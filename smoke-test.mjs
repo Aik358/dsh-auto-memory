@@ -1,5 +1,5 @@
-// Smoke test for @aik358/dsh-auto-memory host half (no dsh runtime needed).
-import { apply, name, inject, GUIDANCE } from '@aik358/dsh-auto-memory'
+// Smoke test for @a9i5k4/dsh-auto-memory host half (no dsh runtime needed).
+import { apply, name, inject, GUIDANCE } from '@a9i5k4/dsh-auto-memory'
 
 const registeredTools = []
 const registeredRoutes = []

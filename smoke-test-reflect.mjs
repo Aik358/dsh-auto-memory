@@ -2,7 +2,7 @@
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readFileSync, existsSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
-import { apply } from '@aik358/dsh-auto-memory'
+import { apply } from '@a9i5k4/dsh-auto-memory'
 
 const ws = mkdtempSync(path.join(tmpdir(), 'dam-test-'))
 const projectDir = path.join(ws, '.dsh-memory')

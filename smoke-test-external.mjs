@@ -1,5 +1,5 @@
 // External memory discovery test against the REAL machine.
-import { apply } from '@aik358/dsh-auto-memory'
+import { apply } from '@a9i5k4/dsh-auto-memory'
 
 const registeredTools = []
 const registeredRoutes = []

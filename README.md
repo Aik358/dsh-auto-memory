@@ -25,18 +25,18 @@ DSH Web GUI 的记忆插件：三层记忆（用户级 / 项目笔记 / 每日�
 
 ```bash
 cd ~/.dsh/profiles/web
-pnpm add @aik358/dsh-auto-memory
+pnpm add @a9i5k4/dsh-auto-memory
 ```
 
 然后编辑该目录下的 `package.json`，在 `dsh.profile.bundles` 数组里追加：
 
 ```json
-"@aik358/dsh-auto-memory"
+"@a9i5k4/dsh-auto-memory"
 ```
 
 保存后**重启 dsh web**，插件即生效（侧边栏出现「记忆」入口）。
 
-> 没有 pnpm？用 npm 也行：`npm install @aik358/dsh-auto-memory`
+> 没有 pnpm？用 npm 也行：`npm install @a9i5k4/dsh-auto-memory`
 
 ## 🤖 AI 时代安装（把这句话直接丢给 AI）
 
@@ -44,8 +44,8 @@ pnpm add @aik358/dsh-auto-memory
 
 ```
 请在 DeepSeek Harness 的 web profile 目录 ~/.dsh/profiles/web 下安装 npm 包
-@aik358/dsh-auto-memory（执行 pnpm add @aik358/dsh-auto-memory 或 npm install），
-然后在 package.json 的 dsh.profile.bundles 数组追加 "@aik358/dsh-auto-memory"，
+@a9i5k4/dsh-auto-memory（执行 pnpm add @a9i5k4/dsh-auto-memory 或 npm install），
+然后在 package.json 的 dsh.profile.bundles 数组追加 "@a9i5k4/dsh-auto-memory"，
 最后重启 dsh web 使插件生效。
 ```
 
@@ -82,5 +82,5 @@ pnpm add @aik358/dsh-auto-memory
 ## 📦 发布信息
 
 - GitHub: https://github.com/Aik358/dsh-auto-memory
-- npm: `@aik358/dsh-auto-memory`
+- npm: `@a9i5k4/dsh-auto-memory`
 - License: BSD-3-Clause
