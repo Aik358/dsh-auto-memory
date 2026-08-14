@@ -1,8 +1,14 @@
 # dsh-auto-memory — DSH Auto Memory Plugin / DSH 自动记忆插件
 
+<p align="center">
+  <img width="820" alt="dsh-auto-memory banner" src="docs/banner.jpg">
+</p>
+
 An auto-memory plugin for the DeepSeek Harness Web GUI: three-layer memory (user-level / project notes / daily logs) with automatic injection and retrieval, daily reflections, AI period greetings with three-level drawers, auto-consolidation after every turn, smart search, a calendar view and settings page, and inheritance of memories from other AI tools.
 
 DSH Web GUI 的记忆插件：三层记忆自动注入与检索、每日反思、AI 时段问候与三级抽屉、每轮自动沉淀、智能检索、日历视图与设置页，支持继承其他 AI 工具的历史记忆。
+
+> **Quick install**: `cd ~/.dsh/profiles/web` → `pnpm add @a9i5k4/dsh-auto-memory` → append `"@a9i5k4/dsh-auto-memory"` to `dsh.profile.bundles` in that directory's `package.json` → restart **dsh web** (the 「Memory」entry appears in the sidebar). Full instructions in [Installation](#installation-one-command); no-pnpm alternative: `npm install @a9i5k4/dsh-auto-memory`.
 
 [**English**](README.md) | [中文版](README.zh-CN.md)
 
@@ -80,109 +86,42 @@ The Search tab adds a **Smart search** button next to the keyword search:
 
 ---
 
-## Demos
+## Screenshots
 
-### 1. Auto-consolidation in action
+All screenshots below are real captures of the plugin running inside the DSH Web GUI.
 
-You finish a conversation turn — no memory commands needed. The moment the turn ends, the plugin writes a topic-grouped entry into today's log:
+### Main interface — the Auto Memory panel (Connect tab)
 
-```
-── Chat ──────────────────────────────────────────────────
+<img width="720" alt="Auto Memory panel in the DSH web UI" src="docs/screenshots/main-connect-en.png">
 
-  You: 我把抽屉的 bug 修好了,顺便加了字号功能,设置页可以调,默认大号。
+### Connect tab — inherit memories accumulated by other AI tools
 
-  AI: 已把 X 记入今日日志。 (回复末尾加粗转述,记忆操作对用户可见)
+<img width="720" alt="Connect tab" src="docs/screenshots/connect-en.png">
 
-── Turn ends → auto-consolidation writes to .dsh-memory/2026-08-14.md ──
+### Overview — AI-written greeting, today's drawers & cross-workspace summaries
 
-## 修复抽屉bug与字号功能（22:30）
-- 修复了抽屉 bug
-- 新增界面字号功能(设置页,默认大号)
-```
+<img width="720" alt="Overview tab" src="docs/screenshots/overview-en.png">
 
-Long-term decisions are promoted to project notes with a `## YYYY-MM-DD` heading automatically. If the AI call fails, the entry is queued and retried by the 5-minute polling loop.
+### Calendar — AI-maintained four-quadrant schedule
 
-### 2. AI greeting & three-level drawers
+<img width="720" alt="Calendar tab" src="docs/screenshots/calendar-en.png">
 
-Click the 「Memory」 button — the floating panel opens with an AI-written greeting, cross-workspace summaries, and drawers titled by the AI summaries themselves:
+### Reflections — structured daily reviews
 
-```
-┌──────────────────────────────────────────────────────┐
-│ 自动记忆                          ⤾   ⟳   ✕         │
-├──────────────────────────────────────────────────────┤
-│ 概览 │ 日志 │ 笔记 │ 反思 │ 接续 │ 日历 │ 检索 │ 工作区 │
-├──────────────────────────────────────────────────────┤
-│ 晚上好 · 晚上                                         │
-│                                                      │
-│ 晚上好,这一晚上你收获满满呀。把 Ark9Tools 扩展框架整个   │
-│ 捋了一遍,冒烟测试 18 项全过,还一口气把 dsh-auto-memory  │
-│ 推到 0.1.9…                                          │
-│                                                      │
-│ ┌ 工作区总结(跨工作区) ────────────────────────────┐  │
-│ │ dsh_debug · 8-10 ~ 8-14                        │  │
-│ │ 主要在做 dsh-auto-memory 插件,逐步发布 v0.1.x…  │  │
-│ │ · 8-14: v0.1.9 系列功能落地                    │  │
-│ │ · 8-13: 中文乱码与 no-branches 修复             │  │
-│ └────────────────────────────────────────────────┘  │
-│                                                      │
-│ ▼ 下午把 dsh-auto-memory 完整发布出去了…               │
-│ 今日下午 · 10 条日志 · 生成于 21:28                    │
-│    ▸ 发布与收尾 (3 项)                                │
-│    ▸ 修复发布过程中的坑 (2 项)                         │
-│                                                      │
-│ ▼ 晚上搭建了扩展框架…                                 │
-│ 今日晚上 · 7 条日志 · 生成于 21:28                     │
-│    ▸ EventBus 与服务容器 (4 项)                       │
-└──────────────────────────────────────────────────────┘
-```
+<img width="720" alt="Reflections tab" src="docs/screenshots/reflections-en.png">
 
-Tap any small drawer (▸) to read its detail points. Greetings and summaries are cached per period — reopening the panel costs no API calls; the ⟳ button forces fresh generation.
+### Settings — memory storage, day boundary, daily budget, update check
 
-### 3. Smart search
+<img width="720" alt="Auto Memory settings" src="docs/screenshots/settings-en.png">
 
-Type a natural-language question in the Search tab and hit 「智能检索」:
+## Beyond the screenshots
 
-```
-┌──────────────────────────────────────────────────────┐
-│ 检索: [上次发布 npm 包踩了什么坑       ] [检索] [智能检索]│
-├──────────────────────────────────────────────────────┤
-│ ┌ 智能回答 ───────────────────────────────────────┐  │
-│ │ 上次发布踩了三个坑:GitHub 中文 description 乱码  │  │
-│ │ (PowerShell GBK,改用 Node fetch);第一次 push    │  │
-│ │ 实际没成功(凭据管理器拦截,需 -c credential.helper=);│ │
-│ │ npm 2FA 需要 Automation 令牌。以上来自           │  │
-│ │ 2026-08-14 日志。                               │  │
-│ └────────────────────────────────────────────────┘  │
-│ 关键词: 发布 / 踩坑 / GitHub / npm / 推送             │
-│ · [2026-08-14.md] 发布完成:①GitHub 仓库已建…         │
-│ · [reflections/2026-08-14.md] 成果回顾:…             │
-└──────────────────────────────────────────────────────┘
-```
-
-The AI expands your query into 3-6 keywords, scans all memory layers, then composes a conversational answer citing its sources — never fabricating facts.
-
-### 4. AI-maintained calendar
-
-Mention a deadline in chat — the AI writes it into the calendar and says so in plain text:
-
-```
-── Chat ──────────────────────────────────────────────────
-
-  You: 周五 10 点要交周报,别忘了。
-
-  AI: 已把『2026-08-15 10:00 交周报』记入日历(重要不紧急)。
-
-── Calendar tab · 2026 年 8 月 ──────────────────────────
-
-         一   二   三   四   五   六   日
-                     11   12   13   14  [15]
-                                      ● 交周报
-```
-
-Pending items are injected into every future session's system prompt until completed — the AI reminds you without being asked.
+- **Auto-consolidation**: every finished turn is evaluated by a small subagent and topic-grouped entries are written to today's log automatically (`## 主题（HH:MM）` + bullet points) — no `memory_log` needed for routine work. Long-term value is promoted to project notes / user-level memory, small talk is skipped, failures are queued and retried every 5 minutes (a 15-second heartbeat file proves the loop is alive).
+- **Smart search**: ask in natural language — the AI expands your query into keywords, scans every memory layer, then answers conversationally with sources cited.
+- **Calendar reminders**: pending items are injected into future sessions' system prompts until completed — the AI reminds you without being asked.
+- **One-click update**: the settings page shows your installed version vs. the npm registry latest; registry installs get a one-click update button (pnpm/npm runs under the hood), then restart to apply.
 
 ---
-
 ## Installation (one command)
 
 > Prerequisite: install [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (dsh) and start `dsh web` at least once.
