@@ -204,6 +204,19 @@ Restart **dsh web** to activate (the 「Memory」entry appears in the sidebar).
 
 > No pnpm? Use npm: `npm install @a9i5k4/dsh-auto-memory`
 
+## Updating (check & upgrade)
+
+The plugin is a normal npm package, so updating is one command in the same profile directory:
+
+```bash
+cd ~/.dsh/profiles/web
+pnpm up @a9i5k4/dsh-auto-memory   # or: npm install @a9i5k4/dsh-auto-memory@latest
+```
+
+Then restart **dsh web**.
+
+The Settings → Auto Memory page has a **Check for updates** button that compares your installed version with the latest one on the npm registry (it shows the update command when a newer version exists).
+
 ---
 
 ## AI-Era Installation (copy-paste for your AI)

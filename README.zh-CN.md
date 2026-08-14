@@ -202,6 +202,19 @@ pnpm add @a9i5k4/dsh-auto-memory
 
 > 没有 pnpm？用 npm 也行：`npm install @a9i5k4/dsh-auto-memory`
 
+## 更新（检查与升级）
+
+插件就是普通的 npm 包，更新同样是在 profile 目录里一条命令：
+
+```bash
+cd ~/.dsh/profiles/web
+pnpm up @a9i5k4/dsh-auto-memory   # 或: npm install @a9i5k4/dsh-auto-memory@latest
+```
+
+然后**重启 dsh web** 生效。
+
+设置 → 自动记忆 页面有「检查更新」按钮，会拿你当前安装的版本和 npm registry 上的最新版对比（有新版时直接显示更新命令）。
+
 ---
 
 ## AI 时代安装（把这句话直接丢给 AI）
