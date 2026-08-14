@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>dsh-auto-memory — Social Preview</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 1280px; height: 640px;
+    overflow: hidden;
+    font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
+    background: #0b1120;
+    color: #e6edf7;
+    position: relative;
+  }
+  /* 背景:深海渐变 + 网格 + 光晕 */
+  .bg {
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(1200px 600px at 80% -10%, rgba(77, 124, 255, 0.35), transparent 60%),
+      radial-gradient(900px 500px at 0% 110%, rgba(0, 200, 180, 0.18), transparent 55%),
+      linear-gradient(160deg, #0b1120 0%, #0e1730 45%, #0a0f1e 100%);
+  }
+  .grid {
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(120, 150, 220, 0.07) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(120, 150, 220, 0.07) 1px, transparent 1px);
+    background-size: 48px 48px;
+    mask-image: radial-gradient(900px 500px at 50% 40%, #000 30%, transparent 75%);
+    -webkit-mask-image: radial-gradient(900px 500px at 50% 40%, #000 30%, transparent 75%);
+  }
+  .glow {
+    position: absolute; inset: 0;
+    background: radial-gradient(600px 300px at 50% 100%, rgba(77, 124, 255, 0.15), transparent 70%);
+  }
+  .content {
+    position: relative; z-index: 2;
+    height: 100%; padding: 56px 64px;
+    display: flex; flex-direction: column;
+  }
+  /* 顶栏 */
+  .topbar { display: flex; align-items: center; gap: 14px; }
+  .logo {
+    width: 44px; height: 44px; border-radius: 12px;
+    background: linear-gradient(135deg, #4d7cff, #22d3ee);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; font-weight: 700; color: #fff;
+    box-shadow: 0 4px 20px rgba(77, 124, 255, 0.45);
+  }
+  .brand { font-size: 15px; font-weight: 600; letter-spacing: 0.04em; color: #93a8cf; }
+  .brand b { color: #e6edf7; font-weight: 700; }
+  .badges { margin-left: auto; display: flex; gap: 10px; }
+  .badge {
+    padding: 7px 16px; border-radius: 999px;
+    font-size: 12.5px; font-weight: 600; letter-spacing: 0.03em;
+    border: 1px solid rgba(120, 160, 255, 0.35);
+    background: rgba(77, 124, 255, 0.12);
+    color: #a9c0f0;
+  }
+  .badge.hl {
+    background: linear-gradient(135deg, #4d7cff, #3b63e6);
+    color: #fff; border: none;
+    box-shadow: 0 4px 16px rgba(77, 124, 255, 0.4);
+  }
+  /* 主标题 */
+  .title { margin-top: 44px; }
+  .title h1 {
+    font-size: 54px; font-weight: 800; letter-spacing: -0.01em;
+    background: linear-gradient(92deg, #ffffff 30%, #9db8ff 70%, #5eead4 100%);
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent; color: transparent;
+  }
+  .title .sub {
+    margin-top: 14px; font-size: 20px; color: #93a8cf; font-weight: 400;
+  }
+  .title .sub b { color: #dbe7ff; font-weight: 600; }
+  /* 功能卡 */
+  .cards {
+    margin-top: 40px;
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
+  }
+  .card {
+    border-radius: 14px;
+    padding: 18px 20px;
+    background: rgba(255, 255, 255, 0.045);
+    border: 1px solid rgba(140, 170, 255, 0.18);
+    backdrop-filter: blur(8px);
+  }
+  .card .k { font-size: 13px; font-weight: 700; color: #7ee7d0; letter-spacing: 0.05em; }
+  .card .v { margin-top: 8px; font-size: 14.5px; line-height: 1.6; color: #b9c9e8; }
+  /* 底部 */
+  .footer {
+    margin-top: auto;
+    display: flex; align-items: center; gap: 12px;
+    font-size: 13.5px; color: #7c8fb5;
+  }
+  .footer .pkg {
+    padding: 8px 18px; border-radius: 10px;
+    background: rgba(77, 124, 255, 0.14);
+    border: 1px solid rgba(77, 124, 255, 0.4);
+    color: #9db8ff; font-family: 'Cascadia Code', Consolas, monospace;
+  }
+  .footer .url { margin-left: auto; color: #5f7398; }
+</style>
+</head>
+<body>
+  <div class="bg"></div>
+  <div class="grid"></div>
+  <div class="glow"></div>
+  <div class="content">
+    <div class="topbar">
+      <div class="logo">M</div>
+      <div class="brand">DeepSeek Harness · <b>Plugin</b></div>
+      <div class="badges">
+        <span class="badge">#dsh-plugin</span>
+        <span class="badge hl">v0.1.3</span>
+      </div>
+    </div>
+    <div class="title">
+      <h1>dsh-auto-memory</h1>
+      <div class="sub">让 AI 记住每一次对话 —— <b>三层记忆</b> 自动注入 · <b>每日反思</b> · <b>中英双语</b></div>
+    </div>
+    <div class="cards">
+      <div class="card">
+        <div class="k">AUTO INJECTION</div>
+        <div class="v">用户级规则 / 项目笔记 / 工作日志 自动注入每次会话上下文</div>
+      </div>
+      <div class="card">
+        <div class="k">DAILY REFLECTION</div>
+        <div class="v">昨日工作自动复盘，一键生成反思，跨会话持续积累</div>
+      </div>
+      <div class="card">
+        <div class="k">I18N READY</div>
+        <div class="v">可视化面板 + 设置页，中文 / English 一键切换</div>
+      </div>
+    </div>
+    <div class="footer">
+      <span class="pkg">pnpm add @a9i5k4/dsh-auto-memory</span>
+      <span>GitHub · Aik358/dsh-auto-memory</span>
+      <span class="url">DeepSeek Harness</span>
+    </div>
+  </div>
+</body>
+</html>
