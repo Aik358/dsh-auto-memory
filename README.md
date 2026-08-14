@@ -14,6 +14,53 @@ DSH Web GUI 的记忆插件：三层记忆自动注入与检索、每日反思�
 
 ---
 
+## Installation (one command)
+
+> Prerequisite: install [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (dsh) and start `dsh web` at least once.
+
+Run in the **profile directory** (`~/.dsh/profiles/web`):
+
+```bash
+cd ~/.dsh/profiles/web
+pnpm add @a9i5k4/dsh-auto-memory
+```
+
+Then edit `package.json` in that directory and append to the `dsh.profile.bundles` array:
+
+```json
+"@a9i5k4/dsh-auto-memory"
+```
+
+Restart **dsh web** to activate (the 「Memory」entry appears in the sidebar).
+
+> No pnpm? Use npm: `npm install @a9i5k4/dsh-auto-memory`
+
+## Updating (check & upgrade)
+
+The plugin is a normal npm package, so updating is one command in the same profile directory:
+
+```bash
+cd ~/.dsh/profiles/web
+pnpm up @a9i5k4/dsh-auto-memory   # or: npm install @a9i5k4/dsh-auto-memory@latest
+```
+
+Then restart **dsh web**.
+
+The Settings → Auto Memory page has a **Check for updates** button that compares your installed version with the latest one on the npm registry (it shows the update command when a newer version exists).
+
+## AI-Era Installation (copy-paste for your AI)
+
+> It's the AI era — just copy the sentence below to your AI assistant (DeepSeek / Claude / Codex etc.) and it will do the installation for you.
+
+```text
+Install the npm package @a9i5k4/dsh-auto-memory in the DeepSeek Harness web profile
+directory ~/.dsh/profiles/web (run "pnpm add @a9i5k4/dsh-auto-memory" or "npm install @a9i5k4/dsh-auto-memory"),
+append "@a9i5k4/dsh-auto-memory" to the dsh.profile.bundles array in package.json,
+then restart dsh web to activate the plugin.
+```
+
+---
+
 ## Features
 
 ### Three-layer Memory
@@ -92,27 +139,27 @@ All screenshots below are real captures of the plugin running inside the DSH Web
 
 ### Main interface — the Auto Memory panel (Connect tab)
 
-<img width="720" alt="Auto Memory panel in the DSH web UI" src="docs/screenshots/main-connect-en.png">
+<img width="480" alt="Auto Memory panel in the DSH web UI" src="docs/screenshots/main-connect-en.png">
 
 ### Connect tab — inherit memories accumulated by other AI tools
 
-<img width="720" alt="Connect tab" src="docs/screenshots/connect-en.png">
+<img width="480" alt="Connect tab" src="docs/screenshots/connect-en.png">
 
 ### Overview — AI-written greeting, today's drawers & cross-workspace summaries
 
-<img width="720" alt="Overview tab" src="docs/screenshots/overview-en.png">
+<img width="480" alt="Overview tab" src="docs/screenshots/overview-en.png">
 
 ### Calendar — AI-maintained four-quadrant schedule
 
-<img width="720" alt="Calendar tab" src="docs/screenshots/calendar-en.png">
+<img width="480" alt="Calendar tab" src="docs/screenshots/calendar-en.png">
 
 ### Reflections — structured daily reviews
 
-<img width="720" alt="Reflections tab" src="docs/screenshots/reflections-en.png">
+<img width="480" alt="Reflections tab" src="docs/screenshots/reflections-en.png">
 
 ### Settings — memory storage, day boundary, daily budget, update check
 
-<img width="720" alt="Auto Memory settings" src="docs/screenshots/settings-en.png">
+<img width="480" alt="Auto Memory settings" src="docs/screenshots/settings-en.png">
 
 ## Beyond the screenshots
 
@@ -120,54 +167,6 @@ All screenshots below are real captures of the plugin running inside the DSH Web
 - **Smart search**: ask in natural language — the AI expands your query into keywords, scans every memory layer, then answers conversationally with sources cited.
 - **Calendar reminders**: pending items are injected into future sessions' system prompts until completed — the AI reminds you without being asked.
 - **One-click update**: the settings page shows your installed version vs. the npm registry latest; registry installs get a one-click update button (pnpm/npm runs under the hood), then restart to apply.
-
----
-## Installation (one command)
-
-> Prerequisite: install [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (dsh) and start `dsh web` at least once.
-
-Run in the **profile directory** (`~/.dsh/profiles/web`):
-
-```bash
-cd ~/.dsh/profiles/web
-pnpm add @a9i5k4/dsh-auto-memory
-```
-
-Then edit `package.json` in that directory and append to the `dsh.profile.bundles` array:
-
-```json
-"@a9i5k4/dsh-auto-memory"
-```
-
-Restart **dsh web** to activate (the 「Memory」entry appears in the sidebar).
-
-> No pnpm? Use npm: `npm install @a9i5k4/dsh-auto-memory`
-
-## Updating (check & upgrade)
-
-The plugin is a normal npm package, so updating is one command in the same profile directory:
-
-```bash
-cd ~/.dsh/profiles/web
-pnpm up @a9i5k4/dsh-auto-memory   # or: npm install @a9i5k4/dsh-auto-memory@latest
-```
-
-Then restart **dsh web**.
-
-The Settings → Auto Memory page has a **Check for updates** button that compares your installed version with the latest one on the npm registry (it shows the update command when a newer version exists).
-
----
-
-## AI-Era Installation (copy-paste for your AI)
-
-> It's the AI era — just copy the sentence below to your AI assistant (DeepSeek / Claude / Codex etc.) and it will do the installation for you.
-
-```text
-Install the npm package @a9i5k4/dsh-auto-memory in the DeepSeek Harness web profile
-directory ~/.dsh/profiles/web (run "pnpm add @a9i5k4/dsh-auto-memory" or "npm install @a9i5k4/dsh-auto-memory"),
-append "@a9i5k4/dsh-auto-memory" to the dsh.profile.bundles array in package.json,
-then restart dsh web to activate the plugin.
-```
 
 ---
 

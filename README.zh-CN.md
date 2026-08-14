@@ -12,6 +12,55 @@ DSH Web GUI 的记忆插件：三层记忆（用户级 / 项目笔记 / 每日�
 
 ---
 
+## 安装（NPM 一键）
+
+> 前提：已安装 DeepSeek Harness（dsh）并至少启动过一次 `dsh web`。
+
+在 **profile 目录**（`~/.dsh/profiles/web`）下执行：
+
+```bash
+cd ~/.dsh/profiles/web
+pnpm add @a9i5k4/dsh-auto-memory
+```
+
+然后编辑该目录下的 `package.json`，在 `dsh.profile.bundles` 数组里追加：
+
+```json
+"@a9i5k4/dsh-auto-memory"
+```
+
+保存后**重启 dsh web**，插件即生效（侧边栏出现「记忆」入口）。
+
+> 没有 pnpm？用 npm 也行：`npm install @a9i5k4/dsh-auto-memory`
+
+## 更新（检查与升级）
+
+插件就是普通的 npm 包，更新同样是在 profile 目录里一条命令：
+
+```bash
+cd ~/.dsh/profiles/web
+pnpm up @a9i5k4/dsh-auto-memory   # 或: npm install @a9i5k4/dsh-auto-memory@latest
+```
+
+然后**重启 dsh web** 生效。
+
+设置 → 自动记忆 页面有「检查更新」按钮，会拿你当前安装的版本和 npm registry 上的最新版对比（有新版时直接显示更新命令）。
+
+---
+
+## AI 时代安装（把这句话直接丢给 AI）
+
+> 现在是 AI 时代，你可以直接把下面这句话复制给你的 AI 助手（DeepSeek / Claude / Codex 等），它会帮你完成安装：
+
+```text
+请在 DeepSeek Harness 的 web profile 目录 ~/.dsh/profiles/web 下安装 npm 包
+@a9i5k4/dsh-auto-memory（执行 pnpm add @a9i5k4/dsh-auto-memory 或 npm install），
+然后在 package.json 的 dsh.profile.bundles 数组追加 "@a9i5k4/dsh-auto-memory"，
+最后重启 dsh web 使插件生效。
+```
+
+---
+
 ## 功能
 
 ### 三层记忆
@@ -90,33 +139,33 @@ DSH Web GUI 的记忆插件：三层记忆（用户级 / 项目笔记 / 每日�
 
 ### 主界面 — 「自动记忆」浮窗（接续页签）
 
-<img width="720" alt="自动记忆浮窗" src="docs/screenshots/main-connect-zh.png">
+<img width="480" alt="自动记忆浮窗" src="docs/screenshots/main-connect-zh.png">
 
 ### 接续 — 继承其他 AI 工具积累的记忆
 
-<img width="720" alt="接续页签" src="docs/screenshots/connect-zh.png">
+<img width="480" alt="接续页签" src="docs/screenshots/connect-zh.png">
 
 ### 概览 — AI 问候语、今日抽屉与跨工作区总结
 
-<img width="720" alt="概览页签" src="docs/screenshots/overview-zh.png">
+<img width="480" alt="概览页签" src="docs/screenshots/overview-zh.png">
 
 ### 日历 — AI 维护的四象限日程
 
-<img width="720" alt="日历页签" src="docs/screenshots/calendar-zh.png">
+<img width="480" alt="日历页签" src="docs/screenshots/calendar-zh.png">
 
 ### 检索 — 关键词检索与智能检索
 
-<img width="720" alt="检索页签" src="docs/screenshots/search-zh.png">
+<img width="480" alt="检索页签" src="docs/screenshots/search-zh.png">
 
 ### 反思（英文界面示例）
 
-<img width="720" alt="反思页签" src="docs/screenshots/reflections-en.png">
+<img width="480" alt="反思页签" src="docs/screenshots/reflections-en.png">
 
 ### 设置 — 记忆存储、日界、每日预算、更新检查
 
-<img width="720" alt="自动记忆设置" src="docs/screenshots/settings-zh.png">
+<img width="480" alt="自动记忆设置" src="docs/screenshots/settings-zh.png">
 
-<img width="720" alt="自动记忆设置(调试中心)" src="docs/screenshots/settings-debug-zh.png">
+<img width="480" alt="自动记忆设置(调试中心)" src="docs/screenshots/settings-debug-zh.png">
 
 ## 截图之外
 
@@ -124,54 +173,6 @@ DSH Web GUI 的记忆插件：三层记忆（用户级 / 项目笔记 / 每日�
 - **智能检索**：自然语言提问，AI 扩成关键词扫描全部记忆层，再综合成带出处的自然语言回答。
 - **日历提醒**：未完成事项注入之后每次会话的系统提示词——AI 不用你提醒就会主动提及。
 - **一键更新**：设置页对比本地版本与 npm registry 最新版；registry 安装的用户可直接「一键更新」（后台自动跑 pnpm/npm），重启后生效。
-
----
-## 安装（NPM 一键）
-
-> 前提：已安装 DeepSeek Harness（dsh）并至少启动过一次 `dsh web`。
-
-在 **profile 目录**（`~/.dsh/profiles/web`）下执行：
-
-```bash
-cd ~/.dsh/profiles/web
-pnpm add @a9i5k4/dsh-auto-memory
-```
-
-然后编辑该目录下的 `package.json`，在 `dsh.profile.bundles` 数组里追加：
-
-```json
-"@a9i5k4/dsh-auto-memory"
-```
-
-保存后**重启 dsh web**，插件即生效（侧边栏出现「记忆」入口）。
-
-> 没有 pnpm？用 npm 也行：`npm install @a9i5k4/dsh-auto-memory`
-
-## 更新（检查与升级）
-
-插件就是普通的 npm 包，更新同样是在 profile 目录里一条命令：
-
-```bash
-cd ~/.dsh/profiles/web
-pnpm up @a9i5k4/dsh-auto-memory   # 或: npm install @a9i5k4/dsh-auto-memory@latest
-```
-
-然后**重启 dsh web** 生效。
-
-设置 → 自动记忆 页面有「检查更新」按钮，会拿你当前安装的版本和 npm registry 上的最新版对比（有新版时直接显示更新命令）。
-
----
-
-## AI 时代安装（把这句话直接丢给 AI）
-
-> 现在是 AI 时代，你可以直接把下面这句话复制给你的 AI 助手（DeepSeek / Claude / Codex 等），它会帮你完成安装：
-
-```text
-请在 DeepSeek Harness 的 web profile 目录 ~/.dsh/profiles/web 下安装 npm 包
-@a9i5k4/dsh-auto-memory（执行 pnpm add @a9i5k4/dsh-auto-memory 或 npm install），
-然后在 package.json 的 dsh.profile.bundles 数组追加 "@a9i5k4/dsh-auto-memory"，
-最后重启 dsh web 使插件生效。
-```
 
 ---
 
