@@ -37,7 +37,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/Aik358/dsh-auto-memory.git"
+    "url": "git+https://github.com/Aik358/dsh-auto-memory.git"
   },
   "license": "BSD-3-Clause"
 }
