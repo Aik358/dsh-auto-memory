@@ -25,6 +25,8 @@ cd ~/.dsh/profiles/web
 pnpm add @a9i5k4/dsh-auto-memory
 ```
 
+> pnpm v11 默认限制安装发布不足 1 天的版本。当天发布想立即拿到新版,在 profile 目录的 pnpm-workspace.yaml 加 `minimumReleaseAge: 0`,或用显式版本 `pnpm add @a9i5k4/dsh-auto-memory@0.1.16`。(pnpm v11 blocks packages published <1 day ago; set `minimumReleaseAge: 0` in pnpm-workspace.yaml or use an explicit version for same-day releases.)
+
 Then edit `package.json` in that directory and append to the `dsh.profile.bundles` array:
 
 ```json
