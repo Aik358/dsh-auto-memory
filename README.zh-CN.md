@@ -4,7 +4,7 @@
   <img width="820" alt="dsh-auto-memory 宣传图" src="docs/banner.jpg">
 </p>
 
-DSH Web GUI 的记忆插件：三层记忆（用户级 / 项目笔记 / 每日日志）自动注入与检索、每日反思、AI 时段问候与三级抽屉、每轮自动沉淀、智能检索、日历视图与设置页，支持继承其他 AI 工具的历史记忆。
+DSH Web GUI 的记忆与人性化交互插件：三层记忆（用户级 / 项目笔记 / 每日日志）自动注入与检索、每日反思、AI 时段问候与三级抽屉、每轮自动沉淀、智能检索、日历视图与设置页，支持继承其他 AI 工具的历史记忆。
 
 > **快速安装**：`cd ~/.dsh/profiles/web` → `pnpm add @a9i5k4/dsh-auto-memory` → 在该目录 `package.json` 的 `dsh.profile.bundles` 里追加 `"@a9i5k4/dsh-auto-memory"` → 重启 **dsh web**（侧边栏出现「记忆」入口）。完整步骤见 [安装](#安装npm-一键)；没有 pnpm 可用 `npm install @a9i5k4/dsh-auto-memory`。
 
