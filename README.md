@@ -1,4 +1,4 @@
-# dsh-auto-memory — DSH Auto Memory Plugin / DSH 自动记忆与交互插件
+# dsh-auto-memory — DSH Auto Memory Plugin / DSH 自动记忆与人性化交互插件
 
 <p align="center">
   <img width="820" alt="dsh-auto-memory banner" src="docs/banner.jpg">
