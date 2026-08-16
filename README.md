@@ -4,7 +4,7 @@
   <img width="820" alt="dsh-auto-memory banner" src="docs/banner.jpg">
 </p>
 
-An auto-memory plugin for the DeepSeek Harness Web GUI: three-layer memory (user-level / project notes / daily logs) with automatic injection and retrieval, daily reflections, AI period greetings with three-level drawers, auto-consolidation after every turn, smart search, a calendar view and settings page, and inheritance of memories from other AI tools.
+A cache-friendly three-layer memory engine for the DeepSeek Harness Web GUI — lean auto injection, per-turn AI consolidation, on-demand reads and cross-tool memory inheritance — wrapped in human touches: proactive calendar reminders, warm AI greetings, and a daily journal that writes itself.
 
 DSH Web GUI 的记忆与人性化交互插件：三层记忆自动注入与检索、每日反思、AI 时段问候与三级抽屉、每轮自动沉淀、智能检索、日历视图与设置页，支持继承其他 AI 工具的历史记忆。
 
@@ -62,6 +62,25 @@ then restart dsh web to activate the plugin.
 ```
 
 ---
+
+## A companion that takes initiative
+
+Auto Memory is designed to feel less like a database and more like an assistant who knows you:
+
+- **Proactive reminders** — when the AI notices a deadline, appointment or promise in your conversation, it files it into the calendar automatically and reminds you in later sessions before the time arrives (`calendar_add` / `calendar_done` / `calendar_remove`).
+- **Warm greetings** — an AI-written greeting for the current period (morning / afternoon / evening) that mentions your most important work of the day; come back after an hour away and it says "welcome back" and catches you up.
+- **It writes its own journal** — after every conversation turn, a small subagent quietly decides what's worth keeping and appends topic-grouped entries to today's log; long-term decisions are promoted to project notes and cross-project rules to user-level memory. You never have to remember to log anything.
+- **Daily reflections** — structured results / lessons / next steps are kept in the background, so you can review how a day really went.
+- **Calendar with human touches** — semantic colors for urgency, a day timeline (07:00–22:00), location and reminder fields; the AI maintains it from context instead of you filling forms.
+- **Inherited memory** — memories accumulated in WorkBuddy / CodeBuddy / Claude Code / Codex are discoverable and importable, so the plugin picks up where your other AI tools left off.
+
+### Under the hood — engineering that stays out of your way
+
+- **Prefix-cache friendly** — static rules live in the system prompt, dynamic memory in runtime snapshots; the prompt stays byte-stable so DeepSeek's prefix cache keeps hitting (no repeated re-encoding of your whole history).
+- **Lean injection, low token cost** — only the last day of logs + a reflection digest are injected; everything else is fetched on demand via `memory_read` / `memory_recall`.
+- **Rate-limited AI** — auto-consolidation runs at most 8×/day with a configurable cooldown (doubled outside work hours), so memory stays useful without burning your budget.
+- **Credentials never enter the prompt** — sensitive sections (tokens / secrets / credentials) are filtered out of injection while staying safe in the files.
+- **Cross-workspace & cross-tool** — centralized storage readable from any session; memories from WorkBuddy / CodeBuddy / Claude Code / Codex are discoverable and importable.
 
 ## Features
 
