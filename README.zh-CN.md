@@ -74,7 +74,8 @@ pnpm up @a9i5k4/dsh-auto-memory   # 或: npm install @a9i5k4/dsh-auto-memory@lat
 
 > **集中式存储（WorkBuddy 式）**：所有工作区的记忆统一存放在一个根目录 `~/.dsh/memory/workspaces/` 下，每工作区一个子目录——任何模型、任何会话都能通过注入 + 跨工作区 `memory_recall` 读取。旧版分散在各工作区 `.dsh-memory/` 的记忆会在升级后首次运行时自动迁移（旧副本保留不删）。
 
-- **自动注入（放在系统提示词末尾）**：每次组装系统提示词时注入 `<memory_system>` 块（用户规则 + 项目笔记 + 最近反思 + 最近 N 天日志尾部 + 未完成日历事项 + 写入纪律），并置于提示词**最末尾**——模型在回复前最后读到记忆纪律，遵循度更高
+- **自动注入（放在系统提示词末尾）**：每次组装系统提示词时注入 `<memory_system>` 块（用户规则 + 项目笔记 + 反思精华 + 最近 1 天日志尾部 + 外部记忆路径 + 未完成日历事项 + 写入纪律），并置于提示词**最末尾**——模型在回复前最后读到记忆纪律，遵循度更高
+- **注入精简、细节按需（v0.1.24）**：注入保持轻量——只含最近 1 天日志、反思「成果回顾」精华、外部记忆绝对路径（不再整段注入）；需要完整日志/反思/记忆文件时用 `memory_read` 工具按需读取；**敏感段落（凭据/令牌/密钥）从注入中过滤**（文件保留，不进 prompt）
 - **记忆操作可见**：更新/检索记忆时，AI 会在对话正文中明文说明（如"已把 X 记入今日日志""我查了记忆,发现…"），不藏在工具调用里
 
 ### 每轮自动沉淀 — 记忆自己写自己（v0.1.9）
@@ -86,7 +87,7 @@ pnpm up @a9i5k4/dsh-auto-memory   # 或: npm install @a9i5k4/dsh-auto-memory@lat
 - **寒暄轮自动跳过**（内容门槛 `autoConsolidateMinChars`）；按 turn 去重，每轮只写一次；子代理轮次不参与
 - **GUI 有 Agent 参与痕迹**：概览页显示"今日已自动沉淀 N 条要点（最近 HH:MM）"；面板打开即刷新、打开期间每 30 秒自动重拉、⟳ 按钮手动刷新
 - **`memory_consolidate` 工具**：AI 读最近日志发散提炼，把有长期价值的决策/架构/用户偏好固化进 MEMORY.md（"做梦式"固化）
-- 可在 `~/.dsh/dsh-auto-memory.json` 配置：`autoConsolidate`（默认开）、`autoConsolidateMinChars`（默认 60）
+- 可在 `~/.dsh/dsh-auto-memory.json` 配置：`autoConsolidate`（默认开）、`autoConsolidateMinChars`（默认 240）、`autoConsolidateCooldownMinutes`（默认 30，22:00-08:00 自动翻倍）、`autoConsolidateDailyMax`（默认 8）——全部可在设置页「自动化」分组调整
 
 ### AI 时段问候与三级抽屉（概览页，v0.1.9）
 
@@ -171,6 +172,10 @@ pnpm up @a9i5k4/dsh-auto-memory   # 或: npm install @a9i5k4/dsh-auto-memory@lat
 
 - **每轮自动沉淀**：每轮对话结束由小代理自动评估，按主题分组写进今日日志（`## 主题（HH:MM）` + 要点列表）——常规工作不需要手动 memory_log。有长期价值的内容自动升格项目笔记 / 用户级记忆；寒暄轮跳过；AI 失败入队，每 5 分钟重试（15 秒心跳文件证明轮询存活）。
 - **智能检索**：自然语言提问，AI 扩成关键词扫描全部记忆层，再综合成带出处的自然语言回答。
+- **日历与当天时间轴（v0.1.24）**：点击日期打开 07:00-22:00 时间轴，事件按时间槽落位；支持地点/提醒/补充说明；AI 主动提取 deadline 用 `calendar_add` 写入、`calendar_done`/`calendar_remove` 维护。
+- **工作区思维导图（v0.1.24）**：AI 生成工作区/主题/跨工作区关联图，支持拖动画布、滑块缩放、点击卡片看摘要。
+- **记忆面板 UI（v0.1.24）**：液态玻璃面板 + 全站丝滑动效——模块箭头滚动条、抽屉展开/收起过渡、设置页浮动保存栏（未保存高亮）。
+- **外部记忆管理（v0.1.24）**：按来源查看/接入/移除——已接入显示 ✓、按目标（笔记/用户级）独立删除；内容按需读取，不再整段注入。
 - **日历提醒**：未完成事项注入之后每次会话的系统提示词——AI 不用你提醒就会主动提及。
 - **一键更新**：设置页对比本地版本与 npm registry 最新版；registry 安装的用户可直接「一键更新」（后台自动跑 pnpm/npm），重启后生效。
 
@@ -186,12 +191,15 @@ pnpm up @a9i5k4/dsh-auto-memory   # 或: npm install @a9i5k4/dsh-auto-memory@lat
   "projectMemoryDir": ".dsh-memory",
   "injectEnabled": true,
   "injectBudgetChars": 2400,
-  "recentDaysInjected": 3,
+  "recentDaysInjected": 1,
   "reflectEnabled": true,
   "reflectStyle": "auto",
   "locale": "zh",
   "autoConsolidate": true,
-  "autoConsolidateMinChars": 60,
+  "autoConsolidateMinChars": 240,
+  "autoConsolidateCooldownMinutes": 30,
+  "autoConsolidateDailyMax": 8,
+  "externalInjectionChars": 1400,
   "memoryRoot": "~/.dsh/memory/workspaces",
   "dayBoundaryMinutes": 450
 }

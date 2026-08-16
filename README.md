@@ -76,7 +76,8 @@ then restart dsh web to activate the plugin.
 
 > **Centralized storage (WorkBuddy-style)**: all workspace memories live under one root — `~/.dsh/memory/workspaces/`, one subdirectory per workspace (readable by any model in any session via injection + cross-workspace `memory_recall`). Legacy per-workspace `.dsh-memory/` folders are auto-migrated on first run after upgrade (the old copies are kept, not deleted).
 
-- **Auto injection (at the end of the system prompt)**: every prompt gets a `<memory_system>` block (user rules + project notes + recent reflections + recent N days of log tails + pending calendar items + writing discipline); it is placed at the very end of the system prompt so the model reads the memory discipline right before replying
+- **Auto injection (at the end of the system prompt)**: every prompt gets a `<memory_system>` block (user rules + project notes + reflection digest + recent 1 day of log tails + external memory paths + pending calendar items + writing discipline); it is placed at the very end of the system prompt so the model reads the memory discipline right before replying
+- **Lean by default, details on demand (v0.1.24)**: injection stays small — the last 1 day of logs, a reflection digest (achievements section only), and paths for external memory instead of full text. `memory_read` fetches full log/reflection/user/notes/calendar files when needed; sensitive sections (credentials/tokens/secrets) are **filtered out of the prompt** but kept in the files
 - **Visible memory ops**: when the AI updates or searches memory, it says so in plain text in the chat reply (e.g. "Logged X to today's journal", "I checked memory and found..."), not hidden inside tool calls
 
 ### Auto-Consolidation — memory writes itself after every turn (v0.1.9)
@@ -88,7 +89,7 @@ Every finished conversation turn is automatically evaluated (via a small subagen
 - **Small talk is skipped** (content threshold `autoConsolidateMinChars`), each turn is deduplicated by turn number, subagent turns are ignored
 - **Agent traces in the GUI**: the overview shows "Auto-consolidated N points today (latest HH:MM)"; the panel refreshes on open, every 30s while open, and via the ⟳ button
 - **`memory_consolidate` tool**: read recent logs and distill long-term decisions / architecture / user preferences into MEMORY.md on demand ("dream-like" consolidation)
-- Configurable in `~/.dsh/dsh-auto-memory.json`: `autoConsolidate` (default true), `autoConsolidateMinChars` (default 60)
+- Configurable in `~/.dsh/dsh-auto-memory.json`: `autoConsolidate` (default true), `autoConsolidateMinChars` (default 240), `autoConsolidateCooldownMinutes` (default 30, doubled 22:00–08:00), `autoConsolidateDailyMax` (default 8) — all adjustable in the Settings → Automation section
 
 ### AI Greetings & Three-level Drawers (Overview page, v0.1.9)
 
@@ -167,6 +168,10 @@ All screenshots below are real captures of the plugin running inside the DSH Web
 
 - **Auto-consolidation**: every finished turn is evaluated by a small subagent and topic-grouped entries are written to today's log automatically (`## 主题（HH:MM）` + bullet points) — no `memory_log` needed for routine work. Long-term value is promoted to project notes / user-level memory, small talk is skipped, failures are queued and retried every 5 minutes (a 15-second heartbeat file proves the loop is alive).
 - **Smart search**: ask in natural language — the AI expands your query into keywords, scans every memory layer, then answers conversationally with sources cited.
+- **Calendar with day timeline (v0.1.24)**: click a date to open a 07:00–22:00 timeline with events placed on their time slots; add events with location/reminder/details; the AI proactively files deadlines via `calendar_add` and marks them done via `calendar_done`/`calendar_remove`.
+- **Workspace mind map (v0.1.24)**: an AI-generated graph of workspaces, topics and cross-workspace links; pan by dragging, resize with the slider, click a card for details.
+- **Memory panel UI (v0.1.24)**: liquid-glass panel with smooth animations everywhere — tab strip with arrow scrolling, expanding sections (greeting drawers, workspace summaries), floating save bar in Settings that highlights when there are unsaved changes.
+- **External memory management (v0.1.24)**: per-source view/import/remove — imported sources show "✓" and become "Delete" buttons per target (notes vs user-level); full content is read on demand and never injected in bulk.
 - **Calendar reminders**: pending items are injected into future sessions' system prompts until completed — the AI reminds you without being asked.
 - **One-click update**: the settings page shows your installed version vs. the npm registry latest; registry installs get a one-click update button (pnpm/npm runs under the hood), then restart to apply.
 
@@ -182,12 +187,15 @@ Defaults (JSON file `~/.dsh/dsh-auto-memory.json`):
   "projectMemoryDir": ".dsh-memory",
   "injectEnabled": true,
   "injectBudgetChars": 2400,
-  "recentDaysInjected": 3,
+  "recentDaysInjected": 1,
   "reflectEnabled": true,
   "reflectStyle": "auto",
   "locale": "zh",
   "autoConsolidate": true,
-  "autoConsolidateMinChars": 60,
+  "autoConsolidateMinChars": 240,
+  "autoConsolidateCooldownMinutes": 30,
+  "autoConsolidateDailyMax": 8,
+  "externalInjectionChars": 1400,
   "memoryRoot": "~/.dsh/memory/workspaces",
   "dayBoundaryMinutes": 450
 }
