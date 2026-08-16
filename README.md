@@ -138,31 +138,28 @@ The Search tab adds a **Smart search** button next to the keyword search:
 
 ## Screenshots
 
-All screenshots below are real captures of the plugin running inside the DSH Web GUI.
+All screenshots below are real captures of the plugin running inside the DSH Web GUI (Chinese UI for now; English UI captures will be added later).
 
-### Main interface — the Auto Memory panel (Connect tab)
+### Memory panel overview — away greeting & AI period summaries
 
-<img width="480" alt="Auto Memory panel in the DSH web UI" src="docs/screenshots/main-connect-en.png">
+<img width="480" alt="Memory panel overview" src="docs/screenshots/overview-zh.png">
 
-### Connect tab — inherit memories accumulated by other AI tools
+### Connect — inherit global memory & history sessions from other AI agents
 
-<img width="480" alt="Connect tab" src="docs/screenshots/connect-en.png">
+<img width="480" alt="Connect tab" src="docs/screenshots/connect-zh.png">
 
-### Overview — AI-written greeting, today's drawers & cross-workspace summaries
+### Calendar — AI adds items, toggles status and marks completion from context
 
-<img width="480" alt="Overview tab" src="docs/screenshots/overview-en.png">
+<img width="480" alt="Calendar tab" src="docs/screenshots/calendar-zh.png">
 
-### Calendar — AI-maintained four-quadrant schedule
+### Workspace mind map — auto-generated, workspace-centered cross-workspace overview
 
-<img width="480" alt="Calendar tab" src="docs/screenshots/calendar-en.png">
+<img width="480" alt="Workspace mind map" src="docs/screenshots/workspace-map-zh.png">
 
-### Reflections — structured daily reviews
+### Settings — highly customizable, covers most technical details
 
-<img width="480" alt="Reflections tab" src="docs/screenshots/reflections-en.png">
-
-### Settings — memory storage, day boundary, daily budget, update check
-
-<img width="480" alt="Auto Memory settings" src="docs/screenshots/settings-en.png">
+<img width="480" alt="Auto Memory settings" src="docs/screenshots/settings-zh.png">
+<img width="480" alt="Auto Memory settings (2)" src="docs/screenshots/settings-2-zh.png">
 
 ## Beyond the screenshots
 

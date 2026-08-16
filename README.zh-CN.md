@@ -136,37 +136,28 @@ pnpm up @a9i5k4/dsh-auto-memory   # 或: npm install @a9i5k4/dsh-auto-memory@lat
 
 ## 界面截图
 
-以下都是插件在 DSH Web GUI 中的真实运行截图。
+以下都是插件在 DSH Web GUI 中的真实运行截图（当前为中文界面；英文界面截图稍后补充）。
 
-### 主界面 — 「自动记忆」浮窗（接续页签）
+### 记忆面板概览 — 暂离问候、AI 总结等
 
-<img width="480" alt="自动记忆浮窗" src="docs/screenshots/main-connect-zh.png">
+<img width="480" alt="记忆面板概览" src="docs/screenshots/overview-zh.png">
 
-### 接续 — 继承其他 AI 工具积累的记忆
+### 接续 — 从其他 AI Agent 提取全局记忆与历史会话
 
 <img width="480" alt="接续页签" src="docs/screenshots/connect-zh.png">
 
-### 概览 — AI 问候语、今日抽屉与跨工作区总结
-
-<img width="480" alt="概览页签" src="docs/screenshots/overview-zh.png">
-
-### 日历 — AI 维护的四象限日程
+### 日历 — AI 根据上下文自动添加事项、切换状态、标记完成
 
 <img width="480" alt="日历页签" src="docs/screenshots/calendar-zh.png">
 
-### 检索 — 关键词检索与智能检索
+### 工作区导图 — 自动生成的以工作区为中心的跨工作区记忆导图
 
-<img width="480" alt="检索页签" src="docs/screenshots/search-zh.png">
+<img width="480" alt="工作区记忆导图" src="docs/screenshots/workspace-map-zh.png">
 
-### 反思（英文界面示例）
-
-<img width="480" alt="反思页签" src="docs/screenshots/reflections-en.png">
-
-### 设置 — 记忆存储、日界、每日预算、更新检查
+### 设置 — 高度自定义，可操作绝大部分技术细节
 
 <img width="480" alt="自动记忆设置" src="docs/screenshots/settings-zh.png">
-
-<img width="480" alt="自动记忆设置(调试中心)" src="docs/screenshots/settings-debug-zh.png">
+<img width="480" alt="自动记忆设置(续)" src="docs/screenshots/settings-2-zh.png">
 
 ## 截图之外
 
