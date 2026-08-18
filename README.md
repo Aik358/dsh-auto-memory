@@ -219,6 +219,19 @@ Defaults (JSON file `~/.dsh/dsh-auto-memory.json`):
 
 Adjustable in the GUI (Settings → Auto Memory), including the UI language (zh / en), the panel font size and the day boundary.
 
+### v0.1.27 hardening (memory hygiene gate — keeps external dirt out)
+
+- **Write gate on the three write tools**: `memory_log_dev` / `memory_note_dev` / `memory_user_dev` now run content through `sanitizeForWrite` before writing — suspected mojibake (GBK round-trip artifacts), stutter degeneration (word/char loops, punctuation-separated included) and consecutive duplicate lines (≥3) are rejected with a reason; append entries cap at 8,000 chars, full rewrites (replace) at 200,000; appends are also deduped against the file's last ~60 lines (the `- HH:MM` log prefix does not affect matching).
+- **Hygiene family fixes**: removed the `进行中` false positive from the mojibake pattern (added the real artifact `杩涜涓`), switched mojibake counting to global matching (it previously counted at most 1 hit, letting dirty long texts slip past the threshold), stutter detection now works across punctuation, and the duplicate-line check is reset by blank lines (no more false positives on short lines repeated across paragraphs).
+- **External memory import is link-only**: `memory_external_dev` import now records only source file path pointers instead of copying content — keeping dirty content from other AI tools (WorkBuddy/CodeBuddy/Claude Code/Codex) out of local memory.
+- **Injection-side scrub + voice discipline**: mojibake lines, code blocks and stutter lines are scrubbed before injection; the injected block adds a "how to read memory" note and voice discipline — write all memory entries as third-person objective statements, no first-person thinking narration.
+
+### v0.1.28 dirty-token checker (prion-scan integrated — stops the "model silently degrades" class)
+
+- **Write gate now rejects raw JSON envelopes & base64 residue**: besides mojibake / stutter / duplicate lines, the write gate also rejects lines matching external-AI-profile JSON signatures (`memoryBlock` / `"uid":` / `updatedAt` / `"role":"... "`) and base64 residue lines — so an external tool profile can never be pasted into memory wholesale again.
+- **Full mojibake table (34 features, verbatim from prion-scan.mjs)**: the GBK round-trip residue list is completed, catching the exact artifacts this class of "garbage token" shows up as.
+- **New "Scan dirty tokens" in Settings → Debug Center**: one-click prion-style scan of user-level memory / project notes / today's log / reflections — returns a per-file report by line range (mojibake / raw JSON envelope / long lines >500 / base64 / duplicate lines, duplicate ## headings) with **locations only, no content**, so you can spot residual dirt without reading it.
+
 ### v0.1.9 hardening (budget / boundary / picker)
 
 - **Daily write budget with auto-compaction**: user memory ≤ 4000 chars/day, project notes ≤ 3000 chars/day (shared across sessions, reset at the day boundary). Going over the budget never rejects the write — the framework compacts the pre-today sections with an AI pass (merge duplicates, drop stale entries, keep hard facts) and then writes; if AI is unavailable, the oldest sections are archived to `archived-user.md` / `archive/notes-archived.md` (nothing is lost). Compaction is throttled to once per 10 minutes.
