@@ -219,9 +219,9 @@ pnpm up @a9i5k4/dsh-auto-memory   # 或: npm install @a9i5k4/dsh-auto-memory@lat
 
 ### v0.1.27 基础加固（记忆卫生闸门 — 防外部脏内容污染）
 
-- **三个写入工具接入写闸门**：`memory_log_dev` / `memory_note_dev` / `memory_user_dev` 写入前先过 `sanitizeForWrite`——疑似乱码（GBK 错误编码往返产物）、复读退化（单词/单字循环，标点分隔也识别）、连续重复行（≥3）一律拒绝并回执原因；追加（append）单条上限 8000 字、整篇重写（replace）上限 20 万字；追加时与文件尾部近 60 行做复读去重（日志行的 `- HH:MM` 前缀不影响判定）。
+- **三个写入工具接入写闸门**：`memory_log_pre` / `memory_note_pre` / `memory_user_pre` 写入前先过 `sanitizeForWrite`——疑似乱码（GBK 错误编码往返产物）、复读退化（单词/单字循环，标点分隔也识别）、连续重复行（≥3）一律拒绝并回执原因；追加（append）单条上限 8000 字、整篇重写（replace）上限 20 万字；追加时与文件尾部近 60 行做复读去重（日志行的 `- HH:MM` 前缀不影响判定）。
 - **卫生函数族修复**：乱码特征表移除 `进行中` 假阳性（补真实乱码形态 `杩涜涓`）、乱码计数改为全局匹配（此前永远只计 1 处，长文本脏内容可绕过阈值）、复读检测支持标点分隔、重复行检测由空行打断（避免误伤隔段相同的短行）。
-- **外部记忆纯链接导入**：`memory_external_dev` 的 import 只落源文件路径指针，不再整段写入内容——防止其他 AI 工具（WorkBuddy/CodeBuddy/Claude Code/Codex）记忆中的脏内容经导入混入本地记忆。
+- **外部记忆纯链接导入**：`memory_external_pre` 的 import 只落源文件路径指针，不再整段写入内容——防止其他 AI 工具（WorkBuddy/CodeBuddy/Claude Code/Codex）记忆中的脏内容经导入混入本地记忆。
 - **注入端清洗与语体纪律**：注入前自动剔除乱码行/代码块/复读行；注入块新增「记忆定位—读法」说明与语体纪律——写记忆一律第三人称客观陈述，禁止第一人称思考腔与过程复述。
 
 ### v0.1.28 脏 token 检查器（prion-scan 整合 — 根治「模型无故降级」这一类问题）
