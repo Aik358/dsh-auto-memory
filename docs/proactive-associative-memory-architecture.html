@@ -1,0 +1,659 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DSH 主动联想记忆中间件 | 技术架构图</title>
+  <style>
+    :root {
+      --ink: #162235;
+      --muted: #64748b;
+      --line: #d8e0eb;
+      --paper: #f5f7fb;
+      --surface: #ffffff;
+      --navy: #101c31;
+      --navy-2: #172744;
+      --blue: #2563eb;
+      --blue-soft: #e8f0ff;
+      --teal: #0f766e;
+      --teal-soft: #ddf5f0;
+      --amber: #b45309;
+      --amber-soft: #fff1d8;
+      --coral: #c2413b;
+      --coral-soft: #ffebe8;
+      --violet: #6d4bc3;
+      --violet-soft: #eee9ff;
+      --green: #247447;
+      --green-soft: #e4f5e9;
+      --shadow: 0 14px 38px rgba(22, 34, 53, .08);
+      --radius: 12px;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--paper);
+      font-family: Inter, "Segoe UI", "Microsoft YaHei", sans-serif;
+      line-height: 1.58;
+    }
+    a { color: var(--blue); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    code, pre, .mono { font-family: "Cascadia Code", Consolas, monospace; }
+    code { color: #204f9f; background: #eef3fa; padding: 1px 5px; border-radius: 4px; }
+    .shell { max-width: 1500px; margin: 0 auto; padding: 0 28px 56px; }
+    .topbar {
+      position: sticky; top: 0; z-index: 20;
+      margin: 0 -28px 30px; padding: 14px 28px;
+      color: #f8fbff; background: rgba(16, 28, 49, .96);
+      border-bottom: 1px solid rgba(255,255,255,.12);
+      backdrop-filter: blur(14px);
+    }
+    .topbar-inner { max-width: 1500px; margin: 0 auto; display: flex; gap: 18px; align-items: center; justify-content: space-between; }
+    .brand { display: flex; align-items: center; gap: 12px; min-width: 230px; }
+    .brand-mark { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 9px; background: #2e7bf6; color: white; font-weight: 800; letter-spacing: .5px; }
+    .brand-name { font-weight: 760; letter-spacing: .15px; }
+    .brand-sub { color: #a7b8d3; font-size: 12px; }
+    .top-links { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+    .top-links a { color: #dce8fb; font-size: 13px; padding: 5px 9px; border-radius: 6px; }
+    .top-links a:hover { background: rgba(255,255,255,.1); text-decoration: none; }
+    .hero { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(320px, .75fr); gap: 22px; margin-bottom: 24px; }
+    .hero-main, .hero-side { border-radius: 16px; box-shadow: var(--shadow); }
+    .hero-main { padding: 34px 38px 38px; color: #f8fbff; background: var(--navy); border: 1px solid #233858; }
+    .eyebrow { color: #85b6ff; text-transform: uppercase; letter-spacing: 1.8px; font-size: 11px; font-weight: 800; }
+    h1 { max-width: 920px; margin: 10px 0 14px; font-size: clamp(30px, 4vw, 54px); line-height: 1.08; letter-spacing: -.8px; }
+    .hero-lead { max-width: 820px; color: #c9d7ec; font-size: 17px; margin: 0; }
+    .hero-pills { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 24px; }
+    .pill { display: inline-flex; align-items: center; min-height: 27px; padding: 3px 10px; border-radius: 999px; border: 1px solid rgba(255,255,255,.18); color: #e5efff; font-size: 12px; }
+    .pill.current { border-color: #58b991; color: #baf1d5; }
+    .pill.proposed { border-color: #7caeff; color: #cfe1ff; }
+    .pill.research { border-color: #d6a65a; color: #ffe4ad; }
+    .hero-side { padding: 25px; background: var(--surface); border: 1px solid var(--line); }
+    .side-kicker { color: var(--coral); font-size: 12px; text-transform: uppercase; font-weight: 800; letter-spacing: 1.2px; }
+    .side-title { font-size: 21px; line-height: 1.2; font-weight: 780; margin: 7px 0 12px; }
+    .boundary { display: grid; gap: 10px; }
+    .boundary-row { display: grid; grid-template-columns: 26px 1fr; gap: 10px; padding: 10px 0; border-top: 1px solid var(--line); }
+    .boundary-num { color: var(--coral); font-family: Consolas, monospace; font-size: 12px; font-weight: 800; }
+    .boundary-row strong { display: block; font-size: 13px; }
+    .boundary-row span { display: block; color: var(--muted); font-size: 12px; margin-top: 2px; }
+    .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; margin: 18px 0 22px; }
+    .filter-group { display: flex; flex-wrap: wrap; gap: 7px; }
+    .filter-btn, .print-btn { appearance: none; border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 7px; padding: 8px 12px; font: inherit; font-size: 12px; cursor: pointer; }
+    .filter-btn:hover, .print-btn:hover { border-color: #98add0; }
+    .filter-btn.active { color: white; background: var(--blue); border-color: var(--blue); }
+    .toolbar-note { color: var(--muted); font-size: 12px; }
+    .section { scroll-margin-top: 82px; margin: 28px 0; }
+    .section-heading { display: flex; align-items: flex-end; gap: 14px; margin: 0 0 14px; }
+    .section-index { color: var(--blue); font-family: Consolas, monospace; font-size: 12px; font-weight: 800; letter-spacing: .8px; }
+    h2 { margin: 0; font-size: 25px; line-height: 1.2; letter-spacing: -.25px; }
+    .section-intro { margin: -5px 0 16px 42px; max-width: 980px; color: var(--muted); font-size: 14px; }
+    .panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); }
+    .panel.pad { padding: 20px; }
+    .status-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px; }
+    .stat { padding: 15px 16px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+    .stat-value { font-size: 23px; font-weight: 820; line-height: 1; }
+    .stat-label { color: var(--muted); font-size: 12px; margin-top: 7px; }
+    .stat.blue .stat-value { color: var(--blue); }
+    .stat.teal .stat-value { color: var(--teal); }
+    .stat.amber .stat-value { color: var(--amber); }
+    .stat.coral .stat-value { color: var(--coral); }
+    .architecture-map { overflow: hidden; }
+    .map-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 16px 18px; background: #edf3fb; border-bottom: 1px solid var(--line); }
+    .map-header strong { font-size: 14px; }
+    .map-header span { color: var(--muted); font-size: 12px; }
+    .map-body { padding: 18px; }
+    .map-lane { display: grid; grid-template-columns: minmax(0,1fr) 34px minmax(0,1fr) 34px minmax(0,1fr) 34px minmax(0,1fr) 34px minmax(0,1fr); align-items: stretch; gap: 8px; }
+    .map-node { min-height: 166px; padding: 15px; border: 1px solid var(--line); border-top: 4px solid var(--blue); border-radius: 10px; background: white; }
+    .map-node h3 { margin: 7px 0 5px; font-size: 15px; line-height: 1.25; }
+    .map-node p { color: var(--muted); font-size: 12px; line-height: 1.5; margin: 0; }
+    .map-node .node-tag { color: var(--blue); font-size: 10px; font-family: Consolas, monospace; font-weight: 800; text-transform: uppercase; letter-spacing: .7px; }
+    .map-node.event { border-top-color: var(--amber); background: #fffdfa; }
+    .map-node.event .node-tag { color: var(--amber); }
+    .map-node.observe { border-top-color: var(--teal); background: #fbfffe; }
+    .map-node.observe .node-tag { color: var(--teal); }
+    .map-node.associate { border-top-color: var(--violet); background: #fdfcff; }
+    .map-node.associate .node-tag { color: var(--violet); }
+    .map-node.broker { border-top-color: var(--coral); background: #fffdfd; }
+    .map-node.broker .node-tag { color: var(--coral); }
+    .map-node.model { border-top-color: #334155; background: #f9fafc; }
+    .map-node.model .node-tag { color: #334155; }
+    .arrow { align-self: center; color: #8ca0bd; font-size: 24px; text-align: center; }
+    .under-lane { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 15px; }
+    .under-card { padding: 14px 16px; border: 1px dashed #b9c7dc; border-radius: 9px; background: #fbfcff; }
+    .under-card strong { display: block; font-size: 13px; }
+    .under-card span { display: block; color: var(--muted); font-size: 12px; margin-top: 3px; }
+    .under-card.python { border-color: #9d8ad8; background: #fcfbff; }
+    .under-card.native { border-color: #8fc5ba; background: #f9fffd; }
+    .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 16px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 14px; }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; }
+    .card { padding: 17px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); box-shadow: 0 5px 16px rgba(22,34,53,.045); transition: opacity .2s, transform .2s; }
+    .card:hover { transform: translateY(-2px); }
+    .card.is-dimmed { opacity: .18; }
+    .card h3 { margin: 6px 0 6px; font-size: 16px; line-height: 1.25; }
+    .card p { margin: 0; color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
+    .card .micro { color: var(--muted); font-size: 11px; font-family: Consolas, monospace; }
+    .card-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+    .tag { display: inline-flex; align-items: center; min-height: 22px; padding: 2px 7px; border-radius: 5px; font-size: 10px; font-weight: 800; letter-spacing: .45px; text-transform: uppercase; }
+    .tag.current { color: var(--green); background: var(--green-soft); }
+    .tag.proposed { color: var(--blue); background: var(--blue-soft); }
+    .tag.research { color: var(--violet); background: var(--violet-soft); }
+    .tag.guard { color: var(--coral); background: var(--coral-soft); }
+    .tag.host { color: var(--teal); background: var(--teal-soft); }
+    .tag.agent { color: var(--amber); background: var(--amber-soft); }
+    .plane-card { min-height: 218px; padding: 20px; border-radius: 12px; border: 1px solid var(--line); }
+    .plane-card.host-plane { background: #f8fffd; border-color: #a9d8cf; }
+    .plane-card.agent-plane { background: #fffdf8; border-color: #e6cc99; }
+    .plane-card h3 { margin: 9px 0 7px; font-size: 19px; }
+    .plane-card ul, .card ul { margin: 10px 0 0; padding-left: 18px; color: var(--muted); font-size: 13px; }
+    .plane-card li, .card li { margin: 4px 0; }
+    .native-callout { padding: 18px; border-left: 4px solid var(--teal); background: #f4fbf9; border-radius: 0 10px 10px 0; margin-top: 16px; }
+    .native-callout strong { display: block; margin-bottom: 5px; }
+    .native-callout p { margin: 0; color: #3f625e; font-size: 13px; }
+    .layer-stack { display: grid; gap: 10px; }
+    .layer { display: grid; grid-template-columns: 165px minmax(0,1fr) 270px; align-items: center; gap: 16px; padding: 16px 18px; border: 1px solid var(--line); border-left: 5px solid var(--blue); border-radius: 9px; background: var(--surface); }
+    .layer:nth-child(2) { border-left-color: var(--teal); }
+    .layer:nth-child(3) { border-left-color: var(--amber); }
+    .layer:nth-child(4) { border-left-color: var(--violet); }
+    .layer:nth-child(5) { border-left-color: var(--coral); }
+    .layer:nth-child(6) { border-left-color: #334155; }
+    .layer:nth-child(7) { border-left-color: var(--green); }
+    .layer-no { font-family: Consolas, monospace; color: var(--muted); font-size: 11px; }
+    .layer-title { font-size: 16px; font-weight: 780; margin-top: 2px; }
+    .layer-copy { color: var(--muted); font-size: 13px; }
+    .layer-hook { color: #51647d; font-size: 12px; padding-left: 14px; border-left: 1px solid var(--line); }
+    .layer-hook strong { display: block; color: var(--ink); font-size: 12px; margin-bottom: 3px; }
+    .sequence { display: grid; grid-template-columns: repeat(6, minmax(130px, 1fr)); gap: 0; padding: 12px 0; }
+    .step { position: relative; padding: 13px 12px 10px; border-top: 2px solid #c4d2e5; }
+    .step:not(:last-child)::after { content: ""; position: absolute; right: -4px; top: -7px; width: 12px; height: 12px; border-top: 2px solid #9eb1cc; border-right: 2px solid #9eb1cc; transform: rotate(45deg); background: var(--surface); }
+    .step-no { color: var(--blue); font-family: Consolas, monospace; font-size: 11px; font-weight: 800; }
+    .step strong { display: block; font-size: 13px; margin: 6px 0 4px; }
+    .step span { display: block; color: var(--muted); font-size: 11px; line-height: 1.45; }
+    .step.critical { border-top-color: var(--coral); }
+    .step.critical .step-no { color: var(--coral); }
+    .step.safe { border-top-color: var(--green); }
+    .step.safe .step-no { color: var(--green); }
+    .memory-card { min-height: 185px; }
+    .memory-card.working { border-top: 4px solid var(--blue); }
+    .memory-card.episodic { border-top: 4px solid var(--amber); }
+    .memory-card.semantic { border-top: 4px solid var(--teal); }
+    .memory-card.procedural { border-top: 4px solid var(--coral); }
+    .memory-card.lexical { border-top: 4px solid var(--violet); }
+    .memory-meta { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 13px; }
+    .memory-meta span { padding: 3px 6px; background: #f0f4f9; border-radius: 4px; color: #52647d; font-size: 10px; }
+    .code-panel { overflow: hidden; border-radius: 10px; border: 1px solid #263a5b; background: #101c31; color: #dce8fb; }
+    .code-panel .code-head { display: flex; justify-content: space-between; padding: 11px 14px; color: #9fb4d4; background: #172744; font-size: 11px; }
+    pre { margin: 0; padding: 17px; overflow: auto; font-size: 12px; line-height: 1.65; white-space: pre-wrap; }
+    .formula { padding: 18px; border-radius: 10px; background: #f8f5ff; border: 1px solid #d5c9f4; color: #4b368e; font-family: Consolas, monospace; font-size: 15px; }
+    .formula small { display: block; color: #7868a7; font-family: inherit; font-size: 11px; margin-top: 8px; }
+    .two-rail { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 14px; }
+    .rail { padding: 16px; border-radius: 10px; border: 1px solid var(--line); }
+    .rail h3 { margin: 0 0 6px; font-size: 15px; }
+    .rail p { margin: 0; color: var(--muted); font-size: 13px; }
+    .rail.activation { background: #fbf9ff; border-color: #d8cef5; }
+    .rail.cognitive { background: #fffaf5; border-color: #efd7af; }
+    .python-map { display: grid; grid-template-columns: 1fr 58px 1fr; align-items: stretch; gap: 12px; }
+    .runtime-box { padding: 19px; border-radius: 11px; border: 1px solid var(--line); }
+    .runtime-box h3 { margin: 7px 0 6px; font-size: 17px; }
+    .runtime-box p { margin: 0; color: var(--muted); font-size: 13px; }
+    .runtime-box.js { background: #f3f8ff; border-color: #b8cdf3; }
+    .runtime-box.py { background: #faf7ff; border-color: #d2c5ed; }
+    .runtime-link { display: grid; place-items: center; color: var(--violet); font-size: 25px; }
+    .startup { margin-top: 14px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 0; }
+    .startup-step { position: relative; padding: 12px 12px 10px; border-top: 2px solid #c7bbeb; }
+    .startup-step:not(:last-child)::after { content: "→"; position: absolute; right: -10px; top: 6px; z-index: 2; color: var(--violet); background: var(--surface); padding: 0 3px; font-size: 18px; }
+    .startup-step b { display: block; font-size: 12px; }
+    .startup-step span { display: block; color: var(--muted); font-size: 11px; margin-top: 4px; }
+    .cap-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .cap-table th, .cap-table td { text-align: left; vertical-align: top; padding: 10px 9px; border-bottom: 1px solid var(--line); }
+    .cap-table th { color: #44566f; background: #f4f7fb; font-size: 11px; text-transform: uppercase; letter-spacing: .5px; }
+    .yes { color: var(--green); font-weight: 800; }
+    .partial { color: var(--amber); font-weight: 800; }
+    .no { color: var(--coral); font-weight: 800; }
+    .gate-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+    .gate { min-height: 150px; padding: 16px; border-radius: 10px; border: 1px solid var(--line); }
+    .gate h3 { margin: 8px 0 6px; font-size: 15px; }
+    .gate p { margin: 0; color: var(--muted); font-size: 12px; }
+    .gate.must { background: #fff8f7; border-color: #f0c3bd; }
+    .gate.defer { background: #fffdf6; border-color: #ecd8aa; }
+    .gate.invariant { background: #f5fbf8; border-color: #b8ddcc; }
+    .roadmap { display: grid; gap: 9px; }
+    .road-row { display: grid; grid-template-columns: 80px 190px minmax(0,1fr) 150px; gap: 14px; align-items: center; padding: 13px 15px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+    .road-row .phase { color: var(--blue); font-family: Consolas, monospace; font-size: 12px; font-weight: 800; }
+    .road-row strong { font-size: 13px; }
+    .road-row p { margin: 0; color: var(--muted); font-size: 12px; }
+    .road-row .deliver { color: #52647d; font-size: 11px; }
+    .source-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    .source { padding: 15px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); }
+    .source h3 { margin: 5px 0; font-size: 14px; line-height: 1.3; }
+    .source p { margin: 0 0 10px; color: var(--muted); font-size: 12px; }
+    .source-links { display: flex; flex-wrap: wrap; gap: 6px; font-size: 11px; }
+    .source-links a { padding: 3px 6px; background: var(--blue-soft); border-radius: 4px; }
+    .footnote { padding: 16px 18px; border-radius: 10px; background: #f0f4f9; color: #52647d; font-size: 12px; }
+    .footer { margin-top: 36px; padding-top: 18px; border-top: 1px solid var(--line); color: var(--muted); font-size: 11px; display: flex; justify-content: space-between; gap: 12px; }
+    @media (max-width: 1120px) {
+      .hero { grid-template-columns: 1fr; }
+      .map-lane { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+      .map-lane .arrow { display: none; }
+      .grid-4, .gate-grid { grid-template-columns: repeat(2, 1fr); }
+      .source-grid { grid-template-columns: repeat(2, 1fr); }
+      .layer { grid-template-columns: 135px minmax(0,1fr); }
+      .layer-hook { grid-column: 2; padding-left: 0; border-left: 0; border-top: 1px solid var(--line); padding-top: 8px; }
+    }
+    @media (max-width: 760px) {
+      .shell { padding: 0 15px 38px; }
+      .topbar { margin: 0 -15px 22px; padding: 12px 15px; }
+      .topbar-inner { display: block; }
+      .brand { margin-bottom: 8px; }
+      .top-links { display: flex; flex-wrap: nowrap; justify-content: flex-start; gap: 4px; max-width: 100%; overflow-x: auto; padding-bottom: 2px; }
+      .top-links a { flex: 0 0 auto; white-space: nowrap; }
+      .hero-main { padding: 25px 22px 28px; }
+      h1 { font-size: 34px; }
+      .hero-lead { font-size: 15px; }
+      .status-bar, .grid-2, .grid-3, .grid-4, .two-rail, .python-map, .under-lane, .source-grid, .gate-grid { grid-template-columns: 1fr; }
+      .map-lane { grid-template-columns: 1fr; }
+      .map-node { min-height: auto; }
+      .sequence { grid-template-columns: 1fr 1fr; }
+      .step:not(:last-child)::after, .startup-step:not(:last-child)::after { display: none; }
+      .startup { grid-template-columns: 1fr; }
+      .layer { grid-template-columns: 1fr; gap: 7px; }
+      .layer-hook { grid-column: auto; }
+      .road-row { grid-template-columns: 60px 1fr; gap: 5px 10px; }
+      .road-row p, .road-row .deliver { grid-column: 2; }
+      .footer { flex-direction: column; }
+    }
+    @media print {
+      .topbar { position: static; color: #162235; background: white; }
+      .top-links, .toolbar { display: none; }
+      .hero-main { color: #162235; background: white; border-color: #aaa; }
+      .hero-lead { color: #52647d; }
+      .panel, .card, .stat { box-shadow: none; }
+      a { color: #162235; text-decoration: underline; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <div class="topbar-inner">
+        <div class="brand">
+          <div class="brand-mark">AM</div>
+          <div><div class="brand-name">dsh-auto-memory</div><div class="brand-sub">Proactive Associative Memory Architecture</div></div>
+        </div>
+        <nav class="top-links" aria-label="页面导航">
+          <a href="#overview">全景</a><a href="#layers">分层</a><a href="#runtime">时序</a><a href="#data">数据</a><a href="#python">Python</a><a href="#roadmap">路线</a><a href="#sources">依据</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero" id="overview">
+        <div class="hero-main">
+          <div class="eyebrow">Architecture Atlas / 2026-08-19</div>
+          <h1>让记忆在模型没有主动调用时，也能被当前情境唤回。</h1>
+          <p class="hero-lead">当前维护链使用原生 <code>systemPrompt.section()</code> 保存稳定规则、<code>systemPrompt.context()</code> 生成易变快照；未来主动联想层才由关联引擎和 Injection Broker 把候选变成 MemoryPacket。</p>
+          <div class="hero-pills"><span class="pill current">当前：JS Host + Markdown memory + native runtime context</span><span class="pill proposed">设计：SessionRuntime + MemoryPacket</span><span class="pill research">增强：Python sidecar + reasoning adapter</span></div>
+        </div>
+        <aside class="hero-side">
+          <div class="side-kicker">不可越过的边界</div>
+          <div class="side-title">已发出的模型请求不能被原地改写</div>
+          <div class="boundary">
+            <div class="boundary-row"><div class="boundary-num">01</div><div><strong>观察</strong><span>用户、工具、可见输出、生命周期事件</span></div></div>
+            <div class="boundary-row"><div class="boundary-num">02</div><div><strong>关联</strong><span>当前上下文与记忆库的候选匹配</span></div></div>
+            <div class="boundary-row"><div class="boundary-num">03</div><div><strong>分流</strong><span>当前 runtime-context；未来 per-session Inbox packet</span></div></div>
+            <div class="boundary-row"><div class="boundary-num">04</div><div><strong>生效</strong><span>native snapshot 或未来 packet 在下一请求边界合并</span></div></div>
+          </div>
+        </aside>
+      </section>
+
+      <div class="toolbar">
+        <div class="filter-group" aria-label="内容筛选">
+          <button class="filter-btn active" data-filter="all">全部层级</button>
+          <button class="filter-btn" data-filter="current">当前实现</button>
+          <button class="filter-btn" data-filter="proposed">设计方案</button>
+          <button class="filter-btn" data-filter="research">研究依据</button>
+          <button class="filter-btn" data-filter="guard">安全门</button>
+        </div>
+        <div><span class="toolbar-note">筛选只改变视觉强调，不隐藏架构内容。</span> <button class="print-btn" onclick="window.print()">打印 / 导出 PDF</button></div>
+      </div>
+
+      <section class="section">
+        <div class="status-bar">
+          <div class="stat blue"><div class="stat-value">5</div><div class="stat-label">认知记忆类型</div></div>
+          <div class="stat teal"><div class="stat-value">2</div><div class="stat-label">运行时平面：Host / Agent</div></div>
+          <div class="stat amber"><div class="stat-value">3</div><div class="stat-label">注入边界等级</div></div>
+          <div class="stat coral"><div class="stat-value">0</div><div class="stat-label">允许的跨会话泄漏</div></div>
+        </div>
+        <div class="panel architecture-map">
+          <div class="map-header"><strong>全局运行时数据流</strong><span>当前 native context 先行；未来主动联想不依赖模型先调用 memory_search</span></div>
+          <div class="map-body">
+            <div class="map-lane">
+              <article class="map-node event" data-status="current"><div class="node-tag">01 / observable events</div><h3>运行时事件</h3><p>用户消息、工具参数、工具结果、错误、可见回复、用户纠正、session 生命周期。</p></article>
+              <div class="arrow">→</div>
+              <article class="map-node observe" data-status="proposed"><div class="node-tag">02 / context observer</div><h3>上下文观察器</h3><p>按 sessionId 收集事件，切成语义片段，推进 contextVersion 和滑动窗口。</p></article>
+              <div class="arrow">→</div>
+              <article class="map-node associate" data-status="proposed"><div class="node-tag">03 / associative engine</div><h3>联想检索器</h3><p>范围、时间、实体、关键词、embedding、关联图和置信度组成候选排序。</p></article>
+              <div class="arrow">→</div>
+              <article class="map-node broker" data-status="proposed"><div class="node-tag">04 / injection broker</div><h3>注入调度器</h3><p>冷却、TTL、冲突、风险、预算、能力协商和 MemoryPacket 版本校验。</p></article>
+              <div class="arrow">→</div>
+              <article class="map-node model" data-status="current"><div class="node-tag">05 / next request</div><h3>下一步模型请求</h3><p>当前在原生 pre-step 边界合并 runtime-context snapshot；未来再合并经过校验的 MemoryPacket。</p></article>
+            </div>
+            <div class="under-lane">
+              <div class="under-card native" data-status="current"><strong>原生 DSH 当前骨架</strong><span>systemPrompt.section/context → assemble → RuntimeContextProjection → agent/pre-step → next request</span></div>
+              <div class="under-card python" data-status="proposed"><strong>可选 Python memory engine</strong><span>JS 负责生命周期和安全决策；Python 负责 embedding、图检索和 reranking。</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="layers">
+        <div class="section-heading"><span class="section-index">01 / LAYERS</span><h2>完整分层：每一层解决一个不同问题</h2></div>
+        <p class="section-intro">不要把“记忆类型”“持久范围”“运行时状态”和“注入策略”混成一个对象。每层都有自己的所有者、输入、输出和失败回退。</p>
+        <div class="layer-stack">
+          <article class="layer" data-status="current"><div><div class="layer-no">L0 · HOST RUNTIME</div><div class="layer-title">DSH Host / Cordis</div></div><div class="layer-copy">加载插件、提供 tools / webServer / systemPrompt / subagents，发送 Agent 生命周期事件，拥有共享注册表和权限栈。</div><div class="layer-hook"><strong>当前依据</strong>package main + apply(ctx)<br>lib/index.js:20-33</div></article>
+          <article class="layer" data-status="current"><div><div class="layer-no">L1 · AGENT BOUNDARY</div><div class="layer-title">Agent preset / step loop</div></div><div class="layer-copy">稳定规则使用 section；preset 允许 runtime context 时，动态维护快照使用 context。Minimal 是 complete persona 并抑制 runtime context，未来 packet 需自建 next-step 路径或安全降级。</div><div class="layer-hook"><strong>关键边界</strong>session-start · pre-step · turn-stopping</div></article>
+          <article class="layer" data-status="proposed"><div><div class="layer-no">L2 · SESSION STATE</div><div class="layer-title">SessionRuntime</div></div><div class="layer-copy">按 sessionId 保存 working memory、context ring、contextVersion、pending packets、冷却、最近注入和未解决事项。</div><div class="layer-hook"><strong>不变量</strong>会话 A 的上下文不能进入会话 B</div></article>
+          <article class="layer" data-status="proposed"><div><div class="layer-no">L3 · OBSERVATION</div><div class="layer-title">ContextObserver</div></div><div class="layer-copy">把原始事件转换成拥有类型的语义片段；reasoning 如果可见，只进入短期观察环，不默认持久化。</div><div class="layer-hook"><strong>输出</strong>Event + Segment + version</div></article>
+          <article class="layer" data-status="proposed"><div><div class="layer-no">L4 · MEMORY COGNITION</div><div class="layer-title">MemoryStore + AssociationEngine</div></div><div class="layer-copy">Markdown 可读投影之外，使用 JSONL / SQLite / vector index 保存结构化记录、来源、向量版本、冲突和生命周期。</div><div class="layer-hook"><strong>排序</strong>相关性 · 范围 · 置信度 · 近期性 · 显著性</div></article>
+          <article class="layer" data-status="proposed"><div><div class="layer-no">L5 · POLICY</div><div class="layer-title">InjectionBroker</div></div><div class="layer-copy">未来决定是否唤回、唤回多少、用 soft hint 还是 checklist；处理 budget、TTL、冷却、重复、冲突、风险和 Provider 能力。当前维护快照不经过此层。</div><div class="layer-hook"><strong>输出</strong>MemoryPacket → future per-session inbox</div></article>
+          <article class="layer" data-status="proposed"><div><div class="layer-no">L6 · EVIDENCE</div><div class="layer-title">EvidenceUpdater / Consolidator</div></div><div class="layer-copy">根据工具成功、失败、用户纠正、问题解决和跨会话复用更新置信度；把 episodic candidate 升格为 semantic 或 procedural。</div><div class="layer-hook"><strong>默认</strong>候选先观察，未经验证不晋升</div></article>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section-heading"><span class="section-index">02 / DSH PLANES</span><h2>原生 DSH 的两平面映射</h2></div>
+        <p class="section-intro">原生 Cordis 配置把跨会话共享的服务放在 Host composition，把单会话的 persona、工具和 prompt 贡献放在 Agent preset。主动记忆应沿用这个边界。</p>
+        <div class="grid-2">
+          <article class="plane-card host-plane" data-status="current"><span class="tag host">current / host plane</span><h3>Host composition</h3><p>负责所有需要跨 session 复用或在 Agent 创建前就存在的能力。</p><ul><li>MemoryStore、索引、审计、配置和路由</li><li>ContextObserver、PythonEngineClient、Provider adapter</li><li>共享的 DSH tools、webServer、systemPrompt 接入</li><li>权限、sandbox、approval 和生命周期清理</li></ul></article>
+          <article class="plane-card agent-plane" data-status="current"><span class="tag agent">current / agent plane</span><h3>Agent preset / SessionRuntime</h3><p>负责某一个会话实际看到的工具、动态消息和工作状态。</p><ul><li>当前 runtime-context snapshot；未来 pending Agent Inbox packet</li><li>packet TTL、冷却、contextVersion 和最近注入</li><li>当前模型的 capability snapshot</li><li>Minimal preset 的 includeRuntimeContext:false 与未来 packet fallback</li></ul></article>
+        </div>
+        <div class="native-callout" data-status="current"><strong>原生实现参照：两条不同通道</strong><p>当前 dsh-auto-memory 维护链使用 systemPrompt.section() 与 systemPrompt.context()；DSH 在 assemble 后由 RuntimeContextProjection 按完整快照去重、替换或清除。dsh-agent-instructions 的 durable user/message inbox 是未来 MemoryPacket 的参考骨架，不是当前 runtime-context 的实现，也不应把两者复制成重复消息。</p></div>
+      </section>
+
+      <section class="section" id="runtime">
+        <div class="section-heading"><span class="section-index">03 / RUNTIME</span><h2>当前维护与未来主动联想的时序</h2></div>
+        <p class="section-intro">当前路径是 native runtime-context projection；下方的检索、Broker 和 MemoryPacket 是后续主动联想路径。Level 3 的流式中断续写不进入默认路径。</p>
+        <div class="panel pad">
+          <ol class="sequence">
+            <li class="step"><span class="step-no">T0</span><strong>事件进入 Host</strong><span>用户、工具、可见输出和生命周期事件可被观察；不要求模型调用记忆工具。</span></li>
+            <li class="step"><span class="step-no">T1</span><strong>原生 assemble</strong><span>section() 提供稳定规则，context() 同步求值易变维护快照。</span></li>
+            <li class="step"><span class="step-no">T2</span><strong>RuntimeContextProjection</strong><span>assemble 后按完整快照精确去重；变化时替换旧 projection。</span></li>
+            <li class="step critical"><span class="step-no">T3</span><strong>未来候选检索</strong><span>仅 planned：范围、相关性、版本和安全门形成候选。</span></li>
+            <li class="step critical"><span class="step-no">T4</span><strong>未来排入 Inbox</strong><span>MemoryPacket 带 sessionId、版本、来源、TTL；当前维护快照不复制到 Inbox。</span></li>
+            <li class="step safe"><span class="step-no">T5</span><strong>pre-step 合并</strong><span>native snapshot 或未来 packet 只在下一请求边界生效，然后继续模型循环。</span></li>
+          </ol>
+          <div class="code-panel"><div class="code-head"><span>runtime-contract / native + future pseudo flow</span><span>DESIGN</span></div><pre>onAgentPreStep(agent):
+  claimed = agent.inbox.claim(target, turn)
+  assembly = await systemPrompt.assemble(agent)
+  sections = renderContextSections(assembly)
+  snapshot = agent.runtimeContext.project(joinContextSections(sections), sections)
+  decision = waterfall({ messages: claimed, turn, step }, () =&gt;
+    enter(snapshot ? [...claimed, snapshot] : claimed))
+  return { decision, assembly }
+
+// Future active path only:
+onObservableEvent(event):
+  candidates = association.search(session.contextRing, version)
+  packet = broker.decide(candidates, session.runtimeState)
+  if (packet): session.pendingInbox.replace(packet)
+
+// Current runtime snapshot and future packet are separate surfaces.</pre></div>
+        </div>
+      </section>
+
+      <section class="section" id="memory-types">
+        <div class="section-heading"><span class="section-index">04 / COGNITION</span><h2>记忆类型、范围与生命周期</h2></div>
+        <p class="section-intro">理论类型参考 CoALA；持久范围和生命周期是工程维度。它们必须正交建模。</p>
+        <div class="grid-3">
+          <article class="card memory-card working" data-status="proposed"><div class="card-head"><span class="tag proposed">working</span><span class="micro">session / volatile</span></div><h3>Working Memory</h3><p>当前目标、上下文片段、未解决事项、最近工具结果和待注入 packet。容量有限，随任务变化淘汰。</p><div class="memory-meta"><span>TTL: step</span><span>ring buffer</span><span>不跨会话</span></div></article>
+          <article class="card memory-card episodic" data-status="proposed"><div class="card-head"><span class="tag proposed">episodic</span><span class="micro">session → workspace</span></div><h3>Episodic Memory</h3><p>带时间、来源、动作、结果和失败证据的事件。适合复盘和后续抽取，不直接当成稳定事实。</p><div class="memory-meta"><span>provenance</span><span>outcome</span><span>时间衰减</span></div></article>
+          <article class="card memory-card semantic" data-status="proposed"><div class="card-head"><span class="tag proposed">semantic</span><span class="micro">workspace / user</span></div><h3>Semantic Memory</h3><p>去重后的项目事实、决策、环境约束和稳定偏好。冲突双方保留，明确来源和确认状态。</p><div class="memory-meta"><span>confidence</span><span>conflicts</span><span>confirmable</span></div></article>
+          <article class="card memory-card procedural" data-status="proposed"><div class="card-head"><span class="tag guard">procedural</span><span class="micro">candidate → active</span></div><h3>Procedural Memory</h3><p>经过多次独立成功和明确验收条件验证的流程、技能或检查清单。高风险动作仍需确认。</p><div class="memory-meta"><span>evidence</span><span>rollback</span><span>approval</span></div></article>
+          <article class="card memory-card lexical" data-status="proposed"><div class="card-head"><span class="tag research">lexical</span><span class="micro">user / project</span></div><h3>Lexical Memory</h3><p>术语、缩写、别名、用户惯用表达。用于改善检索和实体对齐，不应自动等同于用户偏好。</p><div class="memory-meta"><span>aliases</span><span>entity link</span><span>low risk</span></div></article>
+          <article class="card" data-status="current"><div class="card-head"><span class="tag current">projection</span><span class="micro">markdown</span></div><h3>可读投影</h3><p>现有 MEMORY.md、项目笔记、日志和反思继续作为用户可读、可编辑、可恢复的持久层。</p><div class="memory-meta"><span>human readable</span><span>audit</span><span>backup</span></div></article>
+        </div>
+      </section>
+
+      <section class="section" id="data">
+        <div class="section-heading"><span class="section-index">05 / DATA</span><h2>数据契约：事件、记忆和 MemoryPacket</h2></div>
+        <p class="section-intro">结构化 sidecar 负责未来主动检索的运行时索引和状态；Markdown 负责可读投影。当前动态维护快照由原生 systemPrompt.context() 提供，任何异步结果都必须带版本，避免旧联想污染新上下文。</p>
+        <div class="grid-2">
+          <div class="code-panel" data-status="proposed"><div class="code-head"><span>ContextWindow / Segment</span><span>SCHEMA</span></div><pre>{
+  "sessionId": "session_x",
+  "contextVersion": 42,
+  "segments": [
+    {
+      "role": "user",
+      "kind": "request",
+      "text": "修复记忆注入逻辑"
+    },
+    {
+      "role": "tool",
+      "kind": "error",
+      "tool": "test",
+      "text": "测试失败：..."
+    },
+    {
+      "role": "assistant",
+      "kind": "visible_output",
+      "text": "正在检查 pre-step..."
+    }
+  ]
+}</pre></div>
+          <div class="code-panel" data-status="proposed"><div class="code-head"><span>MemoryRecord</span><span>SCHEMA</span></div><pre>{
+  "id": "mem_001",
+  "type": "episodic",
+  "scope": "workspace",
+  "content": "某次测试失败后先验证 provider",
+  "source": "tool_result",
+  "provenance": ["turn_12", "tool:test"],
+  "confidence": 0.78,
+  "salience": 0.72,
+  "ttlMs": 604800000,
+  "status": "candidate",
+  "embeddingVersion": "v1",
+  "conflicts": [],
+  "revoked": false
+}</pre></div>
+        </div>
+        <div class="panel pad" style="margin-top:14px" data-status="current">
+          <div class="code-panel"><div class="code-head"><span>RuntimeContextSnapshot / native projection</span><span>CURRENT</span></div><pre>{
+  "source": "systemPrompt.context()",
+  "surface": "durable user-role snapshot",
+  "state": "retained-on-same-text | replaced-on-change | cleared",
+  "dedupe": "full snapshot text",
+  "note": "Current runtime context. This snapshot supersedes earlier runtime-context snapshots."
+}</pre></div>
+         </div>
+         <div class="panel pad" style="margin-top:14px" data-status="proposed">
+           <div class="code-panel"><div class="code-head"><span>MemoryPacket / Agent Inbox next-step</span><span>FUTURE INJECTION</span></div><pre>{
+  "packetId": "packet_042",
+  "sessionId": "session_x",
+  "contextVersion": 42,
+  "reason": "当前工具错误与历史验证流程高度相关",
+  "mode": "soft",
+  "expiresAfterStep": 44,
+  "items": [{
+    "memoryId": "procedure_017",
+    "content": "先检查 provider 配置，再验证 wire 参数",
+    "similarity": 0.87,
+    "confidence": 0.91,
+    "source": "workspace-procedure"
+  }]
+}</pre></div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section-heading"><span class="section-index">06 / ACTIVATION</span><h2>联想激活和认知状态分离</h2></div>
+        <p class="section-intro">语义相似度决定“什么记忆被想起”；认知负荷或运行时异常决定“以多强形式介入”。不能要求模型先表现出困难，记忆才允许出现。</p>
+        <div class="formula" data-status="research">AssociativeActivation = similarity × scopeMatch × confidence × salience × novelty × recency<small>用于候选排序，不等于真实性。高相似、低置信记忆必须保留不确定性。</small></div>
+        <div class="two-rail">
+          <div class="rail activation" data-status="research"><h3>Associative Activation / 联想激活</h3><p>当前上下文与某条记忆的关系：语义相似、实体重合、工作区匹配、近期性、显著性、成功复用和新颖性。</p></div>
+          <div class="rail cognitive" data-status="proposed"><h3>Cognitive State / 运行状态</h3><p>工具错误、重试、重复动作、目标漂移、未解决时长、用户纠正、锚定监控波段。它只调整介入强度。</p></div>
+        </div>
+        <div class="grid-4" style="margin-top:14px">
+          <article class="card" data-status="proposed"><span class="tag proposed">high + stable</span><h3>静默预取</h3><p>缓存候选，等待下一次自然请求边界，避免打断。</p></article>
+          <article class="card" data-status="proposed"><span class="tag proposed">high + drift</span><h3>Soft hint</h3><p>下一步注入一行相关提示，提醒模型核验。</p></article>
+          <article class="card" data-status="proposed"><span class="tag guard">very high + error</span><h3>Checklist</h3><p>注入步骤摘要、验证点和已知失败条件。</p></article>
+          <article class="card" data-status="guard"><span class="tag guard">low + overload</span><h3>抑制注入</h3><p>相关性不够时不增加噪声，宁可等待新事件。</p></article>
+        </div>
+      </section>
+
+      <section class="section" id="python">
+        <div class="section-heading"><span class="section-index">07 / POLYGLOT</span><h2>JavaScript Host 与 Python Memory Engine</h2></div>
+        <p class="section-intro">原生 DSH 只加载 JS 插件。Python 作为可选、长期运行、由 JS 管理的 sidecar，不能直接注册 DSH 工具或修改模型上下文。</p>
+        <div class="python-map">
+          <article class="runtime-box js" data-status="current"><span class="tag current">JS / DSH Host</span><h3>生命周期与安全决策</h3><p>apply(ctx)、tools、routes、systemPrompt、pre-step、session 隔离、MemoryPacket、超时、回退、审计和子进程清理。</p><ul><li>负责何时注入</li><li>负责是否允许注入</li><li>负责 DSH 内部对象</li></ul></article>
+          <div class="runtime-link">↔</div>
+          <article class="runtime-box py" data-status="proposed"><span class="tag proposed">Python / sidecar</span><h3>算法与离线计算</h3><p>embedding、向量检索、关联图、reranker、衰减、聚类和评测。只收发可序列化 JSON。</p><ul><li>负责想起哪些候选</li><li>不接触 ctx 或 Agent 对象</li><li>失败时回退 JS 关键词检索</li></ul></article>
+        </div>
+        <div class="panel pad" style="margin-top:14px">
+          <div class="startup">
+            <div class="startup-step"><b>DSH 启动</b><span>注册 client，不阻塞，不静默 pip install。</span></div>
+            <div class="startup-step"><b>首次需要</b><span>Shadow Retrieval 或 embedding 触发 lazy start。</span></div>
+            <div class="startup-step"><b>长期复用</b><span>JSONL stdin/stdout，日志走 stderr。</span></div>
+            <div class="startup-step"><b>异常处理</b><span>超时、有限重启、contextVersion 校验。</span></div>
+            <div class="startup-step"><b>安全回退</b><span>Python 不可用时使用 JS 检索。</span></div>
+          </div>
+        </div>
+        <div class="code-panel" style="margin-top:14px" data-status="proposed"><div class="code-head"><span>JS → Python request</span><span>JSONL</span></div><pre>{
+  "requestId": "req_042",
+  "sessionId": "session_x",
+  "contextVersion": 42,
+  "segments": [{
+    "role": "tool",
+    "kind": "error",
+    "text": "测试失败：..."
+  }]
+}
+
+// Python response
+{
+  "requestId": "req_042",
+  "contextVersion": 42,
+  "candidates": [{
+    "memoryId": "procedure_017",
+    "similarity": 0.87,
+    "confidence": 0.91
+  }]
+}</pre></div>
+      </section>
+
+      <section class="section">
+        <div class="section-heading"><span class="section-index">08 / PROVIDERS</span><h2>公开 reasoning 和闭源模型的统一适配</h2></div>
+        <p class="section-intro">不按模型名称猜能力。每个 Provider / model / version 通过 adapter 声明能力；可见 reasoning 始终是低信任观察信号。</p>
+        <div class="panel" style="overflow:auto">
+          <table class="cap-table">
+            <thead><tr><th>能力</th><th>Opaque / 闭源</th><th>Summary</th><th>Full-visible</th><th>记忆系统的处理</th></tr></thead>
+            <tbody>
+              <tr><td>reasoningVisibility</td><td class="no">none</td><td class="partial">summary</td><td class="yes">full</td><td>只作为可选短期片段，不能单独证明事实或意图。</td></tr>
+              <tr><td>可观测事件</td><td class="yes">用户 / 工具 / 输出</td><td class="yes">同左 + 摘要</td><td class="yes">同左 + trace</td><td>核心系统必须在没有 reasoning 时仍可工作。</td></tr>
+              <tr><td>runtimeContext</td><td class="partial">preset-dependent</td><td class="partial">preset-dependent</td><td class="partial">preset-dependent</td><td>原生 systemPrompt.context() 由 includeRuntimeContext 控制；相同完整快照不重复追加。</td></tr>
+              <tr><td>packetPatch</td><td class="partial">future pre-step</td><td class="partial">future pre-step</td><td class="partial">future pre-step</td><td>未来 MemoryPacket 才使用 Inbox / user-message；已发请求不能原地改写。</td></tr>
+              <tr><td>abortAndResume</td><td class="no">默认 false</td><td class="no">默认 false</td><td class="partial">实验</td><td>高阈值、冷却、副作用保护，默认关闭。</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="code-panel" style="margin-top:14px" data-status="proposed"><div class="code-head"><span>ProviderCapability</span><span>ADAPTER CONTRACT</span></div><pre>{
+  "reasoningVisibility": "none | summary | full | unknown",
+  "toolEvents": true,
+  "streamChunks": true,
+  "runtimeContext": "native | none",
+  "packetPatch": "pre-step | user-message | none",
+  "abortAndResume": false
+}</pre></div>
+      </section>
+
+      <section class="section">
+        <div class="section-heading"><span class="section-index">09 / PROCEDURE</span><h2>程序性记忆：从重复过程到可验证技能</h2></div>
+        <p class="section-intro">一次成功不是技能，三次重复也不是技能。技能必须拥有成功标准、工具证据、风险等级和回滚路径。</p>
+        <div class="panel pad">
+          <div class="sequence" style="grid-template-columns:repeat(5,minmax(130px,1fr))">
+            <div class="step"><span class="step-no">P0</span><strong>Observed</strong><span>观察到事件序列，不改变长期记忆。</span></div>
+            <div class="step"><span class="step-no">P1</span><strong>Candidate</strong><span>抽取触发条件、前置条件和草稿步骤。</span></div>
+            <div class="step critical"><span class="step-no">P2</span><strong>Validated</strong><span>跨会话成功、明确检查、保留反例。</span></div>
+            <div class="step safe"><span class="step-no">P3</span><strong>Active</strong><span>可作为 checklist 参与注入。</span></div>
+            <div class="step"><span class="step-no">P4</span><strong>Deprecated</strong><span>过期、冲突或失败率升高后降级。</span></div>
+          </div>
+          <div class="gate-grid" style="margin-top:14px">
+            <article class="gate must" data-status="guard"><span class="tag guard">must</span><h3>必须有证据</h3><p>跨独立 session 的成功结果、测试结果或用户确认。</p></article>
+            <article class="gate defer" data-status="guard"><span class="tag guard">defer</span><h3>候选不执行</h3><p>候选技能只能作为建议，不能自动调用危险工具。</p></article>
+            <article class="gate invariant" data-status="guard"><span class="tag current">rollback</span><h3>可回滚</h3><p>技能变更保留旧版本、失败记录和撤销入口。</p></article>
+            <article class="gate invariant" data-status="guard"><span class="tag current">scope</span><h3>范围明确</h3><p>项目技能不能无条件升级为用户级行为。</p></article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="roadmap">
+        <div class="section-heading"><span class="section-index">10 / ROADMAP</span><h2>分阶段实施路线与验收门</h2></div>
+        <p class="section-intro">每阶段都可独立关闭和回滚。先保证 session 边界，再让语义算法进入注入链路。</p>
+        <div class="roadmap">
+          <div class="road-row" data-status="current"><div class="phase">P0</div><strong>基线与开关</strong><p>固定当前行为，验证 systemPrompt.section() / systemPrompt.context() projection、会话隔离和 prompt budget；MemoryPacket schema 仍只作未来设计基线。</p><div class="deliver"><span class="tag current">已维护</span> 回归测试</div></div>
+          <div class="road-row" data-status="proposed"><div class="phase">P1</div><strong>SessionRuntime</strong><p>Map&lt;sessionId, runtime&gt;，隔离 working、ring、队列、冷却。</p><div class="deliver"><span class="tag proposed">验收</span> 无串线</div></div>
+          <div class="road-row" data-status="proposed"><div class="phase">P2</div><strong>ContextObserver</strong><p>统一接收用户、工具、可见输出和生命周期事件，推进版本。</p><div class="deliver"><span class="tag proposed">验收</span> 可回放</div></div>
+          <div class="road-row" data-status="proposed"><div class="phase">P3</div><strong>Shadow Retrieval</strong><p>关键词、实体、范围、时间衰减排序，暂不影响模型行为。</p><div class="deliver"><span class="tag proposed">验收</span> 命中日志</div></div>
+          <div class="road-row" data-status="proposed"><div class="phase">P4</div><strong>InjectionBroker</strong><p>MemoryPacket、预算、TTL、冷却、重复抑制和审计。</p><div class="deliver"><span class="tag guard">验收</span> 可解释</div></div>
+          <div class="road-row" data-status="proposed"><div class="phase">P5</div><strong>未来 packet Soft Injection</strong><p>复用 durable Inbox / pre-step merge，把经过版本、预算和安全门校验的高置信短提示送入下一步；当前维护快照不走此阶段。</p><div class="deliver"><span class="tag guard">默认关</span> A/B</div></div>
+          <div class="road-row" data-status="proposed"><div class="phase">P6</div><strong>Python sidecar</strong><p>embedding、向量检索、关联图；JS 保留超时和关键词回退。</p><div class="deliver"><span class="tag proposed">可选</span> lazy start</div></div>
+          <div class="road-row" data-status="proposed"><div class="phase">P7</div><strong>Semantic / Profile</strong><p>自动抽取先进入 candidate，事实、偏好、术语分开。</p><div class="deliver"><span class="tag guard">需确认</span> 冲突集</div></div>
+          <div class="road-row" data-status="proposed"><div class="phase">P8</div><strong>Procedure Memory</strong><p>Observed → Candidate → Validated → Active → Deprecated。</p><div class="deliver"><span class="tag guard">高风险</span> 不自动执行</div></div>
+          <div class="road-row" data-status="research"><div class="phase">P9</div><strong>Reasoning adapter</strong><p>公开 trace 和锚定信号只作为低信任辅助；闭源模型正常退化。</p><div class="deliver"><span class="tag research">实验</span> 校准</div></div>
+          <div class="road-row" data-status="guard"><div class="phase">P10</div><strong>流式中断续写</strong><p>只有在取消、重放和副作用保护可靠时评估，默认关闭。</p><div class="deliver"><span class="tag guard">最后</span> 实验开关</div></div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section-heading"><span class="section-index">11 / INVARIANTS</span><h2>长期不变量：系统必须始终守住的门</h2></div>
+        <div class="grid-4">
+          <article class="gate invariant" data-status="guard"><span class="tag guard">isolation</span><h3>跨会话泄漏为零</h3><p>Working Memory、packet 和上下文 ring 不跨 session。</p></article>
+          <article class="gate invariant" data-status="guard"><span class="tag guard">authority</span><h3>记忆不是指令</h3><p>注入内容是参考资料，不能覆盖 system、developer 或当前用户指令。</p></article>
+          <article class="gate invariant" data-status="guard"><span class="tag guard">freshness</span><h3>过期结果丢弃</h3><p>contextVersion 不匹配、TTL 超时、冲突或撤销后不能注入。</p></article>
+          <article class="gate invariant" data-status="guard"><span class="tag guard">fallback</span><h3>算法故障可降级</h3><p>Python、embedding、图检索失败不影响 DSH 基础对话和关键词回退。</p></article>
+        </div>
+      </section>
+
+      <section class="section" id="sources">
+        <div class="section-heading"><span class="section-index">12 / EVIDENCE</span><h2>论文、项目与原生实现依据</h2></div>
+        <p class="section-intro">这些来源解决的是不同问题。它们是可借鉴的积木，不应被误写成已经实现了本项目的完整 Host 主动能力。</p>
+        <div class="source-grid">
+          <article class="source" data-status="research"><span class="tag research">memory types</span><h3>CoALA</h3><p>Working / episodic / semantic / procedural 的认知架构骨架。</p><div class="source-links"><a href="https://arxiv.org/abs/2309.02427">论文</a></div></article>
+          <article class="source" data-status="research"><span class="tag research">association</span><h3>Generative Agents</h3><p>Memory stream、relevance、recency、importance、reflection。</p><div class="source-links"><a href="https://arxiv.org/abs/2304.03442">论文</a><a href="https://dl.acm.org/doi/10.1145/3586183.3606763">ACM</a></div></article>
+          <article class="source" data-status="research"><span class="tag research">decay</span><h3>MemoryBank</h3><p>长期对话记忆、衰减、强化与巩固。</p><div class="source-links"><a href="https://arxiv.org/abs/2305.10250">论文</a><a href="https://ojs.aaai.org/index.php/AAAI/article/view/29946">AAAI</a></div></article>
+          <article class="source" data-status="research"><span class="tag research">paging</span><h3>MemGPT / Letta</h3><p>主上下文、core、recall、archival 与状态化运行时。</p><div class="source-links"><a href="https://arxiv.org/abs/2310.08560">MemGPT</a><a href="https://github.com/letta-ai/letta">Letta</a></div></article>
+          <article class="source" data-status="research"><span class="tag research">graph</span><h3>A-MEM / HippoRAG</h3><p>动态链接记忆节点、图关系和扩散式关联检索。</p><div class="source-links"><a href="https://arxiv.org/abs/2502.12110">A-MEM</a><a href="https://arxiv.org/abs/2405.14831">HippoRAG</a></div></article>
+          <article class="source" data-status="research"><span class="tag research">procedure</span><h3>Reflexion / Voyager</h3><p>结果驱动的情景经验和经过环境验证的技能库。</p><div class="source-links"><a href="https://arxiv.org/abs/2303.11366">Reflexion</a><a href="https://arxiv.org/abs/2305.16291">Voyager</a></div></article>
+          <article class="source" data-status="research"><span class="tag research">control plane</span><h3>MemOS / MIRIX</h3><p>独立于模型的 Memory OS 和多类型 Memory Manager。</p><div class="source-links"><a href="https://arxiv.org/abs/2507.03724">MemOS</a><a href="https://arxiv.org/abs/2507.07957">MIRIX</a></div></article>
+          <article class="source" data-status="research"><span class="tag research">evaluation</span><h3>LongMemEval / LoCoMo</h3><p>长期交互记忆、时间推理、知识更新和长会话基准。</p><div class="source-links"><a href="https://arxiv.org/abs/2410.10813">LongMemEval</a><a href="https://arxiv.org/abs/2402.17753">LoCoMo</a></div></article>
+          <article class="source" data-status="research"><span class="tag research">CoT limits</span><h3>Faithfulness / Monitorability</h3><p>公开 reasoning 不是完整、忠实的内部状态。</p><div class="source-links"><a href="https://arxiv.org/abs/2305.04388">Turpin</a><a href="https://arxiv.org/abs/2307.13702">Lanham</a><a href="https://arxiv.org/abs/2512.18311">Monitorability</a></div></article>
+          <article class="source" data-status="current"><span class="tag current">native DSH</span><h3>DSH Host / Agent preset</h3><p>Host composition、Minimal 双工具 preset、原生生命周期和工具注册。</p><div class="source-links"><a href="./proactive-associative-memory-research-report.zh-CN.md">本项目正式报告</a></div></article>
+          <article class="source" data-status="current"><span class="tag current">native DSH</span><h3>dsh-agent-instructions</h3><p>结构化 fs touch、digest 去重、per-agent inbox、pre-step merge。</p><div class="source-links"><a href="https://github.com/deepseek-ai">DeepSeek GitHub</a></div></article>
+          <article class="source" data-status="proposed"><span class="tag proposed">target</span><h3>dsh-auto-memory</h3><p>把原生动态注入骨架扩展为 Host 主动联想记忆中间件。</p><div class="source-links"><a href="./proactive-associative-memory-research-report.zh-CN.md">设计报告</a></div></article>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="footnote"><strong>研究声明：</strong>本页面是 dsh-auto-memory 的设计蓝图，不代表所有 proposed / research 模块已经实现。研究空白表示在当前检索范围内没有发现同时满足 Host 持续观察、无调用预取、下一请求注入、Provider 协商和可撤销治理的成熟端到端系统。正式实现前应重新核验论文版本、项目 API、许可证和 DSH 当前运行时版本。</div>
+      </section>
+    </main>
+
+    <footer class="footer"><span>DSH 主动联想记忆中间件 / Architecture Atlas</span><span>设计基线：2026-08-19 · 本地独立 HTML，无外部运行时依赖</span></footer>
+  </div>
+  <script>
+    (function () {
+      var buttons = document.querySelectorAll('[data-filter]');
+      var items = document.querySelectorAll('[data-status]');
+      buttons.forEach(function (button) {
+        button.addEventListener('click', function () {
+          var filter = button.getAttribute('data-filter');
+          buttons.forEach(function (item) { item.classList.toggle('active', item === button); });
+          items.forEach(function (item) {
+            var status = item.getAttribute('data-status');
+            item.classList.toggle('is-dimmed', filter !== 'all' && status !== filter && !(filter === 'guard' && status === 'guard'));
+          });
+        });
+      });
+    }());
+  </script>
+</body>
+</html>

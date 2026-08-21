@@ -1,0 +1,1058 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>dsh-auto-memory · 模块 Meta Code 装配预览</title>
+<style>
+:root{
+  --ink:#172238; --muted:#64748b; --paper:#edf2f8; --surface:#fff; --line:#d4deea;
+  --navy:#0d1b31; --navy-2:#142744;
+  --native:#16816d; --native-soft:#dff5ee;
+  --planned:#2864ce; --planned-soft:#e7efff;
+  --research:#7451c8; --research-soft:#eee9ff;
+  --guard:#c4473e; --guard-soft:#ffebe8;
+  --amber:#a96a16; --amber-soft:#fff2d9;
+  --shadow:0 10px 28px rgba(23,34,56,.08);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;color:var(--ink);background:var(--paper);font-family:Inter,"Segoe UI","Microsoft YaHei",sans-serif;line-height:1.55}
+a{color:#1c5fc5;text-decoration:none}
+a:hover{text-decoration:underline}
+code,pre,.mono{font-family:"Cascadia Code",Consolas,monospace}
+.topbar{position:sticky;top:0;z-index:30;color:#f7fbff;background:rgba(13,27,49,.97);border-bottom:1px solid rgba(255,255,255,.12);backdrop-filter:blur(14px)}
+.topbar-inner{max-width:1500px;margin:0 auto;padding:12px 22px;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:11px}
+.mark{width:34px;height:34px;display:grid;place-items:center;border-radius:9px;color:#fff;background:#347df1;font-weight:850}
+.brand-title{font-weight:800}
+.brand-sub{color:#a9b9d2;font-size:11px}
+.top-actions{display:flex;gap:6px;flex-wrap:wrap}
+.top-actions a{padding:6px 9px;color:#dbe8fb;border:1px solid transparent;border-radius:6px;font-size:12px}
+.top-actions a:hover{border-color:rgba(255,255,255,.18);background:rgba(255,255,255,.08)}
+.page{max-width:1500px;margin:0 auto;padding:24px 22px 56px}
+.hero{padding:26px 30px;border-radius:16px;color:#f8fbff;background:var(--navy);box-shadow:var(--shadow)}
+.eyebrow{color:#8ab9ff;font:800 11px/1.2 Consolas,monospace;letter-spacing:1.5px;text-transform:uppercase}
+h1{margin:10px 0 10px;font-size:clamp(26px,3.6vw,42px);line-height:1.1;letter-spacing:-.5px}
+.lead{max-width:980px;margin:0;color:#cbd9ed;font-size:15px}
+.hero-contract{display:flex;flex-wrap:wrap;gap:7px;margin-top:18px}
+.contract-chip{padding:4px 9px;border:1px solid rgba(255,255,255,.2);border-radius:999px;color:#e7f0ff;font-size:11px}
+.contract-chip.native{border-color:#63c4ae;color:#bcefe0}
+.contract-chip.planned{border-color:#86b1ff;color:#d1e1ff}
+.contract-chip.research{border-color:#d3b6ff;color:#f0e6ff}
+.contract-chip.guard{border-color:#f0a49d;color:#ffd9d5}
+.toc-wrap{margin:16px 0 0;padding:13px 15px;border:1px solid var(--line);border-radius:10px;background:rgba(255,255,255,.85)}
+.toc-label{display:block;margin-bottom:8px;color:var(--muted);font:800 10px Consolas,monospace;letter-spacing:1px;text-transform:uppercase}
+.toc-grid{display:flex;flex-wrap:wrap;gap:5px}
+.toc-chip{padding:3px 8px;border:1px solid var(--line);border-radius:5px;color:#51647d;background:#fbfcfe;font-size:10.5px}
+.toc-chip:hover{border-color:#2864ce;color:#2864ce;background:#eef4ff}
+.toc-chip.native:hover{border-color:var(--native);color:var(--native);background:var(--native-soft)}
+.toc-chip.research:hover,.toc-chip.memory:hover{border-color:var(--research);color:var(--research);background:var(--research-soft)}
+.lane-sec{margin-top:30px}
+.lane-head{display:inline-block;margin:0;padding:7px 14px;border-radius:8px;font:800 13px Consolas,monospace;letter-spacing:1px}
+.lane-head.native{background:var(--native-soft);color:var(--native)}
+.lane-head.control{background:var(--planned-soft);color:var(--planned)}
+.lane-head.memory{background:var(--research-soft);color:var(--research)}
+.lane-head.governance{background:var(--amber-soft);color:var(--amber)}
+.lane-sub{margin:8px 2px 12px;color:var(--muted);font-size:12.5px}
+.ring-panel{margin-top:14px;padding:15px 17px;border:1px solid var(--line);border-radius:12px;background:var(--surface);box-shadow:var(--shadow)}
+.ring-panel h3{margin:0 0 4px;font-size:14px}
+.ring-panel p{margin:0 0 10px;color:var(--muted);font-size:12px}
+.ring{display:flex;flex-wrap:wrap;align-items:center;gap:6px;row-gap:8px}
+.ring-chip{font:700 10.5px Consolas,monospace;padding:3px 8px;border-radius:6px;border:1px solid;background:#fff}
+.ring-chip.native{border-color:#63b5a2;color:var(--native)}
+.ring-chip.planned{border-color:#7ea6e4;color:var(--planned)}
+.ring-chip.research{border-color:#a28bdd;color:var(--research)}
+.ring-chip.amber{border-color:#dfb06b;color:var(--amber)}
+.ring-arrow{color:#8fa3bd;font-weight:800}
+.ring-loop{margin-top:8px;color:var(--muted);font-size:11.5px}
+.ring-loop code{color:var(--native)}
+.branch-panel{margin-top:10px;padding:12px 17px;border:1px dashed var(--line);border-radius:12px;background:#fbfdff}
+.branch-panel h3{margin:0 0 8px;font-size:13px}
+.branch-chips{display:flex;flex-wrap:wrap;gap:5px}
+.edge-chip{font:10.5px Consolas,monospace;padding:2px 7px;border-radius:999px;border:1px solid;background:#fff;white-space:nowrap}
+.edge-chip.native{border-color:#b6ddd3;color:var(--native);background:#f4fbf9}
+.edge-chip.planned{border-color:#c4d4f1;color:var(--planned);background:#f6f9ff}
+.edge-chip.research{border-color:#d7cbee;color:var(--research);background:#faf7ff}
+.edge-chip.guard{border-color:#ecd8c3;color:var(--guard);background:#fffaf7}
+.no-edge{color:#a3b0c2;font-size:11px}
+.wiring-panel{margin-top:10px;overflow:hidden;border:1px solid #bfcddd;border-radius:12px;background:var(--navy);box-shadow:var(--shadow)}
+.wiring-head{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 16px;color:#dbe8fb;background:var(--navy-2);font-size:11px}
+.wiring-head strong{font:800 12px Consolas,monospace;letter-spacing:1px}
+.invariants{margin-top:10px;padding:14px 17px;border-left:4px solid var(--amber);border-radius:0 10px 10px 0;color:#76521c;background:var(--amber-soft);font-size:12.5px}
+.invariants ul{margin:6px 0 0;padding-left:18px}
+.invariants li{margin:4px 0}
+.card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(560px,1fr));gap:14px;align-items:start}
+.card{display:flex;flex-direction:column;overflow:hidden;border:1px solid var(--line);border-radius:12px;background:#fff;box-shadow:var(--shadow)}
+.card-head{padding:13px 16px 11px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#fbfdff,#f4f7fb)}
+.card-topline{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.card-code{color:#71839b;font:800 10px Consolas,monospace;letter-spacing:.6px;text-transform:uppercase}
+.badge{display:inline-flex;padding:2px 7px;border-radius:5px;color:#fff;font:800 9px Consolas,monospace;text-transform:uppercase;letter-spacing:.5px}
+.badge.native{background:var(--native)}
+.badge.planned{background:var(--planned)}
+.badge.research{background:var(--research)}
+.badge.guard{background:var(--guard)}
+.ringpos{display:inline-flex;padding:2px 7px;border:1px solid #dfe7f2;border-radius:5px;color:#5c718f;font:700 9px Consolas,monospace;background:#fff}
+.ringpos.dim{color:#a3b0c2;border-style:dashed}
+.card-title{margin:6px 0 3px;font-size:17px;font-weight:820;line-height:1.2}
+.card-role{margin:0;color:var(--muted);font-size:12px}
+.edge-chips{display:flex;flex-wrap:wrap;gap:5px;padding:8px 16px;border-bottom:1px dashed var(--line);background:#fafcff}
+pre.meta{margin:0;padding:13px 16px;flex:1;background:var(--navy);color:#dce8fb;font:11.5px/1.62 Consolas,monospace;overflow-x:auto;white-space:pre}
+pre.meta .c{color:#8ab9ff}
+pre.meta .s{color:#ffd7a3}
+pre.meta .k{color:#7ee2c8;font-weight:700}
+.source-note{margin-top:26px;padding:13px 15px;border-left:4px solid var(--amber);border-radius:0 8px 8px 0;color:#76521c;background:var(--amber-soft);font-size:11.5px}
+.footer{display:flex;justify-content:space-between;gap:10px;margin-top:26px;padding-top:13px;border-top:1px solid var(--line);color:var(--muted);font-size:10.5px}
+@media (max-width:640px){.card-grid{grid-template-columns:1fr}.hero{padding:22px 20px}}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand"><div class="mark">AM</div><div><div class="brand-title">dsh-auto-memory · Meta Code</div><div class="brand-sub">28 模块 · 类型契约 + 关键逻辑伪代码 · 装配预览</div></div></div>
+    <nav class="top-actions" aria-label="页面导航">
+      <a href="#wiring">⓪ 全局装配</a>
+      <a href="#lane-native">① 原生请求面</a>
+      <a href="#lane-control">② 主动控制面</a>
+      <a href="#lane-memory">③ 认知记忆面</a>
+      <a href="#lane-governance">④ 治理与运营</a>
+      <a href="./proactive-associative-memory-system-map.html#map">← 系统地图</a>
+    </nav>
+  </div>
+</header>
+
+<div class="page">
+  <section class="hero">
+    <div class="eyebrow">Meta Code Atlas / Implementation Sketch / 2026-08-19</div>
+    <h1>每个模块一段 Meta Code:先看装配,再看实现。</h1>
+    <p class="lead">Meta code = 类型契约 + 关键逻辑骨架(伪代码,不编译),只表达职责与数据流。第 ⓪ 章是全局装配:一条主动链把各模块串起来,与系统地图的 30 条边一一对应;随后按四个泳道逐模块给出契约、啮合边与实现要点。当前维护通道使用原生 systemPrompt.section() / systemPrompt.context()；未来主动 MemoryPacket 才进入 durable Agent Inbox。状态标注沿用地图:原生 / 设计 / 研究 / 安全门。</p>
+    <div class="hero-contract">
+      <span class="contract-chip native">native: 原生机制(只接不改)</span>
+      <span class="contract-chip planned">planned: 本项目计划实现</span>
+      <span class="contract-chip research">research: 论文 / 开源启发</span>
+      <span class="contract-chip guard">guard: 必须守住的边</span>
+    </div>
+  </section>
+
+  <div class="toc-wrap">
+    <span class="toc-label">模块索引 · 28 个</span>
+    <div class="toc-grid"><a class="toc-chip native" href="#mod-events">N-01 运行时事件</a><a class="toc-chip native" href="#mod-inbox">N-03 Agent Inbox</a><a class="toc-chip native" href="#mod-claim">N-04 Claim / Assemble</a><a class="toc-chip native" href="#mod-prestep">N-05 agent/pre-step</a><a class="toc-chip native" href="#mod-request">N-06 Build Request</a><a class="toc-chip native" href="#mod-model">N-07 模型 / Provider</a><a class="toc-chip native" href="#mod-toolResult">N-08 工具结果 / 反馈</a><a class="toc-chip control" href="#mod-observer">C-01 ContextObserver</a><a class="toc-chip control" href="#mod-runtime">C-02 SessionRuntime</a><a class="toc-chip control" href="#mod-gate">C-03 Retrieval Gate</a><a class="toc-chip control" href="#mod-association">C-04 Association Engine</a><a class="toc-chip control" href="#mod-rank">C-05 Rank / Dedupe / Budget</a><a class="toc-chip control" href="#mod-broker">C-06 Injection Broker</a><a class="toc-chip control" href="#mod-capability">C-07 Provider Adapter</a><a class="toc-chip memory" href="#mod-working">M-01 Working Memory</a><a class="toc-chip memory" href="#mod-episodic">M-02 Episodic Memory</a><a class="toc-chip memory" href="#mod-semantic">M-03 Semantic / Profile</a><a class="toc-chip memory" href="#mod-procedural">M-04 Procedural Memory</a><a class="toc-chip memory" href="#mod-lexical">M-05 Lexical / Entity</a><a class="toc-chip memory" href="#mod-projection">M-06 Readable Projection</a><a class="toc-chip memory" href="#mod-python">M-07 Python Memory Engine</a><a class="toc-chip governance" href="#mod-evidence">G-01 Evidence Updater</a><a class="toc-chip governance" href="#mod-audit">G-02 Injection Audit</a><a class="toc-chip governance" href="#mod-safety">G-03 Safety Gate</a><a class="toc-chip governance" href="#mod-metrics">G-04 Evaluation / Metrics</a><a class="toc-chip governance" href="#mod-fallback">G-05 Fallback / Degrade</a><a class="toc-chip research" href="#mod-research">R-01 Research Signals</a><a class="toc-chip research" href="#mod-lexical2">R-02 Cognitive Model</a></div>
+  </div>
+
+  <section id="wiring">
+    <div class="ring-panel">
+      <h3>主环 · 未来主动 packet 的下一请求链</h3>
+      <p>14 个节点构成闭合回路;除标注外,每一步都只影响「下一请求边界」。</p>
+      <div class="ring"><span class="ring-chip native">N-01 运行时事件</span><span class="ring-arrow">→</span><span class="ring-chip native">SESSION 事实源</span><span class="ring-arrow">→</span><span class="ring-chip planned">C-01 ContextObserver</span><span class="ring-arrow">→</span><span class="ring-chip planned">C-02 SessionRuntime</span><span class="ring-arrow">→</span><span class="ring-chip research">M-01 Working Memory</span><span class="ring-arrow">→</span><span class="ring-chip planned">C-03 Retrieval Gate</span><span class="ring-arrow">→</span><span class="ring-chip planned">C-04 Association Engine</span><span class="ring-arrow">→</span><span class="ring-chip planned">C-05 Rank / Dedupe / Budget</span><span class="ring-arrow">→</span><span class="ring-chip planned">C-06 Injection Broker</span><span class="ring-arrow">→</span><span class="ring-chip native">N-03 Agent Inbox</span><span class="ring-arrow">→</span><span class="ring-chip native">N-04 Claim / Assemble</span><span class="ring-arrow">→</span><span class="ring-chip native">N-05 agent/pre-step</span><span class="ring-arrow">→</span><span class="ring-chip native">N-06 Build Request</span><span class="ring-arrow">→</span><span class="ring-chip native">N-07 模型 / Provider</span><span class="ring-arrow">→</span><span class="ring-chip native">N-08 工具结果 / 反馈</span></div>
+      <div class="ring-loop">未来 packet 回环:<code>toolResult → events → retrieve → Inbox</code>；当前维护快照走 <code>systemPrompt.context() → RuntimeContextProjection</code></div>
+    </div>
+    <div class="branch-panel">
+      <h3>支线 · 召回源 / 证据升格 / 门与降级(15 条)</h3>
+      <div class="branch-chips"><span class="edge-chip planned">M-02 Episodic Memory → C-04 Association Engine · recall</span><span class="edge-chip planned">M-03 Semantic / Profile → C-04 Association Engine · recall</span><span class="edge-chip guard">M-04 Procedural Memory → C-04 Association Engine · checklist</span><span class="edge-chip research">M-05 Lexical / Entity → C-04 Association Engine · entity</span><span class="edge-chip planned">M-06 Readable Projection → M-03 Semantic / Profile · promote</span><span class="edge-chip planned">M-07 Python Memory Engine → C-04 Association Engine · sidecar</span><span class="edge-chip planned">G-01 Evidence Updater → M-03 Semantic / Profile · update</span><span class="edge-chip guard">G-01 Evidence Updater → M-04 Procedural Memory · promote</span><span class="edge-chip planned">G-02 Injection Audit → C-06 Injection Broker · audit</span><span class="edge-chip guard">G-03 Safety Gate → C-06 Injection Broker · gate</span><span class="edge-chip planned">C-07 Provider Adapter → C-06 Injection Broker · adapter</span><span class="edge-chip planned">G-04 Evaluation / Metrics → G-02 Injection Audit · measure</span><span class="edge-chip guard">G-05 Fallback / Degrade → C-04 Association Engine · degrade</span><span class="edge-chip research">R-01 Research Signals → C-03 Retrieval Gate · trigger</span><span class="edge-chip research">R-02 Cognitive Model → C-04 Association Engine · model</span></div>
+    </div>
+    <div class="wiring-panel">
+      <div class="wiring-head"><strong>GLOBAL WIRING · 全局装配</strong><span>契约类型 + Host 装配 + 主动链 + 反馈回环</span></div>
+      <pre class="meta" style="padding:18px 20px"><code><span class="c">/* ============================================================
+ * 全局装配 — 各模块的啮合方式(与地图 30 条边一一对应)
+ *
+ * 未来主动 packet 主环(每步请求边界前最多走一次):
+ *   events → session → observer → runtime → working
+ *   → gate → association → rank → safety → broker → inbox
+ *   → claim → pre-step → buildRequest → model
+ *   → toolResult → events(回环)
+ *
+ * 当前已落地维护通道:
+ *   systemPrompt.section(稳定规则) + systemPrompt.context(易变快照)
+ *   → systemPrompt.assemble → RuntimeContextProjection → agent/pre-step
+ *
+ * 支线:
+ *   M-02/03/04/05 + M-07 → association     (召回源)
+ *   G-01 → M-02/M-03/M-04                  (证据升格)
+ *   G-02/G-03/C-07 → broker                (审计/安全门/能力)
+ *   G-04 → G-02 · G-05 → association       (度量/降级)
+ *   R-01 → C-03 · R-02 → C-04              (启发)
+ * ============================================================ */</span>
+
+<span class="c">/* ---- 契约类型(各模块共享) ---- */</span>
+<span class="k">type</span> SourceKind = <span class="s">'user'</span> | <span class="s">'tool'</span> | <span class="s">'agent'</span> | <span class="s">'lifecycle'</span>
+<span class="k">type</span> Scope      = <span class="s">'Turn'</span> | <span class="s">'Session'</span> | <span class="s">'Workspace'</span> | <span class="s">'User'</span> | <span class="s">'External'</span>
+<span class="k">type</span> Strength   = <span class="s">'soft'</span> | <span class="s">'direct'</span> | <span class="s">'checklist'</span>
+
+<span class="k">interface</span> ContextCursor { sessionId: string; eventSeq: number; contextVersion: number }
+<span class="k">interface</span> Segment {
+  id: string;  sessionId: string;  kind: SourceKind;  eventSeq: number
+  text: string;  entities: string[];  digest: string;  ts: number
+}
+<span class="k">interface</span> Candidate {
+  id: string;  source: <span class="s">'episodic'</span>|<span class="s">'semantic'</span>|<span class="s">'procedural'</span>|<span class="s">'lexical'</span>
+  scope: Scope;  score: number;  confidence: number
+  provenance: string;  expiresAt: number;  payload: string
+}
+<span class="k">interface</span> MemoryPacket {
+  packetSchemaVersion: 1
+  contextCursor: ContextCursor;  retrievalVersion: string
+  triggerReason: string;  strength: Strength;  items: Candidate[]
+  exactDigest: string;  semanticDigest: string
+  budgetBytes: number;  expiry: number
+}
+
+<span class="c">/* ---- Host 装配: 事件入口 ---- */</span>
+<span class="k">class</span> ProactiveMemoryHost {
+  observer   = <span class="k">new</span> ContextObserver()      <span class="c">// C-01</span>
+  runtime    = <span class="k">new</span> SessionRuntime()       <span class="c">// C-02</span>
+  gate       = <span class="k">new</span> RetrievalGate()        <span class="c">// C-03</span>
+  assoc      = <span class="k">new</span> AssociationEngine()    <span class="c">// C-04(注入 M-02/03/04/05/07 召回源)</span>
+  rank       = <span class="k">new</span> RankDedupeBudget()     <span class="c">// C-05</span>
+  safety     = <span class="k">new</span> SafetyGate()           <span class="c">// G-03</span>
+  broker     = <span class="k">new</span> InjectionBroker()      <span class="c">// C-06</span>
+  capability = <span class="k">new</span> ProviderAdapter()      <span class="c">// C-07</span>
+  audit      = <span class="k">new</span> InjectionAudit()       <span class="c">// G-02</span>
+  evidence   = <span class="k">new</span> EvidenceUpdater()      <span class="c">// G-01</span>
+  metrics    = <span class="k">new</span> MetricsCollector()     <span class="c">// G-04</span>
+  fallback   = <span class="k">new</span> FallbackController()   <span class="c">// G-05</span>
+
+  <span class="c">/* N-01: 运行时事件入口 */</span>
+  onSessionEvent(env: EventEnvelope) {
+    <span class="k">const</span> seg = this.observer.observe(env)     <span class="c">// C-01</span>
+    <span class="k">if</span> (!seg) <span class="k">return</span>
+    this.runtime.push(seg)                     <span class="c">// C-02 → M-01</span>
+    this.proactiveTick(seg)                    <span class="c">// 主动链: 异步, 绝不阻塞原生链</span>
+  }
+
+  <span class="c">/* 未来主动 packet 链: 下一步请求边界前最多生效一次; 当前 M0/M1 维护快照不经过此检索链 */</span>
+  <span class="k">async</span> proactiveTick(seg: Segment) {
+    <span class="k">const</span> cur = this.runtime.cursor(seg.sessionId)
+
+    <span class="c">// C-03 门: 现在值不值得检索</span>
+    <span class="k">const</span> decision = this.gate.decide(this.runtime.window(seg.sessionId), seg, cur)
+    <span class="k">if</span> (decision.action === <span class="s">'suppress'</span>)
+      <span class="k">return</span> this.audit.suppressed(cur, decision.reason)
+
+    <span class="c">// C-04 召回(引擎级失败 → G-05 词法回退)</span>
+    <span class="k">const</span> cands = <span class="k">await</span> this.assoc.recall(seg, cur)
+        .catch(() =&gt; this.fallback.keywordRecall(seg, cur))
+
+    <span class="c">// C-05 排序/去重/预算 → G-03 安全门 → C-06 成包</span>
+    <span class="k">const</span> ranked  = this.rank.run(cands, cur)
+    <span class="k">const</span> verdict = this.safety.check(ranked, this.runtime.scopeOf(seg.sessionId))
+    <span class="k">const</span> packet  = this.broker.build(ranked, verdict, this.capability.snapshot())
+
+    <span class="c">// G-02 审计 + G-04 度量(无论注入与否)</span>
+    this.audit.injection(packet, verdict)
+    this.metrics.observe(packet, verdict)
+
+    <span class="c">// 当前维护快照走 systemPrompt.context(), 由 native RuntimeContextProjection 去重/替换</span>
+    <span class="c">// C-06 → N-03(未来 active path): MemoryPacket 只写 next-step inbox, 不改当前请求</span>
+    <span class="k">if</span> (packet &amp;&amp; verdict.action === <span class="s">'allow'</span>) this.broker.syncInbox(packet)
+  }
+
+  <span class="c">/* G-01 反馈回环: 工具结果 / 用户纠正 → 证据更新 → M-02/M-03/M-04 */</span>
+  onToolResult(ev)     { this.evidence.record(ev) }
+  onUserCorrection(ev) { this.evidence.record(ev) }
+}</code></pre>
+    </div>
+    <div class="invariants"><strong>架构不变量(所有 Meta code 共同遵守)</strong>
+      <ul><li>跨 session 泄漏为零</li><li>已发出的请求不原地改写;主动记忆只在下一请求边界生效</li><li>过期 / contextVersion 不匹配的 packet 必丢弃,且不标记 delivered</li><li>记忆是参考资料不是指令;不覆盖 system / developer / 当前用户指令</li><li>Procedure 未经验证不自动执行;高风险副作用默认需要用户确认</li><li>检索中间态不写主 Session;session/event 是 append-only 事实源</li></ul>
+    </div>
+  </section>
+
+  <section class="lane-sec" id="lane-native">
+    <h2 class="lane-head native">NATIVE DSH REQUEST PLANE</h2>
+    <p class="lane-sub">① 原生请求面 — 已发出的请求不可改写；当前维护快照走 runtime-context，未来 packet 才走 next-step</p>
+    <div class="card-grid">  <article class="card" id="mod-events">
+    <div class="card-head">
+      <div class="card-topline">
+        <span class="card-code">N-01 · DSH 原生链路</span>
+        <span class="badge native">NATIVE · 原生</span>
+        <span class="ringpos">主环 #1</span>
+      </div>
+      <h3 class="card-title">运行时事件</h3>
+      <p class="card-role">用户、工具、助手可见输出和 Agent 生命周期进入 Host 的可观测入口。</p>
+    </div>
+    <div class="edge-chips"><span class="edge-chip native">← N-08 工具结果 / 反馈 · replay</span><span class="edge-chip native">→ session 事实源 · append</span></div>
+    <pre class="meta"><code><span class="c">/* N-01 运行时事件 — 原生链路的可观测入口(append-only 事实源) */</span>
+<span class="k">interface</span> EventEnvelope {                <span class="c">// 观察信封: 只取最小标量快照</span>
+  schemaVersion: 1
+  sessionId: string;  agentId: string
+  eventSeq: number;   turn: number;   step: number
+  sourceKind: <span class="s">'user'</span> | <span class="s">'tool'</span> | <span class="s">'agent'</span> | <span class="s">'lifecycle'</span>
+  callId?: string;    rootCallId?: string
+  payloadDigest: string                  <span class="c">// 只存摘要, 不复制整个 payload</span>
+}
+
+<span class="c">// 消费结构化事件, 而不是解析模型文本:</span>
+on(<span class="s">'session/event'</span>,  e =&gt; observe(envelope(e, <span class="s">'lifecycle'</span>)))   <span class="c">// 用户消息 / 生命周期</span>
+on(<span class="s">'tools/result'</span>,   r =&gt; observe(envelope(r, <span class="s">'tool'</span>)))        <span class="c">// 成功 / 失败 / 重试 / 取消 / 纠正</span>
+on(<span class="s">'agent/step'</span>,     s =&gt; observe(envelope(s, <span class="s">'agent'</span>)))       <span class="c">// 步边界</span>
+
+<span class="c">// 硬约束: 检索中间态绝不写入 Session;</span>
+<span class="c">// Session 回放必须与观察结果一致, 检索失败不得伪造 session 事件</span></code></pre>
+  </article>
+  <article class="card" id="mod-inbox">
+    <div class="card-head">
+      <div class="card-topline">
+        <span class="card-code">N-03 · DSH 原生链路</span>
+        <span class="badge native">NATIVE · 原生</span>
+        <span class="ringpos">主环 #10</span>
+      </div>
+      <h3 class="card-title">Agent Inbox</h3>
+      <p class="card-role">未来 MemoryPacket 的持久 next-turn / next-step projection,通过 durable splice 事件维护；当前动态维护快照走 systemPrompt.context()。</p>
+    </div>
+    <div class="edge-chips"><span class="edge-chip planned">← C-06 Injection Broker · future packet</span><span class="edge-chip native">→ N-04 Claim / Assemble · claim</span></div>
+    <pre class="meta"><code><span class="c">/* N-03 Agent Inbox — durable next-turn / next-step projection(未来 MemoryPacket 通道, 不是唯一注入面) */</span>
+<span class="c">// 当前维护路径: systemPrompt.context() → native RuntimeContextProjection</span>
+<span class="c">//   相同完整快照不重复创建 user-context, 变化快照替换之前的 projection</span>
+<span class="c">// Inbox 三原语(未来 packet / 用户消息):</span>
+<span class="c">//   claim   步边界原子领取全部 next-step 输入 → 交给 assemble</span>
+<span class="c">//   inject  写 next-step 但不唤醒(未来主动 packet 默认走这里)</span>
+<span class="c">//   steer   写 next-step 并唤醒(仅用户 / 系统授权场景)</span>
+
+<span class="k">function</span> syncInbox(packet: MemoryPacket) {
+  <span class="c">// 先在 claimed 或可见 surface 找重复, 有则删除 pending 副本</span>
+  <span class="k">if</span> (alreadyClaimed(packet.exactDigest) || alreadyVisible(packet.exactDigest))
+    <span class="k">return</span> dropPending(packet.id)
+  <span class="c">// durable splice: 先写 durable event, 再改 live projection</span>
+  inbox.splice({ op: <span class="s">'inject'</span>,
+                 message: nextStepUserMessage(packet) })
+}
+
+<span class="c">// 约束: next-step 不是临时内存, future packet 持久存在直到被 claim 或显式移除;</span>
+<span class="c">// 取消 / 重启 / 恢复后 pending 状态必须可重建</span></code></pre>
+  </article>
+  <article class="card" id="mod-claim">
+    <div class="card-head">
+      <div class="card-topline">
+        <span class="card-code">N-04 · DSH 原生链路</span>
+        <span class="badge native">NATIVE · 原生</span>
+        <span class="ringpos">主环 #11</span>
+      </div>
+      <h3 class="card-title">Claim / Assemble</h3>
+      <p class="card-role">请求前先领取待处理消息,再组装 system prompt、runtime context 和工具。</p>
+    </div>
+    <div class="edge-chips"><span class="edge-chip native">← N-03 Agent Inbox · claim</span><span class="edge-chip native">→ N-05 agent/pre-step · assemble + waterfall</span></div>
+    <pre class="meta"><code><span class="c">/* N-04 Claim / Assemble — 请求前的原子领取与组装(真实顺序的锚点) */</span>
+<span class="c">// 真实顺序:  claim → systemPrompt.assemble(section + context) → runtime projection</span>
+<span class="c">//            → agent/pre-step waterfall → step/start → buildRequest</span>
+
+<span class="k">async</span> <span class="k">function</span> stepBoundary(session) {
+  <span class="k">const</span> claimed  = inbox.claimAll(session)       <span class="c">// 原子领取 next-step + next-turn FIFO</span>
+  <span class="k">const</span> assembly = <span class="k">await</span> systemPrompt.assemble({ session })
+  <span class="k">const</span> sections = renderContextSections(assembly)
+  <span class="k">const</span> context  = runtimeContext.project(joinContextSections(sections), sections)
+  <span class="k">return</span> { claimed, assembly, context }
+}
+
+<span class="c">// 约束: section/context provider 都是同步求值, 不能在其中 await 异步检索;</span>
+<span class="c">// 稳定规则留在 section, 易变维护快照留在 context;</span>
+<span class="c">// 未来异步 MemoryPacket 先进入 Inbox 或 projection queue, 再交给 pre-step waterfall</span></code></pre>
+  </article>
+  <article class="card" id="mod-prestep">
+    <div class="card-head">
+      <div class="card-topline">
+        <span class="card-code">N-05 · DSH 原生链路</span>
+        <span class="badge native">NATIVE · 原生</span>
+        <span class="ringpos">主环 #12</span>
+      </div>
+      <h3 class="card-title">agent/pre-step</h3>
+      <p class="card-role">原生 runtime-context snapshot 与未来 packet 在下一步请求前汇合的 waterfall 边界。</p>
+    </div>
+    <div class="edge-chips"><span class="edge-chip native">← N-04 Claim / Assemble · assemble + waterfall</span><span class="edge-chip native">→ N-06 Build Request · request</span></div>
+    <pre class="meta"><code><span class="c">/* N-05 agent/pre-step — DSH 核心先组装, 再把 runtime context 交给 waterfall */</span>
+<span class="k">async</span> <span class="k">function</span> nativePreStep(agent, target, position, signal) {
+  <span class="k">const</span> claimed = agent.inbox.claim(target, position.turn)
+  <span class="k">const</span> assembly = <span class="k">await</span> agent.loopCtx.systemPrompt.assemble(assembleContextFor(agent, signal))
+  signal.throwIfAborted()
+  <span class="k">const</span> sections = renderContextSections(assembly)
+  <span class="k">const</span> context = agent.runtimeContext.project(joinContextSections(sections), sections)
+  <span class="k">const</span> decision = <span class="k">await</span> agent.dispatch.waterfall(<span class="s">'agent/pre-step'</span>,
+    { messages: claimed, ...position, signal },
+    () =&gt; Promise.resolve({
+      kind: <span class="s">'enter'</span>,
+      messages: context === undefined ? claimed : [...claimed, context]
+    }))
+  signal.throwIfAborted()
+  <span class="k">return</span> decision.kind === <span class="s">'reject'</span> ? decision : { ...decision, assembly }
+}
+
+<span class="c">// 当前 native context 在这里按完整文本去重; 变化时替换旧 projection</span>
+<span class="c">// 未来 packet listener 只在 waterfall 中校验/保留/消费自己的 Inbox pending</span></code></pre>
+  </article>
+  <article class="card" id="mod-request">
+    <div class="card-head">
+      <div class="card-topline">
+        <span class="card-code">N-06 · DSH 原生链路</span>
+        <span class="badge native">NATIVE · 原生</span>
+        <span class="ringpos">主环 #13</span>
+      </div>
+      <h3 class="card-title">Build Request</h3>
+      <p class="card-role">把 assembled context、可见历史、工具 schema 和当前路由形成精确请求。</p>
+    </div>
+    <div class="edge-chips"><span class="edge-chip native">← N-05 agent/pre-step · request</span><span class="edge-chip native">→ N-07 模型 / Provider · dispatch</span></div>
+    <pre class="meta"><code><span class="c">/* N-06 Build Request — 精确成形; 此后任何事件只影响下一 step/turn */</span>
+<span class="k">interface</span> RequestAudit {
+  provider: string;  model: string
+  reasoning: <span class="s">'none'</span> | <span class="s">'summary'</span> | <span class="s">'full'</span> | <span class="s">'unknown'</span>
+  packetBytes: number;  packetDigest?: string
+  contextVersion: number
+}
+
+<span class="k">function</span> buildRequest({ assembly, messages, tools, history }) {
+  <span class="k">return</span> {
+    system: renderPrompt(assembly),              <span class="c">// section 稳定前缀 → KV cache 复用</span>
+    messages: [...history.visible, ...messages], <span class="c">// context 是原生 user-role snapshot</span>
+    tools,
+    _audit: <span class="k">new</span> RequestAudit(),                 <span class="c">// 生效 provider/model/reasoning 可追踪</span>
+  }
+}
+
+<span class="c">// 未来 MemoryPacket 也只能追加到下一请求 messages, 不能改写已发请求</span>
+<span class="c">// 约束: 动态段每步变化会击穿前缀缓存, 与稳定段分开预算;</span>
+<span class="c">// 字符预算 ≠ 模型 token 预算; packet 成本单独核算</span></code></pre>
+  </article>
+  <article class="card" id="mod-model">
+    <div class="card-head">
+      <div class="card-topline">
+        <span class="card-code">N-07 · DSH 原生链路</span>
+        <span class="badge native">NATIVE · 原生</span>
+        <span class="ringpos">主环 #14</span>
+      </div>
+      <h3 class="card-title">模型 / Provider</h3>
+      <p class="card-role">异构模型实际生成、调用工具并返回可观测结果。</p>
+    </div>
+    <div class="edge-chips"><span class="edge-chip native">← N-06 Build Request · dispatch</span><span class="edge-chip native">→ N-08 工具结果 / 反馈 · feedback</span></div>
+    <pre class="meta"><code><span class="c">/* N-07 模型 / Provider — 异构模型执行; 能力由 adapter 声明, 不按名字硬编码 */</span>
+<span class="k">function</span> dispatch(req: BuiltRequest) {
+  <span class="k">const</span> cap = capability.snapshot(route(req))   <span class="c">// C-07 协商: reasoning / runtimeContext / packetPatch</span>
+  <span class="k">return</span> llm.complete(req)                       <span class="c">// → assistant output / tool calls / reasoning?</span>
+}
+
+<span class="c">// 约束: 公开 reasoning ≠ 完整、忠实的内部状态(CoT faithfulness);</span>
+<span class="c">// 闭源模型只依赖用户 / 工具 / 可见输出 / 运行时事件;</span>
+<span class="c">// reasoning trace 不单独写入事实、授权副作用或晋升技能</span></code></pre>
+  </article>
+  <article class="card" id="mod-toolResult">
+    <div class="card-head">
+      <div class="card-topline">
+        <span class="card-code">N-08 · DSH 原生链路</span>
+        <span class="badge native">NATIVE · 原生</span>
+        <span class="ringpos">主环 #15</span>
+      </div>
+      <h3 class="card-title">工具结果 / 反馈</h3>
+      <p class="card-role">工具成功、失败、重试、取消和用户纠正是最可靠的运行时反馈。</p>
+    </div>
+    <div class="edge-chips"><span class="edge-chip native">← N-07 模型 / Provider · feedback</span><span class="edge-chip native">→ N-01 运行时事件 · replay</span></div>
+    <pre class="meta"><code><span class="c">/* N-08 工具结果 / 反馈 — 最可靠的运行时反馈(emit-only 冻结观测) */</span>
+on(<span class="s">'tools/result'</span>, r =&gt; {
+  <span class="c">// freeze: 冻结结果只读, 绝不当作可原地修改的对象</span>
+  <span class="k">const</span> obs = { kind: <span class="s">'tool'</span>, callId: r.callId, rootCallId: r.rootCallId,
+                ok: r.ok, digest: digest(r.payload) }
+  observer.observe(obs)      <span class="c">// → C-01</span>
+  evidence.record(obs)       <span class="c">// → G-01(强化 / 削弱)</span>
+})
+
+<span class="c">// touch 延迟到 step/end 结算, 避免开放步骤抢跑;</span>
+<span class="c">// 只有工具明确产生下一步说明时才使用 deferContext;</span>
+<span class="c">// 成功 / 失败 / abort / 嵌套调用都能生成稳定 observation</span></code></pre>
+  </article></div>
+  </section>
+  <section class="lane-sec" id="lane-control">
+    <h2 class="lane-head control">PROACTIVE MEMORY CONTROL PLANE</h2>
+    <p class="lane-sub">② 主动控制面 — observe → retrieve → packet</p>
+    <div class="card-grid">  <article class="card" id="mod-observer">
+    <div class="card-head">
+      <div class="card-topline">
+        <span class="card-code">C-01 · 主动控制面</span>
+        <span class="badge planned">PLANNED · 设计</span>
+        <span class="ringpos">主环 #3</span>
+      </div>
+      <h3 class="card-title">ContextObserver</h3>
+      <p class="card-role">把原生事件转换为按 session 隔离的语义上下文片段。</p>
+    </div>
+    <div class="edge-chips"><span class="edge-chip planned">← session 事实源 · observe</span><span class="edge-chip planned">→ C-02 SessionRuntime · scope</span></div>
+    <pre class="meta"><code><span class="c">/* C-01 ContextObserver — 原生事件 → 按 session 隔离的语义上下文片段 */</span>
+<span class="k">function</span> observe(env: EventEnvelope): Segment | null {
+  <span class="k">if</span> (env.schemaVersion !== 1) <span class="k">return</span> null        <span class="c">// 版本不符直接丢</span>
+  <span class="k">const</span> text = sliceByKind(env)                   <span class="c">// 按事件类型切片, 不粗暴取最后 N token</span>
+  <span class="k">return</span> {
+    id: uid(), sessionId: env.sessionId, kind: env.sourceKind,
+    eventSeq: env.eventSeq, text,
+    entities: extract(text), digest: digest(text), ts: now(),
+  }
+}
+
+<span class="c">// 约束: 跨 session 合并事件 = 污染后续所有检索;</span>
+<span class="c">// contextVersion 单调递增; 过期异步结果可丢弃;</span>
+<span class="c">// reasoning chunk 可作可选 reasoning segment, 默认不持久化</span></code></pre>
+  </article>
+  <article class="card" id="mod-runtime">
+    <div class="card-head">
+      <div class="card-topline">
+        <span class="card-code">C-02 · 主动控制面</span>
+        <span class="badge planned">PLANNED · 设计</span>
+        <span class="ringpos">主环 #4</span>
+      </div>
+      <h3 class="card-title">SessionRuntime</h3>
+      <p class="card-role">每个 agent/session 的工作状态、上下文环、pending packet 和冷却。</p>
+    </div>
+    <div class="edge-chips"><span class="edge-chip planned">← C-01 ContextObserver · scope</span><span class="edge-chip planned">→ M-01 Working Memory · window</span></div>
+    <pre class="meta"><code><span class="c">/* C-02 SessionRuntime — per-agent/session 运行态(消灭全局状态) */</span>
+<span class="k">const</span> states = <span class="k">new</span> WeakMap&lt;Agent, AgentMemoryState&gt;()   <span class="c">// 执行 token 用 Map 关联嵌套观测</span>
+
+<span class="k">interface</span> AgentMemoryState {
+  working: RingBuffer&lt;Segment&gt;        <span class="c">// → M-01 工作记忆</span>
+  cursor: ContextCursor               <span class="c">// 单调递增</span>
+  pending: MemoryPacket[]             <span class="c">// 待注入队列</span>
+  cooldown: Map&lt;string, number&gt;       <span class="c">// 触发冷却</span>
+  sidecarJob?: AbortController
+}
+
+<span class="k">function</span> teardown(agent) {
+  states.get(agent)?.sidecarJob?.abort()   <span class="c">// abort 检索 → sidecar quiescence → 清理 map</span>
+  states.delete(agent)
+}
+
+<span class="c">// 验收: 并发 A/B session 隔离为零泄漏;</span>
+<span class="c">// 不再依赖进程级 _lastAgent / 全局 _consolidating / 全局 pending queue</span></code></pre>
+  </article>
+  <article class="card" id="mod-gate">
+    <div class="card-head">
+      <div class="card-topline">
+        <span class="card-code">C-03 · 主动控制面</span>
+        <span class="badge planned">PLANNED · 设计</span>
+        <span class="ringpos">主环 #6</span>
+      </div>
+      <h3 class="card-title">Retrieval Gate</h3>
+      <p class="card-role">动态判断现在是否值得检索,而不是每一步固定召回。</p>
+    </div>
+    <div class="edge-chips"><span class="edge-chip planned">← M-01 Working Memory · signal</span><span class="edge-chip research">← R-01 Research Signals · trigger</span><span class="edge-chip planned">→ C-04 Association Engine · retrieve</span></div>
+    <pre class="meta"><code><span class="c">/* C-03 Retrieval Gate — 动态判断"现在值不值得检索"(无 CoT 也成立) */</span>
+<span class="k">interface</span> GateDecision { action: <span class="s">'retrieve'</span> | <span class="s">'prefetch'</span> | <span class="s">'suppress'</span>; reason: string }
+
+<span class="k">function</span> decide(win: Segment[], seg: Segment, cur: ContextCursor): GateDecision {
+  <span class="k">const</span> signals = {
+    novelty:     !win.some(s =&gt; s.digest === seg.digest),         <span class="c">// 新颖度</span>
+    unresolved:  unresolvedEntities(win).length &gt; 0,              <span class="c">// 未决实体</span>
+    phaseShift:  taskPhase(win) !== taskPhase(win.slice(0, -1)),  <span class="c">// 任务阶段变化</span>
+    toolFailure: seg.kind === <span class="s">'tool'</span> &amp;&amp; !seg.ok,                  <span class="c">// 工具失败</span>
+    conflict:    conflictCount(cur.sessionId) &gt; 0,                <span class="c">// 冲突</span>
+    historical:  hitRecent(cur.sessionId) !== null,               <span class="c">// 相似历史命中</span>
+  }
+  <span class="k">if</span> (cooldownActive(cur))            <span class="k">return</span> { action: <span class="s">'suppress'</span>, reason: <span class="s">'cooldown'</span> }
+  <span class="k">if</span> (ignoredMemory(cur, seg.digest)) <span class="k">return</span> { action: <span class="s">'suppress'</span>, reason: <span class="s">'user-ignored'</span> }
+  <span class="k">const</span> s = weighted(signals)   <span class="c">// 权重来自 R-02 认知模型 + R-01 论文启发</span>
+  <span class="k">return</span> s &gt;= HOT  ? { action: <span class="s">'retrieve'</span>, reason: <span class="s">'above-threshold'</span> }
+       : s &gt;= WARM ? { action: <span class="s">'prefetch'</span>, reason: <span class="s">'warm'</span> }
+       :             { action: <span class="s">'suppress'</span>, reason: <span class="s">'below-threshold'</span> }
+}
+
+<span class="c">// 公开模型可增加 uncertainty / reasoning 信号, 但不是硬依赖;</span>
+<span class="c">// cognitive load 不是"记忆只在困难时出现"的硬门;</span>
+<span class="c">// 滞回 + 冷却 + "已忽略记忆"抑制避免反复打扰</span></code></pre>
+  </article>
+  <article class="card" id="mod-association">
+    <div class="card-head">
+      <div class="card-topline">
+        <span class="card-code">C-04 · 主动控制面</span>
+        <span class="badge planned">PLANNED · 设计</span>
+        <span class="ringpos">主环 #7</span>
+      </div>
+      <h3 class="card-title">Association Engine</h3>
+      <p class="card-role">从预索引记忆中找出当前情境可能自动唤回的候选。</p>
+    </div>
+    <div class="edge-chips"><span class="edge-chip planned">← C-03 Retrieval Gate · retrieve</span><span class="edge-chip planned">← M-02 Episodic Memory · recall</span><span class="edge-chip planned">← M-03 Semantic / Profile · recall</span><span class="edge-chip guard">← M-04 Procedural Memory · checklist</span><span class="edge-chip research">← M-05 Lexical / Entity · entity</span><span class="edge-chip planned">← M-07 Python Memory Engine · sidecar</span><span class="edge-chip guard">← G-05 Fallback / Degrade · degrade</span><span class="edge-chip research">← R-02 Cognitive Model · model</span><span class="edge-chip planned">→ C-05 Rank / Dedupe / Budget · candidates</span></div>
+    <pre class="meta"><code><span class="c">/* C-04 Association Engine — 三级检索: 词法初筛 → 向量/时间过滤 → 图扩散 */</span>
+<span class="k">async</span> <span class="k">function</span> recall(seg: Segment, cur: ContextCursor): Promise&lt;Candidate[]&gt; {
+  <span class="k">const</span> hits: Candidate[] = []
+
+  <span class="c">// ① 关键词 / 实体快速初筛(永远可用)</span>
+  hits.push(...lexical.hits(seg.entities, seg.text))            <span class="c">// M-05</span>
+
+  <span class="c">// ② 向量 + 时间过滤(sidecar, 可降级)</span>
+  <span class="k">const</span> emb = <span class="k">await</span> sidecar.embed(seg.text, cur)                <span class="c">// M-07</span>
+  <span class="k">if</span> (emb.ok) hits.push(...<span class="k">await</span> sidecar.vsearch(emb.vec, cur.scope))
+  <span class="k">else</span> hits.push(...fallbackKeyword(seg.text))                  <span class="c">// G-05 词法回退</span>
+
+  <span class="c">// ③ 必要时图扩散(HippoRAG PPR / A-MEM 链接)</span>
+  <span class="k">if</span> (graphEnabled &amp;&amp; hits.length &lt; k)
+    hits.push(...<span class="k">await</span> sidecar.graphExpand(seg.entities))
+
+  <span class="c">// embedding 元数据(model / dimension / version)随索引持久化, 版本不一致不得混用</span>
+  <span class="c">// 图链接追加证据且可撤销, 避免一次错误扩散污染整个图</span>
+  <span class="k">return</span> hits
+}</code></pre>
+  </article>
+  <article class="card" id="mod-rank">
+    <div class="card-head">
+      <div class="card-topline">
+        <span class="card-code">C-05 · 主动控制面</span>
+        <span class="badge planned">PLANNED · 设计</span>
+        <span class="ringpos">主环 #8</span>
+      </div>
+      <h3 class="card-title">Rank / Dedupe / Budget</h3>
+      <p class="card-role">把"相关"变成有限、可解释、不会重复的候选集合。</p>
+    </div>
+    <div class="edge-chips"><span class="edge-chip planned">← C-04 Association Engine · candidates</span><span class="edge-chip planned">→ C-06 Injection Broker · policy</span></div>
+    <pre class="meta"><code><span class="c">/* C-05 Rank / Dedupe / Budget — 把"相关"变成有限、可解释、不重复的候选集 */</span>
+<span class="k">function</span> run(cands: Candidate[], cur: ContextCursor): RankedResult {
+  <span class="k">const</span> scored = cands
+    .filter(c =&gt; c.scope === cur.scope &amp;&amp; c.expiresAt &gt; now())    <span class="c">// scope + TTL</span>
+    .map(c =&gt; ({ c, s: wSim * c.similarity + wSal * c.salience
+                   + wNov * novelty(c, cur) + wRec * recency(c, cur) }))
+    .sort((a, b) =&gt; b.s - a.s)
+
+  <span class="k">const</span> kept = [], dropped = []
+  <span class="k">const</span> seen = <span class="k">new</span> Set()
+  <span class="k">for</span> (<span class="k">const</span> x of scored) {
+    <span class="k">const</span> key = dedupeKey(x.c, cur)   <span class="c">// session/agent + context cursor</span>
+                                      <span class="c">// + exact/semantic digest + schema/index 版本</span>
+    <span class="k">if</span> (seen.has(key)) { dropped.push({ id: x.c.id, reason: <span class="s">'duplicate'</span> }); continue }
+    <span class="k">if</span> (bytes + x.c.payload.length &gt; budget.candidateBytes)
+      { dropped.push({ id: x.c.id, reason: <span class="s">'budget'</span> }); continue }
+    seen.add(key); kept.push(x)
+  }
+  <span class="k">return</span> { ranked: kept, dropped }    <span class="c">// 每个 drop 都有理由</span>
+
+<span class="c">// 预算分层: 摄取上限 → 候选延迟上限 → packet UTF-8 bytes → token/context window</span>
+<span class="c">// 超预算候选不得标记 delivered; TTL 只触发重检索, 不充当内容 identity</span>
+}</code></pre>
+  </article>
+  <article class="card" id="mod-broker">
+    <div class="card-head">
+      <div class="card-topline">
+        <span class="card-code">C-06 · 主动控制面</span>
+        <span class="badge planned">PLANNED · 设计</span>
+        <span class="ringpos">主环 #9</span>
+      </div>
+      <h3 class="card-title">Injection Broker</h3>
+      <p class="card-role">决定未来候选记忆是否在下一请求边界变成 MemoryPacket；不负责当前 native runtime-context snapshot。</p>
+    </div>
+    <div class="edge-chips"><span class="edge-chip planned">← C-05 Rank / Dedupe / Budget · policy</span><span class="edge-chip planned">← G-02 Injection Audit · audit</span><span class="edge-chip guard">← G-03 Safety Gate · gate</span><span class="edge-chip planned">← C-07 Provider Adapter · adapter</span><span class="edge-chip planned">→ N-03 Agent Inbox · future packet</span></div>
+    <pre class="meta"><code><span class="c">/* C-06 Injection Broker — 候选 → 下一请求边界的 MemoryPacket(或放弃) */</span>
+<span class="k">function</span> build(ranked, verdict: SafetyVerdict, cap): MemoryPacket | null {
+  <span class="k">if</span> (!cap.packetPatch || cap.packetPatch === <span class="s">'none'</span>) <span class="k">return</span> null  <span class="c">// runtime-context 不是未来 packet 通道</span>
+  <span class="k">if</span> (verdict.action !== <span class="s">'allow'</span>) <span class="k">return</span> null                        <span class="c">// G-03 拦截</span>
+  <span class="k">return</span> {
+    packetSchemaVersion: 1,
+    contextCursor: cur,                     <span class="c">// 与 retrievalVersion 一起校验新鲜度</span>
+    retrievalVersion: indexVersion(),
+    triggerReason: verdict.trigger,
+    strength: pickStrength(ranked, cap),    <span class="c">// soft hint / direct context / checklist</span>
+    items: ranked,
+    exactDigest: exactDigest(ranked),  semanticDigest: semanticDigest(ranked),
+    sourceSeqs: ranked.map(c =&gt; c.sourceSeq),
+    budgetBytes: totalBytes(ranked),  expiry: now() + ttl,
+  }
+}
+
+<span class="c">// 约束: packet 不是高优先级新指令; 请求发出后不回写隐藏状态;</span>
+<span class="c">// 任何注入都能回答 why / what / source / cost / expiry</span></code></pre>
+  </article>
+  <article class="card" id="mod-capability">
+    <div class="card-head">
+      <div class="card-topline">
+        <span class="card-code">C-07 · 主动控制面</span>
+        <span class="badge planned">PLANNED · 设计</span>
+        <span class="ringpos dim">支线模块</span>
+      </div>
+      <h3 class="card-title">Provider Adapter</h3>
+      <p class="card-role">按 Provider、model、version 分开协商 reasoning、native runtime context 与未来 packet surface。</p>
+    </div>
+    <div class="edge-chips"><span class="edge-chip planned">→ C-06 Injection Broker · adapter</span></div>
+    <pre class="meta"><code><span class="c">/* C-07 Provider Adapter — 分开声明 native runtime context 与 future packet surface */</span>
+<span class="k">function</span> snapshot(route): CapabilitySnapshot {
+  <span class="k">const</span> m = manifest(route.provider, route.model, route.modelVersion)
+  <span class="k">return</span> {
+    reasoningVisibility: m.reasoning ?? <span class="s">'unknown'</span>,   <span class="c">// none / summary / full / unknown</span>
+    runtimeContext: m.includeRuntimeContext !== false ? <span class="s">'native'</span> : <span class="s">'none'</span>,
+    packetPatch: m.supportsPreStep ? <span class="s">'pre-step'</span>
+                : m.supportsUserMessage ? <span class="s">'user-message'</span>
+                : <span class="s">'none'</span>,
+    abortAndResume: !!m.abortAndResume,
+  }
+}
+
+<span class="c">// runtimeContext = native systemPrompt.context() + RuntimeContextProjection</span>
+<span class="c">// packetPatch = future Agent Inbox / next-step MemoryPacket path</span>
+<span class="c">// includeRuntimeContext:false suppresses the first channel; it does not create the second</span>
+<span class="c">// Minimal complete persona: complete:true + includeRuntimeContext:false</span>
+<span class="c">//   → native runtime-context 被抑制, 不能假设已挂载 dsh-agent-instructions</span>
+<span class="c">//   → 未来需自建 packetPatch user/message 路径, 否则安全降级 shadow retrieval</span>
+<span class="c">// 约束: 不能按"模型名称"硬编码能力; preset 不支持 patch 时不强行改请求</span></code></pre>
+  </article></div>
+  </section>
+  <section class="lane-sec" id="lane-memory">
+    <h2 class="lane-head memory">COGNITIVE MEMORY PLANE</h2>
+    <p class="lane-sub">③ 认知记忆面 — working / episodic / semantic / procedural / lexical / projection / sidecar</p>
+    <div class="card-grid">  <article class="card" id="mod-working">
+    <div class="card-head">
+      <div class="card-topline">
+        <span class="card-code">M-01 · 认知记忆面</span>
+        <span class="badge planned">PLANNED · 设计</span>
+        <span class="ringpos">主环 #5</span>
+      </div>
+      <h3 class="card-title">Working Memory</h3>
+      <p class="card-role">当前 session 的短期注意力缓冲:目标、窗口、未决事项、最近结果和 pending packet。</p>
+    </div>
+    <div class="edge-chips"><span class="edge-chip planned">← C-02 SessionRuntime · window</span><span class="edge-chip planned">→ C-03 Retrieval Gate · signal</span></div>
+    <pre class="meta"><code><span class="c">/* M-01 Working Memory — session 内短期注意力缓冲(ring + TTL, 不跨 session) */</span>
+<span class="k">class</span> WorkingMemory {
+  ring: Segment[] = []
+  cap = 32;  ttl = 15 * 60_000
+
+  push(seg) { this.ring.push(seg); this.evict() }   <span class="c">// 按最旧/TTL/重复淘汰, 可解释</span>
+  window()  { <span class="k">return</span> this.ring.filter(s =&gt; now() - s.ts &lt; this.ttl) }
+  signals() {                                        <span class="c">// → C-03 gate</span>
+    <span class="k">return</span> { unresolved: this.unresolved(), phase: this.phase(),
+             last: this.ring.at(-1) }
+  }
+}
+
+<span class="c">// 按语义片段而非粗暴最后 N token;</span>
+<span class="c">// 高相关候选可静默预取(pending), 不必立即注入;</span>
+<span class="c">// 容量无限增长会让"联想"退化成全量 RAG</span></code></pre>
+  </article>
+  <article class="card" id="mod-episodic">
+    <div class="card-head">
+      <div class="card-topline">
+        <span class="card-code">M-02 · 认知记忆面</span>
+        <span class="badge planned">PLANNED · 设计</span>
+        <span class="ringpos dim">支线模块</span>
+      </div>
+      <h3 class="card-title">Episodic Memory</h3>
+      <p class="card-role">带时间、动作、工具结果和失败证据的事件经验。</p>
+    </div>
+    <div class="edge-chips"><span class="edge-chip planned">→ C-04 Association Engine · recall</span></div>
+    <pre class="meta"><code><span class="c">/* M-02 Episodic Memory — 带时间/动作/结果/失败证据的事件经验 */</span>
+<span class="k">interface</span> Episode {
+  intent: string;  actions: string[];  entities: string[]
+  unresolved: string[];  outcome: <span class="s">'success'</span> | <span class="s">'failure'</span>
+  provenance: string          <span class="c">// sessionId + '#' + turn + '.' + step</span>
+}
+
+<span class="k">function</span> record(ev) {
+  <span class="k">const</span> ep = { intent: infer(ev), actions: ev.actions, entities: ev.entities,
+               unresolved: ev.unresolved, outcome: ev.ok ? <span class="s">'success'</span> : <span class="s">'failure'</span>,
+               provenance: sessionId + <span class="s">'#'</span> + turn + <span class="s">'.'</span> + step }
+  sidecar.append(<span class="s">'episodes.jsonl'</span>, ep)      <span class="c">// 轻量事件先落 sidecar</span>
+  scheduleIdle(() =&gt; consolidate(ep))       <span class="c">// 空闲期摘要 + 巩固 → 候选进 M-03</span>
+}
+
+<span class="c">// 失败经验默认是 candidate, 不直接是事实;</span>
+<span class="c">// 错误自我解释被持久化 = 污染长期层</span></code></pre>
+  </article>
+  <article class="card" id="mod-semantic">
+    <div class="card-head">
+      <div class="card-topline">
+        <span class="card-code">M-03 · 认知记忆面</span>
+        <span class="badge planned">PLANNED · 设计</span>
+        <span class="ringpos dim">支线模块</span>
+      </div>
+      <h3 class="card-title">Semantic / Profile</h3>
+      <p class="card-role">去重后的项目事实、环境约束、用户偏好和稳定决策。</p>
+    </div>
+    <div class="edge-chips"><span class="edge-chip planned">← M-06 Readable Projection · promote</span><span class="edge-chip planned">← G-01 Evidence Updater · update</span><span class="edge-chip planned">→ C-04 Association Engine · recall</span></div>
+    <pre class="meta"><code><span class="c">/* M-03 Semantic / Profile — 去重后的项目事实 / 环境约束 / 用户偏好 / 稳定决策 */</span>
+<span class="k">interface</span> Fact {
+  scope: Scope
+  subject: string;  predicate: string;  object?: string
+  provenance: string[];  confirmedAt: number
+  ttl?: number;  revoked?: boolean
+}
+
+<span class="k">function</span> upsert(cand: FactCandidate) {
+  <span class="k">if</span> (conflicts(cand)) <span class="k">return</span> conflicts.add(cand)          <span class="c">// 冲突集保留双方 provenance</span>
+  <span class="k">const</span> existing = find(cand.subject, cand.predicate)
+  <span class="k">if</span> (existing &amp;&amp; cand.source === <span class="s">'inference'</span>) <span class="k">return</span>      <span class="c">// 自动推断不覆盖硬规则</span>
+  store.put(merge(existing, cand))                          <span class="c">// → M-06 投影 + sidecar 索引</span>
+}
+
+<span class="c">// 用户明确声明 &gt; 模型推断; 项目事实 / 用户画像 / 术语分开;</span>
+<span class="c">// 冲突可见、可确认、可撤销(revoked)</span></code></pre>
+  </article>
+  <article class="card" id="mod-procedural">
+    <div class="card-head">
+      <div class="card-topline">
+        <span class="card-code">M-04 · 认知记忆面</span>
+        <span class="badge guard">GUARD · 安全</span>
+        <span class="ringpos dim">支线模块</span>
+      </div>
+      <h3 class="card-title">Procedural Memory</h3>
+      <p class="card-role">经过独立成功验证的步骤、技能、检查清单和回滚流程。</p>
+    </div>
+    <div class="edge-chips"><span class="edge-chip guard">← G-01 Evidence Updater · promote</span><span class="edge-chip guard">→ C-04 Association Engine · checklist</span></div>
+    <pre class="meta"><code><span class="c">/* M-04 Procedural Memory — 经验证的步骤/技能/检查清单(guard 级) */</span>
+<span class="k">type</span> Stage = <span class="s">'observed'</span> | <span class="s">'candidate'</span> | <span class="s">'validated'</span> | <span class="s">'active'</span> | <span class="s">'deprecated'</span>
+
+<span class="k">interface</span> Procedure {
+  preconditions: string[];  steps: string[];  checks: string[]
+  successCriteria: string[];  rollback: string[]
+  riskLevel: <span class="s">'low'</span> | <span class="s">'medium'</span> | <span class="s">'high'</span>;  requiresApproval: boolean
+  stage: Stage;  evidence: string[]
+}
+
+<span class="k">function</span> promote(p: Procedure) {
+  <span class="k">if</span> (p.riskLevel === <span class="s">'high'</span> &amp;&amp; p.requiresApproval &amp;&amp; !userApproved)
+    <span class="k">return</span> { action: <span class="s">'ask'</span> }                    <span class="c">// 永远先问, G-03</span>
+  <span class="k">if</span> (!crossSessionEvidence(p)) <span class="k">return</span>          <span class="c">// 跨独立 session 证据不足则停</span>
+  p.stage = <span class="s">'validated'</span>;  store.put(p)
+}
+
+<span class="c">// 注入形态: 只作建议 / checklist packet;</span>
+<span class="c">// 高风险工具(SSH/部署/删除)永不因相似度自动执行;</span>
+<span class="c">// 一次成功或三次重复都不足以证明技能可靠</span></code></pre>
+  </article>
+  <article class="card" id="mod-lexical">
+    <div class="card-head">
+      <div class="card-topline">
+        <span class="card-code">M-05 · 认知记忆面</span>
+        <span class="badge research">RESEARCH · 研究</span>
+        <span class="ringpos dim">支线模块</span>
+      </div>
+      <h3 class="card-title">Lexical / Entity</h3>
+      <p class="card-role">术语、缩写、别名和实体对齐层,帮助关联检索但不等于用户画像。</p>
+    </div>
+    <div class="edge-chips"><span class="edge-chip research">→ C-04 Association Engine · entity</span></div>
+    <pre class="meta"><code><span class="c">/* M-05 Lexical / Entity — 术语/缩写/别名/实体对齐(检索增强层) */</span>
+<span class="k">function</span> hits(entities: string[], text: string): Candidate[] {
+  <span class="k">return</span> entities
+    .flatMap(e =&gt; aliasIndex[e] ?? [])       <span class="c">// 别名展开</span>
+    .map(n =&gt; ({ ...n, source: <span class="s">'lexical'</span>, score: LOW_PRIOR }))
+}
+
+<span class="c">// 词法别名是低风险检索增强, 不直接提升事实置信度;</span>
+<span class="c">// 实体关系可连接 semantic / episodic / procedure 节点;</span>
+<span class="c">// 冲突别名保留来源与 scope; 可撤销且不覆盖原文; 共现 ≠ 偏好/事实</span></code></pre>
+  </article>
+  <article class="card" id="mod-projection">
+    <div class="card-head">
+      <div class="card-topline">
+        <span class="card-code">M-06 · 认知记忆面</span>
+        <span class="badge native">NATIVE · 原生</span>
+        <span class="ringpos dim">支线模块</span>
+      </div>
+      <h3 class="card-title">Readable Projection</h3>
+      <p class="card-role">Markdown 是用户可读、可编辑、可备份的持久投影;sidecar 承担运行时索引。</p>
+    </div>
+    <div class="edge-chips"><span class="edge-chip planned">→ M-03 Semantic / Profile · promote</span></div>
+    <pre class="meta"><code><span class="c">/* M-06 Readable Projection — Markdown 是事实可见性边界, sidecar 是运行时索引 */</span>
+<span class="k">function</span> project(fact: Fact) {
+  writeMarkdown(target(fact.scope), render(fact))   <span class="c">// MEMORY.md / 日志 / 反思, 保留现有结构</span>
+  sidecar.index(fact)                                <span class="c">// JSONL / SQLite / vector 元数据</span>
+}
+
+<span class="c">// sidecar 损坏可从 Markdown 重建; 新增元数据不覆盖 Markdown;</span>
+<span class="c">// 写入与索引更新必须原子或可恢复;</span>
+<span class="c">// 验收: 关闭新层时现有 Markdown 行为不变</span></code></pre>
+  </article>
+  <article class="card" id="mod-python">
+    <div class="card-head">
+      <div class="card-topline">
+        <span class="card-code">M-07 · 认知记忆面</span>
+        <span class="badge planned">PLANNED · 设计</span>
+        <span class="ringpos dim">支线模块</span>
+      </div>
+      <h3 class="card-title">Python Memory Engine</h3>
+      <p class="card-role">可选 sidecar:embedding、向量/图检索、reranker、衰减和离线评测。</p>
+    </div>
+    <div class="edge-chips"><span class="edge-chip planned">→ C-04 Association Engine · sidecar</span></div>
+    <pre class="meta"><code><span class="c">/* M-07 Python Memory Engine — 可选 sidecar(JSONL 协议, 失败回退 JS) */</span>
+<span class="k">interface</span> SidecarRequest {
+  requestId: string;  contextVersion: number
+  op: <span class="s">'embed'</span> | <span class="s">'search'</span> | <span class="s">'graph-expand'</span> | <span class="s">'consolidate'</span>
+  payload: JsonValue
+}
+
+<span class="c">// JS Host: 无 shell 的 spawn/execFile 拉起长驻 worker; lazy start</span>
+<span class="c">// stdout 只输出 JSONL; stderr 输出日志</span>
+<span class="k">async</span> <span class="k">function</span> call(req: SidecarRequest) {
+  <span class="k">const</span> res = <span class="k">await</span> timeout(3000, jsonl(request(req)),
+                            () =&gt; { sidecar.restart(); <span class="k">return</span> FALLBACK })
+  <span class="k">if</span> (res.contextVersion !== cur.contextVersion) <span class="k">return</span> DROP   <span class="c">// 版本不匹配必丢弃</span>
+  <span class="k">return</span> res.candidates
+}
+
+<span class="c">// Python 崩溃/超时/未安装 → 回退 JS 关键词检索;</span>
+<span class="c">// sidecar 不接触 ctx / Agent 对象 / 请求; 不修改请求</span></code></pre>
+  </article></div>
+  </section>
+  <section class="lane-sec" id="lane-governance">
+    <h2 class="lane-head governance">EVIDENCE · SAFETY · OPERATIONS</h2>
+    <p class="lane-sub">④ 证据 · 安全 · 运营 — 升格 / 审计 / 安全门 / 度量 / 降级 / 理论</p>
+    <div class="card-grid">  <article class="card" id="mod-evidence">
+    <div class="card-head">
+      <div class="card-topline">
+        <span class="card-code">G-01 · 治理与运营</span>
+        <span class="badge planned">PLANNED · 设计</span>
+        <span class="ringpos dim">支线模块</span>
+      </div>
+      <h3 class="card-title">Evidence Updater</h3>
+      <p class="card-role">根据成功、失败、纠正、复用和冲突更新记忆证据与状态。</p>
+    </div>
+    <div class="edge-chips"><span class="edge-chip planned">→ M-03 Semantic / Profile · update</span><span class="edge-chip guard">→ M-04 Procedural Memory · promote</span></div>
+    <pre class="meta"><code><span class="c">/* G-01 Evidence Updater — 结果证据驱动的置信度与升格决策 */</span>
+<span class="k">function</span> record(ev) {
+  <span class="k">if</span> (ev.kind === <span class="s">'tool'</span>) {
+    ev.ok ? reinforce(ev.provenance)   <span class="c">// 成功复用 → confidence ↑</span>
+          : weaken(ev.provenance)      <span class="c">// 失败 → ↓</span>
+  }
+  <span class="k">if</span> (ev.kind === <span class="s">'user-correction'</span>) conflict.add(ev.fact)     <span class="c">// 纠正 → 冲突集</span>
+  <span class="k">if</span> (ev.kind === <span class="s">'packet-delivered'</span>) advanceDeliveredCursor(ev.digest)
+      <span class="c">// 只有实际进入 decision.messages 的 packet 才推进 delivered cursor</span>
+}
+
+<span class="c">// 空闲期 consolidation, 不阻塞主模型请求;</span>
+<span class="c">// 没有结果证据的自动升格 = 放大错误; 每次晋升都有 evidence list + 可逆状态</span></code></pre>
+  </article>
+  <article class="card" id="mod-audit">
+    <div class="card-head">
+      <div class="card-topline">
+        <span class="card-code">G-02 · 治理与运营</span>
+        <span class="badge planned">PLANNED · 设计</span>
+        <span class="ringpos dim">支线模块</span>
+      </div>
+      <h3 class="card-title">Injection Audit</h3>
+      <p class="card-role">记录为什么注入、注入了什么、从哪里来、花费多少以及结果如何。</p>
+    </div>
+    <div class="edge-chips"><span class="edge-chip planned">← G-04 Evaluation / Metrics · measure</span><span class="edge-chip planned">→ C-06 Injection Broker · audit</span></div>
+    <pre class="meta"><code><span class="c">/* G-02 Injection Audit — why / what / source / cost / result 全链路可解释 */</span>
+<span class="k">function</span> injection(packet: MemoryPacket, verdict: SafetyVerdict) {
+  audit.log({
+    packetId, sessionId, cursor: packet.contextCursor,
+    trigger: verdict.trigger, scores: packet.items.map(i =&gt; i.score),
+    sourceSeqs: packet.sourceSeqs, bytes: packet.budgetBytes,
+    expiry: packet.expiry, action: verdict.action,
+  })   <span class="c">// 只存最小必要摘要: 审计本身也可能暴露敏感内容</span>
+}
+
+<span class="c">// 检索中间态不写主 Session; 注入决策与结果形成可解释审计;</span>
+<span class="c">// UI 提供查看 / 撤销 / 禁用 / 重放入口;</span>
+<span class="c">// 任何注入可从审计反查到来源与版本</span></code></pre>
+  </article>
+  <article class="card" id="mod-safety">
+    <div class="card-head">
+      <div class="card-topline">
+        <span class="card-code">G-03 · 治理与运营</span>
+        <span class="badge guard">GUARD · 安全</span>
+        <span class="ringpos dim">支线模块</span>
+      </div>
+      <h3 class="card-title">Safety Gate</h3>
+      <p class="card-role">记忆是参考资料,不是新指令;冲突、范围、风险和副作用必须在 Broker 前拦截。</p>
+    </div>
+    <div class="edge-chips"><span class="edge-chip guard">→ C-06 Injection Broker · gate</span></div>
+    <pre class="meta"><code><span class="c">/* G-03 Safety Gate — 在 Broker 之前拦截(记忆是参考资料, 不是新指令) */</span>
+<span class="k">function</span> check(ranked: Candidate[], scope: Scope): SafetyVerdict {
+  <span class="k">for</span> (<span class="k">const</span> c of ranked) {
+    <span class="k">if</span> (c.scope !== scope &amp;&amp; c.scope !== <span class="s">'Workspace'</span>) <span class="k">return</span> suppress(<span class="s">'scope'</span>)
+    <span class="k">if</span> (c.kind === <span class="s">'procedure'</span> &amp;&amp; c.riskLevel === <span class="s">'high'</span>) <span class="k">return</span> ask()   <span class="c">// 副作用默认确认</span>
+    <span class="k">if</span> (looksLikeInstruction(c.payload)) <span class="k">return</span> suppress(<span class="s">'injection'</span>)    <span class="c">// 提示注入 / 过期指令</span>
+    <span class="k">if</span> (c.revoked) <span class="k">return</span> suppress(<span class="s">'revoked'</span>)
+  }
+  <span class="k">return</span> { action: <span class="s">'allow'</span>, trigger: ranked[0]?.triggerReason }
+}
+
+<span class="c">// scope: Turn / Session / Workspace / User / External 正交管理;</span>
+<span class="c">// 公开 reasoning 不能单独授权动作或证明事实;</span>
+<span class="c">// 外部记忆可能含提示注入 / 过期指令 / 恶意文本</span></code></pre>
+  </article>
+  <article class="card" id="mod-metrics">
+    <div class="card-head">
+      <div class="card-topline">
+        <span class="card-code">G-04 · 治理与运营</span>
+        <span class="badge planned">PLANNED · 设计</span>
+        <span class="ringpos dim">支线模块</span>
+      </div>
+      <h3 class="card-title">Evaluation / Metrics</h3>
+      <p class="card-role">用离线回放和基准评估主动召回是否真的提高任务结果。</p>
+    </div>
+    <div class="edge-chips"><span class="edge-chip planned">→ G-02 Injection Audit · measure</span></div>
+    <pre class="meta"><code><span class="c">/* G-04 Evaluation / Metrics — 离线回放 + 基准评估主动召回的真实收益 */</span>
+<span class="k">function</span> observe(packet: MemoryPacket | null, verdict: SafetyVerdict) {
+  metrics.inc(<span class="s">'trigger'</span>, { hit: verdict.action === <span class="s">'allow'</span>, reason: verdict.trigger })
+  metrics.inc(<span class="s">'cost'</span>,    { bytes: packet?.budgetBytes ?? 0 })
+}
+
+<span class="c">// 基准: LongMemEval(跨 session/时间/知识更新) + LoCoMo(长对话单跳/多跳)</span>
+<span class="c">// 指标: trigger precision/recall · helpful gain · harmful injection</span>
+<span class="c">//       duplicate · contamination · latency · tokens · leakage</span>
+<span class="c">// 路线: 先 Shadow Retrieval(只记录), 再 A/B Soft Injection</span>
+<span class="c">// 只测最终答案会忽略触发时机和误注入伤害; cross-session leakage 必须为零</span></code></pre>
+  </article>
+  <article class="card" id="mod-fallback">
+    <div class="card-head">
+      <div class="card-topline">
+        <span class="card-code">G-05 · 治理与运营</span>
+        <span class="badge guard">GUARD · 安全</span>
+        <span class="ringpos dim">支线模块</span>
+      </div>
+      <h3 class="card-title">Fallback / Degrade</h3>
+      <p class="card-role">高级算法不可用时,系统仍保持 DSH 基础对话和当前记忆功能。</p>
+    </div>
+    <div class="edge-chips"><span class="edge-chip guard">→ C-04 Association Engine · degrade</span></div>
+    <pre class="meta"><code><span class="c">/* G-05 Fallback / Degrade — 高级层关闭时, 基础对话与现有记忆功能不变 */</span>
+<span class="k">function</span> keywordRecall(seg: Segment, cur: ContextCursor): Candidate[] {
+  <span class="k">return</span> lexicalIndex.search([...seg.entities, ...tokens(seg.text)])
+}
+
+<span class="c">// Python / embedding / reranker / 图检索: 全部有超时 + 失败回退</span>
+<span class="c">// provider unavailable ≠ 删除文件(原生 pattern 回滚临时状态)</span>
+<span class="c">// 过期 packet 丢弃且不标记 delivered; 下一事件可重新检索</span>
+<span class="c">// 回退路径不悄悄改变现有 Markdown 注入语义</span></code></pre>
+  </article>
+  <article class="card" id="mod-research">
+    <div class="card-head">
+      <div class="card-topline">
+        <span class="card-code">R-01 · 理论研究</span>
+        <span class="badge research">RESEARCH · 研究</span>
+        <span class="ringpos dim">支线模块</span>
+      </div>
+      <h3 class="card-title">Research Signals</h3>
+      <p class="card-role">论文提供触发、记忆类型、反思、技能和评测的参考,不是现成 Host 实现。</p>
+    </div>
+    <div class="edge-chips"><span class="edge-chip research">→ C-03 Retrieval Gate · trigger</span></div>
+    <pre class="meta"><code><span class="c">/* R-01 Research Signals — 论文启发 → 设计约束(不是现成 Host 实现) */</span>
+<span class="k">const</span> constraints = {
+  types:    CoALA,                                  <span class="c">// 记忆类型词汇</span>
+  stream:   GenerativeAgents,                       <span class="c">// stream + relevance/recency/importance</span>
+  paging:   MemGPT,                                 <span class="c">// 受限窗口 + 外部记忆分页</span>
+  graph:    [A_MEM, HippoRAG],                      <span class="c">// 链接记忆 / KG + PPR 扩散</span>
+  inGen:    [FLARE, IRCoT, DRAGIN, SelfRAG],        <span class="c">// 生成过程检索 → 只作触发启发</span>
+  skills:   [Reflexion, Voyager],                   <span class="c">// 经验反馈 / 环境验证技能库</span>
+  eval:     [LongMemEval, LoCoMo],                  <span class="c">// 评测</span>
+}
+
+<span class="c">// 约束: 不能把生成侧方法描述成已实现的 Host 主动注入;</span>
+<span class="c">// 每条设计类比在文档中标注"启发"而非"已实现"</span></code></pre>
+  </article>
+  <article class="card" id="mod-lexical2">
+    <div class="card-head">
+      <div class="card-topline">
+        <span class="card-code">R-02 · 理论研究</span>
+        <span class="badge research">RESEARCH · 研究</span>
+        <span class="ringpos dim">支线模块</span>
+      </div>
+      <h3 class="card-title">Cognitive Model</h3>
+      <p class="card-role">人类联想机制的工程抽象:激活、衰减、扩散与抑制。</p>
+    </div>
+    <div class="edge-chips"><span class="edge-chip research">→ C-04 Association Engine · model</span></div>
+    <pre class="meta"><code><span class="c">/* R-02 Cognitive Model — 激活 / 衰减 / 扩散 / 抑制的工程化近似 */</span>
+<span class="k">function</span> activation(c: Candidate, seg: Segment, cur: ContextCursor): number {
+  <span class="k">return</span> base(c.confidence)
+       + wRel * relevance(c, seg)     <span class="c">// 关联度</span>
+       + wRec * recency(c, cur)       <span class="c">// 近因</span>
+       + wFrq * frequency(c, cur)     <span class="c">// 频因</span>
+       + wSal * salience(c)           <span class="c">// 显著性</span>
+       - wSup * suppression(c, cur)   <span class="c">// 重复 / 已忽略抑制</span>
+}
+
+<span class="c">// Activation 只用于排序, ≠ 真实性;</span>
+<span class="c">// 认知状态(介入强度)与联想激活(候选)分离;</span>
+<span class="c">// 每个权重可通过离线回放校准;</span>
+<span class="c">// 不宣称软件分数等同真实脑机制或模型隐藏 attention</span></code></pre>
+  </article></div>
+  </section>
+
+  <div class="source-note"><strong>边界说明:</strong>本页 Meta code 是与 <code>proactive-associative-memory-system-map.html</code> 一一对应的实现草图,不编译、不运行;标注为「设计/研究」的模块不代表当前插件已实现。原生模块(N-*)描述的是插件「如何接入」DSH 既有机制,而非重新实现它们。</div>
+  <footer class="footer"><span>DSH 主动联想记忆 · Meta Code 装配预览</span><span>工作区:D:\dsh-auto-memory · 设计快照:2026-08-19</span></footer>
+</div>
+</body>
+</html>
