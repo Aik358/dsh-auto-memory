@@ -1,10 +1,10 @@
-# dsh-auto-memory — DSH 自动记忆插件
+# dsh-auto-memory — DSH 自动记忆与人性化交互插件
 
 <p align="center">
   <img width="820" alt="dsh-auto-memory 宣传图" src="docs/banner.jpg">
 </p>
 
-DSH Web GUI 的记忆插件：三层记忆（用户级 / 项目笔记 / 每日日志）自动注入与检索、每日反思、AI 时段问候与三级抽屉、每轮自动沉淀、智能检索、日历视图与设置页，支持继承其他 AI 工具的历史记忆。
+DSH Web GUI 的缓存友好三层记忆引擎：精简自动注入、每轮 AI 自动沉淀、按需读取与跨工具记忆继承——并点缀以人性化细节：主动日历提醒、暖心 AI 问候、自己会写的每日日志。
 
 > **快速安装**：`cd ~/.dsh/profiles/web` → `pnpm add @a9i5k4/dsh-auto-memory` → 在该目录 `package.json` 的 `dsh.profile.bundles` 里追加 `"@a9i5k4/dsh-auto-memory"` → 重启 **dsh web**（侧边栏出现「记忆」入口）。完整步骤见 [安装](#安装npm-一键)；没有 pnpm 可用 `npm install @a9i5k4/dsh-auto-memory`。
 
@@ -61,6 +61,25 @@ pnpm up @a9i5k4/dsh-auto-memory   # 或: npm install @a9i5k4/dsh-auto-memory@lat
 
 ---
 
+## 主动懂你的伙伴
+
+自动记忆想让你感觉：它不像一个数据库，而像一个了解你的助手——
+
+- **主动提醒** — AI 在对话里发现 deadline、约定或承诺时，自动写进日历，并在之后的会话中赶在时间到达前提醒你（`calendar_add` / `calendar_done` / `calendar_remove`）。
+- **暖心问候** — 每个时段（早上 / 下午 / 晚上）都有 AI 写的问候，还会提起你今天最重要的工作；离开超过一小时回来，它会说「欢迎回来」并帮你补上这段时间发生了什么。
+- **它自己写日志** — 每轮对话结束，一个小型子代理悄悄判断什么值得记，按主题把条目追加进今日日志；长期决策升格到项目笔记、跨项目规则升格到用户级记忆。你永远不用记得去记录。
+- **每日反思** — 结构化记录成果 / 教训 / 下一步，想回顾时可以看看一天到底过得怎么样。
+- **有人情味的日历** — 紧急程度用语义色区分，07:00-22:00 当天时间轴，支持地点与提醒字段；AI 从上下文帮你维护，而不是让你去填表单。
+- **记忆继承** — WorkBuddy / CodeBuddy / Claude Code / Codex 里积累的记忆可被发现并导入，插件接着你其他 AI 工具留下的进度继续。
+
+### 底层工程 — 技术默默服务，不打扰你
+
+- **前缀缓存友好** — 静态规则在系统提示词里保持字节级稳定，动态记忆走运行时快照，DeepSeek 前缀缓存持续命中（不会反复重编码你的全部历史）。
+- **注入精简、token 成本低** — 只注入最近 1 天日志 + 反思精华，其余通过 `memory_read` / `memory_recall` 按需读取。
+- **AI 调用限频** — 自动沉淀每天最多 8 次、间隔可配置（非工作时间自动翻倍），记忆有用又不烧预算。
+- **凭据不进 prompt** — 敏感段落（令牌 / 密钥 / 凭据）从注入中过滤，文件里安全保留。
+- **跨工作区与跨工具** — 集中式存储任何会话可读；WorkBuddy / CodeBuddy / Claude Code / Codex 的记忆可发现并导入。
+
 ## 功能
 
 ### 三层记忆
@@ -74,7 +93,8 @@ pnpm up @a9i5k4/dsh-auto-memory   # 或: npm install @a9i5k4/dsh-auto-memory@lat
 
 > **集中式存储（WorkBuddy 式）**：所有工作区的记忆统一存放在一个根目录 `~/.dsh/memory/workspaces/` 下，每工作区一个子目录——任何模型、任何会话都能通过注入 + 跨工作区 `memory_recall` 读取。旧版分散在各工作区 `.dsh-memory/` 的记忆会在升级后首次运行时自动迁移（旧副本保留不删）。
 
-- **自动注入（放在系统提示词末尾）**：每次组装系统提示词时注入 `<memory_system>` 块（用户规则 + 项目笔记 + 最近反思 + 最近 N 天日志尾部 + 未完成日历事项 + 写入纪律），并置于提示词**最末尾**——模型在回复前最后读到记忆纪律，遵循度更高
+- **自动注入（放在系统提示词末尾）**：每次组装系统提示词时注入 `<memory_system>` 块（用户规则 + 项目笔记 + 反思精华 + 最近 1 天日志尾部 + 外部记忆路径 + 未完成日历事项 + 写入纪律），并置于提示词**最末尾**——模型在回复前最后读到记忆纪律，遵循度更高
+- **注入精简、细节按需（v0.1.24）**：注入保持轻量——只含最近 1 天日志、反思「成果回顾」精华、外部记忆绝对路径（不再整段注入）；需要完整日志/反思/记忆文件时用 `memory_read` 工具按需读取；**敏感段落（凭据/令牌/密钥）从注入中过滤**（文件保留，不进 prompt）
 - **记忆操作可见**：更新/检索记忆时，AI 会在对话正文中明文说明（如"已把 X 记入今日日志""我查了记忆,发现…"），不藏在工具调用里
 
 ### 每轮自动沉淀 — 记忆自己写自己（v0.1.9）
@@ -86,7 +106,7 @@ pnpm up @a9i5k4/dsh-auto-memory   # 或: npm install @a9i5k4/dsh-auto-memory@lat
 - **寒暄轮自动跳过**（内容门槛 `autoConsolidateMinChars`）；按 turn 去重，每轮只写一次；子代理轮次不参与
 - **GUI 有 Agent 参与痕迹**：概览页显示"今日已自动沉淀 N 条要点（最近 HH:MM）"；面板打开即刷新、打开期间每 30 秒自动重拉、⟳ 按钮手动刷新
 - **`memory_consolidate` 工具**：AI 读最近日志发散提炼，把有长期价值的决策/架构/用户偏好固化进 MEMORY.md（"做梦式"固化）
-- 可在 `~/.dsh/dsh-auto-memory.json` 配置：`autoConsolidate`（默认开）、`autoConsolidateMinChars`（默认 60）
+- 可在 `~/.dsh/dsh-auto-memory.json` 配置：`autoConsolidate`（默认开）、`autoConsolidateMinChars`（默认 240）、`autoConsolidateCooldownMinutes`（默认 30，22:00-08:00 自动翻倍）、`autoConsolidateDailyMax`（默认 8）——全部可在设置页「自动化」分组调整
 
 ### AI 时段问候与三级抽屉（概览页，v0.1.9）
 
@@ -135,42 +155,37 @@ pnpm up @a9i5k4/dsh-auto-memory   # 或: npm install @a9i5k4/dsh-auto-memory@lat
 
 ## 界面截图
 
-以下都是插件在 DSH Web GUI 中的真实运行截图。
+以下都是插件在 DSH Web GUI 中的真实运行截图（当前为中文界面；英文界面截图稍后补充）。
 
-### 主界面 — 「自动记忆」浮窗（接续页签）
+### 记忆面板概览 — 暂离问候、AI 总结等
 
-<img width="480" alt="自动记忆浮窗" src="docs/screenshots/main-connect-zh.png">
+<img width="480" alt="记忆面板概览" src="docs/screenshots/overview-zh.png">
 
-### 接续 — 继承其他 AI 工具积累的记忆
+### 接续 — 从其他 AI Agent 提取全局记忆与历史会话
 
 <img width="480" alt="接续页签" src="docs/screenshots/connect-zh.png">
 
-### 概览 — AI 问候语、今日抽屉与跨工作区总结
-
-<img width="480" alt="概览页签" src="docs/screenshots/overview-zh.png">
-
-### 日历 — AI 维护的四象限日程
+### 日历 — AI 根据上下文自动添加事项、切换状态、标记完成
 
 <img width="480" alt="日历页签" src="docs/screenshots/calendar-zh.png">
 
-### 检索 — 关键词检索与智能检索
+### 工作区导图 — 自动生成的以工作区为中心的跨工作区记忆导图
 
-<img width="480" alt="检索页签" src="docs/screenshots/search-zh.png">
+<img width="480" alt="工作区记忆导图" src="docs/screenshots/workspace-map-zh.png">
 
-### 反思（英文界面示例）
-
-<img width="480" alt="反思页签" src="docs/screenshots/reflections-en.png">
-
-### 设置 — 记忆存储、日界、每日预算、更新检查
+### 设置 — 高度自定义，可操作绝大部分技术细节
 
 <img width="480" alt="自动记忆设置" src="docs/screenshots/settings-zh.png">
-
-<img width="480" alt="自动记忆设置(调试中心)" src="docs/screenshots/settings-debug-zh.png">
+<img width="480" alt="自动记忆设置(续)" src="docs/screenshots/settings-2-zh.png">
 
 ## 截图之外
 
 - **每轮自动沉淀**：每轮对话结束由小代理自动评估，按主题分组写进今日日志（`## 主题（HH:MM）` + 要点列表）——常规工作不需要手动 memory_log。有长期价值的内容自动升格项目笔记 / 用户级记忆；寒暄轮跳过；AI 失败入队，每 5 分钟重试（15 秒心跳文件证明轮询存活）。
 - **智能检索**：自然语言提问，AI 扩成关键词扫描全部记忆层，再综合成带出处的自然语言回答。
+- **日历与当天时间轴（v0.1.24）**：点击日期打开 07:00-22:00 时间轴，事件按时间槽落位；支持地点/提醒/补充说明；AI 主动提取 deadline 用 `calendar_add` 写入、`calendar_done`/`calendar_remove` 维护。
+- **工作区思维导图（v0.1.24）**：AI 生成工作区/主题/跨工作区关联图，支持拖动画布、滑块缩放、点击卡片看摘要。
+- **记忆面板 UI（v0.1.24）**：液态玻璃面板 + 全站丝滑动效——模块箭头滚动条、抽屉展开/收起过渡、设置页浮动保存栏（未保存高亮）。
+- **外部记忆管理（v0.1.24）**：按来源查看/接入/移除——已接入显示 ✓、按目标（笔记/用户级）独立删除；内容按需读取，不再整段注入。
 - **日历提醒**：未完成事项注入之后每次会话的系统提示词——AI 不用你提醒就会主动提及。
 - **一键更新**：设置页对比本地版本与 npm registry 最新版；registry 安装的用户可直接「一键更新」（后台自动跑 pnpm/npm），重启后生效。
 
@@ -186,18 +201,34 @@ pnpm up @a9i5k4/dsh-auto-memory   # 或: npm install @a9i5k4/dsh-auto-memory@lat
   "projectMemoryDir": ".dsh-memory",
   "injectEnabled": true,
   "injectBudgetChars": 2400,
-  "recentDaysInjected": 3,
+  "recentDaysInjected": 1,
   "reflectEnabled": true,
   "reflectStyle": "auto",
   "locale": "zh",
   "autoConsolidate": true,
-  "autoConsolidateMinChars": 60,
+  "autoConsolidateMinChars": 240,
+  "autoConsolidateCooldownMinutes": 30,
+  "autoConsolidateDailyMax": 8,
+  "externalInjectionChars": 1400,
   "memoryRoot": "~/.dsh/memory/workspaces",
   "dayBoundaryMinutes": 450
 }
 ```
 
 可在 GUI（设置 → 自动记忆）中调整，包括界面语言（zh / en）、界面字号与日界。
+
+### v0.1.27 基础加固（记忆卫生闸门 — 防外部脏内容污染）
+
+- **三个写入工具接入写闸门**：`memory_log_dev` / `memory_note_dev` / `memory_user_dev` 写入前先过 `sanitizeForWrite`——疑似乱码（GBK 错误编码往返产物）、复读退化（单词/单字循环，标点分隔也识别）、连续重复行（≥3）一律拒绝并回执原因；追加（append）单条上限 8000 字、整篇重写（replace）上限 20 万字；追加时与文件尾部近 60 行做复读去重（日志行的 `- HH:MM` 前缀不影响判定）。
+- **卫生函数族修复**：乱码特征表移除 `进行中` 假阳性（补真实乱码形态 `杩涜涓`）、乱码计数改为全局匹配（此前永远只计 1 处，长文本脏内容可绕过阈值）、复读检测支持标点分隔、重复行检测由空行打断（避免误伤隔段相同的短行）。
+- **外部记忆纯链接导入**：`memory_external_dev` 的 import 只落源文件路径指针，不再整段写入内容——防止其他 AI 工具（WorkBuddy/CodeBuddy/Claude Code/Codex）记忆中的脏内容经导入混入本地记忆。
+- **注入端清洗与语体纪律**：注入前自动剔除乱码行/代码块/复读行；注入块新增「记忆定位—读法」说明与语体纪律——写记忆一律第三人称客观陈述，禁止第一人称思考腔与过程复述。
+
+### v0.1.28 脏 token 检查器（prion-scan 整合 — 根治「模型无故降级」这一类问题）
+
+- **写入闸门新增 raw JSON envelope 与 base64 残骸拒写**：在乱码/复读/重复行之外，闸门还拒绝命中外部 AI 工具画像 JSON 签名（`memoryBlock` / `"uid":` / `updatedAt` / `"role":"... "`）与 base64 残骸行——外部画像再也无法整段混入本地记忆。
+- **乱码特征表补全至 34 项（与 prion-scan.mjs 逐字一致）**：覆盖 GBK 错误编码往返的全部真实残骸形态，能精确抓到这一类「垃圾 token」。
+- **新增「扫描脏 token」（设置页 → 调试中心）**：一键 prion 式扫描用户级记忆 / 项目笔记 / 今日日志 / 反思——按文件、按行区间返回 mojibake / raw JSON envelope / 超长行 >500 / base64 / 重复内容行、重复 ## 标题报告；**只给位置不含正文**，发现残骸不用读它也能定位。
 
 ### v0.1.9 加固（预算 / 日界 / 目录选择器）
 

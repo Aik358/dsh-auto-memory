@@ -1,0 +1,16 @@
+{
+  "notices": [
+    {
+      "id": "2026-08-16-cache-upgrade",
+      "level": "urgent",
+      "title": "重要提醒:请升级到 0.1.16",
+      "message": "旧版本存在 DeepSeek 前缀缓存击穿问题,会白白消耗 token(命中率掉到个位数)。0.1.16 已重写缓存策略,不再浪费 token。请升级:npm install @a9i5k4/dsh-auto-memory@latest (pnpm 用户当天安装请用显式版本 @0.1.16)",
+      "titleEn": "IMPORTANT: upgrade to 0.1.16",
+      "messageEn": "Older versions break the DeepSeek prefix cache and waste tokens (hit rate drops to single digits). 0.1.16 rewrote the cache strategy — no more wasted tokens. Upgrade: npm install @a9i5k4/dsh-auto-memory@latest (pnpm users on release day: use @0.1.16 explicitly)",
+      "maxVersion": "0.1.15",
+      "startAt": "2026-08-16T00:00:00+08:00",
+      "endAt": "2026-09-15T23:59:59+08:00",
+      "link": "https://github.com/Aik358/dsh-auto-memory"
+    }
+  ]
+}
