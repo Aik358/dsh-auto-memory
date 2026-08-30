@@ -175,27 +175,30 @@ console.log('[S4] 非法 skill 被 validator 拒绝(fail-closed)')
   ok(okNull.ok === true, 'S4 skill=null 视为无技能段(合法)')
 }
 
-console.log('[S5] 预算不足时整段丢弃 skill,packet 不落 skill')
+console.log('[S5] 预算竞争:技能段预留制(2026-08-30 canary 修复)——满帧引用不再挤掉技能段')
 {
-  // 8 条长候选把 4096 预算吃满 → 技能段放不下
+  // 2026-08-30 P0 canary 修复回归:emit 满帧(8×长引用,build 侧 ~3.7KB)时,原「末位计价」
+  // 实现必把技能段挤出 4096 预算(skillDropped),真实投递永不含 checklist。
+  // 修复后:技能段先预留成本,引用按分数装填,装不下的低分引用走 dropped/truncated。
   const recs = []
   for (let i = 0; i < 8; i++) recs.push(mkRec('big' + i, 'x'.repeat(400)))
   const req = makeReq({ records: recs, maxItems: 8, skill: DEPLOY_SKILL, seed: 'm83-budget' })
   const built = A.buildReferenceTailPacketPre({ request: req, nowStep: 1 })
-  ok(built.ok, 'S5 满预算下 packet 仍构建成功(超预算的是技能段,不是引用)')
-  ok(built.packet.skill === undefined, 'S5 技能段被丢弃 → packet 不落 skill(保证与重渲染一致)')
-  ok(!built.rendered.includes('Checklist:'), 'S5 渲染文本不含 checklist')
+  ok(built.ok, 'S5 满预算下 packet 仍构建成功')
+  ok(built.packet.skill !== undefined && built.packet.skill.procedureId === DEPLOY_SKILL.procedureId, 'S5 技能段预留生效 → packet 落 skill(满帧引用不再挤掉它)')
+  ok(built.rendered.includes('Checklist:'), 'S5 渲染文本含 checklist(投递面真实可见)')
+  ok(Array.isArray(built.droppedByBudget) && built.droppedByBudget.length > 0, 'S5 满帧+技能段下让位的是低分引用(部分 reference 被预算裁掉),而非技能段')
   const re = A.renderReferenceTail(built.packet.references, {
     reason: built.packet.triggerReason, budgetBytes: A.REFERENCE_TAIL_BUDGET_PRE_V1.maxPacketBytes, skill: built.packet.skill,
   })
-  eq(A.computeExactDigest(re.text), built.packet.exactDigest, 'S5 丢弃后 exactDigest 仍自洽(投递不会静默变空)')
-  // 确定性小块场景:单条短引用放得下,技能段放不下 → 渲染器必须显式上报 skillDropped
+  eq(A.computeExactDigest(re.text), built.packet.exactDigest, 'S5 预留制下 exactDigest 仍自洽(build/render 双侧同函数重算)')
+  // 技能段自身超预算(而非被引用挤掉)→ 仍必须显式 skillDropped
   const smallItem = {
     memoryId: memId('x1'), scope: 'Workspace', sourceVersion: 1,
     recordDigest: sha256('digest:x1'), score: 0.9, reference: '短引用',
   }
   const flag = A.renderReferenceTail([smallItem], { reason: 'r', budgetBytes: 400, skill: DEPLOY_SKILL })
-  ok(flag.ok === true && flag.skillDropped === true && flag.skillIncluded === false, 'S5 渲染器显式上报 skillDropped(引用块留、技能段丢)')
+  ok(flag.ok === true && flag.skillDropped === true && flag.skillIncluded === false, 'S5 技能段自身放不下时仍显式上报 skillDropped')
   ok(!flag.text.includes('Checklist:') && flag.text.trim().endsWith(A.TAIL_VERIFY_LINE_PRE_V1), 'S5 丢弃技能段后仍保有引用块与固定收尾行')
 }
 
