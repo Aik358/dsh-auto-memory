@@ -21,3 +21,5 @@ artifacts/m7-live-pre/js-semantic-trial/models/
 .tmp-*
 _tmp-e5/
 __pycache__/
+artifacts/release-c2-asset-pack/package/
+artifacts/release-c2-asset-pack/*.tgz
