@@ -85,10 +85,10 @@ c563d6e  混元 4 交付:P0 act.skill 集成 + P1 intent 清洗 + P3 M10 存储�
 
 ### P2（发布工程，需要用户决策）
 
-1. **C2 资产包 npm 发布** — `@deepseek-ai/dsh-auto-memory-model-e5small-q8`
-2. **首启下载向导** — SHA256+自检；注意：**无断点续传**（仅双镜像+SHA256+进度+取消）
-3. **设置页状态机** — 实际 c1/c2/c3 三档（非"七态"）
-4. **lexical_pre_v3** — b0.45 MRR+37%，**独立窗口**（需同步 Python byte-twin + 重校准）
+> **2026-08-30 用户裁定：npm 资产包发布=单向门（发布即触达应用商店用户更新），
+> 全部就绪+全量跑通后才可 publish。** 执行路线已重排，权威见
+> `docs/RELEASE-READINESS-PLAN.md`（阶段 A 收口→B 自然观察→C 本地化不发布→
+> D 全量验收 go/no-go→最后才 publish）。原 P2 条目归入该文档阶段 C。
 
 ### P3（低优先）
 
@@ -197,7 +197,7 @@ autoConsolidateCooldownMinutes=30
 3. P0: 重启 3080 → 发匹配 active skill 的 query → 验证 delivered tail 含 checklist
 4. P1: 自然对话 2 轮 → 查 episodes.json intent 干净度
 5. P2: 观察技能自然晋升（3 会话+2 成功）
-6. P2: 发布工程（C2 资产包+向导）→ 需用户确认 npm 发布
-7. P3: G-02 v2 / correction 语义对齐 / fv2 窗口污染调优
-8. 全量测试 → 最终发布
+6. 发布工程本地化（C2 资产包 pack+向导+三档状态机，**全程不 publish**）
+7. 全量验收门槛（docs/RELEASE-READINESS-PLAN.md 阶段 D 清单）→ 用户确认 go
+8. npm publish（单向门，最后一步）→ 发布后小版本（lexical_pre_v3 等）
 ```
