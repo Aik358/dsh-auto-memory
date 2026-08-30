@@ -1,0 +1,33 @@
+{
+  "id": "decision-record-stale-gate-per-candidate-20260825",
+  "date": "2026-08-25",
+  "author": "calibration-agent (ox-alpha)",
+  "approvedBy": "user (直接授权实施, 主 Agent 沟通成本考量)",
+  "type": "implementation-defect-fix (non-policy-parameter change)",
+  "summary": "fv2 stale/correction hard gates narrowed from session-wide any() to per-candidate-topk.",
+  "trigger": {
+    "source": "M7-8 controlled live shadow (20 scripted requests, user-restarted host PID 5540)",
+    "observation": "94/94 observations suppressed with reasonCodes=[hard_gate_stale], features=null",
+    "rootCause": "worker constructed hardGates.stale as any(e.freshness=='stale' for e in payload.evidence); on real traffic every context_push carries >=1 stale evidence entry (anchored files updated today -> all M5 historical evidence judged stale), so fv2 was permanently muted"
+  },
+  "change": {
+    "file": "python/worker_semantic_pre_v1.py (_fv2_shadow_decide gate construction only)",
+    "semantics": "stale/correction gates fire ONLY when the affected evidence memoryId is among the CURRENT top-K candidates; unrelated evidence never gates",
+    "untouched": [
+      "m7_activation_features_pre_v2.py (decision core unchanged)",
+      "python/policies/*.json (versions, configHashes unchanged: activation cfgh_31e6d977..., intent cfgh_69465e69...)",
+      "golden-parity-fixtures-v1.jsonl (fixtures carry explicit hardGates inputs; all False -> zero output drift)"
+    ]
+  },
+  "verification": [
+    "scenario matrix 7/7 PASS (related-stale fires / unrelated-stale open / empty open / correction symmetric / end-to-end emit restored / related-stale still suppresses)",
+    "smoke m73 59/59, m79 20/20",
+    "py_compile OK"
+  ],
+  "residualRequirements": [
+    "user restarts 3080 again to load the fix",
+    "re-run the same 20-request controlled shadow and compare against archived rows (artifacts/m7-live-pre/controlled-shadow-rows-20260825.json): expected = stale-gate rows disappear, explicit recall requests produce emit/prefetch decisions consistent with offline replay",
+    "parity fixtures should gain stale-scenario cases in the next fixture regeneration window"
+  ],
+  "references": ["docs/M7-ACTIVATION-V2-CONTROLLED-SHADOW.md", "docs/M7-ACTIVATION-V2-HOLDEDOUT-EVAL.md"]
+}

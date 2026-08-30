@@ -6,11 +6,14 @@ import path from 'node:path'
 const ws = mkdtempSync(path.join(tmpdir(), 'dam-consolidate-'))
 const home = path.join(ws, '.dsh-home')
 mkdirSync(home, { recursive: true })
-writeFileSync(path.join(home, 'dsh-auto-memory.json'), JSON.stringify({
+// 审查修复轮2:配置文件名必须是 _pre 版(dsh-auto-memory-pre.json);
+// 旧名 dsh-auto-memory.json 会让 loadConfig ENOENT→默认 '~'(真实 homedir) 根,沉淀写穿真实用户记忆。
+writeFileSync(path.join(home, 'dsh-auto-memory-pre.json'), JSON.stringify({
   memoryRoot: path.join(ws, '.memory-root'),
   userMemoryDir: path.join(ws, '.user-root'),
   projectMemoryDir: '.project-memory',
   externalSources: {},
+  subagentModel: 'probe-model-x', // 设置页「总结/问候默认模型」端到端回归(复审后新增功能)
 }), 'utf8')
 process.env.DSH_HOME = home
 globalThis.fetch = async () => ({ ok: false, status: 503, json: async () => ({}) })
@@ -18,7 +21,7 @@ const parentCalls = []
 const subagents = {
   list() { return ['spawn'] },
   async start(provider, options) {
-    parentCalls.push({ provider, parent: options.parent })
+    parentCalls.push({ provider, parent: options.parent, model: options.agentOptions ? options.agentOptions.model : undefined })
     await new Promise((resolve) => setTimeout(resolve, 15))
     return { result: Promise.resolve({ output: [{ type: 'text', text: '[TOPIC] isolated\n[LOG]\n- session-specific consolidation' }] }) }
   },
@@ -61,6 +64,8 @@ await new Promise((resolve) => setTimeout(resolve, 900))
 if (parentCalls.length !== 2) throw new Error('expected one subagent call per top-level session, got ' + parentCalls.length)
 if (parentCalls.some((call) => !call.parent)) throw new Error('subagent parent missing')
 if (parentCalls[0].parent === parentCalls[1].parent) throw new Error('subagent parent crossed sessions')
+// 设置页「总结/问候默认模型」端到端:config.subagentModel 必须透传为 agentOptions.model
+if (parentCalls.some((call) => call.model !== 'probe-model-x')) throw new Error('subagentModel not passed through: ' + JSON.stringify(parentCalls.map((c) => c.model)))
 
 // Same turn emitted twice for A must not create a second call.
 await stopping({ agent: agentA, turn: 1, signal: new AbortController().signal })

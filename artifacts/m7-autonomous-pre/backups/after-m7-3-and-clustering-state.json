@@ -1,0 +1,59 @@
+{
+  "updatedAt": "2026-08-24T04:45:00+08:00",
+  "phase": "M7-2-complete -> M7-3",
+  "immutableObjective": "autonomously complete M7-2..M7-7 (code+artifacts+tests+docs) without regressing M7-0/M7-1 protocol or index_sync semantics; default-off zero side effects; stop at M7-8 human gate; never commit/push/tag/publish; never touch the 3080 host",
+  "capabilityMatrix": {
+    "repoRead": true, "repoWrite": true, "shell": true,
+    "pythonExecutable": "D:\\dsh-auto-memory\\python\\bench\\.venv\\Scripts\\python.exe (3.10.11)",
+    "networkAccess": "partial: hf-mirror.com ok, huggingface.co/google blocked (proxy off), github ok",
+    "externalMemoryRead": true,
+    "loopbackReadOnly": "partial: 127.0.0.1:3080 responds, /debug/state 404, GET-only, zero writes",
+    "dshLifecycleControl": "capability true, authorization false (user forbids stopping/restarting 3080 this session)",
+    "subagents": true
+  },
+  "m72Decision": {
+    "provider": "BAAI/bge-m3", "revision": "5617a9f61b028005a4858fdac845db406aefb181",
+    "license": "MIT", "dimension": 1024, "pooling": "cls",
+    "chunkPolicy": "m7_chunk_pre_v1 = para-512-noov",
+    "retrieval": "numpy float32 l2-normalized exact dot",
+    "runnerUp": "qwen3-emb-0.6b (better hardneg, worse latency/memory)",
+    "rejected": "multilingual-e5-large (zh->en xlang@5=0.60, 512 hard cap)"
+  },
+  "m72Metrics": {
+    "L1": {"records": 152, "queries": 88, "recall@5": 0.966, "mrr": 0.889, "xlang@5": 1.0, "p95ms": 189},
+    "L2": {"records": 251, "queries": 40, "recall@5": 0.925, "mrr": 0.793, "hardnegErr": 0.074, "p95ms": 241},
+    "supersedeBareCosine": "4/8 fail (all models) -> fusion must carry supersede/recency"
+  },
+  "testStatus": {
+    "smoke-test-m72-pre.mjs": "21 assertions pass",
+    "fullRegression": "23/23 serial pass (M0-M6 20 + m70 + m71 + m72)",
+    "hygiene": "node --check / py_compile / git diff --check / BOM / _dev all clean"
+  },
+  "completedArtifacts": [
+    "docs/M7-EMBEDDING-BENCHMARK.md", "docs/M7-ALGORITHM-DECISION.md",
+    "docs/M7-BENCHMARK-PLAN.md", "docs/M7-INTERFACE-DIGEST.md",
+    "docs/M7-TASKSET-DISPATCH.md", "docs/M7-AUTONOMOUS-STATE.md",
+    "artifacts/m7-benchmark-pre/results.json", "artifacts/m7-benchmark-pre/results.csv",
+    "artifacts/m7-benchmark-pre/runs/run20260824-033315/",
+    "artifacts/m7-corpus-pre/ (251 episodes + 40 queries + hardnegs + scenarios + privacy)",
+    "artifacts/m7-autonomous-pre/m73-research-notes.md",
+    "python/bench/ (9 modules + .venv + .hf-cache + models, untracked)",
+    "tests/m7-2-fixtures/embedding-fixture.json (42 docs x 8 queries)",
+    "smoke-test-m72-pre.mjs"
+  ],
+  "incidentalFixes": [
+    "smoke-test-m70-pre.mjs G7 harness ctx.effect stub discarded heartbeatTimer cleanup -> process could not exit; stub now collects disposers and G7 runs them (90 assertions were already green; zero production code changed)"
+  ],
+  "models": {
+    "bge-m3": {"revision": "5617a9f61b028005a4858fdac845db406aefb181", "license": "MIT", "status": "downloaded+verified+FROZEN as default", "bytes": 2293300000},
+    "qwen3-emb-0.6b": {"revision": "97b0c614be4d77ee51c0cef4e5f07c00f9eb65b3", "license": "Apache-2.0", "status": "downloaded+verified, backup candidate"},
+    "multilingual-e5-large": {"revision": "3d7cfbdacd47fdda877c5cd8a79fbcc4f2a574f3", "license": "MIT", "status": "downloaded+verified, rejected"}
+  },
+  "knownRisks": [
+    "hf direct blocked (proxy off); mirror fallback in place; remind user to re-enable proxy for future direct HF/GitHub needs",
+    "free RAM ~10GB of 31GB; load one model at a time",
+    "transformers 5.15.1 quirks handled (specials probing, dtype deprecation)"
+  ],
+  "blockedItems": [],
+  "nextExactAction": "M7-3: implement python/worker_semantic_pre_v1.py (reuse worker_pre_v1 protocol layer, add frozen bge-m3+para-512 provider, versioned vectors under semantic-pre, dense candidate_result on context_push) + smoke-test-m73-pre.mjs; then hybrid arms benchmark (lexical-clone/bm25s/weighted/RRF k ablation) -> artifacts/m7-hybrid-pre; then clustering shadow -> M7-4..M7-7; stop at M7-8"
+}

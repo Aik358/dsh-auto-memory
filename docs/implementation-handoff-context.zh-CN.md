@@ -5,6 +5,8 @@
 > 工作区：D:\dsh-auto-memory
 >
 > DSH 原生实现只读参考：C:\Users\JH Z\AppData\Roaming\npm\node_modules\@deepseek-ai\dsh
+>
+> **2026-08-22 权威说明**：目标架构和实施进度以 `docs/proactive-associative-memory-system-map.html` 为准。本文第 8-13 节与第 14 节早期执行指令保留为历史记录；当前执行范围见 `docs/M4-CONTRACT.md`、第 14 节更新指令与 `docs/PREVIEW-NEXT-STEPS.md`。
 
 ## 1. 你的任务
 
@@ -23,19 +25,23 @@ Host 观察用户消息、工具调用/结果、可见输出和生命周期事�
 → 必要时把重复成功 Episode 固化为 Procedure candidate
 ~~~
 
-不要一次实现全部架构。当前只实施本文第 8 节定义的“里程碑 0 + 里程碑 1”。
+不要一次实现全部架构。M0-R/T0/M1/M2/P-A/M3a/M3b/M4/M5/M6 已完成并 live；M7 完整契约与研究报告已冻结，当前交给外部 Agent 实施，具体以 M7-AGENT-HANDOFF-PROMPT.md 为准。
 
 ## 2. 开始前必须阅读
 
 按顺序阅读：
 
-1. docs/proactive-associative-memory-research-report.zh-CN.md
-   - 正式研究报告、引用、原生 DSH 对照、风险和实施路线。
-2. docs/proactive-associative-memory-system-map.html
+1. docs/M7-PYTHON-IMPLEMENTATION-REPORT.md
+   - M7 算法选型、开源来源、许可证、benchmark 与阶段计划。
+2. docs/PYTHON-SIDECAR-CONTRACT.md
+   - M7 wire、index_sync、生命周期、安全和验收门。
+3. docs/M7-AGENT-HANDOFF-PROMPT.md
+   - 外部 Agent 执行入口。
+4. docs/proactive-associative-memory-system-map.html
    - 当前权威系统架构图。浏览器直接打开；点击模块可查看概览、实现、依据、Meta 代码和验收条件。
-3. lib/index.js
-   - 当前 Host 半：MemoryEngine、持久化、注入、工具、路由、自动沉淀。
-4. lib/client.js
+5. M5/M6 live modules：context-bridge/evidence/context-host/activation-inbox/state/host。
+   - 读取真实 wire 与 delivery/seen 语义。
+6. lib/index.js 与 M0-M6 smoke tests。
    - 当前 Web UI。
 5. smoke-test.mjs、smoke-test-reflect.mjs、smoke-test-external.mjs
    - 现有测试和历史契约，注意部分断言可能已经陈旧，修改前先验证。
@@ -46,7 +52,7 @@ Host 观察用户消息、工具调用/结果、可见输出和生命周期事�
 
 ## 3. 当前已经完成的内容
 
-以下是设计和研究成果，不代表运行时代码已经实现：
+M0-M6 已 live verified；M7 Python 尚未实现，以下交接文档和研究报告是外部 Agent 的实施依据。
 
 - 正式研究报告：docs/proactive-associative-memory-research-report.zh-CN.md
 - 交互式整体系统地图：docs/proactive-associative-memory-system-map.html
@@ -392,23 +398,32 @@ node smoke-test-external.mjs
 - 是否更改了 model-visible 行为
 - 下一里程碑建议
 
-## 14. 新会话的第一条执行指令
+## 14. 当前新会话的第一条执行指令（2026-08-23 更新）
 
 请按以下顺序开始：
 
-1. 读取本文和两份架构文档。
-2. 运行 git status。
-3. 阅读 lib/index.js 中 MemoryEngine state、refresh、consolidateTurn、session-start、turn-stopping、pre-step 和 dispose 部分。
-4. 输出一段不超过 12 行的实施计划。
-5. 直接实施里程碑 0，然后测试。
-6. 里程碑 0 通过后实施里程碑 1，然后测试。
-7. 不实施第 9 节禁止的后续阶段。
+1. 首先读取 `docs/proactive-associative-memory-system-map.html`、`docs/M7-PYTHON-IMPLEMENTATION-REPORT.md`、`docs/PYTHON-SIDECAR-CONTRACT.md` 和 `docs/M7-AGENT-HANDOFF-PROMPT.md`；目标架构和进度以 system-map 为准。
+2. 再读取 `docs/M5-CONTRACT.md`、`docs/M6-CONTRACT.md`、M5/M6 live JS modules 和 smoke tests，运行 `git status --short --branch`；保留全部无关或未跟踪文件。
+3. 只读核对 `lib/index.js`、context-bridge/evidence/context-host、activation-inbox/state/host 及 M3/M4 provenance；M7 不重写 M5/M6 wire 或 delivery semantics。
+4. M0-R/T0/M1/M2/P-A/M3a/M3b/M4/M5/M6 已完成并 live；M7-0 完整契约已冻结，当前交给外部 Agent 按 M7-0→M7-8 实施，默认关闭。
+5. 预览版所有对外注册与持久化标识必须使用 `_pre`/`-pre`，禁止 `_dev` 或无后缀标识与稳定版碰撞。
+6. M2/M5/M6 的 event、scope、provenance、contextVersion、ActivationRequest 与 delivery/seen 是兼容基线；M7 不修改现有 JS validator 或 M6 投递路径。
+7. M7 必须通过 index_sync 获取完整授权语料；Python 不读 DSH 文件、不创建 evidence、不写 prompt/Packet；失败回退 lexical_pre_v2。
+8. 测试和编码检查通过后，必须回写系统地图 progressLedger 和相关模块证据；不发布、不 push、不 tag。
 
-## 15. M0/M1 后维护改动
+## 15. M0/M1 后维护状态
 
-- 已完成缓存稳定性维护：稳定记忆纪律保留在 `systemPrompt.section()`，动态工作区记忆迁移到原生 `systemPrompt.context()` runtime-context projection。
+- 已完成缓存稳定性维护：稳定记忆纪律保留在 `systemPrompt.section()`，动态工作区记忆使用原生 `systemPrompt.context()` runtime-context projection。
 - 动态快照由 DSH 原生 projection 按完整文本比较；相同快照不重复创建 user-context，变化快照替换之前的 projection。
-- 本维护改动没有启用主动检索、Python、embedding、MemoryPacket 生成、流式中断或自动阈值注入；这些仍属于后续里程碑。
-- 开发版 prompt 注册名继续使用 `dsh:auto-memory-dev` 与 `dsh:auto-memory-dev-rules`，发布脚本负责去除 `_dev`。
-- 三份架构 HTML 已同步区分当前 native `systemPrompt.context()` runtime-context projection 与未来 `MemoryPacket → Agent Inbox` 主动注入；研究报告保留后续检索、Python 和 packet 为未实现阶段。
-- 三份架构 HTML 已同步区分当前 native `systemPrompt.context()` runtime-context projection 与未来 `MemoryPacket → Agent Inbox` 主动注入；研究报告保留后续检索、Python 和 packet 为未实现阶段。
+- f00ad23 已落地 M1：SessionRuntimeStore、AsyncLocalStorage、per-runtime 自动沉淀状态与并发隔离测试。
+- v0.1.29 合并后 M0 的 7 个实验开关与 4 个 packet 预算参数曾从 DEFAULT_CONFIG 丢失；该问题已由 M0-R 在 M2 前恢复并通过回归。
+- 当前预览身份使用 `dsh:auto-memory-pre`、`dsh:auto-memory-pre-rules` 和 Agent 可见 `memory_*_pre` 工具；所有对外注册、API/config/cache/log/localStorage 等持久化命名空间必须保持 `_pre`/`-pre`，不得重新引入 `_dev` 或稳定版无后缀冲突标识。
+- 当前维护改动没有启用主动检索、Python、embedding、MemoryPacket、流式中断或自动阈值注入；这些仍属于后续里程碑。
+
+## 16. 架构权威与进度纪律
+
+- `proactive-associative-memory-system-map.html` 是目标架构、模块契约、架构不变量和实施进度的唯一权威。
+- 研究报告负责理论依据、相关工作、风险与总路线；architecture/meta-code HTML 是辅助视图，不得覆盖系统地图的后增契约。
+- 当前实现事实由 `lib/index.js`、本机 DSH 类型和测试证据确认。工程审查补充必须明确标注，不能冒充论文原文。
+- Python sidecar 的完整 M7 架构、JSONL 协议、JS Host 权威边界和压缩恢复顺序固定在 `docs/PYTHON-SIDECAR-CONTRACT.md`；M7 必须等待 M3b/M4/M5/M6，当前不得启动 Python worker。
+- 每个里程碑完成后必须在同一轮更新系统地图的 progressLedger、相关模块实现证据、验收结果和日期；聊天或记忆中的完成声明不能替代 HTML 进度。

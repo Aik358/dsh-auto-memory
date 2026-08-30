@@ -1,0 +1,416 @@
+[
+ {
+  "sampleId": "hd-001",
+  "classification": "independent-heldout",
+  "bestTrainJ": 0.345,
+  "bestParJ": 0.345
+ },
+ {
+  "sampleId": "hd-002",
+  "classification": "independent-heldout",
+  "bestTrainJ": 0.4,
+  "bestParJ": 0.176
+ },
+ {
+  "sampleId": "hd-003",
+  "classification": "independent-heldout",
+  "bestTrainJ": 0.316,
+  "bestParJ": 0.316
+ },
+ {
+  "sampleId": "hd-004",
+  "classification": "independent-heldout",
+  "bestTrainJ": 0.188,
+  "bestParJ": 0.158
+ },
+ {
+  "sampleId": "hd-005",
+  "classification": "independent-heldout",
+  "bestTrainJ": 0.35,
+  "bestParJ": 0.35
+ },
+ {
+  "sampleId": "hd-006",
+  "classification": "independent-heldout",
+  "bestTrainJ": 0.185,
+  "bestParJ": 0.185
+ },
+ {
+  "sampleId": "hd-007",
+  "classification": "overlaps-parity",
+  "bestTrainJ": 0.583,
+  "bestParJ": 0.583
+ },
+ {
+  "sampleId": "hd-008",
+  "classification": "independent-heldout",
+  "bestTrainJ": 0.286,
+  "bestParJ": 0.267
+ },
+ {
+  "sampleId": "hd-009",
+  "classification": "independent-heldout",
+  "bestTrainJ": 0.286,
+  "bestParJ": 0.195
+ },
+ {
+  "sampleId": "hd-010",
+  "classification": "overlaps-training",
+  "bestTrainJ": 0.5,
+  "bestParJ": 0.25
+ },
+ {
+  "sampleId": "hd-011",
+  "classification": "independent-heldout",
+  "bestTrainJ": 0.393,
+  "bestParJ": 0.159
+ },
+ {
+  "sampleId": "hd-012",
+  "classification": "independent-heldout",
+  "bestTrainJ": 0.04,
+  "bestParJ": 0.0
+ },
+ {
+  "sampleId": "hd-013",
+  "classification": "overlaps-parity",
+  "bestTrainJ": 0.783,
+  "bestParJ": 0.783
+ },
+ {
+  "sampleId": "hd-014",
+  "classification": "overlaps-training",
+  "bestTrainJ": 0.714,
+  "bestParJ": 0.462
+ },
+ {
+  "sampleId": "hd-015",
+  "classification": "independent-heldout",
+  "bestTrainJ": 0.375,
+  "bestParJ": 0.375
+ },
+ {
+  "sampleId": "hd-016",
+  "classification": "overlaps-training",
+  "bestTrainJ": 0.688,
+  "bestParJ": 0.292
+ },
+ {
+  "sampleId": "hd-017",
+  "classification": "independent-heldout",
+  "bestTrainJ": 0.364,
+  "bestParJ": 0.1
+ },
+ {
+  "sampleId": "hd-018",
+  "classification": "independent-heldout",
+  "bestTrainJ": 0.35,
+  "bestParJ": 0.097
+ },
+ {
+  "sampleId": "hd-019",
+  "classification": "independent-heldout",
+  "bestTrainJ": 0.2,
+  "bestParJ": 0.2
+ },
+ {
+  "sampleId": "hd-020",
+  "classification": "independent-heldout",
+  "bestTrainJ": 0.24,
+  "bestParJ": 0.24
+ },
+ {
+  "sampleId": "hd-021",
+  "classification": "overlaps-training",
+  "bestTrainJ": 0.522,
+  "bestParJ": 0.049
+ },
+ {
+  "sampleId": "hd-022",
+  "classification": "overlaps-training",
+  "bestTrainJ": 0.522,
+  "bestParJ": 0.049
+ },
+ {
+  "sampleId": "hd-023",
+  "classification": "independent-heldout",
+  "bestTrainJ": 0.48,
+  "bestParJ": 0.054
+ },
+ {
+  "sampleId": "hd-024",
+  "classification": "independent-heldout",
+  "bestTrainJ": 0.48,
+  "bestParJ": 0.054
+ },
+ {
+  "sampleId": "hd-025",
+  "classification": "independent-heldout",
+  "bestTrainJ": 0.333,
+  "bestParJ": 0.067
+ },
+ {
+  "sampleId": "hd-026",
+  "classification": "overlaps-parity",
+  "bestTrainJ": 1.0,
+  "bestParJ": 1.0
+ },
+ {
+  "sampleId": "hd-027",
+  "classification": "overlaps-parity",
+  "bestTrainJ": 1.0,
+  "bestParJ": 1.0
+ },
+ {
+  "sampleId": "hd-028",
+  "classification": "overlaps-training",
+  "bestTrainJ": 1.0,
+  "bestParJ": 0.0
+ },
+ {
+  "sampleId": "hd-029",
+  "classification": "overlaps-parity",
+  "bestTrainJ": 1.0,
+  "bestParJ": 1.0
+ },
+ {
+  "sampleId": "hd-030",
+  "classification": "overlaps-parity",
+  "bestTrainJ": 0.667,
+  "bestParJ": 0.667
+ },
+ {
+  "sampleId": "hd-031",
+  "classification": "overlaps-parity",
+  "bestTrainJ": 0.833,
+  "bestParJ": 0.833
+ },
+ {
+  "sampleId": "hd-032",
+  "classification": "independent-heldout",
+  "bestTrainJ": 0.222,
+  "bestParJ": 0.222
+ },
+ {
+  "sampleId": "hd-033",
+  "classification": "independent-heldout",
+  "bestTrainJ": 0.444,
+  "bestParJ": 0.444
+ },
+ {
+  "sampleId": "hd-034",
+  "classification": "independent-heldout",
+  "bestTrainJ": 0.2,
+  "bestParJ": 0.2
+ },
+ {
+  "sampleId": "hd-035",
+  "classification": "independent-heldout",
+  "bestTrainJ": 0.312,
+  "bestParJ": 0.176
+ },
+ {
+  "sampleId": "hd-036",
+  "classification": "independent-heldout",
+  "bestTrainJ": 0.176,
+  "bestParJ": 0.176
+ },
+ {
+  "sampleId": "hd-037",
+  "classification": "independent-heldout",
+  "bestTrainJ": 0.231,
+  "bestParJ": 0.188
+ },
+ {
+  "sampleId": "hd-038",
+  "classification": "independent-heldout",
+  "bestTrainJ": 0.353,
+  "bestParJ": 0.353
+ },
+ {
+  "sampleId": "hd-039",
+  "classification": "independent-heldout",
+  "bestTrainJ": 0.267,
+  "bestParJ": 0.25
+ },
+ {
+  "sampleId": "hd-040",
+  "classification": "independent-heldout",
+  "bestTrainJ": 0.267,
+  "bestParJ": 0.186
+ },
+ {
+  "sampleId": "hd-041",
+  "classification": "independent-heldout",
+  "bestTrainJ": 0.4,
+  "bestParJ": 0.242
+ },
+ {
+  "sampleId": "hd-042",
+  "classification": "independent-heldout",
+  "bestTrainJ": 0.389,
+  "bestParJ": 0.103
+ },
+ {
+  "sampleId": "hd-043",
+  "classification": "independent-heldout",
+  "bestTrainJ": 0.304,
+  "bestParJ": 0.088
+ },
+ {
+  "sampleId": "hd-044",
+  "classification": "independent-heldout",
+  "bestTrainJ": 0.077,
+  "bestParJ": 0.072
+ },
+ {
+  "sampleId": "hd-045",
+  "classification": "independent-heldout",
+  "bestTrainJ": 0.048,
+  "bestParJ": 0.048
+ },
+ {
+  "sampleId": "hd-046",
+  "classification": "overlaps-parity",
+  "bestTrainJ": 0.538,
+  "bestParJ": 0.538
+ },
+ {
+  "sampleId": "hd-047",
+  "classification": "overlaps-training",
+  "bestTrainJ": 0.52,
+  "bestParJ": 0.429
+ },
+ {
+  "sampleId": "hd-048",
+  "classification": "independent-heldout",
+  "bestTrainJ": 0.071,
+  "bestParJ": 0.071
+ },
+ {
+  "sampleId": "hd-049",
+  "classification": "independent-heldout",
+  "bestTrainJ": 0.114,
+  "bestParJ": 0.114
+ },
+ {
+  "sampleId": "hd-050",
+  "classification": "overlaps-parity",
+  "bestTrainJ": 0.532,
+  "bestParJ": 0.532
+ },
+ {
+  "sampleId": "hd-051",
+  "classification": "independent-heldout",
+  "bestTrainJ": 0.235,
+  "bestParJ": 0.17
+ },
+ {
+  "sampleId": "hd-052",
+  "classification": "independent-heldout",
+  "bestTrainJ": 0.0,
+  "bestParJ": 0.0
+ },
+ {
+  "sampleId": "hd-053",
+  "classification": "independent-heldout",
+  "bestTrainJ": 0.25,
+  "bestParJ": 0.062
+ },
+ {
+  "sampleId": "hd-supp-pf-01",
+  "classification": "independent-heldout",
+  "bestTrainJ": 0.37,
+  "bestParJ": 0.195
+ },
+ {
+  "sampleId": "hd-supp-pf-02",
+  "classification": "independent-heldout",
+  "bestTrainJ": 0.068,
+  "bestParJ": 0.068
+ },
+ {
+  "sampleId": "hd-supp-pf-03",
+  "classification": "independent-heldout",
+  "bestTrainJ": 0.292,
+  "bestParJ": 0.086
+ },
+ {
+  "sampleId": "hd-supp-pf-04",
+  "classification": "overlaps-training",
+  "bestTrainJ": 0.812,
+  "bestParJ": 0.269
+ },
+ {
+  "sampleId": "hd-supp-pf-05",
+  "classification": "independent-heldout",
+  "bestTrainJ": 0.053,
+  "bestParJ": 0.043
+ },
+ {
+  "sampleId": "hd-supp-pf-06",
+  "classification": "overlaps-training",
+  "bestTrainJ": 1.0,
+  "bestParJ": 0.162
+ },
+ {
+  "sampleId": "hd-supp-pf-07",
+  "classification": "independent-heldout",
+  "bestTrainJ": 0.083,
+  "bestParJ": 0.043
+ },
+ {
+  "sampleId": "hd-supp-pf-08",
+  "classification": "independent-heldout",
+  "bestTrainJ": 0.08,
+  "bestParJ": 0.048
+ },
+ {
+  "sampleId": "hd-supp-pf-09",
+  "classification": "overlaps-parity",
+  "bestTrainJ": 1.0,
+  "bestParJ": 1.0
+ },
+ {
+  "sampleId": "hd-supp-pf-10",
+  "classification": "overlaps-training",
+  "bestTrainJ": 1.0,
+  "bestParJ": 0.057
+ },
+ {
+  "sampleId": "hd-supp-pf-11",
+  "classification": "independent-heldout",
+  "bestTrainJ": 0.273,
+  "bestParJ": 0.154
+ },
+ {
+  "sampleId": "hd-supp-pf-12",
+  "classification": "independent-heldout",
+  "bestTrainJ": 0.174,
+  "bestParJ": 0.103
+ },
+ {
+  "sampleId": "hd-supp-s-01",
+  "classification": "independent-heldout",
+  "bestTrainJ": 0.095,
+  "bestParJ": 0.0
+ },
+ {
+  "sampleId": "hd-supp-s-02",
+  "classification": "overlaps-parity",
+  "bestTrainJ": 1.0,
+  "bestParJ": 1.0
+ },
+ {
+  "sampleId": "hd-supp-s-03",
+  "classification": "independent-heldout",
+  "bestTrainJ": 0.125,
+  "bestParJ": 0.091
+ },
+ {
+  "sampleId": "hd-supp-s-04",
+  "classification": "independent-heldout",
+  "bestTrainJ": 0.045,
+  "bestParJ": 0.0
+ }
+]

@@ -1,0 +1,26 @@
+{
+ "runId": "label-review-cal20260824-1954",
+ "generatedAt": "2026-08-24T13:42:03.497Z",
+ "validations": {
+  "checked": [
+   "id-uniqueness",
+   "id-format-and-existence",
+   "expected-forbidden-disjoint",
+   "pair-split-integrity",
+   "sensitive-patterns",
+   "system-marker-leakage",
+   "near-duplicate-queries"
+  ],
+  "problemCount": 0,
+  "problems": []
+ },
+ "counts": {
+  "reviewedExisting": 73,
+  "disagreements": 2,
+  "ambiguityFlags": 1,
+  "counterfactualSamples": 109,
+  "counterfactualPairs": 56,
+  "boundaryQueue": 28,
+  "goldConfirmed": 0
+ }
+}

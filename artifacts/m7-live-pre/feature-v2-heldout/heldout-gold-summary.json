@@ -1,0 +1,10 @@
+{
+ "total": 49,
+ "byAction": {
+  "activate": 19,
+  "suppress": 13,
+  "prefetch": 17
+ },
+ "meetsGates": true,
+ "note": "12 supplementary prefetch counterfactuals added; all anchored to real parents; isolation maintained"
+}

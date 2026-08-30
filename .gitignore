@@ -2,3 +2,22 @@ node_modules/
 *.log
 .dsh-memory/
 .DS_Store
+
+# M7-7.5 hardening (audit P2, corrected): model weights + raw external corpus never enter git
+python/bench/.hf-cache/
+python/bench/models/
+python/bench/.venv/
+python/bench/*.log
+artifacts/m7-corpus-pre/*.jsonl
+artifacts/m7-vector-pre/
+artifacts/m7-semantic-pre/
+
+# 发布工程大资产(2026-08-30 git 备份前盘点):模型权重与依赖树不入库
+python/bench/models-xenova-bge-m3-int8/
+python/bench/__pycache__/
+python/__pycache__/
+artifacts/m7-live-pre/js-semantic-trial/node_modules/
+artifacts/m7-live-pre/js-semantic-trial/models/
+.tmp-*
+_tmp-e5/
+__pycache__/

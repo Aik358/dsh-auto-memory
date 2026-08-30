@@ -1,0 +1,33 @@
+{
+  "phase": "M7-8 Phase E COMPLETE - real BGE index_sync + hybrid shadow working; Phase F shadow calibration collecting samples",
+  "evidence": {
+    "indexSync": "syncsOk=1, ready cache (wsr|Workspace, miv=idx_pre_0bcc40..., epoch=wk_pre_4b539)",
+    "vectors": "vectors-9aade49458b92ad8.json: 6 chunks x 1024d, identity=bge-m3-pre-v1@5617a9f61b02",
+    "contextPush": "pushesAccepted=4, envelopesBuilt=10",
+    "hybrid": "method=hybrid, candidates carry fused/dense/lexical scores (top1 fused=1.0)",
+    "activationShadow": "5 rows, all suppress (denseTop 0.58-0.84) - threshold initial values behaving",
+    "judgementShadow": "17 rows, 4 kinds (semantic/episodic/resource/working_only)"
+  },
+  "next": "Phase F: need >=30 labeled context_push samples - user sends varied messages (recall/chitchat/code/correction)",
+  "phaseF": {
+    "samples": 39,
+    "distribution": {
+      "score_min": 0.3,
+      "score_median": 0.381,
+      "score_max": 0.539,
+      "denseTop_median": 0.619,
+      "denseTop_max": 0.836
+    },
+    "thresholdSensitivity": {
+      "tOn_0.5": "3/39 emit (8%)",
+      "tOn_0.55+": "0/39 emit"
+    },
+    "decisions": {
+      "suppress": 38,
+      "prefetch": 1,
+      "emit": 0
+    },
+    "verdict": "INSUFFICIENT for threshold freeze: 0 emit samples, no gold labels to verify precision; per contract F, stay in shadow, need more real top-level recall traffic + human labeling",
+    "next": "more real recall-type queries + manual labeling before active canary (Phase G)"
+  }
+}

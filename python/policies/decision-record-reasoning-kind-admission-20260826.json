@@ -1,0 +1,20 @@
+{
+  "id": "decision-record-reasoning-kind-admission-20260826",
+  "date": "2026-08-26",
+  "author": "calibration-agent (ox-alpha)",
+  "approvedBy": "user (产品目标正式裁定: 监听模型思维链与可见输出是本系统核心, 而非仅用户输入)",
+  "type": "contract-revision (M5 segment kind whitelist)",
+  "summary": "'reasoning' admitted as a legal Segment kind (weight 0.5 in lexical query plan), superseding the M4/M5-era rule that reasoning never enters context.",
+  "trigger": "controlled live shadow round 2: envelope drops 'trigger:invalid:kind' + 'window:invalid:kind' — the new CoT segments (kind='reasoning') were rejected by the M5 whitelist ['user','tool_call','tool_result','assistant']",
+  "change": [
+    "lib/context-bridge-pre.js: segment kind whitelist + 'reasoning'",
+    "lib/shadow-retrieval-pre.js: trigger.kind whitelist + 'reasoning'; query-plan origin map adds 'reasoning' at weight 0.5 (between recent-user 0.8 and tool-result 0.6... actually below tool-result, above assistant 0.2)",
+    "smoke-test-m51-pre.mjs: old rejection assertion replaced with admission assertion"
+  ],
+  "safety": [
+    "reasoning remains a FEATURE only; no hard gate may read it",
+    "CoT aggregation buffer bounded 4096 chars; flush >=512 chars or >=1500ms",
+    "purge on assoc-disable clears CoT buffers (zero-retention contract preserved)"
+  ],
+  "references": ["docs/COT-WATCH-RFC.md", "docs/M5-CONTRACT.md"]
+}

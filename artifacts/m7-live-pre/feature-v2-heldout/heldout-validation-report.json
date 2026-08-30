@@ -1,0 +1,27 @@
+{
+ "verdict": "PASS",
+ "scope": "structural precheck on PROPOSED (synthetic, pre-human-review) labels",
+ "labelSource": "strong-agent synthetic — NOT human gold until xlsx review",
+ "gates": {
+  "activateGold >= 15": true,
+  "prefetchGold >= 15": true,
+  "suppressGold >= 15": true,
+  "enActivatePositive >= 1": true,
+  "zhActivatePositive >= 1": true,
+  "expectedForbiddenDisjoint": true,
+  "isolationFromTraining": true
+ },
+ "totalGold": 69,
+ "byAction": {
+  "activate": 25,
+  "suppress": 26,
+  "prefetch": 18
+ },
+ "langActivate": {
+  "zh:activate": 19,
+  "en:activate": 6
+ },
+ "trainingOverlap": 0,
+ "note": "Structural validation only. Score-based evaluation (actPrecision, bootstrap CI) runs OFFLINE with the frozen policy (BGE-M3 + hybrid retrieval over anchored corpora) after human review; it does not require live shadow.",
+ "nextStep": "Human review via heldout-review-v2.xlsx -> score-based offline gate -> controlled live shadow (18-24 queries, user restarts 3080) -> single-session active canary (explicit lane only)."
+}

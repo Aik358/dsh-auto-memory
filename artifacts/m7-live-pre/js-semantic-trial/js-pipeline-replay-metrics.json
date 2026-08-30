@@ -1,0 +1,44 @@
+{
+ "mainSet": {
+  "n": 63,
+  "R5_retrieval": 0.609,
+  "emit": 4,
+  "precision": 1.0,
+  "recall": 0.174,
+  "emitOnSuppress": 0
+ },
+ "crossWorkspace": {
+  "n": 4,
+  "R5_retrieval": 0.5,
+  "emit": 0,
+  "precision": null,
+  "recall": 0.0,
+  "emitOnSuppress": 0
+ },
+ "strata": {
+  "zh": {
+   "n": 57,
+   "R5_retrieval": 0.706,
+   "emit": 4,
+   "precision": 1.0,
+   "recall": 0.235,
+   "emitOnSuppress": 0
+  },
+  "en": {
+   "n": 6,
+   "R5_retrieval": 0.333,
+   "emit": 0,
+   "precision": null,
+   "recall": 0.0,
+   "emitOnSuppress": 0
+  },
+  "independent": {
+   "n": 44,
+   "R5_retrieval": 0.706,
+   "emit": 4,
+   "precision": 1.0,
+   "recall": 0.235,
+   "emitOnSuppress": 0
+  }
+ }
+}

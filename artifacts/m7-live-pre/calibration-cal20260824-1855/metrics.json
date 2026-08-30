@@ -1,0 +1,522 @@
+{
+ "runId": "calibration-cal20260824-1855",
+ "version": "v2-post-analysis (supersedes harness-inline aggregates; correction filter now applied to served candidates)",
+ "generatedAt": "2026-08-24T19:22:01",
+ "samples": {
+  "total": 73,
+  "evaluable": 65,
+  "scopeOnlyChecks": 8,
+  "activate": 31,
+  "prefetch": 14,
+  "suppressClean": 15,
+  "harmfulEvaluable": 5,
+  "crossLanguageActivate": 10,
+  "codeAnchorActivate": 4,
+  "isGoldCount": 0,
+  "liveSurfaceSamples": 16,
+  "episodesSurfaceSamples": 57
+ },
+ "classScoreDistributions": {
+  "activate": {
+   "n": 31,
+   "min": 0.325,
+   "p25": 0.3681,
+   "median": 0.397,
+   "p75": 0.4526,
+   "max": 0.5914
+  },
+  "prefetchExpected": {
+   "n": 14,
+   "min": 0.3318,
+   "p25": 0.3606,
+   "median": 0.3879,
+   "p75": 0.4012,
+   "max": 0.4475
+  },
+  "suppressClean": {
+   "n": 15,
+   "min": 0.2236,
+   "p25": 0.2727,
+   "median": 0.3332,
+   "p75": 0.3621,
+   "max": 0.6507
+  },
+  "harmful": {
+   "n": 5,
+   "min": 0.255,
+   "p25": 0.3781,
+   "median": 0.4061,
+   "p75": 0.4646,
+   "max": 0.4903
+  }
+ },
+ "separability": {
+  "note": "highest-scoring sample overall is a suppress-class life-log echo (cal-0009, 0.6507 > every activate target score); positive/negative distributions overlap -> threshold-only separation impossible on this feature set",
+  "maxActivateScore": 0.591408,
+  "maxSuppressCleanScore": 0.650692,
+  "minSuppressCleanScore": 0.223584
+ },
+ "currentThresholds": {
+  "tOn": 0.62,
+  "tOff": 0.52,
+  "emits": 1,
+  "emitCorrect": 0,
+  "emitFalseOnSuppress": 1,
+  "activationPrecision": 0.0,
+  "activationRecall": 0.0,
+  "prefetches": 4,
+  "prefetchPrecision": 0.0,
+  "prefetchCoverage": 0.5,
+  "suppressViolations": 2,
+  "harmfulActivations": 0
+ },
+ "confusionMatrixCurrent": {
+  "activate": {
+   "prefetch": 3,
+   "suppress": 28
+  },
+  "prefetch": {
+   "suppress": 14
+  },
+  "suppress": {
+   "emit": 1,
+   "prefetch": 1,
+   "suppress": 18
+  }
+ },
+ "recommendedOperatingPoint": {
+  "chosen": {
+   "tOn": 0.55,
+   "tOff": 0.5
+  },
+  "rationale": "argmin (harmfulActivations, suppressViolations, -emitCorrect) over the contract grid",
+  "cell": {
+   "tOn": 0.55,
+   "tOff": 0.5,
+   "emits": 4,
+   "emitCorrect": 2,
+   "emitFalseOnSuppress": 2,
+   "activationPrecision": 0.5,
+   "activationRecall": 0.065,
+   "prefetches": 1,
+   "prefetchPrecision": 0.0,
+   "prefetchCoverage": 0.5,
+   "suppressViolations": 2,
+   "harmfulActivations": 0
+  },
+  "policyVersionProposal": "m7_semantic_threshold_pre_v2-DRAFT-NOT-APPLIED"
+ },
+ "confusionMatrixRecommended": {
+  "activate": {
+   "emit": 2,
+   "suppress": 28,
+   "prefetch": 1
+  },
+  "prefetch": {
+   "suppress": 14
+  },
+  "suppress": {
+   "emit": 2,
+   "suppress": 18
+  }
+ },
+ "recallAtK": {
+  "@1": 0.644,
+  "@5": 0.8,
+  "@8": 0.8
+ },
+ "crossLanguageRecallAt5": 0.9,
+ "codeAnchorRecallAt5": 0.75,
+ "correctionSuppression": {
+  "hardDropSamples": 1,
+  "droppedIdsStillServed": 0,
+  "structuralLeak": true,
+  "detail": [
+   {
+    "sampleId": "cal-0015",
+    "dropped": [
+     "mem_4257151bfacc49ecbd54f4f9f60c092d"
+    ],
+    "decisionAfterDrop": "suppress"
+   }
+  ]
+ },
+ "crossWorkspaceLeakage": {
+  "scopedLeaks": 0,
+  "unscopedWouldLeakSamples": 8,
+  "note": "production workspaceRef+scope+miv triple filter excludes all external-workspace targets; unscoped diagnostic shows what WOULD leak without it (host-side gate stays mandatory)"
+ },
+ "latencyMs": {
+  "p50": 263.5,
+  "p95": 482.1,
+  "note": "offline CPU incl. pure-Python exact scan + BM25 full-corpus rescore; grows linearly with chunk count (~500 chunks here) - monitor vs 500ms budget"
+ },
+ "fallbackErrors": 0,
+ "verdict": "insufficient_gold_for_active",
+ "grid": [
+  {
+   "tOn": 0.5,
+   "tOff": 0.4,
+   "emits": 5,
+   "emitCorrect": 3,
+   "emitFalseOnSuppress": 2,
+   "activationPrecision": 0.6,
+   "activationRecall": 0.097,
+   "prefetches": 18,
+   "prefetchPrecision": 0.111,
+   "prefetchCoverage": 0.5,
+   "suppressViolations": 5,
+   "harmfulActivations": 0
+  },
+  {
+   "tOn": 0.5,
+   "tOff": 0.45,
+   "emits": 5,
+   "emitCorrect": 3,
+   "emitFalseOnSuppress": 2,
+   "activationPrecision": 0.6,
+   "activationRecall": 0.097,
+   "prefetches": 7,
+   "prefetchPrecision": 0.0,
+   "prefetchCoverage": 0.5,
+   "suppressViolations": 4,
+   "harmfulActivations": 0
+  },
+  {
+   "tOn": 0.55,
+   "tOff": 0.4,
+   "emits": 4,
+   "emitCorrect": 2,
+   "emitFalseOnSuppress": 2,
+   "activationPrecision": 0.5,
+   "activationRecall": 0.065,
+   "prefetches": 19,
+   "prefetchPrecision": 0.105,
+   "prefetchCoverage": 0.5,
+   "suppressViolations": 5,
+   "harmfulActivations": 0
+  },
+  {
+   "tOn": 0.55,
+   "tOff": 0.45,
+   "emits": 4,
+   "emitCorrect": 2,
+   "emitFalseOnSuppress": 2,
+   "activationPrecision": 0.5,
+   "activationRecall": 0.065,
+   "prefetches": 8,
+   "prefetchPrecision": 0.0,
+   "prefetchCoverage": 0.5,
+   "suppressViolations": 4,
+   "harmfulActivations": 0
+  },
+  {
+   "tOn": 0.55,
+   "tOff": 0.5,
+   "emits": 4,
+   "emitCorrect": 2,
+   "emitFalseOnSuppress": 2,
+   "activationPrecision": 0.5,
+   "activationRecall": 0.065,
+   "prefetches": 1,
+   "prefetchPrecision": 0.0,
+   "prefetchCoverage": 0.5,
+   "suppressViolations": 2,
+   "harmfulActivations": 0
+  },
+  {
+   "tOn": 0.55,
+   "tOff": 0.52,
+   "emits": 4,
+   "emitCorrect": 2,
+   "emitFalseOnSuppress": 2,
+   "activationPrecision": 0.5,
+   "activationRecall": 0.065,
+   "prefetches": 1,
+   "prefetchPrecision": 0.0,
+   "prefetchCoverage": 0.5,
+   "suppressViolations": 2,
+   "harmfulActivations": 0
+  },
+  {
+   "tOn": 0.6,
+   "tOff": 0.4,
+   "emits": 1,
+   "emitCorrect": 0,
+   "emitFalseOnSuppress": 1,
+   "activationPrecision": 0.0,
+   "activationRecall": 0.0,
+   "prefetches": 22,
+   "prefetchPrecision": 0.091,
+   "prefetchCoverage": 0.5,
+   "suppressViolations": 5,
+   "harmfulActivations": 0
+  },
+  {
+   "tOn": 0.6,
+   "tOff": 0.45,
+   "emits": 1,
+   "emitCorrect": 0,
+   "emitFalseOnSuppress": 1,
+   "activationPrecision": 0.0,
+   "activationRecall": 0.0,
+   "prefetches": 11,
+   "prefetchPrecision": 0.0,
+   "prefetchCoverage": 0.5,
+   "suppressViolations": 4,
+   "harmfulActivations": 0
+  },
+  {
+   "tOn": 0.6,
+   "tOff": 0.5,
+   "emits": 1,
+   "emitCorrect": 0,
+   "emitFalseOnSuppress": 1,
+   "activationPrecision": 0.0,
+   "activationRecall": 0.0,
+   "prefetches": 4,
+   "prefetchPrecision": 0.0,
+   "prefetchCoverage": 0.5,
+   "suppressViolations": 2,
+   "harmfulActivations": 0
+  },
+  {
+   "tOn": 0.6,
+   "tOff": 0.52,
+   "emits": 1,
+   "emitCorrect": 0,
+   "emitFalseOnSuppress": 1,
+   "activationPrecision": 0.0,
+   "activationRecall": 0.0,
+   "prefetches": 4,
+   "prefetchPrecision": 0.0,
+   "prefetchCoverage": 0.5,
+   "suppressViolations": 2,
+   "harmfulActivations": 0
+  },
+  {
+   "tOn": 0.6,
+   "tOff": 0.55,
+   "emits": 1,
+   "emitCorrect": 0,
+   "emitFalseOnSuppress": 1,
+   "activationPrecision": 0.0,
+   "activationRecall": 0.0,
+   "prefetches": 3,
+   "prefetchPrecision": 0.0,
+   "prefetchCoverage": 0.5,
+   "suppressViolations": 2,
+   "harmfulActivations": 0
+  },
+  {
+   "tOn": 0.62,
+   "tOff": 0.4,
+   "emits": 1,
+   "emitCorrect": 0,
+   "emitFalseOnSuppress": 1,
+   "activationPrecision": 0.0,
+   "activationRecall": 0.0,
+   "prefetches": 22,
+   "prefetchPrecision": 0.091,
+   "prefetchCoverage": 0.5,
+   "suppressViolations": 5,
+   "harmfulActivations": 0
+  },
+  {
+   "tOn": 0.62,
+   "tOff": 0.45,
+   "emits": 1,
+   "emitCorrect": 0,
+   "emitFalseOnSuppress": 1,
+   "activationPrecision": 0.0,
+   "activationRecall": 0.0,
+   "prefetches": 11,
+   "prefetchPrecision": 0.0,
+   "prefetchCoverage": 0.5,
+   "suppressViolations": 4,
+   "harmfulActivations": 0
+  },
+  {
+   "tOn": 0.62,
+   "tOff": 0.5,
+   "emits": 1,
+   "emitCorrect": 0,
+   "emitFalseOnSuppress": 1,
+   "activationPrecision": 0.0,
+   "activationRecall": 0.0,
+   "prefetches": 4,
+   "prefetchPrecision": 0.0,
+   "prefetchCoverage": 0.5,
+   "suppressViolations": 2,
+   "harmfulActivations": 0
+  },
+  {
+   "tOn": 0.62,
+   "tOff": 0.52,
+   "emits": 1,
+   "emitCorrect": 0,
+   "emitFalseOnSuppress": 1,
+   "activationPrecision": 0.0,
+   "activationRecall": 0.0,
+   "prefetches": 4,
+   "prefetchPrecision": 0.0,
+   "prefetchCoverage": 0.5,
+   "suppressViolations": 2,
+   "harmfulActivations": 0
+  },
+  {
+   "tOn": 0.62,
+   "tOff": 0.55,
+   "emits": 1,
+   "emitCorrect": 0,
+   "emitFalseOnSuppress": 1,
+   "activationPrecision": 0.0,
+   "activationRecall": 0.0,
+   "prefetches": 3,
+   "prefetchPrecision": 0.0,
+   "prefetchCoverage": 0.5,
+   "suppressViolations": 2,
+   "harmfulActivations": 0
+  },
+  {
+   "tOn": 0.65,
+   "tOff": 0.4,
+   "emits": 1,
+   "emitCorrect": 0,
+   "emitFalseOnSuppress": 1,
+   "activationPrecision": 0.0,
+   "activationRecall": 0.0,
+   "prefetches": 22,
+   "prefetchPrecision": 0.091,
+   "prefetchCoverage": 0.5,
+   "suppressViolations": 5,
+   "harmfulActivations": 0
+  },
+  {
+   "tOn": 0.65,
+   "tOff": 0.45,
+   "emits": 1,
+   "emitCorrect": 0,
+   "emitFalseOnSuppress": 1,
+   "activationPrecision": 0.0,
+   "activationRecall": 0.0,
+   "prefetches": 11,
+   "prefetchPrecision": 0.0,
+   "prefetchCoverage": 0.5,
+   "suppressViolations": 4,
+   "harmfulActivations": 0
+  },
+  {
+   "tOn": 0.65,
+   "tOff": 0.5,
+   "emits": 1,
+   "emitCorrect": 0,
+   "emitFalseOnSuppress": 1,
+   "activationPrecision": 0.0,
+   "activationRecall": 0.0,
+   "prefetches": 4,
+   "prefetchPrecision": 0.0,
+   "prefetchCoverage": 0.5,
+   "suppressViolations": 2,
+   "harmfulActivations": 0
+  },
+  {
+   "tOn": 0.65,
+   "tOff": 0.52,
+   "emits": 1,
+   "emitCorrect": 0,
+   "emitFalseOnSuppress": 1,
+   "activationPrecision": 0.0,
+   "activationRecall": 0.0,
+   "prefetches": 4,
+   "prefetchPrecision": 0.0,
+   "prefetchCoverage": 0.5,
+   "suppressViolations": 2,
+   "harmfulActivations": 0
+  },
+  {
+   "tOn": 0.65,
+   "tOff": 0.55,
+   "emits": 1,
+   "emitCorrect": 0,
+   "emitFalseOnSuppress": 1,
+   "activationPrecision": 0.0,
+   "activationRecall": 0.0,
+   "prefetches": 3,
+   "prefetchPrecision": 0.0,
+   "prefetchCoverage": 0.5,
+   "suppressViolations": 2,
+   "harmfulActivations": 0
+  },
+  {
+   "tOn": 0.7,
+   "tOff": 0.4,
+   "emits": 0,
+   "emitCorrect": 0,
+   "emitFalseOnSuppress": 0,
+   "activationPrecision": null,
+   "activationRecall": 0.0,
+   "prefetches": 23,
+   "prefetchPrecision": 0.087,
+   "prefetchCoverage": 0.5,
+   "suppressViolations": 5,
+   "harmfulActivations": 0
+  },
+  {
+   "tOn": 0.7,
+   "tOff": 0.45,
+   "emits": 0,
+   "emitCorrect": 0,
+   "emitFalseOnSuppress": 0,
+   "activationPrecision": null,
+   "activationRecall": 0.0,
+   "prefetches": 12,
+   "prefetchPrecision": 0.0,
+   "prefetchCoverage": 0.5,
+   "suppressViolations": 4,
+   "harmfulActivations": 0
+  },
+  {
+   "tOn": 0.7,
+   "tOff": 0.5,
+   "emits": 0,
+   "emitCorrect": 0,
+   "emitFalseOnSuppress": 0,
+   "activationPrecision": null,
+   "activationRecall": 0.0,
+   "prefetches": 5,
+   "prefetchPrecision": 0.0,
+   "prefetchCoverage": 0.5,
+   "suppressViolations": 2,
+   "harmfulActivations": 0
+  },
+  {
+   "tOn": 0.7,
+   "tOff": 0.52,
+   "emits": 0,
+   "emitCorrect": 0,
+   "emitFalseOnSuppress": 0,
+   "activationPrecision": null,
+   "activationRecall": 0.0,
+   "prefetches": 5,
+   "prefetchPrecision": 0.0,
+   "prefetchCoverage": 0.5,
+   "suppressViolations": 2,
+   "harmfulActivations": 0
+  },
+  {
+   "tOn": 0.7,
+   "tOff": 0.55,
+   "emits": 0,
+   "emitCorrect": 0,
+   "emitFalseOnSuppress": 0,
+   "activationPrecision": null,
+   "activationRecall": 0.0,
+   "prefetches": 4,
+   "prefetchPrecision": 0.0,
+   "prefetchCoverage": 0.5,
+   "suppressViolations": 2,
+   "harmfulActivations": 0
+  }
+ ]
+}

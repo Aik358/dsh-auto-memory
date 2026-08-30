@@ -1,0 +1,12 @@
+{
+  "episodes": 251,
+  "redactionCounts": {
+    "secret": 97,
+    "phone": 2,
+    "abspath": 85,
+    "email": 0
+  },
+  "hashedRefsOnly": true,
+  "noOriginalsModified": true,
+  "reviewQueue": ">=30 recommended: emitted separately"
+}

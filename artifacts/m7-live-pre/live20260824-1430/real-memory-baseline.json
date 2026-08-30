@@ -1,0 +1,47 @@
+[
+  {
+    "name": "user",
+    "file": "memory/MEMORY.md",
+    "bytes": 7825,
+    "fileDigest": "f4ac082db1ef",
+    "anchored": 23,
+    "status": "clean",
+    "sidecarFreshness": "FRESH"
+  },
+  {
+    "name": "workspace",
+    "file": "--D--dsh-auto-memory--/MEMORY.md",
+    "bytes": 49158,
+    "fileDigest": "81db8c8a8dbf",
+    "anchored": 73,
+    "status": "clean",
+    "sidecarFreshness": "FRESH"
+  },
+  {
+    "name": "workspace-daily-2026-08-24",
+    "file": "--D--dsh-auto-memory--/2026-08-24.md",
+    "bytes": 636,
+    "fileDigest": "3fb932979e34",
+    "anchored": 1,
+    "status": "clean",
+    "sidecarFreshness": "FRESH"
+  },
+  {
+    "name": "workspace-daily-2026-08-23",
+    "file": "--D--dsh-auto-memory--/2026-08-23.md",
+    "bytes": 21219,
+    "fileDigest": "1bea4a991835",
+    "anchored": 29,
+    "status": "clean",
+    "sidecarFreshness": "FRESH"
+  },
+  {
+    "name": "reflections",
+    "file": "reflections/2026-08-23.md",
+    "bytes": 1251,
+    "fileDigest": "7d67d83a5ec9",
+    "anchored": 1,
+    "status": "clean",
+    "sidecarFreshness": "FRESH"
+  }
+]

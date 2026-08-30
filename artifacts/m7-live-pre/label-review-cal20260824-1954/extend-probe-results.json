@@ -1,0 +1,82 @@
+{
+ "X1_zh_to_en_transfer": {
+  "zhTrain_n": 32,
+  "zhPositives": 15,
+  "zh_cv_auc": 0.886,
+  "enMixedTest_n": 7,
+  "enMixed_ids": [
+   "cal-0068",
+   "cal-0002",
+   "cal-0031",
+   "cal-0035",
+   "cf-092",
+   "cf-095",
+   "cf-096"
+  ],
+  "enMixed_meanP": 0.528,
+  "enMixed_recall@0.5": 0.857
+ },
+ "X2_combinedEchoRule": {
+  "rule": "containment>=theta AND 无疑问/回忆标记 -> 判回声",
+  "grid": [
+   {
+    "theta": 0.3,
+    "flaggedEcho": 7,
+    "flaggedActivate": 3,
+    "precision": 0.7,
+    "recall": 0.467
+   },
+   {
+    "theta": 0.4,
+    "flaggedEcho": 5,
+    "flaggedActivate": 3,
+    "precision": 0.625,
+    "recall": 0.333
+   },
+   {
+    "theta": 0.5,
+    "flaggedEcho": 5,
+    "flaggedActivate": 3,
+    "precision": 0.625,
+    "recall": 0.333
+   },
+   {
+    "theta": 0.6,
+    "flaggedEcho": 2,
+    "flaggedActivate": 2,
+    "precision": 0.5,
+    "recall": 0.133
+   },
+   {
+    "theta": 0.7,
+    "flaggedEcho": 1,
+    "flaggedActivate": 1,
+    "precision": 0.5,
+    "recall": 0.067
+   }
+  ],
+  "bestByF1": {
+   "theta": 0.3,
+   "flaggedEcho": 7,
+   "flaggedActivate": 3,
+   "precision": 0.7,
+   "recall": 0.467
+  },
+  "singleSignalCompare": {
+   "containmentOnly_echoMedian": 0.273,
+   "activateMedian": 0.462
+  }
+ },
+ "X3_lexiconBaseline": {
+  "n": 39,
+  "precision": 0.864,
+  "recall": 0.864,
+  "f1": 0.864,
+  "falsePositives": [
+   "cal-0015",
+   "cal-0014",
+   "cf-104"
+  ],
+  "note": "纯词表规则；对照 T2 学习型 AUC=0.901"
+ }
+}

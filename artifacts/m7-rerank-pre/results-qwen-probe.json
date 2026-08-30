@@ -1,0 +1,46 @@
+{
+  "environment": {
+    "reranker": "qwen3-reranker-0.6b",
+    "revision": "e61197ed45024b0ed8a2d74b80b4d909f1255473",
+    "license": "Apache-2.0",
+    "model_load_seconds": 0.84,
+    "peak_rss_gb": 4.95,
+    "note": "bounded probe: 10 queries x top-10 pairs; full-slice quality comparable to candidate 1 slice, latency extrapolates linearly per pair"
+  },
+  "results": [
+    {
+      "layer": "L1",
+      "arm": "qwen3-reranker-0.6b top10->10 (probe)",
+      "recall@1": 0.8,
+      "recall@5": 1.0,
+      "recall@10": 1.0,
+      "mrr": 0.9,
+      "ndcg@10": 0.9262,
+      "hardneg_error": 0.3333,
+      "supersede_correct": null,
+      "xlang_recall@5": 1.0,
+      "code_recall@5": null,
+      "latency_p50_ms": 7826.2,
+      "latency_p95_ms": 8780.1,
+      "pairs_per_query": 10,
+      "sliceQueries": 10
+    },
+    {
+      "layer": "L2",
+      "arm": "qwen3-reranker-0.6b top10->10 (probe)",
+      "recall@1": 0.5,
+      "recall@5": 1.0,
+      "recall@10": 1.0,
+      "mrr": 0.6867,
+      "ndcg@10": 0.7649,
+      "hardneg_error": 0.125,
+      "supersede_correct": null,
+      "xlang_recall@5": null,
+      "code_recall@5": null,
+      "latency_p50_ms": 9495.8,
+      "latency_p95_ms": 11951.1,
+      "pairs_per_query": 10,
+      "sliceQueries": 10
+    }
+  ]
+}

@@ -1,0 +1,4 @@
+{"sampleId": "hd-supp-s-01", "pairId": "hd-sup-s-01", "queryText": "这个函数写得挺优雅的。", "proposedAction": "suppress", "expectedMemoryIds": [], "forbiddenMemoryIds": [], "harmful": false, "language": "zh", "rationale": "评价陈述"}
+{"sampleId": "hd-supp-s-02", "pairId": "hd-sup-s-02", "queryText": "今天天气真不错，适合出去走走。", "proposedAction": "suppress", "expectedMemoryIds": [], "forbiddenMemoryIds": [], "harmful": false, "language": "zh", "rationale": "寒暄回声（与生活记录共享词汇）"}
+{"sampleId": "hd-supp-s-03", "pairId": "hd-sup-s-03", "queryText": "Python 的 GIL 是什么？", "proposedAction": "suppress", "expectedMemoryIds": [], "forbiddenMemoryIds": [], "harmful": false, "language": "zh", "rationale": "通用知识问答"}
+{"sampleId": "hd-supp-s-04", "pairId": "hd-sup-s-04", "queryText": "周末帮我排个健身计划。", "proposedAction": "suppress", "expectedMemoryIds": [], "forbiddenMemoryIds": [], "harmful": false, "language": "zh", "rationale": "生活请求"}

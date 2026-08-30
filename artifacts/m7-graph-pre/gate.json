@@ -1,0 +1,159 @@
+{
+  "policyVersion": "graph_gate_pre_v1",
+  "verdict": {
+    "probes": 8,
+    "bothEndpoints": 6,
+    "hop1Only": 1,
+    "neitherHop1": 1,
+    "hybridCoversBoth": 0.75,
+    "gateQuestion": "would explicit supersede/reference edges pull hop2 into top-k where hybrid misses it?",
+    "decision": "skipped-by-benchmark",
+    "rationale": "hybrid top-10 already surfaces both endpoints on 6/8 probes; remaining gap (1 probes hop2-only-missing) is addressable by M7-6 supersede-edge features in fusion (JS provenance already carries the edge), which carries no graph-store cost. Multi-hop corpus size (7 edges) cannot justify networkx/PPR maintenance."
+  },
+  "detail": [
+    {
+      "probeId": "mh01",
+      "query": "correction 禁止 jieba 预处理——被纠正的最初假设原文是什么?",
+      "hop1In": true,
+      "hop2In": true,
+      "top10": [
+        "r082",
+        "r081",
+        "r026",
+        "r088",
+        "r011",
+        "r138",
+        "r024",
+        "r137",
+        "r096",
+        "r017"
+      ]
+    },
+    {
+      "probeId": "mh02",
+      "query": "分页规则改成 64 条后,之前旧规则允许每页多少条?",
+      "hop1In": true,
+      "hop2In": true,
+      "top10": [
+        "r084",
+        "r017",
+        "r083",
+        "r021",
+        "r136",
+        "r002",
+        "r014",
+        "r025",
+        "r132",
+        "r062"
+      ]
+    },
+    {
+      "probeId": "mh03",
+      "query": "workerEpoch 改成每次重启换新之前,原型阶段的复用策略是什么?",
+      "hop1In": true,
+      "hop2In": true,
+      "top10": [
+        "r085",
+        "r001",
+        "r086",
+        "r017",
+        "r135",
+        "r138",
+        "r098",
+        "r133",
+        "r136",
+        "r132"
+      ]
+    },
+    {
+      "probeId": "mh04",
+      "query": "candidate 身份字段改为 memoryId 之后,被否决的第一版方案是什么?",
+      "hop1In": true,
+      "hop2In": true,
+      "top10": [
+        "r088",
+        "r022",
+        "r010",
+        "r013",
+        "r096",
+        "r027",
+        "r017",
+        "r087",
+        "r057",
+        "r066"
+      ]
+    },
+    {
+      "probeId": "mh05",
+      "query": "tie-break 冻结为 memoryId 字典序,替代了哪种不可复现的做法?",
+      "hop1In": true,
+      "hop2In": false,
+      "top10": [
+        "r096",
+        "r067",
+        "r010",
+        "r021",
+        "r057",
+        "r136",
+        "r088",
+        "r060",
+        "r024",
+        "r133"
+      ]
+    },
+    {
+      "probeId": "mh06",
+      "query": "semantic 状态禁止持久化到 semantic-pre 之外,推翻了哪个原型决定?",
+      "hop1In": true,
+      "hop2In": true,
+      "top10": [
+        "r098",
+        "r024",
+        "r026",
+        "r097",
+        "r005",
+        "r033",
+        "r135",
+        "r096",
+        "r136",
+        "r133"
+      ]
+    },
+    {
+      "probeId": "mh07",
+      "query": "向量禁止跨模型混用索引——最初被纠正的混合假设是什么?",
+      "hop1In": true,
+      "hop2In": true,
+      "top10": [
+        "r024",
+        "r100",
+        "r099",
+        "r138",
+        "r135",
+        "r096",
+        "r082",
+        "r136",
+        "d010",
+        "r012"
+      ]
+    },
+    {
+      "probeId": "mh08",
+      "query": "哪个安全回退层在 Python 不可用时顶上,它的 BM25 参数是什么?",
+      "hop1In": false,
+      "hop2In": false,
+      "top10": [
+        "r136",
+        "r133",
+        "r027",
+        "r138",
+        "r056",
+        "r098",
+        "r058",
+        "r024",
+        "r097",
+        "r135"
+      ]
+    }
+  ]
+}

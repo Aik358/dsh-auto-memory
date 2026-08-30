@@ -1,0 +1,17 @@
+{
+ "totalHumanGold": 137,
+ "byAction": {
+  "suppress": 36,
+  "activate": 65,
+  "prefetch": 36
+ },
+ "meetsQuotaPerClass15": true,
+ "deferredSamples": [
+  "cal-0062",
+  "cal-0073",
+  "hd-048",
+  "hd-049"
+ ],
+ "verdict": "gold_quota_met_and_exceeded — all classes >=29",
+ "nextGate": "live shadow held-out validation (requires worker wiring + 3080 restart)"
+}

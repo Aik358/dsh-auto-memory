@@ -1,0 +1,18 @@
+{
+ "mem_27a7b9a977e04d2498ed94f0282e5844": {
+  "text": "## 2026-08-24 - 测试条目D【关键词:琥珀协议】:项目笔记检索用样例——虚构决策「采用琥珀协议作为模块间通信格式」,供跨会话召回验证,可随下次蒸馏清理。",
+  "source": "semantic-pre/vectors-9aade49458b92ad8.json chunk excerpts"
+ },
+ "mem_31919729c447464585ee14ab25d2f033": {
+  "text": "## 2026-08-24 - 分词决策更新(勘误旧记录):M7 sidecar 不用 jieba。dense/分块路径=embedder 自带 tokenizer 直出 token id(chunk_record_token_ids);词法 BM25 臂=内置 _tokenize(NFKC+CJK bigram+as…",
+  "source": "semantic-pre/vectors-9aade49458b92ad8.json chunk excerpts"
+ },
+ "mem_b914e1b055d4437eaed77cace8546b91": {
+  "text": "测试条目C【关键词：蓝鲸-7号】：日志检索用样例——记录一个虚构里程碑「蓝鲸-7号联调通过」，供后续 memory_recall_pre 验证召回，蒸馏时可清理。",
+  "source": "workspaces/--D--personal_issue--/2026-08-24.md 18:22 entry"
+ },
+ "mem_4257151bfacc49ecbd54f4f9f60c092d": {
+  "text": "生活记录：今天天气不错，午饭吃的面条。",
+  "source": "workspaces/--D--personal_issue--/2026-08-24.md 18:29 entry"
+ }
+}

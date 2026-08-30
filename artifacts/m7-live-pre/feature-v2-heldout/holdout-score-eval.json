@@ -1,0 +1,198 @@
+{
+ "runId": "holdout-score-eval-20260825",
+ "policyVersions": {
+  "features": "activation_features_pre_v2",
+  "intent": "recall_intent_lr_pre_v1",
+  "activation": "activation_policy_pre_v2"
+ },
+ "mode": "offline replay of FROZEN policy; no retuning; production retrieval path (BGE-M3 + BM25 D6 fusion)",
+ "humanGoldTotal": 69,
+ "deferredExcluded": [
+  "hd-048",
+  "hd-049"
+ ],
+ "anchorRecovery": {
+  "reason": "the 4 synthetic test memories anchoring this set were distilled out of the live corpus on 2026-08-25 after the user confirmed them disposable (11:33 note); recovered from vector-snapshot excerpts + workspace log entries",
+  "file": "anchor-recovery.json",
+  "count": 4,
+  "ids": [
+   "mem_27a7b9a977e04d2498ed94f0282e5844",
+   "mem_31919729c447464585ee14ab25d2f033",
+   "mem_4257151bfacc49ecbd54f4f9f60c092d",
+   "mem_b914e1b055d4437eaed77cace8546b91"
+  ]
+ },
+ "mainSet": {
+  "n": 63,
+  "predictedEmit": 12,
+  "activateGold": 23,
+  "actPrecision": 0.9166666666666666,
+  "actRecall": 0.4782608695652174,
+  "emitOnSuppress": 0,
+  "emitOnPrefetch": 1,
+  "prefetchOnSuppress": 1,
+  "actPrecisionCI95": [
+   0.727,
+   1.0
+  ],
+  "actRecallCI95": [
+   0.273,
+   0.696
+  ]
+ },
+ "observations": {
+  "emitOnPrefetch": 1,
+  "prefetchOnSuppress": 1
+ },
+ "strata": {
+  "zh": {
+   "n": 57,
+   "predictedEmit": 8,
+   "activateGold": 17,
+   "actPrecision": 0.875,
+   "actRecall": 0.4117647058823529,
+   "emitOnSuppress": 0,
+   "emitOnPrefetch": 1,
+   "prefetchOnSuppress": 1
+  },
+  "en": {
+   "n": 6,
+   "predictedEmit": 4,
+   "activateGold": 6,
+   "actPrecision": 1.0,
+   "actRecall": 0.6666666666666666,
+   "emitOnSuppress": 0,
+   "emitOnPrefetch": 0,
+   "prefetchOnSuppress": 0
+  },
+  "explicit_lane": {
+   "n": 41,
+   "predictedEmit": 12,
+   "activateGold": 20,
+   "actPrecision": 0.9166666666666666,
+   "actRecall": 0.55,
+   "emitOnSuppress": 0,
+   "emitOnPrefetch": 1,
+   "prefetchOnSuppress": 0
+  },
+  "proactive_lane": {
+   "n": 22,
+   "predictedEmit": 0,
+   "activateGold": 3,
+   "actPrecision": null,
+   "actRecall": 0.0,
+   "emitOnSuppress": 0,
+   "emitOnPrefetch": 0,
+   "prefetchOnSuppress": 1
+  },
+  "independent_subset": {
+   "n": 44,
+   "predictedEmit": 8,
+   "activateGold": 17,
+   "actPrecision": 0.875,
+   "actRecall": 0.4117647058823529,
+   "emitOnSuppress": 0,
+   "emitOnPrefetch": 1,
+   "prefetchOnSuppress": 1
+  },
+  "overlapping_subset": {
+   "n": 19,
+   "predictedEmit": 4,
+   "activateGold": 6,
+   "actPrecision": 1.0,
+   "actRecall": 0.6666666666666666,
+   "emitOnSuppress": 0,
+   "emitOnPrefetch": 0,
+   "prefetchOnSuppress": 0
+  },
+  "cat:echo-vs-recall": {
+   "n": 20,
+   "predictedEmit": 7,
+   "activateGold": 10,
+   "actPrecision": 1.0,
+   "actRecall": 0.7,
+   "emitOnSuppress": 0,
+   "emitOnPrefetch": 0,
+   "prefetchOnSuppress": 1
+  },
+  "cat:failure-vs-planning": {
+   "n": 12,
+   "predictedEmit": 0,
+   "activateGold": 6,
+   "actPrecision": null,
+   "actRecall": 0.0,
+   "emitOnSuppress": 0,
+   "emitOnPrefetch": 0,
+   "prefetchOnSuppress": 0
+  },
+  "cat:low-info": {
+   "n": 7,
+   "predictedEmit": 0,
+   "activateGold": 0,
+   "actPrecision": null,
+   "actRecall": null,
+   "emitOnSuppress": 0,
+   "emitOnPrefetch": 0,
+   "prefetchOnSuppress": 0
+  },
+  "cat:cross-lingual": {
+   "n": 6,
+   "predictedEmit": 4,
+   "activateGold": 6,
+   "actPrecision": 1.0,
+   "actRecall": 0.6666666666666666,
+   "emitOnSuppress": 0,
+   "emitOnPrefetch": 0,
+   "prefetchOnSuppress": 0
+  },
+  "cat:supersede": {
+   "n": 2,
+   "predictedEmit": 0,
+   "activateGold": 1,
+   "actPrecision": null,
+   "actRecall": 0.0,
+   "emitOnSuppress": 0,
+   "emitOnPrefetch": 0,
+   "prefetchOnSuppress": 0
+  },
+  "cat:supplementary-prefetch": {
+   "n": 12,
+   "predictedEmit": 1,
+   "activateGold": 0,
+   "actPrecision": 0.0,
+   "actRecall": null,
+   "emitOnSuppress": 0,
+   "emitOnPrefetch": 1,
+   "prefetchOnSuppress": 0
+  },
+  "cat:supplementary-suppress": {
+   "n": 4,
+   "predictedEmit": 0,
+   "activateGold": 0,
+   "actPrecision": null,
+   "actRecall": null,
+   "emitOnSuppress": 0,
+   "emitOnPrefetch": 0,
+   "prefetchOnSuppress": 0
+  }
+ },
+ "crossWorkspaceStratum": {
+  "n": 6,
+  "predictedEmit": 1,
+  "activateGold": 4,
+  "actPrecision": 1.0,
+  "actRecall": 0.25,
+  "emitOnSuppress": 0,
+  "emitOnPrefetch": 0,
+  "prefetchOnSuppress": 0,
+  "note": "JS authority layer (advisory relay); excluded from main gate by design"
+ },
+ "leakageCoverageNote": "This held-out set contains no harmful/correction/stale/PII samples; those hard gates are covered by the training-gold v2 replay (features-v2-replay.json: sViolations=0, harmfulEmit=0, emitOnP=0) and must be re-tested on real traffic in controlled shadow.",
+ "gates": {
+  "actPrecision >= 0.70": true,
+  "predictedEmit >= 8": true,
+  "harmfulEmit = 0": true,
+  "emitOnSuppress = 0": true
+ },
+ "verdict": "PASS"
+}

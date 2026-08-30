@@ -1,0 +1,66 @@
+{
+ "runId": "calibration-cal20260824-1855",
+ "provider": "bge-m3-pre-v1",
+ "modelRevision": "5617a9f61b028005a4858fdac845db406aefb181",
+ "dimension": 1024,
+ "chunkPolicy": "m7_chunk_pre_v1",
+ "modelLoadSec": 22.3,
+ "liveSurface": {
+  "records": 11,
+  "chunks": 11,
+  "source": "C:\\Users\\JH Z/.dsh\\memory\\semantic-pre\\derived-corpus.json"
+ },
+ "episodesSurface": {
+  "records": 251,
+  "chunks": 274,
+  "source": "D:\\dsh-auto-memory\\artifacts\\m7-corpus-pre\\episodes.jsonl",
+  "scopedKeys_ws_dsh-core": 128
+ },
+ "stopwords": 507,
+ "fusion": {
+  "mode": "hybrid",
+  "wDense": 0.7
+ },
+ "scoreWeights": {
+  "top": 0.6,
+  "margin": 0.15,
+  "evidence": 0.1,
+  "recency": 0.15,
+  "toolFail": 0.05
+ },
+ "labelPolicy": {
+  "isGoldTrueCount": 0,
+  "rule": "isGold=true requires human/user confirmation; every label in this run is strong-agent authored -> verdict insufficient_gold_for_active until reviewed"
+ },
+ "liveFixtureResolution": {
+  "amber": [
+   "mem_27a7b9a977e04d2498ed94f0282e5844"
+  ],
+  "whale": [
+   "mem_b914e1b055d4437eaed77cace8546b91"
+  ],
+  "m78fix-md": [
+   "mem_5f6a877ffed24248af16abd8567745f2"
+  ],
+  "push-investigation": [
+   "mem_044dd2f5581549bfbae880d7a643a862"
+  ],
+  "tokenize-correction": [
+   "mem_31919729c447464585ee14ab25d2f033"
+  ],
+  "lunch": [
+   "mem_4257151bfacc49ecbd54f4f9f60c092d"
+  ],
+  "shadow-next": [
+   "mem_44d318bbc806481e9ea672cd13fb2ae7"
+  ],
+  "log-overview": [
+   "mem_4257151bfacc49ecbd54f4f9f60c092d",
+   "mem_44d318bbc806481e9ea672cd13fb2ae7",
+   "mem_67e60026e941422eabb3605befce1c0f",
+   "mem_b914e1b055d4437eaed77cace8546b91",
+   "mem_cd96bfa374594427b3104d8c8fa860d8",
+   "mem_fa5325639f2b4e7883c3a5f504a69ab4"
+  ]
+ }
+}

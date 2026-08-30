@@ -8,7 +8,8 @@ const home = path.join(ws, '.dsh-home')
 const projectRoot = path.join(ws, '.project-root')
 const userRoot = path.join(ws, '.user-root')
 mkdirSync(home, { recursive: true })
-writeFileSync(path.join(home, 'dsh-auto-memory.json'), JSON.stringify({
+// 审查修复轮2:配置文件名必须是 _pre 版(见 consolidate-isolation 同注)
+writeFileSync(path.join(home, 'dsh-auto-memory-pre.json'), JSON.stringify({
   memoryRoot: projectRoot,
   userMemoryDir: userRoot,
   projectMemoryDir: '.project-memory',

@@ -1,0 +1,194 @@
+{
+  "pinnedAt": "2026-08-24",
+  "models": {
+    "qwen3-emb-0.6b": {
+      "repo_id": "Qwen/Qwen3-Embedding-0.6B",
+      "revision": "97b0c614be4d77ee51c0cef4e5f07c00f9eb65b3",
+      "license": "Apache-2.0",
+      "local_path": "D:\\dsh-auto-memory\\python\\bench\\models\\qwen3-emb-0.6b",
+      "total_bytes": 1207470234,
+      "files": [
+        {
+          "file": "1_Pooling/config.json",
+          "bytes": 313,
+          "sha256": "37bf193fa101f19101bfad9c31d3eb0f786e247b7b1e5cb7f007d730eed1ddbd",
+          "local_name": "D:\\dsh-auto-memory\\python\\bench\\models\\qwen3-emb-0.6b\\1_Pooling__config.json"
+        },
+        {
+          "file": "config.json",
+          "bytes": 727,
+          "sha256": "b5bf1f51fc45be473a54718cef92448d90a1be001bf9b9a44b8c7f10a19feaa9",
+          "local_name": "D:\\dsh-auto-memory\\python\\bench\\models\\qwen3-emb-0.6b\\config.json"
+        },
+        {
+          "file": "config_sentence_transformers.json",
+          "bytes": 215,
+          "sha256": "10667c72ddb772627bf1780cb7f86af8e2ae0032b8c243c731172064105c6961",
+          "local_name": "D:\\dsh-auto-memory\\python\\bench\\models\\qwen3-emb-0.6b\\config_sentence_transformers.json"
+        },
+        {
+          "file": "generation_config.json",
+          "bytes": 117,
+          "sha256": "28396d421a2108acce96383f6a7de78008f7f1b17f807958f3c14c51dbfb65fb",
+          "local_name": "D:\\dsh-auto-memory\\python\\bench\\models\\qwen3-emb-0.6b\\generation_config.json"
+        },
+        {
+          "file": "merges.txt",
+          "bytes": 1671853,
+          "sha256": "8831e4f1a044471340f7c0a83d7bd71306a5b867e95fd870f74d0c5308a904d5",
+          "local_name": "D:\\dsh-auto-memory\\python\\bench\\models\\qwen3-emb-0.6b\\merges.txt"
+        },
+        {
+          "file": "model.safetensors",
+          "bytes": 1191586416,
+          "sha256": "0437e45c94563b09e13cb7a64478fc406947a93cb34a7e05870fc8dcd48e23fd",
+          "local_name": "D:\\dsh-auto-memory\\python\\bench\\models\\qwen3-emb-0.6b\\model.safetensors",
+          "upstream_lfs_verified": true
+        },
+        {
+          "file": "modules.json",
+          "bytes": 349,
+          "sha256": "84e40c8e006c9b1d6c122e02cba9b02458120b5fb0c87b746c41e0207cf642cf",
+          "local_name": "D:\\dsh-auto-memory\\python\\bench\\models\\qwen3-emb-0.6b\\modules.json"
+        },
+        {
+          "file": "tokenizer.json",
+          "bytes": 11423705,
+          "sha256": "def76fb086971c7867b829c23a26261e38d9d74e02139253b38aeb9df8b4b50a",
+          "local_name": "D:\\dsh-auto-memory\\python\\bench\\models\\qwen3-emb-0.6b\\tokenizer.json"
+        },
+        {
+          "file": "tokenizer_config.json",
+          "bytes": 9706,
+          "sha256": "253153d0738ceb4c668d2eff957714dd2bea0b56de772a9fdccd96cbf517e6a0",
+          "local_name": "D:\\dsh-auto-memory\\python\\bench\\models\\qwen3-emb-0.6b\\tokenizer_config.json"
+        },
+        {
+          "file": "vocab.json",
+          "bytes": 2776833,
+          "sha256": "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910",
+          "local_name": "D:\\dsh-auto-memory\\python\\bench\\models\\qwen3-emb-0.6b\\vocab.json"
+        }
+      ]
+    },
+    "multilingual-e5-large": {
+      "repo_id": "intfloat/multilingual-e5-large",
+      "revision": "3d7cfbdacd47fdda877c5cd8a79fbcc4f2a574f3",
+      "license": "MIT",
+      "local_path": "D:\\dsh-auto-memory\\python\\bench\\models\\multilingual-e5-large",
+      "total_bytes": 2261765112,
+      "files": [
+        {
+          "file": "1_Pooling/config.json",
+          "bytes": 201,
+          "sha256": "56c469dba9e31869bb7dfceb9b3d76ac06549d1ba869509d8eb4e8aeb31d62d1",
+          "local_name": "D:\\dsh-auto-memory\\python\\bench\\models\\multilingual-e5-large\\1_Pooling__config.json"
+        },
+        {
+          "file": "config.json",
+          "bytes": 690,
+          "sha256": "e42d98d0c211928d788467aa951000391017f647c76ca8ce2ef6dd8d0c9ce5ca",
+          "local_name": "D:\\dsh-auto-memory\\python\\bench\\models\\multilingual-e5-large\\config.json"
+        },
+        {
+          "file": "model.safetensors",
+          "bytes": 2239611368,
+          "sha256": "020afdebf2762b29fcaf286629a96c3b3b65af241f6a08226b1cfee60a21def6",
+          "local_name": "D:\\dsh-auto-memory\\python\\bench\\models\\multilingual-e5-large\\model.safetensors",
+          "upstream_lfs_verified": true
+        },
+        {
+          "file": "modules.json",
+          "bytes": 387,
+          "sha256": "c6e29747481e8b5dd2b58401966aeac910de39092f90cda9a704b1545f902b04",
+          "local_name": "D:\\dsh-auto-memory\\python\\bench\\models\\multilingual-e5-large\\modules.json"
+        },
+        {
+          "file": "sentence_bert_config.json",
+          "bytes": 57,
+          "sha256": "948201d8329907aae938fa62f9ceeed53f5694dacc2b87b9f3b78b37ee986529",
+          "local_name": "D:\\dsh-auto-memory\\python\\bench\\models\\multilingual-e5-large\\sentence_bert_config.json"
+        },
+        {
+          "file": "sentencepiece.bpe.model",
+          "bytes": 5069051,
+          "sha256": "cfc8146abe2a0488e9e2a0c56de7952f7c11ab059eca145a0a727afce0db2865",
+          "local_name": "D:\\dsh-auto-memory\\python\\bench\\models\\multilingual-e5-large\\sentencepiece.bpe.model"
+        },
+        {
+          "file": "special_tokens_map.json",
+          "bytes": 280,
+          "sha256": "06e405a36dfe4b9604f484f6a1e619af1a7f7d09e34a8555eb0b77b66318067f",
+          "local_name": "D:\\dsh-auto-memory\\python\\bench\\models\\multilingual-e5-large\\special_tokens_map.json"
+        },
+        {
+          "file": "tokenizer.json",
+          "bytes": 17082660,
+          "sha256": "62c24cdc13d4c9952d63718d6c9fa4c287974249e16b7ade6d5a85e7bbb75626",
+          "local_name": "D:\\dsh-auto-memory\\python\\bench\\models\\multilingual-e5-large\\tokenizer.json"
+        },
+        {
+          "file": "tokenizer_config.json",
+          "bytes": 418,
+          "sha256": "efb5c0d09722e5fe59a462cd2a9976ee216d55b037597d997cd3fe833216da15",
+          "local_name": "D:\\dsh-auto-memory\\python\\bench\\models\\multilingual-e5-large\\tokenizer_config.json"
+        }
+      ]
+    },
+    "bge-m3": {
+      "repo_id": "BAAI/bge-m3",
+      "revision": "5617a9f61b028005a4858fdac845db406aefb181",
+      "license": "MIT",
+      "local_path": "D:\\dsh-auto-memory\\python\\bench\\.hf-cache\\models--BAAI--bge-m3\\snapshots\\5617a9f61b028005a4858fdac845db406aefb181",
+      "total_bytes": 2293315610,
+      "files": [
+        {
+          "file": "config.json",
+          "bytes": 687,
+          "sha256": "26159e7ad065073448460117eb24b7a4572f6f4e78eadff65dc0a11c052449fa"
+        },
+        {
+          "file": "config_sentence_transformers.json",
+          "bytes": 123,
+          "sha256": "1eef72430e7194a1e59680e635aed81ffa083f05668dbc5bb1c56c04c0999c38"
+        },
+        {
+          "file": "modules.json",
+          "bytes": 349,
+          "sha256": "84e40c8e006c9b1d6c122e02cba9b02458120b5fb0c87b746c41e0207cf642cf"
+        },
+        {
+          "file": "pytorch_model.bin",
+          "bytes": 2271145830,
+          "sha256": "b5e0ce3470abf5ef3831aa1bd5553b486803e83251590ab7ff35a117cf6aad38"
+        },
+        {
+          "file": "sentence_bert_config.json",
+          "bytes": 54,
+          "sha256": "eb9b44b13c0f52a3b3685c3b1cbdea1ba8b04bea123b98f61610048940776eb1"
+        },
+        {
+          "file": "sentencepiece.bpe.model",
+          "bytes": 5069051,
+          "sha256": "cfc8146abe2a0488e9e2a0c56de7952f7c11ab059eca145a0a727afce0db2865"
+        },
+        {
+          "file": "special_tokens_map.json",
+          "bytes": 964,
+          "sha256": "8c785abebea9ae3257b61681b4e6fd8365ceafde980c21970d001e834cf10835"
+        },
+        {
+          "file": "tokenizer.json",
+          "bytes": 17098108,
+          "sha256": "21106b6d7dab2952c1d496fb21d5dc9db75c28ed361a05f5020bbba27810dd08"
+        },
+        {
+          "file": "tokenizer_config.json",
+          "bytes": 444,
+          "sha256": "a62b2b6784f990259fddef5f16388693a8043be4f69179e6a5257eeb3f9abac4"
+        }
+      ]
+    }
+  },
+  "verificationNote": "bge-m3: snapshot_download from huggingface.co (pre-proxy-off), local sha256 computed; qwen3/e5: hf-mirror segmented download, safetensors sha256 == upstream LFS oid (blobs=true API)"
+}

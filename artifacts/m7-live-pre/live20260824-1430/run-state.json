@@ -1,0 +1,67 @@
+{
+  "runId": "live20260824-1430",
+  "createdAt": "2026-08-24T14:30:00+08:00",
+  "phase": "STOPPED at phase E blocker; defaults restored; M7 NOT live",
+  "baseline": {
+    "time": "2026-08-24 14:30 +0800",
+    "branch": "preview",
+    "head": "aa7d6f0",
+    "node": "v24.18.0",
+    "python": "3.10.11 (bench venv)",
+    "cpu": "AMD Ryzen 7 9700X",
+    "ramTotalGB": 31.1,
+    "ramFreeGB": 19.8,
+    "proxy": "hf-direct blocked, hf-mirror 200",
+    "3080": {
+      "pid": 63788,
+      "cmd": "dsh web",
+      "debug": "assoc=false bridge=false inbox=false shadow=false; NO pythonBackend key (old loaded code - restart required)"
+    }
+  },
+  "hardeningVerified": [
+    "encode_texts/build_doc_ids present",
+    "hybrid wDense 0.7 in worker",
+    "triple filter + wsref_of mirror",
+    "correction negative + hard-drop",
+    "toolFailures weighted",
+    "graph skipped / rerank deferred"
+  ],
+  "gitignoreVerified": [
+    "python/bench/.hf-cache/",
+    "python/bench/models/",
+    "python/bench/.venv/",
+    "artifacts/m7-corpus-pre/*.jsonl"
+  ],
+  "realMemoryBaseline": "5 sources clean/FRESH, 127 anchored records (see real-memory-baseline.json)",
+  "evidencePreBaseline": "events/2026-08-23.jsonl (2491 B)",
+  "semanticPre": "created for config; embedding-config.json (real BGE) in place; NO vectors yet (correct)",
+  "gateTests": {
+    "regression": "26/26 pass",
+    "realSmoke": "12/12 pass (22.8s)",
+    "hygiene": "diff-check/BOM/_dev clean"
+  },
+  "blocker": {
+    "type": "host-wiring-gap",
+    "detail": "context-host bridge envelopesBuilt=0: live 会话事件未触发 envelope 构建(paths 未捕获或事件未达 bridge;runtime segments=0)。python worker 因此零启动(starts=0),无法完成真实 index_sync/BGE 建库/shadow 采集。",
+    "evidence": {
+      "envelopesBuilt": 0,
+      "pythonStarts": 0,
+      "sessionCv": 0,
+      "segments": 0,
+      "sidecarFiles": 34
+    },
+    "needs": "宿主 context-host 事件订阅/paths 捕获接线修复(M7-1 index_sync 宿主推送从未接线)",
+    "decision": "停止 live 流程,恢复默认关闭,报告 blocker;不得伪造 live 证据"
+  },
+  "closedStateVerified": {
+    "assoc": false,
+    "bridge": false,
+    "sink": "null",
+    "inbox": false,
+    "source": "fake",
+    "pythonBackend": "enabled=false started=false",
+    "semanticPre": "config only (no vectors/no shadows)",
+    "evidencePre": "2491 B unchanged",
+    "pythonProcesses": 0
+  }
+}
