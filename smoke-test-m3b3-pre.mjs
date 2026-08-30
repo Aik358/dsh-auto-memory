@@ -41,7 +41,7 @@ apply(ctx, {})
 
 const tool = (name) => registeredTools.find((t) => t.name === name)
 if (registeredTools.length !== 14) throw new Error('expected 14 tools, got ' + registeredTools.length)
-if (registeredRoutes.length !== 32) throw new Error('expected 32 routes, got ' + registeredRoutes.length)
+if (registeredRoutes.length !== 33) throw new Error('expected 33 routes, got ' + registeredRoutes.length)
 
 const cfgRoute = registeredRoutes.find((r2) => r2.path === '/api/dsh-auto-memory-pre/config')
 let body
@@ -73,7 +73,7 @@ const extractMarkerIds = (text) => (String(text).match(/mem_[0-9a-f]{32}/g) || [
 {
   const c = await cfgGet()
   if (c.memoryAnchorEnabled !== false) throw new Error('memoryAnchorEnabled must default false, got ' + c.memoryAnchorEnabled)
-  console.log('E1 默认配置 ✓ (memoryAnchorEnabled=false, 14 tools, 26 routes)')
+  console.log('E1 默认配置 ✓ (memoryAnchorEnabled=false, 14 tools, 33 routes)')
 }
 
 // ---------- E2 关闭态逐字节回归 ----------

@@ -211,16 +211,63 @@ autoConsolidateCooldownMinutes=30
 
 ---
 
+## 4.5 接手方交付记录(2026-08-30 晚,混元 4;分支 preview,起点 1e65d20)
+
+回归: baseline 34/34 → 收尾 **37/37 全绿**(新增 3 套件 / 129 条断言)。以下全部在 `_pre`
+命名空间内,未触碰 fv2 决策核、M5/M6 validator、Reference Tail 固定边界与 seen 语义。
+
+| 项 | 状态 | 落点 |
+|---|---|---|
+| P0 act.skill Python 档集成 | **done** | activation-host-pre.js `matchSkillByCandidates` + `offerExternalActivation` 附着;activation-inbox-pre.js 新增 `SKILL_TAIL_BUDGET_PRE_V1`/`clipBytes`/`validateActivationSkillPre`/`renderSkillBlock`,packet 带可选 `skill`;`renderTailFor` 同源传入 |
+| P1 episode intent 清洗 | **done**(含缺陷修复) | 新增 lib/intent-clean-pre.js(纯函数,index.js consolidateTurn 等价调用);修掉「含 `<memory_system>` 整条跳过」抢跑导致真问题被丢的缺陷 |
+| P2 技能晋升观察 | **已诊断,未改代码** | 两个硬阻塞(见 §4.6) |
+| P3 M10 存储管理 | **done** | 新增 lib/storage-manage-pre.js + `factStore.revokeBySource` + `activationHost.purgeMemory`(+ `inbox.purgeMemoryId`/`registry.boxes()`)+ `/storage-manage` 端点 + client.js「存储管理」页签 |
+| P4 发布工程 | **核实,未执行** | 见 §4.7——含外部不可逆动作,须用户决策 |
+
+新增测试:`smoke-test-m83-skill-packet-pre.mjs`(60)、`smoke-test-m84-intent-clean-pre.mjs`(26)、
+`smoke-test-m85-storage-manage-pre.mjs`(43)。
+路由数 32→33,三处计数断言已同步(smoke-test.mjs:68 / smoke-test-m3b3-pre.mjs:44 /
+smoke-test-context-observer.mjs:108)——**以后每新增一个路由都要同步这三处**。
+
+**P0 关键不变量**(改动 skill 渲染时必须守住):packet 只有在渲染确实把技能段放进去时才落
+`skill`(见 `buildReferenceTailPacketPre` 的 `rendered.skillIncluded`);否则 build 与
+`renderTailFor` 的重渲染文本不一致 → exactDigest 校验失败 → 整单静默降级为空注入。
+
+### 4.6 P2 诊断:技能为什么永远晋升不了(未改代码,留给下一轮决策)
+
+实测 `~/.dsh/memory/hub-pre/procedures.json`:3 个技能,2 observed + 1 deprecated;
+最活跃的 `proc_pre_45e4426a…` 已有 cite=8 / seen=14 / read=2,但 **sessions=0、success=0**。
+
+1. **`success` 证据全仓零产出方**:`createSuccessEvidencePre` 在 lib/context-bridge-pre.js:352
+   已导出,但 grep 全仓**没有任何调用点**。而门槛 `procedureMinSuccess=2` 要求
+   `evidence.success ≥ 2` → 自然使用中技能**永远无法自动晋升**。
+2. **会话多样性计数疑似从未喂入**:`addEvidence` 只在 `ev.sessionRef` 非空时才计数
+   (procedure-store-pre.js:195-201),落盘 JSON 里 `_sessions` 字段缺失。调用方
+   (context-host-pre.js:576)取 `list[0].sessionId || lastSegmentSessionRef`,需实机确认二者是否为空。
+
+### 4.7 P4 发布工程:核实到的真实就绪度(与 §2 的描述有出入,以代码为准)
+
+- **C2 资产包 npm 发布**:外部不可逆动作,未做(铁律:不 publish)。需 npm 凭据 + 118MB 资产包。
+- **首启下载向导**:`createSemanticDownloaderPre` 具备双镜像(auto=cn→intl)、SHA256 校验、
+  进度、按块取消;但**没有断点续传**(代码中无 Range/resume 实现)。首启弹窗
+  (`kind=modelDownload`)**未接线**——client.js 无该分支,原型仅存在于 artifacts/m7-live-pre/ui-assets/。
+- **设置页七态状态机**:`resolveSemanticTier` 只产出 c1/c2/c3 三档,UI 徽章四态,离「七态」尚远。
+- **lexical_pre_v3(b0.45)**:属算法窗口(须同步 Python byte-twin + 重校准),建议不要混在发布工程做。
+
 ## 5. 建议的下一步执行顺序
 
 ```
 1. 读本文 + FREEZE-AND-ROADMAP + m7-progress-checkpoint（恢复上下文）
-2. 跑回归确认 34/34（baseline sanity）
-3. P0: act.skill Python 档集成（M6 packet skill 字段扩展）
+2. 跑回归确认 37/37（baseline sanity；注意 m53 的顺序敏感抖动见 §4）
+3. P0: act.skill Python 档集成（M6 packet skill 字段扩展）        ← 2026-08-30 已完成
    → 验证: 激活技能 → 匹配 query → delivered tail 含 checklist
-4. P1: 自然对话 2 轮 → 查 episodes.json intent 干净度
-5. P2: 观察技能晋升（3 会话+2 成功，不写代码）
-6. P3: M10 组装（删除三联动+健康扫描）
-7. P4: 发布工程（C2 资产包+向导+lexical_v3）
+4. P1: 自然对话 2 轮 → 查 episodes.json intent 干净度              ← 代码层已锁死，实机待用户
+5. P2: 观察技能晋升（3 会话+2 成功，不写代码）                     ← 已诊断出 2 个硬阻塞（§4.6）
+6. P3: M10 组装（删除三联动+健康扫描）                             ← 2026-08-30 已完成
+7. P4: 发布工程（C2 资产包+向导+lexical_v3）                       ← 需用户决策（§4.7，含 npm 发布）
 8. 全量测试 → 标 M8/M9 live → G-02 v2 → 最终发布
 ```
+
+**下一轮的入口优先级**（基于 §4.6/§4.7 的实测）：
+①先解 P2 的 `success` 零产出（否则 M9 晋升链路形同虚设）→ ②P4 的发布决策需用户拍板
+（npm 发布不可逆）→ ③lexical_pre_v3 单独开算法窗口，勿与发布混做。
