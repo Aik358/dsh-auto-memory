@@ -16,20 +16,20 @@ An associative-memory & proactive-companion plugin for the DeepSeek Harness Web 
 
 ---
 
-## ✨ Highlights in 30 seconds
+## Highlights in 30 seconds
 
 | | |
 |---|---|
-| 🧠 **Three-layer memory engine** | User rules → project notes → daily logs; auto-injected + on-demand recall, prefix-cache friendly |
-| ✍️ **Memory writes itself** | A subagent quietly evaluates every turn and files topic-grouped entries — you never "remember to log" |
-| 🔔 **Proactive reminders** | The AI spots deadlines and promises in conversation, files them into the calendar and reminds you later |
-| 🎛️ **Everything is a switch** | Welcome tour + settings page, every feature individually toggleable (incl. unattended mode) |
-| 🌐 **External memory inheritance** | Memories from WorkBuddy / CodeBuddy / Claude Code / Codex are scanned, importable, per-source managed |
-| 🛡️ **Production-grade hygiene** | Write gate (mojibake/stutter/JSON-injection blocking) + dirty-token scanner + credentials never enter prompts |
+| **Three-layer memory engine** | User rules → project notes → daily logs; auto-injected + on-demand recall, prefix-cache friendly |
+| **Memory writes itself** | A subagent quietly evaluates every turn and files topic-grouped entries — you never "remember to log" |
+| **Proactive reminders** | The AI spots deadlines and promises in conversation, files them into the calendar and reminds you later |
+| **Everything is a switch** | Welcome tour + settings page, every feature individually toggleable (incl. unattended mode) |
+| **External memory inheritance** | Memories from WorkBuddy / CodeBuddy / Claude Code / Codex are scanned, importable, per-source managed |
+| **Production-grade hygiene** | Write gate (mojibake/stutter/JSON-injection blocking) + dirty-token scanner + credentials never enter prompts |
 
 ---
 
-## 🧭 Welcome Tour (new in v0.1.30)
+## Welcome Tour (new in v0.1.30)
 
 After first install or an upgrade, the plugin auto-plays a **step-by-step welcome tour** — not an ad popup, but the home of every feature switch:
 
@@ -47,7 +47,7 @@ One-time catch-up for upgraders: from v0.1.30 every user auto-plays the full tou
 
 ---
 
-## 🧠 Three-layer memory system
+## Three-layer memory system
 
 | Layer | Location | Content |
 |---|---|---|
@@ -60,7 +60,7 @@ One-time catch-up for upgraders: from v0.1.30 every user auto-plays the full tou
 
 ---
 
-## 🗂️ Feature tour
+�️ Feature tour
 
 ### Auto-consolidation — memory writes itself
 
@@ -100,7 +100,7 @@ Sessions and memories from WorkBuddy / CodeBuddy / Claude Code / Codex are scann
 
 ---
 
-## ⚙️ Engineering core (restraint by design)
+## Engineering core (restraint by design)
 
 - **Zero runtime dependencies** beyond Node built-ins
 - **Prefix-cache friendly**: byte-stable prompts keep DeepSeek's prefix cache hitting — your history is never re-encoded
@@ -110,7 +110,7 @@ Sessions and memories from WorkBuddy / CodeBuddy / Claude Code / Codex are scann
 
 ---
 
-## 📸 UI gallery
+## UI gallery
 
 ### Memory panel · Overview (away greeting + AI period summaries)
 
@@ -156,7 +156,7 @@ Sessions and memories from WorkBuddy / CodeBuddy / Claude Code / Codex are scann
 
 ---
 
-## 🚀 Install (one command)
+## Install (one command)
 
 > Prerequisite: install [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) and start `dsh web` at least once.
 
@@ -199,7 +199,7 @@ The Settings → Auto Memory page has a "Check for updates" button comparing you
 
 ---
 
-## 🔧 Configuration
+## Configuration
 
 Config file `~/.dsh/dsh-auto-memory.json` (everything adjustable in the Settings GUI, zh/en UI and panel font size included):
 
@@ -227,14 +227,14 @@ Config file `~/.dsh/dsh-auto-memory.json` (everything adjustable in the Settings
 
 ---
 
-## 🧱 Structure
+## Structure
 
 - `lib/index.js` — Host half: engine, injection, tools, routes (zero runtime deps, Node built-ins only)
 - `lib/client.js` — Browser half: memory panel (calendar / mind map) + settings page + welcome tour (zh/en i18n)
 - `python/` — optional Python semantic sidecar (BGE-M3 int8, advanced tier)
 - `cordis.patch.yml` — plugin registration row
 
-## ⚠️ Known limitations
+## Known limitations
 
 - Memory files are plain-text Markdown; no secrets stored unless explicitly requested.
 - `memory_recall` session search depends on the deployed session-query index; without it, only local search works.
@@ -242,14 +242,14 @@ Config file `~/.dsh/dsh-auto-memory.json` (everything adjustable in the Settings
 
 ---
 
-## 🙌 Community
+## Community
 
 - [@ProperSAMA](https://github.com/ProperSAMA) — panel readability fix for DSH Desktop enhanced mode (transparent/Mica materials) + entry-button anti-occlusion & outside-click/Esc close ([PR #12](https://github.com/Aik358/dsh-auto-memory/pull/12))
 - [@nkh0472](https://github.com/nkh0472) — unattended/batch workflow hardening feedback that drove the welcome tour and per-feature switches ([Issue #10](https://github.com/Aik358/dsh-auto-memory/issues/10))
 
 ---
 
-## 📦 Release
+## Release
 
 - GitHub: https://github.com/Aik358/dsh-auto-memory
 - npm: `@a9i5k4/dsh-auto-memory`
