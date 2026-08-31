@@ -1,7 +1,10 @@
 # dsh-auto-memory 宣传网页大纲（LANDING-OUTLINE）
 
 > 交付方：混元 4 · 产物：`docs/landing/index.html`（单文件、零依赖、响应式、中英双语切换）
-> 视觉基准：**以 `docs/proactive-associative-memory-system-map.html`（项目架构图）的配色/玻璃质感/版式语言为准**——先读懂它再动手。
+> 视觉方向（仅此一条硬约束）：**深色液态玻璃质感**——与向导/CHANGELOG 的观感一致即可。
+> **其余美术决策（配色微调、字体、布局结构、动效风格、插画元素）全部由你自由发挥**——
+> 你的前端审美是这次交付的核心价值，大胆做，不要保守。可参考 `docs/proactive-associative-memory-system-map.html`
+> （项目架构图，感受一下气质）与 `docs/screenshots/`（真实产品截图），但**不必模仿**。
 > 内容素材：README.md / README.zh-CN.md（双语全文）、docs/screenshots/（7 张实机图）。
 > 铁律：覆盖本大纲全部功能点；不省略、不虚增；截图相对路径引用；不改仓库其他文件。
 
