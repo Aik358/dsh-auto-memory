@@ -341,6 +341,27 @@
   .arch-cap .lg .dot.queued{background:transparent;border:1.5px solid rgba(232,228,220,.4)}
   .arch-cap-sep{color:rgba(232,228,220,.3)}
 
+  /* ── 设计文献行 ── */
+  .papers{border-top:1px solid rgba(255,255,255,.18)}
+  .papers-head{
+    padding:9px 14px;
+    font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;
+    color:rgba(232,228,220,.55);border-bottom:1px solid rgba(255,255,255,.08);
+  }
+  .paper-row{
+    display:grid;grid-template-columns:34px 1fr auto;gap:12px;align-items:center;
+    padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.08);
+    text-decoration:none;transition:background .15s ease;
+  }
+  .paper-row:last-child{border-bottom:0}
+  .paper-row:hover{background:rgba(255,255,255,.07)}
+  .paper-row .pr-no{font-family:var(--mono);font-size:11px;color:#FF9763;font-weight:700}
+  .paper-row .pr-body{display:grid;gap:2px;min-width:0}
+  .paper-row .pr-body b{font-size:12.5px;font-weight:700;color:#E8E4DC}
+  .paper-row .pr-body small{font-size:11px;color:rgba(232,228,220,.6);line-height:1.5}
+  .paper-row .pr-arrow{font-family:var(--mono);color:rgba(232,228,220,.4);transition:color .15s ease,transform .15s ease}
+  .paper-row:hover .pr-arrow{color:#FF9763;transform:translateX(3px)}
+
   /* ── 功能节：左文右图，细线分区，编号驱动 ── */
   .feature{padding:44px 0;border-top:1px solid var(--line-soft)}
   .feature:first-of-type{border-top:0;padding-top:8px}
@@ -720,6 +741,41 @@
         <span class="lg"><i class="dot queued"></i><span data-i18n="arch.lg.queued">queued 排队</span></span>
         <span class="arch-cap-sep">·</span>
         <span data-i18n="arch.cap">语义层决定"想起什么"，权威层决定"是否/何时/如何注入"——Python 不创建证据，也不直接注入。点击模块查看实现摘要。</span>
+      </div>
+
+      <!-- 设计文献：论文与决策文档 -->
+      <div class="papers">
+        <div class="papers-head" data-i18n="pp.title">DESIGN PAPERS · 设计文献（全部结论冻结为工程决策）</div>
+        <a class="paper-row" href="https://github.com/Aik358/dsh-auto-memory/blob/preview/docs/M7-RESEARCH-PAPER.md" target="_blank" rel="noreferrer">
+          <span class="pr-no">01</span>
+          <span class="pr-body"><b data-i18n="pp.1.t">多语言嵌入式检索选型研究</b><small data-i18n="pp.1.s">3 模型 × 5 分块 × 6 通道 ≈ 90 评测单元，BGE-M3 全面领先；冻结为 D1–D11 工程决策</small></span>
+          <span class="pr-arrow">→</span>
+        </a>
+        <a class="paper-row" href="https://github.com/Aik358/dsh-auto-memory/blob/preview/docs/M7-ACTIVATION-V2-PAPER.md" target="_blank" rel="noreferrer">
+          <span class="pr-no">02</span>
+          <span class="pr-body"><b data-i18n="pp.2.t">从语义相关到唤起必要：回声陷阱的发现、度量与修正</b><small data-i18n="pp.2.s">激活策略 v2 技术报告 + 双轨部署架构（§7）；67 条人工金标 held-out 验收 actPrecision 0.917</small></span>
+          <span class="pr-arrow">→</span>
+        </a>
+        <a class="paper-row" href="https://github.com/Aik358/dsh-auto-memory/blob/preview/docs/M7-EMBEDDING-BENCHMARK.md" target="_blank" rel="noreferrer">
+          <span class="pr-no">03</span>
+          <span class="pr-body"><b data-i18n="pp.3.t">嵌入基准报告</b><small data-i18n="pp.3.s">模型/分块/融合冻结依据：bge-m3 + para-512-noov + 加权融合</small></span>
+          <span class="pr-arrow">→</span>
+        </a>
+        <a class="paper-row" href="https://github.com/Aik358/dsh-auto-memory/blob/preview/docs/M7-ALGORITHM-DECISION.md" target="_blank" rel="noreferrer">
+          <span class="pr-no">04</span>
+          <span class="pr-body"><b data-i18n="pp.4.t">算法冻结决策 D1–D11</b><small data-i18n="pp.4.s">全部研究结论到生产实现的决策台账</small></span>
+          <span class="pr-arrow">→</span>
+        </a>
+        <a class="paper-row" href="https://github.com/Aik358/dsh-auto-memory/blob/preview/docs/M7-ACTIVATION-V2-HOLDEDOUT-EVAL.md" target="_blank" rel="noreferrer">
+          <span class="pr-no">05</span>
+          <span class="pr-body"><b data-i18n="pp.5.t">Held-out 人工金标验收</b><small data-i18n="pp.5.s">67 条标注打分：actPrecision 0.917 / harmfulEmit 0 / echo 层 7/7</small></span>
+          <span class="pr-arrow">→</span>
+        </a>
+        <a class="paper-row" href="https://github.com/Aik358/dsh-auto-memory/blob/preview/docs/PYTHON-SIDECAR-CONTRACT.md" target="_blank" rel="noreferrer">
+          <span class="pr-no">06</span>
+          <span class="pr-body"><b data-i18n="pp.6.t">Python Sidecar 完整契约</b><small data-i18n="pp.6.s">协议/生命周期/权威边界/各里程碑回归证据（§19.x）</small></span>
+          <span class="pr-arrow">→</span>
+        </a>
       </div>
     </div>
   </div>
@@ -1236,6 +1292,13 @@ pnpm up @a9i5k4/dsh-auto-memory</pre>
       "m.M5":"上下文/证据桥","m.M6":"激活收件箱 + 参考尾注","m.C2":"内置语义层 e5-small（默认档）",
       "m.M7":"语义引擎 BGE-M3 int8","m.RD":"双轨语义层（三级算力）","m.M8":"记忆中枢（治理式写回）",
       "m.M9":"技能固化生命周期","m.G2":"激活观测台","m.M10":"存储治理",
+      "pp.title":"DESIGN PAPERS · 设计文献（全部结论冻结为工程决策）",
+      "pp.1.t":"多语言嵌入式检索选型研究","pp.1.s":"3 模型 × 5 分块 × 6 通道 ≈ 90 评测单元，BGE-M3 全面领先；冻结为 D1–D11 工程决策",
+      "pp.2.t":"从语义相关到唤起必要：回声陷阱的发现、度量与修正","pp.2.s":"激活策略 v2 技术报告 + 双轨部署架构（§7）；67 条人工金标 held-out 验收 actPrecision 0.917",
+      "pp.3.t":"嵌入基准报告","pp.3.s":"模型/分块/融合冻结依据：bge-m3 + para-512-noov + 加权融合",
+      "pp.4.t":"算法冻结决策 D1–D11","pp.4.s":"全部研究结论到生产实现的决策台账",
+      "pp.5.t":"Held-out 人工金标验收","pp.5.s":"67 条标注打分：actPrecision 0.917 / harmfulEmit 0 / echo 层 7/7",
+      "pp.6.t":"Python Sidecar 完整契约","pp.6.s":"协议/生命周期/权威边界/各里程碑回归证据（§19.x）",
       "feat.kicker":"功能全景","feat.title":"十二个能力，互相咬合","feat.sub":"逐项展开，不省略——你想知道它\"到底能干什么\"，往下读就对了。",
       "f.1.kicker":"3.1 · 三层记忆体系","f.1.t":"三处文件，三种语义","f.1.p":"用户级 → 项目笔记 → 每日日志/反思，越往下越新鲜、越往上越稳定。注入策略按这个分层严格区分：静态纪律进 system prompt 保缓存，动态记忆只取最近 1 天，其余按需 recall。",
       "f.1.col1":"层","f.1.col2":"位置","f.1.col3":"内容",
@@ -1363,6 +1426,13 @@ pnpm up @a9i5k4/dsh-auto-memory</pre>
       "m.M5":"Context/evidence bridge","m.M6":"Activation inbox + reference tail","m.C2":"Built-in semantic tier e5-small (default)",
       "m.M7":"Semantic engine BGE-M3 int8","m.RD":"Dual-track semantics (3 tiers)","m.M8":"Memory hub (governed write-back)",
       "m.M9":"Skill crystallization lifecycle","m.G2":"Activation console","m.M10":"Storage governance",
+      "pp.title":"DESIGN PAPERS · every conclusion frozen into engineering decisions",
+      "pp.1.t":"Multilingual Embedding Retrieval Study","pp.1.s":"3 models × 5 chunkings × 6 channels ≈ 90 evaluation cells; BGE-M3 leads across the board — frozen as decisions D1–D11",
+      "pp.2.t":"From Semantic Relevance to Recall Necessity: the Echo Trap","pp.2.s":"Activation policy v2 technical report + dual-track deployment architecture (§7); 67 human-gold held-out verdicts, actPrecision 0.917",
+      "pp.3.t":"Embedding Benchmark Report","pp.3.s":"Frozen basis for model/chunk/fusion: bge-m3 + para-512-noov + weighted fusion",
+      "pp.4.t":"Frozen Algorithm Decisions D1–D11","pp.4.s":"The decision ledger from research conclusions to production implementation",
+      "pp.5.t":"Held-out Human-Gold Acceptance","pp.5.s":"67 labeled verdicts: actPrecision 0.917 / harmfulEmit 0 / echo tier 7/7",
+      "pp.6.t":"Python Sidecar Contract","pp.6.s":"Protocol / lifecycle / authority boundary / per-milestone regression evidence (§19.x)",
       "feat.kicker":"Feature tour","feat.title":"Twelve capabilities, interlocked","feat.sub":"Expanded one by one, nothing skipped — read on to find out what it actually does.",
       "f.1.kicker":"3.1 · Three-layer memory","f.1.t":"Three files, three semantics","f.1.p":"User-level → project notes → daily logs/reflections; the deeper, the fresher. Injection strategy strictly follows this layering: static discipline goes into the system prompt to keep the cache hot; dynamic memory only injects the last day, everything else is recalled on demand.",
       "f.1.col1":"Layer","f.1.col2":"Location","f.1.col3":"Content",

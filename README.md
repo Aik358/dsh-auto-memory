@@ -260,6 +260,21 @@ DeepSeek Harness (Node, 127.0.0.1:3080)
 
 **Separation of powers**: the Python semantic layer decides *what to recall and when to suggest*; the JS authority layer decides identity, authorization, timing, and delivery — Python never creates evidence nor injects directly. Data flow: `context_push → M5 envelope → decision → M6 fixed-boundary injection → delivered/seen evidence back`.
 
+### Design papers
+
+The design is not guesswork — every algorithmic conclusion comes from reproducible experiments, frozen into an engineering decision ledger:
+
+| Paper | Content |
+|---|---|
+| [Multilingual Embedding Retrieval Study](docs/M7-RESEARCH-PAPER.md) | 3 models × 5 chunkings × 6 retrieval channels ≈ 90 evaluation cells; BGE-M3 leads across the board, frozen as decisions D1–D11 |
+| [Activation v2: The Echo Trap](docs/M7-ACTIVATION-V2-PAPER.md) | Why semantic relevance ≠ recall necessity — activation policy technical report + dual-track deployment architecture (§7) |
+| [Embedding Benchmark Report](docs/M7-EMBEDDING-BENCHMARK.md) | Frozen basis for model/chunk/fusion: bge-m3 + para-512-noov + weighted fusion |
+| [Frozen Algorithm Decisions D1–D11](docs/M7-ALGORITHM-DECISION.md) | The decision ledger from research conclusions to production implementation |
+| [Held-out Human-Gold Acceptance](docs/M7-ACTIVATION-V2-HOLDEDOUT-EVAL.md) | 67 human-labeled verdicts: actPrecision 0.917 / harmful injections 0 / echo tier 7/7 |
+| [Python Sidecar Contract](docs/PYTHON-SIDECAR-CONTRACT.md) | Protocol / lifecycle / authority boundary / per-milestone regression evidence |
+
+Papers were authored by the autonomous engineering agent (ZCode / GLM); all conclusions were frozen into the production implementation under human review.
+
 ## Known limitations
 
 - Memory files are plain-text Markdown; no secrets stored unless explicitly requested.

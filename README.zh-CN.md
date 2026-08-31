@@ -278,6 +278,21 @@ DeepSeek Harness (Node, 127.0.0.1:3080)
 
 **权限分立**：Python（语义层）决定"想起什么、何时建议"；JS（权威层）决定身份、授权、时序、投递——Python 不创建证据，也不直接注入。数据流：`context_push → M5 envelope → 决策 → M6 固定边界注入 → delivered/seen 证据回流`。
 
+### 技术论文与设计文献
+
+本项目的设计不是拍脑袋——每项算法结论都来自可复现实验，并冻结为工程决策台账：
+
+| 文献 | 内容 |
+|---|---|
+| [多语言嵌入式检索选型研究](docs/M7-RESEARCH-PAPER.md) | 3 模型 × 5 分块策略 × 6 检索通道 ≈ 90 评测单元；BGE-M3 全面领先，冻结为 D1–D11 工程决策 |
+| [激活策略 v2：回声陷阱的发现、度量与修正](docs/M7-ACTIVATION-V2-PAPER.md) | 语义相关 ≠ 唤起必要的激活策略技术报告 + 双轨部署架构（§7） |
+| [嵌入基准报告](docs/M7-EMBEDDING-BENCHMARK.md) | 模型/分块/融合的冻结依据：bge-m3 + para-512-noov + 加权融合 |
+| [算法冻结决策 D1–D11](docs/M7-ALGORITHM-DECISION.md) | 全部研究结论到生产实现的决策台账 |
+| [Held-out 人工金标验收](docs/M7-ACTIVATION-V2-HOLDEDOUT-EVAL.md) | 67 条人工标注打分：actPrecision 0.917 / 有害注入 0 / echo 层 7/7 |
+| [Python Sidecar 完整契约](docs/PYTHON-SIDECAR-CONTRACT.md) | 协议/生命周期/权威边界/各里程碑回归证据 |
+
+论文由自主工程 Agent（ZCode / GLM）撰写，全部结论在人类审核下冻结进生产实现。
+
 ## 已知限制
 
 - 记忆文件为纯文本 Markdown；除非明确要求，不存储密钥
