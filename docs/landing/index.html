@@ -272,7 +272,7 @@
   .flow-note .fn-tag{font-family:var(--mono);font-size:10.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);white-space:nowrap;padding-top:2px}
   .flow-note b{color:var(--ink)}
 
-  /* ── 架构分层树 ── */
+  /* ── 架构分层 + 实现状态板 ── */
   .arch{margin-top:22px;border:1px solid var(--line);background:var(--ink);color:#E8E4DC}
   .arch-head{
     display:flex;justify-content:space-between;align-items:center;
@@ -281,15 +281,65 @@
   }
   .arch-head .arch-link a{color:#FF9763;text-decoration:none}
   .arch-head .arch-link a:hover{text-decoration:underline}
-  .arch-tree{
-    margin:0;padding:16px 18px;
-    font-family:var(--mono);font-size:12.5px;line-height:1.75;
-    color:#E8E4DC;white-space:pre;overflow-x:auto;
+  .arch-cols{display:grid;grid-template-columns:1fr 1fr;gap:0}
+  .arch-col{padding:16px 14px 10px;border-right:1px solid rgba(255,255,255,.12)}
+  .arch-col:last-child{border-right:0}
+  .ac-title{
+    font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;
+    color:rgba(232,228,220,.55);margin-bottom:10px;
+  }
+  .mnode{
+    display:grid;grid-template-columns:14px 52px 1fr;align-items:center;gap:8px;
+    width:100%;text-align:left;
+    background:transparent;border:0;border-top:1px solid rgba(255,255,255,.08);
+    color:#E8E4DC;font:inherit;font-size:12.5px;
+    padding:9px 6px;cursor:pointer;
+    transition:background .15s ease;
+  }
+  .mnode:hover{background:rgba(255,255,255,.07)}
+  .mnode i{width:8px;height:8px;border-radius:50%;justify-self:center}
+  .mnode.live i{background:#5BC98C;box-shadow:0 0 0 3px rgba(91,201,140,.18)}
+  .mnode.tested i{background:#E9A23B;box-shadow:0 0 0 3px rgba(233,162,59,.16)}
+  .mnode.queued i{background:transparent;border:1.5px solid rgba(232,228,220,.4)}
+  .mnode b{font-family:var(--mono);font-size:11px;color:rgba(232,228,220,.85);font-weight:700}
+  .mnode span{color:rgba(232,228,220,.88)}
+  .m-detail{
+    border-top:1px solid rgba(255,255,255,.18);
+    background:rgba(255,255,255,.05);
+  }
+  .m-detail[hidden]{display:none}
+  .md-head{
+    display:flex;align-items:center;gap:10px;
+    padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.1);
+    font-size:12.5px;
+  }
+  .md-head b{font-family:var(--mono);color:#FF9763;font-size:12px}
+  .md-head .md-state{
+    margin-left:auto;font-family:var(--mono);font-size:10px;letter-spacing:.1em;
+    text-transform:uppercase;color:#5BC98C;border:1px solid rgba(91,201,140,.45);padding:1px 7px;
+  }
+  .md-head .md-state.tested{color:#E9A23B;border-color:rgba(233,162,59,.5)}
+  .md-head .md-state.queued{color:rgba(232,228,220,.6);border-color:rgba(232,228,220,.3)}
+  .md-head .md-close{
+    background:transparent;border:1px solid rgba(255,255,255,.3);color:rgba(232,228,220,.8);
+    width:20px;height:20px;line-height:1;cursor:pointer;font-size:13px;padding:0;
+  }
+  .md-head .md-close:hover{background:var(--accent);border-color:var(--accent);color:#fff}
+  .md-body{
+    padding:12px 14px;font-size:12px;line-height:1.7;color:rgba(232,228,220,.85);
+    max-height:150px;overflow-y:auto;scrollbar-width:thin;
   }
   .arch-cap{
     padding:9px 14px;border-top:1px solid rgba(255,255,255,.18);
     font-size:12px;color:rgba(232,228,220,.72);line-height:1.6;
+    display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center;
   }
+  .arch-cap .lg{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10px;letter-spacing:.06em}
+  .arch-cap .lg .dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+  .arch-cap .lg .dot.live{background:#5BC98C}
+  .arch-cap .lg .dot.tested{background:#E9A23B}
+  .arch-cap .lg .dot.queued{background:transparent;border:1.5px solid rgba(232,228,220,.4)}
+  .arch-cap-sep{color:rgba(232,228,220,.3)}
 
   /* ── 功能节：左文右图，细线分区，编号驱动 ── */
   .feature{padding:44px 0;border-top:1px solid var(--line-soft)}
@@ -629,21 +679,48 @@
       <span><b data-i18n="flow.foot.b">决策全程可复核，记忆治理永远在 JS 权威层。</b> <span data-i18n="flow.foot.s">AI 子代理只产出"建议"；是否写入、是否注入、是否唤起——最终决策都跑在 Node 端的 JS 权威层里；任何一次决策都能在「唤起回顾」页追溯原始证据与上下文。</span></span>
     </div>
 
-    <!-- 架构分层树 -->
+    <!-- 架构分层 + 实现状态板（交互式） -->
     <div class="arch reveal">
       <div class="arch-head">
         <span data-i18n="arch.title">SYSTEM LAYERING · 运行时分层</span>
-        <span class="arch-link"><a href="https://github.com/Aik358/dsh-auto-memory/blob/preview/docs/proactive-associative-memory-system-map.html" target="_blank" rel="noreferrer" data-i18n="arch.link">完整架构图 →</a></span>
+        <span class="arch-link"><a href="https://github.com/Aik358/dsh-auto-memory/blob/preview/docs/proactive-associative-memory-system-map.html" target="_blank" rel="noreferrer" data-i18n="arch.link">完整交互架构图 →</a></span>
       </div>
-      <pre class="arch-tree" data-i18n-alt="arch.tree">DeepSeek Harness (Node, 127.0.0.1:3080)
-├─ JS 记忆核心 lib/*_pre.js — 零运行时依赖
-│   会话隔离 · 上下文投影 · 记忆锚定 · 证据桥
-│   激活收件箱 M6 → 固定边界参考尾注 → delivered/seen
-│   词法 BM25 0GB 永远可用 · 内置向量 e5-small 默认档
-└─ Python sidecar（可选，lazy spawn）
-    BGE-M3 int8 · 混合融合 0.7/0.3 · fv2 两车道决策
-    硬门禁：echo / correction / stale / scope</pre>
-      <div class="arch-cap" data-i18n="arch.cap">语义层决定"想起什么"，权威层决定"是否/何时/如何注入"——Python 不创建证据，也不直接注入。</div>
+
+      <div class="arch-cols">
+        <div class="arch-col">
+          <div class="ac-title" data-i18n="arch.js">JS 记忆核心 · lib/*_pre.js · 零运行时依赖</div>
+          <button class="mnode live" type="button" data-m="M1"><i></i><b>M1</b><span data-i18n="m.M1">会话隔离</span></button>
+          <button class="mnode live" type="button" data-m="M2"><i></i><b>M2</b><span data-i18n="m.M2">上下文投影</span></button>
+          <button class="mnode live" type="button" data-m="M3b"><i></i><b>M3</b><span data-i18n="m.M3b">记忆锚定与迁移</span></button>
+          <button class="mnode live" type="button" data-m="M4"><i></i><b>M4</b><span data-i18n="m.M4">语料适配 + 影子检索</span></button>
+          <button class="mnode live" type="button" data-m="M5"><i></i><b>M5</b><span data-i18n="m.M5">上下文/证据桥</span></button>
+          <button class="mnode live" type="button" data-m="M6"><i></i><b>M6</b><span data-i18n="m.M6">激活收件箱 + 参考尾注</span></button>
+          <button class="mnode live" type="button" data-m="C2"><i></i><b>C2</b><span data-i18n="m.C2">内置语义层 e5-small（默认档）</span></button>
+        </div>
+        <div class="arch-col">
+          <div class="ac-title" data-i18n="arch.py">Python sidecar · 可选 · lazy spawn</div>
+          <button class="mnode live" type="button" data-m="M7"><i></i><b>M7</b><span data-i18n="m.M7">语义引擎 BGE-M3 int8</span></button>
+          <button class="mnode live" type="button" data-m="R-DUAL"><i></i><b>R-DUAL</b><span data-i18n="m.RD">双轨语义层（三级算力）</span></button>
+          <button class="mnode tested" type="button" data-m="M8"><i></i><b>M8</b><span data-i18n="m.M8">记忆中枢（治理式写回）</span></button>
+          <button class="mnode tested" type="button" data-m="M9"><i></i><b>M9</b><span data-i18n="m.M9">技能固化生命周期</span></button>
+          <div class="ac-title" style="margin-top:14px" data-i18n="arch.obs">可观测 / 待发布</div>
+          <button class="mnode tested" type="button" data-m="G-02"><i></i><b>G-02</b><span data-i18n="m.G2">激活观测台</span></button>
+          <button class="mnode queued" type="button" data-m="M10"><i></i><b>M10</b><span data-i18n="m.M10">存储治理</span></button>
+        </div>
+      </div>
+
+      <div class="m-detail" id="m-detail" hidden>
+        <div class="md-head"><b id="md-id"></b><span id="md-title"></span><span class="md-state" id="md-state"></span><button type="button" class="md-close" id="md-close" aria-label="close">×</button></div>
+        <div class="md-body" id="md-body"></div>
+      </div>
+
+      <div class="arch-cap">
+        <span class="lg"><i class="dot live"></i><span data-i18n="arch.lg.live">live verified 已实现并实机验证</span></span>
+        <span class="lg"><i class="dot tested"></i><span data-i18n="arch.lg.tested">tested 已测试</span></span>
+        <span class="lg"><i class="dot queued"></i><span data-i18n="arch.lg.queued">queued 排队</span></span>
+        <span class="arch-cap-sep">·</span>
+        <span data-i18n="arch.cap">语义层决定"想起什么"，权威层决定"是否/何时/如何注入"——Python 不创建证据，也不直接注入。点击模块查看实现摘要。</span>
+      </div>
     </div>
   </div>
 </section>
@@ -1149,8 +1226,16 @@ pnpm up @a9i5k4/dsh-auto-memory</pre>
       "flow.c.tag":"C · 投递闭环","flow.c.t":"固定边界注入 + 证据反馈","flow.c.p":"提示词字节级稳定，前缀缓存持续命中；每次投递留下 delivered/seen 证据喂回决策。",
       "flow.c.l1":"固定边界注入（前缀缓存友好）","flow.c.l2":"delivered / seen 证据回流","flow.c.l3":"「唤起回顾」页可逐次打分 + 政策提示",
       "flow.foot.tag":"权限分立","flow.foot.b":"决策全程可复核，记忆治理永远在 JS 权威层。","flow.foot.s":"AI 子代理只产出\"建议\"；是否写入、是否注入、是否唤起——最终决策都跑在 Node 端的 JS 权威层里；任何一次决策都能在「唤起回顾」页追溯原始证据与上下文。",
-      "arch.title":"SYSTEM LAYERING · 运行时分层","arch.link":"完整架构图 →",
-      "arch.cap":"语义层决定\"想起什么\"，权威层决定\"是否/何时/如何注入\"——Python 不创建证据，也不直接注入。",
+      "arch.title":"SYSTEM LAYERING · 运行时分层","arch.link":"完整交互架构图 →",
+      "arch.js":"JS 记忆核心 · lib/*_pre.js · 零运行时依赖",
+      "arch.py":"Python sidecar · 可选 · lazy spawn",
+      "arch.obs":"可观测 / 待发布",
+      "arch.lg.live":"live verified 已实现并实机验证","arch.lg.tested":"tested 已测试","arch.lg.queued":"queued 排队",
+      "arch.cap":"语义层决定\"想起什么\"，权威层决定\"是否/何时/如何注入\"——Python 不创建证据，也不直接注入。点击模块查看实现摘要。",
+      "m.M1":"会话隔离","m.M2":"上下文投影","m.M3b":"记忆锚定与迁移","m.M4":"语料适配 + 影子检索",
+      "m.M5":"上下文/证据桥","m.M6":"激活收件箱 + 参考尾注","m.C2":"内置语义层 e5-small（默认档）",
+      "m.M7":"语义引擎 BGE-M3 int8","m.RD":"双轨语义层（三级算力）","m.M8":"记忆中枢（治理式写回）",
+      "m.M9":"技能固化生命周期","m.G2":"激活观测台","m.M10":"存储治理",
       "feat.kicker":"功能全景","feat.title":"十二个能力，互相咬合","feat.sub":"逐项展开，不省略——你想知道它\"到底能干什么\"，往下读就对了。",
       "f.1.kicker":"3.1 · 三层记忆体系","f.1.t":"三处文件，三种语义","f.1.p":"用户级 → 项目笔记 → 每日日志/反思，越往下越新鲜、越往上越稳定。注入策略按这个分层严格区分：静态纪律进 system prompt 保缓存，动态记忆只取最近 1 天，其余按需 recall。",
       "f.1.col1":"层","f.1.col2":"位置","f.1.col3":"内容",
@@ -1268,8 +1353,16 @@ pnpm up @a9i5k4/dsh-auto-memory</pre>
       "flow.c.tag":"C · Deliver & close the loop","flow.c.t":"Fixed-boundary injection + evidence feedback","flow.c.p":"Byte-stable prompts keep the prefix cache hot; every delivery leaves delivered/seen evidence to feed the next decision.",
       "flow.c.l1":"Fixed-boundary injection (prefix-cache friendly)","flow.c.l2":"delivered / seen evidence feedback","flow.c.l3":"Recall review tab: grade every decision + policy hints",
       "flow.foot.tag":"Separation of powers","flow.foot.b":"Every decision is reviewable. Memory governance always lives in the JS authority layer.","flow.foot.s":"The AI subagent only produces \"suggestions\"; whether to write, inject or recall — every final decision runs in the JS layer on the Node side, traceable to its original evidence and context in the Recall review tab.",
-      "arch.title":"SYSTEM LAYERING · RUNTIME","arch.link":"Full architecture map →",
-      "arch.cap":"The semantic layer decides what to recall; the authority layer decides whether/when/how to inject — Python never creates evidence nor injects directly.",
+      "arch.title":"SYSTEM LAYERING · RUNTIME","arch.link":"Full interactive map →",
+      "arch.js":"JS memory core · lib/*_pre.js · zero runtime deps",
+      "arch.py":"Python sidecar · optional · lazy spawn",
+      "arch.obs":"Observability / upcoming",
+      "arch.lg.live":"live verified","arch.lg.tested":"tested","arch.lg.queued":"queued",
+      "arch.cap":"The semantic layer decides what to recall; the authority layer decides whether/when/how to inject — Python never creates evidence nor injects directly. Click a module for its implementation digest.",
+      "m.M1":"Session isolation","m.M2":"Context projection","m.M3b":"Memory anchoring","m.M4":"Corpus + shadow retrieval",
+      "m.M5":"Context/evidence bridge","m.M6":"Activation inbox + reference tail","m.C2":"Built-in semantic tier e5-small (default)",
+      "m.M7":"Semantic engine BGE-M3 int8","m.RD":"Dual-track semantics (3 tiers)","m.M8":"Memory hub (governed write-back)",
+      "m.M9":"Skill crystallization lifecycle","m.G2":"Activation console","m.M10":"Storage governance",
       "feat.kicker":"Feature tour","feat.title":"Twelve capabilities, interlocked","feat.sub":"Expanded one by one, nothing skipped — read on to find out what it actually does.",
       "f.1.kicker":"3.1 · Three-layer memory","f.1.t":"Three files, three semantics","f.1.p":"User-level → project notes → daily logs/reflections; the deeper, the fresher. Injection strategy strictly follows this layering: static discipline goes into the system prompt to keep the cache hot; dynamic memory only injects the last day, everything else is recalled on demand.",
       "f.1.col1":"Layer","f.1.col2":"Location","f.1.col3":"Content",
@@ -1439,6 +1532,58 @@ pnpm up @a9i5k4/dsh-auto-memory</pre>
       document.querySelectorAll('.js-reveal').forEach(function(el){ io.observe(el); });
     }
   }
+
+  /* ── 实现状态板：里程碑数据（同步自 docs/proactive-associative-memory-system-map.html） ──
+     state: live=已实现并实机验证 / tested=已测试 / queued=排队 */
+  var MILESTONES = {
+    "M1":    { zh:"f00ad23 落地 SessionRuntimeStore、AsyncLocalStorage、per-runtime consolidate 锁/冷却/队列；并发 A/B 的 cwd、segment、cursor、pending 零串线。", en:"f00ad23: SessionRuntimeStore + AsyncLocalStorage + per-runtime locks/cooldown/queues; concurrent A/B sessions share nothing (cwd, segments, cursors, pending tasks).", state:"live" },
+    "M2":    { zh:"EventEnvelope 账本 + Segment 切片：user/tool_call/tool_result/assistant 分型，稳定原生坐标生成 id/digest；关闭态零留存（counters-only），敏感内容零残留。", en:"EventEnvelope ledger + typed Segment slicing (user/tool_call/tool_result/assistant) with stable native-coordinate ids/digests; counters-only when off, zero sensitive residue.", state:"live" },
+    "M3b":   { zh:"anchored records + sidecar 身份体系：parseAnchors conflict fail-closed、digest 前置 planMigration、原子写 MemoryDocumentStore；31 个真实文件 176 记录完成迁移，备份可回滚。", en:"Anchored records + sidecar identity: conflict fail-closed parsing, deterministic planMigration, atomic MemoryDocumentStore writes; 31 real files / 176 records migrated with rollback backups.", state:"live" },
+    "M4":    { zh:"corpus snapshot 六原因 fail-closed + 冻结 SHADOW_GATE_POLICY_PRE_V1 权重/滞回/冷却 + BM25 lexical_pre_v2（CJK 2gram+507 停用词）；候选只审计不注入。", en:"Corpus snapshot with six fail-closed causes, frozen SHADOW_GATE_POLICY_PRE_V1 (weights/hysteresis/cooldown), BM25 lexical_pre_v2 (CJK 2-gram + 507 stopwords); candidates audited, never injected.", state:"live" },
+    "M5":    { zh:"envelope 授权上下文 + evidence store：coverage 校验、cite/correction 证据、stale 拒绝；M5 只用 Null/Fake sink，不启动 Python。", en:"Authorized context envelopes + evidence store: coverage checks, cite/correction evidence, stale rejection; M5 runs on Null/Fake sinks only.", state:"live" },
+    "M6":    { zh:"activation inbox：身份/scope/版本/TTL/预算/风险硬校验 → offer → claim → 参考尾注渲染（技能预算预留制）→ delivered/seen 证据落盘。", en:"Activation inbox: identity/scope/version/TTL/budget/risk hard validation → offer → claim → reference-tail rendering (skill budget reserved) → delivered/seen evidence.", state:"live" },
+    "C2":    { zh:"transformers.js + multilingual-e5-small q8 ~130MB：R@5=0.85，查询 3.8ms；npm 资产包分发+首启下载（SHA256+推理自检），为默认语义档。", en:"transformers.js + multilingual-e5-small q8 (~130MB): R@5=0.85, 3.8ms/query; shipped as an npm asset pack with first-run download (SHA256 + inference self-check). Default semantic tier.", state:"live" },
+    "M7":    { zh:"BGE-M3 int8 ONNX（R@5=0.925，与 fp32 差 0.000，快 6×）+ hybrid 融合 0.7/0.3 + fv2 两车道激活决策（echo veto/completeness/硬门禁）；canary 实测 delivered=3/seen=24。", en:"BGE-M3 int8 ONNX (R@5=0.925, Δ0.000 vs fp32, 6× faster) + hybrid fusion 0.7/0.3 + fv2 two-lane activation policy (echo veto / completeness / hard gates); canary live run delivered=3/seen=24.", state:"live" },
+    "R-DUAL":{ zh:"三级算力实测固化：C1 词法 0GB 兜底（永远可用）/ C2 e5-small 默认档 / C3 Python int8 进阶档；切换 provider 必然 stale 重建，失败自动逐级回退。", en:"Three compute tiers, measured and frozen: C1 lexical 0GB floor (always on) / C2 e5-small default / C3 Python int8 advanced; provider switch forces stale rebuild, failures fall back tier by tier.", state:"live" },
+    "M8":    { zh:"记忆中枢三店持久化 + fact 治理式写回 MEMORY.md + Hermes 借鉴（procedure touch/pinned/90 天归档/evidence 直达分流）。", en:"Memory hub three-store persistence + governed fact write-back to MEMORY.md + Hermes-inspired procedure touch/pinned/90-day archive/evidence routing.", state:"tested" },
+    "M9":    { zh:"技能固化生命周期：observed → candidate → validated → active 晋升 + 90 天未用自动归档 + 置顶；提升门控可配置。", en:"Skill crystallization lifecycle: observed → candidate → validated → active promotion + 90-day auto-archive + pinning; configurable promotion gates.", state:"tested" },
+    "G-02":  { zh:"激活观测台：每次 suppress/prefetch/activate/drop/delivery 可查触发上下文、lane、分数、候选 memoryId 与尾注摘要；用户决策生成可审计 policy diff。", en:"Activation console: every suppress/prefetch/activate/drop/delivery inspectable with trigger context, lane, score, candidate memoryId and tail digest; user decisions produce auditable policy diffs.", state:"tested" },
+    "M10":   { zh:"存储治理（排队）：rebuildSidecar 接线、删除级联 revoke、语料健康扫描与管理 UI——底座（原子事务/retention/30 天蒸馏）已就绪。", en:"Storage governance (queued): rebuildSidecar wiring, delete cascades with revoke, corpus health scan & management UI — foundation (atomic transactions/retention/30-day distillation) already in place.", state:"queued" }
+  };
+  var MS_STATE_LABEL = { live:{zh:"LIVE VERIFIED",en:"LIVE VERIFIED"}, tested:{zh:"TESTED 已测试",en:"TESTED"}, queued:{zh:"QUEUED 排队",en:"QUEUED"} };
+
+  (function(){
+    var detail = document.getElementById('m-detail');
+    if (!detail) return;
+    var mdId = document.getElementById('md-id');
+    var mdTitle = document.getElementById('md-title');
+    var mdState = document.getElementById('md-state');
+    var mdBody = document.getElementById('md-body');
+    var mdClose = document.getElementById('md-close');
+    var current = null;
+    function lang(){ return document.documentElement.getAttribute('data-lang') === 'en' ? 'en' : 'zh'; }
+    function open(id, btn){
+      var m = MILESTONES[id]; if (!m) return;
+      var L = lang();
+      if (current === id && !detail.hidden){ detail.hidden = true; current = null; return; }
+      current = id;
+      mdId.textContent = id;
+      // title follows the button label (already localized)
+      var lbl = btn.querySelector('span');
+      mdTitle.textContent = lbl ? lbl.textContent : '';
+      mdState.textContent = (MS_STATE_LABEL[m.state] || {})[L] || m.state;
+      mdState.className = 'md-state ' + m.state;
+      mdBody.textContent = m[L] || m.zh;
+      detail.hidden = false;
+    }
+    document.querySelectorAll('.mnode').forEach(function(btn){
+      btn.addEventListener('click', function(){ open(btn.getAttribute('data-m'), btn); });
+    });
+    mdClose.addEventListener('click', function(){ detail.hidden = true; current = null; });
+    // refresh open detail when language flips
+    document.getElementById('lang-zh').addEventListener('click', function(){ if (current && !detail.hidden) mdBody.textContent = MILESTONES[current].zh, mdState.textContent = (MS_STATE_LABEL[MILESTONES[current].state]||{}).zh; });
+    document.getElementById('lang-en').addEventListener('click', function(){ if (current && !detail.hidden) mdBody.textContent = MILESTONES[current].en, mdState.textContent = (MS_STATE_LABEL[MILESTONES[current].state]||{}).en; });
+  })();
 </script>
 </body>
 </html>
