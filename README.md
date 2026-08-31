@@ -1,271 +1,256 @@
-# dsh-auto-memory — DSH Auto Memory Plugin / DSH 自动记忆与人性化交互插件
+# dsh-auto-memory — Auto Memory & Proactive Companion for DeepSeek Harness
 
 <p align="center">
   <img width="820" alt="dsh-auto-memory banner" src="docs/banner.jpg">
 </p>
 
-A cache-friendly three-layer memory engine for the DeepSeek Harness Web GUI — lean auto injection, per-turn AI consolidation, on-demand reads and cross-tool memory inheritance — wrapped in human touches: proactive calendar reminders, warm AI greetings, and a daily journal that writes itself.
+<p align="center">
+  <b>中文</b> · <a href="README.zh-CN.md">English</a> · License BSD-3-Clause · <code>pnpm add @a9i5k4/dsh-auto-memory</code>
+</p>
 
-DSH Web GUI 的记忆与人性化交互插件：三层记忆自动注入与检索、每日反思、AI 时段问候与三级抽屉、每轮自动沉淀、智能检索、日历视图与设置页，支持继承其他 AI 工具的历史记忆。
+> **v0.1.30 大更新** — 全新「欢迎向导」：分步介绍所有功能、当场开关；Office/Fluent 式液态玻璃应用图标族；更新日志开场动画；无人值守模式面向长批处理任务。
 
-> **Quick install**: `cd ~/.dsh/profiles/web` → `pnpm add @a9i5k4/dsh-auto-memory` → append `"@a9i5k4/dsh-auto-memory"` to `dsh.profile.bundles` in that directory's `package.json` → restart **dsh web** (the 「Memory」entry appears in the sidebar). Full instructions in [Installation](#installation-one-command); no-pnpm alternative: `npm install @a9i5k4/dsh-auto-memory`.
+一个为 DeepSeek Harness Web GUI 打造的**联想记忆与人性化交互插件**：三层记忆自动注入与按需检索、每轮自动沉淀、AI 问候与每日反思、日历提醒、外部 AI 记忆继承——以及面向生产环境的无人值守/批处理支持。
 
-[**English**](README.md) | [中文版](README.zh-CN.md)
+**它解决的问题是**：AI 助手每次会话都从零开始。装上它之后，你的 AI 记得住你的偏好、项目约定、昨天的进度、下周的截止日期——并且在你回来时说一声"欢迎回来"。
 
 ---
 
-## Installation (one command)
+## ✨ 30 秒亮点
 
-> Prerequisite: install [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (dsh) and start `dsh web` at least once.
+| | |
+|---|---|
+| 🧠 **三层记忆引擎** | 用户级规则 → 项目笔记 → 每日日志，自动注入+按需检索，前缀缓存友好 |
+| ✍️ **记忆自动沉淀** | 每轮对话结束由子代理静默判断去留，主题分组写入日志——你永远不需要记得"记一下" |
+| 🔔 **主动式提醒** | AI 从对话中识别截止日期/约定，自动入日历并在后续会话中提醒 |
+| 🎛️ **一切皆开关** | 欢迎向导+设置页双重入口，每个功能独立开关（含无人值守模式） |
+| 🌐 **外部记忆继承** | WorkBuddy / CodeBuddy / Claude Code / Codex 的历史记忆可扫描、导入、按源管理 |
+| 🛡️ **生产级卫生** | 写入门禁（乱码/复读/JSON 注入拦截）+ 脏 token 扫描 + 凭证永不进提示词 |
 
-Run in the **profile directory** (`~/.dsh/profiles/web`):
+---
+
+## 🧭 欢迎向导（v0.1.30 新增）
+
+升级或首次安装后，插件会自动播放一段**分步欢迎向导**——这不是弹窗广告，而是功能总开关的集合地：
+
+<p align="center"><img width="720" alt="welcome tour" src="docs/screenshots/tour-welcome.png"></p>
+
+- **每步一枚 Office/Fluent 式液态玻璃应用图标**：注入青蓝、问候暖金、日历青绿、引擎紫蓝、雷达天青、完成珊瑚金——各配专属循环动效（铃摆动、日历翻页、雷达扫描、火花上升…）
+- **每项功能当场开关**：开关即写配置立即生效，不需要再进设置页确认
+- **语义引擎检测/下载内联**：三级检索引擎（词法 0GB 保底 → 内置语义 ~130MB → Python BGE-M3 进阶）在向导内自动检测、一键安装（SHA256 校验+推理自检）
+- **外部记忆实时扫描**：本机可读的 WorkBuddy / Claude Code / Codex 等来源直接列出，逐源勾选
+- **关不掉的困惑不存在**：中途关闭会先落到"完成提醒"步，告诉你每个功能在设置的哪个分区重新打开
+
+<p align="center"><img width="720" alt="tour core" src="docs/screenshots/tour-core.png"></p>
+
+升级用户的一次性触达：v0.1.30 起所有用户升级后都会自动播放一次完整向导，结束后自动接更新日志（可点击跳过）。之后可随时在 **设置 → 外观 → 欢迎向导 → ▶ 重看引导** 重新打开。
+
+---
+
+## 🧠 三层记忆体系
+
+| 层 | 位置 | 内容 |
+|---|---|---|
+| 用户级记忆 | `~/.dsh/memory/MEMORY.md` | 跨项目规则与偏好 |
+| 项目笔记 | `~/.dsh/memory/workspaces/{workspace}/MEMORY.md` | 项目约定与决策 |
+| 每日日志 | `~/.dsh/memory/workspaces/{workspace}/YYYY-MM-DD.md` | 追加式工作日志 |
+| 每日反思 | `…/reflections/YYYY-MM-DD.md` | 结构化复盘（成果/教训/下一步） |
+
+**注入策略**：静态纪律进 system prompt（字节级稳定，保前缀缓存命中）；动态记忆走运行时快照——只注入最近 1 天日志+反思摘要，其余全部按需经 `memory_read` / `memory_recall` 取回。凭证/密钥段**永远被过滤在提示词之外**。
+
+---
+
+## 🗂️ 功能全景
+
+### 自动沉淀 — 记忆自己写自己
+
+每轮对话结束后，一个小型子代理静默评估本轮内容：有长期价值的主题分组写入今日日志（`## 主题（HH:MM）`+要点），长期决策晋升项目笔记，跨项目规则晋升用户级记忆，闲聊跳过，失败进队列每 5 分钟重试（15 秒心跳文件证明循环存活）。每日写入有预算与自动压缩（超限不拒写，AI 合并去重后写入）。
+
+### 唤起与固化 — 该出手时才出手
+
+联想式记忆唤起在对话链中检测回忆需求，命中即注入下一环节（不破坏前缀缓存）；高频流程固化为技能 checklist，匹配对话自动附上，跨会话验证后晋升（记忆中枢页审批，90 天未用自动归档可置顶）。**每一次"要不要打断你"的决策都能在「唤起回顾」页复核打分**（A 该激活 / P 只预取 / S 应抑制 / H 有害 / E 改目标），判定队列会汇总成政策提示。
+
+<p align="center"><img width="720" alt="refine" src="docs/screenshots/panel-refine.png"></p>
+
+### 无人值守模式 — 面向批处理任务
+
+长跑批处理/自动化流水线？设置 → 自动化提供**无人值守模式**与**夜间自动托管**（22:00-08:00 可调）。托管期间：不注入欢迎语/寒暄/行为指令、日历提醒静默、上下文保持稳定——模型专注干活，token 花在正事上。
+
+### AI 问候与每日反思
+
+按时段（晨/午/晚）生成提及你当日最重要工作的问候；暂离超过 1 小时回来，记忆面板自动打开并送上"欢迎回来"+近期工作摘要；每天第一次会话主动呈现前一日结构化反思。
+
+### 智能检索
+
+自然语言提问，AI 自动扩展关键词扫描全部记忆层，会话式回答并标注来源；支持跨工作区检索。
+
+### 日历 — AI 替你维护
+
+AI 从对话中识别截止日期/约定自动入日历（`calendar_add`），未完成事项注入后续会话直到完成；日视图 07:00-22:00 时间轴、地点/提醒字段、紧急度语义色。
+
+### 外部记忆继承
+
+WorkBuddy / CodeBuddy / Claude Code / Codex 的历史会话与记忆可扫描发现、按源导入（**只存路径指针，不复制内容**）、按源删除；导入侧+注入侧双重卫生闸门防外部脏数据混入。
+
+### 记忆卫生（生产级写入门禁）
+
+- 三个写入工具全部过 `sanitizeForWrite`：GBK 乱码（34 特征全表）、复读退化、连续重复行、外部 AI 画像 JSON 特征、base64 残留——全部拒写并给出中文回执
+- 设置 → 调试中心「扫描脏 token」：一键扫描用户级/项目/日志/反思，按行区间报告问题（只报位置不含正文）
+- 追加 8000 字/条、全量改写 20 万字上限；追加前与文件尾部近 60 行做去重
+
+---
+
+## ⚙️ 工程内核（保持克制的设计）
+
+- **零运行时依赖**：Node 内建模块之外无任何依赖
+- **前缀缓存友好**：提示词字节级稳定，DeepSeek 前缀缓存持续命中，不反复重编码历史
+- **限额 AI**：自动沉淀每日 ≤8 次带冷却，记忆有用但不烧预算
+- **集中式存储**：全部工作区记忆收在 `~/.dsh/memory/workspaces/` 一个根下，任意会话可读
+- **30 天蒸馏**：旧日志由 AI 蒸馏进项目笔记，原文归档不丢失
+
+---
+
+## 📸 界面速览
+
+### 记忆面板 · 概览（暂离问候 + AI 时段总结）
+
+<img width="480" alt="overview" src="docs/screenshots/panel-overview.png">
+
+### 记忆中枢 · 三层记忆店与技能晋升审批
+
+<img width="480" alt="hub" src="docs/screenshots/panel-hub.png">
+
+### 唤起回顾 · 每次激活决策可打分
+
+<img width="720" alt="refine" src="docs/screenshots/panel-refine.png">
+
+### 欢迎向导 · 功能开关与引擎检测
+
+<img width="720" alt="tour" src="docs/screenshots/tour-toggles.png">
+
+<details>
+<summary><b>更多截图</b>（点击展开）</summary>
+
+### 外部记忆扫描（欢迎向导内）
+
+<img width="720" alt="external scan" src="docs/screenshots/tour-external.png">
+
+### 连接其他 AI 工具
+
+<img width="480" alt="connect" src="docs/screenshots/connect-zh.png">
+
+### 日历视图
+
+<img width="480" alt="calendar" src="docs/screenshots/calendar-zh.png">
+
+### 工作区关系图
+
+<img width="480" alt="workspace map" src="docs/screenshots/workspace-map-zh.png">
+
+### 设置页
+
+<img width="480" alt="settings" src="docs/screenshots/settings-zh.png">
+<img width="480" alt="settings 2" src="docs/screenshots/settings-2-zh.png">
+
+</details>
+
+---
+
+## 🚀 安装（一条命令）
+
+> 前置：安装 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 并至少启动过一次 `dsh web`。
+
+在 **profile 目录**（`~/.dsh/profiles/web`）执行：
 
 ```bash
 cd ~/.dsh/profiles/web
 pnpm add @a9i5k4/dsh-auto-memory
 ```
 
-> pnpm v11 默认限制安装发布不足 1 天的版本。当天发布想立即拿到新版,在 profile 目录的 pnpm-workspace.yaml 加 `minimumReleaseAge: 0`,或用显式版本 `pnpm add @a9i5k4/dsh-auto-memory@0.1.16`。(pnpm v11 blocks packages published <1 day ago; set `minimumReleaseAge: 0` in pnpm-workspace.yaml or use an explicit version for same-day releases.)
-
-Then edit `package.json` in that directory and append to the `dsh.profile.bundles` array:
+然后编辑同目录 `package.json`，在 `dsh.profile.bundles` 数组追加：
 
 ```json
 "@a9i5k4/dsh-auto-memory"
 ```
 
-Restart **dsh web** to activate (the 「Memory」entry appears in the sidebar).
+重启 **dsh web** 生效（侧边栏出现「记忆」入口）。
 
-> No pnpm? Use npm: `npm install @a9i5k4/dsh-auto-memory`
+> 没有 pnpm？`npm install @a9i5k4/dsh-auto-memory` 同样可用。
+> pnpm v11 限制安装发布不足 1 天的版本：当天发布想立即更新，在 profile 目录 `pnpm-workspace.yaml` 加 `minimumReleaseAge: 0`，或装显式版本。
 
-## Updating (check & upgrade)
+### AI 时代安装法
 
-The plugin is a normal npm package, so updating is one command in the same profile directory:
-
-```bash
-cd ~/.dsh/profiles/web
-pnpm up @a9i5k4/dsh-auto-memory   # or: npm install @a9i5k4/dsh-auto-memory@latest
-```
-
-Then restart **dsh web**.
-
-The Settings → Auto Memory page has a **Check for updates** button that compares your installed version with the latest one on the npm registry (it shows the update command when a newer version exists).
-
-## AI-Era Installation (copy-paste for your AI)
-
-> It's the AI era — just copy the sentence below to your AI assistant (DeepSeek / Claude / Codex etc.) and it will do the installation for you.
+复制下面这段发给你正在用的 AI 助手即可：
 
 ```text
-Install the npm package @a9i5k4/dsh-auto-memory in the DeepSeek Harness web profile
-directory ~/.dsh/profiles/web (run "pnpm add @a9i5k4/dsh-auto-memory" or "npm install @a9i5k4/dsh-auto-memory"),
-append "@a9i5k4/dsh-auto-memory" to the dsh.profile.bundles array in package.json,
-then restart dsh web to activate the plugin.
+在 DeepSeek Harness web profile 目录 ~/.dsh/profiles/web 安装 npm 包
+@a9i5k4/dsh-auto-memory（pnpm add 或 npm install），
+把 "@a9i5k4/dsh-auto-memory" 追加到 package.json 的 dsh.profile.bundles 数组，
+然后重启 dsh web 激活插件。
 ```
 
----
+### 更新
 
-## A companion that takes initiative
+```bash
+cd ~/.dsh/profiles/web && pnpm up @a9i5k4/dsh-auto-memory
+```
 
-Auto Memory is designed to feel less like a database and more like an assistant who knows you:
-
-- **Proactive reminders** — when the AI notices a deadline, appointment or promise in your conversation, it files it into the calendar automatically and reminds you in later sessions before the time arrives (`calendar_add` / `calendar_done` / `calendar_remove`).
-- **Warm greetings** — an AI-written greeting for the current period (morning / afternoon / evening) that mentions your most important work of the day; come back after an hour away and it says "welcome back" and catches you up.
-- **It writes its own journal** — after every conversation turn, a small subagent quietly decides what's worth keeping and appends topic-grouped entries to today's log; long-term decisions are promoted to project notes and cross-project rules to user-level memory. You never have to remember to log anything.
-- **Daily reflections** — structured results / lessons / next steps are kept in the background, so you can review how a day really went.
-- **Calendar with human touches** — semantic colors for urgency, a day timeline (07:00–22:00), location and reminder fields; the AI maintains it from context instead of you filling forms.
-- **Inherited memory** — memories accumulated in WorkBuddy / CodeBuddy / Claude Code / Codex are discoverable and importable, so the plugin picks up where your other AI tools left off.
-
-### Under the hood — engineering that stays out of your way
-
-- **Prefix-cache friendly** — static rules live in the system prompt, dynamic memory in runtime snapshots; the prompt stays byte-stable so DeepSeek's prefix cache keeps hitting (no repeated re-encoding of your whole history).
-- **Lean injection, low token cost** — only the last day of logs + a reflection digest are injected; everything else is fetched on demand via `memory_read` / `memory_recall`.
-- **Rate-limited AI** — auto-consolidation runs at most 8×/day with a configurable cooldown (doubled outside work hours), so memory stays useful without burning your budget.
-- **Credentials never enter the prompt** — sensitive sections (tokens / secrets / credentials) are filtered out of injection while staying safe in the files.
-- **Cross-workspace & cross-tool** — centralized storage readable from any session; memories from WorkBuddy / CodeBuddy / Claude Code / Codex are discoverable and importable.
-
-## Features
-
-### Three-layer Memory
-
-| Layer | Location | Description |
-|---|---|---|
-| User-level memory | `~/.dsh/memory/MEMORY.md` | Cross-project rules & preferences |
-| Project notes | `~/.dsh/memory/workspaces/{workspace}/MEMORY.md` | Project conventions & decisions (centralized) |
-| Daily logs | `~/.dsh/memory/workspaces/{workspace}/YYYY-MM-DD.md` | Append-only work log (centralized) |
-| Reflections | `~/.dsh/memory/workspaces/{workspace}/reflections/YYYY-MM-DD.md` | Daily reflection (structured, kept in background) |
-
-> **Centralized storage (WorkBuddy-style)**: all workspace memories live under one root — `~/.dsh/memory/workspaces/`, one subdirectory per workspace (readable by any model in any session via injection + cross-workspace `memory_recall`). Legacy per-workspace `.dsh-memory/` folders are auto-migrated on first run after upgrade (the old copies are kept, not deleted).
-
-- **Auto injection (at the end of the system prompt)**: every prompt gets a `<memory_system>` block (user rules + project notes + reflection digest + recent 1 day of log tails + external memory paths + pending calendar items + writing discipline); it is placed at the very end of the system prompt so the model reads the memory discipline right before replying
-- **Lean by default, details on demand (v0.1.24)**: injection stays small — the last 1 day of logs, a reflection digest (achievements section only), and paths for external memory instead of full text. `memory_read` fetches full log/reflection/user/notes/calendar files when needed; sensitive sections (credentials/tokens/secrets) are **filtered out of the prompt** but kept in the files
-- **Visible memory ops**: when the AI updates or searches memory, it says so in plain text in the chat reply (e.g. "Logged X to today's journal", "I checked memory and found..."), not hidden inside tool calls
-
-### Auto-Consolidation — memory writes itself after every turn (v0.1.9)
-
-Every finished conversation turn is automatically evaluated (via a small subagent) and anything worth keeping is written for you — no reliance on the model remembering to log:
-
-- **Today's log** gets entries like `- 21:03 [自动沉淀] …` — no manual `memory_log` needed for routine work
-- **Long-term value is promoted**: project decisions/architecture → project notes (with a `## YYYY-MM-DD` heading); cross-project rules → user-level memory
-- **Small talk is skipped** (content threshold `autoConsolidateMinChars`), each turn is deduplicated by turn number, subagent turns are ignored
-- **Agent traces in the GUI**: the overview shows "Auto-consolidated N points today (latest HH:MM)"; the panel refreshes on open, every 30s while open, and via the ⟳ button
-- **`memory_consolidate` tool**: read recent logs and distill long-term decisions / architecture / user preferences into MEMORY.md on demand ("dream-like" consolidation)
-- Configurable in `~/.dsh/dsh-auto-memory.json`: `autoConsolidate` (default true), `autoConsolidateMinChars` (default 240), `autoConsolidateCooldownMinutes` (default 30, doubled 22:00–08:00), `autoConsolidateDailyMax` (default 8) — all adjustable in the Settings → Automation section
-
-### AI Greetings & Three-level Drawers (Overview page, v0.1.9)
-
-The first thing you see when opening the memory panel is an **AI-generated** period greeting, not a template and not technical info:
-
-- **AI-written greeting**: a subagent writes a warm, casual greeting for the current period (morning / forenoon / noon / afternoon / evening), mentioning your most important work of the day; generated once per period per day and cached in `.dsh-memory/greetings/` — no repeated API cost
-- **Drawer titles are the AI summaries**: the "Today afternoon / Today evening" window titles are replaced with the AI's casual summary text itself
-- **Three-level drawer structure**:
-  - Level 1: period drawer, titled with the AI summary
-  - Level 2: inside it, small drawers — one per work item the AI distilled (with a point count)
-  - Level 3: expand a work item to read its detail points
-- **Summaries are cached**: structured results live in `.dsh-memory/summaries/`; opening the panel reads the cache (offline-friendly, no regeneration); the ⟳ refresh button or returning after >1h away forces a fresh generation; every summary shows its generation time
-- **Smart timing**: if you were away for more than 1 hour and come back, the greeting says "Welcome back" with what was finished meanwhile
-- **Daily reflection stays in background**: structured reflections (results / lessons / next steps) are kept, while the front page only shows a light greeting
-
-### Smart Search (Search tab, v0.1.9)
-
-The Search tab adds a **Smart search** button next to the keyword search:
-
-- The AI expands your natural-language query into 3-6 keywords (e.g. "last time publishing npm hit a snag" → 发布 / 踩坑 / GitHub / npm / 推送)
-- Scans all three memory layers plus reflections with those keywords
-- The AI then composes a **conversational answer** in natural language, citing where each fact came from (log date / project note / user-level memory) — it never fabricates facts not present in memory
-- Raw keyword hits with their sources are listed under the answer
-
-### Calendar View (Four Quadrants)
-
-「Calendar」tab (liquid-glass monthly view):
-
-- Monthly grid, today highlighted, click any date to add an item
-- **Four-quadrant colors**: Urgent & Important (red) / Important (blue) / Urgent (orange) / Neither (gray)
-- Click an item to toggle done, click again to delete; legend + weekday header
-- **Cross-conversation persistence**: data lives at user level `~/.dsh/memory/CALENDAR.md`, shared across workspaces, survives DSH reinstall
-- **AI-maintained**: the AI extracts deadlines and appointments from conversations and writes them to the calendar automatically (`calendar_add` / `calendar_list` / `calendar_done` / `calendar_remove`), restating it in plain text; pending items are injected into every session's system prompt
-
-### Agent Tools
-
-`memory_log` / `memory_note` / `memory_user` / `memory_recall` / `memory_external` / `memory_maintain` / `memory_status` / `memory_reflect` / `memory_consolidate` / `calendar_add` / `calendar_list` / `calendar_done` / `calendar_remove`
-
-### UI
-
-- Sidebar 「Memory」entry → floating panel (Overview / Logs / Notes / Reflections / Connect / Calendar / Search)
-- Settings page (Settings → Auto Memory): storage paths, injection budget, reflection style, UI language (中文 / English), **panel font size (Small / Normal / Large / Extra large, default Large)** — applies immediately, no save needed
-- **External memory inheritance**: import memories accumulated by other AI tools (CodeBuddy / Claude Code / Codex / project convention files)
+设置 → 自动记忆页的「检查更新」按钮可比对 npm registry 最新版；registry 安装支持一键更新。
 
 ---
 
-## Screenshots
+## 🔧 配置
 
-All screenshots below are real captures of the plugin running inside the DSH Web GUI (Chinese UI for now; English UI captures will be added later).
-
-### Memory panel overview — away greeting & AI period summaries
-
-<img width="480" alt="Memory panel overview" src="docs/screenshots/overview-zh.png">
-
-### Connect — inherit global memory & history sessions from other AI agents
-
-<img width="480" alt="Connect tab" src="docs/screenshots/connect-zh.png">
-
-### Calendar — AI adds items, toggles status and marks completion from context
-
-<img width="480" alt="Calendar tab" src="docs/screenshots/calendar-zh.png">
-
-### Workspace mind map — auto-generated, workspace-centered cross-workspace overview
-
-<img width="480" alt="Workspace mind map" src="docs/screenshots/workspace-map-zh.png">
-
-### Settings — highly customizable, covers most technical details
-
-<img width="480" alt="Auto Memory settings" src="docs/screenshots/settings-zh.png">
-<img width="480" alt="Auto Memory settings (2)" src="docs/screenshots/settings-2-zh.png">
-
-## Beyond the screenshots
-
-- **Auto-consolidation**: every finished turn is evaluated by a small subagent and topic-grouped entries are written to today's log automatically (`## 主题（HH:MM）` + bullet points) — no `memory_log` needed for routine work. Long-term value is promoted to project notes / user-level memory, small talk is skipped, failures are queued and retried every 5 minutes (a 15-second heartbeat file proves the loop is alive).
-- **Smart search**: ask in natural language — the AI expands your query into keywords, scans every memory layer, then answers conversationally with sources cited.
-- **Calendar with day timeline (v0.1.24)**: click a date to open a 07:00–22:00 timeline with events placed on their time slots; add events with location/reminder/details; the AI proactively files deadlines via `calendar_add` and marks them done via `calendar_done`/`calendar_remove`.
-- **Workspace mind map (v0.1.24)**: an AI-generated graph of workspaces, topics and cross-workspace links; pan by dragging, resize with the slider, click a card for details.
-- **Memory panel UI (v0.1.24)**: liquid-glass panel with smooth animations everywhere — tab strip with arrow scrolling, expanding sections (greeting drawers, workspace summaries), floating save bar in Settings that highlights when there are unsaved changes.
-- **External memory management (v0.1.24)**: per-source view/import/remove — imported sources show "✓" and become "Delete" buttons per target (notes vs user-level); full content is read on demand and never injected in bulk.
-- **Calendar reminders**: pending items are injected into future sessions' system prompts until completed — the AI reminds you without being asked.
-- **One-click update**: the settings page shows your installed version vs. the npm registry latest; registry installs get a one-click update button (pnpm/npm runs under the hood), then restart to apply.
-
----
-
-## Configuration
-
-Defaults (JSON file `~/.dsh/dsh-auto-memory.json`):
+配置文件 `~/.dsh/dsh-auto-memory.json`（GUI 设置页可视化调整，含中英文界面与面板字号）：
 
 ```json
 {
   "userMemoryDir": "~/.dsh/memory",
-  "projectMemoryDir": ".dsh-memory",
+  "memoryRoot": "~/.dsh/memory/workspaces",
   "injectEnabled": true,
   "injectBudgetChars": 2400,
   "recentDaysInjected": 1,
   "reflectEnabled": true,
-  "reflectStyle": "auto",
-  "locale": "zh",
   "autoConsolidate": true,
-  "autoConsolidateMinChars": 240,
   "autoConsolidateCooldownMinutes": 30,
   "autoConsolidateDailyMax": 8,
-  "externalInjectionChars": 1400,
-  "memoryRoot": "~/.dsh/memory/workspaces",
+  "unattendedMode": false,
+  "unattendedAuto": false,
+  "unattendedAutoHours": ["22:00-08:00"],
+  "memoryHubEnabled": true,
+  "externalSources": { "workbuddy-user": true, "claude-global": true },
   "dayBoundaryMinutes": 450
 }
 ```
 
-Adjustable in the GUI (Settings → Auto Memory), including the UI language (zh / en), the panel font size and the day boundary.
-
-### v0.1.27 hardening (memory hygiene gate — keeps external dirt out)
-
-- **Write gate on the three write tools**: `memory_log_pre` / `memory_note_pre` / `memory_user_pre` now run content through `sanitizeForWrite` before writing — suspected mojibake (GBK round-trip artifacts), stutter degeneration (word/char loops, punctuation-separated included) and consecutive duplicate lines (≥3) are rejected with a reason; append entries cap at 8,000 chars, full rewrites (replace) at 200,000; appends are also deduped against the file's last ~60 lines (the `- HH:MM` log prefix does not affect matching).
-- **Hygiene family fixes**: removed the `进行中` false positive from the mojibake pattern (added the real artifact `杩涜涓`), switched mojibake counting to global matching (it previously counted at most 1 hit, letting dirty long texts slip past the threshold), stutter detection now works across punctuation, and the duplicate-line check is reset by blank lines (no more false positives on short lines repeated across paragraphs).
-- **External memory import is link-only**: `memory_external_pre` import now records only source file path pointers instead of copying content — keeping dirty content from other AI tools (WorkBuddy/CodeBuddy/Claude Code/Codex) out of local memory.
-- **Injection-side scrub + voice discipline**: mojibake lines, code blocks and stutter lines are scrubbed before injection; the injected block adds a "how to read memory" note and voice discipline — write all memory entries as third-person objective statements, no first-person thinking narration.
-
-### v0.1.28 dirty-token checker (prion-scan integrated — stops the "model silently degrades" class)
-
-- **Write gate now rejects raw JSON envelopes & base64 residue**: besides mojibake / stutter / duplicate lines, the write gate also rejects lines matching external-AI-profile JSON signatures (`memoryBlock` / `"uid":` / `updatedAt` / `"role":"... "`) and base64 residue lines — so an external tool profile can never be pasted into memory wholesale again.
-- **Full mojibake table (34 features, verbatim from prion-scan.mjs)**: the GBK round-trip residue list is completed, catching the exact artifacts this class of "garbage token" shows up as.
-- **New "Scan dirty tokens" in Settings → Debug Center**: one-click prion-style scan of user-level memory / project notes / today's log / reflections — returns a per-file report by line range (mojibake / raw JSON envelope / long lines >500 / base64 / duplicate lines, duplicate ## headings) with **locations only, no content**, so you can spot residual dirt without reading it.
-
-### v0.1.9 hardening (budget / boundary / picker)
-
-- **Daily write budget with auto-compaction**: user memory ≤ 4000 chars/day, project notes ≤ 3000 chars/day (shared across sessions, reset at the day boundary). Going over the budget never rejects the write — the framework compacts the pre-today sections with an AI pass (merge duplicates, drop stale entries, keep hard facts) and then writes; if AI is unavailable, the oldest sections are archived to `archived-user.md` / `archive/notes-archived.md` (nothing is lost). Compaction is throttled to once per 10 minutes.
-- **Day boundary (late-night belongs to yesterday)**: `dayBoundaryMinutes` (default 450 = 07:30). Work logged before the boundary is appended to the previous day's log, and the daily reflection for the previous day starts only after the boundary — no more "it's 00:30, tell me what you did yesterday" right after midnight.
-- **Native OS folder picker**: the "Browse…" button next to the memory root opens the real system folder picker (via the DSH directory-picker native backend); falls back to the in-app browser when no native picker is available. Changing the root auto-migrates existing workspace memory folders to the new location (old files are kept) and all path variables follow the new config on the next refresh.
-- **30-day distillation**: `memory_maintain` distills logs older than 30 days with an AI pass into the project notes, archives the originals under `archive/`, and removes them from the active log list.
-- **First-turn injection guarantee**: a `pre-step` hook awaits the memory state refresh before the first step, so the model sees memory from the very first token (previously the async load could leave the first turn empty).
-- **Per-step reminder with timestamp**: the injected discipline block carries a live `HH:MM:SS` timestamp that refreshes on every prompt assembly, and a 15-second heartbeat file proves the background loop is alive.
+> 完整键位见设置页——每个开关都有中文说明；欢迎向导里的每个开关与设置页一一对应。
 
 ---
 
-## Structure
+## 🧱 结构
 
-- `lib/index.js` — Host half: engine, injection, tools, routes (zero runtime deps, Node built-ins only)
-- `lib/client.js` — Browser half: memory panel (with calendar view) + settings page (built-in zh/en i18n)
-- `cordis.patch.yml` — Plugin row (`auto-memory`)
+- `lib/index.js` — Host 半：引擎、注入、工具、路由（零运行时依赖）
+- `lib/client.js` — Browser 半：记忆面板（含日历/关系图）+ 设置页 + 欢迎向导（内置中英 i18n）
+- `python/` — 可选 Python 语义 sidecar（BGE-M3 int8，进阶档）
+- `cordis.patch.yml` — 插件注册行
+
+## ⚠️ 已知限制
+
+- 记忆文件为纯文本 Markdown；除非明确要求，不存储密钥
+- `memory_recall` 会话搜索依赖已部署的 session-query 索引，缺失时仅本地检索可用
+- 插件增减需要重启 dsh 生效
 
 ---
 
-## Limitations
+## 🙌 社区致谢
 
-- Memory files are plain-text Markdown; no secrets stored unless explicitly requested.
-- `memory_recall` session search depends on the deployed session-query index; without it, only local search works.
-- Plugin-set changes require a dsh restart.
+- [@ProperSAMA](https://github.com/ProperSAMA) — DSH Desktop 增强模式（透明/Mica 材质）面板可读性修复 + 入口按钮防遮挡与外点/Esc 关闭（[PR #12](https://github.com/Aik358/dsh-auto-memory/pull/12)）
+- [@nkh0472](https://github.com/nkh0472) — 无人值守/批处理场景加固反馈，推动了欢迎向导与功能开关化（[Issue #10](https://github.com/Aik358/dsh-auto-memory/issues/10)）
 
 ---
 
-## Release Info
+## 📦 发布信息
 
 - GitHub: https://github.com/Aik358/dsh-auto-memory
 - npm: `@a9i5k4/dsh-auto-memory`
 - License: BSD-3-Clause
-
-## Contributors
-
-- [@ProperSAMA](https://github.com/ProperSAMA) — panel readability fix for DSH Desktop enhanced mode (transparent/Mica materials) + entry-button anti-occlusion & outside-click/Esc close ([PR #12](https://github.com/Aik358/dsh-auto-memory/pull/12))
-- [@nkh0472](https://github.com/nkh0472) — unattended/batch workflow hardening report that drove the first-launch welcome tour with per-feature switches and surfaced the existing unattended-mode toggles ([Issue #10](https://github.com/Aik358/dsh-auto-memory/issues/10))
