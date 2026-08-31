@@ -1,67 +1,49 @@
-# Banner 系列生图手册（GPT-image-2 图生图 · 以现有动漫人物为锚）
+# Banner 系列生图 Prompt v2（单句完整对话版 · GPT-image-2 图生图）
 
-> 2026-09-01 · 用法：现有 `docs/banner.jpg` 为主参考图。每页一次会话：
-> **第 1 条=角色锁定 prompt（每页必发）→ 第 2 条=该页场景 prompt**。
-> 图片和文字一起喂（GPT-image-2 支持参考图输入）；每页跑 2-3 张挑 1。
-> 统一规格：2560×1440 横版（网站 banner 裁切余量）；文字只允许 tagline 一行或无文字。
+> 2026-09-01 · 用法：**每页=一条完整消息**，参考图（docs/banner.jpg）与文字一起发送即可。
+> 每条已包含：参考图说明+角色锁定+完整画面描述+画面内文案+规格。可直接粘贴，无需再补任何上下文。
+> 跑 2-3 张挑 1；哪不满意用 §7 的微调句。
 
-## 0. 角色锁定 prompt（每页第一条，保持人物一致性）
+## P1 主视觉（现有 banner.jpg 直接用，不重新生成）
 
-```text
-Reference image: an anime-style illustration of a cheerful girl with long flowing deep-blue hair, blue eyes, wearing a white sailor-collar blouse with a dark blue trumpet skirt and ribbon, surrounded by floating watercolor-style magical books, notes and constellation cards in blue and violet tones, painted in a soft watercolor + digital hybrid style.
-
-Keep this EXACT character design in my next request: same face, same long deep-blue hairstyle, same outfit colors (white blouse + dark blue skirt + ribbon), same soft watercolor art style with glowing blue-violet magical particles. Do not change her identity, outfit or the art style.
-```
-
-## 1. P2 三层记忆体系（主题：她托起三层光）
-
-**装扮/动作设计**：校服外加一件半透明蓝纱披肩（呼应磨砂玻璃材质），双手向上摊开，掌上悬浮**三片磨砂玻璃圆角方板**（底→顶，间距相等，微倾斜），光柱从顶部穿过三板；表情专注而温柔。
+如需重制一版（升分辨率/微调文案），发这条：
 
 ```text
-Now create a wide 2560x1440 hero illustration: the same girl, now wearing an additional translucent frosted-glass-blue shawl over her sailor outfit, holding both hands up with palms open. Above her hands float THREE frosted rounded-square glass panels stacked with equal gaps, slightly tilted, glowing softly; a vertical beam of blue-violet light (#4D6BFE to #9B7EFF) passes down through all three panels. Deep dark navy background (#0B0F1A) with soft bokeh particles. Same watercolor digital hybrid art style. Leave the left 40% of the canvas relatively empty and dark for text overlay. Minimal or no text.
+请基于这张参考图重绘一张 2560×1440 的横版宣传 banner，保持画面中这位角色的全部设定不变：她是一位蓝发蓝眼的动漫少女，深蓝色长发飘逸，穿白色水手领上衣配深蓝色裙与缎带，周围环绕着水彩风格漂浮的魔法笔记本、便签、星座卡片和书页，整体是水彩混合数字绘画的柔和质感，蓝紫色调。画面布局保持：左侧 45% 是浅色留白区放文字，右侧是角色与漂浮物件。文字内容也保持：左上角小标签"DeepSeek Harness Plugin"，大标题"dsh-auto-memory"，副标题"让 AI 记住每一次对话 —— 三层记忆自动注入 · 每日反思 · 跨工具记忆继承"，下方四张小卡片（三层记忆/自动注入/每日反思/中英双语），底部一条安装命令"pnpm add @a9i5k4/dsh-auto-memory"和 GitHub/npm 链接行。仅提升细节精度与光影层次，构图和配色不变。
 ```
 
-## 2. P3 欢迎向导（主题：六枚图标环绕）
-
-**装扮/动作**：原校服，单手轻点身前一张**悬浮的深色玻璃卡片**（模拟向导界面），周围环绕六枚小的发光彩色玻璃圆角图标（青/金/绿/紫/天青/珊瑚），呈弧形排开；她回头对观者微笑。
+## P2 三层记忆体系（她托起三层光）
 
 ```text
-Now create a wide 2560x1440 illustration: the same girl in her sailor outfit, tapping a floating dark glass card in front of her like a welcome screen; around her, SIX small glowing rounded-square glass icons in different colors (cyan, amber, green, violet, sky-blue, coral) arc across the scene like an app dock. She looks back at the viewer with a confident smile. Deep dark navy background, soft bokeh, same watercolor style. Left 40% kept darker for text overlay. Minimal or no text.
+参考图中是一位蓝发蓝眼的动漫少女：深蓝色长发，白色水手领上衣配深蓝色裙与缎带，水彩混合数字绘画风格，周围有蓝紫色魔法微粒。请保持这个角色的脸、发型、服装、画风完全一致，为她绘制一张 2560×1440 的横版插画：她在这张图里穿上一件半透明的磨砂玻璃质感蓝色披肩，双手向上摊开，掌心上方悬浮着三片磨砂玻璃质感的圆角方形板，从下到上等距堆叠、略微倾斜，一道蓝紫色光柱（从 #4D6BFE 渐变到 #9B7EFF）从画面顶部垂直穿过三片板；她的表情专注温柔。背景是深藏青色（#0B0F1A），有柔和的散景光斑。画面左侧 40% 区域保持较暗、细节较少，用于叠加文字，文字内容为：大标题"三层记忆体系"，副标题"用户级规则 · 项目笔记 · 每日日志 —— 自动注入，按需检索"。除这些文字外画面内不出现其他文字。
 ```
 
-## 3. P4 唤起与固化（主题：对话流凝成技能卡）
-
-**装扮/动作**：校服+手里一支发光钢笔（原图同款道具），面前一条纵向**对话气泡流**（3-4 个半透明气泡从上往下飘），最下方的气泡正在被她的笔"点化"成一张**实体的技能卡片**（发光、带勾选框纹样）；传达"对话被记住并固化成流程"。
+## P3 欢迎向导（六枚图标环绕）
 
 ```text
-Now create a wide 2560x1440 illustration: the same girl holding the same glowing pen from the reference. In front of her, a vertical stream of translucent chat bubbles floats downward; the lowest bubble is being transformed by her pen into a solid glowing skill card with subtle checkbox lines on it — "conversation crystallizing into a skill". Magical particles trail from the pen tip. Deep dark navy background, same watercolor style. Left 40% dark for text. Minimal or no text.
+参考图中是一位蓝发蓝眼的动漫少女：深蓝色长发，白色水手领上衣配深蓝色裙与缎带，水彩混合数字绘画风格，周围有蓝紫色魔法微粒。请保持这个角色的脸、发型、服装、画风完全一致，绘制一张 2560×1440 的横版插画：她穿着原来的校服，单手轻点身前一张悬浮的深色玻璃质感卡片（像一块欢迎界面），她回头对着观者微笑，表情自信；以她为中心，六枚小的发光彩色玻璃圆角图标在空中排成一道弧线，颜色分别是青色、琥珀金、青绿、紫罗兰、天青、珊瑚橙，每枚图标内部有柔和的自发光。背景深藏青色（#0B0F1A）加柔和散景。画面左侧 40% 较暗用于叠字，文字内容为：大标题"欢迎向导"，副标题"每个功能，当场看懂、当场开关"。除这些文字外画面内不出现其他文字。
 ```
 
-## 4. P5 无人值守（主题：月夜守航）
-
-**装扮/动作**：同一角色加一条**深蓝斗篷**（夜班值班感），坐在一张悬浮玻璃控制台前（玻璃屏幕上有柔和的进度波形），姿态放松但警觉；窗外一弯新月+时钟指针指向 22:00；整体光线更暗、更安静，唯独屏幕与她的眼睛有光。
+## P4 唤起与固化（对话凝成技能）
 
 ```text
-Now create a wide 2560x1440 illustration: the same girl now wearing a deep-blue cape over her outfit, sitting relaxed but alert at a floating frosted-glass console showing soft progress waves on its screen. Behind her a large window shows a crescent moon and a clock pointing to 10 PM. The scene is darker and quieter than usual — only the screen and her eyes glow. Conveys "unattended night batch, zero small talk, everything stable". Deep dark navy background, same watercolor style. Left 40% dark for text. Minimal or no text.
+参考图中是一位蓝发蓝眼的动漫少女：深蓝色长发，白色水手领上衣配深蓝色裙与缎带，手持一支发光的钢笔，水彩混合数字绘画风格，周围有蓝紫色魔法微粒。请保持这个角色的脸、发型、服装、钢笔道具、画风完全一致，绘制一张 2560×1440 的横版插画：她身前有一条从上往下漂浮的纵向对话气泡流（三到四个半透明的聊天气泡），最低处的气泡正被她的笔尖"点化"成一张实体的发光技能卡片，卡片上有淡淡的勾选框纹样，笔尖到卡片之间拖出魔法微粒轨迹——传达"对话被记住，并固化成可复用的流程"。背景深藏青色（#0B0F1A）。画面左侧 40% 较暗用于叠字，文字内容为：大标题"唤起与固化"，副标题"对话凝成技能，该出手时才出手"。除这些文字外画面内不出现其他文字。
 ```
 
-## 5. P6 外部记忆继承（主题：四路光桥）
-
-**装扮/动作**：校服，张开双臂，身前悬浮一颗**大的玻璃记忆核心**（多层球体），四条柔和光桥从画面四角伸向核心（四个角各一个抽象的外来记忆体：书/芯片/纸鹤/信封剪影），光桥上有微粒流向核心——"别的 AI 的记忆也在喂她"。
+## P5 无人值守（月夜守航）
 
 ```text
-Now create a wide 2560x1440 illustration: the same girl with arms gently open, a large multi-layered glass memory orb floating in front of her. Four soft light bridges reach toward the orb from the four corners of the canvas, each corner holding an abstract silhouette of an external memory token (a book, a memory chip, a paper crane, an envelope); glowing particles flow along the bridges into the orb. Conveys "memories from other AI tools flow into her". Deep dark navy background, same watercolor style. Center composition. Minimal or no text.
+参考图中是一位蓝发蓝眼的动漫少女：深蓝色长发，白色水手领上衣配深蓝色裙与缎带，水彩混合数字绘画风格，周围有蓝紫色魔法微粒。请保持这个角色的脸、发型、服装、画风完全一致，绘制一张 2560×1440 的横版插画：她在这张图里多披一件深蓝色斗篷，安静地坐在一张悬浮的磨砂玻璃控制台前，控制台屏幕上有柔和的进度波形；她身后是一扇大窗，窗外一弯新月和一个指向晚上十点的时钟。整个场景比其他画面更暗、更安静——只有屏幕的光、她的眼睛、以及窗外月光。传达"无人值守的夜间批量任务，零打扰，一切稳定"。背景深藏青色（#0B0F1A）。画面左侧 40% 较暗用于叠字，文字内容为：大标题"无人值守模式"，副标题"整夜安静跑，零寒暄，零打扰"。除这些文字外画面内不出现其他文字。
 ```
 
-## 6. 通用修图指令（哪张不满意时的微调 prompt）
+## P6 外部记忆继承（四路光桥）
 
 ```text
-Keep everything in this image, only change: [具体一点,例如 "make the three glass panels larger and slightly more transparent" / "reduce the number of particles" / "shift the lighting warmer"]。
-Everything else — character, pose, background, style — stays exactly the same.
+参考图中是一位蓝发蓝眼的动漫少女：深蓝色长发，白色水手领上衣配深蓝色裙与缎带，水彩混合数字绘画风格，周围有蓝紫色魔法微粒。请保持这个角色的脸、发型、服装、画风完全一致，绘制一张 2560×1440 的横版插画：她张开双臂，身前悬浮一颗大的多层玻璃记忆核心球体；画面四个角各有一个抽象的外来记忆体剪影——一本打开的书、一块存储芯片、一只纸鹤、一封信封——每个剪影向中心球体伸出一条柔和的光桥，光桥上有发光微粒流向球体，传达"其他 AI 工具的记忆源源不断汇入"。构图以角色与球体为中心对称。背景深藏青色（#0B0F1A）。画面顶部与底部留出较暗的横条用于叠字，文字内容为：大标题"外部记忆继承"，副标题"你的其他 AI，也在喂她记忆"。除这些文字外画面内不出现其他文字。
 ```
 
-## 7. 验收标准（每页过三关再定稿）
+## 微调句（哪张不满意，追这条只改一点）
 
-1. **角色一致性**：脸/发型/配色与原图并排对比看不出"换了个人"
-2. **左 40% 文字区**：叠白色标题后可读（深底+低细节）
-3. **风格统一**：六页并排像同一个系列的六集，不是六个画师的稿
+```text
+保持这张图的全部内容不变，只调整：[这里写一句话，例如"三片玻璃板再大一点、更透明一些" / "散景光斑减少一半" / "整体光线调暖 10%"]。角色、构图、其余细节完全保持原样。
+```
