@@ -264,3 +264,7 @@ Adjustable in the GUI (Settings → Auto Memory), including the UI language (zh 
 - GitHub: https://github.com/Aik358/dsh-auto-memory
 - npm: `@a9i5k4/dsh-auto-memory`
 - License: BSD-3-Clause
+
+## Contributors
+
+- [@ProperSAMA](https://github.com/ProperSAMA) — panel readability fix for DSH Desktop enhanced mode (transparent/Mica materials) + entry-button anti-occlusion & outside-click/Esc close ([PR #12](https://github.com/Aik358/dsh-auto-memory/pull/12))
