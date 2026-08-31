@@ -1159,21 +1159,27 @@ class SemanticWorker(base.Worker):
 
             correction_gate = _evidence_gate('correction')
             stale_gate = _evidence_gate('stale')
+            # F1 降版本容忍(2026-08-31,docs/A3-RISK-ASSESSMENT-20260830.md):
+            # 候选本身就是当前语料快照检索出来的记录(digest 与语料同版本),而 evidence
+            # aggregate 的 stale 只表示「最近一条证据事件描述的是旧版本 digest」——语料
+            # 每次重锚定(每日日志追加)都会让全部历史证据一夜变 stale,压制窗口随之振荡
+            # (实测 35/64 记忆 stale,emit 全灭,靠用户恰好发起读取才自愈)。纠正风险已由
+            # correction 门独立覆盖;stale 门据此降级:不进 hardGates(不再 suppress/
+            # prefetch 压制),只作为 reasonCodes 标注 + emit 降 prefetch 的软信号保留。
+            # 不动 fv2 决策核(hardGates 仍透传 correction)。
             features = {
                 'id': obs, 'text': query,
                 'denseTop': round(dense_top, 6), 'margin': round(margin, 6),
                 'containment': round(containment, 4), 'mark': mark,
                 'nCand': len(candidates), 'candidateHit': candidate_hit,
                 'resolvedTargets': None, 'requiredHint': None,
-                'hardGates': {'correction': correction_gate,
-                              'stale': stale_gate},
+                'hardGates': {'correction': correction_gate},
                 'repetition': rep,
                 'requiresRelayFlag': False, 'piiClass': 'unknown',
             }
             out = featv2.decide_activation_v2(features, head, pol)
-            # 2026-08-27 优化④:stale 不再整单 suppress——emit 遇 stale 降级为 prefetch
+            # stale 软处理(2026-08-27 优化④ 语义保留):emit 遇 stale 降级为 prefetch
             # (stale 内容不注入,保留预取),并标记 staleDowngraded 供索引刷新。
-            # 不动 fv2 决策核(验收过的算法),只在调用后调整。
             if stale_gate and out.get('decision') == 'emit':
                 out['decision'] = 'prefetch'
                 out['reasonCodes'] = list(out.get('reasonCodes') or []) + ['stale_downgraded']
