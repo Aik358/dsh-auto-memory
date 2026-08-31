@@ -341,6 +341,40 @@
   .arch-cap .lg .dot.queued{background:transparent;border:1.5px solid rgba(232,228,220,.4)}
   .arch-cap-sep{color:rgba(232,228,220,.3)}
 
+  /* ── 宣传图轮播：纯 CSS scroll-snap 翻页 ── */
+  .promo{margin-top:22px;border:1px solid var(--line);background:#fff;position:relative}
+  .promo-track{
+    display:grid;grid-auto-flow:column;
+    grid-auto-columns:100%;
+    overflow-x:auto;scroll-snap-type:x mandatory;
+    scrollbar-width:none;
+  }
+  .promo-track::-webkit-scrollbar{display:none}
+  .promo-track img{
+    width:100%;height:auto;display:block;
+    scroll-snap-align:start;scroll-snap-stop:always;
+    aspect-ratio:16/9;object-fit:cover;background:var(--paper-2);
+  }
+  .promo-nav{
+    display:flex;justify-content:space-between;align-items:center;
+    border-top:1px solid var(--line);padding:8px 12px;
+  }
+  .promo-dots{display:flex;gap:8px}
+  .promo-dots a{
+    width:10px;height:10px;border:1.5px solid var(--ink-3);display:block;
+    transition:background .15s ease,border-color .15s ease;
+  }
+  .promo-dots a:hover{border-color:var(--accent);background:var(--accent)}
+  .promo-cap{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3)}
+  .promo-btn{
+    background:transparent;border:1px solid var(--line);color:var(--ink);
+    font-family:var(--mono);font-size:11px;padding:4px 12px;cursor:pointer;
+    text-decoration:none;letter-spacing:.08em;
+  }
+  .promo-btn:hover{background:var(--ink);color:var(--paper)}
+  /* :target 翻页——点击圆点滚动到对应帧 */
+  .promo-frame:target{scroll-snap-align:start}
+
   /* ── 设计文献行 ── */
   .papers{border-top:1px solid rgba(255,255,255,.18)}
   .papers-head{
@@ -741,6 +775,28 @@
         <span class="lg"><i class="dot queued"></i><span data-i18n="arch.lg.queued">queued 排队</span></span>
         <span class="arch-cap-sep">·</span>
         <span data-i18n="arch.cap">语义层决定"想起什么"，权威层决定"是否/何时/如何注入"——Python 不创建证据，也不直接注入。点击模块查看实现摘要。</span>
+      </div>
+
+      <!-- 宣传图轮播：6 帧滚动吸附 -->
+      <div class="promo reveal">
+        <div class="promo-track" id="promo-track">
+          <img id="promo-1" src="../screenshots/promo/promo-1-hero.png" alt="dsh-auto-memory 主视觉：不用吩咐，她自己记得" />
+          <img id="promo-2" src="../screenshots/promo/promo-2-tour.png" alt="欢迎向导：每个功能、当场看懂、当场开关" />
+          <img id="promo-3" src="../screenshots/promo/promo-3-recall.png" alt="唤起与固化：对话凝成技能，每一步有迹可循" />
+          <img id="promo-4" src="../screenshots/promo/promo-4-unattended.png" alt="无人值守模式：整夜安静跑，零寒暄，零打扰" />
+          <img id="promo-5" src="../screenshots/promo/promo-5-external.png" alt="外部记忆继承：你的其他 AI，也在喂她记忆" />
+          <img id="promo-6" src="../screenshots/promo/promo-6-greeting.png" alt="定时暖心问候：让每一天都被记得" />
+        </div>
+        <div class="promo-nav">
+          <span class="promo-cap" data-i18n="promo.cap">GALLERY · 六幕</span>
+          <span class="promo-dots">
+            <a href="#promo-1" aria-label="1"></a><a href="#promo-2" aria-label="2"></a><a href="#promo-3" aria-label="3"></a><a href="#promo-4" aria-label="4"></a><a href="#promo-5" aria-label="5"></a><a href="#promo-6" aria-label="6"></a>
+          </span>
+          <span style="display:flex;gap:6px">
+            <button type="button" class="promo-btn" id="promo-prev" aria-label="prev">←</button>
+            <button type="button" class="promo-btn" id="promo-next" aria-label="next">→</button>
+          </span>
+        </div>
       </div>
 
       <!-- 设计文献：论文与决策文档 -->
@@ -1299,6 +1355,7 @@ pnpm up @a9i5k4/dsh-auto-memory</pre>
       "pp.4.t":"算法冻结决策 D1–D11","pp.4.s":"全部研究结论到生产实现的决策台账",
       "pp.5.t":"Held-out 人工金标验收","pp.5.s":"67 条标注打分：actPrecision 0.917 / harmfulEmit 0 / echo 层 7/7",
       "pp.6.t":"Python Sidecar 完整契约","pp.6.s":"协议/生命周期/权威边界/各里程碑回归证据（§19.x）",
+      "promo.cap":"GALLERY · 六幕",
       "feat.kicker":"功能全景","feat.title":"十二个能力，互相咬合","feat.sub":"逐项展开，不省略——你想知道它\"到底能干什么\"，往下读就对了。",
       "f.1.kicker":"3.1 · 三层记忆体系","f.1.t":"三处文件，三种语义","f.1.p":"用户级 → 项目笔记 → 每日日志/反思，越往下越新鲜、越往上越稳定。注入策略按这个分层严格区分：静态纪律进 system prompt 保缓存，动态记忆只取最近 1 天，其余按需 recall。",
       "f.1.col1":"层","f.1.col2":"位置","f.1.col3":"内容",
@@ -1433,6 +1490,7 @@ pnpm up @a9i5k4/dsh-auto-memory</pre>
       "pp.4.t":"Frozen Algorithm Decisions D1–D11","pp.4.s":"The decision ledger from research conclusions to production implementation",
       "pp.5.t":"Held-out Human-Gold Acceptance","pp.5.s":"67 labeled verdicts: actPrecision 0.917 / harmfulEmit 0 / echo tier 7/7",
       "pp.6.t":"Python Sidecar Contract","pp.6.s":"Protocol / lifecycle / authority boundary / per-milestone regression evidence (§19.x)",
+      "promo.cap":"GALLERY · SIX FRAMES",
       "feat.kicker":"Feature tour","feat.title":"Twelve capabilities, interlocked","feat.sub":"Expanded one by one, nothing skipped — read on to find out what it actually does.",
       "f.1.kicker":"3.1 · Three-layer memory","f.1.t":"Three files, three semantics","f.1.p":"User-level → project notes → daily logs/reflections; the deeper, the fresher. Injection strategy strictly follows this layering: static discipline goes into the system prompt to keep the cache hot; dynamic memory only injects the last day, everything else is recalled on demand.",
       "f.1.col1":"Layer","f.1.col2":"Location","f.1.col3":"Content",
@@ -1549,6 +1607,34 @@ pnpm up @a9i5k4/dsh-auto-memory</pre>
   }
   document.getElementById('lang-zh').addEventListener('click', function(){ applyLang('zh'); });
   document.getElementById('lang-en').addEventListener('click', function(){ applyLang('en'); });
+
+  /* ── 宣传图轮播：prev/next + 圆点同步 ── */
+  (function(){
+    var track = document.getElementById('promo-track');
+    if (!track) return;
+    var frames = track.querySelectorAll('img');
+    var dots = document.querySelectorAll('.promo-dots a');
+    var cur = 0;
+    function go(i){
+      cur = Math.max(0, Math.min(frames.length - 1, i));
+      frames[cur].scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'start' });
+      dots.forEach(function(d, k){ d.style.background = k === cur ? 'var(--accent)' : 'transparent'; });
+    }
+    document.getElementById('promo-prev').addEventListener('click', function(){ go(cur - 1); });
+    document.getElementById('promo-next').addEventListener('click', function(){ go(cur + 1); });
+    dots.forEach(function(d, k){ d.addEventListener('click', function(e){ e.preventDefault(); go(k); }); });
+    // sync on manual scroll
+    var t;
+    track.addEventListener('scroll', function(){
+      clearTimeout(t);
+      t = setTimeout(function(){
+        var idx = Math.round(track.scrollLeft / track.clientWidth);
+        if (idx !== cur){ cur = idx; dots.forEach(function(d, k){ d.style.background = k === cur ? 'var(--accent)' : 'transparent'; }); }
+      }, 80);
+    });
+    go(0);
+  })();
+
   var saved = null;
   try { saved = localStorage.getItem('dsh-landing-pre.lang'); } catch (e) {}
   if (saved !== 'zh' && saved !== 'en') saved = 'zh';

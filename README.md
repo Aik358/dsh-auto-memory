@@ -1,8 +1,47 @@
 # dsh-auto-memory — Auto Memory & Proactive Companion for DeepSeek Harness
 
 <p align="center">
-  <img width="820" alt="dsh-auto-memory banner" src="docs/banner.jpg">
+  <a href="docs/screenshots/promo/promo-1-hero.png"><img width="820" alt="dsh-auto-memory hero: she remembers, unbidden" src="docs/screenshots/promo/promo-1-hero.png"></a>
 </p>
+
+<p align="center">
+  <a href="docs/screenshots/promo/promo-1-hero.png"><img width="130" alt="hero" src="docs/screenshots/promo/promo-1-hero.png"></a>
+  <a href="docs/screenshots/promo/promo-2-tour.png"><img width="130" alt="welcome tour" src="docs/screenshots/promo/promo-2-tour.png"></a>
+  <a href="docs/screenshots/promo/promo-3-recall.png"><img width="130" alt="recall & crystallization" src="docs/screenshots/promo/promo-3-recall.png"></a>
+  <a href="docs/screenshots/promo/promo-4-unattended.png"><img width="130" alt="unattended mode" src="docs/screenshots/promo/promo-4-unattended.png"></a>
+  <a href="docs/screenshots/promo/promo-5-external.png"><img width="130" alt="external memory inheritance" src="docs/screenshots/promo/promo-5-external.png"></a>
+  <a href="docs/screenshots/promo/promo-6-greeting.png"><img width="130" alt="scheduled greetings" src="docs/screenshots/promo/promo-6-greeting.png"></a>
+</p>
+<p align="center"><sub>Promo gallery · six frames · click any thumbnail to view full size</sub></p>
+
+<details>
+<summary><b>Promo gallery, frame by frame</b> (expand and flip through)</summary>
+
+#### Frame 1 · Hero — She remembers, unbidden
+
+<p align="center"><img width="720" alt="hero" src="docs/screenshots/promo/promo-1-hero.png"></p>
+
+#### Frame 2 · Welcome Tour — Every feature, explained and toggled on the spot
+
+<p align="center"><img width="720" alt="welcome tour" src="docs/screenshots/promo/promo-2-tour.png"></p>
+
+#### Frame 3 · Recall & Crystallization — Conversation condenses into skills, traceably
+
+<p align="center"><img width="720" alt="recall" src="docs/screenshots/promo/promo-3-recall.png"></p>
+
+#### Frame 4 · Unattended Mode — Runs all night, zero small talk, zero interruptions
+
+<p align="center"><img width="720" alt="unattended" src="docs/screenshots/promo/promo-4-unattended.png"></p>
+
+#### Frame 5 · External Memory Inheritance — Your other AIs feed her memory too
+
+<p align="center"><img width="720" alt="external" src="docs/screenshots/promo/promo-5-external.png"></p>
+
+#### Frame 6 · Scheduled Greetings — Every day remembered
+
+<p align="center"><img width="720" alt="greeting" src="docs/screenshots/promo/promo-6-greeting.png"></p>
+
+</details>
 
 <p align="center">
   <a href="README.md">中文</a> · <b>English</b> · License BSD-3-Clause · <code>pnpm add @a9i5k4/dsh-auto-memory</code>

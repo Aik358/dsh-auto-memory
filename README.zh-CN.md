@@ -1,8 +1,47 @@
 # dsh-auto-memory — DSH 自动记忆与人性化交互插件
 
 <p align="center">
-  <img width="820" alt="dsh-auto-memory banner" src="docs/banner.jpg">
+  <a href="docs/screenshots/promo/promo-1-hero.png"><img width="820" alt="dsh-auto-memory 主视觉：不用吩咐，她自己记得" src="docs/screenshots/promo/promo-1-hero.png"></a>
 </p>
+
+<p align="center">
+  <a href="docs/screenshots/promo/promo-1-hero.png"><img width="130" alt="主视觉" src="docs/screenshots/promo/promo-1-hero.png"></a>
+  <a href="docs/screenshots/promo/promo-2-tour.png"><img width="130" alt="欢迎向导" src="docs/screenshots/promo/promo-2-tour.png"></a>
+  <a href="docs/screenshots/promo/promo-3-recall.png"><img width="130" alt="唤起与固化" src="docs/screenshots/promo/promo-3-recall.png"></a>
+  <a href="docs/screenshots/promo/promo-4-unattended.png"><img width="130" alt="无人值守" src="docs/screenshots/promo/promo-4-unattended.png"></a>
+  <a href="docs/screenshots/promo/promo-5-external.png"><img width="130" alt="外部记忆继承" src="docs/screenshots/promo/promo-5-external.png"></a>
+  <a href="docs/screenshots/promo/promo-6-greeting.png"><img width="130" alt="定时问候" src="docs/screenshots/promo/promo-6-greeting.png"></a>
+</p>
+<p align="center"><sub>宣传图六幕 · 点击任意一张查看大图</sub></p>
+
+<details>
+<summary><b>宣传图分幕浏览</b>（点击展开，逐幕翻看）</summary>
+
+#### 第一幕 · 主视觉 —— 不用吩咐，她自己记得
+
+<p align="center"><img width="720" alt="主视觉" src="docs/screenshots/promo/promo-1-hero.png"></p>
+
+#### 第二幕 · 欢迎向导 —— 每个功能，当场看懂、当场开关
+
+<p align="center"><img width="720" alt="欢迎向导" src="docs/screenshots/promo/promo-2-tour.png"></p>
+
+#### 第三幕 · 唤起与固化 —— 对话凝成技能，每一步有迹可循
+
+<p align="center"><img width="720" alt="唤起与固化" src="docs/screenshots/promo/promo-3-recall.png"></p>
+
+#### 第四幕 · 无人值守模式 —— 整夜安静跑，零寒暄，零打扰
+
+<p align="center"><img width="720" alt="无人值守" src="docs/screenshots/promo/promo-4-unattended.png"></p>
+
+#### 第五幕 · 外部记忆继承 —— 你的其他 AI，也在喂她记忆
+
+<p align="center"><img width="720" alt="外部记忆继承" src="docs/screenshots/promo/promo-5-external.png"></p>
+
+#### 第六幕 · 定时暖心问候 —— 让每一天都被记得
+
+<p align="center"><img width="720" alt="定时问候" src="docs/screenshots/promo/promo-6-greeting.png"></p>
+
+</details>
 
 <p align="center">
   <b>中文</b> · <a href="README.md">English</a> · License BSD-3-Clause · <code>pnpm add @a9i5k4/dsh-auto-memory</code>
