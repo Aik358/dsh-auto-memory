@@ -10,9 +10,9 @@
 
 > **v0.1.30 MAJOR UPDATE** — A brand-new Welcome Tour: every feature introduced step by step with per-feature switches; an Office/Fluent-style liquid-glass app icon family; a changelog intro animation; and an unattended mode built for long batch jobs.
 
-An associative-memory & proactive-companion plugin for the DeepSeek Harness Web GUI: three-layer memory with automatic injection and on-demand recall, per-turn auto-consolidation, AI greetings and daily reflections, calendar reminders, cross-tool memory inheritance — plus production-grade unattended/batch support.
+A **proactive associative-memory plugin** for the DeepSeek Harness Web GUI: memory is recalled by situation and injected into the next turn without the model ever asking for it — alongside three-layer auto-consolidation, AI greetings and daily reflections, calendar reminders, cross-tool memory inheritance, and production-grade unattended/batch support.
 
-**The problem it solves**: AI assistants start from zero every session. With this plugin, your AI remembers your preferences, project conventions, yesterday's progress and next week's deadlines — and says "welcome back" when you return.
+**The problem it solves**: AI assistants start from zero every session, and every existing memory solution still relies on the model "remembering to look" — call a tool, send a request; skip it once and the memory might as well not exist. This plugin removes the instruction entirely: a host-side middleware watches the conversation context continuously, and the right memories walk toward the model on their own — your preferences, project conventions, yesterday's progress, next week's deadlines, plus that "welcome back" when you return.
 
 ---
 
@@ -20,8 +20,10 @@ An associative-memory & proactive-companion plugin for the DeepSeek Harness Web 
 
 | | |
 |---|---|
-| **Three-layer memory engine** | User rules → project notes → daily logs; auto-injected + on-demand recall, prefix-cache friendly |
+| **Proactive recall, zero instructions** | Memory is never fetched by the model — the host watches context and recalls automatically, injected at a fixed boundary, prefix-cache friendly |
+| **Three-layer memory engine** | User rules → project notes → daily logs; injected + on-demand recall |
 | **Memory writes itself** | A subagent quietly evaluates every turn and files topic-grouped entries — you never "remember to log" |
+| **Every activation is auditable** | Each recall decision carries a full evidence chain, gradeable in the Recall review tab; skills crystallize from cross-session evidence |
 | **Proactive reminders** | The AI spots deadlines and promises in conversation, files them into the calendar and reminds you later |
 | **Everything is a switch** | Welcome tour + settings page, every feature individually toggleable (incl. unattended mode) |
 | **External memory inheritance** | Memories from WorkBuddy / CodeBuddy / Claude Code / Codex are scanned, importable, per-source managed |
