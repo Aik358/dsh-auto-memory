@@ -60,7 +60,7 @@ One-time catch-up for upgraders: from v0.1.30 every user auto-plays the full tou
 
 ---
 
-�️ Feature tour
+## Feature tour
 
 ### Auto-consolidation — memory writes itself
 
