@@ -272,6 +272,25 @@
   .flow-note .fn-tag{font-family:var(--mono);font-size:10.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);white-space:nowrap;padding-top:2px}
   .flow-note b{color:var(--ink)}
 
+  /* ── 架构分层树 ── */
+  .arch{margin-top:22px;border:1px solid var(--line);background:var(--ink);color:#E8E4DC}
+  .arch-head{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:9px 14px;border-bottom:1px solid rgba(255,255,255,.18);
+    font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;
+  }
+  .arch-head .arch-link a{color:#FF9763;text-decoration:none}
+  .arch-head .arch-link a:hover{text-decoration:underline}
+  .arch-tree{
+    margin:0;padding:16px 18px;
+    font-family:var(--mono);font-size:12.5px;line-height:1.75;
+    color:#E8E4DC;white-space:pre;overflow-x:auto;
+  }
+  .arch-cap{
+    padding:9px 14px;border-top:1px solid rgba(255,255,255,.18);
+    font-size:12px;color:rgba(232,228,220,.72);line-height:1.6;
+  }
+
   /* ── 功能节：左文右图，细线分区，编号驱动 ── */
   .feature{padding:44px 0;border-top:1px solid var(--line-soft)}
   .feature:first-of-type{border-top:0;padding-top:8px}
@@ -384,6 +403,13 @@
   .ft-links{display:flex;gap:18px;font-family:var(--mono);font-size:11.5px;color:var(--ink-2);text-transform:uppercase;letter-spacing:.1em}
   .ft-links a{text-decoration:none}
   .ft-links a:hover{color:var(--accent)}
+  .ft-credits{
+    margin-top:22px;padding-top:14px;border-top:1px solid var(--line-soft);
+    display:flex;flex-wrap:wrap;gap:8px 22px;align-items:baseline;
+    font-family:var(--mono);font-size:10.5px;color:var(--ink-3);letter-spacing:.04em;
+  }
+  .ft-credits .ftc-label{color:var(--accent);font-weight:700;letter-spacing:.14em}
+  .ft-credits span:nth-child(2){color:var(--ink-2)}
 
   /* ── 响应式 ── */
   @media (max-width: 1024px){
@@ -601,6 +627,23 @@
     <div class="flow-note reveal">
       <span class="fn-tag" data-i18n="flow.foot.tag">权限分立</span>
       <span><b data-i18n="flow.foot.b">决策全程可复核，记忆治理永远在 JS 权威层。</b> <span data-i18n="flow.foot.s">AI 子代理只产出"建议"；是否写入、是否注入、是否唤起——最终决策都跑在 Node 端的 JS 权威层里；任何一次决策都能在「唤起回顾」页追溯原始证据与上下文。</span></span>
+    </div>
+
+    <!-- 架构分层树 -->
+    <div class="arch reveal">
+      <div class="arch-head">
+        <span data-i18n="arch.title">SYSTEM LAYERING · 运行时分层</span>
+        <span class="arch-link"><a href="https://github.com/Aik358/dsh-auto-memory/blob/preview/docs/proactive-associative-memory-system-map.html" target="_blank" rel="noreferrer" data-i18n="arch.link">完整架构图 →</a></span>
+      </div>
+      <pre class="arch-tree" data-i18n-alt="arch.tree">DeepSeek Harness (Node, 127.0.0.1:3080)
+├─ JS 记忆核心 lib/*_pre.js — 零运行时依赖
+│   会话隔离 · 上下文投影 · 记忆锚定 · 证据桥
+│   激活收件箱 M6 → 固定边界参考尾注 → delivered/seen
+│   词法 BM25 0GB 永远可用 · 内置向量 e5-small 默认档
+└─ Python sidecar（可选，lazy spawn）
+    BGE-M3 int8 · 混合融合 0.7/0.3 · fv2 两车道决策
+    硬门禁：echo / correction / stale / scope</pre>
+      <div class="arch-cap" data-i18n="arch.cap">语义层决定"想起什么"，权威层决定"是否/何时/如何注入"——Python 不创建证据，也不直接注入。</div>
     </div>
   </div>
 </section>
@@ -1067,6 +1110,13 @@ pnpm up @a9i5k4/dsh-auto-memory</pre>
         <a href="https://www.npmjs.com/package/@a9i5k4/dsh-auto-memory" target="_blank" rel="noreferrer" data-i18n="ft.npm">npm</a>
       </div>
     </div>
+    <div class="ft-credits">
+      <span class="ftc-label" data-i18n="ftc.label">CREDITS</span>
+      <span data-i18n="ftc.owner">Aik358 · 产品/架构</span>
+      <span data-i18n="ftc.zcode">ZCode（GLM · Z.ai）· 工程与论文</span>
+      <span data-i18n="ftc.k3">Kimi K3 · 前端</span>
+      <span data-i18n="ftc.note">人机协作 · AI 署名，人类审核</span>
+    </div>
   </div>
 </footer>
 
@@ -1099,6 +1149,8 @@ pnpm up @a9i5k4/dsh-auto-memory</pre>
       "flow.c.tag":"C · 投递闭环","flow.c.t":"固定边界注入 + 证据反馈","flow.c.p":"提示词字节级稳定，前缀缓存持续命中；每次投递留下 delivered/seen 证据喂回决策。",
       "flow.c.l1":"固定边界注入（前缀缓存友好）","flow.c.l2":"delivered / seen 证据回流","flow.c.l3":"「唤起回顾」页可逐次打分 + 政策提示",
       "flow.foot.tag":"权限分立","flow.foot.b":"决策全程可复核，记忆治理永远在 JS 权威层。","flow.foot.s":"AI 子代理只产出\"建议\"；是否写入、是否注入、是否唤起——最终决策都跑在 Node 端的 JS 权威层里；任何一次决策都能在「唤起回顾」页追溯原始证据与上下文。",
+      "arch.title":"SYSTEM LAYERING · 运行时分层","arch.link":"完整架构图 →",
+      "arch.cap":"语义层决定\"想起什么\"，权威层决定\"是否/何时/如何注入\"——Python 不创建证据，也不直接注入。",
       "feat.kicker":"功能全景","feat.title":"十二个能力，互相咬合","feat.sub":"逐项展开，不省略——你想知道它\"到底能干什么\"，往下读就对了。",
       "f.1.kicker":"3.1 · 三层记忆体系","f.1.t":"三处文件，三种语义","f.1.p":"用户级 → 项目笔记 → 每日日志/反思，越往下越新鲜、越往上越稳定。注入策略按这个分层严格区分：静态纪律进 system prompt 保缓存，动态记忆只取最近 1 天，其余按需 recall。",
       "f.1.col1":"层","f.1.col2":"位置","f.1.col3":"内容",
@@ -1187,7 +1239,8 @@ pnpm up @a9i5k4/dsh-auto-memory</pre>
       "c.2.d":"无人值守/批处理场景加固反馈——直接推动了欢迎向导与功能开关化。",
       "c.l1":"GitHub","c.l2":"npm","c.l3":"License: BSD-3-Clause",
       "c.foot":"欢迎 issue / PR——即使只是改一个标点或一句文案，也算参与。",
-      "ft.name":"dsh-auto-memory","ft.privacy":"记忆存在你自己的机器上","ft.gh":"GitHub","ft.npm":"npm"
+      "ft.name":"dsh-auto-memory","ft.privacy":"记忆存在你自己的机器上","ft.gh":"GitHub","ft.npm":"npm",
+      "ftc.label":"制作署名","ftc.owner":"Aik358 · 产品/架构","ftc.zcode":"ZCode（GLM · Z.ai）· 工程与论文","ftc.k3":"Kimi K3 · 前端","ftc.note":"人机协作 · AI 署名，人类审核"
     },
     en: {
       "brand.tag":"v0.1.30",
@@ -1215,6 +1268,8 @@ pnpm up @a9i5k4/dsh-auto-memory</pre>
       "flow.c.tag":"C · Deliver & close the loop","flow.c.t":"Fixed-boundary injection + evidence feedback","flow.c.p":"Byte-stable prompts keep the prefix cache hot; every delivery leaves delivered/seen evidence to feed the next decision.",
       "flow.c.l1":"Fixed-boundary injection (prefix-cache friendly)","flow.c.l2":"delivered / seen evidence feedback","flow.c.l3":"Recall review tab: grade every decision + policy hints",
       "flow.foot.tag":"Separation of powers","flow.foot.b":"Every decision is reviewable. Memory governance always lives in the JS authority layer.","flow.foot.s":"The AI subagent only produces \"suggestions\"; whether to write, inject or recall — every final decision runs in the JS layer on the Node side, traceable to its original evidence and context in the Recall review tab.",
+      "arch.title":"SYSTEM LAYERING · RUNTIME","arch.link":"Full architecture map →",
+      "arch.cap":"The semantic layer decides what to recall; the authority layer decides whether/when/how to inject — Python never creates evidence nor injects directly.",
       "feat.kicker":"Feature tour","feat.title":"Twelve capabilities, interlocked","feat.sub":"Expanded one by one, nothing skipped — read on to find out what it actually does.",
       "f.1.kicker":"3.1 · Three-layer memory","f.1.t":"Three files, three semantics","f.1.p":"User-level → project notes → daily logs/reflections; the deeper, the fresher. Injection strategy strictly follows this layering: static discipline goes into the system prompt to keep the cache hot; dynamic memory only injects the last day, everything else is recalled on demand.",
       "f.1.col1":"Layer","f.1.col2":"Location","f.1.col3":"Content",
@@ -1303,7 +1358,8 @@ pnpm up @a9i5k4/dsh-auto-memory</pre>
       "c.2.d":"Unattended / batch workflow hardening feedback that directly drove the welcome tour and per-feature switches.",
       "c.l1":"GitHub","c.l2":"npm","c.l3":"License: BSD-3-Clause",
       "c.foot":"Issues and PRs welcome — even fixing a typo or rewording a sentence counts as participation.",
-      "ft.name":"dsh-auto-memory","ft.privacy":"Memories stay on your machine","ft.gh":"GitHub","ft.npm":"npm"
+      "ft.name":"dsh-auto-memory","ft.privacy":"Memories stay on your machine","ft.gh":"GitHub","ft.npm":"npm",
+      "ftc.label":"CREDITS","ftc.owner":"Aik358 · product/architecture","ftc.zcode":"ZCode (GLM · Z.ai) · engineering & papers","ftc.k3":"Kimi K3 · frontend","ftc.note":"Human-machine collaboration · AI-credited, human-reviewed"
     }
   };
 

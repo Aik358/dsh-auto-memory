@@ -254,6 +254,30 @@ cd ~/.dsh/profiles/web && pnpm up @a9i5k4/dsh-auto-memory
 - `python/` — 可选 Python 语义 sidecar（BGE-M3 int8，进阶档）
 - `cordis.patch.yml` — 插件注册行
 
+## 系统架构
+
+全部里程碑已实现并 live verified。完整交互式架构图见 [docs/proactive-associative-memory-system-map.html](docs/proactive-associative-memory-system-map.html)，核心分层如下：
+
+```
+DeepSeek Harness (Node, 127.0.0.1:3080)
+├─ JS 记忆核心（lib/*_pre.js，零运行时依赖）
+│   M1 会话隔离 · M2 ContextObserver 投影
+│   M3 记忆锚定（anchored records + sidecar 身份）
+│   M4 语料适配 + 影子检索宿主（evidence store）
+│   M5 上下文/证据桥（envelope · coverage · cite/correction）
+│   M6 激活收件箱（校验→offer→claim→参考尾注渲染→delivered/seen）
+│   lexical_pre_v2 词法回退检索（BM25 + CJK 2gram，0GB 永远可用）
+│   C2 内置语义层（e5-small q8 ~130MB，默认档）
+└─ Python sidecar M7（可选，lazy spawn 子进程）
+    worker_semantic_pre_v1.py
+    ├─ index_sync：JS 授权分页建库（digest 校验，scope 分组）
+    ├─ dense：BGE-M3 int8 + para-512 分块 + 余弦检索（R@5 0.925）
+    ├─ hybrid：稠密 0.7 + 词法 0.3 融合
+    └─ fv2 激活决策：两车道 + 硬门禁（echo/correction/stale/scope）
+```
+
+**权限分立**：Python（语义层）决定"想起什么、何时建议"；JS（权威层）决定身份、授权、时序、投递——Python 不创建证据，也不直接注入。数据流：`context_push → M5 envelope → 决策 → M6 固定边界注入 → delivered/seen 证据回流`。
+
 ## 已知限制
 
 - 记忆文件为纯文本 Markdown；除非明确要求，不存储密钥
@@ -266,6 +290,18 @@ cd ~/.dsh/profiles/web && pnpm up @a9i5k4/dsh-auto-memory
 
 - [@ProperSAMA](https://github.com/ProperSAMA) — DSH Desktop 增强模式（透明/Mica 材质）面板可读性修复 + 入口按钮防遮挡与外点/Esc 关闭（[PR #12](https://github.com/Aik358/dsh-auto-memory/pull/12)）
 - [@nkh0472](https://github.com/nkh0472) — 无人值守/批处理场景加固反馈，推动了欢迎向导与功能开关化（[Issue #10](https://github.com/Aik358/dsh-auto-memory/issues/10)）
+
+---
+
+## 制作署名
+
+本项目由人与 AI 协作完成。除上述工程与社区贡献外：
+
+- **Aik358** — 项目所有者：产品方向、架构与工程决策。
+- **ZCode（GLM，智谱 Z.ai）** — 自主工程 Agent：M 系列语义引擎实现、两篇基准研究论文（[M7 检索选型研究](docs/M7-RESEARCH-PAPER.md) / [激活策略 v2 技术报告](docs/M7-ACTIVATION-V2-PAPER.md)）、全套回归测试、宣传网页设计与构建。
+- **Kimi K3（月之暗面）** — 前端 Agent：参与 v0.1.30 欢迎向导界面资产与视觉验收。
+
+AI Agent 作为研究论文作者与部分实现作者署名，全程在人类审核与指导下工作。
 
 ---
 

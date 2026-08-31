@@ -236,6 +236,30 @@ Config file `~/.dsh/dsh-auto-memory.json` (everything adjustable in the Settings
 - `python/` — optional Python semantic sidecar (BGE-M3 int8, advanced tier)
 - `cordis.patch.yml` — plugin registration row
 
+## Architecture
+
+All milestones are implemented and live-verified. The full interactive architecture map lives at [docs/proactive-associative-memory-system-map.html](docs/proactive-associative-memory-system-map.html); the core layering:
+
+```
+DeepSeek Harness (Node, 127.0.0.1:3080)
+├─ JS memory core (lib/*_pre.js, zero runtime deps)
+│   M1 session isolation · M2 ContextObserver projection
+│   M3 memory anchoring (anchored records + sidecar identity)
+│   M4 corpus adapter + shadow retrieval host (evidence store)
+│   M5 context/evidence bridge (envelope · coverage · cite/correction)
+│   M6 activation inbox (validate→offer→claim→reference tail→delivered/seen)
+│   lexical_pre_v2 lexical fallback retrieval (BM25 + CJK 2gram, 0GB always-on)
+│   C2 built-in semantic tier (e5-small q8 ~130MB, default)
+└─ Python sidecar M7 (optional, lazy-spawned child process)
+    worker_semantic_pre_v1.py
+    ├─ index_sync: JS-authorized paged index build (digest checks, scope grouping)
+    ├─ dense: BGE-M3 int8 + para-512 chunks + cosine (R@5 0.925)
+    ├─ hybrid: dense 0.7 + lexical 0.3 fusion
+    └─ fv2 activation policy: two lanes + hard gates (echo/correction/stale/scope)
+```
+
+**Separation of powers**: the Python semantic layer decides *what to recall and when to suggest*; the JS authority layer decides identity, authorization, timing, and delivery — Python never creates evidence nor injects directly. Data flow: `context_push → M5 envelope → decision → M6 fixed-boundary injection → delivered/seen evidence back`.
+
 ## Known limitations
 
 - Memory files are plain-text Markdown; no secrets stored unless explicitly requested.
@@ -248,6 +272,18 @@ Config file `~/.dsh/dsh-auto-memory.json` (everything adjustable in the Settings
 
 - [@ProperSAMA](https://github.com/ProperSAMA) — panel readability fix for DSH Desktop enhanced mode (transparent/Mica materials) + entry-button anti-occlusion & outside-click/Esc close ([PR #12](https://github.com/Aik358/dsh-auto-memory/pull/12))
 - [@nkh0472](https://github.com/nkh0472) — unattended/batch workflow hardening feedback that drove the welcome tour and per-feature switches ([Issue #10](https://github.com/Aik358/dsh-auto-memory/issues/10))
+
+---
+
+## Credits
+
+This project is built human-machine collaboratively. In addition to engineering and community contributions above:
+
+- **Aik358** — project owner: product direction, architecture, and engineering.
+- **ZCode (GLM, Z.ai)** — autonomous engineering agent: M-series semantic-engine implementation, benchmark research papers ([M7-RESEARCH-PAPER](docs/M7-RESEARCH-PAPER.md) / [Activation v2 report](docs/M7-ACTIVATION-V2-PAPER.md)), regression suites, and the landing-page design/build.
+- **Kimi K3 (Moonshot AI)** — frontend agent: contributed to the v0.1.30 welcome-tour interface assets and visual QA.
+
+AI agents are credited as authors of the research papers and parts of the implementation, under human review and direction.
 
 ---
 
