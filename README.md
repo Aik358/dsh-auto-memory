@@ -268,3 +268,4 @@ Adjustable in the GUI (Settings → Auto Memory), including the UI language (zh 
 ## Contributors
 
 - [@ProperSAMA](https://github.com/ProperSAMA) — panel readability fix for DSH Desktop enhanced mode (transparent/Mica materials) + entry-button anti-occlusion & outside-click/Esc close ([PR #12](https://github.com/Aik358/dsh-auto-memory/pull/12))
+- [@nkh0472](https://github.com/nkh0472) — unattended/batch workflow hardening report that drove the first-launch welcome tour with per-feature switches and surfaced the existing unattended-mode toggles ([Issue #10](https://github.com/Aik358/dsh-auto-memory/issues/10))
