@@ -220,6 +220,18 @@ Then edit `package.json` in that directory and append to the `dsh.profile.bundle
 
 Restart **dsh web** (the 「Memory」entry appears in the sidebar).
 
+### Semantic engine (optional but recommended)
+
+The built-in JS semantic tier (e5-small q8, ~130MB) needs the `@huggingface/transformers` inference library, installed automatically as an optional dependency of the main package. If your pnpm security policy blocked its native scripts (you see `ERR_PNPM_IGNORED_BUILDS` / `Ignored build scripts: onnxruntime-node, sharp`), approve and reinstall once:
+
+```bash
+# approve the onnxruntime-node / sharp native install scripts, then reinstall transformers
+pnpm approve-builds
+pnpm add @huggingface/transformers
+```
+
+Restart `dsh web` — the welcome tour's semantic-engine step auto-detects readiness (SHA256 verify + inference self-test). Lexical BM25 (0GB) always works as a fallback; skipping the engine only lowers recall precision.
+
 > No pnpm? `npm install @a9i5k4/dsh-auto-memory` works the same.
 > pnpm v11 blocks packages published <1 day ago: set `minimumReleaseAge: 0` in pnpm-workspace.yaml or pin an explicit version for same-day updates.
 
