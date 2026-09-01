@@ -230,6 +230,18 @@ cd ~/.dsh/profiles/web
 pnpm add @a9i5k4/dsh-auto-memory
 ```
 
+### 语义引擎（可选但推荐）
+
+内置 JS 语义档（e5-small q8 ~130MB）需要推理库 `@huggingface/transformers`（随主包作为可选依赖自动安装）。若你的 pnpm 因安全策略拦截了它的原生脚本（提示 `ERR_PNPM_IGNORED_BUILDS` / `Ignored build scripts: onnxruntime-node, sharp`），执行一次批准后重装即可：
+
+```bash
+# 批准 onnxruntime-node / sharp 的原生安装脚本,再重装 transformers
+pnpm approve-builds
+pnpm add @huggingface/transformers
+```
+
+装完重启 `dsh web`，向导的语义引擎步会自动检测到就绪（SHA256 校验 + 推理自检）。词法检索 0GB 永远兜底，不装也能用（仅召回精度较低）。
+
 然后编辑同目录 `package.json`，在 `dsh.profile.bundles` 数组追加：
 
 ```json
