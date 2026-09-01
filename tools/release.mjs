@@ -99,6 +99,7 @@ const transforms = [
   ['auto-memory-pre', 'auto-memory'],
   // systemPrompt context/section 注册名前缀
   ['dsh:auto-memory-pre', 'dsh:auto-memory'],
+  ['dsh:m6-reference-tail-pre', 'dsh:m6-reference-tail'],
   // API 路由 map 键与路径(路由段 -pre 后缀一并去)
   ['activation-inbox-pre', 'activation-inbox'],
   // 版本策略/常量身份(_pre_vN → 裸名;这些值写入持久化 policyVersion/engineTier 与
