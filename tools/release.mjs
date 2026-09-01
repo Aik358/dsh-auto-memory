@@ -48,6 +48,7 @@ const copyDirExcluding = (src, dst, excludeRe) => {
   }
 }
 copyDirExcluding(path.join(DEV, 'lib'), path.join(REL, 'lib'), /\.bak/)
+copyDirExcluding(path.join(DEV, 'python'), path.join(REL, 'python'), /(__pycache__|\.pyc|bench)/)
 for (const entry of ['cordis.patch.yml', 'README.md', 'README.zh-CN.md', 'LICENSE', 'notices.json', 'smoke-test.mjs', 'smoke-test-external.mjs', 'smoke-test-reflect.mjs', 'smoke-test-context-observer.mjs', 'docs', 'social-preview.html']) {
   const s = path.join(DEV, entry), d = path.join(REL, entry)
   if (existsSync(s)) cpSync(s, d, { recursive: true })
@@ -72,13 +73,99 @@ const transforms = [
   ['calendar_done_pre', 'calendar_done'],
   ['calendar_list_pre', 'calendar_list'],
   ['calendar_add_pre', 'calendar_add'],
-  // 缓存文件名
+  // 缓存文件名(必须先于 auto-memory-pre 通用规则,避免被吞)
   ['update-check-pre', 'update-check'],
   ['notices-cache-pre', 'notices-cache'],
+  // 存储目录身份(v0.1.30 新引入,首发布改名零迁移成本)——引号段/斜杠注释/裸路径三种形态
+  ['memory/hub-pre', 'memory/hub'],
+  ["'hub-pre'", "'hub'"],
+  ['hub-pre/', 'hub/'],
+  ['memory/index-pre', 'memory/index'],
+  ["'index-pre'", "'index'"],
+  ['index-pre/', 'index/'],
+  ['memory/semantic-pre', 'memory/semantic'],
+  ["'semantic-pre'", "'semantic'"],
+  ['semantic-pre/', 'semantic/'],
+  ['semantic-pre ', 'semantic '],
+  ['memory/evidence-pre', 'memory/evidence'],
+  ["'evidence-pre'", "'evidence'"],
+  ['evidence-pre/', 'evidence/'],
+  // 证据 id 连字符形式(access-evidence-pre-v1 → access-evidence-v1;必须先于 evidence_pre_v1)
+  ['access-evidence-pre-v1', 'access-evidence-v1'],
+  // 持久化 namespace / 诊断日志前缀(必须先于 auto-memory-pre 通用规则)
+  ['dsh-auto-memory-pre', 'dsh-auto-memory'],
   // 全局 auto-memory-pre 标识(name/slots/API/context/localStorage/配置文件/日志前缀)
   ['auto-memory-pre', 'auto-memory'],
   // systemPrompt context/section 注册名前缀
   ['dsh:auto-memory-pre', 'dsh:auto-memory'],
+  // API 路由 map 键与路径(路由段 -pre 后缀一并去)
+  ['activation-inbox-pre', 'activation-inbox'],
+  // 版本策略/常量身份(_pre_vN → 裸名;这些值写入持久化 policyVersion/engineTier 与
+  // 策略工件文件名——v0.1.30 首次对外发布,统一裸名,无历史包袱)
+  ['activation_policy_pre_v2', 'activation_policy_v2'],
+  ['m7_activation_features_pre_v2', 'm7_activation_features_v2'],
+  ['activation_features_pre_v2', 'activation_features_v2'],
+  ['activation_policy_v2', 'activation_policy_v2'],
+  ['activation_pre_v1', 'activation_v1'],
+  ['capability_pre_v1', 'capability_v1'],
+  ['context_bridge_pre_v1', 'context_bridge_v1'],
+  ['episodic_store_pre_v1', 'episodic_store_v1'],
+  ['evidence_store_pre_v1', 'evidence_store_v1'],
+  ['evidence_pre_v1', 'evidence_v1'],
+  ['fact_store_pre_v1', 'fact_store_v1'],
+  ['fake_threshold_pre_v1', 'fake_threshold_v1'],
+  ['gate_pre_v1', 'gate_v1'],
+  ['index_sync_final_pre_v1', 'index_sync_final_v1'],
+  ['index_sync_pre_v1', 'index_sync_v1'],
+  ['js_activation_decide_pre_v1', 'js_activation_decide_v1'],
+  ['js_semantic_dl_pre_v1', 'js_semantic_dl_v1'],
+  ['js_semantic_engine_pre_v1', 'js_semantic_engine_v1'],
+  ['lexical_pre_v1', 'lexical_v1'],
+  ['lexical_pre_v2', 'lexical_v2'],
+  ['m7_chunk_pre_v1', 'm7_chunk_v1'],
+  ['m7_embedding_pre_v1', 'm7_embedding_v1'],
+  ['m7_fake_threshold_pre_v1', 'm7_fake_threshold_v1'],
+  ['m7_index_sync_host_pre_v1', 'm7_index_sync_host_v1'],
+  ['m7_semantic_threshold_pre_v1', 'm7_semantic_threshold_v1'],
+  ['m7_wire_pre_v1', 'm7_wire_v1'],
+  ['memory_hub_pre_v1', 'memory_hub_v1'],
+  ['procedure_store_pre_v1', 'procedure_store_v1'],
+  ['recall_intent_lr_pre_v1', 'recall_intent_lr_v1'],
+  ['semantic_derived_pre_v1', 'semantic_derived_v1'],
+  ['semantic_shadow_pre_v1', 'semantic_shadow_v1'],
+  ['semantic_vectors_pre_v1', 'semantic_vectors_v1'],
+  ['skill_tail_pre_v1', 'skill_tail_v1'],
+  ['storage_manage_pre_v1', 'storage_manage_v1'],
+  ['judgement_shadow_pre_v1', 'judgement_shadow_v1'],
+  ['worker_semantic_pre_v1', 'worker_semantic_v1'],
+  ['worker_pre_v1', 'worker_v1'],
+  ['bge-m3-onnx-int8-pre-v1', 'bge-m3-onnx-int8-v1'],
+  // 事件/候选 id 前缀(obs_pre_/cand_pre_/... → 裸名)
+  ['act_pre_', 'act_'],
+  // lib 模块文件名的文档性引用(python 注释/决策记录里 lib/xxx-pre.js → lib/xxx.js)
+  // 必须在 libRenameMap 之前以字符串替换形态覆盖全部文件内容
+  ['evidence-store-pre.js', 'evidence-store.js'],
+  ['m7-wire-pre.js', 'm7-wire.js'],
+  ['context-bridge-pre.js', 'context-bridge.js'],
+  ['shadow-retrieval-pre.js', 'shadow-retrieval.js'],
+  ['cand_pre_', 'cand_'],
+  ['chk_pre_', 'chk_'],
+  ['epi_pre_', 'epi_'],
+  ['ev_pre_', 'ev_'],
+  ['fact_pre_', 'fact_'],
+  ['frm_pre_', 'frm_'],
+  ['idx_pre_', 'idx_'],
+  ['ntf_pre_', 'ntf_'],
+  ['obs_pre_', 'obs_'],
+  ['pkt_pre_', 'pkt_'],
+  ['proc_pre_', 'proc_'],
+  ['req_pre_', 'req_'],
+  ['ret_pre_', 'ret_'],
+  ['syn_pre_', 'syn_'],
+  ['wk_pre_', 'wk_'],
+  // JS 侧 SCREAMING 常量名(_PRE_V1 → _V1)
+  ['_PRE_V2', '_V2'],
+  ['_PRE_V1', '_V1'],
   // UI label 与 GUIDANCE 的预览标记
   [' (dev)', ''],
   ['(开发版)', ''],
@@ -87,8 +174,94 @@ const transforms = [
   ['(预览版)', ''],
   ['预览版,', ''],
 ]
+// lib 内部模块文件名重命名(xxx-pre.js → xxx.js;先文件后导入,m4-/m7- 前缀模块同步去前缀段内 -pre)
+const libModuleRenames = [
+  'activation-host-pre.js', 'activation-inbox-pre.js', 'activation-inbox-state-pre.js',
+  'context-bridge-pre.js', 'context-host-pre.js', 'context-sink-python-pre.js',
+  'episodic-store-pre.js', 'evidence-store-pre.js', 'fact-store-pre.js',
+  'index-sync-pre.js', 'intent-clean-pre.js', 'm4-corpus-pre.js',
+  'm7-index-sync-host-pre.js', 'm7-wire-pre.js', 'memory-anchor-pre.js',
+  'memory-hub-pre.js', 'memory-index-pre.js', 'memory-writer-pre.js',
+  'procedure-store-pre.js', 'python-sidecar-client-pre.js', 'semantic-decide-pre.js',
+  'semantic-js-pre.js', 'shadow-host-pre.js', 'shadow-retrieval-pre.js',
+  'storage-manage-pre.js',
+]
+const libRenameMap = libModuleRenames.map((f) => [f, f.replace(/-pre\.js$/, '.js')])
+for (const [from, to] of libRenameMap) {
+  const fp = path.join(REL, 'lib', from)
+  if (existsSync(fp)) {
+    // 先改写全部引用(相对导入 './xxx-pre.js'),再重命名文件
+    for (const f of readdirSync(path.join(REL, 'lib'))) {
+      if (!f.endsWith('.js')) continue
+      const p2 = path.join(REL, 'lib', f)
+      const t = readFileSync(p2, 'utf8')
+      const nt = t.split(from).join(to)
+      if (nt !== t) writeFileSync(p2, nt)
+    }
+    cpSync(fp, path.join(REL, 'lib', to))
+    rmSync(fp)
+  }
+}
+// python 文件名重命名(worker_pre_v1.py → worker_v1.py 等) + 相互 import 改写
+const pyRenameMap = [
+  ['worker_semantic_pre_v1.py', 'worker_semantic_v1.py'],
+  ['worker_pre_v1.py', 'worker_v1.py'],
+  ['m7_embedding_pre_v1.py', 'm7_embedding_v1.py'],
+  ['m7_activation_features_pre_v2.py', 'm7_activation_features_v2.py'],
+]
+if (existsSync(path.join(REL, 'python'))) {
+  for (const f of readdirSync(path.join(REL, 'python'))) {
+    if (!f.endsWith('.py')) continue
+    const p2 = path.join(REL, 'python', f)
+    let t = readFileSync(p2, 'utf8')
+    let changed = false
+    for (const [from, to] of pyRenameMap) {
+      const stemFrom = from.replace(/\.py$/, '')
+      const stemTo = to.replace(/\.py$/, '')
+      if (t.includes(stemFrom)) { t = t.split(stemFrom).join(stemTo); changed = true }
+    }
+    if (changed) writeFileSync(p2, t)
+  }
+  for (const [from, to] of pyRenameMap) {
+    const fp = path.join(REL, 'python', from)
+    if (existsSync(fp)) { cpSync(fp, path.join(REL, 'python', to)); rmSync(fp) }
+  }
+  // 策略工件文件名(recall_intent_lr_pre_v1.json / activation_policy_pre_v2.json)
+  // 同时覆盖 lib/policies/ 与 python/policies/ 两处副本
+  for (const polDir of [path.join(REL, 'lib', 'policies'), path.join(REL, 'python', 'policies')]) {
+    if (!existsSync(polDir)) continue
+    for (const f of readdirSync(polDir)) {
+      if (f.includes('_pre_')) {
+        cpSync(path.join(polDir, f), path.join(polDir, f.replace(/_pre_v(\d)/g, '_v$1')))
+        rmSync(path.join(polDir, f))
+      }
+    }
+  }
+}
 let totalReplaced = 0
-for (const file of ['lib/index.js', 'lib/client.js', 'smoke-test.mjs', 'smoke-test-external.mjs', 'smoke-test-reflect.mjs', 'smoke-test-context-observer.mjs']) {
+// 转换面 = 两个主文件 + 4 个根 smoke + 全部 lib 模块 + 策略工件 + 全部 python 文件
+const transformFiles = ['lib/index.js', 'lib/client.js', 'smoke-test.mjs', 'smoke-test-external.mjs', 'smoke-test-reflect.mjs', 'smoke-test-context-observer.mjs']
+for (const f of readdirSync(path.join(REL, 'lib'))) {
+  if (f.endsWith('.js')) transformFiles.push('lib/' + f)
+}
+const relPolDir = path.join(REL, 'lib', 'policies')
+if (existsSync(relPolDir)) {
+  for (const f of readdirSync(relPolDir)) {
+    if (f.endsWith('.json')) transformFiles.push('lib/policies/' + f)
+  }
+}
+if (existsSync(path.join(REL, 'python'))) {
+  for (const f of readdirSync(path.join(REL, 'python'))) {
+    if (f.endsWith('.py')) transformFiles.push('python/' + f)
+  }
+  const polDir = path.join(REL, 'python', 'policies')
+  if (existsSync(polDir)) {
+    for (const f of readdirSync(polDir)) {
+      if (f.endsWith('.json')) transformFiles.push('python/policies/' + f)
+    }
+  }
+}
+for (const file of transformFiles) {
   const p = path.join(REL, file)
   let text = readFileSync(p, 'utf8')
   for (const [from, to] of transforms) {
@@ -97,7 +270,7 @@ for (const file of ['lib/index.js', 'lib/client.js', 'smoke-test.mjs', 'smoke-te
   }
   writeFileSync(p, text)
 }
-console.log('[release] pre→正式 替换:', totalReplaced, '处')
+console.log('[release] pre→正式 替换:', totalReplaced, '处 /', transformFiles.length, '文件')
 
 // ---------- 3.5 cordis.patch.yml 转换(loader entry id + 包名,防止与预览版撞车) ----------
 {
@@ -112,7 +285,7 @@ console.log('[release] pre→正式 替换:', totalReplaced, '处')
 // ---------- 4. 生成正式 package.json ----------
 const relPkg = {
   name: '@a9i5k4/dsh-auto-memory',
-  description: 'DSH 自动记忆插件:三层记忆(用户级/项目笔记/每日日志)自动注入与检索、每轮对话自动沉淀、每日反思、可视化面板与设置页,支持继承其他 AI 工具的记忆。',
+  description: '主动联想记忆插件:记忆不靠模型调用,自己被唤回——Host 观察情境,NLP+向量化双轨检索,固定边界注入不破坏前缀缓存。三层记忆自动沉淀、欢迎向导、唤起回顾、无人值守、AI 问候与反思、日历、跨工具记忆继承。Proactive associative memory for DSH: zero-call recall, three-layer auto-consolidation, welcome tour, unattended mode.',
   version,
   type: 'module',
   main: 'lib/index.js',
@@ -154,6 +327,16 @@ const walkFiles = (dir, acc) => {
 }
 const scanTargets = [path.join(REL, 'package.json'), path.join(REL, 'cordis.patch.yml')]
 scanTargets.push(...walkFiles(path.join(REL, 'lib'), []))
+if (existsSync(path.join(REL, 'python'))) {
+  for (const entry of readdirSync(path.join(REL, 'python'), { withFileTypes: true })) {
+    if (entry.isFile() && /\.py$/.test(entry.name)) scanTargets.push(path.join(REL, 'python', entry.name))
+    if (entry.isDirectory() && entry.name === 'policies') {
+      for (const f of readdirSync(path.join(REL, 'python', 'policies'))) {
+        if (/\.json$/.test(f)) scanTargets.push(path.join(REL, 'python', 'policies', f))
+      }
+    }
+  }
+}
 // staging 内的 smoke 副本也参与转换,必须一并扫描(不能扫 DEV 源文件——源码本就含 _pre)
 for (const s of ['smoke-test.mjs', 'smoke-test-external.mjs', 'smoke-test-reflect.mjs', 'smoke-test-context-observer.mjs']) {
   const p = path.join(REL, s)
@@ -178,6 +361,11 @@ const residual = [
   'memory_status_pre', 'memory_reflect_pre', 'memory_consolidate_pre', 'memory_external_pre', 'memory_read_pre',
   'calendar_add_pre', 'calendar_done_pre', 'calendar_list_pre', 'calendar_remove_pre',
   'auto-memory-pre', 'update-check-pre', 'notices-cache-pre', 'dsh:auto-memory-pre',
+  // 模块/存储/版本身份(发布转换后必须为裸名)
+  '-pre.js', '-pre.py', 'hub-pre', 'index-pre', 'semantic-pre', 'evidence-pre',
+  '_pre_v1', '_pre_v2', '_PRE_V1', '_PRE_V2', '_pre_', 'activation-inbox-pre',
+  'worker_pre_v1', 'worker_semantic_pre_v1', 'm7_embedding_pre_v1', 'm7_activation_features_pre_v2',
+  'activation_policy_pre_v2', 'recall_intent_lr_pre_v1', 'lexical_pre_v2', 'bge-m3-onnx-int8-pre-v1',
   // 历史开发标识(_dev/-dev)同样禁止残留
   'memory_log_dev', 'memory_note_dev', 'memory_user_dev', 'memory_recall_dev', 'memory_maintain_dev',
   'memory_status_dev', 'memory_reflect_dev', 'memory_consolidate_dev', 'memory_external_dev', 'memory_read_dev',
