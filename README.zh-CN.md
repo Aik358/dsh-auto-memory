@@ -5,11 +5,11 @@
 </p>
 
 <p align="center">
-  <a href="docs/screenshots/promo/promo-1-hero.png"><img width="820" alt="dsh-auto-memory 主视觉：不用吩咐，她自己记得" src="docs/screenshots/promo/promo-1-hero.png"></a>
+  <a href="docs/screenshots/promo/promo-0-banner-v2.png"><img width="820" alt="dsh-auto-memory 主视觉：不用吩咐，她自己记得" src="docs/screenshots/promo/promo-0-banner-v2.png"></a>
 </p>
 
 <p align="center">
-  <a href="docs/screenshots/promo/promo-1-hero.png"><img width="130" alt="主视觉" src="docs/screenshots/promo/promo-1-hero.png"></a>
+  <a href="docs/screenshots/promo/promo-0-banner-v2.png"><img width="130" alt="主视觉" src="docs/screenshots/promo/promo-0-banner-v2.png"></a>
   <a href="docs/screenshots/promo/promo-2-tour.png"><img width="130" alt="欢迎向导" src="docs/screenshots/promo/promo-2-tour.png"></a>
   <a href="docs/screenshots/promo/promo-3-recall.png"><img width="130" alt="唤起与固化" src="docs/screenshots/promo/promo-3-recall.png"></a>
   <a href="docs/screenshots/promo/promo-4-unattended.png"><img width="130" alt="无人值守" src="docs/screenshots/promo/promo-4-unattended.png"></a>

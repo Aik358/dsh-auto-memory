@@ -5,11 +5,11 @@
 </p>
 
 <p align="center">
-  <a href="docs/screenshots/promo/promo-1-hero.png"><img width="820" alt="dsh-auto-memory hero: she remembers, unbidden" src="docs/screenshots/promo/promo-1-hero.png"></a>
+  <a href="docs/screenshots/promo/promo-0-banner-v2.png"><img width="820" alt="dsh-auto-memory hero: she remembers, unbidden" src="docs/screenshots/promo/promo-0-banner-v2.png"></a>
 </p>
 
 <p align="center">
-  <a href="docs/screenshots/promo/promo-1-hero.png"><img width="130" alt="hero" src="docs/screenshots/promo/promo-1-hero.png"></a>
+  <a href="docs/screenshots/promo/promo-0-banner-v2.png"><img width="130" alt="hero" src="docs/screenshots/promo/promo-0-banner-v2.png"></a>
   <a href="docs/screenshots/promo/promo-2-tour.png"><img width="130" alt="welcome tour" src="docs/screenshots/promo/promo-2-tour.png"></a>
   <a href="docs/screenshots/promo/promo-3-recall.png"><img width="130" alt="recall & crystallization" src="docs/screenshots/promo/promo-3-recall.png"></a>
   <a href="docs/screenshots/promo/promo-4-unattended.png"><img width="130" alt="unattended mode" src="docs/screenshots/promo/promo-4-unattended.png"></a>
