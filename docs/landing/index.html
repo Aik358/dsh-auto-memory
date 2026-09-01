@@ -1,0 +1,1745 @@
+<!doctype html>
+<html lang="zh-CN" data-lang="zh">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<meta name="color-scheme" content="light" />
+<meta name="description" content="dsh-auto-memory — DeepSeek Harness 的联想记忆与人性化交互插件。An associative-memory & proactive-companion plugin for DeepSeek Harness." />
+<meta name="theme-color" content="#F4F1EB" />
+<title>dsh-auto-memory · 让 AI 真正记得你 · An AI that actually remembers</title>
+<style>
+  /* ══════════════════════════════════════════════════════════════
+     设计系统：现代主义 / 国际主义排版
+     - 纸色底 + 墨字，单一信号橙强调
+     - 数学网格：12 列，1px 细线分区
+     - 等宽字体承载技术标签，无衬线粗排承载标题
+     - 无渐变、无圆角卡片、无阴影堆砌
+     ══════════════════════════════════════════════════════════════ */
+  *,*::before,*::after{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  :root{
+    --paper:#F4F1EB;          /* 暖纸 */
+    --paper-2:#ECE8DF;        /* 次纸 */
+    --ink:#17171A;            /* 墨 */
+    --ink-2:#5A5A60;          /* 灰墨 */
+    --ink-3:#9B9BA0;          /* 浅墨 */
+    --line:#17171A;           /* 实线 */
+    --line-soft:rgba(23,23,26,.16);
+    --accent:#E9470C;         /* 信号橙 */
+    --accent-ink:#B23708;
+    --mono:"SFMono-Regular","Cascadia Mono",Consolas,Menlo,monospace;
+    --sans:"Helvetica Neue",Helvetica,Arial,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    --max:1240px;
+    --gutter:24px;
+  }
+  html{scroll-behavior:smooth}
+  body{
+    font-family:var(--sans);
+    font-size:15.5px;
+    line-height:1.68;
+    color:var(--ink);
+    background:var(--paper);
+    /* 淡淡的制图纸网格，只在主体区域隐约可见 */
+    background-image:
+      linear-gradient(rgba(23,23,26,.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(23,23,26,.035) 1px, transparent 1px);
+    background-size:72px 72px;
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+  }
+  img{max-width:100%;display:block}
+  a{color:inherit}
+  code,kbd,pre,samp{font-family:var(--mono);font-size:.9em}
+  code{background:var(--paper-2);border:1px solid var(--line-soft);padding:1px 5px}
+  ::selection{background:var(--accent);color:#fff}
+
+  /* ── 通用骨架 ── */
+  .wrap{max-width:var(--max);margin:0 auto;padding:0 var(--gutter)}
+  .rule{height:1px;background:var(--line);border:0;margin:0}
+  .mono{font-family:var(--mono)}
+  .up{text-transform:uppercase;letter-spacing:.14em}
+  .js-reveal{opacity:0;transform:translateY(14px)}
+  .js-reveal.in{opacity:1;transform:none;transition:opacity .55s cubic-bezier(.2,.7,.2,1),transform .55s cubic-bezier(.2,.7,.2,1)}
+
+  /* ── 顶栏：一条横线压住的导览条 ── */
+  .topbar{
+    position:sticky;top:0;z-index:50;
+    background:var(--paper);
+    border-bottom:1px solid var(--line);
+  }
+  .topbar-inner{
+    max-width:var(--max);margin:0 auto;padding:0 var(--gutter);
+    height:56px;display:flex;align-items:center;gap:20px;
+  }
+  .brand{display:flex;align-items:baseline;gap:10px;text-decoration:none}
+  .brand-name{font-weight:800;font-size:16px;letter-spacing:-.02em}
+  .brand-tag{font-family:var(--mono);font-size:11px;color:var(--accent);border:1px solid var(--accent);padding:1px 6px}
+  .topnav{margin-left:auto;display:flex;align-items:center;gap:2px}
+  .topnav a{
+    font-family:var(--mono);font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--ink-2);text-decoration:none;padding:8px 12px;
+    border-left:1px solid transparent;
+  }
+  .topnav a:hover{color:var(--ink);border-left-color:var(--line)}
+  .topnav a .idx{color:var(--accent);margin-right:5px;font-size:10px}
+  .lang{display:inline-flex;border:1px solid var(--line);margin-left:10px}
+  .lang button{
+    border:0;background:transparent;color:var(--ink-2);
+    font-family:var(--mono);font-size:11.5px;cursor:pointer;
+    padding:6px 11px;letter-spacing:.06em;
+  }
+  .lang button.on{background:var(--ink);color:var(--paper)}
+  .lang button:not(.on):hover{color:var(--ink)}
+
+  /* ── Hero：编辑部式大标题 + 技术示意 ── */
+  .hero{
+    border-bottom:1px solid var(--line);
+    padding:72px 0 0;
+    position:relative;overflow:hidden;
+  }
+  .hero-grid{
+    max-width:var(--max);margin:0 auto;padding:0 var(--gutter);
+    display:grid;grid-template-columns:1.25fr 1fr;gap:56px;align-items:start;
+  }
+  .eyebrow{
+    display:inline-flex;align-items:center;gap:10px;
+    font-family:var(--mono);font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--ink-2);margin-bottom:26px;
+  }
+  .eyebrow::before{content:"";width:28px;height:1px;background:var(--accent)}
+  .eyebrow b{color:var(--accent);font-weight:700}
+  h1{
+    font-size:clamp(44px,6.2vw,84px);
+    line-height:.98;letter-spacing:-.03em;font-weight:800;
+    margin:0 0 22px;
+  }
+  h1 .thin{font-weight:300;color:var(--ink-2)}
+  .soul{
+    font-size:clamp(19px,2.1vw,25px);font-weight:700;line-height:1.35;
+    margin:0 0 18px;max-width:24em;
+    border-left:3px solid var(--accent);padding-left:16px;
+  }
+  .lede{
+    font-size:15.5px;color:var(--ink-2);max-width:38em;line-height:1.75;margin:0 0 30px;
+  }
+  .ctas{display:flex;flex-wrap:wrap;gap:0;margin:0 0 26px;border:1px solid var(--line);width:fit-content}
+  .btn{
+    display:inline-flex;align-items:center;gap:10px;
+    padding:14px 20px;
+    font-size:13.5px;font-weight:700;text-decoration:none;cursor:pointer;
+    border:0;border-right:1px solid var(--line);
+    background:var(--paper);color:var(--ink);
+    transition:background .15s ease,color .15s ease;
+  }
+  .btn:last-child{border-right:0}
+  .btn:hover{background:var(--paper-2)}
+  .btn.primary{background:var(--ink);color:var(--paper)}
+  .btn.primary:hover{background:var(--accent)}
+  .btn code{background:transparent;border:0;padding:0;font-weight:700;font-size:12.5px}
+  .btn .copy{font-family:var(--mono);font-size:10.5px;font-weight:400;opacity:.55;text-transform:uppercase;letter-spacing:.1em}
+  .meta-line{
+    display:flex;flex-wrap:wrap;gap:0;
+    border-top:1px solid var(--line-soft);
+    font-family:var(--mono);font-size:11px;color:var(--ink-3);
+  }
+  .meta-line span{padding:8px 14px 8px 0;margin-right:14px;border-right:1px solid var(--line-soft)}
+  .meta-line span:last-child{border-right:0}
+  .meta-line b{color:var(--ink);font-weight:700}
+
+  /* ── Hero 技术示意：观察→向量→检索→注入 管线框图 ──
+     不模拟 UI，画系统本身：一条横贯的信号流，四个处理站，
+     记忆碎片从库里被命中点亮，脉冲沿轨道注入下一拍。 */
+  .schematic{
+    border:1px solid var(--line);background:#fff;
+    padding:0;position:relative;
+  }
+  .sch-head{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:10px 14px;border-bottom:1px solid var(--line);
+    font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;
+  }
+  .sch-head .live{color:var(--accent);display:inline-flex;align-items:center;gap:6px;font-weight:700}
+  .sch-head .live::before{
+    content:"";width:7px;height:7px;background:var(--accent);
+    animation:blink 1.6s steps(2,start) infinite;
+  }
+  @keyframes blink{50%{opacity:.25}}
+  .sch-body{padding:18px 14px 14px;display:grid;gap:14px}
+  .pipe{display:grid;grid-template-columns:88px 1fr;gap:12px;align-items:center}
+  .pipe .st{
+    font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--ink-2);border:1px solid var(--line-soft);padding:5px 7px;text-align:center;
+  }
+  .pipe .st b{display:block;color:var(--ink);font-size:11px}
+  .pipe .lane{position:relative;height:34px;border:1px solid var(--line-soft);background:var(--paper);overflow:hidden}
+  .lane .ticks{position:absolute;inset:0;background-image:repeating-linear-gradient(90deg,var(--line-soft) 0 1px,transparent 1px 18px);opacity:.5}
+  .lane .bar{
+    position:absolute;top:9px;bottom:9px;left:0;width:0;
+    background:var(--ink);
+  }
+  .lane .bar.hot{background:var(--accent)}
+  /* 各级不同的推进节奏 */
+  .lane .bar.b-obs{animation:fill 6s cubic-bezier(.3,.6,.3,1) infinite}
+  .lane .bar.b-vec{animation:fill 6s cubic-bezier(.3,.6,.3,1) infinite;animation-delay:.9s}
+  .lane .bar.b-ret{animation:fill 6s cubic-bezier(.3,.6,.3,1) infinite;animation-delay:1.8s}
+  .lane .bar.b-inj{animation:fill 6s cubic-bezier(.3,.6,.3,1) infinite;animation-delay:2.7s}
+  @keyframes fill{0%{width:0;opacity:0}6%{opacity:1}34%{width:100%;opacity:1}46%{opacity:0}100%{width:100%;opacity:0}}
+  /* 记忆库栅格 */
+  .store{
+    border:1px solid var(--line);background:var(--paper);
+    display:grid;grid-template-columns:repeat(12,1fr);
+  }
+  .store .cell{
+    aspect-ratio:1/1;border-right:1px solid var(--line-soft);border-bottom:1px solid var(--line-soft);
+    position:relative;background:#fff;
+  }
+  .store .cell:nth-child(12n){border-right:0}
+  .store .cell.hit::after{
+    content:"";position:absolute;inset:3px;background:var(--accent);
+    animation:cell-hit 6s steps(1,end) infinite;
+  }
+  .store .cell:nth-child(7)::after{animation-delay:.9s}
+  .store .cell:nth-child(19)::after{animation-delay:1.4s}
+  .store .cell:nth-child(28)::after{animation-delay:1.8s}
+  .store .cell:nth-child(41)::after{animation-delay:2.3s}
+  @keyframes cell-hit{0%,12%{opacity:0}16%,34%{opacity:1}40%,100%{opacity:0}}
+  .store-cap{
+    display:flex;justify-content:space-between;
+    font-family:var(--mono);font-size:10px;color:var(--ink-3);
+    padding:6px 2px 0;letter-spacing:.1em;text-transform:uppercase;
+  }
+  .store-cap b{color:var(--accent);font-weight:700}
+  .sch-foot{
+    border-top:1px solid var(--line);padding:9px 14px;
+    display:flex;justify-content:space-between;gap:12px;
+    font-family:var(--mono);font-size:10.5px;color:var(--ink-2);
+  }
+  .sch-foot .zero{color:var(--ink);font-weight:700}
+  .sch-foot .zero::before{content:"×0 ";color:var(--accent)}
+
+  /* ── 大数字带 ── */
+  .stats-band{border-bottom:1px solid var(--line)}
+  .stats-grid{
+    max-width:var(--max);margin:0 auto;
+    display:grid;grid-template-columns:repeat(4,1fr);
+    border-left:1px solid var(--line);
+  }
+  .stat-cell{
+    border-right:1px solid var(--line);padding:26px 24px 22px;
+  }
+  .stat-cell .v{
+    font-size:clamp(30px,3.4vw,44px);font-weight:800;letter-spacing:-.03em;line-height:1;
+    font-variant-numeric:tabular-nums;
+  }
+  .stat-cell .v .u{font-size:.45em;font-weight:700;color:var(--ink-3);margin-left:4px;letter-spacing:0}
+  .stat-cell .l{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-2);margin-top:10px}
+  .stat-cell.hot .v{color:var(--accent)}
+
+  /* ── 章节头：编号 + 大标题 ── */
+  section.block{border-bottom:1px solid var(--line);padding:64px 0}
+  .sec-head{display:grid;grid-template-columns:120px 1fr;gap:24px;margin-bottom:40px;align-items:start}
+  .sec-num{
+    font-family:var(--mono);font-size:12px;color:var(--ink-3);letter-spacing:.1em;
+    border-top:3px solid var(--accent);padding-top:8px;
+  }
+  .sec-num b{display:block;font-size:26px;color:var(--ink);font-weight:800;letter-spacing:-.02em;margin-bottom:2px}
+  h2{
+    font-size:clamp(28px,3.6vw,44px);line-height:1.06;letter-spacing:-.025em;font-weight:800;margin:0 0 12px;
+  }
+  .sec-sub{font-size:15px;color:var(--ink-2);max-width:52em;margin:0;line-height:1.7}
+
+  /* ── 管线一节（原数据流）：三站纵向排 ── */
+  .pipe-flow{display:grid;grid-template-columns:1fr 1fr 1fr;border:1px solid var(--line);background:#fff}
+  .pf-cell{padding:24px 24px 22px;border-right:1px solid var(--line);position:relative}
+  .pf-cell:last-child{border-right:0}
+  .pf-cell .pf-tag{
+    font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--accent);font-weight:700;margin-bottom:14px;display:block;
+  }
+  .pf-cell h3{font-size:19px;font-weight:800;letter-spacing:-.015em;margin:0 0 8px;line-height:1.25}
+  .pf-cell p{margin:0 0 12px;font-size:13.5px;color:var(--ink-2);line-height:1.65}
+  .pf-cell ul{margin:0;padding:0;list-style:none}
+  .pf-cell li{
+    font-size:12.5px;color:var(--ink-2);padding:6px 0 6px 16px;position:relative;
+    border-top:1px solid var(--line-soft);line-height:1.55;
+  }
+  .pf-cell li::before{content:"";position:absolute;left:0;top:13px;width:8px;height:1.5px;background:var(--accent)}
+  .flow-note{
+    margin-top:22px;padding:14px 18px;border:1px solid var(--line);background:var(--paper-2);
+    font-size:13px;line-height:1.65;color:var(--ink-2);
+    display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:start;
+  }
+  .flow-note .fn-tag{font-family:var(--mono);font-size:10.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);white-space:nowrap;padding-top:2px}
+  .flow-note b{color:var(--ink)}
+
+  /* ── 架构分层 + 实现状态板 ── */
+  .arch{margin-top:22px;border:1px solid var(--line);background:var(--ink);color:#E8E4DC}
+  .arch-head{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:9px 14px;border-bottom:1px solid rgba(255,255,255,.18);
+    font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;
+  }
+  .arch-head .arch-link a{color:#FF9763;text-decoration:none}
+  .arch-head .arch-link a:hover{text-decoration:underline}
+  .arch-cols{display:grid;grid-template-columns:1fr 1fr;gap:0}
+  .arch-col{padding:16px 14px 10px;border-right:1px solid rgba(255,255,255,.12)}
+  .arch-col:last-child{border-right:0}
+  .ac-title{
+    font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;
+    color:rgba(232,228,220,.55);margin-bottom:10px;
+  }
+  .mnode{
+    display:grid;grid-template-columns:14px 52px 1fr;align-items:center;gap:8px;
+    width:100%;text-align:left;
+    background:transparent;border:0;border-top:1px solid rgba(255,255,255,.08);
+    color:#E8E4DC;font:inherit;font-size:12.5px;
+    padding:9px 6px;cursor:pointer;
+    transition:background .15s ease;
+  }
+  .mnode:hover{background:rgba(255,255,255,.07)}
+  .mnode i{width:8px;height:8px;border-radius:50%;justify-self:center}
+  .mnode.live i{background:#5BC98C;box-shadow:0 0 0 3px rgba(91,201,140,.18)}
+  .mnode.tested i{background:#E9A23B;box-shadow:0 0 0 3px rgba(233,162,59,.16)}
+  .mnode.queued i{background:transparent;border:1.5px solid rgba(232,228,220,.4)}
+  .mnode b{font-family:var(--mono);font-size:11px;color:rgba(232,228,220,.85);font-weight:700}
+  .mnode span{color:rgba(232,228,220,.88)}
+  .m-detail{
+    border-top:1px solid rgba(255,255,255,.18);
+    background:rgba(255,255,255,.05);
+  }
+  .m-detail[hidden]{display:none}
+  .md-head{
+    display:flex;align-items:center;gap:10px;
+    padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.1);
+    font-size:12.5px;
+  }
+  .md-head b{font-family:var(--mono);color:#FF9763;font-size:12px}
+  .md-head .md-state{
+    margin-left:auto;font-family:var(--mono);font-size:10px;letter-spacing:.1em;
+    text-transform:uppercase;color:#5BC98C;border:1px solid rgba(91,201,140,.45);padding:1px 7px;
+  }
+  .md-head .md-state.tested{color:#E9A23B;border-color:rgba(233,162,59,.5)}
+  .md-head .md-state.queued{color:rgba(232,228,220,.6);border-color:rgba(232,228,220,.3)}
+  .md-head .md-close{
+    background:transparent;border:1px solid rgba(255,255,255,.3);color:rgba(232,228,220,.8);
+    width:20px;height:20px;line-height:1;cursor:pointer;font-size:13px;padding:0;
+  }
+  .md-head .md-close:hover{background:var(--accent);border-color:var(--accent);color:#fff}
+  .md-body{
+    padding:12px 14px;font-size:12px;line-height:1.7;color:rgba(232,228,220,.85);
+    max-height:150px;overflow-y:auto;scrollbar-width:thin;
+  }
+  .arch-cap{
+    padding:9px 14px;border-top:1px solid rgba(255,255,255,.18);
+    font-size:12px;color:rgba(232,228,220,.72);line-height:1.6;
+    display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center;
+  }
+  .arch-cap .lg{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10px;letter-spacing:.06em}
+  .arch-cap .lg .dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+  .arch-cap .lg .dot.live{background:#5BC98C}
+  .arch-cap .lg .dot.tested{background:#E9A23B}
+  .arch-cap .lg .dot.queued{background:transparent;border:1.5px solid rgba(232,228,220,.4)}
+  .arch-cap-sep{color:rgba(232,228,220,.3)}
+
+  /* ── 宣传图轮播：纯 CSS scroll-snap 翻页 ── */
+  .promo{margin-top:22px;border:1px solid var(--line);background:#fff;position:relative}
+  .promo-track{
+    display:grid;grid-auto-flow:column;
+    grid-auto-columns:100%;
+    overflow-x:auto;scroll-snap-type:x mandatory;
+    scrollbar-width:none;
+  }
+  .promo-track::-webkit-scrollbar{display:none}
+  .promo-track img{
+    width:100%;height:auto;display:block;
+    scroll-snap-align:start;scroll-snap-stop:always;
+    aspect-ratio:16/9;object-fit:cover;background:var(--paper-2);
+  }
+  .promo-nav{
+    display:flex;justify-content:space-between;align-items:center;
+    border-top:1px solid var(--line);padding:8px 12px;
+  }
+  .promo-dots{display:flex;gap:8px}
+  .promo-dots a{
+    width:10px;height:10px;border:1.5px solid var(--ink-3);display:block;
+    transition:background .15s ease,border-color .15s ease;
+  }
+  .promo-dots a:hover{border-color:var(--accent);background:var(--accent)}
+  .promo-cap{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3)}
+  .promo-btn{
+    background:transparent;border:1px solid var(--line);color:var(--ink);
+    font-family:var(--mono);font-size:11px;padding:4px 12px;cursor:pointer;
+    text-decoration:none;letter-spacing:.08em;
+  }
+  .promo-btn:hover{background:var(--ink);color:var(--paper)}
+  /* :target 翻页——点击圆点滚动到对应帧 */
+  .promo-frame:target{scroll-snap-align:start}
+
+  /* ── 设计文献行 ── */
+  .papers{border-top:1px solid rgba(255,255,255,.18)}
+  .papers-head{
+    padding:9px 14px;
+    font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;
+    color:rgba(232,228,220,.55);border-bottom:1px solid rgba(255,255,255,.08);
+  }
+  .paper-row{
+    display:grid;grid-template-columns:34px 1fr auto;gap:12px;align-items:center;
+    padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.08);
+    text-decoration:none;transition:background .15s ease;
+  }
+  .paper-row:last-child{border-bottom:0}
+  .paper-row:hover{background:rgba(255,255,255,.07)}
+  .paper-row .pr-no{font-family:var(--mono);font-size:11px;color:#FF9763;font-weight:700}
+  .paper-row .pr-body{display:grid;gap:2px;min-width:0}
+  .paper-row .pr-body b{font-size:12.5px;font-weight:700;color:#E8E4DC}
+  .paper-row .pr-body small{font-size:11px;color:rgba(232,228,220,.6);line-height:1.5}
+  .paper-row .pr-arrow{font-family:var(--mono);color:rgba(232,228,220,.4);transition:color .15s ease,transform .15s ease}
+  .paper-row:hover .pr-arrow{color:#FF9763;transform:translateX(3px)}
+
+  /* ── 功能节：左文右图，细线分区，编号驱动 ── */
+  .feature{padding:44px 0;border-top:1px solid var(--line-soft)}
+  .feature:first-of-type{border-top:0;padding-top:8px}
+  .feature-grid{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:start}
+  .feature-grid.reverse .f-visual{order:-1}
+  .f-meta{
+    font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--accent);font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px;
+  }
+  .f-meta::after{content:"";flex:1;height:1px;background:var(--line-soft)}
+  .feature h3{font-size:clamp(21px,2.4vw,28px);line-height:1.18;letter-spacing:-.02em;font-weight:800;margin:0 0 12px}
+  .feature p.lede2{font-size:14.5px;color:var(--ink-2);margin:0 0 18px;line-height:1.72}
+  .feat-list{margin:0;padding:0;list-style:none;border-top:1px solid var(--line)}
+  .feat-list li{
+    font-size:13.5px;color:var(--ink-2);line-height:1.6;
+    padding:9px 0 9px 20px;position:relative;border-bottom:1px solid var(--line-soft);
+  }
+  .feat-list li::before{
+    content:"";position:absolute;left:2px;top:16px;width:7px;height:7px;
+    border:1.5px solid var(--accent);
+  }
+  .f-visual{border:1px solid var(--line);background:#fff;position:relative}
+  .f-visual .vbar{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:8px 12px;border-bottom:1px solid var(--line);
+    font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);
+  }
+  .f-visual .vbar .dots{display:inline-flex;gap:5px}
+  .f-visual .vbar .dots i{width:8px;height:8px;border:1px solid var(--ink-3);display:inline-block}
+  .f-visual img{width:100%;height:auto;display:block}
+  /* 无人值守数字组 */
+  .mini-stats{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--line);margin-top:18px}
+  .mini-stats .ms{padding:12px 14px;border-right:1px solid var(--line);background:#fff}
+  .mini-stats .ms:last-child{border-right:0}
+  .mini-stats .v{font-size:24px;font-weight:800;letter-spacing:-.02em;line-height:1;font-variant-numeric:tabular-nums}
+  .mini-stats .l{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);margin-top:6px;line-height:1.4}
+  /* 三层记忆表 */
+  .mem-table{border:1px solid var(--line);margin-top:16px;background:#fff}
+  .mem-row{display:grid;grid-template-columns:1.05fr 1.5fr 1.45fr;border-top:1px solid var(--line-soft)}
+  .mem-row:first-child{border-top:0;background:var(--paper-2)}
+  .mem-row > div{padding:10px 13px;font-size:13px;color:var(--ink-2);line-height:1.55;border-right:1px solid var(--line-soft)}
+  .mem-row > div:last-child{border-right:0}
+  .mem-row > div:first-child{color:var(--ink);font-weight:700}
+  .mem-row.head > div{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);font-weight:700}
+  .mem-pill{font-family:var(--mono);font-size:10px;color:var(--accent);border:1px solid var(--accent);padding:0 5px;margin-right:5px;white-space:nowrap}
+
+  /* ── 画廊：十二列网格 + 细线框 ── */
+  .gallery-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:0;border:1px solid var(--line);background:var(--line-soft)}
+  .g-card{position:relative;background:#fff;overflow:hidden;grid-column:span 6;border:1px solid var(--paper);margin:-.5px}
+  .g-card.span-12{grid-column:span 12}
+  .g-card img{width:100%;height:auto;display:block;filter:grayscale(18%) contrast(1.02)}
+  .g-card:hover img{filter:none}
+  .g-card .cap{
+    display:flex;justify-content:space-between;align-items:baseline;gap:10px;
+    padding:9px 13px;border-top:1px solid var(--line);background:var(--paper);
+    font-size:12.5px;font-weight:700;
+  }
+  .g-card .cap small{font-family:var(--mono);font-weight:400;font-size:10.5px;color:var(--ink-3);letter-spacing:.06em;text-align:right}
+
+  /* ── 安装：四步条带 + AI 框 ── */
+  .qs-grid{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--line);background:#fff}
+  .qs-cell{padding:22px 24px;border-right:1px solid var(--line);border-bottom:1px solid var(--line)}
+  .qs-cell:nth-child(2n){border-right:0}
+  .qs-cell:nth-last-child(-n+2){border-bottom:0}
+  .qs-cell h3{font-size:15px;margin:0 0 8px;font-weight:800;display:flex;align-items:baseline;gap:10px}
+  .qs-cell h3 .n{font-family:var(--mono);font-size:12px;color:var(--accent);font-weight:700}
+  .qs-cell p{margin:0 0 10px;color:var(--ink-2);font-size:13px;line-height:1.65}
+  .codebox{border:1px solid var(--line);background:var(--ink);color:#E8E4DC}
+  .codebox-head{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:7px 12px;border-bottom:1px solid rgba(255,255,255,.16);
+    font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:rgba(232,228,220,.6);
+  }
+  .codebox pre{margin:0;padding:13px 14px;font-size:12.5px;line-height:1.65;white-space:pre-wrap;word-break:break-word}
+  .copy-btn{
+    border:1px solid rgba(255,255,255,.3);background:transparent;color:rgba(232,228,220,.75);
+    font-family:var(--mono);font-size:10px;padding:3px 9px;cursor:pointer;letter-spacing:.1em;text-transform:uppercase;
+  }
+  .copy-btn:hover{background:var(--accent);border-color:var(--accent);color:#fff}
+  .ai-box{margin-top:22px;border:1px solid var(--line);padding:20px 24px;background:var(--paper-2)}
+  .ai-box h3{margin:0 0 8px;font-size:15px;font-weight:800;display:flex;align-items:center;gap:10px}
+  .ai-box h3 .ai-tag{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--paper);background:var(--accent);padding:2px 8px;font-weight:700}
+  .ai-box p{margin:0 0 10px;color:var(--ink-2);font-size:13px}
+
+  /* ── 社区 ── */
+  .comm-grid{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--line);background:#fff}
+  .comm-cell{padding:22px 24px;border-right:1px solid var(--line)}
+  .comm-cell:last-child{border-right:0}
+  .comm-cell .who{font-weight:800;font-size:16px;letter-spacing:-.01em}
+  .comm-cell .who::before{content:"@";color:var(--accent)}
+  .comm-cell .ref{font-family:var(--mono);font-size:11px;color:var(--ink-3);margin-top:4px}
+  .comm-cell .ref a{color:var(--accent-ink);text-decoration:underline;text-underline-offset:2px}
+  .comm-cell .contrib{margin-top:10px;font-size:13.5px;color:var(--ink-2);line-height:1.65;border-top:1px solid var(--line-soft);padding-top:10px}
+  .links-row{margin-top:20px;display:flex;flex-wrap:wrap;gap:0;border:1px solid var(--line);width:fit-content;background:#fff}
+  .link-chip{
+    display:inline-flex;align-items:center;gap:8px;text-decoration:none;
+    padding:11px 18px;border-right:1px solid var(--line);
+    font-family:var(--mono);font-size:12px;color:var(--ink);
+  }
+  .link-chip:last-child{border-right:0}
+  .link-chip:hover{background:var(--ink);color:var(--paper)}
+  .link-chip svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+
+  /* ── 页脚 ── */
+  footer{padding:40px 0 48px}
+  .ft-row{display:flex;flex-wrap:wrap;gap:18px;align-items:center;justify-content:space-between}
+  .ft-brand{font-weight:800;font-size:15px;letter-spacing:-.01em}
+  .ft-privacy{font-family:var(--mono);font-size:11px;color:var(--ink-2);display:flex;align-items:center;gap:8px}
+  .ft-privacy::before{content:"";width:8px;height:8px;background:var(--accent)}
+  .ft-links{display:flex;gap:18px;font-family:var(--mono);font-size:11.5px;color:var(--ink-2);text-transform:uppercase;letter-spacing:.1em}
+  .ft-links a{text-decoration:none}
+  .ft-links a:hover{color:var(--accent)}
+  .ft-credits{
+    margin-top:22px;padding-top:14px;border-top:1px solid var(--line-soft);
+    display:flex;flex-wrap:wrap;gap:8px 22px;align-items:baseline;
+    font-family:var(--mono);font-size:10.5px;color:var(--ink-3);letter-spacing:.04em;
+  }
+  .ft-credits .ftc-label{color:var(--accent);font-weight:700;letter-spacing:.14em}
+  .ft-credits span:nth-child(2){color:var(--ink-2)}
+
+  /* ── 响应式 ── */
+  @media (max-width: 1024px){
+    .hero-grid{grid-template-columns:1fr;gap:40px}
+    .stats-grid{grid-template-columns:repeat(2,1fr)}
+    .stat-cell:nth-child(2){border-right:1px solid var(--line)}
+    .stat-cell{border-bottom:1px solid var(--line)}
+    .stat-cell:nth-last-child(-n+2){border-bottom:0}
+    .pipe-flow{grid-template-columns:1fr}
+    .pf-cell{border-right:0;border-bottom:1px solid var(--line)}
+    .pf-cell:last-child{border-bottom:0}
+    .feature-grid{grid-template-columns:1fr;gap:26px}
+    .feature-grid.reverse .f-visual{order:0}
+    .qs-grid{grid-template-columns:1fr}
+    .qs-cell{border-right:0;border-bottom:1px solid var(--line)}
+    .qs-cell:nth-last-child(-n+2){border-bottom:1px solid var(--line)}
+    .qs-cell:last-child{border-bottom:0}
+    .comm-grid{grid-template-columns:1fr}
+    .comm-cell{border-right:0;border-bottom:1px solid var(--line)}
+    .comm-cell:last-child{border-bottom:0}
+    .mem-row{grid-template-columns:1fr 1.3fr}
+    .mem-row > div:nth-child(3){grid-column:1 / -1;border-top:1px dashed var(--line-soft);color:var(--ink-3);font-size:12px}
+  }
+  @media (max-width: 640px){
+    .topnav a:not(.keep){display:none}
+    .brand-tag{display:none}
+    .hero{padding:44px 0 0}
+    h1{font-size:clamp(38px,11vw,52px)}
+    section.block{padding:44px 0}
+    .sec-head{grid-template-columns:1fr;gap:10px;margin-bottom:28px}
+    .g-card{grid-column:span 12}
+    .mini-stats{grid-template-columns:1fr}
+    .mini-stats .ms{border-right:0;border-bottom:1px solid var(--line)}
+    .mini-stats .ms:last-child{border-bottom:0}
+    .mem-row{grid-template-columns:1fr}
+    .mem-row > div{border-right:0;border-top:1px dashed var(--line-soft)}
+    .mem-row > div:first-child{border-top:0}
+    .ctas{flex-direction:column;width:100%}
+    .btn{border-right:0;border-bottom:1px solid var(--line)}
+    .btn:last-child{border-bottom:0}
+    .ft-row{flex-direction:column;align-items:flex-start;gap:12px}
+    .meta-line span{padding:6px 10px 6px 0;margin-right:10px}
+  }
+  @media (prefers-reduced-motion: reduce){
+    .js-reveal{opacity:1;transform:none;transition:none}
+    .lane .bar,.store .cell.hit::after,.sch-head .live::before{animation:none}
+    .lane .bar{width:100%;opacity:.35}
+    html{scroll-behavior:auto}
+  }
+</style>
+</head>
+<body>
+
+<!-- ── 顶栏 ── -->
+<header class="topbar">
+  <div class="topbar-inner">
+    <a href="#top" class="brand">
+      <span class="brand-name">dsh-auto-memory</span>
+      <span class="brand-tag" data-i18n="brand.tag">v0.1.30</span>
+    </a>
+    <nav class="topnav" aria-label="primary">
+      <a href="#pipeline"><span class="idx">01</span><span data-i18n="nav.flow">管线</span></a>
+      <a href="#features"><span class="idx">02</span><span data-i18n="nav.features">功能</span></a>
+      <a href="#gallery"><span class="idx">03</span><span data-i18n="nav.gallery">界面</span></a>
+      <a href="#quick"><span class="idx">04</span><span data-i18n="nav.quick">安装</span></a>
+      <a href="#community"><span class="idx">05</span><span data-i18n="nav.community">社区</span></a>
+      <span class="lang">
+        <button type="button" id="lang-zh" class="on" aria-pressed="true">中</button>
+        <button type="button" id="lang-en" aria-pressed="false">EN</button>
+      </span>
+    </nav>
+  </div>
+</header>
+
+<!-- ── Hero ── -->
+<a id="top"></a>
+<section class="hero">
+  <div class="hero-grid">
+    <div class="hero-copy reveal">
+      <span class="eyebrow"><b data-i18n="hero.eyebrow.k">DEEPSEEK HARNESS</b><span data-i18n="hero.eyebrow">联想记忆插件</span></span>
+      <h1 data-i18n="hero.title">让 AI<br/>真正<span class="thin">记得你</span></h1>
+      <p class="soul" data-i18n="hero.soul">记忆不靠调用，自己被唤回。</p>
+      <p class="lede" data-i18n="hero.lede">市面记忆方案都要求模型"记得去查"——忘了调，记忆就等于不存在。本插件是 Host 侧主动联想中间件：持续观察对话情境，NLP 关键词 + 向量化双轨检索，该想起的记忆在模型开口之前，经固定边界注入下一环节。</p>
+      <div class="ctas">
+        <button class="btn primary" id="install-btn" type="button">
+          <span data-i18n="hero.cta1">安装</span>
+          <code>pnpm add @a9i5k4/dsh-auto-memory</code>
+          <span class="copy" data-i18n="hero.cta1.copy">点击复制</span>
+        </button>
+        <a class="btn" href="https://github.com/Aik358/dsh-auto-memory" target="_blank" rel="noreferrer">
+          <span data-i18n="hero.cta2">GitHub</span>
+        </a>
+        <a class="btn" href="https://www.npmjs.com/package/@a9i5k4/dsh-auto-memory" target="_blank" rel="noreferrer">
+          <span data-i18n="hero.cta3">npm</span>
+        </a>
+      </div>
+      <div class="meta-line">
+        <span><b data-i18n="hero.meta1">BSD-3-Clause</b></span>
+        <span data-i18n="hero.meta2">零运行时依赖</span>
+        <span data-i18n="hero.meta3">前缀缓存友好</span>
+        <span data-i18n="hero.meta4">记忆在你自己的机器上</span>
+      </div>
+    </div>
+
+    <!-- 技术示意：信号管线框图 -->
+    <div class="schematic reveal" role="img" aria-label="主动联想管线示意：观察→向量化→检索→固定边界注入">
+      <div class="sch-head">
+        <span data-i18n="demo.head">HOST MIDDLEWARE · 主动联想管线</span>
+        <span class="live" data-i18n="demo.live">LISTENING</span>
+      </div>
+      <div class="sch-body">
+        <div class="pipe">
+          <span class="st"><b>A</b><span data-i18n="demo.st1">观察 OBSERVE</span></span>
+          <span class="lane"><span class="ticks"></span><span class="bar b-obs"></span></span>
+        </div>
+        <div class="pipe">
+          <span class="st"><b>B</b><span data-i18n="demo.st2">向量化 EMBED</span></span>
+          <span class="lane"><span class="ticks"></span><span class="bar b-vec"></span></span>
+        </div>
+        <div class="pipe">
+          <span class="st"><b>C</b><span data-i18n="demo.st3">检索 RETRIEVE</span></span>
+          <span class="lane"><span class="ticks"></span><span class="bar b-ret hot"></span></span>
+        </div>
+        <div class="pipe">
+          <span class="st"><b>D</b><span data-i18n="demo.st4">注入 INJECT</span></span>
+          <span class="lane"><span class="ticks"></span><span class="bar b-inj hot"></span></span>
+        </div>
+        <div>
+          <div class="store">
+            <span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell hit"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span>
+            <span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell hit"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span>
+            <span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell hit"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span>
+            <span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell hit"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span>
+          </div>
+          <div class="store-cap">
+            <span data-i18n="demo.store">MEMORY STORE · 三层语料</span>
+            <span><b>4</b> <span data-i18n="demo.hits">条命中</span></span>
+          </div>
+        </div>
+      </div>
+      <div class="sch-foot">
+        <span class="zero" data-i18n="demo.zero">模型发起记忆调用</span>
+        <span data-i18n="demo.next">下一拍开口时，她已经记得</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── 数字带 ── -->
+<div class="stats-band">
+  <div class="stats-grid">
+    <div class="stat-cell hot reveal">
+      <div class="v">0<span class="u" data-i18n="st.1.u">次</span></div>
+      <div class="l" data-i18n="st.1.l">需要模型主动调用记忆</div>
+    </div>
+    <div class="stat-cell reveal">
+      <div class="v">3<span class="u" data-i18n="st.2.u">级</span></div>
+      <div class="l" data-i18n="st.2.l">检索算力：词法 / 内置向量 / BGE-M3</div>
+    </div>
+    <div class="stat-cell reveal">
+      <div class="v">R@5 0.925</div>
+      <div class="l" data-i18n="st.3.l">BGE-M3 int8 档实测召回（与 fp32 差 0.000）</div>
+    </div>
+    <div class="stat-cell reveal">
+      <div class="v">100<span class="u">%</span></div>
+      <div class="l" data-i18n="st.4.l">激活决策带证据链，可逐次复核打分</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── 01 管线 ── -->
+<section class="block" id="pipeline">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <div class="sec-num"><b>01</b><span data-i18n="flow.kicker">核心管线</span></div>
+      <div>
+        <h2 data-i18n="flow.title">从对话到记忆注入，四站直达</h2>
+        <p class="sec-sub" data-i18n="flow.sub">观察 → 检索决策 → 投递闭环。NLP 关键词与向量化双轨并行，唤起必要性由统一策略管线回答——每一步都有 JS 权威层做最终仲裁，AI 只在边界内干活。</p>
+      </div>
+    </div>
+
+    <div class="pipe-flow reveal">
+      <div class="pf-cell">
+        <span class="pf-tag" data-i18n="flow.a.tag">A · 观察</span>
+        <h3 data-i18n="flow.a.t">监听对话与工具事件</h3>
+        <p data-i18n="flow.a.p">持续观察每轮对话、工具回包、用户/助手事件，定位有"长期价值"的内容。</p>
+        <ul>
+          <li data-i18n="flow.a.l1">用户消息 + 工具结果实时锚定</li>
+          <li data-i18n="flow.a.l2">子代理静默评估（不打断主流程）</li>
+          <li data-i18n="flow.a.l3">闲聊 / 失败进重试队列（5 分钟心跳）</li>
+        </ul>
+      </div>
+      <div class="pf-cell">
+        <span class="pf-tag" data-i18n="flow.b.tag">B · 检索与决策</span>
+        <h3 data-i18n="flow.b.t">双轨检索 + 两车道决策</h3>
+        <p data-i18n="flow.b.p">先按相关性排序（词法 BM25 保底 / 内置向量 / BGE-M3），再按"该不该打断你"两车道分流。</p>
+        <ul>
+          <li data-i18n="flow.b.l1">词法 0GB 保底 → 内置语义 ~130MB → Python BGE-M3 进阶</li>
+          <li data-i18n="flow.b.l2">canary 显式唤起 / shadow 仅记录不注入</li>
+          <li data-i18n="flow.b.l3">决策全程可打分复核（A/P/S/H/E）</li>
+        </ul>
+      </div>
+      <div class="pf-cell">
+        <span class="pf-tag" data-i18n="flow.c.tag">C · 投递闭环</span>
+        <h3 data-i18n="flow.c.t">固定边界注入 + 证据反馈</h3>
+        <p data-i18n="flow.c.p">提示词字节级稳定，前缀缓存持续命中；每次投递留下 delivered/seen 证据喂回决策。</p>
+        <ul>
+          <li data-i18n="flow.c.l1">固定边界注入（前缀缓存友好）</li>
+          <li data-i18n="flow.c.l2">delivered / seen 证据回流</li>
+          <li data-i18n="flow.c.l3">「唤起回顾」页可逐次打分 + 政策提示</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="flow-note reveal">
+      <span class="fn-tag" data-i18n="flow.foot.tag">权限分立</span>
+      <span><b data-i18n="flow.foot.b">决策全程可复核，记忆治理永远在 JS 权威层。</b> <span data-i18n="flow.foot.s">AI 子代理只产出"建议"；是否写入、是否注入、是否唤起——最终决策都跑在 Node 端的 JS 权威层里；任何一次决策都能在「唤起回顾」页追溯原始证据与上下文。</span></span>
+    </div>
+
+    <!-- 架构分层 + 实现状态板（交互式） -->
+    <div class="arch reveal">
+      <div class="arch-head">
+        <span data-i18n="arch.title">SYSTEM LAYERING · 运行时分层</span>
+        <span class="arch-link"><a href="https://github.com/Aik358/dsh-auto-memory/blob/preview/docs/proactive-associative-memory-system-map.html" target="_blank" rel="noreferrer" data-i18n="arch.link">完整交互架构图 →</a></span>
+      </div>
+
+      <div class="arch-cols">
+        <div class="arch-col">
+          <div class="ac-title" data-i18n="arch.js">JS 记忆核心 · lib/*_pre.js · 零运行时依赖</div>
+          <button class="mnode live" type="button" data-m="M1"><i></i><b>M1</b><span data-i18n="m.M1">会话隔离</span></button>
+          <button class="mnode live" type="button" data-m="M2"><i></i><b>M2</b><span data-i18n="m.M2">上下文投影</span></button>
+          <button class="mnode live" type="button" data-m="M3b"><i></i><b>M3</b><span data-i18n="m.M3b">记忆锚定与迁移</span></button>
+          <button class="mnode live" type="button" data-m="M4"><i></i><b>M4</b><span data-i18n="m.M4">语料适配 + 影子检索</span></button>
+          <button class="mnode live" type="button" data-m="M5"><i></i><b>M5</b><span data-i18n="m.M5">上下文/证据桥</span></button>
+          <button class="mnode live" type="button" data-m="M6"><i></i><b>M6</b><span data-i18n="m.M6">激活收件箱 + 参考尾注</span></button>
+          <button class="mnode live" type="button" data-m="C2"><i></i><b>C2</b><span data-i18n="m.C2">内置语义层 e5-small（默认档）</span></button>
+        </div>
+        <div class="arch-col">
+          <div class="ac-title" data-i18n="arch.py">Python sidecar · 可选 · lazy spawn</div>
+          <button class="mnode live" type="button" data-m="M7"><i></i><b>M7</b><span data-i18n="m.M7">语义引擎 BGE-M3 int8</span></button>
+          <button class="mnode live" type="button" data-m="R-DUAL"><i></i><b>R-DUAL</b><span data-i18n="m.RD">双轨语义层（三级算力）</span></button>
+          <button class="mnode tested" type="button" data-m="M8"><i></i><b>M8</b><span data-i18n="m.M8">记忆中枢（治理式写回）</span></button>
+          <button class="mnode tested" type="button" data-m="M9"><i></i><b>M9</b><span data-i18n="m.M9">技能固化生命周期</span></button>
+          <div class="ac-title" style="margin-top:14px" data-i18n="arch.obs">可观测 / 待发布</div>
+          <button class="mnode tested" type="button" data-m="G-02"><i></i><b>G-02</b><span data-i18n="m.G2">激活观测台</span></button>
+          <button class="mnode queued" type="button" data-m="M10"><i></i><b>M10</b><span data-i18n="m.M10">存储治理</span></button>
+        </div>
+      </div>
+
+      <div class="m-detail" id="m-detail" hidden>
+        <div class="md-head"><b id="md-id"></b><span id="md-title"></span><span class="md-state" id="md-state"></span><button type="button" class="md-close" id="md-close" aria-label="close">×</button></div>
+        <div class="md-body" id="md-body"></div>
+      </div>
+
+      <div class="arch-cap">
+        <span class="lg"><i class="dot live"></i><span data-i18n="arch.lg.live">live verified 已实现并实机验证</span></span>
+        <span class="lg"><i class="dot tested"></i><span data-i18n="arch.lg.tested">tested 已测试</span></span>
+        <span class="lg"><i class="dot queued"></i><span data-i18n="arch.lg.queued">queued 排队</span></span>
+        <span class="arch-cap-sep">·</span>
+        <span data-i18n="arch.cap">语义层决定"想起什么"，权威层决定"是否/何时/如何注入"——Python 不创建证据，也不直接注入。点击模块查看实现摘要。</span>
+      </div>
+
+      <!-- 宣传图轮播：6 帧滚动吸附 -->
+      <div class="promo reveal">
+        <div class="promo-track" id="promo-track">
+          <img id="promo-1" src="../screenshots/promo/promo-1-hero.png" alt="dsh-auto-memory 主视觉：不用吩咐，她自己记得" />
+          <img id="promo-2" src="../screenshots/promo/promo-2-tour.png" alt="欢迎向导：每个功能、当场看懂、当场开关" />
+          <img id="promo-3" src="../screenshots/promo/promo-3-recall.png" alt="唤起与固化：对话凝成技能，每一步有迹可循" />
+          <img id="promo-4" src="../screenshots/promo/promo-4-unattended.png" alt="无人值守模式：整夜安静跑，零寒暄，零打扰" />
+          <img id="promo-5" src="../screenshots/promo/promo-5-external.png" alt="外部记忆继承：你的其他 AI，也在喂她记忆" />
+          <img id="promo-6" src="../screenshots/promo/promo-6-greeting.png" alt="定时暖心问候：让每一天都被记得" />
+        </div>
+        <div class="promo-nav">
+          <span class="promo-cap" data-i18n="promo.cap">GALLERY · 六幕</span>
+          <span class="promo-dots">
+            <a href="#promo-1" aria-label="1"></a><a href="#promo-2" aria-label="2"></a><a href="#promo-3" aria-label="3"></a><a href="#promo-4" aria-label="4"></a><a href="#promo-5" aria-label="5"></a><a href="#promo-6" aria-label="6"></a>
+          </span>
+          <span style="display:flex;gap:6px">
+            <button type="button" class="promo-btn" id="promo-prev" aria-label="prev">←</button>
+            <button type="button" class="promo-btn" id="promo-next" aria-label="next">→</button>
+          </span>
+        </div>
+      </div>
+
+      <!-- 设计文献：论文与决策文档 -->
+      <div class="papers">
+        <div class="papers-head" data-i18n="pp.title">DESIGN PAPERS · 设计文献（全部结论冻结为工程决策）</div>
+        <a class="paper-row" href="https://github.com/Aik358/dsh-auto-memory/blob/preview/docs/M7-RESEARCH-PAPER.md" target="_blank" rel="noreferrer">
+          <span class="pr-no">01</span>
+          <span class="pr-body"><b data-i18n="pp.1.t">多语言嵌入式检索选型研究</b><small data-i18n="pp.1.s">3 模型 × 5 分块 × 6 通道 ≈ 90 评测单元，BGE-M3 全面领先；冻结为 D1–D11 工程决策</small></span>
+          <span class="pr-arrow">→</span>
+        </a>
+        <a class="paper-row" href="https://github.com/Aik358/dsh-auto-memory/blob/preview/docs/M7-ACTIVATION-V2-PAPER.md" target="_blank" rel="noreferrer">
+          <span class="pr-no">02</span>
+          <span class="pr-body"><b data-i18n="pp.2.t">从语义相关到唤起必要：回声陷阱的发现、度量与修正</b><small data-i18n="pp.2.s">激活策略 v2 技术报告 + 双轨部署架构（§7）；67 条人工金标 held-out 验收 actPrecision 0.917</small></span>
+          <span class="pr-arrow">→</span>
+        </a>
+        <a class="paper-row" href="https://github.com/Aik358/dsh-auto-memory/blob/preview/docs/M7-EMBEDDING-BENCHMARK.md" target="_blank" rel="noreferrer">
+          <span class="pr-no">03</span>
+          <span class="pr-body"><b data-i18n="pp.3.t">嵌入基准报告</b><small data-i18n="pp.3.s">模型/分块/融合冻结依据：bge-m3 + para-512-noov + 加权融合</small></span>
+          <span class="pr-arrow">→</span>
+        </a>
+        <a class="paper-row" href="https://github.com/Aik358/dsh-auto-memory/blob/preview/docs/M7-ALGORITHM-DECISION.md" target="_blank" rel="noreferrer">
+          <span class="pr-no">04</span>
+          <span class="pr-body"><b data-i18n="pp.4.t">算法冻结决策 D1–D11</b><small data-i18n="pp.4.s">全部研究结论到生产实现的决策台账</small></span>
+          <span class="pr-arrow">→</span>
+        </a>
+        <a class="paper-row" href="https://github.com/Aik358/dsh-auto-memory/blob/preview/docs/M7-ACTIVATION-V2-HOLDEDOUT-EVAL.md" target="_blank" rel="noreferrer">
+          <span class="pr-no">05</span>
+          <span class="pr-body"><b data-i18n="pp.5.t">Held-out 人工金标验收</b><small data-i18n="pp.5.s">67 条标注打分：actPrecision 0.917 / harmfulEmit 0 / echo 层 7/7</small></span>
+          <span class="pr-arrow">→</span>
+        </a>
+        <a class="paper-row" href="https://github.com/Aik358/dsh-auto-memory/blob/preview/docs/PYTHON-SIDECAR-CONTRACT.md" target="_blank" rel="noreferrer">
+          <span class="pr-no">06</span>
+          <span class="pr-body"><b data-i18n="pp.6.t">Python Sidecar 完整契约</b><small data-i18n="pp.6.s">协议/生命周期/权威边界/各里程碑回归证据（§19.x）</small></span>
+          <span class="pr-arrow">→</span>
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── 02 功能全景 ── -->
+<section class="block" id="features">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <div class="sec-num"><b>02</b><span data-i18n="feat.kicker">功能全景</span></div>
+      <div>
+        <h2 data-i18n="feat.title">十二个能力，互相咬合</h2>
+        <p class="sec-sub" data-i18n="feat.sub">逐项展开，不省略——你想知道它"到底能干什么"，往下读就对了。</p>
+      </div>
+    </div>
+
+    <!-- 3.1 三层记忆体系 -->
+    <div class="feature reveal" id="f-mem">
+      <div class="feature-grid">
+        <div>
+          <span class="f-meta" data-i18n="f.1.kicker">3.1 · 三层记忆体系</span>
+          <h3 data-i18n="f.1.t">三处文件，三种语义</h3>
+          <p class="lede2" data-i18n="f.1.p">用户级 → 项目笔记 → 每日日志/反思，越往下越新鲜、越往上越稳定。注入策略按这个分层严格区分：静态纪律进 system prompt 保缓存，动态记忆只取最近 1 天，其余按需 recall。</p>
+          <div class="mem-table">
+            <div class="mem-row head">
+              <div data-i18n="f.1.col1">层</div>
+              <div data-i18n="f.1.col2">位置</div>
+              <div data-i18n="f.1.col3">内容</div>
+            </div>
+            <div class="mem-row">
+              <div data-i18n="f.1.r1.n">用户级记忆</div>
+              <div><code>~/.dsh/memory/MEMORY.md</code></div>
+              <div data-i18n="f.1.r1.c">跨项目规则与偏好</div>
+            </div>
+            <div class="mem-row">
+              <div data-i18n="f.1.r2.n">项目笔记</div>
+              <div><code>workspaces/{ws}/MEMORY.md</code></div>
+              <div data-i18n="f.1.r2.c">项目约定与决策</div>
+            </div>
+            <div class="mem-row">
+              <div data-i18n="f.1.r3.n">每日日志</div>
+              <div><code>workspaces/{ws}/YYYY-MM-DD.md</code></div>
+              <div data-i18n="f.1.r3.c">追加式工作日志</div>
+            </div>
+            <div class="mem-row">
+              <div data-i18n="f.1.r4.n">每日反思</div>
+              <div><code>…/reflections/YYYY-MM-DD.md</code></div>
+              <div data-i18n="f.1.r4.c">结构化复盘（成果/教训/下一步）</div>
+            </div>
+          </div>
+        </div>
+        <div class="f-visual">
+          <div class="vbar"><span data-i18n="f.1.art">MEMORY HUB</span><span class="dots"><i></i><i></i><i></i></span></div>
+          <img src="../screenshots/panel-hub.png" alt="memory hub" />
+        </div>
+      </div>
+      <ul class="feat-list" style="margin-top:22px">
+        <li data-i18n="f.1.b1">静态纪律进 system prompt：字节级稳定 → 前缀缓存持续命中</li>
+        <li data-i18n="f.1.b2">动态记忆走运行时快照：只注入最近 1 天日志+反思摘要</li>
+        <li><span data-i18n="f.1.b3">凭证/密钥段</span><strong data-i18n="f.1.b3b">永远</strong><span data-i18n="f.1.b3c">被过滤在提示词之外</span></li>
+      </ul>
+    </div>
+
+    <!-- 3.2 自动沉淀 -->
+    <div class="feature reveal" id="f-auto">
+      <div class="feature-grid reverse">
+        <div>
+          <span class="f-meta" data-i18n="f.2.kicker">3.2 · 自动沉淀</span>
+          <h3 data-i18n="f.2.t">记忆自己写自己</h3>
+          <p class="lede2" data-i18n="f.2.p">每轮对话结束，一个小型子代理静默评估本轮内容——长期有价值的主题分组写入今日日志（<code>## 主题（HH:MM）</code> + 要点），长期决策晋升项目笔记，跨项目规则晋升用户级，闲聊跳过。</p>
+          <ul class="feat-list">
+            <li data-i18n="f.2.l1">主题分组：## 主题（HH:MM） + 要点列表</li>
+            <li data-i18n="f.2.l2">长期决策 → 项目笔记；跨项目规则 → 用户级</li>
+            <li data-i18n="f.2.l3">失败入队，每 5 分钟重试；15 秒心跳文件证明循环存活</li>
+            <li data-i18n="f.2.l4">每日写入有预算 + AI 自动压缩——超限不拒写</li>
+          </ul>
+        </div>
+        <div class="f-visual">
+          <div class="vbar"><span data-i18n="f.2.art">AUTO-CONSOLIDATION</span><span class="dots"><i></i><i></i><i></i></span></div>
+          <img src="../screenshots/panel-overview.png" alt="overview" />
+        </div>
+      </div>
+    </div>
+
+    <!-- 3.3 欢迎向导 -->
+    <div class="feature reveal" id="f-tour">
+      <div class="feature-grid">
+        <div>
+          <span class="f-meta" data-i18n="f.3.kicker">3.3 · 欢迎向导（v0.1.30 大更新）</span>
+          <h3 data-i18n="f.3.t">不是弹窗广告，是功能总开关</h3>
+          <p class="lede2" data-i18n="f.3.p">升级或首装后自动播放的分步向导——Office/Fluent 式液态玻璃应用图标族，每项功能当场开关立即生效；中途关闭会先落到"完成提醒"步，告诉你每个功能在设置的哪个分区重新打开。</p>
+          <ul class="feat-list">
+            <li data-i18n="f.3.l1">每步一枚专属动效图标（注入青蓝 / 问候暖金 / 日历青绿 / 引擎紫蓝 / 雷达天青 / 完成珊瑚金）</li>
+            <li data-i18n="f.3.l2">三级检索引擎在向导内自动检测 + 一键安装（SHA256 校验 + 推理自检）</li>
+            <li data-i18n="f.3.l3">外部记忆实时扫描：WorkBuddy / Claude Code / Codex 等来源直接列出，逐源勾选</li>
+            <li data-i18n="f.3.l4">升级用户一次性触达：v0.1.30 起所有用户升级后自动播放一次</li>
+            <li><span data-i18n="f.3.l5">设置 → 外观 → 欢迎向导 →</span> <strong data-i18n="f.3.l5b">▶ 重看引导</strong> <span data-i18n="f.3.l5c">随时重新打开</span></li>
+          </ul>
+        </div>
+        <div class="f-visual">
+          <div class="vbar"><span data-i18n="f.3.art">WELCOME TOUR</span><span class="dots"><i></i><i></i><i></i></span></div>
+          <img src="../screenshots/tour-welcome.png" alt="tour welcome" />
+        </div>
+      </div>
+    </div>
+
+    <!-- 3.4 唤起与固化 -->
+    <div class="feature reveal" id="f-recall">
+      <div class="feature-grid reverse">
+        <div>
+          <span class="f-meta" data-i18n="f.4.kicker">3.4 · 唤起与技能固化</span>
+          <h3 data-i18n="f.4.t">该出手时才出手</h3>
+          <p class="lede2" data-i18n="f.4.p">联想式记忆唤起在对话链中检测回忆需求，命中即注入下一环节（不破坏前缀缓存）；高频流程固化为技能 checklist 自动附上，跨会话验证后晋升——每一次"要不要打断你"的决策都能在「唤起回顾」页复核打分。</p>
+          <ul class="feat-list">
+            <li data-i18n="f.4.l1">决策打分：A 该激活 / P 只预取 / S 应抑制 / H 有害 / E 改目标</li>
+            <li data-i18n="f.4.l2">技能晋升四态：observed → candidate → validated → active</li>
+            <li data-i18n="f.4.l3">90 天未用自动归档，可手动置顶</li>
+            <li data-i18n="f.4.l4">判定队列会汇总成政策提示，反哺自动决策</li>
+          </ul>
+        </div>
+        <div class="f-visual">
+          <div class="vbar"><span data-i18n="f.4.art">RECALL REVIEW</span><span class="dots"><i></i><i></i><i></i></span></div>
+          <img src="../screenshots/panel-refine.png" alt="refine" />
+        </div>
+      </div>
+    </div>
+
+    <!-- 3.5 无人值守模式 -->
+    <div class="feature reveal" id="f-unattended">
+      <div class="feature-grid">
+        <div>
+          <span class="f-meta" data-i18n="f.5.kicker">3.5 · 无人值守模式</span>
+          <h3 data-i18n="f.5.t">面向长跑批处理任务</h3>
+          <p class="lede2" data-i18n="f.5.p">设置 → 自动化提供<strong>手动开关</strong>与<strong>夜间自动托管</strong>（22:00-08:00 可调）；托管期间不注入欢迎语/寒暄/行为指令、日历提醒静默、上下文保持稳定——模型专注干活，token 花在正事上。</p>
+          <ul class="feat-list">
+            <li data-i18n="f.5.l1">零寒暄 / 零行为指令 / 日历静默 / 上下文冻结</li>
+            <li data-i18n="f.5.l2">时间窗可调（默认 22:00-08:00）</li>
+            <li data-i18n="f.5.l3">来源：社区 Issue #10 反馈驱动的加固场景</li>
+          </ul>
+          <div class="mini-stats">
+            <div class="ms"><div class="v">0</div><div class="l" data-i18n="f.5.s1.l">托管期间注入的寒暄</div></div>
+            <div class="ms"><div class="v">10h</div><div class="l" data-i18n="f.5.s2.l">夜间默认托管窗口</div></div>
+            <div class="ms"><div class="v">100%</div><div class="l" data-i18n="f.5.s3.l">上下文稳定（不增删）</div></div>
+          </div>
+        </div>
+        <div class="f-visual">
+          <div class="vbar"><span data-i18n="f.5.art">UNATTENDED</span><span class="dots"><i></i><i></i><i></i></span></div>
+          <img src="../screenshots/tour-toggles.png" alt="tour toggles" />
+        </div>
+      </div>
+    </div>
+
+    <!-- 3.6 AI 问候与每日反思 -->
+    <div class="feature reveal" id="f-greet">
+      <div class="feature-grid reverse">
+        <div>
+          <span class="f-meta" data-i18n="f.6.kicker">3.6 · AI 问候与每日反思</span>
+          <h3 data-i18n="f.6.t">时段感知 + 暂离回归 + 每日复盘</h3>
+          <p class="lede2" data-i18n="f.6.p">按时段（晨/午/晚）生成提及你当日最重要工作的问候；暂离超过 1 小时回来，记忆面板自动打开并送上"欢迎回来"+近期工作摘要；每天第一次会话主动呈现前一日结构化反思。</p>
+          <ul class="feat-list">
+            <li data-i18n="f.6.l1">时段问候：晨/午/晚，提及当日工作要点</li>
+            <li data-i18n="f.6.l2">暂离 >1h 回归自动开面板 + "欢迎回来"</li>
+            <li data-i18n="f.6.l3">每日第一次会话：前一日结构化反思</li>
+          </ul>
+        </div>
+        <div class="f-visual">
+          <div class="vbar"><span data-i18n="f.6.art">OVERVIEW</span><span class="dots"><i></i><i></i><i></i></span></div>
+          <img src="../screenshots/panel-overview.png" alt="overview" />
+        </div>
+      </div>
+    </div>
+
+    <!-- 3.7 智能检索 + 工作区全景 -->
+    <div class="feature reveal" id="f-search">
+      <div class="feature-grid">
+        <div>
+          <span class="f-meta" data-i18n="f.7.kicker">3.7 · 智能检索与工作区全景</span>
+          <h3 data-i18n="f.7.t">自然语言搜，跨工作区可达</h3>
+          <p class="lede2" data-i18n="f.7.p">自然语言提问，AI 自动扩展关键词扫描全部记忆层，会话式回答并标注来源；面板「工作区」页签自动生成工作区关系图——AI 归纳主题与跨区关联，可拖拽/缩放/点卡片看详情。</p>
+          <ul class="feat-list">
+            <li data-i18n="f.7.l1">跨工作区检索天然支持，结果标注来源工作区</li>
+            <li data-i18n="f.7.l2">工作区关系图：主题归纳 + 跨区关联</li>
+            <li data-i18n="f.7.l3">可拖拽 / 缩放 / 点卡详情</li>
+          </ul>
+        </div>
+        <div class="f-visual">
+          <div class="vbar"><span data-i18n="f.7.art">SEARCH</span><span class="dots"><i></i><i></i><i></i></span></div>
+          <img src="../screenshots/panel-hub.png" alt="search" />
+        </div>
+      </div>
+    </div>
+
+    <!-- 3.8 日历 -->
+    <div class="feature reveal" id="f-cal">
+      <div class="feature-grid reverse">
+        <div>
+          <span class="f-meta" data-i18n="f.8.kicker">3.8 · 日历 — AI 替你维护</span>
+          <h3 data-i18n="f.8.t">截止日期从对话里"长出来"</h3>
+          <p class="lede2" data-i18n="f.8.p">AI 从对话中识别截止日期/约定自动入日历（<code>calendar_add</code>），未完成事项注入后续会话直到完成；日视图 07:00-22:00 时间轴、地点/提醒字段、紧急度语义色。</p>
+          <ul class="feat-list">
+            <li data-i18n="f.8.l1">自动从对话识别 deadline / 约定 → 入日历</li>
+            <li data-i18n="f.8.l2">未完成项注入后续会话直到完成</li>
+            <li data-i18n="f.8.l3">07:00-22:00 时间轴 + 地点/提醒字段 + 紧急度语义色</li>
+          </ul>
+        </div>
+        <div class="f-visual">
+          <div class="vbar"><span data-i18n="f.8.art">CALENDAR</span><span class="dots"><i></i><i></i><i></i></span></div>
+          <img src="../screenshots/calendar-zh.png" alt="calendar" />
+        </div>
+      </div>
+    </div>
+
+    <!-- 3.9 外部记忆继承 -->
+    <div class="feature reveal" id="f-external">
+      <div class="feature-grid">
+        <div>
+          <span class="f-meta" data-i18n="f.9.kicker">3.9 · 外部记忆继承</span>
+          <h3 data-i18n="f.9.t">别让别处的经验白攒</h3>
+          <p class="lede2" data-i18n="f.9.p">WorkBuddy / CodeBuddy / Claude Code / Codex 的历史会话与记忆可扫描发现、按源导入（<strong>只存路径指针，不复制内容</strong>）、按源删除；导入侧 + 注入侧双重卫生闸门防外部脏数据混入。</p>
+          <ul class="feat-list">
+            <li data-i18n="f.9.l1">扫描发现：WorkBuddy / CodeBuddy / Claude Code / Codex</li>
+            <li data-i18n="f.9.l2">按源导入：只存路径指针（不复制内容）</li>
+            <li data-i18n="f.9.l3">按源删除 + 双重卫生闸门</li>
+          </ul>
+        </div>
+        <div class="f-visual">
+          <div class="vbar"><span data-i18n="f.9.art">EXTERNAL SCAN</span><span class="dots"><i></i><i></i><i></i></span></div>
+          <img src="../screenshots/tour-external.png" alt="external scan" />
+        </div>
+      </div>
+    </div>
+
+    <!-- 3.10 记忆卫生 -->
+    <div class="feature reveal" id="f-hygiene">
+      <div class="feature-grid reverse">
+        <div>
+          <span class="f-meta" data-i18n="f.10.kicker">3.10 · 记忆卫生（生产级）</span>
+          <h3 data-i18n="f.10.t">写入门禁 + 脏 token 扫描</h3>
+          <p class="lede2" data-i18n="f.10.p">三个写入工具全部过 <code>sanitizeForWrite</code>：GBK 乱码（34 特征全表）、复读退化、连续重复行、外部 AI 画像 JSON 特征、base64 残留——全部拒写并给出中文回执。设置 → 调试中心「扫描脏 token」一键按行区间报告问题（只报位置不含正文）。</p>
+          <ul class="feat-list">
+            <li data-i18n="f.10.l1">34 个 GBK 乱码特征全表识别</li>
+            <li data-i18n="f.10.l2">复读退化 / 连续重复行 / 外部画像 JSON / base64 残留</li>
+            <li data-i18n="f.10.l3">追加 8000 字/条；全量改写 20 万字上限</li>
+            <li data-i18n="f.10.l4">追加前与文件尾部近 60 行做去重</li>
+          </ul>
+        </div>
+        <div class="f-visual">
+          <div class="vbar"><span data-i18n="f.10.art">HYGIENE</span><span class="dots"><i></i><i></i><i></i></span></div>
+          <img src="../screenshots/tour-core.png" alt="tour core" />
+        </div>
+      </div>
+    </div>
+
+    <!-- 3.11 记忆生命周期 -->
+    <div class="feature reveal" id="f-life">
+      <div class="feature-grid">
+        <div>
+          <span class="f-meta" data-i18n="f.11.kicker">3.11 · 记忆生命周期</span>
+          <h3 data-i18n="f.11.t">30 天蒸馏：把过程流水换成可复用结论</h3>
+          <p class="lede2" data-i18n="f.11.p"><code>memory_maintain_pre</code> 把 30 天前的每日日志交给 AI 蒸馏：只提炼有跨会话长期价值的要点（技术决策/架构约定/偏好/踩坑规则），写入项目笔记；原文保底归档到 <code>archive/</code>（AI 不可用时降级为原样归档，绝不丢信息）。</p>
+          <ul class="feat-list">
+            <li data-i18n="f.11.l1">30 天蒸馏窗口：旧日志 → 长期要点 → 项目笔记</li>
+            <li><span data-i18n="f.11.l2">蒸馏明确边界：</span><strong data-i18n="f.11.l2b">procedure skills（技能固化）</strong><span data-i18n="f.11.l2c">与两级笔记不在蒸馏范围</span></li>
+            <li data-i18n="f.11.l3">归档原文不在常规检索扫描内（检索=项目笔记+活跃日志+反思+用户级）</li>
+            <li data-i18n="f.11.l4">蒸馏要点随笔记常驻注入</li>
+            <li data-i18n="f.11.l5">memory_consolidate：AI 发散固化（阶段性回头升格）</li>
+          </ul>
+        </div>
+        <div class="f-visual">
+          <div class="vbar"><span data-i18n="f.11.art">LIFECYCLE</span><span class="dots"><i></i><i></i><i></i></span></div>
+          <img src="../screenshots/panel-hub.png" alt="hub" />
+        </div>
+      </div>
+    </div>
+
+    <!-- 3.12 工程内核 -->
+    <div class="feature reveal" id="f-core">
+      <div class="feature-grid reverse">
+        <div>
+          <span class="f-meta" data-i18n="f.12.kicker">3.12 · 工程内核（信任背书）</span>
+          <h3 data-i18n="f.12.t">保持克制的设计</h3>
+          <p class="lede2" data-i18n="f.12.p">这些不是"特性"，是"在你能用它之前先让你放心"的工程承诺——少一点跑得快的东西，多一点能跑得久的东西。</p>
+          <ul class="feat-list">
+            <li data-i18n="f.12.l1">零运行时依赖（仅 Node 内建模块）</li>
+            <li data-i18n="f.12.l2">前缀缓存友好：提示词字节级稳定</li>
+            <li data-i18n="f.12.l3">限额 AI：自动沉淀每日 ≤8 次带冷却</li>
+            <li data-i18n="f.12.l4">集中式存储：~/.dsh/memory/workspaces/</li>
+            <li data-i18n="f.12.l5">可选 Python sidecar（BGE-M3 int8，失败自动回退词法）</li>
+          </ul>
+        </div>
+        <div class="f-visual">
+          <div class="vbar"><span data-i18n="f.12.art">ENGINEERING</span><span class="dots"><i></i><i></i><i></i></span></div>
+          <img src="../screenshots/panel-overview.png" alt="engineering" />
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ── 03 界面速览 ── -->
+<section class="block" id="gallery">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <div class="sec-num"><b>03</b><span data-i18n="g.kicker">界面速览</span></div>
+      <div>
+        <h2 data-i18n="g.title">七张实机截图</h2>
+        <p class="sec-sub" data-i18n="g.sub">从欢迎向导到唤起回顾——每个截图都是真实运行画面。</p>
+      </div>
+    </div>
+    <div class="gallery-grid reveal">
+      <figure class="g-card" style="margin:0">
+        <img src="../screenshots/panel-overview.png" alt="overview" />
+        <figcaption class="cap"><span data-i18n="g.1.t">记忆面板 · 概览</span><small data-i18n="g.1.s">暂离问候 + AI 时段总结</small></figcaption>
+      </figure>
+      <figure class="g-card" style="margin:0">
+        <img src="../screenshots/panel-hub.png" alt="hub" />
+        <figcaption class="cap"><span data-i18n="g.2.t">记忆中枢</span><small data-i18n="g.2.s">三层记忆店 + 技能晋升审批</small></figcaption>
+      </figure>
+      <figure class="g-card span-12" style="margin:0">
+        <img src="../screenshots/panel-refine.png" alt="refine" />
+        <figcaption class="cap"><span data-i18n="g.3.t">唤起回顾</span><small data-i18n="g.3.s">每次激活决策可打分（A/P/S/H/E）</small></figcaption>
+      </figure>
+      <figure class="g-card" style="margin:0">
+        <img src="../screenshots/tour-welcome.png" alt="tour welcome" />
+        <figcaption class="cap"><span data-i18n="g.4.t">欢迎向导 · 入口</span><small data-i18n="g.4.s">液态玻璃应用图标 + 步骤</small></figcaption>
+      </figure>
+      <figure class="g-card" style="margin:0">
+        <img src="../screenshots/tour-toggles.png" alt="tour toggles" />
+        <figcaption class="cap"><span data-i18n="g.5.t">欢迎向导 · 开关</span><small data-i18n="g.5.s">每项功能当场开关立即生效</small></figcaption>
+      </figure>
+      <figure class="g-card" style="margin:0">
+        <img src="../screenshots/tour-external.png" alt="external scan" />
+        <figcaption class="cap"><span data-i18n="g.6.t">外部记忆扫描</span><small data-i18n="g.6.s">向导内联扫描 + 逐源勾选</small></figcaption>
+      </figure>
+      <figure class="g-card" style="margin:0">
+        <img src="../screenshots/tour-core.png" alt="tour core" />
+        <figcaption class="cap"><span data-i18n="g.7.t">引擎检测</span><small data-i18n="g.7.s">三级语义引擎内联安装</small></figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<!-- ── 04 快速开始 ── -->
+<section class="block" id="quick">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <div class="sec-num"><b>04</b><span data-i18n="q.kicker">快速开始</span></div>
+      <div>
+        <h2 data-i18n="q.title">三步安装，一条命令</h2>
+        <p class="sec-sub" data-i18n="q.sub">前置：安装 DeepSeek Harness 并至少启动过一次 dsh web。</p>
+      </div>
+    </div>
+
+    <div class="qs-grid reveal">
+      <div class="qs-cell">
+        <h3><span class="n">01</span><span data-i18n="q.1.t">安装包</span></h3>
+        <p data-i18n="q.1.p">在 profile 目录（~/.dsh/profiles/web）执行：</p>
+        <div class="codebox">
+          <div class="codebox-head"><span>bash</span><button class="copy-btn" data-copy="cd ~/.dsh/profiles/web && pnpm add @a9i5k4/dsh-auto-memory">copy</button></div>
+          <pre>cd ~/.dsh/profiles/web
+pnpm add @a9i5k4/dsh-auto-memory</pre>
+        </div>
+        <p style="margin-top:10px" data-i18n="q.1.alt">没有 pnpm？npm install @a9i5k4/dsh-auto-memory 同样可用。</p>
+      </div>
+      <div class="qs-cell">
+        <h3><span class="n">02</span><span data-i18n="q.2.t">注册到 profile</span></h3>
+        <p data-i18n="q.2.p">编辑同目录 package.json，在 dsh.profile.bundles 数组追加：</p>
+        <div class="codebox">
+          <div class="codebox-head"><span>json</span></div>
+          <pre>"dsh.profile.bundles": [
+  "...",
+  "@a9i5k4/dsh-auto-memory"
+]</pre>
+        </div>
+      </div>
+      <div class="qs-cell">
+        <h3><span class="n">03</span><span data-i18n="q.3.t">重启生效</span></h3>
+        <p data-i18n="q.3.p">重启 dsh web——侧边栏出现「记忆」入口，进入即触发欢迎向导。</p>
+        <div class="codebox">
+          <div class="codebox-head"><span>bash</span></div>
+          <pre>dsh web</pre>
+        </div>
+      </div>
+      <div class="qs-cell">
+        <h3><span class="n">↻</span><span data-i18n="q.4.t">更新</span></h3>
+        <p data-i18n="q.4.p">设置 → 自动记忆页「检查更新」按钮可一键比对 npm 最新版；或直接：</p>
+        <div class="codebox">
+          <div class="codebox-head"><span>bash</span><button class="copy-btn" data-copy="cd ~/.dsh/profiles/web && pnpm up @a9i5k4/dsh-auto-memory">copy</button></div>
+          <pre>cd ~/.dsh/profiles/web
+pnpm up @a9i5k4/dsh-auto-memory</pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="ai-box reveal">
+      <h3>
+        <span class="ai-tag" data-i18n="q.ai.tag">AI 时代</span>
+        <span data-i18n="q.ai.t">让 AI 帮你装</span>
+      </h3>
+      <p data-i18n="q.ai.p">复制下面这段发给你正在用的 AI 助手即可：</p>
+      <div class="codebox">
+        <div class="codebox-head"><span>prompt</span><button class="copy-btn" data-copy="prompt-ai">copy</button></div>
+        <pre id="prompt-ai">在 DeepSeek Harness web profile 目录 ~/.dsh/profiles/web 安装 npm 包
+@a9i5k4/dsh-auto-memory（pnpm add 或 npm install），
+把 "@a9i5k4/dsh-auto-memory" 追加到 package.json 的 dsh.profile.bundles 数组，
+然后重启 dsh web 激活插件。</pre>
+      </div>
+      <p style="margin-top:10px" data-i18n="q.ai.sys">系统要求：dsh web 跑起来即可，Node 内建依赖足够；Python 档可选（用于 BGE-M3 进阶语义档，失败自动回退词法检索）。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── 05 社区 ── -->
+<section class="block" id="community">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <div class="sec-num"><b>05</b><span data-i18n="c.kicker">社区与链接</span></div>
+      <div>
+        <h2 data-i18n="c.title">感谢这两位</h2>
+        <p class="sec-sub" data-i18n="c.sub">dsh-auto-memory 不是一个"我一个人写的项目"——下面这两位是塑造产品形态的真正合作者。</p>
+      </div>
+    </div>
+
+    <div class="comm-grid reveal">
+      <div class="comm-cell">
+        <div class="who">ProperSAMA</div>
+        <div class="ref"><a href="https://github.com/ProperSAMA" target="_blank" rel="noreferrer">github.com/ProperSAMA</a> · <a href="https://github.com/Aik358/dsh-auto-memory/pull/12" target="_blank" rel="noreferrer">PR #12</a></div>
+        <div class="contrib" data-i18n="c.1.d">DSH Desktop 增强模式（透明 / Mica 材质）面板可读性修复 + 入口按钮防遮挡与外点/Esc 关闭。</div>
+      </div>
+      <div class="comm-cell">
+        <div class="who">nkh0472</div>
+        <div class="ref"><a href="https://github.com/nkh0472" target="_blank" rel="noreferrer">github.com/nkh0472</a> · <a href="https://github.com/Aik358/dsh-auto-memory/issues/10" target="_blank" rel="noreferrer">Issue #10</a></div>
+        <div class="contrib" data-i18n="c.2.d">无人值守/批处理场景加固反馈——直接推动了欢迎向导与功能开关化。</div>
+      </div>
+    </div>
+
+    <div class="links-row reveal">
+      <a class="link-chip" href="https://github.com/Aik358/dsh-auto-memory" target="_blank" rel="noreferrer">
+        <svg viewBox="0 0 24 24"><path d="M12 .5C5.7.5.5 5.6.5 12c0 5.1 3.3 9.4 7.9 10.9.6.1.8-.3.8-.6v-2c-3.2.7-3.9-1.5-3.9-1.5-.5-1.4-1.3-1.7-1.3-1.7-1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.7 1.3 3.4 1 .1-.8.4-1.3.7-1.6-2.6-.3-5.3-1.3-5.3-5.7 0-1.3.4-2.3 1.2-3.1-.1-.3-.5-1.5.1-3.1 0 0 1-.3 3.3 1.2 1-.3 2-.4 3-.4s2 .1 3 .4c2.3-1.6 3.3-1.2 3.3-1.2.7 1.7.2 2.9.1 3.2.7.8 1.2 1.9 1.2 3.1 0 4.4-2.7 5.4-5.3 5.7.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6 4.6-1.5 7.9-5.9 7.9-10.9C23.5 5.6 18.3.5 12 .5z"/></svg>
+        <span data-i18n="c.l1">GitHub</span>
+      </a>
+      <a class="link-chip" href="https://www.npmjs.com/package/@a9i5k4/dsh-auto-memory" target="_blank" rel="noreferrer">
+        <svg viewBox="0 0 24 24"><path d="M3 5h18v14H3z"/><path d="M3 5l9 7 9-7"/></svg>
+        <span data-i18n="c.l2">npm</span>
+      </a>
+      <a class="link-chip" href="https://github.com/Aik358/dsh-auto-memory/blob/main/LICENSE" target="_blank" rel="noreferrer">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg>
+        <span data-i18n="c.l3">License: BSD-3-Clause</span>
+      </a>
+    </div>
+
+    <p style="margin-top:18px;color:var(--ink-2);font-size:13.5px" data-i18n="c.foot">欢迎 issue / PR——即使只是改一个标点或一句文案，也算参与。</p>
+  </div>
+</section>
+
+<!-- ── 页脚 ── -->
+<footer>
+  <div class="wrap">
+    <div class="ft-row">
+      <div class="ft-brand" data-i18n="ft.name">dsh-auto-memory</div>
+      <div class="ft-privacy" data-i18n="ft.privacy">记忆存在你自己的机器上</div>
+      <div class="ft-links">
+        <a href="https://github.com/Aik358/dsh-auto-memory" target="_blank" rel="noreferrer" data-i18n="ft.gh">GitHub</a>
+        <a href="https://www.npmjs.com/package/@a9i5k4/dsh-auto-memory" target="_blank" rel="noreferrer" data-i18n="ft.npm">npm</a>
+      </div>
+    </div>
+    <div class="ft-credits">
+      <span class="ftc-label" data-i18n="ftc.label">CREDITS</span>
+      <span data-i18n="ftc.owner">Aik358 · 产品/架构</span>
+      <span data-i18n="ftc.zcode">ZCode（GLM · Z.ai）· 工程与论文</span>
+      <span data-i18n="ftc.k3">Kimi K3 · 前端</span>
+      <span data-i18n="ftc.note">人机协作 · AI 署名，人类审核</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+  /* ── i18n ── */
+  var I18N = {
+    zh: {
+      "brand.tag":"v0.1.30",
+      "nav.flow":"管线","nav.features":"功能","nav.gallery":"界面","nav.quick":"安装","nav.community":"社区",
+      "hero.eyebrow.k":"DEEPSEEK HARNESS","hero.eyebrow":"联想记忆插件",
+      "hero.title":"让 AI<br/>真正<span class=\"thin\">记得你</span>",
+      "hero.soul":"记忆不靠调用，自己被唤回。",
+      "hero.lede":"市面记忆方案都要求模型\"记得去查\"——忘了调，记忆就等于不存在。本插件是 Host 侧主动联想中间件：持续观察对话情境，NLP 关键词 + 向量化双轨检索，该想起的记忆在模型开口之前，经固定边界注入下一环节。",
+      "hero.cta1":"安装","hero.cta1.copy":"点击复制","hero.cta2":"GitHub","hero.cta3":"npm",
+      "hero.meta1":"BSD-3-Clause","hero.meta2":"零运行时依赖","hero.meta3":"前缀缓存友好","hero.meta4":"记忆在你自己的机器上",
+      "demo.head":"HOST MIDDLEWARE · 主动联想管线","demo.live":"LISTENING",
+      "demo.st1":"观察 OBSERVE","demo.st2":"向量化 EMBED","demo.st3":"检索 RETRIEVE","demo.st4":"注入 INJECT",
+      "demo.store":"MEMORY STORE · 三层语料","demo.hits":"条命中",
+      "demo.zero":"模型发起记忆调用","demo.next":"下一拍开口时，她已经记得",
+      "st.1.u":"次","st.1.l":"需要模型主动调用记忆",
+      "st.2.u":"级","st.2.l":"检索算力：词法 / 内置向量 / BGE-M3",
+      "st.3.l":"BGE-M3 int8 档实测召回（与 fp32 差 0.000）",
+      "st.4.l":"激活决策带证据链，可逐次复核打分",
+      "flow.kicker":"核心管线","flow.title":"从对话到记忆注入，四站直达",
+      "flow.sub":"观察 → 检索决策 → 投递闭环。NLP 关键词与向量化双轨并行，唤起必要性由统一策略管线回答——每一步都有 JS 权威层做最终仲裁，AI 只在边界内干活。",
+      "flow.a.tag":"A · 观察","flow.a.t":"监听对话与工具事件","flow.a.p":"持续观察每轮对话、工具回包、用户/助手事件，定位有\"长期价值\"的内容。",
+      "flow.a.l1":"用户消息 + 工具结果实时锚定","flow.a.l2":"子代理静默评估（不打断主流程）","flow.a.l3":"闲聊 / 失败进重试队列（5 分钟心跳）",
+      "flow.b.tag":"B · 检索与决策","flow.b.t":"双轨检索 + 两车道决策","flow.b.p":"先按相关性排序（词法 BM25 保底 / 内置向量 / BGE-M3），再按\"该不该打断你\"两车道分流。",
+      "flow.b.l1":"词法 0GB 保底 → 内置语义 ~130MB → Python BGE-M3 进阶","flow.b.l2":"canary 显式唤起 / shadow 仅记录不注入","flow.b.l3":"决策全程可打分复核（A/P/S/H/E）",
+      "flow.c.tag":"C · 投递闭环","flow.c.t":"固定边界注入 + 证据反馈","flow.c.p":"提示词字节级稳定，前缀缓存持续命中；每次投递留下 delivered/seen 证据喂回决策。",
+      "flow.c.l1":"固定边界注入（前缀缓存友好）","flow.c.l2":"delivered / seen 证据回流","flow.c.l3":"「唤起回顾」页可逐次打分 + 政策提示",
+      "flow.foot.tag":"权限分立","flow.foot.b":"决策全程可复核，记忆治理永远在 JS 权威层。","flow.foot.s":"AI 子代理只产出\"建议\"；是否写入、是否注入、是否唤起——最终决策都跑在 Node 端的 JS 权威层里；任何一次决策都能在「唤起回顾」页追溯原始证据与上下文。",
+      "arch.title":"SYSTEM LAYERING · 运行时分层","arch.link":"完整交互架构图 →",
+      "arch.js":"JS 记忆核心 · lib/*_pre.js · 零运行时依赖",
+      "arch.py":"Python sidecar · 可选 · lazy spawn",
+      "arch.obs":"可观测 / 待发布",
+      "arch.lg.live":"live verified 已实现并实机验证","arch.lg.tested":"tested 已测试","arch.lg.queued":"queued 排队",
+      "arch.cap":"语义层决定\"想起什么\"，权威层决定\"是否/何时/如何注入\"——Python 不创建证据，也不直接注入。点击模块查看实现摘要。",
+      "m.M1":"会话隔离","m.M2":"上下文投影","m.M3b":"记忆锚定与迁移","m.M4":"语料适配 + 影子检索",
+      "m.M5":"上下文/证据桥","m.M6":"激活收件箱 + 参考尾注","m.C2":"内置语义层 e5-small（默认档）",
+      "m.M7":"语义引擎 BGE-M3 int8","m.RD":"双轨语义层（三级算力）","m.M8":"记忆中枢（治理式写回）",
+      "m.M9":"技能固化生命周期","m.G2":"激活观测台","m.M10":"存储治理",
+      "pp.title":"DESIGN PAPERS · 设计文献（全部结论冻结为工程决策）",
+      "pp.1.t":"多语言嵌入式检索选型研究","pp.1.s":"3 模型 × 5 分块 × 6 通道 ≈ 90 评测单元，BGE-M3 全面领先；冻结为 D1–D11 工程决策",
+      "pp.2.t":"从语义相关到唤起必要：回声陷阱的发现、度量与修正","pp.2.s":"激活策略 v2 技术报告 + 双轨部署架构（§7）；67 条人工金标 held-out 验收 actPrecision 0.917",
+      "pp.3.t":"嵌入基准报告","pp.3.s":"模型/分块/融合冻结依据：bge-m3 + para-512-noov + 加权融合",
+      "pp.4.t":"算法冻结决策 D1–D11","pp.4.s":"全部研究结论到生产实现的决策台账",
+      "pp.5.t":"Held-out 人工金标验收","pp.5.s":"67 条标注打分：actPrecision 0.917 / harmfulEmit 0 / echo 层 7/7",
+      "pp.6.t":"Python Sidecar 完整契约","pp.6.s":"协议/生命周期/权威边界/各里程碑回归证据（§19.x）",
+      "promo.cap":"GALLERY · 六幕",
+      "feat.kicker":"功能全景","feat.title":"十二个能力，互相咬合","feat.sub":"逐项展开，不省略——你想知道它\"到底能干什么\"，往下读就对了。",
+      "f.1.kicker":"3.1 · 三层记忆体系","f.1.t":"三处文件，三种语义","f.1.p":"用户级 → 项目笔记 → 每日日志/反思，越往下越新鲜、越往上越稳定。注入策略按这个分层严格区分：静态纪律进 system prompt 保缓存，动态记忆只取最近 1 天，其余按需 recall。",
+      "f.1.col1":"层","f.1.col2":"位置","f.1.col3":"内容",
+      "f.1.r1.n":"用户级记忆","f.1.r1.c":"跨项目规则与偏好",
+      "f.1.r2.n":"项目笔记","f.1.r2.c":"项目约定与决策",
+      "f.1.r3.n":"每日日志","f.1.r3.c":"追加式工作日志",
+      "f.1.r4.n":"每日反思","f.1.r4.c":"结构化复盘（成果/教训/下一步）",
+      "f.1.b1":"静态纪律进 system prompt：字节级稳定 → 前缀缓存持续命中",
+      "f.1.b2":"动态记忆走运行时快照：只注入最近 1 天日志+反思摘要",
+      "f.1.b3":"凭证/密钥段","f.1.b3b":"永远","f.1.b3c":"被过滤在提示词之外",
+      "f.1.art":"MEMORY HUB",
+      "f.2.kicker":"3.2 · 自动沉淀","f.2.t":"记忆自己写自己",
+      "f.2.p":"每轮对话结束，一个小型子代理静默评估本轮内容——长期有价值的主题分组写入今日日志（## 主题（HH:MM） + 要点），长期决策晋升项目笔记，跨项目规则晋升用户级，闲聊跳过。",
+      "f.2.l1":"主题分组：## 主题（HH:MM） + 要点列表","f.2.l2":"长期决策 → 项目笔记；跨项目规则 → 用户级",
+      "f.2.l3":"失败入队，每 5 分钟重试；15 秒心跳文件证明循环存活","f.2.l4":"每日写入有预算 + AI 自动压缩——超限不拒写",
+      "f.2.art":"AUTO-CONSOLIDATION",
+      "f.3.kicker":"3.3 · 欢迎向导（v0.1.30 大更新）","f.3.t":"不是弹窗广告，是功能总开关",
+      "f.3.p":"升级或首装后自动播放的分步向导——Office/Fluent 式液态玻璃应用图标族，每项功能当场开关立即生效；中途关闭会先落到\"完成提醒\"步，告诉你每个功能在设置的哪个分区重新打开。",
+      "f.3.l1":"每步一枚专属动效图标（注入青蓝 / 问候暖金 / 日历青绿 / 引擎紫蓝 / 雷达天青 / 完成珊瑚金）",
+      "f.3.l2":"三级检索引擎在向导内自动检测 + 一键安装（SHA256 校验 + 推理自检）",
+      "f.3.l3":"外部记忆实时扫描：WorkBuddy / Claude Code / Codex 等来源直接列出，逐源勾选",
+      "f.3.l4":"升级用户一次性触达：v0.1.30 起所有用户升级后自动播放一次",
+      "f.3.l5":"设置 → 外观 → 欢迎向导 →","f.3.l5b":"▶ 重看引导","f.3.l5c":"随时重新打开",
+      "f.3.art":"WELCOME TOUR",
+      "f.4.kicker":"3.4 · 唤起与技能固化","f.4.t":"该出手时才出手",
+      "f.4.p":"联想式记忆唤起在对话链中检测回忆需求，命中即注入下一环节（不破坏前缀缓存）；高频流程固化为技能 checklist 自动附上，跨会话验证后晋升——每一次\"要不要打断你\"的决策都能在「唤起回顾」页复核打分。",
+      "f.4.l1":"决策打分：A 该激活 / P 只预取 / S 应抑制 / H 有害 / E 改目标",
+      "f.4.l2":"技能晋升四态：observed → candidate → validated → active",
+      "f.4.l3":"90 天未用自动归档，可手动置顶","f.4.l4":"判定队列会汇总成政策提示，反哺自动决策",
+      "f.4.art":"RECALL REVIEW",
+      "f.5.kicker":"3.5 · 无人值守模式","f.5.t":"面向长跑批处理任务",
+      "f.5.p":"设置 → 自动化提供手动开关与夜间自动托管（22:00-08:00 可调）；托管期间不注入欢迎语/寒暄/行为指令、日历提醒静默、上下文保持稳定——模型专注干活，token 花在正事上。",
+      "f.5.l1":"零寒暄 / 零行为指令 / 日历静默 / 上下文冻结","f.5.l2":"时间窗可调（默认 22:00-08:00）","f.5.l3":"来源：社区 Issue #10 反馈驱动的加固场景",
+      "f.5.s1.l":"托管期间注入的寒暄","f.5.s2.l":"夜间默认托管窗口","f.5.s3.l":"上下文稳定（不增删）",
+      "f.5.art":"UNATTENDED",
+      "f.6.kicker":"3.6 · AI 问候与每日反思","f.6.t":"时段感知 + 暂离回归 + 每日复盘",
+      "f.6.p":"按时段（晨/午/晚）生成提及你当日最重要工作的问候；暂离超过 1 小时回来，记忆面板自动打开并送上\"欢迎回来\"+近期工作摘要；每天第一次会话主动呈现前一日结构化反思。",
+      "f.6.l1":"时段问候：晨/午/晚，提及当日工作要点","f.6.l2":"暂离 >1h 回归自动开面板 + \"欢迎回来\"","f.6.l3":"每日第一次会话：前一日结构化反思",
+      "f.6.art":"OVERVIEW",
+      "f.7.kicker":"3.7 · 智能检索与工作区全景","f.7.t":"自然语言搜，跨工作区可达",
+      "f.7.p":"自然语言提问，AI 自动扩展关键词扫描全部记忆层，会话式回答并标注来源；面板「工作区」页签自动生成工作区关系图——AI 归纳主题与跨区关联，可拖拽/缩放/点卡片看详情。",
+      "f.7.l1":"跨工作区检索天然支持，结果标注来源工作区","f.7.l2":"工作区关系图：主题归纳 + 跨区关联","f.7.l3":"可拖拽 / 缩放 / 点卡详情",
+      "f.7.art":"SEARCH",
+      "f.8.kicker":"3.8 · 日历 — AI 替你维护","f.8.t":"截止日期从对话里\"长出来\"",
+      "f.8.p":"AI 从对话中识别截止日期/约定自动入日历（calendar_add），未完成事项注入后续会话直到完成；日视图 07:00-22:00 时间轴、地点/提醒字段、紧急度语义色。",
+      "f.8.l1":"自动从对话识别 deadline / 约定 → 入日历","f.8.l2":"未完成项注入后续会话直到完成","f.8.l3":"07:00-22:00 时间轴 + 地点/提醒字段 + 紧急度语义色",
+      "f.8.art":"CALENDAR",
+      "f.9.kicker":"3.9 · 外部记忆继承","f.9.t":"别让别处的经验白攒",
+      "f.9.p":"WorkBuddy / CodeBuddy / Claude Code / Codex 的历史会话与记忆可扫描发现、按源导入（只存路径指针，不复制内容）、按源删除；导入侧 + 注入侧双重卫生闸门防外部脏数据混入。",
+      "f.9.l1":"扫描发现：WorkBuddy / CodeBuddy / Claude Code / Codex","f.9.l2":"按源导入：只存路径指针（不复制内容）","f.9.l3":"按源删除 + 双重卫生闸门",
+      "f.9.art":"EXTERNAL SCAN",
+      "f.10.kicker":"3.10 · 记忆卫生（生产级）","f.10.t":"写入门禁 + 脏 token 扫描",
+      "f.10.p":"三个写入工具全部过 sanitizeForWrite：GBK 乱码（34 特征全表）、复读退化、连续重复行、外部 AI 画像 JSON 特征、base64 残留——全部拒写并给出中文回执。设置 → 调试中心「扫描脏 token」一键按行区间报告问题（只报位置不含正文）。",
+      "f.10.l1":"34 个 GBK 乱码特征全表识别","f.10.l2":"复读退化 / 连续重复行 / 外部画像 JSON / base64 残留",
+      "f.10.l3":"追加 8000 字/条；全量改写 20 万字上限","f.10.l4":"追加前与文件尾部近 60 行做去重",
+      "f.10.art":"HYGIENE",
+      "f.11.kicker":"3.11 · 记忆生命周期","f.11.t":"30 天蒸馏：把过程流水换成可复用结论",
+      "f.11.p":"memory_maintain_pre 把 30 天前的每日日志交给 AI 蒸馏：只提炼有跨会话长期价值的要点（技术决策/架构约定/偏好/踩坑规则），写入项目笔记；原文保底归档到 archive/（AI 不可用时降级为原样归档，绝不丢信息）。",
+      "f.11.l1":"30 天蒸馏窗口：旧日志 → 长期要点 → 项目笔记",
+      "f.11.l2":"蒸馏明确边界：","f.11.l2b":"procedure skills（技能固化）","f.11.l2c":"与两级笔记不在蒸馏范围",
+      "f.11.l3":"归档原文不在常规检索扫描内（检索=项目笔记+活跃日志+反思+用户级）","f.11.l4":"蒸馏要点随笔记常驻注入",
+      "f.11.l5":"memory_consolidate：AI 发散固化（阶段性回头升格）",
+      "f.11.art":"LIFECYCLE",
+      "f.12.kicker":"3.12 · 工程内核（信任背书）","f.12.t":"保持克制的设计",
+      "f.12.p":"这些不是\"特性\"，是\"在你能用它之前先让你放心\"的工程承诺——少一点跑得快的东西，多一点能跑得久的东西。",
+      "f.12.l1":"零运行时依赖（仅 Node 内建模块）","f.12.l2":"前缀缓存友好：提示词字节级稳定",
+      "f.12.l3":"限额 AI：自动沉淀每日 ≤8 次带冷却","f.12.l4":"集中式存储：~/.dsh/memory/workspaces/",
+      "f.12.l5":"可选 Python sidecar（BGE-M3 int8，失败自动回退词法）",
+      "f.12.art":"ENGINEERING",
+      "g.kicker":"界面速览","g.title":"七张实机截图","g.sub":"从欢迎向导到唤起回顾——每个截图都是真实运行画面。",
+      "g.1.t":"记忆面板 · 概览","g.1.s":"暂离问候 + AI 时段总结",
+      "g.2.t":"记忆中枢","g.2.s":"三层记忆店 + 技能晋升审批",
+      "g.3.t":"唤起回顾","g.3.s":"每次激活决策可打分（A/P/S/H/E）",
+      "g.4.t":"欢迎向导 · 入口","g.4.s":"液态玻璃应用图标 + 步骤",
+      "g.5.t":"欢迎向导 · 开关","g.5.s":"每项功能当场开关立即生效",
+      "g.6.t":"外部记忆扫描","g.6.s":"向导内联扫描 + 逐源勾选",
+      "g.7.t":"引擎检测","g.7.s":"三级语义引擎内联安装",
+      "q.kicker":"快速开始","q.title":"三步安装，一条命令","q.sub":"前置：安装 DeepSeek Harness 并至少启动过一次 dsh web。",
+      "q.1.t":"安装包","q.1.p":"在 profile 目录（~/.dsh/profiles/web）执行：","q.1.alt":"没有 pnpm？npm install @a9i5k4/dsh-auto-memory 同样可用。",
+      "q.2.t":"注册到 profile","q.2.p":"编辑同目录 package.json，在 dsh.profile.bundles 数组追加：",
+      "q.3.t":"重启生效","q.3.p":"重启 dsh web——侧边栏出现「记忆」入口，进入即触发欢迎向导。",
+      "q.4.t":"更新","q.4.p":"设置 → 自动记忆页「检查更新」按钮可一键比对 npm 最新版；或直接：",
+      "q.ai.tag":"AI 时代","q.ai.t":"让 AI 帮你装","q.ai.p":"复制下面这段发给你正在用的 AI 助手即可：","q.ai.sys":"系统要求：dsh web 跑起来即可，Node 内建依赖足够；Python 档可选（用于 BGE-M3 进阶语义档，失败自动回退词法检索）。",
+      "c.kicker":"社区与链接","c.title":"感谢这两位","c.sub":"dsh-auto-memory 不是一个\"我一个人写的项目\"——下面这两位是塑造产品形态的真正合作者。",
+      "c.1.d":"DSH Desktop 增强模式（透明 / Mica 材质）面板可读性修复 + 入口按钮防遮挡与外点/Esc 关闭。",
+      "c.2.d":"无人值守/批处理场景加固反馈——直接推动了欢迎向导与功能开关化。",
+      "c.l1":"GitHub","c.l2":"npm","c.l3":"License: BSD-3-Clause",
+      "c.foot":"欢迎 issue / PR——即使只是改一个标点或一句文案，也算参与。",
+      "ft.name":"dsh-auto-memory","ft.privacy":"记忆存在你自己的机器上","ft.gh":"GitHub","ft.npm":"npm",
+      "ftc.label":"制作署名","ftc.owner":"Aik358 · 产品/架构","ftc.zcode":"ZCode（GLM · Z.ai）· 工程与论文","ftc.k3":"Kimi K3 · 前端","ftc.note":"人机协作 · AI 署名，人类审核"
+    },
+    en: {
+      "brand.tag":"v0.1.30",
+      "nav.flow":"Pipeline","nav.features":"Features","nav.gallery":"UI","nav.quick":"Install","nav.community":"Community",
+      "hero.eyebrow.k":"DEEPSEEK HARNESS","hero.eyebrow":"Associative-memory plugin",
+      "hero.title":"An AI that<br/>actually <span class=\"thin\">remembers</span>",
+      "hero.soul":"No calls. Memories find their own way back.",
+      "hero.lede":"Every mainstream memory scheme asks the model to \"remember to look it up\" — forget the call and the memory might as well not exist. This plugin is a host-side associative middleware: it watches the conversation, runs dual-track retrieval (NLP keywords + vector similarity), and injects what should be recalled at the next fixed boundary — before the model speaks.",
+      "hero.cta1":"Install","hero.cta1.copy":"click to copy","hero.cta2":"GitHub","hero.cta3":"npm",
+      "hero.meta1":"BSD-3-Clause","hero.meta2":"Zero runtime deps","hero.meta3":"Prefix-cache friendly","hero.meta4":"Memories stay on your machine",
+      "demo.head":"HOST MIDDLEWARE · ASSOCIATIVE PIPELINE","demo.live":"LISTENING",
+      "demo.st1":"OBSERVE","demo.st2":"EMBED","demo.st3":"RETRIEVE","demo.st4":"INJECT",
+      "demo.store":"MEMORY STORE · 3-LAYER CORPUS","demo.hits":"hits",
+      "demo.zero":"Memory calls made by the model","demo.next":"By the next turn, she already remembers",
+      "st.1.u":"","st.1.l":"Memory calls the model ever has to make",
+      "st.2.u":"tiers","st.2.l":"Retrieval compute: lexical / built-in vector / BGE-M3",
+      "st.3.l":"Measured recall of the BGE-M3 int8 tier (Δ0.000 vs fp32)",
+      "st.4.l":"Activation decisions carry full evidence, gradeable one by one",
+      "flow.kicker":"Core pipeline","flow.title":"From conversation to injected memory, four stops",
+      "flow.sub":"Observe → retrieve & decide → deliver & close the loop. NLP keywords and vector retrieval run dual-track; a single policy pipeline answers whether to recall — every step is arbitrated by the JS authority layer, the AI works only inside its boundaries.",
+      "flow.a.tag":"A · Observe","flow.a.t":"Listen to conversation & tool events","flow.a.p":"Continuously watch each turn, tool results, user/assistant events — locate what has long-term value.",
+      "flow.a.l1":"User messages + tool results anchored live","flow.a.l2":"Subagent quiet evaluation (never blocks main flow)","flow.a.l3":"Chatter / failures queue with 5-min retry heartbeat",
+      "flow.b.tag":"B · Retrieve & decide","flow.b.t":"Dual-track retrieval + two-lane decision","flow.b.p":"Rank by relevance (lexical BM25 floor / built-in vectors / BGE-M3), then split on \"should I interrupt you\".",
+      "flow.b.l1":"Lexical 0GB floor → built-in ~130MB → Python BGE-M3 advanced","flow.b.l2":"canary explicit recall / shadow record-only","flow.b.l3":"Every decision gradeable (A/P/S/H/E)",
+      "flow.c.tag":"C · Deliver & close the loop","flow.c.t":"Fixed-boundary injection + evidence feedback","flow.c.p":"Byte-stable prompts keep the prefix cache hot; every delivery leaves delivered/seen evidence to feed the next decision.",
+      "flow.c.l1":"Fixed-boundary injection (prefix-cache friendly)","flow.c.l2":"delivered / seen evidence feedback","flow.c.l3":"Recall review tab: grade every decision + policy hints",
+      "flow.foot.tag":"Separation of powers","flow.foot.b":"Every decision is reviewable. Memory governance always lives in the JS authority layer.","flow.foot.s":"The AI subagent only produces \"suggestions\"; whether to write, inject or recall — every final decision runs in the JS layer on the Node side, traceable to its original evidence and context in the Recall review tab.",
+      "arch.title":"SYSTEM LAYERING · RUNTIME","arch.link":"Full interactive map →",
+      "arch.js":"JS memory core · lib/*_pre.js · zero runtime deps",
+      "arch.py":"Python sidecar · optional · lazy spawn",
+      "arch.obs":"Observability / upcoming",
+      "arch.lg.live":"live verified","arch.lg.tested":"tested","arch.lg.queued":"queued",
+      "arch.cap":"The semantic layer decides what to recall; the authority layer decides whether/when/how to inject — Python never creates evidence nor injects directly. Click a module for its implementation digest.",
+      "m.M1":"Session isolation","m.M2":"Context projection","m.M3b":"Memory anchoring","m.M4":"Corpus + shadow retrieval",
+      "m.M5":"Context/evidence bridge","m.M6":"Activation inbox + reference tail","m.C2":"Built-in semantic tier e5-small (default)",
+      "m.M7":"Semantic engine BGE-M3 int8","m.RD":"Dual-track semantics (3 tiers)","m.M8":"Memory hub (governed write-back)",
+      "m.M9":"Skill crystallization lifecycle","m.G2":"Activation console","m.M10":"Storage governance",
+      "pp.title":"DESIGN PAPERS · every conclusion frozen into engineering decisions",
+      "pp.1.t":"Multilingual Embedding Retrieval Study","pp.1.s":"3 models × 5 chunkings × 6 channels ≈ 90 evaluation cells; BGE-M3 leads across the board — frozen as decisions D1–D11",
+      "pp.2.t":"From Semantic Relevance to Recall Necessity: the Echo Trap","pp.2.s":"Activation policy v2 technical report + dual-track deployment architecture (§7); 67 human-gold held-out verdicts, actPrecision 0.917",
+      "pp.3.t":"Embedding Benchmark Report","pp.3.s":"Frozen basis for model/chunk/fusion: bge-m3 + para-512-noov + weighted fusion",
+      "pp.4.t":"Frozen Algorithm Decisions D1–D11","pp.4.s":"The decision ledger from research conclusions to production implementation",
+      "pp.5.t":"Held-out Human-Gold Acceptance","pp.5.s":"67 labeled verdicts: actPrecision 0.917 / harmfulEmit 0 / echo tier 7/7",
+      "pp.6.t":"Python Sidecar Contract","pp.6.s":"Protocol / lifecycle / authority boundary / per-milestone regression evidence (§19.x)",
+      "promo.cap":"GALLERY · SIX FRAMES",
+      "feat.kicker":"Feature tour","feat.title":"Twelve capabilities, interlocked","feat.sub":"Expanded one by one, nothing skipped — read on to find out what it actually does.",
+      "f.1.kicker":"3.1 · Three-layer memory","f.1.t":"Three files, three semantics","f.1.p":"User-level → project notes → daily logs/reflections; the deeper, the fresher. Injection strategy strictly follows this layering: static discipline goes into the system prompt to keep the cache hot; dynamic memory only injects the last day, everything else is recalled on demand.",
+      "f.1.col1":"Layer","f.1.col2":"Location","f.1.col3":"Content",
+      "f.1.r1.n":"User-level memory","f.1.r1.c":"Cross-project rules & preferences",
+      "f.1.r2.n":"Project notes","f.1.r2.c":"Project conventions & decisions",
+      "f.1.r3.n":"Daily log","f.1.r3.c":"Append-only work log",
+      "f.1.r4.n":"Daily reflection","f.1.r4.c":"Structured review (results / lessons / next)",
+      "f.1.b1":"Static discipline in the system prompt — byte-stable, prefix cache stays hot",
+      "f.1.b2":"Dynamic memory rides a runtime snapshot — only the last day's logs + reflection digest",
+      "f.1.b3":"Credential/secret sections are","f.1.b3b":"always","f.1.b3c":"filtered out of prompts",
+      "f.1.art":"MEMORY HUB",
+      "f.2.kicker":"3.2 · Auto-consolidation","f.2.t":"Memory writes itself",
+      "f.2.p":"After every turn a small subagent quietly evaluates what happened: long-term-valuable topics are grouped into today's log (## Topic (HH:MM) + bullets), durable decisions are promoted to project notes, cross-project rules to user-level memory, small talk is skipped.",
+      "f.2.l1":"Topic-grouped: ## Topic (HH:MM) + bullets","f.2.l2":"Durable decisions → project notes; cross-project rules → user-level",
+      "f.2.l3":"Failures queue and retry every 5 minutes; 15-second heartbeat file proves the loop is alive","f.2.l4":"Daily write budget with AI auto-compaction — over budget never rejects a write",
+      "f.2.art":"AUTO-CONSOLIDATION",
+      "f.3.kicker":"3.3 · Welcome tour (v0.1.30 major update)","f.3.t":"Not an ad popup — it's the home of every feature switch",
+      "f.3.p":"A step-by-step tour that auto-plays after first install or upgrade — an Office/Fluent-style liquid-glass app icon family; every feature switch writes config instantly. Closing mid-tour lands on a finish page telling you exactly where each feature lives in Settings.",
+      "f.3.l1":"Per-step liquid-glass icon with bespoke motion (cyan inject, amber greeting, green calendar, violet engine, sky radar, coral finish)",
+      "f.3.l2":"Three-tier retrieval engine auto-detected and one-click installable inline (SHA256 verify + inference self-test)",
+      "f.3.l3":"Live external-memory scan: WorkBuddy / Claude Code / Codex sources, tick-per-source",
+      "f.3.l4":"One-time catch-up for upgraders: from v0.1.30 every user auto-plays the full tour once after upgrading",
+      "f.3.l5":"Settings → Appearance → Welcome tour →","f.3.l5b":"▶ Replay","f.3.l5c":"anytime",
+      "f.3.art":"WELCOME TOUR",
+      "f.4.kicker":"3.4 · Activation & crystallization","f.4.t":"Interrupt only when it matters",
+      "f.4.p":"Associative recall detects memory needs directly in the conversation chain and injects at the next boundary (prefix-cache friendly). Frequent workflows crystallize into skill checklists that attach automatically, promote after cross-session validation — every \"should I interrupt\" decision is gradeable in the Recall review tab.",
+      "f.4.l1":"Grade: A activate / P prefetch / S suppress / H harmful / E edit target",
+      "f.4.l2":"Skill promotion four states: observed → candidate → validated → active",
+      "f.4.l3":"90 days without use auto-archive, pin to keep","f.4.l4":"The review queue digests into policy hints, feeding auto-decision",
+      "f.4.art":"RECALL REVIEW",
+      "f.5.kicker":"3.5 · Unattended mode","f.5.t":"Built for long batch jobs",
+      "f.5.p":"Settings → Automation offers a manual switch and auto-unattended overnight (22:00-08:00, tunable). While engaged: no greetings, no niceties or behavioural directives, calendar silent, context stable — tokens go to the work, not the small talk.",
+      "f.5.l1":"Zero niceties / zero directives / calendar silent / context frozen","f.5.l2":"Tunable window (default 22:00-08:00)","f.5.l3":"Born from community Issue #10 hardening feedback",
+      "f.5.s1.l":"niceties injected while unattended","f.5.s2.l":"default overnight window","f.5.s3.l":"context stability (no drift)",
+      "f.5.art":"UNATTENDED",
+      "f.6.kicker":"3.6 · AI greetings & daily reflection","f.6.t":"Period-aware + return greeting + daily review",
+      "f.6.p":"A period-aware greeting (morning/afternoon/evening) that mentions your most important work today. Return after an hour away and the memory panel auto-opens with \"welcome back\" plus a recent-work digest. The first session of each day presents yesterday's structured reflection.",
+      "f.6.l1":"Period greeting: morning/afternoon/evening, mentioning today's work","f.6.l2":">1h away → auto-open panel + \"welcome back\"","f.6.l3":"First session of the day: yesterday's structured reflection",
+      "f.6.art":"OVERVIEW",
+      "f.7.kicker":"3.7 · Smart search & workspace map","f.7.t":"Natural-language search, cross-workspace by default",
+      "f.7.p":"Ask in natural language — the AI expands your query into keywords, scans every memory layer, and answers conversationally with sources cited. The Workspace tab auto-generates a workspace mind map — AI groups themes and cross-workspace links; drag, zoom, click a card for details.",
+      "f.7.l1":"Cross-workspace search built in; results cite the source workspace","f.7.l2":"Workspace mind map: theme grouping + cross-workspace links","f.7.l3":"Drag / zoom / click for details",
+      "f.7.art":"SEARCH",
+      "f.8.kicker":"3.8 · Calendar — maintained by the AI","f.8.t":"Deadlines grow out of your conversation",
+      "f.8.p":"The AI spots deadlines and promises in conversation and files them (calendar_add). Pending items are injected into later sessions until completed; day view is a 07:00-22:00 timeline with location/reminder fields and urgency-tinted colors.",
+      "f.8.l1":"AI spots deadlines / promises in conversation → calendar","f.8.l2":"Pending items injected into later sessions until completed","f.8.l3":"07:00-22:00 timeline + location/reminder + urgency-tinted colors",
+      "f.8.art":"CALENDAR",
+      "f.9.kicker":"3.9 · External memory inheritance","f.9.t":"Don't let past experience go to waste",
+      "f.9.p":"Sessions and memories from WorkBuddy / CodeBuddy / Claude Code / Codex are scanned, importable per source (path pointers only, never copied content), removable per source; import-side and injection-side hygiene gates keep external dirt out.",
+      "f.9.l1":"Scans: WorkBuddy / CodeBuddy / Claude Code / Codex","f.9.l2":"Per-source import: path pointers only (no content copy)","f.9.l3":"Per-source delete + double hygiene gates",
+      "f.9.art":"EXTERNAL SCAN",
+      "f.10.kicker":"3.10 · Memory hygiene (production-grade)","f.10.t":"Write gate + dirty-token scanner",
+      "f.10.p":"All three write tools run sanitizeForWrite: GBK mojibake (34-feature table), stutter degeneration, consecutive duplicate lines, external-AI-profile JSON signatures, base64 residue — rejected with a human-readable reason. Settings → Debug Center \"Scan dirty tokens\": one-click scan of user memory / notes / logs / reflections, reported by line range (locations only, no content).",
+      "f.10.l1":"34 GBK-mojibake feature table","f.10.l2":"Stutter degeneration / consecutive duplicate lines / external-profile JSON / base64 residue",
+      "f.10.l3":"8,000 chars per append, 200,000 per rewrite caps","f.10.l4":"Appends deduped against the last ~60 lines",
+      "f.10.art":"HYGIENE",
+      "f.11.kicker":"3.11 · Memory lifecycle","f.11.t":"30-day distillation: trade process flow for reusable conclusions",
+      "f.11.p":"memory_maintain_pre hands logs older than 30 days to the AI for distillation: only durable cross-session value (decisions / conventions / preferences / gotchas) is written into project notes. Originals are archived to archive/ (degrades to verbatim archive if the AI is unavailable — never lose information).",
+      "f.11.l1":"30-day distillation window: old logs → durable points → project notes",
+      "f.11.l2":"Explicit boundary:","f.11.l2b":"procedure skills (skill crystallization)","f.11.l2c":"and the two note levels are out of scope",
+      "f.11.l3":"Archived originals outside regular retrieval scan (scan = project notes + active logs + reflections + user-level)","f.11.l4":"Distilled points ride along with the notes, always injected",
+      "f.11.l5":"memory_consolidate: AI divergent consolidation (periodic elevation)",
+      "f.11.art":"LIFECYCLE",
+      "f.12.kicker":"3.12 · Engineering core (trust by design)","f.12.t":"Restraint as a design choice",
+      "f.12.p":"These aren't \"features\" — they're engineering promises made before you even start using it. Less \"fast things\", more \"things that last\".",
+      "f.12.l1":"Zero runtime dependencies (Node built-ins only)","f.12.l2":"Prefix-cache friendly: byte-stable prompts",
+      "f.12.l3":"Rate-limited AI: auto-consolidation ≤8×/day with cooldown","f.12.l4":"Centralized storage: ~/.dsh/memory/workspaces/",
+      "f.12.l5":"Optional Python sidecar (BGE-M3 int8, falls back to lexical on failure)",
+      "f.12.art":"ENGINEERING",
+      "g.kicker":"UI gallery","g.title":"Seven real screenshots","g.sub":"From welcome tour to recall review — every screenshot is a real running frame.",
+      "g.1.t":"Memory panel · Overview","g.1.s":"Away greeting + AI period summaries",
+      "g.2.t":"Memory Hub","g.2.s":"Three stores + skill promotion approvals",
+      "g.3.t":"Recall review","g.3.s":"Grade every activation decision (A/P/S/H/E)",
+      "g.4.t":"Welcome tour · entry","g.4.s":"Liquid-glass app icon + steps",
+      "g.5.t":"Welcome tour · switches","g.5.s":"Flip every feature right in the tour",
+      "g.6.t":"External memory scan","g.6.s":"Inline scan + tick-per-source",
+      "g.7.t":"Engine detection","g.7.s":"Three-tier semantic engine inline install",
+      "q.kicker":"Quick start","q.title":"Three steps, one command","q.sub":"Prerequisite: install DeepSeek Harness and start dsh web at least once.",
+      "q.1.t":"Install package","q.1.p":"In the profile directory (~/.dsh/profiles/web):","q.1.alt":"No pnpm? npm install @a9i5k4/dsh-auto-memory works the same.",
+      "q.2.t":"Register in profile","q.2.p":"Edit package.json in the same directory and append to the dsh.profile.bundles array:",
+      "q.3.t":"Restart to activate","q.3.p":"Restart dsh web — the 「Memory」entry appears in the sidebar; opening it triggers the welcome tour.",
+      "q.4.t":"Updating","q.4.p":"Settings → Auto Memory's \"Check for updates\" button compares your version with npm and one-click updates; or:",
+      "q.ai.tag":"AI era","q.ai.t":"Let the AI install it for you","q.ai.p":"Copy this to the AI assistant you're already using:","q.ai.sys":"System requirements: dsh web running is enough; Node built-ins cover everything. The Python sidecar is optional (for BGE-M3 advanced semantic tier; auto-falls back to lexical on failure).",
+      "c.kicker":"Community","c.title":"Thanks to these two","c.sub":"dsh-auto-memory isn't \"a one-person project\" — these two are the real collaborators who shaped the product.",
+      "c.1.d":"Panel readability fix for DSH Desktop enhanced mode (transparent / Mica materials) + entry-button anti-occlusion & outside-click/Esc close.",
+      "c.2.d":"Unattended / batch workflow hardening feedback that directly drove the welcome tour and per-feature switches.",
+      "c.l1":"GitHub","c.l2":"npm","c.l3":"License: BSD-3-Clause",
+      "c.foot":"Issues and PRs welcome — even fixing a typo or rewording a sentence counts as participation.",
+      "ft.name":"dsh-auto-memory","ft.privacy":"Memories stay on your machine","ft.gh":"GitHub","ft.npm":"npm",
+      "ftc.label":"CREDITS","ftc.owner":"Aik358 · product/architecture","ftc.zcode":"ZCode (GLM · Z.ai) · engineering & papers","ftc.k3":"Kimi K3 · frontend","ftc.note":"Human-machine collaboration · AI-credited, human-reviewed"
+    }
+  };
+
+  /* ── Apply language ── */
+  var HTML_OK = { "hero.title": true };
+  function applyLang(lang){
+    var dict = I18N[lang] || I18N.zh;
+    document.documentElement.setAttribute('lang', lang === 'zh' ? 'zh-CN' : 'en');
+    document.documentElement.setAttribute('data-lang', lang);
+    var nodes = document.querySelectorAll('[data-i18n]');
+    for (var i = 0; i < nodes.length; i++){
+      var n = nodes[i];
+      var k = n.getAttribute('data-i18n');
+      if (dict[k] !== undefined){
+        if (HTML_OK[k]) n.innerHTML = dict[k];
+        else n.textContent = dict[k];
+      }
+    }
+    var zhBtn = document.getElementById('lang-zh');
+    var enBtn = document.getElementById('lang-en');
+    if (lang === 'zh'){ zhBtn.classList.add('on'); enBtn.classList.remove('on'); zhBtn.setAttribute('aria-pressed','true'); enBtn.setAttribute('aria-pressed','false'); }
+    else { enBtn.classList.add('on'); zhBtn.classList.remove('on'); enBtn.setAttribute('aria-pressed','true'); zhBtn.setAttribute('aria-pressed','false'); }
+    try { localStorage.setItem('dsh-landing-pre.lang', lang); } catch (e) {}
+  }
+  document.getElementById('lang-zh').addEventListener('click', function(){ applyLang('zh'); });
+  document.getElementById('lang-en').addEventListener('click', function(){ applyLang('en'); });
+
+  /* ── 宣传图轮播：prev/next + 圆点同步 ── */
+  (function(){
+    var track = document.getElementById('promo-track');
+    if (!track) return;
+    var frames = track.querySelectorAll('img');
+    var dots = document.querySelectorAll('.promo-dots a');
+    var cur = 0;
+    function go(i){
+      cur = Math.max(0, Math.min(frames.length - 1, i));
+      frames[cur].scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'start' });
+      dots.forEach(function(d, k){ d.style.background = k === cur ? 'var(--accent)' : 'transparent'; });
+    }
+    document.getElementById('promo-prev').addEventListener('click', function(){ go(cur - 1); });
+    document.getElementById('promo-next').addEventListener('click', function(){ go(cur + 1); });
+    dots.forEach(function(d, k){ d.addEventListener('click', function(e){ e.preventDefault(); go(k); }); });
+    // sync on manual scroll
+    var t;
+    track.addEventListener('scroll', function(){
+      clearTimeout(t);
+      t = setTimeout(function(){
+        var idx = Math.round(track.scrollLeft / track.clientWidth);
+        if (idx !== cur){ cur = idx; dots.forEach(function(d, k){ d.style.background = k === cur ? 'var(--accent)' : 'transparent'; }); }
+      }, 80);
+    });
+    go(0);
+  })();
+
+  var saved = null;
+  try { saved = localStorage.getItem('dsh-landing-pre.lang'); } catch (e) {}
+  if (saved !== 'zh' && saved !== 'en') saved = 'zh';
+  applyLang(saved);
+
+  /* ── Copy buttons ── */
+  function flashCopied(btn){
+    var old = btn.textContent;
+    btn.textContent = 'copied';
+    setTimeout(function(){ btn.textContent = old; }, 1100);
+  }
+  function copyText(t){
+    if (navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(t).catch(function(){});
+    } else {
+      var ta = document.createElement('textarea');
+      ta.value = t; ta.style.position='fixed'; ta.style.opacity='0';
+      document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); } catch (e) {}
+      document.body.removeChild(ta);
+    }
+  }
+  document.querySelectorAll('.copy-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var t = btn.getAttribute('data-copy');
+      if (t === 'prompt-ai') { t = document.getElementById('prompt-ai').textContent; }
+      copyText(t);
+      flashCopied(btn);
+    });
+  });
+  document.getElementById('install-btn').addEventListener('click', function(){
+    copyText('pnpm add @a9i5k4/dsh-auto-memory');
+    var c = this.querySelector('.copy');
+    if (c) {
+      var orig = c.textContent;
+      c.textContent = (document.documentElement.getAttribute('data-lang') === 'en') ? 'copied!' : '已复制';
+      setTimeout(function(){ c.textContent = orig; }, 1100);
+    }
+  });
+
+  /* ── Reveal on scroll：仅作增强，内容默认可见 ── */
+  if ('IntersectionObserver' in window){
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if (e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); }
+      });
+    }, { rootMargin: '0px 0px -8% 0px', threshold: 0.08 });
+    var els = document.querySelectorAll('.reveal');
+    if (els.length){
+      els.forEach(function(el){ el.classList.add('js-reveal'); el.classList.remove('reveal'); });
+      document.querySelectorAll('.js-reveal').forEach(function(el){ io.observe(el); });
+    }
+  }
+
+  /* ── 实现状态板：里程碑数据（同步自 docs/proactive-associative-memory-system-map.html） ──
+     state: live=已实现并实机验证 / tested=已测试 / queued=排队 */
+  var MILESTONES = {
+    "M1":    { zh:"f00ad23 落地 SessionRuntimeStore、AsyncLocalStorage、per-runtime consolidate 锁/冷却/队列；并发 A/B 的 cwd、segment、cursor、pending 零串线。", en:"f00ad23: SessionRuntimeStore + AsyncLocalStorage + per-runtime locks/cooldown/queues; concurrent A/B sessions share nothing (cwd, segments, cursors, pending tasks).", state:"live" },
+    "M2":    { zh:"EventEnvelope 账本 + Segment 切片：user/tool_call/tool_result/assistant 分型，稳定原生坐标生成 id/digest；关闭态零留存（counters-only），敏感内容零残留。", en:"EventEnvelope ledger + typed Segment slicing (user/tool_call/tool_result/assistant) with stable native-coordinate ids/digests; counters-only when off, zero sensitive residue.", state:"live" },
+    "M3b":   { zh:"anchored records + sidecar 身份体系：parseAnchors conflict fail-closed、digest 前置 planMigration、原子写 MemoryDocumentStore；31 个真实文件 176 记录完成迁移，备份可回滚。", en:"Anchored records + sidecar identity: conflict fail-closed parsing, deterministic planMigration, atomic MemoryDocumentStore writes; 31 real files / 176 records migrated with rollback backups.", state:"live" },
+    "M4":    { zh:"corpus snapshot 六原因 fail-closed + 冻结 SHADOW_GATE_POLICY_PRE_V1 权重/滞回/冷却 + BM25 lexical_pre_v2（CJK 2gram+507 停用词）；候选只审计不注入。", en:"Corpus snapshot with six fail-closed causes, frozen SHADOW_GATE_POLICY_PRE_V1 (weights/hysteresis/cooldown), BM25 lexical_pre_v2 (CJK 2-gram + 507 stopwords); candidates audited, never injected.", state:"live" },
+    "M5":    { zh:"envelope 授权上下文 + evidence store：coverage 校验、cite/correction 证据、stale 拒绝；M5 只用 Null/Fake sink，不启动 Python。", en:"Authorized context envelopes + evidence store: coverage checks, cite/correction evidence, stale rejection; M5 runs on Null/Fake sinks only.", state:"live" },
+    "M6":    { zh:"activation inbox：身份/scope/版本/TTL/预算/风险硬校验 → offer → claim → 参考尾注渲染（技能预算预留制）→ delivered/seen 证据落盘。", en:"Activation inbox: identity/scope/version/TTL/budget/risk hard validation → offer → claim → reference-tail rendering (skill budget reserved) → delivered/seen evidence.", state:"live" },
+    "C2":    { zh:"transformers.js + multilingual-e5-small q8 ~130MB：R@5=0.85，查询 3.8ms；npm 资产包分发+首启下载（SHA256+推理自检），为默认语义档。", en:"transformers.js + multilingual-e5-small q8 (~130MB): R@5=0.85, 3.8ms/query; shipped as an npm asset pack with first-run download (SHA256 + inference self-check). Default semantic tier.", state:"live" },
+    "M7":    { zh:"BGE-M3 int8 ONNX（R@5=0.925，与 fp32 差 0.000，快 6×）+ hybrid 融合 0.7/0.3 + fv2 两车道激活决策（echo veto/completeness/硬门禁）；canary 实测 delivered=3/seen=24。", en:"BGE-M3 int8 ONNX (R@5=0.925, Δ0.000 vs fp32, 6× faster) + hybrid fusion 0.7/0.3 + fv2 two-lane activation policy (echo veto / completeness / hard gates); canary live run delivered=3/seen=24.", state:"live" },
+    "R-DUAL":{ zh:"三级算力实测固化：C1 词法 0GB 兜底（永远可用）/ C2 e5-small 默认档 / C3 Python int8 进阶档；切换 provider 必然 stale 重建，失败自动逐级回退。", en:"Three compute tiers, measured and frozen: C1 lexical 0GB floor (always on) / C2 e5-small default / C3 Python int8 advanced; provider switch forces stale rebuild, failures fall back tier by tier.", state:"live" },
+    "M8":    { zh:"记忆中枢三店持久化 + fact 治理式写回 MEMORY.md + Hermes 借鉴（procedure touch/pinned/90 天归档/evidence 直达分流）。", en:"Memory hub three-store persistence + governed fact write-back to MEMORY.md + Hermes-inspired procedure touch/pinned/90-day archive/evidence routing.", state:"tested" },
+    "M9":    { zh:"技能固化生命周期：observed → candidate → validated → active 晋升 + 90 天未用自动归档 + 置顶；提升门控可配置。", en:"Skill crystallization lifecycle: observed → candidate → validated → active promotion + 90-day auto-archive + pinning; configurable promotion gates.", state:"tested" },
+    "G-02":  { zh:"激活观测台：每次 suppress/prefetch/activate/drop/delivery 可查触发上下文、lane、分数、候选 memoryId 与尾注摘要；用户决策生成可审计 policy diff。", en:"Activation console: every suppress/prefetch/activate/drop/delivery inspectable with trigger context, lane, score, candidate memoryId and tail digest; user decisions produce auditable policy diffs.", state:"tested" },
+    "M10":   { zh:"存储治理（排队）：rebuildSidecar 接线、删除级联 revoke、语料健康扫描与管理 UI——底座（原子事务/retention/30 天蒸馏）已就绪。", en:"Storage governance (queued): rebuildSidecar wiring, delete cascades with revoke, corpus health scan & management UI — foundation (atomic transactions/retention/30-day distillation) already in place.", state:"queued" }
+  };
+  var MS_STATE_LABEL = { live:{zh:"LIVE VERIFIED",en:"LIVE VERIFIED"}, tested:{zh:"TESTED 已测试",en:"TESTED"}, queued:{zh:"QUEUED 排队",en:"QUEUED"} };
+
+  (function(){
+    var detail = document.getElementById('m-detail');
+    if (!detail) return;
+    var mdId = document.getElementById('md-id');
+    var mdTitle = document.getElementById('md-title');
+    var mdState = document.getElementById('md-state');
+    var mdBody = document.getElementById('md-body');
+    var mdClose = document.getElementById('md-close');
+    var current = null;
+    function lang(){ return document.documentElement.getAttribute('data-lang') === 'en' ? 'en' : 'zh'; }
+    function open(id, btn){
+      var m = MILESTONES[id]; if (!m) return;
+      var L = lang();
+      if (current === id && !detail.hidden){ detail.hidden = true; current = null; return; }
+      current = id;
+      mdId.textContent = id;
+      // title follows the button label (already localized)
+      var lbl = btn.querySelector('span');
+      mdTitle.textContent = lbl ? lbl.textContent : '';
+      mdState.textContent = (MS_STATE_LABEL[m.state] || {})[L] || m.state;
+      mdState.className = 'md-state ' + m.state;
+      mdBody.textContent = m[L] || m.zh;
+      detail.hidden = false;
+    }
+    document.querySelectorAll('.mnode').forEach(function(btn){
+      btn.addEventListener('click', function(){ open(btn.getAttribute('data-m'), btn); });
+    });
+    mdClose.addEventListener('click', function(){ detail.hidden = true; current = null; });
+    // refresh open detail when language flips
+    document.getElementById('lang-zh').addEventListener('click', function(){ if (current && !detail.hidden) mdBody.textContent = MILESTONES[current].zh, mdState.textContent = (MS_STATE_LABEL[MILESTONES[current].state]||{}).zh; });
+    document.getElementById('lang-en').addEventListener('click', function(){ if (current && !detail.hidden) mdBody.textContent = MILESTONES[current].en, mdState.textContent = (MS_STATE_LABEL[MILESTONES[current].state]||{}).en; });
+  })();
+</script>
+</body>
+</html>

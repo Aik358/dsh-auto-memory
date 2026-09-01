@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<!-- ============================================================
+  dsh-auto-memory 首次开启引导（宣传稿 · 供精修）
+  结构：6 步向导（欢迎 → 基础层 → 语义增强 C2 → 进阶 C3 → 开关面板 → 完成）
+  交互：纯 vanilla JS 步进 + C2 下载状态机演示（未下载→下载中→校验中→建库中→就绪）
+  主题：与主页同一 liquid-glass 暗色玻璃（:root 变量可整体换肤）
+  零外部依赖，单文件交付。对应工程侧已冻结的首启序列：
+  弹窗确认 → 下载 → SHA256/自检 → 后台建索引 → 原子切换 → 跑通才开
+============================================================= -->
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>欢迎使用 dsh-auto-memory · 首次开启引导</title>
+<style>
+  :root {
+    --bg0: #060913;
+    --glass: rgba(255, 255, 255, 0.045);
+    --glass-border: rgba(255, 255, 255, 0.10);
+    --txt: #e8ecf6;
+    --txt-dim: #93a0bd;
+    --accent: #5b8cff;
+    --accent2: #8f6bff;
+    --accent3: #38d2c2;
+    --ok: #3ecf8e;
+    --warn: #f0b34e;
+    --queued: #5c6a8a;
+    --radius: 18px;
+    --font: "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
+    --mono: "Cascadia Code", Consolas, monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    min-height: 100vh;
+    display: flex; align-items: center; justify-content: center;
+    padding: 30px 18px;
+    background:
+      radial-gradient(1100px 560px at 20% -10%, rgba(91,140,255,.15), transparent 60%),
+      radial-gradient(900px 500px at 85% 5%, rgba(143,107,255,.11), transparent 55%),
+      radial-gradient(800px 600px at 50% 115%, rgba(56,210,194,.08), transparent 60%),
+      var(--bg0);
+    color: var(--txt); font-family: var(--font); line-height: 1.7;
+  }
+
+  .wizard {
+    width: 100%; max-width: 860px;
+    background: var(--glass); border: 1px solid var(--glass-border);
+    border-radius: 24px; backdrop-filter: blur(20px);
+    box-shadow: 0 30px 80px rgba(0,0,0,.45);
+    overflow: hidden;
+  }
+
+  /* ---- 头部:标识 + 步骤指示 ---- */
+  .head { padding: 30px 36px 0; display: flex; align-items: center; gap: 14px; }
+  .head .dot {
+    width: 40px; height: 40px; border-radius: 13px; flex: none;
+    background: conic-gradient(from 210deg, var(--accent), var(--accent2), var(--accent3), var(--accent));
+    box-shadow: 0 0 22px rgba(91,140,255,.55);
+  }
+  .head h1 { font-size: 19px; font-weight: 800; }
+  .head small { display: block; color: var(--txt-dim); font-size: 12.5px; font-weight: 400; }
+  .steps { display: flex; gap: 7px; margin-left: auto; }
+  .steps i {
+    width: 26px; height: 5px; border-radius: 3px; background: var(--glass-border);
+    transition: background .25s ease;
+  }
+  .steps i.on { background: linear-gradient(90deg, var(--accent), var(--accent2)); }
+  .steps i.done { background: var(--accent3); }
+
+  /* ---- 主体 ---- */
+  .body { padding: 26px 36px 8px; min-height: 372px; }
+  .pane { display: none; animation: fadein .3s ease; }
+  .pane.on { display: block; }
+  @keyframes fadein { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+  .pane h2 { font-size: 21px; margin-bottom: 6px; }
+  .pane .lead { color: var(--txt-dim); font-size: 14px; margin-bottom: 22px; }
+  .pane b.hl { color: var(--accent3); font-weight: 700; }
+  .pane .dim { color: var(--txt-dim); }
+
+  .row { display: flex; gap: 14px; flex-wrap: wrap; }
+  .box {
+    flex: 1; min-width: 210px;
+    background: rgba(255,255,255,.03); border: 1px solid var(--glass-border);
+    border-radius: 14px; padding: 16px 16px;
+  }
+  .box b { font-size: 14.5px; display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .box p { font-size: 12.5px; color: var(--txt-dim); }
+  .box .big { font-size: 22px; }
+
+  /* 开关行(第 5 步) */
+  .switch-row {
+    display: flex; align-items: center; gap: 14px;
+    background: rgba(255,255,255,.03); border: 1px solid var(--glass-border);
+    border-radius: 14px; padding: 14px 18px; margin-bottom: 11px;
+  }
+  .switch-row .info { flex: 1; }
+  .switch-row b { font-size: 14.5px; display: block; }
+  .switch-row span { font-size: 12px; color: var(--txt-dim); }
+  .sw {
+    width: 46px; height: 26px; border-radius: 999px; flex: none; cursor: pointer;
+    background: rgba(92,106,138,.35); border: 1px solid var(--glass-border);
+    position: relative; transition: background .2s ease;
+  }
+  .sw::after {
+    content: ""; position: absolute; top: 3px; left: 3px;
+    width: 18px; height: 18px; border-radius: 50%; background: #cfd8ec;
+    transition: transform .2s ease, background .2s ease;
+  }
+  .sw.on { background: linear-gradient(90deg, var(--accent), var(--accent2)); }
+  .sw.on::after { transform: translateX(20px); background: #fff; }
+  .sw .st { position: absolute; right: -40px; top: 3px; font-size: 11px; color: var(--txt-dim); font-family: var(--mono); width: 34px; }
+  .sw.on .st { color: var(--ok); }
+
+  /* C2 下载演示(第 3 步) */
+  .dl {
+    background: rgba(255,255,255,.03); border: 1px solid var(--glass-border);
+    border-radius: 14px; padding: 18px 20px; margin-top: 18px;
+  }
+  .dl-top { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .dl-top b { font-size: 14.5px; }
+  .dl-state {
+    margin-left: auto; font-family: var(--mono); font-size: 12px;
+    padding: 4px 12px; border-radius: 999px;
+    border: 1px solid var(--glass-border); color: var(--txt-dim);
+  }
+  .dl-state.ready { color: var(--ok); border-color: rgba(62,207,142,.4); }
+  .dl-state.busy { color: var(--accent3); border-color: rgba(56,210,194,.4); }
+  .bar { height: 8px; border-radius: 5px; background: rgba(255,255,255,.06); overflow: hidden; }
+  .bar i {
+    display: block; height: 100%; width: 0%;
+    background: linear-gradient(90deg, var(--accent), var(--accent3));
+    transition: width .3s ease; border-radius: 5px;
+  }
+  .dl-meta { display: flex; justify-content: space-between; margin-top: 9px; font-size: 11.5px; color: var(--txt-dim); font-family: var(--mono); }
+  .dl-actions { margin-top: 14px; display: flex; gap: 10px; }
+  .mini-btn {
+    font-size: 12.5px; padding: 8px 18px; border-radius: 10px; cursor: pointer;
+    border: 1px solid var(--glass-border); background: var(--glass); color: var(--txt);
+    font-family: var(--font);
+  }
+  .mini-btn.primary { background: linear-gradient(100deg, var(--accent), var(--accent2)); border: none; color: #fff; font-weight: 700; }
+  .mini-btn:disabled { opacity: .4; cursor: not-allowed; }
+  .dl-note { margin-top: 12px; font-size: 12px; color: var(--txt-dim); }
+  .dl-note code { font-family: var(--mono); color: var(--accent3); font-size: 11.5px; }
+
+  /* 对比表(第 3/4 步共用) */
+  .cmp { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .cmp th, .cmp td { padding: 9px 12px; text-align: left; border-bottom: 1px solid var(--glass-border); }
+  .cmp th { color: var(--txt-dim); font-weight: 600; font-size: 11.5px; }
+  .cmp tr:last-child td { border-bottom: none; }
+  .cmp .mono { font-family: var(--mono); font-size: 12px; }
+
+  /* ---- 底部按钮 ---- */
+  .foot {
+    padding: 18px 36px 26px; display: flex; align-items: center; gap: 12px;
+  }
+  .foot .spacer { flex: 1; }
+  .foot .hint { font-size: 12px; color: var(--queued); }
+  .nav-btn {
+    font-size: 14px; padding: 11px 26px; border-radius: 12px; cursor: pointer;
+    border: 1px solid var(--glass-border); background: var(--glass); color: var(--txt);
+    font-family: var(--font); font-weight: 600;
+  }
+  .nav-btn.primary {
+    background: linear-gradient(100deg, var(--accent), var(--accent2));
+    border: none; color: #fff; box-shadow: 0 6px 24px rgba(91,140,255,.3);
+  }
+  .nav-btn:disabled { opacity: .35; cursor: not-allowed; }
+</style>
+</head>
+<body>
+
+<div class="wizard">
+  <div class="head">
+    <div class="dot"></div>
+    <div>
+      <h1>欢迎使用 dsh-auto-memory</h1>
+      <small>为 DeepSeek Harness 打造的本地联想记忆 · 首次开启引导</small>
+    </div>
+    <div class="steps" id="steps">
+      <i class="on"></i><i></i><i></i><i></i><i></i><i></i>
+    </div>
+  </div>
+
+  <div class="body">
+
+    <!-- ========== 第 1 步 · 欢迎 ========== -->
+    <div class="pane on">
+      <h2>三分钟后，你的 AI 开始拥有记忆</h2>
+      <p class="lead">这个插件让 DeepSeek Harness 学会「想起」：监听对话与思维链，在恰当的时刻把恰当的旧记忆以引用形式送回上下文。</p>
+      <div class="row">
+        <div class="box"><b><span class="big">🧠</span> 开箱即用</b><p>基础能力零配置：词法检索 + 记忆锚定 + 自动沉淀，装好即生效。</p></div>
+        <div class="box"><b><span class="big">🏠</span> 本地优先</b><p>所有记忆都是本机明文 Markdown，可读可改可备份，不出你的电脑。</p></div>
+        <div class="box"><b><span class="big">📎</span> 温和注入</b><p>记忆以「参考尾注」形式出现，明确标注不是指令，可审计、可关闭。</p></div>
+      </div>
+      <p class="dim" style="margin-top:18px; font-size:12.5px;">
+        本引导只需走一遍。之后一切都可以在 <b class="hl">设置 → 自动化 / 语义引擎 / 记忆中枢</b> 里随时调整。
+      </p>
+    </div>
+
+    <!-- ========== 第 2 步 · 基础层 ========== -->
+    <div class="pane">
+      <h2>基础层：现在就已经在工作</h2>
+      <p class="lead">下面这些能力<b class="hl">不需要任何下载</b>，开启插件即生效。</p>
+      <div class="switch-row">
+        <div class="info"><b>📖 记忆锚定与索引</b><span>你的 MEMORY.md / 项目笔记 / 每日日志被稳定锚定并建立只读索引</span></div>
+        <div class="sw on"><span class="st">已开启</span></div>
+      </div>
+      <div class="switch-row">
+        <div class="info"><b>🔎 词法检索（C1）</b><span>BM25 + 中文 2-gram 的保底检索，任何机器零依赖运行</span></div>
+        <div class="sw on"><span class="st">已开启</span></div>
+      </div>
+      <div class="switch-row">
+        <div class="info"><b>🌙 自动沉淀</b><span>每轮对话结束后 AI 评估并提炼要点写入日志，寒暄自动跳过（间隔与额度可调）</span></div>
+        <div class="sw on"><span class="st">已开启</span></div>
+      </div>
+      <div class="switch-row">
+        <div class="info"><b>🧾 证据留痕</b><span>读取/引用/纠正/注入全程留痕，隐私投影，30 天自动清理</span></div>
+        <div class="sw on"><span class="st">已开启</span></div>
+      </div>
+      <p class="dim" style="font-size:12.5px; margin-top:14px;">
+        下一页是<b class="hl">可选</b>的语义增强——如果你只想先用起来，可以一路「下一步」跳过。
+      </p>
+    </div>
+
+    <!-- ========== 第 3 步 · C2 语义增强 ========== -->
+    <div class="pane">
+      <h2>可选升级：语义检索（C2 · 默认推荐档）</h2>
+      <p class="lead">安装一个约 130 MB 的本地嵌入模型后，检索从「关键词匹配」升级为「语义理解」——
+      换个说法也能想起旧事。完全本地推理，装不装都不影响基础层。</p>
+      <table class="cmp">
+        <tr><th>对比</th><th>C1 词法（已就绪）</th><th>C2 语义（本页可选）</th></tr>
+        <tr><td>体积</td><td class="mono">0 GB</td><td class="mono">~130 MB</td></tr>
+        <tr><td>检索质量 R@5</td><td class="mono">0.20</td><td class="mono">0.85</td></tr>
+        <tr><td>能力</td><td>关键词 / 精确词匹配</td><td>跨说法语义联想 · 中英文</td></tr>
+      </table>
+      <div class="dl">
+        <div class="dl-top">
+          <b>multilingual-e5-small（q8 量化）</b>
+          <span class="dl-state" id="dlState">未下载</span>
+        </div>
+        <div class="bar"><i id="dlBar"></i></div>
+        <div class="dl-meta"><span id="dlBytes">0.0 / 118 MB</span><span>SHA-256 校验 · 本地推理</span></div>
+        <div class="dl-actions">
+          <button class="mini-btn primary" id="dlBtn">立即安装</button>
+          <button class="mini-btn" id="dlSkip">稍后再说</button>
+        </div>
+        <div class="dl-note">
+          首启序列：确认下载 → 后台下载 → <code>SHA-256 校验 + 最小推理自检</code> → 后台建索引 → 就绪后自动切换。
+          任何一步失败自动回退 C1 词法，<b>检索服务永不中断</b>；建库期间可正常使用。
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== 第 4 步 · C3 进阶 ========== -->
+    <div class="pane">
+      <h2>进阶选项：Python 深度档（C3 · 爱好者向）</h2>
+      <p class="lead">如果你追求检索质量上限并愿意多花一些磁盘与内存，C3 提供更强的多语嵌入模型。
+      这一步完全可以跳过——之后随时可以在设置里开启。</p>
+      <table class="cmp">
+        <tr><th>对比</th><th>C2（上一页）</th><th>C3 Python 深度档</th></tr>
+        <tr><td>模型</td><td class="mono">e5-small q8</td><td class="mono">bge-m3 int8 ONNX</td></tr>
+        <tr><td>体积</td><td class="mono">~130 MB</td><td class="mono">563 MB</td></tr>
+        <tr><td>检索质量 R@5</td><td class="mono">0.85</td><td class="mono">0.925</td></tr>
+        <tr><td>运行方式</td><td>Node 内嵌推理</td><td>Python 子进程 · 懒启动 · 空闲自动退出</td></tr>
+        <tr><td>失败行为</td><td colspan="2">任一级不可用 → 自动降级回下一级（C3→C2→C1），零人工干预</td></tr>
+      </table>
+      <p class="dim" style="margin-top:16px; font-size:12.5px;">
+        需要本机具备 Python 运行环境；引导安装器会自动检测并提示。判定策略与注入面与 C2 完全共享，体验一致。
+      </p>
+    </div>
+
+    <!-- ========== 第 5 步 · 开关面板 ========== -->
+    <div class="pane">
+      <h2>按你的习惯打开开关</h2>
+      <p class="lead">以下是可以现在决定的三个核心开关（之后随时可改，参数均可在设置页自定义）。</p>
+      <div class="switch-row">
+        <div class="info"><b>🔗 联想记忆（总开关）</b><span>记忆检索、证据与注入的总闸门</span></div>
+        <div class="sw on" data-sw><span class="st">开</span></div>
+      </div>
+      <div class="switch-row">
+        <div class="info"><b>👁️ 思维链监听</b><span>不只听你说的，也「听」AI 想的——CoT 中浮现的回忆意图同样参与唤起判定（滑动监测核心）</span></div>
+        <div class="sw on" data-sw><span class="st">开</span></div>
+      </div>
+      <div class="switch-row">
+        <div class="info"><b>🌱 记忆中枢</b><span>三层记忆（经历→事实→技能）治理与技能 checklist 注入；建议先用一段时间再开</span></div>
+        <div class="sw" data-sw><span class="st">关</span></div>
+      </div>
+      <div class="switch-row">
+        <div class="info"><b>📎 唤起注入模式</b><span>shadow=只记录不注入（观察期）→ canary=仅明确回忆注入（推荐）→ active=全部注入</span></div>
+        <div class="sw on" data-sw><span class="st">canary</span></div>
+      </div>
+      <p class="dim" style="font-size:12.5px; margin-top:14px;">
+        点击开关可以体验切换。所有参数（冷却、候选方案、注入长度、margin 阈值等）都在
+        <b class="hl">设置页</b>提供中英双语的自定义档位。
+      </p>
+    </div>
+
+    <!-- ========== 第 6 步 · 完成 ========== -->
+    <div class="pane">
+      <h2>一切就绪 🎉</h2>
+      <p class="lead">你的 AI 已经开始积累会成长的记忆。几个值得知道的地方：</p>
+      <div class="row">
+        <div class="box"><b><span class="big">🧭</span> 记忆面板</b><p>侧边栏「记忆」随时查看：锚定记录、今日日志、反思与接续内容。</p></div>
+        <div class="box"><b><span class="big">📊</span> 观测与反馈</b><p>每次唤起决策都有理由码与证据；后续版本将提供决策时间线与一键反馈（A/P/S/H/E）。</p></div>
+        <div class="box"><b><span class="big">🔁</span> 随时回退</b><p>任何开关关闭即恢复零注入基线；引擎失败自动降级，删除记忆走安全事务。</p></div>
+      </div>
+      <p class="dim" style="margin-top:18px; font-size:12.5px;">
+        试试对它说：<b class="hl">「我们之前是怎么定 XX 的？」</b>——看它把记忆带回来。
+      </p>
+    </div>
+  </div>
+
+  <div class="foot">
+    <span class="hint" id="stepHint">第 1 步 / 共 6 步</span>
+    <div class="spacer"></div>
+    <button class="nav-btn" id="prevBtn" disabled>上一步</button>
+    <button class="nav-btn primary" id="nextBtn">下一步</button>
+  </div>
+</div>
+
+<script>
+/* ---- 向导步进（供精修：真实接入时替换为宿主向导 API） ---- */
+(function () {
+  var cur = 0, total = 6;
+  var panes = document.querySelectorAll('.pane');
+  var dots = document.querySelectorAll('#steps i');
+  var prevBtn = document.getElementById('prevBtn');
+  var nextBtn = document.getElementById('nextBtn');
+  var hint = document.getElementById('stepHint');
+  function render() {
+    for (var i = 0; i < total; i++) {
+      panes[i].classList.toggle('on', i === cur);
+      dots[i].classList.toggle('on', i === cur);
+      dots[i].classList.toggle('done', i < cur);
+    }
+    prevBtn.disabled = cur === 0;
+    nextBtn.textContent = cur === total - 1 ? '开始使用' : '下一步';
+    hint.textContent = '第 ' + (cur + 1) + ' 步 / 共 ' + total + ' 步';
+  }
+  prevBtn.onclick = function () { if (cur > 0) { cur--; render(); } };
+  nextBtn.onclick = function () { if (cur < total - 1) { cur++; render(); } else { finish(); } };
+  function finish() {
+    nextBtn.disabled = true;
+    nextBtn.textContent = '已就绪 ✓';
+    hint.textContent = '引导完成 · 设置页可随时调整';
+  }
+  /* ---- 开关演示 ---- */
+  document.querySelectorAll('[data-sw]').forEach(function (sw) {
+    sw.onclick = function () {
+      sw.classList.toggle('on');
+      var st = sw.querySelector('.st');
+      var on = sw.classList.contains('on');
+      if (st) st.textContent = sw.getAttribute('data-label') || (on ? '开' : '关');
+    };
+  });
+  render();
+})();
+
+/* ---- C2 下载状态机演示（供精修：真实接入时对接 Asset Manager 事件） ----
+   状态序列与工程侧冻结的首启序列一致:
+   idle(未下载) → downloading(下载中) → verifying(SHA256/自检) → indexing(建库中) → ready(就绪,原子切换) */
+(function () {
+  var state = 'idle', pct = 0;
+  var btn = document.getElementById('dlBtn');
+  var bar = document.getElementById('dlBar');
+  var stEl = document.getElementById('dlState');
+  var bytesEl = document.getElementById('dlBytes');
+  var skip = document.getElementById('dlSkip');
+  function setState(s) {
+    state = s;
+    stEl.className = 'dl-state' + (s === 'ready' ? ' ready' : (s === 'idle' ? '' : ' busy'));
+    var label = { idle: '未下载', downloading: '下载中', verifying: '校验中', indexing: '建库中', ready: '就绪 ✓' }[s];
+    stEl.textContent = label;
+    if (s === 'idle') { btn.disabled = false; btn.textContent = '立即安装'; }
+    else { btn.disabled = true; btn.textContent = '安装中…'; }
+  }
+  function tick() {
+    if (state === 'downloading') {
+      pct = Math.min(100, pct + 4 + Math.random() * 7);
+      bar.style.width = pct + '%';
+      bytesEl.textContent = (pct / 100 * 118).toFixed(1) + ' / 118 MB';
+      if (pct >= 100) { setState('verifying'); setTimeout(function () { setState('indexing'); }, 900); }
+    } else if (state === 'indexing') {
+      bar.style.width = '100%';
+      bytesEl.textContent = '后台建索引 · 可正常使用';
+      if (Math.random() > 0.94) { setState('ready'); bytesEl.textContent = '118 MB · 已原子切换'; return; }
+    } else if (state === 'ready') { return; }
+    setTimeout(tick, state === 'verifying' ? 900 : 180);
+  }
+  btn.onclick = function () { setState('downloading'); tick(); };
+  skip.onclick = function () { setState('idle'); pct = 0; bar.style.width = '0%'; bytesEl.textContent = '0.0 / 118 MB'; };
+})();
+</script>
+</body>
+</html>

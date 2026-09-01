@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<!-- ============================================================
+  dsh-auto-memory 项目主页（宣传稿 · 供精修）
+  结构：Hero → 数据带 → 四大特性 → 工作原理动线 → 双轨引擎 →
+        三层记忆中枢 → 里程碑 → 隐私与安全 → Footer
+  主题：liquid-glass 暗色玻璃（CSS 变量集中在 :root，Kimi K3 可整体换肤）
+  零外部依赖，单文件交付。
+============================================================= -->
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>dsh-auto-memory · 让 AI 拥有会成长的个人记忆</title>
+<style>
+  :root {
+    --bg0: #060913;
+    --bg1: #0b1020;
+    --glass: rgba(255, 255, 255, 0.045);
+    --glass-border: rgba(255, 255, 255, 0.10);
+    --txt: #e8ecf6;
+    --txt-dim: #93a0bd;
+    --accent: #5b8cff;
+    --accent2: #8f6bff;
+    --accent3: #38d2c2;
+    --ok: #3ecf8e;
+    --warn: #f0b34e;
+    --queued: #5c6a8a;
+    --radius: 18px;
+    --font: "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
+    --mono: "Cascadia Code", Consolas, monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background:
+      radial-gradient(1200px 600px at 15% -10%, rgba(91,140,255,.16), transparent 60%),
+      radial-gradient(1000px 500px at 90% 0%, rgba(143,107,255,.12), transparent 55%),
+      radial-gradient(900px 700px at 50% 110%, rgba(56,210,194,.08), transparent 60%),
+      var(--bg0);
+    color: var(--txt);
+    font-family: var(--font);
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 28px; }
+
+  /* ---- 顶部导航 ---- */
+  nav {
+    position: sticky; top: 0; z-index: 50;
+    backdrop-filter: blur(18px);
+    background: rgba(6, 9, 19, 0.72);
+    border-bottom: 1px solid var(--glass-border);
+  }
+  nav .wrap { display: flex; align-items: center; gap: 22px; height: 62px; }
+  .logo { display: flex; align-items: center; gap: 10px; font-weight: 800; letter-spacing: .3px; }
+  .logo .dot {
+    width: 26px; height: 26px; border-radius: 9px;
+    background: conic-gradient(from 210deg, var(--accent), var(--accent2), var(--accent3), var(--accent));
+    box-shadow: 0 0 18px rgba(91,140,255,.55);
+  }
+  .logo small { color: var(--txt-dim); font-weight: 500; }
+  nav a { color: var(--txt-dim); text-decoration: none; font-size: 14px; }
+  nav a:hover { color: var(--txt); }
+  nav .spacer { flex: 1; }
+  .pill {
+    font-size: 12px; padding: 4px 12px; border-radius: 999px;
+    border: 1px solid var(--glass-border); color: var(--txt-dim);
+  }
+  .pill b { color: var(--ok); font-weight: 700; }
+
+  /* ---- Hero ---- */
+  header { padding: 92px 0 64px; text-align: center; }
+  .kicker {
+    display: inline-block; font-family: var(--mono); font-size: 12.5px;
+    color: var(--accent3); letter-spacing: 2px; margin-bottom: 20px;
+    padding: 6px 16px; border: 1px solid rgba(56,210,194,.3); border-radius: 999px;
+    background: rgba(56,210,194,.06);
+  }
+  h1 {
+    font-size: clamp(34px, 5.4vw, 58px); line-height: 1.22; font-weight: 800;
+    letter-spacing: .5px;
+  }
+  h1 .grad {
+    background: linear-gradient(100deg, var(--accent) 0%, var(--accent2) 55%, var(--accent3) 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .hero-sub {
+    max-width: 760px; margin: 22px auto 0; color: var(--txt-dim);
+    font-size: clamp(15px, 1.8vw, 18px);
+  }
+  .hero-cta { margin-top: 34px; display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+  .btn {
+    display: inline-block; padding: 13px 30px; border-radius: 13px;
+    font-size: 15px; font-weight: 700; text-decoration: none; cursor: pointer;
+    border: 1px solid transparent; transition: transform .15s ease, box-shadow .15s ease;
+  }
+  .btn:hover { transform: translateY(-2px); }
+  .btn-primary {
+    background: linear-gradient(100deg, var(--accent), var(--accent2));
+    color: #fff; box-shadow: 0 8px 30px rgba(91,140,255,.35);
+  }
+  .btn-ghost { border-color: var(--glass-border); color: var(--txt); background: var(--glass); }
+  .hero-note { margin-top: 16px; font-size: 12.5px; color: var(--queued); font-family: var(--mono); }
+
+  /* ---- 数据带 ---- */
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; padding: 8px 0 56px; }
+  .stat {
+    background: var(--glass); border: 1px solid var(--glass-border);
+    border-radius: var(--radius); padding: 20px 18px; text-align: center;
+    backdrop-filter: blur(14px);
+  }
+  .stat b { display: block; font-size: 30px; font-weight: 800;
+    background: linear-gradient(120deg, var(--txt), #aab8dd); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .stat span { font-size: 12.5px; color: var(--txt-dim); }
+
+  /* ---- 通用 section ---- */
+  section { padding: 58px 0; }
+  .sec-title { text-align: center; margin-bottom: 8px; font-size: clamp(24px, 3vw, 32px); font-weight: 800; }
+  .sec-sub { text-align: center; color: var(--txt-dim); margin-bottom: 42px; font-size: 15px; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+  @media (max-width: 860px) { .grid-2, .grid-3, .stats { grid-template-columns: 1fr; } }
+
+  .card {
+    background: var(--glass); border: 1px solid var(--glass-border);
+    border-radius: var(--radius); padding: 26px 24px;
+    backdrop-filter: blur(14px);
+    transition: transform .18s ease, border-color .18s ease;
+  }
+  .card:hover { transform: translateY(-3px); border-color: rgba(91,140,255,.4); }
+  .card h3 { font-size: 17.5px; margin-bottom: 10px; display: flex; align-items: center; gap: 10px; }
+  .card p { color: var(--txt-dim); font-size: 14px; }
+  .card .ico {
+    width: 34px; height: 34px; border-radius: 10px; flex: none;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 17px; background: rgba(91,140,255,.14); border: 1px solid rgba(91,140,255,.3);
+  }
+  .card code { font-family: var(--mono); font-size: 12.5px; color: var(--accent3); }
+
+  /* ---- 工作原理动线 ---- */
+  .flow { display: flex; gap: 0; align-items: stretch; justify-content: center; flex-wrap: wrap; }
+  .step {
+    flex: 1; min-width: 168px; max-width: 208px;
+    background: var(--glass); border: 1px solid var(--glass-border);
+    border-radius: 16px; padding: 20px 16px; text-align: center; position: relative;
+    margin: 0 5px;
+  }
+  .step .n {
+    font-family: var(--mono); font-size: 11px; color: var(--accent3);
+    letter-spacing: 1.5px; display: block; margin-bottom: 8px;
+  }
+  .step b { font-size: 15px; display: block; margin-bottom: 6px; }
+  .step span { font-size: 12px; color: var(--txt-dim); display: block; }
+  .step::after {
+    content: "→"; position: absolute; right: -14px; top: 50%; transform: translateY(-50%);
+    color: var(--queued); font-size: 17px; z-index: 2;
+  }
+  .step:last-child::after { content: ""; }
+  .flow-note { text-align: center; color: var(--txt-dim); font-size: 13px; margin-top: 26px; }
+  .flow-note code { color: var(--accent3); font-family: var(--mono); }
+
+  /* ---- 双轨引擎表 ---- */
+  table { width: 100%; border-collapse: separate; border-spacing: 0; }
+  .engine-card { overflow: hidden; padding: 0; }
+  .engine-card table th, .engine-card table td {
+    padding: 14px 18px; font-size: 14px; text-align: left;
+    border-bottom: 1px solid var(--glass-border);
+  }
+  .engine-card table th { color: var(--txt-dim); font-weight: 600; font-size: 12.5px; letter-spacing: 1px; }
+  .engine-card table tr:last-child td { border-bottom: none; }
+  .tag { font-size: 11.5px; padding: 3px 10px; border-radius: 999px; font-weight: 700; }
+  .tag-default { background: rgba(62,207,142,.14); color: var(--ok); border: 1px solid rgba(62,207,142,.35); }
+  .tag-fallback { background: rgba(91,140,255,.12); color: var(--accent); border: 1px solid rgba(91,140,255,.3); }
+  .tag-pro { background: rgba(143,107,255,.12); color: var(--accent2); border: 1px solid rgba(143,107,255,.3); }
+  td .mono { font-family: var(--mono); font-size: 13px; }
+
+  /* ---- 里程碑 ---- */
+  .milestones { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+  .ms {
+    font-family: var(--mono); font-size: 12.5px; padding: 9px 16px;
+    border-radius: 11px; border: 1px solid var(--glass-border);
+    background: var(--glass); display: flex; align-items: center; gap: 8px;
+  }
+  .ms i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+  .ms.live i { background: var(--ok); box-shadow: 0 0 10px var(--ok); }
+  .ms.tested i { background: var(--warn); }
+  .ms.queued i { background: var(--queued); }
+  .ms span { color: var(--txt-dim); }
+
+  /* ---- 隐私 ---- */
+  .privacy { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  @media (max-width: 860px) { .privacy { grid-template-columns: repeat(2, 1fr); } }
+  .p-item { text-align: center; padding: 22px 12px; }
+  .p-item .ico { margin: 0 auto 12px; }
+  .p-item b { display: block; font-size: 14.5px; margin-bottom: 5px; }
+  .p-item span { font-size: 12px; color: var(--txt-dim); }
+
+  footer { border-top: 1px solid var(--glass-border); padding: 34px 0 44px; margin-top: 40px; }
+  footer .wrap { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px; color: var(--txt-dim); font-size: 13px; }
+  footer a { color: var(--txt-dim); }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <div class="logo"><span class="dot"></span>dsh-auto-memory <small>for DeepSeek Harness</small></div>
+    <div class="spacer"></div>
+    <a href="#how">工作原理</a>
+    <a href="#engine">双轨引擎</a>
+    <a href="#hub">记忆中枢</a>
+    <a href="#privacy">隐私</a>
+    <span class="pill">状态 <b>● live</b></span>
+  </div>
+</nav>
+
+<header class="wrap">
+  <div class="kicker">SLIDING MONITORING · ASSOCIATIVE RECALL · MINIMAL INJECTION</div>
+  <h1>让 AI 拥有<span class="grad">会成长的个人记忆</span></h1>
+  <p class="hero-sub">
+    dsh-auto-memory 是 DeepSeek Harness 的联想记忆插件：实时监听模型思维链与可见输出，
+    语义判定「此刻是否需要想起什么」，把恰当的记忆以最低 token 成本送进上下文——
+    全部发生在你的本机，以明文 Markdown 存储。
+  </p>
+  <div class="hero-cta">
+    <a class="btn btn-primary" href="#how">了解工作原理</a>
+    <a class="btn btn-ghost" href="#engine">双轨语义引擎</a>
+  </div>
+  <div class="hero-note">npm install @a9i5k4/dsh-auto-memory · preview</div>
+</header>
+
+<div class="wrap stats">
+  <div class="stat"><b>34</b><span>smoke 测试套件持续全绿</span></div>
+  <div class="stat"><b>0</b><span>云端依赖 · 记忆不出本机</span></div>
+  <div class="stat"><b>3 级</b><span>语义引擎 按需选择</span></div>
+  <div class="stat"><b>100%</b><span>判定链路可审计可回放</span></div>
+</div>
+
+<!-- ================= 四大特性 ================= -->
+<section class="wrap" id="features">
+  <h2 class="sec-title">它做四件事</h2>
+  <p class="sec-sub">从「听」到「想起」到「说出口」到「留下证据」，一条完整闭环</p>
+  <div class="grid-2">
+    <div class="card">
+      <h3><span class="ico">🧠</span>滑动监测 · 监听思维链</h3>
+      <p>不只听用户输入——模型的<b>思维链（CoT）与可见输出</b>同样参与监测。当模型正在回忆、迟疑、
+      或话题擦过某段旧记忆时，滑动监测实时捕捉这些瞬间。拟合度高就激发，不设场景限制。</p>
+    </div>
+    <div class="card">
+      <h3><span class="ico">🧲</span>联想唤起 · 双车道判定</h3>
+      <p>可解释的 fv2 策略核：<code>explicit</code>（明确回忆）与 <code>proactive</code>（主动联想）两条车道，
+      由意图概率、候选分差（margin）、复述否决（echo veto）、完整性门与硬门（纠正/过期/越权）共同裁决——
+      每一次「唤起 / 预热 / 抑制」都有可读的理由码。</p>
+    </div>
+    <div class="card">
+      <h3><span class="ico">📎</span>最小注入 · Reference Tail</h3>
+      <p>命中记忆以固定边界的「引用尾注」进入下一请求：来源身份 + 建议性摘录，
+      明确标注「是参考不是指令」。不碰系统提示、不破坏前缀缓存、不越预算——
+      注入后还有 delivered / seen 证据闭环。</p>
+    </div>
+    <div class="card">
+      <h3><span class="ico">🌱</span>三层记忆 · 会成长</h3>
+      <p><b>经历</b>（episode）自动沉淀 → <b>事实</b>（fact）治理固化 → 反复成功的流程升格为<b>技能</b>（skill checklist），
+      相似场景自动注入。记忆有生命周期：晋升有门槛、冲突可见、可撤销、可过期。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 工作原理动线 ================= -->
+<section class="wrap" id="how">
+  <h2 class="sec-title">一条记忆的旅程</h2>
+  <p class="sec-sub">从被监听的念头，到被引用的参考，全程留痕</p>
+  <div class="flow">
+    <div class="step"><span class="n">STEP 1 · 监听</span><b>观察窗口</b><span>思维链 / 可见输出 / 用户消息进入观察环（query 分源构建）</span></div>
+    <div class="step"><span class="n">STEP 2 · 检索</span><b>语义候选</b><span>稠密向量 × 词法 BM25 融合排序，scope/过期/纠正三重硬过滤</span></div>
+    <div class="step"><span class="n">STEP 3 · 判定</span><b>唤起决策</b><span>意图概率 + margin + echo veto → emit / prefetch / suppress</span></div>
+    <div class="step"><span class="n">STEP 4 · 注入</span><b>引用尾注</b><span>Reference Tail 经硬校验进入下一请求，建议性语气</span></div>
+    <div class="step"><span class="n">STEP 5 · 证据</span><b>闭环留痕</b><span>delivered → seen 落盘，可观测、可审计、可回放</span></div>
+  </div>
+  <p class="flow-note">
+    注入面能力探测：<code>dynamic-context</code>（可证明进入 messages 才标记 delivered）· 无安全注入面时自动降级 Shadow，绝不盲注。
+  </p>
+</section>
+
+<!-- ================= 双轨引擎 ================= -->
+<section class="wrap" id="engine">
+  <h2 class="sec-title">三级语义引擎 · 按需选择</h2>
+  <p class="sec-sub">词法保底永远在；语义增强按需安装；判定核与注入面完全共享</p>
+  <div class="card engine-card">
+    <table>
+      <tr><th>级别</th><th>体积</th><th>检索质量 R@5</th><th>运行方式</th><th>定位</th></tr>
+      <tr>
+        <td><span class="tag tag-fallback">C1 词法</span></td>
+        <td class="mono">0 GB</td>
+        <td class="mono">0.20</td>
+        <td>BM25 + CJK 2-gram + 停用词表，纯 JS</td>
+        <td>永久保底 · 零配置即用</td>
+      </tr>
+      <tr>
+        <td><span class="tag tag-default">C2 语义 · 默认</span></td>
+        <td class="mono">~130 MB</td>
+        <td class="mono">0.85</td>
+        <td>multilingual-e5-small（q8 量化）本地推理，transformers.js</td>
+        <td>默认主路径 · 可选安装 · 跑通才启用</td>
+      </tr>
+      <tr>
+        <td><span class="tag tag-pro">C3 语义 · 进阶</span></td>
+        <td class="mono">563 MB</td>
+        <td class="mono">0.925</td>
+        <td>bge-m3（int8 ONNX）Python sidecar，懒启动子进程</td>
+        <td>爱好者档 · 质量优先 · 优雅降级回 C2/C1</td>
+      </tr>
+    </table>
+  </div>
+  <p class="flow-note">
+    切换引擎必然触发索引重建（miv 版本隔离）；任何一级失败静默回退下一级，服务永不中断。
+    判定策略（fv2）为 JS/Python 双实现字节级孪生，阈值按各自嵌入分布校准。
+  </p>
+</section>
+
+<!-- ================= 记忆中枢 ================= -->
+<section class="wrap" id="hub">
+  <h2 class="sec-title">记忆中枢 · 三层协同</h2>
+  <p class="sec-sub">经历 → 事实 → 技能：不是存储更多，而是沉淀得更准</p>
+  <div class="grid-3">
+    <div class="card">
+      <h3><span class="ico">📖</span>经历 · Episodic</h3>
+      <p>每轮对话自动沉淀为带结果（success/failure）与来源坐标的经历段，
+      达到段数阈值后巩固为 episode。隐私最小化：只留文本特征，不存原文全文。</p>
+    </div>
+    <div class="card">
+      <h3><span class="ico">📌</span>事实 · Semantic</h3>
+      <p>项目事实 / 用户偏好 / 环境约束以「主-谓-宾」四元组固化，
+      带来源链与置信度。铁律：<b>用户明确声明永远优先于模型推断</b>；
+      冲突保留双方证据、可见、可确认、可撤销。</p>
+    </div>
+    <div class="card">
+      <h3><span class="ico">🛠️</span>技能 · Procedural</h3>
+      <p>反复成功的流程固化为可验证 checklist：<b>≥3 个会话 + ≥2 次成功 + 纠正率 ≤30%</b> 才能晋升；
+      高风险流程（SSH/部署/删除）永不因相似度自动执行。召回时以步骤+完成标准注入。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 里程碑 ================= -->
+<section class="wrap">
+  <h2 class="sec-title">工程进度</h2>
+  <p class="sec-sub">每个里程碑都有契约文档与测试矩阵背书</p>
+  <div class="milestones">
+    <div class="ms live"><i></i>M0-M1 基线/隔离</div>
+    <div class="ms live"><i></i>M2 上下文观察</div>
+    <div class="ms live"><i></i>M3 锚定写入</div>
+    <div class="ms live"><i></i>M4 影子检索</div>
+    <div class="ms live"><i></i>M5 证据桥</div>
+    <div class="ms live"><i></i>M6 注入收件箱</div>
+    <div class="ms live"><i></i>M7-JS 闭环</div>
+    <div class="ms tested"><i></i>M7-Python 影子</div>
+    <div class="ms tested"><i></i>M8 记忆中枢</div>
+    <div class="ms tested"><i></i>M9 技能固化</div>
+    <div class="ms queued"><i></i>G-02 观测台</div>
+    <div class="ms queued"><i></i>M10 存储管理</div>
+  </div>
+</section>
+
+<!-- ================= 隐私与安全 ================= -->
+<section class="wrap" id="privacy">
+  <h2 class="sec-title">隐私与安全 · 本地优先</h2>
+  <p class="sec-sub">记忆的每一步都设计为「宁可少做，不可做错」</p>
+  <div class="privacy">
+    <div class="card p-item"><div class="ico">🏠</div><b>全部本地</b><span>记忆是本机明文 Markdown，可读可改可备份，无云端同步</span></div>
+    <div class="card p-item"><div class="ico">🔒</div><b>fail-closed</b><span>身份/作用域/过期/纠正 任一门不过即拒绝，宁缺毋滥</span></div>
+    <div class="card p-item"><div class="ico">🕶️</div><b>隐私投影</b><span>审计与日志中会话/工作区均为不可逆哈希投影，无原文无绝对路径</span></div>
+    <div class="card p-item"><div class="ico">🧾</div><b>全程可审计</b><span>每次决策/注入/投递留痕，append-only 策略注册表</span></div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div>dsh-auto-memory · preview（_pre 命名空间）· 为 DeepSeek Harness 构建</div>
+    <div><a href="#">GitHub</a> · <a href="#">npm</a> · <a href="#">架构总览图</a> · <a href="#">契约文档</a></div>
+  </div>
+</footer>
+
+</body>
+</html>

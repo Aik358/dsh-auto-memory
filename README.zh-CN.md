@@ -1,259 +1,365 @@
 # dsh-auto-memory — DSH 自动记忆与人性化交互插件
 
 <p align="center">
-  <img width="820" alt="dsh-auto-memory 宣传图" src="docs/banner.jpg">
+  <a href="https://htmlpreview.github.io/?https://github.com/Aik358/dsh-auto-memory/blob/preview/docs/landing/index.html"><strong>🌐 宣传主页（功能全景 · 数据流 · 论文 · 截图）</strong></a>
 </p>
 
-DSH Web GUI 的缓存友好三层记忆引擎：精简自动注入、每轮 AI 自动沉淀、按需读取与跨工具记忆继承——并点缀以人性化细节：主动日历提醒、暖心 AI 问候、自己会写的每日日志。
+<p align="center">
+  <a href="docs/screenshots/promo/promo-1-hero.png"><img width="820" alt="dsh-auto-memory 主视觉：不用吩咐，她自己记得" src="docs/screenshots/promo/promo-1-hero.png"></a>
+</p>
 
-> **快速安装**：`cd ~/.dsh/profiles/web` → `pnpm add @a9i5k4/dsh-auto-memory` → 在该目录 `package.json` 的 `dsh.profile.bundles` 里追加 `"@a9i5k4/dsh-auto-memory"` → 重启 **dsh web**（侧边栏出现「记忆」入口）。完整步骤见 [安装](#安装npm-一键)；没有 pnpm 可用 `npm install @a9i5k4/dsh-auto-memory`。
+<p align="center">
+  <a href="docs/screenshots/promo/promo-1-hero.png"><img width="130" alt="主视觉" src="docs/screenshots/promo/promo-1-hero.png"></a>
+  <a href="docs/screenshots/promo/promo-2-tour.png"><img width="130" alt="欢迎向导" src="docs/screenshots/promo/promo-2-tour.png"></a>
+  <a href="docs/screenshots/promo/promo-3-recall.png"><img width="130" alt="唤起与固化" src="docs/screenshots/promo/promo-3-recall.png"></a>
+  <a href="docs/screenshots/promo/promo-4-unattended.png"><img width="130" alt="无人值守" src="docs/screenshots/promo/promo-4-unattended.png"></a>
+  <a href="docs/screenshots/promo/promo-5-external.png"><img width="130" alt="外部记忆继承" src="docs/screenshots/promo/promo-5-external.png"></a>
+  <a href="docs/screenshots/promo/promo-6-greeting.png"><img width="130" alt="定时问候" src="docs/screenshots/promo/promo-6-greeting.png"></a>
+</p>
+<p align="center"><sub>宣传图六幕 · 点击任意一张查看大图</sub></p>
 
-[English](README.md) | [中文版](README.zh-CN.md)
+<details>
+<summary><b>宣传图分幕浏览</b>（点击展开，逐幕翻看）</summary>
+
+#### 第一幕 · 主视觉 —— 不用吩咐，她自己记得
+
+<p align="center"><img width="720" alt="主视觉" src="docs/screenshots/promo/promo-1-hero.png"></p>
+
+#### 第二幕 · 欢迎向导 —— 每个功能，当场看懂、当场开关
+
+<p align="center"><img width="720" alt="欢迎向导" src="docs/screenshots/promo/promo-2-tour.png"></p>
+
+#### 第三幕 · 唤起与固化 —— 对话凝成技能，每一步有迹可循
+
+<p align="center"><img width="720" alt="唤起与固化" src="docs/screenshots/promo/promo-3-recall.png"></p>
+
+#### 第四幕 · 无人值守模式 —— 整夜安静跑，零寒暄，零打扰
+
+<p align="center"><img width="720" alt="无人值守" src="docs/screenshots/promo/promo-4-unattended.png"></p>
+
+#### 第五幕 · 外部记忆继承 —— 你的其他 AI，也在喂她记忆
+
+<p align="center"><img width="720" alt="外部记忆继承" src="docs/screenshots/promo/promo-5-external.png"></p>
+
+#### 第六幕 · 定时暖心问候 —— 让每一天都被记得
+
+<p align="center"><img width="720" alt="定时问候" src="docs/screenshots/promo/promo-6-greeting.png"></p>
+
+</details>
+
+<p align="center">
+  <b>中文</b> · <a href="README.md">English</a> · License BSD-3-Clause · <code>pnpm add @a9i5k4/dsh-auto-memory</code>
+</p>
+
+> **v0.1.30 大更新** — 全新「欢迎向导」：分步介绍所有功能、当场开关；Office/Fluent 式液态玻璃应用图标族；更新日志开场动画；无人值守模式面向长批处理任务。
+
+一个为 DeepSeek Harness Web GUI 打造的**主动联想记忆插件**：不依赖模型主动调用，记忆在对话进行时被情境自动唤回并注入下一环节——同时三层记忆自动沉淀、AI 问候与每日反思、日历提醒、外部 AI 记忆继承，以及面向生产环境的无人值守/批处理支持。
+
+**它解决的问题是**：AI 助手每次会话都从零开始，而现有的记忆方案都要求模型"记得去查"——调一次工具、发一次请求，忘了就没了。装上它之后，记忆的唤回不需要任何指令：Host 中间件持续观察对话情境，该想起的记忆自动走向模型；你的偏好、项目约定、昨天的进度、下周的截止日期，还有你回来时那声"欢迎回来"，全部自然发生。
 
 ---
 
-## 安装（NPM 一键）
+30 秒亮点
 
-> 前提：已安装 DeepSeek Harness（dsh）并至少启动过一次 `dsh web`。
+| | |
+|---|---|
+| **主动联想，零指令** | 记忆不靠模型调用——Host 观察情境自动唤回，经固定边界注入下一环节，前缀缓存友好 |
+| **三层记忆引擎** | 用户级规则 → 项目笔记 → 每日日志，注入+按需检索 |
+| **记忆自动沉淀** | 每轮对话结束由子代理静默判断去留，主题分组写入日志——你永远不需要记得"记一下" |
+| **唤起有据可查** | 每次激活决策带完整证据链，唤起回顾页可复核打分；技能由跨会话证据渐进固化 |
+| **主动式提醒** | AI 从对话中识别截止日期/约定，自动入日历并在后续会话中提醒 |
+| **一切皆开关** | 欢迎向导+设置页双重入口，每个功能独立开关（含无人值守模式） |
+| **外部记忆继承** | WorkBuddy / CodeBuddy / Claude Code / Codex 的历史记忆可扫描、导入、按源管理 |
+| **生产级卫生** | 写入门禁（乱码/复读/JSON 注入拦截）+ 脏 token 扫描 + 凭证永不进提示词 |
 
-在 **profile 目录**（`~/.dsh/profiles/web`）下执行：
+---
+
+## 欢迎向导（v0.1.30 新增）
+
+升级或首次安装后，插件会自动播放一段**分步欢迎向导**——这不是弹窗广告，而是功能总开关的集合地：
+
+<p align="center"><img width="720" alt="welcome tour" src="docs/screenshots/tour-welcome.png"></p>
+
+- **每步一枚 Office/Fluent 式液态玻璃应用图标**：注入青蓝、问候暖金、日历青绿、引擎紫蓝、雷达天青、完成珊瑚金——各配专属循环动效（铃摆动、日历翻页、雷达扫描、火花上升…）
+- **每项功能当场开关**：开关即写配置立即生效，不需要再进设置页确认
+- **语义引擎检测/下载内联**：三级检索引擎（词法 0GB 保底 → 内置语义 ~130MB → Python BGE-M3 进阶）在向导内自动检测、一键安装（SHA256 校验+推理自检）
+- **外部记忆实时扫描**：本机可读的 WorkBuddy / Claude Code / Codex 等来源直接列出，逐源勾选
+- **关不掉的困惑不存在**：中途关闭会先落到"完成提醒"步，告诉你每个功能在设置的哪个分区重新打开
+
+<p align="center"><img width="720" alt="tour core" src="docs/screenshots/tour-core.png"></p>
+
+升级用户的一次性触达：v0.1.30 起所有用户升级后都会自动播放一次完整向导，结束后自动接更新日志（可点击跳过）。之后可随时在 **设置 → 外观 → 欢迎向导 → ▶ 重看引导** 重新打开。
+
+---
+
+## 三层记忆体系
+
+| 层 | 位置 | 内容 |
+|---|---|---|
+| 用户级记忆 | `~/.dsh/memory/MEMORY.md` | 跨项目规则与偏好 |
+| 项目笔记 | `~/.dsh/memory/workspaces/{workspace}/MEMORY.md` | 项目约定与决策 |
+| 每日日志 | `~/.dsh/memory/workspaces/{workspace}/YYYY-MM-DD.md` | 追加式工作日志 |
+| 每日反思 | `…/reflections/YYYY-MM-DD.md` | 结构化复盘（成果/教训/下一步） |
+
+**注入策略**：静态纪律进 system prompt（字节级稳定，保前缀缓存命中）；动态记忆走运行时快照——只注入最近 1 天日志+反思摘要，其余全部按需经 `memory_read` / `memory_recall` 取回。凭证/密钥段**永远被过滤在提示词之外**。
+
+---
+
+## 功能全景
+
+### 主动联想 — 不用吩咐，她自己记得
+
+这是插件与其他记忆方案的根本区别：**记忆唤回不依赖模型主动调用**。市面上的记忆工具要么要模型记得调一次检索工具，要么要用户手动粘贴上下文——忘了调，记忆就等于不存在。本插件是 Host 侧的主动联想中间件：持续观察对话情境与运行事件，相关记忆在模型开口之前就被检索、决策、并经固定边界注入下一环节（已发请求不可原地改写，前缀缓存永不失效）。同时权限分立：语义决策与身份/授权/时序治理由两层各自负责，每次投递都有证据链。
+
+### 自动沉淀 — 记忆自己写自己
+
+每轮对话结束后，一个小型子代理静默评估本轮内容：有长期价值的主题分组写入今日日志（`## 主题（HH:MM）`+要点），长期决策晋升项目笔记，跨项目规则晋升用户级记忆，闲聊跳过，失败进队列每 5 分钟重试（15 秒心跳文件证明循环存活）。每日写入有预算与自动压缩（超限不拒写，AI 合并去重后写入）。
+
+### 唤起与固化 — 该出手时才出手
+
+联想式记忆唤起在对话链中检测回忆需求，命中即注入下一环节（不破坏前缀缓存）；高频流程固化为技能 checklist，匹配对话自动附上，跨会话验证后晋升（记忆中枢页审批，90 天未用自动归档可置顶）。**每一次"要不要打断你"的决策都能在「唤起回顾」页复核打分**（A 该激活 / P 只预取 / S 应抑制 / H 有害 / E 改目标），判定队列会汇总成政策提示。
+
+<p align="center"><img width="720" alt="refine" src="docs/screenshots/panel-refine.png"></p>
+
+### 无人值守模式 — 面向批处理任务
+
+长跑批处理/自动化流水线？设置 → 自动化提供**无人值守模式**与**夜间自动托管**（22:00-08:00 可调）。托管期间：不注入欢迎语/寒暄/行为指令、日历提醒静默、上下文保持稳定——模型专注干活，token 花在正事上。
+
+### AI 问候与每日反思
+
+按时段（晨/午/晚）生成提及你当日最重要工作的问候；暂离超过 1 小时回来，记忆面板自动打开并送上"欢迎回来"+近期工作摘要；每天第一次会话主动呈现前一日结构化反思。
+
+### 智能检索
+
+自然语言提问，AI 自动扩展关键词扫描全部记忆层，会话式回答并标注来源；支持跨工作区检索。
+
+### 日历 — AI 替你维护
+
+AI 从对话中识别截止日期/约定自动入日历（`calendar_add`），未完成事项注入后续会话直到完成；日视图 07:00-22:00 时间轴、地点/提醒字段、紧急度语义色。
+
+### 外部记忆继承
+
+WorkBuddy / CodeBuddy / Claude Code / Codex 的历史会话与记忆可扫描发现、按源导入（**只存路径指针，不复制内容**）、按源删除；导入侧+注入侧双重卫生闸门防外部脏数据混入。
+
+### 记忆卫生（生产级写入门禁）
+
+- 三个写入工具全部过 `sanitizeForWrite`：GBK 乱码（34 特征全表）、复读退化、连续重复行、外部 AI 画像 JSON 特征、base64 残留——全部拒写并给出中文回执
+- 设置 → 调试中心「扫描脏 token」：一键扫描用户级/项目/日志/反思，按行区间报告问题（只报位置不含正文）
+- 追加 8000 字/条、全量改写 20 万字上限；追加前与文件尾部近 60 行做去重
+
+### 记忆生命周期（30 天蒸馏与召回边界）
+
+`memory_maintain_pre` 把 30 天前的每日日志交给 AI 蒸馏：只提炼有跨会话长期价值的要点（技术决策/架构约定/偏好/踩坑规则），写入项目笔记；原文保底归档到 `archive/`（AI 不可用时降级为原样归档，绝不丢信息）。
+
+需要知道的召回边界：**procedure skills（技能固化）与用户级/项目笔记永远不在蒸馏范围**——技能固化存在独立的记忆中枢存储，不受影响；蒸馏只处理日期命名的每日日志。归档后的原文不在词法/语义检索的常规扫描范围内（检索范围=项目笔记+活跃日志+反思+用户级记忆），但蒸馏要点已进入项目笔记、随注入常驻。理解为：蒸馏=主动把"过程流水"换成"可复用结论"的取舍。
+
+### 工作区全景与跨区检索
+
+面板「工作区」页签自动生成工作区关系图（AI 归纳主题与跨区关联，可拖拽/缩放/点卡片看详情）；`memory_recall_pre` 天然跨工作区——检索结果标注来源工作区，其他项目的日志、笔记同样可达。
+
+### AI 发散固化（memory_consolidate）
+
+让 AI 通读今日/近期日志，发散提炼值得长期固化的要点并写入项目笔记——与自动沉淀互补：自动沉淀管"每轮结束记流水"，consolidate 管"阶段性回头看什么值得升格"。
+
+---
+
+## 工程内核（保持克制的设计）
+
+- **零运行时依赖**：Node 内建模块之外无任何依赖
+- **前缀缓存友好**：提示词字节级稳定，DeepSeek 前缀缓存持续命中，不反复重编码历史
+- **限额 AI**：自动沉淀每日 ≤8 次带冷却，记忆有用但不烧预算
+- **集中式存储**：全部工作区记忆收在 `~/.dsh/memory/workspaces/` 一个根下，任意会话可读
+- **30 天蒸馏**：旧日志由 AI 蒸馏进项目笔记，原文归档不丢失
+
+---
+
+## 界面速览
+
+### 记忆面板 · 概览（暂离问候 + AI 时段总结）
+
+<img width="480" alt="overview" src="docs/screenshots/panel-overview.png">
+
+### 记忆中枢 · 三层记忆店与技能晋升审批
+
+<img width="480" alt="hub" src="docs/screenshots/panel-hub.png">
+
+### 唤起回顾 · 每次激活决策可打分
+
+<img width="720" alt="refine" src="docs/screenshots/panel-refine.png">
+
+### 欢迎向导 · 功能开关与引擎检测
+
+<img width="720" alt="tour" src="docs/screenshots/tour-toggles.png">
+
+<details>
+<summary><b>更多截图</b>（点击展开）</summary>
+
+### 外部记忆扫描（欢迎向导内）
+
+<img width="720" alt="external scan" src="docs/screenshots/tour-external.png">
+
+### 连接其他 AI 工具
+
+<img width="480" alt="connect" src="docs/screenshots/connect-zh.png">
+
+### 日历视图
+
+<img width="480" alt="calendar" src="docs/screenshots/calendar-zh.png">
+
+### 工作区关系图
+
+<img width="480" alt="workspace map" src="docs/screenshots/workspace-map-zh.png">
+
+### 设置页
+
+<img width="480" alt="settings" src="docs/screenshots/settings-zh.png">
+<img width="480" alt="settings 2" src="docs/screenshots/settings-2-zh.png">
+
+</details>
+
+---
+
+## 安装（一条命令）
+
+> 前置：安装 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 并至少启动过一次 `dsh web`。
+
+在 **profile 目录**（`~/.dsh/profiles/web`）执行：
 
 ```bash
 cd ~/.dsh/profiles/web
 pnpm add @a9i5k4/dsh-auto-memory
 ```
 
-然后编辑该目录下的 `package.json`，在 `dsh.profile.bundles` 数组里追加：
+然后编辑同目录 `package.json`，在 `dsh.profile.bundles` 数组追加：
 
 ```json
 "@a9i5k4/dsh-auto-memory"
 ```
 
-保存后**重启 dsh web**，插件即生效（侧边栏出现「记忆」入口）。
+重启 **dsh web** 生效（侧边栏出现「记忆」入口）。
 
-> 没有 pnpm？用 npm 也行：`npm install @a9i5k4/dsh-auto-memory`
+> 没有 pnpm？`npm install @a9i5k4/dsh-auto-memory` 同样可用。
+> pnpm v11 限制安装发布不足 1 天的版本：当天发布想立即更新，在 profile 目录 `pnpm-workspace.yaml` 加 `minimumReleaseAge: 0`，或装显式版本。
 
-## 更新（检查与升级）
+### AI 时代安装法
 
-插件就是普通的 npm 包，更新同样是在 profile 目录里一条命令：
-
-```bash
-cd ~/.dsh/profiles/web
-pnpm up @a9i5k4/dsh-auto-memory   # 或: npm install @a9i5k4/dsh-auto-memory@latest
-```
-
-然后**重启 dsh web** 生效。
-
-设置 → 自动记忆 页面有「检查更新」按钮，会拿你当前安装的版本和 npm registry 上的最新版对比（有新版时直接显示更新命令）。
-
----
-
-## AI 时代安装（把这句话直接丢给 AI）
-
-> 现在是 AI 时代，你可以直接把下面这句话复制给你的 AI 助手（DeepSeek / Claude / Codex 等），它会帮你完成安装：
+复制下面这段发给你正在用的 AI 助手即可：
 
 ```text
-请在 DeepSeek Harness 的 web profile 目录 ~/.dsh/profiles/web 下安装 npm 包
-@a9i5k4/dsh-auto-memory（执行 pnpm add @a9i5k4/dsh-auto-memory 或 npm install），
-然后在 package.json 的 dsh.profile.bundles 数组追加 "@a9i5k4/dsh-auto-memory"，
-最后重启 dsh web 使插件生效。
+在 DeepSeek Harness web profile 目录 ~/.dsh/profiles/web 安装 npm 包
+@a9i5k4/dsh-auto-memory（pnpm add 或 npm install），
+把 "@a9i5k4/dsh-auto-memory" 追加到 package.json 的 dsh.profile.bundles 数组，
+然后重启 dsh web 激活插件。
 ```
 
----
+### 更新
 
-## 主动懂你的伙伴
+```bash
+cd ~/.dsh/profiles/web && pnpm up @a9i5k4/dsh-auto-memory
+```
 
-自动记忆想让你感觉：它不像一个数据库，而像一个了解你的助手——
-
-- **主动提醒** — AI 在对话里发现 deadline、约定或承诺时，自动写进日历，并在之后的会话中赶在时间到达前提醒你（`calendar_add` / `calendar_done` / `calendar_remove`）。
-- **暖心问候** — 每个时段（早上 / 下午 / 晚上）都有 AI 写的问候，还会提起你今天最重要的工作；离开超过一小时回来，它会说「欢迎回来」并帮你补上这段时间发生了什么。
-- **它自己写日志** — 每轮对话结束，一个小型子代理悄悄判断什么值得记，按主题把条目追加进今日日志；长期决策升格到项目笔记、跨项目规则升格到用户级记忆。你永远不用记得去记录。
-- **每日反思** — 结构化记录成果 / 教训 / 下一步，想回顾时可以看看一天到底过得怎么样。
-- **有人情味的日历** — 紧急程度用语义色区分，07:00-22:00 当天时间轴，支持地点与提醒字段；AI 从上下文帮你维护，而不是让你去填表单。
-- **记忆继承** — WorkBuddy / CodeBuddy / Claude Code / Codex 里积累的记忆可被发现并导入，插件接着你其他 AI 工具留下的进度继续。
-
-### 底层工程 — 技术默默服务，不打扰你
-
-- **前缀缓存友好** — 静态规则在系统提示词里保持字节级稳定，动态记忆走运行时快照，DeepSeek 前缀缓存持续命中（不会反复重编码你的全部历史）。
-- **注入精简、token 成本低** — 只注入最近 1 天日志 + 反思精华，其余通过 `memory_read` / `memory_recall` 按需读取。
-- **AI 调用限频** — 自动沉淀每天最多 8 次、间隔可配置（非工作时间自动翻倍），记忆有用又不烧预算。
-- **凭据不进 prompt** — 敏感段落（令牌 / 密钥 / 凭据）从注入中过滤，文件里安全保留。
-- **跨工作区与跨工具** — 集中式存储任何会话可读；WorkBuddy / CodeBuddy / Claude Code / Codex 的记忆可发现并导入。
-
-## 功能
-
-### 三层记忆
-
-| 层 | 位置 | 说明 |
-|---|---|---|
-| 用户级记忆 | `~/.dsh/memory/MEMORY.md` | 跨项目规则/偏好（用户明确要求时写） |
-| 项目笔记 | `~/.dsh/memory/workspaces/{工作区}/MEMORY.md` | 项目长期约定、决策、架构要点（集中式） |
-| 每日日志 | `~/.dsh/memory/workspaces/{工作区}/YYYY-MM-DD.md` | append-only 工作日志（集中式） |
-| 反思 | `~/.dsh/memory/workspaces/{工作区}/reflections/YYYY-MM-DD.md` | 每日反思（后台结构化积累） |
-
-> **集中式存储（WorkBuddy 式）**：所有工作区的记忆统一存放在一个根目录 `~/.dsh/memory/workspaces/` 下，每工作区一个子目录——任何模型、任何会话都能通过注入 + 跨工作区 `memory_recall` 读取。旧版分散在各工作区 `.dsh-memory/` 的记忆会在升级后首次运行时自动迁移（旧副本保留不删）。
-
-- **自动注入（放在系统提示词末尾）**：每次组装系统提示词时注入 `<memory_system>` 块（用户规则 + 项目笔记 + 反思精华 + 最近 1 天日志尾部 + 外部记忆路径 + 未完成日历事项 + 写入纪律），并置于提示词**最末尾**——模型在回复前最后读到记忆纪律，遵循度更高
-- **注入精简、细节按需（v0.1.24）**：注入保持轻量——只含最近 1 天日志、反思「成果回顾」精华、外部记忆绝对路径（不再整段注入）；需要完整日志/反思/记忆文件时用 `memory_read` 工具按需读取；**敏感段落（凭据/令牌/密钥）从注入中过滤**（文件保留，不进 prompt）
-- **记忆操作可见**：更新/检索记忆时，AI 会在对话正文中明文说明（如"已把 X 记入今日日志""我查了记忆,发现…"），不藏在工具调用里
-
-### 每轮自动沉淀 — 记忆自己写自己（v0.1.9）
-
-每轮对话结束时自动评估本轮内容（经小型 subagent 判断+提炼），值得记的自动写入，无需你手动调 memory_log，也不依赖模型记得写：
-
-- **今日日志**自动追加 `- 21:03 [自动沉淀] …` 条目
-- **长期价值自动升格**：项目决策/架构 → 项目笔记（带 `## YYYY-MM-DD` 日期标题）；跨项目规则 → 用户级记忆
-- **寒暄轮自动跳过**（内容门槛 `autoConsolidateMinChars`）；按 turn 去重，每轮只写一次；子代理轮次不参与
-- **GUI 有 Agent 参与痕迹**：概览页显示"今日已自动沉淀 N 条要点（最近 HH:MM）"；面板打开即刷新、打开期间每 30 秒自动重拉、⟳ 按钮手动刷新
-- **`memory_consolidate` 工具**：AI 读最近日志发散提炼，把有长期价值的决策/架构/用户偏好固化进 MEMORY.md（"做梦式"固化）
-- 可在 `~/.dsh/dsh-auto-memory.json` 配置：`autoConsolidate`（默认开）、`autoConsolidateMinChars`（默认 240）、`autoConsolidateCooldownMinutes`（默认 30，22:00-08:00 自动翻倍）、`autoConsolidateDailyMax`（默认 8）——全部可在设置页「自动化」分组调整
-
-### AI 时段问候与三级抽屉（概览页，v0.1.9）
-
-打开记忆面板第一眼看到的是 **AI 生成**的生活化问候，不是模板、不是严肃的技术信息：
-
-- **AI 写问候**：subagent 按当前时段（早上/上午/中午/下午/晚上）写一句温暖随口的问候，自然提起今天最重要的 1-2 件工作；每天每时段生成一次并缓存到 `.dsh-memory/greetings/`，不重复消耗 API
-- **抽屉标题就是 AI 总结**："今日下午 / 今日晚上" 的大窗口标题替换为 AI 总结的原文（如"下午这段你干得真不少呢,最能看到成果的就是 dsh-auto-memory 这一条线…"）
-- **三级抽屉结构**：
-  - 第一层：时段抽屉，标题即 AI 总结
-  - 第二层：拉开后是若干小抽屉——AI 归纳的每项工作（带细点数）
-  - 第三层：展开某项工作，阅读其细点
-- **总结有缓存**：结构化结果存 `.dsh-memory/summaries/`；打开面板读缓存（离线可看、不重复生成）；⟳ 刷新键或暂离超 1 小时回来才强制重新生成；每份总结显示生成时间
-- **智能时机**：离开超过 1 小时（下班/暂离）再打开，自动显示"欢迎回来"并列出期间的完成事项
-- **每日反思**：后台保留结构化反思（成果/教训/要点），前台只有轻松问候
-
-### 智能检索（检索页，v0.1.9）
-
-检索页在「检索」旁新增「**智能检索**」按钮：
-
-- AI 把你的自然语言查询扩散成 3-6 个关键词（如"上次发布 npm 踩的坑" → 发布 / 踩坑 / GitHub / npm / 推送）
-- 用这些关键词扫描三层记忆 + 反思
-- AI 再**综合成一段自然语言回答**，注明每条信息来自哪份记忆（日志日期/项目笔记/用户级），**绝不编造记忆里没有的事实**
-- 回答下方列出关键词与原始命中明细（来源 + 原文）
-
-### 日历视图（四象限）
-
-「日历」页签（液态玻璃风格月视图）：
-
-- 月视图网格，今日高亮，点击任意日期添加事项
-- **四象限色标**：重要紧急（红）/ 重要不紧急（蓝）/ 紧急不重要（橙）/ 不重要不紧急（灰）
-- 点条目切换完成状态，再点删除；图例 + 星期头
-- **跨对话持久**：数据存用户级 `~/.dsh/memory/CALENDAR.md`，所有工作区共享，重装 DSH 不丢
-- **AI 主动维护**：AI 会从对话中提取 deadline、约定时间等自动写入日历（`calendar_add` / `calendar_list` / `calendar_done` / `calendar_remove`），并在正文转述；未完成事项注入每次会话的系统提示词
-
-### Agent 工具
-
-`memory_log` / `memory_note` / `memory_user` / `memory_recall` / `memory_external` / `memory_maintain` / `memory_status` / `memory_reflect` / `memory_consolidate` / `calendar_add` / `calendar_list` / `calendar_done` / `calendar_remove`
-
-### 界面
-
-- 侧边栏「记忆」入口 → 浮层面板（概览/日志/笔记/反思/接续/日历/检索）
-- 设置页（设置 → 自动记忆）：存储位置、注入预算、反思风格、界面语言（中文 / English）、**界面字号（小/标准/大/特大，默认大）**——切换立即生效，无需保存
-- **外部记忆继承**：接入其他 AI 工具（CodeBuddy / Claude Code / Codex / 项目约定文件）积累的记忆
-
----
-
-## 界面截图
-
-以下都是插件在 DSH Web GUI 中的真实运行截图（当前为中文界面；英文界面截图稍后补充）。
-
-### 记忆面板概览 — 暂离问候、AI 总结等
-
-<img width="480" alt="记忆面板概览" src="docs/screenshots/overview-zh.png">
-
-### 接续 — 从其他 AI Agent 提取全局记忆与历史会话
-
-<img width="480" alt="接续页签" src="docs/screenshots/connect-zh.png">
-
-### 日历 — AI 根据上下文自动添加事项、切换状态、标记完成
-
-<img width="480" alt="日历页签" src="docs/screenshots/calendar-zh.png">
-
-### 工作区导图 — 自动生成的以工作区为中心的跨工作区记忆导图
-
-<img width="480" alt="工作区记忆导图" src="docs/screenshots/workspace-map-zh.png">
-
-### 设置 — 高度自定义，可操作绝大部分技术细节
-
-<img width="480" alt="自动记忆设置" src="docs/screenshots/settings-zh.png">
-<img width="480" alt="自动记忆设置(续)" src="docs/screenshots/settings-2-zh.png">
-
-## 截图之外
-
-- **每轮自动沉淀**：每轮对话结束由小代理自动评估，按主题分组写进今日日志（`## 主题（HH:MM）` + 要点列表）——常规工作不需要手动 memory_log。有长期价值的内容自动升格项目笔记 / 用户级记忆；寒暄轮跳过；AI 失败入队，每 5 分钟重试（15 秒心跳文件证明轮询存活）。
-- **智能检索**：自然语言提问，AI 扩成关键词扫描全部记忆层，再综合成带出处的自然语言回答。
-- **日历与当天时间轴（v0.1.24）**：点击日期打开 07:00-22:00 时间轴，事件按时间槽落位；支持地点/提醒/补充说明；AI 主动提取 deadline 用 `calendar_add` 写入、`calendar_done`/`calendar_remove` 维护。
-- **工作区思维导图（v0.1.24）**：AI 生成工作区/主题/跨工作区关联图，支持拖动画布、滑块缩放、点击卡片看摘要。
-- **记忆面板 UI（v0.1.24）**：液态玻璃面板 + 全站丝滑动效——模块箭头滚动条、抽屉展开/收起过渡、设置页浮动保存栏（未保存高亮）。
-- **外部记忆管理（v0.1.24）**：按来源查看/接入/移除——已接入显示 ✓、按目标（笔记/用户级）独立删除；内容按需读取，不再整段注入。
-- **日历提醒**：未完成事项注入之后每次会话的系统提示词——AI 不用你提醒就会主动提及。
-- **一键更新**：设置页对比本地版本与 npm registry 最新版；registry 安装的用户可直接「一键更新」（后台自动跑 pnpm/npm），重启后生效。
+设置 → 自动记忆页的「检查更新」按钮可比对 npm registry 最新版；registry 安装支持一键更新。
 
 ---
 
 ## 配置
 
-默认值（JSON 文件 `~/.dsh/dsh-auto-memory.json`）：
+配置文件 `~/.dsh/dsh-auto-memory.json`（GUI 设置页可视化调整，含中英文界面与面板字号）：
 
 ```json
 {
   "userMemoryDir": "~/.dsh/memory",
-  "projectMemoryDir": ".dsh-memory",
+  "memoryRoot": "~/.dsh/memory/workspaces",
   "injectEnabled": true,
   "injectBudgetChars": 2400,
   "recentDaysInjected": 1,
   "reflectEnabled": true,
-  "reflectStyle": "auto",
-  "locale": "zh",
   "autoConsolidate": true,
-  "autoConsolidateMinChars": 240,
   "autoConsolidateCooldownMinutes": 30,
   "autoConsolidateDailyMax": 8,
-  "externalInjectionChars": 1400,
-  "memoryRoot": "~/.dsh/memory/workspaces",
+  "unattendedMode": false,
+  "unattendedAuto": false,
+  "unattendedAutoHours": ["22:00-08:00"],
+  "memoryHubEnabled": true,
+  "externalSources": { "workbuddy-user": true, "claude-global": true },
   "dayBoundaryMinutes": 450
 }
 ```
 
-可在 GUI（设置 → 自动记忆）中调整，包括界面语言（zh / en）、界面字号与日界。
-
-### v0.1.27 基础加固（记忆卫生闸门 — 防外部脏内容污染）
-
-- **三个写入工具接入写闸门**：`memory_log_dev` / `memory_note_dev` / `memory_user_dev` 写入前先过 `sanitizeForWrite`——疑似乱码（GBK 错误编码往返产物）、复读退化（单词/单字循环，标点分隔也识别）、连续重复行（≥3）一律拒绝并回执原因；追加（append）单条上限 8000 字、整篇重写（replace）上限 20 万字；追加时与文件尾部近 60 行做复读去重（日志行的 `- HH:MM` 前缀不影响判定）。
-- **卫生函数族修复**：乱码特征表移除 `进行中` 假阳性（补真实乱码形态 `杩涜涓`）、乱码计数改为全局匹配（此前永远只计 1 处，长文本脏内容可绕过阈值）、复读检测支持标点分隔、重复行检测由空行打断（避免误伤隔段相同的短行）。
-- **外部记忆纯链接导入**：`memory_external_dev` 的 import 只落源文件路径指针，不再整段写入内容——防止其他 AI 工具（WorkBuddy/CodeBuddy/Claude Code/Codex）记忆中的脏内容经导入混入本地记忆。
-- **注入端清洗与语体纪律**：注入前自动剔除乱码行/代码块/复读行；注入块新增「记忆定位—读法」说明与语体纪律——写记忆一律第三人称客观陈述，禁止第一人称思考腔与过程复述。
-
-### v0.1.28 脏 token 检查器（prion-scan 整合 — 根治「模型无故降级」这一类问题）
-
-- **写入闸门新增 raw JSON envelope 与 base64 残骸拒写**：在乱码/复读/重复行之外，闸门还拒绝命中外部 AI 工具画像 JSON 签名（`memoryBlock` / `"uid":` / `updatedAt` / `"role":"... "`）与 base64 残骸行——外部画像再也无法整段混入本地记忆。
-- **乱码特征表补全至 34 项（与 prion-scan.mjs 逐字一致）**：覆盖 GBK 错误编码往返的全部真实残骸形态，能精确抓到这一类「垃圾 token」。
-- **新增「扫描脏 token」（设置页 → 调试中心）**：一键 prion 式扫描用户级记忆 / 项目笔记 / 今日日志 / 反思——按文件、按行区间返回 mojibake / raw JSON envelope / 超长行 >500 / base64 / 重复内容行、重复 ## 标题报告；**只给位置不含正文**，发现残骸不用读它也能定位。
-
-### v0.1.9 加固（预算 / 日界 / 目录选择器）
-
-- **每日写入预算 + 超限自动压缩**：用户级记忆 ≤4000 字/天、项目笔记 ≤3000 字/天（所有会话共享一天额度，日界重置）。超限不拒绝写入——框架先把「今天之前」的旧内容交给 AI 压缩（合并重复、删除过期、保留硬信息）腾出空间再写；AI 不可用时把最早段落归档到 `archived-user.md` / `archive/notes-archived.md`，信息不丢。压缩 10 分钟节流。
-- **日界（凌晨的活儿归昨晚）**：`dayBoundaryMinutes`（默认 450 = 早上 7:30）。日界之前的活儿记入前一天日志，前一天的每日反思也要等过了日界才开始——凌晨不再一过午夜就催「昨天干了什么」。
-- **系统原生文件夹选择器**：记忆根目录旁的「浏览…」按钮直接弹系统的文件夹选择器（经 DSH directory-picker 原生后端）；无原生选择器时自动回退内嵌浏览。更换根目录时自动把已有工作区记忆迁移到新位置（旧文件保留），所有路径变量在下一次刷新时跟随新配置。
-- **30 天蒸馏**：`memory_maintain` 把 30 天前的旧日志交给 AI 提炼进项目笔记，原文保底归档到 `archive/`，并从活跃日志列表移除。
-- **首轮注入保障**：`pre-step` 钩子在第一步放行前等待记忆状态刷新，模型从第一个 token 起就能看到记忆（此前异步加载可能让首轮注入为空）。
-- **每步带时间戳的提醒**：注入的纪律块携带实时 `HH:MM:SS` 时间戳，每次组装提示词都刷新；另有 15 秒心跳文件证明后台轮询存活。
+> 完整键位见设置页——每个开关都有中文说明；欢迎向导里的每个开关与设置页一一对应。
 
 ---
 
 ## 结构
 
-- `lib/index.js` — Host 半：引擎、注入、工具、路由（零运行时依赖，仅 node 内置模块）
-- `lib/client.js` — 浏览器半：记忆面板（含日历视图）+ 设置页（内置中英双语）
-- `cordis.patch.yml` — 插件行（`auto-memory`）
+- `lib/index.js` — Host 半：引擎、注入、工具、路由（零运行时依赖）
+- `lib/client.js` — Browser 半：记忆面板（含日历/关系图）+ 设置页 + 欢迎向导（内置中英 i18n）
+- `python/` — 可选 Python 语义 sidecar（BGE-M3 int8，进阶档）
+- `cordis.patch.yml` — 插件注册行
+
+## 系统架构
+
+全部里程碑已实现并 live verified。完整交互式架构图见 [docs/proactive-associative-memory-system-map.html](docs/proactive-associative-memory-system-map.html)，核心分层如下：
+
+```
+DeepSeek Harness (Node, 127.0.0.1:3080)
+├─ JS 记忆核心（lib/*_pre.js，零运行时依赖）
+│   M1 会话隔离 · M2 ContextObserver 投影
+│   M3 记忆锚定（anchored records + sidecar 身份）
+│   M4 语料适配 + 影子检索宿主（evidence store）
+│   M5 上下文/证据桥（envelope · coverage · cite/correction）
+│   M6 激活收件箱（校验→offer→claim→参考尾注渲染→delivered/seen）
+│   lexical_pre_v2 词法回退检索（BM25 + CJK 2gram，0GB 永远可用）
+│   C2 内置语义层（e5-small q8 ~130MB，默认档）
+└─ Python sidecar M7（可选，lazy spawn 子进程）
+    worker_semantic_pre_v1.py
+    ├─ index_sync：JS 授权分页建库（digest 校验，scope 分组）
+    ├─ dense：BGE-M3 int8 + para-512 分块 + 余弦检索（R@5 0.925）
+    ├─ hybrid：稠密 0.7 + 词法 0.3 融合
+    └─ fv2 激活决策：两车道 + 硬门禁（echo/correction/stale/scope）
+```
+
+**权限分立**：Python（语义层）决定"想起什么、何时建议"；JS（权威层）决定身份、授权、时序、投递——Python 不创建证据，也不直接注入。数据流：`context_push → M5 envelope → 决策 → M6 固定边界注入 → delivered/seen 证据回流`。
+
+### 技术论文与设计文献
+
+本项目的设计不是拍脑袋——每项算法结论都来自可复现实验，并冻结为工程决策台账：
+
+| 文献 | 内容 |
+|---|---|
+| [多语言嵌入式检索选型研究](docs/M7-RESEARCH-PAPER.md) | 3 模型 × 5 分块策略 × 6 检索通道 ≈ 90 评测单元；BGE-M3 全面领先，冻结为 D1–D11 工程决策 |
+| [激活策略 v2：回声陷阱的发现、度量与修正](docs/M7-ACTIVATION-V2-PAPER.md) | 语义相关 ≠ 唤起必要的激活策略技术报告 + 双轨部署架构（§7） |
+| [嵌入基准报告](docs/M7-EMBEDDING-BENCHMARK.md) | 模型/分块/融合的冻结依据：bge-m3 + para-512-noov + 加权融合 |
+| [算法冻结决策 D1–D11](docs/M7-ALGORITHM-DECISION.md) | 全部研究结论到生产实现的决策台账 |
+| [Held-out 人工金标验收](docs/M7-ACTIVATION-V2-HOLDEDOUT-EVAL.md) | 67 条人工标注打分：actPrecision 0.917 / 有害注入 0 / echo 层 7/7 |
+| [Python Sidecar 完整契约](docs/PYTHON-SIDECAR-CONTRACT.md) | 协议/生命周期/权威边界/各里程碑回归证据 |
+
+论文由自主工程 Agent（ZCode / GLM）撰写，全部结论在人类审核下冻结进生产实现。
+
+## 已知限制
+
+- 记忆文件为纯文本 Markdown；除非明确要求，不存储密钥
+- `memory_recall` 会话搜索依赖已部署的 session-query 索引，缺失时仅本地检索可用
+- 插件增减需要重启 dsh 生效
 
 ---
 
-## 限制
+## 社区致谢
 
-- 记忆文件为明文 Markdown；不存密钥，除非用户明确要求。
-- `memory_recall` 的历史会话检索依赖部署的 session-query 索引，未启用时仅本地检索。
-- 插件集变更需重启 dsh 生效。
+- [@ProperSAMA](https://github.com/ProperSAMA) — DSH Desktop 增强模式（透明/Mica 材质）面板可读性修复 + 入口按钮防遮挡与外点/Esc 关闭（[PR #12](https://github.com/Aik358/dsh-auto-memory/pull/12)）
+- [@nkh0472](https://github.com/nkh0472) — 无人值守/批处理场景加固反馈，推动了欢迎向导与功能开关化（[Issue #10](https://github.com/Aik358/dsh-auto-memory/issues/10)）
+
+---
+
+## 制作署名
+
+本项目由人与 AI 协作完成。除上述工程与社区贡献外：
+
+- **Aik358** — 项目所有者：产品方向、架构与工程决策。
+- **ZCode（GLM，智谱 Z.ai）** — 自主工程 Agent：M 系列语义引擎实现、两篇基准研究论文（[M7 检索选型研究](docs/M7-RESEARCH-PAPER.md) / [激活策略 v2 技术报告](docs/M7-ACTIVATION-V2-PAPER.md)）、全套回归测试、宣传网页设计与构建。
+- **Kimi K3（月之暗面）** — 前端 Agent：参与 v0.1.30 欢迎向导界面资产与视觉验收。
+
+AI Agent 作为研究论文作者与部分实现作者署名，全程在人类审核与指导下工作。
 
 ---
 

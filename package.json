@@ -1,7 +1,7 @@
 {
   "name": "@a9i5k4/dsh-auto-memory",
-  "description": "DSH 自动记忆插件:三层记忆(用户级/项目笔记/每日日志)自动注入与检索、每轮对话自动沉淀、每日反思、可视化面板与设置页,支持继承其他 AI 工具的记忆。",
-  "version": "0.1.29",
+  "description": "主动联想记忆插件:记忆不靠模型调用,自己被唤回——Host 观察情境,NLP+向量化双轨检索,固定边界注入不破坏前缀缓存。三层记忆自动沉淀、欢迎向导、唤起回顾、无人值守、AI 问候与反思、日历、跨工具记忆继承。Proactive associative memory for DSH: zero-call recall, three-layer auto-consolidation, welcome tour, unattended mode.",
+  "version": "0.1.30",
   "type": "module",
   "main": "lib/index.js",
   "exports": {
