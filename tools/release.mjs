@@ -48,8 +48,9 @@ const copyDirExcluding = (src, dst, excludeRe) => {
   }
 }
 copyDirExcluding(path.join(DEV, 'lib'), path.join(REL, 'lib'), /\.bak/)
+copyDirExcluding(path.join(DEV, 'tests'), path.join(REL, 'tests'), /node_modules/)
 copyDirExcluding(path.join(DEV, 'python'), path.join(REL, 'python'), /(__pycache__|\.pyc|bench)/)
-for (const entry of ['cordis.patch.yml', 'README.md', 'README.zh-CN.md', 'LICENSE', 'notices.json', 'smoke-test.mjs', 'smoke-test-external.mjs', 'smoke-test-reflect.mjs', 'smoke-test-context-observer.mjs', 'docs', 'social-preview.html']) {
+for (const entry of ['cordis.patch.yml', 'README.md', 'README.zh-CN.md', 'LICENSE', 'notices.json', 'docs', 'social-preview.html']) {
   const s = path.join(DEV, entry), d = path.join(REL, entry)
   if (existsSync(s)) cpSync(s, d, { recursive: true })
 }
@@ -140,6 +141,9 @@ const transforms = [
   ['worker_semantic_pre_v1', 'worker_semantic_v1'],
   ['worker_pre_v1', 'worker_v1'],
   ['bge-m3-onnx-int8-pre-v1', 'bge-m3-onnx-int8-v1'],
+  ['js_semantic_tier_pre_v1', 'js_semantic_tier_v1'],
+  ['anc_pre_', 'anc_'],
+  // staging smoke 引用的 artifacts 相对路径上跳一级(moved into tests/smoke)
   // 事件/候选 id 前缀(obs_pre_/cand_pre_/... → 裸名)
   ['act_pre_', 'act_'],
   // lib 模块文件名的文档性引用(python 注释/决策记录里 lib/xxx-pre.js → lib/xxx.js)
@@ -190,13 +194,23 @@ const libRenameMap = libModuleRenames.map((f) => [f, f.replace(/-pre\.js$/, '.js
 for (const [from, to] of libRenameMap) {
   const fp = path.join(REL, 'lib', from)
   if (existsSync(fp)) {
-    // 先改写全部引用(相对导入 './xxx-pre.js'),再重命名文件
+    // 先改写全部引用(lib 相对导入 + tests/smoke 导入/文档引用),再重命名文件
     for (const f of readdirSync(path.join(REL, 'lib'))) {
       if (!f.endsWith('.js')) continue
       const p2 = path.join(REL, 'lib', f)
       const t = readFileSync(p2, 'utf8')
       const nt = t.split(from).join(to)
       if (nt !== t) writeFileSync(p2, nt)
+    }
+    const smDir = path.join(REL, 'tests', 'smoke')
+    if (existsSync(smDir)) {
+      for (const f of readdirSync(smDir)) {
+        if (!f.endsWith('.mjs')) continue
+        const p2 = path.join(smDir, f)
+        const t = readFileSync(p2, 'utf8')
+        const nt = t.split(from).join(to)
+        if (nt !== t) writeFileSync(p2, nt)
+      }
     }
     cpSync(fp, path.join(REL, 'lib', to))
     rmSync(fp)
@@ -240,9 +254,14 @@ if (existsSync(path.join(REL, 'python'))) {
 }
 let totalReplaced = 0
 // 转换面 = 两个主文件 + 4 个根 smoke + 全部 lib 模块 + 策略工件 + 全部 python 文件
-const transformFiles = ['lib/index.js', 'lib/client.js', 'smoke-test.mjs', 'smoke-test-external.mjs', 'smoke-test-reflect.mjs', 'smoke-test-context-observer.mjs']
+const transformFiles = ['lib/index.js', 'lib/client.js']
 for (const f of readdirSync(path.join(REL, 'lib'))) {
   if (f.endsWith('.js')) transformFiles.push('lib/' + f)
+}
+if (existsSync(path.join(REL, 'tests', 'smoke'))) {
+  for (const f of readdirSync(path.join(REL, 'tests', 'smoke'))) {
+    if (f.endsWith('.mjs')) transformFiles.push('tests/smoke/' + f)
+  }
 }
 const relPolDir = path.join(REL, 'lib', 'policies')
 if (existsSync(relPolDir)) {
@@ -338,9 +357,11 @@ if (existsSync(path.join(REL, 'python'))) {
   }
 }
 // staging 内的 smoke 副本也参与转换,必须一并扫描(不能扫 DEV 源文件——源码本就含 _pre)
-for (const s of ['smoke-test.mjs', 'smoke-test-external.mjs', 'smoke-test-reflect.mjs', 'smoke-test-context-observer.mjs']) {
-  const p = path.join(REL, s)
-  if (existsSync(p)) scanTargets.push(p)
+if (existsSync(path.join(REL, 'tests', 'smoke'))) {
+  for (const f of readdirSync(path.join(REL, 'tests', 'smoke'))) {
+    const s = 'tests/smoke/' + f
+    if (s.endsWith('.mjs')) scanTargets.push(path.join(REL, s))
+  }
 }
 const seen = new Set()
 for (const f of scanTargets) {
