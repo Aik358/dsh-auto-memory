@@ -43,5 +43,8 @@
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.0.1"
   },
+  "optionalDependencies": {
+    "@huggingface/transformers": "^3.7.6"
+  },
   "license": "BSD-3-Clause"
 }

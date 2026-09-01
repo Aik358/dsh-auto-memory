@@ -321,6 +321,7 @@ const relPkg = {
   keywords: ['dsh', 'deepseek-harness', 'memory', 'plugin', 'auto-memory'],
   repository: { type: 'git', url: 'git+https://github.com/Aik358/dsh-auto-memory.git' },
   peerDependencies: { '@deepseek-ai/cordis': '^4.0.1' },
+  optionalDependencies: { '@huggingface/transformers': '^3.7.6' },
   license: 'BSD-3-Clause',
 }
 writeFileSync(path.join(REL, 'package.json'), JSON.stringify(relPkg, null, 2) + '\n')
