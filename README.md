@@ -1,6 +1,10 @@
 # dsh-auto-memory — Auto Memory & Proactive Companion for DeepSeek Harness
 
 <p align="center">
+  <a href="https://htmlpreview.github.io/?https://github.com/Aik358/dsh-auto-memory/blob/preview/docs/landing/index.html"><strong>🌐 Landing page (full feature tour · data flow · papers · screenshots)</strong></a>
+</p>
+
+<p align="center">
   <a href="docs/screenshots/promo/promo-1-hero.png"><img width="820" alt="dsh-auto-memory hero: she remembers, unbidden" src="docs/screenshots/promo/promo-1-hero.png"></a>
 </p>
 

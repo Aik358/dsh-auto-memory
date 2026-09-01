@@ -1,6 +1,10 @@
 # dsh-auto-memory — DSH 自动记忆与人性化交互插件
 
 <p align="center">
+  <a href="https://htmlpreview.github.io/?https://github.com/Aik358/dsh-auto-memory/blob/preview/docs/landing/index.html"><strong>🌐 宣传主页（功能全景 · 数据流 · 论文 · 截图）</strong></a>
+</p>
+
+<p align="center">
   <a href="docs/screenshots/promo/promo-1-hero.png"><img width="820" alt="dsh-auto-memory 主视觉：不用吩咐，她自己记得" src="docs/screenshots/promo/promo-1-hero.png"></a>
 </p>
 
