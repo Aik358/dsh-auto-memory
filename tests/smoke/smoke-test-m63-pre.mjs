@@ -84,7 +84,7 @@ async function setupHarness(opts = {}) {
   await fire('agent/session-start', { agent, source: 'fresh' })
   await new Promise((r) => setTimeout(r, 250))
   return { ws1, home, wsA, agent, records, aaId, bbId, fire, dbg, cfgPost, actPost, promptComponents,
-    tailComponent: () => promptComponents.find((c) => c.name === 'dsh:m6-reference-tail-pre'),
+    tailComponent: () => promptComponents.find((c) => c.name === 'dsh:m6-reference-tail'),
     settle: async () => { for (const s of effectSetups) { try { const td = await s(); if (typeof td === 'function') await td() } catch (_) {} } },
     cleanup: () => { try { rmSync(ws1, { recursive: true, force: true }) } catch (_) {} } }
 }
@@ -144,7 +144,7 @@ let deliveredSeenCount = 0
   // pre-step 为 waterfall:fire 时补一个 noop next
   await h.fire('agent/pre-step', { agent: h.agent, turn: 1, step: 1 }, () => {})
   const tc = h.tailComponent()
-  ok(!!tc, 'F4 专用尾注组件已注册(dsh:m6-reference-tail-pre)')
+  ok(!!tc, 'F4 专用尾注组件已注册(dsh:m6-reference-tail)')
   const out1 = String(tc.text({ agent: h.agent }))
   ok(out1.includes(A.TAIL_MARKER_LINE_V1), 'F5 渲染文本含固定边界标记行')
   ok(/Source: mem_[0-9a-f]{32} \/ Workspace \/ v/.test(out1), 'F5 Source 行含完整 provenance 身份')
