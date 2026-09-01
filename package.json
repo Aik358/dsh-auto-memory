@@ -1,7 +1,7 @@
 {
   "name": "@a9i5k4/dsh-auto-memory",
   "description": "主动联想记忆插件:记忆不靠模型调用,自己被唤回——Host 观察情境,NLP+向量化双轨检索,固定边界注入不破坏前缀缓存。三层记忆自动沉淀、欢迎向导、唤起回顾、无人值守、AI 问候与反思、日历、跨工具记忆继承。Proactive associative memory for DSH: zero-call recall, three-layer auto-consolidation, welcome tour, unattended mode.",
-  "version": "0.1.31",
+  "version": "0.1.32",
   "type": "module",
   "main": "lib/index.js",
   "exports": {
