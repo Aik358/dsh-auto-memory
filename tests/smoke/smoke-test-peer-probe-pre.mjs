@@ -105,6 +105,38 @@ try {
     ok(semMod.resolvePeerTransformersDir(lib) === '', '错位双 node_modules 不参与命中(peerPresent 不再虚报)')
     ok(semMod.probeJsSemanticAssets(lib).peerPresent === false, 'probe fail closed')
   }
+
+  console.log('[peer-probe] G7 深度扫描 —— 三落位命中 + profiles 枚举/直传两用 + 去重容错(0.1.37 semanticDeepDetect 底座)')
+  {
+    const root = freshRoot()
+    const nm = path.join(root, 'profiles', 'web', 'node_modules')
+    const plain = path.join(nm, '@huggingface', 'transformers')
+    const vmHoist = path.join(nm, '.pnpm', 'node_modules', '@huggingface', 'transformers')
+    const isoPkg = path.join(nm, '.pnpm', '@huggingface+transformers@3.8.1', 'node_modules', '@huggingface', 'transformers')
+    stubTransformers(plain); stubTransformers(vmHoist); stubTransformers(isoPkg)
+    // 直传 profiles 容器(真实用法:~/.dsh/profiles)→ 枚举一级子目录命中
+    const viaContainer = semMod.deepScanPeerTransformers([path.join(root, 'profiles')])
+    ok(viaContainer.length === 3, `profiles 容器枚举三落位全中(实际 ${viaContainer.length})`)
+    // 直传 profile 根 → 自身 node_modules 命中
+    const viaDirect = semMod.deepScanPeerTransformers([path.join(root, 'profiles', 'web')])
+    ok(viaDirect.length === 3 && viaDirect.includes(plain) && viaDirect.includes(vmHoist) && viaDirect.includes(isoPkg), '直传 profile 根同样三落位全中')
+    ok(semMod.deepScanPeerTransformers([]).length === 0 && semMod.deepScanPeerTransformers([path.join(root, 'nope')]).length === 0, '空根/不存在根安全返回空')
+    ok(semMod.deepScanPeerTransformers('not-an-array').length === 0, '非法入参 fail closed')
+  }
+
+  console.log('[peer-probe] G8 extraDirs 热接入 —— 常规解析全 miss 时深扫位可兜底(命中即生效)')
+  {
+    const root = freshRoot()
+    const lib = path.join(root, 'profiles', 'web', 'node_modules', '@a9i5k4', 'dsh-auto-memory', 'lib')
+    const custom = path.join(root, 'somewhere-else', 'transformers')
+    stubTransformers(custom)
+    writeFile(path.join(lib, 'models', 'multilingual-e5-small', 'onnx', 'model_quantized.onnx'), FAKE_ONNX)
+    ok(semMod.resolvePeerTransformersDir(lib) === '', '无 extraDirs 时 miss')
+    const probe = semMod.probeJsSemanticAssets(lib, [custom])
+    ok(probe.peerPresent === true && probe.ready === true, 'extraDirs 命中 → peerPresent/ready 即时翻真(热接入语义)')
+    ok(sameDir(semMod.resolvePeerTransformersDir(lib, [custom]), custom), '命中目录=深扫位')
+    ok(semMod.probeJsSemanticAssets(lib, ['', 123, null, custom]).ready === true, 'extraDirs 内非法项被跳过不误判')
+  }
 } finally {
   for (const r of roots) { try { rmSync(r, { recursive: true, force: true }) } catch (_) { /* tmp 清理尽力而为 */ } }
 }
