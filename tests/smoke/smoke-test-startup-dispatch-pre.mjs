@@ -22,6 +22,9 @@ console.log('[startup-dispatch] G0 源码守卫:first 卡已彻底移除 + 具�
 ok(!/kind: 'first'/.test(SRC) && !/kind === 'first'/.test(SRC) && !/gFeat\d/.test(SRC) && !/guideTitle/.test(SRC),
   'first 卡渲染/分发/文案引用全部为 0')
 ok(/function dispatchStartupDialog\(d\) \{/.test(SRC), '具名分发函数存在(可状态机驱动)')
+ok(SRC.includes("var seenV = (dialogState && dialogState.currentVersion) || lastV")
+  && SRC.includes("var seenV2 = (dialogState && dialogState.currentVersion) || lastV"),
+  'update 卡 ✕/知道了 关闭写入 currentVersion(修复 seen 被钉回 0.1.30 的「每次打开都弹」死循环)')
 
 // —— 抽取真实函数体 ——
 const MARK = 'function dispatchStartupDialog(d) {'
