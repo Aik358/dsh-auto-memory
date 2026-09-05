@@ -1,6 +1,7 @@
 # 下一大版本宣传物料草案（热叙述体）
 
 > 状态：**草案**。M-CM1/M-CM2 落地后随大版本启用。本文只管"怎么说"，不管"说什么"——功能事实与边界以 [NEXT-MAJOR-VISION.md](NEXT-MAJOR-VISION.md)（对账版）为准；启用前把每个比喻对着 §2 逐条兑现。**大版本完成前禁改 README。**
+> 配套：**README 整体替换草稿 = [NEXT-MAJOR-README-DRAFT.zh.md](NEXT-MAJOR-README-DRAFT.zh.md)**（大刀阔斧版全文，含【保留区】迁移纪律）；**文风守则 = [PROMO-STYLE-GUIDE.md](PROMO-STYLE-GUIDE.md)**（跨项目可复用，压缩后一键套用的操作手册）。
 
 ---
 
