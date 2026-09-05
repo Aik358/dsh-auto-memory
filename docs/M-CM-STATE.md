@@ -16,10 +16,12 @@
 - [x] 实施步骤 4：renderMemoryStatic 增"交接与白板"纪律行（GUIDANCE 层不用动,静态层即固化纪律载体）
 - [x] 实施步骤 5：注入片段（动态快照首位:snapshotPlanTitle→snapshotHandoffTitle→日志段;stripSensitiveSections+truncateHead 硬预算;handoffEnabled=false 隐藏）
 - [x] 实施步骤 5.5：smoke-test-handoff-pre.mjs 22/22（G0 源码守卫/G1 时间戳/G2 白板归档/G3 账本最新篇/G4 注入行为);主套件+4 套 UI 回归全绿
-- [ ] 实施步骤 6：配置键已加(handoffEnabled/handoffPlanChars/handoffLedgerChars);设置页行随白板视图一起做
-- [ ] 实施步骤 7：面板「白板」视图（client.js：PLAN 版本切换+ledger 时间线）+ handoff-state API + 路由数守卫补丁（+1）
-- [ ] 实施步骤 8：live 验证（3080 重启需处理提权问题;或等用户重启）
-- [ ] 实施步骤 9：M-CM-STATE/PLAN 更新 + push（待用户确认）
+- [x] 实施步骤 6：配置键已加(handoffEnabled/handoffPlanChars/handoffLedgerChars);设置页行随白板视图一起做
+- [x] 实施步骤 7：面板「白板」视图（client.js PlanTab:当前全貌/版本切换/账本时间线,中英 i18n）+ handoff-state API（?file= 白名单限 handoff 目录）+ 路由守卫 34→35 ×3 文件
+- [ ] 实施步骤 8：live 验证——**3080 老进程(60284,提权)杀不动,需用户重启 dsh web**;重启后验证:①面板出现「白板」页签 ②curl /api/dsh-auto-memory-pre/handoff-state 返回 200 ③对话中让模型写 PLAN(kind=plan)/账本(kind=handoff)并在白板页签看到
+- [ ] 实施步骤 9：push（待用户确认）→ M-CM2（memory_recall scope 扩展）
+
+**M-CM1 已交付（2 commits：后端 / 白板面板）**：后端（handoff 存储三函数/memory_note kind 分支/静态纪律行/动态快照首位注入/配置键）+ 白板面板（API+PlanTab 页签中英）+ smoke-test-handoff-pre.mjs 22/22 + 全量回归绿（主套件/observer/m3b3/startup/away/prompt-var/peer-probe）。
 
 **测试调试备忘**：抽取函数时方法体引用的模块级符号（path/mkdir/writeFile/readdir/stat/existsSync/handoffStamp/nowHm）必须逐个注入 new Function 作用域;grab 用逐行扫描+(){} 混合配平（正则方案在 Bash 工具下反斜杠被吞）;CRLF 行尾注意。
 
