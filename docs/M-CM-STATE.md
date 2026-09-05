@@ -18,10 +18,12 @@
 - [x] 实施步骤 5.5：smoke-test-handoff-pre.mjs 22/22（G0 源码守卫/G1 时间戳/G2 白板归档/G3 账本最新篇/G4 注入行为);主套件+4 套 UI 回归全绿
 - [x] 实施步骤 6：配置键已加(handoffEnabled/handoffPlanChars/handoffLedgerChars);设置页行随白板视图一起做
 - [x] 实施步骤 7：面板「白板」视图（client.js PlanTab:当前全貌/版本切换/账本时间线,中英 i18n）+ handoff-state API（?file= 白名单限 handoff 目录）+ 路由守卫 34→35 ×3 文件
-- [ ] 实施步骤 8：live 验证——**3080 老进程(60284,提权)杀不动,需用户重启 dsh web**;重启后验证:①面板出现「白板」页签 ②curl /api/dsh-auto-memory-pre/handoff-state 返回 200 ③对话中让模型写 PLAN(kind=plan)/账本(kind=handoff)并在白板页签看到
-- [ ] 实施步骤 9：push（待用户确认）→ M-CM2（memory_recall scope 扩展）
+- [x] 实施步骤 8：live 验证（2026-09-06 浏览器实测:记忆入口恢复/白板页签渲染种入的 PLAN 全貌+账本时间线/handoff-state API enabled:true;0.1.2-rc.1 兼容事故修复后全链路通）
+- [x] 实施步骤 8.5：M-CM2 已交付（memory_recall scope=all|handoff|sessions 三档路由+白板语料并入全量检索+设置页开关+smoke 30/30+live E2E）
+- [ ] 实施步骤 9：push（待用户确认）
+- [ ] M-CM3（降级为后续增强）：会话检索语义通道（sessionQuery 词法已够用,语义升档视成本）;M-CM4（水位感知）:需 host token 数据/压缩预告事件,开放问题待验证
 
-**M-CM1 已交付（2 commits：后端 / 白板面板）**：后端（handoff 存储三函数/memory_note kind 分支/静态纪律行/动态快照首位注入/配置键）+ 白板面板（API+PlanTab 页签中英）+ smoke-test-handoff-pre.mjs 22/22 + 全量回归绿（主套件/observer/m3b3/startup/away/prompt-var/peer-probe）。
+**M-CM2 已交付（1 commit）**：recall scope 三档路由（handoff/sessions 早返轻量直返）+ searchHandoffCorpus（PLAN+最新账本+归档三语料,limit 预算）+ searchSessionHistory（sessionQuery 抽取复用）+ listHandoffLedgers + 设置页 handoffEnabled 开关（自动化分组,中英）+ smoke G5 断言（30/30 总）+ live E2E（种数据→白板渲染→API 返回）。
 
 **⚡ 2026-09-06 harness 0.1.2-rc.1 兼容事故（已修复，身份迁移 commit）**：
 - 症状：harness 更新重启后记忆插件入口/设置全消失（其他 @a9i5k4/@linxin666 插件正常）。
