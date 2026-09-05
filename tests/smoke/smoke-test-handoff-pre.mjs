@@ -8,7 +8,7 @@
  *   G3 writeHandoffLedger+readLatestHandoff:同秒双写 -b 后缀防撞,最新篇胜出
  *   G4 renderMemoryDynamic:白板+交接注入在日志段之前 / handoffEnabled=false 隐藏 / 超预算硬截断
  */
-import { readFileSync, mkdirSync, writeFileSync, readdirSync, existsSync } from 'node:fs'
+import { readFileSync, mkdirSync, writeFileSync, readdirSync, existsSync, mkdtempSync } from 'node:fs'
 import { readFile, writeFile, mkdir, readdir, stat } from 'node:fs/promises'
 import path from 'node:path'
 import os from 'node:os'
@@ -177,6 +177,32 @@ ok(hitsLedgerOnly.length === 1 && hitsLedgerOnly[0].where.includes('handoff-2026
 const searchCorpusOff = bindMethod('async searchHandoffCorpus(terms, limit, p) {', Object.assign(makeFakeEngine(), { config: { handoffEnabled: false }, listHandoffLedgers: listLedgers }))
 ok((await searchCorpusOff(['斑马'], 8, { handoffDir: seeded })).length === 0, 'handoffEnabled=false 语料检索返回空')
 
+console.log('[handoff] G5.5 M-CM4 自动窗口检测(resolveWaterWindow)')
+const fakeHome = mkdtempSync(path.join(os.tmpdir(), 'wl-home-'))
+writeFileSync(path.join(fakeHome, 'settings.yaml'), [
+  'agent-default-model:',
+  '  provider: opencode-go',
+  '  model: deepseek-v4-flash',
+  'llm-pi-ai:',
+  '  providers:',
+  '    opencode-go:',
+  '      models:',
+  '        - id: deepseek-v4-flash',
+  '          contextWindow: 1000000',
+].join(String.fromCharCode(10)))
+const fakeRw = makeWaterFake({ waterLevelWindowTokens: 0 }, [])
+const resolveWaterWindow = bindMethod('async resolveWaterWindow() {', fakeRw, { dshHome: () => fakeHome })
+const w1 = await resolveWaterWindow()
+ok(w1.window === 1000000 && w1.source === 'auto:opencode-go/deepseek-v4-flash', '自动检测:(' + JSON.stringify(w1) + ')')
+const w2 = await resolveWaterWindow()
+ok(w2.window === 1000000, '60s 缓存生效')
+const fakeM = makeWaterFake({ waterLevelWindowTokens: 777 }, [])
+const resolveM = bindMethod('async resolveWaterWindow() {', fakeM, { dshHome: () => fakeHome })
+ok((await resolveM()).window === 777 && (await resolveM()).source === 'manual', '手动覆盖优先于自动检测')
+const fakeF = makeWaterFake({ waterLevelWindowTokens: 0 }, [])
+const resolveF = bindMethod('async resolveWaterWindow() {', fakeF, { dshHome: () => path.join(tmpRoot, 'no-home') })
+ok((await resolveF()).window === 131072 && (await resolveF()).source === 'fallback', '检测失败回退 131072')
+
 console.log('[handoff] G6 M-CM4 水位感知(官方 token 公式+compaction 事件)')
 function makeWaterFake(opts, ledgerCalls) {
   const rt = {}
@@ -194,6 +220,7 @@ const wlBind = (fake) => {
   fake.estimateSessionTokens = bindMethod('estimateSessionTokens(messages) {', fake, {})
   const truncateHeadFn = new Function(grab('truncateHead') + '\nreturn truncateHead;')()
   const reflectionDigestFn = new Function('truncateHead', grab('reflectionDigest') + '\nreturn reflectionDigest;')(truncateHeadFn)
+  fake.resolveWaterWindow = bindMethod('async resolveWaterWindow() {', fake, { dshHome: () => fakeHome })
   return bindMethod('async checkWaterLevel(agent) {', fake, { extractSessionMessages: (a) => a.messages, diag: () => {}, reflectionDigest: reflectionDigestFn, truncateHead: truncateHeadFn })
 }
 // 公式抽查:文本 token = ceil(字符/4)+4(角色框定)
