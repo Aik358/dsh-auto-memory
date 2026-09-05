@@ -64,8 +64,11 @@ function makeFakeEngine() {
     async writeFullRaw(p, text) { await mkdir(path.dirname(p), { recursive: true }); await writeFile(p, text, 'utf8') },
   }
 }
-const bindMethod = (header, fake) => { // 方法简写 → 对象字面量 → 取出绑定 fake this(注入方法体引用的模块级 fs/path/handoffStamp/nowHm)
-  const obj = new Function('path', 'existsSync', 'mkdir', 'writeFile', 'readdir', 'stat', 'handoffStamp', 'nowHm', 'return {' + extractFn(header) + '};')(path, existsSync, mkdir, writeFile, readdir, stat, handoffStampFn, nowHmFn)
+const bindMethod = (header, fake, extra) => { // 方法简写 → 对象字面量 → 取出绑定 fake this(注入模块级符号+extra)
+  const names = ['path', 'existsSync', 'mkdir', 'writeFile', 'readdir', 'stat', 'handoffStamp', 'nowHm']
+  const vals = [path, existsSync, mkdir, writeFile, readdir, stat, handoffStampFn, nowHmFn]
+  for (const k of Object.keys(extra || {})) { names.push(k); vals.push(extra[k]) }
+  const obj = new Function(...names, 'return {' + extractFn(header) + '};')(...vals)
   return obj[Object.keys(obj)[0]].bind(fake)
 }
 
@@ -173,6 +176,35 @@ const hitsLedgerOnly = await searchCorpus(['长颈鹿'], 8, { handoffDir: seeded
 ok(hitsLedgerOnly.length === 1 && hitsLedgerOnly[0].where.includes('handoff-20260906-080001'), '词命中定位到正确账本篇')
 const searchCorpusOff = bindMethod('async searchHandoffCorpus(terms, limit, p) {', Object.assign(makeFakeEngine(), { config: { handoffEnabled: false }, listHandoffLedgers: listLedgers }))
 ok((await searchCorpusOff(['斑马'], 8, { handoffDir: seeded })).length === 0, 'handoffEnabled=false 语料检索返回空')
+
+console.log('[handoff] G6 M-CM4 水位感知(checkWaterLevel 行为)')
+function makeWaterFake(opts, ledgerCalls) {
+  const rt = {}
+  const fake = Object.assign(makeFakeEngine(), {
+    config: Object.assign({ handoffEnabled: true, waterLevelWindowChars: 1000, waterLevelThreshold: 0.8, waterLevelAutoHandoff: true }, opts),
+    runtimeFor: () => rt,
+    resolvePaths: async () => ({ handoffDir: seeded, projectDir: path.join(tmpRoot, 'ws-g5'), logPath: path.join(seeded, 'fake-log.md') }),
+    writeHandoffLedger: async (dir, content) => { ledgerCalls.push(content); return { ok: true, path: path.join(seeded, 'auto-' + ledgerCalls.length + '.md') } },
+    state: {},
+  })
+  fake._rt = rt
+  return fake
+}
+const wlBind = (fake) => bindMethod('async checkWaterLevel(agent) {', fake, { extractSessionMessages: (a) => a.messages, diag: () => {} })
+const fLow = makeWaterFake({}, [])
+wlBind(fLow)({ messages: [{ text: 'x'.repeat(200) }] })
+ok(!fLow._rt.waterLevelAdvised && (fLow.state.waterLevelRatio || 0) < 0.8, '低于阈值不触发 advisory(ratio=' + (fLow.state.waterLevelRatio || 0).toFixed(2) + ')')
+const ledgerCalls = []
+const fHigh = makeWaterFake({}, ledgerCalls)
+const wlHigh = wlBind(fHigh)
+await wlHigh({ messages: [{ text: 'x'.repeat(900) }] })
+ok(fHigh._rt.waterLevelAdvised && (fHigh.state.waterLevelRatio || 0) >= 0.9, '越阈值触发 advisory 标志(ratio=' + fHigh.state.waterLevelRatio.toFixed(2) + ')')
+ok(ledgerCalls.length === 1 && ledgerCalls[0].includes('系统水位自动快照') && ledgerCalls[0].includes('## 进度与下一步'), '骨架账本自动写一次(含水位标记与四段结构)')
+await wlHigh({ messages: [{ text: 'x'.repeat(900) }] })
+ok(ledgerCalls.length === 1, '第二次调用不重复写(每会话一次)')
+const fOff = makeWaterFake({ waterLevelWindowChars: 0 }, [])
+wlBind(fOff)({ messages: [{ text: 'z'.repeat(900) }] })
+ok(!fOff._rt.waterLevelAdvised, 'waterLevelWindowChars=0 功能关闭')
 
 console.log('')
 console.log('[handoff] pass=' + pass + ' fail=' + fail)
