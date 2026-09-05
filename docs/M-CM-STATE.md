@@ -20,8 +20,10 @@
 - [x] 实施步骤 7：面板「白板」视图（client.js PlanTab:当前全貌/版本切换/账本时间线,中英 i18n）+ handoff-state API（?file= 白名单限 handoff 目录）+ 路由守卫 34→35 ×3 文件
 - [x] 实施步骤 8：live 验证（2026-09-06 浏览器实测:记忆入口恢复/白板页签渲染种入的 PLAN 全貌+账本时间线/handoff-state API enabled:true;0.1.2-rc.1 兼容事故修复后全链路通）
 - [x] 实施步骤 8.5：M-CM2 已交付（memory_recall scope=all|handoff|sessions 三档路由+白板语料并入全量检索+设置页开关+smoke 30/30+live E2E）
-- [ ] 实施步骤 9：push（待用户确认）
-- [ ] M-CM3（降级为后续增强）：会话检索语义通道（sessionQuery 词法已够用,语义升档视成本）;M-CM4（水位感知）:需 host token 数据/压缩预告事件,开放问题待验证
+- [x] 实施步骤 9（部分）：M-CM4/M-CM5 已交付（commit:水位感知+交接助产）——turn-stopping 测会话消息总字符→启发式水位;越阈每会话一次:动态快照 advisory（写账本/刷白板/建议开新窗/派子代理=M-CM5 指引）+自动系统骨架账本兜底;配置 4 键+设置页 3 项（中英）;smoke G6 35/35;重启上线+白板回归 OK
+- [ ] 实施步骤 9.5：push（待用户确认）
+- [ ] M-CM3 残余（后续增强）：会话语义通道（sessionQuery 词法已够用,语义升档视成本）;跨工作区白板语料（语义上存疑,缓）
+- [ ] M-CM4 精度升级（后续）：host 暴露真实 token 计数/压缩预告事件时,把启发式字符估计换成真实水位（向 DSH 提 feature request 的依据已记录）
 
 **M-CM2 已交付（1 commit）**：recall scope 三档路由（handoff/sessions 早返轻量直返）+ searchHandoffCorpus（PLAN+最新账本+归档三语料,limit 预算）+ searchSessionHistory（sessionQuery 抽取复用）+ listHandoffLedgers + 设置页 handoffEnabled 开关（自动化分组,中英）+ smoke G5 断言（30/30 总）+ live E2E（种数据→白板渲染→API 返回）。
 
