@@ -23,6 +23,13 @@
 
 **M-CM1 已交付（2 commits：后端 / 白板面板）**：后端（handoff 存储三函数/memory_note kind 分支/静态纪律行/动态快照首位注入/配置键）+ 白板面板（API+PlanTab 页签中英）+ smoke-test-handoff-pre.mjs 22/22 + 全量回归绿（主套件/observer/m3b3/startup/away/prompt-var/peer-probe）。
 
+**⚡ 2026-09-06 harness 0.1.2-rc.1 兼容事故（已修复，身份迁移 commit）**：
+- 症状：harness 更新重启后记忆插件入口/设置全消失（其他 @a9i5k4/@linxin666 插件正常）。
+- 根因：**0.1.2-rc.1 把 `@deepseek-ai` 作用域保留给官方包——profile 解析的该作用域第三方 bundle（dsh-auto-memory、dsh-draw-gacha）被从浏览器组合加载（combo）剔除**；主机半边（webServer 注入路由）不受影响照常跑。诊断链：认证 token 每次重启更换（401 闸门）→ 大组合 URL 缺席 auto-memory → 直接路径 404（对所有人正常,新版只走 combo）→ 与 ark9canvas 逐字段对比清单无差异 → 按 package.json name 作用域排除。
+- 修复：插件身份统一迁到发布身份 **@a9i5k4/dsh-auto-memory**（package.json name / cordis.patch.yml name / client loader id ×2+tag.dataset）;release.mjs 的 @deepseek-ai→@a9i5k4 转换变恒等但校验（§377 要求含 @a9i5k4）仍过。profile 挂载改 `@a9i5k4/dsh-auto-memory: link:D:/dsh-auto-memory` + bundles 同步。
+- live 验证全过：记忆入口恢复/白板页签渲染（空态）/handoff-state API enabled:true。
+- **待办**：①dsh-draw-gacha（用户另一插件,@deepseek-ai 作用域）同样中招,需同样改名;②token 每次重启更换（0.1.2-rc.1 认证闸门）,URL 以 dsh web 终端打印为准;③旧 @deepseek-ai junction 在 profile node_modules 残留（inert,可忽略）。
+
 **测试调试备忘**：抽取函数时方法体引用的模块级符号（path/mkdir/writeFile/readdir/stat/existsSync/handoffStamp/nowHm）必须逐个注入 new Function 作用域;grab 用逐行扫描+(){} 混合配平（正则方案在 Bash 工具下反斜杠被吞）;CRLF 行尾注意。
 
 ## 关键代码锚点（已审计确认）
