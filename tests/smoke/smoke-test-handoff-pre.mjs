@@ -16,6 +16,7 @@ import { fileURLToPath } from 'node:url'
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 const SRC = readFileSync(path.resolve(HERE, '..', '..', 'lib', 'index.js'), 'utf8')
+const CSRC = readFileSync(path.resolve(HERE, '..', '..', 'lib', 'client.js'), 'utf8')
 let pass = 0, fail = 0
 const ok = (c, n) => { if (c) { pass++; console.log('  ok -', n) } else { fail++; console.log('  FAIL -', n) } }
 const tmpRoot = (() => { const d = path.join(os.tmpdir(), 'dam-handoff-test-' + Date.now()); mkdirSync(d, { recursive: true }); return d })()
@@ -147,6 +148,31 @@ const out2 = run(makeFakeThis(PLAN_LONG, '', true))
 ok(out2.includes('白板 PLAN.md') && !out2.includes('最近交接'), '无账本时只注入白板')
 const out3 = run(makeFakeThis(PLAN_LONG, '# 交接账本', false))
 ok(!out3.includes('白板 PLAN.md') && !out3.includes('最近交接'), 'handoffEnabled=false 完全隐藏')
+
+console.log('[handoff] G5 M-CM2 recall scope 路由(源码守卫+语料检索)')
+ok(SRC.includes("async recall(query, limit = 8, agent, scope = 'all')"), 'recall 带 scope 参数(默认 all)')
+ok(SRC.includes("if (scope === 'handoff') {") && SRC.includes("if (scope === 'sessions') {"), 'handoff/sessions 早返分支存在')
+ok(SRC.includes("scope: { type: 'string', enum: ['all', 'handoff', 'sessions']") && SRC.includes("engine.recall(args.query, args.limit, exec.agent, args.scope || 'all')"), 'memory_recall_pre 工具声明 scope 枚举并透传')
+ok(CSRC.includes("set('handoffEnabled', e.target.checked)") && CSRC.includes("fHandoff: '交接白板'"), '设置页交接白板开关接线(client)')
+const fakeG5 = Object.assign(makeFakeEngine(), { config: { handoffEnabled: true } })
+const listLedgers = bindMethod('async listHandoffLedgers(dir, limit = 12) {', fakeG5)
+fakeG5.listHandoffLedgers = listLedgers
+const searchCorpus = bindMethod('async searchHandoffCorpus(terms, limit, p) {', fakeG5)
+const seeded = path.join(tmpRoot, 'ws-g5', 'handoff')
+mkdirSync(path.join(seeded, 'archive'), { recursive: true })
+writeFileSync(path.join(seeded, 'PLAN.md'), '# 白板\nM-CM 交接白板:白板归档里藏着关键词斑马')
+writeFileSync(path.join(seeded, 'handoff-20260906-080000.md'), '# 交接账本\n进度:白板功能已上线,账本里有斑马线\n下一步:浏览器验证')
+writeFileSync(path.join(seeded, 'handoff-20260906-080001.md'), '# 交接账本\n进度:第二篇,提到长颈鹿')
+writeFileSync(path.join(seeded, 'archive', 'PLAN-20260905-070000.md'), '# 旧白板\n归档版:斑马在旧全貌里也出现过')
+const terms = ['斑马']
+const hits = await searchCorpus(terms, 8, { handoffDir: seeded })
+const whereAll = hits.map((h) => h.where).join('|')
+ok(hits.length >= 3 && whereAll.includes('白板 PLAN.md') && whereAll.includes('交接账本/') && whereAll.includes('白板归档/'), '语料检索覆盖 PLAN+账本+归档(' + hits.length + ' 处)')
+ok(hits.reduce((a, h) => a + h.matches.length, 0) <= 8, 'limit 预算生效')
+const hitsLedgerOnly = await searchCorpus(['长颈鹿'], 8, { handoffDir: seeded })
+ok(hitsLedgerOnly.length === 1 && hitsLedgerOnly[0].where.includes('handoff-20260906-080001'), '词命中定位到正确账本篇')
+const searchCorpusOff = bindMethod('async searchHandoffCorpus(terms, limit, p) {', Object.assign(makeFakeEngine(), { config: { handoffEnabled: false }, listHandoffLedgers: listLedgers }))
+ok((await searchCorpusOff(['斑马'], 8, { handoffDir: seeded })).length === 0, 'handoffEnabled=false 语料检索返回空')
 
 console.log('')
 console.log('[handoff] pass=' + pass + ' fail=' + fail)
