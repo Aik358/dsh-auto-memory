@@ -88,6 +88,8 @@ GPT-6 Astra 把「上下文管理」（结构化笔记跨窗口、归档可搜�
 
 ## 6. README 宣传改版方案（大版本完成后执行，现在禁改）
 
+> **宣传文案成稿（热叙述体）= [NEXT-MAJOR-PROMO.md](NEXT-MAJOR-PROMO.md)**——主视觉/开场白/用户故事/亮点表三行/第七幕分镜/英文 hero/语气守则全在其中，改 README 时以它为文风与文案底稿，本节管结构与清单。
+
 1. **主视觉**：保留品牌句「她记得，不必吩咐 / She remembers, unbidden」；主标下方加副标「跨窗口 · 跨会话 · 跨工具，记忆不断线 / Context that survives windows, sessions, and tools」
 2. **30 秒亮点表**：**现有八行全部保留**（主动联想/三层引擎/自动沉淀/唤起有据/主动提醒/一切皆开关/外部继承/生产级卫生——它们就是对账基准），大版本新增三行：Astra 式上下文管理（交接笔记+可搜索归档+按需检索）；模型无关（DSH 上任何模型即装即得，不锁厂商不锁档位）；记忆可携带（全本地+跨工具导入+可审计可导出）
 3. **新章节「为什么是插件 / Why a plugin」**：放 §3 对照表 + §4 用户故事；口径句 "What Astra ships as an experimental flagship feature, we ship as an open plugin — for every model on your machine, today."（中文：「GPT-6 当作旗舰实验特性的上下文管理，我们做成开放插件——你机器上的任何模型，今天就有一份。」）
