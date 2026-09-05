@@ -20,7 +20,8 @@
 - [x] 实施步骤 7：面板「白板」视图（client.js PlanTab:当前全貌/版本切换/账本时间线,中英 i18n）+ handoff-state API（?file= 白名单限 handoff 目录）+ 路由守卫 34→35 ×3 文件
 - [x] 实施步骤 8：live 验证（2026-09-06 浏览器实测:记忆入口恢复/白板页签渲染种入的 PLAN 全貌+账本时间线/handoff-state API enabled:true;0.1.2-rc.1 兼容事故修复后全链路通）
 - [x] 实施步骤 8.5：M-CM2 已交付（memory_recall scope=all|handoff|sessions 三档路由+白板语料并入全量检索+设置页开关+smoke 30/30+live E2E）
-- [x] 实施步骤 9（部分）：M-CM4/M-CM5 已交付（commit:水位感知+交接助产）——turn-stopping 测会话消息总字符→启发式水位;越阈每会话一次:动态快照 advisory（写账本/刷白板/建议开新窗/派子代理=M-CM5 指引）+自动系统骨架账本兜底;配置 4 键+设置页 3 项（中英）;smoke G6 35/35;重启上线+白板回归 OK
+- [x] 实施步骤 9（部分）：M-CM4/M-CM5 已交付（commit:水位感知+交接助产）
+- [x] 精修轮（dsh-context 借鉴,commit:refine）：①水位计量升级官方 token-meter 公式(4 字符≈1 token+每消息 4,waterLevelWindowTokens=65536 默认)②compaction/summary|prune 事件感知(压缩后 0.5≤ratio 自动补写骨架,seq 去重)③骨架账本 v2=抽取性压缩(策展源:沉淀日志尾+反思摘要+笔记头,dedupe 限行——**测试抓出真 bug:join/dedupe 顺序颠倒致单字化,已修**)④白板注入改行边界截断(truncateLinesBounded)⑤advisory prompt 科学化(四段各≤5 行/失败项「方案→原因」/下一步带文件或命令)。参考=bowenliang123/dsh-context(README:index.js 1852 行/client.js 6892 行,官方 meter 移植+sessionProjections 投影注册表模式,后续 M-CM 深化可注册投影单元)——turn-stopping 测会话消息总字符→启发式水位;越阈每会话一次:动态快照 advisory（写账本/刷白板/建议开新窗/派子代理=M-CM5 指引）+自动系统骨架账本兜底;配置 4 键+设置页 3 项（中英）;smoke G6 35/35;重启上线+白板回归 OK
 - [ ] 实施步骤 9.5：push（待用户确认）
 - [ ] M-CM3 残余（后续增强）：会话语义通道（sessionQuery 词法已够用,语义升档视成本）;跨工作区白板语料（语义上存疑,缓）
 - [ ] M-CM4 精度升级（后续）：host 暴露真实 token 计数/压缩预告事件时,把启发式字符估计换成真实水位（向 DSH 提 feature request 的依据已记录）
