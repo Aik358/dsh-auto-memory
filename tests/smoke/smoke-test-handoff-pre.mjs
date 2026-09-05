@@ -135,7 +135,7 @@ const grab = (name) => { // 逐行扫描+(){} 混合配平(兼容 Object.freeze 
   }
   return buf
 }
-const helpers = ['DEFAULT_PROMPT_LAYERS', 'neutralizePromptTemplateVars', 'truncateHead', 'stripSensitiveSections', 'sanitizeForInjection', 'scrubJunkLines', 'reflectionDigest', 'mojibakeDensity', 'MOJIBAKE_RE', 'hasStutter', 'BASE64_LINE']
+const helpers = ['DEFAULT_PROMPT_LAYERS', 'neutralizePromptTemplateVars', 'truncateHead', 'truncateLinesBounded', 'stripSensitiveSections', 'sanitizeForInjection', 'scrubJunkLines', 'reflectionDigest', 'mojibakeDensity', 'MOJIBAKE_RE', 'hasStutter', 'BASE64_LINE']
 const helperCode = helpers.map((h) => grab(h)).join('\n')
 const renderFn = new Function(helperCode + '\nreturn {' + dynSrc + '};')()['renderMemoryDynamic']
 const run = (fake) => renderFn.call(fake, {})
@@ -177,11 +177,11 @@ ok(hitsLedgerOnly.length === 1 && hitsLedgerOnly[0].where.includes('handoff-2026
 const searchCorpusOff = bindMethod('async searchHandoffCorpus(terms, limit, p) {', Object.assign(makeFakeEngine(), { config: { handoffEnabled: false }, listHandoffLedgers: listLedgers }))
 ok((await searchCorpusOff(['斑马'], 8, { handoffDir: seeded })).length === 0, 'handoffEnabled=false 语料检索返回空')
 
-console.log('[handoff] G6 M-CM4 水位感知(checkWaterLevel 行为)')
+console.log('[handoff] G6 M-CM4 水位感知(官方 token 公式+compaction 事件)')
 function makeWaterFake(opts, ledgerCalls) {
   const rt = {}
   const fake = Object.assign(makeFakeEngine(), {
-    config: Object.assign({ handoffEnabled: true, waterLevelWindowChars: 1000, waterLevelThreshold: 0.8, waterLevelAutoHandoff: true }, opts),
+    config: Object.assign({ handoffEnabled: true, waterLevelWindowTokens: 1000, waterLevelThreshold: 0.8, waterLevelAutoHandoff: true }, opts),
     runtimeFor: () => rt,
     resolvePaths: async () => ({ handoffDir: seeded, projectDir: path.join(tmpRoot, 'ws-g5'), logPath: path.join(seeded, 'fake-log.md') }),
     writeHandoffLedger: async (dir, content) => { ledgerCalls.push(content); return { ok: true, path: path.join(seeded, 'auto-' + ledgerCalls.length + '.md') } },
@@ -190,21 +190,42 @@ function makeWaterFake(opts, ledgerCalls) {
   fake._rt = rt
   return fake
 }
-const wlBind = (fake) => bindMethod('async checkWaterLevel(agent) {', fake, { extractSessionMessages: (a) => a.messages, diag: () => {} })
+const wlBind = (fake) => {
+  fake.estimateSessionTokens = bindMethod('estimateSessionTokens(messages) {', fake, {})
+  const truncateHeadFn = new Function(grab('truncateHead') + '\nreturn truncateHead;')()
+  const reflectionDigestFn = new Function('truncateHead', grab('reflectionDigest') + '\nreturn reflectionDigest;')(truncateHeadFn)
+  return bindMethod('async checkWaterLevel(agent) {', fake, { extractSessionMessages: (a) => a.messages, diag: () => {}, reflectionDigest: reflectionDigestFn, truncateHead: truncateHeadFn })
+}
+// 公式抽查:文本 token = ceil(字符/4)+4(角色框定)
+const fFormula = makeWaterFake({}, [])
+const estTokensFn = bindMethod('estimateSessionTokens(messages) {', fFormula, {})
+ok(estTokensFn([{ text: 'x'.repeat(400) }]) === 104, 'token 公式:ceil(400/4)+4=104')
+ok(estTokensFn([{ text: 'a' }, { text: 'bb' }]) === 10, '多消息逐条计价:各 ceil(len/4)+4(5+5=10)')
+// 低于阈值
 const fLow = makeWaterFake({}, [])
-wlBind(fLow)({ messages: [{ text: 'x'.repeat(200) }] })
+wlBind(fLow)({ messages: [{ text: 'x'.repeat(320) }] })
 ok(!fLow._rt.waterLevelAdvised && (fLow.state.waterLevelRatio || 0) < 0.8, '低于阈值不触发 advisory(ratio=' + (fLow.state.waterLevelRatio || 0).toFixed(2) + ')')
+// 越阈值(3200 字符 → ceil(3200/4)+4=804 token → ratio 0.804)
 const ledgerCalls = []
 const fHigh = makeWaterFake({}, ledgerCalls)
 const wlHigh = wlBind(fHigh)
-await wlHigh({ messages: [{ text: 'x'.repeat(900) }] })
-ok(fHigh._rt.waterLevelAdvised && (fHigh.state.waterLevelRatio || 0) >= 0.9, '越阈值触发 advisory 标志(ratio=' + fHigh.state.waterLevelRatio.toFixed(2) + ')')
-ok(ledgerCalls.length === 1 && ledgerCalls[0].includes('系统水位自动快照') && ledgerCalls[0].includes('## 进度与下一步'), '骨架账本自动写一次(含水位标记与四段结构)')
-await wlHigh({ messages: [{ text: 'x'.repeat(900) }] })
+await wlHigh({ messages: [{ text: 'x'.repeat(3200) }] })
+ok(fHigh._rt.waterLevelAdvised && (fHigh.state.waterLevelRatio || 0) >= 0.8, '越阈值触发 advisory 标志(ratio=' + fHigh.state.waterLevelRatio.toFixed(2) + ')')
+ok(ledgerCalls.length === 1 && ledgerCalls[0].includes('系统自动快照') && ledgerCalls[0].includes('token') && ledgerCalls[0].includes('## 已试方案与失败原因'), '抽取性骨架账本写一次(' + JSON.stringify(String(ledgerCalls[0] || '').slice(0, 150)) + ')')
+await wlHigh({ messages: [{ text: 'x'.repeat(3200) }] })
 ok(ledgerCalls.length === 1, '第二次调用不重复写(每会话一次)')
-const fOff = makeWaterFake({ waterLevelWindowChars: 0 }, [])
-wlBind(fOff)({ messages: [{ text: 'z'.repeat(900) }] })
-ok(!fOff._rt.waterLevelAdvised, 'waterLevelWindowChars=0 功能关闭')
+// compaction 事件:水位 0.6 未到阈值,但检测到 compaction → 触发(0.5≤ratio 且 compacted)
+const ledgerCalls2 = []
+const fCmp = makeWaterFake({}, ledgerCalls2)
+const wlCmp = wlBind(fCmp)
+await wlCmp({ messages: [{ text: 'y'.repeat(2400) }], session: { events: [{ type: 'compaction/summary', seq: 3 }] } })
+ok(ledgerCalls2.length === 1, '检测到 compaction/summary 事件触发补写(0.5≤ratio<阈值)')
+await wlCmp({ messages: [{ text: 'y'.repeat(2400) }], session: { events: [{ type: 'compaction/summary', seq: 3 }] } })
+ok(ledgerCalls2.length === 1, '同一 compaction 事件不重复补写(seq 去重)')
+// 关闭
+const fOff = makeWaterFake({ waterLevelWindowTokens: 0 }, [])
+wlBind(fOff)({ messages: [{ text: 'z'.repeat(3200) }] })
+ok(!fOff._rt.waterLevelAdvised, 'waterLevelWindowTokens=0 功能关闭')
 
 console.log('')
 console.log('[handoff] pass=' + pass + ' fail=' + fail)
