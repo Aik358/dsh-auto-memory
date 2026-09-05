@@ -45,16 +45,25 @@ OS 式记忆分层：core memory（上下文内的 self-edited memory blocks，"
 ## 2. M-CM1 四段式交接笔记（结构化 ledger）
 
 - **存储**：`workspaces/{workspace}/handoff/YYYY-MM-DD-HHMM-{slug}.md`。四段 schema：`## 任务状态` / `## 目标` / `## 已试方案与失败原因` / `## 进度与下一步`，头部 front-matter（workspace、触发原因、关联会话 id）。
+- **白板层（PLAN.md，2026-09-06 启发新增）**：模型随任务推进理解全貌后，用**人能理解的方式**重写 `workspaces/{ws}/handoff/PLAN.md`——整个项目的规划图（"白板"）；后续交接只在此快照上增改，每次重写旧版自动移入 `handoff/archive/PLAN-<ts>.md` 保留更改历史。与四段式 ledger 的关系=git 的树与提交日志：PLAN.md 是当前树，ledger 是 commit 历史。PLAN.md 注入优先级高于单篇 ledger。
 - **写入者三入口**：①自动沉淀子代理的"里程碑判定"顺手写（复用既有队列/心跳/预算设施）；②`memory_note` 工具显式写（M-CM2）；③水位触发自动写（M-CM4）。全部过 `sanitizeForWrite` 门禁（34 特征 + 8000 字/条）。
 - **生命周期**：最近一篇进入注入快照首位（见下）；90 天归档复用 Hermes 规则；**用户可直接读改**——这是与 Codex 服务端加密笔记的根本差异。
 - **注入（我们的 thread_hint）**：动态快照首位加"接续摘要"片段——handoff 最新一篇的压缩版（对齐 Codex 4KB 上限教训，设硬预算并给 evidence 引用），内容类型 `handoff.hint`，走既有 M6 固定边界，前缀缓存纪律不破。
 
-## 3. M-CM2 主动检索工具（门控代理标准工具）
+## 3. M-CM2 主动检索工具（2026-09-06 质询后修订：扩展现有工具面，不新增平行工具）
 
-- 注册 `memory_search` / `memory_note` 两个工具（CUA 插件 30 工具先例验证可行；**ctx.get() 坑**必须规避）。
-- `memory_search(query, scope: notes|logs|handoff|sessions|all, k=5, workspace?)` → 条目 + 来源（文件路径:行号 或 会话帧时间戳）+ evidence 引用（复用 M5 cite 规范）。检索通道：lexical_pre_v2（BM25+CJK 2gram，0GB 兜底）+ C2/BGE-M3 可选升档——复用 M7 双臂与 held-out 校准。
-- `memory_note(text, kind: handoff|note)` → 追加写入对应文件，回执含落点。
-- **权限分立不破**：工具返回=建议素材（advisory），注入仍只走 M6 固定边界；工具结果不直接改写已发请求。
+> **质询记录**：`memory_note`/`memory_recall` 已存在（前者写项目笔记、后者 AI 扩展关键词的会话式检索）。原计划"新增两个同名工具"属冗余设计，工具面污染会让模型选择混乱。修订如下。
+
+**与现有工具的真实差异（三维度）**：
+1. **语料**：现有工具只能搜四层记忆（用户级/项目笔记/日志/反思）；handoff ledger（M-CM1）与会话帧归档（M-CM3）是**任何现有工具都摸不到的新地面**——尤其会话帧=记忆化之前的原始材料。
+2. **调用语义**：`memory_recall` 是重型路径（AI 扩展关键词→会话式回答），面向"回答问题"；Agent 在工作循环里自用需要**轻量直返**——它就是查询的发出者，不需要别人替它扩展关键词，要的是结构化命中（条目+引用+预算截断）。
+3. **归宿**：检索结果是 advisory 素材，进 M6 固定边界仍受治理——权限分立不因新工具改变。
+
+**修订后的落点（扩展现有工具，收敛工具数）**：
+- `memory_recall` 增 `scope` 参数：`notes|logs|reflections|handoff|sessions|all`（默认 `all`，行为向后兼容）；scope=handoff/sessions 时走轻量直返（不做 AI 扩展，直接 BM25/语义命中），返回带 evidence 引用（复用 M5 cite 规范）与硬预算截断（对齐 Codex 4KB 教训）。
+- `memory_note` 增 `kind: handoff` 参数：写四段式 ledger（§2 schema）；缺省行为不变（写项目笔记）。
+- 门控代理注册不变（CUA 先例；**ctx.get() 坑**规避）；**未命中必须可见**并进审计页（§8.4.3）。
+- 例外条款：若实测发现"轻量直返"与"会话式回答"在同工具内语义打架（参数爆炸/模型误用），再拆独立 `memory_search`——拆分是后备，不是起点。
 
 ## 4. M-CM3 会话帧索引（可搜索归档，零复制）
 
@@ -81,8 +90,8 @@ OS 式记忆分层：core memory（上下文内的 self-edited memory blocks，"
 
 | 顺序 | 里程碑 | 依赖 | 验收 |
 |---|---|---|---|
-| 1 | M-CM1 交接笔记 | 无（纯插件侧） | schema+三写入者+注入片段；smoke（真实函数抽取驱动）+ 复放 precision 不回退 |
-| 2 | M-CM2 检索工具 | CM1 存储 | 门控代理 E2E：工具注册/调用/回执/审计；检索复放 |
+| 1 | M-CM1 交接笔记 | 无（纯插件侧） | schema+PLAN 白板层+三写入者+注入片段；smoke（真实函数抽取驱动）+ 复放 precision 不回退 |
+| 2 | M-CM2 检索扩展 | CM1 存储 | memory_recall scope 扩展+memory_note kind=handoff；门控代理 E2E：调用/回执/审计；检索复放 |
 | 3 | M-CM3 会话帧索引 | 双臂就绪 | 索引覆盖率+增量正确性；scope=sessions 复放召回 |
 | 4 | M-CM4 水位联动 | CM1 自动写 | 模拟水位→advisory+handoff 自动落盘；无人值守静默 |
 
@@ -127,6 +136,8 @@ OS 式记忆分层：core memory（上下文内的 self-edited memory blocks，"
 
 ## 9. 风险与开放问题
 
+- **子代理派生（2026-09-06 新增，值得单独规划）**：长任务在水位高+任务可分解时派子代理=上下文隔离的天然单元（Anthropic 配方核心件）。派生决策权在 host+模型；DSH 门控代理是否暴露派生能力**待验证**。插件侧可先做两件：①子代理产出自动沉淀为 handoff/PLAN 增改（M1 会话隔离 + `_ownSubagents` 识别已有底子，intent 提纯已跳过合成注入）；②子代理的注入策略适配（吃不吃记忆注入、吃哪层——待实测定策略）。插件只做"何时值得派"的 advisory，不抢派生权。
+- **memoryRoot git 化（可选增强）**：历史保留当前用 archive 副本；若环境有系统 git 可对 memoryRoot 做轻量自动提交（零依赖约束→git 存在才启用，缺失降级副本）。
 - DSH 是否暴露 token 计数/压缩事件——**待验证**；无则 M-CM4 降级为启发式 + feature request。
 - 会话帧索引隐私边界：凭证段过滤必须先于索引器上线，顺序不可倒。
 - 工具返回的 token 预算：对齐 Codex 教训设硬上限（hint ≤4KB 的同款纪律），超出部分给 evidence 引用让模型按需 `memory_search` 深查。
