@@ -48,7 +48,7 @@
 </details>
 
 <p align="center">
-  <a href="README.zh-CN.md">中文</a> · <b>English</b> · License BSD-3-Clause · <code>pnpm add @a9i5k4/dsh-auto-memory</code>
+  <a href="README.zh-CN.md">中文</a> · <b>English</b> · License BSD-3-Clause · <code>pnpm add @a9i5k4/dsh-auto-memory</code> · <a href="https://qm.qq.com/q/v7Asxn6vPa">QQ group</a>
 </p>
 
 > **v0.1.30 MAJOR UPDATE** — A brand-new Welcome Tour: every feature introduced step by step with per-feature switches; an Office/Fluent-style liquid-glass app icon family; a changelog intro animation; and an unattended mode built for long batch jobs.
