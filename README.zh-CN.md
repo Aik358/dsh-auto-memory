@@ -358,6 +358,10 @@ DeepSeek Harness (Node, 127.0.0.1:3080)
 
 ## 社区致谢
 
+**反馈与交流：**欢迎加入 QQ 交流群——[点击加入 dsh-auto-memory 交流群](https://qm.qq.com/q/v7Asxn6vPa)——问题反馈、使用技巧交流，响应比 issue 更快。
+
+社区贡献者：
+
 - [@ProperSAMA](https://github.com/ProperSAMA) — DSH Desktop 增强模式（透明/Mica 材质）面板可读性修复 + 入口按钮防遮挡与外点/Esc 关闭（[PR #12](https://github.com/Aik358/dsh-auto-memory/pull/12)）
 - [@nkh0472](https://github.com/nkh0472) — 无人值守/批处理场景加固反馈，推动了欢迎向导与功能开关化（[Issue #10](https://github.com/Aik358/dsh-auto-memory/issues/10)）
 
