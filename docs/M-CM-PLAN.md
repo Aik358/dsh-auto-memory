@@ -47,7 +47,7 @@ OS 式记忆分层：core memory（上下文内的 self-edited memory blocks，"
 - **存储**：`workspaces/{workspace}/handoff/YYYY-MM-DD-HHMM-{slug}.md`。四段 schema：`## 任务状态` / `## 目标` / `## 已试方案与失败原因` / `## 进度与下一步`，头部 front-matter（workspace、触发原因、关联会话 id）。
 - **白板层（PLAN.md，2026-09-06 启发新增）**：模型随任务推进理解全貌后，用**人能理解的方式**重写 `workspaces/{ws}/handoff/PLAN.md`——整个项目的规划图（"白板"）；后续交接只在此快照上增改，每次重写旧版自动移入 `handoff/archive/PLAN-<ts>.md` 保留更改历史。与四段式 ledger 的关系=git 的树与提交日志：PLAN.md 是当前树，ledger 是 commit 历史。PLAN.md 注入优先级高于单篇 ledger。
 - **白板的用户面（HCI 联动，同日补）**：白板不只给模型——**用户（尤其探索中/思路混乱的用户）靠它实时看见自己**：做了什么（ledger 时间线）、走错了哪些路（"已试方案与失败原因"段）、改了哪些东西（PLAN 版本 diff）。这是外化认知/共享 grounding 工件：用户与 Agent 对照同一张图对齐。落点：①面板新增「白板」视图（PLAN 当前版+版本切换+ledger 时间线，复用 notes/logs 渲染管道）；②写入者与**回合末固化 prompt 同源同钩**（见上条——主模型每轮固化时一次产出两份：流水→日志/项目记忆，全貌增改→PLAN.md）；③与每日反思互补：反思是回顾（昨天），白板是并发（现在）。
-- **写入者三入口（2026-09-06 二次修正，术语钉准）**：①**回合末固化 prompt**——主大模型每轮对话结束时亲自把内容固化进项目记忆，PLAN.md 增改挂进同一时刻同一 prompt（理解全貌的正是主模型，白板由它写才是第一手理解）；②`memory_note` 工具显式写（M-CM2）；③水位触发自动写（M-CM4）。**子代理层（晋升判断：每日→长期、画像内容）是另一层，不写白板**——它是 PLAN/ledger 的消费方：晋升判断时读白板作为依据。全部过 `sanitizeForWrite` 门禁（34 特征 + 8000 字/条）。
+- **写入者三入口（2026-09-06 二次修正+代码锚定）**：①**回合末固化 prompt**——主大模型每轮对话结束时亲自把内容固化进项目记忆。代码锚点：GUIDANCE 尾注层（prompt order 10000，"完成实质性工作后必须调用"），层文案 builder≈`lib/index.js:2026`，`promptLayerOverrides` 可覆盖——PLAN 增改指令挂这层。②`memory_note` 工具显式写（M-CM2）——代码已有 append/replace 双模+8000/20 万字上限（`lib/index.js:4774`），PLAN.md 重写走 replace 模式零新增。③水位触发自动写（M-CM4）。**子代理层（晋升判断：每日→长期、画像内容）是另一层，不写白板**——它是 PLAN/ledger 的消费方。注：代码里 `autoConsolidate` 子代理（turn-stopping，`lib/index.js:128,1824`）也在写日志——两条写入路径并存，白板主挂 prompt 层，子代理里程碑为可选次级写入者。全部过 `sanitizeForWrite` 门禁（`lib/index.js:3970`）。
 - **生命周期**：最近一篇进入注入快照首位（见下）；90 天归档复用 Hermes 规则；**用户可直接读改**——这是与 Codex 服务端加密笔记的根本差异。
 - **注入（我们的 thread_hint）**：动态快照首位加"接续摘要"片段——handoff 最新一篇的压缩版（对齐 Codex 4KB 上限教训，设硬预算并给 evidence 引用），内容类型 `handoff.hint`，走既有 M6 固定边界，前缀缓存纪律不破。
 
@@ -66,12 +66,13 @@ OS 式记忆分层：core memory（上下文内的 self-edited memory blocks，"
 - 门控代理注册不变（CUA 先例；**ctx.get() 坑**规避）；**未命中必须可见**并进审计页（§8.4.3）。
 - 例外条款：若实测发现"轻量直返"与"会话式回答"在同工具内语义打架（参数爆炸/模型误用），再拆独立 `memory_search`——拆分是后备，不是起点。
 
-## 4. M-CM3 会话帧索引（可搜索归档，零复制）
+## 4. M-CM3 会话检索增强（2026-09-06 审计修正：host 已有关键词级检索，本项=升级非新建）
 
-- **不新建存储**：DSH 已把会话持久化为 `session.jsonl.zstd` 帧（v0.1.29 已解压读 cwd）。M-CM3 做**索引而非复制**——增量为王。
-- 索引器：增量扫描 profiles 会话目录 → digest 去重 → 按 user/assistant/tool 分条 → 词法倒排（复用 lexical_pre_v2）；语义向量仅对 C2/Python 档启用（复用 M7 index_sync 的 digest/分页思路）。
-- 入口：`memory_search scope=sessions`，结果带时间戳与帧位置引用——"笔记没捕获的细节"由此可寻。
-- 边界：凭证段过滤**先于**入索引；脏 token 拒入；索引元数据落 memoryRoot 独立目录，可整体删除。
+> **审计修正**：原文"会话帧未索引"有误。host 自带 `sessionQuery.searchSessions`（`lib/index.js:4531` `ctx.get('sessionQuery')`，:2226 调用，limit≤10），`memory_recall_pre` 已覆盖"历史 DSH 会话全文检索（如部署启用）"——**关键词级**，GUIDANCE 自己声明了局限："外部会话检索为关键词级（非语义）"。
+
+- **真正的增量**：①**语义通道**——C2/BGE-M3 向量升档（词法兜底不变），补齐"非语义"短板；②**排序与 provenance**——命中带时间戳/会话 id/帧位置引用（现状仅文本段），统一 M5 cite 规范；③**handoff corpus 并入**（M-CM1 新地面）；④limit≤10 的预算策略与 evidence 引用按需深查。
+- 索引器（若 host sessionQuery 能力不足再建）：增量扫描→digest 去重→词法倒排+可选向量；凭证段过滤**先于**入索引；脏 token 拒入；元数据落 memoryRoot 独立目录可整体删除。
+- zstd 解压能力已就绪（`lib/index.js:50-51,2328`）。
 
 ## 5. M-CM4 水位感知与压缩联动
 
@@ -137,9 +138,29 @@ OS 式记忆分层：core memory（上下文内的 self-edited memory blocks，"
 
 ## 9. 风险与开放问题
 
-- **子代理派生（2026-09-06 更新：可行性升级）**：DSH 一切皆插件、自由度高（boss 确认），派生子代理可行性高——长任务在水位高+任务可分解时派子代理=上下文隔离的天然单元（Anthropic 配方核心件）。仍需调查：具体派生 API/事件形态。插件侧三件事不变：①子代理产出自动沉淀为 handoff/PLAN 增改（M1 会话隔离 + `_ownSubagents` 识别已有底子）；②子代理注入策略适配（吃不吃记忆注入、吃哪层——实测定）；③"何时值得派"的 advisory。派生决策权在 host+模型，插件助产不夺权。
+- **子代理派生（2026-09-06 审计修正：机制已在插件手中）**：审计发现插件**已经能自产子代理**——`runSubagent(text, label, agent, timeoutMs)`（`lib/index.js:2922`），现役六个标签（auto-memory-compact / smart-kw / smart-ans / ws-map / summarize / greet），`_ownSubagents` WeakSet 防套娃（:673）。任务型子代理（水位高+任务可分解时派出）机制层面**已验证可行**，剩余工作是策略设计：①子代理产出自动沉淀为 handoff/PLAN 增改；②子代理注入策略适配（吃不吃记忆注入、吃哪层）；③"何时值得派"的 advisory。
 - **memoryRoot git 化（可选增强）**：历史保留当前用 archive 副本；若环境有系统 git 可对 memoryRoot 做轻量自动提交（零依赖约束→git 存在才启用，缺失降级副本）。
 - DSH 是否暴露 token 计数/压缩事件——**待验证**；无则 M-CM4 降级为启发式 + feature request。
 - 会话帧索引隐私边界：凭证段过滤必须先于索引器上线，顺序不可倒。
 - 工具返回的 token 预算：对齐 Codex 教训设硬上限（hint ≤4KB 的同款纪律），超出部分给 evidence 引用让模型按需 `memory_search` 深查。
 - 工具调用的用户可见性：复用唤起回顾审计页，避免"黑箱工具"观感。
+
+## 10. 回归项目审计对账表（2026-09-06，逐锚点核验 lib/index.js 等实现）
+
+| 规划锚点 | 代码锚点 | 判定 |
+|---|---|---|
+| 回合末固化 prompt（GUIDANCE 尾注层） | `lib/index.js:59-66`（order 10000 尾注）、`:2026`（层文案 builder）、`:161` promptLayerOverrides | ✓ 命中，白板挂点确认 |
+| memory_note append/replace 双模 + 8000/20 万上限 | `lib/index.js:4774` | ✓ 命中，PLAN.md 重写走 replace 零新增 |
+| memory_log 追加日志 | `lib/index.js:4755` | ✓ |
+| sanitizeForWrite 门禁 | `lib/index.js:3970` | ✓ |
+| 会话检索 | `:4531` `ctx.get('sessionQuery')`、`:2226` searchSessions、`:4846` 工具描述（含"历史 DSH 会话全文检索"） | ✗ 修正：已有关键词级检索，M-CM3 改定位为"升级"（语义通道+provenance） |
+| 子代理派生 | `:2922` runSubagent（6 个现役标签）、`:673` `_ownSubagents` 防套娃 | ✗ 修正：机制已在插件手中，任务型子代理可行性=已验证 |
+| M2 ContextObserver（水位挂点） | `:338`、`:725`（"只观察，不检索，不注入"） | ✓ |
+| 固定边界注入 | `:1936` renderMemoryDynamic、`:276/:289` 动态/静态分层 | ✓ |
+| zstd 会话帧解压 | `:50-51`、`:2328` | ✓ |
+| lexical_pre_v2 + C1/C2/C3 三层引擎 | `context-bridge-pre.js:487`、`context-host-pre.js:8`、client.js:175 | ✓ |
+| evidence store + M5 cite + M9 success evidence | `:1164`、`:3102-3131`、`:5074` | ✓ |
+| 晋升层（procedure 跨会话≥3 / 成功≥2 / 高风险批准） | `:239-255` | ✓ |
+| 自动沉淀子代理（turn-stopping+冷却/额度/寒暄阈值） | `:128-134`、`:4596`（延迟启动防与会话收尾竞争）、`:1824` | ✓ 与固化 prompt 双写入路径并存；术语按 boss 两层论 |
+
+审计结论：规划与项目对得上，两处误判（会话检索现状、子代理能力）已当场修正；无孤立概念。
