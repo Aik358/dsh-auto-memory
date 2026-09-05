@@ -26,9 +26,9 @@
 
 OS 式记忆分层：core memory（上下文内的 self-edited memory blocks，"RAM"）vs archival memory（上下文外的外存，"磁盘"，按需检索拉入）——[Agent Memory](https://www.letta.com/blog/agent-memory/) / [Memory Blocks](https://www.letta.com/blog/memory-blocks/)。开源、本地、Agent 自编辑记忆——与本插件同宗，但其为独立框架，我们为宿主内插件。
 
-### 0.4 "Extra" 查证
+### 0.4 命名澄清（2026-09-06 boss 纠正）
 
-不存在名为 "Extra" 的机制。最接近的是 Astra 发布时思考档位改名（Thinking Heavy → **Extra High / xhigh**）。上下文机制本体就是 `experimental_mode` 三件套。
+"Extra"是误传——boss 所指即 **Astra 本身**：GPT-6 Astra（2026-09-03 发布，9/4–9/5 铺开 Business/Pro）带来的**一套新的上下文机制**（中文媒体口径："上下文窗口填满时不再只靠压缩摘要，而是跨上下文窗口的笔记保留，可检索此前的需求/测试结果/工具输出"，另有 105 万 token 窗口、12.8 万最大输出）。机制挂 Astra 名下，Codex 侧配置键 `context_management.experimental_mode`，将成 Astra 默认。本文 §0.1 的源码级机制调查即该机制的实现细节。
 
 ## 1. 对账：现有架构 vs 三家机制
 
