@@ -23,7 +23,7 @@
 - [x] 实施步骤 9（部分）：M-CM4/M-CM5 已交付（commit:水位感知+交接助产）
 - [x] 精修轮（dsh-context 借鉴,commit:refine）：①水位计量升级官方 token-meter 公式(4 字符≈1 token+每消息 4,waterLevelWindowTokens=65536 默认)②compaction/summary|prune 事件感知(压缩后 0.5≤ratio 自动补写骨架,seq 去重)③骨架账本 v2=抽取性压缩(策展源:沉淀日志尾+反思摘要+笔记头,dedupe 限行——**测试抓出真 bug:join/dedupe 顺序颠倒致单字化,已修**)④白板注入改行边界截断(truncateLinesBounded)⑤advisory prompt 科学化(四段各≤5 行/失败项「方案→原因」/下一步带文件或命令)。参考=bowenliang123/dsh-context(README:index.js 1852 行/client.js 6892 行,官方 meter 移植+sessionProjections 投影注册表模式,后续 M-CM 深化可注册投影单元)——turn-stopping 测会话消息总字符→启发式水位;越阈每会话一次:动态快照 advisory（写账本/刷白板/建议开新窗/派子代理=M-CM5 指引）+自动系统骨架账本兜底;配置 4 键+设置页 3 项（中英）;smoke G6 35/35;重启上线+白板回归 OK
 - [x] 实施步骤 9.2：**水位窗口自动检测**（boss 指示"不能拍脑子"）——解析 settings.yaml 的 agent-default-model(provider+model)→对应模型 contextWindow（实测 deepseek-v4-flash=1000000）→检测失败回退 131072→waterLevelWindowTokens 手动覆盖优先+60s 缓存；handoff-state API 携带水位七字段；白板页签顶部**水位卡**（数值+比例条+来源+阈值说明,中英,浏览器实测渲染）；smoke 43/43
-- [ ] 实施步骤 9.5：push（待用户确认，10 commits 本地）
+- [x] 实施步骤 9.5：**2.1.0 已发布**（GitHub main c396d29+tag v2.1.0；npm latest @a9i5k4/dsh-auto-memory@2.1.0；npmmirror 同步已触发）——changelog 重构为双大版本叙事（2.1 交接白板+水位感知 / 1.3 主动联想记忆回顾），dispatch bigKey 切 2.1.0（G7 跨大版本断言过），实验特性出厂默认关闭（handoffEnabled=false），水位阈值设置项补齐（10-150%），README 双语交接章转实验性上线；boss 实例配置 handoffEnabled=true；live 验证：模拟升级路径弹出 2.1.0 卡（含实验说明+1.3 回顾），preview 分支已推
 - [ ] M-CM3 残余（后续增强）：会话语义通道（sessionQuery 词法已够用,语义升档视成本）;跨工作区白板语料（语义上存疑,缓）
 - [ ] M-CM4 精度升级（后续）：host 暴露真实 token 计数/压缩预告事件时,把启发式字符估计换成真实水位（向 DSH 提 feature request 的依据已记录）
 
