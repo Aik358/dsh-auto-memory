@@ -55,7 +55,7 @@ function run(current, storageMap) {
       for (var i = 0; i < 3; i++) { var x = pa[i] || 0, y = pb[i] || 0; if (x > y) return 1; if (x < y) return -1 }
       return 0
     }
-    var CHANGELOG = { '0.1.30': { zh: [], en: [] }, '0.1.36': { zh: [], en: [] } }
+    var CHANGELOG = { '2.1.0': { zh: [], en: [] }, '0.1.36': { zh: [], en: [] } }
     var apiGet = function () { return { then: function () { return Promise.resolve() } } }
     ${fnSrc}
     try { dispatchStartupDialog({ current: '${current}' }) } catch (e) { opened.push('THROW:' + (e && e.message)) }
@@ -100,6 +100,12 @@ console.log('[startup-dispatch] G6 老用户 seen=current 且向导看过 → �
 {
   const r = run('0.1.37', [['dsh-auto-memory-pre.seenVersion', '0.1.37'], S('dsh-auto-memory-pre.semWizardDone'), S('dsh-auto-memory-pre.majorTourV130')])
   ok(r.opened.length === 0, '已追平且看过 → 静默')
+}
+
+console.log('[startup-dispatch] G7 老用户 seen=0.1.39 升级到 2.1.0(跨大版本,向导看过)→ update')
+{
+  const r = run('2.1.0', [['dsh-auto-memory-pre.seenVersion', '0.1.39'], S('dsh-auto-memory-pre.semWizardDone'), S('dsh-auto-memory-pre.majorTourV130')])
+  ok(r.opened.length === 1 && r.opened[0] === 'update', '跨大版本 → 弹 2.1.0 changelog')
 }
 
 console.log(`[startup-dispatch] pass=${pass} fail=${fail}`)

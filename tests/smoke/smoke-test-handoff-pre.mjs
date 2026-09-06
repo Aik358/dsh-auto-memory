@@ -35,7 +35,7 @@ function extractFn(header) {
 }
 
 console.log('[handoff] G0 源码守卫:接线完整')
-ok(/handoffEnabled: true/.test(SRC) && /handoffPlanChars: 1200/.test(SRC) && /handoffLedgerChars: 800/.test(SRC),
+ok(/handoffEnabled: false/.test(SRC) && /handoffPlanChars: 1200/.test(SRC) && /handoffLedgerChars: 800/.test(SRC),
   '配置默认键齐全(handoffEnabled/handoffPlanChars/handoffLedgerChars)')
 ok(SRC.includes("snapshotPlanTitle: '[白板 PLAN.md") && SRC.includes("snapshotHandoffTitle: '[最近交接"),
   '动态注入层默认文案存在(promptLayerOverrides 可覆盖)')
