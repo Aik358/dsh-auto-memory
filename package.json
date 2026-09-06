@@ -1,6 +1,6 @@
 {
   "name": "@a9i5k4/dsh-auto-memory",
-  "description": "主动联想记忆插件:记忆不靠模型调用,自己被唤回——Host 观察情境,NLP+向量化双轨检索,固定边界注入不破坏前缀缓存。三层记忆自动沉淀、欢迎向导、唤起回顾、无人值守、AI 问候与反思、日历、跨工具记忆继承。Proactive associative memory for DSH: zero-call recall, three-layer auto-consolidation, welcome tour, unattended mode.",
+  "description": "Proactive associative memory for DeepSeek Harness: zero-prompt contextual recall injected at a fixed boundary before the model speaks, three-layer auto-consolidation, skill crystallization, and Astra-style context management - handoff ledgers, PLAN whiteboard, and water-level sensing across context windows. Local-first, model-agnostic, zero runtime dependencies. 主动联想记忆+Astra 式上下文管理:情境自动唤回、三层自动沉淀、技能固化、交接账本与 PLAN 白板跨窗口续命、水位感知窗口自适应。",
   "version": "2.1.0",
   "type": "module",
   "main": "lib/index.js",
