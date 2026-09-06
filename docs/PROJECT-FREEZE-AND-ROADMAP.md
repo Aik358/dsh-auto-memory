@@ -4,6 +4,8 @@
 > 测试为准；架构不变量以 docs/proactive-associative-memory-system-map.html 为准；
 > 本文的作用是在多次会话压缩后，让任何新会话在一篇文档内找回全局。
 > 工作区 D:\dsh-auto-memory（preview 分支）；npm 包 @deepseek-ai/dsh-auto-memory。
+>
+> **2026-09-06 增补：大版本（next major）愿景与 README 宣传改版方案 = [docs/NEXT-MAJOR-VISION.md](NEXT-MAJOR-VISION.md)**——对标 GPT-6 Astra 上下文管理（M-CM1 交接笔记 / M-CM2 主动检索工具 / M-CM3 原始归档 / M-CM4 水位感知）。大版本完成前**禁止改 README**；npm 同步也等大版本一起。
 
 ## 0. 项目一句话
 

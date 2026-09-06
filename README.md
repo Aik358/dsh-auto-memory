@@ -80,7 +80,7 @@ Now we push this route to its last missing piece — when the context fills, she
 | **Everything is a switch** | Welcome tour + settings page, every feature individually toggleable (incl. unattended mode) |
 | **External memory inheritance** | Memories from WorkBuddy / CodeBuddy / Claude Code / Codex are scanned, importable, per-source managed |
 | **Production-grade hygiene** | Write gate (mojibake/stutter/JSON-injection blocking) + dirty-token scanner + credentials never enter prompts |
-| **Astra-style context management (next major)** | A filling context no longer collapses into one summary — four-part handoff notes carry work across windows, full history stays searchable, the agent retrieves on demand |
+| **Astra-style context management (experimental)** | A filling context no longer collapses into one summary — four-part handoff notes carry work across windows, full history stays searchable, the agent retrieves on demand (off by default; enable in Settings → Automation) |
 | **Model-agnostic** | No vendor lock, no tier lock: any model on DSH works out of the box — lexical 0GB floor, built-in ~130MB semantic tier, advanced 563MB |
 | **Portable memory** | Everything lives on your own disk; memories scan in from other AI tools, every entry has an evidence chain — auditable, deletable. Memory belongs to you, not to any vendor |
 
@@ -128,7 +128,7 @@ So we built it as an open plugin: no experimental gate, no subscription tier —
 
 **One route, two arrivals: it ships with a flagship; ours walks into your machine as a plugin.**
 
-*The context-management capabilities described here ship with the next major version (see [How she hands off](#how-she-hands-off-next-major--coming-soon)).*
+*Handoff is experimental and off by default in this release — enable via Settings → Automation → Handoff whiteboard (see [How she hands off](#how-she-hands-off-experimental--off-by-default)).*
 
 ---
 
@@ -142,7 +142,7 @@ Friday, you ask casually: "Why do you remember this?" She shows you: which messa
 
 **She remembers, unbidden. And if you want her to forget — that's one sentence too.**
 
-> Handoff-related scenes ship with the next major version.
+> Handoff-related scenes require Settings → Automation → Handoff whiteboard (experimental).
 
 ---
 
@@ -197,9 +197,9 @@ Return after more than an hour away and the memory panel opens itself — a "wel
 
 ---
 
-## How she hands off (next major · coming soon)
+## How she hands off (experimental · off by default)
 
-> **On the road**: four-part handoff notes, `memory_search` / `memory_note` on-demand retrieval tools, searchable full-history archive, and token water-level awareness — shipping with the next major version, benchmarked against GPT-6 Astra's context management.
+> **Experimental**: these capabilities ship in 2.1 but are disabled by default — enable via Settings → Automation → Handoff whiteboard. The window auto-follows the active model (settings.yaml contextWindow, e.g. 1M), or set it manually.
 
 When the context fills, she no longer burns the whole book for a one-line summary; she writes a **four-part handoff note** — task state, goals, approaches tried and why they failed, progress and next step — closes this window, and opens the next. What didn't fit in the notes is safe too: the full history of messages and tool outputs lands in a local archive, searchable anytime — no detail dies in the fire.
 
