@@ -51,3 +51,20 @@ pnpm add @a9i5k4/dsh-auto-memory@2.1.9
 （pnpm v11 拦 24h 内新版本的话：`pnpm-workspace.yaml` 加 `minimumReleaseAge: 0`，或直接用上面的显式版本号。）
 
 再次感谢每一位写 issue 的人——这份质量的问题报告（带日志、带源码定位、带复现步骤）让修复快了不止一倍。继续欢迎 issue / PR / 群里反馈。
+
+
+---
+
+# dsh-auto-memory 更新报告（v2.1.9）
+
+近期集中修复了一批大家报告的问题，全部已在 v2.1.9 落地，感谢每一位写 issue 的朋友：
+
+- **自动沉淀失效**（新版 DSH 兼容）：已修复，2.1.6 起恢复（感谢 @Minervaowl7，其 PR 已合并、已署名 Contributors）
+- **greet 接口 500 / 唤起冷却无法设 0**：已修复（感谢 @Fishsb）
+- **npm 包缺 python/ 目录致 C3 档不可用**：已修复，tarball 实测含完整 python/ 运行时（注意 2.1.5 请跳过，直接用 2.1.6+）
+- **「修复 stale」恒报错、跨工作区总结不刷新、面板版本号过期**：均已修复（感谢 @JIE42393 的连环定位）
+- **「每次都弹下载提示也没下载成功」**：根因是模型存进了插件目录，升级重装即被冲掉——已迁移到用户目录（~/.dsh/models/），升级后重新点一次下载即可
+
+**新功能**：Python 进阶引擎一键安装向导（自动建 venv + 装依赖 + 下模型，支持 GPU 推理开关）；设置页关于区新增 QQ 交流群入口。
+
+升级：`cd ~/.dsh/profiles/web && pnpm add @a9i5k4/dsh-auto-memory@2.1.9`（pnpm 拦 24h 内新版本就加 `minimumReleaseAge: 0`）。问题继续提 issue 或群里喊，感谢支持。
