@@ -97,6 +97,8 @@ const transforms = [
   ['dsh-auto-memory-pre', 'dsh-auto-memory'],
   // 全局 auto-memory-pre 标识(name/slots/API/context/localStorage/配置文件/日志前缀)
   ['auto-memory-pre', 'auto-memory'],
+  // M7.6 模块文件名(python-setup-pre.js → python-setup.js;含 import 引用与文件自身)
+  ['python-setup-pre.js', 'python-setup.js'],
   // systemPrompt context/section 注册名前缀
   ['dsh:auto-memory-pre', 'dsh:auto-memory'],
   ['dsh:m6-reference-tail-pre', 'dsh:m6-reference-tail'],
@@ -189,7 +191,7 @@ const libModuleRenames = [
   'memory-hub-pre.js', 'memory-index-pre.js', 'memory-writer-pre.js',
   'procedure-store-pre.js', 'python-sidecar-client-pre.js', 'semantic-decide-pre.js',
   'semantic-js-pre.js', 'shadow-host-pre.js', 'shadow-retrieval-pre.js',
-  'storage-manage-pre.js',
+  'storage-manage-pre.js', 'python-setup-pre.js',
 ]
 const libRenameMap = libModuleRenames.map((f) => [f, f.replace(/-pre\.js$/, '.js')])
 for (const [from, to] of libRenameMap) {
@@ -405,6 +407,15 @@ for (const f of scanTargets) {
 }
 if (bad.length) { console.error('[release] ❌ 残留:\n' + bad.join('\n')); process.exit(1) }
 console.log('[release] 语法 ✓ BOM ✓ 无 pre/dev 残留 ✓')
+
+// ---------- 5.5 发布物完整性(#20):python/ 运行时必须在、bench 夹具必须排除 ----------
+const pyDir = path.join(REL, 'python')
+const pyMust = ['worker_v1.py', 'worker_semantic_v1.py', 'm7_activation_features_v2.py', 'm7_embedding_v1.py']
+const pyMissing = pyMust.filter((f) => !existsSync(path.join(pyDir, f)))
+if (pyMissing.length) { console.error('[release] ❌ python/ 运行时缺失: ' + pyMissing.join(', ')); process.exit(1) }
+if (existsSync(path.join(pyDir, 'bench'))) { console.error('[release] ❌ python/bench(含 539MB 模型夹具)不得进入发布包 — 检查 package.json files 排除规则'); process.exit(1) }
+if (!existsSync(path.join(REL, 'lib', 'client.js'))) { console.error('[release] ❌ lib/client.js 缺失'); process.exit(1) }
+console.log('[release] python/ 运行时完整 ✓ bench 已排除 ✓')
 
 // ---------- 6. 完成 ----------
 console.log('\n✅ 构建输出目录:', REL, '(version ' + version + ')' + (dryRun ? ' [dry-run staging,未触碰真实发布基座]' : ''))
