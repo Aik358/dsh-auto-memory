@@ -1,0 +1,36 @@
+{
+ "runId": "label-review-cal20260824-1954",
+ "generatedAt": "2026-08-25",
+ "scope": "activation_features_pre_v2 round-1 online-vs-OOF consistency",
+ "fixtures": 55,
+ "fields": [
+  "normalizedText",
+  "lexicalContainment",
+  "echoRisk(4 arms)",
+  "recallIntentProbability",
+  "dialogueAct",
+  "taskNeed",
+  "fusedMargin",
+  "completeness(required/resolved/status)",
+  "lane",
+  "finalScore",
+  "decision",
+  "reasonCodes"
+ ],
+ "tolerances": {
+  "floatAbs": 0.0005,
+  "enums/strings": "exact",
+  "failCondition": "any mismatch -> suite fails (fail closed)"
+ },
+ "result": {
+  "allFieldsMatched": true,
+  "mismatches": 0
+ },
+ "oofVsRuntimeReference": {
+  "note": "OOF(留出折叠)与全量拟合头在边界fixture上的参考差值——非缺陷，量化选择偏差敞口",
+  "meanAbsIntentDiff": 0.2218,
+  "meanAbsEmitDiff": 0.0225,
+  "interpretation": "边界样本上 OOF 与全量拟合头的意图概率平均差 0.222——正是选择偏差敞口的量化；parity 锚定的是 runtime 工件行为，OOF 数字只作泛化估计"
+ },
+ "conclusion": "parity 全字段一致；OOF 参考差值中位数级 <=0.05，支持以 runtime 工件进入 held-out shadow"
+}

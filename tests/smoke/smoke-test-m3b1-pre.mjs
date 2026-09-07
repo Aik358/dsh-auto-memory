@@ -8,8 +8,8 @@ import { fileURLToPath } from 'node:url'
 process.on('uncaughtException', (e) => { console.error('\n[M3B1-TEST] FATAL uncaughtException:', (e && (e.stack || e.message)) || e); process.exit(1) })
 process.on('unhandledRejection', (r) => { console.error('\n[M3B1-TEST] FATAL unhandledRejection:', (r && (r.stack || r.message)) || r); process.exit(1) })
 
-const { parseAnchors, buildSidecar, parseSidecar, planMigration, newMemoryId, MEMORY_ID_RE, SIDECAR_NAMESPACE } = await import('../../lib/memory-anchor.js')
-const { INDEX_MAX_FILE_BYTES } = await import('../../lib/memory-index.js')
+const { parseAnchors, buildSidecar, parseSidecar, planMigration, newMemoryId, MEMORY_ID_RE, SIDECAR_NAMESPACE } = await import('../../lib/memory-anchor-pre.js')
+const { INDEX_MAX_FILE_BYTES } = await import('../../lib/memory-index-pre.js')
 
 const FIX = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..', 'tests', 'm3b1-fixtures')
 const load = (f) => readFileSync(path.join(FIX, f))

@@ -1,0 +1,25 @@
+{
+ "total": 53,
+ "actions": {
+  "activate": 25,
+  "suppress": 22,
+  "prefetch": 6
+ },
+ "categories": {
+  "echo-vs-recall": 20,
+  "failure-vs-planning": 12,
+  "supersede": 2,
+  "cross-workspace": 6,
+  "low-info": 7,
+  "cross-lingual": 6
+ },
+ "languages": {
+  "zh": 47,
+  "en": 6
+ },
+ "splits": {
+  "train": 35,
+  "test": 7,
+  "dev": 11
+ }
+}

@@ -5,12 +5,12 @@
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 const HERE = path.dirname(fileURLToPath(import.meta.url))
-import { loadAndVerifyPolicy, decideActivationV2 } from '../../lib/semantic-decide.js'
+import { loadAndVerifyPolicy, decideActivationV2 } from '../../lib/semantic-decide-pre.js'
 
 let pass = 0, fail = 0
 const ok = (c, n) => { if (c) { pass++; console.log('  ok - ' + n) } else { fail++; console.error('  FAIL - ' + n) } }
-const INTENT = path.join(HERE, '..', '..', 'python', 'policies', 'recall_intent_lr_v1.json')
-const POLICY = path.join(HERE, '..', '..', 'python', 'policies', 'activation_policy_v2.json')
+const INTENT = path.join(HERE, '..', '..', 'python', 'policies', 'recall_intent_lr_pre_v1.json')
+const POLICY = path.join(HERE, '..', '..', 'python', 'policies', 'activation_policy_pre_v2.json')
 
 console.log('[P1] loadAndVerifyPolicy')
 let ctx

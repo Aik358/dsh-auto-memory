@@ -1,0 +1,5 @@
+layer,arm,recall@1,recall@5,recall@10,mrr,ndcg@10,hardneg_error,supersede_correct,latency_p50_ms,latency_p95_ms
+L1,fusion-top10 (no rerank),0.7386,0.9659,0.9886,0.8373,0.8751,0.1481,0.5,,
+L1,bge-reranker-v2-m3 top50->10,0.8977,1.0,1.0,0.947,0.9608,0.1111,0.625,26093.1,37448.8
+L2,fusion-top10 (no rerank),0.8,0.95,1.0,0.8657,0.8978,0.0741,,,
+L2,bge-reranker-v2-m3 top50->10,0.85,0.95,1.0,0.8921,0.9178,0.037,,32856.8,43808.5

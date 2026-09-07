@@ -7,7 +7,7 @@ import path from 'node:path'
 process.on('uncaughtException', (e) => { console.error('[F1-TEST] FATAL:', (e && (e.stack || e.message)) || e); process.exit(1) })
 process.on('unhandledRejection', (r) => { console.error('[F1-TEST] REJ:', r); process.exit(1) })
 
-const { parseAnchors } = await import('../../lib/memory-anchor.js')
+const { parseAnchors } = await import('../../lib/memory-anchor-pre.js')
 const genProse = (tag, n) => { let s = tag + '。'; for (let i = 1; i <= n; i++) s += '第' + i + '条要点：围绕模块' + (i % 9) + '的接口约定与参数校验做出决定，附带边界条件说明和示例路径。'; return s }
 let pass = 0; let fail = 0
 function ok(cond, name) { if (cond) { pass++; console.log('  ok - ' + name) } else { fail++; console.error('  FAIL - ' + name) } }
@@ -18,7 +18,7 @@ async function setupHarness(opts = {}) {
   const memoryRoot = path.join(ws1, 'mem')
   const wsA = path.join(ws1, 'wsA')
   mkdirSync(home, { recursive: true }); mkdirSync(memoryRoot, { recursive: true }); mkdirSync(wsA, { recursive: true })
-  writeFileSync(path.join(home, 'dsh-auto-memory.json'), JSON.stringify({
+  writeFileSync(path.join(home, 'dsh-auto-memory-pre.json'), JSON.stringify({
     memoryRoot, userMemoryDir: path.join(ws1, 'user'), projectMemoryDir: '.project-memory',
     externalSources: {}, ...(opts.configPatch || {}) }), 'utf8')
   process.env.DSH_HOME = home
@@ -71,11 +71,11 @@ console.log('[G1/G2/G3] anchor 开启:超预算 → 记录级压缩(整条归档
     lineStart: r.lineStart, lineEnd: r.lineEnd, byteStart: r.byteStart, byteEnd: r.byteEnd,
     bytes: r.bytes, recordDigest: r.recordDigest, sourceVersion: 1, fileDigest: sha256Hex(buf),
   }))
-  const sideDir = path.join(h.home, 'memory', 'index', 'files')
+  const sideDir = path.join(h.home, 'memory', 'index-pre', 'files')
   mkdirSync(sideDir, { recursive: true })
   const canon = (x) => path.resolve(x).replace(/\\/g, '/').toLowerCase()
   const sidePath = path.join(sideDir, createHash('sha256').update(canon(notesFile), 'utf8').digest('hex') + '.json')
-  writeFileSync(sidePath, JSON.stringify({ schemaVersion: 1, namespace: 'dsh-auto-memory', sourceFile: notesFile,
+  writeFileSync(sidePath, JSON.stringify({ schemaVersion: 1, namespace: 'dsh-auto-memory-pre', sourceFile: notesFile,
     sourceEpoch: '44444444-4444-4444-8444-444444444444', sourceVersion: 1, fileDigest: sha256Hex(buf),
     newline: 'lf', updatedAt: 1700000000000, records: records0 }, null, 2) + '\n', 'utf8')
   const memIds = () => { const b2 = readFileSync(notesFile); const pp = parseAnchors(b2); return { status: pp.status, ids: pp.records.filter((r) => r.kind === 'anchored').map((r) => r.memoryId) } }
@@ -83,8 +83,8 @@ console.log('[G1/G2/G3] anchor 开启:超预算 → 记录级压缩(整条归档
   eq(before.status, 'clean', 'G1 初始文件 clean')
   eq(before.ids, [idA, idB, idC], 'G1 初始 id 序 A,B,C')
   // 触发:第一笔 2200 字(写入为今天的 anchored 记录 D) → 第二笔 2200 字超日预算 → 压缩
-  const noteTool = h.tools.find((t) => t.name === 'memory_note')
-  ok(!!noteTool, 'memory_note 工具已注册')
+  const noteTool = h.tools.find((t) => t.name === 'memory_note_pre')
+  ok(!!noteTool, 'memory_note_pre 工具已注册')
   const big1 = genProse('第一笔内容', 45)
   const out1 = await noteTool.execute({ content: big1, action: 'append' }, { agent })
   ok(String(out1).includes('已更新项目笔记'), 'G1 第一笔写入成功')
@@ -111,7 +111,7 @@ console.log('[G1/G2/G3] anchor 开启:超预算 → 记录级压缩(整条归档
     ok(!archiveText.includes(idC), 'G2 归档不含今天记录 C')
   }
   // sidecar fresh 且保留 id 稳定(C 同 id 同记录)
-  const sp = path.join(h.home, 'memory', 'index', 'files', createHash('sha256').update(canon(notesFile), 'utf8').digest('hex') + '.json')
+  const sp = path.join(h.home, 'memory', 'index-pre', 'files', createHash('sha256').update(canon(notesFile), 'utf8').digest('hex') + '.json')
   const sc = JSON.parse(readFileSync(sp, 'utf8'))
   const buf2 = readFileSync(notesFile)
   eq(sc.fileDigest, sha256Hex(buf2), 'G3 sidecar fileDigest 与当前文件一致(FRESH)')
@@ -134,7 +134,7 @@ console.log('[G4] anchor 关闭:旧文本路径不异常')
   const agent = { id: 'a2', session: { id: 's2', header: { id: 's2', cwd: h.wsA } } }
   await h.fire('agent/session-start', { agent, source: 'fresh' })
   await new Promise((r) => setTimeout(r, 250))
-  const noteTool = h.tools.find((t) => t.name === 'memory_note')
+  const noteTool = h.tools.find((t) => t.name === 'memory_note_pre')
   const big = genProse('旧路径大内容', 45)
   const o1 = await noteTool.execute({ content: big, action: 'append' }, { agent })
   ok(String(o1).includes('已更新项目笔记'), 'G4 关闭态首笔照常写入')

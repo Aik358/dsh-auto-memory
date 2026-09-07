@@ -1,4 +1,4 @@
-// M7-6 Semantic Activation 测试(任务集 §十,worker_semantic_v1):
+// M7-6 Semantic Activation 测试(任务集 §十,worker_semantic_pre_v1):
 // 双阈值 suppress/prefetch/emit + T_on>T_off 滞回 + cooldown;shadow 校准默认,
 // active 模式发 activation_request 帧——逐字段过现有 M6 validateActivationRequestPre;
 // provenance 从 corpus 复制;close_session 清 per-session 状态;未知 miv fail closed。
@@ -18,11 +18,11 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 const sha256Hex = (s) => createHash('sha256').update(Buffer.from(s)).digest('hex')
 const hex32 = (s) => sha256Hex(s).slice(0, 32)
 
-const CLIENT = await import('../../lib/python-sidecar-client.js')
-const SYNC = await import('../../lib/index-sync.js')
-const INBOX = await import('../../lib/activation-inbox.js')
+const CLIENT = await import('../../lib/python-sidecar-client-pre.js')
+const SYNC = await import('../../lib/index-sync-pre.js')
+const INBOX = await import('../../lib/activation-inbox-pre.js')
 const HERE = path.dirname(fileURLToPath(import.meta.url))
-const SEM_WORKER = path.join(HERE, '..', '..', 'python', 'worker_semantic_v1.py')
+const SEM_WORKER = path.join(HERE, '..', '..', 'python', 'worker_semantic_pre_v1.py')
 
 function mkEmbConfig(home, activationPolicy) {
   const p = path.join(home, `emb-${Math.random().toString(36).slice(2, 7)}.json`)
@@ -47,7 +47,7 @@ const records = () => {
     scope: 'Workspace', workspaceRef: wsr, sourceRef: 'workspace:MEMORY.md',
     sourceEpoch: 'e-m76', sourceVersion: 1,
     fileDigest: sha256Hex('m76f' + i), recordDigest: sha256Hex('m76r' + i),
-    heading: null, text, chunkId: 'chk_' + hex32('m76c' + i), chunkOrdinal: 0, chunkCount: 1,
+    heading: null, text, chunkId: 'chk_pre_' + hex32('m76c' + i), chunkOrdinal: 0, chunkCount: 1,
   })
   return [mk(1, GOLD_TEXT), mk(2, NEAR_TEXT)]
 }
@@ -78,30 +78,30 @@ function push(obs, miv, text, cv = 1, extra = {}) {
     trigger: { segmentId: 'sg' + cv, digest: 'd'.repeat(16), kind: 'user', eventSeq: cv, contextVersion: cv, ts: cv, text },
     window: toolFail ? [{ segmentId: 'tf' + cv, digest: 'e'.repeat(16), kind: 'tool_result', eventSeq: cv, contextVersion: cv, ts: cv, text: 'tool failed', toolName: 't', toolOk: false, errorName: 'EPIPE' }] : [],
     memoryRefs: [], evidence,
-    policy: { contextPolicyVersion: 'context_bridge_v1', gatePolicyVersion: 'gate_v1', lexicalPolicyVersion: 'lexical_v2', evidencePolicyVersion: 'evidence_v1' },
+    policy: { contextPolicyVersion: 'context_bridge_pre_v1', gatePolicyVersion: 'gate_pre_v1', lexicalPolicyVersion: 'lexical_pre_v2', evidencePolicyVersion: 'evidence_pre_v1' },
     budget: { maxSegments: 8, maxInputBytes: 4096, maxMemoryRefs: 8, maxEvidenceItems: 16 },
     observedAt: 1000 + cv, deadlineAt: 6000 + cv, ...extra,
   }
 }
-const actShadowRows = (home) => readFileSync(path.join(home, 'memory', 'semantic', 'activation-shadow.jsonl'), 'utf8').trim().split('\n').map((l) => JSON.parse(l))
+const actShadowRows = (home) => readFileSync(path.join(home, 'memory', 'semantic-pre', 'activation-shadow.jsonl'), 'utf8').trim().split('\n').map((l) => JSON.parse(l))
 
 console.log('[Q1] shadow 模式默认:低分 suppress/高分 emit 决策落日志但零帧')
 {
   const home = mkdtempSync(path.join(tmpdir(), 'm76-q1-'))
   const c = mkClient(home, mkEmbConfig(home)) // 无 activationPolicy → shadow 默认
   const recs = records()
-  const miv = 'idx_' + hex32('m76a')
+  const miv = 'idx_pre_' + hex32('m76a')
   ok(await syncCorpus(c, recs, miv), 'corpus 同步成功')
   let acts = 0
   c.onActivation(() => { acts++ })
-  await c.request('context_push', push('obs_' + hex32('q1a'), miv, OFF_TEXT, 1))
-  await c.request('context_push', push('obs_' + hex32('q1b'), miv, GOLD_TEXT, 2))
+  await c.request('context_push', push('obs_pre_' + hex32('q1a'), miv, OFF_TEXT, 1))
+  await c.request('context_push', push('obs_pre_' + hex32('q1b'), miv, GOLD_TEXT, 2))
   await sleep(500)
   const rows = actShadowRows(home)
   eq(rows.map((r) => r.decision), ['suppress', 'emit'], '决策序列 suppress→emit(低分不过 T_off,满分过 T_on)')
   eq(rows[0].mode, 'shadow', '默认 mode=shadow')
   eq(acts, 0, 'shadow 模式零 activation 帧(仅校准日志)')
-  ok(rows[1].activationId && rows[1].activationId.startsWith('act_'), 'shadow emit 行带确定性 activationId')
+  ok(rows[1].activationId && rows[1].activationId.startsWith('act_pre_'), 'shadow emit 行带确定性 activationId')
   ok(rows[1].features && typeof rows[1].features.denseTop === 'number' && rows[1].features.denseTop > 0.9, '特征分组落日志(denseTop>0.9)')
   await c.dispose('q1'); rmSync(home, { recursive: true, force: true })
 }
@@ -111,21 +111,21 @@ console.log('[Q2] active 模式:activation 帧逐字段过 M6 validateActivation
   const home = mkdtempSync(path.join(tmpdir(), 'm76-q2-'))
   const c = mkClient(home, mkEmbConfig(home, { mode: 'active', tOn: 0.7, tOff: 0.4, cooldownObs: 2 }))
   const recs = records()
-  const miv = 'idx_' + hex32('m76b')
+  const miv = 'idx_pre_' + hex32('m76b')
   await syncCorpus(c, recs, miv)
   const got = []
   c.onActivation((evt) => got.push(evt.activation))
-  const r = await c.request('context_push', push('obs_' + hex32('q2a'), miv, GOLD_TEXT, 1))
+  const r = await c.request('context_push', push('obs_pre_' + hex32('q2a'), miv, GOLD_TEXT, 1))
   ok(r.ok && r.frame.payload.accepted === true, 'ack 不受激活影响')
   for (let i = 0; i < 20 && got.length < 1; i++) await sleep(50)
   ok(got.length === 1, '收到 1 个 activation 帧')
   const act = got[0]
   const v = INBOX.validateActivationRequestPre(act)
   ok(v.ok === true, '过 validateActivationRequestPre(' + (v.ok ? '' : v.reason) + ')')
-  eq(act.observationId, 'obs_' + hex32('q2a'), 'observationId=envelope 原值')
+  eq(act.observationId, 'obs_pre_' + hex32('q2a'), 'observationId=envelope 原值')
   eq(act.memoryIndexVersion, miv, 'miv=envelope 原值')
   eq(act.sessionId, 'sess-76', 'sessionId 逐字复制')
-  eq(act.threshold.policyVersion, 'm7_semantic_threshold_v1', 'threshold.policyVersion')
+  eq(act.threshold.policyVersion, 'm7_semantic_threshold_pre_v1', 'threshold.policyVersion')
   ok(act.threshold.score >= 0.7 && act.threshold.threshold === 0.7, 'score≥T_on 且 threshold=T_on')
   ok(typeof act.level === 'string' && ['index', 'hint', 'excerpt', 'checklist', 'resource', 'full'].includes(act.level), 'level 枚举合法')
   ok(act.candidates.length >= 1 && act.candidates.length <= 8, '候选 1..8')
@@ -145,9 +145,9 @@ console.log('[Q3] 滞回+cooldown:emit→cooldown→(冷却后)高分再 emit;�
   const home = mkdtempSync(path.join(tmpdir(), 'm76-q3-'))
   const c = mkClient(home, mkEmbConfig(home, { mode: 'shadow', tOn: 0.7, tOff: 0.4, cooldownObs: 2 }))
   const recs = records()
-  const miv = 'idx_' + hex32('m76c')
+  const miv = 'idx_pre_' + hex32('m76c')
   await syncCorpus(c, recs, miv)
-  const pushSeq = async (tag, text, cv) => c.request('context_push', push('obs_' + hex32(tag), miv, text, cv))
+  const pushSeq = async (tag, text, cv) => c.request('context_push', push('obs_pre_' + hex32(tag), miv, text, cv))
   await pushSeq('q3a', GOLD_TEXT, 1)      // emit
   await pushSeq('q3b', GOLD_TEXT, 2)      // cooldown
   await pushSeq('q3c', GOLD_TEXT, 3)      // cooldown (obs-last=2<=2)
@@ -170,22 +170,22 @@ console.log('[Q4] close_session 清会话状态;未知 miv fail closed')
   const home = mkdtempSync(path.join(tmpdir(), 'm76-q4-'))
   const c = mkClient(home, mkEmbConfig(home, { mode: 'active', tOn: 0.7, tOff: 0.4, cooldownObs: 5 }))
   const recs = records()
-  const miv = 'idx_' + hex32('m76d')
+  const miv = 'idx_pre_' + hex32('m76d')
   await syncCorpus(c, recs, miv)
   const got = []
   c.onActivation((evt) => got.push(evt.activation))
-  await c.request('context_push', push('obs_' + hex32('q4a'), miv, GOLD_TEXT, 1))
+  await c.request('context_push', push('obs_pre_' + hex32('q4a'), miv, GOLD_TEXT, 1))
   for (let i = 0; i < 20 && got.length < 1; i++) await sleep(50)
   ok(got.length === 1, '首个激活到达')
-  await c.request('context_push', push('obs_' + hex32('q4b'), miv, GOLD_TEXT, 2))
+  await c.request('context_push', push('obs_pre_' + hex32('q4b'), miv, GOLD_TEXT, 2))
   await sleep(300)
   eq(got.length, 1, 'cooldown=5 内第二观测不再发')
   await c.notify('close_session', { sessionId: 'sess-76' })
   await sleep(200)
-  await c.request('context_push', push('obs_' + hex32('q4c'), miv, GOLD_TEXT, 3))
+  await c.request('context_push', push('obs_pre_' + hex32('q4c'), miv, GOLD_TEXT, 3))
   for (let i = 0; i < 20 && got.length < 2; i++) await sleep(50)
   ok(got.length === 2, 'close_session 清状态后同会话重新可 emit')
-  await c.request('context_push', push('obs_' + hex32('q4d'), 'idx_' + hex32('ghost'), GOLD_TEXT, 4))
+  await c.request('context_push', push('obs_pre_' + hex32('q4d'), 'idx_pre_' + hex32('ghost'), GOLD_TEXT, 4))
   await sleep(300)
   eq(got.length, 2, '未知 miv → 零候选零激活(fail closed)')
   await c.dispose('q4'); rmSync(home, { recursive: true, force: true })
@@ -195,10 +195,10 @@ console.log('[Q5] 无 provider/无 corpus:激活路径安全静默')
 {
   const home = mkdtempSync(path.join(tmpdir(), 'm76-q5-'))
   const c = mkClient(home, mkEmbConfig(home, { mode: 'active', tOn: 0.1, tOff: 0.05 }))
-  const r = await c.request('context_push', push('obs_' + hex32('q5a'), 'idx_' + hex32('m76e'), GOLD_TEXT, 1))
+  const r = await c.request('context_push', push('obs_pre_' + hex32('q5a'), 'idx_pre_' + hex32('m76e'), GOLD_TEXT, 1))
   ok(r.ok && r.frame.payload.accepted === true, '无 corpus ack 正常')
   await sleep(300)
-  ok(!existsSync(path.join(home, 'memory', 'semantic', 'activation-shadow.jsonl')), '无候选零激活日志')
+  ok(!existsSync(path.join(home, 'memory', 'semantic-pre', 'activation-shadow.jsonl')), '无候选零激活日志')
   await c.dispose('q5'); rmSync(home, { recursive: true, force: true })
 }
 
@@ -213,25 +213,25 @@ console.log('[Q6] 审计 H4:correction 硬抑制 / 负向特征 / toolFailures /
     scope: 'Workspace', workspaceRef: wsr, sourceRef: 'workspace:MEMORY.md',
     sourceEpoch: 'e-m76', sourceVersion: 1,
     fileDigest: sha256Hex('m76f' + i), recordDigest: sha256Hex('m76r' + i),
-    heading: null, text, chunkId: 'chk_' + hex32('m76c' + i), chunkOrdinal: 0, chunkCount: 1,
+    heading: null, text, chunkId: 'chk_pre_' + hex32('m76c' + i), chunkOrdinal: 0, chunkCount: 1,
     ...(occurredAt ? { occurredAt } : {}),
   })
   const gold = mk(1, GOLD_TEXT, Date.now() - 86400000)
   const recs = [gold, mk(2, NEAR_TEXT)]
-  const miv = 'idx_' + hex32('m76f')
+  const miv = 'idx_pre_' + hex32('m76f')
   ok(await syncCorpus(c, recs, miv), 'corpus 同步')
   const candShadowLast = () => {
-    const f = path.join(home, 'memory', 'semantic', 'candidates-shadow.jsonl')
+    const f = path.join(home, 'memory', 'semantic-pre', 'candidates-shadow.jsonl')
     if (!existsSync(f)) return null
     const lines = readFileSync(f, 'utf8').trim().split('\n')
     return JSON.parse(lines[lines.length - 1])
   }
   // Q6a: correction targets GOLD -> gold hard-dropped; survivor must NOT emit
-  await c.request('context_push', push('obs_' + hex32('q6a'), miv, GOLD_TEXT, 1, {
+  await c.request('context_push', push('obs_pre_' + hex32('q6a'), miv, GOLD_TEXT, 1, {
     evidence: [{ memoryId: gold.memoryId, scope: 'Workspace', freshness: 'fresh',
                  distinctSessions: 1, seen: 0, read: 0, cite: 0, reuse: 0,
                  success: 0, correction: 3, lastEvidenceAt: 1,
-                 policyVersion: 'evidence_v1' }],
+                 policyVersion: 'evidence_pre_v1' }],
   }))
   await sleep(400)
   let rows = actShadowRows(home)
@@ -241,11 +241,11 @@ console.log('[Q6] 审计 H4:correction 硬抑制 / 负向特征 / toolFailures /
   ok(cs1 && cs1.conflictDropped && cs1.conflictDropped.includes(gold.memoryId),
      'candidates-shadow 记录 conflictDropped=[gold]')
   // Q6b: correction targets OTHER memory -> gold survives and emits
-  await c.request('context_push', push('obs_' + hex32('q6b'), miv, GOLD_TEXT, 2, {
+  await c.request('context_push', push('obs_pre_' + hex32('q6b'), miv, GOLD_TEXT, 2, {
     evidence: [{ memoryId: recs[1].memoryId, scope: 'Workspace', freshness: 'fresh',
                  distinctSessions: 1, seen: 0, read: 0, cite: 0, reuse: 0,
                  success: 0, correction: 2, lastEvidenceAt: 1,
-                 policyVersion: 'evidence_v1' }],
+                 policyVersion: 'evidence_pre_v1' }],
   }))
   await sleep(400)
   rows = actShadowRows(home)
@@ -260,7 +260,7 @@ console.log('[Q6] 审计 H4:correction 硬抑制 / 负向特征 / toolFailures /
   // Q6c: close_session resets state; tool failure adds explicit positive weight
   await c.notify('close_session', { sessionId: 'sess-76' })
   await sleep(200)
-  await c.request('context_push', push('obs_' + hex32('q6c'), miv, GOLD_TEXT, 3, { toolFail: true }))
+  await c.request('context_push', push('obs_pre_' + hex32('q6c'), miv, GOLD_TEXT, 3, { toolFail: true }))
   await sleep(400)
   rows = actShadowRows(home)
   const f = rows[rows.length - 1].features

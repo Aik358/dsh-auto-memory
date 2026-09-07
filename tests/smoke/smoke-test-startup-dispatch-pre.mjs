@@ -41,7 +41,7 @@ const fnSrc = SRC.slice(start, end + 1)
 
 function run(current, storageMap) {
   const factory = new Function('openDialog', 'cmpVersion', `
-    var MAJOR_TOUR_KEY = 'dsh-auto-memory.majorTourV130'
+    var MAJOR_TOUR_KEY = 'dsh-auto-memory-pre.majorTourV130'
     var localStorage = {
       _m: new Map(${JSON.stringify([...(storageMap || [])])}),
       getItem: function (k) { return this._m.has(k) ? this._m.get(k) : null },
@@ -74,37 +74,37 @@ console.log('[startup-dispatch] G1 全新安装 current=0.1.37(无标记)→ wel
 
 console.log('[startup-dispatch] G2 新装已看完向导(wizDone+seen=current)→ 不再弹')
 {
-  const r = run('0.1.37', [['dsh-auto-memory.seenVersion', '0.1.37'], S('dsh-auto-memory.semWizardDone'), S('dsh-auto-memory.majorTourV130')])
+  const r = run('0.1.37', [['dsh-auto-memory-pre.seenVersion', '0.1.37'], S('dsh-auto-memory-pre.semWizardDone'), S('dsh-auto-memory-pre.majorTourV130')])
   ok(r.opened.length === 0, '看完向导后静默(seen===current)')
 }
 
 console.log('[startup-dispatch] G3 老用户 seen=0.1.29 升级且向导未看过 → welcomeTour')
 {
-  const r = run('0.1.37', [S('dsh-auto-memory.seenVersion') && ['dsh-auto-memory.seenVersion', '0.1.29']])
+  const r = run('0.1.37', [S('dsh-auto-memory-pre.seenVersion') && ['dsh-auto-memory-pre.seenVersion', '0.1.29']])
   ok(r.opened.length === 1 && r.opened[0] === 'welcomeTour', '大更新补引导 welcomeTour')
 }
 
 console.log('[startup-dispatch] G4 老用户 seen=0.1.29 且向导已看过 → update')
 {
-  const r = run('0.1.37', [['dsh-auto-memory.seenVersion', '0.1.29'], S('dsh-auto-memory.semWizardDone')])
+  const r = run('0.1.37', [['dsh-auto-memory-pre.seenVersion', '0.1.29'], S('dsh-auto-memory-pre.semWizardDone')])
   ok(r.opened.length === 1 && r.opened[0] === 'update', '看过向导 → 弹 changelog')
 }
 
 console.log('[startup-dispatch] G5 老用户 seen=0.1.36(有更新,向导看过)→ update')
 {
-  const r = run('0.1.37', [['dsh-auto-memory.seenVersion', '0.1.36'], S('dsh-auto-memory.semWizardDone'), S('dsh-auto-memory.majorTourV130')])
+  const r = run('0.1.37', [['dsh-auto-memory-pre.seenVersion', '0.1.36'], S('dsh-auto-memory-pre.semWizardDone'), S('dsh-auto-memory-pre.majorTourV130')])
   ok(r.opened.length === 1 && r.opened[0] === 'update', '版本推进 → 弹 changelog')
 }
 
 console.log('[startup-dispatch] G6 老用户 seen=current 且向导看过 → 不弹')
 {
-  const r = run('0.1.37', [['dsh-auto-memory.seenVersion', '0.1.37'], S('dsh-auto-memory.semWizardDone'), S('dsh-auto-memory.majorTourV130')])
+  const r = run('0.1.37', [['dsh-auto-memory-pre.seenVersion', '0.1.37'], S('dsh-auto-memory-pre.semWizardDone'), S('dsh-auto-memory-pre.majorTourV130')])
   ok(r.opened.length === 0, '已追平且看过 → 静默')
 }
 
 console.log('[startup-dispatch] G7 老用户 seen=0.1.39 升级到 2.1.0(跨大版本,向导看过)→ update')
 {
-  const r = run('2.1.0', [['dsh-auto-memory.seenVersion', '0.1.39'], S('dsh-auto-memory.semWizardDone'), S('dsh-auto-memory.majorTourV130')])
+  const r = run('2.1.0', [['dsh-auto-memory-pre.seenVersion', '0.1.39'], S('dsh-auto-memory-pre.semWizardDone'), S('dsh-auto-memory-pre.majorTourV130')])
   ok(r.opened.length === 1 && r.opened[0] === 'update', '跨大版本 → 弹 2.1.0 changelog')
 }
 

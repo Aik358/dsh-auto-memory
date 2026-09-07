@@ -6,9 +6,9 @@ import path from 'node:path'
 const ws = mkdtempSync(path.join(tmpdir(), 'dam-consolidate-'))
 const home = path.join(ws, '.dsh-home')
 mkdirSync(home, { recursive: true })
-// 审查修复轮2:配置文件名必须是 _pre 版(dsh-auto-memory.json);
+// 审查修复轮2:配置文件名必须是 _pre 版(dsh-auto-memory-pre.json);
 // 旧名 dsh-auto-memory.json 会让 loadConfig ENOENT→默认 '~'(真实 homedir) 根,沉淀写穿真实用户记忆。
-writeFileSync(path.join(home, 'dsh-auto-memory.json'), JSON.stringify({
+writeFileSync(path.join(home, 'dsh-auto-memory-pre.json'), JSON.stringify({
   memoryRoot: path.join(ws, '.memory-root'),
   userMemoryDir: path.join(ws, '.user-root'),
   projectMemoryDir: '.project-memory',

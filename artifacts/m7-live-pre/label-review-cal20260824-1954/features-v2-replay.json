@@ -1,0 +1,236 @@
+{
+ "policyVersion": "activation_features_pre_v2-replay",
+ "thetaEcho": 0.3,
+ "tau_lo": 0.35,
+ "delta_pro": 0.05,
+ "bestCell": {
+  "tau_hi": 0.45,
+  "delta_exp": 0.03,
+  "emits": 11,
+  "emitCorrectA": 11,
+  "actPrecision": 1.0,
+  "actRecall": 0.5,
+  "emitOnP": 0,
+  "prefCorrect": 4,
+  "sViolations": 0,
+  "harmfulEmit": 0
+ },
+ "gatesPass": true,
+ "currentDefaultComparison": {
+  "tau_hi": 0.62,
+  "delta_exp": 0.62,
+  "emits": 0,
+  "emitCorrectA": 0,
+  "actPrecision": null,
+  "actRecall": 0.0,
+  "emitOnP": 0,
+  "prefCorrect": 4,
+  "sViolations": 0,
+  "harmfulEmit": 0
+ },
+ "grid": [
+  {
+   "tau_hi": 0.45,
+   "delta_exp": 0.02,
+   "emits": 12,
+   "emitCorrectA": 11,
+   "actPrecision": 0.917,
+   "actRecall": 0.5,
+   "emitOnP": 1,
+   "prefCorrect": 3,
+   "sViolations": 0,
+   "harmfulEmit": 0
+  },
+  {
+   "tau_hi": 0.45,
+   "delta_exp": 0.03,
+   "emits": 11,
+   "emitCorrectA": 11,
+   "actPrecision": 1.0,
+   "actRecall": 0.5,
+   "emitOnP": 0,
+   "prefCorrect": 4,
+   "sViolations": 0,
+   "harmfulEmit": 0
+  },
+  {
+   "tau_hi": 0.45,
+   "delta_exp": 0.05,
+   "emits": 10,
+   "emitCorrectA": 10,
+   "actPrecision": 1.0,
+   "actRecall": 0.455,
+   "emitOnP": 0,
+   "prefCorrect": 4,
+   "sViolations": 0,
+   "harmfulEmit": 0
+  },
+  {
+   "tau_hi": 0.5,
+   "delta_exp": 0.02,
+   "emits": 11,
+   "emitCorrectA": 10,
+   "actPrecision": 0.909,
+   "actRecall": 0.455,
+   "emitOnP": 1,
+   "prefCorrect": 3,
+   "sViolations": 0,
+   "harmfulEmit": 0
+  },
+  {
+   "tau_hi": 0.5,
+   "delta_exp": 0.03,
+   "emits": 10,
+   "emitCorrectA": 10,
+   "actPrecision": 1.0,
+   "actRecall": 0.455,
+   "emitOnP": 0,
+   "prefCorrect": 4,
+   "sViolations": 0,
+   "harmfulEmit": 0
+  },
+  {
+   "tau_hi": 0.5,
+   "delta_exp": 0.05,
+   "emits": 9,
+   "emitCorrectA": 9,
+   "actPrecision": 1.0,
+   "actRecall": 0.409,
+   "emitOnP": 0,
+   "prefCorrect": 4,
+   "sViolations": 0,
+   "harmfulEmit": 0
+  },
+  {
+   "tau_hi": 0.55,
+   "delta_exp": 0.02,
+   "emits": 6,
+   "emitCorrectA": 5,
+   "actPrecision": 0.833,
+   "actRecall": 0.227,
+   "emitOnP": 1,
+   "prefCorrect": 3,
+   "sViolations": 0,
+   "harmfulEmit": 0
+  },
+  {
+   "tau_hi": 0.55,
+   "delta_exp": 0.03,
+   "emits": 5,
+   "emitCorrectA": 5,
+   "actPrecision": 1.0,
+   "actRecall": 0.227,
+   "emitOnP": 0,
+   "prefCorrect": 4,
+   "sViolations": 0,
+   "harmfulEmit": 0
+  },
+  {
+   "tau_hi": 0.55,
+   "delta_exp": 0.05,
+   "emits": 5,
+   "emitCorrectA": 5,
+   "actPrecision": 1.0,
+   "actRecall": 0.227,
+   "emitOnP": 0,
+   "prefCorrect": 4,
+   "sViolations": 0,
+   "harmfulEmit": 0
+  },
+  {
+   "tau_hi": 0.6,
+   "delta_exp": 0.02,
+   "emits": 0,
+   "emitCorrectA": 0,
+   "actPrecision": null,
+   "actRecall": 0.0,
+   "emitOnP": 0,
+   "prefCorrect": 4,
+   "sViolations": 0,
+   "harmfulEmit": 0
+  },
+  {
+   "tau_hi": 0.6,
+   "delta_exp": 0.03,
+   "emits": 0,
+   "emitCorrectA": 0,
+   "actPrecision": null,
+   "actRecall": 0.0,
+   "emitOnP": 0,
+   "prefCorrect": 4,
+   "sViolations": 0,
+   "harmfulEmit": 0
+  },
+  {
+   "tau_hi": 0.6,
+   "delta_exp": 0.05,
+   "emits": 0,
+   "emitCorrectA": 0,
+   "actPrecision": null,
+   "actRecall": 0.0,
+   "emitOnP": 0,
+   "prefCorrect": 4,
+   "sViolations": 0,
+   "harmfulEmit": 0
+  },
+  {
+   "tau_hi": 0.7,
+   "delta_exp": 0.02,
+   "emits": 0,
+   "emitCorrectA": 0,
+   "actPrecision": null,
+   "actRecall": 0.0,
+   "emitOnP": 0,
+   "prefCorrect": 4,
+   "sViolations": 0,
+   "harmfulEmit": 0
+  },
+  {
+   "tau_hi": 0.7,
+   "delta_exp": 0.03,
+   "emits": 0,
+   "emitCorrectA": 0,
+   "actPrecision": null,
+   "actRecall": 0.0,
+   "emitOnP": 0,
+   "prefCorrect": 4,
+   "sViolations": 0,
+   "harmfulEmit": 0
+  },
+  {
+   "tau_hi": 0.7,
+   "delta_exp": 0.05,
+   "emits": 0,
+   "emitCorrectA": 0,
+   "actPrecision": null,
+   "actRecall": 0.0,
+   "emitOnP": 0,
+   "prefCorrect": 4,
+   "sViolations": 0,
+   "harmfulEmit": 0
+  }
+ ],
+ "perLanguageAtBest": {
+  "zh": {
+   "n": 47,
+   "aCorrectEmit": 9,
+   "aTotal": 15,
+   "pPrefetch": 4,
+   "pTotal": 15,
+   "sViolations": 0
+  },
+  "enMixed": {
+   "n": 7,
+   "aCorrectEmit": 2,
+   "aTotal": 7,
+   "pPrefetch": 0,
+   "pTotal": 0,
+   "sViolations": 0
+  }
+ },
+ "caveats": [
+  "intentProb 对 A/S 为分组 OOF；对 P 为全量拟合模型外推（P 判定主要走 margin 门，影响有限）",
+  "proactive lane 的任务信号在本重放中仅由 margin 代理（单查询无工具失败/重复上下文）",
+  "relay 4 条单列不计入指标；deferred 2 条(cal-0062/0073)整体排除"
+ ]
+}

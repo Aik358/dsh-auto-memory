@@ -1,0 +1,120 @@
+{
+  "environment": {
+    "sparseLinear": "sha256:45c93804d214… (sparse_linear.pt, 3.5KB)",
+    "recipe": "relu(linear(hidden)) -> amax per token id -> dot"
+  },
+  "results": [
+    {
+      "layer": "L1",
+      "arm": "dense",
+      "params": "",
+      "recall@1": 0.8068,
+      "recall@5": 0.9659,
+      "recall@10": 0.9659,
+      "mrr": 0.8816,
+      "ndcg@10": 0.9034,
+      "hardneg_error": 0.1111,
+      "supersede_correct": 0.5,
+      "xlang_recall@5": 1.0,
+      "code_recall@5": 1.0
+    },
+    {
+      "layer": "L1",
+      "arm": "lexical",
+      "params": "",
+      "recall@1": 0.5227,
+      "recall@5": 0.7727,
+      "recall@10": 0.8295,
+      "mrr": 0.6265,
+      "ndcg@10": 0.6761,
+      "hardneg_error": 0.2222,
+      "supersede_correct": 0.125,
+      "xlang_recall@5": 0.5,
+      "code_recall@5": 1.0
+    },
+    {
+      "layer": "L1",
+      "arm": "model-sparse(bge-m3)",
+      "params": "",
+      "recall@1": 0.5682,
+      "recall@5": 0.8523,
+      "recall@10": 0.875,
+      "mrr": 0.6861,
+      "ndcg@10": 0.7329,
+      "hardneg_error": 0.2963,
+      "supersede_correct": 0.75,
+      "xlang_recall@5": 0.6,
+      "code_recall@5": 1.0
+    },
+    {
+      "layer": "L1",
+      "arm": "weighted(dense,model-sparse) w=0.7",
+      "params": "",
+      "recall@1": 0.7159,
+      "recall@5": 0.9773,
+      "recall@10": 1.0,
+      "mrr": 0.8261,
+      "ndcg@10": 0.8693,
+      "hardneg_error": 0.1111,
+      "supersede_correct": 0.625,
+      "xlang_recall@5": 1.0,
+      "code_recall@5": 1.0
+    },
+    {
+      "layer": "L2",
+      "arm": "dense",
+      "params": "",
+      "recall@1": 0.675,
+      "recall@5": 0.925,
+      "recall@10": 0.925,
+      "mrr": 0.7737,
+      "ndcg@10": 0.8118,
+      "hardneg_error": 0.0741,
+      "supersede_correct": null,
+      "xlang_recall@5": null,
+      "code_recall@5": null
+    },
+    {
+      "layer": "L2",
+      "arm": "lexical",
+      "params": "",
+      "recall@1": 0.75,
+      "recall@5": 0.825,
+      "recall@10": 0.9,
+      "mrr": 0.7873,
+      "ndcg@10": 0.8135,
+      "hardneg_error": 0.1481,
+      "supersede_correct": null,
+      "xlang_recall@5": null,
+      "code_recall@5": null
+    },
+    {
+      "layer": "L2",
+      "arm": "model-sparse(bge-m3)",
+      "params": "",
+      "recall@1": 0.75,
+      "recall@5": 0.95,
+      "recall@10": 0.95,
+      "mrr": 0.8162,
+      "ndcg@10": 0.8492,
+      "hardneg_error": 0.037,
+      "supersede_correct": null,
+      "xlang_recall@5": null,
+      "code_recall@5": null
+    },
+    {
+      "layer": "L2",
+      "arm": "weighted(dense,model-sparse) w=0.7",
+      "params": "",
+      "recall@1": 0.775,
+      "recall@5": 0.975,
+      "recall@10": 0.975,
+      "mrr": 0.8458,
+      "ndcg@10": 0.8781,
+      "hardneg_error": 0.0741,
+      "supersede_correct": null,
+      "xlang_recall@5": null,
+      "code_recall@5": null
+    }
+  ]
+}

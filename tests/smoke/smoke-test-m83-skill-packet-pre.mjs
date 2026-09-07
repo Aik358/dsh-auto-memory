@@ -24,8 +24,8 @@ globalThis.fetch = async () => ({ ok: false, status: 503, json: async () => ({})
 const tmpHome = mkdtempSync(path.join(tmpdir(), 'dam-m83-'))
 process.env.DSH_HOME = tmpHome
 
-const A = await import('../../lib/activation-inbox.js')
-const { createActivationHost } = await import('../../lib/activation-host.js')
+const A = await import('../../lib/activation-inbox-pre.js')
+const { createActivationHost } = await import('../../lib/activation-host-pre.js')
 
 let pass = 0; let fail = 0
 function ok(cond, name) { if (cond) { pass++; console.log('  ok - ' + name) } else { fail++; console.error('  FAIL - ' + name) } }
@@ -36,14 +36,14 @@ const memId = (tag) => 'mem_' + sha256('mid:' + tag).slice(0, 32)
 /** 构造一条通过 M6 候选校验的语料记录(形状校验,不落盘)。 */
 function mkRec(tag, excerpt) {
   return {
-    memoryId: memId(tag), anchorId: 'anc_' + sha256('anc:' + tag).slice(0, 16),
+    memoryId: memId(tag), anchorId: 'anc_pre_' + sha256('anc:' + tag).slice(0, 16),
     scope: 'Workspace', sourceRef: 'workspace:MEMORY.md',
     sourceEpoch: '33333333-3333-4333-8333-333333333333', sourceVersion: 1,
     fileDigest: sha256('file:' + tag), recordDigest: sha256('rec:' + tag),
     excerpt: excerpt != null ? excerpt : ('参考内容 ' + tag),
   }
 }
-const MIV = 'idx_' + '7'.repeat(32)
+const MIV = 'idx_pre_' + '7'.repeat(32)
 function makeReq(o = {}) {
   const req = A.makeFakeActivationRequestPre({
     seed: o.seed || 'm83-seed', sessionId: 's1', agentId: 'a1', workspaceKey: 'c:/ws-a',
@@ -54,7 +54,7 @@ function makeReq(o = {}) {
   return req
 }
 const DEPLOY_SKILL = {
-  procedureId: 'proc_deploy', title: '服务器部署流程', level: 'checklist',
+  procedureId: 'proc_pre_deploy', title: '服务器部署流程', level: 'checklist',
   text: '[技能] 服务器部署流程\n1. pnpm build\n2. rsync 到目标机\n完成标准: 健康检查返回 200',
 }
 /** 最小 memory-hub 替身:只实现 act.skill 附着用到的三个方法。 */
@@ -105,12 +105,12 @@ function runOffer(hub, req, cfgPatch = {}) {
   return { offered, text, host, engine }
 }
 const PROC_A = {
-  procedureId: 'proc_deploy', title: '服务器部署流程', stage: 'active', riskLevel: 'normal',
+  procedureId: 'proc_pre_deploy', title: '服务器部署流程', stage: 'active', riskLevel: 'normal',
   sourceMemoryIds: [memId('r1')],
   steps: ['pnpm build', 'rsync 到目标机'], successCriteria: ['健康检查返回 200'],
 }
 const PROC_B = {
-  procedureId: 'proc_other', title: '无关流程', stage: 'active', riskLevel: 'normal',
+  procedureId: 'proc_pre_other', title: '无关流程', stage: 'active', riskLevel: 'normal',
   sourceMemoryIds: ['mem_' + '0'.repeat(32)],
   steps: ['无关步骤'], successCriteria: [],
 }
@@ -127,9 +127,9 @@ console.log('[S1] 无 skill 时渲染逐字节不变(回归锚)')
   eq(rUndef, base, 'S1 skill=undefined 与基线逐字节一致')
   eq(rNull, base, 'S1 skill=null 与基线逐字节一致')
   eq(rBad, base, 'S1 非法 skill 被忽略、不渲染(与基线一致)')
-  ok(base.startsWith(A.TAIL_MARKER_LINE_V1), 'S1 首行固定边界标记行')
-  ok(base.trim().endsWith(A.TAIL_VERIFY_LINE_V1), 'S1 末行固定 Verify 收尾行')
-  ok(base.indexOf(A.TAIL_FETCH_HINT_LINE_V1) < base.lastIndexOf(A.TAIL_VERIFY_LINE_V1), 'S1 取全文提示行仍在 Verify 之前')
+  ok(base.startsWith(A.TAIL_MARKER_LINE_PRE_V1), 'S1 首行固定边界标记行')
+  ok(base.trim().endsWith(A.TAIL_VERIFY_LINE_PRE_V1), 'S1 末行固定 Verify 收尾行')
+  ok(base.indexOf(A.TAIL_FETCH_HINT_LINE_PRE_V1) < base.lastIndexOf(A.TAIL_VERIFY_LINE_PRE_V1), 'S1 取全文提示行仍在 Verify 之前')
   ok(!base.includes('Checklist:'), 'S1 无 skill 时零 Checklist 行')
 }
 
@@ -139,12 +139,12 @@ let s2 = null
   const req = makeReq({ skill: DEPLOY_SKILL })
   const built = A.buildReferenceTailPacketPre({ request: req, nowStep: 3 })
   ok(built.ok, 'S2 带 skill 的 packet 构建成功')
-  ok(!!(built.packet.skill && built.packet.skill.procedureId === 'proc_deploy'), 'S2 packet.skill 落库(procedureId 正确)')
+  ok(!!(built.packet.skill && built.packet.skill.procedureId === 'proc_pre_deploy'), 'S2 packet.skill 落库(procedureId 正确)')
   const t = built.rendered
   ok(t.includes('Skill: 服务器部署流程'), 'S2 渲染含 Skill 标题行')
   ok(t.includes('Checklist: [技能] 服务器部署流程; 1. pnpm build; 2. rsync 到目标机; 完成标准: 健康检查返回 200'), 'S2 渲染含完整 checklist 正文(换行按卫生规则折叠为 "; ")')
-  ok(t.includes('Source: skill:proc_deploy / Procedure / checklist / '), 'S2 技能段带 Source 身份行')
-  ok(t.trim().endsWith(A.TAIL_VERIFY_LINE_V1), 'S2 固定边界不变(Verify 仍收尾)')
+  ok(t.includes('Source: skill:proc_pre_deploy / Procedure / checklist / '), 'S2 技能段带 Source 身份行')
+  ok(t.trim().endsWith(A.TAIL_VERIFY_LINE_PRE_V1), 'S2 固定边界不变(Verify 仍收尾)')
   ok(A.validateReferenceTailPacketPre(built.packet).ok, 'S2 packet 通过 M6 validator')
   s2 = built
 }
@@ -153,7 +153,7 @@ console.log('[S3] exactDigest 自洽(投递面重渲染复现同一文本)')
 {
   const p = s2.packet
   const re = A.renderReferenceTail(p.references, {
-    reason: p.triggerReason, budgetBytes: A.REFERENCE_TAIL_BUDGET_V1.maxPacketBytes, skill: p.skill,
+    reason: p.triggerReason, budgetBytes: A.REFERENCE_TAIL_BUDGET_PRE_V1.maxPacketBytes, skill: p.skill,
   })
   eq(re.text, s2.rendered, 'S3 重渲染文本与构建时逐字节一致')
   eq(A.computeExactDigest(re.text), p.exactDigest, 'S3 exactDigest 校验通过(renderTailFor 会真实投递,不会降级为空)')
@@ -190,7 +190,7 @@ console.log('[S5] 预算竞争:技能段预留制(2026-08-30 canary 修复)—�
   ok(built.rendered.includes('Checklist:'), 'S5 渲染文本含 checklist(投递面真实可见)')
   ok(Array.isArray(built.droppedByBudget) && built.droppedByBudget.length > 0, 'S5 满帧+技能段下让位的是低分引用(部分 reference 被预算裁掉),而非技能段')
   const re = A.renderReferenceTail(built.packet.references, {
-    reason: built.packet.triggerReason, budgetBytes: A.REFERENCE_TAIL_BUDGET_V1.maxPacketBytes, skill: built.packet.skill,
+    reason: built.packet.triggerReason, budgetBytes: A.REFERENCE_TAIL_BUDGET_PRE_V1.maxPacketBytes, skill: built.packet.skill,
   })
   eq(A.computeExactDigest(re.text), built.packet.exactDigest, 'S5 预留制下 exactDigest 仍自洽(build/render 双侧同函数重算)')
   // 技能段自身超预算(而非被引用挤掉)→ 仍必须显式 skillDropped
@@ -200,7 +200,7 @@ console.log('[S5] 预算竞争:技能段预留制(2026-08-30 canary 修复)—�
   }
   const flag = A.renderReferenceTail([smallItem], { reason: 'r', budgetBytes: 400, skill: DEPLOY_SKILL })
   ok(flag.ok === true && flag.skillDropped === true && flag.skillIncluded === false, 'S5 技能段自身放不下时仍显式上报 skillDropped')
-  ok(!flag.text.includes('Checklist:') && flag.text.trim().endsWith(A.TAIL_VERIFY_LINE_V1), 'S5 丢弃技能段后仍保有引用块与固定收尾行')
+  ok(!flag.text.includes('Checklist:') && flag.text.trim().endsWith(A.TAIL_VERIFY_LINE_PRE_V1), 'S5 丢弃技能段后仍保有引用块与固定收尾行')
 }
 
 console.log('[S6] Python 档路径:候选 ∩ sourceMemoryIds 匹配 → 投递文本含 checklist')
@@ -211,7 +211,7 @@ console.log('[S6] Python 档路径:候选 ∩ sourceMemoryIds 匹配 → 投递�
   ok(text.length > 0, 'S6 renderTailFor 返回非空尾注(digest 校验通过即真实投递)')
   ok(text.includes('Checklist: [技能] 服务器部署流程'), 'S6 delivered tail 含技能 checklist 段落')
   ok(text.includes('1. pnpm build'), 'S6 delivered tail 含技能步骤文本')
-  eq(touched, ['proc_deploy'], 'S6 命中技能 touch(last_used 时钟)被调用一次')
+  eq(touched, ['proc_pre_deploy'], 'S6 命中技能 touch(last_used 时钟)被调用一次')
 }
 
 console.log('[S7/S8] 不命中 / 中枢关闭 → 零技能段')
@@ -234,32 +234,32 @@ console.log('[S7/S8] 不命中 / 中枢关闭 → 零技能段')
 console.log('[S9] 请求已自带 skill(JS 档 query 匹配)不被覆盖')
 {
   const { hub, touched } = makeFakeHub([PROC_A])
-  const jsSkill = { procedureId: 'proc_jsquery', title: '来自 JS 档 query 匹配', level: 'checklist', text: '[技能] 来自 JS 档 query 匹配\n1. query 命中的步骤' }
+  const jsSkill = { procedureId: 'proc_pre_jsquery', title: '来自 JS 档 query 匹配', level: 'checklist', text: '[技能] 来自 JS 档 query 匹配\n1. query 命中的步骤' }
   const { text } = runOffer(hub, makeReq({ seed: 'm83-s9', skill: jsSkill }))
   ok(text.includes('Skill: 来自 JS 档 query 匹配'), 'S9 保留 JS 档 query 匹配结果')
   ok(text.includes('query 命中的步骤'), 'S9 delivered tail 用的是 JS 档 checklist')
-  ok(!text.includes('proc_deploy'), 'S9 未被候选交集匹配覆盖(交集路径只在无 skill 时兜底)')
+  ok(!text.includes('proc_pre_deploy'), 'S9 未被候选交集匹配覆盖(交集路径只在无 skill 时兜底)')
   eq(touched, [], 'S9 已有 skill 时不重复 touch 其他技能')
 }
 
 console.log('[S10] CJK 超长 checklist 按 UTF-8 字节裁剪')
 {
-  ok(Object.isFrozen(A.SKILL_TAIL_BUDGET_V1), 'S10 技能段预算常量冻结')
-  const longSkill = { procedureId: 'proc_long', title: '长流程', level: 'checklist', text: '一'.repeat(2000) }
+  ok(Object.isFrozen(A.SKILL_TAIL_BUDGET_PRE_V1), 'S10 技能段预算常量冻结')
+  const longSkill = { procedureId: 'proc_pre_long', title: '长流程', level: 'checklist', text: '一'.repeat(2000) }
   const built = A.buildReferenceTailPacketPre({ request: makeReq({ skill: longSkill, seed: 'm83-s10' }), nowStep: 2 })
   ok(built.ok, 'S10 超长技能文本不炸包')
   ok(!built.rendered.includes('\uFFFD'), 'S10 裁剪未产生替换字符(未切坏多字节字符)')
-  ok(Buffer.byteLength(built.rendered, 'utf8') <= A.REFERENCE_TAIL_BUDGET_V1.maxPacketBytes, 'S10 整包仍在 4096 字节预算内')
+  ok(Buffer.byteLength(built.rendered, 'utf8') <= A.REFERENCE_TAIL_BUDGET_PRE_V1.maxPacketBytes, 'S10 整包仍在 4096 字节预算内')
   const m = /Checklist: ([\s\S]*)$/.exec(built.rendered.split('\n').find((l) => l.startsWith('Checklist: ')) || '')
-  ok(!!m && Buffer.byteLength(m[1], 'utf8') <= A.SKILL_TAIL_BUDGET_V1.maxTextBytes, 'S10 checklist 正文 ≤ 1200 字节')
-  const re = A.renderReferenceTail(built.packet.references, { reason: built.packet.triggerReason, budgetBytes: A.REFERENCE_TAIL_BUDGET_V1.maxPacketBytes, skill: built.packet.skill })
+  ok(!!m && Buffer.byteLength(m[1], 'utf8') <= A.SKILL_TAIL_BUDGET_PRE_V1.maxTextBytes, 'S10 checklist 正文 ≤ 1200 字节')
+  const re = A.renderReferenceTail(built.packet.references, { reason: built.packet.triggerReason, budgetBytes: A.REFERENCE_TAIL_BUDGET_PRE_V1.maxPacketBytes, skill: built.packet.skill })
   eq(A.computeExactDigest(re.text), built.packet.exactDigest, 'S10 裁剪后 digest 自洽')
   eq(A.clipBytes('一二三', 5), '一', 'S10 clipBytes 回退到字符边界(3 字节/字)')
 }
 
 console.log('[S11] 源码卫生')
 {
-  for (const f of ['lib/activation-inbox.js', 'lib/activation-host.js']) {
+  for (const f of ['lib/activation-inbox-pre.js', 'lib/activation-host-pre.js']) {
     const src = readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..', f))
     ok(src[0] !== 0xef && src[1] !== 0xbb && src[2] !== 0xbf, 'S11 ' + f + ' 无 BOM')
     ok(!src.includes('_dev'), 'S11 ' + f + ' 无 _dev 残留')
@@ -277,13 +277,13 @@ console.log('[S12/S13] 确定性与多技能择优')
 
   // 两个技能都命中候选:proc_two 命中 2 条 > proc_one 命中 1 条 → 取交集数最多者
   const two = {
-    procedureId: 'proc_two', title: '双命中流程', stage: 'active', riskLevel: 'normal',
+    procedureId: 'proc_pre_two', title: '双命中流程', stage: 'active', riskLevel: 'normal',
     sourceMemoryIds: [memId('r1'), memId('r2')], steps: ['步骤二'], successCriteria: [],
   }
   const { hub, touched } = makeFakeHub([PROC_A, two])
   const { text } = runOffer(hub, makeReq({ seed: 'm83-s13' }))
   ok(text.includes('Skill: 双命中流程'), 'S13 多技能命中取交集数最多者(2 > 1)')
-  eq(touched, ['proc_two'], 'S13 只 touch 胜出技能')
+  eq(touched, ['proc_pre_two'], 'S13 只 touch 胜出技能')
 }
 
 try { rmSync(tmpHome, { recursive: true, force: true }) } catch (_) {}

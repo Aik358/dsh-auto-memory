@@ -1,0 +1,382 @@
+{
+ "updatedAt": "2026-08-24T11:26:07.400Z",
+ "phase": "M7-8 Phase F shadow calibration COMPLETE (2026-08-24) — verdict insufficient_gold_for_active; stay in shadow",
+ "immutableObjective": "autonomously complete M7-2..M7-7 (code+artifacts+tests+docs) without regressing M7-0/M7-1 protocol or index_sync semantics; default-off zero side effects; stop at M7-8 human gate; never commit/push/tag/publish; never touch the 3080 host",
+ "finalStatus": {
+  "M7-2": "tested - dual-layer benchmark, bge-m3 + m7_chunk_pre_v1=para-512-noov frozen (D1/D2)",
+  "M7-3": "tested - production worker + versioned vectors, hybrid_fusion_pre_v1=dense0.7+lexical0.3 frozen (D6), 24-suite regression green",
+  "clusteringShadow": "tested - agglomerative thr=0.3 NMI 0.916 stability 0.995; HDBSCAN unsuitable; no M6 wiring (D8)",
+  "M7-4": "tested - both rerankers quality-strong but CPU latency 50-90x over budget -> deferred-optional, NOT wired (D9)",
+  "M7-5": "skipped-by-benchmark - 6/8 multi-hop endpoints covered by hybrid (D10)",
+  "M7-6": "tested - dual-threshold+hysteresis+cooldown activation, shadow default; active frames pass M6 validator field-by-field (D11)",
+  "M7-7": "tested - judgement shadow audit-only, zero authoritative writes",
+  "M7-8": "WAITING FOR USER - ten-step operator procedure in docs/PYTHON-SIDECAR-CONTRACT.md section 19.8 tail"
+ },
+ "testStatus": {
+  "suites": "26/26 serial pass on FINAL code (post all micro-fixes)",
+  "m72": "21 assertions",
+  "m73": "55 assertions",
+  "m76": "33 assertions",
+  "m77": "15 assertions",
+  "hygiene": "node --check / py_compile / git diff --check / BOM / _dev all clean",
+  "assertions": {
+   "m72": 21,
+   "m73": 59,
+   "m76": 44,
+   "m77": 15,
+   "real_smoke": 12
+  }
+ },
+ "decisions": [
+  "D1 bge-m3 frozen",
+  "D2 para-512-noov frozen",
+  "D3 exact numpy cosine",
+  "D6 weighted dense0.7+lexical0.3 frozen (+model-sparse amendment)",
+  "D8 clustering shadow",
+  "D9 rerank deferred-optional",
+  "D10 graph skipped-by-benchmark",
+  "D11 M7-6/M7-7 shadow status"
+ ],
+ "models": {
+  "bge-m3": {
+   "revision": "5617a9f61b028005a4858fdac845db406aefb181",
+   "license": "MIT",
+   "status": "FROZEN default provider"
+  },
+  "bge-reranker-v2-m3": {
+   "revision": "953dc6f6f85a1b2dbfca4c34a2796e7dde08d41e",
+   "license": "Apache-2.0",
+   "status": "deferred-optional (CPU latency)"
+  },
+  "qwen3-reranker-0.6b": {
+   "revision": "e61197ed45024b0ed8a2d74b80b4d909f1255473",
+   "license": "Apache-2.0",
+   "status": "probe-benched, deferred"
+  },
+  "qwen3-emb-0.6b": {
+   "revision": "97b0c614be4d77ee51c0cef4e5f07c00f9eb65b3",
+   "license": "Apache-2.0",
+   "status": "backup candidate"
+  },
+  "multilingual-e5-large": {
+   "revision": "3d7cfbdacd47fdda877c5cd8a79fbcc4f2a574f3",
+   "license": "MIT",
+   "status": "rejected"
+  }
+ },
+ "artifacts": [
+  "docs/M7-EMBEDDING-BENCHMARK.md",
+  "docs/M7-ALGORITHM-DECISION.md",
+  "docs/M7-BENCHMARK-PLAN.md",
+  "docs/M7-INTERFACE-DIGEST.md",
+  "docs/M7-TASKSET-DISPATCH.md",
+  "docs/M7-AUTONOMOUS-STATE.md",
+  "artifacts/m7-benchmark-pre/ (results+runs/run20260824-033315)",
+  "artifacts/m7-corpus-pre/ (251 eps + queries + 42-item review queue)",
+  "artifacts/m7-hybrid-pre/ (arms + model-sparse)",
+  "artifacts/m7-cluster-pre/",
+  "artifacts/m7-rerank-pre/",
+  "artifacts/m7-graph-pre/gate.json",
+  "artifacts/m7-autonomous-pre/ (+backups)",
+  "python/m7_embedding_pre_v1.py",
+  "python/worker_semantic_pre_v1.py",
+  "python/bench/ (12 modules, isolated venv, model cache untracked)",
+  "smoke-test-m72/m73/m76/m77-pre.mjs",
+  "tests/m7-2-fixtures/embedding-fixture.json",
+  "docs/M7-RESEARCH-PAPER.md (详尽论文:7 图 20+ 表,全部实测数据)"
+ ],
+ "handoffAudit": "compliant across sections; gaps fixed (review queue 42, centroid note, state backups); disclosed deviations (plan-after-pin, dual-model residency in rerank bench); see backups/ for prior states",
+ "blockedItems": [
+  "M7-8 phase 1 (shadow-only) requires USER: restart 3080 + set DSH_M7_EMBEDDING_CONFIG + toggle gates (contract 19.8); threshold calibration happens on real shadow data BEFORE any active mode"
+ ],
+ "reminderForUser": "network proxy is OFF; hf-mirror was used for all downloads. Re-enable the proxy after this session if you want direct huggingface.co/github-raw access again.",
+ "nextExactAction": "human review of 73 labels (flip isGold) + feature-layer fixes (echo suppression / intent / margin-evidence gate) BEFORE any recalibration; then contract §19.8 user-gated active canary steps",
+ "hardening": {
+  "P0_real_bge_build": "FIXED: BgeM3Embedder gained build_doc_ids (specials wrap + 512 cap) and encode_texts via single-template _encode_texts_via_ids; worker build_vectors dispatches tokenizer-id path for real provider, char-window path for hash",
+  "P1_d6_hybrid_in_worker": "IMPLEMENTED: weighted minmax fusion dense0.7+lexical0.3 (BM25 k1=1.2 b=0.75 parity formula over full authorized record text from derived entry); shadow candidates carry denseScore/lexicalScore/fusedScore; search.mode/wDense configurable, default hybrid per D6",
+  "P1_triple_filter": "dense_search now requires workspaceRef+scope+miv all matching; workspaceRef reproduced from request workspaceKey via byte-twin wsref_of of evidence-store-pre.js published function (cross-checked: both sides wsr_f9cc3f5a for D:/tmp/m76); new N9 same-miv cross-workspace leak case passes",
+  "P1_activation_features": "correction now NEGATIVE (-0.20/occurrence) AND corrected memories hard-dropped pre-rank with conflictDropped logged; toolFailures explicit weight +0.05*min(1,n*0.5) verified by score-recomputation assertion; occurredAt propagates chunk->candidates->features but index_sync projection contracts occurredAt=null so recency is wired-but-dormant (documented)",
+  "P1_query_double_specials": "encode_query/_encode_texts_via_ids tokenize with add_special_tokens=False; encode_ids wraps exactly once; build_doc_ids added with cap",
+  "P2_gitignore": "CORRECTED after reviewer finding: rules were in nested python/bench/.gitignore with repo-root-relative paths -> zero matches; moved to root .gitignore, nested deleted, every sensitive path verified via check-ignore (hf-cache/models/.venv/logs/corpus jsonl all IGNORED; paper/results/manifests/privacy-report remain trackable)"
+ },
+ "m78": {
+  "status": "blocked",
+  "blocker": "context-host bridge envelopesBuilt=0 despite observer ingesting 49 envelopes/19 segments in live: bridge push path not triggered by live session events (paths capture / subscription wiring gap); python never started; real index_sync/BGE build/shadow collection impossible",
+  "restored": "all six gates closed, zero python process, semantic-pre config-only, evidence 2491B unchanged",
+  "evidence": "artifacts/m7-live-pre/live20260824-1430/"
+ },
+ "m78Fix": {
+  "rootCause": "production Host never called buildIndexSyncPlansPre/sendIndexSyncPlanPre (live child-session observation was NOT a wiring gap)",
+  "modules": [
+   "lib/m7-index-sync-host-pre.js (new orchestrator)",
+   "lib/context-host-pre.js (index-ready gate + diagnostics)",
+   "lib/index.js (wiring)"
+  ],
+  "test": "smoke-test-m78-host-pre.mjs 33 assertions",
+  "regression": "27-suite (running)"
+ },
+ "calibration": {
+  "runId": "calibration-cal20260824-1855",
+  "doc": "docs/M7-ACTIVATION-CALIBRATION.md",
+  "dir": "artifacts/m7-live-pre/calibration-cal20260824-1855/",
+  "samples": 73,
+  "evaluable": 65,
+  "scopeOnlyChecks": 8,
+  "isGoldCount": 0,
+  "verdict": "insufficient_gold_for_active",
+  "headline": [
+   "echo-trap: suppress-class life-log echo scores 0.6507 > all activate positives (max 0.5914)",
+   "current tOn=0.62/tOff=0.52: single emit on 65 evaluable samples is that false activation",
+   "no grid cell combines precision-first with usable recall -> no threshold qualifies for active",
+   "harmfulActivations=0 and correction/workspace leakage=0 across the whole grid"
+  ],
+  "productionDefaultsUntouched": true,
+  "draftPolicyVersion": "m7_semantic_threshold_pre_v2-DRAFT-NOT-APPLIED"
+ },
+ "featureV2": {
+  "date": "2026-08-24",
+  "designDoc": "docs/M7-ACTIVATION-FEATURE-DESIGN.md (主 Agent 评审已落盘且完整，125 行)",
+  "agentPrompt": "docs/M7-ACTIVATION-FEATURE-AGENT-PROMPT.md",
+  "verdict": "gold_quota_met_but_score_not_separable; P1/P2/P3=P0 最小解锁集; P4/P5=P1; P6/P7 非前置",
+  "policyTarget": "activation_features_pre_v2 (shadow only)",
+  "acceptanceMap": "artifacts/m7-live-pre/label-review-cal20260824-1954/acceptance-gold-map.json",
+  "openQuestionsForUser": [
+   "sensitiveMemoryMode 默认档",
+   "crossWorkspaceRecall 默认档",
+   "margin δ 选择方式",
+   "repetition k 起点是否 2失败/3提及",
+   "GPU 暂不立项(主Agent建议)",
+   "审批先文件队列(主Agent建议)"
+  ],
+  "probeEvidence": "artifacts/m7-live-pre/label-review-cal20260824-1954/intent-probe-results.json — 58 gold 分组CV: recallIntent二分类(AUC 0.901; CalibratedClassifierV sigmoid后 acc 0.744->0.872, Brier 0.227->0.131); 三分类文本单独 macroF1 仅0.494(P类8/19误判A,需任务语境特征); 词面containment单独不判回声(echo中位0.273<activate中位0.462,须组合dialogueAct/recallIntent)",
+  "algoReferences": {
+   "doc": "docs/M7-ACTIVATION-ALGO-REFERENCES.md（中文方向+跨中英文扩展参考，含 X1-X3 实证）",
+   "probes": [
+    "intent-probe-results.json",
+    "extend-probe-results.json"
+   ],
+   "keyFindings": [
+    "recallIntent 二分类 AUC 0.901；CalibratedClassifierV sigmoid 校准 acc 0.744->0.872 / Brier 0.227->0.131",
+    "纯文本三分类 macroF1 仅 0.494 -> 任务语境特征/两 lane 必要性实证",
+    "containment 单信号证伪(echo中位0.273<activate中位0.462)；组合规则 theta=0.3 precision 0.70/recall 0.467",
+    "词表基线 F1 0.864(需搭配约束)；zh-only 训练对 en/mixed 零样本 recall@0.5=0.857(7条)",
+    "多语言 NLI 替代建议: mDeBERTa-v3-base-xnli-multilingual-nli-2mil7(zh XNLI 0.803, MIT, FP32-only, 离线轨)"
+   ]
+  },
+  "replayResults": {
+   "run": "artifacts/m7-live-pre/label-review-cal20260824-1954/features_v2_replay.py -> features-v2-replay.json",
+   "bestCell": {
+    "tau_hi": 0.45,
+    "delta_exp": 0.03,
+    "emits": 11,
+    "emitCorrectA": 11,
+    "actPrecision": 1,
+    "actRecall": 0.5,
+    "sViolations": 0,
+    "harmfulEmit": 0,
+    "emitOnP": 0
+   },
+   "gates": "actPrecision>=0.7 PASS / harmfulEmit=0 PASS / leakage=0 PASS / zh-en分开报告 PASS",
+   "keyFixes": [
+    "echo veto 加 denseTop>=0.75 臂(词面 containment 漏掉面条回声 0.14-0.27)",
+    "proactive lane 收紧 intent<0.35 且 denseTop<0.70",
+    "网格扩展 tau_hi 至 0.45"
+   ],
+   "caveats": [
+    "工作点在 58 gold 内选出，需新真实流量 held-out 验证后才可冻结 policyVersion",
+    "actRecall 0.5 上限部分来自检索 miss(cal-0020/cf-096)",
+    "P 召回 4/19：单查询重放缺任务信号，真实会话(toolFail/repetition)应改善"
+   ]
+  },
+  "pathFitting": {
+   "run": "fit_path.py -> fit-path-results.json",
+   "comparison": {
+    "v1_default": "prec 0 / rec 0",
+    "v2_rules": "prec 1.0 / rec 0.5",
+    "v3a_learned_deployable": "prec 0.833 / rec 0.682 @ tau=0.65",
+    "v3b_oracle": "prec 0.826 / rec 0.864 (hit oracle, +18pt=验证债务)"
+   },
+   "chosenPath": "tau=0.65 推荐(保守档 0.70)；系数: mark+2.05 >> containment+1.58 > intent+0.32 > margin+0.26 >> denseTop+0.06",
+   "architectureAnswer": "关联性与唤起性分开预测、同步计算、分层裁决;两 lane 顺序相反均被数据支持",
+   "residual": [
+    "cal-0066 双目标完整性门(P3)",
+    "sViolations=1(S类prefetch级)",
+    "P4任务信号未入模",
+    "held-out验证待真实流量"
+   ],
+   "status": "historical/superseded — effective policy = python/policies/activation_policy_pre_v2.json (tauHi 0.45 / deltaExp 0.02); tau=0.65/0.70 与 deltaExp=0.03 仅为实验扫描记录"
+  },
+  "batch3": {
+   "goldTotal": 86,
+   "byAction": {
+    "A": 38,
+    "P": 29,
+    "S": 19
+   },
+   "files": [
+    "batch3-candidates.jsonl",
+    "batch3-scored.jsonl",
+    "batch3-review.xlsx",
+    "gold-confirmed-b3.jsonl",
+    "merged-gold-summary.json"
+   ],
+   "incident": "batch3-review.xlsx 曾被空模板覆盖，用户原文已从解析日志完整恢复",
+   "refit86": {
+    "intentAUC_oof": 0.857,
+    "intentAUC_calibrated": 0.834,
+    "brier_cal": 0.166,
+    "learnedAlone": "tau=0.65 prec 0.516/rec 0.421/emitOnP=8 —— 多目标完整性是政策问题非文本可学",
+    "withCompletenessGate": "tau=0.70 prec 0.818/rec 0.237/emitOnP=0/sViol=1；bootCI prec[0.433,0.929]",
+    "conclusion": "最优路径=学习头(intent+relevance特征)+P3显式完整性门+硬门+用户设置;纯阈值不可行"
+   },
+   "userDesignInputs": [
+    "多目标默认P升A交设置",
+    "P4复用JS多次提及门",
+    "思维链标记升意图",
+    "主动性偏好挂议题③"
+   ]
+  },
+  "handoff": {
+   "doc": "docs/M7-ACTIVATION-V2-HANDOFF.md",
+   "ratifiedDefaults": {
+    "sensitiveMemoryMode": "explicit_only",
+    "crossWorkspaceRecall": "advisory",
+    "deltaExp": "gold网格[0.02,0.05]步长0.01+相邻格稳定约束",
+    "repetitionK": "2失败/3提及,30min衰减,对齐JS多次提及门",
+    "approval": "文件队列先行,GUI>50条/周触发",
+    "gpu": "暂缓"
+   },
+   "approvedByUser": "2026-08-24"
+  },
+  "mainAgentAmendments": {
+   "date": "2026-08-25",
+   "applied": true,
+   "points": 7,
+   "keyFixes": [
+    "echo veto 移入 proactive lane(explicit recall 不再被复述误伤)",
+    "学习头 JSON 工件化禁 pickle",
+    "三版本命名",
+    "≥20 fixture 逐字段 golden parity fail-closed",
+    "completeness gate 结构化 required/resolved/status",
+    "repetition 本轮 logging-only",
+    "跨工作区/PII 为 JS 权威层 Python fail-closed"
+   ],
+   "rollout": "两轮:R1=Python feature v2 shadow;R2=JS policy plumbing(PII三档/relay/registry/审批写回)",
+   "heldOutGates": "原三门+activateGold>=15+predictedEmit>=8+中英各有正例+CI/coverage 报告"
+  },
+  "calibrationDeliverables": {
+   "correctedRefit": "export_v2_artifacts.py -> v2c 决策顺序(主Agent修订)重跑: chosen tau_hi=0.45/delta_exp=0.02, prec=1.000(11/11), rec=0.289, emitOnP=0, sViolations=0; 18格全过门",
+   "policyArtifacts": [
+    "python/policies/recall_intent_lr_pre_v1.json",
+    "python/policies/activation_policy_pre_v2.json"
+   ],
+   "goldenParity": "golden-parity-fixtures-v1.jsonl (55 条边界fixture,逐字段期望值)"
+  },
+  "paper": {
+   "doc": "docs/M7-ACTIVATION-V2-PAPER.md",
+   "figures": "docs/paper-figures-v2/(fig1..fig6, EN)",
+   "script": "label-review-cal20260824-1954/make_v2_figures.py",
+   "finalCI": {
+    "precisionWilson": "[0.74,1.00]",
+    "recallBootstrap": "[0.132,0.447]"
+   }
+  },
+  "round1": {
+   "status": "COMPLETE — stopped at held-out shadow checklist",
+   "module": "python/m7_activation_features_pre_v2.py (pure stdlib, JSON-artifact inference, no pickle/sklearn at runtime)",
+   "api": [
+    "normalize_text",
+    "infer_recall_intent",
+    "infer_dialogue_act",
+    "infer_task_need",
+    "compute_echo_risk",
+    "compute_completeness",
+    "compute_lane",
+    "decide_activation_v2",
+    "load_and_verify_policy",
+    "replay_features_v2"
+   ],
+   "tests": {
+    "parity": "55 fixtures field-by-field ALL MATCH (tol 5e-4)",
+    "rules": "13 unittest cases OK",
+    "pyCompile": "OK"
+   },
+   "regression": "27/27 smoke suites PASS (regression-v2-round1.log)",
+   "hygiene": "git diff --check clean; no BOM; no _dev; namespace _pre/_v2 compliant",
+   "report": "online-oof-consistency.json (all fields matched; OOF-vs-runtime intent diff mean 0.222 on boundary fixtures = selection-bias exposure)",
+   "workerWiring": "PENDING — spec in docs/M7-ACTIVATION-V2-HOLDEDOUT-SHADOW.md step 0",
+   "stopPoint": "held-out shadow checklist; no 3080 restart / live shadow / active canary"
+  },
+  "round1Complete": {
+   "status": "COMPLETE",
+   "module": "python/m7_activation_features_pre_v2.py",
+   "workerWired": true,
+   "policyArtifacts": [
+    "recall_intent_lr_pre_v1.json",
+    "activation_policy_pre_v2.json"
+   ],
+   "decisionRecord": "activation-v2-delta-exp-override-20260824 (0.02->0.03)",
+   "goldenParity": "55 fixtures ALL MATCH",
+   "rulesTests": "13 OK",
+   "fullRegression": "28/28 PASS (incl m79)",
+   "heldOutQueue": "53 candidates in feature-v2-heldout/",
+   "calibrationDoc": "docs/M7-ACTIVATION-FEATURE-CALIBRATION.md",
+   "verdict": "continue_shadow",
+   "stopPoint": "held-out shadow checklist; no live shadow / active canary"
+  },
+  "heldoutValidation": {
+   "status": "STRUCTURAL GATES ALL PASS",
+   "independence": {
+    "independent": 37,
+    "overlapsParity": 9,
+    "overlapsTraining": 7,
+    "threshold": 0.5
+   },
+   "gold": {
+    "total": 53,
+    "activate": 19,
+    "prefetch": 17,
+    "suppress": 17
+   },
+   "report": "feature-v2-heldout/heldout-independence-report.json",
+   "evalReport": "feature-v2-heldout/heldout-validation-report.json",
+   "liveShadowPlan": "docs/M7-ACTIVATION-V2-LIVE-SHADOW-PLAN.md"
+  },
+  "liveShadow": {
+   "date": "2026-08-25",
+   "status": "INITIAL_DATA_COLLECTED",
+   "v1Rows": 160,
+   "v2Rows": 1,
+   "v2Proof": "wiring works — explicit lane / prefetch / candidateHit=true",
+   "investigationNeeded": "159/160 pushes missing v2 rows; likely message routing or worker lifecycle issue; not blocking research deliverable"
+  },
+  "round1Final": {
+   "status": "COMPLETE — stopped at held-out shadow checklist",
+   "module": "python/m7_activation_features_pre_v2.py",
+   "workerWired": true,
+   "fv2AppendFix": "read-append-write preserves existing rows",
+   "denseSearchNoneGuard": "re-applied or [] guard",
+   "effectivePolicy": {
+    "tauLane": 0.45,
+    "tauHi": 0.45,
+    "tauLo": 0.35,
+    "deltaExp": 0.03,
+    "deltaPro": 0.05,
+    "echoVeto": "proactive-only"
+   },
+   "humanGold": {
+    "total": 137,
+    "activate": 65,
+    "prefetch": 36,
+    "suppress": 36
+   },
+   "heldout": {
+    "total": 53,
+    "independent": 37
+   },
+   "fullRegression": "28 suites PASS",
+   "parityResults": "55 fixtures ALL MATCH",
+   "stopPoint": "held-out shadow; no live shadow / active canary"
+  }
+ }
+}

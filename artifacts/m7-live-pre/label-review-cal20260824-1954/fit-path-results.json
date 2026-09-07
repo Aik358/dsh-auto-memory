@@ -1,0 +1,495 @@
+{
+ "policyVersion": "activation_features_pre_v2-fit",
+ "features_v3a": [
+  "intentProb",
+  "denseTop",
+  "margin",
+  "containment",
+  "mark",
+  "nCand"
+ ],
+ "intentHead": {
+  "auc_oof": 0.901,
+  "calibrated_acc": 0.872
+ },
+ "lrCoefficients_deployable": {
+  "intentProb": 0.324,
+  "denseTop": 0.055,
+  "margin": 0.255,
+  "containment": 1.576,
+  "mark": 2.045,
+  "nCand": 0.0
+ },
+ "v3a_learned_deployable": [
+  {
+   "tau": 0.2,
+   "emits": 38,
+   "emitCorrectA": 19,
+   "actPrecision": 0.5,
+   "actRecall": 0.864,
+   "emitOnP": 11,
+   "sViolations": 6,
+   "harmfulEmit": 0
+  },
+  {
+   "tau": 0.25,
+   "emits": 33,
+   "emitCorrectA": 18,
+   "actPrecision": 0.545,
+   "actRecall": 0.818,
+   "emitOnP": 9,
+   "sViolations": 6,
+   "harmfulEmit": 0
+  },
+  {
+   "tau": 0.3,
+   "emits": 30,
+   "emitCorrectA": 18,
+   "actPrecision": 0.6,
+   "actRecall": 0.818,
+   "emitOnP": 7,
+   "sViolations": 6,
+   "harmfulEmit": 0
+  },
+  {
+   "tau": 0.35,
+   "emits": 25,
+   "emitCorrectA": 17,
+   "actPrecision": 0.68,
+   "actRecall": 0.773,
+   "emitOnP": 5,
+   "sViolations": 6,
+   "harmfulEmit": 0
+  },
+  {
+   "tau": 0.4,
+   "emits": 25,
+   "emitCorrectA": 17,
+   "actPrecision": 0.68,
+   "actRecall": 0.773,
+   "emitOnP": 5,
+   "sViolations": 4,
+   "harmfulEmit": 0
+  },
+  {
+   "tau": 0.45,
+   "emits": 25,
+   "emitCorrectA": 17,
+   "actPrecision": 0.68,
+   "actRecall": 0.773,
+   "emitOnP": 5,
+   "sViolations": 3,
+   "harmfulEmit": 0
+  },
+  {
+   "tau": 0.5,
+   "emits": 25,
+   "emitCorrectA": 17,
+   "actPrecision": 0.68,
+   "actRecall": 0.773,
+   "emitOnP": 5,
+   "sViolations": 1,
+   "harmfulEmit": 0
+  },
+  {
+   "tau": 0.55,
+   "emits": 24,
+   "emitCorrectA": 16,
+   "actPrecision": 0.667,
+   "actRecall": 0.727,
+   "emitOnP": 5,
+   "sViolations": 1,
+   "harmfulEmit": 0
+  },
+  {
+   "tau": 0.6,
+   "emits": 23,
+   "emitCorrectA": 16,
+   "actPrecision": 0.696,
+   "actRecall": 0.727,
+   "emitOnP": 4,
+   "sViolations": 1,
+   "harmfulEmit": 0
+  },
+  {
+   "tau": 0.65,
+   "emits": 18,
+   "emitCorrectA": 15,
+   "actPrecision": 0.833,
+   "actRecall": 0.682,
+   "emitOnP": 1,
+   "sViolations": 1,
+   "harmfulEmit": 0
+  },
+  {
+   "tau": 0.7,
+   "emits": 9,
+   "emitCorrectA": 9,
+   "actPrecision": 1.0,
+   "actRecall": 0.409,
+   "emitOnP": 0,
+   "sViolations": 1,
+   "harmfulEmit": 0
+  },
+  {
+   "tau": 0.75,
+   "emits": 5,
+   "emitCorrectA": 5,
+   "actPrecision": 1.0,
+   "actRecall": 0.227,
+   "emitOnP": 0,
+   "sViolations": 1,
+   "harmfulEmit": 0
+  },
+  {
+   "tau": 0.8,
+   "emits": 0,
+   "emitCorrectA": 0,
+   "actPrecision": null,
+   "actRecall": 0.0,
+   "emitOnP": 0,
+   "sViolations": 0,
+   "harmfulEmit": 0
+  },
+  {
+   "tau": 0.85,
+   "emits": 0,
+   "emitCorrectA": 0,
+   "actPrecision": null,
+   "actRecall": 0.0,
+   "emitOnP": 0,
+   "sViolations": 0,
+   "harmfulEmit": 0
+  },
+  {
+   "tau": 0.9,
+   "emits": 0,
+   "emitCorrectA": 0,
+   "actPrecision": null,
+   "actRecall": 0.0,
+   "emitOnP": 0,
+   "sViolations": 0,
+   "harmfulEmit": 0
+  },
+  {
+   "tau": 0.95,
+   "emits": 0,
+   "emitCorrectA": 0,
+   "actPrecision": null,
+   "actRecall": 0.0,
+   "emitOnP": 0,
+   "sViolations": 0,
+   "harmfulEmit": 0
+  }
+ ],
+ "v3b_learned_oracle_hit": [
+  {
+   "tau": 0.2,
+   "emits": 29,
+   "emitCorrectA": 19,
+   "actPrecision": 0.655,
+   "actRecall": 0.864,
+   "emitOnP": 7,
+   "sViolations": 1,
+   "harmfulEmit": 0
+  },
+  {
+   "tau": 0.25,
+   "emits": 29,
+   "emitCorrectA": 19,
+   "actPrecision": 0.655,
+   "actRecall": 0.864,
+   "emitOnP": 7,
+   "sViolations": 1,
+   "harmfulEmit": 0
+  },
+  {
+   "tau": 0.3,
+   "emits": 29,
+   "emitCorrectA": 19,
+   "actPrecision": 0.655,
+   "actRecall": 0.864,
+   "emitOnP": 7,
+   "sViolations": 1,
+   "harmfulEmit": 0
+  },
+  {
+   "tau": 0.35,
+   "emits": 24,
+   "emitCorrectA": 19,
+   "actPrecision": 0.792,
+   "actRecall": 0.864,
+   "emitOnP": 5,
+   "sViolations": 1,
+   "harmfulEmit": 0
+  },
+  {
+   "tau": 0.4,
+   "emits": 23,
+   "emitCorrectA": 19,
+   "actPrecision": 0.826,
+   "actRecall": 0.864,
+   "emitOnP": 4,
+   "sViolations": 1,
+   "harmfulEmit": 0
+  },
+  {
+   "tau": 0.45,
+   "emits": 23,
+   "emitCorrectA": 19,
+   "actPrecision": 0.826,
+   "actRecall": 0.864,
+   "emitOnP": 4,
+   "sViolations": 1,
+   "harmfulEmit": 0
+  },
+  {
+   "tau": 0.5,
+   "emits": 22,
+   "emitCorrectA": 18,
+   "actPrecision": 0.818,
+   "actRecall": 0.818,
+   "emitOnP": 4,
+   "sViolations": 0,
+   "harmfulEmit": 0
+  },
+  {
+   "tau": 0.55,
+   "emits": 22,
+   "emitCorrectA": 18,
+   "actPrecision": 0.818,
+   "actRecall": 0.818,
+   "emitOnP": 4,
+   "sViolations": 0,
+   "harmfulEmit": 0
+  },
+  {
+   "tau": 0.6,
+   "emits": 21,
+   "emitCorrectA": 18,
+   "actPrecision": 0.857,
+   "actRecall": 0.818,
+   "emitOnP": 3,
+   "sViolations": 0,
+   "harmfulEmit": 0
+  },
+  {
+   "tau": 0.65,
+   "emits": 19,
+   "emitCorrectA": 17,
+   "actPrecision": 0.895,
+   "actRecall": 0.773,
+   "emitOnP": 2,
+   "sViolations": 0,
+   "harmfulEmit": 0
+  },
+  {
+   "tau": 0.7,
+   "emits": 19,
+   "emitCorrectA": 17,
+   "actPrecision": 0.895,
+   "actRecall": 0.773,
+   "emitOnP": 2,
+   "sViolations": 0,
+   "harmfulEmit": 0
+  },
+  {
+   "tau": 0.75,
+   "emits": 19,
+   "emitCorrectA": 17,
+   "actPrecision": 0.895,
+   "actRecall": 0.773,
+   "emitOnP": 2,
+   "sViolations": 0,
+   "harmfulEmit": 0
+  },
+  {
+   "tau": 0.8,
+   "emits": 18,
+   "emitCorrectA": 16,
+   "actPrecision": 0.889,
+   "actRecall": 0.727,
+   "emitOnP": 2,
+   "sViolations": 0,
+   "harmfulEmit": 0
+  },
+  {
+   "tau": 0.85,
+   "emits": 9,
+   "emitCorrectA": 8,
+   "actPrecision": 0.889,
+   "actRecall": 0.364,
+   "emitOnP": 1,
+   "sViolations": 0,
+   "harmfulEmit": 0
+  },
+  {
+   "tau": 0.9,
+   "emits": 0,
+   "emitCorrectA": 0,
+   "actPrecision": null,
+   "actRecall": 0.0,
+   "emitOnP": 0,
+   "sViolations": 0,
+   "harmfulEmit": 0
+  },
+  {
+   "tau": 0.95,
+   "emits": 0,
+   "emitCorrectA": 0,
+   "actPrecision": null,
+   "actRecall": 0.0,
+   "emitOnP": 0,
+   "sViolations": 0,
+   "harmfulEmit": 0
+  }
+ ],
+ "best_v3a": {
+  "tau": 0.65,
+  "emits": 18,
+  "emitCorrectA": 15,
+  "actPrecision": 0.833,
+  "actRecall": 0.682,
+  "emitOnP": 1,
+  "sViolations": 1,
+  "harmfulEmit": 0
+ },
+ "best_v3b": {
+  "tau": 0.4,
+  "emits": 23,
+  "emitCorrectA": 19,
+  "actPrecision": 0.826,
+  "actRecall": 0.864,
+  "emitOnP": 4,
+  "sViolations": 1,
+  "harmfulEmit": 0
+ },
+ "emitAttribution_v3a_best": [
+  {
+   "id": "cal-0003",
+   "tag": "OK",
+   "p": 0.733,
+   "intent": 0.5014,
+   "text": "蓝鲸-7号联调通过的那个里程碑记录找出来。"
+  },
+  {
+   "id": "cal-0001",
+   "tag": "OK",
+   "p": 0.76,
+   "intent": 0.5649,
+   "text": "之前关于采用琥珀协议作为模块间通信格式的决策是什么？"
+  },
+  {
+   "id": "cal-0024",
+   "tag": "OK",
+   "p": 0.771,
+   "intent": 0.4894,
+   "text": "OX-Alpha 切 Responses API 为"
+  },
+  {
+   "id": "cal-0005",
+   "tag": "OK",
+   "p": 0.687,
+   "intent": 0.5231,
+   "text": "现在 M7 分词方案的最终决策是什么？"
+  },
+  {
+   "id": "cal-0016",
+   "tag": "OK",
+   "p": 0.673,
+   "intent": 0.5085,
+   "text": "embedding 模型选型调研比较了哪几个模型,许"
+  },
+  {
+   "id": "cal-0031",
+   "tag": "OK",
+   "p": 0.76,
+   "intent": 0.5512,
+   "text": "Which milestone completed "
+  },
+  {
+   "id": "cal-0066",
+   "tag": "WRONG-P",
+   "p": 0.691,
+   "intent": 0.5535,
+   "text": "M4-4 和 M6-4 两次 live 验证分别通过"
+  },
+  {
+   "id": "cal-0020",
+   "tag": "OK",
+   "p": 0.671,
+   "intent": 0.5434,
+   "text": "context_push envelope 的预算是"
+  },
+  {
+   "id": "cf-001",
+   "tag": "OK",
+   "p": 0.691,
+   "intent": 0.5354,
+   "text": "之前午饭吃了什么？"
+  },
+  {
+   "id": "cf-003",
+   "tag": "OK",
+   "p": 0.758,
+   "intent": 0.5557,
+   "text": "之前为什么定琥珀协议做模块间通信格式？"
+  },
+  {
+   "id": "cf-005",
+   "tag": "OK",
+   "p": 0.702,
+   "intent": 0.5501,
+   "text": "蓝鲸-7号联调是什么时候通过的？"
+  },
+  {
+   "id": "cf-007",
+   "tag": "OK",
+   "p": 0.691,
+   "intent": 0.5297,
+   "text": "之前为什么选 BGE-M3？"
+  },
+  {
+   "id": "cf-023",
+   "tag": "OK",
+   "p": 0.708,
+   "intent": 0.528,
+   "text": "M7-8 编排修复是什么时候完成的？"
+  },
+  {
+   "id": "cf-025",
+   "tag": "OK",
+   "p": 0.693,
+   "intent": 0.5307,
+   "text": "记忆工具联测那条记录的结论是什么？"
+  },
+  {
+   "id": "cf-027",
+   "tag": "OK",
+   "p": 0.684,
+   "intent": 0.5178,
+   "text": "注入又被 stale-context 丢掉了，跟上次"
+  },
+  {
+   "id": "cf-041",
+   "tag": "OK",
+   "p": 0.721,
+   "intent": 0.5298,
+   "text": "dsh 在线更新又失败了，之前确认过的 NPM 更新"
+  },
+  {
+   "id": "cf-095",
+   "tag": "OK",
+   "p": 0.796,
+   "intent": 0.5468,
+   "text": "503 Endpoint is unavailabl"
+  },
+  {
+   "id": "cf-096",
+   "tag": "OK",
+   "p": 0.657,
+   "intent": 0.5245,
+   "text": "index_sync 的 finalDigest 覆"
+  }
+ ]
+}

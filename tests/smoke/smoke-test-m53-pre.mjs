@@ -9,7 +9,7 @@ process.on('uncaughtException', (e) => { console.error('[M53-TEST] FATAL:', (e &
 process.on('unhandledRejection', (r) => { console.error('[M53-TEST] REJ:', r); process.exit(1) })
 globalThis.fetch = async () => ({ ok: false, status: 503, json: async () => ({}) })
 const sha256Hex = (buf) => createHash('sha256').update(buf).digest('hex')
-const { parseAnchors } = await import('../../lib/memory-anchor.js')
+const { parseAnchors } = await import('../../lib/memory-anchor-pre.js')
 
 let pass = 0; let fail = 0
 function ok(cond, name) { if (cond) { pass++; console.log('  ok - ' + name) } else { fail++; console.error('  FAIL - ' + name) } }
@@ -31,7 +31,7 @@ function makeShadow(root, relName, id, heading, body) {
   }))
   return {
     file, mdText: md, memoryId: id,
-    sidecar: { schemaVersion: 1, namespace: 'dsh-auto-memory', sourceFile: file,
+    sidecar: { schemaVersion: 1, namespace: 'dsh-auto-memory-pre', sourceFile: file,
       sourceEpoch: '22222222-2222-4222-8222-222222222222', sourceVersion: 1, fileDigest,
       newline: p.newline === 'crlf' ? 'crlf' : 'lf', updatedAt: 1700000000000, records },
     writeSidecarTo(sideDir) {
@@ -51,7 +51,7 @@ async function setupHarness(opts = {}) {
   mkdirSync(home, { recursive: true })
   mkdirSync(memoryRoot, { recursive: true })
   mkdirSync(wsA, { recursive: true })
-  writeFileSync(path.join(home, 'dsh-auto-memory.json'), JSON.stringify({
+  writeFileSync(path.join(home, 'dsh-auto-memory-pre.json'), JSON.stringify({
     memoryRoot, userMemoryDir: path.join(ws1, 'user'), projectMemoryDir: '.project-memory',
     externalSources: {}, ...(opts.configPatch || {}),
   }), 'utf8')
@@ -74,7 +74,7 @@ async function setupHarness(opts = {}) {
     bytes: r.bytes, recordDigest: r.recordDigest, sourceVersion: 1, fileDigest: sha256Hex(buf0),
   }))
   const wsMem = { file: wsFile, mdText: combinedMd, memoryId: bbId,
-    sidecar: { schemaVersion: 1, namespace: 'dsh-auto-memory', sourceFile: wsFile,
+    sidecar: { schemaVersion: 1, namespace: 'dsh-auto-memory-pre', sourceFile: wsFile,
       sourceEpoch: '22222222-2222-4222-8222-222222222222', sourceVersion: 1, fileDigest: sha256Hex(buf0),
       newline: p0.newline === 'crlf' ? 'crlf' : 'lf', updatedAt: 1700000000000, records: records0 },
     writeSidecarTo(sideDir) {
@@ -83,7 +83,7 @@ async function setupHarness(opts = {}) {
       writeFileSync(path.join(sideDir, h + '.json'), JSON.stringify(this.sidecar, null, 2) + '\n', 'utf8')
     },
   }
-  const sideDir = path.join(home, 'memory', 'index', 'files')
+  const sideDir = path.join(home, 'memory', 'index-pre', 'files')
   wsMem.writeSidecarTo(sideDir)
   const tools = []
   const routes = []
@@ -104,12 +104,12 @@ async function setupHarness(opts = {}) {
   apply(ctx, {})
   const fire = async (name, ...args) => { const h = handlers.get(name); if (typeof h !== 'function') throw new Error('handler missing ' + name); return Promise.resolve(h(...args)) }
   const dbg = async () => {
-    const route = routes.find((r) => r.path === '/api/dsh-auto-memory/debug')
+    const route = routes.find((r) => r.path === '/api/dsh-auto-memory-pre/debug')
     let b; await route.handler({ socket: { remoteAddress: '127.0.0.1' }, headers: { host: '127.0.0.1:3080' }, method: 'GET', url: '/debug' }, { writeHead() {}, end(x) { b = JSON.parse(x) } })
     return b.associativeMemory
   }
   const cfgPost = async (patch) => {
-    const route = routes.find((r) => r.path === '/api/dsh-auto-memory/config')
+    const route = routes.find((r) => r.path === '/api/dsh-auto-memory-pre/config')
     await route.handler({ socket: { remoteAddress: '127.0.0.1' }, headers: { host: '127.0.0.1:3080', origin: 'http://127.0.0.1:3080' }, method: 'POST', url: '/config', [Symbol.asyncIterator]() { return (async function* () { yield Buffer.from(JSON.stringify(patch)) })() } }, { writeHead() {}, end() {} })
     await new Promise((r) => setTimeout(r, 150))
   }
@@ -121,7 +121,7 @@ async function setupHarness(opts = {}) {
     cleanup: () => { try { rmSync(ws1, { recursive: true, force: true }) } catch (_) {} } }
 }
 function keyOf(p) { return '--' + p.replace(/[\\/:*?"<>|]/g, '-') + '--' }
-function evidenceEventsDir(home) { return path.join(home, 'memory', 'evidence', 'events') }
+function evidenceEventsDir(home) { return path.join(home, 'memory', 'evidence-pre', 'events') }
 function readEvidenceLines(home) {
   const dir = evidenceEventsDir(home)
   if (!existsSync(dir)) return []
@@ -139,7 +139,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
   globalThis.__h = h
   const am = await h.dbg()
   ok(am.contextBridge && am.contextBridge.enabled === false, 'C1 关闭态严格 {enabled:false}')
-  ok(!existsSync(path.join(h.home, 'memory', 'evidence')), 'C1 默认不创建 evidence 目录')
+  ok(!existsSync(path.join(h.home, 'memory', 'evidence-pre')), 'C1 默认不创建 evidence 目录')
   console.log('[C1] 默认关闭零留存')
 }
 
@@ -169,7 +169,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
   const cb = am.contextBridge
   ok(cb.stats.envelopesBuilt >= 1, 'C3 envelope 组建 ≥1(built=' + cb.stats.envelopesBuilt + ')')
   ok(cb.sinkKind === 'fake', 'C3 sink 切换为 fake')
-  ok(cb.lastFrame && String(cb.lastFrame.observationId).startsWith('obs_'), 'C3 lastFrame.observationId=obs_*')
+  ok(cb.lastFrame && String(cb.lastFrame.observationId).startsWith('obs_pre_'), 'C3 lastFrame.observationId=obs_pre_*')
   ok(cb.lastFrame.memoryRefCount >= 1, 'C3 frame 含授权 memoryRefs(lexical 基线选中=' + cb.lastFrame.memoryRefCount + ')')
   ok(cb.stats.pushesAccepted >= 1, 'C3 fake sink 接受推送(accepted=' + cb.stats.pushesAccepted + ')')
   ok(!existsSync(evidenceEventsDir(h.home)) || readEvidenceLines(h.home).length === 0, 'C3 null→fake 切换前零落盘;envelope 推送本身不写盘(fake 内存态)')
@@ -196,7 +196,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
   const readEv = lines.find((l) => l.kind === 'read')
   ok(!!readEv, 'C4 存在 kind=read')
   if (readEv) {
-    eq(readEv.evidenceId && readEv.evidenceId.startsWith('ev_'), true, 'C4 evidenceId=ev_*')
+    eq(readEv.evidenceId && readEv.evidenceId.startsWith('ev_pre_'), true, 'C4 evidenceId=ev_pre_*')
     ok(readEv.coverage > 0 && readEv.coverage <= 1, 'C4 coverage∈(0,1](前缀比例=' + readEv.coverage + ')')
     ok(readEv.event.sessionRef && readEv.event.sessionRef.startsWith('sesr_'), 'C4 sessionRef=sesr_*')
     ok(readEv.workspaceRef && readEv.workspaceRef.startsWith('wsr_'), 'C4 workspaceRef=wsr_*')
@@ -231,7 +231,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
   ok(!!corr, 'C5 用户纠正词典+token → correction 落盘')
   ok(corr && corr.memoryId === aaId, 'C5 correction 关联正确 memoryId')
   ok(cites.some((c) => c.memoryId === bbId), 'C5 assistant 可见文本 token → cite 落盘')
-  ok(lines.every((l) => l.policyVersion === 'evidence_v1'), 'C5 全部 evidence policyVersion 固定')
+  ok(lines.every((l) => l.policyVersion === 'evidence_pre_v1'), 'C5 全部 evidence policyVersion 固定')
   console.log('[C5] cite/correction precision-first 落盘')
 }
 

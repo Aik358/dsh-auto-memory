@@ -1,0 +1,75 @@
+{
+ "appliedAt": "2026-08-24",
+ "source": "boundary-review.xlsx 审批表",
+ "goldCount": 26,
+ "goldByAction": {
+  "S": 4,
+  "A": 11,
+  "P": 11
+ },
+ "deferredToSetting": [
+  "cal-0062",
+  "cal-0073"
+ ],
+ "overridesOfAgentProposal": [
+  {
+   "sampleId": "cal-0044",
+   "proposal": "prefetch",
+   "user": "A",
+   "note": null
+  },
+  {
+   "sampleId": "cal-0036",
+   "proposal": "suppress",
+   "user": "P",
+   "note": null
+  },
+  {
+   "sampleId": "cal-0037",
+   "proposal": "suppress",
+   "user": "P",
+   "note": null
+  },
+  {
+   "sampleId": "cal-0055",
+   "proposal": "suppress",
+   "user": "P",
+   "note": null
+  },
+  {
+   "sampleId": "cal-0058",
+   "proposal": "suppress",
+   "user": "P",
+   "note": null
+  },
+  {
+   "sampleId": "cal-0060",
+   "proposal": "suppress",
+   "user": "P",
+   "note": null
+  },
+  {
+   "sampleId": "cal-0059",
+   "proposal": "suppress",
+   "user": "P",
+   "note": null
+  }
+ ],
+ "crossWorkspaceRelayGolds": [
+  "cal-0036",
+  "cal-0037",
+  "cal-0055",
+  "cal-0058"
+ ],
+ "quotaStatus": {
+  "activate": 11,
+  "prefetch": 11,
+  "suppress": 4,
+  "targetPerClass": 15,
+  "gap": {
+   "activate": 4,
+   "prefetch": 4,
+   "suppress": 11
+  }
+ }
+}

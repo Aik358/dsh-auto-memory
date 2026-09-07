@@ -1,0 +1,48 @@
+{
+  "generatedAt": "2026-08-24",
+  "sources": [
+    {
+      "name": "profile-files",
+      "files": 0,
+      "episodes": 0
+    },
+    {
+      "name": "workbuddy",
+      "files": 36,
+      "episodes": 4
+    },
+    {
+      "name": "claude",
+      "files": 4,
+      "episodes": 4
+    },
+    {
+      "name": "codex",
+      "files": 17,
+      "episodes": 25
+    }
+  ],
+  "rules": {
+    "readonly": true,
+    "exclusions": [
+      "<system-reminder",
+      "<environment_context>",
+      "<permissions",
+      "<user_info>",
+      "<identity_context",
+      "<local-command-caveat",
+      "<tool_result",
+      "<attachments",
+      "Caveat:",
+      "<boot"
+    ],
+    "redactions": [
+      "secret",
+      "phone",
+      "abspath",
+      "email"
+    ],
+    "episodeMerge": "user-turn + assistant-conclusion per session, <=6/session",
+    "split": "by sessionRef hash 70/15/15 (paraphrases never cross splits)"
+  }
+}

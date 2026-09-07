@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Standalone policy artifact verifier for activation_features_v2.
+"""Standalone policy artifact verifier for activation_features_pre_v2.
 
 Recomputes both configHashes with the canonical recipe (UTF-8, sorted keys,
 compact separators, ensure_ascii=false, configHash field excluded), the
@@ -22,8 +22,8 @@ def sha(data):
 
 def verify(policy_dir, gold_dir):
     problems = []
-    ip_path = os.path.join(policy_dir, 'recall_intent_lr_v1.json')
-    ap_path = os.path.join(policy_dir, 'activation_policy_v2.json')
+    ip_path = os.path.join(policy_dir, 'recall_intent_lr_pre_v1.json')
+    ap_path = os.path.join(policy_dir, 'activation_policy_pre_v2.json')
     dr_path = os.path.join(
         policy_dir, 'decision-record-activation-v2-delta-exp-override-20260824.json')
     ip = json.load(open(ip_path, encoding='utf-8'))

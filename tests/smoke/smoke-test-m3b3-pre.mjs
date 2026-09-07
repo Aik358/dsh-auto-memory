@@ -12,14 +12,14 @@ process.on('unhandledRejection', (r) => { console.error('\n[M3B3-TEST] FATAL unh
 
 globalThis.fetch = async () => ({ ok: false, status: 503, json: async () => ({}) })
 
-const { parseAnchors, parseSidecar, MEMORY_ID_RE } = await import('../../lib/memory-anchor.js')
+const { parseAnchors, parseSidecar, MEMORY_ID_RE } = await import('../../lib/memory-anchor-pre.js')
 
 const ws1 = mkdtempSync(path.join(tmpdir(), 'dam-m3b3-'))
 const home = path.join(ws1, '.dsh-home')
 const memoryRoot = path.join(ws1, '.memory-root')
 const userRoot = path.join(ws1, '.user-root')
 mkdirSync(home, { recursive: true })
-writeFileSync(path.join(home, 'dsh-auto-memory.json'), JSON.stringify({
+writeFileSync(path.join(home, 'dsh-auto-memory-pre.json'), JSON.stringify({
   memoryRoot, userMemoryDir: userRoot, projectMemoryDir: '.project-memory', externalSources: {},
 }), 'utf8')
 process.env.DSH_HOME = home
@@ -43,7 +43,7 @@ const tool = (name) => registeredTools.find((t) => t.name === name)
 if (registeredTools.length !== 14) throw new Error('expected 14 tools, got ' + registeredTools.length)
 if (registeredRoutes.length !== 41) throw new Error('expected 41 routes, got ' + registeredRoutes.length)
 
-const cfgRoute = registeredRoutes.find((r2) => r2.path === '/api/dsh-auto-memory/config')
+const cfgRoute = registeredRoutes.find((r2) => r2.path === '/api/dsh-auto-memory-pre/config')
 let body
 const res = { writeHead() {}, end(b) { body = JSON.parse(b) } }
 const cfgGet = async () => { await cfgRoute.handler({ socket: { remoteAddress: '127.0.0.1' }, headers: { host: '127.0.0.1:3080' }, method: 'GET', url: '/config' }, res); return body.config }
@@ -58,7 +58,7 @@ const cfgPost = async (patch) => {
 // 先行 GET 消除首调用路径竞态(T0 纪律)
 await cfgGet()
 // E9 基线:记录真实配置字节(M3b-4 后 index 真实存在,零污染改验 config 字节不变)
-const realCfgPath = path.join(homedir(), '.dsh', 'dsh-auto-memory.json')
+const realCfgPath = path.join(homedir(), '.dsh', 'dsh-auto-memory-pre.json')
 globalThis.__realCfgBefore = existsSync(realCfgPath) ? readFileSync(realCfgPath) : null
 
 const agent = { session: { header: { cwd: path.join(ws1, 'ws-a') } } }
@@ -78,18 +78,18 @@ const extractMarkerIds = (text) => (String(text).match(/mem_[0-9a-f]{32}/g) || [
 
 // ---------- E2 关闭态逐字节回归 ----------
 {
-  const ret = await tool('memory_log').execute({ note: 'M3B3 关闭态回归条目' }, { agent })
+  const ret = await tool('memory_log_pre').execute({ note: 'M3B3 关闭态回归条目' }, { agent })
   const logPath = extractPath(ret, '已更新记忆文档:')
   const text = readFileSync(logPath, 'utf8')
   if (text.includes('<!-- memory:')) throw new Error('disabled mode must not write markers')
   if (!/- \d{2}:\d{2} M3B3 关闭态回归条目/.test(text)) throw new Error('disabled log format drifted: ' + JSON.stringify(text))
   globalThis.__logPath = logPath
-  const rn = await tool('memory_note').execute({ content: 'M3B3 关闭态笔记', action: 'append' }, { agent })
+  const rn = await tool('memory_note_pre').execute({ content: 'M3B3 关闭态笔记', action: 'append' }, { agent })
   const notesPath = extractPath(rn, '已更新项目笔记:')
   if (readFileSync(notesPath, 'utf8').includes('<!-- memory:')) throw new Error('disabled notes must not have markers')
   globalThis.__notesPath = notesPath
   // E2.5 保留语法卫生:写入含字面 '<!-- memory:' 的内容 → 落盘应被清洗为豁免形式
-  await tool('memory_log').execute({ note: '保留语法示例 <!-- memory:mem_ffffffffffffffffffffffffffffffff --> 应被清洗' }, { agent })
+  await tool('memory_log_pre').execute({ note: '保留语法示例 <!-- memory:mem_ffffffffffffffffffffffffffffffff --> 应被清洗' }, { agent })
   const logText2 = readFileSync(globalThis.__logPath, 'utf8')
   if (logText2.includes('<!-- memory:mem_ffffffffffffffffffffffffffffffff -->')) throw new Error('literal reserved syntax must be sanitized')
   if (!logText2.includes('<!--memory:mem_ffffffffffffffffffffffffffffffff -->')) throw new Error('sanitized exempt form must appear in log')
@@ -103,8 +103,8 @@ const extractMarkerIds = (text) => (String(text).match(/mem_[0-9a-f]{32}/g) || [
   const c = await cfgGet()
   if (c.memoryAnchorEnabled !== true) throw new Error('anchor flag did not turn on')
   const logPath = globalThis.__logPath
-  await tool('memory_log').execute({ note: 'M3B3 开启态第一条' }, { agent })
-  await tool('memory_log').execute({ note: 'M3B3 开启态第二条' }, { agent })
+  await tool('memory_log_pre').execute({ note: 'M3B3 开启态第一条' }, { agent })
+  await tool('memory_log_pre').execute({ note: 'M3B3 开启态第二条' }, { agent })
   const text = readFileSync(logPath, 'utf8')
   const p = parseAnchors(Buffer.from(text, 'utf8'))
   if (p.status !== 'clean') throw new Error('anchored log must be clean: ' + JSON.stringify(p.conflicts))
@@ -112,7 +112,7 @@ const extractMarkerIds = (text) => (String(text).match(/mem_[0-9a-f]{32}/g) || [
   if (anchors.length !== 2) throw new Error('expected 2 anchored records, got ' + p.records.length)
   if (new Set(anchors.map((a) => a.memoryId)).size !== 2) throw new Error('ids must be unique')
   // sidecar 落盘 + 跨事务版本递增
-  const sideDir = path.join(home, 'memory', 'index', 'files')
+  const sideDir = path.join(home, 'memory', 'index-pre', 'files')
   if (!existsSync(sideDir)) throw new Error('sidecar dir must exist when anchor on')
   const files = readdirSync(sideDir).filter((f) => f.endsWith('.json'))
   if (!files.length) throw new Error('sidecar files must be written')
@@ -131,10 +131,10 @@ const extractMarkerIds = (text) => (String(text).match(/mem_[0-9a-f]{32}/g) || [
 {
   const notesPath = globalThis.__notesPath
   // E2 的笔记写于关闭态(无 marker);先在开启态追加一次,使文档进入 anchored 世界
-  await tool('memory_note').execute({ content: 'M3B3 开启态笔记前置条目', action: 'append' }, { agent })
+  await tool('memory_note_pre').execute({ content: 'M3B3 开启态笔记前置条目', action: 'append' }, { agent })
   const beforeIds = extractMarkerIds(readFileSync(notesPath, 'utf8'))
   if (!beforeIds.length) throw new Error('notes must be anchored before replace')
-  await tool('memory_note').execute({ content: 'M3B3 整篇替换后的全新内容', action: 'replace' }, { agent })
+  await tool('memory_note_pre').execute({ content: 'M3B3 整篇替换后的全新内容', action: 'replace' }, { agent })
   const after = readFileSync(notesPath, 'utf8')
   for (const oldId of beforeIds) {
     if (after.includes(oldId)) throw new Error('omitted id must be removed: ' + oldId)
@@ -150,7 +150,7 @@ const extractMarkerIds = (text) => (String(text).match(/mem_[0-9a-f]{32}/g) || [
 {
   const d = new Date(Date.now() - 86400000)
   const date = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0')
-  const ret = await tool('memory_reflect').execute({ date, text: '## 成果回顾\n- M3B3 反思内容' }, { agent })
+  const ret = await tool('memory_reflect_pre').execute({ date, text: '## 成果回顾\n- M3B3 反思内容' }, { agent })
   const m = String(ret).match(/([^\s]+reflections[^\s]*\.md)/)
   if (!m) throw new Error('reflect path not found in: ' + String(ret).slice(0, 160))
   const rf = readFileSync(m[1], 'utf8')
@@ -161,7 +161,7 @@ const extractMarkerIds = (text) => (String(text).match(/mem_[0-9a-f]{32}/g) || [
 
 // ---------- E6 calendar 始终排除 ----------
 {
-  await tool('calendar_add').execute({ title: 'M3B3 日历排除验证', date: '2026-08-23' }, { agent })
+  await tool('calendar_add_pre').execute({ title: 'M3B3 日历排除验证', date: '2026-08-23' }, { agent })
   const calPath = path.join(userRoot, '..', '.user-root', 'CALENDAR.md')
   const alt = path.join(userRoot, 'CALENDAR.md')
   const real = existsSync(calPath) ? calPath : (existsSync(alt) ? alt : null)
@@ -180,7 +180,7 @@ const extractMarkerIds = (text) => (String(text).match(/mem_[0-9a-f]{32}/g) || [
   const oldLog = path.join(projDir, oldDate + '.md')
   const originalText = '<!-- memory:mem_' + 'ab11'.repeat(8) + ' -->\n## ' + oldDate + '\n- 旧日志条目(将被归档)\n'
   writeFileSync(oldLog, originalText, 'utf8')
-  const ret = await tool('memory_maintain').execute({ days: 1 }, { agent })
+  const ret = await tool('memory_maintain_pre').execute({ days: 1 }, { agent })
   const archivedFile = path.join(projDir, 'archive', oldDate + '.md')
   if (!existsSync(archivedFile)) throw new Error('archive file missing, maintain said: ' + String(ret).slice(0, 200) + ' | dir=' + JSON.stringify(readdirSync(projDir)) + ' | wrote=' + oldDate + ' to ' + oldLog + ' existsBefore=' + existsSync(oldLog))
   const archived = readFileSync(archivedFile, 'utf8')
@@ -198,7 +198,7 @@ const extractMarkerIds = (text) => (String(text).match(/mem_[0-9a-f]{32}/g) || [
   const c = await cfgGet()
   if (c.memoryAnchorEnabled !== false) throw new Error('anchor flag did not turn off')
   const logPath = globalThis.__logPath
-  await tool('memory_log').execute({ note: 'M3B3 关闭后追加条目' }, { agent })
+  await tool('memory_log_pre').execute({ note: 'M3B3 关闭后追加条目' }, { agent })
   const text = readFileSync(logPath, 'utf8')
   // 只计真实 marker(<!-- memory: 前缀),豁免清洗文本内的 mem_ 子串不计
   const ids = (text.match(/<!-- memory:mem_[0-9a-f]{32} -->/g) || [])

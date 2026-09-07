@@ -1,0 +1,347 @@
+[
+ {
+  "q": "之前关于琥珀协议的决策内容是什么？",
+  "denseTop": 0.452,
+  "margin": 0.0216
+ },
+ {
+  "q": "琥珀协议这名字挺特别的。",
+  "denseTop": 0.42,
+  "margin": 0.0057
+ },
+ {
+  "q": "蓝鲸-7号那个联调结论是什么？",
+  "denseTop": 0.4613,
+  "margin": 0.0117
+ },
+ {
+  "q": "蓝鲸-7号听起来好厉害。",
+  "denseTop": 0.4614,
+  "margin": 0.0247
+ },
+ {
+  "q": "现在分词方案最终定的是什么？",
+  "denseTop": 0.4753,
+  "margin": 0.0016
+ },
+ {
+  "q": "分词用 jieba 挺方便的吧。",
+  "denseTop": 0.5571,
+  "margin": 0.0029
+ },
+ {
+  "q": "为什么选了 BGE-M3？",
+  "denseTop": 0.4977,
+  "margin": 0.0002
+ },
+ {
+  "q": "BGE-M3 效果挺好的。",
+  "denseTop": 0.52,
+  "margin": 0.005
+ },
+ {
+  "q": "activation validator 都校验",
+  "denseTop": 0.5539,
+  "margin": 0.0167
+ },
+ {
+  "q": "validator 写得好严格。",
+  "denseTop": 0.55,
+  "margin": 0.0127
+ },
+ {
+  "q": "Reference Tail 是哪个里程碑交付的",
+  "denseTop": 0.4494,
+  "margin": 0.0144
+ },
+ {
+  "q": "尾注渲染差不多了。",
+  "denseTop": 0.5602,
+  "margin": 0.0064
+ },
+ {
+  "q": "之前定的琥珀协议具体内容是什么？",
+  "denseTop": 0.4405,
+  "margin": 0.0129
+ },
+ {
+  "q": "这个琥珀协议听起来不错。",
+  "denseTop": 0.4839,
+  "margin": 0.0016
+ },
+ {
+  "q": "帮我找一下蓝鲸-7号的记录。",
+  "denseTop": 0.4782,
+  "margin": 0.0183
+ },
+ {
+  "q": "蓝鲸-7号真厉害。",
+  "denseTop": 0.4493,
+  "margin": 0.0101
+ },
+ {
+  "q": "选 BGE-M3 的理由是什么来着？",
+  "denseTop": 0.4707,
+  "margin": 0.0063
+ },
+ {
+  "q": "BGE-M3 是最好的选择。",
+  "denseTop": 0.5525,
+  "margin": 0.0017
+ },
+ {
+  "q": "activation validator 的硬校",
+  "denseTop": 0.5444,
+  "margin": 0.0025
+ },
+ {
+  "q": "validator 校验好多东西。",
+  "denseTop": 0.5387,
+  "margin": 0.0079
+ },
+ {
+  "q": "注入又被 stale-context 丢掉了！",
+  "denseTop": 0.6045,
+  "margin": 0.016
+ },
+ {
+  "q": "之后留意 contextVersion。",
+  "denseTop": 0.6133,
+  "margin": 0.0128
+ },
+ {
+  "q": "envelope 超 4096 被裁了。",
+  "denseTop": 0.5065,
+  "margin": 0.0062
+ },
+ {
+  "q": "计划调整 envelope 预算。",
+  "denseTop": 0.5904,
+  "margin": 0.0221
+ },
+ {
+  "q": "coverage 数值跟上次差很多。",
+  "denseTop": 0.5666,
+  "margin": 0.0046
+ },
+ {
+  "q": "想复测 coverage 投影。",
+  "denseTop": 0.5578,
+  "margin": 0.0167
+ },
+ {
+  "q": "coverage 又偏了。",
+  "denseTop": 0.5476,
+  "margin": 0.0257
+ },
+ {
+  "q": "之后想重新测一下 coverage。",
+  "denseTop": 0.5733,
+  "margin": 0.0047
+ },
+ {
+  "q": "activation 校验一直报错。",
+  "denseTop": 0.604,
+  "margin": 0.0089
+ },
+ {
+  "q": "准备过一遍校验逻辑。",
+  "denseTop": 0.6201,
+  "margin": 0.0047
+ },
+ {
+  "q": "contextVersion 冲突又出现了。",
+  "denseTop": 0.5468,
+  "margin": 0.0021
+ },
+ {
+  "q": "留意一下 contextVersion 变化。",
+  "denseTop": 0.6176,
+  "margin": 0.0084
+ },
+ {
+  "q": "好的。",
+  "denseTop": 0.5306,
+  "margin": 0.0125
+ },
+ {
+  "q": "嗯嗯。",
+  "denseTop": 0.4935,
+  "margin": 0.0045
+ },
+ {
+  "q": "在吗？",
+  "denseTop": 0.4872,
+  "margin": 0.0
+ },
+ {
+  "q": "晚安。",
+  "denseTop": 0.5587,
+  "margin": 0.0218
+ },
+ {
+  "q": "谢谢！",
+  "denseTop": 0.5027,
+  "margin": 0.0039
+ },
+ {
+  "q": "嗯。",
+  "denseTop": 0.5027,
+  "margin": 0.0051
+ },
+ {
+  "q": "好的好的。",
+  "denseTop": 0.4942,
+  "margin": 0.0
+ },
+ {
+  "q": "What was decided about t",
+  "denseTop": 0.4035,
+  "margin": 0.0056
+ },
+ {
+  "q": "When did Blue Whale-7 pa",
+  "denseTop": 0.4346,
+  "margin": 0.0351
+ },
+ {
+  "q": "What's the current token",
+  "denseTop": 0.4999,
+  "margin": 0.0198
+ },
+ {
+  "q": "Why was BGE-M3 selected ",
+  "denseTop": 0.4337,
+  "margin": 0.0244
+ },
+ {
+  "q": "What was the amber proto",
+  "denseTop": 0.3784,
+  "margin": 0.0012
+ },
+ {
+  "q": "How does the activation ",
+  "denseTop": 0.4937,
+  "margin": 0.0014
+ },
+ {
+  "q": "WorkBuddy 跨设备用什么模式？",
+  "denseTop": 0.5505,
+  "margin": 0.0027
+ },
+ {
+  "q": "WorkBuddy 跨设备用什么模式？",
+  "denseTop": 0.5505,
+  "margin": 0.0027
+ },
+ {
+  "q": "PsychoPy 移植的技术栈？",
+  "denseTop": 0.5654,
+  "margin": 0.0615
+ },
+ {
+  "q": "PsychoPy 移植的技术栈？",
+  "denseTop": 0.5654,
+  "margin": 0.0615
+ },
+ {
+  "q": "CC switch 的上下文上限配置是多少？",
+  "denseTop": 0.5335,
+  "margin": 0.0276
+ },
+ {
+  "q": "抽卡演出的像素化要求是什么？",
+  "denseTop": 0.4448,
+  "margin": 0.0031
+ },
+ {
+  "q": "分词现在是 jieba 吧？",
+  "denseTop": 0.4672,
+  "margin": 0.0061
+ },
+ {
+  "q": "就用 jieba 预切，别改了。",
+  "denseTop": 0.5749,
+  "margin": 0.0021
+ },
+ {
+  "q": "我准备继续做 embedding 相关的工作了。",
+  "denseTop": 0.5849,
+  "margin": 0.0056
+ },
+ {
+  "q": "接下来要过一遍 activation 校验逻辑。",
+  "denseTop": 0.6283,
+  "margin": 0.0035
+ },
+ {
+  "q": "之后想复测一下 coverage 投影。",
+  "denseTop": 0.5763,
+  "margin": 0.0304
+ },
+ {
+  "q": "计划调一调 envelope 的预算。",
+  "denseTop": 0.5693,
+  "margin": 0.0275
+ },
+ {
+  "q": "哪天把契约文档整理一下。",
+  "denseTop": 0.6197,
+  "margin": 0.0295
+ },
+ {
+  "q": "我要改 reference tail 的渲染逻辑",
+  "denseTop": 0.5439,
+  "margin": 0.003
+ },
+ {
+  "q": "继续推进 M7 后面的阶段。",
+  "denseTop": 0.6063,
+  "margin": 0.0497
+ },
+ {
+  "q": "开始处理 release 工具的下一步。",
+  "denseTop": 0.701,
+  "margin": 0.0328
+ },
+ {
+  "q": "准备更新交接文档的当前现场小节。",
+  "denseTop": 0.634,
+  "margin": 0.0158
+ },
+ {
+  "q": "有空研究下 compactLayer 的配额。",
+  "denseTop": 0.6088,
+  "margin": 0.0119
+ },
+ {
+  "q": "下午继续弄 OX-Alpha 相关的排查。",
+  "denseTop": 0.5537,
+  "margin": 0.0229
+ },
+ {
+  "q": "打算梳理一遍 inbox 重复门的逻辑。",
+  "denseTop": 0.5863,
+  "margin": 0.0343
+ },
+ {
+  "q": "这个函数写得挺优雅的。",
+  "denseTop": 0.538,
+  "margin": 0.0412
+ },
+ {
+  "q": "今天天气真不错，适合出去走走。",
+  "denseTop": 0.4496,
+  "margin": 0.0221
+ },
+ {
+  "q": "Python 的 GIL 是什么？",
+  "denseTop": 0.4709,
+  "margin": 0.0243
+ },
+ {
+  "q": "周末帮我排个健身计划。",
+  "denseTop": 0.4959,
+  "margin": 0.0025
+ }
+]

@@ -1,5 +1,5 @@
 // M8 采集侧 intent 清洗测试(2026-08-30 P1,docs/HANDOFF-M8-M9-M10.md §2 P1):
-// 用 ~/.dsh/memory/hub/episodes.json 里**实录到的三种污染形态**做回归锁定,
+// 用 ~/.dsh/memory/hub-pre/episodes.json 里**实录到的三种污染形态**做回归锁定,
 // 使「自然对话两轮后查 intent」这一原本只能实机验证的行为变成可重复执行的断言。
 //   T1 形态① harness 快照消息("Current runtime context. This snapshot supersedes…")
 //   T2 形态② 工具回包 JSON 转储(role=user 但 eventType='tool/result')
@@ -9,7 +9,7 @@
 //   T6 纯快照消息 → 跳过(与修复前行为一致,不引入假 intent)
 //   T7 assistant 取最后一条非空文本;边界/健壮性
 // 纯函数测试:零 IO、零网络、零真实记忆接触。
-const { pickConsolidationTextPre, stripInjectedBlockPre, isInjectedContextTextPre } = await import('../../lib/intent-clean.js')
+const { pickConsolidationTextPre, stripInjectedBlockPre, isInjectedContextTextPre } = await import('../../lib/intent-clean-pre.js')
 
 let pass = 0; let fail = 0
 function ok(cond, name) { if (cond) { pass++; console.log('  ok - ' + name) } else { fail++; console.error('  FAIL - ' + name) } }

@@ -1,0 +1,185 @@
+{
+ "mergedGold": {
+  "total": 86,
+  "byAction": {
+   "A": 38,
+   "P": 29,
+   "S": 19
+  },
+  "b3New": 28,
+  "b3OverridesOfPrior": 28,
+  "relayDeferred": [
+   "cal-0036",
+   "cal-0037",
+   "cal-0055",
+   "cal-0058"
+  ]
+ },
+ "intentHead86": {
+  "auc_oof": 0.857,
+  "auc_calibrated_oof": 0.834,
+  "brier_raw": 0.217,
+  "brier_calibrated": 0.166
+ },
+ "chosen": {
+  "tau": 0.7,
+  "emits": 11,
+  "emitCorrectA": 9,
+  "actPrecision": 0.818,
+  "actRecall": 0.237,
+  "emitOnP": 0,
+  "sViolations": 1
+ },
+ "grid86": [
+  {
+   "tau": 0.3,
+   "emits": 51,
+   "emitCorrectA": 19,
+   "actPrecision": 0.373,
+   "actRecall": 0.5,
+   "emitOnP": 12,
+   "sViolations": 13
+  },
+  {
+   "tau": 0.35,
+   "emits": 38,
+   "emitCorrectA": 17,
+   "actPrecision": 0.447,
+   "actRecall": 0.447,
+   "emitOnP": 8,
+   "sViolations": 13
+  },
+  {
+   "tau": 0.4,
+   "emits": 33,
+   "emitCorrectA": 16,
+   "actPrecision": 0.485,
+   "actRecall": 0.421,
+   "emitOnP": 5,
+   "sViolations": 13
+  },
+  {
+   "tau": 0.45,
+   "emits": 33,
+   "emitCorrectA": 16,
+   "actPrecision": 0.485,
+   "actRecall": 0.421,
+   "emitOnP": 5,
+   "sViolations": 6
+  },
+  {
+   "tau": 0.5,
+   "emits": 33,
+   "emitCorrectA": 16,
+   "actPrecision": 0.485,
+   "actRecall": 0.421,
+   "emitOnP": 5,
+   "sViolations": 2
+  },
+  {
+   "tau": 0.55,
+   "emits": 33,
+   "emitCorrectA": 16,
+   "actPrecision": 0.485,
+   "actRecall": 0.421,
+   "emitOnP": 5,
+   "sViolations": 1
+  },
+  {
+   "tau": 0.6,
+   "emits": 32,
+   "emitCorrectA": 16,
+   "actPrecision": 0.5,
+   "actRecall": 0.421,
+   "emitOnP": 5,
+   "sViolations": 1
+  },
+  {
+   "tau": 0.65,
+   "emits": 26,
+   "emitCorrectA": 15,
+   "actPrecision": 0.577,
+   "actRecall": 0.395,
+   "emitOnP": 4,
+   "sViolations": 1
+  },
+  {
+   "tau": 0.7,
+   "emits": 11,
+   "emitCorrectA": 9,
+   "actPrecision": 0.818,
+   "actRecall": 0.237,
+   "emitOnP": 0,
+   "sViolations": 1
+  },
+  {
+   "tau": 0.75,
+   "emits": 3,
+   "emitCorrectA": 2,
+   "actPrecision": 0.667,
+   "actRecall": 0.053,
+   "emitOnP": 0,
+   "sViolations": 1
+  },
+  {
+   "tau": 0.8,
+   "emits": 0,
+   "emitCorrectA": 0,
+   "actPrecision": null,
+   "actRecall": 0.0,
+   "emitOnP": 0,
+   "sViolations": 1
+  },
+  {
+   "tau": 0.85,
+   "emits": 0,
+   "emitCorrectA": 0,
+   "actPrecision": null,
+   "actRecall": 0.0,
+   "emitOnP": 0,
+   "sViolations": 0
+  },
+  {
+   "tau": 0.9,
+   "emits": 0,
+   "emitCorrectA": 0,
+   "actPrecision": null,
+   "actRecall": 0.0,
+   "emitOnP": 0,
+   "sViolations": 0
+  },
+  {
+   "tau": 0.95,
+   "emits": 0,
+   "emitCorrectA": 0,
+   "actPrecision": null,
+   "actRecall": 0.0,
+   "emitOnP": 0,
+   "sViolations": 0
+  }
+ ],
+ "bootstrapCI_at_chosen": {
+  "precision95CI": [
+   0.433,
+   0.929
+  ],
+  "recall95CI": [
+   0.105,
+   0.435
+  ],
+  "sViolations_median": 1.0
+ },
+ "lrCoefficients": {
+  "intentProb": 0.579,
+  "denseTop": -0.377,
+  "margin": 0.269,
+  "containment": 0.944,
+  "mark": 1.635
+ },
+ "userDesignInputs": [
+  "多目标题默认 prefetch，是否升 activate 交由用户阈值设置（P3 完整性门的政策化）",
+  "P4 repetition 应复用 JS 端 episodic→procedural 的多次提及判断门信号",
+  "思维链上下文标记（let me think about / 让我想想）作为意图升级特征",
+  "生活话题重复可按用户主动性偏好做主动联想——挂接个性化议题③"
+ ]
+}

@@ -20,7 +20,7 @@ let pass = 0, fail = 0
 const ok = (cond, name) => { if (cond) { pass++; console.log('  ok -', name) } else { fail++; console.log('  FAIL -', name) } }
 
 // 共享实现直接从源码导入(与 index.js semanticAssetProbe 同一函数)
-const semMod = await import(pathToFileURL(path.join(LIB_SRC, 'semantic-js.js')).href)
+const semMod = await import(pathToFileURL(path.join(LIB_SRC, 'semantic-js-pre.js')).href)
 ok(typeof semMod.probeJsSemanticAssets === 'function' && typeof semMod.resolvePeerTransformersDir === 'function',
   'shared probe helpers exported')
 

@@ -3,9 +3,9 @@
 process.on('uncaughtException', (e) => { console.error('[M4-TEST] FATAL:', (e && (e.stack || e.message)) || e); process.exit(1) })
 process.on('unhandledRejection', (r) => { console.error('[M4-TEST] REJ:', r); process.exit(1) })
 
-const M = await import('../../lib/shadow-retrieval.js')
+const M = await import('../../lib/shadow-retrieval-pre.js')
 const {
-  SHADOW_GATE_POLICY_V1, SHADOW_LEXICAL_BUDGET_V1, DROP_REASON_SET,
+  SHADOW_GATE_POLICY_PRE_V1, SHADOW_LEXICAL_BUDGET_PRE_V1, DROP_REASON_SET,
   validateSnapshot, memoryIndexVersion, tokenize, normalizeText, buildQueryPlan,
   computeSignals, gatePreV1, lexicalSearch, buildCandidates, buildRetrievalId, buildCandidateId,
   replay, canonicalPlugDate, sanitizeExcerpt,
@@ -24,18 +24,18 @@ const mkSnap = (over = {}) => Object.assign({
 
 // ---------- F1 策略常量冻结与权重和 ----------
 {
-  const w = SHADOW_GATE_POLICY_V1.weights
+  const w = SHADOW_GATE_POLICY_PRE_V1.weights
   const sum = w.explicitRecall + w.toolFailure + w.unresolved + w.repeated + w.novelty + w.phaseShift + w.historical + w.conflict + w.unresolvedAge
   if (Math.abs(sum - 1) > 1e-9) throw new Error('weights must sum to 1, got ' + sum)
   if (w.goalDrift !== 0 || w.monitor !== 0 || w.reasoning !== 0) throw new Error('v1 zero weights broken')
-  if (SHADOW_GATE_POLICY_V1.cooldownSegments !== 2) throw new Error('cooldown must be 2')
-  if (SHADOW_GATE_POLICY_V1.hysteresisOn !== 0.65 || SHADOW_GATE_POLICY_V1.hysteresisOff !== 0.42) throw new Error('hysteresis wrong')
-  if (SHADOW_LEXICAL_BUDGET_V1.rankedKept !== 8 || SHADOW_LEXICAL_BUDGET_V1.rawHits !== 64) throw new Error('budget wrong')
+  if (SHADOW_GATE_POLICY_PRE_V1.cooldownSegments !== 2) throw new Error('cooldown must be 2')
+  if (SHADOW_GATE_POLICY_PRE_V1.hysteresisOn !== 0.65 || SHADOW_GATE_POLICY_PRE_V1.hysteresisOff !== 0.42) throw new Error('hysteresis wrong')
+  if (SHADOW_LEXICAL_BUDGET_PRE_V1.rankedKept !== 8 || SHADOW_LEXICAL_BUDGET_PRE_V1.rawHits !== 64) throw new Error('budget wrong')
   for (const d of ['no-owner', 'child-session', 'cooldown', 'index-conflict', 'future-dated']) {
     if (!DROP_REASON_SET.has(d)) throw new Error('drop reason missing: ' + d)
   }
-  try { SHADOW_GATE_POLICY_V1.weights.explicitRecall = 1; } catch (_) {}
-  if (SHADOW_GATE_POLICY_V1.weights.explicitRecall !== 0.30) throw new Error('policy must be frozen')
+  try { SHADOW_GATE_POLICY_PRE_V1.weights.explicitRecall = 1; } catch (_) {}
+  if (SHADOW_GATE_POLICY_PRE_V1.weights.explicitRecall !== 0.30) throw new Error('policy must be frozen')
   console.log('F1 策略常量冻结 ✓ (权重和=1, cooldown=2, 滞回 0.65/0.42)')
 }
 
@@ -56,7 +56,7 @@ const mkSnap = (over = {}) => Object.assign({
   const s = [{ scope: 'User', sourceRef: 'user:MEMORY.md', sourceEpoch: 'e1', sourceVersion: 1, fileDigest: 'aa' }]
   const v1 = memoryIndexVersion(s)
   const v2 = memoryIndexVersion([...s])
-  if (v1 !== v2 || !v1.startsWith('idx_')) throw new Error('version must be deterministic with idx_ prefix')
+  if (v1 !== v2 || !v1.startsWith('idx_pre_')) throw new Error('version must be deterministic with idx_pre_ prefix')
   const changed = memoryIndexVersion([{ ...s[0], sourceVersion: 2 }])
   if (changed === v1) throw new Error('version change must alter index version')
   // 枚举顺序无关(排序按 scope/sourceRef)
@@ -97,7 +97,7 @@ const mkSnap = (over = {}) => Object.assign({
     window: [{ segmentId: 'w', digest: 'd1', kind: 'user', eventSeq: 1, contextVersion: 1, ts: 1, text: '数据库连接池配置 数据库超时' }],
   })
   const qp = buildQueryPlan(snap)
-  if (qp.policyVersion !== 'lexical_v2' || qp.schemaVersion !== 1) throw new Error('QueryPlan version wrong')
+  if (qp.policyVersion !== 'lexical_pre_v2' || qp.schemaVersion !== 1) throw new Error('QueryPlan version wrong')
   if (qp.terms.length > 32) throw new Error('terms over budget')
   let bytes = 0
   for (const t of qp.terms) bytes += Buffer.byteLength(t.term, 'utf8')
@@ -151,7 +151,7 @@ const mkSnap = (over = {}) => Object.assign({
   // 滞回保持:previousLatch=true 且 rawScore∈[0.42,0.55) → latch 保持、action=prefetch
   const midSignals = { explicitRecall: 0, novelty: 1, toolFailure: 1, unresolved: 1, repeated: 0, phaseShift: 0, historical: 1, conflict: 0, unresolvedAge: 0 }
   const dm = gatePreV1(empty, { previousLatch: true, cooldownRemaining: 0, signals: midSignals })
-  if (dm.rawScore < 0.42 || dm.rawScore >= SHADOW_GATE_POLICY_V1.prefetchThreshold) throw new Error('fixture must land in [0.42,0.55), got ' + dm.rawScore)
+  if (dm.rawScore < 0.42 || dm.rawScore >= SHADOW_GATE_POLICY_PRE_V1.prefetchThreshold) throw new Error('fixture must land in [0.42,0.55), got ' + dm.rawScore)
   if (dm.latched !== true) throw new Error('latch must hold above hysteresis-off when previously latched')
   if (dm.action !== 'prefetch') throw new Error('latched mid-band must prefetch')
   // 滞回解除:previousLatch=true 但 rawScore<0.42 → latch 解除
@@ -179,7 +179,7 @@ const mkSnap = (over = {}) => Object.assign({
 // ---------- F9 lexicalSearch:评分/排序/去重/future-dated ----------
 {
   const corpus = {
-    memoryIndexVersion: 'idx_test',
+    memoryIndexVersion: 'idx_pre_test',
     sources: [
       { scope: 'User', sourceRef: 'user:MEMORY.md', sourceEpoch: 'e1', sourceVersion: 1, fileDigest: 'f1' },
       { scope: 'Workspace', sourceRef: 'workspace:MEMORY.md', sourceEpoch: 'e2', sourceVersion: 1, fileDigest: 'f2' },
@@ -225,12 +225,12 @@ const mkSnap = (over = {}) => Object.assign({
     lineStart: 1, lineEnd: 1, byteStart: 0, byteEnd: 30, heading: '登录', text: '登录模块缓存说明', bytes: 30,
   }, extra)
   // 同 memoryId 不同 recordDigest → index-conflict fail closed
-  const c1 = { memoryIndexVersion: 'idx_x', sources: [], records: [mkRec(idA, 'rd1'), mkRec(idA, 'rd2')] }
+  const c1 = { memoryIndexVersion: 'idx_pre_x', sources: [], records: [mkRec(idA, 'rd1'), mkRec(idA, 'rd2')] }
   const ls1 = lexicalSearch(c1, { terms: [{ term: '登录', weight: 1 }], phrases: [] }, {})
   if (ls1.kept.length !== 0) throw new Error('index-conflict must fail closed')
   if (!ls1.dropped.some((d) => d.reason === 'index-conflict')) throw new Error('index-conflict reason missing')
   // 同 recordDigest 不同 memoryId → duplicate-content 保留排序更高者
-  const c2 = { memoryIndexVersion: 'idx_x', sources: [], records: [mkRec(idA, 'same-rd'), mkRec(idB, 'same-rd')] }
+  const c2 = { memoryIndexVersion: 'idx_pre_x', sources: [], records: [mkRec(idA, 'same-rd'), mkRec(idB, 'same-rd')] }
   const ls2 = lexicalSearch(c2, { terms: [{ term: '登录', weight: 1 }], phrases: [] }, {})
   if (ls2.kept.length !== 1) throw new Error('duplicate content must keep exactly one')
   if (!ls2.dropped.some((d) => d.reason === 'duplicate-content')) throw new Error('duplicate-content reason missing')
@@ -267,7 +267,7 @@ const mkSnap = (over = {}) => Object.assign({
 // ---------- F12 replay 纯 core 确定性 + 身份 ----------
 {
   const corpus = {
-    memoryIndexVersion: 'idx_replaytest',
+    memoryIndexVersion: 'idx_pre_replaytest',
     sources: [{ scope: 'Workspace', sourceRef: 'workspace:MEMORY.md', sourceEpoch: 'e', sourceVersion: 1, fileDigest: 'f' }],
     records: [
       { memoryId: 'mem_' + 'ef'.repeat(16), scope: 'Workspace', sourceClass: 'workspace-notes', sourceRef: 'workspace:MEMORY.md', sourceEpoch: 'e', sourceVersion: 1, fileDigest: 'f', recordDigest: 'rd-ef', lineStart: 1, lineEnd: 2, byteStart: 0, byteEnd: 40, heading: '部署流程', text: '部署流程使用 pnpm build 后 rsync 到服务器' },
@@ -282,10 +282,10 @@ const mkSnap = (over = {}) => Object.assign({
   const r2 = replay(args)
   if (JSON.stringify(r1) !== JSON.stringify(r2)) throw new Error('replay must be field-identical for same input')
   const first = r1[0].canonical
-  if (!first.retrievalId.startsWith('ret_')) throw new Error('retrievalId prefix wrong')
+  if (!first.retrievalId.startsWith('ret_pre_')) throw new Error('retrievalId prefix wrong')
   // candidate 身份确定性
   const cid = buildCandidateId(first.retrievalId, 'mem_x', 'e', 1, 'rd')
-  if (!cid.startsWith('cand_')) throw new Error('candidateId prefix wrong')
+  if (!cid.startsWith('cand_pre_')) throw new Error('candidateId prefix wrong')
   const cid2 = buildCandidateId(first.retrievalId, 'mem_x', 'e', 1, 'rd')
   if (cid !== cid2) throw new Error('candidateId must be deterministic')
   // excerpt 清洗+截断

@@ -1,0 +1,29 @@
+{
+  "recordedAt": "2026-08-24",
+  "status": "waiting-for-user-finish-editing-boundary-review.md",
+  "rulings": [
+    {
+      "id": "ruling-1",
+      "subject": "cal-0036 / cal-0037 外部工作区样本",
+      "decision": "proposedAction 回退为 prefetch（撤销 strong-agent 的 suppress 改判）",
+      "decidedBy": "user",
+      "rationale": "外部工作区内容可能造成干扰，但也可能是有意的联想信息——具体问题具体分析，或交由用户的'跨工作区记忆联想'设置决定（对应主 Agent 议题③a）。保留 wrong-scope 提示与 scopeCaveat 字段，但 action 按 prefetch 口径。",
+      "applyPlan": "更新 review-overlay.jsonl 两行 agreement=user-revised→prefetch，rationale 注明 user ruling；重跑 build_review.mjs 时同步"
+    },
+    {
+      "id": "ruling-2",
+      "subject": "cal-0020 并列 gold 争议（ep_9695c53761cd879c vs 检索第一 ep_11f4f11b6beeabb2）",
+      "decision": "维持单一 gold=ep_9695c53761cd879c，不新增并列 gold；ambiguityFlag 继续保留",
+      "decidedBy": "agent (user 授权按己方判断)",
+      "rationale": "precision-first：检索第一名≠并列正确答案，未经确认不稀释 gold；该分歧继续作为检索质量信号记录在案"
+    },
+    {
+      "id": "ruling-3",
+      "subject": "概览型问题归类（cal-0007 / cal-0008 / cal-0039）",
+      "decision": "确认为 prefetch（P）",
+      "decidedBy": "user",
+      "rationale": "概览类问题更适合 prefetch：反复修改、反复提及的主题正是运行中 Agent 需要抓住的痛点/难点，注入策略上由后续校准利用这一信号"
+    }
+  ],
+  "note": "用户正在亲自编辑 boundary-review.md 的选择栏；待其回复'改完了'后一次性应用：①本文件三项裁决写入 overlay 并重建产物 ②读取用户编辑后的 boundary-review.md 选择栏 ③统一翻转 isGold=true(labelSource=human) ④按需补 prefetch 变体 ⑤重跑校验与阈值分析"
+}

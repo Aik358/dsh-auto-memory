@@ -42,7 +42,7 @@ ok(SRC.includes("snapshotPlanTitle: '[白板 PLAN.md") && SRC.includes("snapshot
 ok(SRC.includes('交接与白板(长任务续命)') && SRC.includes('kind=handoff') && SRC.includes('kind=plan'),
   '静态纪律层含交接/白板指令(kind=handoff/plan)')
 ok(/args\.kind === 'handoff' \|\| args\.kind === 'plan'/.test(SRC) && /engine\.writePlanSnapshot\(/.test(SRC) && /engine\.writeHandoffLedger\(/.test(SRC),
-  'memory_note kind 分支路由到白板/账本写入')
+  'memory_note_pre kind 分支路由到白板/账本写入')
 ok(SRC.includes("planPath: path.join(projectDir, 'handoff', 'PLAN.md')") && SRC.includes("handoffDir: path.join(projectDir, 'handoff')"),
   'resolvePaths 返回 handoffDir/planPath')
 ok(SRC.includes("kind: { type: 'string', enum: ['note', 'handoff', 'plan']"), '工具 schema 声明 kind 枚举')
@@ -155,7 +155,7 @@ ok(!out3.includes('白板 PLAN.md') && !out3.includes('最近交接'), 'handoffE
 console.log('[handoff] G5 M-CM2 recall scope 路由(源码守卫+语料检索)')
 ok(SRC.includes("async recall(query, limit = 8, agent, scope = 'all')"), 'recall 带 scope 参数(默认 all)')
 ok(SRC.includes("if (scope === 'handoff') {") && SRC.includes("if (scope === 'sessions') {"), 'handoff/sessions 早返分支存在')
-ok(SRC.includes("scope: { type: 'string', enum: ['all', 'handoff', 'sessions']") && SRC.includes("engine.recall(args.query, args.limit, exec.agent, args.scope || 'all')"), 'memory_recall 工具声明 scope 枚举并透传')
+ok(SRC.includes("scope: { type: 'string', enum: ['all', 'handoff', 'sessions']") && SRC.includes("engine.recall(args.query, args.limit, exec.agent, args.scope || 'all')"), 'memory_recall_pre 工具声明 scope 枚举并透传')
 ok(CSRC.includes("set('handoffEnabled', e.target.checked)") && CSRC.includes("fHandoff: '交接白板'"), '设置页交接白板开关接线(client)')
 const fakeG5 = Object.assign(makeFakeEngine(), { config: { handoffEnabled: true } })
 const listLedgers = bindMethod('async listHandoffLedgers(dir, limit = 12) {', fakeG5)

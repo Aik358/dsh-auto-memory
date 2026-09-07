@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/** [M80] JS semantic tier (js_semantic_tier_v1) — trial-module contract.
+/** [M80] JS semantic tier (js_semantic_tier_pre_v1) — trial-module contract.
  * Zero production wiring: this suite exercises the standalone module in
  * artifacts/m7-live-pre/js-semantic-trial/. If the optional peer deps are not
  * installed, the suite SKIPS (exit 0) with an explicit note — the tier is an
@@ -26,7 +26,7 @@ process.env.TRANSFORMERS_OFFLINE = '1'
 const tierMod = await import('file:///' +
   path.join(TRIAL, 'js-semantic-tier.mjs').replace(/\\/g, '/'))
 ok(typeof tierMod.createJsSemanticTier === 'function', 'factory exported')
-ok(String(tierMod.JS_SEMANTIC_TIER_VERSION) === 'js_semantic_tier_v1',
+ok(String(tierMod.JS_SEMANTIC_TIER_VERSION) === 'js_semantic_tier_pre_v1',
   'version constant frozen')
 
 console.log('[M80] G2 tier boots from local model dir (no network)')

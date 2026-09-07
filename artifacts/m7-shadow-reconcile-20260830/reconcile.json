@@ -1,0 +1,264 @@
+[
+ {
+  "id": 1,
+  "rows": 89,
+  "decisions": {
+   "prefetch": 21,
+   "suppress": 53,
+   "emit": 15
+  },
+  "best": {
+   "lane": "explicit",
+   "intentProb": 0.998994,
+   "margin": 0.071374
+  },
+  "anchors": [
+   "mem_0c106f7493ea",
+   "mem_0fe9a635530a",
+   "mem_1e9dfa9899a4",
+   "mem_2181f50112e9",
+   "mem_25fa047708f5"
+  ]
+ },
+ {
+  "id": 2,
+  "rows": 30,
+  "decisions": {
+   "suppress": 26,
+   "prefetch": 1,
+   "emit": 3
+  },
+  "best": {
+   "lane": "explicit",
+   "intentProb": 0.998642,
+   "margin": 0.035
+  },
+  "anchors": [
+   "mem_11aaf8cc9f50",
+   "mem_199c434a262d",
+   "mem_1f0ab5fe9e34",
+   "mem_2181f50112e9",
+   "mem_3f541f2ab2cf"
+  ]
+ },
+ {
+  "id": 3,
+  "rows": 10,
+  "decisions": {
+   "suppress": 10
+  },
+  "best": {
+   "lane": "explicit",
+   "intentProb": 0.998559,
+   "margin": 0.039512
+  },
+  "anchors": [
+   "mem_11aaf8cc9f50",
+   "mem_1f0ab5fe9e34",
+   "mem_2181f50112e9",
+   "mem_375f18735aeb",
+   "mem_3f541f2ab2cf"
+  ]
+ },
+ {
+  "id": 4,
+  "rows": 17,
+  "decisions": {
+   "suppress": 17
+  },
+  "best": {
+   "lane": "explicit",
+   "intentProb": 0.999138,
+   "margin": 0.019477
+  },
+  "anchors": [
+   "mem_2181f50112e9",
+   "mem_255748c6b7ee",
+   "mem_2fff5106bcd2",
+   "mem_3f541f2ab2cf",
+   "mem_4cdf3462633a"
+  ]
+ },
+ {
+  "id": 5,
+  "rows": 1,
+  "decisions": {
+   "suppress": 1
+  },
+  "best": {
+   "lane": null,
+   "intentProb": null,
+   "margin": null
+  },
+  "anchors": [
+   "mem_cba99be88eed",
+   "mem_d7f41e59c9be"
+  ]
+ },
+ {
+  "id": 6,
+  "rows": 10,
+  "decisions": {
+   "suppress": 9,
+   "prefetch": 1
+  },
+  "best": {
+   "lane": "explicit",
+   "intentProb": 0.997603,
+   "margin": 0.006347
+  },
+  "anchors": [
+   "mem_0c106f7493ea",
+   "mem_255748c6b7ee",
+   "mem_357bafd4f50c",
+   "mem_4cdf3462633a",
+   "mem_615dc1831f4d"
+  ]
+ },
+ {
+  "id": 7,
+  "rows": 8,
+  "decisions": {
+   "suppress": 8
+  },
+  "best": {
+   "lane": "explicit",
+   "intentProb": 0.997052,
+   "margin": 0.018374
+  },
+  "anchors": [
+   "mem_0c106f7493ea",
+   "mem_357bafd4f50c",
+   "mem_3f541f2ab2cf",
+   "mem_4cdf3462633a",
+   "mem_5cf74726e84e"
+  ]
+ },
+ {
+  "id": 8,
+  "rows": 4,
+  "decisions": {
+   "suppress": 4
+  },
+  "best": {
+   "lane": null,
+   "intentProb": null,
+   "margin": null
+  },
+  "anchors": [
+   "mem_3f541f2ab2cf",
+   "mem_666765a7f222",
+   "mem_b978130d5f4e"
+  ]
+ },
+ {
+  "id": 10,
+  "rows": 5,
+  "decisions": {
+   "suppress": 5
+  },
+  "best": {
+   "lane": null,
+   "intentProb": null,
+   "margin": null
+  },
+  "anchors": [
+   "mem_040033613b90",
+   "mem_666765a7f222",
+   "mem_71452e44a784",
+   "mem_d58a9920e317"
+  ]
+ },
+ {
+  "id": 9,
+  "rows": 7,
+  "decisions": {
+   "suppress": 7
+  },
+  "best": {
+   "lane": "explicit",
+   "intentProb": 0.996787,
+   "margin": 0.028025
+  },
+  "anchors": [
+   "mem_040033613b90",
+   "mem_666765a7f222",
+   "mem_7742f3c9ba05",
+   "mem_a184272d57e0",
+   "mem_cd57034186c2"
+  ]
+ },
+ {
+  "id": 11,
+  "rows": 11,
+  "decisions": {
+   "suppress": 11
+  },
+  "best": {
+   "lane": "explicit",
+   "intentProb": 0.998366,
+   "margin": 0.1288
+  },
+  "anchors": [
+   "mem_255748c6b7ee",
+   "mem_cd57034186c2",
+   "mem_d6cf24d8a30f",
+   "mem_d7f41e59c9be",
+   "mem_fdb9750975ed"
+  ]
+ },
+ {
+  "id": 12,
+  "rows": 13,
+  "decisions": {
+   "suppress": 13
+  },
+  "best": {
+   "lane": "explicit",
+   "intentProb": 0.998289,
+   "margin": 0.00023
+  },
+  "anchors": [
+   "mem_0fe9a635530a",
+   "mem_255748c6b7ee",
+   "mem_4cdf3462633a",
+   "mem_9a11b14f7373",
+   "mem_9bf530f63faa"
+  ]
+ },
+ {
+  "id": 13,
+  "rows": 4,
+  "decisions": {
+   "suppress": 4
+  },
+  "best": {
+   "lane": "explicit",
+   "intentProb": 0.997821,
+   "margin": 0.044688
+  },
+  "anchors": [
+   "mem_0fe9a635530a",
+   "mem_375f18735aeb"
+  ]
+ },
+ {
+  "id": 14,
+  "rows": 15,
+  "decisions": {
+   "suppress": 15
+  },
+  "best": {
+   "lane": "explicit",
+   "intentProb": 0.997531,
+   "margin": 0.029776
+  },
+  "anchors": [
+   "mem_0fe9a635530a",
+   "mem_2181f50112e9",
+   "mem_375f18735aeb",
+   "mem_4b1ef572e526",
+   "mem_4cdf3462633a"
+  ]
+ }
+]

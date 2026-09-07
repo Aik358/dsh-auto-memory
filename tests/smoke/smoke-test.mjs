@@ -17,7 +17,7 @@ import path from 'node:path'
 const smkWs = mkdtempSync(path.join(tmpdir(), 'dam-smoke-'))
 const smkHome = path.join(smkWs, '.dsh-home')
 mkdirSync(smkHome, { recursive: true })
-writeFileSync(path.join(smkHome, 'dsh-auto-memory.json'), JSON.stringify({
+writeFileSync(path.join(smkHome, 'dsh-auto-memory-pre.json'), JSON.stringify({
   memoryRoot: path.join(smkWs, '.memory-root'),
   userMemoryDir: path.join(smkWs, '.user-root'),
   projectMemoryDir: '.project-memory',
@@ -53,9 +53,9 @@ apply(ctx, {})
 
 // 审查修复轮2:先经 config 路由 await loadConfig,再执行任何工具调用,
 // 消除"首个调用按默认 '~'(真实 homedir) 解析路径"的竞态(本测试污染真实记忆的根因)。
-const configRouteEarly = registeredRoutes.find((r) => r.path === '/api/dsh-auto-memory/config')
+const configRouteEarly = registeredRoutes.find((r) => r.path === '/api/dsh-auto-memory-pre/config')
 let cfgBody
-await configRouteEarly.handler({ socket: { remoteAddress: '127.0.0.1' }, headers: { host: '127.0.0.1:3080' }, method: 'GET', url: '/api/dsh-auto-memory/config' }, { writeHead() {}, end(b) { cfgBody = JSON.parse(b) } })
+await configRouteEarly.handler({ socket: { remoteAddress: '127.0.0.1' }, headers: { host: '127.0.0.1:3080' }, method: 'GET', url: '/api/dsh-auto-memory-pre/config' }, { writeHead() {}, end(b) { cfgBody = JSON.parse(b) } })
 if (cfgBody.config.memoryRoot.indexOf(smkWs) !== 0) throw new Error('memoryRoot not isolated to temp dir before execution: ' + cfgBody.config.memoryRoot)
 
 console.log('name:', name, '| inject:', JSON.stringify(inject))
@@ -70,9 +70,9 @@ if (sections.length !== 1) throw new Error('expected 1 prompt section (static ru
 if (contexts.length !== 2) throw new Error('expected 2 dynamic contexts (memory snapshot + m6 reference tail surface), got ' + contexts.length)
 
 // ---- tool shape ----
-const log = registeredTools.find((t) => t.name === 'memory_log')
-if (!log.parameters || log.parameters.type !== 'object' || !log.parameters.properties.note) throw new Error('memory_log parameters malformed')
-if (typeof log.execute !== 'function' || typeof log.output.render !== 'function') throw new Error('memory_log contract broken')
+const log = registeredTools.find((t) => t.name === 'memory_log_pre')
+if (!log.parameters || log.parameters.type !== 'object' || !log.parameters.properties.note) throw new Error('memory_log_pre parameters malformed')
+if (typeof log.execute !== 'function' || typeof log.output.render !== 'function') throw new Error('memory_log_pre contract broken')
 
 // ---- execute memory_log:工作区键仍用真实 cwd 形态,但集中记忆根已隔离到临时目录(见文件头配置) ----
 const agent = { session: { header: { cwd: 'D:\\Ark9Tools' } } }
@@ -81,9 +81,9 @@ const r1 = await log.execute({ note: smkNote }, { agent })
 console.log('\nmemory_log →', r1)
 
 // ---- execute memory_status ----
-const status = registeredTools.find((t) => t.name === 'memory_status')
+const status = registeredTools.find((t) => t.name === 'memory_status_pre')
 const r2 = await status.execute({}, { agent })
-console.log('\nmemory_status →\n' + r2)
+console.log('\nmemory_status_pre →\n' + r2)
 
 // ---- static rules section (byte-stable anchor) ----
 const provider = sections[0].text

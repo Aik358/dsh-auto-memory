@@ -5,10 +5,10 @@
 // H4 hub 编排: judgement-shadow 消费(三类候选分流) + crossFeed + renderChecklists
 // H5 持久化: 三层各自 save/restore
 // H6 卫生
-import { createEpisodicStorePre } from '../../lib/episodic-store.js'
-import { createProcedureStorePre } from '../../lib/procedure-store.js'
-import { createFactStorePre } from '../../lib/fact-store.js'
-import { createMemoryHubPre, factCandidateFromRow, procedureCandidateFromRow } from '../../lib/memory-hub.js'
+import { createEpisodicStorePre } from '../../lib/episodic-store-pre.js'
+import { createProcedureStorePre } from '../../lib/procedure-store-pre.js'
+import { createFactStorePre } from '../../lib/fact-store-pre.js'
+import { createMemoryHubPre, factCandidateFromRow, procedureCandidateFromRow } from '../../lib/memory-hub-pre.js'
 import { readFileSync } from 'node:fs'
 
 let pass = 0, fail = 0
@@ -25,7 +25,7 @@ console.log('[H1] episodic 生命周期')
   st.append({ kind: 'assistant', assistantText: '好的,先备份再 rsync,已完成', sessionRef: 'sesr_A', eventSeq: 2, contextVersion: 1 })
   st.append({ kind: 'user', userText: '确认没问题,测试通过了', sessionRef: 'sesr_A', eventSeq: 3, contextVersion: 1 })
   const c = st.consolidate()
-  ok(c.ok && c.episode && c.episode.episodeId.match(/^epi_/), '巩固成功 + epi_ id')
+  ok(c.ok && c.episode && c.episode.episodeId.match(/^epi_pre_/), '巩固成功 + epi_pre_ id')
   ok(c.episode.intent.includes('部署'), 'intent 提取自首段用户文本')
   ok(c.episode.outcome === 'success' && c.episode.success === true, 'outcome 推断 success(助手文本含完成信号)')
   ok(st.size === 1, 'store 大小=1')
@@ -161,7 +161,7 @@ console.log('[H5] 持久化')
 
 console.log('[H6] 卫生')
 {
-  for (const f of ['../../lib/episodic-store.js', '../../lib/procedure-store.js', '../../lib/memory-hub.js']) {
+  for (const f of ['../../lib/episodic-store-pre.js', '../../lib/procedure-store-pre.js', '../../lib/memory-hub-pre.js']) {
     const src = readFileSync(new URL(f, import.meta.url), 'utf8')
     const code = src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/^\s*\/\/.*$/gm, ' ')
     const bad = ['child' + '_process', 'node:' + 'net', 'node:' + 'http', 'spaw' + 'n', 'exec' + 'File', 'fetch' + '(']

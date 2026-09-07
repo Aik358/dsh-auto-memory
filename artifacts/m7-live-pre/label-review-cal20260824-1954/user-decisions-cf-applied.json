@@ -1,0 +1,24 @@
+{
+ "batch2": {
+  "gold": 32,
+  "byAction": {
+   "S": 13,
+   "P": 8,
+   "A": 11
+  },
+  "overrides": [
+   "cf-008",
+   "cf-014"
+  ]
+ },
+ "combinedGold": {
+  "byAction": {
+   "A": 22,
+   "P": 19,
+   "S": 17
+  },
+  "total": 58,
+  "meetsQuota15PerClass": true
+ },
+ "note": "cf-008/cf-014 由 suppress 改判 P：跨项目可顺便介绍（用户联想哲学，与议题③a一致）"
+}

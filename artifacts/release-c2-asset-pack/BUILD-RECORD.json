@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "builtAt": "2026-08-30T16:06:56.013Z",
+  "tgz": "deepseek-ai-dsh-auto-memory-model-e5small-q8-0.1.0.tgz",
+  "sizeBytes": 82183295,
+  "sha256": "c503fd01c64557978a8781f402439772baef4f9a67f8027c1851b9a5136cde8c",
+  "package": "@deepseek-ai/dsh-auto-memory-model-e5small-q8",
+  "version": "0.1.0",
+  "status": "LOCAL BUILD ONLY — DO NOT PUBLISH until user go at phase D6 (docs/RELEASE-READINESS-PLAN.md)",
+  "roundtripVerified": true
+}

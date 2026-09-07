@@ -3,14 +3,14 @@
 process.on('uncaughtException', (e) => { console.error('[M62B-TEST] FATAL:', (e && (e.stack || e.message)) || e); process.exit(1) })
 process.on('unhandledRejection', (r) => { console.error('[M62B-TEST] REJ:', r); process.exit(1) })
 
-const A = await import('../../lib/activation-inbox.js')
-const S = await import('../../lib/activation-inbox-state.js')
+const A = await import('../../lib/activation-inbox-pre.js')
+const S = await import('../../lib/activation-inbox-state-pre.js')
 let pass = 0; let fail = 0
 function ok(cond, name) { if (cond) { pass++; console.log('  ok - ' + name) } else { fail++; console.error('  FAIL - ' + name) } }
 function eq(a, b, name) { const ja = JSON.stringify(a); const jb = JSON.stringify(b); ok(ja === jb, name + (ja === jb ? '' : ' got=' + ja + ' want=' + jb)) }
 
 const ID = { sessionId: 'sess-1', agentId: 'agent-1', workspaceKey: 'd:/ws' }
-const MIV = 'idx_' + 'ab'.repeat(16)
+const MIV = 'idx_pre_' + 'ab'.repeat(16)
 const memA = 'mem_' + 'aa'.repeat(16)
 const memB = 'mem_' + 'bb'.repeat(16)
 function mkRec(mid) { return { memoryId: mid, anchorId: 'memory:' + mid, scope: 'Workspace', sourceRef: 'workspace:MEMORY.md', sourceEpoch: 'ep-1', sourceVersion: 2, fileDigest: 'e'.repeat(64), recordDigest: 'd'.repeat(63) + (mid === memA ? 'a' : 'b'), excerpt: '- 参考内容' } }
@@ -39,7 +39,7 @@ console.log('[E2] offer→pending→claim→deliver 全链路')
 const req1 = mkReq()
 const o1 = box.offerActivation(req1, { nowStep: 100 })
 ok(o1.ok && o1.outcome === 'pending', '首单接受为 pending')
-ok(box.pendingPacket && box.pendingPacket.packetId.startsWith('pkt_'), 'pending packet 就位(pkt_*)')
+ok(box.pendingPacket && box.pendingPacket.packetId.startsWith('pkt_pre_'), 'pending packet 就位(pkt_pre_*)')
 const c1 = box.claim({ nowStep: 101, currentContextVersion: 5, currentMemoryIndexVersion: MIV })
 ok(c1.ok && c1.packet.packetId === o1.packetId, 'claim 返回同一 packet')
 eq(c1.packet.deliveryState, 'claimed', '状态机 pending→claimed')
@@ -85,7 +85,7 @@ eq(staleClaim.reason, 'stale-context', 'claim 时 cursor 已前进 → stale-con
 box2.setCursor({ contextVersion: 7 })
 const req7 = mkReq({ contextVersion: 7 })
 ok(box2.offerActivation(req7, { nowStep: 13 }).ok, 'cursor 对齐后重新接受')
-const idxClaim = box2.claim({ nowStep: 14, currentContextVersion: 7, currentMemoryIndexVersion: 'idx_' + 'ff'.repeat(16) })
+const idxClaim = box2.claim({ nowStep: 14, currentContextVersion: 7, currentMemoryIndexVersion: 'idx_pre_' + 'ff'.repeat(16) })
 eq(idxClaim.reason, 'stale-index', 'index 版本不匹配 → stale-index 丢弃')
 console.log('[E5] cursor/index 双 stale 门')
 
@@ -142,7 +142,7 @@ eq(reg.size, 0, 'registry disposeAll 清空')
 console.log('[E9] dispose/抑制/隔离')
 
 console.log('[D-hygiene] 静态卫生')
-const src = await (await import('node:fs')).promises.readFile(new URL('../../lib/activation-inbox-state.js', import.meta.url), 'utf8')
+const src = await (await import('node:fs')).promises.readFile(new URL('../../lib/activation-inbox-state-pre.js', import.meta.url), 'utf8')
 ok(!/child_process|node:net|node:http|spawnSync/i.test(src), '无 spawn/net/http 引用')
 ok(!/_lastAgent/.test(src), '无 _lastAgent fallback(契约 §9)')
 ok(!src.includes('\uFEFF'), '无 BOM 字符')

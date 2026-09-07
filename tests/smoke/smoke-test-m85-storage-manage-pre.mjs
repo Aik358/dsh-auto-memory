@@ -16,10 +16,10 @@ process.on('uncaughtException', (e) => { console.error('[M85-TEST] FATAL:', (e &
 process.on('unhandledRejection', (r) => { console.error('[M85-TEST] REJ:', r); process.exit(1) })
 globalThis.fetch = async () => ({ ok: false, status: 503, json: async () => ({}) })
 
-const { MemoryDocumentStore } = await import('../../lib/memory-writer.js')
-const { createStorageManagerPre } = await import('../../lib/storage-manage.js')
-const { createActivationHost } = await import('../../lib/activation-host.js')
-const { createFactStorePre } = await import('../../lib/fact-store.js')
+const { MemoryDocumentStore } = await import('../../lib/memory-writer-pre.js')
+const { createStorageManagerPre } = await import('../../lib/storage-manage-pre.js')
+const { createActivationHost } = await import('../../lib/activation-host-pre.js')
+const { createFactStorePre } = await import('../../lib/fact-store-pre.js')
 
 let pass = 0; let fail = 0
 function ok(cond, name) { if (cond) { pass++; console.log('  ok - ' + name) } else { fail++; console.error('  FAIL - ' + name) } }
@@ -29,7 +29,7 @@ const sha256 = (s) => createHash('sha256').update(String(s), 'utf8').digest('hex
 const tmpHome = mkdtempSync(path.join(tmpdir(), 'dam-m85-'))
 const wsDir = path.join(tmpHome, 'ws')
 const userDir = path.join(tmpHome, 'user')
-const sidecarDir = path.join(tmpHome, '.dsh', 'memory', 'index', 'files')
+const sidecarDir = path.join(tmpHome, '.dsh', 'memory', 'index-pre', 'files')
 mkdirSync(wsDir, { recursive: true }); mkdirSync(userDir, { recursive: true }); mkdirSync(sidecarDir, { recursive: true })
 const NOTES = path.join(wsDir, 'MEMORY.md')
 const USER = path.join(userDir, 'MEMORY.md')
@@ -127,7 +127,7 @@ let purgeSeen = null
   }
   const host = createActivationHost({ engine })
   host.initCapability({ systemPrompt: { context: () => 'x' } })
-  const { makeFakeActivationRequestPre } = await import('../../lib/activation-inbox.js')
+  const { makeFakeActivationRequestPre } = await import('../../lib/activation-inbox-pre.js')
   const mkRec = (tag) => ({
     memoryId: memIdOf(tag), anchorId: 'anc_' + tag, scope: 'Workspace', sourceRef: 'workspace:MEMORY.md',
     sourceEpoch: '33333333-3333-4333-8333-333333333333', sourceVersion: 1,
@@ -135,7 +135,7 @@ let purgeSeen = null
   })
   const req = makeFakeActivationRequestPre({
     seed: 'm85-del', sessionId: 's1', agentId: 'a1', workspaceKey: PATHS.workspaceKey,
-    contextVersion: 3, memoryIndexVersion: 'idx_' + '3'.repeat(32),
+    contextVersion: 3, memoryIndexVersion: 'idx_pre_' + '3'.repeat(32),
     records: [mkRec('a'), mkRec('b')], maxItems: 2, ttlSteps: 8, now: Date.now(),
   })
   const offered = host.offerExternalActivation(req)
@@ -166,7 +166,7 @@ let purgeSeen = null
   // 后续 offer 若再带该记忆必须被整单拒绝(抑制名单)
   const req2 = makeFakeActivationRequestPre({
     seed: 'm85-del2', sessionId: 's1', agentId: 'a1', workspaceKey: PATHS.workspaceKey,
-    contextVersion: 4, memoryIndexVersion: 'idx_' + '3'.repeat(32),
+    contextVersion: 4, memoryIndexVersion: 'idx_pre_' + '3'.repeat(32),
     records: [mkRec('a')], maxItems: 1, ttlSteps: 8, now: Date.now(),
   })
   const denied = host.offerExternalActivation(req2)
@@ -198,8 +198,8 @@ console.log('[H5] 失败路径')
 
 console.log('[H6] 卫生与审计')
 {
-  const src = readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..', 'lib', 'storage-manage.js'))
-  ok(src[0] !== 0xef && src[1] !== 0xbb && src[2] !== 0xbf, 'H6 storage-manage.js 无 BOM')
+  const src = readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..', 'lib', 'storage-manage-pre.js'))
+  ok(src[0] !== 0xef && src[1] !== 0xbb && src[2] !== 0xbf, 'H6 storage-manage-pre.js 无 BOM')
   const s = src.toString('utf8')
   ok(!/from\s+'(node:net|node:http|node:child_process|node:dgram)'/.test(s), 'H6 零进程/网络原语')
   ok(!s.includes('_dev'), 'H6 无 _dev 残留')

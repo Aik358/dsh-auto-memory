@@ -1,0 +1,17 @@
+{
+ "point": {
+  "emits": 11,
+  "correct": 11,
+  "actPrecision": 1.0,
+  "actRecall": 0.289
+ },
+ "precision95CI": [
+  1.0,
+  1.0
+ ],
+ "recall95CI": [
+  0.132,
+  0.447
+ ],
+ "sViolMean": 0.0
+}

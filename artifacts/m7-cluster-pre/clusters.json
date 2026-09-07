@@ -1,0 +1,4161 @@
+{
+  "policyVersion": "cluster_shadow_pre_v1",
+  "algo": "agglomerative",
+  "params": "thr=0.3",
+  "recordCount": 152,
+  "memoryIndexVersion": "bench-l1",
+  "clusters": [
+    {
+      "clusterId": "clu_pre_000",
+      "members": [
+        "r015",
+        "r069"
+      ],
+      "centroidNorm": [
+        -0.039,
+        -0.0125,
+        -0.0226,
+        -0.0106,
+        0.0006,
+        -0.0059,
+        0.0827,
+        -0.0045
+      ],
+      "medoid": "r069",
+      "radius": 0.3885,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "zstd",
+        "连接",
+        "websocket",
+        "修复",
+        "心跳",
+        "压缩",
+        "序列",
+        "列号"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_001",
+      "members": [
+        "r010",
+        "r087",
+        "r088"
+      ],
+      "centroidNorm": [
+        -0.0127,
+        -0.0056,
+        -0.0048,
+        -0.0031,
+        -0.0368,
+        -0.0343,
+        0.0295,
+        -0.0019
+      ],
+      "medoid": "r088",
+      "radius": 0.4704,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "as",
+        "identity",
+        "chunkid",
+        "memoryid",
+        "derived",
+        "locator",
+        "plus",
+        "record"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_002",
+      "members": [
+        "r063",
+        "r064"
+      ],
+      "centroidNorm": [
+        -0.0356,
+        0.0168,
+        -0.0236,
+        0.0169,
+        -0.0056,
+        0.0013,
+        0.0362,
+        0.0225
+      ],
+      "medoid": "r063",
+      "radius": 0.3795,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "memories",
+        "only",
+        "workspace",
+        "scope",
+        "promotion",
+        "workspace-scope",
+        "are",
+        "visible"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_003",
+      "members": [
+        "r061",
+        "r062"
+      ],
+      "centroidNorm": [
+        -0.0226,
+        0.0136,
+        0.0072,
+        0.0212,
+        -0.0282,
+        -0.0186,
+        -0.0291,
+        0.0096
+      ],
+      "medoid": "r062",
+      "radius": 0.3857,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "cap",
+        "are",
+        "tokenizer",
+        "256",
+        "tokens",
+        "query",
+        "query-side",
+        "embedding"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_004",
+      "members": [
+        "r131",
+        "r132"
+      ],
+      "centroidNorm": [
+        -0.0397,
+        -0.021,
+        -0.0204,
+        0.0176,
+        -0.0074,
+        0.0105,
+        0.0334,
+        0.011
+      ],
+      "medoid": "r131",
+      "radius": 0.3714,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "breaker",
+        "worker",
+        "with",
+        "part",
+        "stderr",
+        "from",
+        "corpus",
+        "记忆"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_005",
+      "members": [
+        "r003",
+        "r025"
+      ],
+      "centroidNorm": [
+        -0.036,
+        -0.036,
+        -0.0282,
+        0.0156,
+        -0.005,
+        -0.0115,
+        0.0091,
+        -0.0019
+      ],
+      "medoid": "r025",
+      "radius": 0.3773,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "digest",
+        "index_sync",
+        "canonical",
+        "json",
+        "page",
+        "final",
+        "sync",
+        "commit"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_006",
+      "members": [
+        "r081",
+        "r082"
+      ],
+      "centroidNorm": [
+        -0.0134,
+        -0.0291,
+        -0.0339,
+        0.0302,
+        0.001,
+        -0.0153,
+        0.0233,
+        0.0287
+      ],
+      "medoid": "r081",
+      "radius": 0.3467,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "chinese",
+        "model",
+        "jieba",
+        "word",
+        "text",
+        "early",
+        "note",
+        "preprocessing"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_007",
+      "members": [
+        "r023",
+        "r136"
+      ],
+      "centroidNorm": [
+        -0.0003,
+        -0.0158,
+        -0.0218,
+        0.0089,
+        -0.0275,
+        -0.0015,
+        0.0361,
+        0.0122
+      ],
+      "medoid": "r023",
+      "radius": 0.366,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "默认",
+        "false.",
+        "三重",
+        "重门",
+        "pythonbackendenabled",
+        "开关",
+        "fake",
+        "规则"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_008",
+      "members": [
+        "r038",
+        "r070"
+      ],
+      "centroidNorm": [
+        0.0075,
+        -0.0022,
+        -0.0215,
+        0.0413,
+        -0.0176,
+        -0.0143,
+        -0.0228,
+        -0.0254
+      ],
+      "medoid": "r038",
+      "radius": 0.3747,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "importinto",
+        "external",
+        "streams",
+        "256",
+        "kib",
+        "per-record",
+        "cap",
+        "zip"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_009",
+      "members": [
+        "r009",
+        "r057"
+      ],
+      "centroidNorm": [
+        -0.0471,
+        -0.0177,
+        -0.0114,
+        0.0243,
+        -0.0332,
+        -0.0328,
+        0.0474,
+        0.017
+      ],
+      "medoid": "r009",
+      "radius": 0.3177,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "ack",
+        "memory",
+        "reference",
+        "tail",
+        "delivery",
+        "after",
+        "seen",
+        "that"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_010",
+      "members": [
+        "r085",
+        "r086"
+      ],
+      "centroidNorm": [
+        -0.0099,
+        0.0057,
+        -0.0457,
+        0.0271,
+        -0.0278,
+        -0.032,
+        0.0391,
+        0.0322
+      ],
+      "medoid": "r085",
+      "radius": 0.3246,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "worker",
+        "restart",
+        "policy",
+        "across",
+        "process",
+        "restarts",
+        "requests",
+        "after"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_011",
+      "members": [
+        "r097",
+        "r098"
+      ],
+      "centroidNorm": [
+        -0.0404,
+        -0.0205,
+        0.0034,
+        0.0268,
+        -0.0197,
+        -0.032,
+        0.0016,
+        0.0243
+      ],
+      "medoid": "r097",
+      "radius": 0.3759,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "prototype",
+        "state",
+        "persist",
+        "semantic",
+        "behavior",
+        "under",
+        "dsh_home",
+        "/memory/semantic-state/"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_012",
+      "members": [
+        "r037",
+        "r111",
+        "r112"
+      ],
+      "centroidNorm": [
+        -0.0743,
+        -0.0163,
+        -0.0468,
+        0.0271,
+        -0.0143,
+        -0.0235,
+        -0.0307,
+        -0.0036
+      ],
+      "medoid": "r112",
+      "radius": 0.4489,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "git",
+        "tree",
+        "preview-to-formal",
+        "release",
+        "checklist",
+        "requires",
+        "clean",
+        "green"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_013",
+      "members": [
+        "r055",
+        "r056"
+      ],
+      "centroidNorm": [
+        -0.0145,
+        -0.0055,
+        -0.0121,
+        0.0361,
+        0.0009,
+        -0.0733,
+        0.0406,
+        0.0488
+      ],
+      "medoid": "r055",
+      "radius": 0.3165,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "inbox",
+        "gates",
+        "while",
+        "pythonbackendenabled",
+        "off",
+        "activationinboxenabled",
+        "activation",
+        "js"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_014",
+      "members": [
+        "r007",
+        "r137"
+      ],
+      "centroidNorm": [
+        -0.0335,
+        -0.0222,
+        -0.0006,
+        -0.007,
+        -0.0002,
+        -0.034,
+        0.0262,
+        -0.0012
+      ],
+      "medoid": "r007",
+      "radius": 0.3416,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "excerpt",
+        "budget",
+        "bytes",
+        "validator",
+        "day",
+        "was",
+        "at",
+        "480"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_015",
+      "members": [
+        "r053",
+        "r054"
+      ],
+      "centroidNorm": [
+        -0.0577,
+        -0.0164,
+        -0.0309,
+        0.0159,
+        0.0097,
+        -0.0232,
+        0.0055,
+        0.0057
+      ],
+      "medoid": "r054",
+      "radius": 0.3519,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "file",
+        "filedigest",
+        "record",
+        "scope",
+        "covers",
+        "one",
+        "changes",
+        "while"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_016",
+      "members": [
+        "r083",
+        "r084"
+      ],
+      "centroidNorm": [
+        0.0004,
+        -0.0215,
+        -0.0222,
+        0.0371,
+        -0.0217,
+        0.0013,
+        0.01,
+        0.0108
+      ],
+      "medoid": "r083",
+      "radius": 0.3164,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "pagination",
+        "rule",
+        "index_sync",
+        "pages",
+        "records",
+        "256",
+        "kib",
+        "json"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_017",
+      "members": [
+        "d039"
+      ],
+      "centroidNorm": [
+        -0.0919,
+        -0.0004,
+        -0.011,
+        -0.0111,
+        -0.025,
+        -0.0343,
+        0.0105,
+        -0.0348
+      ],
+      "medoid": "d039",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "newsletter",
+        "cull",
+        "unsubscribe",
+        "round",
+        "done",
+        "kept",
+        "only",
+        "two"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_018",
+      "members": [
+        "r117",
+        "r118"
+      ],
+      "centroidNorm": [
+        -0.0187,
+        0.0111,
+        -0.0142,
+        0.024,
+        -0.0273,
+        0.0263,
+        0.037,
+        0.0113
+      ],
+      "medoid": "r117",
+      "radius": 0.2713,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "incident",
+        "contact",
+        "on-call",
+        "rotation",
+        "page",
+        "pinned",
+        "workspace",
+        "readme"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_019",
+      "members": [
+        "d043"
+      ],
+      "centroidNorm": [
+        0.0053,
+        0.0174,
+        -0.0508,
+        -0.0028,
+        -0.056,
+        -0.0276,
+        -0.0385,
+        0.0281
+      ],
+      "medoid": "d043",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "sourdough",
+        "log",
+        "starter",
+        "peaked",
+        "4h",
+        "at",
+        "26c",
+        "adjust"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_020",
+      "members": [
+        "r119",
+        "r120"
+      ],
+      "centroidNorm": [
+        -0.0407,
+        0.0172,
+        -0.0467,
+        0.0306,
+        -0.0418,
+        -0.0132,
+        0.0112,
+        0.0343
+      ],
+      "medoid": "r120",
+      "radius": 0.3073,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "benchmark",
+        "hardware",
+        "note",
+        "ryzen",
+        "9700x",
+        "32",
+        "gb",
+        "ram"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_021",
+      "members": [
+        "r115",
+        "r116"
+      ],
+      "centroidNorm": [
+        -0.0597,
+        -0.003,
+        -0.034,
+        0.0452,
+        -0.0548,
+        -0.016,
+        0.0053,
+        -0.0018
+      ],
+      "medoid": "r116",
+      "radius": 0.2093,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "team",
+        "api",
+        "key",
+        "rotation",
+        "schedule",
+        "every",
+        "90",
+        "days"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_022",
+      "members": [
+        "r004",
+        "r058"
+      ],
+      "centroidNorm": [
+        -0.0684,
+        -0.0275,
+        -0.0212,
+        0.0259,
+        0.0025,
+        -0.0141,
+        0.0046,
+        0.0217
+      ],
+      "medoid": "r058",
+      "radius": 0.2931,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "breaker",
+        "after",
+        "cooldown",
+        "circuit",
+        "sidecar",
+        "consecutive",
+        "client",
+        "all"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_023",
+      "members": [
+        "r065",
+        "r066"
+      ],
+      "centroidNorm": [
+        -0.0659,
+        -0.0187,
+        -0.0092,
+        -0.0154,
+        0.0002,
+        -0.0314,
+        0.0307,
+        0.0072
+      ],
+      "medoid": "r066",
+      "radius": 0.3682,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "candidate",
+        "reranker",
+        "m7-4",
+        "top-50",
+        "top-10",
+        "bge-reranker-v2-m3",
+        "cross-encoder",
+        "mit"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_024",
+      "members": [
+        "d021"
+      ],
+      "centroidNorm": [
+        -0.0007,
+        -0.002,
+        -0.0585,
+        0.0143,
+        -0.0269,
+        0.0079,
+        0.0203,
+        -0.0228
+      ],
+      "medoid": "d021",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "interview",
+        "loop",
+        "notes",
+        "candidates",
+        "platform",
+        "role",
+        "get",
+        "debugging"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_025",
+      "members": [
+        "d052"
+      ],
+      "centroidNorm": [
+        -0.0002,
+        0.0036,
+        -0.0224,
+        -0.0224,
+        0.0123,
+        -0.0145,
+        -0.0445,
+        0.0019
+      ],
+      "medoid": "d052",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "eye",
+        "test",
+        "optometrist",
+        "books",
+        "out",
+        "six",
+        "weeks",
+        "schedule"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_026",
+      "members": [
+        "d054"
+      ],
+      "centroidNorm": [
+        -0.0396,
+        0.0214,
+        -0.0489,
+        0.0206,
+        -0.0337,
+        -0.0538,
+        0.0242,
+        0.0025
+      ],
+      "medoid": "d054",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "package",
+        "versions",
+        "node",
+        "22",
+        "lts",
+        "pinned",
+        "toolchain",
+        "memory"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_027",
+      "members": [
+        "d056"
+      ],
+      "centroidNorm": [
+        -0.014,
+        -0.0274,
+        -0.0572,
+        -0.0012,
+        0.0056,
+        -0.0415,
+        -0.0009,
+        -0.0058
+      ],
+      "medoid": "d056",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "game",
+        "board",
+        "rule",
+        "dispute",
+        "resolved",
+        "expansion",
+        "mission",
+        "deck"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_028",
+      "members": [
+        "d058"
+      ],
+      "centroidNorm": [
+        -0.0546,
+        0.0039,
+        -0.0596,
+        0.0012,
+        -0.0141,
+        -0.0175,
+        -0.0074,
+        0.0015
+      ],
+      "medoid": "d058",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "vaccine",
+        "records",
+        "travel",
+        "clinic",
+        "needs",
+        "yellow",
+        "book",
+        "person"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_029",
+      "members": [
+        "r121",
+        "r122"
+      ],
+      "centroidNorm": [
+        -0.0366,
+        0.0163,
+        0.0043,
+        0.0282,
+        0.012,
+        -0.0565,
+        0.0189,
+        0.0443
+      ],
+      "medoid": "r122",
+      "radius": 0.1665,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "scope",
+        "rule",
+        "this",
+        "workspace",
+        "only",
+        "pythonbackendenabled",
+        "may",
+        "be"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_030",
+      "members": [
+        "r113",
+        "r114"
+      ],
+      "centroidNorm": [
+        -0.0247,
+        -0.0265,
+        -0.0541,
+        0.0229,
+        -0.0187,
+        -0.0388,
+        -0.0119,
+        0.0224
+      ],
+      "medoid": "r113",
+      "radius": 0.1982,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "under",
+        "workspace",
+        "convention",
+        "daily",
+        "memory",
+        "files",
+        "live",
+        "memory/daily/yyyy-mm-dd.md"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_031",
+      "members": [
+        "r027",
+        "r138"
+      ],
+      "centroidNorm": [
+        -0.012,
+        -0.0491,
+        0.0043,
+        0.0135,
+        0.0099,
+        -0.0417,
+        0.0353,
+        -0.0141
+      ],
+      "medoid": "r027",
+      "radius": 0.3167,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "级别",
+        "level",
+        "六级",
+        "建议",
+        "checklist",
+        "讨论",
+        "full",
+        "excerpt"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_032",
+      "members": [
+        "d026"
+      ],
+      "centroidNorm": [
+        -0.0523,
+        0.0105,
+        -0.0692,
+        0.0491,
+        -0.0372,
+        0.0042,
+        -0.0219,
+        -0.0158
+      ],
+      "medoid": "d026",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "password",
+        "manager",
+        "rotate",
+        "shared",
+        "vault",
+        "entry",
+        "after",
+        "anyone"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_033",
+      "members": [
+        "d060"
+      ],
+      "centroidNorm": [
+        -0.0596,
+        0.0393,
+        -0.0328,
+        0.0108,
+        -0.0216,
+        0.005,
+        0.0418,
+        -0.01
+      ],
+      "medoid": "d060",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "review",
+        "code",
+        "norm",
+        "your",
+        "own",
+        "pr",
+        "once",
+        "requesting"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_034",
+      "members": [
+        "d019"
+      ],
+      "centroidNorm": [
+        -0.0657,
+        -0.0415,
+        -0.0691,
+        0.0331,
+        -0.0377,
+        -0.0051,
+        -0.0243,
+        -0.001
+      ],
+      "medoid": "d019",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "car",
+        "maintenance",
+        "tire",
+        "rotation",
+        "every",
+        "10000",
+        "km",
+        "dealer"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_035",
+      "members": [
+        "d017"
+      ],
+      "centroidNorm": [
+        -0.0264,
+        0.0082,
+        -0.0629,
+        0.0046,
+        -0.0236,
+        -0.053,
+        0.0182,
+        0.0349
+      ],
+      "medoid": "d017",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "one",
+        "grocery",
+        "note",
+        "switch",
+        "protein",
+        "powder",
+        "brand",
+        "back"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_036",
+      "members": [
+        "d032"
+      ],
+      "centroidNorm": [
+        0.0149,
+        0.0221,
+        -0.0164,
+        -0.0027,
+        0.0054,
+        -0.0603,
+        -0.0189,
+        0.0306
+      ],
+      "medoid": "d032",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "ginger",
+        "cooking",
+        "note",
+        "congee",
+        "recipe",
+        "needs",
+        "late",
+        "early"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_037",
+      "members": [
+        "d046"
+      ],
+      "centroidNorm": [
+        -0.0308,
+        -0.0072,
+        -0.0679,
+        -0.0128,
+        0.0135,
+        -0.0943,
+        0.0245,
+        -0.0363
+      ],
+      "medoid": "d046",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "gift",
+        "note",
+        "team",
+        "lead",
+        "prefers",
+        "books",
+        "over",
+        "gadgets"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_038",
+      "members": [
+        "d059"
+      ],
+      "centroidNorm": [
+        0.0026,
+        -0.0166,
+        -0.0467,
+        -0.0137,
+        -0.0038,
+        -0.0546,
+        -0.0224,
+        0.0333
+      ],
+      "medoid": "d059",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "espresso",
+        "dial-in",
+        "18g",
+        "36g",
+        "out",
+        "27",
+        "seconds",
+        "current"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_039",
+      "members": [
+        "d016"
+      ],
+      "centroidNorm": [
+        -0.0286,
+        -0.0284,
+        -0.0632,
+        0.0015,
+        -0.0304,
+        -0.0041,
+        -0.0177,
+        -0.0039
+      ],
+      "medoid": "d016",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "desk",
+        "setup",
+        "monitor",
+        "arm",
+        "arrived",
+        "recalibrate",
+        "color",
+        "profile"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_040",
+      "members": [
+        "d003"
+      ],
+      "centroidNorm": [
+        0.0129,
+        0.0072,
+        -0.0301,
+        0.0062,
+        -0.0334,
+        -0.0476,
+        0.0138,
+        -0.0217
+      ],
+      "medoid": "d003",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "reading",
+        "list",
+        "rag",
+        "survey",
+        "papers",
+        "queued",
+        "weekend",
+        "priority"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_041",
+      "members": [
+        "d057"
+      ],
+      "centroidNorm": [
+        -0.0092,
+        -0.0036,
+        -0.0751,
+        0.0097,
+        -0.0316,
+        -0.0229,
+        0.0558,
+        -0.0049
+      ],
+      "medoid": "d057",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "piano",
+        "tuning",
+        "every",
+        "six",
+        "months",
+        "with",
+        "regular",
+        "playing"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_042",
+      "members": [
+        "d042"
+      ],
+      "centroidNorm": [
+        -0.0364,
+        -0.0127,
+        -0.0082,
+        0.0194,
+        -0.0559,
+        -0.0242,
+        0.007,
+        -0.0301
+      ],
+      "medoid": "d042",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "study",
+        "group",
+        "thursday",
+        "nlp",
+        "paper",
+        "session",
+        "moved",
+        "19"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_043",
+      "members": [
+        "d055"
+      ],
+      "centroidNorm": [
+        -0.0587,
+        0.0063,
+        -0.093,
+        0.0105,
+        -0.0167,
+        -0.0569,
+        -0.0104,
+        0.0225
+      ],
+      "medoid": "d055",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "temp",
+        "ski",
+        "trip",
+        "wax",
+        "forecast",
+        "snow",
+        "air",
+        "at"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_044",
+      "members": [
+        "d049"
+      ],
+      "centroidNorm": [
+        -0.0269,
+        0.0175,
+        -0.0457,
+        0.0055,
+        -0.0252,
+        0.0081,
+        0.0175,
+        0.0309
+      ],
+      "medoid": "d049",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "tax",
+        "documents",
+        "portal",
+        "upload",
+        "rejects",
+        "pdfs",
+        "above",
+        "10"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_045",
+      "members": [
+        "d018"
+      ],
+      "centroidNorm": [
+        -0.0197,
+        -0.0317,
+        -0.0482,
+        0.0353,
+        -0.039,
+        -0.0499,
+        0.0331,
+        0.0149
+      ],
+      "medoid": "d018",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "game",
+        "night",
+        "group",
+        "voted",
+        "co-op",
+        "farming",
+        "sim",
+        "over"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_046",
+      "members": [
+        "d035"
+      ],
+      "centroidNorm": [
+        -0.0263,
+        -0.0483,
+        -0.0363,
+        0.0071,
+        -0.012,
+        -0.0122,
+        0.0418,
+        0.0076
+      ],
+      "medoid": "d035",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "profile",
+        "vpn",
+        "new",
+        "endpoint",
+        "fixes",
+        "split-tunnel",
+        "dns",
+        "leak"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_047",
+      "members": [
+        "d037"
+      ],
+      "centroidNorm": [
+        -0.0496,
+        0.016,
+        -0.067,
+        -0.024,
+        -0.0355,
+        -0.0591,
+        -0.0434,
+        0.003
+      ],
+      "medoid": "d037",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "watering",
+        "plant",
+        "care",
+        "office",
+        "monstera",
+        "needs",
+        "only",
+        "when"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_048",
+      "members": [
+        "d041"
+      ],
+      "centroidNorm": [
+        0.0198,
+        0.0136,
+        -0.0195,
+        -0.0159,
+        0.0235,
+        0.0122,
+        0.0312,
+        0.0018
+      ],
+      "medoid": "d041",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "reboot",
+        "step",
+        "retry",
+        "recipe",
+        "flaky",
+        "home",
+        "internet",
+        "router"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_049",
+      "members": [
+        "d002"
+      ],
+      "centroidNorm": [
+        -0.0278,
+        -0.0197,
+        -0.0092,
+        0.0095,
+        -0.0453,
+        -0.0421,
+        -0.0025,
+        -0.006
+      ],
+      "medoid": "d002",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "lunch",
+        "note",
+        "ramen",
+        "place",
+        "near",
+        "office",
+        "closes",
+        "at"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_050",
+      "members": [
+        "d001"
+      ],
+      "centroidNorm": [
+        -0.051,
+        0.0024,
+        -0.0162,
+        -0.0171,
+        -0.0235,
+        -0.0173,
+        0.0305,
+        -0.0079
+      ],
+      "medoid": "d001",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "ctrl",
+        "shift",
+        "keyboard",
+        "shortcut",
+        "week",
+        "toggles",
+        "memory",
+        "panel"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_051",
+      "members": [
+        "d023"
+      ],
+      "centroidNorm": [
+        0.0075,
+        -0.0014,
+        -0.0425,
+        0.0459,
+        -0.0302,
+        -0.0185,
+        0.0051,
+        0.0241
+      ],
+      "medoid": "d023",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "per",
+        "budget",
+        "note",
+        "conference",
+        "ticket",
+        "cap",
+        "person",
+        "year"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_052",
+      "members": [
+        "d020"
+      ],
+      "centroidNorm": [
+        -0.0486,
+        -0.0021,
+        -0.0313,
+        0.0268,
+        -0.0474,
+        -0.0207,
+        0.0124,
+        0.0524
+      ],
+      "medoid": "d020",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "photo",
+        "backup",
+        "raw",
+        "files",
+        "archive",
+        "drive",
+        "edits",
+        "cloud"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_053",
+      "members": [
+        "d034"
+      ],
+      "centroidNorm": [
+        0.0082,
+        0.0076,
+        -0.0489,
+        -0.0236,
+        -0.0433,
+        -0.0496,
+        0.0325,
+        -0.0083
+      ],
+      "medoid": "d034",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "reminder",
+        "dentist",
+        "appointments",
+        "every",
+        "six",
+        "months",
+        "postcard",
+        "arrives"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_054",
+      "members": [
+        "r034"
+      ],
+      "centroidNorm": [
+        -0.0972,
+        -0.0146,
+        0.0228,
+        0.0239,
+        -0.0204,
+        -0.0132,
+        -0.01,
+        -0.0014
+      ],
+      "medoid": "r034",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "npm",
+        "publish",
+        "err",
+        "version",
+        "release",
+        "dry-run",
+        "error",
+        "code"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_055",
+      "members": [
+        "d044"
+      ],
+      "centroidNorm": [
+        0.0086,
+        0.0321,
+        -0.0594,
+        0.0263,
+        -0.0319,
+        -0.0577,
+        0.0288,
+        0.0276
+      ],
+      "medoid": "d044",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "bike",
+        "maintenance",
+        "chain",
+        "lube",
+        "every",
+        "200",
+        "km",
+        "dry"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_056",
+      "members": [
+        "d022"
+      ],
+      "centroidNorm": [
+        -0.002,
+        0.0094,
+        -0.0601,
+        0.0266,
+        -0.0519,
+        -0.0251,
+        0.0254,
+        -0.0026
+      ],
+      "medoid": "d022",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "onboarding",
+        "doc",
+        "new",
+        "joiners",
+        "need",
+        "repo",
+        "access",
+        "memory"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_057",
+      "members": [
+        "d007"
+      ],
+      "centroidNorm": [
+        -0.0881,
+        0.0039,
+        -0.015,
+        -0.0341,
+        -0.0078,
+        -0.0207,
+        0.056,
+        0.0068
+      ],
+      "medoid": "d007",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "profile",
+        "windows",
+        "terminal",
+        "use",
+        "git",
+        "bash",
+        "smoke",
+        "tests"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_058",
+      "members": [
+        "r135"
+      ],
+      "centroidNorm": [
+        -0.0366,
+        -0.0167,
+        -0.0021,
+        0.0031,
+        -0.0097,
+        -0.0116,
+        0.046,
+        0.0026
+      ],
+      "medoid": "r135",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "确认",
+        "预览",
+        "检查",
+        "目录",
+        "模型",
+        "manifest",
+        "回滚",
+        "部署"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_059",
+      "members": [
+        "d036"
+      ],
+      "centroidNorm": [
+        0.0155,
+        -0.0013,
+        -0.0774,
+        0.0181,
+        -0.0087,
+        -0.0559,
+        -0.0126,
+        0.0043
+      ],
+      "medoid": "d036",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "music",
+        "practice",
+        "scale",
+        "routine",
+        "15",
+        "minutes",
+        "daily",
+        "beats"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_060",
+      "members": [
+        "d053"
+      ],
+      "centroidNorm": [
+        -0.0239,
+        0.004,
+        -0.0715,
+        -0.0086,
+        -0.0071,
+        -0.027,
+        -0.0007,
+        0.0428
+      ],
+      "medoid": "d053",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "swimming",
+        "early",
+        "lane",
+        "calmer",
+        "goggles",
+        "fog",
+        "less",
+        "with"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_061",
+      "members": [
+        "d045"
+      ],
+      "centroidNorm": [
+        -0.0411,
+        -0.0214,
+        -0.078,
+        0.0091,
+        -0.0191,
+        -0.0125,
+        -0.0304,
+        0.0057
+      ],
+      "medoid": "d045",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "course",
+        "has",
+        "better",
+        "audit",
+        "online",
+        "compilers",
+        "exercise",
+        "grader"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_062",
+      "members": [
+        "r100"
+      ],
+      "centroidNorm": [
+        -0.0189,
+        -0.0407,
+        -0.0398,
+        0.0347,
+        -0.0341,
+        0.007,
+        0.0032,
+        0.0161
+      ],
+      "medoid": "r100",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "hard",
+        "rule",
+        "correcting",
+        "assumption",
+        "vectors",
+        "different",
+        "models",
+        "revisions"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_063",
+      "members": [
+        "d013"
+      ],
+      "centroidNorm": [
+        -0.0287,
+        -0.0092,
+        -0.0204,
+        0.0163,
+        -0.0429,
+        -0.035,
+        -0.0346,
+        -0.0212
+      ],
+      "medoid": "d013",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "bookkeeping",
+        "conference",
+        "travel",
+        "receipts",
+        "go",
+        "finance",
+        "drop",
+        "box"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_064",
+      "members": [
+        "d028"
+      ],
+      "centroidNorm": [
+        -0.0246,
+        0.0147,
+        -0.0358,
+        -0.0182,
+        -0.0326,
+        -0.0101,
+        0.0278,
+        0.0452
+      ],
+      "medoid": "d028",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "library",
+        "due",
+        "dates",
+        "two",
+        "textbooks",
+        "renewable",
+        "once",
+        "each"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_065",
+      "members": [
+        "r095"
+      ],
+      "centroidNorm": [
+        0.0052,
+        -0.012,
+        -0.0101,
+        0.0243,
+        -0.0223,
+        0.0242,
+        0.0695,
+        0.0034
+      ],
+      "medoid": "r095",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "trial",
+        "approach",
+        "activation",
+        "ordering",
+        "rank",
+        "candidates",
+        "by",
+        "raw"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_066",
+      "members": [
+        "d010"
+      ],
+      "centroidNorm": [
+        -0.0301,
+        -0.0414,
+        -0.0456,
+        0.0063,
+        -0.0214,
+        -0.004,
+        0.0026,
+        -0.0086
+      ],
+      "medoid": "d010",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "podcast",
+        "backlog",
+        "note",
+        "episode",
+        "vector",
+        "db",
+        "internals",
+        "queued"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_067",
+      "members": [
+        "d050"
+      ],
+      "centroidNorm": [
+        -0.0351,
+        0.018,
+        -0.0227,
+        0.0294,
+        -0.0059,
+        -0.0559,
+        -0.0085,
+        0.0154
+      ],
+      "medoid": "d050",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "neighbors",
+        "package",
+        "room",
+        "holds",
+        "parcels",
+        "seven",
+        "days",
+        "now"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_068",
+      "members": [
+        "d047"
+      ],
+      "centroidNorm": [
+        0.003,
+        -0.025,
+        -0.0542,
+        0.0185,
+        -0.0493,
+        -0.0536,
+        0.0086,
+        0.0066
+      ],
+      "medoid": "d047",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "volunteer",
+        "shift",
+        "food",
+        "bank",
+        "first",
+        "saturday",
+        "monthly",
+        "swap"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_069",
+      "members": [
+        "r019"
+      ],
+      "centroidNorm": [
+        -0.0556,
+        -0.0066,
+        -0.0207,
+        -0.0398,
+        -0.0209,
+        0.0198,
+        0.0044,
+        0.0548
+      ],
+      "medoid": "r019",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "玻璃",
+        "液态",
+        "态玻",
+        "ui",
+        "设置",
+        "置弹",
+        "弹窗",
+        "窗和"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_070",
+      "members": [
+        "d014"
+      ],
+      "centroidNorm": [
+        0.0245,
+        0.0025,
+        -0.0857,
+        0.0113,
+        -0.0225,
+        0.0067,
+        -0.0134,
+        0.0497
+      ],
+      "medoid": "d014",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "workout",
+        "log",
+        "bench",
+        "5x5",
+        "stalled",
+        "deload",
+        "week",
+        "scheduled"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_071",
+      "members": [
+        "d012"
+      ],
+      "centroidNorm": [
+        -0.0161,
+        -0.0135,
+        -0.0425,
+        0.0043,
+        -0.0122,
+        -0.0347,
+        0.0313,
+        0.0114
+      ],
+      "medoid": "d012",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "train",
+        "schedule",
+        "12",
+        "more",
+        "reliable",
+        "than",
+        "04",
+        "despite"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_072",
+      "members": [
+        "r018"
+      ],
+      "centroidNorm": [
+        -0.0056,
+        0.0058,
+        -0.0345,
+        0.0014,
+        -0.0382,
+        -0.0267,
+        0.0436,
+        -0.0001
+      ],
+      "medoid": "r018",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "一小",
+        "小时",
+        "面板",
+        "自动",
+        "动展",
+        "展开",
+        "lastactive",
+        "离开"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_073",
+      "members": [
+        "d008"
+      ],
+      "centroidNorm": [
+        -0.0288,
+        -0.0016,
+        -0.0183,
+        0.0286,
+        -0.0442,
+        -0.0242,
+        0.061,
+        -0.0004
+      ],
+      "medoid": "d008",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "backup",
+        "schedule",
+        "full",
+        "disk",
+        "image",
+        "monthly",
+        "memory",
+        "directory"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_074",
+      "members": [
+        "r096"
+      ],
+      "centroidNorm": [
+        -0.0207,
+        0.0227,
+        0.0052,
+        0.0137,
+        0.0045,
+        -0.0201,
+        0.035,
+        0.0311
+      ],
+      "medoid": "r096",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "tie-break",
+        "freeze",
+        "ordering",
+        "score",
+        "descending",
+        "then",
+        "memoryid",
+        "lexicographic"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_075",
+      "members": [
+        "d004"
+      ],
+      "centroidNorm": [
+        -0.0784,
+        -0.0235,
+        -0.0218,
+        -0.002,
+        0.0024,
+        -0.0095,
+        0.014,
+        -0.0148
+      ],
+      "medoid": "d004",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "vim",
+        "plugin",
+        "update",
+        "telescope",
+        "fuzzy",
+        "finder",
+        "config",
+        "moved"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_076",
+      "members": [
+        "r133"
+      ],
+      "centroidNorm": [
+        -0.0437,
+        -0.0118,
+        -0.0097,
+        0.0384,
+        0.0017,
+        -0.014,
+        -0.0132,
+        0.0435
+      ],
+      "medoid": "r133",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "benchmark",
+        "model",
+        "decision",
+        "一步",
+        "plan",
+        "draft",
+        "m7-2",
+        "embedding"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_077",
+      "members": [
+        "d027"
+      ],
+      "centroidNorm": [
+        -0.0472,
+        -0.0222,
+        -0.0395,
+        -0.03,
+        -0.0115,
+        0.0009,
+        -0.0116,
+        0.0335
+      ],
+      "medoid": "d027",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "monitoring",
+        "wishlist",
+        "p95",
+        "activation",
+        "latency",
+        "graph",
+        "next",
+        "lexical"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_078",
+      "members": [
+        "d024"
+      ],
+      "centroidNorm": [
+        -0.0152,
+        0.0156,
+        -0.0538,
+        0.0112,
+        -0.0317,
+        -0.0096,
+        -0.0037,
+        0.0597
+      ],
+      "medoid": "d024",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "whiteboard",
+        "photo",
+        "policy",
+        "transcribe",
+        "decisions",
+        "into",
+        "memory",
+        "record"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_079",
+      "members": [
+        "d015"
+      ],
+      "centroidNorm": [
+        -0.0304,
+        -0.0385,
+        -0.0055,
+        -0.0229,
+        -0.0171,
+        -0.0565,
+        0.0298,
+        -0.0285
+      ],
+      "medoid": "d015",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "language",
+        "study",
+        "anki",
+        "deck",
+        "reading",
+        "japanese",
+        "error",
+        "messages"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_080",
+      "members": [
+        "r005"
+      ],
+      "centroidNorm": [
+        -0.0436,
+        0.0058,
+        0.0072,
+        0.0121,
+        -0.0153,
+        -0.0434,
+        0.0408,
+        0.0453
+      ],
+      "medoid": "r005",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "lexical",
+        "semantic",
+        "fallback",
+        "invariant",
+        "whenever",
+        "backend",
+        "unavailable",
+        "times"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_081",
+      "members": [
+        "r014"
+      ],
+      "centroidNorm": [
+        -0.0458,
+        0.0034,
+        0.0,
+        -0.0304,
+        0.0018,
+        -0.0029,
+        -0.0194,
+        0.0179
+      ],
+      "medoid": "r014",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "token",
+        "相等",
+        "比对",
+        "脏",
+        "检查",
+        "查器",
+        "客户",
+        "户端"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_082",
+      "members": [
+        "r039"
+      ],
+      "centroidNorm": [
+        -0.0138,
+        0.004,
+        -0.0168,
+        0.0169,
+        -0.0125,
+        -0.0112,
+        0.0492,
+        0.0166
+      ],
+      "medoid": "r039",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "must",
+        "windows",
+        "path",
+        "pitfall",
+        "dsh_home",
+        "containing",
+        "spaces",
+        "be"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_083",
+      "members": [
+        "r008"
+      ],
+      "centroidNorm": [
+        -0.0173,
+        0.0052,
+        -0.0332,
+        0.0448,
+        -0.0186,
+        -0.0202,
+        -0.0013,
+        -0.011
+      ],
+      "medoid": "r008",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "evidence",
+        "session",
+        "privacy",
+        "projection",
+        "persisted",
+        "rows",
+        "store",
+        "only"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_084",
+      "members": [
+        "d051"
+      ],
+      "centroidNorm": [
+        0.0177,
+        0.0404,
+        -0.0749,
+        0.0097,
+        -0.0141,
+        -0.0055,
+        -0.0008,
+        0.0091
+      ],
+      "medoid": "d051",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "keyboard",
+        "group",
+        "buy",
+        "switches",
+        "ship",
+        "next",
+        "quarter",
+        "stabilizers"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_085",
+      "members": [
+        "r028"
+      ],
+      "centroidNorm": [
+        -0.0005,
+        -0.0077,
+        -0.0212,
+        0.0017,
+        -0.0181,
+        -0.0111,
+        0.0133,
+        -0.0304
+      ],
+      "medoid": "r028",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "会话",
+        "frameid",
+        "a/b",
+        "话隔",
+        "隔离",
+        "离测",
+        "测试",
+        "试要"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_086",
+      "members": [
+        "d040"
+      ],
+      "centroidNorm": [
+        -0.027,
+        0.0292,
+        -0.0163,
+        0.0348,
+        -0.0379,
+        -0.0399,
+        0.0071,
+        0.0183
+      ],
+      "medoid": "d040",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "warranty",
+        "registrations",
+        "log",
+        "serial",
+        "numbers",
+        "day",
+        "hardware",
+        "arrives"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_087",
+      "members": [
+        "r006"
+      ],
+      "centroidNorm": [
+        0.0015,
+        0.0073,
+        -0.0143,
+        0.0369,
+        0.0006,
+        -0.01,
+        0.0312,
+        -0.0389
+      ],
+      "medoid": "r006",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "activation",
+        "ttl",
+        "request",
+        "ttlsteps",
+        "budget",
+        "every",
+        "carries",
+        "between"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_088",
+      "members": [
+        "d038"
+      ],
+      "centroidNorm": [
+        -0.0457,
+        0.0006,
+        -0.0271,
+        -0.016,
+        -0.0114,
+        0.0291,
+        0.0243,
+        0.0043
+      ],
+      "medoid": "d038",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "flight",
+        "check-in",
+        "seat",
+        "11a",
+        "767",
+        "has",
+        "window",
+        "misaligned"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_089",
+      "members": [
+        "d048"
+      ],
+      "centroidNorm": [
+        -0.0672,
+        -0.0145,
+        -0.0306,
+        0.0045,
+        0.0007,
+        -0.0129,
+        0.0021,
+        0.0072
+      ],
+      "medoid": "d048",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "recorder",
+        "practice",
+        "breath",
+        "marks",
+        "second",
+        "movement",
+        "are",
+        "editorial"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_090",
+      "members": [
+        "r012"
+      ],
+      "centroidNorm": [
+        -0.0197,
+        -0.021,
+        0.0087,
+        -0.0208,
+        -0.0428,
+        -0.0437,
+        -0.0272,
+        -0.0092
+      ],
+      "medoid": "r012",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "450",
+        "分钟",
+        "引擎",
+        "钟日",
+        "日界",
+        "擎的",
+        "窗口",
+        "凌晨"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_091",
+      "members": [
+        "r031"
+      ],
+      "centroidNorm": [
+        -0.0893,
+        0.0124,
+        -0.0312,
+        0.0097,
+        -0.0188,
+        -0.024,
+        -0.0085,
+        0.0421
+      ],
+      "medoid": "r031",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "spawn",
+        "error",
+        "enoent.",
+        "recurring",
+        "crash",
+        "sidecar",
+        "path",
+        "traceback"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_092",
+      "members": [
+        "r016"
+      ],
+      "centroidNorm": [
+        -0.08,
+        0.0037,
+        0.0013,
+        -0.0139,
+        -0.0214,
+        -0.0469,
+        0.0451,
+        0.0035
+      ],
+      "medoid": "r016",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "npm",
+        "的包",
+        "包名",
+        "名修",
+        "修复",
+        "发到",
+        "bundle",
+        "id"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_093",
+      "members": [
+        "d031"
+      ],
+      "centroidNorm": [
+        -0.0202,
+        -0.0433,
+        -0.0558,
+        0.0339,
+        -0.0037,
+        -0.009,
+        -0.0099,
+        -0.01
+      ],
+      "medoid": "d031",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "merch",
+        "order",
+        "team",
+        "hoodie",
+        "sizes",
+        "collected",
+        "reorder",
+        "threshold"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_094",
+      "members": [
+        "r040"
+      ],
+      "centroidNorm": [
+        0.0082,
+        0.0153,
+        -0.0213,
+        0.0004,
+        -0.035,
+        -0.0047,
+        0.0174,
+        0.0239
+      ],
+      "medoid": "r040",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "torch",
+        "cpu",
+        "wheel",
+        "thread",
+        "explosion",
+        "ryzen",
+        "9700x",
+        "default"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_095",
+      "members": [
+        "d025"
+      ],
+      "centroidNorm": [
+        -0.0894,
+        0.0148,
+        -0.0173,
+        -0.0071,
+        -0.0151,
+        0.0322,
+        -0.0337,
+        0.0043
+      ],
+      "medoid": "d025",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "printer",
+        "quirk",
+        "office",
+        "rejects",
+        "double-sided",
+        "jobs",
+        "above",
+        "40"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_096",
+      "members": [
+        "d029"
+      ],
+      "centroidNorm": [
+        -0.052,
+        -0.0011,
+        -0.0469,
+        0.0018,
+        -0.0205,
+        -0.0577,
+        0.0171,
+        -0.0094
+      ],
+      "medoid": "d029",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "team",
+        "calendar",
+        "no-meeting",
+        "wednesdays",
+        "pilot",
+        "extended",
+        "by",
+        "month"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_097",
+      "members": [
+        "d011"
+      ],
+      "centroidNorm": [
+        -0.0341,
+        -0.0026,
+        -0.0686,
+        0.0037,
+        -0.0147,
+        -0.0253,
+        0.0357,
+        0.0028
+      ],
+      "medoid": "d011",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "three",
+        "one",
+        "weekly",
+        "review",
+        "template",
+        "wins",
+        "risks",
+        "decision"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_098",
+      "members": [
+        "r052"
+      ],
+      "centroidNorm": [
+        -0.0734,
+        -0.0285,
+        0.0002,
+        0.0363,
+        -0.0375,
+        0.0059,
+        0.0084,
+        0.0164
+      ],
+      "medoid": "r052",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "tail",
+        "budget",
+        "reference",
+        "latency",
+        "packet",
+        "render",
+        "path",
+        "has"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_099",
+      "members": [
+        "r035"
+      ],
+      "centroidNorm": [
+        -0.0435,
+        -0.0069,
+        0.0187,
+        -0.0033,
+        -0.0035,
+        -0.0473,
+        -0.0271,
+        0.0066
+      ],
+      "medoid": "r035",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "write",
+        "flush",
+        "epipe",
+        "crash",
+        "during",
+        "corpus",
+        "embedding",
+        "batch"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_100",
+      "members": [
+        "r060"
+      ],
+      "centroidNorm": [
+        -0.069,
+        -0.0286,
+        -0.0022,
+        0.0279,
+        -0.0148,
+        -0.0806,
+        0.0232,
+        0.0316
+      ],
+      "medoid": "r060",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "changes",
+        "memoryindexversion",
+        "idx_pre_",
+        "32",
+        "hex",
+        "chars",
+        "identifies",
+        "whole"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_101",
+      "members": [
+        "r017"
+      ],
+      "centroidNorm": [
+        -0.0047,
+        -0.0154,
+        -0.0324,
+        -0.0128,
+        -0.0088,
+        -0.0562,
+        0.0348,
+        0.0471
+      ],
+      "medoid": "r017",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "提醒",
+        "同一",
+        "日期",
+        "期级",
+        "key",
+        "一天",
+        "级提",
+        "之前"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_102",
+      "members": [
+        "r033"
+      ],
+      "centroidNorm": [
+        -0.0059,
+        -0.0213,
+        -0.0343,
+        0.013,
+        -0.0221,
+        -0.0263,
+        0.0188,
+        -0.0057
+      ],
+      "medoid": "r033",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "memory",
+        "users",
+        "jh",
+        ".dsh",
+        "semantic-pre",
+        "store",
+        "path",
+        "layout"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_103",
+      "members": [
+        "r002"
+      ],
+      "centroidNorm": [
+        -0.0405,
+        -0.041,
+        -0.0185,
+        0.0128,
+        0.0149,
+        0.0224,
+        -0.0392,
+        0.008
+      ],
+      "medoid": "r002",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "json",
+        "line",
+        "stdout.",
+        "jsonl",
+        "transport",
+        "framing",
+        "rule",
+        "one"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_104",
+      "members": [
+        "r036"
+      ],
+      "centroidNorm": [
+        -0.0488,
+        -0.0153,
+        -0.0372,
+        0.0305,
+        0.0076,
+        -0.0509,
+        -0.0088,
+        0.0096
+      ],
+      "medoid": "r036",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "code",
+        "exit",
+        "worker",
+        "semantics",
+        "clean",
+        "close_session",
+        "unhandled",
+        "stdin"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_105",
+      "members": [
+        "r011"
+      ],
+      "centroidNorm": [
+        -0.0575,
+        0.0054,
+        -0.0001,
+        0.0182,
+        -0.0332,
+        -0.0066,
+        0.0129,
+        0.0186
+      ],
+      "medoid": "r011",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "归档",
+        "窗口",
+        "修复",
+        "当天",
+        "日志",
+        "cutoff",
+        "凌晨",
+        "00"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_106",
+      "members": [
+        "r068"
+      ],
+      "centroidNorm": [
+        -0.0079,
+        -0.0262,
+        0.0374,
+        0.0316,
+        -0.027,
+        -0.0233,
+        0.0102,
+        0.0347
+      ],
+      "medoid": "r068",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "numpy",
+        "stage-2",
+        "ann",
+        "upgrade",
+        "path",
+        "faiss",
+        "indexflatip",
+        "allowed"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_107",
+      "members": [
+        "r021"
+      ],
+      "centroidNorm": [
+        -0.0465,
+        -0.0268,
+        0.0012,
+        -0.009,
+        -0.0076,
+        -0.0184,
+        -0.0072,
+        0.0121
+      ],
+      "medoid": "r021",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "bytes",
+        "条",
+        "contextpushenvelopepre",
+        "的冻",
+        "冻结",
+        "结预",
+        "预算",
+        "segments"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_108",
+      "members": [
+        "d030"
+      ],
+      "centroidNorm": [
+        -0.0602,
+        0.0172,
+        -0.0565,
+        0.0136,
+        -0.0141,
+        -0.0293,
+        0.0388,
+        0.0019
+      ],
+      "medoid": "d030",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "home",
+        "lab",
+        "mini",
+        "pc",
+        "fan",
+        "curves",
+        "need",
+        "custom"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_109",
+      "members": [
+        "r020"
+      ],
+      "centroidNorm": [
+        -0.0146,
+        -0.0143,
+        0.0139,
+        0.0401,
+        -0.0365,
+        -0.0422,
+        0.0106,
+        0.0282
+      ],
+      "medoid": "r020",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "importinto",
+        "入口",
+        "外部",
+        "记忆",
+        "externalmemory",
+        "暴露",
+        "engine.memtoday",
+        "部系"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_110",
+      "members": [
+        "r026"
+      ],
+      "centroidNorm": [
+        -0.0298,
+        -0.0438,
+        0.0151,
+        0.0377,
+        0.0047,
+        -0.0402,
+        0.0119,
+        0.0506
+      ],
+      "medoid": "r026",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "evidence",
+        "类型",
+        "型枚",
+        "枚举",
+        "seen/read/cite/reuse/success/correction",
+        "七种",
+        "js",
+        "创建"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_111",
+      "members": [
+        "d006"
+      ],
+      "centroidNorm": [
+        -0.0285,
+        -0.0327,
+        -0.0307,
+        0.0017,
+        -0.036,
+        -0.0189,
+        0.023,
+        0.0301
+      ],
+      "medoid": "d006",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "standup",
+        "rotation",
+        "memory-platform",
+        "team",
+        "alternates",
+        "facilitator",
+        "weekly",
+        "notes"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_112",
+      "members": [
+        "d005"
+      ],
+      "centroidNorm": [
+        -0.0173,
+        -0.0136,
+        -0.0481,
+        -0.0084,
+        -0.0052,
+        -0.0216,
+        -0.0111,
+        0.0103
+      ],
+      "medoid": "d005",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "coffee",
+        "machine",
+        "maintenance",
+        "descale",
+        "every",
+        "weeks",
+        "filter",
+        "change"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_113",
+      "members": [
+        "r051"
+      ],
+      "centroidNorm": [
+        -0.048,
+        -0.0103,
+        0.0065,
+        0.0228,
+        -0.013,
+        -0.0198,
+        -0.0345,
+        0.0186
+      ],
+      "medoid": "r051",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "ack",
+        "context",
+        "push",
+        "deadline",
+        "budget",
+        "whole",
+        "context_push",
+        "pipeline"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_114",
+      "members": [
+        "r024"
+      ],
+      "centroidNorm": [
+        -0.039,
+        -0.0304,
+        -0.0074,
+        0.0223,
+        -0.0292,
+        -0.0672,
+        0.0153,
+        0.0197
+      ],
+      "medoid": "r024",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "重建",
+        "个目",
+        "目录",
+        "整个",
+        "derived",
+        "index",
+        "的可",
+        "可重"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_115",
+      "members": [
+        "r099"
+      ],
+      "centroidNorm": [
+        -0.03,
+        -0.0145,
+        -0.019,
+        0.0087,
+        -0.0095,
+        -0.0175,
+        0.0027,
+        -0.014
+      ],
+      "medoid": "r099",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "as",
+        "assumption",
+        "from",
+        "first",
+        "benchmark",
+        "embedding",
+        "dimension",
+        "can"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_116",
+      "members": [
+        "r022"
+      ],
+      "centroidNorm": [
+        0.0179,
+        -0.0062,
+        0.0148,
+        0.001,
+        -0.016,
+        -0.0125,
+        0.0127,
+        -0.0077
+      ],
+      "medoid": "r022",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "m6",
+        "validator",
+        "硬校",
+        "校验",
+        "验清",
+        "清单",
+        "workerepoch",
+        "session"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_117",
+      "members": [
+        "r059"
+      ],
+      "centroidNorm": [
+        -0.0206,
+        -0.0059,
+        -0.0325,
+        0.0344,
+        -0.053,
+        -0.0029,
+        0.0085,
+        0.0361
+      ],
+      "medoid": "r059",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "contextversion",
+        "as",
+        "session.",
+        "an",
+        "identifies",
+        "state",
+        "one",
+        "request"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_118",
+      "members": [
+        "r067"
+      ],
+      "centroidNorm": [
+        -0.0108,
+        -0.0201,
+        -0.011,
+        -0.016,
+        -0.0043,
+        -0.0232,
+        0.0076,
+        0.0
+      ],
+      "medoid": "r067",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "m7-3",
+        "exact",
+        "dense",
+        "baseline",
+        "numpy",
+        "float32",
+        "matrix",
+        "l2-normalized"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_119",
+      "members": [
+        "d033"
+      ],
+      "centroidNorm": [
+        0.0077,
+        -0.0149,
+        -0.0325,
+        0.0277,
+        -0.0657,
+        -0.0353,
+        -0.0035,
+        0.0326
+      ],
+      "medoid": "d033",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "charity",
+        "run",
+        "registration",
+        "closes",
+        "end",
+        "month",
+        "pickup",
+        "bib"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_120",
+      "members": [
+        "r134"
+      ],
+      "centroidNorm": [
+        -0.0531,
+        -0.0006,
+        -0.0168,
+        0.019,
+        -0.0115,
+        -0.0304,
+        -0.0132,
+        0.0244
+      ],
+      "medoid": "r134",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "as",
+        "same",
+        "records",
+        "full",
+        "corpus",
+        "gold",
+        "with",
+        "plus"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_121",
+      "members": [
+        "d009"
+      ],
+      "centroidNorm": [
+        -0.0404,
+        -0.0249,
+        -0.0487,
+        0.0168,
+        -0.0113,
+        -0.0084,
+        0.0368,
+        0.0142
+      ],
+      "medoid": "d009",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "font",
+        "preference",
+        "panel",
+        "13px",
+        "monospace",
+        "ligatures",
+        "off",
+        "line-height"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_122",
+      "members": [
+        "r001"
+      ],
+      "centroidNorm": [
+        -0.0339,
+        -0.033,
+        -0.0374,
+        0.0499,
+        0.0072,
+        -0.0231,
+        0.0233,
+        0.0217
+      ],
+      "medoid": "r001",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "frame",
+        "workerepoch",
+        "host",
+        "every",
+        "process",
+        "that",
+        "epoch",
+        "semantics"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_123",
+      "members": [
+        "r013"
+      ],
+      "centroidNorm": [
+        -0.0272,
+        -0.0356,
+        -0.003,
+        0.0049,
+        -0.0453,
+        -0.0418,
+        0.0641,
+        0.0387
+      ],
+      "medoid": "r013",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "自动",
+        "动弹",
+        "开关",
+        "记忆",
+        "面板",
+        "影响",
+        "弹窗",
+        "窗开"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    },
+    {
+      "clusterId": "clu_pre_124",
+      "members": [
+        "r032"
+      ],
+      "centroidNorm": [
+        -0.0488,
+        -0.0516,
+        -0.0186,
+        -0.0206,
+        0.0175,
+        0.0189,
+        -0.0148,
+        0.0384
+      ],
+      "medoid": "r032",
+      "radius": 0.0,
+      "softMembership": null,
+      "noise": [],
+      "keywords": [
+        "bom",
+        "digest",
+        "mismatch",
+        "failure",
+        "signature",
+        "from",
+        "worker",
+        "log"
+      ],
+      "policyVersion": "cluster_shadow_pre_v1",
+      "centroidDim": 8,
+      "centroidNote": "preview 8 dims; full centroid recomputable from members+vectors (bench artifacts)"
+    }
+  ]
+}

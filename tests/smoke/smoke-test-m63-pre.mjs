@@ -8,8 +8,8 @@ process.on('uncaughtException', (e) => { console.error('[M63B-TEST] FATAL:', (e 
 process.on('unhandledRejection', (r) => { console.error('[M63B-TEST] REJ:', r); process.exit(1) })
 globalThis.fetch = async () => ({ ok: false, status: 503, json: async () => ({}) })
 const sha256Hex = (buf) => createHash('sha256').update(buf).digest('hex')
-const { parseAnchors } = await import('../../lib/memory-anchor.js')
-const A = await import('../../lib/activation-inbox.js')
+const { parseAnchors } = await import('../../lib/memory-anchor-pre.js')
+const A = await import('../../lib/activation-inbox-pre.js')
 
 let pass = 0; let fail = 0
 function ok(cond, name) { if (cond) { pass++; console.log('  ok - ' + name) } else { fail++; console.error('  FAIL - ' + name) } }
@@ -20,7 +20,7 @@ async function setupHarness(opts = {}) {
   const memoryRoot = path.join(ws1, 'mem')
   const wsA = path.join(ws1, 'wsA')
   mkdirSync(home, { recursive: true }); mkdirSync(memoryRoot, { recursive: true }); mkdirSync(wsA, { recursive: true })
-  writeFileSync(path.join(home, 'dsh-auto-memory.json'), JSON.stringify({
+  writeFileSync(path.join(home, 'dsh-auto-memory-pre.json'), JSON.stringify({
     memoryRoot, userMemoryDir: path.join(ws1, 'user'), projectMemoryDir: '.project-memory',
     externalSources: {}, ...(opts.configPatch || {}) }), 'utf8')
   process.env.DSH_HOME = home
@@ -42,11 +42,11 @@ async function setupHarness(opts = {}) {
     scope: 'Workspace', sourceRef: 'workspace:MEMORY.md', sourceEpoch: '33333333-3333-4333-8333-333333333333',
     excerpt: '- 参考内容',
   }))
-  const sideDir = path.join(home, 'memory', 'index', 'files')
+  const sideDir = path.join(home, 'memory', 'index-pre', 'files')
   mkdirSync(sideDir, { recursive: true })
   const canon = (x) => path.resolve(x).replace(/\\/g, '/').toLowerCase()
   writeFileSync(path.join(sideDir, createHash('sha256').update(canon(wsFile), 'utf8').digest('hex') + '.json'),
-    JSON.stringify({ schemaVersion: 1, namespace: 'dsh-auto-memory', sourceFile: wsFile,
+    JSON.stringify({ schemaVersion: 1, namespace: 'dsh-auto-memory-pre', sourceFile: wsFile,
       sourceEpoch: '33333333-3333-4333-8333-333333333333', sourceVersion: 1, fileDigest: sha256Hex(buf),
       newline: 'lf', updatedAt: 1700000000000, records }, null, 2) + '\n', 'utf8')
   const tools = []; const routes = []; const handlers = new Map(); const effectSetups = []
@@ -65,26 +65,26 @@ async function setupHarness(opts = {}) {
   apply(ctx, {})
   const fire = async (name, ...args) => { const h = handlers.get(name); if (typeof h !== 'function') throw new Error('handler missing ' + name); return Promise.resolve(h(...args)) }
   const dbg = async () => {
-    const route = routes.find((r) => r.path === '/api/dsh-auto-memory/debug')
+    const route = routes.find((r) => r.path === '/api/dsh-auto-memory-pre/debug')
     let b; await route.handler({ socket: { remoteAddress: '127.0.0.1' }, headers: { host: '127.0.0.1:3080' }, method: 'GET', url: '/debug' }, { writeHead() {}, end(x) { b = JSON.parse(x) } })
     return b.associativeMemory
   }
   const cfgPost = async (patch) => {
-    const route = routes.find((r) => r.path === '/api/dsh-auto-memory/config')
+    const route = routes.find((r) => r.path === '/api/dsh-auto-memory-pre/config')
     await route.handler({ socket: { remoteAddress: '127.0.0.1' }, headers: { host: '127.0.0.1:3080', origin: 'http://127.0.0.1:3080' }, method: 'POST', url: '/config', [Symbol.asyncIterator]() { return (async function* () { yield Buffer.from(JSON.stringify(patch)) })() } }, { writeHead() {}, end() {} })
     await new Promise((r) => setTimeout(r, 150))
   }
   const actPost = async (payload) => {
-    const route = routes.find((r) => r.path === '/api/dsh-auto-memory/activation-inbox')
+    const route = routes.find((r) => r.path === '/api/dsh-auto-memory-pre/activation-inbox-pre')
     let out
-    await route.handler({ socket: { remoteAddress: '127.0.0.1' }, headers: { host: '127.0.0.1:3080', origin: 'http://127.0.0.1:3080' }, method: 'POST', url: '/activation-inbox', [Symbol.asyncIterator]() { return (async function* () { yield Buffer.from(JSON.stringify(payload)) })() } }, { writeHead() {}, end(x) { out = JSON.parse(x) } })
+    await route.handler({ socket: { remoteAddress: '127.0.0.1' }, headers: { host: '127.0.0.1:3080', origin: 'http://127.0.0.1:3080' }, method: 'POST', url: '/activation-inbox-pre', [Symbol.asyncIterator]() { return (async function* () { yield Buffer.from(JSON.stringify(payload)) })() } }, { writeHead() {}, end(x) { out = JSON.parse(x) } })
     return out
   }
   const agent = { id: 'a1', session: { id: 's1', header: { id: 's1', cwd: wsA } } }
   await fire('agent/session-start', { agent, source: 'fresh' })
   await new Promise((r) => setTimeout(r, 250))
   return { ws1, home, wsA, agent, records, aaId, bbId, fire, dbg, cfgPost, actPost, promptComponents,
-    tailComponent: () => promptComponents.find((c) => c.name === 'dsh:m6-reference-tail'),
+    tailComponent: () => promptComponents.find((c) => c.name === 'dsh:m6-reference-tail-pre'),
     settle: async () => { for (const s of effectSetups) { try { const td = await s(); if (typeof td === 'function') await td() } catch (_) {} } },
     cleanup: () => { try { rmSync(ws1, { recursive: true, force: true }) } catch (_) {} } }
 }
@@ -125,13 +125,13 @@ let deliveredSeenCount = 0
   const h = globalThis.__h
   // 2026-08-27 默认 activationSource=js;F4/F5 测的是 fake 演示注入路由,须显式 fake
   await h.cfgPost({ associativeMemoryEnabled: true, activationInboxEnabled: true, activationSource: 'fake' })
-  const A = await import('../../lib/activation-inbox.js')
+  const A = await import('../../lib/activation-inbox-pre.js')
   // 预热:先走一次 pre-step 让 activation host 加载 corpus 并缓存 miv
   await h.fire('agent/pre-step', { agent: h.agent, turn: 0, step: 0 }, () => {})
   const amNow = await h.dbg()
   const liveCv = (amNow.runtimes.find((r) => r.sessionId === 's1') || {}).contextVersion || 0
   const liveMiv = amNow.activationInbox.memoryIndexVersion
-  ok(!!liveMiv && String(liveMiv).startsWith('idx_'), 'F4 状态接口暴露当前 miv(' + String(liveMiv).slice(0, 12) + '…)')
+  ok(!!liveMiv && String(liveMiv).startsWith('idx_pre_'), 'F4 状态接口暴露当前 miv(' + String(liveMiv).slice(0, 12) + '…)')
   const fakeReq = A.makeFakeActivationRequestPre({
     seed: 'live-1', sessionId: 's1', agentId: 'a1', workspaceKey: h.wsA.replace(/\\/g, '/').toLowerCase(),
     contextVersion: liveCv, memoryIndexVersion: liveMiv,
@@ -144,15 +144,15 @@ let deliveredSeenCount = 0
   // pre-step 为 waterfall:fire 时补一个 noop next
   await h.fire('agent/pre-step', { agent: h.agent, turn: 1, step: 1 }, () => {})
   const tc = h.tailComponent()
-  ok(!!tc, 'F4 专用尾注组件已注册(dsh:m6-reference-tail)')
+  ok(!!tc, 'F4 专用尾注组件已注册(dsh:m6-reference-tail-pre)')
   const out1 = String(tc.text({ agent: h.agent }))
-  ok(out1.includes(A.TAIL_MARKER_LINE_V1), 'F5 渲染文本含固定边界标记行')
+  ok(out1.includes(A.TAIL_MARKER_LINE_PRE_V1), 'F5 渲染文本含固定边界标记行')
   ok(/Source: mem_[0-9a-f]{32} \/ Workspace \/ v/.test(out1), 'F5 Source 行含完整 provenance 身份')
-  ok(out1.trim().endsWith(A.TAIL_VERIFY_LINE_V1), 'F5 Verify 收尾行结尾')
+  ok(out1.trim().endsWith(A.TAIL_VERIFY_LINE_PRE_V1), 'F5 Verify 收尾行结尾')
   const out2 = String(tc.text({ agent: h.agent }))
   eq(out2, '', 'F5 已投递后再次渲染为空(同一 packet 不重复出现)')
   await sleep(500)
-  const evDir = path.join(h.home, 'memory', 'evidence', 'events')
+  const evDir = path.join(h.home, 'memory', 'evidence-pre', 'events')
   let seenCount = 0
   if (existsSync(evDir)) {
     for (const f of readdirSync(evDir).filter((x) => x.endsWith('.jsonl'))) {
@@ -167,7 +167,7 @@ let deliveredSeenCount = 0
 console.log('[F6] 冷却门')
 {
   const h = globalThis.__h
-  const A = await import('../../lib/activation-inbox.js')
+  const A = await import('../../lib/activation-inbox-pre.js')
   const amNow2 = await h.dbg()
   const cv2 = (amNow2.runtimes.find((r) => r.sessionId === 's1') || {}).contextVersion || 0
   const miv2 = amNow2.activationInbox.memoryIndexVersion
@@ -179,7 +179,7 @@ console.log('[F6] 冷却门')
   await h.fire('agent/pre-step', { agent: h.agent, turn: 2, step: 3 }, () => {})
   const out6 = String(h.tailComponent().text({ agent: h.agent }))
   const amC = await h.dbg()
-  ok(out6 === '' || out6.includes(A.TAIL_MARKER_LINE_V1), 'F6 第二轮渲染要么冷却为空要么正常尾注(确定性二选一)')
+  ok(out6 === '' || out6.includes(A.TAIL_MARKER_LINE_PRE_V1), 'F6 第二轮渲染要么冷却为空要么正常尾注(确定性二选一)')
   ok(amC.activationInbox.stats.delivered >= deliveredBefore, 'F6 delivered 单调不减(' + deliveredBefore + '→' + amC.activationInbox.stats.delivered + ')；严格 2 步冷却窗由 smoke-test-m62 E8 锁定')
   console.log('[F6] 冷却语义=单元锁定;live 验证投递单调性')
 }
@@ -197,7 +197,7 @@ console.log('[F7/F8] section 字节稳定 / 尾注不进 section / 关闭恢复'
   const secAfter = String(sectionComp.text({}))
   eq(secBefore, secAfter, 'F7 section 输出逐字节不变(prompt 零变化)')
   const ctxTexts = ctxComps.map((c) => ({ name: c.name, t: String(c.text({ agent: h.agent })) }))
-  ok(ctxTexts.every((x) => !x.t.includes(A.TAIL_MARKER_LINE_V1)), 'F7 关闭后任何组件零尾注')
+  ok(ctxTexts.every((x) => !x.t.includes(A.TAIL_MARKER_LINE_PRE_V1)), 'F7 关闭后任何组件零尾注')
   console.log('[F7/F8] section 稳定与关闭恢复')
 }
 
@@ -206,7 +206,7 @@ console.log('[F9] TTL 过期(live)')
   const h = globalThis.__h
   // 2026-08-27 默认 activationSource=js;F4 测的是 fake 演示注入路由,须显式 fake
   await h.cfgPost({ associativeMemoryEnabled: true, activationInboxEnabled: true, activationSource: 'fake' })
-  const A = await import('../../lib/activation-inbox.js')
+  const A = await import('../../lib/activation-inbox-pre.js')
   const amNow3 = await h.dbg()
   const cv3 = (amNow3.runtimes.find((r) => r.sessionId === 's1') || {}).contextVersion || 0
   const miv3 = amNow3.activationInbox.memoryIndexVersion

@@ -35,7 +35,7 @@ function makeHarness(phaseLabel, configPatch) {
   const home = path.join(ws, '.dsh-home')
   mkdirSync(home, { recursive: true })
   // 显式覆盖集中记忆根与用户级目录到临时目录,杜绝任何写穿真实 ~/.dsh 的路径
-  writeFileSync(path.join(home, 'dsh-auto-memory.json'), JSON.stringify({
+  writeFileSync(path.join(home, 'dsh-auto-memory-pre.json'), JSON.stringify({
     memoryRoot: path.join(ws, '.memory-root'),
     userMemoryDir: path.join(ws, '.user-root'),
     projectMemoryDir: '.project-memory',
@@ -61,9 +61,9 @@ function makeHarness(phaseLabel, configPatch) {
   apply(ctx, {})
   // prime: 经由 config 路由 await engine.loadConfig(),保证 hook 触发前配置已生效(enabled 开关可靠)
   const prime = async () => {
-    const route = registeredRoutes.find((r) => r.path === '/api/dsh-auto-memory/config')
+    const route = registeredRoutes.find((r) => r.path === '/api/dsh-auto-memory-pre/config')
     let body
-    await route.handler({ socket: { remoteAddress: '127.0.0.1' }, headers: { host: '127.0.0.1:3080' }, method: 'GET', url: '/api/dsh-auto-memory/config' }, { writeHead() {}, end(b) { body = JSON.parse(b) } })
+    await route.handler({ socket: { remoteAddress: '127.0.0.1' }, headers: { host: '127.0.0.1:3080' }, method: 'GET', url: '/api/dsh-auto-memory-pre/config' }, { writeHead() {}, end(b) { body = JSON.parse(b) } })
     return body.config
   }
   const settle = async () => {
@@ -84,9 +84,9 @@ const makeAgent = (id, sessionId, cwd) => ({ id, session: { id: sessionId, heade
 
 async function debugAssoc(routes) {
   let body
-  const route = routes.find((r) => r.path === '/api/dsh-auto-memory/debug')
+  const route = routes.find((r) => r.path === '/api/dsh-auto-memory-pre/debug')
   if (!route) throw new Error('debug route not registered')
-  await route.handler({ socket: { remoteAddress: '127.0.0.1' }, headers: { host: '127.0.0.1:3080' }, method: 'GET', url: '/api/dsh-auto-memory/debug' }, { writeHead() {}, end(b) { body = JSON.parse(b) } })
+  await route.handler({ socket: { remoteAddress: '127.0.0.1' }, headers: { host: '127.0.0.1:3080' }, method: 'GET', url: '/api/dsh-auto-memory-pre/debug' }, { writeHead() {}, end(b) { body = JSON.parse(b) } })
   return body.associativeMemory
 }
 const rowOf = async (routes, sessionId) => (await debugAssoc(routes)).runtimes.find((r) => r.sessionId === sessionId)
@@ -249,7 +249,7 @@ const ENABLED = { associativeMemoryEnabled: true }
     const reborn = await rowOf(h.registeredRoutes, 'session-b')
     if (!reborn || reborn.eventCursor !== 1 || reborn.envelopes > 2 || reborn.nativeCursor !== 0) throw new Error('reborn runtime not fresh')
     disposedHandler({ agent: agentA })
-    const statusTool = h.registeredTools.find((t) => t.name === 'memory_status')
+    const statusTool = h.registeredTools.find((t) => t.name === 'memory_status_pre')
     const st = await statusTool.execute({}, { agent: agentB2 })
     if (String(st).includes('workspace-a')) throw new Error('dispose cross-talk detected')
     console.log('P3f dispose cleanup ✓')
@@ -376,12 +376,12 @@ const ENABLED = { associativeMemoryEnabled: true }
       fire(hp.eventHandlers, 'session/event', pa.session, assistantEvent(2, 1, 1, 'pre disable answer', 1724200040002))
       let prow = await rowOf(hp.registeredRoutes, 'session-purge')
       if (!(prow.envelopes >= 3 && prow.segments >= 2 && prow.contextVersion >= 2)) throw new Error('purge setup wrong: ' + JSON.stringify(prow))
-      const configRoute = hp.registeredRoutes.find((r) => r.path === '/api/dsh-auto-memory/config')
+      const configRoute = hp.registeredRoutes.find((r) => r.path === '/api/dsh-auto-memory-pre/config')
       let lastBody
       const res = { writeHead() {}, end(b) { lastBody = JSON.parse(b) } }
       await configRoute.handler({
         socket: { remoteAddress: '127.0.0.1' }, headers: { host: '127.0.0.1:3080', origin: 'http://127.0.0.1:3080' },
-        method: 'POST', url: '/api/dsh-auto-memory/config',
+        method: 'POST', url: '/api/dsh-auto-memory-pre/config',
         [Symbol.asyncIterator]() { return (async function* () { yield Buffer.from(JSON.stringify({ associativeMemoryEnabled: false })) })() },
       }, res)
       if (lastBody.config.associativeMemoryEnabled !== false) throw new Error('disable POST failed')
@@ -391,7 +391,7 @@ const ENABLED = { associativeMemoryEnabled: true }
       if ((await debugAssoc(hp.registeredRoutes)).observer.observationStorage !== 'counters-only') throw new Error('storage flag not counters-only after switch')
       await configRoute.handler({
         socket: { remoteAddress: '127.0.0.1' }, headers: { host: '127.0.0.1:3080', origin: 'http://127.0.0.1:3080' },
-        method: 'POST', url: '/api/dsh-auto-memory/config',
+        method: 'POST', url: '/api/dsh-auto-memory-pre/config',
         [Symbol.asyncIterator]() { return (async function* () { yield Buffer.from(JSON.stringify({ associativeMemoryEnabled: true })) })() },
       }, res)
       if ((await debugAssoc(hp.registeredRoutes)).observer.observationStorage !== 'full') throw new Error('storage flag not full after re-enable')

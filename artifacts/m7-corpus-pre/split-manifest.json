@@ -1,0 +1,16 @@
+{
+  "splits": {
+    "train": 190,
+    "dev": 32,
+    "test": 29
+  },
+  "langs": {
+    "mixed": 245,
+    "en": 6
+  },
+  "byKind": {
+    "memory-record": 128,
+    "profile-block": 94,
+    "session-episode": 29
+  }
+}

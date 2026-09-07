@@ -33,14 +33,14 @@ const rootPeer = path.join(root, 'profiles', 'web', 'node_modules', '@huggingfac
 
 try {
   mkdirSync(libDir, { recursive: true })
-  cpSync(LIB_SRC, libDir, { recursive: true }) // 发行布局:lib/ 平铺(含 semantic-js.js)
+  cpSync(LIB_SRC, libDir, { recursive: true }) // 发行布局:lib/ 平铺(含 semantic-js-pre.js)
   mkdirSync(path.dirname(rootPeer), { recursive: true })
   symlinkSync(TRIAL_PEER, rootPeer, 'junction') // peer 只在 profile 根(hoisted 位)
   mkdirSync(path.join(libDir, 'models'), { recursive: true })
   symlinkSync(TRIAL_MODEL, path.join(libDir, 'models', 'multilingual-e5-small'), 'junction')
 
   console.log('[peer-probe-live] G1 共享 probe 在发行布局树下判就绪')
-  const semMod = await import(pathToFileURL(path.join(libDir, 'semantic-js.js')).href)
+  const semMod = await import(pathToFileURL(path.join(libDir, 'semantic-js-pre.js')).href)
   const probe = semMod.probeJsSemanticAssets(libDir)
   console.log('  resolved peer dir:', semMod.resolvePeerTransformersDir(libDir))
   ok(probe.peerPresent === true, 'peerPresent=true(仅 profile 根提升位在场)')
@@ -50,7 +50,7 @@ try {
 
   console.log('[peer-probe-live] G2 引擎全链:裸 import 解析 peer → 真实加载 → 自检 → rank')
   const eng = semMod.createJsSemanticEnginePre({ pluginDir: libDir })
-  const miv = 'idx_' + randomBytes(16).toString('hex')
+  const miv = 'idx_pre_' + randomBytes(16).toString('hex')
   const r = await eng.rank({
     memoryIndexVersion: miv,
     records: [

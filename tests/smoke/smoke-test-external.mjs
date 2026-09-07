@@ -22,13 +22,13 @@ apply(ctx, {})
 const agent = { session: { header: { cwd: 'D:\\Ark9Tools' } } }
 
 // 1) force discovery
-const externalTool = registeredTools.find((t) => t.name === 'memory_external')
+const externalTool = registeredTools.find((t) => t.name === 'memory_external_pre')
 const list = await externalTool.execute({ action: 'list' }, { agent })
 console.log(list)
 console.log('---')
 
 // 2) recall across external sources
-const recall = registeredTools.find((t) => t.name === 'memory_recall')
+const recall = registeredTools.find((t) => t.name === 'memory_recall_pre')
 const r1 = await recall.execute({ query: '鸿蒙', limit: 5 }, { agent })
 console.log('recall 鸿蒙 →', r1.slice(0, 600))
 console.log('---')

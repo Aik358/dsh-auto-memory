@@ -1,0 +1,63 @@
+{
+ "T1_3class": {
+  "macroF1": 0.494,
+  "confusionOrder": [
+   "A",
+   "P",
+   "S"
+  ],
+  "confusion": [
+   [
+    16,
+    4,
+    2
+   ],
+   [
+    8,
+    5,
+    6
+   ],
+   [
+    4,
+    4,
+    9
+   ]
+  ]
+ },
+ "T2_recallIntent_binary": {
+  "n": 39,
+  "positives": 22,
+  "auc": 0.901,
+  "acc_raw@0.5": 0.744,
+  "acc_calibrated@0.5": 0.872,
+  "brier_raw": 0.227,
+  "brier_calibrated": 0.131,
+  "note": "P 类按设计排除：其必要性来自任务语境而非文本本身"
+ },
+ "T3_echoContainment": {
+  "echoS_n": 15,
+  "echoS_median": 0.273,
+  "echoS_max": 1.0,
+  "activate_n": 22,
+  "activate_median": 0.462,
+  "activate_max": 0.733,
+  "echo_ids": [
+   "cal-0009",
+   "cal-0010",
+   "cf-002",
+   "cf-004",
+   "cf-006",
+   "cf-016",
+   "cf-018",
+   "cf-020",
+   "cf-022",
+   "cf-098",
+   "cf-100",
+   "cf-102",
+   "cf-104",
+   "cf-106",
+   "cf-108"
+  ],
+  "note": "containment = |bigram(query) ∩ bigram(top1候选)| / |bigram(query)|；与 denseTop 正交的词面复述信号"
+ }
+}

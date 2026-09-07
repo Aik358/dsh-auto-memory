@@ -8,7 +8,7 @@
 // F7 M5 evidence 挂钩: evidenceFor 聚合六类计数 + 去重 session
 // F8 卫生: 零进程/网络原语静态扫描
 import { createFactStorePre, validateFactCandidatePre, validateFactPre, isFactConflict,
-  factCandidateFromJudgementRow, ingestJudgementRows, FACT_ID_RE } from '../../lib/fact-store.js'
+  factCandidateFromJudgementRow, ingestJudgementRows, FACT_ID_RE } from '../../lib/fact-store-pre.js'
 import { readFileSync } from 'node:fs'
 
 let pass = 0, fail = 0
@@ -126,10 +126,10 @@ console.log('[F6] judgement-shadow 消费')
   const io = memIO()
   const s = createFactStorePre({ io: io.io, now })
   const rows = [
-    { schemaVersion: 1, policyVersion: 'judgement_shadow_v1', observationId: 'obs_1', contextVersion: 1, memoryIndexVersion: 'idx_x', kindCandidate: 'semantic_candidate', suggestion: 'keep_suggest', sourceIds: ['mem_a'], supportEvidence: {}, counterEvidence: {}, confidence: 0.7, subject: '项目', predicate: '构建工具', object: 'esbuild', scope: 'Workspace' },
-    { schemaVersion: 1, policyVersion: 'judgement_shadow_v1', observationId: 'obs_2', contextVersion: 1, memoryIndexVersion: 'idx_x', kindCandidate: 'profile_candidate', suggestion: 'supersede_suggest', sourceIds: ['mem_b'], supportEvidence: {}, counterEvidence: {}, confidence: 0.8, subject: '偏好', predicate: '语言', object: 'python', scope: 'User' },
-    { schemaVersion: 1, policyVersion: 'judgement_shadow_v1', observationId: 'obs_3', contextVersion: 1, memoryIndexVersion: 'idx_x', kindCandidate: 'noise', suggestion: 'discard_suggest', sourceIds: ['mem_c'], supportEvidence: {}, counterEvidence: {}, confidence: 0.1 },
-    { schemaVersion: 1, policyVersion: 'judgement_shadow_v1', observationId: 'obs_4', contextVersion: 1, memoryIndexVersion: 'idx_x', kindCandidate: 'procedure_candidate', suggestion: 'promote_suggest', sourceIds: ['mem_d'], supportEvidence: {}, counterEvidence: {}, confidence: 0.6 },
+    { schemaVersion: 1, policyVersion: 'judgement_shadow_pre_v1', observationId: 'obs_1', contextVersion: 1, memoryIndexVersion: 'idx_pre_x', kindCandidate: 'semantic_candidate', suggestion: 'keep_suggest', sourceIds: ['mem_a'], supportEvidence: {}, counterEvidence: {}, confidence: 0.7, subject: '项目', predicate: '构建工具', object: 'esbuild', scope: 'Workspace' },
+    { schemaVersion: 1, policyVersion: 'judgement_shadow_pre_v1', observationId: 'obs_2', contextVersion: 1, memoryIndexVersion: 'idx_pre_x', kindCandidate: 'profile_candidate', suggestion: 'supersede_suggest', sourceIds: ['mem_b'], supportEvidence: {}, counterEvidence: {}, confidence: 0.8, subject: '偏好', predicate: '语言', object: 'python', scope: 'User' },
+    { schemaVersion: 1, policyVersion: 'judgement_shadow_pre_v1', observationId: 'obs_3', contextVersion: 1, memoryIndexVersion: 'idx_pre_x', kindCandidate: 'noise', suggestion: 'discard_suggest', sourceIds: ['mem_c'], supportEvidence: {}, counterEvidence: {}, confidence: 0.1 },
+    { schemaVersion: 1, policyVersion: 'judgement_shadow_pre_v1', observationId: 'obs_4', contextVersion: 1, memoryIndexVersion: 'idx_pre_x', kindCandidate: 'procedure_candidate', suggestion: 'promote_suggest', sourceIds: ['mem_d'], supportEvidence: {}, counterEvidence: {}, confidence: 0.6 },
   ]
   const r = ingestJudgementRows(s, rows, {})
   ok(r.results.length === 4, '4 行全处理')
@@ -164,7 +164,7 @@ console.log('[F7] M5 evidence 挂钩')
 
 console.log('[F8] 卫生静态扫描')
 {
-  const src = readFileSync(new URL('../../lib/fact-store.js', import.meta.url), 'utf8')
+  const src = readFileSync(new URL('../../lib/fact-store-pre.js', import.meta.url), 'utf8')
   const code = src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/^\s*\/\/.*$/gm, ' ')
   const bad = ['child' + '_process', 'node:' + 'net', 'node:' + 'http', 'spaw' + 'n', 'exec' + 'File', 'fetch' + '(']
   ok(!bad.some((b) => code.includes(b)), '零进程/网络原语')

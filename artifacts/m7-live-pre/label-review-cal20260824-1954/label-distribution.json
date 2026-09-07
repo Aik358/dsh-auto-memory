@@ -1,0 +1,68 @@
+{
+ "existingReviewed": {
+  "previousAction": {
+   "activate": 31,
+   "prefetch": 16,
+   "suppress": 26
+  },
+  "proposedAction": {
+   "activate": 31,
+   "prefetch": 14,
+   "suppress": 28
+  },
+  "harmfulTrue": 10,
+  "echoRisk": {
+   "none": 67,
+   "low": 3,
+   "high": 2,
+   "medium": 1
+  },
+  "dialogueAct": {
+   "question": 39,
+   "request": 15,
+   "statement": 2,
+   "other": 2,
+   "planning": 10,
+   "acknowledgement": 1,
+   "error-report": 4
+  },
+  "taskNeed": {
+   "required": 31,
+   "optional": 14,
+   "none": 28
+  },
+  "scopeInvalid": 9,
+  "highScoreSuppress": [
+   "cal-0009",
+   "cal-0010"
+  ]
+ },
+ "counterfactual": {
+  "action": {
+   "activate": 65,
+   "suppress": 35,
+   "prefetch": 9
+  },
+  "language": {
+   "zh": 94,
+   "en": 6,
+   "mixed": 9
+  },
+  "category": {
+   "echo-vs-recall": 26,
+   "failure-vs-planning": 16,
+   "supersede": 16,
+   "cross-workspace": 16,
+   "language-variant": 17,
+   "code-anchor": 6,
+   "low-info": 12
+  },
+  "split": {
+   "train": 92,
+   "test": 7,
+   "dev": 10
+  },
+  "harmfulTrue": 8,
+  "crossWorkspacePairs": 8
+ }
+}

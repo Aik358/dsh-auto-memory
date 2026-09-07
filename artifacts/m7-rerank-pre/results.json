@@ -1,0 +1,70 @@
+{
+  "environment": {
+    "reranker": "bge-reranker-v2-m3",
+    "revision": "953dc6f6f85a1b2dbfca4c34a2796e7dde08d41e",
+    "license": "Apache-2.0",
+    "model_load_seconds": 1.71,
+    "peak_rss_gb": 3.84,
+    "torch": "2.13.0+cpu"
+  },
+  "results": [
+    {
+      "layer": "L1",
+      "arm": "fusion-top10 (no rerank)",
+      "recall@1": 0.7386,
+      "recall@5": 0.9659,
+      "recall@10": 0.9886,
+      "mrr": 0.8373,
+      "ndcg@10": 0.8751,
+      "hardneg_error": 0.1481,
+      "supersede_correct": 0.5,
+      "xlang_recall@5": 1.0,
+      "code_recall@5": 1.0
+    },
+    {
+      "layer": "L1",
+      "arm": "bge-reranker-v2-m3 top50->10",
+      "recall@1": 0.8977,
+      "recall@5": 1.0,
+      "recall@10": 1.0,
+      "mrr": 0.947,
+      "ndcg@10": 0.9608,
+      "hardneg_error": 0.1111,
+      "supersede_correct": 0.625,
+      "xlang_recall@5": 1.0,
+      "code_recall@5": 1.0,
+      "latency_p50_ms": 26093.1,
+      "latency_p95_ms": 37448.8,
+      "pairs_per_query": 50
+    },
+    {
+      "layer": "L2",
+      "arm": "fusion-top10 (no rerank)",
+      "recall@1": 0.8,
+      "recall@5": 0.95,
+      "recall@10": 1.0,
+      "mrr": 0.8657,
+      "ndcg@10": 0.8978,
+      "hardneg_error": 0.0741,
+      "supersede_correct": null,
+      "xlang_recall@5": null,
+      "code_recall@5": null
+    },
+    {
+      "layer": "L2",
+      "arm": "bge-reranker-v2-m3 top50->10",
+      "recall@1": 0.85,
+      "recall@5": 0.95,
+      "recall@10": 1.0,
+      "mrr": 0.8921,
+      "ndcg@10": 0.9178,
+      "hardneg_error": 0.037,
+      "supersede_correct": null,
+      "xlang_recall@5": null,
+      "code_recall@5": null,
+      "latency_p50_ms": 32856.8,
+      "latency_p95_ms": 43808.5,
+      "pairs_per_query": 50
+    }
+  ]
+}

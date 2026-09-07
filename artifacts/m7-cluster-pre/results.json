@@ -1,0 +1,117 @@
+{
+  "environment": {
+    "model": "bge-m3 record-mean-of-chunk vectors",
+    "sklearn": "1.7.x"
+  },
+  "groundTruth": "hand-authored topics: twins share, others own, distractor mini-groups",
+  "skipped": [
+    "UMAP (visualization-only per task set)",
+    "BERTopic (labeling layer, not a gate)"
+  ],
+  "results": [
+    {
+      "layer": "L1",
+      "algo": "agglomerative",
+      "params": "thr=0.3",
+      "clusters": 125,
+      "ARI": 0.1713,
+      "NMI": 0.9161,
+      "bCubedF1": 0.7816,
+      "noiseRate": 0.0,
+      "pairSameCluster": 0.6957
+    },
+    {
+      "layer": "L1",
+      "algo": "agglomerative",
+      "params": "thr=0.4",
+      "clusters": 98,
+      "ARI": 0.157,
+      "NMI": 0.8834,
+      "bCubedF1": 0.72,
+      "noiseRate": 0.0,
+      "pairSameCluster": 0.7826
+    },
+    {
+      "layer": "L1",
+      "algo": "agglomerative",
+      "params": "thr=0.5",
+      "clusters": 39,
+      "ARI": 0.0533,
+      "NMI": 0.7205,
+      "bCubedF1": 0.4367,
+      "noiseRate": 0.0,
+      "pairSameCluster": 0.8696
+    },
+    {
+      "layer": "L1",
+      "algo": "agglomerative",
+      "params": "thr=0.6",
+      "clusters": 3,
+      "ARI": -0.0014,
+      "NMI": 0.0609,
+      "bCubedF1": 0.0692,
+      "noiseRate": 0.0,
+      "pairSameCluster": 1.0
+    },
+    {
+      "layer": "L1",
+      "algo": "agglomerative",
+      "params": "thr=0.7",
+      "clusters": 1,
+      "ARI": 0.0,
+      "NMI": 0.0,
+      "bCubedF1": 0.039,
+      "noiseRate": 0.0,
+      "pairSameCluster": 1.0
+    },
+    {
+      "layer": "L1",
+      "algo": "hdbscan",
+      "params": "mcs=3",
+      "clusters": 7,
+      "ARI": 0.0323,
+      "NMI": 0.576,
+      "bCubedF1": 0.2903,
+      "noiseRate": 0.6184,
+      "knownTopicNoiseRate": 0.6768,
+      "pairSameCluster": 0.4348
+    },
+    {
+      "layer": "L1",
+      "algo": "hdbscan",
+      "params": "mcs=5",
+      "clusters": 0,
+      "ARI": 0.0,
+      "NMI": 0.0,
+      "bCubedF1": 0.0,
+      "noiseRate": 1.0,
+      "knownTopicNoiseRate": 1.0,
+      "pairSameCluster": 0.0
+    },
+    {
+      "layer": "L1",
+      "algo": "hdbscan",
+      "params": "mcs=8",
+      "clusters": 0,
+      "ARI": 0.0,
+      "NMI": 0.0,
+      "bCubedF1": 0.0,
+      "noiseRate": 1.0,
+      "knownTopicNoiseRate": 1.0,
+      "pairSameCluster": 0.0
+    },
+    {
+      "layer": "L1",
+      "algo": "bootstrap-stability",
+      "params": "agglomerative:thr=0.3 x5@80%",
+      "meanPairwiseARI": 0.9953
+    },
+    {
+      "layer": "L2",
+      "algo": "agglomerative",
+      "params": "thr=0.5",
+      "clusters": 5,
+      "note": "structure-only (no labels); singleton-heavy real corpus"
+    }
+  ]
+}

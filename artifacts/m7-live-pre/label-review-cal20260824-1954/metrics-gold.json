@@ -1,0 +1,461 @@
+{
+ "generatedAt": "2026-08-24",
+ "goldTotal": 58,
+ "evaluable": 54,
+ "crossWorkspaceRelayDeferred": [
+  "cal-0036",
+  "cal-0037",
+  "cal-0055",
+  "cal-0058"
+ ],
+ "classScoreDistributions": {
+  "activate": {
+   "n": 22,
+   "min": 0.325,
+   "median": 0.4167,
+   "max": 0.5914
+  },
+  "prefetch": {
+   "n": 15,
+   "min": 0.3293,
+   "median": 0.3732,
+   "max": 0.4102
+  },
+  "suppress": {
+   "n": 17,
+   "min": 0.255,
+   "median": 0.364,
+   "max": 0.6507
+  }
+ },
+ "separabilityGold": {
+  "maxActivate": 0.591408,
+  "maxSuppress": 0.650692,
+  "overlapSamples": [
+   {
+    "sampleId": "cal-0009",
+    "score": 0.650692,
+    "why": "suppress-gold above some activate-golds"
+   },
+   {
+    "sampleId": "cal-0010",
+    "score": 0.580274,
+    "why": "suppress-gold above some activate-golds"
+   },
+   {
+    "sampleId": "cal-0014",
+    "score": 0.464628,
+    "why": "suppress-gold above some activate-golds"
+   },
+   {
+    "sampleId": "cf-002",
+    "score": 0.6254439949989319,
+    "why": "suppress-gold above some activate-golds"
+   },
+   {
+    "sampleId": "cf-004",
+    "score": 0.44969698786735535,
+    "why": "suppress-gold above some activate-golds"
+   },
+   {
+    "sampleId": "cf-006",
+    "score": 0.4673349857330322,
+    "why": "suppress-gold above some activate-golds"
+   },
+   {
+    "sampleId": "cf-016",
+    "score": 0.36401501297950745,
+    "why": "suppress-gold above some activate-golds"
+   },
+   {
+    "sampleId": "cf-018",
+    "score": 0.4722689986228943,
+    "why": "suppress-gold above some activate-golds"
+   }
+  ]
+ },
+ "currentThresholds": {
+  "tOn": 0.62,
+  "tOff": 0.52,
+  "emits": 2,
+  "emitCorrectA": 0,
+  "actPrecision": 0.0,
+  "actRecall": 0.0,
+  "emitOnP": 0,
+  "prefCorrect": 0,
+  "prefRecall": 0.0,
+  "sViolations": 4,
+  "harmfulEmit": 0
+ },
+ "confusionCurrent": {
+  "S": {
+   "emit": 2,
+   "prefetch": 2,
+   "suppress": 13
+  },
+  "A": {
+   "prefetch": 5,
+   "suppress": 17
+  },
+  "P": {
+   "suppress": 15
+  }
+ },
+ "bestCellByRank": {
+  "tOn": 0.55,
+  "tOff": 0.5,
+  "emits": 8,
+  "emitCorrectA": 4,
+  "actPrecision": 0.5,
+  "actRecall": 0.182,
+  "emitOnP": 0,
+  "prefCorrect": 0,
+  "prefRecall": 0.0,
+  "sViolations": 4,
+  "harmfulEmit": 0
+ },
+ "recallAtK_goldTargets": {
+  "@5": 0.75,
+  "@8": 0.75
+ },
+ "grid": [
+  {
+   "tOn": 0.5,
+   "tOff": 0.4,
+   "emits": 9,
+   "emitCorrectA": 5,
+   "actPrecision": 0.556,
+   "actRecall": 0.227,
+   "emitOnP": 0,
+   "prefCorrect": 3,
+   "prefRecall": 0.2,
+   "sViolations": 8,
+   "harmfulEmit": 0
+  },
+  {
+   "tOn": 0.5,
+   "tOff": 0.45,
+   "emits": 9,
+   "emitCorrectA": 5,
+   "actPrecision": 0.556,
+   "actRecall": 0.227,
+   "emitOnP": 0,
+   "prefCorrect": 0,
+   "prefRecall": 0.0,
+   "sViolations": 7,
+   "harmfulEmit": 0
+  },
+  {
+   "tOn": 0.55,
+   "tOff": 0.4,
+   "emits": 8,
+   "emitCorrectA": 4,
+   "actPrecision": 0.5,
+   "actRecall": 0.182,
+   "emitOnP": 0,
+   "prefCorrect": 3,
+   "prefRecall": 0.2,
+   "sViolations": 8,
+   "harmfulEmit": 0
+  },
+  {
+   "tOn": 0.55,
+   "tOff": 0.45,
+   "emits": 8,
+   "emitCorrectA": 4,
+   "actPrecision": 0.5,
+   "actRecall": 0.182,
+   "emitOnP": 0,
+   "prefCorrect": 0,
+   "prefRecall": 0.0,
+   "sViolations": 7,
+   "harmfulEmit": 0
+  },
+  {
+   "tOn": 0.55,
+   "tOff": 0.5,
+   "emits": 8,
+   "emitCorrectA": 4,
+   "actPrecision": 0.5,
+   "actRecall": 0.182,
+   "emitOnP": 0,
+   "prefCorrect": 0,
+   "prefRecall": 0.0,
+   "sViolations": 4,
+   "harmfulEmit": 0
+  },
+  {
+   "tOn": 0.55,
+   "tOff": 0.52,
+   "emits": 8,
+   "emitCorrectA": 4,
+   "actPrecision": 0.5,
+   "actRecall": 0.182,
+   "emitOnP": 0,
+   "prefCorrect": 0,
+   "prefRecall": 0.0,
+   "sViolations": 4,
+   "harmfulEmit": 0
+  },
+  {
+   "tOn": 0.6,
+   "tOff": 0.4,
+   "emits": 3,
+   "emitCorrectA": 0,
+   "actPrecision": 0.0,
+   "actRecall": 0.0,
+   "emitOnP": 0,
+   "prefCorrect": 3,
+   "prefRecall": 0.2,
+   "sViolations": 8,
+   "harmfulEmit": 0
+  },
+  {
+   "tOn": 0.6,
+   "tOff": 0.45,
+   "emits": 3,
+   "emitCorrectA": 0,
+   "actPrecision": 0.0,
+   "actRecall": 0.0,
+   "emitOnP": 0,
+   "prefCorrect": 0,
+   "prefRecall": 0.0,
+   "sViolations": 7,
+   "harmfulEmit": 0
+  },
+  {
+   "tOn": 0.6,
+   "tOff": 0.5,
+   "emits": 3,
+   "emitCorrectA": 0,
+   "actPrecision": 0.0,
+   "actRecall": 0.0,
+   "emitOnP": 0,
+   "prefCorrect": 0,
+   "prefRecall": 0.0,
+   "sViolations": 4,
+   "harmfulEmit": 0
+  },
+  {
+   "tOn": 0.6,
+   "tOff": 0.52,
+   "emits": 3,
+   "emitCorrectA": 0,
+   "actPrecision": 0.0,
+   "actRecall": 0.0,
+   "emitOnP": 0,
+   "prefCorrect": 0,
+   "prefRecall": 0.0,
+   "sViolations": 4,
+   "harmfulEmit": 0
+  },
+  {
+   "tOn": 0.6,
+   "tOff": 0.55,
+   "emits": 3,
+   "emitCorrectA": 0,
+   "actPrecision": 0.0,
+   "actRecall": 0.0,
+   "emitOnP": 0,
+   "prefCorrect": 0,
+   "prefRecall": 0.0,
+   "sViolations": 4,
+   "harmfulEmit": 0
+  },
+  {
+   "tOn": 0.62,
+   "tOff": 0.4,
+   "emits": 2,
+   "emitCorrectA": 0,
+   "actPrecision": 0.0,
+   "actRecall": 0.0,
+   "emitOnP": 0,
+   "prefCorrect": 3,
+   "prefRecall": 0.2,
+   "sViolations": 8,
+   "harmfulEmit": 0
+  },
+  {
+   "tOn": 0.62,
+   "tOff": 0.45,
+   "emits": 2,
+   "emitCorrectA": 0,
+   "actPrecision": 0.0,
+   "actRecall": 0.0,
+   "emitOnP": 0,
+   "prefCorrect": 0,
+   "prefRecall": 0.0,
+   "sViolations": 7,
+   "harmfulEmit": 0
+  },
+  {
+   "tOn": 0.62,
+   "tOff": 0.5,
+   "emits": 2,
+   "emitCorrectA": 0,
+   "actPrecision": 0.0,
+   "actRecall": 0.0,
+   "emitOnP": 0,
+   "prefCorrect": 0,
+   "prefRecall": 0.0,
+   "sViolations": 4,
+   "harmfulEmit": 0
+  },
+  {
+   "tOn": 0.62,
+   "tOff": 0.52,
+   "emits": 2,
+   "emitCorrectA": 0,
+   "actPrecision": 0.0,
+   "actRecall": 0.0,
+   "emitOnP": 0,
+   "prefCorrect": 0,
+   "prefRecall": 0.0,
+   "sViolations": 4,
+   "harmfulEmit": 0
+  },
+  {
+   "tOn": 0.62,
+   "tOff": 0.55,
+   "emits": 2,
+   "emitCorrectA": 0,
+   "actPrecision": 0.0,
+   "actRecall": 0.0,
+   "emitOnP": 0,
+   "prefCorrect": 0,
+   "prefRecall": 0.0,
+   "sViolations": 4,
+   "harmfulEmit": 0
+  },
+  {
+   "tOn": 0.65,
+   "tOff": 0.4,
+   "emits": 1,
+   "emitCorrectA": 0,
+   "actPrecision": 0.0,
+   "actRecall": 0.0,
+   "emitOnP": 0,
+   "prefCorrect": 3,
+   "prefRecall": 0.2,
+   "sViolations": 8,
+   "harmfulEmit": 0
+  },
+  {
+   "tOn": 0.65,
+   "tOff": 0.45,
+   "emits": 1,
+   "emitCorrectA": 0,
+   "actPrecision": 0.0,
+   "actRecall": 0.0,
+   "emitOnP": 0,
+   "prefCorrect": 0,
+   "prefRecall": 0.0,
+   "sViolations": 7,
+   "harmfulEmit": 0
+  },
+  {
+   "tOn": 0.65,
+   "tOff": 0.5,
+   "emits": 1,
+   "emitCorrectA": 0,
+   "actPrecision": 0.0,
+   "actRecall": 0.0,
+   "emitOnP": 0,
+   "prefCorrect": 0,
+   "prefRecall": 0.0,
+   "sViolations": 4,
+   "harmfulEmit": 0
+  },
+  {
+   "tOn": 0.65,
+   "tOff": 0.52,
+   "emits": 1,
+   "emitCorrectA": 0,
+   "actPrecision": 0.0,
+   "actRecall": 0.0,
+   "emitOnP": 0,
+   "prefCorrect": 0,
+   "prefRecall": 0.0,
+   "sViolations": 4,
+   "harmfulEmit": 0
+  },
+  {
+   "tOn": 0.65,
+   "tOff": 0.55,
+   "emits": 1,
+   "emitCorrectA": 0,
+   "actPrecision": 0.0,
+   "actRecall": 0.0,
+   "emitOnP": 0,
+   "prefCorrect": 0,
+   "prefRecall": 0.0,
+   "sViolations": 4,
+   "harmfulEmit": 0
+  },
+  {
+   "tOn": 0.7,
+   "tOff": 0.4,
+   "emits": 0,
+   "emitCorrectA": 0,
+   "actPrecision": null,
+   "actRecall": 0.0,
+   "emitOnP": 0,
+   "prefCorrect": 3,
+   "prefRecall": 0.2,
+   "sViolations": 8,
+   "harmfulEmit": 0
+  },
+  {
+   "tOn": 0.7,
+   "tOff": 0.45,
+   "emits": 0,
+   "emitCorrectA": 0,
+   "actPrecision": null,
+   "actRecall": 0.0,
+   "emitOnP": 0,
+   "prefCorrect": 0,
+   "prefRecall": 0.0,
+   "sViolations": 7,
+   "harmfulEmit": 0
+  },
+  {
+   "tOn": 0.7,
+   "tOff": 0.5,
+   "emits": 0,
+   "emitCorrectA": 0,
+   "actPrecision": null,
+   "actRecall": 0.0,
+   "emitOnP": 0,
+   "prefCorrect": 0,
+   "prefRecall": 0.0,
+   "sViolations": 4,
+   "harmfulEmit": 0
+  },
+  {
+   "tOn": 0.7,
+   "tOff": 0.52,
+   "emits": 0,
+   "emitCorrectA": 0,
+   "actPrecision": null,
+   "actRecall": 0.0,
+   "emitOnP": 0,
+   "prefCorrect": 0,
+   "prefRecall": 0.0,
+   "sViolations": 4,
+   "harmfulEmit": 0
+  },
+  {
+   "tOn": 0.7,
+   "tOff": 0.55,
+   "emits": 0,
+   "emitCorrectA": 0,
+   "actPrecision": null,
+   "actRecall": 0.0,
+   "emitOnP": 0,
+   "prefCorrect": 0,
+   "prefRecall": 0.0,
+   "sViolations": 4,
+   "harmfulEmit": 0
+  }
+ ]
+}

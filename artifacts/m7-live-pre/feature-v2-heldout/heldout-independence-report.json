@@ -1,0 +1,214 @@
+[
+ {
+  "sampleId": "hd-001",
+  "classification": "independent-heldout"
+ },
+ {
+  "sampleId": "hd-002",
+  "classification": "independent-heldout"
+ },
+ {
+  "sampleId": "hd-003",
+  "classification": "independent-heldout"
+ },
+ {
+  "sampleId": "hd-004",
+  "classification": "independent-heldout"
+ },
+ {
+  "sampleId": "hd-005",
+  "classification": "independent-heldout"
+ },
+ {
+  "sampleId": "hd-006",
+  "classification": "independent-heldout"
+ },
+ {
+  "sampleId": "hd-007",
+  "classification": "overlaps-parity"
+ },
+ {
+  "sampleId": "hd-008",
+  "classification": "independent-heldout"
+ },
+ {
+  "sampleId": "hd-009",
+  "classification": "independent-heldout"
+ },
+ {
+  "sampleId": "hd-010",
+  "classification": "overlaps-training"
+ },
+ {
+  "sampleId": "hd-011",
+  "classification": "independent-heldout"
+ },
+ {
+  "sampleId": "hd-012",
+  "classification": "independent-heldout"
+ },
+ {
+  "sampleId": "hd-013",
+  "classification": "overlaps-parity"
+ },
+ {
+  "sampleId": "hd-014",
+  "classification": "overlaps-training"
+ },
+ {
+  "sampleId": "hd-015",
+  "classification": "independent-heldout"
+ },
+ {
+  "sampleId": "hd-016",
+  "classification": "overlaps-training"
+ },
+ {
+  "sampleId": "hd-017",
+  "classification": "independent-heldout"
+ },
+ {
+  "sampleId": "hd-018",
+  "classification": "independent-heldout"
+ },
+ {
+  "sampleId": "hd-019",
+  "classification": "independent-heldout"
+ },
+ {
+  "sampleId": "hd-020",
+  "classification": "independent-heldout"
+ },
+ {
+  "sampleId": "hd-021",
+  "classification": "overlaps-training"
+ },
+ {
+  "sampleId": "hd-022",
+  "classification": "overlaps-training"
+ },
+ {
+  "sampleId": "hd-023",
+  "classification": "independent-heldout"
+ },
+ {
+  "sampleId": "hd-024",
+  "classification": "independent-heldout"
+ },
+ {
+  "sampleId": "hd-025",
+  "classification": "independent-heldout"
+ },
+ {
+  "sampleId": "hd-026",
+  "classification": "overlaps-parity"
+ },
+ {
+  "sampleId": "hd-027",
+  "classification": "overlaps-parity"
+ },
+ {
+  "sampleId": "hd-028",
+  "classification": "overlaps-training"
+ },
+ {
+  "sampleId": "hd-029",
+  "classification": "overlaps-parity"
+ },
+ {
+  "sampleId": "hd-030",
+  "classification": "overlaps-parity"
+ },
+ {
+  "sampleId": "hd-031",
+  "classification": "overlaps-parity"
+ },
+ {
+  "sampleId": "hd-032",
+  "classification": "independent-heldout"
+ },
+ {
+  "sampleId": "hd-033",
+  "classification": "independent-heldout"
+ },
+ {
+  "sampleId": "hd-034",
+  "classification": "independent-heldout"
+ },
+ {
+  "sampleId": "hd-035",
+  "classification": "independent-heldout"
+ },
+ {
+  "sampleId": "hd-036",
+  "classification": "independent-heldout"
+ },
+ {
+  "sampleId": "hd-037",
+  "classification": "independent-heldout"
+ },
+ {
+  "sampleId": "hd-038",
+  "classification": "independent-heldout"
+ },
+ {
+  "sampleId": "hd-039",
+  "classification": "independent-heldout"
+ },
+ {
+  "sampleId": "hd-040",
+  "classification": "independent-heldout"
+ },
+ {
+  "sampleId": "hd-041",
+  "classification": "independent-heldout"
+ },
+ {
+  "sampleId": "hd-042",
+  "classification": "independent-heldout"
+ },
+ {
+  "sampleId": "hd-043",
+  "classification": "independent-heldout"
+ },
+ {
+  "sampleId": "hd-044",
+  "classification": "independent-heldout"
+ },
+ {
+  "sampleId": "hd-045",
+  "classification": "independent-heldout"
+ },
+ {
+  "sampleId": "hd-046",
+  "classification": "overlaps-parity"
+ },
+ {
+  "sampleId": "hd-047",
+  "classification": "overlaps-training"
+ },
+ {
+  "sampleId": "hd-048",
+  "classification": "independent-heldout"
+ },
+ {
+  "sampleId": "hd-049",
+  "classification": "independent-heldout"
+ },
+ {
+  "sampleId": "hd-050",
+  "classification": "overlaps-parity"
+ },
+ {
+  "sampleId": "hd-051",
+  "classification": "independent-heldout"
+ },
+ {
+  "sampleId": "hd-052",
+  "classification": "independent-heldout"
+ },
+ {
+  "sampleId": "hd-053",
+  "classification": "independent-heldout"
+ }
+]

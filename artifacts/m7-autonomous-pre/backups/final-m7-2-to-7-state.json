@@ -1,0 +1,42 @@
+{
+  "updatedAt": "2026-08-24T11:20:00+08:00",
+  "phase": "M7-2..M7-7 COMPLETE (tested) -> STOPPED AT M7-8 HUMAN GATE",
+  "immutableObjective": "autonomously complete M7-2..M7-7 (code+artifacts+tests+docs) without regressing M7-0/M7-1 protocol or index_sync semantics; default-off zero side effects; stop at M7-8 human gate; never commit/push/tag/publish; never touch the 3080 host",
+  "finalStatus": {
+    "M7-2": "tested - dual-layer benchmark, bge-m3 + m7_chunk_pre_v1=para-512-noov frozen (D1/D2)",
+    "M7-3": "tested - production worker + versioned vectors, hybrid_fusion_pre_v1=dense0.7+lexical0.3 frozen (D6), 24-suite regression green",
+    "clusteringShadow": "tested - agglomerative thr=0.3 NMI 0.916 stability 0.995; HDBSCAN unsuitable; no M6 wiring (D8)",
+    "M7-4": "tested - both rerankers quality-strong but CPU latency 50-90x over budget -> deferred-optional, NOT wired (D9)",
+    "M7-5": "skipped-by-benchmark - 6/8 multi-hop endpoints covered by hybrid (D10)",
+    "M7-6": "tested - dual-threshold+hysteresis+cooldown activation, shadow default; active frames pass M6 validator field-by-field (D11)",
+    "M7-7": "tested - judgement shadow audit-only, zero authoritative writes",
+    "M7-8": "WAITING FOR USER - ten-step operator procedure in docs/PYTHON-SIDECAR-CONTRACT.md section 19.8 tail"
+  },
+  "testStatus": {
+    "suites": "26/26 serial pass (M0-M6 20 + m70/m71/m72/m73/m76/m77)",
+    "m72": "21 assertions", "m73": "55 assertions", "m76": "33 assertions", "m77": "15 assertions",
+    "hygiene": "node --check / py_compile / git diff --check / BOM / _dev all clean"
+  },
+  "decisions": ["D1 bge-m3 frozen", "D2 para-512-noov frozen", "D3 exact numpy cosine", "D6 weighted dense0.7+lexical0.3 frozen (+model-sparse amendment)", "D8 clustering shadow", "D9 rerank deferred-optional", "D10 graph skipped-by-benchmark", "D11 M7-6/M7-7 shadow status"],
+  "models": {
+    "bge-m3": {"revision": "5617a9f61b028005a4858fdac845db406aefb181", "license": "MIT", "status": "FROZEN default provider"},
+    "bge-reranker-v2-m3": {"revision": "953dc6f6f85a1b2dbfca4c34a2796e7dde08d41e", "license": "Apache-2.0", "status": "deferred-optional (CPU latency)"},
+    "qwen3-reranker-0.6b": {"revision": "e61197ed45024b0ed8a2d74b80b4d909f1255473", "license": "Apache-2.0", "status": "probe-benched, deferred"},
+    "qwen3-emb-0.6b": {"revision": "97b0c614be4d77ee51c0cef4e5f07c00f9eb65b3", "license": "Apache-2.0", "status": "backup candidate"},
+    "multilingual-e5-large": {"revision": "3d7cfbdacd47fdda877c5cd8a79fbcc4f2a574f3", "license": "MIT", "status": "rejected"}
+  },
+  "artifacts": [
+    "docs/M7-EMBEDDING-BENCHMARK.md", "docs/M7-ALGORITHM-DECISION.md", "docs/M7-BENCHMARK-PLAN.md",
+    "docs/M7-INTERFACE-DIGEST.md", "docs/M7-TASKSET-DISPATCH.md", "docs/M7-AUTONOMOUS-STATE.md",
+    "artifacts/m7-benchmark-pre/ (results+runs/run20260824-033315)", "artifacts/m7-corpus-pre/ (251 eps + queries + 42-item review queue)",
+    "artifacts/m7-hybrid-pre/ (arms + model-sparse)", "artifacts/m7-cluster-pre/", "artifacts/m7-rerank-pre/",
+    "artifacts/m7-graph-pre/gate.json", "artifacts/m7-autonomous-pre/ (+backups)",
+    "python/m7_embedding_pre_v1.py", "python/worker_semantic_pre_v1.py",
+    "python/bench/ (12 modules, isolated venv, model cache untracked)",
+    "smoke-test-m72/m73/m76/m77-pre.mjs", "tests/m7-2-fixtures/embedding-fixture.json"
+  ],
+  "handoffAudit": "compliant across sections; gaps fixed (review queue 42, centroid note, state backups); disclosed deviations (plan-after-pin, dual-model residency in rerank bench); see backups/ for prior states",
+  "blockedItems": ["M7-8 requires user: restart 3080 + toggle gates + ten-step verification (contract 19.8 tail)"],
+  "reminderForUser": "network proxy is OFF; hf-mirror was used for all downloads. Re-enable the proxy after this session if you want direct huggingface.co/github-raw access again.",
+  "nextExactAction": "USER executes M7-8 steps (contract 19.8); then agent verifies real index_sync -> context_push -> python activation -> M6 natural pre-step tail -> delivered/seen, stale/fallback, disabled-clean, cross-scope zero leakage; after pass, restore all defaults and mark M7 live"
+}

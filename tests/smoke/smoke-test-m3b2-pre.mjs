@@ -14,11 +14,11 @@ process.on('unhandledRejection', (r) => { console.error('\n[M3B2-TEST] FATAL unh
 import { createHash } from 'node:crypto'
 const {
   parseAnchors, buildSidecar, planMigration, newMemoryId, MEMORY_ID_RE, ANCHOR_PREFIX, buildAnchoredIndex,
-} = await import('../../lib/memory-anchor.js')
+} = await import('../../lib/memory-anchor-pre.js')
 const {
   applyMigrationPlan, appendAnchoredRecord, renderReplace, atomicReplace, MemoryDocumentStore, toEol,
-} = await import('../../lib/memory-writer.js')
-const { verifyRecord, INDEX_MAX_FILE_BYTES } = await import('../../lib/memory-index.js')
+} = await import('../../lib/memory-writer-pre.js')
+const { verifyRecord, INDEX_MAX_FILE_BYTES } = await import('../../lib/memory-index-pre.js')
 
 const FIX = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..', 'tests', 'm3b1-fixtures')
 const load = (f) => readFileSync(path.join(FIX, f))

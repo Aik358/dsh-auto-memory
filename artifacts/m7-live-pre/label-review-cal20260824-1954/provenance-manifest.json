@@ -1,0 +1,30 @@
+{
+ "runId": "label-review-cal20260824-1954",
+ "parentCalibrationRun": "calibration-cal20260824-1855",
+ "inputs": [
+  "docs/M7-ACTIVATION-CALIBRATION.md",
+  "docs/M7-ALGORITHM-DECISION.md",
+  "docs/PYTHON-SIDECAR-CONTRACT.md §19.8/19.9",
+  "docs/M7-RESEARCH-PAPER.md",
+  "artifacts/m7-live-pre/calibration-cal20260824-1855/*",
+  "artifacts/m7-corpus-pre/{episodes,activation-scenarios,multilingual-queries,hard-negatives,review-queue}.jsonl"
+ ],
+ "readOnlySources": [
+  "C:/Users/JH Z/.dsh/memory/semantic-pre/derived-corpus.json (read-only)"
+ ],
+ "labelPolicy": {
+  "allLabelsStrongAgentSilver": true,
+  "isGoldTrueCount": 0,
+  "rule": "gold 只能由用户确认产生：填写 gold-import-template.jsonl 的 userDecision 后翻转",
+  "generator": {
+   "provider": "zcode-agent",
+   "model": "ox-alpha",
+   "version": "label-review-cal20260824-1954"
+  }
+ },
+ "parentAnchors": {
+  "liveMemories": 11,
+  "episodes": 251,
+  "note": "所有 counterfactual 样本的 expected/forbidden 均指向真实存在的记录 id，未发明新事实"
+ }
+}

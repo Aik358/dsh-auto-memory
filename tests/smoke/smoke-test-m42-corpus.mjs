@@ -8,8 +8,8 @@ process.on('uncaughtException', (e) => { console.error('[M42-TEST] FATAL:', (e &
 process.on('unhandledRejection', (r) => { console.error('[M42-TEST] REJ:', r); process.exit(1) })
 const {
   buildSourceCatalog, canonicalScopeGuard, loadCorpusSnapshot, sourceFingerprint, CorpusRegistry, canonicalize,
-} = await import('../../lib/m4-corpus.js')
-const { parseAnchors } = await import('../../lib/memory-anchor.js')
+} = await import('../../lib/m4-corpus-pre.js')
+const { parseAnchors } = await import('../../lib/memory-anchor-pre.js')
 
 const sha256Hex = (buf) => createHash('sha256').update(buf).digest('hex')
 // shadow-copy 构造:真实 anchored Markdown → parseAnchors → 合法 sidecar(fileDigest/recordDigest 真算)
@@ -30,7 +30,7 @@ function makeShadow(root, relName, markdown) {
     sourceVersion: 1, fileDigest,
   }))
   const sc = {
-    schemaVersion: 1, namespace: 'dsh-auto-memory',
+    schemaVersion: 1, namespace: 'dsh-auto-memory-pre',
     sourceFile: file, sourceEpoch: '11111111-1111-4111-8111-111111111111', sourceVersion: 1,
     fileDigest, newline: p.newline === 'crlf' ? 'crlf' : 'lf',
     updatedAt: 1700000000000, records,
@@ -82,8 +82,8 @@ const anchoredMd = (id, heading, body) => '<!-- memory:' + id + ' -->\n## ' + he
       if (!r.sourceEpoch || r.sourceVersion !== 1 || !/^[0-9a-f]{64}$/.test(r.fileDigest) || !/^[0-9a-f]{64}$/.test(r.recordDigest)) throw new Error('provenance incomplete')
       if (!/^mem_[0-9a-f]{32}$/.test(r.memoryId)) throw new Error('memoryId malformed')
     }
-    if (!snap.memoryIndexVersion.startsWith('idx_')) throw new Error('index version prefix wrong')
-    console.log('G2 loader 正常链 ✓ (3 记录, provenance 完整, idx_ 版本)')
+    if (!snap.memoryIndexVersion.startsWith('idx_pre_')) throw new Error('index version prefix wrong')
+    console.log('G2 loader 正常链 ✓ (3 记录, provenance 完整, idx_pre_ 版本)')
   } finally { rmSync(ws, { recursive: true, force: true }) }
 }
 
