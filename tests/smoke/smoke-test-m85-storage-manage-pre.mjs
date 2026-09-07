@@ -67,6 +67,23 @@ console.log('[H0] 初始建库:三源 sidecar 落盘')
   }
 }
 
+console.log('[H0.5] #15 追加①:docStore live getter(常量解构回归——repair 恒 no-doc-store)')
+{
+  // 复现 issue #15 追加①:apply 阶段以 getter 传 docStore(此时 memoryAnchorEnabled 未生效→null),
+  // repair 必须在运行时活读 getter,而不是工厂创建时固化 null。
+  let liveStore = null
+  const smLazy = createStorageManagerPre({
+    get docStore() { return liveStore },
+    io, pathsOf: () => PATHS,
+    activationHostOf: () => null, factStoreOf: () => null,
+  })
+  const before = await smLazy.repair()
+  ok(before.ok === false && before.reason === 'no-doc-store', 'H0.5 getter 为 null 时保持 no-doc-store(行为不变)')
+  liveStore = docStore
+  const after = await smLazy.repair()
+  ok(after.ok === true && typeof after.attempted === 'number', 'H0.5 getter 活读:实例就位后 repair 正常执行(修复点——旧代码恒 no-doc-store;健康语料 repaired=0 属预期,attempted=' + after.attempted + ')')
+}
+
 console.log('[H1] 健康扫描')
 {
   const sm = makeManager()
