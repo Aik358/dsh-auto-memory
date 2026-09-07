@@ -6,8 +6,8 @@ import path from 'node:path'
 process.on('uncaughtException', (e) => { console.error('[M52-TEST] FATAL:', (e && (e.stack || e.message)) || e); process.exit(1) })
 process.on('unhandledRejection', (r) => { console.error('[M52-TEST] REJ:', r); process.exit(1) })
 
-const ES = await import('../../lib/evidence-store-pre.js')
-const CB = await import('../../lib/context-bridge-pre.js')
+const ES = await import('../../lib/evidence-store.js')
+const CB = await import('../../lib/context-bridge.js')
 let pass = 0; let fail = 0
 function ok(cond, name) { if (cond) { pass++; console.log('  ok - ' + name) } else { fail++; console.error('  FAIL - ' + name) } }
 function eq(a, b, name) { const ja = JSON.stringify(a); const jb = JSON.stringify(b); ok(ja === jb, name + (ja === jb ? '' : ' got=' + ja + ' want=' + jb)) }
@@ -43,7 +43,7 @@ eq(badProj.ok, false, '非法 evidence 拒绝投影')
 
 console.log('[B2] append-only 落盘(布局/单行 JSON/无 BOM)')
 const ws = mkdtempSync(path.join(tmpdir(), 'dam-m52-'))
-const root = path.join(ws, 'evidence-pre')
+const root = path.join(ws, 'evidence')
 const store = new ES.EvidenceEventStore({ root })
 const r1 = await store.append(ev)
 ok(r1.ok, 'append 成功')
@@ -81,7 +81,7 @@ eq(store.loadEvents().events.length, 2, '第二条正常落盘')
 
 console.log('[B4] retention(keepDays/totalBytes)')
 const oldFile = path.join(eventsDir, '2026-01-01.jsonl')
-writeFileSync(oldFile, JSON.stringify({ evidenceId: 'ev_pre_' + 'f'.repeat(32), kind: 'seen' }) + '\n', 'utf8')
+writeFileSync(oldFile, JSON.stringify({ evidenceId: 'ev_' + 'f'.repeat(32), kind: 'seen' }) + '\n', 'utf8')
 const oldTime = new Date(Date.now() - 40 * 86400000)
 utimesSync(oldFile, oldTime, oldTime)
 store.sweepRetention(true)

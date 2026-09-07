@@ -7,8 +7,8 @@
   "summary": "'reasoning' admitted as a legal Segment kind (weight 0.5 in lexical query plan), superseding the M4/M5-era rule that reasoning never enters context.",
   "trigger": "controlled live shadow round 2: envelope drops 'trigger:invalid:kind' + 'window:invalid:kind' — the new CoT segments (kind='reasoning') were rejected by the M5 whitelist ['user','tool_call','tool_result','assistant']",
   "change": [
-    "lib/context-bridge-pre.js: segment kind whitelist + 'reasoning'",
-    "lib/shadow-retrieval-pre.js: trigger.kind whitelist + 'reasoning'; query-plan origin map adds 'reasoning' at weight 0.5 (between recent-user 0.8 and tool-result 0.6... actually below tool-result, above assistant 0.2)",
+    "lib/context-bridge.js: segment kind whitelist + 'reasoning'",
+    "lib/shadow-retrieval.js: trigger.kind whitelist + 'reasoning'; query-plan origin map adds 'reasoning' at weight 0.5 (between recent-user 0.8 and tool-result 0.6... actually below tool-result, above assistant 0.2)",
     "smoke-test-m51-pre.mjs: old rejection assertion replaced with admission assertion"
   ],
   "safety": [

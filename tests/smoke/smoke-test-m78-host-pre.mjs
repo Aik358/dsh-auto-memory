@@ -17,7 +17,7 @@ process.on('uncaughtException', (e) => { console.error('[M78-TEST] FATAL:', (e &
 process.on('unhandledRejection', (r) => { console.error('[M78-TEST] REJ:', r); process.exit(1) })
 globalThis.fetch = async () => ({ ok: false, status: 503, json: async () => ({}) })
 const sha256Hex = (b) => createHash('sha256').update(b).digest('hex')
-const { parseAnchors } = await import('../../lib/memory-anchor-pre.js')
+const { parseAnchors } = await import('../../lib/memory-anchor.js')
 
 let pass = 0; let fail = 0
 function ok(cond, name) { if (cond) { pass++; console.log('  ok - ' + name) } else { fail++; console.error('  FAIL - ' + name) } }
@@ -33,7 +33,7 @@ async function setupHarness(opts = {}) {
   const memoryRoot = path.join(ws1, 'mem')
   const wsA = path.join(ws1, 'wsA')
   mkdirSync(home, { recursive: true }); mkdirSync(memoryRoot, { recursive: true }); mkdirSync(wsA, { recursive: true })
-  writeFileSync(path.join(home, 'dsh-auto-memory-pre.json'), JSON.stringify({
+  writeFileSync(path.join(home, 'dsh-auto-memory.json'), JSON.stringify({
     memoryRoot, userMemoryDir: path.join(ws1, 'user'), projectMemoryDir: '.project-memory',
     externalSources: {}, ...(opts.configPatch || {}),
   }), 'utf8')
@@ -51,13 +51,13 @@ async function setupHarness(opts = {}) {
     lineStart: r.lineStart, lineEnd: r.lineEnd, byteStart: r.byteStart, byteEnd: r.byteEnd,
     bytes: r.bytes, recordDigest: r.recordDigest, sourceVersion: 1, fileDigest: sha256Hex(buf0),
   }))
-  const sideDir = path.join(home, 'memory', 'index-pre', 'files')
+  const sideDir = path.join(home, 'memory', 'index', 'files')
   mkdirSync(sideDir, { recursive: true })
-  const side = { schemaVersion: 1, namespace: 'dsh-auto-memory-pre', sourceFile: wsFile,
+  const side = { schemaVersion: 1, namespace: 'dsh-auto-memory', sourceFile: wsFile,
     sourceEpoch: '22222222-2222-4222-8222-222222222222', sourceVersion: 1, fileDigest: sha256Hex(buf0),
     newline: p0.newline === 'crlf' ? 'crlf' : 'lf', updatedAt: 1700000000000, records: records0 }
   writeFileSync(path.join(sideDir, createHash('sha256').update(canonicalizePath(wsFile), 'utf8').digest('hex') + '.json'), JSON.stringify(side, null, 2) + '\n', 'utf8')
-  const semDir = path.join(home, 'memory', 'semantic-pre')
+  const semDir = path.join(home, 'memory', 'semantic')
   mkdirSync(semDir, { recursive: true })
   writeFileSync(path.join(semDir, 'embedding-config.json'), JSON.stringify({
     provider: 'hash-pre-v1', dimension: 32,
@@ -74,8 +74,8 @@ async function setupHarness(opts = {}) {
   const { apply } = await import('../../lib/index.js')
   apply(ctx, {})
   const fire = async (name, ...args) => { const h = handlers.get(name); if (typeof h !== 'function') throw new Error('handler missing ' + name); return Promise.resolve(h(...args)) }
-  const dbg = async () => { const r = routes.find((x) => x.path === '/api/dsh-auto-memory-pre/debug'); let b; await r.handler({ socket: { remoteAddress: '127.0.0.1' }, headers: { host: '127.0.0.1:3080' }, method: 'GET', url: '/debug' }, { writeHead() {}, end(x) { b = JSON.parse(x) } }); return b.associativeMemory }
-  const cfgPost = async (patch) => { const r = routes.find((x) => x.path === '/api/dsh-auto-memory-pre/config'); await r.handler({ socket: { remoteAddress: '127.0.0.1' }, headers: { host: '127.0.0.1:3080', origin: 'http://127.0.0.1:3080' }, method: 'POST', url: '/config', [Symbol.asyncIterator]() { return (async function* () { yield Buffer.from(JSON.stringify(patch)) })() } }, { writeHead() {}, end() {} }); await sleep(150) }
+  const dbg = async () => { const r = routes.find((x) => x.path === '/api/dsh-auto-memory/debug'); let b; await r.handler({ socket: { remoteAddress: '127.0.0.1' }, headers: { host: '127.0.0.1:3080' }, method: 'GET', url: '/debug' }, { writeHead() {}, end(x) { b = JSON.parse(x) } }); return b.associativeMemory }
+  const cfgPost = async (patch) => { const r = routes.find((x) => x.path === '/api/dsh-auto-memory/config'); await r.handler({ socket: { remoteAddress: '127.0.0.1' }, headers: { host: '127.0.0.1:3080', origin: 'http://127.0.0.1:3080' }, method: 'POST', url: '/config', [Symbol.asyncIterator]() { return (async function* () { yield Buffer.from(JSON.stringify(patch)) })() } }, { writeHead() {}, end() {} }); await sleep(150) }
   const agent = { id: 'a1', session: { id: 's1', header: { id: 's1', cwd: wsA } } }
   await fire('agent/session-start', { agent, source: 'fresh' })
   await sleep(250)
@@ -83,7 +83,7 @@ async function setupHarness(opts = {}) {
     settle: async () => { for (const s of effectSetups) { try { const td = await s(); if (typeof td === 'function') await td() } catch (_) {} } },
     cleanup: () => { try { rmSync(ws1, { recursive: true, force: true }) } catch (_) {} } }
 }
-function semPre(home) { return path.join(home, 'memory', 'semantic-pre') }
+function semPre(home) { return path.join(home, 'memory', 'semantic') }
 
 console.log('[P1] live-parity:已有 runtime + 开三重门 + 顶层 user Segment → envelope 构建 + worker lazy start + index_sync 编排')
 {
@@ -135,22 +135,22 @@ console.log('[P2] child-session 抑制不建 envelope;plugin-generated 抑制')
 console.log('[P3] 编排器单元:首同步/同 miv 幂等/epoch 重同步/miv 替换')
 {
   const h = await setupHarness()
-  const SYNC_HOST = await import('../../lib/m7-index-sync-host-pre.js')
-  const EV = await import('../../lib/evidence-store-pre.js')
+  const SYNC_HOST = await import('../../lib/m7-index-sync-host.js')
+  const EV = await import('../../lib/evidence-store.js')
   const wsr78 = EV.workspaceRefOf('D:/tmp/m78')
-  const SNAP = { memoryIndexVersion: 'idx_pre_' + 'a1'.repeat(16), records: [
+  const SNAP = { memoryIndexVersion: 'idx_' + 'a1'.repeat(16), records: [
     { memoryId: 'mem_' + '11'.repeat(16), anchorId: 'a1', scope: 'Workspace', sourceRef: 'workspace:MEMORY.md', workspaceRef: wsr78, sourceEpoch: 'e1', sourceVersion: 1, fileDigest: 'f0'.repeat(32), recordDigest: 'a1'.repeat(32), heading: 'h', text: '部署流程 pnpm build' },
     { memoryId: 'mem_' + '22'.repeat(16), anchorId: 'a2', scope: 'User', sourceRef: 'user:MEMORY.md', workspaceRef: wsr78, sourceEpoch: 'e1', sourceVersion: 1, fileDigest: 'e2'.repeat(32), recordDigest: 'b3'.repeat(32), heading: 'u', text: '用户偏好中文' },
   ], sources: [{ scope: 'Workspace', sourceRef: 'workspace:MEMORY.md', sourceEpoch: 'e1', sourceVersion: 1, fileDigest: 'f0'.repeat(32) }] }
   const paths = { workspaceKey: 'D:/tmp/m78' }
   const host = SYNC_HOST.createIndexSyncHostPre({ engine: {
     config: { associativeMemoryEnabled: true, contextBridgeEnabled: true, pythonBackendEnabled: true, contextSinkMode: 'python' },
-    _pythonSidecar: await (async () => { const CL = await import('../../lib/python-sidecar-client-pre.js'); const c = CL.createPythonSidecarClientPre({ command: 'python', scriptPath: () => path.join(HERE, '..', '..', 'python', 'worker_semantic_pre_v1.py'), dshHome: h.home, requestTimeoutMs: 4000 }); globalThis.__p3client = c; return c })(),
+    _pythonSidecar: await (async () => { const CL = await import('../../lib/python-sidecar-client.js'); const c = CL.createPythonSidecarClientPre({ command: 'python', scriptPath: () => path.join(HERE, '..', '..', 'python', 'worker_semantic_v1.py'), dshHome: h.home, requestTimeoutMs: 4000 }); globalThis.__p3client = c; return c })(),
   } })
   const r1 = await host.ensureIndexReady(SNAP, paths, 'Workspace')
   ok(r1.ready === true, 'P3 首次同步 ready(syncsStarted=' + host._stats.syncsStarted + ')')
   ok(host._readyCacheForTest.size >= 1, 'P3 ready 缓存建立')
-  // r1 触发 lazy spawn:epoch 从 null 变为 wk_pre_*,第二次调用因 epoch 变化会合法重同步一次
+  // r1 触发 lazy spawn:epoch 从 null 变为 wk_*,第二次调用因 epoch 变化会合法重同步一次
   // (worker 首次启动后 epoch 生效)。等待 epoch 稳定后,后续调用才应幂等。
   await sleep(200)
   const r1b = await host.ensureIndexReady(SNAP, paths, 'Workspace')
@@ -160,11 +160,11 @@ console.log('[P3] 编排器单元:首同步/同 miv 幂等/epoch 重同步/miv �
   ok(r2.ready === true && host._stats.readyHits >= 1, 'P3 同 miv 幂等(readyHits=' + host._stats.readyHits + ',不重复 sync)')
   ok(host._stats.syncsStarted === statsAfterSettle.syncsStarted, 'P3 syncsStarted 未再增加(幂等)')
   // epoch 变化:改 readyCache 的 epoch 使 cached.epoch !== 实际(模拟 worker 重启)
-  for (const [k, v] of host._readyCacheForTest) host._readyCacheForTest.set(k, { ...v, epoch: 'wk_pre_other' })
+  for (const [k, v] of host._readyCacheForTest) host._readyCacheForTest.set(k, { ...v, epoch: 'wk_other' })
   const r3 = await host.ensureIndexReady(SNAP, paths, 'Workspace')
   ok(r3.ready === true && host._stats.epochReset >= 1, 'P3 epoch 变化重同步(epochReset=' + host._stats.epochReset + ')')
   // miv 替换
-  const SNAP2 = { ...SNAP, memoryIndexVersion: 'idx_pre_' + 'b2'.repeat(16) }
+  const SNAP2 = { ...SNAP, memoryIndexVersion: 'idx_' + 'b2'.repeat(16) }
   const r4 = await host.ensureIndexReady(SNAP2, paths, 'Workspace')
   ok(r4.ready === true && host._stats.mivReplaced >= 1, 'P3 miv 替换 latest-wins(mivReplaced=' + host._stats.mivReplaced + ')')
   host.dispose('test')
@@ -175,16 +175,16 @@ console.log('[P3] 编排器单元:首同步/同 miv 幂等/epoch 重同步/miv �
 console.log('[P4] sync 失败 → 不 push context;后续可重试')
 {
   const h = await setupHarness()
-  const SYNC_HOST = await import('../../lib/m7-index-sync-host-pre.js')
-  const EV = await import('../../lib/evidence-store-pre.js')
+  const SYNC_HOST = await import('../../lib/m7-index-sync-host.js')
+  const EV = await import('../../lib/evidence-store.js')
   const wsr = EV.workspaceRefOf('D:/tmp/m78fail')
-  const badSnap = { memoryIndexVersion: 'idx_pre_' + 'c3'.repeat(16), records: [
+  const badSnap = { memoryIndexVersion: 'idx_' + 'c3'.repeat(16), records: [
     { memoryId: 'mem_' + '33'.repeat(16), anchorId: 'a', scope: 'Workspace', workspaceRef: wsr,
       sourceRef: 'workspace:MEMORY.md', sourceEpoch: 'e', sourceVersion: 1,
       fileDigest: 'd0'.repeat(32), recordDigest: 'e1'.repeat(32), heading: 'h', text: '内容' },
   ], sources: [{ scope: 'Workspace', sourceRef: 'workspace:MEMORY.md', sourceEpoch: 'e', sourceVersion: 1, fileDigest: 'd0'.repeat(32) }] }
   // client 指向不存在的 worker 脚本 → send 失败
-  const CL = await import('../../lib/python-sidecar-client-pre.js')
+  const CL = await import('../../lib/python-sidecar-client.js')
   const badClient = CL.createPythonSidecarClientPre({ command: 'python', scriptPath: () => path.join(HERE, '..', '..', 'python', 'no-such-worker.py'), dshHome: h.home, requestTimeoutMs: 1000 })
   const host = SYNC_HOST.createIndexSyncHostPre({ engine: { config: { associativeMemoryEnabled: true, contextBridgeEnabled: true, pythonBackendEnabled: true, contextSinkMode: 'python' }, _pythonSidecar: badClient } })
   const r = await host.ensureIndexReady(badSnap, { workspaceKey: 'D:/tmp/m78fail' }, 'Workspace')
@@ -197,14 +197,14 @@ console.log('[P4] sync 失败 → 不 push context;后续可重试')
 console.log('[P5] A/B workspace 同 miv 零串线(编排器层面)')
 {
   const h = await setupHarness()
-  const SYNC_HOST = await import('../../lib/m7-index-sync-host-pre.js')
-  const CL = await import('../../lib/python-sidecar-client-pre.js')
-  const c = CL.createPythonSidecarClientPre({ command: 'python', scriptPath: () => path.join(HERE, '..', '..', 'python', 'worker_semantic_pre_v1.py'), dshHome: h.home, requestTimeoutMs: 4000 })
+  const SYNC_HOST = await import('../../lib/m7-index-sync-host.js')
+  const CL = await import('../../lib/python-sidecar-client.js')
+  const c = CL.createPythonSidecarClientPre({ command: 'python', scriptPath: () => path.join(HERE, '..', '..', 'python', 'worker_semantic_v1.py'), dshHome: h.home, requestTimeoutMs: 4000 })
   const host = SYNC_HOST.createIndexSyncHostPre({ engine: { config: { associativeMemoryEnabled: true, contextBridgeEnabled: true, pythonBackendEnabled: true, contextSinkMode: 'python' }, _pythonSidecar: c } })
-  const EV = await import('../../lib/evidence-store-pre.js')
+  const EV = await import('../../lib/evidence-store.js')
   const wsrA = EV.workspaceRefOf('D:/tmp/wsA')
   const wsrB = EV.workspaceRefOf('D:/tmp/wsB')
-  const mivSame = 'idx_pre_' + 'ab'.repeat(16)
+  const mivSame = 'idx_' + 'ab'.repeat(16)
   const snapA = { memoryIndexVersion: mivSame, records: [{ memoryId: 'mem_' + 'aa'.repeat(16), anchorId: 'a', scope: 'Workspace', workspaceRef: wsrA, sourceRef: 'workspace:MEMORY.md', sourceEpoch: 'e', sourceVersion: 1, fileDigest: 'f0'.repeat(32), recordDigest: 'a1'.repeat(32), heading: 'h', text: 'A 内容' }], sources: [] }
   const snapB = { memoryIndexVersion: mivSame, records: [{ memoryId: 'mem_' + 'bb'.repeat(16), anchorId: 'b', scope: 'Workspace', workspaceRef: wsrB, sourceRef: 'workspace:MEMORY.md', sourceEpoch: 'e', sourceVersion: 1, fileDigest: 'f0'.repeat(32), recordDigest: 'b2'.repeat(32), heading: 'h', text: 'B 内容' }], sources: [] }
   let rA, rB
@@ -219,13 +219,13 @@ console.log('[P5] A/B workspace 同 miv 零串线(编排器层面)')
 console.log('[P6] 关闭/dispose → in-flight abort + ready 缓存清空 + 零后续 IO')
 {
   const h = await setupHarness()
-  const SYNC_HOST = await import('../../lib/m7-index-sync-host-pre.js')
-  const CL = await import('../../lib/python-sidecar-client-pre.js')
-  const c = CL.createPythonSidecarClientPre({ command: 'python', scriptPath: () => path.join(HERE, '..', '..', 'python', 'worker_semantic_pre_v1.py'), dshHome: h.home, requestTimeoutMs: 4000 })
+  const SYNC_HOST = await import('../../lib/m7-index-sync-host.js')
+  const CL = await import('../../lib/python-sidecar-client.js')
+  const c = CL.createPythonSidecarClientPre({ command: 'python', scriptPath: () => path.join(HERE, '..', '..', 'python', 'worker_semantic_v1.py'), dshHome: h.home, requestTimeoutMs: 4000 })
   const host = SYNC_HOST.createIndexSyncHostPre({ engine: { config: { associativeMemoryEnabled: true, contextBridgeEnabled: true, pythonBackendEnabled: true, contextSinkMode: 'python' }, _pythonSidecar: c } })
-  const EV = await import('../../lib/evidence-store-pre.js')
+  const EV = await import('../../lib/evidence-store.js')
   const wsr = EV.workspaceRefOf('D:/tmp/wsP6')
-  const snap = { memoryIndexVersion: 'idx_pre_' + 'd4'.repeat(16), records: [{ memoryId: 'mem_' + '44'.repeat(16), anchorId: 'a', scope: 'Workspace', workspaceRef: wsr, sourceRef: 'workspace:MEMORY.md', sourceEpoch: 'e', sourceVersion: 1, fileDigest: 'f0'.repeat(32), recordDigest: 'e2'.repeat(32), heading: 'h', text: '内容' }], sources: [] }
+  const snap = { memoryIndexVersion: 'idx_' + 'd4'.repeat(16), records: [{ memoryId: 'mem_' + '44'.repeat(16), anchorId: 'a', scope: 'Workspace', workspaceRef: wsr, sourceRef: 'workspace:MEMORY.md', sourceEpoch: 'e', sourceVersion: 1, fileDigest: 'f0'.repeat(32), recordDigest: 'e2'.repeat(32), heading: 'h', text: '内容' }], sources: [] }
   await host.ensureIndexReady(snap, { workspaceKey: 'D:/tmp/wsP6' }, 'Workspace')
   ok(host._readyCacheForTest.size === 1, 'P6 ready 缓存建立')
   host.dispose('dispose-test')
@@ -238,7 +238,7 @@ console.log('[P7] activation 回流:index ready 后 context_push 到达 → fake
 {
   const h = await setupHarness()
   // 开 python 门 + 走真实引擎事件 → worker 收 context_push(影子模式零 activation 帧)
-  await h.cfgPost({ associativeMemoryEnabled: true, contextBridgeEnabled: true, pythonBackendEnabled: true, contextSinkMode: 'python', pythonBackendWorkerPath: path.join(HERE, '..', '..', 'python', 'worker_semantic_pre_v1.py'), pythonBackendExecutable: process.env.M78_PY || 'python' })
+  await h.cfgPost({ associativeMemoryEnabled: true, contextBridgeEnabled: true, pythonBackendEnabled: true, contextSinkMode: 'python', pythonBackendWorkerPath: path.join(HERE, '..', '..', 'python', 'worker_semantic_v1.py'), pythonBackendExecutable: process.env.M78_PY || 'python' })
   await h.fire('session/event', h.agent.session, { type: 'user/message', seq: 400, time: Date.now(), data: { role: 'user', content: [{ type: 'text', text: '部署流程 pnpm build 回忆' }] } })
   await sleep(2500)
   const am = await h.dbg()
@@ -256,7 +256,7 @@ console.log('[P7] activation 回流:index ready 后 context_push 到达 → fake
   // 进程为 lazy 常驻,配置关闭不主动 kill(dispose 才杀);断言零新流量
   await h.settle()
   // dispose engine._pythonSidecar:reach via debug route? use direct kill of worker child via global registry
-  try { const CL2 = await import('../../lib/python-sidecar-client-pre.js'); const rt = await h.dbg(); if (rt.pythonBackend && rt.pythonBackend.started) { } } catch (_) {}
+  try { const CL2 = await import('../../lib/python-sidecar-client.js'); const rt = await h.dbg(); if (rt.pythonBackend && rt.pythonBackend.started) { } } catch (_) {}
   h.cleanup()
 }
 

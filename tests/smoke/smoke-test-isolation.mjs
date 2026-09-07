@@ -9,7 +9,7 @@ const projectRoot = path.join(ws, '.project-root')
 const userRoot = path.join(ws, '.user-root')
 mkdirSync(home, { recursive: true })
 // 审查修复轮2:配置文件名必须是 _pre 版(见 consolidate-isolation 同注)
-writeFileSync(path.join(home, 'dsh-auto-memory-pre.json'), JSON.stringify({
+writeFileSync(path.join(home, 'dsh-auto-memory.json'), JSON.stringify({
   memoryRoot: projectRoot,
   userMemoryDir: userRoot,
   projectMemoryDir: '.project-memory',
@@ -42,8 +42,8 @@ const wsA = path.join(ws, 'workspace-a')
 const wsB = path.join(ws, 'workspace-b')
 const agentA = { id: 'agent-a', session: { id: 'session-a', header: { id: 'session-a', cwd: wsA } } }
 const agentB = { id: 'agent-b', session: { id: 'session-b', header: { id: 'session-b', cwd: wsB } } }
-const status = registeredTools.find((tool) => tool.name === 'memory_status_pre')
-const log = registeredTools.find((tool) => tool.name === 'memory_log_pre')
+const status = registeredTools.find((tool) => tool.name === 'memory_status')
+const log = registeredTools.find((tool) => tool.name === 'memory_log')
 const provider = contexts[0].text
 
 await Promise.all([
@@ -70,7 +70,7 @@ if (typeof preStep !== 'function' || typeof turnStopping !== 'function') throw n
 await preStep({ agent: agentA, turn: 1, step: 1 }, async () => ({ kind: 'enter', messages: [] }))
 await turnStopping({ agent: agentA, turn: 1, signal: new AbortController().signal })
 await turnStopping({ agent: agentB, turn: 1, signal: new AbortController().signal })
-const debugRoute = registeredRoutes.find((route) => route.path === '/api/dsh-auto-memory-pre/debug')
+const debugRoute = registeredRoutes.find((route) => route.path === '/api/dsh-auto-memory/debug')
 if (!debugRoute) throw new Error('debug route not registered')
 let debugBody
 await debugRoute.handler({

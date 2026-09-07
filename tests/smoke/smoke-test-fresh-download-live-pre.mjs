@@ -11,8 +11,8 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 const LIB = path.resolve(HERE, '..', '..', 'lib')
-const semMod = await import(pathToFileURL(path.join(LIB, 'semantic-js-pre.js')).href)
-const manifest = semMod.E5_SMALL_Q8_MANIFEST_PRE_V1
+const semMod = await import(pathToFileURL(path.join(LIB, 'semantic-js.js')).href)
+const manifest = semMod.E5_SMALL_Q8_MANIFEST_V1
 
 if (process.env.RUN_LIVE_DOWNLOAD !== '1') {
   console.log('[fresh-download] SKIP: networked 135MB live download — set RUN_LIVE_DOWNLOAD=1 to run (kept out of routine regression loops)')

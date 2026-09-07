@@ -9,7 +9,7 @@ process.on('uncaughtException', (e) => { console.error('[M43-TEST] FATAL:', (e &
 process.on('unhandledRejection', (r) => { console.error('[M43-TEST] REJ:', r); process.exit(1) })
 globalThis.fetch = async () => ({ ok: false, status: 503, json: async () => ({}) })
 const sha256Hex = (buf) => createHash('sha256').update(buf).digest('hex')
-const { parseAnchors } = await import('../../lib/memory-anchor-pre.js')
+const { parseAnchors } = await import('../../lib/memory-anchor.js')
 
 function makeShadow(root, relName, id, heading, body) {
   const md = '<!-- memory:' + id + ' -->\n## ' + heading + '\n' + body
@@ -28,7 +28,7 @@ function makeShadow(root, relName, id, heading, body) {
   }))
   return {
     file,
-    sidecar: { schemaVersion: 1, namespace: 'dsh-auto-memory-pre', sourceFile: file,
+    sidecar: { schemaVersion: 1, namespace: 'dsh-auto-memory', sourceFile: file,
       sourceEpoch: '11111111-1111-4111-8111-111111111111', sourceVersion: 1, fileDigest,
       newline: p.newline === 'crlf' ? 'crlf' : 'lf', updatedAt: 1700000000000, records },
     writeSidecarTo(sideDir) {
@@ -49,7 +49,7 @@ async function setupHarness(opts = {}) {
   mkdirSync(home, { recursive: true })
   mkdirSync(memoryRoot, { recursive: true })
   mkdirSync(wsA, { recursive: true })
-  writeFileSync(path.join(home, 'dsh-auto-memory-pre.json'), JSON.stringify({
+  writeFileSync(path.join(home, 'dsh-auto-memory.json'), JSON.stringify({
     memoryRoot, userMemoryDir: path.join(ws1, 'user'), projectMemoryDir: '.project-memory',
     externalSources: {},
     ...(opts.configPatch || {}),
@@ -58,7 +58,7 @@ async function setupHarness(opts = {}) {
   // 语料:用户级 + workspace MEMORY.md(anchored)
   const userMem = makeShadow(memoryRoot, 'user-MEMORY.md', 'mem_' + 'aa'.repeat(16), '用户偏好', '- 用户偏好中文回复与分步验证,部署流程使用 pnpm build')
   const wsMem = makeShadow(memoryRoot, keyOf(wsA) + '/MEMORY.md', 'mem_' + 'bb'.repeat(16), '部署流程', '- 登录模块部署流程使用 pnpm build 与 rsync')
-  const sideDir = path.join(home, 'memory', 'index-pre', 'files')
+  const sideDir = path.join(home, 'memory', 'index', 'files')
   userMem.writeSidecarTo(sideDir)
   wsMem.writeSidecarTo(sideDir)
   const tools = []
@@ -76,12 +76,12 @@ async function setupHarness(opts = {}) {
   apply(ctx, {})
   const fire = async (name, ...args) => { const h = handlers.get(name); if (typeof h !== 'function') throw new Error('handler missing ' + name); return Promise.resolve(h(...args)) }
   const dbg = async () => {
-    const route = routes.find((r) => r.path === '/api/dsh-auto-memory-pre/debug')
+    const route = routes.find((r) => r.path === '/api/dsh-auto-memory/debug')
     let b; await route.handler({ socket: { remoteAddress: '127.0.0.1' }, headers: { host: '127.0.0.1:3080' }, method: 'GET', url: '/debug' }, { writeHead() {}, end(x) { b = JSON.parse(x) } })
     return b.associativeMemory
   }
   const cfgPost = async (patch) => {
-    const route = routes.find((r) => r.path === '/api/dsh-auto-memory-pre/config')
+    const route = routes.find((r) => r.path === '/api/dsh-auto-memory/config')
     await route.handler({ socket: { remoteAddress: '127.0.0.1' }, headers: { host: '127.0.0.1:3080', origin: 'http://127.0.0.1:3080' }, method: 'POST', url: '/config', [Symbol.asyncIterator]() { return (async function* () { yield Buffer.from(JSON.stringify(patch)) })() } }, { writeHead() {}, end() {} })
     await new Promise((r) => setTimeout(r, 150))
   }

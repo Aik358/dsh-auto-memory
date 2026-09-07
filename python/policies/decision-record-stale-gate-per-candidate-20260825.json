@@ -11,10 +11,10 @@
     "rootCause": "worker constructed hardGates.stale as any(e.freshness=='stale' for e in payload.evidence); on real traffic every context_push carries >=1 stale evidence entry (anchored files updated today -> all M5 historical evidence judged stale), so fv2 was permanently muted"
   },
   "change": {
-    "file": "python/worker_semantic_pre_v1.py (_fv2_shadow_decide gate construction only)",
+    "file": "python/worker_semantic_v1.py (_fv2_shadow_decide gate construction only)",
     "semantics": "stale/correction gates fire ONLY when the affected evidence memoryId is among the CURRENT top-K candidates; unrelated evidence never gates",
     "untouched": [
-      "m7_activation_features_pre_v2.py (decision core unchanged)",
+      "m7_activation_features_v2.py (decision core unchanged)",
       "python/policies/*.json (versions, configHashes unchanged: activation cfgh_31e6d977..., intent cfgh_69465e69...)",
       "golden-parity-fixtures-v1.jsonl (fixtures carry explicit hardGates inputs; all False -> zero output drift)"
     ]

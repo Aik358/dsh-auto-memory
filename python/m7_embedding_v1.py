@@ -257,19 +257,9 @@ class BgeM3OnnxInt8Embedder:
         self._np = np
         base = config['modelDir']
         onnx_rel = str(config.get('onnxFile') or 'onnx/model_int8.onnx')
-        # GPU 开关:配置 gpu=true 时优先 CUDA(装了 onnxruntime-gpu 才有该 provider),
-        # 不可用自动回退 CPU——推理契约(输入名/CLS pooling/L2)与 CPU 完全一致。
-        providers = ['CPUExecutionProvider']
-        try:
-            avail = ort.get_available_providers()
-            gpu_conf = str(config.get('gpu') or '').lower() in ('1', 'true', 'yes', 'on')
-            if gpu_conf and 'CUDAExecutionProvider' in avail:
-                providers = ['CUDAExecutionProvider', 'CPUExecutionProvider']
-        except Exception:
-            pass
         self.session = ort.InferenceSession(
             os.path.join(base, *onnx_rel.split('/')),
-            providers=providers)
+            providers=['CPUExecutionProvider'])
         self.tokenizer = AutoTokenizer.from_pretrained(base)
         self._inp = self.session.get_inputs()[0].name
         self._att = self.session.get_inputs()[1].name

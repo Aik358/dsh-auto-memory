@@ -9,9 +9,9 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 
-const CLIENT = await import('../../lib/python-sidecar-client-pre.js')
-const SYNC = await import('../../lib/index-sync-pre.js')
-const SEM_WORKER = path.join(HERE, '..', '..', 'python', 'worker_semantic_pre_v1.py')
+const CLIENT = await import('../../lib/python-sidecar-client.js')
+const SYNC = await import('../../lib/index-sync.js')
+const SEM_WORKER = path.join(HERE, '..', '..', 'python', 'worker_semantic_v1.py')
 const PYEXE = path.join(HERE, '..', '..', 'python', 'bench', '.venv', 'Scripts', 'python.exe')
 const sha256Hex = (s) => createHash('sha256').update(Buffer.from(s)).digest('hex')
 const hex32 = (s) => sha256Hex(s).slice(0, 32)
@@ -40,7 +40,7 @@ function mkCorpus() {
     scope: 'Workspace', workspaceRef: wsr, sourceRef: 'workspace:MEMORY.md',
     sourceEpoch: 'e-m710', sourceVersion: 1, fileDigest: sha256Hex('m710f' + i),
     recordDigest: sha256Hex('m710r' + i), heading: null, text,
-    chunkId: 'chk_pre_' + hex32('m710c' + i), chunkOrdinal: 0, chunkCount: 1,
+    chunkId: 'chk_' + hex32('m710c' + i), chunkOrdinal: 0, chunkCount: 1,
   })
   const recAmber = mk(1, '测试条目【琥珀协议】：虚构决策——采用琥珀协议作为模块间通信格式，供跨会话召回复核。')
   const recLunch = mk(2, '- 12:30 生活记录：今天中午吃了面条。')
@@ -62,13 +62,13 @@ function pushOf(obs, miv, text, memRefs) {
     index: { memoryIndexVersion: miv, sourceEpochs: ['e-m710'] },
     trigger: { segmentId: 'sg', digest: 'd'.repeat(16), kind: 'user', eventSeq: 1, contextVersion: 1, ts: 1, text },
     window: [], memoryRefs: memRefs || [], evidence: [],
-    policy: { contextPolicyVersion: 'context_bridge_pre_v1', gatePolicyVersion: 'gate_pre_v1', lexicalPolicyVersion: 'lexical_pre_v2', evidencePolicyVersion: 'evidence_pre_v1' },
+    policy: { contextPolicyVersion: 'context_bridge_v1', gatePolicyVersion: 'gate_v1', lexicalPolicyVersion: 'lexical_v2', evidencePolicyVersion: 'evidence_v1' },
     budget: { maxSegments: 8, maxInputBytes: 4096, maxMemoryRefs: 8, maxEvidenceItems: 16 },
     observedAt: 1000, deadlineAt: 6000,
   }
 }
 const v2rows = (home) => {
-  const p = path.join(home, 'memory', 'semantic-pre', 'activation-shadow-v2.jsonl')
+  const p = path.join(home, 'memory', 'semantic', 'activation-shadow-v2.jsonl')
   return existsSync(p) ? readFileSync(p, 'utf8').trim().split('\n').filter(Boolean).map(l => JSON.parse(l)) : []
 }
 
@@ -85,17 +85,17 @@ async function runPhase(tag, flag, queries) {
   try { const ch = c.processForTest(); ch.stderr.on('data', d => errTail.push(d.toString())) } catch {}
   const acts = []
   try { c.onActivation((evt) => { if (evt && evt.activation) acts.push(evt.activation) }) } catch (e) { console.error('onActivation reg threw:', e.message) }
-  const miv = 'idx_pre_' + hex32('m710miv-' + tag)
+  const miv = 'idx_' + hex32('m710miv-' + tag)
   let synced = false
   try { synced = await syncCorpus(c, recs, miv) } catch (e) { console.error('sync threw:', e.message) }
   if (!synced) console.error('[' + tag + '] corpus sync failed; stderr:', errTail.join('').slice(-600))
   for (let i = 0; i < queries.length; i++) {
     const q = queries[i]
-    try { await c.request('context_push', pushOf('obs_pre_' + hex32(tag + ':q' + i), miv, q.text, q.refs)) } catch (e) { console.error('push threw:', e.message) }
+    try { await c.request('context_push', pushOf('obs_' + hex32(tag + ':q' + i), miv, q.text, q.refs)) } catch (e) { console.error('push threw:', e.message) }
     await sleep(1200)
   }
   await sleep(800)
-  const expectedObs = queries.map((q, i) => 'obs_pre_' + hex32(tag + ':q' + i))
+  const expectedObs = queries.map((q, i) => 'obs_' + hex32(tag + ':q' + i))
   const rows = v2rows(home).filter(r => expectedObs.includes(r.observationId))
   try { c.dispose() } catch {}
   await sleep(300)
@@ -114,15 +114,15 @@ const emitRows = t1.rows.filter(r => r.decision === 'emit')
 ok(emitRows.length >= 1, 'T1 at least one fv2 emit row produced (rows=' + t1.rows.length + ', decisions=' + t1.rows.map(r => r.decision).join(',') + ')')
 ok(emitRows.every(r => (r.features || {}).lane === 'explicit'), 'T1 all emit rows are explicit lane')
 ok(t1.acts.length === emitRows.length, 'T1 frame count == explicit emit row count (' + t1.acts.length + ' vs ' + emitRows.length + ')')
-const echoRow = t1.rows.find(r => r.observationId === 'obs_pre_' + hex32('t1:q1'))
+const echoRow = t1.rows.find(r => r.observationId === 'obs_' + hex32('t1:q1'))
 ok(echoRow && echoRow.decision !== 'emit', 'T1 echo decision != emit (' + (echoRow ? echoRow.decision : 'no-row') + ')')
 // T0 的 amber 行应已记录 decision=emit(决策照记)但零帧(fail closed)——双保险断言
-const t0amberRow = t0.rows.find(r => r.observationId === 'obs_pre_' + hex32('t0:q0'))
+const t0amberRow = t0.rows.find(r => r.observationId === 'obs_' + hex32('t0:q0'))
 ok(t0amberRow && t0amberRow.decision === 'emit' && t0.acts.length === 0, 'T0 shadow row records emit decision yet zero frames leak')
 if (t1.acts.length > 0) {
   const a = t1.acts[0]
-  ok(a.kind === 'activation_request' && String(a.activationId || '').startsWith('act_pre_'), 'act kind/id shape')
-  ok(a.threshold && a.threshold.policyVersion === 'activation_policy_pre_v2', 'threshold.policyVersion = activation_policy_pre_v2')
+  ok(a.kind === 'activation_request' && String(a.activationId || '').startsWith('act_'), 'act kind/id shape')
+  ok(a.threshold && a.threshold.policyVersion === 'activation_policy_v2', 'threshold.policyVersion = activation_policy_v2')
   ok(a.level === 'excerpt', 'level=excerpt (minimal content tier)')
   ok(Number.isInteger(a.ttlSteps) && a.ttlSteps >= 1 && a.ttlSteps <= 10, 'ttlSteps in [1,10]')
   ok(Array.isArray(a.candidates) && a.candidates.length >= 1 && a.candidates.every(x => /^mem_[0-9a-f]{32}$/.test(x.memoryId) && /^[0-9a-f]{64}$/.test(x.recordDigest)), 'candidates carry provenance identity')

@@ -25,7 +25,7 @@ console.log('[K1] fixture 结构 + embedding identity 契约(不联网)')
   ok(m && (m.license === 'MIT' || m.license === 'Apache-2.0'), `model.license 允许分发 (${m && m.license})`)
   ok(m && m.dimension === 1024 && m.normalization === 'l2_normalize', 'dimension=1024 + l2_normalize')
   ok(typeof fx.configHash === 'string' && fx.configHash.startsWith('cfgh_') && fx.configHash.length === 5 + 64, 'configHash = cfgh_+64hex')
-  ok(fx.policy && fx.policy.chunkingPolicyVersion === 'm7_chunk_pre_v1', 'chunkingPolicyVersion 冻结为 m7_chunk_pre_v1')
+  ok(fx.policy && fx.policy.chunkingPolicyVersion === 'm7_chunk_v1', 'chunkingPolicyVersion 冻结为 m7_chunk_v1')
   ok(fx.similarity && fx.similarity.includes('exact cosine'), '相似度 = exact cosine(无 ANN)')
 }
 

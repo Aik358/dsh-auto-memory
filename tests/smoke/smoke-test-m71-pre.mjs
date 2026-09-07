@@ -16,11 +16,11 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 const sha256Hex = (buf) => createHash('sha256').update(buf).digest('hex')
 const hex32 = (s) => sha256Hex(Buffer.from(s)).slice(0, 32)
 
-const WIRE = await import('../../lib/m7-wire-pre.js')
-const CLIENT = await import('../../lib/python-sidecar-client-pre.js')
-const SYNC = await import('../../lib/index-sync-pre.js')
-const BRIDGE = await import('../../lib/context-bridge-pre.js')
-const ACT = await import('../../lib/activation-inbox-pre.js')
+const WIRE = await import('../../lib/m7-wire.js')
+const CLIENT = await import('../../lib/python-sidecar-client.js')
+const SYNC = await import('../../lib/index-sync.js')
+const BRIDGE = await import('../../lib/context-bridge.js')
+const ACT = await import('../../lib/activation-inbox.js')
 const WORKER_PATH = CLIENT.defaultWorkerScriptPathPre()
 
 function mkSnapshot(nWs, nUser, tag, opt = {}) {
@@ -38,7 +38,7 @@ function mkSnapshot(nWs, nUser, tag, opt = {}) {
   for (let i = 0; i < nWs; i++) records.push(rec('Workspace', i))
   for (let i = 0; i < nUser; i++) records.push(rec('User', i))
   return {
-    memoryIndexVersion: opt.miv || ('idx_pre_' + hex32('miv-' + tag)),
+    memoryIndexVersion: opt.miv || ('idx_' + hex32('miv-' + tag)),
     sources: [
       { scope: 'Workspace', sourceRef: 'workspace:MEMORY.md', sourceEpoch: epochWs, sourceVersion: 1, fileDigest: sha256Hex(Buffer.from(tag + 'fileWorkspace')) },
       { scope: 'User', sourceRef: 'user:MEMORY.md', sourceEpoch: epochUser, sourceVersion: 1, fileDigest: sha256Hex(Buffer.from(tag + 'fileUser')) },
@@ -49,7 +49,7 @@ function mkSnapshot(nWs, nUser, tag, opt = {}) {
 function mkClient(home) {
   return CLIENT.createPythonSidecarClientPre({ command: 'python', scriptPath: () => WORKER_PATH, dshHome: home || '', requestTimeoutMs: 2500 })
 }
-const derivedPath = (home) => path.join(home, 'memory', 'semantic-pre', 'derived-corpus.json')
+const derivedPath = (home) => path.join(home, 'memory', 'semantic', 'derived-corpus.json')
 async function sendAll(client, plans) {
   const results = []
   for (const p of plans) results.push(await SYNC.sendIndexSyncPlanPre(client, p))
@@ -69,14 +69,14 @@ console.log('[H1] 记录投影 + chunk 派生身份 + syncId 确定性')
     ok(Object.prototype.hasOwnProperty.call(r0, k), 'H1 记录含必填字段 ' + k)
   }
   ok(r0.workspaceRef.startsWith('wsr_') && r0.workspaceRef.length === 36, 'H1 workspaceRef 为隐私投影 wsr_*')
-  ok(r0.chunkCount === 1 && r0.chunkOrdinal === 0 && r0.chunkId.startsWith('chk_pre_'), 'H1 占位 chunking=整记录单 chunk(chk_pre_*)')
+  ok(r0.chunkCount === 1 && r0.chunkOrdinal === 0 && r0.chunkId.startsWith('chk_'), 'H1 占位 chunking=整记录单 chunk(chk_*)')
   const srcRec = snap.records.find((x) => x.memoryId === r0.memoryId)
   ok(r0.recordDigest === srcRec.recordDigest && r0.text === srcRec.text && r0.sourceVersion === srcRec.sourceVersion, 'H1 provenance/text 逐字段来自授权语料快照')
   const another = wPlan.pages[0].records[1]
   ok(another.chunkId !== r0.chunkId, 'H1 不同记录 chunkId 不同')
   eq(SYNC.buildIndexSyncPlansPre({ snapshot: snap, workspaceKey: 'D:/tmp/wsH1' }).plans[0].begin.syncId, wPlan.begin.syncId, 'H1 syncId 同输入确定')
   ok(wPlan.begin.syncId !== built.plans[1].begin.syncId, 'H1 不同 scope 不同 syncId')
-  eq(wPlan.begin.indexPolicyVersion, WIRE.M7_INDEX_POLICY_VERSION_PRE_V1, 'H1 begin 携带 index_sync_pre_v1 策略版本')
+  eq(wPlan.begin.indexPolicyVersion, WIRE.M7_INDEX_POLICY_VERSION_V1, 'H1 begin 携带 index_sync_v1 策略版本')
 }
 
 console.log('[H2] 分页预算:64 条边界 + 256KiB 上限 + 单条超限 fail closed')
@@ -89,7 +89,7 @@ console.log('[H2] 分页预算:64 条边界 + 256KiB 上限 + 单条超限 fail 
   ok(!big.ok && big.reason.startsWith('record-oversize'), 'H2 单条超 256KiB → record-oversize fail closed')
   const many = SYNC.buildIndexSyncPlansPre({ snapshot: mkSnapshot(200, 2, 'many'), workspaceKey: 'D:/tmp/wsB' })
   ok(many.ok, 'H2 大快照构建成功')
-  const BUDGET = SYNC.INDEX_SYNC_PAGE_BUDGET_PRE_V1
+  const BUDGET = SYNC.INDEX_SYNC_PAGE_BUDGET_V1
   let totalRecords = 0
   for (const p of many.plans) {
     for (const pg of p.pages) {
@@ -124,8 +124,8 @@ const H3 = {}
     ok(commitAck.payload && commitAck.payload.accepted === true && commitAck.payload.phase === 'commit', 'H3 [' + built.plans[i].scope + '] commit ack 接受')
     eq(commitAck.payload.persisted, true, 'H3 [' + built.plans[i].scope + '] 派生态已原子落盘(persisted=true)')
   }
-  const dirP = path.join(home, 'memory', 'semantic-pre')
-  ok(existsSync(derivedPath(home)), 'H3 derived-corpus.json 存在且仅在 semantic-pre 下')
+  const dirP = path.join(home, 'memory', 'semantic')
+  ok(existsSync(derivedPath(home)), 'H3 derived-corpus.json 存在且仅在 semantic 下')
   eq(readdirSync(dirP).sort(), ['derived-corpus.json'], 'H3 目录无临时残留(原子替换无 *.tmp)')
   const parsed = JSON.parse(readFileSync(derivedPath(home), 'utf8'))
   eq(parsed.entries.length, 2, 'H3 两个 scope 分区条目')
@@ -200,7 +200,7 @@ console.log('[H4] 失败语义:缺页/重复/乱序/digest/版本/scope 全拒�
   }, 'record-scope-mismatch', '记录携带不同 workspaceRef(中途不一致)')
   await runBroken((p) => {
     const fr = pageFrames(p)
-    fr[fr.length - 1].payload = { ...fr[fr.length - 1].payload, memoryIndexVersion: 'idx_pre_' + 'ee'.repeat(16) }
+    fr[fr.length - 1].payload = { ...fr[fr.length - 1].payload, memoryIndexVersion: 'idx_' + 'ee'.repeat(16) }
     return fr
   }, 'version-mismatch', 'commit 的 memoryIndexVersion 与 begin 不一致')
   await runBroken((p) => {
@@ -208,7 +208,7 @@ console.log('[H4] 失败语义:缺页/重复/乱序/digest/版本/scope 全拒�
     fr[fr.length - 1].payload = { ...fr[fr.length - 1].payload, finalDigest: '1'.repeat(64) };
     return fr
   }, 'final-digest-mismatch', 'finalDigest 不符')
-  eq(readdirSync(path.join(H3.home, 'memory', 'semantic-pre')).length, 1, 'H4 全程无 .tmp 残留文件')
+  eq(readdirSync(path.join(H3.home, 'memory', 'semantic')).length, 1, 'H4 全程无 .tmp 残留文件')
 }
 
 
@@ -216,8 +216,8 @@ console.log('[H4] 失败语义:缺页/重复/乱序/digest/版本/scope 全拒�
 console.log('[H5] 新 memoryIndexVersion 原子整体替换·旧版本零残留')
 {
   const c = H3.client
-  const oldMiv = 'idx_pre_' + sha256Hex(Buffer.from('miv-e2e')).slice(0, 32)
-  const snapV2 = mkSnapshot(10, 2, 'e2e', { miv: 'idx_pre_' + hex32('miv-e2e-v2') })
+  const oldMiv = 'idx_' + sha256Hex(Buffer.from('miv-e2e')).slice(0, 32)
+  const snapV2 = mkSnapshot(10, 2, 'e2e', { miv: 'idx_' + hex32('miv-e2e-v2') })
   ok(snapV2.memoryIndexVersion !== oldMiv, 'H5 v2 版本号不同于已提交 v1')
   const built = SYNC.buildIndexSyncPlansPre({ snapshot: snapV2, workspaceKey: 'D:/tmp/wsE2E' })
   const results = await sendAll(c, built.plans)
@@ -251,20 +251,20 @@ console.log('[H7] 四种身份格式分离 + index_ack 关联纪律')
   await c.health()
   const epoch = c.currentEpoch()
   const before = c._statsForTest.dropped.unknownRequest;
-  const fakeAck = { protocolVersion: WIRE.M7_WIRE_PROTOCOL_VERSION_PRE_V1, frameId: 'fa', requestId: 'obs_pre_notarequestid', workerEpoch: epoch, type: 'index_ack', payload: { schemaVersion: 1, syncId: 'syn_pre_' + '0'.repeat(32), phase: 'commit', accepted: true, memoryIndexVersion: 'idx_pre_' + '0'.repeat(32), workspaceRef: 'wsr_' + '0'.repeat(32), scope: 'Workspace' }, sentAt: 9 }
+  const fakeAck = { protocolVersion: WIRE.M7_WIRE_PROTOCOL_VERSION_V1, frameId: 'fa', requestId: 'obs_notarequestid', workerEpoch: epoch, type: 'index_ack', payload: { schemaVersion: 1, syncId: 'syn_' + '0'.repeat(32), phase: 'commit', accepted: true, memoryIndexVersion: 'idx_' + '0'.repeat(32), workspaceRef: 'wsr_' + '0'.repeat(32), scope: 'Workspace' }, sentAt: 9 }
   c._feedForTest(JSON.stringify(fakeAck) + '\n')
   eq(c._statsForTest.dropped.unknownRequest, before + 1, 'H7 observationId 形状 id 冒充 requestId 的 index_ack → 丢弃')
   const plans = SYNC.buildIndexSyncPlansPre({ snapshot: mkSnapshot(1, 0, 'idfmt'), workspaceKey: 'D:/tmp/wsE2E' })
-  ok(plans.plans[0].begin.syncId.startsWith('syn_pre_'), 'H7 sync 身份=syncId(syn_pre_*)')
+  ok(plans.plans[0].begin.syncId.startsWith('syn_'), 'H7 sync 身份=syncId(syn_*)')
   await c.health()
   const lastReq = c._lastFrameForTest();
-  ok(lastReq.requestId.startsWith('req_pre_'), 'H7 transport 身份=requestId(req_pre_*)')
+  ok(lastReq.requestId.startsWith('req_'), 'H7 transport 身份=requestId(req_*)')
 }
 
 // ---------- H8 ----------
 console.log('[H8] M5/M6 兼容复assert(worker 产物仍过现有 validator)')
 {
-  const CB = await import('../../lib/context-bridge-pre.js')
+  const CB = await import('../../lib/context-bridge.js')
   const c = mkClient(null)
   const acts = []
   c.onActivation((evt) => acts.push(evt.activation))
@@ -273,7 +273,7 @@ console.log('[H8] M5/M6 兼容复assert(worker 产物仍过现有 validator)')
   const built = CB.buildContextPushEnvelopePre({
     session: { sessionId: 'sess-H8', agentId: 'agent-h8', workspaceKey: 'D:/tmp/wsH8', scope: 'Workspace' },
     cursor: { eventSeq: 3, contextVersion: 2 },
-    index: { memoryIndexVersion: 'idx_pre_' + hex32('h8-miv'), sourceEpochs: [rec.sourceEpoch] },
+    index: { memoryIndexVersion: 'idx_' + hex32('h8-miv'), sourceEpochs: [rec.sourceEpoch] },
     trigger: { segmentId: 't', digest: sha256Hex(Buffer.from('trigger-text')).slice(0, 32), kind: 'user', eventSeq: 3, contextVersion: 2, ts: 1700000000000, text: '触发文本' },
     window: [], memoryRefs: [ref], evidence: [], now: 1700000000000,
   })
@@ -286,11 +286,11 @@ console.log('[H8] M5/M6 兼容复assert(worker 产物仍过现有 validator)')
 }
 
 // ---------- H9 ----------
-console.log('[H9] 同步失败后 lexical_pre_v2 回退语义不受破坏')
+console.log('[H9] 同步失败后 lexical_v2 回退语义不受破坏')
 {
-  const SR = await import('../../lib/shadow-retrieval-pre.js')
+  const SR = await import('../../lib/shadow-retrieval.js')
   const snap = {
-    memoryIndexVersion: 'idx_pre_' + 'cd'.repeat(16), sources: [],
+    memoryIndexVersion: 'idx_' + 'cd'.repeat(16), sources: [],
     records: [{ memoryId: 'mem_' + 'ee'.repeat(16), anchorId: 'anc-y', scope: 'Workspace', sourceClass: 'workspace-notes', sourceRef: 'workspace:MEMORY.md', sourceEpoch: 'ep', sourceVersion: 1, fileDigest: sha256Hex(Buffer.from('f')), recordDigest: sha256Hex(Buffer.from('r')), lineStart: 1, lineEnd: 2, byteStart: 0, byteEnd: 20, heading: '部署', text: '部署流程使用 pnpm build 与 rsync 发布', bytes: 20 }],
   }
   const qp = SR.buildQueryPlan({ trigger: { segmentId: 's', segmentDigest: 'd', kind: 'user', eventType: 'session/event', ts: 1700000000000 }, window: [] })
@@ -302,7 +302,7 @@ console.log('[H9] 同步失败后 lexical_pre_v2 回退语义不受破坏')
   const rBad = await H3.client.request('index_sync_commit', badCommit);
   ok(rBad.ok && rBad.frame.payload.accepted === false, 'H9 注入失败 sync 确实被拒(前置成立)')
   const b = SR.lexicalSearch(snap, qp, { triggerTs: 1700000000000, mode: 'prefetch' }).kept.map((k) => k.memoryId)
-  eq(b, a, 'H9 同步失败前后 lexical_pre_v2 结果一致(JS 本地回退不受影响)')
+  eq(b, a, 'H9 同步失败前后 lexical_v2 结果一致(JS 本地回退不受影响)')
 }
 
 await H3.client.dispose('test')

@@ -6,9 +6,9 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
-const CLIENT = await import('../../lib/python-sidecar-client-pre.js')
-const SYNC = await import('../../lib/index-sync-pre.js')
-const SEM_WORKER = path.join(HERE, '..', '..', 'python', 'worker_semantic_pre_v1.py')
+const CLIENT = await import('../../lib/python-sidecar-client.js')
+const SYNC = await import('../../lib/index-sync.js')
+const SEM_WORKER = path.join(HERE, '..', '..', 'python', 'worker_semantic_v1.py')
 const PYEXE = path.join(HERE, '..', '..', 'python', 'bench', '.venv', 'Scripts', 'python.exe')
 const POLICY_DIR = path.join(HERE, '..', '..', 'python', 'policies')
 const sha256Hex = (s) => createHash('sha256').update(Buffer.from(s)).digest('hex')
@@ -38,7 +38,7 @@ function mkCorpus() {
     scope: 'Workspace', workspaceRef: wsr, sourceRef: 'workspace:MEMORY.md',
     sourceEpoch: 'e-m79', sourceVersion: 1, fileDigest: sha256Hex('m79f' + i),
     recordDigest: sha256Hex('m79r' + i), heading: null, text,
-    chunkId: 'chk_pre_' + hex32('m79c' + i), chunkOrdinal: 0, chunkCount: 1,
+    chunkId: 'chk_' + hex32('m79c' + i), chunkOrdinal: 0, chunkCount: 1,
   })
   const recAmber = mk(1, '测试条目【琥珀协议】：虚构决策——采用琥珀协议作为模块间通信格式，供跨会话召回复核。')
   const recLunch = mk(2, '- 12:30 生活记录：今天中午吃了面条。')
@@ -65,7 +65,7 @@ function pushOf(obs, miv, text, memRefs) {
     index: { memoryIndexVersion: miv, sourceEpochs: ['e-m79'] },
     trigger: { segmentId: 'sg', digest: 'd'.repeat(16), kind: 'user', eventSeq: 1, contextVersion: 1, ts: 1, text },
     window: [], memoryRefs: memRefs || [], evidence: [],
-    policy: { contextPolicyVersion: 'context_bridge_pre_v1', gatePolicyVersion: 'gate_pre_v1', lexicalPolicyVersion: 'lexical_pre_v2', evidencePolicyVersion: 'evidence_pre_v1' },
+    policy: { contextPolicyVersion: 'context_bridge_v1', gatePolicyVersion: 'gate_v1', lexicalPolicyVersion: 'lexical_v2', evidencePolicyVersion: 'evidence_v1' },
     budget: { maxSegments: 8, maxInputBytes: 4096, maxMemoryRefs: 8, maxEvidenceItems: 16 },
     observedAt: 1000, deadlineAt: 6000,
   }
@@ -77,20 +77,20 @@ const c = mkClient(home)
 const errTail = []
 try { const ch = c.processForTest(); ch.stderr.on('data', d => errTail.push(d.toString())) } catch {}
 const { recs, amberId } = mkCorpus()
-const miv = 'idx_pre_' + hex32('m79miv')
+const miv = 'idx_' + hex32('m79miv')
 let synced = false
 try { synced = await syncCorpus(c, recs, miv) } catch (e) { console.error('sync threw:', e.message) }
 ok(synced, 'corpus synced')
 try { const h = await c.request('health'); console.log('featuresV2 health:', JSON.stringify(h.frame?.payload?.featuresV2)) } catch (e) { console.error('health threw:', e.message) }
-console.log('candidates-shadow exists after sync:', existsSync(path.join(home, 'memory', 'semantic-pre', 'candidates-shadow.jsonl')))
-const v2Path = path.join(home, 'memory', 'semantic-pre', 'activation-shadow-v2.jsonl')
+console.log('candidates-shadow exists after sync:', existsSync(path.join(home, 'memory', 'semantic', 'candidates-shadow.jsonl')))
+const v2Path = path.join(home, 'memory', 'semantic', 'activation-shadow-v2.jsonl')
 const v2rows = () => existsSync(v2Path) ? readFileSync(v2Path, 'utf8').trim().split('\n').filter(Boolean).map(l => JSON.parse(l)) : []
 const AMBER_REFS = [{ memoryId: amberId, anchorId: 'anc_x', scope: 'Workspace', sourceRef: 'workspace:MEMORY.md', sourceEpoch: 'e-m79', sourceVersion: 1, fileDigest: sha256Hex('f'), recordDigest: sha256Hex('r') }]
 const AMBER_Q = '之前关于采用琥珀协议作为模块间通信格式的决策是什么？'
 
 console.log('[T1] explicit recall + memoryRefs')
 try {
-  const res1 = await c.request('context_push', pushOf('obs_pre_' + hex32('t1'), miv, AMBER_Q, AMBER_REFS))
+  const res1 = await c.request('context_push', pushOf('obs_' + hex32('t1'), miv, AMBER_Q, AMBER_REFS))
   console.log('T1 ack:', JSON.stringify(res1.frame ? res1.frame.payload : res1).slice(0, 200))
 } catch (e) { console.error('push threw:', e.message) }
 await sleep(1500)
@@ -100,9 +100,9 @@ if (rows.length) {
   const r1 = rows[rows.length - 1]
   console.log("ROW KEYS:", JSON.stringify(Object.keys(r1)))
   console.log("ROW SAMPLE:", JSON.stringify(r1).slice(0, 500))
-  ok(r1.policyVersions?.features === 'activation_features_pre_v2', 'features policyVersion')
-  ok(r1.policyVersions?.intent === 'recall_intent_lr_pre_v1', 'intent policyVersion')
-  ok(r1.policyVersions?.activation === 'activation_policy_pre_v2', 'activation policyVersion')
+  ok(r1.policyVersions?.features === 'activation_features_v2', 'features policyVersion')
+  ok(r1.policyVersions?.intent === 'recall_intent_lr_v1', 'intent policyVersion')
+  ok(r1.policyVersions?.activation === 'activation_policy_v2', 'activation policyVersion')
   ok(String(r1.configHashes?.activation || '').startsWith('cfgh_'), 'activation configHash present')
   ok(String(r1.goldDigest || '').length === 64, 'goldDigest present')
   ok(['emit', 'prefetch'].includes(r1.decision), `T1 decision=${r1.decision}`)
@@ -113,7 +113,7 @@ if (rows.length) {
 
 console.log('[T2] life echo -> never emit')
 const beforeT2Rows = rows.map(r => r.observationId)
-try { await c.request('context_push', pushOf('obs_pre_' + hex32('t2'), miv, '今天中午吃的面条挺不错的。')) } catch (e) { console.error('push threw:', e.message) }
+try { await c.request('context_push', pushOf('obs_' + hex32('t2'), miv, '今天中午吃的面条挺不错的。')) } catch (e) { console.error('push threw:', e.message) }
 await sleep(1500)
 rows = v2rows()
 const t2row = rows[rows.length - 1]
@@ -134,24 +134,24 @@ ok(rows.length >= 1, 'T3: v2 shadow rows present')
 console.log('[T4] corrupted policy dir -> fail closed')
 const badDir = path.join(tmpdir(), 'm79-badpol-' + Date.now())
 mkdirSync(badDir, { recursive: true })
-const ipol = JSON.parse(readFileSync(path.join(POLICY_DIR, 'recall_intent_lr_pre_v1.json'), 'utf8'))
+const ipol = JSON.parse(readFileSync(path.join(POLICY_DIR, 'recall_intent_lr_v1.json'), 'utf8'))
 ipol.configHash = 'cfgh_' + '0'.repeat(32)
-writeFileSync(path.join(badDir, 'recall_intent_lr_pre_v1.json'), JSON.stringify(ipol))
-copyFileSync(path.join(POLICY_DIR, 'activation_policy_pre_v2.json'), path.join(badDir, 'activation_policy_pre_v2.json'))
-const candPath = path.join(home, 'memory', 'semantic-pre', 'candidates-shadow.jsonl')
+writeFileSync(path.join(badDir, 'recall_intent_lr_v1.json'), JSON.stringify(ipol))
+copyFileSync(path.join(POLICY_DIR, 'activation_policy_v2.json'), path.join(badDir, 'activation_policy_v2.json'))
+const candPath = path.join(home, 'memory', 'semantic', 'candidates-shadow.jsonl')
 const candBefore = existsSync(candPath) ? readFileSync(candPath, 'utf8').trim().split('\n').length : 0
 const beforeBadRows = v2rows().map(r => r.observationId)
 const cbad = mkClient(home, badDir)
 let badSynced = false
 try { badSynced = await syncCorpus(cbad, recs, miv) } catch (e) { console.error('bad sync threw:', e.message) }
 ok(badSynced, 'retrieval alive under invalid policy')
-try { await cbad.request('context_push', pushOf('obs_pre_' + hex32('t4bad'), miv, '琥珀协议的决策内容？')) } catch (e) { console.error('push threw:', e.message) }
+try { await cbad.request('context_push', pushOf('obs_' + hex32('t4bad'), miv, '琥珀协议的决策内容？')) } catch (e) { console.error('push threw:', e.message) }
 await sleep(2000)
-const badPath = path.join(home, 'memory', 'semantic-pre', 'activation-shadow-v2.jsonl')
+const badPath = path.join(home, 'memory', 'semantic', 'activation-shadow-v2.jsonl')
 let badRow = null
 if (existsSync(badPath)) {
   const all = readFileSync(badPath, 'utf8').trim().split('\n').filter(Boolean).map(l => JSON.parse(l))
-  badRow = all.find(x => x.observationId === 'obs_pre_' + hex32('t4bad')) || null
+  badRow = all.find(x => x.observationId === 'obs_' + hex32('t4bad')) || null
 }
 ok(badRow !== null && badRow !== undefined, 'bad-policy v2 row exists')
 ok(badRow?.shadowReason === 'policy-invalid', 'bad policy fails closed with policy-invalid reason')

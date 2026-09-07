@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs'
 process.on('uncaughtException', (e) => { console.error('[M51-TEST] FATAL:', (e && (e.stack || e.message)) || e); process.exit(1) })
 process.on('unhandledRejection', (r) => { console.error('[M51-TEST] REJ:', r); process.exit(1) })
 
-const CB = await import('../../lib/context-bridge-pre.js')
+const CB = await import('../../lib/context-bridge.js')
 let pass = 0; let fail = 0
 function ok(cond, name) { if (cond) { pass++; console.log('  ok - ' + name) } else { fail++; console.error('  FAIL - ' + name) } }
 function eq(a, b, name) { const ja = JSON.stringify(a); const jb = JSON.stringify(b); ok(ja === jb, name + (ja === jb ? '' : ' got=' + ja + ' want=' + jb)) }
@@ -26,12 +26,12 @@ function mkRec(mid, opts = {}) {
 const coords = { sessionId: 'sess-x', eventSeq: 7, nativeSeq: 42, contextVersion: 9, callId: 'call_1', workspaceKey: 'd:/ws', ts: 1700000000000 }
 
 console.log('[A1] 策略冻结与命名空间')
-ok(CB.CONTEXT_BRIDGE_POLICY_VERSION === 'context_bridge_pre_v1', 'contextPolicyVersion 固定')
-ok(CB.EVIDENCE_POLICY_VERSION === 'evidence_pre_v1', 'evidencePolicyVersion 固定')
-eq(CB.ACCESS_KINDS_PRE_V1, ['seen', 'read', 'cite', 'reuse', 'success', 'correction'], '六类证据枚举')
-ok(Object.isFrozen(CB.CONTEXT_BRIDGE_BUDGET_PRE_V1), '预算对象冻结')
-eq(CB.CONTEXT_BRIDGE_BUDGET_PRE_V1.maxSegments, 8, 'maxSegments=8')
-ok(CB.NAMESPACE === 'dsh-auto-memory-pre', 'namespace=_pre')
+ok(CB.CONTEXT_BRIDGE_POLICY_VERSION === 'context_bridge_v1', 'contextPolicyVersion 固定')
+ok(CB.EVIDENCE_POLICY_VERSION === 'evidence_v1', 'evidencePolicyVersion 固定')
+eq(CB.ACCESS_KINDS_V1, ['seen', 'read', 'cite', 'reuse', 'success', 'correction'], '六类证据枚举')
+ok(Object.isFrozen(CB.CONTEXT_BRIDGE_BUDGET_V1), '预算对象冻结')
+eq(CB.CONTEXT_BRIDGE_BUDGET_V1.maxSegments, 8, 'maxSegments=8')
+ok(CB.NAMESPACE === 'dsh-auto-memory', 'namespace=_pre')
 
 console.log('[A2] validators')
 const seg = { segmentId: 'seg_1', digest: 'a'.repeat(32), kind: 'user', eventSeq: 3, contextVersion: 2, ts: 1700000000000, text: 'hello' }
@@ -46,7 +46,7 @@ ok(!CB.validateAuthorizedMemoryRefPre({ ...ref, memoryId: 'mem_xyz' }).ok, '坏 
 ok(!CB.validateAuthorizedMemoryRefPre({ ...ref, scope: 'Session' }).ok, 'memoryRef scope=Session 拒绝(仅 Workspace|User)')
 ok(!CB.validateAuthorizedMemoryRefPre({ ...ref, sourceRef: 'C:\\abs\\path.md' }).ok, '绝对路径 sourceRef 拒绝')
 ok(!CB.validateAuthorizedMemoryRefPre({ ...ref, fileDigest: 'zz' }).ok, '坏 fileDigest 拒绝')
-const agg = { memoryId: mem1, scope: 'User', freshness: 'fresh', distinctSessions: 2, seen: 1, read: 0, cite: 0, reuse: 0, success: 0, correction: 0, lastEvidenceAt: 1700000000000, policyVersion: 'evidence_pre_v1' }
+const agg = { memoryId: mem1, scope: 'User', freshness: 'fresh', distinctSessions: 2, seen: 1, read: 0, cite: 0, reuse: 0, success: 0, correction: 0, lastEvidenceAt: 1700000000000, policyVersion: 'evidence_v1' }
 ok(CB.validateEvidenceAggregatePre(agg).ok, '合法 aggregate 通过')
 ok(!CB.validateEvidenceAggregatePre({ ...agg, freshness: 'hot' }).ok, '非法 freshness 拒绝')
 ok(!CB.validateEvidenceAggregatePre({ ...agg, seen: -1 }).ok, '负计数拒绝')
@@ -55,14 +55,14 @@ console.log('[A3] canonical identity')
 const oid1 = CB.buildObservationId('s1', 5, seg.digest)
 const oid2 = CB.buildObservationId('s1', 5, seg.digest)
 const oid3 = CB.buildObservationId('s1', 6, seg.digest)
-ok(oid1 === oid2 && oid1.startsWith('obs_pre_'), 'observationId 确定(obs_pre_)')
+ok(oid1 === oid2 && oid1.startsWith('obs_'), 'observationId 确定(obs_)')
 ok(oid1 !== oid3, 'contextVersion 变化 → observationId 变化')
 const eidIn = { kind: 'read', memoryId: mem1, sessionId: 's1', eventSeq: 7, nativeSeq: 42, callId: 'c1', contextVersion: 9, workspaceKey: 'w1' }
 const eid1 = CB.buildEvidenceId(eidIn)
 ok(eid1 === CB.buildEvidenceId({ ...eidIn }), 'evidenceId 幂等')
 ok(eid1 !== CB.buildEvidenceId({ ...eidIn, kind: 'cite' }), 'kind 变化 → evidenceId 变化')
 ok(eid1 !== CB.buildEvidenceId({ ...eidIn, nativeSeq: undefined }), 'nativeSeq 变化 → evidenceId 变化')
-ok(eid1.startsWith('ev_pre_'), 'evidenceId 前缀 ev_pre_')
+ok(eid1.startsWith('ev_'), 'evidenceId 前缀 ev_')
 
 console.log('[A4] coverage adapter(fresh/stale/多记录/range 半开区间)')
 const rec1 = mkRec(mem1, { byteStart: 0, byteEnd: 100 })
@@ -121,7 +121,7 @@ console.log('[A7] envelope builder(schema/budget/canonical determinism)')
 const envInput = {
   session: { sessionId: 's1', agentId: 'a1', workspaceKey: 'd:/ws', scope: 'Workspace' },
   cursor: { eventSeq: 11, nativeSeq: 77, contextVersion: 5 },
-  index: { memoryIndexVersion: 'idx_pre_' + 'ab'.repeat(8), sourceEpochs: ['ep-b', 'ep-a'] },
+  index: { memoryIndexVersion: 'idx_' + 'ab'.repeat(8), sourceEpochs: ['ep-b', 'ep-a'] },
   trigger: seg,
   window: [seg, { ...seg, segmentId: 'seg_2', kind: 'tool_result', toolName: 'read', toolOk: true }],
   memoryRefs: [ref],
@@ -132,9 +132,9 @@ const built1 = CB.buildContextPushEnvelopePre(envInput)
 const built2 = CB.buildContextPushEnvelopePre(envInput)
 ok(built1.ok, 'envelope 构造成功')
 eq(built1.frame.observationId, built2.frame.observationId, '同输入同 observationId')
-eq(built1.frame.policy.contextPolicyVersion, 'context_bridge_pre_v1', 'policy 版本固化')
+eq(built1.frame.policy.contextPolicyVersion, 'context_bridge_v1', 'policy 版本固化')
 eq(built1.frame.index.sourceEpochs, ['ep-a', 'ep-b'], 'sourceEpochs 排序规范化')
-eq(built1.frame.deadlineAt - built1.frame.observedAt, CB.CONTEXT_BRIDGE_BUDGET_PRE_V1.deadlineMs, 'deadline=now+5000ms')
+eq(built1.frame.deadlineAt - built1.frame.observedAt, CB.CONTEXT_BRIDGE_BUDGET_V1.deadlineMs, 'deadline=now+5000ms')
 ok(built1.frame.window[1].toolName === 'read' && built1.frame.window[1].toolOk === true, 'window segment 标量投影保留')
 const bigWindow = []
 for (let i = 0; i < 20; i++) bigWindow.push({ ...seg, segmentId: 'seg_' + i, text: 'x'.repeat(400) })
@@ -143,7 +143,7 @@ eq(overSegs.frame.window.length, 8, 'window 超 8 条截断到 maxSegments')
 ok(overSegs.dropped.includes('window-truncated'), '截断计账(window-truncated)')
 const byteCut = CB.buildContextPushEnvelopePre({ ...envInput, window: [{ ...seg, segmentId: 'w1', text: 'y'.repeat(3000) }, { ...seg, segmentId: 'w2', text: 'z'.repeat(3000) }] })
 eq(byteCut.frame.window.length, 1, 'inputBytes 超 4096 → 从最旧 window 逐条丢弃至预算内')
-ok(byteCut.inputBytes <= CB.CONTEXT_BRIDGE_BUDGET_PRE_V1.maxInputBytes, '截断后 inputBytes 回到预算内')
+ok(byteCut.inputBytes <= CB.CONTEXT_BRIDGE_BUDGET_V1.maxInputBytes, '截断后 inputBytes 回到预算内')
 const trigHuge = CB.buildContextPushEnvelopePre({ ...envInput, trigger: { ...seg, text: 'y'.repeat(6000) } })
 ok(!trigHuge.ok && trigHuge.reason === 'trigger-oversize', 'trigger 自身超预算 fail closed(trigger-oversize)')
 ok(!CB.buildContextPushEnvelopePre({ ...envInput, session: { ...envInput.session, scope: 'Global' } }).ok, 'scope 非法 fail closed')
@@ -200,12 +200,12 @@ const run1 = CB.replayContextBridge(runArgs)
 const run2 = CB.replayContextBridge(JSON.parse(JSON.stringify(runArgs)))
 eq(JSON.stringify(run1.results), JSON.stringify(run2.results), '同事件流回放逐字段一致')
 eq(run1.results.find((r) => r.label === 'cite-1').evidence.length, 2, 'replay cite 产出 2 条')
-ok(run1.results.find((r) => r.label === 'push-1').observationId.startsWith('obs_pre_'), 'replay envelope id 确定')
+ok(run1.results.find((r) => r.label === 'push-1').observationId.startsWith('obs_'), 'replay envelope id 确定')
 eq(run1.results.find((r) => r.label === 'corr-1').evidence.length, 1, 'replay correction 产出 1 条')
 eq(run1.sink.frames.length, 1, 'replay fake sink 收到 1 帧')
 
 console.log('[A10] 静态卫生:M5 纯核心无 spawn/HTTP/Python 路径')
-const src = readFileSync(new URL('../../lib/context-bridge-pre.js', import.meta.url), 'utf8')
+const src = readFileSync(new URL('../../lib/context-bridge.js', import.meta.url), 'utf8')
 ok(!/child_process|node:net|from\s*'node:http'|spawnSync|execFile|\.python/i.test(src), '无 child_process/net/http/python 引用')
 ok(!src.includes('\uFEFF'), '源文件无 BOM 字符')
 

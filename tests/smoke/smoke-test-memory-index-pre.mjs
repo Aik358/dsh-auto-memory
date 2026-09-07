@@ -10,7 +10,7 @@ process.on('unhandledRejection', (r) => { console.error('\n[M3A-TEST] FATAL unha
 
 globalThis.fetch = async () => ({ ok: false, status: 503, json: async () => ({}) })
 
-const { buildIndex, verifyRecord, coverage, splitByteLines, INDEX_MAX_FILE_BYTES } = await import('../../lib/memory-index-pre.js')
+const { buildIndex, verifyRecord, coverage, splitByteLines, INDEX_MAX_FILE_BYTES } = await import('../../lib/memory-index.js')
 
 // ---------- B1 确定性重建 + 版本 + 文件级 stale ----------
 {
@@ -91,7 +91,7 @@ const { buildIndex, verifyRecord, coverage, splitByteLines, INDEX_MAX_FILE_BYTES
   const home = path.join(ws1, '.dsh-home')
   mkdirSync(home, { recursive: true })
   const memoryRoot = path.join(ws1, '.memory-root')
-  writeFileSync(path.join(home, 'dsh-auto-memory-pre.json'), JSON.stringify({
+  writeFileSync(path.join(home, 'dsh-auto-memory.json'), JSON.stringify({
     memoryRoot, userMemoryDir: path.join(ws1, '.user-root'), projectMemoryDir: '.project-memory', externalSources: {},
   }), 'utf8')
   process.env.DSH_HOME = home
@@ -131,8 +131,8 @@ const { buildIndex, verifyRecord, coverage, splitByteLines, INDEX_MAX_FILE_BYTES
   }
   const { apply } = await import('../../lib/index.js')
   apply(ctx, {})
-  const cfgRoute = registeredRoutes.find((r2) => r2.path === '/api/dsh-auto-memory-pre/config')
-  const dbgRoute = registeredRoutes.find((r2) => r2.path === '/api/dsh-auto-memory-pre/debug')
+  const cfgRoute = registeredRoutes.find((r2) => r2.path === '/api/dsh-auto-memory/config')
+  const dbgRoute = registeredRoutes.find((r2) => r2.path === '/api/dsh-auto-memory/debug')
   let body
   const res = { writeHead() {}, end(b) { body = JSON.parse(b) } }
   await cfgRoute.handler({ socket: { remoteAddress: '127.0.0.1' }, headers: { host: '127.0.0.1:3080' }, method: 'GET', url: '/config' }, res)

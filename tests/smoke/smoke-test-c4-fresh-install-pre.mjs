@@ -39,7 +39,7 @@ process.env.DSH_HOME = home
 // ── F1/F3/F4:插件引擎(词法独立 + C2 探测 + 自检) ──
 const engineMod = await import(pathToFileURL(path.join(repo, 'lib', 'index.js')).href)
 // 引擎以 apply(ctx) 挂载;E2E 只需 dshHome 隔离下的 semantic 模块与决策核,不起 3080。
-const { createJsSemanticEnginePre, E5_SMALL_Q8_MANIFEST_PRE_V1 } = await import(pathToFileURL(path.join(repo, 'lib', 'semantic-js-pre.js')).href)
+const { createJsSemanticEnginePre, E5_SMALL_Q8_MANIFEST_V1 } = await import(pathToFileURL(path.join(repo, 'lib', 'semantic-js.js')).href)
 
 // F2b:资产包 modelsDir 直连引擎(模拟发行包解析到 node_modules 的形态)
 const engine = createJsSemanticEnginePre({
@@ -53,7 +53,7 @@ const st1 = engine.status()
 ok(st1.assetPresent === true, 'F4 资产探测命中资产包路径')
 // rank 触发懒加载 → 自检(384 维+模长) → 建索引
 const corpus = {
-  memoryIndexVersion: 'idx_pre_' + 'a'.repeat(32),
+  memoryIndexVersion: 'idx_' + 'a'.repeat(32),
   records: [
     { memoryId: 'mem_fresh01', scope: 'Workspace', sourceRef: '2026-08-30.md', sourceVersion: 1, recordDigest: 'd0', excerpt: 'DSH 推理档位:off/minimal/low/medium/high/xhigh/max 七档,off 不发送参数' },
     { memoryId: 'mem_fresh02', scope: 'Workspace', sourceRef: '2026-08-30.md', sourceVersion: 1, recordDigest: 'd1', excerpt: 'episodic consolidate 不足 minSegments 时丢弃缓冲,需本地计数' },
@@ -68,19 +68,19 @@ const st2 = engine.status()
 ok(st2.ready === true && st2.model === 'multilingual-e5-small/q8', 'F4 引擎 ready(自检后)')
 
 // F1:词法档独立(无模型注入,lexicalSearch 纯函数)
-const { lexicalSearchPre } = await import(pathToFileURL(path.join(repo, 'lib', 'shadow-retrieval-pre.js')).href).catch(() => ({ lexicalSearchPre: null }))
+const { lexicalSearchPre } = await import(pathToFileURL(path.join(repo, 'lib', 'shadow-retrieval.js')).href).catch(() => ({ lexicalSearchPre: null }))
 if (lexicalSearchPre) {
   const lex = lexicalSearchPre(corpus.records.map((r) => ({ memoryId: r.memoryId, text: r.excerpt })), 'episodic consolidate 丢弃')
   ok(lex && lex.length && lex[0].memoryId === 'mem_fresh02', 'F1 词法档独立命中(top=episodic 记忆)')
 } else {
   // 词法入口名不同时按 M4 契约兜底断言:shadow-retrieval 模块存在即可(具体函数由 m4 套件覆盖)
-  ok(existsSync(path.join(repo, 'lib', 'shadow-retrieval-pre.js')), 'F1 词法层模块存在(C1 保底,细粒度由 m4 套件覆盖)')
+  ok(existsSync(path.join(repo, 'lib', 'shadow-retrieval.js')), 'F1 词法层模块存在(C1 保底,细粒度由 m4 套件覆盖)')
 }
 
 // F2c:manifest 对照(资产包 MANIFEST vs 代码冻结表)
 const pkgManifest = JSON.parse(readFileSync(path.join(nm, 'node_modules', '@deepseek-ai', 'dsh-auto-memory-model-e5small-q8', 'MANIFEST.json'), 'utf8'))
-ok(pkgManifest.files.length === E5_SMALL_Q8_MANIFEST_PRE_V1.files.length, 'F2 资产包 manifest 文件数与冻结表一致(' + pkgManifest.files.length + ')')
-const codeSha = new Map(E5_SMALL_Q8_MANIFEST_PRE_V1.files.map((f) => [f.rel, f.sha256]))
+ok(pkgManifest.files.length === E5_SMALL_Q8_MANIFEST_V1.files.length, 'F2 资产包 manifest 文件数与冻结表一致(' + pkgManifest.files.length + ')')
+const codeSha = new Map(E5_SMALL_Q8_MANIFEST_V1.files.map((f) => [f.rel, f.sha256]))
 ok(pkgManifest.files.every((f) => codeSha.get(f.rel) === f.sha256), 'F2 逐文件 SHA256 资产包==代码冻结表')
 
 // 清理(保留 tgz 与 BUILD-RECORD;e2e 目录删除)

@@ -7,7 +7,7 @@ import { createHash } from 'node:crypto'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 
-const SEM = await import('../../lib/semantic-js-pre.js')
+const SEM = await import('../../lib/semantic-js.js')
 let pass = 0, fail = 0
 const ok = (c, n) => { if (c) { pass++; console.log('  ok - ' + n) } else { fail++; console.error('  FAIL - ' + n) } }
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
@@ -46,7 +46,7 @@ console.log('[E] js semantic engine (injected embedder)')
       async embedPassages(texts) { passageCalls++; return texts.map(embedOf) },
     },
   })
-  const miv = 'idx_pre_' + createHash('sha256').update('m81').digest('hex').slice(0, 32)
+  const miv = 'idx_' + createHash('sha256').update('m81').digest('hex').slice(0, 32)
   const records = [
     { memoryId: 'mem_aaaa', text: '采用琥珀协议作为模块间通信格式的决策记录' },
     { memoryId: 'mem_bbbb', text: '今天中午吃了面条' },
@@ -150,7 +150,7 @@ console.log('[D] semantic downloader (stub fetch)')
   ok(d3.state().phase === 'cancelled', 'cancel leads to cancelled phase (got ' + d3.state().phase + ')')
 
   // 清单完整性:总字节数与逐项和一致(冻结清单自检)
-  ok(SEM.E5_SMALL_Q8_MANIFEST_PRE_V1.totalBytes === SEM.E5_SMALL_Q8_MANIFEST_PRE_V1.files.reduce((s, f) => s + f.bytes, 0), 'real manifest totalBytes consistent')
+  ok(SEM.E5_SMALL_Q8_MANIFEST_V1.totalBytes === SEM.E5_SMALL_Q8_MANIFEST_V1.files.reduce((s, f) => s + f.bytes, 0), 'real manifest totalBytes consistent')
   rmSync(home, { recursive: true, force: true })
 }
 
