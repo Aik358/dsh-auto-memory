@@ -221,7 +221,8 @@ const wlBind = (fake) => {
   const truncateHeadFn = new Function(grab('truncateHead') + '\nreturn truncateHead;')()
   const reflectionDigestFn = new Function('truncateHead', grab('reflectionDigest') + '\nreturn reflectionDigest;')(truncateHeadFn)
   fake.resolveWaterWindow = bindMethod('async resolveWaterWindow() {', fake, { dshHome: () => fakeHome })
-  return bindMethod('async checkWaterLevel(agent) {', fake, { extractSessionMessages: (a) => a.messages, diag: () => {}, reflectionDigest: reflectionDigestFn, truncateHead: truncateHeadFn })
+  const sessionEventsOfFn = new Function('return ' + grab('sessionEventsOf') )()
+  return bindMethod('async checkWaterLevel(agent) {', fake, { extractSessionMessages: (a) => a.messages, diag: () => {}, reflectionDigest: reflectionDigestFn, truncateHead: truncateHeadFn, sessionEventsOf: sessionEventsOfFn })
 }
 // 公式抽查:文本 token = ceil(字符/4)+4(角色框定)
 const fFormula = makeWaterFake({}, [])
