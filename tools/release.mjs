@@ -307,12 +307,13 @@ console.log('[release] pre→正式 替换:', totalReplaced, '处 /', transformF
 // ---------- 4. 生成正式 package.json ----------
 const relPkg = {
   name: '@a9i5k4/dsh-auto-memory',
-  description: '主动联想记忆插件:记忆不靠模型调用,自己被唤回——Host 观察情境,NLP+向量化双轨检索,固定边界注入不破坏前缀缓存。三层记忆自动沉淀、欢迎向导、唤起回顾、无人值守、AI 问候与反思、日历、跨工具记忆继承。Proactive associative memory for DSH: zero-call recall, three-layer auto-consolidation, welcome tour, unattended mode.',
+  description: 'Proactive associative memory for DSH: zero-prompt recall injected before the model speaks, three-layer auto-consolidation, skill crystallization, and Astra-style context management - handoff ledgers, PLAN whiteboard, water-level sensing. Local-first, model-agnostic, zero deps. 主动联想记忆+Astra 式上下文管理:自动唤回/自动沉淀/技能固化/交接账本与白板跨窗口续命/水位感知。',
   version,
   type: 'module',
   main: 'lib/index.js',
   exports: { '.': './lib/index.js', './client': './lib/client.js', './package.json': './package.json' },
-  files: ['lib', 'cordis.patch.yml'],
+  // #20:python/ 运行时(worker+语义引擎+策略)必须随包;bench(539MB 模型夹具)与 __pycache__ 永久排除
+  files: ['lib', 'python', 'cordis.patch.yml', '!python/bench', '!python/__pycache__'],
   dsh: {
     bundle: { patch: './cordis.patch.yml' },
     client: {
