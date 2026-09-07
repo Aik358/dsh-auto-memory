@@ -26,9 +26,10 @@
 
 ## 3. 当前状态（截至交接）
 
-**已发布 2.1.9**（npm latest / GitHub main / tag 同步；preview 分支 = 开发历史含全部过程提交）。
+**已发布 2.2.0**（npm latest / GitHub main / tag 同步；preview 分支 = 开发历史含全部过程提交）。
 
 刚完成的（详见 git log 近 20 条）：
+- **2.2.0**：外部记忆继承扩展 ZCode / Kimi Code / TRAE（自动扫描常见数据目录，链接模式只注路径不注内容）；定时做梦式固化（默认 09:30/7 天回看）+ 定时 30 天蒸馏（默认 10:00，无旧日志零成本跳过）；设置页新增「上下文管理」分区（交接白板+水位 7 项，新暴露 PlanChars/LedgerChars/WaterThreshold）；README 中英双语主副标题；快照外部源展示上限 3→6
 - **#16-#20 五个 issue 全闭**：session 事件兼容（采社区 PR #17，贡献者已署名）/ greet 500 / 冷却允许 0 / **npm 包缺 python/**（双根部：dev files + release.mjs 生成器硬编码，均已修）
 - **M7.6 Python 一键向导**：`lib/python-setup-pre.js`，detect→venv→deps→model 四步，装 `~/.dsh/python-engine/`（用户目录），6 个 API（`/api/dsh-auto-memory-pre/python-setup/*`），设置页有向导组件；GPU 推理开关（勾选装 onnxruntime-gpu；**CPU 基础集无 torch**——int8 档实测不需要）
 - **JS 模型迁移用户目录**：`~/.dsh/models/js-semantic/`（原包目录在 npm 更新时被冲掉，用户"下载不成功"的主因）

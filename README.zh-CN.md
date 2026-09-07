@@ -1,7 +1,7 @@
-# dsh-auto-memory — 她记得，不必吩咐
+# dsh-auto-memory — 无问自忆 · She remembers, unbidden
 
-> **现在，换窗口也不必。**
-> 跨窗口 · 跨会话 · 跨工具，记忆不断线
+> **中文** 现在，换窗口也不必。跨窗口 · 跨会话 · 跨工具，记忆不断线
+> **EN** She remembers, unbidden — now, across windows, too. Context that survives windows, sessions, and tools
 
 <p align="center">
   <a href="https://htmlpreview.github.io/?https://github.com/Aik358/dsh-auto-memory/blob/preview/docs/landing/index.html"><strong>🌐 宣传主页（功能全景 · 数据流 · 论文 · 截图）</strong></a>
