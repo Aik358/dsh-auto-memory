@@ -105,7 +105,8 @@ const turnStartEvent = (seq, turn, time) => ({ type: 'turn/start', seq, time: ti
   const h = makeHarness('cfg', {})
   try {
     if (h.registeredTools.length !== 14) throw new Error('tool count drifted: ' + h.registeredTools.length)
-    if (h.registeredRoutes.length !== 41) throw new Error('route count drifted (expected 41): ' + h.registeredRoutes.length)
+    // 2026-09-08:41→42(ws-overview-rank 路由落线后 smoke-test.mjs 已按 42 守卫,此处同步)
+    if (h.registeredRoutes.length !== 42) throw new Error('route count drifted (expected 42): ' + h.registeredRoutes.length)
     const cfg = await h.prime()
     // 2026-08-26 裁定:reasoningObserverEnabled/contextBridgeObserveChildSessions 默认 true
     // (开源模型为主,思维链/分支是主要观测面);其余实验开关仍默认 false
