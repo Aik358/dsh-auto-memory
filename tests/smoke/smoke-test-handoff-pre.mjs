@@ -13,6 +13,8 @@ import { readFile, writeFile, mkdir, readdir, stat } from 'node:fs/promises'
 import path from 'node:path'
 import os from 'node:os'
 import { fileURLToPath } from 'node:url'
+// 2.2.4:resolveWaterWindow 把 settings.yaml 解析抽成纯函数(block+flow 双支持);测试用 new Function 抽取方法体执行,须显式注入。
+import { parseModelWindowsPre, pickWindowPre, findOfficialContextWindowPre } from '../../lib/water-window.js'
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 const SRC = readFileSync(path.resolve(HERE, '..', '..', 'lib', 'index.js'), 'utf8')
@@ -200,17 +202,18 @@ writeFileSync(path.join(fakeHome, 'settings.yaml'), [
   '        - id: deepseek-v4-flash',
   '          contextWindow: 1000000',
 ].join(String.fromCharCode(10)))
+const waterDeps = { parseModelWindowsPre, pickWindowPre }
 const fakeRw = makeWaterFake({ waterLevelWindowTokens: 0 }, [])
-const resolveWaterWindow = bindMethod('async resolveWaterWindow() {', fakeRw, { dshHome: () => fakeHome })
+const resolveWaterWindow = bindMethod('async resolveWaterWindow() {', fakeRw, Object.assign({ dshHome: () => fakeHome }, waterDeps))
 const w1 = await resolveWaterWindow()
 ok(w1.window === 1000000 && w1.source === 'auto:opencode-go/deepseek-v4-flash', '自动检测:(' + JSON.stringify(w1) + ')')
 const w2 = await resolveWaterWindow()
 ok(w2.window === 1000000, '60s 缓存生效')
 const fakeM = makeWaterFake({ waterLevelWindowTokens: 777 }, [])
-const resolveM = bindMethod('async resolveWaterWindow() {', fakeM, { dshHome: () => fakeHome })
+const resolveM = bindMethod('async resolveWaterWindow() {', fakeM, Object.assign({ dshHome: () => fakeHome }, waterDeps))
 ok((await resolveM()).window === 777 && (await resolveM()).source === 'manual', '手动覆盖优先于自动检测')
 const fakeF = makeWaterFake({ waterLevelWindowTokens: 0 }, [])
-const resolveF = bindMethod('async resolveWaterWindow() {', fakeF, { dshHome: () => path.join(tmpRoot, 'no-home') })
+const resolveF = bindMethod('async resolveWaterWindow() {', fakeF, Object.assign({ dshHome: () => path.join(tmpRoot, 'no-home') }, waterDeps))
 ok((await resolveF()).window === 131072 && (await resolveF()).source === 'fallback', '检测失败回退 131072')
 
 console.log('[handoff] G6 M-CM4 水位感知(官方 token 公式+compaction 事件)')
@@ -230,9 +233,9 @@ const wlBind = (fake) => {
   fake.estimateSessionTokens = bindMethod('estimateSessionTokens(messages) {', fake, {})
   const truncateHeadFn = new Function(grab('truncateHead') + '\nreturn truncateHead;')()
   const reflectionDigestFn = new Function('truncateHead', grab('reflectionDigest') + '\nreturn reflectionDigest;')(truncateHeadFn)
-  fake.resolveWaterWindow = bindMethod('async resolveWaterWindow() {', fake, { dshHome: () => fakeHome })
+  fake.resolveWaterWindow = bindMethod('async resolveWaterWindow() {', fake, Object.assign({ dshHome: () => fakeHome }, waterDeps))
   const sessionEventsOfFn = new Function('return ' + grab('sessionEventsOf') )()
-  return bindMethod('async checkWaterLevel(agent) {', fake, { extractSessionMessages: (a) => a.messages, diag: () => {}, reflectionDigest: reflectionDigestFn, truncateHead: truncateHeadFn, sessionEventsOf: sessionEventsOfFn })
+  return bindMethod('async checkWaterLevel(agent) {', fake, { extractSessionMessages: (a) => a.messages, diag: () => {}, reflectionDigest: reflectionDigestFn, truncateHead: truncateHeadFn, sessionEventsOf: sessionEventsOfFn, findOfficialContextWindowPre })
 }
 // 公式抽查:文本 token = ceil(字符/4)+4(角色框定)
 const fFormula = makeWaterFake({}, [])
