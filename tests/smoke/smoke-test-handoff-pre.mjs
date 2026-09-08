@@ -152,6 +152,16 @@ ok(out2.includes('白板 PLAN.md') && !out2.includes('最近交接'), '无账本
 const out3 = run(makeFakeThis(PLAN_LONG, '# 交接账本', false))
 ok(!out3.includes('白板 PLAN.md') && !out3.includes('最近交接'), 'handoffEnabled=false 完全隐藏')
 
+// G4b 全局账本兜底(2026-09-08,新会话未绑定工作区修复):plan/ledger 均空 + globalLedgerPath 就位 → 注入 [交接续命] 指针;已绑定或不缓存时不注入
+const fakeUnbound = makeFakeThis('', '', true)
+fakeUnbound.state.globalLedgerPath = 'C:\\mem\\workspaces\\--X--\\handoff\\handoff-20260908-125104.md'
+const outUnbound = run(fakeUnbound)
+ok(outUnbound.includes('[交接续命]') && outUnbound.includes('handoff-20260908-125104.md'), '未绑定+有全局账本 → 注入 [交接续命] 指针(含绝对路径)')
+const outBound = run(makeFakeThis(PLAN_LONG, '# 交接账本', true))
+ok(!outBound.includes('[交接续命]'), '已绑定 → 正常注入白板账本,不出兜底行')
+const fakeNoCache = makeFakeThis('', '', true)
+ok(!run(fakeNoCache).includes('[交接续命]'), '未绑定但全局账本未缓存 → 不注入空指针')
+
 console.log('[handoff] G5 M-CM2 recall scope 路由(源码守卫+语料检索)')
 ok(SRC.includes("async recall(query, limit = 8, agent, scope = 'all')"), 'recall 带 scope 参数(默认 all)')
 ok(SRC.includes("if (scope === 'handoff') {") && SRC.includes("if (scope === 'sessions') {"), 'handoff/sessions 早返分支存在')

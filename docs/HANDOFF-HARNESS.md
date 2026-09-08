@@ -58,7 +58,7 @@
 ## 5. 快速验证清单（接手后先跑一遍确认环境正常）
 
 ```bash
-node tests/smoke/smoke-test.mjs            # 主套件（需 41 路由断言通过）
+node tests/smoke/smoke-test.mjs            # 主套件（需 42 路由断言通过）
 node tests/smoke/smoke-test-handoff-pre.mjs # 43/43
 node tests/smoke/smoke-test-m85-storage-manage-pre.mjs  # 45/45
 curl -s http://127.0.0.1:3080/api/dsh-auto-memory-pre/handoff-state  # (需 harness 运行中;loopback 免认证) 返回 enabled:true
