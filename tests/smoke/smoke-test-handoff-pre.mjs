@@ -230,6 +230,8 @@ function makeWaterFake(opts, ledgerCalls) {
     runtimeFor: () => rt,
     resolvePaths: async () => ({ handoffDir: seeded, projectDir: path.join(tmpRoot, 'ws-g5'), logPath: path.join(seeded, 'fake-log.md') }),
     writeHandoffLedger: async (dir, content) => { ledgerCalls.push(content); return { ok: true, path: path.join(seeded, 'auto-' + ledgerCalls.length + '.md') } },
+    // 会话级水位记录(2026-09-08):host 现在把每次测量按 sessionId 存下来,切会话按会话取数
+    rememberWaterRecord: function (sid, rec) { if (!this._waterRecords) this._waterRecords = {}; if (sid) this._waterRecords[sid] = rec },
     state: {},
   })
   fake._rt = rt
@@ -267,6 +269,13 @@ await wlBind(fOver)({ messages: [{ text: 'w'.repeat(12000) }] })
 const overRatio = Number(fOver.state.waterLevelRatio) || 0
 ok(Math.abs(overRatio - 3.004) < 0.001, '超额水位如实上报 ratio=' + overRatio.toFixed(3) + '(旧版恒为 1.5)')
 ok(fOver.state.waterLevelWindow === 1000 && fOver.state.waterLevelSource === 'manual', '窗口数值/来源同步写入 state(' + fOver.state.waterLevelWindow + '/' + fOver.state.waterLevelSource + ')')
+// 会话级记录(2026-09-08):切会话时按 sessionId 取数,不再显示别的会话的水位
+const fSess = makeWaterFake({}, [])
+const wlSess = wlBind(fSess)
+await wlSess({ session: { id: 'sess-A', events: [] }, messages: [{ text: 'x'.repeat(3200) }] })
+await wlSess({ session: { id: 'sess-B', events: [] }, messages: [{ text: 'x'.repeat(400) }] })
+ok(fSess._waterRecords && fSess._waterRecords['sess-A'] && fSess._waterRecords['sess-A'].tokens === 804, '会话 A 按 sessionId 记录(tokens=804)')
+ok(fSess._waterRecords && fSess._waterRecords['sess-B'] && fSess._waterRecords['sess-B'].tokens === 104, '会话 B 独立记录(tokens=104),互不覆盖')
 // compaction 事件:水位 0.6 未到阈值,但检测到 compaction → 触发(0.5≤ratio 且 compacted)
 const ledgerCalls2 = []
 const fCmp = makeWaterFake({}, ledgerCalls2)
