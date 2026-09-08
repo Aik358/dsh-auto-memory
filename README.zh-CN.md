@@ -1,4 +1,6 @@
-# dsh-auto-memory — 无问自忆 · She remembers, unbidden
+# 无问自忆 · 记忆不断线
+
+**dsh-auto-memory** — *She remembers, unbidden.*
 
 > **中文** 现在，换窗口也不必。跨窗口 · 跨会话 · 跨工具，记忆不断线
 > **EN** She remembers, unbidden — now, across windows, too. Context that survives windows, sessions, and tools
