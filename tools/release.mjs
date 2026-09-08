@@ -340,9 +340,10 @@ if (!dryRun) {
     const devPkgPath = path.join(DEV, 'package.json')
     const devPkg = JSON.parse(readFileSync(devPkgPath, 'utf8'))
     if (devPkg.version !== version) {
+      const prev = devPkg.version
       devPkg.version = version
       writeFileSync(devPkgPath, JSON.stringify(devPkg, null, 2) + '\n')
-      console.log('[release] 开发树版本回写:', devPkg.version, '→', version)
+      console.log('[release] 开发树版本回写:', prev, '→', version)
     } else {
       console.log('[release] 开发树版本已一致:', version)
     }
