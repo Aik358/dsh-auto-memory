@@ -331,6 +331,26 @@ const relPkg = {
 }
 writeFileSync(path.join(REL, 'package.json'), JSON.stringify(relPkg, null, 2) + '\n')
 
+// ---------- 4.5 版本回写开发树(2026-09-08) ----------
+// 开发树经 symlink 就是本机实际加载的副本,面板徽标与「检测更新」都读它的 package.json.version。
+// 此前开发树版本长期停在 0.1.30(只有 REL 树被写版本),导致界面显示 1.30、更新检查永远"有新版本"。
+// 发布即把版本回写开发树,两条线的版本号永远一致。
+if (!dryRun) {
+  try {
+    const devPkgPath = path.join(DEV, 'package.json')
+    const devPkg = JSON.parse(readFileSync(devPkgPath, 'utf8'))
+    if (devPkg.version !== version) {
+      devPkg.version = version
+      writeFileSync(devPkgPath, JSON.stringify(devPkg, null, 2) + '\n')
+      console.log('[release] 开发树版本回写:', devPkg.version, '→', version)
+    } else {
+      console.log('[release] 开发树版本已一致:', version)
+    }
+  } catch (e) {
+    console.warn('[release] ⚠ 开发树版本回写失败(不影响发布):', e && e.message)
+  }
+}
+
 // ---------- 5. 验证 ----------
 console.log('[release] 验证 ...')
 // 审查修复轮2:语法检查失败必须硬退出(旧实现把执行异常当 'ERR' 可接受,存在假绿)
