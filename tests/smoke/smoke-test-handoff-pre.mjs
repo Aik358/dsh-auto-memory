@@ -255,6 +255,12 @@ ok(fHigh._rt.waterLevelAdvised && (fHigh.state.waterLevelRatio || 0) >= 0.8, '�
 ok(ledgerCalls.length === 1 && ledgerCalls[0].includes('系统自动快照') && ledgerCalls[0].includes('token') && ledgerCalls[0].includes('## 已试方案与失败原因'), '抽取性骨架账本写一次(' + JSON.stringify(String(ledgerCalls[0] || '').slice(0, 150)) + ')')
 await wlHigh({ messages: [{ text: 'x'.repeat(3200) }] })
 ok(ledgerCalls.length === 1, '第二次调用不重复写(每会话一次)')
+// 2.2.4 修复:水位比例不再硬截断到 1.5(旧版把 761692/131072≈5.81 显示成 150%)
+const fOver = makeWaterFake({}, [])
+await wlBind(fOver)({ messages: [{ text: 'w'.repeat(12000) }] })
+const overRatio = Number(fOver.state.waterLevelRatio) || 0
+ok(Math.abs(overRatio - 3.004) < 0.001, '超额水位如实上报 ratio=' + overRatio.toFixed(3) + '(旧版恒为 1.5)')
+ok(fOver.state.waterLevelWindow === 1000 && fOver.state.waterLevelSource === 'manual', '窗口数值/来源同步写入 state(' + fOver.state.waterLevelWindow + '/' + fOver.state.waterLevelSource + ')')
 // compaction 事件:水位 0.6 未到阈值,但检测到 compaction → 触发(0.5≤ratio 且 compacted)
 const ledgerCalls2 = []
 const fCmp = makeWaterFake({}, ledgerCalls2)

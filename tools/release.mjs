@@ -192,6 +192,8 @@ const libModuleRenames = [
   'procedure-store-pre.js', 'python-sidecar-client-pre.js', 'semantic-decide-pre.js',
   'semantic-js-pre.js', 'shadow-host-pre.js', 'shadow-retrieval-pre.js',
   'storage-manage-pre.js', 'python-setup-pre.js',
+  // 2.2.4 新增模块(子代理痕迹回收 / 上下文窗口解析)
+  'subagent-gc-pre.js', 'water-window-pre.js',
 ]
 const libRenameMap = libModuleRenames.map((f) => [f, f.replace(/-pre\.js$/, '.js')])
 for (const [from, to] of libRenameMap) {
