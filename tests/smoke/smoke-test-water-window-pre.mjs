@@ -21,7 +21,7 @@
  */
 
 import assert from 'node:assert/strict'
-import { parseModelWindowsPre, pickWindowPre, findOfficialContextWindowPre } from '../../lib/water-window.js'
+import { parseModelWindowsPre, pickWindowPre, findOfficialContextWindowPre, findSessionModelPre } from '../../lib/water-window.js'
 
 let pass = 0
 let fail = 0
@@ -100,6 +100,24 @@ try {
   ok('W9 非法 contextWindow 返回 0', findOfficialContextWindowPre([{ type: 'request/context', data: { contextWindow: 'x' } }]) === 0)
   ok('W10 maxScan 限制生效(只扫最近 1 条 → 0)', findOfficialContextWindowPre(longEvents, 1) === 0)
   ok('W9 非数组输入返回 0', findOfficialContextWindowPre(null) === 0)
+
+  // ── W11-W14 会话真实模型(request/header 优先,2026-09-08) ──────────
+  const sessEvents = [
+    { type: 'request/header', data: { header: { config: { provider: 'deepseek-official', model: 'deepseek-v4.1-flash-expires-on-0910' } } } },
+    { type: 'request/context', data: { provider: 'deepseek-official', model: 'deepseek-v4.1-flash-expires-on-0910', contextWindow: 1000000 } },
+  ]
+  for (let i = 0; i < 3000; i++) sessEvents.push({ type: 'assistant/chunk', data: { i } })
+  const m1 = findSessionModelPre(sessEvents)
+  ok('W11 取会话真实 provider/model(事件在开头也能取到)', m1.provider === 'deepseek-official' && m1.model === 'deepseek-v4.1-flash-expires-on-0910')
+  ok('W12 顺带带回 contextWindow', m1.contextWindow === 1000000)
+  ok('W13 无 request 事件时返回空', JSON.stringify(findSessionModelPre([{ type: 'user/message', data: {} }])) === '{"provider":"","model":"","contextWindow":0}')
+  ok('W13 非数组输入返回空', findSessionModelPre(null).model === '')
+  const newer = [
+    { type: 'request/header', data: { header: { config: { provider: 'deepseek-official', model: 'deepseek-v4.1-flash-expires-on-0910' } } } },
+    { type: 'request/header', data: { header: { config: { provider: 'opencode-go', model: 'deepseek-v4-flash' } } } },
+  ]
+  ok('W14 last-wins 取最新一条 request/header', findSessionModelPre(newer).model === 'deepseek-v4-flash')
+  ok('W14 maxScan 限制生效(只扫最近 1 条仍取到最新)', findSessionModelPre(newer, 1).model === 'deepseek-v4-flash')
 } catch (e) {
   fail++
   console.log('  FAIL - 未捕获异常: ' + (e && e.stack ? e.stack : e))

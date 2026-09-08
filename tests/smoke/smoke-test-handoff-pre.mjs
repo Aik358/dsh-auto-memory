@@ -14,7 +14,7 @@ import path from 'node:path'
 import os from 'node:os'
 import { fileURLToPath } from 'node:url'
 // 2.2.4:resolveWaterWindow 把 settings.yaml 解析抽成纯函数(block+flow 双支持);测试用 new Function 抽取方法体执行,须显式注入。
-import { parseModelWindowsPre, pickWindowPre, findOfficialContextWindowPre } from '../../lib/water-window.js'
+import { parseModelWindowsPre, pickWindowPre, findOfficialContextWindowPre, findSessionModelPre } from '../../lib/water-window.js'
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 const SRC = readFileSync(path.resolve(HERE, '..', '..', 'lib', 'index.js'), 'utf8')
@@ -201,19 +201,25 @@ writeFileSync(path.join(fakeHome, 'settings.yaml'), [
   '      models:',
   '        - id: deepseek-v4-flash',
   '          contextWindow: 1000000',
+  'llm-deepseek:',
+  '  models:',
+  '    - id: deepseek-v4.1-flash-expires-on-0910',
+  '      contextWindow: 1000000',
 ].join(String.fromCharCode(10)))
 const waterDeps = { parseModelWindowsPre, pickWindowPre }
 const fakeRw = makeWaterFake({ waterLevelWindowTokens: 0 }, [])
-const resolveWaterWindow = bindMethod('async resolveWaterWindow() {', fakeRw, Object.assign({ dshHome: () => fakeHome }, waterDeps))
+const resolveWaterWindow = bindMethod("async resolveWaterWindow(providerOverride = '', modelOverride = '') {", fakeRw, Object.assign({ dshHome: () => fakeHome }, waterDeps))
 const w1 = await resolveWaterWindow()
 ok(w1.window === 1000000 && w1.source === 'auto:opencode-go/deepseek-v4-flash', '自动检测:(' + JSON.stringify(w1) + ')')
+const wSess = await resolveWaterWindow('deepseek-official', 'deepseek-v4.1-flash-expires-on-0910')
+ok(wSess.window === 1000000 && wSess.source === 'auto:deepseek-official/deepseek-v4.1-flash-expires-on-0910', '会话真实模型优先于默认模型:(' + JSON.stringify(wSess) + ')')
 const w2 = await resolveWaterWindow()
 ok(w2.window === 1000000, '60s 缓存生效')
 const fakeM = makeWaterFake({ waterLevelWindowTokens: 777 }, [])
-const resolveM = bindMethod('async resolveWaterWindow() {', fakeM, Object.assign({ dshHome: () => fakeHome }, waterDeps))
+const resolveM = bindMethod("async resolveWaterWindow(providerOverride = '', modelOverride = '') {", fakeM, Object.assign({ dshHome: () => fakeHome }, waterDeps))
 ok((await resolveM()).window === 777 && (await resolveM()).source === 'manual', '手动覆盖优先于自动检测')
 const fakeF = makeWaterFake({ waterLevelWindowTokens: 0 }, [])
-const resolveF = bindMethod('async resolveWaterWindow() {', fakeF, Object.assign({ dshHome: () => path.join(tmpRoot, 'no-home') }, waterDeps))
+const resolveF = bindMethod("async resolveWaterWindow(providerOverride = '', modelOverride = '') {", fakeF, Object.assign({ dshHome: () => path.join(tmpRoot, 'no-home') }, waterDeps))
 ok((await resolveF()).window === 131072 && (await resolveF()).source === 'fallback', '检测失败回退 131072')
 
 console.log('[handoff] G6 M-CM4 水位感知(官方 token 公式+compaction 事件)')
@@ -224,6 +230,8 @@ function makeWaterFake(opts, ledgerCalls) {
     runtimeFor: () => rt,
     resolvePaths: async () => ({ handoffDir: seeded, projectDir: path.join(tmpRoot, 'ws-g5'), logPath: path.join(seeded, 'fake-log.md') }),
     writeHandoffLedger: async (dir, content) => { ledgerCalls.push(content); return { ok: true, path: path.join(seeded, 'auto-' + ledgerCalls.length + '.md') } },
+    // 会话级水位记录(2026-09-08):host 现在把每次测量按 sessionId 存下来,切会话按会话取数
+    rememberWaterRecord: function (sid, rec) { if (!this._waterRecords) this._waterRecords = {}; if (sid) this._waterRecords[sid] = rec },
     state: {},
   })
   fake._rt = rt
@@ -233,9 +241,9 @@ const wlBind = (fake) => {
   fake.estimateSessionTokens = bindMethod('estimateSessionTokens(messages) {', fake, {})
   const truncateHeadFn = new Function(grab('truncateHead') + '\nreturn truncateHead;')()
   const reflectionDigestFn = new Function('truncateHead', grab('reflectionDigest') + '\nreturn reflectionDigest;')(truncateHeadFn)
-  fake.resolveWaterWindow = bindMethod('async resolveWaterWindow() {', fake, Object.assign({ dshHome: () => fakeHome }, waterDeps))
+  fake.resolveWaterWindow = bindMethod("async resolveWaterWindow(providerOverride = '', modelOverride = '') {", fake, Object.assign({ dshHome: () => fakeHome }, waterDeps))
   const sessionEventsOfFn = new Function('return ' + grab('sessionEventsOf') )()
-  return bindMethod('async checkWaterLevel(agent) {', fake, { extractSessionMessages: (a) => a.messages, diag: () => {}, reflectionDigest: reflectionDigestFn, truncateHead: truncateHeadFn, sessionEventsOf: sessionEventsOfFn, findOfficialContextWindowPre })
+  return bindMethod('async checkWaterLevel(agent) {', fake, { extractSessionMessages: (a) => a.messages, diag: () => {}, reflectionDigest: reflectionDigestFn, truncateHead: truncateHeadFn, sessionEventsOf: sessionEventsOfFn, findOfficialContextWindowPre, findSessionModelPre })
 }
 // 公式抽查:文本 token = ceil(字符/4)+4(角色框定)
 const fFormula = makeWaterFake({}, [])
@@ -255,6 +263,19 @@ ok(fHigh._rt.waterLevelAdvised && (fHigh.state.waterLevelRatio || 0) >= 0.8, '�
 ok(ledgerCalls.length === 1 && ledgerCalls[0].includes('系统自动快照') && ledgerCalls[0].includes('token') && ledgerCalls[0].includes('## 已试方案与失败原因'), '抽取性骨架账本写一次(' + JSON.stringify(String(ledgerCalls[0] || '').slice(0, 150)) + ')')
 await wlHigh({ messages: [{ text: 'x'.repeat(3200) }] })
 ok(ledgerCalls.length === 1, '第二次调用不重复写(每会话一次)')
+// 2.2.4 修复:水位比例不再硬截断到 1.5(旧版把 761692/131072≈5.81 显示成 150%)
+const fOver = makeWaterFake({}, [])
+await wlBind(fOver)({ messages: [{ text: 'w'.repeat(12000) }] })
+const overRatio = Number(fOver.state.waterLevelRatio) || 0
+ok(Math.abs(overRatio - 3.004) < 0.001, '超额水位如实上报 ratio=' + overRatio.toFixed(3) + '(旧版恒为 1.5)')
+ok(fOver.state.waterLevelWindow === 1000 && fOver.state.waterLevelSource === 'manual', '窗口数值/来源同步写入 state(' + fOver.state.waterLevelWindow + '/' + fOver.state.waterLevelSource + ')')
+// 会话级记录(2026-09-08):切会话时按 sessionId 取数,不再显示别的会话的水位
+const fSess = makeWaterFake({}, [])
+const wlSess = wlBind(fSess)
+await wlSess({ session: { id: 'sess-A', events: [] }, messages: [{ text: 'x'.repeat(3200) }] })
+await wlSess({ session: { id: 'sess-B', events: [] }, messages: [{ text: 'x'.repeat(400) }] })
+ok(fSess._waterRecords && fSess._waterRecords['sess-A'] && fSess._waterRecords['sess-A'].tokens === 804, '会话 A 按 sessionId 记录(tokens=804)')
+ok(fSess._waterRecords && fSess._waterRecords['sess-B'] && fSess._waterRecords['sess-B'].tokens === 104, '会话 B 独立记录(tokens=104),互不覆盖')
 // compaction 事件:水位 0.6 未到阈值,但检测到 compaction → 触发(0.5≤ratio 且 compacted)
 const ledgerCalls2 = []
 const fCmp = makeWaterFake({}, ledgerCalls2)
