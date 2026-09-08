@@ -12,6 +12,7 @@
   "files": [
     "lib",
     "python",
+    "docs",
     "cordis.patch.yml",
     "!python/bench",
     "!python/__pycache__"
