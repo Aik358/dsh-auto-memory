@@ -65,7 +65,7 @@ console.log('tools:', registeredTools.map((t) => t.name).join(', '))
 console.log('routes:', registeredRoutes.map((r) => r.path).join(', '))
 
 if (registeredTools.length !== 14) throw new Error('expected 14 tools, got ' + registeredTools.length)
-if (registeredRoutes.length !== 42) throw new Error('expected 42 routes, got ' + registeredRoutes.length)
+if (registeredRoutes.length !== 43) throw new Error('expected 43 routes, got ' + registeredRoutes.length)
 if (sections.length !== 1) throw new Error('expected 1 prompt section (static rules)')
 if (contexts.length !== 2) throw new Error('expected 2 dynamic contexts (memory snapshot + m6 reference tail surface), got ' + contexts.length)
 
