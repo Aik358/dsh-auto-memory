@@ -139,22 +139,27 @@ ok(argsNone.agentPreset === 'default' && argsNone.cwd === undefined && argsNone.
 ok(bodyOf(SRC, 'async function executeContinue(d, onMsg) {').includes('rf.session.create(continueCreateArgs(d))'),
   'G10 executor creates with continueCreateArgs(d)')
 
-// —— G11(①):running true→false 轮次边界,弃"两轮水位持平" ——
-ok(SRC.includes('function currentRunningInfo()') && SRC.includes('s.byId[sessionId]') === false || SRC.includes('snap.byId && snap.byId[id]'),
-  'G11 reads authoritative running bit from sessions.list snapshot')
-ok(SRC.includes('autoState.lastRunning === true && info.running === false'), 'G11 triggers on the running true→false edge')
-ok(SRC.includes('setTimeout(function () { verifyEdge(edgeAt) }, 3000)'), 'G11 3s short-confirm before treating it as a turn boundary')
+// —— G11(①):触发权移交宿主(2.2.6)——边沿观察/倒计时全在 host;client 只轮询状态展示 ——
+ok(SRC.includes('function currentRunningInfo()') && (SRC.includes('snap.byId && snap.byId[id]') || SRC.includes('s.byId[sessionId]')),
+  'G11 currentRunningInfo still reads authoritative running bit (legacy/manual paths)')
+ok(HSRC.includes('engine.armAutoContinue(agent, { ratio: rt2.waterLevel'),
+  'G11 trigger moved to host: turn-stopping arms host-side countdown after water measurement')
+ok(HSRC.includes('expiresAt: now + sec * 1000') && /autoContinueConfirmSeconds/.test(HSRC),
+  'G11 host countdown (confirmSeconds) replaces client 3s short-confirm')
 ok(!SRC.includes('wl.tokens === autoState.lastTokens'), 'G11 old "two polls flat tokens = idle" heuristic removed')
-ok(SRC.includes('sessions.list.subscribe(observe)') && SRC.includes('setInterval(function () { observe(); maybePrompt(autoState.edgeAt) }, 20000)'),
-  'G11 edge subscription + 20s fallback poll (挂机/水位后到)')
+ok(SRC.includes('apiGet(API.autoContState)') && SRC.includes('setInterval(poll, 3000)'),
+  'G11 client polls host auto-continue state every 3s (render-only)')
+ok(HSRC.includes('void engine.tickAutoContinue()'), 'G11 host heartbeat drives deadline execution (15s tick)')
 
-// —— G12(②③④):确认卡三分支 + 刷新仪式 + 材料分层 ——
+// —— G12(②③④):确认卡三分支(同意/拒绝交宿主,超时宿主执行)+ 刷新仪式 + 材料分层 ——
 ok(SRC.includes('autoContAgree') && SRC.includes('autoContReject') && SRC.includes('autoContTimeout'),
-  'G12 confirm card has agree / reject / timeout branches')
-ok(SRC.includes('autoState.rejectedEdgeAt === edgeAt') && SRC.includes('autoState.rejectedEdgeAt = edgeAt'),
-  'G12 rejection recorded per boundary (同一边界不重复提示)')
-ok(SRC.includes('autoState.promptVisible = true') && SRC.includes('runAuto()   // ③超时 = 挂机 → 自动接续兜底'),
-  'G12 timeout auto-continues (unattended fallback)')
+  'G12 confirm card has agree / reject / timeout labels')
+ok(SRC.includes("action: 'agree'") && SRC.includes("action: 'reject'"),
+  'G12 decisions posted to host (host owns execution)')
+ok(HSRC.includes('st.rejectedEdgeAt = armedEdge') && HSRC.includes('now - st.rejectedEdgeAt < 10 * 60 * 1000'),
+  'G12 rejection recorded host-side (10min window, re-evaluated at next boundary)')
+ok(HSRC.includes('Date.now() < st.armed.expiresAt') && HSRC.includes('await this.hostAutoContinue()'),
+  'G12 host timeout auto-continues (unattended fallback)')
 ok(SRC.includes('async function refreshOldSession(') && SRC.includes('async function waitForRefresh(') && SRC.includes('await refreshOldSession(onMsg)'),
   'G12 ③refresh ritual before material assembly (PLAN+ledger, fail-soft)')
 ok(HSRC.includes('refreshRitualPrompt()') && HSRC.includes('autoContinueRefreshRitual === false') && HSRC.includes('refresh: this.config.autoContinueRefreshRitual'),
