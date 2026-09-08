@@ -58,5 +58,17 @@ ok((SRC.match(/newId = extractSessionId\(created\)/g) || []).length === 2,
 ok((SRC.match(/clientTimeZone: amCtz/g) || []).length === 2,
   'G4 both session.prompt calls carry clientTimeZone (6a94794)')
 
+// —— G5:两处 create 都带 agentPreset(沿用旧会话预设,顺带保工作区绑定语义) ——
+ok((SRC.match(/agentPreset: d\.agentPreset \|\| undefined/g) || []).length === 2,
+  'G5 both create calls pass agentPreset (bffe105)')
+
+// —— G6:两处 selectModel 都带 reasoningEffort(保留模型思考能力) ——
+ok((SRC.match(/reasoningEffort: d\.reasoningEffort \|\| undefined/g) || []).length === 2,
+  'G6 both selectModel calls pass reasoningEffort (bffe105)')
+
+// —— G7:两处都对新会话 rename 接续序号标题(接续#N · wsBase;每站点含 zh+en 两个字面量,只数 zh) ——
+ok((SRC.match(/接续 #/g) || []).length === 2,
+  'G7 both paths rename new session with numbered title 接续#N (bffe105)')
+
 console.log('\n[smoke-test-continue-chain] ' + pass + ' passed, ' + fail + ' failed')
 if (fail > 0) process.exit(1)
