@@ -51,7 +51,7 @@
 </details>
 
 <p align="center">
-  <a href="README.zh-CN.md">中文</a> · <b>English</b> · License BSD-3-Clause · <code>pnpm add @a9i5k4/dsh-auto-memory</code> · <a href="https://qm.qq.com/q/v7Asxn6vPa">QQ group</a>
+  <a href="README.zh-CN.md">中文</a> · <b>English</b> · License BSD-3-Clause · <code>pnpm add @a9i5k4/dsh-auto-memory</code> · <a href="docs/USER-GUIDE.zh-CN.md">📖 User guide (settings & tuning)</a> · <a href="https://qm.qq.com/q/v7Asxn6vPa">QQ group</a>
 </p>
 
 ---
