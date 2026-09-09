@@ -102,4 +102,4 @@
 - [x] 零进程/网络原语卫生（H6）
 - [x] fact store 41 断言 + hub 综合 33 断言
 - [x] 全量回归 35 套件全绿
-- [ ] live 验证（用户重启 3080 后）
+- [x] live 验证（2026-09-09 用户重启 3080 后,执行侧 loopback 代验:GET /memory-hub 200/177ms 三层 overview;hub-pre 落盘 episodes=22/facts=3/procedures=9,含重启后新会话条目;fv2 emit explicit_lane 激活）
