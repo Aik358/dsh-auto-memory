@@ -169,5 +169,18 @@ console.log('[H6] 卫生')
   }
 }
 
+// M8-3(2026-09-09):默认启用守卫 —— memoryHubEnabled 默认 true(经用户书面确认;设置页「记忆中枢」开关可回滚)
+console.log('[M8-3] 默认启用守卫')
+{
+  const hostSrc = readFileSync(new URL('../../lib/index.js', import.meta.url), 'utf8')
+  ok(hostSrc.includes('memoryHubEnabled: true'), 'index.js 默认 memoryHubEnabled: true(启用后消费 judgement-shadow/crossFeed)')
+  ok(!hostSrc.includes('memoryHubEnabled: false'), '旧默认 false 已不存在')
+  // 三处消费门与常开设施仍在(开关只门控消费,store 构建/restore/端点不受门控)
+  ok(hostSrc.includes('if (this.config.memoryHubEnabled === true && hub && hub.stores && hub.stores.episodic)'), 'crossFeed 消费门在位')
+  ok((hostSrc.match(/engine\.config\.memoryHubEnabled !== true/g) || []).length === 2, 'judgement 行消费双门在位(各 !== true 早退)')
+  ok(hostSrc.includes("path.join(dshHome(), 'memory', 'hub-pre')"), 'hubIo 落盘目录 hub-pre 在位(restore 常开,不受开关门控)')
+  ok(hostSrc.includes("API['memory-hub']"), 'loopback 端点 memory-hub 在位')
+}
+
 console.log(`[M8-HUB] pass=${pass} fail=${fail}`)
 process.exit(fail > 0 ? 1 : 0)
