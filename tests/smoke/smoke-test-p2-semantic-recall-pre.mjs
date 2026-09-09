@@ -31,7 +31,7 @@ function extractFn(header) {
 
 // ---------- G0 源码守卫 ----------
 console.log('[p2-semantic-recall] G0 源码守卫')
-ok(SRC.includes('async recall(query, limit = 8, agent, scope = \'all\') {'), 'recall() 签名不变')
+ok(SRC.includes('async recall(query, limit = 8, agent, scope = \'all\', opts = null) {'), 'recall() 签名 = P4 可选参数扩展(opts 未传时词法臂行为不变)')
 ok(SRC.includes("defineTool('memory_recall_pre'"), 'memory_recall_pre 工具定义仍在(schema 零改动)')
 ok(SRC.includes("const { buildL0IndexPre } = await import('./l0-extract-pre.js')"), 'T1 经函数内动态 import 引入')
 ok(SRC.includes("await import('node:crypto')"), 'node:crypto 函数内动态 import(miv 计算)')
