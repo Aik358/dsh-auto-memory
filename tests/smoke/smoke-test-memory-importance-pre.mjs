@@ -110,8 +110,9 @@ console.log('[memory-importance] G4 值域/确定性/纯函数(验收 1/4)')
 ok(!/import\s|require\(|readFile|writeFile|Date\.now|Math\.random/.test(MOD), '纯函数零 IO/无时钟无随机(确定性前提)')
 ok(Array.isArray(Object.freeze(IMPORTANCE_WEIGHTS_PRE_V1) && Object.keys(IMPORTANCE_WEIGHTS_PRE_V1)) && Object.isFrozen(IMPORTANCE_WEIGHTS_PRE_V1), '权重常数冻结')
 
-console.log('[memory-importance] G5 不接线守卫(本段只交付纯函数)')
-ok(!SRC.includes('memory-importance-pre'), 'index.js 未接线(检索结论:fuseD6Pre 现役点=fv2 决策 margin、P3 RRF 未接线、shadow 管线 evidence 不可达——接线待 P3 RRF 落点,importance 仅作加权因子之一)')
+console.log('[memory-importance] G5 接线守卫(M8-2b 2026-09-09 更新:经 evidence-agg 管道接入 recall L0 融合)')
+ok(SRC.includes("await import('./memory-importance-pre.js')"), 'index.js 已接线(M8-2b:dense 臂乘以 0.5+0.5×importance 加权因子;中性 0.5 → 因子 0.75 均匀缩放排序不变)')
+ok(SRC.includes("await import('./evidence-agg-pre.js')"), 'evidence 聚合层已接入(有界只读扫描)')
 
 console.log(`\n[memory-importance] ${pass}/${pass + fail} assertions passed`)
 if (fail) process.exit(1)
