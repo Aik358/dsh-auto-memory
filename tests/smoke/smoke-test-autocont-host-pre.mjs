@@ -32,7 +32,10 @@ function extractFn(header) {
 }
 
 console.log('[autocont-host] A1 源码守卫')
-ok(SRC.includes('armAutoContinue(agent, wl) {'), 'armAutoContinue 定义存在')
+ok(SRC.includes('armAutoContinue(agent, wl, opts = null) {'), 'armAutoContinue 定义存在')
+// 2.2.7:pre-step 水位测量后同样 arm(否则长回合里官方压缩抢先、接续永不触发)
+ok(/checkWaterLevelAtStep\(agent, minGapMs = 5000\)[\s\S]{0,900}?this\.armAutoContinue\(agent, \{ ratio: rt2\.waterLevel[\s\S]{0,220}?awaitIdle: true/.test(SRC),
+  'pre-step 测量后 arm 自动接续(awaitIdle 标记,避免打断进行中回合)')
 ok(SRC.includes('async tickAutoContinue() {'), 'tickAutoContinue 定义存在')
 ok(SRC.includes('async hostAutoContinue() {'), 'hostAutoContinue 定义存在')
 ok(SRC.includes('autoContinueState() {'), 'autoContinueState 定义存在')
@@ -67,7 +70,7 @@ function makeEngine(opts) {
     _sc: sc,
   }
   const fns = {}
-  for (const h of ['armAutoContinue(agent, wl) {', 'async tickAutoContinue() {', 'async hostAutoContinue() {', 'autoContinueState() {', 'async decideAutoContinue(action, edgeAt) {']) {
+  for (const h of ['armAutoContinue(agent, wl, opts = null) {', 'async tickAutoContinue() {', 'async hostAutoContinue() {', 'autoContinueState() {', 'async decideAutoContinue(action, edgeAt) {']) {
     const obj = new Function('diag', 'AbortSignal', 'return {' + extractFn(h) + '};')(() => {}, { timeout: () => undefined })
     const key = Object.keys(obj)[0]
     fns[key] = obj[key].bind(eng)
