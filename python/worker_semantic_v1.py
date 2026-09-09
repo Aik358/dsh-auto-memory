@@ -959,10 +959,34 @@ class SemanticWorker(base.Worker):
         import traceback as _tb
         import sys as _sys
         try:
+            # P13:recall_rank 在 base dispatch(worker_v1.handle_frame)白名单外,在此拦截。
+            if req.get('type') == 'recall_rank':
+                return self.handle_recall_rank(req)
             return super().handle_frame(req)
         except Exception:
             _sys.stderr.write('[fv2-trace] ' + _tb.format_exc() + '\n')
             raise
+
+    def handle_recall_rank(self, req):
+        """P13:recall 的 C3 语义臂 —— 只读 dense_search(三重过滤:workspaceRef+scope+miv),
+        不写回、不改索引、不新造存储;embedder 未就绪/无 vectors/encode 失败/任何异常
+        → scores=[] fail-soft(不抛,JS 侧据此回退 C2→词法)。"""
+        p = req.get('payload') or {}
+        miv = str(p.get('memoryIndexVersion', p.get('miv', '')))
+        scores = []
+        try:
+            hits = self.dense_search(
+                str(p.get('query', '')),
+                str(p.get('workspaceKey', '')),
+                str(p.get('scope', 'Workspace')),
+                miv,
+                top_k=max(1, min(64, int(p.get('topK') or 20))),
+            )
+            scores = [{'memoryId': h['memoryId'], 'score': h['score']} for h in hits]
+        except Exception as exc:  # noqa: BLE001
+            base.diag('recall_rank-failed: ' + str(exc))
+        return [self._frame(req, 'recall_rank_result',
+                            {'scores': scores, 'miv': miv})]
 
     def handle_close_session(self, req):
         p = req.get('payload') or {}
@@ -1294,7 +1318,10 @@ def run_loop(worker):
                                  'sentAt': obj.get('sentAt', 0)}
         except (UnicodeDecodeError, ValueError):
             obj = None
-        if not isinstance(obj, dict) or not base.envelope_shape_ok(obj):
+        # P13:recall_rank(JS→PY 新请求类型)在 base.envelope_shape_ok 的 JS_TYPES 白名单外,
+        # 在此显式放行(其余字段仍按协议帧校验);handler 在 SemanticWorker.handle_frame 拦截。
+        obj_type_ok = isinstance(obj, dict) and obj.get('type') == 'recall_rank'
+        if not isinstance(obj, dict) or not (obj_type_ok or base.envelope_shape_ok(obj)):
             out.write((base.dumps(worker.error_frame(req_for_error,
                                                      'invalid-envelope')) + '\n').encode('utf-8'))
             out.flush()
