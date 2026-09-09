@@ -73,7 +73,8 @@ const notesPath = path.join(tmp, 'notes.md'); writeFileSync(notesPath, '', 'utf8
 function bindRecall(fake) {
   const fnSrc = extractFn("async recall(query, limit = 8, agent, scope = 'all', opts = null) {")
   const l0Url = JSON.stringify(new URL('../../lib/l0-extract-pre.js', import.meta.url).href)
-  const arrow = ('async ' + fnSrc.slice(fnSrc.indexOf('('), fnSrc.indexOf(') {') + 1) + ' => ' + fnSrc.slice(fnSrc.indexOf(') {') + 2)).replaceAll("'./l0-extract-pre.js'", l0Url)
+  const rrfUrl = JSON.stringify(new URL('../../lib/recall-fusion-pre.js', import.meta.url).href)
+  const arrow = ('async ' + fnSrc.slice(fnSrc.indexOf('('), fnSrc.indexOf(') {') + 1) + ' => ' + fnSrc.slice(fnSrc.indexOf(') {') + 2)).replaceAll("'./l0-extract-pre.js'", l0Url).replaceAll("'./recall-fusion-pre.js'", rrfUrl)
   const factory = new Function('path', 'homedir', 'return { recall: ' + arrow + ' };')
   const obj = factory.call(fake, path, homedir)
   return (...args) => obj.recall.apply(fake, args)
