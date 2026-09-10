@@ -164,7 +164,12 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
   const h = globalThis.__h
   await h.cfgPost({ contextSinkMode: 'fake' })
   await h.fire('session/event', h.agent.session, { type: 'user/message', seq: 200, time: Date.now(), data: { role: 'user', content: [{ type: 'text', text: '回忆一下之前的部署流程记录' }] } })
-  await sleep(900)
+  // 2026-09-10:原先固定 sleep(900) 再断言 —— 批量跑(前面还有 m51/m52 等)时机器更忙,900ms 内 envelope 还没组建就断言,
+  // 表现为「严格按字母序全量跑必红、单跑必绿」的顺序敏感 flake。改成有界轮询:最多等 8s,断言口径不变(等不到照样红)。
+  for (let i = 0; i < 40; i++) {
+    if ((await h.dbg()).contextBridge.stats.envelopesBuilt >= 1) break
+    await sleep(200)
+  }
   const am = await h.dbg()
   const cb = am.contextBridge
   ok(cb.stats.envelopesBuilt >= 1, 'C3 envelope 组建 ≥1(built=' + cb.stats.envelopesBuilt + ')')

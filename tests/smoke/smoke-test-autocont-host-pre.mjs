@@ -38,7 +38,7 @@ ok(/checkWaterLevelAtStep\(agent, minGapMs = 0\)[\s\S]{0,900}?this\.armAutoConti
   'pre-step 测量后 arm 自动接续(awaitIdle 标记,避免打断进行中回合;默认不节流)')
 ok(SRC.includes('async tickAutoContinue() {'), 'tickAutoContinue 定义存在')
 ok(SRC.includes('async hostAutoContinue() {'), 'hostAutoContinue 定义存在')
-ok(SRC.includes('autoContinueState() {'), 'autoContinueState 定义存在')
+ok(SRC.includes('autoContinueState(selfSid) {'), 'autoContinueState 定义存在(带 selfSid 会话归属过滤)')
 ok(SRC.includes('async decideAutoContinue(action, edgeAt) {'), 'decideAutoContinue 定义存在')
 ok(/engine\.checkWaterLevel\(agent\)\.then\(function \(\) \{/.test(SRC) && /engine\.armAutoContinue\(agent, \{ ratio: rt2\.waterLevel/.test(SRC),
   'turn-stopping 在 checkWaterLevel 完成后 arm(宿主兜底接线)')
@@ -50,11 +50,12 @@ ok(/ctx\.get\('sessionController'\)/.test(SRC), '经 ctx.get(sessionController) 
 
 console.log('[autocont-host] A2-A5 行为')
 function makeEngine(opts) {
-  const calls = { create: [], select: [], prompt: [], decided: [] }
+  const calls = { create: [], select: [], prompt: [], decided: [], rename: [] }
   const sc = {
     create: async (r) => { calls.create.push(r); if (opts && opts.createFail) throw new Error('create failed'); return { sessionId: 'session-new-' + calls.create.length } },
     selectModel: async (r) => { calls.select.push(r) },
     prompt: async (r) => { calls.prompt.push(r) },
+    rename: async (r) => { calls.rename.push(r) },
   }
   const eng = {
     config: (opts && opts.config) || {},
@@ -74,7 +75,7 @@ function makeEngine(opts) {
     async buildContinueCarry(preferSid) {
       calls.carrySid = String(preferSid || '')
       if (opts && opts.carryFail) return { ok: false, error: 'no material' }
-      return { ok: true, carryText: 'carry', ws: 'D:\\ws', workspaceId: 'ws-1', provider: 'p', model: 'm', reasoningEffort: 'high', agentPreset: 'code' }
+      return { ok: true, carryText: 'carry', ws: 'D:\\ws', workspaceId: 'ws-1', provider: 'p', model: 'm', reasoningEffort: 'high', agentPreset: 'code', contSeq: 7, wsBase: 'dsh-auto-memory' }
     },
     _sc: sc,
     // 2026-09-10:刷新仪式依赖「材料指纹」与仪式文案;真实实现走文件 IO(path/stat/readdir),
@@ -82,11 +83,13 @@ function makeEngine(opts) {
     handoffMaterialStamp: (() => { let n = 0; return async () => ((opts && opts.stamp) ? opts.stamp() : 'stamp-' + (++n)) })(),
     refreshRitualPrompt: () => 'ritual-prompt',
     _ritualPollMs: 5,
+    // 2026-09-10:已接续闩锁占位 —— 预置为空 Set 可让 loadContinuedSessions() 直接返回、不读真实盘文件
+    _continuedSessions: (opts && opts.continued) || new Set(),
   }
   const fns = {}
   // 2026-09-10:hostAutoContinue 现在会调 this.inheritPermissionPreset / hostRefreshRitual 继承权限与刷材料,
   // 夹具是"从源码抽方法拼假 engine",新增的被调方法必须一并抽取,否则 this 上不存在(TypeError)。
-  for (const h of ['armAutoContinue(agent, wl, opts = null) {', 'async tickAutoContinue() {', 'async hostAutoContinue() {', 'autoContinueState() {', 'async decideAutoContinue(action, edgeAt) {', 'async inheritPermissionPreset(oldAgent, newSid, opts = {}) {', 'agentForSessionId(sid) {', 'async inheritPermissionForContinue(fromSessionId, toSessionId, opts = {}) {', 'async hostRefreshRitual(oldSid) {']) {
+  for (const h of ['armAutoContinue(agent, wl, opts = null) {', 'async tickAutoContinue() {', 'async hostAutoContinue() {', 'autoContinueState(selfSid) {', 'async decideAutoContinue(action, edgeAt) {', 'async inheritPermissionPreset(oldAgent, newSid, opts = {}) {', 'agentForSessionId(sid) {', 'async inheritPermissionForContinue(fromSessionId, toSessionId, opts = {}) {', 'async hostRefreshRitual(oldSid) {', 'waterKey(sid) {', 'loadContinuedSessions() {', 'isContinuedSession(sid) {']) {
     const obj = new Function('diag', 'AbortSignal', 'return {' + extractFn(h) + '};')(() => {}, { timeout: () => undefined })
     const key = Object.keys(obj)[0]
     fns[key] = obj[key].bind(eng)
@@ -254,6 +257,64 @@ ok(/const d = await this\.buildContinueCarry\(oldSid\)/.test(SRC), 'hostAutoCont
 ok(/engine\.buildContinueCarry\(\(body && body\.fromSessionId\) \|\| ''\)/.test(SRC), 'handoff-continue 端点接受 fromSessionId')
 ok(/apiPost\(API\.handoffContinue, fromSidForCarry \? \{ fromSessionId: fromSidForCarry \} : \{\}\)/.test(CLIENT),
   'client 一键接续把来源会话 id 传给端点')
+
+console.log('[autocont-host] A9 接续会话标题 + 双口径(2026-09-10 实机取证)')
+{
+  // ①标题:浏览器路径一直设「接续 #N · 工作区」,宿主路径漏了 → 兜底接续出来的会话在侧栏无名
+  //   (实测 18:07 建出的新会话日志里没有 session/title 事件,用户看不出它是"延续会话")。
+  const eTitle = makeEngine({ config: { autoContinueEnabled: true, handoffEnabled: true, autoContinueRefreshRitual: false } })
+  eTitle.fns.armAutoContinue(agent, wl)
+  await eTitle.fns.hostAutoContinue()
+  ok(eTitle.calls.rename.length === 1 && eTitle.calls.rename[0].sessionId === 'session-new-1' &&
+     eTitle.calls.rename[0].title === '接续 #7 · dsh-auto-memory',
+    '宿主接续给新会话设「接续 #N · 工作区」标题(与浏览器路径同名)')
+  ok(/if \(d\.contSeq && typeof sc\.rename === 'function'\)/.test(SRC), 'rename 缺失时 fail-soft(旧 harness 不炸)')
+  ok(/const title = '接续 #' \+ String\(d\.contSeq\)/.test(SRC), '标题格式与 client 路径逐字一致')
+  // ②双口径:我们的分母是「可用额度」(窗口−预留),官方小圈的分母是声明窗口 ——
+  //   不把两个数一起显示,用户就会问「明明才 50% 为什么接续了」(实测)。
+  ok(/this\.state\.waterLevelRing = /.test(SRC), '水位记录同时算出官方小圈读数(声明窗口为分母)')
+  ok(/const hardWin = Number\(sig\.overflow && sig\.overflow\.windowTokens\) \|\| 0/.test(SRC) &&
+     /this\.state\.waterLevelWall = hardWin > 0 \? Math\.max\(0, hardWin - reserve\) : 0/.test(SRC),
+    '撞过墙的会话能算出「真实可写上限」(provider 自报硬限 − 预留),供显示距墙剩余')
+  ok(/ring: Number\(this\.state && this\.state\.waterLevelRing\) \|\| 0/.test(SRC) && /wall: Number\(this\.state && this\.state\.waterLevelWall\) \|\| 0/.test(SRC),
+    'arm 时把双口径带进 armed 对象(state 缺失也不得让 arm 失败)')
+  ok(/ring: Number\(st\.armed\.ring\) \|\| 0/.test(SRC) && /wall: Number\(st\.armed\.wall\) \|\| 0/.test(SRC),
+    'autoContinueState 透出双口径给确认卡')
+}
+
+console.log('[autocont-host] A10 卡面口径 + 已接续闩锁 + 会话归属(2026-09-10 实机取证)')
+{
+  // ①「512,311 / 0 token」:pre-step 的 arm 走的是 runtime 字段(checkWaterLevelAtStep → armAutoContinue),
+  //   而 checkWaterLevel 只写了 ratio/tokens、漏写 window/source → 确认卡分母恒为 0(用户实测截图)。
+  ok(/rt\.waterLevel = armRatio\s*\n\s*rt\.waterLevelTokens = estTokens\s*\n[\s\S]{0,400}?rt\.waterLevelWindow = effectiveWin/.test(SRC) &&
+     /rt\.waterLevelSource = winSource/.test(SRC),
+    'pre-step arm 携带 window/source(否则确认卡显示「xxx / 0 token」)')
+  // ②闩锁:同一会话只接续一次。旧实现只有 30 分钟冷却,冷却一过、用户切回旧窗口 → 再次 arm → 再次建会话
+  //   (用户报「切回原来的窗口…它还是想接续流程」)。接续失败不落闩(允许重试)。
+  ok(/if \(this\.isContinuedSession\(sid\)\) return/.test(SRC), 'armAutoContinue 对已接续会话直接返回')
+  ok(/engine\.markContinuedSession\(body\.fromSessionId, body\.toSessionId\)/.test(SRC),
+    '浏览器路径在建好新会话后落闩(handoff-permission 回调点,而非取材料的预览点)')
+  ok(/this\.markContinuedSession\(oldSid, newId\)/.test(SRC), '宿主路径接续成功后落闩')
+  ok(/path\.join\(dshHome\(\), 'memory', 'auto-continue-done\.json'\)/.test(SRC), '闩锁落盘(重启后依旧生效)')
+  const fnHost = extractFn('async hostAutoContinue() {')
+  ok(fnHost.indexOf('this.markContinuedSession(oldSid, newId)') > fnHost.indexOf('await sc.prompt('),
+    '落闩在投料成功之后(prompt 之前失败则不落闩,允许下次重试)')
+
+  const eLatch = makeEngine({ config: { autoContinueEnabled: true, handoffEnabled: true, autoContinueThreshold: 0.75 }, continued: new Set(['a']) })
+  eLatch.fns.armAutoContinue(agent, wl)
+  ok(!eLatch.eng._autoContState || !eLatch.eng._autoContState.armed, '已接续过的会话不再 arm(即使水位达标)')
+  ok(eLatch.fns.isContinuedSession('session-a') === true && eLatch.fns.isContinuedSession('session-z') === false,
+    '水键归一化:session- 前缀不影响闩锁判定')
+
+  // ③会话归属:状态是全局单值,而 armed 只属于一个会话 —— 不过滤的话别的窗口也会弹「本会话水位已达 x%」
+  const eSid = makeEngine({ config: { autoContinueEnabled: true, handoffEnabled: true, autoContinueThreshold: 0.75 } })
+  eSid.fns.armAutoContinue(agent, wl)
+  ok(eSid.fns.autoContinueState('session-a').armed !== null, '本窗口的 armed 正常显示')
+  ok(eSid.fns.autoContinueState('session-b').armed === null, '别的窗口不显示这条 armed')
+  ok(eSid.fns.autoContinueState('').armed !== null, '取不到会话 id 时 fail-open(卡片照常显示,不因过滤而消失)')
+  ok(/at: st\.lastRunAt \|\| 0/.test(SRC), 'lastOk 带时间戳(客户端据此给「已完成」提示设有效期)')
+  ok(/url\.searchParams\.get\('sessionId'\)/.test(SRC), 'auto-continue-state 端点接受 sessionId 查询参数')
+}
 
 console.log('\n[autocont-host] ' + pass + '/' + (pass + fail) + ' assertions passed')
 if (fail) process.exit(1)

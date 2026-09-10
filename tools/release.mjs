@@ -380,6 +380,28 @@ for (const f of ['lib/index.js', 'lib/client.js']) {
   const r = check('node --check ' + f)
   if (!r.ok || r.out !== '') { console.error('[release] ❌ 语法失败:', f, r.out); process.exit(1) }
 }
+
+// ---------- 5.05 版本标识一致性闸门(2026-09-10 固化,用户要求) ----------
+// 症状:发版只改 package.json/RELEASE 树,而 CHANGELOG 与应用内版本标识没跟着走 →
+// 「检测更新」一直拿旧版本号去比对(npm 页面/更新说明也停在上一版)。
+// 本闸门把两笔固化成硬校验:任一不一致即拒绝构建。
+{
+  const problems = []
+  const cl = path.join(DEV, 'CHANGELOG.md')
+  if (!existsSync(cl)) problems.push('DEV 树缺少 CHANGELOG.md')
+  else if (!readFileSync(cl, 'utf8').includes('## [' + version + ']')) problems.push('CHANGELOG.md 缺少 `## [' + version + ']` 小节')
+  const devClient = path.join(DEV, 'lib', 'client.js')
+  if (!readFileSync(devClient, 'utf8').includes("'" + version + "': { zh: [")) problems.push("应用内更新说明(CHANGELOG 字典)缺少 '" + version + "' 条目")
+  const relClient = path.join(REL, 'lib', 'client.js')
+  if (!new RegExp('client v' + version.replace(/\./g, '\\.') + ' fingerprint').test(readFileSync(relClient, 'utf8'))) problems.push('界面指纹行未同步(应为 `client v' + version + ' fingerprint`)')
+  if (problems.length) {
+    console.error('\n❌ 版本标识未同步,拒绝构建:')
+    for (const p of problems) console.error('   · ' + p)
+    console.error('   固定流程(GitHub/npm 双向提醒):改 CHANGELOG.md → 改应用内更新说明字典 → 改界面指纹行 → 重跑本脚本。')
+    process.exit(1)
+  }
+  console.log('[release] 版本标识一致性: OK(CHANGELOG / 应用内更新说明 / 界面指纹行)')
+}
 // 扫描面扩大到整个 staging 树的文本文件(lib 递归 + 根部清单/文档/测试),不再只查两个 lib 文件
 const walkFiles = (dir, acc) => {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
