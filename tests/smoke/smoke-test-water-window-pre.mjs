@@ -110,7 +110,8 @@ try {
   const m1 = findSessionModelPre(sessEvents)
   ok('W11 取会话真实 provider/model(事件在开头也能取到)', m1.provider === 'deepseek-official' && m1.model === 'deepseek-v4.1-flash-expires-on-0910')
   ok('W12 顺带带回 contextWindow', m1.contextWindow === 1000000)
-  ok('W13 无 request 事件时返回空', JSON.stringify(findSessionModelPre([{ type: 'user/message', data: {} }])) === '{"provider":"","model":"","contextWindow":0}')
+  ok('W13 无 request 事件时返回空', JSON.stringify(findSessionModelPre([{ type: 'user/message', data: {} }])) === '{"provider":"","model":"","contextWindow":0,"maxTokens":0}')
+  ok('W13b 顺带带回预留输出额度 maxTokens(水位口径要扣掉它)', findSessionModelPre([{ type: 'request/header', data: { header: { config: { provider: 'opencode-go2', model: 'deepseek-flash', maxTokens: 384000 } } } }]).maxTokens === 384000)
   ok('W13 非数组输入返回空', findSessionModelPre(null).model === '')
   const newer = [
     { type: 'request/header', data: { header: { config: { provider: 'deepseek-official', model: 'deepseek-v4.1-flash-expires-on-0910' } } } },

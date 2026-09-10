@@ -14,7 +14,7 @@ import path from 'node:path'
 import os from 'node:os'
 import { fileURLToPath } from 'node:url'
 // 2.2.4:resolveWaterWindow 把 settings.yaml 解析抽成纯函数(block+flow 双支持);测试用 new Function 抽取方法体执行,须显式注入。
-import { parseModelWindowsPre, pickWindowPre, findOfficialContextWindowPre, findSessionModelPre } from '../../lib/water-window.js'
+import { parseModelWindowsPre, pickWindowPre, findOfficialContextWindowPre, findSessionModelPre, scanPressureSignalsPre } from '../../lib/water-window.js'
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 const SRC = readFileSync(path.resolve(HERE, '..', '..', 'lib', 'index.js'), 'utf8')
@@ -243,7 +243,7 @@ const wlBind = (fake) => {
   const reflectionDigestFn = new Function('truncateHead', grab('reflectionDigest') + '\nreturn reflectionDigest;')(truncateHeadFn)
   fake.resolveWaterWindow = bindMethod("async resolveWaterWindow(providerOverride = '', modelOverride = '') {", fake, Object.assign({ dshHome: () => fakeHome }, waterDeps))
   const sessionEventsOfFn = new Function('return ' + grab('sessionEventsOf') )()
-  return bindMethod('async checkWaterLevel(agent) {', fake, { extractSessionMessages: (a) => a.messages, diag: () => {}, reflectionDigest: reflectionDigestFn, truncateHead: truncateHeadFn, sessionEventsOf: sessionEventsOfFn, findOfficialContextWindowPre, findSessionModelPre })
+  return bindMethod('async checkWaterLevel(agent) {', fake, { extractSessionMessages: (a) => a.messages, diag: () => {}, reflectionDigest: reflectionDigestFn, truncateHead: truncateHeadFn, sessionEventsOf: sessionEventsOfFn, findOfficialContextWindowPre, findSessionModelPre, scanPressureSignalsPre })
 }
 // 公式抽查:文本 token = ceil(字符/4)+4(角色框定)
 const fFormula = makeWaterFake({}, [])
@@ -276,13 +276,20 @@ await wlSess({ session: { id: 'sess-A', events: [] }, messages: [{ text: 'x'.rep
 await wlSess({ session: { id: 'sess-B', events: [] }, messages: [{ text: 'x'.repeat(400) }] })
 ok(fSess._waterRecords && fSess._waterRecords['sess-A'] && fSess._waterRecords['sess-A'].tokens === 804, '会话 A 按 sessionId 记录(tokens=804)')
 ok(fSess._waterRecords && fSess._waterRecords['sess-B'] && fSess._waterRecords['sess-B'].tokens === 104, '会话 B 独立记录(tokens=104),互不覆盖')
-// compaction 事件:水位 0.6 未到阈值,但检测到 compaction → 触发(0.5≤ratio 且 compacted)
+// compaction 事件:水位未到阈值,但检测到 compaction → 硬触发补写。
+// 2026-09-10 修正:首次观测某会话只**建立基线** —— 宿主重启后运行时状态清零,若把历史压缩
+// 当成"刚刚发生",重启后立刻误触发接续(实机踩到:17:50 重启后 0.7 分钟即 armed,水位只有 48%)。
 const ledgerCalls2 = []
 const fCmp = makeWaterFake({}, ledgerCalls2)
 const wlCmp = wlBind(fCmp)
 await wlCmp({ messages: [{ text: 'y'.repeat(2400) }], session: { events: [{ type: 'compaction/summary', seq: 3 }] } })
-ok(ledgerCalls2.length === 1, '检测到 compaction/summary 事件触发补写(0.5≤ratio<阈值)')
+ok(ledgerCalls2.length === 0, '首次观测遇历史 compaction 只建基线,不触发(重启不再误接续)')
 await wlCmp({ messages: [{ text: 'y'.repeat(2400) }], session: { events: [{ type: 'compaction/summary', seq: 3 }] } })
+ok(ledgerCalls2.length === 0, '同一历史 compaction 持续不触发(seq 未前进)')
+const twoCmp = [{ type: 'compaction/summary', seq: 3 }, { type: 'compaction/start', seq: 9 }]
+await wlCmp({ messages: [{ text: 'y'.repeat(2400) }], session: { events: twoCmp } })
+ok(ledgerCalls2.length === 1, '基线之后出现**新的** compaction → 硬触发补写(水位仅 0.6)')
+await wlCmp({ messages: [{ text: 'y'.repeat(2400) }], session: { events: twoCmp } })
 ok(ledgerCalls2.length === 1, '同一 compaction 事件不重复补写(seq 去重)')
 // 关闭
 const fOff = makeWaterFake({ waterLevelWindowTokens: 0 }, [])

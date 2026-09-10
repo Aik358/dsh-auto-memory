@@ -30,14 +30,17 @@ function extractFn(header) {
 }
 
 console.log('[water-step] W1 源码守卫:pre-step 补测已接线')
-ok(SRC.includes('checkWaterLevelAtStep(agent, minGapMs = 5000) {'), 'checkWaterLevelAtStep 定义存在')
+ok(SRC.includes('checkWaterLevelAtStep(agent, minGapMs = 0) {'), 'checkWaterLevelAtStep 定义存在且默认不节流')
+// 2026-09-10 反回归锁:默认 5 秒节流会让"两次 pre-step 间隔 <5s 即整段跳过",而官方压缩挂在**每个** pre-step 上、
+// 无任何节流 → 模型越快(单步越短)越容易被官方抢先压缩、自动接续永不触发。默认必须为 0,仅测试可注入。
+ok(!/checkWaterLevelAtStep\(agent, minGapMs = [1-9]/.test(SRC), '默认 minGapMs 不得为正值(否则官方压缩会抢跑)')
 ok(/try \{ engine\.checkWaterLevelAtStep\(agent\) \} catch \(eWL\) \{\}/.test(SRC), 'pre-step 处理器调用 checkWaterLevelAtStep(带 try 保护)')
 ok(SRC.includes('void engine.checkWaterLevel(agent)'), 'turn-stopping 仍保留轮末测量')
-ok(/waterStepAt/.test(SRC) && /now - rt\.waterStepAt < minGapMs/.test(SRC), '节流状态 waterStepAt + 窗口判断存在')
+ok(/waterStepAt/.test(SRC) && /now - rt\.waterStepAt < minGapMs/.test(SRC), '节流状态 waterStepAt + 窗口判断仍存在(默认 0 即不节流,测试可注入)')
 ok(SRC.includes('thresholdRatio=0.8') && /compaction\/start\+summary/.test(SRC), '注释记录官方压缩阈值与实锤证据')
 
 console.log('[water-step] W2/W3/W4 行为:节流 / 开关 / 身份守卫 / 异常隔离')
-const body = extractFn('checkWaterLevelAtStep(agent, minGapMs = 5000) {')
+const body = extractFn('checkWaterLevelAtStep(agent, minGapMs = 0) {')
 function makeEngine(cfg, opts) {
   const calls = []
   const store = new Map()
@@ -72,14 +75,20 @@ const agentB = { session: { id: 'session-b' } }
 
 // 节流:同一 agent 5s 内只测一次
 const e1 = makeEngine({}, {})
-e1.fn(agentA)
-e1.fn(agentA)
-e1.fn(agentA)
-ok(e1.calls.length === 1, '节流窗口内重复调用只测一次(实际 ' + e1.calls.length + ')')
-e1.fn(agentB)
+e1.fn(agentA, 5000)
+e1.fn(agentA, 5000)
+e1.fn(agentA, 5000)
+ok(e1.calls.length === 1, '显式 minGapMs=5000 时窗口内重复调用只测一次(实际 ' + e1.calls.length + ')')
+e1.fn(agentB, 5000)
 ok(e1.calls.length === 2, '不同会话各自计时,不受彼此节流影响')
 e1.fn(agentA, 0)
 ok(e1.calls.length === 3, 'minGapMs=0 时立即再次测量(可配置)')
+
+// 2026-09-10 新契约:默认不传参 = 0 = **不节流**(与官方 pre-step 压缩站在同一边界,避免被抢跑)
+const e1d = makeEngine({}, {})
+e1d.fn(agentA)
+e1d.fn(agentA)
+ok(e1d.calls.length === 2, '默认不节流:连续 pre-step 每次都测量(修复官方压缩抢跑)')
 
 // 超过窗口后可再测
 const e2 = makeEngine({}, {})

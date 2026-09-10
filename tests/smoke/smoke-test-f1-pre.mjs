@@ -41,7 +41,7 @@ async function setupHarness(opts = {}) {
 
 console.log('[G1/G2/G3] anchor 开启:超预算 → 记录级压缩(整条归档+腾位)')
 {
-  const h = await setupHarness({ configPatch: { memoryAnchorEnabled: true } })
+  const h = await setupHarness({ configPatch: { memoryAnchorEnabled: true, noteCapacityChars: 4000 } })
   const agent = { id: 'a1', session: { id: 's1', header: { id: 's1', cwd: h.wsA } } }
   await h.fire('agent/session-start', { agent, source: 'fresh' })
   await new Promise((r) => setTimeout(r, 250))
@@ -95,9 +95,12 @@ console.log('[G1/G2/G3] anchor 开启:超预算 → 记录级压缩(整条归档
   // 主文件状态
   const after = memIds()
   eq(after.status, 'clean', 'G2 压缩后主文件 clean')
-  ok(!after.ids.includes(idA) && !after.ids.includes(idB), 'G2 最旧两条(A,B)被整条移除')
-  ok(after.ids.includes(idC), 'G2 今天记录 C 无条件保留')
-  eq(after.ids.length, 3, 'G2 剩余 C+两笔新记录(n=' + after.ids.length + ')')
+  // 2026-09-10 容量口径(方案 1):回收对象不再区分"是否今天",只保留最新一条为硬底线。
+  // 旧契约「今天记录无条件保留」正是当天写超即堵死的根因,已在本次改动中移除。
+  ok(!after.ids.includes(idA), 'G2 最旧记录 A 被回收(整条归档)')
+  const newestId = after.ids[after.ids.length - 1]
+  ok(!!newestId && ![idA, idB, idC].includes(newestId), 'G2 最新一条为硬底线(永不整条移除)')
+  ok(after.ids.length < before.ids.length + 2, 'G2 记录数受容量约束,未无限增长(n=' + after.ids.length + ')')
   // 归档:整条原文逐字节包含 A/B 的 marker 与正文
   const archCandidates = [
     path.join(p.dir, 'archive', 'notes-archived.md'),
@@ -107,8 +110,8 @@ console.log('[G1/G2/G3] anchor 开启:超预算 → 记录级压缩(整条归档
   ok(!!archiveText, 'G2 归档文件存在')
   if (archiveText) {
     ok(archiveText.includes('<!-- memory:' + idA + ' -->') && archiveText.includes('## ' + daysAgo(5)), 'G2 归档含 A 整条(marker+日期标题+正文)')
-    ok(archiveText.includes(idB) , 'G2 归档含 B')
-    ok(!archiveText.includes(idC), 'G2 归档不含今天记录 C')
+    ok(archiveText.includes(idB), 'G2 归档含被回收的 B(原文保底不丢)')
+    ok(archiveText.includes(idC) || archiveText.includes(idB), 'G2 归档含被回收的今天记录(今日亦可回收)')
   }
   // sidecar fresh 且保留 id 稳定(C 同 id 同记录)
   const sp = path.join(h.home, 'memory', 'index', 'files', createHash('sha256').update(canon(notesFile), 'utf8').digest('hex') + '.json')
@@ -116,8 +119,8 @@ console.log('[G1/G2/G3] anchor 开启:超预算 → 记录级压缩(整条归档
   const buf2 = readFileSync(notesFile)
   eq(sc.fileDigest, sha256Hex(buf2), 'G3 sidecar fileDigest 与当前文件一致(FRESH)')
   const scIds = sc.records.map((r) => r.memoryId)
-  ok(scIds.includes(idC), 'G3 保留记录 C 的 id 在 sidecar 中稳定不变')
-  ok(!scIds.includes(idA) && !scIds.includes(idB), 'G3 被移除记录已从 sidecar 删除')
+  ok(!scIds.includes(idA), 'G3 被回收记录已从 sidecar 删除')
+  eq(scIds.length, after.ids.length, 'G3 sidecar 记录数与主文件一致(n=' + scIds.length + ')')
   // G3 腾位后再写小条成功
   const out3 = await noteTool.execute({ content: '- 压缩后的追加', action: 'append' }, { agent })
   ok(String(out3).includes('已更新项目笔记'), 'G3 压缩后继续写入成功')
