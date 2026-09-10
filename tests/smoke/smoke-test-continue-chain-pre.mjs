@@ -147,9 +147,21 @@ ok(HSRC.includes('engine.armAutoContinue(agent, { ratio: rt2.waterLevel'),
 ok(HSRC.includes('expiresAt: now + sec * 1000') && /autoContinueConfirmSeconds/.test(HSRC),
   'G11 host countdown (confirmSeconds) replaces client 3s short-confirm')
 ok(!SRC.includes('wl.tokens === autoState.lastTokens'), 'G11 old "two polls flat tokens = idle" heuristic removed')
-ok(SRC.includes('apiGet(API.autoContState)') && SRC.includes('setInterval(poll, 3000)'),
+ok(SRC.includes('apiGet(API.autoContState,') && SRC.includes('setInterval(poll, 3000)'),
   'G11 client polls host auto-continue state every 3s (render-only)')
 ok(HSRC.includes('void engine.tickAutoContinue()'), 'G11 host heartbeat drives deadline execution (15s tick)')
+
+// —— G14(2026-09-10 实机取证):宿主已接续完成后,旧窗口的卡必须收起、提示要有期限、轮询要带会话 id ——
+ok(/if \(s\.executing\) \{[\s\S]{0,700}?setAcConfirm\(null\)/.test(SRC) && /if \(s\.lastOk && \(okAt === 0/.test(SRC) && /(okAt === 0[\s\S]{0,200}?setAcConfirm\(null\))/.test(SRC),
+  'G14 executing / lastOk 分支先收起确认卡(旧实现直接 return → 卡片与「✓ 已自动接续」并存)')
+ok(SRC.includes('okAt === 0 || Date.now() - okAt < 10 * 60 * 1000'),
+  'G14 「已完成」提示设 10 分钟有效期(宿主状态是全局单值,不设期限会一直挂在每个窗口上)')
+ok(SRC.includes('apiGet(API.autoContState, sidQ ? { sessionId: sidQ } : {})') && SRC.includes('currentSessionIdClient()'),
+  'G14 轮询携带当前会话 id(宿主据此只在本窗口弹确认卡)')
+ok(HSRC.includes("url.searchParams.get('sessionId')") && HSRC.includes('autoContinueState(selfSid)'),
+  'G14 宿主侧按 sessionId 过滤 armed(取不到 id 时 fail-open)')
+ok(/setAcConfirm\(\{ ratio: Number\(arm\.ratio\) \|\| 0[\s\S]{0,220}?wall: Number\(arm\.wall\) \|\| 0/.test(SRC),
+  'G14 确认卡把双口径 ring/wall 拷进 acConfirm(宿主透出但这里丢了 → 那行永不渲染)')
 
 // —— G12(②③④):确认卡三分支(同意/拒绝交宿主,超时宿主执行)+ 刷新仪式 + 材料分层 ——
 ok(SRC.includes('autoContAgree') && SRC.includes('autoContReject') && SRC.includes('autoContTimeout'),
