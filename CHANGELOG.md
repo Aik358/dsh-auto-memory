@@ -4,6 +4,87 @@ All notable changes to dsh-auto-memory.
 
 ---
 
+## [2.4.0] — 2026-09-10 · DSH 0.1.5 实机核验修复 · 水位按路由额度 · 记忆容量口径重做
+
+> 覆盖：0.1.5 三项实机缺陷、记忆容量口径重做（字符/文件上限）、Python 引擎贯通修复与向导常驻、接续体验与权限继承、**水位判据按「该会话当前模型」的预留额度自适应**、压缩/溢出即接续、接续材料认会话。
+
+### 缺陷修复（实测于 0.1.5-rc.1 的 live 宿主）
+
+- **自动接续静默失效（严重）**：0.1.5 起 `SessionPromptRequest.requestId` 为必填（客户端铸造的用户消息身份，落到 `source.rpcId`）。宿主侧兜底接续漏传该字段时，官方在 `createUserMessage` 处抛普通 `Error`，并被包装成**误导性的** `session/agent-busy / "prompt rejected"` —— 现象是**新会话建出来了、但交接材料从未送达**（实测 14:02 接入生成的会话只有 314 字节头部即停更）。现补传 `randomUUID()`，并透出官方藏在 `details.reason` 里的真实原因，避免再出现无法排查的一句 "prompt rejected"。
+- **`_agentSvc` 恒为空 → `restoreLastAgent` 永久失效**：0.1.5 移除了单数服务键 `ctx.agent`，Agent 注册表改名为 **`ctx.agents`**（`AgentRegistry`）。旧写法使定时兜底每小时刷 `restoreLastAgent: svc missing … agent=false` 且永不恢复。现先取新键、保留旧键兜底以兼容 0.1.4 及更早。
+- **诊断日志被会话回放刷屏**：DSH 载入/观测历史会话时会对每段历史都走一次 accept，而这些 runtime 从未 `capturePaths` → 同一原因一次性刷出上百行（实测单次回放 288 行；最近 6000 行日志里 2976 行是 drop，占近半）。现在同一 drop 原因按 30 秒窗口限流：窗口内只写首条并附 `runtime key`（可定位是哪个会话），其余仅计数。
+
+### 记忆容量与水位检测（第二轮实机修正）
+
+- **整理后复查改为"按实际文件大小迭代、有界重试"**：旧实现只压一轮就复查，而单轮缺口是按"容纳本次写入"估算的 —— 折叠产物、`## 日期` 标题行开销会让实际结果偏小，于是出现"压缩确实成功（折叠块已写入）、复查却不过、工具还把**成功标识** `folded` 当成失败原因报出来"的怪象（实机踩到）。现在每轮都用**重新测量的实际文件大小**算缺口，复查不过就再来一轮（最多 3 轮）；失败时返回**真实**原因（`still-over-capacity` / `compact-made-no-progress`），不再复用成功标识。
+- **容量检查计入追加开销**：`capacityCheck` 现在把 `'\n## YYYY-MM-DD\n'` 标题行（约 15 字符）计入，此前会低估导致边界判断偏移。
+- **取消 pre-step 水位检查的 5 秒节流（默认 `minGapMs` 5000 → 0）**：旧默认使"两次 pre-step 间隔 <5 秒即整段跳过"（不测量、不 arm），而官方自动压缩挂在**每个** `agent/pre-step` 上、没有任何节流。**模型越快、单步越短，被跳过的概率越高** —— 实测 DeepSeek-V41-Flash 下单步常低于 5 秒，于是官方永远抢先压缩、自动接续从不触发。本函数开销很小（`tokenMeter.measure()` + 最近 64 条会话事件扫描），省这点开销不划算；`minGapMs` 仅保留给测试注入。
+
+### 子代理模型与思考强度（0.1.5 agent 自定义）
+
+- 设置页「子代理模型 / 思考强度」：模型与推理档位（`off` / `low` / `high` / `max`）统一经 0.1.5 的 `SubagentStartRequest.agentOptions` 下发给子代理（时段总结 / 问候 / 自动沉淀 / 蒸馏），**不影响主对话**；留空跟随路由与模型默认。
+- 服务端对强度做白名单过滤（DeepSeek 适配器口径 `off|low|high|max`，默认 `high`），非法值直接不下发，避免 `UNSUPPORTED_REASONING_EFFORT` 触发子代理 30 分钟熔断。
+- 补回归锁：`prompt` 必带非空 `requestId`（`smoke-test-autocont-host-pre.mjs`）。
+
+### 记忆容量口径重做（新记忆不再被堵在外面）
+
+- **写入预算由「当日写入量」改为「文件容量上限」**：旧口径下"当天写得多"就会撞墙——而压缩对象只有"今天之前"的记录，当天记录被无条件保留，于是可回收集合为空、直接拒绝写入，**必须跨天才自解**（实测：一天写入 8 条约 8,700 字符即触发）。现在只看"写入后总字符数是否超过上限"，超出先自动整理腾位，整理后仍超才拒绝。
+- **单位统一为字符**：旧实现记账用字符（`String.length`）、压缩配额用字节（`rec.byteEnd - rec.markerByteStart`），同一个 3000 在中文内容下差约 1.44 倍；且 legacy 文本路径用字符、anchor 路径用字节，开不开 anchor 有效配额还会跳变。现已全部统一为字符。
+- **整理改为"先折叠、后退归档"**：超出容量时先把较早内容交给 AI 折叠成要点留在主文件（原文同时归档），AI 不可用才退回整条归档。**要点留在语料里**——不再像纯归档那样"移出索引即被遗忘"。
+- **保护窗口 + 硬底线**：最近写入的 2000 字符不参与回收；硬底线是"至少保留最新 1 条"。旧实现"今天记录无条件保留"正是堵死的根因，已移除。
+- **节流只限制 AI 折叠，不阻止整条归档**：否则短时间内反复超容量时仍会拒绝写入。节流按层独立（旧实现是单变量，压过用户级会连带节流项目级）。
+- **修复重复实现**：`compactAnchoredLayer` 原有 **3 份逐字节相同的实现**（类体同名方法后者覆盖前者，只有最后一份生效），改前两份会静默无效。已合并为一份。
+- **报错不再含糊**：旧文案把三种不同原因压成"（刚压缩过或 AI 不可用）"，实测会把使用者直接带偏。现在区分「锚点文件脏 / 无可回收内容 / 折叠与归档都失败」并给出相应处置建议。
+- **新增设置项** `noteCapacityChars` / `userCapacityChars`（默认各 12000 字符）——与「注入预算」`injectBudgetChars` 是两回事：前者管文件本体大小，后者管每轮往上下文注入多少摘要。
+
+### Python 引擎「装了用不了」贯通修复
+
+- **配置写错位置（致命）**：向导把 `embedding-config.json` 写到 `<dsh-home>/memory/semantic/`，而本线 worker 读的是 `<dsh-home>/memory/semantic-pre/`（`worker_semantic_pre_v1.load_embedding_config_from_env`）—— 文件写进了**引擎从不读取的目录**，等于没有配置。现写规范路径（发布构建统一把 `semantic-pre` 折成 `semantic`，两线同源）。
+- **配置缺 `provider` / `modelDir`（致命）**：向导原先只写 `gpu` 一个键。`load_embedder` 对未知 provider 直接抛 `unknown embedding provider`，int8 分支还强制读 `config['modelDir']`（缺失即 `KeyError`）。现模型下齐后回写 `provider`（`bge-m3-onnx-int8-pre-v1`）、`modelDir`、`onnxFile`、`dimension`，并与既有键做 read-modify-write，不覆盖引擎自管的 `search` / `activationPolicy` / `activationEmitMode`。
+- **onnx 落位与 worker 默认路径错配**：向导下载是平铺的 `models/model_int8.onnx`，而 worker 默认按 `modelDir/onnx/model_int8.onnx` 找。现显式写入 `onnxFile: 'model_int8.onnx'` 对齐平铺布局（tokenizer 五件同在该目录根，`AutoTokenizer.from_pretrained(modelDir)` 因此可用）。
+- **`depsOk` 探针与安装清单不同口径（致命）**：探针 `import transformers, onnxruntime, torch`，而 `PIP_DEPS_CPU` 从不安装 torch —— `depsOk` 恒为 false，UI 的"全部就绪"**永不出现**。现探针与 int8 档真实依赖同口径（`transformers` + `onnxruntime` + `numpy`，numpy 随 onnxruntime 装入）。
+- **就绪判定新增 `configOk`（消除假绿）**：引导卡此前只看 onnx/tokenizer 是否下载齐全，配置坏掉也照常显示完成。现要求配置里的 `provider` / `modelDir` / `onnxFile` 指向磁盘上真实存在的模型与 tokenizer（按实际可加载口径 —— fast 路径有 `tokenizer.json` 即可，缺 `sentencepiece.bpe.model` 不算坏），"全部就绪"才亮起；模型在而配置没指过去时给出可操作提示。
+- **安装向导入口常驻**：向导原先只在"资产未就绪"时自动弹出 —— 已经装好的用户反而**无处可点**（想重装、想换模型布局都进不去）。现设置页语义引擎区块常驻一个「🧩 安装向导」开关，随时可开可收；已就绪时打开复用同一套下载/校验步骤。
+
+### 接续体验与权限继承（实机取证修复）
+
+- **刷新仪式不再静默**：接续前的「刷新白板/账本」由浏览器侧执行，此前 `skipped` / 抛错一律被吞掉 —— 用户看到的现象是"点了接续什么也没发生、旧会话毫无动静"。现跳过、失败、超时都回报一句原因，接续本身照常继续（fail-soft 但**可见**）。
+- **宿主重启后会话 id 可回退**：刷新仪式用的 `refresh.sessionId` 取自纯内存的 `_lastAgent`，宿主重启后要等下一次 pre-step 才重建；窗口期内它为空串 → 仪式被静默跳过（实测：旧会话在接续前后**零写入**，全文检索无 `[接续前刷新仪式]`）。现内存态为空时按会话日志 mtime 回退取最近活跃会话（5 秒缓存，优先普通会话目录），重启后立刻接续也能刷到最新材料。
+- **接续继承旧会话的权限预设**：官方 `session.create` 入参只有 `{workspaceId, cwd, sessionId, agentPreset}`，**没有权限字段** —— 新会话一律走 `PermissionPresetService.pinInitialPermission()` 落 settings 的 `permission.defaultPreset`。于是接续出来的新会话丢掉旧会话的完全权限，静默运行每一步都要批准（实测：旧会话开局 41 秒后即升到完整权限，新会话则回落 `workspace-write + ask`）。现在建会话后按延迟重试取到该会话的 Agent，用 `current(session)` / `set(session, name)` 把旧预设套上去；拿不到就 fail-soft 并记诊断。
+- **两条接续路径的行为对齐**：一键接续（浏览器侧建会话）与宿主兜底接续（浏览器关着时宿主直调官方会话服务）此前**行为不同** —— 宿主路径既不做刷新仪式，也不继承权限。现宿主路径补上刷新仪式（先让旧会话刷 PLAN/账本、轮询材料指纹变化或超时，再组装交接材料；只在 `armed.sessionId` 明确时注入，同一旧会话 10 分钟内只注入一次），并改为**按会话 id 从 agents 注册表取旧会话**（`_lastAgent` 重启后可能为空）；浏览器路径补上权限继承（新增 `handoff-permission` 端点，投料前先试一次、投料后再重试，尽量让新会话**首轮**就已继承）。
+- **回退只认普通会话目录**：刷新仪式的会话 id 磁盘回退原本可能选中裸 uuid 目录（子代理会话），把仪式注进子代理等于白做还会污染它的上下文。现只认 `session-` 前缀目录，取不到就返回空串、由上层明确报"无刷新目标"。
+
+### 水位口径重做：按路由预留额度算水位 + 压缩即接续 + 接续材料认会话（实机取证）
+
+**现象**：官方压缩又一次抢在 75% 接续之前；同时在另一条路由上「自动接续」明明 armed 过，却从没真正跑完，用户侧的观感是「接续从来没有发生过」。
+
+**取证一 · 阈值不可达（deepseek 路由）**（会话 `session-40727a84…` 的 v3 日志）：`assistant/attempt` 里存着 provider 的 400 原文 ——
+`This model's maximum context length is 1048576 tokens. However, you requested 1050044 tokens (666044 in the messages, 384000 in the completion).`
+即 **请求里含路由预留的输出预算 384,000**，消息实际只能用到约 **664,576**（= 1,048,576 − 384,000）。而旧阈值 `0.75 × 1,000,000 = 750,000` 比它**还高 85,424** ⇒ 这条路由上**永远不可达**；官方自己的 80% 线（800,000）同样不可达，只能靠 400 溢出兜底触发压缩。
+
+**取证二 · 预留额度随路由变，「能不能摸到 75%」也随之变**（逐会话扫描 `request/header.config.maxTokens`）：
+
+| 路由 | 预留输出 | 消息可用上限 | 官方小圈理论上限 |
+| --- | --- | --- | --- |
+| glm-5.3-flash | 128,000 | 920,576 | 92% |
+| deepseek-v4.1-flash-expires-on-0910 | 256,000 | 792,576 | 79% |
+| deepseek-v4-flash / deepseek-flash | 384,000 | 664,576 | **66%** |
+
+实测印证：`session-de10b34f` 走 glm 时小圈确实爬到 **80.1%**（`input 5,262 + cacheRead 796,160 = 801,422`），紧接着就被官方压缩（0.8 × 1e6 = 800,000 线）；而走 deepseek 的 `session-40727a84` 小圈**卡在 64~66%** 就撞 400。**这解释了「以前见过 75%、80%，现在只有 66%」——不是计量漂移，而是路由换了、额度天花板换了。**
+
+**取证三 · 接续触发了，但死在 prompt 上**（诊断日志，今日）：`14:01:16 water level advisory: ratio=0.75 tokens=752959/1000000` → `auto-continue armed` → `14:02:06 deadline reached, executing host-side` → **`hostAutoContinue error: prompt rejected`**；`14:51:17` 再来一次（`0.76`，`759034`），同样下场。所以「接续从来没有发生过」的真因是 0.1.5 的 `requestId` 必填（见上文缺陷修复）——**与阈值是两条叠加的独立缺陷**，不是同一件事。
+
+**修复**：
+- **分母**改为「窗口 − 预留输出」，预留取自**该会话自己的**请求头 `config.maxTokens`（随路由变动，不再假定 384,000）＝消息真实额度；取不到预留的会话原样用窗口。
+- **分子不做任何系数修正**（**更正**：曾一度加入「本地计量偏乐观 2×」的校准系数并落盘，**判错了、已撤除**）。实测压缩前最后一条 `usage.totalTokens = 660,728`，而 provider 8 秒后报 `666044 in the messages` —— 差 0.8%，**本地取数与官方小圈/dsh-context 同源且本来是准的**；先前看到的 `316,610` 是**压缩之后**的读数（被误当作压缩前）。
+- **判别算式**：旧阈值 `0.75 × 1,000,000 = 750,000` 比消息实上限 `664,576` 还高 **85,424** ⇒ 永不触发；新阈值随路由为 `0.75 × (1,000,000 − 预留)`（deepseek 384,000 → 462,000；glm 128,000 → 654,000），都落在各自硬墙之前。
+- **压缩/溢出即接续**：`compaction/*` 事件与 `CONTEXT_WINDOW_EXCEEDED` 都升级为**硬触发** —— 命中即触发接续（按 seq 去重避免重复触发），同时补写交接账本。
+- **接续材料认「被接续的那个会话」**：`buildPrevSessionPack()` 原先只认 `this._lastAgent`（最近活跃的 agent），而自动接续要交接的是 `armed.sessionId` —— 二者可以不是同一个会话。实测 `14:54:30`：armed 是 `de10b34f`，却把 `1f621132` 的转写、provider、model、思考档位当成接续材料（新会话还会被 `selectModel` 套错模型）。现改为**显式旧会话优先、`_lastAgent` 仅作回退**；宿主路径传 `armed.sessionId`，一键接续把来源会话 id 经 `handoff-continue` 端点传入。
+- **重启不再把历史压缩当成「刚刚发生」（实机事故修复）**：硬触发的去重状态（`lastCompactionSeen` / `lastOverflowSeen`）原本只存在内存里，宿主一重启就归零 —— 于是**每次重启都会把会话里那条历史 compaction 当成新事件**，在完全不到阈值的水位下武装自动接续（实测 17:50 重启后 0.7 分钟即 `armed`，当时水位只有 48%，还顺手写了一份空壳账本）。现改为：每个会话在**本进程内首次被观测时只建立基线**（把启动前已存在的 compaction/溢出 seq 记为「已见」），其后才按 seq 前进判定。
+- 水位记录新增 `measuredRatio / reserve / windowRaw / hardTrigger`，面板与 diag 都能看出「比例是算出来的还是撞出来的」「分母扣掉了多少预留」。
+
+**回归**：新增 `tests/smoke/smoke-test-water-hard-trigger-pre.mjs`（27 条：真实错误文本解析、请求头预留额度、compaction 全历史扫描、源码守卫、空/畸形事件不抛错）；`smoke-test-autocont-host-pre.mjs` 增补 **A8**（7 条：材料来源会话的行为锁 + 「显式旧会话优先于最近活跃 agent」的反向锁）。
+
 ## [2.3.1] — 2026-09-10 · 适配 DSH 0.1.5 会话数据格式 V3
 
 ### 兼容性修复
