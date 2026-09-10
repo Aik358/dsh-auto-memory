@@ -316,5 +316,10 @@ console.log('[autocont-host] A10 卡面口径 + 已接续闩锁 + 会话归属(2
   ok(/url\.searchParams\.get\('sessionId'\)/.test(SRC), 'auto-continue-state 端点接受 sessionId 查询参数')
 }
 
+  // ④ 反向锁(2026-09-10):出厂默认必须是关的 —— 触发口径尚未与官方「约 80% 才压缩」对齐之前,
+  // 不允许把默认悄悄翻回 true(否则公开用户会在上下文刚过半时被接续,纯浪费 token)。
+  const defAutoCont = /^\s*autoContinueEnabled: (true|false),/m.exec(SRC)
+  ok(defAutoCont && defAutoCont[1] === 'false', '出厂默认为关(autoContinueEnabled: false),防止口径未修前被翻回')
+
 console.log('\n[autocont-host] ' + pass + '/' + (pass + fail) + ' assertions passed')
 if (fail) process.exit(1)
