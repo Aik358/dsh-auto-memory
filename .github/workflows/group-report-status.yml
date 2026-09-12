@@ -1,0 +1,37 @@
+name: group-report-status(群反馈状态同步)
+
+# 群反馈闭环的状态机:GitHub 侧留结构化评论,QQ 群侧推用户口吻的一句话。
+#   收到 ✅      群反馈 issue 建立(或被打上 group-report 标签)
+#   正在处理 🔧  PR 开出且引用了 group-report issue(把 issue 分配给 @copilot 即可让 Copilot 修)
+#   处理完毕 ✅  群反馈 issue 关闭(PR 合并自动关单也算)
+on:
+  issues:
+    types: [opened, labeled, closed]
+  pull_request:
+    types: [opened, reopened]
+
+permissions:
+  issues: write
+  pull-requests: write
+  contents: read
+
+concurrency:
+  group: report-sync-${{ github.event.issue.number || github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: 同步状态(GitHub 评论 + QQ 群播报)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          QQ_APP_ID: ${{ secrets.QQ_APP_ID }}
+          QQ_APP_SECRET: ${{ secrets.QQ_APP_SECRET }}
+          QQ_GROUP_OPENID: ${{ secrets.QQ_GROUP_OPENID }}
+        run: node .github/scripts/report-sync.mjs
