@@ -37,6 +37,7 @@ const CFG = {
 for (const k of ['appId', 'appSecret', 'groupId', 'ghToken']) {
   if (!CFG[k]) { console.error(`[webhook] 缺少环境变量 ${k}`); process.exit(1) }
 }
+const VERSION = 'webhook-gist-20260913a' // 部署核对标记:diag 端点与错误响应都会带它
 
 // ---------- Ed25519 密钥派生(官方算法) ----------
 function keyPairFromSecret(secret) {
@@ -173,6 +174,27 @@ const server = http.createServer((req, res) => {
     const raw = Buffer.concat(chunks).toString('utf8')
     try {
       if (CFG.routeToken && !req.url.includes(CFG.routeToken)) { res.writeHead(404); res.end(); return }
+      // 自诊断:GET <url>?diag=1 → 汇报线上代码版本、关键变量与 gist 连通性(值脱敏)
+      if (req.method === 'GET' && req.url.includes('diag=1')) {
+        const diag = {
+          v: VERSION,
+          appId: CFG.appId,
+          groupId: CFG.groupId.slice(-6),
+          gistId: CFG.gistId || '(未配置)',
+          ghTokenPrefix: CFG.ghToken.slice(0, 14) + '…',
+          triggers: CFG.triggers,
+          keywords: CFG.keywords,
+          llmEnabled: !!CFG.llm.key,
+        }
+        try {
+          const g = await gh(`/gists/${CFG.gistId}`)
+          const f = g.ok ? Object.values(g.body.files || {})[0] : null
+          diag.gistProbe = { status: g.status, ok: g.ok, file: f ? f.filename : null, bytes: f ? f.size : null }
+        } catch (e) { diag.gistProbe = { err: e.message } }
+        res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' })
+        res.end(JSON.stringify(diag, null, 2))
+        return
+      }
       const payload = JSON.parse(raw || '{}')
       if (payload.op !== 13) {
         const sigHex = String(req.headers['x-signature-ed25519'] || '')
@@ -184,7 +206,8 @@ const server = http.createServer((req, res) => {
       }
       const out = await handleEvent(payload)
       res.writeHead(200, { 'Content-Type': 'application/json' })
-      res.end(JSON.stringify(out || {}))
+      if (payload.op === 13) res.end(JSON.stringify(out || {})) // op=13 应答结构严格,不附加字段
+      else res.end(JSON.stringify({ ...(out || {}), v: VERSION }))
     } catch (e) {
       console.error('[webhook] 处理异常:', e.message)
       res.writeHead(200, { 'Content-Type': 'application/json' })
