@@ -1,0 +1,3 @@
+#!/bin/bash
+export PATH=/var/lang/node24/bin:/var/lang/node22/bin:/var/lang/node20/bin:/var/lang/node18/bin:$PATH
+exec node index.js
