@@ -122,12 +122,23 @@ async function collect() {
     const { json } = await fetchJson(`https://registry.npmjs.org/${NPM_PACKAGE.replace('/', '%2F')}/latest`)
     out.npmVersion = json?.version || null
   } catch (e) { console.warn('[digest] npm 版本采集失败:', e.message) }
-  out.feedback = null
-  if (env.FEEDBACK_URL) {
+  out.groupFeedbackLines = null
+  if (env.FEEDBACK_GIST_ID && env.FEEDBACK_GH_PAT) {
     try {
-      const { json } = await fetchJson(`${env.FEEDBACK_URL}${env.FEEDBACK_URL.includes('?') ? '&' : '?'}hours=${Math.ceil(windowH)}`)
-      out.feedback = Array.isArray(json?.items) ? json.items.slice(0, 5) : null
-    } catch (e) { console.warn('[digest] 群内反馈采集失败(忽略):', e.message) }
+      const r = await fetch(`https://api.github.com/gists/${env.FEEDBACK_GIST_ID}`, { headers: { Accept: 'application/vnd.github+json', Authorization: `Bearer ${env.FEEDBACK_GH_PAT}`, 'User-Agent': 'group-digest' } })
+      const j = await r.json().catch(() => null)
+      const fname = Object.keys(j?.files || {})[0]
+      const content = (j?.files?.[fname]?.content || '').trim()
+      if (content) {
+        out.groupFeedbackLines = content.split('\n').filter(Boolean).slice(-120)
+        await fetch(`https://api.github.com/gists/${env.FEEDBACK_GIST_ID}`, {
+          method: 'PATCH',
+          headers: { Accept: 'application/vnd.github+json', Authorization: `Bearer ${env.FEEDBACK_GH_PAT}`, 'User-Agent': 'group-digest' },
+          body: JSON.stringify({ files: { [fname]: { content: '' } } }),
+        })
+        console.log(`[digest] 群反馈原始消息 ${out.groupFeedbackLines.length} 条已取出(gist 已清空)`)
+      }
+    } catch (e) { console.warn('[digest] 群反馈 gist 读取失败(忽略):', e.message) }
   }
   return out
 }
@@ -186,10 +197,14 @@ function compose(d) {
   for (const pr of (d.openPRs || []).slice(0, 4)) L.push(`🛠 待处理 PR #${pr.number} ${clip(pr.title, 44)}`)
   L.push(`完整列表:GitHub 仓库 ${REPO} → issues 页(群消息不带链接,直接搜仓库名)`)
 
-  if (d.feedback?.length) {
+  if (d.groupFeedbackLines?.length) {
     L.push('')
-    L.push('▍群内反馈(自动采集)')
-    for (const f of d.feedback.slice(0, 5)) L.push(`• ${f.user || '?'}:${clip(f.text, 60)}`)
+    L.push('▍群内反馈(AI 归纳)')
+    if (d.groupFeedbackSummary) L.push(...d.groupFeedbackSummary.split('\n'))
+    else for (const line of d.groupFeedbackLines.slice(-8)) {
+      try { const o = JSON.parse(line); L.push(`• ${clip(o.m, 60)}(${String(o.t || '').slice(5, 16).replace('T', ' ')})`) }
+      catch { L.push(`• ${clip(line, 60)}`) }
+    }
   }
 
   L.push('')
@@ -273,6 +288,28 @@ async function send(text) {
 
 // ---------- 主流程 ----------
 const d = await collect()
+// 群内反馈 AI 归纳:原始消息在 collect 里已取出并清空 gist,这里让 LLM 归纳成带标题的清单
+if (d.groupFeedbackLines?.length && env.LLM_API_KEY) {
+  try {
+    const r = await fetch(`${(env.LLM_BASE_URL || 'https://api.deepseek.com').replace(/\/$/, '')}/chat/completions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${env.LLM_API_KEY}` },
+      body: JSON.stringify({
+        model: env.LLM_MODEL || 'deepseek-chat',
+        messages: [
+          { role: 'system', content: '你是群报整理员。下面是 QQ 群近一窗口的用户原始消息(JSONL:t=时间,u=用户脱敏标识,m=原文)。归纳其中反映的「问题/故障/使用障碍/请求」,合并同类项,输出最多 8 条,每条一行,格式「• 标题 —— 一句话细节(时间)」,标题不超过 20 字,时间为原文 t 转成北京时间。没有实质问题就只输出一行「(本窗口群内未捕获到明确问题)」。纯文本,不要 Markdown 标题。' },
+          { role: 'user', content: d.groupFeedbackLines.join('\n').slice(0, 20000) },
+        ],
+        max_tokens: 600,
+        temperature: 0.3,
+      }),
+    })
+    const j = await r.json().catch(() => null)
+    const text = j?.choices?.[0]?.message?.content?.trim()
+    if (text) { d.groupFeedbackSummary = text; console.log('[digest] 群反馈 AI 归纳完成') }
+    else console.warn('[digest] 群反馈归纳空应答,退回原文摘录')
+  } catch (e) { console.warn('[digest] 群反馈归纳失败(退回原文摘录):', e.message) }
+}
 const text = compose(d)
 console.log('─────────────── 生成摘要 ───────────────')
 console.log(text)

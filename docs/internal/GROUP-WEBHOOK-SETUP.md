@@ -1,8 +1,9 @@
 # 群反馈云端耳朵(Webhook)部署说明
 
-> 2026-09-13 搭建。**推荐路线**:零设备、零月租——把 QQ 机器人的事件接收方式从 WebSocket 切成
-> **Webhook**,HTTP 回调推给腾讯云函数(Web 函数),命中触发词就在 GitHub 建单并回「收到 ✅」。
-> 前置阅读:状态闭环词汇表见 `GROUP-LISTENER-SETUP.md`(收到/正在处理/处理完毕 的定义不变)。
+> 2026-09-13 搭建(同日改为 AI 归纳路线):**不再自动建 GitHub issue**。云端耳朵把群里命中
+> 反馈词/问题关键词的消息静默收进一个**秘密 Gist**;每天 12:00/21:00 的日报(group-digest)读取
+> gist、调用大模型归纳成带标题的「群内反馈(AI 归纳)」清单随日报发群,并清空 gist 防重复。
+> 前置阅读:状态闭环词汇表见 `GROUP-LISTENER-SETUP.md`(issue 状态机保留但处于休眠,当前无建单方)。
 
 ## 组成
 
@@ -21,9 +22,11 @@
    QQ_APP_ID=1905260114
    QQ_APP_SECRET=<机器人secret>
    QQ_GROUP_OPENID=D4D52BA3A7412F88E9192011CD4B935A
-   GH_TOKEN=<细粒度PAT,仅 issues:write>
+   GH_TOKEN=<细粒度PAT,Account permissions → Gists: Read and write(收集用,不碰仓库)>
+   GIST_ID=<秘密 gist 的 32 位 id,文件名 group-feedback.jsonl>
    REPO=Aik358/dsh-auto-memory
    ROUTE_TOKEN=<自造一段随机字符串,防扫描>
+   FEEDBACK_KEYWORDS=问题,bug,报错,error,异常,失效,崩溃,闪退,不能用,出错了,坏了,修复  <可选,收集关键词>
    LLM_API_KEY=<可选;配了才启用「@ 消息大模型应答」(DeepSeek key 或任意 OpenAI 兼容端点)>
    LLM_MODEL=deepseek-chat            <可选,默认 deepseek-chat>
    LLM_BASE_URL=https://api.deepseek.com  <可选,换其他 OpenAI 兼容服务时改>

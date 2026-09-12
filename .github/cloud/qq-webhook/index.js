@@ -1,24 +1,16 @@
 /**
  * QQ 机器人 Webhook 接收端(「耳朵」的云端版)
  *
- * 部署形态:
- *   - 腾讯云函数「Web 函数」(推荐,零设备零月租):Node.js 18/20,入口文件本文件,监听端口取环境变量 PORT(默认 9000)
- *   - 任何能常驻跑 Node >= 18 的地方(本机/VPS):node index.js
- *
+ * 部署形态:腾讯云函数「Web 函数」(Node.js 18/20/24)或任何能常驻跑 Node 的地方
  * 职责:接收 QQ 开放平台 HTTP 事件回调(op=13 URL 验证 + GROUP_AT_MESSAGE_CREATE)
- *   → 命中触发词(默认 反馈/问题/bug)→ 建 GitHub issue(group-report 标签)→ 群里回「收到 ✅」
+ *   ① 命中反馈触发词/问题关键词的消息 → 追加进 GitHub Gist(group-feedback.jsonl)→ @ 消息回「已记录」
+ *   ② 其他 @ 消息 → 配了 LLM_API_KEY 就让大模型被动回复,没配则沉默
+ *   ※ 不再自动建 GitHub issue;日报时由 group-digest.mjs 读 gist、AI 归纳成问题清单后清空
  *
- * 环境变量(云函数控制台配置,严禁写进代码库):
- *   QQ_APP_ID / QQ_APP_SECRET / QQ_GROUP_OPENID   机器人凭据与目标群
- *   GH_TOKEN       细粒度 PAT,仅需 issues:write
- *   REPO           默认 Aik358/dsh-auto-memory
- *   TRIGGER        可选,逗号分隔,默认 反馈,问题,bug
- *   ROUTE_TOKEN    可选,回调 URL 里带一段随机路径防扫描(如 https://…/qqcb-xxxxx/)
- *   STRICT_VERIFY  设为 1 则验签失败直接拒绝(默认只告警不阻断,防止算法差异丢消息)
- *
- * 签名方案(官方文档):seed = AppSecret 自我拼接补足 32 字节 → 派生 Ed25519 密钥对;
- *   URL 验证(op=13):用私钥签 event_ts+plain_token,hex 回传;
- *   事件推送:用公钥验证 X-Signature-Ed25519(原文 = X-Signature-Timestamp + 原始 body)。
+ * 环境变量:QQ_APP_ID / QQ_APP_SECRET / QQ_GROUP_OPENID / GH_TOKEN(需 Gists 读写)/
+ *          GIST_ID(收集文件的 gist)/ REPO(备用)/ ROUTE_TOKEN(可选)/ STRICT_VERIFY(可选)/
+ *          TRIGGER(可选,明确反馈词)/ FEEDBACK_KEYWORDS(可选,问题关键词)/
+ *          LLM_API_KEY / LLM_MODEL / LLM_BASE_URL / LLM_MAX_REPLY(均可选)
  */
 const http = require('node:http')
 const crypto = require('node:crypto')
@@ -28,8 +20,10 @@ const CFG = {
   appSecret: process.env.QQ_APP_SECRET,
   groupId: process.env.QQ_GROUP_OPENID,
   ghToken: process.env.GH_TOKEN,
+  gistId: process.env.GIST_ID || '',
   repo: process.env.REPO || 'Aik358/dsh-auto-memory',
   triggers: (process.env.TRIGGER || '反馈,问题,bug').split(',').map((s) => s.trim()).filter(Boolean),
+  keywords: (process.env.FEEDBACK_KEYWORDS || '问题,bug,报错,error,异常,失效,崩溃,闪退,不能用,出错了,坏了,修复').split(',').map((s) => s.trim().toLowerCase()).filter(Boolean),
   routeToken: process.env.ROUTE_TOKEN || '',
   port: Number(process.env.PORT || 9000),
   strictVerify: process.env.STRICT_VERIFY === '1',
@@ -83,7 +77,7 @@ async function qqSend(text, msgId) {
   return b
 }
 
-// ---------- LLM 应答(可选):非触发词的 @ 消息交给大模型,被动回复 ----------
+// ---------- LLM 应答(可选):非反馈类 @ 消息交给大模型,被动回复 ----------
 async function llmReply(userText) {
   const r = await fetch(`${CFG.llm.base}/chat/completions`, {
     method: 'POST',
@@ -91,7 +85,7 @@ async function llmReply(userText) {
     body: JSON.stringify({
       model: CFG.llm.model,
       messages: [
-        { role: 'system', content: '你是 QQ 群「dsh-auto-memory 交流群」的群助手 automemory。回答简短(通常不超过 150 字)、技术向、语气谦虚;关于本项目的问题如实回答,不确定就建议提 GitHub issue。不要用 Markdown 标题,纯文本短段落。' },
+        { role: 'system', content: '你是 QQ 群「dsh-auto-memory 交流群」的群助手 automemory。回答简短(通常不超过 150 字)、技术向、语气谦虚;关于本项目的问题如实回答,不确定就建议在群里说明情况。不要用 Markdown 标题,纯文本短段落。' },
         { role: 'user', content: userText },
       ],
       max_tokens: 400,
@@ -103,19 +97,23 @@ async function llmReply(userText) {
   return j.choices[0].message.content.trim().slice(0, CFG.llm.maxReply)
 }
 
-// ---------- GitHub ----------
+// ---------- GitHub(Gist 收集) ----------
 const gh = (p, opts = {}) =>
   fetch(`https://api.github.com${p}`, {
     ...opts,
     headers: { Accept: 'application/vnd.github+json', Authorization: `Bearer ${CFG.ghToken}`, 'User-Agent': 'qq-webhook', ...(opts.headers || {}) },
   }).then(async (r) => ({ ok: r.ok, status: r.status, body: r.status === 204 ? null : await r.json().catch(() => null) }))
 
-async function ensureLabel() {
-  const r = await gh(`/repos/${CFG.repo}/labels/group-report`)
-  if (r.status === 404) {
-    await gh(`/repos/${CFG.repo}/labels`, { method: 'POST', body: JSON.stringify({ name: 'group-report', color: 'F9A825', description: '来自 QQ 群的用户反馈(群助手自动创建)' }) })
-    console.log('[webhook] 已创建标签 group-report')
-  }
+async function gistAppend(line) {
+  const r0 = await gh(`/gists/${CFG.gistId}`)
+  if (!r0.ok) throw new Error(`读 gist 失败 ${r0.status}`)
+  const fname = Object.keys(r0.body.files || {})[0]
+  if (!fname) throw new Error('gist 里没有文件')
+  const prev = (r0.body.files[fname].content || '').split('\n').filter(Boolean)
+  prev.push(line)
+  while (prev.length > 400) prev.shift() // 只保留最近 400 条
+  const r = await gh(`/gists/${CFG.gistId}`, { method: 'PATCH', body: JSON.stringify({ files: { [fname]: { content: prev.join('\n') + '\n' } } }) })
+  if (!r.ok) throw new Error(`写 gist 失败 ${r.status}`)
 }
 
 // ---------- 事件处理 ----------
@@ -140,39 +138,30 @@ async function handleEvent(payload) {
     seen.add(id)
     if (seen.size > 500) seen.delete(seen.values().next().value)
     const text = String(d.content || '').replace(/<@!\d+>/g, '').trim()
-    const hit = CFG.triggers.find((w) => text.toLowerCase().includes(w.toLowerCase()))
-    if (!hit) {
-      // 非反馈类 @ 消息:配了 LLM key 就让大模型被动回复,否则保持沉默
-      if (CFG.llm.key && String(d.content || '').includes('@')) {
-        try {
-          const reply = await llmReply(text || '(空消息)')
-          await qqSend(reply, d.id)
-          console.log('[webhook] LLM 已回复:', clip(reply, 40))
-        } catch (e) { console.error('[webhook] LLM 应答失败:', e.message) }
-      } else { console.log('[webhook] 忽略:', clip(text, 30)) }
+    const lower = text.toLowerCase()
+    const isAt = String(d.content || '').includes('@')
+
+    // ① 问题收集:明确反馈词 或 问题关键词命中 → 存 gist(@ 的消息回一句已记录)
+    const collected = CFG.triggers.find((w) => lower.includes(w.toLowerCase())) || CFG.keywords.find((w) => lower.includes(w))
+    if (collected && CFG.gistId) {
+      try {
+        await gistAppend(JSON.stringify({ t: new Date().toISOString(), u: clip(d.author?.openid || '?', 10), w: collected, m: clip(text, 200) }))
+        console.log('[webhook] 已收集:', clip(text, 50))
+        if (isAt) await qqSend('已记录 ✅ 会归纳进下次群报', d.id).catch((e) => console.error('[webhook]', e.message))
+      } catch (e) { console.error('[webhook] 收集失败:', e.message) }
       return
     }
-    console.log('[webhook] 命中反馈:', clip(text, 60))
-    const body = [
-      '## QQ 群反馈(群助手自动建单)', '',
-      `- 汇报人: ${clip(d.author?.openid || '匿名', 12)}(脱敏标识)`,
-      `- 时间: ${when()}(北京)`, '',
-      '**原文:**', '',
-      ...String(d.content || '').split(/\r?\n/).map((l) => '> ' + l), '',
-      '---', '',
-      '处理状态自动同步:收到 → 正在处理 → 处理完毕(issue 评论 + QQ 群)。',
-      '可把本 issue 分配给 Copilot(若开通)或自行认领。', '',
-      '<sub>由 QQ Webhook 云端接收端自动创建</sub>',
-    ].join('\n')
-    await ensureLabel()
-    const r = await gh(`/repos/${CFG.repo}/issues`, { method: 'POST', body: JSON.stringify({ title: `[群反馈] ${clip(text, 30)}`, body, labels: ['group-report'] }) })
-    if (!r.ok) {
-      console.error('[webhook] 建 issue 失败', r.status, JSON.stringify(r.body).slice(0, 200))
-      await qqSend(`收到 ✅(建单通道抖了一下,管理员会人工补记)「${clip(text, 24)}」`).catch(() => {})
+
+    // ② 其他 @ 消息:LLM 聊天(配了 key 才启)
+    if (isAt && CFG.llm.key) {
+      try {
+        const reply = await llmReply(text || '(空消息)')
+        await qqSend(reply, d.id)
+        console.log('[webhook] LLM 已回复:', clip(reply, 40))
+      } catch (e) { console.error('[webhook] LLM 应答失败:', e.message) }
       return
     }
-    console.log('[webhook] 已建 issue #' + r.body.number)
-    await qqSend(`收到 ✅ 群反馈已建单 #${r.body.number}「${clip(text, 24)}」,处理进度会同步`).catch((e) => console.error('[webhook]', e.message))
+    console.log('[webhook] 忽略:', clip(text, 30))
   }
 }
 
@@ -203,4 +192,4 @@ const server = http.createServer((req, res) => {
     }
   })
 })
-server.listen(CFG.port, () => console.log(`[webhook] 监听 :${CFG.port},触发词:`, CFG.triggers.join('/')))
+server.listen(CFG.port, () => console.log(`[webhook] 监听 :${CFG.port},触发词:`, CFG.triggers.join('/'), '| 关键词:', CFG.keywords.join('/')))
