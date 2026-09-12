@@ -221,6 +221,7 @@ async function send(text) {
     return json
   }
   switch (CHANNEL) {
+    // 常见 QQ 错误码:40034105 主动消息无权限(机器人未在 q.qq.com 审核上线)/ 40034101 机器人不在群里
     case 'qq_official': {
       const t = await post('https://bots.qq.com/app/getAppAccessToken', {}, { appId: env.QQ_APP_ID, clientSecret: env.QQ_APP_SECRET })
       if (!t?.access_token) throw new Error(`取 access_token 失败:${JSON.stringify(t).slice(0, 240)}`)
@@ -290,7 +291,8 @@ if (NO_SEND) {
     const used = await send(text)
     console.log(`[digest] ✅ 已通过 ${used} 投递。`)
   } catch (e) {
-    console.error(`[digest] ❌ 投递失败(${CHANNEL}):`, e.message)
+    const hint = /40034105/.test(e.message) ? '(机器人尚未在 q.qq.com 完成审核上线,主动消息被拒;上线后自动恢复)' : /40034101/.test(e.message) ? '(机器人不在目标群)' : ''
+    console.error(`[digest] ❌ 投递失败(${CHANNEL}):`, e.message, hint)
     process.exitCode = 1
   }
 }
