@@ -50,7 +50,7 @@ const copyDirExcluding = (src, dst, excludeRe) => {
 copyDirExcluding(path.join(DEV, 'lib'), path.join(REL, 'lib'), /\.bak/)
 copyDirExcluding(path.join(DEV, 'tests'), path.join(REL, 'tests'), /node_modules/)
 copyDirExcluding(path.join(DEV, 'python'), path.join(REL, 'python'), /(__pycache__|\.pyc|bench)/)
-for (const entry of ['cordis.patch.yml', 'README.md', 'README.zh-CN.md', 'LICENSE', 'notices.json', 'docs', 'social-preview.html']) {
+for (const entry of ['cordis.patch.yml', 'README.md', 'README.zh-CN.md', 'LICENSE', 'notices.json', 'docs', 'social-preview.html', '.github']) {
   const s = path.join(DEV, entry), d = path.join(REL, entry)
   if (existsSync(s)) cpSync(s, d, { recursive: true })
 }
