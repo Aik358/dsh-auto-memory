@@ -37,8 +37,20 @@ const CFG = {
 for (const k of ['appId', 'appSecret', 'groupId', 'ghToken']) {
   if (!CFG[k]) { console.error(`[webhook] 缺少环境变量 ${k}`); process.exit(1) }
 }
-const VERSION = 'webhook-gist-20260913b' // 部署核对标记:diag 端点与错误响应都会带它
+const VERSION = 'webhook-gist-20260913c' // 部署核对标记:diag 端点与错误响应都会带它
 let lastError = null // 最近一次内部错误(diag 可见)
+const RAW_DEBUG = (process.env.RAW_DEBUG || '1') !== '0' // 抓原始报文进 gist 的 group-raw-debug.txt(排查完可关)
+
+async function rawDebug(req, raw) {
+  if (!RAW_DEBUG || req.method !== 'POST' || !CFG.gistId) return
+  try {
+    const r0 = await gh(`/gists/${CFG.gistId}`)
+    const prev = r0.body.files['group-raw-debug.txt']?.content || ''
+    const lines = [...prev.split('\n').filter(Boolean), `${new Date().toISOString()} ${clip(raw, 500)}`]
+    while (lines.length > 50) lines.shift()
+    await gh(`/gists/${CFG.gistId}`, { method: 'PATCH', body: JSON.stringify({ files: { 'group-raw-debug.txt': { content: lines.join('\n') + '\n' } } }) })
+  } catch { /* 调试记录失败不影响主流程 */ }
+}
 
 // ---------- Ed25519 密钥派生(官方算法) ----------
 function keyPairFromSecret(secret) {
@@ -175,6 +187,7 @@ const server = http.createServer((req, res) => {
     const raw = Buffer.concat(chunks).toString('utf8')
     try {
       if (CFG.routeToken && !req.url.includes(CFG.routeToken)) { res.writeHead(404); res.end(); return }
+      rawDebug(req, raw).catch(() => {})
       // 自诊断:GET <url>?diag=1 → 汇报线上代码版本、关键变量与 gist 连通性(值脱敏);加 write=1 顺带做一次写入探针
       if (req.method === 'GET' && req.url.includes('diag=1')) {
         const diag = {
