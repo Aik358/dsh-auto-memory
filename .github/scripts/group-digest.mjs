@@ -297,7 +297,7 @@ if (d.groupFeedbackLines?.length && env.LLM_API_KEY) {
       body: JSON.stringify({
         model: env.LLM_MODEL || 'deepseek-chat',
         messages: [
-          { role: 'system', content: '你是群报整理员。下面是 QQ 群近一窗口的用户原始消息(JSONL:t=时间,u=用户脱敏标识,m=原文)。归纳其中反映的「问题/故障/使用障碍/请求」,合并同类项,输出最多 8 条,每条一行,格式「• 标题 —— 一句话细节(时间)」,标题不超过 20 字,时间为原文 t 转成北京时间。没有实质问题就只输出一行「(本窗口群内未捕获到明确问题)」。纯文本,不要 Markdown 标题。' },
+          { role: 'system', content: '你是群报整理员。下面是 QQ 群近一窗口的用户原始消息(JSONL:t=时间,u=用户脱敏标识,m=原文)。归纳其中反映的「问题/故障/使用障碍/请求」,合并同类项,输出最多 8 条,每条一行,格式「• 标题 —— 一句话细节(时间)」,标题不超过 20 字,时间为原文 t 转成北京时间。没有实质问题就只输出一行「(本窗口群内未捕获到明确问题)」。直接输出最终清单,禁止输出思考过程、字段名、标题字数说明等任何多余内容。纯文本,不要 Markdown 标题。' },
           { role: 'user', content: d.groupFeedbackLines.join('\n').slice(0, 20000) },
         ],
         max_tokens: 600,
@@ -305,8 +305,13 @@ if (d.groupFeedbackLines?.length && env.LLM_API_KEY) {
       }),
     })
     const j = await r.json().catch(() => null)
-    const text = j?.choices?.[0]?.message?.content?.trim()
-    if (text) { d.groupFeedbackSummary = text; console.log('[digest] 群反馈 AI 归纳完成') }
+    const raw = j?.choices?.[0]?.message?.content?.trim()
+    if (raw) {
+      // 后处理:只保留符合「• 标题 —— 细节」或「未捕获」结论的行,滤掉模型混入的思考草稿
+      const kept = raw.split('\n').map((l) => l.trim()).filter((l) => l && (l.includes('——') || l.includes('未捕获')))
+      d.groupFeedbackSummary = (kept.length ? kept : [clip(raw, 300)]).join('\n')
+      console.log('[digest] 群反馈 AI 归纳完成:', clip(d.groupFeedbackSummary, 80))
+    }
     else console.warn('[digest] 群反馈归纳空应答,退回原文摘录')
   } catch (e) { console.warn('[digest] 群反馈归纳失败(退回原文摘录):', e.message) }
 }
