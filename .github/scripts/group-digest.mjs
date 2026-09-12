@@ -143,19 +143,20 @@ async function collect() {
   return out
 }
 
-// ---------- 人工备注(.github/digest/NOTES.md,#/<!-- 开头的行视为注释) ----------
-function loadNotes() {
-  const notes = []
-  const p = env.DIGEST_NOTES_PATH || path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'digest', 'NOTES.md')
+// ---------- 板块文案文件(.github/digest/*.md:#/<!-- 开头的行视为注释,空文件=板块隐藏) ----------
+function loadSectionFile(name) {
+  const p = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'digest', name)
   try {
-    if (existsSync(p)) {
-      for (const line of readFileSync(p, 'utf8').split(/\r?\n/)) {
-        const t = line.trim()
-        if (!t || t.startsWith('#') || t.startsWith('<!--')) continue
-        notes.push(t)
-      }
-    }
-  } catch { /* 备注缺省无所谓 */ }
+    if (!existsSync(p)) return []
+    return readFileSync(p, 'utf8').split(/\r?\n/).map((l) => l.trim()).filter((l) => l && !l.startsWith('#') && !l.startsWith('<!--'))
+  } catch { return [] }
+}
+
+// ---------- 人工备注(默认 .github/digest/NOTES.md;DIGEST_NOTES_PATH 可显式指定;EXTRA_NOTE 追加) ----------
+function loadNotes() {
+  const custom = env.DIGEST_NOTES_PATH
+  const lines = custom ? (existsSync(custom) ? readFileSync(custom, 'utf8').split(/\r?\n/) : []) : loadSectionFile('NOTES.md')
+  const notes = lines.map((l) => l.trim()).filter((l) => l && !l.startsWith('#') && !l.startsWith('<!--'))
   if (env.EXTRA_NOTE && env.EXTRA_NOTE.trim()) notes.push(env.EXTRA_NOTE.trim())
   return notes
 }
@@ -196,6 +197,14 @@ function compose(d) {
   }
   for (const pr of (d.openPRs || []).slice(0, 4)) L.push(`🛠 待处理 PR #${pr.number} ${clip(pr.title, 44)}`)
   L.push(`完整列表:GitHub 仓库 ${REPO} → issues 页(群消息不带链接,直接搜仓库名)`)
+
+  // 下版本前瞻/新增功能预告:内容在 .github/digest/PREVIEW.md,网页编辑即可,留空则整块隐藏
+  const preview = loadSectionFile('PREVIEW.md')
+  if (preview.length) {
+    L.push('')
+    L.push('▍下版本前瞻')
+    L.push(...preview)
+  }
 
   if (d.groupFeedbackLines?.length) {
     L.push('')
