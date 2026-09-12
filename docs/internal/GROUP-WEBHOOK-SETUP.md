@@ -24,6 +24,9 @@
    GH_TOKEN=<细粒度PAT,仅 issues:write>
    REPO=Aik358/dsh-auto-memory
    ROUTE_TOKEN=<自造一段随机字符串,防扫描>
+   LLM_API_KEY=<可选;配了才启用「@ 消息大模型应答」(DeepSeek key 或任意 OpenAI 兼容端点)>
+   LLM_MODEL=deepseek-chat            <可选,默认 deepseek-chat>
+   LLM_BASE_URL=https://api.deepseek.com  <可选,换其他 OpenAI 兼容服务时改>
    ```
 5. 部署后,函数详情页拿「**访问服务 URL**」(默认公网域名,HTTPS),在末尾拼上 `/<ROUTE_TOKEN>/`;
 6. QQ 新版控制台 → 开发设置 → 「事件订阅与回调地址」→ 接收方式切换 **Webhook** → 粘贴上面的 URL;
