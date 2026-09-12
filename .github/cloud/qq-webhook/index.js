@@ -37,7 +37,8 @@ const CFG = {
 for (const k of ['appId', 'appSecret', 'groupId', 'ghToken']) {
   if (!CFG[k]) { console.error(`[webhook] 缺少环境变量 ${k}`); process.exit(1) }
 }
-const VERSION = 'webhook-gist-20260913a' // 部署核对标记:diag 端点与错误响应都会带它
+const VERSION = 'webhook-gist-20260913b' // 部署核对标记:diag 端点与错误响应都会带它
+let lastError = null // 最近一次内部错误(diag 可见)
 
 // ---------- Ed25519 密钥派生(官方算法) ----------
 function keyPairFromSecret(secret) {
@@ -149,7 +150,7 @@ async function handleEvent(payload) {
         await gistAppend(JSON.stringify({ t: new Date().toISOString(), u: clip(d.author?.openid || '?', 10), w: collected, m: clip(text, 200) }))
         console.log('[webhook] 已收集:', clip(text, 50))
         if (isAt) await qqSend('已记录 ✅ 会归纳进下次群报', d.id).catch((e) => console.error('[webhook]', e.message))
-      } catch (e) { console.error('[webhook] 收集失败:', e.message) }
+      } catch (e) { lastError = 'collect: ' + e.message; console.error('[webhook] 收集失败:', e.message) }
       return
     }
 
@@ -174,10 +175,11 @@ const server = http.createServer((req, res) => {
     const raw = Buffer.concat(chunks).toString('utf8')
     try {
       if (CFG.routeToken && !req.url.includes(CFG.routeToken)) { res.writeHead(404); res.end(); return }
-      // 自诊断:GET <url>?diag=1 → 汇报线上代码版本、关键变量与 gist 连通性(值脱敏)
+      // 自诊断:GET <url>?diag=1 → 汇报线上代码版本、关键变量与 gist 连通性(值脱敏);加 write=1 顺带做一次写入探针
       if (req.method === 'GET' && req.url.includes('diag=1')) {
         const diag = {
           v: VERSION,
+          lastError,
           appId: CFG.appId,
           groupId: CFG.groupId.slice(-6),
           gistId: CFG.gistId || '(未配置)',
@@ -191,6 +193,12 @@ const server = http.createServer((req, res) => {
           const f = g.ok ? Object.values(g.body.files || {})[0] : null
           diag.gistProbe = { status: g.status, ok: g.ok, file: f ? f.filename : null, bytes: f ? f.size : null }
         } catch (e) { diag.gistProbe = { err: e.message } }
+        if (req.url.includes('write=1')) {
+          try {
+            await gistAppend(JSON.stringify({ t: new Date().toISOString(), u: 'DIAG', m: 'diag write probe' }))
+            diag.writeProbe = 'ok(gist 已追加一行 DIAG 探针)'
+          } catch (e) { diag.writeProbe = '失败: ' + e.message }
+        }
         res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' })
         res.end(JSON.stringify(diag, null, 2))
         return
