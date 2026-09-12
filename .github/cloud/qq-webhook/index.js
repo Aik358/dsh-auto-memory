@@ -33,6 +33,12 @@ const CFG = {
   routeToken: process.env.ROUTE_TOKEN || '',
   port: Number(process.env.PORT || 9000),
   strictVerify: process.env.STRICT_VERIFY === '1',
+  llm: {
+    key: process.env.LLM_API_KEY || '',
+    model: process.env.LLM_MODEL || 'deepseek-chat',
+    base: (process.env.LLM_BASE_URL || 'https://api.deepseek.com').replace(/\/$/, ''),
+    maxReply: Number(process.env.LLM_MAX_REPLY || 500),
+  },
 }
 for (const k of ['appId', 'appSecret', 'groupId', 'ghToken']) {
   if (!CFG[k]) { console.error(`[webhook] 缺少环境变量 ${k}`); process.exit(1) }
@@ -64,15 +70,37 @@ async function getQQToken(force = false) {
   }
   return qqToken
 }
-async function qqSend(text) {
+async function qqSend(text, msgId) {
+  const body = { content: String(text).replace(/https?:\/\/\S+/g, '(链接略)'), msg_type: 0, msg_seq: (Date.now() % 1000) + 1 }
+  if (msgId) body.msg_id = msgId // 被动回复(5 分钟窗口内有效,不占主动消息配额)
   const r = await fetch(`https://api.sgroup.qq.com/v2/groups/${CFG.groupId}/messages`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `QQBot ${await getQQToken()}` },
-    body: JSON.stringify({ content: String(text).replace(/https?:\/\/\S+/g, '(链接略)'), msg_type: 0, msg_seq: (Date.now() % 1000) + 1 }),
+    body: JSON.stringify(body),
   })
   const b = await r.json().catch(() => null)
   if (!r.ok) throw new Error(`QQ 发送失败 ${r.status} ${JSON.stringify(b).slice(0, 160)}`)
   return b
+}
+
+// ---------- LLM 应答(可选):非触发词的 @ 消息交给大模型,被动回复 ----------
+async function llmReply(userText) {
+  const r = await fetch(`${CFG.llm.base}/chat/completions`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${CFG.llm.key}` },
+    body: JSON.stringify({
+      model: CFG.llm.model,
+      messages: [
+        { role: 'system', content: '你是 QQ 群「dsh-auto-memory 交流群」的群助手 automemory。回答简短(通常不超过 150 字)、技术向、语气谦虚;关于本项目的问题如实回答,不确定就建议提 GitHub issue。不要用 Markdown 标题,纯文本短段落。' },
+        { role: 'user', content: userText },
+      ],
+      max_tokens: 400,
+      temperature: 0.7,
+    }),
+  })
+  const j = await r.json().catch(() => null)
+  if (!r.ok || !j?.choices?.[0]?.message?.content) throw new Error(`LLM 失败 ${r.status} ${JSON.stringify(j).slice(0, 160)}`)
+  return j.choices[0].message.content.trim().slice(0, CFG.llm.maxReply)
 }
 
 // ---------- GitHub ----------
@@ -113,7 +141,17 @@ async function handleEvent(payload) {
     if (seen.size > 500) seen.delete(seen.values().next().value)
     const text = String(d.content || '').replace(/<@!\d+>/g, '').trim()
     const hit = CFG.triggers.find((w) => text.toLowerCase().includes(w.toLowerCase()))
-    if (!hit) { console.log('[webhook] 忽略:', clip(text, 30)); return }
+    if (!hit) {
+      // 非反馈类 @ 消息:配了 LLM key 就让大模型被动回复,否则保持沉默
+      if (CFG.llm.key && String(d.content || '').includes('@')) {
+        try {
+          const reply = await llmReply(text || '(空消息)')
+          await qqSend(reply, d.id)
+          console.log('[webhook] LLM 已回复:', clip(reply, 40))
+        } catch (e) { console.error('[webhook] LLM 应答失败:', e.message) }
+      } else { console.log('[webhook] 忽略:', clip(text, 30)) }
+      return
+    }
     console.log('[webhook] 命中反馈:', clip(text, 60))
     const body = [
       '## QQ 群反馈(群助手自动建单)', '',
