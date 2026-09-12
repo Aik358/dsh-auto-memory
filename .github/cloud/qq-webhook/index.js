@@ -23,7 +23,7 @@ const CFG = {
   gistId: process.env.GIST_ID || '',
   repo: process.env.REPO || 'Aik358/dsh-auto-memory',
   triggers: (process.env.TRIGGER || '反馈,问题,bug').split(',').map((s) => s.trim()).filter(Boolean),
-  keywords: (process.env.FEEDBACK_KEYWORDS || '问题,bug,报错,error,异常,失效,崩溃,闪退,不能用,出错了,坏了,修复').split(',').map((s) => s.trim().toLowerCase()).filter(Boolean),
+  keywords: (process.env.FEEDBACK_KEYWORDS || '问题,bug,报错,error,异常,失效,崩溃,闪退,不能用,出错了,坏了').split(',').map((s) => s.trim().toLowerCase()).filter(Boolean),
   routeToken: process.env.ROUTE_TOKEN || '',
   port: Number(process.env.PORT || 9000),
   strictVerify: process.env.STRICT_VERIFY === '1',
@@ -39,6 +39,7 @@ for (const k of ['appId', 'appSecret', 'groupId', 'ghToken']) {
 }
 const VERSION = 'webhook-gist-20260913c' // 部署核对标记:diag 端点与错误响应都会带它
 let lastError = null // 最近一次内部错误(diag 可见)
+let botMentionToken = null // 从「@机器人+反馈词」消息里学习的机器人 mention 标识
 const RAW_DEBUG = (process.env.RAW_DEBUG || '1') !== '0' // 抓原始报文进 gist 的 group-raw-debug.txt(排查完可关)
 
 async function rawDebug(req, raw) {
@@ -145,32 +146,36 @@ async function handleEvent(payload) {
     return { plain_token: plainToken, signature: sig.toString('hex') }
   }
   // 群消息事件
-  if (payload.op === 0 && payload.t === 'GROUP_AT_MESSAGE_CREATE') {
+  // 事件识别:WS 信封用 t 字段;Webhook 信封没有 t,事件名在顶层 id 前缀(GROUP_MESSAGE_CREATE:xxx)
+  const eventName = payload.t || String(payload.id || '').split(':')[0]
+  if (payload.op === 0 && (eventName === 'GROUP_MESSAGE_CREATE' || eventName === 'GROUP_AT_MESSAGE_CREATE')) {
     const d = payload.d || {}
-    const id = d.id || `${d.timestamp}|${d.author?.openid}|${d.content}`
+    const id = d.id || `${d.timestamp}|${d.author?.username || d.author?.openid}|${d.content}`
     if (seen.has(id)) return
     seen.add(id)
     if (seen.size > 500) seen.delete(seen.values().next().value)
-    const text = String(d.content || '').replace(/<@!\d+>/g, '').trim()
+    const mentions = [...String(d.content || '').matchAll(/<@!?([0-9A-Fa-f]+)>/g)].map((m) => m[1])
+    const isAt = mentions.length > 0
+    const text = String(d.content || '').replace(/<@!?[0-9A-Fa-f]+>/g, '').trim()
     const lower = text.toLowerCase()
-    const isAt = String(d.content || '').includes('@')
 
-    // ① 问题收集:明确反馈词 或 问题关键词命中 → 存 gist(@ 的消息回一句已记录)
+    // ① 问题收集:明确反馈词 或 问题关键词命中 → 存 gist;@ 了机器人就回一句已记录(主动发送,最稳)
     const collected = CFG.triggers.find((w) => lower.includes(w.toLowerCase())) || CFG.keywords.find((w) => lower.includes(w))
     if (collected && CFG.gistId) {
+      if (isAt && !botMentionToken) botMentionToken = mentions[0] // 学习机器人自己的 mention 标识
       try {
-        await gistAppend(JSON.stringify({ t: new Date().toISOString(), u: clip(d.author?.openid || '?', 10), w: collected, m: clip(text, 200) }))
+        await gistAppend(JSON.stringify({ t: d.timestamp || new Date().toISOString(), u: clip(d.author?.username || d.author?.member_openid || '?', 16), w: collected, m: clip(text, 200) }))
         console.log('[webhook] 已收集:', clip(text, 50))
-        if (isAt) await qqSend('已记录 ✅ 会归纳进下次群报', d.id).catch((e) => console.error('[webhook]', e.message))
+        if (isAt) await qqSend('已记录 ✅ 会归纳进下次群报').catch((e) => console.error('[webhook]', e.message))
       } catch (e) { lastError = 'collect: ' + e.message; console.error('[webhook] 收集失败:', e.message) }
       return
     }
 
-    // ② 其他 @ 消息:LLM 聊天(配了 key 才启)
-    if (isAt && CFG.llm.key) {
+    // ② 其他 @ 机器人的消息:LLM 聊天(配了 key 且已学到机器人 mention 标识才启)
+    if (isAt && botMentionToken && mentions.includes(botMentionToken) && CFG.llm.key) {
       try {
         const reply = await llmReply(text || '(空消息)')
-        await qqSend(reply, d.id)
+        await qqSend(reply)
         console.log('[webhook] LLM 已回复:', clip(reply, 40))
       } catch (e) { console.error('[webhook] LLM 应答失败:', e.message) }
       return
