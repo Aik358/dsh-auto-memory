@@ -57,6 +57,11 @@ jobs:
           DINGTALK_WEBHOOK_URL: ${{ secrets.DINGTALK_WEBHOOK_URL }}
           GENERIC_WEBHOOK_URL: ${{ secrets.GENERIC_WEBHOOK_URL }}
           FEEDBACK_URL: ${{ secrets.FEEDBACK_URL }}
+          FEEDBACK_GIST_ID: ${{ secrets.FEEDBACK_GIST_ID }}
+          FEEDBACK_GH_PAT: ${{ secrets.FEEDBACK_GH_PAT }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          LLM_MODEL: ${{ vars.LLM_MODEL }}
+          LLM_BASE_URL: ${{ vars.LLM_BASE_URL }}
           EXTRA_NOTE: ${{ github.event.inputs.note }}
           SINCE_HOURS: ${{ github.event.inputs.since_hours }}
         run: node .github/scripts/group-digest.mjs
