@@ -1,0 +1,62 @@
+name: group-digest(群同步日报)
+
+# 每天北京时间 12:00 / 21:00 统计 issues/PRs 并投递到 QQ 群。
+# GitHub 的 schedule 按 UTC 跑,且可能有几分钟到半小时的调度延迟,属正常现象。
+# 通道配置:仓库变量 DIGEST_CHANNEL = none/qq_official/napcat/telegram/discord/feishu/dingtalk/generic
+#          + Settings → Secrets and variables → Actions 里配对应凭据(清单见 docs/internal/GROUP-DIGEST-SETUP.md)
+on:
+  schedule:
+    - cron: "0 4 * * *"   # 北京时间 12:00
+    - cron: "0 13 * * *"  # 北京时间 21:00
+  workflow_dispatch:
+    inputs:
+      note:
+        description: 附加备注(追加在消息末尾,可空)
+        required: false
+        default: ''
+      since_hours:
+        description: 手动模式:统计最近 N 小时(留空 = 自动接上次成功运行)
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+  issues: read
+  pull-requests: read
+  actions: read
+
+concurrency:
+  group: group-digest
+  cancel-in-progress: false
+
+jobs:
+  digest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: 生成并投递群同步
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          DIGEST_CHANNEL: ${{ vars.DIGEST_CHANNEL }}
+          QQ_APP_ID: ${{ secrets.QQ_APP_ID }}
+          QQ_APP_SECRET: ${{ secrets.QQ_APP_SECRET }}
+          QQ_GROUP_OPENID: ${{ secrets.QQ_GROUP_OPENID }}
+          QQ_API_BASE: ${{ vars.QQ_API_BASE }}
+          NAPCAT_HTTP_URL: ${{ secrets.NAPCAT_HTTP_URL }}
+          NAPCAT_TOKEN: ${{ secrets.NAPCAT_TOKEN }}
+          NAPCAT_GROUP_ID: ${{ secrets.NAPCAT_GROUP_ID }}
+          TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
+          TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
+          DINGTALK_WEBHOOK_URL: ${{ secrets.DINGTALK_WEBHOOK_URL }}
+          GENERIC_WEBHOOK_URL: ${{ secrets.GENERIC_WEBHOOK_URL }}
+          FEEDBACK_URL: ${{ secrets.FEEDBACK_URL }}
+          EXTRA_NOTE: ${{ github.event.inputs.note }}
+          SINCE_HOURS: ${{ github.event.inputs.since_hours }}
+        run: node .github/scripts/group-digest.mjs
