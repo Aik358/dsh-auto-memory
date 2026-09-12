@@ -130,7 +130,7 @@ async function collect() {
       const fname = Object.keys(j?.files || {})[0]
       const content = (j?.files?.[fname]?.content || '').trim()
       if (content) {
-        out.groupFeedbackLines = content.split('\n').filter(Boolean).slice(-120)
+        out.groupFeedbackLines = content.split('\n').map((l) => l.trim()).filter((l) => l && !l.startsWith('<!--')).slice(-120)
         await fetch(`https://api.github.com/gists/${env.FEEDBACK_GIST_ID}`, {
           method: 'PATCH',
           headers: { Accept: 'application/vnd.github+json', Authorization: `Bearer ${env.FEEDBACK_GH_PAT}`, 'User-Agent': 'group-digest' },
