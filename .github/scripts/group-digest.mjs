@@ -143,20 +143,23 @@ async function collect() {
   return out
 }
 
-// ---------- 板块文案文件(.github/digest/*.md:#/<!-- 开头的行视为注释,空文件=板块隐藏) ----------
+// ---------- 板块文案文件(.github/digest/*.md:整段 <!-- --> 注释先剥除,# 行忽略,空文件=板块隐藏) ----------
+function sectionLines(text) {
+  return text.replace(/<!--[\s\S]*?-->/g, '').split(/\r?\n/).map((l) => l.trim()).filter((l) => l && !l.startsWith('#'))
+}
 function loadSectionFile(name) {
   const p = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'digest', name)
   try {
     if (!existsSync(p)) return []
-    return readFileSync(p, 'utf8').split(/\r?\n/).map((l) => l.trim()).filter((l) => l && !l.startsWith('#') && !l.startsWith('<!--'))
+    return sectionLines(readFileSync(p, 'utf8'))
   } catch { return [] }
 }
 
 // ---------- 人工备注(默认 .github/digest/NOTES.md;DIGEST_NOTES_PATH 可显式指定;EXTRA_NOTE 追加) ----------
 function loadNotes() {
   const custom = env.DIGEST_NOTES_PATH
-  const lines = custom ? (existsSync(custom) ? readFileSync(custom, 'utf8').split(/\r?\n/) : []) : loadSectionFile('NOTES.md')
-  const notes = lines.map((l) => l.trim()).filter((l) => l && !l.startsWith('#') && !l.startsWith('<!--'))
+  const lines = custom ? (existsSync(custom) ? sectionLines(readFileSync(custom, 'utf8')) : []) : loadSectionFile('NOTES.md')
+  const notes = [...lines]
   if (env.EXTRA_NOTE && env.EXTRA_NOTE.trim()) notes.push(env.EXTRA_NOTE.trim())
   return notes
 }
