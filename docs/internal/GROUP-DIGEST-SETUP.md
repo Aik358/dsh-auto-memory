@@ -12,6 +12,7 @@
 | `.github/scripts/group-digest.mjs` | 统计 + 生成 + 多通道投递,零依赖;`--print` 本机试跑 |
 | `.github/scripts/qq-capture-openid.mjs` | 一次性工具:连官方 WS 网关抓群 `group_openid`(仅本机跑) |
 | `.github/digest/NOTES.md` | 人工备注区:写了什么,群消息「备注」栏就带什么(改完要上 main 才生效) |
+| `.github/digest/PREVIEW.md` | 「下版本前瞻」板块文案:网页编辑,写几行就整块出现在日报里,留空隐藏 |
 | `tools/release.mjs` | 复制白名单已加 `.github` → 以后每次发版自动带到 REL 树,不会被发版清掉 |
 
 **窗口口径**=上一次「成功」的 workflow run → 现在;错过一次自动并进下一次,封顶 7 天。
