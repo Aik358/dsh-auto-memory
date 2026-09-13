@@ -53,7 +53,7 @@ const CFG = {
 for (const k of ['appId', 'appSecret', 'groupId', 'ghToken']) {
   if (!CFG[k]) { console.error(`[webhook] 缺少环境变量 ${k}`); process.exit(1) }
 }
-const VERSION = 'webhook-gist-20260913k' // 部署核对标记:diag 端点与错误响应都会带它(20260913h=@ 答疑优先于已记录/LLM 空应答外显错误体)
+const VERSION = 'webhook-gist-20260913l' // 部署核对标记:diag 端点与错误响应都会带它(20260913h=@ 答疑优先于已记录/LLM 空应答外显错误体)
 const FEEDBACK_FILE = 'group-feedback.jsonl' // 反馈收集钉死文件名(digest 与 report 同读此名,清空时保留文件本身)
 let lastError = null // 最近一次内部错误(diag 可见)
 let botMentionToken = null // 从「@机器人+反馈词」消息里学习的机器人 mention 标识
@@ -107,6 +107,115 @@ async function qqSend(text, msgId) {
   const b = await r.json().catch(() => null)
   if (!r.ok) throw new Error(`QQ 发送失败 ${r.status} ${JSON.stringify(b).slice(0, 160)}`)
   return b
+}
+
+// ---------- @ 即查(2026-09-14,零 LLM):触发词=消息去掉@后**整条恰好**是关键词 ----------
+// 边界(用户指定):只有"更新总结"/"现有问题"等作为独立消息出现才触发;长句中出现这些词不触发。
+// 数据全部零 LLM:GitHub 公开 API / gist 状态文件 / raw.githubusercontent。
+const AT_QUERY_WORDS = ['更新总结', '现有问题', '下版本前瞻', '使用帮助']
+function matchAtQuery(text) {
+  const t = String(text || '').trim()
+  return AT_QUERY_WORDS.includes(t) ? t : null
+}
+
+function ghAnon(p) {
+  return fetch(`https://api.github.com${p}`, { headers: { Accept: 'application/vnd.github+json', 'User-Agent': 'qq-webhook' } })
+    .then(async (r) => ({ ok: r.ok, status: r.status, body: r.status === 204 ? null : await r.json().catch(() => null) }))
+}
+const clipLine = (s, n) => { const t = String(s || '').replace(/\s+/g, ' ').trim(); return t.length > n ? t.slice(0, n - 1) + '…' : t }
+
+// 「现有问题」= 开放 bug/PR + 未解决事项跟踪清单(gist group-issues.json)
+async function atQueryIssues() {
+  const L = []
+  try {
+    const q = await ghAnon(`/repos/${CFG.repo}/issues?state=open&per_page=30`)
+    const all = (q.body || []).filter((x) => !x.pull_request)
+    const bugs = all.filter((x) => (x.labels || []).some((l) => /bug/i.test(l.name || '')) || /^\[?bug/i.test(x.title || ''))
+    L.push(`开放 Issue ${all.length}(bug ${bugs.length})`)
+    for (const b of bugs.slice(0, 5)) L.push(`🐛 #${b.number} ${clipLine(b.title, 44)}`)
+    if (!bugs.length) L.push('开放 bug 清零 🎉')
+  } catch (e) { L.push('(GitHub 读取失败,稍后再试)') }
+  try {
+    const si = await gh(`/gists/${CFG.gistId}`)
+    const issues = JSON.parse(si.body?.files?.['group-issues.json']?.content || '{}')?.issues || []
+    if (issues.length) {
+      L.push('未解决事项(群内反馈跟踪):')
+      for (const it of issues.slice(0, 8)) L.push(`• ${clipLine(it.title, 40)} —— ${clipLine(it.detail, 50)}`)
+    } else L.push('当前没有未解决事项(群内反馈跟踪为空)。')
+  } catch (e) { L.push('(跟踪状态读取失败)') }
+  return L.join('\n')
+}
+
+// 「下版本前瞻」= .github/digest/PREVIEW.md(main 分支,与日报同源)
+async function atQueryPreview() {
+  const r = await fetch(`https://raw.githubusercontent.com/${CFG.repo}/main/.github/digest/PREVIEW.md`, { headers: { 'User-Agent': 'qq-webhook' } })
+  if (!r.ok) return '(暂无下版本前瞻内容。)'
+  // 注释剔除与 digest 端同纪律:逐行过滤 <!-- 与 #,并剥掉悬空的 HTML 注释闭合行 -->
+  const lines = (await r.text()).split('\n').map((l) => l.trim()).filter((l) => l && !l.startsWith('<!--') && !l.startsWith('#') && l !== '-->')
+  return lines.length ? ['▍下版本前瞻', ...lines.slice(0, 10).map((l) => clipLine(l, 70))].join('\n') : '(暂无下版本前瞻内容。)'
+}
+
+// 「使用帮助」= 静态说明(零 LLM,零 IO)
+function atQueryHelp() {
+  return [
+    '我可用的指令(@我 后单独发,或 @我+指令):',
+    '• @automemory 更新总结 —— 最近一版更新要点',
+    '• @automemory 现有问题 —— 开放 bug + 群反馈未解决事项',
+    '• @automemory 下版本前瞻 —— 下版本计划内容',
+    '• @automemory 使用帮助 —— 显示本说明',
+    '• @automemory + 任意问题 —— AI 答疑(限频见群内提示)',
+    '反馈方式:消息里带上「反馈/问题/bug」等词,我会记录进下期总结。',
+  ].join('\n')
+}
+
+// 「更新总结」= 最近一班日报正文。优先:最近成功 run 的 job logs(需带 token 的 API,免费且即时);
+// 兜底:main 分支 CHANGELOG 最新两节(纯公开数据)。
+async function atQuerySummary() {
+  try {
+    if (CFG.ghToken) {
+      const runs = await gh(`/repos/${CFG.repo}/actions/workflows/${CFG.timer.workflowFile}/runs?status=success&per_page=1`)
+      const run = runs.body?.workflow_runs?.[0]
+      if (run) {
+        const jobs = await gh(`/repos/${CFG.repo}/actions/runs/${run.id}/jobs`)
+        const job = jobs.body?.jobs?.[0]
+        if (job) {
+          const lr = await fetch(`https://api.github.com/repos/${CFG.repo}/actions/jobs/${job.id}/logs`, {
+            headers: { Authorization: `Bearer ${CFG.ghToken}`, 'User-Agent': 'qq-webhook' },
+            redirect: 'follow',
+          })
+          if (lr.ok) {
+            const text = await lr.text()
+            const m = text.split('─────────────── 生成摘要 ───────────────')[1]
+            if (m) {
+              const body = m.split('────────────────────────────────────────')[0].split('\n').map((l) => l.trimEnd()).filter((l, i, a) => l || (i > 0 && a[i - 1])).slice(0, 40).join('\n').trim()
+              if (body) return `最近总结(${run.created_at.slice(5, 16).replace('T', ' ')} UTC 跑完):\n${body}`
+            }
+          }
+        }
+      }
+    }
+  } catch (e) { /* 走兜底 */ }
+  // 兜底:CHANGELOG 最新两节
+  const cl = await fetch(`https://raw.githubusercontent.com/${CFG.repo}/main/CHANGELOG.md`, { headers: { 'User-Agent': 'qq-webhook' } }).then((r) => r.text())
+  const out = cl.split(/\n(?=## )/).slice(0, 2).map((sec) => {
+    const head = (sec.split('\n')[0] || '').replace(/^## /, '')
+    const bullets = sec.split('\n').filter((l) => /^[•\-*] /.test(l.trim())).slice(0, 5).map((l) => clipLine(l.trim(), 60))
+    return `▍${head}\n${bullets.join('\n')}`
+  }).filter((s) => s.length > 10).join('\n')
+  return out || '(暂时取不到总结内容。)'
+}
+
+async function handleAtQuery(word) {
+  try {
+    if (word === '更新总结') return await atQuerySummary()
+    if (word === '现有问题') return await atQueryIssues()
+    if (word === '下版本前瞻') return await atQueryPreview()
+    if (word === '使用帮助') return atQueryHelp()
+    return null
+  } catch (e) {
+    lastError = 'atquery: ' + ((e && e.message) || e)
+    return '(查询失败,稍后再试。)'
+  }
 }
 
 // ---------- LLM 应答(可选):非反馈类 @ 消息交给大模型,被动回复 ----------
@@ -215,7 +324,16 @@ async function handleEvent(payload) {
       } catch (e) { lastError = 'collect: ' + e.message; console.error('[webhook] 收集失败:', e.message) }
     }
 
-    // ② @ 机器人的消息:LLM 答疑(限频全走环境变量:AI_MAX_PER_HOUR=每小时最多几次,不配=不限;
+    // ② @ 机器人的消息:先查即查指令(零 LLM,不占答疑额度);不是指令才走 LLM 答疑。
+    if (isAt && botMentionToken && mentions.includes(botMentionToken)) {
+      const atq = matchAtQuery(text)
+      if (atq) {
+        try { await qqSend(await handleAtQuery(atq), d.id) } catch (e) { console.error('[webhook] 即查失败:', (e && e.message) || e) }
+        return
+      }
+    }
+
+    // ③ @ 机器人的消息:LLM 答疑(限频全走环境变量:AI_MAX_PER_HOUR=每小时最多几次,不配=不限;
     //    AI_QUOTA_HOURS=时间窗,默认 1h。配额落盘 gist 防冷启动失忆;被动回复不占主动消息配额)。
     if (isAt && botMentionToken && mentions.includes(botMentionToken) && CFG.llm.key) {
       const confirm = recorded ? '已记录 ✅ 会归纳进下次群报\n\n' : ''
