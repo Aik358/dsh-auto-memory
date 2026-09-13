@@ -53,7 +53,7 @@ const CFG = {
 for (const k of ['appId', 'appSecret', 'groupId', 'ghToken']) {
   if (!CFG[k]) { console.error(`[webhook] 缺少环境变量 ${k}`); process.exit(1) }
 }
-const VERSION = 'webhook-gist-20260913m' // 部署核对标记:diag 端点与错误响应都会带它(20260913h=@ 答疑优先于已记录/LLM 空应答外显错误体)
+const VERSION = 'webhook-gist-20260913n' // 部署核对标记:diag 端点与错误响应都会带它(20260913h=@ 答疑优先于已记录/LLM 空应答外显错误体)
 const FEEDBACK_FILE = 'group-feedback.jsonl' // 反馈收集钉死文件名(digest 与 report 同读此名,清空时保留文件本身)
 let lastError = null // 最近一次内部错误(diag 可见)
 let botMentionToken = null // 从「@机器人+反馈词」消息里学习的机器人 mention 标识
@@ -307,7 +307,7 @@ async function handleEvent(payload) {
     if (seen.size > 500) seen.delete(seen.values().next().value)
     const mentions = [...String(d.content || '').matchAll(/<@!?([0-9A-Fa-f]+)>/g)].map((m) => m[1])
     const isAt = mentions.length > 0
-    if (isAt && !botMentionToken) botMentionToken = mentions[0] // 学习机器人自己的 mention 标识(任何 @ 都学,不限于反馈词)
+    if (isAt) botMentionToken = mentions[mentions.length - 1] // 学习/刷新机器人 mention 标识:机器人换实例后 id 会变(2026-09-14 实测),取最新见到的为准
     const text = String(d.content || '').replace(/<@!?[0-9A-Fa-f]+>/g, '').trim()
     const lower = text.toLowerCase()
 
@@ -325,7 +325,7 @@ async function handleEvent(payload) {
     }
 
     // ② @ 机器人的消息:先查即查指令(零 LLM,不占答疑额度);不是指令才走 LLM 答疑。
-    if (isAt && botMentionToken && mentions.includes(botMentionToken)) {
+    if (isAt) {
       const atq = matchAtQuery(text)
       if (atq) {
         try { await qqSend(await handleAtQuery(atq), d.id) } catch (e) { console.error('[webhook] 即查失败:', (e && e.message) || e) }
@@ -335,7 +335,7 @@ async function handleEvent(payload) {
 
     // ③ @ 机器人的消息:LLM 答疑(限频全走环境变量:AI_MAX_PER_HOUR=每小时最多几次,不配=不限;
     //    AI_QUOTA_HOURS=时间窗,默认 1h。配额落盘 gist 防冷启动失忆;被动回复不占主动消息配额)。
-    if (isAt && botMentionToken && mentions.includes(botMentionToken) && CFG.llm.key) {
+    if (isAt && CFG.llm.key) {
       const confirm = recorded ? '已记录 ✅ 会归纳进下次群报\n\n' : ''
       try {
         const q = await botState()
