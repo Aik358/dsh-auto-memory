@@ -94,6 +94,14 @@
 
 ## G. 群反馈 / 日报 CI（2026-09-12~13 新建，ZCode 线）
 
+> **2026-09-13 深夜～09-14 凌晨大更新（caf161a..1104864，全部已部署至线上 n 版并经群里实战验证）**：
+> ① **定时班自触发**：GitHub schedule 从未生效（全仓库 schedule 运行 0 次）→ 改 SCF 定时触发器（名 `digest_dispatch`，Cron `0 40 11,20 * * * *`）→ 函数收 Type:Timer 事件调 workflow_dispatch（10h 防重落 `bot-state.json`；timer 秒回受理后台执行，绕开 3s 同步窗）。
+> ② **@ 答疑**：@机器人 + 问题 → M3 回答（每小时限 1 次，配额落 gist；被动回复不占主动配额）；@ 优先答疑，反馈词命中改静默收集（回答开头合并「已记录」确认）。
+> ③ **未解决事项跟踪**：日报群反馈从一次性归纳升级为跨期清单（gist `group-issues.json`）——没修好的持续列出（带首报/最近日期），**群里确认修复或发版 CHANGELOG 写明修复 → AI 对号自动销账**，14 天无提及归档；确定性兜底「包含即同类」去重。
+> ④ **LLM base 401 根因**：webhook 代码读 `LLM_BASE_URL`，部署文档误写 `LLM_API_BASE` → base 恒为默认 DeepSeek → 401；已双名兼容。**教训：给用户的 env 清单必须与代码实际读取名逐一核对。**
+> ⑤ **已闭环（09-14 凌晨实战验证）**：函数超时已调、LLM 链路全通（答疑成片正文+思维链过滤生效）、@ 即查四指令上线、机器人 mention id 变更导致"失聪"已修（学习改最新优先，即查/答疑不再依赖 id 匹配）——用户确认"没毛病了"。
+> ⑥ **剩余观察/待办**：a) 明早 11:40 定时触发器首跑（digest_dispatch，观察群里是否准点出总结）；b) 群里确认 AI 会主动引导群友用即查指令；c) 群反馈跟踪的首个实战销账预期：下期日报应把「工作区切换问题」按 v2.5.2 CHANGELOG 自动销账；d) **云函数版本 LLM_SOURCE 同步**：n 版之后若再改，记得用户要再上传 zip（当前线上=n=源码同步）；e) AI 答疑限频=AI_MAX_PER_HOUR env（当前 5/小时，用户侧可改）。
+
 **已有资产**：`.github/cloud/qq-webhook/`（腾讯 SCF 云函数：`index.js` / `index.zip` / `scf_bootstrap`）、`.github/scripts/{group-digest,group-listener,qq-capture-openid,qq-send,report-sync}.mjs`、`.github/workflows/{group-digest,group-report-status}.yml`、`.github/digest/{NOTES,PREVIEW}.md`、说明文档 `docs/internal/GROUP-{LISTENER,DIGEST,WEBHOOK}-SETUP.md`；插件侧新增按需报告端点 `?report=N`（`9461cea`）。
 
 - [ ] 🟡 **安全面收口（待确认）**：webhook 公网入口是否校验签名/时间戳与来源白名单？是否限流防重放？密钥是否只存 GitHub Secrets / SCF 环境变量（**绝不入库**）？
@@ -107,7 +115,7 @@
 ## H. 插件功能侧遗留
 
 - [ ] 🟡 **issue #30（open）= procedure 管线断裂社区实证**：与 §A 末条（procedure 统一重构）同根因，挂在重构下处置；Aik358 已回复「将在发布新版本时通知」——重构发版后需回来通知该用户。
-- [ ] 🟡 **工作区切换问题（叉叉基，群反馈）——已修复待发版（2.5.2）**：诊断报告 2026-09-13 回传判 C 类；根因=①`handoffPanelData` 面板路径全局单值（sessionId 只喂水位）②`resolvePaths` 无人值守锁**全局**钉死 state.ws（`unattendedMode=true` 用户切工作区整个冻结）③workspaceId 创建的会话 header.cwd 缺失误回退 process.cwd()。修复：无人值守锁改按会话（rt.wsLocked）+ 面板按 sessionId 解析（新增 `resolvePathsForSession`+`sessionWorkspaceFallback`，registry→持久化头两级回退）+ 未绑定诚实返回 wsBound:false + 面板配置加载守卫。验证=`smoke-test-wsfix-pre.mjs` 16 断言双实例对照，全量 71 套件 0 失败。
+- [x] ✅ **工作区切换问题（叉叉基，群反馈）——已随 v2.5.2 发布**（pre 20447e8+b9bf1e8 / REL+tag+main 55c3deb / npm 2.5.2）：诊断报告 2026-09-13 回传判 C 类；根因=①`handoffPanelData` 面板路径全局单值（sessionId 只喂水位）②`resolvePaths` 无人值守锁**全局**钉死 state.ws（`unattendedMode=true` 用户切工作区整个冻结）③workspaceId 创建的会话 header.cwd 缺失误回退 process.cwd()。修复：无人值守锁改按会话（rt.wsLocked）+ 面板按 sessionId 解析（新增 `resolvePathsForSession`+`sessionWorkspaceFallback`，registry→持久化头两级回退）+ 未绑定诚实返回 wsBound:false + 面板配置加载守卫。验证=`smoke-test-wsfix-pre.mjs` 16 断言双实例对照，全量 71 套件 0 失败。
 
 - [ ] ⚪ **子代理通知无法跨会话继承**：durable 侧 `SessionHeader.parentSession` 是 readonly，`coldResume → authorizeLineage` 抛 UNAUTHORIZED，服务契约无 re-parent/transfer/attach → 新会话**收不到旧会话的子代理完成通知**。可选路线见 `docs/internal/SUBAGENT-REPORT-ROUTING-PRE-RESEARCH.md`。
 - [ ] ⚪ **上下文桥不推子代理会话的 context**：被观测的子代理会话 runtime 从未 `capturePaths`（整段 drop）；本机已做 30s 窗口限流 + 首条附 runtime key，**工作区归属改造未做**。
