@@ -8,10 +8,10 @@
  *   直到上游直接 400: "...maximum context length is 1048576 tokens. However, you requested
  *   1050044 tokens (666044 in the messages, 384000 in the completion)."
  *
- * 本测试锁三件事:
+ * 本测试锁四件事:
  *   H1 纯函数:能从该 400 文本里解析出真实窗口/请求量/消息实占/预留额度,能扫到 compaction 事件;
- *   H2 源码守卫:checkWaterLevel 确实用「window − reserve」当分母、用溢出事实做校准、
- *      并让 overflow/compaction 成为「硬触发」(不再只看比例);
+ *   H2 源码守卫:checkWaterLevel 的分母是**官方声明窗口**(provider 自报过硬限时取 min,2026-09-13 口径修正,
+ *      reserve 不得再计入分母)、用溢出事实做校准,并让 overflow/compaction/预测性硬墙成为「硬触发」;
  *   H3 边界:空事件/垃圾事件不得抛错(水位检查在 pre-step 每次工具调用都跑)。
  */
 import { readFileSync } from 'node:fs'
@@ -66,21 +66,35 @@ console.log('[water-hard] H2 源码守卫')
 ok(/scanPressureSignalsPre/.test(SRC) && /from '\.\/water-window-pre\.js'/.test(SRC), 'index.js 已引入 scanPressureSignalsPre')
 ok(/const reserve = Number\(sessModel\.maxTokens\) \|\| Number\(sig\.reservedTokens\) \|\| 0/.test(SRC),
   '预留额度取自会话请求头 maxTokens(而非硬编码)')
-ok(/const effectiveWin = \(reserve > 0 && reserve < win \* 0\.9\) \? \(win - reserve\) : win/.test(SRC),
-  '分母改为「窗口 − 预留输出」= 消息真实额度')
+// 2026-09-13 口径修正(NEXT-VERSION-TODO 改点1):分母 = 官方声明窗口,provider 自报过硬限时取 min。
+ok(/const triggerWin = hardWin > 0 \? Math\.min\(win, hardWin\) : win/.test(SRC),
+  '判定窗 = 官方声明窗口(provider 自报硬限时取较小值)')
+// 反向锁:旧口径(分母 = win − reserve)必须绝迹 —— reserve 只许出现在展示与硬判据里,不得进分母。
+ok(!/reserve < win \* 0\.9/.test(SRC) && !/win\s*-\s*reserve\)\s*:\s*win/.test(SRC) && !/effectiveWin/.test(SRC),
+  '反向锁:不得把 reserve 计入分母(旧 win−reserve 口径已废,effectiveWin 标识符一并清除)')
+ok(!/estTokens \/ \(win - reserve\)/.test(SRC) && !/\/ \(win - reserve\)/.test(SRC),
+  '反向锁:比例算式里不得出现 win − reserve 形式的分母')
 ok(!/calibration|pressured/.test(SRC),
   '**不引入任何本地计量校准系数**(实测本地读数与 provider 的 "in the messages" 只差 0.8%,乘系数只会导致过早接续)')
-ok(/const ratio = effectiveWin > 0 && Number\.isFinite\(estTokens\) \? Math\.min\(estTokens \/ effectiveWin, 99\)/.test(SRC),
-  '分子直接用本地读数(不乘任何系数),分母才是被修正的那个')
-ok(/const hard = compacted \|\| overflowed/.test(SRC), 'overflow 与 compaction 同属硬触发')
+ok(/const ratio = triggerWin > 0 && Number\.isFinite\(estTokens\) \? Math\.min\(estTokens \/ triggerWin, 99\)/.test(SRC),
+  '分子直接用本地读数(不乘任何系数),分母是判定窗(官方窗口口径)')
+ok(/const hardWall = estTokens > 0 && \(estTokens \+ reserve > triggerWin\)/.test(SRC),
+  '预测性硬墙:estTokens + reserve > 判定窗(下一次请求就会被拒)才硬触发')
+ok(/const hard = compacted \|\| overflowed \|\| hardWall/.test(SRC), 'overflow/compaction/硬墙同属硬触发')
 ok(/const armRatio = hard \? Math\.max\(ratio, threshold\) : ratio/.test(SRC),
   '硬触发时直接按阈值触发接续(不再依赖比例算得准)')
+ok(/compacted \? 'compaction' : overflowed \? 'overflow' : 'wall'/.test(SRC),
+  '硬触发原因三分类:compaction / overflow / wall(水位记录供面板与排障)')
 ok(/const over = armRatio >= threshold/.test(SRC) && !/const over = ratio >= threshold \|\| \(ratio >= 0\.5 && compacted\)/.test(SRC),
   '触发判定改用 armRatio(旧的「ratio≥0.5 才认 compaction」已废)')
 ok(/rt\.waterLevel = armRatio/.test(SRC), 'arm 用的水位即 armRatio(armAutoContinue 直接吃 rt.waterLevel)')
 ok(/lastOverflowSeen/.test(SRC), '溢出按 seq 去重,不重复触发')
 ok(/hardTrigger: this\.state\.waterLevelHardTrigger/.test(SRC) && /measuredRatio: ratio/.test(SRC),
   '水位记录同时留「实测比例 / 硬触发原因」供面板与排障')
+ok(/this\.state\.waterLevelWall = hardWin > 0 \? Math\.max\(0, hardWin - reserve\) : 0/.test(SRC),
+  'reserve 保留「距硬墙余量」展示职责(硬限 − 预留),不进触发分母')
+ok(/ring: Number\(this\.state && this\.state\.waterLevelRing\) \|\| 0/.test(SRC) && /wall: Number\(this\.state && this\.state\.waterLevelWall\) \|\| 0/.test(SRC),
+  'arm 时把双口径带进 armed 对象(state 缺失也不得让 arm 失败)')
 ok(!/Math\.max\(0, events\.length - 64\)[\s\S]{0,200}compaction/.test(SRC) || /sig\.compactionSeq/.test(SRC),
   'compaction 检测不再局限于最近 64 条事件')
 
@@ -112,12 +126,17 @@ console.log('[water-hard] H4 预留额度必须跟随「当前模型」(实测 d
   const mid = findSessionModelPre(switched.slice(0, 3))
   ok(mid.maxTokens === 256000 && mid.model === 'deepseek-v4.1-flash-expires-on-0910',
     '停在那个**已过期**的旧测试 id 上时取 256,000(历史值,仅作「换模型即换分母」的证据)')
-  // 分母随模型变:预留越大,可用额度越小,阈值越早到 —— 这正是「按路由自适应」的意义
+  // 2026-09-13 口径修正后:「比例阈值点」与预留无关(分母=官方窗口,0.75×win 恒为 750,000);
+  // 随模型变的是「预测性硬墙点」(win − reserve,下一次请求必被拒的边界)—— 这正是 reserve 仅存的两处职责之一。
   const win = 1000000
-  const thr128 = 0.75 * (win - 128000)
-  const thr384 = 0.75 * (win - 384000)
-  ok(Math.round(thr128) === 654000 && Math.round(thr384) === 462000,
-    '阈值随预留自适应:glm 654,000 / deepseek-flash 462,000(都落在各自硬墙之前)')
+  const ratioPt = 0.75 * win
+  const wall128 = win - 128000
+  const wall384 = win - 384000
+  ok(Math.round(ratioPt) === 750000, '比例阈值点与预留无关:0.75 × 1,000,000 = 750,000(glm / deepseek-flash 同点)')
+  ok(wall128 === 872000 && wall384 === 616000,
+    '硬墙点随预留自适应:glm 872,000 / deepseek-flash 616,000(estTokens + reserve > win 即下一次请求必被拒)')
+  ok(wall384 < ratioPt && ratioPt < wall128,
+    '本机这种大预留路由(384k=36.6% win)硬墙先于比例线;预留 <25% win 的常规路由比例线先生效(墙只作兜底)')
   ok(!/maxTokens:\s*\d{4,}/.test(SRC.slice(SRC.indexOf('const reserve ='), SRC.indexOf('const reserve =') + 200)),
     '分母处的预留额度不是硬编码常数')
 }

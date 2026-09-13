@@ -1,7 +1,7 @@
 # 下一版待改（用户 2026-09-10 19:0x 指定）
 
 > 来源：用户实机观察 —— 「自动接续又触发了，而且确实才刚过半，太浪费；你现在依靠那个 max output 来算，但官方压缩也是等到上下文真正占到 80% 才开始；新窗口依旧没有按正确序号排序。接续流程我已经关掉了，只要记着下一版怎么改就行。」
-> 状态：**已记录，未开工**（当前 v2.4.1；用户已手动关闭自动接续以免浪费 token）。
+> 状态：**✅ 三项已于 v2.5.0（2026-09-13）落地**：①分母=官方声明窗口（reserve 退出分母，新增预测性硬墙 estTokens+reserve>判定窗）②cont-seq.json 持久计数器（全局单调/失败回滚/标题扫描兜底，smoke-test-contseq-pre.mjs）③docs/prompts/RELEASE-AGENT.md 等四份任务书 + RELEASE-PROCESS.md 角色分工。`autoContinueEnabled` 出厂默认仍为 false，是否翻回待用户实机验证后定夺。
 
 ---
 
@@ -65,3 +65,31 @@
 - 用户**已手动关闭自动接续**（`autoContinueEnabled = false`）以免浪费 token；改完需用户自行开启并重启 dsh web 验证。
 - `v2.4.1` 已含「已接续闩锁」（`~/.dsh/memory/auto-continue-done.json`），本次"又触发"是在**该闩锁之前就已 arm 的会话**上发生的，不代表闩锁失效；下版验证时要区分"闩锁没拦住"与"口径太早"。
 - 相关 diag：`~/.dsh/dsh-auto-memory-pre-diagnose.log`（`auto-continue armed / deferred / deadline reached / rejected at edge / host-executed` 全在这条线上）。
+
+---
+
+## 改点 3 · 固定流程外包给子代理（主对话只做决策）
+
+> 用户 2026-09-10 提出：「这种固定流程（尤其是已经多次固化成 skill 的），比如发版本，不应该由主对话来处理，主对话太耗上下文了，应该丢给一个 sub agent，思考强度不用特别高。他做完了或者出错了就扔回主对话，让主对话决定怎么解决。」
+
+### 目标形态
+- **主对话只做三件事**：①开闸前确认前置门（脏树范围核实 + 全量回归结果）②收到回报后判定放行/中止 ③失败时决定处置方向。**不逐步执行流程**。
+- **子代理执行**：按检查表全跑，**出错即停**，回报一个结构化结论：
+  `{ ok, version, pre_sha, rel_sha, tag, npm_latest, failed_step, error_tail(≤20 行) }`
+- **凭据不进提示词**：子代理自行从 `--D--dsh_debug--/MEMORY.md` 读（该处明确「只存本地，严禁写入任何会上传 GitHub/npm 的文件」）。
+
+### 落地形态（下版做）
+1. **`docs/prompts/RELEASE-AGENT.md`** —— 给子代理的完整任务书：照 `docs/internal/RELEASE-PROCESS.md` 逐条展开 + 回报格式 + 出错即停规则 + 禁止事项（无 PAT 不得 push、未过闸门不得发布、除版本标识与 CHANGELOG 外不得改文件）。
+2. **`RELEASE-PROCESS.md` 顶部加「角色分工」段**：主对话=决策者 / 子代理=执行者，并写明「主对话不得逐步执行本清单」。
+3. **同类流程一并外包**：全量回归、docs 双语对账、子代理痕迹巡检，各写一份任务书（`docs/prompts/*-AGENT.md`）。
+
+### 已知约束（先记下来，免得下版踩）
+- **当前工具面无法给 `subagent` 指定思考强度**：`subagent` 只接受 `description/prompt/run_in_background`，`workflow` 的 `agent()` 会**显式拒绝** `effort`/`agentType`。要真压到 low/off 只有两条路：①在 DSH 侧给该路由/预设配默认推理强度；②**由插件自己 spawn** —— 插件已有 `subagentReasoningEffort: off|low|high|max`，经 `ctx.subagents.start({ agentOptions })` 下发。
+- **子代理看不到主对话**：任务书必须自包含（路径、命令、判据、回报格式全写死）。
+- **不得并发**：同一工作区的写盘流程（尤其发版）必须串行。
+- 子代理同样受「不重启宿主」约束：需要重启才生效的事只能回报给用户，不能自己动手。
+
+### 验收
+- 主对话跑一次发版：其上下文增量只含「开闸判断 + 子代理回报 + 三处复核」三块；
+- 故意造一次失败（如抽掉 CHANGELOG 的 `## [<ver>]` 小节）：子代理回报 `failed_step=5.05` 且 `error_tail` 含闸门原文，主对话据此给处置；
+- 子代理输出里不出现凭据明文（除命令行本身；不落盘、不入 git）。

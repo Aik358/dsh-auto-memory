@@ -270,9 +270,11 @@ console.log('[autocont-host] A9 接续会话标题 + 双口径(2026-09-10 实机
     '宿主接续给新会话设「接续 #N · 工作区」标题(与浏览器路径同名)')
   ok(/if \(d\.contSeq && typeof sc\.rename === 'function'\)/.test(SRC), 'rename 缺失时 fail-soft(旧 harness 不炸)')
   ok(/const title = '接续 #' \+ String\(d\.contSeq\)/.test(SRC), '标题格式与 client 路径逐字一致')
-  // ②双口径:我们的分母是「可用额度」(窗口−预留),官方小圈的分母是声明窗口 ——
-  //   不把两个数一起显示,用户就会问「明明才 50% 为什么接续了」(实测)。
-  ok(/this\.state\.waterLevelRing = /.test(SRC), '水位记录同时算出官方小圈读数(声明窗口为分母)')
+  // ②双口径(2026-09-13 起):水位/ring 同用一个分母(判定窗 = 官方声明窗口,provider 自报过硬限时取 min)——
+  //   旧「可用额度(窗口−预留)」分母已废(reserve 退出分母,NEXT-VERSION-TODO 改点1);
+  //   保留的第二个数是「距硬墙余量」(硬限 − 预留)。ring 与触发比例同分母是硬性验收项。
+  ok(/this\.state\.waterLevelRing = \(triggerWin > 0 && Number\.isFinite\(estTokens\)\) \? \(estTokens \/ triggerWin\) : 0/.test(SRC),
+    '水位记录同时算出 ring 读数,且与触发比例同分母(判定窗)')
   ok(/const hardWin = Number\(sig\.overflow && sig\.overflow\.windowTokens\) \|\| 0/.test(SRC) &&
      /this\.state\.waterLevelWall = hardWin > 0 \? Math\.max\(0, hardWin - reserve\) : 0/.test(SRC),
     '撞过墙的会话能算出「真实可写上限」(provider 自报硬限 − 预留),供显示距墙剩余')
@@ -286,7 +288,7 @@ console.log('[autocont-host] A10 卡面口径 + 已接续闩锁 + 会话归属(2
 {
   // ①「512,311 / 0 token」:pre-step 的 arm 走的是 runtime 字段(checkWaterLevelAtStep → armAutoContinue),
   //   而 checkWaterLevel 只写了 ratio/tokens、漏写 window/source → 确认卡分母恒为 0(用户实测截图)。
-  ok(/rt\.waterLevel = armRatio\s*\n\s*rt\.waterLevelTokens = estTokens\s*\n[\s\S]{0,400}?rt\.waterLevelWindow = effectiveWin/.test(SRC) &&
+  ok(/rt\.waterLevel = armRatio\s*\n\s*rt\.waterLevelTokens = estTokens\s*\n[\s\S]{0,400}?rt\.waterLevelWindow = triggerWin/.test(SRC) &&
      /rt\.waterLevelSource = winSource/.test(SRC),
     'pre-step arm 携带 window/source(否则确认卡显示「xxx / 0 token」)')
   // ②闩锁:同一会话只接续一次。旧实现只有 30 分钟冷却,冷却一过、用户切回旧窗口 → 再次 arm → 再次建会话
@@ -316,10 +318,10 @@ console.log('[autocont-host] A10 卡面口径 + 已接续闩锁 + 会话归属(2
   ok(/url\.searchParams\.get\('sessionId'\)/.test(SRC), 'auto-continue-state 端点接受 sessionId 查询参数')
 }
 
-  // ④ 反向锁(2026-09-10):出厂默认必须是关的 —— 触发口径尚未与官方「约 80% 才压缩」对齐之前,
-  // 不允许把默认悄悄翻回 true(否则公开用户会在上下文刚过半时被接续,纯浪费 token)。
+  // ④ 反向锁(2026-09-10,2026-09-13 更新):出厂默认保持关。触发口径已于 2026-09-13 修正(分母=官方声明窗口,
+  // 不再扣预留输出),但「是否翻回默认开」要等用户实机验证后再定夺 —— 在用户明确拍板之前,不允许悄悄翻回 true。
   const defAutoCont = /^\s*autoContinueEnabled: (true|false),/m.exec(SRC)
-  ok(defAutoCont && defAutoCont[1] === 'false', '出厂默认为关(autoContinueEnabled: false),防止口径未修前被翻回')
+  ok(defAutoCont && defAutoCont[1] === 'false', '出厂默认为关(autoContinueEnabled: false),翻回默认开须用户拍板')
 
 console.log('\n[autocont-host] ' + pass + '/' + (pass + fail) + ' assertions passed')
 if (fail) process.exit(1)
