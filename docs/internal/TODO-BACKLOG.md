@@ -2,7 +2,7 @@
 
 > 用途：**唯一待办入口**。跨会话/跨工具（DSH、ZCode）通用 —— 不依赖任何一方的工作记忆，全部写路径与判据。
 > 状态约定：🔴 阻塞或高优先 / 🟡 应做但可排期 / ⚪ 可选或长期 / ✅ 已关闭（留在 §J 备查，别重复劳动）
-> 事实基线（2026-09-13 实测）：npm latest = **2.4.2**；pre 线 `D:\dsh-auto-memory` HEAD = `e55a0ec`，已跟踪文件无未提交改动；REL = tag `v2.4.2` = GitHub main = `243dee1`。
+> 事实基线（2026-09-13 发版后实测）：npm latest = **2.5.0**；pre 线 `D:\dsh-auto-memory` HEAD = `8ad94c3`；REL = tag `v2.5.0` = GitHub main = `7234627`（子代理执行发版，主对话独立复核三处一致）。
 
 ---
 
@@ -11,8 +11,8 @@
 | 优先级 | 事项 | 归属 | 参考 |
 | --- | --- | --- | --- |
 | 🔴 | 大排期三件套（界面 / 文档 / 首页）**等用户拍板 6 点 + 给 3 样输入** | 用户 → 执行方 | `DESIGN-OVERHAUL-PRE-RESEARCH.md` §8 |
-| 🟡 | **v2.5.0 待发版**：B 区三项深改已全部落地（2026-09-13），等用户令按 RELEASE-PROCESS 角色分工派子代理执行 | 执行方 | `NEXT-VERSION-TODO.md` 状态行 |
-| 🟡 | **procedure 记忆机制整体重构**（沿用 Hermes、社区褒贬不一；等用户统一拍板整体逻辑，期间不动引擎） | 用户 → 执行方 | 本表 §A 末条 |
+| 🟡 | **PR #29 待处置**（社区修 Node 22 宿主崩溃，审阅通过；等拍板：合并 → 移植 pre 线 → 随 2.5.1 发版） | 用户 → 执行方 | 本表 §H |
+| 🟡 | **procedure 记忆机制整体重构**（沿用 Hermes、社区褒贬不一；issue #30 实证同根因；等用户统一拍板整体逻辑，期间不动引擎） | 用户 → 执行方 | 本表 §A 末条 |
 | 🟡 | 群反馈·日报 CI 的**安全与运维**收口（密钥/签名/成本/告警） | ZCode | `.github/`、`docs/internal/GROUP-*.md` |
 | 🟡 | 冷启动闭环（公开用户"装上没反应"） | 执行方 | 本表 §C |
 | 🟡 | 分发瘦身 + 对外元数据（npm 包 11 MB 里 86% 是 docs） | 执行方 | 本表 §D |
@@ -31,7 +31,7 @@
 
 ## B. 下一版代码改动（3 项，均已定位到行，详见 `docs/internal/NEXT-VERSION-TODO.md`）
 
-> **✅ 2026-09-13 状态：三项已全部落地 v2.5.0（未发版，等用户令）**。全量回归 70/70 绿；细节与验收见 `NEXT-VERSION-TODO.md` 顶部状态行与 §J 存档。以下原文保留备查（文中行号为落地前观测值）。
+> **✅ 2026-09-13 状态：三项已全部落地并随 v2.5.0 发布**（pre `18807ee` / REL+tag+main `7234627` / npm latest 2.5.0，子代理执行、三处复核一致）。全量回归 70/70 绿；细节与验收见 `NEXT-VERSION-TODO.md` 顶部状态行与 §J 存档。以下原文保留备查（文中行号为落地前观测值）。
 
 - [ ] 🔴 **水位判据口径**：现触发用 `effectiveWin = win − reserve` 当分母（`lib/index.js:1900`，本机 1,048,576 − 384,000 = 664,576）→ 上下文**刚过半就触发接续**，比官方压缩点（≈80% ≈ 83.9 万）早约 45%。
   **改法**：正常触发线改用官方声明窗口（或 `min(win, hardWin)`）为分母，阈值 0.75–0.78；`reserve` 只留"距硬墙余量"展示 + 硬判据（`estTokens + reserve > win` 才硬触发）。**加反向锁**：断言"不得把 reserve 计入分母"。
@@ -100,10 +100,15 @@
 - [ ] 🟡 **运维面（待确认）**：定时班时区与失败告警（现在 11:40/20:40 + 55 分兜底重试）；SCF 免费额度/成本；`index.zip` 这类二进制是否应入库（建议改为构建产物，不入 git）。
 - [ ] ⚪ **文档化**：把三份 `GROUP-*-SETUP.md` 合并成一份"从零部署"清单（含所需 secrets 名、验证命令、回滚方式）。
 - [ ] ⚪ **与插件的关系**：`.github/**` 不在 npm `files` 里（不会随包发布）—— 保持这样；若日报内容要面向用户，走 `docs/` 或 landing，不要塞进包。
+- [ ] 🟡 **SCF 云函数部署滞后（2026-09-13 实测）**：仓库源码 `9461cea` 已有 `?report=N` 按需报告路由，线上 zip（版本标记 `20260913c`）没有——`?report=12` 只回 `{"v":...}`。需重新打包部署（`index.zip` 重构建 + SCF 控制台上传）。部署前 gist 直读可用替代：用 `--D--dsh_debug--` 记忆里的 fine-grained PAT（只走 shell 变量，不落盘不回显）GET `api.github.com/gists/fb17c49dab6c295346c96ac971727095` 取 `group-raw-debug.txt` 原文。
 
 ---
 
 ## H. 插件功能侧遗留
+
+- [ ] 🟡 **PR #29 待处置（2026-09-13 审阅通过，等拍板）**：fei009009 修 Node 22（DSH Desktop 0.5.10/Electron）下巡检全量解压巨型会话文件令宿主必崩——`decodeZstdFramesHead`（前 8 帧/4MB 上限）+ 巡检切换调用点，`lib/subagent-gc.js` +30/-1，贡献者自证 257 会话文件全过、桌面端从必崩到稳定。**处置路径**：GitHub 合并（用户浏览器点，或授权 API 合并）→ 我移植 pre 线（`subagent-gc-pre.js:85/183` 一一对应；建议一并修 `index.js:1842` `waterWindowForSession` 的同类全量解压——PR 作者也指出了）→ 随 **2.5.1** 发版并回复 PR。
+- [ ] 🟡 **issue #30（open）= procedure 管线断裂社区实证**：与 §A 末条（procedure 统一重构）同根因，挂在重构下处置；Aik358 已回复「将在发布新版本时通知」——重构发版后需回来通知该用户。
+- [ ] 🟡 **工作区切换问题（叉叉基，群反馈）**：自包含只读诊断 prompt 已发、用户 15:14 已执行（群内回「已经跑了」），**报告未回传**；回传后按 `--D--dsh-auto-memory--` 记忆 `workspace-switch-user-report.md` 的四归因链判读。
 
 - [ ] ⚪ **子代理通知无法跨会话继承**：durable 侧 `SessionHeader.parentSession` 是 readonly，`coldResume → authorizeLineage` 抛 UNAUTHORIZED，服务契约无 re-parent/transfer/attach → 新会话**收不到旧会话的子代理完成通知**。可选路线见 `docs/internal/SUBAGENT-REPORT-ROUTING-PRE-RESEARCH.md`。
 - [ ] ⚪ **上下文桥不推子代理会话的 context**：被观测的子代理会话 runtime 从未 `capturePaths`（整段 drop）；本机已做 30s 窗口限流 + 首条附 runtime key，**工作区归属改造未做**。

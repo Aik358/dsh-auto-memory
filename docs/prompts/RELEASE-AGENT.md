@@ -63,7 +63,13 @@ node tools\release.mjs <ver> --dry-run
 node tools\release.mjs <ver>
 ```
 
-复核输出含 `开发树版本回写: … → <ver>`。构建会写 REL 树。
+复核输出含 `开发树版本回写: … → <ver>`。构建会写 REL 树。**构建后 pre 线的 `package.json` 已被回写为新版本 → 立即补一笔提交**（v2.5.0 教训：不补会留下脏文件，污染下一次发版的脏树闸门）：
+
+```powershell
+cd D:\dsh-auto-memory
+git add package.json
+git -c user.name="Aik358" -c user.email="aik358@users.noreply.github.com" commit -m "v<ver>: 回写开发树版本号(release.mjs 构建后回写)"
+```
 
 ## 阶段 5 · REL 提交 + tag
 

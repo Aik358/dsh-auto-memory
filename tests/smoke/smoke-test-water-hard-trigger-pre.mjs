@@ -89,6 +89,9 @@ ok(/const over = armRatio >= threshold/.test(SRC) && !/const over = ratio >= thr
   '触发判定改用 armRatio(旧的「ratio≥0.5 才认 compaction」已废)')
 ok(/rt\.waterLevel = armRatio/.test(SRC), 'arm 用的水位即 armRatio(armAutoContinue 直接吃 rt.waterLevel)')
 ok(/lastOverflowSeen/.test(SRC), '溢出按 seq 去重,不重复触发')
+// PR #29(2026-09-13):Node 22 下全量解压巨型会话文件会崩宿主 —— 切会话推导路径必须保持头帧解码。
+ok(/decodeZstdFramesHead\(raw, 32, 8 \* 1024 \* 1024\)/.test(SRC) && !/decodeZstdFrames\(raw\)/.test(SRC),
+  'waterWindowForSession 用头帧解码(前 32 帧/8MB),不得回退全量解压(Node 22 崩溃类)')
 ok(/hardTrigger: this\.state\.waterLevelHardTrigger/.test(SRC) && /measuredRatio: ratio/.test(SRC),
   '水位记录同时留「实测比例 / 硬触发原因」供面板与排障')
 ok(/this\.state\.waterLevelWall = hardWin > 0 \? Math\.max\(0, hardWin - reserve\) : 0/.test(SRC),
