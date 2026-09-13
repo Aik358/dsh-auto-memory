@@ -37,7 +37,7 @@ const CFG = {
 for (const k of ['appId', 'appSecret', 'groupId', 'ghToken']) {
   if (!CFG[k]) { console.error(`[webhook] 缺少环境变量 ${k}`); process.exit(1) }
 }
-const VERSION = 'webhook-gist-20260913c' // 部署核对标记:diag 端点与错误响应都会带它
+const VERSION = 'webhook-gist-20260913d' // 部署核对标记:diag 端点与错误响应都会带它(20260913d 起=含 ?report=N 按需报告路由;9461cea 当时忘了 bump,导致线上旧包无法与源码区分)
 let lastError = null // 最近一次内部错误(diag 可见)
 let botMentionToken = null // 从「@机器人+反馈词」消息里学习的机器人 mention 标识
 const RAW_DEBUG = (process.env.RAW_DEBUG || '1') !== '0' // 抓原始报文进 gist 的 group-raw-debug.txt(排查完可关)
