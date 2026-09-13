@@ -48,7 +48,7 @@ const CFG = {
 for (const k of ['appId', 'appSecret', 'groupId', 'ghToken']) {
   if (!CFG[k]) { console.error(`[webhook] 缺少环境变量 ${k}`); process.exit(1) }
 }
-const VERSION = 'webhook-gist-20260913g' // 部署核对标记:diag 端点与错误响应都会带它(20260913g=timer 先秒回受理再后台触发,绕开 3s 平台同步窗)
+const VERSION = 'webhook-gist-20260913h' // 部署核对标记:diag 端点与错误响应都会带它(20260913h=@ 答疑优先于已记录/LLM 空应答外显错误体)
 const FEEDBACK_FILE = 'group-feedback.jsonl' // 反馈收集钉死文件名(digest 与 report 同读此名,清空时保留文件本身)
 let lastError = null // 最近一次内部错误(diag 可见)
 let botMentionToken = null // 从「@机器人+反馈词」消息里学习的机器人 mention 标识
@@ -184,38 +184,41 @@ async function handleEvent(payload) {
     const text = String(d.content || '').replace(/<@!?[0-9A-Fa-f]+>/g, '').trim()
     const lower = text.toLowerCase()
 
-    // ① 问题收集:明确反馈词 或 问题关键词命中 → 存 gist;@ 了机器人就回一句已记录(主动发送,最稳)
+    // ① 问题收集(2026-09-13 交互修正):所有消息(@ 与否)命中反馈词/关键词都静默记录 ——
+    //    旧实现 @ + 反馈词会用「已记录」顶掉 LLM 回答(实测:用户 @ 提问带「反馈」二字 → 只收到已记录)。
+    //    现在 @ = 答疑优先,收集静默进行,回答开头合并「已记录」确认(见 ②)。
     const collected = CFG.triggers.find((w) => lower.includes(w.toLowerCase())) || CFG.keywords.find((w) => lower.includes(w))
+    let recorded = false
     if (collected && CFG.gistId) {
       try {
         await gistAppend(JSON.stringify({ t: d.timestamp || new Date().toISOString(), u: clip(d.author?.username || d.author?.member_openid || '?', 16), w: collected, m: clip(text, 200) }))
-        console.log('[webhook] 已收集:', clip(text, 50))
-        if (isAt) await qqSend('已记录 ✅ 会归纳进下次群报').catch((e) => console.error('[webhook]', e.message))
+        recorded = true
+        console.log('[webhook] 已收集:', clip(text, 50), isAt ? '(随 @ 答疑合并确认)' : '(非 @,静默)')
       } catch (e) { lastError = 'collect: ' + e.message; console.error('[webhook] 收集失败:', e.message) }
-      return
     }
 
-    // ② 其他 @ 机器人的消息:LLM 答疑(2026-09-13 起每小时限 1 次,配额落盘 gist 防冷启动失忆;
+    // ② @ 机器人的消息:LLM 答疑(每小时限 1 次,配额落盘 gist 防冷启动失忆;
     //    带原消息 msg_id 做被动回复,不占主动消息配额)。未配 LLM_API_KEY 则沉默(保持旧行为)。
     if (isAt && botMentionToken && mentions.includes(botMentionToken) && CFG.llm.key) {
+      const confirm = recorded ? '已记录 ✅ 会归纳进下次群报\n\n' : ''
       try {
         const q = await botState()
         const gapMs = Math.max(1, CFG.aiQuotaHours) * 3600e3
         if (q.aiLastReplyAt && Date.now() - q.aiLastReplyAt < gapMs) {
           const left = Math.max(1, Math.ceil((gapMs - (Date.now() - q.aiLastReplyAt)) / 60000))
-          await qqSend(`每小时我只详细回答一个问题哦,约 ${left} 分钟后再来 @ 我(反馈收集不受影响,照常记录)`).catch((e) => console.error('[webhook]', e.message))
+          await qqSend(confirm + `另外:每小时我只详细回答一个问题哦,约 ${left} 分钟后再来 @ 我`).catch((e) => console.error('[webhook]', e.message))
           console.log('[webhook] LLM 配额内,已回复限频提示')
           return
         }
         const reply = await llmReply(text || '(空消息)')
-        await qqSend(reply, d.id) // 被动回复:带 msg_id,不占主动消息配额
+        await qqSend(confirm + reply, d.id) // 被动回复:带 msg_id,不占主动消息配额
         q.aiLastReplyAt = Date.now()
         await saveBotState(q).catch(() => {})
         console.log('[webhook] LLM 已回复:', clip(reply, 40))
       } catch (e) { lastError = 'llm: ' + e.message; console.error('[webhook] LLM 应答失败:', e.message) }
       return
     }
-    console.log('[webhook] 忽略:', clip(text, 30))
+    if (!recorded) console.log('[webhook] 忽略:', clip(text, 30))
   }
 }
 
@@ -307,6 +310,7 @@ const server = http.createServer((req, res) => {
               })
               const j = await r.json().catch(() => null)
               const raw0 = j?.choices?.[0]?.message?.content?.trim()
+              if (!raw0) out.llmError = `HTTP ${r.status} 无有效应答(查 LLM_MODEL 名与 key): ${clip(JSON.stringify(j), 200)}`
               if (raw0) {
                 const kept = raw0.split('\n').map((l) => l.trim()).filter((l) => l && (/^[•\-\d]/.test(l) || /清单|优先级/.test(l)))
                 out.summary = (kept.length ? kept : [clip(raw0, 400)]).join('\n')
