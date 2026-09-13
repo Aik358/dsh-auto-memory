@@ -48,7 +48,7 @@ const CFG = {
 for (const k of ['appId', 'appSecret', 'groupId', 'ghToken']) {
   if (!CFG[k]) { console.error(`[webhook] 缺少环境变量 ${k}`); process.exit(1) }
 }
-const VERSION = 'webhook-gist-20260913f' // 部署核对标记:diag 端点与错误响应都会带它(20260913f=反馈文件钉死文件名+定时触发器名归一化匹配,SCF 名称不允许连字符)
+const VERSION = 'webhook-gist-20260913g' // 部署核对标记:diag 端点与错误响应都会带它(20260913g=timer 先秒回受理再后台触发,绕开 3s 平台同步窗)
 const FEEDBACK_FILE = 'group-feedback.jsonl' // 反馈收集钉死文件名(digest 与 report 同读此名,清空时保留文件本身)
 let lastError = null // 最近一次内部错误(diag 可见)
 let botMentionToken = null // 从「@机器人+反馈词」消息里学习的机器人 mention 标识
@@ -260,11 +260,14 @@ const server = http.createServer((req, res) => {
     const raw = Buffer.concat(chunks).toString('utf8')
     try {
       if (CFG.routeToken && !req.url.includes(CFG.routeToken)) { res.writeHead(404); res.end(); return }
-      // 定时班自触发入口:SCF 定时触发器 POST body 带 Type:'Timer';另支持 GET ?timer=1&key=<TIMER_SECRET> 手动测试
+      // 定时班自触发入口:SCF 定时触发器 POST body 带 Type:'Timer';另支持 GET ?timer=1&key=<TIMER_SECRET> 手动测试。
+      // 2026-09-13:GitHub API 从大陆云上调用耗时不稳(实测 3s 平台同步窗被掐)——先秒回"受理",
+      // 实际触发放后台执行(结果看 diag.lastError 与群消息;防重逻辑在任务内部,重复触发不会重发)。
       if (raw.includes('"Type":"Timer"') || (req.method === 'GET' && req.url.includes('timer=1'))) {
-        const out = await handleTimer(req.method === 'GET' ? new URL('http://x' + req.url).searchParams : raw)
+        const arg = req.method === 'GET' ? new URL('http://x' + req.url).searchParams : raw
         res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' })
-        res.end(JSON.stringify(out, null, 2))
+        res.end(JSON.stringify({ ok: true, accepted: true, note: 'dispatching in background; 结果看 diag.lastError 与群消息' }))
+        void handleTimer(arg).catch((e) => console.error('[webhook] timer async:', (e && e.message) || e))
         return
       }
       rawDebug(req, raw).catch(() => {})
