@@ -37,7 +37,7 @@ const CFG = {
   // 官方文档承认 schedule 尽力而为、高峰会整班丢)——改由常驻的 SCF 定时触发器打本函数,函数再调
   // workflow_dispatch API 把日报班唤起来。GitHub 侧只当执行器,到点必达。
   timer: {
-    triggerName: process.env.TIMER_TRIGGER_NAME || 'digest-dispatch',
+    triggerName: process.env.TIMER_TRIGGER_NAME || 'digest_dispatch',
     secret: process.env.TIMER_SECRET || '',
     token: process.env.GH_DISPATCH_TOKEN || '',
     workflowFile: process.env.GH_WORKFLOW_FILE || 'group-digest.yml',
@@ -48,7 +48,7 @@ const CFG = {
 for (const k of ['appId', 'appSecret', 'groupId', 'ghToken']) {
   if (!CFG[k]) { console.error(`[webhook] 缺少环境变量 ${k}`); process.exit(1) }
 }
-const VERSION = 'webhook-gist-20260913f' // 部署核对标记:diag 端点与错误响应都会带它(20260913f=反馈文件钉死文件名,不再依赖「gist 第一个文件」)
+const VERSION = 'webhook-gist-20260913f' // 部署核对标记:diag 端点与错误响应都会带它(20260913f=反馈文件钉死文件名+定时触发器名归一化匹配,SCF 名称不允许连字符)
 const FEEDBACK_FILE = 'group-feedback.jsonl' // 反馈收集钉死文件名(digest 与 report 同读此名,清空时保留文件本身)
 let lastError = null // 最近一次内部错误(diag 可见)
 let botMentionToken = null // 从「@机器人+反馈词」消息里学习的机器人 mention 标识
@@ -227,7 +227,7 @@ async function handleTimer(arg) {
   try {
     if (viaQuery && CFG.timer.secret && arg.get('key') !== CFG.timer.secret) return { ok: false, reason: 'bad key' }
     if (!viaQuery) {
-      try { const ev = JSON.parse(arg); const tn = String(ev.TriggerName || ev.triggerName || ''); if (CFG.timer.triggerName && tn && tn !== CFG.timer.triggerName) return { ok: false, reason: 'trigger 不匹配: ' + tn } } catch (e) {}
+      try { const ev = JSON.parse(arg); const norm = (x) => String(x || '').replace(/[-s]+/g, '_').toLowerCase(); const tn = norm(ev.TriggerName || ev.triggerName || ''); if (CFG.timer.triggerName && tn && tn !== norm(CFG.timer.triggerName)) return { ok: false, reason: 'trigger 不匹配: ' + tn } } catch (e) {}
     }
     if (!CFG.timer.token) return { ok: false, dispatched: false, reason: 'GH_DISPATCH_TOKEN 未配置(需要 Actions 读写权限的 token)' }
     const st = await botState()
