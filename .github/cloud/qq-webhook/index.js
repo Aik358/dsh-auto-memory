@@ -48,7 +48,7 @@ const CFG = {
 for (const k of ['appId', 'appSecret', 'groupId', 'ghToken']) {
   if (!CFG[k]) { console.error(`[webhook] 缺少环境变量 ${k}`); process.exit(1) }
 }
-const VERSION = 'webhook-gist-20260913h' // 部署核对标记:diag 端点与错误响应都会带它(20260913h=@ 答疑优先于已记录/LLM 空应答外显错误体)
+const VERSION = 'webhook-gist-20260913i' // 部署核对标记:diag 端点与错误响应都会带它(20260913h=@ 答疑优先于已记录/LLM 空应答外显错误体)
 const FEEDBACK_FILE = 'group-feedback.jsonl' // 反馈收集钉死文件名(digest 与 report 同读此名,清空时保留文件本身)
 let lastError = null // 最近一次内部错误(diag 可见)
 let botMentionToken = null // 从「@机器人+反馈词」消息里学习的机器人 mention 标识
@@ -295,6 +295,7 @@ const server = http.createServer((req, res) => {
           if (out.total && CFG.llm.key && !req.url.includes('raw=1')) {
             const text = out.items.map((o) => `- [${o.t}] ${o.u}: ${o.m}`).join('\n').slice(0, 20000)
             try {
+              const keyShape = `len=${CFG.llm.key.length}, tail=${CFG.llm.key.slice(-4)}, head=${CFG.llm.key.slice(0, 3)}${/\s/.test(CFG.llm.key) ? ', 含空白字符!' : ''}${/^bearer /i.test(CFG.llm.key) ? ', 已含 Bearer 前缀!' : ''}`
               const r = await fetch(`${CFG.llm.base}/chat/completions`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${CFG.llm.key}` },
@@ -310,7 +311,7 @@ const server = http.createServer((req, res) => {
               })
               const j = await r.json().catch(() => null)
               const raw0 = j?.choices?.[0]?.message?.content?.trim()
-              if (!raw0) out.llmError = `HTTP ${r.status} 无有效应答(查 LLM_MODEL 名与 key): ${clip(JSON.stringify(j), 200)}`
+              if (!raw0) out.llmError = `HTTP ${r.status}(base=${CFG.llm.base}, model=${CFG.llm.model}, key ${keyShape}): ${clip(JSON.stringify(j), 240)}`
               if (raw0) {
                 const kept = raw0.split('\n').map((l) => l.trim()).filter((l) => l && (/^[•\-\d]/.test(l) || /清单|优先级/.test(l)))
                 out.summary = (kept.length ? kept : [clip(raw0, 400)]).join('\n')
