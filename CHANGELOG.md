@@ -4,6 +4,35 @@ All notable changes to dsh-auto-memory.
 
 ---
 
+## [2.5.0] — 2026-09-13 · 水位口径对齐官方压缩 · 接续序号持久计数器
+
+> 覆盖：v2.4.2 遗留的两项判据修正（NEXT-VERSION-TODO 改点 1/2）+ 发版流程外包（改点 3，纯文档）。水位触发不再"刚过半就接续"；接续序号不再错乱。**`autoContinueEnabled` 出厂默认仍为关**——等实机验证新口径后再决定是否翻回。
+
+### 变更 · 水位判据口径（改点 1）
+
+- **正常触发线与官方压缩同坐标系**：分母改为**官方声明窗口**（provider 自报过硬限时取二者较小值），不再把「预留输出」（本机 384,000）从分母里扣掉。阈值 0.75 的触发点从 ≈46 万 token 后移到 ≈78.6 万（1,048,576 窗口），与官方"约 80% 才压缩"站在同一条线上。
+- **新增预测性硬墙判据**：`estTokens + reserve > 判定窗`（下一次请求必被 provider 拒绝，即实测 400 事故的复现边界）时**立即硬触发**，不等比例线；compaction / CONTEXT_WINDOW_EXCEEDED 两个既有硬触发不变。
+- **reserve 退出分母**，只保留两个职责：「距硬墙余量」展示（硬限 − 预留）与上面这条硬判据。水位 / ring / 触发比例三者同分母，确认卡与面板不再各说各话；反向锁（`water-hard-trigger` 套件）断言"不得把 reserve 计入分母"。
+- 大预留路由说明：本机这类 reserve=36.6% 窗口的路由，硬墙点（≈66.5 万）会先于 0.75 比例线（≈78.6 万）到达——那是"下一步必 400"的最后一格，不是浪费；常规路由（reserve < 25% 窗口）仍由比例线先行。
+- 设置页阈值提示与接续确认卡文案同步改为官方窗口口径（中英双语）。
+
+### 变更 · 接续序号（改点 2）
+
+- **`contSeq` 改持久计数器** `~/.dsh/memory/cont-seq.json`：全局单调递增，**换工作区接续不重复已有序号**（byWorkspace 记账）。旧口径（数 handoff 目录里 prev-session 包文件数 +1）在落盘失败 / 跨工作区 / carry 复用时会重复、跳号或为空——为空即 rename 被跳过、新会话标题退回自动生成（实机两次观察到）。
+- **分配与落盘成序**：先分配序号、再写转写包；**包落盘失败回滚计数器，不跳号**。
+- **兜底链**：包已分配 → 持久计数器 → 计数器缺失时从历史「接续 #N / Cont.#N」标题解析最大值（兼容老数据）→ 旧文件数口径 → 1。`contSeq` 恒非空，宿主与浏览器两条 rename 路径都不再被跳过；浏览器路径 rename 失败不再静默（console.warn 可见）。
+
+### 流程（改点 3，纯文档）
+
+- 发版流程外包子代理固化：`docs/internal/RELEASE-PROCESS.md` 顶部新增**角色分工**（主对话=决策者，只做开闸/放行/处置；子代理=执行者，出错即停，回报 `{ ok, version, pre_sha, rel_sha, tag, npm_latest, failed_step, error_tail }`）。
+- 新增任务书：`docs/prompts/RELEASE-AGENT.md`（发版执行）、`REGRESSION-AGENT.md`（全量回归）、`DOCS-AUDIT-AGENT.md`（双语对账）、`TRACE-PATROL-AGENT.md`（痕迹巡检）。
+
+### 验证
+
+- 全量 smoke **70 文件 0 失败**（新增 `smoke-test-contseq-pre.mjs`：持久化 / 跨工作区不重号 / 落盘失败回滚不跳号 / 标题扫描兜底 / 重启后递增，20 断言）；`water-hard-trigger` / `water-window` / `water-step` / `autocont-host` / `continue-host` / `continue-chain` / `handoff-anchor` 全绿；`node --check` 双文件通过；改动文件无 BOM。
+
+---
+
 ## [2.4.2] — 2026-09-10 · 自动接续改为出厂默认关闭
 
 > 一行默认值变更 + 一把反向锁。目的：在触发判据尚未与官方压缩口径对齐之前，不让公开用户被过早接续白白消耗 token。

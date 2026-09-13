@@ -2,6 +2,15 @@
 
 > 2026-09-10 固化。本文件是发版的唯一检查表；`tools/release.mjs` 已内置**版本标识一致性闸门**（缺任一项即拒绝构建），所以下面第 2、3 步不是"记得做"，而是"不做就发不出去"。
 
+## 角色分工（2026-09-13 固化，改点3）
+
+- **任务书流向**：主对话读本检查表 → 角色分工指向任务书 → **主对话填入版本号后原文派发给执行子代理**。用户不必、也不要绕过主对话直接投喂子代理（两条入口并存=并发冲突之源）。
+- **主对话 = 决策者，只做三件事**：①开闸前确认前置门（第 0 节：全量回归结果 + 脏树范围核实）②收到子代理回报后**放行或中止** ③失败时决定处置方向。**主对话不得逐步执行本清单**——发版这类固化流程交给子代理执行（主对话上下文最贵）。
+- **子代理 = 执行者**：投喂 [`docs/prompts/RELEASE-AGENT.md`](../prompts/RELEASE-AGENT.md)（自包含任务书，填入版本号），按本清单全跑、**出错即停**，只回结构化结论 `{ ok, version, pre_sha, rel_sha, tag, npm_latest, failed_step, error_tail }`。
+- **不得并发（冲突防线）**：主对话**派活后等待回报**，期间对同一工作区**只读**（看日志/读状态可以；改文件、git 写操作、跑发版命令、再派第二个执行子代理都不行）；只读类任务书（回归/对账/巡检）之间可并行，但**不与发版执行并发**（回归占满 CPU 会污染计时敏感套件）。
+- 凭据不经主对话转手：子代理按任务书自行从 `--D--dsh_debug--` 记忆文件读取，回报中一律 `<redacted>`。
+- 同类固化流程的任务书：全量回归=[`REGRESSION-AGENT.md`](../prompts/REGRESSION-AGENT.md) · 双语对账=[`DOCS-AUDIT-AGENT.md`](../prompts/DOCS-AUDIT-AGENT.md) · 痕迹巡检=[`TRACE-PATROL-AGENT.md`](../prompts/TRACE-PATROL-AGENT.md)。
+
 ## 0. 前置门（不满足不许开工）
 
 - [ ] 全量回归：`cd D:\dsh-auto-memory; Get-ChildItem tests\smoke -File -Filter *.mjs | ForEach-Object { node $_.FullName }` → **0 失败**

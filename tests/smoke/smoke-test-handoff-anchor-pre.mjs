@@ -38,7 +38,7 @@ console.log('[handoff-anchor] G0 源码守卫')
   // 2026-09-10:签名带参(preferSid,接续必须指名旧会话)→ 守卫不绑死空参数列表
   const posFn = SRC.indexOf('async buildContinueCarry(')
   const posAnchor = SRC.indexOf('const anchorSectionFor = async (label, file, cap) => {')
-  const posContSeq = SRC.indexOf('// 接续序号:统计 handoff 目录里已有的 prev-session 包数量 +1')
+  const posContSeq = SRC.indexOf('// 接续序号 v2(2026-09-13,NEXT-VERSION-TODO 改点2)')
   ok(posFn > 0 && posAnchor > posFn && posAnchor < posContSeq,
     'anchorSectionFor 定义在 buildContinueCarry() 内部、contSeq 之前(改动边界)')
   const posImport = SRC.indexOf("const { buildL0IndexPre } = await import('./l0-extract-pre.js')")
