@@ -48,7 +48,8 @@ const CFG = {
 for (const k of ['appId', 'appSecret', 'groupId', 'ghToken']) {
   if (!CFG[k]) { console.error(`[webhook] 缺少环境变量 ${k}`); process.exit(1) }
 }
-const VERSION = 'webhook-gist-20260913e' // 部署核对标记:diag 端点与错误响应都会带它(20260913e=+定时班自触发/@问答每小时限额)
+const VERSION = 'webhook-gist-20260913f' // 部署核对标记:diag 端点与错误响应都会带它(20260913f=反馈文件钉死文件名,不再依赖「gist 第一个文件」)
+const FEEDBACK_FILE = 'group-feedback.jsonl' // 反馈收集钉死文件名(digest 与 report 同读此名,清空时保留文件本身)
 let lastError = null // 最近一次内部错误(diag 可见)
 let botMentionToken = null // 从「@机器人+反馈词」消息里学习的机器人 mention 标识
 const RAW_DEBUG = (process.env.RAW_DEBUG || '1') !== '0' // 抓原始报文进 gist 的 group-raw-debug.txt(排查完可关)
@@ -131,14 +132,15 @@ const gh = (p, opts = {}) =>
   }).then(async (r) => ({ ok: r.ok, status: r.status, body: r.status === 204 ? null : await r.json().catch(() => null) }))
 
 async function gistAppend(line) {
+  // 2026-09-13 修复:反馈一律写进**钉死的文件名** group-feedback.jsonl(PATCH 到不存在的文件名会自动创建)。
+  // 旧实现取「gist 里第一个文件」——raw-debug 文件先建/清空后文件被删,第一个文件就会换人,
+  // 反馈与原始调试混写(实测 14:29 的反馈行混进了 group-raw-debug.txt)。
   const r0 = await gh(`/gists/${CFG.gistId}`)
   if (!r0.ok) throw new Error(`读 gist 失败 ${r0.status}`)
-  const fname = Object.keys(r0.body.files || {})[0]
-  if (!fname) throw new Error('gist 里没有文件')
-  const prev = (r0.body.files[fname].content || '').split('\n').filter(Boolean)
+  const prev = (r0.body.files[FEEDBACK_FILE]?.content || '').split('\n').filter(Boolean)
   prev.push(line)
   while (prev.length > 400) prev.shift() // 只保留最近 400 条
-  const r = await gh(`/gists/${CFG.gistId}`, { method: 'PATCH', body: JSON.stringify({ files: { [fname]: { content: prev.join('\n') + '\n' } } }) })
+  const r = await gh(`/gists/${CFG.gistId}`, { method: 'PATCH', body: JSON.stringify({ files: { [FEEDBACK_FILE]: { content: prev.join('\n') + '\n' } } }) })
   if (!r.ok) throw new Error(`写 gist 失败 ${r.status}`)
 }
 
@@ -273,9 +275,10 @@ const server = http.createServer((req, res) => {
         try {
           if (CFG.gistId) {
             const r0 = await gh(`/gists/${CFG.gistId}`)
-            const fname = Object.keys(r0.body.files || {})[0]
+            // 只读钉死的反馈文件(与 gistAppend/digest 同名);2026-09-13 前旧数据混在第一个文件里,不再兼容读取
+            const content = r0.body.files[FEEDBACK_FILE]?.content || ''
             const cutoff = Date.now() - hours * 3600e3
-            for (const line of (r0.body.files[fname]?.content || '').split('\n')) {
+            for (const line of content.split('\n')) {
               try {
                 const o = JSON.parse(line)
                 if (new Date(o.t).getTime() >= cutoff) out.items.push(o)
@@ -285,25 +288,27 @@ const server = http.createServer((req, res) => {
           out.total = out.items.length
           if (out.total && CFG.llm.key && !req.url.includes('raw=1')) {
             const text = out.items.map((o) => `- [${o.t}] ${o.u}: ${o.m}`).join('\n').slice(0, 20000)
-            const r = await fetch(`${CFG.llm.base}/chat/completions`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${CFG.llm.key}` },
-              body: JSON.stringify({
-                model: CFG.llm.model,
-                messages: [
-                  { role: 'system', content: '你是 bug 分诊助手。下面是 QQ 群用户近期反馈的问题原文。输出两段:1)「问题清单」:合并同类,每条「• 标题 —— 细节(时间/人数)」;2)「修复优先级建议」:哪些最影响使用、可能原因猜测。纯文本共不超过 400 字,直接输出最终内容,禁止展示思考过程。' },
-                  { role: 'user', content: text },
-                ],
-                max_tokens: 700,
-                temperature: 0.3,
-              }),
-            })
-            const j = await r.json().catch(() => null)
-            const raw0 = j?.choices?.[0]?.message?.content?.trim()
-            if (raw0) {
-              const kept = raw0.split('\n').map((l) => l.trim()).filter((l) => l && (/^[•\-\d]/.test(l) || /清单|优先级/.test(l)))
-              out.summary = (kept.length ? kept : [clip(raw0, 400)]).join('\n')
-            }
+            try {
+              const r = await fetch(`${CFG.llm.base}/chat/completions`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${CFG.llm.key}` },
+                body: JSON.stringify({
+                  model: CFG.llm.model,
+                  messages: [
+                    { role: 'system', content: '你是 bug 分诊助手。下面是 QQ 群用户近期反馈的问题原文。输出两段:1)「问题清单」:合并同类,每条「• 标题 —— 细节(时间/人数)」;2)「修复优先级建议」:哪些最影响使用、可能原因猜测。纯文本共不超过 400 字,直接输出最终内容,禁止展示思考过程。' },
+                    { role: 'user', content: text },
+                  ],
+                  max_tokens: 700,
+                  temperature: 0.3,
+                }),
+              })
+              const j = await r.json().catch(() => null)
+              const raw0 = j?.choices?.[0]?.message?.content?.trim()
+              if (raw0) {
+                const kept = raw0.split('\n').map((l) => l.trim()).filter((l) => l && (/^[•\-\d]/.test(l) || /清单|优先级/.test(l)))
+                out.summary = (kept.length ? kept : [clip(raw0, 400)]).join('\n')
+              }
+            } catch (e) { out.llmError = '归纳失败(请检查 LLM_API_BASE/LLM_MODEL/LLM_API_KEY): ' + e.message }
           }
         } catch (e) { out.error = e.message }
         res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' })
