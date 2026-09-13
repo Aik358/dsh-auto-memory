@@ -6,8 +6,10 @@ name: group-digest(群同步日报)
 #          + Settings → Secrets and variables → Actions 里配对应凭据(清单见 docs/internal/GROUP-DIGEST-SETUP.md)
 on:
   schedule:
-    - cron: "0 4 * * *"   # 北京时间 12:00
-    - cron: "0 13 * * *"  # 北京时间 21:00
+    - cron: "40 3 * * *"   # 北京 11:40 主班(避开整点调度拥堵)
+    - cron: "55 3 * * *"   # 北京 11:55 兜底重试(窗口去重,不会重发)
+    - cron: "40 12 * * *"  # 北京 20:40 主班
+    - cron: "55 12 * * *"  # 北京 20:55 兜底重试
   workflow_dispatch:
     inputs:
       note:
