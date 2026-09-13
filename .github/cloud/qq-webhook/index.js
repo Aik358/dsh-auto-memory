@@ -193,6 +193,50 @@ const server = http.createServer((req, res) => {
     try {
       if (CFG.routeToken && !req.url.includes(CFG.routeToken)) { res.writeHead(404); res.end(); return }
       rawDebug(req, raw).catch(() => {})
+      // 按需报告:GET <url>?report=N → 最近 N 小时群反馈(items 原文;配了 LLM 且未 raw=1 时附 AI 归纳)
+      if (req.method === 'GET' && req.url.includes('report=')) {
+        const hours = Math.min(48, Math.max(1, Number((req.url.match(/report=(\d+)/) || [])[1]) || 12))
+        const out = { window_hours: hours, total: 0, items: [], summary: null, v: VERSION }
+        try {
+          if (CFG.gistId) {
+            const r0 = await gh(`/gists/${CFG.gistId}`)
+            const fname = Object.keys(r0.body.files || {})[0]
+            const cutoff = Date.now() - hours * 3600e3
+            for (const line of (r0.body.files[fname]?.content || '').split('\n')) {
+              try {
+                const o = JSON.parse(line)
+                if (new Date(o.t).getTime() >= cutoff) out.items.push(o)
+              } catch { /* 占位/坏行跳过 */ }
+            }
+          }
+          out.total = out.items.length
+          if (out.total && CFG.llm.key && !req.url.includes('raw=1')) {
+            const text = out.items.map((o) => `- [${o.t}] ${o.u}: ${o.m}`).join('\n').slice(0, 20000)
+            const r = await fetch(`${CFG.llm.base}/chat/completions`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${CFG.llm.key}` },
+              body: JSON.stringify({
+                model: CFG.llm.model,
+                messages: [
+                  { role: 'system', content: '你是 bug 分诊助手。下面是 QQ 群用户近期反馈的问题原文。输出两段:1)「问题清单」:合并同类,每条「• 标题 —— 细节(时间/人数)」;2)「修复优先级建议」:哪些最影响使用、可能原因猜测。纯文本共不超过 400 字,直接输出最终内容,禁止展示思考过程。' },
+                  { role: 'user', content: text },
+                ],
+                max_tokens: 700,
+                temperature: 0.3,
+              }),
+            })
+            const j = await r.json().catch(() => null)
+            const raw0 = j?.choices?.[0]?.message?.content?.trim()
+            if (raw0) {
+              const kept = raw0.split('\n').map((l) => l.trim()).filter((l) => l && (/^[•\-\d]/.test(l) || /清单|优先级/.test(l)))
+              out.summary = (kept.length ? kept : [clip(raw0, 400)]).join('\n')
+            }
+          }
+        } catch (e) { out.error = e.message }
+        res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' })
+        res.end(JSON.stringify(out, null, 2))
+        return
+      }
       // 自诊断:GET <url>?diag=1 → 汇报线上代码版本、关键变量与 gist 连通性(值脱敏);加 write=1 顺带做一次写入探针
       if (req.method === 'GET' && req.url.includes('diag=1')) {
         const diag = {
