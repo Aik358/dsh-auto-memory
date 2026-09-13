@@ -71,7 +71,8 @@ GET ...?report=12&raw=1                            # 只要原文不要 AI 总�
 2. **新增环境变量**（函数配置）：
    - `LLM_BASE_URL` / `LLM_API_KEY` / `LLM_MODEL` —— 与日报 Actions secrets 同源（WorldCodes 中转 + minimax-m3），配了才有 @ 答疑；**注意 base 的变量名是 `LLM_BASE_URL`**（`LLM_API_BASE` 亦兼容，2026-09-13 曾因文档误写前者导致 base 一直是 DeepSeek 默认值的 401）；
    - `GH_DISPATCH_TOKEN` —— **Actions 读写权限**的 PAT（细粒度：Repository permissions → Actions: Read and write），定时班自触发必需；
-   - `TIMER_SECRET`（可选）—— `?timer=1&key=<值>` 手动测试时的口令；`AI_QUOTA_HOURS`（可选，默认 1）；`TIMER_MIN_GAP_HOURS`（可选，默认 10）。
+   - `TIMER_SECRET`（可选）—— `?timer=1&key=<值>` 手动测试时的口令；`TIMER_MIN_GAP_HOURS`（可选，默认 10）。
+   - `AI_MAX_PER_HOUR`（可选）—— @ 答疑每小时最多几次，**不配 = 不限额**；`AI_QUOTA_HOURS`（可选，默认 1）—— 限频时间窗（小时）。改额度只改环境变量，无需改代码。
 3. **添加定时触发器**（函数 → 触发管理 → 创建）：类型=定时触发器，名称必须叫 **`digest-dispatch`**（与默认 TIMER_TRIGGER_NAME 一致），自定义 Cron（SCF 七段=秒 分 时 日 月 星期 年，按北京时间）：
    - `0 40 11 * * * *`（北京 11:40 主班）
    - `0 40 20 * * * *`（北京 20:40 主班）

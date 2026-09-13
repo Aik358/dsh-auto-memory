@@ -43,7 +43,12 @@ const CFG = {
     workflowFile: process.env.GH_WORKFLOW_FILE || 'group-digest.yml',
     minGapHours: Number(process.env.TIMER_MIN_GAP_HOURS || 10),
   },
-  aiQuotaHours: Number(process.env.AI_QUOTA_HOURS || 1),
+  // @ 答疑限频(2026-09-14 起全部走环境变量,改额度不用改代码):
+  //   AI_MAX_PER_HOUR = 每小时最多答疑次数(不配或 0 = 不限额);AI_QUOTA_HOURS = 时间窗(默认 1)。
+  ai: {
+    maxPerHour: Number(process.env.AI_MAX_PER_HOUR || 0),
+    quotaHours: Number(process.env.AI_QUOTA_HOURS || 1),
+  },
 }
 for (const k of ['appId', 'appSecret', 'groupId', 'ghToken']) {
   if (!CFG[k]) { console.error(`[webhook] 缺少环境变量 ${k}`); process.exit(1) }
@@ -210,23 +215,28 @@ async function handleEvent(payload) {
       } catch (e) { lastError = 'collect: ' + e.message; console.error('[webhook] 收集失败:', e.message) }
     }
 
-    // ② @ 机器人的消息:LLM 答疑(每小时限 1 次,配额落盘 gist 防冷启动失忆;
-    //    带原消息 msg_id 做被动回复,不占主动消息配额)。未配 LLM_API_KEY 则沉默(保持旧行为)。
+    // ② @ 机器人的消息:LLM 答疑(限频全走环境变量:AI_MAX_PER_HOUR=每小时最多几次,不配=不限;
+    //    AI_QUOTA_HOURS=时间窗,默认 1h。配额落盘 gist 防冷启动失忆;被动回复不占主动消息配额)。
     if (isAt && botMentionToken && mentions.includes(botMentionToken) && CFG.llm.key) {
       const confirm = recorded ? '已记录 ✅ 会归纳进下次群报\n\n' : ''
       try {
         const q = await botState()
-        const gapMs = Math.max(1, CFG.aiQuotaHours) * 3600e3
-        if (q.aiLastReplyAt && Date.now() - q.aiLastReplyAt < gapMs) {
-          const left = Math.max(1, Math.ceil((gapMs - (Date.now() - q.aiLastReplyAt)) / 60000))
-          await qqSend(confirm + `另外:每小时我只详细回答一个问题哦,约 ${left} 分钟后再来 @ 我`).catch((e) => console.error('[webhook]', e.message))
-          console.log('[webhook] LLM 配额内,已回复限频提示')
-          return
+        if (CFG.ai.maxPerHour > 0) {
+          const winMs = Math.max(1, CFG.ai.quotaHours) * 3600e3
+          const stamps = (q.aiReplyStamps || []).filter((t) => Date.now() - t < winMs)
+          if (stamps.length >= CFG.ai.maxPerHour) {
+            const waitMin = Math.max(1, Math.ceil((winMs - (Date.now() - stamps[0])) / 60000))
+            await qqSend(confirm + `另外:我这段时间的答疑额度用完了(${CFG.ai.maxPerHour} 次/小时),约 ${waitMin} 分钟后恢复`).catch((e) => console.error('[webhook]', e.message))
+            console.log('[webhook] LLM 配额内,已回复限频提示')
+            return
+          }
         }
         const reply = await llmReply(text || '(空消息)')
         await qqSend(confirm + reply, d.id) // 被动回复:带 msg_id,不占主动消息配额
-        q.aiLastReplyAt = Date.now()
-        await saveBotState(q).catch(() => {})
+        if (CFG.ai.maxPerHour > 0) {
+          q.aiReplyStamps = ((q.aiReplyStamps || []).filter((t) => Date.now() - t < Math.max(1, CFG.ai.quotaHours) * 3600e3)).concat(Date.now())
+          await saveBotState(q).catch(() => {})
+        }
         console.log('[webhook] LLM 已回复:', clip(reply, 40))
       } catch (e) { lastError = 'llm: ' + e.message; console.error('[webhook] LLM 应答失败:', e.message) }
       return
@@ -348,7 +358,7 @@ const server = http.createServer((req, res) => {
           triggers: CFG.triggers,
           keywords: CFG.keywords,
           llmEnabled: !!CFG.llm.key,
-          ai: { quotaHours: CFG.aiQuotaHours, mentionLearned: !!botMentionToken },
+          ai: { maxPerHour: CFG.ai.maxPerHour, quotaHours: CFG.ai.quotaHours, mentionLearned: !!botMentionToken },
           timer: { triggerName: CFG.timer.triggerName, hasDispatchToken: !!CFG.timer.token, minGapHours: CFG.timer.minGapHours },
         }
         try {
