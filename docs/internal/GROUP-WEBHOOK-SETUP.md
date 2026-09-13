@@ -46,3 +46,15 @@
 ## 与 Copilot/修理工的关系
 
 建出的 issue 分配给 @copilot(需 Copilot 付费档,学生包免费)或自行认领;PR 引用 issue 自动播「正在处理 🔧」,关闭自动播「处理完毕 ✅」——由 `group-report-status.yml` 负责,与本耳朵解耦。
+
+## 按需报告接口(给 DeepSeek Harness / 人工用)
+
+```
+GET https://<函数URL>/<ROUTE_TOKEN>/?report=N      # 最近 N 小时(1-48)群反馈
+GET ...?report=12&raw=1                            # 只要原文不要 AI 总结
+```
+返回 JSON:`{ window_hours, total, items:[{t,u,w,m}], summary?, v }`。
+- items=带时间戳的原始反馈;配了云函数 LLM_API_KEY 时附 summary(AI 分诊:问题清单+修复优先级),没配则只有原文——harness 的模型可直接读原文自己分析。
+- 注意:每次日报(11:40/20:40)读完后会清空收集区,所以可查范围≈「自上次日报以来收集的反馈」(与 12h 窗口天然对齐)。
+- DeepSeek Harness 用法:直接 GET 该 URL(浏览器/curl/任意 HTTP 工具),把返回 JSON 交给模型出修复方案;或固化成 auto-memory 的 procedure。
+
