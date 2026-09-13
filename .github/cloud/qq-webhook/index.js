@@ -53,7 +53,7 @@ const CFG = {
 for (const k of ['appId', 'appSecret', 'groupId', 'ghToken']) {
   if (!CFG[k]) { console.error(`[webhook] 缺少环境变量 ${k}`); process.exit(1) }
 }
-const VERSION = 'webhook-gist-20260913l' // 部署核对标记:diag 端点与错误响应都会带它(20260913h=@ 答疑优先于已记录/LLM 空应答外显错误体)
+const VERSION = 'webhook-gist-20260913m' // 部署核对标记:diag 端点与错误响应都会带它(20260913h=@ 答疑优先于已记录/LLM 空应答外显错误体)
 const FEEDBACK_FILE = 'group-feedback.jsonl' // 反馈收集钉死文件名(digest 与 report 同读此名,清空时保留文件本身)
 let lastError = null // 最近一次内部错误(diag 可见)
 let botMentionToken = null // 从「@机器人+反馈词」消息里学习的机器人 mention 标识
@@ -226,7 +226,7 @@ async function llmReply(userText) {
     body: JSON.stringify({
       model: CFG.llm.model,
       messages: [
-        { role: 'system', content: '你是 QQ 群「dsh-auto-memory 交流群」的群助手 automemory。回答简短(通常不超过 150 字)、技术向、语气谦虚;关于本项目的问题如实回答,不确定就建议在群里说明情况。不要用 Markdown 标题,纯文本短段落。直接输出面向用户的最终回答,禁止输出任何思考过程/草稿/自我分析。' },
+        { role: 'system', content: '你是 QQ 群「dsh-auto-memory 交流群」的群助手 automemory。回答简短(通常不超过 150 字)、技术向、语气谦虚;关于本项目的问题如实回答,不确定就建议在群里说明情况。不要用 Markdown 标题,纯文本短段落。直接输出面向用户的最终回答,禁止输出任何思考过程/草稿/自我分析。你还有零额度的即查指令(用户 @你 后单独发送关键词即可):「更新总结」=最近一版更新要点;「现有问题」=开放 bug 与群反馈跟踪清单;「下版本前瞻」=下版本计划;「使用帮助」=完整说明。当用户问进展/现存问题/计划/怎么用你时,优先引导用对应指令,而不是让用户把内容贴给你。' },
         { role: 'user', content: userText },
       ],
       // 2026-09-14 修复:中转会把思维链混进 content 且计入 max_tokens——400 全被思考耗光,
