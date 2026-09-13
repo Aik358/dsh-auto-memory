@@ -132,16 +132,20 @@ async function collect() {
     try {
       const r = await fetch(`https://api.github.com/gists/${env.FEEDBACK_GIST_ID}`, { headers: { Accept: 'application/vnd.github+json', Authorization: `Bearer ${env.FEEDBACK_GH_PAT}`, 'User-Agent': 'group-digest' } })
       const j = await r.json().catch(() => null)
-      const fname = Object.keys(j?.files || {})[0]
+      // 2026-09-13 修复:只读**钉死的文件名**(与 webhook 的 gistAppend/report 同名)——旧实现取
+      // 「第一个文件」,raw-debug 先建/清空后第一个文件会换人,反馈与原始调试混写。
+      const fname = env.FEEDBACK_FILE || 'group-feedback.jsonl'
       const content = (j?.files?.[fname]?.content || '').trim()
       if (content) {
         out.groupFeedbackLines = content.split('\n').map((l) => l.trim()).filter((l) => l && !l.startsWith('<!--')).slice(-120)
         await fetch(`https://api.github.com/gists/${env.FEEDBACK_GIST_ID}`, {
           method: 'PATCH',
           headers: { Accept: 'application/vnd.github+json', Authorization: `Bearer ${env.FEEDBACK_GH_PAT}`, 'User-Agent': 'group-digest' },
-          body: JSON.stringify({ files: { [fname]: { content: '' } } }),
+          // 置空字符串会**删除** gist 文件(删除后 webhook 端的「第一个文件」就会换人)——
+          // 改写成一个换行,保留文件本身,只清空内容。
+          body: JSON.stringify({ files: { [fname]: { content: '\n' } } }),
         })
-        console.log(`[digest] 群反馈原始消息 ${out.groupFeedbackLines.length} 条已取出(gist 已清空)`)
+        console.log(`[digest] 群反馈原始消息 ${out.groupFeedbackLines.length} 条已取出(文件保留,内容已清空)`)
       }
     } catch (e) { console.warn('[digest] 群反馈 gist 读取失败(忽略):', e.message) }
   }
