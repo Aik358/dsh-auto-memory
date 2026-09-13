@@ -2,7 +2,7 @@
 
 > 用途：**唯一待办入口**。跨会话/跨工具（DSH、ZCode）通用 —— 不依赖任何一方的工作记忆，全部写路径与判据。
 > 状态约定：🔴 阻塞或高优先 / 🟡 应做但可排期 / ⚪ 可选或长期 / ✅ 已关闭（留在 §J 备查，别重复劳动）
-> 事实基线（2026-09-13 发版后实测）：npm latest = **2.5.0**；pre 线 `D:\dsh-auto-memory` HEAD = `8ad94c3`；REL = tag `v2.5.0` = GitHub main = `7234627`（子代理执行发版，主对话独立复核三处一致）。
+> 事实基线（2026-09-13 二次发版后实测）：npm latest = **2.5.1**；pre 线 `D:\dsh-auto-memory` HEAD = `7fdb960`；REL = tag `v2.5.1` = GitHub main = `c9ecc9f`（v2.5.0 → 7234627 → v2.5.1 → c9ecc9f 同日两连发，均子代理执行、主对话独立复核）。
 
 ---
 
@@ -11,7 +11,7 @@
 | 优先级 | 事项 | 归属 | 参考 |
 | --- | --- | --- | --- |
 | 🔴 | 大排期三件套（界面 / 文档 / 首页）**等用户拍板 6 点 + 给 3 样输入** | 用户 → 执行方 | `DESIGN-OVERHAUL-PRE-RESEARCH.md` §8 |
-| 🟡 | **PR #29 待处置**（社区修 Node 22 宿主崩溃，审阅通过；等拍板：合并 → 移植 pre 线 → 随 2.5.1 发版） | 用户 → 执行方 | 本表 §H |
+| ⚪ | **SCF 云函数重部署**（新 `index.zip` 已重打：含 `?report=N` 路由 + 标记 `20260913d`；等用户控制台上传后 `?diag=1` 核对） | 用户 | 本表 §G |
 | 🟡 | **procedure 记忆机制整体重构**（沿用 Hermes、社区褒贬不一；issue #30 实证同根因；等用户统一拍板整体逻辑，期间不动引擎） | 用户 → 执行方 | 本表 §A 末条 |
 | 🟡 | 群反馈·日报 CI 的**安全与运维**收口（密钥/签名/成本/告警） | ZCode | `.github/`、`docs/internal/GROUP-*.md` |
 | 🟡 | 冷启动闭环（公开用户"装上没反应"） | 执行方 | 本表 §C |
@@ -106,9 +106,8 @@
 
 ## H. 插件功能侧遗留
 
-- [ ] 🟡 **PR #29 待处置（2026-09-13 审阅通过，等拍板）**：fei009009 修 Node 22（DSH Desktop 0.5.10/Electron）下巡检全量解压巨型会话文件令宿主必崩——`decodeZstdFramesHead`（前 8 帧/4MB 上限）+ 巡检切换调用点，`lib/subagent-gc.js` +30/-1，贡献者自证 257 会话文件全过、桌面端从必崩到稳定。**处置路径**：GitHub 合并（用户浏览器点，或授权 API 合并）→ 我移植 pre 线（`subagent-gc-pre.js:85/183` 一一对应；建议一并修 `index.js:1842` `waterWindowForSession` 的同类全量解压——PR 作者也指出了）→ 随 **2.5.1** 发版并回复 PR。
 - [ ] 🟡 **issue #30（open）= procedure 管线断裂社区实证**：与 §A 末条（procedure 统一重构）同根因，挂在重构下处置；Aik358 已回复「将在发布新版本时通知」——重构发版后需回来通知该用户。
-- [ ] 🟡 **工作区切换问题（叉叉基，群反馈）**：自包含只读诊断 prompt 已发、用户 15:14 已执行（群内回「已经跑了」），**报告未回传**；回传后按 `--D--dsh-auto-memory--` 记忆 `workspace-switch-user-report.md` 的四归因链判读。
+- [ ] 🟡 **工作区切换问题（叉叉基，群反馈）——已修复待发版（2.5.2）**：诊断报告 2026-09-13 回传判 C 类；根因=①`handoffPanelData` 面板路径全局单值（sessionId 只喂水位）②`resolvePaths` 无人值守锁**全局**钉死 state.ws（`unattendedMode=true` 用户切工作区整个冻结）③workspaceId 创建的会话 header.cwd 缺失误回退 process.cwd()。修复：无人值守锁改按会话（rt.wsLocked）+ 面板按 sessionId 解析（新增 `resolvePathsForSession`+`sessionWorkspaceFallback`，registry→持久化头两级回退）+ 未绑定诚实返回 wsBound:false + 面板配置加载守卫。验证=`smoke-test-wsfix-pre.mjs` 16 断言双实例对照，全量 71 套件 0 失败。
 
 - [ ] ⚪ **子代理通知无法跨会话继承**：durable 侧 `SessionHeader.parentSession` 是 readonly，`coldResume → authorizeLineage` 抛 UNAUTHORIZED，服务契约无 re-parent/transfer/attach → 新会话**收不到旧会话的子代理完成通知**。可选路线见 `docs/internal/SUBAGENT-REPORT-ROUTING-PRE-RESEARCH.md`。
 - [ ] ⚪ **上下文桥不推子代理会话的 context**：被观测的子代理会话 runtime 从未 `capturePaths`（整段 drop）；本机已做 30s 窗口限流 + 首条附 runtime key，**工作区归属改造未做**。
@@ -140,3 +139,4 @@
 - ✅ **`smoke-test-m53-pre.mjs` 顺序敏感 flake**（固定 `sleep(900)` → 有界轮询）。
 - ✅ **真实自动接续实机验证通过**（修复后首次 `auto-continue host-executed`）。
 - ✅ **B 区三项深改落地 v2.5.0**（2026-09-13，未发版）：①水位口径——分母改官方声明窗口（`min(win, hardWin)`），reserve 退出分母只留"距硬墙余量"展示与预测性硬墙判据（`estTokens + reserve > 判定窗`），反向锁断言"不得把 reserve 计入分母"；②接续序号——`~/.dsh/memory/cont-seq.json` 持久计数器（全局单调、跨工作区不重号、写包失败回滚不跳号、历史标题扫描兜底），新增 `smoke-test-contseq-pre.mjs`（20 断言）；③流程外包——四份自包含任务书（`docs/prompts/{RELEASE,REGRESSION,DOCS-AUDIT,TRACE-PATROL}-AGENT.md`）+ `RELEASE-PROCESS.md` 角色分工（主对话派活后只读等待）。全量回归 70 套件 0 失败。
+- ✅ **v2.5.0 / v2.5.1 同日两连发**（2026-09-13）：均按 RELEASE-AGENT 任务书派阻塞式子代理执行、主对话独立复核三处一致；2.5.0 = 三改点上线；2.5.1 = **PR #29 已合并（squash `f2efefa`，社区贡献者 fei009009）+ pre 线移植**（`decodeZstdFramesHead` + 巡检调用点 + `waterWindowForSession` 同防，G13 套件 + water-hard 反向锁），PR 已回复。任务书新增教训两条：构建后 `package.json` 补提交步骤（阶段 4）；REL 提交排除 `index.zip`。
