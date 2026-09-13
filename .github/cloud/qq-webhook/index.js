@@ -30,7 +30,7 @@ const CFG = {
   llm: {
     key: process.env.LLM_API_KEY || '',
     model: process.env.LLM_MODEL || 'deepseek-chat',
-    base: (process.env.LLM_BASE_URL || 'https://api.deepseek.com').replace(/\/$/, ''),
+    base: (process.env.LLM_API_BASE || process.env.LLM_BASE_URL || 'https://api.deepseek.com').replace(/\/$/, ''),
     maxReply: Number(process.env.LLM_MAX_REPLY || 500),
   },
   // 定时班自触发(2026-09-13):GitHub 的 schedule 定时器从未唤起过本仓库工作流(全仓库 schedule 运行 0 次,
@@ -48,7 +48,7 @@ const CFG = {
 for (const k of ['appId', 'appSecret', 'groupId', 'ghToken']) {
   if (!CFG[k]) { console.error(`[webhook] 缺少环境变量 ${k}`); process.exit(1) }
 }
-const VERSION = 'webhook-gist-20260913i' // 部署核对标记:diag 端点与错误响应都会带它(20260913h=@ 答疑优先于已记录/LLM 空应答外显错误体)
+const VERSION = 'webhook-gist-20260913j' // 部署核对标记:diag 端点与错误响应都会带它(20260913h=@ 答疑优先于已记录/LLM 空应答外显错误体)
 const FEEDBACK_FILE = 'group-feedback.jsonl' // 反馈收集钉死文件名(digest 与 report 同读此名,清空时保留文件本身)
 let lastError = null // 最近一次内部错误(diag 可见)
 let botMentionToken = null // 从「@机器人+反馈词」消息里学习的机器人 mention 标识
@@ -316,7 +316,7 @@ const server = http.createServer((req, res) => {
                 const kept = raw0.split('\n').map((l) => l.trim()).filter((l) => l && (/^[•\-\d]/.test(l) || /清单|优先级/.test(l)))
                 out.summary = (kept.length ? kept : [clip(raw0, 400)]).join('\n')
               }
-            } catch (e) { out.llmError = '归纳失败(请检查 LLM_API_BASE/LLM_MODEL/LLM_API_KEY): ' + e.message }
+            } catch (e) { out.llmError = '归纳失败(请检查 LLM_API_BASE 或 LLM_BASE_URL/LLM_MODEL/LLM_API_KEY): ' + e.message }
           }
         } catch (e) { out.error = e.message }
         res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' })

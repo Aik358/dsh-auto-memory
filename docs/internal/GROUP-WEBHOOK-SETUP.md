@@ -69,7 +69,7 @@ GET ...?report=12&raw=1                            # 只要原文不要 AI 总�
 
 1. **上传新 index.zip**（标记 `20260913e`；上传后 `?diag=1` 应显示 `"v":"webhook-gist-20260913e"`，并出现 `"ai"` 与 `"timer"` 两个配置块）。
 2. **新增环境变量**（函数配置）：
-   - `LLM_API_BASE` / `LLM_API_KEY` / `LLM_MODEL` —— 与日报 Actions secrets 同源（WorldCodes 中转 + minimax-m3），配了才有 @ 答疑；
+   - `LLM_BASE_URL` / `LLM_API_KEY` / `LLM_MODEL` —— 与日报 Actions secrets 同源（WorldCodes 中转 + minimax-m3），配了才有 @ 答疑；**注意 base 的变量名是 `LLM_BASE_URL`**（`LLM_API_BASE` 亦兼容，2026-09-13 曾因文档误写前者导致 base 一直是 DeepSeek 默认值的 401）；
    - `GH_DISPATCH_TOKEN` —— **Actions 读写权限**的 PAT（细粒度：Repository permissions → Actions: Read and write），定时班自触发必需；
    - `TIMER_SECRET`（可选）—— `?timer=1&key=<值>` 手动测试时的口令；`AI_QUOTA_HOURS`（可选，默认 1）；`TIMER_MIN_GAP_HOURS`（可选，默认 10）。
 3. **添加定时触发器**（函数 → 触发管理 → 创建）：类型=定时触发器，名称必须叫 **`digest-dispatch`**（与默认 TIMER_TRIGGER_NAME 一致），自定义 Cron（SCF 七段=秒 分 时 日 月 星期 年，按北京时间）：
