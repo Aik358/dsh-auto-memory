@@ -33,11 +33,22 @@ const CFG = {
     base: (process.env.LLM_BASE_URL || 'https://api.deepseek.com').replace(/\/$/, ''),
     maxReply: Number(process.env.LLM_MAX_REPLY || 500),
   },
+  // 定时班自触发(2026-09-13):GitHub 的 schedule 定时器从未唤起过本仓库工作流(全仓库 schedule 运行 0 次,
+  // 官方文档承认 schedule 尽力而为、高峰会整班丢)——改由常驻的 SCF 定时触发器打本函数,函数再调
+  // workflow_dispatch API 把日报班唤起来。GitHub 侧只当执行器,到点必达。
+  timer: {
+    triggerName: process.env.TIMER_TRIGGER_NAME || 'digest-dispatch',
+    secret: process.env.TIMER_SECRET || '',
+    token: process.env.GH_DISPATCH_TOKEN || '',
+    workflowFile: process.env.GH_WORKFLOW_FILE || 'group-digest.yml',
+    minGapHours: Number(process.env.TIMER_MIN_GAP_HOURS || 10),
+  },
+  aiQuotaHours: Number(process.env.AI_QUOTA_HOURS || 1),
 }
 for (const k of ['appId', 'appSecret', 'groupId', 'ghToken']) {
   if (!CFG[k]) { console.error(`[webhook] 缺少环境变量 ${k}`); process.exit(1) }
 }
-const VERSION = 'webhook-gist-20260913d' // 部署核对标记:diag 端点与错误响应都会带它(20260913d 起=含 ?report=N 按需报告路由;9461cea 当时忘了 bump,导致线上旧包无法与源码区分)
+const VERSION = 'webhook-gist-20260913e' // 部署核对标记:diag 端点与错误响应都会带它(20260913e=+定时班自触发/@问答每小时限额)
 let lastError = null // 最近一次内部错误(diag 可见)
 let botMentionToken = null // 从「@机器人+反馈词」消息里学习的机器人 mention 标识
 const RAW_DEBUG = (process.env.RAW_DEBUG || '1') !== '0' // 抓原始报文进 gist 的 group-raw-debug.txt(排查完可关)
@@ -131,6 +142,17 @@ async function gistAppend(line) {
   if (!r.ok) throw new Error(`写 gist 失败 ${r.status}`)
 }
 
+// 状态文件(bot-state.json,与反馈收集同一个 gist):@问答配额/定时班去重都落这里,防冷启动失忆
+async function botState() {
+  const r0 = await gh(`/gists/${CFG.gistId}`)
+  const f = r0.body && r0.body.files && r0.body.files['bot-state.json']
+  try { return JSON.parse((f && f.content) || '{}') } catch (e) { return {} }
+}
+async function saveBotState(st) {
+  const r = await gh(`/gists/${CFG.gistId}`, { method: 'PATCH', body: JSON.stringify({ files: { 'bot-state.json': { content: JSON.stringify(st) } } }) })
+  if (!r.ok) throw new Error(`写 bot-state 失败 ${r.status}`)
+}
+
 // ---------- 事件处理 ----------
 const seen = new Set()
 const clip = (s, n) => { const t = String(s || '').replace(/\s+/g, ' ').trim(); return t.length > n ? t.slice(0, n) + '…' : t }
@@ -156,13 +178,13 @@ async function handleEvent(payload) {
     if (seen.size > 500) seen.delete(seen.values().next().value)
     const mentions = [...String(d.content || '').matchAll(/<@!?([0-9A-Fa-f]+)>/g)].map((m) => m[1])
     const isAt = mentions.length > 0
+    if (isAt && !botMentionToken) botMentionToken = mentions[0] // 学习机器人自己的 mention 标识(任何 @ 都学,不限于反馈词)
     const text = String(d.content || '').replace(/<@!?[0-9A-Fa-f]+>/g, '').trim()
     const lower = text.toLowerCase()
 
     // ① 问题收集:明确反馈词 或 问题关键词命中 → 存 gist;@ 了机器人就回一句已记录(主动发送,最稳)
     const collected = CFG.triggers.find((w) => lower.includes(w.toLowerCase())) || CFG.keywords.find((w) => lower.includes(w))
     if (collected && CFG.gistId) {
-      if (isAt && !botMentionToken) botMentionToken = mentions[0] // 学习机器人自己的 mention 标识
       try {
         await gistAppend(JSON.stringify({ t: d.timestamp || new Date().toISOString(), u: clip(d.author?.username || d.author?.member_openid || '?', 16), w: collected, m: clip(text, 200) }))
         console.log('[webhook] 已收集:', clip(text, 50))
@@ -171,16 +193,60 @@ async function handleEvent(payload) {
       return
     }
 
-    // ② 其他 @ 机器人的消息:LLM 聊天(配了 key 且已学到机器人 mention 标识才启)
+    // ② 其他 @ 机器人的消息:LLM 答疑(2026-09-13 起每小时限 1 次,配额落盘 gist 防冷启动失忆;
+    //    带原消息 msg_id 做被动回复,不占主动消息配额)。未配 LLM_API_KEY 则沉默(保持旧行为)。
     if (isAt && botMentionToken && mentions.includes(botMentionToken) && CFG.llm.key) {
       try {
+        const q = await botState()
+        const gapMs = Math.max(1, CFG.aiQuotaHours) * 3600e3
+        if (q.aiLastReplyAt && Date.now() - q.aiLastReplyAt < gapMs) {
+          const left = Math.max(1, Math.ceil((gapMs - (Date.now() - q.aiLastReplyAt)) / 60000))
+          await qqSend(`每小时我只详细回答一个问题哦,约 ${left} 分钟后再来 @ 我(反馈收集不受影响,照常记录)`).catch((e) => console.error('[webhook]', e.message))
+          console.log('[webhook] LLM 配额内,已回复限频提示')
+          return
+        }
         const reply = await llmReply(text || '(空消息)')
-        await qqSend(reply)
+        await qqSend(reply, d.id) // 被动回复:带 msg_id,不占主动消息配额
+        q.aiLastReplyAt = Date.now()
+        await saveBotState(q).catch(() => {})
         console.log('[webhook] LLM 已回复:', clip(reply, 40))
-      } catch (e) { console.error('[webhook] LLM 应答失败:', e.message) }
+      } catch (e) { lastError = 'llm: ' + e.message; console.error('[webhook] LLM 应答失败:', e.message) }
       return
     }
     console.log('[webhook] 忽略:', clip(text, 30))
+  }
+}
+
+// ---------- 定时班自触发(SCF 定时触发器 → workflow_dispatch) ----------
+// GitHub 的 schedule 从未唤起过本仓库工作流(全仓库 schedule 运行 0 次)——由常驻 SCF 定时触发器
+// 打本函数(POST body 带 Type:'Timer'),函数再调 workflow_dispatch 把日报班唤起来,到点必达。
+async function handleTimer(arg) {
+  const viaQuery = typeof arg !== 'string'
+  try {
+    if (viaQuery && CFG.timer.secret && arg.get('key') !== CFG.timer.secret) return { ok: false, reason: 'bad key' }
+    if (!viaQuery) {
+      try { const ev = JSON.parse(arg); const tn = String(ev.TriggerName || ev.triggerName || ''); if (CFG.timer.triggerName && tn && tn !== CFG.timer.triggerName) return { ok: false, reason: 'trigger 不匹配: ' + tn } } catch (e) {}
+    }
+    if (!CFG.timer.token) return { ok: false, dispatched: false, reason: 'GH_DISPATCH_TOKEN 未配置(需要 Actions 读写权限的 token)' }
+    const st = await botState()
+    const gapMs = Math.max(1, CFG.timer.minGapHours) * 3600e3
+    if (st.lastDigestDispatchAt && Date.now() - st.lastDigestDispatchAt < gapMs) {
+      return { ok: true, dispatched: false, reason: '距上次触发不足 ' + CFG.timer.minGapHours + 'h(防重,各班重试不会重发)' }
+    }
+    const r = await fetch(`https://api.github.com/repos/${CFG.repo}/actions/workflows/${CFG.timer.workflowFile}/dispatches`, {
+      method: 'POST',
+      headers: { Accept: 'application/vnd.github+json', Authorization: `Bearer ${CFG.timer.token}`, 'User-Agent': 'qq-webhook' },
+      body: JSON.stringify({ ref: 'main', inputs: { note: '', since_hours: '' } }), // since_hours 留空=自动接上次成功运行
+    })
+    if (!r.ok) { const b = await r.text().catch(() => ''); throw new Error('dispatch ' + r.status + ' ' + b.slice(0, 140)) }
+    st.lastDigestDispatchAt = Date.now()
+    await saveBotState(st).catch(() => {})
+    console.log('[timer] 已触发日报 workflow(', CFG.timer.workflowFile, ')')
+    return { ok: true, dispatched: true, at: new Date().toISOString() }
+  } catch (e) {
+    lastError = 'timer: ' + ((e && e.message) || e)
+    console.error('[webhook] timer 失败:', (e && e.message) || e)
+    return { ok: false, error: String((e && e.message) || e) }
   }
 }
 
@@ -192,6 +258,13 @@ const server = http.createServer((req, res) => {
     const raw = Buffer.concat(chunks).toString('utf8')
     try {
       if (CFG.routeToken && !req.url.includes(CFG.routeToken)) { res.writeHead(404); res.end(); return }
+      // 定时班自触发入口:SCF 定时触发器 POST body 带 Type:'Timer';另支持 GET ?timer=1&key=<TIMER_SECRET> 手动测试
+      if (raw.includes('"Type":"Timer"') || (req.method === 'GET' && req.url.includes('timer=1'))) {
+        const out = await handleTimer(req.method === 'GET' ? new URL('http://x' + req.url).searchParams : raw)
+        res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' })
+        res.end(JSON.stringify(out, null, 2))
+        return
+      }
       rawDebug(req, raw).catch(() => {})
       // 按需报告:GET <url>?report=N → 最近 N 小时群反馈(items 原文;配了 LLM 且未 raw=1 时附 AI 归纳)
       if (req.method === 'GET' && req.url.includes('report=')) {
@@ -249,6 +322,8 @@ const server = http.createServer((req, res) => {
           triggers: CFG.triggers,
           keywords: CFG.keywords,
           llmEnabled: !!CFG.llm.key,
+          ai: { quotaHours: CFG.aiQuotaHours, mentionLearned: !!botMentionToken },
+          timer: { triggerName: CFG.timer.triggerName, hasDispatchToken: !!CFG.timer.token, minGapHours: CFG.timer.minGapHours },
         }
         try {
           const g = await gh(`/gists/${CFG.gistId}`)
