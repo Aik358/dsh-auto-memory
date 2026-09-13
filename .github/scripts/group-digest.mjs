@@ -128,6 +128,7 @@ async function collect() {
     out.npmVersion = json?.version || null
   } catch (e) { console.warn('[digest] npm 版本采集失败:', e.message) }
   out.groupFeedbackLines = null
+  out.trackedIssues = []
   if (env.FEEDBACK_GIST_ID && env.FEEDBACK_GH_PAT) {
     try {
       const r = await fetch(`https://api.github.com/gists/${env.FEEDBACK_GIST_ID}`, { headers: { Accept: 'application/vnd.github+json', Authorization: `Bearer ${env.FEEDBACK_GH_PAT}`, 'User-Agent': 'group-digest' } })
@@ -147,6 +148,11 @@ async function collect() {
         })
         console.log(`[digest] 群反馈原始消息 ${out.groupFeedbackLines.length} 条已取出(文件保留,内容已清空)`)
       }
+      // 未解决事项跟踪状态(2026-09-13):与反馈文件同一个 gist 的 group-issues.json,跨期持续列出/自动销账
+      try {
+        const si = JSON.parse(j?.files?.['group-issues.json']?.content || '{}')
+        if (Array.isArray(si.issues)) out.trackedIssues = si.issues
+      } catch (e) {}
     } catch (e) { console.warn('[digest] 群反馈 gist 读取失败(忽略):', e.message) }
   }
   return out
@@ -218,13 +224,22 @@ function compose(d) {
     L.push(...preview)
   }
 
-  if (d.groupFeedbackLines?.length) {
+  const tg = d.groupFeedbackTracked
+  if (d.groupFeedbackLines?.length || (tg && (tg.open.length || tg.resolvedTitles.length || tg.staleTitles.length))) {
     L.push('')
-    L.push('▍群内反馈(AI 归纳)')
-    if (d.groupFeedbackSummary) L.push(...d.groupFeedbackSummary.split('\n'))
-    else for (const line of d.groupFeedbackLines.slice(-8)) {
-      try { const o = JSON.parse(line); L.push(`• ${clip(o.m, 60)}(${String(o.t || '').slice(5, 16).replace('T', ' ')})`) }
-      catch { L.push(`• ${clip(line, 60)}`) }
+    L.push('▍群内反馈(AI 跟踪·未解决事项)')
+    if (tg && (tg.open.length || tg.resolvedTitles.length || tg.staleTitles.length)) {
+      for (const it of tg.open) L.push(`• ${it.title} —— ${clip(it.detail, 56)}(首报 ${String(it.first_seen || '').slice(5, 10)} · 最近 ${String(it.last_seen || '').slice(5, 10)})`)
+      if (!tg.open.length) L.push('(当前没有未解决事项)')
+      if (tg.resolvedTitles.length) L.push(`✅ 已解决并移出: ${tg.resolvedTitles.join('、')}`)
+      if (tg.staleTitles.length) L.push(`🗂 超期未再提及,已归档: ${tg.staleTitles.join('、')}`)
+    } else if (d.groupFeedbackSummary) {
+      L.push(...d.groupFeedbackSummary.split('\n'))
+    } else {
+      for (const line of d.groupFeedbackLines.slice(-8)) {
+        try { const o = JSON.parse(line); L.push(`• ${clip(o.m, 60)}(${String(o.t || '').slice(5, 16).replace('T', ' ')})`) }
+        catch { L.push(`• ${clip(line, 60)}`) }
+      }
     }
   }
 
@@ -309,7 +324,30 @@ async function send(text) {
 
 // ---------- 主流程 ----------
 const d = await collect()
-// 群内反馈 AI 归纳:原始消息在 collect 里已取出并清空 gist,这里让 LLM 归纳成带标题的清单
+// ---------- 群内反馈跟踪(2026-09-13):未解决事项跨期持续列出;群里确认修复或发版说明写明修复 → 自动销账 ----------
+const tracked = { open: (Array.isArray(d.trackedIssues) ? d.trackedIssues : []).filter((x) => x && typeof x.title === 'string'), resolvedTitles: [], staleTitles: [] }
+{
+  // ①陈旧归档:超过 14 天没有新提及的事项移出清单(本期一次性提示)
+  const staleCut = Date.now() - 14 * 86400e3
+  const still = []
+  for (const it of tracked.open) {
+    const ts = Date.parse(it.last_seen || it.first_seen || '') || 0
+    if (ts && ts < staleCut) tracked.staleTitles.push(it.title)
+    else still.push(it)
+  }
+  tracked.open = still
+}
+const normKey = (t) => String(t).replace(/[^\p{Script=Han}A-Za-z0-9]+/gu, '')
+const sameTopic = (a, b) => { const x = normKey(a), y = normKey(b); return !!x && !!y && (x.startsWith(y) || y.startsWith(x)) }
+// ②发版说明 = 解决信号之一:拉取 main 分支 CHANGELOG 最新几节(公开文件,匿名可取)
+let changelogTail = ''
+if (tracked.open.length) {
+  try {
+    const r = await fetch(`https://raw.githubusercontent.com/${REPO}/main/CHANGELOG.md`, { headers: { 'User-Agent': 'group-digest' } })
+    if (r.ok) changelogTail = (await r.text()).split(/\n(?=## )/).slice(0, 4).join('\n').slice(0, 3500)
+  } catch (e) {}
+}
+// 群内反馈 AI 归纳:原始消息在 collect 里已取出并清空 gist;这里先归纳本窗口新反馈,再与跟踪状态合并
 if (d.groupFeedbackLines?.length && env.LLM_API_KEY) {
   try {
     const r = await fetch(`${(env.LLM_BASE_URL || 'https://api.deepseek.com').replace(/\/$/, '')}/chat/completions`, {
@@ -346,6 +384,60 @@ if (d.groupFeedbackLines?.length && env.LLM_API_KEY) {
     else console.warn('[digest] 群反馈归纳空应答,退回原文摘录')
   } catch (e) { console.warn('[digest] 群反馈归纳失败(退回原文摘录):', e.message) }
 }
+// ③合并:既有未解决事项 × 本窗口新反馈 × 发版说明 —— 解决→移出;同事件→并入;全新→入册
+const newBullets = String(d.groupFeedbackSummary || '').split('\n').filter((l) => l.includes('——')).map((l) => {
+  const parts = l.replace(/^•\s*/, '').split('——')
+  return { title: (parts[0] || '').trim().slice(0, 20), detail: (parts.slice(1).join('——') || '').trim(), first_seen: new Date().toISOString(), last_seen: new Date().toISOString(), status: 'open' }
+})
+if ((newBullets.length || changelogTail) && env.LLM_API_KEY) {
+  try {
+    const r = await fetch(`${(env.LLM_BASE_URL || 'https://api.deepseek.com').replace(/\/$/, '')}/chat/completions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${env.LLM_API_KEY}` },
+      body: JSON.stringify({
+        model: env.LLM_MODEL || 'deepseek-chat',
+        messages: [
+          { role: 'system', content: '你是群反馈跟踪员。输入 JSON:open_issues=当前未解决事项;new_messages=本窗口群内原始消息;changelog_tail=最近发版更新说明。更新未解决事项清单,规则:①changelog_tail 或 new_messages 表明某事项已被修复/解决/不再复现(如「修复:xxx」「修好了」「可以了」)→ 该事项移出 issues,原标题记入 resolved_titles;②new_messages 与某事项是同一件事(追问/补充/仍然存在)→ 更新其 last_seen 与 detail(取更完整表述),不得新增重复条目;③全新事项 → 新增(first_seen 与 last_seen 取该组最早消息时间);④无新证据的事项原样保留。输出**仅一个 JSON 对象**(禁止 Markdown 代码块、禁止解释):{"issues":[{"title":"不超过20字","detail":"一句话","first_seen":"ISO 时间","last_seen":"ISO 时间","status":"open"}],"resolved_titles":["被解决事项的原标题",...]};issues 最多 10 条、按 last_seen 从新到旧排序。' },
+          { role: 'user', content: JSON.stringify({ open_issues: tracked.open, new_messages: (d.groupFeedbackLines || []).slice(-80), changelog_tail: changelogTail, npm_latest: d.npmVersion }) },
+        ],
+        max_tokens: 900,
+        temperature: 0.2,
+      }),
+    })
+    const j = await r.json().catch(() => null)
+    const m = JSON.parse(String(j?.choices?.[0]?.message?.content || '').replace(/^```(?:json)?\s*/m, '').replace(/```\s*$/m, '').trim())
+    if (m && Array.isArray(m.issues)) {
+      const oldTitles = tracked.open.map((x) => x.title)
+      tracked.resolvedTitles = (Array.isArray(m.resolved_titles) ? m.resolved_titles : []).filter((t) => oldTitles.includes(t)).slice(0, 8)
+      tracked.open = m.issues.filter((x) => x && typeof x.title === 'string' && x.status === 'open').slice(0, 10)
+      tracked.merged = true
+      console.log('[digest] 事项跟踪合并完成: open=' + tracked.open.length + ' resolved=' + tracked.resolvedTitles.length)
+    }
+  } catch (e) {
+    // JSON 解析失败/调用失败 → 确定性兜底:新条目按标题前 8 字去重后入册,不做解决判定
+    console.warn('[digest] 事项合并失败,确定性兜底:', e.message)
+    for (const nb of newBullets) {
+      if (!tracked.open.some((x) => sameTopic(x.title, nb.title))) tracked.open.push(nb)
+    }
+    tracked.open = tracked.open.slice(0, 10)
+  }
+} else if (newBullets.length) {
+  for (const nb of newBullets) {
+    if (!tracked.open.some((x) => sameTopic(x.title, nb.title))) tracked.open.push(nb)
+  }
+  tracked.open = tracked.open.slice(0, 10)
+}
+// ④状态落盘(有变化才写):group-issues.json 与反馈文件同一个 gist
+if (env.FEEDBACK_GIST_ID && env.FEEDBACK_GH_PAT && (tracked.merged || newBullets.length || tracked.staleTitles.length)) {
+  try {
+    await fetch(`https://api.github.com/gists/${env.FEEDBACK_GIST_ID}`, {
+      method: 'PATCH',
+      headers: { Accept: 'application/vnd.github+json', Authorization: `Bearer ${env.FEEDBACK_GH_PAT}`, 'User-Agent': 'group-digest' },
+      body: JSON.stringify({ files: { 'group-issues.json': { content: JSON.stringify({ issues: tracked.open, updatedAt: new Date().toISOString() }) } } }),
+    })
+  } catch (e) { console.warn('[digest] group-issues.json 写入失败(下期会重复列出):', e.message) }
+}
+d.groupFeedbackTracked = tracked
 const text = compose(d)
 console.log('─────────────── 生成摘要 ───────────────')
 console.log(text)
