@@ -48,7 +48,7 @@ const CFG = {
 for (const k of ['appId', 'appSecret', 'groupId', 'ghToken']) {
   if (!CFG[k]) { console.error(`[webhook] 缺少环境变量 ${k}`); process.exit(1) }
 }
-const VERSION = 'webhook-gist-20260913j' // 部署核对标记:diag 端点与错误响应都会带它(20260913h=@ 答疑优先于已记录/LLM 空应答外显错误体)
+const VERSION = 'webhook-gist-20260913k' // 部署核对标记:diag 端点与错误响应都会带它(20260913h=@ 答疑优先于已记录/LLM 空应答外显错误体)
 const FEEDBACK_FILE = 'group-feedback.jsonl' // 反馈收集钉死文件名(digest 与 report 同读此名,清空时保留文件本身)
 let lastError = null // 最近一次内部错误(diag 可见)
 let botMentionToken = null // 从「@机器人+反馈词」消息里学习的机器人 mention 标识
@@ -112,16 +112,29 @@ async function llmReply(userText) {
     body: JSON.stringify({
       model: CFG.llm.model,
       messages: [
-        { role: 'system', content: '你是 QQ 群「dsh-auto-memory 交流群」的群助手 automemory。回答简短(通常不超过 150 字)、技术向、语气谦虚;关于本项目的问题如实回答,不确定就建议在群里说明情况。不要用 Markdown 标题,纯文本短段落。' },
+        { role: 'system', content: '你是 QQ 群「dsh-auto-memory 交流群」的群助手 automemory。回答简短(通常不超过 150 字)、技术向、语气谦虚;关于本项目的问题如实回答,不确定就建议在群里说明情况。不要用 Markdown 标题,纯文本短段落。直接输出面向用户的最终回答,禁止输出任何思考过程/草稿/自我分析。' },
         { role: 'user', content: userText },
       ],
-      max_tokens: 400,
+      // 2026-09-14 修复:中转会把思维链混进 content 且计入 max_tokens——400 全被思考耗光,
+      // 用户实测收到的是截断的思维链。放宽到 1600 给思考+正文都留足;过滤见下。
+      max_tokens: 1600,
       temperature: 0.7,
     }),
   })
   const j = await r.json().catch(() => null)
   if (!r.ok || !j?.choices?.[0]?.message?.content) throw new Error(`LLM 失败 ${r.status} ${JSON.stringify(j).slice(0, 160)}`)
-  return j.choices[0].message.content.trim().slice(0, CFG.llm.maxReply)
+  let out = j.choices[0].message.content.trim()
+  // 过滤思维链(与日报脚本同源纪律):优先剥离正规分离形态 reasoning_content;混进 content 时
+  // 按 </think> 标签切段,再按行首思考特征词剥除思维链前缀,只留成片正文。
+  const rc = j.choices[0].message.reasoning_content
+  if (rc && out.startsWith(String(rc).trim())) out = out.slice(String(rc).length).trim()
+  if (/<think>/i.test(out)) out = out.split(/<\/think>/i).pop().trim()
+  const thinkRe = /^(好[的吧]|让我|我需要|首先|嗯|用户(可能|在问|想|要)|他(想|要)|这段|这个问题|分析一下|总结一下|大概|应该[是从]|或许是|考虑|检查一下|等等|看来|也就是说|换句话说|好的[,,，]|[-—]{3,})/
+  const lines = out.split('\n').map((l) => l.trim()).filter(Boolean)
+  let lastCut = -1
+  for (let i = 0; i < lines.length; i++) if (thinkRe.test(lines[i])) lastCut = i
+  if (lastCut >= 0 && lastCut >= lines.length - 3) out = lines.slice(lastCut + 1).join('\n').trim() || out
+  return out.slice(0, CFG.llm.maxReply)
 }
 
 // ---------- GitHub(Gist 收集) ----------
