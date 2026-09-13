@@ -1,43 +1,69 @@
-## Independent confirmation from a Chinese community user (3 cases, one new finding)
+# 补充确认：同轮内重复 tool_call_id（相邻双写形态）
 
-I run a third-party plugin (dsh-auto-memory) and help maintain a plugin community. We hit this exact failure **three times in one night** on `dsh 0.1.5-rc.1`, Windows, via a strict relay (`Console Go` → upstream OpenAI-compatible). Confirming #5732's diagnosis and adding one detail the original report could not show.
+## EN
 
-### Symptom is identical
-Every follow-up fails with:
+**Environment**: Windows 11 / Node 24 / dsh `0.1.5-rc.1`, strict OpenAI-compatible relay (Console Go, unique-id check).
+
+**Symptom**: the session becomes permanently unusable — every model fails with:
+
 ```
 400 invalid_request_error: Duplicate 'call_id': call_01_IBQv9P78wRhPI72L2XVh2573_call_01_IBQv9P78wRhPI72L2XVh257.
-// and, on another model in the same session:
 400 Duplicate value for 'tool_call_id' of call_01_IBQv9P78wRhPI72L2XVh2573|call_01_IBQv9P78wRhPI72L2XVh2573 in message[3]
 ```
-The session becomes permanently unusable (every model fails — the broken history is re-sent each time), and the UI also fails to render: `[session-controller] event feed subscriber failed: conversation Context 20:trajectory-tool-call <id>|<id> received more than one start Match`.
 
-### New finding: it does **not** require aborting a turn
-The second and third occurrences happened during **normal turn flow** — no cancellation, no `turn/end reason:aborted`. Timeline from the on-disk log (all events same second, `turn` intact):
+The UI also fails to render: `[session-controller] event feed subscriber failed: conversation Context 20:trajectory-tool-call <id>|<id> received more than one start Match`.
+
+**Evidence (3 sessions on disk, one night)**: the model emitted the same `tool_call_id` twice **within one step**; DSH persisted both verbatim:
 
 ```
-979  tool/call    call_00_wNCqnnajJD3I7N3n9x253480|call_00...
 981  tool/call    call_01_UKmzZe2AlTekpCR0whQV6449|call_01...
-983  tool/call    call_01_UKmzZe2AlTekpCR0whQV6449|call_01...   <-- same id written again in the same step
+983  tool/call    call_01_UKmzZe2AlTekpCR0whQV6449|call_01...   <-- same id, 2 events apart
 ```
-So this is not only "abort re-appends the in-flight batch" (our 1st/2nd cases, which *were* aborts, `turn/end reason:aborted` then a duplicated batch of 3 tool calls). The model itself emitted the **same tool_call id twice within one step**, and DSH persisted both verbatim — matching #5732's "came verbatim from the model response".
 
-### Storage form (for anyone writing a repair tool)
-- On disk: `~/.dsh/sessions/<ws>/<sid>/session.v3.jsonl.zstd`, **append-style multi-frame zstd, one event per frame**; the first frame must be *exactly* one header line, otherwise boot fails with `corrupt Zstandard session log: first frame is not exactly one header line` (we learned this the hard way — compressing the repaired text into a single frame bricks startup. Repair tools must preserve frame-per-line).
-- Damaged ids appear as `<id>|<id>` in `data.callId` of `tool/call` and `data.message.source.callId` of `tool/result`; a duplicate pair is `tool/call` + its `tool/result` appended a second time.
-- Repair that works: drop the second `tool/call`+`tool/result` pair (keep the first), keep every other event and the frame structure, then the session resumes normally after a host restart. We did this three times (sessions `1ef5cee8`, `a82b8e44`, `9cc01f76`; 6/4/2 events removed respectively).
+The duplicated id is stored as the byte string `<id>|<id>` in `data.callId` (tool/call) and `data.message.source.callId` (tool/result). Two of the three cases followed an aborted turn; **the third had no abort** (`turn/end reason` absent) — so this is not abort-specific.
 
-### Addendum: two distinct shapes, only one of them bricks the session
+**New finding — two shapes, only one is acute**: scanning 164 local session files, 30 contain duplicated ids:
 
-Scanning all 164 local session files, duplicated tool ids appear in **30 of them**, but they fall into two very different shapes:
-
-| shape | example gap | count | effect |
+| shape | gap | sessions | effect |
 |---|---|---|---|
-| **adjacent double-write** (same step) | 2 events apart (seq 981 -> 983) | 3 sessions - the ones that bricked | **session permanently unusable** (400 on every turn) |
-| **cross-turn reuse** (same id, different turn) | tens of thousands of events apart (seq 493 -> 84330, 1369 -> 426207) | 27 sessions, still running fine | tolerated by our relay default path |
+| adjacent double-write (same step) | 2 events | 3 | session permanently unusable |
+| cross-turn reuse (different turn) | tens of thousands of events | 27 | tolerated today, one strict-provider switch from the same fate |
 
-So the id-uniqueness guarantee #5732 asks for is genuinely needed (those 27 sessions are one strict-provider switch away from the same fate), but the **acute** trigger is the adjacent double-write, which is what produces the byte-identical duplicated id string we see in `data.callId`. Two symptoms, one root cause.
+**Repair (works, host restart required)**: drop the second `tool/call`+`tool/result` pair, keep all other events. Constraint: the `session.v3.jsonl.zstd` log is append-style multi-frame zstd with **one event per frame**, and the first frame must be *exactly* one header line — recompressing into a single frame bricks boot (`corrupt Zstandard session log: first frame is not exactly one header line`).
 
-### Suggested fix (fully agreeing with the report)
-Deduplicate/rewrite `toolCallId` at **history append** (rewrite the later occurrence to a fresh id and remap the matching `tool` message), so any provider sees a unique id space — and, for the UI side, the assembler should not fatal-throw on `received more than one start Match` but isolate the bad block (same ask as the #5692 family).
+**Suggested fix**: enforce session-wide unique `toolCallId` at history append (rewrite the later occurrence + remap its `tool` message), and make the assembler isolate rather than fatal-throw on the duplicate `start Match` (same ask as the #5692 family).
 
-Happy to provide the raw (redacted) event excerpts or the repair script if useful. Environment: Windows 11, Node 24, dsh `0.1.5-rc.1`; relay = Console Go (strict unique-id check).
+---
+
+## 中文
+
+**环境**：Windows 11 / Node 24 / dsh `0.1.5-rc.1`，严格校验唯一 id 的 OpenAI 兼容中转（Console Go）。
+
+**现象**：会话永久不可用——所有模型都报：
+
+```
+400 invalid_request_error: Duplicate 'call_id': call_01_IBQv9P78wRhPI72L2XVh2573_call_01_IBQv9P78wRhPI72L2XVh257.
+400 Duplicate value for 'tool_call_id' of call_01_IBQv9P78wRhPI72L2XVh2573|call_01_IBQv9P78wRhPI72L2XVh2573 in message[3]
+```
+
+界面同时卡加载：`[session-controller] event feed subscriber failed: conversation Context 20:trajectory-tool-call <id>|<id> received more than one start Match`。
+
+**证据（一夜之间 3 个会话，磁盘日志）**：模型在**同一个 step 内**输出了两次相同的 `tool_call_id`，DSH 原样持久化两条：
+
+```
+981  tool/call    call_01_UKmzZe2AlTekpCR0whQV6449|call_01...
+983  tool/call    call_01_UKmzZe2AlTekpCR0whQV6449|call_01...   ← 同一 id，相隔 2 条事件
+```
+
+重复 id 以字节串 `<id>|<id>` 形式存于 `data.callId`（tool/call）与 `data.message.source.callId`（tool/result）。三次中两次发生在中断回合之后，**第三次没有任何中断**（日志里没有 `turn/end reason`）——所以并非中断专属。
+
+**新发现——两种形态，只有一种致命**：扫描本地 164 个会话文件，30 个含重复 id：
+
+| 形态 | 间隔 | 会话数 | 影响 |
+|---|---|---|---|
+| 相邻双写（同一 step） | 2 条事件 | 3 | 会话永久不可用 |
+| 跨 turn 复用（不同轮次） | 相差数万条事件 | 27 | 当前被容忍，一旦切换严格 provider 即同样失效 |
+
+**修复方式（有效，需重启宿主）**：删除第二次出现的 `tool/call` + `tool/result` 对，其余事件全部保留。约束：`session.v3.jsonl.zstd` 是追加式多帧 zstd、**一帧一事件**，且首帧必须恰好是 session 头一行——压成单帧会导致启动直接失败（`corrupt Zstandard session log: first frame is not exactly one header line`）。
+
+**建议修复**：在历史 append 处强制会话内 `toolCallId` 唯一（改写后出现的那次并同步重映射其 `tool` 消息）；同时让 assembler 在 `start Match` 重复时隔离该块而非致命抛出（与 #5692 家族的诉求一致）。
