@@ -29,6 +29,7 @@ import {
   PLUGIN_LABEL_PREFIX,
   scanZstdFrames,
   decodeZstdFrames,
+  decodeZstdFramesHead,
   parseSessionHead,
   isPluginOneShotSubagent,
   scanPluginSubagentSessions,
@@ -79,6 +80,21 @@ try {
   ok('G1 header 解析出 origin=subagent', head.header && head.header.origin === 'subagent')
   ok('G1 descriptor 解析出 label/mode', head.descriptor && head.descriptor.label === 'auto-memory-summarize' && head.descriptor.mode === 'one-shot')
   ok('G12 解析在 header+descriptor 齐备后提前退出(事件计数=2)', head.eventCount === 2, 'got=' + head.eventCount)
+
+  // ── G13 头帧解码(PR #29,2026-09-13):扫描路径禁止全量解压 ──
+  {
+    const headAll = decodeZstdFramesHead(raw)
+    const NL = String.fromCharCode(10)
+    ok('G13 帧数在上限内时头帧解码=全量解码', headAll === text)
+    const head1 = decodeZstdFramesHead(raw, 1)
+    const lines1 = head1.split(NL).filter((l) => l.trim())
+    ok('G13 maxFrames=1 只解出第 1 帧', lines1.length === 1, 'lines=' + lines1.length)
+    const ev1 = JSON.parse(lines1[0])
+    ok('G13 第 1 帧就是 session header', ev1.type === 'session')
+    const head2 = decodeZstdFramesHead(raw, 2)
+    const h2 = parseSessionHead(head2)
+    ok('G13 maxFrames=2 已够扫描判定(header+descriptor 齐备)', h2.header && h2.descriptor && h2.descriptor.label === 'auto-memory-summarize')
+  }
 
   // ── G2-G7 判据 ──────────────────────────────────────────
   const base = { labelPrefix: PLUGIN_LABEL_PREFIX, keepMs: 0, now: Date.now(), mtimeMs: 1 }

@@ -4,6 +4,19 @@ All notable changes to dsh-auto-memory.
 
 ---
 
+## [2.5.1] — 2026-09-13 · Node 22 巨型会话文件宿主崩溃修复（PR #29）
+
+### 缺陷修复
+
+- **DSH Desktop 0.5.10（Electron 内置 Node 22.22.1）下，装上本插件后 dsh web 启动 60–155 秒必崩**：每日兜底巡检 `scanPluginSubagentSessions` 会对 `~/.dsh/sessions` 下每个会话**全量解压** zstd，Node 22 的实验性 zstd 在解压巨型会话文件（数 MB 压缩、数万帧）时直接令宿主进程崩溃（crashpad 报 `not connected`，无 JS 异常可捕获）；同样文件在 Node 24 下正常。社区贡献者 **fei009009**（PR #29，已合并）定位并修复：新增 `decodeZstdFramesHead`（只解前 8 帧 / 4MB 即停），扫描判定只需首帧附近的 header 与 subagent descriptor；全量解码保留给确需全文的路径。
+- **同类全量解压路径一并加固**：`waterWindowForSession`（切会话时从磁盘推导模型/窗口）改为头帧解码（前 32 帧 / 8MB——request/header 与 request/context 都在会话开头），与巡检扫描同防（PR 作者在遗留建议中指出）。
+
+### 验证
+
+- `smoke-test-subagent-gc-pre.mjs` 新增 **G13**：帧数在上限内头帧解码=全量解码 / `maxFrames=1` 只解首帧 / 前 2 帧即可完成扫描判定；`smoke-test-water-hard-trigger-pre.mjs` 新增源码反向锁（`waterWindowForSession` 不得回退全量解压）。全量回归 70 套件 0 失败。
+
+---
+
 ## [2.5.0] — 2026-09-13 · 水位口径对齐官方压缩 · 接续序号持久计数器
 
 > 覆盖：v2.4.2 遗留的两项判据修正（NEXT-VERSION-TODO 改点 1/2）+ 发版流程外包（改点 3，纯文档）。水位触发不再"刚过半就接续"；接续序号不再错乱。**`autoContinueEnabled` 出厂默认仍为关**——等实机验证新口径后再决定是否翻回。
