@@ -88,6 +88,11 @@ if (now.getTime() - new Date(sinceIso).getTime() > maxH * 3600e3) {
 }
 const windowH = (now.getTime() - new Date(sinceIso).getTime()) / 3600e3
 console.log(`[digest] 窗口:${sinceIso} → ${now.toISOString()}(${windowH.toFixed(1)}h)`)
+// 定时班去重:兜底 cron 与主班撞车时(距上次成功运行不足 30 分钟),schedule 触发直接跳过,手动触发不受限
+if (env.GITHUB_EVENT_NAME === 'schedule' && !sinceHoursEnv && windowH < 0.5) {
+  console.log('[digest] 距上次成功统计不足 30 分钟(schedule 去重),跳过本次。')
+  process.exit(0)
+}
 
 // ---------- 数据采集(每段独立容错,失败即跳过该段) ----------
 async function collect() {
