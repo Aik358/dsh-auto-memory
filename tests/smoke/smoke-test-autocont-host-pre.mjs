@@ -37,6 +37,15 @@ ok(SRC.includes('armAutoContinue(agent, wl, opts = null) {'), 'armAutoContinue �
 // 2.2.7:pre-step 水位测量后同样 arm(否则长回合里官方压缩抢先、接续永不触发)
 ok(/checkWaterLevelAtStep\(agent, minGapMs = 0\)[\s\S]{0,900}?this\.armAutoContinue\(agent, \{ ratio: rt2\.waterLevel[\s\S]{0,220}?awaitIdle: true/.test(SRC),
   'pre-step 测量后 arm 自动接续(awaitIdle 标记,避免打断进行中回合;默认不节流)')
+// 2026-09-14:会话真实模型未知时不按比例 arm(首轮 request/header 尚未写入会话)。
+// 这条链要三处齐备才生效:checkWaterLevel 记字段 → 两个 arm 调用点透传 → armAutoContinue 做闸。
+// 少任何一处都表现为"接线看着有、行为不生效",故逐处守卫。
+ok(/rt\.waterLevelModelKnown = !!\(sessModel\.provider \|\| sessModel\.model\)/.test(SRC),
+  'checkWaterLevel 记录「会话真实模型是否已知」')
+ok((SRC.match(/modelKnown: rt2\.waterLevelModelKnown, hard: rt2\.waterLevelHard/g) || []).length === 2,
+  '两个 arm 调用点均透传 modelKnown/hard(pre-step 与 turn-stopping 行为必须一致)')
+ok(/if \(!shouldArmAutoContinuePre\(wl\)\)/.test(SRC),
+  'armAutoContinue 以 shouldArmAutoContinuePre 作前置闸')
 ok(SRC.includes('async tickAutoContinue() {'), 'tickAutoContinue 定义存在')
 ok(SRC.includes('async hostAutoContinue() {'), 'hostAutoContinue 定义存在')
 ok(SRC.includes('autoContinueState(selfSid) {'), 'autoContinueState 定义存在(带 selfSid 会话归属过滤)')
