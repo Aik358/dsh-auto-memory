@@ -18,6 +18,9 @@
  *   W8  findOfficialContextWindowPre:取最后一条 request/context(last-wins)
  *   W9  findOfficialContextWindowPre:缺失/非法值返回 0
  *   W10 findOfficialContextWindowPre:maxScan 限制生效
+ *   W11-W14 会话真实模型(request/header 优先)
+ *   W15-W16 provider 前缀式模型 id(含 `/`)可被解析并命中(核心回归,2026-09-14)
+ *   W17 非法 id 行不得把窗口记到上一条模型头上(静默错配)
  */
 
 import assert from 'node:assert/strict'
@@ -119,6 +122,40 @@ try {
   ]
   ok('W14 last-wins 取最新一条 request/header', findSessionModelPre(newer).model === 'deepseek-v4-flash')
   ok('W14 maxScan 限制生效(只扫最近 1 条仍取到最新)', findSessionModelPre(newer, 1).model === 'deepseek-v4-flash')
+
+  // ── W15-W17 provider 前缀式模型 id(含 `/`) ────────────────────────────
+  // 核心回归:`parseModelWindowsPre` 的 id 字符类此前不含 `/`,凡 `provider/model` 形态的 id
+  // 整行匹配失败 → 该模型的 contextWindow 被静默丢弃 → 窗口退化为 fallback,水位虚高。
+  // 实测:真实窗口 1,000,000 的会话按 131,072 当分母,水位被放大 7.63 倍(12.8% 显示成 98%),
+  // 未达阈值即误弹「接续到新会话」确认卡。
+  const slashYaml = [
+    'llm-pi-ai:',
+    '  providers:',
+    '    command-code:',
+    '      models:',
+    '        - id: deepseek/deepseek-v4.1-flash',
+    '          name: DeepSeek V4.1 Flash',
+    '          contextWindow: 1000000',
+    '        - id: z-ai/glm-5.3-flash',
+    '          contextWindow: 1048576',
+  ].join('\n')
+  const w15 = parseModelWindowsPre(slashYaml)
+  ok('W15 含斜杠的 id 能被解析', w15.byModel['deepseek/deepseek-v4.1-flash'] === 1000000, JSON.stringify(w15.byModel))
+  ok('W15 第二个含斜杠 id 同样解析', w15.byModel['z-ai/glm-5.3-flash'] === 1048576)
+  ok('W16 按 model 名命中(provider 段缩进更深时由 byModel 兜底)',
+    pickWindowPre(w15, 'command-code', 'deepseek/deepseek-v4.1-flash') === 1000000)
+  ok('W16 未知 provider 仍按 model 命中',
+    pickWindowPre(w15, 'whatever', 'z-ai/glm-5.3-flash') === 1048576)
+
+  // W17 id 行格式不被识别时不得把窗口记到上一条模型头上。
+  // 静默错配比"读不到"更危险:读不到只会退化为 fallback,错配会直接给出**偏小**的窗口 → 水位漏报。
+  const badIdYaml = [
+    '        - id: good-model',
+    '        - id: "quoted-model"',
+    '          contextWindow: 222222',
+  ].join('\n')
+  const w17 = parseModelWindowsPre(badIdYaml)
+  ok('W17 非法 id 行的窗口不记到上一条', w17.byModel['good-model'] === 0, JSON.stringify(w17.byModel))
 } catch (e) {
   fail++
   console.log('  FAIL - 未捕获异常: ' + (e && e.stack ? e.stack : e))
