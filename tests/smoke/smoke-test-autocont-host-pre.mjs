@@ -13,6 +13,7 @@
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { shouldArmAutoContinuePre } from '../../lib/water-window.js'
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 const SRC = readFileSync(path.resolve(HERE, '..', '..', 'lib', 'index.js'), 'utf8')
@@ -90,7 +91,12 @@ function makeEngine(opts) {
   // 2026-09-10:hostAutoContinue 现在会调 this.inheritPermissionPreset / hostRefreshRitual 继承权限与刷材料,
   // 夹具是"从源码抽方法拼假 engine",新增的被调方法必须一并抽取,否则 this 上不存在(TypeError)。
   for (const h of ['armAutoContinue(agent, wl, opts = null) {', 'async tickAutoContinue() {', 'async hostAutoContinue() {', 'autoContinueState(selfSid) {', 'async decideAutoContinue(action, edgeAt) {', 'async inheritPermissionPreset(oldAgent, newSid, opts = {}) {', 'agentForSessionId(sid) {', 'async inheritPermissionForContinue(fromSessionId, toSessionId, opts = {}) {', 'async hostRefreshRitual(oldSid) {', 'waterKey(sid) {', 'loadContinuedSessions() {', 'isContinuedSession(sid) {']) {
-    const obj = new Function('diag', 'AbortSignal', 'return {' + extractFn(h) + '};')(() => {}, { timeout: () => undefined })
+    // 2026-09-14:armAutoContinue 起用模块级纯函数 shouldArmAutoContinuePre(会话真实模型未知时
+    // 不许按比例 arm)。抽出的函数体在 new Function 里重建,作用域中没有模块级绑定 ⇒
+    // 必须与 diag/AbortSignal 一并注入,否则抛 ReferenceError 并被 armAutoContinue 自身的
+    // catch 吞掉,表现为"水位达标却不 arm"(实测本文件第 110 行即因它崩溃)。
+    const obj = new Function('diag', 'AbortSignal', 'shouldArmAutoContinuePre', 'return {' + extractFn(h) + '};')(
+      () => {}, { timeout: () => undefined }, shouldArmAutoContinuePre)
     const key = Object.keys(obj)[0]
     fns[key] = obj[key].bind(eng)
   }
@@ -122,6 +128,17 @@ e3.fns.armAutoContinue(agent, wl)
 await e3.fns.decideAutoContinue('reject', 0)
 e3.fns.armAutoContinue(agent, wl)
 ok(!e3.eng._autoContState.armed, '拒绝窗口(10min)内不 arm')
+
+// 2026-09-14:会话真实模型未知时不按比例 arm。新会话首轮 agent/pre-step 时 request/header
+// 尚未写入会话(findSessionModelPre 返回 provider/model/contextWindow 全空),窗口只能用
+// settings.yaml 的 agent-default-model 推算 —— 而它与会话实际模型可能完全不同
+// (实测同一台机器上会是两个不同 provider 的模型,连 maxTokens 都不一致),
+// 按比例触发会误弹接续卡;此时只放行硬信号,比例判据推迟到轮末。
+const eMk = makeEngine({ config: { autoContinueEnabled: true, handoffEnabled: true, autoContinueThreshold: 0.75 } })
+eMk.fns.armAutoContinue(agent, { ratio: 0.95, tokens: 950000, window: 131072, source: 'fallback', modelKnown: false })
+ok(!eMk.eng._autoContState || !eMk.eng._autoContState.armed, '模型未知时不按比例 arm(等硬信号或轮到轮末)')
+eMk.fns.armAutoContinue(agent, { ratio: 0.95, tokens: 950000, window: 131072, source: 'fallback', modelKnown: false, hard: true })
+ok(!!(eMk.eng._autoContState && eMk.eng._autoContState.armed), '模型未知但有硬信号 → 仍 arm')
 
 const e4 = makeEngine({ config: { autoContinueEnabled: true, handoffEnabled: true } })
 e4.eng._autoContState = { lastRunAt: Date.now() }

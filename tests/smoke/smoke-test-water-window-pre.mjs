@@ -21,10 +21,12 @@
  *   W11-W14 会话真实模型(request/header 优先)
  *   W15-W16 provider 前缀式模型 id(含 `/`)可被解析并命中(核心回归,2026-09-14)
  *   W17 非法 id 行不得把窗口记到上一条模型头上(静默错配)
+ *   W23-W25 会话真实模型未知时不得按比例 arm(新会话首轮,2026-09-14)
+ *          —— 编号自 W23 起,避开 W18-W22(留给并行的扫描缓存 PR)
  */
 
 import assert from 'node:assert/strict'
-import { parseModelWindowsPre, pickWindowPre, findOfficialContextWindowPre, findSessionModelPre } from '../../lib/water-window.js'
+import { parseModelWindowsPre, pickWindowPre, findOfficialContextWindowPre, findSessionModelPre, shouldArmAutoContinuePre } from '../../lib/water-window.js'
 
 let pass = 0
 let fail = 0
@@ -156,6 +158,23 @@ try {
   ].join('\n')
   const w17 = parseModelWindowsPre(badIdYaml)
   ok('W17 非法 id 行的窗口不记到上一条', w17.byModel['good-model'] === 0, JSON.stringify(w17.byModel))
+
+  // ── W23-W25 会话真实模型未知时的 arm 资格(2026-09-14) ────────────────
+  // 新会话首轮 agent/pre-step 时 request/header 尚未写入会话,
+  // findSessionModelPre 返回 {provider:'',model:'',contextWindow:0,maxTokens:0} 全空
+  // (DSH 的 sessionApi 只有 selectModel,没有查询会话当前模型的接口)。
+  // 此时窗口只能用 settings.yaml 的 agent-default-model 推算 —— 而它与会话实际模型可能完全不同,
+  // 按比例 arm 会让水位虚高数倍(实测 1,000,000 被当 131,072)后误弹接续卡。
+  ok('W23 模型未知 + 无硬信号 → 不得按比例 arm',
+    shouldArmAutoContinuePre({ ratio: 0.99, modelKnown: false, hard: false }) === false)
+  ok('W23 模型未知 + 有硬信号(compaction/overflow/硬墙) → 放行（真实事件不依赖窗口估算）',
+    shouldArmAutoContinuePre({ ratio: 0.50, modelKnown: false, hard: true }) === true)
+  ok('W24 模型已知 → 比例判据照常生效',
+    shouldArmAutoContinuePre({ ratio: 0.80, modelKnown: true, hard: false }) === true)
+  ok('W25 未传 modelKnown 的旧调用点 → 视为已知,行为不变',
+    shouldArmAutoContinuePre({ ratio: 0.80, hard: false }) === true)
+  ok('W25 空 wl → 不放行', shouldArmAutoContinuePre(null) === false)
+  ok('W25 undefined → 不放行', shouldArmAutoContinuePre(undefined) === false)
 } catch (e) {
   fail++
   console.log('  FAIL - 未捕获异常: ' + (e && e.stack ? e.stack : e))
