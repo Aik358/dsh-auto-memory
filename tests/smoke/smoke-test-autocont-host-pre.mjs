@@ -9,6 +9,11 @@
  *   A3 行为-tick:未到期不执行;到期执行 hostAutoContinue(单次)
  *   A4 行为-decide:reject 清 armed+记拒绝窗口;agree 立即执行;stale edge 拒绝
  *   A5 行为-执行:成功=create→selectModel→prompt 顺序与入参;sessionController 缺失=ok:false 有 error
+  *   A4b (2026-09-14 issue#35 Defect A) agree 的 awaitIdle 防护:回合活跃 → deferred=true 不执行、
+ *      armed 保留 deferCount 顺延;空闲后 tick 接管执行;defer 满 5 次仍执行(升级语义);
+ *      无 awaitIdle 的 turn-stopping 侧行为不变;无活动信号不误判忙;state 透出 defer 状态
+  *   A7b (2026-09-14 issue#35 Defect B/C) busyAtExec 透明化;仪式完成需「戳变化+新 assistant
+ *      消息」双判据,水位检查自写材料不再误报 updated;agent 取不到退回 stamp-only
  */
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
@@ -99,7 +104,7 @@ function makeEngine(opts) {
   const fns = {}
   // 2026-09-10:hostAutoContinue 现在会调 this.inheritPermissionPreset / hostRefreshRitual 继承权限与刷材料,
   // 夹具是"从源码抽方法拼假 engine",新增的被调方法必须一并抽取,否则 this 上不存在(TypeError)。
-  for (const h of ['armAutoContinue(agent, wl, opts = null) {', 'async tickAutoContinue() {', 'async hostAutoContinue() {', 'autoContinueState(selfSid) {', 'async decideAutoContinue(action, edgeAt) {', 'async inheritPermissionPreset(oldAgent, newSid, opts = {}) {', 'agentForSessionId(sid) {', 'async inheritPermissionForContinue(fromSessionId, toSessionId, opts = {}) {', 'async hostRefreshRitual(oldSid) {', 'waterKey(sid) {', 'loadContinuedSessions() {', 'isContinuedSession(sid) {']) {
+  for (const h of ['armAutoContinue(agent, wl, opts = null) {', 'async tickAutoContinue() {', 'async hostAutoContinue() {', 'autoContinueState(selfSid) {', 'async decideAutoContinue(action, edgeAt) {', 'async inheritPermissionPreset(oldAgent, newSid, opts = {}) {', 'agentForSessionId(sid) {', 'sessionAssistantCount(sid) {', 'async inheritPermissionForContinue(fromSessionId, toSessionId, opts = {}) {', 'async hostRefreshRitual(oldSid) {', 'waterKey(sid) {', 'loadContinuedSessions() {', 'isContinuedSession(sid) {']) {
     // 2026-09-14:armAutoContinue 起用模块级纯函数 shouldArmAutoContinuePre(会话真实模型未知时
     // 不许按比例 arm)。抽出的函数体在 new Function 里重建,作用域中没有模块级绑定 ⇒
     // 必须与 diag/AbortSignal 一并注入,否则抛 ReferenceError 并被 armAutoContinue 自身的
@@ -261,6 +266,90 @@ eOff.fns.armAutoContinue(agent, wl)
 const rOff = await eOff.fns.hostAutoContinue()
 ok(eOff.calls.prompt.length === 1 && eOff.calls.prompt[0].sessionId === 'session-new-1' && rOff && rOff.refreshRitual === 'disabled',
   'autoContinueRefreshRitual=false → 不注入仪式,只发交接材料')
+
+// A4b issue#35 Defect A:agree 路径的 awaitIdle 防护(旧实现直接 hostAutoContinue,awaitIdle 被完全忽略)
+{
+  // A9-1 pre-step 侧 arm(awaitIdle)+ 回合活跃 → agree 返回 deferred,不执行,armed 保留
+  const eAg = makeEngine({ config: { autoContinueEnabled: true, handoffEnabled: true, autoContinueRefreshRitual: false } })
+  eAg.fns.armAutoContinue(agent, wl, { awaitIdle: true })
+  eAg.eng._globalLastActiveAt = Date.now()
+  const rDefer = await eAg.fns.decideAutoContinue('agree', eAg.eng._autoContState.armed.edgeAt)
+  ok(rDefer && rDefer.ok && rDefer.deferred === true && eAg.calls.create.length === 0,
+    'Defect A: agree 时回合仍活跃 → deferred=true 且不执行(旧实现立即建会话,两会话并行)')
+  ok(eAg.eng._autoContState.armed && eAg.eng._autoContState.armed.deferCount === 1,
+    'armed 保留且 deferCount=1(倒计时顺延,tick 后续接管)')
+  ok(eAg.eng._autoContState.armed.deferredAt > 0, 'deferredAt 记录最近一次顺延')
+  // A9-2 回合空闲后 → tick 到期执行(agree 意图被保留)
+  eAg.eng._globalLastActiveAt = Date.now() - 60000
+  eAg.eng._autoContState.armed.expiresAt = Date.now() - 1
+  await eAg.fns.tickAutoContinue()
+  ok(eAg.calls.create.length === 1, '回合空闲后 tick 到期执行(agree 意图保留,自动接管)')
+  // A9-3 defer 满 5 次后 agree 仍执行(与 tick 升级语义一致,避免长任务永不接续)
+  const eAg5 = makeEngine({ config: { autoContinueEnabled: true, handoffEnabled: true, autoContinueRefreshRitual: false } })
+  eAg5.fns.armAutoContinue(agent, wl, { awaitIdle: true })
+  eAg5.eng._globalLastActiveAt = Date.now()
+  eAg5.eng._autoContState.armed.deferCount = 5
+  const r5 = await eAg5.fns.decideAutoContinue('agree', eAg5.eng._autoContState.armed.edgeAt)
+  ok(r5 && r5.ok && !r5.deferred && eAg5.calls.create.length === 1, 'defer 满 5 次后 agree 仍执行(升级语义与 tick 一致)')
+  // A9-4 turn-stopping 侧 arm(无 awaitIdle)+ 回合活跃 → agree 立即执行,行为不变
+  const eAgTs = makeEngine({ config: { autoContinueEnabled: true, handoffEnabled: true, autoContinueRefreshRitual: false } })
+  eAgTs.fns.armAutoContinue(agent, wl)
+  eAgTs.eng._globalLastActiveAt = Date.now()
+  const rTs = await eAgTs.fns.decideAutoContinue('agree', eAgTs.eng._autoContState.armed.edgeAt)
+  ok(rTs && rTs.ok && !rTs.deferred && eAgTs.calls.create.length === 1, 'turn-stopping 侧 arm(无 awaitIdle)→ agree 立即执行,语义不变')
+  // A9-5 无活动信号(_globalLastActiveAt=0,如宿主刚重启)→ agree 立即执行(不因无数据而卡死)
+  const eAg0 = makeEngine({ config: { autoContinueEnabled: true, handoffEnabled: true, autoContinueRefreshRitual: false } })
+  eAg0.fns.armAutoContinue(agent, wl, { awaitIdle: true })
+  const r0 = await eAg0.fns.decideAutoContinue('agree', eAg0.eng._autoContState.armed.edgeAt)
+  ok(r0 && r0.ok && !r0.deferred && eAg0.calls.create.length === 1, '无活动信号 → 不误判忙,agree 立即执行')
+  // A9-6 state 透出 awaitIdle/deferCount(确认卡显示「回合进行中,已顺延 N 次」)
+  const eStA = makeEngine({ config: { autoContinueEnabled: true, handoffEnabled: true } })
+  eStA.fns.armAutoContinue(agent, wl, { awaitIdle: true })
+  const stView = eStA.fns.autoContinueState('session-a')
+  ok(stView.armed && stView.armed.awaitIdle === true && stView.armed.deferCount === 0 && stView.armed.deferredAt === 0, 'state 透出 awaitIdle/deferCount/deferredAt')
+}
+
+// A7b issue#35 Defect B 透明化 + Defect C 仪式判定
+{
+  // A10-1 Defect B:执行时旧回合仍活跃 → lastOk.busyAtExec 如实入账(无 stop API,并行风险可审计)
+  const eBusy = makeEngine({ config: { autoContinueEnabled: true, handoffEnabled: true, autoContinueRefreshRitual: false } })
+  eBusy.fns.armAutoContinue(agent, wl)
+  eBusy.eng._globalLastActiveAt = Date.now()
+  await eBusy.fns.hostAutoContinue()
+  ok(eBusy.eng._autoContState.lastOk && eBusy.eng._autoContState.lastOk.busyAtExec === true, 'Defect B: 执行时回合活跃 → lastOk.busyAtExec=true')
+  ok(eBusy.fns.autoContinueState('').lastOk.busyAtExec === true, 'state 投影透出 busyAtExec')
+  const eIdle = makeEngine({ config: { autoContinueEnabled: true, handoffEnabled: true, autoContinueRefreshRitual: false } })
+  eIdle.fns.armAutoContinue(agent, wl)
+  await eIdle.fns.hostAutoContinue()
+  ok(eIdle.eng._autoContState.lastOk.busyAtExec === false, '空闲边界执行 → busyAtExec=false')
+  // A10-2 Defect C:材料戳变化但旧会话无新 assistant 消息 → 不算仪式完成(旧实现误报 updated)
+  const eR2 = makeEngine({
+    config: { autoContinueEnabled: true, handoffEnabled: true },
+    stamp: mkStamp(),
+    agents: { get(id) { return id === 'session-a' ? { session: { id: 'session-a', snapshotEvents() { return [{ type: 'assistant/message' }] } } } : null } },
+  })
+  eR2.eng._ritualPollMs = 5
+  eR2.eng._ritualTimeoutMs = 40
+  eR2.fns.armAutoContinue(agent, wl)
+  const rRit2 = await eR2.fns.hostAutoContinue()
+  ok(rRit2 && rRit2.ok && rRit2.refreshRitual === 'timeout' && eR2.calls.create.length === 1,
+    'Defect C: 材料戳变化但无新 assistant 消息 → 判超时(水位检查自写材料不再误报仪式完成),接续照常 fail-soft')
+  // A10-3 材料戳变化 且 旧会话真的新增了 assistant 消息 → updated
+  let asstCalls = 0
+  const eR3 = makeEngine({
+    config: { autoContinueEnabled: true, handoffEnabled: true },
+    stamp: mkStamp(),
+    agents: { get(id) { return id === 'session-a' ? { session: { id: 'session-a', snapshotEvents() { asstCalls++; const arr = [{ type: 'assistant/message' }]; if (asstCalls > 1) arr.push({ type: 'assistant/message' }); return arr } } } : null } },
+  })
+  eR3.eng._ritualPollMs = 5
+  eR3.eng._ritualTimeoutMs = 200
+  eR3.fns.armAutoContinue(agent, wl)
+  const rRit3 = await eR3.fns.hostAutoContinue()
+  ok(rRit3 && rRit3.ok && rRit3.refreshRitual === 'updated', 'Defect C: 戳变化+新增 assistant 消息 → 仪式完成(真实产出才放行)')
+  // A10-4 agent 取不到(宿主重启/冷会话)→ 退回 stamp-only 判据,行为与旧版一致
+  // (eR 用例的 agents 缺省为 undefined,sessionAssistantCount 返回 null → 走 stamp-only,已覆盖)
+  ok(eR.fns.sessionAssistantCount('session-none') === null, '取不到会话 → assistant 计数返回 null(fail-soft 退回 stamp-only)')
+}
 
 const eDup = makeEngine({ config: { autoContinueEnabled: true, handoffEnabled: true }, stamp: mkStamp() })
 eDup.eng._autoContState = { ritualForSid: 'session-a', ritualAt: Date.now() }
