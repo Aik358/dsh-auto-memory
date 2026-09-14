@@ -288,6 +288,7 @@ async function saveBotState(st) {
 
 // ---------- 事件处理 ----------
 const seen = new Set()
+const recentByContent = new Map() // 作者+内容 → 最近处理时间(重复推送去重,2026-09-14)
 const clip = (s, n) => { const t = String(s || '').replace(/\s+/g, ' ').trim(); return t.length > n ? t.slice(0, n) + '…' : t }
 const when = () => new Intl.DateTimeFormat('zh-CN', { timeZone: 'Asia/Shanghai', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date())
 
@@ -309,6 +310,15 @@ async function handleEvent(payload) {
     if (seen.has(id)) return
     seen.add(id)
     if (seen.size > 500) seen.delete(seen.values().next().value)
+    // 重复推送去重(2026-09-14 实测):平台会把同一条消息推两次(相隔 7-8 秒),**两次的 d.id 不同**
+    // (id 尾部含递增 seq),故上面的 id 去重拦不住 —— 会导致群反馈记两遍、即查/答疑各回两次。
+    // 这里按「作者 + 内容」做短窗口语义去重;时间戳字段缺失时退化为「作者+内容」永久去重(仅在 500 条窗口内)。
+    const dedupKey = String(d.author?.member_openid || d.author?.username || '?') + '\u0000' + String(d.content || '')
+    const nowMs = Date.now()
+    const prevAt = recentByContent.get(dedupKey)
+    if (prevAt && nowMs - prevAt < 60000) { console.log('[webhook] 重复推送已忽略:', clip(d.content, 30)); return }
+    recentByContent.set(dedupKey, nowMs)
+    if (recentByContent.size > 500) recentByContent.delete(recentByContent.keys().next().value)
     const mentions = [...String(d.content || '').matchAll(/<@!?([0-9A-Fa-f]+)>/g)].map((m) => m[1].toUpperCase())
     const text = String(d.content || '').replace(/<@!?[0-9A-Fa-f]+>/g, '').trim()
     const lower = text.toLowerCase()
