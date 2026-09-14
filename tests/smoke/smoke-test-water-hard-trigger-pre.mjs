@@ -63,7 +63,13 @@ ok(scanPressureSignalsPre(events.slice(0, 3)).overflow === null && scanPressureS
   '没有溢出/压缩时不误报')
 
 console.log('[water-hard] H2 源码守卫')
-ok(/scanPressureSignalsPre/.test(SRC) && /from '\.\/water-window-pre\.js'/.test(SRC), 'index.js 已引入 scanPressureSignalsPre')
+// 2026-09-14 修正:原断言 `/from '\.\/water-window-pre\.js'/` 写死了 v2.2.4(2e8d112)之前旧模块名
+// water-window-pre.js,而本断言 v2.4.0(ff2de53)写入时 lib 侧早已改名 water-window.js
+// ⇒ 在 upstream/main 上自写入起恒红(实测 v2.5.2 前后与三个 PR 基线均为 43/44)。
+// 顺带把两段松散 &&(任意位置出现函数名 + 任意 import)收紧为单条 import 语句守卫,
+// 与 smoke-test-water-window-pre.mjs W26 的守卫同款写法。
+ok(/import \{[^}]*\bscanPressureSignalsPre\b[^}]*\} from '\.\/water-window\.js'/.test(SRC),
+  'index.js 已引入 scanPressureSignalsPre')
 ok(/const reserve = Number\(sessModel\.maxTokens\) \|\| Number\(sig\.reservedTokens\) \|\| 0/.test(SRC),
   '预留额度取自会话请求头 maxTokens(而非硬编码)')
 // 2026-09-13 口径修正(NEXT-VERSION-TODO 改点1):分母 = 官方声明窗口,provider 自报过硬限时取 min。
