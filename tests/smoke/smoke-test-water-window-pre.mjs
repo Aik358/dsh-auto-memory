@@ -21,10 +21,12 @@
  *   W11-W14 会话真实模型(request/header 优先)
  *   W15-W16 provider 前缀式模型 id(含 `/`)可被解析并命中(核心回归,2026-09-14)
  *   W17 非法 id 行不得把窗口记到上一条模型头上(静默错配)
+ *   W18-W21 会话模型扫描缓存的复用边界(空结果不得被锁死 5 分钟,2026-09-14)
+ *   W22 首轮 pre-step 只存在 request/header 时 contextWindow 恒为 0(空值的来源)
  */
 
 import assert from 'node:assert/strict'
-import { parseModelWindowsPre, pickWindowPre, findOfficialContextWindowPre, findSessionModelPre } from '../../lib/water-window.js'
+import { parseModelWindowsPre, pickWindowPre, findOfficialContextWindowPre, findSessionModelPre, reusableWindowCachePre } from '../../lib/water-window.js'
 
 let pass = 0
 let fail = 0
@@ -156,6 +158,41 @@ try {
   ].join('\n')
   const w17 = parseModelWindowsPre(badIdYaml)
   ok('W17 非法 id 行的窗口不记到上一条', w17.byModel['good-model'] === 0, JSON.stringify(w17.byModel))
+
+  // ── W18-W21 会话模型扫描缓存的复用边界(2026-09-14) ──────────────────
+  // 回归:checkWaterLevel 原先无条件缓存扫描结果,空结果(contextWindow=0)同样命中
+  // `cached.info`(对象恒为 truthy)⇒ 被锁死 5 分钟。而首轮 agent/pre-step 必然早于
+  // request/context 写入(实测同轮内 turn/start → request/context 相隔 58ms,
+  // step/start 在 request/context 之前约 21ms)⇒ official-context 在开局 5 分钟内永远取不到。
+  const t0 = 1000000
+  const mkCache = (over) => Object.assign(
+    { sid: 's1', at: t0, info: { provider: 'p', model: 'm', contextWindow: 0 }, events: 13 }, over)
+  const nonEmpty = { provider: 'p', model: 'm', contextWindow: 1000000 }
+
+  ok('W18 非空结果 TTL 内复用(request/context 只在会话开头追加,值稳定)',
+    reusableWindowCachePre(mkCache({ info: nonEmpty }), 's1', 999, t0 + 1000) === true)
+  ok('W19 空结果 + 事件数未变 → 复用(不给每个 pre-step 加一次 O(n) 扫描)',
+    reusableWindowCachePre(mkCache(), 's1', 13, t0 + 1000) === true)
+  ok('W20 空结果 + 事件数增长 → 必须重扫【核心回归;修复前此断言为 true,即锁死 5 分钟】',
+    reusableWindowCachePre(mkCache(), 's1', 14, t0 + 1000) === false)
+  ok('W21 超过 TTL 不复用', reusableWindowCachePre(mkCache({ info: nonEmpty }), 's1', 13, t0 + 300001) === false)
+  ok('W21 换会话不复用', reusableWindowCachePre(mkCache({ info: nonEmpty }), 's2', 13, t0 + 1000) === false)
+  ok('W21 无缓存不复用', reusableWindowCachePre(null, 's1', 13, t0 + 1000) === false)
+  ok('W21 无 sid 不复用', reusableWindowCachePre(mkCache({ info: nonEmpty }), '', 13, t0 + 1000) === false)
+  ok('W21 空 info 且旧缓存缺 events 字段 → 不复用(兼容降级为"重扫")',
+    reusableWindowCachePre({ sid: 's1', at: t0, info: { provider: '', model: '', contextWindow: 0 } }, 's1', 13, t0 + 1000) === false)
+
+  // ── W22 空值的来源:首轮 pre-step 只存在 request/header ────────────────
+  // 实测事件序列为 turn/start → step/start → user/message → request/header → request/context,
+  // pre-step 早于 request/context ⇒ 首次扫描只能拿到 provider/model,contextWindow 为 0。
+  const round1Model = findSessionModelPre([
+    { type: 'request/header', data: { header: { config: { provider: 'command-code', model: 'deepseek/deepseek-v4.1-flash' } } } },
+  ])
+  ok('W22 只有 request/header 时 provider/model 有值、contextWindow 为 0',
+    round1Model.provider === 'command-code'
+      && round1Model.model === 'deepseek/deepseek-v4.1-flash'
+      && round1Model.contextWindow === 0,
+    JSON.stringify(round1Model))
 } catch (e) {
   fail++
   console.log('  FAIL - 未捕获异常: ' + (e && e.stack ? e.stack : e))
