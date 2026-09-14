@@ -21,7 +21,7 @@
  *   W11-W14 会话真实模型(request/header 优先)
  *   W15-W16 provider 前缀式模型 id(含 `/`)可被解析并命中(核心回归,2026-09-14)
  *   W17 非法 id 行不得把窗口记到上一条模型头上(静默错配)
- *   W23-W25 会话真实模型未知时不得按比例 arm(新会话首轮,2026-09-14)
+ *   W23-W25 会话真实模型未知时不得按比例 arm(新会话首轮,2026-09-14;W25 同日审查修正为 fail-closed)
  *          —— 编号自 W23 起,避开 W18-W22(留给并行的扫描缓存 PR)
  */
 
@@ -171,8 +171,15 @@ try {
     shouldArmAutoContinuePre({ ratio: 0.50, modelKnown: false, hard: true }) === true)
   ok('W24 模型已知 → 比例判据照常生效',
     shouldArmAutoContinuePre({ ratio: 0.80, modelKnown: true, hard: false }) === true)
-  ok('W25 未传 modelKnown 的旧调用点 → 视为已知,行为不变',
-    shouldArmAutoContinuePre({ ratio: 0.80, hard: false }) === true)
+  // W25 fail-closed(2026-09-14 审查修正):原先 `=== false` 显式判等下,undefined 视为「已知」→
+  // checkWaterLevel 早退路径(handoff 关闭/win<=0/测量异常)残留 undefined 时闸被静默绕过。
+  // 改为 `!== true`:凡非 true 一律视为未知,只放行硬信号。
+  ok('W25 未传 modelKnown → 视为未知(fail-closed,字段缺失不得绕闸)',
+    shouldArmAutoContinuePre({ ratio: 0.80, hard: false }) === false)
+  ok('W25 modelKnown=null/0/"true" 等非 true 值 → 一律视为未知',
+    shouldArmAutoContinuePre({ ratio: 0.80, modelKnown: null, hard: false }) === false &&
+    shouldArmAutoContinuePre({ ratio: 0.80, modelKnown: 0, hard: false }) === false &&
+    shouldArmAutoContinuePre({ ratio: 0.80, modelKnown: 'true', hard: false }) === false)
   ok('W25 空 wl → 不放行', shouldArmAutoContinuePre(null) === false)
   ok('W25 undefined → 不放行', shouldArmAutoContinuePre(undefined) === false)
 } catch (e) {

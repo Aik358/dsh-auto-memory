@@ -115,7 +115,10 @@ function makeEngine(opts) {
 }
 
 const agent = { session: { id: 'session-a' } }
-const wl = { ratio: 0.8, tokens: 800000, window: 1000000, source: 'official-context' }
+// 2026-09-14 审查修正:闸改 fail-closed(modelKnown !== true)后,未传 modelKnown 的 wl 会被视为
+// 「模型未知」而拒绝按比例 arm。本夹具的用例目标不是模型未知闸,故显式给 modelKnown: true,
+// 保证这些用例继续覆盖 ratio/冷却/闩锁/执行链等原有分支。
+const wl = { ratio: 0.8, tokens: 800000, window: 1000000, source: 'official-context', modelKnown: true }
 
 // A2 arm 条件
 const e1 = makeEngine({ config: { autoContinueEnabled: true, handoffEnabled: true, autoContinueThreshold: 0.75, autoContinueConfirmSeconds: 35, autoContinueCooldownMinutes: 30 } })
