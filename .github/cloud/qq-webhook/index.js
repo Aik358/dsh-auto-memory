@@ -49,11 +49,15 @@ const CFG = {
     maxPerHour: Number(process.env.AI_MAX_PER_HOUR || 0),
     quotaHours: Number(process.env.AI_QUOTA_HOURS || 1),
   },
+  // 本机器人在群内的 openid(严格判定「是否被 @」用)。它 ≠ /users/@me 的数字 uin,平台也不提供换算接口,
+  // 因此作为身份常量内置(与 QQ_APP_ID 同性质);换群/换机器人时用环境变量 BOT_MENTION_ID 覆盖即可。
+  // 实测取证(2026-09-14):@ 该 id 的消息全是对机器人提需求(@8FB1CC35 的则全是 @ 群主)。
+  botMentionId: (process.env.BOT_MENTION_ID || '183DA99311014124CAB4E497F0AF5892').trim().toUpperCase(),
 }
 for (const k of ['appId', 'appSecret', 'groupId', 'ghToken']) {
   if (!CFG[k]) { console.error(`[webhook] 缺少环境变量 ${k}`); process.exit(1) }
 }
-const VERSION = 'webhook-gist-20260913n' // 部署核对标记:diag 端点与错误响应都会带它(20260913h=@ 答疑优先于已记录/LLM 空应答外显错误体)
+const VERSION = 'webhook-gist-20260914a' // 部署核对标记:diag 端点与错误响应都会带它(20260913h=@ 答疑优先于已记录/LLM 空应答外显错误体)
 const FEEDBACK_FILE = 'group-feedback.jsonl' // 反馈收集钉死文件名(digest 与 report 同读此名,清空时保留文件本身)
 let lastError = null // 最近一次内部错误(diag 可见)
 let botMentionToken = null // 从「@机器人+反馈词」消息里学习的机器人 mention 标识
@@ -305,11 +309,18 @@ async function handleEvent(payload) {
     if (seen.has(id)) return
     seen.add(id)
     if (seen.size > 500) seen.delete(seen.values().next().value)
-    const mentions = [...String(d.content || '').matchAll(/<@!?([0-9A-Fa-f]+)>/g)].map((m) => m[1])
-    const isAt = mentions.length > 0
-    if (isAt) botMentionToken = mentions[mentions.length - 1] // 学习/刷新机器人 mention 标识:机器人换实例后 id 会变(2026-09-14 实测),取最新见到的为准
+    const mentions = [...String(d.content || '').matchAll(/<@!?([0-9A-Fa-f]+)>/g)].map((m) => m[1].toUpperCase())
     const text = String(d.content || '').replace(/<@!?[0-9A-Fa-f]+>/g, '').trim()
     const lower = text.toLowerCase()
+    // 严格判定「是否被 @」(2026-09-14 修复):
+    // 旧实现 isAt = mentions.length > 0 —— 群里任何 @(比如别人 @ 群主)都会被当成「@ 机器人」,
+    // 机器人会抢答;更糟的是它把最后那个 mention 学成「机器人的 id」,于是永久认错人。
+    // 现在只认两类证据:①平台明确给 AT 事件(只有 @机器人 才推送);②mention 命中已知的机器人 id。
+    const atEvent = eventName === 'GROUP_AT_MESSAGE_CREATE'
+    const knownBotId = CFG.botMentionId || botMentionToken || ''
+    const isAt = atEvent || (!!knownBotId && mentions.includes(knownBotId))
+    // 学习:AT 事件是"这条就是 @ 机器人"的权威证据 —— 只有在此时才学习机器人 id,且必须唯一
+    if (atEvent && mentions.length === 1 && !CFG.botMentionId) botMentionToken = mentions[0]
 
     // ① 问题收集(2026-09-13 交互修正):所有消息(@ 与否)命中反馈词/关键词都静默记录 ——
     //    旧实现 @ + 反馈词会用「已记录」顶掉 LLM 回答(实测:用户 @ 提问带「反馈」二字 → 只收到已记录)。
@@ -476,7 +487,7 @@ const server = http.createServer((req, res) => {
           triggers: CFG.triggers,
           keywords: CFG.keywords,
           llmEnabled: !!CFG.llm.key,
-          ai: { maxPerHour: CFG.ai.maxPerHour, quotaHours: CFG.ai.quotaHours, mentionLearned: !!botMentionToken },
+          ai: { maxPerHour: CFG.ai.maxPerHour, quotaHours: CFG.ai.quotaHours, botMentionId: CFG.botMentionId.slice(0,8)+'…', mentionLearned: !!botMentionToken },
           timer: { triggerName: CFG.timer.triggerName, hasDispatchToken: !!CFG.timer.token, minGapHours: CFG.timer.minGapHours },
         }
         try {
