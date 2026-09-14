@@ -13,6 +13,7 @@
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { shouldArmAutoContinuePre } from '../../lib/water-window.js'
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 const SRC = readFileSync(path.resolve(HERE, '..', '..', 'lib', 'index.js'), 'utf8')
@@ -36,6 +37,15 @@ ok(SRC.includes('armAutoContinue(agent, wl, opts = null) {'), 'armAutoContinue �
 // 2.2.7:pre-step 水位测量后同样 arm(否则长回合里官方压缩抢先、接续永不触发)
 ok(/checkWaterLevelAtStep\(agent, minGapMs = 0\)[\s\S]{0,900}?this\.armAutoContinue\(agent, \{ ratio: rt2\.waterLevel[\s\S]{0,220}?awaitIdle: true/.test(SRC),
   'pre-step 测量后 arm 自动接续(awaitIdle 标记,避免打断进行中回合;默认不节流)')
+// 2026-09-14:会话真实模型未知时不按比例 arm(首轮 request/header 尚未写入会话)。
+// 这条链要三处齐备才生效:checkWaterLevel 记字段 → 两个 arm 调用点透传 → armAutoContinue 做闸。
+// 少任何一处都表现为"接线看着有、行为不生效",故逐处守卫。
+ok(/rt\.waterLevelModelKnown = !!\(sessModel\.provider \|\| sessModel\.model\)/.test(SRC),
+  'checkWaterLevel 记录「会话真实模型是否已知」')
+ok((SRC.match(/modelKnown: rt2\.waterLevelModelKnown, hard: rt2\.waterLevelHard/g) || []).length === 2,
+  '两个 arm 调用点均透传 modelKnown/hard(pre-step 与 turn-stopping 行为必须一致)')
+ok(/if \(!shouldArmAutoContinuePre\(wl\)\)/.test(SRC),
+  'armAutoContinue 以 shouldArmAutoContinuePre 作前置闸')
 ok(SRC.includes('async tickAutoContinue() {'), 'tickAutoContinue 定义存在')
 ok(SRC.includes('async hostAutoContinue() {'), 'hostAutoContinue 定义存在')
 ok(SRC.includes('autoContinueState(selfSid) {'), 'autoContinueState 定义存在(带 selfSid 会话归属过滤)')
@@ -90,7 +100,12 @@ function makeEngine(opts) {
   // 2026-09-10:hostAutoContinue 现在会调 this.inheritPermissionPreset / hostRefreshRitual 继承权限与刷材料,
   // 夹具是"从源码抽方法拼假 engine",新增的被调方法必须一并抽取,否则 this 上不存在(TypeError)。
   for (const h of ['armAutoContinue(agent, wl, opts = null) {', 'async tickAutoContinue() {', 'async hostAutoContinue() {', 'autoContinueState(selfSid) {', 'async decideAutoContinue(action, edgeAt) {', 'async inheritPermissionPreset(oldAgent, newSid, opts = {}) {', 'agentForSessionId(sid) {', 'async inheritPermissionForContinue(fromSessionId, toSessionId, opts = {}) {', 'async hostRefreshRitual(oldSid) {', 'waterKey(sid) {', 'loadContinuedSessions() {', 'isContinuedSession(sid) {']) {
-    const obj = new Function('diag', 'AbortSignal', 'return {' + extractFn(h) + '};')(() => {}, { timeout: () => undefined })
+    // 2026-09-14:armAutoContinue 起用模块级纯函数 shouldArmAutoContinuePre(会话真实模型未知时
+    // 不许按比例 arm)。抽出的函数体在 new Function 里重建,作用域中没有模块级绑定 ⇒
+    // 必须与 diag/AbortSignal 一并注入,否则抛 ReferenceError 并被 armAutoContinue 自身的
+    // catch 吞掉,表现为"水位达标却不 arm"(实测本文件第 110 行即因它崩溃)。
+    const obj = new Function('diag', 'AbortSignal', 'shouldArmAutoContinuePre', 'return {' + extractFn(h) + '};')(
+      () => {}, { timeout: () => undefined }, shouldArmAutoContinuePre)
     const key = Object.keys(obj)[0]
     fns[key] = obj[key].bind(eng)
   }
@@ -100,7 +115,10 @@ function makeEngine(opts) {
 }
 
 const agent = { session: { id: 'session-a' } }
-const wl = { ratio: 0.8, tokens: 800000, window: 1000000, source: 'official-context' }
+// 2026-09-14 审查修正:闸改 fail-closed(modelKnown !== true)后,未传 modelKnown 的 wl 会被视为
+// 「模型未知」而拒绝按比例 arm。本夹具的用例目标不是模型未知闸,故显式给 modelKnown: true,
+// 保证这些用例继续覆盖 ratio/冷却/闩锁/执行链等原有分支。
+const wl = { ratio: 0.8, tokens: 800000, window: 1000000, source: 'official-context', modelKnown: true }
 
 // A2 arm 条件
 const e1 = makeEngine({ config: { autoContinueEnabled: true, handoffEnabled: true, autoContinueThreshold: 0.75, autoContinueConfirmSeconds: 35, autoContinueCooldownMinutes: 30 } })
@@ -122,6 +140,17 @@ e3.fns.armAutoContinue(agent, wl)
 await e3.fns.decideAutoContinue('reject', 0)
 e3.fns.armAutoContinue(agent, wl)
 ok(!e3.eng._autoContState.armed, '拒绝窗口(10min)内不 arm')
+
+// 2026-09-14:会话真实模型未知时不按比例 arm。新会话首轮 agent/pre-step 时 request/header
+// 尚未写入会话(findSessionModelPre 返回 provider/model/contextWindow 全空),窗口只能用
+// settings.yaml 的 agent-default-model 推算 —— 而它与会话实际模型可能完全不同
+// (实测同一台机器上会是两个不同 provider 的模型,连 maxTokens 都不一致),
+// 按比例触发会误弹接续卡;此时只放行硬信号,比例判据推迟到轮末。
+const eMk = makeEngine({ config: { autoContinueEnabled: true, handoffEnabled: true, autoContinueThreshold: 0.75 } })
+eMk.fns.armAutoContinue(agent, { ratio: 0.95, tokens: 950000, window: 131072, source: 'fallback', modelKnown: false })
+ok(!eMk.eng._autoContState || !eMk.eng._autoContState.armed, '模型未知时不按比例 arm(等硬信号或轮到轮末)')
+eMk.fns.armAutoContinue(agent, { ratio: 0.95, tokens: 950000, window: 131072, source: 'fallback', modelKnown: false, hard: true })
+ok(!!(eMk.eng._autoContState && eMk.eng._autoContState.armed), '模型未知但有硬信号 → 仍 arm')
 
 const e4 = makeEngine({ config: { autoContinueEnabled: true, handoffEnabled: true } })
 e4.eng._autoContState = { lastRunAt: Date.now() }

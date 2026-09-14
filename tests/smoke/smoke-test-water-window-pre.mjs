@@ -23,13 +23,14 @@
  *   W17 非法 id 行不得把窗口记到上一条模型头上(静默错配)
  *   W18-W21 会话模型扫描缓存的复用边界(空结果不得被锁死 5 分钟,2026-09-14)
  *   W22 首轮 pre-step 只存在 request/header 时 contextWindow 恒为 0(空值的来源)
+ *   W23-W25 会话真实模型未知时不得按比例 arm(新会话首轮,2026-09-14;W25 同日审查修正为 fail-closed)
  *   W26 接线守卫:宿主端确实调用 reusableWindowCachePre 并写入 events 字段
- *       —— 编号自 W26 起,避开 W23-W25(留给并行的首轮判定 PR)
+ *       —— W18-W22/W26 与 W23-W25 分别来自两个并行 PR,合并解冲突后编号区间相邻
  */
 
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
-import { parseModelWindowsPre, pickWindowPre, findOfficialContextWindowPre, findSessionModelPre, reusableWindowCachePre } from '../../lib/water-window.js'
+import { parseModelWindowsPre, pickWindowPre, findOfficialContextWindowPre, findSessionModelPre, reusableWindowCachePre, shouldArmAutoContinuePre } from '../../lib/water-window.js'
 
 let pass = 0
 let fail = 0
@@ -207,6 +208,30 @@ try {
     /if \(reusableWindowCachePre\(cached, sid, eventsForModel\.length, Date\.now\(\)\)\)/.test(INDEX_SRC))
   ok('W26 写入缓存时带 events 字段(否则空结果没有重扫依据,修复即失效)',
     /info: sessModel, events: eventsForModel\.length/.test(INDEX_SRC))
+
+  // ── W23-W25 会话真实模型未知时的 arm 资格(2026-09-14) ────────────────
+  // 新会话首轮 agent/pre-step 时 request/header 尚未写入会话,
+  // findSessionModelPre 返回 {provider:'',model:'',contextWindow:0,maxTokens:0} 全空
+  // (DSH 的 sessionApi 只有 selectModel,没有查询会话当前模型的接口)。
+  // 此时窗口只能用 settings.yaml 的 agent-default-model 推算 —— 而它与会话实际模型可能完全不同,
+  // 按比例 arm 会让水位虚高数倍(实测 1,000,000 被当 131,072)后误弹接续卡。
+  ok('W23 模型未知 + 无硬信号 → 不得按比例 arm',
+    shouldArmAutoContinuePre({ ratio: 0.99, modelKnown: false, hard: false }) === false)
+  ok('W23 模型未知 + 有硬信号(compaction/overflow/硬墙) → 放行（真实事件不依赖窗口估算）',
+    shouldArmAutoContinuePre({ ratio: 0.50, modelKnown: false, hard: true }) === true)
+  ok('W24 模型已知 → 比例判据照常生效',
+    shouldArmAutoContinuePre({ ratio: 0.80, modelKnown: true, hard: false }) === true)
+  // W25 fail-closed(2026-09-14 审查修正):原先 `=== false` 显式判等下,undefined 视为「已知」→
+  // checkWaterLevel 早退路径(handoff 关闭/win<=0/测量异常)残留 undefined 时闸被静默绕过。
+  // 改为 `!== true`:凡非 true 一律视为未知,只放行硬信号。
+  ok('W25 未传 modelKnown → 视为未知(fail-closed,字段缺失不得绕闸)',
+    shouldArmAutoContinuePre({ ratio: 0.80, hard: false }) === false)
+  ok('W25 modelKnown=null/0/"true" 等非 true 值 → 一律视为未知',
+    shouldArmAutoContinuePre({ ratio: 0.80, modelKnown: null, hard: false }) === false &&
+    shouldArmAutoContinuePre({ ratio: 0.80, modelKnown: 0, hard: false }) === false &&
+    shouldArmAutoContinuePre({ ratio: 0.80, modelKnown: 'true', hard: false }) === false)
+  ok('W25 空 wl → 不放行', shouldArmAutoContinuePre(null) === false)
+  ok('W25 undefined → 不放行', shouldArmAutoContinuePre(undefined) === false)
 } catch (e) {
   fail++
   console.log('  FAIL - 未捕获异常: ' + (e && e.stack ? e.stack : e))
