@@ -50,9 +50,13 @@ console.log('[H2] procedure 晋升全链路(核心)')
   // observe 一个部署流程
   const r1 = st.observe({ title: '服务器部署流程', riskLevel: 'low', steps: ['备份', 'rsync', '重启服务'], successCriteria: ['curl 健康检查通过'], sourceMemoryIds: ['mem_a'] })
   ok(r1.ok && r1.procedure.stage === 'observed', 'observe → observed')
-  // 去重: 同 title 再 observe → merged
+  // 去重: 内容指纹(非 title)——同 title 不同形状 → 分立候选(issue#30 修复:title 相同不等于同一流程)
   const r2 = st.observe({ title: '服务器部署流程', riskLevel: 'low', steps: ['备份'], sourceMemoryIds: ['mem_b'] })
-  ok(r2.merged === true, '同 title 去重合并')
+  ok(r2.merged === false && r2.procedure.procedureId !== r1.procedure.procedureId, '同 title 不同步骤 → 内容指纹不同,分立候选不合并')
+  // 同内容不同来源 → 同指纹仍合并,来源并集
+  const r3 = st.observe({ title: '服务器部署流程', riskLevel: 'low', steps: ['备份', 'rsync', '重启服务'], successCriteria: ['curl 健康检查通过'], sourceMemoryIds: ['mem_b'] })
+  ok(r3.merged === true && r3.procedure.procedureId === r1.procedure.procedureId, '同指纹(内容相同)不同来源 → 仍合并到同一候选')
+  ok(JSON.stringify(r3.procedure.sourceMemoryIds) === JSON.stringify(['mem_a', 'mem_b']), '合并时来源并集(mem_a+mem_b)')
   // 未达门槛: diversity=1 < 3 → keep
   st.addEvidence(r1.procedure.procedureId, { kind: 'success', sessionRef: 'sesr_1' })
   const p1 = st.promote(r1.procedure.procedureId)
