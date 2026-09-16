@@ -190,7 +190,7 @@
 - [ ] 🟡 **运维面（待确认）**：定时班时区与失败告警（现在 11:40/20:40 + 55 分兜底重试）；SCF 免费额度/成本；`index.zip` 这类二进制是否应入库（建议改为构建产物，不入 git）。
 - [ ] ⚪ **文档化**：把三份 `GROUP-*-SETUP.md` 合并成一份"从零部署"清单（含所需 secrets 名、验证命令、回滚方式）。
 - [ ] ⚪ **与插件的关系**：`.github/**` 不在 npm `files` 里（不会随包发布）—— 保持这样；若日报内容要面向用户，走 `docs/` 或 landing，不要塞进包。
-- [ ] 🟡 **SCF 云函数部署滞后（2026-09-13 实测）**：仓库源码 `9461cea` 已有 `?report=N` 按需报告路由，线上 zip（版本标记 `20260913c`）没有——`?report=12` 只回 `{"v":...}`。需重新打包部署（`index.zip` 重构建 + SCF 控制台上传）。部署前 gist 直读可用替代：用 `--D--dsh_debug--` 记忆里的 fine-grained PAT（只走 shell 变量，不落盘不回显）GET `api.github.com/gists/fb17c49dab6c295346c96ac971727095` 取 `group-raw-debug.txt` 原文。
+- [ ] 🟡 **SCF 云函数部署滞后（2026-09-13 实测）**：仓库源码 `9461cea` 已有 `?report=N` 按需报告路由，线上 zip（版本标记 `20260913c`）没有——`?report=12` 只回 `{"v":...}`。需重新打包部署（`index.zip` 重构建 + SCF 控制台上传）。部署前 gist 直读可用替代：用 `--D--dsh_debug--` 记忆里的 fine-grained PAT 与 gist id（只走 shell 变量，不落盘不回显）GET `api.github.com/gists/<gist-id>` 取 `group-raw-debug.txt` 原文。
 
 ---
 

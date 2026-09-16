@@ -90,4 +90,4 @@ GET ...?report=12&raw=1                            # 只要原文不要 AI 总�
 - **问题**：反馈写入/日报读取/清空都用「gist 里第一个文件」当目标——`group-raw-debug.txt` 先建、或清空用 `content:''`（= **删除文件**）后，第一个文件就会换人，实测反馈行混进了原始调试文件。
 - **修复**：三方（webhook 写入 / report 读取 / digest 收集清空）全部钉死 `group-feedback.jsonl`；清空改写 `'
 '`（**保留文件本身**）；report 的 LLM 失败不再静默，外显 `llmError` 字段（检查 base/model/key 就看它）。
-- **迁移**：旧混写的历史行留在 `group-raw-debug.txt` 作为调试史，不再被 report 读取；新反馈从上传新包起进 `group-feedback.jsonl`。**务必确认 Actions secret `FEEDBACK_GIST_ID` 与云函数 `GIST_ID` 是同一个值**（`fb17c49dab6c295346c96ac971727095`；secret 不可回读，不记得就重设）。
+- **迁移**：旧混写的历史行留在 `group-raw-debug.txt` 作为调试史，不再被 report 读取；新反馈从上传新包起进 `group-feedback.jsonl`。**务必确认 Actions secret `FEEDBACK_GIST_ID` 与云函数 `GIST_ID` 是同一个值**（真实值不写进仓库——`docs/` 会随 npm 包发布；从 `~/.dsh/memory/workspaces/--D--dsh_debug--/MEMORY.md` 取，secret 不可回读，不记得就重设）。

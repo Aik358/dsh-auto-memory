@@ -527,6 +527,58 @@ for (const f of scanTargets) {
 if (bad.length) { console.error('[release] ❌ 残留:\n' + bad.join('\n')); process.exit(1) }
 console.log('[release] 语法 ✓ BOM ✓ 无 pre/dev 残留 ✓')
 
+// ---------- 5.4 凭据泄露闸门(2026-09-17, fail closed) ----------
+// 背景(实测):docs/ 会随 npm 包发布,而 docs/internal 里曾直接写入真实的
+// fine-grained PAT 目标 gist id;用户硬性规则是「凭据只存本地记忆文件,严禁写入任何
+// 将上传 GitHub/npm 的文件」。这里在打包前扫描发布树,命中即拒绝发布并点名文件。
+// 判据取「形如凭据的串」而非仅具体值——避免下次换 token 时闸门失效。
+{
+  // 判据分两档：
+  //  ① 带前缀的凭据串(github_pat_/ghp_/npm_)——形状自证，任何上下文都算泄露；
+  //  ② 裸 32 位 hex——必须**同行出现凭据语境词**才算，否则会误伤一大片合法内容
+  //    （实测误伤样本：ZCode 图片缓存文件名里的哈希、arXiv/DOI 编号片段、
+  //     PKCS#8 DER 前缀常量 302e020100300506032b657004220420）。
+  const strongPatterns = [
+    /github_pat_[A-Za-z0-9_]{20,}/,          // 细粒度 PAT
+    /ghp_[A-Za-z0-9]{30,}/,                   // 经典 PAT
+    /npm_[A-Za-z0-9]{30,}/,                   // npm token
+  ]
+  const hexRe = /\b[a-f0-9]{32}\b/
+  const credContext = /(gist|token|secret|passwd|password|credential|\bpat\b|authToken|GIST_ID|webhook)/i
+  const credHits = []
+  const walk = (dir) => {
+    for (const e of readdirSync(dir, { withFileTypes: true })) {
+      const p = path.join(dir, e.name)
+      if (e.isDirectory()) { walk(p); continue }
+      if (!/\.(md|js|mjs|json|yml|yaml|txt|html|py)$/.test(e.name)) continue
+      let t = ''
+      try { t = readFileSync(p, 'utf8') } catch (err) { continue }
+      // 占位符写法(<token> / <PAT> / <gist-id>)一律放行——这正是期望的写法
+      const cleaned = t.replace(/<[^>\n]{1,40}>/g, '')
+      for (const re of strongPatterns) {
+        const m = cleaned.match(re)
+        if (m) credHits.push(path.relative(REL, p) + ' → ' + m[0].slice(0, 12) + '… (带前缀凭据)')
+      }
+      for (const line of cleaned.split(/\r?\n/)) {
+        if (hexRe.test(line) && credContext.test(line)) {
+          credHits.push(path.relative(REL, p) + ' → ' + line.trim().slice(0, 70) + ' (凭据语境中的 32 位 hex)')
+        }
+      }
+    }
+  }
+  for (const d of ['lib', 'python', 'docs', '.github']) {
+    const p = path.join(REL, d)
+    if (existsSync(p)) walk(p)
+  }
+  if (credHits.length) {
+    console.error('\n❌ 发布树内检出疑似凭据(凭据只允许存本地记忆文件，严禁随包发布):')
+    for (const h of credHits) console.error('   · ' + h)
+    console.error('   修法：把真实值改成占位符，真实值从 ~/.dsh/memory/workspaces/--D--dsh_debug--/MEMORY.md 读取。')
+    process.exit(1)
+  }
+  console.log('[release] 凭据泄露闸门 ✓')
+}
+
 // ---------- 5.5 发布物完整性(#20):python/ 运行时必须在、bench 夹具必须排除 ----------
 const pyDir = path.join(REL, 'python')
 const pyMust = ['worker_v1.py', 'worker_semantic_v1.py', 'm7_activation_features_v2.py', 'm7_embedding_v1.py']
