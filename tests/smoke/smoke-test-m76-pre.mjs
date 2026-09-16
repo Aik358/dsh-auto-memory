@@ -2,7 +2,7 @@
 // 双阈值 suppress/prefetch/emit + T_on>T_off 滞回 + cooldown;shadow 校准默认,
 // active 模式发 activation_request 帧——逐字段过现有 M6 validateActivationRequestPre;
 // provenance 从 corpus 复制;close_session 清 per-session 状态;未知 miv fail closed。
-// hash-pre-v1 确定性 provider,零联网零模型。
+// hash-v1 确定性 provider,零联网零模型。
 import { mkdtempSync, writeFileSync, rmSync, existsSync, readFileSync } from 'node:fs'
 import { createHash } from 'node:crypto'
 import { tmpdir } from 'node:os'
@@ -26,7 +26,7 @@ const SEM_WORKER = path.join(HERE, '..', '..', 'python', 'worker_semantic_v1.py'
 
 function mkEmbConfig(home, activationPolicy) {
   const p = path.join(home, `emb-${Math.random().toString(36).slice(2, 7)}.json`)
-  const cfg = { provider: 'hash-pre-v1', dimension: 64 }
+  const cfg = { provider: 'hash-v1', dimension: 64 }
   if (activationPolicy) cfg.activationPolicy = activationPolicy
   writeFileSync(p, JSON.stringify(cfg), 'utf8')
   return p

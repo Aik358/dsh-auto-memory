@@ -25,7 +25,7 @@ const SEM_WORKER = path.join(HERE, '..', '..', 'python', 'worker_semantic_v1.py'
 
 function mkClient(home) {
   const cfg = path.join(home, 'emb.json')
-  writeFileSync(cfg, JSON.stringify({ provider: 'hash-pre-v1', dimension: 64, activationPolicy: { mode: 'shadow', tOn: 0.99, tOff: 0.9 } }), 'utf8')
+  writeFileSync(cfg, JSON.stringify({ provider: 'hash-v1', dimension: 64, activationPolicy: { mode: 'shadow', tOn: 0.99, tOff: 0.9 } }), 'utf8')
   process.env.DSH_M7_EMBEDDING_CONFIG = cfg
   return CLIENT.createPythonSidecarClientPre({
     command: 'python', scriptPath: () => SEM_WORKER, dshHome: home, requestTimeoutMs: 8000,

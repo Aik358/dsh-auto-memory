@@ -19,7 +19,7 @@ index_sync rejection matrix, same atomic derived-corpus persistence. Adds:
 
 Embedding backend is selected by an optional JSON config file passed via
 the DSH_M7_EMBEDDING_CONFIG environment variable (no CLI change, no JS
-change): {"provider":"bge-m3-pre-v1"|"hash-pre-v1", "modelDir":...,
+change): {"provider":"bge-m3-v1"|"hash-v1", "modelDir":...,
 "modelRevision":..., "dimension":1024, "torchThreads":16}.
 Without the env var the worker degrades to fake-worker behavior (protocol
 alive, embedding not ready) - never crashes, never changes ack semantics.
@@ -64,7 +64,7 @@ def wsref_of(workspace_key):
     artifact of differing miv values)."""
     canon = canonical_workspace_key(workspace_key)
     return 'wsr_' + hashlib.sha256(
-        ('evidence-wsref-pre-v1\u0000' + canon).encode('utf-8')).hexdigest()[:32]
+        ('evidence-wsref-v1\u0000' + canon).encode('utf-8')).hexdigest()[:32]
 
 
 def _tokenize(text, stopwords=frozenset()):
@@ -640,7 +640,7 @@ class SemanticWorker(base.Worker):
         if not cands:
             return None
         activation_id = 'act_' + base.first32(
-            base.sha_str('m7-semantic-activation-pre-v1\u0000' + obs))
+            base.sha_str('m7-semantic-activation-v1\u0000' + obs))
         created = req.get('sentAt', 0)
         ttl = int(pol['ttlSteps'])
         return {
@@ -690,12 +690,23 @@ class SemanticWorker(base.Worker):
         if act is None:
             return None
         reasons = ','.join(str(x) for x in (out.get('reasonCodes') or []))
+
+        def _num(x):
+            try:
+                return float(x or 0.0)
+            except (TypeError, ValueError):
+                return 0.0
+
+        # 2026-09-14 P1-⑮:reason 串此前只有 lane/decision/reasonCodes,注入侧看不到
+        # 0-1 相似度(intent 概率 / 稠密分 / 融合 margin)。数值段放在 reasonCodes **之前**,
+        # 这样 160 字符截断只会砍掉代码列表,不会砍掉分值。
         act['threshold'] = {
             'policyVersion': featv2.ACTIVATION_POLICY_VERSION,
             'score': round(score, 6),
             'threshold': float(th.get('tauHi', 0.45)),
-            'reason': ('fv2 lane=%s %s %s' % (
-                feats.get('lane'), out.get('decision'), reasons))[:160],
+            'reason': ('fv2 lane=%s %s intent=%.2f dense=%.2f margin=%.2f %s' % (
+                feats.get('lane'), out.get('decision'), score,
+                _num(feats.get('denseTop')), _num(feats.get('margin')), reasons))[:160],
         }
         act['level'] = 'excerpt'
         return act
@@ -1356,7 +1367,7 @@ def main():
     args, _unknown = ap.parse_known_args()
     if args.selftest:
         base.run_selftest()
-        w = SemanticWorker('ep', '', {'provider': 'hash-pre-v1',
+        w = SemanticWorker('ep', '', {'provider': 'hash-v1',
                                       'dimension': 64})
         view = w.embedding_view()
         assert view['enabled'] is True and view['ready'] is False

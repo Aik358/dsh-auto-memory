@@ -96,11 +96,17 @@ e2.fn(agentA, 0)
 e2.fn(agentA, 0)
 ok(e2.calls.length === 2, '窗口归零后可连续测量')
 
-// handoffEnabled=false 完全不测
-const e3 = makeEngine({ handoffEnabled: false }, {})
+// 2026-09-14 解耦:测量侧只看配置本身,不再被 handoffEnabled 关掉
+// (旧契约「handoffEnabled=false 完全不测」就是耦合缺陷:关白板 ⇒ 水位永不测量 ⇒ rt.waterLevelModelKnown
+//  永不写入 ⇒ armAutoContinue 的 fail-closed 闸永久拒绝,接续被静默关闭。白板开关只管 PLAN/账本产物。)
+const e3 = makeEngine({ handoffEnabled: false, autoContinueEnabled: true }, {})
 e3.fn(agentA, 0)
 e3.fn(agentA, 0)
-ok(e3.calls.length === 0, 'handoffEnabled=false 时不测量')
+ok(e3.calls.length === 2, 'handoffEnabled=false 时照常测量(测量与接续资格只看 autoContinueEnabled)')
+// 对照:autoContinueEnabled 也不影响**测量**(资格判定在 armAutoContinue 内,见 switch-decouple 套件)
+const e3b = makeEngine({ handoffEnabled: false, autoContinueEnabled: false }, {})
+e3b.fn(agentA, 0)
+ok(e3b.calls.length === 1, '两开关都关也照常测量(测量是只读动作)')
 
 // 身份守卫:匿名对象不测
 const e4 = makeEngine({}, {})

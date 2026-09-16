@@ -20,7 +20,7 @@ const ok = (c, n) => { if (c) { pass++; console.log('  ok - ' + n) } else { fail
 const sleep = (ms) => new Promise(r => setTimeout(r, ms))
 
 function writeEmbConfig(home, flag) {
-  const cfg = { provider: 'hash-pre-v1', dimension: 64 }
+  const cfg = { provider: 'hash-v1', dimension: 64 }
   if (flag) cfg.activationEmitMode = flag
   const p = path.join(home, 'emb-m710.json')
   writeFileSync(p, JSON.stringify(cfg), 'utf8')

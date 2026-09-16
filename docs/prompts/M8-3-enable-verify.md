@@ -4,7 +4,7 @@
 ## 【M8-3】M8 启用与 live 验证
 
 **背景（有代码证据）**：
-- `lib/index.js:365` `memoryHubEnabled: false` —— **M8 三层记忆系统默认关闭**。
+- ~~`lib/index.js:365` `memoryHubEnabled: false` —— M8 三层记忆系统默认关闭~~ **⚠️ 本条前提已过期（2026-09-14 按代码复核）**：`memoryHubEnabled` 现已默认 `true`（`lib/index.js:403`），且已接线（`:6495` 创建 / `:6518-6522` restore / `:5232` crossFeed / `:6580` judgement ingest）；对应发版记录 = **CHANGELOG 2.3.0（2026-09-10）「M8 默认启用」**。**本任务书若再投喂，请按当前事实改写前置确认**：不再是"是否改默认值"，而是"是否要回滚/细调默认行为"。
 - `docs/M8-MEMORY-HUB.md` §7 验收矩阵中，**唯一未完成项是 `[ ] live 验证（用户重启 3080 后）`**；其余（H1–H6、74 断言、35 套件全绿、持久化 restore）均已 `[x]`。
 - 调研结论：M8 的问题是**"未启用、未实证"**，而非"设计残缺"。
 

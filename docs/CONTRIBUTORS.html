@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<!-- ============================================================
+  dsh-auto-memory · 贡献者与赞助 (Contributors & Sponsors)
+  单文件零外部依赖；与 docs/promo/homepage.html 同一套 liquid-glass 暗色主题。
+  数据来源：GitHub API issues?state=all&per_page=100 (2026-09-16 快照，51 条)
+============================================================= -->
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>贡献者与赞助 · dsh-auto-memory</title>
+<style>
+  :root {
+    --bg0: #060913;
+    --bg1: #0b1020;
+    --glass: rgba(255, 255, 255, 0.045);
+    --glass-2: rgba(255, 255, 255, 0.075);
+    --glass-border: rgba(255, 255, 255, 0.10);
+    --txt: #e8ecf6;
+    --txt-dim: #93a0bd;
+    --accent: #5b8cff;
+    --accent2: #8f6bff;
+    --accent3: #38d2c2;
+    --ok: #3ecf8e;
+    --warn: #f0b34e;
+    --radius: 18px;
+    --font: "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
+    --mono: "Cascadia Code", Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background:
+      radial-gradient(1100px 620px at 12% -8%, rgba(91, 140, 255, .20), transparent 60%),
+      radial-gradient(900px 560px at 88% 6%, rgba(143, 107, 255, .17), transparent 62%),
+      linear-gradient(180deg, var(--bg0), var(--bg1) 45%, var(--bg0));
+    color: var(--txt); font-family: var(--font);
+    line-height: 1.7; font-size: 15px; min-height: 100vh;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 56px 22px 80px; }
+
+  /* ── Hero ── */
+  .hero { text-align: center; margin-bottom: 52px; }
+  .hero .badge {
+    display: inline-block; padding: 5px 14px; border-radius: 999px;
+    background: var(--glass); border: 1px solid var(--glass-border);
+    color: var(--txt-dim); font-size: 12.5px; letter-spacing: .06em;
+    text-transform: uppercase; margin-bottom: 18px;
+  }
+  .hero h1 {
+    font-size: 40px; line-height: 1.24; margin: 0 0 14px;
+    background: linear-gradient(100deg, var(--accent), var(--accent2) 52%, var(--accent3));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .hero p { color: var(--txt-dim); font-size: 16px; margin: 0 auto; max-width: 660px; }
+
+  /* ── 统计带 ── */
+  .stats {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 14px; margin: 38px 0 56px;
+  }
+  .stat {
+    background: var(--glass); border: 1px solid var(--glass-border);
+    border-radius: var(--radius); padding: 20px 18px; text-align: center;
+    backdrop-filter: blur(14px);
+  }
+  .stat b { display: block; font-size: 30px; line-height: 1.1;
+    background: linear-gradient(100deg, var(--accent), var(--accent3));
+    -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .stat span { color: var(--txt-dim); font-size: 12.5px; }
+
+  /* ── 段落标题 ── */
+  h2.sec {
+    font-size: 23px; margin: 0 0 8px; display: flex; align-items: center; gap: 10px;
+  }
+  h2.sec::before {
+    content: ''; width: 4px; height: 22px; border-radius: 2px;
+    background: linear-gradient(180deg, var(--accent), var(--accent2));
+  }
+  .sec-sub { color: var(--txt-dim); font-size: 13.5px; margin: 0 0 24px; }
+
+  /* ── 贡献者卡 ── */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)); gap: 16px; }
+  .card {
+    background: var(--glass); border: 1px solid var(--glass-border);
+    border-radius: var(--radius); padding: 20px; backdrop-filter: blur(14px);
+    transition: transform .16s ease, border-color .16s ease, background .16s ease;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .card:hover { transform: translateY(-3px); border-color: rgba(91,140,255,.5); background: var(--glass-2); }
+  .card .top { display: flex; align-items: center; gap: 12px; }
+  .card img { width: 46px; height: 46px; border-radius: 50%; flex-shrink: 0;
+    border: 2px solid var(--glass-border); background: rgba(255,255,255,.06); }
+  .card .who { min-width: 0; }
+  .card .who a { color: var(--txt); text-decoration: none; font-weight: 700; font-size: 15.5px; }
+  .card .who a:hover { color: var(--accent); }
+  .card .tier { font-size: 11.5px; color: var(--txt-dim); }
+  .card .desc { color: var(--txt-dim); font-size: 13.5px; margin: 0; }
+  .card .refs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: auto; }
+  .card .refs a {
+    font-family: var(--mono); font-size: 11px; padding: 2px 8px; border-radius: 6px;
+    background: rgba(91,140,255,.14); border: 1px solid rgba(91,140,255,.28);
+    color: #a9c2ff; text-decoration: none;
+  }
+  .card .refs a.pr { background: rgba(143,107,255,.15); border-color: rgba(143,107,255,.32); color: #c6b2ff; }
+  .card .refs a:hover { filter: brightness(1.25); }
+
+  /* ── 紧凑列表(单人 issue) ── */
+  .compact { display: grid; grid-template-columns: repeat(auto-fill, minmax(232px, 1fr)); gap: 11px; }
+  .chip {
+    display: flex; align-items: center; gap: 10px; padding: 11px 14px;
+    background: var(--glass); border: 1px solid var(--glass-border);
+    border-radius: 12px; text-decoration: none; color: var(--txt);
+    transition: border-color .15s ease, background .15s ease;
+  }
+  .chip:hover { border-color: rgba(91,140,255,.5); background: var(--glass-2); }
+  .chip img { width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0; background: rgba(255,255,255,.06); }
+  .chip .n { font-weight: 600; font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .chip .r { font-family: var(--mono); font-size: 11px; color: var(--txt-dim); margin-left: auto; flex-shrink: 0; }
+
+  /* ── 赞助卡 ── */
+  .sponsor {
+    background: linear-gradient(135deg, rgba(91,140,255,.14), rgba(143,107,255,.12));
+    border: 1px solid rgba(91,140,255,.34); border-radius: var(--radius);
+    padding: 28px; display: flex; align-items: center; gap: 22px; flex-wrap: wrap;
+  }
+  .sponsor .mark {
+    width: 62px; height: 62px; border-radius: 15px; flex-shrink: 0;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 25px; font-weight: 800; color: #fff; letter-spacing: -.02em;
+  }
+  .sponsor .body { flex: 1; min-width: 240px; }
+  .sponsor h3 { margin: 0 0 6px; font-size: 20px; }
+  .sponsor h3 a { color: var(--txt); text-decoration: none; }
+  .sponsor h3 a:hover { color: var(--accent3); }
+  .sponsor p { margin: 0; color: var(--txt-dim); font-size: 14px; }
+  .sponsor .tag {
+    display: inline-block; margin-top: 10px; padding: 3px 11px; border-radius: 999px;
+    background: rgba(62,207,142,.16); border: 1px solid rgba(62,207,142,.34);
+    color: var(--ok); font-size: 11.5px;
+  }
+
+  /* ── 参与方式 ── */
+  .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+  .step {
+    background: var(--glass); border: 1px solid var(--glass-border);
+    border-radius: 14px; padding: 20px;
+  }
+  .step .k { font-family: var(--mono); font-size: 11.5px; color: var(--accent3); margin-bottom: 8px; }
+  .step b { display: block; margin-bottom: 6px; font-size: 15px; }
+  .step p { margin: 0; color: var(--txt-dim); font-size: 13px; }
+
+  footer { margin-top: 66px; padding-top: 26px; border-top: 1px solid var(--glass-border);
+    text-align: center; color: var(--txt-dim); font-size: 13px; }
+  footer a { color: var(--accent); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+
+  /* 语言切换 */
+  .lang { display: flex; justify-content: center; gap: 8px; margin-top: 22px; }
+  .lang button {
+    padding: 6px 18px; border-radius: 999px; cursor: pointer; font-family: inherit;
+    font-size: 13px; background: var(--glass); border: 1px solid var(--glass-border);
+    color: var(--txt-dim); transition: all .15s ease;
+  }
+  .lang button.on { background: rgba(91,140,255,.20); border-color: rgba(91,140,255,.5); color: var(--txt); }
+  body[data-lang="zh"] .en, body[data-lang="en"] .zh { display: none; }
+
+  @media (max-width: 640px) {
+    .hero h1 { font-size: 29px; }
+    .wrap { padding: 38px 16px 60px; }
+    .sponsor { padding: 22px; }
+  }
+</style>
+</head>
+<body data-lang="zh">
+<div class="wrap">
+
+  <!-- ══════════ Hero ══════════ -->
+  <header class="hero">
+    <div class="badge">Contributors &amp; Sponsors</div>
+    <h1><span class="zh">一起把她养大的人</span><span class="en">The people who raised her</span></h1>
+    <p class="zh">dsh-auto-memory 从一个人的实验，长成了有人在用的工具。这页记录所有提过 issue、交过 PR、以及赞助过开发资源的人——名字和贡献都在这里。</p>
+    <p class="en">dsh-auto-memory grew from a solo experiment into something people actually use. This page credits everyone who filed an issue, sent a pull request, or sponsored the development resources.</p>
+    <div class="lang">
+      <button id="lb-zh" class="on" onclick="setLang('zh')">中文</button>
+      <button id="lb-en" onclick="setLang('en')">English</button>
+    </div>
+  </header>
+
+  <!-- ══════════ 统计带 ══════════ -->
+  <section class="stats">
+    <div class="stat"><b id="s-ppl">18</b><span class="zh">外部贡献者</span><span class="en">contributors</span></div>
+    <div class="stat"><b id="s-pr">17</b><span class="zh">Pull Request</span><span class="en">pull requests</span></div>
+    <div class="stat"><b id="s-iss">32</b><span class="zh">Issue</span><span class="en">issues</span></div>
+    <div class="stat"><b>1</b><span class="zh">资源赞助方</span><span class="en">resource sponsor</span></div>
+  </section>
+
+  <!-- ══════════ 突出贡献者 ══════════ -->
+  <h2 class="sec"><span class="zh">突出贡献者</span><span class="en">Top contributors</span></h2>
+  <p class="sec-sub zh">按贡献条目数排序。每条都指向原始的 issue / PR。</p>
+  <p class="sec-sub en">Sorted by number of contributions. Every entry links back to the original issue or PR.</p>
+
+  <div class="grid">
+
+    <div class="card">
+      <div class="top">
+        <img src="https://github.com/Minervaowl7.png?size=92" alt="Minervaowl7" loading="lazy">
+        <div class="who">
+          <a href="https://github.com/Minervaowl7" target="_blank" rel="noopener">@Minervaowl7</a>
+          <div class="tier"><span class="zh">15 PR · 8 issue</span><span class="en">15 PRs · 8 issues</span></div>
+        </div>
+      </div>
+      <p class="desc zh">贡献量最大。工作区概览日志日期锚定修复（未锚定子串正则误纳恢复候选 ⇒ 排序被污染、概览可能为空）、自动续跑宿主加固、恢复候选生命周期与幂等重放。</p>
+      <p class="desc en">The most prolific contributor. Anchored workspace-overview log-date matching (an unanchored substring regex admitted recovery candidates, polluting ranking and sometimes emptying the overview), auto-continuation host hardening, and recovery-candidate lifecycle / idempotent replay.</p>
+      <div class="refs">
+        <a class="pr" href="https://github.com/Aik358/dsh-auto-memory/pull/53">PR #53</a>
+        <a class="pr" href="https://github.com/Aik358/dsh-auto-memory/pull/50">PR #50</a>
+        <a class="pr" href="https://github.com/Aik358/dsh-auto-memory/pull/49">PR #49</a>
+        <a class="pr" href="https://github.com/Aik358/dsh-auto-memory/pull/46">PR #46</a>
+        <a class="pr" href="https://github.com/Aik358/dsh-auto-memory/pull/44">PR #44</a>
+        <a class="pr" href="https://github.com/Aik358/dsh-auto-memory/pull/37">PR #37</a>
+        <a class="pr" href="https://github.com/Aik358/dsh-auto-memory/pull/36">PR #36</a>
+        <a class="pr" href="https://github.com/Aik358/dsh-auto-memory/pull/34">PR #34</a>
+        <a class="pr" href="https://github.com/Aik358/dsh-auto-memory/pull/33">PR #33</a>
+        <a class="pr" href="https://github.com/Aik358/dsh-auto-memory/pull/32">PR #32</a>
+        <a class="pr" href="https://github.com/Aik358/dsh-auto-memory/pull/31">PR #31</a>
+        <a class="pr" href="https://github.com/Aik358/dsh-auto-memory/pull/27">PR #27</a>
+        <a class="pr" href="https://github.com/Aik358/dsh-auto-memory/pull/25">PR #25</a>
+        <a class="pr" href="https://github.com/Aik358/dsh-auto-memory/pull/23">PR #23</a>
+        <a class="pr" href="https://github.com/Aik358/dsh-auto-memory/pull/17">PR #17</a>
+        <a href="https://github.com/Aik358/dsh-auto-memory/issues/16">#16</a>
+        <a href="https://github.com/Aik358/dsh-auto-memory/issues/22">#22</a>
+        <a href="https://github.com/Aik358/dsh-auto-memory/issues/24">#24</a>
+        <a href="https://github.com/Aik358/dsh-auto-memory/issues/28">#28</a>
+        <a href="https://github.com/Aik358/dsh-auto-memory/issues/35">#35</a>
+        <a href="https://github.com/Aik358/dsh-auto-memory/issues/48">#48</a>
+        <a href="https://github.com/Aik358/dsh-auto-memory/issues/51">#51</a>
+        <a href="https://github.com/Aik358/dsh-auto-memory/issues/52">#52</a>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="top">
+        <img src="https://github.com/JIE42393.png?size=92" alt="JIE42393" loading="lazy">
+        <div class="who">
+          <a href="https://github.com/JIE42393" target="_blank" rel="noopener">@JIE42393</a>
+          <div class="tier"><span class="zh">7 issue</span><span class="en">7 issues</span></div>
+        </div>
+      </div>
+      <p class="desc zh">持续的问题反馈者，覆盖面板行为、召回质量与配置边界等场景。</p>
+      <p class="desc en">A persistent reporter covering panel behaviour, recall quality, and configuration edge cases.</p>
+      <div class="refs">
+        <a href="https://github.com/Aik358/dsh-auto-memory/issues/15">#15</a>
+        <a href="https://github.com/Aik358/dsh-auto-memory/issues/26">#26</a>
+        <a href="https://github.com/Aik358/dsh-auto-memory/issues/30">#30</a>
+        <a href="https://github.com/Aik358/dsh-auto-memory/issues/41">#41</a>
+        <a href="https://github.com/Aik358/dsh-auto-memory/issues/42">#42</a>
+        <a href="https://github.com/Aik358/dsh-auto-memory/issues/43">#43</a>
+        <a href="https://github.com/Aik358/dsh-auto-memory/issues/45">#45</a>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="top">
+        <img src="https://github.com/Fishsb.png?size=92" alt="Fishsb" loading="lazy">
+        <div class="who">
+          <a href="https://github.com/Fishsb" target="_blank" rel="noopener">@Fishsb</a>
+          <div class="tier"><span class="zh">3 issue</span><span class="en">3 issues</span></div>
+        </div>
+      </div>
+      <p class="desc zh">关于记忆召回与注入行为的连续反馈。</p>
+      <p class="desc en">Successive reports on memory recall and injection behaviour.</p>
+      <div class="refs">
+        <a href="https://github.com/Aik358/dsh-auto-memory/issues/18">#18</a>
+        <a href="https://github.com/Aik358/dsh-auto-memory/issues/19">#19</a>
+        <a href="https://github.com/Aik358/dsh-auto-memory/issues/20">#20</a>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="top">
+        <img src="https://github.com/ProperSAMA.png?size=92" alt="ProperSAMA" loading="lazy">
+        <div class="who">
+          <a href="https://github.com/ProperSAMA" target="_blank" rel="noopener">@ProperSAMA</a>
+          <div class="tier"><span class="zh">1 PR</span><span class="en">1 PR</span></div>
+        </div>
+      </div>
+      <p class="desc zh">DSH Desktop 增强模式（透明 / Mica 材质）下的面板可读性修复，以及入口按钮防遮挡与外点 / Esc 关闭。</p>
+      <p class="desc en">Panel readability fix for DSH Desktop enhanced mode (transparent / Mica materials), plus entry-button anti-occlusion and outside-click / Esc dismissal.</p>
+      <div class="refs"><a class="pr" href="https://github.com/Aik358/dsh-auto-memory/pull/12">PR #12</a></div>
+    </div>
+
+    <div class="card">
+      <div class="top">
+        <img src="https://github.com/nkh0472.png?size=92" alt="nkh0472" loading="lazy">
+        <div class="who">
+          <a href="https://github.com/nkh0472" target="_blank" rel="noopener">@nkh0472</a>
+          <div class="tier"><span class="zh">1 issue</span><span class="en">1 issue</span></div>
+        </div>
+      </div>
+      <p class="desc zh">无人值守 / 批处理场景的加固反馈——直接推动了欢迎向导与逐功能开关化。</p>
+      <p class="desc en">Unattended / batch-workflow hardening feedback that directly drove the welcome tour and per-feature switches.</p>
+      <div class="refs"><a href="https://github.com/Aik358/dsh-auto-memory/issues/10">#10</a></div>
+    </div>
+
+    <div class="card">
+      <div class="top">
+        <img src="https://github.com/messiahyl.png?size=92" alt="messiahyl" loading="lazy">
+        <div class="who">
+          <a href="https://github.com/messiahyl" target="_blank" rel="noopener">@messiahyl</a>
+          <div class="tier"><span class="zh">2 issue</span><span class="en">2 issues</span></div>
+        </div>
+      </div>
+      <p class="desc zh">早期问题反馈，帮助校准了最初的行为预期。</p>
+      <p class="desc en">Early feedback that helped calibrate the initial behaviour expectations.</p>
+      <div class="refs">
+        <a href="https://github.com/Aik358/dsh-auto-memory/issues/8">#8</a>
+        <a href="https://github.com/Aik358/dsh-auto-memory/issues/9">#9</a>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="top">
+        <img src="https://github.com/fei009009.png?size=92" alt="fei009009" loading="lazy">
+        <div class="who">
+          <a href="https://github.com/fei009009" target="_blank" rel="noopener">@fei009009</a>
+          <div class="tier"><span class="zh">1 PR</span><span class="en">1 PR</span></div>
+        </div>
+      </div>
+      <p class="desc zh">提交代码贡献。</p>
+      <p class="desc en">Contributed code via pull request.</p>
+      <div class="refs"><a class="pr" href="https://github.com/Aik358/dsh-auto-memory/pull/29">PR #29</a></div>
+    </div>
+
+  </div>
+
+  <!-- ══════════ 其他贡献者 ══════════ -->
+  <h2 class="sec" style="margin-top:56px"><span class="zh">其他贡献者</span><span class="en">Also contributed</span></h2>
+  <p class="sec-sub zh">每一位的第一个反馈都算数——很多修复就是从这些 issue 开始的。</p>
+  <p class="sec-sub en">Every first report counts — many of these fixes started right here.</p>
+
+  <div class="compact">
+    <a class="chip" href="https://github.com/Architectxz" target="_blank" rel="noopener">
+      <img src="https://github.com/Architectxz.png?size=56" alt="" loading="lazy">
+      <span class="n">@Architectxz</span><span class="r">#1</span>
+    </a>
+    <a class="chip" href="https://github.com/ALuoXue" target="_blank" rel="noopener">
+      <img src="https://github.com/ALuoXue.png?size=56" alt="" loading="lazy">
+      <span class="n">@ALuoXue</span><span class="r">#2</span>
+    </a>
+    <a class="chip" href="https://github.com/lhbsaa" target="_blank" rel="noopener">
+      <img src="https://github.com/lhbsaa.png?size=56" alt="" loading="lazy">
+      <span class="n">@lhbsaa</span><span class="r">#3</span>
+    </a>
+    <a class="chip" href="https://github.com/alexchenzl" target="_blank" rel="noopener">
+      <img src="https://github.com/alexchenzl.png?size=56" alt="" loading="lazy">
+      <span class="n">@alexchenzl</span><span class="r">#6</span>
+    </a>
+    <a class="chip" href="https://github.com/zjj871114037" target="_blank" rel="noopener">
+      <img src="https://github.com/zjj871114037.png?size=56" alt="" loading="lazy">
+      <span class="n">@zjj871114037</span><span class="r">#7</span>
+    </a>
+    <a class="chip" href="https://github.com/eclgo" target="_blank" rel="noopener">
+      <img src="https://github.com/eclgo.png?size=56" alt="" loading="lazy">
+      <span class="n">@eclgo</span><span class="r">#13</span>
+    </a>
+    <a class="chip" href="https://github.com/moonltppt" target="_blank" rel="noopener">
+      <img src="https://github.com/moonltppt.png?size=56" alt="" loading="lazy">
+      <span class="n">@moonltppt</span><span class="r">#14</span>
+    </a>
+    <a class="chip" href="https://github.com/swtseaman" target="_blank" rel="noopener">
+      <img src="https://github.com/swtseaman.png?size=56" alt="" loading="lazy">
+      <span class="n">@swtseaman</span><span class="r">#21</span>
+    </a>
+    <a class="chip" href="https://github.com/xiaochaZ" target="_blank" rel="noopener">
+      <img src="https://github.com/xiaochaZ.png?size=56" alt="" loading="lazy">
+      <span class="n">@xiaochaZ</span><span class="r">#38</span>
+    </a>
+    <a class="chip" href="https://github.com/jeffsui" target="_blank" rel="noopener">
+      <img src="https://github.com/jeffsui.png?size=56" alt="" loading="lazy">
+      <span class="n">@jeffsui</span><span class="r">#39</span>
+    </a>
+    <a class="chip" href="https://github.com/cuohua" target="_blank" rel="noopener">
+      <img src="https://github.com/cuohua.png?size=56" alt="" loading="lazy">
+      <span class="n">@cuohua</span><span class="r">#40</span>
+    </a>
+  </div>
+
+  <!-- ══════════ 赞助方 ══════════ -->
+  <h2 class="sec" style="margin-top:56px"><span class="zh">资源赞助</span><span class="en">Resource sponsors</span></h2>
+  <p class="sec-sub zh">本项目不接广告、不做付费墙。以下赞助方提供的是开发本身要烧掉的东西——API 额度。</p>
+  <p class="sec-sub en">No ads, no paywall. These sponsors provide what development actually burns: API quota.</p>
+
+  <div class="sponsor">
+    <div class="mark">DSH</div>
+    <div class="body">
+      <h3><a href="https://api.dshapi.icu/" target="_blank" rel="noopener">DSH API · api.dshapi.icu</a></h3>
+      <p class="zh">API 中转站，为本项目的开发、回归测试，以及 M 系列语义引擎的选型与激活策略研究提供模型端点。没有这些额度，那些基准实验根本跑不起来。</p>
+      <p class="en">An API relay station providing the model endpoints used for development, regression testing, and the M-series semantic-engine selection / activation research. Without that quota, those benchmark runs simply would not have happened.</p>
+      <div class="tag"><span class="zh">API 额度赞助</span><span class="en">API quota sponsor</span></div>
+    </div>
+  </div>
+
+  <!-- ══════════ 如何参与 ══════════ -->
+  <h2 class="sec" style="margin-top:56px"><span class="zh">如何参与</span><span class="en">How to contribute</span></h2>
+  <p class="sec-sub zh">不需要先成为"核心贡献者"。一个能复现的 issue 就是有效贡献。</p>
+  <p class="sec-sub en">You do not need to be a "core contributor" first. A reproducible issue is a real contribution.</p>
+
+  <div class="steps">
+    <div class="step">
+      <div class="k">01 / issue</div>
+      <b><span class="zh">报一个能复现的问题</span><span class="en">File a reproducible issue</span></b>
+      <p class="zh">带上 DSH 版本、插件版本、复现步骤和实际 vs 预期。这一步比什么都重要。</p>
+      <p class="en">Include DSH version, plugin version, steps, and actual vs expected. This matters more than anything else.</p>
+    </div>
+    <div class="step">
+      <div class="k">02 / pr</div>
+      <b><span class="zh">提交一个 PR</span><span class="en">Send a pull request</span></b>
+      <p class="zh">小步、单一目的、带上验证结果。回归套件是绿的才算完成。</p>
+      <p class="en">Small, single-purpose, with verification results. It counts as done only when the regression suite is green.</p>
+    </div>
+    <div class="step">
+      <div class="k">03 / qq</div>
+      <b><span class="zh">加入交流群</span><span class="en">Join the QQ group</span></b>
+      <p class="zh">问题反馈、使用技巧交流，响应通常比 issue 更快。</p>
+      <p class="en">Feedback and usage tips — usually faster than issues.</p>
+      <p style="margin-top:10px"><a href="https://qm.qq.com/q/v7Asxn6vPa" target="_blank" rel="noopener" style="color:var(--accent)">→ <span class="zh">点击加入</span><span class="en">Join now</span></a></p>
+    </div>
+    <div class="step">
+      <div class="k">04 / sponsor</div>
+      <b><span class="zh">赞助开发资源</span><span class="en">Sponsor resources</span></b>
+      <p class="zh">提供 API 额度或其他开发资源。开个 issue 说明来意即可。</p>
+      <p class="en">Provide API quota or other development resources. Just open an issue.</p>
+    </div>
+  </div>
+
+  <footer>
+    <p class="zh">数据来源：GitHub Issues &amp; Pull Requests（2026-09-16 快照，共 51 条）。头像由 GitHub 提供。</p>
+    <p class="en">Data source: GitHub Issues &amp; Pull Requests (snapshot 2026-09-16, 51 entries). Avatars served by GitHub.</p>
+    <p style="margin-top:14px">
+      <a href="https://github.com/Aik358/dsh-auto-memory">README</a> ·
+      <a href="https://github.com/Aik358/dsh-auto-memory/blob/main/docs/USER-GUIDE.zh-CN.md">用户文档</a> ·
+      <a href="https://github.com/Aik358/dsh-auto-memory" target="_blank" rel="noopener">GitHub</a> ·
+      <a href="https://api.dshapi.icu/" target="_blank" rel="noopener">DSH API</a>
+    </p>
+    <p style="margin-top:10px;opacity:.6">dsh-auto-memory · BSD-3-Clause</p>
+  </footer>
+
+</div>
+
+<script>
+  function setLang(l) {
+    document.body.setAttribute('data-lang', l);
+    document.documentElement.lang = (l === 'zh' ? 'zh-CN' : 'en');
+    document.getElementById('lb-zh').className = (l === 'zh' ? 'on' : '');
+    document.getElementById('lb-en').className = (l === 'en' ? 'on' : '');
+    try { localStorage.setItem('dam-contrib-lang', l); } catch (e) {}
+  }
+  (function () {
+    var saved = null;
+    try { saved = localStorage.getItem('dam-contrib-lang'); } catch (e) {}
+    if (!saved) {
+      // 跟随浏览器语言: 非中文默认英文
+      saved = /^zh\b/i.test(navigator.language || '') ? 'zh' : 'en';
+    }
+    setLang(saved);
+  })();
+</script>
+</body>
+</html>

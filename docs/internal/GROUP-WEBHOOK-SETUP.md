@@ -58,3 +58,36 @@ GET ...?report=12&raw=1                            # 只要原文不要 AI 总�
 - 注意:每次日报(11:40/20:40)读完后会清空收集区,所以可查范围≈「自上次日报以来收集的反馈」(与 12h 窗口天然对齐)。
 - DeepSeek Harness 用法:直接 GET 该 URL(浏览器/curl/任意 HTTP 工具),把返回 JSON 交给模型出修复方案;或固化成 auto-memory 的 procedure。
 
+
+---
+
+## 2026-09-13 增量：定时班自触发 + @问答每小时限额（版本标记 20260913f）
+
+**背景**：GitHub 的 schedule 定时触发对本仓库从未生效（全仓库 schedule 运行 0 次，成功的日报全是手动 dispatch）。改为「SCF 定时触发器 → 函数 → workflow_dispatch」：到点必达，GitHub 侧只当执行器。
+
+### 控制台要做的三件事
+
+1. **上传新 index.zip**（标记 `20260913e`；上传后 `?diag=1` 应显示 `"v":"webhook-gist-20260913e"`，并出现 `"ai"` 与 `"timer"` 两个配置块）。
+2. **新增环境变量**（函数配置）：
+   - `LLM_BASE_URL` / `LLM_API_KEY` / `LLM_MODEL` —— 与日报 Actions secrets 同源（WorldCodes 中转 + minimax-m3），配了才有 @ 答疑；**注意 base 的变量名是 `LLM_BASE_URL`**（`LLM_API_BASE` 亦兼容，2026-09-13 曾因文档误写前者导致 base 一直是 DeepSeek 默认值的 401）；
+   - `GH_DISPATCH_TOKEN` —— **Actions 读写权限**的 PAT（细粒度：Repository permissions → Actions: Read and write），定时班自触发必需；
+   - `TIMER_SECRET`（可选）—— `?timer=1&key=<值>` 手动测试时的口令；`TIMER_MIN_GAP_HOURS`（可选，默认 10）。
+   - `AI_MAX_PER_HOUR`（可选）—— @ 答疑每小时最多几次，**不配 = 不限额**；`AI_QUOTA_HOURS`（可选，默认 1）—— 限频时间窗（小时）。改额度只改环境变量，无需改代码。
+3. **添加定时触发器**（函数 → 触发管理 → 创建）：类型=定时触发器，名称必须叫 **`digest-dispatch`**（与默认 TIMER_TRIGGER_NAME 一致），自定义 Cron（SCF 七段=秒 分 时 日 月 星期 年，按北京时间）：
+   - `0 40 11 * * * *`（北京 11:40 主班）
+   - `0 40 20 * * * *`（北京 20:40 主班）
+   - 触发器 POST 到函数 URL（会带 Type:Timer 事件体），函数内部有 10 小时防重（落 gist 的 bot-state.json），不会重发。
+
+### 新行为
+
+- **@ 答疑**：群成员 @机器人 + 任意问题（不含反馈触发词）→ AI（M3）**每小时限 1 次**详细回答（被动回复，带 msg_id，不占主动消息配额）；超限回复一条限频提示；配额时间戳落 gist `bot-state.json`，冷启动不失忆。反馈触发词（反馈/问题/bug）的收集行为不变。
+- **手动测试**：`GET …?timer=1&key=<TIMER_SECRET>` 可随时触发一班日报（同样受 10h 防重保护）。
+- **成本**：SCF 侧 新增调用 ≤ 每天几十次，远在免费额度内；LLM 侧 M3 约 0.02 元/次，日报 2 次/天 + 答疑上限 24 次/天 → 最坏 ~0.5 元/天，实际远低。
+
+
+### 20260913f 追加：反馈文件钉死文件名（真 bug 修复）
+
+- **问题**：反馈写入/日报读取/清空都用「gist 里第一个文件」当目标——`group-raw-debug.txt` 先建、或清空用 `content:''`（= **删除文件**）后，第一个文件就会换人，实测反馈行混进了原始调试文件。
+- **修复**：三方（webhook 写入 / report 读取 / digest 收集清空）全部钉死 `group-feedback.jsonl`；清空改写 `'
+'`（**保留文件本身**）；report 的 LLM 失败不再静默，外显 `llmError` 字段（检查 base/model/key 就看它）。
+- **迁移**：旧混写的历史行留在 `group-raw-debug.txt` 作为调试史，不再被 report 读取；新反馈从上传新包起进 `group-feedback.jsonl`。**务必确认 Actions secret `FEEDBACK_GIST_ID` 与云函数 `GIST_ID` 是同一个值**（`fb17c49dab6c295346c96ac971727095`；secret 不可回读，不记得就重设）。

@@ -13,10 +13,10 @@ Pure re-implementation of the frozen policy for the production sidecar path
                 -> configHash; mismatch = stale = full rebuild
 
 Providers:
-  hash-pre-v1   deterministic stdlib-only embedding (sha256-seeded bag of
+  hash-v1   deterministic stdlib-only embedding (sha256-seeded bag of
                 token-trigram dims). Zero dependencies, zero network. Used
                 by CI and offline protocol tests. NOT a quality provider.
-  bge-m3-pre-v1 real model via transformers (lazy import; requires the
+  bge-m3-v1 real model via transformers (lazy import; requires the
                 pinned local snapshot dir passed in the embedding config).
 
 No DSH file reads; no writes except what the worker explicitly passes in.
@@ -25,9 +25,9 @@ import hashlib
 import json
 import re
 
-PROVIDER_REAL = 'bge-m3-pre-v1'
+PROVIDER_REAL = 'bge-m3-v1'
 PROVIDER_REAL_INT8 = 'bge-m3-onnx-int8-v1'
-PROVIDER_HASH = 'hash-pre-v1'
+PROVIDER_HASH = 'hash-v1'
 CHUNK_POLICY_VERSION = 'm7_chunk_v1'
 CHUNK_MAX_TOKENS = 512
 QUERY_MAX_TOKENS = 256
@@ -74,7 +74,7 @@ def config_hash(provider, model_revision, dimension):
 
 def chunk_id_for(memory_id, record_digest, ordinal):
     return 'chk_' + sha_hex(
-        ('m7-chunk-pre-v1\u0000' + memory_id + '\u0000' + record_digest +
+        ('m7-chunk-v1\u0000' + memory_id + '\u0000' + record_digest +
          '\u0000' + str(ordinal)).encode('utf-8'))[:32]
 
 

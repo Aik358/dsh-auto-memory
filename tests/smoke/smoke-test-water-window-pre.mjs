@@ -18,13 +18,19 @@
  *   W8  findOfficialContextWindowPre:取最后一条 request/context(last-wins)
  *   W9  findOfficialContextWindowPre:缺失/非法值返回 0
  *   W10 findOfficialContextWindowPre:maxScan 限制生效
- *   W11-W14 会话真实模型(request/header 优先)
+ *   W11-W14 会话真实模型(request/header 优先,2026-09-08)
  *   W15-W16 provider 前缀式模型 id(含 `/`)可被解析并命中(核心回归,2026-09-14)
  *   W17 非法 id 行不得把窗口记到上一条模型头上(静默错配)
+ *   W18-W21 会话模型扫描缓存的复用边界(空结果不得被锁死 5 分钟,2026-09-14)
+ *   W22 首轮 pre-step 只存在 request/header 时 contextWindow 恒为 0(空值的来源)
+ *   W23-W25 会话真实模型未知时不得按比例 arm(新会话首轮,2026-09-14;W25 同日审查修正为 fail-closed)
+ *   W26 接线守卫:宿主端确实调用 reusableWindowCachePre 并写入 events 字段
+ *       —— 编号刻意让扫描缓存(W18-W22/W26)与首轮判定(W23-W25)两段互不重叠
  */
 
 import assert from 'node:assert/strict'
-import { parseModelWindowsPre, pickWindowPre, findOfficialContextWindowPre, findSessionModelPre } from '../../lib/water-window.js'
+import { readFileSync } from 'node:fs'
+import { parseModelWindowsPre, pickWindowPre, findOfficialContextWindowPre, findSessionModelPre, reusableWindowCachePre, shouldArmAutoContinuePre } from '../../lib/water-window.js'
 
 let pass = 0
 let fail = 0
@@ -128,6 +134,7 @@ try {
   // 整行匹配失败 → 该模型的 contextWindow 被静默丢弃 → 窗口退化为 fallback,水位虚高。
   // 实测:真实窗口 1,000,000 的会话按 131,072 当分母,水位被放大 7.63 倍(12.8% 显示成 98%),
   // 未达阈值即误弹「接续到新会话」确认卡。
+  // 2026-09-14 从主车道回填(PR #31 的回归用例当时只落在发行轨;开发轨缺这 5 条断言)。
   const slashYaml = [
     'llm-pi-ai:',
     '  providers:',
@@ -156,6 +163,77 @@ try {
   ].join('\n')
   const w17 = parseModelWindowsPre(badIdYaml)
   ok('W17 非法 id 行的窗口不记到上一条', w17.byModel['good-model'] === 0, JSON.stringify(w17.byModel))
+
+  // ── W18-W21 会话模型扫描缓存的复用边界(2026-09-14) ──────────────────
+  // 回归:checkWaterLevel 原先无条件缓存扫描结果,空结果(contextWindow=0)同样命中
+  // `cached.info`(对象恒为 truthy)⇒ 被锁死 5 分钟。而首轮 agent/pre-step 必然早于
+  // request/context 写入(实测同轮内 turn/start → request/context 相隔 58ms,
+  // step/start 在 request/context 之前约 21ms)⇒ official-context 在开局 5 分钟内永远取不到。
+  const t0 = 1000000
+  const mkCache = (over) => Object.assign(
+    { sid: 's1', at: t0, info: { provider: 'p', model: 'm', contextWindow: 0 }, events: 13 }, over)
+  const nonEmpty = { provider: 'p', model: 'm', contextWindow: 1000000 }
+
+  ok('W18 非空结果 TTL 内复用(request/context 只在会话开头追加,值稳定)',
+    reusableWindowCachePre(mkCache({ info: nonEmpty }), 's1', 999, t0 + 1000) === true)
+  ok('W19 空结果 + 事件数未变 → 复用(不给每个 pre-step 加一次 O(n) 扫描)',
+    reusableWindowCachePre(mkCache(), 's1', 13, t0 + 1000) === true)
+  ok('W20 空结果 + 事件数增长 → 必须重扫【核心回归;修复前此断言为 true,即锁死 5 分钟】',
+    reusableWindowCachePre(mkCache(), 's1', 14, t0 + 1000) === false)
+  ok('W21 超过 TTL 不复用', reusableWindowCachePre(mkCache({ info: nonEmpty }), 's1', 13, t0 + 300001) === false)
+  ok('W21 换会话不复用', reusableWindowCachePre(mkCache({ info: nonEmpty }), 's2', 13, t0 + 1000) === false)
+  ok('W21 无缓存不复用', reusableWindowCachePre(null, 's1', 13, t0 + 1000) === false)
+  ok('W21 无 sid 不复用', reusableWindowCachePre(mkCache({ info: nonEmpty }), '', 13, t0 + 1000) === false)
+  ok('W21 空 info 且旧缓存缺 events 字段 → 不复用(兼容降级为"重扫")',
+    reusableWindowCachePre({ sid: 's1', at: t0, info: { provider: '', model: '', contextWindow: 0 } }, 's1', 13, t0 + 1000) === false)
+
+  // ── W22 空值的来源:首轮 pre-step 只存在 request/header ────────────────
+  // 实测事件序列为 turn/start → step/start → user/message → request/header → request/context,
+  // pre-step 早于 request/context ⇒ 首次扫描只能拿到 provider/model,contextWindow 为 0。
+  const round1Model = findSessionModelPre([
+    { type: 'request/header', data: { header: { config: { provider: 'command-code', model: 'deepseek/deepseek-v4.1-flash' } } } },
+  ])
+  ok('W22 只有 request/header 时 provider/model 有值、contextWindow 为 0',
+    round1Model.provider === 'command-code'
+      && round1Model.model === 'deepseek/deepseek-v4.1-flash'
+      && round1Model.contextWindow === 0,
+    JSON.stringify(round1Model))
+
+  // ── W23-W25 会话真实模型未知时的 arm 资格(2026-09-14) ────────────────
+  // 新会话首轮 agent/pre-step 时 request/header 尚未写入会话,
+  // findSessionModelPre 返回 {provider:'',model:'',contextWindow:0,maxTokens:0} 全空
+  // (DSH 的 sessionApi 只有 selectModel,没有查询会话当前模型的接口)。
+  // 此时窗口只能用 settings.yaml 的 agent-default-model 推算 —— 而它与会话实际模型可能完全不同,
+  // 按比例 arm 会让水位虚高数倍(实测 1,000,000 被当 131,072)后误弹接续卡。
+  ok('W23 模型未知 + 无硬信号 → 不得按比例 arm',
+    shouldArmAutoContinuePre({ ratio: 0.99, modelKnown: false, hard: false }) === false)
+  ok('W23 模型未知 + 有硬信号(compaction/overflow/硬墙) → 放行（真实事件不依赖窗口估算）',
+    shouldArmAutoContinuePre({ ratio: 0.50, modelKnown: false, hard: true }) === true)
+  ok('W24 模型已知 → 比例判据照常生效',
+    shouldArmAutoContinuePre({ ratio: 0.80, modelKnown: true, hard: false }) === true)
+  // W25 fail-closed(2026-09-14 审查修正):原先 `=== false` 显式判等下,undefined 视为「已知」→
+  // checkWaterLevel 早退路径(handoff 关闭/win<=0/测量异常)残留 undefined 时闸被静默绕过。
+  // 改为 `!== true`:凡非 true 一律视为未知,只放行硬信号。
+  ok('W25 未传 modelKnown → 视为未知(fail-closed,字段缺失不得绕闸)',
+    shouldArmAutoContinuePre({ ratio: 0.80, hard: false }) === false)
+  ok('W25 modelKnown=null/0/"true" 等非 true 值 → 一律视为未知',
+    shouldArmAutoContinuePre({ ratio: 0.80, modelKnown: null, hard: false }) === false &&
+    shouldArmAutoContinuePre({ ratio: 0.80, modelKnown: 0, hard: false }) === false &&
+    shouldArmAutoContinuePre({ ratio: 0.80, modelKnown: 'true', hard: false }) === false)
+  ok('W25 空 wl → 不放行', shouldArmAutoContinuePre(null) === false)
+  ok('W25 undefined → 不放行', shouldArmAutoContinuePre(undefined) === false)
+
+  // ── W26 接线守卫:纯函数正确 ≠ 接线正确 ─────────────────────────────
+  // 以上全是纯函数断言,无法发现「checkWaterLevel 忘了调用它 / 参数传错 / 忘了写 events」
+  // 这类接线问题(纯函数测试照样全绿)。故对宿主端补一次源码守卫,与本仓库其余 *-pre 测试同法。
+  // 注:守卫的 import 路径按本仓 dev 车道写成 water-window.js(主车道为 water-window.js)。
+  const INDEX_SRC = readFileSync(new URL('../../lib/index.js', import.meta.url), 'utf8')
+  ok('W26 已导入 reusableWindowCachePre',
+    /import \{[^}]*\breusableWindowCachePre\b[^}]*\} from '\.\/water-window-pre\.js'/.test(INDEX_SRC))
+  ok('W26 checkWaterLevel 用它判定缓存复用(传入的是当前事件数)',
+    /if \(reusableWindowCachePre\(cached, sid, eventsForModel\.length, Date\.now\(\)\)\)/.test(INDEX_SRC))
+  ok('W26 写入缓存时带 events 字段(否则空结果没有重扫依据,修复即失效)',
+    /info: sessModel, events: eventsForModel\.length/.test(INDEX_SRC))
 } catch (e) {
   fail++
   console.log('  FAIL - 未捕获异常: ' + (e && e.stack ? e.stack : e))

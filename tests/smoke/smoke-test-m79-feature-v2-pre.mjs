@@ -27,7 +27,7 @@ function mkClient(home, policyDirOverride) {
 }
 function mkEmbConfig(home) {
   const p = path.join(home, 'emb-m79.json')
-  writeFileSync(p, JSON.stringify({ provider: 'hash-pre-v1', dimension: 64 }), 'utf8')
+  writeFileSync(p, JSON.stringify({ provider: 'hash-v1', dimension: 64 }), 'utf8')
   process.env.DSH_M7_EMBEDDING_CONFIG = p
   return p
 }

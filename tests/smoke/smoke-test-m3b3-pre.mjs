@@ -40,8 +40,8 @@ const { apply } = await import('../../lib/index.js')
 apply(ctx, {})
 
 const tool = (name) => registeredTools.find((t) => t.name === name)
-if (registeredTools.length !== 14) throw new Error('expected 14 tools, got ' + registeredTools.length)
-if (registeredRoutes.length !== 46) throw new Error('expected 46 routes, got ' + registeredRoutes.length)
+if (registeredTools.length !== 16) throw new Error('expected 16 tools (3.0.0 起 boardMode 默认 graph), got ' + registeredTools.length)
+if (registeredRoutes.length !== 47) throw new Error('expected 47 routes, got ' + registeredRoutes.length)
 
 const cfgRoute = registeredRoutes.find((r2) => r2.path === '/api/dsh-auto-memory/config')
 let body

@@ -22,12 +22,23 @@ import os
 import re
 import sys
 import tempfile
+import time
 
 PROTOCOL = 'm7_wire_v1'
 NAMESPACE = 'dsh-auto-memory'
 INDEX_POLICY = 'index_sync_v1'
 MAX_LINE_BYTES = 256 * 1024
 MAX_RECORDS_PER_PAGE = 64
+# ★2026-09-17 修「索引永久不就绪 → 语义唤回全程降级」：JS 侧契约是「新 miv latest-wins；
+# 旧 in-flight sync abort/cancel」，但 abort 只作用于 JS 的 fetch，Python 从不收到取消帧；
+# 而 active_sync 原先只在 reject_sync / commit 两处清零 ⇒ 一次「begin 之后没收 page/commit」
+# 的同步会把槽永久占住，此后每次 index_begin 都被回 sync-in-progress。
+# 实测取证：engine-switch-state.json = failed:2527 / error:"sync-in-progress" / startedAt:0；
+# 诊断日志 index-not-ready 累计 22945 行（sync-in-progress 占 664），自 2026-08-26 起持续；
+# worker 于 00:49:50 重启后仍有 1593 行 ⇒ 重启只是暂时缓解，状态会重新形成。
+# 本常量 = 「距最后一次活动多久仍无进展即视为持有者已死」的阈值；取 150s > JS 的 syncTimeoutMs
+# (120s)，保证 JS 先放弃、worker 后回收。
+SYNC_TAKEOVER_IDLE_SECONDS = 150
 STDERR_BUDGET = 64
 
 JS_TYPES = frozenset(['health', 'context_push', 'index_sync_begin', 'index_sync_page',
@@ -136,7 +147,7 @@ class Worker:
         self.active_sync = None     # at most one in-flight index sync (JS serializes anyway)
         self.derived = {}           # (workspaceRef, scope) -> current committed entry ONLY (old versions discarded)
         self.counts = {'frames': 0, 'errors': 0, 'acks': 0, 'activations': 0, 'commits': 0,
-                       'cancels': 0, 'close_sessions': 0}
+                       'cancels': 0, 'close_sessions': 0, 'sync_takeovers': 0}
 
     # ---------- outbound ----------
 
@@ -246,7 +257,7 @@ class Worker:
                 continue
             if not RE_HEX64.match(fdig) or not RE_HEX64.match(rdig):
                 continue
-            activation_id = 'act_' + first32(sha_str('m7-fake-activation-pre-v1\u0000' + obs))
+            activation_id = 'act_' + first32(sha_str('m7-fake-activation-v1\u0000' + obs))
             cand = {
                 'candidateId': 'cand_' + first32(sha_str(activation_id + '\u0000' + mid + '\u0000' + str(i))),
                 'memoryId': mid,
@@ -262,7 +273,7 @@ class Worker:
             candidates.append(cand)
         if not candidates:
             return None
-        activation_id = 'act_' + first32(sha_str('m7-fake-activation-pre-v1\u0000' + obs))
+        activation_id = 'act_' + first32(sha_str('m7-fake-activation-v1\u0000' + obs))
         created = req.get('sentAt', 0)
         ttl_steps = 2
         activation = {
@@ -340,11 +351,33 @@ class Worker:
         require((record_count == 0) == (page_count == 0), 'invalid-payload', 'count-consistency')
         require(p.get('indexPolicyVersion') == INDEX_POLICY, 'invalid-payload', 'indexPolicyVersion')
         if self.active_sync is not None:
-            return [self.index_ack(req, p, 'begin', False, reason='sync-in-progress')]
+            prev = self.active_sync
+            prev_id = str(prev.get('syncId', ''))
+            try:
+                last_seen = float(prev.get('lastActivityAt') or prev.get('startedAt') or 0)
+            except Exception:
+                last_seen = 0.0
+            idle = (time.time() - last_seen) if last_seen else 0.0
+            same_key = (str(prev.get('workspaceRef', '')) == ws_ref
+                        and prev.get('scope') == scope)
+            superseded = same_key and prev_id != sync_id
+            idle_dead = idle > SYNC_TAKEOVER_IDLE_SECONDS
+            if superseded or idle_dead:
+                # 只在「同 key 被新 syncId 取代」或「超过阈值无任何活动」时接管；
+                # 跨工作区并发、以及正在推进的长同步，仍按原样回 sync-in-progress。
+                self.counts['sync_takeovers'] = self.counts.get('sync_takeovers', 0) + 1
+                diag('index_sync takeover: %s -> %s (%s)' % (
+                    prev_id or '(none)', sync_id,
+                    'superseded' if superseded else 'idle:%.0fs' % idle))
+                self.active_sync = None
+            else:
+                return [self.index_ack(req, p, 'begin', False, reason='sync-in-progress')]
         self.active_sync = {
             'syncId': sync_id, 'workspaceRef': ws_ref, 'scope': scope, 'memoryIndexVersion': miv,
             'recordCount': record_count, 'pageCount': page_count, 'tuples': tuples,
             'pages': {}, 'next_page': 0, 'received': 0, 'page_digests': [],
+            'startedAt': time.time(),
+            'lastActivityAt': time.time(),
         }
         return [self.index_ack(req, p, 'begin', True)]
 
@@ -412,6 +445,7 @@ class Worker:
         st['next_page'] = page_no + 1
         st['received'] += len(records)
         st['page_digests'].append(recomputed)
+        st['lastActivityAt'] = time.time()
         return [self.index_ack(req, base, 'page', True, extra={
             'pageNo': page_no, 'receivedPages': len(st['pages']), 'receivedRecords': st['received']})]
 

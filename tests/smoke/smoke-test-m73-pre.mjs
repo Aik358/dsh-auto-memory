@@ -3,7 +3,7 @@
 // 协议零回退(rejection 矩阵复测)/commit 后建 versioned vectors(identity block)/
 // context_push 影子候选(本地日志,不发新帧)/miv 隔离/stale 检测与重建/
 // 无 embedding 配置时降级为纯协议/semantic worker 抑制 fake activation。
-// 全程 hash-pre-v1 确定性 provider(纯标准库)——不下载模型、不联网、不依赖 torch。
+// 全程 hash-v1 确定性 provider(纯标准库)——不下载模型、不联网、不依赖 torch。
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync, existsSync, readdirSync, readFileSync } from 'node:fs'
 import { createHash } from 'node:crypto'
 import { tmpdir } from 'node:os'
@@ -27,7 +27,7 @@ const SEM_WORKER = path.join(HERE, '..', '..', 'python', 'worker_semantic_v1.py'
 
 function mkEmbConfig(home, dim = 64) {
   const p = path.join(home, `emb-${dim}.json`)
-  writeFileSync(p, JSON.stringify({ provider: 'hash-pre-v1', dimension: dim }), 'utf8')
+  writeFileSync(p, JSON.stringify({ provider: 'hash-v1', dimension: dim }), 'utf8')
   return p
 }
 function mkClient(home, embConfigPath) {
@@ -36,6 +36,19 @@ function mkClient(home, embConfigPath) {
   return CLIENT.createPythonSidecarClientPre({
     command: 'python', scriptPath: () => SEM_WORKER, dshHome: home, requestTimeoutMs: 8000,
   })
+}
+// 负载敏感点(2026-09-14 全量连跑实测):python worker 冷启动可能超过 requestTimeoutMs(8000),
+// 此时 health() 返回**无 frame**的失败响应 → 后续 `h.frame.payload` 抛 TypeError,整套假红。
+// 改为有界轮询,但只看最终响应:worker 真起不来时轮询耗尽、拿到最后一个无 frame 响应,
+// 断言(embedding.enabled/ready)照原样失败,不掩蔽真实故障。
+async function healthReady(c, attempts = 8, gapMs = 400) {
+  let last = null
+  for (let i = 0; i < attempts; i++) {
+    last = await c.health()
+    if (last && last.frame) return last
+    if (i < attempts - 1) await sleep(gapMs)
+  }
+  return last
 }
 function mkRecords(tag, n, wsrSeed, opt = {}) {
   const wsr = 'wsr_' + hex32(wsrSeed)
@@ -93,7 +106,7 @@ console.log('[N1] semantic worker 启动 + health embedding 视图(协议层零�
 {
   const home = mkdtempSync(path.join(tmpdir(), 'm73-n1-'))
   const c = mkClient(home, mkEmbConfig(home))
-  const h = await c.health()
+  const h = await healthReady(c)
   ok(h.ok && h.frame.payload.worker === 'semantic', 'health worker=semantic')
   eq(h.frame.payload.capabilities, ['index-sync-v1', 'embedding-shadow-v1'], 'capabilities 含 embedding-shadow-v1')
   ok(h.frame.payload.embedding.enabled === true && h.frame.payload.embedding.ready === false, '无 corpus 时 enabled/ready=true/false')
@@ -115,7 +128,7 @@ console.log('[N2] index_sync E2E → versioned vectors + identity block 落盘')
   ok(vecFiles.length === 1, 'semantic 下恰一个 vectors 文件')
   const v = JSON.parse(readFileSync(path.join(semDir(home), vecFiles[0]), 'utf8'))
   eq(v.identity.chunkPolicyVersion, 'm7_chunk_v1', 'identity.chunkPolicyVersion')
-  eq(v.identity.provider, 'hash-pre-v1', 'identity.provider')
+  eq(v.identity.provider, 'hash-v1', 'identity.provider')
   eq(v.identity.normalization, 'l2_normalize', 'identity.normalization')
   eq(v.identity.dimension, 64, 'identity.dimension')
   ok(typeof v.identity.configHash === 'string' && v.identity.configHash.startsWith('cfgh_'), 'identity.configHash')
@@ -129,7 +142,7 @@ console.log('[N2] index_sync E2E → versioned vectors + identity block 落盘')
   ok(single.chunkOrdinal === 0 && single.chunkCount === 1 && single.chunkId.startsWith('chk_'), '单 chunk 记录 chunkOrdinal=0/chunkCount=1')
   ok(v.vectors.length === v.chunks.length && v.vectors[0].length === 64, '向量数=chunk 数,dimension=64')
   ok(v.chunks.every((x) => x.sourceRef && x.fileDigest && x.recordDigest && x.sourceEpoch && x.sourceVersion === 1), '每 chunk 带 provenance 五元组')
-  const h = await c.health()
+  const h = await healthReady(c)
   ok(h.frame.payload.embedding.ready === true && h.frame.payload.embedding.chunks === v.chunks.length, 'health ready=true chunks 数正确')
   await c.dispose('n2'); rmSync(home, { recursive: true, force: true })
 }
@@ -175,7 +188,7 @@ console.log('[N4] miv 隔离:跨 workspaceRef/版本 不串')
   await sendAll(c, planA)
   const planB = mkPlan(recsB, mivB, 'D:/tmp/wsB')
   await sendAll(c, planB)
-  const h = await c.health()
+  const h = await healthReady(c)
   eq(h.frame.payload.embedding.entries, 2, '两个 (wsRef,scope) 向量条目')
   await c.request('context_push', pushPayload('obs_' + hex32('n4o1'), mivA, 'alpha 工作区 breaker 语义是什么'))
   await sleep(400)
@@ -203,13 +216,13 @@ console.log('[N5] stale:identity 不匹配拒用,commit 后重建')
   { // first run: build with dim 64
     const c = mkClient(home, mkEmbConfig(home, 64))
     await sendAll(c, mkPlan(recs, miv, 'D:/tmp/wsA'))
-    const h = await c.health()
+    const h = await healthReady(c)
     ok(h.frame.payload.embedding.ready === true, '初次构建 ready')
     await c.dispose('n5a')
   }
   { // second run: same corpus already on disk, config now dim 128 -> stale, refuses
     const c = mkClient(home, mkEmbConfig(home, 128))
-    const h = await c.health()
+    const h = await healthReady(c)
     ok(h.frame.payload.embedding.staleEntries >= 1, 'identity 失配 → staleEntries≥1')
     ok(h.frame.payload.embedding.ready === false, 'stale 时 ready=false(拒绝服务)')
     await c.request('context_push', pushPayload('obs_' + hex32('n5o'), miv, 'breaker 语义'))
@@ -219,7 +232,7 @@ console.log('[N5] stale:identity 不匹配拒用,commit 后重建')
     const recs2 = mkRecords('n5', 2, 'wsA', { topic: 'breaker 语义 v2' })
     const miv2 = 'idx_' + hex32('n5miv2')
     await sendAll(c, mkPlan(recs2, miv2, 'D:/tmp/wsA'))
-    const h2 = await c.health()
+    const h2 = await healthReady(c)
     ok(h2.frame.payload.embedding.ready === true && h2.frame.payload.embedding.staleEntries === 0, 'commit 后重建 ready 且 stale=0')
     await c.request('context_push', pushPayload('obs_' + hex32('n5o2'), miv2, 'breaker 语义 v2'))
     await sleep(300)
@@ -241,7 +254,7 @@ console.log('[N9] 同 miv 跨 workspace:三重过滤显式隔离(审计 P1 泄�
   const planB9 = mkPlan(recsB, mivSame, 'D:/tmp/wsB')
   await sendAll(c, planA9)
   await sendAll(c, planB9)
-  const h = await c.health()
+  const h = await healthReady(c)
   eq(h.frame.payload.embedding.entries, 2, '同 miv 两 (wsRef,scope) 条目共存')
   await c.request('context_push', pushPayload('obs_' + hex32('n9o1'), mivSame, '共享快照内容 breaker 是什么', 1, 'D:/tmp/wsA'))
   await sleep(400)
@@ -280,7 +293,7 @@ console.log('[N7] 无 embedding 配置 → 降级纯协议,永不崩')
 {
   const home = mkdtempSync(path.join(tmpdir(), 'm73-n7-'))
   const c = mkClient(home, null)
-  const h = await c.health()
+  const h = await healthReady(c)
   ok(h.ok && h.frame.payload.embedding.enabled === false, 'embedding.enabled=false(无 env 配置)')
   const recs = mkRecords('n7', 2, 'wsA')
   const rs = await sendAll(c, mkPlan(recs, 'idx_' + hex32('n7miv'), 'D:/tmp/wsA'))
@@ -293,13 +306,13 @@ console.log('[N7] 无 embedding 配置 → 降级纯协议,永不崩')
   await c.dispose('n7'); rmSync(home, { recursive: true, force: true })
 }
 
-console.log('[N8] 真实 provider 门:bge-m3-pre-v1 配置校验(不加载模型)')
+console.log('[N8] 真实 provider 门:bge-m3-v1 配置校验(不加载模型)')
 {
   const home = mkdtempSync(path.join(tmpdir(), 'm73-n8-'))
   const cfgPath = path.join(home, 'emb-real.json')
-  writeFileSync(cfgPath, JSON.stringify({ provider: 'bge-m3-pre-v1', modelDir: path.join(home, 'no-such-model'), dimension: 1024 }), 'utf8')
+  writeFileSync(cfgPath, JSON.stringify({ provider: 'bge-m3-v1', modelDir: path.join(home, 'no-such-model'), dimension: 1024 }), 'utf8')
   const c = mkClient(home, cfgPath)
-  const h = await c.health()
+  const h = await healthReady(c)
   ok(h.ok && h.frame.payload.embedding.enabled === true && h.frame.payload.embedding.ready === false, '模型缺失 → enabled/ready=true/false')
   ok(typeof h.frame.payload.embedding.error === 'string' && h.frame.payload.embedding.error.length > 0, '错误信息有界呈现(不崩)')
   const recs = mkRecords('n8', 1, 'wsA')

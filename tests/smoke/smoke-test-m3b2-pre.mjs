@@ -219,12 +219,20 @@ const load = (f) => readFileSync(path.join(FIX, f))
       },
       copyFile: async (a, b) => { if (fail.copy) throw new Error('injected copy'); return fsDefault.copyFile(a, b) },
     })
-    // 7a: rename 失败 → write-failed,原文件不动,tmp 清理
+    // 7a: rename 失败 → write-failed,原文件不动,完整候选保留(issue #48)
+    // 行为变更(2026-09-16,PR#50 同源):修前 rename 一次失败即 unlink 临时文件(连残骸一起丢),
+    // Windows 并发子代理下会把本可成功的写入判死。现在瞬时错误走退避重试,仍失败则把
+    // **完整候选快照**改名保留为 `.dam-failed-*.tmp` 并回传 recoveryPath,供人工比对。
+    // 候选是整篇快照而非追加指令 ⇒ 绝不自动回放(期间可能有别的写入者推进了目标)。
     const s1 = new MemoryDocumentStore({ fs: mkSpy({ all: true, kind: 'rename' }), backupDir: path.join(ws, 'bak1') })
     const r1 = await s1.append(f, '## x\n- y')
     if (r1.ok || !r1.reason.startsWith('write-failed')) throw new Error('rename failure must surface: ' + r1.reason)
     if (readFileSync(f).equals(original) === false) throw new Error('file must be untouched after rename failure')
-    if (readdirSync(ws).some((x) => x.includes('.dam-pre-tmp-'))) throw new Error('tmp must be cleaned after rename failure')
+    if (!r1.recoveryComplete || !r1.recoveryPath) throw new Error('complete failed-write candidate must be retained')
+    const recovered = readFileSync(r1.recoveryPath, 'utf8')
+    if (!recovered.includes(original.toString('utf8')) || !recovered.includes('## x\n- y')) throw new Error('recovery snapshot must contain old and attempted new content')
+    if (parseAnchors(recovered).status !== 'clean') throw new Error('retained candidate must parse cleanly')
+    if (!r1.recoveryPath.endsWith('.tmp')) throw new Error('recovery snapshot must not look like a Markdown source')
     // 7b: backup 失败 → backup-failed 且不写
     const s2 = new MemoryDocumentStore({ fs: mkSpy({ copy: true }), backupDir: path.join(ws, 'bak2') })
     const r2 = await s2.append(f, '## x\n- y')
@@ -235,7 +243,7 @@ const load = (f) => readFileSync(path.join(FIX, f))
     const r3 = await s3.append(f, '## 2026-08-22\n- 新内容', { memoryId: newMemoryId('bbbb'.repeat(8)) })
     if (!r3.ok || r3.dirty !== true) throw new Error('sidecar failure must mark dirty, got: ' + JSON.stringify(r3))
     if (parseAnchors(readFileSync(f)).records.length !== 2) throw new Error('markdown must be updated despite sidecar failure')
-    console.log('D7 故障注入 ✓ (rename 失败零污染+tmp 清理 / backup 失败中止 / sidecar 失败 dirty 不回滚)')
+    console.log('D7 故障注入 ✓ (rename 失败零污染+完整候选保留 / backup 失败中止 / sidecar 失败 dirty 不回滚)')
   } finally {
     rmSync(ws, { recursive: true, force: true })
   }

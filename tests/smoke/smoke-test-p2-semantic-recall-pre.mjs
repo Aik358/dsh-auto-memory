@@ -2,7 +2,13 @@
 /** smoke-test-p2-semantic-recall —— P2 语义臂接入 recall 回归锁定(2026-09-09)。
  * 语义臂=recall() 内联闭包 semanticArm(env):L0 语料(idx_ miv)→ _jsSemanticRank → 阈值 0.5 → 确定性排序。
  * 覆盖:词法不重合但语义相关的记录可召回 / 词法臂零改动(源码守卫)/ fail-soft(rank=null→[]) /
- * 阈值过滤 / miv 稳定且格式合法 / 语料=L0 非全文 / 确定性 / 上限与截断。
+ * 阈值过滤 / miv 稳定且格式合法 / 语料=L0 非全文 / 确定性 / 输出上限(limit)。
+ *
+ * #45(2026-09-16)契约更新:语义臂原先按 env.maxRecords 在**排名之前**截断语料,导致追加顺序靠后
+ * 的旧日志/反思/项目笔记/用户记忆失去候选资格。该记录预算已移除,窗口内全部已解析记录进入排名,
+ * 输出仍由 minScore 与 limit 在排名之后限制。本文件原先断言 maxRecords 截断的两处改为
+ * 「记录预算不得重新引入」的反向守卫(行为断言改为 seen[0] === 全部已解析记录数),
+ * 未删除任何 limit/阈值/确定性断言。
  */
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
@@ -36,7 +42,10 @@ ok(SRC.includes("defineTool('memory_recall'"), 'memory_recall 工具定义仍在
 ok(SRC.includes("const { buildL0IndexPre } = await import('./l0-extract.js')"), 'T1 经函数内动态 import 引入')
 ok(SRC.includes("await import('node:crypto')"), 'node:crypto 函数内动态 import(miv 计算)')
 ok(/catch \(eSem\) \{\}/.test(SRC), '整块 fail-soft try/catch(非 C2/异常 → 跳过语义节)')
-ok(SRC.includes("minScore: 0.5") && SRC.includes("maxRecords: 256"), '阈值 0.5 + 语料上限 256')
+// #45:阈值 0.5 与输出 limit 保持不变;记录预算(env.maxRecords)已在源头移除。
+// 守卫写法:不再要求调用点存在 maxRecords: 256,而是要求语义臂不消费任何记录预算。
+ok(SRC.includes("minScore: 0.5") && !SRC.includes('env.maxRecords'),
+  '阈值 0.5 保留;语义臂不再消费记录预算(#45 反回归守卫)')
 ok(SRC.includes("'idx_' + env.createHash"), 'miv 前缀 idx_(匹配 rank() 校验)')
 ok(SRC.includes("== 语义命中(L0 摘要,按相关度;可按锚点下钻) =="), '语义节输出格式')
 // 词法臂保留:scanFile 词法扫描与全文行输出原样存在
@@ -73,6 +82,7 @@ const mkEnv = (over = {}) => ({
     { label: '2026-09-08.md', path: '/ws/2026-09-08.md' },
   ],
   buildL0IndexPre, createHash, query: '发布踩坑', limit: 5, maxRecords: 256, minScore: 0.5,
+  // #45:maxRecords 保留在默认 env 中作为**被忽略的多余键** —— 语义臂不得再据此截断语料。
   ...over,
 })
 
@@ -116,17 +126,20 @@ await ta('fail-soft:语料为空(文件缺失) → 空数组,不调 rank', async
   assert.deepEqual(await makeSemanticArm(fake)(mkEnv()), [])
   assert.equal(called, 0, '空语料不触发嵌入')
 })
-await ta('上限:maxRecords 截断语料;limit 截断命中数', async () => {
+await ta('#45 反回归:记录预算不再截断语料;limit 仍截断命中数', async () => {
   // 锚点 id 必须是恰好 32 个十六进制字符:anchor() 对单字符 repeat(32),12 个不同 hex 字符足够
   const HEXC = '0123456789abcdef'
   const big = Array.from({ length: 12 }, (_, i) => anchor(HEXC[i % 16]) + `- 0${i % 10}:00 条目${i}的内容描述足够长`).join('\n')
+  const perFile = buildL0IndexPre(big).length
+  assert.equal(perFile, 12, '夹具自检:单文件解析出 12 条锚点记录')
   const seen = []
   const fake = { readTextSafe: async () => big, _jsSemanticRank: async (snap) => { seen.push(snap.records.length); return { scores: new Map(snap.records.map((r, i) => [r.memoryId, 0.9 - i * 0.01])) } } }
+  // maxRecords: 8 被显式传入:old 语义会截断到 8;新契约忽略它,全部已解析记录进入排名。
   await makeSemanticArm(fake)(mkEnv({ maxRecords: 8, limit: 3 }))
-  assert.equal(seen[0], 8, '语料截断到 maxRecords=8')
+  assert.equal(seen[0], perFile * 2, '窗口内全部已解析记录进入排名(2 个源 × 12 条);maxRecords=8 不再截断')
   const fake2 = { readTextSafe: async () => big, _jsSemanticRank: async (snap) => ({ scores: new Map(snap.records.map((r, i) => [r.memoryId, 0.8 - i * 0.01])) }) }
   const hits = await makeSemanticArm(fake2)(mkEnv({ limit: 3 }))
-  assert.equal(hits.length, 3, '命中数截断到 limit=3')
+  assert.equal(hits.length, 3, '命中数截断到 limit=3(输出限制仍在排名之后)')
   assert.ok(hits[0].score >= hits[1].score && hits[1].score >= hits[2].score, '按分数降序')
 })
 

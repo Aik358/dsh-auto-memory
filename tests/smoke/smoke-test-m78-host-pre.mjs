@@ -6,7 +6,7 @@
 //      sync 失败不 push/frame latest-wins/A-B 隔离/关闭 abort/零 IO;
 //   C) activation 回流——index ready 后 context_push 到达、fake worker 激活过 M6 validator、
 //      sourceMode=python 门关闭时零 worker。
-// 使用 hash-pre-v1 确定性 provider(纯标准库,零联网);不模拟 delivered/seen(M6 自有测试)。
+// 使用 hash-v1 确定性 provider(纯标准库,零联网);不模拟 delivered/seen(M6 自有测试)。
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, existsSync, readdirSync } from 'node:fs'
 import { createHash } from 'node:crypto'
 import { tmpdir } from 'node:os'
@@ -60,7 +60,7 @@ async function setupHarness(opts = {}) {
   const semDir = path.join(home, 'memory', 'semantic')
   mkdirSync(semDir, { recursive: true })
   writeFileSync(path.join(semDir, 'embedding-config.json'), JSON.stringify({
-    provider: 'hash-pre-v1', dimension: 32,
+    provider: 'hash-v1', dimension: 32,
     activationPolicy: { mode: 'shadow', tOn: 0.5, tOff: 0.3 },
   }), 'utf8')
   const tools = []; const routes = []; const handlers = new Map(); const effectSetups = []; const promptComponents = []

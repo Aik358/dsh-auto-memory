@@ -37,7 +37,9 @@ function extractFn(header) {
 }
 
 console.log('[handoff] G0 源码守卫:接线完整')
-ok(/handoffEnabled: false/.test(SRC) && /handoffPlanChars: 1200/.test(SRC) && /handoffLedgerChars: 800/.test(SRC),
+// ★2026-09-17（3.0.0）：handoffEnabled 默认已由 false 翻为 true（白板默认开，用户裁定）。
+// 本守卫原意是「三个配置默认键都在」，不锁具体布尔值；这里同步为当前默认。
+ok(/handoffEnabled: true/.test(SRC) && /handoffPlanChars: 1200/.test(SRC) && /handoffLedgerChars: 800/.test(SRC),
   '配置默认键齐全(handoffEnabled/handoffPlanChars/handoffLedgerChars)')
 ok(SRC.includes("snapshotPlanTitle: '[白板 PLAN.md") && SRC.includes("snapshotHandoffTitle: '[最近交接"),
   '动态注入层默认文案存在(promptLayerOverrides 可覆盖)')
@@ -61,6 +63,16 @@ ok(/^\d{8}-\d{6}$/.test(stamp), '时间戳格式 YYYYMMDD-HHMMSS(' + stamp + ')'
 // —— 真实 fs 假引擎(临时目录) ——
 function makeFakeEngine() {
   return {
+    // P0（2026-09-14）：两个写入函数现在先过 `checkMutationPre`（判据门 + 共同保护门）。
+    // 本套件考的是**归档/截断/注入行为**，不是门本身 ⇒ 这里给一个恒过的桩
+    // （门的行为由 `smoke-test-t0-8-mutation-gate-pre.mjs` 专测；门在真实引擎上的接线由该套件的
+    //  T0-8B「三条写入路径都不能绕过」断言锁）。
+    checkMutationPre() { return { ok: true } },
+    // P2 sidecar(2026-09-16)桩: writeHandoffLedger/writePlanSnapshot 写盘后会调 writeSidecarEntryPre
+    // (boardMode 默认 legacy 时它是 no-op, 但抽取式沙箱里 this 上必须有该方法, 否则 TypeError)。
+    async writeSidecarEntryPre() {},
+    // P2 events.jsonl(2026-09-16 补桩): 同属新增引擎方法 —— 缺桩会 TypeError → {ok:false} → 后续断言假红。
+    async appendSidecarEventPre() {},
     memToday: () => '2026-09-06',
     async readTextSafe(p) { try { return (await readFile(p, 'utf8')) || '' } catch (e) { return '' } },
     async writeFullRaw(p, text) { await mkdir(path.dirname(p), { recursive: true }); await writeFile(p, text, 'utf8') },
@@ -77,7 +89,9 @@ const bindMethod = (header, fake, extra) => { // 方法简写 → 对象字面�
 console.log('[handoff] G2 writePlanSnapshot:首建/改写归档/同内容免归档')
 const proj = path.join(tmpRoot, 'ws')
 const fake2 = makeFakeEngine()
-const writePlanSnapshot = bindMethod('async writePlanSnapshot(projectDir, content) {', fake2)
+// P0（2026-09-14）：两个写入函数的签名新增可选 `opts`（`skipCriteria` 供水位骨架 A6 降级路径用），
+// 故抽取 header 同步带上 `, opts)`。这是**签名扩展**而非行为回归：不传 opts 时语义完全不变。
+const writePlanSnapshot = bindMethod('async writePlanSnapshot(projectDir, content, opts) {', fake2)
 const r1 = await writePlanSnapshot(proj, '# Plan v1\n全貌第一版')
 ok(r1.ok && !r1.archived, '首建成功且无归档')
 ok(existsSync(path.join(proj, 'handoff', 'PLAN.md')), 'PLAN.md 落盘')
@@ -90,7 +104,7 @@ ok(r3.ok && !r3.archived, '同内容重写不产生冗余归档')
 
 console.log('[handoff] G3 writeHandoffLedger + readLatestHandoff')
 const fake3 = makeFakeEngine()
-const writeHandoffLedger = bindMethod('async writeHandoffLedger(projectDir, content) {', fake3)
+const writeHandoffLedger = bindMethod('async writeHandoffLedger(projectDir, content, opts) {', fake3)
 const readLatestHandoff = bindMethod('async readLatestHandoff(handoffDir) {', fake3)
 const l1 = await writeHandoffLedger(proj, '## 任务状态\n第一阶段')
 const l2 = await writeHandoffLedger(proj, '## 任务状态\n第二阶段')
@@ -137,9 +151,16 @@ const grab = (name) => { // 逐行扫描+(){} 混合配平(兼容 Object.freeze 
   }
   return buf
 }
-const helpers = ['DEFAULT_PROMPT_LAYERS', 'neutralizePromptTemplateVars', 'truncateHead', 'truncateLinesBounded', 'stripSensitiveSections', 'sanitizeForInjection', 'scrubJunkLines', 'reflectionDigest', 'mojibakeDensity', 'MOJIBAKE_RE', 'hasStutter', 'BASE64_LINE']
+const helpers = ['DEFAULT_PROMPT_LAYERS', 'neutralizePromptTemplateVars', 'truncateHead', 'truncateLinesBounded', 'stripSensitiveSections', 'sanitizeForInjection', 'scrubJunkLines', 'reflectionDigest', 'mojibakeDensity', 'MOJIBAKE_RE', 'hasStutter', 'BASE64_LINE', 'todayStr']
 const helperCode = helpers.map((h) => grab(h)).join('\n')
-const renderFn = new Function(helperCode + '\nreturn {' + dynSrc + '};')()['renderMemoryDynamic']
+// ⚠️ 2026-09-14 T0-3：`renderMemoryDynamic` 现在把序列化交给**分项账本**（`composeMemoryEnvelopePre`），
+// 所以源码抽取式测试必须**连那个模块一起注入**——否则 `new Function` 作用域里没有这个符号
+// （报 `ReferenceError: composeMemoryEnvelopePre is not defined`）。
+// 这不是"测试迁就实现"：抽取式测试本来就是"把函数从源码里拿出来跑"，它依赖的全部模块级符号
+// 都必须显式提供，否则测的就不是真代码。
+const envelopeCode = readFileSync(path.resolve(HERE, '..', '..', 'lib', 'memory-envelope.js'), 'utf8')
+  .replace(/^export /gm, '')
+const renderFn = new Function(helperCode + '\n' + envelopeCode + '\nreturn {' + dynSrc + '};')()['renderMemoryDynamic']
 const run = (fake) => renderFn.call(fake, {})
 const out1 = run(makeFakeThis(PLAN_LONG, '# 交接账本 · 2026-09-06 12:00\n## 任务状态\n第二阶段', true))
 const iPlan = out1.indexOf('白板 PLAN.md')
@@ -226,12 +247,17 @@ console.log('[handoff] G6 M-CM4 水位感知(官方 token 公式+compaction 事�
 function makeWaterFake(opts, ledgerCalls) {
   const rt = {}
   const fake = Object.assign(makeFakeEngine(), {
-    config: Object.assign({ handoffEnabled: true, waterLevelWindowTokens: 1000, waterLevelThreshold: 0.8, waterLevelAutoHandoff: true }, opts),
+    // ⚠️ 2026-09-15（方案 1）：水位账本链路现在由 `handoffChainEnabledPre()` 统一把关
+    //   （= autoContinueEnabled && handoffEnabled）。本套件测的是**接续材料**链路，
+    //   所以默认把接续开关打开，否则会误判为"不写账本"。
+    config: Object.assign({ handoffEnabled: true, autoContinueEnabled: true, waterLevelWindowTokens: 1000, waterLevelThreshold: 0.8, waterLevelAutoHandoff: true }, opts),
     runtimeFor: () => rt,
     resolvePaths: async () => ({ handoffDir: seeded, projectDir: path.join(tmpRoot, 'ws-g5'), logPath: path.join(seeded, 'fake-log.md') }),
     writeHandoffLedger: async (dir, content) => { ledgerCalls.push(content); return { ok: true, path: path.join(seeded, 'auto-' + ledgerCalls.length + '.md') } },
     // 会话级水位记录(2026-09-08):host 现在把每次测量按 sessionId 存下来,切会话按会话取数
     rememberWaterRecord: function (sid, rec) { if (!this._waterRecords) this._waterRecords = {}; if (sid) this._waterRecords[sid] = rec },
+    // 被提取方法引用的宿主方法必须显式提供（沙箱约定），否则 TypeError 被外层 catch 吞成"静默不写"
+    handoffChainEnabledPre: function () { return this.config.autoContinueEnabled !== false && this.config.handoffEnabled !== false },
     state: {},
   })
   fake._rt = rt

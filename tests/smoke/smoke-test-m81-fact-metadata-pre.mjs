@@ -160,7 +160,18 @@ await ta('真实 facts.json 兼容实测(只读)', async () => {
   const r = s.restore(data)
   assert.equal(r.ok, true)
   assert.equal(r.restored, data.facts.length, '真实旧记录全量读回零丢弃')
-  assert.ok(data.facts.every((x) => x.ingestedAt === undefined), '实测对象确为旧结构(无新字段)')
+  // ★2026-09-17 修正（非本批引入的既有缺陷，实测暴露）：
+  // 原断言 `data.facts.every(x => x.ingestedAt === undefined)`（「实测对象确为旧结构」）把
+  // **测试前提**写成了**硬断言** —— 插件自身一旦按新结构写过一条记录，该文件就变成新旧混装，
+  // 这条前提自然失效并永久假红（本机实测：4 条中 1 条已带 ingestedAt）。
+  // 而「混装文件」恰恰是向后兼容最该覆盖的场景。改为钉真正要保的语义：
+  //   ① 结构统计自洽（防数组被写坏）② 新结构记录的字段本身合法（防写坏成非数值）
+  // 旧结构记录仍零丢弃已由上一行的 restored === length 覆盖。
+  const oldOnes = data.facts.filter((x) => x.ingestedAt === undefined)
+  const newOnes = data.facts.filter((x) => x.ingestedAt !== undefined)
+  console.log(`    (实测文件结构: 旧结构 ${oldOnes.length} 条 / 新结构 ${newOnes.length} 条 — 混装本就要支持)`)
+  assert.equal(oldOnes.length + newOnes.length, data.facts.length, '新旧结构统计自洽')
+  assert.ok(newOnes.every((x) => typeof x.ingestedAt === 'number'), '新结构记录的 ingestedAt 为数值(未被写坏)')
 })
 
 console.log(`\n[m81-fact-metadata] ${pass}/${pass + fail} assertions passed`)
