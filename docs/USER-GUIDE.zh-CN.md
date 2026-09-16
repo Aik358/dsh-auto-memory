@@ -41,7 +41,7 @@
 
 ## 1. 安装与入口
 
-- 安装：在 DSH 的 web profile 目录（`~/.dsh/profiles/web`）执行 `pnpm add @a9i5k4/dsh-auto-memory`，并在同目录 `package.json` 的 `dsh.profile.bundles` 数组里追加 `"@a9i5k4/dsh-auto-memory"`（或在 DSH 插件市场一键安装）。
+- 安装：在 DSH 的 web profile 目录（`~/.dsh/profiles/web`）执行 `pnpm add @a9i5k4/dsh-auto-memory@latest`，并在同目录 `package.json` 的 `dsh.profile.bundles` 数组里追加 `"@a9i5k4/dsh-auto-memory"`（或在 DSH 插件市场一键安装）。
 - **装完必须重启 dsh web**：插件的注入面（manifest）在启动时加载；改完 host 代码同理。
 - 浏览器端更新后需**硬刷新**（Ctrl+Shift+R）才会加载新 client.js。
 - pnpm v11 会拦截发布不足 24 小时的新版本（`minimumReleaseAge`）：当天更新请在 `pnpm-workspace.yaml` 设 `minimumReleaseAge: 0`，或直接 pin 版本号。
@@ -193,7 +193,7 @@
 
 | 项 | 说明 |
 |---|---|
-| 插件版本 / 检查更新 | 与 npm registry 比对；registry 安装可一键更新。本地开发链接会显示更新命令 `cd ~/.dsh/profiles/web && pnpm up @a9i5k4/dsh-auto-memory` |
+| 插件版本 / 检查更新 | 与 npm registry 比对；registry 安装可一键更新。本地开发链接会显示更新命令 `cd ~/.dsh/profiles/web && pnpm up @a9i5k4/dsh-auto-memory@latest` |
 | 诊断日志 | `~/.dsh/dsh-auto-memory-pre-diagnose.log`（子代理熔断、巩固跳过、回收、唤起降级等事件全在内） |
 | 交流群 | QQ 群反馈，响应比 issue 快（链接见 README） |
 
