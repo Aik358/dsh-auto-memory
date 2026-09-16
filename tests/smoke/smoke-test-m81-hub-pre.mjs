@@ -25,7 +25,7 @@ console.log('[H1] episodic 生命周期')
   st.append({ kind: 'assistant', assistantText: '好的,先备份再 rsync,已完成', sessionRef: 'sesr_A', eventSeq: 2, contextVersion: 1 })
   st.append({ kind: 'user', userText: '确认没问题,测试通过了', sessionRef: 'sesr_A', eventSeq: 3, contextVersion: 1 })
   const c = st.consolidate()
-  ok(c.ok && c.episode && c.episode.episodeId.match(/^epi_pre_/), '巩固成功 + epi_pre_ id')
+  ok(c.ok && c.episode && c.episode.episodeId.match(/^epi_/), '巩固成功 + epi_ id')
   ok(c.episode.intent.includes('部署'), 'intent 提取自首段用户文本')
   ok(c.episode.outcome === 'success' && c.episode.success === true, 'outcome 推断 success(助手文本含完成信号)')
   ok(st.size === 1, 'store 大小=1')
@@ -50,9 +50,13 @@ console.log('[H2] procedure 晋升全链路(核心)')
   // observe 一个部署流程
   const r1 = st.observe({ title: '服务器部署流程', riskLevel: 'low', steps: ['备份', 'rsync', '重启服务'], successCriteria: ['curl 健康检查通过'], sourceMemoryIds: ['mem_a'] })
   ok(r1.ok && r1.procedure.stage === 'observed', 'observe → observed')
-  // 去重: 同 title 再 observe → merged
+  // 去重: 内容指纹(非 title)——同 title 不同形状 → 分立候选(issue#30 修复:title 相同不等于同一流程)
   const r2 = st.observe({ title: '服务器部署流程', riskLevel: 'low', steps: ['备份'], sourceMemoryIds: ['mem_b'] })
-  ok(r2.merged === true, '同 title 去重合并')
+  ok(r2.merged === false && r2.procedure.procedureId !== r1.procedure.procedureId, '同 title 不同步骤 → 内容指纹不同,分立候选不合并')
+  // 同内容不同来源 → 同指纹仍合并,来源并集
+  const r3 = st.observe({ title: '服务器部署流程', riskLevel: 'low', steps: ['备份', 'rsync', '重启服务'], successCriteria: ['curl 健康检查通过'], sourceMemoryIds: ['mem_b'] })
+  ok(r3.merged === true && r3.procedure.procedureId === r1.procedure.procedureId, '同指纹(内容相同)不同来源 → 仍合并到同一候选')
+  ok(JSON.stringify(r3.procedure.sourceMemoryIds) === JSON.stringify(['mem_a', 'mem_b']), '合并时来源并集(mem_a+mem_b)')
   // 未达门槛: diversity=1 < 3 → keep
   st.addEvidence(r1.procedure.procedureId, { kind: 'success', sessionRef: 'sesr_1' })
   const p1 = st.promote(r1.procedure.procedureId)
@@ -178,7 +182,7 @@ console.log('[M8-3] 默认启用守卫')
   // 三处消费门与常开设施仍在(开关只门控消费,store 构建/restore/端点不受门控)
   ok(hostSrc.includes('if (this.config.memoryHubEnabled === true && hub && hub.stores && hub.stores.episodic)'), 'crossFeed 消费门在位')
   ok((hostSrc.match(/engine\.config\.memoryHubEnabled !== true/g) || []).length === 2, 'judgement 行消费双门在位(各 !== true 早退)')
-  ok(hostSrc.includes("path.join(dshHome(), 'memory', 'hub-pre')"), 'hubIo 落盘目录 hub-pre 在位(restore 常开,不受开关门控)')
+  ok(hostSrc.includes("path.join(dshHome(), 'memory', 'hub-pre')"), 'hubIo 落盘目录 hub 在位(restore 常开,不受开关门控)')
   ok(hostSrc.includes("API['memory-hub']"), 'loopback 端点 memory-hub 在位')
 }
 

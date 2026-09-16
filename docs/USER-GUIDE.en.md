@@ -1,7 +1,14 @@
 # dsh-auto-memory User Guide
 
+<p align="center">
+  <a href="./USER-GUIDE.zh-CN.md"><img alt="中文" src="https://img.shields.io/badge/%E4%B8%AD%E6%96%87-switch-lightgrey?style=for-the-badge"></a>
+  <a href="./USER-GUIDE.en.md"><img alt="English" src="https://img.shields.io/badge/English-current-blue?style=for-the-badge"></a>
+</p>
+
+<p align="center"><a href="../README.md">← Back to README</a></p>
+
 > She remembers, unbidden: memory never waits for your command — the right memory surfaces on its own; every entry has provenance — checkable, editable, deletable.
-> Applies to version **2.2.7+** · Changelog: in-plugin **Settings → Appearance → View changelog**.
+> Applies to version **3.0+** · Changelog: in-plugin **Settings → Appearance → View changelog**.
 > 中文版：[USER-GUIDE.zh-CN.md](./USER-GUIDE.zh-CN.md)
 
 ---
@@ -28,6 +35,7 @@
 10. [Memory tools (available in conversation)](#10-memory-tools)
 11. [Troubleshooting](#11-troubleshooting)
 12. [Data locations & rollback](#12-data-locations--rollback)
+13. [The 3.0 rebuild: what it means for you](#13-the-30-rebuild-what-it-means-for-you)
 
 ---
 
@@ -376,6 +384,53 @@ All three write tools (log/note/user) pass the **write gate**: GBK mojibake, stu
 | Models / venv | `~/.dsh/models/js-semantic/` (C2 model) · `~/.dsh/python-engine/` (C3 venv + model; plugin upgrades never touch these) |
 | Subagent trace backups | `~/.dsh/subagent-gc-backup/` (move back into `~/.dsh/sessions/` to roll back) |
 | Diagnostics log | `~/.dsh/dsh-auto-memory-pre-diagnose.log` |
+
+---
+
+## 13. The 3.0 rebuild: what it means for you
+
+Most of this release adds no new buttons. It changes *what makes a memory trustworthy*. **You don't need to configure anything** — everything below is default behaviour, listed so you know exactly where the boundaries are.
+
+### 13.1 Safer writes: one bad line no longer bricks the file
+
+Before: if a record's body happened to contain the memory system's own reserved marker, the write reported **success** — but from the *next* write onward the **entire file was refused**, with an error carrying no line number. The only way to locate it was to script a line-by-line scan.
+
+Now: reserved-syntax detection moved into the **write primitives**. A body carrying a reserved marker is refused **on the spot, with the offending line number**; a pre-existing silent corruption is fixed too (the compaction path used to inline archived logs' own marker lines into the note, minting phantom anchors).
+
+> Worth knowing: wrapping the text in backticks or a code fence does **not** help — the check is substring-level, so the wording itself has to change.
+
+### 13.2 Steadier writes: transient Windows contention no longer eats content
+
+On Windows, `rename` hitting an external file handle (antivirus scan, Search indexer, an editor, a handle the host just wrote) throws `EPERM` — a **transient** condition. That layer previously had no backoff: the exception propagated and **the whole record was lost**.
+
+Now: `EPERM / EACCES / EBUSY` retry with backoff (`[0, 50, 150, 400, 1000] ms`); if it still fails, the **full candidate snapshot is preserved** (`.dam-failed-<ts>-<nonce>-<name>.tmp`, exposed as `recoveryPath` in the error) so you can recover it by hand — already-rendered content is never destroyed. Write tools also report **`isError` truthfully**, so a failure no longer masquerades as "the call succeeded, but the body contains a failure sentence".
+
+### 13.3 Workspaces and sessions stop starving each other
+
+This is the most important fix of the release. **Symptom**: with two workspaces or two sessions open, "nothing can inject any more" — not a compute problem (the worker measured idle), but four single-slot states overwriting each other:
+
+| Overwritten state | Consequence |
+|---|---|
+| Recall-decision projection | A's projection clobbered by B ⇒ A later reads B's ⇒ **the identity gate sees a session mismatch ⇒ A never descends to tier-1 retrieval** |
+| Index-version cache | Two workspaces evict each other ⇒ a guaranteed recompute every time (amplifying the "index never becomes ready" problem below) |
+| Index-degradation state | The reader checked only a 10-minute window, not the session ⇒ **false cross-session degradation** |
+| Last-query record | Unconditional overwrite ⇒ the reader falls back to `triggerText`, a semantic downgrade |
+
+Now: all four are sharded **by session / workspace**, in bounded containers (`size > 32` eviction). **The decision predicate is unchanged** — sharding adds one key dimension and changes no rule; compatibility projections are retained so older readers never receive `undefined`.
+
+**In plain terms**: clicking into another workspace used to disturb the recall of the session that was actually running. It no longer does. This is the one you can feel directly.
+
+### 13.4 Three more (default behaviour, nothing to configure)
+
+- **Mutually exclusive engine identities**: the built-in JS semantic tier and the advanced Python tier are **two interchangeable implementations** — whichever you pick is the one that runs. No shadowing, no cross-triggering, and neither is a prerequisite for the other.
+- **True incremental embedding**: only changed records get re-embedded, with reuse ordering, instead of recomputing the whole store.
+- **Bounded rerank window**: if you enable a rerank tier, the clock starts at enqueue, 60s expiry with no renewal, LRU ≤16, yields when busy — background work never slows the live conversation.
+
+### 13.5 How to confirm it's really in effect
+
+- **No new settings.** The eight groups in §4 are unchanged.
+- Write-failure tell-tales: check `isError` and `recoveryPath` in the tool result; a `.dam-failed-*.tmp` file in the directory means a final-state failure occurred and the file *is* the forensic snapshot — safe to delete once confirmed.
+- Regression evidence: the matching suites live under `tests/smoke/`, including mutation demos that revert each mechanism to its old behaviour and must go genuinely red.
 
 ---
 

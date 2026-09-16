@@ -188,6 +188,19 @@ const transforms = [
   // JS 侧 SCREAMING 常量名(_PRE_V1 → _V1)
   ['_PRE_V2', '_V2'],
   ['_PRE_V1', '_V1'],
+  // ★2026-09-17（3.0.0）按「形态」补齐通用规则 —— 此前只有零星十来个短前缀被逐个登记，
+  // 3.0 重建期新增的 ~180 个身份常量（board_mode_pre_v1 / tier_layer_inject_pre_v1 /
+  // TIER_BUDGET_PRE_V1 …）无人登记 ⇒ 残留闸门必然拒绝构建，这就是 npm 长期停在 2.5.3 的第二层原因。
+  // 逐个登记是错的做法（漏登记不会立刻报错，只在发版时炸）；这里改成按形态一次性覆盖。
+  // 安全性：本表是把**整棵发布子树**做同一次文本替换（lib/ tests/ python/ policies 全覆盖），
+  // 写方与读方一起改，键名仍然自洽；旧版 pre 身份写下的持久化键会自然失效（与既有改名同一纪律）。
+  // 顺序：必须排在 SCREAMING 规则之后、且比下面更具体的条目更靠后无妨（两者结果一致）。
+  ['-pre-v1', '-v1'],        // 连字符形式：bge-m3-onnx-int8-pre-v1 → bge-m3-onnx-int8-v1
+  ['-pre-v2', '-v2'],
+  ['_pre_v2', '_v2'],        // 小写版本后缀：lexical_pre_v2 → lexical_v2
+  ['_pre_v1', '_v1'],        // 小写版本后缀：board_mode_pre_v1 → board_mode_v1
+  ['_PRE_', '_'],            // SCREAMING 短前缀：AFT_PRE_ / _DISPATCH_PRE_ / DEFAULT_PRE_
+  ['_pre_', '_'],            // 小写短前缀：act_pre_x / idx_pre_x / skill:proc_pre_x
   // UI label 与 GUIDANCE 的预览标记
   [' (dev)', ''],
   ['(开发版)', ''],
@@ -211,6 +224,30 @@ const libModuleRenames = [
   'temporal-parse-pre.js', 'python-setup-pre.js',
   // 2.2.4 新增模块(子代理痕迹回收 / 上下文窗口解析)
   'subagent-gc-pre.js', 'water-window-pre.js',
+  // issue #48 新增模块(有界 rename 重试,Windows 瞬时句柄争用)
+  'fs-retry-pre.js',
+  // issue #30 新增模块(procedure 观察态标记 / 运行时信封清洗)
+  'procedure-observation-pre.js', 'intent-clean-safe-pre.js',
+  // ★2026-09-17（3.0.0）补齐：3.0 底层重建期新增的 15 个模块此前**从未登记**，
+  // 导致残留闸门每次都在 tests/smoke 里扫到 `-pre.js` / `_pre_v1` / `_pre_` 而拒绝构建
+  // —— 即 3.0 的 pre 线从来没成功打出过发布包（npm 因此长期停在 2.5.3）。
+  // 这 15 个文件各自被对应套件 import，登记后引用与文件名会被一并改写为裸名。
+  // 覆盖面由文件末尾的「模块重命名完整性自检」强制保证，新增模块忘登记会直接 fail closed。
+  'acceptance-pre.js',            // P5 验收清单
+  'board-mode-pre.js',            // 白板线总开关解析
+  'engine-identity-pre.js',       // P2 引擎身份
+  'engine-switch-pre.js',         // P2 切换状态机
+  'l0-index-sync-pre.js',         // L0 索引同步
+  'ledger-criteria-pre.js',       // 判据账本(账本/白板判据)
+  'memory-envelope-pre.js',       // 记忆信封
+  'memory-mutation-pre.js',       // 变更边界共同保护(丢卡/用户区/重复 id)
+  'rerank-host-pre.js',           // P4 精排有界窗口
+  'rules-layer-pre.js',           // P6A 规则分层
+  'state-commit-pre.js',          // P1 状态提交
+  'tier-layer-inject-pre.js',     // C5 三层注入
+  'tier0-catalog-pre.js',         // Tier-0 常驻目录
+  'wb-contract-pre.js',           // S10 白板契约(判据/保护段/marker)
+  'wb-sidecar-pre.js',            // S10 白板结构化 sidecar + 看板派生
 ]
 const libRenameMap = libModuleRenames.map((f) => [f, f.replace(/-pre\.js$/, '.js')])
 for (const [from, to] of libRenameMap) {
@@ -236,6 +273,25 @@ for (const [from, to] of libRenameMap) {
     }
     cpSync(fp, path.join(REL, 'lib', to))
     rmSync(fp)
+  }
+}
+// ---------- 3.6 模块重命名完整性自检(2026-09-17, fail closed) ----------
+// 症状(实测):新增 `*-pre.js` 模块若忘记登记进 libModuleRenames,它不会被重命名为裸名,
+// lib/ 与 tests/smoke 里便仍留着 `-pre.js` 字样 → 5.5 残留闸门拒绝构建(报错点离真因很远)。
+// 本自检把这个失败**前移成点名报错**:直接列出缺哪些模块,而不是让人去翻残留清单。
+// 判据:DEV 树里每个 lib/*-pre.js 都必须已登记(反向不强制——白名单允许保留历史条目)。
+{
+  const devLib = path.join(DEV, 'lib')
+  if (existsSync(devLib)) {
+    const onDisk = readdirSync(devLib).filter((f) => f.endsWith('-pre.js'))
+    const unregistered = onDisk.filter((f) => !libModuleRenames.includes(f))
+    if (unregistered.length) {
+      console.error('\n❌ lib/ 存在未登记的 -pre.js 模块(不会被重命名为裸名,残留闸门必然拒绝构建):')
+      for (const f of unregistered) console.error('   · ' + f)
+      console.error('   修法:把上述文件名加进 tools/release.mjs 的 libModuleRenames 数组后重跑。')
+      process.exit(1)
+    }
+    console.log('[release] 模块重命名完整性: OK(' + onDisk.length + ' 个 -pre.js 全部已登记)')
   }
 }
 // python 文件名重命名(worker_pre_v1.py → worker_v1.py 等) + 相互 import 改写

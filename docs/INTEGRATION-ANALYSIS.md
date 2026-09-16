@@ -230,16 +230,18 @@ C2   semantic-js        内置语义引擎宿主 + 资产下载器（492 行）
 
 ### 4.2 需要新增/改动的文件
 
-| 阶段 | 文件 | 动作 | 来源 | 风险 |
+> ⚠️ **状态列已于 2026-09-14 按代码实测更新**（原表把多个已接线项标成「未接线」，会误导执行者；判定方式 = 在 `lib/index.js` 里检索模块名，零引用即未接线）。
+
+| 阶段 | 文件 | 动作 | 来源 | 状态（2026-09-14 实测） |
 |---|---|---|---|---|
-| **0（已完成）** | `lib/l0-extract-pre.js` | 新增 | 自研 | 无（未接线） |
-| **1** | `lib/l0-index-pre.js` | 新增（L0 向量索引，增量） | OpenViking「向量索引只存 URI+向量」 | 无（未接线） |
-| **2** | `lib/recall-fusion-pre.js` | 新增（rank-space 融合 + 绝对分数决策） | Hindsight `fusion.py` / `recall_boost.py` | 无（未接线） |
-| **3** | `lib/index.js` 的 `recall()` | 改动：接入语义臂 + 新融合，**用配置开关** | — | 中（需回归） |
-| **4** | `lib/handoff-anchor-pre.js` | 新增（四段解析 + 权重分配） | 自研 | 无 |
-| **5** | `lib/index.js` 的 `buildContinueCarry()` | 改动：锚点表注入 | OpenViking 渐进加载 | 中 |
-| **6** | `fact-store-pre.js` | 可选增强：加 NO COMPUTATION / CASCADE / 趋势字段 | Hindsight 巩固 9 规则 | 中高（动状态机） |
-| **7** | `lib/metamem-rules-pre.js` | 新增（元记忆规则库，手工初始化） | MetaMem | 无（未接线） |
+| **0** | `lib/l0-extract-pre.js` | 新增 | 自研 | ✅ **已接线**（`index.js:2827/3995/4148`，L0 摘要即它产出） |
+| **1** | `lib/l0-index-pre.js` | 新增（L0 向量索引，增量） | OpenViking「向量索引只存 URI+向量」 | ❌ **未接线**（文件在，`index.js` **零引用**）→ 排期 P0-② |
+| **2** | `lib/recall-fusion-pre.js` | 新增（rank-space 融合） | Hindsight `fusion.py` / `recall_boost.py` | ✅ **已接线**（`index.js:4067`） |
+| **3** | `lib/index.js` 的 `recall()` | 改动：接入语义臂 + 新融合 | — | ✅ 已落地（L0 默认 + RRF k=60，见 CHANGELOG 2.3.0） |
+| **4** | `lib/handoff-anchor-pre.js` | 新增（四段解析 + 权重分配） | 自研 | ✅ **已接线**（`index.js:2801`） |
+| **5** | `lib/index.js` 的 `buildContinueCarry()` | 改动：锚点表注入 | OpenViking 渐进加载 | ✅ 已落地 |
+| **6** | `fact-store-pre.js` | 可选增强：NO COMPUTATION / CASCADE / 趋势字段 | Hindsight 巩固 9 规则 | ❌ 未做（动状态机，风险中高） |
+| **7** | `lib/metamem-rules-pre.js` | 新增（元记忆规则库） | MetaMem | ❌ **未建（文件不存在）** |
 
 ### 4.3 要适配的接口与数据结构
 

@@ -63,7 +63,12 @@ ok(scanPressureSignalsPre(events.slice(0, 3)).overflow === null && scanPressureS
   '没有溢出/压缩时不误报')
 
 console.log('[water-hard] H2 源码守卫')
-ok(/scanPressureSignalsPre/.test(SRC) && /from '\.\/water-window-pre\.js'/.test(SRC), 'index.js 已引入 scanPressureSignalsPre')
+// 2026-09-14 修正(对齐上游 PR #34):原断言 `/from '\.\/water-window-pre\.js'/` 有两处问题 ——
+// ①两段松散 && 各自可被无关文本满足(任意位置出现函数名 + 任意 import 命中),不构成「这条 import 存在」;
+// ②写死了单一轨的文件名。本仓两轨模块名不同(开发轨 lib/water-window-pre.js / 发行轨 lib/water-window.js),
+// 故守卫改用单条 import 语句、文件名接受两轨写法 —— 上游发行轨与本地开发轨都必须是绿的。
+ok(/import \{[^}]*\bscanPressureSignalsPre\b[^}]*\} from '\.\/water-window(-pre)?\.js'/.test(SRC),
+  'index.js 已引入 scanPressureSignalsPre')
 ok(/const reserve = Number\(sessModel\.maxTokens\) \|\| Number\(sig\.reservedTokens\) \|\| 0/.test(SRC),
   '预留额度取自会话请求头 maxTokens(而非硬编码)')
 // 2026-09-13 口径修正(NEXT-VERSION-TODO 改点1):分母 = 官方声明窗口,provider 自报过硬限时取 min。

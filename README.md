@@ -53,7 +53,27 @@
 </details>
 
 <p align="center">
-  <a href="README.zh-CN.md">中文</a> · <b>English</b> · License BSD-3-Clause · <code>pnpm add @a9i5k4/dsh-auto-memory</code> · 📖 <a href="docs/USER-GUIDE.en.md">User guide (settings &amp; tuning)</a> · 📖 <a href="docs/USER-GUIDE.zh-CN.md">用户文档</a> · 🤝 <a href="https://htmlpreview.github.io/?https://github.com/Aik358/dsh-auto-memory/blob/main/docs/CONTRIBUTORS.html">Contributors &amp; Sponsors</a> · <a href="https://qm.qq.com/q/v7Asxn6vPa">QQ group</a>
+  <a href="./README.zh-CN.md"><img alt="中文" src="https://img.shields.io/badge/%E4%B8%AD%E6%96%87-switch-lightgrey?style=for-the-badge"></a>
+  <a href="./README.md"><img alt="English" src="https://img.shields.io/badge/English-current-blue?style=for-the-badge"></a>
+</p>
+
+<p align="center">
+  <a href="https://www.npmjs.com/package/@a9i5k4/dsh-auto-memory"><img alt="npm" src="https://img.shields.io/npm/v/@a9i5k4/dsh-auto-memory"></a>
+  <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/License-BSD--3--Clause-yellow.svg"></a>
+  <img alt="Runtime dependencies" src="https://img.shields.io/badge/runtime%20deps-0-brightgreen">
+  <img alt="Platform" src="https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey">
+</p>
+
+<p align="center">
+  <code>pnpm add @a9i5k4/dsh-auto-memory</code>
+</p>
+
+<p align="center">
+  <a href="docs/USER-GUIDE.en.md"><strong>📖 User guide</strong></a> ·
+  <a href="docs/USER-GUIDE.zh-CN.md"><strong>📖 用户手册</strong></a> ·
+  <a href="CHANGELOG.md">Changelog</a> ·
+  <a href="https://htmlpreview.github.io/?https://github.com/Aik358/dsh-auto-memory/blob/main/docs/CONTRIBUTORS.html">Contributors &amp; Sponsors</a> ·
+  <a href="https://qm.qq.com/q/v7Asxn6vPa">QQ group</a>
 </p>
 
 ---
@@ -83,6 +103,7 @@ Now we push this route to its last missing piece — when the context fills, she
 | **External memory inheritance** | Memories from WorkBuddy / CodeBuddy / Claude Code / Codex are scanned, importable, per-source managed |
 | **Production-grade hygiene** | Write gate (mojibake/stutter/JSON-injection blocking) + dirty-token scanner + credentials never enter prompts |
 | **Astra-style context management** | A filling context no longer collapses into one summary — four-part handoff notes carry work across windows, full history stays searchable, the agent retrieves on demand (on by default, threshold 0.75) |
+| **No cross-talk between workspaces** | Open several workspaces or sessions at once and each keeps its own recall decisions and index cache. Clicking into one never disturbs the one that's running |
 | **Model-agnostic** | No vendor lock, no tier lock: any model on DSH works out of the box — lexical 0GB floor, built-in ~130MB semantic tier, advanced 563MB |
 | **Portable memory** | Everything lives on your own disk; memories scan in from other AI tools, every entry has an evidence chain — auditable, deletable. Memory belongs to you, not to any vendor |
 
@@ -177,6 +198,98 @@ Ask, and she answers: `memory_recall` returns a layered summary list first (each
 
 The panel's Workspace tab draws all of this as a mind map: workspaces at the center, memory topics as branches, dashed lines for cross-workspace shares; draggable, zoomable, click a card for details. **Your memory has a shape for the first time.**
 
+### Retrieval isn't "dump all memory in" — three tiers, descending (OpenViking-style)
+
+This borrows **OpenViking**'s tiering idea, recalibrated against real corpus measurements in this repo. The rule is **descend tier by tier — never all at once**:
+
+| Tier | Content | Budget | When it appears |
+|---|---|---|---|
+| **Tier-0 · Catalog** (index layer) | One line per entry = title · conclusion · layer · status · date | ≤ `B0` = **800 tokens** (resident, ~30 entries) | **The norm** — only this tier is injected by default |
+| **Tier-1 · Digests** (candidate layer) | ≤ `L1` = **140 chars** each, top `K` = **8** | 8 × 140 = 1120 chars | Only when the catalog under-hits |
+| **Tier-2 · Source chunks** (evidence layer) | `chunkId = hash(memoryId, digest, index)` | ≤ `B2` = **2400 chars** / call | Only when evidence is needed |
+
+Flow: `Tier-0 out first → narrow → descend to Tier-1 only if short → fetch Tier-2 only for evidence`. Single-turn injection still respects `injectBudgetChars` (default 8000 chars).
+
+**Why it's built this way (measured, not guessed)**:
+- **The native corpus is smaller than you'd think**: source text p90 is only **1196 chars**, max **1692**. So OpenViking's `L0 → L1(2k) → L2` middle step can be dropped — jumping from a 140-char digest straight to a ≤2400 source chunk is an acceptable span.
+- **Pure priority makes tiering collapse**: on real corpus, the `project` layer's 77 chunks **consumed the entire 800-token budget**, leaving `whiteboard` / `user` / `log` with **zero** entries — "tiered" degenerating into single-tier. Hence **per-layer quotas** (e.g. `project ≤ 60% · B0`) — a hard rule, not a suggestion.
+- **Reconciliation**: spot-checking real `expand` output against corpus length — `mem_d55f8e8e` reported 1499 chars ↔ corpus 1499 ✅, `mem_5a7f779a` reported 1403 ↔ 1403 ✅.
+
+### The "Karpathy module" — the whiteboard *is* the corpus: feeding the memory flow graph straight to the AI
+
+This line started from a sentence: **"dsh graph is exactly the Karpathy module I wanted."** The problem it solves isn't "is retrieval accurate" — it's **the shape of memory**. Traditional RAG rediscovers from zero on every query, accumulating nothing; the Karpathy-style answer is to let a model incrementally maintain a persistent wiki (entity pages, concept pages, cross-references, contradiction flags) navigated by `index.md` + `log.md`.
+
+What this repo shipped isn't "yet another wiki" — it found an interface that needs **zero new machinery**: **pages *are* the corpus (S10.1)**.
+
+> **A whiteboard card carries an anchor, and the anchor is what the Tier-0 catalog slices by.** The slicing order is 「anchor → heading → top-level item → whole-file fallback」, so an anchored card becomes its own entry in the **guidance layer injected every turn** — no new pipeline required.
+
+```markdown
+### Card title
+<!-- memory:mem_<32hex> -->
+```
+
+**How the anchor is computed (content-addressed, recomputable)**:
+`mem_` + first 32 hex chars of `sha256(workspaceKey + '\0' + page relative path + '\0' + card title)`.
+The whiteboard text is one of **five sources** (`user` / `project` / `log` / `whiteboard` / `reflection`) feeding the Tier-0 catalog, and it holds a **reserved floor quota** (`whiteboard` and `user` each reserve `floorRatio·maxTokens`) — so the `project` layer can't swallow the whole 800-token budget and lock the whiteboard out.
+
+> **⚠️ Implementation boundary (stated plainly, not oversold)**: the anchor→corpus path is currently wired **only for injection** (Tier-0 catalog, via `add('whiteboard', …)` in `index.js`).
+> The `memory_recall` **retrieval** corpus still contains only four source classes — daily logs / reflections / project notes / user-level memory — **the whiteboard is not yet wired in** (see the four `pushL0` call sites and the four `semSources` entries in `lib/index.js`).
+> In other words: whiteboard content **is injected every turn**, but `memory_recall` **still cannot search it**. This is a contract-layer item defined but not yet implemented, and it is outside the scope of this change.
+
+The payoff cuts both ways:
+- **The kanban/whiteboard stops being "a view for humans only"** — it is simultaneously a **source of injection corpus**. Goals, criteria and conclusions you write on the board are visible to the AI in the guidance layer on the next turn;
+- It **also eases the "two sources of truth" problem**: content exists once, on the board; the guidance layer is derived from it, so you can't get "board says A, index says B".
+
+**The six Karpathy-style landing items** (S10.1–S10.6):
+
+| Item | What it does |
+|---|---|
+| **S10.1 Pages are the corpus** | Whiteboard cards carry anchors ⇒ sliced by the Tier-0 guidance layer and injected every turn (**retrieval side not yet wired — see the boundary note above**) |
+| **S10.2 Index auto-derived** | `index` is **derived** from pages (link + one line + `layer`/`status`) and must **not** be written twice; the derived result must match Tier-0 catalog entries |
+| **S10.3 Lint completed** | Four zero-token classes: orphan entries / stale / mentioned-but-no-page / missing cross-reference. **Only "contradiction detection" needs an LLM, and it must be user-triggered — never on the automatic path**; lint **reports, never auto-fixes** |
+| **S10.4 No state machine** | The whiteboard is a **view layer**; state belongs to memory entries' `layer` + `status`. Adding a state machine = a violation |
+| **S10.5 Answers flow back** | The conclusion of any search/analysis must be one-click depositable as: ① a new whiteboard card (anchored) ② a memory entry ③ a handoff ledger line. **Any conclusion that "lives only in the conversation" is a process failure** |
+| **S10.6 Human/model split** | `<!-- model -->` / `<!-- user -->` sections; a full rewrite must carry the user section back verbatim — **after a model rewrite, the user section is preserved byte-for-byte** |
+
+**Sequencing discipline (a lesson actually paid for)**: the **contract layer (format / anchors / index derivation) must come before the RAG substrate** — it determines the shape of the corpus; build RAG first and you redo the corpus. The UI layer (board rendering / interaction) comes *after* RAG instead — "it's only a view".
+
+**A path explicitly rejected**: Grep agentic ("model-driven glob/grep beats everything"). Its premises are **multi-turn LLM tool calls every round** (a token multiplier) and a corpus that is **exactly token-matchable** — but natural-language memory has no literal string to grep. We took only the phrase "whether to search should be judged intelligently", and **handed the default judgement to a local linear classifier, fv2 (0 tokens)**.
+
+### Activation eligibility: judging "should this be recalled", not "how similar is it"
+
+This is the most technical — and most misunderstood — part of the system. **Semantic relevance ≠ activation eligibility**: material can be very similar to the current topic and still be unhelpful to inject right now. We split the decision into two separately measurable targets: **semantic relevance** and **activation eligibility**.
+
+**The failure mode we named and measured: the echo trap.**
+When a user restates a memory ("you said X, right?"), that memory's semantic score is **necessarily high** — yet injecting it now is redundant. On 86 human gold labels: the highest suppress-class score (the noodle echo at **0.6507** and its variant 0.6254) **exceeds every activate positive (max 0.5914)**. In other words — **the threshold that "looks safest" lands squarely on echoes**.
+
+**The two-arm echo rule**: echo = 「query and top-1 candidate form a near-duplicate restatement」∧「declarative mood」∧「no recall intent」.
+Lexical arm (bigram containment ≥ θ) and semantic arm (`denseTop ≥ 0.75`) combine with **OR** — either arm alone was falsified as insufficient; combined, they hit zero false negatives and zero false positives across the 86 gold labels.
+
+**Three falsified shortcuts** (negative results, published in the paper):
+1. Lexical containment **alone cannot** detect echoes — the echo-suppress group's median containment (0.273) is *lower* than the activate group's (0.462), because questions naturally share the target's terminology;
+2. Pure text tri-classification **cannot** judge eligibility (macroF1 0.494);
+3. **A global upfront echo veto harms explicit follow-ups** — moving it out of the global front and into the proactive lane improved the best operating point from precision 0.818 / recall 0.237 / 1 violation to **1.000 / 0.289 / 0 violations**.
+
+**Calibration and feature weights** (reproducible numbers):
+- Sigmoid calibration lifted intent-head accuracy **0.744 → 0.872** and Brier **0.227 → 0.131** (58 gold);
+- LR coefficients of the deployable feature set: `mark` (question/recall markers) **+1.64** ≫ `containment` **+0.94** > `intentProb` **+0.58** > `margin` **+0.27** ≫ `denseTop` **−0.38**.
+- **In one line**: "**is this a question**" matters an order of magnitude more than "**how similar is it**".
+
+### Three deployment tiers: the size–quality curve (all measured)
+
+| Tier | Size | Runtime | L2 R@5 | Role |
+|---|---|---|---|---|
+| Lexical BM25 (`lexical_pre_v2`) | **0** | Pure JS | 0.200 | The always-available floor and final fallback |
+| **JS semantic tier** (transformers.js + `multilingual-e5-small` q8) | ~**130MB** | Node-side ONNX | **0.850** | The standard tier, yours on `npm install` |
+| **Python advanced tier** (BGE-M3 int8 ONNX 563MB / fp32 2.3GB) | optional 2nd tier | sidecar | **0.925** | Quality champion, enabled on demand in the wizard |
+
+JS tier key numbers: model load **679ms**, query encode **3.8ms**, full rebuild of 251 entries **5.5s**.
+int8 key numbers: head-to-head with fp32 **R@5 delta = 0.000**, MRR gap 0.007 (noise level), mean vector cosine 0.975, encode speedup **6×** (44s vs 262s), single-query p50 **16ms**.
+⇒ **Quantization loss is zero in ranking terms**, so the 563MB tier can replace fp32 as the default.
+The e5-small vs BGE-M3 gap (0.85 vs 0.925) concentrates on hard-negative twin pairs — the small model is still far better than pure lexical (**+65pt**), but adversarial near-neighbour discrimination is a **capacity problem, not a protocol problem**.
+
+> Every conclusion comes from reproducible experiments and is frozen into an engineering decision ledger (D1–D11): [retrieval model selection](docs/M7-RESEARCH-PAPER.md) · [activation policy v2](docs/M7-ACTIVATION-V2-PAPER.md) · [embedding benchmark](docs/M7-EMBEDDING-BENCHMARK.md) · [held-out human gold evaluation](docs/M7-ACTIVATION-V2-HOLDEDOUT-EVAL.md) (67 human-scored items: actPrecision **0.917** / harmful injections **0** / echo layer **7/7**).
+
 ---
 
 ## How she reminds
@@ -208,6 +321,28 @@ When the context fills, she no longer burns the whole book for a one-line summar
 She can also look things back up herself: `memory_search` queries the full archive on demand, `memory_note` jots down what matters — from "passively fed injections" to "looking things up on her own", the second upgrade of her memory.
 
 Token water-level awareness completes it: as the window fills, she suggests opening a new window and handing off, instead of silently compressing. The window is the host's territory — she midwifes the handoff, and never decides for the host.
+
+### Why handoff isn't "write a summary" — the engineering of whiteboard and ledger
+
+**The problem**: asking an LLM to produce a paragraph of "what happened before" for a new window looks simple but degrades — each compaction loses a layer, and after a few rounds the handoff material is out of sync with reality, **with nobody able to tell that it is**. So the rule here is: **handoff material must not get to speak for itself either — it has to be traceable, decidable, and regression-tested.**
+
+Three entities, each minding one job:
+
+| Entity | What it is | Where it lives |
+|---|---|---|
+| **Handoff ledger** | A fixed **four-part** shape: task state / goals / approaches tried and why they failed / progress and next step | `handoff/handoff-*.md` |
+| **Whiteboard** (PLAN.md) | The project's **whole-picture map**: a human-readable planning snapshot; old versions are archived on rewrite | `handoff/PLAN.md` |
+| **Anchor** | Every record carries `<!-- memory:mem_<32hex> -->` — **identity addressing**, not positional addressing | inside the memory file |
+
+**Two hard engineering constraints**:
+1. **Ledger quality is a hard gate, not a style suggestion.** The four headings must match **verbatim** (a wrong heading breaks downstream weighted truncation and the injection-side parser), each section has a minimum length, and a bad one is rejected outright — the very shape of the section you're reading was formed by that gate.
+2. **Anchors stop append-writes from piercing the file.** `appendAnchoredRecord()` parses the existing file first: any non-clean state **fails closed** (neither appends nor rewrites); if reserved syntax appears in the body, the write is **refused on the spot with a line number** — rather than "succeeding" and then making the whole file permanently unwritable from the next write onward.
+
+**The kanban board is not a separate UI** — it is **another view over the same ledgers and whiteboard**: ledger entries laid out as a swimlane matrix (goals / in progress / failures and detours / archived).
+
+> A real recorded misstep: board v1 squeezed 92 files into 92 cards and left three swimlanes permanently empty. **The root cause was not "too few cards" but a slicing granularity off by one level** (slicing by file instead of by the sections inside), compounded by a missing `break` in `sectionOf` that collapsed every document into its last heading. v2 aligned granularity to "section".
+
+**Where the deep end lives**: the cross-window continuity internals are under `docs/internal/` — the [three-tier contract](docs/internal/THREE-LAYER-CONTRACT.md) (Tier 0/1/2 budgets and acceptance predicates), the [semantic architecture spec](docs/internal/SEMANTIC-ARCHITECTURE-SPEC.md) (clauses S1–S10 and stage gates), and the [RAG + Karpathy program](docs/internal/RAG-KARPATHY-PROGRAM.md) (six-step pipeline × three stage lines as a build map).
 
 ---
 
@@ -353,6 +488,23 @@ Config file `~/.dsh/dsh-auto-memory.json` (everything adjustable in the Settings
 - **Rate-limited AI**: auto-consolidation ≤8×/day with a 30-minute cooldown; dynamic injection defaults to a 2,400-char budget — useful memory without burning tokens
 - **Centralized storage**: all workspace memory under one root (`~/.dsh/memory/workspaces/`), readable from any session
 - **30-day distillation**: old logs are AI-distilled into project notes; originals archived, nothing lost
+
+### The 3.0 rebuild (invisible to you — but every recall goes through it)
+
+Most of this release adds no new buttons. It changes *what makes a memory trustworthy*. Eight mechanisms, all shipped and measured:
+
+| Mechanism | The problem it kills |
+|---|---|
+| **Write-side gate** | Reserved-syntax filtering moved *into the write primitives* instead of being detected after the fact. Content carrying a reserved marker is refused on the spot **with a line number** — no more "one bad line makes the whole file permanently unwritable" |
+| **Decision ledger** | Every "should I recall this?" call becomes a reviewable ledger entry; five-grade scoring (A/P/S/H/E) flows back into policy. Not a log — an **auditable chain of decisions** |
+| **Single-source state commit** | The memory index version (miv) converges on one source, killing the "one store, two version numbers" class of recompute-and-miss bugs |
+| **Concurrent atomic writes** | On Windows a `rename` hitting an external file handle throws `EPERM`. Now it retries with backoff, and on final failure it **preserves the full candidate snapshot** (`recoveryPath`) for forensics instead of destroying already-rendered content |
+| **Engine identity gate** | The JS and Python semantic implementations are **mutually exclusive identities**: whichever you pick is the one that runs — never shadowing, never cross-triggering |
+| **True incremental embedding** | Only changed records get re-embedded, with reuse ordering — instead of recomputing the whole store |
+| **Bounded rerank window** | Optional rerank tiers (off/fast/enthusiast): the clock starts at enqueue, 60s expiry with no renewal, LRU ≤16, yields when busy — background work never slows the live conversation |
+| **Multi-workspace / multi-session isolation** | With several workspaces and sessions open at once, each keeps its own gate decisions, index cache, and degradation state. **Clicking into a workspace can no longer disturb the one that's actually running** |
+
+> Each of the eight ships with a regression suite and a mutation demo (revert the mechanism to its old behaviour and the tests must genuinely go red). Engineering detail lives in [`docs/internal/`](docs/internal/).
 
 ---
 

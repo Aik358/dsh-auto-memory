@@ -43,6 +43,14 @@ mkdirSync(tmpRoot, { recursive: true })
 // ---------- 假引擎(真实 tmp fs) ----------
 function makeFakeEngine() {
   return {
+    // P0（2026-09-14）：写入函数现在先过 `checkMutationPre`（判据门 + 共同保护门）。
+    // 本套件考的是**双标题剔除 / 老化分类**，不是门本身 ⇒ 恒过桩。
+    // 门的真实行为由 `smoke-test-t0-8-mutation-gate-pre.mjs` 专测。
+    checkMutationPre() { return { ok: true } },
+    // P2 sidecar(2026-09-16)桩: 同 handoff-pre —— 抽取式沙箱的 this 上必须有该方法。
+    async writeSidecarEntryPre() {},
+    // P2 events.jsonl(2026-09-16 补桩): 同属新增引擎方法 —— 缺桩会 TypeError → {ok:false} → 后续断言假红。
+    async appendSidecarEventPre() {},
     memToday: () => '2026-09-09',
     async readTextSafe(p) { try { return (await readFile(p, 'utf8')) || '' } catch (e) { return '' } },
     async writeFullRaw(p, text) { await mkdir(path.dirname(p), { recursive: true }); await writeFile(p, text, 'utf8') },
@@ -69,7 +77,7 @@ ok(/engine\.state\.latestHandoffText = '# 交接账本 · ' \+ engine\.memToday\
 console.log('[p7-write-fix] G1 账本双标题修复')
 const proj1 = path.join(tmpRoot, 'ws1')
 const eng1 = makeFakeEngine()
-const writeLedger = bindMethod('async writeHandoffLedger(projectDir, content) {', eng1)
+const writeLedger = bindMethod('async writeHandoffLedger(projectDir, content, opts) {', eng1)
 
 // ① 模型 content 自带标题(实锤形态:标题行 + 时间戳不一致) → 文件恰好 1 个标题行,正文零丢失
 {
@@ -100,7 +108,7 @@ const writeLedger = bindMethod('async writeHandoffLedger(projectDir, content) {'
 console.log('[p7-write-fix] G2 白板老化')
 const proj2 = path.join(tmpRoot, 'ws2')
 const eng2 = makeFakeEngine()
-const writePlan = bindMethod('async writePlanSnapshot(projectDir, content) {', eng2)
+const writePlan = bindMethod('async writePlanSnapshot(projectDir, content, opts) {', eng2)
 
 // ① 混合内容:2 个当前节 + 3 个历史节 → PLAN.md 只留当前,历史 3 节整体移入 history 簿
 const mixed = [

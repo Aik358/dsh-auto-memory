@@ -4,7 +4,59 @@ All notable changes to dsh-auto-memory.
 
 ---
 
-## [2.5.2] — 2026-09-13 · 工作区切换修复（终端用户诊断实证）
+## [3.0.0] — 2026-09-17 · 底层重建收官（大版本）
+
+> **这是大版本。** 3.0 线把插件的检索、注入、容量、并发四条底层全部重建，并把「白板/看板」从实验特性提升为出厂形态。
+> **升级须知（三条默认值变化，都可显式改回）**：①**白板默认开启**（`handoffEnabled: true`，原为 false）②**白板默认新版看板**（`boardMode: 'graph'`，旧版文字白板保留为兼容档，工具数 14→16）③**自动接续仍默认关闭**（`autoContinueEnabled: false`，本次特意维持——判据尚未实机验证到位）。老用户已落盘的显式设置**不受影响**，只有从未设过该键的用户吃这组新默认。
+
+### 变更 · 白板线（兼并 dsh-graph，含可视化）
+
+- **`boardMode` 默认翻为 `graph`**：出厂即启用新版看板——结构化 sidecar（`handoff/index.json`：条目/标签倒排/线索索引/版本链）+ 列式泳道矩阵（行=日期分组，列=5 泳道）+ 两个遍历工具（`memory_expand_pre` 按 tag 展开、`memory_trace_pre` 按 id 回溯）。**`legacy` 完整保留**：显式设置即回到字节级旧行为（文字白板、14 工具）。
+- **可视化长在本插件自己身上**，不并列挂第二个插件：不新增 profile bundle、不新增存储、不新增工具命名空间。
+- **`handoffEnabled` 默认翻为 `true`**：白板（PLAN.md 项目全貌）+ 四段式交接账本是 3.0 的招牌能力，出厂关着等于新用户看不到它；且 README/用户手册早已对外声称「交接默认开启」，此项现在与文档一致。
+- 面板新增看板路由与两处一键切换按钮（白板页 / 设置页），切换即时回显并落盘。
+
+### 缺陷修复 · 语义索引永久不就绪（记忆唤回全程降级的真因）
+
+- **症状**：`memory_recall` 的语义臂长期不可用，每轮降级为「词法命中 + Tier-0 常驻目录」，只出目录层、不下探 Tier-1/Tier-2。诊断日志 `index-not-ready` 累计 **22,945** 行，自 2026-08-26 起持续；**worker 重启后仍继续产生**（实测重启后仍增 1,593 行）⇒ 重启只是暂时缓解。
+- **根因（代码级）**：JS 侧契约是「新 miv latest-wins；旧 in-flight sync abort/cancel」，但 `abort()` 只作用于 JS 的 fetch，**Python 从不收到取消帧**；而 worker 的 `active_sync` 原先只在「主动拒绝」与「commit 成功」两处清零 ⇒ 一次「begin 之后没收 page/commit」的同步会把槽**永久占住**，此后每次 `index_begin` 都被回 `sync-in-progress`，索引再也建不起来（`engine-switch-state.json` 记 `failed:2527`）。
+- **修复**：给 `index_begin` 补两条「**可证已死**」的接管出口——①同 key（同 workspaceRef+scope）但 syncId 变了（= JS 已按 per-key latest-wins 放弃旧的）②距**最后一次活动**超过 150s 仍无进展（> JS 侧 syncTimeoutMs 120s，保证 JS 先放弃、worker 后回收）。按「最后活动」而非「开始时间」计时，避免误夺正在推进的长同步（BGE 加载+全量建库可能很久）。
+- **未放宽拒绝矩阵**：同 key 同 syncId 重复 begin 仍拒 `sync-in-progress`；**跨工作区并发仍按原样拒绝**（worker 只有一个槽、而 JS 的 abort 是按 (wsRef,scope) 的，故不能一律让新 syncId 抢占，否则工作区 B 会踩掉 A）。协议帧格式零改动。
+
+### 缺陷修复 · 其他
+
+- **升级弹窗看不到本版说明**（`lib/client.js`）：`bigKey` 原为硬编码 `'2.1.0'` ⇒ 老用户升级到 3.0.0 时弹的仍是 2.1.0 的说明卡。改为**动态取当前版本**（本版有条目就弹本版），以后每个大版本自动正确。
+- **多工作区/多会话适配（4 处「单槽」）**：同时跑两个会话时「谁也没法注入」；点进不同工作区时语义模型跟着走。根因是引擎里 4 处状态写成单槽变量（`engine._tierGateHits` 整体覆盖、`mivCache` 只认最后一个 wsRef、`lastIndexDegrade` 读方只判 10 分钟窗、`_lastTierQuery` 无条件覆盖），A/B 交替时互相覆盖。现按会话/工作区分片；旧字段保留为兼容投影，老读取方不受影响。
+- 外部贡献者 PR 合并：**#36 / #44 / #46 / #49 / #50 / #53 / #37**（procedure 观测标记、容量计费与原子替换、欢迎向导配置闸、recall 记录截断、原子 rename 重试、白板概览日期匹配、接续 idle 门讨论）。对应 issue **#30 / #35 / #38 / #40 / #45 / #48 / #51 / #52 / #54** 全部处理完毕。
+
+### 内部重构 · 3.0 底层重建八阶段（全部结项）
+
+- **P0** 写入门 + 判据账本 + 注入表达 ｜ **P6A** 注入节奏与措辞 ｜ **P1** 状态提交 + miv 单源 + 并发原子写 ｜ **P6B** `kind` 持久化 + 撤回 + 迁移。
+- **P2** 真增量（embedded 真实输入数/复用顺序/引擎身份门）+ 引擎身份与切换状态机。
+- **P3** 共同检索融合决策：R1 双显示（绝对分 + #N finalRank；`opts.fusion:'legacy'` 可回滚）+ 词法臂独立。
+- **P4** 精排多级 + 有界异步窗口：档位门、入队起算到期不续命、LRU≤16、busy 门、审计。
+- **P5** 验收清单（`lib/acceptance-pre.js`：7 必需项 + U1 兼容门 + release-ready 门）。
+- **三层注入（C5）**：Tier-0 常驻目录（指引层）＋ Tier-1 下探 ＋ Tier-2 证据；索引未就绪时**显式降级不静默丢弃**。
+
+### 流程
+
+- 发版固定流程四件套：`docs/internal/RELEASE-PROCESS.md`（检查表）＋ `docs/prompts/RELEASE-AGENT.md` 等四份子代理任务书 ＋ `tools/release.mjs`（pre→发布线转换与三道版本标识闸门）。
+- README 与用户手册双语按大版本标准改写（for-the-badge 徽章、技术段、3.0 章）。
+
+### 验证
+
+- 全量回归 **106 套件 / FAIL 0 / TIMEOUT 0（182.8s）**（3.0 基线 105 套件；本版新增「索引同步卡死自愈」套件 9 断言）。
+- 变异演示：把索引接管分支改回「恒拒绝」⇒ 新套件真红 **PASS 7 / FAIL 2**（T2 实测 `sync-in-progress`、T4 实测 `unknown-sync` + `transport:worker-error`），且 T1/T3/T5 保持绿（证明钉的不是同一件事）；变异后按 SHA256 逐字节还原并复跑 9/9。
+- `node --check` 双文件通过；改动文件无 BOM；`py_compile` 双 worker 通过。
+
+---
+
+## [2.5.3] — 2026-09-14 · 水位虚高修复（PR #31，外部贡献者）
+
+- **修复：`provider/id` 前缀式模型 id 的窗口被静默丢弃导致水位虚高**（贡献者 Minervaowl7，PR #31，已合并）。`parseModelWindowsPre` 的 id 字符类不含 `/`，而 `deepseek/deepseek-v4.1-flash`、`z-ai/glm-5.3-flash` 这类 provider 前缀写法很常见 ⇒ 整条 id 行匹配失败、其 `contextWindow` 被丢弃，窗口退化为 fallback 131072。实测真实窗口 1,000,000 的会话被按 131,072 当分母，**水位放大 7.63 倍（12.8% 显示成 98%）**，未达阈值即误弹接续确认卡。
+- 配套补齐 PR #31 第二半：id 行存在但格式仍不被识别（带引号/含空格/中文等）时**重置 `currentId`**，避免紧随其后的 `contextWindow` 被记到上一条模型头上——静默错配比"读不到"更危险（读不到只退化为 fallback，错配会给出偏小的窗口使水位漏报）。
+
+---
 
 ### 缺陷修复
 

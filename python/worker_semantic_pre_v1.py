@@ -690,12 +690,23 @@ class SemanticWorker(base.Worker):
         if act is None:
             return None
         reasons = ','.join(str(x) for x in (out.get('reasonCodes') or []))
+
+        def _num(x):
+            try:
+                return float(x or 0.0)
+            except (TypeError, ValueError):
+                return 0.0
+
+        # 2026-09-14 P1-⑮:reason 串此前只有 lane/decision/reasonCodes,注入侧看不到
+        # 0-1 相似度(intent 概率 / 稠密分 / 融合 margin)。数值段放在 reasonCodes **之前**,
+        # 这样 160 字符截断只会砍掉代码列表,不会砍掉分值。
         act['threshold'] = {
             'policyVersion': featv2.ACTIVATION_POLICY_VERSION,
             'score': round(score, 6),
             'threshold': float(th.get('tauHi', 0.45)),
-            'reason': ('fv2 lane=%s %s %s' % (
-                feats.get('lane'), out.get('decision'), reasons))[:160],
+            'reason': ('fv2 lane=%s %s intent=%.2f dense=%.2f margin=%.2f %s' % (
+                feats.get('lane'), out.get('decision'), score,
+                _num(feats.get('denseTop')), _num(feats.get('margin')), reasons))[:160],
         }
         act['level'] = 'excerpt'
         return act

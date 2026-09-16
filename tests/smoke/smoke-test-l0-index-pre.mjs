@@ -109,8 +109,25 @@ await ta('索引文件: schemaVersion/l0IndexVersion/无 body/不含原文串', 
   assert.equal(fileObj.schemaVersion, L0_INDEX_SCHEMA_VERSION)
   assert.match(fileObj.l0IndexVersion, /^l0idx_pre_[0-9a-f]{32}$/)
   for (const e of fileObj.entries) {
-    assert.deepEqual(Object.keys(e).sort(), ['id', 'l0', 'l0Hash', 'source', 'updatedAt', 'vector'])
+    // C3（2026-09-14）：条目字段集**新增 layer + status**——索引必须显式落这两列，
+    // 否则检索侧看不到层归属与状态（契约 I4 的 L0 索引这一环）。此断言写死字段集，
+    // 正是「能失败」的那条：少一列即红。
+    assert.deepEqual(Object.keys(e).sort(), ['id', 'l0', 'l0Hash', 'layer', 'source', 'status', 'updatedAt', 'vector'])
+    assert.ok(['user', 'project', 'log', 'reflection', 'whiteboard'].includes(e.layer), 'layer 落在合法五值内: ' + e.layer)
+    assert.ok(['current', 'superseded', 'retracted'].includes(e.status), 'status 落在合法三值内: ' + e.status)
   }
+  // C3 身份：l0IndexVersion 必须把 layer/status 计入，否则「只换层」不触发版本变化 → 下游缓存拿到过期归属
+  const bumped = fileObj.entries.map((e) => ({ ...e }))
+  assert.notEqual(
+    computeL0IndexVersionPre(bumped),
+    computeL0IndexVersionPre(bumped.map((e) => (e.id === bumped[0].id ? { ...e, layer: e.layer === 'log' ? 'project' : 'log' } : e))),
+    'C3：仅改一条的 layer 也会改变 l0IndexVersion'
+  )
+  assert.notEqual(
+    computeL0IndexVersionPre(bumped),
+    computeL0IndexVersionPre(bumped.map((e) => (e.id === bumped[0].id ? { ...e, status: e.status === 'current' ? 'retracted' : 'current' } : e))),
+    'C3：仅改一条的 status 也会改变 l0IndexVersion'
+  )
   const raw = JSON.stringify(fileObj)
   assert.ok(!raw.includes('绝密原文标记XYZ'), '索引不得含记忆原文')
   // l0IndexVersion 与 computeL0IndexVersionPre 一致

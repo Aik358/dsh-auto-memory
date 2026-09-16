@@ -37,7 +37,7 @@ function extractFn(header) {
 console.log('[p4-l0-response] N1 源码守卫')
 ok(SRC.includes("async recall(query, limit = 8, agent, scope = 'all', opts = null) {"), 'recall 签名 = 可选 opts 扩展(第5参,默认 null)')
 ok(SRC.includes('async expandMemoryRecordPre(id, agent) {'), 'expandMemoryRecordPre 方法存在')
-ok(/import \{ parseAnchors \} from '\.\/memory-anchor-pre\.js'/.test(SRC), 'parseAnchors 复用(字节区间定位,非新造)')
+ok(/import \{[^}]*\bparseAnchors\b[^}]*\} from '\.\/memory-anchor-pre\.js'/.test(SRC), 'parseAnchors 复用(字节区间定位,非新造)')
 ok(SRC.includes("format: { type: 'string', enum: ['l0', 'full']"), '工具 schema 新增可选 format')
 ok(SRC.includes("expand: { type: 'string', description: '按记忆 id"), '工具 schema 新增可选 expand')
 ok(SRC.includes("{ format: args.format || 'l0', expand: args.expand }"), '工具层 format 缺省 l0(模型默认拿 L0 列表)')

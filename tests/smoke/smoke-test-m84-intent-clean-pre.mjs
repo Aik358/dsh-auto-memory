@@ -1,5 +1,5 @@
 // M8 采集侧 intent 清洗测试(2026-08-30 P1,docs/HANDOFF-M8-M9-M10.md §2 P1):
-// 用 ~/.dsh/memory/hub-pre/episodes.json 里**实录到的三种污染形态**做回归锁定,
+// 用 ~/.dsh/memory/hub/episodes.json 里**实录到的三种污染形态**做回归锁定,
 // 使「自然对话两轮后查 intent」这一原本只能实机验证的行为变成可重复执行的断言。
 //   T1 形态① harness 快照消息("Current runtime context. This snapshot supersedes…")
 //   T2 形态② 工具回包 JSON 转储(role=user 但 eventType='tool/result')
@@ -8,6 +8,8 @@
 //   T5 真人问题与快照拼在同一条消息 → 剥离后捞回真问题(抽取时发现的缺陷修复)
 //   T6 纯快照消息 → 跳过(与修复前行为一致,不引入假 intent)
 //   T7 assistant 取最后一条非空文本;边界/健壮性
+//   T8 (2026-09-14 issue#30) 新增实录污染形态:system-reminder 块 / long_term_memory 块 /
+//      「Current DSH file policy:」策略行 —— 整条注入跳过、拼条剥离捞回、真人引用不误吞
 // 纯函数测试:零 IO、零网络、零真实记忆接触。
 const { pickConsolidationTextPre, stripInjectedBlockPre, isInjectedContextTextPre } = await import('../../lib/intent-clean-pre.js')
 
@@ -58,8 +60,8 @@ console.log('[T5] 真人问题与快照拼在同一条消息 → 捞回真问题
   const inline2 = REAL_Q + '\n' + SNAPSHOT
   eq(pickConsolidationTextPre([U(inline2)]).userText, REAL_Q, 'T5 真问题在前、快照在后 → 取真问题部分')
   eq(stripInjectedBlockPre('<memory_system>块内容</memory_system>尾巴文本'), '尾巴文本', 'T5 剥离完整块保留尾部')
-  eq(stripInjectedBlockPre('头部<memory_system>块</memory_system>'), '头部', 'T5 剥离完整块保留头部')
-  eq(stripInjectedBlockPre('前段</memory_system>后段'), '后段', 'T5 只有闭合标签(半截注入)→ 取其后内容')
+  eq(stripInjectedBlockPre('头部<memory_system>块</memory_system>'), '头部<memory_system>块</memory_system>', 'T5 行中包裹不再剥离 → 整行原样保留(引用/代码零误伤)')
+  eq(stripInjectedBlockPre('前段</memory_system>后段'), '前段</memory_system>后段', 'T5 行中闭合标签不再剥离 → 整行原样保留(仅行首闭合才消费)')
 }
 
 console.log('[T6] 纯快照消息 → 跳过,不制造假 intent')
@@ -87,7 +89,7 @@ console.log('[T7] 边界与健壮性')
   eq(pickConsolidationTextPre([{ role: 'user', eventType: 'user/message' }]).userText, '', 'T7 缺 text 字段不炸')
   // 用户真的在讨论本插件、手抄了一段快照 → 剥离后剩下他的问题(不误吞)
   const discuss = '这段注入 <memory_system>示例</memory_system> 为什么会重复出现？'
-  eq(pickConsolidationTextPre([U(discuss)]).userText, '这段注入  为什么会重复出现？', 'T7 真人引用快照片段时不整条丢弃')
+  eq(pickConsolidationTextPre([U(discuss)]).userText, '这段注入 <memory_system>示例</memory_system> 为什么会重复出现？', 'T7 真人引用快照片段不整条丢弃(行中包裹原样保留)')
   // 确定性
   const msgs = [U(REAL_Q), A(ANSWER), U(SNAPSHOT)]
   eq(pickConsolidationTextPre(msgs), pickConsolidationTextPre(msgs), 'T7 同输入同输出(确定性)')
@@ -95,6 +97,31 @@ console.log('[T7] 边界与健壮性')
   const frozen = JSON.stringify(msgs)
   pickConsolidationTextPre(msgs)
   eq(JSON.stringify(msgs), frozen, 'T7 不修改入参数组')
+}
+
+console.log('[T8] issue#30 新增实录污染形态:system-reminder / long_term_memory / DSH file policy')
+{
+  const REMINDER = '<system-reminder>\nUpdated instructions for file policy\n</system-reminder>'
+  const LTM = '<long_term_memory>\n用户偏好快照内容\n</long_term_memory>'
+  const POLICY = 'Current DSH file policy: danger-full-access — runtime injected line'
+  // T8-1 三种新形态整条注入 → 识别为合成消息,不污染 intent
+  ok(isInjectedContextTextPre(REMINDER), 'T8-1 整条 system-reminder 注入被识别')
+  ok(isInjectedContextTextPre(LTM), 'T8-1 整条 long_term_memory 注入被识别')
+  ok(isInjectedContextTextPre(POLICY), 'T8-1 整条 DSH file policy 行被识别')
+  // T8-2 真人问题之前/之后拼注入 → 剥离后取真问题
+  eq(pickConsolidationTextPre([U(REAL_Q), A(ANSWER), U(REMINDER)]).userText, REAL_Q, 'T8-2 末尾 system-reminder 注入跳过')
+  eq(pickConsolidationTextPre([U(LTM), A(ANSWER), U(REAL_Q)]).userText, REAL_Q, 'T8-2 开头 long_term_memory 注入跳过')
+  eq(pickConsolidationTextPre([U(POLICY), A(ANSWER), U(REAL_Q)]).userText, REAL_Q, 'T8-2 开头 policy 行跳过')
+  // T8-3 注入块与真问题拼在同一条消息 → 剥块捞回真问题(与 T5 同语义,新标签)
+  eq(pickConsolidationTextPre([U(REAL_Q + '\n' + REMINDER)]).userText, REAL_Q, 'T8-3 真问题在前 reminder 在后 → 捞回')
+  eq(pickConsolidationTextPre([U(REMINDER + '\n' + REAL_Q)]).userText, REAL_Q, 'T8-3 reminder 在前真问题在后 → 捞回')
+  eq(pickConsolidationTextPre([U('帮我看看\n' + LTM + '\n这个计划对吗')]).userText, '帮我看看\n这个计划对吗', 'T8-3 整行包裹块连占位行一并消失,不留空行')
+  // T8-4 真人手抄/引用注入片段 → 不整条丢弃(与 T7 同语义,新标签)
+  eq(pickConsolidationTextPre([U('这段 <system-reminder>提醒</system-reminder> 为什么反复出现？')]).userText,
+    '这段 <system-reminder>提醒</system-reminder> 为什么反复出现？', 'T8-4 真人引用 reminder 片段时行中包裹原样保留')
+  // T8-5 三种新形态混合 + 旧形态混合 → 仍取真人问题
+  const msgs = [U(SNAPSHOT), U(POLICY), U(REAL_Q), A(ANSWER), U(REMINDER), U(LTM)]
+  eq(pickConsolidationTextPre(msgs).userText, REAL_Q, 'T8-5 新旧形态混合乱序 → 取真人问题')
 }
 
 console.log('\n[M84] ' + pass + ' passed, ' + fail + ' failed')
