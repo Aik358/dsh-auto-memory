@@ -97,7 +97,7 @@ console.log('[contseq] S0 源码守卫')
     'buildPrevSessionPack:写包失败回滚(不跳号)')
   ok(/let contSeq = Number\(pack && pack\.contSeq\) \|\| 0[\s\S]{0,400}?if \(!contSeq\) contSeq = 1/.test(SRC),
     'buildContinueCarry 取值链:pack → 持久计数器 → 旧文件数+1 → 1(contSeq 恒非空,rename 不再被跳过)')
-  ok(/if \(d\.contSeq && typeof sc\.rename === 'function'\)/.test(SRC), '宿主 rename 保留 fail-soft(旧 harness 不炸)')
+  ok(readFileSync(new URL('../../lib/continuation-safety.js', import.meta.url), 'utf8').includes("if (d.contSeq && typeof c.rename === 'function')"), '宿主执行器保留接续序号 rename；异常仅影响标题，不重复投递')
   ok(/allocContSeq\(wsKey\) \{[\s\S]{0,600}?scanMaxContSeq\(\)/.test(SRC), '计数器缺失时从历史标题解析兜底(兼容老数据)')
 }
 

@@ -26,6 +26,8 @@ import { foldSessionLogEvents, workspaceIdForSession } from '../../lib/index.js'
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 const SRC = readFileSync(path.resolve(HERE, '..', '..', 'lib', 'client.js'), 'utf8')
 const HSRC = readFileSync(path.resolve(HERE, '..', '..', 'lib', 'index.js'), 'utf8')
+const ESRC = readFileSync(path.resolve(HERE, '..', '..', 'lib', 'continuation-safety.js'), 'utf8')
+const ASRC = readFileSync(path.resolve(HERE, '..', '..', 'lib', 'continuation-host.js'), 'utf8')
 let pass = 0, fail = 0
 const ok = (c, n) => { if (c) { pass++; console.log('  ok -', n) } else { fail++; console.log('  FAIL -', n) } }
 const count = (s, re) => (s.match(re) || []).length
@@ -65,27 +67,18 @@ for (const [input, expect, name] of cases) {
   ok(extractSessionId(input) === expect, 'G2 extractSessionId(' + name + ') => ' + String(expect))
 }
 
-// —— G3:接续链路收敛到共用执行器(create 返回值只经 extractSessionId 提取一次)——
-ok(count(SRC, /runContinueFlow\(/g) >= 2, 'G3 both entry points (oneClickContinue + runAuto) call the shared runContinueFlow')
-ok(count(SRC, /newId = extractSessionId\(created\)/g) === 1, 'G3 create result extracted once via extractSessionId (shared executor)')
-ok(SRC.includes('async function runContinueFlow(') && SRC.includes('async function executeContinue('),
-  'G3 shared executor present (runContinueFlow + executeContinue)')
-
-// —— G4:两处 session.prompt 都携带 clientTimeZone ——
-ok(count(SRC, /clientTimeZone: amCtzValue\(\)/g) === 2 && count(SRC, /session\.prompt\(/g) === 2,
-  'G4 both session.prompt calls carry clientTimeZone (6a94794)')
-
-// —— G5:create 参数经 continueCreateArgs,带 agentPreset ——
-ok(SRC.includes('rf.session.create(continueCreateArgs(d))') && SRC.includes('agentPreset: d.agentPreset || undefined'),
-  'G5 create args via continueCreateArgs with agentPreset')
-
-// —— G6:selectModel 带 reasoningEffort(保留模型思考能力)——
-ok(bodyOf(SRC, 'async function executeContinue(d, onMsg) {').includes('reasoningEffort: d.reasoningEffort || undefined'),
-  'G6 selectModel passes reasoningEffort (bffe105)')
-
-// —— G7:新会话 rename 接续序号标题(接续#N · wsBase)——
-ok(bodyOf(SRC, 'async function executeContinue(d, onMsg) {').includes("'接续 #'"),
-  'G7 new session renamed with numbered title 接续#N (bffe105)')
+// —— G3:三入口共享宿主执行器；浏览器不能另外 create/prompt ——
+ok(count(SRC, /runContinueFlow\(/g) >= 2, 'G3 manual UI delegates to runContinueFlow')
+ok(SRC.includes("action: 'manual'") && HSRC.includes('this.continuationHost().decide(action, edgeAt, fromSessionId)'), 'G3 explicit source is passed to the common host executor')
+ok(!SRC.includes('async function executeContinue(') && !SRC.includes('async function refreshOldSession(') && !/session\.prompt\(/.test(SRC), 'G3 no browser-side continuation/ritual delivery path survives')
+// —— G4:当前公开 prompt 契约要求 signal；clientTimeZone 已非必填 ——
+ok(ESRC.includes('new AbortController().signal') && ESRC.includes("mode: 'queue'"), 'G4 public prompt receives AbortSignal and mode queue (behavior tested in autocont-host)')
+// —— G5:稳定 sessionId + 旧 agentPreset 由宿主创建 ——
+ok(ESRC.includes('c.create({ sessionId: cp.newSessionId,') && ESRC.includes('agentPreset: d.agentPreset'), 'G5 explicit stable create identity and agent preset')
+// —— G6:思考档位仍沿用 ——
+ok(ESRC.includes('reasoningEffort: d.reasoningEffort'), 'G6 host selectModel carries reasoningEffort')
+// —— G7:接续序号标题仍沿用 ——
+ok(ESRC.includes("title: '接续 #' + d.contSeq") && ESRC.includes("typeof c.rename === 'function'"), 'G7 host preserves numbered continuation title')
 
 // —— G8(修B):模型/思考档位取自 request/header 的 data.header.config ——
 const J = (o) => JSON.stringify(o)
@@ -136,15 +129,15 @@ const argsCwd = continueCreateArgs({ workspaceId: '', ws: 'D:\\proj', agentPrese
 ok(argsCwd.cwd === 'D:\\proj' && argsCwd.workspaceId === undefined, 'G10 fallback to cwd when workspaceId unresolved')
 const argsNone = continueCreateArgs({ agentPreset: 'default' })
 ok(argsNone.agentPreset === 'default' && argsNone.cwd === undefined && argsNone.workspaceId === undefined, 'G10 neither => agentPreset only')
-ok(bodyOf(SRC, 'async function executeContinue(d, onMsg) {').includes('rf.session.create(continueCreateArgs(d))'),
-  'G10 executor creates with continueCreateArgs(d)')
+ok(ESRC.includes('c.create({ sessionId: cp.newSessionId,') && ESRC.includes('d.workspaceId ? { workspaceId: d.workspaceId } : { cwd: d.ws }'),
+  'G10 production executor uses stable identity and exclusive workspaceId/cwd (behavior tested in autocont-host)')
 
 // —— G11(①):触发权移交宿主(2.2.6)——边沿观察/倒计时全在 host;client 只轮询状态展示 ——
 ok(SRC.includes('function currentRunningInfo()') && (SRC.includes('snap.byId && snap.byId[id]') || SRC.includes('s.byId[sessionId]')),
   'G11 currentRunningInfo still reads authoritative running bit (legacy/manual paths)')
 ok(HSRC.includes('engine.armAutoContinue(agent, { ratio: rt2.waterLevel'),
   'G11 trigger moved to host: turn-stopping arms host-side countdown after water measurement')
-ok(HSRC.includes('expiresAt: now + sec * 1000') && /autoContinueConfirmSeconds/.test(HSRC),
+ok(ASRC.includes('expiresAt: now + sec * 1000') && /autoContinueConfirmSeconds/.test(ASRC),
   'G11 host countdown (confirmSeconds) replaces client 3s short-confirm')
 ok(!SRC.includes('wl.tokens === autoState.lastTokens'), 'G11 old "two polls flat tokens = idle" heuristic removed')
 ok(SRC.includes('apiGet(API.autoContState,') && SRC.includes('setInterval(poll, 3000)'),
@@ -159,7 +152,7 @@ ok(SRC.includes('okAt === 0 || Date.now() - okAt < 10 * 60 * 1000'),
 ok(SRC.includes('apiGet(API.autoContState, sidQ ? { sessionId: sidQ } : {})') && SRC.includes('currentSessionIdClient()'),
   'G14 轮询携带当前会话 id(宿主据此只在本窗口弹确认卡)')
 ok(HSRC.includes("url.searchParams.get('sessionId')") && HSRC.includes('autoContinueState(selfSid)'),
-  'G14 宿主侧按 sessionId 过滤 armed(取不到 id 时 fail-open)')
+  'G14 宿主侧按 sessionId 过滤 armed；未知 id 不展示其他会话状态')
 ok(/setAcConfirm\(\{ ratio: Number\(arm\.ratio\) \|\| 0[\s\S]{0,220}?wall: Number\(arm\.wall\) \|\| 0/.test(SRC),
   'G14 确认卡把双口径 ring/wall 拷进 acConfirm(宿主透出但这里丢了 → 那行永不渲染)')
 
@@ -168,13 +161,13 @@ ok(SRC.includes('autoContAgree') && SRC.includes('autoContReject') && SRC.includ
   'G12 confirm card has agree / reject / timeout labels')
 ok(SRC.includes("action: 'agree'") && SRC.includes("action: 'reject'"),
   'G12 decisions posted to host (host owns execution)')
-ok(HSRC.includes('st.rejectedEdgeAt = armedEdge') && HSRC.includes('now - st.rejectedEdgeAt < 10 * 60 * 1000'),
+ok(ESRC.includes('this.state.rejectedEdgeAt =') && ASRC.includes('now - st.rejectedEdgeAt < 10 * 60 * 1000'),
   'G12 rejection recorded host-side (10min window, re-evaluated at next boundary)')
-ok(HSRC.includes('Date.now() < st.armed.expiresAt') && HSRC.includes('await this.hostAutoContinue()'),
+ok(ESRC.includes('this.state.armed.expiresAt > this.now()') && ESRC.includes('return this.request(this.state.armed.sessionId)'),
   'G12 host timeout auto-continues (unattended fallback)')
-ok(SRC.includes('async function refreshOldSession(') && SRC.includes('async function waitForRefresh(') && SRC.includes('await refreshOldSession(onMsg)'),
-  'G12 ③refresh ritual before material assembly (PLAN+ledger, fail-soft)')
-ok(HSRC.includes('refreshRitualPrompt()') && HSRC.includes('autoContinueRefreshRitual === false') && HSRC.includes('refresh: this.config.autoContinueRefreshRitual'),
+ok(ESRC.includes('const ritual = await this.refresh(cp, run)') && ESRC.includes('proveRitual(await this.events(sid), sid, current.ritual)'),
+  'G12 请求级 ritual 在材料组装之前；timeout/uncertain 不冒充成功')
+ok(HSRC.includes('refreshRitualPrompt()') && ASRC.includes('engine.config.autoContinueRefreshRitual !== false') && HSRC.includes('refresh: this.config.autoContinueRefreshRitual'),
   'G12 host exposes refresh ritual (config-gated) via handoff-state')
 for (const layer of ['【第0层 · 白板 PLAN.md(节选)】', '【第1层 · 交接账本 ', '【第2层 · 近期线程', '【第3层 · 完整转写与检索(按需)】']) {
   ok(HSRC.includes(layer), 'G12 layered material: ' + layer)

@@ -21,6 +21,7 @@ import { scanPressureSignalsPre, findSessionModelPre } from '../../lib/water-win
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 const SRC = readFileSync(path.resolve(HERE, '..', '..', 'lib', 'index.js'), 'utf8')
+const ASRC = readFileSync(path.resolve(HERE, '..', '..', 'lib', 'continuation-host.js'), 'utf8')
 let pass = 0, fail = 0
 const ok = (c, n) => { if (c) { pass++; console.log('  ok -', n) } else { fail++; console.log('  FAIL -', n) } }
 
@@ -102,8 +103,8 @@ ok(/hardTrigger: this\.state\.waterLevelHardTrigger/.test(SRC) && /measuredRatio
   '水位记录同时留「实测比例 / 硬触发原因」供面板与排障')
 ok(/this\.state\.waterLevelWall = hardWin > 0 \? Math\.max\(0, hardWin - reserve\) : 0/.test(SRC),
   'reserve 保留「距硬墙余量」展示职责(硬限 − 预留),不进触发分母')
-ok(/ring: Number\(this\.state && this\.state\.waterLevelRing\) \|\| 0/.test(SRC) && /wall: Number\(this\.state && this\.state\.waterLevelWall\) \|\| 0/.test(SRC),
-  'arm 时把双口径带进 armed 对象(state 缺失也不得让 arm 失败)')
+ok(ASRC.includes('ring: Number(engine.state?.waterLevelRing) || 0') && ASRC.includes('wall: Number(engine.state?.waterLevelWall) || 0'),
+  'arm 时把双口径带进 armed 对象(state 缺失也不得让 arm 失败;由宿主执行器写入)')
 ok(!/Math\.max\(0, events\.length - 64\)[\s\S]{0,200}compaction/.test(SRC) || /sig\.compactionSeq/.test(SRC),
   'compaction 检测不再局限于最近 64 条事件')
 
