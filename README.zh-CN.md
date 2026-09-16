@@ -53,7 +53,7 @@
 </details>
 
 <p align="center">
-  <b>中文</b> · <a href="README.md">English</a> · License BSD-3-Clause · <code>pnpm add @a9i5k4/dsh-auto-memory</code> · <a href="docs/USER-GUIDE.zh-CN.md">📖 用户文档(设置与调优)</a> · <a href="docs/USER-GUIDE.en.md">📖 User guide (EN)</a> · <a href="https://qm.qq.com/q/v7Asxn6vPa">QQ 交流群</a>
+  <b>中文</b> · <a href="README.md">English</a> · License BSD-3-Clause · <code>pnpm add @a9i5k4/dsh-auto-memory</code> · 📖 <a href="docs/USER-GUIDE.zh-CN.md">用户文档</a> · 📖 <a href="docs/USER-GUIDE.en.md">User guide (EN)</a> · 🤝 <a href="https://htmlpreview.github.io/?https://github.com/Aik358/dsh-auto-memory/blob/main/docs/CONTRIBUTORS.html">贡献者与赞助</a> · <a href="https://qm.qq.com/q/v7Asxn6vPa">QQ 交流群</a>
 </p>
 
 ---
@@ -467,8 +467,26 @@ DeepSeek Harness (Node, 127.0.0.1:3080)
 
 社区贡献者：
 
+- [@Minervaowl7](https://github.com/Minervaowl7) — 贡献最活跃：15 个 PR + 8 个 issue，覆盖工作区概览日志日期锚定、自动续跑宿主加固、恢复候选生命周期等（[#16](https://github.com/Aik358/dsh-auto-memory/issues/16)–[#53](https://github.com/Aik358/dsh-auto-memory/pull/53)）
+- [@JIE42393](https://github.com/JIE42393) — 7 个 issue，覆盖面板行为、召回质量与配置边界（[#15](https://github.com/Aik358/dsh-auto-memory/issues/15)、[#26](https://github.com/Aik358/dsh-auto-memory/issues/26)、[#30](https://github.com/Aik358/dsh-auto-memory/issues/30)、[#41](https://github.com/Aik358/dsh-auto-memory/issues/41)–[#43](https://github.com/Aik358/dsh-auto-memory/issues/43)、[#45](https://github.com/Aik358/dsh-auto-memory/issues/45)）
+- [@Fishsb](https://github.com/Fishsb) — 3 个 issue，关于记忆召回与注入行为（[#18](https://github.com/Aik358/dsh-auto-memory/issues/18)–[#20](https://github.com/Aik358/dsh-auto-memory/issues/20)）
+- [@messiahyl](https://github.com/messiahyl) — 2 个 issue（[#8](https://github.com/Aik358/dsh-auto-memory/issues/8)、[#9](https://github.com/Aik358/dsh-auto-memory/issues/9)）
 - [@ProperSAMA](https://github.com/ProperSAMA) — DSH Desktop 增强模式（透明/Mica 材质）面板可读性修复 + 入口按钮防遮挡与外点/Esc 关闭（[PR #12](https://github.com/Aik358/dsh-auto-memory/pull/12)）
 - [@nkh0472](https://github.com/nkh0472) — 无人值守/批处理场景加固反馈，推动了欢迎向导与功能开关化（[Issue #10](https://github.com/Aik358/dsh-auto-memory/issues/10)）
+- [@fei009009](https://github.com/fei009009) — 提交 PR（[#29](https://github.com/Aik358/dsh-auto-memory/pull/29)）
+- [@alexchenzl](https://github.com/alexchenzl)（[#6](https://github.com/Aik358/dsh-auto-memory/issues/6)）· [@ALuoXue](https://github.com/ALuoXue)（[#2](https://github.com/Aik358/dsh-auto-memory/issues/2)）· [@Architectxz](https://github.com/Architectxz)（[#1](https://github.com/Aik358/dsh-auto-memory/issues/1)）· [@cuohua](https://github.com/cuohua)（[#40](https://github.com/Aik358/dsh-auto-memory/issues/40)）· [@eclgo](https://github.com/eclgo)（[#13](https://github.com/Aik358/dsh-auto-memory/issues/13)）· [@jeffsui](https://github.com/jeffsui)（[#39](https://github.com/Aik358/dsh-auto-memory/issues/39)）· [@lhbsaa](https://github.com/lhbsaa)（[#3](https://github.com/Aik358/dsh-auto-memory/issues/3)）· [@moonltppt](https://github.com/moonltppt)（[#14](https://github.com/Aik358/dsh-auto-memory/issues/14)）· [@swtseaman](https://github.com/swtseaman)（[#21](https://github.com/Aik358/dsh-auto-memory/issues/21)）· [@xiaochaZ](https://github.com/xiaochaZ)（[#38](https://github.com/Aik358/dsh-auto-memory/issues/38)）· [@zjj871114037](https://github.com/zjj871114037)（[#7](https://github.com/Aik358/dsh-auto-memory/issues/7)）— 问题反馈与功能建议
+
+完整名单（含基础设施赞助）：**[贡献者与赞助](https://htmlpreview.github.io/?https://github.com/Aik358/dsh-auto-memory/blob/main/docs/CONTRIBUTORS.html)**
+
+---
+
+## 赞助
+
+本项目部分开发资源由以下方提供：
+
+- **[DSH API](https://api.dshapi.icu/)** — API 中转站，为本项目的开发、测试以及 M 系列语义引擎研究提供模型端点。感谢一路同行。
+
+基础设施与 API 额度赞助方列在 **[贡献者与赞助](https://htmlpreview.github.io/?https://github.com/Aik358/dsh-auto-memory/blob/main/docs/CONTRIBUTORS.html)** 页面。如希望支持本项目，欢迎提 issue 或加入 QQ 交流群。
 
 ---
 

@@ -53,7 +53,7 @@
 </details>
 
 <p align="center">
-  <a href="README.zh-CN.md">中文</a> · <b>English</b> · License BSD-3-Clause · <code>pnpm add @a9i5k4/dsh-auto-memory</code> · <a href="docs/USER-GUIDE.en.md">📖 User guide (settings & tuning)</a> · <a href="docs/USER-GUIDE.zh-CN.md">📖 用户文档</a> · <a href="https://qm.qq.com/q/v7Asxn6vPa">QQ group</a>
+  <a href="README.zh-CN.md">中文</a> · <b>English</b> · License BSD-3-Clause · <code>pnpm add @a9i5k4/dsh-auto-memory</code> · 📖 <a href="docs/USER-GUIDE.en.md">User guide (settings &amp; tuning)</a> · 📖 <a href="docs/USER-GUIDE.zh-CN.md">用户文档</a> · 🤝 <a href="https://htmlpreview.github.io/?https://github.com/Aik358/dsh-auto-memory/blob/main/docs/CONTRIBUTORS.html">Contributors &amp; Sponsors</a> · <a href="https://qm.qq.com/q/v7Asxn6vPa">QQ group</a>
 </p>
 
 ---
@@ -465,8 +465,26 @@ Papers were authored by the autonomous engineering agent (ZCode / GLM); all conc
 
 Community contributors:
 
+- [@Minervaowl7](https://github.com/Minervaowl7) — the most prolific contributor: 15 PRs + 8 issues covering workspace-overview log-date anchoring, auto-continuation host hardening, and recovery-candidate lifecycle ([#16](https://github.com/Aik358/dsh-auto-memory/issues/16)–[#53](https://github.com/Aik358/dsh-auto-memory/pull/53))
+- [@JIE42393](https://github.com/JIE42393) — 7 issues on panel behaviour, recall quality and configuration edge cases ([#15](https://github.com/Aik358/dsh-auto-memory/issues/15), [#26](https://github.com/Aik358/dsh-auto-memory/issues/26), [#30](https://github.com/Aik358/dsh-auto-memory/issues/30), [#41](https://github.com/Aik358/dsh-auto-memory/issues/41)–[#43](https://github.com/Aik358/dsh-auto-memory/issues/43), [#45](https://github.com/Aik358/dsh-auto-memory/issues/45))
+- [@Fishsb](https://github.com/Fishsb) — 3 issues on memory recall and injection behaviour ([#18](https://github.com/Aik358/dsh-auto-memory/issues/18)–[#20](https://github.com/Aik358/dsh-auto-memory/issues/20))
+- [@messiahyl](https://github.com/messiahyl) — 2 issues ([#8](https://github.com/Aik358/dsh-auto-memory/issues/8), [#9](https://github.com/Aik358/dsh-auto-memory/issues/9))
 - [@ProperSAMA](https://github.com/ProperSAMA) — panel readability fix for DSH Desktop enhanced mode (transparent/Mica materials) + entry-button anti-occlusion & outside-click/Esc close ([PR #12](https://github.com/Aik358/dsh-auto-memory/pull/12))
 - [@nkh0472](https://github.com/nkh0472) — unattended/batch workflow hardening feedback that drove the welcome tour and per-feature switches ([Issue #10](https://github.com/Aik358/dsh-auto-memory/issues/10))
+- [@fei009009](https://github.com/fei009009) — pull request ([#29](https://github.com/Aik358/dsh-auto-memory/pull/29))
+- [@alexchenzl](https://github.com/alexchenzl) ([#6](https://github.com/Aik358/dsh-auto-memory/issues/6)) · [@ALuoXue](https://github.com/ALuoXue) ([#2](https://github.com/Aik358/dsh-auto-memory/issues/2)) · [@Architectxz](https://github.com/Architectxz) ([#1](https://github.com/Aik358/dsh-auto-memory/issues/1)) · [@cuohua](https://github.com/cuohua) ([#40](https://github.com/Aik358/dsh-auto-memory/issues/40)) · [@eclgo](https://github.com/eclgo) ([#13](https://github.com/Aik358/dsh-auto-memory/issues/13)) · [@jeffsui](https://github.com/jeffsui) ([#39](https://github.com/Aik358/dsh-auto-memory/issues/39)) · [@lhbsaa](https://github.com/lhbsaa) ([#3](https://github.com/Aik358/dsh-auto-memory/issues/3)) · [@moonltppt](https://github.com/moonltppt) ([#14](https://github.com/Aik358/dsh-auto-memory/issues/14)) · [@swtseaman](https://github.com/swtseaman) ([#21](https://github.com/Aik358/dsh-auto-memory/issues/21)) · [@xiaochaZ](https://github.com/xiaochaZ) ([#38](https://github.com/Aik358/dsh-auto-memory/issues/38)) · [@zjj871114037](https://github.com/zjj871114037) ([#7](https://github.com/Aik358/dsh-auto-memory/issues/7)) — bug reports and feature requests
+
+Full credits, including infrastructure sponsors: **[Contributors & Sponsors](https://htmlpreview.github.io/?https://github.com/Aik358/dsh-auto-memory/blob/main/docs/CONTRIBUTORS.html)**
+
+---
+
+## Sponsors
+
+Development resources for this project are partly provided by:
+
+- **[DSH API](https://api.dshapi.icu/)** — API relay station providing the model endpoints used for development, testing, and the semantic-engine research behind the M-series features. Thank you for keeping the lights on.
+
+Infrastructure and API-quota sponsors are listed on the **[Contributors & Sponsors](https://htmlpreview.github.io/?https://github.com/Aik358/dsh-auto-memory/blob/main/docs/CONTRIBUTORS.html)** page. If you would like to support the project, open an issue or join the QQ group.
 
 ---
 
