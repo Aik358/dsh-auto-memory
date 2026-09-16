@@ -65,7 +65,7 @@
 </p>
 
 <p align="center">
-  <code>pnpm add @a9i5k4/dsh-auto-memory</code>
+  <code>pnpm add @a9i5k4/dsh-auto-memory@latest</code>
 </p>
 
 <p align="center">
@@ -400,7 +400,7 @@ Run in the **profile directory** (`~/.dsh/profiles/web`):
 
 ```bash
 cd ~/.dsh/profiles/web
-pnpm add @a9i5k4/dsh-auto-memory
+pnpm add @a9i5k4/dsh-auto-memory@latest
 ```
 
 Then edit `package.json` in that directory and append to the `dsh.profile.bundles` array:
@@ -411,7 +411,7 @@ Then edit `package.json` in that directory and append to the `dsh.profile.bundle
 
 Restart **dsh web** (the 「Memory」entry appears in the sidebar).
 
-> No pnpm? `npm install @a9i5k4/dsh-auto-memory` works the same.
+> No pnpm? `npm install @a9i5k4/dsh-auto-memory@latest` works the same.
 > pnpm v11 blocks packages published <1 day ago: set `minimumReleaseAge: 0` in pnpm-workspace.yaml or pin an explicit version for same-day updates.
 
 ### Semantic engine (optional but recommended)
@@ -446,7 +446,7 @@ then restart dsh web to activate the plugin.
 ### Updating
 
 ```bash
-cd ~/.dsh/profiles/web && pnpm up @a9i5k4/dsh-auto-memory
+cd ~/.dsh/profiles/web && pnpm up @a9i5k4/dsh-auto-memory@latest
 ```
 
 The Settings page has a "Check for updates" button comparing your version with the npm registry; registry installs get a one-click update.

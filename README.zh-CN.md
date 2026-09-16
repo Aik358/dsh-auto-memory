@@ -65,7 +65,7 @@
 </p>
 
 <p align="center">
-  <code>pnpm add @a9i5k4/dsh-auto-memory</code>
+  <code>pnpm add @a9i5k4/dsh-auto-memory@latest</code>
 </p>
 
 <p align="center">
@@ -400,7 +400,7 @@ e5-small 与 BGE-M3 的差距（0.85 vs 0.925）集中在 hard-negative 双子�
 
 ```bash
 cd ~/.dsh/profiles/web
-pnpm add @a9i5k4/dsh-auto-memory
+pnpm add @a9i5k4/dsh-auto-memory@latest
 ```
 
 然后编辑同目录 `package.json`，在 `dsh.profile.bundles` 数组追加：
@@ -411,7 +411,7 @@ pnpm add @a9i5k4/dsh-auto-memory
 
 重启 **dsh web** 生效（侧边栏出现「记忆」入口）。
 
-> 没有 pnpm？`npm install @a9i5k4/dsh-auto-memory` 同样可用。
+> 没有 pnpm？`npm install @a9i5k4/dsh-auto-memory@latest` 同样可用。
 > pnpm v11 限制安装发布不足 1 天的版本：当天发布想立即更新，在 profile 目录 `pnpm-workspace.yaml` 加 `minimumReleaseAge: 0`，或装显式版本。
 
 ### 语义引擎（可选但推荐）
@@ -448,7 +448,7 @@ pnpm add @huggingface/transformers
 ### 更新
 
 ```bash
-cd ~/.dsh/profiles/web && pnpm up @a9i5k4/dsh-auto-memory
+cd ~/.dsh/profiles/web && pnpm up @a9i5k4/dsh-auto-memory@latest
 ```
 
 设置页「检查更新」可比对 npm registry 最新版，registry 安装支持一键更新。

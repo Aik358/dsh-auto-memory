@@ -41,7 +41,7 @@
 
 ## 1. Install & entry points
 
-- Install into the DSH web profile directory (`~/.dsh/profiles/web`): `pnpm add @a9i5k4/dsh-auto-memory`, then append `"@a9i5k4/dsh-auto-memory"` to the `dsh.profile.bundles` array in that directory's `package.json` (or one-click from the DSH plugin marketplace).
+- Install into the DSH web profile directory (`~/.dsh/profiles/web`): `pnpm add @a9i5k4/dsh-auto-memory@latest`, then append `"@a9i5k4/dsh-auto-memory"` to the `dsh.profile.bundles` array in that directory's `package.json` (or one-click from the DSH plugin marketplace).
 - **You must restart dsh web after installing**: the injection surface (manifest) loads at startup. Same after changing host code.
 - After a browser-side update, **hard-refresh** (Ctrl+Shift+R) to load the new client.js.
 - pnpm v11 blocks packages published <24h ago (`minimumReleaseAge`): set `minimumReleaseAge: 0` in `pnpm-workspace.yaml` or pin an explicit version for same-day updates.
@@ -193,7 +193,7 @@ The static injection face: the `<memory_system>` block composed into every turn.
 
 | Item | Notes |
 |---|---|
-| Version / check for updates | Compares with the npm registry; registry installs get one-click updates. Local dev links show the update command `cd ~/.dsh/profiles/web && pnpm up @a9i5k4/dsh-auto-memory` |
+| Version / check for updates | Compares with the npm registry; registry installs get one-click updates. Local dev links show the update command `cd ~/.dsh/profiles/web && pnpm up @a9i5k4/dsh-auto-memory@latest` |
 | Diagnostics log | `~/.dsh/dsh-auto-memory-pre-diagnose.log` (subagent circuit-breaking, consolidation skips, GC, recall degradation — all in here) |
 | Community | QQ group feedback — faster than GitHub issues (link in README) |
 
