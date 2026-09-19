@@ -217,12 +217,24 @@ console.log('[switch-decouple] D3 行为:buildContinueCarry 白板关 → 载体
   // 白板/账本产物**真实存在于磁盘** —— 白板关时必须一个字都不进材料(比"读不到"更强的判据)
   writeFileSync(path.join(handoffDir, 'PLAN.md'), '# PLAN\nPLAN_BODY_MARKER', 'utf8')
   writeFileSync(path.join(handoffDir, 'handoff-20260914-120000.md'), '## 任务状态\nLEDGER_BODY_MARKER', 'utf8')
+  // ★issue #90 回归夹具:全局口径(resolvePaths=GUI 最后轮询工作区)故意指向**另一个**工作区,
+  // 其 PLAN 写 GLOBAL_PLAN_MARKER —— 旧实现(resolvePaths(undefined))会读到全局标记,修复后读会话工作区。
+  const globalWs = path.join(tmpRoot, 'carry-global')
+  const globalHandoff = path.join(globalWs, 'handoff')
+  mkdirSync(globalHandoff, { recursive: true })
+  writeFileSync(path.join(globalHandoff, 'PLAN.md'), '# GLOBAL\nGLOBAL_PLAN_MARKER', 'utf8')
   const mkCarry = (handoffEnabled) => {
     const fake = Object.assign(makeFakeEngine(), {
       config: { handoffEnabled },
       resolvePaths: async () => ({
+        handoffDir: globalHandoff, planPath: path.join(globalHandoff, 'PLAN.md'),
+        notesPath: path.join(globalWs, 'notes.md'), logPath: path.join(globalWs, 'log.md'),
+        ws: globalWs, projectDir: globalWs,
+      }),
+      // ★issue #90:buildContinueCarry 改按被接续会话解析路径 —— 回落到 D3 原会话工作区 fixture
+      resolvePathsForSession: async (sid) => ({
         handoffDir, planPath: path.join(handoffDir, 'PLAN.md'), notesPath: path.join(proj, 'notes.md'),
-        logPath: path.join(proj, 'log.md'), ws: proj, projectDir: proj,
+        logPath: path.join(proj, 'log.md'), ws: proj, projectDir: proj, wsBound: sid === 'session-old',
       }),
       findLatestGlobalHandoff: async () => null,
       buildPrevSessionPack: async () => ({
@@ -250,6 +262,10 @@ console.log('[switch-decouple] D3 行为:buildContinueCarry 白板关 → 载体
   const textOn = String((rOn && rOn.carryText) || '')
   ok(rOn && rOn.ok === true && textOn.includes('PLAN_BODY_MARKER') && textOn.includes('LEDGER_BODY_MARKER'),
     '对照:白板开时同一 fixture 两层材料都在(证明上面两条不是空断言)')
+  // ★issue #90 回归:材料按被接续会话的工作区(resolvePathsForSession)解析,不落全局口径 ——
+  // 全局口径的 PLAN 写着 GLOBAL_PLAN_MARKER:旧实现(resolvePaths(undefined))读到它,修复后只读会话工作区。
+  ok(textOn.includes('PLAN_BODY_MARKER') && !textOn.includes('GLOBAL_PLAN_MARKER'),
+    '★issue #90 回归:接续材料来自被接续会话的工作区,全局口径不串味')
 }
 
 console.log('[switch-decouple] D4 接线:两页共用同一对配置键 + 默认关闭')
