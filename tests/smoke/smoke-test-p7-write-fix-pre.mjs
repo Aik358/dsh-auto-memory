@@ -149,7 +149,8 @@ const mixed = [
 {
   const oldPlan = await readFile(path.join(proj2, 'handoff', 'PLAN.md'), 'utf8')
   const r = await writePlan(proj2, '# 项目白板 v2\n\n## 当前状态\n- 全新状态。')
-  ok(r.ok && r.archived && /PLAN-\d{8}-\d{6}\.md$/.test(r.archived), '既有整体归档机制保留(PLAN-<ts>.md)')
+  // ★issue #94(2026-09-19):PLAN 归档补 -b/-c 防撞后缀(本夹具同秒连写,第二份起带后缀),正则同步接受
+  ok(r.ok && r.archived && /PLAN-\d{8}-\d{6}(-[a-z])?\.md$/.test(r.archived), '既有整体归档机制保留(PLAN-<ts>[-x].md)')
   const archived = await readFile(r.archived, 'utf8')
   ok(archived === oldPlan, '归档内容=旧版完整快照(既有行为不变)')
   const planText = await readFile(r.path, 'utf8')
