@@ -148,7 +148,9 @@ console.log('[switch-decouple] D1b 行为:接续资格只看 autoContinueEnabled
 
 console.log('[switch-decouple] D2 行为:真实 checkWaterLevel —— 白板关仍测量,但不写 PLAN/账本产物(镜像保护)')
 function makeWaterFake(opts, ledgerCalls) {
-  const rt = {}
+  // ★issue #88:checkWaterLevel 的 state 写入走 runtimeFor(agent).state —— 真引擎裸调时
+  // runtimeFor(undefined)=default ⇒ rt.state 与 fake.state 必须是同一对象(复刻该不变量)。
+  const rt = { state: {} }
   const fake = Object.assign(makeFakeEngine(), {
     config: Object.assign({ handoffEnabled: true, waterLevelWindowTokens: 1000, waterLevelThreshold: 0.8, waterLevelAutoHandoff: true }, opts),
     runtimeFor: () => rt,
@@ -159,7 +161,7 @@ function makeWaterFake(opts, ledgerCalls) {
     //   抽取式沙箱里 fake 必须提供它，否则 TypeError 被外层 catch 吞掉 ⇒ 表现为"静默不写账本"，
     //   即本项目的经典坑：被提取方法引用的**所有**符号都得显式提供。
     handoffChainEnabledPre: function () { return this.config.autoContinueEnabled !== false && this.config.handoffEnabled !== false },
-    state: {},
+    state: rt.state,
   })
   fake._rt = rt
   return fake
@@ -349,10 +351,40 @@ console.log('[switch-decouple] D6 ★接续开关 × 水位账本：产物从属
     '接线:水位账本写入点已改用统一判定')
   ok(/if \(!this\.handoffChainEnabledPre\(\)\) return ''/.test(idx),
     '接线:renderPlanUpdateRequest 已改用统一判定（否则"不接续却每轮催模型重写白板"）')
-  ok(/this\.state\.planUpdatePending = \{ reason: 'continue'/.test(idx) && /if \(this\.handoffChainEnabledPre\(\)\) \{\s*\n\s*this\.state\.planUpdatePending = \{ reason: 'continue'/.test(idx),
-    '★接线:接续置位点（markContinuedSession）也已改用统一判定')
+  // ★issue #88(2026-09-19) 起接续置位点改为按新窗口 runtime 写入(default 兜底),紧邻行正则改为块内匹配
+  ok(/targetRt\.state\.planUpdatePending = \{ reason: 'continue'/.test(idx) && /if \(this\.handoffChainEnabledPre\(\)\) \{[\s\S]{0,800}?planUpdatePending = \{ reason: 'continue'/.test(idx),
+    '★接线:接续置位点（markContinuedSession）也已改用统一判定（issue #88 起写新窗口 runtime）')
   ok(!/if \(this\.config\.handoffEnabled !== false\) \{\s*\n\s*this\.state\.planUpdatePending/.test(idx),
     '两个置位点都不再只看 handoffEnabled（旧写法在接续关闭时照样置位）')
+
+  // ★issue #88(2026-09-19) 行为:接续置位按新窗口 runtime 落点 —— 旧写法裸调落 default,
+  // 注入侧(withAgent 内)读 per-runtime ⇒ 催更块从未触发。取不到 agent 时回落 default(兼容旧口径)。
+  {
+    const mkEng = (agents) => {
+      const rtDefault = { state: {} }
+      const eng = Object.assign(makeFakeEngine(), {
+        config: { autoContinueEnabled: true, handoffEnabled: true },
+        handoffChainEnabledPre: function () { return this.config.autoContinueEnabled !== false && this.config.handoffEnabled !== false },
+        agentForSessionId: (sid) => (agents && agents[sid]) || null,
+        runtimeFor: (ag) => (ag && ag._rt) || rtDefault,
+        waterKey: (sid) => String(sid || ''),
+        loadContinuedSessions: () => new Set(),
+        continuedSessionsFile: () => path.join(tmpRoot, 'cont-latch-d5.json'),
+        state: rtDefault.state,
+      })
+      return eng
+    }
+    const d5Deps = { mkdirSync, readFileSync, writeFileSync, diag: () => {} }
+    const newRt = { state: {} }
+    const engHit = mkEng({ 'new-sid': { _rt: newRt, session: { id: 'new-sid' } } })
+    const markHit = bindMethod('markContinuedSession(sid, toSid) {', engHit, d5Deps)
+    ok(markHit('old-sid', 'new-sid') === true && newRt.state.planUpdatePending && newRt.state.planUpdatePending.reason === 'continue',
+      'D5 行为:接续置位写进新窗口 runtime.state(注入侧可见)')
+    const engFall = mkEng(null)
+    const markFall = bindMethod('markContinuedSession(sid, toSid) {', engFall, d5Deps)
+    ok(markFall('old-sid', 'ghost') === true && engFall.state.planUpdatePending && engFall.state.planUpdatePending.reason === 'continue',
+      'D5 兜底:注册表取不到新窗口 agent → 回落 default 置位(兼容旧口径)')
+  }
 }
 
 console.log('[switch-decouple] ' + pass + '/' + (pass + fail) + ' assertions passed')
