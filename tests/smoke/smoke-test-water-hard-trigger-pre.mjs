@@ -97,9 +97,11 @@ ok(/lastOverflowSeen/.test(SRC), '溢出按 seq 去重,不重复触发')
 // PR #29(2026-09-13):Node 22 下全量解压巨型会话文件会崩宿主 —— 切会话推导路径必须保持头帧解码。
 ok(/decodeZstdFramesHead\(raw, 32, 8 \* 1024 \* 1024\)/.test(SRC) && !/decodeZstdFrames\(raw\)/.test(SRC),
   'waterWindowForSession 用头帧解码(前 32 帧/8MB),不得回退全量解压(Node 22 崩溃类)')
-ok(/hardTrigger: this\.state\.waterLevelHardTrigger/.test(SRC) && /measuredRatio: ratio/.test(SRC),
+// ★issue #88(2026-09-19):checkWaterLevel 的 state 写入/读取改走 rtOwn.state(裸调落点修复),
+// 以下两条正则放宽为 `任意.state.` 形态,锁的是字段与公式本身。
+ok(/hardTrigger: \w+\.state\.waterLevelHardTrigger/.test(SRC) && /measuredRatio: ratio/.test(SRC),
   '水位记录同时留「实测比例 / 硬触发原因」供面板与排障')
-ok(/this\.state\.waterLevelWall = hardWin > 0 \? Math\.max\(0, hardWin - reserve\) : 0/.test(SRC),
+ok(/\.state\.waterLevelWall = hardWin > 0 \? Math\.max\(0, hardWin - reserve\) : 0/.test(SRC),
   'reserve 保留「距硬墙余量」展示职责(硬限 − 预留),不进触发分母')
 ok(/ring: Number\(this\.state && this\.state\.waterLevelRing\) \|\| 0/.test(SRC) && /wall: Number\(this\.state && this\.state\.waterLevelWall\) \|\| 0/.test(SRC),
   'arm 时把双口径带进 armed 对象(state 缺失也不得让 arm 失败)')
