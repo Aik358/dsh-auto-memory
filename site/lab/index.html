@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title data-en="The 3D archive terminal · under construction — dsh-auto-memory">三维档案终端 · 施工中 — dsh-auto-memory</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='9' fill='%234d6bfe'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="../assets/site.css">
+<noscript><style>.rv{opacity:1;transform:none}</style></noscript>
+</head>
+<body class="page-lab">
+<a class="skip" href="#lab-status" data-en="Skip to content">跳到主内容</a>
+
+<header class="nav">
+  <div class="nav-in">
+    <a class="brand" href="../index.html"><span class="brand-dot" aria-hidden="true"></span><span class="brand-name">dsh-auto-memory</span></a>
+    <nav class="nav-links" aria-label="页面导航" data-aria-en="Page navigation">
+      <a href="../index.html#hero" data-en="Homepage">主页</a>
+      <a href="../index.html#lab" data-en="§09 · 3D terminal">§09 亮点页入口</a>
+    </nav>
+    <div class="nav-act">
+      <button id="lang-toggle" class="btn-ghost" type="button" aria-pressed="false" aria-label="切换语言 / Switch language">EN</button>
+    </div>
+  </div>
+</header>
+
+<main>
+<section class="sec" id="lab-status" aria-label="三维档案终端施工状态" data-aria-en="3D archive terminal — construction status">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <p class="eyebrow"><span class="eb-no">§09</span><span class="eb-t" data-en="LAB">亮点页入口</span></p>
+      <h2 data-en="The 3D archive terminal · under construction">三维档案终端 · 施工中</h2>
+      <p class="lede" data-en="Think of it as a room, not a page — the room is still being built.">把它当成一间屋子，而不是一页纸——屋子还在盖。</p>
+    </div>
+    <div class="badges rv">
+      <span class="badge badge-key" data-en="Needs WebGL">需要 WebGL</span>
+      <span class="badge badge-wip" data-en="Under construction">当前施工中</span>
+      <span class="badge" data-en="No percentages on this page">本页不放进度百分比</span>
+    </div>
+    <p class="body rv" data-en="This page will become the 3D dossier array — five columns, forty dossiers, arrow-key navigation, drag-to-orbit. The underlying technique (a Three.js array plus a frame-by-frame opening) already runs on this machine; what remains is moving it from the reference project to our side. Three things are missing:">这一页会是那个三维档案阵列——五列、四十份档案，方向键移动、拖拽环绕。底层技术（Three.js 阵列 + 逐帧开场）已经在本机跑通，但从参考项目搬到我们这边还差三件事：</p>
+    <ol class="lab-list">
+      <li class="rv"><span data-en="The 3D models can’t be reused as-is — the reference repo’s MIT license does ">三维模型不能直接沿用——参考仓库的 MIT </span><b data-en="does not cover">不覆盖</b><span data-en=" its GLB and Blender projects, so they must be rebuilt or replaced with procedural geometry.">它的 GLB 与 Blender 工程，需要自建或改用程序化几何。</span></li>
+      <li class="rv" data-d="1"><span data-en="The palette needs recalibration — the reference project sits on a warm-gray base; we want a dark base with brand blue, so lighting and fog have to be recomputed.">配色要重标定——参考项目是暖灰底，我们要的是深底 + 品牌蓝，光照与雾效得重算。</span></li>
+      <li class="rv" data-d="2"><span data-en="The forty dossiers’ body text has to be rewritten from this plugin’s capability inventory.">四十份档案的正文要按本插件的能力清单重写。</span></li>
+    </ol>
+    <div class="verify rv">
+      <span class="verify-tag" data-en="How to verify">怎么核</span>
+      <p data-en="Each item is crossed off here as it lands, and every landing is traceable in the repository’s commit history.">每完成一项，就从上面划掉一行；每一项的落地都以仓库提交记录为准。</p>
+    </div>
+    <p class="body rv" data-en="Until then, the homepage’s feature sections are complete on their own — nothing about understanding or using the plugin is blocked by this page.">在此之前，主页上的功能说明是完整的，不影响你了解和使用这个插件。</p>
+    <a class="btn-primary rv" href="../index.html" data-en="← Back to the readable homepage">← 回到可读版主页</a>
+  </div>
+</section>
+</main>
+
+<footer class="foot">
+  <div class="foot-in">
+    <div class="foot-top">
+      <a class="brand" href="../index.html"><span class="brand-dot" aria-hidden="true"></span><span class="brand-name">dsh-auto-memory</span></a>
+      <p class="foot-tag" data-en="She remembers unprompted. Every recall, verifiable.">无问自忆，且件件可查。</p>
+    </div>
+    <div class="legal">
+      <section class="legal-b">
+        <h3 data-en="License">许可</h3>
+        <p data-en="dsh-auto-memory is released under the BSD-3-Clause license.">dsh-auto-memory 以 BSD-3-Clause 发布。</p>
+      </section>
+      <section class="legal-b">
+        <h3 data-en="Upstream attribution">上游署名</h3>
+        <p data-en="The 3D scene structure references RhineLabUI / rhinelab-blog-theme (LBEILC / JesseLee-CN), MIT, Copyright (c) 2026 LBEILC. This project ships none of their 3D models, Blender projects, source footage, or game brands.">三维场景结构参考 RhineLabUI / rhinelab-blog-theme（LBEILC / JesseLee-CN），MIT，Copyright (c) 2026 LBEILC。本项目不包含其三维模型、Blender 工程、原片素材或游戏品牌。</p>
+      </section>
+      <section class="legal-b">
+        <h3 data-en="Character">角色</h3>
+        <p data-en="The character “溟月” is by its original author 上善无形, under CC BY-NC-SA 4.0 — non-commercial derivatives with attribution, shared under the same terms. That license is independent of, and stricter than, the code licenses above.">角色设定「溟月」原作者上善无形，CC BY-NC-SA 4.0——非商业衍生并署名、以同协议共享。该许可与上述代码许可相互独立且更严格。</p>
+      </section>
+      <section class="legal-b">
+        <h3 data-en="Disclaimer">免责</h3>
+        <p data-en="A DeepSeek Harness community plugin — not affiliated with DeepSeek, nor with the authors of the repositories referenced above.">DeepSeek Harness 社区插件，与 DeepSeek 官方无关，与上述参考仓库作者亦无隶属关系。</p>
+      </section>
+    </div>
+    <p class="foot-meta">© 2026 dsh-auto-memory · <span data-en="a DeepSeek Harness community plugin">DeepSeek Harness 社区插件</span></p>
+  </div>
+</footer>
+
+<script src="../assets/site.js"></script>
+</body>
+</html>

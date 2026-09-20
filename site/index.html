@@ -1,454 +1,639 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
+<meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>dsh-auto-memory — 无问自忆 · 记忆不断线</title>
-<meta name="description" content="dsh-auto-memory：DeepSeek Harness 的主动联想记忆插件。无问自忆，记忆不断线。She remembers, unbidden.">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&display=swap">
+<title data-en="dsh-auto-memory — She remembers unprompted. Every recall, verifiable.">dsh-auto-memory · 无问自忆，且件件可查</title>
+<meta name="description" content="DeepSeek Harness 记忆插件：无问自忆，且件件可查。零运行时依赖，全本地，BSD-3-Clause。">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='9' fill='%234d6bfe'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="assets/site.css">
-<noscript><style>.reveal{opacity:1;transform:none}</style></noscript>
+<noscript><style>.rv{opacity:1;transform:none}</style></noscript>
 </head>
-<body data-lang="zh">
+<body>
+<a class="skip" href="#hero" data-en="Skip to content">跳到主内容</a>
 
-<div class="ambient" aria-hidden="true"><i class="o1"></i><i class="o2"></i><i class="o3"></i></div>
-
-<header class="topbar">
-  <div class="wrap topbar-inner">
-    <a class="brand" href="#top" aria-label="dsh-auto-memory">
-      <svg viewBox="0 0 32 32" aria-hidden="true">
-        <path d="M3 18c1-6 8-10 15-8 3 .8 5 2.4 6 4.6l5-3.2c-.6 2.6-.6 5 0 7.2l-5-2.4c-1.6 3.6-6 5.6-11 4.6C7 20.4 4 19.6 3 18Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
-        <circle cx="21" cy="15.5" r="1.2" fill="currentColor"/>
-      </svg>
-      <span class="brand-name">auto-memory<small data-en="memory plugin for DSH">DSH 记忆插件</small></span>
-    </a>
-    <nav class="mainnav" aria-label="sections">
-      <a href="#flow"><span data-en="FLOW">数据流</span></a>
-      <a href="#structure"><span data-en="STRUCTURE">结构</span></a>
-      <a href="#capabilities"><span data-en="CAPABILITIES">能力</span></a>
-      <a href="#terminal"><span data-en="TERMINAL">终端</span></a>
-      <a href="#ui"><span data-en="UI">界面</span></a>
-      <a href="#limits"><span data-en="LIMITS">边界</span></a>
-      <a href="#install"><span data-en="INSTALL">安装</span></a>
+<header class="nav">
+  <div class="nav-in">
+    <a class="brand" href="#hero"><span class="brand-dot" aria-hidden="true"></span><span class="brand-name">dsh-auto-memory</span><span class="brand-ver">v3.0.0</span></a>
+    <nav class="nav-links" aria-label="页面导航" data-aria-en="Page navigation">
+      <a href="#six" data-en="Six things">六件事</a>
+      <a href="#tiers" data-en="Three tiers">三层</a>
+      <a href="#gate" data-en="Write gate">闸门</a>
+      <a href="#lab" data-en="3D terminal">亮点</a>
+      <a href="#install" data-en="Install">安装</a>
+      <a href="#bounds" data-en="Known bounds">边界</a>
     </nav>
-    <button class="lang-btn" id="langBtn" type="button" aria-label="switch language">EN</button>
-    <a class="gh-link" href="https://github.com/Aik358/dsh-auto-memory" target="_blank" rel="noopener">GitHub ↗</a>
+    <div class="nav-act">
+      <button id="lang-toggle" class="btn-ghost" type="button" aria-pressed="false" aria-label="切换语言 / Switch language">EN</button>
+      <a class="btn-ghost" href="https://github.com/Aik358/dsh-auto-memory" target="_blank" rel="noopener">GitHub</a>
+    </div>
   </div>
 </header>
 
-<main class="wrap" id="top">
+<main>
 
-  <!-- ══ SHEET 01 · HERO ═══════════════════════════════════════════ -->
-  <section class="sheet" id="hero">
-    <header class="sheet-head">
-      <span class="sh-no">01</span>
-      <span class="sh-title" data-en="Overview">总览</span>
-      <span class="sh-meta">2026-09-20 · REV A</span>
-    </header>
-    <div class="sheet-body hero-grid">
-      <div class="hero-copy reveal">
-        <p class="kicker">DEEPSEEK HARNESS PLUGIN · dsh-auto-memory</p>
-        <h1><span class="h1l" data-en="She remembers,">无问自忆，</span><span class="h1l" data-en="unbidden.">记忆不断线。</span></h1>
-        <p class="lede"><span data-en="Memory lives outside the context window: what should resurface, resurfaces unbidden — with a checkable evidence chain. When the window fills, she stops compressing herself into a summary. She closes one notebook of margin notes and opens a new page.">dsh-auto-memory 把记忆放在上下文窗口之外：该想起的自己浮现，每次唤起都有证据链可查。上下文写满时，她不再把自己压缩成一段摘要——合上一本写满批注的笔记，翻开新的一页。</span></p>
-        <div class="cta-row">
-          <span class="cmd"><span class="dollar">$</span><code id="cmdText">pnpm add @a9i5k4/dsh-auto-memory@latest</code><button class="copy" id="copyBtn" type="button" data-en="COPY">复制</button></span>
-          <a class="btn btn-accent" href="https://www.npmjs.com/package/@a9i5k4/dsh-auto-memory" target="_blank" rel="noopener">npm ↗</a>
-        </div>
-        <p class="meta-chips">
-          <span class="chip">v3.0.0</span>
-          <span class="chip">BSD-3-Clause</span>
-          <span class="chip">runtime deps 0</span>
-          <span class="chip">Win / macOS / Linux</span>
-          <span class="chip"><span data-en="Bilingual UI">中英双语</span></span>
-        </p>
+<!-- ============================================================ §01 HERO -->
+<section class="sec hero" id="hero" aria-label="首屏" data-aria-en="Hero">
+  <div class="wrap hero-grid">
+    <div class="hero-copy">
+      <p class="hero-eb rv"><span class="eb-bar" aria-hidden="true"></span><span class="eb-t" data-en="Memory plugin · DeepSeek Harness">记忆插件 · DeepSeek Harness</span></p>
+      <h1 class="rv" data-d="1"><span data-en="She remembers unprompted.">无问自忆，</span><span class="grad" data-en="Every recall, verifiable.">且件件可查。</span></h1>
+      <p class="lede rv" data-d="2" data-en="You never have to tell her “remember this”. She notices on her own, files things away, and brings them back when they matter — every recall carries evidence you can read, rate, and edit. When the context fills up, she doesn’t compress herself into a summary either: she closes one annotated notebook and opens a fresh page.">你不用交代她「记得记一下」。她自己留意、自己归档，在该用上的时候自己想起来——每次想起都带一条你能读、能评、能改的证据。上下文写满时，她也不把自己压缩成一段摘要：合上一本写满批注的笔记，翻开新的一页。</p>
+      <div class="cmd rv" data-d="3">
+        <code>pnpm add @a9i5k4/dsh-auto-memory@latest</code>
+        <button type="button" class="copy" data-copy="pnpm add @a9i5k4/dsh-auto-memory@latest" aria-label="复制安装命令" data-aria-en="Copy the install command"><span data-en="Copy">复制</span></button>
       </div>
-
-      <figure class="stage reveal">
-        <svg id="stageSvg" viewBox="0 0 640 572" role="img" aria-label="night visit window: line-art character on a deep blue plate, dimensioned per delivery contract">
-          <defs>
-            <marker id="arrN" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-              <path d="M0 0L8 4L0 8Z" fill="var(--ink-3)"></path>
-            </marker>
-            <linearGradient id="hairGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0" stop-color="#2B4A8B"></stop>
-              <stop offset="1" stop-color="#6799fe"></stop>
-            </linearGradient>
-          </defs>
-          <!-- baseline grid (static, .75px, pale on night) -->
-          <g class="gridlines" stroke="rgba(244,241,235,.13)" stroke-width=".75">
-            <path d="M60 40V500M112 40V500M164 40V500M216 40V500M268 40V500M320 40V500M372 40V500M424 40V500M476 40V500M528 40V500M580 40V500"></path>
-            <path d="M60 40H580M60 86H580M60 132H580M60 178H580M60 224H580M60 270H580M60 316H580M60 362H580M60 408H580M60 454H580M60 500H580"></path>
-          </g>
-          <!-- canvas outline (self-draw, pale) -->
-          <rect class="draw" x="60" y="40" width="520" height="460" pathLength="1" fill="none" stroke="rgba(255,255,255,.4)" stroke-width="1"></rect>
-          <text x="64" y="60" class="svg-mono" font-size="10" fill="var(--ink-3)" data-en="WHALE GIRL · ABSTRACT LINE ART — silhouette first: ahoge, head fin, whale tail, rice bowl">鲸鱼娘 · 抽象线描 — 剪影优先：呆毛 / 头鳍 / 鲸尾 / 白米饭</text>
-          <!-- center axis -->
-          <path class="thin" d="M320 92V497" stroke="var(--ink-3)" stroke-width=".75" stroke-dasharray="2 6" opacity=".6"></path>
-          <!-- headroom -->
-          <path class="thin dashed" d="M60 92H580" stroke="var(--ink-3)" stroke-width=".75" opacity=".7"></path>
-          <text x="574" y="86" class="svg-mono" font-size="9" fill="var(--ink-3)" text-anchor="end" data-en="HEADROOM 120">头顶安全区 120 · HEADROOM</text>
-          <!-- ground -->
-          <g>
-            <path class="draw d1" d="M80 459H560" pathLength="1" stroke="#E9EDF5" stroke-width="1.5" fill="none"></path>
-            <path class="draw d2" d="M80 465H560" pathLength="1" stroke="#E9EDF5" stroke-width="1" fill="none"></path>
-          </g>
-          <!-- character: abstract whale-girl line art — silhouette-first; blue only in hair gradient & pupils (§1.5) -->
-          <g class="breathe">
-            <ellipse cx="320" cy="452" rx="60" ry="7" fill="rgba(255,255,255,.06)"></ellipse>
-            <path d="M455 345 C448 328 450 308 462 294 L470 306 C476 296 486 290 498 290 C490 300 486 312 486 324 C478 336 468 344 455 345 Z" fill="hsla(0,0%,100%,.04)" stroke="#E9EDF5" stroke-width="1.5"></path>
-            <path class="draw cd1" d="M320 108 C278 108 256 142 255 186 C254 232 258 270 268 300 C272 312 284 316 292 310 C288 272 287 236 290 204 L350 204 C353 236 352 272 348 310 C356 316 368 312 372 300 C382 270 386 232 385 186 C384 142 362 108 320 108 Z" pathLength="1" fill="hsla(0,0%,100%,.04)" stroke="#E9EDF5" stroke-width="1.5"></path>
-            <path d="M262 180 C258 220 262 258 272 288" fill="none" stroke="url(#hairGrad)" stroke-width="2"></path>
-            <path d="M376 170 C380 206 378 240 372 268" fill="none" stroke="url(#hairGrad)" stroke-width="1.5"></path>
-            <path d="M318 106 C318 96 326 92 332 96" fill="none" stroke="#E9EDF5" stroke-width="1.5"></path>
-            <path d="M336 118 C344 111 353 111 358 118 C351 120 344 122 340 125 Z" fill="hsla(0,0%,100%,.06)" stroke="#E9EDF5" stroke-width="1"></path>
-            <path d="M300 136 C305 124 312 119 320 119 C328 119 335 124 340 136" fill="none" stroke="#E9EDF5" stroke-width="1"></path>
-            <g class="eyes">
-              <circle cx="310" cy="149" r="2.2" fill="#6799fe"></circle>
-              <circle cx="330" cy="149" r="2.2" fill="#6799fe"></circle>
-            </g>
-            <path class="draw cd1" d="M302 196 C297 210 295 224 297 236 C288 268 281 300 278 336 C276 372 279 412 284 444 L356 444 C361 412 364 372 362 336 C359 300 352 268 343 236 C345 224 343 210 338 196 C326 190 314 190 302 196 Z" pathLength="1" fill="hsla(0,0%,100%,.03)" stroke="#E9EDF5" stroke-width="1.5"></path>
-            <path d="M281 430 L359 430" stroke="#E9EDF5" stroke-width=".75" opacity=".5"></path>
-            <path d="M303 200 C295 204 291 214 292 224 C297 228 304 228 307 224" fill="none" stroke="#E9EDF5" stroke-width="1"></path>
-            <path d="M337 200 C345 204 349 214 348 224 C343 228 336 228 333 224" fill="none" stroke="#E9EDF5" stroke-width="1"></path>
-            <path d="M295 222 C290 238 293 252 302 262" fill="none" stroke="#E9EDF5" stroke-width="1.5"></path>
-            <path d="M345 222 C350 238 347 252 338 262" fill="none" stroke="#E9EDF5" stroke-width="1.5"></path>
-            <path d="M304 264 C306 256 312 252 320 252 C328 252 334 256 336 264" fill="none" stroke="#E9EDF5" stroke-width="1.2"></path>
-            <path d="M299 264 C299 277 308 285 320 285 C332 285 341 277 341 264 Z" fill="hsla(0,0%,100%,.05)" stroke="#E9EDF5" stroke-width="1.2"></path>
-            <path d="M302 271 L338 271" stroke="#E9EDF5" stroke-width=".5" opacity=".5"></path>
-            <path d="M372 410 L372 398 L386 396 L386 410 M392 410 L392 394 L406 392 L406 410" fill="none" stroke="#E9EDF5" stroke-width="1"></path>
-            <rect x="368" y="410" width="56" height="42" fill="hsla(0,0%,100%,.03)" stroke="#E9EDF5" stroke-width="1.2"></rect>
-          </g>
-          <!-- sparkles (background register, 60fps) -->
-          <circle class="tw" cx="200" cy="140" r="1.3" fill="#fff"></circle>
-          <circle class="tw t2" cx="432" cy="176" r="1.1" fill="#6799fe"></circle>
-          <circle class="tw t3" cx="152" cy="316" r="1.2" fill="#fff"></circle>
-          <!-- anchor at her feet (signal orange) -->
-          <circle cx="320" cy="452" r="5" fill="none" stroke="var(--accent)" stroke-width="1"></circle>
-          <path d="M306 452h-8m36 0h-8M320 438v-8m0 36v-8" stroke="var(--accent)" stroke-width=".75" opacity=".9"></path>
-          <text x="346" y="456" class="svg-mono" font-size="9" fill="var(--ink-3)">ANCHOR (600, 1080)</text>
-          <!-- width dim -->
-          <path class="thin" d="M60 522H580" stroke="var(--ink-3)" stroke-width=".75" marker-start="url(#arrN)" marker-end="url(#arrN)"></path>
-          <path class="thin" d="M60 516v12M580 516v12" stroke="var(--ink-3)" stroke-width=".75"></path>
-          <text x="320" y="540" class="svg-mono" text-anchor="middle" font-size="10" fill="var(--ink-3)" data-en="1200 × 1200 @1x · CANVAS">1200 × 1200 @1x · 画布 CANVAS</text>
-          <!-- height dim = her height -->
-          <path class="thin" d="M606 104V452" stroke="var(--ink-3)" stroke-width=".75" marker-start="url(#arrN)" marker-end="url(#arrN)"></path>
-          <path class="thin" d="M600 104h12M600 452h12" stroke="var(--ink-3)" stroke-width=".75"></path>
-          <text transform="rotate(90 616 278)" x="616" y="278" class="svg-mono" font-size="9" fill="var(--ink-3)" text-anchor="middle" data-en="CHARACTER HEIGHT ≈ 900">角色高 ≈ 900</text>
-          <!-- palette legend -->
-          <g class="svg-mono" font-size="9" fill="var(--ink-3)">
-            <rect x="60" y="550" width="10" height="10" fill="#E9EDF5" stroke="var(--ink-3)" stroke-width=".75"></rect>
-            <text x="76" y="559" data-en="LINE">线 LINE</text>
-            <rect x="126" y="550" width="10" height="10" fill="#4d6bfe" stroke="var(--ink-3)" stroke-width=".75"></rect>
-            <text x="142" y="559" data-en="BRAND">品牌蓝</text>
-            <rect x="196" y="550" width="10" height="10" fill="#2B4A8B" stroke="var(--ink-3)" stroke-width=".75"></rect>
-            <rect x="207" y="550" width="10" height="10" fill="#6799fe" stroke="var(--ink-3)" stroke-width=".75"></rect>
-            <text x="223" y="559" data-en="HAIR GRADIENT (char only)">发丝渐变（仅角色）</text>
-            <rect x="338" y="550" width="10" height="10" fill="#6799fe" stroke="var(--ink-3)" stroke-width=".75"></rect>
-            <text x="354" y="559" data-en="EYE (char only)">瞳（仅角色）</text>
-            <rect x="430" y="550" width="10" height="10" fill="#0a0a0a" stroke="var(--ink-3)" stroke-width=".75"></rect>
-            <text x="446" y="559" data-en="PAGE BG">底 #0a0a0a</text>
-          </g>
-        </svg>
-        <figcaption class="fig"><span data-en="FIG.00 — whale girl · abstract line art (character layer 24/12fps) · PNG sequence pending">FIG.00 — 鲸鱼娘 · 抽象线稿（角色层 24/12FPS）· 序列帧待交付</span><span data-en="background runs 60fps">背景层 60FPS</span></figcaption>
-      </figure>
-    </div>
-  </section>
-
-  <!-- ══ SHEET 02 · DATA FLOW ══════════════════════════════════════ -->
-  <section class="sheet" id="flow">
-    <header class="sheet-head">
-      <span class="sh-no">02</span>
-      <span class="sh-title" data-en="Data flow">数据流</span>
-      <span class="sh-meta">FIG.01 · AMBIENT LOOP</span>
-    </header>
-    <div class="sheet-body">
-      <figure class="plain reveal">
-        <svg id="flowSvg" viewBox="0 0 1100 240" role="img" aria-label="data flow: observe, recall, inject, crystallize">
-          <defs>
-            <marker id="arrI" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-              <path d="M0 0L8 4L0 8Z" fill="var(--ink)"></path>
-            </marker>
-          </defs>
-          <!-- nodes -->
-          <g class="nodes">
-            <rect class="draw" x="50" y="55" width="180" height="70" pathLength="1" fill="var(--paper)" stroke="var(--ink)" stroke-width="1.5"></rect>
-            <rect class="draw d1" x="330" y="55" width="180" height="70" pathLength="1" fill="var(--paper)" stroke="var(--ink)" stroke-width="1.5"></rect>
-            <rect class="draw d2" x="610" y="55" width="180" height="70" pathLength="1" fill="var(--paper)" stroke="var(--ink)" stroke-width="1.5"></rect>
-            <rect class="draw d3" x="890" y="55" width="180" height="70" pathLength="1" fill="var(--paper)" stroke="var(--ink)" stroke-width="1.5"></rect>
-          </g>
-          <g class="svg-labels" fill="var(--ink)" font-size="15" font-weight="700">
-            <text x="162" y="88" text-anchor="middle" data-en="OBSERVE">观察</text>
-            <text x="442" y="88" text-anchor="middle" data-en="RECALL">检索</text>
-            <text x="722" y="88" text-anchor="middle" data-en="INJECT">注入</text>
-            <text x="1002" y="88" text-anchor="middle" data-en="CRYSTALLIZE">固化</text>
-          </g>
-          <g class="svg-mono svg-note" font-size="9" fill="var(--ink-2)">
-            <text x="162" y="106" text-anchor="middle">OBSERVE</text>
-            <text x="442" y="106" text-anchor="middle">RECALL</text>
-            <text x="722" y="106" text-anchor="middle">INJECT</text>
-            <text x="1002" y="106" text-anchor="middle">CRYSTALLIZE</text>
-            <text x="140" y="150" text-anchor="middle" data-en="silent per-turn evaluation">每轮静默评估 · 自动记账</text>
-            <text x="442" y="150" text-anchor="middle" data-en="evidence chain · gradeable">证据链 · 可评分 · 三态放行</text>
-            <text x="722" y="150" text-anchor="middle" data-en="resident ≤800 tok · cache-friendly">常驻目录 ≤800 tok · 缓存友好</text>
-            <text x="1002" y="150" text-anchor="middle" data-en="promotion gate · SKILL.md export">晋升闸门 · SKILL.md 导出</text>
-          </g>
-          <!-- forward flow -->
-          <path class="flowbase" d="M230 90H324M424 90H604M704 90H884" stroke="var(--line-soft)" stroke-width="1" fill="none"></path>
-          <path class="flowline" d="M230 90H324M424 90H604M704 90H884" stroke="var(--accent)" stroke-width="1.5" fill="none" marker-end="url(#arrI)"></path>
-          <!-- evidence loop -->
-          <path class="flowbase" d="M980 125V196H140V131" stroke="var(--line-soft)" stroke-width="1" fill="none"></path>
-          <path class="flowline rev" d="M980 125V196H140V131" stroke="var(--ink-2)" stroke-width="1" fill="none" stroke-dasharray="3 5" marker-end="url(#arrI)"></path>
-          <text x="560" y="214" class="svg-mono svg-note" text-anchor="middle" data-en="EVIDENCE LOOP · cross-session evidence → skills">EVIDENCE LOOP · 跨会话证据累积 → 技能固化</text>
-        </svg>
-        <figcaption class="fig"><span data-en="FIG.01 — DATA FLOW · observe → recall → inject → crystallize">FIG.01 — 数据流 · 观察 → 检索 → 注入 → 固化</span><span data-en="animates in viewport only">动效仅进视口播放</span></figcaption>
-      </figure>
-      <div class="duo">
-        <p class="body-p reveal"><span data-en="Memory is never fetched by the model. The host watches the context and injects recalls automatically at a fixed boundary — prefix-cache friendly, zero instructions needed.">记忆从不靠模型「想起来」。宿主盯着上下文，在固定边界自动注入召回——前缀缓存友好，不需要任何指令。</span></p>
-        <p class="body-p reveal"><span data-en="Every activation carries a full evidence chain: gradeable in the Recall review tab, editable and deletable entry by entry. Skills crystallize from cross-session evidence through a promotion gate.">每次唤起都带完整证据链：可在「唤起回顾」逐条评分，逐条可查、可改、可删。技能由跨会话证据通过晋升闸门固化而成。</span></p>
-      </div>
-    </div>
-  </section>
-
-  <!-- ══ SHEET 03 · STRUCTURE ══════════════════════════════════════ -->
-  <section class="sheet" id="structure">
-    <header class="sheet-head">
-      <span class="sh-no">03</span>
-      <span class="sh-title" data-en="Memory structure">记忆结构</span>
-      <span class="sh-meta">FIG.02 · INJECTION × STORES</span>
-    </header>
-    <div class="sheet-body">
-      <figure class="plain reveal">
-        <svg id="structSvg" viewBox="0 0 1100 470" role="img" aria-label="memory structure: injection surface, stores, promotion pipeline, water level">
-          <defs>
-            <marker id="arrS" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-              <path d="M0 0L8 4L0 8Z" fill="var(--ink)"></path>
-            </marker>
-            <pattern id="hatch" width="6" height="6" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
-              <line x1="0" y1="0" x2="0" y2="6" stroke="var(--ink-2)" stroke-width=".75"></line>
-            </pattern>
-          </defs>
-          <text x="60" y="38" class="svg-mono svg-note">注入面 INJECTION SURFACE</text>
-          <text x="640" y="38" class="svg-mono svg-note">记忆库 MEMORY STORES</text>
-          <!-- injection layers -->
-          <g class="draw-g">
-            <rect class="draw" x="60" y="56" width="300" height="66" pathLength="1" fill="var(--paper)" stroke="var(--ink)" stroke-width="1.5"></rect>
-            <text x="78" y="84" class="svg-labels" font-size="14" font-weight="700" fill="var(--ink)" data-en="USER RULES">用户级硬约束 <tspan class="svg-mono svg-note" font-size="9">RULES</tspan></text>
-            <text x="78" y="106" class="svg-mono svg-note" font-size="9.5" data-en="injected every turn · editable in panel">每轮无条件注入 · 面板可视编辑</text>
-            <rect class="draw d1" x="60" y="146" width="300" height="66" pathLength="1" fill="var(--paper)" stroke="var(--ink)" stroke-width="1"></rect>
-            <text x="78" y="174" class="svg-labels" font-size="14" font-weight="700" fill="var(--ink)" data-en="PROJECT NOTES">项目笔记 <tspan class="svg-mono svg-note" font-size="9">NOTES</tspan></text>
-            <text x="78" y="196" class="svg-mono svg-note" font-size="9.5" data-en="resident ≤800 tok · self-healing index">常驻目录 ≤800 tok · 语义索引自愈</text>
-            <rect class="draw d2" x="60" y="236" width="300" height="66" pathLength="1" fill="var(--paper)" stroke="var(--ink)" stroke-width="1"></rect>
-            <text x="78" y="264" class="svg-labels" font-size="14" font-weight="700" fill="var(--ink)" data-en="DAILY LOGS">每日日志 <tspan class="svg-mono svg-note" font-size="9">LOGS</tspan></text>
-            <text x="78" y="286" class="svg-mono svg-note" font-size="9.5" data-en="on-demand recall · overflow folds to archive">按需检索 · 超限折叠后退回归档</text>
-          </g>
-          <!-- stores -->
-          <g>
-            <rect class="draw" x="640" y="56" width="300" height="56" pathLength="1" fill="var(--paper)" stroke="var(--ink)" stroke-width="1"></rect>
-            <text x="658" y="80" class="svg-labels" font-size="14" font-weight="700" fill="var(--ink)" data-en="FACT STORE">事实库 <tspan class="svg-mono svg-note" font-size="9">FACT</tspan></text>
-            <text x="658" y="100" class="svg-mono svg-note" font-size="9.5" data-en="governed write-back · status marks">治理式写回 · 状态标记</text>
-            <rect class="draw d1" x="640" y="136" width="300" height="56" pathLength="1" fill="var(--paper)" stroke="var(--ink)" stroke-width="1"></rect>
-            <text x="658" y="160" class="svg-labels" font-size="14" font-weight="700" fill="var(--ink)" data-en="EPISODIC STORE">情节库 <tspan class="svg-mono svg-note" font-size="9">EPISODIC</tspan></text>
-            <text x="658" y="180" class="svg-mono svg-note" font-size="9.5" data-en="consolidation chain · temporal arm">巩固链路 · 时间检索臂</text>
-            <rect class="draw d2" x="640" y="216" width="300" height="56" pathLength="1" fill="var(--paper)" stroke="var(--ink)" stroke-width="1.5"></rect>
-            <text x="658" y="240" class="svg-labels" font-size="14" font-weight="700" fill="var(--ink)" data-en="PROCEDURE STORE">技能库 <tspan class="svg-mono svg-note" font-size="9">PROCEDURE</tspan></text>
-            <text x="658" y="260" class="svg-mono svg-note" font-size="9.5" data-en="model-write path · risk levels · approval queue">模型直写通路 · 风险分级 · 审批队列</text>
-          </g>
-          <!-- promotion pipeline -->
-          <g class="svg-mono" font-size="9">
-            <rect x="640" y="300" width="62" height="26" fill="var(--paper)" stroke="var(--ink-2)" stroke-width=".75"></rect>
-            <text x="671" y="316" text-anchor="middle" fill="var(--ink)">observed</text>
-            <rect x="716" y="300" width="62" height="26" fill="var(--paper)" stroke="var(--ink-2)" stroke-width=".75"></rect>
-            <text x="747" y="316" text-anchor="middle" fill="var(--ink)">candidate</text>
-            <rect x="792" y="300" width="62" height="26" fill="var(--paper)" stroke="var(--ink-2)" stroke-width=".75"></rect>
-            <text x="823" y="316" text-anchor="middle" fill="var(--ink)">validated</text>
-            <rect x="868" y="300" width="62" height="26" fill="var(--paper)" stroke="var(--accent)" stroke-width="1.5"></rect>
-            <text x="899" y="316" text-anchor="middle" fill="var(--accent-ink)" font-weight="700">active</text>
-            <path class="thin" d="M702 313h14M778 313h14M854 313h14M930 313h15" stroke="var(--ink-2)" stroke-width=".75" marker-end="url(#arrS)"></path>
-            <rect x="945" y="300" width="150" height="26" fill="none" stroke="var(--ink)" stroke-width="1" stroke-dasharray="4 3"></rect>
-            <text x="1020" y="316" text-anchor="middle" fill="var(--ink)" data-en="SKILL.md EXPORT">SKILL.md 导出</text>
-            <text x="640" y="342" fill="var(--ink-2)" data-en="promotion gate min-sessions / min-success · readable approval reasons">晋升闸门 min-sessions / min-success · 审批队列可视（晋升原因可读）</text>
-          </g>
-          <!-- arrows between columns -->
-          <path class="flowline" d="M360 179h274" stroke="var(--ink-2)" stroke-width="1" fill="none" marker-end="url(#arrS)"></path>
-          <text x="497" y="170" class="svg-mono svg-note" text-anchor="middle" data-en="RECALL · INJECT">检索 · 注入</text>
-          <path class="thin dashed" d="M640 268H366" stroke="var(--ink-2)" stroke-width=".75" marker-end="url(#arrS)"></path>
-          <text x="497" y="286" class="svg-mono svg-note" text-anchor="middle" data-en="WRITE-BACK · CONSOLIDATE">写回 · 整理</text>
-          <!-- water level -->
-          <g>
-            <rect x="60" y="380" width="300" height="16" fill="var(--paper)" stroke="var(--ink)" stroke-width="1"></rect>
-            <rect x="61" y="381" width="204" height="14" fill="url(#hatch)" opacity=".55"></rect>
-            <path d="M300 376v24" stroke="var(--accent)" stroke-width="1.5"></path>
-            <text x="60" y="416" class="svg-mono svg-note" font-size="9.5" data-en="WATER-LEVEL (experimental, off by default) — 0.80 threshold mark">水位感知 WATER-LEVEL（实验 · 默认关）— 0.80 阈值标记</text>
-          </g>
-          <!-- one bytes three consumers -->
-          <g class="svg-mono" font-size="9.5">
-            <text x="640" y="410" fill="var(--ink-2)" data-en="MEMORY.md: one byte stream, three consumers:">MEMORY.md 一份字节 · 三条消费方：</text>
-            <rect x="640" y="420" width="118" height="24" fill="none" stroke="var(--ink-2)" stroke-width=".75"></rect>
-            <text x="699" y="436" text-anchor="middle" fill="var(--ink)" data-en="full injection">整篇注入</text>
-            <rect x="770" y="420" width="118" height="24" fill="none" stroke="var(--ink-2)" stroke-width=".75"></rect>
-            <text x="829" y="436" text-anchor="middle" fill="var(--ink)" data-en="L0 anchor slicing">L0 按锚点切条</text>
-            <rect x="900" y="420" width="118" height="24" fill="none" stroke="var(--ink-2)" stroke-width=".75"></rect>
-            <text x="959" y="436" text-anchor="middle" fill="var(--ink)" data-en="semantic digest">语义语料 digest</text>
-          </g>
-        </svg>
-        <figcaption class="fig"><span data-en="FIG.02 — MEMORY STRUCTURE · injection surface × stores × promotion pipeline">FIG.02 — 记忆结构 · 注入面 × 记忆库 × 晋升管线</span><span data-en="hatching = archived / compressed">剖面线 = 归档/压缩区</span></figcaption>
-      </figure>
-    </div>
-  </section>
-
-  <!-- ══ SHEET 04 · CAPABILITIES ═══════════════════════════════════ -->
-  <section class="sheet" id="capabilities">
-    <header class="sheet-head">
-      <span class="sh-no">04</span>
-      <span class="sh-title" data-en="Capabilities">能力清单</span>
-      <span class="sh-meta">12 ITEMS · ①–⑫</span>
-    </header>
-    <div class="sheet-body">
-      <ul class="caps">
-        <li class="cap reveal"><span class="no">1</span><h3><span data-en="Proactive recall">无问自忆</span></h3><p><span data-en="The host watches context and injects recalls at a fixed boundary — no instructions, prefix-cache friendly.">宿主盯上下文，固定边界自动注入，零指令、前缀缓存友好。</span></p></li>
-        <li class="cap reveal"><span class="no">2</span><h3><span data-en="Three-layer memory">三层记忆</span></h3><p><span data-en="User rules → project notes → daily logs; always-on injection plus on-demand recall.">用户级规则 → 项目级笔记 → 每日日志；常驻注入 + 按需检索。</span></p></li>
-        <li class="cap reveal"><span class="no">3</span><h3><span data-en="Memory writes itself">记忆自己写自己</span></h3><p><span data-en="A subagent quietly evaluates every turn and files topic-grouped entries.">子代理逐轮静默评估，按主题归档成条目，无需「记得去记」。</span></p></li>
-        <li class="cap reveal"><span class="no">4</span><h3><span data-en="Auditable activations">唤起可审计</span></h3><p><span data-en="Every recall carries an evidence chain, gradeable in review; skills crystallize from cross-session evidence.">每次召回带完整证据链，可逐条评分；技能由跨会话证据固化。</span></p></li>
-        <li class="cap reveal"><span class="no">5</span><h3><span data-en="Proactive reminders">主动提醒</span></h3><p><span data-en="Deadlines and promises spotted in conversation, filed to the calendar.">从对话里识别截止日期与承诺，写入日历，到点提醒。</span></p></li>
-        <li class="cap reveal"><span class="no">6</span><h3><span data-en="Everything is a switch">一切皆开关</span></h3><p><span data-en="Welcome tour + settings; every feature individually toggleable, incl. unattended mode.">首启向导 + 设置页，每个功能单独可开关，含无人值守模式。</span></p></li>
-        <li class="cap reveal"><span class="no">7</span><h3><span data-en="External memory inheritance">外部记忆继承</span></h3><p><span data-en="Memories from WorkBuddy / CodeBuddy / Claude Code / Codex are scanned, importable, per-source managed.">WorkBuddy / CodeBuddy / Claude Code / Codex 的记忆可扫描、可导入、分源管理。</span></p></li>
-        <li class="cap reveal"><span class="no">8</span><h3><span data-en="Production hygiene">生产级卫生</span></h3><p><span data-en="Write gate (mojibake / stutter / JSON-injection blocking) + dirty-token scanner + credentials never enter prompts.">写入闸门（乱码/卡顿/JSON 注入拦截）+ 脏 token 扫描 + 凭据不进提示词。</span></p></li>
-        <li class="cap reveal"><span class="no">9</span><h3><span data-en="Context management">上下文管理</span></h3><p><span data-en="Four-part handoff notes carry work across windows; full history stays searchable; water-level sensing (experimental).">四段式交接账本跨窗口续命，全程历史可检索；水位感知（实验）。</span></p></li>
-        <li class="cap reveal"><span class="no">10</span><h3><span data-en="Workspace isolation">工作区隔离</span></h3><p><span data-en="Parallel workspaces and sessions keep their own recall decisions and index caches.">多工作区/多会话并行，各自召回决策与索引缓存互不打扰。</span></p></li>
-        <li class="cap reveal"><span class="no">11</span><h3><span data-en="Model-agnostic">模型无关</span></h3><p><span data-en="Any model on DSH works out of the box: lexical 0GB floor, ~130MB built-in semantic tier, ~563MB advanced.">任何模型开箱即用：词法 0GB 起步，内置 ~130MB 语义档，进阶 ~563MB。</span></p></li>
-        <li class="cap reveal"><span class="no">12</span><h3><span data-en="Portable memory">记忆可携带</span></h3><p><span data-en="Everything lives on your own disk; every entry auditable, editable, deletable.">一切都在你自己的磁盘上，每条可查、可改、可删。</span></p></li>
+      <ul class="chips rv" data-d="4" aria-label="事实芯片" data-aria-en="Fact chips">
+        <li class="chip chip-key">v3.0.0</li>
+        <li class="chip">BSD-3-Clause</li>
+        <li class="chip" data-en="0 runtime deps">零运行时依赖</li>
+        <li class="chip">Windows / macOS / Linux</li>
+        <li class="chip" data-en="ZH · EN bilingual">中英双语</li>
       </ul>
     </div>
-  </section>
+    <div class="hero-fig rv" data-d="3">
+      <svg viewBox="0 0 520 520" role="img" aria-label="四步闭环：你说话、她留意、归档、想起来——零指令，不需要" data-aria-en="Four-step loop: you speak, she notices, filed away, recalled with evidence — zero commands, none needed">
+        <circle cx="260" cy="260" r="158" fill="none" stroke="rgba(255,255,255,.14)" stroke-dasharray="3 7"/>
+        <circle cx="260" cy="260" r="76" fill="rgba(255,255,255,.03)" stroke="#4d6bfe" stroke-width="1.5"/>
+        <text x="260" y="254" text-anchor="middle" font-size="19" fill="#ffffff" data-en="Zero commands">零指令</text>
+        <text x="260" y="280" text-anchor="middle" font-size="19" fill="#ffffff" data-en="none needed">不需要</text>
+        <rect x="196" y="79" width="128" height="46" rx="23" fill="rgba(255,255,255,.05)" stroke="rgba(255,255,255,.18)"/>
+        <text x="260" y="108" text-anchor="middle" font-size="16" fill="rgba(255,255,255,.88)" data-en="You speak">你说话</text>
+        <rect x="366" y="237" width="104" height="46" rx="23" fill="rgba(255,255,255,.05)" stroke="#4d6bfe"/>
+        <text x="418" y="266" text-anchor="middle" font-size="16" fill="rgba(255,255,255,.88)" data-en="She notices">她留意</text>
+        <rect x="196" y="395" width="128" height="46" rx="23" fill="rgba(255,255,255,.05)" stroke="rgba(255,255,255,.18)"/>
+        <text x="260" y="424" text-anchor="middle" font-size="16" fill="rgba(255,255,255,.88)" data-en="Filed away">归档</text>
+        <rect x="27" y="229" width="150" height="62" rx="24" fill="rgba(77,107,254,.08)" stroke="#4d6bfe"/>
+        <text x="102" y="254" text-anchor="middle" font-size="16" fill="rgba(255,255,255,.88)" data-en="Recalled">想起来</text>
+        <text x="102" y="276" text-anchor="middle" font-size="11.5" fill="#6799fe" data-en="with evidence chain">带证据链</text>
+        <polygon points="364.6,378.8 368.2,368.2 375.2,375.2" fill="#4d6bfe" opacity=".9"/>
+        <polygon points="141.2,364.6 151.8,368.2 144.8,375.2" fill="#4d6bfe" opacity=".9"/>
+        <polygon points="155.4,141.2 151.8,151.8 144.8,144.8" fill="#4d6bfe" opacity=".9"/>
+        <polygon points="378.8,155.4 368.2,151.8 375.2,144.8" fill="#4d6bfe" opacity=".9"/>
+      </svg>
+    </div>
+  </div>
+  <div class="wrap">
+    <div class="verify rv">
+      <span class="verify-tag" data-en="How to verify">怎么核</span>
+      <p data-en="Open the panel’s Overview tab — step one of the setup wizard walks you through every switch.">打开面板的「概览」页签，安装向导第一步会把每个开关讲一遍。</p>
+    </div>
+  </div>
+  <!-- 24fps 角色序列帧挂载位（按交付契约预埋）：序列帧到位后，替换 .char-mount 内的占位线稿 -->
+  <div class="char-mount" aria-hidden="true">
+    <svg viewBox="0 0 140 320">
+      <circle cx="70" cy="34" r="17" fill="none" stroke="rgba(255,255,255,.34)" stroke-width="1.4"/>
+      <path d="M70,17 C46,20 38,44 44,66 C48,80 42,92 38,104" fill="none" stroke="rgba(255,255,255,.30)" stroke-width="1.3"/>
+      <path d="M70,17 C94,20 102,44 96,66 C92,80 98,92 102,104" fill="none" stroke="rgba(255,255,255,.30)" stroke-width="1.3"/>
+      <path d="M56,62 C60,56 68,54 74,58" fill="none" stroke="rgba(255,255,255,.26)" stroke-width="1.1"/>
+      <path d="M52,118 C44,150 52,166 46,196 C42,218 50,238 46,262" fill="none" stroke="rgba(255,255,255,.30)" stroke-width="1.4"/>
+      <path d="M88,118 C96,150 88,166 94,196 C98,218 90,238 94,262" fill="none" stroke="rgba(255,255,255,.30)" stroke-width="1.4"/>
+      <path d="M52,122 C62,132 78,132 88,122" fill="none" stroke="rgba(255,255,255,.28)" stroke-width="1.3"/>
+      <path d="M70,52 C66,60 66,68 70,76" fill="none" stroke="rgba(255,255,255,.22)" stroke-width="1"/>
+      <path d="M46,262 C52,286 88,286 94,262" fill="none" stroke="rgba(255,255,255,.26)" stroke-width="1.3"/>
+      <path d="M58,296 C64,306 76,306 82,296" fill="none" stroke="rgba(255,255,255,.20)" stroke-width="1.2"/>
+      <path d="M70,17 C52,10 44,24 46,40" fill="none" stroke="#4d6bfe" stroke-width="1.4" opacity=".65"/>
+      <path d="M88,124 C100,160 92,200 96,252" fill="none" stroke="#4d6bfe" stroke-width="1.1" opacity=".4"/>
+    </svg>
+  </div>
+</section>
 
-  <!-- ══ SHEET 05 · ARCHIVE TERMINAL ═══════════════════════════════ -->
-  <section class="sheet" id="terminal">
-    <header class="sheet-head">
-      <span class="sh-no">05</span>
-      <span class="sh-title" data-en="Archive terminal">档案终端</span>
-      <span class="sh-meta">FIG.03 · CANVAS 3D · 12 FILES</span>
-    </header>
-    <div class="sheet-body term-grid">
-      <figure class="term-stage reveal">
-        <div class="term-bar">
-          <span class="term-dot" aria-hidden="true"></span>
-          <span class="term-title">MEM-OS/3.0 · <span data-en="ARCHIVE TERMINAL">档案终端</span></span>
-          <span class="term-hint" data-en="click, then ↑↓←→ select · drag to orbit">点击后 ↑↓←→ 选取 · 拖拽环绕</span>
-        </div>
-        <pre class="term-out" id="termOut" aria-live="polite"></pre>
-        <canvas id="termCanvas" class="term-canvas" tabindex="0" aria-label="12 capability archives in a rotatable wireframe array — click to focus, then use arrow keys"></canvas>
-        <figcaption class="fig"><span data-en="FIG.03 — ARCHIVE ARRAY · selection lifts, decrypt-lines converge (12fps), array waves at 60fps">FIG.03 — 档案阵列 · 选中抬起 · 解密线合拢（12FPS 手拍）· 波浪 60FPS</span><span data-en="ink wireframe · zero WebGL deps">墨线线框 · 零 WebGL 依赖</span></figcaption>
+<!-- ============================================================ §02 SIX -->
+<section class="sec" id="six" aria-label="她做六件事" data-aria-en="Six things she does">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <p class="eyebrow"><span class="eb-no">§02</span><span class="eb-t" data-en="OVERVIEW">总览</span></p>
+      <h2 data-en="Six things she does">她做六件事</h2>
+      <p class="lede" data-en="Read these six and you know the plugin. Everything below is detail.">看完这六条，你就了解这个插件了。下面都是细节。</p>
+    </div>
+    <div class="six-grid">
+      <a class="card six-card rv" href="#auto">
+        <span class="six-no" aria-hidden="true">①</span>
+        <h3 data-en="She remembers on her own">她自己记</h3>
+        <p data-en="No need to say “remember this”. She notices, files, and brings it back when it matters.">不用你说「记得记一下」。她留意、归档，并在该用上时自己想起来。</p>
+        <span class="card-go" data-en="→ §03" aria-hidden="true">→ 详见 §03</span>
+      </a>
+      <a class="card six-card rv" data-d="1" href="#evidence">
+        <span class="six-no" aria-hidden="true">②</span>
+        <h3 data-en="Every entry is checkable">每条都查得到</h3>
+        <p data-en="Every recall carries an evidence chain: readable, rateable, editable, deletable — all on your own disk.">每次想起都带证据链：能读、能评、能改、能删。全在你自己盘上。</p>
+        <span class="card-go" data-en="→ §04" aria-hidden="true">→ 详见 §04</span>
+      </a>
+      <a class="card six-card rv" data-d="2" href="#tiers">
+        <span class="six-no" aria-hidden="true">③</span>
+        <h3 data-en="Three tiers, each minding its own">三层分工</h3>
+        <p data-en="Hard rules, project notes, daily journal. Always-on injection plus on-demand retrieval, each minding its own.">硬规矩、项目笔记、每日流水。常驻注入 + 按需检索，各管各的。</p>
+        <span class="card-go" data-en="→ §05" aria-hidden="true">→ 详见 §05</span>
+      </a>
+      <a class="card six-card rv" href="#calendar">
+        <span class="six-no" aria-hidden="true">④</span>
+        <h3 data-en="She keeps your dates">她替你记日子</h3>
+        <p data-en="Deadlines and promises from the conversation go into her calendar; she reminds you on time.">对话里的截止日期与承诺，她记进日历，到点提醒你。</p>
+        <span class="card-go" data-en="→ §06" aria-hidden="true">→ 详见 §06</span>
+      </a>
+      <a class="card six-card rv" data-d="1" href="#import">
+        <span class="six-no" aria-hidden="true">⑤</span>
+        <h3 data-en="Imports cleanly, never bleeds">能搬，也不串味</h3>
+        <p data-en="Memories from other AI tools can move in; parallel projects never disturb each other.">别的 AI 工具的记忆能搬进来；多个项目并行互不打扰。</p>
+        <span class="card-go" data-en="→ §07" aria-hidden="true">→ 详见 §07</span>
+      </a>
+      <a class="card six-card rv" data-d="2" href="#gate">
+        <span class="six-no" aria-hidden="true">⑥</span>
+        <h3 data-en="Junk stays out">脏东西进不来</h3>
+        <p data-en="Garbled text, stuck output and JSON injection are caught at write time; credentials never reach the prompt; every feature has its own switch.">乱码、卡顿、JSON 注入在写入时就被拦；凭据不进提示词；每个功能单独可关。</p>
+        <span class="card-go" data-en="→ §08" aria-hidden="true">→ 详见 §08</span>
+      </a>
+    </div>
+    <div class="verify rv">
+      <span class="verify-tag" data-en="How to verify">怎么核</span>
+      <p data-en="Click into any card — each section carries its own “how to verify” line.">每张卡片点进去都能看到该节自己的「怎么核」那一行。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ §03 AUTO -->
+<section class="sec" id="auto" aria-label="她自己记" data-aria-en="She remembers on her own">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <p class="eyebrow"><span class="eb-no">§03</span><span class="eb-t" data-en="AUTO MEMORY">自动归档</span></p>
+      <h2 data-en="① She remembers on her own">① 她自己记</h2>
+    </div>
+    <div class="cols">
+      <div class="copy">
+        <p class="body rv" data-en="You never have to remember to tell her to remember. When each turn ends, a quiet sub-agent reads what just happened and files what’s worth keeping by topic — not another layer piled onto a wall. When that content becomes relevant again, the host injects it at a fixed boundary of the context. The model never has to “think to look it up”, and your prefix cache stays intact.">你不用记得去告诉她「要记住」。每一轮结束，一个安静的子代理会读一遍刚发生的事，把值得留的按主题归档——不是往一堵墙上继续堆。等这些内容重新变得相关时，宿主会在上下文的固定边界把它们注入进去。模型不需要「想起来去查」，你的前缀缓存也不会被打散。</p>
+        <ul class="points rv" data-d="1">
+          <li data-en="There is no “remember to do” left on you — no save key exists, so there is nothing to forget">你没有任何「记得要做」的动作——根本没有一个会忘的保存键</li>
+          <li data-en="Grouped by topic, so a week later it still reads like notes, not a stream of events">按主题成组，一周后翻出来仍像笔记，不是一堆流水</li>
+          <li data-en="Injected at a fixed boundary — prefix-cache friendly, no full recompute every turn">固定边界注入，前缀缓存友好，不会每轮全量重算</li>
+          <li data-en="When the window fills, she writes a handoff ledger instead of compressing herself away">窗口写满时她写一份交接账本，而不是把自己压缩掉</li>
+        </ul>
+      </div>
+      <figure class="fig rv" data-d="2">
+        <svg viewBox="0 0 520 260" role="img" aria-label="每轮：读这一轮、按主题成组、落盘归档；相关时从固定边界注入回上下文" data-aria-en="Each turn: read, group by topic, file to disk; later injected back at the fixed boundary">
+          <text x="300" y="24" text-anchor="middle" font-size="12.5" fill="#6799fe" data-en="fixed boundary">固定边界</text>
+          <line x1="300" y1="32" x2="300" y2="126" stroke="#6799fe" stroke-width="2"/>
+          <rect x="30" y="58" width="460" height="64" rx="12" fill="rgba(255,255,255,.03)" stroke="rgba(255,255,255,.18)"/>
+          <rect x="306" y="64" width="178" height="52" rx="8" fill="rgba(77,107,254,.16)" stroke="rgba(77,107,254,.5)"/>
+          <text x="168" y="94" text-anchor="middle" font-size="14" fill="rgba(255,255,255,.54)" data-en="conversation so far">已对话上下文</text>
+          <text x="395" y="94" text-anchor="middle" font-size="14" fill="#6799fe" data-en="what she recalled">她想起的</text>
+          <rect x="30" y="190" width="132" height="48" rx="12" fill="rgba(255,255,255,.05)" stroke="rgba(255,255,255,.16)"/>
+          <text x="96" y="219" text-anchor="middle" font-size="15" fill="rgba(255,255,255,.88)" data-en="read the turn">读这一轮</text>
+          <rect x="194" y="190" width="132" height="48" rx="12" fill="rgba(255,255,255,.05)" stroke="rgba(255,255,255,.16)"/>
+          <text x="260" y="219" text-anchor="middle" font-size="15" fill="rgba(255,255,255,.88)" data-en="group by topic">按主题成组</text>
+          <rect x="358" y="190" width="132" height="48" rx="12" fill="rgba(255,255,255,.05)" stroke="#4d6bfe"/>
+          <text x="424" y="219" text-anchor="middle" font-size="15" fill="rgba(255,255,255,.88)" data-en="file to disk">落盘归档</text>
+          <line x1="164" y1="214" x2="182" y2="214" stroke="rgba(255,255,255,.45)" stroke-width="1.5"/>
+          <polygon points="192,214 182,209.5 182,218.5" fill="rgba(255,255,255,.45)"/>
+          <line x1="328" y1="214" x2="346" y2="214" stroke="rgba(255,255,255,.45)" stroke-width="1.5"/>
+          <polygon points="356,214 346,209.5 346,218.5" fill="rgba(255,255,255,.45)"/>
+          <path d="M424,188 C424,160 405,150 398,128" fill="none" stroke="#4d6bfe" stroke-width="1.5" stroke-dasharray="4 4"/>
+          <polygon points="398,122 394,131 402,131" fill="#4d6bfe"/>
+        </svg>
       </figure>
-      <aside class="term-panel reveal" id="termPanel" aria-live="polite">
-        <p class="tp-row"><i data-en="NO.">编号</i><b id="tpNo">01</b></p>
-        <p class="tp-row"><i data-en="TITLE">条目</i><b id="tpTitle">—</b></p>
-        <p class="tp-row"><i data-en="SURFACE">承载面</i><b id="tpWhere">—</b></p>
-        <p class="tp-desc" id="tpDesc">—</p>
-        <p class="tp-note" data-en="Array pattern after RhineLabUI: arrows cycle columns and rows, the selection lifts toward camera while decrypt-lines converge (12fps hand-timed); the wave runs smooth at 60fps. Data mirrors the capabilities list.">阵列范式取自 RhineLabUI：方向键在列/行间循环，选中档案向镜头抬起、解密线以 12fps 手拍合拢；波浪以 60fps 丝滑运转。数据与本页能力清单同序。</p>
-      </aside>
     </div>
-  </section>
+    <div class="verify rv">
+      <span class="verify-tag" data-en="How to verify">怎么核</span>
+      <p><span data-en="Open the panel’s ">打开面板的</span><b data-en="Log">日志</b><span data-en=" tab — every automatic archive entry is timestamped and tagged with the turn it came from.">页签，每条自动归档都带时间戳，并标明来自哪一轮。</span></p>
+    </div>
+  </div>
+</section>
 
-  <!-- ══ SHEET 06 · UI ═════════════════════════════════════════════ -->
-  <section class="sheet" id="ui">
-    <header class="sheet-head">
-      <span class="sh-no">06</span>
-      <span class="sh-title" data-en="Interface">界面速览</span>
-      <span class="sh-meta">3 PLATES · 摄于 v2.x</span>
-    </header>
-    <div class="sheet-body">
-      <div class="plates">
-        <figure class="plate reveal">
-          <img src="assets/img/panel-overview.png" alt="概览页签截图" loading="lazy" width="860" height="645">
-          <figcaption class="fig"><span>FIG.05-A — 概览 OVERVIEW</span><span>PANEL</span></figcaption>
-        </figure>
-        <figure class="plate reveal">
-          <img src="assets/img/settings-zh.png" alt="设置页截图" loading="lazy" width="860" height="1075">
-          <figcaption class="fig"><span>FIG.05-B — 设置 SETTINGS</span><span>SETTINGS</span></figcaption>
-        </figure>
-        <figure class="plate reveal">
-          <img src="assets/img/workspace-map-zh.png" alt="工作区关系图截图" loading="lazy" width="860" height="645">
-          <figcaption class="fig"><span>FIG.05-C — 工作区关系图 WORKSPACE MAP</span><span>MAP</span></figcaption>
-        </figure>
+<!-- ============================================================ §04 EVIDENCE -->
+<section class="sec" id="evidence" aria-label="每条都查得到" data-aria-en="Every entry is checkable">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <p class="eyebrow"><span class="eb-no">§04</span><span class="eb-t" data-en="AUDITABLE">可审计</span></p>
+      <h2 data-en="② Every entry is checkable">② 每条都查得到</h2>
+    </div>
+    <div class="cols">
+      <div class="copy">
+        <p class="body rv" data-en="A memory you can’t trace to its source is hearsay. Every recall carries a full evidence chain: which entries were activated, on what grounds, with what scores. In Recall Review you can rate each one — ratings flow back into promotion decisions, so weak ones grow quieter and useful ones grow firmer. No black box, and nothing ever leaves your disk.">查不到源头的记忆就是传闻。每次唤起都带完整证据链：哪几条被激活、依据是什么、分数多少。你可以在「唤起回顾」里逐条评分——评分会回流到晋升判定，所以差了会越来越安静，好用的会越来越牢。没有黑盒，也没有任何东西离开你的磁盘。</p>
+        <ul class="points rv" data-d="1">
+          <li data-en="You can catch a wrong memory before it quietly steers the next few months">你能在一条错记忆悄悄影响后面几个月之前就抓出它</li>
+          <li data-en="Rating is the feedback loop — that’s how a skill earns its promotion">评分就是反馈回路——技能就是这样挣到晋升的</li>
+          <li data-en="Credentials never reach the prompt: a hygiene check strips them before write">凭据不进提示词：写入前卫生检查会剥掉</li>
+          <li data-en="Everything lives on your local disk — no account, no cloud">一切都在你本地磁盘；没有账号，没有云端</li>
+        </ul>
       </div>
-      <p class="fig-note reveal"><span data-en="Screenshots taken on v2.x; they will be re-shot after the UI overhaul lands.">界面截图摄于 v2.x，将随前端重构定稿后统一重拍。</span></p>
+      <figure class="fig rv" data-d="2">
+        <svg viewBox="0 0 520 362" role="img" aria-label="一次唤起展开证据链：来源条目、命中依据、评分；四个动作：读、评、改、删" data-aria-en="One recall expands into its evidence chain: sources, grounds, score; four actions: read, rate, edit, delete">
+          <rect x="185" y="20" width="150" height="44" rx="22" fill="rgba(77,107,254,.10)" stroke="#4d6bfe"/>
+          <text x="260" y="48" text-anchor="middle" font-size="16" fill="#ffffff" data-en="one recall">一次唤起</text>
+          <line x1="260" y1="64" x2="260" y2="88" stroke="rgba(255,255,255,.25)" stroke-width="1.5"/>
+          <polygon points="260,96 255,87 265,87" fill="rgba(255,255,255,.35)"/>
+          <rect x="70" y="100" width="380" height="158" rx="14" fill="rgba(255,255,255,.03)" stroke="rgba(255,255,255,.16)"/>
+          <circle cx="98" cy="134" r="3" fill="#4d6bfe"/>
+          <text x="112" y="139" font-size="14" fill="#ffffff" data-en="source entries">来源条目</text>
+          <text x="430" y="139" text-anchor="end" font-size="13" fill="rgba(255,255,255,.54)" data-en="which entries fired">哪几条被激活</text>
+          <line x1="90" y1="156" x2="430" y2="156" stroke="rgba(255,255,255,.08)"/>
+          <circle cx="98" cy="180" r="3" fill="#4d6bfe"/>
+          <text x="112" y="185" font-size="14" fill="#ffffff" data-en="grounds">命中依据</text>
+          <text x="430" y="185" text-anchor="end" font-size="13" fill="rgba(255,255,255,.54)" data-en="on what basis">依据是什么</text>
+          <line x1="90" y1="202" x2="430" y2="202" stroke="rgba(255,255,255,.08)"/>
+          <circle cx="98" cy="226" r="3" fill="#4d6bfe"/>
+          <text x="112" y="231" font-size="14" fill="#ffffff" data-en="score">评分</text>
+          <text x="430" y="231" text-anchor="end" font-size="13" fill="rgba(255,255,255,.54)" data-en="how confident">分数多少</text>
+          <line x1="260" y1="258" x2="260" y2="282" stroke="rgba(255,255,255,.25)" stroke-width="1.5"/>
+          <polygon points="260,290 255,281 265,281" fill="rgba(255,255,255,.35)"/>
+          <rect x="48" y="300" width="88" height="48" rx="12" fill="rgba(255,255,255,.05)" stroke="rgba(255,255,255,.16)"/>
+          <text x="92" y="330" text-anchor="middle" font-size="16" fill="rgba(255,255,255,.85)" data-en="Read">读</text>
+          <rect x="160" y="300" width="88" height="48" rx="12" fill="rgba(255,255,255,.05)" stroke="rgba(255,255,255,.16)"/>
+          <text x="204" y="330" text-anchor="middle" font-size="16" fill="rgba(255,255,255,.85)" data-en="Rate">评</text>
+          <rect x="272" y="300" width="88" height="48" rx="12" fill="rgba(255,255,255,.05)" stroke="rgba(255,255,255,.16)"/>
+          <text x="316" y="330" text-anchor="middle" font-size="16" fill="rgba(255,255,255,.85)" data-en="Edit">改</text>
+          <rect x="384" y="300" width="88" height="48" rx="12" fill="rgba(77,107,254,.16)" stroke="#6799fe" stroke-width="2"/>
+          <text x="428" y="330" text-anchor="middle" font-size="16" font-weight="700" fill="#6799fe" data-en="Delete">删</text>
+        </svg>
+      </figure>
     </div>
-  </section>
-
-  <!-- ══ SHEET 07 · LIMITS ═════════════════════════════════════════ -->
-  <section class="sheet" id="limits">
-    <header class="sheet-head">
-      <span class="sh-no">07</span>
-      <span class="sh-title" data-en="Known limits">已知边界</span>
-      <span class="sh-meta">CAUTION · 4 ITEMS</span>
-    </header>
-    <div class="sheet-body stack">
-      <div class="caution reveal"><b>CAUTION</b><span><span data-en="Handoff whiteboard & water-level sensing are experimental — off by default. Enable in Settings → Automation.">交接白板与水位感知为实验特性，默认关闭。开启：设置 → 自动化。</span></span></div>
-      <div class="caution reveal"><b>CAUTION</b><span><span data-en="The semantic tier is optional: ~130MB JS built-in by default; the advanced Python int8 tier (~563MB) installs via the guided setup.">语义档为可选进阶：JS 内置 ~130MB 为默认档；Python int8 进阶档 ~563MB，走向导安装。</span></span></div>
-      <div class="caution reveal"><b>CAUTION</b><span><span data-en="The panel API listens on loopback only; a 401 from outside is expected behavior, not a fault.">面板 API 仅监听本机回环地址（loopback-only）；外部访问返回 401 属预期行为。</span></span></div>
-      <div class="caution reveal"><b>CAUTION</b><span><span data-en="The 24fps PNG sequence for the character is not delivered yet: the hero ships as static SVG line-art (self-draw / breath / blink already running at 24fps steps); the mount is pre-wired to the §5 contract.">角色 24fps PNG 序列帧尚未交付：Hero 目前为静态 SVG 线稿定妆（自绘/呼吸/眨眼已按 24fps 步进运行），挂载位已按 §5 交付契约预埋，到货即换装。</span></span></div>
+    <div class="verify rv">
+      <span class="verify-tag" data-en="How to verify">怎么核</span>
+      <p data-en="Recall Review tab → pick any recall → see its sources and scores; edits and deletes take effect immediately.">唤起回顾页签 → 任选一次唤起 → 能看到它的来源与评分；改或删立即生效。</p>
     </div>
-  </section>
+  </div>
+</section>
 
-  <!-- ══ SHEET 08 · INSTALL ════════════════════════════════════════ -->
-  <section class="sheet" id="install">
-    <header class="sheet-head">
-      <span class="sh-no">08</span>
-      <span class="sh-title" data-en="Install">安装</span>
-      <span class="sh-meta">3 STEPS</span>
-    </header>
-    <div class="sheet-body">
-      <div class="steps">
-        <div class="step reveal">
-          <p class="s-no">STEP 01</p>
-          <h3><span data-en="Install">安装</span></h3>
-          <p class="body-p"><span data-en="Any DSH install, npm or pnpm:">npm / pnpm 均可：</span></p>
-          <p class="cmd sm"><span class="dollar">$</span><code>pnpm add @a9i5k4/dsh-auto-memory@latest</code></p>
-          <p class="fig-note"><span data-en="pnpm v11 may block versions published within 24h (minimumReleaseAge): set it to 0 or pin a version.">pnpm v11 若拦截 24h 内新版本：minimumReleaseAge 设 0 或固定版本号。</span></p>
+<!-- ============================================================ §05 TIERS -->
+<section class="sec" id="tiers" aria-label="三层分工" data-aria-en="Three tiers, each minding its own">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <p class="eyebrow"><span class="eb-no">§05</span><span class="eb-t" data-en="THREE TIERS">三层分工</span></p>
+      <h2 data-en="③ Three tiers, each minding its own">③ 三层分工</h2>
+    </div>
+    <p class="body rv" data-en="What she keeps sits in three tiers — and which tier it sits in decides how it reaches the model. Hard rules go in every single turn, no exceptions. Project notes live in a resident directory: always at hand, never eating the window. The daily journal takes no room at all until it’s actually needed.">她记的东西分三层放，放在哪一层，决定它怎么进入模型。硬规矩每一轮都进——没有例外。项目笔记住在常驻目录里，随手可用但不吃窗口。每日日志平时不占地方，真需要的时候才被拉进来。</p>
+    <div class="tier-grid">
+      <div class="tier rv">
+        <div class="tier-top">
+          <span class="tier-freq f-every" data-en="every turn">每轮</span>
+          <span class="tier-name" data-en="User-level hard rules">用户级硬约束</span>
         </div>
-        <div class="step reveal">
-          <p class="s-no">STEP 02</p>
-          <h3><span data-en="Restart DSH">重启 DSH</span></h3>
-          <p class="body-p"><span data-en="After restart, a “Memory” entry appears in the sidebar. No account, no cloud — everything stays on your disk.">重启后侧栏出现「记忆」入口。无账号、无云端——一切都在你自己的磁盘上。</span></p>
-        </div>
-        <div class="step reveal">
-          <p class="s-no">STEP 03</p>
-          <h3><span data-en="Welcome tour">首启向导</span></h3>
-          <p class="body-p"><span data-en="The tour explains every feature and toggles it on the spot; the optional semantic tier downloads in place.">向导逐项讲解、当场开关；语义档（可选）在向导内就地下载。</span></p>
-        </div>
+        <p class="tier-desc" data-en="“Never do X”, “always answer in Chinese” — rules you set yourself.">「绝不要 X」「永远用中文答」——你自己定的。</p>
+        <p class="tier-way" data-en="Arrival: injected unconditionally, every turn (no relevance check)">到达方式：每轮无条件注入（不做相关性判断）</p>
       </div>
-      <p class="fig-note reveal">
-        <span data-en="Guides: ">手册：</span><a href="https://github.com/Aik358/dsh-auto-memory/blob/main/docs/USER-GUIDE.zh-CN.md">用户手册</a> ·
-        <a href="https://github.com/Aik358/dsh-auto-memory/blob/main/docs/USER-GUIDE.en.md">User guide (EN)</a> ·
-        <a href="https://github.com/Aik358/dsh-auto-memory/blob/main/CHANGELOG.md">Changelog</a> ·
-        <a href="https://github.com/Aik358/dsh-auto-memory/issues">Issues</a>
-      </p>
+      <div class="tier rv" data-d="1">
+        <div class="tier-top">
+          <span class="tier-freq f-hit" data-en="on hit">命中即用</span>
+          <span class="tier-name" data-en="Project notes">项目级笔记</span>
+        </div>
+        <p class="tier-desc" data-en="Decisions, architecture, conventions — the things you’d otherwise re-explain every time.">决策、架构、约定——本来要反复解释的东西。</p>
+        <p class="tier-way" data-en="Arrival: resident directory + used on hit (≤400 tokens)">到达方式：常驻目录 + 命中即用（≤400 token）</p>
+      </div>
+      <div class="tier rv" data-d="2">
+        <div class="tier-top">
+          <span class="tier-freq f-demand" data-en="on demand">按需</span>
+          <span class="tier-name" data-en="Daily journal">每日日志</span>
+        </div>
+        <p class="tier-desc" data-en="What happened today, with timestamps.">今天发生了什么，带时间戳。</p>
+        <p class="tier-way" data-en="Arrival: retrieved only on demand (never enters the window until needed)">到达方式：仅按需检索（不进窗口，直到被需要）</p>
+      </div>
     </div>
-  </section>
+    <p class="keynote rv" data-en="Which tier you put something in is itself the scheduling decision — you never hand-tune an injection policy.">你把东西放进哪一层，本身就是调度决策。你不需要手工调注入策略。</p>
+    <figure class="fig fig-center rv" data-d="1">
+      <svg viewBox="0 0 520 344" role="img" aria-label="三层堆叠，三条箭头指向模型，箭头粗细表示注入频率：每轮、命中即用、按需检索" data-aria-en="Three stacked tiers feed the model; arrow thickness is injection frequency: every turn, on hit, on demand">
+        <rect x="30" y="30" width="230" height="82" rx="14" fill="rgba(77,107,254,.08)" stroke="#4d6bfe" stroke-width="1.5"/>
+        <text x="44" y="62" font-size="15.5" fill="#ffffff" data-en="User-level hard rules">用户级硬约束</text>
+        <text x="44" y="86" font-size="11.5" fill="rgba(255,255,255,.54)" data-en="every turn · no exceptions">每轮 · 无例外</text>
+        <rect x="30" y="136" width="230" height="82" rx="14" fill="rgba(255,255,255,.03)" stroke="rgba(255,255,255,.16)"/>
+        <text x="44" y="168" font-size="15.5" fill="#ffffff" data-en="Project notes">项目笔记</text>
+        <text x="44" y="192" font-size="11.5" fill="rgba(255,255,255,.54)" data-en="resident dir · ≤400 tokens">常驻目录 · ≤400 token</text>
+        <rect x="30" y="242" width="230" height="82" rx="14" fill="rgba(255,255,255,.03)" stroke="rgba(255,255,255,.16)"/>
+        <text x="44" y="274" font-size="15.5" fill="#ffffff" data-en="Daily journal">每日日志</text>
+        <text x="44" y="298" font-size="11.5" fill="rgba(255,255,255,.54)" data-en="timestamped · out of the way">带时间戳 · 不占窗口</text>
+        <rect x="410" y="152" width="84" height="84" rx="18" fill="rgba(255,255,255,.04)" stroke="rgba(255,255,255,.18)"/>
+        <text x="452" y="199" text-anchor="middle" font-size="17" fill="#ffffff" data-en="Model">模型</text>
+        <line x1="260" y1="71" x2="396" y2="168" stroke="#4d6bfe" stroke-width="6" opacity=".9"/>
+        <polygon points="406,172 392.7,170 399.5,160.3" fill="#4d6bfe"/>
+        <text x="318" y="106" text-anchor="middle" font-size="11.5" fill="rgba(255,255,255,.6)" data-en="every turn">每轮无条件</text>
+        <line x1="260" y1="177" x2="396" y2="192" stroke="rgba(77,107,254,.55)" stroke-width="3"/>
+        <polygon points="406,194 395.6,196.8 396.6,188.8" fill="rgba(77,107,254,.55)"/>
+        <text x="318" y="168" text-anchor="middle" font-size="11.5" fill="rgba(255,255,255,.6)" data-en="on hit">命中即用</text>
+        <line x1="260" y1="283" x2="396" y2="218" stroke="rgba(255,255,255,.30)" stroke-width="1.5"/>
+        <polygon points="406,216 398.6,223.8 395.2,216.6" fill="rgba(255,255,255,.30)"/>
+        <text x="318" y="262" text-anchor="middle" font-size="11.5" fill="rgba(255,255,255,.6)" data-en="on demand">按需检索</text>
+      </svg>
+    </figure>
+    <div class="verify rv">
+      <span class="verify-tag" data-en="How to verify">怎么核</span>
+      <p data-en="The Settings page shows how many tokens each tier currently holds; the rules tier has a visual editor; the notes tier shows the resident directory’s size.">设置页显示每一层当前占多少 token；规则层有可视化编辑器；笔记层显示常驻目录体积。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ §06 CALENDAR -->
+<section class="sec" id="calendar" aria-label="她替你记日子" data-aria-en="She keeps your dates">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <p class="eyebrow"><span class="eb-no">§06</span><span class="eb-t" data-en="CALENDAR">日历</span></p>
+      <h2 data-en="④ She keeps your dates">④ 她替你记日子</h2>
+    </div>
+    <div class="cols">
+      <div class="copy">
+        <p class="body rv"><span data-en="Deadlines, agreed times, offhand promises — “report due Friday”, “I’ll send it next week” — get picked up while you’re talking about something else. They land in her calendar with parsed dates, and she comes back to you ">截止日期、约好的时间、顺口一说就忘的承诺，都是在聊别的事的时候被顺手记下的——「周五交报告」「下周给你发过去」。它们会带着解析好的日期进日历，并在</span><strong data-en="before">日期到之前</strong><span data-en=" the date, not after.">回来找你，不是之后。</span></p>
+        <ul class="points rv" data-d="1">
+          <li data-en="Explicit dates: “by October 4”, “the 30th”">明确日期：「10 月 4 日前」「30 号」</li>
+          <li data-en="Relative dates: “next week”, “in three days” — resolved against today">相对日期：「下周」「三天后」——按今天换算</li>
+          <li data-en="Time and quadrant: the due hour and importance are recorded together">时间与象限：截止时刻和重要度一并记下</li>
+          <li data-en="Promises you made to others, not just your own tasks">你对别人许的承诺，不只是你自己的任务</li>
+        </ul>
+      </div>
+      <figure class="fig rv" data-d="2">
+        <svg viewBox="0 0 520 240" role="img" aria-label="对话里一句话解析成带日期的日历条目，日期到之前回来提醒你" data-aria-en="One sentence in chat, parsed into a dated calendar entry, with a reminder before the date">
+          <text x="40" y="36" font-size="11.5" fill="rgba(255,255,255,.54)" data-en="you">你</text>
+          <rect x="30" y="44" width="200" height="56" rx="16" fill="rgba(255,255,255,.05)" stroke="rgba(255,255,255,.16)"/>
+          <text x="130" y="77" text-anchor="middle" font-size="14.5" fill="#ffffff" data-en="“Report due by Nov 1”">「11 月 1 日前交报告」</text>
+          <line x1="234" y1="72" x2="262" y2="72" stroke="rgba(255,255,255,.4)" stroke-width="1.5"/>
+          <polygon points="270,72 260,67.5 260,76.5" fill="rgba(255,255,255,.4)"/>
+          <rect x="274" y="50" width="84" height="44" rx="12" fill="rgba(77,107,254,.10)" stroke="#4d6bfe"/>
+          <text x="316" y="77" text-anchor="middle" font-size="14.5" fill="#ffffff" data-en="parse">解析</text>
+          <line x1="362" y1="72" x2="384" y2="72" stroke="rgba(255,255,255,.4)" stroke-width="1.5"/>
+          <polygon points="392,72 382,67.5 382,76.5" fill="rgba(255,255,255,.4)"/>
+          <rect x="396" y="30" width="112" height="84" rx="12" fill="rgba(255,255,255,.04)" stroke="rgba(255,255,255,.18)"/>
+          <text x="452" y="58" text-anchor="middle" font-size="14" class="tm" fill="#ffffff">2026-11-01</text>
+          <text x="452" y="76" text-anchor="middle" font-size="14" class="tm" fill="#ffffff">23:59</text>
+          <rect x="408" y="86" width="88" height="17" rx="8.5" fill="rgba(77,107,254,.18)"/>
+          <text x="452" y="98.5" text-anchor="middle" font-size="10.5" fill="#6799fe" data-en="important · not urgent">重要不紧急</text>
+          <path d="M448,118 Q440,150 396,160" fill="none" stroke="#4d6bfe" stroke-width="1.5" stroke-dasharray="4 4"/>
+          <polygon points="390,164 396,155 401,162" fill="#4d6bfe"/>
+          <rect x="110" y="170" width="300" height="56" rx="14" fill="rgba(77,107,254,.08)" stroke="#4d6bfe" stroke-width="1.2"/>
+          <circle cx="140" cy="198" r="9" fill="none" stroke="#6799fe" stroke-width="1.5"/>
+          <path d="M140,192 L140,198 L145,200" fill="none" stroke="#6799fe" stroke-width="1.5"/>
+          <text x="160" y="203" font-size="14.5" fill="#ffffff" data-en="she comes back before the date">日期到之前回来找你</text>
+        </svg>
+      </figure>
+    </div>
+    <div class="verify rv">
+      <span class="verify-tag" data-en="How to verify">怎么核</span>
+      <p data-en="Ask “what’s coming up for me” — she reads it back from the calendar file, which you can open yourself.">问一句「我最近有什么安排」，她会从日历文件里读回来——那个文件你自己也能打开看。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ §07 IMPORT -->
+<section class="sec" id="import" aria-label="能搬，也不串味" data-aria-en="Imports cleanly, never bleeds">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <p class="eyebrow"><span class="eb-no">§07</span><span class="eb-t" data-en="PORTABILITY">迁移与隔离</span></p>
+      <h2 data-en="⑤ Imports cleanly, never bleeds">⑤ 能搬，也不串味</h2>
+    </div>
+    <div class="cols">
+      <div class="copy">
+        <p class="body rv"><span data-en="If you’ve already done work inside other AI tools, that history doesn’t have to start over. She scans what ">如果你已经在别的 AI 工具里干过活，那段历史不用重来。她会扫描 </span><span class="hl" data-en="WorkBuddy, CodeBuddy, Claude Code, Codex, ZCode, Kimi Code and TRAE">WorkBuddy、CodeBuddy、Claude Code、Codex、ZCode、Kimi Code、TRAE</span><span data-en=" left behind and imports it source by source — you pick which come in, and you can retract a whole source afterwards. The other half runs the other way: parallel workspaces and sessions keep their own recall decisions and index caches. The work matters you told her never leak into another small project."> 留下的记忆，按来源分别导入——进哪些你挑，事后也能把一个来源整个撤掉。另一半是反过来的：并行的工作区和会话各自保留自己的召回决策与索引缓存，你跟她讲过的工作上的事，不会串到另一个小项目里去。</span></p>
+        <ul class="points rv" data-d="1">
+          <li data-en="The scan is read-only — nothing is written until you confirm">扫描是只读的，在你点确认之前不会写任何东西</li>
+          <li data-en="Listed by source; you choose which come in">按来源分列，进哪些你挑</li>
+          <li data-en="A whole source can be retracted in one move">一个来源可以整个撤掉</li>
+          <li data-en="The global tier (hard rules) is shared on purpose — that’s your long-term policy; everything else is isolated per workspace">全局层（硬规矩）是故意共享的——那是你的长期约束；其余全部按工作区隔离</li>
+        </ul>
+      </div>
+      <figure class="fig rv" data-d="2">
+        <svg viewBox="0 0 520 330" role="img" aria-label="外部工具只读扫描、逐源导入，右侧项目 A 与项目 B 各自隔离，中间画叉" data-aria-en="External tools scanned read-only and imported per source; Project A and Project B stay isolated, marked with an ✕">
+          <text x="30" y="32" font-size="12" fill="rgba(255,255,255,.54)" data-en="external tools">外部工具</text>
+          <rect x="30" y="44" width="130" height="36" rx="10" fill="rgba(255,255,255,.04)" stroke="rgba(255,255,255,.14)"/>
+          <text x="95" y="67" text-anchor="middle" font-size="12.5" class="tm" fill="rgba(255,255,255,.75)">WorkBuddy</text>
+          <rect x="30" y="92" width="130" height="36" rx="10" fill="rgba(255,255,255,.04)" stroke="rgba(255,255,255,.14)"/>
+          <text x="95" y="115" text-anchor="middle" font-size="12.5" class="tm" fill="rgba(255,255,255,.75)">Claude Code</text>
+          <rect x="30" y="140" width="130" height="36" rx="10" fill="rgba(255,255,255,.04)" stroke="rgba(255,255,255,.14)"/>
+          <text x="95" y="163" text-anchor="middle" font-size="12.5" class="tm" fill="rgba(255,255,255,.75)">Codex</text>
+          <rect x="30" y="188" width="130" height="36" rx="10" fill="rgba(255,255,255,.04)" stroke="rgba(255,255,255,.14)"/>
+          <text x="95" y="211" text-anchor="middle" font-size="12.5" class="tm" fill="rgba(255,255,255,.75)">TRAE</text>
+          <rect x="30" y="236" width="130" height="36" rx="10" fill="rgba(255,255,255,.04)" stroke="rgba(255,255,255,.14)"/>
+          <text x="95" y="259" text-anchor="middle" font-size="12.5" class="tm" fill="rgba(255,255,255,.75)" data-en="+3 more">+3 ……</text>
+          <line x1="160" y1="62" x2="206" y2="164" stroke="rgba(255,255,255,.20)" stroke-width="1.2"/>
+          <line x1="160" y1="110" x2="206" y2="172" stroke="rgba(255,255,255,.20)" stroke-width="1.2"/>
+          <line x1="160" y1="158" x2="206" y2="182" stroke="rgba(255,255,255,.20)" stroke-width="1.2"/>
+          <line x1="160" y1="206" x2="206" y2="192" stroke="rgba(255,255,255,.20)" stroke-width="1.2"/>
+          <line x1="160" y1="254" x2="206" y2="202" stroke="rgba(255,255,255,.20)" stroke-width="1.2"/>
+          <rect x="210" y="140" width="110" height="110" rx="14" fill="rgba(77,107,254,.08)" stroke="#4d6bfe"/>
+          <text x="265" y="182" text-anchor="middle" font-size="13.5" fill="#ffffff" data-en="scan · read-only">扫描 · 只读</text>
+          <text x="265" y="206" text-anchor="middle" font-size="12.5" fill="#6799fe" data-en="import per source">逐源导入</text>
+          <text x="265" y="278" text-anchor="middle" font-size="11" fill="rgba(255,255,255,.54)" data-en="writes nothing until you confirm">确认前不写入</text>
+          <line x1="320" y1="170" x2="390" y2="114" stroke="#4d6bfe" stroke-width="1.8"/>
+          <polygon points="396,110 384.4,112.5 389.4,120.1" fill="#4d6bfe"/>
+          <rect x="400" y="70" width="100" height="64" rx="12" fill="rgba(255,255,255,.04)" stroke="rgba(255,255,255,.18)"/>
+          <text x="450" y="98" text-anchor="middle" font-size="14" fill="#ffffff" data-en="Project A">项目 A</text>
+          <text x="450" y="118" text-anchor="middle" font-size="10.5" fill="rgba(255,255,255,.54)" data-en="memories · index">记忆 · 索引</text>
+          <line x1="320" y1="220" x2="390" y2="268" stroke="#4d6bfe" stroke-width="1.8"/>
+          <polygon points="396,272 384.4,269.5 389.4,261.9" fill="#4d6bfe"/>
+          <rect x="400" y="250" width="100" height="64" rx="12" fill="rgba(255,255,255,.04)" stroke="rgba(255,255,255,.18)"/>
+          <text x="450" y="278" text-anchor="middle" font-size="14" fill="#ffffff" data-en="Project B">项目 B</text>
+          <text x="450" y="298" text-anchor="middle" font-size="10.5" fill="rgba(255,255,255,.54)" data-en="memories · index">记忆 · 索引</text>
+          <line x1="438" y1="180" x2="462" y2="204" stroke="rgba(255,255,255,.45)" stroke-width="2.5" stroke-linecap="round"/>
+          <line x1="462" y1="180" x2="438" y2="204" stroke="rgba(255,255,255,.45)" stroke-width="2.5" stroke-linecap="round"/>
+        </svg>
+      </figure>
+    </div>
+    <div class="verify rv">
+      <span class="verify-tag" data-en="How to verify">怎么核</span>
+      <p data-en="Settings → External memory first lists every detected source with its path and size — nothing is written before you confirm.">设置 → 外部记忆，会先列出检测到的每个来源及其路径与体积，在你点确认之前不会写任何东西。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ §08 GATE -->
+<section class="sec" id="gate" aria-label="脏东西进不来" data-aria-en="Junk stays out">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <p class="eyebrow"><span class="eb-no">§08</span><span class="eb-t" data-en="WRITE GATE">写入闸门</span></p>
+      <h2 data-en="⑥ Junk stays out">⑥ 脏东西进不来</h2>
+    </div>
+    <div class="cols">
+      <div class="copy">
+        <p class="body rv" data-en="A memory plugin that writes garbage is worse than no plugin at all. Every write passes a gate first: garbled text, stuck-loop output and JSON-shaped injection are stopped right there, and anything credential-like is stripped before it can reach a prompt. On top of that, every feature is an independent switch — run the whole loop automatically, or switch off exactly one thing and leave the rest untouched.">一个会写垃圾的记忆插件还不如没有。每次写入都先过闸门：乱码、卡顿输出、JSON 形状的注入都在那里被拦下；任何像凭据的东西在进入提示词之前就被剥掉。在那之上，每个功能是独立开关——你可以让它全自动跑，也可以只关掉某一项、其余照旧。</p>
+        <p class="gate-strip rv" data-d="1" data-en="The gate stops three kinds — garbled text · stuck &amp; repeated output · JSON injection → dropped + logged (never silent)">闸门拦三类：乱码 · 卡顿与重复输出 · JSON 注入 → 丢弃 + 留痕（不静默）</p>
+        <ul class="points rv" data-d="2">
+          <li data-en="Turn reminders off and recall is untouched; turn recall off and rules are untouched — switches never drag each other">关掉提醒不影响召回；关掉召回不影响规矩（开关互不牵连）</li>
+          <li data-en="Unattended mode runs the whole loop with zero confirmations — fine to leave running">无人值守模式整圈自动跑、不弹任何确认，挂着机也能用</li>
+          <li data-en="Any model works out of the box: the lexical tier starts at 0 GB, the built-in JS semantic tier at ~130 MB">任何模型开箱可用：词法档 0 GB 起步，内置 JS 语义档约 130 MB</li>
+          <li data-en="The Python int8 advanced tier (~563 MB) is a guided optional install — never a prerequisite">Python int8 进阶档（约 563 MB）是向导式可选安装，永远不是前置条件</li>
+        </ul>
+      </div>
+      <figure class="fig rv" data-d="3">
+        <svg viewBox="0 0 520 392" role="img" aria-label="三类脏东西在写入闸门被拦下、丢弃并留痕；凭据被剥除后，进入提示词的是干净的" data-aria-en="Three kinds of junk are stopped at the write gate, dropped and logged; credentials are stripped so what reaches the prompt is clean">
+          <text x="253" y="20" text-anchor="middle" font-size="12.5" fill="#6799fe" data-en="write gate">写入闸门</text>
+          <rect x="30" y="40" width="150" height="44" rx="12" fill="rgba(255,255,255,.04)" stroke="rgba(255,255,255,.16)"/>
+          <text x="105" y="67" text-anchor="middle" font-size="14.5" fill="rgba(255,255,255,.85)" data-en="garbled text">乱码</text>
+          <rect x="30" y="100" width="150" height="44" rx="12" fill="rgba(255,255,255,.04)" stroke="rgba(255,255,255,.16)"/>
+          <text x="105" y="127" text-anchor="middle" font-size="13.5" fill="rgba(255,255,255,.85)" data-en="stuck &amp; repeated">卡顿与重复输出</text>
+          <rect x="30" y="160" width="150" height="44" rx="12" fill="rgba(255,255,255,.04)" stroke="rgba(255,255,255,.16)"/>
+          <text x="105" y="187" text-anchor="middle" font-size="14" fill="rgba(255,255,255,.85)" data-en="JSON injection">JSON 注入</text>
+          <rect x="30" y="250" width="150" height="44" rx="12" fill="rgba(255,255,255,.03)" stroke="rgba(255,255,255,.30)" stroke-dasharray="5 4"/>
+          <text x="105" y="277" text-anchor="middle" font-size="14.5" fill="rgba(255,255,255,.85)" data-en="credentials">凭据</text>
+          <rect x="245" y="30" width="16" height="350" rx="8" fill="rgba(77,107,254,.30)" stroke="#4d6bfe"/>
+          <line x1="180" y1="62" x2="233" y2="94" stroke="rgba(255,255,255,.30)" stroke-width="1.5"/>
+          <polygon points="241,96 233,92 235,86" fill="rgba(255,255,255,.35)"/>
+          <line x1="180" y1="122" x2="232" y2="121" stroke="rgba(255,255,255,.30)" stroke-width="1.5"/>
+          <polygon points="241,121 232,116.5 232,125.5" fill="rgba(255,255,255,.35)"/>
+          <line x1="180" y1="182" x2="233" y2="148" stroke="rgba(255,255,255,.30)" stroke-width="1.5"/>
+          <polygon points="241,146 235,140 233,152" fill="rgba(255,255,255,.35)"/>
+          <line x1="263" y1="80" x2="340" y2="80" stroke="#4d6bfe" stroke-width="2"/>
+          <polygon points="350,80 340,75.5 340,84.5" fill="#4d6bfe"/>
+          <rect x="352" y="56" width="150" height="48" rx="12" fill="rgba(255,255,255,.04)" stroke="rgba(255,255,255,.20)"/>
+          <text x="427" y="77" text-anchor="middle" font-size="14" fill="#ffffff" data-en="dropped + logged">丢弃 + 留痕</text>
+          <text x="427" y="95" text-anchor="middle" font-size="10.5" fill="rgba(255,255,255,.54)" data-en="never silent">不静默</text>
+          <line x1="180" y1="272" x2="340" y2="272" stroke="rgba(255,255,255,.35)" stroke-width="1.5"/>
+          <polygon points="350,272 340,267.5 340,276.5" fill="rgba(255,255,255,.45)"/>
+          <rect x="352" y="250" width="150" height="44" rx="12" fill="rgba(77,107,254,.06)" stroke="#4d6bfe" stroke-dasharray="5 4"/>
+          <text x="427" y="277" text-anchor="middle" font-size="14" fill="#ffffff" data-en="strip credentials">剥除凭据</text>
+          <line x1="427" y1="294" x2="427" y2="316" stroke="#4d6bfe" stroke-width="1.8"/>
+          <polygon points="427,322 422.5,313 431.5,313" fill="#4d6bfe"/>
+          <rect x="352" y="322" width="150" height="52" rx="12" fill="rgba(77,107,254,.10)" stroke="#4d6bfe"/>
+          <text x="427" y="345" text-anchor="middle" font-size="14.5" fill="#ffffff" data-en="prompt">提示词</text>
+          <text x="427" y="363" text-anchor="middle" font-size="11" fill="#6799fe" data-en="clean">干净</text>
+        </svg>
+      </figure>
+    </div>
+    <div class="verify rv">
+      <span class="verify-tag" data-en="How to verify">怎么核</span>
+      <p data-en="In Settings, every feature sits on its own row with its own switch — click a label and it flips instantly.">设置里每个功能各占一行、各有独立开关，点一下标签立刻翻面。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ §09 LAB -->
+<section class="sec" id="lab" aria-label="三维档案终端" data-aria-en="The 3D archive terminal">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <p class="eyebrow"><span class="eb-no">§09</span><span class="eb-t" data-en="LAB">亮点页入口</span></p>
+      <h2 data-en="The 3D archive terminal">三维档案终端</h2>
+      <p class="lede" data-en="Think of it as a room, not a page.">把它当成一间屋子，而不是一页纸。</p>
+    </div>
+    <div class="lab-panel rv">
+      <div class="lab-copy">
+        <p class="body" data-en="The 3D archive terminal turns the same content into an array you can walk into: five columns, forty dossiers, arrow-key navigation, drag-to-orbit. The selected card lifts toward the camera as the decryption lines close around it. It reads the same data as this page — another view of the same plugin, not a different plugin.">三维档案终端把同样的内容变成一个能走进去的阵列：五列、四十份档案，方向键移动，拖拽环绕。选中的卡片会向镜头抬起，解密线随之合拢。它读的是和本页同一份数据——是同一个插件的另一种看法，不是另一个插件。</p>
+        <div class="badges">
+          <span class="badge badge-key" data-en="Needs WebGL">需要 WebGL</span>
+          <span class="badge badge-wip" data-en="Under construction">当前施工中</span>
+        </div>
+        <p class="lab-note" data-en="Without WebGL it falls back automatically to this readable page — nothing is lost, only the 3D.">不支持 WebGL 时，自动退回本页这种可读版——信息不丢，只是没有三维呈现。</p>
+        <a class="btn-primary" href="lab/index.html" data-en="The three things still missing →">还差哪三件事 →</a>
+      </div>
+      <figure class="fig lab-fig">
+        <svg viewBox="0 0 520 260" role="img" aria-label="五列四十份档案的阵列示意，选中的卡片向镜头抬起，解密线合拢" data-aria-en="A five-column array of forty dossiers; the selected card lifts toward the camera as decryption lines close">
+          <line x1="40" y1="222" x2="480" y2="222" stroke="rgba(255,255,255,.12)"/>
+          <rect x="52" y="120" width="64" height="96" rx="8" fill="rgba(255,255,255,.03)" stroke="rgba(255,255,255,.16)"/>
+          <rect x="140" y="120" width="64" height="96" rx="8" fill="rgba(255,255,255,.03)" stroke="rgba(255,255,255,.16)"/>
+          <rect x="228" y="96" width="64" height="96" rx="8" fill="rgba(77,107,254,.10)" stroke="#4d6bfe" stroke-width="1.8"/>
+          <rect x="316" y="120" width="64" height="96" rx="8" fill="rgba(255,255,255,.03)" stroke="rgba(255,255,255,.16)"/>
+          <rect x="404" y="120" width="64" height="96" rx="8" fill="rgba(255,255,255,.03)" stroke="rgba(255,255,255,.16)"/>
+          <line x1="84" y1="116" x2="250" y2="90" stroke="rgba(77,107,254,.45)" stroke-width="1" stroke-dasharray="3 4"/>
+          <line x1="172" y1="116" x2="256" y2="88" stroke="rgba(77,107,254,.45)" stroke-width="1" stroke-dasharray="3 4"/>
+          <line x1="348" y1="116" x2="264" y2="88" stroke="rgba(77,107,254,.45)" stroke-width="1" stroke-dasharray="3 4"/>
+          <line x1="436" y1="116" x2="270" y2="90" stroke="rgba(77,107,254,.45)" stroke-width="1" stroke-dasharray="3 4"/>
+          <text x="260" y="246" text-anchor="middle" font-size="12.5" fill="rgba(255,255,255,.54)" data-en="5 columns · 40 dossiers">五列 · 四十份档案</text>
+        </svg>
+      </figure>
+    </div>
+    <div class="verify rv">
+      <span class="verify-tag" data-en="How to verify">怎么核</span>
+      <p data-en="The link leads to a status page that spells out exactly which three things are missing.">入口指向一个说明页，写清了还差哪三件事。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ §10 INSTALL -->
+<section class="sec" id="install" aria-label="安装" data-aria-en="Install">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <p class="eyebrow"><span class="eb-no">§10</span><span class="eb-t" data-en="INSTALL">安装</span></p>
+      <h2 data-en="Three steps to install">三步装好</h2>
+    </div>
+    <ol class="steps">
+      <li class="step rv">
+        <span class="step-no">STEP 01</span>
+        <h3 data-en="Install">安装</h3>
+        <div class="cmd">
+          <code>pnpm add @a9i5k4/dsh-auto-memory@latest</code>
+          <button type="button" class="copy" data-copy="pnpm add @a9i5k4/dsh-auto-memory@latest" aria-label="复制 pnpm 安装命令" data-aria-en="Copy the pnpm command"><span data-en="Copy">复制</span></button>
+        </div>
+        <div class="cmd">
+          <code>npm i @a9i5k4/dsh-auto-memory@latest</code>
+          <button type="button" class="copy" data-copy="npm i @a9i5k4/dsh-auto-memory@latest" aria-label="复制 npm 安装命令" data-aria-en="Copy the npm command"><span data-en="Copy">复制</span></button>
+        </div>
+        <p class="note" data-en="pnpm v11’s minimumReleaseAge defaults to 24 hours and may hold back a freshly published release — set it to 0, or pin the version.">提示：pnpm v11 的 minimumReleaseAge 默认 24 小时，可能拦下刚发布的版本——设为 0 或写死版本号。</p>
+      </li>
+      <li class="step rv" data-d="1">
+        <span class="step-no">STEP 02</span>
+        <h3 data-en="Restart DSH">重启 DSH</h3>
+        <p class="step-body" data-en="A “Memory” entry appears in the sidebar. No account, no cloud, nothing uploaded.">侧栏出现「记忆」入口。无账号、无云端、不上传任何东西。</p>
+      </li>
+      <li class="step rv" data-d="2">
+        <span class="step-no">STEP 03</span>
+        <h3 data-en="A 30-second check">30 秒验证</h3>
+        <p class="step-body" data-en="Say one thing with a date (“report due Friday”), then ask “what’s coming up for me”. If the date comes back, the whole chain works.">说一件带日期的事（「周五交报告」），再问「我最近有什么安排」。日期答得出来，整条链路就是通的。</p>
+      </li>
+    </ol>
+    <p class="links-h rv" data-en="MANUALS &amp; TRACKER">手册与追踪</p>
+    <div class="links rv" data-d="1">
+      <a href="https://github.com/Aik358/dsh-auto-memory/blob/main/docs/USER-GUIDE.zh-CN.md" target="_blank" rel="noopener" data-en="User guide (Chinese) ↗">用户手册（中）↗</a>
+      <a href="https://github.com/Aik358/dsh-auto-memory/blob/main/docs/USER-GUIDE.en.md" target="_blank" rel="noopener" data-en="User guide (English) ↗">用户手册（英）↗</a>
+      <a href="https://github.com/Aik358/dsh-auto-memory/blob/main/CHANGELOG.md" target="_blank" rel="noopener" data-en="Changelog ↗">更新日志 ↗</a>
+      <a href="https://github.com/Aik358/dsh-auto-memory/issues" target="_blank" rel="noopener" data-en="Issues ↗">问题追踪 ↗</a>
+    </div>
+    <div class="verify rv">
+      <span class="verify-tag" data-en="How to verify">怎么核</span>
+      <p data-en="After installing, open the Overview tab first: the environment check lights up item by item, and the Log tab explains any that stay dark.">装完先开「概览」页签：环境自检逐项亮灯，哪项不亮，日志页签会写明原因。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ §11 BOUNDS -->
+<section class="sec" id="bounds" aria-label="已知边界" data-aria-en="Known bounds">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <p class="eyebrow"><span class="eb-no">§11</span><span class="eb-t" data-en="BOUNDS">已知边界</span></p>
+      <h2 data-en="Known bounds">已知边界</h2>
+      <p class="lede" data-en="This page isn’t self-deprecation — it’s a credential of trust.">这一页不是自黑，是信任凭证。</p>
+    </div>
+    <div class="stats rv" role="list" aria-label="规模数字" data-aria-en="Scale numbers">
+      <div class="stat" role="listitem"><span class="stat-n">17</span><span class="stat-l" data-en="model tools">模型工具</span></div>
+      <div class="stat" role="listitem"><span class="stat-n">49</span><span class="stat-l" data-en="HTTP routes">HTTP 路由</span></div>
+      <div class="stat" role="listitem"><span class="stat-n">98</span><span class="stat-l" data-en="config keys · 60 writable">配置键 · 60 可写</span></div>
+      <div class="stat" role="listitem"><span class="stat-n">12</span><span class="stat-l" data-en="panel tabs">面板页签</span></div>
+      <div class="stat" role="listitem"><span class="stat-n">6</span><span class="stat-l" data-en="slots">插槽</span></div>
+      <div class="stat" role="listitem"><span class="stat-n">0</span><span class="stat-l" data-en="runtime deps">运行时依赖</span></div>
+    </div>
+    <ol class="bounds">
+      <li class="rv"><span class="b-no">1</span><p data-en="The handoff whiteboard and water-level awareness are experimental. Whiteboard &amp; ledger are on by default since 3.0; auto-continuation is off by default.">交接白板与水位感知是实验特性。白板与账本 3.0 起默认开启；自动接续默认关闭。</p></li>
+      <li class="rv"><span class="b-no">2</span><p data-en="Semantic tiers are optional. The built-in JS semantic tier (~130 MB) is the default and needs no setup; the Python int8 advanced tier (~563 MB) goes through a guided install.">语义档可选。内置 JS 语义档（约 130 MB）是默认值、无需配置；Python int8 进阶档（约 563 MB）走向导安装。</p></li>
+      <li class="rv"><span class="b-no">3</span><p data-en="The panel API listens on loopback only. An external request returning 401 is expected behavior, not a fault.">面板 API 仅监听本机回环地址。外部访问返回 401 属预期行为，不是故障。</p></li>
+      <li class="rv"><span class="b-no">4</span><p data-en="The 3D archive terminal needs WebGL. Without it, it falls back to the readable version — no information lost, just no 3D.">三维档案终端需要 WebGL。不支持时会退回可读版——信息不丢，只是没有三维呈现。</p></li>
+      <li class="rv"><span class="b-no">5</span><p data-en="The hero character’s 24 fps frame sequence isn’t delivered yet; an inline SVG line sketch stands in, with the mount point pre-wired per the delivery contract.">首屏角色的 24 fps 序列帧尚未交付；目前是内联 SVG 线稿，挂载位已按交付契约预埋。</p></li>
+    </ol>
+    <div class="verify rv">
+      <span class="verify-tag" data-en="How to verify">怎么核</span>
+      <p data-en="In the whitepaper, every number is annotated with its source in code.">白皮书里每个数字都标注了代码出处。</p>
+    </div>
+  </div>
+</section>
 
 </main>
 
-<footer class="footer">
-  <div class="wrap">
-    <p class="foot-brand">
-      <svg viewBox="0 0 32 32" aria-hidden="true">
-        <path d="M3 18c1-6 8-10 15-8 3 .8 5 2.4 6 4.6l5-3.2c-.6 2.6-.6 5 0 7.2l-5-2.4c-1.6 3.6-6 5.6-11 4.6C7 20.4 4 19.6 3 18Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
-        <circle cx="21" cy="15.5" r="1.2" fill="currentColor"/>
-      </svg>
-      auto-memory <small style="font-family:var(--sans);font-weight:500;font-size:11px;color:var(--ink-3);margin-left:6px" data-en="memory plugin on the DSH black-whale layer">DSH 黑鲸层上的记忆插件</small>
-    </p>
-    <p class="foot-links">
-      <a href="https://github.com/Aik358/dsh-auto-memory" target="_blank" rel="noopener">GitHub</a>
-      <a href="https://www.npmjs.com/package/@a9i5k4/dsh-auto-memory" target="_blank" rel="noopener">npm</a>
-      <a href="https://github.com/Aik358/dsh-auto-memory/blob/main/README.zh-CN.md" target="_blank" rel="noopener"><span data-en="README (中文)">README</span></a>
-      <a href="https://github.com/Aik358/dsh-auto-memory/blob/main/README.md" target="_blank" rel="noopener"><span data-en="README (EN)">README (EN)</span></a>
-      <a href="https://qm.qq.com/q/v7Asxn6vPa" target="_blank" rel="noopener">QQ 群</a>
-      <a href="https://github.com/Aik358/dsh-auto-memory/blob/main/CHANGELOG.md" target="_blank" rel="noopener">Changelog</a>
-    </p>
-    <p class="foot-note"><span data-en="A community plugin for DeepSeek Harness — the black-whale layer (runtime), not affiliated with DeepSeek. The hero character is an abstract line-art homage to the community's whale-girl persona.">DeepSeek Harness 社区插件，属「黑鲸」（DSH 运行环境）层生态，与 DeepSeek 官方无关。首屏角色为社区「鲸鱼娘」人格形象的抽象线描致敬。</span></p>
-    <p class="foot-legal"><span data-en="Character design “Mingyue” © 商山无行 (Shangshan Wuxing), CC BY-NC-SA 4.0 — non-commercial derivative with attribution; derivatives share alike. Re-evaluate before any commercial use.">角色设定「明月」原作者 商山无行（Shangshan Wuxing）· CC BY-NC-SA 4.0 —— 本页为非商业衍生使用并署名，衍生物以同协议共享；如未来涉及商业化须重新评估授权。</span></p>
+<!-- ============================================================ FOOTER -->
+<footer class="foot">
+  <div class="foot-in">
+    <div class="foot-top">
+      <a class="brand" href="#hero"><span class="brand-dot" aria-hidden="true"></span><span class="brand-name">dsh-auto-memory</span></a>
+      <p class="foot-tag" data-en="She remembers unprompted. Every recall, verifiable.">无问自忆，且件件可查。</p>
+    </div>
+    <div class="legal">
+      <section class="legal-b">
+        <h3 data-en="License">许可</h3>
+        <p data-en="dsh-auto-memory is released under the BSD-3-Clause license.">dsh-auto-memory 以 BSD-3-Clause 发布。</p>
+      </section>
+      <section class="legal-b">
+        <h3 data-en="Upstream attribution">上游署名</h3>
+        <p data-en="The 3D scene structure references RhineLabUI / rhinelab-blog-theme (LBEILC / JesseLee-CN), MIT, Copyright (c) 2026 LBEILC. This project ships none of their 3D models, Blender projects, source footage, or game brands.">三维场景结构参考 RhineLabUI / rhinelab-blog-theme（LBEILC / JesseLee-CN），MIT，Copyright (c) 2026 LBEILC。本项目不包含其三维模型、Blender 工程、原片素材或游戏品牌。</p>
+      </section>
+      <section class="legal-b">
+        <h3 data-en="Character">角色</h3>
+        <p data-en="The character “溟月” is by its original author 上善无形, under CC BY-NC-SA 4.0 — non-commercial derivatives with attribution, shared under the same terms. That license is independent of, and stricter than, the code licenses above.">角色设定「溟月」原作者上善无形，CC BY-NC-SA 4.0——非商业衍生并署名、以同协议共享。该许可与上述代码许可相互独立且更严格。</p>
+      </section>
+      <section class="legal-b">
+        <h3 data-en="Disclaimer">免责</h3>
+        <p data-en="A DeepSeek Harness community plugin — not affiliated with DeepSeek, nor with the authors of the repositories referenced above.">DeepSeek Harness 社区插件，与 DeepSeek 官方无关，与上述参考仓库作者亦无隶属关系。</p>
+      </section>
+    </div>
+    <p class="foot-meta">© 2026 dsh-auto-memory · <span data-en="a DeepSeek Harness community plugin">DeepSeek Harness 社区插件</span></p>
   </div>
 </footer>
 
