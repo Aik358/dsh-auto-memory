@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>dsh-auto-memory — 无问自忆 · 记忆不断线</title>
+<meta name="description" content="dsh-auto-memory：DeepSeek Harness 的主动联想记忆插件。无问自忆，记忆不断线。She remembers, unbidden.">
+<link rel="stylesheet" href="assets/site.css">
+<noscript><style>.reveal{opacity:1;transform:none}</style></noscript>
+</head>
+<body data-lang="zh">
+
+<div class="pageframe" aria-hidden="true"></div>
+
+<header class="topbar">
+  <div class="wrap topbar-inner">
+    <a class="brand" href="#top" aria-label="dsh-auto-memory">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 6C9.5 4.2 5.8 4.1 3.2 5.6V19.8c2.6-1.4 6.3-1.3 8.8.7 2.5-2 6.2-2.1 8.8-.7V5.6C18.2 4.1 14.5 4.2 12 6Z" fill="none" stroke="currentColor" stroke-width="1.5"/>
+        <path d="M12 6.4V20.2" stroke="currentColor" stroke-width="1"/>
+        <path d="M8.2 2.2h5.2v4.4H8.2z" fill="var(--accent)" stroke="currentColor" stroke-width="1"/>
+      </svg>
+      <span class="brand-name">auto-memory<small data-en="memory plugin for DSH">DSH 记忆插件</small></span>
+    </a>
+    <nav class="mainnav" aria-label="sections">
+      <a href="#flow"><span data-en="FLOW">数据流</span></a>
+      <a href="#structure"><span data-en="STRUCTURE">结构</span></a>
+      <a href="#capabilities"><span data-en="CAPABILITIES">能力</span></a>
+      <a href="#terminal"><span data-en="TERMINAL">终端</span></a>
+      <a href="#ui"><span data-en="UI">界面</span></a>
+      <a href="#limits"><span data-en="LIMITS">边界</span></a>
+      <a href="#install"><span data-en="INSTALL">安装</span></a>
+    </nav>
+    <button class="lang-btn" id="langBtn" type="button" aria-label="switch language">EN</button>
+    <a class="gh-link" href="https://github.com/Aik358/dsh-auto-memory" target="_blank" rel="noopener">GitHub ↗</a>
+  </div>
+</header>
+
+<main class="wrap" id="top">
+
+  <!-- ══ SHEET 01 · HERO ═══════════════════════════════════════════ -->
+  <section class="sheet" id="hero">
+    <header class="sheet-head">
+      <span class="sh-no">SHEET 01</span>
+      <span class="sh-title" data-en="Overview">总览</span>
+      <span class="sh-meta">REV A · 2026-09-20 · SCALE 1:1</span>
+    </header>
+    <div class="sheet-body hero-grid">
+      <div class="hero-copy reveal">
+        <p class="kicker">DEEPSEEK HARNESS PLUGIN · dsh-auto-memory</p>
+        <h1><span data-en="She remembers, unbidden.">无问自忆，<br>记忆不断线。</span></h1>
+        <p class="lede"><span data-en="Memory lives outside the context window: what should resurface, resurfaces unbidden — with a checkable evidence chain. When the window fills, she stops compressing herself into a summary. She closes one notebook of margin notes and opens a new page.">dsh-auto-memory 把记忆放在上下文窗口之外：该想起的自己浮现，每次唤起都有证据链可查。上下文写满时，她不再把自己压缩成一段摘要——合上一本写满批注的笔记，翻开新的一页。</span></p>
+        <div class="cta-row">
+          <span class="cmd"><span class="dollar">$</span><code id="cmdText">pnpm add @a9i5k4/dsh-auto-memory@latest</code><button class="copy" id="copyBtn" type="button" data-en="COPY">复制</button></span>
+          <a class="btn btn-accent" href="https://www.npmjs.com/package/@a9i5k4/dsh-auto-memory" target="_blank" rel="noopener">npm ↗</a>
+        </div>
+        <p class="meta-chips">
+          <span class="chip">v3.0.0</span>
+          <span class="chip">BSD-3-Clause</span>
+          <span class="chip">runtime deps 0</span>
+          <span class="chip">Win / macOS / Linux</span>
+          <span class="chip"><span data-en="Bilingual UI">中英双语</span></span>
+        </p>
+      </div>
+
+      <figure class="stage reveal">
+        <svg id="stageSvg" viewBox="0 0 640 572" role="img" aria-label="night visit window: line-art character on a deep blue plate, dimensioned per delivery contract">
+          <defs>
+            <marker id="arrN" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0 0L8 4L0 8Z" fill="#A8BBD8"></path>
+            </marker>
+            <pattern id="hatchN" width="6" height="6" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
+              <line x1="0" y1="0" x2="0" y2="6" stroke="#A8BBD8" stroke-width=".75" opacity=".5"></line>
+            </pattern>
+          </defs>
+          <!-- baseline grid (static, .75px, pale on night) -->
+          <g class="gridlines" stroke="rgba(244,241,235,.13)" stroke-width=".75">
+            <path d="M60 40V500M112 40V500M164 40V500M216 40V500M268 40V500M320 40V500M372 40V500M424 40V500M476 40V500M528 40V500M580 40V500"></path>
+            <path d="M60 40H580M60 86H580M60 132H580M60 178H580M60 224H580M60 270H580M60 316H580M60 362H580M60 408H580M60 454H580M60 500H580"></path>
+          </g>
+          <!-- canvas outline (self-draw, pale) -->
+          <rect class="draw" x="60" y="40" width="520" height="460" pathLength="1" fill="none" stroke="#E9EDF5" stroke-width="1"></rect>
+          <text x="64" y="60" class="svg-mono" font-size="10" fill="#A8BBD8" data-en="PLATE 00 · NIGHT VISIT — mount pre-wired to §5 contract">PLATE 00 · 夜访窗 — 定妆位按 §5 交付契约预埋</text>
+          <!-- center axis -->
+          <path class="thin" d="M320 92V497" stroke="#A8BBD8" stroke-width=".75" stroke-dasharray="2 6" opacity=".6"></path>
+          <!-- headroom -->
+          <path class="thin dashed" d="M60 92H580" stroke="#A8BBD8" stroke-width=".75" opacity=".7"></path>
+          <text x="574" y="86" class="svg-mono" font-size="9" fill="#A8BBD8" text-anchor="end" data-en="HEADROOM 120">头顶安全区 120 · HEADROOM</text>
+          <!-- ground / pedestal (self-draw, pale) -->
+          <g>
+            <path class="draw d1" d="M80 459H560" pathLength="1" stroke="#E9EDF5" stroke-width="1.5" fill="none"></path>
+            <path class="draw d2" d="M80 465H560" pathLength="1" stroke="#E9EDF5" stroke-width="1" fill="none"></path>
+            <path class="draw d2" d="M92 465l-12 12m28-12l-12 12m28-12l-12 12m28-12l-12 12m28-12l-12 12m28-12l-12 12m28-12l-12 12m28-12l-12 12m28-12l-12 12m28-12l-12 12m28-12l-12 12m28-12l-12 12m28-12l-12 12m28-12l-12 12m28-12l-12 12m28-12l-12 12m28-12l-12 12m28-12l-12 12m28-12l-12 12" pathLength="1" stroke="#A8BBD8" stroke-width=".75" fill="none" opacity=".7"></path>
+          </g>
+          <!-- character: line-art of the banner girl — blue only in hair & eyes (§2.1) -->
+          <g class="breathe">
+            <ellipse cx="320" cy="452" rx="54" ry="6" fill="url(#hatchN)" opacity=".55"></ellipse>
+            <path class="draw cd1" d="M320 112 C280 112 260 146 259 188 C258 236 263 274 276 302 C283 311 298 307 301 297 C299 268 298 232 301 202 L339 202 C342 232 341 268 339 297 C342 307 357 311 364 302 C377 274 382 236 381 188 C380 146 360 112 320 112 Z" pathLength="1" fill="#182742" stroke="#E9EDF5" stroke-width="1.5"></path>
+            <path d="M303 140 C297 162 297 188 303 208" fill="none" stroke="#E9EDF5" stroke-width="1"></path>
+            <path d="M337 140 C343 162 343 188 337 208" fill="none" stroke="#E9EDF5" stroke-width="1"></path>
+            <path d="M268 190 C264 228 267 262 276 290" fill="none" stroke="#6E8FD8" stroke-width="1.5"></path>
+            <path d="M372 190 C376 228 373 262 364 290" fill="none" stroke="#2B4A8B" stroke-width="1.5"></path>
+            <path d="M284 132 C280 150 279 168 281 184" fill="none" stroke="#2B4A8B" stroke-width="1"></path>
+            <path d="M336 130 C338 136 338 142 336 148" fill="none" stroke="#6E8FD8" stroke-width="1"></path>
+            <path d="M318 112 C319 104 325 101 330 104" fill="none" stroke="#E9EDF5" stroke-width="1.5"></path>
+            <path class="draw cd2" d="M300 148 C300 134 308 126 320 126 C332 126 340 134 340 148 C340 164 332 180 320 182 C308 180 300 164 300 148 Z" pathLength="1" fill="#182742" stroke="#E9EDF5" stroke-width="1.5"></path>
+            <path d="M303 138 C308 128 314 125 320 125 C326 125 332 128 337 138" fill="none" stroke="#E9EDF5" stroke-width="1"></path>
+            <path d="M313 126 C311 134 311 141 314 148" fill="none" stroke="#E9EDF5" stroke-width=".75"></path>
+            <path d="M327 126 C329 134 329 141 326 148" fill="none" stroke="#E9EDF5" stroke-width=".75"></path>
+            <g class="eyes">
+              <ellipse cx="311" cy="158" rx="4.2" ry="4.8" fill="#182742" stroke="#E9EDF5" stroke-width="1"></ellipse>
+              <circle cx="311" cy="159" r="2.4" fill="#2B6FD8"></circle>
+              <circle cx="310.3" cy="157.7" r=".7" fill="#E9EDF5"></circle>
+              <ellipse cx="329" cy="158" rx="4.2" ry="4.8" fill="#182742" stroke="#E9EDF5" stroke-width="1"></ellipse>
+              <circle cx="329" cy="159" r="2.4" fill="#2B6FD8"></circle>
+              <circle cx="328.3" cy="157.7" r=".7" fill="#E9EDF5"></circle>
+            </g>
+            <path d="M317 172 Q320 174 323 172" fill="none" stroke="#E9EDF5" stroke-width=".75"></path>
+            <path d="M316 182 L315 194 M324 182 L325 194" stroke="#E9EDF5" stroke-width="1"></path>
+            <path d="M304 200 L320 195 L336 200 L334 214 L320 208 L306 214 Z" fill="#182742" stroke="#E9EDF5" stroke-width="1"></path>
+            <path d="M316 214 L324 214 L320 224 Z" fill="var(--accent)"></path>
+            <path d="M318 222 L314 234 M322 222 L326 234" stroke="var(--accent-ink)" stroke-width="1"></path>
+            <path class="draw cd1" d="M303 200 C299 216 297 230 299 242 C291 274 285 302 283 324 L357 324 C355 302 349 274 341 242 C343 230 341 216 337 200" pathLength="1" fill="none" stroke="#E9EDF5" stroke-width="1.5"></path>
+            <path d="M300 244 L340 244" stroke="#E9EDF5" stroke-width="1"></path>
+            <path d="M287 317 L353 317" stroke="#E9EDF5" stroke-width=".75" opacity=".7"></path>
+            <path d="M303 202 C295 206 291 216 292 226 C297 230 304 230 307 226" fill="none" stroke="#E9EDF5" stroke-width="1"></path>
+            <path d="M337 202 C345 206 349 216 348 226 C343 230 336 230 333 226" fill="none" stroke="#E9EDF5" stroke-width="1"></path>
+            <path d="M292 224 L307 224 M333 224 L348 224" stroke="#E9EDF5" stroke-width=".75" opacity=".7"></path>
+            <path d="M293 226 C289 242 292 256 301 266" fill="none" stroke="#E9EDF5" stroke-width="1.5"></path>
+            <path d="M347 226 C351 242 348 256 339 266" fill="none" stroke="#E9EDF5" stroke-width="1.5"></path>
+            <circle cx="302" cy="268" r="3" fill="#182742" stroke="#E9EDF5" stroke-width="1"></circle>
+            <circle cx="338" cy="268" r="3" fill="#182742" stroke="#E9EDF5" stroke-width="1"></circle>
+            <path class="draw cd2" d="M320 256 L285 264 L287 290 L320 283 Z" pathLength="1" fill="#182742" stroke="#E9EDF5" stroke-width="1.5"></path>
+            <path class="draw cd2" d="M320 256 L355 264 L353 290 L320 283 Z" pathLength="1" fill="#182742" stroke="#E9EDF5" stroke-width="1.5"></path>
+            <path d="M320 256 L320 283" stroke="#E9EDF5" stroke-width="1"></path>
+            <path d="M292 270 L315 265 M292 278 L315 273 M325 265 L348 270 M325 273 L348 278" stroke="#E9EDF5" stroke-width=".5" opacity=".7"></path>
+            <path d="M310 324 L308 434 M330 324 L332 434" stroke="#E9EDF5" stroke-width="1.5"></path>
+            <path d="M307 420 L309 420 M331 420 L333 420" stroke="#E9EDF5" stroke-width=".75"></path>
+            <path d="M304 452 L319 452 L318 438 L307 440 Z" fill="#182742" stroke="#E9EDF5" stroke-width="1.5"></path>
+            <path d="M336 452 L321 452 L322 438 L333 440 Z" fill="#182742" stroke="#E9EDF5" stroke-width="1.5"></path>
+            <path d="M366 410 L426 410 L418 401 L358 401 Z" fill="none" stroke="#E9EDF5" stroke-width="1"></path>
+            <path d="M378 401 L378 388 L392 386 L392 401 M396 401 L396 384 L410 382 L410 401" fill="none" stroke="#E9EDF5" stroke-width="1"></path>
+            <rect x="366" y="410" width="60" height="44" fill="#182742" stroke="#E9EDF5" stroke-width="1.5"></rect>
+            <path d="M426 410 L434 405 L434 447 L426 454 Z" fill="url(#hatchN)" stroke="#E9EDF5" stroke-width="1"></path>
+            <text x="396" y="436" class="svg-mono" font-size="7" fill="#A8BBD8" text-anchor="middle">MEMORY</text>
+          </g>
+          <!-- anchor at her feet (signal orange) -->
+          <circle cx="320" cy="452" r="5" fill="none" stroke="var(--accent)" stroke-width="1"></circle>
+          <path d="M306 452h-8m36 0h-8M320 438v-8m0 36v-8" stroke="var(--accent)" stroke-width=".75" opacity=".9"></path>
+          <text x="346" y="456" class="svg-mono" font-size="9" fill="#A8BBD8">ANCHOR (600, 1080)</text>
+          <!-- width dim -->
+          <path class="thin" d="M60 522H580" stroke="#A8BBD8" stroke-width=".75" marker-start="url(#arrN)" marker-end="url(#arrN)"></path>
+          <path class="thin" d="M60 516v12M580 516v12" stroke="#A8BBD8" stroke-width=".75"></path>
+          <text x="320" y="540" class="svg-mono" text-anchor="middle" font-size="10" fill="#A8BBD8" data-en="1200 × 1200 @1x · CANVAS">1200 × 1200 @1x · 画布 CANVAS</text>
+          <!-- height dim = her height -->
+          <path class="thin" d="M606 104V452" stroke="#A8BBD8" stroke-width=".75" marker-start="url(#arrN)" marker-end="url(#arrN)"></path>
+          <path class="thin" d="M600 104h12M600 452h12" stroke="#A8BBD8" stroke-width=".75"></path>
+          <text transform="rotate(90 616 278)" x="616" y="278" class="svg-mono" font-size="9" fill="#A8BBD8" text-anchor="middle" data-en="CHARACTER HEIGHT ≈ 900">角色高 ≈ 900</text>
+          <!-- palette chips -->
+          <g class="svg-mono" font-size="9" fill="#A8BBD8">
+            <rect x="60" y="550" width="10" height="10" fill="#17171A" stroke="#A8BBD8" stroke-width=".75"></rect>
+            <text x="76" y="559" data-en="INK">墨 INK</text>
+            <rect x="130" y="550" width="10" height="10" fill="#E9470C" stroke="#A8BBD8" stroke-width=".75"></rect>
+            <text x="146" y="559" data-en="ACCENT ≤5%">橙 ≤5%</text>
+            <rect x="212" y="550" width="10" height="10" fill="#2B4A8B" stroke="#A8BBD8" stroke-width=".75"></rect>
+            <text x="228" y="559" data-en="HAIR (char only)">发丝（仅角色）</text>
+            <rect x="320" y="550" width="10" height="10" fill="#2B6FD8" stroke="#A8BBD8" stroke-width=".75"></rect>
+            <text x="336" y="559" data-en="EYE (char only)">瞳（仅角色）</text>
+            <rect x="428" y="550" width="10" height="10" fill="#1B375A" stroke="#A8BBD8" stroke-width=".75"></rect>
+            <text x="444" y="559" data-en="NIGHT (DSH harness)">夜蓝（DSH harness）</text>
+          </g>
+        </svg>
+        <figcaption class="fig"><span data-en="FIG.00 — NIGHT VISIT · character line-art (static) · 24fps sequence pending">FIG.00 — 夜访窗 · 角色定妆线稿（静态版）· 24FPS 序列帧待交付</span><span>24FPS · BREATH 72F · BLINK 6F</span></figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- ══ SHEET 02 · DATA FLOW ══════════════════════════════════════ -->
+  <section class="sheet" id="flow">
+    <header class="sheet-head">
+      <span class="sh-no">SHEET 02</span>
+      <span class="sh-title" data-en="Data flow">数据流</span>
+      <span class="sh-meta">FIG.01 · LOOP 2S · 48F @24FPS</span>
+    </header>
+    <div class="sheet-body">
+      <figure class="plain reveal">
+        <svg id="flowSvg" viewBox="0 0 1100 240" role="img" aria-label="data flow: observe, recall, inject, crystallize">
+          <defs>
+            <marker id="arrI" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0 0L8 4L0 8Z" fill="var(--ink)"></path>
+            </marker>
+          </defs>
+          <!-- nodes -->
+          <g class="nodes">
+            <rect class="draw" x="50" y="55" width="180" height="70" pathLength="1" fill="var(--paper)" stroke="var(--ink)" stroke-width="1.5"></rect>
+            <rect class="draw d1" x="330" y="55" width="180" height="70" pathLength="1" fill="var(--paper)" stroke="var(--ink)" stroke-width="1.5"></rect>
+            <rect class="draw d2" x="610" y="55" width="180" height="70" pathLength="1" fill="var(--paper)" stroke="var(--ink)" stroke-width="1.5"></rect>
+            <rect class="draw d3" x="890" y="55" width="180" height="70" pathLength="1" fill="var(--paper)" stroke="var(--ink)" stroke-width="1.5"></rect>
+          </g>
+          <g class="svg-labels" fill="var(--ink)" font-size="15" font-weight="700">
+            <text x="162" y="88" text-anchor="middle" data-en="OBSERVE">观察</text>
+            <text x="442" y="88" text-anchor="middle" data-en="RECALL">检索</text>
+            <text x="722" y="88" text-anchor="middle" data-en="INJECT">注入</text>
+            <text x="1002" y="88" text-anchor="middle" data-en="CRYSTALLIZE">固化</text>
+          </g>
+          <g class="svg-mono svg-note" font-size="9" fill="var(--ink-2)">
+            <text x="162" y="106" text-anchor="middle">OBSERVE</text>
+            <text x="442" y="106" text-anchor="middle">RECALL</text>
+            <text x="722" y="106" text-anchor="middle">INJECT</text>
+            <text x="1002" y="106" text-anchor="middle">CRYSTALLIZE</text>
+            <text x="140" y="150" text-anchor="middle" data-en="silent per-turn evaluation">每轮静默评估 · 自动记账</text>
+            <text x="442" y="150" text-anchor="middle" data-en="evidence chain · gradeable">证据链 · 可评分 · 三态放行</text>
+            <text x="722" y="150" text-anchor="middle" data-en="resident ≤800 tok · cache-friendly">常驻目录 ≤800 tok · 缓存友好</text>
+            <text x="1002" y="150" text-anchor="middle" data-en="promotion gate · SKILL.md export">晋升闸门 · SKILL.md 导出</text>
+          </g>
+          <!-- forward flow -->
+          <path class="flowbase" d="M230 90H324M424 90H604M704 90H884" stroke="var(--line-soft)" stroke-width="1" fill="none"></path>
+          <path class="flowline" d="M230 90H324M424 90H604M704 90H884" stroke="var(--accent)" stroke-width="1.5" fill="none" marker-end="url(#arrI)"></path>
+          <!-- evidence loop -->
+          <path class="flowbase" d="M980 125V196H140V131" stroke="var(--line-soft)" stroke-width="1" fill="none"></path>
+          <path class="flowline rev" d="M980 125V196H140V131" stroke="var(--ink-2)" stroke-width="1" fill="none" stroke-dasharray="3 5" marker-end="url(#arrI)"></path>
+          <text x="560" y="214" class="svg-mono svg-note" text-anchor="middle" data-en="EVIDENCE LOOP · cross-session evidence → skills">EVIDENCE LOOP · 跨会话证据累积 → 技能固化</text>
+        </svg>
+        <figcaption class="fig"><span data-en="FIG.01 — DATA FLOW · observe → recall → inject → crystallize">FIG.01 — 数据流 · 观察 → 检索 → 注入 → 固化</span><span data-en="animates in viewport only">动效仅进视口播放</span></figcaption>
+      </figure>
+      <div class="duo">
+        <p class="body-p reveal"><span data-en="Memory is never fetched by the model. The host watches the context and injects recalls automatically at a fixed boundary — prefix-cache friendly, zero instructions needed.">记忆从不靠模型「想起来」。宿主盯着上下文，在固定边界自动注入召回——前缀缓存友好，不需要任何指令。</span></p>
+        <p class="body-p reveal"><span data-en="Every activation carries a full evidence chain: gradeable in the Recall review tab, editable and deletable entry by entry. Skills crystallize from cross-session evidence through a promotion gate.">每次唤起都带完整证据链：可在「唤起回顾」逐条评分，逐条可查、可改、可删。技能由跨会话证据通过晋升闸门固化而成。</span></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ SHEET 03 · STRUCTURE ══════════════════════════════════════ -->
+  <section class="sheet" id="structure">
+    <header class="sheet-head">
+      <span class="sh-no">SHEET 03</span>
+      <span class="sh-title" data-en="Memory structure">记忆结构</span>
+      <span class="sh-meta">FIG.02 · INJECTION × STORES</span>
+    </header>
+    <div class="sheet-body">
+      <figure class="plain reveal">
+        <svg id="structSvg" viewBox="0 0 1100 470" role="img" aria-label="memory structure: injection surface, stores, promotion pipeline, water level">
+          <defs>
+            <marker id="arrS" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0 0L8 4L0 8Z" fill="var(--ink)"></path>
+            </marker>
+            <pattern id="hatch" width="6" height="6" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
+              <line x1="0" y1="0" x2="0" y2="6" stroke="var(--ink-2)" stroke-width=".75"></line>
+            </pattern>
+          </defs>
+          <text x="60" y="38" class="svg-mono svg-note">注入面 INJECTION SURFACE</text>
+          <text x="640" y="38" class="svg-mono svg-note">记忆库 MEMORY STORES</text>
+          <!-- injection layers -->
+          <g class="draw-g">
+            <rect class="draw" x="60" y="56" width="300" height="66" pathLength="1" fill="var(--paper)" stroke="var(--ink)" stroke-width="1.5"></rect>
+            <text x="78" y="84" class="svg-labels" font-size="14" font-weight="700" fill="var(--ink)" data-en="USER RULES">用户级硬约束 <tspan class="svg-mono svg-note" font-size="9">RULES</tspan></text>
+            <text x="78" y="106" class="svg-mono svg-note" font-size="9.5" data-en="injected every turn · editable in panel">每轮无条件注入 · 面板可视编辑</text>
+            <rect class="draw d1" x="60" y="146" width="300" height="66" pathLength="1" fill="var(--paper)" stroke="var(--ink)" stroke-width="1"></rect>
+            <text x="78" y="174" class="svg-labels" font-size="14" font-weight="700" fill="var(--ink)" data-en="PROJECT NOTES">项目笔记 <tspan class="svg-mono svg-note" font-size="9">NOTES</tspan></text>
+            <text x="78" y="196" class="svg-mono svg-note" font-size="9.5" data-en="resident ≤800 tok · self-healing index">常驻目录 ≤800 tok · 语义索引自愈</text>
+            <rect class="draw d2" x="60" y="236" width="300" height="66" pathLength="1" fill="var(--paper)" stroke="var(--ink)" stroke-width="1"></rect>
+            <text x="78" y="264" class="svg-labels" font-size="14" font-weight="700" fill="var(--ink)" data-en="DAILY LOGS">每日日志 <tspan class="svg-mono svg-note" font-size="9">LOGS</tspan></text>
+            <text x="78" y="286" class="svg-mono svg-note" font-size="9.5" data-en="on-demand recall · overflow folds to archive">按需检索 · 超限折叠后退回归档</text>
+          </g>
+          <!-- stores -->
+          <g>
+            <rect class="draw" x="640" y="56" width="300" height="56" pathLength="1" fill="var(--paper)" stroke="var(--ink)" stroke-width="1"></rect>
+            <text x="658" y="80" class="svg-labels" font-size="14" font-weight="700" fill="var(--ink)" data-en="FACT STORE">事实库 <tspan class="svg-mono svg-note" font-size="9">FACT</tspan></text>
+            <text x="658" y="100" class="svg-mono svg-note" font-size="9.5" data-en="governed write-back · status marks">治理式写回 · 状态标记</text>
+            <rect class="draw d1" x="640" y="136" width="300" height="56" pathLength="1" fill="var(--paper)" stroke="var(--ink)" stroke-width="1"></rect>
+            <text x="658" y="160" class="svg-labels" font-size="14" font-weight="700" fill="var(--ink)" data-en="EPISODIC STORE">情节库 <tspan class="svg-mono svg-note" font-size="9">EPISODIC</tspan></text>
+            <text x="658" y="180" class="svg-mono svg-note" font-size="9.5" data-en="consolidation chain · temporal arm">巩固链路 · 时间检索臂</text>
+            <rect class="draw d2" x="640" y="216" width="300" height="56" pathLength="1" fill="var(--paper)" stroke="var(--ink)" stroke-width="1.5"></rect>
+            <text x="658" y="240" class="svg-labels" font-size="14" font-weight="700" fill="var(--ink)" data-en="PROCEDURE STORE">技能库 <tspan class="svg-mono svg-note" font-size="9">PROCEDURE</tspan></text>
+            <text x="658" y="260" class="svg-mono svg-note" font-size="9.5" data-en="model-write path · risk levels · approval queue">模型直写通路 · 风险分级 · 审批队列</text>
+          </g>
+          <!-- promotion pipeline -->
+          <g class="svg-mono" font-size="9">
+            <rect x="640" y="300" width="62" height="26" fill="var(--paper)" stroke="var(--ink-2)" stroke-width=".75"></rect>
+            <text x="671" y="316" text-anchor="middle" fill="var(--ink)">observed</text>
+            <rect x="716" y="300" width="62" height="26" fill="var(--paper)" stroke="var(--ink-2)" stroke-width=".75"></rect>
+            <text x="747" y="316" text-anchor="middle" fill="var(--ink)">candidate</text>
+            <rect x="792" y="300" width="62" height="26" fill="var(--paper)" stroke="var(--ink-2)" stroke-width=".75"></rect>
+            <text x="823" y="316" text-anchor="middle" fill="var(--ink)">validated</text>
+            <rect x="868" y="300" width="62" height="26" fill="var(--paper)" stroke="var(--accent)" stroke-width="1.5"></rect>
+            <text x="899" y="316" text-anchor="middle" fill="var(--accent-ink)" font-weight="700">active</text>
+            <path class="thin" d="M702 313h14M778 313h14M854 313h14M930 313h15" stroke="var(--ink-2)" stroke-width=".75" marker-end="url(#arrS)"></path>
+            <rect x="945" y="300" width="150" height="26" fill="none" stroke="var(--ink)" stroke-width="1" stroke-dasharray="4 3"></rect>
+            <text x="1020" y="316" text-anchor="middle" fill="var(--ink)" data-en="SKILL.md EXPORT">SKILL.md 导出</text>
+            <text x="640" y="342" fill="var(--ink-2)" data-en="promotion gate min-sessions / min-success · readable approval reasons">晋升闸门 min-sessions / min-success · 审批队列可视（晋升原因可读）</text>
+          </g>
+          <!-- arrows between columns -->
+          <path class="flowline" d="M360 179h274" stroke="var(--ink-2)" stroke-width="1" fill="none" marker-end="url(#arrS)"></path>
+          <text x="497" y="170" class="svg-mono svg-note" text-anchor="middle" data-en="RECALL · INJECT">检索 · 注入</text>
+          <path class="thin dashed" d="M640 268H366" stroke="var(--ink-2)" stroke-width=".75" marker-end="url(#arrS)"></path>
+          <text x="497" y="286" class="svg-mono svg-note" text-anchor="middle" data-en="WRITE-BACK · CONSOLIDATE">写回 · 整理</text>
+          <!-- water level -->
+          <g>
+            <rect x="60" y="380" width="300" height="16" fill="var(--paper)" stroke="var(--ink)" stroke-width="1"></rect>
+            <rect x="61" y="381" width="204" height="14" fill="url(#hatch)" opacity=".55"></rect>
+            <path d="M300 376v24" stroke="var(--accent)" stroke-width="1.5"></path>
+            <text x="60" y="416" class="svg-mono svg-note" font-size="9.5" data-en="WATER-LEVEL (experimental, off by default) — 0.80 threshold mark">水位感知 WATER-LEVEL（实验 · 默认关）— 0.80 阈值标记</text>
+          </g>
+          <!-- one bytes three consumers -->
+          <g class="svg-mono" font-size="9.5">
+            <text x="640" y="410" fill="var(--ink-2)" data-en="MEMORY.md: one byte stream, three consumers:">MEMORY.md 一份字节 · 三条消费方：</text>
+            <rect x="640" y="420" width="118" height="24" fill="none" stroke="var(--ink-2)" stroke-width=".75"></rect>
+            <text x="699" y="436" text-anchor="middle" fill="var(--ink)" data-en="full injection">整篇注入</text>
+            <rect x="770" y="420" width="118" height="24" fill="none" stroke="var(--ink-2)" stroke-width=".75"></rect>
+            <text x="829" y="436" text-anchor="middle" fill="var(--ink)" data-en="L0 anchor slicing">L0 按锚点切条</text>
+            <rect x="900" y="420" width="118" height="24" fill="none" stroke="var(--ink-2)" stroke-width=".75"></rect>
+            <text x="959" y="436" text-anchor="middle" fill="var(--ink)" data-en="semantic digest">语义语料 digest</text>
+          </g>
+        </svg>
+        <figcaption class="fig"><span data-en="FIG.02 — MEMORY STRUCTURE · injection surface × stores × promotion pipeline">FIG.02 — 记忆结构 · 注入面 × 记忆库 × 晋升管线</span><span data-en="hatching = archived / compressed">剖面线 = 归档/压缩区</span></figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- ══ SHEET 04 · CAPABILITIES ═══════════════════════════════════ -->
+  <section class="sheet" id="capabilities">
+    <header class="sheet-head">
+      <span class="sh-no">SHEET 04</span>
+      <span class="sh-title" data-en="Capabilities">能力清单</span>
+      <span class="sh-meta">12 ITEMS · ①–⑫</span>
+    </header>
+    <div class="sheet-body">
+      <ul class="caps">
+        <li class="cap reveal"><span class="no">1</span><h3><span data-en="Proactive recall">无问自忆</span></h3><p><span data-en="The host watches context and injects recalls at a fixed boundary — no instructions, prefix-cache friendly.">宿主盯上下文，固定边界自动注入，零指令、前缀缓存友好。</span></p></li>
+        <li class="cap reveal"><span class="no">2</span><h3><span data-en="Three-layer memory">三层记忆</span></h3><p><span data-en="User rules → project notes → daily logs; always-on injection plus on-demand recall.">用户级规则 → 项目级笔记 → 每日日志；常驻注入 + 按需检索。</span></p></li>
+        <li class="cap reveal"><span class="no">3</span><h3><span data-en="Memory writes itself">记忆自己写自己</span></h3><p><span data-en="A subagent quietly evaluates every turn and files topic-grouped entries.">子代理逐轮静默评估，按主题归档成条目，无需「记得去记」。</span></p></li>
+        <li class="cap reveal"><span class="no">4</span><h3><span data-en="Auditable activations">唤起可审计</span></h3><p><span data-en="Every recall carries an evidence chain, gradeable in review; skills crystallize from cross-session evidence.">每次召回带完整证据链，可逐条评分；技能由跨会话证据固化。</span></p></li>
+        <li class="cap reveal"><span class="no">5</span><h3><span data-en="Proactive reminders">主动提醒</span></h3><p><span data-en="Deadlines and promises spotted in conversation, filed to the calendar.">从对话里识别截止日期与承诺，写入日历，到点提醒。</span></p></li>
+        <li class="cap reveal"><span class="no">6</span><h3><span data-en="Everything is a switch">一切皆开关</span></h3><p><span data-en="Welcome tour + settings; every feature individually toggleable, incl. unattended mode.">首启向导 + 设置页，每个功能单独可开关，含无人值守模式。</span></p></li>
+        <li class="cap reveal"><span class="no">7</span><h3><span data-en="External memory inheritance">外部记忆继承</span></h3><p><span data-en="Memories from WorkBuddy / CodeBuddy / Claude Code / Codex are scanned, importable, per-source managed.">WorkBuddy / CodeBuddy / Claude Code / Codex 的记忆可扫描、可导入、分源管理。</span></p></li>
+        <li class="cap reveal"><span class="no">8</span><h3><span data-en="Production hygiene">生产级卫生</span></h3><p><span data-en="Write gate (mojibake / stutter / JSON-injection blocking) + dirty-token scanner + credentials never enter prompts.">写入闸门（乱码/卡顿/JSON 注入拦截）+ 脏 token 扫描 + 凭据不进提示词。</span></p></li>
+        <li class="cap reveal"><span class="no">9</span><h3><span data-en="Context management">上下文管理</span></h3><p><span data-en="Four-part handoff notes carry work across windows; full history stays searchable; water-level sensing (experimental).">四段式交接账本跨窗口续命，全程历史可检索；水位感知（实验）。</span></p></li>
+        <li class="cap reveal"><span class="no">10</span><h3><span data-en="Workspace isolation">工作区隔离</span></h3><p><span data-en="Parallel workspaces and sessions keep their own recall decisions and index caches.">多工作区/多会话并行，各自召回决策与索引缓存互不打扰。</span></p></li>
+        <li class="cap reveal"><span class="no">11</span><h3><span data-en="Model-agnostic">模型无关</span></h3><p><span data-en="Any model on DSH works out of the box: lexical 0GB floor, ~130MB built-in semantic tier, ~563MB advanced.">任何模型开箱即用：词法 0GB 起步，内置 ~130MB 语义档，进阶 ~563MB。</span></p></li>
+        <li class="cap reveal"><span class="no">12</span><h3><span data-en="Portable memory">记忆可携带</span></h3><p><span data-en="Everything lives on your own disk; every entry auditable, editable, deletable.">一切都在你自己的磁盘上，每条可查、可改、可删。</span></p></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ══ SHEET 05 · ARCHIVE TERMINAL ═══════════════════════════════ -->
+  <section class="sheet" id="terminal">
+    <header class="sheet-head">
+      <span class="sh-no">SHEET 05</span>
+      <span class="sh-title" data-en="Archive terminal">档案终端</span>
+      <span class="sh-meta">FIG.03 · CANVAS 3D · 12 FILES · 24FPS</span>
+    </header>
+    <div class="sheet-body term-grid">
+      <figure class="term-stage reveal">
+        <div class="term-bar">
+          <span class="term-dot" aria-hidden="true"></span>
+          <span class="term-title">MEM-OS/3.0 · <span data-en="ARCHIVE TERMINAL">档案终端</span></span>
+          <span class="term-hint" data-en="click, then ↑↓←→ select · drag to orbit">点击后 ↑↓←→ 选取 · 拖拽环绕</span>
+        </div>
+        <pre class="term-out" id="termOut" aria-live="polite"></pre>
+        <canvas id="termCanvas" class="term-canvas" tabindex="0" aria-label="12 capability archives in a rotatable wireframe array — click to focus, then use arrow keys"></canvas>
+        <figcaption class="fig"><span data-en="FIG.03 — ARCHIVE ARRAY · selection lifts, decrypt-lines converge, array waves at 24fps">FIG.03 — 档案阵列 · 选中抬起 · 解密线合拢 · 阵列 24FPS 波浪</span><span data-en="ink wireframe · zero WebGL deps">墨线线框 · 零 WebGL 依赖</span></figcaption>
+      </figure>
+      <aside class="term-panel reveal" id="termPanel" aria-live="polite">
+        <p class="tp-row"><i data-en="NO.">编号</i><b id="tpNo">01</b></p>
+        <p class="tp-row"><i data-en="TITLE">条目</i><b id="tpTitle">—</b></p>
+        <p class="tp-row"><i data-en="SURFACE">承载面</i><b id="tpWhere">—</b></p>
+        <p class="tp-desc" id="tpDesc">—</p>
+        <p class="tp-note" data-en="Array pattern after RhineLabUI: arrows cycle columns and rows, the selection lifts toward camera while decrypt-lines converge; wave motion runs on a 24fps step.">阵列范式取自 RhineLabUI：方向键在列/行间循环，选中档案向镜头抬起、解密线合拢；波浪动效按 24fps 步进。数据来自本页能力清单。</p>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ══ SHEET 06 · UI ═════════════════════════════════════════════ -->
+  <section class="sheet" id="ui">
+    <header class="sheet-head">
+      <span class="sh-no">SHEET 06</span>
+      <span class="sh-title" data-en="Interface">界面速览</span>
+      <span class="sh-meta">3 PLATES · 摄于 v2.x</span>
+    </header>
+    <div class="sheet-body">
+      <div class="plates">
+        <figure class="plate reveal">
+          <img src="assets/img/panel-overview.png" alt="概览页签截图" loading="lazy" width="860" height="645">
+          <figcaption class="fig"><span>FIG.05-A — 概览 OVERVIEW</span><span>PANEL</span></figcaption>
+        </figure>
+        <figure class="plate reveal">
+          <img src="assets/img/settings-zh.png" alt="设置页截图" loading="lazy" width="860" height="1075">
+          <figcaption class="fig"><span>FIG.05-B — 设置 SETTINGS</span><span>SETTINGS</span></figcaption>
+        </figure>
+        <figure class="plate reveal">
+          <img src="assets/img/workspace-map-zh.png" alt="工作区关系图截图" loading="lazy" width="860" height="645">
+          <figcaption class="fig"><span>FIG.05-C — 工作区关系图 WORKSPACE MAP</span><span>MAP</span></figcaption>
+        </figure>
+      </div>
+      <p class="fig-note reveal"><span data-en="Screenshots taken on v2.x; they will be re-shot after the UI overhaul lands.">界面截图摄于 v2.x，将随前端重构定稿后统一重拍。</span></p>
+    </div>
+  </section>
+
+  <!-- ══ SHEET 07 · LIMITS ═════════════════════════════════════════ -->
+  <section class="sheet" id="limits">
+    <header class="sheet-head">
+      <span class="sh-no">SHEET 07</span>
+      <span class="sh-title" data-en="Known limits">已知边界</span>
+      <span class="sh-meta">CAUTION · 4 ITEMS</span>
+    </header>
+    <div class="sheet-body stack">
+      <div class="caution reveal"><b>CAUTION</b><span><span data-en="Handoff whiteboard & water-level sensing are experimental — off by default. Enable in Settings → Automation.">交接白板与水位感知为实验特性，默认关闭。开启：设置 → 自动化。</span></span></div>
+      <div class="caution reveal"><b>CAUTION</b><span><span data-en="The semantic tier is optional: ~130MB JS built-in by default; the advanced Python int8 tier (~563MB) installs via the guided setup.">语义档为可选进阶：JS 内置 ~130MB 为默认档；Python int8 进阶档 ~563MB，走向导安装。</span></span></div>
+      <div class="caution reveal"><b>CAUTION</b><span><span data-en="The panel API listens on loopback only; a 401 from outside is expected behavior, not a fault.">面板 API 仅监听本机回环地址（loopback-only）；外部访问返回 401 属预期行为。</span></span></div>
+      <div class="caution reveal"><b>CAUTION</b><span><span data-en="The 24fps PNG sequence for the character is not delivered yet: the hero ships as static SVG line-art (self-draw / breath / blink already running at 24fps steps); the mount is pre-wired to the §5 contract.">角色 24fps PNG 序列帧尚未交付：Hero 目前为静态 SVG 线稿定妆（自绘/呼吸/眨眼已按 24fps 步进运行），挂载位已按 §5 交付契约预埋，到货即换装。</span></span></div>
+    </div>
+  </section>
+
+  <!-- ══ SHEET 08 · INSTALL ════════════════════════════════════════ -->
+  <section class="sheet" id="install">
+    <header class="sheet-head">
+      <span class="sh-no">SHEET 08</span>
+      <span class="sh-title" data-en="Install">安装</span>
+      <span class="sh-meta">3 STEPS</span>
+    </header>
+    <div class="sheet-body">
+      <div class="steps">
+        <div class="step reveal">
+          <p class="s-no">STEP 01</p>
+          <h3><span data-en="Install">安装</span></h3>
+          <p class="body-p"><span data-en="Any DSH install, npm or pnpm:">npm / pnpm 均可：</span></p>
+          <p class="cmd sm"><span class="dollar">$</span><code>pnpm add @a9i5k4/dsh-auto-memory@latest</code></p>
+          <p class="fig-note"><span data-en="pnpm v11 may block versions published within 24h (minimumReleaseAge): set it to 0 or pin a version.">pnpm v11 若拦截 24h 内新版本：minimumReleaseAge 设 0 或固定版本号。</span></p>
+        </div>
+        <div class="step reveal">
+          <p class="s-no">STEP 02</p>
+          <h3><span data-en="Restart DSH">重启 DSH</span></h3>
+          <p class="body-p"><span data-en="After restart, a “Memory” entry appears in the sidebar. No account, no cloud — everything stays on your disk.">重启后侧栏出现「记忆」入口。无账号、无云端——一切都在你自己的磁盘上。</span></p>
+        </div>
+        <div class="step reveal">
+          <p class="s-no">STEP 03</p>
+          <h3><span data-en="Welcome tour">首启向导</span></h3>
+          <p class="body-p"><span data-en="The tour explains every feature and toggles it on the spot; the optional semantic tier downloads in place.">向导逐项讲解、当场开关；语义档（可选）在向导内就地下载。</span></p>
+        </div>
+      </div>
+      <p class="fig-note reveal">
+        <span data-en="Guides: ">手册：</span><a href="https://github.com/Aik358/dsh-auto-memory/blob/main/docs/USER-GUIDE.zh-CN.md">用户手册</a> ·
+        <a href="https://github.com/Aik358/dsh-auto-memory/blob/main/docs/USER-GUIDE.en.md">User guide (EN)</a> ·
+        <a href="https://github.com/Aik358/dsh-auto-memory/blob/main/CHANGELOG.md">Changelog</a> ·
+        <a href="https://github.com/Aik358/dsh-auto-memory/issues">Issues</a>
+      </p>
+    </div>
+  </section>
+
+</main>
+
+<footer class="footer">
+  <div class="wrap">
+    <div class="tblock" role="presentation">
+      <div><i>PROJECT</i><b>dsh-auto-memory</b></div>
+      <div><i>DWG</i><b>LANDING-2026-09</b></div>
+      <div><i>REV</i><b>A</b></div>
+      <div><i>DATE</i><b>2026-09-20</b></div>
+      <div><i>STYLE</i><b>WIREFRAME / 24FPS</b></div>
+      <div><i>LICENSE</i><b>BSD-3-Clause</b></div>
+      <div><i>RUNTIME</i><b>DEPS 0</b></div>
+    </div>
+    <p class="foot-links">
+      <a href="https://github.com/Aik358/dsh-auto-memory" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://www.npmjs.com/package/@a9i5k4/dsh-auto-memory" target="_blank" rel="noopener">npm</a>
+      <a href="https://github.com/Aik358/dsh-auto-memory/blob/main/README.zh-CN.md" target="_blank" rel="noopener"><span data-en="README (中文)">README</span></a>
+      <a href="https://github.com/Aik358/dsh-auto-memory/blob/main/README.md" target="_blank" rel="noopener"><span data-en="README (EN)">README (EN)</span></a>
+      <a href="https://qm.qq.com/q/v7Asxn6vPa" target="_blank" rel="noopener">QQ 群</a>
+    </p>
+    <p class="foot-note"><span data-en="A community plugin for DeepSeek Harness. Not affiliated with DeepSeek. Character animation per ART-DIRECTION-WIREFRAME spec.">DeepSeek Harness 社区插件，与 DeepSeek 官方无关。角色动画按《美术方向与动效规格》执行。</span></p>
+  </div>
+</footer>
+
+<script src="assets/site.js"></script>
+</body>
+</html>
