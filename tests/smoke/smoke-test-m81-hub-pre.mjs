@@ -114,7 +114,9 @@ console.log('[H4] hub 编排')
   const episodic = createEpisodicStorePre({ now })
   const facts = createFactStorePre({ io: io.io, now })
   const procedures = createProcedureStorePre({ io: io.io, now })
-  const hub = createMemoryHubPre({ stores: { episodic, facts, procedures }, now })
+  // ★T10（2026-09-20）：机械 procedure 切片已**默认关闭**。本用例测的是那条旧通路
+  //   （成功 episode → procedure 观察），故**显式开启**再断言 —— 不放宽断言。
+  const hub = createMemoryHubPre({ stores: { episodic, facts, procedures }, now, mechanicalProcedureFeedEnabled: true })
   // judgement-shadow 三类候选分流
   const rows = [
     { kindCandidate: 'semantic_candidate', suggestion: 'keep_suggest', sourceIds: ['mem_1'], subject: '项目', predicate: '构建工具', object: 'esbuild', scope: 'Workspace', confidence: 0.8 },

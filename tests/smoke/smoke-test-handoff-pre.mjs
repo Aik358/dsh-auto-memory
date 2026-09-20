@@ -152,7 +152,13 @@ const grab = (name) => { // 逐行扫描+(){} 混合配平(兼容 Object.freeze 
   return buf
 }
 const helpers = ['DEFAULT_PROMPT_LAYERS', 'neutralizePromptTemplateVars', 'truncateHead', 'truncateLinesBounded', 'stripSensitiveSections', 'sanitizeForInjection', 'scrubJunkLines', 'reflectionDigest', 'mojibakeDensity', 'MOJIBAKE_RE', 'hasStutter', 'BASE64_LINE', 'todayStr']
+// ★T7-a（2026-09-20 · 上游 #86-4）：水位/接续默认值已抽为**模块级常量**，本套件同样是
+//   "源码抽取 + new Function"执行 `renderMemoryDynamic`，故必须显式注入这两个自由变量，
+//   否则抛 `ReferenceError: DEFAULT_WATER_LEVEL_THRESHOLD is not defined`（实测已发生）。
+//   ⚠️ 注入的是**与生产同值**的常量，不是放宽断言——抽取式测试依赖的全部模块级符号都必须显式提供，
+//   否则测的就不是真代码（与上面 composeMemoryEnvelopePre 那条同因）。
 const helperCode = helpers.map((h) => grab(h)).join('\n')
+  + '\nconst DEFAULT_WATER_LEVEL_THRESHOLD = 0.75\nconst DEFAULT_AUTO_CONTINUE_THRESHOLD = 0.75\n'
 // ⚠️ 2026-09-14 T0-3：`renderMemoryDynamic` 现在把序列化交给**分项账本**（`composeMemoryEnvelopePre`），
 // 所以源码抽取式测试必须**连那个模块一起注入**——否则 `new Function` 作用域里没有这个符号
 // （报 `ReferenceError: composeMemoryEnvelopePre is not defined`）。
@@ -245,9 +251,7 @@ ok((await resolveF()).window === 131072 && (await resolveF()).source === 'fallba
 
 console.log('[handoff] G6 M-CM4 水位感知(官方 token 公式+compaction 事件)')
 function makeWaterFake(opts, ledgerCalls) {
-  // ★issue #88:checkWaterLevel 的 state 写入走 runtimeFor(agent).state —— 真引擎裸调时
-  // runtimeFor(undefined)=default ⇒ rt.state 与 fake.state 必须是同一对象(复刻该不变量)。
-  const rt = { state: {} }
+  const rt = {}
   const fake = Object.assign(makeFakeEngine(), {
     // ⚠️ 2026-09-15（方案 1）：水位账本链路现在由 `handoffChainEnabledPre()` 统一把关
     //   （= autoContinueEnabled && handoffEnabled）。本套件测的是**接续材料**链路，
@@ -260,7 +264,7 @@ function makeWaterFake(opts, ledgerCalls) {
     rememberWaterRecord: function (sid, rec) { if (!this._waterRecords) this._waterRecords = {}; if (sid) this._waterRecords[sid] = rec },
     // 被提取方法引用的宿主方法必须显式提供（沙箱约定），否则 TypeError 被外层 catch 吞成"静默不写"
     handoffChainEnabledPre: function () { return this.config.autoContinueEnabled !== false && this.config.handoffEnabled !== false },
-    state: rt.state,
+    state: {},
   })
   fake._rt = rt
   return fake
@@ -297,14 +301,6 @@ await wlBind(fOver)({ messages: [{ text: 'w'.repeat(12000) }] })
 const overRatio = Number(fOver.state.waterLevelRatio) || 0
 ok(Math.abs(overRatio - 3.004) < 0.001, '超额水位如实上报 ratio=' + overRatio.toFixed(3) + '(旧版恒为 1.5)')
 ok(fOver.state.waterLevelWindow === 1000 && fOver.state.waterLevelSource === 'manual', '窗口数值/来源同步写入 state(' + fOver.state.waterLevelWindow + '/' + fOver.state.waterLevelSource + ')')
-// ★issue #88 回归:生产路径裸调(无 ALS)时写入落点必须是 runtimeFor(agent).state —— 注入回调(withAgent 内
-// this.state)读的就是它。此 fake 故意把 runtime.state 与 default 口径分开:旧实现写 default(this.state),
-// 注入侧永远看不到;修复后写 rt.state 且 default 恒空。
-const fAlign = makeWaterFake({}, [])
-fAlign.state = {}
-await wlBind(fAlign)({ messages: [{ text: 'x'.repeat(3200) }] })
-ok((fAlign._rt.state.waterLevelRatio || 0) >= 0.8 && fAlign._rt.state.planUpdatePending && (fAlign.state.waterLevelRatio || 0) === 0,
-  '裸调写入落 runtime.state 而非 default(ratio=' + Number(fAlign._rt.state.waterLevelRatio || 0).toFixed(2) + ', planUpdatePending=' + JSON.stringify(fAlign._rt.state.planUpdatePending || null) + ')')
 // 会话级记录(2026-09-08):切会话时按 sessionId 取数,不再显示别的会话的水位
 const fSess = makeWaterFake({}, [])
 const wlSess = wlBind(fSess)

@@ -117,7 +117,14 @@ ok(layer2.includes('tool_call: read(') && layer2.includes('tool_result: 工具�
 ok(r.carryText.includes('(白板比账本旧——以账本为准)'), 'H7 过期提示(白板早于账本)')
 ok(!!r.transcriptPath && existsSync(r.transcriptPath), 'H5 旧会话转写文件落盘')
 const tr = readFileSync(r.transcriptPath, 'utf8')
-ok(tr.includes('tool_call**: read(') && tr.includes('tool_result**: 工具结果') && tr.includes('模型第23条'), 'H5 转写含工具标记与消息')
+// ★L3.6(2026-09-17): 转写**瘦身**后只留用户输入与助手最终输出, 工具事件压成一行计数 ⇒
+//   "转写含工具标记"这条旧判据已**随设计作废**(实测工具事件是正文的 3 倍以上)。
+//   新判据: ①正文消息在 ②如实自述省略了多少工具事件 ③工具标记**不得**再进转写正文
+//   (注意: 第2层"近期线程"仍保留工具标记, 见上方 H4 —— 两者分层不同, 不是矛盾)。
+ok(tr.includes('模型第23条'), 'H5 转写含正文消息')
+ok(/省略了 \d+ 次工具调用与 \d+ 条工具结果/.test(tr), 'H5 转写如实自述省略了多少工具事件')
+ok(!tr.includes('tool_call**: read(') && !tr.includes('tool_result**: 工具结果'),
+  'H5 ★ 工具标记不再进转写正文(瘦身生效;层2 仍保留, 见 H4)')
 ok(r.wsBase === 'dam-continue-proj' && Number(r.contSeq) >= 1 && r.agentPreset === 'default',
   'H6 contSeq/wsBase/agentPreset(' + r.contSeq + ' / ' + r.wsBase + ')')
 ok(r.reasoningEffort === 'max' && r.carryText.includes('思考档位 max'), 'H6 材料内声明沿用模型+思考档位')

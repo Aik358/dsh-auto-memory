@@ -45,7 +45,10 @@ console.log('[handoff-anchor] G0 源码守卫')
   ok(posImport > posFn && posImport < posContSeq, 'T1 模块经函数内动态 import 引入(不加静态 import)')
   const block = SRC.slice(posImport, posContSeq)
   ok(block.includes('catch (eAnchor) {}'), '整块 fail-soft try/catch(任何失败跳过表,不阻塞接续)')
-  ok(block.includes("parts.push('【锚点表"), '锚点表 push 进 parts(末尾,预算截断时最先牺牲=自动回退平铺)')
+  // ★L3(2026-09-17) 更新:数组已由单数组 `parts` 拆成 head/nav/bulk 三段。锚点表仍进
+  //   **bulkParts**(可截断的身体层)且仍是其中**最后 push 的一段** ⇒ 原判据「预算截断时最先牺牲
+  //   = 自动回退平铺」的语义**不变**(nav 是不截断的逃生通道, 锚点表本就不该进 nav)。
+  ok(block.includes("bulkParts.push('【锚点表"), '锚点表 push 进 bulkParts(末尾,预算截断时最先牺牲=自动回退平铺)')
   ok(block.includes("maxChars: 48"), '每条 L0 ≤48 字符(≈20-30 token)')
   ok(block.includes('.slice(0, cap)') && block.includes(", 10)"), '每源条数上限 10')
   ok(block.includes("p.notesPath") && block.includes("p.logPath"), '数据源=notesPath+logPath(锚点载体文件)')

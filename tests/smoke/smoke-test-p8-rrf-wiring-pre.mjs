@@ -66,7 +66,7 @@ function bindRecall(fake) {
   const fnSrc = extractFn("async recall(query, limit = 8, agent, scope = 'all', opts = null) {")
   const l0Url = JSON.stringify(new URL('../../lib/l0-extract.js', import.meta.url).href)
   const rrfUrl = JSON.stringify(new URL('../../lib/recall-fusion.js', import.meta.url).href)
-  const arrow = ('async ' + fnSrc.slice(fnSrc.indexOf('('), fnSrc.indexOf(') {') + 1) + ' => ' + fnSrc.slice(fnSrc.indexOf(') {') + 2)).replaceAll("'./l0-extract.js'", l0Url).replaceAll("'./recall-fusion.js'", rrfUrl)
+  const arrow = ('async ' + fnSrc.slice(fnSrc.indexOf('('), fnSrc.indexOf(') {') + 1) + ' => ' + fnSrc.slice(fnSrc.indexOf(') {') + 2)).replaceAll("'./l0-extract.js'", l0Url).replaceAll("'./recall-fusion.js'", rrfUrl).replaceAll("'./note-status-apply.js'", JSON.stringify(new URL('../../lib/note-status-apply.js', import.meta.url).href))
   const factory = new Function('path', 'homedir', 'return { recall: ' + arrow + ' };')
   const obj = factory.call(fake, path, homedir)
   return (...args) => obj.recall.apply(fake, args)

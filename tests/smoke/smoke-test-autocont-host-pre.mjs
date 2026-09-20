@@ -124,10 +124,15 @@ function makeEngine(opts) {
     // 不许按比例 arm)。抽出的函数体在 new Function 里重建,作用域中没有模块级绑定 ⇒
     // 必须与 diag/AbortSignal 一并注入,否则抛 ReferenceError 并被 armAutoContinue 自身的
     // catch 吞掉,表现为"水位达标却不 arm"。
+    // ★T7-a(2026-09-20 · 上游 #86-4):同理,`DEFAULT_AUTO_CONTINUE_THRESHOLD` 已从内联 0.75
+    // 改为**模块级常量**,抽取出的 autoContinueState 会引用它 ⇒ 必须注入(同值 0.75),否则
+    // ReferenceError 被 catch 吞掉,表现为"automContState 拿不到 armed"(实测已发生)。
     // 纪律:此后凡被抽出的函数**新增外部依赖**(模块级绑定/全局),都必须加进这张注入表,
     // 否则同样以"静默不生效"的形式失败。
-    const obj = new Function('diag', 'AbortSignal', 'shouldArmAutoContinuePre', 'return {' + extractFn(h) + '};')(
-      () => {}, { timeout: () => undefined }, shouldArmAutoContinuePre)
+    const obj = new Function('diag', 'AbortSignal', 'shouldArmAutoContinuePre',
+      'DEFAULT_AUTO_CONTINUE_THRESHOLD', 'DEFAULT_WATER_LEVEL_THRESHOLD',
+      'return {' + extractFn(h) + '};')(
+      () => {}, { timeout: () => undefined }, shouldArmAutoContinuePre, 0.75, 0.75)
     const key = Object.keys(obj)[0]
     fns[key] = obj[key].bind(eng)
   }
@@ -403,12 +408,10 @@ console.log('[autocont-host] A9 接续会话标题 + 双口径(2026-09-10 实机
   // ②双口径(2026-09-13 起):水位/ring 同用一个分母(判定窗 = 官方声明窗口,provider 自报过硬限时取 min)——
   //   旧「可用额度(窗口−预留)」分母已废(reserve 退出分母,NEXT-VERSION-TODO 改点1);
   //   保留的第二个数是「距硬墙余量」(硬限 − 预留)。ring 与触发比例同分母是硬性验收项。
-  // ★issue #88(2026-09-19):checkWaterLevel 的 state 写入改走 rtOwn.state(裸调落点修复),
-  // 以下两条正则放宽为 `任意.state.` 形态,锁的是分母公式与 wall 公式本身。
-  ok(/\.state\.waterLevelRing = \(triggerWin > 0 && Number\.isFinite\(estTokens\)\) \? \(estTokens \/ triggerWin\) : 0/.test(SRC),
+  ok(/this\.state\.waterLevelRing = \(triggerWin > 0 && Number\.isFinite\(estTokens\)\) \? \(estTokens \/ triggerWin\) : 0/.test(SRC),
     '水位记录同时算出 ring 读数,且与触发比例同分母(判定窗)')
   ok(/const hardWin = Number\(sig\.overflow && sig\.overflow\.windowTokens\) \|\| 0/.test(SRC) &&
-     /\.state\.waterLevelWall = hardWin > 0 \? Math\.max\(0, hardWin - reserve\) : 0/.test(SRC),
+     /this\.state\.waterLevelWall = hardWin > 0 \? Math\.max\(0, hardWin - reserve\) : 0/.test(SRC),
     '撞过墙的会话能算出「真实可写上限」(provider 自报硬限 − 预留),供显示距墙剩余')
   ok(/ring: Number\(this\.state && this\.state\.waterLevelRing\) \|\| 0/.test(SRC) && /wall: Number\(this\.state && this\.state\.waterLevelWall\) \|\| 0/.test(SRC),
     'arm 时把双口径带进 armed 对象(state 缺失也不得让 arm 失败)')

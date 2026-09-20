@@ -23,3 +23,8 @@ _tmp-e5/
 __pycache__/
 artifacts/release-c2-asset-pack/package/
 artifacts/release-c2-asset-pack/*.tgz
+
+# 发布基座不得含备份文件（2026-09-21）
+*.bak
+*.bak-*
+

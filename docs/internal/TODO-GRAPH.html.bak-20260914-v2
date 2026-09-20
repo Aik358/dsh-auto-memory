@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>dsh-auto-memory · 待办排期图</title>
+<style>
+  :root{
+    --paper:#F4F1EB; --ink:#17171A; --accent:#E9470C; --muted:#6B6B73;
+    --line:#D8D3C8; --card:#FFFFFF; --card2:#FAF8F4; --shadow:0 1px 2px rgba(23,23,26,.06),0 8px 20px rgba(23,23,26,.05);
+    --p0:#E9470C; --p1:#C9860A; --p2:#3E6C8E; --decide:#7A3E9D; --defer:#9A9AA3; --inbox:#2E7D6B;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --paper:#141416; --ink:#EDEBE7; --muted:#9C9CA4; --line:#2C2C31; --card:#1C1C20; --card2:#222227; --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.35); }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);
+    font:14px/1.6 "Segoe UI","PingFang SC","Microsoft YaHei",system-ui,sans-serif;}
+  header{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--paper) 88%,transparent);
+    backdrop-filter:blur(10px);border-bottom:1px solid var(--line);padding:14px 22px 12px}
+  h1{margin:0 0 2px;font-size:17px;letter-spacing:.2px}
+  h1 span{color:var(--accent)}
+  .sub{color:var(--muted);font-size:12px}
+  .bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px}
+  .chip{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;
+    padding:3px 11px;font-size:12px;cursor:pointer}
+  .chip[data-on="1"]{border-color:var(--ink);background:var(--ink);color:var(--paper)}
+  .btn{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:8px;
+    padding:4px 10px;font-size:12px;cursor:pointer}
+  .btn:hover{border-color:var(--accent);color:var(--accent)}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:8px;font-size:12px;color:var(--muted)}
+  .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;vertical-align:1px}
+  main{max-width:1180px;margin:0 auto;padding:22px 22px 80px}
+  .phase{position:relative;margin:0 0 10px;padding-left:30px}
+  .phase::before{content:"";position:absolute;left:9px;top:34px;bottom:-14px;width:2px;background:var(--line)}
+  .phase:last-child::before{display:none}
+  .phead{display:flex;align-items:center;gap:10px;margin:26px 0 12px;position:relative}
+  .phead::before{content:"";position:absolute;left:-26px;top:50%;transform:translateY(-50%);
+    width:12px;height:12px;border-radius:50%;background:var(--paper);border:2px solid var(--muted)}
+  .phase[data-tone="decide"] .phead::before{border-color:var(--decide)}
+  .phase[data-tone="p0"] .phead::before{border-color:var(--p0)}
+  .phase[data-tone="p1"] .phead::before{border-color:var(--p1)}
+  .phase[data-tone="p2"] .phead::before{border-color:var(--p2)}
+  .phase[data-tone="inbox"] .phead::before{border-color:var(--inbox)}
+  .phead h2{margin:0;font-size:15px}
+  .phead .hint{color:var(--muted);font-size:12px}
+  .cards{display:flex;flex-direction:column;gap:12px}
+  .card{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--muted);
+    border-radius:12px;padding:12px 14px;box-shadow:var(--shadow);position:relative}
+  .card[data-tone="decide"]{border-left-color:var(--decide)}
+  .card[data-tone="p0"]{border-left-color:var(--p0)}
+  .card[data-tone="p1"]{border-left-color:var(--p1)}
+  .card[data-tone="p2"]{border-left-color:var(--p2)}
+  .card[data-tone="defer"]{border-left-color:var(--defer);opacity:.72}
+  .card[data-added="1"]{border-left-color:var(--inbox);background:var(--card2)}
+  .card .row1{display:flex;flex-wrap:wrap;gap:8px;align-items:baseline}
+  .lvl{font-weight:700;font-size:12px;color:var(--accent);letter-spacing:.4px}
+  .title{font-weight:600;font-size:14px}
+  .tag{font-size:11px;border:1px solid var(--line);border-radius:999px;padding:1px 8px;color:var(--muted)}
+  .tag.st{background:color-mix(in srgb,var(--p0) 10%,transparent);border-color:transparent;color:var(--p0)}
+  .tag.dep{background:color-mix(in srgb,var(--p2) 12%,transparent);border-color:transparent;color:var(--p2)}
+  .kill{position:absolute;right:8px;top:8px;border:0;background:transparent;color:var(--muted);
+    cursor:pointer;font-size:14px;line-height:1}
+  .kill:hover{color:var(--accent)}
+  ul.pts{margin:8px 0 0;padding-left:18px}
+  ul.pts li{margin:2px 0}
+  .crit{margin-top:8px;padding:8px 10px;border-radius:8px;background:var(--card2);border:1px dashed var(--line)}
+  .crit b{font-size:12px;color:var(--muted);font-weight:600}
+  .refs{margin-top:8px;font-size:12px;color:var(--muted)}
+  .refs code{background:var(--card2);border:1px solid var(--line);border-radius:5px;padding:0 4px}
+  .slot{border:1px dashed var(--line);border-radius:12px;padding:12px 14px;color:var(--muted);
+    background:transparent;display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .slot span{font-size:12.5px}
+  .addbtn{border:1px dashed var(--line);background:transparent;color:var(--muted);border-radius:10px;
+    padding:8px;font-size:12.5px;cursor:pointer}
+  .addbtn:hover{border-color:var(--inbox);color:var(--inbox)}
+  .note{border:1px solid var(--line);background:var(--card);border-radius:12px;padding:12px 14px;margin-top:14px;font-size:12.5px;color:var(--muted)}
+  .note b{color:var(--ink)}
+  textarea{width:100%;height:130px;margin-top:8px;border:1px solid var(--line);border-radius:8px;
+    background:var(--card2);color:var(--ink);padding:8px;font:12px/1.5 ui-monospace,Consolas,monospace;display:none}
+  table{margin-top:10px;border-collapse:collapse;font-size:12.5px;width:100%}
+  th,td{border-bottom:1px solid var(--line);text-align:left;padding:5px 8px;vertical-align:top}
+  th{color:var(--muted);font-weight:600}
+  @media print{ header{position:static} .kill,.addbtn,.slot .btn{display:none} }
+</style>
+</head>
+<body>
+<header>
+  <h1>dsh-auto-memory · <span>待办排期图</span></h1>
+  <div class="sub" id="sub">自上而下 = 时间顺序 · 依赖用「依赖」标签标注 · 虚线框是留给新待办的空位</div>
+  <div class="bar">
+    <button class="chip" data-filter="all" data-on="1">全部</button>
+    <button class="chip" data-filter="decide">等你拍板</button>
+    <button class="chip" data-filter="p0">P0 主线</button>
+    <button class="chip" data-filter="p1">P1</button>
+    <button class="chip" data-filter="p2">P2</button>
+    <button class="chip" data-filter="defer">推后</button>
+    <button class="chip" data-filter="inbox">待入池</button>
+    <button class="chip" data-filter="main">只看 3.0 主轨</button>
+    <span style="flex:1"></span>
+    <button class="btn" id="exportBtn">导出 JSON</button>
+    <button class="btn" id="resetBtn">清空我加的</button>
+  </div>
+  <div class="legend">
+    <span><i class="dot" style="background:var(--decide)"></i>待拍板</span>
+    <span><i class="dot" style="background:var(--p0)"></i>P0（先做，工程落地）</span>
+    <span><i class="dot" style="background:var(--p1)"></i>P1（紧接/并行）</span>
+    <span><i class="dot" style="background:var(--p2)"></i>P2（待拍板）</span>
+    <span><i class="dot" style="background:var(--defer)"></i>明确推后</span>
+    <span><i class="dot" style="background:var(--inbox)"></i>待入池（你加的）</span>
+  </div>
+  <div class="note" style="margin:12px 22px 0;border-left:4px solid var(--accent)">
+    <b>3.0 主轨（快刀斩乱麻 · 2026-09-14 定）</b>：本轮<b>只做底层</b>——① 会话检索解锁 ② 三层补全 + 验收门 ③ 分级精确检索 ④ 记忆纠错与索引稳定（块级缓存 / supersede / 防抖）⑤ 验收判据换代 ⑥ 三层量化实验 ⑦ 语义框架审计。
+    <b>其余一律封存到 3.1</b>：接续开关、模型选择、日历、手机端指引、procedural 重构、白板 combine、界面 / 文档 / 分发。用户没反馈大问题 → 线上不动，攒成 3.0 一次发。
+  </div>
+</header>
+
+<main>
+  <div id="mount"></div>
+
+  <div class="note">
+    <b>怎么用：</b>① 每个「待入池」空位右边有「＋ 加一条」，点了输入标题就进图（存在你浏览器本地，不会上传）；
+    ② 每条卡片右上角 ✕ 可以隐藏（也可恢复，见「清空我加的」）；
+    ③ 加完点「导出 JSON」，把内容贴给我，我就把群反馈/新问题正式并进排期；
+    ④ 卡片里写「<b>群反馈第 N 条</b>」的，就是你 2026-09-14 从群里喂进来的那 9 项，可直接对照群消息；
+    ⑤ 打印或另存 PDF 都行。
+    <textarea id="io" readonly></textarea>
+  </div>
+</main>
+
+<script>
+(function(){
+  "use strict";
+  var KEY = "dam-todo-graph-v1";
+  var DATA = {
+    updated: "2026-09-14（第二批群反馈已并入）",
+    phases: [
+      { id:"decide", tone:"decide", title:"阶段 0 · 已暂停（做完底层再拍板）", hint:"与底层无关的拍板项都挂这里，不阻塞开发" },
+      { id:"p0", tone:"p0", title:"阶段 1 · 3.0 主轨（底层 · 语义 / 算法 / 实验）", hint:"只做这些；做不完不发版" },
+      { id:"p1", tone:"p1", title:"阶段 2 · 3.0 主轨续（验收 / 实验 / 语义审计）", hint:"同属底层，可并行" },
+      { id:"p2", tone:"p2", title:"阶段 3 · 封存（3.1 及以后）", hint:"本轮不碰——用户小需求都在这里" },
+      { id:"defer", tone:"defer", title:"阶段 4 · 封存（不碰）", hint:"界面 / 文档 / 分发 / 冷启动余项" },
+      { id:"inbox", tone:"inbox", title:"阶段 5 · 待入池", hint:"留空位给你要喂进来的群反馈与新问题" }
+    ],
+    items: [
+      { id:"D1", phase:"p0", lvl:"✅ 已拍板", title:"① 会话检索口径：C + B（含丁组允许改字段）", who:"你已拍板 2026-09-14", status:"已拍板", est:"半天",
+        points:["<b>拍板结果</b>：C=就地修复 51 个文件（每文件先备份、写盘前跑启动级契约校验）＋ B=给 DSH 索引器加「跳过+计数」保险（保留全部会话；dsh 升级会覆盖，需留重打脚本）",
+                "<b>丁组允许就地改字段</b>：cc245cf1 空工具名 → 占位名 \"(unnamed)\"；fc931245 的 kind:anchored-monitor → plugin（各 1~2 个字段，不碰任何消息正文）",
+                "<b>四组构成</b>：39 个 descriptor v2→v3 ／ 7 个 permission·preset 删多余 origin ／ 3 个 seq 缺口（重编号 + 同步重映射 sourceEventSeqs）／ 丁组 2 个改字段",
+                "<b>禁删行</b>：seq 必须严格等于行序号——删任一行 = 该文件永久不可读",
+                "全库复测通过后，<b>由你重启一次 dsh web</b>（重启我不动）"],
+        note:"已弃用口径：A 只隔离 ／ D 导出后隔离 ／ E 只上报（若 B 的重打脚本维护负担太大，再回退到 A）",
+        refs:["SESSION-FILE-REPAIR-PROTOCOL.md","TODO-BACKLOG §0 看板 P0-①"] },
+
+      { id:"D2", phase:"decide", title:"【已暂停】⑥ 白板路线：把看板 combine 进自己的白板", who:"已定方向", status:"暂停（做完底层再谈）",
+        points:["目标（你的原话）：让用户实时看到进展 + 整个项目的流程",
+                "不装独立插件；吸收 dsh-graph 的范式（版本泳道 / 目标 / 判据先于执行 / 事件流唯一事实源）",
+                "落地载体：仓库里的 WB-GRAPH 方案（P0→P3）+ 白板看板化（方案 §10）"],
+        refs:["WB-GRAPH-INTEGRATION-PLAN.md §5 / §8 / §10"] },
+
+      { id:"D3", phase:"decide", title:"【已暂停】WB-GRAPH 的 8 个拍板点什么时候拍", who:"你", status:"暂停（做完底层再谈）",
+        points:["①P2/P3 是否立项 ②sidecar 位置 ③静态纪律是否一次性更新 ④工具命名",
+                "⑤是否进 2.6.0 ⑥水位骨架 fail 策略 ⑦PLAN 判据强度 ⑧P2-6 条目锚点",
+                "P0（零代码）/ P1（≈190 行）不等这 8 点，可立即做"],
+        refs:["WB-GRAPH-DECISIONS-20260914.md","TODO-BACKLOG §A"] },
+
+      { id:"D4", phase:"p0", lvl:"口径 · 已定默认", title:"④ 记忆纠错两问 → 我先按「默认可逆」实现，你随时改", who:"执行方（默认口径）", status:"默认口径（可回退）",
+        points:["<b>问题一（压缩上限 + 排除用户提示）</b>：默认按「<b>注入量上限（条数 / 字符）+ 可排除来源</b>」实现（即 P0-④d）；若你本意是「压缩蒸馏时的取舍规则」，改动点集中在取材规则，可回退",
+                "<b>问题二（AI 能否直接改记忆）</b>：默认走 <b>只读 + 提案</b> —— AI 不直接写记忆文件，产出「建议修改」清单由你确认；破坏性最小，等 P0-④b（supersede）落地后再考虑放开低风险档",
+                "两条都是<b>可逆默认</b>：先把底层跑起来，不做成阻塞项；你哪天真要改口径，我再改实现"],
+        refs:["ROADMAP.md A1 / A2","MEMORY-MUTATION-AND-INDEX-DESIGN.md"] },
+
+      { id:"D5", phase:"p2", lvl:"✅ 已拍板", title:"【已暂停】⑦ 跨会话 / 跨 Agent 检索：路径 C 已定 + 等大排期（剩 6 条拍板点）", who:"你已拍板 2026-09-13", status:"已拍板 · 暂停（随大排期）",
+        points:["路径已选 <b>C（分期版 A）</b>：先把插件自己承诺的能力做实，再扩到外部 Agent 源（对应 P2-⑦）",
+                "体量与成本已实测：见 P2-⑦ 卡片；全量解码约 1 分钟 CPU，无需新装依赖",
+                "<b>拍板原话（09-13 02:58 日志）</b>：路径选 <b>C（分期版 A）</b>，并「<b>等大排期一起定，暂不动工</b>」",
+                "剩下没定的：<code>CROSS-SESSION-SEARCH-PATH-DECISION.md</code> 里的 <b>6 条拍板点</b>（与「大排期」捆绑，需要时逐条过）"],
+        note:"不做也不会烂——调研与成本模型已落盘，随时可启动",
+        refs:["CROSS-SESSION-SEARCH-RESEARCH.md","CROSS-SESSION-SEARCH-PATH-DECISION.md","ROADMAP.md A4b"] },
+
+      { id:"P0-A", phase:"p2", lvl:"P0-A", title:"白板「接续」开关互锁 + 取消强制接续（成本）", who:"执行方", status:"封存（3.1）", est:"约半天",
+        points:["现况 bug：开了「接续」之后「强制接续」点不动，要关只能把整个白板关掉（互锁失效）",
+                "诉求：默认<b>不强制接续</b>——强制接续会让主力 agent 用贵模型（成本诉求）",
+                "群反馈第 1 条（老板提的）"],
+        crit:["两个开关互不卡死、可独立开关","不勾强制时，压缩后不自动接续（或严格按用户设置）"] },
+
+      { id:"P0-B", phase:"p2", lvl:"P0-B", title:"设置里 sub agent 的「模型 + 思考强度」选不动", who:"执行方", status:"封存（3.1）", est:"约半天",
+        points:["现况：能读出来，但选不动；用户估计「用的时候也没法复制」",
+                "排查面：控件 disabled / 枚举来源 / 选中值持久化写入路径",
+                "群反馈第 2 条"],
+        crit:["设置页可选，且有一次实际生效证据（跑一次归纳，确认落到所选模型）"] },
+
+      { id:"P0-1", phase:"p0", lvl:"P0-①", title:"解锁会话检索（可开工）", who:"执行方 + 你重启", status:"待开工（口径已定）", est:"半天", deps:["D1"],
+        points:["51 个阻塞文件：39 个 descriptor v2 / 7 个 permission-preset 多 origin / 3 个 seq 缺口 / 1 个空工具名 / 1 个 kind=anchored-monitor",
+                "处理完 → 你重启 → 首次检索自动重建索引"],
+        crit:["memory_recall(scope=\"sessions\") 返回命中，不再报 disabled / descriptor","51 个文件各有明确去向（修复或隔离或跳过计数）"] },
+
+      { id:"P0-4", phase:"p0", lvl:"P0-④", title:"记忆增删 × 少重建：块级向量缓存 + 检索 fail-open", who:"执行方", status:"待开工", est:"约 1 天", deps:["P0-1"],
+        points:["持久化改 Map&lt;chunkId, vector&gt;；commit 时做集合差 → 只嵌新增块",
+                "identity 校验收窄到 embedding 配置（换模型才全量重算）",
+                "索引失败 → 退回词法 + 明确降级标注，绝不整条失败"],
+        crit:["编辑 1 条只嵌变化块","删除 1 条 = 零 encode","故意破坏一个源文件仍返回词法命中"],
+        refs:["MEMORY-MUTATION-AND-INDEX-DESIGN.md P0"] },
+
+      { id:"P0-4b", phase:"p0", lvl:"P0-④b", title:"supersede 改正语义（改正=新增声明，不物理删）", who:"执行方", status:"待开工", est:"约半天", deps:["P0-4"],
+        points:["新记录声明 supersedes:&lt;旧id&gt;；旧条标记 supersededBy 但**不退场**",
+                "检索过滤/降权被替代项；审计视图仍能看到「当时为什么这么记」"],
+        crit:["被 supersede 的记录不出现在检索结果、但出现在审计视图"] },
+
+      { id:"P0-4c", phase:"p0", lvl:"P0-④c", title:"差量同步：upsert + tombstone", who:"执行方", status:"待开工", est:"约 1 天", deps:["P0-4b"],
+        points:["miv 退化为诊断用；缓存键改为 memoryId → recordDigest 集合","发送成本与改动量成正比"],
+        crit:["改 1 条不再重发整份语料"] },
+
+      { id:"P0-4d", phase:"p0", lvl:"P0-④d", title:"注入压缩上限 + 可排除来源（坏记忆不再反复灌入）", who:"执行方", status:"待开工", est:"约半天", deps:["P0-4b"],
+        points:["给自动注入设上限（条数/字符）——<b>口径待 D4 确认</b>（也可能是「压缩蒸馏的取舍规则」）",
+                "支持把某条来源整个排除（例：已判定错误的白板段/日志段）",
+                "与 supersede 同一套状态：被替代项默认不进注入",
+                "群反馈第 4 条：「避免因为记忆问题导致结果一路走错」"],
+        crit:["被排除的来源在后续注入中 0 次出现","上限生效且超限时的取舍规则写死在代码里（可测）"],
+        refs:["ROADMAP.md A2","MEMORY-MUTATION-AND-INDEX-DESIGN.md"] },
+
+      { id:"P0-4e", phase:"p0", lvl:"P0-④e", title:"索引同步防抖：持续写入会让语义索引永远不就绪（实测卡死 20 分钟）", who:"执行方", status:"已实测复现", est:"约半天", deps:["P0-4"],
+        points:["<b>现场</b>：诊断日志从本地 07:43 到 08:01 一直在刷同一行 —— <code>ctx-host drop: index-not-ready:sync-in-progress cv=…</code>（cv 从 175 涨到 612，即<b>每轮都在换新语料版本、每轮都触发新一轮全量重建</b>），期间注入被显式丢弃（+N suppressed in 30s）",
+                "<b>成因</b>：语料身份是整份哈希（miv），而最近每轮都在写记忆（日志 / 笔记）→ 语料一直在变 → 新 miv 的全量重嵌还没跑完，下一轮又变 → <b>重建永远追不上</b>；旁证=最新向量文件停在 07:42:56、fv2 候选生成停在 07:44:30，之后 20 分钟零新产物",
+                "<b>后果</b>：语义唤回 packet 自 07:43:45 起停止注入（你看到的「语义唤回没了」就是它），recall 也静默退化为纯词法",
+                "修法：①块级向量缓存（P0-④：只嵌变化块，重建成本与改动量成正比）②corpus 变更<b>合并 / 防抖</b>（一段时间内的多次写入只触发一次 sync）③长时间未就绪<b>不得静默丢弃</b>：要么用旧版本向量继续服务并标注过期，要么在界面上明示",
+                "<b>更硬的定性（08:09 补测）</b>：worker 子进程 CPU 累计 659.4s、<b>3 秒内增加 0.00s（在闲着）</b>，而索引产物从 07:43 到 08:09 <b>26 分钟零更新</b>；对比此前一次重建只花 <b>6 秒</b>（07:42:50 → 07:42:56）→ <b>不是「重建慢」，是同步状态机卡死 / 任务被反复作废</b>；「持续写入导致饥饿」仍是待复测假设（重启后单独验证）",
+                "<b>已排除的错误猜测</b>：曾怀疑「两个 python worker 抢同一份索引」——实测为<b>父子结构</b>（venv python 父进程 5MB → 用 <code>D:\\PsychoPy\\python.exe</code> 重新拉起自己，子进程 2.6GB 装着模型），是<b>一个逻辑 worker</b>，不是两个竞争者"],
+        crit:["连续写 10 轮记忆后索引仍能就绪（复跑：ctx-host 不再刷 index-not-ready）","未就绪期间注入不丢空——至少出现明确的降级标注","重嵌耗时与改动量成正比（改 1 条不触发全量）"],
+        refs:["MEMORY-MUTATION-AND-INDEX-DESIGN.md P0 / P2","ROADMAP.md A1"] },
+
+
+      { id:"P0-2", phase:"p0", lvl:"P0-②", title:"OpenViking 式三层补全（施工全部完成 · 待宿主重启真实验收）", who:"执行方", status:"施工完成（C1/C2/C3/C4/C5/C6/C7 全 ✅；**待宿主重启后真实验收**）", est:"约 2 天", deps:["P0-1"],
+        points:["<b>阶段门（用户 2026-09-14 明确）</b>：「三层先修完并真验收通过，才能进入语义模型」——本项是 P1-⑨ 语义框架审计与引擎调优的前置",
+                "<b>2026-09-14 施工结果（全部带能失败的断言）</b>：C1 抽取层补 layer/status（21）· C2 召回侧带层与检索侧过滤（21）· C4 Tier-0 目录生成器（33）· C7 注入块 0-1 相似度与排名（29）· <b>C3 接线 + C5 注入层 + C6 验收套件</b>（C5 83、C6 122，另 7 处定向变异全部报红）；全量 <code>tests/smoke</code> <b>77 套件 0 失败</b>",
+                "<b>关键事实更正（2026-09-14）</b>：每轮 <code>&lt;memory_system&gt;</code> 块由 <code>renderMemoryDynamic</code> 产出，<b>不是</b> <code>injectionText</code>（后者全仓零引用的死代码，内容是外部 AI 记忆清单）——此前文档与本卡按旧认知写过，以此为准",
+                "<b>验收未完成的最后一步（必须由用户做）</b>：重启 dsh web 后，注入里应出现 <code>[Tier-0 常驻目录 …]</code> + <code>[层账]</code> + <code>[降级]</code>（有缺层时）+ <code>[闸门]</code>，且参考块带 <code>Score: 0.xx (rank n/m)</code>——这才是「真过」",
+                "<b>⚠️ 行为变更需知</b>：C5 的 <code>tier0CatalogEnabled</code> <b>默认开</b>，且目录段长度从证据段预算里先扣（默认预算下 4 个证据段各约 135 字符，原约 275）→ 每轮 token 成本与日志/笔记注入长度都会变；C3 的 <code>l0IndexEnabled</code> <b>默认开</b>（用户 2026-09-14 裁定；设 false 才回到零 IO）",
+                "<b>已知残留</b>：① Tier-2 实践上仍是「更长的摘录」（受激活候选 20–480 字限制），取整篇原文仍走 expand；② Python 档激活帧不带 query，其闸门只能开到 tier1；③ C3 索引为「按层各一份」而非单文件（<code>l0-index-pre</code> 每次只接受单一 layer）",
+                "<b>实测缺口（2026-09-14 代码级复核）</b>：①无 Tier-0 带状态目录；②L0 条目无 layer（用户级/项目/日志/反思/白板）与 status（current/superseded/retracted）；③无递进闸门（现为 top-K 混排，语料=日志 40+反思 30+笔记+用户记忆）；④<code>l0-index-pre.js</code> 仍<b>零引用未接线</b>（L0 层没有自己的向量索引，现有向量是对原文块做的）；⑤中间「概览层」不存在——从 ~90 字 L0 一步跳到原文全文",
+                "「以为过了、其实没过」的病根＝验收只验「声明过的项」→ 治法见 P1-⑤（能力可达性）与 P1-⑯（量化实验）",
+                "施工顺序：①三层契约（每层的输入/产出/token 预算/状态位；零代码，可立即做）②L0 补 layer+status，检索按状态过滤 ③接线 l0-index-pre.js ④Tier-0 目录 + 递进闸门 ⑤验收套件（每条能力一个能失败的断言）",
+                "待裁：<code>metamem-rules-pre.js</code> 是否要做"],
+        crit:["三层各自可独立验证：Tier-0 常驻 ≤N token；L0 每条带 layer+status；expand 能按需取回原文",
+              "被 supersede / retracted 的条目不出现在检索结果（造样本可断言）",
+              "验收套件里每条能力都有一个「默认配置下可达」的断言，故意破坏时确实会红"],
+        refs:["TODO-BACKLOG §K.0（四大问题之二）","ROADMAP.md A3","P1-⑯"] },
+
+      { id:"P0-3", phase:"p0", lvl:"P0-③", title:"分级精确检索：Tier-0 目录 → L0 摘要 → 原文", who:"执行方", status:"待开工", est:"约 1 天", deps:["P0-2"],
+        points:["Tier-0：短目录常驻（标题+一句+layer+status+日期），负责「要不要用这条记忆」",
+                "Tier-1：L0 摘要列表（现状）；Tier-2：expand 取原文",
+                "仲裁：当前认知（笔记）优先于历史日志；被更正项过滤；输出带 provenance"],
+        crit:["Tier-0 ≤N token 可注入","有更正的场景返回更正后的条目且带来源+日期+状态"] },
+
+      { id:"P1-5", phase:"p1", lvl:"P1-⑤", title:"验收判据换代：能力可达性套件", who:"执行方", status:"待开工", est:"约半天", deps:["P0-1","P0-2","P0-3","P0-4"],
+        points:["每条对外承诺（尤其 guidance 写给模型的能力）必须有「默认配置下可达」的证据",
+                "文档里的默认值/接线状态由测试锁住，杜绝「文档说 A、代码是 B」"],
+        crit:["新增套件覆盖 scope=\"sessions\"、语义臂、外部源、白板语料"] },
+
+      { id:"P1-6", phase:"p2", lvl:"P1-⑥", title:"白板 combine：实时进展 + 全流程可视化", who:"执行方", status:"契约层已落地（B 线，零代码）；界面层封存（3.1）", est:"分步", deps:["D2"],
+        points:["P0｜判据文档约定（零代码，可立即做）—— <b>已完成：<code>docs/internal/WB-FORMAT-CONVENTION.md</code> v1</b>（2026-09-14，用户批准 S10 后落地）：三种页面时态 · <b>锚点契约</b>（卡片 id = <code>mem_</code>+sha256(workspaceKey+页面路径+卡片标题) 前 32 位十六进制；重排不变、改名换 id 且旧 id 须 supersede 留痕）· 索引派生格式（与 Tier-0 目录同源，不许手抄）· 写入门只做「卡片集合比对」（丢卡可检出、拒绝静默消失）· 人机分区（<code>&lt;!-- model --&gt;</code> / <code>&lt;!-- user --&gt;</code>，整篇重写须原样带回用户段）· lint 五类（孤立/陈旧/被提及无独立卡/缺交叉引用 = 零 token；矛盾检测须手动触发）· 答案归档回流 · 6 条能失败的验收",
+                "<b>顺序结论（2026-09-14 定）</b>：Karpathy 那套要拆成两层 —— <b>契约层（格式/锚点/索引派生）必须在 RAG 底层之前</b>（它决定语料形状，先做 RAG 就得对语料重做一遍）；<b>界面层（client.js 渲染/看板交互）必须排在 RAG 之后</b>（它只是视图）。故本卡的契约层已提前进 B 线，界面层仍封存",
+                "P1｜判据校验中间件（≈190 行；咽喉=writeHandoffLedger / writePlanSnapshot）",
+                "P2｜sidecar 结构化存储（≈240 行，需拍板）",
+                "P3｜两个遍历工具 + 看板 UI（≈165 行；工具数 14→16，三处测试硬锁必须同步）",
+                "<b>群反馈第 1 条的两个目标准入本项</b>：①不启动 agent 也能单独打开 graph 看项目总进展（不用用户自己记）②这份进展同步注入 agent，使多轮压缩后仍准确掌握",
+                "看板化：白板从「接续专用」升级为「人机交互面」（方案 §10 的七大待解点）"],
+        crit:["能按版本回答「改了什么 / 哪些是弯路」","用户在面板上实时看到进展（目标/阶段/判据）","不启动 agent 也能单独打开看到项目总进展（目标①）","同一条进展在 agent 多轮压缩后的上下文里仍能被读到（目标②）"] },
+
+      { id:"P1-8", phase:"p2", lvl:"P1-⑧", title:"procedural memory 重构（档着 3 条群反馈）", who:"执行方（设计要你拍板）", status:"封存（3.1）", est:"分步", deps:["P0-4b"],
+        points:["<b>晋升标准重做</b>：不只按次数沉淀——长时攻关/突破做完也晋升为长期 skill 记忆（群反馈第 8 条）",
+                "<b>skill 之间可写 hand-off</b>：「用完这个经常会遇到那个」，两个紧密联系的 skill 互相指路（第 8 条）",
+                "<b>晋升物要可读</b>：现在「我都不知道是啥技能」（第 5 条）",
+                "<b>晋升开关</b>：项目记忆 → 全局记忆，可开可关、可手动管理；你的规划=保留自动，但等本项做完再上（第 3 条）",
+                "现状沿用 Hermes 的 observed→candidate→validated→active；社区褒贬不一，issue #30 同根因",
+                "过渡期：执行类流程仍走仓库任务书通道（docs/prompts/*-AGENT.md）"],
+        crit:["晋升记录里能看到「因攻关而晋升」与「skill 互链」两类真实样本",
+              "关掉晋升开关后，项目记忆不再自动写入全局记忆",
+              "技能说明人看得懂（不是一串 id）"],
+        refs:["ROADMAP.md §B","issue #30"] },
+
+      { id:"P1-9", phase:"p1", lvl:"P1-⑨", title:"语义架构规范 v2（已立）：用规范 RAG 策略清单审计并约束检索", who:"执行方", status:"规范已立（B 线，可与三层施工并行）；审计待跑", est:"约半天", deps:["P1-16"],
+        points:["素材：B 站《7 分钟了解 10 种 RAG 策略》（BV17J3B6PEGK）——你的要求是「用规范性的框架来做，或用来审核我这个的标准」",
+                "<b>已交付：<code>docs/internal/SEMANTIC-ARCHITECTURE-SPEC.md</code> v2</b> —— <b>9 条规范条款 S1–S9</b>，每条都带「判据 / 我方现状（含代码证据）/ 缺口」：S1 分块与增量 · S2 查询侧加工（改写 / 多查询 / HyDE）· S3 混合臂与排名空间融合 · S4 精排 · S5 注入压缩/预算/降级 · S6 自适应检索决策 · S7 评估（没有实验就没资格改算法）· S8 观测与再现 · <b>S9 分档四条</b>（S9.1 兼容档 = 零额外 LLM token；S9.2 最优档 = 允许引入 LLM，但每条重方案须带「成本 + 门控条件 + 无 LLM 时的降级路径」三件套；S9.3 两档共用同一套接口与判据、只换引擎与预算、不改契约形状；S9.4 禁止把兼容档当成目标形态）",
+                "<b>审计结论（规范 §3）</b>：<b>合规</b>的是 S3（词法 + 稠密 + 时间三臂，RRF 排名空间融合 <code>:4068</code>）、S6（fv2 决策 + echo veto + 冷却，本仓领先项）、S9（<b>兼容档</b>达标：决策 = 本地 LR、嵌入 = 端侧、压缩 = 本地规则，即 S9.1 零额外 LLM token；<b>最优档</b>的 S9.2 三件套审计待跑）；<b>草台</b>的是 S1（块 ID 未进缓存键 → 写一条记忆全库重嵌）、S2（查询侧三项全无）、S4（无精排级）、S5.3（索引未就绪静默丢弃，07:43–08:35 现场）",
+                "<b>立场（规范 §7 分档口径，已核验外部事实见附录 F）</b>：<b>「RAG 已死」的判据不是 RAG vs 长上下文，而是「谁付费」</b>。LLM Wiki（Karpathy）= 写入/维护侧由 LLM 承担，靠 <code>index.md</code> 导航，约百份资料规模可避开嵌入基础设施；Grep agentic（Claude Code）= 每轮多次 LLM 工具调用的乘数。<b>首要用户 = 开发者本人 = 最优档：以最优为目标吸收两者优点（索引即自然语言 + 智能判断要不要搜），允许在检索路径上引入 LLM，但每条重方案须按 S9.2 带「成本 + 门控条件 + 无 LLM 时的降级路径」三件套</b>；<b>兼容档（token 敏感 + 设备弱）只是必须存在的降级路径：按 S9.1 零额外 LLM token，判断交给零 token 的本地 LR</b>。两档共用同一套接口与判据、只换引擎与预算（S9.3），<b>不得把兼容档当作目标形态（S9.4）</b>",
+                "<b>阶段门（三条线）</b>：<b>A 线</b>接口冻结（C3 → C5 → C6）在先；<b>C 线</b>按 S1.3 增量 → S5.3 降级标注 → S2 查询侧（<b>兼容档</b>必须本地实现，按 S9.1 零额外 LLM token；<b>最优档</b>可引入 LLM，但按 S9.2 带「成本 + 门控条件 + 降级路径」三件套）→ S4 精排 的顺序改造算法，开工条件 = A 线全绿；<b>B 线</b>（本卡：立规 + 审计 + 补实验基线）不碰接口，<b>即刻可跑</b>"],
+        crit:["逐条覆盖规范清单的每一类策略，标注现状（已用/部分/未用）与代码证据 —— ✅ 已随规范 v2 交付",
+              "<b>分档审计（S9）</b>：清点检索路径上的每一处 LLM 调用点 —— <b>兼容档</b>守 S9.1（零额外 LLM token）；<b>最优档</b>每条重方案必须写明「成本 + 门控条件 + 无 LLM 时的降级路径」三件套",
+              "<b>语义算法改造的开工条件可判定</b>：C3/C5/C6 全绿，且宿主重启后注入块里出现 <code>Score: 0.xx (rank n/m)</code>",
+              "改造按规范 §5 顺序执行，每项带 S7 三策略对照（A 只给目录 / B 目录+命中摘要 / C 目录+候选全灌）与一条能失败的断言"],
+        refs:["SEMANTIC-ARCHITECTURE-SPEC.md（新）","THREE-LAYER-CONTRACT.md §7","ROADMAP.md §A"] },
+
+      { id:"CHK-1", phase:"p1", lvl:"P1-⑬", title:"记忆文件卫生：空行残留 / 标题层级 / 容量逼近上限", who:"执行方", status:"本机已复现（已清理一轮，机制待修）", est:"约 1 小时",
+        points:["<b>群友报的 3 条里，第 1 条在本机复现了</b>：项目笔记 `MEMORY.md` 开头有 <b>63 行连续空行</b>（残留碎片），另有 5 处标题层级错位（相邻两个 `##`）",
+                "实测修复（2026-09-14）：191 行 → 128 行；空行 93 → 30；最长连续空行 63 → 2；字符 11,366 → 11,308；<b>15 个记忆锚点一个没少</b>；无 BOM；行尾保持 LF；备份 `MEMORY.md.hygiene-backup-20260914-075325.bak`",
+                "<b>机制推断</b>：笔记的自动压缩把旧内容移走后<b>留下了空行</b>——这就是群友说的「空标题碎片」的真身（我上次查的是「空 <code>###</code> 标题行」，<b>口径错了</b>，所以误报「未复现」）",
+                "<b>仍悬着两条</b>：①笔记容量 11,308/12,000 = <b>94%</b>，随时会撞上「超容量 → 写入被拒」（群友第 2 条）；②交接账本被自动快照段落污染（第 3 条）本机还没复现",
+                "<b>给插件加的真修法</b>：压缩时同步清掉空行残留；容量到 90% 就主动折叠，而不是等写入被拒"],
+        crit:["笔记文件头不再有空行残留；相邻同层标题消失","容量到 90% 时自动折叠而不是拒绝写入（造一份 11k 字符的笔记，再写一条应成功）"] },
+
+      { id:"P1-14", phase:"p1", lvl:"P1-⑭", title:"语义臂会静默失效：miv 一变，0-1 相似度排序就消失", who:"执行方", status:"已实测复现（含根因）", est:"约 1 天",
+        points:["<b>症状</b>：以前 recall 给的是 0-1 拟合度（0.8 / 0.7 / 0.6 往下走），现在只剩「词法×1 / ×2 / ×3」——<b>语义分整段消失</b>",
+                "<b>根因链（文件级证据）</b>：①diag 显示四门全开（associativeMemoryEnabled / contextBridgeEnabled / pythonBackendEnabled / contextSinkMode=python），语义引擎=python 模式，python worker 活着（3.2GB 那个）；②但 semantic-pre 里最新的向量文件是 <code>vectors-c6eef049….json</code>（07:42:56）；③我在 <b>07:53:33 改了项目笔记</b> → 语料变 → miv 变 → <b>新 miv 对应的向量文件不存在</b>；④worker 的三重过滤（workspaceRef + scope + miv）于是返回空分 → <b>静默退化为纯词法</b>，不告诉调用方",
+                "<b>换句话说</b>：我改一次笔记，就把语义检索打回词法——这正是「一改就全量重算」的现场版，也解释了「理论上该有语义」而实测没有",
+                "同源症状两条：L0 只有标题级摘要（决策结论句只在 expand 原文里）；刚写入的条目下一轮查不到（新鲜度滞后）",
+                "修法：①块级向量缓存（只嵌变化块 = P0-④）②miv 未就绪时必须<b>显式降级标注</b>，不许静默 ③写盘后触发索引刷新，或 recall 前校验 miv",
+                "<b>决定性证据（2026-09-14 08:0x）</b>：诊断日志 <code>~/.dsh/dsh-auto-memory-pre-diagnose.log</code> 显示<b>每轮</b>都在 <code>ctx-host drop: index-not-ready:sync-in-progress</code>，从 07:43 起持续 20 分钟未就绪 → 这就是 packet 归零的直接原因（详见 P0-④e）",
+                "时间线锚点：packet 注入 02:15–02:58 正常、07:39–<b>07:43:45 正常</b>、之后<b>归零</b>；而 spliced 投递仍在（07:52 / 07:54 / 07:56 / 07:58 / 08:00），只是内容被 ctx-host 丢弃"],
+        crit:["纯语义查询能命中同主题条目（复跑「改掉一条旧结论之后整个向量空间要不要重算」那条探针应非空）","语义臂不可用时，返回里出现明确的降级标注","改一次笔记之后，下次 recall 仍带 0-1 语义分（不用等全量重建）"],
+        refs:["ROADMAP.md A3 / A6","MEMORY-MUTATION-AND-INDEX-DESIGN.md","TODO-BACKLOG §K"] },
+
+      { id:"P1-15", phase:"p1", lvl:"P1-⑮", title:"注入层不是语义唤回：注入块里看不到 0-1 相似度（已修渲染层，待重启验证）", who:"执行方", status:"已修（待宿主重启验证）", est:"小",
+        points:["<b>现象（用户报告）</b>：昨晚今早注入里能看到很多语义唤回块，后来「怎么现在就没了」，并且<b>看不到 0-1 相似度排序</b>",
+                "<b>消失的直接原因（已定案）</b>：本地 ctx-host 每轮刷 <code>index-not-ready:sync-in-progress</code> → 注入被<b>显式丢弃</b>（07:43:45–08:35:55 归零，而 inbox 投递仍在，只是内容为空）；根因=整份哈希 miv 语料身份 + worker 卡死，重建永远追不上写记忆节奏。重启后注入块已恢复（每轮 7–9 块）",
+                "<b>0-1 相似度是另一处真缺陷（渲染层丢分）</b>：分值上游一直算得出来（<code>act.candidates[].score</code> → <code>packet.references[].score</code>，来自稠密分 / 融合序），但 <code>renderReferenceTail</code> 只渲染 Source/Reason/Reference 三行，<b>从不打印 item.score</b>；reason 串也只有 lane/decision/reasonCodes（<code>python/worker_semantic_pre_v1.py</code> 的 fv2 reason 串 / <code>lib/context-host-pre.js</code> 的 js-decide reason）→ 看得见「要不要注入」，看不见「到底多像」<b>（行号别写死：本轮补数值后该处已从 :697 漂到 :707）</b>",
+                "<b>修法（2026-09-14 已落地）</b>：①<code>renderItemBlock</code> 增第四行 <code>Score: 0.71 (rank 1/3)</code>（取自 packet 既有字段，确定性；score 非有限数则整行省略，保持旧版字节行为）②Python 与 JS 两处 reason 串补 <code>intent/dense/margin</code>，且数值段放在 reasonCodes <b>之前</b>，160 字符截断只砍代码列表不砍分值 ③新套件 <code>smoke-test-tail-score-visible-pre.mjs</code> 29 断言（含乱序输入必须重排、预算必须把这行计入、声明了却没接线必须报红）",
+                "<b>残留（归 P0-③）</b>：注入层骨架（日志尾/反思摘要/笔记头…）仍未升级为带 layer/status 的 Tier-0 目录；本卡只解决「块里看不见相似度」"],
+        crit:["注入内容里能看到带 layer / status 的 Tier-0 目录（P0-③）","宿主重启后，注入块里出现 <code>Score: 0.xx (rank n/m)</code> 且块序按分值降序","至少一次注入中出现语义召回条目（带相似度与来源）"],
+        refs:["ROADMAP.md A3","P1-⑭ 本卡","THREE-LAYER-CONTRACT.md §7","tests/smoke/smoke-test-tail-score-visible-pre.mjs"] },
+
+      { id:"P1-16", phase:"p1", lvl:"P1-⑯", title:"三层检索的量化实验（你缺的那两个实验）", who:"执行方", status:"词法基线已跑，待语义臂恢复后正式跑", est:"约 1 天",
+        points:["<b>三层现状（代码级实测）</b>：✅ 语料已分块（chunkId 内容寻址）／✅ L0 摘要层（<code>buildL0IndexPre</code>，被 index.js 三处调用 :2827 / :3995 / :4148）／✅ 原文层（<code>expandMemoryRecordPre</code> :4194）；❌ 无 Tier-0 带状态目录；❌ 无层级归属、无状态过滤、无递进闸门（现在是 top-K 混排）；❌ <code>l0-index-pre.js</code> 仍<b>零引用未接线</b> → 语义向量是对<b>原文块</b>做的，L0 自己没有索引",
+                "<b>关键缺口</b>：从 ~90 字的 L0 <b>一步跳到原文全文</b>，中间那个「概览层」目前不存在 —— 这正是实验二要回答的「直接灌够不够、贵不贵」",
+                "<b>实验一 · 下探准确性</b>：12 条已知答案的事实 → 记录 L0 top-1 / top-3 / top-5 命中率 + <b>expand 之后答案可达率</b> + 每跳 token 成本 + 需要几跳。判据：top-5 命中 ≥ 10/12 且下探后答案可达 ≥ 10/12",
+                "<b>实验二 · 直接灌是否够用</b>：同一批问题，三策略对照 —— A 只给 L0 ／ B L0 + 命中条原文 ／ C L0 + 候选集全灌（上限 <code>injectBudgetChars 2000</code>）；指标 = 盲测答题正确率、注入 token 数、噪声比",
+                "<b>词法基线（2026-09-14 已跑，语义臂卡死期间）</b>：3 条事实 → L0 top-1 命中 <b>1/3</b>、top-5 命中 <b>2/3</b>（m73 根因那条 top-5 未中）；命中原因<b>全是词法、0 条带语义分</b>；并观察到单字母 token 污染（<code>词法×3(agent,检索,a)</code>）",
+                "前置：语义臂恢复（重启 dsh web）。两个实验可离线跑，不需要重跑嵌入"],
+        crit:["实验一：top-5 命中 ≥ 10/12 且下探后答案可达 ≥ 10/12","实验二：给出 A/B/C 三策略的正确率与 token 对照表，并明确「中间概览层要不要补」","结论能直接决定 Tier-0 / L1 概览层是否立项"],
+        refs:["ROADMAP.md A3","TODO-BACKLOG §K"] },
+
+
+      { id:"P2-7", phase:"p2", lvl:"P2-⑦", title:"跨 Agent 记忆入检索（外部文档 + 外部会话）", who:"待拍板（见 D5）", status:"待拍板", deps:["P0-3"],
+        points:["外部 md 入语料（Claude Code CLAUDE.md / WorkBuddy·CodeBuddy 画像 / ZCode 记忆 / TRAE·Cursor 规则）",
+                "外部会话适配器（Claude Code / Codex / WorkBuddy / ZCode / Kimi），逐源可开关",
+                "与 P0-②③ 共用同一套 ID 与增量纪律",
+                "<b>路径已选 C（分期版 A）</b>：先把插件自己承诺的能力做实，再扩到外部 Agent 源",
+                "体量实测：DSH 191 个/320MB、Codex 17/45.8MB、WorkBuddy 89/155MB、ZCode 3/80MB（≈600MB）；DSH 压缩比 2.1x、可索引正文约 0.35GB；解码 11MB 仅 0.7s（全量约 1 分钟 CPU）",
+                "技术结论：FTS5/BM25 词法主干 + 可选本地小嵌入（RRF 融合）+ <b>轮次级分块</b> + 增量后台索引；LongMemEval-S R@5：BM25-only 86.2% → 混合 95.2% → 纯向量 96.6%",
+                "<b>容错纪律：逐文件跳过 + 计数 + quarantine，不得 fail-closed</b>（本次被 51 个文件压死的教训）"],
+        refs:["CROSS-SESSION-SEARCH-RESEARCH.md","CROSS-SESSION-SEARCH-PATH-DECISION.md","ROADMAP.md A4b"] },
+
+      { id:"P2-8", phase:"p2", lvl:"P2-⑧", title:"（已上移为 P1-⑧ · procedural memory 重构）", who:"—", status:"见 P1-⑧",
+        points:["本条已并入阶段 2 的 <b>P1-⑧</b>：群反馈第 3/5/8 条都以它为前置，所以从「待拍板」上移为「待开工」"] },
+
+      { id:"P2-9", phase:"p2", lvl:"P2-⑨", title:"群反馈 / 日报 CI 的安全与运维收口", who:"ZCode", status:"待确认",
+        points:["webhook 签名 / 限流 / 来源白名单；密钥只存 GitHub Secrets 与 SCF 环境变量",
+                "时区与失败告警；index.zip 这类二进制是否应入库"] },
+
+      { id:"P2-10", phase:"p2", lvl:"P2-⑩", title:"SCF 云函数 zip 重部署", who:"你", status:"待你操作",
+        points:["新 index.zip 已重打（含 ?report=N 路由与版本标记）","上传后在群里或 ?diag=1 核对"] },
+
+      { id:"P2-11", phase:"p2", lvl:"P2-⑪", title:"日历换开源方案（自研太粗糙）", who:"执行方调研 + 你定夺", status:"待调研", est:"调研约半天",
+        points:["群反馈第 7 条：「日历插件太粗糙，需要搜索公开的开源日历插件，直接替换掉我写的这个草台班子」",
+                "调研面：DSH 生态现成日历插件 ／ 通用开源日历组件，比较「替换成本 vs 自研补齐」",
+                "注意迁移：日历数据现在落在 ~/.dsh/memory/CALENDAR.md（本插件自己维护的 md），换组件要给出旧数据导入路径"],
+        crit:["给出 2~3 个候选（含许可与维护活跃度）+ 一个推荐","旧数据迁移路径明确（能一条命令导过去）"] },
+
+      { id:"P2-12", phase:"p2", lvl:"P2-⑫", title:"手机端远程控制：首次启动指引太大且关不掉", who:"执行方", status:"远期（随 UI 调整）",
+        points:["群反馈第 6 条：手机端远程控制首次启动指引过大、且无法关闭",
+                "与「明确推后」阶段的冷启动余项同源（welcomeTourEnabled 死键 / 向导无兜底触发），<b>合并做</b>"],
+        crit:["小屏下指引可关闭，且关闭状态被记住"] },
+
+      { id:"A-1", phase:"defer", title:"大排期三件套（界面 / 文档 / 首页）", who:"你", status:"推后",
+        points:["需 6 个拍板点 + 3 样输入（官方 DSH 网页 URL·截图 / 角色基准图 / 风格探针许可）"] },
+      { id:"A-2", phase:"defer", title:"界面技术债：令牌层 / 组件层 / i18n / IA 重排", status:"推后",
+        points:["硬编码色 320 处 / 内联 style 228 vs className 4 / :focus 0 条 / 12 页签塞进 440×560"] },
+      { id:"A-3", phase:"defer", title:"文档体系：README 大改 / USER-GUIDE / 双语对账 / 27 张配图", status:"推后" },
+      { id:"A-4", phase:"defer", title:"分发门面：npm 瘦身 / package.json 字段 / Pages / CHANGELOG 死链", status:"推后" },
+      { id:"A-5", phase:"defer", title:"冷启动余项：向导兜底触发 / 幻觉 ON / 引擎步重试 / welcomeTourEnabled / 术语 Top5", status:"推后" }
+    ]
+  };
+
+  var state = load();
+  var filter = "all";
+
+  function load(){
+    try{ var raw = localStorage.getItem(KEY); if(!raw) return {added:[],hidden:[]};
+      var o = JSON.parse(raw);
+      return { added: Array.isArray(o.added)?o.added:[], hidden: Array.isArray(o.hidden)?o.hidden:[] };
+    }catch(e){ return {added:[],hidden:[]} }
+  }
+  function save(){ try{ localStorage.setItem(KEY, JSON.stringify(state)) }catch(e){} }
+
+  function tone(id){ var p = DATA.phases.filter(function(x){return x.id===id})[0]; return p?p.tone:"inbox" }
+  function visible(it){
+    if(state.hidden.indexOf(it.id)>=0) return false;
+    if(filter==="all") return true;
+    if(filter==="main") return it.phase==="p0" || it.phase==="p1";
+    return it.phase===filter;
+  }
+  function esc(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;") }
+
+  function card(it){
+    var t = tone(it.phase) === "inbox" ? "p2" : tone(it.phase);
+    var h = '<div class="card" data-tone="' + (it.added?"inbox":t) + '" data-added="' + (it.added?1:0) + '">';
+    h += '<button class="kill" title="隐藏这条" data-kill="' + esc(it.id) + '">×</button>';
+    h += '<div class="row1">';
+    if(it.lvl) h += '<span class="lvl">' + esc(it.lvl) + '</span>';
+    h += '<span class="title">' + esc(it.title) + '</span>';
+    if(it.status) h += '<span class="tag st">' + esc(it.status) + '</span>';
+    if(it.who) h += '<span class="tag">' + esc(it.who) + '</span>';
+    if(it.est) h += '<span class="tag">' + esc(it.est) + '</span>';
+    (it.deps||[]).forEach(function(d){ h += '<span class="tag dep">依赖 ' + esc(d) + '</span>' });
+    if(it.added) h += '<span class="tag">我加的</span>';
+    h += '</div>';
+    if(it.points && it.points.length){
+      h += '<ul class="pts">';
+      it.points.forEach(function(p){ h += '<li>' + p + '</li>' });   // 允许内联小标签
+      h += '</ul>';
+    }
+    if(it.note) h += '<div class="refs">↳ ' + esc(it.note) + '</div>';
+    if(it.crit && it.crit.length){
+      h += '<div class="crit"><b>验收判据（打钩用）</b><ul class="pts">';
+      it.crit.forEach(function(c){ h += '<li>' + esc(c) + '</li>' });
+      h += '</ul></div>';
+    }
+    if(it.refs && it.refs.length){
+      h += '<div class="refs">参考：';
+      it.refs.forEach(function(r){ h += '<code>' + esc(r) + '</code> ' });
+      h += '</div>';
+    }
+    return h + '</div>';
+  }
+
+  function render(){
+    var all = DATA.items.concat(state.added);
+    var out = '';
+    DATA.phases.forEach(function(ph){
+      var list = all.filter(function(it){ return it.phase===ph.id && visible(it) });
+      var slots = (ph.id==="inbox");
+      var showPhase = (filter==="all") || (filter==="main" ? (ph.id==="p0" || ph.id==="p1") : (filter===ph.id)) || slots;
+      if(!showPhase) return;
+      if(!list.length && !slots) return;
+      out += '<section class="phase" data-tone="' + ph.tone + '">';
+      out += '<div class="phead"><h2>' + esc(ph.title) + '</h2>';
+      if(ph.hint) out += '<span class="hint">' + esc(ph.hint) + '</span>';
+      out += '</div><div class="cards">';
+      list.forEach(function(it){ out += card(it) });
+      if(slots){
+        for(var i=0;i<6;i++){
+          out += '<div class="slot"><span>空位 ' + (i+1) + ' · 等一条新待办（群反馈 / ZCode 待办 / 你想到的）</span>' +
+                 '<button class="btn" data-add="' + ph.id + '">＋ 加一条</button></div>';
+        }
+      }
+      out += '</div></section>';
+    });
+    document.getElementById("mount").innerHTML = out;
+    document.getElementById("sub").textContent =
+      "数据源：TODO-BACKLOG.md §0 看板 + §K 排期 + §L 群反馈第二批；主线与依赖见 ROADMAP.md（更新 " + DATA.updated + "）· "
+      + "卡片上的 P0-①/P1-⑧ 这类「看板号」是唯一权威编号（§A~§D 只是历史分区名，两者不同）· 虚线框是留给你加待办的空位";
+  }
+
+  function addItem(phaseId){
+    var title = prompt("新待办标题（例：群里反馈的「XX 面板不刷新」）");
+    if(!title) return;
+    state.added.push({ id:"NEW-" + Date.now(), phase:phaseId, title:title.trim(),
+      who:"你", status:"待排期", added:true, points:["（占位：细节待你补充，或我按群反馈整理）"] });
+    save(); render();
+  }
+
+  document.addEventListener("click", function(e){
+    var k = e.target.closest("[data-kill]");
+    if(k){ state.hidden.push(k.getAttribute("data-kill")); save(); render(); return }
+    var a = e.target.closest("[data-add]");
+    if(a){ addItem(a.getAttribute("data-add")); return }
+    var f = e.target.closest("[data-filter]");
+    if(f){
+      filter = f.getAttribute("data-filter");
+      [].forEach.call(document.querySelectorAll("[data-filter]"), function(b){ b.setAttribute("data-on", b===f ? "1":"0") });
+      render();
+    }
+  });
+
+  document.getElementById("exportBtn").addEventListener("click", function(){
+    var payload = { updated:new Date().toISOString().slice(0,10), added:state.added, hidden:state.hidden };
+    var txt = JSON.stringify(payload, null, 2);
+    var ta = document.getElementById("io");
+    ta.style.display = "block"; ta.value = txt;
+    try{ ta.select(); document.execCommand("copy") }catch(e){}
+    alert("已生成并尝试复制到剪贴板——把这整段贴给我即可。");
+  });
+
+  document.getElementById("resetBtn").addEventListener("click", function(){
+    if(!confirm("清空你加的待办与隐藏记录？（不动我原来写的内容）")) return;
+    state = {added:[],hidden:[]}; save(); render();
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>

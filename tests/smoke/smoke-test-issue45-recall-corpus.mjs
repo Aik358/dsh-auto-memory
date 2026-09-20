@@ -25,7 +25,7 @@ const sandbox = await mkdtemp(path.join(tmpdir(), 'issue45-recall-'))
 after(async () => { await rm(sandbox, { recursive: true, force: true }) })
 const diagnosticHome = path.join(sandbox, 'diagnostic-home')
 await mkdir(path.join(diagnosticHome, 'memory/evidence/events'), { recursive: true })
-const dependencies = ['l0-extract.js', 'recall-fusion.js', 'temporal-parse.js', 'evidence-agg.js', 'memory-importance.js']
+const dependencies = ['l0-extract.js', 'recall-fusion.js', 'temporal-parse.js', 'evidence-agg.js', 'memory-importance.js', 'note-status-apply.js']
 const loaded = new Map()
 for (const dep of dependencies) loaded.set(dep, await import(pathToFileURL(path.join(root, 'lib', dep)).href))
 // Fail during setup, rather than silently turning an absent dependency into a green fallback test.
@@ -34,6 +34,8 @@ assert.equal(typeof loaded.get('recall-fusion.js').rankFusionRRFPre, 'function')
 assert.equal(typeof loaded.get('temporal-parse.js').parseTemporalQueryPre, 'function')
 assert.equal(typeof loaded.get('evidence-agg.js').scanEvidenceEventsPre, 'function')
 assert.equal(typeof loaded.get('memory-importance.js').computeImportancePre, 'function')
+// G3（2026-09-19）读侧：recall 的 L0 分支经 statusOf 读磁盘状态行 —— 缺它会让 G3 写了也读不回来。
+assert.equal(typeof loaded.get('note-status-apply.js').readRecordStatusPre, 'function')
 const { buildL0IndexPre } = loaded.get('l0-extract.js')
 
 function extractMethod(signature) {

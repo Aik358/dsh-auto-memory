@@ -49,8 +49,13 @@ try {
     ok(sameDir(semMod.resolvePeerTransformersDir(lib), realPeer), '命中目录=profile 根(不再是 node_modules/node_modules 错位)')
     ok(probe.assetPresent === true && probe.assetBytes === FAKE_ONNX.length, 'assetPresent + 字节数')
     ok(probe.ready === true, 'ready=true(资产+peer 齐备)')
-    ok(JSON.stringify(Object.keys(probe).sort()) === JSON.stringify(['assetBytes', 'assetPath', 'assetPresent', 'peerPresent', 'ready']),
-      '返回形状与 status API 契约一致')
+    // ★ 2026-09-19 同步更新（issue #70 修复）：probe 新增两个**仅追加**键——
+    //   `filesReady`（纯文件齐备，用于区分「文件缺」与「引擎降级」）
+    //   `degraded`（引擎运行期降级原因；非空时 `ready` 必须为 false）
+    //   属"仅追加键 ⇒ 既有读者零改动"，故此处契约集合同步扩展并注明原因。
+    ok(JSON.stringify(Object.keys(probe).sort()) === JSON.stringify(['assetBytes', 'assetPath', 'assetPresent', 'degraded', 'filesReady', 'peerPresent', 'ready']),
+      '返回形状与 status API 契约一致（含 #70 新增 filesReady/degraded）')
+    ok(probe.filesReady === true && probe.degraded === '', '★ #70：filesReady=true 且未降级', JSON.stringify({ f: probe.filesReady, d: probe.degraded }))
   }
 
   console.log('[peer-probe] G2 布局B:包内邻接 —— peer 在 <pkg>/node_modules')

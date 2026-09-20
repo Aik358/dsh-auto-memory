@@ -64,8 +64,10 @@ console.log('sections:', sections.length, '| contexts:', contexts.length, '| eff
 console.log('tools:', registeredTools.map((t) => t.name).join(', '))
 console.log('routes:', registeredRoutes.map((r) => r.path).join(', '))
 
-if (registeredTools.length !== 16) throw new Error('expected 16 tools (3.0.0 起 boardMode 默认 graph), got ' + registeredTools.length)
-if (registeredRoutes.length !== 47) throw new Error('expected 47 routes, got ' + registeredRoutes.length)
+// ★ T4（2026-09-19）：16 → 17 —— 新增 memory_procedure（procedure memory 的模型直写通路）。
+//   该工具**无条件注册**（不像 expand/trace 受 boardMode=graph 闸门），故任何档位下都 +1。
+if (registeredTools.length !== 17) throw new Error('expected 17 tools (16 + T4 memory_procedure), got ' + registeredTools.length)
+if (registeredRoutes.length !== 49) throw new Error('expected 49 routes, got ' + registeredRoutes.length)
 if (sections.length !== 1) throw new Error('expected 1 prompt section (static rules)')
 if (contexts.length !== 2) throw new Error('expected 2 dynamic contexts (memory snapshot + m6 reference tail surface), got ' + contexts.length)
 

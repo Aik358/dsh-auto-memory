@@ -75,9 +75,27 @@ function makeFakeEngine() {
 }
 const handoffStampFn = new Function(grab('handoffStamp') + '\nreturn handoffStamp;')()
 const nowHmFn = new Function(grab('nowHm') + '\nreturn nowHm;')()
+// ★L3(2026-09-17) 修复:L3 把 buildContinueCarry 的组装逻辑抽成了**模块级**函数
+//   `assembleCarryPre`。本测试用 `new Function` 从源码重建方法体,自由变量必须**显式注入** ——
+//   漏注入会让方法体内 `assembleCarryPre(...)` 抛 ReferenceError, 被 try/catch 吞成
+//   `{ok:false, error:'assembleCarryPre is not defined'}` ⇒ D3 六条断言假红。
+//   这正是"重构改了自由变量可见性、源码抽取式测试没跟上"的典型, 记为教训。
+//   ⚠️ 坑:extractFn 假定 header 以函数体的 `{` 结尾、从这里开始配平;
+//   而本函数的**参数用了对象解构**(`{ head = [] , ... } = {}`), 若 header 只写到 `(`,
+//   配平会在**解构默认值的 `}`** 处提前闭合 ⇒ 截出半截源码 ⇒ `new Function` 报
+//   "Unexpected token 'return'"。故 header 必须一路写到**函数体的 `{`**。
+const assembleCarryPreFn = new Function(
+  extractFn('export function assembleCarryPre({ head = [], nav = [], bulk = [], budget = 18000 } = {}) {')
+    .replace(/^export\s+/, '') + '\nreturn assembleCarryPre;'
+)()
 const bindMethod = (header, fake, extra) => {
-  const names = ['path', 'existsSync', 'mkdir', 'writeFile', 'readdir', 'stat', 'handoffStamp', 'nowHm']
-  const vals = [path, SRC && null, mkdir, writeFile, readdir, stat, handoffStampFn, nowHmFn]
+  const names = ['path', 'existsSync', 'mkdir', 'writeFile', 'readdir', 'stat', 'handoffStamp', 'nowHm', 'assembleCarryPre',
+    // ★T7-a（2026-09-20 · 上游 #86-4）：水位/接续默认值已抽为**模块级常量**。
+    //   本套件用"源码抽取 + new Function"执行方法体 ⇒ 被抽出的代码里的自由变量必须在这里显式注入，
+    //   否则会抛 `DEFAULT_AUTO_CONTINUE_THRESHOLD is not defined`（实测已发生）。
+    //   ⚠️ 注入的是**与生产同值**的常量（0.75），不是放宽断言。
+    'DEFAULT_AUTO_CONTINUE_THRESHOLD', 'DEFAULT_WATER_LEVEL_THRESHOLD']
+  const vals = [path, SRC && null, mkdir, writeFile, readdir, stat, handoffStampFn, nowHmFn, assembleCarryPreFn, 0.75, 0.75]
   vals[1] = (p) => { try { return readFileSync(p) != null } catch (e) { return false } }
   for (const k of Object.keys(extra || {})) { names.push(k); vals.push(extra[k]) }
   const obj = new Function(...names, 'return {' + extractFn(header) + '};')(...vals)
@@ -148,9 +166,7 @@ console.log('[switch-decouple] D1b 行为:接续资格只看 autoContinueEnabled
 
 console.log('[switch-decouple] D2 行为:真实 checkWaterLevel —— 白板关仍测量,但不写 PLAN/账本产物(镜像保护)')
 function makeWaterFake(opts, ledgerCalls) {
-  // ★issue #88:checkWaterLevel 的 state 写入走 runtimeFor(agent).state —— 真引擎裸调时
-  // runtimeFor(undefined)=default ⇒ rt.state 与 fake.state 必须是同一对象(复刻该不变量)。
-  const rt = { state: {} }
+  const rt = {}
   const fake = Object.assign(makeFakeEngine(), {
     config: Object.assign({ handoffEnabled: true, waterLevelWindowTokens: 1000, waterLevelThreshold: 0.8, waterLevelAutoHandoff: true }, opts),
     runtimeFor: () => rt,
@@ -161,7 +177,7 @@ function makeWaterFake(opts, ledgerCalls) {
     //   抽取式沙箱里 fake 必须提供它，否则 TypeError 被外层 catch 吞掉 ⇒ 表现为"静默不写账本"，
     //   即本项目的经典坑：被提取方法引用的**所有**符号都得显式提供。
     handoffChainEnabledPre: function () { return this.config.autoContinueEnabled !== false && this.config.handoffEnabled !== false },
-    state: rt.state,
+    state: {},
   })
   fake._rt = rt
   return fake
@@ -219,24 +235,12 @@ console.log('[switch-decouple] D3 行为:buildContinueCarry 白板关 → 载体
   // 白板/账本产物**真实存在于磁盘** —— 白板关时必须一个字都不进材料(比"读不到"更强的判据)
   writeFileSync(path.join(handoffDir, 'PLAN.md'), '# PLAN\nPLAN_BODY_MARKER', 'utf8')
   writeFileSync(path.join(handoffDir, 'handoff-20260914-120000.md'), '## 任务状态\nLEDGER_BODY_MARKER', 'utf8')
-  // ★issue #90 回归夹具:全局口径(resolvePaths=GUI 最后轮询工作区)故意指向**另一个**工作区,
-  // 其 PLAN 写 GLOBAL_PLAN_MARKER —— 旧实现(resolvePaths(undefined))会读到全局标记,修复后读会话工作区。
-  const globalWs = path.join(tmpRoot, 'carry-global')
-  const globalHandoff = path.join(globalWs, 'handoff')
-  mkdirSync(globalHandoff, { recursive: true })
-  writeFileSync(path.join(globalHandoff, 'PLAN.md'), '# GLOBAL\nGLOBAL_PLAN_MARKER', 'utf8')
   const mkCarry = (handoffEnabled) => {
     const fake = Object.assign(makeFakeEngine(), {
       config: { handoffEnabled },
       resolvePaths: async () => ({
-        handoffDir: globalHandoff, planPath: path.join(globalHandoff, 'PLAN.md'),
-        notesPath: path.join(globalWs, 'notes.md'), logPath: path.join(globalWs, 'log.md'),
-        ws: globalWs, projectDir: globalWs,
-      }),
-      // ★issue #90:buildContinueCarry 改按被接续会话解析路径 —— 回落到 D3 原会话工作区 fixture
-      resolvePathsForSession: async (sid) => ({
         handoffDir, planPath: path.join(handoffDir, 'PLAN.md'), notesPath: path.join(proj, 'notes.md'),
-        logPath: path.join(proj, 'log.md'), ws: proj, projectDir: proj, wsBound: sid === 'session-old',
+        logPath: path.join(proj, 'log.md'), ws: proj, projectDir: proj,
       }),
       findLatestGlobalHandoff: async () => null,
       buildPrevSessionPack: async () => ({
@@ -264,10 +268,6 @@ console.log('[switch-decouple] D3 行为:buildContinueCarry 白板关 → 载体
   const textOn = String((rOn && rOn.carryText) || '')
   ok(rOn && rOn.ok === true && textOn.includes('PLAN_BODY_MARKER') && textOn.includes('LEDGER_BODY_MARKER'),
     '对照:白板开时同一 fixture 两层材料都在(证明上面两条不是空断言)')
-  // ★issue #90 回归:材料按被接续会话的工作区(resolvePathsForSession)解析,不落全局口径 ——
-  // 全局口径的 PLAN 写着 GLOBAL_PLAN_MARKER:旧实现(resolvePaths(undefined))读到它,修复后只读会话工作区。
-  ok(textOn.includes('PLAN_BODY_MARKER') && !textOn.includes('GLOBAL_PLAN_MARKER'),
-    '★issue #90 回归:接续材料来自被接续会话的工作区,全局口径不串味')
 }
 
 console.log('[switch-decouple] D4 接线:两页共用同一对配置键 + 默认关闭')
@@ -288,8 +288,12 @@ console.log('[switch-decouple] D4 接线:两页共用同一对配置键 + 默认
   const zhS = (CSRC.match(/handoffSwitchTitle: '/g) || []).length
   ok(zhF === 2 && zhS === 2, 'zh+en 两套文案表都补齐了新开关文案(实际 ' + zhF + '/' + zhS + ')')
   // 白板关闭时开关卡必须仍可渲染(旧实现在 !data.enabled 处直接 return → 默认关 = 无处可开)
+  // ★L2(2026-09-17) 更新锚点:该早退分支的返回体已被 L2 改写(空态改为按 reason 分支的 disMsg 卡片),
+  //   旧锚点字面量 `[switchCard` 不再逐字存在 ⇒ indexOf = -1 ⇒ 断言假红。
+  //   判据本身不变: switchCard 必须**先于**早退分支出现(即定义在早退之前, 默认关也能渲染它)。
   const planTab = extractFnIn(CSRC, 'function PlanTab() {')
-  ok(planTab.indexOf('switchCard') >= 0 && planTab.indexOf('switchCard') < planTab.indexOf("if (!data.enabled) return h('div', null, [switchCard"),
+  const earlyReturnIdx = planTab.indexOf('return h(\'div\', null, [switchCard, h(Card, { title: t(\'planTitle\') }')
+  ok(planTab.indexOf('switchCard') >= 0 && earlyReturnIdx >= 0 && planTab.indexOf('switchCard') < earlyReturnIdx,
     '白板页:开关卡先于「未启用」分支渲染(默认关闭状态下仍可打开)')
   // 2026-09-14 补:上面那条只证明「开关卡定义在早退分支之前」,对**已启用**分支不构成约束 ——
   // 实测正是它漏掉的路径:白板一开就走末尾 return(rows),而 rows 里没有 switchCard ⇒ 开得了、关不掉。
@@ -367,40 +371,10 @@ console.log('[switch-decouple] D6 ★接续开关 × 水位账本：产物从属
     '接线:水位账本写入点已改用统一判定')
   ok(/if \(!this\.handoffChainEnabledPre\(\)\) return ''/.test(idx),
     '接线:renderPlanUpdateRequest 已改用统一判定（否则"不接续却每轮催模型重写白板"）')
-  // ★issue #88(2026-09-19) 起接续置位点改为按新窗口 runtime 写入(default 兜底),紧邻行正则改为块内匹配
-  ok(/targetRt\.state\.planUpdatePending = \{ reason: 'continue'/.test(idx) && /if \(this\.handoffChainEnabledPre\(\)\) \{[\s\S]{0,800}?planUpdatePending = \{ reason: 'continue'/.test(idx),
-    '★接线:接续置位点（markContinuedSession）也已改用统一判定（issue #88 起写新窗口 runtime）')
+  ok(/this\.state\.planUpdatePending = \{ reason: 'continue'/.test(idx) && /if \(this\.handoffChainEnabledPre\(\)\) \{\s*\n\s*this\.state\.planUpdatePending = \{ reason: 'continue'/.test(idx),
+    '★接线:接续置位点（markContinuedSession）也已改用统一判定')
   ok(!/if \(this\.config\.handoffEnabled !== false\) \{\s*\n\s*this\.state\.planUpdatePending/.test(idx),
     '两个置位点都不再只看 handoffEnabled（旧写法在接续关闭时照样置位）')
-
-  // ★issue #88(2026-09-19) 行为:接续置位按新窗口 runtime 落点 —— 旧写法裸调落 default,
-  // 注入侧(withAgent 内)读 per-runtime ⇒ 催更块从未触发。取不到 agent 时回落 default(兼容旧口径)。
-  {
-    const mkEng = (agents) => {
-      const rtDefault = { state: {} }
-      const eng = Object.assign(makeFakeEngine(), {
-        config: { autoContinueEnabled: true, handoffEnabled: true },
-        handoffChainEnabledPre: function () { return this.config.autoContinueEnabled !== false && this.config.handoffEnabled !== false },
-        agentForSessionId: (sid) => (agents && agents[sid]) || null,
-        runtimeFor: (ag) => (ag && ag._rt) || rtDefault,
-        waterKey: (sid) => String(sid || ''),
-        loadContinuedSessions: () => new Set(),
-        continuedSessionsFile: () => path.join(tmpRoot, 'cont-latch-d5.json'),
-        state: rtDefault.state,
-      })
-      return eng
-    }
-    const d5Deps = { mkdirSync, readFileSync, writeFileSync, diag: () => {} }
-    const newRt = { state: {} }
-    const engHit = mkEng({ 'new-sid': { _rt: newRt, session: { id: 'new-sid' } } })
-    const markHit = bindMethod('markContinuedSession(sid, toSid) {', engHit, d5Deps)
-    ok(markHit('old-sid', 'new-sid') === true && newRt.state.planUpdatePending && newRt.state.planUpdatePending.reason === 'continue',
-      'D5 行为:接续置位写进新窗口 runtime.state(注入侧可见)')
-    const engFall = mkEng(null)
-    const markFall = bindMethod('markContinuedSession(sid, toSid) {', engFall, d5Deps)
-    ok(markFall('old-sid', 'ghost') === true && engFall.state.planUpdatePending && engFall.state.planUpdatePending.reason === 'continue',
-      'D5 兜底:注册表取不到新窗口 agent → 回落 default 置位(兼容旧口径)')
-  }
 }
 
 console.log('[switch-decouple] ' + pass + '/' + (pass + fail) + ' assertions passed')

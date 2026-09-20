@@ -10,11 +10,11 @@
 </p>
 
 <p align="center">
-  <a href="docs/screenshots/promo/promo-0-banner-v2.png"><img width="820" alt="dsh-auto-memory hero: she remembers, unbidden" src="docs/screenshots/promo/promo-0-banner-v2.png"></a>
+  <a href="docs/screenshots/promo/promo-0-banner-v3.png"><img width="820" alt="dsh-auto-memory hero: she remembers, unbidden" src="docs/screenshots/promo/promo-0-banner-v3.png"></a>
 </p>
 
 <p align="center">
-  <a href="docs/screenshots/promo/promo-0-banner-v2.png"><img width="130" alt="hero" src="docs/screenshots/promo/promo-0-banner-v2.png"></a>
+  <a href="docs/screenshots/promo/promo-0-banner-v3.png"><img width="130" alt="hero" src="docs/screenshots/promo/promo-0-banner-v3.png"></a>
   <a href="docs/screenshots/promo/promo-2-tour.png"><img width="130" alt="welcome tour" src="docs/screenshots/promo/promo-2-tour.png"></a>
   <a href="docs/screenshots/promo/promo-3-recall.png"><img width="130" alt="recall & crystallization" src="docs/screenshots/promo/promo-3-recall.png"></a>
   <a href="docs/screenshots/promo/promo-4-unattended.png"><img width="130" alt="unattended mode" src="docs/screenshots/promo/promo-4-unattended.png"></a>
@@ -384,7 +384,7 @@ One-time catch-up for upgraders: from v0.1.30 every user auto-plays the full tou
 
 Settings and the tour are twin entrances, mapped one-to-one: proactive recall, periodic snapshots, away greetings, night unattended, daily reflection, scheduled digests, external memory, skill crystallization, auto-open… every switch carries a description, the UI switches between Chinese and English, and the panel font size is adjustable.
 
-Ten tabs, each minding its own post: **Workspace** (mind map), **Calendar**, **Connect** (external memory), **Memory Hub** (skill approvals), **Logs**, **Notes**, **Reflections**, **Recall review** (the audit), **Search**, **Storage**. The panel is considerate too: in DSH Desktop enhanced mode (transparent/Mica materials) it keeps its readability; the default position never covers the sidebar "Memory" entry; click outside or press Esc and it's gone — present, but never in the way.
+Twelve tabs, each minding its own post: **Overview** (away greeting + period summaries), **Logs** (incl. the user-level hard-rules editor), **Recall review** (the audit — grade every activation), **Memory Hub** (three stores + skill approvals), **Storage**, **Notes**, **Whiteboard**, **Reflections**, **Connect** (external memory), **Calendar**, **Search**, **Workspace** (mind map). The panel is considerate too: in DSH Desktop enhanced mode (transparent/Mica materials) it keeps its readability; the default position never covers the sidebar "Memory" entry; click outside or press Esc and it's gone — present, but never in the way.
 
 **Long batch jobs? Go unattended.** Settings → Automation offers **Unattended mode** and **auto-unattended overnight** (22:00–08:00, tunable): while engaged, no greetings, no niceties or behavioural directives, calendar silent — the model focuses on the work, and tokens go to the work too.
 
@@ -599,6 +599,18 @@ The design is not guesswork — every algorithmic conclusion comes from reproduc
 | [Python Sidecar Contract](docs/PYTHON-SIDECAR-CONTRACT.md) | Protocol / lifecycle / authority boundary / per-milestone regression evidence |
 
 Papers were authored by the autonomous engineering agent (ZCode / GLM); all conclusions were frozen into the production implementation under human review.
+
+### Project documents
+
+| Document | Answers |
+|---|---|
+| [**Whitepaper**](docs/WHITEPAPER.md) | What are the **invariants you must not break**, and what are the known limits? Every default value in it is code-verified. |
+| [**Frontend co-creation plan**](docs/FRONTEND-CO-CREATION.md) | What can outside contributors change, what is off-limits, and how to do it — complete component/route/slot map included. |
+| [Feature Inventory](docs/internal/FEATURE-INVENTORY.md) | What features exist and where each one lives (39 user capabilities / 17 tools / 49 routes / 98 config keys) |
+
+> **⚠️ Upgrading from before 3.0?** A batch of default values was **flipped** in 3.0.0 —
+> most notably whiteboard + ledger went from `off` to **`on`**. Do not trust pre-3.0
+> documentation on defaults; see the [whitepaper §4.1](docs/WHITEPAPER.md) for the verified table.
 
 ## Known limitations
 

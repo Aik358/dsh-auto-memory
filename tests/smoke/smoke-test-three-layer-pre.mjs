@@ -165,29 +165,46 @@ console.log('\n[G2] L0 列表每条带 layer（五值）+ status（三值）')
     bogus.length >= 1 && bogus.every((it) => it.layer === L0.L0_DEFAULT_LAYER))
 }
 
-// ═════════════════ G3 被 supersede 的记忆：检索/注入两处都不出现 ═════════════════
-console.log('\n[G3] superseded 记忆在检索结果与注入内容两处都不出现（I5）')
+// ═════════════════ G3 被 supersede 的记忆：检索侧「返回但标记」/注入侧继续过滤 ═════════════════
+// ★R4-A 落地（2026-09-19）：本组按**用户最终裁定**重写。
+//   原 I5（契约 :183）「两处都过滤」；用户两次修正后定稿：
+//     ① 检索侧「**返回但标记**」（作废条目对 AI 是有用信息）
+//     ② 「**retracted 也不过滤**……**并不是挡，我感觉是备注**」（做错的事最该被记住）
+//   ⇒ 检索侧改为三态一律返回 + 标记；**注入侧维持过滤**（常驻 800 token 不装过时条目）。
+console.log('\n[G3] superseded/retracted 检索侧返回但标记；注入侧继续过滤（I5 修正版）')
 {
   // ① 谓词语义（含反向对照）
-  ok('G3-status=current → 放行', L0.isCurrentPre({ status: 'current' }) === true)
-  ok('G3-status 缺失 → 放行（旧记录向后兼容）', L0.isCurrentPre({}) === true && L0.isCurrentPre(undefined) === true)
-  ok('G3-status=superseded → 挡下', L0.isCurrentPre({ status: 'superseded' }) === false)
-  ok('G3-status=retracted → 挡下', L0.isCurrentPre({ status: 'retracted' }) === false)
-  ok('G3-未知 status → 不放行（fail closed）', L0.isCurrentPre({ status: 'bogus' }) === false)
+  ok('G3-isCurrentPre: status=current → 放行', L0.isCurrentPre({ status: 'current' }) === true)
+  ok('G3-isCurrentPre: status 缺失 → 放行（旧记录向后兼容）', L0.isCurrentPre({}) === true && L0.isCurrentPre(undefined) === true)
+  ok('G3-isCurrentPre: status=superseded → 挡下（注入侧继续过滤）', L0.isCurrentPre({ status: 'superseded' }) === false)
+  ok('G3-isCurrentPre: status=retracted → 挡下（注入侧继续过滤）', L0.isCurrentPre({ status: 'retracted' }) === false)
+  ok('G3-isCurrentPre: 未知 status → 不放行（fail closed）', L0.isCurrentPre({ status: 'bogus' }) === false)
 
-  // ② 检索侧：真实语料 → 标一条 superseded → 过滤后它必须消失，且兄弟条必须留下（非真空）
+  // ★R4-A：检索侧准入谓词 —— 已知三态**一律放行**，只对未知值 fail-closed
+  ok('G3-isRetrievablePre: current → 放行', L0.isRetrievablePre({ status: 'current' }) === true)
+  ok('G3-isRetrievablePre: superseded → 放行（返回但标记）', L0.isRetrievablePre({ status: 'superseded' }) === true)
+  ok('G3-isRetrievablePre: retracted → 放行（★它是教训，不是垃圾）', L0.isRetrievablePre({ status: 'retracted' }) === true)
+  ok('G3-isRetrievablePre: 未知 status → 挡下（fail closed，防新增枚举静默放行）', L0.isRetrievablePre({ status: 'bogus' }) === false)
+
+  // ② 检索侧：真实语料 → 标一条 superseded → 它必须**仍在结果里**，且带标记
   const raw = L0.buildL0IndexPre(SRC_LOG.text, { layer: SRC_LOG.path })
   ok('G3-检索侧前置：抽取到 ≥2 条', raw.length >= 2)
   const corpus = raw.map((it, i) => ({ id: it.id, l0: it.l0, layer: it.layer, status: i === 0 ? 'superseded' : 'current' }))
-  const killed = corpus[0].id
-  const kept = corpus.filter((c) => L0.isCurrentPre(c))
-  eq('G3-检索结果：被 supersede 的那条不在结果里', kept.some((c) => c.id === killed), false)
-  ok('G3-检索结果：其余 current 条仍返回（计数非零，证不是"全空"假过）', kept.length === corpus.length - 1 && kept.length >= 1)
+  const marked = corpus[0].id
+  const kept = corpus.filter((c) => L0.isRetrievablePre(c))
+  eq('G3-检索结果：被 supersede 的那条**仍在结果里**（返回但标记）', kept.some((c) => c.id === marked), true)
+  eq('G3-检索结果：全部条目都返回（三态不剔除）', kept.length, corpus.length)
+  ok('G3-标记：superseded 条目带 ⚠已作废', L0.supersededMarkPre({ status: 'superseded' }).includes(L0.L0_SUPERSEDED_MARK_V1))
+  ok('G3-标记：retracted 条目带 ⚠已撤回', L0.supersededMarkPre({ status: 'retracted' }).includes(L0.L0_RETRACTED_MARK_V1))
+  ok('G3-标记：current 条目无标记（逐字节向后兼容）', L0.supersededMarkPre({ status: 'current' }) === '' && L0.supersededMarkPre({}) === '')
   // 接线可达性：检索路径确实用这个谓词（删掉即红）
-  ok('G3-接线：检索路径用 isCurrentPre 过滤（index.js l0 语料构建）',
-    /if \(!isCurrentPre\(it\)\) continue/.test(SRC_INDEX))
-  ok('G3-接线：检索路径从 l0-extract-pre 取入 isCurrentPre',
-    /const \{ buildL0IndexPre, isCurrentPre \} = await import\('\.\/l0-extract-pre\.js'\)/.test(SRC_INDEX))
+  ok('G3-接线：检索路径用 isRetrievablePre 准入（index.js l0 语料构建）',
+    /if \(!retrievableL0\(it\)\) continue/.test(SRC_INDEX))
+  ok('G3-接线：检索路径从 l0-extract-pre 取入 isRetrievablePre',
+    /isRetrievablePre: retrievableL0/.test(SRC_INDEX))
+  // 反向锁：旧谓词**不得**再出现在检索侧准入位置
+  ok('G3-反向锁：检索侧不再用 isCurrentPre 作准入（注入侧才有）',
+    !/if \(!isCurrentPre\(it\)\) continue/.test(SRC_INDEX))
 
   // ③ 注入侧：注入块由**过滤后**的集合构建 → 被 supersede 的那条不得出现在注入文本里
   const mkCand = (c, tag) => ({
@@ -196,6 +213,10 @@ console.log('\n[G3] superseded 记忆在检索结果与注入内容两处都不�
     fileDigest: 'e'.repeat(64), recordDigest: 'd'.repeat(63) + tag, score: tag === 'a' ? 0.91 : 0.62,
     excerpt: '参考正文 ' + tag,
   })
+  // ③ 注入侧：★R4-A 之后**两处判据不同** —— 检索侧放行、注入侧继续过滤。
+  //    故这里显式用注入侧谓词 isCurrentPre 过滤后再喂注入包（模拟注入侧真实行为）。
+  const forInject = corpus.filter((c) => L0.isCurrentPre(c))
+  eq('G3-注入侧前置：过滤后只剩 current 条（superseded 已剔除）', forInject.length, corpus.length - 1)
   const injected = A.buildReferenceTailPacketPre({
     request: {
       schemaVersion: 1, namespace: A.NAMESPACE, kind: 'activation_request',
@@ -205,16 +226,16 @@ console.log('\n[G3] superseded 记忆在检索结果与注入内容两处都不�
       scope: 'Workspace', contextVersion: 7, memoryIndexVersion: 'idx_' + 'ab'.repeat(16),
       threshold: { policyVersion: 'thr_v1', score: 0.91, threshold: 0.8, reason: 'fv2 lane=explicit emit intent=0.91 dense=0.88 margin=0.21 explicit_lane' },
       level: 'excerpt', ttlSteps: 2, createdAt: 1700000000000, expiresAt: 1700000000120000,
-      candidates: kept.map((c, i) => mkCand(c, i === 0 ? 'a' : 'b')),
+      candidates: forInject.map((c, i) => mkCand(c, i === 0 ? 'a' : 'b')),
     },
     triggerReason: 'explicit recall', nowStep: 100,
   })
   ok('G3-注入侧前置：注入包构建成功且含 ≥1 条', injected.ok === true && /Reference:/.test(injected.rendered))
-  ok('G3-注入内容：被 supersede 的 id 不出现', !injected.rendered.includes(killed))
+  ok('G3-注入内容：被 supersede 的 id 不出现（注入侧仍过滤）', !injected.rendered.includes(marked))
   ok('G3-注入内容：current 兄弟条的 id 出现（证明注入通道本身可用）',
-    kept.some((c) => injected.rendered.includes(c.id)))
-  ok('G3-注入内容：被 supersede 的条目在渲染前已由同一谓词剔除（检索/注入共用谓词）',
-    kept.every((c) => L0.isCurrentPre(c) === true) && L0.isCurrentPre({ status: 'superseded' }) === false)
+    forInject.some((c) => injected.rendered.includes(c.id)))
+  ok('G3-两处判据分工明确：检索侧放行 superseded、注入侧挡下它',
+    L0.isRetrievablePre({ status: 'superseded' }) === true && L0.isCurrentPre({ status: 'superseded' }) === false)
 }
 
 // ═════════════════ G4 expand 取回原文（回归钉子） ═════════════════
