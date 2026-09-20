@@ -80,8 +80,8 @@
     var out = document.getElementById("termOut");
     var reduce = reduced();
 
-    var INK = "#17171A", INK2 = "#5A5A60", SOFT = "rgba(23,23,26,.16)",
-        ACC = "#E9470C", ACCI = "#B23708", PAPER = "#ECE8DF";
+    var INK = "hsla(0,0%,100%,.9)", INK2 = "hsla(0,0%,100%,.56)", SOFT = "hsla(0,0%,100%,.10)",
+        ACC = "#6799fe", ACCI = "#8fb4ff", PAPER = "#15171c";
 
     var ARCH = [
       { t: ["无问自忆", "PROACTIVE RECALL"], w: ["注入面 · 固定边界", "injection · fixed boundary"], d: ["宿主盯着上下文，在固定边界自动注入召回，零指令、前缀缓存友好。", "The host injects recalls at a fixed boundary — zero instructions, cache-friendly."] },
@@ -158,7 +158,7 @@
       ctx.fillText(idx, n.x - 6, n.y + 4);
       /* decrypt lines converge on selection */
       if (active && decrypt < 1) {
-        var q = Math.floor(decrypt * 14) / 14;
+        var q = Math.floor(decrypt * 12) / 12;
         var a1 = proj(p.x - CW / 2, p.y - CH / 2, p.z, cx, cy);
         var a2 = proj(p.x - CW / 2 + CW * q, p.y - CH / 2 + CH * q, p.z, cx, cy);
         var b1 = proj(p.x + CW / 2, p.y + CH / 2, p.z, cx, cy);
@@ -198,13 +198,14 @@
     function frame(now) {
       if (!running) return;
       raf = requestAnimationFrame(frame);
-      /* 24fps step: hold previous frame for ~41.7ms */
+      /* background register: smooth 60fps (follows refresh rate) */
       if (!t0) t0 = now;
-      var t = Math.floor((now - t0) / 41.7) / 24;
+      var t = (now - t0) / 1000;
       if (now - lastInput > 3500 && !reduce) tYaw += 0.0011;
       yaw += (tYaw - yaw) * 0.08;
       pitch += (tPitch - pitch) * 0.08;
-      if (decrypt < 1) decrypt = Math.min(1, decrypt + 1 / 14);
+      /* decrypt-lines keep the 12fps stepped hand-drawn feel */
+      if (decrypt < 1) decrypt = Math.min(1, decrypt + 1 / 12);
       var w = canvas.clientWidth, h = canvas.clientHeight, cx = w / 2, cy = h / 2 - 6;
       ctx.clearRect(0, 0, w, h);
       drawGround(cx, cy, t);
@@ -316,7 +317,7 @@
       var px = e.clientX - rect.left, py = e.clientY - rect.top;
       var best = -1, bd = 1e9, cx = canvas.clientWidth / 2, cy = canvas.clientHeight / 2 - 6;
       for (var c = 0; c < COLS; c++) for (var r = 0; r < ROWS; r++) {
-        var p = cardCenter(c, r, Math.floor(performance.now() / 41.7) / 24);
+        var p = cardCenter(c, r, performance.now() / 1000);
         var s = proj(p.x, p.y, p.z, cx, cy);
         var d = (s.x - px) * (s.x - px) + (s.y - py) * (s.y - py);
         if (d < bd) { bd = d; best = c * ROWS + r; }
