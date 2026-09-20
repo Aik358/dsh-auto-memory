@@ -152,7 +152,13 @@ const grab = (name) => { // 逐行扫描+(){} 混合配平(兼容 Object.freeze 
   return buf
 }
 const helpers = ['DEFAULT_PROMPT_LAYERS', 'neutralizePromptTemplateVars', 'truncateHead', 'truncateLinesBounded', 'stripSensitiveSections', 'sanitizeForInjection', 'scrubJunkLines', 'reflectionDigest', 'mojibakeDensity', 'MOJIBAKE_RE', 'hasStutter', 'BASE64_LINE', 'todayStr']
+// ★T7-a（2026-09-20 · 上游 #86-4）：水位/接续默认值已抽为**模块级常量**，本套件同样是
+//   "源码抽取 + new Function"执行 `renderMemoryDynamic`，故必须显式注入这两个自由变量，
+//   否则抛 `ReferenceError: DEFAULT_WATER_LEVEL_THRESHOLD is not defined`（实测已发生）。
+//   ⚠️ 注入的是**与生产同值**的常量，不是放宽断言——抽取式测试依赖的全部模块级符号都必须显式提供，
+//   否则测的就不是真代码（与上面 composeMemoryEnvelopePre 那条同因）。
 const helperCode = helpers.map((h) => grab(h)).join('\n')
+  + '\nconst DEFAULT_WATER_LEVEL_THRESHOLD = 0.75\nconst DEFAULT_AUTO_CONTINUE_THRESHOLD = 0.75\n'
 // ⚠️ 2026-09-14 T0-3：`renderMemoryDynamic` 现在把序列化交给**分项账本**（`composeMemoryEnvelopePre`），
 // 所以源码抽取式测试必须**连那个模块一起注入**——否则 `new Function` 作用域里没有这个符号
 // （报 `ReferenceError: composeMemoryEnvelopePre is not defined`）。

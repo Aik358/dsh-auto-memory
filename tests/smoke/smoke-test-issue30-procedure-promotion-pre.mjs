@@ -30,7 +30,7 @@ const memIO = () => { let s = null; return { io: { save: (v) => { s = v }, load:
 let fakeNow = 1000000
 const now = () => ++fakeNow
 
-function makeHub() {
+function makeHub(opts = {}) {
   return createMemoryHubPre({
     stores: {
       episodic: createEpisodicStorePre({ now }),
@@ -38,7 +38,35 @@ function makeHub() {
       procedures: createProcedureStorePre({ now }),
     },
     now,
+    // ★T10（2026-09-20）：机械 procedure 切片现已**默认关闭**（见 index.js 的
+    //   `hubMechanicalProcedureFeedEnabled: false`）。本套件测的是**旧行为**（issue #30
+    //   对那条通路的约束），故**显式开启**再断言 —— 而不是放宽断言。
+    //   ⇒ 这样本条通路仍被完整锁住，同时「默认关闭」由 T10 自己的用例负责。
+    mechanicalProcedureFeedEnabled: true,
+    ...opts,
   })
+}
+
+// ★T10 补充：**默认必须关闭**（不传选项时不得产出机械 procedure 观察）。
+//   与上面 makeHub({mechanicalProcedureFeedEnabled:true}) 互为对照：
+//   一个锁「显式开启时的旧行为」，一个锁「缺省时的新行为」。
+{
+  const hubDefault = createMemoryHubPre({
+    stores: {
+      episodic: createEpisodicStorePre({ now }),
+      facts: createFactStorePre({ now }),
+      procedures: createProcedureStorePre({ now }),
+    },
+    now,
+  })
+  const eps2 = hubDefault.stores.episodic
+  eps2.append({ kind: 'user', userText: '帮我部署这个服务到服务器', sessionRef: 'sesr_DEF', eventSeq: 1 })
+  eps2.append({ kind: 'assistant', assistantText: '部署成功完成', sessionRef: 'sesr_DEF', eventSeq: 2 })
+  eps2.consolidate()
+  const cfDefault = hubDefault.crossFeed('sesr_DEF')
+  ok(cfDefault.ok, 'T10-1 默认配置下 crossFeed 仍正常返回(不报错)')
+  ok(!cfDefault.fed.some((f) => f.to === 'procedure'), 'T10-2 ★★ 默认**不**产出机械 procedure 观察（无模型介入的截断行不再入店）')
+  ok(hubDefault.stores.procedures.query().length === 0, 'T10-3 ★★ 默认下 procedures 店保持空（procedural 线只留模型直写/人工）')
 }
 
 console.log('[P1] episode → crossFeed → observation-only 候选 + promote 首闸')

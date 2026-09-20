@@ -124,10 +124,15 @@ function makeEngine(opts) {
     // 不许按比例 arm)。抽出的函数体在 new Function 里重建,作用域中没有模块级绑定 ⇒
     // 必须与 diag/AbortSignal 一并注入,否则抛 ReferenceError 并被 armAutoContinue 自身的
     // catch 吞掉,表现为"水位达标却不 arm"。
+    // ★T7-a(2026-09-20 · 上游 #86-4):同理,`DEFAULT_AUTO_CONTINUE_THRESHOLD` 已从内联 0.75
+    // 改为**模块级常量**,抽取出的 autoContinueState 会引用它 ⇒ 必须注入(同值 0.75),否则
+    // ReferenceError 被 catch 吞掉,表现为"automContState 拿不到 armed"(实测已发生)。
     // 纪律:此后凡被抽出的函数**新增外部依赖**(模块级绑定/全局),都必须加进这张注入表,
     // 否则同样以"静默不生效"的形式失败。
-    const obj = new Function('diag', 'AbortSignal', 'shouldArmAutoContinuePre', 'return {' + extractFn(h) + '};')(
-      () => {}, { timeout: () => undefined }, shouldArmAutoContinuePre)
+    const obj = new Function('diag', 'AbortSignal', 'shouldArmAutoContinuePre',
+      'DEFAULT_AUTO_CONTINUE_THRESHOLD', 'DEFAULT_WATER_LEVEL_THRESHOLD',
+      'return {' + extractFn(h) + '};')(
+      () => {}, { timeout: () => undefined }, shouldArmAutoContinuePre, 0.75, 0.75)
     const key = Object.keys(obj)[0]
     fns[key] = obj[key].bind(eng)
   }

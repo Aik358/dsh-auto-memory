@@ -75,9 +75,27 @@ function makeFakeEngine() {
 }
 const handoffStampFn = new Function(grab('handoffStamp') + '\nreturn handoffStamp;')()
 const nowHmFn = new Function(grab('nowHm') + '\nreturn nowHm;')()
+// ★L3(2026-09-17) 修复:L3 把 buildContinueCarry 的组装逻辑抽成了**模块级**函数
+//   `assembleCarryPre`。本测试用 `new Function` 从源码重建方法体,自由变量必须**显式注入** ——
+//   漏注入会让方法体内 `assembleCarryPre(...)` 抛 ReferenceError, 被 try/catch 吞成
+//   `{ok:false, error:'assembleCarryPre is not defined'}` ⇒ D3 六条断言假红。
+//   这正是"重构改了自由变量可见性、源码抽取式测试没跟上"的典型, 记为教训。
+//   ⚠️ 坑:extractFn 假定 header 以函数体的 `{` 结尾、从这里开始配平;
+//   而本函数的**参数用了对象解构**(`{ head = [] , ... } = {}`), 若 header 只写到 `(`,
+//   配平会在**解构默认值的 `}`** 处提前闭合 ⇒ 截出半截源码 ⇒ `new Function` 报
+//   "Unexpected token 'return'"。故 header 必须一路写到**函数体的 `{`**。
+const assembleCarryPreFn = new Function(
+  extractFn('export function assembleCarryPre({ head = [], nav = [], bulk = [], budget = 18000 } = {}) {')
+    .replace(/^export\s+/, '') + '\nreturn assembleCarryPre;'
+)()
 const bindMethod = (header, fake, extra) => {
-  const names = ['path', 'existsSync', 'mkdir', 'writeFile', 'readdir', 'stat', 'handoffStamp', 'nowHm']
-  const vals = [path, SRC && null, mkdir, writeFile, readdir, stat, handoffStampFn, nowHmFn]
+  const names = ['path', 'existsSync', 'mkdir', 'writeFile', 'readdir', 'stat', 'handoffStamp', 'nowHm', 'assembleCarryPre',
+    // ★T7-a（2026-09-20 · 上游 #86-4）：水位/接续默认值已抽为**模块级常量**。
+    //   本套件用"源码抽取 + new Function"执行方法体 ⇒ 被抽出的代码里的自由变量必须在这里显式注入，
+    //   否则会抛 `DEFAULT_AUTO_CONTINUE_THRESHOLD is not defined`（实测已发生）。
+    //   ⚠️ 注入的是**与生产同值**的常量（0.75），不是放宽断言。
+    'DEFAULT_AUTO_CONTINUE_THRESHOLD', 'DEFAULT_WATER_LEVEL_THRESHOLD']
+  const vals = [path, SRC && null, mkdir, writeFile, readdir, stat, handoffStampFn, nowHmFn, assembleCarryPreFn, 0.75, 0.75]
   vals[1] = (p) => { try { return readFileSync(p) != null } catch (e) { return false } }
   for (const k of Object.keys(extra || {})) { names.push(k); vals.push(extra[k]) }
   const obj = new Function(...names, 'return {' + extractFn(header) + '};')(...vals)
@@ -270,8 +288,12 @@ console.log('[switch-decouple] D4 接线:两页共用同一对配置键 + 默认
   const zhS = (CSRC.match(/handoffSwitchTitle: '/g) || []).length
   ok(zhF === 2 && zhS === 2, 'zh+en 两套文案表都补齐了新开关文案(实际 ' + zhF + '/' + zhS + ')')
   // 白板关闭时开关卡必须仍可渲染(旧实现在 !data.enabled 处直接 return → 默认关 = 无处可开)
+  // ★L2(2026-09-17) 更新锚点:该早退分支的返回体已被 L2 改写(空态改为按 reason 分支的 disMsg 卡片),
+  //   旧锚点字面量 `[switchCard` 不再逐字存在 ⇒ indexOf = -1 ⇒ 断言假红。
+  //   判据本身不变: switchCard 必须**先于**早退分支出现(即定义在早退之前, 默认关也能渲染它)。
   const planTab = extractFnIn(CSRC, 'function PlanTab() {')
-  ok(planTab.indexOf('switchCard') >= 0 && planTab.indexOf('switchCard') < planTab.indexOf("if (!data.enabled) return h('div', null, [switchCard"),
+  const earlyReturnIdx = planTab.indexOf('return h(\'div\', null, [switchCard, h(Card, { title: t(\'planTitle\') }')
+  ok(planTab.indexOf('switchCard') >= 0 && earlyReturnIdx >= 0 && planTab.indexOf('switchCard') < earlyReturnIdx,
     '白板页:开关卡先于「未启用」分支渲染(默认关闭状态下仍可打开)')
   // 2026-09-14 补:上面那条只证明「开关卡定义在早退分支之前」,对**已启用**分支不构成约束 ——
   // 实测正是它漏掉的路径:白板一开就走末尾 return(rows),而 rows 里没有 switchCard ⇒ 开得了、关不掉。

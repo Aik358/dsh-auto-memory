@@ -40,8 +40,9 @@ const { apply } = await import('../../lib/index.js')
 apply(ctx, {})
 
 const tool = (name) => registeredTools.find((t) => t.name === name)
-if (registeredTools.length !== 16) throw new Error('expected 16 tools (3.0.0 起 boardMode 默认 graph), got ' + registeredTools.length)
-if (registeredRoutes.length !== 47) throw new Error('expected 47 routes, got ' + registeredRoutes.length)
+// ★ T4（2026-09-19）：16 → 17 —— 新增 memory_procedure_pre（procedure memory 的模型直写通路，无条件注册）。
+if (registeredTools.length !== 17) throw new Error('expected 17 tools (16 + T4 memory_procedure_pre), got ' + registeredTools.length)
+if (registeredRoutes.length !== 49) throw new Error('expected 49 routes, got ' + registeredRoutes.length)
 
 const cfgRoute = registeredRoutes.find((r2) => r2.path === '/api/dsh-auto-memory-pre/config')
 let body

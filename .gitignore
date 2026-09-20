@@ -23,3 +23,9 @@ _tmp-e5/
 __pycache__/
 artifacts/release-c2-asset-pack/package/
 artifacts/release-c2-asset-pack/*.tgz
+# 一次性备份/临时文件（发版与回归都不应带上）
+*.bak
+*.bak-*
+*.bak2-*
+_patch-*.mjs
+_verify-*.mjs

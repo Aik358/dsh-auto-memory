@@ -50,7 +50,11 @@ const copyDirExcluding = (src, dst, excludeRe) => {
 copyDirExcluding(path.join(DEV, 'lib'), path.join(REL, 'lib'), /\.bak/)
 copyDirExcluding(path.join(DEV, 'tests'), path.join(REL, 'tests'), /node_modules/)
 copyDirExcluding(path.join(DEV, 'python'), path.join(REL, 'python'), /(__pycache__|\.pyc|bench)/)
-for (const entry of ['cordis.patch.yml', 'README.md', 'README.zh-CN.md', 'LICENSE', 'notices.json', 'docs', 'social-preview.html', '.github']) {
+for (const entry of ['cordis.patch.yml', 'README.md', 'README.zh-CN.md', 'LICENSE', 'notices.json', 'docs', 'social-preview.html', '.github',
+  // ★2026-09-21 补 CHANGELOG.md：两份 README **各有 3 处**链接到 `CHANGELOG.md`（导航条 / 文末链接区，
+  //   共 6 处），但此文件此前**从不在复制清单里**，REL 仓也从未有过它 ⇒ GitHub 上点「Changelog」
+  //   一直是 **404**（`git log --all -- CHANGELOG.md` 为空可证）。发版脚本漏拷，属真断链。
+  'CHANGELOG.md']) {
   const s = path.join(DEV, entry), d = path.join(REL, entry)
   if (existsSync(s)) cpSync(s, d, { recursive: true })
 }
@@ -70,6 +74,14 @@ const transforms = [
   ['memory_note_pre', 'memory_note'],
   ['memory_user_pre', 'memory_user'],
   ['memory_log_pre', 'memory_log'],
+  // ★T7-e(2026-09-20 用户报「发布后这些工具后面的 -pre 是要去掉的」)：以下 3 个工具
+  //   **此前不在表里** ⇒ 发布物残留 `_pre`（memory_expand_pre / memory_trace_pre 实测证实，
+  //   见 REL 线 D:\dsh_debug\_publish_dsh-auto-memory\lib\index.js），而 memory_procedure_pre
+  //   是 T4 新增工具、3.0.0 之后才有的 ⇒ 下次发布也会带 `_pre` 出去。
+  //   ⚠️ 顺序无关（各名字互不为前缀），但放在同类工具名之后便于人工核对。
+  ['memory_expand_pre', 'memory_expand'],
+  ['memory_trace_pre', 'memory_trace'],
+  ['memory_procedure_pre', 'memory_procedure'],
   ['calendar_remove_pre', 'calendar_remove'],
   ['calendar_done_pre', 'calendar_done'],
   ['calendar_list_pre', 'calendar_list'],
@@ -248,6 +260,24 @@ const libModuleRenames = [
   'tier0-catalog-pre.js',         // Tier-0 常驻目录
   'wb-contract-pre.js',           // S10 白板契约(判据/保护段/marker)
   'wb-sidecar-pre.js',            // S10 白板结构化 sidecar + 看板派生
+  // ★2026-09-21（3.0.1）补齐第二批：3.0.0 发布后又新增/遗留的 8 个模块同样**从未登记**。
+  //   干跑 `node tools/release.mjs 3.0.1 --dry-run` 时被「模块重命名完整性自检」拦下 ——
+  //   若不登记，它们会以 `*-pre.js` 原名进入发布包，残留闸门必然拒绝构建。
+  //   这 8 个都是**已上线功能的源文件**，不是临时文件：
+  //     · rules-edit-pre.js      → R7 用户级硬性约束可视编辑（宿主 + 面板）
+  //     · skill-export-*.js      → T4 技能导出（三档深度，宿主侧 + 共享逻辑）
+  //     · note-status-*.js       → P6B 结论生命周期（supersedes / retract）
+  //     · config-io-pre.js       → 配置原子写
+  //     · dsh-home-pre.js        → dshHome() 路径解析（被多数模块 import）
+  //     · degrade-pre.js         → 降级留痕
+  'config-io-pre.js',             // 配置原子写
+  'degrade-pre.js',               // 降级留痕
+  'dsh-home-pre.js',              // dshHome() 路径解析
+  'note-status-apply-pre.js',     // P6B 结论生命周期(状态落盘)
+  'note-status-pre.js',           // P6B 结论生命周期(状态解析)
+  'rules-edit-pre.js',            // R7 规则可视编辑
+  'skill-export-host-pre.js',     // T4 技能导出(宿主侧)
+  'skill-export-pre.js',          // T4 技能导出(共享逻辑)
 ]
 const libRenameMap = libModuleRenames.map((f) => [f, f.replace(/-pre\.js$/, '.js')])
 for (const [from, to] of libRenameMap) {
@@ -503,6 +533,10 @@ const residual = [
   // 预览标识(_pre/-pre)—— 发布物中必须为裸稳定名
   'memory_log_pre', 'memory_note_pre', 'memory_user_pre', 'memory_recall_pre', 'memory_maintain_pre',
   'memory_status_pre', 'memory_reflect_pre', 'memory_consolidate_pre', 'memory_external_pre', 'memory_read_pre',
+  // ★T7-e(2026-09-20)：下面 3 个此前**转换表与残留表双双漏登记** ⇒ 两次发布静默带 `_pre` 出去。
+  //   教训：新增工具必须**同时**登记到 transforms 与 residual 两处，否则漏了不会报警。
+  //   本项已由 smoke-test-t7e-toolname-pre.mjs 做「两侧清单一致性」自动守卫。
+  'memory_expand_pre', 'memory_trace_pre', 'memory_procedure_pre',
   'calendar_add_pre', 'calendar_done_pre', 'calendar_list_pre', 'calendar_remove_pre',
   'auto-memory-pre', 'update-check-pre', 'notices-cache-pre', 'dsh:auto-memory-pre',
   // 模块/存储/版本身份(发布转换后必须为裸名)

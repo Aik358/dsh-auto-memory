@@ -124,18 +124,19 @@ t('M9 P3 两工具条件注册 + 工具数闸门(legacy 14 / graph 16)', async (
   // 只匹配裸 defineTool 会被注释骗过, 只匹配 tools.push 才能证明定义真的进了数组。
   assert.ok(/\btools\.push\(defineTool\('memory_expand_pre'/.test(src), 'memory_expand_pre 定义已 push 进 tools(防 BUG-15 回归)')
   assert.ok(/\btools\.push\(defineTool\('memory_trace_pre'/.test(src), 'memory_trace_pre 定义已 push 进 tools(防 BUG-15 回归)')
-  assert.ok(src.includes('工具数 14→16'), '硬锁联动注释在场')
+  assert.ok(src.includes('工具数 14→16') || src.includes('工具数 16→17'), '硬锁联动注释在场')
   // ★2026-09-16 设计裁定(与原规划 P3-3 的差异, 须留痕):
   //   规划 P3-3 写「三处工具数硬锁 14→16」, 但那是**在 boardMode 闸门存在之前**写的。
   //   现设计要求: legacy(默认)档**字节级不变** ⇒ 工具数必须仍为 14; 只有 graph 档才 16。
   //   故三处硬锁**保持 14**, 由 graph 档端到端套件另行断言 16。
+  // ★ T4(2026-09-19): 16 → 17(新增 memory_procedure_pre, 无条件注册)。
   for (const f of ['tests/smoke/smoke-test.mjs', 'tests/smoke/smoke-test-m3b3-pre.mjs', 'tests/smoke/smoke-test-context-observer.mjs']) {
     const s = await readFile(f, 'utf8')
-    assert.ok(/!==\s*16/.test(s), f + ' 默认档已翻 graph ⇒ 工具数硬锁应为 16(3.0.0)')
+    assert.ok(/!==\s*17/.test(s), f + ' 默认档已翻 graph ⇒ 工具数硬锁应为 17(含 T4 memory_procedure_pre)')
   }
-  // graph 档 16 的断言在 smoke-test-graph-mode-pre.mjs
+  // graph 档 17 的断言在 smoke-test-graph-mode-pre.mjs
   const g = await readFile('tests/smoke/smoke-test-graph-mode-pre.mjs', 'utf8')
-  assert.ok(/!==\s*16/.test(g) || /=== *16/.test(g), 'graph 档工具数 16 有独立断言')
+  assert.ok(/!==\s*17/.test(g) || /=== *17/.test(g), 'graph 档工具数 17 有独立断言')
 })
 
 t('M10 GUI 一键切换: 设置页与接续面板双入口, 同一配置键 boardMode, 默认档旧行为', async () => {

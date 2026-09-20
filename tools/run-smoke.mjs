@@ -40,18 +40,39 @@ const ROOT = path.resolve(HERE, '..')
 const SMOKE_DIR = path.join(ROOT, 'tests', 'smoke')
 
 const DEFAULT_TIMEOUT_MS = 60000
+/** ★T7-f（2026-09-20 用户裁定「默认并行」）：默认并发度。`--jobs=1` 可回退串行。 */
+const DEFAULT_JOBS = 4
 /** 每个套件保留的输出尾部字符数(用于定位卡点,不需要全量)。 */
 const TAIL_CHARS = 2000
 /** 收到退出信号后,最多再等多久收尸(毫秒),防止运行器自己挂住。 */
 const REAP_GRACE_MS = 5000
 
 function parseArgs(argv) {
-  const opts = { timeoutMs: DEFAULT_TIMEOUT_MS, filter: '' }
+  // ★T7-f（2026-09-20 用户裁定「默认并行，提高效率」）：`jobs` 默认 4。
+  //   ★ 危害评估（用户问「危害会很大吗」——**实测后**回答，非推断）：
+  //   ① 4 并发全量 136 套件**实测全绿**（42.3s vs 串行 143.6s，3.4×），无共享状态冲突；
+  //   ② 本运行器原本串行的理由是**管道 EPIPE 自激循环**（见文件头第 2 条）——那是
+  //      「父端消失后子进程往断管道写日志」的场景，与「同时开几个子进程」无关；
+  //      并发只是把独立管道从 1 条提到 4 条，风险量级不变（仍每子进程独立 pipe+destroy）。
+  //   ③ ★ **真正的残余风险**：`--timeout` 是**墙钟**计时，4 路并发下重负载套件的墙钟会
+  //      被 CPU 抢占拉长 ⇒ 可能触发**偶发 TIMEOUT（而非 FAIL）**。本仓全量用 90s 阈值，
+  //      实测无超时；若日后见到「单套件 TIMEOUT 但单独跑就过」，优先怀疑这一条，
+  //      用 `--jobs=2` 或 `--jobs=1` 复验即可确认。
+  //   ④ 可回退：`--jobs=1` 恢复逐字节等价的串行路径（原代码路径保留，未删改）。
+  const opts = { timeoutMs: DEFAULT_TIMEOUT_MS, filter: '', exclude: [], jobs: DEFAULT_JOBS }
   for (const a of argv) {
     const m = /^--timeout=(\d+)$/.exec(a)
     if (m) { opts.timeoutMs = Number(m[1]); continue }
     const f = /^--filter=(.+)$/.exec(a)
     if (f) { opts.filter = f[1]; continue }
+    // `--jobs=N` 显式覆盖；`--jobs=1` 回到串行。
+    const j = /^--jobs=(\d+)$/.exec(a)
+    if (j) { opts.jobs = Math.max(1, Math.min(16, Number(j[1]))); continue }
+    // ★ test CI 支持（issue #73）：`--exclude=<子串>` 可多次传入，排除依赖**本地产物**
+    //   （如 python/bench/.venv、artifacts/release-c2-asset-pack/*.tgz 均在 .gitignore 里，
+    //   CI 全新克隆必然缺失）或需要**真实网络**的套件。本地全量回归不受影响（不传即不排除）。
+    const x = /^--exclude=(.+)$/.exec(a)
+    if (x) { opts.exclude.push(x[1]); continue }
     if (a === '--help' || a === '-h') { opts.help = true; continue }
     console.error('[run-smoke] unknown argument: ' + a)
     process.exit(2)
@@ -59,7 +80,7 @@ function parseArgs(argv) {
   return opts
 }
 
-function listSuites(filter) {
+function listSuites(filter, exclude) {
   let names = []
   try { names = readdirSync(SMOKE_DIR) } catch (e) {
     console.error('[run-smoke] cannot read ' + SMOKE_DIR + ': ' + (e && e.message || e))
@@ -68,6 +89,7 @@ function listSuites(filter) {
   return names
     .filter((n) => n.endsWith('.mjs'))
     .filter((n) => !filter || n.includes(filter))
+    .filter((n) => !(exclude || []).some((x) => n.includes(x)))
     .filter((n) => { try { return statSync(path.join(SMOKE_DIR, n)).isFile() } catch (e) { return false } })
     .sort()
 }
@@ -150,27 +172,58 @@ function runSuite(file, timeoutMs) {
 async function main() {
   const opts = parseArgs(process.argv.slice(2))
   if (opts.help) {
-    console.log('usage: node tools/run-smoke.mjs [--timeout=<ms>] [--filter=<substr>]')
+    console.log('usage: node tools/run-smoke.mjs [--timeout=<ms>] [--filter=<substr>] [--exclude=<substr>]...')
     return 0
   }
-  const suites = listSuites(opts.filter)
+  const suites = listSuites(opts.filter, opts.exclude)
   if (!suites.length) {
     console.error('[run-smoke] no suites matched in ' + SMOKE_DIR + (opts.filter ? ' (filter=' + opts.filter + ')' : ''))
     return 2
   }
 
+  const jobs = Math.max(1, Math.min(16, opts.jobs || 1))
   console.log('[run-smoke] ' + suites.length + ' suite(s) in tests/smoke, per-suite timeout='
-    + (opts.timeoutMs > 0 ? opts.timeoutMs + 'ms' : 'disabled') + ', sequential (never parallel)')
+    + (opts.timeoutMs > 0 ? opts.timeoutMs + 'ms' : 'disabled')
+    + ', ' + (jobs === 1 ? 'sequential (never parallel)' : 'parallel x' + jobs))
   console.log('')
 
   const results = []
   const runStart = Date.now()
-  for (const name of suites) {
-    const r = await runSuite(path.join(SMOKE_DIR, name), opts.timeoutMs)
+  let done = 0
+  // ★T7-c：进度行。写成 `[12/135] (1m02s) 最近: xxx.mjs`，让"还要等多久"一眼可见。
+  //   串行时每套件跑完刷新一次；并行时也在每个完成点刷新（谁先完成谁先报）。
+  const fmtDur = (ms) => {
+    const s = Math.round(ms / 1000)
+    return s < 60 ? s + 's' : Math.floor(s / 60) + 'm' + String(s % 60).padStart(2, '0') + 's'
+  }
+  const report = (r) => {
     results.push(r)
+    done++
     const mark = r.status === 'PASS' ? 'PASS   ' : (r.status === 'TIMEOUT' ? 'TIMEOUT' : 'FAIL   ')
     console.log('[' + mark + '] ' + r.name + '  (' + r.seconds.toFixed(1) + 's)'
       + (r.status === 'PASS' ? '' : '  exit=' + r.code + ' sig=' + r.signal))
+    // 进度行:已跑完 X/N,已耗时,最近完成者。末行会被汇总覆盖,不留垃圾。
+    const pct = String(Math.round((done / suites.length) * 100)).padStart(3)
+    console.log('   └─ ' + pct + '% [' + done + '/' + suites.length + ']  已耗时 ' + fmtDur(Date.now() - runStart)
+      + '  最近: ' + r.name)
+  }
+
+  if (jobs === 1) {
+    for (const name of suites) {
+      report(await runSuite(path.join(SMOKE_DIR, name), opts.timeoutMs))
+    }
+  } else {
+    // 有界工作池:固定 jobs 个 worker 从同一下标游标取任务,天然限流、无第三方依赖。
+    let cursor = 0
+    const worker = async () => {
+      for (;;) {
+        const i = cursor++
+        if (i >= suites.length) return
+        const r = await runSuite(path.join(SMOKE_DIR, suites[i]), opts.timeoutMs)
+        report(r)
+      }
+    }
+    await Promise.all(Array.from({ length: Math.min(jobs, suites.length) }, () => worker()))
   }
 
   const pass = results.filter((r) => r.status === 'PASS')

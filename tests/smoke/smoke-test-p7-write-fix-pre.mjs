@@ -149,11 +149,38 @@ const mixed = [
 {
   const oldPlan = await readFile(path.join(proj2, 'handoff', 'PLAN.md'), 'utf8')
   const r = await writePlan(proj2, '# 项目白板 v2\n\n## 当前状态\n- 全新状态。')
-  ok(r.ok && r.archived && /PLAN-\d{8}-\d{6}\.md$/.test(r.archived), '既有整体归档机制保留(PLAN-<ts>.md)')
+  ok(r.ok && r.archived && /PLAN-\d{8}-\d{6}(-[a-z])?\.md$/.test(r.archived), '既有整体归档机制保留(PLAN-<ts>[-x].md)')
+  // ★2026-09-20（移植 issue #94② / PR #100）：`-[a-z]` 后缀是**同秒防撞**引入的，旧命名精确
+  //   形态下同秒两次重写会算出同名并**静默覆盖**。放宽为「接受后缀」的同时，用下面 ③b 把
+  //   强度补回来 —— 只放宽不加断言 = 降低保护。
   const archived = await readFile(r.archived, 'utf8')
   ok(archived === oldPlan, '归档内容=旧版完整快照(既有行为不变)')
   const planText = await readFile(r.path, 'utf8')
   ok(planText.includes('全新状态。'), '新快照正常写入')
+}
+// ③b ★2026-09-20 新增（issue #94② / PR #100）：同秒连续两次归档**不得互相覆盖**。
+//     旧实现 `PLAN-<ts>.md` 秒级时间戳 ⇒ 同一秒内第二次归档算出同一路径、静默覆盖上一份
+//     （旧版白板快照永久丢失）。这里用「同秒内连写三次、每次内容不同」逼出该场景。
+//     ⚠️ 这条是上一条放宽命名断言后的**强度补偿**，两条件必须同时成立。
+{
+  const stamp = Date.now()
+  const seen = []
+  for (let i = 1; i <= 3; i++) {
+    // 每次都写一个与当前不同的新内容，保证触发「整体归档」
+    const rr = await writePlan(proj2, '# 项目白板 v' + (10 + i) + '\n\n## 当前状态\n- 第 ' + i + ' 次。')
+    if (rr && rr.archived) seen.push(rr.archived)
+  }
+  const uniq = Array.from(new Set(seen))
+  ok(seen.length === 3 && uniq.length === 3, '★同秒三次归档各自独立(路径不重复): ' + uniq.length + '/3')
+  // 逐份校验：每个归档路径都必须真实存在且内容非空（证明没有被后一次覆盖成空/错内容）
+  let allOk = true
+  const bodies = []
+  for (const p of uniq) {
+    try { const t = await readFile(p, 'utf8'); bodies.push(t.length); if (!t.trim()) allOk = false }
+    catch { allOk = false }
+  }
+  ok(allOk, '★三份归档全部真实落盘且非空: ' + JSON.stringify(bodies))
+  ok(new Set(bodies).size >= 2, '★三份归档内容各不相同(未被同一份覆盖): ' + JSON.stringify(bodies))
 }
 // ④ 全部节都是历史 → fail-soft 放弃老化,原样写入(内容不丢)
 {

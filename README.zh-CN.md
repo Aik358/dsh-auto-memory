@@ -10,11 +10,11 @@
 </p>
 
 <p align="center">
-  <a href="docs/screenshots/promo/promo-0-banner-v2.png"><img width="820" alt="dsh-auto-memory 主视觉：不用吩咐，她自己记得" src="docs/screenshots/promo/promo-0-banner-v2.png"></a>
+  <a href="docs/screenshots/promo/promo-0-banner-v3.png"><img width="820" alt="dsh-auto-memory 主视觉：无问自忆，且件件可查" src="docs/screenshots/promo/promo-0-banner-v3.png"></a>
 </p>
 
 <p align="center">
-  <a href="docs/screenshots/promo/promo-0-banner-v2.png"><img width="130" alt="主视觉" src="docs/screenshots/promo/promo-0-banner-v2.png"></a>
+  <a href="docs/screenshots/promo/promo-0-banner-v3.png"><img width="130" alt="主视觉" src="docs/screenshots/promo/promo-0-banner-v3.png"></a>
   <a href="docs/screenshots/promo/promo-2-tour.png"><img width="130" alt="欢迎向导" src="docs/screenshots/promo/promo-2-tour.png"></a>
   <a href="docs/screenshots/promo/promo-3-recall.png"><img width="130" alt="唤起与固化" src="docs/screenshots/promo/promo-3-recall.png"></a>
   <a href="docs/screenshots/promo/promo-4-unattended.png"><img width="130" alt="无人值守" src="docs/screenshots/promo/promo-4-unattended.png"></a>
@@ -384,7 +384,7 @@ e5-small 与 BGE-M3 的差距（0.85 vs 0.925）集中在 hard-negative 双子�
 
 设置页与向导双入口、一一对应：自动联想、周期快照、暂离问候、夜间托管、每日反思、定时总结、外部记忆、技能固化、自动弹出……每个开关一行中文说明，中英文界面随心切换，面板字号可调。
 
-十个页签，各司其职：**工作区**（关系图）、**日历**、**接续**（外部记忆）、**记忆中枢**（技能审批）、**日志**、**笔记**、**反思**、**唤起回顾**（查账）、**检索**、**存储**。面板也体贴：DSH Desktop 增强模式（透明/Mica 材质）下自动保住可读性；默认位置不挡侧边栏「记忆」入口；点外部或按 Esc 就走——在场，但不碍事。
+十二个页签，各司其职：**概览**（暂离问候 + 时段总结）、**日志**（含用户级硬约束编辑器）、**唤起回顾**（查账，每次激活可打分）、**记忆中枢**（三层记忆店 + 技能审批）、**存储管理**、**笔记**、**白板**、**反思**、**接续**（外部记忆）、**日历**、**检索**、**工作区**（关系图）。面板也体贴：DSH Desktop 增强模式（透明/Mica 材质）下自动保住可读性；默认位置不挡侧边栏「记忆」入口；点外部或按 Esc 就走——在场，但不碍事。
 
 **长跑批处理？开无人值守。** 设置 → 自动化提供「无人值守模式」与「夜间自动托管」（22:00–08:00 可调）：托管期间不注入欢迎语、不寒暄、不下行为指令，日历提醒同步静默——模型专注干活，token 花在正事上。
 
@@ -601,6 +601,18 @@ DeepSeek Harness (Node, 127.0.0.1:3080)
 | [Python Sidecar 完整契约](docs/PYTHON-SIDECAR-CONTRACT.md) | 协议/生命周期/权威边界/各里程碑回归证据 |
 
 论文由自主工程 Agent（ZCode / GLM）撰写，全部结论在人类审核下冻结进生产实现。
+
+### 项目文档
+
+| 文档 | 回答什么 |
+|---|---|
+| [**白皮书**](docs/WHITEPAPER.md) | 「有哪些**不能违反**的约束、哪些已知边界」——文中每个默认值都经代码自核 |
+| [**前端共创计划**](docs/FRONTEND-CO-CREATION.md) | 外部贡献者能改什么、什么是禁区、怎么改——含完整组件/路由/插槽地图 |
+| [功能全量清单](docs/internal/FEATURE-INVENTORY.md) | 「有哪些功能、各住在哪」（39 条用户能力 / 17 工具 / 49 路由 / 98 配置键） |
+
+> **⚠️ 从 3.0 之前升级上来的用户请注意**：3.0.0 有一批默认值**被翻转**——
+> 其中最重要的是白板 + 账本从「默认关」改为 **「默认开」**。
+> 3.0 之前的文档在默认值上都不可信，请以[白皮书 §4.1](docs/WHITEPAPER.md) 的核验表为准。
 
 ## 已知限制
 
