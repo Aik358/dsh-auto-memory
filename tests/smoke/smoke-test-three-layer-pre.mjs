@@ -319,7 +319,7 @@ console.log('\n[G6] C3 接线：开关默认开（设 false 才不写索引、�
 {
   // —— 源码级接线守卫（删掉接线即红）——
   ok('G6-配置项存在且默认 true（默认开，用户 2026-09-14 裁定）', /l0IndexEnabled: true/.test(SRC_INDEX))
-  ok('G6-宿主 import 了新接线模块', /import \{ createL0IndexSyncPre \} from '\.\/l0-index-sync-pre\.js'/.test(SRC_INDEX))
+  ok('G6-宿主 import 了新接线模块', /import \{ createL0IndexSyncPre \} from '\.\/l0-index-sync(?:-pre)?\.js'/.test(SRC_INDEX))
   ok('G6-宿主开关门：config.l0IndexEnabled !== true 即短路', /engine\.config\.l0IndexEnabled !== true/.test(SRC_INDEX))
   ok('G6-触发点是「工作区语料刷新完成」（refreshAll 内调用 tick）', /engine\.l0IndexSyncTick\(agent\)/.test(SRC_INDEX))
   ok('G6-异步不阻塞：sync 结果不 await 在刷新链上', /void engine\.syncL0IndexPre\(\{ agent \}\)\.catch\(\(\) => \{\}\)/.test(SRC_INDEX))
