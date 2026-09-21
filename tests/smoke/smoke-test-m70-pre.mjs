@@ -126,16 +126,26 @@ console.log('[G2] framing:partial/multiple/bad JSON/oversize/epoch 门/type 混�
   c._feedForTest(JSON.stringify(mkResp('health_result', { protocol: 'm7_wire_v1' })) + '\n')
   const rh = await ph
   ok(rh.ok && rh.frame.type === 'health_result', 'G2 正确响应到达后正常 resolve')
-  const p2 = c.request('health')
-  const sent2 = c._lastFrameForTest()
-  const resp2 = Buffer.from(JSON.stringify({ protocolVersion: WIRE.M7_WIRE_PROTOCOL_VERSION_V1, frameId: 'r2', requestId: sent2.requestId, workerEpoch: epoch, type: 'health_result', payload: { protocol: 'm7_wire_v1' }, sentAt: 6 }) + '\n', 'utf8')
+  // partial framing 必须由手工 feed 独占；真实 fake worker 在 CI 上可能 <60ms 回 health_result，
+  // 会抢先 resolve 并制造假红。这里用一个只保持 stdin 打开的静默 Node 子进程，仍走真实 SidecarClient。
+  const partialDir = mkdtempSync(path.join(tmpdir(), 'dam-m70-partial-'))
+  const silentWorker = path.join(partialDir, 'silent-worker.mjs')
+  writeFileSync(silentWorker, 'process.stdin.resume()\n', 'utf8')
+  const partialClient = mkClient({ command: process.execPath, scriptPath: silentWorker, requestTimeoutMs: 1500 })
+  ok(partialClient.ensureStarted().ok, 'G2 partial framing 静默 transport 启动')
+  const partialEpoch = partialClient.currentEpoch()
+  const p2 = partialClient.request('health')
+  const sent2 = partialClient._lastFrameForTest()
+  const resp2 = Buffer.from(JSON.stringify({ protocolVersion: WIRE.M7_WIRE_PROTOCOL_VERSION_V1, frameId: 'r2', requestId: sent2.requestId, workerEpoch: partialEpoch, type: 'health_result', payload: { protocol: 'm7_wire_v1' }, sentAt: 6 }) + '\n', 'utf8')
   let done2 = false; void p2.then(() => { done2 = true })
-  c._feedForTest(resp2.subarray(0, 10))
+  partialClient._feedForTest(resp2.subarray(0, 10))
   await sleep(60)
   ok(!done2, 'G2 partial 行挂起等待补全')
-  c._feedForTest(resp2.subarray(10))
+  partialClient._feedForTest(resp2.subarray(10))
   const r2 = await p2
   ok(r2.ok, 'G2 补全后半帧立即 resolve(partial 重组)')
+  await partialClient.dispose('partial-framing-test')
+  rmSync(partialDir, { recursive: true, force: true })
   const qA = c.request('health'); const frA = JSON.parse(JSON.stringify(c._lastFrameForTest()))
   const qB = c.request('health'); const frB = JSON.parse(JSON.stringify(c._lastFrameForTest()))
   const chunk = [frA, frB].map((fr, i) => JSON.stringify({ protocolVersion: WIRE.M7_WIRE_PROTOCOL_VERSION_V1, frameId: 'm' + i, requestId: fr.requestId, workerEpoch: epoch, type: 'health_result', payload: { i }, sentAt: 7 })).join('\n') + '\n'
