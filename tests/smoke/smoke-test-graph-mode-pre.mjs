@@ -416,7 +416,7 @@ t('F6 宿主侧 kanbanBoardData 挂载 + **被调符号必须已 import** + 路�
   //   {enabled:false, reason:'error', error:'buildSectionCardsPre is not defined'}
   //   ⇒ 前端 setKbData(null) ⇒ 看板完全不渲染, 而当时 29 条断言**全绿**。
   //   教训(泛化): 「调用点在场」还不够, 跨模块调用必须同时断言**被调符号在本模块 import 表里**。
-  const imp = /import\s*\{([\s\S]*?)\}\s*from\s*'\.\/wb-sidecar-pre\.js'/.exec(IDX_SRC)
+  const imp = /import\s*\{([\s\S]*?)\}\s*from\s*'\.\/wb-sidecar(?:-pre)?\.js'/.exec(IDX_SRC)
   assert(imp, '未找到 wb-sidecar.js 的 import 语句')
   const imported = imp[1].split(',').map((s) => s.trim()).filter(Boolean)
   for (const sym of ['buildKanbanPre', 'buildSectionCardsPre']) {
@@ -500,7 +500,7 @@ t('G3 矩阵投影: 数据层 export + **被调符号已 import** + host 载荷�
   const WBS = readFileSync(new URL('../../lib/wb-sidecar.js', import.meta.url), 'utf8')
   assert(/export function buildKanbanMatrixPre\(/.test(WBS), 'buildKanbanMatrixPre 必须 export')
   assert(/export function ledgerDateOfPre\(/.test(WBS), 'ledgerDateOfPre 必须 export')
-  const imp = /import\s*\{([\s\S]*?)\}\s*from\s*'\.\/wb-sidecar-pre\.js'/.exec(IDX_SRC)
+  const imp = /import\s*\{([\s\S]*?)\}\s*from\s*'\.\/wb-sidecar(?:-pre)?\.js'/.exec(IDX_SRC)
   assert(imp, '未找到 wb-sidecar.js import')
   const imported = imp[1].split(',').map((s) => s.trim()).filter(Boolean)
   assert(imported.includes('buildKanbanMatrixPre'), '调了 buildKanbanMatrixPre 但没 import ⇒ 运行时 ReferenceError')
