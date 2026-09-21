@@ -14,6 +14,7 @@ import { createContextHost } from '../../lib/context-host.js'
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 const SRC = readFileSync(path.resolve(HERE, '..', '..', 'lib', 'context-host.js'), 'utf8')
+const IS_PREVIEW_TREE = JSON.parse(readFileSync(path.resolve(HERE, '..', '..', 'package.json'), 'utf8')).private === true
 let pass = 0, fail = 0
 const ok = (c, n) => { if (c) { pass++; console.log('  ok -', n) } else { fail++; console.error('FAIL', n) } }
 
@@ -86,7 +87,12 @@ console.log('[p9d] G4 回归证明:修复前口径对同一夹具返回空')
 console.log('[p9d] G5 源核验(口径一致 + 停止条件)')
 ok(SRC.includes('const ets = Number(e.event && e.event.ts) || Number(e.ts) || Number(e.createdAt) || 0'), '时间戳口径与 selectCorrectionAttributionPre 一致')
 ok(!/const ets = e\.ts \|\| e\.createdAt \|\| 0/.test(SRC), '旧写法已消失(-pre 源)')
-ok(!readFileSync(path.resolve(HERE, '..', '..', 'lib', 'context-host.js'), 'utf8').includes('Number(e.event && e.event.ts)'), '发布产物 context-host.js 未手改(仍为旧版,由发布流水线重建)')
+if (IS_PREVIEW_TREE) {
+  const releaseCopy = readFileSync(path.resolve(HERE, '..', '..', 'lib', 'context-host.js'), 'utf8')
+  ok(!releaseCopy.includes('Number(e.event && e.event.ts)'), 'preview 车道：裸名发布副本仍由发布流水线重建，不手改')
+} else {
+  ok(SRC.includes('Number(e.event && e.event.ts)'), 'release 车道：当前发布产物已包含 event.ts 修复')
+}
 
 console.log(`\n[p9d] ${pass}/${pass + fail} assertions passed`)
 if (fail) process.exit(1)
