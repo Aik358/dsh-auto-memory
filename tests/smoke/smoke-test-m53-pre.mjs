@@ -10,6 +10,7 @@ process.on('unhandledRejection', (r) => { console.error('[M53-TEST] REJ:', r); p
 globalThis.fetch = async () => ({ ok: false, status: 503, json: async () => ({}) })
 const sha256Hex = (buf) => createHash('sha256').update(buf).digest('hex')
 const { parseAnchors } = await import('../../lib/memory-anchor.js')
+const IS_PREVIEW_TREE = JSON.parse(readFileSync(new URL('../../package.json', import.meta.url), 'utf8')).private === true
 
 let pass = 0; let fail = 0
 function ok(cond, name) { if (cond) { pass++; console.log('  ok - ' + name) } else { fail++; console.error('  FAIL - ' + name) } }
@@ -287,7 +288,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 {
   const h = globalThis.__h
   ok(h.promptComponents.length === 3, 'C8 注册组件=section+context+m6 尾注面(n=' + h.promptComponents.length + ')')
-  ok(h.promptComponents.every((c) => c.name && String(c.name).includes('-pre')), 'C8 组件名保持 _pre 命名空间')
+  ok(h.promptComponents.every((c) => { const n = String(c.name || ''); return IS_PREVIEW_TREE ? n.includes('-pre') : !n.includes('-pre') }), 'C8 组件名与当前 preview/release 车道一致')
   const ctxObj = { agent: h.agent }
   const textsBefore = h.promptComponents.map((c) => (typeof c.text === 'function' ? String(c.text(ctxObj)) : ''))
   ok(textsBefore.every((t) => !t.includes('[Retrieved memory reference')), 'C8 开启前无 Reference Tail 文本')
