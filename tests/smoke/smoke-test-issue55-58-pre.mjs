@@ -252,13 +252,33 @@ await t('#58-3 写入侧登记 stepKey（供 dispose 精确回收）', () => {
   ok(/st\.stepKey\s*=\s*stepKeyHere/.test(SRC_ACT), 'onPreStep 必须把 stepKey 登记进 runtime 态')
 })
 
-await t('#58-4 engine.dispose 已接线 activationHost.disposeRuntime', () => {
+await t('#58-4a 行为：dispose() 真的把 per-runtime 态交给两个 host 回收（消费侧）', async () => {
+  const { SessionRuntimeStore } = await import(new URL('index.js', LIB))
+  const store = new SessionRuntimeStore()
+  const seen = []
+  store._shadowHost = { disposeRuntime: (rt) => seen.push(['shadow', rt && rt.key]) }
+  store._activationHost = { disposeRuntime: (k) => seen.push(['activation', k]) }
+  const agent = { id: 'agent-1', session: { id: 'sess-1' } }
+  const rt = store.get(agent)
+  ok(rt && rt.key === 'session:sess-1', '夹具前提：runtime 按 sessionId 建键（与 activation-host 的键空间一致）')
+  ok(store.dispose(agent) === true, 'dispose 必须返回 true —— 返回 false 时 host 清理根本不会执行')
+  ok(seen.some((s) => s[0] === 'shadow' && s[1] === rt.key),
+    '★ 必须调用 _shadowHost.disposeRuntime(runtime.key)：漏了 ⇒ shadow per-runtime 态与 inFlight abort 永不回收')
+  ok(seen.some((s) => s[0] === 'activation' && s[1] === rt.key),
+    '★ 必须调用 _activationHost.disposeRuntime(runtime.key)：#58 的原始缺陷形态（零调用方 ⇒ 计数器只增不减）')
+})
+
+await t('#58-4b 生产侧成对锁：dispose() 读到的每个 host 都必须被回填（issue #104 回归）', () => {
   const i = SRC_INDEX.indexOf('  dispose(agent) {')
-  ok(i > 0, '未找到 RuntimeRegistry.dispose')
+  ok(i > 0, '未找到 SessionRuntimeStore.dispose')
   const body = SRC_INDEX.slice(i, SRC_INDEX.indexOf('  disposeAll() {', i))
-  ok(/this\._activationHost\s*&&\s*runtime\.key\)\s*this\._activationHost\.disposeRuntime\(runtime\.key\)/.test(body),
-    '★ dispose 必须调用 _activationHost.disposeRuntime(runtime.key) —— 修复前全仓零调用方 ⇒ per-runtime 投影与计数器永不回收')
-  ok(/this\._shadowHost.*disposeRuntime/.test(body), '既有 shadowHost 接线保持不变')
+  const reads = [...new Set((body.match(/this\.(_\w+Host)/g) || []).map((s) => s.slice(5)))]
+  ok(reads.length >= 2, `dispose() 至少应引用 shadow/activation 两个 host（实测：${reads.join(',') || '无'}）—— 读侧被删则本锁失效`)
+  for (const f of reads) {
+    ok(new RegExp(`engine\\.runtimes\\.${f}\\s*=\\s*engine\\.${f}`).test(SRC_INDEX),
+      `★ 缺回填 engine.runtimes.${f} = engine.${f} —— host 只挂在 engine 上时 store 里的 if 恒假，清理是死码。` +
+      '3.0.1 发布提交 53d20e7 正是删了这一行，而旧测试只断言 dispose 函数体的字符串 ⇒ 静默回退')
+  }
 })
 
 await t('#58-5 行为：disposeRuntime 真的清掉步进计数器（键对齐实证）', async () => {
