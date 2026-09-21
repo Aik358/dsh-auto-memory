@@ -152,6 +152,7 @@ t('既有语义回归:冲突判定/ supersede / inference-blocked 结果与旧�
 
 // ---------- 向后兼容:真实 facts.json 实测(存在时;不存在则跳过) ----------
 await ta('真实 facts.json 兼容实测(只读)', async () => {
+  if (process.env.CI) { console.log('    (CI 环境跳过真实 ~/.dsh 数据探针；兼容性由上方确定性 fixture 覆盖)'); return }
   const f = path.join(process.env.USERPROFILE || process.env.HOME, '.dsh', 'memory', 'hub', 'facts.json')
   if (!existsSync(f)) { console.log('    (本机无 facts.json,跳过实测)'); return }
   const data = JSON.parse(readFileSync(f, 'utf8'))
