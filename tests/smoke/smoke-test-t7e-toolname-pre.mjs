@@ -9,14 +9,17 @@
 //   对 release.mjs 的两张清单做**双向对账**。任何一处漏登记 ⇒ 红。
 //
 // 真源：lib/index.js 里的 `defineTool('<name>'`（这是运行时真实注册的名）。
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 const ROOT = path.resolve(HERE, '..', '..')
 const IDX = readFileSync(path.join(ROOT, 'lib', 'index.js'), 'utf8')
-const REL = readFileSync(path.join(ROOT, 'tools', 'release.mjs'), 'utf8')
+const RELEASE_TOOL = path.join(ROOT, 'tools', 'release.mjs')
+const HAS_RELEASE_TOOL = existsSync(RELEASE_TOOL)
+const PKG = JSON.parse(readFileSync(path.join(ROOT, 'package.json'), 'utf8'))
+const REL = HAS_RELEASE_TOOL ? readFileSync(RELEASE_TOOL, 'utf8') : ''
 
 let pass = 0, fail = 0
 const t = (name, fn) => {
@@ -45,6 +48,16 @@ const bareTools = registered.filter((n) => !n.endsWith('_pre'))
 console.log('其中预览态(_pre 结尾): ' + preTools.length + ' 个；正式态(裸名): ' + bareTools.length + ' 个')
 
 console.log('\n=== T7-e 发布改名两侧登记完整性 ===')
+
+t('T7e-0 ★ 当前车道必须可判定：preview 有 release.mjs；release 无工具时直接核最终工具名', () => {
+  if (HAS_RELEASE_TOOL) {
+    assert(PKG.private === true, '存在 release.mjs 的源码车道应为 private preview 树')
+    return
+  }
+  assert(PKG.private !== true, 'preview 树缺 release.mjs：发布工程不完整')
+  assert(registered.length > 0, 'release 树必须实际注册工具，不能靠空集合真空通过')
+  assert(preTools.length === 0, 'release 树运行时不得残留 _pre 工具：' + preTools.join(', '))
+})
 
 t('T7e-1 ★★ 每个 _pre 工具都必须在 transforms 表里（否则发布物残留 _pre）', () => {
   const missing = preTools.filter((n) => !txToolNames.some((x) => x.from === n))
