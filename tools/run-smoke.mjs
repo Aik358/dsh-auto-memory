@@ -75,10 +75,17 @@ function parseArgs(argv) {
       continue
     }
 
+    const jobsEq = /^--jobs=(\d+)$/.exec(arg)
+    if (jobsEq) {
+      opts.jobs = Math.min(16, Number(jobsEq[1]))
+      if (!Number.isSafeInteger(opts.jobs) || opts.jobs < 1) usage('--jobs must be >= 1')
+      continue
+    }
+
     parsed = readOptionValue(argv, i, 'jobs')
     if (parsed) {
       if (!/^\d+$/.test(parsed.value)) usage('--jobs must be a positive integer')
-      opts.jobs = Number(parsed.value)
+      opts.jobs = Math.min(16, Number(parsed.value))
       if (!Number.isSafeInteger(opts.jobs) || opts.jobs < 1) usage('--jobs must be >= 1')
       i += parsed.consumed
       continue
@@ -238,16 +245,23 @@ async function main() {
     process.exit(2)
   }
 
-  const workers = Math.min(opts.jobs, suites.length)
-  console.log(`smoke suites: ${suites.length} | jobs=${workers} | timeout=${opts.timeoutMs === 0 ? 'off' : opts.timeoutMs + 'ms'}`)
+  const jobs = Math.min(16, opts.jobs)
+  if (jobs === 1) console.log('mode: sequential (never parallel)')
+  console.log(`smoke suites: ${suites.length} | jobs=${Math.min(jobs, suites.length)} | timeout=${opts.timeoutMs === 0 ? 'off' : opts.timeoutMs + 'ms'}`)
 
   const started = Date.now()
   const results = new Array(suites.length)
-  let next = 0
+  let cursor = 0
+  let done = 0
+
+  const printProgress = () => {
+    const pct = Math.round((done / suites.length) * 100)
+    console.log('[' + pct + '%] ' + done + '/' + suites.length + ' 已耗时 ' + formatSeconds(Date.now() - started))
+  }
 
   async function worker() {
     while (true) {
-      const index = next++
+      const index = cursor++
       if (index >= suites.length) return
       const result = await runSuite(suites[index], opts.timeoutMs)
       results[index] = result
@@ -258,10 +272,12 @@ async function main() {
       } else {
         console.log(`PASS ${result.name} (${formatSeconds(result.elapsedMs)})`)
       }
+      done++
+      printProgress()
     }
   }
 
-  await Promise.all(Array.from({ length: workers }, () => worker()))
+  await Promise.all(Array.from({ length: Math.min(jobs, suites.length) }, () => worker()))
 
   let pass = 0
   let fail = 0
