@@ -7,6 +7,15 @@ import { createHash } from 'node:crypto'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 
+// ---------- 隔离前置（上游 issue #112）----------
+// ★家目录口径唯一：整套件钉到一次性 DSH_HOME，**绝不读真实 `~/.dsh`**。
+//   `createJsSemanticEnginePre` 的默认模型候选第一项就是 `resolveDshHomePre()/models/js-semantic/…`；
+//   不钉住的话「这台机器恰好下过 e5 模型」会让下面 `assetPresent === false` 的初态断言变红。
+//   `resolveDshHomePre` 不缓存（每次调用重读 env）⇒ 在任何 status()/create() 之前设置即生效。
+const HERMETIC_DSH_HOME = mkdtempSync(path.join(tmpdir(), 'm81-c2-home-'))
+process.env.DSH_HOME = HERMETIC_DSH_HOME
+console.log('[M81] 隔离: DSH_HOME →', path.basename(HERMETIC_DSH_HOME), '(一次性临时目录)')
+
 const SEM = await import('../../lib/semantic-js-pre.js')
 let pass = 0, fail = 0
 const ok = (c, n) => { if (c) { pass++; console.log('  ok - ' + n) } else { fail++; console.error('  FAIL - ' + n) } }
@@ -163,6 +172,8 @@ function waitFor(pred, timeoutMs) {
   })
 }
 function defer() { let resolve; const promise = new Promise((r) => { resolve = r }); return { promise, resolve: () => resolve() } }
+
+try { rmSync(HERMETIC_DSH_HOME, { recursive: true, force: true }) } catch (_) { /* 一次性临时目录,清理尽力而为 */ }
 
 console.log(`[M81] pass=${pass} fail=${fail}`)
 process.exit(fail > 0 ? 1 : 0)

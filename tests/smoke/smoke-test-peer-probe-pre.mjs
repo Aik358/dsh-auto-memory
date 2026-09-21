@@ -16,8 +16,19 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 const LIB_SRC = path.resolve(HERE, '..', '..', 'lib')
-let pass = 0, fail = 0
+let pass = 0, fail = 0, skip = 0
 const ok = (cond, name) => { if (cond) { pass++; console.log('  ok -', name) } else { fail++; console.log('  FAIL -', name) } }
+/** 前提不成立 ⇒ 显式跳过并说明（issue #112：环境噪音不是契约回归，不判红也不静默）。 */
+const skipped = (name, detail) => { skip++; console.log('  SKIP -', name); if (detail) console.log('         ' + detail) }
+
+// ---------- 隔离前置（上游 issue #112）----------
+// ★家目录口径唯一：本套件钉到一次性 DSH_HOME，**绝不读真实 `~/.dsh`**。
+//   原因：`probeJsSemanticAssets()` 的**第一候选**是 `resolveDshHomePre()/models/js-semantic/…`。
+//   不钉住的话，「这台机器恰好下过 e5 模型」会让 G1 的 assetBytes 变成真实模型体积（本机绿、别机红）。
+//   `resolveDshHomePre` 不缓存（每次调用重读 env），所以在任何探测之前设置即可生效。
+const HERMETIC_DSH_HOME = realpathSync(mkdtempSync(path.join(tmpdir(), 'peer-probe-home-')))
+process.env.DSH_HOME = HERMETIC_DSH_HOME
+console.log('[peer-probe] 隔离: DSH_HOME →', path.basename(HERMETIC_DSH_HOME), '(一次性临时目录)')
 
 // 共享实现直接从源码导入(与 index.js semanticAssetProbe 同一函数)
 const semMod = await import(pathToFileURL(path.join(LIB_SRC, 'semantic-js-pre.js')).href)
@@ -71,15 +82,21 @@ try {
 
   console.log('[peer-probe] G3 布局C:peer 完全缺失 —— fail closed')
   {
-    // 注:合成树内无 peer 时要求 miss;若宿主机上层目录恰好有全局 transformers,标准解析
-    // 命中属环境真实(引擎裸 import 同样会命中),此时本组会以 FAIL 提示环境噪音。
+    // 注:合成树内无 peer 时要求 miss。**但** Node 的标准解析会从 tmpdir() 一路上溯到盘根;
+    // 若开发者本机的祖先目录里恰好装了全局 @huggingface/transformers,就会命中**合成根之外**的它。
+    // 那是环境噪音（前提不成立），不是本套件的回归 ⇒ 显式跳过并打印命中路径（issue #112 前是直接判红）。
     const root = freshRoot()
     const lib = path.join(root, 'profiles', 'web', 'node_modules', '@a9i5k4', 'dsh-auto-memory', 'lib')
     mkdirSync(lib, { recursive: true })
-    const probe = semMod.probeJsSemanticAssets(lib)
-    ok(probe.peerPresent === false, 'peerPresent=false')
-    ok(probe.ready === false, 'ready=false(不虚报就绪)')
-    ok(semMod.resolvePeerTransformersDir(lib) === '', '解析返回空串')
+    const hit = semMod.resolvePeerTransformersDir(lib)
+    if (hit && !hit.startsWith(root)) {
+      skipped('G3 peer 完全缺失(环境噪音使前提不成立)', '合成根之外命中:' + hit)
+    } else {
+      const probe = semMod.probeJsSemanticAssets(lib)
+      ok(probe.peerPresent === false, 'peerPresent=false')
+      ok(probe.ready === false, 'ready=false(不虚报就绪)')
+      ok(semMod.resolvePeerTransformersDir(lib) === '', '解析返回空串')
+    }
   }
 
   console.log('[peer-probe] G4 布局D:lib/node_modules —— issue 临时 junction 绕过位向后兼容')
@@ -107,8 +124,13 @@ try {
     const bogus = path.join(root, 'profiles', 'web', 'node_modules', 'node_modules', '@huggingface', 'transformers')
     stubTransformers(bogus)
     const lib = path.join(root, 'profiles', 'web', 'node_modules', '@a9i5k4', 'dsh-auto-memory', 'lib')
-    ok(semMod.resolvePeerTransformersDir(lib) === '', '错位双 node_modules 不参与命中(peerPresent 不再虚报)')
-    ok(semMod.probeJsSemanticAssets(lib).peerPresent === false, 'probe fail closed')
+    const hit = semMod.resolvePeerTransformersDir(lib)
+    if (hit && !hit.startsWith(root)) {
+      skipped('G6 错位负样本(环境噪音使前提不成立)', '合成根之外命中:' + hit)
+    } else {
+      ok(semMod.resolvePeerTransformersDir(lib) === '', '错位双 node_modules 不参与命中(peerPresent 不再虚报)')
+      ok(semMod.probeJsSemanticAssets(lib).peerPresent === false, 'probe fail closed')
+    }
   }
 
   console.log('[peer-probe] G7 深度扫描 —— 三落位命中 + profiles 枚举/直传两用 + 去重容错(0.1.37 semanticDeepDetect 底座)')
@@ -144,7 +166,8 @@ try {
   }
 } finally {
   for (const r of roots) { try { rmSync(r, { recursive: true, force: true }) } catch (_) { /* tmp 清理尽力而为 */ } }
+  try { rmSync(HERMETIC_DSH_HOME, { recursive: true, force: true }) } catch (_) { /* 同上 */ }
 }
 
-console.log(`[peer-probe] pass=${pass} fail=${fail}`)
+console.log(`[peer-probe] pass=${pass} fail=${fail} skip=${skip}`)
 process.exit(fail ? 1 : 0)

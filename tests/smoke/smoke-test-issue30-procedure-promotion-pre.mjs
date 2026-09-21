@@ -195,7 +195,18 @@ ok(/hub review: ' \+ action \+ ' ' \+ pid\.slice\(0, 20\) \+ ' → ' \+ JSON\.st
   'index.js hub review 日志记录 decision+reasonCodes(不再只记 ok 的假阳性)')
 ok(/\(j && Array\.isArray\(j\.reasonCodes\) && j\.reasonCodes\.length \? ' \(' \+ j\.reasonCodes\.join\(', '\)/.test(CLIENT_SRC), 'client.js hubAct 内联追加显示 reasonCodes')
 ok(/observationOnly \? \(locale === 'zh' \? ' · 观察/.test(CLIENT_SRC), 'client.js 审批队列为观察型条目打标')
-ok(/!p\.observationOnly && h\('button'[\s\S]{0,220}?hubAct\('promote'/.test(CLIENT_SRC), 'client.js 观察型条目隐藏晋升按钮')
+// 断言按**意图**写（2026-09-21 配合 A-9 调整）：观察型条目必须拿不到「晋升」按钮。
+// 旧断言写死相邻字面量 `!p.observationOnly && h('button'`，A-9 把条件改成
+// 「observationOnly 与 promotion 投影取合取」后该字面量不再相邻 —— 契约没变，断言形状要改。
+// 现在两步验：① 晋升按钮的守卫里确实含 `!p.observationOnly`（观察型被挡）
+//             ② 同一守卫**还**引用了 `p.promotion`（门限与真实判定对齐，A-9）
+// 并保留「附近确实有 hubAct('promote'」这层，防止守卫与按钮对不上号。
+const promoteGuard = CLIENT_SRC.slice(
+  Math.max(0, CLIENT_SRC.indexOf("hubAct('promote'") - 800),
+  CLIENT_SRC.indexOf("hubAct('promote'")
+)
+ok(/!p\.observationOnly/.test(promoteGuard), 'client.js 观察型条目隐藏晋升按钮')
+ok(/p\.promotion/.test(promoteGuard), 'client.js 晋升按钮门限与只读判定投影对齐(A-9)')
 
 console.log('\n[issue30] ' + pass + ' passed, ' + fail + ' failed')
 if (fail > 0) process.exit(1)

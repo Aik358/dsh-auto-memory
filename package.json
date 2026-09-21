@@ -13,10 +13,12 @@
   "files": [
     "lib",
     "python",
-    "docs",
     "cordis.patch.yml",
     "!python/bench",
-    "!python/__pycache__"
+    "!python/__pycache__",
+    "!**/*.bak",
+    "!**/*.bak-*",
+    "!**/*.tmp"
   ],
   "dsh": {
     "bundle": {

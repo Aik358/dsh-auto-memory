@@ -278,6 +278,9 @@ const libModuleRenames = [
   'rules-edit-pre.js',            // R7 规则可视编辑
   'skill-export-host-pre.js',     // T4 技能导出(宿主侧)
   'skill-export-pre.js',          // T4 技能导出(共享逻辑)
+  // ★2026-09-22（#110）：hub 持久化 IO 适配器（带健康度记账）从 index.js 抽出为独立模块。
+  //   不登记的话它会以 `hub-io-pre.js` 原名进入发布包，残留闸门必然拒绝构建。
+  'hub-io-pre.js',                // #110 hub 落盘 IO 失败可见化
 ]
 const libRenameMap = libModuleRenames.map((f) => [f, f.replace(/-pre\.js$/, '.js')])
 for (const [from, to] of libRenameMap) {
