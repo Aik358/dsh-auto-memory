@@ -8,9 +8,17 @@
  *   ※ 不再自动建 GitHub issue;日报时由 group-digest.mjs 读 gist、AI 归纳成问题清单后清空
  *
  * 环境变量:QQ_APP_ID / QQ_APP_SECRET / QQ_GROUP_OPENID / GH_TOKEN(需 Gists 读写)/
- *          GIST_ID(收集文件的 gist)/ REPO(备用)/ ROUTE_TOKEN(可选)/ STRICT_VERIFY(可选)/
+ *          GIST_ID(收集文件的gist)/ REPO(备用)/
  *          TRIGGER(可选,明确反馈词)/ FEEDBACK_KEYWORDS(可选,问题关键词)/
  *          LLM_API_KEY / LLM_MODEL / LLM_BASE_URL / LLM_MAX_REPLY(均可选)
+ *
+ * ★ 2026-09-21 起（issue #113–#116）默认值全部改为 fail closed，**部署前必须先配好这几项**：
+ *   ROUTE_TOKEN   —— 不再"可选"：`?report=` / `?diag=` / GET `?timer=1` 三类人用端点的凭据，
+ *                    未配置 ⇒ 这些端点一律 403（旧实现是"未配置就对匿名开放"，会回群聊原文与密钥形状）
+ *   TIMER_SECRET  —— 不再"可选"：SCF 定时触发器唤起日报班的共享密钥，未配置 ⇒ timer 一律拒绝
+ *   STRICT_VERIFY —— 默认**开**（验签失败 401）；只有本地联调才显式设 0
+ *   AI_MAX_PER_HOUR —— 默认 **6**；显式设 0 才是"不限额"
+ *   RAW_DEBUG     —— 默认**关**；设 1 才把入站原始报文写进 gist，且采集点在验签之后
  */
 const http = require('node:http')
 const crypto = require('node:crypto')
@@ -26,7 +34,10 @@ const CFG = {
   keywords: (process.env.FEEDBACK_KEYWORDS || '问题,bug,报错,error,异常,失效,崩溃,闪退,不能用,出错了,坏了').split(',').map((s) => s.trim().toLowerCase()).filter(Boolean),
   routeToken: process.env.ROUTE_TOKEN || '',
   port: Number(process.env.PORT || 9000),
-  strictVerify: process.env.STRICT_VERIFY === '1',
+  // issue #113：验签默认**严格**（fail-closed）。旧默认 `=== '1'` ⇒ 不显式配置就不验签，
+  // 而事件类型取自载荷 `payload.t`，任何打到本 URL 的人都能伪造 @ 事件触发 LLM 回复。
+  // 需要放行（本地联调）时显式设 STRICT_VERIFY=0。
+  strictVerify: process.env.STRICT_VERIFY !== '0',
   llm: {
     key: process.env.LLM_API_KEY || '',
     model: process.env.LLM_MODEL || 'deepseek-chat',
@@ -44,9 +55,12 @@ const CFG = {
     minGapHours: Number(process.env.TIMER_MIN_GAP_HOURS || 10),
   },
   // @ 答疑限频(2026-09-14 起全部走环境变量,改额度不用改代码):
-  //   AI_MAX_PER_HOUR = 每小时最多答疑次数(不配或 0 = 不限额);AI_QUOTA_HOURS = 时间窗(默认 1)。
+  //   AI_MAX_PER_HOUR = 每小时最多答疑次数(**默认 6 次**;显式设 0 = 不限额,需明知代价);
+  //   AI_QUOTA_HOURS = 时间窗(默认 1)。
+  // issue #113：旧默认 0 = 不限额,与「验签默认关 + 事件名取自载荷」叠加后,公网 URL 即可以
+  //   运维者的 LLM key 无上限刷调用。默认值改成有限值,把"不设防"变成需要显式声明的选择。
   ai: {
-    maxPerHour: Number(process.env.AI_MAX_PER_HOUR || 0),
+    maxPerHour: Number(process.env.AI_MAX_PER_HOUR === undefined || process.env.AI_MAX_PER_HOUR === '' ? 6 : process.env.AI_MAX_PER_HOUR),
     quotaHours: Number(process.env.AI_QUOTA_HOURS || 1),
   },
   // 本机器人在群内的 openid(严格判定「是否被 @」用)。它 ≠ /users/@me 的数字 uin,平台也不提供换算接口,
@@ -57,11 +71,14 @@ const CFG = {
 for (const k of ['appId', 'appSecret', 'groupId', 'ghToken']) {
   if (!CFG[k]) { console.error(`[webhook] 缺少环境变量 ${k}`); process.exit(1) }
 }
-const VERSION = 'webhook-gist-20260914a' // 部署核对标记:diag 端点与错误响应都会带它(20260913h=@ 答疑优先于已记录/LLM 空应答外显错误体)
+const VERSION = 'webhook-secure-20260921a' // 部署核对标记:diag 端点与错误响应都会带它(20260921a=验签/额度/诊断端点凭据/timer 密钥全部改 fail closed,见 issue #113-#116)
 const FEEDBACK_FILE = 'group-feedback.jsonl' // 反馈收集钉死文件名(digest 与 report 同读此名,清空时保留文件本身)
 let lastError = null // 最近一次内部错误(diag 可见)
 let botMentionToken = null // 从「@机器人+反馈词」消息里学习的机器人 mention 标识
-const RAW_DEBUG = (process.env.RAW_DEBUG || '1') !== '0' // 抓原始报文进 gist 的 group-raw-debug.txt(排查完可关)
+// issue #116：RAW_DEBUG **默认关**。旧默认开且采集发生在验签之前 ⇒ 任何匿名请求都能把
+// 完整入站报文（含群成员聊天文本）灌进共享 gist。需要排障时显式设 RAW_DEBUG=1，
+// 且采集点已移到验签通过之后（见 http.createServer 内的顺序调整）。
+const RAW_DEBUG = process.env.RAW_DEBUG === '1'
 
 async function rawDebug(req, raw) {
   if (!RAW_DEBUG || req.method !== 'POST' || !CFG.gistId) return
@@ -354,7 +371,7 @@ async function handleEvent(payload) {
       }
     }
 
-    // ③ @ 机器人的消息:LLM 答疑(限频全走环境变量:AI_MAX_PER_HOUR=每小时最多几次,不配=不限;
+    // ③ @ 机器人的消息:LLM 答疑(限频全走环境变量:AI_MAX_PER_HOUR=每小时最多几次,**默认 6**;显式 0=不限;
     //    AI_QUOTA_HOURS=时间窗,默认 1h。配额落盘 gist 防冷启动失忆;被动回复不占主动消息配额)。
     if (isAt && CFG.llm.key) {
       const confirm = recorded ? '已记录 ✅ 会归纳进下次群报\n\n' : ''
@@ -390,9 +407,27 @@ async function handleEvent(payload) {
 async function handleTimer(arg) {
   const viaQuery = typeof arg !== 'string'
   try {
-    if (viaQuery && CFG.timer.secret && arg.get('key') !== CFG.timer.secret) return { ok: false, reason: 'bad key' }
-    if (!viaQuery) {
-      try { const ev = JSON.parse(arg); const norm = (x) => String(x || '').replace(/[-s]+/g, '_').toLowerCase(); const tn = norm(ev.TriggerName || ev.triggerName || ''); if (CFG.timer.triggerName && tn && tn !== norm(CFG.timer.triggerName)) return { ok: false, reason: 'trigger 不匹配: ' + tn } } catch (e) {}
+    // issue #114：两道判据都不许被"缺省"短路。旧写法 `if (CFG.timer.secret && …)` 与
+    // `if (CFG.timer.triggerName && tn && …)` 在 TIMER_SECRET 未配 / 载荷省略 TriggerName 时
+    // **整条件不成立**⇒直接放行,任何外部者都能唤起主分支上带全套 secrets 的 workflow
+    // (而日报班每次运行都会把反馈 gist 覆写为 '\n',即一条匿名请求即可反复销毁用户反馈)。
+    const secret = String(CFG.timer.secret || '')
+    if (!secret) return { ok: false, dispatched: false, reason: 'TIMER_SECRET 未配置 ⇒ 定时入口一律拒绝(fail closed)' }
+    if (viaQuery) {
+      if (arg.get('key') !== secret) return { ok: false, reason: 'bad key' }
+    } else {
+      // POST 分支同样必须持密钥:SCF 定时触发器的 body 里带 X-Timer-Secret 或 ?key=。
+      const qkey = (String(arg).match(/[?&]key=([^&"\s]+)/) || [])[1]
+      let ev = null
+      try { ev = JSON.parse(arg) } catch (e) { ev = null }
+      const bodyKey = ev && (ev['X-Timer-Secret'] || ev.timerSecret || ev.key)
+      if (qkey !== secret && bodyKey !== secret) return { ok: false, reason: 'missing timer secret' }
+      const norm = (x) => String(x || '').replace(/[-s]+/g, '_').toLowerCase()
+      const tn = norm(ev && (ev.TriggerName || ev.triggerName))
+      // 触发名缺失不再等于"跳过校验"：配了 TIMER_TRIGGER_NAME 就必须带对
+      if (CFG.timer.triggerName && tn !== norm(CFG.timer.triggerName)) {
+        return { ok: false, reason: 'trigger 不匹配: ' + (tn || '(载荷未带 TriggerName)') }
+      }
     }
     if (!CFG.timer.token) return { ok: false, dispatched: false, reason: 'GH_DISPATCH_TOKEN 未配置(需要 Actions 读写权限的 token)' }
     const st = await botState()
@@ -417,10 +452,35 @@ async function handleTimer(arg) {
   }
 }
 
+/**
+ * 人用端点准入门（`?report=` / `?diag=` / timer 手动触发）—— issue #115。
+ *
+ * ★ fail-closed：未配置 `ROUTE_TOKEN` 时**拒绝**，而不是像旧实现那样"空 token ⇒ 门不存在"。
+ * 旧行为下这两个端点匿名可读，返回的是**群成员聊天原文**（最多 400 条）、LLM key 的形状
+ * （长度 + 头 3 + 尾 4）、完整 appId、gistId 与 ghToken 前 14 字符，且 `write=1` 可匿名触发 gist 写入。
+ *
+ * QQ 事件回调**不**走这道门：平台只往登记的 URL 上原样 POST，带不上自定义 token；
+ * 那条路径的身份由 Ed25519 验签负责（`STRICT_VERIFY` 现已默认开）。
+ */
+function diagnosticsAuthorized(req) {
+  const tok = String(CFG.routeToken || '')
+  if (!tok) return false
+  return String(req.url || '').includes(tok)
+}
+
 // ---------- HTTP 服务(Web 函数/任何 Node 宿主通用) ----------
 const server = http.createServer((req, res) => {
   const chunks = []
-  req.on('data', (c) => chunks.push(c))
+  let received = 0
+  // issue #116/#115 配套：请求体上限。旧实现无界累积后再 Buffer.concat，恶意大 body 会先在
+  // 内存里长大（SCF 网关自带上限，故实际影响受限，但应用层也该有一道）。
+  const MAX_BODY = 1024 * 1024
+  req.on('data', (c) => {
+    received += c.length
+    if (received > MAX_BODY) { req.destroy(new Error('body too large')); return }
+    chunks.push(c)
+  })
+  req.on('error', () => { try { res.writeHead(413, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ ok: false, reason: 'body too large' })) } catch (e) {} })
   req.on('end', async () => {
     const raw = Buffer.concat(chunks).toString('utf8')
     try {
@@ -435,9 +495,12 @@ const server = http.createServer((req, res) => {
         void handleTimer(arg).catch((e) => console.error('[webhook] timer async:', (e && e.message) || e))
         return
       }
-      rawDebug(req, raw).catch(() => {})
+      // issue #116：rawDebug 采集**移到验签之后**（见本函数尾部）。旧位置在鉴权/验签之前，
+      // 于是任何匿名请求都能把内容灌进共享 gist 的 group-raw-debug.txt。
       // 按需报告:GET <url>?report=N → 最近 N 小时群反馈(items 原文;配了 LLM 且未 raw=1 时附 AI 归纳)
       if (req.method === 'GET' && req.url.includes('report=')) {
+        // issue #115：返回的是群成员聊天原文 ⇒ 必须有凭据，未配 ROUTE_TOKEN 直接拒绝
+        if (!diagnosticsAuthorized(req)) { res.writeHead(403, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ ok: false, reason: 'report 需要 ROUTE_TOKEN（未配置则该端点关闭）', v: VERSION })); return }
         const hours = Math.min(48, Math.max(1, Number((req.url.match(/report=(\d+)/) || [])[1]) || 12))
         const out = { window_hours: hours, total: 0, items: [], summary: null, v: VERSION }
         try {
@@ -457,7 +520,9 @@ const server = http.createServer((req, res) => {
           if (out.total && CFG.llm.key && !req.url.includes('raw=1')) {
             const text = out.items.map((o) => `- [${o.t}] ${o.u}: ${o.m}`).join('\n').slice(0, 20000)
             try {
-              const keyShape = `len=${CFG.llm.key.length}, tail=${CFG.llm.key.slice(-4)}, head=${CFG.llm.key.slice(0, 3)}${/\s/.test(CFG.llm.key) ? ', 含空白字符!' : ''}${/^bearer /i.test(CFG.llm.key) ? ', 已含 Bearer 前缀!' : ''}`
+              // issue #115：只报**布尔**判据，不再回显密钥形状（旧实现给长度 + 头 3 位 + 尾 4 位，
+              // 足以让拿到该响应的人压缩爆破空间并确认密钥格式）。
+              const keyFlags = [/\s/.test(CFG.llm.key) ? '含空白字符' : '', /^bearer /i.test(CFG.llm.key) ? '已含 Bearer 前缀' : ''].filter(Boolean).join(', ') || '形状正常'
               const r = await fetch(`${CFG.llm.base}/chat/completions`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${CFG.llm.key}` },
@@ -473,7 +538,7 @@ const server = http.createServer((req, res) => {
               })
               const j = await r.json().catch(() => null)
               const raw0 = j?.choices?.[0]?.message?.content?.trim()
-              if (!raw0) out.llmError = `HTTP ${r.status}(base=${CFG.llm.base}, model=${CFG.llm.model}, key ${keyShape}): ${clip(JSON.stringify(j), 240)}`
+              if (!raw0) out.llmError = `HTTP ${r.status}(base=${CFG.llm.base}, model=${CFG.llm.model}, key ${keyFlags}): ${clip(JSON.stringify(j), 240)}`
               if (raw0) {
                 const kept = raw0.split('\n').map((l) => l.trim()).filter((l) => l && (/^[•\-\d]/.test(l) || /清单|优先级/.test(l)))
                 out.summary = (kept.length ? kept : [clip(raw0, 400)]).join('\n')
@@ -487,18 +552,24 @@ const server = http.createServer((req, res) => {
       }
       // 自诊断:GET <url>?diag=1 → 汇报线上代码版本、关键变量与 gist 连通性(值脱敏);加 write=1 顺带做一次写入探针
       if (req.method === 'GET' && req.url.includes('diag=1')) {
+        // issue #115：diag 泄露身份标识且 write=1 可匿名触发写 gist ⇒ 同一道凭据门
+        if (!diagnosticsAuthorized(req)) { res.writeHead(403, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ ok: false, reason: 'diag 需要 ROUTE_TOKEN（未配置则该端点关闭）', v: VERSION })); return }
         const diag = {
           v: VERSION,
           lastError,
-          appId: CFG.appId,
-          groupId: CFG.groupId.slice(-6),
-          gistId: CFG.gistId || '(未配置)',
-          ghTokenPrefix: CFG.ghToken.slice(0, 14) + '…',
+          // issue #115：身份标识一律脱敏到"够判断配没配对"的程度——完整 appId / gistId /
+          // ghToken 前 14 字符都不该出现在一个可被外部读到的响应里。
+          appIdShape: CFG.appId ? `已配置(尾 ${String(CFG.appId).slice(-4)})` : '(未配置)',
+          groupIdShape: CFG.groupId ? `已配置(尾 ${String(CFG.groupId).slice(-4)})` : '(未配置)',
+          gistIdShape: CFG.gistId ? `已配置(尾 ${String(CFG.gistId).slice(-4)})` : '(未配置)',
+          ghTokenConfigured: !!CFG.ghToken,
+          dispatchTokenConfigured: !!CFG.timer.token,
           triggers: CFG.triggers,
           keywords: CFG.keywords,
           llmEnabled: !!CFG.llm.key,
-          ai: { maxPerHour: CFG.ai.maxPerHour, quotaHours: CFG.ai.quotaHours, botMentionId: CFG.botMentionId.slice(0,8)+'…', mentionLearned: !!botMentionToken },
-          timer: { triggerName: CFG.timer.triggerName, hasDispatchToken: !!CFG.timer.token, minGapHours: CFG.timer.minGapHours },
+          ai: { maxPerHour: CFG.ai.maxPerHour, quotaHours: CFG.ai.quotaHours, mentionLearned: !!botMentionToken },
+          timer: { triggerName: CFG.timer.triggerName, hasDispatchToken: !!CFG.timer.token, minGapHours: CFG.timer.minGapHours, secretConfigured: !!CFG.timer.secret },
+          strictVerify: CFG.strictVerify, rawDebug: RAW_DEBUG,
         }
         try {
           const g = await gh(`/gists/${CFG.gistId}`)
@@ -522,7 +593,10 @@ const server = http.createServer((req, res) => {
         let ok = false
         try { ok = !!sigHex && crypto.verify(null, Buffer.from(`${ts}${raw}`), KEYS.pub, Buffer.from(sigHex, 'hex')) } catch { /* 算法差异时告警 */ }
         if (!ok && CFG.strictVerify) { console.warn('[webhook] 验签失败,严格模式拒绝'); res.writeHead(401); res.end('bad signature'); return }
-        if (!ok) console.warn('[webhook] 验签未通过(非严格模式,继续处理)')
+        if (!ok) console.warn('[webhook] 验签未通过(STRICT_VERIFY=0 显式放行,仅限本地联调)')
+        // issue #116：原始报文采集**必须在验签之后**。旧实现放在请求一进来就做（且默认开启），
+        // 于是任何匿名流量都能把内容灌进共享 gist 的 group-raw-debug.txt。
+        rawDebug(req, raw).catch(() => {})
       }
       const out = await handleEvent(payload)
       res.writeHead(200, { 'Content-Type': 'application/json' })
