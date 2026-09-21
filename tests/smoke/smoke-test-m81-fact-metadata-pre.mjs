@@ -14,6 +14,7 @@ import {
   createFactStorePre, validateFactCandidatePre, validateFactPre,
   FACT_EPISTEMIC_STATUSES_V1, FACT_TRENDS_V1,
 } from '../../lib/fact-store.js'
+import { resolveDshHomePre } from '../../lib/dsh-home.js' // 与生产同一口径解析家目录（认 DSH_HOME）
 
 let pass = 0, fail = 0
 const t = (name, fn) => { try { fn(); pass++; console.log('  ok -', name) } catch (e) { fail++; console.error('FAIL', name + ':', e.message) } }
@@ -150,12 +151,18 @@ t('既有语义回归:冲突判定/ supersede / inference-blocked 结果与旧�
   assert.equal(blk.outcome, 'created', '新主体不受影响')
 })
 
-// ---------- 向后兼容:真实 facts.json 实测(存在时;不存在则跳过) ----------
+// ---------- 向后兼容:真实 facts.json 实测(有数据时;无数据/空库则跳过) ----------
 await ta('真实 facts.json 兼容实测(只读)', async () => {
-  const f = path.join(process.env.USERPROFILE || process.env.HOME, '.dsh', 'memory', 'hub', 'facts.json')
-  if (!existsSync(f)) { console.log('    (本机无 facts.json,跳过实测)'); return }
+  // issue #112：两处口径修正。
+  // ① 路径原先是 `USERPROFILE || HOME` 手拼，绕开了 `resolveDshHomePre()` ⇒ 与生产读的
+  //    不是同一个目录，且 `DSH_HOME` 覆盖失效（Windows 外或改过家目录时行为漂移）。
+  // ② 原断言要求真实库 **≥1 条**才通过 —— 那是把"测试前提"写成"硬断言"：空库
+  //    （首次使用前、或被 clear/裁剪后）是完全合法的状态，于是这台机器红、那台机器绿。
+  //    真正要保的语义是「有记录时零丢弃」，无记录就没有可验证的对象 ⇒ 跳过并说明。
+  const f = path.join(resolveDshHomePre(), 'memory', 'hub', 'facts.json')
+  if (!existsSync(f)) { console.log('    (本 DSH_HOME 下无 facts.json,跳过实测)'); return }
   const data = JSON.parse(readFileSync(f, 'utf8'))
-  assert.ok(Array.isArray(data.facts) && data.facts.length >= 1, '真实数据存在')
+  if (!Array.isArray(data.facts) || data.facts.length === 0) { console.log('    (真实库为空,无可实测记录,跳过)'); return }
   const s = createFactStorePre({ io: memIo() })
   const r = s.restore(data)
   assert.equal(r.ok, true)

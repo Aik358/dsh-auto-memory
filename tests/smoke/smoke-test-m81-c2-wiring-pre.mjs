@@ -7,6 +7,13 @@ import { createHash } from 'node:crypto'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 
+// issue #112：本套件断言"资产不存在 ⇒ not ready"，但 `lib/semantic-js.js` 探测的是
+// **真实 `~/.dsh/models/js-semantic`**（`resolveDshHomePre()` 只读 `DSH_HOME`，不缓存）⇒
+// 在装过语义模型的机器上必然红、在干净机器上必然绿，同一份代码两种结论。
+// 这里把 DSH_HOME 钉到一次性临时目录，让断言只依赖夹具而不依赖执行者的家目录。
+const DAM_HOME_ISOLATED = mkdtempSync(path.join(tmpdir(), 'dam-m81-c2-home-'))
+process.env.DSH_HOME = DAM_HOME_ISOLATED
+
 const SEM = await import('../../lib/semantic-js.js')
 let pass = 0, fail = 0
 const ok = (c, n) => { if (c) { pass++; console.log('  ok - ' + n) } else { fail++; console.error('  FAIL - ' + n) } }

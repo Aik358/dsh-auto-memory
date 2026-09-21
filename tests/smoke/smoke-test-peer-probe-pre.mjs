@@ -20,6 +20,12 @@ let pass = 0, fail = 0
 const ok = (cond, name) => { if (cond) { pass++; console.log('  ok -', name) } else { fail++; console.log('  FAIL -', name) } }
 
 // 共享实现直接从源码导入(与 index.js semanticAssetProbe 同一函数)
+// issue #112：`probeJsSemanticAssets()` 除了看传入的 lib 目录，还会经 `resolveDshHomePre()`
+// 探**真实 `~/.dsh/models/js-semantic`**（该函数只读 `DSH_HOME`、不缓存）。于是本套件在装过
+// 语义模型的机器上红、在干净机器上绿——同一份代码两种结论，CI 与本地永远对不上。
+// 把 DSH_HOME 钉到一次性空目录，断言就只依赖合成夹具（下面各 case 的 freshRoot）。
+process.env.DSH_HOME = realpathSync(mkdtempSync(path.join(tmpdir(), 'peer-probe-home-')))
+
 const semMod = await import(pathToFileURL(path.join(LIB_SRC, 'semantic-js.js')).href)
 ok(typeof semMod.probeJsSemanticAssets === 'function' && typeof semMod.resolvePeerTransformersDir === 'function',
   'shared probe helpers exported')
