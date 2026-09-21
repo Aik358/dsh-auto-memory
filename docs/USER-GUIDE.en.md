@@ -50,7 +50,7 @@
 - The version number in the panel title and in Settings → "Check for updates" both show the **installed** version.
 - A **floating pin** (line-drawn quick-access icon) also lives in the sidebar for one-click access to memory actions from anywhere.
 - Since DSH 0.1.2-rc.1 the Web UI sits behind a token gate (new token every restart; the `?token=…` URL in the startup log is your address). This plugin's HTTP endpoints are loopback-only and unaffected by the gate.
-- All data stays on your machine: `~/.dsh/memory/` (memory files), `~/.dsh/dsh-auto-memory-pre.json` (config; `dsh-auto-memory.json` in release builds).
+- All data stays on your machine: `~/.dsh/memory/` (memory files), `~/.dsh/dsh-auto-memory.json` (config). **Note**: inside this repo's pre dev tree the same file carries a `-pre` suffix; the build you install from npm uses the suffix-less name. Same applies to every path below.
 
 ## 2. First launch
 
@@ -194,7 +194,7 @@ The static injection face: the `<memory_system>` block composed into every turn.
 | Item | Notes |
 |---|---|
 | Version / check for updates | Compares with the npm registry; registry installs get one-click updates. Local dev links show the update command `cd ~/.dsh/profiles/web && pnpm up @a9i5k4/dsh-auto-memory@latest` |
-| Diagnostics log | `~/.dsh/dsh-auto-memory-pre-diagnose.log` (subagent circuit-breaking, consolidation skips, GC, recall degradation — all in here) |
+| Diagnostics log | `~/.dsh/dsh-auto-memory-diagnose.log` (subagent circuit-breaking, consolidation skips, GC, recall degradation — all in here; **it sits next to `memory/`, not inside it**) |
 | Community | QQ group feedback — faster than GitHub issues (link in README) |
 
 ---
@@ -250,7 +250,7 @@ Every decision lands in the **Recall review** tab for A/P/S/H/E grading. Every i
 
 ## 7. Evidence chain & memory importance
 
-Every memory keeps an auditable usage dossier — six event types, filed daily under `~/.dsh/memory/evidence-pre/events/YYYY-MM-DD.jsonl`:
+Every memory keeps an auditable usage dossier — six event types, filed daily under `~/.dsh/memory/evidence/events/YYYY-MM-DD.jsonl` (this repo's pre dev tree uses `evidence-pre/`):
 
 | Event | Meaning |
 |---|---|
@@ -366,7 +366,7 @@ All three write tools (log/note/user) pass the **write gate**: GBK mojibake, stu
 | pnpm blocks a same-day update | pnpm v11 `minimumReleaseAge` blocks <24h packages: set `minimumReleaseAge: 0` or pin the version |
 | Web UI asks for a token | DSH 0.1.2-rc.1 security gate; the token is in the `dsh web` startup-log URL and rotates each restart |
 | Sidebar Memory button vanished | Likely a conflict with another sidebar-injecting plugin; disable the suspect in plugin management |
-| Feedback / grab logs | `~/.dsh/dsh-auto-memory-pre-diagnose.log`; QQ group in README |
+| Feedback / grab logs | `~/.dsh/dsh-auto-memory-diagnose.log` (run `ls -l ~/.dsh/*diagnose*.log` first to confirm it is non-empty); QQ group in README |
 
 ---
 
@@ -374,16 +374,16 @@ All three write tools (log/note/user) pass the **write gate**: GBK mojibake, stu
 
 | Content | Path |
 |---|---|
-| Plugin config | `~/.dsh/dsh-auto-memory-pre.json` (`dsh-auto-memory.json` in release builds) |
+| Plugin config | `~/.dsh/dsh-auto-memory.json` (this repo's pre dev tree uses `dsh-auto-memory-pre.json`) |
 | User-level memory | `~/.dsh/memory/MEMORY.md` |
 | Workspace memory | `~/.dsh/memory/workspaces/<workspace>/` (MEMORY.md, daily logs, handoff/, reflections/, summaries/) |
 | Whiteboard & ledgers | `~/.dsh/memory/workspaces/<workspace>/handoff/` (PLAN.md + handoff-*.md) |
-| Memory Hub layers | `~/.dsh/memory/hub-pre/` (episodes / facts / procedures .json, atomic writes) |
-| Evidence events | `~/.dsh/memory/evidence-pre/events/YYYY-MM-DD.jsonl` (six types, per day) |
-| Semantic-engine data | `~/.dsh/memory/semantic-pre/` (embedding-config.json, decision shadow logs, vector cache) |
+| Memory Hub layers | `~/.dsh/memory/hub/` (episodes / facts / procedures .json, atomic writes; this repo's pre dev tree uses `hub-pre/`) |
+| Evidence events | `~/.dsh/memory/evidence/events/YYYY-MM-DD.jsonl` (six types, per day; pre dev tree uses `evidence-pre/`) |
+| Semantic-engine data | `~/.dsh/memory/semantic/` (embedding-config.json, decision shadow logs, vector cache; pre dev tree uses `semantic-pre/`) |
 | Models / venv | `~/.dsh/models/js-semantic/` (C2 model) · `~/.dsh/python-engine/` (C3 venv + model; plugin upgrades never touch these) |
 | Subagent trace backups | `~/.dsh/subagent-gc-backup/` (move back into `~/.dsh/sessions/` to roll back) |
-| Diagnostics log | `~/.dsh/dsh-auto-memory-pre-diagnose.log` |
+| Diagnostics log | `~/.dsh/dsh-auto-memory-diagnose.log` (next to `memory/`, **not** inside it) |
 
 ---
 

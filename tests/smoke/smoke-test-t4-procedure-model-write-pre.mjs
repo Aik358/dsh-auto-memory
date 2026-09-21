@@ -184,7 +184,9 @@ console.log('\n[T4-7] 源码级锁定:promote 的授权分支形状(防日后被
   ok(/if \(!authorizedBy\) \{\s*\n\s*if \(diversity < gates\.minSessionDiversity\)/.test(PS),
     '★ 两条统计门被同一个 if (!authorizedBy) 整体包住')
   // observationOnly 短路必须在授权读取**之前**(授权也无法绕过)
-  const iObs = PS.indexOf('isObservationOnlyPre(p)) return { ok: true, decision: \'keep\', procedure: p, reasonCodes: [\'observation-only\'] }')
+  // ★2026-09-21 放宽:此前用精确返回字面量 indexOf 定位,但 promote() 现已带 `promoted` 字段
+  //   (P2-5 修复),字面量一变断言就断。改为只锚定**调用点**,语义不变、不再锁定返回形状。
+  const iObs = PS.indexOf('if (isObservationOnlyPre(p))')
   const iAuth = PS.indexOf("const authorizedBy = opts && opts.authorizedBy")
   ok(iObs > 0 && iAuth > 0 && iObs < iAuth, '★ observationOnly 短路在授权读取之前(结构门优先于授权)')
   // no-success-criteria 必须在授权块**之后**(即授权不放行它)

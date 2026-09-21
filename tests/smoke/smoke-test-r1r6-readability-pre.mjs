@@ -110,7 +110,16 @@ t('R6-1 ★ 三个操作按钮仍在（晋升/激活/弃用）', () => {
 })
 
 t('R6-2 ★★ 观察型条目仍隐藏晋升按钮（issue30 契约不得回退）', () => {
-  assert(/!p\.observationOnly && h\('button'/ .test(C), '★ 观察型条目的晋升按钮又出现了')
+  // ★2026-09-21(A-9)收紧:晋升按钮条件由「仅 !observationOnly」改为
+  //   「!observationOnly && 只读投影 decision==='promote'」——多了一道与真实门限对齐的判据。
+  //   本断言随之改为**按意图验证**:晋升按钮所在的条件区必须仍含 !p.observationOnly。
+  //   (不再锁死紧邻字面量,否则排版一变就假红。)
+  const iBtn = C.indexOf("hubAct('promote'")
+  assert(iBtn > 0, '找不到晋升按钮调用点')
+  const condZone = C.slice(Math.max(0, iBtn - 400), iBtn)
+  assert(/!p\.observationOnly/.test(condZone), '★ 观察型条目的晋升按钮又出现了（条件区缺 !p.observationOnly）')
+  // A-9 附加:按钮还须受只读投影约束(与 store 真实门限一致)
+  assert(/p\.promotion/.test(condZone), '★ 晋升按钮未对齐只读投影 p.promotion(A-9 契约)')
 })
 
 console.log('\n[r1r6] ' + pass + ' passed, ' + fail + ' failed')

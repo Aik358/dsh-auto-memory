@@ -50,7 +50,7 @@
 - 面板标题里的版本号与 设置 →「检查更新」显示的都是**当前安装的版本**。
 - 侧栏还有一颗**悬浮钉**（线描快捷入口），可从任何页面快速唤出记忆操作。
 - DSH 0.1.2-rc.1 起 Web UI 有 token 认证闸门（每次重启换新 token，启动日志里 `?token=…` 即访问地址）；本插件的 HTTP 端点仅本机回环可访问，不受闸门影响。
-- 数据全在本机：`~/.dsh/memory/`（记忆文件）、`~/.dsh/dsh-auto-memory-pre.json`（配置，发布版为 `dsh-auto-memory.json`）。
+- 数据全在本机：`~/.dsh/memory/`（记忆文件）、`~/.dsh/dsh-auto-memory.json`（配置）。**注意**：本仓库的 pre 开发树里同一个文件名带 `-pre` 后缀；你从 npm 装到的版本是**不带**后缀的那个，下面所有路径同理。
 
 ## 2. 第一次启动
 
@@ -194,7 +194,7 @@
 | 项 | 说明 |
 |---|---|
 | 插件版本 / 检查更新 | 与 npm registry 比对；registry 安装可一键更新。本地开发链接会显示更新命令 `cd ~/.dsh/profiles/web && pnpm up @a9i5k4/dsh-auto-memory@latest` |
-| 诊断日志 | `~/.dsh/dsh-auto-memory-pre-diagnose.log`（子代理熔断、巩固跳过、回收、唤起降级等事件全在内） |
+| 诊断日志 | `~/.dsh/dsh-auto-memory-diagnose.log`（子代理熔断、巩固跳过、回收、唤起降级等事件全在内；**与 `memory/` 同级，不在 `memory/` 里面**） |
 | 交流群 | QQ 群反馈，响应比 issue 快（链接见 README） |
 
 ---
@@ -250,7 +250,7 @@
 
 ## 7. 证据链与记忆重要性
 
-每条记忆都有可审计的使用档案，六类事件按日落盘 `~/.dsh/memory/evidence-pre/events/YYYY-MM-DD.jsonl`：
+每条记忆都有可审计的使用档案，六类事件按日落盘 `~/.dsh/memory/evidence/events/YYYY-MM-DD.jsonl`（本仓库 pre 开发树为 `evidence-pre/`）：
 
 | 事件 | 含义 |
 |---|---|
@@ -366,7 +366,7 @@ AI 在对话中可直接调用（共 14 个，你不需要记）：
 | pnpm 安装当天新版被拦 | pnpm v11 `minimumReleaseAge` 拦 24h 内新版：`minimumReleaseAge: 0` 或 pin 版本 |
 | Web UI 打开要 token | DSH 0.1.2-rc.1 起的安全闸门，token 在 `dsh web` 启动日志的 URL 里，重启即换 |
 | 侧栏插件按钮消失 | 可能与其他注入侧栏的插件冲突，到插件管理停用嫌疑插件 |
-| 想反馈 / 拿日志 | `~/.dsh/dsh-auto-memory-pre-diagnose.log`；QQ 群见 README |
+| 想反馈 / 拿日志 | `~/.dsh/dsh-auto-memory-diagnose.log`（打包前先 `ls -l ~/.dsh/*diagnose*.log` 确认非空）；QQ 群见 README |
 
 ---
 
@@ -374,16 +374,16 @@ AI 在对话中可直接调用（共 14 个，你不需要记）：
 
 | 内容 | 路径 |
 |---|---|
-| 插件配置 | `~/.dsh/dsh-auto-memory-pre.json`（发布版 `dsh-auto-memory.json`） |
+| 插件配置 | `~/.dsh/dsh-auto-memory.json`（本仓库 pre 开发树为 `dsh-auto-memory-pre.json`） |
 | 用户级记忆 | `~/.dsh/memory/MEMORY.md` |
 | 工作区记忆 | `~/.dsh/memory/workspaces/<工作区>/`（MEMORY.md、每日日志、handoff/、reflections/、summaries/） |
 | 白板与账本 | `~/.dsh/memory/workspaces/<工作区>/handoff/`（PLAN.md + handoff-*.md） |
-| 记忆中枢三层 | `~/.dsh/memory/hub-pre/`（episodes / facts / procedures .json，原子写） |
-| 证据事件 | `~/.dsh/memory/evidence-pre/events/YYYY-MM-DD.jsonl`（六类，按日） |
-| 语义引擎数据 | `~/.dsh/memory/semantic-pre/`（发射配置 embedding-config.json、决策影子日志、向量缓存） |
+| 记忆中枢三层 | `~/.dsh/memory/hub/`（episodes / facts / procedures .json，原子写；本仓库 pre 开发树为 `hub-pre/`） |
+| 证据事件 | `~/.dsh/memory/evidence/events/YYYY-MM-DD.jsonl`（六类，按日；本仓库 pre 开发树为 `evidence-pre/`） |
+| 语义引擎数据 | `~/.dsh/memory/semantic/`（发射配置 embedding-config.json、决策影子日志、向量缓存；本仓库 pre 开发树为 `semantic-pre/`） |
 | 语义模型/venv | `~/.dsh/models/js-semantic/`（C2 模型）· `~/.dsh/python-engine/`（C3 venv+模型，升级插件不受影响） |
 | 子代理痕迹备份 | `~/.dsh/subagent-gc-backup/`（移回 `~/.dsh/sessions/` 即回滚） |
-| 诊断日志 | `~/.dsh/dsh-auto-memory-pre-diagnose.log` |
+| 诊断日志 | `~/.dsh/dsh-auto-memory-diagnose.log`（与 `memory/` 同级，不在 `memory/` 里面） |
 
 ---
 

@@ -1,24 +1,41 @@
 #!/usr/bin/env node
 /** smoke-test-m81-fact-metadata —— M8-1 Fact 层元数据补强回归锁定(2026-09-09)。
  * 三组新字段(时间三价/认识论状态/趋势),全部可选、向后兼容:
- *   ① 旧数据可读:无新字段的既有记录 restore 正常(不报错不丢弃);真实 facts.json 实测(存在时)
+ *   ① 旧数据可读:无新字段的既有记录 restore 正常(不报错不丢弃);用**自造夹具**实测(见下)
  *   ② 校验函数接受新字段(可选),不因新字段拒绝旧结构
  *   ③ 创建透传 + 合并回填(旧记录首次合并补 ingestedAt=原 confirmedAt)
  * 纯内存驱动(io 注入),不落盘不改真实数据。
+ *
+ * ★上游 issue #112(隔离):本套件**钉一次性 DSH_HOME**,绝不读真实 `~/.dsh`。
+ *   旧写法手拼 `process.env.USERPROFILE || process.env.HOME` + 真实 `~/.dsh/memory/hub/facts.json`,
+ *   并把「真实库 ≥1 条」写成硬断言 ⇒ 结果依赖「本机恰好有库」,别机/空库必红。
+ *   现在:家目录口径唯一(`DSH_HOME`,与 `lib/dsh-home.js` 同源)、夹具由本套件自造、
+ *   前提不成立(空库/缺夹具)改为**显式跳过 + 说明**——空库是完全合法的状态。
  */
 import assert from 'node:assert/strict'
-import { readFileSync, existsSync } from 'node:fs'
+import { readFileSync, existsSync, mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
   createFactStorePre, validateFactCandidatePre, validateFactPre,
   FACT_EPISTEMIC_STATUSES_V1, FACT_TRENDS_V1,
 } from '../../lib/fact-store.js'
+import { resolveDshHomePre } from '../../lib/dsh-home.js'
 
-let pass = 0, fail = 0
+let pass = 0, fail = 0, skip = 0
 const t = (name, fn) => { try { fn(); pass++; console.log('  ok -', name) } catch (e) { fail++; console.error('FAIL', name + ':', e.message) } }
 const ta = async (name, fn) => { try { await fn(); pass++; console.log('  ok -', name) } catch (e) { fail++; console.error('FAIL', name + ':', e.message) } }
+/** 前提不成立 ⇒ 显式跳过并说明(issue #112:空库/缺夹具不是契约回归,不判红也不静默)。 */
+const skipped = (name, detail) => { skip++; console.log('  SKIP -', name); if (detail) console.log('        ' + detail) }
 const HERE = path.dirname(fileURLToPath(import.meta.url))
+
+// ---------- 隔离前置(上游 issue #112)----------
+const HERMETIC_DSH_HOME = mkdtempSync(path.join(tmpdir(), 'm81-fact-home-'))
+process.env.DSH_HOME = HERMETIC_DSH_HOME
+/** 夹具路径**只用唯一口径** `resolveDshHomePre()` 拼(它读的正是 DSH_HOME),不手拼家目录。 */
+const FIXTURE_FACTS = path.join(resolveDshHomePre(), 'memory', 'hub', 'facts.json')
+console.log('[m81-fact-metadata] 隔离: DSH_HOME →', path.basename(HERMETIC_DSH_HOME), '(一次性临时目录)')
 
 const memIo = () => { let saved = null; return { save(d) { saved = d }, load() { return saved }, get saved() { return saved } } }
 const cand = (over = {}) => ({
@@ -26,6 +43,20 @@ const cand = (over = {}) => ({
   sourceKind: 'explicit', provenance: ['mem_' + 'a'.repeat(32)], ...over,
 })
 const T0 = 1750000000000
+
+// ---------- 夹具(自造,替代原「真实 facts.json」;上游 issue #112)----------
+// 混装:2 条旧结构(无 ingestedAt) + 1 条新结构(有 ingestedAt) ——「混装」正是本套件最该覆盖的场景。
+// 两条旧结构分别取 explicit 与 inference 来源,用于验证 B-4 的 restore 回填规则(fact / observation)。
+const FIXTURE_OLD_EXPLICIT = { factId: 'fact_' + '1'.repeat(32), scope: 'User', subject: '夹具旧主体A', predicate: '旧谓词A', object: null, sourceKind: 'explicit', sourceClass: 'user-memory', provenance: ['fixture'], confidence: null, confirmedAt: T0, ttl: 0, revoked: false }
+const FIXTURE_OLD_INFERENCE = { factId: 'fact_' + '2'.repeat(32), scope: 'Workspace', subject: '夹具旧主体B', predicate: '旧谓词B', object: '值', sourceKind: 'inference', provenance: [], confidence: 0.5, confirmedAt: T0 - 9, ttl: 0, revoked: false }
+const FIXTURE_NEW = { factId: 'fact_' + '3'.repeat(32), scope: 'User', subject: '夹具新主体C', predicate: '新谓词C', object: null, sourceKind: 'explicit', provenance: ['fixture'], confidence: null, confirmedAt: T0, ttl: 0, revoked: false, ingestedAt: T0 - 1 }
+{
+  mkdirSync(path.dirname(FIXTURE_FACTS), { recursive: true })
+  writeFileSync(FIXTURE_FACTS, JSON.stringify({
+    schemaVersion: 1, namespace: 'dsh-auto-memory', policyVersion: 'fact_store_v1', savedAt: T0,
+    facts: [FIXTURE_OLD_EXPLICIT, FIXTURE_OLD_INFERENCE, FIXTURE_NEW], conflicts: [],
+  }), 'utf8')
+}
 
 // ---------- 枚举冻结 ----------
 t('枚举冻结且值正确', () => {
@@ -74,18 +105,21 @@ t('upsert 创建:ingestedAt 必填且=confirmedAt;提供 occurredAt/mentionedAt 
   assert.equal(f.epistemicStatus, 'directive')
   assert.equal(f.trend, 'new')
 })
-t('upsert 创建:不提供新字段 → 既有结构不变(occurredAt/mentionedAt 缺省),仅多 ingestedAt', () => {
+t('upsert 创建:不提供新字段 → occurredAt/mentionedAt/trend 缺省,新增 ingestedAt 与 epistemicStatus(B-4)', () => {
   const s = createFactStorePre({ io: memIo(), now: () => T0 })
   const r = s.upsert(cand())
   assert.equal(r.fact.ingestedAt, T0)
   assert.equal(r.fact.occurredAt, undefined)
   assert.equal(r.fact.mentionedAt, undefined)
-  assert.equal(r.fact.epistemicStatus, undefined)
   assert.equal(r.fact.trend, undefined)
-  // 快照 JSON 不含 undefined 字段(与旧形状兼容)
+  // ★B-4(2026-09-22)契约变更:epistemicStatus 现在**必带默认值**(explicit/user-memory → 'fact')。
+  //   trend 仍是「缺省不写」,保持原样断言 —— 只翻被改的那一半。
+  assert.equal(r.fact.epistemicStatus, 'fact', '★B-4:缺省即补默认(explicit → fact)')
+  // 快照 JSON 不含 undefined 字段(与旧形状兼容);epistemicStatus 已必填故必须出现
   const snap = s.snapshot({ includeRevoked: true })
   const raw = JSON.stringify(snap)
-  assert.ok(raw.includes('ingestedAt') && !raw.includes('occurredAt') && !raw.includes('epistemicStatus'))
+  assert.ok(raw.includes('ingestedAt') && raw.includes('epistemicStatus') && !raw.includes('occurredAt') && !raw.includes('trend'),
+    '★B-4:epistemicStatus 已必填;occurredAt/trend 仍缺省不写')
 })
 
 // ---------- 验收1:旧数据可读 + 合并回填 ----------
@@ -150,16 +184,26 @@ t('既有语义回归:冲突判定/ supersede / inference-blocked 结果与旧�
   assert.equal(blk.outcome, 'created', '新主体不受影响')
 })
 
-// ---------- 向后兼容:真实 facts.json 实测(存在时;不存在则跳过) ----------
-await ta('真实 facts.json 兼容实测(只读)', async () => {
-  const f = path.join(process.env.USERPROFILE || process.env.HOME, '.dsh', 'memory', 'hub', 'facts.json')
-  if (!existsSync(f)) { console.log('    (本机无 facts.json,跳过实测)'); return }
-  const data = JSON.parse(readFileSync(f, 'utf8'))
-  assert.ok(Array.isArray(data.facts) && data.facts.length >= 1, '真实数据存在')
+// ---------- 向后兼容:夹具 facts.json 实测(一次性 DSH_HOME;前提不成立则显式跳过) ----------
+await ta('夹具 facts.json 兼容实测(hermetic DSH_HOME)', async () => {
+  // ★issue #112:此前手拼 `process.env.USERPROFILE || process.env.HOME` + 真实 `~/.dsh`
+  //   ⇒ 断言依赖「本机恰好有库」,别机/空库必红,「回归全绿」不可判定。
+  //   现在:路径只走唯一口径 `resolveDshHomePre()`(读的正是本套件设置的 DSH_HOME),夹具由本套件自造。
+  if (!existsSync(FIXTURE_FACTS)) {
+    skipped('夹具 facts.json 未落盘(前提不成立,跳过实测)', FIXTURE_FACTS)
+    return
+  }
+  const data = JSON.parse(readFileSync(FIXTURE_FACTS, 'utf8'))
+  if (!Array.isArray(data.facts) || data.facts.length === 0) {
+    // ★空库是**完全合法**的状态:不再把「库里有数据」写成硬断言
+    //   (旧写法 `assert.ok(... && data.facts.length >= 1, '真实数据存在')` 会在空库误红)。
+    skipped('夹具 facts 为空数组 —— 空库合法,跳过「全量读回」实测', '')
+    return
+  }
   const s = createFactStorePre({ io: memIo() })
   const r = s.restore(data)
   assert.equal(r.ok, true)
-  assert.equal(r.restored, data.facts.length, '真实旧记录全量读回零丢弃')
+  assert.equal(r.restored, data.facts.length, '夹具旧记录全量读回零丢弃')
   // ★2026-09-17 修正（非本批引入的既有缺陷，实测暴露）：
   // 原断言 `data.facts.every(x => x.ingestedAt === undefined)`（「实测对象确为旧结构」）把
   // **测试前提**写成了**硬断言** —— 插件自身一旦按新结构写过一条记录，该文件就变成新旧混装，
@@ -172,7 +216,23 @@ await ta('真实 facts.json 兼容实测(只读)', async () => {
   console.log(`    (实测文件结构: 旧结构 ${oldOnes.length} 条 / 新结构 ${newOnes.length} 条 — 混装本就要支持)`)
   assert.equal(oldOnes.length + newOnes.length, data.facts.length, '新旧结构统计自洽')
   assert.ok(newOnes.every((x) => typeof x.ingestedAt === 'number'), '新结构记录的 ingestedAt 为数值(未被写坏)')
+
+  // ★B-4(2026-09-22)新契约:restore() 对旧快照按写入侧同一套规则回填 epistemicStatus。
+  //   这里钉住它的**可观察结果**与**作用范围**(只回填这一个字段,不动 ingestedAt)。
+  const snap = s.snapshot({ includeRevoked: true })
+  const restoredFacts = Array.isArray(snap.facts) ? snap.facts : []
+  assert.equal(restoredFacts.length, data.facts.length, '回填不增删记录(条数与夹具一致)')
+  assert.ok(restoredFacts.every((x) => typeof x.epistemicStatus === 'string' && x.epistemicStatus.length > 0),
+    '★B-4:restore 后每条都带 epistemicStatus(旧结构按规则回填,不留 undefined)')
+  const byId = new Map(restoredFacts.map((x) => [x.factId, x]))
+  assert.equal((byId.get(FIXTURE_OLD_EXPLICIT.factId) || {}).epistemicStatus, 'fact', '★B-4:explicit/user-memory → fact')
+  assert.equal((byId.get(FIXTURE_OLD_INFERENCE.factId) || {}).epistemicStatus, 'observation', '★B-4:inference → observation')
+  assert.equal((byId.get(FIXTURE_OLD_INFERENCE.factId) || {}).ingestedAt, undefined,
+    '★B-4 作用范围:只回填 epistemicStatus,不凭空补 ingestedAt')
+  assert.equal((byId.get(FIXTURE_NEW.factId) || {}).epistemicStatus, 'fact', '夹具新结构记录原值保留')
 })
 
-console.log(`\n[m81-fact-metadata] ${pass}/${pass + fail} assertions passed`)
+try { rmSync(HERMETIC_DSH_HOME, { recursive: true, force: true }) } catch (_) { /* 一次性临时目录,清理尽力而为 */ }
+
+console.log(`\n[m81-fact-metadata] ${pass}/${pass + fail} assertions passed` + (skip ? `, ${skip} skipped(前提不成立,非失败)` : ''))
 if (fail) process.exit(1)

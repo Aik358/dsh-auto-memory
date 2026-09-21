@@ -8,12 +8,36 @@
  *   ※ 不再自动建 GitHub issue;日报时由 group-digest.mjs 读 gist、AI 归纳成问题清单后清空
  *
  * 环境变量:QQ_APP_ID / QQ_APP_SECRET / QQ_GROUP_OPENID / GH_TOKEN(需 Gists 读写)/
- *          GIST_ID(收集文件的 gist)/ REPO(备用)/ ROUTE_TOKEN(可选)/ STRICT_VERIFY(可选)/
+ *          GIST_ID(收集文件的 gist)/ REPO(备用)/
  *          TRIGGER(可选,明确反馈词)/ FEEDBACK_KEYWORDS(可选,问题关键词)/
  *          LLM_API_KEY / LLM_MODEL / LLM_BASE_URL / LLM_MAX_REPLY(均可选)
+ *
+ * ★ 2026-09-21 安全加固(上游 issue #113/#114/#115/#116):本文件是全仓唯一公网可达面,
+ *   四条默认值原本都是「默认不安全」,现全部改为 **fail-closed**(不配就拒绝,而不是不配就放行):
+ *
+ *   STRICT_VERIFY         默认**开**(验签失败 → 401)。旧默认 `=== '1'` ⇒ 不显式配置就不验签,
+ *                         而事件名取自载荷 `payload.t`,匿名即可伪造 @ 事件烧 LLM_API_KEY(#113)。
+ *                         要关必须**同时**设 STRICT_VERIFY=0 与 ALLOW_INSECURE_VERIFY=1(仅本地联调)。
+ *   AI_MAX_PER_HOUR       默认 6 次/小时(显式写 0 才是"不限额",且需自担代价)。旧默认 0=不限(#113)。
+ *   ROUTE_TOKEN           人用端点(`?report=` / `?diag=`)的凭据,**不再是"可选"**:未配置 ⇒ 这两条端点
+ *                         一律 403。旧行为是"token 为空 ⇒ 这道门不存在",于是匿名可读到群聊原文、
+ *                         LLM key 形状(长度+头3+尾4)、appId/gistId/ghToken 前缀,`write=1` 还能写 gist(#115)。
+ *   TIMER_SECRET          定时入口的共享密钥,**不再是"可选"**:未配置 ⇒ 定时入口一律拒绝(#114)。
+ *   RAW_DEBUG             默认**关**(设 1 才开);且采集点已移到**验签之后**(#116)。
+ *
+ * ★ 三类入口的凭据各不相同,不要混:
+ *   ① QQ 平台回调(默认路径) —— **不需要**任何自定义 token:平台只会把事件原样 POST 到登记的 URL,
+ *      身份由 Ed25519 验签(X-Signature-Ed25519)负责。**给回调加 ROUTE_TOKEN 要求 = 机器人直接失联**。
+ *   ② 人用端点 ?report= / ?diag= —— 需要 ROUTE_TOKEN(?token= 或请求头 x-route-token)。
+ *   ③ 定时触发 ?timer=1 / POST Type:Timer —— 需要 TIMER_SECRET(另有触发名比对)。
  */
 const http = require('node:http')
 const crypto = require('node:crypto')
+
+// 数值型环境变量解析:非数字/负数/空串一律回落到安全默认值。
+// 为什么需要:旧写法 `Number(process.env.AI_MAX_PER_HOUR || 0)` 在写入非数字时会得到 NaN,
+// 而限流判据是 `maxPerHour > 0` ⇒ NaN 让它**静默失效**(等于不限额),正是 #113 想要消除的形态。
+const envNum = (v, def) => { if (v === undefined || v === null || v === '') return def; const n = Number(v); return Number.isFinite(n) && n >= 0 ? n : def }
 
 const CFG = {
   appId: process.env.QQ_APP_ID,
@@ -25,8 +49,14 @@ const CFG = {
   triggers: (process.env.TRIGGER || '反馈,问题,bug').split(',').map((s) => s.trim()).filter(Boolean),
   keywords: (process.env.FEEDBACK_KEYWORDS || '问题,bug,报错,error,异常,失效,崩溃,闪退,不能用,出错了,坏了').split(',').map((s) => s.trim().toLowerCase()).filter(Boolean),
   routeToken: process.env.ROUTE_TOKEN || '',
-  port: Number(process.env.PORT || 9000),
-  strictVerify: process.env.STRICT_VERIFY === '1',
+  port: envNum(process.env.PORT, 9000),
+  // ★ issue #113:验签**默认开**。旧默认 `=== '1'` ⇒ 不显式配置就不验签,叠加「事件名取自载荷 payload.t」,
+  //   任何拿到本函数 URL 的人都能伪造 GROUP_AT_MESSAGE_CREATE 让函数用运维者的 LLM_API_KEY 生成回复。
+  //   关闭需要**同时**显式声明两个开关(STRICT_VERIFY=0 + ALLOW_INSECURE_VERIFY=1),单个 0 不再生效:
+  //   这样"我知道我在做什么"必须被写进配置里,而不是靠漏配。
+  strictVerify: !(process.env.STRICT_VERIFY === '0' && process.env.ALLOW_INSECURE_VERIFY === '1'),
+  // 显式声明的不验签联调模式(仅本地)。即便开启,LLM 答疑(花钱的那条路径)仍要求验签通过 —— 见 handleEvent。
+  allowInsecure: process.env.STRICT_VERIFY === '0' && process.env.ALLOW_INSECURE_VERIFY === '1',
   llm: {
     key: process.env.LLM_API_KEY || '',
     model: process.env.LLM_MODEL || 'deepseek-chat',
@@ -41,13 +71,16 @@ const CFG = {
     secret: process.env.TIMER_SECRET || '',
     token: process.env.GH_DISPATCH_TOKEN || '',
     workflowFile: process.env.GH_WORKFLOW_FILE || 'group-digest.yml',
-    minGapHours: Number(process.env.TIMER_MIN_GAP_HOURS || 10),
+    minGapHours: envNum(process.env.TIMER_MIN_GAP_HOURS, 10),
   },
   // @ 答疑限频(2026-09-14 起全部走环境变量,改额度不用改代码):
-  //   AI_MAX_PER_HOUR = 每小时最多答疑次数(不配或 0 = 不限额);AI_QUOTA_HOURS = 时间窗(默认 1)。
+  //   AI_MAX_PER_HOUR = 每小时最多答疑次数;AI_QUOTA_HOURS = 时间窗(默认 1)。
+  // ★ issue #113:默认值由 0(不限额)改为 **6 次/小时**。旧默认与「验签默认关」叠加后,
+  //   公网 URL 就是一个"无上限烧 LLM_API_KEY"的入口。显式写 AI_MAX_PER_HOUR=0 仍是"不限额",
+  //   但那从此是一句需要被写下来的声明,而不是没人注意到的默认值。
   ai: {
-    maxPerHour: Number(process.env.AI_MAX_PER_HOUR || 0),
-    quotaHours: Number(process.env.AI_QUOTA_HOURS || 1),
+    maxPerHour: envNum(process.env.AI_MAX_PER_HOUR, 6),
+    quotaHours: envNum(process.env.AI_QUOTA_HOURS, 1),
   },
   // 本机器人在群内的 openid(严格判定「是否被 @」用)。它 ≠ /users/@me 的数字 uin,平台也不提供换算接口,
   // 因此作为身份常量内置(与 QQ_APP_ID 同性质);换群/换机器人时用环境变量 BOT_MENTION_ID 覆盖即可。
@@ -57,11 +90,14 @@ const CFG = {
 for (const k of ['appId', 'appSecret', 'groupId', 'ghToken']) {
   if (!CFG[k]) { console.error(`[webhook] 缺少环境变量 ${k}`); process.exit(1) }
 }
-const VERSION = 'webhook-gist-20260914a' // 部署核对标记:diag 端点与错误响应都会带它(20260913h=@ 答疑优先于已记录/LLM 空应答外显错误体)
+const VERSION = 'webhook-failclosed-20260921a' // 部署核对标记:diag 端点与错误响应都会带它(20260914a=@ 答疑优先于已记录;20260921a=#113-#116 四条默认值全部改 fail-closed)
 const FEEDBACK_FILE = 'group-feedback.jsonl' // 反馈收集钉死文件名(digest 与 report 同读此名,清空时保留文件本身)
 let lastError = null // 最近一次内部错误(diag 可见)
 let botMentionToken = null // 从「@机器人+反馈词」消息里学习的机器人 mention 标识
-const RAW_DEBUG = (process.env.RAW_DEBUG || '1') !== '0' // 抓原始报文进 gist 的 group-raw-debug.txt(排查完可关)
+// ★ issue #116:RAW_DEBUG **默认关**(设 1 才开)。旧默认 `(env || '1') !== '0'` ⇒ 不配就是开,
+//   且采集发生在**验签之前** ⇒ 任何匿名请求都能把全量入站报文(含群成员聊天文本)灌进共享 gist。
+//   现在:默认关 + 采集点移到验签通过之后(见文件末 HTTP 服务)。它只是排障开关,排完请关掉。
+const RAW_DEBUG = process.env.RAW_DEBUG === '1'
 
 async function rawDebug(req, raw) {
   if (!RAW_DEBUG || req.method !== 'POST' || !CFG.gistId) return
@@ -292,7 +328,9 @@ const recentByContent = new Map() // 作者+内容 → 最近处理时间(重复
 const clip = (s, n) => { const t = String(s || '').replace(/\s+/g, ' ').trim(); return t.length > n ? t.slice(0, n) + '…' : t }
 const when = () => new Intl.DateTimeFormat('zh-CN', { timeZone: 'Asia/Shanghai', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date())
 
-async function handleEvent(payload) {
+// verified = 本次请求是否通过 Ed25519 验签(HTTP 层传入)。默认配置下未验签请求已在上游被 401 拦掉,
+// 这个参数只用于「显式关掉验签的联调模式」下继续拦住花钱的那条路径(issue #113)。
+async function handleEvent(payload, verified = false) {
   // URL 验证(op=13):回传 plain_token + 对 event_ts+plain_token 的 Ed25519 签名(hex)
   if (payload.op === 13) {
     const { plain_token: plainToken, event_ts: eventTs } = payload.d || {}
@@ -354,9 +392,15 @@ async function handleEvent(payload) {
       }
     }
 
-    // ③ @ 机器人的消息:LLM 答疑(限频全走环境变量:AI_MAX_PER_HOUR=每小时最多几次,不配=不限;
-    //    AI_QUOTA_HOURS=时间窗,默认 1h。配额落盘 gist 防冷启动失忆;被动回复不占主动消息配额)。
-    if (isAt && CFG.llm.key) {
+    // ③ @ 机器人的消息:LLM 答疑(限频全走环境变量:AI_MAX_PER_HOUR=每小时最多几次,**默认 6**;
+    //    显式 0=不限;AI_QUOTA_HOURS=时间窗,默认 1h。配额落盘 gist 防冷启动失忆;被动回复不占主动消息配额)。
+    // ★ issue #113:花钱那条路径(调 LLM_API_KEY + 往真实群发消息)额外要求**本次请求验签通过**。
+    //   默认配置下未验签请求根本到不了这里(HTTP 层已 401);这一道是给「显式关掉验签的联调模式」兜底,
+    //   确保那次显式放行不会变成匿名烧 key 的入口。
+    if (isAt && CFG.llm.key && !verified) {
+      console.warn('[webhook] 已跳过 LLM 答疑:本次请求未通过验签(即便处于显式放行的联调模式,也不替匿名流量花 LLM_API_KEY)')
+    }
+    if (isAt && CFG.llm.key && verified) {
       const confirm = recorded ? '已记录 ✅ 会归纳进下次群报\n\n' : ''
       try {
         const q = await botState()
@@ -387,14 +431,57 @@ async function handleEvent(payload) {
 // ---------- 定时班自触发(SCF 定时触发器 → workflow_dispatch) ----------
 // GitHub 的 schedule 从未唤起过本仓库工作流(全仓库 schedule 运行 0 次)——由常驻 SCF 定时触发器
 // 打本函数(POST body 带 Type:'Timer'),函数再调 workflow_dispatch 把日报班唤起来,到点必达。
-async function handleTimer(arg) {
-  const viaQuery = typeof arg !== 'string'
-  try {
-    if (viaQuery && CFG.timer.secret && arg.get('key') !== CFG.timer.secret) return { ok: false, reason: 'bad key' }
-    if (!viaQuery) {
-      try { const ev = JSON.parse(arg); const norm = (x) => String(x || '').replace(/[-s]+/g, '_').toLowerCase(); const tn = norm(ev.TriggerName || ev.triggerName || ''); if (CFG.timer.triggerName && tn && tn !== norm(CFG.timer.triggerName)) return { ok: false, reason: 'trigger 不匹配: ' + tn } } catch (e) {}
+//
+// ★ issue #114:timer 入口的两道鉴权原本都能被请求载荷**短路**,现全部改为 fail-closed:
+//   旧写法 `if (CFG.timer.secret && arg.get('key') !== CFG.timer.secret) …` —— TIMER_SECRET 未配时
+//   整条件不成立,直接放行;POST 分支更是完全不查 key。后果:外部者可用 GH_DISPATCH_TOKEN 唤起
+//   main 上带全套 secrets 的 workflow,而那条日报班每次成功运行都会把反馈 gist 覆写为 '\n'
+//   ⇒ 一条匿名 HTTP 请求就能反复销毁群反馈数据。
+//   现在:①TIMER_SECRET 未配 ⇒ 拒绝;②密钥缺失/不匹配 ⇒ 拒绝;③触发名缺失/不匹配 ⇒ 拒绝(载荷省略
+//   TriggerName 不再等于"跳过校验")。三种拒绝都带人能读懂的原因 + 该改哪个环境变量。
+const normTrigger = (x) => String(x || '').replace(/[-s]+/g, '_').toLowerCase()
+// arg 形状:{ kind:'query', params:URLSearchParams, header } 或 { kind:'payload', payload, params, header }
+function timerAuth(arg) {
+  const secret = String(CFG.timer.secret || '')
+  if (!secret) {
+    return {
+      ok: false, status: 403, code: 'timer_secret_unconfigured',
+      error: '定时入口已关闭:云函数没有配置 TIMER_SECRET 环境变量。',
+      hint: '这是 fail-closed 设计(未配密钥时该入口对所有人关闭)。请在云函数环境变量里配置 TIMER_SECRET,并让触发请求携带它:GET 用 ?timer=1&key=<TIMER_SECRET>、POST 用请求头 x-timer-secret: <TIMER_SECRET>,或在 body 里带 "key"/"timerSecret" 字段。',
     }
+  }
+  const given = arg.kind === 'query'
+    ? (arg.params.get('key') || arg.header || '')
+    : (arg.header || (arg.payload && (arg.payload.key || arg.payload.timerSecret || arg.payload['X-Timer-Secret'])) || '')
+  if (!given || !timingSafeEq(given, secret)) {
+    return {
+      ok: false, status: 403, code: 'timer_secret_mismatch',
+      error: (given ? '定时入口密钥不匹配。' : '定时入口缺少密钥。') + '(POST 分支旧实现完全不查 key,是 issue #114 的主缺口)',
+      hint: '触发请求必须携带 TIMER_SECRET:GET ?timer=1&key=<TIMER_SECRET>;POST 请求头 x-timer-secret:<TIMER_SECRET> 或 body 字段 "key"/"timerSecret"。',
+    }
+  }
+  const rawTn = arg.kind === 'payload'
+    ? (arg.payload && (arg.payload.TriggerName || arg.payload.triggerName))
+    : arg.params.get('trigger')
+  const tn = normTrigger(rawTn)
+  const want = normTrigger(CFG.timer.triggerName)
+  if (want && tn !== want) {
+    return {
+      ok: false, status: 403, code: 'timer_trigger_mismatch',
+      error: `定时入口触发名不匹配:收到 ${tn || '(请求未带 TriggerName)'},期望 ${want}。`,
+      hint: '载荷里的 TriggerName 缺失**不再**等于跳过校验(旧实现的短路点之一)。若 SCF 定时触发器的触发名(或手动调用的 trigger 参数)与 TIMER_TRIGGER_NAME 不一致,请改成一致,或把 TIMER_TRIGGER_NAME 显式设成 ' + want + '。',
+    }
+  }
+  return { ok: true }
+}
+
+async function handleTimer(arg) {
+  try {
+    // 二次校验(与 HTTP 层的准入同一套判据):即便入口被绕过,这里也不会用 GH_DISPATCH_TOKEN 去 dispatch。
+    const auth = timerAuth(arg)
+    if (!auth.ok) return { ok: false, dispatched: false, code: auth.code, reason: auth.error + ' ' + auth.hint }
     if (!CFG.timer.token) return { ok: false, dispatched: false, reason: 'GH_DISPATCH_TOKEN 未配置(需要 Actions 读写权限的 token)' }
+
     const st = await botState()
     const gapMs = Math.max(1, CFG.timer.minGapHours) * 3600e3
     if (st.lastDigestDispatchAt && Date.now() - st.lastDigestDispatchAt < gapMs) {
@@ -417,27 +504,105 @@ async function handleTimer(arg) {
   }
 }
 
+// ---------- 拒绝响应(机器码 + 人话 + 该配哪个环境变量) ----------
+// 方针「人看得懂」:拒绝时不能只回机器码。每个拒绝都带 code(机器可判)+ error(中文说明)+ hint(要改哪个 env)。
+function deny(res, status, code, error, hint) {
+  if (res.writableEnded) return
+  res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8' })
+  res.end(JSON.stringify({ ok: false, code, error, hint, v: VERSION }, null, 2))
+}
+const tail4 = (s) => { const t = String(s == null ? '' : s); return t ? '…' + t.slice(-4) : '(未配置)' }
+function timingSafeEq(a, b) {
+  const A = Buffer.from(String(a == null ? '' : a)); const B = Buffer.from(String(b == null ? '' : b))
+  return A.length > 0 && A.length === B.length && crypto.timingSafeEqual(A, B)
+}
+const rejects = { count: 0, lastCode: null, at: null, lastDetail: null }
+function noteReject(code, detail) {
+  rejects.count++
+  rejects.lastCode = code
+  rejects.at = new Date().toISOString()
+  if (detail) rejects.lastDetail = clip(detail, 160)
+}
+const safeJson = (s) => { try { return JSON.parse(s) } catch { return null } }
+
+// ★ 人用端点准入门(issue #115):?report= / ?diag= 必须持 ROUTE_TOKEN,**未配即 403**(门不存在 = 门关闭)。
+//   旧实现是 `if (CFG.routeToken && !req.url.includes(routeToken)) 404` —— 没配 ROUTE_TOKEN 时这道门
+//   根本不存在,于是匿名可读到群聊原文、LLM key 形状(长度+头3+尾4)、appId/gistId/ghToken 前缀,
+//   `write=1` 还能匿名写 gist。
+//   ★★ QQ 平台回调路径**不走**这道门:平台只把事件原样 POST 到登记的 URL,带不上自定义 token;
+//      回调的身份由 Ed25519 验签负责(见文件末)。给回调加 token 要求 = 机器人直接失联。
+function routeAuth(req, url) {
+  const tok = String(CFG.routeToken || '')
+  if (!tok) return { ok: false, code: 'route_token_unconfigured' }
+  const given = String(req.headers['x-route-token'] || url.searchParams.get('token') || '')
+  if (given && timingSafeEq(given, tok)) return { ok: true }
+  // 兼容旧用法:旧实现只做 `req.url.includes(token)` 子串判定,老 URL 形如 ?diag=1&token=xxx 继续可用
+  if (String(req.url || '').includes(tok)) return { ok: true, legacy: true }
+  return { ok: false, code: 'route_token_mismatch' }
+}
+function routeDeny(res, endpoint, code) {
+  noteReject(code)
+  if (code === 'route_token_unconfigured') {
+    return deny(res, 403, code,
+      endpoint + ' 端点已关闭:云函数没有配置 ROUTE_TOKEN 环境变量。',
+      '这是刻意设计的 fail-closed(未配凭据时对所有人关闭,以免匿名读到群聊原文与密钥形状)。请在云函数环境变量里配置 ROUTE_TOKEN 后重新部署,再用 ?token=<ROUTE_TOKEN> 或请求头 x-route-token 访问。')
+  }
+  return deny(res, 403, code,
+    endpoint + ' 端点需要凭据:请求未携带匹配的 ROUTE_TOKEN。',
+    '请在查询串里加 ?token=<ROUTE_TOKEN>,或加请求头 x-route-token: <ROUTE_TOKEN>。注意:QQ 平台回调路径不需要 token,它靠 Ed25519 验签。')
+}
+
 // ---------- HTTP 服务(Web 函数/任何 Node 宿主通用) ----------
+const MAX_BODY_BYTES = envNum(process.env.MAX_BODY_BYTES, 1024 * 1024) // 入站 body 上限(issue #116)
 const server = http.createServer((req, res) => {
   const chunks = []
-  req.on('data', (c) => chunks.push(c))
+  let received = 0
+  let tooLarge = false
+  req.on('data', (c) => {
+    if (tooLarge) return
+    received += c.length
+    if (received > MAX_BODY_BYTES) {
+      // issue #116:旧实现无界累积后再 Buffer.concat ⇒ 匿名大 body 先在内存里长大。超限即拒,不再读。
+      tooLarge = true
+      chunks.length = 0
+      noteReject('body_too_large', 'bytes>' + MAX_BODY_BYTES)
+      deny(res, 413, 'body_too_large',
+        '入站请求体超过上限 ' + MAX_BODY_BYTES + ' 字节,已拒绝。',
+        'QQ 回调报文只有几 KB;若确实要手工发大 body,再调 MAX_BODY_BYTES 环境变量。')
+      return
+    }
+    chunks.push(c)
+  })
+  // 客户端中途断开(公网面上很常见:探测、超时取消、被 413 拒后仍继续写)会让 req 抛 error;
+  // 没有监听者时 Node 会把它是当成未处理错误(可致函数实例崩溃)⇒ 这里显式吞掉,只当本次请求结束。
+  req.on('error', () => { tooLarge = true })
   req.on('end', async () => {
+    if (tooLarge) return
     const raw = Buffer.concat(chunks).toString('utf8')
     try {
-      if (CFG.routeToken && !req.url.includes(CFG.routeToken)) { res.writeHead(404); res.end(); return }
-      // 定时班自触发入口:SCF 定时触发器 POST body 带 Type:'Timer';另支持 GET ?timer=1&key=<TIMER_SECRET> 手动测试。
-      // 2026-09-13:GitHub API 从大陆云上调用耗时不稳(实测 3s 平台同步窗被掐)——先秒回"受理",
-      // 实际触发放后台执行(结果看 diag.lastError 与群消息;防重逻辑在任务内部,重复触发不会重发)。
-      if (raw.includes('"Type":"Timer"') || (req.method === 'GET' && req.url.includes('timer=1'))) {
-        const arg = req.method === 'GET' ? new URL('http://x' + req.url).searchParams : raw
+      const url = new URL('http://x' + (req.url || '/'))
+      // ---- ① 定时班自触发入口(SCF 定时触发器 POST Type:'Timer',或 GET ?timer=1&key=…&trigger=… 手动测试)----
+      // 鉴权先做,失败一律 403 且**不** dispatch(旧实现先秒回 200 再校验,POST 分支甚至完全不查 key)。
+      // 2026-09-13 的「先秒回受理、后台执行」保留:密钥/触发名校验是同步的,不占平台 3s 窗口。
+      if (raw.includes('"Type":"Timer"') || (req.method === 'GET' && url.searchParams.get('timer') === '1')) {
+        const header = String(req.headers['x-timer-secret'] || '')
+        const arg = req.method === 'GET'
+          ? { kind: 'query', params: url.searchParams, header }
+          : { kind: 'payload', payload: safeJson(raw), params: url.searchParams, header }
+        const auth = timerAuth(arg)
+        if (!auth.ok) { noteReject(auth.code); return deny(res, auth.status, auth.code, auth.error, auth.hint) }
         res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' })
-        res.end(JSON.stringify({ ok: true, accepted: true, note: 'dispatching in background; 结果看 diag.lastError 与群消息' }))
+        res.end(JSON.stringify({ ok: true, accepted: true, v: VERSION, note: 'dispatching in background; 结果看 ?diag=1 的 rejects/lastError 与群消息' }))
         void handleTimer(arg).catch((e) => console.error('[webhook] timer async:', (e && e.message) || e))
         return
       }
-      rawDebug(req, raw).catch(() => {})
-      // 按需报告:GET <url>?report=N → 最近 N 小时群反馈(items 原文;配了 LLM 且未 raw=1 时附 AI 归纳)
+      // ---- ② 人用端点:?report= / ?diag= 必须持 ROUTE_TOKEN(issue #115)----
+      // 注:rawDebug 的采集点已从「请求一进来就采集」移到验签之后(见 ③),见 issue #116。
+      // 按需报告:GET <url>?report=N&token=<ROUTE_TOKEN> → 最近 N 小时群反馈(items 原文;配了 LLM 且未 raw=1 时附 AI 归纳)
       if (req.method === 'GET' && req.url.includes('report=')) {
+        // ★ issue #115:这里返回的是**群成员聊天原文** ⇒ 必须有凭据;未配 ROUTE_TOKEN 直接 403(门不存在=门关闭)。
+        const gate = routeAuth(req, url)
+        if (!gate.ok) return routeDeny(res, 'report', gate.code)
         const hours = Math.min(48, Math.max(1, Number((req.url.match(/report=(\d+)/) || [])[1]) || 12))
         const out = { window_hours: hours, total: 0, items: [], summary: null, v: VERSION }
         try {
@@ -457,7 +622,9 @@ const server = http.createServer((req, res) => {
           if (out.total && CFG.llm.key && !req.url.includes('raw=1')) {
             const text = out.items.map((o) => `- [${o.t}] ${o.u}: ${o.m}`).join('\n').slice(0, 20000)
             try {
-              const keyShape = `len=${CFG.llm.key.length}, tail=${CFG.llm.key.slice(-4)}, head=${CFG.llm.key.slice(0, 3)}${/\s/.test(CFG.llm.key) ? ', 含空白字符!' : ''}${/^bearer /i.test(CFG.llm.key) ? ', 已含 Bearer 前缀!' : ''}`
+              // ★ issue #115:密钥诊断只回**布尔**,不再回显长度 + 头 3 位 + 尾 4 位(旧实现足以让人压缩爆破空间,
+              //   也直接暴露密钥格式是否正确)。base/model 是运维者自己的端点配置,保留以维持可排障性。
+              const keyDiag = `key 已配置=${!!CFG.llm.key}${/\s/.test(CFG.llm.key) ? ', 含空白字符' : ''}${/^bearer /i.test(CFG.llm.key) ? ', 已含 Bearer 前缀' : ''}`
               const r = await fetch(`${CFG.llm.base}/chat/completions`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${CFG.llm.key}` },
@@ -473,7 +640,7 @@ const server = http.createServer((req, res) => {
               })
               const j = await r.json().catch(() => null)
               const raw0 = j?.choices?.[0]?.message?.content?.trim()
-              if (!raw0) out.llmError = `HTTP ${r.status}(base=${CFG.llm.base}, model=${CFG.llm.model}, key ${keyShape}): ${clip(JSON.stringify(j), 240)}`
+              if (!raw0) out.llmError = `HTTP ${r.status}(base=${CFG.llm.base}, model=${CFG.llm.model}, ${keyDiag}): ${clip(JSON.stringify(j), 240)}`
               if (raw0) {
                 const kept = raw0.split('\n').map((l) => l.trim()).filter((l) => l && (/^[•\-\d]/.test(l) || /清单|优先级/.test(l)))
                 out.summary = (kept.length ? kept : [clip(raw0, 400)]).join('\n')
@@ -485,26 +652,49 @@ const server = http.createServer((req, res) => {
         res.end(JSON.stringify(out, null, 2))
         return
       }
-      // 自诊断:GET <url>?diag=1 → 汇报线上代码版本、关键变量与 gist 连通性(值脱敏);加 write=1 顺带做一次写入探针
+      // 自诊断:GET <url>?diag=1&token=<ROUTE_TOKEN> → 部署核对(版本 + 三个布尔)+ gist 连通性;加 write=1 顺带一次写入探针
       if (req.method === 'GET' && req.url.includes('diag=1')) {
+        // ★ issue #115:diag 会回显配置标识、且 write=1 能写 gist ⇒ 与 report 同一道凭据门(未配 ROUTE_TOKEN 即 403)。
+        const gate = routeAuth(req, url)
+        if (!gate.ok) return routeDeny(res, 'diag', gate.code)
+        const bool = (x) => !!x
         const diag = {
-          v: VERSION,
-          lastError,
-          appId: CFG.appId,
-          groupId: CFG.groupId.slice(-6),
-          gistId: CFG.gistId || '(未配置)',
-          ghTokenPrefix: CFG.ghToken.slice(0, 14) + '…',
+          v: VERSION, // ★ 部署核对的第 0 项:线上跑的到底是哪一版
+          // ★ 方针「人看得懂」:一眼核对部署 —— 版本号 + 三个布尔(严格验签 / 原始调试 / 密钥已配)
+          deployCheck: {
+            严格验签: CFG.strictVerify,
+            原始调试: RAW_DEBUG,
+            密钥已配: bool(CFG.routeToken),
+          },
+          verdict: `部署核对 v=${VERSION} 严格验签=${CFG.strictVerify ? '开' : '关'} 原始调试=${RAW_DEBUG ? '开' : '关'} 密钥已配=${bool(CFG.routeToken) ? '是' : '否'}`,
+          strictVerify: CFG.strictVerify,
+          rawDebug: RAW_DEBUG,
+          routeTokenConfigured: bool(CFG.routeToken),
+          timerSecretConfigured: bool(CFG.timer.secret),
+          ghDispatchTokenConfigured: bool(CFG.timer.token),
+          insecureMode: CFG.allowInsecure, // 仅当 STRICT_VERIFY=0 且 ALLOW_INSECURE_VERIFY=1 时才是 true
+          // ★ issue #115:身份标识只留**尾 4 位**(旧实现回显完整 appId 与 ghToken 前 14 字符),
+          //   够判断"配没配对",不足以定位/复用凭据。
+          identity: {
+            appIdTail: tail4(CFG.appId),
+            groupIdTail: tail4(CFG.groupId),
+            gistIdTail: tail4(CFG.gistId),
+          },
+          llmEnabled: bool(CFG.llm.key),
+          ai: { maxPerHour: CFG.ai.maxPerHour, quotaHours: CFG.ai.quotaHours, mentionLearned: bool(botMentionToken) },
+          timer: { triggerName: CFG.timer.triggerName, hasDispatchToken: bool(CFG.timer.token), minGapHours: CFG.timer.minGapHours, secretConfigured: bool(CFG.timer.secret) },
+          rejects: { count: rejects.count, lastCode: rejects.lastCode, at: rejects.at, lastDetail: rejects.lastDetail }, // 验签/密钥被拒次数(部署后用它判断"是否有匿名流量在敲门")
+          lastError: lastError ? clip(lastError, 240) : null,
           triggers: CFG.triggers,
           keywords: CFG.keywords,
-          llmEnabled: !!CFG.llm.key,
-          ai: { maxPerHour: CFG.ai.maxPerHour, quotaHours: CFG.ai.quotaHours, botMentionId: CFG.botMentionId.slice(0,8)+'…', mentionLearned: !!botMentionToken },
-          timer: { triggerName: CFG.timer.triggerName, hasDispatchToken: !!CFG.timer.token, minGapHours: CFG.timer.minGapHours },
         }
-        try {
-          const g = await gh(`/gists/${CFG.gistId}`)
-          const f = g.ok ? Object.values(g.body.files || {})[0] : null
-          diag.gistProbe = { status: g.status, ok: g.ok, file: f ? f.filename : null, bytes: f ? f.size : null }
-        } catch (e) { diag.gistProbe = { err: e.message } }
+        if (CFG.gistId) {
+          try {
+            const g = await gh(`/gists/${CFG.gistId}`)
+            const f = g.ok ? Object.values(g.body.files || {})[0] : null
+            diag.gistProbe = { status: g.status, ok: g.ok, file: f ? f.filename : null, bytes: f ? f.size : null }
+          } catch (e) { diag.gistProbe = { err: e.message } }
+        } else diag.gistProbe = { skipped: '未配置 GIST_ID' } // 没配就别发无意义的出站请求
         if (req.url.includes('write=1')) {
           try {
             await gistAppend(JSON.stringify({ t: new Date().toISOString(), u: 'DIAG', m: 'diag write probe' }))
@@ -515,16 +705,37 @@ const server = http.createServer((req, res) => {
         res.end(JSON.stringify(diag, null, 2))
         return
       }
+      // ---- ③ QQ 平台回调路径 ----
+      // ★ 这条路径**不要求** ROUTE_TOKEN / TIMER_SECRET:QQ 平台只会按登记的 URL 原样 POST 事件
+      //   (带 X-Signature-Ed25519 / X-Signature-Timestamp 头),带不上任何自定义 token。
+      //   它的身份判定 = 下面的 Ed25519 验签;默认 STRICT_VERIFY=1,验签失败一律 401。
+      //   ⚠️ 给下一个读者:不要给这条路径加 token 要求,平台无法配合,那等于让机器人失联。
       const payload = JSON.parse(raw || '{}')
-      if (payload.op !== 13) {
+      let verified = false
+      if (payload.op === 13) {
+        // URL 验证握手(op=13):平台校验的是我们的**应答签名**,响应内容自证身份,故不要求我们先验签。
+        // 这条分支只回 plain_token + 签名,不碰群数据、不回显任何密钥。
+      } else {
         const sigHex = String(req.headers['x-signature-ed25519'] || '')
         const ts = String(req.headers['x-signature-timestamp'] || '')
         let ok = false
         try { ok = !!sigHex && crypto.verify(null, Buffer.from(`${ts}${raw}`), KEYS.pub, Buffer.from(sigHex, 'hex')) } catch { /* 算法差异时告警 */ }
-        if (!ok && CFG.strictVerify) { console.warn('[webhook] 验签失败,严格模式拒绝'); res.writeHead(401); res.end('bad signature'); return }
-        if (!ok) console.warn('[webhook] 验签未通过(非严格模式,继续处理)')
+        verified = ok
+        if (!ok && CFG.strictVerify) {
+          // ★ issue #113:旧实现默认不严格 ⇒ 匿名请求只要把载荷事件名写成 GROUP_AT_MESSAGE_CREATE
+          //   就能让函数用运维者的 LLM_API_KEY 生成回复(事件名取自载荷,谁都能自称是 @ 事件)。
+          noteReject('signature_invalid', `no_sig=${!sigHex} ts=${!!ts}`)
+          console.warn('[webhook] 验签失败,拒绝(STRICT_VERIFY 默认开)')
+          return deny(res, 401, 'signature_invalid',
+            '验签未通过:请求缺少 X-Signature-Ed25519 头,或签名与 QQ_APP_SECRET 派生的公钥不匹配。默认配置(STRICT_VERIFY=1)下一律拒绝。',
+            '先确认云函数环境变量 QQ_APP_SECRET 与 QQ 开放平台的机器人密钥完全一致(勿多空格/换行)。只有本地联调才允许同时设 STRICT_VERIFY=0 与 ALLOW_INSECURE_VERIFY=1(那种模式下也不会替匿名流量花 LLM_API_KEY)。')
+        }
+        if (!ok) console.warn('[webhook] 验签未通过:已显式设 STRICT_VERIFY=0 + ALLOW_INSECURE_VERIFY=1,仅限本地联调')
       }
-      const out = await handleEvent(payload)
+      // ★ issue #116:原始报文采集移到**验签之后**,且默认关(RAW_DEBUG=1 才开)。旧实现是
+      //   "请求一进来就采集 + 默认开" ⇒ 任何匿名请求都能把全量入站报文(含群成员聊天文本)灌进共享 gist。
+      if (verified && RAW_DEBUG) rawDebug(req, raw).catch(() => {})
+      const out = await handleEvent(payload, verified)
       res.writeHead(200, { 'Content-Type': 'application/json' })
       if (payload.op === 13) res.end(JSON.stringify(out || {})) // op=13 应答结构严格,不附加字段
       else res.end(JSON.stringify({ ...(out || {}), v: VERSION }))

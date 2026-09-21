@@ -298,7 +298,10 @@ console.log('[switch-decouple] D4 接线:两页共用同一对配置键 + 默认
   // 2026-09-14 补:上面那条只证明「开关卡定义在早退分支之前」,对**已启用**分支不构成约束 ——
   // 实测正是它漏掉的路径:白板一开就走末尾 return(rows),而 rows 里没有 switchCard ⇒ 开得了、关不掉。
   // 故必须直接断言「已启用分支的返回里也带上开关卡」。
-  ok(/return h\('div', null, \[switchCard\]\.concat\(rows\)\)/.test(planTab),
+  // ★2026-09-22 更新锚点:该末尾返回的 div 多了一个属性(`data-dam-flow`,大屏卡片流分列标记),
+  //   旧锚点字面量 `return h('div', null, [switchCard]` 不再逐字存在 ⇒ 断言假红。
+  //   判据本身不变: 末尾返回必须**无条件**把 switchCard 并进 rows 之前(白板开着也能从本页关掉)。
+  ok(/return h\('div', \{[^}]*\}, \[switchCard\]\.concat\(rows\)\)/.test(planTab),
     '白板页:开关卡在「已启用」分支同样渲染(白板开着也能从本页关掉)')
   // 设置页保存不得再 POST 整份快照(宿主端是合并语义,整份快照会把别的入口期间的改动回滚)
   ok(!/saveConfigPatch\(cfg,/.test(CSRC), '设置页保存不再整份快照 POST(旧写法会把其它入口的改动回滚)')
