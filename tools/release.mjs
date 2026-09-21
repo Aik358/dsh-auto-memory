@@ -426,7 +426,8 @@ const relPkg = {
   main: 'lib/index.js',
   exports: { '.': './lib/index.js', './client': './lib/client.js', './package.json': './package.json' },
   // #20:python/ 运行时(worker+语义引擎+策略)必须随包;bench(539MB 模型夹具)与 __pycache__ 永久排除
-  files: ['lib', 'python', 'docs', 'cordis.patch.yml', '!python/bench', '!python/__pycache__'],
+  // #106:发布物剔除非运行时负载 —— docs/internal(内部审计/规划/分诊)与 .bak/.bak-* 一律不进包
+  files: ['lib', 'python', 'docs', 'cordis.patch.yml', '!python/bench', '!python/__pycache__', '!docs/internal', '!docs/**/*.bak', '!docs/**/*.bak-*', '!**/*.mjs.bak-*'],
   dsh: {
     bundle: { patch: './cordis.patch.yml' },
     client: {
