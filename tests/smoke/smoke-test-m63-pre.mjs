@@ -10,6 +10,7 @@ globalThis.fetch = async () => ({ ok: false, status: 503, json: async () => ({})
 const sha256Hex = (buf) => createHash('sha256').update(buf).digest('hex')
 const { parseAnchors } = await import('../../lib/memory-anchor.js')
 const A = await import('../../lib/activation-inbox.js')
+const IS_PREVIEW_TREE = JSON.parse(readFileSync(new URL('../../package.json', import.meta.url), 'utf8')).private === true
 
 let pass = 0; let fail = 0
 function ok(cond, name) { if (cond) { pass++; console.log('  ok - ' + name) } else { fail++; console.error('  FAIL - ' + name) } }
@@ -189,7 +190,7 @@ console.log('[F7/F8] section 字节稳定 / 尾注不进 section / 关闭恢复'
   const h = globalThis.__h
   const sectionComp = h.promptComponents.find((c) => c.kind === 'section')
   const ctxComps = h.promptComponents.filter((c) => c.kind === 'context')
-  ok(sectionComp.name.includes('-pre'), 'F7 section 组件 _pre 命名')
+  ok(IS_PREVIEW_TREE ? sectionComp.name.includes('-pre') : !sectionComp.name.includes('-pre'), 'F7 section 组件命名与当前 preview/release 车道一致')
   const secBefore = String(sectionComp.text({}))
   await h.cfgPost({ activationInboxEnabled: false, associativeMemoryEnabled: false })
   const am = await h.dbg()
