@@ -10,7 +10,7 @@
 
 | 术语 | 全称 / 含义 |
 |---|---|
-| **DSH** | **DeepSeek Harness**，宿主应用。以 CLI `dsh` 启动，提供浏览器 UI（`dsh web`）与插件装载能力。本机安装在 `C:\Users\JH Z\AppData\Roaming\npm\node_modules\@deepseek-ai\dsh` |
+| **DSH** | **DeepSeek Harness**，宿主应用。以 CLI `dsh` 启动，提供浏览器 UI（`dsh web`）与插件装载能力。本机安装位置随平台而定（npm 全局目录下 `@deepseek-ai/dsh`；Windows 常见为 `%APPDATA%\npm\node_modules\@deepseek-ai\dsh`，POSIX 为 `$(npm prefix -g)/lib/node_modules/@deepseek-ai/dsh`） |
 | **Cordis** | DSH 使用的插件框架（`@deepseek-ai/cordis ^4.0.1`）。本插件是 Cordis 插件，通过 `cordis.patch.yml` 注入宿主 |
 | **本插件** | `dsh-auto-memory`，包名同名，工程根目录 `D:\dsh-auto-memory` |
 | **pre 线 / `-pre.js`** | 源码约定：新增模块一律命名为 `lib/xxx-pre.js`（纯函数、零 IO、IO 注入）。发布时由流水线剥去 `-pre` 生成同名 `lib/xxx.js`。**改源码改 `-pre.js`；`lib/xxx.js` 是产物，禁止手改** |
@@ -26,7 +26,7 @@
 | **BM25** | 经典词法相关性算法 |
 | **M8 / 记忆中枢** | 三层记忆存储（fact 事实／episodic 经历／procedure 技能）与编排器 memory-hub 的合称 |
 | **evidence（证据）** | 记忆被使用情况的记录，六类：`seen`（曝光）／`read`（读到原文）／`cite`（回复引用）／`reuse`（跨会话复用）／`success`（任务成功）／`correction`（用户纠正） |
-| **endpoint / 端点** | 后端 HTTP 接口，路径前缀统一为 `/api/dsh-auto-memory-pre/` |
+| **endpoint / 端点** | 后端 HTTP 接口，路径前缀统一为 `/api/dsh-auto-memory/` |
 
 ---
 
@@ -74,10 +74,10 @@ dsh web --no-open --port 0
 │  · 语义引擎环境检测面板                                      │
 │  仅负责「展示 + 收集用户操作」，通过 DSH 远程 API 调用后端    │
 └───────────────┬───────────────────────────────────────────┘
-                │ HTTP /api/dsh-auto-memory-pre/*
+                │ HTTP /api/dsh-auto-memory/*
 ┌───────────────▼───────────────────────────────────────────┐
 │ 宿主侧（后端）lib/index.js + lib/*-pre.js                   │
-│  · 端点路由（39 个）                                         │
+│  · 端点路由（49 个）                                         │
 │  · 工具（10 个，供模型调用）                                  │
 │  · 存储：记忆文件、M8 三层 JSON、evidence 事件 JSONL          │
 │  · 检索：C1 词法 / C2 语义 / C3 Python 语义                  │
@@ -85,11 +85,11 @@ dsh web --no-open --port 0
 └───────────────┬───────────────────────────────────────────┘
                 │ 读写
 ┌───────────────▼───────────────────────────────────────────┐
-│ 磁盘 C:\Users\JH Z\.dsh\memory\                             │
+│ 磁盘 ~/.dsh/                             │
 │  · workspaces\<工作区>\*.md       记忆日志/笔记/白板/账本     │
-│  · hub-pre\episodes|facts|procedures.json   M8 三层          │
-│  · evidence-pre\events\YYYY-MM-DD.jsonl     证据事件（按日）  │
-│  · dsh-auto-memory-pre-diagnose.log         诊断日志         │
+│  · memory\hub\{episodes,facts,procedures}.json  M8 三层      │
+│  · memory\evidence\events\YYYY-MM-DD.jsonl  证据事件（按日）  │
+│  · dsh-auto-memory-diagnose.log         诊断日志             │
 └────────────────────────────────────────────────────────────┘
 ```
 
@@ -125,7 +125,7 @@ dsh web --no-open --port 0
 
 - **位置**：记忆窗格内的「记忆中枢」页签
 - **内容**：技能（procedure）／事实（fact）／经历（episodic）三栏
-- **预期**：有内容时显示条目；无内容显示正确空态；数据来自 `hub-pre\*.json`
+- **预期**：有内容时显示条目；无内容显示正确空态；数据来自 `hub\*.json`
 
 ### 4.3 设置分组（`data-dam-settings-group`）
 
@@ -147,7 +147,7 @@ dsh web --no-open --port 0
 | `procedurePromotionEnabled` | false | 开启 → 技能晋升可用 |
 | `unattendedMode` / `awayMinutes` | false / 60 | 无人值守相关（**设置页 UI 尚未核实，属待办**） |
 
-> ⚠️ 修改设置后需要**重载/重启 dsh web**才生效的场景，以实际观察为准；若改完无变化，先查 `/api/dsh-auto-memory-pre/config` 是否已回写。
+> ⚠️ 修改设置后需要**重载/重启 dsh web**才生效的场景，以实际观察为准；若改完无变化，先查 `/api/dsh-auto-memory/config` 是否已回写。
 
 ### 4.4 语义引擎环境检测面板（`data-dam-detect-panel`）
 
@@ -162,7 +162,7 @@ dsh web --no-open --port 0
 
 ## 5. 后端状态来源（如何确认前端操作已生效）
 
-### 5.1 主要端点（`lib/index.js` 注册，共 39 个，前缀 `/api/dsh-auto-memory-pre/`）
+### 5.1 主要端点（`lib/index.js` 注册 49 个，前缀 `/api/dsh-auto-memory/`）
 
 | 端点 | 用途 | 关键返回字段 |
 |---|---|---|
@@ -179,19 +179,19 @@ dsh web --no-open --port 0
 | `update` / `update-check` | 更新 | 版本信息 |
 | `calendar`、`file`、`browse-dir`、`external*`、`summarize`、`shadow-recent`、`subagent-gc`、`greet` | 其余辅助端点 | — |
 
-> 端点名以代码为准：`grep -oE "'/api/dsh-auto-memory-pre/[a-z0-9-]+'" lib/index.js | sort -u`
+> 端点名以代码为准：`grep -oE "'/api/dsh-auto-memory/[a-z0-9-]+'" lib/index.js | sort -u`；两侧是否对齐看 `node tests/smoke/smoke-test-api-paths-pre.mjs`（该套件把宿主与客户端端点集锁在一起，输出即真值）。
 
 ### 5.2 日志
 
-- **诊断日志**：`C:\Users\JH Z\.dsh\memory\dsh-auto-memory-pre-diagnose.log`
+- **诊断日志**：`~/.dsh/dsh-auto-memory-diagnose.log`
   - 关键线索：插件加载异常、`diag(...)` 输出的降级与状态（如 `hub success evidence: +N`、`p9a correction attribution: ...`）
-- **证据事件**：`C:\Users\JH Z\.dsh\memory\evidence-pre\events\YYYY-MM-DD.jsonl`
+- **证据事件**：`~/.dsh/memory/evidence/events/YYYY-MM-DD.jsonl`
   - 单行结构（实测）：顶层 `kind` / `memoryId` / `recordedAt` / `anchorId` …，**时间戳在 `event.ts`**（顶层无 `ts`/`createdAt`）
-- **M8 数据**：`C:\Users\JH Z\.dsh\memory\hub-pre\{episodes,facts,procedures}.json`（原子写）
+- **M8 数据**：`~/.dsh/memory/hub/{episodes,facts,procedures}.json`（原子写）
 
 ### 5.3 「前端操作 → 后端确认」判定方法（通用三步）
 
-1. **操作前**取基线快照：`GET /api/dsh-auto-memory-pre/config`（或 `state`）+ 记录相关文件条目数/修改时间
+1. **操作前**取基线快照：`GET /api/dsh-auto-memory/config`（或 `state`）+ 记录相关文件条目数/修改时间
 2. **在前端执行操作**（改开关、点按钮）
 3. **操作后再取**：对比配置值是否变化、端点返回是否变化、磁盘文件 mtime/条数是否变化
 
@@ -200,9 +200,9 @@ dsh web --no-open --port 0
 **示例（改 `memoryHubEnabled`）**：
 
 ```
-改前：GET /config → memoryHubEnabled=false；hub-pre\*.json 无新写入
+改前：GET /config → memoryHubEnabled=false；hub\*.json 无新写入
 前端：开启「记忆中枢」开关
-改后：GET /config → memoryHubEnabled=true；对话若干轮后 hub-pre\*.json mtime 更新、条目增加
+改后：GET /config → memoryHubEnabled=true；对话若干轮后 hub\*.json mtime 更新、条目增加
 ```
 
 ---
@@ -235,7 +235,7 @@ dsh web --no-open --port 0
 |---|---|---|---|
 | A1 | — | `dsh web --no-open` | 终端打印监听地址；**没有自动弹出浏览器** |
 | A2 | A1 | 查看诊断日志与终端输出 | 无 `SyntaxError` / `ReferenceError` / 模块加载失败 |
-| A3 | A2 | `GET /api/dsh-auto-memory-pre/state` | 返回 200 且含状态字段 |
+| A3 | A2 | `GET /api/dsh-auto-memory/state` | 返回 200 且含状态字段 |
 
 ### B. 记忆检索主流程
 
@@ -258,16 +258,16 @@ dsh web --no-open --port 0
 
 | # | 步骤 | 通过标准 |
 |---|---|---|
-| D1 | `GET /api/dsh-auto-memory-pre/memory-hub` | 200，含 `policyVersion`/`stats`/三栏数据 |
+| D1 | `GET /api/dsh-auto-memory/memory-hub` | 200，含 `policyVersion`/`stats`/三栏数据 |
 | D2 | 打开记忆窗格 → 记忆中枢页签 | 三栏有内容或正确空态 |
 | D3 | 关闭 `memoryHubEnabled` → 重载 → 对话若干轮 | 无新落盘；端点反映未启用 |
-| D4 | 重新开启 → 对话若干轮 | `hub-pre\*.json` 有新条目 |
+| D4 | 重新开启 → 对话若干轮 | `hub\*.json` 有新条目 |
 
 ### E. 证据链
 
 | # | 步骤 | 通过标准 |
 |---|---|---|
-| E1 | 对话若干轮后查看当日 `evidence-pre\events\*.jsonl` | 新增 `seen` 事件 |
+| E1 | 对话若干轮后查看当日 `evidence\events\*.jsonl` | 新增 `seen` 事件 |
 | E2 | 触发一次用户纠正（对话里说"不对，你记错了"之类） | 新增 `kind:"correction"` 事件（且归因到最近被 cite/read 的记忆） |
 | E3 | 异常：events 目录缺失/损坏 | 检索不报错（fail-soft），重要性取中性 |
 
@@ -284,7 +284,7 @@ dsh web --no-open --port 0
 
 | # | 步骤 | 通过标准 |
 |---|---|---|
-| G1 | 对话若干轮 | 工作区日志 `*.md` 有新条目；`hub-pre\*.json` 更新 |
+| G1 | 对话若干轮 | 工作区日志 `*.md` 有新条目；`hub\*.json` 更新 |
 | G2 | **重启 dsh web**（带 `--no-open`） | 数据 restore 不丢 |
 | G3 | 异常：磁盘不可写 | 不崩溃，日志有记录 |
 
@@ -321,7 +321,7 @@ node tests/smoke/smoke-test-continue-chain-pre.mjs              # 58
 | 启动后 UI 空白/无插件入口 | 检查插件是否装载到 web profile；看诊断日志加载错误 |
 | 改了设置没效果 | 查 `/config` 是否回写；确认是否需要重载 |
 | recall 返回空 | 确认记忆目录有内容；确认 `semanticEngineMode` 与引擎可用；看日志降级记录 |
-| 证据不落盘 | 检查 `evidence-pre\events` 目录权限；确认相关开关 |
+| 证据不落盘 | 检查 `evidence\events` 目录权限；确认相关开关 |
 | 接续不触发 | 确认水位确实到 0.75；`autoContinueEnabled` 为 true |
 | 检索很慢 | 当前词法检索为全量扫描（无倒排索引，属已知待办） |
 
@@ -345,10 +345,10 @@ node tests/smoke/smoke-test-continue-chain-pre.mjs              # 58
 | 工程根 | `D:\dsh-auto-memory` |
 | 宿主侧入口 | `lib/index.js` |
 | 浏览器侧入口 | `lib/client.js` |
-| 端点前缀 | `/api/dsh-auto-memory-pre/`（39 个） |
+| 端点前缀 | `/api/dsh-auto-memory/`（49 个） |
 | 工具 | 10 个，`memory_*_pre` |
-| 记忆根 | `C:\Users\JH Z\.dsh\memory` |
-| 证据事件 | `...\evidence-pre\events\YYYY-MM-DD.jsonl`（时间戳在 `event.ts`） |
-| 诊断日志 | `...\dsh-auto-memory-pre-diagnose.log` |
-| M8 数据 | `...\hub-pre\{episodes,facts,procedures}.json` |
+| 记忆根 | `~/.dsh/memory`（Windows 等价 `%USERPROFILE%\.dsh\memory`；解析口径以 `lib/dsh-home.js` 为准，可用 `DSH_HOME` 覆盖） |
+| 证据事件 | `...\evidence\events\YYYY-MM-DD.jsonl`（时间戳在 `event.ts`） |
+| 诊断日志 | `...\dsh-auto-memory-diagnose.log` |
+| M8 数据 | `...\hub\{episodes,facts,procedures}.json` |
 | 水位/接续阈值 | 0.75 / 0.75（**须低于官方压缩 0.80**） |

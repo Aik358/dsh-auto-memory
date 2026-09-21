@@ -50,7 +50,7 @@
 - 面板标题里的版本号与 设置 →「检查更新」显示的都是**当前安装的版本**。
 - 侧栏还有一颗**悬浮钉**（线描快捷入口），可从任何页面快速唤出记忆操作。
 - DSH 0.1.2-rc.1 起 Web UI 有 token 认证闸门（每次重启换新 token，启动日志里 `?token=…` 即访问地址）；本插件的 HTTP 端点仅本机回环可访问，不受闸门影响。
-- 数据全在本机：`~/.dsh/memory/`（记忆文件）、`~/.dsh/dsh-auto-memory-pre.json`（配置，发布版为 `dsh-auto-memory.json`）。
+- 数据全在本机：`~/.dsh/memory/`（记忆文件）、`~/.dsh/dsh-auto-memory.json`（配置）。
 
 ## 2. 第一次启动
 
@@ -194,7 +194,7 @@
 | 项 | 说明 |
 |---|---|
 | 插件版本 / 检查更新 | 与 npm registry 比对；registry 安装可一键更新。本地开发链接会显示更新命令 `cd ~/.dsh/profiles/web && pnpm up @a9i5k4/dsh-auto-memory@latest` |
-| 诊断日志 | `~/.dsh/dsh-auto-memory-pre-diagnose.log`（子代理熔断、巩固跳过、回收、唤起降级等事件全在内） |
+| 诊断日志 | `~/.dsh/dsh-auto-memory-diagnose.log`（子代理熔断、巩固跳过、回收、唤起降级等事件全在内） |
 | 交流群 | QQ 群反馈，响应比 issue 快（链接见 README） |
 
 ---
@@ -366,7 +366,7 @@ AI 在对话中可直接调用（共 14 个，你不需要记）：
 | pnpm 安装当天新版被拦 | pnpm v11 `minimumReleaseAge` 拦 24h 内新版：`minimumReleaseAge: 0` 或 pin 版本 |
 | Web UI 打开要 token | DSH 0.1.2-rc.1 起的安全闸门，token 在 `dsh web` 启动日志的 URL 里，重启即换 |
 | 侧栏插件按钮消失 | 可能与其他注入侧栏的插件冲突，到插件管理停用嫌疑插件 |
-| 想反馈 / 拿日志 | `~/.dsh/dsh-auto-memory-pre-diagnose.log`；QQ 群见 README |
+| 想反馈 / 拿日志 | `~/.dsh/dsh-auto-memory-diagnose.log`；QQ 群见 README |
 
 ---
 
@@ -374,7 +374,7 @@ AI 在对话中可直接调用（共 14 个，你不需要记）：
 
 | 内容 | 路径 |
 |---|---|
-| 插件配置 | `~/.dsh/dsh-auto-memory-pre.json`（发布版 `dsh-auto-memory.json`） |
+| 插件配置 | `~/.dsh/dsh-auto-memory.json` |
 | 用户级记忆 | `~/.dsh/memory/MEMORY.md` |
 | 工作区记忆 | `~/.dsh/memory/workspaces/<工作区>/`（MEMORY.md、每日日志、handoff/、reflections/、summaries/） |
 | 白板与账本 | `~/.dsh/memory/workspaces/<工作区>/handoff/`（PLAN.md + handoff-*.md） |
@@ -383,7 +383,7 @@ AI 在对话中可直接调用（共 14 个，你不需要记）：
 | 语义引擎数据 | `~/.dsh/memory/semantic-pre/`（发射配置 embedding-config.json、决策影子日志、向量缓存） |
 | 语义模型/venv | `~/.dsh/models/js-semantic/`（C2 模型）· `~/.dsh/python-engine/`（C3 venv+模型，升级插件不受影响） |
 | 子代理痕迹备份 | `~/.dsh/subagent-gc-backup/`（移回 `~/.dsh/sessions/` 即回滚） |
-| 诊断日志 | `~/.dsh/dsh-auto-memory-pre-diagnose.log` |
+| 诊断日志 | `~/.dsh/dsh-auto-memory-diagnose.log` |
 
 ---
 
