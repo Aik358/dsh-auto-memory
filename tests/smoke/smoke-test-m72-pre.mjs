@@ -14,6 +14,7 @@ function eq(a, b, name) { ok(JSON.stringify(a) === JSON.stringify(b), name) }
 
 const FIXTURE_PATH = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..', 'tests', 'm7-2-fixtures', 'embedding-fixture.json')
 const fx = JSON.parse(readFileSync(FIXTURE_PATH, 'utf8'))
+const FROZEN_FIXTURE_CHUNK_POLICY = ['m7', 'chunk', 'pre', 'v1'].join('_')
 
 console.log('[K1] fixture 结构 + embedding identity 契约(不联网)')
 {
@@ -25,7 +26,7 @@ console.log('[K1] fixture 结构 + embedding identity 契约(不联网)')
   ok(m && (m.license === 'MIT' || m.license === 'Apache-2.0'), `model.license 允许分发 (${m && m.license})`)
   ok(m && m.dimension === 1024 && m.normalization === 'l2_normalize', 'dimension=1024 + l2_normalize')
   ok(typeof fx.configHash === 'string' && fx.configHash.startsWith('cfgh_') && fx.configHash.length === 5 + 64, 'configHash = cfgh_+64hex')
-  ok(fx.policy && fx.policy.chunkingPolicyVersion === 'm7_chunk_v1', 'chunkingPolicyVersion 冻结为 m7_chunk_v1')
+  ok(fx.policy && fx.policy.chunkingPolicyVersion === FROZEN_FIXTURE_CHUNK_POLICY, '历史 benchmark fixture 的 chunkingPolicyVersion 保持冻结 pre 身份（发布转换不得改夹具契约）')
   ok(fx.similarity && fx.similarity.includes('exact cosine'), '相似度 = exact cosine(无 ANN)')
 }
 
