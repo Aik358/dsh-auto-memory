@@ -281,6 +281,11 @@ const libModuleRenames = [
   // ★2026-09-22（#110）：hub 持久化 IO 适配器（带健康度记账）从 index.js 抽出为独立模块。
   //   不登记的话它会以 `hub-io-pre.js` 原名进入发布包，残留闸门必然拒绝构建。
   'hub-io-pre.js',                // #110 hub 落盘 IO 失败可见化
+  // ★2026-09-22（3.1.0）：procedure 开关契约模块（B-2 从 context-host / activation-host 抽出，
+  //   作为「哪些开关真生效」的唯一权威判据）。同样**从未登记** —— 干跑
+  //   `node tools/release.mjs 3.1.0 --dry-run` 时被「模块重命名完整性自检」拦下（fail closed 生效）。
+  //   不登记它就会以 `procedure-switch-pre.js` 原名进包，残留闸门必然拒绝构建。
+  'procedure-switch-pre.js',      // B-2 procedure 开关契约(注入/晋升门控的唯一权威判据)
 ]
 const libRenameMap = libModuleRenames.map((f) => [f, f.replace(/-pre\.js$/, '.js')])
 for (const [from, to] of libRenameMap) {
