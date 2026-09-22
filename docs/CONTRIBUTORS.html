@@ -263,7 +263,10 @@
   background-image: none;
   -webkit-background-clip: initial;
   background-clip: initial;
-  color: transparent;
+  /* ★必须给一档**非透明**兜底色：宿主 b 原有 color:transparent 会被后代继承，
+     JS 失败时数字会整片消失。彩色由 .t-reel-digit 自己上。 */
+  color: var(--txt);
+  -webkit-text-fill-color: currentColor;
 }
 .t-reel {
   display: inline-flex;
@@ -279,23 +282,35 @@
   /* 窗口上下缘软淡出，而不是硬裁切 */
   -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 22%, #000 78%, transparent 100%);
   mask-image: linear-gradient(to bottom, transparent 0%, #000 22%, #000 78%, transparent 100%);
-  /* 每列自带页面同款渐变，逐字裁进字形（父级 background-clip 无法穿到被裁切的子层） */
-  background-image: linear-gradient(100deg, var(--accent), var(--accent3));
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
 }
 .t-reel-strip {
   display: flex;
   flex-direction: column;
   will-change: transform, filter;
 }
+/* ★渐变必须落在**直接包含文字**的元素上。
+   background-clip:text 只对“本元素自己的文字”生效，放到祖先（.t-reel-col）不会
+   透过后代字形绘制；而 -webkit-text-fill-color:transparent / color:transparent
+   都会被后代继承 ⇒ 那样写的结果是数字整片消失（本次实测踩到）。
+   另外先给 color 一档实色兜底，浏览器不支持 clip:text 时也不会白屏。 */
 .t-reel-digit {
   height: var(--reel-cell);
   display: flex;
   align-items: center;
   justify-content: center;
+  color: var(--accent3);
+  background-image: linear-gradient(100deg, var(--accent), var(--accent3));
+  /* 背景铺到 2 倍宽，再按位数挪 background-position，
+     这样多个数字合起来读作**一条**连续渐变，而不是每位各自重复一次。 */
+  background-size: 200% 100%;
+  background-repeat: no-repeat;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
+.t-reel-col:nth-child(1) .t-reel-digit { background-position: 0% 50%; }
+.t-reel-col:nth-child(2) .t-reel-digit { background-position: 100% 50%; }
+.t-reel-col:nth-child(n+3) .t-reel-digit { background-position: 100% 50%; }
 .dam-svg-defs { position: absolute; width: 0; height: 0; overflow: hidden; }
 
 /* ── ③ 3d-tilt（逐字抄改：贡献者卡随指针倾斜 + 光标辉光）──────
