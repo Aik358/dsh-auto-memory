@@ -63,7 +63,10 @@ const isBom = (b) => b.length >= 3 && b[0] === 0xef && b[1] === 0xbb && b[2] ===
 
 // ---------- C3 LF/CRLF/多字节/无尾换行/preamble/空文件 ----------
 {
-  const crlf = parseAnchors(load('crlf.md'))
+  // ★跨平台确定性：仓库 blob 可能以 LF 存储，Windows autocrlf 又会把它检出为 CRLF；
+  //   被测的是换行检测器，不应把前提押在 checkout 的平台转换上。显式构造 CRLF 字节。
+  const crlfSrc = load('crlf.md').toString('utf8').replace(/\r\n/g, '\n').replace(/\n/g, '\r\n')
+  const crlf = parseAnchors(Buffer.from(crlfSrc, 'utf8'))
   if (crlf.newline !== 'crlf') throw new Error('crlf.md newline detect failed: ' + crlf.newline)
   if (parseAnchors(Buffer.from('a\r\nb\nc\n')).newline !== 'mixed') throw new Error('mixed newline detect failed')
   if (parseAnchors(Buffer.from('a\nb\n')).newline !== 'lf') throw new Error('lf newline detect failed')
