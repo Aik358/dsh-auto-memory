@@ -67,9 +67,11 @@ for (const entry of ['cordis.patch.yml', 'README.md', 'README.zh-CN.md', 'LICENS
 //   闸门安全性（已核对）：残留闸门 scanTargets（L565-580）与凭据闸门 walk 面（L669
 //   `['lib','python','docs','.github']`）**都不含 tools/**；且 tools/ 不在 transformFiles 里
 //   ⇒ 这两份文件以**原样**入包，其中的 `xxx-pre` 名保持不动，正是四支守卫要读的「转换表真源」。
-// ★清单**刻意不用 `['a', 'b']` 数组字面量**：issue111 / t7e 用
-//   /\[\s*'([^']+)'\s*,\s*'([^']+)'\s*\]/ 解析转换表，该形状会被误认成一条「转换对」，
-//   从而扰动它们的统计与「陈旧条目」判定。用字符串 split 形态，对那两个正则不可见。
+// ★清单刻意**不写成「方括号 + 两个单引号字符串」的成对形态**：issue111 会用正则扫 release.mjs
+//   里的这种成对字面量来重建转换表，任何形状相同的短对都会被当成一条「转换对」。
+//   ⚠️ 本注释的早先版本就踩了这个坑 —— 那个示例短对被收进表内、且位置在真表之前（**先于真表生效**），
+//   使 relName() 把 /api/dsh-auto-memory/ 推成 /bpi/dsh-buto-memory-pre/，issue111 八条断言集体假红。
+//   改用字符串 split 形态，对扫描正则不可见。
 for (const toolFile of 'run-smoke.mjs,release.mjs'.split(',')) {
   const src = path.join(DEV, 'tools', toolFile)
   if (!existsSync(src)) continue

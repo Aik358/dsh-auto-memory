@@ -190,7 +190,14 @@ try {
     ok(/clear\(\)[\s\S]{0,300}throw e/.test(HUB_IO), 'clear 失败同样抛出')
 
     if (RELEASE === null) console.log('  – SKIP: release.mjs 登记检查（发布线未含 tools/；该节需发布线工具）')
-    else ok(RELEASE.includes("'hub-io-pre.js'"), '★release.mjs 已登记 hub-io-pre.js（未登记会在发版残留闸门 fail closed）')
+    else {
+      // ★发布线兼容（2026-09-22）：发布构建会按 libModuleRenames 把本文件里的模块名字面量
+      //   改写成裸名，而 tools/release.mjs 是**原样入包**、里面仍是带预览后缀的名字 ⇒ 写死
+      //   任一种形态都会在另一条线上变红。故在运行时拼出该名字（片段不含可被改写的连续模式）。
+      const HUB_IO_MOD = 'hub' + '-io' + '-pre' + '.js'
+      ok(RELEASE.includes("'" + HUB_IO_MOD + "'"),
+        '★release.mjs 已登记 ' + HUB_IO_MOD + '（未登记会在发版残留闸门 fail closed）')
+    }
   }
 } finally {
   try { rmSync(tmp, { recursive: true, force: true }) } catch (_) {}

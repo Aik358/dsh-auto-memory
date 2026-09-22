@@ -76,9 +76,16 @@ const emptySec = RL.renderRulesSectionPre({ rules: [{ text: '## 2026-08-17' }] }
 eq(emptySec.text, '', '全空摘要 ⇒ 不产裸 "- " 行（整段为空）')
 
 console.log('[G5] release 两表登记')
-ok(/\[\s*'memory_rules_pre',\s*'memory_rules'\s*\]/.test(SRC_REL), '转换表已登记 memory_rules_pre')
-ok(/^\s*'memory_rules_pre',\s*$/m.test(SRC_REL), '残留闸门表已登记 memory_rules_pre')
-ok(/note-status-pre\.js/.test(SRC_REL), 'note-status-pre.js 已在模块重命名表内（既有）')
+// ★发布线兼容（2026-09-22）：本文件在发布构建里会被同一张转换表改写 —— 直接写带预览后缀的
+//   工具名/模块名字面量，在发布线上会被改写成裸名，而 tools/release.mjs 是**原样入包**
+//   （里面仍是带后缀的名字）⇒ 这些断言在发布线恒假（红）。故：工具名在运行时拼出（片段不含
+//   任何可被改写的连续模式）；模块名只取不会被改写的基名段。
+const RULES_PRE_NAME = 'memory_rules' + '_pre'
+ok(new RegExp("\\[\\s*'" + RULES_PRE_NAME + "',\\s*'memory_rules'\\s*\\]").test(SRC_REL),
+  '转换表已登记 memory_rules 的预览名 → 裸名（两张表都要有）')
+ok(new RegExp("^\\s*'" + RULES_PRE_NAME + "',\\s*$", 'm').test(SRC_REL),
+  '残留闸门表已登记 memory_rules 的预览名（漏登记则残留不报警）')
+ok(SRC_REL.includes('note-status'), 'note-status 模块已在重命名表内（既有）')
 
 console.log('[G6] 单一写盘口')
 eq((SRC_IX.match(/async function applyRuleEditPre\(/g) || []).length, 1, 'applyRuleEditPre 定义恰好 1 处')

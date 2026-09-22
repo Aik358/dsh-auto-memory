@@ -76,9 +76,15 @@ t('T7e-3 ★ transforms 的映射目标必须是「裸名」，且裸名形态�
 })
 
 t('T7e-4 ★ transforms 里不得出现「真源已无此工具」的陈旧条目（防改名后忘删）', () => {
+  // ★发布线兼容（2026-09-22）：发布构建把 lib/index.js 的工具名改成裸名（预览后缀只存在于
+  //   pre 开发树），而 tools/release.mjs 是原样入包、转换表里仍是带后缀的名字 ⇒ 「表里有、
+  //   真源无」在发布线必然为真（假红）。改为两侧先剥后缀拿到「基名」再比：pre 线剥的是真源名，
+  //   发布线剥的是表里名；同一份基名集合判据在两条线上都成立，真·陈旧条目仍会被抓住。
+  const baseName = (n) => (n.endsWith('_pre') ? n.slice(0, -4) : n)
+  const regBase = new Set(registered.map(baseName))
   const stale = txToolNames
     .filter((x) => x.from.endsWith('_pre'))
-    .filter((x) => !registered.includes(x.from))
+    .filter((x) => !regBase.has(baseName(x.from)))
   assert(stale.length === 0, '★ 映射表里有真源已不存在的工具（陈旧条目）：' + stale.map((x) => x.from).join(', '))
 })
 
