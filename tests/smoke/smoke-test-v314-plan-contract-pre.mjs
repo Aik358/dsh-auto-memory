@@ -43,9 +43,11 @@ ok(ix.includes('missingCardsExcerptPre(beforeText, res)'), 'I2a 拒绝路径接�
 // 精确计两次：函数**定义**（`missingCardsExcerptPre(beforeText, res) {`）+ 拒绝路径**调用**。
 // ⚠️ 计数坑（本轮第二次踩）：`missingCardsExcerptPre(beforeText, res)` 这个串在**定义行里也有**，
 //   所以它出现 2 次而非 1 次 —— 要区分调用点必须带上赋值前缀 `excerpt = `。
-ok(cnt(ix, 'missingCardsExcerptPre') === 2, 'I2b 定义 + 调用各一次（实得 ' + cnt(ix, 'missingCardsExcerptPre') + '）')
-ok(cnt(ix, 'excerpt = missingCardsExcerptPre(beforeText, res)') === 1, 'I2b2 调用点唯一且在拒绝路径（带赋值前缀）')
-ok(cnt(ix, 'let excerpt =') === 1, 'I2b3 拒绝分支里有 excerpt 局部声明')
+// ★v3.1.4 批 J 修正：判据改成**下界 ≥2**（定义 + 至少一处调用）。后续批次在同一函数里
+//   新增调用点是合法演进（批 J 就加了一处），钉死精确值会让守卫变成"改别处就红"的脆断言。
+ok(cnt(ix, 'missingCardsExcerptPre') >= 2, 'I2b 定义 + 至少一处调用（实得 ' + cnt(ix, 'missingCardsExcerptPre') + '）')
+ok(cnt(ix, 'excerpt = missingCardsExcerptPre(beforeText, res)') === 1, 'I2b2 拒绝路径调用点唯一且在拒绝路径（带赋值前缀）')
+ok(ix.includes('let excerpt ='), 'I2b3 有 excerpt 局部声明（拒绝分支）')
 // 真跑：抽函数体
 try {
   const start = ix.indexOf('  missingCardsExcerptPre(beforeText, res) {')

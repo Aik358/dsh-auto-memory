@@ -34,7 +34,9 @@ const read = (p) => readFileSync(path.join(ROOT, p), 'utf8')
 
 const INDEX = read('lib/index.js')
 const HUB_IO = read('lib/hub-io-pre.js')
-const RELEASE = read('tools/release.mjs')
+// ★tools/ 不在发布包 ⇒ 可空（发布线/干净克隆里不存在），只在「登记检查」那一节判定。
+let RELEASE = null
+try { RELEASE = read('tools/release.mjs') } catch (_) { RELEASE = null }
 
 let pass = 0, fail = 0
 const ok = (cond, msg) => { if (cond) { pass++; console.log('  ✓ ' + msg) } else { fail++; console.log('  ✗ FAIL: ' + msg) } }
@@ -187,7 +189,8 @@ try {
     ok(!/save\(data\)[\s\S]{0,300}catch \(_\) \{\}/.test(HUB_IO), '模块内 save 不存在 `catch (_) {}` 静默分支')
     ok(/clear\(\)[\s\S]{0,300}throw e/.test(HUB_IO), 'clear 失败同样抛出')
 
-    ok(RELEASE.includes("'hub-io-pre.js'"), '★release.mjs 已登记 hub-io-pre.js（未登记会在发版残留闸门 fail closed）')
+    if (RELEASE === null) console.log('  – SKIP: release.mjs 登记检查（发布线未含 tools/；该节需发布线工具）')
+    else ok(RELEASE.includes("'hub-io-pre.js'"), '★release.mjs 已登记 hub-io-pre.js（未登记会在发版残留闸门 fail closed）')
   }
 } finally {
   try { rmSync(tmp, { recursive: true, force: true }) } catch (_) {}

@@ -37,7 +37,15 @@ const read = (rel) => readFileSync(path.join(ROOT, rel), 'utf8')
 const norm = (s) => s.replace(/\\/g, '/')
 
 // ---------- ① 发布转换表(唯一权威:tools/release.mjs) ----------
-const releaseSrc = read('tools/release.mjs')
+// ★缺 tools/release.mjs 时**显式跳过**（发布线未含 tools/），不要 ENOENT 崩：
+//   崩溃会让「这条守卫在保护什么」彻底失焦；跳过会留下一行可读事实（今天哪一批没跑）。
+let releaseSrc = ''
+try { releaseSrc = read('tools/release.mjs') } catch (_) { releaseSrc = '' }
+if (!releaseSrc) {
+  console.log('[issue111-docs] SKIP：缺 tools/release.mjs（发布线未含 tools/）⇒ 转换口径检查今天未执行')
+  console.log('[issue111-docs] pass=0 fail=0 skipped=1')
+  process.exit(0)
+}
 const TRANSFORMS = [...releaseSrc.matchAll(/\['([^']+)',\s*'([^']+)'\]/g)].map((m) => [m[1], m[2]])
 ok(TRANSFORMS.length > 50, `解析到发布转换表(${TRANSFORMS.length} 条)`, 'tools/release.mjs 里 [pre 名, 发布名] 的字面量表')
 /** 按发布流水线的顺序做**字符串替换** —— 与 release.mjs 对源码做的事同构。 */

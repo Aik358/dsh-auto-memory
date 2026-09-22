@@ -287,7 +287,14 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 {
   const h = globalThis.__h
   ok(h.promptComponents.length === 3, 'C8 注册组件=section+context+m6 尾注面(n=' + h.promptComponents.length + ')')
-  ok(h.promptComponents.every((c) => c.name && String(c.name).includes('-pre')), 'C8 组件名保持 _pre 命名空间')
+  // ★命名空间「齐一」而不是「必须带 -pre」：发布线用裸名、pre 开发树用 -pre，由 release.mjs 转换表统一改写。
+  //   真正要防的是同一进程里混用两种名字（混用会让组件去重/覆盖判据失效）⇒ 断言齐一。
+  {
+    const names = h.promptComponents.map((c) => String(c.name || ''))
+    const withPre = names.filter((n) => n.includes('-pre')).length
+    ok(withPre === 0 || withPre === names.length,
+      'C8 prompt 组件命名空间齐一（全裸名或全 -pre，实得 ' + withPre + '/' + names.length + ' 带 -pre）')
+  }
   const ctxObj = { agent: h.agent }
   const textsBefore = h.promptComponents.map((c) => (typeof c.text === 'function' ? String(c.text(ctxObj)) : ''))
   ok(textsBefore.every((t) => !t.includes('[Retrieved memory reference')), 'C8 开启前无 Reference Tail 文本')

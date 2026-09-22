@@ -16,7 +16,16 @@ import { fileURLToPath } from 'node:url'
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 const ROOT = path.resolve(HERE, '..', '..')
 const IDX = readFileSync(path.join(ROOT, 'lib', 'index.js'), 'utf8')
-const REL = readFileSync(path.join(ROOT, 'tools', 'release.mjs'), 'utf8')
+// ★tools/ 不在发布包（release.mjs 的复制白名单未含 tools）⇒ 发布线与干净克隆里这份文件不存在。
+//   旧写法在模块顶层直接 read ⇒ ENOENT 崩，整套断言（含与它无关的）一并失效。
+//   改为可空：缺文件即显式跳过这一节，并留一行可读事实（跳过的是对账，不是全部覆盖）。
+let REL = ''
+try { REL = readFileSync(path.join(ROOT, 'tools', 'release.mjs'), 'utf8') } catch (_) { REL = '' }
+if (!REL) {
+  console.log('[t7e] SKIP：缺 tools/release.mjs（发布线未含 tools/）⇒ 预览名/发布名双向对账今天未执行')
+  console.log('[t7e] pass=0 fail=0 skipped=1')
+  process.exit(0)
+}
 
 let pass = 0, fail = 0
 const t = (name, fn) => {

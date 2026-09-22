@@ -58,6 +58,24 @@ for (const entry of ['cordis.patch.yml', 'README.md', 'README.zh-CN.md', 'LICENS
   const s = path.join(DEV, entry), d = path.join(REL, entry)
   if (existsSync(s)) cpSync(s, d, { recursive: true })
 }
+// ★2026-09-22：把发版线**必需的两个工具**带进发布包 —— CI 运行器 + 转换表真源。
+//   背景：此前 tools/ 整个不在复制清单，REL 仓因此**从未有过 tools/**，main 上既没有
+//   `tools/run-smoke.mjs`（CI 无从运行）也没有 `tools/release.mjs`（t7e / issue110 /
+//   issue111 / p9-rules-lifecycle 四支守卫顶层 read 它 → ENOENT 崩，连与它无关的断言一并失效）。
+//   为什么是**过滤拷贝**而不是把 'tools' 加进上面的白名单：tools/ 共 38 个文件，含
+//   `*.bak-*` 备份与一批探针/截图临时脚本，整目录拷会把它们一并推上 main。
+//   闸门安全性（已核对）：残留闸门 scanTargets（L565-580）与凭据闸门 walk 面（L669
+//   `['lib','python','docs','.github']`）**都不含 tools/**；且 tools/ 不在 transformFiles 里
+//   ⇒ 这两份文件以**原样**入包，其中的 `xxx-pre` 名保持不动，正是四支守卫要读的「转换表真源」。
+// ★清单**刻意不用 `['a', 'b']` 数组字面量**：issue111 / t7e 用
+//   /\[\s*'([^']+)'\s*,\s*'([^']+)'\s*\]/ 解析转换表，该形状会被误认成一条「转换对」，
+//   从而扰动它们的统计与「陈旧条目」判定。用字符串 split 形态，对那两个正则不可见。
+for (const toolFile of 'run-smoke.mjs,release.mjs'.split(',')) {
+  const src = path.join(DEV, 'tools', toolFile)
+  if (!existsSync(src)) continue
+  mkdirSync(path.join(REL, 'tools'), { recursive: true })
+  cpSync(src, path.join(REL, 'tools', toolFile))
+}
 
 // ---------- 3. pre → 正式 反转(精确替换;转换输入一律 _pre,禁止 _dev) ----------
 const transforms = [
@@ -184,6 +202,15 @@ const transforms = [
   ['m7-wire-pre.js', 'm7-wire.js'],
   ['context-bridge-pre.js', 'context-bridge.js'],
   ['shadow-retrieval-pre.js', 'shadow-retrieval.js'],
+  // ★正则转义形(2026-09-22, PR#128 根因)：测试断言普遍写成 `\.\/xxx-pre\.js`
+  //   —— 反斜杠隔开了 `.`，而上面的模块改名用的是纯串 `split('xxx-pre.js')`，
+  //   匹配不到 ⇒ 切换成裸名后这些断言在发布线找不到模块，实测 **8 个套件 15 条断言**变红
+  //   （board-index-atomic / graph-mode / i5-status-filter / p4-l0-response / t0-3 /
+  //    t0-8 / three-layer / water-window）。
+  //   同时让 2 条**反向**断言（note-status 不得依赖 memory-anchor、t0-8 保护门不得反向
+  //   依赖 wb-contract）从「改写后永真的假绿」恢复成真守卫。
+  //   一条通用规则覆盖全部转义形；开发树源码无此形态，故对 pre 线零影响。
+  ['-pre\\.js', '.js'],
   ['cand_pre_', 'cand_'],
   ['chk_pre_', 'chk_'],
   ['epi_pre_', 'epi_'],

@@ -25,7 +25,12 @@ console.log('[K1] fixture 结构 + embedding identity 契约(不联网)')
   ok(m && (m.license === 'MIT' || m.license === 'Apache-2.0'), `model.license 允许分发 (${m && m.license})`)
   ok(m && m.dimension === 1024 && m.normalization === 'l2_normalize', 'dimension=1024 + l2_normalize')
   ok(typeof fx.configHash === 'string' && fx.configHash.startsWith('cfgh_') && fx.configHash.length === 5 + 64, 'configHash = cfgh_+64hex')
-  ok(fx.policy && fx.policy.chunkingPolicyVersion === 'm7_chunk_pre_v1', 'chunkingPolicyVersion 冻结为 m7_chunk_pre_v1')
+  // ★冻结策略版本名：夹具是在 -pre 改名**之前**生成的，自述为 m7_chunk_pre_v1；代码常量现为 m7_chunk_v1。
+  //   不去改夹具自述（等于伪造金标向量谱系）⇒ 断「归一到冻结版」。
+  //   '归一'用的片段 _pre_v 不在 release.mjs 转换表里（表里只有 _pre_v1/_pre_v2）⇒ 两条线都不会被改写。
+  const verRaw = String((fx.policy && fx.policy.chunkingPolicyVersion) || '')
+  const verNorm = verRaw.split('_pre_v').join('_v')
+  ok(verNorm === 'm7_chunk_v1', 'chunkingPolicyVersion 归一到冻结版 m7_chunk_v1（实得 ' + verRaw + '）')
   ok(fx.similarity && fx.similarity.includes('exact cosine'), '相似度 = exact cosine(无 ANN)')
 }
 
