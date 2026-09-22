@@ -180,7 +180,7 @@ console.log('[T0-3-7] 确定性 / 边界 / 版本')
 console.log('[T0-3-8] 接线可达性（源码级）：renderMemoryDynamic 用分项账本，不再有注水 used')
 {
   const idx = readFileSync(new URL('../../lib/index.js', import.meta.url), 'utf8')
-  ok(/import \{ composeMemoryEnvelopePre[^}]*\} from '\.\/memory-envelope-pre\.js'/.test(idx),
+  ok(/import \{ composeMemoryEnvelopePre[^}]*\} from '\.\/memory-envelope\.js'/.test(idx),
     'index.js 导入 composeMemoryEnvelopePre')
   ok(/composeMemoryEnvelopePre\(\{/.test(idx), 'renderMemoryDynamic 实际调用分项账本组装器')
   // 旧实现的 `used` 变量只累加、从不被读 —— 这是"注水账本"的指纹。

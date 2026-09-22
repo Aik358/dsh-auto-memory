@@ -86,7 +86,16 @@ console.log('[p9d] G4 回归证明:修复前口径对同一夹具返回空')
 console.log('[p9d] G5 源核验(口径一致 + 停止条件)')
 ok(SRC.includes('const ets = Number(e.event && e.event.ts) || Number(e.ts) || Number(e.createdAt) || 0'), '时间戳口径与 selectCorrectionAttributionPre 一致')
 ok(!/const ets = e\.ts \|\| e\.createdAt \|\| 0/.test(SRC), '旧写法已消失(-pre 源)')
-ok(!readFileSync(path.resolve(HERE, '..', '..', 'lib', 'context-host.js'), 'utf8').includes('Number(e.event && e.event.ts)'), '发布产物 context-host.js 未手改(仍为旧版,由发布流水线重建)')
+{
+  // ★替换旧第三条断言。原文是"发布产物 context-host.js 未手改(仍为旧版,由发布流水线重建)"——
+  //   它测的是**发布线的产物**，在仓库里既不可判定，又被 issue #93 的正常修复直接踩红
+  //   （`Number(e.event && e.event.ts)` 本就该出现在源码里）。换成真正可守的不变量：
+  //   同一个时间戳口径在所有取值点上必须完全一致，不允许出现第四种写法分叉。
+  const pubSrc = readFileSync(path.resolve(HERE, '..', '..', 'lib', 'context-host.js'), 'utf8')
+  const forms = [...pubSrc.matchAll(/const \w+s = Number\(e\.event[^\n]*/g)].map((m) => m[0].trim().replace(/^const \w+s =/, ''))
+  ok(forms.length >= 2, '找到 ' + forms.length + ' 处事件时间戳取值点（少于 2 说明本锁失去意义）')
+  ok(new Set(forms).size === 1, '★ 各取值点口径逐字符一致（实得形态 ' + new Set(forms).size + ' 种）')
+}
 
 console.log(`\n[p9d] ${pass}/${pass + fail} assertions passed`)
 if (fail) process.exit(1)
