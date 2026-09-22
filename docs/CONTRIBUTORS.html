@@ -781,6 +781,9 @@
     each(doc.querySelectorAll('[data-reel]'), function (el) {
       var target = parseInt(el.getAttribute('data-reel'), 10);
       if (isNaN(target)) return;         // 非数字：原样保留，不动
+      // ★给一个**稳定**的可访问名：数字在滚动时 textContent 每帧都变，
+      //   读屏会逐帧播报。aria-label 一旦存在即作为可访问名，屏蔽这种噪声。
+      el.setAttribute('aria-label', String(target));
       if (reduce) { el.textContent = String(target); return; }
 
       var DUR = 1100;                    // 计数总时长
