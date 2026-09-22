@@ -11,6 +11,8 @@
  */
 import fs from 'node:fs'
 import path from 'node:path'
+import os from 'node:os'
+import { scanPluginSubagentSessions } from '../../lib/subagent-gc.js'
 import url from 'node:url'
 import { fileURLToPath } from 'node:url'
 
@@ -18,7 +20,6 @@ const HERE = path.dirname(fileURLToPath(import.meta.url))
 const ROOT = path.resolve(HERE, '..', '..')
 const IX = path.join(ROOT, 'lib', 'index.js')
 const CL = path.join(ROOT, 'lib', 'client.js')
-const GC = path.join(ROOT, 'lib', 'subagent-gc.js')
 
 let pass = 0, fail = 0
 const ok = (c, n, d) => { if (c) { pass++; console.log('  ✓ ' + n) } else { fail++; console.error('  ✗ ' + n + (d ? ' — ' + d : '')) } }
@@ -26,7 +27,6 @@ const cnt = (h, n) => { let c = 0, i = 0; for (;;) { const p = h.indexOf(n, i); 
 
 const ix = fs.readFileSync(IX, 'utf8')
 const cl = fs.readFileSync(CL, 'utf8')
-const gc = fs.readFileSync(GC, 'utf8')
 
 console.log('=== V1 会话文件名去硬编码 ===')
 ok(ix.includes('pickSessionFileNamePre(names, mtimes)'), 'V1a 宿主存在结构识别函数')
@@ -34,7 +34,21 @@ ok(cnt(ix, `const cands = ['session.v3.jsonl.zstd', 'session.jsonl.zstd', 'sessi
   'V1b 旧固定表**只保留在回退分支**里（实得 ' + cnt(ix, `const cands = ['session.v3.jsonl.zstd'`) + ' 处）')
 ok(ix.includes('picked = this.pickSessionFileNamePre'), 'V1c resolveSessionFile 走目录扫描')
 ok(ix.includes('遍历该会话目录里**全部** session.* 文件'), 'V1d sid 回退走目录遍历')
-ok(gc.includes('hits.length ? hits'), 'V1e subagent-gc 走目录扫描')
+// The old string guard passed even when readdirSync was undefined and swallowed.
+// Exercise the real scanner against a future-format file in an isolated directory.
+const gcRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'dam-v313-gc-'))
+try {
+  const dir = path.join(gcRoot, 'workspace', 'child')
+  fs.mkdirSync(dir, { recursive: true })
+  const file = path.join(dir, 'session.v4.jsonl')
+  fs.writeFileSync(file, [
+    { type: 'session', origin: 'subagent', parentSession: 'parent' },
+    { type: 'subagent/descriptor', data: { label: 'auto-memory-summarize', mode: 'one-shot' } },
+  ].map((event) => JSON.stringify(event)).join('\n') + '\n')
+  fs.utimesSync(file, 1, 1)
+  const result = await scanPluginSubagentSessions({ sessionsRoot: gcRoot, keepMs: 0 })
+  ok(result.candidates.length === 1 && result.candidates[0].file === file, 'V1e subagent-gc 实际读取未来命名')
+} finally { fs.rmSync(gcRoot, { recursive: true, force: true }) }
 
 // 真跑纯函数（源码抽取 + new Function，与补丁脚本同法但独立实现）
 console.log('\n=== V1 纯函数真跑 ===')
