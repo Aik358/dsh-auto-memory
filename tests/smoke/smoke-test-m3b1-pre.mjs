@@ -63,7 +63,12 @@ const isBom = (b) => b.length >= 3 && b[0] === 0xef && b[1] === 0xbb && b[2] ===
 
 // ---------- C3 LF/CRLF/多字节/无尾换行/preamble/空文件 ----------
 {
-  const crlf = parseAnchors(load('crlf.md'))
+  // ★跨平台确定性：`crlf.md` 在库里是 **LF**（blob 48 字节、零 CR），而 Windows 检出会被
+  //   git 的 `core.autocrlf` 转成 CRLF ⇒ 本地是"夹具恰好带 CRLF"才绿，Linux runner 上必红
+  //   （issue #112 的门禁实测抓到）。被测的是**检测器**，不该把前提押在 checkout 的换行转换上：
+  //   这里显式先归一再构造，任何平台都得到同一份字节。
+  const crlfSrc = load('crlf.md').toString('utf8').replace(/\r\n/g, '\n').replace(/\n/g, '\r\n')
+  const crlf = parseAnchors(Buffer.from(crlfSrc, 'utf8'))
   if (crlf.newline !== 'crlf') throw new Error('crlf.md newline detect failed: ' + crlf.newline)
   if (parseAnchors(Buffer.from('a\r\nb\nc\n')).newline !== 'mixed') throw new Error('mixed newline detect failed')
   if (parseAnchors(Buffer.from('a\nb\n')).newline !== 'lf') throw new Error('lf newline detect failed')

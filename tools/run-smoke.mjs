@@ -134,7 +134,11 @@ async function main() {
     + '，总耗时 ' + ((Date.now() - t0) / 1000).toFixed(1) + 's')
   for (const r of failed) {
     console.log('\n--- FAIL: ' + r.file + ' (' + (r.timedOut ? 'TIMEOUT after ' + opts.timeout + 'ms' : 'exit ' + r.code) + ') ---')
-    console.log(r.tail ? r.tail.slice(-FAIL_TAIL_CHARS) : '(该套件无任何输出)')
+    // ★只打尾窗会把真正的失败断言挤掉（CI 首跑就撞上：套件有 90 条输出，`FAIL -` 那行在 2400
+    //   字符之外 ⇒ 看得到 exit 1 却看不到是哪条）。先把失败行全部挑出来，再附上尾部。
+    const marks = (r.tail || '').split('\n').filter((l) => /\bFAIL\b|✗|not ok|Error:|FATAL|assert/i.test(l)).slice(0, 25)
+    if (marks.length) console.log('  失败要点:\n' + marks.map((l) => '    ' + l.trim()).join('\n'))
+    console.log('  输出尾部:\n' + (r.tail ? r.tail.slice(-FAIL_TAIL_CHARS) : '(该套件无任何输出)'))
   }
   if (failed.length) {
     console.log('\n[run-smoke] 有失败 ⇒ exit 1（本地复现: node tools/run-smoke.mjs --filter=<套件名关键字>）')
