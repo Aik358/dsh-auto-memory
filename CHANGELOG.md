@@ -13,8 +13,10 @@ All notable changes to dsh-auto-memory.
 ### 修复
 
 - **记忆尾注里的 `{{ … }}` 会让整条会话的模型请求全部失败（issue #132）**：尾注走的是**独立渲染链**，`sanitizeTailText`（guard v1）只做控制符剔除／注释剥离／空格折叠／换行折叠 —— **不碰双花括号**；而宿主 `dsh-system-prompt` 对注入文本做严格插值，命中后要么判 `malformed prompt variable reference`、要么判 `unknown prompt variable`，**两条都直接 throw**。用户侧表现：只要有一条记忆／反思／日记正文里写了 `{{ count }}`（例如记录「Vue 模板用 `{{ count }}` 做插值」），该会话**之后每一次模型请求都失败**。
-  修法：guard **v1 → v2**，在渲染器内部中和双花括号，与 `lib/index.js` 的 `neutralizePromptTemplateVars` **逐字同口径**（半角 → 全角等长替换）。
-  - **为什么内联在渲染器内部、而不是外层 `renderItemBlock`**：`exactDigest` 是渲染文本的 sha256，构建与重渲染两侧必须同口径；放外层会让两侧 digest 不一致，`renderTailFor` 静默降级为空注入 —— 记忆看不见，却**不报错**。
+  修法：guard **v1 → v2**，与 `lib/index.js` 的 `neutralizePromptTemplateVars` **逐字同口径**（半角 `{{`/`}}` → 全角等长替换）。
+  - **★两阶段修复：第一版漏了「字段级穿透」（本版最重要的教训）**。第一版只中和 `reference` 正文，**漏掉 `Source:` 身份行** —— 该行是 `'Source: ' + memoryId + ' / ' + scope + ' / v' + sourceVersion + ' / ' + recordDigest` 裸拼接，`skill.procedureId` / `skill.level` 同理，**任一带 `{{ }}` 就照样穿透**；且 `validateReferenceTailPacketPre` **不校验 `scope`**，外部 packet 通道能把毒字段直接送进渲染器。
+    第二版改为在**渲染器唯一出口**对整段渲染结果中和一次：一次性兜住所有既有与未来新增字段，**不再依赖「记得净化每一个字段」**。
+  - **为什么放在渲染器内部、而不是外层 `renderItemBlock`**：`exactDigest` 是渲染文本的 sha256，构建与重渲染两侧必须同口径；放外层会让两侧 digest 不一致，`renderTailFor` 静默降级为空注入 —— 记忆看不见，却**不报错**。
   - **为什么取「无差别双花括号」而非「成对形态」**：宿主 `GROUP_AT` 的正则字符类不容嵌套花括号，成对替换会漏掉 `{{ a {b} c }}` 这类真实 malformed 输入。
 - **落地页首屏「安装」按钮点一次就毁容**：它是富按钮（1 个 SVG + 2 段文字），而复制反馈用 `btn.textContent` 整体替换 ⇒ 图标与两段文字被永久摧毁（`old` 存的是纯文本，还原不回来）。改为存取/还原 `innerHTML`。
 
@@ -26,7 +28,7 @@ All notable changes to dsh-auto-memory.
 
 ### 新增守卫
 
-- `tests/smoke/smoke-test-issue132-tail-brace-pre.mjs` —— **31 断言**，优先用**真实宿主插值器**跑（取不到时退化为结构性不变量）；含 G3「真实宿主插值不抛错」、G4「`exactDigest` 往返一致」、G5「与主快照中和口径逐字一致」。
+- `tests/smoke/smoke-test-issue132-tail-brace-pre.mjs` —— **44 断言**，优先用**真实宿主插值器**跑（取不到时退化为结构性不变量）；含 **G2b「9 个字段逐个投毒 ⇒ 出口已中和」**、G3「真实宿主插值不抛错」、G4「`exactDigest` 往返一致」、G5「与主快照中和口径逐字一致」，以及「宿主 `GROUP_AT` 命中形态零出现」「固定边界行完好」。
 
 ### 回归
 

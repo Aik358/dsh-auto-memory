@@ -73,6 +73,43 @@ console.log('[issue132] G2 渲染器出口:宿主校验零命中')
   ok(String(r.text).includes('Reference: '), '固定边界 Reference 行仍在')
 }
 
+console.log('[issue132] G2b 出口兜底:身份行与技能段字段不得穿透(二次修复回归)')
+{
+  const POISON = LB + ' ' + RB
+  const base = () => ({ memoryId: 'mem_' + 'a'.repeat(32), recordDigest: 'a'.repeat(64), scope: 'Workspace', sourceVersion: 3, score: 0.91, anchorId: 'anc_1', sourceRef: 'workspace:x', reference: 'ok' })
+  const cases = [
+    ['reference', (it) => { it.reference = POISON }],
+    ['memoryId(Source 行)', (it) => { it.memoryId = POISON }],
+    ['scope(Source 行)', (it) => { it.scope = POISON }],
+    ['sourceVersion(Source 行)', (it) => { it.sourceVersion = POISON }],
+    ['recordDigest(Source 行)', (it) => { it.recordDigest = POISON }],
+  ]
+  for (const [name, mutate] of cases) {
+    const it = base(); mutate(it)
+    const r = A.renderReferenceTail([it], { reason: 'r' })
+    ok(!String(r.text).includes(LB) && !String(r.text).includes(RB), '字段 ' + name + ' 含毒 ⇒ 出口已中和')
+  }
+  // reason / skill 走 opts 而非 item
+  const rReason = A.renderReferenceTail([base()], { reason: POISON })
+  ok(!String(rReason.text).includes(LB), 'reason 含毒 ⇒ 出口已中和')
+  for (const [name, skillPatch] of [
+    ['skill.procedureId', { procedureId: POISON }],
+    ['skill.level', { level: POISON }],
+    ['skill.title', { title: POISON }],
+    ['skill.text', { text: 'body ' + POISON }],
+  ]) {
+    const sk = Object.assign({ procedureId: 'p1', title: 't', text: 'body', level: 'checklist' }, skillPatch)
+    const r = A.renderReferenceTail([base()], { reason: 'r', skill: sk })
+    ok(!String(r.text).includes(LB), name + ' 含毒 ⇒ 出口已中和')
+  }
+  // 结构不变量:任何字段组合下都不得含宿主 GROUP_AT 命中形态
+  const hitRe = /\{\{[^{}]*\}\}/
+  const it2 = base(); it2.scope = POISON; it2.recordDigest = POISON
+  const r2 = A.renderReferenceTail([it2], { reason: POISON })
+  ok(!hitRe.test(String(r2.text)), '宿主 GROUP_AT 命中形态零出现')
+  ok(String(r2.text).includes('Source: '), '固定边界 Source 行仍在')
+  ok(String(r2.text).trim().endsWith(A.TAIL_VERIFY_LINE_PRE_V1), 'Verify 收尾行仍在')
+}
 console.log('[issue132] G3 宿主严格插值不抛错(issue 原始复现路径)')
 if (!renderContextSections) {
   console.log('  [skip] 本机无法解析 @deepseek-ai/dsh-system-prompt ⇒ 退化为结构性断言')
@@ -142,8 +179,7 @@ console.log('[issue132] G6 源码守卫:guard 版本标记与接线')
   ok(SRC.includes('注入卫生 guard v2'), 'guard 版本已升到 v2(guard v1 注释自陈变更必须升版)')
   ok(SRC.includes('function neutralizeTailTemplateVars(text) {'), '中和函数已定义')
   ok(SRC.includes("  return neutralizeTailTemplateVars(String(text == null ? '' : text)"), 'sanitizeTailText 已接线(真实调用,非死码)')
-  const calls = (SRC.split('neutralizeTailTemplateVars(').length - 1)
-  ok(calls === 2, '中和函数:定义 1 处 + 调用 1 处(实计 ' + calls + ')')
+  ok(SRC.includes('neutralizeTailTemplateVars(parts.join('), '渲染器出口兜底已接线(唯一出口整段中和)')
 }
 
 console.log('  [mode] 宿主插值器=' + (renderContextSections ? '真实包' : '结构性退化'))
