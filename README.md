@@ -651,7 +651,7 @@ Full credits, including infrastructure sponsors: **[Contributors & Sponsors](htt
 
 Development resources for this project are partly provided by:
 
-- **[DSH API](https://api.dshapi.icu/)** — API relay station providing the model endpoints used for development, testing, and the semantic-engine research behind the M-series features. Thank you for keeping the lights on.
+- **[DSH API](https://api.dshapi.icu/register?aff=HJU27P7JL39N)** — API relay station providing the model endpoints used for development, testing, and the semantic-engine research behind the M-series features. Thank you for keeping the lights on.
 
 Infrastructure and API-quota sponsors are listed on the **[Contributors & Sponsors](https://htmlpreview.github.io/?https://github.com/Aik358/dsh-auto-memory/blob/main/docs/CONTRIBUTORS.html)** page. If you would like to support the project, open an issue or join the QQ group.
 
