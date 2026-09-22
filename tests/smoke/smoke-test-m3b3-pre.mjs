@@ -41,8 +41,9 @@ apply(ctx, {})
 
 const tool = (name) => registeredTools.find((t) => t.name === name)
 // ★ T4（2026-09-19）：16 → 17 —— 新增 memory_procedure（procedure memory 的模型直写通路，无条件注册）。
-if (registeredTools.length !== 17) throw new Error('expected 17 tools (16 + T4 memory_procedure), got ' + registeredTools.length)
-if (registeredRoutes.length !== 49) throw new Error('expected 49 routes, got ' + registeredRoutes.length)
+if (registeredTools.length !== 18) throw new Error('expected 18 tools (16 + T4 memory_procedure + P9 memory_rules), got ' + registeredTools.length)
+// 49 → 50：新增只读路由 GET /recall-stats（2026-09-22）。
+if (registeredRoutes.length !== 54) throw new Error('expected 50 routes, got ' + registeredRoutes.length)
 
 const cfgRoute = registeredRoutes.find((r2) => r2.path === '/api/dsh-auto-memory/config')
 let body

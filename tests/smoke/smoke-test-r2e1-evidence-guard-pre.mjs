@@ -64,7 +64,9 @@ console.log('\n[2] 守卫位置与静默语义（源码断言）')
   const iCatch = SRC_INDEX.indexOf("catch (eImp)", iElse)
   ok(iCatch > 0, '保留 catch (eImp) 兜底真正的异常')
   const catchSeg = SRC_INDEX.slice(iCatch, iCatch + 220)
-  ok(/diag\s*\(/.test(catchSeg), '★ 真异常仍写 diag（故障可见性未被削弱）')
+  // ★2026-09-22（P3-9 组1 落盘后同步）：该处 diag 已被换成 diagThrottled('evidence-agg', …)。
+  //   放宽的是**拼写**不是判据 —— 仍要求「真异常分支里有诊断调用」；节流只压重复、不吞首条。
+  ok(/diagThrottled\s*\(|diag\s*\(/.test(catchSeg), '★ 真异常仍写 diag（故障可见性未被削弱）')
 }
 
 // ── ③ 契约对称：写侧确实懒建 ──────────────────────────────────────
