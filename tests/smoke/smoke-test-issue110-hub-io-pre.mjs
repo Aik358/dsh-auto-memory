@@ -34,10 +34,9 @@ const read = (p) => readFileSync(path.join(ROOT, p), 'utf8')
 
 const INDEX = read('lib/index.js')
 const HUB_IO = read('lib/hub-io.js')
-// ★`tools/release.mjs` 是发布线工具、**未入库**：旧写法在模块顶层直接 read 它 ⇒ 干净克隆里
-//   整套 52 条断言一起 ENOENT 崩（连与它无关的 hub-io 行为检查也跟着失效）。
-//   改为可空 + 只在该节检查时判定，缺文件就明确跳过那一节，其余照常跑。
-const RELEASE = existsSync(path.join(ROOT, 'tools', 'release.mjs')) ? read('tools/release.mjs') : null
+// ★tools/ 不在发布包 ⇒ 可空（发布线/干净克隆里不存在），只在「登记检查」那一节判定。
+let RELEASE = null
+try { RELEASE = read('tools/release.mjs') } catch (_) { RELEASE = null }
 
 let pass = 0, fail = 0
 const ok = (cond, msg) => { if (cond) { pass++; console.log('  ✓ ' + msg) } else { fail++; console.log('  ✗ FAIL: ' + msg) } }
@@ -178,7 +177,7 @@ try {
   // ─────────────────────────────────────────────────────────────
   console.log('== ⑤ 宿主接线：index.js 必须委托该模块，旧内联静默实现必须消失 ==')
   {
-    ok(/import \{[^}]*createHubIoPre[^}]*\} from '\.\/hub-io\.js'/.test(INDEX), 'index.js 从 ./hub-io.js 导入适配器')
+    ok(/import \{[^}]*createHubIoPre[^}]*\} from '\.\/hub-io.js'/.test(INDEX), 'index.js 从 ./hub-io.js 导入适配器')
     ok(!INDEX.includes('const hubIo = (name) => {'), '★旧内联 hubIo 工厂已移除（回归即红）')
     ok(INDEX.includes('createHubIoPre({'), 'index.js 用 createHubIoPre 装配 io')
     ok(/engine\._hubIoHealth = hubIoHealth/.test(INDEX), 'health 台账挂在 engine 上（debugInfo 可读）')
@@ -190,8 +189,15 @@ try {
     ok(!/save\(data\)[\s\S]{0,300}catch \(_\) \{\}/.test(HUB_IO), '模块内 save 不存在 `catch (_) {}` 静默分支')
     ok(/clear\(\)[\s\S]{0,300}throw e/.test(HUB_IO), 'clear 失败同样抛出')
 
-    if (RELEASE === null) console.log('  – SKIP: release.mjs 登记检查（tools/release.mjs 未入库；该节需发布线工具）')
-    else ok(RELEASE.includes("'hub-io.js'"), '★release.mjs 已登记 hub-io.js（未登记会在发版残留闸门 fail closed）')
+    if (RELEASE === null) console.log('  – SKIP: release.mjs 登记检查（发布线未含 tools/；该节需发布线工具）')
+    else {
+      // ★发布线兼容（2026-09-22）：发布构建会按 libModuleRenames 把本文件里的模块名字面量
+      //   改写成裸名，而 tools/release.mjs 是**原样入包**、里面仍是带预览后缀的名字 ⇒ 写死
+      //   任一种形态都会在另一条线上变红。故在运行时拼出该名字（片段不含可被改写的连续模式）。
+      const HUB_IO_MOD = 'hub' + '-io' + '-pre' + '.js'
+      ok(RELEASE.includes("'" + HUB_IO_MOD + "'"),
+        '★release.mjs 已登记 ' + HUB_IO_MOD + '（未登记会在发版残留闸门 fail closed）')
+    }
   }
 } finally {
   try { rmSync(tmp, { recursive: true, force: true }) } catch (_) {}

@@ -189,8 +189,7 @@ console.log('[F7/F8] section 字节稳定 / 尾注不进 section / 关闭恢复'
   const h = globalThis.__h
   const sectionComp = h.promptComponents.find((c) => c.kind === 'section')
   const ctxComps = h.promptComponents.filter((c) => c.kind === 'context')
-  // ★同 m53-C8：断言"命名空间齐一"而不是"必须带 -pre"（发布线裸名、pre 树 -pre，
-  //   由 tools/release.mjs 转换表统一改写；混用才是缺陷）
+  // ★同 m53-C8：断言「命名空间齐一」而不是「必须带 -pre」（发布线裸名 / pre 树 -pre，由转换表统一改写）
   {
     const names = [sectionComp, ...ctxComps].map((c) => String((c && c.name) || ''))
     const withPre = names.filter((n) => n.includes('-pre')).length

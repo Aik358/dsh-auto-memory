@@ -59,7 +59,7 @@ console.log('[I5-1] 取值域：只有 current（与旧记录的缺失/空）可
 console.log('[I5-2] 同一判定：注入侧与检索侧用同一个函数（不复制 → 不会漂移）')
 {
   const mod = readFileSync(new URL('../../lib/tier-layer-inject.js', import.meta.url), 'utf8')
-  ok(/import \{ isCurrentPre \} from '\.\/l0-extract\.js'/.test(mod),
+  ok(/import \{ isCurrentPre \} from '\.\/l0-extract.js'/.test(mod),
     '注入侧 import 检索侧的 isCurrentPre（唯一权威，不是各写一份）')
   ok(!/function isCurrentPre\(/.test(mod), '注入侧没有自己再定义一份 isCurrentPre（复制即漂移源）')
   // 逐值对照：两侧对同一输入必须给同一答案

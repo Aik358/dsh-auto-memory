@@ -287,9 +287,8 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 {
   const h = globalThis.__h
   ok(h.promptComponents.length === 3, 'C8 注册组件=section+context+m6 尾注面(n=' + h.promptComponents.length + ')')
-  // ★命名空间一致性（不是"必须带 -pre"）：本仓发布线用裸名、pre 开发树用 `-pre`，
-  //   由 tools/release.mjs 转换表统一改写。真正要防的是**同一进程里混用两种名字**
-  //   （混用会让 prompt 组件去重/覆盖判据失效），所以断言"齐一"而非断言"带 -pre"。
+  // ★命名空间「齐一」而不是「必须带 -pre」：发布线用裸名、pre 开发树用 -pre，由 release.mjs 转换表统一改写。
+  //   真正要防的是同一进程里混用两种名字（混用会让组件去重/覆盖判据失效）⇒ 断言齐一。
   {
     const names = h.promptComponents.map((c) => String(c.name || ''))
     const withPre = names.filter((n) => n.includes('-pre')).length

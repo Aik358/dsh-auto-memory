@@ -229,7 +229,7 @@ try {
   // 注:守卫的 import 路径按本仓 dev 车道写成 water-window.js(主车道为 water-window.js)。
   const INDEX_SRC = readFileSync(new URL('../../lib/index.js', import.meta.url), 'utf8')
   ok('W26 已导入 reusableWindowCachePre',
-    /import \{[^}]*\breusableWindowCachePre\b[^}]*\} from '\.\/water-window\.js'/.test(INDEX_SRC))
+    /import \{[^}]*\breusableWindowCachePre\b[^}]*\} from '\.\/water-window.js'/.test(INDEX_SRC))
   ok('W26 checkWaterLevel 用它判定缓存复用(传入的是当前事件数)',
     /if \(reusableWindowCachePre\(cached, sid, eventsForModel\.length, Date\.now\(\)\)\)/.test(INDEX_SRC))
   ok('W26 写入缓存时带 events 字段(否则空结果没有重扫依据,修复即失效)',

@@ -9,22 +9,23 @@
 //   对 release.mjs 的两张清单做**双向对账**。任何一处漏登记 ⇒ 红。
 //
 // 真源：lib/index.js 里的 `defineTool('<name>'`（这是运行时真实注册的名）。
-import { readFileSync, existsSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 const ROOT = path.resolve(HERE, '..', '..')
 const IDX = readFileSync(path.join(ROOT, 'lib', 'index.js'), 'utf8')
-// ★`tools/release.mjs` 是发布线的工具，**没有入库** ⇒ 这条对账在干净克隆里原先直接 ENOENT 崩。
-//   改为显式跳过并留一行可读事实（跳过的是"工具名双向对账"，不是全部）。要让它真正生效，
-//   把 release.mjs 入库即可（它一入库，本套件的 44 条断言就会开始约束发版反转表）。
-if (!existsSync(path.join(ROOT, 'tools', 'release.mjs'))) {
-  console.log('[t7e] SKIP：缺 tools/release.mjs ⇒ 预览名/发布名双向对账今天未执行')
+// ★tools/ 不在发布包（release.mjs 的复制白名单未含 tools）⇒ 发布线与干净克隆里这份文件不存在。
+//   旧写法在模块顶层直接 read ⇒ ENOENT 崩，整套断言（含与它无关的）一并失效。
+//   改为可空：缺文件即显式跳过这一节，并留一行可读事实（跳过的是对账，不是全部覆盖）。
+let REL = ''
+try { REL = readFileSync(path.join(ROOT, 'tools', 'release.mjs'), 'utf8') } catch (_) { REL = '' }
+if (!REL) {
+  console.log('[t7e] SKIP：缺 tools/release.mjs（发布线未含 tools/）⇒ 预览名/发布名双向对账今天未执行')
   console.log('[t7e] pass=0 fail=0 skipped=1')
   process.exit(0)
 }
-const REL = readFileSync(path.join(ROOT, 'tools', 'release.mjs'), 'utf8')
 
 let pass = 0, fail = 0
 const t = (name, fn) => {
@@ -75,9 +76,15 @@ t('T7e-3 ★ transforms 的映射目标必须是「裸名」，且裸名形态�
 })
 
 t('T7e-4 ★ transforms 里不得出现「真源已无此工具」的陈旧条目（防改名后忘删）', () => {
+  // ★发布线兼容（2026-09-22）：发布构建把 lib/index.js 的工具名改成裸名（预览后缀只存在于
+  //   pre 开发树），而 tools/release.mjs 是原样入包、转换表里仍是带后缀的名字 ⇒ 「表里有、
+  //   真源无」在发布线必然为真（假红）。改为两侧先剥后缀拿到「基名」再比：pre 线剥的是真源名，
+  //   发布线剥的是表里名；同一份基名集合判据在两条线上都成立，真·陈旧条目仍会被抓住。
+  const baseName = (n) => (n.endsWith('_pre') ? n.slice(0, -4) : n)
+  const regBase = new Set(registered.map(baseName))
   const stale = txToolNames
     .filter((x) => x.from.endsWith('_pre'))
-    .filter((x) => !registered.includes(x.from))
+    .filter((x) => !regBase.has(baseName(x.from)))
   assert(stale.length === 0, '★ 映射表里有真源已不存在的工具（陈旧条目）：' + stale.map((x) => x.from).join(', '))
 })
 

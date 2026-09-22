@@ -21,7 +21,7 @@
  *
  * 只读、零网络、零副作用(不写任何文件,不改 process.env)。
  */
-import { readFileSync, existsSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -37,18 +37,36 @@ const read = (rel) => readFileSync(path.join(ROOT, rel), 'utf8')
 const norm = (s) => s.replace(/\\/g, '/')
 
 // ---------- ① 发布转换表(唯一权威:tools/release.mjs) ----------
-// ★依赖不在仓库里时**显式跳过**，不要 ENOENT 崩：崩溃会让"这条守卫在保护什么"彻底失焦，
-//   而跳过会留下一行可读事实（哪一批检查今天没跑）。要真正生效，需把 tools/release.mjs 入库。
-if (!existsSync(path.join(ROOT, 'tools', 'release.mjs'))) {
-  console.log('[issue111-docs] SKIP：缺 tools/release.mjs（发布转换表未入库）⇒ ①②③ 三组转换口径检查今天未执行')
+// ★缺 tools/release.mjs 时**显式跳过**（发布线未含 tools/），不要 ENOENT 崩：
+//   崩溃会让「这条守卫在保护什么」彻底失焦；跳过会留下一行可读事实（今天哪一批没跑）。
+let releaseSrc = ''
+try { releaseSrc = read('tools/release.mjs') } catch (_) { releaseSrc = '' }
+if (!releaseSrc) {
+  console.log('[issue111-docs] SKIP：缺 tools/release.mjs（发布线未含 tools/）⇒ 转换口径检查今天未执行')
   console.log('[issue111-docs] pass=0 fail=0 skipped=1')
   process.exit(0)
 }
-const releaseSrc = read('tools/release.mjs')
-const TRANSFORMS = [...releaseSrc.matchAll(/\['([^']+)',\s*'([^']+)'\]/g)].map((m) => [m[1], m[2]])
+// ★只扫 `const transforms = [` 到该数组收尾行之间的**表体**，不扫全文：早期实现扫全文，
+//   于是注释/散文里任何「方括号 + 两个单引号字符串」都会被当成一条转换对并入表，且**先于真表生效**
+//   ——实测一个示例短对把 a→b 混进表，relName() 随即把 /api/dsh-auto-memory/ 推成
+//   /bpi/dsh-buto-memory-pre/，本套件 8 条断言集体假红（而真表一条没变）。
+const TX0 = releaseSrc.indexOf('const transforms = [')
+let txRegion = releaseSrc
+if (TX0 >= 0) {
+  const rest = releaseSrc.slice(TX0)
+  const endM = /^\]\s*$/m.exec(rest)
+  txRegion = endM ? rest.slice(0, endM.index) : rest
+}
+const TRANSFORMS = [...txRegion.matchAll(/\['([^']+)',\s*'([^']+)'\]/g)].map((m) => [m[1], m[2]])
 ok(TRANSFORMS.length > 50, `解析到发布转换表(${TRANSFORMS.length} 条)`, 'tools/release.mjs 里 [pre 名, 发布名] 的字面量表')
 /** 按发布流水线的顺序做**字符串替换** —— 与 release.mjs 对源码做的事同构。 */
 const relName = (s) => { let o = String(s); for (const [a, b] of TRANSFORMS) o = o.split(a).join(b); return o }
+// ★不变式哨兵：**不含任何 pre 标记的字符串不得被转换表改动**。真表每条 from 都带 -pre / _pre /
+//   版本标记，故对纯发布名恒等；一旦表里混进伪对（如那个短对），这条立刻红。
+const PROBE_NO_MARK = 'dsh-auto-memory'
+ok(relName(PROBE_NO_MARK) === PROBE_NO_MARK,
+  '★转换表不得改动不含 pre 标记的字符串（伪转换对会在此暴露）',
+  `relName(${PROBE_NO_MARK}) = ${relName(PROBE_NO_MARK)}`)
 
 // ---------- ② 源码真值(lib/index.js;pre 树) ----------
 const src = read('lib/index.js')

@@ -300,9 +300,9 @@ console.log('[T0-8B] ★三条写入路径都不能绕过共同保护（源码�
     || /r\.gate === 'mutation'\) return/.test(code), '工具层对保护门拒绝返回**原始可执行文案**（不是"未知"）')
   // 配置项存在且默认开
   ok(/criteriaGate: true/.test(code), '默认配置含 criteriaGate: true（质量门默认开）')
-  ok(/import \{ validateMutationBoundaryPre, mutationRefusalTextPre \} from '\.\/memory-mutation\.js'/.test(idx),
+  ok(/import \{ validateMutationBoundaryPre, mutationRefusalTextPre \} from '\.\/memory-mutation.js'/.test(idx),
     'index.js 导入共同保护门（不是本地复写一份）')
-  ok(/from '\.\/wb-contract\.js'/.test(idx), 'index.js 导入白板适配器')
+  ok(/from '\.\/wb-contract.js'/.test(idx), 'index.js 导入白板适配器')
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -312,9 +312,7 @@ console.log('[边界] 职责不混：保护门不解释白板格式；适配器�
   const mutCode = mut.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '')
   ok(!/###|<!--\s*model|<!--\s*user|memory:mem_/.test(mutCode),
     '★保护门内**没有**任何白板格式知识（### / 分区标记 / 锚点），只处理规范化投影')
-  // ★反向断言必须写**当前真实模块名**：旧写法 negates `./wb-contract-pre.js`，
-  //   而发布线早已是裸名 ⇒ 该断言永不可能失败（假绿），它声称守的"不反向依赖"实际无人守。
-  ok(!/from '\.\/wb-contract\.js'/.test(mutCode), '保护门不反向依赖白板适配器（避免职责环）')
+  ok(!/from '\.\/wb-contract.js'/.test(mutCode), '保护门不反向依赖白板适配器（避免职责环）')
   const wb = readFileSync(new URL('../../lib/wb-contract.js', import.meta.url), 'utf8')
   const wbCode = wb.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '')
   ok(!/validateMutationBoundaryPre/.test(wbCode), '适配器不调用保护门（判定权归保护门）')

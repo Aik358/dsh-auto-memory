@@ -25,8 +25,7 @@ const ok = (c, m) => { if (c) { pass++; console.log('  ok   - ' + m) } else { fa
 const eq = (a, b, m) => ok(JSON.stringify(a) === JSON.stringify(b), m + '  (got ' + JSON.stringify(a) + ')')
 const SRC_RL = fs.readFileSync(path.join(ROOT, 'lib/rules-layer.js'), 'utf8')
 const SRC_IX = fs.readFileSync(path.join(ROOT, 'lib/index.js'), 'utf8')
-const RELEASE_PATH = path.join(ROOT, 'tools/release.mjs')
-const SRC_REL = fs.existsSync(RELEASE_PATH) ? fs.readFileSync(RELEASE_PATH, 'utf8') : ''
+const SRC_REL = fs.readFileSync(path.join(ROOT, 'tools/release.mjs'), 'utf8')
 
 const MID = 'mem_' + 'a'.repeat(32)
 const CASES = [
@@ -77,13 +76,16 @@ const emptySec = RL.renderRulesSectionPre({ rules: [{ text: '## 2026-08-17' }] }
 eq(emptySec.text, '', '全空摘要 ⇒ 不产裸 "- " 行（整段为空）')
 
 console.log('[G5] release 两表登记')
-if (!SRC_REL) {
-  console.log('  SKIP - tools/release.mjs 未随当前仓库跟踪；仅跳过 release 表登记守卫，其余 P9 行为测试继续执行')
-} else {
-  ok(/\[\s*'memory_rules',\s*'memory_rules'\s*\]/.test(SRC_REL), '转换表已登记 memory_rules')
-  ok(/^\s*'memory_rules',\s*$/m.test(SRC_REL), '残留闸门表已登记 memory_rules')
-  ok(/note-status-pre\.js/.test(SRC_REL), 'note-status.js 已在模块重命名表内（既有）')
-}
+// ★发布线兼容（2026-09-22）：本文件在发布构建里会被同一张转换表改写 —— 直接写带预览后缀的
+//   工具名/模块名字面量，在发布线上会被改写成裸名，而 tools/release.mjs 是**原样入包**
+//   （里面仍是带后缀的名字）⇒ 这些断言在发布线恒假（红）。故：工具名在运行时拼出（片段不含
+//   任何可被改写的连续模式）；模块名只取不会被改写的基名段。
+const RULES_NAME = 'memory_rules' + '_pre'
+ok(new RegExp("\\[\\s*'" + RULES_NAME + "',\\s*'memory_rules'\\s*\\]").test(SRC_REL),
+  '转换表已登记 memory_rules 的预览名 → 裸名（两张表都要有）')
+ok(new RegExp("^\\s*'" + RULES_NAME + "',\\s*$", 'm').test(SRC_REL),
+  '残留闸门表已登记 memory_rules 的预览名（漏登记则残留不报警）')
+ok(SRC_REL.includes('note-status'), 'note-status 模块已在重命名表内（既有）')
 
 console.log('[G6] 单一写盘口')
 eq((SRC_IX.match(/async function applyRuleEditPre\(/g) || []).length, 1, 'applyRuleEditPre 定义恰好 1 处')
