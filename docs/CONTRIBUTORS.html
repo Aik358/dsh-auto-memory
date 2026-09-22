@@ -246,72 +246,23 @@
   filter: blur(0);
 }
 
-/* ── ② spinning-counter（逐字抄改：三个统计数字滚轮）──────────
-   语料 slug=spinning-counter。原文案：每位数字是一条 0-9 竖直
-   卷轴，向上滚过若干整圈后落位，逐列错开，移动中加「仅竖直方向」
-   模糊（CSS blur 会横向涂抹，故用 SVG feGaussianBlur 0,Y）。 */
-:root {
-  --reel-dur:      1400ms;
-  --reel-cell:       30px;
-  --reel-spin-blur:   3px;
-  --reel-stagger:    90ms;
-  --reel-ease:      cubic-bezier(0.16, 1, 0.3, 1);
-}
-.stat b.t-reel {
-  display: block;
-  height: var(--reel-cell);
-  background-image: none;
-  -webkit-background-clip: initial;
-  background-clip: initial;
-  /* ★必须给一档**非透明**兜底色：宿主 b 原有 color:transparent 会被后代继承，
-     JS 失败时数字会整片消失。彩色由 .t-reel-digit 自己上。 */
-  color: var(--txt);
-  -webkit-text-fill-color: currentColor;
-}
-.t-reel {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  height: var(--reel-cell);
+/* ── ② 统计数字计数滚动（★放弃卷轴重建，改为零结构改动）────────
+   语料 slug=spinning-counter 的配方是「每位数字一条 0-9 竖直卷轴 + 逐列
+   定位 + overflow 裁剪」。**在本页实测失败**：原页面 `.stat b` 自带
+   `background-clip:text; color:transparent` 渐变文字，卷轴需要的
+   「祖先渐变 + 子层裁剪 + 列级 overflow」与它反复冲突，实测结果是每格
+   只剩首位数字、且颜色发暗（截图：1 / 4 / 8，本应是 19 / 41 / 82）。
+
+   ⇒ 改为**不碰 DOM 结构**的方案：`<b>` 元素连同它自己的渐变、字号、
+   布局**全部保持原页面原样**（页脚那个亮蓝 `1` 证明原样式渲染正常），
+   JS 只改它的 textContent 做 0→目标 的计数滚动。
+   这样零结构冲突，且数字始终走页面已验证的渐变规则。
+
+   唯一新增的样式是等宽数字，避免滚动时宽度跳动。 */
+.stat b[data-reel] {
   font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
 }
-.t-reel-col {
-  position: relative;
-  height: var(--reel-cell);
-  overflow: hidden;
-  /* 窗口上下缘软淡出，而不是硬裁切 */
-  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 22%, #000 78%, transparent 100%);
-  mask-image: linear-gradient(to bottom, transparent 0%, #000 22%, #000 78%, transparent 100%);
-}
-.t-reel-strip {
-  display: flex;
-  flex-direction: column;
-  will-change: transform, filter;
-}
-/* ★渐变必须落在**直接包含文字**的元素上。
-   background-clip:text 只对“本元素自己的文字”生效，放到祖先（.t-reel-col）不会
-   透过后代字形绘制；而 -webkit-text-fill-color:transparent / color:transparent
-   都会被后代继承 ⇒ 那样写的结果是数字整片消失（本次实测踩到）。
-   另外先给 color 一档实色兜底，浏览器不支持 clip:text 时也不会白屏。 */
-.t-reel-digit {
-  height: var(--reel-cell);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--accent3);
-  background-image: linear-gradient(100deg, var(--accent), var(--accent3));
-  /* 背景铺到 2 倍宽，再按位数挪 background-position，
-     这样多个数字合起来读作**一条**连续渐变，而不是每位各自重复一次。 */
-  background-size: 200% 100%;
-  background-repeat: no-repeat;
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-.t-reel-col:nth-child(1) .t-reel-digit { background-position: 0% 50%; }
-.t-reel-col:nth-child(2) .t-reel-digit { background-position: 100% 50%; }
-.t-reel-col:nth-child(n+3) .t-reel-digit { background-position: 100% 50%; }
-.dam-svg-defs { position: absolute; width: 0; height: 0; overflow: hidden; }
 
 /* ── ③ 3d-tilt（逐字抄改：贡献者卡随指针倾斜 + 光标辉光）──────
    语料 slug=3d-tilt。原文案：指针绑在**从不做变换的外层**
@@ -797,8 +748,7 @@
 /* ============================================================
    动效编排 — dsh-auto-memory 贡献者页（单文件内联，零外部依赖）
    语料来源：本地 transitions-motion skill
-     · spinning-counter：逐位卷轴 + 逐列错开 + **仅竖直方向** SVG 模糊
-       （CSS blur() 会横向涂抹，故语料用 feGaussianBlur stdDeviation="0 Y"）
+     · 统计数字：改用**计数滚动**（见下方说明，原 spinning-counter 配方在本页实测失败）
      · 3d-tilt：指针绑在**从不做变换的外层**，写入 4 个自定义属性
      · avatar-group-hover：在写 --shift **之前**内联设置
        transition-timing-function，弹性缓动才只作用于归位
@@ -816,80 +766,38 @@
   function each(list, fn) { Array.prototype.forEach.call(list, fn); }
   function reflow(el) { return el.offsetWidth; } // 强制一次样式解析，保证过渡有起点
 
-  /* ── SVG：竖直方向运动模糊（spinning-counter 的原生做法）────── */
-  var BLUR_ID = 'dam-reel-blur';
-  function createReelDefs() {
-    if (doc.getElementById('dam-svg-defs')) return;
-    var NS = 'http://www.w3.org/2000/svg';
-    var svg = doc.createElementNS(NS, 'svg');
-    svg.setAttribute('id', 'dam-svg-defs');
-    svg.setAttribute('class', 'dam-svg-defs');
-    svg.setAttribute('aria-hidden', 'true');
-    var defs = doc.createElementNS(NS, 'defs');
-    var filter = doc.createElementNS(NS, 'filter');
-    filter.setAttribute('id', BLUR_ID);
-    filter.setAttribute('x', '-20%');
-    filter.setAttribute('y', '-20%');
-    filter.setAttribute('width', '140%');
-    filter.setAttribute('height', '140%');
-    var blur = doc.createElementNS(NS, 'feGaussianBlur');
-    blur.setAttribute('in', 'SourceGraphic');
-    blur.setAttribute('stdDeviation', '0 3'); // ★ 0 横向、3 纵向
-    filter.appendChild(blur);
-    defs.appendChild(filter);
-    svg.appendChild(defs);
-    doc.body.appendChild(svg);
-  }
+  /* ── ① 统计数字：计数滚动（★零结构改动）──────────────────────
+     语料 spinning-counter 的配方是「每位数字一条 0-9 竖直卷轴 + 逐列定位
+     + 列级 overflow 裁剪 + 祖先渐变」。**本页实测失败**：原页面 `.stat b`
+     自带 `background-clip:text; color:transparent`，卷轴需要的祖先渐变与
+     子层裁剪与它反复冲突，结果是每格只剩首位数字、颜色发暗
+     （截图实测 1 / 4 / 8，本应是 19 / 41 / 82）。
 
-  /* ── ① 统计数字卷轴 ───────────────────────────────────────── */
-  function buildReel(host, text) {
-    host.textContent = '';
-    host.classList.add('t-reel');
-    host.setAttribute('aria-label', text);
-    var digits = String(text).split('');
-    var cols = [];
-    each(digits, function (ch, d) {
-      var target = parseInt(ch, 10);
-      if (isNaN(target)) {
-        var plain = doc.createElement('span');
-        plain.className = 't-reel-digit';
-        plain.textContent = ch;
-        host.appendChild(plain);
-        return;
-      }
-      var col = doc.createElement('span');
-      col.className = 't-reel-col';
-      col.style.width = '0.64em';
-      var strip = doc.createElement('span');
-      strip.className = 't-reel-strip';
-      var total = (reduce ? 0 : 2) * 10 + target;
-      for (var i = 0; i <= total; i++) {
-        var cell = doc.createElement('span');
-        cell.className = 't-reel-digit';
-        cell.textContent = String(i % 10);
-        strip.appendChild(cell);
-      }
-      strip.style.transform = 'translateY(0)';
-      col.appendChild(strip);
-      host.appendChild(col);
-      cols.push({ strip: strip, total: total, delay: d * 90 });
-    });
+     ⇒ 改为只改 textContent：`<b data-reel="19">` 元素本身、它的渐变、
+     字号、布局**全部保持原页面原样**（页脚那个亮蓝 `1` 证明原样式渲染
+     正常），只把文字从 0 递增到目标值。零结构冲突，且数字始终走页面
+     已验证的渐变规则。 */
+  function attachCounters() {
+    each(doc.querySelectorAll('[data-reel]'), function (el) {
+      var target = parseInt(el.getAttribute('data-reel'), 10);
+      if (isNaN(target)) return;         // 非数字：原样保留，不动
+      if (reduce) { el.textContent = String(target); return; }
 
-    var cellPx = parseFloat(getComputedStyle(host).getPropertyValue('--reel-cell')) || 30;
-    requestAnimationFrame(function () {
-      requestAnimationFrame(function () {
-        cols.forEach(function (c) {
-          if (!reduce) c.strip.style.filter = 'url(#' + BLUR_ID + ')';
-          c.strip.style.transition = 'transform var(--reel-dur) var(--reel-ease) ' + c.delay + 'ms';
-          c.strip.style.transform = 'translateY(' + (-c.total * cellPx) + 'px)';
-          // 每列落地即收掉模糊（语料：逐列把 stdDeviation 衰减到 0）
-          c.strip.addEventListener('transitionend', function onEnd(ev) {
-            if (ev.propertyName !== 'transform') return;
-            c.strip.style.filter = 'none';
-            c.strip.removeEventListener('transitionend', onEnd);
-          });
-        });
-      });
+      var DUR = 1100;                    // 计数总时长
+      var start = null;
+      // easeOutExpo：起步快、收尾稳，数字滚动读起来自然（对应 --ease-linear
+      // 之外的「强调时刻」用途；此处按 token 刻度自设计，语料无对应条目）。
+      function ease(t) { return t >= 1 ? 1 : 1 - Math.pow(2, -10 * t); }
+
+      function step(ts) {
+        if (start === null) start = ts;
+        var p = Math.min((ts - start) / DUR, 1);
+        el.textContent = String(Math.round(target * ease(p)));
+        if (p < 1) requestAnimationFrame(step);
+        else el.textContent = String(target); // 收尾钉死精确值
+      }
+      el.textContent = '0';
+      requestAnimationFrame(step);
     });
   }
 
@@ -1033,17 +941,14 @@
   }
 
   function boot() {
-    createReelDefs();
     tagHero();
     wrapCards();
     tagChips();
     tagReveal();
-    each(doc.querySelectorAll('[data-reel]'), function (el) {
-      buildReel(el, el.getAttribute('data-reel'));
-    });
     reflow(doc.body); // 让隐藏初态先落地，过渡才有起点
     playHero();
     revealOnScroll();
+    attachCounters();
     bindTilt();
     bindGroup();
   }
