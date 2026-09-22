@@ -1,0 +1,67 @@
+name: tests(全量 smoke 回归)
+
+# issue #73 的落地件：仓库此前只有 group-digest / group-report-status 两条 workflow，
+# **都不跑测试** ⇒ 红测试静默积累，"回归全绿"失去可信度。本 workflow 在每次 push / PR 上
+# 跑全量 smoke 套件，任何红都让 job 失败。
+#
+# ★ 为什么用 --jobs=1（串行）而不是默认的并发 4：
+#   套件至今仍有读写真实 `~/.dsh` 状态的（issue #112 记录：顺序跑与单跑结论不同、首跑偶红）。
+#   门禁要的是可复现的判决，不是速度 —— 本地提速请直接用默认并发 `node tools/run-smoke.mjs`。
+#
+# ★ 为什么必须保留"跑得到"这一条：
+#   v3.1.0 的发布线把本文件与 `tools/run-smoke.mjs` 一起丢了 ⇒ 门禁归零，红测试连续两周无人察觉
+#   （同期 #118/#119/#120 三条 P1 修复也是在"没有门禁"的状态下被静默回退的）。
+#    runner 缺失时本 workflow 会以 MODULE_NOT_FOUND 失败 —— 那是**正确**的行为：跑不了测试不等于没测试要跑。
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [22]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      # 本插件零运行时依赖（package.json 无 dependencies），因此**不跑 install**：
+      # 装依赖会引入非确定性，而这里要验的正是"仓库原样即可跑"。
+      - name: 环境自述
+        run: |
+          node --version
+          npm --version
+          echo "--- 套件总数 ---"
+          ls tests/smoke/*.mjs | wc -l
+
+      - name: 全量 smoke 回归（排除依赖本机产物/网络的套件）
+        run: |
+          node tools/run-smoke.mjs \
+            --jobs=1 \
+            --timeout=90000 \
+            --exclude=-live- \
+            --exclude=m79-feature-v2-pre \
+            --exclude=m710-fv2-emit-pre \
+            --exclude=c4-fresh-install-pre
+
+      - name: 回归失败时打印定位提示
+        if: failure()
+        run: |
+          echo "::error::全量 smoke 有 FAIL/TIMEOUT。上方 '--- FAIL: <套件名> ---' 段落给出该套件的输出尾部。"
+          echo "本地复现：node tools/run-smoke.mjs --filter=<套件名关键字>"
+          echo "被 --exclude 跳过的套件会在日志里以 'skip <文件> (--exclude=...)' 逐条列出：排除不等于放弃覆盖，理由必须留在日志里。"

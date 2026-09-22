@@ -34,7 +34,7 @@ console.log('== ① 源码接线：sidecar 索引必须原子替换，不得裸�
   ok(/idxPath \+ '\.tmp'|idxPath \+ "\.tmp"/.test(body), '★写临时文件（index.json.tmp）而不是直接写目标')
   ok(/await retryRename\(tmpPath, idxPath\)/.test(body), '★用 retryRename 原子替换（Windows 句柄争用有界退避）')
   ok(!/await writeFile\(path\.join\(sideDir, 'index\.json'\)/.test(INDEX), '★旧的裸写 index.json 已消失（回归即红）')
-  ok(/import \{ retryRename \} from '\.\/fs-retry-pre\.js'/.test(INDEX), 'retryRename 已导入')
+  ok(/import \{ retryRename \} from '\.\/fs-retry\.js'/.test(INDEX), 'retryRename 已导入')
   ok(/await mkdir\(sideDir, \{ recursive: true \}\)/.test(body), '写入前仍确保目录存在（未顺手删掉既有前置）')
 }
 

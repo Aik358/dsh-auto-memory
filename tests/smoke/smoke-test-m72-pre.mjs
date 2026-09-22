@@ -25,7 +25,15 @@ console.log('[K1] fixture 结构 + embedding identity 契约(不联网)')
   ok(m && (m.license === 'MIT' || m.license === 'Apache-2.0'), `model.license 允许分发 (${m && m.license})`)
   ok(m && m.dimension === 1024 && m.normalization === 'l2_normalize', 'dimension=1024 + l2_normalize')
   ok(typeof fx.configHash === 'string' && fx.configHash.startsWith('cfgh_') && fx.configHash.length === 5 + 64, 'configHash = cfgh_+64hex')
-  ok(fx.policy && fx.policy.chunkingPolicyVersion === 'm7_chunk_v1', 'chunkingPolicyVersion 冻结为 m7_chunk_v1')
+  // ★冻结策略版本名：夹具是在 `-pre` 改名**之前**生成的，自述为 `m7_chunk_pre_v1`；
+  //   代码常量（python/m7_embedding_v1.py:31）现是 `m7_chunk_v1`。不去改夹具的自述
+  //   （那等于伪造金标向量的谱系），改为：① 版本名允许这两个同族别名之一；
+  //   ② 真正锁住标签背后的实体 —— 分块参数必须是 para-512-noov 那一份冻结配置。
+  const ver = fx.policy && fx.policy.chunkingPolicyVersion
+  ok(ver === 'm7_chunk_v1' || ver === 'm7_chunk_pre_v1', `chunkingPolicyVersion 属冻结族(${ver})`)
+  ok(fx.policy && fx.policy.name === 'para-512-noov' && fx.policy.params
+    && fx.policy.params.max_tokens === 512 && fx.policy.params.para_aligned === true && fx.policy.params.overlap === 0,
+    '★ 分块参数 = para-512-noov(512/段对齐/零重叠)，与 CHUNK_POLICY_VERSION 所指同一份配置')
   ok(fx.similarity && fx.similarity.includes('exact cosine'), '相似度 = exact cosine(无 ANN)')
 }
 
