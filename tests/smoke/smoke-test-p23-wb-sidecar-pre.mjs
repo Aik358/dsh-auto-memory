@@ -132,11 +132,11 @@ t('M9 P3 两工具条件注册 + 工具数闸门(legacy 14 / graph 16)', async (
   // ★ T4(2026-09-19): 16 → 17(新增 memory_procedure, 无条件注册)。
   for (const f of ['tests/smoke/smoke-test.mjs', 'tests/smoke/smoke-test-m3b3-pre.mjs', 'tests/smoke/smoke-test-context-observer.mjs']) {
     const s = await readFile(f, 'utf8')
-    assert.ok(/!==\s*17/.test(s), f + ' 默认档已翻 graph ⇒ 工具数硬锁应为 17(含 T4 memory_procedure)')
+    assert.ok(/!==\s*18/.test(s), f + ' 默认档已翻 graph ⇒ 工具数硬锁应为 18(含 T4 memory_procedure + P9 memory_rules)')
   }
   // graph 档 17 的断言在 smoke-test-graph-mode-pre.mjs
   const g = await readFile('tests/smoke/smoke-test-graph-mode-pre.mjs', 'utf8')
-  assert.ok(/!==\s*17/.test(g) || /=== *17/.test(g), 'graph 档工具数 17 有独立断言')
+  assert.ok(/!==\s*18/.test(g) || /=== *18/.test(g), 'graph 档工具数 18 有独立断言')
 })
 
 t('M10 GUI 一键切换: 设置页与接续面板双入口, 同一配置键 boardMode, 默认档旧行为', async () => {

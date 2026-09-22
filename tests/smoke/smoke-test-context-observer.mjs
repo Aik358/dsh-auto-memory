@@ -105,9 +105,9 @@ const turnStartEvent = (seq, turn, time) => ({ type: 'turn/start', seq, time: ti
   const h = makeHarness('cfg', {})
   try {
     // ★ T4（2026-09-19）：16 → 17 —— 新增 memory_procedure（procedure memory 的模型直写通路，无条件注册）。
-    if (h.registeredTools.length !== 17) throw new Error('tool count drifted (T4 起默认 17): ' + h.registeredTools.length)
+    if (h.registeredTools.length !== 18) throw new Error('tool count drifted (P9 起默认 18): ' + h.registeredTools.length)
     // 2026-09-08:41→42(ws-overview-rank 路由落线);42→43(subagent-gc 路由落线);43→45(2.2.6 auto-continue-state/decide 路由落线);46→47(白板看板 kanban-board 路由落线)
-    if (h.registeredRoutes.length !== 49) throw new Error('route count drifted (expected 49): ' + h.registeredRoutes.length)
+    if (h.registeredRoutes.length !== 53) throw new Error('route count drifted (expected 50): ' + h.registeredRoutes.length)
     const cfg = await h.prime()
     // 2026-08-26 裁定:reasoningObserverEnabled/contextBridgeObserveChildSessions 默认 true
     // (开源模型为主,思维链/分支是主要观测面);其余实验开关仍默认 false

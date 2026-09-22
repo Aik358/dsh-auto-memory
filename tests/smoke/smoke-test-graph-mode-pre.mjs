@@ -86,11 +86,11 @@ console.log('=== WB-GRAPH graph 档端到端 ===')
 // A. graph 档: 工具数 14 → 16, 两个遍历工具**真的注册**(修 BUG-1/11 的验收)
 // ─────────────────────────────────────────────────────────────
 const bg = bootPre('graph')
-t('A1 graph 档工具数 = 16(13 旧 + 2 遍历 + 1 ?) —— 断言「至少含两遍历工具」且计数一致', () => {
+t('A1 graph 档工具数 = 18(13 旧 + 2 遍历 + 1 ? + T4 + P9) —— 断言「至少含两遍历工具」且计数一致', () => {
   const names = bg.tools.map((x) => x.name)
   assert(names.includes('memory_expand'), 'graph 档必须注册 memory_expand(修 BUG-1: 此前闸门恒假, 永不注册)')
   assert(names.includes('memory_trace'), 'graph 档必须注册 memory_trace')
-  assert(bg.tools.length === 17, 'graph 档工具数应为 17, 实为 ' + bg.tools.length + ': ' + names.join(','))
+  assert(bg.tools.length === 18, 'graph 档工具数应为 18, 实为 ' + bg.tools.length + ': ' + names.join(','))
 })
 t('A2 两遍历工具契约完整(parameters.id/tag + execute 是函数)', () => {
   const ex = bg.tools.find((x) => x.name === 'memory_expand')
@@ -213,21 +213,21 @@ t('C1 BUG-10 write/rebuild 两路径 id 一致(正/反斜杠 + title 前缀差�
 // ─────────────────────────────────────────────────────────────
 // ★ T4(2026-09-19): 14→15 / 16→17 —— memory_procedure **无条件注册**(不属白板 P3 闸门),
 //   故 legacy 与 graph 两档同时 +1;本节断言的**意图**(legacy ≠ graph, 证明闸门真的在起作用)不变。
-t('D1 legacy 档工具数 = 15(与 graph 档 17 形成对照, 证明闸门真的在起作用)', () => {
+t('D1 legacy 档工具数 = 16(与 graph 档 18 形成对照, 证明闸门真的在起作用)', () => {
   const bl = bootPre('legacy')
   try {
     const names = bl.tools.map((x) => x.name)
-    assert(bl.tools.length === 15, 'legacy 档必须仍为 15 工具(14 + T4 memory_procedure), 实为 ' + bl.tools.length)
+    assert(bl.tools.length === 16, 'legacy 档必须仍为 16 工具(14 + T4 memory_procedure + P9 memory_rules), 实为 ' + bl.tools.length)
     assert(!names.includes('memory_expand'), 'legacy 档不得注册 memory_expand')
     assert(!names.includes('memory_trace'), 'legacy 档不得注册 memory_trace')
     // T4 工具**不属**白板闸门 ⇒ legacy 档也必须在场(反向保证:别把它错当 graph-only)
     assert(names.includes('memory_procedure'), 'legacy 档也必须注册 memory_procedure(它不受 boardMode 闸门管)')
   } finally { cleanup(bl) }
 })
-t('D2 非法档位值 fail closed → legacy(15), 绝不猜 graph', () => {
+t('D2 非法档位值 fail closed → legacy(16), 绝不猜 graph', () => {
   const bx = bootPre('bogus-mode')
   try {
-    assert(bx.tools.length === 15, '非法值必须回落 legacy(15), 实为 ' + bx.tools.length)
+    assert(bx.tools.length === 16, '非法值必须回落 legacy(16), 实为 ' + bx.tools.length)
   } finally { cleanup(bx) }
 })
 

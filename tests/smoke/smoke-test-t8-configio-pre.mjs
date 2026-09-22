@@ -79,8 +79,12 @@ t('T8a-7 ★★★ **原子性本身**：覆盖写期间读方绝不可能看到
     '★ 未使用同目录 tmp 路径')
   assert(/writeFileSync\(tmp, String\(text\), 'utf8'\)[\s\S]{0,80}?renameSync\(tmp, file\)/.test(body),
     '★ 同步版不是「写 tmp → rename」（裸写目标文件 ≠ 原子）')
-  assert(/await writeFile\(tmp, String\(text\), 'utf8'\)[\s\S]{0,80}?renameSync\(tmp, file\)/.test(body),
-    '★ 异步版不是「写 tmp → rename」')
+  // ★2026-09-22（P3-12 落盘后同步）：异步版的 rename 由裸 `renameSync` 换成**有界退避**的
+  //   `renameBoundedRetryPre`（Windows 句柄争用下 EPERM/EACCES/EBUSY 会让整次设置保存失败）。
+  //   此处放宽的只是**拼写**、不是判据：仍要求「异步写 tmp → 把 tmp **改名**到目标」，
+  //   且下一行「不得直接写目标文件」的反断言原样保留 ⇒ 退回裸写目标仍必红。
+  assert(/await writeFile\(tmp, String\(text\), 'utf8'\)[\s\S]{0,120}?(?:renameSync|renameBoundedRetryPre|retryRename)\(tmp, file\)/.test(body),
+    '★ 异步版不是「写 tmp → rename」（裸写目标文件 ≠ 原子）')
   assert(!/writeFileSync\(file, String\(text\)/.test(body) && !/writeFile\(file, String\(text\)/.test(body),
     '★ 存在直接写目标文件的路径')
 
