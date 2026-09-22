@@ -37,11 +37,15 @@ All notable changes to dsh-auto-memory.
 
 - 诊断日志路径收敛为**单一来源**（`diagLogFile()`）：落盘、轮转、面板投影三处共用同一拼法，避免三份实现各自漂移。
 - 日志轮转全程 try/catch（fail-soft）：轮转出错绝不影响日志写入，与既有落盘链同一纪律。
+- **上游回流 PR #124**（issue #110 剩余缺口）：把「批内合并落盘」的批语义从宿主的喂数定时循环**下沉到拥有这批行的那一层**（`ingestJudgementRows` 收 `opts.batch`）。此前批控制只挂在宿主的喂数循环上，其它批量入口——HTTP `/memory-hub` 的 `action=feed`（面板/外部重放器一次喂一整批判据）——仍是 **N 行 = N 次整份快照写盘**（写放大）。现在任何批量入口都自动只落一次；外层若已自己开批，`beginBatch` 的 depth 计数保证内层 `end` 不会提前落盘。
+  - 一并回流其守卫 `smoke-test-issue110-hub-batch-entry-pre.mjs`（**19 断言**，含真行为记账桩：批调用序列、外层已开批时 deferred 不落盘、异常时批末仍必落）。
+  - **为什么必须回流**：发布包从 pre 线构建，不回流就会被下次 `--force` push 静默抹掉（#103/#104/#105 的事故形状，已固化为 `RELEASE-PROCESS.md` §0.5）。
 
 ### 验证
 
-- 全量回归：**PASS 166 / FAIL 0 / TIMEOUT 0**（45.7s）；`node --check` 双入口通过。
+- 全量回归：**PASS 167 / FAIL 0 / TIMEOUT 0**（46.3s）；`node --check` 双入口通过。
 - 新增守卫 `smoke-test-migrate-pack-pre.mjs`（**52 断言**，真行为为主：路径重写 4 形态、同路径零改写、校验和跨机一致且对键序不敏感、坏包/路径穿越/空包被拒、冲突三策略、内容相同不计覆盖、summary 合并**不覆盖其它工作区**、引擎零写盘零依赖）。
+- 新增守卫 `smoke-test-issue110-hub-batch-entry-pre.mjs`（**19 断言**）。
 - `smoke-test-api-paths-pre.mjs` 的 A2（宿主独有端点必须接上界面）**由红转绿** —— 迁移三端点已接进存储管理页签。
 - 文档同步：`docs/HANDBOOK.md` §5.1 端点表补三条迁移端点、端点计数 50 → **53**。
 
