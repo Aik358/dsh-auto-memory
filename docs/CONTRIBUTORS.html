@@ -2,7 +2,8 @@
 <!-- ============================================================
   dsh-auto-memory · 贡献者与赞助 (Contributors & Sponsors)
   单文件零外部依赖；与 docs/promo/homepage.html 同一套 liquid-glass 暗色主题。
-  数据来源：GitHub API issues?state=all&per_page=100 (2026-09-16 快照，51 条)
+  数据来源：GitHub API issues?state=all + pulls?state=closed (2026-09-22 快照：
+  已合并 PR 41 · Issue 82 · 外部贡献者 19)
 ============================================================= -->
 <html lang="zh-CN">
 <head>
@@ -171,6 +172,208 @@
     .wrap { padding: 38px 16px 60px; }
     .sponsor { padding: 22px; }
   }
+
+
+/* ===== 动效层（内联；语料见本地 transitions-motion skill）===== */
+/* ============================================================
+   动效层 — dsh-auto-memory 贡献者页
+   语料来源：本地 transitions-motion skill（transitions.dev 43 条）
+     逐字抄改：texts-reveal / spinning-counter / 3d-tilt / avatar-group-hover
+     按 token 自设计：标题扫光、分区入场（语料无对应条目，已在注释标注）
+   判据：按「用途」选 token，不按数值就近。所有新增动效受 reduced-motion 闸门约束。
+   ============================================================ */
+
+:root {
+  /* ── 时长 ── */
+  --duration-stagger:    40ms;
+  --duration-micro:      80ms;
+  --duration-quick:     150ms;
+  --duration-fast:      250ms;
+  --duration-medium:    350ms;
+  --duration-slow:      400ms;
+  --duration-very-slow: 500ms;
+  /* ── 缓动 ── */
+  --ease-smooth-out:    cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out:        ease-in-out;
+  --ease-out:           ease-out;
+  --ease-linear:        linear;
+  --ease-bounce:        cubic-bezier(0.34, 1.36, 0.64, 1);
+  --ease-bounce-strong: cubic-bezier(0.34, 3.85, 0.64, 1);
+  /* ── 位移 ── */
+  --distance-micro:   4px;
+  --distance-small:   6px;
+  --distance-base:    8px;
+  --distance-medium: 12px;
+  --distance-large:  30px;
+  /* ── 缩放 ── */
+  --scale-large:  0.96;
+  --scale-medium: 0.97;
+  --scale-small:  0.98;
+  --scale-tiny:   0.99;
+  /* ── 模糊 ── */
+  --blur-small:  2px;
+  --blur-medium: 3px;
+  --blur-large:  8px;
+}
+
+/* ── ① texts-reveal（逐字抄改：hero 文案错开升起）────────────
+   语料 slug=texts-reveal。原文案：headline + supporting line 带
+   错开模糊升起；退出与入场解耦，避免反向重播。 */
+:root {
+  --stagger-dur:        500ms;
+  --stagger-distance:    12px;
+  --stagger-stagger:     40ms;
+  --stagger-blur:         3px;
+  --stagger-ease:        cubic-bezier(0.22, 1, 0.36, 1);
+}
+/* 初始隐藏态只在 JS 可用时生效（dam-js），避免脚本失败导致首屏空白 */
+.dam-js .t-stagger-line {
+  opacity: 0;
+  transform: translateY(var(--stagger-distance));
+  filter: blur(var(--stagger-blur));
+  transition:
+    opacity   var(--stagger-dur) var(--stagger-ease),
+    transform var(--stagger-dur) var(--stagger-ease),
+    filter    var(--stagger-dur) var(--stagger-ease);
+  will-change: transform, opacity, filter;
+}
+.dam-js .t-stagger-line--2 { transition-delay: var(--stagger-stagger); }
+.dam-js .t-stagger-line--3 { transition-delay: calc(var(--stagger-stagger) * 2); }
+.dam-js .t-stagger-line--4 { transition-delay: calc(var(--stagger-stagger) * 3); }
+.t-stagger.is-shown .t-stagger-line {
+  opacity: 1;
+  transform: translateY(0);
+  filter: blur(0);
+}
+
+/* ── ② 统计数字计数滚动（★放弃卷轴重建，改为零结构改动）────────
+   语料 slug=spinning-counter 的配方是「每位数字一条 0-9 竖直卷轴 + 逐列
+   定位 + overflow 裁剪」。**在本页实测失败**：原页面 `.stat b` 自带
+   `background-clip:text; color:transparent` 渐变文字，卷轴需要的
+   「祖先渐变 + 子层裁剪 + 列级 overflow」与它反复冲突，实测结果是每格
+   只剩首位数字、且颜色发暗（截图：1 / 4 / 8，本应是 19 / 41 / 82）。
+
+   ⇒ 改为**不碰 DOM 结构**的方案：`<b>` 元素连同它自己的渐变、字号、
+   布局**全部保持原页面原样**（页脚那个亮蓝 `1` 证明原样式渲染正常），
+   JS 只改它的 textContent 做 0→目标 的计数滚动。
+   这样零结构冲突，且数字始终走页面已验证的渐变规则。
+
+   唯一新增的样式是等宽数字，避免滚动时宽度跳动。 */
+.stat b[data-reel] {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+/* ── ③ 3d-tilt（逐字抄改：贡献者卡随指针倾斜 + 光标辉光）──────
+   语料 slug=3d-tilt。原文案：指针绑在**从不做变换的外层**
+   （.t-tilt）上；否则旋转后的边缘会滑出光标下方造成 hover 闪烁。 */
+:root {
+  --tilt-perspective:   1000px;
+  --tilt-return:        1000ms;
+  --tilt-return-ease:   cubic-bezier(0.22, 1, 0.36, 1);
+  --tilt-follow:         400ms;
+  --tilt-follow-ease:   cubic-bezier(0.22, 1, 0.36, 1);
+  --tilt-glare-opacity:  0.32;
+  --tilt-glare-fade:     300ms;
+  --tilt-glare-ease:    cubic-bezier(0.22, 1, 0.36, 1);
+}
+.t-tilt { position: relative; }
+.card.t-tilt-card {
+  height: 100%;
+  transform:
+    perspective(var(--tilt-perspective))
+    rotateX(var(--tilt-rx, 0deg))
+    rotateY(var(--tilt-ry, 0deg));
+  transform-style: preserve-3d;
+  transition: transform var(--tilt-return) var(--tilt-return-ease);
+  will-change: transform;
+}
+.card.t-tilt-card.is-tilting {
+  transition: transform var(--tilt-follow) var(--tilt-follow-ease);
+}
+.t-tilt-glare {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius);
+  pointer-events: none;
+  opacity: 0;
+  mix-blend-mode: screen;
+  background:
+    radial-gradient(circle 95px at var(--tilt-gx, 50%) var(--tilt-gy, 50%),
+      rgba(255,255,255,0.48), rgba(255,255,255,0.06) 52%, rgba(255,255,255,0) 84%),
+    radial-gradient(circle 200px at var(--tilt-gx, 50%) var(--tilt-gy, 50%),
+      rgba(255,255,255,0.22), rgba(255,255,255,0.04) 58%, rgba(255,255,255,0) 78%),
+    radial-gradient(circle 360px at var(--tilt-gx, 50%) var(--tilt-gy, 50%),
+      rgba(255,255,255,0.10), rgba(255,255,255,0) 88%);
+  transition: opacity var(--tilt-glare-fade) var(--tilt-glare-ease);
+}
+.t-tilt.is-hover .t-tilt-glare { opacity: var(--tilt-glare-opacity); }
+
+/* ── ④ avatar-group-hover（逐字抄改：其他贡献者 chip 的梳齿交互）─
+   语料 slug=avatar-group-hover。原文案：hover 抬起该项，邻居按
+   幂衰减随之轻抬，离开时用回弹曲线归位；进场用干净 ease-in，
+   回位用弹性 ease-out。 */
+:root {
+  --avatar-lift:      -4px;
+  --avatar-dur:       320ms;
+  --avatar-scale:     1.05;
+  --avatar-falloff:   0.45;
+  --avatar-ease-in:   cubic-bezier(0.22, 1, 0.36, 1);
+  --avatar-ease-out:  cubic-bezier(0.34, 3.85, 0.64, 1);
+}
+.chip.t-avatar {
+  transform-origin: center;
+  /* translateY 放在 scale 之前，避免 scale 放大抬升位移 */
+  transform:
+    translateY(var(--shift, 0px))
+    scale(var(--scale-active, 1));
+  transition: transform var(--avatar-dur) var(--avatar-ease-in);
+  will-change: transform;
+}
+
+/* ── ⑤ 标题扫光（自设计：语料无对应条目，按 token 手工设计）────
+   纯装饰性持续运动 ⇒ linear + 慢周期（对应 --ease-linear 的用途：
+   微光 / 持续加载）。只动 background-position，不触发重排。 */
+.hero h1 { background-size: 220% 100%; }
+@keyframes dam-hue-sweep {
+  0%   { background-position:   0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position:   0% 50%; }
+}
+.dam-js .hero h1 { animation: dam-hue-sweep 9s var(--ease-linear) infinite; }
+
+/* ── ⑥ 分区入场（自设计：语料无对应条目，按 §1 位移/模糊刻度设计）─
+   用途「面板揭示」⇒ --duration-slow + --ease-smooth-out + --blur-small；
+   错开用 --duration-stagger，且封顶 6 项（总错开 ≤240ms，避免末项迟到）。 */
+.dam-js .dam-reveal {
+  opacity: 0;
+  transform: translateY(var(--distance-medium));
+  filter: blur(var(--blur-small));
+  transition:
+    opacity   var(--duration-slow) var(--ease-smooth-out),
+    transform var(--duration-slow) var(--ease-smooth-out),
+    filter    var(--duration-slow) var(--ease-smooth-out);
+  transition-delay: calc(var(--duration-stagger) * var(--i, 0));
+}
+.dam-js .dam-reveal.is-in {
+  opacity: 1;
+  transform: translateY(0);
+  filter: blur(0);
+}
+
+/* ── ⑦ 全局 reduced-motion 闸门（每个条目自带，必须保留）──────── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .card.t-tilt-card { transform: none !important; }
+  .chip.t-avatar { transform: none !important; }
+}
 </style>
 </head>
 <body data-lang="zh">
@@ -190,9 +393,9 @@
 
   <!-- ══════════ 统计带 ══════════ -->
   <section class="stats">
-    <div class="stat"><b id="s-ppl">18</b><span class="zh">外部贡献者</span><span class="en">contributors</span></div>
-    <div class="stat"><b id="s-pr">17</b><span class="zh">Pull Request</span><span class="en">pull requests</span></div>
-    <div class="stat"><b id="s-iss">32</b><span class="zh">Issue</span><span class="en">issues</span></div>
+    <div class="stat"><b id="s-ppl" data-reel="19">19</b><span class="zh">外部贡献者</span><span class="en">contributors</span></div>
+    <div class="stat"><b id="s-pr" data-reel="41">41</b><span class="zh">已合并 Pull Request</span><span class="en">merged pull requests</span></div>
+    <div class="stat"><b id="s-iss" data-reel="82">82</b><span class="zh">Issue</span><span class="en">issues</span></div>
     <div class="stat"><b>1</b><span class="zh">资源赞助方</span><span class="en">resource sponsor</span></div>
   </section>
 
@@ -203,17 +406,41 @@
 
   <div class="grid">
 
-    <div class="card">
+    <div class="card" style="grid-column: 1 / -1">
       <div class="top">
         <img src="https://github.com/Minervaowl7.png?size=92" alt="Minervaowl7" loading="lazy">
         <div class="who">
           <a href="https://github.com/Minervaowl7" target="_blank" rel="noopener">@Minervaowl7</a>
-          <div class="tier"><span class="zh">15 PR · 8 issue</span><span class="en">15 PRs · 8 issues</span></div>
+          <div class="tier"><span class="zh">39 PR · 53 issue（共 92 条）</span><span class="en">39 PRs · 53 issues (92 total)</span></div>
         </div>
       </div>
-      <p class="desc zh">贡献量最大。工作区概览日志日期锚定修复（未锚定子串正则误纳恢复候选 ⇒ 排序被污染、概览可能为空）、自动续跑宿主加固、恢复候选生命周期与幂等重放。</p>
-      <p class="desc en">The most prolific contributor. Anchored workspace-overview log-date matching (an unanchored substring regex admitted recovery candidates, polluting ranking and sometimes emptying the overview), auto-continuation host hardening, and recovery-candidate lifecycle / idempotent replay.</p>
+      <p class="desc zh">贡献量最大，覆盖面也最广：语义索引同步卡死自愈、记忆搬包与安全导入；自动沉淀 100% 失效、水位虚高与接续时机、跨工作区与 per-runtime 隔离等稳定性根因；python 模型下载链路重写与坏产物清除；打包卫生、webhook 默认 fail-closed、CI 全量门禁恢复；并补齐数十条回归守卫。</p>
+      <p class="desc en">The most prolific contributor, and the broadest in scope: self-healing for a permanently stuck semantic-index sync, memory packing and safe import; root causes behind auto-consolidation failing 100% of the time, inflated context-watermark readings, continuation timing, and cross-workspace / per-runtime isolation; a rewritten python model-download chain with bad-artifact cleanup; packaging hygiene, webhook defaults switched to fail-closed, and restoration of the full CI gate — plus dozens of new regression guards.</p>
       <div class="refs">
+        <a class="pr" href="https://github.com/Aik358/dsh-auto-memory/pull/129">PR #129</a>
+        <a class="pr" href="https://github.com/Aik358/dsh-auto-memory/pull/128">PR #128</a>
+        <a class="pr" href="https://github.com/Aik358/dsh-auto-memory/pull/126">PR #126</a>
+        <a class="pr" href="https://github.com/Aik358/dsh-auto-memory/pull/125">PR #125</a>
+        <a class="pr" href="https://github.com/Aik358/dsh-auto-memory/pull/124">PR #124</a>
+        <a class="pr" href="https://github.com/Aik358/dsh-auto-memory/pull/123">PR #123</a>
+        <a class="pr" href="https://github.com/Aik358/dsh-auto-memory/pull/122">PR #122</a>
+        <a class="pr" href="https://github.com/Aik358/dsh-auto-memory/pull/121">PR #121</a>
+        <a class="pr" href="https://github.com/Aik358/dsh-auto-memory/pull/120">PR #120</a>
+        <a class="pr" href="https://github.com/Aik358/dsh-auto-memory/pull/119">PR #119</a>
+        <a class="pr" href="https://github.com/Aik358/dsh-auto-memory/pull/118">PR #118</a>
+        <a class="pr" href="https://github.com/Aik358/dsh-auto-memory/pull/101">PR #101</a>
+        <a class="pr" href="https://github.com/Aik358/dsh-auto-memory/pull/100">PR #100</a>
+        <a class="pr" href="https://github.com/Aik358/dsh-auto-memory/pull/99">PR #99</a>
+        <a class="pr" href="https://github.com/Aik358/dsh-auto-memory/pull/98">PR #98</a>
+        <a class="pr" href="https://github.com/Aik358/dsh-auto-memory/pull/97">PR #97</a>
+        <a class="pr" href="https://github.com/Aik358/dsh-auto-memory/pull/96">PR #96</a>
+        <a class="pr" href="https://github.com/Aik358/dsh-auto-memory/pull/95">PR #95</a>
+        <a class="pr" href="https://github.com/Aik358/dsh-auto-memory/pull/81">PR #81</a>
+        <a class="pr" href="https://github.com/Aik358/dsh-auto-memory/pull/80">PR #80</a>
+        <a class="pr" href="https://github.com/Aik358/dsh-auto-memory/pull/79">PR #79</a>
+        <a class="pr" href="https://github.com/Aik358/dsh-auto-memory/pull/78">PR #78</a>
+        <a class="pr" href="https://github.com/Aik358/dsh-auto-memory/pull/77">PR #77</a>
+        <a class="pr" href="https://github.com/Aik358/dsh-auto-memory/pull/62">PR #62</a>
         <a class="pr" href="https://github.com/Aik358/dsh-auto-memory/pull/53">PR #53</a>
         <a class="pr" href="https://github.com/Aik358/dsh-auto-memory/pull/50">PR #50</a>
         <a class="pr" href="https://github.com/Aik358/dsh-auto-memory/pull/49">PR #49</a>
@@ -229,14 +456,59 @@
         <a class="pr" href="https://github.com/Aik358/dsh-auto-memory/pull/25">PR #25</a>
         <a class="pr" href="https://github.com/Aik358/dsh-auto-memory/pull/23">PR #23</a>
         <a class="pr" href="https://github.com/Aik358/dsh-auto-memory/pull/17">PR #17</a>
-        <a href="https://github.com/Aik358/dsh-auto-memory/issues/16">#16</a>
-        <a href="https://github.com/Aik358/dsh-auto-memory/issues/22">#22</a>
-        <a href="https://github.com/Aik358/dsh-auto-memory/issues/24">#24</a>
-        <a href="https://github.com/Aik358/dsh-auto-memory/issues/28">#28</a>
-        <a href="https://github.com/Aik358/dsh-auto-memory/issues/35">#35</a>
-        <a href="https://github.com/Aik358/dsh-auto-memory/issues/48">#48</a>
-        <a href="https://github.com/Aik358/dsh-auto-memory/issues/51">#51</a>
+        <a href="https://github.com/Aik358/dsh-auto-memory/issues/117">#117</a>
+        <a href="https://github.com/Aik358/dsh-auto-memory/issues/116">#116</a>
+        <a href="https://github.com/Aik358/dsh-auto-memory/issues/115">#115</a>
+        <a href="https://github.com/Aik358/dsh-auto-memory/issues/114">#114</a>
+        <a href="https://github.com/Aik358/dsh-auto-memory/issues/113">#113</a>
+        <a href="https://github.com/Aik358/dsh-auto-memory/issues/112">#112</a>
+        <a href="https://github.com/Aik358/dsh-auto-memory/issues/111">#111</a>
+        <a href="https://github.com/Aik358/dsh-auto-memory/issues/110">#110</a>
+        <a href="https://github.com/Aik358/dsh-auto-memory/issues/109">#109</a>
+        <a href="https://github.com/Aik358/dsh-auto-memory/issues/108">#108</a>
+        <a href="https://github.com/Aik358/dsh-auto-memory/issues/107">#107</a>
+        <a href="https://github.com/Aik358/dsh-auto-memory/issues/106">#106</a>
+        <a href="https://github.com/Aik358/dsh-auto-memory/issues/105">#105</a>
+        <a href="https://github.com/Aik358/dsh-auto-memory/issues/104">#104</a>
+        <a href="https://github.com/Aik358/dsh-auto-memory/issues/103">#103</a>
+        <a href="https://github.com/Aik358/dsh-auto-memory/issues/94">#94</a>
+        <a href="https://github.com/Aik358/dsh-auto-memory/issues/93">#93</a>
+        <a href="https://github.com/Aik358/dsh-auto-memory/issues/92">#92</a>
+        <a href="https://github.com/Aik358/dsh-auto-memory/issues/91">#91</a>
+        <a href="https://github.com/Aik358/dsh-auto-memory/issues/90">#90</a>
+        <a href="https://github.com/Aik358/dsh-auto-memory/issues/89">#89</a>
+        <a href="https://github.com/Aik358/dsh-auto-memory/issues/88">#88</a>
+        <a href="https://github.com/Aik358/dsh-auto-memory/issues/86">#86</a>
+        <a href="https://github.com/Aik358/dsh-auto-memory/issues/85">#85</a>
+        <a href="https://github.com/Aik358/dsh-auto-memory/issues/84">#84</a>
+        <a href="https://github.com/Aik358/dsh-auto-memory/issues/83">#83</a>
+        <a href="https://github.com/Aik358/dsh-auto-memory/issues/82">#82</a>
+        <a href="https://github.com/Aik358/dsh-auto-memory/issues/76">#76</a>
+        <a href="https://github.com/Aik358/dsh-auto-memory/issues/75">#75</a>
+        <a href="https://github.com/Aik358/dsh-auto-memory/issues/74">#74</a>
+        <a href="https://github.com/Aik358/dsh-auto-memory/issues/73">#73</a>
+        <a href="https://github.com/Aik358/dsh-auto-memory/issues/72">#72</a>
+        <a href="https://github.com/Aik358/dsh-auto-memory/issues/71">#71</a>
+        <a href="https://github.com/Aik358/dsh-auto-memory/issues/70">#70</a>
+        <a href="https://github.com/Aik358/dsh-auto-memory/issues/69">#69</a>
+        <a href="https://github.com/Aik358/dsh-auto-memory/issues/68">#68</a>
+        <a href="https://github.com/Aik358/dsh-auto-memory/issues/67">#67</a>
+        <a href="https://github.com/Aik358/dsh-auto-memory/issues/66">#66</a>
+        <a href="https://github.com/Aik358/dsh-auto-memory/issues/65">#65</a>
+        <a href="https://github.com/Aik358/dsh-auto-memory/issues/64">#64</a>
+        <a href="https://github.com/Aik358/dsh-auto-memory/issues/63">#63</a>
+        <a href="https://github.com/Aik358/dsh-auto-memory/issues/58">#58</a>
+        <a href="https://github.com/Aik358/dsh-auto-memory/issues/57">#57</a>
+        <a href="https://github.com/Aik358/dsh-auto-memory/issues/56">#56</a>
+        <a href="https://github.com/Aik358/dsh-auto-memory/issues/55">#55</a>
         <a href="https://github.com/Aik358/dsh-auto-memory/issues/52">#52</a>
+        <a href="https://github.com/Aik358/dsh-auto-memory/issues/51">#51</a>
+        <a href="https://github.com/Aik358/dsh-auto-memory/issues/48">#48</a>
+        <a href="https://github.com/Aik358/dsh-auto-memory/issues/35">#35</a>
+        <a href="https://github.com/Aik358/dsh-auto-memory/issues/28">#28</a>
+        <a href="https://github.com/Aik358/dsh-auto-memory/issues/24">#24</a>
+        <a href="https://github.com/Aik358/dsh-auto-memory/issues/22">#22</a>
+        <a href="https://github.com/Aik358/dsh-auto-memory/issues/16">#16</a>
       </div>
     </div>
 
@@ -245,7 +517,7 @@
         <img src="https://github.com/JIE42393.png?size=92" alt="JIE42393" loading="lazy">
         <div class="who">
           <a href="https://github.com/JIE42393" target="_blank" rel="noopener">@JIE42393</a>
-          <div class="tier"><span class="zh">7 issue</span><span class="en">7 issues</span></div>
+          <div class="tier"><span class="zh">8 issue</span><span class="en">8 issues</span></div>
         </div>
       </div>
       <p class="desc zh">持续的问题反馈者，覆盖面板行为、召回质量与配置边界等场景。</p>
@@ -258,6 +530,7 @@
         <a href="https://github.com/Aik358/dsh-auto-memory/issues/42">#42</a>
         <a href="https://github.com/Aik358/dsh-auto-memory/issues/43">#43</a>
         <a href="https://github.com/Aik358/dsh-auto-memory/issues/45">#45</a>
+        <a href="https://github.com/Aik358/dsh-auto-memory/issues/87">#87</a>
       </div>
     </div>
 
@@ -385,6 +658,10 @@
       <img src="https://github.com/cuohua.png?size=56" alt="" loading="lazy">
       <span class="n">@cuohua</span><span class="r">#40</span>
     </a>
+    <a class="chip" href="https://github.com/ADE150" target="_blank" rel="noopener">
+      <img src="https://github.com/ADE150.png?size=56" alt="" loading="lazy">
+      <span class="n">@ADE150</span><span class="r">#102</span>
+    </a>
   </div>
 
   <!-- ══════════ 赞助方 ══════════ -->
@@ -436,8 +713,8 @@
   </div>
 
   <footer>
-    <p class="zh">数据来源：GitHub Issues &amp; Pull Requests（2026-09-16 快照，共 51 条）。头像由 GitHub 提供。</p>
-    <p class="en">Data source: GitHub Issues &amp; Pull Requests (snapshot 2026-09-16, 51 entries). Avatars served by GitHub.</p>
+    <p class="zh">数据来源：GitHub Issues &amp; Pull Requests（2026-09-22 快照：已合并 PR 41 · Issue 82 · 外部贡献者 19）。头像由 GitHub 提供。</p>
+    <p class="en">Data source: GitHub Issues &amp; Pull Requests (snapshot 2026-09-22: 41 merged PRs · 82 issues · 19 external contributors). Avatars served by GitHub.</p>
     <p style="margin-top:14px">
       <a href="https://github.com/Aik358/dsh-auto-memory">README</a> ·
       <a href="https://github.com/Aik358/dsh-auto-memory/blob/main/docs/USER-GUIDE.zh-CN.md">用户文档</a> ·
@@ -466,6 +743,224 @@
     }
     setLang(saved);
   })();
+</script>
+<script>
+/* ============================================================
+   动效编排 — dsh-auto-memory 贡献者页（单文件内联，零外部依赖）
+   语料来源：本地 transitions-motion skill
+     · 统计数字：改用**计数滚动**（见下方说明，原 spinning-counter 配方在本页实测失败）
+     · 3d-tilt：指针绑在**从不做变换的外层**，写入 4 个自定义属性
+     · avatar-group-hover：在写 --shift **之前**内联设置
+       transition-timing-function，弹性缓动才只作用于归位
+     · texts-reveal：父级加 .is-shown 播放错开入场
+   降级：脚本失败 ⇒ 无 .dam-js，CSS 初始隐藏态不生效，内容照常可见可读。
+   ============================================================ */
+(function () {
+  'use strict';
+
+  var doc = document;
+  var root = doc.documentElement;
+  var reduce = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  var canHover = !!(window.matchMedia && window.matchMedia('(hover: hover) and (pointer: fine)').matches);
+
+  function each(list, fn) { Array.prototype.forEach.call(list, fn); }
+  function reflow(el) { return el.offsetWidth; } // 强制一次样式解析，保证过渡有起点
+
+  /* ── ① 统计数字：计数滚动（★零结构改动）──────────────────────
+     语料 spinning-counter 的配方是「每位数字一条 0-9 竖直卷轴 + 逐列定位
+     + 列级 overflow 裁剪 + 祖先渐变」。**本页实测失败**：原页面 `.stat b`
+     自带 `background-clip:text; color:transparent`，卷轴需要的祖先渐变与
+     子层裁剪与它反复冲突，结果是每格只剩首位数字、颜色发暗
+     （截图实测 1 / 4 / 8，本应是 19 / 41 / 82）。
+
+     ⇒ 改为只改 textContent：`<b data-reel="19">` 元素本身、它的渐变、
+     字号、布局**全部保持原页面原样**（页脚那个亮蓝 `1` 证明原样式渲染
+     正常），只把文字从 0 递增到目标值。零结构冲突，且数字始终走页面
+     已验证的渐变规则。 */
+  function attachCounters() {
+    each(doc.querySelectorAll('[data-reel]'), function (el) {
+      var target = parseInt(el.getAttribute('data-reel'), 10);
+      if (isNaN(target)) return;         // 非数字：原样保留，不动
+      // ★给一个**稳定**的可访问名：数字在滚动时 textContent 每帧都变，
+      //   读屏会逐帧播报。aria-label 一旦存在即作为可访问名，屏蔽这种噪声。
+      el.setAttribute('aria-label', String(target));
+      if (reduce) { el.textContent = String(target); return; }
+
+      var DUR = 1100;                    // 计数总时长
+      var start = null;
+      // easeOutExpo：起步快、收尾稳，数字滚动读起来自然（对应 --ease-linear
+      // 之外的「强调时刻」用途；此处按 token 刻度自设计，语料无对应条目）。
+      function ease(t) { return t >= 1 ? 1 : 1 - Math.pow(2, -10 * t); }
+
+      function step(ts) {
+        if (start === null) start = ts;
+        var p = Math.min((ts - start) / DUR, 1);
+        el.textContent = String(Math.round(target * ease(p)));
+        if (p < 1) requestAnimationFrame(step);
+        else el.textContent = String(target); // 收尾钉死精确值
+      }
+      el.textContent = '0';
+      requestAnimationFrame(step);
+    });
+  }
+
+  /* ── ② 卡片包裹（3d-tilt：外层扁平、内层旋转）───────────────── */
+  function wrapCards() {
+    each(doc.querySelectorAll('.card'), function (card) {
+      if (card.parentNode && card.parentNode.classList.contains('t-tilt')) return;
+      var wrap = doc.createElement('div');
+      wrap.className = 't-tilt';
+      // 整行卡片的栅格定位必须留在**栅格项**（即外层）上，否则会失去跨列
+      if (card.style && card.style.gridColumn) {
+        wrap.style.gridColumn = card.style.gridColumn;
+        card.style.gridColumn = '';
+      }
+      card.parentNode.insertBefore(wrap, card);
+      wrap.appendChild(card);
+      card.classList.add('t-tilt-card');
+      var glare = doc.createElement('div');
+      glare.className = 't-tilt-glare';
+      glare.setAttribute('aria-hidden', 'true');
+      card.appendChild(glare);
+    });
+  }
+
+  /* ── ③ 梳齿组标记（avatar-group-hover）────────────────────── */
+  function tagChips() {
+    each(doc.querySelectorAll('.compact'), function (group) { group.classList.add('t-avatar-group'); });
+    each(doc.querySelectorAll('.chip'), function (chip) { chip.classList.add('t-avatar'); });
+  }
+
+  /* ── ④ 分区入场标记（按 §1 位移/模糊刻度自设计）────────────── */
+  function tagReveal() {
+    var seq = [
+      '.stats', '.hero ~ h2.sec', 'h2.sec', '.sec-sub', '.grid',
+      '.compact', '.sponsor', '.steps', 'footer'
+    ];
+    var i = 0;
+    seq.forEach(function (sel) {
+      each(doc.querySelectorAll(sel), function (el) {
+        if (el.classList.contains('dam-reveal')) return;
+        el.classList.add('dam-reveal');
+        el.style.setProperty('--i', String(i % 6)); // 封顶 6：总错开 ≤240ms
+        i++;
+      });
+    });
+  }
+
+  /* ── ⑤ hero 文案错开（texts-reveal）────────────────────────── */
+  function tagHero() {
+    var hero = doc.querySelector('.hero');
+    if (!hero) return;
+    hero.classList.add('t-stagger');
+    var badge = hero.querySelector('.badge');
+    var h1 = hero.querySelector('h1');
+    var ps = hero.querySelectorAll('p');
+    var lang = hero.querySelector('.lang');
+    if (badge) badge.classList.add('t-stagger-line', 't-stagger-line--1');
+    if (h1) h1.classList.add('t-stagger-line', 't-stagger-line--2');
+    each(ps, function (p) { p.classList.add('t-stagger-line', 't-stagger-line--3'); });
+    if (lang) lang.classList.add('t-stagger-line', 't-stagger-line--4');
+  }
+
+  function playHero() {
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () {
+        each(doc.querySelectorAll('.t-stagger'), function (el) { el.classList.add('is-shown'); });
+      });
+    });
+  }
+
+  /* ── ⑥ 滚动入场 ───────────────────────────────────────────── */
+  function revealOnScroll() {
+    var targets = doc.querySelectorAll('.dam-reveal');
+    if (!('IntersectionObserver' in window)) {
+      each(targets, function (el) { el.classList.add('is-in'); });
+      return;
+    }
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) { e.target.classList.add('is-in'); io.unobserve(e.target); }
+      });
+    }, { rootMargin: '0px 0px -6% 0px', threshold: 0.06 });
+    each(targets, function (el) { io.observe(el); });
+  }
+
+  /* ── ⑦ 3D 倾斜 ────────────────────────────────────────────── */
+  function bindTilt() {
+    if (reduce || !canHover) return;
+    var MAX = 6; // 克制：超过约 8° 会读成「翻倒」而不是「被指针吸引」
+    each(doc.querySelectorAll('.t-tilt'), function (wrap) {
+      var card = wrap.querySelector('.t-tilt-card');
+      if (!card) return;
+      wrap.addEventListener('pointermove', function (ev) {
+        var r = wrap.getBoundingClientRect();
+        if (!r.width || !r.height) return;
+        var px = (ev.clientX - r.left) / r.width;
+        var py = (ev.clientY - r.top) / r.height;
+        card.style.setProperty('--tilt-ry', ((px - 0.5) * 2 * MAX).toFixed(2) + 'deg');
+        card.style.setProperty('--tilt-rx', ((0.5 - py) * 2 * MAX).toFixed(2) + 'deg');
+        card.style.setProperty('--tilt-gx', (px * 100).toFixed(1) + '%');
+        card.style.setProperty('--tilt-gy', (py * 100).toFixed(1) + '%');
+        card.classList.add('is-tilting');
+        wrap.classList.add('is-hover');
+      });
+      wrap.addEventListener('pointerleave', function () {
+        card.classList.remove('is-tilting');
+        wrap.classList.remove('is-hover');
+        card.style.setProperty('--tilt-rx', '0deg');
+        card.style.setProperty('--tilt-ry', '0deg');
+      });
+    });
+  }
+
+  /* ── ⑧ 梳齿悬停 ───────────────────────────────────────────── */
+  function bindGroup() {
+    if (reduce || !canHover) return;
+    var LIFT = -4, FALLOFF = 0.45, SCALE = 1.05;
+    var EASE_IN = 'cubic-bezier(0.22, 1, 0.36, 1)';
+    var EASE_OUT = 'cubic-bezier(0.34, 3.85, 0.64, 1)';
+    each(doc.querySelectorAll('.t-avatar-group'), function (group) {
+      var items = Array.prototype.slice.call(group.querySelectorAll('.t-avatar'));
+      if (items.length < 2) return;
+      items.forEach(function (el, idx) {
+        el.addEventListener('mouseenter', function () {
+          items.forEach(function (other, j) {
+            // ★ 先设缓动、再写变量（语料明确要求，否则弹性会作用在进场）
+            other.style.transitionTimingFunction = EASE_IN;
+            other.style.setProperty('--shift', (LIFT * Math.pow(FALLOFF, Math.abs(j - idx))).toFixed(3) + 'px');
+            other.style.setProperty('--scale-active', other === el ? String(SCALE) : '1');
+          });
+        });
+      });
+      group.addEventListener('mouseleave', function () {
+        items.forEach(function (el) {
+          el.style.transitionTimingFunction = EASE_OUT; // 归位才回弹
+          el.style.setProperty('--shift', '0px');
+          el.style.setProperty('--scale-active', '1');
+        });
+      });
+    });
+  }
+
+  function boot() {
+    tagHero();
+    wrapCards();
+    tagChips();
+    tagReveal();
+    reflow(doc.body); // 让隐藏初态先落地，过渡才有起点
+    playHero();
+    revealOnScroll();
+    attachCounters();
+    bindTilt();
+    bindGroup();
+  }
+
+  // ★ 先挂 .dam-js 再动 DOM：CSS 的初始隐藏态只在脚本可用时生效
+  root.classList.add('dam-js');
+  if (doc.readyState === 'loading') doc.addEventListener('DOMContentLoaded', boot);
+  else boot();
+})();
 </script>
 </body>
 </html>

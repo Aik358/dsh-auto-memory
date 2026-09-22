@@ -264,7 +264,7 @@ M6 live 后，JS 已能在没有 Python 的情况下用 fake activation 完整�
 | ActivationRequestPre validator | §4 JS 硬校验矩阵:schema/namespace/kind/activationId、observationId 必须 obs_pre_*、workerEpoch 必填(Python 身份门)、scope 枚举、contextVersion≥0、memoryIndexVersion 必须 idx_pre_+32hex、threshold 形状+reason≤160、level 六级枚举、candidates 1..8 全过候选校验、ttlSteps 1..10、expiresAt≥createdAt——不重算语义分,仅身份/版本/时序/预算门 |
 | ActivationCandidatePre validator | memoryId 严格/anchorId/scope Workspace\|User/sourceRef 相对引用白名单/sourceVersion/fileDigest/recordDigest hex64/score∈[0,1]/excerpt≤480B/checklist 形状 |
 | dedupeCandidates | 跨 memoryId 同 recordDigest 折叠保最高分(平局 memoryId 字典序);score 降序输出 |
-| Reference Tail 渲染器 | 固定边界逐字一致(TAIL_MARKER_LINE_PRE_V1/Source: id / scope / vN / digest 前 16 / Reason / Reference)+全局 Verify 收尾行恰好一次;sanitizeTailText guard v1(控制符剔除/注释语法剥离/多空格折叠/换行折叠 '; ');超预算整条丢弃最低分项(tail-budget 计账),provenance 三行身份永不截断;全放不下 fail closed packet-oversize |
+| Reference Tail 渲染器 | 固定边界逐字一致(TAIL_MARKER_LINE_PRE_V1/Source: id / scope / vN / digest 前 16 / Reason / Reference)+全局 Verify 收尾行恰好一次;sanitizeTailText guard v2(控制符剔除/注释语法剥离/多空格折叠/换行折叠 '; '/模板变量双花括号→全角中和,issue #132);超预算整条丢弃最低分项(tail-budget 计账),provenance 三行身份永不截断;全放不下 fail closed packet-oversize |
 | packet identity | packetId=pkt_pre_+first32(sha256(activationId+contextVersion+indexVersion+exactDigest));exactDigest=渲染文本逐字节 sha256;两者确定性且对输入敏感 |
 | ReferenceTailPacketPre validator | 全 schema 校验(packetSchemaVersion/packetId 前缀/references 形状与单项 ≤600B/budgetBytes>0/expiresAtStep 整数/deliveryState 五态枚举) |
 | TTL 纯函数 | isExpired(packet,nowStep)=nowStep≥expiresAtStep(§8 过期丢弃判定) |

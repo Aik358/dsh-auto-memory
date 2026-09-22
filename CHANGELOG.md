@@ -4,6 +4,36 @@ All notable changes to dsh-auto-memory.
 
 ---
 
+## [3.1.5] — 2026-09-22 · 记忆尾注双花括号中和（issue #132）+ 站点动效体系
+
+> **补丁版（patch）。** 无破坏性改动、无默认值回退；老用户已落盘的配置全部沿用。
+> 本次**只动 `-pre` 模块**（尾注渲染器），`lib/index.js` 一行未改 ⇒ **不需要重启 dsh web**；重启后即生效（不重启则内存里仍是旧代码，注入路径与行为不变）。
+> ⚠️ **行为变化（用户可见）**：记忆正文里出现的半角双花括号会被替换成同形全角字符再渲染 —— 这是修复本身的代价：`{{ count }}` 在尾注里会显示为 `｛｛ count ｝｝`，换来的是「不再让整条会话的模型请求全崩」。
+
+### 修复
+
+- **记忆尾注里的 `{{ … }}` 会让整条会话的模型请求全部失败（issue #132）**：尾注走的是**独立渲染链**，`sanitizeTailText`（guard v1）只做控制符剔除／注释剥离／空格折叠／换行折叠 —— **不碰双花括号**；而宿主 `dsh-system-prompt` 对注入文本做严格插值，命中后要么判 `malformed prompt variable reference`、要么判 `unknown prompt variable`，**两条都直接 throw**。用户侧表现：只要有一条记忆／反思／日记正文里写了 `{{ count }}`（例如记录「Vue 模板用 `{{ count }}` 做插值」），该会话**之后每一次模型请求都失败**。
+  修法：guard **v1 → v2**，在渲染器内部中和双花括号，与 `lib/index.js` 的 `neutralizePromptTemplateVars` **逐字同口径**（半角 → 全角等长替换）。
+  - **为什么内联在渲染器内部、而不是外层 `renderItemBlock`**：`exactDigest` 是渲染文本的 sha256，构建与重渲染两侧必须同口径；放外层会让两侧 digest 不一致，`renderTailFor` 静默降级为空注入 —— 记忆看不见，却**不报错**。
+  - **为什么取「无差别双花括号」而非「成对形态」**：宿主 `GROUP_AT` 的正则字符类不容嵌套花括号，成对替换会漏掉 `{{ a {b} c }}` 这类真实 malformed 输入。
+- **落地页首屏「安装」按钮点一次就毁容**：它是富按钮（1 个 SVG + 2 段文字），而复制反馈用 `btn.textContent` 整体替换 ⇒ 图标与两段文字被永久摧毁（`old` 存的是纯文本，还原不回来）。改为存取/还原 `innerHTML`。
+
+### 站点
+
+- **落地页 `docs/landing/index.html` 按模板整体重写**：浅色为基准、中文默认（深色与英文为切换项）；十节结构 = 英雄区／是什么／十二个能力／三件可交互演示／运行时分层／安装／版本历程／界面／对比／FAQ。
+- **动效体系按「用途」对齐 token 刻度**（语料取自本地 transitions-motion skill 的 43 条）：统一 `--duration-*` / `--ease-*` / `--distance-*` / `--blur-*`；**11 处 `transition: all` 全部收口为具名属性**；`.reveal` 900ms → 500ms、位移 40px → 12px；导航下划线与阈值条由 `width` 动画改 `transform: scaleX`；补齐按压反馈（独立 `scale` 属性，避开磁吸按钮写在内联样式上的 `transform`）、悬停指针闸门 `@media (hover:hover)`、reduced-motion 归零。
+- **贡献者页 `docs/CONTRIBUTORS.html` 补动效层**（纯内联、零外部依赖）。
+
+### 新增守卫
+
+- `tests/smoke/smoke-test-issue132-tail-brace-pre.mjs` —— **31 断言**，优先用**真实宿主插值器**跑（取不到时退化为结构性不变量）；含 G3「真实宿主插值不抛错」、G4「`exactDigest` 往返一致」、G5「与主快照中和口径逐字一致」。
+
+### 回归
+
+- pre 开发线全量 smoke **174/174 通过**（基线 173，+1 即本套件）。
+
+---
+
 ## [3.1.4] — 2026-09-22 · CI 门禁回补 + 发布线兼容 + 迁移搬包安全导入
 
 > **补丁版（patch）。** 无破坏性改动、无默认值回退；老用户已落盘的配置全部沿用。
