@@ -74,6 +74,8 @@ const transforms = [
   ['memory_note_pre', 'memory_note'],
   ['memory_user_pre', 'memory_user'],
   ['memory_log_pre', 'memory_log'],
+  // ★P9(2026-09-22)：条目级增删改工具。**两张表都要登记**（漏一处的真实事故见上方 T7-e 注）。
+  ['memory_rules_pre', 'memory_rules'],
   // ★T7-e(2026-09-20 用户报「发布后这些工具后面的 -pre 是要去掉的」)：以下 3 个工具
   //   **此前不在表里** ⇒ 发布物残留 `_pre`（memory_expand_pre / memory_trace_pre 实测证实，
   //   见 REL 线 D:\dsh_debug\_publish_dsh-auto-memory\lib\index.js），而 memory_procedure_pre
@@ -236,6 +238,10 @@ const libModuleRenames = [
   'temporal-parse-pre.js', 'python-setup-pre.js',
   // 2.2.4 新增模块(子代理痕迹回收 / 上下文窗口解析)
   'subagent-gc-pre.js', 'water-window-pre.js',
+  // ★2026-09-22 新增模块：记忆迁移搬包引擎（零依赖纯逻辑，IO 全在宿主）。
+  // 漏登记后果：残留闸门会在产物里扫到 `migrate-pack-pre.js` / `_pre_v1` 而拒绝构建
+  // （见下方 3.0.0 那段同源注释 —— 3.0 的 pre 线曾因此从未成功打出发布包）。
+  'migrate-pack-pre.js',
   // issue #48 新增模块(有界 rename 重试,Windows 瞬时句柄争用)
   'fs-retry-pre.js',
   // issue #30 新增模块(procedure 观察态标记 / 运行时信封清洗)
@@ -286,6 +292,8 @@ const libModuleRenames = [
   //   `node tools/release.mjs 3.1.0 --dry-run` 时被「模块重命名完整性自检」拦下（fail closed 生效）。
   //   不登记它就会以 `procedure-switch-pre.js` 原名进包，残留闸门必然拒绝构建。
   'procedure-switch-pre.js',      // B-2 procedure 开关契约(注入/晋升门控的唯一权威判据)
+  'jsonl-tail-cursor-pre.js',     // issue#103 环形 JSONL 增量游标(内容指纹;取自被强推冲掉的 475abfe 同名模块)
+  'recall-stats-pre.js',          // 召回统计(只记录不改排序;面板统计页签的数据源)
 ]
 const libRenameMap = libModuleRenames.map((f) => [f, f.replace(/-pre\.js$/, '.js')])
 for (const [from, to] of libRenameMap) {
@@ -330,6 +338,45 @@ for (const [from, to] of libRenameMap) {
       process.exit(1)
     }
     console.log('[release] 模块重命名完整性: OK(' + onDisk.length + ' 个 -pre.js 全部已登记)')
+  }
+}
+// ---------- 3.7 上游回流自检(2026-09-22, fail closed) ----------
+// 事故(2026-09-22 实证):pre 线与 GitHub `main` 自 2026-09-07 起分叉,而**发布包从 pre 构建**。
+//   于是「在 main 上修」= 白修;且 main 会被下次发布强推覆盖(PR #118/#119/#120 的合并提交
+//   在本机已 `missing`)。代价:#103/#104/#105 三条 P1 修了两轮、用户侧从未拿到。
+//   详见 docs/internal/WHY-FIXES-MISSING-20260922.md。
+// 本自检把「上游修复必须先回流 pre 线」变成**发版前的硬闸门**:缺任一产物即拒绝构建,
+//   并点名缺什么、该怎么补。清单维护在 tools/reconcile-upstream.mjs(MUST_BE_IN_PRE / MUST_MARKERS)。
+{
+  try {
+    const { execFileSync } = await import('node:child_process')
+    const out = execFileSync(process.execPath, [path.join(DEV, 'tools', 'reconcile-upstream.mjs'), '--json'], {
+      cwd: DEV, encoding: 'utf8',
+    })
+    const r = JSON.parse(out)
+    const missing = (r.artifacts || []).filter((a) => !a.present)
+    const unreg = r.unregistered || []
+    const orphans = (r.orphans || []).filter((o) => o.state === 'missing')
+    if (missing.length || unreg.length) {
+      console.error('\n❌ 上游回流自检未过(这些上游产物没有落在 pre 线,发出去就是「修了但用户拿不到」):')
+      for (const m of missing) console.error('   · ' + m.p + (m.needle ? '  ⟨' + m.needle + '⟩' : '') + '  — ' + m.why)
+      for (const u of unreg) console.error('   · 未登记 -pre 模块: ' + u)
+      console.error('   修法:把 main 上的该修复移植进 pre 线(命名带 -pre),或把产物清单同步进')
+      console.error('         tools/reconcile-upstream.mjs 的 MUST_BE_IN_PRE / MUST_MARKERS 后重跑。')
+      process.exit(1)
+    }
+    const fork = r.fork || {}
+    console.log('[release] 上游回流: OK(产物清单 ' + (r.artifacts || []).length + ' 项齐全'
+      + (orphans.length ? ';注意 main 侧已有 ' + orphans.length + ' 个孤儿提交' : '') + ')')
+    if (fork.preOnly !== undefined) {
+      console.log('[release] 分叉度: pre 独有 ' + fork.preOnly + ' / main 独有 ' + fork.mainOnly
+        + '(merge-base ' + fork.mergeBase + ' @ ' + String(fork.mergeBaseDate).slice(0, 10) + ')')
+    }
+  } catch (e) {
+    // fail closed:拿不到对账结果本身就是异常(缺文件/脚本报错),不允许带疑发布。
+    console.error('\n❌ 上游回流自检无法执行:' + String((e && e.message) || e).slice(0, 200))
+    console.error('   期望 tools/reconcile-upstream.mjs 存在且可运行;若确要临时跳过,请先说明理由。')
+    process.exit(1)
   }
 }
 // python 文件名重命名(worker_pre_v1.py → worker_v1.py 等) + 相互 import 改写
@@ -546,6 +593,7 @@ const residual = [
   //   教训：新增工具必须**同时**登记到 transforms 与 residual 两处，否则漏了不会报警。
   //   本项已由 smoke-test-t7e-toolname-pre.mjs 做「两侧清单一致性」自动守卫。
   'memory_expand_pre', 'memory_trace_pre', 'memory_procedure_pre',
+  'memory_rules_pre',
   'calendar_add_pre', 'calendar_done_pre', 'calendar_list_pre', 'calendar_remove_pre',
   'auto-memory-pre', 'update-check-pre', 'notices-cache-pre', 'dsh:auto-memory-pre',
   // 模块/存储/版本身份(发布转换后必须为裸名)

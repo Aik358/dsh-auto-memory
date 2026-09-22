@@ -66,8 +66,10 @@ console.log('routes:', registeredRoutes.map((r) => r.path).join(', '))
 
 // ★ T4（2026-09-19）：16 → 17 —— 新增 memory_procedure_pre（procedure memory 的模型直写通路）。
 //   该工具**无条件注册**（不像 expand/trace 受 boardMode=graph 闸门），故任何档位下都 +1。
-if (registeredTools.length !== 17) throw new Error('expected 17 tools (16 + T4 memory_procedure_pre), got ' + registeredTools.length)
-if (registeredRoutes.length !== 49) throw new Error('expected 49 routes, got ' + registeredRoutes.length)
+if (registeredTools.length !== 18) throw new Error('expected 18 tools (16 + T4 memory_procedure_pre + P9 memory_rules_pre), got ' + registeredTools.length)
+// ★ 召回统计（2026-09-22）：49 → 50 —— 新增只读路由 GET /recall-stats（面板「统计」页签的数据源）。
+//   该路由**无条件注册**（不受任何开关闸门约束），故任何档位下都 +1。
+if (registeredRoutes.length !== 53) throw new Error('expected 50 routes, got ' + registeredRoutes.length)
 if (sections.length !== 1) throw new Error('expected 1 prompt section (static rules)')
 if (contexts.length !== 2) throw new Error('expected 2 dynamic contexts (memory snapshot + m6 reference tail surface), got ' + contexts.length)
 
