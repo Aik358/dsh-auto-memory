@@ -653,7 +653,7 @@ DeepSeek Harness (Node, 127.0.0.1:3080)
 
 本项目部分开发资源由以下方提供：
 
-- **[DSH API](https://api.dshapi.icu/)** — API 中转站，为本项目的开发、测试以及 M 系列语义引擎研究提供模型端点。感谢一路同行。
+- **[DSH API](https://api.dshapi.icu/register?aff=HJU27P7JL39N)** — API 中转站，为本项目的开发、测试以及 M 系列语义引擎研究提供模型端点。感谢一路同行。
 
 基础设施与 API 额度赞助方列在 **[贡献者与赞助](https://htmlpreview.github.io/?https://github.com/Aik358/dsh-auto-memory/blob/main/docs/CONTRIBUTORS.html)** 页面。如希望支持本项目，欢迎提 issue 或加入 QQ 交流群。
 

@@ -69,7 +69,7 @@ console.log('routes:', registeredRoutes.map((r) => r.path).join(', '))
 if (registeredTools.length !== 18) throw new Error('expected 18 tools (16 + T4 memory_procedure + P9 memory_rules), got ' + registeredTools.length)
 // ★ 召回统计（2026-09-22）：49 → 50 —— 新增只读路由 GET /recall-stats（面板「统计」页签的数据源）。
 //   该路由**无条件注册**（不受任何开关闸门约束），故任何档位下都 +1。
-if (registeredRoutes.length !== 53) throw new Error('expected 50 routes, got ' + registeredRoutes.length)
+if (registeredRoutes.length !== 54) throw new Error('expected 50 routes, got ' + registeredRoutes.length)
 if (sections.length !== 1) throw new Error('expected 1 prompt section (static rules)')
 if (contexts.length !== 2) throw new Error('expected 2 dynamic contexts (memory snapshot + m6 reference tail surface), got ' + contexts.length)
 
