@@ -61,13 +61,19 @@ const SHIM_RE = (() => {
   if (shims.length) console.log('[release] 排除过渡垫片 ' + shims.length + ' 个: ' + shims.join(', '))
   return shims.length ? new RegExp('^(' + shims.map((s) => s.replace(/[.]/g, '\\.')).join('|') + ')$') : /$^/
 })()
-copyDirExcluding(path.join(DEV, 'lib'), path.join(REL, 'lib'), /\.bak/)
+// ★2026-09-23(3.1.6) 备份过滤口径收窄为「含 bak 子串」：
+//   此前用 `/\.bak/` 只匹配**字面** `.bak`，而 .m8b* 系列备份命名是 `xxx.m8b5bak` /
+//   `xxx.m8b6bak-<ts>`（bak 前无点）⇒ **13 个 lib 备份（6.66 MB，含 5 份 index.js /
+//   4 份 client.js 全文）被拷进发布基座**，且 REL 的 .gitignore 同样只兜 `*.bak`/`*.bak-*`
+//   ⇒ 会以「新增未跟踪文件」身份被 `git add -A` 带进 GitHub。
+//   实测核对：`/\.bak/` 时 13 个漏网；`/bak/i` 时 0 个。备份一律含 bak ⇒ 以此为唯一口径最稳。
+copyDirExcluding(path.join(DEV, 'lib'), path.join(REL, 'lib'), /bak/i)
 // 垫片已拷入 ⇒ 删掉（copyDirExcluding 只支持扩展名黑名单，故拷后清理，语义等价且零风险）
 for (const f of readdirSync(path.join(REL, 'lib'))) {
   if (SHIM_RE.test(f)) rmSync(path.join(REL, 'lib', f), { force: true })
 }
-copyDirExcluding(path.join(DEV, 'tests'), path.join(REL, 'tests'), /node_modules/)
-copyDirExcluding(path.join(DEV, 'python'), path.join(REL, 'python'), /(__pycache__|\.pyc|bench)/)
+copyDirExcluding(path.join(DEV, 'tests'), path.join(REL, 'tests'), /(node_modules|bak)/i)
+copyDirExcluding(path.join(DEV, 'python'), path.join(REL, 'python'), /(__pycache__|\.pyc|bench|bak)/i)
 for (const entry of ['cordis.patch.yml', 'README.md', 'README.zh-CN.md', 'LICENSE', 'notices.json', 'docs', 'social-preview.html', '.github',
   // ★2026-09-21 补 CHANGELOG.md：两份 README **各有 3 处**链接到 `CHANGELOG.md`（导航条 / 文末链接区，
   //   共 6 处），但此文件此前**从不在复制清单里**，REL 仓也从未有过它 ⇒ GitHub 上点「Changelog」

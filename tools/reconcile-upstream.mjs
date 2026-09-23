@@ -83,11 +83,11 @@ for (const o of KNOWN_ORPHANS) {
 
 // ── 3. 文件面：这些上游产物必须**在 pre 线**存在（否则就是没回流）──────
 const MUST_BE_IN_PRE = [
-  { kind: 'module', p: 'lib/jsonl-tail-cursor-pre.js', why: '#103 环形游标（必须带 -pre 后缀才进发布包）' },
-  { kind: 'module', p: 'lib/hub-io-pre.js', why: '#110 写失败可见' },
-  { kind: 'guard', p: 'tests/smoke/smoke-test-issue103-105-portfix-pre.mjs', why: '#103/#104/#105 行为守卫' },
-  { kind: 'guard', p: 'tests/smoke/smoke-test-issue110-hub-io-pre.mjs', why: '#110 守卫' },
-  { kind: 'guard', p: 'tests/smoke/smoke-test-issue112-hermetic-home-pre.mjs', why: '#112 隔离守卫' },
+  { kind: 'module', p: 'lib/jsonl-tail-cursor.js', why: '#103 环形游标（去 pre 后源码名即发布名）' },
+  { kind: 'module', p: 'lib/hub-io.js', why: '#110 写失败可见' },
+  { kind: 'guard', p: 'tests/smoke/smoke-test-issue103-105-portfix.mjs', why: '#103/#104/#105 行为守卫' },
+  { kind: 'guard', p: 'tests/smoke/smoke-test-issue110-hub-io.mjs', why: '#110 守卫' },
+  { kind: 'guard', p: 'tests/smoke/smoke-test-issue112-hermetic-home.mjs', why: '#112 隔离守卫' },
 ]
 // 关键修复标记（源码里必须存在的行；缺一即说明该修复没回流）
 const MUST_MARKERS = [
@@ -95,8 +95,8 @@ const MUST_MARKERS = [
   { p: 'lib/index.js', needle: 'engine.runtimes._activationHost = engine._activationHost', why: '#104 activation host 回填' },
   { p: 'lib/index.js', needle: 'createJsonlTailCursorPre({ maxSeen: 1024 })', why: '#103 指纹游标实例' },
   { p: 'lib/index.js', needle: 'workspaceDiscoverMax', why: '#102 工作区发现上限参数化' },
-  { p: 'lib/python-setup-pre.js', needle: 'Readable.fromWeb(resp.body)', why: '#105 WHATWG→Node 流' },
-  { p: 'lib/python-setup-pre.js', needle: 'await pipeline(src, createWriteStream(part', why: '#105 真写入' },
+  { p: 'lib/python-setup.js', needle: 'Readable.fromWeb(resp.body)', why: '#105 WHATWG→Node 流' },
+  { p: 'lib/python-setup.js', needle: 'await pipeline(src, createWriteStream(part', why: '#105 真写入' },
 ]
 for (const a of MUST_BE_IN_PRE) {
   const abs = path.join(ROOT, a.p)
@@ -109,7 +109,9 @@ for (const m of MUST_MARKERS) {
   out.artifacts.push({ kind: 'marker', p: m.p, needle: m.needle, why: m.why, present: hit })
 }
 
-// ── 4. release.mjs 登记核查（新 -pre 模块漏登记 ⇒ 构建 fail-closed）────────
+// ── 4. 过渡垫片核查（去 pre 2026-09-23）────────
+// 去 pre 后 lib/*-pre.js 只应是**过渡垫片**（同名裸文件已存在，垫片仅 re-export）。
+// 若出现「没有裸名孪生体的 -pre.js」，说明有模块漏改名 —— 点名报错。
 {
   let reg = ''
   try { reg = fs.readFileSync(path.join(ROOT, 'tools', 'release.mjs'), 'utf8') } catch (_) {}
@@ -117,8 +119,8 @@ for (const m of MUST_MARKERS) {
   try {
     for (const f of fs.readdirSync(path.join(ROOT, 'lib'))) if (f.endsWith('-pre.js')) onDisk.push(f)
   } catch (_) {}
-  const unreg = onDisk.filter((f) => !reg.includes("'" + f + "'"))
-  out.unregistered = unreg
+  const realLeft = onDisk.filter((f) => !fs.existsSync(path.join(ROOT, 'lib', f.replace(/-pre\.js$/, '.js'))))
+  out.unregistered = realLeft
 }
 
 // ── 输出 ─────────────────────────────────────────────────────────

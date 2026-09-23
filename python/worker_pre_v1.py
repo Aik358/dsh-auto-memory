@@ -10,7 +10,7 @@ Discipline:
     (no wall clock, no randomness; sentAt/frameId are derived from the request).
   - No HTTP listener; no reads of DSH files/Markdown/sidecars/session logs/workspace files.
   - The ONLY filesystem write is the rebuildable derived corpus under
-    <dsh-home>/memory/semantic-pre/ (path supplied explicitly by JS via --dsh-home;
+    <dsh-home>/memory/semantic/ (path supplied explicitly by JS via --dsh-home;
     never discovered). Atomic switch = temp file + os.replace.
   - Creates no evidence, no ReferenceTailPacket, no prompt text.
 """
@@ -500,7 +500,7 @@ class Worker:
     def persist_derived(self):
         if not self.dsh_home:
             return False
-        dir_path = os.path.join(self.dsh_home, 'memory', 'semantic-pre')
+        dir_path = os.path.join(self.dsh_home, 'memory', 'semantic')
         entries = []
         for key in sorted(self.derived.keys()):
             e = self.derived[key]

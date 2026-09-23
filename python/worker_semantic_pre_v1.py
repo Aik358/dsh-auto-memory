@@ -8,12 +8,12 @@ index_sync rejection matrix, same atomic derived-corpus persistence. Adds:
 
   - after a successful index_sync commit: chunk (m7_chunk_pre_v1) + embed
     (frozen provider) every record and persist versioned vectors with an
-    identity block under <dsh-home>/memory/semantic-pre/ (atomic replace)
+    identity block under <dsh-home>/memory/semantic/ (atomic replace)
   - on startup: reuse persisted vectors only when the identity block
     matches the running embedding config; any mismatch = stale = refuse to
     serve until the next commit rebuilds (fail closed, never mix)
   - on context_push: dense top-8 shadow candidates appended to a bounded
-    semantic-pre/candidates-shadow.jsonl. NO new wire frames in M7-3: the
+    semantic/candidates-shadow.jsonl. NO new wire frames in M7-3: the
     frozen client correlates only acks/activations, so unsolicited
     candidate_result frames would regress it; the frame type stays reserved.
 
@@ -207,7 +207,7 @@ class SemanticWorker(base.Worker):
             base.diag('embedding-init-failed: ' + self.embedding_error)
 
     def _semantic_dir(self):
-        return os.path.join(self.dsh_home, 'memory', 'semantic-pre')
+        return os.path.join(self.dsh_home, 'memory', 'semantic')
 
     def _load_vectors_from_disk(self):
         if not self.dsh_home:
@@ -874,7 +874,7 @@ class SemanticWorker(base.Worker):
         except Exception as exc:  # noqa: BLE001
             try:
                 dbg = os.path.join(self.dsh_home or '', 'memory',
-                                   'semantic-pre', 'fv2-debug.log')
+                                   'semantic', 'fv2-debug.log')
                 with open(dbg, 'a', encoding='utf-8') as f:
                     f.write('CTX-PUSH-EXC: %s\n%s\n' % (
                         repr(exc)[:300],
@@ -1077,7 +1077,7 @@ class SemanticWorker(base.Worker):
 
     def _fv2_shadow_decide(self, req, p, candidates, frames):
         try:
-            dbg = os.path.join(self.dsh_home or '', 'memory', 'semantic-pre',
+            dbg = os.path.join(self.dsh_home or '', 'memory', 'semantic',
                                'fv2-debug.log')
             with open(dbg, 'a', encoding='utf-8') as f:
                 f.write('CALLED obs=%s ncand=%s fv2=%s nrefs=%s nev=%s ws=%s\n' % (
@@ -1281,11 +1281,11 @@ class SemanticWorker(base.Worker):
 
 def load_embedding_config_from_env(dsh_home=''):
     """M7-8 live path: env var overrides; otherwise fall back to a
-    host-provisioned config at <dsh-home>/memory/semantic-pre/embedding-config.json
+    host-provisioned config at <dsh-home>/memory/semantic/embedding-config.json
     so the real provider survives restarts without env inheritance."""
     path = os.environ.get(EMBEDDING_CONFIG_ENV, '')
     if not path and dsh_home:
-        cand = os.path.join(dsh_home, 'memory', 'semantic-pre',
+        cand = os.path.join(dsh_home, 'memory', 'semantic',
                             'embedding-config.json')
         if os.path.isfile(cand):
             path = cand
