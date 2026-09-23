@@ -101,7 +101,12 @@ function listSuites(filter, exclude) {
 function auditExcludes(exclude) {
   if (!(exclude || []).length) return []
   let names = []
-  try { names = readdirSync(SMOKE_DIR).filter((n) => n.endsWith('.mjs')) } catch (e) { return [] }
+  try { names = readdirSync(SMOKE_DIR).filter((n) => n.endsWith('.mjs')) } catch (e) {
+    // 读不到目录 = 任何模式都无法验证，一律按失效上报。这里若返回空就是 fail-open：
+    // 守卫恰好在自己最该出声的时候沉默，而静默放行正是它要防的那类失效。
+    console.error('[run-smoke] 无法校验 --exclude：读不到 ' + SMOKE_DIR + '（' + (e && e.message || e) + '）')
+    return exclude
+  }
   for (const x of exclude) {
     for (const n of names.filter((n) => n.includes(x)).sort()) {
       console.log('   skip ' + n + '  (--exclude=' + x + ')')

@@ -54,6 +54,9 @@ jobs:
           # 这三条依赖**只有开发机才有**的东西，与代码正确性无关：
           #   m79-feature-v2 / m710-fv2-emit → python/bench/.venv（含 E5 模型的本地虚拟环境）
           #   c4-fresh-install              → artifacts/release-c2-asset-pack/*.tgz 本地打包件
+          # 另两条走**真实网络**（fresh-download-live / peer-probe-live）：它们目前在 Linux CI 上
+          # 是通过的，排除它们是用 2 条覆盖换门禁确定性（外站抖动会让红落在与代码无关的地方）。
+          # 要保留覆盖就删掉下面 `--exclude=-live` 一行，run-smoke 的守卫不会因此报错。
           # ⚠️ --exclude 是**子串**匹配套件文件名，改名即失效（v3.1.6「删净 pre」把
           #    *-pre.mjs 改成 *.mjs 时，这里的旧模式静默失效了：*-live-pre.mjs → *-live.mjs
           #    让 `-live-` 的尾横线再也匹配不上；三条本地产物套件也一样漏进 CI）。
