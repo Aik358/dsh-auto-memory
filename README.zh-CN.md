@@ -574,7 +574,7 @@ cd ~/.dsh/profiles/web && pnpm up @a9i5k4/dsh-auto-memory@latest
 
 ```
 DeepSeek Harness (Node, 127.0.0.1:3080)
-├─ JS 记忆核心（lib/*_pre.js，零运行时依赖）
+├─ JS 记忆核心（lib/*.js，零运行时依赖）
 │   M1 会话隔离 · M2 ContextObserver 投影
 │   M3 记忆锚定（anchored records + sidecar 身份）
 │   M4 语料适配 + 影子检索宿主（evidence store）
@@ -583,7 +583,7 @@ DeepSeek Harness (Node, 127.0.0.1:3080)
 │   lexical_pre_v2 词法回退检索（BM25 + CJK 2gram，0GB 永远可用）
 │   C2 内置语义层（e5-small q8 ~130MB，默认档）
 └─ Python sidecar M7（可选，lazy spawn 子进程）
-    worker_semantic_pre_v1.py
+    worker_semantic_v1.py
     ├─ index_sync：JS 授权分页建库（digest 校验，scope 分组）
     ├─ dense：BGE-M3 int8 + para-512 分块 + 余弦检索（R@5 0.925）
     ├─ hybrid：稠密 0.7 + 词法 0.3 融合

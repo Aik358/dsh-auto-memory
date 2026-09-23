@@ -65,6 +65,17 @@ for (const [f, text] of docs) {
   ok(preHits.length === 0, `${f}: 文档不得残留 -pre 拼写（去 pre 承诺）`, preHits.slice(0, 5).join(', '))
 }
 
+// ---------- ④ 带扩展名的产物文件名（覆盖面含两份 README） ----------
+// ③ 的正则只抓 memory/ 子目录与包名，抓不到 `worker_semantic_pre_v1.py`、`lib/*_pre.js`
+// 这类**产物文件名**形态 —— v3.1.6「删净 pre」之后，正是这一类把两份 README 的架构树
+// 留在了磁盘上不存在的文件上（issue #137）。协议/策略标识符（`lexical_pre_v2`、
+// `m7_wire_pre_v1`、`hybrid_fusion_pre_v1`）不带扩展名，故不会被这条误伤。
+// README 不进 ② 的循环：它本就不承诺诊断日志名与 memory/hub/ 路径，那样会假红。
+for (const f of ['README.md', 'README.zh-CN.md', ...DOCS]) {
+  const hits = [...norm(read(f)).matchAll(/[\w.*-]*_pre[\w-]*\.(?:py|js|mjs|json)\b/g)].map((m) => m[0])
+  ok(hits.length === 0, `${f}: 不得引用带 _pre 的产物文件名（去 pre 承诺）`, hits.slice(0, 5).join(', '))
+}
+
 const hb = docs.get('docs/HANDBOOK.md')
 ok(hb.includes(PREFIX), `HANDBOOK: 端点前缀给的是真名 ${PREFIX}`)
 const m51 = hb.match(/### 5\.1 主要端点（[^）]*共\s*\*\*(\d+)\*\*\s*条/)
