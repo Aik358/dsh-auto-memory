@@ -103,8 +103,19 @@ console.log('[G1] 协议常量冻结 + wire codec')
 // ---------- G2 ----------
 console.log('[G2] framing:partial/multiple/bad JSON/oversize/epoch 门/type 混用')
 {
-  const c = mkClient()
-  ok(c.ensureStarted().ok, 'G2 lazy start 成功(real worker)')
+  // issue #139:framing 断言必须独占响应流,不能与真 worker 抢同一个解析 buffer。
+  // 旧实现在这里起真 worker:request('health') 会把真帧写进 worker stdin,而 worker_v1.py
+  // 对每个 health 帧立即回显 requestId 的 health_result 并 flush;stdout 的 'data' 回调与
+  // _feedForTest 进的是同一个 feed()/buffer(python-sidecar-client.js)——真响应在 sleep(60)
+  // 窗口内到达就会提前 settle p2 ⇒ done2=true 断言红,真 chunk 还会与手工半帧拼接成坏行 badJson。
+  // Linux CI 的 python 启动/回包远快于该窗口 ⇒ 必红;Windows 启动慢 ⇒ 本地恒绿,正是
+  // 「只在 Linux CI 红」的来源。修法:framing 段改用吞 stdin、永不回响应的 silent worker,
+  // 合成帧独占 buffer;仅 crash-recovery 断言需要真进程重生成功,届时再切回真 worker。
+  const silentPy = path.join(tmpdir(), 'dam-m70-g2silent-' + Date.now() + '.py')
+  writeFileSync(silentPy, 'import sys, time\nwhile True:\n    line = sys.stdin.readline()\n    if not line: break\n    time.sleep(0.01)\n', 'utf8')
+  let target = silentPy
+  const c = mkClient({ scriptPathFn: () => target, requestTimeoutMs: 2500 })
+  ok(c.ensureStarted().ok, 'G2 lazy start 成功(silent framing worker,真 worker 仅在 crash-recovery 入场)')
   const epoch = c.currentEpoch()
   ok(/^wk_pre_[0-9a-f]{32}$/.test(epoch), 'G2 workerEpoch 形状 wk_pre_+32hex')
   c._feedForTest('{"broken\n')
@@ -126,16 +137,29 @@ console.log('[G2] framing:partial/multiple/bad JSON/oversize/epoch 门/type 混�
   c._feedForTest(JSON.stringify(mkResp('health_result', { protocol: 'm7_wire_pre_v1' })) + '\n')
   const rh = await ph
   ok(rh.ok && rh.frame.type === 'health_result', 'G2 正确响应到达后正常 resolve')
+  // issue #139 诊断前置:partial 断言要求 p2 处于挂起态;request() 的立即 fulfilled 路径
+  // (disposed/unavailable/circuit-open/backpressure)或真 worker 抢答都会让 !done2 失真。
+  // 先显式断言熔断器未开;若仍失败,下方诊断会打印 settle 值/stats/熔断态供 CI 归因。
+  ok(!c.breakerOpenForTest(), 'G2 熔断器前置:partial 断言前未开')
   const p2 = c.request('health')
   const sent2 = c._lastFrameForTest()
   const resp2 = Buffer.from(JSON.stringify({ protocolVersion: WIRE.M7_WIRE_PROTOCOL_VERSION_PRE_V1, frameId: 'r2', requestId: sent2.requestId, workerEpoch: epoch, type: 'health_result', payload: { protocol: 'm7_wire_pre_v1' }, sentAt: 6 }) + '\n', 'utf8')
-  let done2 = false; void p2.then(() => { done2 = true })
+  let done2 = false; let settled2 = '<pending>'
+  void p2.then((r) => { done2 = true; settled2 = r })
   c._feedForTest(resp2.subarray(0, 10))
   await sleep(60)
-  ok(!done2, 'G2 partial 行挂起等待补全')
+  // 仅失败时展开诊断(正常路径保持安静):settle 值可区分「结构化失败/真响应抢跑」与
+  // 「分帧逻辑真缺陷」,配 stats/熔断态/近期 diag 在 CI 上直接归因,免去复跑抓包。
+  const g2Diag = () => ' settle=' + JSON.stringify(settled2)
+    + ' breaker=' + JSON.stringify(c.debugView().breaker)
+    + ' failed=' + JSON.stringify(c._statsForTest.failed)
+    + ' dropped=' + JSON.stringify(c._statsForTest.dropped)
+    + ' lastFatal=' + String(c._statsForTest.lastFatal)
+    + ' recentDiag=' + JSON.stringify(c._diagRingForTest.slice(-3).map((d) => d.message))
+  ok(!done2, 'G2 partial 行挂起等待补全' + (done2 ? g2Diag() : ''))
   c._feedForTest(resp2.subarray(10))
   const r2 = await p2
-  ok(r2.ok, 'G2 补全后半帧立即 resolve(partial 重组)')
+  ok(r2.ok, 'G2 补全后半帧立即 resolve(partial 重组)' + (r2.ok ? '' : g2Diag() + ' r2=' + JSON.stringify(r2)))
   const qA = c.request('health'); const frA = JSON.parse(JSON.stringify(c._lastFrameForTest()))
   const qB = c.request('health'); const frB = JSON.parse(JSON.stringify(c._lastFrameForTest()))
   const chunk = [frA, frB].map((fr, i) => JSON.stringify({ protocolVersion: WIRE.M7_WIRE_PROTOCOL_VERSION_PRE_V1, frameId: 'm' + i, requestId: fr.requestId, workerEpoch: epoch, type: 'health_result', payload: { i }, sentAt: 7 })).join('\n') + '\n'
@@ -147,9 +171,11 @@ console.log('[G2] framing:partial/multiple/bad JSON/oversize/epoch 门/type 混�
   const rBig = await bigReq
   eq(rBig.code, 'protocol', 'G2 超长行 fatal → 在途请求结构化失败(protocol)')
   eq(c._statsForTest.lastFatal, 'line-oversize', 'G2 lastFatal=line-oversize')
+  target = WORKER_PATH
   const rr = await c.request('health')
-  ok(rr.ok, 'G2 fatal 后下一次请求自动重生进程并成功(crash recovery)')
+  ok(rr.ok, 'G2 fatal 后下一次请求自动重生进程并成功(crash recovery)' + (rr.ok ? '' : ' rr=' + JSON.stringify(rr)))
   await c.dispose('test')
+  try { rmSync(silentPy, { force: true }) } catch (_) {}
 }
 
 

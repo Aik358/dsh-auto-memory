@@ -94,6 +94,27 @@ function listSuites(filter, exclude) {
     .sort()
 }
 
+/** --exclude 是纯子串过滤：模式一旦匹配不到任何套件（改名、笔误）就等于**静默失效**，
+ *  被排除的套件会带着「本地产物缺失」的错混进 CI，报错点离真因很远。这里做两件事：
+ *  ① 逐条打印被跳过的套件（兑现 tests.yml 失败提示里承诺的 `skip <文件> (--exclude=...)` 留痕）；
+ *  ② 返回匹配不到任何文件的死模式，由调用方拒绝运行。 */
+function auditExcludes(exclude) {
+  if (!(exclude || []).length) return []
+  let names = []
+  try { names = readdirSync(SMOKE_DIR).filter((n) => n.endsWith('.mjs')) } catch (e) {
+    // 读不到目录 = 任何模式都无法验证，一律按失效上报。这里若返回空就是 fail-open：
+    // 守卫恰好在自己最该出声的时候沉默，而静默放行正是它要防的那类失效。
+    console.error('[run-smoke] 无法校验 --exclude：读不到 ' + SMOKE_DIR + '（' + (e && e.message || e) + '）')
+    return exclude
+  }
+  for (const x of exclude) {
+    for (const n of names.filter((n) => n.includes(x)).sort()) {
+      console.log('   skip ' + n + '  (--exclude=' + x + ')')
+    }
+  }
+  return exclude.filter((x) => !names.some((n) => n.includes(x)))
+}
+
 /**
  * Windows 下 SIGKILL 对 node 是"尽力而为":子进程可能还有自己 spawn 的后代。
  * 先 taskkill /T /F 拆整棵树,再补一发 child.kill 兜底。
@@ -174,6 +195,12 @@ async function main() {
   if (opts.help) {
     console.log('usage: node tools/run-smoke.mjs [--timeout=<ms>] [--filter=<substr>] [--exclude=<substr>]...')
     return 0
+  }
+  const deadExcludes = auditExcludes(opts.exclude)
+  if (deadExcludes.length) {
+    console.error('[run-smoke] --exclude 模式匹配不到任何套件（套件改名后旧模式会静默失效）: ' + deadExcludes.join(', '))
+    console.error('  → 失效的排除等于没排除：依赖本地产物/网络的套件会混进 CI，报出与真因无关的错。请改成现有套件名。')
+    return 2
   }
   const suites = listSuites(opts.filter, opts.exclude)
   if (!suites.length) {

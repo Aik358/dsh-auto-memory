@@ -403,7 +403,7 @@ M7 只能在 protocol/index_sync replay 确定、每个 activation 通过 M6 val
 
 | 套件 | 结果 |
 | --- | --- |
-| smoke-test-m70-pre.mjs | G1-G9 共 **90 断言 exit 0**:常量冻结/canonical JSON 已知向量/envelope 正反例+方向门/framing(partial·multi-line·bad JSON·oversize·epoch 门·type 混用)/ack 过 validateContextAckPre(M5 兼容)/worker activation 过 validateActivationRequestPre+候选逐条复制(M6 兼容)/obs 幂等/determinism 两进程逐字节/epoch 重启旧响应丢弃/SIGKILL crash 结构化 crashed/timeout·cancel·breaker·half-open/身份不混用/Python 缺失结构化 unavailable+lexical_pre_v2 结果不变/A-B 会话零串线/harness 默认零进程零 IO 零目录+三重门矩阵(fake-only 注入路由不变) |
+| smoke-test-m70-pre.mjs | G1-G9 共 **91 断言 exit 0**:常量冻结/canonical JSON 已知向量/envelope 正反例+方向门/framing(partial·multi-line·bad JSON·oversize·epoch 门·type 混用;framing 段用 silent worker 独占响应流,issue #139)/ack 过 validateContextAckPre(M5 兼容)/worker activation 过 validateActivationRequestPre+候选逐条复制(M6 兼容)/obs 幂等/determinism 两进程逐字节/epoch 重启旧响应丢弃/SIGKILL crash 结构化 crashed/timeout·cancel·breaker·half-open/身份不混用/Python 缺失结构化 unavailable+lexical_pre_v2 结果不变/A-B 会话零串线/harness 默认零进程零 IO 零目录+三重门矩阵(fake-only 注入路由不变) |
 | smoke-test-m71-pre.mjs | H1-H9 共 **90 断言 exit 0**:15 字段投影/chunk 派生/syncId 确定/64 条与 256KiB 边界+单条超限 fail closed/E2E happy path+原子落盘无 tmp 残留+重放字节一致/七类失败全拒且派生态零变化/v2 整体替换旧版零残留/内存模式 persisted=false/身份格式分离/M5-M6 兼容复assert/同步失败后 lexical_pre_v2 不变 |
 | 全量回归 | **22 项串行全绿**(M0-M6 原 20 项+m70+m71;含 smoke-test.mjs 与 m3b3 凌晨窗口修复后复跑) |
 | 卫生 | node --check×11 文件=0;py_compile=0;git diff --check=0;12 个触碰文件 BOM 扫描净;`_dev` 扫描净;UTF-8 无 BOM |
