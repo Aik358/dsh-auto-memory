@@ -267,8 +267,7 @@ async function main() {
     // ★先跨全采集窗口挑"失败要点"，再给尾部：只看尾窗会把真凶挤掉（本运行器历史上就踩过，
     //   见上方 CAP_CHARS 注释）。要点行永远排在尾部前面，CI 里一眼能看到是哪条断言。
     const marks = (r.tail || '').split('\n')
-      .filter((l) => /^\s*(?:FAIL(?:\s|:|-)|✗|not ok\b)/i.test(l)
-        || /\bFATAL\b|\b(?:AssertionError|TypeError|ReferenceError|SyntaxError|RangeError|Error):/i.test(l)).slice(0, 25)
+      .filter((l) => /^\s*(?:FAIL(?:\s|:|-)|✗|not ok\b|FATAL\b|\[[^\]]+\]\s+FATAL\b|(?:AssertionError|TypeError|ReferenceError|SyntaxError|RangeError|Error):)/i.test(l)).slice(0, 25)
     if (marks.length) console.log('failure highlights:\n' + marks.map((l) => '    ' + l.trim()).join('\n'))
     console.log('last output tail:')
     const tailStr = r.tail ? String(r.tail).slice(-TAIL_CHARS) : '(no output captured)'
