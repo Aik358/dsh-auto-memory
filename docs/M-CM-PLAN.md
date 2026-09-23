@@ -68,7 +68,7 @@ OS 式记忆分层：core memory（上下文内的 self-edited memory blocks，"
 
 ## 4. M-CM3 会话检索增强（2026-09-06 审计修正：host 已有关键词级检索，本项=升级非新建）
 
-> **审计修正**：原文"会话帧未索引"有误。host 自带 `sessionQuery.searchSessions`（`lib/index.js:4531` `ctx.get('sessionQuery')`，:2226 调用，limit≤10），`memory_recall_pre` 已覆盖"历史 DSH 会话全文检索（如部署启用）"——**关键词级**，GUIDANCE 自己声明了局限："外部会话检索为关键词级（非语义）"。
+> **审计修正**：原文"会话帧未索引"有误。host 自带 `sessionQuery.searchSessions`（`lib/index.js:4531` `ctx.get('sessionQuery')`，:2226 调用，limit≤10），`memory_recall` 已覆盖"历史 DSH 会话全文检索（如部署启用）"——**关键词级**，GUIDANCE 自己声明了局限："外部会话检索为关键词级（非语义）"。
 
 - **真正的增量**：①**语义通道**——C2/BGE-M3 向量升档（词法兜底不变），补齐"非语义"短板；②**排序与 provenance**——命中带时间戳/会话 id/帧位置引用（现状仅文本段），统一 M5 cite 规范；③**handoff corpus 并入**（M-CM1 新地面）；④limit≤10 的预算策略与 evidence 引用按需深查。
 - 索引器（若 host sessionQuery 能力不足再建）：增量扫描→digest 去重→词法倒排+可选向量；凭证段过滤**先于**入索引；脏 token 拒入；元数据落 memoryRoot 独立目录可整体删除。

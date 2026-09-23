@@ -117,7 +117,7 @@ git diff --stat
 
 **目标**：`memory_recall` 当前为纯词法（工具描述自述"关键词匹配"）。接入语义臂，**输入用 L0 而非全文**（全文会超 e5 512 token 上限被截断）。
 
-**涉及功能模块**：`lib/index.js` 的 `recall()` 实现与 `memory_recall_pre` 工具定义；`lib/semantic-js-pre.js`（C2）；`lib/shadow-retrieval-pre.js`（词法臂）。
+**涉及功能模块**：`lib/index.js` 的 `recall()` 实现与 `memory_recall` 工具定义；`lib/semantic-js-pre.js`（C2）；`lib/shadow-retrieval-pre.js`（词法臂）。
 
 **验收标准**：
 1. 主题性查询（"发布踩坑"）能召回词法不重合但语义相关的记忆
@@ -128,7 +128,7 @@ git diff --stat
 
 **需先检索的仓库路径与符号关键词**：
 - 路径：`lib/index.js`、`lib/semantic-js-pre.js`、`lib/shadow-retrieval-pre.js`、`lib/context-host-pre.js`
-- 关键词：`async recall(`、`defineTool('memory_recall_pre'`、`engine.recall(`、`lexicalSearch`、`buildQueryPlan`、`D6_FUSION_WEIGHTS_PRE_V1`、`fuseD6Pre`、`SHADOW_GATE_POLICY_PRE_V1`
+- 关键词：`async recall(`、`defineTool('memory_recall'`、`engine.recall(`、`lexicalSearch`、`buildQueryPlan`、`D6_FUSION_WEIGHTS_PRE_V1`、`fuseD6Pre`、`SHADOW_GATE_POLICY_PRE_V1`
 - 必须先确认：① `recall()` 真实行号与完整函数体 ② 当前召回走的是 `lexicalSearch` 还是别的函数 ③ C2 引擎实例在 `index.js` 中如何持有（字段名）④ 是否已有 `scope='sessions'` 走 host 的分支
 
 **改动边界**：
@@ -253,7 +253,7 @@ git diff --stat
 
 **目标**：两个独立小缺陷 ① 账本标题重复（最近 6 个中 3 个含两个 `# 交接账本` 标题行、时间戳不一致，解析会取到错的）② `PLAN.md` 退化成日志（并列堆积 2.2.5/2.2.6 状态与历史踩坑，无老化）。
 
-**涉及功能模块**：`memory_note_pre` 的 `kind=handoff` 分支；白板归档（复用既有 PLAN archive 机制）。
+**涉及功能模块**：`memory_note` 的 `kind=handoff` 分支；白板归档（复用既有 PLAN archive 机制）。
 
 **验收标准**：
 1. 追加写入前检测已存在标题则跳过（或解析取最后一个标题，二选一并断言）

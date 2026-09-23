@@ -12,7 +12,7 @@
 - [x] 规划与审计（M-CM-PLAN.md §0-§10，含回归审计对账表）
 - [x] 实施步骤 1：读代码锚点（memory_note handler、GUIDANCE/静态纪律层、renderMemoryDynamic、resolvePaths、_doRefresh 装载器、DEFAULT_PROMPT_LAYERS）
 - [x] 实施步骤 2：handoff 存储函数（writePlanSnapshot 归档/writeHandoffLedger 同秒 -b 后缀/readLatestHandoff 按 mtime）
-- [x] 实施步骤 3：memory_note_pre 增 kind: handoff|plan（同 sanitizeForWrite 门禁;plan 走 replace 归档;不走项目笔记预算）
+- [x] 实施步骤 3：memory_note 增 kind: handoff|plan（同 sanitizeForWrite 门禁;plan 走 replace 归档;不走项目笔记预算）
 - [x] 实施步骤 4：renderMemoryStatic 增"交接与白板"纪律行（GUIDANCE 层不用动,静态层即固化纪律载体）
 - [x] 实施步骤 5：注入片段（动态快照首位:snapshotPlanTitle→snapshotHandoffTitle→日志段;stripSensitiveSections+truncateHead 硬预算;handoffEnabled=false 隐藏）
 - [x] 实施步骤 5.5：smoke-test-handoff-pre.mjs 22/22（G0 源码守卫/G1 时间戳/G2 白板归档/G3 账本最新篇/G4 注入行为);主套件+4 套 UI 回归全绿

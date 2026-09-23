@@ -97,7 +97,7 @@ rebuild id = mem_7329b82cde69f9370852dabc52b15aec
 | rebuild | `'handoff/' + f` → **正斜杠** | `'交接账本 ' + f.replace(/\.md$/,'').replace('handoff-','')` → **去掉前缀** | `lib/index.js:2029` |
 
 **后果（三条，均致命级）**：
-1. **`index.json` 自我分裂**：`writeSidecarEntryPre` 按 id upsert（`:2014-2015`）。写新账本 A 时存入 `id_w`；此后触发一次 rebuild（`:2021-2036`），全部条目被换成 `id_r`。用户 `memory_trace_pre(id_w)` 查旧 id 直接 `found:false`。
+1. **`index.json` 自我分裂**：`writeSidecarEntryPre` 按 id upsert（`:2014-2015`）。写新账本 A 时存入 `id_w`；此后触发一次 rebuild（`:2021-2036`），全部条目被换成 `id_r`。用户 `memory_trace(id_w)` 查旧 id 直接 `found:false`。
 2. **违反规划 §3.3「index.json 完全可重建」**：规划明写"sidecar 丢失不丢信息"。实测 Write→Rebuild→同一账本 id 变化 ⇒ **重建不是幂等**，与 `WB-FORMAT-CONVENTION §2`「id 可复算」的锚点契约直接冲突。
 3. **`ts` 字段同源错位**：rebuild 用 `f.slice(8,12)+'-'+f.slice(12,14)+'-'+f.slice(14,16)`（`:2029`）解析 `handoff-20260916-020000.md`。实测该切片**恰好得到 `2026-09-16`**（探针 C 段）——**巧合正确**，但写侧传的是 `''`（`:1976` 第 5 实参），依赖 `writeSidecarEntryPre` 内部兜底 `this.memToday() + ' ' + nowHm()`（`:2007`）。两侧 ts 语义不同（一为日期，一为日期+时刻）。
 
@@ -135,7 +135,7 @@ extractTagsPre("type:dead-end")          = ["type:dead-end"]     ✅
 extractTagsPre("（topic:登录流程）")      = []                    ❌
 extractTagsPre("a:type:dead-end")        = []                    ❌
 ```
-正则 `/(^|\s)((?:tag|type|topic):[\w\u4e00-\u9fff-]{2,24})/g`（`wb-sidecar-pre.js:23`）要求 tag 前是**行首或空白**。中文写作里 tag 前常是中文标点（`（`、`、`、`：`）或紧跟中文（`…格式：type:dead-end`），这些**全部漏采** ⇒ `by_tag` 倒排稀疏 ⇒ `memory_expand_pre` 命中率大幅低于规划预期。
+正则 `/(^|\s)((?:tag|type|topic):[\w\u4e00-\u9fff-]{2,24})/g`（`wb-sidecar-pre.js:23`）要求 tag 前是**行首或空白**。中文写作里 tag 前常是中文标点（`（`、`、`、`：`）或紧跟中文（`…格式：type:dead-end`），这些**全部漏采** ⇒ `by_tag` 倒排稀疏 ⇒ `memory_expand` 命中率大幅低于规划预期。
 
 `a:type:dead-end` 漏掉属**正确**（避免误吞 `xxxtype:`），但与中文标点漏采是同一个边界过严问题的两面。
 
@@ -151,7 +151,7 @@ extractTagsPre("a:type:dead-end")        = []                    ❌
 {version, entries:[{id,title,source,tags,cue,chars,ts}]}
 ```
 **缺**：`ws`、`by_tag`、`by_cue`、`versions`；条目级缺 `kind`/`section`/`text_preview`/`mtime`/`criteria`。
-**后果**：没有 `by_tag` 倒排 ⇒ `expandByTagPre` 只能对 `entries` 做**全表线性 filter**（`wb-sidecar-pre.js:70`），§3.3 设计意图（tag 倒排加速）落空；`versions`/`prev_version` 缺失 ⇒ `memory_trace_pre` 承诺的"归档版本链"**根本无法实现**（数据不存在），不只是没返回。
+**后果**：没有 `by_tag` 倒排 ⇒ `expandByTagPre` 只能对 `entries` 做**全表线性 filter**（`wb-sidecar-pre.js:70`），§3.3 设计意图（tag 倒排加速）落空；`versions`/`prev_version` 缺失 ⇒ `memory_trace` 承诺的"归档版本链"**根本无法实现**（数据不存在），不只是没返回。
 
 `events.jsonl`（BUG-6，自审已报）复核**成立**：全仓 `events.jsonl` 0 命中，该文件从未被写入。
 
@@ -203,9 +203,9 @@ extractTagsPre("a:type:dead-end")        = []                    ❌
 
 **A1 · BUG-1/BUG-11 注册时机** —— 二选一，**不可用自审原方案**：
 
-- **方案 A1-a（推荐·最小侵入）**：`apply()` 内把两工具的注册从数组字面量中**移出**，改为在**首次工具调用时惰性注册**——即把 `memory_expand_pre`/`memory_trace_pre` 无条件放进 `tools` 数组，在各自 `execute` 开头做**运行时闸门**：
+- **方案 A1-a（推荐·最小侵入）**：`apply()` 内把两工具的注册从数组字面量中**移出**，改为在**首次工具调用时惰性注册**——即把 `memory_expand`/`memory_trace` 无条件放进 `tools` 数组，在各自 `execute` 开头做**运行时闸门**：
   ```js
-  if (!resolveBoardModePre(engine.config.boardMode).graphEnabled) return 'memory_expand_pre: 需 boardMode=graph（当前 legacy）。'
+  if (!resolveBoardModePre(engine.config.boardMode).graphEnabled) return 'memory_expand: 需 boardMode=graph（当前 legacy）。'
   ```
   代价：legacy 档工具数变 16 ⇒ 三处硬锁（BUG-5）必须同步改 16。**但**此时"闸门"从"注册层"降到"执行层"，`legacy` 档模型能看到两个不可用工具——**违反"legacy 字节级一致"**。故**不推荐**。
 

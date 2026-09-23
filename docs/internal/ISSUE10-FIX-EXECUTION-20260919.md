@@ -339,7 +339,7 @@ SHA256 还原校验：clean / hub / idx 三文件**逐字节一致**（零残留
 - **向后兼容**：`opts` 缺省 `{}` ⇒ `authorizedBy` 为空串 ⇒ **未授权时行为逐字节不变**（T4-1 锁定）。
 
 **`lib/index.js`** —— 两处：
-1. 新增 `defineTool('memory_procedure_pre', ...)`（**工具数 16→17**）：
+1. 新增 `defineTool('memory_procedure', ...)`（**工具数 16→17**）：
    - `action: 'write' | 'activate'`；`write` → `observe()` 进审批列表；
      `activate` → `observe` → `promote(授权=model)` → `activate` → **自动导出 SKILL.md**。
    - `steps`/`successCriteria`/… 用**字符串分行**接收（`defineTool` 不支持 array schema）；
@@ -355,7 +355,7 @@ SHA256 还原校验：clean / hub / idx 三文件**逐字节一致**（零残留
 `smoke-test-graph-mode-pre.mjs`（A1 graph 17 / **D1 legacy 15** / D2 非法档 15）·
 `smoke-test-p23-wb-sidecar-pre.mjs:127-138`（M9 正则 `!== 16` → `!== 17`）。
 ★ 另在 `index.js` 工具定义处补「工具数 16→17」联动注释（M9 会检查该注释在场）。
-★ D1 新增反向断言：`memory_procedure_pre` **不受 boardMode 闸门管** ⇒ legacy 档也必须在场。
+★ D1 新增反向断言：`memory_procedure` **不受 boardMode 闸门管** ⇒ legacy 档也必须在场。
 
 ### 12.4 验收（全部实跑，非纸面）
 
@@ -375,7 +375,7 @@ SHA256 还原校验：clean / hub / idx 三文件**逐字节一致**（零残留
    （`ae.ok === true` / `evidence.sessions >= 3`），否则测试在测空气。
 2. **加工具会连带打破多处"数量硬锁"** —— 本次共 5 个文件 6 处（含一处正则 `!==\s*16`）。
    纪律：新增/删除工具后必须全仓 grep 工具数断言，逐处更新并**写明原因**，不能只改数字。
-3. **`memory_procedure_pre` 必须无条件注册** —— 它不属白板 P3 闸门；若误放进 `graphEnabled` 分支内，
+3. **`memory_procedure` 必须无条件注册** —— 它不属白板 P3 闸门；若误放进 `graphEnabled` 分支内，
    legacy 档就没有模型写入口（本项目 BUG-15 正是"defineTool 写在数组外"的同型缺陷）。
    D1 已加反向断言守住这一点。
 

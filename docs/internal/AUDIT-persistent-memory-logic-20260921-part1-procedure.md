@@ -53,7 +53,7 @@ procs.promote(pid)                          index.js:10904   ← ★ 未传第�
 
 **关键点**：`procs.promote(pid)` 只传了 1 个参数。而 `promote()` 的签名是 `promote(procedureId, extraEvidence = {}, opts = {})`——
 **第二参 `extraEvidence` 与第三参 `opts`（含 `authorizedBy`）在用户手点路径上永远为空**。
-只有模型工具路径 `memory_procedure_pre` 会传 `{ authorizedBy: 'model' }`（index.js:10384）。
+只有模型工具路径 `memory_procedure` 会传 `{ authorizedBy: 'model' }`（index.js:10384）。
 
 ⇒ **用户手点与模型自写，走的是两套门限**。这是"审批逻辑乱"的第一层来源。
 

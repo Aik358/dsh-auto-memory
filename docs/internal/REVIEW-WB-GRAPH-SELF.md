@@ -15,7 +15,7 @@
 - 真配置只在 `loadConfig()` 里合并（`:1597`），而 `loadConfig()` 是**懒加载**：全仓唯一自动调用点是 `resolvePaths()`（`:1739` `if (!this.configLoaded) await this.loadConfig()`）——即"首次工具调用"才发生。
 - 取证：`apply()` 段（7632–8510）内 **无** `await engine.loadConfig()`。
 
-**后果**：不管配置里写 `graph` 还是 `legacy`，插件启动时读到的永远是默认 `legacy` ⇒ **`memory_expand_pre` / `memory_trace_pre` 永远不注册**。用户配置里 `"boardMode": "graph"` 是真写进去了（见 §四证据），但工具从未出现。
+**后果**：不管配置里写 `graph` 还是 `legacy`，插件启动时读到的永远是默认 `legacy` ⇒ **`memory_expand` / `memory_trace` 永远不注册**。用户配置里 `"boardMode": "graph"` 是真写进去了（见 §四证据），但工具从未出现。
 
 **修法**：`apply()` 内在构建 tools 之前 `await engine.loadConfig()`（必要时兜底 catch）；或把注册闸门的判定改为"延迟到首次调用时再判"。
 

@@ -90,7 +90,7 @@
 |---|---|---|
 | **G4a** | `lib/index.js:143`（`GUIDANCE`） | 扩写白板纪律（**三条硬约束**）：①条件触发非每轮 ②只报告不自动删 ③白板关闭时跳过 |
 | **G4b** | 铭文模板 `:556` | 评估是否加一句白板提醒（**谨慎**：铭文每轮注入，加内容=每轮成本） |
-| **G4c** | `memory_log_pre` 的 `description`（`:9018` 附近） | 加一句"完成阶段性工作后，如白板已过时请一并调用 `memory_note_pre(kind=plan)` 更新" |
+| **G4c** | `memory_log` 的 `description`（`:9018` 附近） | 加一句"完成阶段性工作后，如白板已过时请一并调用 `memory_note(kind=plan)` 更新" |
 
 **⚠️ 边界（必须遵守）**：
 - **零新增管线**——只改提示词/描述文本，不新增注入通道
@@ -132,7 +132,7 @@ BATTLE-PLAN 的 **M3「GUIDANCE 白板纪律扩写」** 与本项**重叠**。
 
 **读取侧**：`pushL0` / `semSources` / `searchHandoffCorpus` 命中 `status != current` 的条目时，**输出前缀加 `[已作废 → 见 <新id>]`**，不静默丢弃（保留可追溯性）。
 
-**写入侧**：`memory_note_pre` 的模板加这两个字段（**默认 current**，模型显式填 supersedes）。
+**写入侧**：`memory_note` 的模板加这两个字段（**默认 current**，模型显式填 supersedes）。
 
 **⚠️ 风险**：需模型自觉填写 `supersedes`。**缓解**：G5 的 lint 会检测漏填（同主题多条 current）。
 
@@ -240,7 +240,7 @@ G6   结论层 replace+archive（长期）
 1. 改动前备份（G2 已做）
 2. `node --check` 语法校验（涉及代码时）
 3. 可失败断言 + 变异演示（涉及代码时）
-4. 留痕：`memory_log_pre` + 必要时 `memory_note_pre`
+4. 留痕：`memory_log` + 必要时 `memory_note`
 5. **白板回写**：PLAN.md / 账本同步更新（**这正是 G4 要固化的习惯**）
 
 ---

@@ -14,7 +14,7 @@
 
 | # | 能力 | 代码位置 | 现状 | 影响 |
 |---|---|---|---|---|
-| **A1** | **`retracted`（撤回）写入** | `note-status-pre.js:52` 支持三态 / `:69` 可渲染 retracted · `index.js:5866` 仅映射 `superseded` | **无通道**：`memory_note_pre` 只有 `supersedes` 参数，硬编码映射到 `superseded` | 用户 2026-09-18 裁定「retracted 不是垃圾，是教训」——**教训通路不可写** |
+| **A1** | **`retracted`（撤回）写入** | `note-status-pre.js:52` 支持三态 / `:69` 可渲染 retracted · `index.js:5866` 仅映射 `superseded` | **无通道**：`memory_note` 只有 `supersedes` 参数，硬编码映射到 `superseded` | 用户 2026-09-18 裁定「retracted 不是垃圾，是教训」——**教训通路不可写** |
 | **A2** | **fact 过期机制** | `fact-store-pre.js:159 isExpired` · `:326 resolveConflict` · `:283 revokeBySource` · `:263 supersede` | 9 个能力齐全，**零 `defineTool`**（实测 `memory_fact*` = 0） | 用户问的「记忆是否过期」——模型既读不到也写不了 |
 | **A3** | **episodic（情节）写入** | `episodic-store-pre.js` · `EPISODE_OUTCOMES_PRE_V1 = ['unknown','success','failure','partial']` | 仅宿主自动（`index.js:7411` `hub.stores.episodic.append`） | 模型无法标记"这次是失败/部分成功" |
 | **A4** | **fact 语义域（5 个枚举）** | 见 §C-1 | 全部无 prompt | 模型不知道 fact 还有 epistemic_status / scope / trend 这些维度 |
@@ -28,16 +28,16 @@
 | # | 缺什么 | 代码位置 | 现状 |
 |---|---|---|---|
 | **B1** | **白板/账本两套四段措辞不一致** | `index.js:5726`（催办块）用「当前目标/已完成/进行中/下一步第一步」· `:570`/`:3658` 用「任务状态/目标/已试方案与失败原因/进度与下一步」 | 同名四段、两套词，模型可能当同一件事 |
-| **B2** | **`boardMode=graph` 前提** | `index.js:10198` 条件注册 `memory_expand_pre` / `memory_trace_pre` | legacy 模式下工具**不存在**，prompt 无任何解释 |
+| **B2** | **`boardMode=graph` 前提** | `index.js:10198` 条件注册 `memory_expand` / `memory_trace` | legacy 模式下工具**不存在**，prompt 无任何解释 |
 | **B3** | **procedure 晋升门限** | T4：`successCriteria` 缺失 ⇒ 结构上永不晋升 | 工具描述只提了 "high 需人工批准"，未说这条硬事实 |
 | **B4** | **R1 四条可读性判据** | `R1-READABILITY-FORENSICS-20260919.md`（开头空行=0 / 空行占比<15% / 同日重复 `## `=0 / 缺主语<5%） | 仅在文档，**未进任何 prompt** |
-| **B5** | **`memory_log_pre` 的 `date` 参数** | `index.js:9857` | 描述未说"可补写过去日期" |
-| **B6** | **`memory_note_pre` 的容量与整理行为** | `:9880` 提到 24000，但未说整理触发条件与归档位置 | 模型不知道写满后会发生什么 |
-| **B7** | **`memory_recall_pre` 的 `expand`/`format` 组合** | `:9976-9982` | 参数各自有描述，但**组合语义**（expand 时忽略 query）只在参数描述里夹带 |
-| **B8** | **`memory_maintain_pre` 的 days 语义** | `:10007` | 未说"阈值天数"与日志可见性关系 |
-| **B9** | **`memory_status_pre` / `memory_reflect_pre` 的适用时机** | `:10011` / `:10023` | 只写了功能，没写"什么时候该用" |
-| **B10** | **`memory_external_pre` 的 import 链接模式** | `:10028` | 未说"只记路径指针、不写内容"的防脏纪律 |
-| **B11** | **`memory_consolidate_pre` 与自动沉淀的关系** | `:10085` | prompt 里"自动沉淀"与"手动 consolidate"边界模糊 |
+| **B5** | **`memory_log` 的 `date` 参数** | `index.js:9857` | 描述未说"可补写过去日期" |
+| **B6** | **`memory_note` 的容量与整理行为** | `:9880` 提到 24000，但未说整理触发条件与归档位置 | 模型不知道写满后会发生什么 |
+| **B7** | **`memory_recall` 的 `expand`/`format` 组合** | `:9976-9982` | 参数各自有描述，但**组合语义**（expand 时忽略 query）只在参数描述里夹带 |
+| **B8** | **`memory_maintain` 的 days 语义** | `:10007` | 未说"阈值天数"与日志可见性关系 |
+| **B9** | **`memory_status` / `memory_reflect` 的适用时机** | `:10011` / `:10023` | 只写了功能，没写"什么时候该用" |
+| **B10** | **`memory_external` 的 import 链接模式** | `:10028` | 未说"只记路径指针、不写内容"的防脏纪律 |
+| **B11** | **`memory_consolidate` 与自动沉淀的关系** | `:10085` | prompt 里"自动沉淀"与"手动 consolidate"边界模糊 |
 
 ---
 
@@ -121,7 +121,7 @@ WB_STATUSES_PRE_V1 = ['current', 'superseded', 'retracted']   // 与笔记三态
 
 ## F. 拍板建议（三条最小改动，已在前轮提出）
 
-1. **A1**：`memory_note_pre` 增 `retract: string[]`，与 `supersedes` 对称走 `applyNoteStatusPre`
+1. **A1**：`memory_note` 增 `retract: string[]`，与 `supersedes` 对称走 `applyNoteStatusPre`
 2. **B1**：统一白板/账本四段措辞，或在 prompt 显式声明二者区别
 3. **B2**：铭文补 boardMode 说明
 

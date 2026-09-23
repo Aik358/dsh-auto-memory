@@ -113,7 +113,7 @@ L0 / 分块 --> 查缓存 --> 只编码 miss --> 校验完整性
 ### 1.3 查询路径
 
 ```text
-push：接收 observation             pull：memory_recall_pre(query)
+push：接收 observation             pull：memory_recall(query)
              \                         /
               +----> 构造 QueryRequest
                              |

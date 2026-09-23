@@ -42,9 +42,9 @@
 
 **生成路径共 3 条**
 
-1. 工具显式写：`lib/index.js:7069-7112` — `memory_note_pre` 工具，`kind` 枚举 `note|handoff|plan`（7072）；`kind=handoff/plan` 分支在 7078-7091：`sanitizeForWrite`（plan 20 万字 / handoff 8000 字上限，7079）→ `writePlanSnapshot`（7083）或 `writeHandoffLedger`（7084）→ 同步 `state.planText` / `state.latestHandoffText`（7086-7087）。注意：**此分支不检查 `handoffEnabled`**（其余读写路径均有该开关门禁，见 1691/1869/2679/2796/3137/3616）。
+1. 工具显式写：`lib/index.js:7069-7112` — `memory_note` 工具，`kind` 枚举 `note|handoff|plan`（7072）；`kind=handoff/plan` 分支在 7078-7091：`sanitizeForWrite`（plan 20 万字 / handoff 8000 字上限，7079）→ `writePlanSnapshot`（7083）或 `writeHandoffLedger`（7084）→ 同步 `state.planText` / `state.latestHandoffText`（7086-7087）。注意：**此分支不检查 `handoffEnabled`**（其余读写路径均有该开关门禁，见 1691/1869/2679/2796/3137/3616）。
 2. 水位自动骨架账本：`lib/index.js:2002-2024` — `checkWaterLevel` 内 `waterLevelAutoHandoff!==false` 且本会话未写过时触发（每会话一次，`rt.waterLevelAutoHandoffDone`）；骨架从"已策展源"抽取（今日日志尾部 16 行 2008、失败行去重 4 条 2009、反思摘要 2010、笔记头部 6 行 2011），**四段标题在代码里硬编码**（2014-2017：`## 任务状态` / `## 目标` / `## 已试方案与失败原因` / `## 进度与下一步`），`slice(0,4000)`（2018）后**直调 `writeHandoffLedger`（2019）——完全绕过工具层门禁**。
-3. 接续前刷新仪式：`lib/index.js:2502-2509` — `refreshRitualPrompt()` 明文要求旧会话执行 `memory_note_pre(kind=plan)`（2505）与 `memory_note_pre(kind=handoff)` 四段式（2506）。宿主侧 `hostRefreshRitual`（2540-2574）经 `sessionController.prompt` 发回旧会话并轮询 `handoffMaterialStamp`（2524-2533，PLAN mtime+最新账本名指纹）等待材料变化；client 路径 `refreshOldSession`（`lib/client.js:2117`）+ `waitForRefresh`（2145-2166）同序。
+3. 接续前刷新仪式：`lib/index.js:2502-2509` — `refreshRitualPrompt()` 明文要求旧会话执行 `memory_note(kind=plan)`（2505）与 `memory_note(kind=handoff)` 四段式（2506）。宿主侧 `hostRefreshRitual`（2540-2574）经 `sessionController.prompt` 发回旧会话并轮询 `handoffMaterialStamp`（2524-2533，PLAN mtime+最新账本名指纹）等待材料变化；client 路径 `refreshOldSession`（`lib/client.js:2117`）+ `waitForRefresh`（2145-2166）同序。
 
 **四段式标题在代码里的全部映射点**
 
@@ -84,7 +84,7 @@
 **"检索"逻辑现状**
 
 - 唯一的检索是**词法行级匹配**：`searchHandoffCorpus`（1689-1719）对 `白板 PLAN.md`（每文件最多 3 命中行）＋最新 12 篇账本（2 行）＋20 篇归档（2 行）做 `line.toLowerCase().includes(term)` 计分，平铺直返；`handoffEnabled===false` 时返回空（1691）。
-- 路由：`recall()`（3827-3853）`scope='handoff'` 走 3838-3844；`scope='all'` 时白板语料并入头部（3875-3881）；`scope='sessions'` 走 `searchSessionHistory`（1722-1735，sessionQuery 部署时可用）；工具参数面在 `lib/index.js:7169`（`memory_recall_pre` 的 `scope` 枚举）。
+- 路由：`recall()`（3827-3853）`scope='handoff'` 走 3838-3844；`scope='all'` 时白板语料并入头部（3875-3881）；`scope='sessions'` 走 `searchSessionHistory`（1722-1735，sessionQuery 部署时可用）；工具参数面在 `lib/index.js:7169`（`memory_recall` 的 `scope` 枚举）。
 - 结论：**主注入路径是平铺**（固定分层+预算截断+一张锚点表），没有图导航/主动重建；P5 锚点表是唯一的"地图"形态（也只覆盖笔记与日志，不覆盖白板与账本本身）。
 
 ---
@@ -115,7 +115,7 @@
 
 | 通路 | 代码位置 | 门禁 |
 | --- | --- | --- |
-| 工具 `memory_note_pre(kind=plan/handoff)` | `lib/index.js:7078-7091` | sanitizeForWrite（7079）；**无 handoffEnabled 检查** |
+| 工具 `memory_note(kind=plan/handoff)` | `lib/index.js:7078-7091` | sanitizeForWrite（7079）；**无 handoffEnabled 检查** |
 | 水位自动骨架账本 | `lib/index.js:2002-2024`（写 2019） | `waterLevelAutoHandoff` 开关 + 每会话一次；**直调 writeHandoffLedger，绕过工具层** |
 | 刷新仪式（旧会话自己调工具） | `2505-2506` + `hostRefreshRitual` 2540-2574 + client 2117/2145 | 仅 prompt 约束，产物仍走通路 1 |
 
@@ -138,8 +138,8 @@
 | # | 改动点 | 位置 | 上游（谁调它） | 下游（它调谁） | 改动量 |
 | --- | --- | --- | --- | --- | --- |
 | 1 | 新建纯函数校验模块（建议 `lib/ledger-criteria-pre.js`，仿 handoff-anchor-pre.js 契约：纯函数、零 IO、fail closed） | 新文件 | index.js 两处写入函数 | 复用 `parseHandoffLedgerPre`（handoff-anchor-pre.js:41）判段结构；自身判段数/段名/段行数/下一步特征 | 新增 ~100 行 |
-| 2 | `writeHandoffLedger` 入口插校验（或 1674 `writeFullRaw` 之前） | `lib/index.js:1667-1679` | ① `memory_note_pre` 7084；② 水位骨架 2019 | `writeFullRaw`(3798)、`handoffStamp`(464)、`memToday`(3208)、`nowHm`(462) | ~5 行 |
-| 3 | `writePlanSnapshot` 入口插校验 | `lib/index.js:1620-1662` | 仅 `memory_note_pre` 7083 | `writeFullRaw`(1657) | ~5 行 |
+| 2 | `writeHandoffLedger` 入口插校验（或 1674 `writeFullRaw` 之前） | `lib/index.js:1667-1679` | ① `memory_note` 7084；② 水位骨架 2019 | `writeFullRaw`(3798)、`handoffStamp`(464)、`memToday`(3208)、`nowHm`(462) | ~5 行 |
+| 3 | `writePlanSnapshot` 入口插校验 | `lib/index.js:1620-1662` | 仅 `memory_note` 7083 | `writeFullRaw`(1657) | ~5 行 |
 | 4 | 工具层拒绝文案：把判据 gate 并入 7079-7081 的 `sanitizeForWrite` 判定处，仿 `WRITE_GATE_REASON`(6092) 模式返回可执行的改写指引 | `lib/index.js:7078-7091` | harness 工具分发 | 新校验函数 | ~10 行 |
 | 5 | 水位骨架路径的 fail-soft 策略：校验不过时照写+diag+骨架内加警示行（或仅记日志跳过），**不得阻塞接续**（I4，`docs/CONTINUITY-FLOW.md:165`） | `lib/index.js:2002-2024` | `checkWaterLevel`(1867) ← pre-step 钩子 2049 与 `agent/turn-stopping` 钩子 6868/6884 | 通路 2 | ~5 行 |
 | 6 | 回归测试：仿 `tests/smoke/smoke-test-handoff-anchor-pre.mjs`（fixture 锁定+源码守卫）；注意 `tests/smoke/smoke-test-handoff-pre.mjs` 的 G0 源码守卫断言了写入/注入块的存在与顺序（文件头 13-17），插校验后需同步 | tests/smoke | — | — | ~60 行 |

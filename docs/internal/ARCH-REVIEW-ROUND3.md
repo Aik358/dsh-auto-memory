@@ -144,8 +144,8 @@ Q5. **引擎隔离（T2-9）与切档进度条，在你的 engineIdentity 两级
     请确认 T2-9 该怎么写，以及它与你的 `engineIdentity` 设计是否自洽。
 
 Q6. **白板线工具数 14→16 会不会污染 3.0 的回归基线？**
-    你的方案主张"3.0 工具数不变"；WB-GRAPH 的白板线会新增两个工具（`memory_expand_pre` /
-    `memory_trace_pre`），并触发**三处测试硬锁**（`tests/smoke/smoke-test.mjs:67`、
+    你的方案主张"3.0 工具数不变"；WB-GRAPH 的白板线会新增两个工具（`memory_expand` /
+    `memory_trace`），并触发**三处测试硬锁**（`tests/smoke/smoke-test.mjs:67`、
     `smoke-test-m3b3-pre.mjs:43`、`smoke-test-context-observer.mjs:107` 都断言 `!== 14`）。
     我方处置是：**白板线独立立项、独立回归窗口**，不混进 3.0 主体。
     这样对不对？有没有更好的处置？

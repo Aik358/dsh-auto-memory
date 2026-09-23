@@ -50,7 +50,7 @@
 - 面板标题里的版本号与 设置 →「检查更新」显示的都是**当前安装的版本**。
 - 侧栏还有一颗**悬浮钉**（线描快捷入口），可从任何页面快速唤出记忆操作。
 - DSH 0.1.2-rc.1 起 Web UI 有 token 认证闸门（每次重启换新 token，启动日志里 `?token=…` 即访问地址）；本插件的 HTTP 端点仅本机回环可访问，不受闸门影响。
-- 数据全在本机：`~/.dsh/memory/`（记忆文件）、`~/.dsh/dsh-auto-memory.json`（配置）。**注意**：本仓库的 pre 开发树里同一个文件名带 `-pre` 后缀；你从 npm 装到的版本是**不带**后缀的那个，下面所有路径同理。
+- 数据全在本机：`~/.dsh/memory/`（记忆文件）、`~/.dsh/dsh-auto-memory.json`（配置）。**注意**：去 pre 后源码名即发布名，仓库与 npm 安装的路径**完全一致**，下面所有路径两边通用。
 
 ## 2. 第一次启动
 
@@ -98,7 +98,7 @@
 | 唤起冷却（分钟）（jsDecideCooldownRounds） | 1 | 注入后 N 轮内不再判定，防连续唤起浪费 token；**0=不冷却**（合法值） |
 | 唤起 margin 阈值（jsDecideDeltaExp） | 0.01 | 候选第 1/2 名分差须超过此值才注入（e5 余弦分布紧，默认 0.01；bge-m3 校准值 0.03）。调小=更容易唤起，调大=更保守；0=不过滤 |
 | 唤起候选方案（jsDecideCandidateScheme） | `balanced` | balanced=3 条×40 字符（信息量/token 平衡）；dense=6 条×20 字符（更多候选更广联想）；custom=自定义条数（1-8）与长度 |
-| 唤起注入内容长度（jsDecideExcerptChars） | 40 | Reference 行内容上限。40=关键词级（省 token，细节由模型 `memory_read_pre` 取全文）；可调 20-480 |
+| 唤起注入内容长度（jsDecideExcerptChars） | 40 | Reference 行内容上限。40=关键词级（省 token，细节由模型 `memory_read` 取全文）；可调 20-480 |
 | 检索模式（semanticEngineMode） | `auto` | **auto**=内置语义就绪即用，否则词法保底；**lexical**=仅词法；**js**=内置语义（e5-small，约 130MB）；**python**=高级 Python（BGE-M3 int8，约 563MB）。详见 §5。旁边的 **⟳ 检测** 按钮一键体检环境，缺资产时自动弹安装引导卡 |
 | 思维链监听（reasoningObserverEnabled） | 开 | 把模型思维链纳入实时观测 `(重启生效)`——闭源模型的概括式思维链同样纳入，是「边做边想起」的重要信号源 |
 | 分支会话观测（contextBridgeObserveChildSessions） | 开 | 跨天续接的会话标记为分支后同样纳入观测 |
@@ -178,7 +178,7 @@
 | 项 | 默认 | 怎么调 |
 |---|---|---|
 | 交接白板（handoffEnabled） | 关 | **PLAN.md 全貌快照 + 四段式交接账本**：模型在理解全貌/阶段完成时写入，注入动态快照首位，白板页签实时可看，跨窗口续命。建议开启 |
-| 白板注入预算（handoffPlanChars） | 1200 | PLAN.md 注入动态快照的硬截断预算；全文经 `memory_read_pre` 或白板页查看 |
+| 白板注入预算（handoffPlanChars） | 1200 | PLAN.md 注入动态快照的硬截断预算；全文经 `memory_read` 或白板页查看 |
 | 账本注入预算（handoffLedgerChars） | 800 | 最新账本的注入预算；账本内部按四段权重截断（失败原因 .35 ＞ 下一步 .30 ＞ 目标 .20 ＞ 状态 .15，从最低权重段起截） |
 | 水位估计窗口（token）（waterLevelWindowTokens） | 0=自动 | 0 表示自动：优先官方路由容量，其次按当前会话模型查 settings.yaml。**除非特殊模型，保持 0** |
 | 水位建议阈值（waterLevelThreshold） | 0.75 | 越阈即注入交接建议并自动补写账本。**默认 0.75 而非 0.8**：官方自动压缩阈值是 80%，贴着 80% 常被官方抢先压缩，留 5% 余量（1M 窗口约 50K token）才来得及走完交接 |
@@ -201,7 +201,7 @@
 
 ## 5. 检索专题
 
-一次 `memory_recall_pre`（或面板检索页）背后，召回走的是**多臂融合**管线：
+一次 `memory_recall`（或面板检索页）背后，召回走的是**多臂融合**管线：
 
 ### 5.1 四个检索臂
 
@@ -217,7 +217,7 @@
 - 各臂排名经 **RRF（rank-space 倒数排名融合，k=60）** 合并——只看名次不看绝对分，任何一臂缺席都不扰动其余结果。
 - 查询词先经 **QueryPlan 组装**（窗口 8 段/4096 字符预算、最多 32 个词项）；词项按**权重降序**保留（用户/触发词 1.0 ＞ 近期用户消息 0.8 ＞ 工具结果 0.6 ＞ 思维链 0.5 ＞ 工具调用 0.4 ＞ 助手输出 0.2），超预算时截掉的是低权重词，高权重的关键问句词永不被丢。
 - 默认返回 **L0 摘要列表**：每条约 93 字符（压缩 6.78:1），含 `id`、得分、匹配原因（`词法×N` / `语义×x.xx`）——一次检索只花十分之一的 token。
-- 要看某条原文：把它的 id 传给 `expand="mem_xxx"`（或 `memory_read_pre`），按锚点**字节区间**直接定位原文，精确不串条。
+- 要看某条原文：把它的 id 传给 `expand="mem_xxx"`（或 `memory_read`），按锚点**字节区间**直接定位原文，精确不串条。
 - 检索范围 `scope`：`all`（默认，含白板语料+跨工作区+外部记忆+历史会话）/ `handoff`（只搜交接白板——接续长任务先查这里）/ `sessions`（只搜历史会话）。
 - 查不存在的主题：正常返回空或弱命中，不报错不阻塞（fail-soft）。
 
@@ -250,7 +250,7 @@
 
 ## 7. 证据链与记忆重要性
 
-每条记忆都有可审计的使用档案，六类事件按日落盘 `~/.dsh/memory/evidence/events/YYYY-MM-DD.jsonl`（本仓库 pre 开发树为 `evidence-pre/`）：
+每条记忆都有可审计的使用档案，六类事件按日落盘 `~/.dsh/memory/evidence/events/YYYY-MM-DD.jsonl`：
 
 | 事件 | 含义 |
 |---|---|
@@ -334,17 +334,17 @@ AI 在对话中可直接调用（共 14 个，你不需要记）：
 
 | 工具 | 作用 |
 |---|---|
-| `memory_recall_pre` | 检索记忆：本地记忆（全工作区日志/笔记/反思/白板）+ 跨工作区 + 外部记忆 + 历史会话。默认返回 L0 摘要列表；`expand` 展开原文；`scope=handoff/sessions` 直达 |
-| `memory_read_pre` | 按需读取某条记忆/某天日志/反思/笔记全文 |
-| `memory_note_pre` | 写项目笔记 / 交接账本 / 重写白板 PLAN（`kind=plan/handoff`） |
-| `memory_log_pre` | 追加今日日志（append-only） |
-| `memory_user_pre` | 跨项目长期规则读写 |
-| `memory_reflect_pre` | 保存每日反思 |
-| `memory_consolidate_pre` | 做梦式固化：读最近日志发散提炼长期要点 |
-| `memory_maintain_pre` | 30 天蒸馏：旧日志提炼进笔记，原文归档，一字不丢 |
-| `memory_status_pre` | 记忆系统状态总览 |
-| `memory_external_pre` | 外部记忆源管理（扫描/接入/移除其他 AI 工具的记忆） |
-| `calendar_add_pre` / `calendar_list_pre` / `calendar_done_pre` / `calendar_remove_pre` | 日程管理——AI 主动从对话提取截止日期，未完成事项持续提醒 |
+| `memory_recall` | 检索记忆：本地记忆（全工作区日志/笔记/反思/白板）+ 跨工作区 + 外部记忆 + 历史会话。默认返回 L0 摘要列表；`expand` 展开原文；`scope=handoff/sessions` 直达 |
+| `memory_read` | 按需读取某条记忆/某天日志/反思/笔记全文 |
+| `memory_note` | 写项目笔记 / 交接账本 / 重写白板 PLAN（`kind=plan/handoff`） |
+| `memory_log` | 追加今日日志（append-only） |
+| `memory_user` | 跨项目长期规则读写 |
+| `memory_reflect` | 保存每日反思 |
+| `memory_consolidate` | 做梦式固化：读最近日志发散提炼长期要点 |
+| `memory_maintain` | 30 天蒸馏：旧日志提炼进笔记，原文归档，一字不丢 |
+| `memory_status` | 记忆系统状态总览 |
+| `memory_external` | 外部记忆源管理（扫描/接入/移除其他 AI 工具的记忆） |
+| `calendar_add` / `calendar_list` / `calendar_done` / `calendar_remove` | 日程管理——AI 主动从对话提取截止日期，未完成事项持续提醒 |
 
 三个写入工具（log/note/user）全部过**写入口闸门**：GBK 乱码、口吃退化、连续重复行、外部 AI 人设 JSON、base64 残留一律拒收并给人类可读原因；单次追加 ≤8000 字符、重写 ≤200000 字符、追加与最近约 60 行去重。**凭据/密钥段永远不进提示词。**
 
@@ -374,13 +374,13 @@ AI 在对话中可直接调用（共 14 个，你不需要记）：
 
 | 内容 | 路径 |
 |---|---|
-| 插件配置 | `~/.dsh/dsh-auto-memory.json`（本仓库 pre 开发树为 `dsh-auto-memory-pre.json`） |
+| 插件配置 | `~/.dsh/dsh-auto-memory.json`（本仓库 pre 开发树为 `dsh-auto-memory.json`） |
 | 用户级记忆 | `~/.dsh/memory/MEMORY.md` |
 | 工作区记忆 | `~/.dsh/memory/workspaces/<工作区>/`（MEMORY.md、每日日志、handoff/、reflections/、summaries/） |
 | 白板与账本 | `~/.dsh/memory/workspaces/<工作区>/handoff/`（PLAN.md + handoff-*.md） |
-| 记忆中枢三层 | `~/.dsh/memory/hub/`（episodes / facts / procedures .json，原子写；本仓库 pre 开发树为 `hub-pre/`） |
-| 证据事件 | `~/.dsh/memory/evidence/events/YYYY-MM-DD.jsonl`（六类，按日；本仓库 pre 开发树为 `evidence-pre/`） |
-| 语义引擎数据 | `~/.dsh/memory/semantic/`（发射配置 embedding-config.json、决策影子日志、向量缓存；本仓库 pre 开发树为 `semantic-pre/`） |
+| 记忆中枢三层 | `~/.dsh/memory/hub/`（episodes / facts / procedures .json，原子写） |
+| 证据事件 | `~/.dsh/memory/evidence/events/YYYY-MM-DD.jsonl`（六类，按日） |
+| 语义引擎数据 | `~/.dsh/memory/semantic/`（发射配置 embedding-config.json、决策影子日志、向量缓存） |
 | 语义模型/venv | `~/.dsh/models/js-semantic/`（C2 模型）· `~/.dsh/python-engine/`（C3 venv+模型，升级插件不受影响） |
 | 子代理痕迹备份 | `~/.dsh/subagent-gc-backup/`（移回 `~/.dsh/sessions/` 即回滚） |
 | 诊断日志 | `~/.dsh/dsh-auto-memory-diagnose.log`（与 `memory/` 同级，不在 `memory/` 里面） |

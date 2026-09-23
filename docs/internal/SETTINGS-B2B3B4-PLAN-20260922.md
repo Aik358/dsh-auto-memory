@@ -272,8 +272,8 @@
 | **插入锚点** | 在 **`client.js:6260`**（`fWaterAuto` 行）**之后**插入（即 `subagentGc` 两行之前）。锚定片段（唯一）：`t('fWaterAutoHint')` |
 | label zh | `高级：精简版·白板额度（字符）` / `高级：精简版·账本额度（字符）` |
 | label en | `Advanced: slim plan budget (chars)` / `Advanced: slim ledger budget (chars)` |
-| hint zh | `完整快照每 5 轮才发一次，中间几轮发「精简版」——这两项管精简版里白板/账本能占多少字。默认 400 / 300（刻意小于完整版的 1200 / 800）。精简版的目的只是让模型「看到它长什么样、以及它已经旧了」，全文走 memory_read_pre 或面板。` |
-| hint en | `A full snapshot is sent only every 5 turns; between them a slim version is sent. These two cap how many chars the plan / ledger get there. Default 400 / 300 (deliberately smaller than the full 1200 / 800). The slim version only shows what it looks like and that it is stale — read the full text via memory_read_pre or the panel.` |
+| hint zh | `完整快照每 5 轮才发一次，中间几轮发「精简版」——这两项管精简版里白板/账本能占多少字。默认 400 / 300（刻意小于完整版的 1200 / 800）。精简版的目的只是让模型「看到它长什么样、以及它已经旧了」，全文走 memory_read 或面板。` |
+| hint en | `A full snapshot is sent only every 5 turns; between them a slim version is sent. These two cap how many chars the plan / ledger get there. Default 400 / 300 (deliberately smaller than the full 1200 / 800). The slim version only shows what it looks like and that it is stale — read the full text via memory_read or the panel.` |
 
 ### P1-4 · `autoContinueThreshold`
 

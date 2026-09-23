@@ -115,7 +115,7 @@ window.__ModuleLoader__.load({
 | 用户级记忆 | `DSH_HOME/memory/MEMORY.md`（另 `CALENDAR.md`、`archived-user.md`、归档目录） | 条目化，容量配额 |
 | 项目笔记 | `{workspace}/.dsh-memory/MEMORY.md` | 条目化，容量配额 |
 | 每日日志 | `{workspace}/.dsh-memory/YYYY-MM-DD.md` | **append-only** |
-| 白板 | PLAN.md（整体重写）与 handoff-*.md（append-only 账本） | 由 `memory_note_pre` 维护 |
+| 白板 | PLAN.md（整体重写）与 handoff-*.md（append-only 账本） | 由 `memory_note` 维护 |
 | 反思/索引/sidecar | `DSH_HOME/memory/` 下：`hub-pre/`、`index-pre/files/`、`semantic-pre/`、`evidence-pre/`、`degrade-pre/` 等 | 各子系统自管 |
 
 `DSH_HOME` 的解析收敛在 `dsh-home-pre.js` 一处（#86-3：此前全仓 7 处 4 种回落口径；现顺序 = 显式 override → `DSH_HOME` env → `os.homedir()/.dsh` → `USERPROFILE||HOME/.dsh` → `'.dsh'`，永不返回空串）。
@@ -151,9 +151,9 @@ window.__ModuleLoader__.load({
 - 实际踩过的坑已固化在注释里：issue #66——BOM 使 `byteStart/byteEnd` 整体偏 3 字节 ⇒ 该文件全部记录恒 `record-stale`；修法是消费侧剥 BOM 后再切片（`m4-corpus-pre.js:97-102` 注释块）。
 - **推论（给要动排版/写侧格式的你）**：改记忆文件的排版（换行风格、缩进、锚点格式、BOM）≠ 无害重构，它会同时打断 L0 切条与语义语料。正确路径只有两条：只经写入原语改内容（anchor 事务会同步重建 sidecar），或同时改三方消费逻辑并补字节等价性断言。相关既有守卫：`tests/smoke/` 的源码抽取型套件（用花括号配平切函数体）也依赖源码字节，注释里不能写裸 ASCII 双花括号（`index.js:5505-5507` 注释明文）。
 
-### 3.5 检索链（`memory_recall_pre`）
+### 3.5 检索链（`memory_recall`）
 
-词法臂 + 语义臂（c1/c2/c3 见 §2.3）+ 时间臂（中文时间表达解析 `temporal-parse-pre.js`）+ 重要性加权（evidence 事件聚合 → `memory-importance-pre.js`），多臂结果在 rank-space 做 RRF 融合（`recall-fusion-pre.js`），L0 两档呈现（命中摘要 → 需要证据时按 id 下钻原文块，展开时带 `文件:行号 + digest` 溯源头，`index.js:6382-6405`）。白板 graph 档另有两个遍历工具（`memory_expand_pre`/`memory_trace_pre`，`boardMode=graph` 才注册，`index.js:10304-10313`）。
+词法臂 + 语义臂（c1/c2/c3 见 §2.3）+ 时间臂（中文时间表达解析 `temporal-parse-pre.js`）+ 重要性加权（evidence 事件聚合 → `memory-importance-pre.js`），多臂结果在 rank-space 做 RRF 融合（`recall-fusion-pre.js`），L0 两档呈现（命中摘要 → 需要证据时按 id 下钻原文块，展开时带 `文件:行号 + digest` 溯源头，`index.js:6382-6405`）。白板 graph 档另有两个遍历工具（`memory_expand`/`memory_trace`，`boardMode=graph` 才注册，`index.js:10304-10313`）。
 
 ---
 
@@ -215,7 +215,7 @@ slots.inject(name, () => slots.register({ name, id, order, label }, renderCompon
 6. 验证闸门（全部 fail-closed）：`node --check`（`:443-446`）；版本标识一致性（CHANGELOG 小节 + client 内更新说明字典 + 界面指纹行三处必须同步，`:452-468`）；BOM 扫描（`:497-503`）；残留扫描（整棵 staging 树不得再出现任何 `-pre`/`_pre_`/`_dev` 身份，`:510-539`）；凭据泄露闸门（`:547-592`）；python 运行时完整性（`:594-601`）。
 7. **到此为止**：`git add/commit/push/tag` 与 `npm publish` 只打印提示、**必须由用户明确要求才执行**（`:605-611`）。
 
-**坑 ③（T7-e 教训，`:73-80` 与 `:514-517` 注释）**：新增工具/身份必须**同时**登记进 transforms 表与 residual 残留表——漏任何一边都不报警，残留会静默随包发布（`memory_expand_pre`/`memory_trace_pre`/`memory_procedure_pre` 实际踩过）。
+**坑 ③（T7-e 教训，`:73-80` 与 `:514-517` 注释）**：新增工具/身份必须**同时**登记进 transforms 表与 residual 残留表——漏任何一边都不报警，残留会静默随包发布（`memory_expand`/`memory_trace`/`memory_procedure` 实际踩过）。
 
 ### 5.3 文件名约定：`lib/*-pre.js` 是真身，`lib/*.js` 裸名是陈旧副本
 
@@ -370,7 +370,7 @@ node tools/run-smoke.mjs --timeout=0        # 关超时（不建议）
 | 水位（water level） | 上下文占用/模型窗口比值；阈值 0.75 触发接续建议/自动接续 |
 | 接续（auto-continue/handoff） | 窗口将满时把任务状态写成交接账本、开新会话续做的机制 |
 | 白板（whiteboard） | PLAN.md（稳定事实）+ handoff-*.md（动态账本）；graph 档另有结构化 sidecar 与看板 |
-| 反思（reflect） | 每日「昨天有日志未生成反思」检测 → 注入反思请求 → `memory_reflect_pre` 落盘 |
+| 反思（reflect） | 每日「昨天有日志未生成反思」检测 → 注入反思请求 → `memory_reflect` 落盘 |
 | 沉淀（consolidate） | turn-stopping 时自动评估本轮内容、写日志/升格笔记 |
 | shadow / canary / active | 唤起注入模式三档：影子（只记不注）→ 金丝雀 → 主动 |
 | 分项账本（envelope） | 注入快照的逐段计量/限额/序列化层（`memory-envelope-pre.js`） |

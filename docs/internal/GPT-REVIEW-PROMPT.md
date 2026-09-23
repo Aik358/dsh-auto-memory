@@ -31,7 +31,7 @@
 `dsh-auto-memory` 是 DeepSeek Harness（DSH）的记忆插件。它有两条「白板线」形态：
 
 - **旧版（legacy）**：白板 = `handoff/PLAN.md`（人可读全貌）+ `handoff/handoff-*.md`（四段式交接账本），纯 Markdown，无结构化索引。
-- **新版（graph）**：引入 `boardMode` 开关，切换到 graph 档后应额外启用：① 结构化 sidecar 索引 `handoff/index.json`；② 两个遍历工具 `memory_expand_pre`（按 tag 正向展开）/ `memory_trace_pre`（按 id 反向回溯）；③ 预留接入第三方看板插件 `dsh-graph`（已 vendor 到 `vendor/dsh-graph/`，**尚未接线**）。
+- **新版（graph）**：引入 `boardMode` 开关，切换到 graph 档后应额外启用：① 结构化 sidecar 索引 `handoff/index.json`；② 两个遍历工具 `memory_expand`（按 tag 正向展开）/ `memory_trace`（按 id 反向回溯）；③ 预留接入第三方看板插件 `dsh-graph`（已 vendor 到 `vendor/dsh-graph/`，**尚未接线**）。
 
 **本窗口（2026-09-16 凌晨）新交付**，全部在未提交的 pre 线：
 
@@ -82,7 +82,7 @@
 请特别审查以下高风险区域，逐项给结论（有问题 → 给复现步骤 + 期望/实际）：
 
 **B1 · 新工具的参数与返回契约**
-- `memory_expand_pre` / `memory_trace_pre` 的 `execute` 签名是否为 `(args, exec)`（对照既有工具，如 `memory_recall_pre` 等）；`exec.agent` 是否存在（A2 相关）。
+- `memory_expand` / `memory_trace` 的 `execute` 签名是否为 `(args, exec)`（对照既有工具，如 `memory_recall` 等）；`exec.agent` 是否存在（A2 相关）。
 - 工具返回值的结构是否与 DSH 工具协议一致（既有哪些工具返回什么？新工具是否会被前端正常渲染）。
 - `defineTool` 的 `parameters` 字段是否符合既有约定（注意作者手写的 `limit` 用了 `type: 'integer'`——既有工具怎么写？不匹配会怎样）。
 
@@ -130,7 +130,7 @@
 | P2-4 | 注入端导航层加 tag 摘要行（保持"同输入同字节"） | ? |
 | P2-5 | GUI `handoffPanelData` 增加 tag/段视图；fileQ 白名单放行 `.json` | ? |
 | P2-6 | 条目锚点（`<!-- memory:mem_... -->`）写入 | ? |
-| P3-1 | 注册 `memory_expand_pre`/`memory_trace_pre`；**index.json 缺失时 fail-soft 回落 `searchHandoffCorpus`** | ? |
+| P3-1 | 注册 `memory_expand`/`memory_trace`；**index.json 缺失时 fail-soft 回落 `searchHandoffCorpus`** | ? |
 | P3-2 | 唤醒逻辑：`buildContinueCarry` 第 3 层 guide 加"可用遍历工具重建"提示 | ? |
 | P3-3 | **三处工具数硬锁同步 14→16（标注为必须项）** | ? |
 | A2 | sidecar 放 `memoryRoot/<ws>/handoff/` 旁挂 | ? |

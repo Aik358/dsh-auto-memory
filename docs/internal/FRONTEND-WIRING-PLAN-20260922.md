@@ -81,7 +81,7 @@
 
 | 项 | 内容 |
 |---|---|
-| **宿主字段/接口** | 写侧 `lib/index.js:6047`（`applyNoteStatusPre` 导入）/ `lib/index.js:10286`（`memory_note_pre` 调用）；读侧注入 `lib/index.js:6209-6213`（`statusOf: (id) => statusOfNotePre(text, id)` → `l0Corpus.push({… status, mark: markL0(it) })` at `:6216`）、`lib/index.js:6486`（`statusOf: statusOfNotePre`）；徽章文本产出 `lib/l0-extract-pre.js:295+`（`supersededMarkPre`） |
+| **宿主字段/接口** | 写侧 `lib/index.js:6047`（`applyNoteStatusPre` 导入）/ `lib/index.js:10286`（`memory_note` 调用）；读侧注入 `lib/index.js:6209-6213`（`statusOf: (id) => statusOfNotePre(text, id)` → `l0Corpus.push({… status, mark: markL0(it) })` at `:6216`）、`lib/index.js:6486`（`statusOf: statusOfNotePre`）；徽章文本产出 `lib/l0-extract-pre.js:295+`（`supersededMarkPre`） |
 | **已进应答体的位置** | ①`lib/index.js:6469` 语义 hits 投影含 `mark: rec.mark`（该数组即 `smartRecall` 的 `hits`）；②`lib/index.js:6362` 把 `c.mark` 内联进 `recall` 的文本 `result` |
 | **前端 API 常量** | `API.smartRecall`（声明 `lib/client.js:1190`）；若走文本流则 `API.recall`（`:1189`） |
 | **响应体字段路径** | `smart.hits[i].mark`（字符串，**带前导空格**，渲染前 `.trim()`）；`mark === ''` 表示现行（`current`）条目 |

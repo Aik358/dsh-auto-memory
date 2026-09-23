@@ -6,9 +6,9 @@ import { promises as fs } from 'node:fs'
 import path from 'node:path'
 import os from 'node:os'
 import { createHash } from 'node:crypto'
-import { retryRename, RENAME_RETRY_DELAYS } from '../../lib/fs-retry-pre.js'
-import { atomicReplace, MemoryDocumentStore, memoryWriteLockKey, memoryWriteError } from '../../lib/memory-writer-pre.js'
-import { parseAnchors, planMigration } from '../../lib/memory-anchor-pre.js'
+import { retryRename, RENAME_RETRY_DELAYS } from '../../lib/fs-retry.js'
+import { atomicReplace, MemoryDocumentStore, memoryWriteLockKey, memoryWriteError } from '../../lib/memory-writer.js'
+import { parseAnchors, planMigration } from '../../lib/memory-anchor.js'
 
 const noSleep = async () => {}
 const fast = { sleep: noSleep }

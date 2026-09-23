@@ -17,7 +17,7 @@ import path from 'node:path'
 const smkWs = mkdtempSync(path.join(tmpdir(), 'dam-smoke-'))
 const smkHome = path.join(smkWs, '.dsh-home')
 mkdirSync(smkHome, { recursive: true })
-writeFileSync(path.join(smkHome, 'dsh-auto-memory-pre.json'), JSON.stringify({
+writeFileSync(path.join(smkHome, 'dsh-auto-memory.json'), JSON.stringify({
   memoryRoot: path.join(smkWs, '.memory-root'),
   userMemoryDir: path.join(smkWs, '.user-root'),
   projectMemoryDir: '.project-memory',
@@ -53,9 +53,9 @@ apply(ctx, {})
 
 // 审查修复轮2:先经 config 路由 await loadConfig,再执行任何工具调用,
 // 消除"首个调用按默认 '~'(真实 homedir) 解析路径"的竞态(本测试污染真实记忆的根因)。
-const configRouteEarly = registeredRoutes.find((r) => r.path === '/api/dsh-auto-memory-pre/config')
+const configRouteEarly = registeredRoutes.find((r) => r.path === '/api/dsh-auto-memory/config')
 let cfgBody
-await configRouteEarly.handler({ socket: { remoteAddress: '127.0.0.1' }, headers: { host: '127.0.0.1:3080' }, method: 'GET', url: '/api/dsh-auto-memory-pre/config' }, { writeHead() {}, end(b) { cfgBody = JSON.parse(b) } })
+await configRouteEarly.handler({ socket: { remoteAddress: '127.0.0.1' }, headers: { host: '127.0.0.1:3080' }, method: 'GET', url: '/api/dsh-auto-memory/config' }, { writeHead() {}, end(b) { cfgBody = JSON.parse(b) } })
 if (cfgBody.config.memoryRoot.indexOf(smkWs) !== 0) throw new Error('memoryRoot not isolated to temp dir before execution: ' + cfgBody.config.memoryRoot)
 
 console.log('name:', name, '| inject:', JSON.stringify(inject))
@@ -64,9 +64,9 @@ console.log('sections:', sections.length, '| contexts:', contexts.length, '| eff
 console.log('tools:', registeredTools.map((t) => t.name).join(', '))
 console.log('routes:', registeredRoutes.map((r) => r.path).join(', '))
 
-// ★ T4（2026-09-19）：16 → 17 —— 新增 memory_procedure_pre（procedure memory 的模型直写通路）。
+// ★ T4（2026-09-19）：16 → 17 —— 新增 memory_procedure（procedure memory 的模型直写通路）。
 //   该工具**无条件注册**（不像 expand/trace 受 boardMode=graph 闸门），故任何档位下都 +1。
-if (registeredTools.length !== 18) throw new Error('expected 18 tools (16 + T4 memory_procedure_pre + P9 memory_rules_pre), got ' + registeredTools.length)
+if (registeredTools.length !== 19) throw new Error('expected 19 tools (16 + T4 memory_procedure + P9 memory_rules + M8-B memory_procedure_list), got ' + registeredTools.length)
 // ★ 召回统计（2026-09-22）：49 → 50 —— 新增只读路由 GET /recall-stats（面板「统计」页签的数据源）。
 //   该路由**无条件注册**（不受任何开关闸门约束），故任何档位下都 +1。
 if (registeredRoutes.length !== 54) throw new Error('expected 50 routes, got ' + registeredRoutes.length)
@@ -74,9 +74,9 @@ if (sections.length !== 1) throw new Error('expected 1 prompt section (static ru
 if (contexts.length !== 2) throw new Error('expected 2 dynamic contexts (memory snapshot + m6 reference tail surface), got ' + contexts.length)
 
 // ---- tool shape ----
-const log = registeredTools.find((t) => t.name === 'memory_log_pre')
-if (!log.parameters || log.parameters.type !== 'object' || !log.parameters.properties.note) throw new Error('memory_log_pre parameters malformed')
-if (typeof log.execute !== 'function' || typeof log.output.render !== 'function') throw new Error('memory_log_pre contract broken')
+const log = registeredTools.find((t) => t.name === 'memory_log')
+if (!log.parameters || log.parameters.type !== 'object' || !log.parameters.properties.note) throw new Error('memory_log parameters malformed')
+if (typeof log.execute !== 'function' || typeof log.output.render !== 'function') throw new Error('memory_log contract broken')
 
 // ---- execute memory_log:工作区键仍用真实 cwd 形态,但集中记忆根已隔离到临时目录(见文件头配置) ----
 const agent = { session: { header: { cwd: 'D:\\Ark9Tools' } } }
@@ -85,7 +85,7 @@ const r1 = await log.execute({ note: smkNote }, { agent })
 console.log('\nmemory_log →', r1)
 
 // ---- execute memory_status ----
-const status = registeredTools.find((t) => t.name === 'memory_status_pre')
+const status = registeredTools.find((t) => t.name === 'memory_status')
 const r2 = await status.execute({}, { agent })
 console.log('\nmemory_status_pre →\n' + r2)
 

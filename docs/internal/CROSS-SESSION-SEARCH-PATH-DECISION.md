@@ -10,7 +10,7 @@
 | --- | --- | --- |
 | 本地记忆（每日日志 / 反思 / `MEMORY.md` / 用户级） | ✅ 可用：词法臂 + 语义臂（python dense 优先，失败回退 `_jsSemanticRank`）+ 时间臂 + 重要性加权 + L0/expand 两档 | `lib/index.js:3935-4050`（`recall`）、`:4019-4021`（语义臂择优） |
 | 交接白板语料（PLAN + 账本 + archive） | ✅ 可用 | `:3946-3951`、`searchHandoffCorpus` |
-| **跨 DSH 会话历史** | ⚠️ **完全外挂在 DSH 的 opt-in 特性上**：①DSH 出厂 `openAt: never` → 用户不做 DSH 侧配置就永久失败；②插件自注入的 guidance 却指示模型用 `memory_recall_pre(scope='sessions')`；③即便开了，老装机（含 v0 + `subagent/descriptor` v2 的老日志）会被上游 fail-closed 整条挡死 | 插件 `:3953-3960`（catch 后把上游错误原文回给模型）；guidance `:2737`、`:2812-2816`；上游：`dsh-base/cordis.patch.yml:121-133`、`dsh-session-format-v0-to-v1/lib/index.js:1584-1587`、`dsh-session-query-sqlite/lib/index.js:724-739` |
+| **跨 DSH 会话历史** | ⚠️ **完全外挂在 DSH 的 opt-in 特性上**：①DSH 出厂 `openAt: never` → 用户不做 DSH 侧配置就永久失败；②插件自注入的 guidance 却指示模型用 `memory_recall(scope='sessions')`；③即便开了，老装机（含 v0 + `subagent/descriptor` v2 的老日志）会被上游 fail-closed 整条挡死 | 插件 `:3953-3960`（catch 后把上游错误原文回给模型）；guidance `:2737`、`:2812-2816`；上游：`dsh-base/cordis.patch.yml:121-133`、`dsh-session-format-v0-to-v1/lib/index.js:1584-1587`、`dsh-session-query-sqlite/lib/index.js:724-739` |
 | **外部 Agent 记忆文档**（Claude Code `CLAUDE.md`、WorkBuddy/CodeBuddy 画像、ZCode 项目记忆、TRAE/Cursor 规则） | ⚠️ **只被注入上下文，不进检索语料**：`discover()` 抓到 `content`（截 200KB），但 `recall(scope='all')` 的语料只由 handoff + 日志 + 反思 + 项目/用户记忆构成，**从不包含外部源** | `discover()` `:5822-5902`；`recall` 语料装配 `:3983-4002` |
 | **外部 Agent 历史会话**（Claude Code / Codex / WorkBuddy / ZCode / Kimi） | ⚠️ 注释自述「**会话源只带文件索引**」「只注入路径不注内容」→ 只能进上下文摘要，不能检索 | `pushSessions()` `:5849-5863`、`:5880-5893` |
 

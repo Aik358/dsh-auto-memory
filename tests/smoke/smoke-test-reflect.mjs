@@ -15,7 +15,7 @@ mkdirSync(projectDir, { recursive: true })
 // 集中记忆迁移/反思写入穿进真实用户目录(审查修复轮)。
 const t0Home = path.join(ws, '.dsh-home')
 mkdirSync(t0Home, { recursive: true })
-writeFileSync(path.join(t0Home, 'dsh-auto-memory-pre.json'), JSON.stringify({
+writeFileSync(path.join(t0Home, 'dsh-auto-memory.json'), JSON.stringify({
   memoryRoot: path.join(ws, '.memory-root'),
   userMemoryDir: path.join(ws, '.user-root'),
   projectMemoryDir: '.project-memory',
@@ -51,7 +51,7 @@ const agent = { session: { header: { cwd: ws } } }
 const provider = contexts[0].text
 
 // 1) refresh with agent → pending reflection for yesterday
-const status = registeredTools.find((t) => t.name === 'memory_status_pre')
+const status = registeredTools.find((t) => t.name === 'memory_status')
 await status.execute({}, { agent })
 const text1 = provider({ agent })
 console.log('has reflection request:', text1.includes('昨日反思 · ' + y))
@@ -66,7 +66,7 @@ const text2 = provider({ agent })
 if (text2.includes('昨日反思 — 待生成')) throw new Error('reflection request repeated in same session')
 
 // 4) memory_reflect saves and clears pending
-const reflect = registeredTools.find((t) => t.name === 'memory_reflect_pre')
+const reflect = registeredTools.find((t) => t.name === 'memory_reflect')
 const rr = await reflect.execute({ date: y, text: '成果: 登录模块重构完成;教训: 注意缓存一致性;明天: 继续性能优化。' }, { agent })
 console.log('reflect →', rr)
 // v0.1.15+ 集中式记忆: 反思写入集中目录(从工具返回消息解析实际路径), 不再写在 {ws}/.dsh-memory
@@ -79,16 +79,16 @@ if (!text3.includes('最近反思 ' + y)) throw new Error('latest reflection not
 console.log('latest reflection injected ✓')
 
 // 5) config route GET/POST
-const configRoute = registeredRoutes.find((r) => r.path === '/api/dsh-auto-memory-pre/config')
+const configRoute = registeredRoutes.find((r) => r.path === '/api/dsh-auto-memory/config')
 let lastBody
 const res = {
   writeHead() {}, end(b) { lastBody = JSON.parse(b) },
 }
-await configRoute.handler({ socket: { remoteAddress: '127.0.0.1' }, headers: { host: '127.0.0.1:3080' }, method: 'GET', url: '/api/dsh-auto-memory-pre/config' }, res)
+await configRoute.handler({ socket: { remoteAddress: '127.0.0.1' }, headers: { host: '127.0.0.1:3080' }, method: 'GET', url: '/api/dsh-auto-memory/config' }, res)
 console.log('config GET →', lastBody.config.reflectStyle, lastBody.config.injectBudgetChars)
 await configRoute.handler({
   socket: { remoteAddress: '127.0.0.1' }, headers: { host: '127.0.0.1:3080', 'content-type': 'application/json', origin: 'http://127.0.0.1:3080' },
-  method: 'POST', url: '/api/dsh-auto-memory-pre/config',
+  method: 'POST', url: '/api/dsh-auto-memory/config',
   [Symbol.asyncIterator]() { return (async function* () { yield Buffer.from(JSON.stringify({ reflectStyle: 'life', injectBudgetChars: 3000 })) })() },
 }, res)
 console.log('config POST →', lastBody.config.reflectStyle, lastBody.config.injectBudgetChars)
@@ -97,12 +97,12 @@ if (lastBody.config.reflectStyle !== 'life' || lastBody.config.injectBudgetChars
 // restore config defaults
 await configRoute.handler({
   socket: { remoteAddress: '127.0.0.1' }, headers: { host: '127.0.0.1:3080', origin: 'http://127.0.0.1:3080' },
-  method: 'POST', url: '/api/dsh-auto-memory-pre/config',
+  method: 'POST', url: '/api/dsh-auto-memory/config',
   [Symbol.asyncIterator]() { return (async function* () { yield Buffer.from(JSON.stringify({ reflectStyle: 'auto', injectBudgetChars: 2400 })) })() },
 }, res)
 
 // 6) memory_recall finds the log content
-const recall = registeredTools.find((t) => t.name === 'memory_recall_pre')
+const recall = registeredTools.find((t) => t.name === 'memory_recall')
 const rq = await recall.execute({ query: '缓存穿透' }, { agent })
 console.log('recall hit:', rq.includes('缓存穿透'))
 if (!rq.includes('缓存穿透')) throw new Error('recall failed to find log content')

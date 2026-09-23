@@ -84,7 +84,7 @@
 | **引擎隔离（T2-9）** | **留 3.0 的 Phase 2** | 属索引层 |
 | **锚点 + 人机分区** | **移交 WB-GRAPH P1/P2** | 它是图的数据模型前提（卡片 = 节点，锚点 = id） |
 | **lint（体检报告）** | **移交 WB-GRAPH P1** | 用户裁定 R5：归 WB-GRAPH，且"不只是报告，要能改，AI 可主动提问" |
-| **archiveAnswerPre（结论归档）** | **移交 WB-GRAPH P3** | 需图的遍历能力（`memory_expand_pre`）才有意义 |
+| **archiveAnswerPre（结论归档）** | **移交 WB-GRAPH P3** | 需图的遍历能力（`memory_expand`）才有意义 |
 
 **也就是说：GPT 的 Phase 4 里，只有「写入门」和「状态过滤」真正属于 3.0，其余全部移交。** 3.0 因此从 7 个 Phase 变成 **6 个 Phase + 1 条独立的白板线**。
 
@@ -98,7 +98,7 @@
 | | 说法 |
 |---|---|
 | **GPT** | Phase 1「工具数不变」；Phase 4 也未提工具数变化 |
-| **WB-GRAPH** | P2/P3 新增 `memory_expand_pre` / `memory_trace_pre`，**工具数 14→16**；§0 记录**三处测试硬锁**：`smoke-test.mjs:67`、`smoke-test-m3b3-pre.mjs:43`、`smoke-test-context-observer.mjs:107` 都断言 `!== 14` 抛错 |
+| **WB-GRAPH** | P2/P3 新增 `memory_expand` / `memory_trace`，**工具数 14→16**；§0 记录**三处测试硬锁**：`smoke-test.mjs:67`、`smoke-test-m3b3-pre.mjs:43`、`smoke-test-context-observer.mjs:107` 都断言 `!== 14` 抛错 |
 
 **调和结论（v2）**：
 - 两者**本就不冲突** —— GPT 说的"工具数不变"是针对它的 Phase 1（状态提交）。
