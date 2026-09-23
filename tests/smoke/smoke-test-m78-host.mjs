@@ -145,7 +145,7 @@ console.log('[P3] 编排器单元:首同步/同 miv 幂等/epoch 重同步/miv �
   const paths = { workspaceKey: 'D:/tmp/m78' }
   const host = SYNC_HOST.createIndexSyncHostPre({ engine: {
     config: { associativeMemoryEnabled: true, contextBridgeEnabled: true, pythonBackendEnabled: true, contextSinkMode: 'python' },
-    _pythonSidecar: await (async () => { const CL = await import('../../lib/python-sidecar-client.js'); const c = CL.createPythonSidecarClientPre({ command: 'python', scriptPath: () => path.join(HERE, '..', '..', 'python', 'worker_semantic_pre_v1.py'), dshHome: h.home, requestTimeoutMs: 4000 }); globalThis.__p3client = c; return c })(),
+    _pythonSidecar: await (async () => { const CL = await import('../../lib/python-sidecar-client.js'); const c = CL.createPythonSidecarClientPre({ command: 'python', scriptPath: () => path.join(HERE, '..', '..', 'python', 'worker_semantic_v1.py'), dshHome: h.home, requestTimeoutMs: 4000 }); globalThis.__p3client = c; return c })(),
   } })
   const r1 = await host.ensureIndexReady(SNAP, paths, 'Workspace')
   ok(r1.ready === true, 'P3 首次同步 ready(syncsStarted=' + host._stats.syncsStarted + ')')
@@ -199,7 +199,7 @@ console.log('[P5] A/B workspace 同 miv 零串线(编排器层面)')
   const h = await setupHarness()
   const SYNC_HOST = await import('../../lib/m7-index-sync-host.js')
   const CL = await import('../../lib/python-sidecar-client.js')
-  const c = CL.createPythonSidecarClientPre({ command: 'python', scriptPath: () => path.join(HERE, '..', '..', 'python', 'worker_semantic_pre_v1.py'), dshHome: h.home, requestTimeoutMs: 4000 })
+  const c = CL.createPythonSidecarClientPre({ command: 'python', scriptPath: () => path.join(HERE, '..', '..', 'python', 'worker_semantic_v1.py'), dshHome: h.home, requestTimeoutMs: 4000 })
   const host = SYNC_HOST.createIndexSyncHostPre({ engine: { config: { associativeMemoryEnabled: true, contextBridgeEnabled: true, pythonBackendEnabled: true, contextSinkMode: 'python' }, _pythonSidecar: c } })
   const EV = await import('../../lib/evidence-store.js')
   const wsrA = EV.workspaceRefOf('D:/tmp/wsA')
@@ -221,7 +221,7 @@ console.log('[P6] 关闭/dispose → in-flight abort + ready 缓存清空 + 零�
   const h = await setupHarness()
   const SYNC_HOST = await import('../../lib/m7-index-sync-host.js')
   const CL = await import('../../lib/python-sidecar-client.js')
-  const c = CL.createPythonSidecarClientPre({ command: 'python', scriptPath: () => path.join(HERE, '..', '..', 'python', 'worker_semantic_pre_v1.py'), dshHome: h.home, requestTimeoutMs: 4000 })
+  const c = CL.createPythonSidecarClientPre({ command: 'python', scriptPath: () => path.join(HERE, '..', '..', 'python', 'worker_semantic_v1.py'), dshHome: h.home, requestTimeoutMs: 4000 })
   const host = SYNC_HOST.createIndexSyncHostPre({ engine: { config: { associativeMemoryEnabled: true, contextBridgeEnabled: true, pythonBackendEnabled: true, contextSinkMode: 'python' }, _pythonSidecar: c } })
   const EV = await import('../../lib/evidence-store.js')
   const wsr = EV.workspaceRefOf('D:/tmp/wsP6')
@@ -238,7 +238,7 @@ console.log('[P7] activation 回流:index ready 后 context_push 到达 → fake
 {
   const h = await setupHarness()
   // 开 python 门 + 走真实引擎事件 → worker 收 context_push(影子模式零 activation 帧)
-  await h.cfgPost({ associativeMemoryEnabled: true, contextBridgeEnabled: true, pythonBackendEnabled: true, contextSinkMode: 'python', pythonBackendWorkerPath: path.join(HERE, '..', '..', 'python', 'worker_semantic_pre_v1.py'), pythonBackendExecutable: process.env.M78_PY || 'python' })
+  await h.cfgPost({ associativeMemoryEnabled: true, contextBridgeEnabled: true, pythonBackendEnabled: true, contextSinkMode: 'python', pythonBackendWorkerPath: path.join(HERE, '..', '..', 'python', 'worker_semantic_v1.py'), pythonBackendExecutable: process.env.M78_PY || 'python' })
   await h.fire('session/event', h.agent.session, { type: 'user/message', seq: 400, time: Date.now(), data: { role: 'user', content: [{ type: 'text', text: '部署流程 pnpm build 回忆' }] } })
   await sleep(2500)
   const am = await h.dbg()

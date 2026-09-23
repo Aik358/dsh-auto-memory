@@ -22,7 +22,7 @@ const CLIENT = await import('../../lib/python-sidecar-client.js')
 const SYNC = await import('../../lib/index-sync.js')
 const INBOX = await import('../../lib/activation-inbox.js')
 const HERE = path.dirname(fileURLToPath(import.meta.url))
-const SEM_WORKER = path.join(HERE, '..', '..', 'python', 'worker_semantic_pre_v1.py')
+const SEM_WORKER = path.join(HERE, '..', '..', 'python', 'worker_semantic_v1.py')
 
 function mkEmbConfig(home, activationPolicy) {
   const p = path.join(home, `emb-${Math.random().toString(36).slice(2, 7)}.json`)

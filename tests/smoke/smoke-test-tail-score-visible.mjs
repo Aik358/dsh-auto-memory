@@ -95,7 +95,7 @@ const jsHost = readFileSync(new URL('../../lib/context-host.js', import.meta.url
 ok(/js-decide lane=/.test(jsHost), 'context-host.js 仍构造 js-decide reason')
 ok(/intent=' \+ num2\(/.test(jsHost) && /dense=' \+ num2\(/.test(jsHost) && /margin=' \+ num2\(/.test(jsHost), 'reason 串拼入 intent/dense/margin 数值')
 ok(/reason: jsReason/.test(jsHost), 'threshold.reason 实际取用 jsReason(不是声明了却没接线)')
-const pyHost = readFileSync(new URL('../../python/worker_semantic_pre_v1.py', import.meta.url), 'utf8')
+const pyHost = readFileSync(new URL('../../python/worker_semantic_v1.py', import.meta.url), 'utf8')
 ok(/intent=%\.2f dense=%\.2f margin=%\.2f/.test(pyHost), 'Python fv2 reason 串拼入 intent/dense/margin')
 ok(pyHost.indexOf('intent=%.2f') < pyHost.indexOf('reasons))[:160'), '数值段在 reasonCodes 之前(160 字符截断只砍代码列表)')
 

@@ -63,7 +63,12 @@ const isBom = (b) => b.length >= 3 && b[0] === 0xef && b[1] === 0xbb && b[2] ===
 
 // ---------- C3 LF/CRLF/多字节/无尾换行/preamble/空文件 ----------
 {
-  const crlf = parseAnchors(load('crlf.md'))
+  // 夹具在 git blob 里是**纯 LF**（`crlf.md` 的 blob 零个 \r），此前只在 Windows 绿是因为
+  // `core.autocrlf=true` 在检出时把 LF 转成了 CRLF —— 测试实际断言的是**开发机的行尾配置**，
+  // 不是换行检测本身，Linux CI 上恒红（`crlf.md newline detect failed: lf`）。
+  // 改为在内存里造 CRLF 字节喂给被测函数：输入形态与真实 CRLF 文件一致，且与下方
+  // `aCrlf`(字符串字面量造 CRLF) 同一写法，不再依赖 checkout。
+  const crlf = parseAnchors(Buffer.from(load('crlf.md').toString('utf8').replace(/\r?\n/g, '\r\n')))
   if (crlf.newline !== 'crlf') throw new Error('crlf.md newline detect failed: ' + crlf.newline)
   if (parseAnchors(Buffer.from('a\r\nb\nc\n')).newline !== 'mixed') throw new Error('mixed newline detect failed')
   if (parseAnchors(Buffer.from('a\nb\n')).newline !== 'lf') throw new Error('lf newline detect failed')

@@ -572,7 +572,7 @@ All milestones are implemented and live-verified. The full interactive architect
 
 ```
 DeepSeek Harness (Node, 127.0.0.1:3080)
-├─ JS memory core (lib/*_pre.js, zero runtime deps)
+├─ JS memory core (lib/*.js, zero runtime deps)
 │   M1 session isolation · M2 ContextObserver projection
 │   M3 memory anchoring (anchored records + sidecar identity)
 │   M4 corpus adapter + shadow retrieval host (evidence store)
@@ -581,7 +581,7 @@ DeepSeek Harness (Node, 127.0.0.1:3080)
 │   lexical_pre_v2 lexical fallback retrieval (BM25 + CJK 2gram, 0GB always-on)
 │   C2 built-in semantic tier (e5-small q8 ~130MB, default)
 └─ Python sidecar M7 (optional, lazy-spawned child process)
-    worker_semantic_pre_v1.py
+    worker_semantic_v1.py
     ├─ index_sync: JS-authorized paged index build (digest checks, scope grouping)
     ├─ dense: BGE-M3 int8 + para-512 chunks + cosine (R@5 0.925)
     ├─ hybrid: dense 0.7 + lexical 0.3 fusion

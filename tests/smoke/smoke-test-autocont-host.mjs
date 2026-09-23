@@ -369,7 +369,7 @@ console.log('[autocont-host] A11 终止旧回合 → 仪式真结束 → 新窗�
     '源码:cancel/inspect 都先探测可用性(旧 host 不至于抛错中断)')
   ok(/const done = evs\.length > baseCount && evs\.some\(\(ev\) => Number\(ev && ev\.seq\) > baseSeq && \(ev\.type === 'assistant\/message' \|\| ev\.type === 'tool\/call'\)\)/.test(SRC),
     '源码:仪式完成判据 = 事件尾增长 + 基线之上出现 assistant/message 或 tool/call')
-  ok(/const before = await this\.handoffMaterialStamp\(\)[\s\S]{0,900}?const snap0 = await sc\.inspect\(sid, sigInspect\)/.test(SRC),
+  ok(/const before = await this\.handoffMaterialStamp\(sid\)[\s\S]{0,900}?const snap0 = await sc\.inspect\(sid, sigInspect\)/.test(SRC),
     '源码:事件尾基线在发仪式之前采样')
   ok(/diag\('auto-continue agreed by user: edge='/.test(SRC), '源码:agree 分支记录触发来源(此前只有 reject 有日志)')
   ok(/stopped: st\.lastOk\.stopped \|\| ''/.test(SRC), '源码:stopped 透给浏览器轮询视图')
