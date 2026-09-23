@@ -11,7 +11,7 @@ const HERE = path.dirname(fileURLToPath(import.meta.url))
 
 const CLIENT = await import('../../lib/python-sidecar-client.js')
 const SYNC = await import('../../lib/index-sync.js')
-const SEM_WORKER = path.join(HERE, '..', '..', 'python', 'worker_semantic_pre_v1.py')
+const SEM_WORKER = path.join(HERE, '..', '..', 'python', 'worker_semantic_v1.py')
 const PYEXE = path.join(HERE, '..', '..', 'python', 'bench', '.venv', 'Scripts', 'python.exe')
 const sha256Hex = (s) => createHash('sha256').update(Buffer.from(s)).digest('hex')
 const hex32 = (s) => sha256Hex(s).slice(0, 32)

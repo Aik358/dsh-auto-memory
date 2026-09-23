@@ -1,4 +1,4 @@
-// 2026-09-17 · 索引同步「卡死自愈」回归锁（worker_pre_v1.py）
+// 2026-09-17 · 索引同步「卡死自愈」回归锁（worker_v1.py）
 //
 // 背景（实测取证）：
 //   JS 侧契约是「新 memoryIndexVersion latest-wins；旧 in-flight sync abort/cancel」
@@ -33,7 +33,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 const CLIENT = await import('../../lib/python-sidecar-client.js')
 const SYNC = await import('../../lib/index-sync.js')
 const HERE = path.dirname(fileURLToPath(import.meta.url))
-const WORKER = path.join(HERE, '..', '..', 'python', 'worker_pre_v1.py')
+const WORKER = path.join(HERE, '..', '..', 'python', 'worker_v1.py')
 
 const home = mkdtempSync(path.join(tmpdir(), 'sync-takeover-'))
 const client = CLIENT.createPythonSidecarClientPre({
