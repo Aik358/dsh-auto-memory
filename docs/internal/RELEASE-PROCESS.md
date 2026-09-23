@@ -16,12 +16,12 @@
 - [ ] 全量回归：`cd D:\dsh-auto-memory; Get-ChildItem tests\smoke -File -Filter *.mjs | ForEach-Object { node $_.FullName }` → **0 失败**
 - [ ] `node --check lib/index.js` 与 `lib/client.js` 通过；改动文件无 BOM
 - [ ] **脏树范围核实**：`git status --short` 里只有本次要发布的文件（`release.mjs` 的源就是工作区，脏树会整体进包且不可回溯）
-- [ ] **上游回流对账**：`node tools\reconcile-upstream.mjs` → 结论必须是「✓ 上游产物已全部回流 pre 线」
+- [ ] **上游回流对账**：`node tools\reconcile-upstream.mjs` → 结论必须是「✓ 上游产物已全部回流开发树」
       （`release.mjs` 已内置同名闸门 §3.7，缺产物即拒绝构建；本步是让人在动手前先看到分叉度与孤儿提交数）
 
-## 0.5 上游修复回流 pre 线（2026-09-22 固化，事故换来的）
+## 0.5 上游修复回流工作树（2026-09-22 固化，事故换来的；2026-09-23 口径更新）
 
-**为什么有这一节**：pre 开发线与 GitHub `main` **自 2026-09-07 起分叉**，而**发布包是从 pre 线构建的**
+**为什么有这一节**：开发树与 GitHub `main` **自 2026-09-07 起分叉**，而**发布包是从开发树构建的**
 （`release.mjs` 从 DEV 树生成 REL 树）。于是「在 `main` 上修」= **白修**：既不影响发布包，
 还会被下一次发布强推冲成孤儿。**实证代价**：#103/#104/#105 三条 P1 修了两轮（PR #118/#119/#120，
 2026-09-21 16:47 全部 `merged=true`），用户侧**从未拿到** —— 三个合并提交在本机
@@ -30,8 +30,8 @@
 
 **硬约束（三条，缺一即视为没修）**：
 
-1. **修复必须落在 pre 线**：`-pre` 模块 + 通配 `-pre` 守卫；新 `lib/*-pre.js` **必须**登记进
-   `tools/release.mjs` 的 `libModuleRenames`（漏登记 fail-closed）。
+1. **修复必须落在唯一工作树** `D:\dsh-auto-memory`（★2026-09-23 删净 pre 后：**已无 pre 线 / dev 树之分，
+   也没有 `-pre` 后缀与 `libModuleRenames` 登记表** —— 构建退化为纯复制 + 身份变换，源码名即发布名）。
 2. **合任何 `base=main` 的 PR 之后，立刻回流**：不能等下次发版才想起来。
    命令（只读、无网络）：
    ```powershell
@@ -40,11 +40,11 @@
    node tools\reconcile-upstream.mjs --strict # 闸门模式：有缺即 exit 1
    ```
 3. **产物清单是活文档**：每回流一条上游修复，就把它的**产物**（模块 / 守卫 / 关键修复标记行）
-   加进 `tools/reconcile-upstream.mjs` 的 `MUST_BE_IN_PRE` / `MUST_MARKERS` —— 否则下次同样的事故
-   闸门不会知道该拦。**这条是把「惯例」变成「机制」的关键**：清单不写，等于没立规矩。
+   加进 `tools/reconcile-upstream.mjs` 的 `MUST_BE_IN_PRE` / `MUST_MARKERS`（去 pre 后清单内一律用**裸名**）——
+   否则下次同样的事故闸门不会知道该拦。**这条是把「惯例」变成「机制」的关键**：清单不写，等于没立规矩。
 
 **判据（人工复核用）**：`merge-base` 日期若明显落后于最近一次发版，且 `main` 独有提交里有带
-`fix(...)` 的合并提交，则**必须**逐条确认其产物是否已在 pre 线。
+`fix(...)` 的合并提交，则**必须**逐条确认其产物是否已在开发树。
 
 
 ## 1. 定版本号
@@ -63,7 +63,7 @@
 - [ ] `package.json.version`：**由 `release.mjs` 自动回写开发树**（面板徽标与「检测更新」读的就是它），构建后复核输出里有 `开发树版本回写: x.y.z → <ver>`
 - 闸门校验：以上三项任一与新版本号不一致 → **拒绝构建**（防止检测更新一直拿旧版本号去比对）
 
-## 4. pre 线提交
+## 4. 开发树提交
 
 ```powershell
 cd D:\dsh-auto-memory
@@ -124,7 +124,7 @@ npm view @a9i5k4/dsh-auto-memory version --registry=https://registry.npmjs.org -
 
 ## 纪律
 
-- **★ 上游修复必须回流 pre 线**（2026-09-22 事故固化，见 §0.5）：pre 与 `main` 是两条分叉历史，
+- **★ 上游修复必须回流开发树**（2026-09-22 事故固化，见 §0.5）：开发树与 `main` 是两条分叉历史，
   发布包从 pre 构建 ⇒ 在 `main` 上修等于没修。合完上游 PR 立刻 `node tools\reconcile-upstream.mjs`
   对账，并把新产物加进该脚本的清单。`release.mjs` §3.7 会在发版时再拦一次。
 - **凭据只走行内 URL / 环境变量，严禁写进任何会上传 GitHub 或 npm 的文件**（本文件亦不写）。
