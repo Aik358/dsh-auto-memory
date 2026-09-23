@@ -25,7 +25,12 @@ const ok = (c, m) => { if (c) { pass++; console.log('  ok   - ' + m) } else { fa
 const eq = (a, b, m) => ok(JSON.stringify(a) === JSON.stringify(b), m + '  (got ' + JSON.stringify(a) + ')')
 const SRC_RL = fs.readFileSync(path.join(ROOT, 'lib/rules-layer.js'), 'utf8')
 const SRC_IX = fs.readFileSync(path.join(ROOT, 'lib/index.js'), 'utf8')
-const SRC_REL = fs.readFileSync(path.join(ROOT, 'tools/release.mjs'), 'utf8')
+// ★可空读取（2026-09-22 审校补回）：tools/ 不随 npm 包发布，本文件此前把 release.mjs 的读取
+//   写成顶层无保护 readFileSync ⇒ 一旦该文件不在树里，ENOENT 会让 G1–G6 共 20 条断言整体崩掉
+//   （连与 release 无关的判据/写盘口检查一起失效）。这正是同批在 t7e / issue110 / issue111
+//   三支里刚修掉的失效模式，故此处恢复"缺文件只跳过 G5 那一节"。
+let SRC_REL = ''
+try { SRC_REL = fs.readFileSync(path.join(ROOT, 'tools/release.mjs'), 'utf8') } catch (_) { SRC_REL = '' }
 
 const MID = 'mem_' + 'a'.repeat(32)
 const CASES = [
@@ -76,16 +81,25 @@ const emptySec = RL.renderRulesSectionPre({ rules: [{ text: '## 2026-08-17' }] }
 eq(emptySec.text, '', '全空摘要 ⇒ 不产裸 "- " 行（整段为空）')
 
 console.log('[G5] release 两表登记')
-// ★发布线兼容（2026-09-22）：本文件在发布构建里会被同一张转换表改写 —— 直接写带预览后缀的
-//   工具名/模块名字面量，在发布线上会被改写成裸名，而 tools/release.mjs 是**原样入包**
-//   （里面仍是带后缀的名字）⇒ 这些断言在发布线恒假（红）。故：工具名在运行时拼出（片段不含
-//   任何可被改写的连续模式）；模块名只取不会被改写的基名段。
-const RULES_NAME = 'memory_rules' + '_pre'
-ok(new RegExp("\\[\\s*'" + RULES_NAME + "',\\s*'memory_rules'\\s*\\]").test(SRC_REL),
-  '转换表已登记 memory_rules 的预览名 → 裸名（两张表都要有）')
-ok(new RegExp("^\\s*'" + RULES_NAME + "',\\s*$", 'm').test(SRC_REL),
-  '残留闸门表已登记 memory_rules 的预览名（漏登记则残留不报警）')
-ok(SRC_REL.includes('note-status'), 'note-status 模块已在重命名表内（既有）')
+if (!SRC_REL) {
+  console.log('  SKIP - tools/release.mjs 不在当前树（发布线未含 tools/）⇒ 仅跳过 release 表登记守卫，G1–G6 其余照常跑')
+} else {
+  // ★发布线兼容（2026-09-22）：本文件在发布构建里会被同一张转换表改写 —— 直接写带预览后缀的
+  //   工具名/模块名字面量，在发布线上会被改写成裸名，而 tools/release.mjs 是**原样入包**
+  //   （里面仍是带后缀的名字）⇒ 这些断言在发布线恒假（红）。故：工具名在运行时拼出（片段不含
+  //   任何可被改写的连续模式）；模块名同理，且必须带引号命中登记表行。
+  const RULES_NAME = 'memory_rules' + '_pre'
+  ok(new RegExp("\\[\\s*'" + RULES_NAME + "',\\s*'memory_rules'\\s*\\]").test(SRC_REL),
+    '转换表已登记 memory_rules 的预览名 → 裸名（两张表都要有）')
+  ok(new RegExp("^\\s*'" + RULES_NAME + "',\\s*$", 'm').test(SRC_REL),
+    '残留闸门表已登记 memory_rules 的预览名（漏登记则残留不报警）')
+  // ★审校修正：原写法 SRC_REL.includes('note-status') **永可真** —— release.mjs 的注释里
+  //   （:212「note-status 不得依赖 memory-anchor」、:304「note-status-*.js → P6B」）同样含该串，
+  //   把 libModuleRenames 里两条登记全删也照样绿。改为要求带引号的登记形态。
+  const NN_MOD = 'note-status' + '-pre' + '.js'
+  ok(SRC_REL.includes("'" + NN_MOD + "'"),
+    '★note-status 模块确在 libModuleRenames 登记行内（实查 ' + NN_MOD + '；注释命中不算）')
+}
 
 console.log('[G6] 单一写盘口')
 eq((SRC_IX.match(/async function applyRuleEditPre\(/g) || []).length, 1, 'applyRuleEditPre 定义恰好 1 处')

@@ -212,7 +212,7 @@ const transforms = [
   //   同时让 2 条**反向**断言（note-status 不得依赖 memory-anchor、t0-8 保护门不得反向
   //   依赖 wb-contract）从「改写后永真的假绿」恢复成真守卫。
   //   一条通用规则覆盖全部转义形；开发树源码无此形态，故对 pre 线零影响。
-  ['-pre\\.js', '.js'],
+  ['-pre\\.js', '\\.js'],   // 替换目标保留反斜杠：写 `.js` 会把点号的转义一起吃掉，断言随之变松
   ['cand_pre_', 'cand_'],
   ['chk_pre_', 'chk_'],
   ['epi_pre_', 'epi_'],

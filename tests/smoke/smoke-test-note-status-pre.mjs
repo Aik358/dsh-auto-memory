@@ -287,7 +287,9 @@ await t('#7-1 ★ 不得复用锚点开标记（复用会撞锚点契约 ⇒ 整
 
 await t('#7-2 ★ 不得从别的模块 import 锚点常量（避免与锚点契约耦合）', () => {
   ok(!/import[\s\S]*MARKER_OPEN/.test(CODE), '★ 未 import MARKER_OPEN')
-  ok(!/import[\s\S]*from\s+'\.\/memory-anchor.js'/.test(CODE), '★ 未依赖 memory-anchor-pre')
+  // ★反向断言要写当前真实模块名 + 转义点号：旧写法 negate 的是 `memory-anchor` 加预览后缀的文件名，
+  //   而发布线是裸名 ⇒ 永不失败（假绿），它声称守的"不与锚点契约耦合"实际无人守。
+  ok(!/import[\s\S]*from\s+'\.\/memory-anchor\.js'/.test(CODE), '★ 未依赖 memory-anchor（不与锚点契约耦合）')
 })
 
 await t('#7-3 ★ 本模块零 IO（纯函数 —— 不写盘是当前设计的硬约束）', () => {

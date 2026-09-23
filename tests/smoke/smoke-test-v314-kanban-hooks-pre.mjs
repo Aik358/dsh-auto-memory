@@ -12,6 +12,9 @@
  *
  * 本守卫钉死：**hook 调用不得出现在条件表达式或 JSX 实参里**（只许顶层无条件调用）。
  * 判据取自本次真实事故，属"下次谁再这么写就红"的硬网。
+ * ⚠️ 已知边界（诚实记录，勿当全知）：K2 是**单行**启发式 —— 跨行的条件包 hook
+ *   （如 `if (a)` 换行再 `useX()`）与 `h(...)` 换行传参它看不见；K1c 只锁本次事故的精确写法。
+ *   真正兜底仍是 React 自身的 #310，本网的作用是把报红提前到 CI。
  */
 import fs from 'node:fs'
 import path from 'node:path'
@@ -34,19 +37,35 @@ ok(CL.includes('useCardFull(d) || d.full || d.preview'), 'K1d 兜底链保留（
 
 console.log('\n=== K2 全仓 hook 调用面：不得出现在条件表达式/JSX 实参里 ===')
 {
-  const HOOKS = ['useState', 'useEffect', 'useMemo', 'useRef', 'useCallback', 'useContext', 'useReducer', 'useLayoutEffect']
-  const hookRe = new RegExp('\\b(' + HOOKS.join('|') + ')\\s*\\(')
+  // ★v3.1.4 审校修正：原判据的 HOOKS 白名单只列 8 个**内置** hook，而造成本次 #310 白屏的
+  //   useCardFull 是**自定义** hook ⇒ 事故行连判定都进不去（实测对该行 SKIPPED、不报警），
+  //   文件头「下次谁再这么写就红」成了空头承诺。改按形态匹配任意 useXxx( 调用。
+  //   同时把原判据里恒假的 inJsxArg 复合式（`X.test(...) === false && ...` 自相矛盾）
+  //   换成两个可独立成立的条件。误报实测：client.js 全 7537 行 0 命中；
+  //   四条已知事故形态（实参里调 hook / 三元右侧 / 数组实参 / 自定义 hook）全部报警。
+  const hookRe = /\buse[A-Z][A-Za-z0-9]*\s*\(/
   const bad = []
   lines.forEach((l, i) => {
     if (!hookRe.test(l)) return
     if (/^\s*function use[A-Z]/.test(l)) return                       // hook 定义行
     if (/^\s*(\/\*|\*|\/\/)/.test(l)) return                          // 注释
-    // 判定：同一行里，hook 调用是否出现在 `h(` 的实参中，或出现在 `? :`/`&&`/`||` 条件表达式的右侧
-    const inJsxArg = /h\(/.test(l) && /\(\s*(use[A-Z][A-Za-z]*)\s*\(/.test(l.replace(/^[\s\S]*?h\(/, 'h(').replace(/[\s\S]*?h\(/, '')) === false && hookRe.test(l) && /,\s*(use[A-Z]|\()/.test(l)
-    const conditional = /[?:]|&&|\|\|/.test(l.slice(0, l.search(hookRe)))
-    if (inJsxArg || conditional) bad.push('L' + (i + 1) + '  ' + l.trim().slice(0, 130))
+    const at = l.search(hookRe)
+    const before = l.slice(0, at)
+    // ① 条件右侧：hook **之前**同行出现 ? : && || ⇒ 是否调用取决于分支 ⇒ hook 数可变
+    const conditional = /[:?](?!\/)/.test(before) || /&&|\|\|/.test(before)
+    // ② JSX 实参：hook **之前**同行有 h( ，且 hook 紧跟在 , ( [ 之后 ⇒ 被当实参传入（本次事故形态）
+    const inJsxArg = /\bh\(/.test(before) && /[,([]\s*(\(?\s*)$/.test(before)
+    if (conditional || inJsxArg) bad.push('L' + (i + 1) + '  ' + l.trim().slice(0, 130))
   })
   ok(bad.length === 0, '★K2 无「条件/实参里调 hook」的写法（实得 ' + bad.length + ' 处）', bad.join('\n           '))
+  // 判据自身的哨兵：把已知事故行喂进去，必须报警（防"守卫再次看不见自己的猎物"）
+  const CATCHES = (s) => {
+    if (!hookRe.test(s)) return false
+    const b = s.slice(0, s.search(hookRe))
+    return /[:?](?!\/)/.test(b) || /&&|\|\|/.test(b) || (/\bh\(/.test(b) && /[,([]\s*(\(?\s*)$/.test(b))
+  }
+  ok(CATCHES("h('pre', { key: 'body' }, (useCardFull(drawer) || drawer.full))"), 'K2s 哨兵：本次事故行（自定义 hook 作实参）能报警')
+  ok(CATCHES("h('p', null, useTick(30))"), 'K2s 哨兵：数组外的实参位调用自定义 hook 能报警')
 }
 
 console.log('\n=== K3 同一 hook 的既有正确写法未被改坏 ===')
