@@ -103,8 +103,15 @@ console.log('[G1] 协议常量冻结 + wire codec')
 // ---------- G2 ----------
 console.log('[G2] framing:partial/multiple/bad JSON/oversize/epoch 门/type 混用')
 {
-  const c = mkClient()
-  ok(c.ensureStarted().ok, 'G2 lazy start 成功(real worker)')
+  // Framing assertions must own the response stream. A real worker may answer health
+  // before the manually injected partial frame is completed, making this test racy.
+  // Use a stdin-draining silent worker for synthetic responses, then switch back to
+  // the bundled worker only for the crash-recovery assertion.
+  const silentPy = path.join(tmpdir(), 'dam-m70-framing-' + randomUUID() + '.py')
+  writeFileSync(silentPy, 'import sys, time\nwhile True:\n    line = sys.stdin.readline()\n    if not line: break\n    time.sleep(0.01)\n', 'utf8')
+  let target = silentPy
+  const c = mkClient({ scriptPathFn: () => target, requestTimeoutMs: 2500 })
+  ok(c.ensureStarted().ok, 'G2 lazy start 成功(silent framing worker)')
   const epoch = c.currentEpoch()
   ok(/^wk_[0-9a-f]{32}$/.test(epoch), 'G2 workerEpoch 形状 wk_+32hex')
   c._feedForTest('{"broken\n')
@@ -147,9 +154,11 @@ console.log('[G2] framing:partial/multiple/bad JSON/oversize/epoch 门/type 混�
   const rBig = await bigReq
   eq(rBig.code, 'protocol', 'G2 超长行 fatal → 在途请求结构化失败(protocol)')
   eq(c._statsForTest.lastFatal, 'line-oversize', 'G2 lastFatal=line-oversize')
+  target = WORKER_PATH
   const rr = await c.request('health')
   ok(rr.ok, 'G2 fatal 后下一次请求自动重生进程并成功(crash recovery)')
   await c.dispose('test')
+  try { rmSync(silentPy, { force: true }) } catch (_) {}
 }
 
 
