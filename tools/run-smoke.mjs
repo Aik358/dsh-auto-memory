@@ -2,11 +2,16 @@
 /**
  * tools/run-smoke.mjs — 冒烟回归串行运行器(零第三方依赖,仅 node 内置)。
  *
+ * ⚠️ 「串行」指**每个套件独立成进程、互不共享状态**;默认并发度是 4(见 DEFAULT_JOBS),
+ *   门禁(CI)用 `--jobs=1` 强制逐字节串行以保可复现。本地提速直接用默认值。
+ *
  * 用法:
- *   node tools/run-smoke.mjs                      # 逐个跑 tests/smoke/*.mjs,每套件超时 60s
+ *   node tools/run-smoke.mjs                      # 跑 tests/smoke/*.mjs,默认并发 4,每套件超时 90s
+ *   node tools/run-smoke.mjs --jobs=1             # 强制串行(CI 门禁口径)
  *   node tools/run-smoke.mjs --timeout=30000      # 自定义每套件超时(毫秒)
  *   node tools/run-smoke.mjs --timeout=0          # 关闭超时(不建议:见下)
  *   node tools/run-smoke.mjs --filter=handoff     # 只跑文件名含该子串的套件
+ *   node tools/run-smoke.mjs --exclude=-live-     # 排除套件(可重复) ⇒ 逐个打印 skip 原因
  *
  * 设计原因
  * --------
@@ -39,11 +44,19 @@ const HERE = path.dirname(fileURLToPath(import.meta.url))
 const ROOT = path.resolve(HERE, '..')
 const SMOKE_DIR = path.join(ROOT, 'tests', 'smoke')
 
-const DEFAULT_TIMEOUT_MS = 60000
+// ★与 CI 门禁同阈值（.github/workflows/tests.yml 传 --timeout=90000）：本地默认若比 CI 短，
+//   会出现"本地偶发 TIMEOUT、CI 却绿"的假信号；parseArgs 的 T7-f 注也按 90s 陈述。
+const DEFAULT_TIMEOUT_MS = 90000
 /** ★T7-f（2026-09-20 用户裁定「默认并行」）：默认并发度。`--jobs=1` 可回退串行。 */
 const DEFAULT_JOBS = 4
-/** 每个套件保留的输出尾部字符数(用于定位卡点,不需要全量)。 */
+/** 每个套件**打印**的输出尾部字符数(用于定位卡点,不需要全量)。 */
 const TAIL_CHARS = 2000
+/**
+ * 每个套件**采集**的输出字符数。★必须显著大于打印窗口：失败断言常出现在套件开头,
+ * 只按打印窗口留尾会把真凶挤掉(CI 首跑实测: 90 条输出的套件"看得到 exit 1 却看不到哪条")。
+ * 汇总时先跨全窗挑失败要点,再附 TAIL_CHARS 尾部。
+ */
+const CAP_CHARS = TAIL_CHARS * 5
 /** 收到退出信号后,最多再等多久收尸(毫秒),防止运行器自己挂住。 */
 const REAP_GRACE_MS = 5000
 
@@ -86,12 +99,23 @@ function listSuites(filter, exclude) {
     console.error('[run-smoke] cannot read ' + SMOKE_DIR + ': ' + (e && e.message || e))
     process.exit(2)
   }
-  return names
-    .filter((n) => n.endsWith('.mjs'))
-    .filter((n) => !filter || n.includes(filter))
-    .filter((n) => !(exclude || []).some((x) => n.includes(x)))
-    .filter((n) => { try { return statSync(path.join(SMOKE_DIR, n)).isFile() } catch (e) { return false } })
+  let skipped = 0
+  const out = names
+    .filter((n) => n.endsWith('.mjs') && !n.includes('.bak')) // 备份文件不算套件（历史上确有 *.mjs.bak-* 被跟踪）
     .sort()
+    .filter((n) => !filter || n.includes(filter))
+    .filter((n) => {
+      const hit = (exclude || []).find((x) => n.includes(x))
+      if (!hit) return true
+      // ★排除必须逐条留痕：门禁静默缩水时，"全绿"只代表跑过的那部分——这正是 issue #73 要修的
+      //   失效模式。CI 的失败提示（.github/workflows/tests.yml）也明确向读者承诺了这些 skip 行。
+      skipped++
+      console.log('  skip ' + n + '  (--exclude=' + hit + ')')
+      return false
+    })
+    .filter((n) => { try { return statSync(path.join(SMOKE_DIR, n)).isFile() } catch (e) { return false } })
+  if (skipped) console.log('  共 ' + skipped + ' 个套件被 --exclude 跳过（跳过 ≠ 放弃覆盖，理由见上方逐行）')
+  return out
 }
 
 /**
@@ -122,8 +146,8 @@ function runSuite(file, timeoutMs) {
     const capture = (chunk, sink) => {
       const s = String(chunk)
       const next = (sink === 'out' ? out : err) + s
-      if (sink === 'out') out = next.length > TAIL_CHARS ? next.slice(-TAIL_CHARS) : next
-      else err = next.length > TAIL_CHARS ? next.slice(-TAIL_CHARS) : next
+      if (sink === 'out') out = next.length > CAP_CHARS ? next.slice(-CAP_CHARS) : next
+      else err = next.length > CAP_CHARS ? next.slice(-CAP_CHARS) : next
     }
     child.stdout.on('data', (c) => capture(c, 'out'))
     child.stderr.on('data', (c) => capture(c, 'err'))
@@ -172,7 +196,9 @@ function runSuite(file, timeoutMs) {
 async function main() {
   const opts = parseArgs(process.argv.slice(2))
   if (opts.help) {
-    console.log('usage: node tools/run-smoke.mjs [--timeout=<ms>] [--filter=<substr>] [--exclude=<substr>]...')
+    console.log('usage: node tools/run-smoke.mjs [--jobs=N] [--timeout=<ms>] [--filter=<substr>] [--exclude=<substr>]...')
+    console.log('  默认 --jobs=' + DEFAULT_JOBS + '（上界 16，--jobs=1 为 CI 门禁口径）、默认 --timeout=' + DEFAULT_TIMEOUT_MS + 'ms')
+    console.log('  有任何 FAIL/TIMEOUT ⇒ exit 1；参数错误或选不中套件 ⇒ exit 2')
     return 0
   }
   const suites = listSuites(opts.filter, opts.exclude)
@@ -238,8 +264,14 @@ async function main() {
   for (const r of [...timeout, ...fail]) {
     console.log('')
     console.log('--- ' + r.status + ': ' + r.name + (r.status === 'TIMEOUT' ? '  (exceeded ' + opts.timeoutMs + 'ms)' : '  (exit=' + r.code + ')') + ' ---')
+    // ★先跨全采集窗口挑"失败要点"，再给尾部：只看尾窗会把真凶挤掉（本运行器历史上就踩过，
+    //   见上方 CAP_CHARS 注释）。要点行永远排在尾部前面，CI 里一眼能看到是哪条断言。
+    const marks = (r.tail || '').split('\n')
+      .filter((l) => /\bFAIL\b|✗|not ok|Error:|FATAL|assert/i.test(l)).slice(0, 25)
+    if (marks.length) console.log('failure highlights:\n' + marks.map((l) => '    ' + l.trim()).join('\n'))
     console.log('last output tail:')
-    console.log(r.tail ? r.tail.split('\n').slice(-25).join('\n') : '(no output captured)')
+    const tailStr = r.tail ? String(r.tail).slice(-TAIL_CHARS) : '(no output captured)'
+    console.log(tailStr.split('\n').slice(-25).join('\n'))
   }
   console.log('=========================================')
 
