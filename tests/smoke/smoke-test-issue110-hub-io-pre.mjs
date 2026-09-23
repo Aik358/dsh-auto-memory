@@ -177,7 +177,7 @@ try {
   // ─────────────────────────────────────────────────────────────
   console.log('== ⑤ 宿主接线：index.js 必须委托该模块，旧内联静默实现必须消失 ==')
   {
-    ok(/import \{[^}]*createHubIoPre[^}]*\} from '\.\/hub-io.js'/.test(INDEX), 'index.js 从 ./hub-io.js 导入适配器')
+    ok(/import \{[^}]*createHubIoPre[^}]*\} from '\.\/hub-io\.js'/.test(INDEX), 'index.js 从 ./hub-io.js 导入适配器')
     ok(!INDEX.includes('const hubIo = (name) => {'), '★旧内联 hubIo 工厂已移除（回归即红）')
     ok(INDEX.includes('createHubIoPre({'), 'index.js 用 createHubIoPre 装配 io')
     ok(/engine\._hubIoHealth = hubIoHealth/.test(INDEX), 'health 台账挂在 engine 上（debugInfo 可读）')

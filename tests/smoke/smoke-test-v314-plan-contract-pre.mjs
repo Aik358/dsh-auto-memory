@@ -4,7 +4,8 @@
  * 钉死三件事（都是用户报障「每次都重试」的真实成因）：
  *   I1 工具描述里必须写明「plan 重写前先 read 磁盘原文抄回锚点」（A）
  *   I2 M1 拒绝时回吐**缺失卡片原文块**（B）——真跑纯函数，不用字符串断言糊弄
- *   I3 拒绝文案里**不得**再出现那条对模型不可达的出路（C-修，三层取证确认假出路）
+ *   I3 拒绝文案给出**两条真出路**（原样带回 / 声明归档）：批 I 删旧句时 archivedIds 尚未接通，
+ *      同批的批 J 已把它接进工具 ⇒ 只给一条出路会与实现和 t0-8:119 互相打脸。
  *
  * ★本套件同时是「三处根因」的回归网（2026-09-22 实测踩到，已记入工程纪律）：
  *   · 探针串必须逐字复制目标文本（首版 '必须 read' vs 实际 '必须先 read' ⇒ 假红）
@@ -14,6 +15,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { mutationRefusalTextPre } from '../../lib/memory-mutation.js'
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 const ROOT = path.resolve(HERE, '..', '..')
@@ -30,7 +32,12 @@ const mm = fs.readFileSync(MM, 'utf8')
 console.log('=== I1 工具描述写明契约（A）===')
 ok(ix.includes('必须先 read 磁盘 handoff/PLAN.md'), 'I1a ★描述含「先 read 磁盘原文」')
 ok(ix.includes('注入快照会被截断'), 'I1b 说明为何必须读原文（快照会截断）')
-ok(ix.includes('缺锚点会被保护门拒绝'), 'I1c 说明拒绝后果')
+// ★v3.1.4 审校修正：本批同时把白板 M1 丢卡**降级为警示**（批 J），原断言
+//   「缺锚点会被保护门拒绝」是与本批行为自相矛盾的假陈述 —— 模型照它行动会以为
+//   漏抄也没关系，或反过来以为 archivedIds 无用。故改钉真实后果，并加反向锁防复发。
+ok(ix.includes('漏抄锚点=卡片消失') && ix.includes('不再硬拒'), 'I1c ★丢卡后果写明为「照写 + 警示」（与批 J 一致）')
+ok(ix.includes('仍会硬拒的是两类'), 'I1c2 同时写明仍硬拒的两类（用户备注区未带回 / 卡片 id 重复）')
+ok(!ix.includes('缺锚点会被保护门拒绝'), 'I1c3 ★反向锁：不得再声称丢卡会被直接拒绝')
 // 锚点：该描述必须在 memory_note 的 kind 参数行里（不是别处）
 {
   const i = ix.indexOf("defineTool('memory_note'")
@@ -85,16 +92,26 @@ try {
   ok(F(SAMPLE, { hard: [{ id: 'M1', pass: false, missing: ['mem_zzz'] }] }) === '', 'I2i 找不到该卡时不抛错')
 } catch (e) { ok(false, 'I2 纯函数真跑异常', String((e && e.message) || e).slice(0, 200)) }
 
-console.log('\n=== I3 假出路已删（C-修）===')
-ok(!mm.includes('显式写入归档集合'), 'I3a ★拒绝文案不再承诺不可达出路')
-ok(mm.includes('这是唯一可通过的写法'), 'I3b 改为唯一真出路（原样带回）')
+console.log('\n=== I3 拒绝文案按失败类型给真出路 ===')
+ok(!mm.includes('显式写入归档集合'), 'I3a 不再使用旧的不可达措辞')
+ok(mm.includes('请逐项修正后重试'), 'I3b ★混合失败必须逐项修，不再误写成万能二选一')
+ok(mm.includes('archivedIds 不能修复用户区丢失或改写'), 'I3b1 M2 明确 archivedIds 无效')
+ok(mm.includes('archivedIds 不能修复重复 id'), 'I3b2 M3 明确 archivedIds 无效')
 ok(mm.includes('先 read 磁盘 handoff/PLAN.md'), 'I3c 指引模型先读原文')
-// 保留既有守卫依赖的两条（smoke-test-t0-8 断言过）
 ok(mm.includes('原文件未改动'), 'I3d 保留「原文件未改动」')
 {
-  const i = mm.indexOf('export function mutationRefusalTextPre')
-  const seg = mm.slice(i, i + 1200)
-  ok(/h\.id/.test(seg) && /failed/.test(seg), 'I3e 仍回吐卡片 id（既有守卫依赖）')
+  const mk = (...ids) => ({ hard: ids.map((id) => ({ id, pass: false, detail: 'probe-' + id })) })
+  const m1 = mutationRefusalTextPre(mk('M1'))
+  const m2 = mutationRefusalTextPre(mk('M2'))
+  const m3 = mutationRefusalTextPre(mk('M3'))
+  const mixed = mutationRefusalTextPre(mk('M1', 'M2'))
+  ok(m1.includes('若确属有意移除') && m1.includes('archivedIds'), 'I3e ★M1 才给「有意移除 → archivedIds」真出路')
+  ok(m2.includes('[M2]') && m2.includes('archivedIds 不能修复') && !m2.includes('若确属有意移除'),
+    'I3f ★M2 不会误导模型靠 archivedIds 重试')
+  ok(m3.includes('[M3]') && m3.includes('archivedIds 不能修复') && !m3.includes('若确属有意移除'),
+    'I3g ★M3 不会误导模型靠 archivedIds 重试')
+  ok(mixed.includes('[M1]') && mixed.includes('[M2]') && mixed.includes('请逐项修正后重试'),
+    'I3h ★M1+M2 混合失败要求两项都修，不再宣称二选一')
 }
 
 console.log('\n=== I4 卡片判据同源（防再次自造形态）===')
