@@ -3,7 +3,7 @@
  * smoke-test-batch4-20260919-pre.mjs —— 第四批上游 issue 修复套件（#68 JS/Python 分叉）
  *
  * #68：`semantic-decide.js` 的 JS 实现自称「与 Python 对齐」但有三处分叉
- * （权威实现 = `python/m7_activation_features_pre_v2.py`，两版 Python 逐字相同）：
+ * （权威实现 = `python/m7_activation_features_v2.py`，两版 Python 逐字相同）：
  *   ① **1 字词**：Python `_WORD_RE = (?u)\b\w\w+\b`（≥2 字），旧 JS `+` 允许 1 字
  *   ② **全角数字**：Python `str.isalnum()` 对 `１２３` 为真，旧 JS `[a-z0-9]` 丢弃
  *   ③ **`é` 等带音标字母**：同上（Python isalnum 真，旧 JS 丢弃）
@@ -57,7 +57,7 @@ console.log('\n[4] ④ 非字母数字必须「整删」而非「变空格」（
 
 console.log('\n[5] 逐字复刻 Python 参照实现（真值表）')
 {
-  // 参照：python/m7_activation_features_pre_v2.py:78-79
+  // 参照：python/m7_activation_features_v2.py:78-79
   //   ''.join(ch for ch in str(text).lower() if ch.isalnum() or '\u4e00' <= ch <= '\u9fff')
   const pyRef = (text) => {
     let out = ''
