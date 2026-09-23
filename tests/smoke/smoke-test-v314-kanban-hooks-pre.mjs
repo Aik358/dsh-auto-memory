@@ -37,35 +37,39 @@ ok(CL.includes('useCardFull(d) || d.full || d.preview'), 'K1d 兜底链保留（
 
 console.log('\n=== K2 全仓 hook 调用面：不得出现在条件表达式/JSX 实参里 ===')
 {
-  // ★v3.1.4 审校修正：原判据的 HOOKS 白名单只列 8 个**内置** hook，而造成本次 #310 白屏的
-  //   useCardFull 是**自定义** hook ⇒ 事故行连判定都进不去（实测对该行 SKIPPED、不报警），
-  //   文件头「下次谁再这么写就红」成了空头承诺。改按形态匹配任意 useXxx( 调用。
-  //   同时把原判据里恒假的 inJsxArg 复合式（`X.test(...) === false && ...` 自相矛盾）
-  //   换成两个可独立成立的条件。误报实测：client.js 全 7537 行 0 命中；
-  //   四条已知事故形态（实参里调 hook / 三元右侧 / 数组实参 / 自定义 hook）全部报警。
-  const hookRe = /\buse[A-Z][A-Za-z0-9]*\s*\(/
+  // 单行启发式仍只负责提前拦截已知事故族，但必须：
+  // ① 扫一行里的**全部** hook，而不是只看第一个；② 只把真正的三元 ? 当条件，不把对象属性的 : 误判。
+  const hookCallRe = /\buse[A-Z][A-Za-z0-9]*\s*\(/g
+  const riskyHookCallsInLine = (s) => {
+    const hits = []
+    for (const m of s.matchAll(hookCallRe)) {
+      const at = Number(m.index)
+      const before = s.slice(0, at)
+      // 条件右侧：&& / ||，或真正的三元 ?（排除 ?. 与 ??）。
+      const conditional = /&&|\|\|/.test(before) || /(^|[^?])\?(?![?.])/.test(before)
+      // h(...) 的实参位：hook 前同行已有 h(，且当前位置紧跟在逗号/左括号/左方括号之后。
+      const inJsxArg = /\bh\(/.test(before) && /(?:,|\(|\[)\s*(?:\(?\s*)$/.test(before)
+      if (conditional || inJsxArg) hits.push({ at, hook: m[0].trim(), conditional, inJsxArg })
+    }
+    return hits
+  }
+
   const bad = []
   lines.forEach((l, i) => {
-    if (!hookRe.test(l)) return
-    if (/^\s*function use[A-Z]/.test(l)) return                       // hook 定义行
-    if (/^\s*(\/\*|\*|\/\/)/.test(l)) return                          // 注释
-    const at = l.search(hookRe)
-    const before = l.slice(0, at)
-    // ① 条件右侧：hook **之前**同行出现 ? : && || ⇒ 是否调用取决于分支 ⇒ hook 数可变
-    const conditional = /[:?](?!\/)/.test(before) || /&&|\|\|/.test(before)
-    // ② JSX 实参：hook **之前**同行有 h( ，且 hook 紧跟在 , ( [ 之后 ⇒ 被当实参传入（本次事故形态）
-    const inJsxArg = /\bh\(/.test(before) && /[,([]\s*(\(?\s*)$/.test(before)
-    if (conditional || inJsxArg) bad.push('L' + (i + 1) + '  ' + l.trim().slice(0, 130))
+    if (/^\s*function use[A-Z]/.test(l)) return
+    if (/^\s*(\/\*|\*|\/\/)/.test(l)) return
+    const hits = riskyHookCallsInLine(l)
+    if (hits.length) bad.push('L' + (i + 1) + '  ' + l.trim().slice(0, 130))
   })
   ok(bad.length === 0, '★K2 无「条件/实参里调 hook」的写法（实得 ' + bad.length + ' 处）', bad.join('\n           '))
-  // 判据自身的哨兵：把已知事故行喂进去，必须报警（防"守卫再次看不见自己的猎物"）
-  const CATCHES = (s) => {
-    if (!hookRe.test(s)) return false
-    const b = s.slice(0, s.search(hookRe))
-    return /[:?](?!\/)/.test(b) || /&&|\|\|/.test(b) || (/\bh\(/.test(b) && /[,([]\s*(\(?\s*)$/.test(b))
-  }
-  ok(CATCHES("h('pre', { key: 'body' }, (useCardFull(drawer) || drawer.full))"), 'K2s 哨兵：本次事故行（自定义 hook 作实参）能报警')
-  ok(CATCHES("h('p', null, useTick(30))"), 'K2s 哨兵：数组外的实参位调用自定义 hook 能报警')
+
+  // 判据自身哨兵：既锁本次事故，也锁「同一行第二个 hook」漏报与对象属性冒号误报。
+  const CATCHES = (s) => riskyHookCallsInLine(s).length > 0
+  ok(CATCHES("h('pre', { key: 'body' }, (useCardFull(drawer) || drawer.full))"), 'K2s1 本次事故行（自定义 hook 作实参）能报警')
+  ok(CATCHES("h('p', null, useTick(30))"), 'K2s2 普通实参位调用自定义 hook 能报警')
+  ok(CATCHES("const a = useA(); cond && useB()"), 'K2s3 ★同一行第二个 hook 位于条件右侧也能报警')
+  ok(CATCHES("const a = useA(); h('p', null, useB())"), 'K2s4 ★同一行第二个 hook 作 h() 实参也能报警')
+  ok(!CATCHES("const x = { value: useFoo() }"), 'K2s5 ★对象属性冒号不是三元表达式，不误报合法顶层 hook')
 }
 
 console.log('\n=== K3 同一 hook 的既有正确写法未被改坏 ===')

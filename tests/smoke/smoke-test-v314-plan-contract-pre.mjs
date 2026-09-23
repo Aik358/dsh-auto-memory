@@ -15,6 +15,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { mutationRefusalTextPre } from '../../lib/memory-mutation.js'
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 const ROOT = path.resolve(HERE, '..', '..')
@@ -91,21 +92,26 @@ try {
   ok(F(SAMPLE, { hard: [{ id: 'M1', pass: false, missing: ['mem_zzz'] }] }) === '', 'I2i 找不到该卡时不抛错')
 } catch (e) { ok(false, 'I2 纯函数真跑异常', String((e && e.message) || e).slice(0, 200)) }
 
-console.log('\n=== I3 假出路已删（C-修）===')
-ok(!mm.includes('显式写入归档集合'), 'I3a ★拒绝文案不再用那句不可达的原文措辞')
-// ★v3.1.4 审校修正：批 J 已把 archivedIds 真接进 memory_note（参数表 → writePlanSnapshot → 保护门），
-//   「显式归档」自本批起是**可达**出路，且 t0-8:119 行为钉它放行 ⇒ 文案若只给一条出路即与
-//   同批实现和既有行为测试互相打脸。改钉「两条出路并列」。
-ok(mm.includes('请修正后重试（二选一）'), 'I3b 出路①原样带回 / 出路②声明归档，并列给出')
-ok(mm.includes('archivedIds'), 'I3b1 ★拒绝文案点名的 archivedIds 与本批真接通的参数同名')
-ok(!mm.includes('这是唯一可通过的写法'), 'I3b2 ★反向锁：不得再声称只有一条出路')
+console.log('\n=== I3 拒绝文案按失败类型给真出路 ===')
+ok(!mm.includes('显式写入归档集合'), 'I3a 不再使用旧的不可达措辞')
+ok(mm.includes('请逐项修正后重试'), 'I3b ★混合失败必须逐项修，不再误写成万能二选一')
+ok(mm.includes('archivedIds 不能修复用户区丢失或改写'), 'I3b1 M2 明确 archivedIds 无效')
+ok(mm.includes('archivedIds 不能修复重复 id'), 'I3b2 M3 明确 archivedIds 无效')
 ok(mm.includes('先 read 磁盘 handoff/PLAN.md'), 'I3c 指引模型先读原文')
-// 保留既有守卫依赖的两条（smoke-test-t0-8 断言过）
 ok(mm.includes('原文件未改动'), 'I3d 保留「原文件未改动」')
 {
-  const i = mm.indexOf('export function mutationRefusalTextPre')
-  const seg = mm.slice(i, i + 1200)
-  ok(/h\.id/.test(seg) && /failed/.test(seg), 'I3e 仍回吐卡片 id（既有守卫依赖）')
+  const mk = (...ids) => ({ hard: ids.map((id) => ({ id, pass: false, detail: 'probe-' + id })) })
+  const m1 = mutationRefusalTextPre(mk('M1'))
+  const m2 = mutationRefusalTextPre(mk('M2'))
+  const m3 = mutationRefusalTextPre(mk('M3'))
+  const mixed = mutationRefusalTextPre(mk('M1', 'M2'))
+  ok(m1.includes('若确属有意移除') && m1.includes('archivedIds'), 'I3e ★M1 才给「有意移除 → archivedIds」真出路')
+  ok(m2.includes('[M2]') && m2.includes('archivedIds 不能修复') && !m2.includes('若确属有意移除'),
+    'I3f ★M2 不会误导模型靠 archivedIds 重试')
+  ok(m3.includes('[M3]') && m3.includes('archivedIds 不能修复') && !m3.includes('若确属有意移除'),
+    'I3g ★M3 不会误导模型靠 archivedIds 重试')
+  ok(mixed.includes('[M1]') && mixed.includes('[M2]') && mixed.includes('请逐项修正后重试'),
+    'I3h ★M1+M2 混合失败要求两项都修，不再宣称二选一')
 }
 
 console.log('\n=== I4 卡片判据同源（防再次自造形态）===')

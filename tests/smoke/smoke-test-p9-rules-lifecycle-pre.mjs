@@ -96,9 +96,13 @@ if (!SRC_REL) {
   // ★审校修正：原写法 SRC_REL.includes('note-status') **永可真** —— release.mjs 的注释里
   //   （:212「note-status 不得依赖 memory-anchor」、:304「note-status-*.js → P6B」）同样含该串，
   //   把 libModuleRenames 里两条登记全删也照样绿。改为要求带引号的登记形态。
+  const renameMatch = /const libModuleRenames = \[([\s\S]*?)\]\nconst libRenameMap =/.exec(SRC_REL)
+  ok(Boolean(renameMatch), '★能精确截出 libModuleRenames 数组（后续断言不得扫整个 release.mjs）')
+  const renameRegion = renameMatch ? renameMatch[1] : ''
+  const listedModules = [...renameRegion.matchAll(/^\s*'([^']+)',/gm)].map((m) => m[1])
   const NN_MOD = 'note-status' + '-pre' + '.js'
-  ok(SRC_REL.includes("'" + NN_MOD + "'"),
-    '★note-status 模块确在 libModuleRenames 登记行内（实查 ' + NN_MOD + '；注释命中不算）')
+  ok(listedModules.includes(NN_MOD),
+    '★note-status 模块确在 libModuleRenames 的字符串条目中（实查 ' + NN_MOD + '；数组外文本/注释命中不算）')
 }
 
 console.log('[G6] 单一写盘口')
