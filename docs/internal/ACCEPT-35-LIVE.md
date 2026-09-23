@@ -124,7 +124,7 @@ Copy-Item "$env:USERPROFILE\.dsh\dsh-auto-memory-pre.json.bak-accept35" "$env:US
    `09:38:38.450Z turn/end reason.kind=error`，错误为 **`502: {"message":"上游拒绝请求","type":"upstream_bad_request"}`**。
 3. 90s 轮询窗（`autoContinueRefreshTimeoutSeconds`）到点 → 报 `timeout`，宿主按 fail-soft 继续接续。
 4. **仪式随后真的执行了**：用户后续「继续」推动 `turn=6`，`09:41:01.529Z`（seq 291–295）模型连调两次
-   `memory_note_pre`（`kind=plan` + `kind=handoff`）→ `PLAN.md` 与 `handoff-20260914-174101.md` 的 mtime 正是 `17:41:01`。
+   `memory_note`（`kind=plan` + `kind=handoff`）→ `PLAN.md` 与 `handoff-20260914-174101.md` 的 mtime 正是 `17:41:01`。
 
 结论：**因果闭合判据的实质成立**（事件数增长且出现 seq>239 的 `assistant/message` + `tool/call`），只是发生在 90s 窗之后（+114s）。**记为半通过**，按本文档 §3 的口径单独记录；若要让它真通过，应提高 `autoContinueRefreshTimeoutSeconds`（当前上限 600）。
 

@@ -10,7 +10,7 @@
 | ① | `board_mode_pre_v1` 总开关（`lib/board-mode-pre.js`）：legacy（默认）/ graph，非法值 fail closed | ✅ |
 | ② | P1 判据门对账 + 单一真源再导出（`lib/ledger-criteria-pre.js`） | ✅ 10/10 |
 | ③ | P2 sidecar（`lib/wb-sidecar-pre.js` + index.js 两咽喉挂接）：index.json 完全可重建 | ✅ 10/10 |
-| ④ | P3 两遍历工具 `memory_expand_pre`/`memory_trace_pre`（仅 graph 档注册，工具数 14→16） | ✅ |
+| ④ | P3 两遍历工具 `memory_expand`/`memory_trace`（仅 graph 档注册，工具数 14→16） | ✅ |
 | ⑤ | dsh-graph v0.11.0 vendor 搬入（`vendor/dsh-graph/`，MIT 留痕 NOTICE-VENDOR.md） | ✅ |
 | ⑥ | GUI 一键切换（设置页双按钮 + 接续面板快捷键，同键 boardMode，即时回显） | ✅ |
 | ⑦ | 验收套件 `smoke-test-p1-ledger-criteria-pre.mjs` / `smoke-test-p23-wb-sidecar-pre.mjs` | ✅ 10+10 |
@@ -31,7 +31,7 @@
 ## 用户使用方式
 
 - **默认**：什么都不做 = 旧版白板，行为与 3.0 收官时完全一致（sidecar 不写、新工具不注册、graph_* 不激活）。
-- **切新版**：设置页「记忆窗口→白板模式」或接续面板按钮 → 「新版看板（dsh-graph）」→ 重启 dsh web（用户自行重启）→ 生效：P2 sidecar 开始写 `handoff/index.json`、`memory_expand_pre`/`memory_trace_pre` 注册（14→16）。dsh-graph vendor 的 cordis 接线步骤见 `vendor/dsh-graph/NOTICE-VENDOR.md`（需在 profile patch 加 insert 行，升级动作待用户明示）。
+- **切新版**：设置页「记忆窗口→白板模式」或接续面板按钮 → 「新版看板（dsh-graph）」→ 重启 dsh web（用户自行重启）→ 生效：P2 sidecar 开始写 `handoff/index.json`、`memory_expand`/`memory_trace` 注册（14→16）。dsh-graph vendor 的 cordis 接线步骤见 `vendor/dsh-graph/NOTICE-VENDOR.md`（需在 profile patch 加 insert 行，升级动作待用户明示）。
 - **回滚**：切回「旧版白板」+ 重启 = 完全回滚；sidecar 是派生物，删 `handoff/index.json` 不丢任何信息。
 
 ## 未做与待用户（如实）
@@ -141,7 +141,7 @@ legacy 档注入文本与面板返回结构**逐字节不变**（后端 `structu
 
 | 变异 | 期望 | 实测 |
 | --- | --- | --- |
-| ① 把 `tools.push(defineTool('memory_expand_pre'…))` 还原成裸 `defineTool(…)`（BUG-15 复发） | graph 套件变红 | **exit=1，真失败** |
+| ① 把 `tools.push(defineTool('memory_expand'…))` 还原成裸 `defineTool(…)`（BUG-15 复发） | graph 套件变红 | **exit=1，真失败** |
 | ② 删掉 `engine.loadConfigSync()` 调用（BUG-1/11 复发） | graph 套件变红，且应看到 `ready: engine + 14 tools`（回落 legacy） | **exit=1，真失败**；A1/A2/A3 三条同时红，日志实证退化为 14 工具 |
 
 两次变异后 `lib/index.js` **SHA256 逐字节还原**（`0E36650A08DF616B19C46CE65AD110CD72C8FD3BFFD86AEEFE916A0A6026898B`）。

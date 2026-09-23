@@ -239,12 +239,12 @@ query(q):
 
 #### 【P2】语义臂接入 memory_recall
 
-**背景**：`memory_recall_pre`（`lib/index.js:6302`）当前是**纯词法关键词匹配**，工具描述自己写着"关键词匹配"。语义引擎（C2 e5-small q8 / C3 bge-m3）只用在主动联想注入，recall 这条完全没接。本任务把语义臂接进来，**输入用 L0 而非全文**（全文超 e5 512 token 上限会被截断，实测最长条目 11046 字符）。
+**背景**：`memory_recall`（`lib/index.js:6302`）当前是**纯词法关键词匹配**，工具描述自己写着"关键词匹配"。语义引擎（C2 e5-small q8 / C3 bge-m3）只用在主动联想注入，recall 这条完全没接。本任务把语义臂接进来，**输入用 L0 而非全文**（全文超 e5 512 token 上限会被截断，实测最长条目 11046 字符）。
 
 **前置约定**：依赖 P1 完成（有 L0 向量索引）。不改动激活决策层（那是原创核心，与本任务无关）。
 
 **要改的文件/模块**：
-- `lib/index.js` 中 `memory_recall_pre` 的处理逻辑（约 `:6302` 附近）
+- `lib/index.js` 中 `memory_recall` 的处理逻辑（约 `:6302` 附近）
 - 语义调用复用 `lib/semantic-js-pre.js`，不新写引擎
 
 **验收标准**：
@@ -431,7 +431,7 @@ for s in orderByWeightDesc(sections):
 **前置约定**：无依赖，随时可做。
 
 **要改的文件/模块**：
-- 账本写入逻辑（`memory_note_pre` 的 `kind=handoff` 分支）
+- 账本写入逻辑（`memory_note` 的 `kind=handoff` 分支）
 - 白板归档逻辑（复用现有 PLAN archive 机制）
 
 **验收标准**：

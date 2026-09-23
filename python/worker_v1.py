@@ -24,9 +24,9 @@ import sys
 import tempfile
 import time
 
-PROTOCOL = 'm7_wire_v1'
-NAMESPACE = 'dsh-auto-memory'
-INDEX_POLICY = 'index_sync_v1'
+PROTOCOL = 'm7_wire_pre_v1'
+NAMESPACE = 'dsh-auto-memory-pre'
+INDEX_POLICY = 'index_sync_pre_v1'
 MAX_LINE_BYTES = 256 * 1024
 MAX_RECORDS_PER_PAGE = 64
 # ★2026-09-17 修「索引永久不就绪 → 语义唤回全程降级」：JS 侧契约是「新 miv latest-wins；
@@ -47,9 +47,9 @@ PY_TYPES = frozenset(['health_result', 'context_ack', 'index_ack', 'activation_r
 
 RE_MEMORY_ID = re.compile(r'^mem_[0-9a-f]{32}$')
 RE_HEX64 = re.compile(r'^[0-9a-f]{64}$')
-RE_IDX = re.compile(r'^idx_[0-9a-f]{32}$')
+RE_IDX = re.compile(r'^idx_pre_[0-9a-f]{32}$')
 RE_WSR = re.compile(r'^wsr_[0-9a-f]{32}$')
-RE_OBS = re.compile(r'^obs_')
+RE_OBS = re.compile(r'^obs_pre_')
 RE_SOURCE_REF = re.compile(r'^(user|workspace|workspace-log):[A-Za-z0-9._\u4e00-\u9fff-]+$')
 
 _stderr_used = {'n': 0}
@@ -84,7 +84,7 @@ def dumps(v):
 
 
 def canonical(v):
-    """Byte-identical twin of lib/m7-wire.js canonicalJson()."""
+    """Byte-identical twin of lib/m7-wire-pre.js canonicalJson()."""
     if v is None:
         return 'null'
     if isinstance(v, bool):
@@ -105,7 +105,7 @@ class ProtocolError(Exception):
         self.detail = detail
 
 
-# ---------- payload validators (mirror of lib/m7-wire.js) ----------
+# ---------- payload validators (mirror of lib/m7-wire-pre.js) ----------
 
 
 def validate_semantic_record(rec):
@@ -126,7 +126,7 @@ def validate_semantic_record(rec):
     need(RE_HEX64.match(str(rec.get('recordDigest', ''))), 'recordDigest')
     need(rec.get('heading') is None or isinstance(rec.get('heading'), str), 'heading')
     need(isinstance(rec.get('text'), str), 'text')
-    need(isinstance(rec.get('chunkId'), str) and str(rec.get('chunkId')).startswith('chk_'), 'chunkId')
+    need(isinstance(rec.get('chunkId'), str) and str(rec.get('chunkId')).startswith('chk_pre_'), 'chunkId')
     ordinal = rec.get('chunkOrdinal')
     count = rec.get('chunkCount')
     need(isinstance(ordinal, int) and not isinstance(ordinal, bool) and ordinal >= 0, 'chunkOrdinal')
@@ -219,7 +219,7 @@ class Worker:
 
     def maybe_activation(self, req, p):
         """Deterministic fake ActivationRequestPre copied from JS-owned provenance.
-        Emits only when the frame carries valid identity + idx_ index version;
+        Emits only when the frame carries valid identity + idx_pre_ index version;
         otherwise stays silent (fail closed). Field-compatible with M6 validator."""
         miv = str((p.get('index') or {}).get('memoryIndexVersion', ''))
         if not RE_IDX.match(miv):
@@ -257,9 +257,9 @@ class Worker:
                 continue
             if not RE_HEX64.match(fdig) or not RE_HEX64.match(rdig):
                 continue
-            activation_id = 'act_' + first32(sha_str('m7-fake-activation-v1\u0000' + obs))
+            activation_id = 'act_pre_' + first32(sha_str('m7-fake-activation-pre-v1\u0000' + obs))
             cand = {
-                'candidateId': 'cand_' + first32(sha_str(activation_id + '\u0000' + mid + '\u0000' + str(i))),
+                'candidateId': 'cand_pre_' + first32(sha_str(activation_id + '\u0000' + mid + '\u0000' + str(i))),
                 'memoryId': mid,
                 'anchorId': aid,
                 'scope': rscope,
@@ -273,7 +273,7 @@ class Worker:
             candidates.append(cand)
         if not candidates:
             return None
-        activation_id = 'act_' + first32(sha_str('m7-fake-activation-v1\u0000' + obs))
+        activation_id = 'act_pre_' + first32(sha_str('m7-fake-activation-pre-v1\u0000' + obs))
         created = req.get('sentAt', 0)
         ttl_steps = 2
         activation = {
@@ -290,7 +290,7 @@ class Worker:
             'contextVersion': cv,
             'memoryIndexVersion': miv,
             'threshold': {
-                'policyVersion': 'm7_fake_threshold_v1',
+                'policyVersion': 'm7_fake_threshold_pre_v1',
                 'score': 0.92,
                 'threshold': 0.8,
                 'reason': 'deterministic fake activation (python worker)',
@@ -326,7 +326,7 @@ class Worker:
         require(isinstance(p, dict), 'invalid-payload', 'not-object')
         require(p.get('schemaVersion') == 1, 'invalid-payload', 'schemaVersion')
         sync_id = str(p.get('syncId', ''))
-        require(sync_id.startswith('syn_'), 'invalid-payload', 'syncId')
+        require(sync_id.startswith('syn_pre_'), 'invalid-payload', 'syncId')
         ws_ref = str(p.get('workspaceRef', ''))
         require(RE_WSR.match(ws_ref), 'invalid-payload', 'workspaceRef')
         scope = p.get('scope')
@@ -469,7 +469,7 @@ class Worker:
         for i in range(st['pageCount']):
             flat.extend(st['pages'][i])
         expected_final = sha_hex(canonical({
-            'kind': 'index_sync_final_v1',
+            'kind': 'index_sync_final_pre_v1',
             'syncId': st['syncId'],
             'memoryIndexVersion': st['memoryIndexVersion'],
             'workspaceRef': st['workspaceRef'],
@@ -511,7 +511,7 @@ class Worker:
                 'records': e['records'],
             })
         payload = {'schemaVersion': 1, 'namespace': NAMESPACE,
-                   'policyVersion': 'semantic_derived_v1', 'entries': entries}
+                   'policyVersion': 'semantic_derived_pre_v1', 'entries': entries}
         data = (dumps(payload) + '\n').encode('utf-8')
         try:
             os.makedirs(dir_path, exist_ok=True)
@@ -584,10 +584,10 @@ def run_selftest():
     assert frames[0]['frameId'] == 'res_' + first32(sha_str('r1:health_result'))
     checks += 1
     push = {'requestId': 'r2', 'workerEpoch': 'ep', 'sentAt': 20, 'frameId': 'f2', 'type': 'context_push',
-            'payload': {'kind': 'context_push', 'observationId': 'obs_' + '0' * 32,
+            'payload': {'kind': 'context_push', 'observationId': 'obs_pre_' + '0' * 32,
                         'session': {'sessionId': 's', 'agentId': 'a', 'workspaceKey': 'w', 'scope': 'Workspace'},
                         'cursor': {'eventSeq': 1, 'contextVersion': 3},
-                        'index': {'memoryIndexVersion': 'idx_' + 'ab' * 16}, 'memoryRefs': []}}
+                        'index': {'memoryIndexVersion': 'idx_pre_' + 'ab' * 16}, 'memoryRefs': []}}
     f2 = w.handle_frame(push)
     assert len(f2) == 1 and f2[0]['payload']['accepted'] is True
     again = w.handle_frame(push)

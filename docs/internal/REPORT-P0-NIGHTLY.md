@@ -37,7 +37,7 @@
 | `lib/index.js:checkMutationPre`（新方法） | 写入保护统一入口（判据门 → 保护门，顺序有意为之） |
 | `lib/index.js:writePlanSnapshot` / `writeHandoffLedger` | 接入 `checkMutationPre`；签名加 `opts`（`skipCriteria`） |
 | `lib/index.js:checkWaterLevel`（水位骨架路径） | A6 降级路径：`skipCriteria: true` **只跳判据门**；遇保护门拒绝**绝不绕过**并留痕 |
-| `lib/index.js:memory_note_pre`（工具层） | 两类拒绝都返回**原始可执行文案**（不再是"白板写入失败(未知)"） |
+| `lib/index.js:memory_note`（工具层） | 两类拒绝都返回**原始可执行文案**（不再是"白板写入失败(未知)"） |
 | `lib/index.js`（注入调用方） | P6A：`parseGapRoundsPre` 替换 `Number(v) || 5`；节流分支由"跳过整份快照"改为 `rulesOnlyText + renderReflectionRequest()` |
 
 ### 新增/修改测试（5 新增 + 4 修改）

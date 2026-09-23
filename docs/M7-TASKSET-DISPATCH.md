@@ -21,7 +21,7 @@
 - 可以检查 dsh 命令是否存在，但不得停止、启动或重启宿主
 
 重要：
-- 不得假设存在 memory_recall_pre、memory_external_pre、goal、calendar 等 DeepSeek Harness 工具。
+- 不得假设存在 memory_recall、memory_external、goal、calendar 等 DeepSeek Harness 工具。
 - 若这些工具没有真实暴露，不得模拟、描述为已调用或绕过限制。
 - 没有 dshLifecycleControl 不构成离线 M7 阻断；继续完成 M7-2 至 M7-7，并在 M7-8 人工门停止。
 - 即便存在 dshLifecycleControl，未经用户本轮明确授权，也严禁停止或重启 3080。

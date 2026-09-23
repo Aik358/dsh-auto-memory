@@ -6,17 +6,17 @@ Pure re-implementation of the frozen policy for the production sidecar path
 (the benchmark rig lives separately under python/bench/ and stays untouched):
 
   provider      bge-m3 pinned revision, CLS pooling, L2-normalized float32
-  chunk policy  m7_chunk_v1 = para-512-noov (tokenizer id space,
+  chunk policy  m7_chunk_pre_v1 = para-512-noov (tokenizer id space,
                 greedy paragraph packing, oversized paragraph hard-split,
                 no overlap; special tokens added by the model tokenizer)
   identity      provider/model/revision/dimension/normalization/policyVersion
                 -> configHash; mismatch = stale = full rebuild
 
 Providers:
-  hash-v1   deterministic stdlib-only embedding (sha256-seeded bag of
+  hash-pre-v1   deterministic stdlib-only embedding (sha256-seeded bag of
                 token-trigram dims). Zero dependencies, zero network. Used
                 by CI and offline protocol tests. NOT a quality provider.
-  bge-m3-v1 real model via transformers (lazy import; requires the
+  bge-m3-pre-v1 real model via transformers (lazy import; requires the
                 pinned local snapshot dir passed in the embedding config).
 
 No DSH file reads; no writes except what the worker explicitly passes in.
@@ -25,15 +25,15 @@ import hashlib
 import json
 import re
 
-PROVIDER_REAL = 'bge-m3-v1'
-PROVIDER_REAL_INT8 = 'bge-m3-onnx-int8-v1'
-PROVIDER_HASH = 'hash-v1'
-CHUNK_POLICY_VERSION = 'm7_chunk_v1'
+PROVIDER_REAL = 'bge-m3-pre-v1'
+PROVIDER_REAL_INT8 = 'bge-m3-onnx-int8-pre-v1'
+PROVIDER_HASH = 'hash-pre-v1'
+CHUNK_POLICY_VERSION = 'm7_chunk_pre_v1'
 CHUNK_MAX_TOKENS = 512
 QUERY_MAX_TOKENS = 256
 DIMENSION = 1024
 
-RE_CHUNK = re.compile(r'^chk_[0-9a-f]{16,}$')
+RE_CHUNK = re.compile(r'^chk_pre_[0-9a-f]{16,}$')
 
 
 def sha_hex(data):
@@ -73,8 +73,8 @@ def config_hash(provider, model_revision, dimension):
 
 
 def chunk_id_for(memory_id, record_digest, ordinal):
-    return 'chk_' + sha_hex(
-        ('m7-chunk-v1\u0000' + memory_id + '\u0000' + record_digest +
+    return 'chk_pre_' + sha_hex(
+        ('m7-chunk-pre-v1\u0000' + memory_id + '\u0000' + record_digest +
          '\u0000' + str(ordinal)).encode('utf-8'))[:32]
 
 
@@ -359,8 +359,8 @@ def identity_block(provider, config):
         dtype = 'int8-dynamic-onnx'
     return {
         'schemaVersion': 1,
-        'namespace': 'dsh-auto-memory',
-        'policyVersion': 'semantic_vectors_v1',
+        'namespace': 'dsh-auto-memory-pre',
+        'policyVersion': 'semantic_vectors_pre_v1',
         'provider': provider,
         'model': model_name,
         'modelRevision': str(config.get('modelRevision') or 'hash'),

@@ -44,7 +44,7 @@ M lib/python-setup-pre.js (+16/-4) issue #27 bge-m3 仓库名（HF 401）+ #28 t
 - [ ] **B1** 重启 dsh web，设置页「记忆中枢」可见、三栏有内容或正确空态
 - [ ] **B2** `GET /api/dsh-auto-memory-pre/memory-hub` 返回 200 + overview
 - [ ] **B3** ⭐ **P8 语义臂实证**（排序行为变更，最关键）：
-      用 `memory_recall_pre` 查一个**与记忆词法不重合但语义相关**的查询（如记忆里写"npm 发布报 ENEEDAUTH"，查"发布凭证问题"），
+      用 `memory_recall` 查一个**与记忆词法不重合但语义相关**的查询（如记忆里写"npm 发布报 ENEEDAUTH"，查"发布凭证问题"），
       确认能召回 ⇒ 证明 RRF 融合生效、语义臂不是摆设。
       若召回失败且 `legacy` 开关切回后正常 → 立即回报，**暂缓发版**。
 - [ ] **B4** correction 端到端：对 AI 说一句命中纠正词典的话（如"不对，你记错了"），检查当日 events 是否新增 `"kind":"correction"`

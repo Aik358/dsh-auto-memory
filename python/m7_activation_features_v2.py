@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""M7 activation features pre v2 (policy: activation_policy_v2).
+"""M7 activation features pre v2 (policy: activation_policy_pre_v2).
 
 Round-1 implementation of the two-lane activation eligibility decision.
 Pure stdlib; deterministic; NO pickle/joblib/sklearn at runtime — the
 calibrated intent head is reproduced from the auditable JSON artifact
-python/policies/recall_intent_lr_v1.json (vocabulary + IDF + logistic
+python/policies/recall_intent_lr_pre_v1.json (vocabulary + IDF + logistic
 regression coefficients/intercept + Platt calibration), exported by the
 calibration pipeline (runId label-review-cal20260824-1954).
 
@@ -48,9 +48,9 @@ import math
 import os
 import re
 
-FEATURES_POLICY_VERSION = 'activation_features_v2'
-INTENT_POLICY_VERSION = 'recall_intent_lr_v1'
-ACTIVATION_POLICY_VERSION = 'activation_policy_v2'
+FEATURES_POLICY_VERSION = 'activation_features_pre_v2'
+INTENT_POLICY_VERSION = 'recall_intent_lr_pre_v1'
+ACTIVATION_POLICY_VERSION = 'activation_policy_pre_v2'
 
 INTERROG = ['什么', '如何', '怎么', '哪些', '哪个', '为什么', '多少', '吗',
             '呢', '啥', 'recall', 'what', 'how', 'which', 'when', 'where',
@@ -375,8 +375,8 @@ if __name__ == '__main__':
     here = os.path.dirname(os.path.abspath(__file__))
     pol_dir = os.path.join(here, 'policies')
     loaded = load_and_verify_policy(
-        os.path.join(pol_dir, 'recall_intent_lr_v1.json'),
-        os.path.join(pol_dir, 'activation_policy_v2.json'))
+        os.path.join(pol_dir, 'recall_intent_lr_pre_v1.json'),
+        os.path.join(pol_dir, 'activation_policy_pre_v2.json'))
     demo_rows = [
         {'id': 'demo-recall', 'text': '之前为什么选 BGE-M3？',
          'denseTop': 0.72, 'margin': 0.10, 'containment': 0.55, 'mark': 1,

@@ -86,7 +86,7 @@ dsh-graph 的状态机**不引入**：白板是单对话进度快照，dsh-graph
 
 1. **写入前（代码，权威）**：校验中间件插在两个咽喉 `writeHandoffLedger`（1667）与 `writePlanSnapshot`（1620）入口——这两个函数覆盖全部三条生成通路（工具 7083-7084 / 水位骨架 2019 直调 / 刷新仪式产物走通路 1），在工具层（7078）校验则漏掉水位骨架直调通路（R1 §五已证）。硬判据不过 → 拒绝（`{ok:false, gate:'criteria'}`）。
 2. **写入后（事件，确认）**：校验通过/带软警告的事实作为**确认事件**记录（P2 的 events.jsonl：`criteria.passed` / `criteria.warned`），供刷新仪式轮询（`handoffMaterialStamp` 2524）、GUI 面板（2795）与图重建消费。登记（写入）与确认（判据事件）分离——"写了"不等于"合格"，防止模型用一次敷衍写入骗过仪式等待。
-3. **生成中 self-check（prompt，引导）**：只在 `memory_note_pre` 工具描述（7069）与刷新仪式 prompt（2506）补一句"写前自检四段齐全、无占位符"。它不承担拦截：LLM 自评不可靠，且生成中校验需要额外轮次，违背最小改动与 I4。
+3. **生成中 self-check（prompt，引导）**：只在 `memory_note` 工具描述（7069）与刷新仪式 prompt（2506）补一句"写前自检四段齐全、无占位符"。它不承担拦截：LLM 自评不可靠，且生成中校验需要额外轮次，违背最小改动与 I4。
 
 ### 2.5 校验报告 JSON Schema（机器可读产物，P1 中间件返回值契约）
 
@@ -174,7 +174,7 @@ dsh-graph 的状态机**不引入**：白板是单对话进度快照，dsh-graph
 
 命名采用现有 14 工具的 `*_pre` 惯例（备选名见 §8 拍板点 4）：
 
-**`memory_expand_pre`**（正向：给定 tag 展开其下 Content，对应 MRAgent `edges_by_tag` 的 Cue→Tag→Content）
+**`memory_expand`**（正向：给定 tag 展开其下 Content，对应 MRAgent `edges_by_tag` 的 Cue→Tag→Content）
 
 ```jsonc
 // 输入
@@ -187,10 +187,10 @@ dsh-graph 的状态机**不引入**：白板是单对话进度快照，dsh-graph
                  "mtime": 1780000000000, "cues": ["src/handoff.js"],
                  "criteria": "passed|warned|unknown" } ],
   "total": 17, "truncated": true, "remaining": 7,
-  "hint": "可用 memory_trace_pre(id) 回溯该条目的 cue/tag/邻居与归档版本" }
+  "hint": "可用 memory_trace(id) 回溯该条目的 cue/tag/邻居与归档版本" }
 ```
 
-**`memory_trace_pre`**（反向：给定条目回溯其 Cue/Tag 与邻居，对应 MRAgent `query_event_keywords` + `query_event_context` 的合并）
+**`memory_trace`**（反向：给定条目回溯其 Cue/Tag 与邻居，对应 MRAgent `query_event_keywords` + `query_event_context` 的合并）
 
 ```jsonc
 // 输入
@@ -221,19 +221,19 @@ dsh-graph 的状态机**不引入**：白板是单对话进度快照，dsh-graph
 
 1. **接续场景（主路径）**：入口 Cue 已经在上下文里——`carryText` 第0层白板 + 第1层账本（2712/2723）中可见的文件路径、组件名、主题词就是确定性可见的 Cue；工具描述指示模型"从已注入白板/账本中取路径/模块名/主题词作为入口 tag/cue"，**不需要新增 LLM 抽取步骤**（对齐 MRAgent 把种子证据 + key 候选塞进首轮的做法，R2：`agent/agent.py:539-545`）。
 2. **白板 Cue 头**：`index.json` 的 session Cue（工作区 + contSeq）与 PLAN/账本头部时间戳（系统头 1674）。
-3. **非接续场景**：当前轮用户消息分词 → `by_tag`/`by_cue` 规范化包含匹配（MRAgent `evaluate_relations_over_graph` 的白板极简版：只做规范化相等/包含，不做 Jaccard）；零命中 → 回落 `memory_recall_pre(scope=handoff)` 词法检索（3838-3844 原路径不动，即内建回退）。
+3. **非接续场景**：当前轮用户消息分词 → `by_tag`/`by_cue` 规范化包含匹配（MRAgent `evaluate_relations_over_graph` 的白板极简版：只做规范化相等/包含，不做 Jaccard）；零命中 → 回落 `memory_recall(scope=handoff)` 词法检索（3838-3844 原路径不动，即内建回退）。
 
 ### 4.4 与 MRAgent 工具集对齐表（以代码为准，含论文-代码命名出入）
 
 | MRAgent 工具（代码 `agent/tools.py` 为准） | 论文名（如有出入） | 白板对应 | 取舍说明 |
 | --- | --- | --- | --- |
-| `edges_by_tag` | 论文误称 `query_tag_events`（出入 6） | `memory_expand_pre` | 保留 (tag) 展开语义；去掉 note 参数与 LLM 决策注记（白板图小不需要）、去掉 embedding rerank |
-| `query_event_keywords` | 同名 | `memory_trace_pre`（cues/tags 部分） | 反向遍历 |
-| `query_event_context` | 同名 | `memory_trace_pre`（neighbors/versions 部分） | "上下文"在白板场景=同 tag 邻居 + 归档版本链 |
-| `query_topic_events` | 同名 | `memory_expand_pre(tag="topic:*")` | 复用同一工具，不新开 |
+| `edges_by_tag` | 论文误称 `query_tag_events`（出入 6） | `memory_expand` | 保留 (tag) 展开语义；去掉 note 参数与 LLM 决策注记（白板图小不需要）、去掉 embedding rerank |
+| `query_event_keywords` | 同名 | `memory_trace`（cues/tags 部分） | 反向遍历 |
+| `query_event_context` | 同名 | `memory_trace`（neighbors/versions 部分） | "上下文"在白板场景=同 tag 邻居 + 归档版本链 |
+| `query_topic_events` | 同名 | `memory_expand(tag="topic:*")` | 复用同一工具，不新开 |
 | `query_conversation_time` | 同名 | **不需要** | 条目自带文件名时间序（464-467） |
 | `query_personal_information` / `query_personal_aspect` | 同名 | **不适用** | 边界约束：单对话白板无人物/跨目标维度 |
-| （问题入口 `extract_question_keys` + `evaluate_relations_over_graph`） | — | 无独立工具 | Cue 匹配内联在 `memory_expand_pre` 的 tag 解析中（确定性包含匹配） |
+| （问题入口 `extract_question_keys` + `evaluate_relations_over_graph`） | — | 无独立工具 | Cue 匹配内联在 `memory_expand` 的 tag 解析中（确定性包含匹配） |
 
 dsh-graph 侧对齐：**无可借鉴的遍历工具**（出入 4）——它只有 `graph_validate`/`graph_rebuild` 式的对账接口，本方案只取其"派生件可重建"思想（§3.3），两工具的接口语义全部来自 MRAgent。
 
@@ -281,8 +281,8 @@ dsh-graph 侧对齐：**无可借鉴的遍历工具**（出入 4）——它只�
 
 | # | 改动 | 位置（抽验行号） | 依赖 | 改动量 |
 | --- | --- | --- | --- | --- |
-| P3-1 | 注册 `memory_expand_pre` / `memory_trace_pre`（defineTool，schema 见 §4.1；handler 读 index.json，缺失时 fail-soft 回落 `searchHandoffCorpus`） | `lib/index.js` 工具注册区（`memory_recall_pre` 7166 附近） | P2-1/P2-2 | ~100 行（两工具含描述与剪枝纪律文案） |
-| P3-2 | 唤醒逻辑：`buildContinueCarry` 第3层 guide（2727-2737）加一句"白板已结构化：可用 memory_expand_pre/memory_trace_pre 按 tag 主动重建，先于通读第3层" | `lib/index.js:2727-2737` | P3-1 | ~5 行 |
+| P3-1 | 注册 `memory_expand` / `memory_trace`（defineTool，schema 见 §4.1；handler 读 index.json，缺失时 fail-soft 回落 `searchHandoffCorpus`） | `lib/index.js` 工具注册区（`memory_recall` 7166 附近） | P2-1/P2-2 | ~100 行（两工具含描述与剪枝纪律文案） |
+| P3-2 | 唤醒逻辑：`buildContinueCarry` 第3层 guide（2727-2737）加一句"白板已结构化：可用 memory_expand/memory_trace 按 tag 主动重建，先于通读第3层" | `lib/index.js:2727-2737` | P3-1 | ~5 行 |
 | P3-3 | **测试硬锁同步（必须项）**：工具数 14 → 16，三处 `!== 14` 全部改 `!== 16`——`tests/smoke/smoke-test.mjs:67`、`tests/smoke/smoke-test-m3b3-pre.mjs:43`、`tests/smoke/smoke-test-context-observer.mjs:107`；另补两工具行为测试与"sidecar 缺失回落"测试 | 三处测试文件 | P3-1 | ~60 行 |
 
 小计：~165 行。依赖：P2 → P3-1 → {P3-2, P3-3}。**警告**：漏改任一处工具数断言 = smoke 测试直接红；回退（移除工具）时同样要同步回 14。
@@ -302,7 +302,7 @@ I1 不变量：静态纪律层字节稳定（`renderMemoryStatic` 注册为 `ctx
 | P0-1 | 纯文档 | 不进任何 prompt | **零** |
 | P1 | 写盘路径 + 工具返回值 | 校验只发生在落盘前；拒绝文案只出现在当轮工具结果（对话动态部分）；工具描述/仪式文案（P1-7）变更属**发布版本级一次性字节变化**（工具块在请求头部、全版本会话一致，非每轮击穿） | **零每轮影响**；发布时一次性质变，与前缀缓存语义兼容 |
 | P2 | 落盘 sidecar + 注入端 | index.json/events.jsonl **永不进固定边界**；进入上下文的只有：①动态快照白板/账本段（3617/3619，本来就在动态层、已有预算与频率控制 6971-7019）；②锚点表扩展（2744-2760，位于接续首条 user 消息内、单次接续写定后不变，且保持"同输入同字节"）。动态快照每轮增量 ≈ tag 摘要行 200-400 字节，且受 800/1200 预算与既有指纹节流约束 | **≈零**；动态层本来就被设计为可变 |
-| P3 | 工具注册 + 唤醒提示 | 新工具进工具块（发布级一次性变化）；`memory_expand_pre`/`memory_trace_pre` 返回值只进当轮 messages 动态部分；唤醒提示加在第3层 guide（2727-2737，carryText 内，接续会话内写定）。静态 section（7026）字节 **0 次改动** | **≈零**（发布级一次性 + 动态区按需） |
+| P3 | 工具注册 + 唤醒提示 | 新工具进工具块（发布级一次性变化）；`memory_expand`/`memory_trace` 返回值只进当轮 messages 动态部分；唤醒提示加在第3层 guide（2727-2737，carryText 内，接续会话内写定）。静态 section（7026）字节 **0 次改动** | **≈零**（发布级一次性 + 动态区按需） |
 
 **量化结论**：P0-P3 对静态纪律 section 的每轮字节稳定性的破坏次数均为 **0**；全方案唯一的固定边界触碰是 P1-7 的工具描述文本与 P3 的工具块增员——两者都是**发布版本级一次性**变化（等价于任意一次版本升级），不存在"每轮内容变化击穿 system prompt 前缀"的路径。若用户拍板把判据纪律写进静态纪律 3703（§8 拍板点 3），则增加一次版本级更新，仍非每轮击穿。
 
@@ -314,7 +314,7 @@ I1 不变量：静态纪律层字节稳定（`renderMemoryStatic` 注册为 `ctx
 
 MRAgent 实测（R2，LongMemEval 每 sample 含构建+检索）：**token 全场最低**（118k，对比 Mem0 245k ~ LangMem 3268k），但**墙钟仅第二快**（586s，Mem0 533s 更快）——省 token 靠"只注入相关子图"，代价是遍历轮数增多。白板场景的对应预估：
 
-- 图规模小（单工作区可见账本 ≤60 篇 + 20 篇归档窗口，1710/1714；条目数十级），`memory_expand_pre` 单次 = 一次 index.json 读取 + 内存过滤，<5ms，无 LLM rerank；
+- 图规模小（单工作区可见账本 ≤60 篇 + 20 篇归档窗口，1710/1714；条目数十级），`memory_expand` 单次 = 一次 index.json 读取 + 内存过滤，<5ms，无 LLM rerank；
 - token 增量：主动重建会话预估 **+1~2 轮工具往返、+1~3k token**（对比现状"通读 18000 carryText"多数情况下反而更省——MRAgent 的省 token 机制正是"只注入相关子图"）；
 - 延迟增量：每次遍历一轮工具往返（秒级）；接续唤醒首轮**零额外轮次**（入口 Cue 从已注入材料确定性提取，§4.3）；
 - P1 误拒重试：最坏 +1 轮（硬判据仅结构检查，重试率预期低）；刷新仪式期间被拒会推迟 `handoffMaterialStamp` 变化——仪式 prompt（2506）已给足四段格式、拒绝文案给出缺失清单，旧会话可当轮重试；风险窗口在仪式超时前，P1-6 测试需覆盖该场景。
@@ -324,7 +324,7 @@ MRAgent 实测（R2，LongMemEval 每 sample 含构建+检索）：**token 全�
 | 故障 | 回退路径 | 代价 |
 | --- | --- | --- |
 | sidecar 丢失/损坏/版本不识别 | `rebuildHandoffIndex()`（P2-2）从 Markdown 真相源重建；重建失败 → 一切读者回落 Markdown 平铺（现状路径全部保留：1603/1682/3838-3844） | 零信息损失（dsh-graph"投影可重建"范式） |
-| `memory_expand_pre`/`memory_trace_pre` 失败或行为异常 | 回落 `memory_recall_pre(scope=handoff)` 词法检索 + carryText 平铺（原路径未删）；极端情况不注册两工具即回到 P2 状态（**同步把三处测试断言改回 14**） | 功能降级，接续不受阻（I4） |
+| `memory_expand`/`memory_trace` 失败或行为异常 | 回落 `memory_recall(scope=handoff)` 词法检索 + carryText 平铺（原路径未删）；极端情况不注册两工具即回到 P2 状态（**同步把三处测试断言改回 14**） | 功能降级，接续不受阻（I4） |
 | P1 判据误拦 | 配置开关 `criteriaGate: false` 一键 fail-open 回到现状（校验仍执行但只记 diag） | 一轮配置热更 |
 | P2 注入扩展异常 | 锚点表区沿用既有 try/catch fail-soft 模式（2744-2760 现状即如此），失败自动跳过、材料回落平铺 | 零阻塞 |
 | 判据事件流膨胀 | events.jsonl 仅 append 且按账本篇滚动；超限只保留最近 N 篇的事件 | 磁盘可控 |
@@ -336,7 +336,7 @@ MRAgent 实测（R2，LongMemEval 每 sample 含构建+检索）：**token 全�
 1. **P2/P3 是否立项**：后端冻结期间禁改引擎——P2/P3 均改 `lib/index.js` 本体；P0-P1 可立即做。建议：P0-P1 立即，P2-P3 冻结解除后按本方案执行。
 2. **sidecar 位置**：`memoryRoot/<ws>/handoff/`（与现有 handoffDir 同目录，1573，GUI 白名单只放行 `.json`，备份/迁移自动覆盖）vs 工作区 `.dsh-memory/handoff/`。**建议前者**。
 3. **静态纪律 3703 是否随下一版本一次性更新**（把判据纪律写进固定 section，而不只是工具描述/仪式 prompt）：I1 允许版本级更新，代价是全量会话一次缓存重建。**建议更新**（判据与注入权重表本就同源）。
-4. **工具命名**：`memory_expand_pre` / `memory_trace_pre`（对齐现有 14 工具 `*_pre` 惯例，**建议**）vs 任务书原名 `expand_tag` / `trace_back`（对齐 MRAgent 语义直译）。
+4. **工具命名**：`memory_expand` / `memory_trace`（对齐现有 14 工具 `*_pre` 惯例，**建议**）vs 任务书原名 `expand_tag` / `trace_back`（对齐 MRAgent 语义直译）。
 5. **是否进 2.6.0**：P0-P1 体积小（~190 行）可进；P2-P3 建议 2.7.x 单独发版（工具数变更 + 存储格式新增，宜独立回归窗口）。
 6. **P1 水位骨架硬判据失败策略**：照写 + 警示行（**建议**，I4 优先）vs 跳过写入（更干净但接续材料缺失）。
 7. **PLAN 判据强度**：维持自由节名 + 最弱硬判据 P-H1（**建议**，P7 老化依赖节名灵活性）vs 固定 PLAN 小节集（伤及 P7 老化与"全貌图"用途）。
@@ -365,7 +365,7 @@ MRAgent 实测（R2，LongMemEval 每 sample 含构建+检索）：**token 全�
 
 - **Q1 判据集**：§2（硬=结构完整性 H1-H4/P-H1/P-H2 拒绝，软=质量密度 S1-S4/P-S1 警告；时机=写入前代码校验 + 写入后确认事件，self-check 仅 prompt 引导）。
 - **Q2 图映射**：§3（Cue=会话身份+条目内路径/组件名+交接时刻关键词；Tag=边属性、段类型/主题词确定性映射优先；Content=白板条目，state 与 dead-end 同为 Content 仅 tag 集合不同；存储=sidecar JSON，Markdown 为人读真相源）。
-- **Q3 遍历落地**：§4（入口 Cue 自动提取自已注入材料；两工具 `memory_expand_pre`/`memory_trace_pre`；剪枝=判据确认状态+段类型权重+(tag) 去重+条目帽+轮数提示帽+自判停止）。
+- **Q3 遍历落地**：§4（入口 Cue 自动提取自已注入材料；两工具 `memory_expand`/`memory_trace`；剪枝=判据确认状态+段类型权重+(tag) 去重+条目帽+轮数提示帽+自判停止）。
 - **Q4 优先级**：§5（P0 零代码 → P1 中间件 ~190 行 → P2 sidecar ~240 行 → P3 工具 ~165 行；P0-P1 立即、P2-P3 待拍板）。
 - **Q5 边界**：§1/§3.3/§6/§9（无跨目标依赖边；零代码搬运；Tag 确定性映射优先；固定边界零每轮击穿）。
 

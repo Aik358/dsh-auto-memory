@@ -32,7 +32,7 @@ index_sync 语义;不接生产 activation(默认关闭零副作用);到 M7-8 停
 | dshLifecycleControl | true(能力)/false(授权) | dsh 命令存在;本轮用户明令禁止停止/重启 3080 → 视为 false |
 | subagents | true | ZCode Agent 工具可用(仅只读研究/复核,主 Agent 唯一 writer) |
 
-不假设存在 memory_recall_pre/memory_external_pre/goal/calendar 等 DeepSeek
+不假设存在 memory_recall/memory_external/goal/calendar 等 DeepSeek
 Harness 工具;未暴露即不模拟。无 dshLifecycleControl 授权不构成离线 M7 阻断:
 M7-2~M7-7 照常推进,M7-8 人工门停止。
 

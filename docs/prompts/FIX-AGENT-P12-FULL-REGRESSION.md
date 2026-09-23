@@ -88,7 +88,7 @@ node tests/smoke/smoke-test-continue-chain-pre.mjs              # 58
 | # | 功能 | 怎么验 | 通过标准 |
 |---|---|---|---|
 | **L1** | **主动联想（P12 直接影响面）** | 开一个新会话，聊一段与已有记忆主题相关的话 | 记忆被**主动**联想并注入；从日志/diag 看 `queryPlan` 保留的词里**含高权重来源（user/trigger）的词** |
-| **L2** | **语义检索（P8）** | 用 `memory_recall_pre` 查一个**词法不重合但语义相关**的查询（如记忆里写"npm 发布报 ENEEDAUTH"，查"发布凭证问题"） | 能召回。失败则切 `legacy` 对比——若 legacy 正常而 rrf 失败 ⇒ **P8 回归** |
+| **L2** | **语义检索（P8）** | 用 `memory_recall` 查一个**词法不重合但语义相关**的查询（如记忆里写"npm 发布报 ENEEDAUTH"，查"发布凭证问题"） | 能召回。失败则切 `legacy` 对比——若 legacy 正常而 rrf 失败 ⇒ **P8 回归** |
 | **L3** | L0 返回与展开 | 同 L2 的 recall | 返回 L0 列表（含 id/score），用 `expand="mem_xxx"` 能取到原文 |
 | **L4** | M8 记忆中枢 | 浏览器打开记忆面板 | 三栏（技能/事实/经历）有内容或正确空态；`GET /api/dsh-auto-memory-pre/memory-hub` 返回 200 + overview |
 | **L5** | 证据落盘 | 查看 `C:\Users\JH Z\.dsh\memory\evidence-pre\events\` 当日文件 | 有 `seen` 事件新增 |

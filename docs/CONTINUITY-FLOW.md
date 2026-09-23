@@ -17,7 +17,7 @@
 | **S4** | 建新会话 | 材料就绪 | `sessionController.create` | 新 sessionId + 工作区绑定 |
 | **S5** | 状态沿用 | 会话创建后 | `selectModel` | provider / model / reasoningEffort |
 | **S6** | 首轮注入 | 新会话首条 | `carryText` 作为 prompt | 新窗口上下文 |
-| **S7** | 按需取回 | 推进中 | `memory_recall_pre` / `read` | 细节补充 |
+| **S7** | 按需取回 | 推进中 | `memory_recall` / `read` | 细节补充 |
 
 ---
 
@@ -73,8 +73,8 @@
 **执行方式**：`client` 通过 `remote.session.prompt` 把指令发回**旧会话**（`:2047`）。
 
 **旧 AI 被要求做的事**（`:2050-2054`，本轮内只做这两件）：
-1. `memory_note_pre(kind=plan, …)` 重写 PLAN.md（项目白板最新全貌）
-2. `memory_note_pre(kind=handoff, …)` 写一篇四段式账本
+1. `memory_note(kind=plan, …)` 重写 PLAN.md（项目白板最新全貌）
+2. `memory_note(kind=handoff, …)` 写一篇四段式账本
    - 四段：`## 任务状态` / `## 目标` / `## 已试方案与失败原因` / `## 进度与下一步`
    - 每段 ≤5 行；下一步必须是**可直接执行的第一步**，带文件路径或命令
 3. 完成后只回复「已刷新」
@@ -144,15 +144,15 @@
 | | 文案 |
 |---|---|
 | 改前 | **接续前先用 read 工具读取该转写文件**，以完全理解旧会话的讨论、结论与未竟事项 |
-| 改后 | 完整转写已归档，**不必在接续前通读**：仅在第0-2层不足以推进时再 read；优先用 `memory_recall_pre(scope='sessions', query='关键词')` 定位片段，避免整篇读入 |
+| 改后 | 完整转写已归档，**不必在接续前通读**：仅在第0-2层不足以推进时再 read；优先用 `memory_recall(scope='sessions', query='关键词')` 定位片段，避免整篇读入 |
 
 **改动意图**：分层此前被"全读"指令架空——模型被要求通读就不会选择性取用。改后分层才真正生效。
 
 ### S7 · 按需取回
 
-- `memory_recall_pre(scope='sessions' | 'handoff' | 'all', query=…)`：轻量直返，带 provenance 与预算截断
+- `memory_recall(scope='sessions' | 'handoff' | 'all', query=…)`：轻量直返，带 provenance 与预算截断
 - `read`：完整转写（仅在前述不足时）
-- `memory_recall_pre` 亦可跨 WorkBuddy / CodeBuddy / Claude Code / Codex / ZCode / Kimi Code / TRAE 检索
+- `memory_recall` 亦可跨 WorkBuddy / CodeBuddy / Claude Code / Codex / ZCode / Kimi Code / TRAE 检索
 
 ---
 

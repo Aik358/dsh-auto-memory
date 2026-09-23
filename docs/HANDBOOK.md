@@ -13,11 +13,11 @@
 | **DSH** | **DeepSeek Harness**，宿主应用。以 CLI `dsh` 启动，提供浏览器 UI（`dsh web`）与插件装载能力。Windows 默认装在 `%APPDATA%\npm\node_modules\@deepseek-ai\dsh`（**不要写死某个用户名**） |
 | **Cordis** | DSH 使用的插件框架（`@deepseek-ai/cordis ^4.0.1`）。本插件是 Cordis 插件，通过 `cordis.patch.yml` 注入宿主 |
 | **本插件** | `dsh-auto-memory`，包名同名，工程根目录 `D:\dsh-auto-memory` |
-| **pre 线 / `-pre.js`** | 源码约定：新增模块一律命名为 `lib/xxx-pre.js`（纯函数、零 IO、IO 注入）。发布时由 `tools/release.mjs` 的**转换表**剥去 `-pre` 生成同名 `lib/xxx.js`。**改源码改 `-pre.js`；`lib/xxx.js` 是产物，禁止手改** |
-| **命名口径（发布名 vs pre 名）** | 同一份身份在两条线上拼写不同，**本手册正文一律给「发布名」——即用户实际装到的那个**；pre 开发树各加 `-pre`。成对关系：端点前缀 `/api/dsh-auto-memory/` ↔ `/api/dsh-auto-memory-pre/`；诊断日志 `dsh-auto-memory-diagnose.log` ↔ `dsh-auto-memory-pre-diagnose.log`；配置 `dsh-auto-memory.json` ↔ `dsh-auto-memory-pre.json`；目录 `memory/hub/` ↔ `memory/hub-pre/`、`memory/evidence/` ↔ `memory/evidence-pre/`、`memory/index/` ↔ `memory/index-pre/`、`memory/semantic/` ↔ `memory/semantic-pre/`。**★例外：`memory/degrade-pre/` 转换表里没有对应规则 ⇒ 发布物里仍叫 `degrade-pre`，不要改成 `degrade`**。依据：`tools/release.mjs` 转换表 + 已发布产物 `D:\dsh_debug\_publish_dsh-auto-memory\lib\index.js` |
+| **源码约定** | 新增模块一律命名为 `lib/xxx.js`（纯函数、零 IO、IO 注入）。去 pre 后**没有 `-pre` 后缀与孪生体**，发布构建为纯复制。 |
+| **命名口径** | 去 pre 后**只有一套名字**：源码名即发布名，不再有 `-pre` 变体。此前「pre 树带 `-pre`、发布时由 `tools/release.mjs` 转换表剥掉」的双名机制已整体退役（该表已删除，构建退化为纯复制）。 |
 | **宿主侧 / 后端** | `lib/index.js`，运行在 Node 进程里，负责存储、检索、端点、工具、调度 |
 | **浏览器侧 / 前端** | `lib/client.js`，注入到 DSH 浏览器 UI，负责面板与设置页 |
-| **工具（tool）** | 供模型调用的函数（类似 MCP 工具）。本插件注册 **18 个**；pre 树名字以 `_pre` 结尾，发布名去掉 `_pre`（如 `memory_recall`） |
+| **工具（tool）** | 供模型调用的函数（类似 MCP 工具）。本插件注册 **19 个**；pre 树名字以 `_pre` 结尾，发布名去掉 `_pre`（如 `memory_recall`） |
 | **水位（water level）** | 当前会话上下文占用比例（0–1）。用于决定何时触发接续 |
 | **接续 / handoff** | 上下文将满时，把进度交接给一个新会话继续工作的机制 |
 | **主动联想** | 不等用户询问，由系统主动判断"该想起什么"并注入上下文——本插件的核心差异化能力 |
@@ -27,7 +27,7 @@
 | **BM25** | 经典词法相关性算法 |
 | **M8 / 记忆中枢** | 三层记忆存储（fact 事实／episodic 经历／procedure 技能）与编排器 memory-hub 的合称 |
 | **evidence（证据）** | 记忆被使用情况的记录，六类：`seen`（曝光）／`read`（读到原文）／`cite`（回复引用）／`reuse`（跨会话复用）／`success`（任务成功）／`correction`（用户纠正） |
-| **endpoint / 端点** | 后端 HTTP 接口，路径前缀统一为 `/api/dsh-auto-memory/`（pre 树为 `/api/dsh-auto-memory-pre/`），共 54 条 |
+| **endpoint / 端点** | 后端 HTTP 接口，路径前缀统一为 `/api/dsh-auto-memory/`（pre 树为 `/api/dsh-auto-memory/`），共 54 条 |
 
 ---
 
@@ -36,7 +36,7 @@
 本插件给 DSH 加一套**长期记忆系统**：记忆以 Markdown 文件存放在用户目录下，插件负责写入、检索、在合适时机主动提醒模型，并在上下文将满时把进度交给新会话。
 
 - 工程根：`D:\dsh-auto-memory`
-- 源码：`lib/index.js`（宿主侧，约 11,600 行）、`lib/client.js`（浏览器侧）、`lib/*-pre.js`（各纯核心模块，62 个文件）
+- 源码：`lib/index.js`（宿主侧，约 11,600 行）、`lib/client.js`（浏览器侧）、`lib/*.js`（各纯核心模块）
 - 发布产物：`lib/`（含剥名后的 `.js`）、`python/`、`docs/`、`cordis.patch.yml`
 - 运行时依赖：**零**。`dependencies` 为空；peer 为 cordis；optional 为 transformers
 
@@ -75,11 +75,11 @@ dsh web --no-open --port 0
 │  · 语义引擎环境检测面板                                      │
 │  仅负责「展示 + 收集用户操作」，通过 DSH 远程 API 调用后端    │
 └───────────────┬───────────────────────────────────────────┘
-                │ HTTP /api/dsh-auto-memory/*（pre 树为 /api/dsh-auto-memory-pre/*）
+                │ HTTP /api/dsh-auto-memory/*（pre 树为 /api/dsh-auto-memory/*）
 ┌───────────────▼───────────────────────────────────────────┐
-│ 宿主侧（后端）lib/index.js + lib/*-pre.js                   │
+│ 宿主侧（后端）lib/index.js + lib/*.js                   │
 │  · 端点路由（54 个）                                         │
-│  · 工具（18 个，供模型调用）                                  │
+│  · 工具（19 个，供模型调用）                                  │
 │  · 存储：记忆文件、M8 三层 JSON、evidence 事件 JSONL          │
 │  · 检索：C1 词法 / C2 语义 / C3 Python 语义                  │
 │  · 决策：主动联想门控、接续调度、水位监测                      │
@@ -95,14 +95,14 @@ dsh web --no-open --port 0
 ```
 
 > ⚠️ **诊断日志的位置**：`~/.dsh/dsh-auto-memory-diagnose.log` —— 它与 `memory/` **同级**，不在 `memory/` 里面
-> （代码依据：`lib/index.js` 里是 `path.join(dshHome(), 'dsh-auto-memory-pre-diagnose.log')`，没有 `'memory'` 这一段）。
+> （代码依据：`lib/index.js` 里是 `path.join(dshHome(), 'dsh-auto-memory-diagnose.log')`，没有 `'memory'` 这一段）。
 > 打包日志时先确认文件存在再交：`ls -l ~/.dsh/*diagnose*.log`
 
 ```
 
 **数据流向（一次典型记忆检索）**：
 
-1. 模型调用工具 `memory_recall`（pre 树 `memory_recall_pre`；或前端点选）→ 宿主侧 `recall()`
+1. 模型调用工具 `memory_recall`（pre 树 `memory_recall`；或前端点选）→ 宿主侧 `recall()`
 2. `recall()` 构建 L0 语料（从日志/反思/笔记抽取摘要）
 3. 词法臂（C1）打 L0、语义臂（C2）打 L0；若查询含时间表达，追加时间臂
 4. 三臂经 `rankFusionRRFPre`（rank-space，k=60）融合排序
@@ -132,7 +132,7 @@ dsh web --no-open --port 0
 
 - **位置**：记忆窗格内的「记忆中枢」页签
 - **内容**：技能（procedure）／事实（fact）／经历（episodic）三栏
-- **预期**：有内容时显示条目；无内容显示正确空态；数据来自 `memory\hub\*.json`（pre 树为 `memory\hub-pre\*.json`）
+- **预期**：有内容时显示条目；无内容显示正确空态；数据来自 `memory\hub\*.json`
 
 ### 4.3 设置分组（`data-dam-settings-group`）
 
@@ -154,7 +154,7 @@ dsh web --no-open --port 0
 | `procedurePromotionEnabled` | false | 开启 → 技能晋升可用 |
 | `unattendedMode` / `awayMinutes` | false / 60 | 无人值守相关（**设置页 UI 尚未核实，属待办**） |
 
-> ⚠️ 修改设置后需要**重载/重启 dsh web**才生效的场景，以实际观察为准；若改完无变化，先查 `/api/dsh-auto-memory/config`（pre 树 `/api/dsh-auto-memory-pre/config`）是否已回写。
+> ⚠️ 修改设置后需要**重载/重启 dsh web**才生效的场景，以实际观察为准；若改完无变化，先查 `/api/dsh-auto-memory/config`（pre 树 `/api/dsh-auto-memory/config`）是否已回写。
 
 ### 4.4 语义引擎环境检测面板（`data-dam-detect-panel`）
 
@@ -200,21 +200,21 @@ dsh web --no-open --port 0
 ### 5.2 日志
 
 - **诊断日志**：`~/.dsh/dsh-auto-memory-diagnose.log`（Windows：`%USERPROFILE%\.dsh\dsh-auto-memory-diagnose.log`）
-  - **★它不在 `memory/` 下面**：代码是 `path.join(dshHome(), 'dsh-auto-memory-pre-diagnose.log')`（pre 树），无 `'memory'` 段
+  - **★它不在 `memory/` 下面**：代码是 `path.join(dshHome(), 'dsh-auto-memory-diagnose.log')`（pre 树），无 `'memory'` 段
   - 关键线索：插件加载异常、`diag(...)` 输出的降级与状态（如 `hub success evidence: +N`、`p9a correction attribution: ...`）
-- **证据事件**：`~/.dsh/memory/evidence/events/YYYY-MM-DD.jsonl`（pre 树为 `~/.dsh/memory/evidence-pre/events/`）
+- **证据事件**：`~/.dsh/memory/evidence/events/YYYY-MM-DD.jsonl`（pre 树为 `~/.dsh/memory/evidence/events/`）
   - 单行结构（实测）：顶层 `kind` / `memoryId` / `recordedAt` / `anchorId` …，**时间戳在 `event.ts`**（顶层无 `ts`/`createdAt`）
-- **M8 数据**：`~/.dsh/memory/hub/{episodes,facts,procedures}.json`（原子写；pre 树为 `memory/hub-pre/`）
-- **降级台账**：`~/.dsh/memory/degrade-pre/latest.json` —— ★**这条没有发布名，两条线都叫 `degrade-pre`**，见下方自核
+- **M8 数据**：`~/.dsh/memory/hub/{episodes,facts,procedures}.json`（原子写；pre 树为 `memory/hub/`）
+- **降级台账**：`~/.dsh/memory/degrade/latest.json` —— ★去 pre 后**唯一的真名**，不再有 `-pre` 变体
 
-> **一条命令自核上面 4 条路径的「发布名」**（读源码 + 发布转换表，所以两条线都对得上）：
+> **一条命令自核上面 4 条路径**（直接读源码真值 —— 去 pre 后源码名即真名）：
 >
 > ```bash
-> node -e "const f=require('fs');const s=f.readFileSync('lib/index.js','utf8'),r=f.readFileSync('tools/release.mjs','utf8');const P=[...r.matchAll(/\['([^']+)',\s*'([^']+)'\]/g)].map(m=>[m[1],m[2]]);const c=x=>P.reduce((a,[b,d])=>a.split(b).join(d),x);const d=s.match(/'dsh-auto-memory[^']*diagnose\.log'/)[0].slice(1,-1);console.log('诊断日志(发布名):',c(d));for(const k of ['hub-pre','evidence-pre','index-pre','semantic-pre','degrade-pre'])console.log('  ',k,'->',c(k))"
+> node -e "const s=require('fs').readFileSync('lib/index.js','utf8');console.log('诊断日志:',s.match(/'dsh-auto-memory[^']*diagnose\.log'/)[0].slice(1,-1));console.log('memory 子目录:',[...new Set([...s.matchAll(/memoryDir\('([a-z-]+)'\)/g)].map(m=>m[1]))].join(', '))"
 > ```
 >
-> 输出应为：`诊断日志(发布名): dsh-auto-memory-diagnose.log`，以及 `hub-pre -> hub`、`evidence-pre -> evidence`、
-> `index-pre -> index`、`semantic-pre -> semantic-pre`、**`degrade-pre -> degrade-pre`**（最后一行就是「不能整体替换」的证据）。
+> 输出应为：`诊断日志: dsh-auto-memory-diagnose.log`，以及 `memory 子目录: workspaces, index, evidence, degrade, semantic, hub`
+> —— 全部为裸名，**不带 `-pre` 后缀**。
 
 ### 5.3 「前端操作 → 后端确认」判定方法（通用三步）
 
@@ -234,31 +234,32 @@ dsh web --no-open --port 0
 
 ---
 
-## 6. 工具（模型可调用，18 个）
+## 6. 工具（模型可调用，19 个）
 
-> 下表给的是**发布名**；pre 树各加 `_pre` 后缀（`memory_recall` ↔ `memory_recall_pre`）。
+> 下表给的是**发布名**；pre 树各加 `_pre` 后缀（`memory_recall` ↔ `memory_recall`）。
 > 自核（数一遍源码里的注册调用）：`node -e "const s=require('fs').readFileSync('lib/index.js','utf8');const n=[...s.matchAll(/defineTool\('([a-z_]+)'/g)].map(m=>m[1]);console.log(n.length,'个:',n.sort().join(' '))"`
 
 | 工具（发布名） | pre 树名 | 作用 |
 |---|---|---|
-| `memory_recall` | `memory_recall_pre` | 记忆检索（默认返回 L0，`expand` 展开原文） |
-| `memory_read` | `memory_read_pre` | 按锚点读取记忆原文 |
-| `memory_note` | `memory_note_pre` | 写入记忆（含 `kind` 区分日志/笔记/白板 `plan`/账本 `handoff` 等） |
-| `memory_log` | `memory_log_pre` | 记录日志条目 |
-| `memory_reflect` | `memory_reflect_pre` | 生成反思 |
-| `memory_consolidate` | `memory_consolidate_pre` | 记忆巩固 |
-| `memory_maintain` | `memory_maintain_pre` | 存储维护（30 天蒸馏） |
-| `memory_status` | `memory_status_pre` | 状态查询 |
-| `memory_user` | `memory_user_pre` | 用户级记忆读写 |
-| `memory_external` | `memory_external_pre` | 外部记忆源管理（list / import） |
-| `memory_procedure` | `memory_procedure_pre` | 流程（技能）直写：write 进审批列表 / activate 写入+晋升+激活 |
-| `memory_rules` | `memory_rules_pre` | 用户级硬约束的条目级增删改：list / add / update / remove（删改须带 `expect` 内容锚定） |
-| `memory_expand` | `memory_expand_pre` | 白板结构化展开（需 `boardMode=graph`） |
-| `memory_trace` | `memory_trace_pre` | 白板结构化回溯（需 `boardMode=graph`） |
-| `calendar_add` | `calendar_add_pre` | 添加日历事项 |
-| `calendar_list` | `calendar_list_pre` | 列出日历条目 |
-| `calendar_done` | `calendar_done_pre` | 标记日历条目完成 |
-| `calendar_remove` | `calendar_remove_pre` | 删除日历条目 |
+| `memory_recall` | `memory_recall` | 记忆检索（默认返回 L0，`expand` 展开原文） |
+| `memory_read` | `memory_read` | 按锚点读取记忆原文 |
+| `memory_note` | `memory_note` | 写入记忆（含 `kind` 区分日志/笔记/白板 `plan`/账本 `handoff` 等） |
+| `memory_log` | `memory_log` | 记录日志条目 |
+| `memory_reflect` | `memory_reflect` | 生成反思 |
+| `memory_consolidate` | `memory_consolidate` | 记忆巩固 |
+| `memory_maintain` | `memory_maintain` | 存储维护（30 天蒸馏） |
+| `memory_status` | `memory_status` | 状态查询 |
+| `memory_user` | `memory_user` | 用户级记忆读写 |
+| `memory_external` | `memory_external` | 外部记忆源管理（list / import） |
+| `memory_procedure` | `memory_procedure` | 流程（技能）直写：write 进审批列表 / activate 写入+晋升+激活 |
+| `memory_procedure_list` | `memory_procedure_list` | 技能库**只读浏览**：列出两库条目（含属于哪个库）、阶段、证据量与未晋升原因码；写之前先查重 |
+| `memory_rules` | `memory_rules` | 用户级硬约束的条目级增删改：list / add / update / remove（删改须带 `expect` 内容锚定） |
+| `memory_expand` | `memory_expand` | 白板结构化展开（需 `boardMode=graph`） |
+| `memory_trace` | `memory_trace` | 白板结构化回溯（需 `boardMode=graph`） |
+| `calendar_add` | `calendar_add` | 添加日历事项 |
+| `calendar_list` | `calendar_list` | 列出日历条目 |
+| `calendar_done` | `calendar_done` | 标记日历条目完成 |
+| `calendar_remove` | `calendar_remove` | 删除日历条目 |
 
 ---
 
@@ -266,7 +267,7 @@ dsh web --no-open --port 0
 
 > **通用前置**：`dsh web --no-open` 已启动；插件已装载；已确认端口并手动打开 UI。
 > **通用通过标准**：每一步都要有**证据**（截图 / 日志原文 / 数据快照）。禁止"看起来正常"这类无证据结论。
-> ★**端点写法**：本节一律写发布名 `GET /api/dsh-auto-memory/xxx`；**在 pre 开发树里跑要换成 `/api/dsh-auto-memory-pre/xxx`**（别把手册里的写法当成 pre 树的写法）。工具名同理（`memory_recall` ↔ `memory_recall_pre`）。
+> ★**端点写法**：本节一律写发布名 `GET /api/dsh-auto-memory/xxx`；**在 pre 开发树里跑要换成 `/api/dsh-auto-memory/xxx`**（别把手册里的写法当成 pre 树的写法）。工具名同理（`memory_recall` ↔ `memory_recall`）。
 
 ### A. 启动与装载
 
@@ -338,15 +339,15 @@ dsh web --no-open --port 0
 
 ```bash
 cd /d/D/dsh-auto-memory || cd D:/dsh-auto-memory
-node tests/smoke/smoke-test-m4-pre.mjs                          # m4
-node tests/smoke/smoke-test-p8-rrf-wiring-pre.mjs               # 14
-node tests/smoke/smoke-test-p4-l0-response-pre.mjs              # 34
-node tests/smoke/smoke-test-evidence-agg-pre.mjs                # 14
-node tests/smoke/smoke-test-memory-importance-pre.mjs           # 18
-node tests/smoke/smoke-test-p9a-correction-attribution-pre.mjs  # 26
-node tests/smoke/smoke-test-p9d-recent-evidence-ts-pre.mjs      # 13
-node tests/smoke/smoke-test-handoff-pre.mjs                     # 51
-node tests/smoke/smoke-test-continue-chain-pre.mjs              # 58
+node tests/smoke/smoke-test-m4.mjs                          # m4
+node tests/smoke/smoke-test-p8-rrf-wiring.mjs               # 14
+node tests/smoke/smoke-test-p4-l0-response.mjs              # 34
+node tests/smoke/smoke-test-evidence-agg.mjs                # 14
+node tests/smoke/smoke-test-memory-importance.mjs           # 18
+node tests/smoke/smoke-test-p9a-correction-attribution.mjs  # 26
+node tests/smoke/smoke-test-p9d-recent-evidence-ts.mjs      # 13
+node tests/smoke/smoke-test-handoff.mjs                     # 51
+node tests/smoke/smoke-test-continue-chain.mjs              # 58
 ```
 
 **任一数字下降 → 停止，回报**。
@@ -368,7 +369,7 @@ node tests/smoke/smoke-test-continue-chain-pre.mjs              # 58
 
 ## 9. 边界与禁止事项
 
-- 改源码只改 `lib/*-pre.js`；**禁止手改 `lib/*.js` 同名产物**（由流水线重建）
+- 源码即产物：去 pre 后**直接改 `lib/*.js`**（不再有 `-pre` 孪生与流水线重建）
 - **禁止引入运行时依赖**（项目承诺零依赖）
 - 禁止删除既有测试断言；禁止整文件重写
 - 涉及用户隐私：日志与诊断输出**不得包含用户原文**
@@ -384,11 +385,11 @@ node tests/smoke/smoke-test-continue-chain-pre.mjs              # 58
 | 工程根 | `D:\dsh-auto-memory` |
 | 宿主侧入口 | `lib/index.js` |
 | 浏览器侧入口 | `lib/client.js` |
-| 端点前缀 | `/api/dsh-auto-memory/`（54 条；pre 树 `/api/dsh-auto-memory-pre/`） |
+| 端点前缀 | `/api/dsh-auto-memory/`（54 条；pre 树 `/api/dsh-auto-memory/`） |
 | 工具 | 10 个，`memory_*_pre` |
 | 记忆根 | `C:\Users\JH Z\.dsh\memory` |
 | 证据事件 | `...\memory\evidence\events\YYYY-MM-DD.jsonl`（时间戳在 `event.ts`） |
 | 诊断日志 | `...\dsh-auto-memory-diagnose.log`（**与 `memory\` 同级**，不在其下） |
 | M8 数据 | `...\memory\hub\{episodes,facts,procedures}.json` |
-| 降级台账 | `...\memory\degrade-pre\latest.json`（★两条线同名，无发布名） |
+| 降级台账 | `...\memory\degrade\latest.json`（★两条线同名，无发布名） |
 | 水位/接续阈值 | 0.75 / 0.75（**须低于官方压缩 0.80**） |

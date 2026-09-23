@@ -31,7 +31,7 @@
 |---|---|---|---|
 | **F-1** | **Markdown 为唯一事实源 + 画布双向同步** | 我们的白板/账本本来就是 Markdown；看板是**只读投影**，模型改文件、面板跟着变，与它的范式一致 | 低 —— 我们已是这个架构 |
 | **F-2** | **待审草稿 → Session 审查 → 原子保存** | 正好解决用户痛点：模型改白板**不静默落盘**，先成草稿，再由 Session 审，带 revision 防并发覆盖 | 中 —— 需引入 revision 概念 |
-| **F-3** | **`SKILL.md` 随插件分发、注册后自动加载** | 与 T4 的 `memory_procedure_pre` + skill 导出层方向一致，可参考其 frontmatter 与工具命名规范 | 低 |
+| **F-3** | **`SKILL.md` 随插件分发、注册后自动加载** | 与 T4 的 `memory_procedure` + skill 导出层方向一致，可参考其 frontmatter 与工具命名规范 | 低 |
 | **F-4** | **8 类确定性逻辑门** | ⚠️ **不适用** —— 我们的看板是**状态展示**不是**流程编排**；硬套会引入无意义的布尔语义 | —— |
 
 ### 判定（一句话）
@@ -48,9 +48,9 @@
 |---|---|---|---|
 | 1 | `lib/index.js` `applyNoteStatusPre` | 签名与 JSDoc 加 `retract` / `reason` | 新能力 |
 | 2 | `lib/index.js` `applyNoteStatusPre` 循环体 | **新增 `plan.retract` 处理循环**（调 `applyStatusToRecordPre(text, id, 'retracted', {reason})`） | 🔴 A1 通道打通 |
-| 3 | `lib/index.js` `memory_note_pre` 调用侧 | 透传 `retract` + `retractReason`；门扩为三门 | 接线 |
-| 4 | `lib/index.js` `memory_note_pre` 参数表 | 新增 `retract` / `retractReason` 两个参数，**含与 supersedes 的分工说明** | 模型可见 |
-| 5 | `lib/index.js` `memory_note_pre` 主描述 | 补「结论失效时的两个通道（不要混用）」+ 看板 tag 说明 | 模型可见 |
+| 3 | `lib/index.js` `memory_note` 调用侧 | 透传 `retract` + `retractReason`；门扩为三门 | 接线 |
+| 4 | `lib/index.js` `memory_note` 参数表 | 新增 `retract` / `retractReason` 两个参数，**含与 supersedes 的分工说明** | 模型可见 |
+| 5 | `lib/index.js` `memory_note` 主描述 | 补「结论失效时的两个通道（不要混用）」+ 看板 tag 说明 | 模型可见 |
 | 6 | `lib/index.js` `renderMemoryStatic` | **新增「看板分列（5 条泳道 + tag 命名约定）」整条注入** | 🔴 A5/A6 打通 |
 | 7 | `lib/index.js` + `lib/client.js` 铭文 | 第④条改为「结论失效/被取代」（含 retract 分工）；**新增第⑤条「看板落列」** | 收尾提醒 |
 

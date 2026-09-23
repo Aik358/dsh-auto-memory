@@ -10,7 +10,7 @@
 
 | 项 | 交接数字（HANDOFF-TO-ZCODE-20260920 §4-A） | 实际枚举数 | 结论 | 证据 |
 |---|---|---|---|---|
-| 模型工具 | 17 | **17** | 一致 | `defineTool(` 全仓 17 处调用（index.js:9982-10318）；14 个 `memory_*` + 3 个 `calendar_*`；其中 `memory_expand_pre` / `memory_trace_pre` 为 `boardMode=graph` 时的条件注册（index.js:10309-10317） |
+| 模型工具 | 17 | **17** | 一致 | `defineTool(` 全仓 17 处调用（index.js:9982-10318）；14 个 `memory_*` + 3 个 `calendar_*`；其中 `memory_expand` / `memory_trace` 为 `boardMode=graph` 时的条件注册（index.js:10309-10317） |
 | HTTP 路由 | 49 | **49** | 一致 | 常量表 `export const API = {`（index.js:161-206）恰 49 键；路由数组 `const routes = [`（index.js:10320）恰 49 个 `{kind,path,handler}` 条目，经 `ctx.webServer.register(route)` 挂载（index.js:11451） |
 | 设置键 | 85 | **98**（顶层数） | **不符：+13** | `DEFAULT_CONFIG`（index.js:258-586）顶层键实数 98。旧 85 清单（UI-INVENTORY-RAW.md）之后新增 13 键：`boardMode`(L264)、`tier0CatalogEnabled`(L291)、`tier0MaxTokens`(L295)、`tier0BudgetShare`(L298)、`injectExcludeSources`(L308)、`capacityDefaultsVersion`(L331)、`slimPlanChars`(L368)、`slimLedgerChars`(L369)、`rulesLayeringMode`(L379)、`criteriaGate`(L385)、`snapshotTieredInject`(L441)、`l0IndexEnabled`(L536)、`hubMechanicalProcedureFeedEnabled`(L557)。85+13=98，逐键对得上。另：`externalSources`(L471) 含 13 个子键（L472-485）；`DEFAULT_PROMPT_LAYERS`（index.js:592-647）另有 23 个 prompt 层文案键（可被 `promptLayerOverrides` 覆盖），**不属于** DEFAULT_CONFIG，不计入 98 |
 | 插槽注册 | 6 | **6** | 一致 | `slots.inject(` 在 client.js 恰 6 处（L5664/5667/5670/5673/5676/5683）。旧文档（UI-INVENTORY-RAW §1）的「5 注册面」少的是 2026-09-16 新增的 `conversation.view` 白板看板（client.js:5683-5689） |
@@ -35,11 +35,11 @@
 
 **记忆检索与召回**
 
-6. **跨会话记忆检索**：一句话找回"上周的决定/之前的做法"，覆盖全部工作区的日志、笔记、反思、白板（`memory_recall_pre`，index.js:10130）。
+6. **跨会话记忆检索**：一句话找回"上周的决定/之前的做法"，覆盖全部工作区的日志、笔记、反思、白板（`memory_recall`，index.js:10130）。
 7. **两段式省 token 检索**：先返回 L0 摘要列表（id/得分/匹配原因），看中哪条再按 id 展开全文（format=l0 + expand，index.js:10134-10135）。
 8. **智能分层语义检索**：词法 + 内置 JS 语义模型（可选 130MB Python 引擎）双路召回，RRF 融合排序（`smartRecall`，index.js:6441；recall-fusion-pre.js:55）。
 9. **历史会话全文检索**：搜过的不只是记忆文件，还有历史 DSH 会话转写（`scope=sessions`，index.js:2791,6007-6014）。
-10. **外部 AI 工具记忆继承**：自动发现并接入 WorkBuddy/CodeBuddy/Claude Code/Codex/ZCode/Kimi Code/TRAE 的记忆与会话，纯链接模式不抄内容（`memory_external_pre`，index.js:10159；外部源 13 子键，index.js:471-486）。
+10. **外部 AI 工具记忆继承**：自动发现并接入 WorkBuddy/CodeBuddy/Claude Code/Codex/ZCode/Kimi Code/TRAE 的记忆与会话，纯链接模式不抄内容（`memory_external`，index.js:10159；外部源 13 子键，index.js:471-486）。
 
 **注入与上下文管理**
 
@@ -47,20 +47,20 @@
 12. **Tier-0 常驻目录**：注入首位的记忆索引（每条 1 行：标题·结论·层·状态·日期），零 LLM 成本，让模型知道"有什么、怎么取"（`tier0Catalog*`，index.js:291-306；生成器 tier0-catalog-pre.js，纯内存计算零 IO）。
 13. **用户级硬性约束规则层**：日志里标 `kind=rule` 的条目自动识别为硬约束，每轮以「必须遵守」段注入，与背景参考内容分层措辞（rules-layer-pre.js:142,238；T7 措辞分层 `rulesLayeringMode`，index.js:379）。
 14. **精简注入节奏**：完整快照每 N 轮一次、其余轮次只给规则+索引+日程，token 成本可控（`snapshotTieredInject`/`snapshotMinGapRounds`，index.js:441-447）。
-15. **结论生命周期管理**：结论被取代标 superseded、做错了标 retracted（附原因）、标错可 restore——检索结果永远带状态标记（memory_note_pre 的 `supersedes/retract/restore`，index.js:10014-10018）。
+15. **结论生命周期管理**：结论被取代标 superseded、做错了标 retracted（附原因）、标错可 restore——检索结果永远带状态标记（memory_note 的 `supersedes/retract/restore`，index.js:10014-10018）。
 
 **白板与接续**
 
-16. **项目白板**：模型维护的"项目全貌快照" PLAN.md，旧版自动归档，用户面板直接看（`memory_note_pre kind=plan`，index.js:2248-2266）。
+16. **项目白板**：模型维护的"项目全貌快照" PLAN.md，旧版自动归档，用户面板直接看（`memory_note kind=plan`，index.js:2248-2266）。
 17. **四段式交接账本**：任务状态/目标/已试方案与失败原因/下一步，append-only，专供"换个窗口接着干"（`kind=handoff`，index.js:2355-2369）。
 18. **白板看板（新版）**：白板/账本结构化为 5 泳道看板（目标/状态/死胡同/进度/版本归档），面板 440px 看泳道、会话页顶栏看整页矩阵（boardMode=graph 默认，index.js:264；wb-sidecar-pre.js:593,647,804）。
-19. **白板溯源工具**：按 tag 正向展开所有同类条目、按 id 反向回溯结论来源与版本链（`memory_expand_pre`/`memory_trace_pre`，index.js:10310,10314）。
+19. **白板溯源工具**：按 tag 正向展开所有同类条目、按 id 反向回溯结论来源与版本链（`memory_expand`/`memory_trace`，index.js:10310,10314）。
 20. **自动接续**：上下文水位越阈自动写交接骨架→确认卡倒计时→刷新仪式→组装四层交接材料→新窗口无缝续命（water-window-pre.js:259；index.js:3375-3377,4021-4022）。
 21. **上下文水位提示**：官方公式估算窗口占用，接近阈值时注入"该收尾了"的三步执行清单（`waterLevel*`，index.js:387-399）。
 
 **技能库（procedure memory）**
 
-22. **模型直写技能（T4，2026-09-14 后新增）**：模型把跑通的多步流程直接写成技能条目（工具 `memory_procedure_pre`，工具数 16→17 的那一刀），含步骤/成功判据/回滚/风险级（index.js:10233-10241）。
+22. **模型直写技能（T4，2026-09-14 后新增）**：模型把跑通的多步流程直接写成技能条目（工具 `memory_procedure`，工具数 16→17 的那一刀），含步骤/成功判据/回滚/风险级（index.js:10233-10241）。
 23. **技能晋升门槛与审批**：observed→candidate→validated→active 五阶段，跨会话≥3、成功≥2、correction 占比≤0.3 的统计门 + 高风险人工批准（procedure-store-pre.js:41,56-68；设置页「记忆中枢」分组可调）。
 24. **技能自动导出 SKILL.md**：激活的技能自动导出为 `<DSH_HOME>/skills/<目录>/SKILL.md`（DSH 四条技能发现路径之一，跨项目可迁移）（skill-export-host-pre.js:29-36；index.js:10284,10804）。
 25. **审批界面人话化（R1-R6，2026-09-20）**：审批不再盲确认——阶段名中文化、晋升为什么不够用带具体数字的人话、reasonCodes 透出、可展开预览真实步骤（client.js:2596-2627 的 stageLabel/whyNotPromotable 辅助 + MemoryHubTab）。
@@ -168,23 +168,23 @@
 
 | # | 工具名 | 定义行 | 参数签名 | 用途（摘要自 description，全文在源码） |
 |---|---|---|---|---|
-| 1 | `memory_log_pre` | index.js:9982 | `note`(string,必填)、`date`(string，缺省今天，可补记过去)、`kind`(enum rule\|preference\|fact\|todo，缺省 fact) | 向当前工作区今日日志追加一条工作记录（append-only）。kind=rule 的条目会被规则层识别为硬约束每轮注入。完成实质性工作后必须调用；顺带条件触发白板/账本维护 |
-| 2 | `memory_note_pre` | index.js:10007 | `content`(string,必填)、`action`(enum append\|replace)、`kind`(enum note\|handoff\|plan)、`supersedes`(array of mem_id)、`retract`(array of mem_id)、`retractReason`(string,≤120 字)、`restore`(array of mem_id) | 项目级写入口：note=项目笔记 MEMORY.md（容量上限 noteCapacityChars，超限先 AI 折叠、再归档 archive/、最后才拒绝）；handoff=四段式交接账本新篇（append-only）；plan=白板 PLAN.md 整体重写（唯一能覆盖旧结论的通道，旧版自动归档）。状态通道：superseded/retracted/restore |
-| 3 | `memory_user_pre` | index.js:10078 | `content`(string,必填)、`action`(enum append\|replace,必填) | 用户级记忆 ~/.dsh/memory/MEMORY.md（跨项目规则/偏好），容量上限 userCapacityChars，超限行为同上 |
-| 4 | `memory_read_pre` | index.js:10107 | `kind`(enum log\|reflection\|user\|notes\|calendar,必填)、`date`(string，log/reflection 用，缺省今天) | 按需读取记忆文件完整原文（注入只含摘要，要细节用本工具） |
-| 5 | `memory_recall_pre` | index.js:10130 | `query`(string,必填)、`limit`(integer,缺省 8)、`scope`(enum all\|handoff\|sessions)、`format`(enum l0\|full)、`expand`(string，mem_<32hex>) | 记忆检索主入口：本地多工作区 + 交接白板语料 + 历史会话。默认 L0 摘要列表；expand 为两段式第二段（提供时忽略 query 语义）。scope=handoff 只搜白板语料，scope=sessions 只搜历史会话 |
-| 6 | `memory_maintain_pre` | index.js:10138 | `days`(integer,缺省 30) | 30 天蒸馏：早于「今天−days」的日志交给 AI 蒸馏要点进 MEMORY.md，原文保底归档 archive/；AI 不可用降级为原样归档，不丢信息 |
-| 7 | `memory_status_pre` | index.js:10142 | （无参数） | 只读诊断：存储位置、各文件大小、今日日志条数、待反思、上次刷新时间 |
-| 8 | `memory_reflect_pre` | index.js:10154 | `date`(string,必填，被反思那天的日志日期)、`text`(string,必填) | 保存每日反思到 .dsh-memory/reflections/YYYY-MM-DD.md 并标记当日完成。触发条件严格：仅在框架提示+正文已呈现反思后调用 |
-| 9 | `memory_external_pre` | index.js:10159 | `action`(enum list\|import,必填)、`source`(string，import 必填)、`target`(enum project\|user) | 外部记忆源查看/接入。import 为**纯链接模式**：只写源文件绝对路径指针，不抄内容 |
-| 10 | `calendar_add_pre` | index.js:10180 | `date`(string,缺省今天)、`time`(string)、`quadrant`(enum 重要紧急\|重要不紧急\|紧急不重要\|不重要不紧急)、`title`(string,必填)、`location`、`reminder`、`note` | 向用户级日历 ~/.dsh/memory/CALENDAR.md 添加日程（跨对话有效） |
-| 11 | `calendar_list_pre` | index.js:10190 | `date`(string，过滤日期，缺省近 60 天) | 列出日历条目（含完成状态） |
-| 12 | `calendar_done_pre` | index.js:10204 | `date`/`time`/`title`(均必填，需与 list 结果一致) | 标记日历条目完成 |
-| 13 | `calendar_remove_pre` | index.js:10210 | `date`/`time`/`title`(均必填) | 删除日历条目 |
-| 14 | `memory_consolidate_pre` | index.js:10216 | `days`(integer,缺省 7,上限 30) | AI 主动固化（与自动沉淀互补）：读最近 N 天日志发散提炼，写入项目笔记+用户级记忆。阶段性收尾用，不替代每轮 memory_log_pre |
-| 15 | `memory_procedure_pre` | index.js:10233 | `action`(enum write\|activate)、`title`(string,必填)、`steps`(string,必填，一行一步)、`successCriteria`(string,一行一条)、`preconditions`、`checks`、`rollback`、`riskLevel`(enum low\|medium\|high) | **T4 模型直写通路**（09-14 后新增）：把可复用流程写进 procedure memory。write=进审批列表（保守）；activate=跳统计门直接晋升+激活+自动导出 SKILL.md（authorizedBy:'model'，index.js:10275-10284）。无 successCriteria 的条目结构上无法晋升 |
-| 16 | `memory_expand_pre` | index.js:10310（条件注册：仅 `resolveBoardModePre(config.boardMode).graphEnabled` 为真时 push，index.js:10309） | `tag`(string，如 type:dead-end)、`limit`(integer,缺省 10,硬帽 20) | 白板结构化正向遍历（P3）：按 tag 展开全部匹配账本/白板条目，返回 id/标题/来源/判据状态。实现：engine.expandWhiteboardByTagPre → wb-sidecar-pre.js `expandByTagPre`(L453) |
-| 17 | `memory_trace_pre` | index.js:10314（条件注册：同上） | `id`(string，index.json 条目 id) | 白板结构化反向回溯（P3）：按条目 id 回溯 cue/tag/相邻条目/归档版本链。实现：engine.traceWhiteboardByIdPre → wb-sidecar-pre.js `traceByIdPre`(L492) |
+| 1 | `memory_log` | index.js:9982 | `note`(string,必填)、`date`(string，缺省今天，可补记过去)、`kind`(enum rule\|preference\|fact\|todo，缺省 fact) | 向当前工作区今日日志追加一条工作记录（append-only）。kind=rule 的条目会被规则层识别为硬约束每轮注入。完成实质性工作后必须调用；顺带条件触发白板/账本维护 |
+| 2 | `memory_note` | index.js:10007 | `content`(string,必填)、`action`(enum append\|replace)、`kind`(enum note\|handoff\|plan)、`supersedes`(array of mem_id)、`retract`(array of mem_id)、`retractReason`(string,≤120 字)、`restore`(array of mem_id) | 项目级写入口：note=项目笔记 MEMORY.md（容量上限 noteCapacityChars，超限先 AI 折叠、再归档 archive/、最后才拒绝）；handoff=四段式交接账本新篇（append-only）；plan=白板 PLAN.md 整体重写（唯一能覆盖旧结论的通道，旧版自动归档）。状态通道：superseded/retracted/restore |
+| 3 | `memory_user` | index.js:10078 | `content`(string,必填)、`action`(enum append\|replace,必填) | 用户级记忆 ~/.dsh/memory/MEMORY.md（跨项目规则/偏好），容量上限 userCapacityChars，超限行为同上 |
+| 4 | `memory_read` | index.js:10107 | `kind`(enum log\|reflection\|user\|notes\|calendar,必填)、`date`(string，log/reflection 用，缺省今天) | 按需读取记忆文件完整原文（注入只含摘要，要细节用本工具） |
+| 5 | `memory_recall` | index.js:10130 | `query`(string,必填)、`limit`(integer,缺省 8)、`scope`(enum all\|handoff\|sessions)、`format`(enum l0\|full)、`expand`(string，mem_<32hex>) | 记忆检索主入口：本地多工作区 + 交接白板语料 + 历史会话。默认 L0 摘要列表；expand 为两段式第二段（提供时忽略 query 语义）。scope=handoff 只搜白板语料，scope=sessions 只搜历史会话 |
+| 6 | `memory_maintain` | index.js:10138 | `days`(integer,缺省 30) | 30 天蒸馏：早于「今天−days」的日志交给 AI 蒸馏要点进 MEMORY.md，原文保底归档 archive/；AI 不可用降级为原样归档，不丢信息 |
+| 7 | `memory_status` | index.js:10142 | （无参数） | 只读诊断：存储位置、各文件大小、今日日志条数、待反思、上次刷新时间 |
+| 8 | `memory_reflect` | index.js:10154 | `date`(string,必填，被反思那天的日志日期)、`text`(string,必填) | 保存每日反思到 .dsh-memory/reflections/YYYY-MM-DD.md 并标记当日完成。触发条件严格：仅在框架提示+正文已呈现反思后调用 |
+| 9 | `memory_external` | index.js:10159 | `action`(enum list\|import,必填)、`source`(string，import 必填)、`target`(enum project\|user) | 外部记忆源查看/接入。import 为**纯链接模式**：只写源文件绝对路径指针，不抄内容 |
+| 10 | `calendar_add` | index.js:10180 | `date`(string,缺省今天)、`time`(string)、`quadrant`(enum 重要紧急\|重要不紧急\|紧急不重要\|不重要不紧急)、`title`(string,必填)、`location`、`reminder`、`note` | 向用户级日历 ~/.dsh/memory/CALENDAR.md 添加日程（跨对话有效） |
+| 11 | `calendar_list` | index.js:10190 | `date`(string，过滤日期，缺省近 60 天) | 列出日历条目（含完成状态） |
+| 12 | `calendar_done` | index.js:10204 | `date`/`time`/`title`(均必填，需与 list 结果一致) | 标记日历条目完成 |
+| 13 | `calendar_remove` | index.js:10210 | `date`/`time`/`title`(均必填) | 删除日历条目 |
+| 14 | `memory_consolidate` | index.js:10216 | `days`(integer,缺省 7,上限 30) | AI 主动固化（与自动沉淀互补）：读最近 N 天日志发散提炼，写入项目笔记+用户级记忆。阶段性收尾用，不替代每轮 memory_log |
+| 15 | `memory_procedure` | index.js:10233 | `action`(enum write\|activate)、`title`(string,必填)、`steps`(string,必填，一行一步)、`successCriteria`(string,一行一条)、`preconditions`、`checks`、`rollback`、`riskLevel`(enum low\|medium\|high) | **T4 模型直写通路**（09-14 后新增）：把可复用流程写进 procedure memory。write=进审批列表（保守）；activate=跳统计门直接晋升+激活+自动导出 SKILL.md（authorizedBy:'model'，index.js:10275-10284）。无 successCriteria 的条目结构上无法晋升 |
+| 16 | `memory_expand` | index.js:10310（条件注册：仅 `resolveBoardModePre(config.boardMode).graphEnabled` 为真时 push，index.js:10309） | `tag`(string，如 type:dead-end)、`limit`(integer,缺省 10,硬帽 20) | 白板结构化正向遍历（P3）：按 tag 展开全部匹配账本/白板条目，返回 id/标题/来源/判据状态。实现：engine.expandWhiteboardByTagPre → wb-sidecar-pre.js `expandByTagPre`(L453) |
+| 17 | `memory_trace` | index.js:10314（条件注册：同上） | `id`(string，index.json 条目 id) | 白板结构化反向回溯（P3）：按条目 id 回溯 cue/tag/相邻条目/归档版本链。实现：engine.traceWhiteboardByIdPre → wb-sidecar-pre.js `traceByIdPre`(L492) |
 
 > 历史口径：DESIGN-OVERHAUL §1.1 的「14 个 memory_* 工具」是 2026-09-10 冻结口径；14→16 是白板 graph 两工具（BUG-15 修复后真正注册成功，index.js:10306-10309 注释），16→17 是 T4。日历 4 工具（calendar_*）一直与 memory_* 并列存在。
 
@@ -397,16 +397,16 @@
 
 | 文件/目录 | 生产者 | 消费者 |
 |---|---|---|
-| `<projectDir>/MEMORY.md` | memory_note_pre(kind=note)、memory_consolidate_pre、30 天蒸馏、hub flush（hubFlushTick 治理式写入 index.js:9098）、外部源导入（target=project） | 注入快照、memory_read_pre、/state、NotesTab、R7 规则解析（rules-layer-pre.js:142 真源）、m4 语料 |
-| `<projectDir>/<YYYY-MM-DD>.md`（每日日志） | memory_log_pre、自动沉淀 | 注入快照（recentDaysInjected）、memory_recall/read、蒸馏/固化输入、m4 语料 |
-| `<projectDir>/reflections/YYYY-MM-DD.md` | memory_reflect_pre、/reflect、/reflect-auto | 注入快照（最近反思）、memory_read_pre、ReflectionsTab |
-| `<projectDir>/handoff/PLAN.md` | memory_note_pre(kind=plan)（重写前旧版归档，index.js:2248-2266） | 注入快照首位、/handoff-state、PlanTab、接续材料第 0 层（index.js:4022）、白板语料 |
-| `<projectDir>/handoff/handoff-*.md`（交接账本） | memory_note_pre(kind=handoff)（append-only，index.js:2355-2369） | 注入快照、/handoff-state、PlanTab、接续材料、白板语料 |
-| `<projectDir>/handoff/archive/PLAN-<ts>.md` 等 | PLAN 重写/账本流程的自动归档 | PlanTab 历史版本、memory_trace_pre 版本链、白板语料（archive 目录也进检索语料，index.js:2622） |
-| `~/.dsh/memory/MEMORY.md`（用户级） | memory_user_pre、memory_consolidate_pre、外部源导入（target=user） | 注入快照（跨项目必须遵守）、LogsTab 用户画像卡（client.js:2581）、R7 规则编辑（rules-edit-pre.js 直接编辑此文件，rules-edit-pre.js:7） |
-| `~/.dsh/memory/CALENDAR.md` | calendar_add/done/remove_pre、/calendar、CalendarTab | 注入快照（未完成日程）、calendar_list_pre；**anchor 事务豁免文件**（index.js:334 注释） |
+| `<projectDir>/MEMORY.md` | memory_note(kind=note)、memory_consolidate、30 天蒸馏、hub flush（hubFlushTick 治理式写入 index.js:9098）、外部源导入（target=project） | 注入快照、memory_read、/state、NotesTab、R7 规则解析（rules-layer-pre.js:142 真源）、m4 语料 |
+| `<projectDir>/<YYYY-MM-DD>.md`（每日日志） | memory_log、自动沉淀 | 注入快照（recentDaysInjected）、memory_recall/read、蒸馏/固化输入、m4 语料 |
+| `<projectDir>/reflections/YYYY-MM-DD.md` | memory_reflect、/reflect、/reflect-auto | 注入快照（最近反思）、memory_read、ReflectionsTab |
+| `<projectDir>/handoff/PLAN.md` | memory_note(kind=plan)（重写前旧版归档，index.js:2248-2266） | 注入快照首位、/handoff-state、PlanTab、接续材料第 0 层（index.js:4022）、白板语料 |
+| `<projectDir>/handoff/handoff-*.md`（交接账本） | memory_note(kind=handoff)（append-only，index.js:2355-2369） | 注入快照、/handoff-state、PlanTab、接续材料、白板语料 |
+| `<projectDir>/handoff/archive/PLAN-<ts>.md` 等 | PLAN 重写/账本流程的自动归档 | PlanTab 历史版本、memory_trace 版本链、白板语料（archive 目录也进检索语料，index.js:2622） |
+| `~/.dsh/memory/MEMORY.md`（用户级） | memory_user、memory_consolidate、外部源导入（target=user） | 注入快照（跨项目必须遵守）、LogsTab 用户画像卡（client.js:2581）、R7 规则编辑（rules-edit-pre.js 直接编辑此文件，rules-edit-pre.js:7） |
+| `~/.dsh/memory/CALENDAR.md` | calendar_add/done/remove_pre、/calendar、CalendarTab | 注入快照（未完成日程）、calendar_list；**anchor 事务豁免文件**（index.js:334 注释） |
 | `<projectDir>/greetings/<date>.json`（旧 .md） | /greet 问候生成 | OverviewTab GreetingCard（index.js:2145-2147） |
-| `<projectDir>/archive/` | 容量折叠与蒸馏的原文保底归档（memory_note_pre/maintain 超限链路） | 「信息不丢」承诺的落地；不再注入 |
+| `<projectDir>/archive/` | 容量折叠与蒸馏的原文保底归档（memory_note/maintain 超限链路） | 「信息不丢」承诺的落地；不再注入 |
 
 #### L3-e.2 白板结构化（graph 档 sidecar）
 
@@ -422,12 +422,12 @@
 |---|---|---|
 | `DSH_HOME/memory/hub-pre/episodes.json` | episodic store（hubIo 原子写：tmp+rename，index.js:9030-9043）；episodic.append/consolidate | 启动 restore（index.js:9067-9072）；/memory-hub overview |
 | `DSH_HOME/memory/hub-pre/facts.json` | fact store（crossFeed fact 分支、ingestJudgementRows） | 同上；checklist 渲染 |
-| `DSH_HOME/memory/hub-pre/procedures.json` | procedure store（memory_procedure_pre 直写、promote/activate/deprecate） | 同上；/memory-hub 审批动作；SKILL.md 导出源 |
+| `DSH_HOME/memory/hub-pre/procedures.json` | procedure store（memory_procedure 直写、promote/activate/deprecate） | 同上；/memory-hub 审批动作；SKILL.md 导出源 |
 | `DSH_HOME/memory/hub-pre/flush-state.json` | hub flush 去重账（index.js:9101-9102） | 同上（幂等 flush） |
 | `DSH_HOME/memory/semantic-pre/judgement-shadow.jsonl` | Python/JS 语义引擎影子判定 | hub 60s 轮询喂数（index.js:9093-9098）；T10 关闭时机械切片支路不消费 |
 | `DSH_HOME/memory/semantic-pre/activation-shadow-v2.jsonl` | 激活影子观测 | /shadow-recent（RefineTab 展示，index.js:10624） |
 | `DSH_HOME/memory/semantic-pre/review-queue.jsonl` | /review-feedback 打分写入（index.js:10713） | 反哺唤起决策 |
-| `DSH_HOME/memory/semantic-pre/l0/`（l0-index-<hash>-<layer>.json） | l0-index-sync-pre.js（L0_INDEX_FILE_PREFIX，l0-index-sync-pre.js:43,59；l0IndexEnabled 门，index.js:9334-9353） | L0 摘要列表检索（memory_recall_pre format=l0） |
+| `DSH_HOME/memory/semantic-pre/l0/`（l0-index-<hash>-<layer>.json） | l0-index-sync-pre.js（L0_INDEX_FILE_PREFIX，l0-index-sync-pre.js:43,59；l0IndexEnabled 门，index.js:9334-9353） | L0 摘要列表检索（memory_recall format=l0） |
 | `DSH_HOME/memory/evidence-pre/events/<date>.jsonl` | evidence-store-pre.js append（evidence-store-pre.js:135-136；success evidence 驱动晋升，index.js:7523-7530） | evidence 聚合（aggregates/index.json，evidence-store-pre.js:274-278） |
 | `DSH_HOME/memory/cont-seq.json` | 接续序号分配器（全局单调，index.js:3271-3276；写入失败降级内存计数，3296） | 交接账本命名/接续材料序号 |
 
@@ -446,14 +446,14 @@
 | 数据 | 生产者 | 消费者 |
 |---|---|---|
 | 历史 DSH 会话 `session.v3.jsonl(.zstd)` 等（~/.dsh/sessions） | DSH 宿主 | 候选名匹配（index.js:2885）、会话全文检索 searchSessionHistory（engine._sessionQuery 宿主服务，index.js:9666-9667）、subagent-gc 扫描 |
-| 外部 AI 工具记忆/会话（WorkBuddy/CodeBuddy/Claude/Codex/ZCode/Kimi/TRAE 的既有文件） | 各外部工具 | memory_external_pre list/import（纯链接）；/external* 路由 |
+| 外部 AI 工具记忆/会话（WorkBuddy/CodeBuddy/Claude/Codex/ZCode/Kimi/TRAE 的既有文件） | 各外部工具 | memory_external list/import（纯链接）；/external* 路由 |
 
 ### L3-f · 关键调用链（函数级）
 
 #### f.1 写入链（每轮自动沉淀 → episode → crossFeed → 三店）
 
 1. 会话轮次结束 → 引擎自动沉淀评估（`autoConsolidate` 门 + 寒暄门槛 `autoConsolidateMinChars` + 冷却/每日额度，核心方法体在 index.js:7490-7495：`combined.length < minChars` 跳过、`runtime.lastConsolidateAt` 记账、`this._autoCallCount` 计数）。
-2. 日志/笔记写入：`memory_log_pre` 工具与自动沉淀共用 `engine.appendText`（append-only；容量折叠事务在 memory-writer-pre.js 的 MemoryDocumentStore，index.js:29 import）。
+2. 日志/笔记写入：`memory_log` 工具与自动沉淀共用 `engine.appendText`（append-only；容量折叠事务在 memory-writer-pre.js 的 MemoryDocumentStore，index.js:29 import）。
 3. 记忆中枢支路（`memoryHubEnabled` 门，index.js:7499-7522）：`hub.stores.episodic.append({sessionRef,userText,assistantText,kind,eventSeq})`（7502）→ 本地计数 `_hubEpBuffer` 攒够 `episodicMinSegments`（7511-7514）→ `episodic.consolidate()` 巩固成 episode（7515，段数不足即丢弃缓冲）→ **`hub.crossFeed(sessionRef)`**（7517；memory-hub-pre.js:145）。
 4. crossFeed 举一反三（memory-hub-pre.js:145-）：success episode → procedure 观察条目（`procedure_candidate`）；未决事实 → fact 候选（`semantic_candidate`/`profile_candidate` 映射表 memory-hub-pre.js:34）。写入前必须过清洗器（intent-clean-safe-pre.js `stripRuntimeIntentPre`，memory-hub-pre.js:175-183,290-312 的「未清洗 intent 不得进 facts.json」纪律）。
 5. success evidence 支路（M9，index.js:7523-7530）：`contextHost.recentEvidenceForSuccess(5min)` 检测本轮记忆被 read/cite → `procs.addEvidence(success)`（evidence 事件经 context-bridge-pre.js `createSuccessEvidencePre`，index.js:37）→ 累积到 `procedureMinSuccess` 门槛后可晋升。
@@ -462,7 +462,7 @@
 
 #### f.2 召回链（检索 → 融合 → 注入）
 
-**工具检索（memory_recall_pre → engine.recall，index.js:5989-6210+）**：
+**工具检索（memory_recall → engine.recall，index.js:5989-6210+）**：
 
 1. 入口分派：`expand` 指定 mem_id → `expandMemoryRecordPre`（按 anchor sidecar 字节区间直取原文，5990-5991）；`scope=handoff` → `searchHandoffCorpus`（白板语料词法直返，6000-6005）；`scope=sessions` → `searchSessionHistory`（宿主 sessionQuery 服务，6007-6014）。
 2. 本地扫描：`scanFile` 逐层词法打分（6025-6033，任一词命中 OR、按命中词数排序）；读侧状态解析统一走 note-status-apply-pre.js（`readRecordStatusPre` 动态 import，6024——**单一解析点**纪律：与写侧 note-status-pre.js 共用语法，防读写口径漂移）。
@@ -488,7 +488,7 @@
 
 #### f.4 技能审批链（T4/R1-R6/晋升/SKILL 导出）
 
-1. 模型直写：`memory_procedure_pre`（index.js:10242-10298）→ 校验（procedure-store-pre.js `validateProcedureCandidatePre`，L97）→ `procs.add(...)` 入 observed/candidate（action=write，10272 前段）。
+1. 模型直写：`memory_procedure`（index.js:10242-10298）→ 校验（procedure-store-pre.js `validateProcedureCandidatePre`，L97）→ `procs.add(...)` 入 observed/candidate（action=write，10272 前段）。
 2. 模型直通：action=activate → `procs.promote(pid, {}, {authorizedBy:'model'})`（10275，跳统计门）→ `procs.activate(pid)`（10276-10290）→ `exportSkillForPre` 导出 SKILL.md（10284，skill-export-host-pre.js）。
 3. 用户审批：MemoryHubTab（client.js:2724）→ `hubAct(action, procedureId)`（2747-2759）→ `POST /memory-hub {action: promote|activate|deprecate|pin}`（index.js:10791-10825，走 store 门槛判定不绕 gate）→ 返回 `{decision, reason, reasonCodes}` → UI 显示人话（R2：reasonCodes→人话映射 whyNotPromotable，client.js:2604-2627；R3：stage 中文 stageLabel，2598；issue #30 注释 2753-2754）。
 4. 晋升门：`PROCEDURE_DEFAULT_GATES_PRE_V1`（procedure-store-pre.js:56：minSessions=3、minSuccess=2、correctionCap=0.3）+ 高风险（riskLevel=high）需 `procedureHighRiskApproval` 人工批准；无 successCriteria 结构性无法晋升。
@@ -503,7 +503,7 @@
 
 #### f.6 外部记忆链（发现 → 链接导入 → 注入）
 
-1. 发现：引擎扫描各外部工具的已知路径（memory_external_pre action=list；/external GET，index.js:11207-11214）。
+1. 发现：引擎扫描各外部工具的已知路径（memory_external action=list；/external GET，index.js:11207-11214）。
 2. 导入：action=import（`/external-import` POST，11250）→ **纯链接模式**：只在 MEMORY.md/用户记忆写一条源文件绝对路径指针（不抄内容，防脏数据与过期）。
 3. 注入：`externalInjectionChars`（1400）预算下注入源清单/指针段（snapshotExternalTitle 段）；`externalSources` 13 子键控制哪些源参与。
 4. 管理：ConnectTab（/external-view 查看原文、/external-remove 从记忆 prompt 移除已导入段落）。

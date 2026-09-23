@@ -69,9 +69,9 @@ const waitUntil = async (predicate, { timeoutMs = 8000, stepMs = 20 } = {}) => {
   }
 }
 // 插件的每轮沉淀并非在处理器内同步执行,而是「turn-stopping 处理器 + 600ms 延迟」后才调
-// consolidateTurn;其被去重/冷却挡掉的原因会写进 diag 日志(<DSH_HOME>/dsh-auto-memory-diagnose.log)。
+// consolidateTurn;其被去重/冷却挡掉的原因会写进 diag 日志(<DSH_HOME>/dsh-auto-memory-pre-diagnose.log)。
 // 「没有第 3 次调用」是否定命题,无法轮询出结论;但可以轮询到肯定信号——去重判定确实发生过。
-const diagLogPath = path.join(home, 'dsh-auto-memory-diagnose.log')
+const diagLogPath = path.join(home, 'dsh-auto-memory-pre-diagnose.log')
 const readDiagLog = () => { try { return readFileSync(diagLogPath, 'utf8') } catch (e) { return '' } }
 
 await Promise.all([

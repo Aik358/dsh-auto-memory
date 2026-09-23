@@ -250,7 +250,7 @@ tests/smoke/smoke-test-water-window-pre.mjs         16.2KB
 ① `git fetch origin pull/<n>/head` 取分支实体；② 读 PR 的**意图与根因**；
 ③ 在 pre 线**按根因重写**（保留 pre 线已有的加固，如 `isCurrentPre` 状态闸、`compactAnchoredLayer` 重做）；
 ④ 落 PR 自带测试并把 `import` 路径改到 `-pre` 模块、把发布线命名（`memory_recall`/`idx_`/`proc_`/`hub`）
-改回 pre 线命名（`memory_recall_pre`/`idx_pre_`/`proc_pre_`/`hub-pre`）；
+改回 pre 线命名（`memory_recall`/`idx_pre_`/`proc_pre_`/`hub-pre`）；
 ⑤ **不要假设 PR 的测试是充分的** —— #36 的用例没覆盖它自己的根因（同名碰撞链），必须补断言。
 
 ---

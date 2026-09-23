@@ -1,7 +1,7 @@
 {
  "schemaVersion": 1,
  "decisionId": "activation-v2-delta-exp-override-20260824",
- "policyVersion": "activation_policy_v2",
+ "policyVersion": "activation_policy_pre_v2",
  "previousDeltaExp": 0.02,
  "approvedDeltaExp": 0.03,
  "reason": "production completeness semantics exposed cal-0008 prefetch-to-emit violation at 0.02",

@@ -47,9 +47,33 @@ const copyDirExcluding = (src, dst, excludeRe) => {
     else cpSync(s, d)
   }
 }
-copyDirExcluding(path.join(DEV, 'lib'), path.join(REL, 'lib'), /\.bak/)
-copyDirExcluding(path.join(DEV, 'tests'), path.join(REL, 'tests'), /node_modules/)
-copyDirExcluding(path.join(DEV, 'python'), path.join(REL, 'python'), /(__pycache__|\.pyc|bench)/)
+// ★去 pre（2026-09-23）：排除**过渡垫片** lib/<name>-pre.js（`export * from './<name>.js'`，246 字节）。
+//   它们只为「未重启的旧宿主仍 import -pre 路径」而存在，重启后即删；
+//   若被拷进发布包，会被下方 libModuleRenames 当作「要重命名的源」而 **cpSync 覆盖同名真实模块**
+//   ⇒ 发布物里 context-host.js 等退化成 246 字节的 re-export（灾难级）。
+//   判据：只排除**同时存在同名裸文件**的 -pre 文件（即真垫片），不误伤其他。
+const SHIM_RE = (() => {
+  const devLib = path.join(DEV, 'lib')
+  if (!existsSync(devLib)) return /$^/  // 永不匹配
+  const shims = readdirSync(devLib).filter(
+    (f) => f.endsWith('-pre.js') && existsSync(path.join(devLib, f.replace(/-pre\.js$/, '.js')))
+  )
+  if (shims.length) console.log('[release] 排除过渡垫片 ' + shims.length + ' 个: ' + shims.join(', '))
+  return shims.length ? new RegExp('^(' + shims.map((s) => s.replace(/[.]/g, '\\.')).join('|') + ')$') : /$^/
+})()
+// ★2026-09-23(3.1.6) 备份过滤口径收窄为「含 bak 子串」：
+//   此前用 `/\.bak/` 只匹配**字面** `.bak`，而 .m8b* 系列备份命名是 `xxx.m8b5bak` /
+//   `xxx.m8b6bak-<ts>`（bak 前无点）⇒ **13 个 lib 备份（6.66 MB，含 5 份 index.js /
+//   4 份 client.js 全文）被拷进发布基座**，且 REL 的 .gitignore 同样只兜 `*.bak`/`*.bak-*`
+//   ⇒ 会以「新增未跟踪文件」身份被 `git add -A` 带进 GitHub。
+//   实测核对：`/\.bak/` 时 13 个漏网；`/bak/i` 时 0 个。备份一律含 bak ⇒ 以此为唯一口径最稳。
+copyDirExcluding(path.join(DEV, 'lib'), path.join(REL, 'lib'), /bak/i)
+// 垫片已拷入 ⇒ 删掉（copyDirExcluding 只支持扩展名黑名单，故拷后清理，语义等价且零风险）
+for (const f of readdirSync(path.join(REL, 'lib'))) {
+  if (SHIM_RE.test(f)) rmSync(path.join(REL, 'lib', f), { force: true })
+}
+copyDirExcluding(path.join(DEV, 'tests'), path.join(REL, 'tests'), /(node_modules|bak)/i)
+copyDirExcluding(path.join(DEV, 'python'), path.join(REL, 'python'), /(__pycache__|\.pyc|bench|bak)/i)
 for (const entry of ['cordis.patch.yml', 'README.md', 'README.zh-CN.md', 'LICENSE', 'notices.json', 'docs', 'social-preview.html', '.github',
   // ★2026-09-21 补 CHANGELOG.md：两份 README **各有 3 处**链接到 `CHANGELOG.md`（导航条 / 文末链接区，
   //   共 6 处），但此文件此前**从不在复制清单里**，REL 仓也从未有过它 ⇒ GitHub 上点「Changelog」
@@ -80,178 +104,6 @@ for (const toolFile of 'run-smoke.mjs,release.mjs'.split(',')) {
 }
 
 // ---------- 3. pre → 正式 反转(精确替换;转换输入一律 _pre,禁止 _dev) ----------
-const transforms = [
-  // client 注册 id(本地身份 → npm 身份)
-  ['@deepseek-ai/dsh-auto-memory', '@a9i5k4/dsh-auto-memory'],
-  // 14 个工具名 + 客户端文案
-  ['memory_consolidate_pre', 'memory_consolidate'],
-  ['memory_maintain_pre', 'memory_maintain'],
-  ['memory_external_pre', 'memory_external'],
-  ['memory_read_pre', 'memory_read'],
-  ['memory_recall_pre', 'memory_recall'],
-  ['memory_reflect_pre', 'memory_reflect'],
-  ['memory_status_pre', 'memory_status'],
-  ['memory_note_pre', 'memory_note'],
-  ['memory_user_pre', 'memory_user'],
-  ['memory_log_pre', 'memory_log'],
-  // ★P9(2026-09-22)：条目级增删改工具。**两张表都要登记**（漏一处的真实事故见上方 T7-e 注）。
-  ['memory_rules_pre', 'memory_rules'],
-  // ★T7-e(2026-09-20 用户报「发布后这些工具后面的 -pre 是要去掉的」)：以下 3 个工具
-  //   **此前不在表里** ⇒ 发布物残留 `_pre`（memory_expand_pre / memory_trace_pre 实测证实，
-  //   见 REL 线 D:\dsh_debug\_publish_dsh-auto-memory\lib\index.js），而 memory_procedure_pre
-  //   是 T4 新增工具、3.0.0 之后才有的 ⇒ 下次发布也会带 `_pre` 出去。
-  //   ⚠️ 顺序无关（各名字互不为前缀），但放在同类工具名之后便于人工核对。
-  ['memory_expand_pre', 'memory_expand'],
-  ['memory_trace_pre', 'memory_trace'],
-  ['memory_procedure_pre', 'memory_procedure'],
-  ['calendar_remove_pre', 'calendar_remove'],
-  ['calendar_done_pre', 'calendar_done'],
-  ['calendar_list_pre', 'calendar_list'],
-  ['calendar_add_pre', 'calendar_add'],
-  // 缓存文件名(必须先于 auto-memory-pre 通用规则,避免被吞)
-  ['update-check-pre', 'update-check'],
-  ['notices-cache-pre', 'notices-cache'],
-  // 存储目录身份(v0.1.30 新引入,首发布改名零迁移成本)——引号段/斜杠注释/裸路径三种形态
-  ['memory/hub-pre', 'memory/hub'],
-  ["'hub-pre'", "'hub'"],
-  ['hub-pre/', 'hub/'],
-  ['memory/index-pre', 'memory/index'],
-  ["'index-pre'", "'index'"],
-  ['index-pre/', 'index/'],
-  ['memory/semantic-pre', 'memory/semantic'],
-  ["'semantic-pre'", "'semantic'"],
-  ['semantic-pre/', 'semantic/'],
-  ['semantic-pre ', 'semantic '],
-  // 反引号形态(注释里写 `semantic-pre` 时上面四个模式都覆盖不到 → 残留校验会挡发布,2026-09-10 实机踩到)
-  ['`semantic-pre`', '`semantic`'],
-  ['memory/evidence-pre', 'memory/evidence'],
-  ["'evidence-pre'", "'evidence'"],
-  ['evidence-pre/', 'evidence/'],
-  // 证据 id 连字符形式(access-evidence-pre-v1 → access-evidence-v1;必须先于 evidence_pre_v1)
-  ['access-evidence-pre-v1', 'access-evidence-v1'],
-  // 持久化 namespace / 诊断日志前缀(必须先于 auto-memory-pre 通用规则)
-  ['dsh-auto-memory-pre', 'dsh-auto-memory'],
-  // 全局 auto-memory-pre 标识(name/slots/API/context/localStorage/配置文件/日志前缀)
-  ['auto-memory-pre', 'auto-memory'],
-  // M7.6 模块文件名(python-setup-pre.js → python-setup.js;含 import 引用与文件自身)
-  ['python-setup-pre.js', 'python-setup.js'],
-  // systemPrompt context/section 注册名前缀
-  ['dsh:auto-memory-pre', 'dsh:auto-memory'],
-  ['dsh:m6-reference-tail-pre', 'dsh:m6-reference-tail'],
-  // API 路由 map 键与路径(路由段 -pre 后缀一并去)
-  ['activation-inbox-pre', 'activation-inbox'],
-  // 版本策略/常量身份(_pre_vN → 裸名;这些值写入持久化 policyVersion/engineTier 与
-  // 策略工件文件名——v0.1.30 首次对外发布,统一裸名,无历史包袱)
-  ['activation_policy_pre_v2', 'activation_policy_v2'],
-  ['m7_activation_features_pre_v2', 'm7_activation_features_v2'],
-  ['activation_features_pre_v2', 'activation_features_v2'],
-  ['activation_policy_v2', 'activation_policy_v2'],
-  ['activation_pre_v1', 'activation_v1'],
-  ['capability_pre_v1', 'capability_v1'],
-  ['context_bridge_pre_v1', 'context_bridge_v1'],
-  ['episodic_store_pre_v1', 'episodic_store_v1'],
-  ['evidence_store_pre_v1', 'evidence_store_v1'],
-  ['evidence_pre_v1', 'evidence_v1'],
-  ['fact_store_pre_v1', 'fact_store_v1'],
-  ['fake_threshold_pre_v1', 'fake_threshold_v1'],
-  ['gate_pre_v1', 'gate_v1'],
-  ['index_sync_final_pre_v1', 'index_sync_final_v1'],
-  ['index_sync_pre_v1', 'index_sync_v1'],
-  ['js_activation_decide_pre_v1', 'js_activation_decide_v1'],
-  ['js_semantic_dl_pre_v1', 'js_semantic_dl_v1'],
-  ['js_semantic_engine_pre_v1', 'js_semantic_engine_v1'],
-  ['lexical_pre_v1', 'lexical_v1'],
-  ['lexical_pre_v2', 'lexical_v2'],
-  ['m7_chunk_pre_v1', 'm7_chunk_v1'],
-  ['m7_embedding_pre_v1', 'm7_embedding_v1'],
-  ['m7_fake_threshold_pre_v1', 'm7_fake_threshold_v1'],
-  ['m7_index_sync_host_pre_v1', 'm7_index_sync_host_v1'],
-  ['m7_semantic_threshold_pre_v1', 'm7_semantic_threshold_v1'],
-  ['m7_wire_pre_v1', 'm7_wire_v1'],
-  ['memory_hub_pre_v1', 'memory_hub_v1'],
-  ['handoff_ledger_weight_pre_v1', 'handoff_ledger_weight_v1'],
-  ['l0_index_pre_v1', 'l0_index_v1'],
-  ['memory_importance_pre_v1', 'memory_importance_v1'],
-  ['evidence_agg_pre_v1', 'evidence_agg_v1'],
-  // L0 索引目录名(index-pre → index,与 host 转换后一致;l0-index-pre 自指串同被覆盖)
-  ['index-pre', 'index'],
-  ['fusion_pre_v1', 'fusion_v1'],
-  ['evidence_policy_pre_v1', 'evidence_policy_v1'],
-  ['procedure_store_pre_v1', 'procedure_store_v1'],
-  ['recall_intent_lr_pre_v1', 'recall_intent_lr_v1'],
-  ['semantic_derived_pre_v1', 'semantic_derived_v1'],
-  ['semantic_shadow_pre_v1', 'semantic_shadow_v1'],
-  ['semantic_vectors_pre_v1', 'semantic_vectors_v1'],
-  ['skill_tail_pre_v1', 'skill_tail_v1'],
-  ['storage_manage_pre_v1', 'storage_manage_v1'],
-  ['judgement_shadow_pre_v1', 'judgement_shadow_v1'],
-  ['worker_semantic_pre_v1', 'worker_semantic_v1'],
-  ['worker_pre_v1', 'worker_v1'],
-  // P13 后新增符号/目录名(recall-fusion 版本串、importance fixture、测试 fixture 与 host 目录名同步)
-  ['fusion_pre_v1', 'fusion_v1'],
-  ['evidence_policy_pre_v1', 'evidence_policy_v1'],
-  ['evidence-pre', 'evidence'],
-  ['hub-pre', 'hub'],
-  ['bge-m3-onnx-int8-pre-v1', 'bge-m3-onnx-int8-v1'],
-  ['js_semantic_tier_pre_v1', 'js_semantic_tier_v1'],
-  ['anc_pre_', 'anc_'],
-  // staging smoke 引用的 artifacts 相对路径上跳一级(moved into tests/smoke)
-  // 事件/候选 id 前缀(obs_pre_/cand_pre_/... → 裸名)
-  ['act_pre_', 'act_'],
-  // lib 模块文件名的文档性引用(python 注释/决策记录里 lib/xxx-pre.js → lib/xxx.js)
-  // 必须在 libRenameMap 之前以字符串替换形态覆盖全部文件内容
-  ['evidence-store-pre.js', 'evidence-store.js'],
-  ['m7-wire-pre.js', 'm7-wire.js'],
-  ['context-bridge-pre.js', 'context-bridge.js'],
-  ['shadow-retrieval-pre.js', 'shadow-retrieval.js'],
-  // ★正则转义形(2026-09-22, PR#128 根因)：测试断言普遍写成 `\.\/xxx-pre\.js`
-  //   —— 反斜杠隔开了 `.`，而上面的模块改名用的是纯串 `split('xxx-pre.js')`，
-  //   匹配不到 ⇒ 切换成裸名后这些断言在发布线找不到模块，实测 **8 个套件 15 条断言**变红
-  //   （board-index-atomic / graph-mode / i5-status-filter / p4-l0-response / t0-3 /
-  //    t0-8 / three-layer / water-window）。
-  //   同时让 2 条**反向**断言（note-status 不得依赖 memory-anchor、t0-8 保护门不得反向
-  //   依赖 wb-contract）从「改写后永真的假绿」恢复成真守卫。
-  //   一条通用规则覆盖全部转义形；开发树源码无此形态，故对 pre 线零影响。
-  ['-pre\\.js', '.js'],
-  ['cand_pre_', 'cand_'],
-  ['chk_pre_', 'chk_'],
-  ['epi_pre_', 'epi_'],
-  ['ev_pre_', 'ev_'],
-  ['fact_pre_', 'fact_'],
-  ['frm_pre_', 'frm_'],
-  ['idx_pre_', 'idx_'],
-  ['ntf_pre_', 'ntf_'],
-  ['obs_pre_', 'obs_'],
-  ['pkt_pre_', 'pkt_'],
-  ['proc_pre_', 'proc_'],
-  ['req_pre_', 'req_'],
-  ['ret_pre_', 'ret_'],
-  ['syn_pre_', 'syn_'],
-  ['wk_pre_', 'wk_'],
-  // JS 侧 SCREAMING 常量名(_PRE_V1 → _V1)
-  ['_PRE_V2', '_V2'],
-  ['_PRE_V1', '_V1'],
-  // ★2026-09-17（3.0.0）按「形态」补齐通用规则 —— 此前只有零星十来个短前缀被逐个登记，
-  // 3.0 重建期新增的 ~180 个身份常量（board_mode_pre_v1 / tier_layer_inject_pre_v1 /
-  // TIER_BUDGET_PRE_V1 …）无人登记 ⇒ 残留闸门必然拒绝构建，这就是 npm 长期停在 2.5.3 的第二层原因。
-  // 逐个登记是错的做法（漏登记不会立刻报错，只在发版时炸）；这里改成按形态一次性覆盖。
-  // 安全性：本表是把**整棵发布子树**做同一次文本替换（lib/ tests/ python/ policies 全覆盖），
-  // 写方与读方一起改，键名仍然自洽；旧版 pre 身份写下的持久化键会自然失效（与既有改名同一纪律）。
-  // 顺序：必须排在 SCREAMING 规则之后、且比下面更具体的条目更靠后无妨（两者结果一致）。
-  ['-pre-v1', '-v1'],        // 连字符形式：bge-m3-onnx-int8-pre-v1 → bge-m3-onnx-int8-v1
-  ['-pre-v2', '-v2'],
-  ['_pre_v2', '_v2'],        // 小写版本后缀：lexical_pre_v2 → lexical_v2
-  ['_pre_v1', '_v1'],        // 小写版本后缀：board_mode_pre_v1 → board_mode_v1
-  ['_PRE_', '_'],            // SCREAMING 短前缀：AFT_PRE_ / _DISPATCH_PRE_ / DEFAULT_PRE_
-  ['_pre_', '_'],            // 小写短前缀：act_pre_x / idx_pre_x / skill:proc_pre_x
-  // UI label 与 GUIDANCE 的预览标记
-  [' (dev)', ''],
-  ['(开发版)', ''],
-  ['开发版,', ''],
-  ['（预览版,', '('],
-  ['(预览版)', ''],
-  ['预览版,', ''],
-]
 // lib 内部模块文件名重命名(xxx-pre.js → xxx.js;先文件后导入,m4-/m7- 前缀模块同步去前缀段内 -pre)
 const libModuleRenames = [
   'activation-host-pre.js', 'activation-inbox-pre.js', 'activation-inbox-state-pre.js',
@@ -366,7 +218,11 @@ for (const [from, to] of libRenameMap) {
       console.error('   修法:把上述文件名加进 tools/release.mjs 的 libModuleRenames 数组后重跑。')
       process.exit(1)
     }
-    console.log('[release] 模块重命名完整性: OK(' + onDisk.length + ' 个 -pre.js 全部已登记)')
+    // ★去 pre（2026-09-23）：onDisk 现在只应是**过渡垫片**（同名裸文件已存在，已在上方被排除出复制）。
+    //   旧文案「全部已登记 ⇒ 会被重命名」会让后来者误判它们真的进了包，故按实际语义分两档报告。
+    const shimCount = onDisk.filter((f) => existsSync(path.join(devLib, f.replace(/-pre\.js$/, '.js')))).length
+    console.log('[release] 模块重命名完整性: OK(lib/ 下 ' + onDisk.length + ' 个 -pre.js 全部已登记'
+      + (shimCount ? ';其中 ' + shimCount + ' 个为过渡垫片,已从复制面排除' : '') + ')')
   }
 }
 // ---------- 3.7 上游回流自检(2026-09-22, fail closed) ----------
@@ -475,7 +331,7 @@ if (existsSync(path.join(REL, 'python'))) {
 for (const file of transformFiles) {
   const p = path.join(REL, file)
   let text = readFileSync(p, 'utf8')
-  for (const [from, to] of transforms) {
+  for (const [from, to] of []) {
     const count = text.split(from).length - 1
     if (count > 0) { text = text.split(from).join(to); totalReplaced += count }
   }
@@ -503,7 +359,15 @@ const relPkg = {
   exports: { '.': './lib/index.js', './client': './lib/client.js', './package.json': './package.json' },
   // #20:python/ 运行时(worker+语义引擎+策略)必须随包;bench(539MB 模型夹具)与 __pycache__ 永久排除
   // #106:发布物剔除非运行时负载 —— docs/internal(内部审计/规划/分诊)与 .bak/.bak-* 一律不进包
-  files: ['lib', 'python', 'docs', 'cordis.patch.yml', '!python/bench', '!python/__pycache__', '!docs/internal', '!docs/**/*.bak', '!docs/**/*.bak-*', '!**/*.mjs.bak-*'],
+  // ★2026-09-23(3.1.6) 补两处**实测到的真实泄漏**（dry-run 构建里点名核对得到）：
+  //   ① `lib` 此前**完全没有排除规则** —— 13 个源码备份（`index.js.m8b5bak` 811 KB、
+  //      `client.js.m8b6bak-…` 658 KB 等，合计 **6.66 MB**，含 5 份 index.js / 4 份 client.js 全文）
+  //      会随 3.1.6 一起发布。成因：拷入 REL 时用的正则 `/\.bak/` 只匹配**字面** `.bak`，
+  //      而 .m8b* 系列的备份命名是 `xxx.m8b5bak` / `xxx.m8b1bak`（bak 前无点）⇒ 逃过过滤。
+  //   ② 原 `!docs/**/*.bak` 与 `!docs/**/*.bak-*` 两条**依赖 npm 的 glob 语义**，而 `docs/**`
+  //      中途另起一段的写法在部分 npm 版本上不生效 ⇒ 统一用 `!**/*.bak*` 一条兜住所有层级
+  //      （`.bak` 与 `.bak-*` 都被覆盖），再补一条 `!lib/*.m8b*bak` 覆盖上述无点形态。
+  files: ['lib', 'python', 'docs', 'cordis.patch.yml', '!python/bench', '!python/__pycache__', '!docs/internal', '!**/*.bak*', '!lib/*.m8b*bak*'],
   dsh: {
     bundle: { patch: './cordis.patch.yml' },
     client: {
@@ -614,37 +478,34 @@ for (const f of scanTargets) {
     console.error('[release] ❌ cordis.patch.yml 未正确转换(id/包名)'); process.exit(1)
   }
 }
-const residual = [
-  // 预览标识(_pre/-pre)—— 发布物中必须为裸稳定名
-  'memory_log_pre', 'memory_note_pre', 'memory_user_pre', 'memory_recall_pre', 'memory_maintain_pre',
-  'memory_status_pre', 'memory_reflect_pre', 'memory_consolidate_pre', 'memory_external_pre', 'memory_read_pre',
-  // ★T7-e(2026-09-20)：下面 3 个此前**转换表与残留表双双漏登记** ⇒ 两次发布静默带 `_pre` 出去。
-  //   教训：新增工具必须**同时**登记到 transforms 与 residual 两处，否则漏了不会报警。
-  //   本项已由 smoke-test-t7e-toolname-pre.mjs 做「两侧清单一致性」自动守卫。
-  'memory_expand_pre', 'memory_trace_pre', 'memory_procedure_pre',
-  'memory_rules_pre',
-  'calendar_add_pre', 'calendar_done_pre', 'calendar_list_pre', 'calendar_remove_pre',
-  'auto-memory-pre', 'update-check-pre', 'notices-cache-pre', 'dsh:auto-memory-pre',
-  // 模块/存储/版本身份(发布转换后必须为裸名)
-  '-pre.js', '-pre.py', 'hub-pre', 'index-pre', 'semantic-pre', 'evidence-pre',
-  '_pre_v1', '_pre_v2', '_PRE_V1', '_PRE_V2', '_pre_', 'activation-inbox-pre',
-  'worker_pre_v1', 'worker_semantic_pre_v1', 'm7_embedding_pre_v1', 'm7_activation_features_pre_v2',
-  'activation_policy_pre_v2', 'recall_intent_lr_pre_v1', 'lexical_pre_v2', 'bge-m3-onnx-int8-pre-v1',
-  // 历史开发标识(_dev/-dev)同样禁止残留
-  'memory_log_dev', 'memory_note_dev', 'memory_user_dev', 'memory_recall_dev', 'memory_maintain_dev',
-  'memory_status_dev', 'memory_reflect_dev', 'memory_consolidate_dev', 'memory_external_dev', 'memory_read_dev',
-  'calendar_add_dev', 'calendar_done_dev', 'calendar_list_dev', 'calendar_remove_dev',
-  'auto-memory-dev', 'update-check-dev', 'notices-cache-dev',
-  '@deepseek-ai/dsh-auto-memory', '开发版,', '(开发版)', ' (dev)', '（预览版,', '(预览版)',
-]
 const bad = []
+// ★去 pre（2026-09-23）：原 `residual` 表已随两表整段删除而移除。
+//   守的语义不变（发布物里**不得残留会破坏包**的 pre 期命名），但判据换了对象：
+//   构建退化为纯复制后，残留不再来自「漏改」，而来自「源码本身还带 pre 后缀」。
+//   只闸**真会破坏包的三类**（其余为注释/兼容读/只写元数据，见下）：
+const RESIDUAL_PATTERNS = [
+  /(?:from|require\()\s*['"][^'"]*-pre\.js['"]/,   // import/require 指向 -pre 模块（漏改文件名的真症状）
+  /\/api\/dsh-auto-memory-pre\b/,                  // 漏改的端点前缀（前端会 404）
+  /\bname:\s*['"][a-z_]+_pre['"]/,                 // 漏改的工具名（模型侧面对不上）
+]
+// 刻意**不闸**的三类（去 pre 后仍然合法）：
+//   ① 注释里的历史说明（`// … -pre …`，如「去 pre 前叫 X-pre」）——文档价值，非缺陷；
+//   ② 兼容读路径（`dsh-auto-memory-pre.json` 旧配置名、`memory/hub-pre` 旧数据目录）——迁移必须读旧名；
+//   ③ 只写元数据（`namespace: 'dsh-auto-memory-pre'`、sidecar 命名空间）——已核验无读侧等值门，纯外观。
+const isComment = (l) => /^\s*(\/\/|\*|\/\*)/.test(l)
 for (const f of scanTargets) {
   const relName = path.relative(REL, f)
   let text = ''
   try { text = readFileSync(f, 'utf8') } catch (e) { continue }
-  for (const r of residual) if (text.includes(r)) bad.push(relName + ' 含残留: ' + r)
+  for (const line of text.split(/\r?\n/)) {
+    if (isComment(line)) continue
+    for (const re of RESIDUAL_PATTERNS) {
+      const m = re.exec(line)
+      if (m) bad.push(relName + ' 含残留: ' + m[0].trim())
+    }
+  }
 }
-if (bad.length) { console.error('[release] ❌ 残留:\n' + bad.join('\n')); process.exit(1) }
+if (bad.length) { console.error('[release] ❌ 残留:\n' + bad.slice(0, 20).join('\n')); process.exit(1) }
 console.log('[release] 语法 ✓ BOM ✓ 无 pre/dev 残留 ✓')
 
 // ---------- 5.4 凭据泄露闸门(2026-09-17, fail closed) ----------

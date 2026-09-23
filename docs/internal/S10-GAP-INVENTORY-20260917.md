@@ -143,8 +143,8 @@ entry 字段: id, kind, source, section, tags, cues, preview, mtime, criteria, t
 ### 工具线 / GUI 线
 | 位置 | 作用 | 该解耦吗 |
 |---|---|---|
-| `:9146` | `memory_expand_pre` 注册 | ❌ 不该 |
-| `:9150` | `memory_trace_pre` 注册 | ❌ 不该 |
+| `:9146` | `memory_expand` 注册 | ❌ 不该 |
+| `:9150` | `memory_trace` 注册 | ❌ 不该 |
 | `:2207` | 看板数据 `kanbanDataPre` | ❌ 不该（这就是看板本体） |
 | `:2235` | 看板 enabled 门 | ❌ 不该 |
 | `:3823` | `handoffPanelData` 结构化视图 | ❌ 不该 |
@@ -178,7 +178,7 @@ entry 字段: id, kind, source, section, tags, cues, preview, mtime, criteria, t
 
 ```
 白板 no | PLAN no | kind=plan no | 账本 no | handoff no
-memory_expand_pre no | memory_trace_pre no
+memory_expand no | memory_trace no
 ```
 
 （它提到了「接续」——但那是在描述 GUI 面板页签，不是白板维护纪律。）

@@ -50,7 +50,7 @@
 - The version number in the panel title and in Settings → "Check for updates" both show the **installed** version.
 - A **floating pin** (line-drawn quick-access icon) also lives in the sidebar for one-click access to memory actions from anywhere.
 - Since DSH 0.1.2-rc.1 the Web UI sits behind a token gate (new token every restart; the `?token=…` URL in the startup log is your address). This plugin's HTTP endpoints are loopback-only and unaffected by the gate.
-- All data stays on your machine: `~/.dsh/memory/` (memory files), `~/.dsh/dsh-auto-memory.json` (config). **Note**: inside this repo's pre dev tree the same file carries a `-pre` suffix; the build you install from npm uses the suffix-less name. Same applies to every path below.
+- All data stays on your machine: `~/.dsh/memory/` (memory files), `~/.dsh/dsh-auto-memory.json` (config). **Note**: after the de-pre migration the source name *is* the published name — the repo and the npm build use identical paths, so every path below applies to both.
 
 ## 2. First launch
 
@@ -98,7 +98,7 @@ The control room of proactive recall. On, the plugin watches context, runs seman
 | Recall cooldown (`jsDecideCooldownRounds`) | 1 | No re-decision for N rounds after an injection, to save tokens; **0 = no cooldown** (legal) |
 | Margin threshold (`jsDecideDeltaExp`) | 0.01 | Gap between top-1 and top-2 candidates must exceed this to inject (e5's cosine distribution is tight: 0.01; bge-m3 calibrates to 0.03). Smaller = more eager, larger = more conservative; 0 = no filter |
 | Candidate scheme (`jsDecideCandidateScheme`) | `balanced` | balanced = 3 refs × 40 chars; dense = 6 × 20 (more candidates, wider association); custom = your own count (1–8) and length |
-| Injected excerpt length (`jsDecideExcerptChars`) | 40 | Reference-line content cap. 40 = keyword-level (cheap; the model fetches full text via `memory_read_pre`); range 20–480 |
+| Injected excerpt length (`jsDecideExcerptChars`) | 40 | Reference-line content cap. 40 = keyword-level (cheap; the model fetches full text via `memory_read`); range 20–480 |
 | Retrieval mode (`semanticEngineMode`) | `auto` | **auto** = built-in semantics when ready, lexical fallback; **lexical** only; **js** = built-in e5-small (~130MB); **python** = advanced BGE-M3 int8 (~563MB). See §5. The **⟳ detect** button next to it health-checks the environment and pops the install guide when assets are missing |
 | CoT observer (`reasoningObserverEnabled`) | on | Include the model's chain of thought in live observation `(restart)` — closed-source models' summarizing CoT counts too; an important signal for "remembering while doing" |
 | Branch-session observation (`contextBridgeObserveChildSessions`) | on | Sessions that continue across days are marked as branches and observed too |
@@ -178,7 +178,7 @@ The static injection face: the `<memory_system>` block composed into every turn.
 | Setting | Default | How to tune |
 |---|---|---|
 | Handoff whiteboard (`handoffEnabled`) | off | **PLAN.md snapshot + four-part handoff ledger**: written by the model at milestones, injected first in the dynamic snapshot, live in the Whiteboard tab — context that survives windows. Recommended on |
-| Plan budget (`handoffPlanChars`) | 1200 | Hard truncation for injecting PLAN.md; full text via `memory_read_pre` or the Whiteboard tab |
+| Plan budget (`handoffPlanChars`) | 1200 | Hard truncation for injecting PLAN.md; full text via `memory_read` or the Whiteboard tab |
 | Ledger budget (`handoffLedgerChars`) | 800 | Injection budget for the latest ledger; internally truncated by section weight (failure reasons .35 ＞ next step .30 ＞ goals .20 ＞ state .15, trimmed from the lightest section first) |
 | Water-level window override (`waterLevelWindowTokens`) | 0 = auto | 0 = auto: official routed capacity first, then settings.yaml for the active model. **Keep 0 unless you have an exotic model** |
 | Advisory threshold (`waterLevelThreshold`) | 0.75 | Past the threshold: inject the handoff advisory and backfill the ledger. **0.75, not 0.8**: the host's own compaction fires at 80%; sitting right under 80% means the host compresses before the handoff finishes — the 5% margin (~50K tokens on a 1M window) is the room to complete it |
@@ -201,7 +201,7 @@ The static injection face: the `<memory_system>` block composed into every turn.
 
 ## 5. Retrieval deep dive
 
-One `memory_recall_pre` call (or the panel's Search tab) runs a **multi-arm fused** pipeline:
+One `memory_recall` call (or the panel's Search tab) runs a **multi-arm fused** pipeline:
 
 ### 5.1 The four arms
 
@@ -217,7 +217,7 @@ One `memory_recall_pre` call (or the panel's Search tab) runs a **multi-arm fuse
 - Arm rankings merge via **RRF (rank-space reciprocal-rank fusion, k=60)** — ranks only, never raw scores, so any arm's absence never perturbs the rest.
 - Query terms first pass through **QueryPlan assembly** (8-segment / 4096-char window budget, ≤32 terms); terms are kept **in weight-descending order** (user/trigger 1.0 ＞ recent-user 0.8 ＞ tool-result 0.6 ＞ reasoning 0.5 ＞ tool-call 0.4 ＞ assistant 0.2), so budget cuts bite the low-weight words and the high-weight question words are never dropped.
 - The default response is an **L0 summary list**: ~93 characters each (6.78:1 compression), with `id`, score, and match reason (`lexical×N` / `semantic×x.xx`) — one retrieval costs about a tenth of the tokens.
-- Need the full text of one? Pass its id as `expand="mem_xxx"` (or use `memory_read_pre`) — an anchor-based **byte-range** lookup returns exactly that entry, never a mix-up.
+- Need the full text of one? Pass its id as `expand="mem_xxx"` (or use `memory_read`) — an anchor-based **byte-range** lookup returns exactly that entry, never a mix-up.
 - Scope: `all` (default: handoff corpus + cross-workspace + external + session history) / `handoff` (whiteboard corpus only — check here when resuming long tasks) / `sessions` (session history only).
 - Query for something that doesn't exist: an empty or weak-hit response, no error, no blocking (fail-soft).
 
@@ -250,7 +250,7 @@ Every decision lands in the **Recall review** tab for A/P/S/H/E grading. Every i
 
 ## 7. Evidence chain & memory importance
 
-Every memory keeps an auditable usage dossier — six event types, filed daily under `~/.dsh/memory/evidence/events/YYYY-MM-DD.jsonl` (this repo's pre dev tree uses `evidence-pre/`):
+Every memory keeps an auditable usage dossier — six event types, filed daily under `~/.dsh/memory/evidence/events/YYYY-MM-DD.jsonl` :
 
 | Event | Meaning |
 |---|---|
@@ -334,17 +334,17 @@ Available to the AI in conversation (14 in total; you don't need to memorize the
 
 | Tool | Purpose |
 |---|---|
-| `memory_recall_pre` | Retrieve memory: local memory (all workspaces' logs / notes / reflections / whiteboard) + cross-workspace + external + session history. Returns an L0 summary list by default; `expand` for full text; `scope=handoff/sessions` shortcuts |
-| `memory_read_pre` | Read a specific memory / day's log / reflection / notes on demand |
-| `memory_note_pre` | Write project notes / handoff ledger / rewrite the PLAN whiteboard (`kind=plan/handoff`) |
-| `memory_log_pre` | Append today's log (append-only) |
-| `memory_user_pre` | Cross-project long-term rules |
-| `memory_reflect_pre` | Save a daily reflection |
-| `memory_consolidate_pre` | Dream-style consolidation: read recent logs, distill long-term points |
-| `memory_maintain_pre` | 30-day distill: distill old logs into notes, archive originals — not a character lost |
-| `memory_status_pre` | Memory system status overview |
-| `memory_external_pre` | External memory source management (scan / connect / remove other AI tools' memories) |
-| `calendar_add_pre` / `calendar_list_pre` / `calendar_done_pre` / `calendar_remove_pre` | Calendar — the AI extracts deadlines from conversation proactively; unfinished items keep reminding |
+| `memory_recall` | Retrieve memory: local memory (all workspaces' logs / notes / reflections / whiteboard) + cross-workspace + external + session history. Returns an L0 summary list by default; `expand` for full text; `scope=handoff/sessions` shortcuts |
+| `memory_read` | Read a specific memory / day's log / reflection / notes on demand |
+| `memory_note` | Write project notes / handoff ledger / rewrite the PLAN whiteboard (`kind=plan/handoff`) |
+| `memory_log` | Append today's log (append-only) |
+| `memory_user` | Cross-project long-term rules |
+| `memory_reflect` | Save a daily reflection |
+| `memory_consolidate` | Dream-style consolidation: read recent logs, distill long-term points |
+| `memory_maintain` | 30-day distill: distill old logs into notes, archive originals — not a character lost |
+| `memory_status` | Memory system status overview |
+| `memory_external` | External memory source management (scan / connect / remove other AI tools' memories) |
+| `calendar_add` / `calendar_list` / `calendar_done` / `calendar_remove` | Calendar — the AI extracts deadlines from conversation proactively; unfinished items keep reminding |
 
 All three write tools (log/note/user) pass the **write gate**: GBK mojibake, stutter degeneration, consecutive duplicate lines, external-AI persona JSON signatures, base64 residue — all rejected with a human-readable reason; appends ≤8,000 chars, rewrites ≤200,000; appends are deduped against the last ~60 lines. **Credential/secret sections never enter prompts.**
 
@@ -374,13 +374,13 @@ All three write tools (log/note/user) pass the **write gate**: GBK mojibake, stu
 
 | Content | Path |
 |---|---|
-| Plugin config | `~/.dsh/dsh-auto-memory.json` (this repo's pre dev tree uses `dsh-auto-memory-pre.json`) |
+| Plugin config | `~/.dsh/dsh-auto-memory.json` (this repo's pre dev tree uses `dsh-auto-memory.json`) |
 | User-level memory | `~/.dsh/memory/MEMORY.md` |
 | Workspace memory | `~/.dsh/memory/workspaces/<workspace>/` (MEMORY.md, daily logs, handoff/, reflections/, summaries/) |
 | Whiteboard & ledgers | `~/.dsh/memory/workspaces/<workspace>/handoff/` (PLAN.md + handoff-*.md) |
-| Memory Hub layers | `~/.dsh/memory/hub/` (episodes / facts / procedures .json, atomic writes; this repo's pre dev tree uses `hub-pre/`) |
-| Evidence events | `~/.dsh/memory/evidence/events/YYYY-MM-DD.jsonl` (six types, per day; pre dev tree uses `evidence-pre/`) |
-| Semantic-engine data | `~/.dsh/memory/semantic/` (embedding-config.json, decision shadow logs, vector cache; pre dev tree uses `semantic-pre/`) |
+| Memory Hub layers | `~/.dsh/memory/hub/` (episodes / facts / procedures .json, atomic writes) |
+| Evidence events | `~/.dsh/memory/evidence/events/YYYY-MM-DD.jsonl` (six types, per day) |
+| Semantic-engine data | `~/.dsh/memory/semantic/` (embedding-config.json, decision shadow logs, vector cache) |
 | Models / venv | `~/.dsh/models/js-semantic/` (C2 model) · `~/.dsh/python-engine/` (C3 venv + model; plugin upgrades never touch these) |
 | Subagent trace backups | `~/.dsh/subagent-gc-backup/` (move back into `~/.dsh/sessions/` to roll back) |
 | Diagnostics log | `~/.dsh/dsh-auto-memory-diagnose.log` (next to `memory/`, **not** inside it) |

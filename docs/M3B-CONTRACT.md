@@ -58,8 +58,8 @@ Anchor marker 必须独占一行，固定放在逻辑记录内容之前。解析
 
 推荐粒度：一次明确写入事务 = 一个 memoryId。
 
-- memory_log_pre：一次调用的单条日志为一个记录。
-- memory_note_pre / memory_user_pre append：一次调用为一个记录。
+- memory_log：一次调用的单条日志为一个记录。
+- memory_note / memory_user append：一次调用为一个记录。
 - 自动沉淀：一次 LOG / NOTE / USER 分组分别为一个记录，不把每个 bullet 单独编号。
 - 一份 reflection 文件：一个记录。
 - 一次外部链接导入 block：一个记录。
@@ -205,7 +205,7 @@ rebuildMemorySidecar(file)
 
 ## 9. Replace 语义
 
-memory_note_pre / memory_user_pre replace 是最高风险路径。
+memory_note / memory_user replace 是最高风险路径。
 
 - 输入中保留的合法 anchor 保持原 ID。
 - 未带 anchor 的新 block 分配新 ID。
@@ -218,10 +218,10 @@ memory_note_pre / memory_user_pre replace 是最高风险路径。
 
 必须逐项迁移和测试：
 
-- memory_log_pre
-- memory_note_pre append / replace
-- memory_user_pre append / replace
-- memory_reflect_pre
+- memory_log
+- memory_note append / replace
+- memory_user append / replace
+- memory_reflect
 - 自动沉淀 LOG / NOTE / USER
 - compact/maintain 新摘要与 archive
 - 外部记忆 import / remove

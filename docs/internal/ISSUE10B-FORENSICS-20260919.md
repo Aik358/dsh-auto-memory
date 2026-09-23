@@ -53,15 +53,15 @@ if (sha256Hex(body.subarray(r.byteStart, r.byteEnd)) !== r.recordDigest) {
 
 | # | 调用点 | 触发 | 方式 | 清洗门 |
 |---|---|---|---|---|
-| 1 | `index.js:9773` | `memory_note_pre`(append) | 追加 | ✅ `sanitizeForWrite` |
-| 2 | `index.js:9771` | `memory_note_pre`(replace) | 整体替换 | ✅ |
-| 3 | `index.js:9811` | `memory_user_pre`(append) | 追加 | ✅ |
-| 4 | `index.js:9809` | `memory_user_pre`(replace) | 整体替换 | ✅ |
+| 1 | `index.js:9773` | `memory_note`(append) | 追加 | ✅ `sanitizeForWrite` |
+| 2 | `index.js:9771` | `memory_note`(replace) | 整体替换 | ✅ |
+| 3 | `index.js:9811` | `memory_user`(append) | 追加 | ✅ |
+| 4 | `index.js:9809` | `memory_user`(replace) | 整体替换 | ✅ |
 | 5 | `index.js:7519` | **自动沉淀 note（每轮）** | 追加 | ❌ |
 | 6 | `index.js:7529` | **自动沉淀 user（每轮）** | 追加 | ❌ |
-| 7 | `index.js:7614` | `memory_consolidate_pre` | 追加 | ❌ |
+| 7 | `index.js:7614` | `memory_consolidate` | 追加 | ❌ |
 | 8 | `index.js:7622` | 同上 | 追加 | ❌ |
-| 9 | `index.js:7719` | `memory_maintain_pre` 蒸馏成功 | 追加 | ❌ |
+| 9 | `index.js:7719` | `memory_maintain` 蒸馏成功 | 追加 | ❌ |
 | 10 | `index.js:7730` | **蒸馏失败保底（内联归档日志全文）** | 追加 | ❌ |
 | 11 | `index.js:8141` | GUI 接入外部记忆 → user | 追加 | ❌ |
 | 12 | `index.js:8146` | 同上 → project | 追加 | ❌ |

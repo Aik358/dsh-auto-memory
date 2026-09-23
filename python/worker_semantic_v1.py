@@ -6,7 +6,7 @@ Extends the tested M7-0/M7-1 fake worker (python/worker_v1.py) WITHOUT
 touching its protocol semantics: same JSONL framing, same validators, same
 index_sync rejection matrix, same atomic derived-corpus persistence. Adds:
 
-  - after a successful index_sync commit: chunk (m7_chunk_v1) + embed
+  - after a successful index_sync commit: chunk (m7_chunk_pre_v1) + embed
     (frozen provider) every record and persist versioned vectors with an
     identity block under <dsh-home>/memory/semantic/ (atomic replace)
   - on startup: reuse persisted vectors only when the identity block
@@ -19,7 +19,7 @@ index_sync rejection matrix, same atomic derived-corpus persistence. Adds:
 
 Embedding backend is selected by an optional JSON config file passed via
 the DSH_M7_EMBEDDING_CONFIG environment variable (no CLI change, no JS
-change): {"provider":"bge-m3-v1"|"hash-v1", "modelDir":...,
+change): {"provider":"bge-m3-pre-v1"|"hash-pre-v1", "modelDir":...,
 "modelRevision":..., "dimension":1024, "torchThreads":16}.
 Without the env var the worker degrades to fake-worker behavior (protocol
 alive, embedding not ready) - never crashes, never changes ack semantics.
@@ -51,24 +51,24 @@ SHADOW_TOP_K = 8
 
 
 def canonical_workspace_key(key):
-    """Byte-twin of lib/evidence-store.js canonicalWorkspaceKey:
+    """Byte-twin of lib/evidence-store-pre.js canonicalWorkspaceKey:
     path.resolve + backslash->slash + lowercase."""
     return os.path.abspath(str(key == None and '' or key)).replace('\\', '/').lower()
 
 
 def wsref_of(workspace_key):
-    """Byte-twin of evidence-store.js workspaceRefOf. JS owns identity;
+    """Byte-twin of evidence-store-pre.js workspaceRefOf. JS owns identity;
     this is a deterministic reproduction of its published pure function so
     the worker can apply the workspace/scope/miv triple filter required by
     the M7-7.5 hardening audit (P1: isolation must be explicit, never an
     artifact of differing miv values)."""
     canon = canonical_workspace_key(workspace_key)
     return 'wsr_' + hashlib.sha256(
-        ('evidence-wsref-v1\u0000' + canon).encode('utf-8')).hexdigest()[:32]
+        ('evidence-wsref-pre-v1\u0000' + canon).encode('utf-8')).hexdigest()[:32]
 
 
 def _tokenize(text, stopwords=frozenset()):
-    """lexical_v2 parity tokenizer: NFKC + CJK 2-gram + ascii tokens."""
+    """lexical_pre_v2 parity tokenizer: NFKC + CJK 2-gram + ascii tokens."""
     t = unicodedata.normalize('NFKC', str(text)).lower()
     out = []
     for run in __import__('re').findall(r'[\u4e00-\u9fff]+|[a-z0-9_./-]+', t):
@@ -111,7 +111,7 @@ class LexicalBM25:
         return s
 
 # ---- M7-6 activation policy (default: shadow calibration only) ----
-ACTIVATION_POLICY_VERSION = 'm7_semantic_threshold_v1'
+ACTIVATION_POLICY_VERSION = 'm7_semantic_threshold_pre_v1'
 DEFAULT_ACTIVATION_POLICY = {
     'mode': 'shadow',            # 'shadow' = calibrate/log only; 'active' = emit frames
     'tOn': 0.62, 'tOff': 0.52,   # dual threshold, T_on > T_off (hysteresis)
@@ -166,7 +166,7 @@ class SemanticWorker(base.Worker):
         # 'shadow'(默认)=只记 shadow 行零发射;'canary-explicit'=仅 explicit 车道
         # 的 emit 决策发 activation_request 帧;'active' 预留。非法值回退 shadow
         # (fail closed)。此开关属 JS/用户运营面,不进策略工件——阈值权威仍在
-        # activation_policy_v2.json(append-only),发射节流依赖 M6 收件箱的
+        # activation_policy_pre_v2.json(append-only),发射节流依赖 M6 收件箱的
         # 硬校验+cooldown+TTL+latest-wins,worker 侧不重复限速。
         _em = str(self.embedding_config.get('activationEmitMode') or 'shadow')
         self.activation_emit_mode = _em if _em in (
@@ -184,9 +184,9 @@ class SemanticWorker(base.Worker):
                              'policies')
             try:
                 self._fv2 = featv2.load_and_verify_policy(
-                    os.path.join(pol_dir, 'recall_intent_lr_v1.json'),
+                    os.path.join(pol_dir, 'recall_intent_lr_pre_v1.json'),
                     os.path.join(pol_dir,
-                                 'activation_policy_v2.json'))
+                                 'activation_policy_pre_v2.json'))
             except Exception as exc:  # fail closed, retrieval unaffected
                 self._fv2_invalid = str(exc)[:200]
                 base.diag('featuresV2-policy-invalid: ' + self._fv2_invalid)
@@ -361,7 +361,7 @@ class SemanticWorker(base.Worker):
         payload = {
             'schemaVersion': 1,
             'namespace': base.NAMESPACE,
-            'policyVersion': 'semantic_vectors_v1',
+            'policyVersion': 'semantic_vectors_pre_v1',
             'identity': identity,
             'workspaceRef': ws_ref,
             'scope': scope,
@@ -627,7 +627,7 @@ class SemanticWorker(base.Worker):
             if len(excerpt.encode('utf-8')) > 480:
                 excerpt = excerpt[:150]
             cands.append({
-                'candidateId': 'cand_' + base.first32(
+                'candidateId': 'cand_pre_' + base.first32(
                     base.sha_str('m7-semantic-cand\u0000' + obs + '\u0000' +
                                  c['memoryId'] + '\u0000' + str(i))),
                 'memoryId': c['memoryId'], 'anchorId': c['anchorId'],
@@ -639,8 +639,8 @@ class SemanticWorker(base.Worker):
             })
         if not cands:
             return None
-        activation_id = 'act_' + base.first32(
-            base.sha_str('m7-semantic-activation-v1\u0000' + obs))
+        activation_id = 'act_pre_' + base.first32(
+            base.sha_str('m7-semantic-activation-pre-v1\u0000' + obs))
         created = req.get('sentAt', 0)
         ttl = int(pol['ttlSteps'])
         return {
@@ -736,7 +736,7 @@ class SemanticWorker(base.Worker):
 
     # ---------- M7-7 judgement shadow (audit only, never writes) ----------
 
-    JUDGEMENT_POLICY = 'judgement_shadow_v1'
+    JUDGEMENT_POLICY = 'judgement_shadow_pre_v1'
 
     _J_MARKERS = ('CORRECTION', 'UPDATED', 'REVISED', 'FREEZE',
                   'HARD RULE', 'DECISION reversing', '纠正', '更新:',
@@ -911,7 +911,7 @@ class SemanticWorker(base.Worker):
             self._append_shadow({
                 'schemaVersion': 1,
                 'namespace': base.NAMESPACE,
-                'policyVersion': 'semantic_shadow_v1',
+                'policyVersion': 'semantic_shadow_pre_v1',
                 'observationId': str(p.get('observationId', '')),
                 'workerEpoch': str(req.get('workerEpoch', '')),
                 'memoryIndexVersion': miv,
@@ -1063,7 +1063,7 @@ class SemanticWorker(base.Worker):
 
     def _intent_config_hash(self):
         ip_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                               'policies', 'recall_intent_lr_v1.json')
+                               'policies', 'recall_intent_lr_pre_v1.json')
         try:
             with open(ip_path, encoding='utf-8') as f:
                 ip = json.load(f)
@@ -1367,7 +1367,7 @@ def main():
     args, _unknown = ap.parse_known_args()
     if args.selftest:
         base.run_selftest()
-        w = SemanticWorker('ep', '', {'provider': 'hash-v1',
+        w = SemanticWorker('ep', '', {'provider': 'hash-pre-v1',
                                       'dimension': 64})
         view = w.embedding_view()
         assert view['enabled'] is True and view['ready'] is False

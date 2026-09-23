@@ -105,7 +105,8 @@ const turnStartEvent = (seq, turn, time) => ({ type: 'turn/start', seq, time: ti
   const h = makeHarness('cfg', {})
   try {
     // ★ T4（2026-09-19）：16 → 17 —— 新增 memory_procedure（procedure memory 的模型直写通路，无条件注册）。
-    if (h.registeredTools.length !== 18) throw new Error('tool count drifted (P9 起默认 18): ' + h.registeredTools.length)
+    // ★ M8-B（2026-09-23）：18 → 19 —— 新增 memory_procedure_list（技能库只读浏览；用户裁定「不注入候选目录，只给浏览函数」）。
+    if (h.registeredTools.length !== 19) throw new Error('tool count drifted (M8-B 起默认 19): ' + h.registeredTools.length)
     // 2026-09-08:41→42(ws-overview-rank 路由落线);42→43(subagent-gc 路由落线);43→45(2.2.6 auto-continue-state/decide 路由落线);46→47(白板看板 kanban-board 路由落线)
     if (h.registeredRoutes.length !== 54) throw new Error('route count drifted (expected 50): ' + h.registeredRoutes.length)
     const cfg = await h.prime()

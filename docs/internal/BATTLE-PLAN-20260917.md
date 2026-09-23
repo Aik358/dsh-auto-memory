@@ -331,13 +331,13 @@ entry 字段: id, kind, source, section, tags, cues, preview, mtime, criteria, t
 
 #### ★ 并入项：G3 结论层状态写入（2026-09-18 用户拍板）
 
-**用户原话**：「b➕c 应该才是正路」「**只在 `memory_note_pre`（结论层）时比对**」「标错成 superseded 后，要有个撤销通道」「**落到文档里，和 M2 一起做**」。
+**用户原话**：「b➕c 应该才是正路」「**只在 `memory_note`（结论层）时比对**」「标错成 superseded 后，要有个撤销通道」「**落到文档里，和 M2 一起做**」。
 
 **完整设计见 `MEMORY-GOVERNANCE-20260917.md` §8**（含代码证据、触发范围、撤销通道、风险约束、验收口径）。要点：
 
 | 项 | 定案 |
 |---|---|
-| **触发范围** | **只挂 `memory_note_pre`**；`memory_log_pre` **零改动**（日志是流水，append 本正确） |
+| **触发范围** | **只挂 `memory_note`**；`memory_log` **零改动**（日志是流水，append 本正确） |
 | **地基现状** | `status` 三值 + L0 版本指纹 + 归档机制**全部已存在**；缺口是「**机制只读不写**」（全仓 0 处写 `superseded`） |
 | **撤销通道** | **必需项**（误判代价不对称：漏判=维持现状，误判=有效结论被当废纸）→ 倾向 U1（`restore: [id]` 参数 + 留痕） |
 | **③④ 判据** | ✅ **不再阻塞**：改为"主动触发 + 写入时兜底比对"，不必预先穷举判据 |
@@ -353,7 +353,7 @@ entry 字段: id, kind, source, section, tags, cues, preview, mtime, criteria, t
 **实测**：`lib/index.js:143` 的 `GUIDANCE`（每轮注入的记忆纪律，≈845 字符）**逐字检查结果**：
 ```
 白板 no | PLAN no | kind=plan no | 账本 no | handoff no
-memory_expand_pre no | memory_trace_pre no
+memory_expand no | memory_trace no
 ```
 ⇒ **模型被明确要求"做记忆"，但从未被要求"维护白板"。这是白板腐烂的真因，不是模型偷懒。**
 
@@ -361,7 +361,7 @@ memory_expand_pre no | memory_trace_pre no
 
 **三条必须守住的**：
 1. 写成**条件触发**，不是"每轮都做" —— 否则每轮改白板 ⇒ 噪声 + token 浪费。
-   措辞方向：「**当本轮产生与白板既有结论冲突的信息、或完成了白板上的目标时**，用 `memory_note_pre(kind=plan)` 更新」。
+   措辞方向：「**当本轮产生与白板既有结论冲突的信息、或完成了白板上的目标时**，用 `memory_note(kind=plan)` 更新」。
 2. **必须写明「只报告、不自动删」** —— 契约 §6 尾注为硬纪律。否则模型会把"清理白板"理解成"删卡片"。
 3. **白板关闭时不得有副作用** —— `handoffEnabled=false` 时白板不读不写，纪律里须说明「未启用则跳过」。
 
@@ -826,7 +826,7 @@ ENOENT: no such file or directory, scandir 'C:\Users\Administrator\.dsh\memory\e
 
 | 项 | 事实 |
 |---|---|
-| 现象 | `memory_recall_pre(scope='sessions')` 返回 `session-search persistence observation failed: subagent/descriptor 5 uses unsupported descriptor version 2` |
+| 现象 | `memory_recall(scope='sessions')` 返回 `session-search persistence observation failed: subagent/descriptor 5 uses unsupported descriptor version 2` |
 | 触发文件 | `~/.dsh/sessions/--D-dsh-auto-memory--/01740c44-…/session.jsonl.zstd`（48KB，mtime **2026-08-19 15:41**，v0 旧格式） |
 | 报错层 | DSH 上游 `dsh-session-query-sqlite/lib/index.js:739` → 内层 `dsh-session-format-v0-to-v1/lib/index.js:1586` |
 | 根因 | v0→v1 迁移器只接受 `subagent/descriptor` 的 `version === 3`（`:1584`）；该文件里是 **2** ⇒ 抛 `SessionFormatUnsupportedMigrationError` ⇒ **整个 `scope='sessions'` 查询失败**（不是跳过该文件，是直接抛错） |
@@ -864,7 +864,7 @@ ENOENT: no such file or directory, scandir 'C:\Users\Administrator\.dsh\memory\e
 
 **三态一律返回**；`isRetrievablePre` 只对**未知值 fail-closed**（防未来新增枚举时静默放行）。
 **指向哈希**：id 就是既有 `mem_<32hex>` 锚点 id（**不新建 ID 体系**，守 S10.4）；
-标记内嵌 id ⇒ AI 可直接拿它去 `memory_recall_pre`/grep 追最新结论。
+标记内嵌 id ⇒ AI 可直接拿它去 `memory_recall`/grep 追最新结论。
 **注入侧维持过滤**（常驻目录仅 800 token，装过时条目会挤掉现行结论；检索是按需的）。
 ⇒ **I5 的"两处"要求被拆开**：检索侧由"过滤"改为"标注"，注入侧不变。
 

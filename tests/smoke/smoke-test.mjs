@@ -66,7 +66,7 @@ console.log('routes:', registeredRoutes.map((r) => r.path).join(', '))
 
 // ★ T4（2026-09-19）：16 → 17 —— 新增 memory_procedure（procedure memory 的模型直写通路）。
 //   该工具**无条件注册**（不像 expand/trace 受 boardMode=graph 闸门），故任何档位下都 +1。
-if (registeredTools.length !== 18) throw new Error('expected 18 tools (16 + T4 memory_procedure + P9 memory_rules), got ' + registeredTools.length)
+if (registeredTools.length !== 19) throw new Error('expected 19 tools (16 + T4 memory_procedure + P9 memory_rules + M8-B memory_procedure_list), got ' + registeredTools.length)
 // ★ 召回统计（2026-09-22）：49 → 50 —— 新增只读路由 GET /recall-stats（面板「统计」页签的数据源）。
 //   该路由**无条件注册**（不受任何开关闸门约束），故任何档位下都 +1。
 if (registeredRoutes.length !== 54) throw new Error('expected 50 routes, got ' + registeredRoutes.length)
@@ -87,7 +87,7 @@ console.log('\nmemory_log →', r1)
 // ---- execute memory_status ----
 const status = registeredTools.find((t) => t.name === 'memory_status')
 const r2 = await status.execute({}, { agent })
-console.log('\nmemory_status →\n' + r2)
+console.log('\nmemory_status_pre →\n' + r2)
 
 // ---- static rules section (byte-stable anchor) ----
 const provider = sections[0].text

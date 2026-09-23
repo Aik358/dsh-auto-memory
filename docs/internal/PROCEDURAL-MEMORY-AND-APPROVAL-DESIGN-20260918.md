@@ -38,7 +38,7 @@
 这要求标记里带上**可检索的 id**，而不只是一句"已作废"。落地要点：
 
 - id 就是既有的 `mem_<32hex>` 锚点 id（**已有的东西，不新建 ID 体系**，守 S10.4）
-- 标记形态：`⚠已作废（已被 mem_xxxx 取代）` ⇒ AI 可直接拿这个 id 去 `memory_recall_pre` / `grep`
+- 标记形态：`⚠已作废（已被 mem_xxxx 取代）` ⇒ AI 可直接拿这个 id 去 `memory_recall` / `grep`
 - `retracted` 额外带 **reason**（为什么撤回）——这才是"教训"的正文，比 status 本身有价值
 
 > ⚠️ **安全纪律（已在 R4-A 探针锁定）**：id 只认 `/^mem_[0-9a-f]{32}$/` 形态，

@@ -144,8 +144,8 @@ function rankProvider(f, wanted, snapshots) {
       .filter((r) => wanted.includes(r.memoryId)).map((r) => [r.memoryId, 0.93])) }
   }
 }
-// pre 线 miv 前缀为 `idx_`（发布时由 tools/release.mjs 反转为 `idx_`）。
-const hashRecords = (records) => 'idx_' + createHash('sha256').update(JSON.stringify(records
+// pre 线 miv 前缀为 `idx_pre_`（发布时由 tools/release.mjs 反转为 `idx_`）。
+const hashRecords = (records) => 'idx_pre_' + createHash('sha256').update(JSON.stringify(records
   .map((r) => [r.memoryId, r.text]).sort((a, b) => a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0))).digest('hex').slice(0, 32)
 
 // Baseline and patched code run the identical tests. A red baseline must be a

@@ -58,7 +58,7 @@ Get-ChildItem "$env:USERPROFILE\.dsh\memory\workspaces\--D--dsh-auto-memory--\ha
 
 - 取**最新一份**读（约 70KB，**单条截断 2000 字符**，是上一个窗口的完整转写）。
 - 注意：DSH 原生会话是 `~/.dsh/sessions/--D-dsh-auto-memory--/<id>/session.v3.jsonl.zstd`（**zstd 压缩，read 工具读不了**）；`prev-session-*.md` 是插件解压后的可读版。
-- **同时调用 `memory_recall_pre`** 检索本机所有工作区记忆（含本项目的项目笔记与用户级规则）。**用户说「有些还有问题」，所以不要只信本文，也要自己搜。**
+- **同时调用 `memory_recall`** 检索本机所有工作区记忆（含本项目的项目笔记与用户级规则）。**用户说「有些还有问题」，所以不要只信本文，也要自己搜。**
 
 ---
 
@@ -144,7 +144,7 @@ limits: { memoryReferences, otherDynamic }
 | A1 | P0-P1 立即做；P2-P3 等后端冻结解除 | |
 | A2 | sidecar 位置 = `memoryRoot/<ws>/handoff/`（与现有 handoffDir 同目录） | |
 | A3 | 静态纪律**随下一版一次性更新** | 代价：全量会话一次缓存重建 |
-| A4 | 工具命名 = `memory_expand_pre` / `memory_trace_pre`（对齐 `*_pre` 惯例） | 对外契约，发布后难改 |
+| A4 | 工具命名 = `memory_expand` / `memory_trace`（对齐 `*_pre` 惯例） | 对外契约，发布后难改 |
 | A5 | P0-P1 进 2.6.0；P2-P3 进 2.7.x | |
 | A6 | 水位骨架硬判据失败策略 = **照写 + 警示行** | 优先保证接续材料存在 |
 | A7 | PLAN 判据**维持自由节名** + 最弱硬判据 P-H1 | 固定小节集会削弱老化机制 |
@@ -183,10 +183,10 @@ limits: { memoryReferences, otherDynamic }
 
 | 时机 | 动作 |
 |---|---|
-| **每完成一个小步**（一个函数改完、一个断言转绿） | 调 `memory_log_pre` 追加一条（记：做了什么、结果、行号） |
-| **每得出一个跨会话有用的结论**（口径、约定、踩坑） | 调 `memory_note_pre`（`kind=note`）写进项目笔记 |
-| **方向变化 / 阶段完成** | 调 `memory_note_pre`（`kind=handoff`）写四段式交接账本 |
-| **对项目全貌理解有实质变化** | 调 `memory_note_pre`（`kind=plan`）重写白板 |
+| **每完成一个小步**（一个函数改完、一个断言转绿） | 调 `memory_log` 追加一条（记：做了什么、结果、行号） |
+| **每得出一个跨会话有用的结论**（口径、约定、踩坑） | 调 `memory_note`（`kind=note`）写进项目笔记 |
+| **方向变化 / 阶段完成** | 调 `memory_note`（`kind=handoff`）写四段式交接账本 |
+| **对项目全貌理解有实质变化** | 调 `memory_note`（`kind=plan`）重写白板 |
 
 **日志纪律**：客观陈述（第三人称中性句式），**只留可复用的事实/决策/规则/路径**，不写「我考虑/我排查」这类思考腔。
 
