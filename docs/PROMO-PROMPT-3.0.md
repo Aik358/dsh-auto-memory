@@ -37,7 +37,7 @@ LEFT PANEL LOWER — a dark rounded terminal bar with a thin cyan border, contai
 To its right, a small rounded pill button with the Chinese text "复制".
 
 LEFT PANEL BOTTOM — a horizontal row of small rounded info chips with thin borders, each containing short Chinese text:
-"17 模型工具"  "49 路由"  "98 配置键"  "12 面板页签"  "零运行时依赖"
+"19 模型工具"  "56 路由"  "115 配置键"  "12 面板页签"  "零运行时依赖"
 
 TOP RIGHT CORNER — a small glowing version badge, rounded pill shape with a cyan border and cyan text: "v3.0.0"
 
@@ -57,7 +57,7 @@ AI 生图的**中文长文本**仍可能出错（缺笔画、错字、糊字）�
 - [ ] 四张卡片标题：自动记忆 / 写入闸门 / 交接账本 / 三层记忆
 - [ ] 卡片小字（错字可接受，糊字不行 —— 小字允许后期覆盖）
 - [ ] 命令 `pnpm add @a9i5k4/dsh-auto-memory@latest`（**必须逐字符对**）
-- [ ] 五个 chip：17 模型工具 / 49 路由 / 98 配置键 / 12 面板页签 / 零运行时依赖
+- [ ] 五个 chip：19 模型工具 / 56 路由 / 115 配置键 / 12 面板页签 / 零运行时依赖
 - [ ] 版本号 `v3.0.0`（不是 0.1.35、不是 3.0.1）
 - [ ] 书封 `MEMORY LOG`
 - [ ] 左下 `BSD-3-Clause`

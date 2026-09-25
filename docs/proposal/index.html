@@ -1,0 +1,1072 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>dsh-auto-memory v3.1.7 · 交付提案</title>
+<meta name="description" content="dsh-auto-memory v3.1.7 交付提案：团队记忆能力、企业登录接入、前端重构三块工作，含迁移批次、里程碑与诚实边界。">
+<style>
+/* ========================================================================
+   dsh-auto-memory · 交付提案（单文件 · 零外部依赖）
+   色板严格取自交付契约（浅色为默认主题，深色可切）
+   ======================================================================== */
+
+/* ---------- 1. 设计令牌 ---------- */
+:root{
+  /* 浅色（默认） */
+  --bg:#eef2f7; --bg-soft:#e2e8f0; --bg-elev:#ffffff; --bg-code:#0f172a;
+  --fg:#0f172a; --fg-dim:#334155;
+  --accent:#2563eb; --accent-2:#3b82f6; --accent-3:#93c5fd;
+  --accent-glow:rgba(37,99,235,.2);
+  /* 语义色（两套主题共用） */
+  --ok:#2fa46a; --warn:#d4a94f; --err:#c44a4a; --info:#4f7cff; --muted:#8b93a5;
+  /* 派生（不引入新品牌色，只做明暗派生） */
+  --line:rgba(15,23,42,.13);
+  --line-soft:rgba(15,23,42,.07);
+  --tint:rgba(37,99,235,.07);
+  --tint-strong:rgba(37,99,235,.13);
+  --shadow:0 1px 2px rgba(15,23,42,.05), 0 14px 34px -20px rgba(15,23,42,.24);
+  --shadow-sm:0 1px 2px rgba(15,23,42,.05);
+  /* 字体：契约字体名 + system-ui 兜底（零外部依赖） */
+  --font-display:'Space Grotesk','Manrope',system-ui,-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;
+  --font-body:'Manrope',system-ui,-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;
+  --font-mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Consolas,monospace;
+  --radius:14px;
+  --wrap:1060px;
+  --dur:.55s;
+  --ease:cubic-bezier(.22,.61,.36,1);
+  color-scheme:light;
+}
+:root[data-theme="dark"]{
+  /* 深色 */
+  --bg:#0a0d14; --bg-soft:#141828; --bg-elev:#0f1320; --bg-code:#05070d;
+  --fg:#e8ecf3; --fg-dim:#b8c0d0;
+  --accent:#3b82f6; --accent-2:#60a5fa; --accent-3:#93c5fd;
+  --accent-glow:rgba(59,130,246,.35);
+  --line:rgba(232,236,243,.16);
+  --line-soft:rgba(232,236,243,.09);
+  --tint:rgba(59,130,246,.13);
+  --tint-strong:rgba(59,130,246,.22);
+  --shadow:0 1px 2px rgba(0,0,0,.35), 0 20px 44px -24px rgba(0,0,0,.75);
+  --shadow-sm:0 1px 2px rgba(0,0,0,.35);
+  color-scheme:dark;
+}
+
+/* ---------- 2. 基础 ---------- */
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;background:var(--bg);color:var(--fg);
+  font-family:var(--font-body);font-size:15.5px;line-height:1.78;
+  -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  transition:background-color .35s var(--ease),color .35s var(--ease);
+}
+h1,h2,h3,h4{font-family:var(--font-display);font-weight:700;line-height:1.28;letter-spacing:-.02em;margin:0}
+p{margin:0 0 1em}
+a{color:var(--accent);text-decoration:none;border-bottom:1px solid var(--line)}
+a:hover{border-bottom-color:var(--accent)}
+ul,ol{margin:0 0 1em;padding-left:1.25em}
+li{margin:.32em 0}
+strong{font-weight:700;color:var(--fg)}
+code,.mono{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+.num{font-family:var(--font-mono);font-variant-numeric:tabular-nums;font-weight:600;letter-spacing:-.01em}
+.wrap{max-width:var(--wrap);margin:0 auto;padding:0 30px}
+.sec{padding:84px 0;border-top:1px solid var(--line-soft);scroll-margin-top:78px}
+.sec:first-of-type{border-top:0}
+.lead{font-size:16.5px;color:var(--fg-dim);max-width:74ch}
+.muted{color:var(--muted)}
+.dim{color:var(--fg-dim)}
+.hint{font-size:13px;line-height:1.7;color:var(--fg-dim)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:4px}
+
+/* ---------- 3. 顶栏与导航 ---------- */
+.progress{position:fixed;top:0;left:0;height:2px;width:0;background:var(--accent);z-index:60;transition:width .12s linear}
+.topbar{
+  position:sticky;top:0;z-index:50;
+  background:color-mix(in srgb,var(--bg) 88%,transparent);
+  backdrop-filter:saturate(1.4) blur(10px);
+  border-bottom:1px solid var(--line-soft);
+}
+@supports not (backdrop-filter:blur(1px)){.topbar{background:var(--bg)}}
+.topbar-in{display:flex;align-items:center;gap:18px;max-width:var(--wrap);margin:0 auto;padding:11px 30px}
+.brand{display:flex;align-items:center;gap:10px;flex-shrink:0;border:0}
+.brand-mark{width:26px;height:26px;border-radius:7px;background:var(--accent);display:grid;place-items:center;flex-shrink:0;box-shadow:0 4px 14px -4px var(--accent-glow)}
+.brand-mark svg{display:block}
+.brand-name{font-family:var(--font-mono);font-size:13.5px;font-weight:600;color:var(--fg);letter-spacing:-.01em}
+.brand-ver{font-family:var(--font-mono);font-size:11px;color:var(--accent);border:1px solid var(--line);border-radius:999px;padding:2px 8px;white-space:nowrap}
+.navbar{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;flex:1;margin:0 -4px;padding:0 4px}
+.navbar::-webkit-scrollbar{display:none}
+.navbar a{
+  font-size:13px;color:var(--fg-dim);border:0;border-radius:8px;padding:6px 10px;white-space:nowrap;
+  transition:color .2s,background-color .2s;
+}
+.navbar a:hover{color:var(--accent);background:var(--tint)}
+.navbar a.on{color:var(--accent);background:var(--tint-strong);font-weight:600}
+.navbar a i{font-style:normal;font-family:var(--font-mono);font-size:11px;opacity:.7;margin-right:5px}
+.theme-btn{
+  flex-shrink:0;display:inline-flex;align-items:center;gap:6px;cursor:pointer;
+  background:transparent;border:1px solid var(--line);border-radius:9px;color:var(--fg-dim);
+  font-family:var(--font-mono);font-size:11.5px;padding:6px 10px;transition:all .22s var(--ease);
+}
+.theme-btn:hover{color:var(--accent);border-color:var(--accent)}
+
+/* ---------- 4. Hero ---------- */
+.hero{padding:74px 0 66px;position:relative;overflow:hidden}
+.hero::before{
+  content:"";position:absolute;inset:-40% 40% 40% -20%;pointer-events:none;
+  background:radial-gradient(closest-side,var(--accent-glow),transparent 78%);opacity:.55;
+}
+.hero-in{position:relative}
+.eyebrow{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-bottom:26px}
+.pill{
+  display:inline-flex;align-items:center;gap:7px;border-radius:999px;padding:4px 12px;font-size:12px;
+  font-family:var(--font-mono);border:1px solid var(--line);color:var(--fg-dim);background:var(--bg-elev);
+}
+.pill .dot{width:6px;height:6px;border-radius:50%;background:var(--ok)}
+.pill.v{border-color:var(--accent);color:var(--accent)}
+h1.hero-title{font-size:clamp(30px,4.6vw,46px);margin-bottom:20px}
+h1.hero-title em{font-style:normal;color:var(--accent)}
+.hero-sub{font-size:17.5px;color:var(--fg-dim);max-width:64ch;margin-bottom:14px}
+.hero-note{font-size:13.5px;color:var(--fg-dim);border-left:2px solid var(--accent-3);padding-left:14px;margin-top:24px;max-width:66ch}
+.hero-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:44px}
+.hstat{background:var(--bg-elev);border:1px solid var(--line-soft);border-radius:var(--radius);padding:18px 18px 16px;box-shadow:var(--shadow-sm)}
+.hstat b{display:block;font-family:var(--font-mono);font-size:29px;font-weight:700;line-height:1.1;color:var(--accent);letter-spacing:-.03em}
+.hstat span{display:block;font-size:12.5px;color:var(--fg-dim);margin-top:7px;line-height:1.55}
+/* ---------- 5. 区块标题 ---------- */
+.sec-head{margin-bottom:38px;max-width:80ch}
+.sec-num{font-family:var(--font-mono);font-size:11.5px;font-weight:600;color:var(--accent);letter-spacing:.22em;display:block;margin-bottom:12px}
+.sec-title{font-size:clamp(24px,3vw,31px);margin-bottom:14px}
+.sec-head .lead{margin-bottom:0}
+
+/* ---------- 6. 容器 ---------- */
+.grid{display:grid;gap:16px}
+.g2{grid-template-columns:repeat(2,1fr)}
+.g3{grid-template-columns:repeat(3,1fr)}
+.g4{grid-template-columns:repeat(4,1fr)}
+.card{
+  background:var(--bg-elev);border:1px solid var(--line-soft);border-radius:var(--radius);
+  padding:24px 24px 22px;box-shadow:var(--shadow-sm);
+  transition:border-color .3s var(--ease),box-shadow .3s var(--ease),transform .3s var(--ease);
+}
+.card:hover{border-color:var(--line);box-shadow:var(--shadow)}
+.card h3{font-size:17px;margin-bottom:9px;display:flex;align-items:center;gap:9px}
+.card h4{font-size:14.5px;margin:18px 0 7px;color:var(--fg)}
+.card p:last-child,.card ul:last-child,.card ol:last-child{margin-bottom:0}
+.tag{
+  display:inline-block;font-family:var(--font-mono);font-size:10.5px;letter-spacing:.06em;
+  padding:2px 8px;border-radius:6px;border:1px solid var(--line);color:var(--fg-dim);background:var(--bg-soft);
+  vertical-align:middle;white-space:nowrap;
+}
+.tag.new{color:var(--accent);border-color:var(--accent);background:var(--tint)}
+.tag.ok{color:var(--ok);border-color:var(--ok);background:color-mix(in srgb,var(--ok) 10%,transparent)}
+.kv{list-style:none;padding:0;margin:0}
+.kv li{display:flex;gap:12px;padding:9px 0;border-top:1px solid var(--line-soft);font-size:14.5px}
+.kv li:first-child{border-top:0}
+.kv b{flex-shrink:0;width:5.4em;font-family:var(--font-mono);font-size:12px;font-weight:600;color:var(--accent);padding-top:2px}
+.kv span{color:var(--fg-dim)}
+
+/* ---------- 7. 引用 / 提示块 ---------- */
+.quote{
+  border-left:3px solid var(--accent);background:var(--tint);border-radius:0 10px 10px 0;
+  padding:15px 20px;margin:0 0 18px;font-size:15.5px;color:var(--fg);
+}
+.quote cite{display:block;font-style:normal;font-size:12.5px;color:var(--fg-dim);margin-top:7px;font-family:var(--font-mono)}
+.callout{
+  border:1px solid var(--line);border-left-width:3px;border-radius:0 10px 10px 0;
+  padding:14px 18px;margin:16px 0;font-size:14.5px;background:var(--bg-elev);
+}
+.callout b:first-child{display:block;margin-bottom:5px;font-size:13.5px}
+.callout.ok{border-left-color:var(--ok)} .callout.ok b:first-child{color:var(--ok)}
+.callout.warn{border-left-color:var(--warn)} .callout.warn b:first-child{color:var(--warn)}
+.callout.err{border-left-color:var(--err)} .callout.err b:first-child{color:var(--err)}
+.callout.info{border-left-color:var(--info)} .callout.info b:first-child{color:var(--info)}
+.callout p:last-child{margin-bottom:0}
+
+/* ---------- 8. 诊断：平铺 vs 收敛 ---------- */
+.blobwrap{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+.blobbox{background:var(--bg-elev);border:1px solid var(--line-soft);border-radius:var(--radius);padding:20px}
+.blobbox>h4{font-size:13px;font-family:var(--font-mono);letter-spacing:.04em;margin:0 0 4px;color:var(--fg-dim);font-weight:600}
+.blobbox>p{font-size:13px;color:var(--muted);margin:0 0 16px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips i{
+  font-style:normal;font-size:12.5px;padding:4px 10px;border-radius:6px;
+  border:1px solid var(--line);background:var(--bg-soft);color:var(--fg-dim);
+}
+.chips.flat i{opacity:.92}
+.groups{display:grid;gap:10px}
+.group{border:1px solid var(--line);border-radius:10px;padding:11px 13px;background:var(--bg-soft)}
+.group b{display:block;font-size:13px;margin-bottom:8px;color:var(--fg)}
+.group b em{font-style:normal;font-family:var(--font-mono);font-size:10.5px;color:var(--muted);font-weight:400;margin-left:6px}
+.group .chips i{background:var(--bg-elev);font-size:12px;padding:3px 8px}
+.group.a{border-left:3px solid var(--accent)}
+.group.b{border-left:3px solid var(--ok)}
+.group.c{border-left:3px solid var(--warn)}
+.group.d{border-left:3px solid var(--muted)}
+.bars{list-style:none;padding:0;margin:22px 0 0;display:grid;gap:11px}
+.bars li{display:grid;grid-template-columns:132px 1fr 82px;align-items:center;gap:14px;font-size:13.5px}
+.bars .bl{color:var(--fg-dim);text-align:right}
+.bars .bt{height:9px;border-radius:999px;background:var(--bg-soft);overflow:hidden;border:1px solid var(--line-soft)}
+.bars .bt i{display:block;height:100%;border-radius:999px;background:var(--accent);width:0;transition:width 1.1s var(--ease)}
+.bars .bv{font-family:var(--font-mono);font-size:12.5px;font-weight:600;color:var(--fg-dim);white-space:nowrap}
+
+/* ---------- 9. 迁移批次 ---------- */
+.batches{display:grid;gap:12px;margin:0;padding:0;list-style:none;counter-reset:bt}
+.batch{
+  display:grid;grid-template-columns:52px 1fr 168px;gap:18px;align-items:start;
+  background:var(--bg-elev);border:1px solid var(--line-soft);border-radius:var(--radius);padding:19px 22px;
+  box-shadow:var(--shadow-sm);
+}
+.batch .bl{
+  font-family:var(--font-mono);font-size:19px;font-weight:700;color:var(--accent);
+  border:1px solid var(--line);border-radius:9px;text-align:center;padding:5px 0;background:var(--bg-soft);
+}
+.batch h4{font-size:15.5px;margin:0 0 6px}
+.batch p{font-size:14px;color:var(--fg-dim);margin:0}
+.batch .guard{font-size:12.5px;color:var(--fg-dim);text-align:right;line-height:1.6}
+.batch .guard b{display:block;font-family:var(--font-mono);font-size:10.5px;color:var(--muted);font-weight:600;letter-spacing:.06em;margin-bottom:4px}
+.batch.key{border-color:var(--accent);background:linear-gradient(180deg,var(--tint),transparent 42%),var(--bg-elev)}
+.batch.key .bl{color:#fff;background:var(--accent);border-color:var(--accent)}
+
+/* ---------- 10. 里程碑 ---------- */
+.ms{list-style:none;padding:0;margin:0;display:grid;gap:0}
+.ms li{display:grid;grid-template-columns:96px 30px 1fr;gap:16px;position:relative;padding-bottom:26px}
+.ms li:last-child{padding-bottom:0}
+.ms .when{font-family:var(--font-mono);font-size:11.5px;color:var(--muted);text-align:right;padding-top:5px;line-height:1.5}
+.ms .dot{position:relative;display:flex;justify-content:center}
+.ms .dot::before{content:"";width:11px;height:11px;border-radius:50%;background:var(--bg-elev);border:2px solid var(--muted);margin-top:6px;z-index:1}
+.ms .dot::after{content:"";position:absolute;top:6px;bottom:-26px;width:1px;background:var(--line)}
+.ms li:last-child .dot::after{display:none}
+.ms .body{background:var(--bg-elev);border:1px solid var(--line-soft);border-radius:var(--radius);padding:17px 20px;box-shadow:var(--shadow-sm)}
+.ms h4{font-size:15.5px;margin:0 0 6px}
+.ms p{font-size:14px;color:var(--fg-dim);margin:0}
+.ms li.done .dot::before{background:var(--ok);border-color:var(--ok);box-shadow:0 0 0 4px color-mix(in srgb,var(--ok) 18%,transparent)}
+.ms li.done .body{border-color:var(--ok)}
+.ms li.done .when{color:var(--ok);font-weight:600}
+
+/* ---------- 11. 表格 ---------- */
+.tbl{width:100%;border-collapse:collapse;font-size:14px;margin:0 0 4px;overflow:hidden;border-radius:var(--radius)}
+.tbl th,.tbl td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--line-soft);vertical-align:top}
+.tbl th{font-size:12px;font-family:var(--font-mono);letter-spacing:.05em;color:var(--fg-dim);background:var(--bg-soft);font-weight:600}
+.tbl tr:last-child td{border-bottom:0}
+.tbl td.c,.tbl th.c{text-align:center}
+.tbl .okn{color:var(--ok);font-weight:600}
+.card>.tbl{background:var(--bg-elev)}
+
+/* ---------- 12. 待确认问题 ---------- */
+.qs{display:grid;gap:14px;margin:0;padding:0;list-style:none;counter-reset:q}
+.qs li{
+  display:grid;grid-template-columns:40px 1fr;gap:16px;background:var(--bg-elev);
+  border:1px solid var(--line-soft);border-left:3px solid var(--accent);border-radius:0 var(--radius) var(--radius) 0;
+  padding:19px 22px;box-shadow:var(--shadow-sm);
+}
+.qs .qn{counter-increment:q;font-family:var(--font-mono);font-size:19px;font-weight:700;color:var(--accent-3)}
+.qs .qn::before{content:"Q" counter(q)}
+.qs h4{font-size:15.5px;margin:0 0 7px}
+.qs p{font-size:14px;color:var(--fg-dim);margin:0 0 8px}
+.qs p:last-child{margin-bottom:0}
+.qs .why{font-size:12.5px;color:var(--muted);border-top:1px solid var(--line-soft);padding-top:9px;margin-top:10px}
+
+/* ---------- 13. 页脚 ---------- */
+.foot{border-top:1px solid var(--line-soft);padding:52px 0 60px;background:var(--bg-soft)}
+.foot h3{font-size:16px;margin-bottom:14px}
+.foot .grid{margin-bottom:26px}
+.foot .card{background:var(--bg-elev)}
+.foot .fine{font-size:12.5px;color:var(--muted);line-height:1.75;max-width:88ch}
+.foot .fine p{margin-bottom:.6em}
+.contact{list-style:none;padding:0;margin:0;font-size:14px}
+.contact li{padding:7px 0;border-top:1px solid var(--line-soft);color:var(--fg-dim)}
+.contact li:first-child{border-top:0}
+.contact b{color:var(--fg);font-weight:600}
+.endmark{display:flex;align-items:center;gap:12px;margin-top:30px;font-family:var(--font-mono);font-size:11.5px;color:var(--muted)}
+.endmark::after{content:"";flex:1;height:1px;background:var(--line-soft)}
+
+/* ---------- 14. 入场动效 ----------
+   渐进增强：隐藏态只在根元素带 .js 类时生效。
+   无 JS / 脚本被拦时，全部内容按默认可见渲染，绝不出现空白页。 */
+.js .rv{opacity:0;transform:translateY(14px);transition:opacity var(--dur) var(--ease),transform var(--dur) var(--ease)}
+.js .rv.in{opacity:1;transform:none}
+.d1{transition-delay:.07s} .d2{transition-delay:.14s} .d3{transition-delay:.21s} .d4{transition-delay:.28s}
+
+/* ---------- 15. 响应式 ---------- */
+@media (max-width:1080px){
+  .g4{grid-template-columns:repeat(2,1fr)}
+  .hero-stats{grid-template-columns:repeat(2,1fr)}
+  .batch{grid-template-columns:46px 1fr;}
+  .batch .guard{grid-column:2;text-align:left}
+}
+@media (max-width:880px){
+  .wrap{padding:0 22px}
+  .g2,.g3{grid-template-columns:1fr}
+  .blobwrap{grid-template-columns:1fr}
+  .sec{padding:64px 0}
+  .bars li{grid-template-columns:96px 1fr 72px;gap:10px}
+  .ms li{grid-template-columns:72px 24px 1fr;gap:12px}
+  .navbar{display:none}
+  .brand-name{display:none}
+}
+@media (max-width:560px){
+  .g4,.hero-stats{grid-template-columns:1fr}
+  body{font-size:15px}
+  .card{padding:19px 18px}
+}
+
+/* ---------- 16. 动效降级（无障碍） ---------- */
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  *,*::before,*::after{animation-duration:.001ms !important;animation-iteration-count:1 !important;transition-duration:.001ms !important}
+  .js .rv{opacity:1;transform:none}
+  .bars .bt i{transition:none}
+}
+/* ---------- 17. 打印 ---------- */
+@media print{
+  .topbar,.progress,.theme-btn{display:none}
+  body{background:#fff}
+  .sec{page-break-inside:avoid;padding:30px 0}
+  .js .rv{opacity:1;transform:none}
+  .card,.batch,.ms .body{box-shadow:none}
+}
+</style>
+<script>
+/* 主题初始化：必须在首帧前执行，避免闪白/闪黑；默认浅色（正式文档观感） */
+(function(){
+  try{
+    document.documentElement.classList.add('js');
+    var saved = localStorage.getItem('dam-proposal-theme');
+    if(saved === 'dark' || saved === 'light'){ document.documentElement.setAttribute('data-theme', saved); }
+  }catch(e){ /* 隐私模式下 localStorage 不可用：保持默认浅色 */ }
+})();
+</script>
+</head>
+<body>
+<div class="progress" id="progress" aria-hidden="true"></div>
+
+<!-- ======================= 顶栏导航 ======================= -->
+<header class="topbar">
+  <div class="topbar-in">
+    <a class="brand" href="#s1" aria-label="回到开头">
+      <span class="brand-mark" aria-hidden="true">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round">
+          <path d="M12 3v5"/><circle cx="12" cy="12" r="4.2"/><path d="M5 21c1.6-3.2 4.2-4.4 7-4.4S17.4 17.8 19 21"/>
+        </svg>
+      </span>
+      <span class="brand-name">dsh-auto-memory</span>
+    </a>
+    <span class="brand-ver">v3.1.7</span>
+    <nav class="navbar" id="nav" aria-label="分节导航">
+      <a href="#s1"><i>01</i>概览</a>
+      <a href="#s2"><i>02</i>现状诊断</a>
+      <a href="#s3"><i>03</i>要做什么</a>
+      <a href="#s4"><i>04</i>怎么做</a>
+      <a href="#s5"><i>05</i>里程碑</a>
+      <a href="#s6"><i>06</i>我们凭什么</a>
+      <a href="#s7"><i>07</i>诚实边界</a>
+      <a href="#s8"><i>08</i>下一步</a>
+      <a href="#s9"><i>09</i>联系</a>
+    </nav>
+    <button class="theme-btn" id="themeBtn" type="button" aria-label="切换深浅色主题">
+      <span id="themeIcon" aria-hidden="true">◐</span><span id="themeTxt">深色</span>
+    </button>
+  </div>
+</header>
+
+<main>
+<!-- ======================= 01 · Hero ======================= -->
+<section class="sec hero" id="s1">
+  <div class="wrap hero-in">
+    <div class="eyebrow">
+      <span class="pill v">v3.1.7 · 已发布</span>
+      <span class="pill"><span class="dot" aria-hidden="true"></span>开源可审计 · 零第三方运行依赖</span>
+      <span class="pill">交付提案 · 2026-09-23</span>
+    </div>
+    <h1 class="hero-title">让团队的每一次经验，<em>在需要它的那一刻自动出现</em>。</h1>
+    <p class="hero-sub">
+      dsh-auto-memory 是 DSH 平台上的记忆插件。它的定位是<strong>主动联想记忆 + 上下文管理</strong>：
+      不等提问，先把该记起的递到眼前；自动唤回、自动沉淀、技能固化；
+      并让长会话通过交接账本与白板跨窗口续命。
+    </p>
+    <p class="hero-note">
+      本提案面向贵方决策层，用一页说清四件事：<strong>问题出在哪、我们要做什么、什么时候能看到、我们凭什么能做成</strong>。
+      其中第 02 节与第 07 节是「不好看但必须说」的部分，我们没有回避。
+    </p>
+    <div class="hero-stats">
+      <div class="hstat rv"><b data-count="177">0</b><span>项自动化回归测试全部通过，0 失败</span></div>
+      <div class="hstat rv d1"><b data-count="13" data-suffix=" → 4">0</b><span>个并排入口，收敛为 4 个一级入口</span></div>
+      <div class="hstat rv d2"><b data-count="80" data-suffix=" → 约 15">0</b><span>个设置项，首屏控件收敛到约 15 个</span></div>
+      <div class="hstat rv d3"><b>0</b><span>个第三方运行依赖，代码完全公开</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= 02 · 现状诊断 ======================= -->
+<section class="sec" id="s2">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="sec-num rv">02 · 现状诊断</span>
+      <h2 class="sec-title rv">先说贵方那条最刺耳、也最准确的反馈</h2>
+      <p class="lead rv">
+        在讨论我们要做什么之前，有一件事需要先摆到桌面上。这条反馈我们不打算解释、不打算淡化——它是本轮方案成立的起点。
+      </p>
+    </div>
+
+    <blockquote class="quote rv">
+      「界面杂乱、看着晕晕的。」
+      <cite>— 贵方对当前版本的评价，我们原文引用</cite>
+    </blockquote>
+
+    <div class="card rv">
+      <h3>我们的判断：不是信息太多，而是<strong>缺少层级</strong></h3>
+      <p class="dim">
+        第一反应很容易是把功能砍掉。我们没有这么做，因为复核之后发现问题并不在「量」，而在「序」：所有东西都长在同一层上，
+        界面没有表达过任何一句「哪个重要、哪个先看、哪个跟我有关」。
+      </p>
+      <p class="dim" style="margin-bottom:0">这不是观感问题，是可测量的结构问题。我们复核了三个维度，数字如下。</p>
+      <ul class="bars" role="list">
+        <li class="rv"><span class="bl">一级视图页签</span><span class="bt"><i data-bar="100" style="width:100%"></i></span><span class="bv">13 个并排</span></li>
+        <li class="rv"><span class="bl">设置分区</span><span class="bt"><i data-bar="69" style="width:69%"></i></span><span class="bv">9 个，全部同时展开</span></li>
+        <li class="rv"><span class="bl">设置控件</span><span class="bt"><i data-bar="100" style="width:100%;background:var(--warn)"></i></span><span class="bv">80 个同时可见</span></li>
+        <li class="rv"><span class="bl">交互范式</span><span class="bt"><i data-bar="69" style="width:69%;background:var(--warn)"></i></span><span class="bv">9 套并存</span></li>
+      </ul>
+      <p class="hint" style="margin-top:18px">
+        补充一句更直白的：设置页的导航看着像页签，实际只是把页面滚到对应位置——用户以为在切换，其实在滚动。
+        这类「看起来有层级、实际没有」的设计，正是「晕」的直接来源。
+      </p>
+    </div>
+
+    <div class="blobwrap" style="margin-top:26px">
+      <div class="blobbox rv">
+        <h4>现在：一层平铺</h4>
+        <p>13 个入口、9 个设置分区、80 个控件同处一层，没有主次</p>
+        <div class="chips flat" role="img" aria-label="当前 13 个并排入口">
+          <i>概览</i><i>日志</i><i>唤起回顾</i><i>记忆中枢</i><i>存储管理</i><i>笔记</i><i>白板</i><i>反思</i>
+          <i>接续</i><i>日历</i><i>检索</i><i>工作区</i><i>统计</i>
+        </div>
+      </div>
+      <div class="blobbox rv d1">
+        <h4>重构后：四层归位</h4>
+        <p>四个一级入口，各自最多 4 个子项，按「我现在要干什么」组织</p>
+        <div class="groups">
+          <div class="group a"><b>今天<em>我这一轮要用的</em></b><div class="chips"><i>概览</i><i>日志</i><i>反思</i></div></div>
+          <div class="group b"><b>项目<em>这个项目沉淀了什么</em></b><div class="chips"><i>笔记</i><i>白板</i><i>记忆中枢</i></div></div>
+          <div class="group c"><b>团队<em>全团队共享什么</em></b><div class="chips"><i>团队记忆</i><i>成员</i><i>审计</i><i>冲突</i></div></div>
+          <div class="group d"><b>检索<em>我要找东西</em></b><div class="chips"><i>检索</i><i>统计</i><i>接续</i><i>日历</i><i>工作区</i></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout ok rv" style="margin-top:24px">
+      <b>零功能丢失，是这一节的硬承诺</b>
+      <p>
+        原来 13 个入口里的每一个，在 4 个一级入口下都有明确归属，一个都不会消失、一个都不会被藏进「更多」。
+        其中「存储管理」属于配置而非内容，会下沉到设置页。
+        贵方可以拿上面两张图逐项对账——<strong>重构不删功能，只补层级</strong>。
+      </p>
+    </div>
+
+    <div class="callout warn rv">
+      <b>为什么我们敢把「晕」写在第一页</b>
+      <p>
+        因为这句话贵方已经说过一次了。如果我们先讲成绩、把问题留到答疑环节，那不叫方案，那叫回避。
+        我们更愿意用后面的 7 个批次和 177 项回归来回答它，而不是用一段形容词。
+      </p>
+    </div>
+  </div>
+</section>
+<!-- ======================= 03 · 我们要做什么 ======================= -->
+<section class="sec" id="s3">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="sec-num rv">03 · 我们要做什么</span>
+      <h2 class="sec-title rv">三块工作，一块收敛观感，两块新增能力</h2>
+      <p class="lead rv">
+        三块工作分工很清晰：<strong>前端重构</strong>解决「看着晕」；<strong>团队记忆</strong>把单人能力升级为团队资产；
+        <strong>企业登录</strong>让这套能力进得了企业环境。下面每块都写明「贵方具体得到什么」。
+      </p>
+    </div>
+
+    <div class="grid g3">
+      <div class="card rv">
+        <h3>一、团队记忆能力 <span class="tag new">新</span></h3>
+        <p class="dim">
+          把一个人踩过的坑，变成全团队不再踩的坑。每位成员的身份会落到每一条记忆上，
+          团队共享范围内的经验、约定与结论可以被全组看到和复用。
+        </p>
+        <p class="dim">
+          特别地，我们把「失败与弯路」当成一等公民：历史上走不通的方案会明确保留在看板上，
+          而不是被悄悄删掉。这是团队最贵、也最容易被丢掉的知识。
+        </p>
+        <h4>贵方得到什么</h4>
+        <ul class="kv">
+          <li><b>经验留存</b><span>人员流动时，判断依据和踩坑记录留在团队，不随人走</span></li>
+          <li><b>重复试错</b><span>同一个坑不重复踩第二次，新人不必重新走一遍老路</span></li>
+          <li><b>责任可见</b><span>每条结论可追溯到是谁、在什么时候写的</span></li>
+        </ul>
+      </div>
+
+      <div class="card rv d1">
+        <h3>二、企业登录接入 <span class="tag new">新</span></h3>
+        <p class="dim">
+          我们<strong>复用 DSH 平台已有的账号体系</strong>（含 DeepSeek 账号，并支持对接 Google / 阿里云），
+          插件本身不另建一套账号密码。
+        </p>
+        <p class="dim">
+          本插件只做两件事：把登录进来的身份映射为团队成员，以及把「谁做了什么」写进审计记录。
+          本地只保留接口。<strong>登录能力由平台提供，我们不重复造。</strong>
+        </p>
+        <h4>贵方得到什么</h4>
+        <ul class="kv">
+          <li><b>无额外账号</b><span>成员用企业已有的账号进入，不必再记一套新密码</span></li>
+          <li><b>运维成本</b><span>账号体系沿用平台既有能力，无需再维护一份成员密码库</span></li>
+          <li><b>可追溯</b><span>团队内的写入行为可定位到具体成员与时间</span></li>
+        </ul>
+      </div>
+
+      <div class="card rv d2">
+        <h3>三、前端重构 <span class="tag ok">本轮重点</span></h3>
+        <p class="dim">
+          针对第 02 节的问题逐项收敛：<strong class="num">13 → 4</strong> 个一级入口、
+          <strong class="num">9 → 4</strong> 组设置、<strong class="num">9 → 3</strong> 套交互方式、
+          首屏控件 <strong class="num">80 → 约 15</strong> 个。
+        </p>
+        <p class="dim">
+          所有改动都在「零功能丢失」的前提下完成，并且始终保留贵方最敏感的两件事：
+          历史数据不迁移、不丢失；已有操作习惯不被强行推翻。
+        </p>
+        <h4>贵方得到什么</h4>
+        <ul class="kv">
+          <li><b>上手成本</b><span>不用培训、不用看手册，第一次打开就知道从哪里开始</span></li>
+          <li><b>演示效率</b><span>贵方对内部或对客户展示时，不需要在旁边解释界面</span></li>
+          <li><b>可见可信</b><span>新版长什么样，本提案交付时已有可点击的演示稿</span></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout info rv" style="margin-top:24px">
+      <b>三块工作的先后关系</b>
+      <p>
+        前端重构排在最前，因为它是「看得见」的那一块，也是贵方反馈最直接的那一块；
+        团队记忆与企业登录随后增量叠加，它们<strong>不依赖也不改写</strong>前端已经收敛好的结构。
+        换句话说：先把屋子收拾干净，再往里搬新家具。
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= 04 · 怎么做 ======================= -->
+<section class="sec" id="s4">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="sec-num rv">04 · 怎么做</span>
+      <h2 class="sec-title rv">7 个批次，每一步都有回归验证兜底</h2>
+      <p class="lead rv">
+        重构最大的风险不是「改不好」，而是「改完不知道哪里坏了」。我们的应对方式是：
+        把工作切成 7 个批次，<strong>任何一批只要回归没有全绿，就不允许进入下一批</strong>；
+        每一批都能单独回退，不会出现「改到一半退不回去」的状态。
+      </p>
+    </div>
+
+    <ol class="batches">
+      <li class="batch rv">
+        <span class="bl">A</span>
+        <div><h4>结构就位（用户零感知）</h4><p>先在代码里把新的分组结构搭好，但界面保持原样。这一步贵方看不到任何变化，它的价值是让后面每一步都有地方可落。</p></div>
+        <div class="guard"><b>验证兜底</b>回归全绿 · 界面零差异</div>
+      </li>
+      <li class="batch rv">
+        <span class="bl">B</span>
+        <div><h4>导航收敛：13 个入口 → 4 个</h4><p>一级入口收敛为「今天 / 项目 / 团队 / 检索」，每个入口下不超过 4 个子项。原来的 13 个入口逐一归位，零丢失。</p></div>
+        <div class="guard"><b>验证兜底</b>13 项归属逐条对账 · 回归全绿</div>
+      </li>
+      <li class="batch key rv">
+        <span class="bl">C</span>
+        <div><h4>设置页重分组（本批涉及结构约定调整）</h4><p>9 个设置分区重组为 4 组：引擎 / 内容 / 偏好 / 关于。高级设置默认折叠，首屏只留下最常改的项。因为这一批会触及已被自动化测试逐字锁定的结构，我们把它<strong>单独成批、单独验收</strong>，不和其它改动混在一起。</p></div>
+        <div class="guard"><b>验证兜底</b>首屏控件 80 → 约 15 · 独立批次验收</div>
+      </li>
+      <li class="batch rv">
+        <span class="bl">D</span>
+        <div><h4>设置项搬移归位</h4><p>把设置项逐个搬到它真正属于的组里。搬移过程前后逐项核对，确保没有一项在搬运中丢失或错位。</p></div>
+        <div class="guard"><b>验证兜底</b>搬移前后逐项比对 · 零丢失</div>
+      </li>
+      <li class="batch rv">
+        <span class="bl">E</span>
+        <div><h4>视觉规范统一</h4><p>把颜色、间距、字号收敛到一套统一的设计变量上。此前系统里同时存在三套状态色，这一批之后只剩一套。</p></div>
+        <div class="guard"><b>验证兜底</b>已上线的四档缩放特性不回归</div>
+      </li>
+      <li class="batch rv">
+        <span class="bl">F</span>
+        <div><h4>降噪与术语统一</h4><p>去掉重复表述与冗余提示，统一术语主称（例如「工作区」与「项目」两个说法，统一为一个主称、另一个作别名）。</p></div>
+        <div class="guard"><b>验证兜底</b>术语主称逐处核对 · 回归全绿</div>
+      </li>
+      <li class="batch rv">
+        <span class="bl">G</span>
+        <div><h4>团队能力增量</h4><p>在收敛好的结构上新增「团队」一级入口：团队记忆、成员、审计、冲突。这一步建立在 A–F 之上，不回头改动既有结构。</p></div>
+        <div class="guard"><b>验证兜底</b>不改动既有结构 · 回归全绿</div>
+      </li>
+    </ol>
+
+    <div class="grid g2" style="margin-top:26px">
+      <div class="callout warn rv" style="margin:0">
+        <b>顺序为什么不能颠倒</b>
+        <p>
+          现有 177 项回归里，有一部分是<strong>逐字校验界面结构</strong>的——界面结构一动，它们会立刻报红。
+          这听起来像障碍，其实是护栏：它保证了「改完之后，功能确实还在」。
+          配置项分组是其中锁定最紧的一处，所以必须单独成批，不能和别的改动混做。
+        </p>
+      </div>
+      <div class="callout ok rv d1" style="margin:0">
+        <b>每一批都可单独回退</b>
+        <p>
+          批次之间没有「半成品必须留着」的依赖。任何一批如果在验收中没通过，我们回退该批、修好再来，
+          不会带着问题往下走，也不会把贵方拖进「改到一半」的状态。
+          验收标准在每批开工前就写好，而不是事后补。
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+<!-- ======================= 05 · 里程碑 ======================= -->
+<section class="sec" id="s5">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="sec-num rv">05 · 什么时候能看到</span>
+      <h2 class="sec-title rv">四个里程碑，第一个已经在贵方手上</h2>
+      <p class="lead rv">
+        我们刻意<strong>不给日历日期</strong>。新版要改的是贵方正在使用的界面，时间点应由贵方看到实物之后再一起定，
+        而不是我们先报一个数字、再想办法圆回来。下面给的是顺序与可见成果。
+      </p>
+    </div>
+
+    <ol class="ms">
+      <li class="done rv">
+        <span class="when">已完成<br>本次交付</span>
+        <span class="dot" aria-hidden="true"></span>
+        <div class="body">
+          <h4>里程碑 1 · 新界面演示稿 <span class="tag ok">已交付</span></h4>
+          <p>
+            本次随提案一并提供新版的<strong>可点击界面演示</strong>：不是效果图，是可以点、可以切页、可以看设置分组的实物。
+            贵方现在就能用它判断「还晕不晕」，而不用等我们把代码写完。四组设置、四个一级入口、团队相关页面均可在演示里走一遍。
+          </p>
+        </div>
+      </li>
+      <li class="rv">
+        <span class="when">紧接着</span>
+        <span class="dot" aria-hidden="true"></span>
+        <div class="body">
+          <h4>里程碑 2 · 单人版可登录</h4>
+          <p>
+            在成员自己的机器上完成身份接入（复用 DSH 平台已有账号体系），团队记忆具备最小可用能力：
+            成员身份可识别、写入可归属到人。这一步的目标是<strong>先跑通、先验证</strong>，不追求覆盖全部入口。
+          </p>
+        </div>
+      </li>
+      <li class="rv">
+        <span class="when">其后</span>
+        <span class="dot" aria-hidden="true"></span>
+        <div class="body">
+          <h4>里程碑 3 · 团队共享记忆可用</h4>
+          <p>
+            记忆中枢支持按团队粒度分片，团队共享记忆正式可用：成员可以看到全组沉淀的结论、约定，
+            以及专门保留的「失败与弯路」看板。这一步之后，「团队版」才真正成立。
+          </p>
+        </div>
+      </li>
+      <li class="rv">
+        <span class="when">最后</span>
+        <span class="dot" aria-hidden="true"></span>
+        <div class="body">
+          <h4>里程碑 4 · 企业交付版</h4>
+          <p>
+            统一权威服务端上线，审计追溯、多成员并发读写、以及以阿里云优先的多云兼容交付全部就位。
+            这一步面向贵方的规模化使用与合规要求，也是整套能力对外交付的收口。
+          </p>
+        </div>
+      </li>
+    </ol>
+
+    <div class="callout info rv" style="margin-top:24px">
+      <b>关于节奏的一句话说明</b>
+      <p>
+        里程碑 2–4 的进入时间，取决于第 08 节里<strong>贵方需要确认的三个问题</strong>。
+        其中第一个问题（新版 DSH 平台向插件开放哪些账号能力）直接决定里程碑 2 的工作量级——
+        平台开放得越多，我们自建的部分就越少，交付也越快。这也是我们把它放在第一位的原因。
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= 06 · 我们凭什么 ======================= -->
+<section class="sec" id="s6">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="sec-num rv">06 · 我们凭什么</span>
+      <h2 class="sec-title rv">四条别人做不了的设计，加三项可核对的工程事实</h2>
+      <p class="lead rv">
+        市面上的企业级检索产品，绝大多数是<strong>只读系统</strong>：人负责写，AI 只负责查。
+        所以「这条结论过时了」「两条结论打架了」在它们的数据模型里根本不存在。
+        而我们处理的是<strong>会写、会错、会改</strong>的记忆。下面四条差异，都来自这个前提。
+      </p>
+    </div>
+
+    <div class="grid g2">
+      <div class="card rv">
+        <h3>01 · 记忆三态治理</h3>
+        <p class="dim">
+          每条记忆都有明确状态：当前有效、已被取代、已撤回。
+          过时的结论<strong>不会静默消失</strong>——检索时照常返回，但会明确标注它已过时，并指出最新结论在哪里。
+        </p>
+        <p class="hint" style="margin-bottom:0">为什么重要：静默丢弃会让团队在不知不觉中重复引用一个已经作废的判断，而且没人发现。</p>
+      </div>
+
+      <div class="card rv d1">
+        <h3>02 · 防记忆劫持</h3>
+        <p class="dim">
+          最高优先级的记忆会<strong>无条件进入</strong>模型每一轮的上下文——这是能力，也是风险。
+          我们在数据层做了结构性约束：任何绕过模型判断直接写入这条通路的路径，在设计上就不可能存在。
+        </p>
+        <p class="hint" style="margin-bottom:0">为什么重要：这条通路一旦被污染，被污染的不是一条记录，而是此后每一轮对话。</p>
+      </div>
+
+      <div class="card rv">
+        <h3>03 · 「失败与弯路」是一等公民</h3>
+        <p class="dim">
+          走不通的方案、踩过的坑，在系统里<strong>有专门的看板位置</strong>，与成果同等对待。
+          它们不是被归档的垃圾，而是带上下文、带原因、带结论的资产。
+        </p>
+        <p class="hint" style="margin-bottom:0">为什么重要：业界普遍把失败当负资产，于是失败从不落纸，于是同一个坑被反复踩。</p>
+      </div>
+
+      <div class="card rv d1">
+        <h3>04 · 可信度可量化</h3>
+        <p class="dim">
+          我们不对贵方说「效果很好」。回归测试通过多少项、包内包含哪些文件、
+          有没有第三方代码，全部是<strong>可公开核对</strong>的数字，贵方可以自己数。</p>
+        <p class="hint" style="margin-bottom:0">为什么重要：卖方的形容词不可验证，数字可以。这一点决定了本提案第 07 节是否可信。</p>
+      </div>
+    </div>
+
+    <div class="card rv" style="margin-top:26px">
+      <h3>工程事实：三项可以被贵方独立核对的数字</h3>
+      <ul class="kv">
+        <li>
+          <b>回归</b>
+          <span><strong class="num">177</strong> 项自动化回归测试，当前<strong>全部通过、0 失败</strong>。
+          每一次改动前后各跑一遍，任何一批只要出现红项就不放行。</span>
+        </li>
+        <li>
+          <b>可审计</b>
+          <span>本项目<strong>开源</strong>，完整源代码公开可查。贵方或贵方委托的第三方可以自行审阅，
+          不必相信我们的自述。</span>
+        </li>
+        <li>
+          <b>零依赖</b>
+          <span>运行时<strong>零第三方依赖</strong>，全部代码在包内可见。不引入外部组件，
+          也因此没有「某个下游组件停止维护」这类长期风险。</span>
+        </li>
+      </ul>
+      <p class="hint" style="margin-top:14px;margin-bottom:0">
+        这三项是本节前四条差异的基础：一个可以被审计、被复现、被自己数清楚的系统，才有资格谈「可信」。
+      </p>
+    </div>
+  </div>
+</section>
+<!-- ======================= 07 · 诚实边界 ======================= -->
+<section class="sec" id="s7">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="sec-num rv">07 · 诚实边界</span>
+      <h2 class="sec-title rv">三件对我们不利、但贵方必须现在就知道的事</h2>
+      <p class="lead rv">
+        这一节整段都在讲对我们不利的事。我们把它单独成节，是因为这三件事如果在验收阶段才被发现，
+        对贵方的伤害远大于我们现在说出来。每条都写清楚：<strong>事实是什么、边界在哪、建议贵方怎么做</strong>。
+      </p>
+    </div>
+
+    <div class="grid g3">
+      <div class="card rv" style="border-left:3px solid var(--err)">
+        <h3>边界一 · 记忆数据本地明文存储</h3>
+        <p class="dim">
+          <strong>事实：</strong>记忆数据以明文形式保存在本地。这是开源项目的取舍——只有明文，贵方才有可能完整审阅它到底写了什么、有没有夹带不该有的内容。
+        </p>
+        <p class="dim">
+          <strong>我们没做什么：</strong>我们<strong>没有</strong>实现端到端加密，也不打算用这四个字来包装这件事。
+        </p>
+        <p class="hint" style="margin-bottom:0">
+          <strong>建议贵方：</strong>如贵方有密级要求，请在存储层自行加密（磁盘加密、目录加密或贵方既有的密钥体系均可）；
+          我们已预留加解密接口，接入时无需改动核心逻辑。若贵方需要，我们可以配合做一次接入联调。
+        </p>
+      </div>
+
+      <div class="card rv d1" style="border-left:3px solid var(--warn)">
+        <h3>边界二 · 审计是「追溯级」，不是「防篡改级」</h3>
+        <p class="dim">
+          <strong>事实：</strong>我们可以回答「谁、在什么时间、写了哪一条」，并且写入者的身份在写入路径上不可伪造。
+        </p>
+        <p class="dim">
+          <strong>边界：</strong>它<strong>不保证磁盘层面的防篡改</strong>。任何能够直接读取并修改存储文件的进程，都绕得开这套追溯。
+        </p>
+        <p class="hint" style="margin-bottom:0">
+          <strong>建议贵方：</strong>把它当作「内部责任可定位」的工具，而不是「合规取证」的凭据。
+          如果贵方需要后者，我们建议由贵方的文件系统权限与备份策略来兜底，我们可以配合提供导出能力。
+        </p>
+      </div>
+
+      <div class="card rv d2" style="border-left:3px solid var(--info)">
+        <h3>边界三 · 阿里云登录有版本门槛与日志期限</h3>
+        <p class="dim">
+          <strong>事实：</strong>对接阿里云登录时，<strong>需要标准版及以上</strong>才支持标准应用（免费版不支持）；
+          并且标准版的登录日志<strong>仅保留 7 天</strong>。
+        </p>
+        <p class="dim">
+          <strong>边界：</strong>「日志只留 7 天」意味着，如果贵方需要长期可查的登录与操作记录，不能依赖云侧日志。
+        </p>
+        <p class="hint" style="margin-bottom:0">
+          <strong>建议贵方：</strong>把审计记录<strong>自建在本系统内</strong>（我们本来就按这个前提设计），
+          云侧日志只作为辅助排查手段。Google 登录不受此限制。
+        </p>
+      </div>
+    </div>
+
+    <div class="callout warn rv" style="margin-top:26px">
+      <b>为什么我们要主动写这一节</b>
+      <p>
+        因为能力边界只有两种结局：要么在方案阶段由我们说出来，要么在验收阶段由贵方发现。
+        第二种结局对双方都更贵。本提案第 06 节之所以敢谈「可信」，前提就是第 07 节这些数字是准的。
+      </p>
+      <p style="margin-bottom:0">
+        另外说明一句范围：这三条都是<strong>当前版本（v3.1.7）</strong>的边界，不是永久结论。
+        加密接口、审计强度、多云兼容都会随里程碑推进而变化；届时我们同样会以本节的写法，逐条更新。
+      </p>
+    </div>
+  </div>
+</section>
+<!-- ======================= 08 · 下一步 ======================= -->
+<section class="sec" id="s8">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="sec-num rv">08 · 下一步</span>
+      <h2 class="sec-title rv">需要贵方确认的三个问题</h2>
+      <p class="lead rv">
+        我们不想把方案做成一份「请签字」的文件。下面三个问题会实质影响交付路径，
+        其中第一个问题决定里程碑 2 的工作量级——<strong>贵方确认得越早，我们动的越少、交付越快</strong>。
+      </p>
+    </div>
+
+    <ol class="qs">
+      <li class="rv">
+        <span class="qn" aria-hidden="true"></span>
+        <div>
+          <h4>新版 DSH 平台向插件开放哪些账号能力？</h4>
+          <p>
+            如果平台能把登录身份直接交给插件，我们只需要做「身份映射 + 审计写入」两件事；
+            如果平台只提供客户端登录、不向插件暴露身份，我们就需要补一段额外的接入工作。
+          </p>
+          <p class="why">
+            <strong>为什么问：</strong>这直接决定里程碑 2 是「一周量级」还是「一个阶段量级」。在贵方确认之前，我们不希望先动手写一大堆可能用不上的代码。
+          </p>
+        </div>
+      </li>
+      <li class="rv">
+        <span class="qn" aria-hidden="true"></span>
+        <div>
+          <h4>贵方成员访问这套系统的方式是哪一种？</h4>
+          <p>
+            具体是三种情形之一：<strong>①</strong> 通过端口转发／隧道访问（浏览器地址仍是本机地址）；
+            <strong>②</strong> 直接访问内网 IP 或内网域名；<strong>③</strong> 通过你们已有的反向代理。
+          </p>
+          <p class="why">
+            <strong>为什么问：</strong>当前版本的安全策略默认只接受「本机访问」。贵方若是第 ② 种或第 ③ 种方式，
+            现有界面可能已经处于半不可用状态——这不是登录的问题，是整个系统能不能用的问题。我们希望先确认，再决定是否要为此单独安排一批工作。
+          </p>
+        </div>
+      </li>
+      <li class="rv">
+        <span class="qn" aria-hidden="true"></span>
+        <div>
+          <h4>是否需要在存储层加密？由谁来做？</h4>
+          <p>
+            承接第 07 节的边界一。如贵方有密级要求，我们需要提前知道是由贵方在自己的加密环境里接入，
+            还是希望我们配合提供一套参考接法。
+          </p>
+          <p class="why">
+            <strong>为什么问：</strong>加密这件事一旦放到交付后期补，会牵动存储结构与既有数据，成本远高于现在就把接口对上。
+          </p>
+        </div>
+      </li>
+    </ol>
+
+    <div class="callout info rv" style="margin-top:24px">
+      <b>确认之后我们做什么</b>
+      <p style="margin-bottom:0">
+        三个问题有了答复，我们会把里程碑 2–4 拆成可验收的小批次，连同每批的验收标准一起提交给贵方；
+        每批做完先给贵方看实物，贵方认可后再进入下一批。整个过程不需要贵方投入技术人力。
+      </p>
+    </div>
+  </div>
+</section>
+</main>
+
+<!-- ======================= 09 · 联系与说明 ======================= -->
+<footer class="foot" id="s9">
+  <div class="wrap">
+    <span class="sec-num rv">09 · 联系与说明</span>
+    <h3 class="rv">联系方式</h3>
+    <div class="grid g3">
+      <div class="card rv">
+        <h3>项目联系人</h3>
+        <ul class="contact">
+          <li><b>姓名</b>　待填写</li>
+          <li><b>职务</b>　待填写</li>
+          <li><b>手机</b>　待填写</li>
+        </ul>
+      </div>
+      <div class="card rv d1">
+        <h3>技术与交付</h3>
+        <ul class="contact">
+          <li><b>邮箱</b>　待填写</li>
+          <li><b>企业微信</b>　待填写</li>
+          <li><b>支持时段</b>　待填写</li>
+        </ul>
+      </div>
+      <div class="card rv d2">
+        <h3>产品与版本</h3>
+        <ul class="contact">
+          <li><b>产品</b>　dsh-auto-memory</li>
+          <li><b>版本</b>　v3.1.7</li>
+          <li><b>提案日期</b>　2026-09-23</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="fine rv">
+      <p>
+        <strong>术语说明：</strong>本文档主称使用「项目」，原「工作区」为同一事物的别名，两者指向同一个概念，不影响功能与数据。
+      </p>
+      <p>
+        <strong>数据来源：</strong>本文档中的全部数字（回归测试项数、界面入口数、设置项数、依赖数）均来自本项目的自动化测试报告与开源代码，
+        贵方可自行核对；其中「约 15 个首屏控件」为重构目标值，以重构批次 C 验收时的实测为准。
+      </p>
+      <p>
+        <strong>示例说明：</strong>第 02 节的界面示意用于说明分组逻辑，非最终视觉稿；最终以里程碑 1 交付的可点击界面演示为准。
+      </p>
+      <p style="margin-bottom:0">
+        本页为单文件文档，不依赖任何外部网络资源，可在贵方内网环境直接打开。
+      </p>
+    </div>
+
+    <div class="endmark rv">dsh-auto-memory v3.1.7 · 交付提案 · 完</div>
+  </div>
+</footer>
+
+<script>
+(function(){
+  'use strict';
+  var root = document.documentElement;
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var raf = window.requestAnimationFrame ? window.requestAnimationFrame.bind(window) : null;
+  /* 无 rAF（老环境/被裁剪）时退化为直接写入终值，绝不把数字停在 0 */
+  function nextFrame(fn){ if(raf){ raf(fn); } else { setTimeout(fn, 16); } }
+
+  /* ---------- 1. 主题切换（默认浅色） ---------- */
+  var btn = document.getElementById('themeBtn');
+  var txt = document.getElementById('themeTxt');
+  var ico = document.getElementById('themeIcon');
+  function paint(){
+    var dark = root.getAttribute('data-theme') === 'dark';
+    if(txt) txt.textContent = dark ? '浅色' : '深色';
+    if(ico) ico.textContent = dark ? '☀' : '◐';
+    if(btn) btn.setAttribute('aria-label', dark ? '切换到浅色主题' : '切换到深色主题');
+  }
+  if(btn){
+    btn.addEventListener('click', function(){
+      var next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      root.setAttribute('data-theme', next);
+      try{ localStorage.setItem('dam-proposal-theme', next); }catch(e){}
+      paint();
+    });
+  }
+  paint();
+
+  /* ---------- 2. 入场动画（尊重 reduced-motion） ---------- */
+  var revealables = [].slice.call(document.querySelectorAll('.rv'));
+  function showAll(){ revealables.forEach(function(el){ el.classList.add('in'); }); }
+  if(reduce || !('IntersectionObserver' in window)){
+    showAll();
+  }else{
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(en){
+        if(en.isIntersecting){ en.target.classList.add('in'); io.unobserve(en.target); }
+      });
+    }, { threshold: .12, rootMargin: '0px 0px -8% 0px' });
+    revealables.forEach(function(el){ io.observe(el); });
+    /* 兜底：脚本异常或浏览器不支持时，2 秒后强制显示，绝不留下空白 */
+    setTimeout(showAll, 2000);
+  }
+
+  /* ---------- 3. 数字滚动 + 对比条 ---------- */
+  /* 纪律：数字是提案的事实依据，任何路径下都不允许停在 0。
+     先同步写入终值，再决定是否用动画覆盖它。 */
+  var counters = [].slice.call(document.querySelectorAll('[data-count]'));
+  var barEls = [].slice.call(document.querySelectorAll('[data-bar]'));
+  function settleNumbers(){
+    counters.forEach(function(el){
+      el.textContent = String(parseFloat(el.getAttribute('data-count') || '0')) + (el.getAttribute('data-suffix') || '');
+    });
+    barEls.forEach(function(el){ el.style.width = (el.getAttribute('data-bar') || '0') + '%'; });
+  }
+  function animateNumber(el){
+    var target = parseFloat(el.getAttribute('data-count') || '0');
+    var suffix = el.getAttribute('data-suffix') || '';
+    var dur = 900, t0 = 0;
+    function step(ts){
+      if(!t0) t0 = ts;
+      var p = Math.min(1, (ts - t0) / dur);
+      var eased = 1 - Math.pow(1 - p, 3);
+      el.textContent = String(Math.round(target * eased)) + (p === 1 ? suffix : '');
+      if(p < 1) nextFrame(step);
+    }
+    nextFrame(step);
+  }
+
+  var animated = false;
+  function runCounters(){
+    if(animated) return;
+    animated = true;
+    if(reduce){ settleNumbers(); return; }
+    counters.forEach(animateNumber);
+    barEls.forEach(function(el){ nextFrame(function(){ el.style.width = (el.getAttribute('data-bar') || '0') + '%'; }); });
+    /* 动画没跑完也必须落到终值，不留下中间态 */
+    setTimeout(settleNumbers, 1400);
+  }
+
+  /* 首屏先写终值兜底，再在可见时改为动画（保证「0 项回归」这类错误显示不可能出现） */
+  settleNumbers();
+  var counterHost = document.querySelector('.hero-stats');
+  if(reduce || !('IntersectionObserver' in window) || !counterHost){
+    runCounters();
+  }else{
+    var io2 = new IntersectionObserver(function(entries){
+      entries.forEach(function(en){ if(en.isIntersecting){ runCounters(); io2.disconnect(); } });
+    }, { threshold: .25 });
+    io2.observe(counterHost);
+    setTimeout(runCounters, 2500);
+  }
+
+  /* ---------- 4. 顶栏进度 + 当前节高亮 ---------- */
+  var bar = document.getElementById('progress');
+  var links = [].slice.call(document.querySelectorAll('.navbar a'));
+  var sections = links.map(function(a){ return document.querySelector(a.getAttribute('href')); });
+  function onScroll(){
+    var h = document.documentElement.scrollHeight - window.innerHeight;
+    var y = window.pageYOffset || document.documentElement.scrollTop;
+    if(bar) bar.style.width = (h > 0 ? (y / h) * 100 : 0) + '%';
+    var current = 0;
+    sections.forEach(function(s, i){
+      if(s && s.getBoundingClientRect().top <= 140) current = i;
+    });
+    links.forEach(function(a, i){ a.classList.toggle('on', i === current); });
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', onScroll);
+  onScroll();
+})();
+</script>
+</body>
+</html>

@@ -26,6 +26,9 @@ const clientSrc = readFileSync(path.join(root, 'lib', 'client.js'), 'utf8')
 const HOST_ONLY_WHITELIST = [
   '/api/dsh-auto-memory/activation-inbox',
   '/api/dsh-auto-memory/subagent-gc',
+  // ★B0（2026-09-25）：子代理契约探针 —— 消费者是本仓只读取证脚本（artifacts/_b0-probe-call.mjs），
+  //   界面侧零引用。**它不是死端点**：可复用子代理（B1）的架构决策依赖它产出的真实契约数据。
+  '/api/dsh-auto-memory/subagent-probe',
 ]
 
 function parseHostTable(src) {

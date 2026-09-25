@@ -1,7 +1,7 @@
 # 前端接线审计 · 「后端已实现、前端零消费者」能力穷举
 
 - 审计日期：2026-09-22
-- 审计范围：`lib/index.js`（宿主，11 388 行 / 17 个模型工具 / **49 条路由**）↔ `lib/client.js`（浏览器，6 362 行，手写 `__ModuleLoader__`）
+- 审计范围：`lib/index.js`（宿主，14,426 行 / 19 个模型工具 / **56 条路由**）↔ `lib/client.js`（浏览器，8,220 行，手写 `__ModuleLoader__`）（行数 2026-09-25 复测）
 - 触发诉求（用户原话）：「有些后端功能已经改好了，但是前端没有加上，没有连，就没有相对应的窗口。」
 - 纪律声明：本报告**只读**，未修改 `lib/` 下任何文件；未 commit / 未 push；未重启任何进程。
 - 证据口径：每条结论均带 `file:line`；凡属推断均显式标注「推断」二字。
@@ -63,8 +63,8 @@
 1. **宿主动能面枚举**
    - `grep lib/index.js` → `dsh-auto-memory`（88 命中，取路由前缀真相）
    - `grep lib/index.js` → `^\s+path:\s`（**50 命中**：49 条真实路由 + `lib/index.js:11406` 的 `path: p.userFile` 为 settings 文件路径，非路由）
-   - `grep lib/index.js` → `kind:\s*'(exact|prefix)'`（**49 命中**，与上条 49 条路由互证）
-   - `grep lib/index.js` → `defineTool\('memory_`（13 命中）+ `defineTool\(`（19 命中，含 `lib/index.js:8118` 定义处与 `:10537` 注释）⇒ 去重后 **17 个模型工具**
+   - `grep lib/index.js` → `kind:\s*'(exact|prefix)'`（**56 命中**，与上条 56 条路由互证）
+   - `grep lib/index.js` → `defineTool\('memory_`（13 命中）+ `defineTool\(`（19 命中，含 `lib/index.js:8118` 定义处与 `:10537` 注释）⇒ 去重后 **19 个模型工具**（2026-09-25 复测；原记 17 为过期口径）
    - `read lib/index.js:163-214`（API 常量表）⇒ **49 个 key**
 
 2. **前端消费面反向检索**

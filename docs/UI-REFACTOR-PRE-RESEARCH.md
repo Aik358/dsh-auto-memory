@@ -70,7 +70,7 @@
 | 界面可改 | **67** | = 设置页 60 + 白板页 2 + 引擎联动草稿 3 + 首启向导 2 |
 | **仅文件可改** | **18** | 15 个全文零引用（`pythonBackendExecutable`、`shadowRetrievalEnabled`、`maxPacketChars`…）+ 3 个只读引用（`autoContinueRefreshRitual`、`autoContinueRefreshTimeoutSeconds`、`unattendedAutoHours`） |
 | 弹窗种类 | 7 | 更新说明 / 首启向导 / 模型下载 / 通知 / 总结 / 暂别回来 / 语义安装 |
-| **HTTP 端点** | **46** | 全部 loopback-only；其中 **2 个对不上任何界面**：`/activation-inbox-pre`、`/subagent-gc`（`client.js` 零引用，但**不是死端点**：`activation-inbox-pre` 有契约测试与注入入口消费者，`subagent-gc` 有 CLI 消费者 `tools/subagent-gc.mjs`；**别删**，见 §7 更正） |
+| **HTTP 端点** | **56**（2026-09-25 复测） | 全部 loopback-only；其中 **2 个对不上任何界面**：`/activation-inbox`、`/subagent-gc`（`client.js` 零引用，但**不是死端点**：`activation-inbox` 有契约测试与注入入口消费者；`subagent-gc` 的**回收动作已判废停用**，且 `tools/` **不随 npm 包发布** ⇒ 用户机上无该 CLI；**别删**，见 §7 更正） |
 | `client.js` 具名函数 | 125 | 单文件 4,493 行 |
 | 补丁式入口 | **4 处 / 5 个物件** | 见下 |
 
@@ -158,7 +158,7 @@
 
 1. **路径表单一化**：把 `client.js:858-897` 那份删掉，只留 `index.js` 一份，并把 20 处裸 `fetch('/api/…')` 全部改成走常量。
 2. **写配置路径收敛成 1 条**：现在有 4 条（`SettingsPage.save` / `PlanTab.autoSave` / 向导两处），收敛后"加一个配置项"才只需改一处。
-3. **顺手清两个死端点**：`/activation-inbox-pre`、`/subagent-gc` 界面上没有任何引用 —— 要么接上界面，要么删掉。
+3. **顺手清两个死端点**：`/activation-inbox`、`/subagent-gc` 界面上没有任何引用 —— 要么接上界面，要么删掉。
 
 **B 主体（三件事，一次发版）：**
 
@@ -204,8 +204,8 @@
 ### 7.2 更正两处早先判断（重要，别照着旧文做）
 
 1. **「2 个死端点」不成立。** 它们只是**界面零引用**，不是没人用：
-   - `activation-inbox-pre` —— 契约测试与注入入口（`docs/M6-CONTRACT.md`、`tests/smoke/smoke-test-m63/m70`）；
-   - `subagent-gc` —— CLI 消费者 `tools/subagent-gc.mjs`。
+   - `activation-inbox` —— 契约测试与注入入口（`docs/M6-CONTRACT.md`、`tests/smoke/smoke-test-m63/m70`）；
+   - `subagent-gc` —— 原 CLI 消费者 `tools/subagent-gc.mjs`（**不随 npm 包发布，用户机上不存在**；回收能力亦已停用）。
 
    **删掉会打断它们。** 处理方式改为：在锁里写成显式白名单（宿主独有路径只允许这 2 条），以后谁新增宿主独有端点，谁就得改白名单并注明消费者。
 2. **「把 `client.js` 那份路径表删掉、只留宿主一份」做不到。** `client.js` 是 `__ModuleLoader__` 手写 bundle，不能 `import` 宿主模块 —— 两个半边之间没有可共享的模块层。所以「只有一份事实」的正确机制是**测试锁**（客户端 ⊆ 宿主 + 表外无裸字面量），不是删代码。

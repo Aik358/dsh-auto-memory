@@ -12,14 +12,14 @@
 |---|---|---|---|---|
 | 模型工具 | 17 | **17** | 一致 | `defineTool(` 全仓 17 处调用（index.js:9982-10318）；14 个 `memory_*` + 3 个 `calendar_*`；其中 `memory_expand` / `memory_trace` 为 `boardMode=graph` 时的条件注册（index.js:10309-10317） |
 | HTTP 路由 | 49 | **49** | 一致 | 常量表 `export const API = {`（index.js:161-206）恰 49 键；路由数组 `const routes = [`（index.js:10320）恰 49 个 `{kind,path,handler}` 条目，经 `ctx.webServer.register(route)` 挂载（index.js:11451） |
-| 设置键 | 85 | **98**（顶层数） | **不符：+13** | `DEFAULT_CONFIG`（index.js:258-586）顶层键实数 98。旧 85 清单（UI-INVENTORY-RAW.md）之后新增 13 键：`boardMode`(L264)、`tier0CatalogEnabled`(L291)、`tier0MaxTokens`(L295)、`tier0BudgetShare`(L298)、`injectExcludeSources`(L308)、`capacityDefaultsVersion`(L331)、`slimPlanChars`(L368)、`slimLedgerChars`(L369)、`rulesLayeringMode`(L379)、`criteriaGate`(L385)、`snapshotTieredInject`(L441)、`l0IndexEnabled`(L536)、`hubMechanicalProcedureFeedEnabled`(L557)。85+13=98，逐键对得上。另：`externalSources`(L471) 含 13 个子键（L472-485）；`DEFAULT_PROMPT_LAYERS`（index.js:592-647）另有 23 个 prompt 层文案键（可被 `promptLayerOverrides` 覆盖），**不属于** DEFAULT_CONFIG，不计入 98 |
+| 设置键 | 85 | **98**（顶层数） | **不符：+13** | `DEFAULT_CONFIG`（index.js:258-586）顶层键实数 98。旧 85 清单（UI-INVENTORY-RAW.md）之后新增 13 键：`boardMode`(L264)、`tier0CatalogEnabled`(L291)、`tier0MaxTokens`(L295)、`tier0BudgetShare`(L298)、`injectExcludeSources`(L308)、`capacityDefaultsVersion`(L331)、`slimPlanChars`(L368)、`slimLedgerChars`(L369)、`rulesLayeringMode`(L379)、`criteriaGate`(L385)、`snapshotTieredInject`(L441)、`l0IndexEnabled`(L536)、`hubMechanicalProcedureFeedEnabled`(L557)。85+13=98，逐键对得上。另：`externalSources`(L471) 含 13 个子键（L472-485）；`DEFAULT_PROMPT_LAYERS`（index.js:592-647）另有 23 个 prompt 层文案键（可被 `promptLayerOverrides` 覆盖），**不属于** DEFAULT_CONFIG，不计入顶层键数（2026-09-25 复测顶层键 **115**） |
 | 插槽注册 | 6 | **6** | 一致 | `slots.inject(` 在 client.js 恰 6 处（L5664/5667/5670/5673/5676/5683）。旧文档（UI-INVENTORY-RAW §1）的「5 注册面」少的是 2026-09-16 新增的 `conversation.view` 白板看板（client.js:5683-5689） |
 | 面板页签 | 12（旧文档） | **12** | 与旧文档一致 | client.js:4023（数组定义）/ 4011-4022（分派） |
 | 设置分组 | 8（旧文档） | **8** | 一致 | `section(` 恰 8 处（client.js:5095/5249/5264/5289/5306/5337/5363/5396）；组名表 `sectionLabels`（client.js:5077-5084） |
 | index.js 行数 | 约 11,460 | 11,463 | 一致 | `wc -l` |
 | client.js 行数 | 约 5,701 | 5,706 | 一致（±5 行漂移） | `wc -l` |
 
-> 注意：交接 §4-B 写的「61 个插槽清单」是**宿主侧插槽目录总量**（宿主提供的插槽位），插件实际注册的只有 6 个——两者不矛盾，别混用。旧 DESIGN-OVERHAUL §1.1 的「46 条路由 / 14 工具 / 69 套件」均为 2026-09-10 口径，已过时。
+> 注意：交接 §4-B 写的「61 个插槽清单」是**宿主侧插槽目录总量**（宿主提供的插槽位），插件实际注册的只有 6 个——两者不矛盾，别混用。旧 DESIGN-OVERHAUL §1.1 的「46 条路由 / 14 工具 / 69 套件」均为 2026-09-10 口径，已过时。**当前口径（2026-09-25 代码实测）：19 工具 / 56 路由 / 115 配置键。**
 
 ---
 
@@ -76,7 +76,7 @@
 32. **首启欢迎向导**：10 个内联开关一次配好（联想/固化/反思/定时总结/思维链监听/技能固化…），外部源批量勾选（DialogHost，client.js:4269-4399）。
 33. **安装向导与环境检测**：JS 语义模型一键下载 / Python 引擎 venv+依赖+模型一条龙，深扫+热接入（PySetupWizard，client.js:2233；`/python-setup/*` 6 路由 + `/semantic-*` 3 路由）。
 34. **存储管理**：全记忆文件扫描/修复/删除（删除有确认），脏 token 扫描（mojibake/裸 JSON/超长行）（StorageTab + `/storage-manage`，index.js:10832）。
-35. **子代理痕迹回收**：插件标记的子代理会话按策略回收，兜底保留 N 天（`subagentGc*`，index.js:417-419；subagent-gc-pre.js）。
+35. **子代理痕迹回收**：插件标记的子代理会话按策略回收，兜底保留 N 天（`subagentGc*`，index.js:520/522；`lib/subagent-gc.js`）。**⚠️ 该能力已判废并停用**：`subagentGcEnabled` 用户配置为 `false`，`recycleSubagentSession` / `subagentGcSweep` 双早退 ⇒ 运行时不再搬移任何痕迹（判废理由：搬移不减轻前端渲染负担）。
 
 **可靠性（2026-09-14 后新交付的工程面）**
 
@@ -162,9 +162,9 @@
 
 ## L3 · 工程细节（存档层——全量枚举，不做取舍）
 
-### L3-a · 全部 17 个模型工具
+### L3-a · 全部 19 个模型工具
 
-注册方式：`defineTool(name, description, parameters, execute)`（index.js:7934），在 mount 阶段集中注册；工具数随 `boardMode` 条件变化（graph 档 17，legacy 档 15）。启动日志：`ready: engine + N tools + injection + 49 routes`（index.js:11459）。
+注册方式：`defineTool(name, description, parameters, execute)`（index.js:10467），在 mount 阶段集中注册；工具数随 `boardMode` 条件变化（graph 档 19，legacy 档 17）。启动日志：`ready: engine + N tools + injection + 56 routes`（index.js:14419）。
 
 | # | 工具名 | 定义行 | 参数签名 | 用途（摘要自 description，全文在源码） |
 |---|---|---|---|---|
@@ -186,15 +186,15 @@
 | 16 | `memory_expand` | index.js:10310（条件注册：仅 `resolveBoardModePre(config.boardMode).graphEnabled` 为真时 push，index.js:10309） | `tag`(string，如 type:dead-end)、`limit`(integer,缺省 10,硬帽 20) | 白板结构化正向遍历（P3）：按 tag 展开全部匹配账本/白板条目，返回 id/标题/来源/判据状态。实现：engine.expandWhiteboardByTagPre → wb-sidecar-pre.js `expandByTagPre`(L453) |
 | 17 | `memory_trace` | index.js:10314（条件注册：同上） | `id`(string，index.json 条目 id) | 白板结构化反向回溯（P3）：按条目 id 回溯 cue/tag/相邻条目/归档版本链。实现：engine.traceWhiteboardByIdPre → wb-sidecar-pre.js `traceByIdPre`(L492) |
 
-> 历史口径：DESIGN-OVERHAUL §1.1 的「14 个 memory_* 工具」是 2026-09-10 冻结口径；14→16 是白板 graph 两工具（BUG-15 修复后真正注册成功，index.js:10306-10309 注释），16→17 是 T4。日历 4 工具（calendar_*）一直与 memory_* 并列存在。
+> 历史口径：DESIGN-OVERHAUL §1.1 的「14 个 memory_* 工具」是 2026-09-10 冻结口径；14→16 是白板 graph 两工具（BUG-15 修复后真正注册成功，index.js:10306-10309 注释），16→17 是 T4，17→19 是 E 线新增的 `memory_procedure_list` / `memory_rules`。日历 4 工具（calendar_*）一直与 memory_* 并列存在。
 
-### L3-b · 全部 49 条 HTTP 路由
+### L3-b · 全部 56 条 HTTP 路由
 
-- 前缀常量：宿主 `API` 表（index.js:161-206，49 键）；客户端独立维护同一批路径（client.js:1105-1160，`ROUTE_PREFIX='/api/dsh-auto-memory-pre'`），两侧一致性由 tests/smoke 路径表锁保证（client.js:1106-1108 注释）。
-- 挂载：`const routes = [...]`（index.js:10320-11383）→ `ctx.webServer.register(route)`（index.js:11451）。全部 `kind:'exact'`。
-- **认证边界：全部 49 条 handler 第一行都是 `isLoopbackRequest(req)` 检查，非回环地址一律 `403 {error:'forbidden: loopback-only'}`**（如 index.js:10887）。无 token/签名机制——安全模型是「只听本机回环」。
+- 前缀常量：宿主 `API` 表（index.js:221 起）；客户端独立维护同一批路径（`ROUTE_PREFIX='/api/dsh-auto-memory'`，client.js:1582；键表 client.js:1587-1642），两侧一致性由 tests/smoke 路径表锁保证。
+- 挂载：`const routes = [...]`（index.js:13036-14329）→ `ctx.webServer.register(route)`（index.js:14409）。全部 `kind:'exact'`（实测 exact 56 / prefix 0）。
+- **认证边界：全部 56 条 handler 第一行都是 `isLoopbackRequest(req)` 检查，非回环地址一律 `403 {error:'forbidden: loopback-only'}`**（如 index.js:10887）。无 token/签名机制——安全模型是「只听本机回环」。
 - 方法纪律：读路由 `GET`（非 GET→405）；动作路由 `POST`（非 POST→405）；`/config` 同时接受 GET+POST/PUT（index.js:11096-11124）；少数探测类路由不检查方法（下表标「不限」）。
-- 客户端消费符号：`API.<key>`（client.js:1109-1160）；「对不上界面」= client.js 无该键引用（现仅 1 条，见尾注）。
+- 客户端消费符号：`API.<key>`（client.js:1587-1642）；「对不上界面」= client.js 无该键引用（现仅 1 条，见尾注）。
 
 | # | 路径（前缀 `/api/dsh-auto-memory-pre` 省略） | API 键 | 注册行 | 方法 | 用途 | 消费方（client.js 侧） |
 |---|---|---|---|---|---|---|
@@ -212,7 +212,7 @@
 | 12 | /handoff-permission | handoff-permission | 10489 | POST | 接续权限预设继承 | 接续流程（无独立 UI） |
 | 13 | /auto-continue-state | auto-continue-state | 10510 | 不限 | 自动接续宿主状态（armed/edgeAt） | AutoContinueHost 轮询 |
 | 14 | /auto-continue-decide | auto-continue-decide | 10522 | POST | 同意/拒绝接续 | AutoContinueHost 确认卡 |
-| 15 | /subagent-gc | subagent-gc | 10536 | GET | 子代理痕迹回收（dryRun 参数） | **client.js 零引用**（回收动作由引擎内部调度触发：一次性子代理结束即移痕迹 + 每日兜底巡检；UI 只有 `subagentGc*` 两个开关键，client.js:5392-5394） |
+| 15 | /subagent-gc | subagent-gc | 13250 | GET | 子代理痕迹回收（dryRun 参数）——**消费方已停用**：`subagentGcEnabled` 用户配置为 `false`，双早退 gate ⇒ 路由仍注册但不再产生搬移 | **client.js 零引用**（UI 只有 `subagentGc*` 两个开关键，client.js:7662-7664） |
 | 16 | /semantic-download | semantic-download | 10570 | POST | 下载 JS 语义模型 | 设置页/向导 |
 | 17 | /semantic-emit | semantic-emit | 10590 | POST | 唤起注入档位（canary/shadow 等） | 设置页 emit 下拉/向导 |
 | 18 | /shadow-recent | shadow-recent | 10616 | 不限 | shadow 观测记录（供回顾打分） | RefineTab |
@@ -248,11 +248,11 @@
 | 48 | /notices | notices | 11338 | GET | 拉取动态通知（notices.json） | 通知弹窗 |
 | 49 | /models | models | 11353 | GET | provider/模型目录（子代理模型抽屉数据） | 设置页模型抽屉 |
 
-尾注：客户端「表外裸路径」纪律——client.js:1104-1108 声明路径只能出自 API 表；旧盘点列出的 20 处裸 fetch 已收敛进表（现表含全部在用路径）。**client.js 零引用的宿主路由共 2 条**：`/subagent-gc`（引擎内部动作，无 UI 按钮）与 `/activation-inbox-pre`（能力在、UI 未接）。
+尾注：客户端「表外裸路径」纪律——client.js:1104-1108 声明路径只能出自 API 表；旧盘点列出的 20 处裸 fetch 已收敛进表（现表含全部在用路径）。**client.js 零引用的宿主路由共 2 条**：`/subagent-gc`（引擎内部动作，无 UI 按钮；**其回收动作已判废停用**）与 `/activation-inbox`（能力在、UI 未接）。
 
-### L3-c · 全部设置键（DEFAULT_CONFIG 98 键 · index.js:258-586）
+### L3-c · 全部设置键（DEFAULT_CONFIG 115 键 · index.js:328-715）
 
-> 口径：**顶层键 98**（含 `externalSources` 容器 1 个 + 其 13 子键单独列）。与旧 85 清单的差异 = 13 个新增键（核对表已列）。默认值里的具名常量：`DEFAULT_NOTE_CAPACITY_CHARS`/`DEFAULT_USER_CAPACITY_CHARS`（24000，v3.0.0 由 12000 上调）、`CAPACITY_DEFAULTS_VERSION`、`DEFAULT_WATER_LEVEL_THRESHOLD`(0.75)、`DEFAULT_AUTO_CONTINUE_THRESHOLD`(0.75)。
+> 口径：**顶层键 115**（2026-09-25 实测；98 → 115 为后续新增 17 键。含 `externalSources` 容器 1 个 + 其 13 子键单独列）。**下表键区仍为 98 键快照，未补录其后新增的 17 键。**与旧 85 清单的差异 = 此快照期内的 13 个新增键（核对表已列）。默认值里的具名常量：`DEFAULT_NOTE_CAPACITY_CHARS`/`DEFAULT_USER_CAPACITY_CHARS`（24000，v3.0.0 由 12000 上调）、`CAPACITY_DEFAULTS_VERSION`、`DEFAULT_WATER_LEVEL_THRESHOLD`(0.75)、`DEFAULT_AUTO_CONTINUE_THRESHOLD`(0.75)。
 > 「UI 分组」列 = 设置页承载分组（client.js section 名）；「—」= 该键当前无设置页控件（仅文件/联动写入）。行号 = DEFAULT_CONFIG 内定义行。
 
 | # | 键 | 默认（index.js 行号） | 含义 | UI 分组 |
@@ -302,8 +302,8 @@
 | 43 | autoContinueRefreshRitual | true（410） | 接续前刷新仪式 | — |
 | 44 | autoContinueRefreshTimeoutSeconds | 90（412） | 刷新仪式超时 | — |
 | 45 | autoContinueCooldownMinutes | 30（414） | 接续冷却 | — |
-| 46 | subagentGcEnabled | true（417） | 子代理痕迹回收开关 | context |
-| 47 | subagentGcKeepDays | 3（419） | 痕迹兜底保留天数 | context |
+| 46 | subagentGcEnabled | true（520，**代码默认；本机用户配置为 `false`**） | 子代理痕迹回收开关——**已判废停用**（搬移不减轻前端渲染负担） | context |
+| 47 | subagentGcKeepDays | 3（522） | 痕迹兜底保留天数——**已停用**（仅 `subagentGcSweep` 读取，而该函数首行早退） | context |
 | 48 | awayMinutes | 60（421） | 暂离判定阈值 | automation |
 | 49 | unattendedMode | false（427） | 无人值守模式 | automation |
 | 50 | unattendedAuto | false（432） | 无人值守自动检测 | automation |
@@ -437,7 +437,7 @@
 |---|---|---|
 | `DSH_HOME/dsh-auto-memory-pre.json`（引擎配置文件，`_configPath`，index.js:1213） | /config POST（patch 合并→writeTextAtomicPre 原子写，index.js:1943,1963）；损坏隔离 `.corrupt-<ts>`（readJsonQuarantinePreSync，index.js:1890-1894；#82 状态透出 index.js:7926） | 引擎启动加载、GET /config、/debug（含 corrupt 状态） |
 | `DSH_HOME/skills/<dirName>/SKILL.md` | exportSkillForPre（skill-export-host-pre.js:66-70；根目录 resolveSkillsRootPre 29-36） | DSH 技能发现路径（跨项目迁移）；<dirName>=skillDirNamePre（如 mem-skill-untitled-<hash>） |
-| `DSH_HOME/subagent-gc-backup/` | subagent-gc-pre.js（痕迹移动不删除；每日兜底巡检） | 可回滚的回收备份（client.js:797 文案） |
+| `DSH_HOME/subagent-gc-backup/` | `lib/subagent-gc.js`（痕迹移动不删除）——**回收已判废停用，该目录只存量不增量** | 旧回收备份（client.js:1164/1171 文案） |
 | 通知 `notices.json`（仓库分发面） | 发布链维护 | /notices → 通知弹窗 |
 | 语义资产（JS 模型 `E5_SMALL_Q8_MANIFEST_PRE_V1`、Python venv/模型） | python-setup-pre.js / createSemanticDownloaderPre（/python-setup/*、/semantic-download） | semantic-js-pre.js / python-sidecar-client-pre.js 推理；`embedding-config.json`（语义引擎配置，index.js:6754 提及） |
 
@@ -527,5 +527,5 @@
 - **枚举方式**：临时 node 脚本（OS 临时目录，未落仓库）对 lib/index.js / lib/client.js / lib/*-pre.js 做结构化提取——`defineTool(` 调用逐个解析参数块；`const routes = [` 数组按花括号配对逐条提取 kind/path/handler 行号与方法分支；`DEFAULT_CONFIG`/`DEFAULT_PROMPT_LAYERS` 按行号区间提取顶层键；`slots.inject(`/`section('`/页签数组逐一 grep 定位；`set('key'` 按分组区间归类。未采用手工抄录。
 - **本文不做的事**：未运行任何服务、未跑测试套件、未启动宿主、未写 lib/。所有结论来自源码静态读取。
 - **行号时效**：file:line 以 2026-09-20 工作区状态为准（index.js=11,463 行、client.js=5,706 行）。`lib/` 归 DSH 线持续演进，行号会漂移——引用时建议连同符号名（函数/常量名）一起定位。
-- **与三份上位文档的关系**：DESIGN-OVERHAUL-PRE-RESEARCH.md §2 的量化数据（三套设计语言、样式审计、冷启动断点）本文未重做、未复述；UI-INVENTORY-RAW.md 的 85 键清单已被本文 L3-c（98 键）取代，差异在核对表与 L3-c.1；交接文档 §4-A 的 17/49/85/6 四个数字已在核对表逐一核销。
-- **给 4-B（架构文档）与 4-C（首页）的接力提示**：插槽全表见 L2.1/L3-d；路由认证边界（loopback-only 403，无 token）见 L3-b 表头；能力宣传素材的数字口径以本文核对表为准（尤其「85 键」应更新为 98 键）。
+- **与三份上位文档的关系**：DESIGN-OVERHAUL-PRE-RESEARCH.md §2 的量化数据（三套设计语言、样式审计、冷启动断点）本文未重做、未复述；UI-INVENTORY-RAW.md 的 85 键清单已被本文 L3-c（**当前实测 115 键**，快照期记 98 键）取代，差异在核对表与 L3-c.1；交接文档 §4-A 的 17/49/85/6 四个数字已在核对表逐一核销。
+- **给 4-B（架构文档）与 4-C（首页）的接力提示**：插槽全表见 L2.1/L3-d；路由认证边界（loopback-only 403，无 token）见 L3-b 表头；能力宣传素材的数字口径以本文核对表为准（尤其「85 键」应更新为 **115 键**；2026-09-25 代码实测）。

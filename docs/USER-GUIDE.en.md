@@ -172,6 +172,10 @@ The static injection face: the `<memory_system>` block composed into every turn.
 | Scheduled 30-day distill (`maintainScheduleEnabled`) | on | Daily at the set time, distill logs older than 30 days into notes and archive originals; zero-cost skip when nothing is old |
 | Distill time | 10:00 | Offset from the consolidation time |
 | Subagent model (`subagentModel/Provider`) | follow routing | Model for summaries/greetings/consolidation subagents; empty = follow default |
+| Session auto-archive (`autoArchiveEnabled` / `autoArchiveDays`) | on / 2 days | **Owned by this plugin** — no external plugin needed: a subagent session is kept after it finishes, then auto-archived after 2 days. See §8.5 |
+| Auto-delete after archive (`autoDeleteEnabled` / `autoDeleteDays`) | on / 7 days | Deleted 7 days after archiving. **A session whose archive time is unknown is never auto-deleted** (safety boundary) |
+| Archive sweep interval (`autoArchiveCheckMin`) | 60 min | Throttle for the sweep; the host must be online |
+| Session archive master switch (`sessionArchiveEnabled`) | on | Turn off and neither archiving nor deletion runs |
 
 ### 4.7 Context management
 
@@ -184,8 +188,8 @@ The static injection face: the `<memory_system>` block composed into every turn.
 | Advisory threshold (`waterLevelThreshold`) | 0.75 | Past the threshold: inject the handoff advisory and backfill the ledger. **0.75, not 0.8**: the host's own compaction fires at 80%; sitting right under 80% means the host compresses before the handoff finishes — the 5% margin (~50K tokens on a 1M window) is the room to complete it |
 | Water-level advisory (`waterLevelAdvisory`) | on | Inject the "write the ledger / refresh the plan / open a new window" advisory past the threshold; silent in unattended mode |
 | Auto skeleton ledger (`waterLevelAutoHandoff`) | on | Past the threshold, auto-write one system skeleton ledger per session, so handoff material exists even if the model ignores the advisory |
-| Subagent GC (`subagentGcEnabled`) | on | One-shot subagents (consolidation/summaries/greetings/distill) get their session traces **moved** to `~/.dsh/subagent-gc-backup/` on completion (move, not delete — fully reversible); keeps the session list fast |
-| Fallback keep days (`subagentGcKeepDays`) | 3 | Daily sweep recycles traces older than this (e.g. after a crash); 0 = rely on end-of-task removal only |
+| Subagent GC (`subagentGcEnabled`) | on (code default) / **retired** | **Capability retired**: moving session traces does **not** reduce front-end render load (for subagents the host only downgrades status and **never deletes the projection store**); it can only create "session unavailable" ghost entries. Kept for backward compatibility; this machine sets it to `false` ⇒ not running |
+| Fallback keep days (`subagentGcKeepDays`) | 3 (code default) / **disabled** | Read only inside `subagentGcSweep`, which early-returns on its first line when `subagentGcEnabled === false` ⇒ no effect here. Kept for backward compatibility |
 
 > The auto-continue toggle and threshold live **not in Settings** but in the **auto-continue card** on the panel's Whiteboard tab (see §8.4).
 
@@ -310,9 +314,32 @@ Whiteboard tab → auto-continue card: toggle (default on) + threshold (default 
 - After a trigger, a 30-minute cooldown prevents repeats.
 - Unattended: Settings → Automation → auto-unattended overnight skips the dialog and continues directly.
 
-### 8.5 Subagent trace GC
+### 8.5 Subagent session lifecycle: workbench rotation → archive → delete
 
-DSH creates a persistent session directory per subagent; this plugin's consolidation/summaries/greetings/distills are all one-shot subagents, and thousands of leftovers slow the session list. GC (default on) **moves** sessions with `origin=subagent`, label prefixed `auto-memory-`, one-shot mode, into `~/.dsh/subagent-gc-backup/` (never deletes; fully reversible); continuable subagents are always kept. Manual preview/apply: `node tools/subagent-gc.mjs` / `--apply`.
+**The problem first**: subagent sessions are **persistent** — you cannot delete them away. The old design created a brand-new session per subagent, so persistent sessions grew without bound. The current design is:
+
+**① The memory workbench (single mount point)**
+All subagents hang under **one workbench session** (`Memory Hub #<epoch>`) instead of each creating its own. The workbench **rotates every 2 days**: the old epoch steps aside and a new one takes over.
+
+- Rotation phases: `active → draining → sealing → active (new epoch)`;
+- **The primary criterion is "all subagents quiescent"** (no in-flight tasks + subagent directories quiet for 2 minutes); the 30-minute timeout is pure defense and **never forces a switch**;
+- **The old workbench session is kept, not deleted** — deleting it would make the catalog point at a non-existent directory and re-create the very "session unavailable" ghost entries this design exists to eliminate;
+- **The rotation period is not a separate setting**: it **follows "Archive after (days)"**, and that row in the settings page is **read-only**.
+  The two used to have separate numbers (both defaulting to 2), but they are two phases of one lifecycle, and separate numbers must eventually disagree: a slower rotation means the old workbench **never goes quiet** and the archive chain breaks; a faster one just creates sessions needlessly.
+  ⇒ There is now **a single knob** (the archive threshold), and rotation always equals it (equality is optimal). **This is the intended behaviour, not a missing feature.**
+
+**② Auto-archive (2 days) → ③ Auto-delete (7 days after archive)**
+Owned by this plugin itself (`autoArchiveDays=2` / `autoDeleteDays=7` / `autoArchiveCheckMin=60`). **Client machines do not need `dsh-session-archive` installed** — the settings live in this plugin's own settings page → Automation.
+
+Three **safety boundaries** (we do not recommend loosening them):
+
+- **A session whose archive time is unknown is never auto-deleted** (no `archivedAt` ⇒ not in the delete seed);
+- **A session archived in the same sweep tick is not deleted** (avoids "archived and immediately deleted");
+- **If any member of a family is protected, the whole family is skipped**; the workbench session itself is also rejected by the archive/delete entry points.
+
+**④ The old "subagent trace GC" is retired** (this machine sets `subagentGcEnabled` to `false`; both `recycleSubagentSession` and `subagentGcSweep` early-return): the original premise was **falsified** — moving or deleting session traces does **not** reduce front-end render load (for `origin=subagent` the host only downgrades status and **never deletes the projection store**), and it can desync the catalog from disk. For a growing session list use **②③** above. The old `node tools/subagent-gc.mjs` instruction is removed — `tools/` is not shipped in the npm package, so the file does not exist on user machines.
+
+> **Troubleshooting**: if the diagnostics log shows `wb-rotate: sealing -> create ... ok=true` **repeating every 60 seconds**, rotation is not converging (older builds had this defect; fixed in 3.1.7). A host restart self-heals it.
 
 ---
 
@@ -360,7 +387,7 @@ All three write tools (log/note/user) pass the **write gate**: GBK mojibake, stu
 | One-click continue errors "harness did not provide remote.session" | Restart dsh web; if it persists, plugin version ≥ 2.2.2 required |
 | Setting changed but nothing happened | Did you click the save bar (button lights up when dirty)? Items marked `(restart)` need a restart; browser-side updates need Ctrl+Shift+R |
 | Consolidation too often / too rare | Tune `autoConsolidateCooldownMinutes` (auto-doubled at night; 0 counts as 30) and the daily cap |
-| Session list getting slow | Keep subagent GC on (Settings → Context management); run `node tools/subagent-gc.mjs --apply` once; backups in `~/.dsh/subagent-gc-backup/` roll back wholesale |
+| Session list getting slow | **Not** "trace GC is off": deleting/moving subagent session directories does **not** reduce render load (the host only downgrades status for subagents, never deletes the projection store); that GC capability is retired. Use Settings → auto-maintenance instead: archive (default 2 days) → delete (default 7 days) |
 | Recall review shows only prefetch, never injection | The emit gate is on shadow (record only) — switch to canary-explicit or active; or lower the margin threshold |
 | Mojibake / duplicates in memory | The write gate guards new entries; for existing ones use Storage → "Scan dirty tokens" (locations only) and clean by position (back up first) |
 | pnpm blocks a same-day update | pnpm v11 `minimumReleaseAge` blocks <24h packages: set `minimumReleaseAge: 0` or pin the version |

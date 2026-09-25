@@ -15,7 +15,7 @@ dsh-auto-memory 是 DSH（DeepSeek Harness）的**主动联想记忆插件**：�
 
 | 组成 | 文件 | 运行在哪 | 一句话 |
 | --- | --- | --- | --- |
-| 宿主半边 | `lib/index.js`（11,463 行） | DSH 宿主 Node 进程内 | 记忆引擎本体：读写记忆文件、组装 `<memory_system>` 注入块、注册 17 个模型工具与 49 条 loopback 路由 |
+| 宿主半边 | `lib/index.js`（14,426 行，2026-09-25 复测） | DSH 宿主 Node 进程内 | 记忆引擎本体：读写记忆文件、组装 `<memory_system>` 注入块、注册 19 个模型工具与 56 条 loopback 路由 |
 | 浏览器半边 | `lib/client.js`（5,706 行） | DSH Web GUI（浏览器） | 手写 `__ModuleLoader__` 单文件 bundle，无构建链，注册 6 处界面插槽，经 loopback API 读宿主 |
 | 可选语义引擎 | `python/worker_semantic_pre_v1.py` 等 | 宿主子进程（sidecar） | Python 高级档（bge-m3 int8）；损坏/缺席时逐级降级到内置 JS 语义档（e5-small q8），最终保底词法档 |
 
@@ -130,7 +130,7 @@ window.__ModuleLoader__.load({
 
 ### 3.3 HTTP 路由与认证边界
 
-- 插件**不自建 HTTP server**：49 条路由定义在 `const routes = [...]`（`index.js:10320–11384`，脚本计数 49 条，交接口径一致），逐条 `ctx.webServer.register(route)` 挂到**宿主的 web server**（即 3080 端口那个服务）上。路由路径前缀 `/api/dsh-auto-memory-pre/`（`API` 表，`index.js:161`）。
+- 插件**不自建 HTTP server**：56 条路由定义在 `const routes = [...]`（`index.js:13036–14329`，脚本计数 56 条），逐条 `ctx.webServer.register(route)`（`index.js:14409`）挂到**宿主的 web server** 上。路由路径前缀 `/api/dsh-auto-memory/`（`API` 表，`index.js:221` 起）。（2026-09-25 复测：`/api/dsh-auto-memory-pre/` 全仓出现 **0** 次。）
 - **认证边界是 loopback-only**：每条路由 handler 第一行 `if (!isLoopbackRequest(req)) return writeJson(res, 403, { error: 'forbidden: loopback-only' })`。`isLoopbackRequest`（`index.js:7969`）同时校验**远端地址**（127.0.0.1 / ::1 / ::ffff:127.0.0.1）与 **Host 头**（127.0.0.1 / localhost / [::1]），防 DNS rebinding。
 - **403 vs 401**：插件层实测的拒绝码是 **403**（全仓 20+ 处，均为 `forbidden: loopback-only`）。交接文档写的「401 是预期」指的是**宿主 web 服务自身认证层**的行为（不带凭据访问 3080 会被宿主 401）——这在仓库内不可验证（宿主代码不在本仓），但两者不矛盾：401 = 宿主门，403 = 插件 loopback 门。从外面直接 curl 插件路由拿到 401/403 都**是预期行为，不是故障**。
 - 浏览器半边（`client.js`）与宿主同源（页面就是宿主 3080 服务的），fetch 自家 loopback 路由天然通过。
@@ -343,7 +343,7 @@ node tools/run-smoke.mjs --timeout=0        # 关超时（不建议）
 | --- | --- | --- |
 | 加/改模型工具 | `lib/index.js` 的 `const tools = [...]`（`:9981` 起）；graph 档条件工具在 `:10310` 附近 | 新工具名要**同时**登记 `release.mjs` transforms 表与 residual 表（§5.2 坑 ③）；每加一个，前端工具说明文案在 `client.js` |
 | 加/改 HTTP 路由 | `lib/index.js` routes 数组（`:10320-11384`）+ `API` 表（`:161`） | 每条 handler 第一行必须是 loopback 403 门；`client.js` 的 `API` 镜像表与其保持一致（路径表一致性锁） |
-| 加/改设置键 | `DEFAULT_CONFIG`（`index.js:258-586`，实测 98 键）+ `client.js` 设置页分组 | 改默认值=老用户行为突变，慎用；幽灵键先 grep 宿主侧引用数（先例：`pythonGpu` 零引用被删） |
+| 加/改设置键 | `DEFAULT_CONFIG`（`index.js:328-715`，2026-09-25 实测 115 键）+ `client.js` 设置页分组 | 改默认值=老用户行为突变，慎用；幽灵键先 grep 宿主侧引用数（先例：`pythonGpu` 零引用被删） |
 | 改注入文案/预算 | `renderMemoryDynamic`（`index.js:5447`）+ `memory-envelope-pre.js` + `tier-layer-inject-pre.js` | 保持前缀缓存友好性：内容不变则字节不变；`promptLayerOverrides` 可整层覆盖 |
 | 改记忆写入格式 | 只经写入原语（`appendText` → anchor 事务）；**禁止手改排版** | 字节布局一动，L0 切条与语义语料同时失配（§3.4） |
 | 改面板 UI | `lib/client.js`（只读红线：本线不许改，列「待 DSH 线处理」清单） | 无构建链、依赖仅宿主 seed 表（react/react-dom）；令牌体系见预研 §2.6 |
@@ -389,7 +389,7 @@ node tools/run-smoke.mjs --timeout=0        # 关超时（不建议）
 | 模型工具数 | 17 | **15 基础 + 2 条件（boardMode=graph）= 17** | 一致；注意 graph 关闭时只有 15 |
 | 插槽注册点 | 6 处 | **6 处**（落在 5 个插槽面） | 一致 |
 | 插槽目录规模 | 61 | 仓库内**不可验证**；预研口径约 58 | 写「约 58–61」并标注来源差异 |
-| 设置键数 | 85（8 组） | **`DEFAULT_CONFIG` 98 键**（`index.js:258-586`） | **85 是 2026-09-10 快照**；85 也曾用于描述 UI 渲染口径（可改 67 + 仅文件 18）。以 98 为代码事实，UI 口径以 FEATURE-INVENTORY 复核为准 |
+| 设置键数 | 85（8 组） | **`DEFAULT_CONFIG` 115 键**（`index.js:328-715`，2026-09-25 实测） | **85 是 2026-09-10 快照、98 是 2026-09-22 快照**；以 115 为当前代码事实，UI 口径以 FEATURE-INVENTORY 复核为准 |
 | 路由拒绝码 | 「401 是预期」 | 插件层是 **403 loopback-only**（20+ 处） | 不矛盾：401=宿主自身认证层（仓内不可验证），403=插件 loopback 门；两者都是预期，不是故障 |
 | 前端行为断言套件 | 约 3 个 | **4 个**（startup-dispatch / away-popup-fix / autocont-host / continue-chain） | 量级一致，以 4 为准 |
 | `-pre` 模块数 | （未给） | **61** | 本文新证；与「61 插槽」是无关巧合 |

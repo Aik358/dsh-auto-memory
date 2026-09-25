@@ -9,7 +9,7 @@
 
 | 项 | 数字 | 说明 |
 |---|---|---|
-| 宿主侧配置键全集 | **101** | `index.js:260-606` 全部为 DEFAULT_CONFIG 一级键（提示中的「49 键」应为路由数，非键数；仓库文档 `docs/internal/ARCHITECTURE-FOR-ZCODE-20260920.md:346` 亦记「实测 98 键」，本次逐行点数为 101） |
+| 宿主侧配置键全集 | **115**（2026-09-25 复测） | `index.js:328-715` 全部为 DEFAULT_CONFIG 一级键（提示中的「49 键」应为路由数，非键数）。本行原记 101（09-22 口径），其后增至 115 |
 | 方向 A：宿主有键、**设置页无对应设置行** | **31** | 见 §1 表（另含 1 条子键缺口：`externalSources` 下 5 个新源无勾选入口） |
 | 方向 B：前端写键、宿主不认 = **死控件** | **1 真死** | `pythonGpu`（`client.js:5939`） |
 | 方向 B 附加：**写盘成功但结构性无效**（灰控件） | **1** | `procedurePromotionEnabled`（`client.js:5023` 向导 toggle） |
@@ -162,7 +162,7 @@
 ### 5.2 宿主侧键全集
 
 1. `grep pattern=DEFAULT_CONFIG path=lib/index.js` → 定位到 10 处命中，取字面量块：`index.js:260-606`（`read` 分 3 段读全 255-632 行）。
-2. 逐行点数该块内的 `key:` 行 → **101 键**（含 `externalSources` 一个对象键，其下 13 个子键另计）。仓库文档记「98 键」（`docs/internal/ARCHITECTURE-FOR-ZCODE-20260920.md:346`）——**以本次逐行点数为准**，98/101 的差额来自 09-20 之后新增的 `hubMechanicalProcedureFeedEnabled`、`factRetentionMax`、`workspaceDiscoverMax` 等。
+2. 逐行点数该块内的 `key:` 行 → **101 键**（含 `externalSources` 一个对象键，其下 13 个子键另计）。仓库文档记「98 键」（`docs/internal/ARCHITECTURE-FOR-ZCODE-20260920.md:346`）——差额来自 09-20 之后新增的 `hubMechanicalProcedureFeedEnabled`、`factRetentionMax`、`workspaceDiscoverMax` 等。**2026-09-25 复测为 115 键**（`index.js:328-715`），以 115 为当前事实。
 3. 模块侧实际读取键：`grep pattern='\bconfig\.[a-zA-Z_][A-Za-z0-9_]*' include='*-pre.js' path=lib` → 43 命中（含 `config.json` 文件名这类假阳性 3 处，如 `python-setup-pre.js:44/134`、`semantic-js-pre.js:413`）；`grep pattern='\bcfg\.[a-zA-Z_][A-Za-z0-9_]*|\}\s*=\s*[a-zA-Z_.]*\.config\b' include='*-pre.js'` → 26 命中（`tier0-catalog-pre.js`、`water-window-pre.js`、`episodic-store-pre.js`、`python-setup-pre.js` 的参数对象）。
 4. 核心宿主读取：`grep pattern='this\.config\.[a-zA-Z_][A-Za-z0-9_]*' include=index.js path=lib` → **89 命中**（<250 上限，结果完整）；`grep pattern='\bcfg\.[a-zA-Z_]' include=index.js` 另补充方法内别名（如 `index.js:5270-5334`）。
 5. **判据**：模块侧实际读取的键，逐个人工比对 `DEFAULT_CONFIG` —— **未发现"模块读、DEFAULT_CONFIG 没有"的键**（唯一疑似 `fact-store-pre.js:679` 的 `opts.config.maxFacts` 是 `index.js:9236` 现传的选项对象字段，不是插件配置键；`water-window-pre.js:102-105`、`python-setup-pre.js:127-130`、`tier0-catalog-pre.js:429-431` 的 `cfg.*` 均为**入参选项对象**，非插件配置）。⇒ 本报告的"宿主键全集"= `DEFAULT_CONFIG` 的 101 键。
@@ -182,7 +182,7 @@
 
 ### 5.4 修正的两处既有说法（硬证据优先）
 
-1. 「DEFAULT_CONFIG 49 个键」→ **实测 101 键**（`index.js:260-606`）。49 是**路由**数（插件 ready 日志 `index.js:11696` 打印 routes 数；白板 PLAN 亦记「49 条路由」）。
+1. 「DEFAULT_CONFIG 49 个键」→ **2026-09-25 实测 115 键**（`index.js:328-715`）。49 是**路由**数（插件 ready 日志 `index.js:14419` 打印 routes 数；2026-09-25 实测路由数为 **56**）。
 2. 文档 `docs/UI-REFACTOR-PRE-RESEARCH.md:97` / `DESIGN-OVERHAUL-PRE-RESEARCH.md:46` 称 `pythonGpu` 写在 `client.js:4106/4154` —— **行号已漂移**，当前实际写入点是 **`client.js:5939`**（另 `2812/2816` 为 `localStorage` 读写）。结论不变（宿主零引用）。
 
 ### 5.5 本审计未做的事（边界声明）

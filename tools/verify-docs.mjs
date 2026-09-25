@@ -1,14 +1,31 @@
 import { readFileSync, existsSync } from 'node:fs';
 
 /* 交叉核验：新产出的四份文档里出现的数字性断言 vs 代码实际值
-   用法: node tools/verify-docs.mjs */
+   用法: node tools/verify-docs.mjs
+
+   ★ 2026-09-25（E6 勘误条目 3-12）：期望值不再写死。
+     旧版把 17 / 49 / 98 直接写进条件里，而代码实测为 19 / 56 / 115 ⇒
+     判定式里**不含实测值**：代码真值变了、或文档写错，都照样打印 ✅。
+     （`if (!cond) fail++` 与 `process.exit(fail ? 1 : 0)` 一直存在，
+       缺陷在**判定条件**，不在失败计数器。）
+     现改为：从文档解析出声明值，再与源码实测值比对 —— 两侧都进判定，
+     文档与代码从此不能再各自漂移。 */
 
 const idx = readFileSync('lib/index.js', 'utf8');
 let fail = 0;
 const ok = (cond, label, got, want) => {
-  console.log(`${cond ? '✅' : '❌'} ${label}  实测=${got}${cond ? '' : ` 文档声称=${want}`}`);
+  console.log(`${cond ? '✅' : '❌'} ${label}  实测=${got}${cond ? '' : ` 期望=${want}`}`);
   if (!cond) fail++;
 };
+/** 从文档文本里取出声明的数字；取不到 → null（会让断言红，不会静默通过）。 */
+const pick = (text, re) => {
+  const m = text.match(re);
+  return m ? Number(m[1]) : null;
+};
+/** 核心判据：文档声明值 === 代码实测值（两侧都进判定）。 */
+const eq = (declared, measured, label) =>
+  ok(declared !== null && declared === measured, label,
+    `文档=${declared} 代码=${measured}`, `文档应写 ${measured}`);
 
 // ── 代码侧真值 ──
 const dc = idx.match(/DEFAULT_CONFIG\s*=\s*\{/);
@@ -34,6 +51,10 @@ console.log(`handoffEnabled=${getKey('handoffEnabled')} · autoContinueEnabled=$
 console.log(`tier0MaxTokens=${getKey('tier0MaxTokens')} · injectBudgetChars=${getKey('injectBudgetChars')}`);
 console.log(`hubMechanicalProcedureFeedEnabled=${getKey('hubMechanicalProcedureFeedEnabled')}\n`);
 
+// 实测值本身必须是正整数，否则下面所有 eq() 会因 measured 异常而失去意义
+ok(tools.size > 0 && routes.size > 0 && keys.length > 0, '三项计数均取到正整数（判据前提）',
+  `${tools.size}/${routes.size}/${keys.length}`, '>0');
+
 // ── 文档断言 ──
 const docs = {
   whitepaper: 'docs/WHITEPAPER.md',
@@ -53,21 +74,42 @@ const cc = readFileSync('docs/FRONTEND-CO-CREATION.md', 'utf8');
 const rm = readFileSync('README.md', 'utf8');
 const rmz = readFileSync('README.zh-CN.md', 'utf8');
 
-console.log('\n── 关键数字断言 ──');
-ok(wp.includes('| 模型工具 | **17** |') || wp.includes('**17**'), '白皮书 工具数 17', tools.size, 17);
-ok(/HTTP 路由 \| \*\*49\*\*/.test(wp), '白皮书 路由数 49', routes.size, 49);
-ok(/设置键 \| \*\*98\*\*/.test(wp), '白皮书 配置键 98', keys.length, 98);
+console.log('\n── 白皮书 docs/WHITEPAPER.md §3.1 规模表 ──');
+eq(pick(wp, /\| 模型工具 \| \*\*(\d+)\*\* \|/), tools.size, '白皮书 模型工具 = 代码实测');
+eq(pick(wp, /\| HTTP 路由 \| \*\*(\d+)\*\* \|/), routes.size, '白皮书 HTTP 路由 = 代码实测');
+eq(pick(wp, /\| 设置键 \| \*\*(\d+)\*\* \|/), keys.length, '白皮书 设置键 = 代码实测');
 ok(wp.includes('`true`（开）') && /handoffEnabled/.test(wp), '白皮书 白板默认=开', getKey('handoffEnabled'), 'true');
 ok(wp.includes('`false`（关）') && /autoContinueEnabled/.test(wp), '白皮书 自动接续默认=关', getKey('autoContinueEnabled'), 'false');
 ok(/`hubMechanicalProcedureFeedEnabled`\s*\|\s*\*\*`false`/.test(wp), '白皮书 机械切片默认=关', getKey('hubMechanicalProcedureFeedEnabled'), 'false');
 ok(/各 \*\*24000\*\*/.test(wp), '白皮书 容量 24000', 'DEFAULT_NOTE_CAPACITY_CHARS=24000', 24000);
 
+console.log('\n── 主页内容规格 docs/HOMEPAGE-CONTENT-FOR-GM53.md ──');
+eq(pick(gm, /(\d+) 个模型工具/), tools.size, 'GM53 模型工具 = 代码实测');
+eq(pick(gm, /(\d+) 条 HTTP 路由/), routes.size, 'GM53 HTTP 路由 = 代码实测');
+eq(pick(gm, /(\d+) 个配置键/), keys.length, 'GM53 配置键 = 代码实测');
 ok(gm.includes('563 MB'), 'GM53 Python 档 563MB', '563MB', '563MB');
 ok(!gm.includes('380+ MB'), 'GM53 无 380+MB 笔误', '—', '—');
 ok(gm.includes('400 token 预算'), 'GM53 Tier-0 = 400 token', getKey('tier0MaxTokens'), 400);
-ok(gm.includes('17 个模型工具') && gm.includes('49 条 HTTP 路由') && gm.includes('98 个配置键'),
-  'GM53 规模数字一致', `${tools.size}/${routes.size}/${keys.length}`, '17/49/98');
-ok(/12 页签/.test(cc) && /98 个配置键/.test(cc), '共创 12 页签 + 98 键', '—', '—');
+
+console.log('\n── 前端共创 docs/FRONTEND-CO-CREATION.md ──');
+eq(pick(cc, /后端 (\d+) 个模型工具/), tools.size, '共创 模型工具 = 代码实测');
+eq(pick(cc, /(\d+) 条路由/), routes.size, '共创 路由 = 代码实测');
+eq(pick(cc, /共 (\d+) 个配置键/), keys.length, '共创 配置键 = 代码实测');
+ok(/12 页签/.test(cc), '共创 12 页签', '12', '12');
+
+console.log('\n── README 功能清单口径 ──');
+{
+  const m = rm.match(/(\d+) user capabilities \/ (\d+) tools \/ (\d+) routes \/ (\d+) config keys/);
+  eq(m ? Number(m[2]) : null, tools.size, 'README.md tools = 代码实测');
+  eq(m ? Number(m[3]) : null, routes.size, 'README.md routes = 代码实测');
+  eq(m ? Number(m[4]) : null, keys.length, 'README.md config keys = 代码实测');
+}
+{
+  const m = rmz.match(/(\d+) 条用户能力 \/ (\d+) 工具 \/ (\d+) 路由 \/ (\d+) 配置键/);
+  eq(m ? Number(m[2]) : null, tools.size, 'README.zh-CN.md 工具 = 代码实测');
+  eq(m ? Number(m[3]) : null, routes.size, 'README.zh-CN.md 路由 = 代码实测');
+  eq(m ? Number(m[4]) : null, keys.length, 'README.zh-CN.md 配置键 = 代码实测');
+}
 
 console.log('\n── README 修正断言 ──');
 ok(/Twelve tabs/.test(rm), 'README.md 十二页签', 'Twelve tabs', 'Twelve tabs');
@@ -77,5 +119,5 @@ ok(!/十个页签/.test(rmz), 'README.zh-CN.md 无十个页签残留', '—', '�
 ok(rm.includes('docs/WHITEPAPER.md') && rmz.includes('docs/WHITEPAPER.md'), '两份 README 挂了白皮书链接', '—', '—');
 ok(rm.includes('docs/FRONTEND-CO-CREATION.md') && rmz.includes('docs/FRONTEND-CO-CREATION.md'), '两份 README 挂了共创链接', '—', '—');
 
-console.log(fail ? `\n${fail} 项不一致` : '\n全部一致');
+console.log(fail ? `\n${fail} 项不一致` : '\n全部一致（文档声明值 === 代码实测值）');
 process.exit(fail ? 1 : 0);
