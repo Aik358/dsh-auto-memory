@@ -1,14 +1,14 @@
 {
   "schema": 1,
-  "updatedAt": "2026-09-27T04:40:00+08:00",
+  "updatedAt": "2026-09-27T01:20:00+08:00",
   "frozenAt": "2026-09-26",
   "freezeDoc": "00-目标冻结书.md",
   "freezeLock": "00-目标冻结书.sha256",
   "scope": "full",
   "restartBudget": {
-    "used": 0,
+    "used": 2,
     "planned": 2,
-    "note": "重启只挡 E2 取证；编码与 E0/E1 不消耗重启"
+    "note": "两次重启均已完成：① PID 27404→57012 @ 2026-09-26 22:46:18；② →56628 @ 2026-09-26 23:12:35。重启只挡 E2 取证；编码与 E0/E1 不消耗重启"
   },
   "tracks": {
     "backend": {
@@ -709,9 +709,9 @@
       "evidence": "~/.dsh/profiles/node_modules/@deepseek-ai/ 全库 .d.ts 扫 Context 接口；dsh-authorization/lib/types/index.d.ts 的 AuthorizationService 方法列表"
     }
   ],
-  "ciNote": "CI run #68 红属既有欠账（本地同命令 181/181 绿，归因实验完成）",
-  "totalBatches": 21,
-  "lastUpdated": "2026-09-26T11:09:49",
+  "ciNote": "CI 已全绿（2026-09-26）。修复链：a2da238（.gitattributes 锁 CRLF 夹具 + 同步失效 --exclude）→ 84af6c9（3 个 workbench 套件去硬编码绝对路径）→ 5f77497（m70 G2 去掉 worker 时序假设）。CI run 36255073235 @ 5f77497：PASS 182 / FAIL 0 / TIMEOUT 0（100.4s）。修复前基线 run 36254040702 @ a2da238：PASS 178 / FAIL 4。",
+  "totalBatches": 27,
+  "lastUpdated": "2026-09-26T17:20:00",
   "fit": {
     "sessionId": "fit_6dff4e6d9fe6",
     "convergedAt": "2026-09-26T21:30:00+08:00",
