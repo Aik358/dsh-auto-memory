@@ -177,6 +177,25 @@ function makeWaterFake(opts, ledgerCalls) {
     //   抽取式沙箱里 fake 必须提供它，否则 TypeError 被外层 catch 吞掉 ⇒ 表现为"静默不写账本"，
     //   即本项目的经典坑：被提取方法引用的**所有**符号都得显式提供。
     handoffChainEnabledPre: function () { return this.config.autoContinueEnabled !== false && this.config.handoffEnabled !== false },
+    // ⚠️ 2026-09-26（水位 v4）：`checkWaterLevel` 又新增两个 self 方法依赖 ——
+    //   `_resolveWaterLevelPre`（镜像官方公式算阈值）与 `_officialParamsPre`（读 preset 参数）。
+    //   同型坑：不注入 ⇒ TypeError 被同一个 catch 吞掉 ⇒ 6 条断言假红（归属实验已证：HEAD 基线 53/53，
+    //   含本次改动 47/53）。此处**按真实语义注入**（而非放宽断言）：
+    //   `_resolveWaterLevelPre` 用与生产同构的纯公式（floor(min(W×r,(W−O)−B))×margin），
+    //   ratio/headroom 取官方默认，保证被测的是「水位测量链路」而不是阈值来源。
+    _officialParamsPre: function () { return { ratio: 0.8, headroomTokens: 65536, source: 'test-injected' } },
+    _resolveWaterLevelPre: function (triggerWin, reserve) {
+      const W = Number(triggerWin) || 0
+      const O = Math.max(0, Number(reserve) || 0)
+      const fixed = Math.max(Number(this.config.waterLevelThreshold) || 0.75, 0.1)
+      if (!(W > 0)) return { mode: 'fixed', threshold: fixed, officialRatio: 0, officialTokens: 0, margin: 0, source: 'test-window-unknown' }
+      const officialRatio = Math.min(0.8, ((W - O) - 65536) / W)
+      if (!(officialRatio > 0)) return { mode: 'fixed', threshold: fixed, officialRatio: 0, officialTokens: 0, margin: 0, source: 'test-fallback' }
+      return {
+        mode: 'auto', threshold: Math.min(Math.max(officialRatio * 0.9, 0.1), 0.95),
+        officialRatio, officialTokens: Math.floor(officialRatio * W), margin: 0.9, source: 'test-injected',
+      }
+    },
     state: {},
   })
   fake._rt = rt

@@ -29,3 +29,16 @@ artifacts/release-c2-asset-pack/*.tgz
 *.bak2-*
 _patch-*.mjs
 _verify-*.mjs
+
+# --- 2026-09-26 补漏：备份与临时脚本（Phase 0.3）---
+*.m8b*
+*.m8r2*
+*.bak3-*
+*.bak4-*
+*.bak-depre-*
+artifacts/_*
+_pr-diffs/
+_probe/
+_tmp-*/
+.vision-tmp/
+.video_agent/

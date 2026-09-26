@@ -264,6 +264,25 @@ function makeWaterFake(opts, ledgerCalls) {
     rememberWaterRecord: function (sid, rec) { if (!this._waterRecords) this._waterRecords = {}; if (sid) this._waterRecords[sid] = rec },
     // 被提取方法引用的宿主方法必须显式提供（沙箱约定），否则 TypeError 被外层 catch 吞成"静默不写"
     handoffChainEnabledPre: function () { return this.config.autoContinueEnabled !== false && this.config.handoffEnabled !== false },
+    // ⚠️ 2026-09-26（水位 v4）：`checkWaterLevel` 新增两个 self 方法依赖（镜像官方公式算阈值 / 读 preset 参数）。
+    //   同型坑——不注入 ⇒ TypeError 被外层 catch 吞掉 ⇒ `state.waterLevelRatio` 全空、本组 G6 断言崩
+    //   （归属实验已证：HEAD 基线 exit=0，含本次改动 exit=1）。
+    //   此处**按真实语义注入**（不是放宽断言）：本 fixture 窗口 1000 / reserve 0 / B=65536 ⇒ (W−O)−B<0，
+    //   故走 fixed 回退分支取 waterLevelThreshold(0.8) —— 正是 fixture 期望的「804/1000=0.804 越 0.8」。
+    _officialParamsPre: function () { return { ratio: 0.8, headroomTokens: 65536, source: 'test-injected' } },
+    _resolveWaterLevelPre: function (triggerWin, reserve) {
+      const W = Number(triggerWin) || 0
+      const O = Math.max(0, Number(reserve) || 0)
+      const fixed = Math.max(Number(this.config.waterLevelThreshold) || 0.75, 0.1)
+      if (!(W > 0)) return { mode: 'fixed', threshold: fixed, officialRatio: 0, officialTokens: 0, margin: 0, source: 'test-window-unknown' }
+      const officialRatio = Math.min(0.8, ((W - O) - 65536) / W)
+      // 天花板压不出正数（小窗口 fixture）⇒ 走 fixed 分支，与生产 _resolveWaterLevelPre 同构
+      if (!(officialRatio > 0)) return { mode: 'fixed', threshold: fixed, officialRatio: 0, officialTokens: 0, margin: 0, source: 'test-fallback' }
+      return {
+        mode: 'auto', threshold: Math.min(Math.max(officialRatio * 0.9, 0.1), 0.95),
+        officialRatio, officialTokens: Math.floor(officialRatio * W), margin: 0.9, source: 'test-injected',
+      }
+    },
     state: {},
   })
   fake._rt = rt

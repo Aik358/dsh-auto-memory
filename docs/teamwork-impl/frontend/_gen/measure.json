@@ -1,0 +1,5445 @@
+{
+ "bytes": 742031,
+ "lines": 8249,
+ "crlfOnly": true,
+ "anchors": [
+  {
+   "name": "data-dam-autocont",
+   "count": 1,
+   "first": 7020,
+   "lastLine": 7020,
+   "components": [
+    "AutoContinueHost"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-autocont-confirm",
+   "count": 1,
+   "first": 7021,
+   "lastLine": 7021,
+   "components": [
+    "AutoContinueHost"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-banner",
+   "count": 4,
+   "first": 1898,
+   "lastLine": 2290,
+   "components": [
+    "CSS×3",
+    "Banner"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-body",
+   "count": 10,
+   "first": 1792,
+   "lastLine": 6068,
+   "components": [
+    "CSS×8",
+    "MemoryPageView",
+    "MemoryPanel"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-btn",
+   "count": 143,
+   "first": 1835,
+   "lastLine": 7880,
+   "components": [
+    "setMany×32",
+    "CSS×9",
+    "MemoryHubTab×9",
+    "migRows×8",
+    "PlanTab×8",
+    "CalendarTab×8",
+    "ConnectTab×8",
+    "DialogHost×8",
+    "RulesEditPanel×5",
+    "MemoryPanel×5",
+    "KanbanView×4",
+    "SettingsPage×4",
+    "WhiteboardGraphView×3",
+    "PySetupWizard×3",
+    "OverviewTab×3",
+    "StorageTab×3",
+    "ReflectionsTab×3",
+    "body×3",
+    "GreetingCard×2",
+    "RefineTab×2",
+    "SearchTab×2",
+    "MemoryPageView×2",
+    "DebugCenter×2",
+    "AutoContinueHost×2",
+    "KanbanCard",
+    "KanbanBoard",
+    "LogsTab",
+    "FoldableLogs",
+    "NotesTab"
+   ],
+   "role": "control",
+   "tag": "button"
+  },
+  {
+   "name": "data-dam-calendar",
+   "count": 7,
+   "first": 1907,
+   "lastLine": 5671,
+   "components": [
+    "CSS×6",
+    "CalendarTab"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-calendar-day",
+   "count": 5,
+   "first": 1908,
+   "lastLine": 5538,
+   "components": [
+    "CSS×4",
+    "CalendarTab"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-calendar-event",
+   "count": 6,
+   "first": 1907,
+   "lastLine": 5620,
+   "components": [
+    "CSS×3",
+    "CalendarTab×3"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-calendar-modal",
+   "count": 4,
+   "first": 1907,
+   "lastLine": 5646,
+   "components": [
+    "CSS×2",
+    "CalendarTab×2"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-calendar-slot",
+   "count": 2,
+   "first": 5611,
+   "lastLine": 5618,
+   "components": [
+    "CalendarTab×2"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-card",
+   "count": 18,
+   "first": 1820,
+   "lastLine": 5444,
+   "components": [
+    "CSS×12",
+    "RefineTab×2",
+    "body×2",
+    "Card",
+    "WorkspaceGraph"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-chip",
+   "count": 1,
+   "first": 2931,
+   "lastLine": 2931,
+   "components": [
+    "KanbanView"
+   ],
+   "role": "container",
+   "tag": "span"
+  },
+  {
+   "name": "data-dam-collapsible",
+   "count": 1,
+   "first": 3673,
+   "lastLine": 3673,
+   "components": [
+    "OverviewTab"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-content",
+   "count": 30,
+   "first": 3459,
+   "lastLine": 5787,
+   "components": [
+    "MemoryHubTab×9",
+    "PlanTab×9",
+    "LogsTab×2",
+    "RulesEditPanel×2",
+    "SearchTab×2",
+    "ConnectTab×2",
+    "GreetingCard",
+    "StorageTab",
+    "ReflectionsTab",
+    "body"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-detect-panel",
+   "count": 1,
+   "first": 7489,
+   "lastLine": 7489,
+   "components": [
+    "setMany"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-disclosure",
+   "count": 5,
+   "first": 1895,
+   "lastLine": 3391,
+   "components": [
+    "CSS×4",
+    "AnimatedDisclosure"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-error",
+   "count": 14,
+   "first": 1931,
+   "lastLine": 7882,
+   "components": [
+    "setMany×4",
+    "ConnectTab×3",
+    "CalendarTab×2",
+    "SettingsPage×2",
+    "CSS",
+    "migRows",
+    "NotesTab"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-float-toggle",
+   "count": 1,
+   "first": 5949,
+   "lastLine": 5949,
+   "components": [
+    "MemoryPageView"
+   ],
+   "role": "control",
+   "tag": "button"
+  },
+  {
+   "name": "data-dam-flow",
+   "count": 31,
+   "first": 1807,
+   "lastLine": 5794,
+   "components": [
+    "CSS×12",
+    "LogsTab×3",
+    "migRows×3",
+    "RefineTab×2",
+    "MemoryHubTab×2",
+    "PlanTab×2",
+    "ReflectionsTab×2",
+    "SearchTab×2",
+    "ConnectTab×2",
+    "body"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-fold",
+   "count": 8,
+   "first": 1780,
+   "lastLine": 3901,
+   "components": [
+    "CSS×7",
+    "FoldableLogs"
+   ],
+   "role": "mixed",
+   "tag": "button"
+  },
+  {
+   "name": "data-dam-graph",
+   "count": 5,
+   "first": 1880,
+   "lastLine": 5150,
+   "components": [
+    "CSS×4",
+    "WorkspaceGraph"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-graph-legend",
+   "count": 1,
+   "first": 1885,
+   "lastLine": 1885,
+   "components": [
+    "CSS"
+   ],
+   "role": "container",
+   "tag": "(css)"
+  },
+  {
+   "name": "data-dam-graph-node",
+   "count": 3,
+   "first": 1884,
+   "lastLine": 5164,
+   "components": [
+    "WorkspaceGraph×2",
+    "CSS"
+   ],
+   "role": "container",
+   "tag": "g"
+  },
+  {
+   "name": "data-dam-graph-toolbar",
+   "count": 3,
+   "first": 1878,
+   "lastLine": 5438,
+   "components": [
+    "CSS×2",
+    "body"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-hint",
+   "count": 163,
+   "first": 1927,
+   "lastLine": 7877,
+   "components": [
+    "setMany×19",
+    "MemoryHubTab×17",
+    "PlanTab×17",
+    "migRows×10",
+    "KanbanBoard×9",
+    "RulesEditPanel×9",
+    "KanbanView×8",
+    "DebugCenter×8",
+    "WhiteboardGraphView×7",
+    "StorageTab×7",
+    "body×7",
+    "SettingsPage×6",
+    "KanbanCard×5",
+    "OverviewTab×5",
+    "GreetingCard×4",
+    "ConnectTab×4",
+    "WbgNode×3",
+    "SearchTab×3",
+    "KanbanMatrixCard×2",
+    "LogsTab×2",
+    "NotesTab×2",
+    "CalendarTab×2",
+    "AutoContinueHost×2",
+    "CSS",
+    "FoldableLogs",
+    "ReflectionsTab",
+    "MemoryPageView",
+    "MemoryPanel"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-input",
+   "count": 60,
+   "first": 1924,
+   "lastLine": 7821,
+   "components": [
+    "setMany×41",
+    "CalendarTab×5",
+    "RulesEditPanel×2",
+    "migRows×2",
+    "CSS",
+    "KanbanBoard",
+    "KanbanView",
+    "WhiteboardGraphView",
+    "StorageTab",
+    "NotesTab",
+    "PlanTab",
+    "SearchTab",
+    "MemoryPanel",
+    "SettingsPage"
+   ],
+   "role": "control",
+   "tag": "input"
+  },
+  {
+   "name": "data-dam-kanban",
+   "count": 1,
+   "first": 2627,
+   "lastLine": 2627,
+   "components": [
+    "KanbanBoard"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-kanban-view",
+   "count": 1,
+   "first": 2792,
+   "lastLine": 2792,
+   "components": [
+    "KanbanView"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-kbar",
+   "count": 1,
+   "first": 2577,
+   "lastLine": 2577,
+   "components": [
+    "KanbanBoard"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-kcard",
+   "count": 1,
+   "first": 2490,
+   "lastLine": 2490,
+   "components": [
+    "KanbanCard"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-key",
+   "count": 12,
+   "first": 4827,
+   "lastLine": 7855,
+   "components": [
+    "setMany×9",
+    "PlanTab×3"
+   ],
+   "role": "control",
+   "tag": "button"
+  },
+  {
+   "name": "data-dam-kv",
+   "count": 4,
+   "first": 1889,
+   "lastLine": 3701,
+   "components": [
+    "CSS×2",
+    "OverviewTab×2"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-kx-badge",
+   "count": 1,
+   "first": 2689,
+   "lastLine": 2689,
+   "components": [
+    "kxBadge"
+   ],
+   "role": "container",
+   "tag": "span"
+  },
+  {
+   "name": "data-dam-kx-card",
+   "count": 1,
+   "first": 2702,
+   "lastLine": 2702,
+   "components": [
+    "KanbanMatrixCard"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-kx-cell",
+   "count": 1,
+   "first": 2883,
+   "lastLine": 2883,
+   "components": [
+    "KanbanView"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-kx-dot",
+   "count": 1,
+   "first": 2854,
+   "lastLine": 2854,
+   "components": [
+    "KanbanView"
+   ],
+   "role": "container",
+   "tag": "span"
+  },
+  {
+   "name": "data-dam-kx-drawer",
+   "count": 1,
+   "first": 2905,
+   "lastLine": 2905,
+   "components": [
+    "KanbanView"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-kx-empty",
+   "count": 3,
+   "first": 2821,
+   "lastLine": 2824,
+   "components": [
+    "KanbanView×3"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-kx-full",
+   "count": 1,
+   "first": 2475,
+   "lastLine": 2475,
+   "components": [
+    "KanbanDrawerBody"
+   ],
+   "role": "container",
+   "tag": "pre"
+  },
+  {
+   "name": "data-dam-kx-head",
+   "count": 2,
+   "first": 2838,
+   "lastLine": 2846,
+   "components": [
+    "KanbanView×2"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-kx-lane",
+   "count": 1,
+   "first": 2703,
+   "lastLine": 2703,
+   "components": [
+    "KanbanMatrixCard"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-kx-row",
+   "count": 1,
+   "first": 2867,
+   "lastLine": 2867,
+   "components": [
+    "KanbanView"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-kx-scroll",
+   "count": 2,
+   "first": 2799,
+   "lastLine": 2897,
+   "components": [
+    "KanbanView×2"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-kx-warn",
+   "count": 1,
+   "first": 2808,
+   "lastLine": 2808,
+   "components": [
+    "KanbanView"
+   ],
+   "role": "container",
+   "tag": "span"
+  },
+  {
+   "name": "data-dam-lane",
+   "count": 1,
+   "first": 2633,
+   "lastLine": 2633,
+   "components": [
+    "KanbanBoard"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-layout",
+   "count": 1,
+   "first": 2627,
+   "lastLine": 2627,
+   "components": [
+    "KanbanBoard"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-legend-dot",
+   "count": 3,
+   "first": 1886,
+   "lastLine": 1888,
+   "components": [
+    "CSS×3"
+   ],
+   "role": "container",
+   "tag": "(css)"
+  },
+  {
+   "name": "data-dam-loading",
+   "count": 2,
+   "first": 1933,
+   "lastLine": 3353,
+   "components": [
+    "CSS",
+    "Loading"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-muted",
+   "count": 7,
+   "first": 1932,
+   "lastLine": 5761,
+   "components": [
+    "GreetingCard×2",
+    "PlanTab×2",
+    "CSS",
+    "ReflectionsTab",
+    "ConnectTab"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-nav-item",
+   "count": 1,
+   "first": 5959,
+   "lastLine": 5959,
+   "components": [
+    "MemoryPageView"
+   ],
+   "role": "control",
+   "tag": "button"
+  },
+  {
+   "name": "data-dam-official-band",
+   "count": 1,
+   "first": 4931,
+   "lastLine": 4931,
+   "components": [
+    "PlanTab"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-official-line",
+   "count": 1,
+   "first": 4942,
+   "lastLine": 4942,
+   "components": [
+    "PlanTab"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-page",
+   "count": 44,
+   "first": 1710,
+   "lastLine": 5933,
+   "components": [
+    "CSS×43",
+    "MemoryPageView"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-page-content",
+   "count": 3,
+   "first": 1776,
+   "lastLine": 5961,
+   "components": [
+    "CSS×2",
+    "MemoryPageView"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-page-head",
+   "count": 4,
+   "first": 1762,
+   "lastLine": 5940,
+   "components": [
+    "CSS×3",
+    "MemoryPageView"
+   ],
+   "role": "container",
+   "tag": "header"
+  },
+  {
+   "name": "data-dam-page-main",
+   "count": 4,
+   "first": 1768,
+   "lastLine": 5956,
+   "components": [
+    "CSS×3",
+    "MemoryPageView"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-page-nav",
+   "count": 7,
+   "first": 1769,
+   "lastLine": 5957,
+   "components": [
+    "CSS×6",
+    "MemoryPageView"
+   ],
+   "role": "container",
+   "tag": "nav"
+  },
+  {
+   "name": "data-dam-panel",
+   "count": 20,
+   "first": 1711,
+   "lastLine": 7904,
+   "components": [
+    "CSS×17",
+    "MemoryPanel",
+    "setMany",
+    "apply"
+   ],
+   "role": "mixed",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-panel-host",
+   "count": 1,
+   "first": 6076,
+   "lastLine": 6076,
+   "components": [
+    "MemoryPanel"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-prompt-sections",
+   "count": 1,
+   "first": 7594,
+   "lastLine": 7594,
+   "components": [
+    "setMany"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-pswitch",
+   "count": 1,
+   "first": 7606,
+   "lastLine": 7606,
+   "components": [
+    "setMany"
+   ],
+   "role": "control",
+   "tag": "input"
+  },
+  {
+   "name": "data-dam-resize",
+   "count": 3,
+   "first": 1740,
+   "lastLine": 6069,
+   "components": [
+    "CSS×2",
+    "MemoryPanel"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-row",
+   "count": 44,
+   "first": 1877,
+   "lastLine": 7869,
+   "components": [
+    "setMany×13",
+    "DebugCenter×6",
+    "CalendarTab×5",
+    "PlanTab×4",
+    "CSS×3",
+    "migRows×3",
+    "ConnectTab×3",
+    "SettingsPage×2",
+    "OverviewTab",
+    "NotesTab",
+    "ReflectionsTab",
+    "SearchTab",
+    "body"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-rule",
+   "count": 1,
+   "first": 4029,
+   "lastLine": 4029,
+   "components": [
+    "RulesEditPanel"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-savebar",
+   "count": 6,
+   "first": 1874,
+   "lastLine": 7874,
+   "components": [
+    "CSS×5",
+    "setMany"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-scope",
+   "count": 1,
+   "first": 4139,
+   "lastLine": 4139,
+   "components": [
+    "MemoryHubTab"
+   ],
+   "role": "container",
+   "tag": "span"
+  },
+  {
+   "name": "data-dam-scope-to",
+   "count": 1,
+   "first": 4149,
+   "lastLine": 4149,
+   "components": [
+    "MemoryHubTab"
+   ],
+   "role": "control",
+   "tag": "button"
+  },
+  {
+   "name": "data-dam-section",
+   "count": 5,
+   "first": 1778,
+   "lastLine": 3888,
+   "components": [
+    "LogsTab×4",
+    "CSS"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-select",
+   "count": 15,
+   "first": 1924,
+   "lastLine": 7816,
+   "components": [
+    "setMany×11",
+    "CSS",
+    "StorageTab",
+    "CalendarTab",
+    "MemoryPanel"
+   ],
+   "role": "control",
+   "tag": "select"
+  },
+  {
+   "name": "data-dam-settings",
+   "count": 2,
+   "first": 1865,
+   "lastLine": 7421,
+   "components": [
+    "CSS",
+    "setMany"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-settings-content",
+   "count": 2,
+   "first": 1869,
+   "lastLine": 7425,
+   "components": [
+    "CSS",
+    "setMany"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-settings-group",
+   "count": 4,
+   "first": 1870,
+   "lastLine": 7416,
+   "components": [
+    "CSS×3",
+    "setMany"
+   ],
+   "role": "container",
+   "tag": "section"
+  },
+  {
+   "name": "data-dam-settings-nav",
+   "count": 4,
+   "first": 1866,
+   "lastLine": 7422,
+   "components": [
+    "CSS×3",
+    "setMany"
+   ],
+   "role": "container",
+   "tag": "nav"
+  },
+  {
+   "name": "data-dam-settings-row",
+   "count": 3,
+   "first": 1873,
+   "lastLine": 7349,
+   "components": [
+    "CSS×2",
+    "setMany"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-sidebar-btn",
+   "count": 6,
+   "first": 67,
+   "lastLine": 7904,
+   "components": [
+    "CSS×3",
+    "entryButtonRect",
+    "SidebarButton",
+    "apply"
+   ],
+   "role": "mixed",
+   "tag": "button"
+  },
+  {
+   "name": "data-dam-spinner",
+   "count": 2,
+   "first": 1934,
+   "lastLine": 3353,
+   "components": [
+    "CSS",
+    "Loading"
+   ],
+   "role": "container",
+   "tag": "span"
+  },
+  {
+   "name": "data-dam-stat",
+   "count": 1,
+   "first": 5282,
+   "lastLine": 5282,
+   "components": [
+    "y"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-stat-bars",
+   "count": 1,
+   "first": 5219,
+   "lastLine": 5219,
+   "components": [
+    "seg"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-stat-donut",
+   "count": 1,
+   "first": 5204,
+   "lastLine": 5204,
+   "components": [
+    "seg"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-stat-heat",
+   "count": 1,
+   "first": 5265,
+   "lastLine": 5265,
+   "components": [
+    "y"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-stat-skeleton",
+   "count": 1,
+   "first": 5326,
+   "lastLine": 5326,
+   "components": [
+    "iv"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-stat-spark",
+   "count": 1,
+   "first": 5252,
+   "lastLine": 5252,
+   "components": [
+    "y"
+   ],
+   "role": "container",
+   "tag": "svg"
+  },
+  {
+   "name": "data-dam-tab",
+   "count": 14,
+   "first": 1835,
+   "lastLine": 6023,
+   "components": [
+    "CSS×12",
+    "TabScroller",
+    "MemoryPanel"
+   ],
+   "role": "mixed",
+   "tag": "button"
+  },
+  {
+   "name": "data-dam-tab-strip",
+   "count": 4,
+   "first": 1854,
+   "lastLine": 5876,
+   "components": [
+    "CSS×3",
+    "TabScroller"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-tabs",
+   "count": 3,
+   "first": 1851,
+   "lastLine": 5876,
+   "components": [
+    "CSS×2",
+    "TabScroller"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-tabs-arrow",
+   "count": 7,
+   "first": 1859,
+   "lastLine": 5877,
+   "components": [
+    "CSS×5",
+    "TabScroller×2"
+   ],
+   "role": "mixed",
+   "tag": "button"
+  },
+  {
+   "name": "data-dam-tabs-wrap",
+   "count": 2,
+   "first": 1850,
+   "lastLine": 5874,
+   "components": [
+    "CSS",
+    "TabScroller"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-tour",
+   "count": 9,
+   "first": 1942,
+   "lastLine": 6690,
+   "components": [
+    "CSS×5",
+    "DialogHost×4"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-tour-",
+   "count": 1,
+   "first": 6400,
+   "lastLine": 6400,
+   "components": [
+    "DialogHost"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-tour-app-tile",
+   "count": 12,
+   "first": 2076,
+   "lastLine": 6701,
+   "components": [
+    "CSS×11",
+    "DialogHost"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-tour-art",
+   "count": 46,
+   "first": 2088,
+   "lastLine": 6679,
+   "components": [
+    "CSS×45",
+    "DialogHost"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-tour-backdrop",
+   "count": 4,
+   "first": 1939,
+   "lastLine": 6681,
+   "components": [
+    "CSS×2",
+    "DialogHost×2"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-tour-badge",
+   "count": 3,
+   "first": 2162,
+   "lastLine": 6750,
+   "components": [
+    "DialogHost×2",
+    "CSS"
+   ],
+   "role": "container",
+   "tag": "span"
+  },
+  {
+   "name": "data-dam-tour-bar",
+   "count": 2,
+   "first": 2147,
+   "lastLine": 6733,
+   "components": [
+    "CSS",
+    "DialogHost"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-tour-bar-i",
+   "count": 2,
+   "first": 2148,
+   "lastLine": 6734,
+   "components": [
+    "CSS",
+    "DialogHost"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-tour-body",
+   "count": 3,
+   "first": 2134,
+   "lastLine": 6704,
+   "components": [
+    "CSS×2",
+    "DialogHost"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-tour-bokeh",
+   "count": 12,
+   "first": 1901,
+   "lastLine": 6697,
+   "components": [
+    "CSS×6",
+    "DialogHost×6"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-tour-btn",
+   "count": 12,
+   "first": 2156,
+   "lastLine": 6780,
+   "components": [
+    "CSS×10",
+    "DialogHost×2"
+   ],
+   "role": "mixed",
+   "tag": "button"
+  },
+  {
+   "name": "data-dam-tour-chips",
+   "count": 3,
+   "first": 2180,
+   "lastLine": 6745,
+   "components": [
+    "CSS×2",
+    "DialogHost"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-tour-close",
+   "count": 3,
+   "first": 1954,
+   "lastLine": 6692,
+   "components": [
+    "CSS×2",
+    "DialogHost"
+   ],
+   "role": "mixed",
+   "tag": "button"
+  },
+  {
+   "name": "data-dam-tour-dl",
+   "count": 2,
+   "first": 2140,
+   "lastLine": 6729,
+   "components": [
+    "CSS",
+    "DialogHost"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-tour-dl-row",
+   "count": 3,
+   "first": 2141,
+   "lastLine": 6735,
+   "components": [
+    "DialogHost×2",
+    "CSS"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-tour-dl-tier",
+   "count": 2,
+   "first": 2142,
+   "lastLine": 6737,
+   "components": [
+    "CSS",
+    "DialogHost"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-tour-dl-tier-row",
+   "count": 6,
+   "first": 2143,
+   "lastLine": 6741,
+   "components": [
+    "CSS×4",
+    "DialogHost×2"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-tour-dot",
+   "count": 7,
+   "first": 2150,
+   "lastLine": 6772,
+   "components": [
+    "CSS×6",
+    "DialogHost"
+   ],
+   "role": "mixed",
+   "tag": "button"
+  },
+  {
+   "name": "data-dam-tour-dots",
+   "count": 3,
+   "first": 2149,
+   "lastLine": 6770,
+   "components": [
+    "CSS×2",
+    "DialogHost"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-tour-foot",
+   "count": 3,
+   "first": 2153,
+   "lastLine": 6775,
+   "components": [
+    "CSS×2",
+    "DialogHost"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-tour-glare",
+   "count": 2,
+   "first": 1952,
+   "lastLine": 6691,
+   "components": [
+    "CSS",
+    "DialogHost"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-tour-halo",
+   "count": 2,
+   "first": 2214,
+   "lastLine": 6694,
+   "components": [
+    "CSS",
+    "DialogHost"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-tour-head",
+   "count": 2,
+   "first": 2227,
+   "lastLine": 6705,
+   "components": [
+    "CSS",
+    "DialogHost"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-tour-kicker",
+   "count": 3,
+   "first": 2135,
+   "lastLine": 6706,
+   "components": [
+    "CSS×2",
+    "DialogHost"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-tour-link",
+   "count": 6,
+   "first": 2185,
+   "lastLine": 6766,
+   "components": [
+    "CSS×3",
+    "DialogHost×3"
+   ],
+   "role": "mixed",
+   "tag": "a"
+  },
+  {
+   "name": "data-dam-tour-links",
+   "count": 3,
+   "first": 2181,
+   "lastLine": 6760,
+   "components": [
+    "CSS×2",
+    "DialogHost"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-tour-links-note",
+   "count": 2,
+   "first": 2194,
+   "lastLine": 6768,
+   "components": [
+    "CSS",
+    "DialogHost"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-tour-orb-core",
+   "count": 3,
+   "first": 1901,
+   "lastLine": 2273,
+   "components": [
+    "CSS×3"
+   ],
+   "role": "container",
+   "tag": "(css)"
+  },
+  {
+   "name": "data-dam-tour-orb-wrap",
+   "count": 20,
+   "first": 1900,
+   "lastLine": 6693,
+   "components": [
+    "CSS×19",
+    "DialogHost"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-tour-pedestal",
+   "count": 2,
+   "first": 2218,
+   "lastLine": 6703,
+   "components": [
+    "CSS",
+    "DialogHost"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-tour-rec",
+   "count": 2,
+   "first": 2163,
+   "lastLine": 6715,
+   "components": [
+    "CSS",
+    "DialogHost"
+   ],
+   "role": "container",
+   "tag": "span"
+  },
+  {
+   "name": "data-dam-tour-skip",
+   "count": 4,
+   "first": 2154,
+   "lastLine": 6776,
+   "components": [
+    "CSS×3",
+    "DialogHost"
+   ],
+   "role": "mixed",
+   "tag": "button"
+  },
+  {
+   "name": "data-dam-tour-slab",
+   "count": 20,
+   "first": 1901,
+   "lastLine": 6701,
+   "components": [
+    "CSS×14",
+    "DialogHost×6"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-tour-stage",
+   "count": 4,
+   "first": 2041,
+   "lastLine": 6698,
+   "components": [
+    "CSS×2",
+    "DialogHost×2"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-tour-stepchip",
+   "count": 2,
+   "first": 2232,
+   "lastLine": 6707,
+   "components": [
+    "CSS",
+    "DialogHost"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-tour-sw",
+   "count": 6,
+   "first": 2176,
+   "lastLine": 6727,
+   "components": [
+    "CSS×4",
+    "DialogHost×2"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-tour-swap",
+   "count": 2,
+   "first": 2138,
+   "lastLine": 6704,
+   "components": [
+    "CSS",
+    "DialogHost"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-tour-text",
+   "count": 3,
+   "first": 2137,
+   "lastLine": 6709,
+   "components": [
+    "CSS×2",
+    "DialogHost"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-tour-tg",
+   "count": 8,
+   "first": 2169,
+   "lastLine": 6723,
+   "components": [
+    "CSS×6",
+    "DialogHost×2"
+   ],
+   "role": "mixed",
+   "tag": "button"
+  },
+  {
+   "name": "data-dam-tour-tg-name",
+   "count": 3,
+   "first": 2174,
+   "lastLine": 6725,
+   "components": [
+    "DialogHost×2",
+    "CSS"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-tour-tg-sub",
+   "count": 3,
+   "first": 2175,
+   "lastLine": 6726,
+   "components": [
+    "DialogHost×2",
+    "CSS"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-tour-tg-txt",
+   "count": 3,
+   "first": 2173,
+   "lastLine": 6724,
+   "components": [
+    "DialogHost×2",
+    "CSS"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-tour-title",
+   "count": 3,
+   "first": 2136,
+   "lastLine": 6708,
+   "components": [
+    "CSS×2",
+    "DialogHost"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-tour-toggles",
+   "count": 7,
+   "first": 2165,
+   "lastLine": 6719,
+   "components": [
+    "CSS×5",
+    "DialogHost×2"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-tour-where",
+   "count": 4,
+   "first": 2195,
+   "lastLine": 6752,
+   "components": [
+    "CSS×3",
+    "DialogHost"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-update-box",
+   "count": 6,
+   "first": 1900,
+   "lastLine": 6385,
+   "components": [
+    "CSS×5",
+    "DialogHost"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-update-click",
+   "count": 3,
+   "first": 2255,
+   "lastLine": 6396,
+   "components": [
+    "CSS×2",
+    "DialogHost"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-update-content",
+   "count": 8,
+   "first": 1903,
+   "lastLine": 6397,
+   "components": [
+    "CSS×7",
+    "DialogHost"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-update-hint",
+   "count": 2,
+   "first": 2274,
+   "lastLine": 6395,
+   "components": [
+    "CSS",
+    "DialogHost"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-update-logo",
+   "count": 8,
+   "first": 2266,
+   "lastLine": 6387,
+   "components": [
+    "CSS×7",
+    "DialogHost"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-update-stage",
+   "count": 4,
+   "first": 1902,
+   "lastLine": 6386,
+   "components": [
+    "CSS×3",
+    "DialogHost"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-water-bar",
+   "count": 1,
+   "first": 4940,
+   "lastLine": 4940,
+   "components": [
+    "PlanTab"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-wb-actions",
+   "count": 3,
+   "first": 2008,
+   "lastLine": 6497,
+   "components": [
+    "CSS×2",
+    "DialogHost"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-wb-card",
+   "count": 37,
+   "first": 1958,
+   "lastLine": 6459,
+   "components": [
+    "CSS×35",
+    "DialogHost×2"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-wb-cta",
+   "count": 3,
+   "first": 2012,
+   "lastLine": 6498,
+   "components": [
+    "CSS×2",
+    "DialogHost"
+   ],
+   "role": "mixed",
+   "tag": "button"
+  },
+  {
+   "name": "data-dam-wb-cta2",
+   "count": 3,
+   "first": 2015,
+   "lastLine": 6504,
+   "components": [
+    "CSS×2",
+    "DialogHost"
+   ],
+   "role": "mixed",
+   "tag": "button"
+  },
+  {
+   "name": "data-dam-wb-detail",
+   "count": 3,
+   "first": 1996,
+   "lastLine": 6437,
+   "components": [
+    "CSS×2",
+    "DialogHost"
+   ],
+   "role": "container",
+   "tag": "span"
+  },
+  {
+   "name": "data-dam-wb-dir",
+   "count": 3,
+   "first": 2001,
+   "lastLine": 6482,
+   "components": [
+    "CSS×2",
+    "DialogHost"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-wb-dot",
+   "count": 2,
+   "first": 1991,
+   "lastLine": 6435,
+   "components": [
+    "CSS",
+    "DialogHost"
+   ],
+   "role": "container",
+   "tag": "span"
+  },
+  {
+   "name": "data-dam-wb-foot",
+   "count": 2,
+   "first": 2020,
+   "lastLine": 6506,
+   "components": [
+    "CSS",
+    "DialogHost"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-wb-head",
+   "count": 3,
+   "first": 1980,
+   "lastLine": 6460,
+   "components": [
+    "CSS×2",
+    "DialogHost"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-wb-label",
+   "count": 2,
+   "first": 1995,
+   "lastLine": 6436,
+   "components": [
+    "CSS",
+    "DialogHost"
+   ],
+   "role": "container",
+   "tag": "span"
+  },
+  {
+   "name": "data-dam-wb-phase",
+   "count": 4,
+   "first": 1984,
+   "lastLine": 6460,
+   "components": [
+    "CSS×3",
+    "DialogHost"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-wb-reason",
+   "count": 2,
+   "first": 1999,
+   "lastLine": 6481,
+   "components": [
+    "CSS",
+    "DialogHost"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-wb-risk",
+   "count": 3,
+   "first": 2003,
+   "lastLine": 6487,
+   "components": [
+    "CSS×2",
+    "DialogHost"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-wb-row",
+   "count": 3,
+   "first": 1989,
+   "lastLine": 6434,
+   "components": [
+    "CSS×2",
+    "DialogHost"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-wb-setup",
+   "count": 6,
+   "first": 1958,
+   "lastLine": 6458,
+   "components": [
+    "CSS×5",
+    "DialogHost"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-wb-state",
+   "count": 4,
+   "first": 1992,
+   "lastLine": 6435,
+   "components": [
+    "CSS×3",
+    "DialogHost"
+   ],
+   "role": "container",
+   "tag": "span"
+  },
+  {
+   "name": "data-dam-wb-sub",
+   "count": 2,
+   "first": 1987,
+   "lastLine": 6463,
+   "components": [
+    "CSS",
+    "DialogHost"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-wbg-bar",
+   "count": 1,
+   "first": 3233,
+   "lastLine": 3233,
+   "components": [
+    "WhiteboardGraphView"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-wbg-canvas",
+   "count": 1,
+   "first": 3309,
+   "lastLine": 3309,
+   "components": [
+    "WhiteboardGraphView"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-wbg-colhead",
+   "count": 1,
+   "first": 3286,
+   "lastLine": 3286,
+   "components": [
+    "WhiteboardGraphView"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-wbg-node",
+   "count": 1,
+   "first": 3065,
+   "lastLine": 3065,
+   "components": [
+    "WbgNode"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-wbg-side",
+   "count": 1,
+   "first": 3333,
+   "lastLine": 3333,
+   "components": [
+    "WhiteboardGraphView"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-wbg-stage",
+   "count": 1,
+   "first": 3320,
+   "lastLine": 3320,
+   "components": [
+    "WhiteboardGraphView"
+   ],
+   "role": "container",
+   "tag": "div"
+  },
+  {
+   "name": "data-dam-wbg-wrap",
+   "count": 2,
+   "first": 3223,
+   "lastLine": 3304,
+   "components": [
+    "WhiteboardGraphView×2"
+   ],
+   "role": "container",
+   "tag": "div"
+  }
+ ],
+ "vars": [
+  {
+   "name": "--dam-accent",
+   "uses": 64,
+   "def": null
+  },
+  {
+   "name": "--dam-dur-fast",
+   "uses": 16,
+   "def": {
+    "line": 1713,
+    "value": "250ms",
+    "comp": "CSS"
+   }
+  },
+  {
+   "name": "--dam-dur-quick",
+   "uses": 18,
+   "def": {
+    "line": 1713,
+    "value": "150ms",
+    "comp": "CSS"
+   }
+  },
+  {
+   "name": "--dam-dur-slow",
+   "uses": 9,
+   "def": {
+    "line": 1713,
+    "value": "400ms",
+    "comp": "CSS"
+   }
+  },
+  {
+   "name": "--dam-dur-stagger",
+   "uses": 7,
+   "def": {
+    "line": 1713,
+    "value": "40ms",
+    "comp": "CSS"
+   }
+  },
+  {
+   "name": "--dam-ease-inout",
+   "uses": 4,
+   "def": {
+    "line": 1714,
+    "value": "cubic-bezier(.65, 0, .35, 1)",
+    "comp": "CSS"
+   }
+  },
+  {
+   "name": "--dam-ease-linear",
+   "uses": 1,
+   "def": null
+  },
+  {
+   "name": "--dam-ease-out",
+   "uses": 33,
+   "def": {
+    "line": 1714,
+    "value": "cubic-bezier(.22, 1, .36, 1)",
+    "comp": "CSS"
+   }
+  },
+  {
+   "name": "--dam-ease-pop",
+   "uses": 2,
+   "def": {
+    "line": 1714,
+    "value": "cubic-bezier(.34, 1.36, .64, 1)",
+    "comp": "CSS"
+   }
+  },
+  {
+   "name": "--dam-fg",
+   "uses": 1,
+   "def": null
+  },
+  {
+   "name": "--dam-gap",
+   "uses": 2,
+   "def": {
+    "line": 1756,
+    "value": "clamp(10px, .5vw + 6px, 18px)",
+    "comp": "CSS"
+   }
+  },
+  {
+   "name": "--dam-hero-rgb",
+   "uses": 11,
+   "def": {
+    "line": 2205,
+    "value": "83,122,255",
+    "comp": "CSS"
+   }
+  },
+  {
+   "name": "--dam-measure",
+   "uses": 2,
+   "def": {
+    "line": 1753,
+    "value": "1440px",
+    "comp": "CSS"
+   }
+  },
+  {
+   "name": "--dam-mx",
+   "uses": 3,
+   "def": {
+    "line": 1947,
+    "value": "50%",
+    "comp": "CSS"
+   }
+  },
+  {
+   "name": "--dam-my",
+   "uses": 3,
+   "def": {
+    "line": 1947,
+    "value": "18%",
+    "comp": "CSS"
+   }
+  },
+  {
+   "name": "--dam-orb-a",
+   "uses": 3,
+   "def": {
+    "line": 2066,
+    "value": "360deg",
+    "comp": "CSS"
+   }
+  },
+  {
+   "name": "--dam-pad-x",
+   "uses": 3,
+   "def": {
+    "line": 1754,
+    "value": "clamp(16px, 1.6vw + 6px, 44px)",
+    "comp": "CSS"
+   }
+  },
+  {
+   "name": "--dam-pad-y",
+   "uses": 2,
+   "def": {
+    "line": 1755,
+    "value": "clamp(14px, .8vw + 6px, 26px)",
+    "comp": "CSS"
+   }
+  },
+  {
+   "name": "--dam-scale",
+   "uses": 105,
+   "def": {
+    "line": 1715,
+    "value": "1",
+    "comp": "CSS"
+   }
+  },
+  {
+   "name": "--dam-slab-from-z",
+   "uses": 4,
+   "def": {
+    "line": 2062,
+    "value": "calc(var(--dam-slab-z) * 1.5)",
+    "comp": "CSS"
+   }
+  },
+  {
+   "name": "--dam-slab-to-z",
+   "uses": 4,
+   "def": {
+    "line": 2062,
+    "value": "calc(var(--dam-slab-z) * 1)",
+    "comp": "CSS"
+   }
+  },
+  {
+   "name": "--dam-slab-z",
+   "uses": 8,
+   "def": {
+    "line": 2028,
+    "value": "22px",
+    "comp": "CSS"
+   }
+  },
+  {
+   "name": "--dam-user-scale",
+   "uses": 4,
+   "def": null
+  }
+ ],
+ "i18n": {
+  "zhStartLine": 203,
+  "zhEndLine": 472,
+  "enStartLine": 473,
+  "enEndLine": 737,
+  "zhCount": 173,
+  "enCount": 172,
+  "onlyZh": [
+   "fTuningHint"
+  ],
+  "onlyEn": [],
+  "zhKeys": [
+   {
+    "k": "loading",
+    "l": 204
+   },
+   {
+    "k": "memoryPanel",
+    "l": 205
+   },
+   {
+    "k": "memory",
+    "l": 206
+   },
+   {
+    "k": "autoMemory",
+    "l": 207
+   },
+   {
+    "k": "overview",
+    "l": 208
+   },
+   {
+    "k": "hubSkills",
+    "l": 238
+   },
+   {
+    "k": "storageScanHint",
+    "l": 239
+   },
+   {
+    "k": "storageDeleteHint",
+    "l": 240
+   },
+   {
+    "k": "migTitle",
+    "l": 241
+   },
+   {
+    "k": "migPathChanged",
+    "l": 242
+   },
+   {
+    "k": "secSemantic",
+    "l": 243
+   },
+   {
+    "k": "pyWizTitle",
+    "l": 244
+   },
+   {
+    "k": "pyWizDetect",
+    "l": 245
+   },
+   {
+    "k": "semModeHint",
+    "l": 246
+   },
+   {
+    "k": "fAssocEngine",
+    "l": 247
+   },
+   {
+    "k": "fAnchorIndex",
+    "l": 248
+   },
+   {
+    "k": "secMemoryHubHint",
+    "l": 249
+   },
+   {
+    "k": "fMemoryHub",
+    "l": 250
+   },
+   {
+    "k": "fEpisodicMin",
+    "l": 251
+   },
+   {
+    "k": "fEpisodicRet",
+    "l": 252
+   },
+   {
+    "k": "fProcSessions",
+    "l": 253
+   },
+   {
+    "k": "fProcSuccess",
+    "l": 254
+   },
+   {
+    "k": "fProcCorr",
+    "l": 255
+   },
+   {
+    "k": "fProcRisk",
+    "l": 256
+   },
+   {
+    "k": "fProcLevel",
+    "l": 257
+   },
+   {
+    "k": "memoryHubViewHint",
+    "l": 258
+   },
+   {
+    "k": "fJsCooldown",
+    "l": 259
+   },
+   {
+    "k": "fJsDelta",
+    "l": 260
+   },
+   {
+    "k": "fEmitMode",
+    "l": 261
+   },
+   {
+    "k": "fCandScheme",
+    "l": 262
+   },
+   {
+    "k": "fCandN",
+    "l": 263
+   },
+   {
+    "k": "fJsExcerpt",
+    "l": 264
+   },
+   {
+    "k": "fReasoning",
+    "l": 265
+   },
+   {
+    "k": "fChildObs",
+    "l": 266
+   },
+   {
+    "k": "fTauHi",
+    "l": 267
+   },
+   {
+    "k": "fTuningHint",
+    "l": 268
+   },
+   {
+    "k": "refineTitle",
+    "l": 269
+   },
+   {
+    "k": "refineEmpty",
+    "l": 270
+   },
+   {
+    "k": "sent1",
+    "l": 271
+   },
+   {
+    "k": "semResolved",
+    "l": 272
+   },
+   {
+    "k": "semDlStart",
+    "l": 273
+   },
+   {
+    "k": "mAuto",
+    "l": 274
+   },
+   {
+    "k": "dlDownloading",
+    "l": 275
+   },
+   {
+    "k": "fWelcomeTour",
+    "l": 276
+   },
+   {
+    "k": "wsGenerating",
+    "l": 277
+   },
+   {
+    "k": "debugCenter",
+    "l": 278
+   },
+   {
+    "k": "fMemoryRoot",
+    "l": 279
+   },
+   {
+    "k": "fBrowse",
+    "l": 280
+   },
+   {
+    "k": "pickedDir",
+    "l": 281
+   },
+   {
+    "k": "fDayBoundary",
+    "l": 282
+   },
+   {
+    "k": "fVersion",
+    "l": 283
+   },
+   {
+    "k": "updateNow",
+    "l": 284
+   },
+   {
+    "k": "kvVersion",
+    "l": 285
+   },
+   {
+    "k": "kvHeartbeat",
+    "l": 286
+   },
+   {
+    "k": "kvQueue",
+    "l": 287
+   },
+   {
+    "k": "kvAvail",
+    "l": 288
+   },
+   {
+    "k": "kvMem",
+    "l": 289
+   },
+   {
+    "k": "kvWs",
+    "l": 290
+   },
+   {
+    "k": "dbgHubIo",
+    "l": 292
+   },
+   {
+    "k": "dbgLogs",
+    "l": 293
+   },
+   {
+    "k": "dbgLogsNone",
+    "l": 294
+   },
+   {
+    "k": "dbgLogsHint",
+    "l": 295
+   },
+   {
+    "k": "kvPyTitle",
+    "l": 296
+   },
+   {
+    "k": "kvPyWatchdog",
+    "l": 297
+   },
+   {
+    "k": "updateTitle",
+    "l": 298
+   },
+   {
+    "k": "refresh",
+    "l": 299
+   },
+   {
+    "k": "generated",
+    "l": 300
+   },
+   {
+    "k": "generatedAt",
+    "l": 301
+   },
+   {
+    "k": "pointsCount",
+    "l": 302
+   },
+   {
+    "k": "pendingReflection",
+    "l": 303
+   },
+   {
+    "k": "pendingReflectionHint",
+    "l": 304
+   },
+   {
+    "k": "todayWork",
+    "l": 305
+   },
+   {
+    "k": "autoSettledToday",
+    "l": 306
+   },
+   {
+    "k": "autoSettledRecent",
+    "l": 307
+   },
+   {
+    "k": "dailyReflection",
+    "l": 308
+   },
+   {
+    "k": "workspace",
+    "l": 309
+   },
+   {
+    "k": "reflecting",
+    "l": 310
+   },
+   {
+    "k": "reflectHint",
+    "l": 311
+   },
+   {
+    "k": "quickLinks",
+    "l": 312
+   },
+   {
+    "k": "collapseTech",
+    "l": 313
+   },
+   {
+    "k": "userMemory",
+    "l": 314
+   },
+   {
+    "k": "readFailed",
+    "l": 315
+   },
+   {
+    "k": "empty",
+    "l": 316
+   },
+   {
+    "k": "clickDateViewLog",
+    "l": 317
+   },
+   {
+    "k": "userMemoryBlock",
+    "l": 318
+   },
+   {
+    "k": "appended",
+    "l": 384
+   },
+   {
+    "k": "notesPlaceholder",
+    "l": 385
+   },
+   {
+    "k": "saving",
+    "l": 386
+   },
+   {
+    "k": "notesHint",
+    "l": 387
+   },
+   {
+    "k": "reflectionTitle",
+    "l": 388
+   },
+   {
+    "k": "reflectAutoHint",
+    "l": 389
+   },
+   {
+    "k": "noReflection",
+    "l": 390
+   },
+   {
+    "k": "searchFailed",
+    "l": 391
+   },
+   {
+    "k": "smartSearch",
+    "l": 392
+   },
+   {
+    "k": "projectFiles",
+    "l": 393
+   },
+   {
+    "k": "imported",
+    "l": 394
+   },
+   {
+    "k": "noExternal",
+    "l": 395
+   },
+   {
+    "k": "sessionSource",
+    "l": 396
+   },
+   {
+    "k": "importingOne",
+    "l": 397
+   },
+   {
+    "k": "disabled",
+    "l": 398
+   },
+   {
+    "k": "connectHint",
+    "l": 399
+   },
+   {
+    "k": "importAll",
+    "l": 400
+   },
+   {
+    "k": "styleAuto",
+    "l": 401
+   },
+   {
+    "k": "todayGreetingTitle",
+    "l": 402
+   },
+   {
+    "k": "yesterdayTimeline",
+    "l": 403
+   },
+   {
+    "k": "saved",
+    "l": 404
+   },
+   {
+    "k": "settingsHeader",
+    "l": 405
+   },
+   {
+    "k": "fFontSize",
+    "l": 406
+   },
+   {
+    "k": "fPanelPos",
+    "l": 407
+   },
+   {
+    "k": "posBottomLeft",
+    "l": 408
+   },
+   {
+    "k": "fUserDir",
+    "l": 409
+   },
+   {
+    "k": "fProjectDir",
+    "l": 410
+   },
+   {
+    "k": "fInject",
+    "l": 411
+   },
+   {
+    "k": "fBudget",
+    "l": 412
+   },
+   {
+    "k": "fExclude",
+    "l": 413
+   },
+   {
+    "k": "fNoteCap",
+    "l": 414
+   },
+   {
+    "k": "fUserCap",
+    "l": 415
+   },
+   {
+    "k": "fSnapGap",
+    "l": 416
+   },
+   {
+    "k": "fReinjectOnCompact",
+    "l": 417
+   },
+   {
+    "k": "fPromptCustom",
+    "l": 418
+   },
+   {
+    "k": "fPromptSections",
+    "l": 419
+   },
+   {
+    "k": "fDays",
+    "l": 420
+   },
+   {
+    "k": "fExtBudget",
+    "l": 421
+   },
+   {
+    "k": "fConsolidateMin",
+    "l": 422
+   },
+   {
+    "k": "fAway",
+    "l": 423
+   },
+   {
+    "k": "fAutoPopup",
+    "l": 424
+   },
+   {
+    "k": "fUnattended",
+    "l": 425
+   },
+   {
+    "k": "fUnattendedAuto",
+    "l": 426
+   },
+   {
+    "k": "fAutoConsolidate",
+    "l": 427
+   },
+   {
+    "k": "fConsolidate",
+    "l": 428
+   },
+   {
+    "k": "fConsolidateMax",
+    "l": 429
+   },
+   {
+    "k": "fAutoSum",
+    "l": 430
+   },
+   {
+    "k": "awayTitle",
+    "l": 431
+   },
+   {
+    "k": "sumTitle",
+    "l": 432
+   },
+   {
+    "k": "fReflect",
+    "l": 433
+   },
+   {
+    "k": "fAutoContinue",
+    "l": 434
+   },
+   {
+    "k": "handoffSwitchTitle",
+    "l": 435
+   },
+   {
+    "k": "fHandoff",
+    "l": 436
+   },
+   {
+    "k": "fWaterWindow",
+    "l": 437
+   },
+   {
+    "k": "fWaterAdvisory",
+    "l": 438
+   },
+   {
+    "k": "fWaterAuto",
+    "l": 439
+   },
+   {
+    "k": "fWaterThreshold",
+    "l": 440
+   },
+   {
+    "k": "fHandoffPlan",
+    "l": 441
+   },
+   {
+    "k": "fProcInject",
+    "l": 442
+   },
+   {
+    "k": "fFactRetention",
+    "l": 443
+   },
+   {
+    "k": "fTier0Catalog",
+    "l": 444
+   },
+   {
+    "k": "fTier0Max",
+    "l": 445
+   },
+   {
+    "k": "fRulesLayering",
+    "l": 446
+   },
+   {
+    "k": "fCriteriaGate",
+    "l": 447
+   },
+   {
+    "k": "fWsDiscover",
+    "l": 448
+   },
+   {
+    "k": "fMemFileIndex",
+    "l": 449
+   },
+   {
+    "k": "fHandoffLedger",
+    "l": 450
+   },
+   {
+    "k": "fConsSchedule",
+    "l": 451
+   },
+   {
+    "k": "fConsScheduleTime",
+    "l": 452
+   },
+   {
+    "k": "fConsScheduleDays",
+    "l": 453
+   },
+   {
+    "k": "fMaintSchedule",
+    "l": 454
+   },
+   {
+    "k": "fMaintScheduleTime",
+    "l": 455
+   },
+   {
+    "k": "waterCardTitle",
+    "l": 456
+   },
+   {
+    "k": "waterOfficialTitle",
+    "l": 457
+   },
+   {
+    "k": "autoContTitle",
+    "l": 458
+   },
+   {
+    "k": "continueCardTitle",
+    "l": 459
+   },
+   {
+    "k": "fStyle",
+    "l": 460
+   },
+   {
+    "k": "fLocale",
+    "l": 461
+   },
+   {
+    "k": "saveSettings",
+    "l": 462
+   },
+   {
+    "k": "zh",
+    "l": 463
+   },
+   {
+    "k": "calendar",
+    "l": 464
+   },
+   {
+    "k": "segMorning",
+    "l": 465
+   },
+   {
+    "k": "segPrefix",
+    "l": 466
+   },
+   {
+    "k": "welcomeBack",
+    "l": 467
+   },
+   {
+    "k": "yesterdayDrawer",
+    "l": 468
+   },
+   {
+    "k": "greetMorning",
+    "l": 469
+   },
+   {
+    "k": "greetSummary",
+    "l": 470
+   },
+   {
+    "k": "qUrgentImportant",
+    "l": 471
+   }
+  ],
+  "enKeys": [
+   {
+    "k": "loading",
+    "l": 474
+   },
+   {
+    "k": "memoryPanel",
+    "l": 475
+   },
+   {
+    "k": "memory",
+    "l": 476
+   },
+   {
+    "k": "autoMemory",
+    "l": 477
+   },
+   {
+    "k": "overview",
+    "l": 478
+   },
+   {
+    "k": "hubSkills",
+    "l": 508
+   },
+   {
+    "k": "storageScanHint",
+    "l": 509
+   },
+   {
+    "k": "storageDeleteHint",
+    "l": 510
+   },
+   {
+    "k": "migTitle",
+    "l": 511
+   },
+   {
+    "k": "migPathChanged",
+    "l": 512
+   },
+   {
+    "k": "secSemantic",
+    "l": 513
+   },
+   {
+    "k": "pyWizTitle",
+    "l": 514
+   },
+   {
+    "k": "pyWizDetect",
+    "l": 515
+   },
+   {
+    "k": "fAssocEngine",
+    "l": 516
+   },
+   {
+    "k": "fAnchorIndex",
+    "l": 517
+   },
+   {
+    "k": "secMemoryHubHint",
+    "l": 518
+   },
+   {
+    "k": "fMemoryHub",
+    "l": 519
+   },
+   {
+    "k": "fEpisodicMin",
+    "l": 520
+   },
+   {
+    "k": "fEpisodicRet",
+    "l": 521
+   },
+   {
+    "k": "fProcSessions",
+    "l": 522
+   },
+   {
+    "k": "fProcSuccess",
+    "l": 523
+   },
+   {
+    "k": "fProcCorr",
+    "l": 524
+   },
+   {
+    "k": "fProcRisk",
+    "l": 525
+   },
+   {
+    "k": "fProcLevel",
+    "l": 526
+   },
+   {
+    "k": "memoryHubViewHint",
+    "l": 527
+   },
+   {
+    "k": "fJsCooldown",
+    "l": 528
+   },
+   {
+    "k": "fJsDelta",
+    "l": 529
+   },
+   {
+    "k": "fEmitMode",
+    "l": 530
+   },
+   {
+    "k": "fCandScheme",
+    "l": 531
+   },
+   {
+    "k": "fCandN",
+    "l": 532
+   },
+   {
+    "k": "fJsExcerpt",
+    "l": 533
+   },
+   {
+    "k": "semModeHint",
+    "l": 534
+   },
+   {
+    "k": "fReasoning",
+    "l": 535
+   },
+   {
+    "k": "fChildObs",
+    "l": 536
+   },
+   {
+    "k": "fTauHi",
+    "l": 537
+   },
+   {
+    "k": "refineTitle",
+    "l": 538
+   },
+   {
+    "k": "refineEmpty",
+    "l": 539
+   },
+   {
+    "k": "sent1",
+    "l": 540
+   },
+   {
+    "k": "semResolved",
+    "l": 541
+   },
+   {
+    "k": "semDlStart",
+    "l": 542
+   },
+   {
+    "k": "mAuto",
+    "l": 543
+   },
+   {
+    "k": "dlDownloading",
+    "l": 544
+   },
+   {
+    "k": "fWelcomeTour",
+    "l": 545
+   },
+   {
+    "k": "wsGenerating",
+    "l": 546
+   },
+   {
+    "k": "debugCenter",
+    "l": 547
+   },
+   {
+    "k": "fMemoryRoot",
+    "l": 548
+   },
+   {
+    "k": "fBrowse",
+    "l": 549
+   },
+   {
+    "k": "pickedDir",
+    "l": 550
+   },
+   {
+    "k": "fDayBoundary",
+    "l": 551
+   },
+   {
+    "k": "fVersion",
+    "l": 552
+   },
+   {
+    "k": "updateNow",
+    "l": 553
+   },
+   {
+    "k": "kvVersion",
+    "l": 554
+   },
+   {
+    "k": "kvHeartbeat",
+    "l": 555
+   },
+   {
+    "k": "kvQueue",
+    "l": 556
+   },
+   {
+    "k": "kvAvail",
+    "l": 557
+   },
+   {
+    "k": "kvMem",
+    "l": 558
+   },
+   {
+    "k": "kvWs",
+    "l": 559
+   },
+   {
+    "k": "dbgHubIo",
+    "l": 560
+   },
+   {
+    "k": "dbgLogs",
+    "l": 561
+   },
+   {
+    "k": "dbgLogsNone",
+    "l": 562
+   },
+   {
+    "k": "dbgLogsHint",
+    "l": 563
+   },
+   {
+    "k": "kvPyTitle",
+    "l": 564
+   },
+   {
+    "k": "kvPyWatchdog",
+    "l": 565
+   },
+   {
+    "k": "updateTitle",
+    "l": 566
+   },
+   {
+    "k": "refresh",
+    "l": 567
+   },
+   {
+    "k": "generated",
+    "l": 568
+   },
+   {
+    "k": "generatedAt",
+    "l": 569
+   },
+   {
+    "k": "pointsCount",
+    "l": 570
+   },
+   {
+    "k": "pendingReflection",
+    "l": 571
+   },
+   {
+    "k": "pendingReflectionHint",
+    "l": 572
+   },
+   {
+    "k": "todayWork",
+    "l": 573
+   },
+   {
+    "k": "autoSettledToday",
+    "l": 574
+   },
+   {
+    "k": "autoSettledRecent",
+    "l": 575
+   },
+   {
+    "k": "dailyReflection",
+    "l": 576
+   },
+   {
+    "k": "workspace",
+    "l": 577
+   },
+   {
+    "k": "reflecting",
+    "l": 578
+   },
+   {
+    "k": "reflectHint",
+    "l": 579
+   },
+   {
+    "k": "quickLinks",
+    "l": 580
+   },
+   {
+    "k": "collapseTech",
+    "l": 581
+   },
+   {
+    "k": "userMemory",
+    "l": 582
+   },
+   {
+    "k": "readFailed",
+    "l": 583
+   },
+   {
+    "k": "empty",
+    "l": 584
+   },
+   {
+    "k": "clickDateViewLog",
+    "l": 585
+   },
+   {
+    "k": "userMemoryBlock",
+    "l": 586
+   },
+   {
+    "k": "appended",
+    "l": 649
+   },
+   {
+    "k": "notesPlaceholder",
+    "l": 650
+   },
+   {
+    "k": "saving",
+    "l": 651
+   },
+   {
+    "k": "notesHint",
+    "l": 652
+   },
+   {
+    "k": "reflectionTitle",
+    "l": 653
+   },
+   {
+    "k": "reflectAutoHint",
+    "l": 654
+   },
+   {
+    "k": "noReflection",
+    "l": 655
+   },
+   {
+    "k": "searchFailed",
+    "l": 656
+   },
+   {
+    "k": "smartSearch",
+    "l": 657
+   },
+   {
+    "k": "projectFiles",
+    "l": 658
+   },
+   {
+    "k": "imported",
+    "l": 659
+   },
+   {
+    "k": "noExternal",
+    "l": 660
+   },
+   {
+    "k": "sessionSource",
+    "l": 661
+   },
+   {
+    "k": "importingOne",
+    "l": 662
+   },
+   {
+    "k": "disabled",
+    "l": 663
+   },
+   {
+    "k": "connectHint",
+    "l": 664
+   },
+   {
+    "k": "importAll",
+    "l": 665
+   },
+   {
+    "k": "styleAuto",
+    "l": 666
+   },
+   {
+    "k": "todayGreetingTitle",
+    "l": 667
+   },
+   {
+    "k": "yesterdayTimeline",
+    "l": 668
+   },
+   {
+    "k": "saved",
+    "l": 669
+   },
+   {
+    "k": "settingsHeader",
+    "l": 670
+   },
+   {
+    "k": "fFontSize",
+    "l": 671
+   },
+   {
+    "k": "fPanelPos",
+    "l": 672
+   },
+   {
+    "k": "posBottomLeft",
+    "l": 673
+   },
+   {
+    "k": "fUserDir",
+    "l": 674
+   },
+   {
+    "k": "fProjectDir",
+    "l": 675
+   },
+   {
+    "k": "fInject",
+    "l": 676
+   },
+   {
+    "k": "fBudget",
+    "l": 677
+   },
+   {
+    "k": "fExclude",
+    "l": 678
+   },
+   {
+    "k": "fNoteCap",
+    "l": 679
+   },
+   {
+    "k": "fUserCap",
+    "l": 680
+   },
+   {
+    "k": "fSnapGap",
+    "l": 681
+   },
+   {
+    "k": "fReinjectOnCompact",
+    "l": 682
+   },
+   {
+    "k": "fPromptCustom",
+    "l": 683
+   },
+   {
+    "k": "fPromptSections",
+    "l": 684
+   },
+   {
+    "k": "fDays",
+    "l": 685
+   },
+   {
+    "k": "fExtBudget",
+    "l": 686
+   },
+   {
+    "k": "fConsolidateMin",
+    "l": 687
+   },
+   {
+    "k": "fAway",
+    "l": 688
+   },
+   {
+    "k": "fAutoPopup",
+    "l": 689
+   },
+   {
+    "k": "fUnattended",
+    "l": 690
+   },
+   {
+    "k": "fUnattendedAuto",
+    "l": 691
+   },
+   {
+    "k": "fAutoConsolidate",
+    "l": 692
+   },
+   {
+    "k": "fConsolidate",
+    "l": 693
+   },
+   {
+    "k": "fConsolidateMax",
+    "l": 694
+   },
+   {
+    "k": "fAutoSum",
+    "l": 695
+   },
+   {
+    "k": "awayTitle",
+    "l": 696
+   },
+   {
+    "k": "sumTitle",
+    "l": 697
+   },
+   {
+    "k": "fReflect",
+    "l": 698
+   },
+   {
+    "k": "fAutoContinue",
+    "l": 699
+   },
+   {
+    "k": "handoffSwitchTitle",
+    "l": 700
+   },
+   {
+    "k": "fHandoff",
+    "l": 701
+   },
+   {
+    "k": "fWaterWindow",
+    "l": 702
+   },
+   {
+    "k": "fWaterAdvisory",
+    "l": 703
+   },
+   {
+    "k": "fWaterAuto",
+    "l": 704
+   },
+   {
+    "k": "fWaterThreshold",
+    "l": 705
+   },
+   {
+    "k": "fHandoffPlan",
+    "l": 706
+   },
+   {
+    "k": "fProcInject",
+    "l": 707
+   },
+   {
+    "k": "fFactRetention",
+    "l": 708
+   },
+   {
+    "k": "fTier0Catalog",
+    "l": 709
+   },
+   {
+    "k": "fTier0Max",
+    "l": 710
+   },
+   {
+    "k": "fRulesLayering",
+    "l": 711
+   },
+   {
+    "k": "fCriteriaGate",
+    "l": 712
+   },
+   {
+    "k": "fWsDiscover",
+    "l": 713
+   },
+   {
+    "k": "fMemFileIndex",
+    "l": 714
+   },
+   {
+    "k": "fHandoffLedger",
+    "l": 715
+   },
+   {
+    "k": "fConsSchedule",
+    "l": 716
+   },
+   {
+    "k": "fConsScheduleTime",
+    "l": 717
+   },
+   {
+    "k": "fConsScheduleDays",
+    "l": 718
+   },
+   {
+    "k": "fMaintSchedule",
+    "l": 719
+   },
+   {
+    "k": "fMaintScheduleTime",
+    "l": 720
+   },
+   {
+    "k": "waterCardTitle",
+    "l": 721
+   },
+   {
+    "k": "waterOfficialTitle",
+    "l": 722
+   },
+   {
+    "k": "autoContTitle",
+    "l": 723
+   },
+   {
+    "k": "continueCardTitle",
+    "l": 724
+   },
+   {
+    "k": "fStyle",
+    "l": 725
+   },
+   {
+    "k": "fLocale",
+    "l": 726
+   },
+   {
+    "k": "saveSettings",
+    "l": 727
+   },
+   {
+    "k": "zh",
+    "l": 728
+   },
+   {
+    "k": "calendar",
+    "l": 729
+   },
+   {
+    "k": "segMorning",
+    "l": 730
+   },
+   {
+    "k": "segPrefix",
+    "l": 731
+   },
+   {
+    "k": "welcomeBack",
+    "l": 732
+   },
+   {
+    "k": "yesterdayDrawer",
+    "l": 733
+   },
+   {
+    "k": "greetMorning",
+    "l": 734
+   },
+   {
+    "k": "greetSummary",
+    "l": 735
+   },
+   {
+    "k": "qUrgentImportant",
+    "l": 736
+   }
+  ],
+  "tCalls": 632,
+  "localeSwitches": 408
+ },
+ "apiConst": {
+  "state": {
+   "suffix": "/state",
+   "line": 1589
+  },
+  "list": {
+   "suffix": "/list",
+   "line": 1590
+  },
+  "file": {
+   "suffix": "/file",
+   "line": 1591
+  },
+  "recall": {
+   "suffix": "/recall",
+   "line": 1592
+  },
+  "smartRecall": {
+   "suffix": "/smart-recall",
+   "line": 1593
+  },
+  "workspaces": {
+   "suffix": "/workspaces",
+   "line": 1594
+  },
+  "debug": {
+   "suffix": "/debug",
+   "line": 1595
+  },
+  "scanDirty": {
+   "suffix": "/scan-dirty",
+   "line": 1596
+  },
+  "browseDir": {
+   "suffix": "/browse-dir",
+   "line": 1597
+  },
+  "pickDir": {
+   "suffix": "/pick-dir",
+   "line": 1598
+  },
+  "updateCheck": {
+   "suffix": "/update-check",
+   "line": 1599
+  },
+  "update": {
+   "suffix": "/update",
+   "line": 1600
+  },
+  "config": {
+   "suffix": "/config",
+   "line": 1601
+  },
+  "reflect": {
+   "suffix": "/reflect",
+   "line": 1602
+  },
+  "recallStats": {
+   "suffix": "/recall-stats",
+   "line": 1603
+  },
+  "reflectAuto": {
+   "suffix": "/reflect-auto",
+   "line": 1604
+  },
+  "note": {
+   "suffix": "/note",
+   "line": 1605
+  },
+  "rulesList": {
+   "suffix": "/rules",
+   "line": 1607
+  },
+  "rulesApply": {
+   "suffix": "/rules/apply",
+   "line": 1608
+  },
+  "external": {
+   "suffix": "/external",
+   "line": 1609
+  },
+  "externalView": {
+   "suffix": "/external-view",
+   "line": 1610
+  },
+  "externalRemove": {
+   "suffix": "/external-remove",
+   "line": 1611
+  },
+  "externalImport": {
+   "suffix": "/external-import",
+   "line": 1612
+  },
+  "calendar": {
+   "suffix": "/calendar",
+   "line": 1613
+  },
+  "summarize": {
+   "suffix": "/summarize",
+   "line": 1614
+  },
+  "greet": {
+   "suffix": "/greet",
+   "line": 1615
+  },
+  "workbench": {
+   "suffix": "/workbench",
+   "line": 1617
+  },
+  "notices": {
+   "suffix": "/notices",
+   "line": 1618
+  },
+  "models": {
+   "suffix": "/models",
+   "line": 1619
+  },
+  "semanticDeepDetect": {
+   "suffix": "/semantic-deep-detect",
+   "line": 1620
+  },
+  "semanticStatus": {
+   "suffix": "/semantic-status",
+   "line": 1621
+  },
+  "semanticEmit": {
+   "suffix": "/semantic-emit",
+   "line": 1622
+  },
+  "pyDetect": {
+   "suffix": "/python-setup/detect",
+   "line": 1623
+  },
+  "pyVenv": {
+   "suffix": "/python-setup/venv",
+   "line": 1624
+  },
+  "pyDeps": {
+   "suffix": "/python-setup/deps",
+   "line": 1625
+  },
+  "pyModel": {
+   "suffix": "/python-setup/model",
+   "line": 1626
+  },
+  "pyCancel": {
+   "suffix": "/python-setup/cancel",
+   "line": 1627
+  },
+  "pyStatus": {
+   "suffix": "/python-setup/status",
+   "line": 1628
+  },
+  "handoffState": {
+   "suffix": "/handoff-state",
+   "line": 1629
+  },
+  "kanbanBoard": {
+   "suffix": "/kanban-board",
+   "line": 1630
+  },
+  "kanbanCard": {
+   "suffix": "/kanban-card",
+   "line": 1632
+  },
+  "handoffContinue": {
+   "suffix": "/handoff-continue",
+   "line": 1633
+  },
+  "handoffPermission": {
+   "suffix": "/handoff-permission",
+   "line": 1634
+  },
+  "autoContState": {
+   "suffix": "/auto-continue-state",
+   "line": 1635
+  },
+  "autoContDecide": {
+   "suffix": "/auto-continue-decide",
+   "line": 1636
+  },
+  "semanticDownload": {
+   "suffix": "/semantic-download",
+   "line": 1637
+  },
+  "shadowRecent": {
+   "suffix": "/shadow-recent",
+   "line": 1638
+  },
+  "reviewFeedback": {
+   "suffix": "/review-feedback",
+   "line": 1639
+  },
+  "memoryHub": {
+   "suffix": "/memory-hub",
+   "line": 1640
+  },
+  "storageManage": {
+   "suffix": "/storage-manage",
+   "line": 1641
+  },
+  "migrateExport": {
+   "suffix": "/migrate-export",
+   "line": 1642
+  },
+  "migrateInspect": {
+   "suffix": "/migrate-inspect",
+   "line": 1643
+  },
+  "migrateImport": {
+   "suffix": "/migrate-import",
+   "line": 1644
+  }
+ },
+ "apiCalls": [
+  {
+   "line": 1484,
+   "fn": "apiPost",
+   "target": "API.workbench",
+   "comp": "v"
+  },
+  {
+   "line": 1520,
+   "fn": "apiGet",
+   "target": "API.updateCheck",
+   "comp": "wantChangelog"
+  },
+  {
+   "line": 1536,
+   "fn": "apiGet",
+   "target": "API.config",
+   "comp": "wantChangelog"
+  },
+  {
+   "line": 1674,
+   "fn": "apiPost",
+   "target": "API.config",
+   "comp": "saveConfigPatch"
+  },
+  {
+   "line": 1692,
+   "fn": "apiGet",
+   "target": "API.config",
+   "comp": "saveConfigPatch"
+  },
+  {
+   "line": 1702,
+   "fn": "fetch",
+   "target": "API.semanticStatus",
+   "comp": "refreshSem"
+  },
+  {
+   "line": 2447,
+   "fn": "apiGet",
+   "target": "API.kanbanCard",
+   "comp": "useCardFull"
+  },
+  {
+   "line": 2756,
+   "fn": "apiGet",
+   "target": "API.kanbanBoard",
+   "comp": "KanbanView"
+  },
+  {
+   "line": 3139,
+   "fn": "apiGet",
+   "target": "API.kanbanBoard",
+   "comp": "WhiteboardGraphView"
+  },
+  {
+   "line": 3466,
+   "fn": "apiPost",
+   "target": "API.summarize",
+   "comp": "GreetingCard"
+  },
+  {
+   "line": 3550,
+   "fn": "apiPost",
+   "target": "API.pyDeps",
+   "comp": "PySetupWizard"
+  },
+  {
+   "line": 3552,
+   "fn": "apiGet",
+   "target": "API.pyStatus",
+   "comp": "PySetupWizard"
+  },
+  {
+   "line": 3555,
+   "fn": "apiGet",
+   "target": "API.pyDetect",
+   "comp": "PySetupWizard"
+  },
+  {
+   "line": 3603,
+   "fn": "apiPost",
+   "target": "API.pyCancel",
+   "comp": "PySetupWizard"
+  },
+  {
+   "line": 3636,
+   "fn": "apiPost",
+   "target": "API.workspaces",
+   "comp": "OverviewTab"
+  },
+  {
+   "line": 3637,
+   "fn": "apiGet",
+   "target": "API.state",
+   "comp": "OverviewTab"
+  },
+  {
+   "line": 3641,
+   "fn": "apiPost",
+   "target": "API.greet",
+   "comp": "OverviewTab"
+  },
+  {
+   "line": 3655,
+   "fn": "apiGet",
+   "target": "API.state",
+   "comp": "OverviewTab"
+  },
+  {
+   "line": 3664,
+   "fn": "apiPost",
+   "target": "API.reflectAuto",
+   "comp": "OverviewTab"
+  },
+  {
+   "line": 3666,
+   "fn": "apiGet",
+   "target": "API.state",
+   "comp": "OverviewTab"
+  },
+  {
+   "line": 3726,
+   "fn": "fetch",
+   "target": "API.shadowRecent",
+   "comp": "RefineTab"
+  },
+  {
+   "line": 3729,
+   "fn": "fetch",
+   "target": "API.reviewFeedback",
+   "comp": "RefineTab"
+  },
+  {
+   "line": 3735,
+   "fn": "fetch",
+   "target": "API.reviewFeedback",
+   "comp": "RefineTab"
+  },
+  {
+   "line": 3861,
+   "fn": "apiGet",
+   "target": "API.list",
+   "comp": "LogsTab"
+  },
+  {
+   "line": 3862,
+   "fn": "apiGet",
+   "target": "API.state",
+   "comp": "LogsTab"
+  },
+  {
+   "line": 3868,
+   "fn": "apiGet",
+   "target": "API.file",
+   "comp": "LogsTab"
+  },
+  {
+   "line": 3969,
+   "fn": "apiGet",
+   "target": "API.rulesList",
+   "comp": "RulesEditPanel"
+  },
+  {
+   "line": 3977,
+   "fn": "apiPost",
+   "target": "API.rulesApply",
+   "comp": "RulesEditPanel"
+  },
+  {
+   "line": 4070,
+   "fn": "fetch",
+   "target": "API.memoryHub",
+   "comp": "MemoryHubTab"
+  },
+  {
+   "line": 4078,
+   "fn": "fetch",
+   "target": "API.memoryHub",
+   "comp": "MemoryHubTab"
+  },
+  {
+   "line": 4096,
+   "fn": "fetch",
+   "target": "API.memoryHub",
+   "comp": "MemoryHubTab"
+  },
+  {
+   "line": 4341,
+   "fn": "apiPost",
+   "target": "API.pickDir",
+   "comp": "StorageTab"
+  },
+  {
+   "line": 4356,
+   "fn": "apiPost",
+   "target": "API.migrateExport",
+   "comp": "StorageTab"
+  },
+  {
+   "line": 4373,
+   "fn": "apiPost",
+   "target": "API.migrateInspect",
+   "comp": "StorageTab"
+  },
+  {
+   "line": 4386,
+   "fn": "apiPost",
+   "target": "API.migrateImport",
+   "comp": "StorageTab"
+  },
+  {
+   "line": 4395,
+   "fn": "fetch",
+   "target": "API.storageManage",
+   "comp": "StorageTab"
+  },
+  {
+   "line": 4403,
+   "fn": "fetch",
+   "target": "API.storageManage",
+   "comp": "StorageTab"
+  },
+  {
+   "line": 4413,
+   "fn": "fetch",
+   "target": "API.storageManage",
+   "comp": "StorageTab"
+  },
+  {
+   "line": 4533,
+   "fn": "apiGet",
+   "target": "API.state",
+   "comp": "NotesTab"
+  },
+  {
+   "line": 4540,
+   "fn": "apiPost",
+   "target": "API.note",
+   "comp": "NotesTab"
+  },
+  {
+   "line": 4578,
+   "fn": "apiGet",
+   "target": "API.handoffState",
+   "comp": "continueCreateArgs"
+  },
+  {
+   "line": 4606,
+   "fn": "apiGet",
+   "target": "API.config",
+   "comp": "continueCreateArgs"
+  },
+  {
+   "line": 4616,
+   "fn": "apiGet",
+   "target": "API.handoffState",
+   "comp": "continueCreateArgs"
+  },
+  {
+   "line": 4653,
+   "fn": "apiPost",
+   "target": "API.handoffPermission",
+   "comp": "continueCreateArgs"
+  },
+  {
+   "line": 4660,
+   "fn": "apiPost",
+   "target": "API.handoffPermission",
+   "comp": "continueCreateArgs"
+  },
+  {
+   "line": 4677,
+   "fn": "apiGet",
+   "target": "API.config",
+   "comp": "continueCreateArgs"
+  },
+  {
+   "line": 4682,
+   "fn": "apiPost",
+   "target": "API.handoffContinue",
+   "comp": "continueCreateArgs"
+  },
+  {
+   "line": 4743,
+   "fn": "apiGet",
+   "target": "API.config",
+   "comp": "PlanTab"
+  },
+  {
+   "line": 4780,
+   "fn": "apiGet",
+   "target": "API.handoffState",
+   "comp": "PlanTab"
+  },
+  {
+   "line": 4783,
+   "fn": "apiGet",
+   "target": "API.kanbanBoard",
+   "comp": "PlanTab"
+  },
+  {
+   "line": 4805,
+   "fn": "apiGet",
+   "target": "API.handoffState",
+   "comp": "PlanTab"
+  },
+  {
+   "line": 4999,
+   "fn": "apiGet",
+   "target": "API.list",
+   "comp": "ReflectionsTab"
+  },
+  {
+   "line": 5005,
+   "fn": "apiGet",
+   "target": "API.file",
+   "comp": "ReflectionsTab"
+  },
+  {
+   "line": 5012,
+   "fn": "apiPost",
+   "target": "API.reflectAuto",
+   "comp": "ReflectionsTab"
+  },
+  {
+   "line": 5014,
+   "fn": "apiGet",
+   "target": "API.list",
+   "comp": "ReflectionsTab"
+  },
+  {
+   "line": 5054,
+   "fn": "apiPost",
+   "target": "API.recall",
+   "comp": "SearchTab"
+  },
+  {
+   "line": 5060,
+   "fn": "apiPost",
+   "target": "API.smartRecall",
+   "comp": "SearchTab"
+  },
+  {
+   "line": 5303,
+   "fn": "fetch",
+   "target": "API.recallStats",
+   "comp": "load"
+  },
+  {
+   "line": 5318,
+   "fn": "fetch",
+   "target": "API.recallStats",
+   "comp": "iv"
+  },
+  {
+   "line": 5417,
+   "fn": "apiPost",
+   "target": "API.workspaces",
+   "comp": "body"
+  },
+  {
+   "line": 5483,
+   "fn": "apiGet",
+   "target": "API.calendar",
+   "comp": "CalendarTab"
+  },
+  {
+   "line": 5572,
+   "fn": "apiPost",
+   "target": "API.calendar",
+   "comp": "CalendarTab"
+  },
+  {
+   "line": 5580,
+   "fn": "apiPost",
+   "target": "API.calendar",
+   "comp": "CalendarTab"
+  },
+  {
+   "line": 5704,
+   "fn": "apiGet",
+   "target": "API.external",
+   "comp": "ConnectTab"
+  },
+  {
+   "line": 5711,
+   "fn": "apiPost",
+   "target": "API.externalImport",
+   "comp": "ConnectTab"
+  },
+  {
+   "line": 5724,
+   "fn": "apiGet",
+   "target": "API.externalView",
+   "comp": "ConnectTab"
+  },
+  {
+   "line": 5736,
+   "fn": "apiPost",
+   "target": "API.externalRemove",
+   "comp": "ConnectTab"
+  },
+  {
+   "line": 5744,
+   "fn": "apiPost",
+   "target": "API.recall",
+   "comp": "ConnectTab"
+  },
+  {
+   "line": 5756,
+   "fn": "apiPost",
+   "target": "API.externalImport",
+   "comp": "ConnectTab"
+  },
+  {
+   "line": 5920,
+   "fn": "apiGet",
+   "target": "API.updateCheck",
+   "comp": "MemoryPageView"
+  },
+  {
+   "line": 5985,
+   "fn": "apiGet",
+   "target": "API.updateCheck",
+   "comp": "MemoryPanel"
+  },
+  {
+   "line": 6104,
+   "fn": "fetch",
+   "target": "API.scanDirty",
+   "comp": "DebugCenter"
+  },
+  {
+   "line": 6126,
+   "fn": "apiGet",
+   "target": "API.debug",
+   "comp": "DebugCenter"
+  },
+  {
+   "line": 6319,
+   "fn": "fetch",
+   "target": "API.config",
+   "comp": "DialogHost"
+  },
+  {
+   "line": 6331,
+   "fn": "fetch",
+   "target": "API.external",
+   "comp": "DialogHost"
+  },
+  {
+   "line": 6356,
+   "fn": "apiPost",
+   "target": "API.semanticDownload",
+   "comp": "DialogHost"
+  },
+  {
+   "line": 6444,
+   "fn": "apiPost",
+   "target": "API.workbench",
+   "comp": "DialogHost"
+  },
+  {
+   "line": 6602,
+   "fn": "apiPost",
+   "target": "API.semanticDownload",
+   "comp": "DialogHost"
+  },
+  {
+   "line": 6628,
+   "fn": "apiPost",
+   "target": "API.semanticEmit",
+   "comp": "DialogHost"
+  },
+  {
+   "line": 6863,
+   "fn": "apiPost",
+   "target": "API.semanticDownload",
+   "comp": "DialogHost"
+  },
+  {
+   "line": 6938,
+   "fn": "apiGet",
+   "target": "API.config",
+   "comp": "AutoContinueHost"
+  },
+  {
+   "line": 6939,
+   "fn": "apiGet",
+   "target": "API.autoContState",
+   "comp": "AutoContinueHost"
+  },
+  {
+   "line": 6956,
+   "fn": "apiGet",
+   "target": "API.autoContState",
+   "comp": "AutoContinueHost"
+  },
+  {
+   "line": 7001,
+   "fn": "apiPost",
+   "target": "API.autoContDecide",
+   "comp": "AutoContinueHost"
+  },
+  {
+   "line": 7016,
+   "fn": "apiPost",
+   "target": "API.autoContDecide",
+   "comp": "AutoContinueHost"
+  },
+  {
+   "line": 7120,
+   "fn": "apiGet",
+   "target": "API.models",
+   "comp": "SettingsPage"
+  },
+  {
+   "line": 7130,
+   "fn": "apiPost",
+   "target": "API.browseDir",
+   "comp": "SettingsPage"
+  },
+  {
+   "line": 7141,
+   "fn": "apiPost",
+   "target": "API.pickDir",
+   "comp": "SettingsPage"
+  },
+  {
+   "line": 7244,
+   "fn": "apiGet",
+   "target": "API.config",
+   "comp": "SettingsPage"
+  },
+  {
+   "line": 7252,
+   "fn": "apiGet",
+   "target": "API.updateCheck",
+   "comp": "SettingsPage"
+  },
+  {
+   "line": 7318,
+   "fn": "apiGet",
+   "target": "API.updateCheck",
+   "comp": "setMany"
+  },
+  {
+   "line": 7324,
+   "fn": "apiPost",
+   "target": "API.update",
+   "comp": "setMany"
+  },
+  {
+   "line": 7336,
+   "fn": "apiGet",
+   "target": "API.config",
+   "comp": "setMany"
+  },
+  {
+   "line": 7369,
+   "fn": "apiGet",
+   "target": "API.semanticDeepDetect",
+   "comp": "setMany"
+  },
+  {
+   "line": 7432,
+   "fn": "apiPost",
+   "target": "API.semanticEmit",
+   "comp": "setMany"
+  },
+  {
+   "line": 7536,
+   "fn": "apiPost",
+   "target": "API.semanticDownload",
+   "comp": "setMany"
+  },
+  {
+   "line": 7539,
+   "fn": "apiPost",
+   "target": "API.semanticDownload",
+   "comp": "setMany"
+  },
+  {
+   "line": 7937,
+   "fn": "apiGet",
+   "target": "API.config",
+   "comp": "apply"
+  },
+  {
+   "line": 8053,
+   "fn": "apiGet",
+   "target": "API.updateCheck",
+   "comp": "apply"
+  },
+  {
+   "line": 8104,
+   "fn": "apiGet",
+   "target": "API.notices",
+   "comp": "apply"
+  },
+  {
+   "line": 8125,
+   "fn": "apiGet",
+   "target": "API.semanticDeepDetect",
+   "comp": "apply"
+  },
+  {
+   "line": 8142,
+   "fn": "apiGet",
+   "target": "API.state",
+   "comp": "apply"
+  }
+ ],
+ "routeLiterals": [],
+ "compRanges": [
+  {
+   "name": "(module-scope)",
+   "start": 1,
+   "end": 13
+  },
+  {
+   "name": "module",
+   "start": 14,
+   "end": 14
+  },
+  {
+   "name": "exports",
+   "start": 15,
+   "end": 15
+  },
+  {
+   "name": "React",
+   "start": 16,
+   "end": 16
+  },
+  {
+   "name": "h",
+   "start": 17,
+   "end": 21
+  },
+  {
+   "name": "createPortal",
+   "start": 22,
+   "end": 25
+  },
+  {
+   "name": "kxPortal",
+   "start": 26,
+   "end": 29
+  },
+  {
+   "name": "useState",
+   "start": 30,
+   "end": 30
+  },
+  {
+   "name": "useEffect",
+   "start": 31,
+   "end": 31
+  },
+  {
+   "name": "useReducer",
+   "start": 32,
+   "end": 32
+  },
+  {
+   "name": "useRef",
+   "start": 33,
+   "end": 35
+  },
+  {
+   "name": "listeners",
+   "start": 36,
+   "end": 36
+  },
+  {
+   "name": "panelOpen",
+   "start": 37,
+   "end": 37
+  },
+  {
+   "name": "panelClosing",
+   "start": 38,
+   "end": 38
+  },
+  {
+   "name": "closeTimer",
+   "start": 39,
+   "end": 40
+  },
+  {
+   "name": "PIN_KEY",
+   "start": 41,
+   "end": 41
+  },
+  {
+   "name": "pinned",
+   "start": 42,
+   "end": 44
+  },
+  {
+   "name": "GEOM_KEY",
+   "start": 45,
+   "end": 51
+  },
+  {
+   "name": "POS_KEY",
+   "start": 52,
+   "end": 52
+  },
+  {
+   "name": "PANEL_POS_VALUES",
+   "start": 53,
+   "end": 53
+  },
+  {
+   "name": "panelPos",
+   "start": 54,
+   "end": 60
+  },
+  {
+   "name": "DEFAULT_W",
+   "start": 61,
+   "end": 61
+  },
+  {
+   "name": "DEFAULT_H",
+   "start": 62,
+   "end": 62
+  },
+  {
+   "name": "DEFAULT_GAP",
+   "start": 63,
+   "end": 64
+  },
+  {
+   "name": "entryButtonRect",
+   "start": 65,
+   "end": 71
+  },
+  {
+   "name": "defaultGeom",
+   "start": 72,
+   "end": 88
+  },
+  {
+   "name": "avoidCoveringEntry",
+   "start": 89,
+   "end": 100
+  },
+  {
+   "name": "geom",
+   "start": 101,
+   "end": 101
+  },
+  {
+   "name": "clampGeom",
+   "start": 102,
+   "end": 113
+  },
+  {
+   "name": "loadGeom",
+   "start": 114,
+   "end": 120
+  },
+  {
+   "name": "persistGeom",
+   "start": 121,
+   "end": 122
+  },
+  {
+   "name": "parseCssColor",
+   "start": 123,
+   "end": 133
+  },
+  {
+   "name": "emit",
+   "start": 134,
+   "end": 137
+  },
+  {
+   "name": "panelTab",
+   "start": 138,
+   "end": 138
+  },
+  {
+   "name": "setPanelTab",
+   "start": 139,
+   "end": 142
+  },
+  {
+   "name": "surfacesRefreshHook",
+   "start": 143,
+   "end": 143
+  },
+  {
+   "name": "setSurfacesRefreshHook",
+   "start": 144,
+   "end": 144
+  },
+  {
+   "name": "controller",
+   "start": 145,
+   "end": 201
+  },
+  {
+   "name": "I18N",
+   "start": 202,
+   "end": 738
+  },
+  {
+   "name": "locale",
+   "start": 739,
+   "end": 739
+  },
+  {
+   "name": "localeMode",
+   "start": 740,
+   "end": 740
+  },
+  {
+   "name": "sysLocale",
+   "start": 741,
+   "end": 741
+  },
+  {
+   "name": "applyLocalePref",
+   "start": 742,
+   "end": 747
+  },
+  {
+   "name": "sessions",
+   "start": 748,
+   "end": 748
+  },
+  {
+   "name": "remoteFace",
+   "start": 749,
+   "end": 750
+  },
+  {
+   "name": "extractSessionId",
+   "start": 751,
+   "end": 766
+  },
+  {
+   "name": "currentWs",
+   "start": 767,
+   "end": 780
+  },
+  {
+   "name": "currentRunningInfo",
+   "start": 781,
+   "end": 803
+  },
+  {
+   "name": "runningOfSession",
+   "start": 804,
+   "end": 818
+  },
+  {
+   "name": "mainViewSessionIdClient",
+   "start": 819,
+   "end": 839
+  },
+  {
+   "name": "currentSessionIdClient",
+   "start": 840,
+   "end": 842
+  },
+  {
+   "name": "amCtzValue",
+   "start": 843,
+   "end": 845
+  },
+  {
+   "name": "amReqId",
+   "start": 846,
+   "end": 848
+  },
+  {
+   "name": "fontScale",
+   "start": 849,
+   "end": 849
+  },
+  {
+   "name": "FONT_SCALES",
+   "start": 850,
+   "end": 851
+  },
+  {
+   "name": "DEFAULT_PROMPT_LAYERS_CLIENT",
+   "start": 852,
+   "end": 875
+  },
+  {
+   "name": "FONT_SCALE_VALUES",
+   "start": 876,
+   "end": 876
+  },
+  {
+   "name": "accentTheme",
+   "start": 877,
+   "end": 877
+  },
+  {
+   "name": "graphDensity",
+   "start": 878,
+   "end": 878
+  },
+  {
+   "name": "ACCENT_VALUES",
+   "start": 879,
+   "end": 885
+  },
+  {
+   "name": "localeListeners",
+   "start": 886,
+   "end": 886
+  },
+  {
+   "name": "t",
+   "start": 887,
+   "end": 887
+  },
+  {
+   "name": "setLocale",
+   "start": 888,
+   "end": 888
+  },
+  {
+   "name": "onLocale",
+   "start": 889,
+   "end": 890
+  },
+  {
+   "name": "hostAway",
+   "start": 891,
+   "end": 891
+  },
+  {
+   "name": "hostAwayReady",
+   "start": 892,
+   "end": 892
+  },
+  {
+   "name": "autoPopupEnabled",
+   "start": 893,
+   "end": 893
+  },
+  {
+   "name": "isAway",
+   "start": 894,
+   "end": 901
+  },
+  {
+   "name": "CHANGELOG",
+   "start": 902,
+   "end": 1348
+  },
+  {
+   "name": "dialogListeners",
+   "start": 1349,
+   "end": 1349
+  },
+  {
+   "name": "dialogState",
+   "start": 1350,
+   "end": 1350
+  },
+  {
+   "name": "dialogQueue",
+   "start": 1351,
+   "end": 1351
+  },
+  {
+   "name": "dialogPriority",
+   "start": 1352,
+   "end": 1363
+  },
+  {
+   "name": "dialogKey",
+   "start": 1364,
+   "end": 1373
+  },
+  {
+   "name": "notifyDialog",
+   "start": 1374,
+   "end": 1374
+  },
+  {
+   "name": "openDialog",
+   "start": 1375,
+   "end": 1384
+  },
+  {
+   "name": "tourNavigationEpoch",
+   "start": 1385,
+   "end": 1385
+  },
+  {
+   "name": "welcomeTourConfig",
+   "start": 1386,
+   "end": 1386
+  },
+  {
+   "name": "decodeWelcomeConfigPre",
+   "start": 1387,
+   "end": 1394
+  },
+  {
+   "name": "welcomeAutoAllowedPre",
+   "start": 1395,
+   "end": 1399
+  },
+  {
+   "name": "dismissWelcomeTourPre",
+   "start": 1400,
+   "end": 1409
+  },
+  {
+   "name": "rememberWelcomeConfigPre",
+   "start": 1410,
+   "end": 1415
+  },
+  {
+   "name": "installTourFocusPre",
+   "start": 1416,
+   "end": 1440
+  },
+  {
+   "name": "openManualWelcomeTourPre",
+   "start": 1441,
+   "end": 1456
+  },
+  {
+   "name": "target",
+   "start": 1457,
+   "end": 1472
+  },
+  {
+   "name": "v",
+   "start": 1473,
+   "end": 1504
+  },
+  {
+   "name": "wantChangelog",
+   "start": 1505,
+   "end": 1541
+  },
+  {
+   "name": "closeDialog",
+   "start": 1542,
+   "end": 1542
+  },
+  {
+   "name": "onDialog",
+   "start": 1543,
+   "end": 1547
+  },
+  {
+   "name": "cmpVersion",
+   "start": 1548,
+   "end": 1556
+  },
+  {
+   "name": "changelogBetween",
+   "start": 1557,
+   "end": 1569
+  },
+  {
+   "name": "OLD_LS",
+   "start": 1570,
+   "end": 1570
+  },
+  {
+   "name": "doomed",
+   "start": 1571,
+   "end": 1587
+  },
+  {
+   "name": "API",
+   "start": 1588,
+   "end": 1645
+  },
+  {
+   "name": "query",
+   "start": 1646,
+   "end": 1669
+  },
+  {
+   "name": "saveConfigPatch",
+   "start": 1670,
+   "end": 1694
+  },
+  {
+   "name": "configOf",
+   "start": 1695,
+   "end": 1699
+  },
+  {
+   "name": "refreshSem",
+   "start": 1700,
+   "end": 1708
+  },
+  {
+   "name": "CSS",
+   "start": 1709,
+   "end": 2275
+  },
+  {
+   "name": "STYLE_ID",
+   "start": 2276,
+   "end": 2276
+  },
+  {
+   "name": "ensureStyle",
+   "start": 2277,
+   "end": 2286
+  },
+  {
+   "name": "useTick",
+   "start": 2287,
+   "end": 2288
+  },
+  {
+   "name": "Banner",
+   "start": 2289,
+   "end": 2292
+  },
+  {
+   "name": "Card",
+   "start": 2293,
+   "end": 2309
+  },
+  {
+   "name": "KANBAN_TONES",
+   "start": 2310,
+   "end": 2325
+  },
+  {
+   "name": "KANBAN_ZOOM_KEY",
+   "start": 2326,
+   "end": 2326
+  },
+  {
+   "name": "KANBAN_COL_KEY",
+   "start": 2327,
+   "end": 2327
+  },
+  {
+   "name": "KANBAN_LAYOUT_KEY",
+   "start": 2328,
+   "end": 2329
+  },
+  {
+   "name": "readLsNum",
+   "start": 2330,
+   "end": 2332
+  },
+  {
+   "name": "writeLs",
+   "start": 2333,
+   "end": 2346
+  },
+  {
+   "name": "wbStripComment",
+   "start": 2347,
+   "end": 2348
+  },
+  {
+   "name": "wbStripPrefix",
+   "start": 2349,
+   "end": 2355
+  },
+  {
+   "name": "wbStripMarkup",
+   "start": 2356,
+   "end": 2365
+  },
+  {
+   "name": "wbCleanLines",
+   "start": 2366,
+   "end": 2375
+  },
+  {
+   "name": "wbCleanTitle",
+   "start": 2376,
+   "end": 2386
+  },
+  {
+   "name": "wbShape",
+   "start": 2387,
+   "end": 2419
+  },
+  {
+   "name": "wbLaneTone",
+   "start": 2420,
+   "end": 2435
+  },
+  {
+   "name": "wbFullCache",
+   "start": 2436,
+   "end": 2436
+  },
+  {
+   "name": "useCardFull",
+   "start": 2437,
+   "end": 2471
+  },
+  {
+   "name": "KanbanDrawerBody",
+   "start": 2472,
+   "end": 2478
+  },
+  {
+   "name": "KanbanCard",
+   "start": 2479,
+   "end": 2528
+  },
+  {
+   "name": "KanbanBoard",
+   "start": 2529,
+   "end": 2668
+  },
+  {
+   "name": "KX_LANE_COLOR",
+   "start": 2669,
+   "end": 2676
+  },
+  {
+   "name": "kxLaneColor",
+   "start": 2677,
+   "end": 2679
+  },
+  {
+   "name": "kxBadge",
+   "start": 2680,
+   "end": 2695
+  },
+  {
+   "name": "KanbanMatrixCard",
+   "start": 2696,
+   "end": 2742
+  },
+  {
+   "name": "KanbanView",
+   "start": 2743,
+   "end": 2963
+  },
+  {
+   "name": "WBG_NODE_W",
+   "start": 2964,
+   "end": 2964
+  },
+  {
+   "name": "WBG_NODE_H",
+   "start": 2965,
+   "end": 2965
+  },
+  {
+   "name": "WBG_GAP_X",
+   "start": 2966,
+   "end": 2966
+  },
+  {
+   "name": "WBG_GAP_Y",
+   "start": 2967,
+   "end": 2967
+  },
+  {
+   "name": "WBG_PAD",
+   "start": 2968,
+   "end": 2968
+  },
+  {
+   "name": "WBG_ZOOM_KEY",
+   "start": 2969,
+   "end": 2969
+  },
+  {
+   "name": "WBG_PAN_KEY",
+   "start": 2970,
+   "end": 2978
+  },
+  {
+   "name": "WBG_COL_CAP",
+   "start": 2979,
+   "end": 2979
+  },
+  {
+   "name": "WBG_MIN_ZOOM",
+   "start": 2980,
+   "end": 2980
+  },
+  {
+   "name": "WBG_HDR_H",
+   "start": 2981,
+   "end": 2990
+  },
+  {
+   "name": "wbLayout",
+   "start": 2991,
+   "end": 3055
+  },
+  {
+   "name": "WbgNode",
+   "start": 3056,
+   "end": 3122
+  },
+  {
+   "name": "WhiteboardGraphView",
+   "start": 3123,
+   "end": 3350
+  },
+  {
+   "name": "Loading",
+   "start": 3351,
+   "end": 3356
+  },
+  {
+   "name": "PinIcon",
+   "start": 3357,
+   "end": 3370
+  },
+  {
+   "name": "AnimatedDisclosure",
+   "start": 3371,
+   "end": 3394
+  },
+  {
+   "name": "SidebarButton",
+   "start": 3395,
+   "end": 3406
+  },
+  {
+   "name": "fmtSize",
+   "start": 3407,
+   "end": 3412
+  },
+  {
+   "name": "GreetingCard",
+   "start": 3413,
+   "end": 3530
+  },
+  {
+   "name": "PySetupWizard",
+   "start": 3531,
+   "end": 3612
+  },
+  {
+   "name": "OverviewTab",
+   "start": 3613,
+   "end": 3710
+  },
+  {
+   "name": "RefineTab",
+   "start": 3711,
+   "end": 3837
+  },
+  {
+   "name": "LogsTab",
+   "start": 3838,
+   "end": 3895
+  },
+  {
+   "name": "FoldableLogs",
+   "start": 3896,
+   "end": 3915
+  },
+  {
+   "name": "pathName",
+   "start": 3916,
+   "end": 3919
+  },
+  {
+   "name": "stageLabel",
+   "start": 3920,
+   "end": 3925
+  },
+  {
+   "name": "whyNotPromotable",
+   "start": 3926,
+   "end": 3957
+  },
+  {
+   "name": "RulesEditPanel",
+   "start": 3958,
+   "end": 4053
+  },
+  {
+   "name": "MemoryHubTab",
+   "start": 4054,
+   "end": 4279
+  },
+  {
+   "name": "StorageTab",
+   "start": 4280,
+   "end": 4460
+  },
+  {
+   "name": "migOutPlaceholder",
+   "start": 4461,
+   "end": 4461
+  },
+  {
+   "name": "migRows",
+   "start": 4462,
+   "end": 4514
+  },
+  {
+   "name": "NotesTab",
+   "start": 4515,
+   "end": 4555
+  },
+  {
+   "name": "autoState",
+   "start": 4556,
+   "end": 4560
+  },
+  {
+   "name": "continueFlowBusy",
+   "start": 4561,
+   "end": 4564
+  },
+  {
+   "name": "lastRefreshSessionId",
+   "start": 4565,
+   "end": 4565
+  },
+  {
+   "name": "continueCreateArgs",
+   "start": 4566,
+   "end": 4697
+  },
+  {
+   "name": "PlanTab",
+   "start": 4698,
+   "end": 4980
+  },
+  {
+   "name": "ReflectionsTab",
+   "start": 4981,
+   "end": 5037
+  },
+  {
+   "name": "SearchTab",
+   "start": 5038,
+   "end": 5088
+  },
+  {
+   "name": "graphKeywords",
+   "start": 5089,
+   "end": 5091
+  },
+  {
+   "name": "WorkspaceGraph",
+   "start": 5092,
+   "end": 5191
+  },
+  {
+   "name": "frac",
+   "start": 5192,
+   "end": 5192
+  },
+  {
+   "name": "seg",
+   "start": 5193,
+   "end": 5244
+  },
+  {
+   "name": "x",
+   "start": 5245,
+   "end": 5245
+  },
+  {
+   "name": "y",
+   "start": 5246,
+   "end": 5300
+  },
+  {
+   "name": "alive",
+   "start": 5301,
+   "end": 5301
+  },
+  {
+   "name": "load",
+   "start": 5302,
+   "end": 5312
+  },
+  {
+   "name": "iv",
+   "start": 5313,
+   "end": 5354
+  },
+  {
+   "name": "m",
+   "start": 5355,
+   "end": 5355
+  },
+  {
+   "name": "body",
+   "start": 5356,
+   "end": 5450
+  },
+  {
+   "name": "QUADRANT_I18N",
+   "start": 5451,
+   "end": 5451
+  },
+  {
+   "name": "QUADRANT_STYLE",
+   "start": 5452,
+   "end": 5458
+  },
+  {
+   "name": "CalendarTab",
+   "start": 5459,
+   "end": 5673
+  },
+  {
+   "name": "TOOL_LABEL",
+   "start": 5674,
+   "end": 5674
+  },
+  {
+   "name": "ConnectTab",
+   "start": 5675,
+   "end": 5804
+  },
+  {
+   "name": "dragActive",
+   "start": 5805,
+   "end": 5805
+  },
+  {
+   "name": "startPointerDrag",
+   "start": 5806,
+   "end": 5833
+  },
+  {
+   "name": "TabScroller",
+   "start": 5834,
+   "end": 5884
+  },
+  {
+   "name": "MemoryTabBody",
+   "start": 5885,
+   "end": 5899
+  },
+  {
+   "name": "MEMORY_TABS",
+   "start": 5900,
+   "end": 5907
+  },
+  {
+   "name": "MemoryPageView",
+   "start": 5908,
+   "end": 5964
+  },
+  {
+   "name": "MemoryPanel",
+   "start": 5965,
+   "end": 6079
+  },
+  {
+   "name": "DebugCenter",
+   "start": 6080,
+   "end": 6289
+  },
+  {
+   "name": "DialogHost",
+   "start": 6290,
+   "end": 6905
+  },
+  {
+   "name": "STYLE_IDS",
+   "start": 6906,
+   "end": 6906
+  },
+  {
+   "name": "LOCALE_IDS_LIST",
+   "start": 6907,
+   "end": 6911
+  },
+  {
+   "name": "AutoContinueHost",
+   "start": 6912,
+   "end": 7039
+  },
+  {
+   "name": "PROMPT_SECTION_TEXT",
+   "start": 7040,
+   "end": 7062
+  },
+  {
+   "name": "SettingsPage",
+   "start": 7063,
+   "end": 7311
+  },
+  {
+   "name": "set",
+   "start": 7312,
+   "end": 7313
+  },
+  {
+   "name": "setMany",
+   "start": 7314,
+   "end": 7885
+  },
+  {
+   "name": "apply",
+   "start": 7886,
+   "end": 8249
+  }
+ ]
+}

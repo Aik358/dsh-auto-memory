@@ -81,7 +81,15 @@ ok(!/if \(wl\.window > 0\) \{/.test(CLI), 'B1-1 旧渲染门 `wl.window > 0` 已
 ok(/if \(wl && \(wl\.window > 0 \|\| wl\.at \|\| Object\.keys\(wl\)\.length\)\) \{/.test(CLI),
   'B1-2 新渲染门：有对象即渲染（未测出窗口也显示）')
 ok(/var hasWin = \(wl\.window \|\| 0\) > 0/.test(CLI), 'B1-3 hasWin 判据存在')
-ok(/hasWin \? h\('div', \{ style: \{ height: '6px'/.test(CLI), 'B1-4 无窗口时不画进度条（不显示假 0%）')
+// ⚠️ 2026-09-26（水位 v4）判据演进：进度条仍是 `hasWin ? ... : null` 门控（**不变量本体未变**：
+//   无窗口时绝不画进度条、不显示假 0%）。变的是条内结构 —— 现改为「位置容器 + 已用填充 + 插件阈值
+//   刻度 + 官方阈值实带」多层，首行由 `h('div', { style: { height: '6px'` 变为带 `data-dam-water-bar`
+//   与 `position: 'relative'` 的容器。故判据改写为「存在 data-dam-water-bar 容器，且它仍由 hasWin 门控」，
+//   既守住原事故不变量，又不锁死条内实现细节。
+ok(/data-dam-water-bar/.test(CLI) && /hasWin \? h\('div', \{ 'data-dam-water-bar': ''/.test(CLI),
+  'B1-4 无窗口时不画进度条（不显示假 0%）—— 进度条仍由 hasWin 门控')
+ok(/data-dam-official-band/.test(CLI) && /hasOff \? h\('div', \{ 'data-dam-official-band'/.test(CLI),
+  'B1-4b 官方压缩阈值实带：仅在测出窗口且 officialRatio>0 时绘制（不得显示假官方线）')
 ok(/t\('waterWindowUnknown'\)/.test(CLI) && /t\('waterWindowUnknownHint'\)/.test(CLI), 'B1-5 未测出窗口时给出说明与指引')
 for (const k of ['waterWindowUnknown', 'waterWindowUnknownHint']) {
   const n = (CLI.match(new RegExp('\\b' + k + ':', 'g')) || []).length

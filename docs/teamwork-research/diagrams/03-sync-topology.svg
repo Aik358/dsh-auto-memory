@@ -1,0 +1,102 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 900" width="1400" height="900" role="img" aria-label="同步拓扑与阈值示意图">
+<defs>
+  <marker id="arE" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#64748b"/></marker>
+  <marker id="arS" markerWidth="9" markerHeight="9" refX="1" refY="4.5" orient="auto"><path d="M9,0 L0,4.5 L9,9 z" fill="#64748b"/></marker>
+</defs>
+<rect x="0" y="0" width="1400" height="900" rx="0" fill="#ffffff" stroke="none" stroke-width="2"/>
+<text x="60" y="48" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="25" fill="#0f172a" font-weight="700">同步拓扑与阈值 · 四条通道的延迟预算</text>
+<text x="60" y="78" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="14" fill="#475569">横轴＝端到端延迟预算（对数刻度）· 延迟越紧的通道，载荷越小、冲突面越窄</text>
+<line x1="60" y1="92" x2="1340" y2="92" stroke="#cbd5e1" stroke-width="2"/>
+<text x="430" y="140" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#475569">延迟预算（对数刻度）</text>
+<line x1="430" y1="150" x2="1330" y2="150" stroke="#94a3b8" stroke-width="1"/>
+<line x1="496" y1="150" x2="496" y2="664" stroke="#eef2f7" stroke-width="1" stroke-dasharray="4 4"/>
+<line x1="496" y1="144" x2="496" y2="156" stroke="#94a3b8" stroke-width="1"/>
+<text x="496" y="176" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#475569" text-anchor="middle">100ms</text>
+<line x1="717" y1="150" x2="717" y2="664" stroke="#eef2f7" stroke-width="1" stroke-dasharray="4 4"/>
+<line x1="717" y1="144" x2="717" y2="156" stroke="#94a3b8" stroke-width="1"/>
+<text x="717" y="176" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#475569" text-anchor="middle">1s</text>
+<line x1="938" y1="150" x2="938" y2="664" stroke="#eef2f7" stroke-width="1" stroke-dasharray="4 4"/>
+<line x1="938" y1="144" x2="938" y2="156" stroke="#94a3b8" stroke-width="1"/>
+<text x="938" y="176" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#475569" text-anchor="middle">10s</text>
+<line x1="1109" y1="150" x2="1109" y2="664" stroke="#eef2f7" stroke-width="1" stroke-dasharray="4 4"/>
+<line x1="1109" y1="144" x2="1109" y2="156" stroke="#94a3b8" stroke-width="1"/>
+<text x="1109" y="176" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#475569" text-anchor="middle">60s</text>
+<line x1="1263" y1="150" x2="1263" y2="664" stroke="#eef2f7" stroke-width="1" stroke-dasharray="4 4"/>
+<line x1="1263" y1="144" x2="1263" y2="156" stroke="#94a3b8" stroke-width="1"/>
+<text x="1263" y="176" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#475569" text-anchor="middle">5min</text>
+<line x1="1330" y1="150" x2="1330" y2="664" stroke="#eef2f7" stroke-width="1" stroke-dasharray="4 4"/>
+<line x1="1330" y1="144" x2="1330" y2="156" stroke="#94a3b8" stroke-width="1"/>
+<text x="1330" y="176" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#475569" text-anchor="end">10min</text>
+<rect x="80" y="190" width="1260" height="104" rx="12" fill="#ffffff" stroke="#e2e8f0" stroke-width="2"/>
+<rect x="80" y="190" width="8" height="104" rx="4" fill="#dcfce7" stroke="none" stroke-width="2"/>
+<text x="104" y="216" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="15" fill="#334155" font-weight="700">① 实时通道（状态 / B 型短事件）</text>
+<text x="104" y="236" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#475569">WebSocket 长连 + 心跳 15s</text>
+<text x="104" y="262" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#475569">载荷：状态位、在线态、索引就绪、短事件（≤8KB）</text>
+<text x="104" y="282" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#475569">语义：最后写入胜（LWW），允许丢中间态</text>
+<rect x="430" y="246" width="890" height="6" rx="3" fill="#f1f5f9" stroke="none" stroke-width="2"/>
+<rect x="430" y="246" width="287" height="6" rx="3" fill="#16a34a" stroke="none" stroke-width="2"/>
+<text x="430" y="282" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#16a34a" font-weight="700">预算 ≤1s</text>
+<text x="910" y="282" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#94a3b8">该通道的写入语义与阈值见下方卡片，降级顺序为 ①→②→④。</text>
+<rect x="80" y="310" width="1260" height="104" rx="12" fill="#ffffff" stroke="#e2e8f0" stroke-width="2"/>
+<rect x="80" y="310" width="8" height="104" rx="4" fill="#dbeafe" stroke="none" stroke-width="2"/>
+<text x="104" y="336" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="15" fill="#334155" font-weight="700">② 秒级通道（内容增量 · 字段级补丁）</text>
+<text x="104" y="356" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#475569">HTTP 批量 + 字段级 diff</text>
+<text x="104" y="382" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#475569">载荷：笔记 / 规则 / 白板 / 技能条目的字段增量</text>
+<text x="104" y="402" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#475569">语义：字段级合并（同字段 LWW，不同字段并存）</text>
+<rect x="430" y="366" width="890" height="6" rx="3" fill="#f1f5f9" stroke="none" stroke-width="2"/>
+<rect x="430" y="366" width="508" height="6" rx="3" fill="#2563eb" stroke="none" stroke-width="2"/>
+<text x="430" y="402" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#2563eb" font-weight="700">预算 ≤10s</text>
+<text x="910" y="402" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#94a3b8">该通道的写入语义与阈值见下方卡片，降级顺序为 ①→②→④。</text>
+<rect x="80" y="430" width="1260" height="104" rx="12" fill="#ffffff" stroke="#e2e8f0" stroke-width="2"/>
+<rect x="80" y="430" width="8" height="104" rx="4" fill="#ede9fe" stroke="none" stroke-width="2"/>
+<text x="104" y="456" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="15" fill="#334155" font-weight="700">③ 异步通道（向量与派生索引）</text>
+<text x="104" y="476" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#475569">定时任务 + 服务端向量集合</text>
+<text x="104" y="502" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#475569">载荷：嵌入向量、Tier-0 目录、技能索引、统计</text>
+<text x="104" y="522" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#475569">语义：可重建的派生数据，冲突以重算收敛</text>
+<rect x="430" y="486" width="890" height="6" rx="3" fill="#f1f5f9" stroke="none" stroke-width="2"/>
+<rect x="430" y="486" width="833" height="6" rx="3" fill="#7c3aed" stroke="none" stroke-width="2"/>
+<text x="430" y="522" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#7c3aed" font-weight="700">预算 ≤5min</text>
+<text x="910" y="522" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#94a3b8">该通道的写入语义与阈值见下方卡片，降级顺序为 ①→②→④。</text>
+<rect x="80" y="550" width="1260" height="104" rx="12" fill="#ffffff" stroke="#e2e8f0" stroke-width="2"/>
+<rect x="80" y="550" width="8" height="104" rx="4" fill="#f1f5f9" stroke="none" stroke-width="2"/>
+<text x="104" y="576" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="15" fill="#334155" font-weight="700">④ 离线补传（断网恢复）</text>
+<text x="104" y="596" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#475569">本地队列 + 增量锚点</text>
+<text x="104" y="622" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#475569">载荷：离线期间累积的写入 op（按 actor 顺序）</text>
+<text x="104" y="642" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#475569">语义：以最后确认版本为锚点，逐段补传</text>
+<rect x="430" y="606" width="890" height="6" rx="3" fill="#f1f5f9" stroke="none" stroke-width="2"/>
+<rect x="430" y="606" width="900" height="6" rx="3" fill="#64748b" stroke="none" stroke-width="2"/>
+<text x="430" y="642" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#64748b" font-weight="700">预算 无上限</text>
+<text x="910" y="642" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#94a3b8">该通道的写入语义与阈值见下方卡片，降级顺序为 ①→②→④。</text>
+<rect x="80" y="690" width="300" height="110" rx="12" fill="#ffffff" stroke="#e2e8f0" stroke-width="2"/>
+<text x="94" y="714" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="14" fill="#334155" font-weight="700">水位与降级阈值</text>
+<text x="94" y="738" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#475569">队列 &gt; 60% → 实时降级为秒级</text>
+<text x="94" y="760" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#475569">&gt; 85% → 仅保留控制消息</text>
+<text x="94" y="782" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#475569">本地写入永不阻塞</text>
+<rect x="395" y="690" width="300" height="110" rx="12" fill="#ffffff" stroke="#e2e8f0" stroke-width="2"/>
+<text x="409" y="714" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="14" fill="#334155" font-weight="700">时钟与顺序</text>
+<text x="409" y="738" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#475569">服务端 HLC 为权威时基</text>
+<text x="409" y="760" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#475569">客户端时钟仅供展示</text>
+<text x="409" y="782" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#475569">乱序到达按 HLC 重排后入库</text>
+<rect x="710" y="690" width="300" height="110" rx="12" fill="#ffffff" stroke="#e2e8f0" stroke-width="2"/>
+<text x="724" y="714" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="14" fill="#334155" font-weight="700">背压与重试</text>
+<text x="724" y="738" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#475569">单设备并发上行上限 4</text>
+<text x="724" y="760" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#475569">连续 3 次失败 → 指数退避</text>
+<text x="724" y="782" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#475569">1s 起、30s 封顶，成功后复位</text>
+<rect x="1025" y="690" width="300" height="110" rx="12" fill="#ffffff" stroke="#e2e8f0" stroke-width="2"/>
+<text x="1039" y="714" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="14" fill="#334155" font-weight="700">可观测性</text>
+<text x="1039" y="738" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#475569">上报 P50 / P95 / 积压 / 失败率</text>
+<text x="1039" y="760" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#475569">P95 超预算 2 倍即告警</text>
+<text x="1039" y="782" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#475569">积压 &gt; 1000 条进入降级提示</text>
+<rect x="80" y="812" width="1260" height="44" rx="10" fill="#ffffff" stroke="#e2e8f0" stroke-width="2"/>
+<rect x="96" y="826" width="18" height="16" rx="4" fill="#dcfce7" stroke="#16a34a" stroke-width="2"/>
+<text x="120" y="839" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#475569">实时通道（最紧预算）</text>
+<rect x="300" y="826" width="18" height="16" rx="4" fill="#dbeafe" stroke="#2563eb" stroke-width="2"/>
+<text x="324" y="839" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#475569">秒级通道（字段级）</text>
+<rect x="500" y="826" width="18" height="16" rx="4" fill="#ede9fe" stroke="#7c3aed" stroke-width="2"/>
+<text x="524" y="839" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#475569">异步通道（可重建派生）</text>
+<rect x="736" y="826" width="18" height="16" rx="4" fill="#f1f5f9" stroke="#64748b" stroke-width="2"/>
+<text x="760" y="839" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#475569">离线补传（无上限）</text>
+<line x1="946" y1="834" x2="996" y2="834" stroke="#e2e8f0" stroke-width="6"/>
+<text x="1006" y="839" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#475569">＝ 延迟预算条（长度按对数刻度）</text>
+<text x="1340" y="886" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#94a3b8" text-anchor="end">dsh-auto-memory · teamwork research · 2026-09</text>
+</svg>

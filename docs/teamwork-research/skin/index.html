@@ -1,0 +1,2288 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-skin="default" data-theme-mode="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>dsh-auto-memory · Teamwork 企业版皮肤原型</title>
+<meta name="description" content="dsh-auto-memory Teamwork 企业版皮肤原型：单文件、零依赖、四套主题 token、10 个页面。">
+<!-- 零外部依赖：无 CDN、无外链字体、无构建产物，双击本文件即可在浏览器中打开。 -->
+<style>
+/* =====================================================================
+   0. 皮肤 token 根命名空间（--skin-*）
+   规则：本文件中所有组件样式只消费 var(--skin-*)，组件层不出现字面色值
+   （#hex / rgb() / hsl()）；换肤只改 token，不改组件。
+   ===================================================================== */
+:root{
+  --skin-version:"1.0.0";
+  /* 间距刻度 */
+  --skin-space-1:4px;  --skin-space-2:8px;  --skin-space-3:12px; --skin-space-4:16px;
+  --skin-space-5:20px; --skin-space-6:24px; --skin-space-7:32px; --skin-space-8:48px;
+  /* 圆角刻度 */
+  --skin-radius-xs:4px; --skin-radius-sm:8px; --skin-radius-md:12px; --skin-radius-lg:16px;
+  --skin-radius-xl:20px; --skin-radius-pill:999px; --skin-radius-card:14px;
+  /* 字体 */
+  --skin-font-family:"PingFang SC","Microsoft YaHei","Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+  --skin-font-family-heading:var(--skin-font-family);
+  --skin-font-mono:"JetBrains Mono","SFMono-Regular",Consolas,"Liberation Mono",monospace;
+  --skin-font-size-xs:11px; --skin-font-size-sm:12px; --skin-font-size-md:13px; --skin-font-size-lg:15px;
+  --skin-font-size-xl:18px; --skin-font-size-2xl:22px; --skin-font-size-3xl:28px;
+  --skin-line-height:1.65; --skin-line-height-tight:1.28;
+  --skin-font-weight-normal:400; --skin-font-weight-medium:500; --skin-font-weight-bold:650;
+  --skin-letter-spacing:0;
+  /* 描边 */
+  --skin-border-width-card:1px; --skin-border-width-strong:1px; --skin-focus-ring-width:2px; --skin-focus-ring-offset:2px;
+  /* 阴影 */
+  --skin-shadow-card:0 1px 2px rgba(23,32,60,.04), 0 10px 26px -18px rgba(23,32,60,.35);
+  --skin-shadow-pop:0 16px 40px -12px rgba(23,32,60,.28);
+  /* 动效 */
+  --skin-duration-instant:90ms; --skin-duration-fast:150ms; --skin-duration-base:220ms; --skin-duration-slow:360ms;
+  --skin-ease-standard:cubic-bezier(.2,.8,.2,1); --skin-ease-emphasized:cubic-bezier(.34,1.16,.64,1);
+  /* 布局与层级 */
+  --skin-sidebar-width:226px; --skin-topbar-height:64px; --skin-content-max:1380px;
+  --skin-z-sidebar:20; --skin-z-topbar:30; --skin-z-overlay:60;
+  --skin-opacity-disabled:.55;
+}
+/* ---- 主题包 1/4：default（DeepSeek 蓝紫 · 浅色底，对齐概念图基调） ---- */
+[data-skin="default"]{
+  --skin-color-bg-app:#eef1f8; --skin-color-bg-canvas:#f7f9fd;
+  --skin-color-surface:#ffffff; --skin-color-surface-2:#f4f7fd; --skin-color-surface-sunken:#e9eef8;
+  --skin-color-sidebar-bg:#eef1f8; --skin-color-sidebar-border:#e2e7f3; --skin-color-sidebar-brand:#4a5df9;
+  --skin-color-sidebar-item-bg-hover:#e3e9f6; --skin-color-sidebar-item-bg-active:#dce5fb;
+  --skin-color-sidebar-text:#3d4658; --skin-color-sidebar-text-muted:#7d879e; --skin-color-sidebar-text-active:#3a49d6;
+  --skin-color-border:#e3e8f4; --skin-color-border-strong:#ccd5ea;
+  --skin-color-text:#1b2333; --skin-color-text-muted:#5a6580; --skin-color-text-subtle:#8a94ab; --skin-color-text-inverse:#ffffff;
+  --skin-color-brand:#4a5df9; --skin-color-brand-strong:#3a49d6; --skin-color-brand-soft:#e8ecff;
+  --skin-color-brand-softer:#f2f5ff; --skin-color-brand-contrast:#ffffff;
+  --skin-color-success:#1f9d68; --skin-color-success-soft:#e4f6ee;
+  --skin-color-warning:#d9871a; --skin-color-warning-soft:#fdf1df;
+  --skin-color-danger:#d94a4a;  --skin-color-danger-soft:#fdeced;
+  --skin-color-info:#2f6fed;    --skin-color-info-soft:#e9f0ff;
+  --skin-color-focus-ring:#4a5df9; --skin-color-overlay:rgba(20,28,50,.42);
+  --skin-color-chart-track:#e6ebf7;
+  --skin-color-chart-1:#4a5df9; --skin-color-chart-2:#7e9bff; --skin-color-chart-3:#b9c9ff; --skin-color-chart-4:#dbe4ff;
+  --skin-gradient-banner:linear-gradient(120deg,#e7eeff 0%,#f3f7ff 48%,#e9f1ff 100%);
+  --skin-gradient-brand:linear-gradient(135deg,#5b6cff 0%,#3f52e8 100%);
+}
+/* ---- 主题包 2/4：enterprise-blue（律所/金融 · 低饱和深蓝 + 宋体标题） ---- */
+[data-skin="enterprise-blue"]{
+  --skin-radius-xs:3px; --skin-radius-sm:5px; --skin-radius-md:8px; --skin-radius-lg:10px;
+  --skin-radius-xl:12px; --skin-radius-card:8px;
+  --skin-font-family-heading:"Songti SC","SimSun","Source Han Serif SC","Noto Serif SC",var(--skin-font-family);
+  --skin-shadow-card:0 1px 1px rgba(16,28,48,.06), 0 6px 16px -14px rgba(16,28,48,.30);
+  --skin-color-bg-app:#eef1f5; --skin-color-bg-canvas:#f6f8fa;
+  --skin-color-surface:#ffffff; --skin-color-surface-2:#f2f5f8; --skin-color-surface-sunken:#e7ecf1;
+  --skin-color-sidebar-bg:#1e2b41; --skin-color-sidebar-border:#16222f; --skin-color-sidebar-brand:#c8a96b;
+  --skin-color-sidebar-item-bg-hover:#2a3b57; --skin-color-sidebar-item-bg-active:#32456a;
+  --skin-color-sidebar-text:#d7dfea; --skin-color-sidebar-text-muted:#93a2b8; --skin-color-sidebar-text-active:#ffffff;
+  --skin-color-border:#d9dfe7; --skin-color-border-strong:#b9c3d1;
+  --skin-color-text:#1a2433; --skin-color-text-muted:#4c5a70; --skin-color-text-subtle:#7b889c; --skin-color-text-inverse:#ffffff;
+  --skin-color-brand:#274a7a; --skin-color-brand-strong:#1b3559; --skin-color-brand-soft:#e6ecf5;
+  --skin-color-brand-softer:#f0f4fa; --skin-color-brand-contrast:#ffffff;
+  --skin-color-success:#2f7d5f; --skin-color-success-soft:#e7f2ec;
+  --skin-color-warning:#9a6b1f; --skin-color-warning-soft:#f8f1e2;
+  --skin-color-danger:#a33b3b;  --skin-color-danger-soft:#f7e9e9;
+  --skin-color-info:#2b5b91;    --skin-color-info-soft:#e8eef6;
+  --skin-color-focus-ring:#274a7a; --skin-color-overlay:rgba(14,22,36,.52);
+  --skin-color-chart-track:#e4e9ef;
+  --skin-color-chart-1:#274a7a; --skin-color-chart-2:#5b7ba6; --skin-color-chart-3:#9fb3cd; --skin-color-chart-4:#d3dceb;
+  --skin-gradient-banner:linear-gradient(120deg,#e9eef6 0%,#f5f8fb 50%,#e5edf7 100%);
+  --skin-gradient-brand:linear-gradient(135deg,#31547f 0%,#1e3350 100%);
+}
+/* ---- 主题包 3/4：dark-pro（夜间/工程团队 · 深色专业） ---- */
+[data-skin="dark-pro"]{
+  --skin-font-family-heading:var(--skin-font-family);
+  --skin-shadow-card:0 1px 0 rgba(255,255,255,.03), 0 12px 30px -20px rgba(0,0,0,.95);
+  --skin-shadow-pop:0 20px 48px -16px rgba(0,0,0,.95);
+  --skin-color-bg-app:#0d1016; --skin-color-bg-canvas:#11151c;
+  --skin-color-surface:#161b24; --skin-color-surface-2:#1c222d; --skin-color-surface-sunken:#0b0e13;
+  --skin-color-sidebar-bg:#0b0e13; --skin-color-sidebar-border:#1f2733; --skin-color-sidebar-brand:#6c8bff;
+  --skin-color-sidebar-item-bg-hover:#1a212c; --skin-color-sidebar-item-bg-active:#212b3c;
+  --skin-color-sidebar-text:#c3ccda; --skin-color-sidebar-text-muted:#7c8798; --skin-color-sidebar-text-active:#a9beff;
+  --skin-color-border:#232b38; --skin-color-border-strong:#334052;
+  --skin-color-text:#e7ecf4; --skin-color-text-muted:#9aa5b8; --skin-color-text-subtle:#6d7889; --skin-color-text-inverse:#0d1016;
+  --skin-color-brand:#6c8bff; --skin-color-brand-strong:#8aa3ff; --skin-color-brand-soft:#1e2740;
+  --skin-color-brand-softer:#182031; --skin-color-brand-contrast:#0d1016;
+  --skin-color-success:#3ecf8e; --skin-color-success-soft:#12281f;
+  --skin-color-warning:#f0b34b; --skin-color-warning-soft:#2b2213;
+  --skin-color-danger:#f0706f;  --skin-color-danger-soft:#2c1717;
+  --skin-color-info:#58a6ff;    --skin-color-info-soft:#141f30;
+  --skin-color-focus-ring:#8aa3ff; --skin-color-overlay:rgba(4,6,10,.66);
+  --skin-color-chart-track:#242c3a;
+  --skin-color-chart-1:#6c8bff; --skin-color-chart-2:#4b62c9; --skin-color-chart-3:#334173; --skin-color-chart-4:#242c3a;
+  --skin-gradient-banner:linear-gradient(120deg,#1a2334 0%,#151c2a 52%,#1c2637 100%);
+  --skin-gradient-brand:linear-gradient(135deg,#7d99ff 0%,#4a63d8 100%);
+}
+/* ---- 主题包 4/4：a11y-contrast（无障碍 · 高对比 + 大字号 + 零动效） ---- */
+[data-skin="a11y-contrast"]{
+  --skin-font-size-xs:13px; --skin-font-size-sm:14px; --skin-font-size-md:16px; --skin-font-size-lg:18px;
+  --skin-font-size-xl:21px; --skin-font-size-2xl:26px; --skin-font-size-3xl:32px;
+  --skin-line-height:1.8; --skin-font-weight-medium:600; --skin-font-weight-bold:700;
+  --skin-radius-xs:4px; --skin-radius-sm:6px; --skin-radius-md:6px; --skin-radius-lg:8px;
+  --skin-radius-xl:8px; --skin-radius-card:6px;
+  --skin-border-width-card:2px; --skin-border-width-strong:2px; --skin-focus-ring-width:3px; --skin-focus-ring-offset:3px;
+  --skin-shadow-card:none; --skin-shadow-pop:none;
+  --skin-duration-instant:0ms; --skin-duration-fast:0ms; --skin-duration-base:0ms; --skin-duration-slow:0ms;
+  --skin-sidebar-width:252px;
+  --skin-color-bg-app:#ffffff; --skin-color-bg-canvas:#ffffff;
+  --skin-color-surface:#ffffff; --skin-color-surface-2:#f2f2f2; --skin-color-surface-sunken:#e6e6e6;
+  --skin-color-sidebar-bg:#ffffff; --skin-color-sidebar-border:#000000; --skin-color-sidebar-brand:#0b3fbf;
+  --skin-color-sidebar-item-bg-hover:#e6ecff; --skin-color-sidebar-item-bg-active:#d6e0ff;
+  --skin-color-sidebar-text:#111111; --skin-color-sidebar-text-muted:#333333; --skin-color-sidebar-text-active:#062a80;
+  --skin-color-border:#000000; --skin-color-border-strong:#000000;
+  --skin-color-text:#000000; --skin-color-text-muted:#1f1f1f; --skin-color-text-subtle:#333333; --skin-color-text-inverse:#ffffff;
+  --skin-color-brand:#0b3fbf; --skin-color-brand-strong:#062a80; --skin-color-brand-soft:#e8efff;
+  --skin-color-brand-softer:#f2f6ff; --skin-color-brand-contrast:#ffffff;
+  --skin-color-success:#0a6b3d; --skin-color-success-soft:#e4f4ec;
+  --skin-color-warning:#8a4b00; --skin-color-warning-soft:#fbf0e0;
+  --skin-color-danger:#a80000;  --skin-color-danger-soft:#fbe9e9;
+  --skin-color-info:#00429e;    --skin-color-info-soft:#e8eefb;
+  --skin-color-focus-ring:#0b3fbf; --skin-color-overlay:rgba(0,0,0,.72);
+  --skin-color-chart-track:#d0d0d0;
+  --skin-color-chart-1:#0b3fbf; --skin-color-chart-2:#7a1fa2; --skin-color-chart-3:#0a6b3d; --skin-color-chart-4:#8a4b00;
+  --skin-gradient-banner:linear-gradient(120deg,#eef2ff 0%,#ffffff 60%,#e9f0ff 100%);
+  --skin-gradient-brand:linear-gradient(135deg,#0b3fbf 0%,#062a80 100%);
+}
+/* ---- 暗色模式层：正交于主题包（形状 token 仍来自主题包，此处只换色） ---- */
+[data-theme-mode="dark"]{
+  --skin-color-bg-app:#0d1016; --skin-color-bg-canvas:#11151c;
+  --skin-color-surface:#161b24; --skin-color-surface-2:#1c222d; --skin-color-surface-sunken:#0b0e13;
+  --skin-color-sidebar-bg:#0b0e13; --skin-color-sidebar-border:#1f2733;
+  --skin-color-sidebar-item-bg-hover:#1a212c; --skin-color-sidebar-item-bg-active:#212b3c;
+  --skin-color-sidebar-text:#c3ccda; --skin-color-sidebar-text-muted:#7c8798; --skin-color-sidebar-text-active:#a9beff;
+  --skin-color-border:#232b38; --skin-color-border-strong:#334052;
+  --skin-color-text:#e7ecf4; --skin-color-text-muted:#9aa5b8; --skin-color-text-subtle:#6d7889; --skin-color-text-inverse:#0d1016;
+  --skin-color-brand:#6c8bff; --skin-color-brand-strong:#8aa3ff; --skin-color-brand-soft:#1e2740;
+  --skin-color-brand-softer:#182031; --skin-color-brand-contrast:#0d1016;
+  --skin-color-success:#3ecf8e; --skin-color-success-soft:#12281f;
+  --skin-color-warning:#f0b34b; --skin-color-warning-soft:#2b2213;
+  --skin-color-danger:#f0706f;  --skin-color-danger-soft:#2c1717;
+  --skin-color-info:#58a6ff;    --skin-color-info-soft:#141f30;
+  --skin-color-focus-ring:#8aa3ff; --skin-color-overlay:rgba(4,6,10,.66);
+  --skin-color-chart-track:#242c3a;
+  --skin-color-chart-1:#6c8bff; --skin-color-chart-2:#4b62c9; --skin-color-chart-3:#334173; --skin-color-chart-4:#242c3a;
+  --skin-gradient-banner:linear-gradient(120deg,#1a2334 0%,#151c2a 52%,#1c2637 100%);
+}
+/* 暗色层下的品牌色按主题包收敛（形状 token 来自主题包，此处只覆盖色相） */
+[data-theme-mode="dark"][data-skin="enterprise-blue"]{
+  --skin-color-sidebar-brand:#d8bd85; --skin-color-brand:#8aa6cf; --skin-color-brand-strong:#b3c6e2;
+  --skin-color-sidebar-text-active:#ffffff; --skin-color-focus-ring:#8aa6cf;
+}
+[data-theme-mode="dark"][data-skin="a11y-contrast"]{
+  --skin-color-brand:#7fb0ff; --skin-color-brand-strong:#a9c8ff; --skin-color-focus-ring:#ffd400;
+  --skin-color-sidebar-brand:#7fb0ff; --skin-color-sidebar-text-active:#a9c8ff;
+}
+/* =====================================================================
+   1. 基础与外壳布局
+   ===================================================================== */
+*,*::before,*::after{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0; background:var(--skin-color-bg-app); color:var(--skin-color-text);
+  font-family:var(--skin-font-family); font-size:var(--skin-font-size-md);
+  line-height:var(--skin-line-height); letter-spacing:var(--skin-letter-spacing);
+  -webkit-font-smoothing:antialiased;
+  transition:background-color var(--skin-duration-base) var(--skin-ease-standard),
+             color var(--skin-duration-base) var(--skin-ease-standard);
+}
+h1,h2,h3,h4{margin:0;font-family:var(--skin-font-family-heading);line-height:var(--skin-line-height-tight);font-weight:var(--skin-font-weight-bold)}
+p{margin:0}
+a{color:var(--skin-color-brand);text-decoration:none}
+:focus-visible{outline:var(--skin-focus-ring-width) solid var(--skin-color-focus-ring);outline-offset:var(--skin-focus-ring-offset)}
+.app{display:flex;min-height:100vh}
+/* 侧栏 */
+.sidebar{
+  position:fixed; inset:0 auto 0 0; width:var(--skin-sidebar-width);
+  background:var(--skin-color-sidebar-bg); border-right:var(--skin-border-width-card) solid var(--skin-color-sidebar-border);
+  display:flex; flex-direction:column; padding:var(--skin-space-5) var(--skin-space-3) var(--skin-space-4);
+  z-index:var(--skin-z-sidebar); overflow-y:auto;
+  transition:background-color var(--skin-duration-base) var(--skin-ease-standard);
+}
+.brand{display:flex;gap:var(--skin-space-3);align-items:center;padding:0 var(--skin-space-2) var(--skin-space-5)}
+.brand__logo{
+  width:38px;height:38px;flex:0 0 38px;border-radius:var(--skin-radius-md);
+  background:var(--skin-gradient-brand); color:var(--skin-color-brand-contrast);
+  display:flex;align-items:center;justify-content:center;
+  font-weight:var(--skin-font-weight-bold);font-size:var(--skin-font-size-lg);
+}
+.brand__name{font-family:var(--skin-font-family-heading);font-weight:var(--skin-font-weight-bold);font-size:var(--skin-font-size-lg);color:var(--skin-color-text)}
+.brand__slogan{font-size:var(--skin-font-size-sm);color:var(--skin-color-sidebar-text-muted)}
+.nav{display:flex;flex-direction:column;gap:2px;flex:1}
+.nav__group{margin-top:var(--skin-space-4);padding:0 var(--skin-space-2);font-size:var(--skin-font-size-xs);color:var(--skin-color-sidebar-text-muted);letter-spacing:.08em}
+.nav__item{
+  display:flex;align-items:center;gap:var(--skin-space-3);width:100%;text-align:left;
+  padding:9px var(--skin-space-3);border:0;border-radius:var(--skin-radius-sm);cursor:pointer;
+  background:transparent;color:var(--skin-color-sidebar-text);font-family:inherit;
+  font-size:var(--skin-font-size-md);font-weight:var(--skin-font-weight-medium);
+  transition:background-color var(--skin-duration-fast) var(--skin-ease-standard),
+             color var(--skin-duration-fast) var(--skin-ease-standard);
+}
+.nav__item:hover{background:var(--skin-color-sidebar-item-bg-hover)}
+.nav__item[aria-current="page"]{background:var(--skin-color-sidebar-item-bg-active);color:var(--skin-color-sidebar-text-active);font-weight:var(--skin-font-weight-bold)}
+.nav__icon{width:18px;text-align:center;font-size:var(--skin-font-size-lg);line-height:1}
+.sidebar__foot{margin-top:var(--skin-space-5);padding:var(--skin-space-3) var(--skin-space-2) 0;border-top:var(--skin-border-width-card) solid var(--skin-color-sidebar-border)}
+.sidebar__foot-title{font-weight:var(--skin-font-weight-bold);font-size:var(--skin-font-size-md)}
+.sidebar__foot-text{font-size:var(--skin-font-size-sm);color:var(--skin-color-sidebar-text-muted)}
+.dot{display:inline-block;width:7px;height:7px;border-radius:var(--skin-radius-pill);background:var(--skin-color-success);margin-right:6px}
+/* 主区 */
+.main{margin-left:var(--skin-sidebar-width);flex:1;min-width:0;display:flex;flex-direction:column}
+.topbar{
+  position:sticky;top:0;z-index:var(--skin-z-topbar);height:var(--skin-topbar-height);
+  display:flex;align-items:center;gap:var(--skin-space-4);
+  padding:0 var(--skin-space-6);background:var(--skin-color-surface);
+  border-bottom:var(--skin-border-width-card) solid var(--skin-color-border);
+}
+.search{position:relative;flex:1;max-width:600px}
+.search__input{
+  width:100%;height:38px;padding:0 68px 0 34px;font-family:inherit;text-overflow:ellipsis;
+  font-size:var(--skin-font-size-md);color:var(--skin-color-text);background:var(--skin-color-surface-2);
+  border:var(--skin-border-width-card) solid var(--skin-color-border);border-radius:var(--skin-radius-md);
+}
+.search__input::placeholder{color:var(--skin-color-text-subtle)}
+.search__icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--skin-color-text-subtle)}
+.search__kbd{
+  position:absolute;right:10px;top:50%;transform:translateY(-50%);
+  font-family:var(--skin-font-mono);font-size:var(--skin-font-size-xs);
+  color:var(--skin-color-text-subtle);border:var(--skin-border-width-card) solid var(--skin-color-border);
+  border-radius:var(--skin-radius-xs);padding:1px 5px;
+}
+.topbar__spacer{flex:1}
+.topbar__user{display:flex;align-items:center;gap:var(--skin-space-3);padding-left:var(--skin-space-4);border-left:var(--skin-border-width-card) solid var(--skin-color-border)}
+.avatar{width:36px;height:36px;border-radius:var(--skin-radius-pill);background:var(--skin-gradient-brand);color:var(--skin-color-brand-contrast);display:flex;align-items:center;justify-content:center;font-weight:var(--skin-font-weight-bold)}
+.user__name{font-weight:var(--skin-font-weight-bold)}
+.user__role{font-size:var(--skin-font-size-sm);color:var(--skin-color-text-muted)}
+.content{
+  padding:var(--skin-space-6) var(--skin-space-6) var(--skin-space-8);
+  max-width:var(--skin-content-max);width:100%;margin:0 auto;
+}
+.page{display:none;animation:page-in var(--skin-duration-base) var(--skin-ease-emphasized)}
+.page.is-active{display:block}
+@keyframes page-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+/* =====================================================================
+   2. 通用组件（全部只消费 --skin-* token）
+   ===================================================================== */
+.pagehead{display:flex;align-items:flex-start;gap:var(--skin-space-5);margin-bottom:var(--skin-space-5);flex-wrap:wrap}
+.pagehead__title{font-size:var(--skin-font-size-3xl)}
+.pagehead__sub{color:var(--skin-color-text-muted);margin-top:6px}
+.pagehead__aside{margin-left:auto;text-align:right;display:flex;flex-direction:column;gap:var(--skin-space-3);align-items:flex-end}
+.quote{color:var(--skin-color-text-subtle);font-size:var(--skin-font-size-sm);max-width:360px}
+.quote__src{display:block;margin-top:2px}
+/* 卡片 / 面板 */
+.card{
+  background:var(--skin-color-surface);border:var(--skin-border-width-card) solid var(--skin-color-border);
+  border-radius:var(--skin-radius-card);box-shadow:var(--skin-shadow-card);
+  transition:background-color var(--skin-duration-base) var(--skin-ease-standard),
+             border-color var(--skin-duration-base) var(--skin-ease-standard),
+             box-shadow var(--skin-duration-base) var(--skin-ease-standard);
+}
+.card--pad{padding:var(--skin-space-5)}
+.panel__head{display:flex;align-items:center;gap:var(--skin-space-3);padding:var(--skin-space-4) var(--skin-space-5);border-bottom:var(--skin-border-width-card) solid var(--skin-color-border)}
+.panel__title{font-size:var(--skin-font-size-lg);font-weight:var(--skin-font-weight-bold)}
+.panel__body{padding:var(--skin-space-5)}
+.panel__link{margin-left:auto;font-size:var(--skin-font-size-sm);color:var(--skin-color-brand);cursor:pointer;border:0;background:none;font-family:inherit}
+/* 栅格 */
+.grid{display:grid;gap:var(--skin-space-4)}
+.grid--4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.grid--3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.grid--2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.grid--main-aside{grid-template-columns:minmax(0,1.65fr) minmax(0,1fr);align-items:start}
+.grid--3col{grid-template-columns:minmax(0,252px) minmax(0,1fr) minmax(0,300px);align-items:start}
+.stack{display:flex;flex-direction:column;gap:var(--skin-space-4)}
+.stack--sm{gap:var(--skin-space-2)}
+.row{display:flex;align-items:center;gap:var(--skin-space-3)}
+.row--wrap{flex-wrap:wrap}
+.row--between{justify-content:space-between}
+.spacer{flex:1}
+/* 统计卡 */
+.stat{display:flex;flex-direction:column;gap:var(--skin-space-2);padding:var(--skin-space-4) var(--skin-space-5)}
+.stat__top{display:flex;align-items:center;gap:var(--skin-space-3)}
+.stat__icon{width:34px;height:34px;border-radius:var(--skin-radius-sm);display:flex;align-items:center;justify-content:center;background:var(--skin-color-brand-soft);color:var(--skin-color-brand);font-size:var(--skin-font-size-lg)}
+.stat__label{font-weight:var(--skin-font-weight-medium)}
+.stat__value{font-size:var(--skin-font-size-3xl);font-weight:var(--skin-font-weight-bold);font-family:var(--skin-font-family-heading)}
+.stat__desc{font-size:var(--skin-font-size-sm);color:var(--skin-color-text-muted)}
+.trend{font-size:var(--skin-font-size-sm);font-weight:var(--skin-font-weight-medium);border-radius:var(--skin-radius-pill);padding:1px 8px;background:var(--skin-color-success-soft);color:var(--skin-color-success)}
+.trend--warn{background:var(--skin-color-warning-soft);color:var(--skin-color-warning)}
+.trend--info{background:var(--skin-color-info-soft);color:var(--skin-color-info)}
+.trend--brand{background:var(--skin-color-brand-soft);color:var(--skin-color-brand)}
+/* 按钮 / 胶囊 / 徽标 */
+.btn{
+  display:inline-flex;align-items:center;gap:var(--skin-space-2);cursor:pointer;font-family:inherit;
+  font-size:var(--skin-font-size-md);font-weight:var(--skin-font-weight-medium);
+  padding:8px var(--skin-space-4);border-radius:var(--skin-radius-sm);
+  border:var(--skin-border-width-card) solid var(--skin-color-border);
+  background:var(--skin-color-surface);color:var(--skin-color-text);
+  transition:background-color var(--skin-duration-fast) var(--skin-ease-standard),
+             transform var(--skin-duration-fast) var(--skin-ease-standard),
+             border-color var(--skin-duration-fast) var(--skin-ease-standard);
+}
+.btn:hover{background:var(--skin-color-surface-2)}
+.btn:active{transform:translateY(1px)}
+.btn--primary{background:var(--skin-color-brand);border-color:var(--skin-color-brand);color:var(--skin-color-brand-contrast)}
+.btn--primary:hover{background:var(--skin-color-brand-strong);border-color:var(--skin-color-brand-strong)}
+.btn--ghost{background:transparent}
+.btn--sm{padding:5px var(--skin-space-3);font-size:var(--skin-font-size-sm)}
+.btn[disabled]{opacity:var(--skin-opacity-disabled);cursor:not-allowed}
+.chip{
+  display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border-radius:var(--skin-radius-pill);
+  font-size:var(--skin-font-size-sm);font-weight:var(--skin-font-weight-medium);
+  background:var(--skin-color-surface-2);color:var(--skin-color-text-muted);
+  border:var(--skin-border-width-card) solid transparent;white-space:nowrap;
+}
+.chip--brand{background:var(--skin-color-brand-soft);color:var(--skin-color-brand)}
+.chip--success{background:var(--skin-color-success-soft);color:var(--skin-color-success)}
+.chip--warning{background:var(--skin-color-warning-soft);color:var(--skin-color-warning)}
+.chip--danger{background:var(--skin-color-danger-soft);color:var(--skin-color-danger)}
+.chip--info{background:var(--skin-color-info-soft);color:var(--skin-color-info)}
+.chip--outline{background:transparent;border-color:var(--skin-color-border-strong);color:var(--skin-color-text-muted)}
+.tag{font-family:var(--skin-font-mono);font-size:var(--skin-font-size-xs);color:var(--skin-color-brand);background:var(--skin-color-brand-softer);border-radius:var(--skin-radius-xs);padding:2px 6px}
+/* 分段控件 / tabs */
+.seg{display:inline-flex;background:var(--skin-color-surface-2);border:var(--skin-border-width-card) solid var(--skin-color-border);border-radius:var(--skin-radius-sm);padding:2px;gap:2px;flex-wrap:wrap}
+.seg__btn{border:0;background:transparent;font-family:inherit;cursor:pointer;padding:5px var(--skin-space-3);border-radius:var(--skin-radius-xs);color:var(--skin-color-text-muted);font-size:var(--skin-font-size-sm);font-weight:var(--skin-font-weight-medium)}
+.seg__btn[aria-selected="true"]{background:var(--skin-color-surface);color:var(--skin-color-text);box-shadow:var(--skin-shadow-card)}
+.tabs{display:flex;gap:var(--skin-space-2);border-bottom:var(--skin-border-width-card) solid var(--skin-color-border);margin-bottom:var(--skin-space-4);flex-wrap:wrap}
+.tabs__btn{border:0;background:none;font-family:inherit;cursor:pointer;padding:9px var(--skin-space-3);color:var(--skin-color-text-muted);font-weight:var(--skin-font-weight-medium);border-bottom:2px solid transparent}
+.tabs__btn[aria-selected="true"]{color:var(--skin-color-brand);border-bottom-color:var(--skin-color-brand)}
+/* 列表 */
+.list{display:flex;flex-direction:column;gap:var(--skin-space-2)}
+.item{
+  display:flex;gap:var(--skin-space-3);align-items:flex-start;padding:var(--skin-space-3);
+  border:var(--skin-border-width-card) solid transparent;border-radius:var(--skin-radius-sm);cursor:pointer;
+  background:transparent;text-align:left;font-family:inherit;color:inherit;width:100%;
+  transition:background-color var(--skin-duration-fast) var(--skin-ease-standard),
+             border-color var(--skin-duration-fast) var(--skin-ease-standard);
+}
+.item:hover{background:var(--skin-color-surface-2)}
+.item[aria-selected="true"]{background:var(--skin-color-brand-softer);border-color:var(--skin-color-brand)}
+.item__icon{width:30px;height:30px;flex:0 0 30px;border-radius:var(--skin-radius-sm);background:var(--skin-color-brand-soft);color:var(--skin-color-brand);display:flex;align-items:center;justify-content:center}
+.item__title{font-weight:var(--skin-font-weight-bold)}
+.item__sub{font-size:var(--skin-font-size-sm);color:var(--skin-color-text-muted);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.item__meta{margin-left:auto;text-align:right;font-size:var(--skin-font-size-sm);color:var(--skin-color-text-subtle);white-space:nowrap}
+.meta-line{font-size:var(--skin-font-size-sm);color:var(--skin-color-text-subtle)}
+/* 富文本摘要块 */
+.summary{display:flex;gap:var(--skin-space-4);align-items:flex-start}
+.summary__avatar{width:38px;height:38px;flex:0 0 38px;border-radius:var(--skin-radius-sm);background:var(--skin-color-brand-soft);color:var(--skin-color-brand);display:flex;align-items:center;justify-content:center;font-size:var(--skin-font-size-lg)}
+.summary__quote{margin-top:var(--skin-space-3);padding:var(--skin-space-3);border-radius:var(--skin-radius-sm);background:var(--skin-color-surface-2);color:var(--skin-color-text-muted);font-style:italic}
+/* 表格 */
+.table{width:100%;border-collapse:collapse;font-size:var(--skin-font-size-md)}
+.table th{
+  text-align:left;font-weight:var(--skin-font-weight-medium);color:var(--skin-color-text-muted);
+  font-size:var(--skin-font-size-sm);padding:var(--skin-space-2) var(--skin-space-3);
+  border-bottom:var(--skin-border-width-card) solid var(--skin-color-border);white-space:nowrap;
+}
+.table td{padding:var(--skin-space-3);border-bottom:var(--skin-border-width-card) solid var(--skin-color-border);vertical-align:middle}
+.table tbody tr:hover{background:var(--skin-color-surface-2)}
+.table--compact td{padding:var(--skin-space-2) var(--skin-space-3)}
+.num{font-family:var(--skin-font-mono);font-variant-numeric:tabular-nums}
+.bar{height:6px;border-radius:var(--skin-radius-pill);background:var(--skin-color-chart-track);overflow:hidden;min-width:60px}
+.bar__fill{height:100%;background:var(--skin-color-brand)}
+.pager{display:flex;align-items:center;gap:var(--skin-space-2);justify-content:flex-end;padding-top:var(--skin-space-3)}
+.pager__btn{width:28px;height:28px;border-radius:var(--skin-radius-xs);border:var(--skin-border-width-card) solid var(--skin-color-border);background:var(--skin-color-surface);color:var(--skin-color-text-muted);cursor:pointer;font-family:inherit}
+.pager__btn[aria-current="true"]{background:var(--skin-color-brand);border-color:var(--skin-color-brand);color:var(--skin-color-brand-contrast)}
+/* 表单 */
+.field{display:flex;flex-direction:column;gap:6px;margin-bottom:var(--skin-space-4)}
+.field__label{font-size:var(--skin-font-size-sm);font-weight:var(--skin-font-weight-medium);color:var(--skin-color-text-muted)}
+.input,.select{
+  width:100%;padding:8px var(--skin-space-3);font-family:inherit;font-size:var(--skin-font-size-md);
+  color:var(--skin-color-text);background:var(--skin-color-surface-2);
+  border:var(--skin-border-width-card) solid var(--skin-color-border);border-radius:var(--skin-radius-sm);
+}
+.switch{position:relative;display:inline-flex;align-items:center;gap:var(--skin-space-3);cursor:pointer;user-select:none}
+.switch input{position:absolute;opacity:0;width:0;height:0}
+.switch__track{width:42px;height:24px;flex:0 0 42px;border-radius:var(--skin-radius-pill);background:var(--skin-color-chart-track);position:relative;transition:background-color var(--skin-duration-fast) var(--skin-ease-standard)}
+.switch__track::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:var(--skin-radius-pill);background:var(--skin-color-surface);box-shadow:var(--skin-shadow-card);transition:transform var(--skin-duration-fast) var(--skin-ease-standard)}
+.switch input:checked + .switch__track{background:var(--skin-color-brand)}
+.switch input:checked + .switch__track::after{transform:translateX(18px)}
+.switch input:focus-visible + .switch__track{outline:var(--skin-focus-ring-width) solid var(--skin-color-focus-ring);outline-offset:var(--skin-focus-ring-offset)}
+.switch__label{font-size:var(--skin-font-size-sm);color:var(--skin-color-text-muted)}
+/* 能力卡（欢迎引导） */
+.cap{display:flex;flex-direction:column;gap:var(--skin-space-3);padding:var(--skin-space-4)}
+.cap__head{display:flex;align-items:center;gap:var(--skin-space-3)}
+.cap__icon{width:34px;height:34px;border-radius:var(--skin-radius-sm);display:flex;align-items:center;justify-content:center;background:var(--skin-color-brand-soft);color:var(--skin-color-brand);font-size:var(--skin-font-size-lg)}
+.cap__title{font-weight:var(--skin-font-weight-bold)}
+.cap__body{font-size:var(--skin-font-size-sm);color:var(--skin-color-text-muted)}
+.pledge{display:flex;gap:var(--skin-space-3);padding:var(--skin-space-4);background:var(--skin-color-brand-softer);border-color:var(--skin-color-brand-soft)}
+/* 横幅（首页 AI 已整理） */
+.banner{
+  display:flex;align-items:center;gap:var(--skin-space-5);padding:var(--skin-space-5);
+  background:var(--skin-gradient-banner);border:var(--skin-border-width-card) solid var(--skin-color-brand-soft);
+  border-radius:var(--skin-radius-card);border-left:4px solid var(--skin-color-brand);
+}
+.banner__orb{width:56px;height:56px;flex:0 0 56px;border-radius:var(--skin-radius-pill);background:var(--skin-color-brand-soft);display:flex;align-items:center;justify-content:center;font-size:var(--skin-font-size-2xl)}
+.banner__title{font-size:var(--skin-font-size-xl);font-weight:var(--skin-font-weight-bold);font-family:var(--skin-font-family-heading)}
+.banner__text{color:var(--skin-color-text-muted);margin-top:4px}
+/* 环形进度 */
+.ring{
+  width:132px;height:132px;flex:0 0 132px;border-radius:var(--skin-radius-pill);display:flex;align-items:center;justify-content:center;position:relative;
+  background:conic-gradient(var(--skin-color-chart-1) calc(var(--ring-pct,0) * 1%), var(--skin-color-chart-track) calc(var(--ring-pct,0) * 1%));
+}
+.ring::after{content:"";position:absolute;inset:15px;border-radius:var(--skin-radius-pill);background:var(--skin-color-surface)}
+.ring__value{position:relative;z-index:1;text-align:center;font-family:var(--skin-font-family-heading)}
+.ring__num{font-size:var(--skin-font-size-2xl);font-weight:var(--skin-font-weight-bold)}
+.legend{display:flex;flex-direction:column;gap:var(--skin-space-3);flex:1}
+.legend__row{display:flex;align-items:center;gap:var(--skin-space-2);font-size:var(--skin-font-size-sm)}
+.legend__dot{width:8px;height:8px;border-radius:var(--skin-radius-pill);flex:0 0 8px}
+.legend__val{margin-left:auto;font-family:var(--skin-font-mono);color:var(--skin-color-text-muted)}
+/* 时间流 / 动态 */
+.feed{display:flex;flex-direction:column;gap:var(--skin-space-3)}
+.feed__item{display:flex;gap:var(--skin-space-3);align-items:flex-start}
+.feed__icon{width:28px;height:28px;flex:0 0 28px;border-radius:var(--skin-radius-pill);background:var(--skin-color-brand-soft);color:var(--skin-color-brand);display:flex;align-items:center;justify-content:center;font-size:var(--skin-font-size-sm)}
+.feed__text{font-size:var(--skin-font-size-md)}
+.feed__time{margin-left:auto;color:var(--skin-color-text-subtle);font-size:var(--skin-font-size-sm);white-space:nowrap}
+/* 时间线 */
+.tl{position:relative;padding-left:var(--skin-space-6)}
+.tl::before{content:"";position:absolute;left:7px;top:6px;bottom:6px;width:2px;background:var(--skin-color-border)}
+.tl__item{position:relative;padding-bottom:var(--skin-space-5)}
+.tl__dot{position:absolute;left:calc(var(--skin-space-6) * -1 + 2px);top:4px;width:12px;height:12px;border-radius:var(--skin-radius-pill);background:var(--skin-color-surface);border:2px solid var(--skin-color-brand)}
+.tl__time{font-family:var(--skin-font-mono);font-size:var(--skin-font-size-sm);color:var(--skin-color-text-subtle);width:52px;flex:0 0 52px}
+.tl__head{display:flex;gap:var(--skin-space-3);align-items:baseline}
+.tl__title{font-weight:var(--skin-font-weight-bold)}
+.tl__text{color:var(--skin-color-text-muted);font-size:var(--skin-font-size-md);margin-top:2px}
+#handoffList .item{flex-wrap:wrap}
+#handoffList .item__meta{margin-left:42px;text-align:left;width:calc(100% - 42px)}
+.dayhead{display:flex;align-items:center;gap:var(--skin-space-3);margin:var(--skin-space-5) 0 var(--skin-space-3)}
+.dayhead__date{font-size:var(--skin-font-size-lg);font-weight:var(--skin-font-weight-bold)}
+.dayhead__rule{flex:1;height:1px;background:var(--skin-color-border)}
+/* 交接账本四段 */
+.step{display:flex;gap:var(--skin-space-4);padding-bottom:var(--skin-space-5)}
+.step__num{width:26px;height:26px;flex:0 0 26px;border-radius:var(--skin-radius-pill);background:var(--skin-color-brand);color:var(--skin-color-brand-contrast);display:flex;align-items:center;justify-content:center;font-size:var(--skin-font-size-sm);font-weight:var(--skin-font-weight-bold)}
+.step__title{font-weight:var(--skin-font-weight-bold);display:flex;align-items:center;gap:var(--skin-space-2)}
+.bullets{margin:var(--skin-space-2) 0 0;padding-left:var(--skin-space-5);display:flex;flex-direction:column;gap:6px}
+.checklist{list-style:none;margin:var(--skin-space-2) 0 0;padding:0;display:flex;flex-direction:column;gap:8px}
+.checklist li{display:flex;gap:var(--skin-space-3);align-items:flex-start;font-size:var(--skin-font-size-md)}
+.checklist input{margin-top:3px}
+.boardcard{display:flex;justify-content:space-between;align-items:center;gap:var(--skin-space-3);padding:var(--skin-space-3) var(--skin-space-4);border-radius:var(--skin-radius-sm);border-left:3px solid var(--skin-color-brand);background:var(--skin-color-surface-2)}
+.boardcard--todo{border-left-color:var(--skin-color-success)}
+.boardcard--risk{border-left-color:var(--skin-color-warning)}
+.board-card-title{font-weight:var(--skin-font-weight-bold);font-size:var(--skin-font-size-md)}
+/* 详情面板 */
+.detail__head{display:flex;gap:var(--skin-space-3);align-items:flex-start;padding:var(--skin-space-5);border-bottom:var(--skin-border-width-card) solid var(--skin-color-border)}
+.evidence{display:flex;flex-direction:column;gap:var(--skin-space-3)}
+.evidence__item{padding:var(--skin-space-3);border:var(--skin-border-width-card) solid var(--skin-color-border);border-radius:var(--skin-radius-sm);background:var(--skin-color-surface-2)}
+.kv{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--skin-space-3)}
+.kv__cell{background:var(--skin-color-surface-2);border-radius:var(--skin-radius-sm);padding:var(--skin-space-3)}
+.kv__k{font-size:var(--skin-font-size-sm);color:var(--skin-color-text-muted)}
+.kv__v{font-weight:var(--skin-font-weight-bold);font-family:var(--skin-font-mono)}
+.actionbar{display:flex;gap:var(--skin-space-3);padding:var(--skin-space-4) var(--skin-space-5);border-top:var(--skin-border-width-card) solid var(--skin-color-border);flex-wrap:wrap}
+/* 思维导图 */
+.mindmap{position:relative;width:100%;min-height:520px;background:var(--skin-color-surface-2);border-radius:var(--skin-radius-md);overflow:hidden}
+.mindmap__svg{position:absolute;inset:0;width:100%;height:100%}
+.mindmap__node{position:absolute;transform:translate(-50%,-50%);padding:6px 12px;border-radius:var(--skin-radius-pill);font-size:var(--skin-font-size-sm);background:var(--skin-color-surface);border:var(--skin-border-width-card) solid var(--skin-color-border);white-space:nowrap}
+.mindmap__node--center{background:var(--skin-color-brand);color:var(--skin-color-brand-contrast);border-color:var(--skin-color-brand);font-weight:var(--skin-font-weight-bold);padding:12px 20px;border-radius:var(--skin-radius-lg)}
+.mindmap__node--branch{border-color:var(--skin-color-brand);color:var(--skin-color-brand);font-weight:var(--skin-font-weight-bold)}
+.mindmap__node--leaf{color:var(--skin-color-text-muted)}
+/* 月历 */
+.cal__grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+.cal__dow{text-align:center;font-size:var(--skin-font-size-sm);color:var(--skin-color-text-muted);padding-bottom:6px}
+.cal__day{
+  aspect-ratio:1/1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+  border:var(--skin-border-width-card) solid transparent;border-radius:var(--skin-radius-sm);cursor:pointer;
+  background:transparent;font-family:inherit;color:var(--skin-color-text);font-size:var(--skin-font-size-md);
+}
+.cal__day:hover{background:var(--skin-color-surface-2)}
+.cal__day--muted{color:var(--skin-color-text-subtle)}
+.cal__day--today{background:var(--skin-color-brand);color:var(--skin-color-brand-contrast);font-weight:var(--skin-font-weight-bold)}
+.cal__day--selected{border-color:var(--skin-color-brand);background:var(--skin-color-brand-softer)}
+.cal__dots{display:flex;gap:3px}
+.cal__dot{width:5px;height:5px;border-radius:var(--skin-radius-pill)}
+.cal__legend{display:flex;gap:var(--skin-space-4);flex-wrap:wrap;margin-top:var(--skin-space-4);font-size:var(--skin-font-size-sm);color:var(--skin-color-text-muted)}
+/* 皮肤切换器 */
+.skin-switcher{position:relative}
+.skin-switcher__btn{display:inline-flex;align-items:center;gap:var(--skin-space-2);cursor:pointer;font-family:inherit;font-size:var(--skin-font-size-sm);padding:6px var(--skin-space-3);border-radius:var(--skin-radius-sm);border:var(--skin-border-width-card) solid var(--skin-color-border);background:var(--skin-color-surface);color:var(--skin-color-text)}
+.skin-switcher__panel{
+  position:absolute;right:0;top:calc(100% + 8px);width:296px;z-index:var(--skin-z-overlay);
+  background:var(--skin-color-surface);border:var(--skin-border-width-card) solid var(--skin-color-border);
+  border-radius:var(--skin-radius-md);box-shadow:var(--skin-shadow-pop);padding:var(--skin-space-3);display:none;
+}
+.skin-switcher__panel.is-open{display:block}
+.swatch{display:flex;align-items:center;gap:var(--skin-space-3);padding:var(--skin-space-3);border-radius:var(--skin-radius-sm);cursor:pointer;width:100%;font-family:inherit;background:none;border:var(--skin-border-width-card) solid transparent;color:inherit;text-align:left}
+.swatch:hover{background:var(--skin-color-surface-2)}
+.swatch[aria-selected="true"]{border-color:var(--skin-color-brand);background:var(--skin-color-brand-softer)}
+.swatch__dots{display:flex;gap:4px}
+.swatch__dot{width:14px;height:14px;border-radius:var(--skin-radius-xs)}
+.swatch__name{font-weight:var(--skin-font-weight-bold);font-size:var(--skin-font-size-md)}
+.swatch__desc{font-size:var(--skin-font-size-sm);color:var(--skin-color-text-muted)}
+/* 组件插槽（第三方企业组件挂载点） */
+.slot{display:block}
+.slot:empty{display:none}
+.slot--banner{margin-bottom:var(--skin-space-4)}
+.slot--sidebar-brand{padding:0 var(--skin-space-2) var(--skin-space-3)}
+.slot--card-foot{margin-top:var(--skin-space-3);padding-top:var(--skin-space-3);border-top:var(--skin-border-width-card) dashed var(--skin-color-border)}
+.slot--settings-section{margin-bottom:var(--skin-space-4)}
+.slot--detail-actions{display:flex;gap:var(--skin-space-2);align-items:center}
+/* 通用工具类 */
+.muted{color:var(--skin-color-text-muted)}
+.subtle{color:var(--skin-color-text-subtle)}
+.small{font-size:var(--skin-font-size-sm)}
+.bold{font-weight:var(--skin-font-weight-bold)}
+.mono{font-family:var(--skin-font-mono)}
+.hr{height:1px;background:var(--skin-color-border);border:0;margin:var(--skin-space-4) 0}
+.scroll-y{max-height:520px;overflow-y:auto}
+.scroll-y--tall{max-height:640px;overflow-y:auto}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+/* 响应式 */
+@media (max-width:1200px){
+  .grid--4{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .grid--3col{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  .grid--main-aside{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:860px){
+  :root{--skin-sidebar-width:0px}
+  .sidebar{transform:translateX(-100%);transition:transform var(--skin-duration-base) var(--skin-ease-standard);width:226px}
+  .app.is-nav-open .sidebar{transform:none}
+  .main{margin-left:0}
+  .grid--4,.grid--3,.grid--2,.grid--3col{grid-template-columns:minmax(0,1fr)}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:1ms !important;transition-duration:1ms !important}
+}
+/* 移动端：显示汉堡按钮，收起侧栏 */
+@media (max-width:860px){ #navToggle{display:inline-flex !important} }
+/* 无障碍主题下提示条保持实心高对比 */
+[data-skin="a11y-contrast"] #skinToast{border:2px solid var(--skin-color-text)}
+/* @ck1 */
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <!-- ============ 侧栏 ============ -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand__logo" aria-hidden="true">记</div>
+      <div>
+        <div class="brand__name">dsh-auto-memory</div>
+        <div class="brand__slogan" data-i18n="brand.slogan">让重要的事持久被记住</div>
+      </div>
+    </div>
+    <!-- 插槽：侧栏品牌区（企业可放置自己的 Logo / 合规徽标 / 版本水印） -->
+    <div class="slot slot--sidebar-brand" id="slot-sidebar-brand" data-slot="sidebar-brand"></div>
+    <nav class="nav" aria-label="主导航">
+      <button class="nav__item" data-route="home" data-i18n="nav.home"><span class="nav__icon">🏠</span>首页</button>
+      <button class="nav__item" data-route="library" data-i18n="nav.library"><span class="nav__icon">📚</span>记忆库</button>
+      <button class="nav__item" data-route="recall" data-i18n="nav.recall"><span class="nav__icon">🕘</span>召回审查</button>
+      <button class="nav__item" data-route="timeline" data-i18n="nav.timeline"><span class="nav__icon">🧭</span>时间线</button>
+      <button class="nav__item" data-route="calendar" data-i18n="nav.calendar"><span class="nav__icon">📅</span>日历提醒</button>
+      <button class="nav__item" data-route="mindmap" data-i18n="nav.mindmap"><span class="nav__icon">🕸</span>思维导图</button>
+      <button class="nav__item" data-route="external" data-i18n="nav.external"><span class="nav__icon">🔗</span>外部记忆</button>
+      <button class="nav__item" data-route="handoff" data-i18n="nav.handoff"><span class="nav__icon">📘</span>交接账本</button>
+      <div class="nav__group" data-i18n="nav.groupGuide">引导与配置</div>
+      <button class="nav__item" data-route="welcome" data-i18n="nav.welcome"><span class="nav__icon">✨</span>欢迎引导</button>
+      <button class="nav__item" data-route="settings" data-i18n="nav.settings"><span class="nav__icon">⚙️</span>设置</button>
+    </nav>
+    <div class="sidebar__foot">
+      <div class="sidebar__foot-title" data-i18n="side.title">本地优先</div>
+      <div class="sidebar__foot-text" data-i18n="side.text">你的记忆，始终在你手中</div>
+      <div class="sidebar__foot-text" style="margin-top:8px"><span class="dot"></span>本地存储 · 运行中</div>
+    </div>
+  </aside>
+
+  <!-- ============ 主区 ============ -->
+  <div class="main">
+    <header class="topbar">
+      <button class="btn btn--ghost btn--sm" id="navToggle" aria-label="切换导航" style="display:none">☰</button>
+      <div class="search">
+        <span class="search__icon" aria-hidden="true">🔍</span>
+        <label class="sr-only" for="globalSearch">搜索你的记忆</label>
+        <input class="search__input" id="globalSearch" type="search" placeholder="搜索你的记忆（例如：项目、会议、想法…）" data-i18n-attr="placeholder:search.placeholder">
+        <span class="search__kbd">Ctrl K</span>
+      </div>
+      <div class="topbar__spacer"></div>
+      <!-- 皮肤切换器：演示「同一套皮肤接口长出不同企业的皮」 -->
+      <div class="skin-switcher" id="skin-switcher">
+        <button class="skin-switcher__btn" id="skinSwitcherBtn" aria-haspopup="true" aria-expanded="false">
+          <span class="swatch__dots" id="skinSwitcherDots" aria-hidden="true"></span>
+          <span>皮肤：<b id="skinSwitcherName">Default</b></span>
+          <span aria-hidden="true">▾</span>
+        </button>
+        <div class="skin-switcher__panel" id="skinSwitcherPanel" role="dialog" aria-label="皮肤切换器"></div>
+      </div>
+      <button class="btn btn--ghost btn--sm" id="themeToggle" title="切换明暗" aria-label="切换明暗">🌙</button>
+      <div class="topbar__user">
+        <div class="avatar" aria-hidden="true">张</div>
+        <div>
+          <div class="user__name">Hi, 张三</div>
+          <div class="user__role" data-i18n="topbar.role">专注，让一切更好</div>
+        </div>
+      </div>
+    </header>
+
+    <main class="content" id="content">
+      <!-- ==================== 页面 1：首页仪表盘 ==================== -->
+      <section class="page" id="page-home" data-page="home" aria-labelledby="home-title">
+        <div class="pagehead">
+          <div>
+            <h1 class="pagehead__title" id="home-title" data-i18n="home.title">早上好，张三 👋</h1>
+            <p class="pagehead__sub" data-i18n="home.sub">我已经准备好，与你一起继续积累和管理重要记忆。</p>
+          </div>
+          <div class="pagehead__aside">
+            <div class="quote" data-i18n="home.quote">“好记性不如会管理的记忆。”<span class="quote__src">—— dsh-auto-memory</span></div>
+          </div>
+        </div>
+
+        <!-- 4 个统计卡 -->
+        <div class="grid grid--4" style="margin-bottom:16px">
+          <article class="card stat">
+            <div class="stat__top"><div class="stat__icon">🗂</div><div class="stat__label">长期记忆</div><span class="trend">↑ +12</span></div>
+            <div class="stat__value">342</div><div class="stat__desc">用户规则 · 长期偏好</div>
+          </article>
+          <article class="card stat">
+            <div class="stat__top"><div class="stat__icon">📁</div><div class="stat__label">项目知识</div><span class="trend">↑ +6</span></div>
+            <div class="stat__value">128</div><div class="stat__desc">项目笔记 · 文档摘要</div>
+          </article>
+          <article class="card stat">
+            <div class="stat__top"><div class="stat__icon">📊</div><div class="stat__label">行为习惯</div><span class="trend trend--brand">↑ +3</span></div>
+            <div class="stat__value">56</div><div class="stat__desc">从日志中学习的习惯</div>
+          </article>
+          <article class="card stat">
+            <div class="stat__top"><div class="stat__icon">📝</div><div class="stat__label">今日新增</div><span class="trend trend--warn">↑ +8</span></div>
+            <div class="stat__value">8</div><div class="stat__desc">条新记忆已保存</div>
+          </article>
+        </div>
+
+        <!-- AI 已整理横幅 + 企业横幅插槽 -->
+        <div class="slot slot--banner" id="slot-home-banner" data-slot="home-banner"></div>
+        <div class="banner" style="margin-bottom:16px">
+          <div class="banner__orb" aria-hidden="true">🧠</div>
+          <div>
+            <div class="banner__title" data-i18n="home.bannerTitle">今天，AI 已帮你整理了 8 条重要信息</div>
+            <div class="banner__text" data-i18n="home.bannerText">包括 3 条项目进展、2 条会议要点和 3 条行为习惯。我会持续在合适的时机主动唤回相关记忆，帮助你更高效地思考和行动。</div>
+          </div>
+          <div class="spacer"></div>
+          <button class="btn btn--primary" data-route-link="timeline">查看今日详情 →</button>
+        </div>
+
+        <div class="grid grid--main-aside">
+          <!-- 你的 AI 现在知道什么 -->
+          <section class="card">
+            <div class="panel__head">
+              <span aria-hidden="true">🤖</span><h2 class="panel__title" data-i18n="home.knowTitle">你的 AI 现在知道什么</h2>
+              <button class="panel__link" data-route-link="library">查看全部 →</button>
+            </div>
+            <div class="panel__body stack">
+              <article>
+                <div class="summary">
+                  <div class="summary__avatar" aria-hidden="true">❤️</div>
+                  <div style="flex:1">
+                    <div class="row row--between"><div class="bold" data-i18n="home.knowPref">偏好</div><span class="muted small">共 42 条</span></div>
+                    <div class="muted small">我知道你的工作风格、工具偏好和一些生活习惯。</div>
+                    <div class="summary__quote small">“你更喜欢使用简洁的中文回复，技术问题希望包含示例代码。”</div>
+                  </div>
+                </div>
+                <!-- 插槽：记忆卡尾部 -->
+                <div class="slot slot--card-foot" data-slot="memory-card-foot" data-slot-context="preference"></div>
+              </article>
+              <hr class="hr">
+              <article>
+                <div class="summary">
+                  <div class="summary__avatar" aria-hidden="true">📁</div>
+                  <div style="flex:1">
+                    <div class="row row--between"><div class="bold" data-i18n="home.knowProject">项目</div><span class="muted small">共 128 条</span></div>
+                    <div class="muted small">我了解你正在进行的项目、目标和关键上下文。</div>
+                    <div class="summary__quote small">“你正在开发 dsh-auto-memory 项目，关注本地优先和隐私保护。”</div>
+                  </div>
+                </div>
+                <div class="slot slot--card-foot" data-slot="memory-card-foot" data-slot-context="project"></div>
+              </article>
+              <hr class="hr">
+              <article>
+                <div class="summary">
+                  <div class="summary__avatar" aria-hidden="true">🎓</div>
+                  <div style="flex:1">
+                    <div class="row row--between"><div class="bold" data-i18n="home.knowSkill">技能</div><span class="muted small">共 56 条</span></div>
+                    <div class="muted small">我已从你的记录中提炼出你的技能与经验。</div>
+                    <div class="summary__quote small">“你在 Python 开发、知识管理和产品设计方面有丰富经验。”</div>
+                  </div>
+                </div>
+                <div class="slot slot--card-foot" data-slot="memory-card-foot" data-slot-context="skill"></div>
+              </article>
+            </div>
+          </section>
+
+          <div class="stack">
+            <!-- 记忆健康度 -->
+            <section class="card">
+              <div class="panel__head">
+                <span aria-hidden="true">📈</span><h2 class="panel__title" data-i18n="home.healthTitle">记忆健康度</h2>
+                <button class="panel__link" data-route-link="settings">了解详情 →</button>
+              </div>
+              <div class="panel__body">
+                <div class="row" style="align-items:center">
+                  <div class="ring" id="healthRing" style="--ring-pct:88" role="img" aria-label="记忆健康度 88 分">
+                    <div class="ring__value"><div class="ring__num">88</div><div class="small muted">良好</div></div>
+                  </div>
+                  <div class="legend">
+                    <div class="bold">你的记忆状态良好</div>
+                    <div class="muted small">持续记录与复盘，让 AI 更了解你。</div>
+                    <div class="legend__row"><span class="legend__dot" style="background:var(--skin-color-chart-1)"></span>记忆完整性<span class="legend__val">92%</span></div>
+                    <div class="legend__row"><span class="legend__dot" style="background:var(--skin-color-chart-2)"></span>最近活跃度<span class="legend__val">85%</span></div>
+                    <div class="legend__row"><span class="legend__dot" style="background:var(--skin-color-chart-3)"></span>知识结构化<span class="legend__val">78%</span></div>
+                    <div class="legend__row"><span class="legend__dot" style="background:var(--skin-color-warning)"></span>待整理内容<span class="legend__val">3 条</span></div>
+                  </div>
+                </div>
+              </div>
+            </section>
+            <!-- 最近记忆动态 -->
+            <section class="card">
+              <div class="panel__head">
+                <span aria-hidden="true">🕘</span><h2 class="panel__title" data-i18n="home.feedTitle">最近记忆动态</h2>
+                <button class="panel__link" data-route-link="timeline">查看全部 →</button>
+              </div>
+              <div class="panel__body feed">
+                <div class="feed__item"><span class="feed__icon">🔄</span><div><div class="feed__text"><b>主动唤回</b> 在与你讨论 FastAPI 时，唤回了相关项目笔记</div></div><span class="feed__time">2 小时前</span></div>
+                <div class="feed__item"><span class="feed__icon">🧩</span><div><div class="feed__text"><b>自动整合</b> 将 5 条相关记录整合为「项目部署最佳实践」</div></div><span class="feed__time">4 小时前</span></div>
+                <div class="feed__item"><span class="feed__icon">🎓</span><div><div class="feed__text"><b>技能提炼</b> 从多次对话中提炼出新技能：容器化部署</div></div><span class="feed__time">6 小时前</span></div>
+                <div class="feed__item"><span class="feed__icon">📅</span><div><div class="feed__text"><b>日历提醒</b> 提醒：明天 10:00 项目周会</div></div><span class="feed__time">8 小时前</span></div>
+              </div>
+            </section>
+          </div>
+        </div>
+      </section>
+      <!-- ==================== 页面 2：欢迎引导 ==================== -->
+      <section class="page" id="page-welcome" data-page="welcome" aria-labelledby="welcome-title">
+        <div class="pagehead">
+          <div>
+            <h1 class="pagehead__title" id="welcome-title" data-i18n="welcome.title">欢迎引导</h1>
+            <p class="pagehead__sub" data-i18n="welcome.sub">第一次使用时，快速了解并配置核心能力</p>
+          </div>
+          <div class="pagehead__aside"><div class="quote">“好的开始，是记忆长久的另一半。”<span class="quote__src">—— dsh-auto-memory</span></div></div>
+        </div>
+
+        <!-- 4 步流程 -->
+        <ol class="card card--pad" style="display:flex;list-style:none;margin:0 0 16px;padding:16px 20px;gap:12px" id="wizardSteps">
+          <li style="flex:1"><button class="wizard__step" data-step="1" aria-current="step" style="border:0;background:none;font-family:inherit;cursor:pointer;width:100%;text-align:center;color:inherit">
+            <span class="step__num" style="margin:0 auto 6px">1</span><span class="bold small">了解能力</span></button></li>
+          <li style="flex:1"><button class="wizard__step" data-step="2" style="border:0;background:none;font-family:inherit;cursor:pointer;width:100%;text-align:center;color:inherit">
+            <span class="step__num" style="margin:0 auto 6px;background:var(--skin-color-surface-2);color:var(--skin-color-text-muted)">2</span><span class="small muted">基础配置</span></button></li>
+          <li style="flex:1"><button class="wizard__step" data-step="3" style="border:0;background:none;font-family:inherit;cursor:pointer;width:100%;text-align:center;color:inherit">
+            <span class="step__num" style="margin:0 auto 6px;background:var(--skin-color-surface-2);color:var(--skin-color-text-muted)">3</span><span class="small muted">个性化设置</span></button></li>
+          <li style="flex:1"><button class="wizard__step" data-step="4" style="border:0;background:none;font-family:inherit;cursor:pointer;width:100%;text-align:center;color:inherit">
+            <span class="step__num" style="margin:0 auto 6px;background:var(--skin-color-surface-2);color:var(--skin-color-text-muted)">4</span><span class="small muted">完成</span></button></li>
+        </ol>
+
+        <div class="banner" style="margin-bottom:16px">
+          <div class="banner__orb" aria-hidden="true">📬</div>
+          <div>
+            <div class="banner__title">你好，张三！</div>
+            <div class="banner__text">欢迎使用 <b>dsh-auto-memory</b>。我会像一个可靠的伙伴，帮你记录、整理、唤回和管理重要的知识与经验，让每一次思考都有沉淀，让每一次行动都有参考。</div>
+            <div class="row row--wrap" style="margin-top:12px">
+              <span class="chip chip--brand">♾ 记住重要的事</span>
+              <span class="chip chip--info">⚡ 唤回需要的时刻</span>
+              <span class="chip chip--success">📈 让经验持续增值</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 8 个能力开关卡 -->
+        <section class="card">
+          <div class="panel__head">
+            <h2 class="panel__title" data-i18n="welcome.capTitle">核心能力</h2>
+            <span class="muted small">开启你需要的能力，打造专属的记忆助手。后续也可以在「设置」中随时调整。</span>
+            <button class="panel__link" id="enableAllCaps">全部开启 →</button>
+          </div>
+          <div class="panel__body">
+            <div class="grid grid--3" id="capabilityGrid">
+              <article class="card cap" data-cap="recall">
+                <div class="cap__head"><span class="cap__icon">🔄</span><div><div class="cap__title">主动唤回</div><span class="chip chip--brand">推荐</span></div><span class="spacer"></span>
+                  <label class="switch"><input type="checkbox" checked data-cap-toggle="recall"><span class="switch__track"></span><span class="sr-only">开启主动唤回</span></label></div>
+                <p class="cap__body">在与您讨论时，主动召回相关的项目、会议、想法和过往记忆，提供更有上下文的回答。</p>
+                <div class="checkbox-caption small muted" data-cap-state="recall">已开启</div>
+              </article>
+              <article class="card cap" data-cap="sediment">
+                <div class="cap__head"><span class="cap__icon">🧩</span><div class="cap__title">自动沉淀</div><span class="spacer"></span>
+                  <label class="switch"><input type="checkbox" checked data-cap-toggle="sediment"><span class="switch__track"></span><span class="sr-only">开启自动沉淀</span></label></div>
+                <p class="cap__body">自动将对话中的关键信息沉淀为结构化记忆，如项目笔记、知识点、待办事项等，减少手动整理的负担。</p>
+                <div class="small muted" data-cap-state="sediment">已开启</div>
+              </article>
+              <article class="card cap" data-cap="skill">
+                <div class="cap__head"><span class="cap__icon">🎓</span><div class="cap__title">技能固化</div><span class="spacer"></span>
+                  <label class="switch"><input type="checkbox" checked data-cap-toggle="skill"><span class="switch__track"></span><span class="sr-only">开启技能固化</span></label></div>
+                <p class="cap__body">从多次对话中提炼出你的工作方法、技能经验和偏好，让我越来越懂你，形成专属的能力模型。</p>
+                <div class="small muted" data-cap-state="skill">已开启</div>
+              </article>
+              <article class="card cap" data-cap="calendar">
+                <div class="cap__head"><span class="cap__icon">📅</span><div class="cap__title">日历提醒</div><span class="spacer"></span>
+                  <label class="switch"><input type="checkbox" checked data-cap-toggle="calendar"><span class="switch__track"></span><span class="sr-only">开启日历提醒</span></label></div>
+                <p class="cap__body">根据对话内容自动识别重要的时间点，创建日程提醒，如会议、截止日期、阶段性目标等。</p>
+                <div class="small muted" data-cap-state="calendar">已开启</div>
+              </article>
+              <article class="card cap" data-cap="external">
+                <div class="cap__head"><span class="cap__icon">🔗</span><div class="cap__title">外部记忆继承</div><span class="spacer"></span>
+                  <label class="switch"><input type="checkbox" data-cap-toggle="external"><span class="switch__track"></span><span class="sr-only">开启外部记忆继承</span></label></div>
+                <p class="cap__body">支持从第三方工具导入历史数据（如 Notion、飞书、语雀等），让过往的知识也能被激活和使用。</p>
+                <div class="small muted" data-cap-state="external">已关闭</div>
+              </article>
+              <article class="card cap" data-cap="handoff">
+                <div class="cap__head"><span class="cap__icon">📘</span><div class="cap__title">交接账本 / 白板</div><span class="spacer"></span>
+                  <label class="switch"><input type="checkbox" data-cap-toggle="handoff"><span class="switch__track"></span><span class="sr-only">开启交接账本</span></label></div>
+                <p class="cap__body">将重要的项目记录、经验总结沉淀到交接账本或白板，便于团队协作和知识传承。</p>
+                <div class="small muted" data-cap-state="handoff">已关闭</div>
+              </article>
+              <article class="card cap" data-cap="audit">
+                <div class="cap__head"><span class="cap__icon">🕘</span><div class="cap__title">召回审计</div><span class="spacer"></span>
+                  <label class="switch"><input type="checkbox" checked data-cap-toggle="audit"><span class="switch__track"></span><span class="sr-only">开启召回审计</span></label></div>
+                <p class="cap__body">记录每一次主动唤回：为什么被唤回、是否命中、证据来自哪里，让召回可解释、可追溯、可纠偏。</p>
+                <div class="small muted" data-cap-state="audit">已开启</div>
+              </article>
+              <article class="card cap" data-cap="local">
+                <div class="cap__head"><span class="cap__icon">🔒</span><div><div class="cap__title">本地优先存储</div><span class="chip chip--brand">推荐</span></div><span class="spacer"></span>
+                  <label class="switch"><input type="checkbox" checked data-cap-toggle="local"><span class="switch__track"></span><span class="sr-only">开启本地优先存储</span></label></div>
+                <p class="cap__body">优先在本地存储你的记忆与数据，保护隐私安全。敏感内容不会上传，你始终掌握自己的数据。</p>
+                <div class="small muted" data-cap-state="local">已开启</div>
+              </article>
+              <article class="card cap pledge">
+                <div class="cap__head"><span class="cap__icon" style="background:var(--skin-color-brand-soft)">🛡</span><div class="cap__title">我们的承诺</div></div>
+                <p class="cap__body">你的数据，属于你自己。本地优先，安全可控；任何上传动作都需要你显式确认。</p>
+                <div class="small muted">版本 1.0 · 企业皮肤原型</div>
+              </article>
+            </div>
+          </div>
+        </section>
+
+        <div class="row row--between" style="margin-top:16px">
+          <button class="btn btn--ghost" data-route-link="home">跳过引导</button>
+          <div class="row">
+            <span class="muted small" id="wizardCounter">1 / 4</span>
+            <button class="btn btn--primary" data-route-link="settings">下一步：基础配置 →</button>
+          </div>
+        </div>
+      </section>
+      <!-- ==================== 页面 3：交接账本与 PLAN 白板 ==================== -->
+      <section class="page" id="page-handoff" data-page="handoff" aria-labelledby="handoff-title">
+        <div class="pagehead">
+          <div>
+            <h1 class="pagehead__title" id="handoff-title" data-i18n="handoff.title">📘 交接账本与 PLAN 白板</h1>
+            <p class="pagehead__sub" data-i18n="handoff.sub">上下文变满时，不压缩烧掉历史，而是通过交接笔记与白板续接工作。</p>
+          </div>
+          <div class="pagehead__aside">
+            <div class="row row--wrap" style="justify-content:flex-end">
+              <span class="chip chip--brand">上下文水位 76%（已使用）</span>
+              <span class="chip chip--warning">建议准备交接 &gt; 80%</span>
+              <span class="chip chip--info">历史窗口可检索</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid--3col">
+          <!-- 左：交接笔记列表 -->
+          <section class="card" style="padding:16px">
+            <div class="row row--between" style="margin-bottom:12px">
+              <h2 class="panel__title">交接笔记</h2>
+              <button class="btn btn--primary btn--sm">＋ 新建交接笔记</button>
+            </div>
+            <div class="seg" style="margin-bottom:12px" role="tablist" aria-label="交接笔记分类">
+              <button class="seg__btn" role="tab" aria-selected="true" data-handoff-filter="all">全部 12</button>
+              <button class="seg__btn" role="tab" aria-selected="false" data-handoff-filter="project">项目 8</button>
+              <button class="seg__btn" role="tab" aria-selected="false" data-handoff-filter="meeting">会议 2</button>
+              <button class="seg__btn" role="tab" aria-selected="false" data-handoff-filter="personal">个人 2</button>
+            </div>
+            <div class="list" id="handoffList">
+              <button class="item" data-handoff-id="H-1" data-kind="project" aria-selected="true">
+                <span class="item__icon">📘</span>
+                <span><span class="item__title">dsh-auto-memory 项目交接</span><span class="item__sub">完成核心记忆模块开发，准备进入白板…</span></span>
+                <span class="item__meta">今天 10:23</span></button>
+              <button class="item" data-handoff-id="H-2" data-kind="project" aria-selected="false">
+                <span class="item__icon">🧠</span>
+                <span><span class="item__title">Astra 上下文管理方案</span><span class="item__sub">讨论上下文水位与交接策略…</span></span>
+                <span class="item__meta">昨天 16:40</span></button>
+              <button class="item" data-handoff-id="H-3" data-kind="meeting" aria-selected="false">
+                <span class="item__icon">👥</span>
+                <span><span class="item__title">产品需求梳理</span><span class="item__sub">整理用户反馈与下一版规划…</span></span>
+                <span class="item__meta">11月15日</span></button>
+              <button class="item" data-handoff-id="H-4" data-kind="project" aria-selected="false">
+                <span class="item__icon">📅</span>
+                <span><span class="item__title">记忆库重构</span><span class="item__sub">完成向量检索优化，提升召回效果…</span></span>
+                <span class="item__meta">11月13日</span></button>
+              <button class="item" data-handoff-id="H-5" data-kind="meeting" aria-selected="false">
+                <span class="item__icon">📝</span>
+                <span><span class="item__title">周会纪要</span><span class="item__sub">本周进展与下周计划…</span></span>
+                <span class="item__meta">11月12日</span></button>
+              <button class="item" data-handoff-id="H-6" data-kind="personal" aria-selected="false">
+                <span class="item__icon">💬</span>
+                <span><span class="item__title">多轮对话测试</span><span class="item__sub">测试交接后能否正确延续上下文…</span></span>
+                <span class="item__meta">11月10日</span></button>
+              <button class="item" data-handoff-id="H-7" data-kind="project" aria-selected="false">
+                <span class="item__icon">💡</span>
+                <span><span class="item__title">白板功能设计</span><span class="item__sub">PLAN 白板的交互与数据结构…</span></span>
+                <span class="item__meta">11月08日</span></button>
+              <button class="item" data-handoff-id="H-8" data-kind="personal" aria-selected="false">
+                <span class="item__icon">🧑‍🤝‍🧑</span>
+                <span><span class="item__title">用户访谈记录</span><span class="item__sub">收集 5 位用户的使用反馈…</span></span>
+                <span class="item__meta">11月06日</span></button>
+            </div>
+          </section>
+
+          <!-- 中：四段式交接正文 -->
+          <section class="card">
+            <div class="panel__head">
+              <span aria-hidden="true">📘</span><h2 class="panel__title" id="handoffDocTitle">dsh-auto-memory 项目交接</h2>
+              <span class="muted small" style="margin-left:12px">创建时间：2024年11月17日 10:23</span>
+              <span class="chip chip--outline"># 项目</span><span class="chip chip--outline"># 产品</span><span class="chip chip--outline"># 交接</span>
+              <button class="panel__link">✏️ 编辑</button>
+            </div>
+            <div class="panel__body">
+              <div class="step">
+                <div class="step__num">1</div>
+                <div style="flex:1">
+                  <div class="step__title">📄 当前状态 <span class="chip chip--success" data-i18n="handoff.tagState">进行中</span></div>
+                  <p class="muted" style="margin-top:6px">核心记忆模块已完成，支持项目、会议、想法等多类型记忆存储。已集成时间线、思维导图和外部记忆功能。当前正在开发 PLAN 白板和交接账本模块，整体完成度约 70%。</p>
+                </div>
+              </div>
+              <div class="step">
+                <div class="step__num">2</div>
+                <div style="flex:1">
+                  <div class="step__title">🎯 目标</div>
+                  <ul class="bullets muted">
+                    <li>完成交接账本与 PLAN 白板的完整实现</li>
+                    <li>打通上下文水位监控与自动交接建议</li>
+                    <li>进行内部测试并收集用户反馈</li>
+                    <li>准备 v1.0 发布</li>
+                  </ul>
+                </div>
+              </div>
+              <div class="step">
+                <div class="step__num">3</div>
+                <div style="flex:1">
+                  <div class="step__title">⚠️ 死路与原因</div>
+                  <ul class="bullets muted">
+                    <li>曾尝试将历史长上下文直接压缩保留，导致关键信息丢失</li>
+                    <li>直接依赖单次对话上下文，容易在复杂任务中断裂</li>
+                    <li>白板早期方案过于复杂，交互学习成本高 → 已简化</li>
+                  </ul>
+                </div>
+              </div>
+              <div class="step" style="padding-bottom:0">
+                <div class="step__num">4</div>
+                <div style="flex:1">
+                  <div class="step__title">➡️ 进展与下一步</div>
+                  <ul class="checklist" id="handoffChecklist">
+                    <li><input type="checkbox" checked data-task="t1"><span><span class="bold">记忆库基础功能完成</span></span><span class="spacer"></span><span class="muted small">11月15日</span></li>
+                    <li><input type="checkbox" checked data-task="t2"><span><span class="bold">时间线与思维导图已上线</span></span><span class="spacer"></span><span class="muted small">11月16日</span></li>
+                    <li><input type="checkbox" checked data-task="t3"><span><span class="bold">上下文水位监控已实现</span></span><span class="spacer"></span><span class="muted small">11月16日</span></li>
+                    <li><input type="checkbox" data-task="t4"><span><span class="bold">完成 PLAN 白板卡片组件</span></span><span class="spacer"></span><span class="muted small">11月18日</span></li>
+                    <li><input type="checkbox" data-task="t5"><span><span class="bold">联调交接账本与白板的跳转</span></span><span class="spacer"></span><span class="muted small">11月20日</span></li>
+                    <li><input type="checkbox" data-task="t6"><span><span class="bold">编写使用文档并进行用户测试</span></span><span class="spacer"></span><span class="muted small">11月22日</span></li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- 右：PLAN 白板卡列 -->
+          <section class="card">
+            <div class="panel__head"><h2 class="panel__title">📋 PLAN 白板</h2><button class="panel__link">↗</button></div>
+            <div class="panel__body stack">
+              <div>
+                <div class="row row--between" style="margin-bottom:8px"><span class="bold">✅ TODO 待办事项</span><span class="chip chip--success">3</span></div>
+                <div class="stack stack--sm">
+                  <div class="card boardcard boardcard--todo"><span class="board-card-title">实现白板卡片拖拽与排序</span><span class="chip chip--outline">待办</span></div>
+                  <div class="card boardcard boardcard--todo"><span class="board-card-title">接入交接账本跳转功能</span><span class="chip chip--outline">待办</span></div>
+                  <div class="card boardcard boardcard--todo"><span class="board-card-title">准备 v1.0 发布说明文档</span><span class="chip chip--outline">待办</span></div>
+                </div>
+              </div>
+              <div>
+                <div class="row row--between" style="margin-bottom:8px"><span class="bold">❓ 开放问题</span><span class="chip chip--info">2</span></div>
+                <div class="stack stack--sm">
+                  <div class="card boardcard" style="border-left-color:var(--skin-color-info)"><span class="board-card-title">如何自动判断交接的最佳时机？</span></div>
+                  <div class="card boardcard" style="border-left-color:var(--skin-color-info)"><span class="board-card-title">白板是否需要支持多人协作？</span></div>
+                </div>
+              </div>
+              <div>
+                <div class="row row--between" style="margin-bottom:8px"><span class="bold">💡 重要决策</span><span class="chip chip--brand">3</span></div>
+                <div class="stack stack--sm">
+                  <div class="card boardcard boardcard--risk"><span class="board-card-title">✅ 采用四段式交接结构（状态/目标/死路/进展）</span></div>
+                  <div class="card boardcard boardcard--risk"><span class="board-card-title">✅ 上下文水位 &gt; 80% 时提示交接</span></div>
+                  <div class="card boardcard boardcard--risk"><span class="board-card-title">✅ 白板采用卡片式轻量设计</span></div>
+                </div>
+              </div>
+              <div>
+                <div class="row row--between" style="margin-bottom:8px"><span class="bold">⚠️ 阻塞项</span><span class="chip chip--warning">1</span></div>
+                <div class="card boardcard boardcard--risk"><span class="board-card-title">白板的实时保存机制待验证</span><span class="chip chip--warning">阻塞</span></div>
+              </div>
+              <div>
+                <div class="row row--between" style="margin-bottom:8px"><span class="bold">🚀 下一步</span><span class="chip chip--info">2</span></div>
+                <div class="stack stack--sm">
+                  <div class="card boardcard boardcard--todo"><span class="board-card-title">完成白板核心功能开发</span></div>
+                  <div class="card boardcard boardcard--todo"><span class="board-card-title">进行端到端测试与用户反馈收集</span></div>
+                </div>
+              </div>
+              <!-- 插槽：记忆卡尾部（企业可在白板卡列尾部追加自定义卡） -->
+              <div class="slot slot--card-foot" data-slot="memory-card-foot" data-slot-context="handoff-board"></div>
+            </div>
+          </section>
+        </div>
+      </section>
+      <!-- ==================== 页面 4：召回审查 ==================== -->
+      <section class="page" id="page-recall" data-page="recall" aria-labelledby="recall-title">
+        <div class="pagehead">
+          <div>
+            <h1 class="pagehead__title" id="recall-title" data-i18n="recall.title">🕘 召回审查</h1>
+            <p class="pagehead__sub" data-i18n="recall.sub">审计每次主动唤起：为什么被唤回、是否命中、证据来自哪里</p>
+          </div>
+          <div class="pagehead__aside"><div class="quote">“让每一次 AI 的主动想起，都可解释、可审计。”<span class="quote__src">—— dsh-auto-memory</span></div></div>
+        </div>
+
+        <div class="grid grid--4" style="margin-bottom:16px">
+          <article class="card stat"><div class="stat__top"><div class="stat__icon">💬</div><div class="stat__label">今日唤回</div></div>
+            <div class="stat__value">12 <span class="stat__desc" style="font-size:var(--skin-font-size-md)">次</span></div>
+            <div class="stat__desc">较昨日 <span class="trend">+20% ↑</span></div></article>
+          <article class="card stat"><div class="stat__top"><div class="stat__icon">🎯</div><div class="stat__label">命中率</div></div>
+            <div class="stat__value">83%</div><div class="stat__desc">10 / 12 次命中</div></article>
+          <article class="card stat"><div class="stat__top"><div class="stat__icon">📋</div><div class="stat__label">待审查</div></div>
+            <div class="stat__value">3 <span class="stat__desc" style="font-size:var(--skin-font-size-md)">条</span></div>
+            <div class="stat__desc">需要你确认和反馈</div></article>
+          <article class="card stat"><div class="stat__top"><div class="stat__icon">📊</div><div class="stat__label">平均置信度</div></div>
+            <div class="stat__value">0.76</div>
+            <div class="stat__desc">高于上周 <span class="trend">12% ↑</span></div></article>
+        </div>
+
+        <div class="grid grid--main-aside">
+          <section class="card">
+            <div class="panel__body" style="padding-bottom:0">
+              <div class="row row--between row--wrap" style="margin-bottom:12px">
+                <div class="seg" role="tablist" aria-label="召回结果过滤">
+                  <button class="seg__btn" role="tab" aria-selected="true" data-recall-filter="all">全部 (12)</button>
+                  <button class="seg__btn" role="tab" aria-selected="false" data-recall-filter="hit">已命中 (10)</button>
+                  <button class="seg__btn" role="tab" aria-selected="false" data-recall-filter="weak">一般 (1)</button>
+                  <button class="seg__btn" role="tab" aria-selected="false" data-recall-filter="miss">不相关 (1)</button>
+                </div>
+                <button class="btn btn--sm">📅 今天 · 2024-01-15 ▾</button>
+              </div>
+            </div>
+            <div style="overflow-x:auto">
+              <table class="table" id="recallTable">
+                <thead><tr>
+                  <th>#</th><th>当前对话主题</th><th>唤回的记忆</th><th>召回分数</th><th>触发原因</th><th>来源</th><th>结果</th>
+                </tr></thead>
+                <tbody>
+                  <tr data-recall-id="R-1" data-outcome="hit" aria-selected="true">
+                    <td class="num">1</td>
+                    <td><div class="bold">下周产品需求评审…</div><div class="small subtle">今天 10:24</div></td>
+                    <td><div class="row" style="gap:8px"><span>📄</span><span><div class="bold">产品评审会议习惯</div><div class="small subtle">会议 · 工作习惯</div></span></div></td>
+                    <td class="num">0.92</td><td>语义相似</td><td><span class="chip chip--outline">长期记忆</span></td><td><span class="chip chip--success">已命中</span></td>
+                  </tr>
+                  <tr data-recall-id="R-2" data-outcome="hit">
+                    <td class="num">2</td>
+                    <td><div class="bold">帮我写一个数据分…</div><div class="small subtle">今天 09:18</div></td>
+                    <td><div class="row" style="gap:8px"><span>📄</span><span><div class="bold">Python 数据分析经验</div><div class="small subtle">技能 · 工具使用</div></span></div></td>
+                    <td class="num">0.88</td><td>任务相关</td><td><span class="chip chip--outline">项目知识</span></td><td><span class="chip chip--success">已命中</span></td>
+                  </tr>
+                  <tr data-recall-id="R-3" data-outcome="hit">
+                    <td class="num">3</td>
+                    <td><div class="bold">这个方案和之前的…</div><div class="small subtle">今天 09:03</div></td>
+                    <td><div class="row" style="gap:8px"><span>📄</span><span><div class="bold">智能客服项目背景</div><div class="small subtle">项目 · 项目文档</div></span></div></td>
+                    <td class="num">0.81</td><td>语义相似</td><td><span class="chip chip--outline">项目知识</span></td><td><span class="chip chip--success">已命中</span></td>
+                  </tr>
+                  <tr data-recall-id="R-4" data-outcome="weak">
+                    <td class="num">4</td>
+                    <td><div class="bold">我最近睡眠质量不…</div><div class="small subtle">今天 08:47</div></td>
+                    <td><div class="row" style="gap:8px"><span>📄</span><span><div class="bold">睡眠改善计划</div><div class="small subtle">生活 · 健康管理</div></span></div></td>
+                    <td class="num">0.76</td><td>关键词匹配</td><td><span class="chip chip--outline">长期记忆</span></td><td><span class="chip chip--warning">一般</span></td>
+                  </tr>
+                  <tr data-recall-id="R-5" data-outcome="hit">
+                    <td class="num">5</td>
+                    <td><div class="bold">帮我对比一下这两…</div><div class="small subtle">今天 08:31</div></td>
+                    <td><div class="row" style="gap:8px"><span>📄</span><span><div class="bold">技术选型偏好</div><div class="small subtle">偏好 · 技术栈</div></span></div></td>
+                    <td class="num">0.68</td><td>语义相似</td><td><span class="chip chip--outline">长期记忆</span></td><td><span class="chip chip--success">已命中</span></td>
+                  </tr>
+                  <tr data-recall-id="R-6" data-outcome="hit">
+                    <td class="num">6</td>
+                    <td><div class="bold">明天的项目周会有…</div><div class="small subtle">今天 08:12</div></td>
+                    <td><div class="row" style="gap:8px"><span>📄</span><span><div class="bold">项目周会节奏</div><div class="small subtle">工作习惯 · 会议</div></span></div></td>
+                    <td class="num">0.62</td><td>时间相关</td><td><span class="chip chip--outline">日历提醒</span></td><td><span class="chip chip--success">已命中</span></td>
+                  </tr>
+                  <tr data-recall-id="R-7" data-outcome="miss">
+                    <td class="num">7</td>
+                    <td><div class="bold">文章风格再调整一…</div><div class="small subtle">今天 07:56</div></td>
+                    <td><div class="row" style="gap:8px"><span>📄</span><span><div class="bold">写作风格偏好</div><div class="small subtle">偏好 · 内容创作</div></span></div></td>
+                    <td class="num">0.58</td><td>语义相似</td><td><span class="chip chip--outline">长期记忆</span></td><td><span class="chip chip--danger">不相关</span></td>
+                  </tr>
+                  <tr data-recall-id="R-8" data-outcome="hit">
+                    <td class="num">8</td>
+                    <td><div class="bold">帮我准备和客户的…</div><div class="small subtle">今天 07:33</div></td>
+                    <td><div class="row" style="gap:8px"><span>📄</span><span><div class="bold">客户 A 沟通要点</div><div class="small subtle">客户 · 商务沟通</div></span></div></td>
+                    <td class="num">0.85</td><td>语义相似</td><td><span class="chip chip--outline">项目知识</span></td><td><span class="chip chip--success">已命中</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="panel__body">
+              <div class="row row--between"><span class="muted small">共 12 条</span>
+                <div class="pager">
+                  <button class="pager__btn" aria-label="上一页">‹</button>
+                  <button class="pager__btn" aria-current="true">1</button>
+                  <button class="pager__btn">2</button>
+                  <button class="pager__btn" aria-label="下一页">›</button>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- 右：召回详情（含证据链） -->
+          <section class="card">
+            <div class="panel__head"><h2 class="panel__title">召回详情</h2><button class="panel__link" title="关闭">✕</button></div>
+            <div class="panel__body stack">
+              <div>
+                <div class="bold">下周产品需求评审需要准备什么？</div>
+                <div class="small subtle">今天 10:24</div>
+                <button class="btn btn--sm" style="margin-top:8px">在对话中查看 ↗</button>
+              </div>
+              <hr class="hr">
+              <div>
+                <div class="small muted bold" style="margin-bottom:8px">唤回的记忆</div>
+                <div class="evidence__item">
+                  <div class="row row--between"><span class="bold">📄 产品评审会议习惯</span><button class="panel__link">打开原文 ↗</button></div>
+                  <div class="small subtle">会议 · 工作习惯</div>
+                  <div class="small muted" style="margin-top:6px">我通常会在产品评审前准备：需求背景、核心方案、风险点和…（下略）</div>
+                </div>
+              </div>
+              <div class="kv">
+                <div class="kv__cell"><div class="kv__k">召回分数</div><div class="kv__v">0.92</div><div class="bar" style="margin-top:6px"><div class="bar__fill" style="width:92%"></div></div></div>
+                <div class="kv__cell"><div class="kv__k">触发原因</div><div class="chip chip--brand">语义相似</div></div>
+                <div class="kv__cell"><div class="kv__k">来源</div><div class="chip chip--outline">长期记忆</div></div>
+                <div class="kv__cell"><div class="kv__k">结果</div><div class="chip chip--success">已命中</div></div>
+              </div>
+              <hr class="hr">
+              <div>
+                <div class="row row--between"><span class="small muted bold">本次唤回的证据链</span><span class="chip chip--outline">3 条证据</span></div>
+                <div class="evidence" style="margin-top:8px">
+                  <div class="evidence__item">
+                    <div class="row row--between"><span class="bold small">会议准备清单</span><span class="small muted">语义匹配 <b class="num">0.91</b></span></div>
+                    <div class="small subtle">“产品评审前我通常会准备：1. 需求背景和目标 2. 核心…”</div>
+                    <div class="small subtle">2024-01-08</div>
+                    <div class="bar" style="margin-top:6px"><div class="bar__fill" style="width:91%"></div></div>
+                  </div>
+                  <div class="evidence__item">
+                    <div class="row row--between"><span class="bold small">评审会议偏好</span><span class="small muted">语义匹配 <b class="num">0.83</b></span></div>
+                    <div class="small subtle">“我喜欢用简洁的结构化汇报，先讲结论，再讲方案细节…”</div>
+                    <div class="small subtle">2023-12-15</div>
+                    <div class="bar" style="margin-top:6px"><div class="bar__fill" style="width:83%"></div></div>
+                  </div>
+                  <div class="evidence__item">
+                    <div class="row row--between"><span class="bold small">相关项目经验</span><span class="small muted">语义匹配 <b class="num">0.78</b></span></div>
+                    <div class="small subtle">“在上次智能客服项目评审中，我重点准备了用户场景、…”</div>
+                    <div class="small subtle">2023-11-20</div>
+                    <div class="bar" style="margin-top:6px"><div class="bar__fill" style="width:78%"></div></div>
+                  </div>
+                </div>
+              </div>
+              <hr class="hr">
+              <div>
+                <div class="small muted bold" style="margin-bottom:8px">唤回边界信息</div>
+                <div class="kv">
+                  <div class="kv__cell"><div class="kv__k">时间范围</div><div class="kv__v">近 6 个月</div></div>
+                  <div class="kv__cell"><div class="kv__k">记忆类型</div><div class="kv__v">工作习惯</div></div>
+                  <div class="kv__cell"><div class="kv__k">检索方式</div><div class="kv__v">语义检索</div></div>
+                  <div class="kv__cell"><div class="kv__k">候选数量</div><div class="kv__v">8 条 → Top 3</div></div>
+                </div>
+              </div>
+            </div>
+            <!-- 插槽：详情面板动作条（企业可追加「上报合规」「导出审计包」等动作） -->
+            <div class="actionbar">
+              <div class="slot slot--detail-actions" data-slot="detail-actions" data-slot-context="recall"></div>
+              <button class="btn btn--primary btn--sm">👍 有帮助</button>
+              <button class="btn btn--sm">👎 无关</button>
+              <button class="btn btn--sm">📌 固定为规则</button>
+            </div>
+          </section>
+        </div>
+      </section>
+      <!-- ==================== 页面 5：记忆库 ==================== -->
+      <section class="page" id="page-library" data-page="library" aria-labelledby="library-title">
+        <div class="pagehead">
+          <div>
+            <h1 class="pagehead__title" id="library-title" data-i18n="library.title">📚 记忆库</h1>
+            <p class="pagehead__sub" data-i18n="library.sub">集中查看用户规则、项目笔记、每日日志与技能记忆。</p>
+          </div>
+          <div class="pagehead__aside"><div class="quote">“记录不是终点，更好的思考才是。”<span class="quote__src">—— dsh-auto-memory</span></div></div>
+        </div>
+
+        <div class="grid grid--main-aside">
+          <section class="card" style="padding:16px">
+            <div class="field" style="margin-bottom:12px">
+              <label class="sr-only" for="librarySearch">搜索记忆内容、标签或来源</label>
+              <input class="input" id="librarySearch" type="search" placeholder="🔍 搜索记忆内容、标签或来源…" data-i18n-attr="placeholder:library.search">
+            </div>
+            <div class="seg" style="margin-bottom:12px" role="tablist" aria-label="记忆类型">
+              <button class="seg__btn" role="tab" aria-selected="true" data-library-filter="all">全部 128</button>
+              <button class="seg__btn" role="tab" aria-selected="false" data-library-filter="rule">用户规则 42</button>
+              <button class="seg__btn" role="tab" aria-selected="false" data-library-filter="project">项目笔记 36</button>
+              <button class="seg__btn" role="tab" aria-selected="false" data-library-filter="log">每日日志 28</button>
+              <button class="seg__btn" role="tab" aria-selected="false" data-library-filter="skill">技能固化 22</button>
+            </div>
+            <div class="row row--between" style="margin-bottom:8px">
+              <span class="muted small">按最新优先</span><span class="muted small">↕ 最新优先</span>
+            </div>
+            <div class="list scroll-y" id="libraryList">
+              <button class="item" data-memory-id="M-1" data-kind="project" aria-selected="true">
+                <span class="item__icon">📄</span>
+                <span style="flex:1"><span class="item__title">FastAPI 项目部署最佳实践</span>
+                <span class="item__sub">总结了 FastAPI 项目从开发到生产环境部署的完整流程，包括依赖管理、环境配置、容器化部署和监控建议。</span>
+                <span class="row row--wrap" style="margin-top:6px"><span class="tag">#FastAPI</span><span class="tag">#部署</span><span class="tag">#Docker</span><span class="tag">#项目实践</span></span></span>
+                <span class="item__meta"><span class="chip chip--outline">⇧ 来自对话</span><br>2024-12-01 14:32<br><span class="subtle">项目笔记</span></span></button>
+              <button class="item" data-memory-id="M-2" data-kind="rule" aria-selected="false">
+                <span class="item__icon">❤️</span>
+                <span style="flex:1"><span class="item__title">偏好：简洁的中文回复</span>
+                <span class="item__sub">我更喜欢使用简洁的中文回复，技术问题希望包含示例代码，避免过于冗长的解释。</span>
+                <span class="row row--wrap" style="margin-top:6px"><span class="tag">#沟通偏好</span><span class="tag">#中文</span><span class="tag">#回答风格</span></span></span>
+                <span class="item__meta"><span class="chip chip--danger">📌 手动置顶</span><br>2024-11-28 10:15<br><span class="subtle">用户规则</span></span></button>
+              <button class="item" data-memory-id="M-3" data-kind="log" aria-selected="false">
+                <span class="item__icon">📅</span>
+                <span style="flex:1"><span class="item__title">2024-12-01 每日日志</span>
+                <span class="item__sub">今天完成了用户记忆库的界面设计，梳理了记忆检索与审查流程。下午调研了向量检索方案，对比了三种实现方式。</span>
+                <span class="row row--wrap" style="margin-top:6px"><span class="tag">#日常记录</span><span class="tag">#产品设计</span><span class="tag">#向量检索</span></span></span>
+                <span class="item__meta"><span class="chip chip--brand">✧ 自动沉淀</span><br>2024-12-01 22:10<br><span class="subtle">每日日志</span></span></button>
+              <button class="item" data-memory-id="M-4" data-kind="skill" aria-selected="false">
+                <span class="item__icon">🎓</span>
+                <span style="flex:1"><span class="item__title">Python 数据分析技能固化</span>
+                <span class="item__sub">掌握 pandas 数据清洗、可视化与常用统计分析方法，能够独立完成数据分析项目的完整流程。</span>
+                <span class="row row--wrap" style="margin-top:6px"><span class="tag">#Python</span><span class="tag">#数据分析</span><span class="tag">#pandas</span><span class="tag">#技能固化</span></span></span>
+                <span class="item__meta"><span class="chip chip--outline">⇧ 来自对话</span><br>2024-11-20 16:45<br><span class="subtle">技能固化</span></span></button>
+              <button class="item" data-memory-id="M-5" data-kind="project" aria-selected="false">
+                <span class="item__icon">📄</span>
+                <span style="flex:1"><span class="item__title">dsh-auto-memory 产品需求梳理</span>
+                <span class="item__sub">整理了产品的核心功能需求：三层记忆架构、可审计记忆、外部知识整合、隐私保护等关键点。</span>
+                <span class="row row--wrap" style="margin-top:6px"><span class="tag">#产品需求</span><span class="tag">#规划</span><span class="tag">#dsh-auto-memory</span></span></span>
+                <span class="item__meta"><span class="chip chip--brand">✧ 自动沉淀</span><br>2024-11-18 09:20<br><span class="subtle">项目笔记</span></span></button>
+              <button class="item" data-memory-id="M-6" data-kind="project" aria-selected="false">
+                <span class="item__icon">📄</span>
+                <span style="flex:1"><span class="item__title">Mac 上如何配置开发环境</span>
+                <span class="item__sub">记录在 macOS 上配置 Python、Node.js 和常用开发工具的步骤，包括 Homebrew、Python 环境管理和 IDE 推荐。</span>
+                <span class="row row--wrap" style="margin-top:6px"><span class="tag">#开发环境</span><span class="tag">#macOS</span><span class="tag">#工具链</span></span></span>
+                <span class="item__meta"><span class="chip chip--outline">⇧ 来自对话</span><br>2024-11-15 11:30<br><span class="subtle">项目笔记</span></span></button>
+            </div>
+          </section>
+
+          <section class="card">
+            <div class="detail__head">
+              <span class="item__icon" style="width:38px;height:38px;flex:0 0 38px">📄</span>
+              <div style="flex:1">
+                <div class="row"><h2 class="panel__title" id="libraryDetailTitle">FastAPI 项目部署最佳实践</h2><span class="chip chip--warning">★</span>
+                  <span class="spacer"></span><button class="panel__link">…</button></div>
+                <div class="row row--wrap" style="margin-top:8px">
+                  <span class="chip chip--outline">📄 项目笔记</span>
+                  <span class="chip chip--outline">⇧ 来自对话</span>
+                  <span class="chip chip--outline">🕐 2024-12-01 14:32</span>
+                </div>
+              </div>
+            </div>
+            <div class="panel__body stack">
+              <div>
+                <div class="small muted bold" style="margin-bottom:6px">内容摘要</div>
+                <p class="muted">总结了 FastAPI 项目从开发到生产环境部署的完整流程，包括：
+1. 依赖管理：使用 poetry 或 pip，锁定版本；
+2. 环境配置：通过环境变量区分开发、测试和生产环境；
+3. 容器化部署：使用 Docker 构建镜像，推荐多阶段构建；
+4. 生产部署：使用 gunicorn + uvicorn，配置 Nginx 反向代理；
+5. 监控与日志：集成 Prometheus、Grafana 和结构化日志；
+6. 最佳实践：安全配置、性能优化和自动化部署建议。</p>
+                <div class="row row--wrap" style="margin-top:10px">
+                  <span class="tag">#FastAPI</span><span class="tag">#部署</span><span class="tag">#Docker</span><span class="tag">#项目实践</span><span class="tag">#后端开发</span>
+                </div>
+              </div>
+              <hr class="hr">
+              <div>
+                <div class="row row--between"><span class="small muted bold">证据链（来源于我的对话）</span><button class="panel__link">查看原始对话 →</button></div>
+                <div class="evidence" style="margin-top:8px">
+                  <div class="evidence__item row"><span>🧑</span><div style="flex:1"><div class="small">你：如何将 FastAPI 项目部署到生产环境？</div><div class="small subtle">2024-12-01 14:20</div></div></div>
+                  <div class="evidence__item row"><span>🤖</span><div style="flex:1"><div class="small">AI：详细介绍了部署方案，包括 Docker、Nginx…</div><div class="small subtle">2024-12-01 14:22</div></div></div>
+                  <div class="evidence__item row"><span>🧑</span><div style="flex:1"><div class="small">你：能否补充监控和日志的最佳实践？</div><div class="small subtle">2024-12-01 14:28</div></div></div>
+                  <div class="evidence__item row"><span>🤖</span><div style="flex:1"><div class="small">AI：提供了完整的监控方案和配置示例。</div><div class="small subtle">2024-12-01 14:32</div></div></div>
+                </div>
+              </div>
+              <hr class="hr">
+              <div>
+                <div class="row row--between"><span class="small muted bold">相关记忆</span><button class="panel__link">查看更多 →</button></div>
+                <div class="list" style="margin-top:8px">
+                  <button class="item"><span class="item__icon">📄</span><span style="flex:1"><span class="item__title">Docker 常用命令合集</span><span class="row row--wrap" style="margin-top:4px"><span class="tag">#Docker</span></span></span><span class="item__meta">2024-11-12</span></button>
+                  <button class="item"><span class="item__icon">📄</span><span style="flex:1"><span class="item__title">Linux 服务器运维经验</span><span class="row row--wrap" style="margin-top:4px"><span class="tag">#运维</span></span></span><span class="item__meta">2024-11-18</span></button>
+                  <button class="item"><span class="item__icon">📊</span><span style="flex:1"><span class="item__title">服务监控与告警配置</span><span class="row row--wrap" style="margin-top:4px"><span class="tag">#监控</span></span></span><span class="item__meta">2024-11-25</span></button>
+                </div>
+              </div>
+              <div class="evidence__item row" style="background:var(--skin-color-brand-softer)">
+                <span>💡</span>
+                <div style="flex:1"><div class="bold small">为什么会出现这条记忆</div>
+                <div class="small muted">这是在你与我关于“FastAPI 部署”的多轮对话中，包含具体方案、代码示例和最佳实践。系统自动识别为具有长期价值的项目笔记，并按照三层记忆规则沉淀到你的记忆库中。</div></div>
+                <button class="panel__link">了解更多 →</button>
+              </div>
+              <!-- 插槽：记忆卡尾部 -->
+              <div class="slot slot--card-foot" data-slot="memory-card-foot" data-slot-context="M-1"></div>
+            </div>
+            <div class="actionbar">
+              <div class="slot slot--detail-actions" data-slot="detail-actions" data-slot-context="library"></div>
+              <button class="btn" style="flex:1">✏️ 编辑</button>
+              <button class="btn" style="flex:1;color:var(--skin-color-danger);border-color:var(--skin-color-danger)">🗑 删除</button>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <!-- ==================== 页面 6：时间线 ==================== -->
+      <section class="page" id="page-timeline" data-page="timeline" aria-labelledby="timeline-title">
+        <div class="pagehead">
+          <div>
+            <h1 class="pagehead__title" id="timeline-title" data-i18n="timeline.title">🧭 时间线</h1>
+            <p class="pagehead__sub" data-i18n="timeline.sub">查看 AI 在不同会话与工作日里记录、整合、技能固化与主动唤回的轨迹</p>
+          </div>
+          <div class="pagehead__aside"><button class="btn">📅 2024年12月2日 - 2024年12月8日 ▾</button></div>
+        </div>
+
+        <div class="grid grid--3" style="margin-bottom:16px">
+          <article class="card stat"><div class="stat__top"><div class="stat__icon">📝</div><div class="stat__label">今日新增</div><span class="trend">↑ +8</span></div><div class="stat__value">8</div><div class="stat__desc">条新记忆已保存</div></article>
+          <article class="card stat"><div class="stat__top"><div class="stat__icon">🎓</div><div class="stat__label">本周固化技能</div><span class="trend trend--brand">↑ +2</span></div><div class="stat__value">5</div><div class="stat__desc">项技能已沉淀</div></article>
+          <article class="card stat"><div class="stat__top"><div class="stat__icon">🔁</div><div class="stat__label">跨窗口交接次数</div><span class="trend trend--info">↑ +4</span></div><div class="stat__value">12</div><div class="stat__desc">次在不同项目/会话中成功交接</div></article>
+        </div>
+
+        <div class="grid grid--main-aside">
+          <section class="card card--pad">
+            <div class="dayhead"><span class="dayhead__date">12月8日</span><span class="chip chip--brand">今天</span><span class="muted small">星期日</span><span class="dayhead__rule"></span><span class="muted small">6 条记录</span></div>
+            <div class="tl">
+              <div class="tl__item"><span class="tl__dot"></span><div class="tl__head"><span class="tl__time">10:24</span><span class="bold">记录新笔记</span><span class="chip chip--outline">个人</span></div><div class="tl__text" style="margin-left:64px">记录了《产品周会讨论要点：2025 Q1 规划》 · 总结了 3 个核心方向与待办事项…</div></div>
+              <div class="tl__item"><span class="tl__dot" style="border-color:var(--skin-color-chart-2)"></span><div class="tl__head"><span class="tl__time">11:03</span><span class="bold">自动整合</span><span class="chip chip--brand">AI 处理</span></div><div class="tl__text" style="margin-left:64px">将 5 条相关记录整合为《Q1 产品策略》 · 来自 会议记录、需求文档、…</div></div>
+              <div class="tl__item"><span class="tl__dot" style="border-color:var(--skin-color-success)"></span><div class="tl__head"><span class="tl__time">14:17</span><span class="bold">技能固化</span><span class="chip chip--success">产品</span></div><div class="tl__text" style="margin-left:64px">将“PRD 需求拆解方法”沉淀为可复用技能 · 形成了标准步骤与模板…</div></div>
+              <div class="tl__item"><span class="tl__dot" style="border-color:var(--skin-color-info)"></span><div class="tl__head"><span class="tl__time">16:42</span><span class="bold">主动唤回</span><span class="chip chip--info">工作</span></div><div class="tl__text" style="margin-left:64px">在你撰写方案时，主动唤回了「Q1 产品策略」 · 基于上下文推荐了相关内容…</div></div>
+              <div class="tl__item"><span class="tl__dot" style="border-color:var(--skin-color-warning)"></span><div class="tl__head"><span class="tl__time">18:05</span><span class="bold">交接完成</span><span class="chip chip--warning">跨窗口</span></div><div class="tl__text" style="margin-left:64px">将本次对话要点交接至「项目管理」会话 · 已同步 3 条关键记忆和 1 个技能…</div></div>
+              <div class="tl__item" style="padding-bottom:0"><span class="tl__dot"></span><div class="tl__head"><span class="tl__time">21:36</span><span class="bold">记录新笔记</span><span class="chip chip--outline">生活</span></div><div class="tl__text" style="margin-left:64px">记录了《健身计划与饮食建议》 · 包含目标、每周计划和饮食参考…</div></div>
+            </div>
+            <div class="dayhead"><span class="dayhead__date">12月7日</span><span class="muted small">星期六</span><span class="dayhead__rule"></span><span class="muted small">4 条记录</span></div>
+            <div class="tl">
+              <div class="tl__item"><span class="tl__dot" style="border-color:var(--skin-color-chart-2)"></span><div class="tl__head"><span class="tl__time">09:12</span><span class="bold">自动整合</span><span class="chip chip--outline">学习</span></div><div class="tl__text" style="margin-left:64px">将 3 条阅读笔记整合为《AI 产品趋势洞察》 · 来自 文章摘要、灵感笔记、…</div></div>
+              <div class="tl__item"><span class="tl__dot" style="border-color:var(--skin-color-success)"></span><div class="tl__head"><span class="tl__time">11:56</span><span class="bold">技能固化</span><span class="chip chip--outline">学习</span></div><div class="tl__text" style="margin-left:64px">将“快速阅读与笔记法”沉淀为可复用技能 · 包含方法论、示例与实践建议…</div></div>
+              <div class="tl__item"><span class="tl__dot" style="border-color:var(--skin-color-info)"></span><div class="tl__head"><span class="tl__time">15:20</span><span class="bold">主动唤回</span><span class="chip chip--outline">产品</span></div><div class="tl__text" style="margin-left:64px">在你讨论技术方案时，推荐了相关历史经验 · 来自《微服务架构实践》…</div></div>
+              <div class="tl__item" style="padding-bottom:0"><span class="tl__dot" style="border-color:var(--skin-color-warning)"></span><div class="tl__head"><span class="tl__time">20:11</span><span class="bold">交接完成</span><span class="chip chip--warning">跨设备</span></div><div class="tl__text" style="margin-left:64px">已同步 7 条记录，0 个冲突</div></div>
+            </div>
+          </section>
+
+          <section class="card">
+            <div class="panel__head"><h2 class="panel__title">📝 记录新笔记</h2><button class="panel__link">✕</button></div>
+            <div class="panel__body stack">
+              <div class="row row--between"><span class="muted small">2024年12月8日 10:24</span><span class="chip chip--outline">个人</span></div>
+              <hr class="hr">
+              <div>
+                <div class="small muted bold" style="margin-bottom:6px">事件详情</div>
+                <p class="muted small">你在对话中记录了《产品周会讨论要点：2025 Q1 规划》，包括了业务目标、核心策略和后续待办事项。这条记录已被自动添加标签，并纳入项目知识库。</p>
+                <div class="summary__quote small" style="margin-top:10px">“2025 Q1 重点关注：用户增长、AI 能力升级、国际化探索。下一步安排需求评审会。”</div>
+              </div>
+              <hr class="hr">
+              <div>
+                <div class="small muted bold" style="margin-bottom:6px">来源</div>
+                <div class="row"><span>💬</span><div style="flex:1"><div class="small">对话会话</div><div class="small subtle">与 ChatGPT 的对话</div></div><button class="panel__link">查看原对话 →</button></div>
+              </div>
+              <hr class="hr">
+              <div>
+                <div class="row row--between"><span class="small muted bold">相关内容</span><button class="panel__link">查看全部 →</button></div>
+                <div class="list" style="margin-top:6px">
+                  <button class="item"><span class="item__icon">📄</span><span style="flex:1">产品路线图 2025</span><span class="item__meta">12月6日</span></button>
+                  <button class="item"><span class="item__icon">📄</span><span style="flex:1">用户增长策略</span><span class="item__meta">12月5日</span></button>
+                  <button class="item"><span class="item__icon">📄</span><span style="flex:1">Q1 需求池整理</span><span class="item__meta">12月3日</span></button>
+                </div>
+              </div>
+              <hr class="hr">
+              <div>
+                <div class="small muted bold" style="margin-bottom:6px">后续行动</div>
+                <div class="row"><input type="checkbox" id="followUp1"><label for="followUp1" class="small">在日历中创建需求评审会</label><span class="chip chip--warning">12月11日 10:00</span></div>
+                <div class="row" style="margin-top:8px"><input type="checkbox" id="followUp2"><label for="followUp2" class="small">补充并细化各策略的执行计划</label></div>
+              </div>
+            </div>
+            <div class="actionbar">
+              <button class="btn" style="flex:1">✓ 标记为已处理</button>
+              <button class="btn btn--primary" style="flex:1">＋ 创建相关任务</button>
+            </div>
+          </section>
+        </div>
+      </section>
+      <!-- ==================== 页面 7：外部记忆继承 ==================== -->
+      <section class="page" id="page-external" data-page="external" aria-labelledby="external-title">
+        <div class="pagehead">
+          <div>
+            <h1 class="pagehead__title" id="external-title" data-i18n="external.title">🔗 外部记忆继承</h1>
+            <p class="pagehead__sub" data-i18n="external.sub">继承你在其他 AI 工具中的历史记忆，接入前先审核，接入后随时可停用。</p>
+          </div>
+          <div class="pagehead__aside"><div class="quote">“让过去的积累，成为未来的起点。”<span class="quote__src">—— dsh-auto-memory</span></div></div>
+        </div>
+
+        <div class="grid grid--4" style="margin-bottom:16px">
+          <article class="card stat"><div class="stat__top"><div class="stat__icon">🧠</div><div class="stat__label">外部记忆源</div></div><div class="stat__value">4</div><div class="stat__desc">其中 2 个已开启同步</div></article>
+          <article class="card stat"><div class="stat__top"><div class="stat__icon">📥</div><div class="stat__label">待审核条目</div><span class="trend trend--warn">需处理</span></div><div class="stat__value">3</div><div class="stat__desc">尚未写入你的记忆库</div></article>
+          <article class="card stat"><div class="stat__top"><div class="stat__icon">🔁</div><div class="stat__label">本次可用更新</div></div><div class="stat__value">12</div><div class="stat__desc">来自源文件的增量变更</div></article>
+          <article class="card stat"><div class="stat__top"><div class="stat__icon">🕐</div><div class="stat__label">最近继承</div></div><div class="stat__value">2 <span class="stat__desc" style="font-size:var(--skin-font-size-md)">小时前</span></div><div class="stat__desc">自动增量同步 · 每 6 小时</div></article>
+        </div>
+
+        <div class="grid grid--2" style="margin-bottom:16px">
+          <article class="card cap" data-source="claude">
+            <div class="cap__head"><span class="cap__icon">🅰️</span><div style="flex:1"><div class="cap__title">Claude Code</div><div class="small subtle mono">~/.claude/CLAUDE.md · 12.4 KB</div></div>
+              <label class="switch"><input type="checkbox" checked data-source-toggle="claude"><span class="switch__track"></span><span class="sr-only">开启 Claude Code 同步</span></label></div>
+            <p class="cap__body">全局规则与项目约定。上次同步：今天 08:12 · 已继承 36 条</p>
+            <div class="row row--wrap"><span class="chip chip--success">已连接</span><span class="chip chip--outline">增量同步</span><button class="btn btn--sm" data-source-detail="claude">查看详情</button></div>
+          </article>
+          <article class="card cap" data-source="workbuddy">
+            <div class="cap__head"><span class="cap__icon">🅱️</span><div style="flex:1"><div class="cap__title">WorkBuddy</div><div class="small subtle mono">~/.workbuddy/MEMORY.md · 28.1 KB</div></div>
+              <label class="switch"><input type="checkbox" checked data-source-toggle="workbuddy"><span class="switch__track"></span><span class="sr-only">开启 WorkBuddy 同步</span></label></div>
+            <p class="cap__body">用户画像与云端记忆。上次同步：今天 06:40 · 已继承 74 条</p>
+            <div class="row row--wrap"><span class="chip chip--success">已连接</span><span class="chip chip--outline">增量同步</span><button class="btn btn--sm" data-source-detail="workbuddy">查看详情</button></div>
+          </article>
+          <article class="card cap" data-source="codebuddy">
+            <div class="cap__head"><span class="cap__icon">🅲</span><div style="flex:1"><div class="cap__title">CodeBuddy</div><div class="small subtle mono">~/.codebuddy/memery/*.md · 18.7 KB</div></div>
+              <label class="switch"><input type="checkbox" data-source-toggle="codebuddy"><span class="switch__track"></span><span class="sr-only">开启 CodeBuddy 同步</span></label></div>
+            <p class="cap__body">IDE 侧记忆画像。上次同步：3 天前 · 已继承 21 条</p>
+            <div class="row row--wrap"><span class="chip chip--outline">已暂停</span><span class="chip chip--outline">增量同步</span><button class="btn btn--sm" data-source-detail="codebuddy">查看详情</button></div>
+          </article>
+          <article class="card cap" data-source="zcode">
+            <div class="cap__head"><span class="cap__icon">🆉</span><div style="flex:1"><div class="cap__title">ZCode</div><div class="small subtle mono">~/.zcode/cli/memories/**/*.md · 9.8 KB</div></div>
+              <label class="switch"><input type="checkbox" data-source-toggle="zcode"><span class="switch__track"></span><span class="sr-only">开启 ZCode 同步</span></label></div>
+            <p class="cap__body">项目级记忆与交接稿。从未同步 · 检测到 3 条可继承条目</p>
+            <div class="row row--wrap"><span class="chip chip--warning">待审核</span><span class="chip chip--outline">增量同步</span><button class="btn btn--sm" data-source-detail="zcode">查看详情</button></div>
+          </article>
+        </div>
+
+        <div class="grid grid--main-aside">
+          <section class="card">
+            <div class="panel__head"><h2 class="panel__title">待审核条目</h2><span class="muted small">接入前逐条确认，避免把过期结论带进记忆库</span>
+              <span class="spacer"></span><button class="btn btn--sm">全部忽略</button><button class="btn btn--primary btn--sm">全部采纳</button></div>
+            <div style="overflow-x:auto">
+              <table class="table">
+                <thead><tr><th><input type="checkbox" aria-label="全选"></th><th>来源</th><th>条目</th><th>类型</th><th>置信度</th><th>更新时间</th><th>操作</th></tr></thead>
+                <tbody>
+                  <tr data-pending-id="P-1" aria-selected="true"><td><input type="checkbox" checked></td><td><span class="chip chip--outline">ZCode</span></td>
+                    <td><div class="bold">插件发版九步流程（含上游回流前置）</div><div class="small subtle">技能 / 流程 · 与「发版四步」规则存在重名冲突</div></td>
+                    <td>procedure</td><td class="num">0.81</td><td class="num">2026-08-21</td>
+                    <td><button class="btn btn--sm">采纳</button> <button class="btn btn--sm">忽略</button></td></tr>
+                  <tr data-pending-id="P-2"><td><input type="checkbox" checked></td><td><span class="chip chip--outline">CodeBuddy</span></td>
+                    <td><div class="bold">React 状态管理偏好：Redux Toolkit</div><div class="small subtle">偏好 · 与本机前端技术栈不一致</div></td>
+                    <td>preference</td><td class="num">0.62</td><td class="num">2026-06-30</td>
+                    <td><button class="btn btn--sm">采纳</button> <button class="btn btn--sm">忽略</button></td></tr>
+                  <tr data-pending-id="P-3"><td><input type="checkbox"></td><td><span class="chip chip--outline">ZCode</span></td>
+                    <td><div class="bold">首页交付记录 gm53-homepage-delivery</div><div class="small subtle">事实 · 与既有 doc 条目部分重叠</div></td>
+                    <td>fact</td><td class="num">0.74</td><td class="num">2026-07-04</td>
+                    <td><button class="btn btn--sm">采纳</button> <button class="btn btn--sm">忽略</button></td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="panel__body"><div class="row row--between"><span class="muted small">共 3 条待审核 · 已选 2 条</span>
+              <div class="row"><button class="btn btn--sm">标记为已读</button><button class="btn btn--primary btn--sm">继承所选（2）</button></div></div></div>
+          </section>
+
+          <section class="card">
+            <div class="panel__head"><h2 class="panel__title" id="externalDetailTitle">ZCode</h2><span class="chip chip--warning" id="externalDetailState">待审核</span></div>
+            <div class="panel__body stack">
+              <div class="kv">
+                <div class="kv__cell"><div class="kv__k">来源类型</div><div class="kv__v">外部工具遗产</div></div>
+                <div class="kv__cell"><div class="kv__k">接入方式</div><div class="kv__v">纯链接（不复制）</div></div>
+                <div class="kv__cell"><div class="kv__k">条目总数</div><div class="kv__v">3</div></div>
+                <div class="kv__cell"><div class="kv__k">冲突条目</div><div class="kv__v">1</div></div>
+              </div>
+              <hr class="hr">
+              <div>
+                <div class="small muted bold" style="margin-bottom:6px">源文件（只存指针，内容按需读取）</div>
+                <div class="evidence__item mono small">~/.zcode/cli/memories/projects/dsh-auto-memory-4421cd98b2e33c51/memory/MEMORY.md</div>
+                <div class="evidence__item mono small" style="margin-top:8px">~/.zcode/cli/memories/projects/…/gm53-homepage-delivery.md</div>
+              </div>
+              <hr class="hr">
+              <div>
+                <div class="small muted bold" style="margin-bottom:6px">冲突提示</div>
+                <div class="evidence__item" style="border-color:var(--skin-color-warning)">
+                  <div class="small bold">「发版流程」与既有用户规则重名</div>
+                  <div class="small muted" style="margin-top:4px">既有规则：自研 DSH 插件发版四步（已在记忆中固化）。新条目为九步流程。二者语义相近，需你裁定保留哪一条；系统默认 fail-closed：不自动覆盖既有规则，冲突条目需人工确认。</div>
+                </div>
+              </div>
+            </div>
+            <div class="actionbar">
+              <div class="slot slot--detail-actions" data-slot="detail-actions" data-slot-context="external"></div>
+              <button class="btn">暂停同步</button><button class="btn">查看原文</button><button class="btn btn--primary">继承所选</button>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <!-- ==================== 页面 8：思维导图 ==================== -->
+      <section class="page" id="page-mindmap" data-page="mindmap" aria-labelledby="mindmap-title">
+        <div class="pagehead">
+          <div>
+            <h1 class="pagehead__title" id="mindmap-title" data-i18n="mindmap.title">🕸 思维导图</h1>
+            <p class="pagehead__sub" data-i18n="mindmap.sub">从记忆中自动组织你的偏好、项目、技能与关系脉络</p>
+          </div>
+          <div class="pagehead__aside"><div class="row"><button class="btn btn--sm">🔍 放大</button><button class="btn btn--sm">🔎 缩小</button><button class="btn btn--sm">⛶ 居中</button></div></div>
+        </div>
+
+        <div class="grid grid--main-aside">
+          <section class="card card--pad">
+            <div class="mindmap" id="mindmapCanvas">
+              <svg class="mindmap__svg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+                <line x1="50" y1="50" x2="18" y2="20" stroke="var(--skin-color-danger)" stroke-width="0.35" opacity="0.65"></line>
+                <line x1="50" y1="50" x2="82" y2="18" stroke="var(--skin-color-success)" stroke-width="0.35" opacity="0.65"></line>
+                <line x1="50" y1="50" x2="18" y2="76" stroke="var(--skin-color-chart-2)" stroke-width="0.35" opacity="0.65"></line>
+                <line x1="50" y1="50" x2="82" y2="76" stroke="var(--skin-color-brand)" stroke-width="0.35" opacity="0.65"></line>
+                <line x1="50" y1="50" x2="50" y2="90" stroke="var(--skin-color-warning)" stroke-width="0.35" opacity="0.65"></line>
+                <g stroke="var(--skin-color-border-strong)" stroke-width="0.25" opacity="0.75">
+                  <line x1="18" y1="20" x2="7" y2="7"></line><line x1="18" y1="20" x2="6" y2="15"></line><line x1="18" y1="20" x2="7" y2="23"></line><line x1="18" y1="20" x2="6" y2="31"></line>
+                  <line x1="82" y1="18" x2="94" y2="7"></line><line x1="82" y1="18" x2="94" y2="14"></line><line x1="82" y1="18" x2="94" y2="21"></line><line x1="82" y1="18" x2="94" y2="28"></line><line x1="82" y1="18" x2="94" y2="35"></line>
+                  <line x1="18" y1="76" x2="6" y2="63"></line><line x1="18" y1="76" x2="6" y2="70"></line><line x1="18" y1="76" x2="6" y2="77"></line><line x1="18" y1="76" x2="6" y2="84"></line>
+                  <line x1="82" y1="76" x2="94" y2="63"></line><line x1="82" y1="76" x2="94" y2="70"></line><line x1="82" y1="76" x2="94" y2="77"></line><line x1="82" y1="76" x2="94" y2="84"></line><line x1="82" y1="76" x2="94" y2="91"></line>
+                  <line x1="50" y1="90" x2="16" y2="97"></line><line x1="50" y1="90" x2="33" y2="97"></line><line x1="50" y1="90" x2="50" y2="97"></line><line x1="50" y1="90" x2="67" y2="97"></line><line x1="50" y1="90" x2="84" y2="97"></line>
+                </g>
+              </svg>
+              <div class="mindmap__node mindmap__node--center" style="left:50%;top:50%">你 · 持续学习<br><span style="font-weight:400;font-size:var(--skin-font-size-xs)">更高效地思考和行动</span></div>
+              <div class="mindmap__node mindmap__node--branch" style="left:18%;top:20%;border-color:var(--skin-color-danger);color:var(--skin-color-danger)">❤️ 用户规则</div>
+              <div class="mindmap__node mindmap__node--leaf" style="left:7%;top:7%">偏好设置</div>
+              <div class="mindmap__node mindmap__node--leaf" style="left:6%;top:15%">工作风格</div>
+              <div class="mindmap__node mindmap__node--leaf" style="left:7%;top:23%">查新流程</div>
+              <div class="mindmap__node mindmap__node--leaf" style="left:6%;top:31%">本地优先</div>
+              <div class="mindmap__node mindmap__node--branch" style="left:82%;top:18%;border-color:var(--skin-color-success);color:var(--skin-color-success)">📁 项目知识</div>
+              <div class="mindmap__node mindmap__node--leaf" style="left:94%;top:7%">dsh-auto-memory</div>
+              <div class="mindmap__node mindmap__node--leaf" style="left:94%;top:14%">需求分析</div>
+              <div class="mindmap__node mindmap__node--leaf" style="left:94%;top:21%">技术架构</div>
+              <div class="mindmap__node mindmap__node--leaf" style="left:94%;top:28%">容器化部署</div>
+              <div class="mindmap__node mindmap__node--leaf" style="left:94%;top:35%">版本发布</div>
+              <div class="mindmap__node mindmap__node--branch" style="left:18%;top:76%;border-color:var(--skin-color-chart-2);color:var(--skin-color-chart-2)">📅 每日日志</div>
+              <div class="mindmap__node mindmap__node--leaf" style="left:6%;top:63%">今日工作</div>
+              <div class="mindmap__node mindmap__node--leaf" style="left:6%;top:70%">会议记录</div>
+              <div class="mindmap__node mindmap__node--leaf" style="left:6%;top:77%">想法与灵感</div>
+              <div class="mindmap__node mindmap__node--leaf" style="left:6%;top:84%">待办事项</div>
+              <div class="mindmap__node mindmap__node--branch" style="left:82%;top:76%">🎓 技能固化</div>
+              <div class="mindmap__node mindmap__node--leaf" style="left:94%;top:63%">Python 开发</div>
+              <div class="mindmap__node mindmap__node--leaf" style="left:94%;top:70%">产品设计</div>
+              <div class="mindmap__node mindmap__node--leaf" style="left:94%;top:77%">知识管理</div>
+              <div class="mindmap__node mindmap__node--leaf" style="left:94%;top:84%">提示工程</div>
+              <div class="mindmap__node mindmap__node--leaf" style="left:94%;top:91%">容器化部署</div>
+              <div class="mindmap__node mindmap__node--branch" style="left:50%;top:90%;border-color:var(--skin-color-warning);color:var(--skin-color-warning)">🔗 外部记忆</div>
+              <div class="mindmap__node mindmap__node--leaf" style="left:16%;top:97%">会议习惯</div>
+              <div class="mindmap__node mindmap__node--leaf" style="left:33%;top:97%">行业动态</div>
+              <div class="mindmap__node mindmap__node--leaf" style="left:50%;top:97%">优秀实践</div>
+              <div class="mindmap__node mindmap__node--leaf" style="left:67%;top:97%">参考资料</div>
+              <div class="mindmap__node mindmap__node--leaf" style="left:84%;top:97%">人物关系</div>
+            </div>
+          </section>
+
+          <section class="card">
+            <div class="detail__head">
+              <span class="item__icon" style="width:38px;height:38px;flex:0 0 38px;background:var(--skin-color-success-soft);color:var(--skin-color-success)">📁</span>
+              <div style="flex:1"><h2 class="panel__title" id="mindmapDetailTitle">项目知识</h2><div class="small subtle">思维导图节点</div></div>
+              <button class="panel__link">…</button>
+            </div>
+            <div class="panel__body stack">
+              <div>
+                <div class="small muted bold" style="margin-bottom:6px">节点描述</div>
+                <p class="muted small">包含我正在进行的项目、技术文档、需求分析、开发记录以及相关的知识积累。帮助我在不同阶段快速回顾项目背景、技术方案和关键决策。</p>
+                <div class="summary__quote small" style="margin-top:10px">“项目的每一步，都是认知的积累。”</div>
+              </div>
+              <hr class="hr">
+              <div>
+                <div class="row row--between"><span class="small muted bold">关联记忆（共 128 条）</span><button class="panel__link">查看全部 →</button></div>
+                <div class="list" style="margin-top:6px">
+                  <button class="item"><span class="item__icon">📄</span><span style="flex:1"><span class="item__title">dsh-auto-memory 项目概述</span></span><span class="item__meta">2024-12-10</span></button>
+                  <button class="item"><span class="item__icon">📄</span><span style="flex:1"><span class="item__title">技术架构设计文档</span></span><span class="item__meta">2024-12-08</span></button>
+                  <button class="item"><span class="item__icon">📄</span><span style="flex:1"><span class="item__title">容器化部署实践</span></span><span class="item__meta">2024-12-05</span></button>
+                  <button class="item"><span class="item__icon">📄</span><span style="flex:1"><span class="item__title">产品需求分析 v1.2</span></span><span class="item__meta">2024-12-01</span></button>
+                  <button class="item"><span class="item__icon">📄</span><span style="flex:1"><span class="item__title">版本发布流程</span></span><span class="item__meta">2024-11-28</span></button>
+                </div>
+              </div>
+              <hr class="hr">
+              <div>
+                <div class="row row--between"><span class="small muted bold">最近变更</span><button class="panel__link">查看全部 →</button></div>
+                <div class="stack stack--sm" style="margin-top:6px">
+                  <div class="row small"><span class="legend__dot" style="background:var(--skin-color-chart-1)"></span>4 小时前<span class="muted">更新了《容器化部署实践》</span></div>
+                  <div class="row small"><span class="legend__dot" style="background:var(--skin-color-chart-2)"></span>1 天前<span class="muted">新增《版本发布流程》</span></div>
+                  <div class="row small"><span class="legend__dot" style="background:var(--skin-color-success)"></span>2 天前<span class="muted">更新了《技术架构设计文档》</span></div>
+                  <div class="row small"><span class="legend__dot" style="background:var(--skin-color-warning)"></span>3 天前<span class="muted">新增《需求分析会议记录》</span></div>
+                  <div class="row small"><span class="legend__dot" style="background:var(--skin-color-info)"></span>5 天前<span class="muted">更新了《项目概述》</span></div>
+                </div>
+              </div>
+            </div>
+            <div class="actionbar"><button class="btn btn--primary" style="flex:1">↗ 前往记忆库查看相关内容</button></div>
+          </section>
+        </div>
+      </section>
+      <!-- ==================== 页面 9：日历提醒 ==================== -->
+      <section class="page" id="page-calendar" data-page="calendar" aria-labelledby="calendar-title">
+        <div class="pagehead">
+          <div>
+            <h1 class="pagehead__title" id="calendar-title" data-i18n="calendar.title">📅 日历提醒</h1>
+            <p class="pagehead__sub" data-i18n="calendar.sub">将对话中的承诺、截止时间与待办自动写入提醒系统</p>
+          </div>
+          <div class="pagehead__aside"><div class="quote">“让重要的时刻，不再被遗忘。”<span class="quote__src">—— dsh-auto-memory</span></div></div>
+        </div>
+
+        <div class="grid grid--4" style="margin-bottom:16px">
+          <article class="card stat"><div class="stat__top"><div class="stat__icon">🔔</div><div class="stat__label">本周待提醒</div><span class="spacer"></span><span class="muted">→</span></div><div class="stat__value">6</div><div class="stat__desc">包括待办、会议和截止时间</div></article>
+          <article class="card stat"><div class="stat__top"><div class="stat__icon">⏰</div><div class="stat__label">今日到期</div><span class="spacer"></span><span class="muted">→</span></div><div class="stat__value">2</div><div class="stat__desc">有 2 项任务需要关注</div></article>
+          <article class="card stat"><div class="stat__top"><div class="stat__icon">✅</div><div class="stat__label">已完成</div><span class="spacer"></span><span class="muted">→</span></div><div class="stat__value">14</div><div class="stat__desc">本周已完成 14 项提醒</div></article>
+          <article class="card stat"><div class="stat__top"><div class="stat__icon">🔁</div><div class="stat__label">重复提醒</div><span class="spacer"></span><span class="muted">→</span></div><div class="stat__value">3</div><div class="stat__desc">包含日常问候和周期任务</div></article>
+        </div>
+
+        <div class="grid grid--main-aside">
+          <section class="card card--pad">
+            <div class="row row--between" style="margin-bottom:16px">
+              <h2 class="panel__title">2024 年 12 月</h2>
+              <div class="row"><button class="btn btn--sm" aria-label="上个月">‹</button><button class="btn btn--sm">今天</button><button class="btn btn--sm" aria-label="下个月">›</button></div>
+            </div>
+            <div class="cal__grid" role="grid" aria-label="月历">
+              <div class="cal__dow">日</div><div class="cal__dow">一</div><div class="cal__dow">二</div><div class="cal__dow">三</div><div class="cal__dow">四</div><div class="cal__dow">五</div><div class="cal__dow">六</div>
+              <button class="cal__day cal__day--muted">24</button><button class="cal__day cal__day--muted">25</button><button class="cal__day cal__day--muted">26</button><button class="cal__day cal__day--muted">27</button><button class="cal__day cal__day--muted">28</button><button class="cal__day cal__day--muted">29</button><button class="cal__day cal__day--muted">30</button>
+              <button class="cal__day" data-day="1">1<span class="cal__dots"><span class="cal__dot" style="background:var(--skin-color-info)"></span></span></button>
+              <button class="cal__day" data-day="2">2<span class="cal__dots"><span class="cal__dot" style="background:var(--skin-color-info)"></span></span></button>
+              <button class="cal__day" data-day="3">3<span class="cal__dots"><span class="cal__dot" style="background:var(--skin-color-info)"></span></span></button>
+              <button class="cal__day" data-day="4">4<span class="cal__dots"><span class="cal__dot" style="background:var(--skin-color-info)"></span></span></button>
+              <button class="cal__day" data-day="5">5<span class="cal__dots"><span class="cal__dot" style="background:var(--skin-color-danger)"></span><span class="cal__dot" style="background:var(--skin-color-chart-2)"></span></span></button>
+              <button class="cal__day" data-day="6">6<span class="cal__dots"><span class="cal__dot" style="background:var(--skin-color-success)"></span></span></button>
+              <button class="cal__day" data-day="7">7<span class="cal__dots"><span class="cal__dot" style="background:var(--skin-color-success)"></span></span></button>
+              <button class="cal__day" data-day="8">8<span class="cal__dots"><span class="cal__dot" style="background:var(--skin-color-chart-2)"></span></span></button>
+              <button class="cal__day" data-day="9">9<span class="cal__dots"><span class="cal__dot" style="background:var(--skin-color-chart-2)"></span></span></button>
+              <button class="cal__day cal__day--today cal__day--selected" data-day="10" aria-current="date">10</button>
+              <button class="cal__day" data-day="11">11</button><button class="cal__day" data-day="12">12</button><button class="cal__day" data-day="13">13</button><button class="cal__day" data-day="14">14<span class="cal__dots"><span class="cal__dot" style="background:var(--skin-color-info)"></span></span></button>
+              <button class="cal__day" data-day="15">15<span class="cal__dots"><span class="cal__dot" style="background:var(--skin-color-success)"></span></span></button>
+              <button class="cal__day" data-day="16">16</button>
+              <button class="cal__day" data-day="17">17<span class="cal__dots"><span class="cal__dot" style="background:var(--skin-color-chart-2)"></span></span></button>
+              <button class="cal__day" data-day="18">18</button><button class="cal__day" data-day="19">19</button>
+              <button class="cal__day" data-day="20">20<span class="cal__dots"><span class="cal__dot" style="background:var(--skin-color-warning)"></span></span></button>
+              <button class="cal__day" data-day="21">21</button>
+              <button class="cal__day" data-day="22">22</button><button class="cal__day" data-day="23">23</button>
+              <button class="cal__day" data-day="24">24<span class="cal__dots"><span class="cal__dot" style="background:var(--skin-color-info)"></span></span></button>
+              <button class="cal__day" data-day="25">25</button>
+              <button class="cal__day" data-day="26">26<span class="cal__dots"><span class="cal__dot" style="background:var(--skin-color-info)"></span></span></button>
+              <button class="cal__day" data-day="27">27</button><button class="cal__day" data-day="28">28</button>
+              <button class="cal__day" data-day="29">29</button><button class="cal__day" data-day="30">30</button><button class="cal__day" data-day="31">31</button>
+              <button class="cal__day cal__day--muted">1</button><button class="cal__day cal__day--muted">2</button><button class="cal__day cal__day--muted">3</button><button class="cal__day cal__day--muted">4</button>
+            </div>
+            <div class="cal__legend">
+              <span><span class="cal__dot" style="background:var(--skin-color-info)"></span> 对话承诺</span>
+              <span><span class="cal__dot" style="background:var(--skin-color-danger)"></span> 截止时间</span>
+              <span><span class="cal__dot" style="background:var(--skin-color-chart-2)"></span> 会议</span>
+              <span><span class="cal__dot" style="background:var(--skin-color-success)"></span> 重复提醒</span>
+              <span><span class="cal__dot" style="background:var(--skin-color-warning)"></span> 复盘/回顾</span>
+            </div>
+          </section>
+
+          <section class="card">
+            <div class="panel__head"><h2 class="panel__title" id="calendarDayTitle">12 月 10 日</h2><span class="chip chip--brand">星期二</span>
+              <span class="spacer"></span><button class="btn btn--sm" aria-label="下一天">›</button><button class="btn btn--primary btn--sm">＋ 新建提醒</button></div>
+            <div class="panel__body stack" id="calendarEvents">
+              <div class="row" style="align-items:flex-start"><input type="checkbox" id="ev1"><label for="ev1" style="flex:1"><div class="bold">整理产品需求文档</div><div class="small muted">你在昨天的对话中承诺：整理并发送最新的产品需求文档。</div><div class="small subtle">🕘 09:00</div></label><span class="chip chip--info">自动识别</span></div>
+              <hr class="hr">
+              <div class="row" style="align-items:flex-start"><input type="checkbox" id="ev2"><label for="ev2" style="flex:1"><div class="bold">提交周报</div><div class="small muted">从对话中检测到的截止时间：本周周报需在今天提交。</div><div class="small subtle">🕘 10:00</div></label><span class="chip chip--info">自动识别</span></div>
+              <hr class="hr">
+              <div class="row" style="align-items:flex-start"><input type="checkbox" id="ev3"><label for="ev3" style="flex:1"><div class="bold">产品团队周会</div><div class="small muted">每周例会，讨论项目进展与下周计划。</div><div class="small subtle">🕘 14:00</div></label><span class="chip chip--success">已提醒</span></div>
+              <hr class="hr">
+              <div class="row" style="align-items:flex-start"><input type="checkbox" id="ev4"><label for="ev4" style="flex:1"><div class="bold">问候：关心李四的出差情况</div><div class="small muted">你之前说过要在本周二问候李四的出差行程。</div><div class="small subtle">🕘 16:00</div></label><span class="chip chip--brand">重复</span></div>
+              <hr class="hr">
+              <div class="row" style="align-items:flex-start"><input type="checkbox" id="ev5"><label for="ev5" style="flex:1"><div class="bold">项目复盘提醒</div><div class="small muted">建议回顾本月的项目进展，整理经验与待改进项。</div><div class="small subtle">🕘 19:00</div></label><span class="chip chip--info">自动识别</span></div>
+              <div class="evidence__item row" style="background:var(--skin-color-brand-softer)">
+                <span>💡</span><div style="flex:1"><div class="bold small">来自对话的智能提醒</div>
+                <div class="small muted">我会持续从你的对话中识别承诺、截止时间和重要事件，并自动生成提醒。</div></div>
+                <button class="panel__link">了解更多 →</button>
+              </div>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <!-- ==================== 页面 10：设置 ==================== -->
+      <section class="page" id="page-settings" data-page="settings" aria-labelledby="settings-title">
+        <div class="pagehead">
+          <div>
+            <h1 class="pagehead__title" id="settings-title" data-i18n="settings.title">⚙️ 设置</h1>
+            <p class="pagehead__sub" data-i18n="settings.sub">控制记忆如何记录、唤回、继承与保护</p>
+          </div>
+          <div class="pagehead__aside"><div class="quote">“好的设置，让记忆更可靠，也更自由。”<span class="quote__src">—— dsh-auto-memory</span></div></div>
+        </div>
+
+        <!-- 插槽：设置页扩展分区（企业可插入自有策略分区） -->
+        <div class="slot slot--settings-section" id="slot-settings" data-slot="settings-section"></div>
+
+        <div class="grid grid--main-aside">
+          <div class="grid grid--2">
+            <section class="card card--pad">
+              <div class="row"><span class="stat__icon">🔄</span><div style="flex:1"><div class="bold">主动唤回</div><div class="small muted">在合适的时机，主动回忆相关内容，提供上下文支持。</div></div>
+                <label class="switch"><input type="checkbox" checked data-setting="recall"><span class="switch__track"></span><span class="sr-only">开启主动唤回</span></label></div>
+              <div class="field" style="margin-top:16px"><label class="field__label" for="setRecallTiming">唤回时机</label>
+                <select class="select" id="setRecallTiming"><option>与我对话时（推荐）</option><option>仅在明确询问时</option><option>每次会话开始时</option></select></div>
+              <div class="field"><span class="field__label">相关性阈值</span>
+                <div class="seg" role="tablist"><button class="seg__btn" role="tab" aria-selected="false">宽松</button><button class="seg__btn" role="tab" aria-selected="true">平衡</button><button class="seg__btn" role="tab" aria-selected="false">严格</button></div></div>
+              <div class="field" style="margin-bottom:0"><label class="field__label" for="setRecallMax">单次最大条数</label>
+                <select class="select" id="setRecallMax"><option>3 条</option><option>5 条</option><option>8 条</option></select></div>
+            </section>
+
+            <section class="card card--pad">
+              <div class="row"><span class="stat__icon">🧩</span><div style="flex:1"><div class="bold">自动沉淀</div><div class="small muted">将重要对话自动整理为结构化记忆。</div></div>
+                <label class="switch"><input type="checkbox" checked data-setting="sediment"><span class="switch__track"></span><span class="sr-only">开启自动沉淀</span></label></div>
+              <div class="field" style="margin-top:16px"><span class="field__label">沉淀粒度</span>
+                <div class="seg" role="tablist"><button class="seg__btn" role="tab" aria-selected="false">精简</button><button class="seg__btn" role="tab" aria-selected="true">标准</button><button class="seg__btn" role="tab" aria-selected="false">详细</button></div></div>
+              <div class="field"><label class="field__label" for="setMinImportance">最低重要性</label>
+                <select class="select" id="setMinImportance"><option>中等及以上</option><option>仅重要</option><option>全部记录</option></select></div>
+              <div class="row row--between" style="margin-top:12px"><span class="small muted">自动生成标签</span>
+                <label class="switch"><input type="checkbox" checked data-setting="autoTag"><span class="switch__track"></span><span class="sr-only">自动生成标签</span></label></div>
+              <div class="row row--between" style="margin-top:12px"><span class="small muted">沉淀后提示</span>
+                <label class="switch"><input type="checkbox" checked data-setting="sedimentToast"><span class="switch__track"></span><span class="sr-only">沉淀后提示</span></label></div>
+            </section>
+
+            <section class="card card--pad">
+              <div class="row"><span class="stat__icon">🎓</span><div style="flex:1"><div class="bold">技能固化</div><div class="small muted">从多次对话中提炼技能，形成可复用的长期能力。</div></div>
+                <label class="switch"><input type="checkbox" checked data-setting="skill"><span class="switch__track"></span><span class="sr-only">开启技能固化</span></label></div>
+              <div class="field" style="margin-top:16px"><label class="field__label" for="setSkillTiming">提取时机</label>
+                <select class="select" id="setSkillTiming"><option>达到阈值后自动提取</option><option>每周汇总提取</option><option>手动触发</option></select></div>
+              <div class="field"><label class="field__label" for="setSkillMin">最小出现次数</label>
+                <input class="input" id="setSkillMin" type="number" value="3" min="1" max="10"></div>
+              <div class="field" style="margin-bottom:0"><label class="field__label" for="setSkillStore">技能保存位置</label>
+                <select class="select" id="setSkillStore"><option>本地优先</option><option>仅本地</option><option>同步到云端</option></select></div>
+            </section>
+
+            <section class="card card--pad">
+              <div class="row"><span class="stat__icon">📅</span><div style="flex:1"><div class="bold">日历提醒</div><div class="small muted">基于记忆内容，生成日程与提醒。</div></div>
+                <label class="switch"><input type="checkbox" checked data-setting="calendar"><span class="switch__track"></span><span class="sr-only">开启日历提醒</span></label></div>
+              <div class="field" style="margin-top:16px"><label class="field__label" for="setRemindSource">提醒来源</label>
+                <select class="select" id="setRemindSource"><option>项目与行动项</option><option>全部对话内容</option><option>仅明确承诺</option></select></div>
+              <div class="field"><label class="field__label" for="setRemindAhead">默认提前时间</label>
+                <select class="select" id="setRemindAhead"><option>10 分钟</option><option>30 分钟</option><option>1 小时</option></select></div>
+              <div class="row row--between" style="margin-top:12px"><span class="small muted">同步到系统日历</span>
+                <label class="switch"><input type="checkbox" checked data-setting="calendarSync"><span class="switch__track"></span><span class="sr-only">同步到系统日历</span></label></div>
+              <div class="field" style="margin:12px 0 0"><label class="field__label" for="setTimezone">时区</label>
+                <select class="select" id="setTimezone"><option>Asia/Shanghai</option><option>Asia/Tokyo</option><option>UTC</option></select></div>
+            </section>
+
+            <section class="card card--pad">
+              <div class="row"><span class="stat__icon">🔗</span><div style="flex:1"><div class="bold">外部记忆</div><div class="small muted">连接外部工具与知识，扩展记忆边界。</div></div>
+                <label class="switch"><input type="checkbox" checked data-setting="external"><span class="switch__track"></span><span class="sr-only">开启外部记忆</span></label></div>
+              <div class="field" style="margin-top:16px"><span class="field__label">已连接工具</span>
+                <div class="row row--wrap"><span class="chip chip--outline">Notion</span><span class="chip chip--outline">GitHub</span><span class="chip chip--outline">飞书</span><span class="chip chip--outline">ZCode</span></div></div>
+              <div class="field"><label class="field__label" for="setSyncStrategy">同步策略</label>
+                <select class="select" id="setSyncStrategy"><option>增量同步</option><option>全量覆盖</option><option>仅手动</option></select></div>
+              <div class="field" style="margin-bottom:0"><label class="field__label" for="setSyncInterval">同步间隔</label>
+                <select class="select" id="setSyncInterval"><option>每天</option><option>每 6 小时</option><option>每周</option></select></div>
+            </section>
+
+            <section class="card card--pad">
+              <div class="row"><span class="stat__icon">📘</span><div style="flex:1"><div class="bold">交接账本</div><div class="small muted">记录与导出交接内容，支持角色与项目切换。</div></div>
+                <label class="switch"><input type="checkbox" checked data-setting="handoff"><span class="switch__track"></span><span class="sr-only">开启交接账本</span></label></div>
+              <div class="field" style="margin-top:16px"><label class="field__label" for="setExportFormat">默认导出格式</label>
+                <select class="select" id="setExportFormat"><option>Markdown</option><option>JSON</option><option>PDF</option></select></div>
+              <div class="field"><label class="field__label" for="setHandoffScope">包含范围</label>
+                <select class="select" id="setHandoffScope"><option>项目 + 技能 + 待办</option><option>仅项目</option><option>全部记忆</option></select></div>
+              <div class="row row--between" style="margin-top:12px"><span class="small muted">脱敏导出</span>
+                <label class="switch"><input type="checkbox" checked data-setting="desensitize"><span class="switch__track"></span><span class="sr-only">脱敏导出</span></label></div>
+            </section>
+
+            <section class="card card--pad">
+              <div class="row"><span class="stat__icon">🧠</span><div style="flex:1"><div class="bold">模型无关兼容</div><div class="small muted">与任意大语言模型兼容，不绑定特定服务。</div></div></div>
+              <div class="field" style="margin-top:16px"><label class="field__label" for="setProvider">LLM 提供方</label>
+                <select class="select" id="setProvider"><option>OpenAI 兼容</option><option>DeepSeek</option><option>本地 Ollama</option></select></div>
+              <div class="field"><label class="field__label" for="setBaseUrl">API Base</label>
+                <input class="input mono" id="setBaseUrl" type="text" value="https://api.openai.com/v1"></div>
+              <div class="field" style="margin-bottom:0"><label class="field__label" for="setModel">模型名称</label>
+                <input class="input mono" id="setModel" type="text" value="gpt-4o"></div>
+            </section>
+
+            <section class="card card--pad">
+              <div class="row"><span class="stat__icon">🌐</span><div style="flex:1"><div class="bold">外观</div><div class="small muted">界面语言、字号、强调色与组件密度。</div></div></div>
+              <div class="field" style="margin-top:16px"><label class="field__label" for="setLang">界面语言</label>
+                <select class="select" id="setLang"><option>跟随系统语言</option><option>简体中文</option><option>English</option></select></div>
+              <div class="field"><span class="field__label">界面字号</span>
+                <div class="seg" role="tablist"><button class="seg__btn" role="tab" aria-selected="false">紧凑</button><button class="seg__btn" role="tab" aria-selected="true">标准</button><button class="seg__btn" role="tab" aria-selected="false">大</button></div></div>
+              <div class="field" style="margin-bottom:0"><label class="field__label" for="setSkinPref">皮肤主题</label>
+                <select class="select" id="setSkinPref"><option value="default">Default（DeepSeek 蓝紫）</option><option value="enterprise-blue">Enterprise Blue（企业深蓝）</option><option value="dark-pro">Dark Pro（深色专业）</option><option value="a11y-contrast">高对比无障碍</option></select></div>
+            </section>
+          </div>
+
+          <div class="stack">
+            <section class="card">
+              <div class="panel__head"><span aria-hidden="true">💾</span><h2 class="panel__title">存储与备份</h2><button class="panel__link">管理 →</button></div>
+              <div class="panel__body">
+                <div class="row">
+                  <div class="ring" id="storageRing" style="--ring-pct:48" role="img" aria-label="存储已使用 2.4 GB，共 5 GB">
+                    <div class="ring__value"><div class="ring__num">2.4</div><div class="small muted">GB 已使用</div></div>
+                  </div>
+                  <div class="legend">
+                    <div class="legend__row"><span class="legend__dot" style="background:var(--skin-color-chart-1)"></span>记忆数据<span class="legend__val">1.8 GB</span></div>
+                    <div class="legend__row"><span class="legend__dot" style="background:var(--skin-color-chart-2)"></span>向量索引<span class="legend__val">420 MB</span></div>
+                    <div class="legend__row"><span class="legend__dot" style="background:var(--skin-color-chart-3)"></span>其他<span class="legend__val">180 MB</span></div>
+                    <div class="small subtle">共 5 GB</div>
+                  </div>
+                </div>
+                <div class="row" style="margin-top:16px"><button class="btn btn--primary" style="flex:1">⬆ 立即备份</button><button class="btn" style="flex:1">⬇ 导出数据</button></div>
+                <div class="row row--between" style="margin-top:12px"><span class="small subtle">上次备份：2024-12-20 10:24</span><span class="chip chip--success">✅ 备份完成</span></div>
+              </div>
+            </section>
+            <section class="card">
+              <div class="panel__head"><span aria-hidden="true">📊</span><h2 class="panel__title">数据规模</h2><button class="panel__link">查看详情 →</button></div>
+              <div class="panel__body kv">
+                <div class="kv__cell"><div class="kv__k">📄 记忆条目</div><div class="kv__v">342</div><div class="small subtle">较上月 +12%</div></div>
+                <div class="kv__cell"><div class="kv__k">📦 向量索引</div><div class="kv__v">128 MB</div><div class="small subtle">较上月 +8%</div></div>
+              </div>
+            </section>
+            <section class="card card--pad">
+              <div class="panel__head" style="padding:0;border:0;margin-bottom:12px"><span aria-hidden="true">🛡</span><h2 class="panel__title">记忆卫生</h2><span class="spacer"></span><button class="panel__link">管理 →</button></div>
+              <div class="stack stack--sm">
+                <div class="row row--between"><span class="small">写入门控（Write Gate）<br><span class="subtle">仅保存有价值的内容，过滤闲聊与噪声。</span></span>
+                  <label class="switch"><input type="checkbox" checked data-setting="writeGate"><span class="switch__track"></span><span class="sr-only">写入门控</span></label></div>
+                <div class="row row--between"><span class="small">脏 Token 扫描<br><span class="subtle">自动识别并过滤敏感信息、无意义内容。</span></span>
+                  <label class="switch"><input type="checkbox" checked data-setting="dirtyScan"><span class="switch__track"></span><span class="sr-only">脏 Token 扫描</span></label></div>
+                <div class="row row--between"><span class="small">凭据不进入提示词<br><span class="subtle">检测并拦截密码、密钥等敏感凭据。</span></span>
+                  <label class="switch"><input type="checkbox" checked data-setting="secretGuard"><span class="switch__track"></span><span class="sr-only">凭据拦截</span></label></div>
+              </div>
+              <p class="small muted" style="margin-top:12px">“更好的设置，成就更好的思考。”</p>
+              <p class="small subtle">—— dsh-auto-memory</p>
+            </section>
+          </div>
+        </div>
+      </section>
+
+
+
+
+
+
+    </main>
+  </div>
+</div>
+<script>
+(function () {
+  'use strict';
+  /* =====================================================================
+     dsh-auto-memory · Teamwork 企业版皮肤原型
+     本脚本仅演示「皮肤接口」的三条接入路径：主题 token / 主题包 / 组件插槽。
+     ===================================================================== */
+
+  /* ---------- 1) 主题注册表（= theme.json 的运行时形态） ---------- */
+  var THEMES = [
+    { id: 'default', name: 'Default', desc: 'DeepSeek 蓝紫 · 浅色底（默认）', dots: ['#4a5df9', '#7e9bff', '#e8ecff'] },
+    { id: 'enterprise-blue', name: 'Enterprise Blue', desc: '律所/金融 · 低饱和深蓝 + 宋体标题', dots: ['#274a7a', '#c8a96b', '#e6ecf5'] },
+    { id: 'dark-pro', name: 'Dark Pro', desc: '工程/夜间 · 深色专业主题', dots: ['#6c8bff', '#161b24', '#3ecf8e'] },
+    { id: 'a11y-contrast', name: '高对比无障碍', desc: '高对比 + 大字号 + 零动效（WCAG 取向）', dots: ['#0b3fbf', '#000000', '#ffffff'] }
+  ];
+  var DEFAULT_SKIN = 'default';
+  var ALIASES = {
+    'enterprise': 'enterprise-blue', 'blue': 'enterprise-blue', 'legal': 'enterprise-blue',
+    'dark': 'dark-pro', 'pro': 'dark-pro', 'night': 'dark-pro',
+    'a11y': 'a11y-contrast', 'contrast': 'a11y-contrast', 'high-contrast': 'a11y-contrast'
+  };
+  /* token 契约中「必需 token」子集：缺失即 fail-closed */
+  var REQUIRED_TOKENS = ['--skin-color-brand', '--skin-color-text', '--skin-color-surface', '--skin-color-border',
+    '--skin-radius-card', '--skin-space-4', '--skin-font-family', '--skin-duration-base', '--skin-shadow-card'];
+
+  var state = { skin: DEFAULT_SKIN, mode: 'light', lang: 'zh', rejected: [] };
+  var root = document.documentElement;
+
+  /* ---------- 2) i18n 文案键（data-i18n / data-i18n-attr 的取值表） ---------- */
+  var I18N = {
+    zh: {
+      'brand.slogan': '让重要的事持久被记住', 'topbar.role': '专注，让一切更好',
+      'search.placeholder': '搜索你的记忆（例如：项目、会议、想法…）',
+      'nav.home': '首页', 'nav.library': '记忆库', 'nav.recall': '召回审查', 'nav.timeline': '时间线',
+      'nav.calendar': '日历提醒', 'nav.mindmap': '思维导图', 'nav.external': '外部记忆', 'nav.handoff': '交接账本',
+      'nav.welcome': '欢迎引导', 'nav.settings': '设置', 'nav.groupGuide': '引导与配置',
+      'side.title': '本地优先', 'side.text': '你的记忆，始终在你手中',
+      'home.title': '早上好，张三 👋', 'home.sub': '我已经准备好，与你一起继续积累和管理重要记忆。',
+      'home.quote': '“好记性不如会管理的记忆。”',
+      'home.bannerTitle': '今天，AI 已帮你整理了 8 条重要信息',
+      'home.bannerText': '包括 3 条项目进展、2 条会议要点和 3 条行为习惯。我会持续在合适的时机主动唤回相关记忆，帮助你更高效地思考和行动。',
+      'home.knowTitle': '你的 AI 现在知道什么', 'home.healthTitle': '记忆健康度', 'home.feedTitle': '最近记忆动态',
+      'home.knowPref': '偏好', 'home.knowProject': '项目', 'home.knowSkill': '技能',
+      'welcome.title': '欢迎引导', 'welcome.sub': '第一次使用时，快速了解并配置核心能力', 'welcome.capTitle': '核心能力',
+      'handoff.title': '📘 交接账本与 PLAN 白板', 'handoff.sub': '上下文变满时，不压缩烧掉历史，而是通过交接笔记与白板续接工作。', 'handoff.tagState': '进行中',
+      'recall.title': '🕘 召回审查', 'recall.sub': '审计每次主动唤起：为什么被唤回、是否命中、证据来自哪里',
+      'library.title': '📚 记忆库', 'library.sub': '集中查看用户规则、项目笔记、每日日志与技能记忆。', 'library.search': '🔍 搜索记忆内容、标签或来源…',
+      'timeline.title': '🧭 时间线', 'timeline.sub': '查看 AI 在不同会话与工作日里记录、整合、技能固化与主动唤回的轨迹',
+      'external.title': '🔗 外部记忆继承', 'external.sub': '继承你在其他 AI 工具中的历史记忆，接入前先审核，接入后随时可停用。',
+      'mindmap.title': '🕸 思维导图', 'mindmap.sub': '从记忆中自动组织你的偏好、项目、技能与关系脉络',
+      'calendar.title': '📅 日历提醒', 'calendar.sub': '将对话中的承诺、截止时间与待办自动写入提醒系统',
+      'settings.title': '⚙️ 设置', 'settings.sub': '控制记忆如何记录、唤回、继承与保护'
+    },
+    en: {
+      'brand.slogan': 'Make what matters last', 'topbar.role': 'Focus makes it better',
+      'search.placeholder': 'Search your memory (project, meeting, idea…)',
+      'nav.home': 'Home', 'nav.library': 'Library', 'nav.recall': 'Recall audit', 'nav.timeline': 'Timeline',
+      'nav.calendar': 'Calendar', 'nav.mindmap': 'Mind map', 'nav.external': 'External memory', 'nav.handoff': 'Handoff ledger',
+      'nav.welcome': 'Onboarding', 'nav.settings': 'Settings', 'nav.groupGuide': 'Guide & config',
+      'side.title': 'Local first', 'side.text': 'Your memory always stays with you',
+      'home.title': 'Good morning, Zhang 👋', 'home.sub': 'Ready to keep growing and managing what matters with you.',
+      'home.quote': '“A managed memory beats a good memory.”',
+      'home.bannerTitle': 'Today AI organised 8 important items for you',
+      'home.bannerText': 'Includes 3 project updates, 2 meeting notes and 3 habits. I keep recalling what matters at the right moment so you can think and act faster.',
+      'home.knowTitle': 'What your AI knows now', 'home.healthTitle': 'Memory health', 'home.feedTitle': 'Recent activity',
+      'home.knowPref': 'Preferences', 'home.knowProject': 'Projects', 'home.knowSkill': 'Skills',
+      'welcome.title': 'Onboarding', 'welcome.sub': 'Understand and configure the core capabilities in a few steps', 'welcome.capTitle': 'Core capabilities',
+      'handoff.title': '📘 Handoff ledger & PLAN board', 'handoff.sub': 'When context fills up, hand off instead of burning history.', 'handoff.tagState': 'In progress',
+      'recall.title': '🕘 Recall audit', 'recall.sub': 'Why it was recalled, whether it hit, where the evidence came from',
+      'library.title': '📚 Memory library', 'library.sub': 'Rules, project notes, daily logs and distilled skills in one place.', 'library.search': '🔍 Search content, tags or source…',
+      'timeline.title': '🧭 Timeline', 'timeline.sub': 'How AI recorded, merged, distilled and recalled across sessions',
+      'external.title': '🔗 External memory inheritance', 'external.sub': 'Inherit history from other AI tools: review first, disable anytime.',
+      'mindmap.title': '🕸 Mind map', 'mindmap.sub': 'Your preferences, projects, skills and relations, organised automatically',
+      'calendar.title': '📅 Calendar reminders', 'calendar.sub': 'Promises, deadlines and todos detected from conversations become reminders',
+      'settings.title': '⚙️ Settings', 'settings.sub': 'Control how memory is recorded, recalled, inherited and protected'
+    }
+  };
+  function applyLang(lang) {
+    state.lang = I18N[lang] ? lang : 'zh';
+    var dict = I18N[state.lang] || I18N.zh;
+    Array.prototype.forEach.call(document.querySelectorAll('[data-i18n]'), function (el) {
+      var key = el.getAttribute('data-i18n');
+      if (dict[key]) el.textContent = dict[key];
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('[data-i18n-attr]'), function (el) {
+      el.getAttribute('data-i18n-attr').split(',').forEach(function (pair) {
+        var kv = pair.split(':');
+        if (kv.length === 2 && dict[kv[1].trim()]) el.setAttribute(kv[0].trim(), dict[kv[1].trim()]);
+      });
+    });
+    root.setAttribute('lang', state.lang === 'en' ? 'en' : 'zh-CN');
+  }
+
+  /* ---------- 3) 路由（hash，未知路由 fail-closed 回首页） ---------- */
+  var PAGES = ['home', 'library', 'recall', 'timeline', 'calendar', 'mindmap', 'external', 'handoff', 'welcome', 'settings'];
+  function route() {
+    var raw = (location.hash || '').replace(/^#\/?/, '').trim();
+    var page = PAGES.indexOf(raw) >= 0 ? raw : 'home';
+    if (raw && page === 'home' && raw !== 'home') {
+      report('未知路由 #/' + raw + ' 已回退到首页（fail-closed）');
+    }
+    Array.prototype.forEach.call(document.querySelectorAll('.page'), function (el) {
+      el.classList.toggle('is-active', el.getAttribute('data-page') === page);
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('[data-route]'), function (el) {
+      if (el.getAttribute('data-route') === page) el.setAttribute('aria-current', 'page');
+      else el.removeAttribute('aria-current');
+    });
+    if (document.getElementById('app')) document.getElementById('app').classList.remove('is-nav-open');
+    var active = document.querySelector('.page.is-active');
+    if (active && active.getAttribute('data-page') === 'mindmap') drawMindmapLinks();
+  }
+  function go(page) { location.hash = '#/' + page; }
+
+  /* ---------- 4) 皮肤应用（token 覆盖 + 主题包 + fail-closed 校验） ---------- */
+  function tokenIssues() {
+    var cs = getComputedStyle(root);
+    return REQUIRED_TOKENS.filter(function (t) { return !cs.getPropertyValue(t).trim(); });
+  }
+  function applySkin(id, source) {
+    var wanted = String(id || '').trim();
+    var resolved = ALIASES[wanted] || wanted;
+    var known = THEMES.filter(function (t) { return t.id === resolved; })[0];
+    var rejected = null;
+    if (!known) {
+      rejected = wanted;
+      resolved = DEFAULT_SKIN;
+      known = THEMES[0];
+      state.rejected.push({ requested: wanted, fallback: resolved, at: new Date().toISOString(), source: source || 'api' });
+      console.warn('[skin] 未注册的皮肤「' + wanted + '」，已 fail-closed 回退到 ' + resolved);
+    }
+    root.setAttribute('data-skin', resolved);
+    state.skin = resolved;
+    var issues = tokenIssues();
+    if (issues.length) {
+      console.warn('[skin] 契约校验未通过，缺失 token：' + issues.join(', ') + '；回退到 ' + DEFAULT_SKIN);
+      root.setAttribute('data-skin', DEFAULT_SKIN);
+      state.skin = DEFAULT_SKIN;
+      rejected = id;
+      known = THEMES[0];
+    }
+    var nameEl = document.getElementById('skinSwitcherName');
+    if (nameEl) nameEl.textContent = known.name;
+    var dotsEl = document.getElementById('skinSwitcherDots');
+    if (dotsEl) dotsEl.innerHTML = known.dots.map(function (c) { return '<span class="swatch__dot" style="background:' + c + '"></span>'; }).join('');
+    var sel = document.getElementById('setSkinPref');
+    if (sel && sel.value !== state.skin) sel.value = state.skin;
+    Array.prototype.forEach.call(document.querySelectorAll('.swatch'), function (b) {
+      b.setAttribute('aria-selected', b.getAttribute('data-skin-id') === state.skin ? 'true' : 'false');
+    });
+    if (rejected) report('皮肤「' + rejected + '」未注册或 token 不完整 → 已回退（fail-closed）');
+    if (source === 'url' || source === 'switch' || source === 'api') {
+      var url = new URL(location.href);
+      url.searchParams.set('skin', state.skin);
+      try { history.replaceState(null, '', url.toString()); } catch (e) { /* file:// 下忽略 */ }
+    }
+  }
+  function toggleMode() {
+    state.mode = state.mode === 'dark' ? 'light' : 'dark';
+    root.setAttribute('data-theme-mode', state.mode);
+    var btn = document.getElementById('themeToggle');
+    if (btn) { btn.textContent = state.mode === 'dark' ? '☀️' : '🌙'; btn.title = state.mode === 'dark' ? '切换到浅色' : '切换到深色'; }
+  }
+
+  /* ---------- 5) 皮肤切换器 UI ---------- */
+  function buildSwitcher() {
+    var panel = document.getElementById('skinSwitcherPanel');
+    if (!panel) return;
+    panel.innerHTML = '<div class="small muted bold" style="padding:8px 12px 4px">选择皮肤（同一套 token 接口）</div>' +
+      THEMES.map(function (t) {
+        return '<button class="swatch" data-skin-id="' + t.id + '">' +
+          '<span class="swatch__dots">' + t.dots.map(function (c) { return '<span class="swatch__dot" style="background:' + c + '"></span>'; }).join('') + '</span>' +
+          '<span style="flex:1"><span class="swatch__name">' + t.name + '</span><span class="swatch__desc">' + t.desc + '</span></span></button>';
+      }).join('') +
+      '<div class="small subtle" style="padding:8px 12px 2px">URL 参数同样生效：?skin=enterprise-blue</div>';
+    Array.prototype.forEach.call(panel.querySelectorAll('.swatch'), function (b) {
+      b.addEventListener('click', function () { applySkin(b.getAttribute('data-skin-id'), 'switch'); panel.classList.remove('is-open'); bindToggle.set(false); });
+    });
+  }
+
+  /* ---------- 6) 组件插槽（企业自定义组件的挂载点） ---------- */
+  var SLOT_IDS = ['sidebar-brand', 'home-banner', 'memory-card-foot', 'settings-section', 'detail-actions'];
+  function mountSlot(slotId, html, opts) {
+    if (SLOT_IDS.indexOf(slotId) < 0) { console.warn('[slot] 未注册的插槽：' + slotId); return 0; }
+    var host = document.querySelectorAll('[data-slot="' + slotId + '"]');
+    var scope = opts && opts.context;
+    var n = 0;
+    Array.prototype.forEach.call(host, function (el) {
+      if (scope && el.getAttribute('data-slot-context') !== scope) return;
+      el.innerHTML = typeof html === 'function' ? html(el) : html;
+      n++;
+    });
+    return n;
+  }
+  function demoEnterpriseComponents() {
+    mountSlot('sidebar-brand', '<div class="chip chip--outline" style="width:100%;justify-content:center">Acme Corp · IT 合规已启用</div>');
+    mountSlot('home-banner', '<div class="banner" style="border-left-color:var(--skin-color-warning)">' +
+      '<div class="banner__orb" aria-hidden="true">🛡</div><div><div class="banner__title">企业策略生效中</div>' +
+      '<div class="banner__text">凭据不入提示词 · 审计记录留存 180 天 · 导出需二次确认（由企业组件插槽注入，非皮肤本体）</div></div></div>');
+    mountSlot('memory-card-foot', '<span class="chip chip--warning">企业策略：该记忆禁止导出</span>');
+    mountSlot('settings-section', '<section class="card card--pad"><div class="row"><span class="stat__icon">🏢</span>' +
+      '<div style="flex:1"><div class="bold">企业策略（自定义分区插槽）</div>' +
+      '<div class="small muted">此分区由第三方企业组件挂载，不占用皮肤 token。</div></div>' +
+      '<label class="switch"><input type="checkbox" checked><span class="switch__track"></span><span class="sr-only">企业策略</span></label></div>' +
+      '<div class="grid grid--3" style="margin-top:12px">' +
+      '<div class="kv__cell"><div class="kv__k">审计留存</div><div class="kv__v">180 天</div></div>' +
+      '<div class="kv__cell"><div class="kv__k">凭据策略</div><div class="kv__v">禁止入提示词</div></div>' +
+      '<div class="kv__cell"><div class="kv__k">导出策略</div><div class="kv__v">二次确认</div></div>' +
+      '</div></section>');
+    mountSlot('detail-actions', '<button class="btn btn--sm">导出审计包</button>');
+  }
+
+  /* ---------- 7) 页面交互 ---------- */
+  var toastTimer = null;
+  function report(msg) {
+    var t = document.getElementById('skinToast');
+    if (!t) return;
+    t.textContent = msg;
+    t.style.opacity = '1';
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { t.style.opacity = '0'; }, 3200);
+  }
+  var bindToggle = { set: function (v) { var p = document.getElementById('skinSwitcherPanel'); if (p) p.classList.toggle('is-open', !!v); var b = document.getElementById('skinSwitcherBtn'); if (b) b.setAttribute('aria-expanded', v ? 'true' : 'false'); } };
+  function bindToggles() {
+    var btn = document.getElementById('skinSwitcherBtn');
+    if (btn) btn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      var p = document.getElementById('skinSwitcherPanel');
+      bindToggle.set(!(p && p.classList.contains('is-open')));
+    });
+    document.addEventListener('click', function () { bindToggle.set(false); });
+    var tt = document.getElementById('themeToggle');
+    if (tt) tt.addEventListener('click', toggleMode);
+    var nav = document.getElementById('navToggle');
+    if (nav) nav.addEventListener('click', function () { document.getElementById('app').classList.toggle('is-nav-open'); });
+  }
+  function bindNav() {
+    Array.prototype.forEach.call(document.querySelectorAll('[data-route]'), function (el) {
+      el.addEventListener('click', function () { go(el.getAttribute('data-route')); });
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('[data-route-link]'), function (el) {
+      el.addEventListener('click', function () { go(el.getAttribute('data-route-link')); });
+    });
+  }
+  function bindSegs() {
+    Array.prototype.forEach.call(document.querySelectorAll('.seg, .tabs'), function (group) {
+      Array.prototype.forEach.call(group.querySelectorAll('button'), function (b) {
+        b.addEventListener('click', function () {
+          Array.prototype.forEach.call(group.querySelectorAll('button'), function (x) { x.setAttribute('aria-selected', 'false'); });
+          b.setAttribute('aria-selected', 'true');
+        });
+      });
+    });
+  }
+  function bindCapabilities() {
+    Array.prototype.forEach.call(document.querySelectorAll('[data-cap-toggle]'), function (input) {
+      input.addEventListener('change', function () {
+        var key = input.getAttribute('data-cap-toggle');
+        var label = document.querySelector('[data-cap-state="' + key + '"]');
+        if (label) label.textContent = input.checked ? '已开启' : '已关闭';  /* 即时回显 */
+        report('能力「' + key + '」' + (input.checked ? '已开启' : '已关闭'));
+      });
+    });
+    var all = document.getElementById('enableAllCaps');
+    if (all) all.addEventListener('click', function () {
+      Array.prototype.forEach.call(document.querySelectorAll('[data-cap-toggle]'), function (input) {
+        input.checked = true;
+        var label = document.querySelector('[data-cap-state="' + input.getAttribute('data-cap-toggle') + '"]');
+        if (label) label.textContent = '已开启';
+        input.dispatchEvent(new Event('change'));
+      });
+    });
+  }
+  function bindHandoff() {
+    var list = document.getElementById('handoffList');
+    if (!list) return;
+    Array.prototype.forEach.call(list.querySelectorAll('.item'), function (it) {
+      it.addEventListener('click', function () {
+        Array.prototype.forEach.call(list.querySelectorAll('.item'), function (x) { x.setAttribute('aria-selected', 'false'); });
+        it.setAttribute('aria-selected', 'true');
+        var title = document.getElementById('handoffDocTitle');
+        if (title) title.textContent = it.querySelector('.item__title').textContent;
+      });
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('[data-handoff-filter]'), function (b) {
+      b.addEventListener('click', function () {
+        var f = b.getAttribute('data-handoff-filter');
+        Array.prototype.forEach.call(list.querySelectorAll('.item'), function (it) {
+          it.style.display = (f === 'all' || it.getAttribute('data-kind') === f) ? '' : 'none';
+        });
+      });
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('#handoffChecklist input'), function (c) {
+      c.addEventListener('change', function () { report('任务 ' + c.getAttribute('data-task') + (c.checked ? ' 已勾选' : ' 已取消')); });
+    });
+  }
+  function bindRecall() {
+    var table = document.getElementById('recallTable');
+    if (!table) return;
+    Array.prototype.forEach.call(table.querySelectorAll('tbody tr'), function (tr) {
+      tr.addEventListener('click', function () {
+        Array.prototype.forEach.call(table.querySelectorAll('tbody tr'), function (x) { x.removeAttribute('aria-selected'); });
+        tr.setAttribute('aria-selected', 'true');
+        var id = tr.getAttribute('data-recall-id');
+        var outcome = tr.getAttribute('data-outcome');
+        report('召回 ' + id + '（' + (outcome === 'hit' ? '已命中' : outcome === 'weak' ? '一般' : '不相关') + '）已在右侧展开证据链');
+      });
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('[data-recall-filter]'), function (b) {
+      b.addEventListener('click', function () {
+        var f = b.getAttribute('data-recall-filter');
+        Array.prototype.forEach.call(table.querySelectorAll('tbody tr'), function (tr) {
+          var keep = f === 'all' || tr.getAttribute('data-outcome') === f;
+          tr.style.display = keep ? '' : 'none';
+        });
+      });
+    });
+  }
+  function bindLibrary() {
+    var list = document.getElementById('libraryList');
+    if (!list) return;
+    Array.prototype.forEach.call(list.querySelectorAll('.item'), function (it) {
+      it.addEventListener('click', function () {
+        Array.prototype.forEach.call(list.querySelectorAll('.item'), function (x) { x.setAttribute('aria-selected', 'false'); });
+        it.setAttribute('aria-selected', 'true');
+        var title = document.getElementById('libraryDetailTitle');
+        if (title) title.textContent = it.querySelector('.item__title').textContent;
+      });
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('[data-library-filter]'), function (b) {
+      b.addEventListener('click', function () {
+        var f = b.getAttribute('data-library-filter');
+        Array.prototype.forEach.call(list.querySelectorAll('.item'), function (it) {
+          it.style.display = (f === 'all' || it.getAttribute('data-kind') === f) ? '' : 'none';
+        });
+      });
+    });
+  }
+  function bindCalendar() {
+    Array.prototype.forEach.call(document.querySelectorAll('.cal__day'), function (d) {
+      d.addEventListener('click', function () {
+        Array.prototype.forEach.call(document.querySelectorAll('.cal__day'), function (x) { x.classList.remove('cal__day--selected'); });
+        d.classList.add('cal__day--selected');
+        var t = document.getElementById('calendarDayTitle');
+        if (t && d.getAttribute('data-day')) t.textContent = '12 月 ' + d.getAttribute('data-day') + ' 日';
+      });
+    });
+  }
+  function bindSources() {
+    Array.prototype.forEach.call(document.querySelectorAll('[data-source-toggle]'), function (input) {
+      input.addEventListener('change', function () {
+        var card = input.closest('[data-source]');
+        if (card) {
+          var chip = card.querySelector('.chip');
+          if (chip) { chip.textContent = input.checked ? '已连接' : '已暂停'; chip.className = 'chip ' + (input.checked ? 'chip--success' : 'chip--outline'); }
+        }
+        report('外部记忆源「' + input.getAttribute('data-source-toggle') + '」' + (input.checked ? '已开启同步' : '已暂停同步'));
+      });
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('[data-source-detail]'), function (b) {
+      b.addEventListener('click', function () {
+        var card = b.closest('[data-source]');
+        var name = card.querySelector('.cap__title').textContent;
+        var t = document.getElementById('externalDetailTitle');
+        if (t) t.textContent = name;
+      });
+    });
+  }
+  function bindSettings() {
+    var sel = document.getElementById('setSkinPref');
+    if (sel) sel.addEventListener('change', function () { applySkin(sel.value, 'settings'); });
+    var lang = document.getElementById('setLang');
+    if (lang) lang.addEventListener('change', function () {
+      applyLang(lang.value === 'English' ? 'en' : 'zh');
+      report('界面语言：' + (state.lang === 'en' ? 'English' : '简体中文'));
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('[data-setting]'), function (input) {
+      input.addEventListener('change', function () { report('设置「' + input.getAttribute('data-setting') + '」' + (input.checked ? '已开启' : '已关闭')); });
+    });
+  }
+
+  /* ---------- 8) 思维导图：用 SVG 直线连接节点（纯计算，无外部图表库） ---------- */
+  function drawMindmapLinks() {
+    var map = document.getElementById('mindmapCanvas');
+    if (!map) return;
+    var svg = map.querySelector('svg');
+    if (!svg) return;
+    var box = map.getBoundingClientRect();
+    if (!box.width || !box.height) return;
+    var nodes = Array.prototype.slice.call(map.querySelectorAll('.mindmap__node'));
+    var center = nodes.filter(function (n) { return n.classList.contains('mindmap__node--center'); })[0];
+    if (!center) return;
+    function pt(el) {
+      var r = el.getBoundingClientRect();
+      return { x: ((r.left + r.width / 2 - box.left) / box.width) * 100, y: ((r.top + r.height / 2 - box.top) / box.height) * 100 };
+    }
+    var c = pt(center);
+    var branches = nodes.filter(function (n) { return n.classList.contains('mindmap__node--branch'); });
+    var lines = branches.map(function (b) {
+      var p = pt(b);
+      return '<line x1="' + c.x.toFixed(2) + '" y1="' + c.y.toFixed(2) + '" x2="' + p.x.toFixed(2) + '" y2="' + p.y.toFixed(2) + '" stroke="var(--skin-color-border-strong)" stroke-width="0.5" opacity="0.9"></line>';
+    });
+    var leaves = nodes.filter(function (n) { return n.classList.contains('mindmap__node--leaf'); });
+    leaves.forEach(function (l) {
+      var p = pt(l);
+      var best = null, bestD = 1e9;
+      branches.forEach(function (b) { var q = pt(b); var d = Math.abs(q.x - p.x) + Math.abs(q.y - p.y); if (d < bestD) { bestD = d; best = q; } });
+      if (best) lines.push('<line x1="' + best.x.toFixed(2) + '" y1="' + best.y.toFixed(2) + '" x2="' + p.x.toFixed(2) + '" y2="' + p.y.toFixed(2) + '" stroke="var(--skin-color-border-strong)" stroke-width="0.35" opacity="0.75"></line>');
+    });
+    svg.innerHTML = lines.join('');
+  }
+
+  /* ---------- 9) 对外接口（= skin-token-contract.md §3 的运行时 API） ---------- */
+  var api = {
+    version: '1.0.0',
+    slotIds: SLOT_IDS.slice(),
+    themes: THEMES.map(function (t) { return t.id; }),
+    state: state,
+    applySkin: function (id) { applySkin(id, 'api'); },
+    useTheme: function (id) { applySkin(id, 'api'); },
+    setMode: function (m) { if ((m === 'dark') !== (state.mode === 'dark')) toggleMode(); },
+    setLang: applyLang,
+    getToken: function (name) { return getComputedStyle(root).getPropertyValue(name).trim(); },
+    verifyTokens: function () { return { missing: tokenIssues(), required: REQUIRED_TOKENS.slice() }; },
+    mountSlot: mountSlot,
+    registerSlotContent: mountSlot,
+    rejected: function () { return state.rejected.slice(); },
+    report: report
+  };
+  window.dshAutoMemorySkin = api;
+
+  /* ---------- 10) 启动 ---------- */
+  function boot() {
+    var params = new URLSearchParams(location.search);
+    var fromUrl = params.get('skin');
+    buildSwitcher();
+    bindToggles(); bindNav(); bindSegs(); bindCapabilities(); bindHandoff();
+    bindRecall(); bindLibrary(); bindCalendar(); bindSources(); bindSettings();
+    demoEnterpriseComponents();
+    applyLang('zh');
+    applySkin(fromUrl || DEFAULT_SKIN, fromUrl ? 'url' : 'boot');
+    if (!location.hash) location.hash = '#/home';
+    route();
+    window.addEventListener('hashchange', route);
+    window.addEventListener('resize', drawMindmapLinks);
+    var v = api.verifyTokens();
+    if (v.missing.length) report('token 契约校验失败：' + v.missing.join(', '));
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
+})();
+
+</script>
+<!-- 皮肤状态提示（fail-closed / 交互回显） -->
+<div id="skinToast" role="status" aria-live="polite" style="position:fixed;left:24px;bottom:24px;z-index:60;max-width:420px;padding:12px 16px;border-radius:var(--skin-radius-md);background:var(--skin-color-text);color:var(--skin-color-surface);font-size:var(--skin-font-size-sm);opacity:0;transition:opacity var(--skin-duration-base) var(--skin-ease-standard);pointer-events:none"></div>
+</body>
+</html>

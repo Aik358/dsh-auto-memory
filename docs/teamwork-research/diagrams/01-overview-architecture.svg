@@ -1,0 +1,108 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 900" width="1400" height="900" role="img" aria-label="Teamwork 总体架构示意图">
+<defs>
+  <marker id="arE" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#64748b"/></marker>
+  <marker id="arS" markerWidth="9" markerHeight="9" refX="1" refY="4.5" orient="auto"><path d="M9,0 L0,4.5 L9,9 z" fill="#64748b"/></marker>
+</defs>
+<rect x="0" y="0" width="1400" height="900" rx="0" fill="#ffffff" stroke="none" stroke-width="2"/>
+<text x="60" y="48" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="25" fill="#0f172a" font-weight="700">总体架构 · 本地插件 ↔ 团队权威服务端 ↔ 对象存储 / 向量库</text>
+<text x="60" y="78" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="14" fill="#475569">dsh-auto-memory Teamwork 企业版 · 三带划分：本地私有层 / 团队共享层 / 企业治理层</text>
+<line x1="60" y1="92" x2="1340" y2="92" stroke="#cbd5e1" stroke-width="2"/>
+<rect x="60" y="100" width="1280" height="200" rx="14" fill="#eff6ff" stroke="#2563eb" stroke-width="2"/>
+<text x="80" y="130" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="15" fill="#1e3a8a" font-weight="700">本地私有层 · 每台开发机 · 插件进程内（宿主 + 前端 + .dsh-memory/）</text>
+<text x="1320" y="130" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#475569" text-anchor="end">所有写盘先落本地，权威不可达不阻塞</text>
+<rect x="80" y="146" width="360" height="118" rx="10" fill="#ffffff" stroke="#2563eb" stroke-width="2"/>
+<text x="98" y="178" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="14" fill="#0f172a">宿主 lib/index.js（约 96 万字节）</text>
+<text x="98" y="202" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="14" fill="#0f172a">56 条 HTTP 路由 · 记忆读写与检索</text>
+<text x="98" y="226" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="14" fill="#0f172a">规则段注入 · 子代理调度 · 工具 19 个</text>
+<text x="98" y="250" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="14" fill="#0f172a">同步客户端：通道 / 队列 / 重试</text>
+<rect x="480" y="146" width="360" height="118" rx="10" fill="#ffffff" stroke="#2563eb" stroke-width="2"/>
+<text x="498" y="178" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="14" fill="#0f172a">前端 lib/client.js（约 74 万字节）</text>
+<text x="498" y="202" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="14" fill="#0f172a">13 个页签 · 面板 / 白板看板 / 技能库</text>
+<text x="498" y="226" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="14" fill="#0f172a">设置页：同步开关 · 作用域 · 身份</text>
+<text x="498" y="250" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="14" fill="#0f172a">皮肤：底座 token / 主题包 / 插槽</text>
+<rect x="880" y="146" width="440" height="118" rx="10" fill="#ffffff" stroke="#2563eb" stroke-width="2"/>
+<text x="898" y="178" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="14" fill="#0f172a">.dsh-memory/ 本地私有存储（本地真源）</text>
+<text x="898" y="202" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="14" fill="#0f172a">每日日志 · 项目笔记 · 用户级记忆 · 规则</text>
+<text x="898" y="226" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="14" fill="#0f172a">技能库 · 白板 PLAN · 交接账本 · 日历</text>
+<text x="898" y="250" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="14" fill="#0f172a">本地派生索引（向量 / Tier-0，可重建）</text>
+<line x1="442" y1="205" x2="478" y2="205" stroke="#2563eb" stroke-width="2" marker-start="url(#arS)" marker-end="url(#arE)"/>
+<line x1="842" y1="205" x2="878" y2="205" stroke="#2563eb" stroke-width="2" marker-start="url(#arS)" marker-end="url(#arE)"/>
+<line x1="520" y1="302" x2="520" y2="348" stroke="#94a3b8" stroke-width="2" marker-start="url(#arS)" marker-end="url(#arE)"/>
+<line x1="880" y1="302" x2="880" y2="348" stroke="#94a3b8" stroke-width="2" marker-start="url(#arS)" marker-end="url(#arE)"/>
+<text x="700" y="330" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#475569" text-anchor="middle">同步上行（增量 / 证据）· 权威下行（规则 / 技能 / 参考库）</text>
+<text x="700" y="347" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#94a3b8" text-anchor="middle">策略与审批由治理层下发，本地不自行放宽</text>
+<rect x="60" y="350" width="1280" height="220" rx="14" fill="#faf5ff" stroke="#7c3aed" stroke-width="2"/>
+<text x="80" y="380" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="15" fill="#5b21b6" font-weight="700">团队共享层 · 团队权威服务端（真源：团队通用库 / 项目库 / 只读参考库）</text>
+<text x="1320" y="380" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#475569" text-anchor="end">服务端是共享层唯一真源</text>
+<rect x="80" y="394" width="300" height="164" rx="10" fill="#ffffff" stroke="#7c3aed" stroke-width="2"/>
+<text x="96" y="420" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="14" fill="#5b21b6" font-weight="700">身份与成员目录</text>
+<text x="96" y="446" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="14" fill="#0f172a">企业 IdP 对接（SSO / SCIM）</text>
+<text x="96" y="472" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="14" fill="#0f172a">成员 ↔ userId / teamId 映射</text>
+<text x="96" y="498" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="14" fill="#0f172a">设备注册与指纹绑定</text>
+<text x="96" y="524" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="14" fill="#0f172a">actor 三元组签发</text>
+<rect x="410" y="394" width="300" height="164" rx="10" fill="#ffffff" stroke="#7c3aed" stroke-width="2"/>
+<text x="426" y="420" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="14" fill="#5b21b6" font-weight="700">同步网关（四条通道）</text>
+<text x="426" y="446" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="14" fill="#0f172a">实时通道：状态 / B 型短事件</text>
+<text x="426" y="472" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="14" fill="#0f172a">秒级通道：内容增量 · 字段级补丁</text>
+<text x="426" y="498" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="14" fill="#0f172a">异步通道：向量与派生索引（5 分钟）</text>
+<text x="426" y="524" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="14" fill="#0f172a">离线补传队列 · 背压与限流</text>
+<rect x="740" y="394" width="300" height="164" rx="10" fill="#ffffff" stroke="#7c3aed" stroke-width="2"/>
+<text x="756" y="420" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="14" fill="#5b21b6" font-weight="700">作用域与冲突裁决</text>
+<text x="756" y="446" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="14" fill="#0f172a">库 / 作用域管理（团队·项目·参考）</text>
+<text x="756" y="472" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="14" fill="#0f172a">跨域动作：晋升 · 收纳 · 广播</text>
+<text x="756" y="498" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="14" fill="#0f172a">裁决：LWW / 字段级 / OR-Set</text>
+<text x="756" y="524" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="14" fill="#0f172a">保留双份 · 人工裁决队列</text>
+<rect x="1070" y="394" width="250" height="164" rx="10" fill="#ffffff" stroke="#7c3aed" stroke-width="2"/>
+<text x="1086" y="420" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="14" fill="#5b21b6" font-weight="700">存储与索引</text>
+<text x="1086" y="446" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="14" fill="#0f172a">对象存储：附件与证据</text>
+<text x="1086" y="472" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="14" fill="#0f172a">向量库：团队级集合</text>
+<text x="1086" y="498" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="14" fill="#0f172a">内容寻址（哈希去重）</text>
+<text x="1086" y="524" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="14" fill="#0f172a">版本与法务留存</text>
+<line x1="520" y1="572" x2="520" y2="618" stroke="#c2410c" stroke-width="2" marker-start="url(#arS)" marker-end="url(#arE)"/>
+<line x1="880" y1="572" x2="880" y2="618" stroke="#c2410c" stroke-width="2" marker-start="url(#arS)" marker-end="url(#arE)"/>
+<text x="700" y="600" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#c2410c" text-anchor="middle">治理策略下行（禁同步字段 / 只读白名单 / 审批矩阵）</text>
+<text x="700" y="617" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#94a3b8" text-anchor="middle">审计与合规证据上行（写审计 / 越权告警）</text>
+<rect x="60" y="620" width="1280" height="180" rx="14" fill="#fff7ed" stroke="#ea580c" stroke-width="2"/>
+<text x="80" y="650" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="15" fill="#9a3412" font-weight="700">企业治理层 · 策略所有权在组织（可审计 · 可导出 · 可保全）</text>
+<text x="1320" y="650" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#475569" text-anchor="end">治理层只下发策略与收取审计</text>
+<rect x="80" y="664" width="300" height="124" rx="10" fill="#ffffff" stroke="#ea580c" stroke-width="2"/>
+<text x="96" y="690" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="14" fill="#9a3412" font-weight="700">合规与留存</text>
+<text x="96" y="710" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="14" fill="#0f172a">法务保全（hold）与保留期</text>
+<text x="96" y="732" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="14" fill="#0f172a">到期删除与版本归档</text>
+<text x="96" y="754" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="14" fill="#0f172a">取证导出（actor / 版本）</text>
+<text x="96" y="776" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="14" fill="#0f172a">不可否认性：写入签名</text>
+<rect x="410" y="664" width="300" height="124" rx="10" fill="#ffffff" stroke="#ea580c" stroke-width="2"/>
+<text x="426" y="690" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="14" fill="#9a3412" font-weight="700">租户与数据分区</text>
+<text x="426" y="710" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="14" fill="#0f172a">租户隔离与工作区归属</text>
+<text x="426" y="732" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="14" fill="#0f172a">区域驻留（数据不出境）</text>
+<text x="426" y="754" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="14" fill="#0f172a">静态加密与密钥托管</text>
+<text x="426" y="776" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="14" fill="#0f172a">跨区同步白名单</text>
+<rect x="740" y="664" width="300" height="124" rx="10" fill="#ffffff" stroke="#ea580c" stroke-width="2"/>
+<text x="756" y="690" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="14" fill="#9a3412" font-weight="700">策略下发</text>
+<text x="756" y="710" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="14" fill="#0f172a">禁同步字段清单（敏感键）</text>
+<text x="756" y="732" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="14" fill="#0f172a">只读参考库白名单</text>
+<text x="756" y="754" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="14" fill="#0f172a">技能晋升与删除审批矩阵</text>
+<text x="756" y="776" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="14" fill="#0f172a">敏感内容扫描与拦截</text>
+<rect x="1070" y="664" width="250" height="124" rx="10" fill="#ffffff" stroke="#ea580c" stroke-width="2"/>
+<text x="1086" y="690" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="14" fill="#9a3412" font-weight="700">审计与监控</text>
+<text x="1086" y="710" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="14" fill="#0f172a">全量写审计（含 actor）</text>
+<text x="1086" y="732" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="14" fill="#0f172a">越权与异常同步告警</text>
+<text x="1086" y="754" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="14" fill="#0f172a">通道延迟与积压看板</text>
+<text x="1086" y="776" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="14" fill="#0f172a">成员活动报表</text>
+<rect x="60" y="812" width="1280" height="44" rx="10" fill="#ffffff" stroke="#e2e8f0" stroke-width="2"/>
+<rect x="80" y="826" width="18" height="16" rx="4" fill="#dbeafe" stroke="#2563eb" stroke-width="2"/>
+<text x="104" y="839" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#475569">本地私有层</text>
+<rect x="196" y="826" width="18" height="16" rx="4" fill="#ede9fe" stroke="#7c3aed" stroke-width="2"/>
+<text x="220" y="839" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#475569">团队共享层</text>
+<rect x="312" y="826" width="18" height="16" rx="4" fill="#ffedd5" stroke="#ea580c" stroke-width="2"/>
+<text x="336" y="839" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#475569">企业治理层</text>
+<line x1="436" y1="834" x2="486" y2="834" stroke="#94a3b8" stroke-width="2" marker-start="url(#arS)" marker-end="url(#arE)"/>
+<text x="494" y="839" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#475569">权威数据流（上行 / 下行）</text>
+<line x1="680" y1="834" x2="730" y2="834" stroke="#c2410c" stroke-width="2" marker-start="url(#arS)" marker-end="url(#arE)"/>
+<text x="738" y="839" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#475569">治理边界（策略闸门 / 审批）</text>
+<rect x="946" y="826" width="18" height="16" rx="4" fill="#fef2f2" stroke="#dc2626" stroke-width="2"/>
+<text x="970" y="839" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#475569">冲突与风险（见 04 冲突矩阵）</text>
+<rect x="1180" y="826" width="18" height="16" rx="4" fill="#f1f5f9" stroke="#64748b" stroke-width="2"/>
+<text x="1204" y="839" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#475569">存储 / 索引</text>
+<text x="1340" y="886" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#94a3b8" text-anchor="end">dsh-auto-memory · teamwork research · 2026-09</text>
+</svg>

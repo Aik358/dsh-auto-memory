@@ -1,0 +1,95 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 900" width="1400" height="900" role="img" aria-label="数据作用域模型示意图">
+<defs>
+  <marker id="arE" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#64748b"/></marker>
+  <marker id="arS" markerWidth="9" markerHeight="9" refX="1" refY="4.5" orient="auto"><path d="M9,0 L0,4.5 L9,9 z" fill="#64748b"/></marker>
+</defs>
+<rect x="0" y="0" width="1400" height="900" rx="0" fill="#ffffff" stroke="none" stroke-width="2"/>
+<text x="60" y="48" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="25" fill="#0f172a" font-weight="700">数据作用域模型 · 私有三层 ↔ 共享三层</text>
+<text x="60" y="78" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="14" fill="#475569">跨域动作仅三种：晋升（私有→共享）· 收纳（共享→私有）· 广播（治理/管理员→全体成员）</text>
+<line x1="60" y1="92" x2="1340" y2="92" stroke="#cbd5e1" stroke-width="2"/>
+<rect x="60" y="104" width="480" height="470" rx="14" fill="#eff6ff" stroke="#2563eb" stroke-width="2"/>
+<text x="80" y="132" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="15" fill="#1e3a8a" font-weight="700">本地私有层 · 默认不出设备</text>
+<rect x="80" y="146" width="440" height="104" rx="10" fill="#ffffff" stroke="#2563eb" stroke-width="2"/>
+<text x="96" y="174" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="15" fill="#1e3a8a" font-weight="700">① 本机层（device）</text>
+<text x="96" y="200" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#475569">~/.dsh/local · 设备私有，不入同步队列</text>
+<text x="96" y="224" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#475569">例：临时缓存、未命名草稿、设备指纹</text>
+<rect x="80" y="282" width="440" height="104" rx="10" fill="#ffffff" stroke="#2563eb" stroke-width="2"/>
+<text x="96" y="310" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="15" fill="#1e3a8a" font-weight="700">② 本用户层（user）</text>
+<text x="96" y="336" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#475569">~/.dsh/memory/MEMORY.md · 跨项目规则</text>
+<text x="96" y="360" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#475569">默认不外发；晋升需确认，可带生效范围</text>
+<rect x="80" y="418" width="440" height="104" rx="10" fill="#ffffff" stroke="#2563eb" stroke-width="2"/>
+<text x="96" y="446" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="15" fill="#1e3a8a" font-weight="700">③ 本工作区层（workspace）</text>
+<text x="96" y="472" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#475569">工作区 .dsh-memory/ · 日志 / 笔记 / 白板</text>
+<text x="96" y="496" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#475569">本地派生索引可重建；共享前先做敏感扫描</text>
+<rect x="80" y="540" width="440" height="26" rx="6" fill="#dbeafe" stroke="none" stroke-width="2"/>
+<text x="96" y="558" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#1e3a8a">私有不变量：不经晋升动作，任何内容都不出设备</text>
+<rect x="860" y="104" width="480" height="470" rx="14" fill="#faf5ff" stroke="#7c3aed" stroke-width="2"/>
+<text x="880" y="132" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="15" fill="#5b21b6" font-weight="700">团队共享层 · 服务端为唯一真源</text>
+<rect x="880" y="146" width="440" height="104" rx="10" fill="#ffffff" stroke="#7c3aed" stroke-width="2"/>
+<text x="896" y="174" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="15" fill="#5b21b6" font-weight="700">① 只读参考库（reference）</text>
+<text x="896" y="200" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#475569">治理下发 / 白名单引用，成员端只读</text>
+<text x="896" y="224" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#475569">可离线镜像供检索；本地不得改写</text>
+<rect x="880" y="282" width="440" height="104" rx="10" fill="#ffffff" stroke="#7c3aed" stroke-width="2"/>
+<text x="896" y="310" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="15" fill="#5b21b6" font-weight="700">② 项目库（project）</text>
+<text x="896" y="336" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#475569">一个团队项目的工作区集合，成员协作</text>
+<text x="896" y="360" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#475569">字段级合并；删除走删除竞争裁决</text>
+<rect x="880" y="418" width="440" height="104" rx="10" fill="#ffffff" stroke="#7c3aed" stroke-width="2"/>
+<text x="896" y="446" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="15" fill="#5b21b6" font-weight="700">③ 团队通用库（team）</text>
+<text x="896" y="472" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#475569">跨项目规范 / 技能 / 规则，全员可见</text>
+<text x="896" y="496" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#475569">写入受治理审批；普通成员默认只读</text>
+<rect x="880" y="540" width="440" height="26" rx="6" fill="#ede9fe" stroke="none" stroke-width="2"/>
+<text x="896" y="558" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#5b21b6">共享不变量：版本与来源可追溯，冲突落裁决矩阵</text>
+<path d="M 520 470 L 878 470" fill="none" stroke="#7c3aed" stroke-width="2" marker-end="url(#arE)"/>
+<rect x="600" y="452" width="200" height="24" rx="6" fill="#ffffff" stroke="#7c3aed" stroke-width="2"/>
+<text x="700" y="469" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#5b21b6" font-weight="700" text-anchor="middle">晋升 · 需审批</text>
+<path d="M 878 330 C 730 330 660 400 522 452" fill="none" stroke="#7c3aed" stroke-width="2" marker-end="url(#arE)"/>
+<rect x="600" y="364" width="200" height="24" rx="6" fill="#ffffff" stroke="#7c3aed" stroke-width="2"/>
+<text x="700" y="381" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#5b21b6" font-weight="700" text-anchor="middle">收纳 · 本地只读副本</text>
+<path d="M 878 196 C 730 196 660 268 522 320" fill="none" stroke="#ea580c" stroke-width="2" marker-end="url(#arE)"/>
+<rect x="600" y="232" width="200" height="24" rx="6" fill="#ffffff" stroke="#ea580c" stroke-width="2"/>
+<text x="700" y="249" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#9a3412" font-weight="700" text-anchor="middle">广播 · 成员不可覆盖</text>
+<text x="700" y="562" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#94a3b8" text-anchor="middle">跨域动作均需携带来源标注：成员 / 时间 / 来源工作区</text>
+<text x="700" y="586" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#94a3b8" text-anchor="middle">禁同步字段与只读白名单由企业治理层下发，命中即拒绝入库</text>
+<rect x="80" y="614" width="1260" height="158" rx="12" fill="#ffffff" stroke="#e2e8f0" stroke-width="2"/>
+<rect x="80" y="614" width="1260" height="30" rx="0" fill="#f1f5f9" stroke="#e2e8f0" stroke-width="2"/>
+<text x="80" y="630" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#475569" font-weight="700">私有来源（候选）</text>
+<text x="400" y="630" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#475569" font-weight="700">目标共享库</text>
+<text x="660" y="630" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#475569" font-weight="700">触发方式</text>
+<text x="950" y="630" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#475569" font-weight="700">冲突与权限边界</text>
+<line x1="80" y1="642" x2="1340" y2="642" stroke="#eef2f7" stroke-width="1"/>
+<text x="80" y="660" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#0f172a" font-weight="400">本工作区 · 笔记 / 白板</text>
+<text x="400" y="660" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#0f172a" font-weight="400">项目库</text>
+<text x="660" y="660" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#0f172a" font-weight="400">显式晋升（项目成员可批）</text>
+<text x="950" y="660" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#0f172a" font-weight="400">字段级合并；id 撞车 → 保留双份</text>
+<line x1="80" y1="672" x2="1340" y2="672" stroke="#eef2f7" stroke-width="1"/>
+<text x="80" y="690" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#0f172a" font-weight="400">本用户 · 规则 / 偏好</text>
+<text x="400" y="690" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#0f172a" font-weight="400">团队通用库</text>
+<text x="660" y="690" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#0f172a" font-weight="400">显式晋升 + 治理审批</text>
+<text x="950" y="690" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#0f172a" font-weight="400">同字段覆盖取 LWW；敏感键禁同步</text>
+<line x1="80" y1="702" x2="1340" y2="702" stroke="#eef2f7" stroke-width="1"/>
+<text x="80" y="720" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#0f172a" font-weight="400">本工作区 · 技能库条目</text>
+<text x="400" y="720" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#0f172a" font-weight="400">团队通用库（技能）</text>
+<text x="660" y="720" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#0f172a" font-weight="400">提交 → 审批 → 晋升（只增不改）</text>
+<text x="950" y="720" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#0f172a" font-weight="400">删除 / 回退需人工裁决</text>
+<line x1="80" y1="732" x2="1340" y2="732" stroke="#eef2f7" stroke-width="1"/>
+<text x="80" y="750" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#0f172a" font-weight="400">只读参考库（治理下发）</text>
+<text x="400" y="750" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#0f172a" font-weight="400">本用户 / 本工作区</text>
+<text x="660" y="750" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#0f172a" font-weight="400">广播（自动，无需成员审批）</text>
+<text x="950" y="750" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#0f172a" font-weight="400">本地不可改；变更走治理审批 + 审计</text>
+<rect x="80" y="772" width="400" height="88" rx="12" fill="#ffffff" stroke="#e2e8f0" stroke-width="2"/>
+<text x="96" y="796" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="14" fill="#334155" font-weight="700">晋升（private → shared）</text>
+<text x="96" y="816" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#475569">显式动作；默认关闭；提交前敏感扫描</text>
+<text x="96" y="834" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#475569">落审批队列；附带来源与版本；失败不留半成品</text>
+<text x="96" y="852" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#475569">一次性可撤回：撤回后共享层删除、本地保留</text>
+<rect x="500" y="772" width="400" height="88" rx="12" fill="#ffffff" stroke="#e2e8f0" stroke-width="2"/>
+<text x="516" y="796" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="14" fill="#334155" font-weight="700">收纳（shared → private）</text>
+<text x="516" y="816" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#475569">把团队内容收进本地，获得离线可用与检索命中</text>
+<text x="516" y="834" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#475569">副本保留 origin / version / owner 三要素</text>
+<text x="516" y="852" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#475569">只读语义：本地改写不回流，冲突交人工裁决</text>
+<rect x="920" y="772" width="400" height="88" rx="12" fill="#ffffff" stroke="#e2e8f0" stroke-width="2"/>
+<text x="936" y="796" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="14" fill="#334155" font-weight="700">广播（shared → all）</text>
+<text x="936" y="816" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#475569">治理下发或库管理员发布，成员侧无需确认</text>
+<text x="936" y="834" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#475569">走实时或秒级通道；断线补传按最后版本</text>
+<text x="936" y="852" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#475569">不可被成员本地覆盖，仅可被更高优先级覆盖</text>
+<text x="1340" y="886" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#94a3b8" text-anchor="end">dsh-auto-memory · teamwork research · 2026-09</text>
+</svg>

@@ -1,0 +1,27 @@
+扫描根 : C:\Users\JH Z\.dsh\memory
+扫描深度: 3（基线也是 3）
+基线 1026 / 当前 1027
+差异: 修改 16 / 新增 1 / 删除 0
+其中后台自变（已排除，不参与判定）: 14
+  ~ hub/episodes.json
+  ~ hub/facts.json
+  ~ hub/procedures.json
+  ~ index/files/178bac007765671ff52ccbe8a2ed4287c5a77662a84969587c1ef28bc3b5405d.json
+  ~ polling-heartbeat.json
+  ~ recall-stats.json
+  ~ semantic/derived-corpus.json
+  ~ semantic/l0/l0-index-1586fb9da235-log.json
+  ~ semantic/l0/l0-index-1586fb9da235-project.json
+  ~ semantic/l0/l0-index-1586fb9da235-reflection.json
+  ~ semantic/l0/l0-index-1586fb9da235-user.json
+  ~ semantic/vectors-c6eef0495385c669.json
+  ~ workspaces/--D--dsh-auto-memory--/2026-09-26.md
+  ~ workspaces/--D--dsh-auto-memory--/hub/procedures.json
+
+  M workspaces/--D--dsh-auto-memory--/handoff/index.json
+  M workspaces/--D--dsh-auto-memory--/handoff/PLAN.md
+  + workspaces/--D--dsh-auto-memory--/handoff/handoff-20260926-170517.md
+
+（未给 --expect：仅列出差异；判定需人工核对差异集合。）
+
+退出码: 0

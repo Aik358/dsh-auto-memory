@@ -1,0 +1,417 @@
+{
+  "schema": 1,
+  "updatedAt": "2026-09-26 09:29:04",
+  "frozenAt": "2026-09-26",
+  "freezeDoc": "00-目标冻结书.md",
+  "freezeLock": "00-目标冻结书.sha256",
+  "scope": "full",
+  "restartBudget": {
+    "used": 0,
+    "planned": 2,
+    "note": "重启只挡 E2 取证；编码与 E0/E1 不消耗重启"
+  },
+  "tracks": {
+    "backend": {
+      "label": "后端功能",
+      "batches": [
+        "B0",
+        "B1",
+        "B2",
+        "B3",
+        "B4",
+        "B5",
+        "B6",
+        "B7",
+        "B8",
+        "B9"
+      ]
+    },
+    "frontend": {
+      "label": "前端 UI",
+      "batches": [
+        "B10"
+      ]
+    },
+    "skin": {
+      "label": "皮肤线",
+      "batches": [
+        "S1",
+        "S2"
+      ]
+    },
+    "evidence": {
+      "label": "取证",
+      "batches": [
+        "R1",
+        "R2",
+        "R3",
+        "R4",
+        "R5",
+        "R6"
+      ]
+    }
+  },
+  "batches": [
+    {
+      "id": "B0",
+      "name": "基线冻结与守门",
+      "track": "backend",
+      "status": "pending",
+      "tier": "E0",
+      "files": [
+        "_gen/B0.txt"
+      ],
+      "restart": false,
+      "criteria": [
+        "采开工基线 B0（三文件 SHA256）",
+        "记录回归基线（181 套件）"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "B1",
+      "name": "身份级缺陷修复",
+      "track": "backend",
+      "status": "pending",
+      "tier": "E2",
+      "files": [
+        "lib/procedure-store.js",
+        "lib/team-project-map.js",
+        "lib/index.js"
+      ],
+      "restart": true,
+      "criteria": [
+        "同一 title+steps 两机同 id",
+        "旧 id 仍可命中（alias）",
+        "回归全绿"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "B2",
+      "name": "团队配置键+身份+鉴权",
+      "track": "backend",
+      "status": "pending",
+      "tier": "E2",
+      "files": [
+        "lib/index.js",
+        "lib/team-identity.js",
+        "lib/team-auth.js"
+      ],
+      "restart": true,
+      "criteria": [
+        "14 个 team.* 键默认全关",
+        "未登录返回 null 不抛",
+        "teamFetch 四情形均 {ok:false}",
+        "teamEnabled=false 零网络调用"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "B3",
+      "name": "出站队列",
+      "track": "backend",
+      "status": "pending",
+      "tier": "E1",
+      "files": [
+        "lib/team-outbox.js"
+      ],
+      "restart": false,
+      "criteria": [
+        "幂等",
+        "可续",
+        "有界",
+        "同步返回 <5ms",
+        "原子写含 pid+序号"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "B4",
+      "name": "同步心跳（关键路径）",
+      "track": "backend",
+      "status": "pending",
+      "tier": "E2",
+      "files": [
+        "lib/index.js",
+        "lib/team-sync.js"
+      ],
+      "restart": true,
+      "criteria": [
+        "pre-step 耗时不变",
+        "服务端慢 10s 时 pre-step<50ms",
+        "单飞",
+        "最小间隔 5s",
+        "永不抛"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "B5",
+      "name": "日历双轨（首个闭环）",
+      "track": "backend",
+      "status": "pending",
+      "tier": "E2",
+      "files": [
+        "lib/index.js"
+      ],
+      "restart": true,
+      "criteria": [
+        "默认 personal 逐字节一致",
+        "track=team 带注释",
+        "既有正则仍可解析",
+        "端到端 A→B"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "B6",
+      "name": "下行合并+冲突中心",
+      "track": "backend",
+      "status": "pending",
+      "tier": "E2",
+      "files": [
+        "lib/team-pull.js",
+        "lib/team-conflict.js"
+      ],
+      "restart": true,
+      "criteria": [
+        "不绕过 Gate",
+        "冲突保留双方",
+        "未知 kind 被拒且留痕",
+        "拒绝可见"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "B7",
+      "name": "注入层合并（最高风险）",
+      "track": "backend",
+      "status": "pending",
+      "tier": "E2",
+      "files": [
+        "lib/index.js"
+      ],
+      "restart": true,
+      "criteria": [
+        "未同步时注入逐字节不变",
+        "版本未变返回空串",
+        "版本变则变化",
+        "不击穿前缀缓存"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "B8",
+      "name": "白板冲突+看板两阶段",
+      "track": "backend",
+      "status": "pending",
+      "tier": "E2",
+      "files": [
+        "lib/index.js"
+      ],
+      "restart": true,
+      "criteria": [
+        "两端不同进人工队列",
+        "一端空直接采用",
+        "相同无动作",
+        "propose 超时回滚"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "B9",
+      "name": "派生重算调度",
+      "track": "backend",
+      "status": "pending",
+      "tier": "E1",
+      "files": [
+        "lib/team-derived.js"
+      ],
+      "restart": false,
+      "criteria": [
+        "防抖 2s",
+        "重复 mark 合并",
+        "失败重新标脏",
+        "未登记 kind 不重算"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "B10",
+      "name": "前端团队 UI",
+      "track": "frontend",
+      "status": "pending",
+      "tier": "E2",
+      "files": [
+        "lib/client.js"
+      ],
+      "restart": true,
+      "criteria": [
+        "teamEnabled=false 零 UI 变化（163 锚点全在）",
+        "状态条四项",
+        "冲突中心回传",
+        "开关即时回显"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "S1",
+      "name": "皮肤资源数据表",
+      "track": "skin",
+      "status": "pending",
+      "tier": "E1",
+      "files": [
+        "lib/skin-assets.js"
+      ],
+      "restart": false,
+      "criteria": [
+        "代码只认 key 不认文件",
+        "assetOf 缺失返回占位不抛"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "S2",
+      "name": "6 槽位+占位样式",
+      "track": "skin",
+      "status": "pending",
+      "tier": "E2",
+      "files": [
+        "lib/client.js"
+      ],
+      "restart": true,
+      "criteria": [
+        "图未就绪界面不塌",
+        "占位像成品非灰块"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "R1",
+      "name": "全量回归",
+      "track": "evidence",
+      "status": "pending",
+      "tier": "E1",
+      "files": [],
+      "restart": false,
+      "criteria": [
+        "181 套件全绿",
+        "node --check 两文件"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "R2",
+      "name": "★重启1·取 E2 证据",
+      "track": "evidence",
+      "status": "pending",
+      "tier": "E2",
+      "files": [],
+      "restart": true,
+      "criteria": [
+        "20 条 E2 目标一次取完",
+        "顺带实测 client.js 是否需重启"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "R3",
+      "name": "按 R2 结果修错",
+      "track": "evidence",
+      "status": "pending",
+      "tier": "E1",
+      "files": [],
+      "restart": false,
+      "criteria": [
+        "失败项全部修复并回归绿"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "R4",
+      "name": "★重启2·复验",
+      "track": "evidence",
+      "status": "pending",
+      "tier": "E2",
+      "files": [],
+      "restart": true,
+      "criteria": [
+        "20 条 E2 复验通过"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "R5",
+      "name": "E3 七条（需第二环境）",
+      "track": "evidence",
+      "status": "pending",
+      "tier": "E3",
+      "files": [],
+      "restart": false,
+      "criteria": [
+        "G-B3/C1/C3/D1/D4/E2/F6 全部达标或如实记未触达"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "R6",
+      "name": "逐条核对 30 条",
+      "track": "evidence",
+      "status": "pending",
+      "tier": "E2",
+      "files": [],
+      "restart": false,
+      "criteria": [
+        "先校验冻结锁",
+        "30 条逐条判定",
+        "附录 C 核对表填满"
+      ],
+      "evidence": []
+    }
+  ],
+  "e3Environment": [
+    {
+      "id": "G-B3",
+      "need": "真非 Windows 运行时",
+      "local": "需 WSL / 云 Linux / GitHub Actions",
+      "why": "必须实际换过路径分隔符"
+    },
+    {
+      "id": "G-C1",
+      "need": "两家云账号凭据",
+      "local": "可本机（只要有 2 家云 key）",
+      "why": "不需要第二台机器"
+    },
+    {
+      "id": "G-C3",
+      "need": "两台隔离机器",
+      "local": "需 VM / 第二主机",
+      "why": "反例明确禁止同机双进程假装"
+    },
+    {
+      "id": "G-D1",
+      "need": "两个实例（可同进程）",
+      "local": "✅ 可本机",
+      "why": "测的是合并函数，不是网络"
+    },
+    {
+      "id": "G-D4",
+      "need": "两个隔离 memory root",
+      "local": "✅ 可本机",
+      "why": "两个 store 即可"
+    },
+    {
+      "id": "G-E2",
+      "need": "两个真实实例（异 device）",
+      "local": "需 VM / 第二主机",
+      "why": "反例禁止共享内存模拟"
+    },
+    {
+      "id": "G-F6",
+      "need": "有/无 Python 两环境",
+      "local": "✅ 可本机（改 PATH）",
+      "why": "不需要第二台机器"
+    }
+  ]
+}
