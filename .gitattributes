@@ -1,0 +1,16 @@
+# .gitattributes — EOL 契约（2026-09-26 新增，修 CI 在 ubuntu-latest 上的既有红）
+#
+# 背景：本仓开发机 core.autocrlf=true ⇒ 提交时全部归一为 LF（索引里 i/lf）。
+# CI 跑在 ubuntu-latest ⇒ 检出即 LF。但部分**测试夹具断言必须是 CRLF**：
+#   tests/m3b1-fixtures/crlf.md 被 smoke-test-m3b1.mjs 断言 newline === 'crlf'
+# ⇒ Linux 上必红（CI 实测报错：crlf.md newline detect failed: lf）。
+#
+# 修法：只对**必须保持 CRLF 的夹具**显式声明 eol=crlf；不写 `* text=auto`，
+# 以免一次性重规范化 984 个文件、造成大面积无意义 diff。
+#
+# 判据：`git check-attr eol tests/m3b1-fixtures/crlf.md` 应输出 eol: crlf。
+
+# CRLF 敏感夹具：内容含真实 CRLF 换行，供 newline 探测断言使用
+tests/m3b1-fixtures/*.md text eol=crlf
+
+# 其余文件维持仓库既有默认（不在此处声明，避免全局重规范化）

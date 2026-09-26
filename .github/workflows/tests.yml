@@ -55,9 +55,9 @@ jobs:
             --jobs=1 \
             --timeout=90000 \
             --exclude=-live- \
-            --exclude=m79-feature-v2-pre \
-            --exclude=m710-fv2-emit-pre \
-            --exclude=c4-fresh-install-pre
+            --exclude=m79-feature-v2 \
+            --exclude=m710-fv2-emit \
+            --exclude=c4-fresh-install
 
       - name: 回归失败时打印定位提示
         if: failure()
