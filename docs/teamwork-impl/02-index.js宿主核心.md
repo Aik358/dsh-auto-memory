@@ -438,7 +438,7 @@ writeJson(res, 200, body)
 // ---- 团队（Teamwork）----
 // 全部默认「关闭」。★ teamEnabled=false 时以下键**不产生任何行为**（含零网络、零文件）。
 teamEnabled: false,                  // 总开关
-teamServerUrl: '',                   // 团队服务端地址（空=未配置）
+teamServerUrl: '',                   // 团队服务端地址（T2 涉密内网兜底通道，CR-8；默认通道不用它）
 teamId: '',                          // 团队/租户 ID（每个请求都带，服务端据此隔离）
 teamProjectId: '',                   // 团队项目 ID（解决 wsKey 跨机不汇合）
 teamMemberName: '',                  // 本机成员显示名

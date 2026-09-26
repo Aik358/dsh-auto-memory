@@ -71,8 +71,10 @@ if (registeredTools.length !== 19) throw new Error('expected 19 tools (16 + T4 m
 //   该路由**无条件注册**（不受任何开关闸门约束），故任何档位下都 +1。
 // ★ 记忆工作台（2026-09-24）：54 → 55 —— 新增 POST /workbench（工作台三重校验诊断/修复；
 //   前端居中弹窗向导的数据源）。同样**无条件注册**，故任何档位下都 +1。
+// ★ Teamwork B10（2026-09-26）：56 → 57 —— 新增 GET /team-state（团队线状态快照；
+//   前端「团队」页签唯一数据源）。同样**无条件注册**（teamEnabled=false 时也返回 200），故任何档位下都 +1。
 //   判据（判据本身不变，只是计数随新增路由更新）：本文件 count 守卫 = 全量无条件路由条数。
-if (registeredRoutes.length !== 56) throw new Error('expected 56 routes, got ' + registeredRoutes.length)
+if (registeredRoutes.length !== 65) throw new Error('expected 65 routes, got ' + registeredRoutes.length)
 if (sections.length !== 1) throw new Error('expected 1 prompt section (static rules)')
 if (contexts.length !== 2) throw new Error('expected 2 dynamic contexts (memory snapshot + m6 reference tail surface), got ' + contexts.length)
 

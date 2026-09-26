@@ -44,7 +44,7 @@ const tool = (name) => registeredTools.find((t) => t.name === name)
 if (registeredTools.length !== 19) throw new Error('expected 19 tools (16 + T4 memory_procedure + P9 memory_rules + M8-B memory_procedure_list), got ' + registeredTools.length)
 // ★ 记忆工作台（2026-09-24）：54 → 55 —— 新增 POST /workbench（工作台三重校验诊断/修复，无条件注册）。
 // 49 → 50：新增只读路由 GET /recall-stats（2026-09-22）。
-if (registeredRoutes.length !== 56) throw new Error('expected 56 routes, got ' + registeredRoutes.length)
+if (registeredRoutes.length !== 65) throw new Error('expected 65 routes, got ' + registeredRoutes.length)
 
 const cfgRoute = registeredRoutes.find((r2) => r2.path === '/api/dsh-auto-memory/config')
 let body

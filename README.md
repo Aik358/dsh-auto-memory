@@ -611,7 +611,7 @@ Papers were authored by the autonomous engineering agent (ZCode / GLM); all conc
 |---|---|
 | [**Whitepaper**](docs/WHITEPAPER.md) | What are the **invariants you must not break**, and what are the known limits? Every default value in it is code-verified. |
 | [**Frontend co-creation plan**](docs/FRONTEND-CO-CREATION.md) | What can outside contributors change, what is off-limits, and how to do it — complete component/route/slot map included. |
-| [Feature Inventory](docs/internal/FEATURE-INVENTORY.md) | What features exist and where each one lives (39 user capabilities / 19 tools / 56 routes / 115 config keys) |
+| [Feature Inventory](docs/internal/FEATURE-INVENTORY.md) | What features exist and where each one lives (39 user capabilities / 19 tools / 65 routes / 135 config keys) |
 
 > **⚠️ Upgrading from before 3.0?** A batch of default values was **flipped** in 3.0.0 —
 > most notably whiteboard + ledger went from `off` to **`on`**. Do not trust pre-3.0

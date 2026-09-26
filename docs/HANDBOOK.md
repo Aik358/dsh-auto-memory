@@ -27,7 +27,7 @@
 | **BM25** | 经典词法相关性算法 |
 | **M8 / 记忆中枢** | 三层记忆存储（fact 事实／episodic 经历／procedure 技能）与编排器 memory-hub 的合称 |
 | **evidence（证据）** | 记忆被使用情况的记录，六类：`seen`（曝光）／`read`（读到原文）／`cite`（回复引用）／`reuse`（跨会话复用）／`success`（任务成功）／`correction`（用户纠正） |
-| **endpoint / 端点** | 后端 HTTP 接口，路径前缀统一为 `/api/dsh-auto-memory/`，共 56 条 |
+| **endpoint / 端点** | 后端 HTTP 接口，路径前缀统一为 `/api/dsh-auto-memory/`，共 65 条 |
 
 ---
 
@@ -78,7 +78,7 @@ dsh web --no-open --port 0
                 │ HTTP /api/dsh-auto-memory/*
 ┌───────────────▼───────────────────────────────────────────┐
 │ 宿主侧（后端）lib/index.js + lib/*.js                   │
-│  · 端点路由（56 个）                                         │
+│  · 端点路由（65 个）                                         │
 │  · 工具（19 个，供模型调用）                                  │
 │  · 存储：记忆文件、M8 三层 JSON、evidence 事件 JSONL          │
 │  · 检索：C1 词法 / C2 语义 / C3 Python 语义                  │
@@ -169,7 +169,7 @@ dsh web --no-open --port 0
 
 ## 5. 后端状态来源（如何确认前端操作已生效）
 
-### 5.1 主要端点（`lib/index.js` 注册，共 **56** 条，前缀 `/api/dsh-auto-memory/`）
+### 5.1 主要端点（`lib/index.js` 注册，共 **65** 条，前缀 `/api/dsh-auto-memory/`）
 
 | 端点 | 用途 | 关键返回字段 |
 |---|---|---|
@@ -195,7 +195,7 @@ dsh web --no-open --port 0
 > node -e "const f=require('fs');const s=f.readFileSync('lib/index.js','utf8'),r=f.readFileSync('tools/release.mjs','utf8');const P=[...r.matchAll(/\['([^']+)',\s*'([^']+)'\]/g)].map(m=>[m[1],m[2]]);const c=x=>P.reduce((a,[b,d])=>a.split(b).join(d),x);const e=[...new Set([...s.matchAll(/'(\/api\/dsh-auto-memory[^']*)'/g)].map(m=>m[1]))];console.log('端点条数:',e.length);console.log('发布名前缀:',c(e[0]).split('/').slice(0,3).join('/')+'/')"
 > ```
 >
-> 在工程根执行，输出应为 `端点条数: 56` / `发布名前缀: /api/dsh-auto-memory/`。命令读的是**源码 + 发布转换表**，所以两条线的拼写都能对上。
+> 在工程根执行，输出应为 `端点条数: 65` / `发布名前缀: /api/dsh-auto-memory/`。命令读的是**源码 + 发布转换表**，所以两条线的拼写都能对上。（B11c 后为 65。）
 
 ### 5.2 日志
 
@@ -383,7 +383,7 @@ node tests/smoke/smoke-test-continue-chain.mjs              # 58
 | 工程根 | `D:\dsh-auto-memory` |
 | 宿主侧入口 | `lib/index.js` |
 | 浏览器侧入口 | `lib/client.js` |
-| 端点前缀 | `/api/dsh-auto-memory/`（56 条） |
+| 端点前缀 | `/api/dsh-auto-memory/`（65 条） |
 | 工具 | 19 个，`memory_*` |
 | 记忆根 | `C:\Users\JH Z\.dsh\memory` |
 | 证据事件 | `...\memory\evidence\events\YYYY-MM-DD.jsonl`（时间戳在 `event.ts`） |

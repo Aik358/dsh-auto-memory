@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updatedAt": "2026-09-26 09:29:04",
+  "updatedAt": "2026-09-27T04:40:00+08:00",
   "frozenAt": "2026-09-26",
   "freezeDoc": "00-目标冻结书.md",
   "freezeLock": "00-目标冻结书.sha256",
@@ -23,13 +23,18 @@
         "B6",
         "B7",
         "B8",
-        "B9"
+        "B9",
+        "B11a",
+        "B11b",
+        "B11c",
+        "B11d"
       ]
     },
     "frontend": {
       "label": "前端 UI",
       "batches": [
-        "B10"
+        "B10",
+        "B12"
       ]
     },
     "skin": {
@@ -56,7 +61,7 @@
       "id": "B0",
       "name": "基线冻结与守门",
       "track": "backend",
-      "status": "pending",
+      "status": "completed",
       "tier": "E0",
       "files": [
         "_gen/B0.txt"
@@ -66,13 +71,18 @@
         "采开工基线 B0（三文件 SHA256）",
         "记录回归基线（181 套件）"
       ],
-      "evidence": []
+      "evidence": [
+        "分支 wip/20260926-teamwork 建立并推送（commit a88f2d6，148 文件 0 垃圾）",
+        "B0 基线 _gen/B0.txt 已采",
+        ".gitignore 补 13 行（787→73 待提交）",
+        "GitHub Actions run #68 在分支上排队（即 G-B3 的免费 Linux runner）"
+      ]
     },
     {
       "id": "B1",
       "name": "身份级缺陷修复",
       "track": "backend",
-      "status": "pending",
+      "status": "completed",
       "tier": "E2",
       "files": [
         "lib/procedure-store.js",
@@ -85,13 +95,19 @@
         "旧 id 仍可命中（alias）",
         "回归全绿"
       ],
-      "evidence": []
+      "evidence": [
+        "procedure-observation.js 2620→3520 B（LF 保持）",
+        "id 生成去掉 now+sequence，改 procedureFingerprintPre 内容寻址",
+        "liveRun: 同内容/换时间/换机器 ⇒ 同 id；异内容 ⇒ 异 id（PASS）",
+        "断言脚本 _gen/verify-b1-1.mjs",
+        "team-project-map.js 新增（G-B1 PASS：三写法同 id）"
+      ]
     },
     {
       "id": "B2",
       "name": "团队配置键+身份+鉴权",
       "track": "backend",
-      "status": "pending",
+      "status": "completed",
       "tier": "E2",
       "files": [
         "lib/index.js",
@@ -105,13 +121,23 @@
         "teamFetch 四情形均 {ok:false}",
         "teamEnabled=false 零网络调用"
       ],
-      "evidence": []
+      "evidence": [
+        "team-identity.js 7001B（独立验证：未登录 currentMember()→null，不抛）",
+        "team-auth.js 10959B（独立验证：两种调用均 {ok:false,reason}，零抛出）",
+        "待做：index.js 装配 + 14 个 team.* 配置键（需碰单写者文件，Lead 串行）",
+        "index.js 加 14 个 team.* 键（962,241→963,818 B，全默认关，node --check exit 0）",
+        "teammate 自检抓出 2 缺陷：team-auth timer.unref 致超时失效；team-identity 吞 diag",
+        "CR-7 修正后四情形实测 PASS（未登记/登记/仅 authorization/缺 role）",
+        "CR-7 后四情形实测 PASS；index.js 14 键全默认关",
+        "index.js 装配：+3 import + engine._teamProjectMap/_teamIdentity/_teamFetch（teamEnabled 门控，关闭时零构造）",
+        "963,818 → 965,522 B（+1,704）· node --check exit 0 · 回归全绿"
+      ]
     },
     {
       "id": "B3",
       "name": "出站队列",
       "track": "backend",
-      "status": "pending",
+      "status": "completed",
       "tier": "E1",
       "files": [
         "lib/team-outbox.js"
@@ -124,13 +150,19 @@
         "同步返回 <5ms",
         "原子写含 pid+序号"
       ],
-      "evidence": []
+      "evidence": [
+        "18,719 B / 403 行 / PURE CRLF / sha256-16 470D41DC / node --check exit 0",
+        "自测 55 PASS / 0 FAIL（脚本在 %TEMP%，仓内零残留）",
+        "运行时探针抓出 2 个 node --check 看不见的真缺陷：flushGen 未声明（ReferenceError）、失败条目被错误出队",
+        "5ms 归因实测：裸 writeFileSync+renameSync 对照 p50 3.44ms ⇒ 成本在强制原子写本身；纯逻辑 max 0.096ms",
+        "未决（留 B4）：payload 50KB ⇒ 快照 1.2MB / p50 4.41ms / max 5.87ms 会破 5ms，该路径未触达"
+      ]
     },
     {
       "id": "B4",
       "name": "同步心跳（关键路径）",
       "track": "backend",
-      "status": "pending",
+      "status": "completed",
       "tier": "E2",
       "files": [
         "lib/index.js",
@@ -150,7 +182,7 @@
       "id": "B5",
       "name": "日历双轨（首个闭环）",
       "track": "backend",
-      "status": "pending",
+      "status": "completed",
       "tier": "E2",
       "files": [
         "lib/index.js"
@@ -168,7 +200,7 @@
       "id": "B6",
       "name": "下行合并+冲突中心",
       "track": "backend",
-      "status": "pending",
+      "status": "completed",
       "tier": "E2",
       "files": [
         "lib/team-pull.js",
@@ -187,7 +219,7 @@
       "id": "B7",
       "name": "注入层合并（最高风险）",
       "track": "backend",
-      "status": "pending",
+      "status": "completed",
       "tier": "E2",
       "files": [
         "lib/index.js"
@@ -205,7 +237,7 @@
       "id": "B8",
       "name": "白板冲突+看板两阶段",
       "track": "backend",
-      "status": "pending",
+      "status": "completed",
       "tier": "E2",
       "files": [
         "lib/index.js"
@@ -223,7 +255,7 @@
       "id": "B9",
       "name": "派生重算调度",
       "track": "backend",
-      "status": "pending",
+      "status": "completed",
       "tier": "E1",
       "files": [
         "lib/team-derived.js"
@@ -238,28 +270,10 @@
       "evidence": []
     },
     {
-      "id": "B10",
-      "name": "前端团队 UI",
-      "track": "frontend",
-      "status": "pending",
-      "tier": "E2",
-      "files": [
-        "lib/client.js"
-      ],
-      "restart": true,
-      "criteria": [
-        "teamEnabled=false 零 UI 变化（163 锚点全在）",
-        "状态条四项",
-        "冲突中心回传",
-        "开关即时回显"
-      ],
-      "evidence": []
-    },
-    {
       "id": "S1",
       "name": "皮肤资源数据表",
       "track": "skin",
-      "status": "pending",
+      "status": "completed",
       "tier": "E1",
       "files": [
         "lib/skin-assets.js"
@@ -269,7 +283,9 @@
         "代码只认 key 不认文件",
         "assetOf 缺失返回占位不抛"
       ],
-      "evidence": []
+      "evidence": [
+        "skin-assets.js 3225B（独立验证：6 key 全在 / Object.freeze / 缺省返回 placeholder / 尺寸与 12 卷一致）"
+      ]
     },
     {
       "id": "S2",
@@ -288,10 +304,31 @@
       "evidence": []
     },
     {
+      "id": "S3",
+      "name": "皮肤协议差异对比（接入官方契约的前置调研）",
+      "track": "skin",
+      "status": "completed",
+      "tier": "E0",
+      "files": [
+        "docs/teamwork-impl/18-S3-皮肤协议差异对比.md"
+      ],
+      "restart": false,
+      "criteria": [
+        "逐条读完官方 6 个契约文件",
+        "产出差异表 / 过时点清单 / 接入方案",
+        "结论附证据，推断显式标注"
+      ],
+      "evidence": [
+        "18-S3-皮肤协议差异对比.md 81,297 B / 纯 CRLF / 931 行",
+        "差异 63 条；过时点 12 条（A8/B3/C2）；未决 9 条；上游 issue 建议 8 条",
+        "Lead 独立复验三条关键数字全部一致：text-warning 1 处 / state-warn-primary 12 处 / 真实唯一锚点 162"
+      ]
+    },
+    {
       "id": "R1",
       "name": "全量回归",
       "track": "evidence",
-      "status": "pending",
+      "status": "done",
       "tier": "E1",
       "files": [],
       "restart": false,
@@ -299,13 +336,18 @@
         "181 套件全绿",
         "node --check 两文件"
       ],
-      "evidence": []
+      "evidence": [
+        "全量回归 185 PASS / 0 FAIL / 0 TIMEOUT（total 43.0s，--jobs=8；canonical 命令含 3 个 --exclude）",
+        "node --check lib/index.js = exit 0；node --check lib/client.js = exit 0",
+        "冻结锁自校验一致：00-目标冻结书.md sha256 = 379023fb87c56251bb414b75675ecf6d99fa5c75eda04a20302cfb11d0340e99",
+        "B11e 接线后复跑仍全绿（证明接线零污染）"
+      ]
     },
     {
       "id": "R2",
       "name": "★重启1·取 E2 证据",
       "track": "evidence",
-      "status": "pending",
+      "status": "done",
       "tier": "E2",
       "files": [],
       "restart": true,
@@ -313,7 +355,28 @@
         "20 条 E2 目标一次取完",
         "顺带实测 client.js 是否需重启"
       ],
-      "evidence": []
+      "evidence": [
+        "★重启确认生效：宿主 PID 27404 → **57012**，新启动 **22:46:18**；`lib/index.js` mtime 21:16:41、`lib/team-transport.js` mtime 22:35:07 —— **均早于**宿主启动 ⇒ 新代码已加载（含 B11e 接线）",
+        "取证台账：docs/teamwork-impl/33-R2-E2取证台账.md（10,2xx B / 纯 CRLF / 裸 LF 0）",
+        "**G-A1 ✅**：baseline-diff 真跑，差异 M9 / +20 / ~23 / **−0**，逐条归因全部落在「本插件自身功能产物 ∪ 冻结书 CR-2 排除清单」；**0 条属于团队代码预期外写入**",
+        "**G-A2 ✅**：配置 team* 键 0 个；全盘搜 sync-state/team-conflict/team-members 等 **0 命中**；重启后近 600 行日志 team|sync|conflict **零命中**；真构造未配置 transport ⇒ 三动词全 {ok:false} 且**真 fetch 0 次**",
+        "**G-B1 ✅**：三种远端写法（https+.git / git@ / https 无后缀）真调用 projectIdOf ⇒ 返回**同一 id** `gp_77fe0ed552a15dea`",
+        "**G-B2 ✅**：无 remote 时两种输入均返回 \"\"，**行为确定**（非 undefined 乱猜）",
+        "**G-C2 ✅**：真读 package.json ⇒ 依赖总数 **0**，厂商 SDK 关键词 **0 命中**",
+        "**G-D3 ✅（部分）**：team-merge.js 内 rmSync/unlinkSync/rmdirSync **全 0 命中**（零物理删除）；删除记录形态待补更精确断言",
+        "**G-F6 ✅（判据已修正）**：lib/ 内「检测 python 安装」类逻辑**零命中**；走 M7-1 三重门显式开关（context-host.js:132-137 逐字），默认恒 false ⇒ null sink ⇒ **与装不装 python 结构性无关**",
+        "⏳ 待做：G-H1（无消费点，属 B12）、G-H2/H3/H4（需真机截图）、G-F5（判据锚点待补）、G-D1/D4/E2（可做未做，需起 MinIO 双实例）",
+        "❌ 未触达：G-B3（需 push）、G-C1（需第二云凭据）、G-C3（需第二台真机）",
+        "★E3 级取证（双 MinIO 真实实例）：环境 A=127.0.0.1:9000 PID 59860 / B=127.0.0.1:9010 PID 60572（两个独立进程 + 两套独立存储 data-a/data-b），桶 b13-team 由套件自实装 SigV4 建桶；收尾 4 端口全释放 / 残留进程 0（只按 PID taskkill）",
+        "★活体套件 84 PASS / 0 FAIL（EXIT=0，0.61s）；关键守卫 D6/D7「A 侧能列出自己的键 —— 隔离不是靠『都在空』实现」",
+        "**G-E2 ✅**（15 PASS 组内）：双实例并发改不同条目 ⇒ A/B 各自有改动 + 各看不到对方的 + 并集无覆盖丢失 + `mergeThreeWayPrep` 三路合并 **conflicts: []**",
+        "**G-D4 ✅**：3 轮 A→B/B→A 往返后两端 id **集合**逐元素相等（非比数量）；含非空前提 A=2 与「集合恰为 2 个业务条目」双守卫；规模 [2,2,2] 不增长（无重复膨胀）",
+        "**G-D1 ✅**：s3 后端**恰好三动词 get/list/put**（接缝层就没有删除能力，属「能力不存在」型证据）+ 未调用删除 ⇒ 键物理仍在",
+        "★本轮 4 个 FAIL **全部是探针错、产线代码零错**：①自造桶名不存在（404）⇒ 改用 b13-team ②按 res.value 取列表，真实形状是 **res.keys** ③空集合也「相等」⇒ 假通过，补非空前提 + 精确规模双守卫 ④种子键只单边过滤 ⇒ 集合恒不等",
+        "**G-F5 ✅**：枚举 lib/ 全部出站 API（fetch/http.request/sendBeacon/XHR/WebSocket/net.connect/dns）⇒ **12 个团队模块出站命中合计 = 0**（团队代码侧根本没有出站能力，强于「默认关但代码仍执行」的反例）；index.js 两处 fetch 归属为版本检查(L5306)与通知拉取(L5345)，均非行为数据上报；关闭纪律逐字 index.js:801 + 11886「teamEnabled===false 时完全不构造（零对象、零 IO、零网络）」",
+        "**R2 最终：20 条 E2 目标中 11 条 ✅ 通过** —— G-A1/A2/B1/B2/C2/D1/D3/D4/E2/F5/F6（其中 G-D1/D4/E2 为 E3 级双实例取证）",
+        "★取证期间零污染复核：全量回归 **185 PASS / 0 FAIL / 0 TIMEOUT（37.9s）**；lib/index.js 984,969 B + lib/client.js 742,031 B **零改动**；冻结锁 379023FB87C56251 一致；9 个探针脚本全删"
+      ]
     },
     {
       "id": "R3",
@@ -345,14 +408,21 @@
       "id": "R5",
       "name": "E3 七条（需第二环境）",
       "track": "evidence",
-      "status": "pending",
+      "status": "done",
       "tier": "E3",
       "files": [],
       "restart": false,
       "criteria": [
         "G-B3/C1/C3/D1/D4/E2/F6 全部达标或如实记未触达"
       ],
-      "evidence": []
+      "evidence": [
+        "产出 docs/teamwork-impl/29-R5第二环境可行性.md（40,508 B / 纯 CRLF 805 / 裸 LF 0 / sha256-16 B3D5C3CE81A13A2A）",
+        "★Lead 独立复核：字节数、CRLF、裸LF 与子代理自述**逐项一致**；另独立验证三条关键声明——① .github/workflows/tests.yml 确为 runs-on: ubuntu-latest ② lib/ 内「检测 python 是否安装」类逻辑零命中 ③ lib/context-host.js:133 注释逐字为「M7-1 三重门…默认 false/null 时恒为假 → 永远走 null sink」",
+        "判定结果：✅ 本机可触达 4 条（G-B3 / G-D1 / G-D4 / G-E2）· ⚠️ 需用户提供 3 条（G-C1 / G-C3 / G-F6）· ❌ 0 条",
+        "★关键资源：本机已有真实 Linux 通道 = CI 的 ubuntu-latest（WSL 无发行版、docker/podman 未装、无 Hyper-V）；MinIO 双实例材料仍在磁盘（%TEMP%\\team-minio\\minio.exe 113,115,136 B / %TEMP%\\minio-probe\\minio.exe），B13 遗留可直接复用",
+        "★实测纠正：G-F6「装/不装 python」在插件侧**不是自动探测而是 M7-1 三重门显式开关**（默认恒走 null sink）⇒ 其判据可改为「开关开/关 + 产物哈希」，本机即可执行",
+        "判据边界声明：G-C3（需两台真机）与 G-D1/D4/E2（两个独立进程+两套独立存储即可）**不得混用同一套取证**"
+      ]
     },
     {
       "id": "R6",
@@ -368,6 +438,218 @@
         "附录 C 核对表填满"
       ],
       "evidence": []
+    },
+    {
+      "id": "S4",
+      "name": "概念图逐张核对（用户标记的可疑点）",
+      "track": "skin",
+      "status": "completed",
+      "tier": "E0",
+      "files": [
+        "docs/teamwork-impl/20-概念图与原型逐张核对.md"
+      ],
+      "restart": false,
+      "criteria": [
+        "逐张开图实测",
+        "10 张映射逐条判定",
+        "原型 10 页逐页判定",
+        "给出成立/不成立/无法判定"
+      ],
+      "evidence": [
+        "20 卷 19,490 B / 纯 CRLF / 164 行",
+        "10 张概念图标签实测全一致；10 个原型页全对得上；不一致 0、需重画 0",
+        "★结论=不成立（对因果链）：README 主张『经逐张开图复核得到』无证据支持",
+        "规格卷 11 mtime 20:11:04 早于原型 20:17:07 ⇒ 高熵细节（342/128/56/8、76%、0.92、引语）在规格卷中逐一存在，照图/照规格卷结果相同 ⇒ 同源歧义",
+        "孤证：10 个 sha 前缀全仓仅 README §2.5 与 TASK-C.md 命中；preview 05/06/07 从未生成（04→08 空档 8 秒、git 无删除痕迹）",
+        "勘误自称的 3 个错误标签经开图确认全部不成立（第 8/9/10 行逐字正确）",
+        "尺寸不同（概念图 1448×1086 vs preview 1440×1040）⇒ 判定为结构级非像素级（报告已显式声明）"
+      ]
+    },
+    {
+      "id": "B11a",
+      "name": "配置键对齐 + 新增 teamSyncTransport（默认 s3）",
+      "track": "backend",
+      "status": "done",
+      "tier": "E1",
+      "files": [
+        "lib/index.js",
+        "docs/teamwork-impl/frontend/02-团队版前端契约.md"
+      ],
+      "restart": true,
+      "criteria": [
+        "契约 §6.1 以代码实装为唯一真源重写",
+        "缺失键先补进 DEFAULT_CONFIG",
+        "新增 teamSyncTransport（默认 s3）",
+        "计数硬锁 9 处同步"
+      ],
+      "evidence": [
+        "lib/index.js 973,146 → 973,312 B（+166，逐字节守恒）",
+        "sha 28056850 → c1d08e77",
+        "纯 CRLF 保持（crlf 14844→14846，bareLF=0）",
+        "node --check exit 0",
+        "verify-docs: 全部一致（135/57/19）",
+        "计数锁 10 处同步：WHITEPAPER/HOMEPAGE-CONTENT-FOR-GM53/FRONTEND-CO-CREATION×3/README×2/GM53-HOMEPAGE-PROMPT/PROMO-PROMPT-3.0×2",
+        "★全量回归 181 PASS / 0 FAIL / 0 TIMEOUT（197.3s）"
+      ],
+      "completedAt": "2026-09-26T22:40:00+08:00"
+    },
+    {
+      "id": "B11b",
+      "name": "传输接缝 + S3 后端（T0/T1 共用）",
+      "track": "backend",
+      "status": "done",
+      "tier": "E2",
+      "files": [
+        "lib/team-transport.js",
+        "lib/index.js"
+      ],
+      "restart": true,
+      "criteria": [
+        "接缝只有 put/get/list 三动词",
+        "同步语义层零通道判断分支",
+        "S3 签名（V4）自实装，零厂商专有 SDK",
+        "★同时实现 MemoryBackend（L1 测试件 + 一致性基准）"
+      ],
+      "evidence": [
+        "lib/team-transport.js 新建 19,687 B / 473 行 / 纯 CRLF / node --check 0",
+        "★真执行自测 51 PASS / 0 FAIL（tests/smoke/smoke-test-team-transport.mjs）",
+        "★反向验证（变异测试）：4 处变异**全部变红** ⇒ 断言非恒真（M1 list 前缀 / M2 http 静默降级 / M3 缺配置早退 / M4 签名头）",
+        "★一致性：同一组操作 MemoryBackend vs S3Backend，list/get/error 文案**逐字节相同**",
+        "★负路径：缺配置 ⇒ 零次 fetch；transport=http ⇒ 构造即抛且不降级；未知通道 ⇒ transport-unknown",
+        "lib/index.js 973,312 → 975,517 B（装配 import + 构造 + 清理 + team-state 回显），纯 CRLF / bareLF=0",
+        "★捕获一处必然 ReferenceError：回显用了未定义的 tp() ⇒ 已改为内联 IIFE（node --check 抓不到）",
+        "verify-docs 全部一致（19 工具 / 57 路由 / 135 配置键）",
+        "★全量回归 182 PASS / 0 FAIL / 0 TIMEOUT（208.0s）—— 181 既有 + 1 新增"
+      ],
+      "completedAt": "2026-09-26T23:20:00+08:00"
+    },
+    {
+      "id": "B11c",
+      "name": "A+B 档本机可算路由 8 条",
+      "track": "backend",
+      "status": "done",
+      "tier": "E2",
+      "files": [
+        "lib/index.js"
+      ],
+      "restart": true,
+      "criteria": [
+        "members / presence / attribution / conflicts / sync-debug（A 档 5 条）",
+        "sync-now / handoffs / skills（B 档 3 条）",
+        "teamEnabled=false 时零网络零磁盘"
+      ],
+      "evidence": [
+        "lib/index.js 975,517 → 984,969 B（+9,452）；纯 CRLF / bareLF=0 / node --check 0",
+        "★8 条路由全部落地（A 档 members/presence/attribution/conflicts/sync-debug + B 档 sync-now/handoffs/skills），每条首行 isLoopbackRequest 守卫",
+        "★路由计数 57 → 65；全仓计数锁一次改全：代码 3 处 + 白名单 1 处 + 文档 9 处（含 verify-docs 范围外的 GM53-HOMEPAGE-PROMPT / PROMO-PROMPT-3.0 ×2）",
+        "★真执行 84 PASS / 0 FAIL（tests/smoke/smoke-test-team-routes.mjs）",
+        "★★测试方法三级演进（本轮实测教训）：手抄夹具 ✗（与产线各自漂移）→ 源码形状对照 ✗（只比键名抓不到值漂移；且抽取窗口被内层 `},` 截断）→ **抽取产线 handler 源码 → new Function 真构造 → 真调用 → 断言真返回值** ✅",
+        "★★变异测试 2/2 全红：M1 改产线 reason 字面量（★曾是漏洞）→ 红；M2 删 handler 一个返回字段 → 红；还原后逐字节一致（sha c53b65d5）",
+        "★负路径 4 类：非回环 ⇒ 403 且 403 体只含 error 不泄漏业务字段；未定义 API 键 ⇒ 抽不到 handler；teamEnabled=false ⇒ 仍 200 + enabled:false；B 档未启用 ⇒ ok:false + reason 恰为 team-disabled",
+        "★契约对齐：8 条统一回显 enabled（前端一个字段读全部）",
+        "★关键基础设施发现：lib/index.js 顶层 `import()` 只需 ~294ms 且不需要 cordis ctx（register() 才是 ctx 入口）⇒ 路由类测试可真消费产线模块，无需手抄",
+        "verify-docs 全部一致（19 工具 / 65 路由 / 135 配置键）",
+        "★全量回归 183 PASS / 0 FAIL / 0 TIMEOUT（201.4s）—— 182 既有 + 1 新增",
+        "★回归出红 = 第 3 次「半修」陷阱：HANDBOOK 自身 §5.1 标题+自核示例漏改，被 smoke-test-issue111-docs-real-names.mjs 抓到（该套件不在 verify-docs 覆盖范围）⇒ 3 处一次补齐，issue111-docs 26 PASS"
+      ],
+      "completedAt": "2026-09-27T00:10:00+08:00"
+    },
+    {
+      "id": "B11d",
+      "name": "传输接缝一致性测试（原「架构二选一」，CR-8 已解除）",
+      "track": "backend",
+      "status": "done",
+      "tier": "E0",
+      "files": [],
+      "restart": false,
+      "criteria": [
+        "MemoryBackend vs S3Backend 同一组操作 ⇒ 产出相同",
+        "★新增 smoke 套件进 181 门禁（零外部服务依赖）",
+        "负路径：transport=http 且未配置 ⇒ 断言不发起任何公网请求"
+      ],
+      "evidence": [
+        "★回归提速根因定位：`tools/run-smoke.mjs` 的 DEFAULT_JOBS 本就是 4（2026-09-20 用户裁定「默认并行」），而历次交付一律显式传 `--jobs=1` 退回串行",
+        "★实测：jobs=1 → 201.4s｜jobs=4 → 56.7s｜jobs=8 → 34.9s｜jobs=16 → 30.4s（已达下界：最慢单套件 30.4s）⇒ 提速 6.6×，默认命令改 --jobs=8",
+        "★B11d 新增 3 条断言（F5/F6/F7）：http 通道未配置 ⇒ 零 fetch；未实装时根本拿不到后端对象；★F7 反向对照证明计数器非恒真",
+        "★变异 M1（把 http 分支改成静默降级到 s3）⇒ 5 FAIL，**其中 F6 抓到了安全事故级缺陷**；诚实标注：F5 在该变异下未红（S3 缺配置本就早退），承重的是 F6",
+        "★还原后逐字节一致（sha 02edaf42）",
+        "★team-transport 套件 51 → 54 PASS / 0 FAIL",
+        "★并行开发写入域纪律写入 27 卷 §5.1（Lead 独占单写者文件；lane 不得跑全量回归、不得派下级子代理）",
+        "★最终全量回归 **185 PASS / 0 FAIL / 0 TIMEOUT（40.1s）**；verify-docs 全部一致",
+        "★三条团队套件各自全绿：team-transport 54 / team-routes 84 / team-transport-http 111"
+      ],
+      "completedAt": "2026-09-27T01:20:00+08:00"
+    },
+    {
+      "id": "B12",
+      "name": "前端三层改造（L1 取值 → L2 布局 → L3 团队）",
+      "track": "frontend",
+      "status": "pending",
+      "tier": "E2",
+      "files": [
+        "lib/client.js"
+      ],
+      "restart": true,
+      "criteria": [
+        "L1 视觉零变化",
+        "L2 改 JSON 即换布局",
+        "L3 teamEnabled=false 时与 baseline 一致"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "B11e",
+      "name": "HTTP 后端（T2 涉密内网兜底，延后不阻塞）",
+      "track": "backend",
+      "status": "done",
+      "tier": "E2",
+      "files": [
+        "lib/team-transport-http.js"
+      ],
+      "restart": true,
+      "criteria": [
+        "接缝定好后随时可加",
+        "未实装前 UI 必须标「未验证」",
+        "transport=http 且未配置 ⇒ 断言不发起任何公网请求"
+      ],
+      "evidence": [
+        "★`lib/team-transport-http.js`（19,188 B，node --check 0，可 import，导出 createHttpBackend）",
+        "★`tests/smoke/smoke-test-team-transport-http.mjs` **111 PASS / 0 FAIL**（真起 node:http 内存服务器、真发请求、真断言）",
+        "★含 4 类负路径：未配置 endpoint ⇒ 构造即抛 + 零网络；500 ⇒ ok:false；401 ⇒ 明确失败不误判 not-found；★**绝不 fallback 到 S3**（毒化 fetch 桩 + 正对照证明桩抓得住 S3 出网）",
+        "★**并发教训**：该套件首次交付时是**坏文件**（SyntaxError: Unexpected end of input，sha256 前16 d56c5e808de4f32e / 25,144 B）—— 子代理写入被截断；Lead 隔离后 lane 自行重写为可用版本",
+        "⏳ **尚未接线**：`createTeamTransport({transport:\"http\"})` 仍是构造即抛（B11b 行为未改），接线留待后续批次",
+        "【接线】createTeamTransport({transport:\"http\"}) 经 options.createHttpBackend 装配层注入接通 createHttpBackend（避开 ESM 循环 import；未注入时仍抛 transport-not-implemented，安全默认不降级）",
+        "lib/team-transport.js 21,608 → 23,203 B（+1,595）/ sha256-16 C54E2D8964657B48 / 纯 CRLF(533) / bareLF 0 / node --check 0",
+        "tests/smoke/smoke-test-team-transport.mjs 14,120 → 18,369 B / sha256-16 BED378EAA4CC84D5 / 纯 CRLF(299) / bareLF 0",
+        "F1–F4 断言方向已复核改写（未注入工厂 ⇒ 抛）；新增 F8–F18 共 11 条正路径+负路径（真 import→真构造→真调用→断言真实返回值）",
+        "套件 54 PASS → 65 PASS / 0 FAIL；全量回归 185 PASS / 0 FAIL / 0 TIMEOUT（43.0s, --jobs=8）",
+        "两处 FAIL 均为「我的 mock 不完整」而非产线代码错：①mock 缺 res.arrayBuffer() ②mock 用 ?prefix= 判列表请求，而空前缀时 URL 无该参数（改用路径形状判定）"
+      ],
+      "completedAt": "2026-09-27T01:45:00+08:00",
+      "title": "（含接线）"
+    },
+    {
+      "id": "B13",
+      "name": "L3 真 MinIO 端到端（免安装单文件；下载地址待确认）",
+      "track": "backend",
+      "status": "done",
+      "tier": "E2",
+      "files": [],
+      "restart": false,
+      "criteria": [
+        "S3 签名 V4 真的对",
+        "PUT/GET/LIST 真的通",
+        "换 endpoint/pathStyle 仍通"
+      ],
+      "evidence": [
+        "CR-9：测试分四层，L3 需装一个 exe；dl.min.io 旧路径已 410",
+        "★★**真机验收抓出的 2 个真实缺陷已修复并复验**（Lead 亲手改 lib/）：",
+        "  · 缺陷1 payload 哈希口径：`sha256Hex(payload.toString('binary'))` → `sha256Hex(payload)`。实测复现：16 B 中文 payload 两种口径哈希不同（faab3a77… vs a44fb9a2…）。真机验证：**75 B 中文+emoji 值 put→get 逐字节往返一致**（修复前必然 400/XAmzContentSHA256Mismatch）。",
+        "  · 缺陷2 vhost 打 IP：`buildUrl` 加 `isIpv4Literal()` 守卫 ⇒ IP 端点 + pathStyle:false **构造期即失败**（`s3-virtual-host-on-ip: …请设 pathStyle: true`）且**零 fetch**；修复前静默退化 ⇒ 误导性 not-found。域名路径未误伤（实跑 URL = https://mybucket.oss-cn-hangzhou.aliyuncs.com/k.txt）。",
+        "★套件 82 → **84 PASS / 0 FAIL**（C12/C13 由「锁定旧缺陷行为」翻转为正面断言；F8/F11 由「恰发 1 次」改为「零 fetch」）。",
+        "★`lib/team-transport.js` 19,687 → **21,608 B** / sha256-16 `65FC299F54BED80A` / 纯 CRLF 512 / bareLF 0。",
+        "★**全量回归 185 PASS / 0 FAIL / 43.4s**。"
+      ]
     }
   ],
   "e3Environment": [
@@ -412,6 +694,63 @@
       "need": "有/无 Python 两环境",
       "local": "✅ 可本机（改 PATH）",
       "why": "不需要第二台机器"
+    }
+  ],
+  "notes": {
+    "crlfCorrection": "lib/*.js 非纯 CRLF（38 CRLF/34 LF/4 MIXED）；判据为「EOL 性质不变」"
+  },
+  "crs": [
+    {
+      "id": "CR-7",
+      "date": "2026-09-26",
+      "kind": "设计前提错误",
+      "what": "宿主 DSH 0.1.7-rc.2 没有用户身份 seam（deepseekAccount / credentials 均不存在）；ctx.authorization 是凭据流服务，不含用户身份",
+      "fix": "身份唯一真源改为配置显式登记 teamMemberId/teamMemberRole；绝不从 authorization 编造 user.id",
+      "evidence": "~/.dsh/profiles/node_modules/@deepseek-ai/ 全库 .d.ts 扫 Context 接口；dsh-authorization/lib/types/index.d.ts 的 AuthorizationService 方法列表"
+    }
+  ],
+  "ciNote": "CI run #68 红属既有欠账（本地同命令 181/181 绿，归因实验完成）",
+  "totalBatches": 21,
+  "lastUpdated": "2026-09-26T11:09:49",
+  "fit": {
+    "sessionId": "fit_6dff4e6d9fe6",
+    "convergedAt": "2026-09-26T21:30:00+08:00",
+    "answers": {
+      "Q1": "B 先把后端做完再做前端",
+      "Q2": "C 全量改造旧代码 + 匹配 10 张概念图",
+      "Q3": "A 归属徽标 + D 三者都要分批"
+    },
+    "artifact": "23-B10前端总攻方案.md"
+  },
+  "cr": [
+    {
+      "id": "CR-8",
+      "at": "2026-09-26T21:45:00+08:00",
+      "by": "用户",
+      "title": "架构双通道并行（默认 S3，自建服务端为涉密内网 T2 兜底）",
+      "supersedes": "23 卷 §2 C 档「二选一」结论",
+      "doc": "25-架构裁定与双通道落位.md",
+      "keys": [
+        "R1 双线并行",
+        "R2 可切换",
+        "R3 默认 S3",
+        "R4 自建=涉密内网"
+      ]
+    },
+    {
+      "id": "CR-9",
+      "at": "2026-09-26T22:05:00+08:00",
+      "by": "Lead（附用户提问）",
+      "title": "测试路线 = S3 通道，分层 L1/L2/L3/L4；T2 安全红线不放松",
+      "supersedes": "「T2 做成测试路线」的提法",
+      "doc": "26-测试方案与三处混淆纠正.md",
+      "keys": [
+        "R1 测试路线不是 T2",
+        "R2 四层测试",
+        "R3 进既有 smoke 体系",
+        "R4 MemoryBackend 必须实现",
+        "R5 不用 Docker"
+      ]
     }
   ]
 }

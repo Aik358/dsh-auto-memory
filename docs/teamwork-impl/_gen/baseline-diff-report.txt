@@ -1,27 +1,64 @@
 扫描根 : C:\Users\JH Z\.dsh\memory
 扫描深度: 3（基线也是 3）
-基线 1026 / 当前 1027
-差异: 修改 16 / 新增 1 / 删除 0
-其中后台自变（已排除，不参与判定）: 14
+基线 1026 / 当前 1047
+差异: 修改 31 / 新增 21 / 删除 0
+其中后台自变（已排除，不参与判定）: 23
   ~ hub/episodes.json
   ~ hub/facts.json
   ~ hub/procedures.json
+  ~ index/files/0825a7f22e4a54d3e351aa364e47b5c610d5b8f7ee46d561b897bbb02942066d.json
   ~ index/files/178bac007765671ff52ccbe8a2ed4287c5a77662a84969587c1ef28bc3b5405d.json
+  ~ index/files/9c7802d20ae1a0fa11ad6d2fca07e2653a2c07d904a31a3b17c1dc3021dce674.json
   ~ polling-heartbeat.json
   ~ recall-stats.json
   ~ semantic/derived-corpus.json
+  ~ semantic/engine-switch-state.json
   ~ semantic/l0/l0-index-1586fb9da235-log.json
   ~ semantic/l0/l0-index-1586fb9da235-project.json
   ~ semantic/l0/l0-index-1586fb9da235-reflection.json
   ~ semantic/l0/l0-index-1586fb9da235-user.json
+  ~ semantic/l0/l0-index-6a3c8134ed4f-log.json
+  ~ semantic/l0/l0-index-6a3c8134ed4f-project.json
+  ~ semantic/l0/l0-index-6a3c8134ed4f-reflection.json
+  ~ semantic/l0/l0-index-6a3c8134ed4f-user.json
+  ~ semantic/vectors-39f8aa2f08c2d1d0.json
   ~ semantic/vectors-c6eef0495385c669.json
+  ~ workspaces/--C--Users-JH Z-.dsh-aik_auto_memory_use--/hub/procedures.json
   ~ workspaces/--D--dsh-auto-memory--/2026-09-26.md
   ~ workspaces/--D--dsh-auto-memory--/hub/procedures.json
 
+  M archived-user.md
+  M greetings/2026-09-26.json
+  M MEMORY.md
+  M notices-cache-pre.json
+  M workbench.json
+  M workspaces/--D--dsh-auto-memory--/archive/notes-archived.md
   M workspaces/--D--dsh-auto-memory--/handoff/index.json
   M workspaces/--D--dsh-auto-memory--/handoff/PLAN.md
+  M workspaces/--D--dsh-auto-memory--/MEMORY.md
+  + summaries/2026-09-26-晚上.json
   + workspaces/--D--dsh-auto-memory--/handoff/handoff-20260926-170517.md
+  + workspaces/--D--dsh-auto-memory--/handoff/handoff-20260926-175648.md
+  + workspaces/--D--dsh-auto-memory--/handoff/handoff-20260926-175731.md
+  + workspaces/--D--dsh-auto-memory--/handoff/handoff-20260926-181104.md
+  + workspaces/--D--dsh-auto-memory--/handoff/handoff-20260926-190934.md
+  + workspaces/--D--dsh-auto-memory--/handoff/handoff-20260926-193031.md
+  + workspaces/--D--dsh-auto-memory--/handoff/handoff-20260926-195756.md
+  + workspaces/--D--dsh-auto-memory--/handoff/handoff-20260926-201645.md
+  + workspaces/--D--dsh-auto-memory--/handoff/handoff-20260926-203255.md
+  + workspaces/--D--dsh-auto-memory--/handoff/handoff-20260926-203720.md
+  + workspaces/--D--dsh-auto-memory--/handoff/handoff-20260926-204741.md
+  + workspaces/--D--dsh-auto-memory--/handoff/handoff-20260926-210316.md
+  + workspaces/--D--dsh-auto-memory--/handoff/handoff-20260926-212655.md
+  + workspaces/--D--dsh-auto-memory--/handoff/handoff-20260926-214023.md
+  + workspaces/--D--dsh-auto-memory--/handoff/handoff-20260926-214258.md
+  + workspaces/--D--dsh-auto-memory--/handoff/handoff-20260926-214331.md
+  + workspaces/--D--dsh-auto-memory--/handoff/handoff-20260926-214457.md
+  + workspaces/--D--dsh-auto-memory--/handoff/handoff-20260926-220650.md
+  + workspaces/--D--dsh-auto-memory--/handoff/handoff-20260926-224028.md
 
-（未给 --expect：仅列出差异；判定需人工核对差异集合。）
+✗ G-A1 不通过
+  预期外的改动（最危险）: MEMORY.md, archived-user.md, greetings/2026-09-26.json, notices-cache-pre.json, summaries/2026-09-26-晚上.json, workbench.json, workspaces/--D--dsh-auto-memory--/MEMORY.md, workspaces/--D--dsh-auto-memory--/archive/notes-archived.md, workspaces/--D--dsh-auto-memory--/handoff/PLAN.md, workspaces/--D--dsh-auto-memory--/handoff/handoff-20260926-170517.md, workspaces/--D--dsh-auto-memory--/handoff/handoff-20260926-175648.md, workspaces/--D--dsh-auto-memory--/handoff/handoff-20260926-175731.md, workspaces/--D--dsh-auto-memory--/handoff/handoff-20260926-181104.md, workspaces/--D--dsh-auto-memory--/handoff/handoff-20260926-190934.md, workspaces/--D--dsh-auto-memory--/handoff/handoff-20260926-193031.md, workspaces/--D--dsh-auto-memory--/handoff/handoff-20260926-195756.md, workspaces/--D--dsh-auto-memory--/handoff/handoff-20260926-201645.md, workspaces/--D--dsh-auto-memory--/handoff/handoff-20260926-203255.md, workspaces/--D--dsh-auto-memory--/handoff/handoff-20260926-203720.md, workspaces/--D--dsh-auto-memory--/handoff/handoff-20260926-204741.md, workspaces/--D--dsh-auto-memory--/handoff/handoff-20260926-210316.md, workspaces/--D--dsh-auto-memory--/handoff/handoff-20260926-212655.md, workspaces/--D--dsh-auto-memory--/handoff/handoff-20260926-214023.md, workspaces/--D--dsh-auto-memory--/handoff/handoff-20260926-214258.md, workspaces/--D--dsh-auto-memory--/handoff/handoff-20260926-214331.md, workspaces/--D--dsh-auto-memory--/handoff/handoff-20260926-214457.md, workspaces/--D--dsh-auto-memory--/handoff/handoff-20260926-220650.md, workspaces/--D--dsh-auto-memory--/handoff/handoff-20260926-224028.md, workspaces/--D--dsh-auto-memory--/handoff/index.json
+  预期内但未发生: zzz-不存在的文件.md
 
-退出码: 0
+退出码: 1
