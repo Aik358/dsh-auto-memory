@@ -1,7 +1,13 @@
 /** 工作台相关守卫：缺口①（工作区注册）、③（greeting loop）、⑤（打开复查） */
 import fs from 'node:fs'
-const idx = fs.readFileSync('D:/dsh-auto-memory/lib/index.js', 'utf8')
-const cli = fs.readFileSync('D:/dsh-auto-memory/lib/client.js', 'utf8')
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+// 仓库根：由本文件位置推导（tests/smoke/*.mjs → 上两级）。
+// 2026-09-26 修：原先硬编码 'D:/dsh-auto-memory'，CI 在 /home/runner/... 下必 ENOENT。
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..')
+const idx = fs.readFileSync(path.join(ROOT, 'lib/index.js'), 'utf8')
+const cli = fs.readFileSync(path.join(ROOT, 'lib/client.js'), 'utf8')
 
 let P = 0, F = 0
 const ck = (name, ok, detail) => {

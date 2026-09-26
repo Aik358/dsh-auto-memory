@@ -10,8 +10,13 @@
  * 纪律：只读源码做静态断言 + 纯逻辑重放；不碰磁盘、不启进程、无副作用。
  */
 import fs from 'node:fs'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 
-const idx = fs.readFileSync('D:/dsh-auto-memory/lib/index.js', 'utf8')
+// 仓库根：由本文件位置推导（tests/smoke/*.mjs → 上两级）。
+// 2026-09-26 修：原先硬编码 'D:/dsh-auto-memory'，CI 在 /home/runner/... 下必 ENOENT。
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..')
+const idx = fs.readFileSync(path.join(ROOT, 'lib/index.js'), 'utf8')
 
 let P = 0, F = 0
 const ck = (name, ok, detail) => {
@@ -129,7 +134,7 @@ ck('该函数体内 prompt 恰好 1 次', (visBody.match(/await sc\.prompt\(/g) 
 console.log('\n══ ⑧ 守卫 ⑰ 硬约束不回退（防旧方案复活）══')
 ck('无删除工作台会话的调用', !/deleteSession|removeSession/.test(idx) || !/workbench/i.test(idx.match(/deleteSession[\s\S]{0,80}/)?.[0] || ''))
 ck('subagent-gc 不触碰工作台（源码级：只在 gc 模块内判 label 前缀）', (() => {
-  const gc = fs.readFileSync('D:/dsh-auto-memory/lib/subagent-gc.js', 'utf8')
+  const gc = fs.readFileSync(path.join(ROOT, 'lib/subagent-gc.js'), 'utf8')
   return !/workbench/i.test(gc)
 })(), 'subagent-gc.js 内不得出现 workbench')
 

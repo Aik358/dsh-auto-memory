@@ -132,7 +132,12 @@ console.log('[G2] framing:partial/multiple/bad JSON/oversize/epoch 门/type 混�
   let done2 = false; void p2.then(() => { done2 = true })
   c._feedForTest(resp2.subarray(0, 10))
   await sleep(60)
-  ok(!done2, 'G2 partial 行挂起等待补全')
+  // 2026-09-26 修（CI 假红根因）：原断言 `ok(!done2, ...)` 依赖「真实 python worker 在 60ms 内
+  //   不回 health」——这是**时序假设而非契约**。Windows 上解释器冷启动 >60ms ⇒ 恒绿；Linux CI 上
+  //   启动/往返更快，真实 health_result 抢先 resolve p2 ⇒ done2=true ⇒ 必红（CI 实测 89 PASS/1 FAIL）。
+  //   改为对**行分帧器**做确定性断言：半行（无 \n）不得被结算为帧。与 worker 速度无关。
+  //   badJson 在 L111 已被断言为 1；喂入 10 字节残片后若仍为 1，即证明残片被缓冲、未解析。
+  eq(c._statsForTest.dropped.badJson, 1, 'G2 partial 半行不结算(未到行尾不解析;不依赖 worker 时序)')
   c._feedForTest(resp2.subarray(10))
   const r2 = await p2
   ok(r2.ok, 'G2 补全后半帧立即 resolve(partial 重组)')

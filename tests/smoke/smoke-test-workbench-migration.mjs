@@ -6,8 +6,11 @@
  */
 import fs from 'node:fs'
 import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 
-const ROOT = 'D:/dsh-auto-memory'
+// 仓库根：由本文件位置推导（tests/smoke/*.mjs → 上两级）。
+// 2026-09-26 修：原先硬编码 'D:/dsh-auto-memory'，CI 在 /home/runner/... 下必 ENOENT。
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..')
 const idx = fs.readFileSync(path.join(ROOT, 'lib/index.js'), 'utf8')
 const cli = fs.readFileSync(path.join(ROOT, 'lib/client.js'), 'utf8')
 const idxL = idx.split(/\r?\n/)
