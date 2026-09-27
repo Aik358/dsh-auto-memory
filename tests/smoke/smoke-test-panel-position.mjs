@@ -55,7 +55,7 @@ ok(/panelPos: function \(\) \{ return panelPos \}/.test(SRC), 'controller.panelP
 
 console.log('== 3. 「会话页」注册在 conversation.view（与对话轨迹/白板看板并列） ==')
 ok(/slots\.inject\('conversation\.view', function \(\) \{[\s\S]{0,300}id: 'auto-memory-pre-panel'/.test(SRC), '记忆页注册到 conversation.view,id=auto-memory-pre-panel')
-ok(/label: function \(\) \{ return locale === 'zh' \? '记忆' : 'Memory' \}/.test(SRC), '页签标签中英双语')
+ok(/label: function \(\) \{ return (?:L3\('记忆'|locale === 'zh' \? '记忆')/.test(SRC), '页签标签跟随语言(zh/en/ja)')
 ok(/if \(controller\.panelPos\(\) === 'page' \|\| controller\.panelPos\(\) === 'both'\)/.test(SRC), '仅 page/both 档才挂该页签')
 ok(!/slots\.register\(\s*\{[^}]*'shell\.overlay'[^}]*label/.test(SRC), '不得再往 shell.overlay 注册带 label 的"第二页面"（那是覆盖层,做不出并列页）')
 

@@ -482,7 +482,7 @@ t('G1 前端注册 conversation.view 槽位(整页看板唯一落点)', () => {
   assert(CLI_SRC.includes("slots.inject('conversation.view'"), '必须 inject conversation.view —— 否则整页看板永不出现(「函数写了没人调用」的老病)')
   assert(/slots\.register\(\s*\{\s*name:\s*'conversation\.view'/.test(CLI_SRC), "register 的 name 必须是 'conversation.view'(与 inject 同名)")
   assert(/id:\s*'auto-memory-pre-kanban'/.test(CLI_SRC), '槽位 id 不在场')
-  assert(/label:\s*function\s*\(\)\s*\{\s*return\s+locale\s*===\s*'zh'/.test(CLI_SRC), 'label 必须是 locale 跟随函数(否则显示 undefined/切语言不重算)')
+  assert(/label:\s*function\s*\(\)\s*\{\s*return\s+(?:locale\s*===\s*'zh'|L3\()/.test(CLI_SRC), 'label 必须是 locale 跟随函数(否则显示 undefined/切语言不重算)')
 })
 
 t('G2 整页组件与矩阵元素在场(看得见的口径)', () => {

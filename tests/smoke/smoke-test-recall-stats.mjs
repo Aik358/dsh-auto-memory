@@ -178,7 +178,7 @@ ok(/chCard\(model, 'model'/.test(CL) && /chCard\(inject, 'inject'/.test(CL) && /
 for (const k of ['statsChModelHint', 'statsChInjectHint', 'statsChShadowHint']) {
   ok(cnt(CL, k + ": '") === 2 && cnt(CL, "t('" + k + "')") >= 1, 'S4g5 ' + k + ' 中英定义齐 + 被使用')
 }
-ok(cnt(CL, 'statsChannels:') === 2, 'S4g6 总览标题中英双语齐全（命中 2）')
+ok(cnt(CL, 'statsChannels:') === 3, 'S4g6 总览标题 zh/en/ja 齐全（命中 3）')
 ok(cnt(CL, 'h(DamDonut') >= 2 && cnt(CL, 'h(DamBars') >= 2 && cnt(CL, 'h(DamSpark') >= 1 && cnt(CL, 'h(DamHeat') >= 1, 'S4g7 四类图表都在用（环形/条形/折线/热力）')
 ok(/it\.score \|\| 0/.test(CL), 'S4g8 ★注入侧按字符数度量（回答「谁最占预算」），不是次数')
 // 动效必须走项目既有 token（skill 教义：对齐既有刻度，不引入第二套）

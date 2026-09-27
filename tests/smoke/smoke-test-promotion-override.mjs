@@ -182,7 +182,7 @@ console.log('\n[PO-9] 前端门控：overridable 才给按钮，结构门只给�
   ok(/hubWhyOverridable/.test(CLI) && /hubWhyStructural/.test(CLI), '两段解释文案键存在')
   const n1 = CLI.split('hubForcePromote:').length - 1
   const n2 = CLI.split('hubForcePromoteTitle:').length - 1
-  ok(n1 === 2 && n2 === 2, 'hubForcePromote / hubForcePromoteTitle 各 zh+en 两处（实际 ' + n1 + ' / ' + n2 + '）')
+  ok(n1 === 3 && n2 === 3, 'hubForcePromote / hubForcePromoteTitle 各 zh/en/ja 三处（实际 ' + n1 + ' / ' + n2 + '）')
   // 反例守卫：按钮不得挂在 decision==='ask' 上（那是「批准(人工)」，不是越权）
   ok(/p\.promotion\.decision === 'ask'/.test(CLI), '「批准(人工)」按钮仍在（两条通道互不冒充）')
 }

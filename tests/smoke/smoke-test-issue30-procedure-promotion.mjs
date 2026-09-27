@@ -208,7 +208,7 @@ console.log('[G1] 源码守卫:index.js 日志 / client.js 面板')
 ok(/hub review: ' \+ action \+ ' ' \+ pid\.slice\(0, 20\) \+ ' → ' \+ JSON\.stringify\(\{ ok: r\.ok, decision: r\.decision, reason: r\.reason, reasonCodes: r\.reasonCodes \}\)/.test(INDEX_SRC),
   'index.js hub review 日志记录 decision+reasonCodes(不再只记 ok 的假阳性)')
 ok(/\(j && Array\.isArray\(j\.reasonCodes\) && j\.reasonCodes\.length \? ' \(' \+ j\.reasonCodes\.join\(', '\)/.test(CLIENT_SRC), 'client.js hubAct 内联追加显示 reasonCodes')
-ok(/observationOnly \? \(locale === 'zh' \? ' · 观察/.test(CLIENT_SRC), 'client.js 审批队列为观察型条目打标')
+ok(/observationOnly \? \((?:L3\()?' · 观察/.test(CLIENT_SRC), 'client.js 审批队列为观察型条目打标')
 // 断言按**意图**写（2026-09-21 配合 A-9 调整）：观察型条目必须拿不到「晋升」按钮。
 // 旧断言写死相邻字面量 `!p.observationOnly && h('button'`，A-9 把条件改成
 // 「observationOnly 与 promotion 投影取合取」后该字面量不再相邻 —— 契约没变，断言形状要改。

@@ -85,7 +85,7 @@ ok(/hasWin \? h\('div', \{ style: \{ height: '6px'/.test(CLI), 'B1-4 无窗口�
 ok(/t\('waterWindowUnknown'\)/.test(CLI) && /t\('waterWindowUnknownHint'\)/.test(CLI), 'B1-5 未测出窗口时给出说明与指引')
 for (const k of ['waterWindowUnknown', 'waterWindowUnknownHint']) {
   const n = (CLI.match(new RegExp('\\b' + k + ':', 'g')) || []).length
-  ok(n === 2, 'B1-6 文案键 ' + k + ' zh/en 各定义一次（实际 ' + n + '）')
+  ok(n === 3, 'B1-6 文案键 ' + k + ' zh/en/ja 各定义一次（实际 ' + n + '）')
 }
 // 不可达提示：旧代码把「尚未测量」关在 window>0 门内 ⇒ 结构性恒不可达场景已被移除
 ok(!/if \(wl\.window > 0\) \{[\s\S]{0,900}?waterNotMeasured/.test(CLI), 'B1-7 「尚未测量」提示不再被 window>0 门遮蔽')
