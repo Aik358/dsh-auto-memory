@@ -90,6 +90,11 @@ try {
  const [ca,cb]=await Promise.all([scanA,scanB]);assert.ok(ca.some(s=>s.content.includes('only A')));assert.ok(!cb.some(s=>s.content.includes('only A')))
  assert.ok(cb.some(s=>s.content.includes('only B')));assert.equal(engine.external.cache,cb)
  engine.state.ws=a;assert.equal(await engine.external.discover(false),ca)
+ Object.assign(engine.config,{globalBriefEnabled:true,globalBriefWatchMemory:false,globalBriefWatchDocs:false,globalBriefWatchExternal:true})
+ engine.external.briefDetectSyncPre();engine.state.ws=b;engine.external.briefDetectSyncPre()
+ assert.ok(Object.keys(engine._briefWatermarks.get(engine.wsKey(b))).some(p=>p.startsWith(b)))
+ assert.ok(!Object.keys(engine._briefWatermarks.get(engine.wsKey(b))).some(p=>p.startsWith(a)))
+ assert.ok(!JSON.stringify(engine._briefSnapshots.get(engine.wsKey(b))).includes(a))
  // A quota reached on the first line must not read a second multi-MiB line.
  const jsonl=path.join(root,'quota.jsonl')
  await writeFile(jsonl,JSON.stringify({type:'user',content:[{type:'text',text:'first'}]})+'\n'+JSON.stringify({type:'user',content:[{type:'text',text:'x'.repeat(2*1024*1024)}]}))
