@@ -61,3 +61,13 @@ https://github.com/Aik358/dsh-auto-memory/compare/main...Minervaowl7:dsh-auto-me
 复审补修首轮全量为242/5/0（136.2秒）：除三项基线失败，continue-host仍期待去前缀后继ID，switch-decouple抽取式unit未注入新增状态依赖。两项夹具已定向适配，保留所有行为断言；continue-host定向40/0。新增完整生产模块suite已在首轮全量通过，避免用抽取式假边界作为持久化证据。
 
 本轮state 12/0；processes与formal routes通过。正式维护入口不仅在npm pack dry-run文件列表中，也从仅包含实际打包依赖的隔离安装目录运行status通过。build-iter5-skin --check --strict和git diff --check通过。
+
+## 固定收尾验证
+
+旧token回归与交付说明固定在`7d97eba4c6b6f090097423101efe1780f5e8c768`；该提交相对已复审产品5bc5e2d没有lib差异。正式CLI/路由定向通过，本地完整隔离回归**244/3/0，136.5秒**；[该SHA的CI37004330622](https://github.com/Minervaowl7/dsh-auto-memory/actions/runs/37004330622)为**244/3/0，138.9秒**。三个issue207 suite均通过，失败仍仅policies、开发venv、skin assets。证据收尾提交只记录结果；其远端head与对应CI在最终报告再次确认。
+
+## 不推送的隔离集成检查
+
+在独立detached工作树先组合#206 head857a422与#208 head513b613，再合入本轮7d97eba，临时集成SHA`29825615690508439461a2406ba22770b3614b12`。合并出现index导入行和index源码指纹两处冲突；仅在临时树保留双方imports并重算组合指纹，其余由git自动合并。未改变或推送任何已有PR分支。
+
+相同Node22/独立HOME/外部服务守卫下完整集成**259/1/0，138.6秒，260套**。唯一失败为memory-index的last-started session B归属断言，不能称全绿或已证明完全无冲突。合入前的#206+#208控制SHA`6d8d16ce34954233f8cb0786f9c5a96d65337ff9`和合入后的该suite各自隔离单跑都通过；随后各运行10次，控制8过/2同断言失败，合入后7过/3同断言失败。证实该不稳定失败在本批加入前已存在；这些次数不确定唯一根因或证明频率无变化。没有为消掉它扩大本次产品范围。三个新issue207 suite及相关流程在集成全量中均通过。
