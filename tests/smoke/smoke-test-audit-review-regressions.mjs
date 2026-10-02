@@ -39,6 +39,29 @@ try {
  release();await held;await moving; const imported=await importing
  assert.equal(imported.skipped.length,0)
  assert.ok(engine.parseCalendar(await readFile(path.join(nextUser,'CALENDAR.md'),'utf8')).some(r=>r.title==='导入记录'))
+ // Start actual calendar operations while saveConfig holds the physical old lock.
+ // An IO boundary observer queues them before the alias config is published.
+ if (process.platform !== 'win32') {
+  await engine.calendarAdd({date:'2026-10-02',title:'alias done'})
+  await engine.calendarAdd({date:'2026-10-02',title:'alias remove'})
+  const alias=path.join(root,'next-user-alias');await symlink(nextUser,alias,'dir')
+  const configPath=engine._configPath, resolvePaths=engine.resolvePaths.bind(engine)
+  let pending, oldPaths=0, freshPaths=0
+  engine.resolvePaths=async agent=>{const p=await resolvePaths(agent);if(p.calendarPath===path.join(nextUser,'CALENDAR.md'))oldPaths++;else if(p.calendarPath===path.join(alias,'CALENDAR.md'))freshPaths++;return p}
+  Object.defineProperty(engine,'_configPath',{configurable:true,get(){
+   if(!pending && fs.existsSync(path.join(nextUser,'CALENDAR.md.lock'))) {
+    pending=[engine.calendarAdd({date:'2026-10-02',title:'alias queued add'}),engine.calendarDone('2026-10-02','--:--','alias done'),engine.calendarRemove('2026-10-02','--:--','alias remove')]
+   }
+   return configPath
+  }})
+  try {
+   await engine.saveConfig({userMemoryDir:alias});assert.ok(pending)
+   await Promise.all(pending)
+   assert.ok(oldPaths>=3 && freshPaths>=3,'all three stale-path operations queued across actual alias config commit')
+   const rows=engine.parseCalendar(await readFile(path.join(alias,'CALENDAR.md'),'utf8'))
+   assert.ok(rows.some(r=>r.title==='alias queued add'));assert.equal(rows.find(r=>r.title==='alias done').done,true);assert.ok(!rows.some(r=>r.title==='alias remove'))
+  } finally {Object.defineProperty(engine,'_configPath',{configurable:true,writable:true,value:configPath});engine.resolvePaths=resolvePaths}
+ }
  // Historical pack really uses the old flattened slug; the format/checksum stay v1.
  const from=path.join(root,'Old-Project'),to=path.join(root,'new','project'),slug=legacyWorkspaceKey(from)
  const pack=buildPackPre({ws:from,files:{'MEMORY.md':`root=${from}\nsidecar=/memory/${slug}/hub`},now:1}).pack
