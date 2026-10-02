@@ -59,6 +59,9 @@ try {
  session('session-pre-effect-source');controller.create=async()=>{throw Error('create rejected before delivery')};controller.prompt=async()=>{}
  const early=await engine.decideAutoContinue('manual',null,'session-pre-effect-source');assert.equal(early.ok,false);assert.equal(new MemoryEngine().isContinuedSession('session-pre-effect-source'),false)
  controller.create=async()=>({sessionId:'new-'+(++creates)});assert.equal((await engine.decideAutoContinue('manual',null,'session-pre-effect-source')).ok,true)
+ session('session-auto-source');engine._autoContState={};engine.armAutoContinue({session:{id:'session-auto-source',header:{cwd:workspace}}},{ratio:.99,modelKnown:true})
+ assert.equal(engine._autoContState.armed.sessionId,'session-auto-source');engine._autoContState.armed.expiresAt=Date.now()-1
+ const beforeAuto=creates;await engine.tickAutoContinue();assert.equal(creates,beforeAuto+1);assert.equal(engine.isContinuedSession('session-auto-source'),true);assert.equal(engine._autoContState.executing,false)
  console.log('PASS formal legacy routes and real host: reservation refusal, concurrent numbering, post-delivery persist fault, restart, multi-engine source and ambiguous delivery')
 }finally{
  fs.renameSync=rename;syncBuiltinESMExports();MemoryEngine.prototype.loadConfigSync=load;globalThis.setInterval=interval;globalThis.setTimeout=timeout;globalThis.fetch=fetch
