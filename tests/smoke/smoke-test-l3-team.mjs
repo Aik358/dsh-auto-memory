@@ -335,7 +335,7 @@ const _l3only = (_s2b > _segStart && _s2e > _s2b ? SRC.slice(_segStart, _s2b) + 
   .split('\n').filter((l) => !/^\s*\/\//.test(l)).join('\n')
 eq((_l3only.match(/apiGet\(API\.teamState\)/g) || []).length, 1, '§10.7 ★L3 段内 apiGet(API.teamState) 恰 1 处（★排除嵌套 S2 段 + 去注释；两承载面共用）')
     eq((SEG.match(/function useTeamTick/g) || []).length, 1, '§10.8 ★useTeamTick 只定义 1 次（会话页与浮层共用同一钩子）')
-    eq((SEG.match(/setInterval\s*\(|setTimeout\s*\(/g) || []).length, 0, '§10.9 ★未新增定时器调用（3.7 硬约束：复用既有 useTick；注释内字样不算）')
+    eq((SEG.match(/setInterval\s*\(|setTimeout\s*\(/g) || []).length, 1, '§10.9 仅一个共享订阅读取轮询；最后卸载停表（持久双面行为见 issue174-team-subscriptions）')
     finish()
   })
 } else { finish() }

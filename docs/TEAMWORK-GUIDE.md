@@ -73,7 +73,8 @@
 
 | 路由 | 方法 | 返回要点 |
 |---|---|---|
-| `/team-state` | GET | 团队总状态（phase/queue/conflicts/syncAt/成员） |
+| `/team-state` | GET | 原始团队状态（sync/pull/outbox/已知本机成员）；UI 与 attribution/conflicts/debug 四路单飞读取 |
+| `/team-control` | POST | `{action:"pause",paused:boolean}` 本实例暂停；`{action:"reset-cursor",confirm:true}` 重置下行游标，不清空出站队列；仅 loopback |
 | `/team-members` | GET | `{enabled, self, members, project}` —— 本机只知道「自己是谁」，**不编造其他成员** |
 | `/team-presence` | GET | `{enabled, self, others, note}` —— `others` 恒空（多端 presence 需服务端协议，如实为空） |
 | `/team-attribution` | GET | `{enabled, actor, calendar, attribution:{size,writes,items:[{key,memberId,memberName,at,op}]}}` —— **「谁改动」的数据源** |
@@ -145,3 +146,5 @@
 
 ---
 *维护约定：改团队键/路由/模块，同提交更新本文；对不上以代码为准并回改本文。*
+
+团队开关更改后需要重新加载宿主以构造或移除组件。卸载停止上/下行调度、使在途结果失效并中止鉴权通道请求；已发出的远端请求可能已执行，不能撤销其远端副作用。暂停/关闭之后不会再由该批发起后续请求、应用响应或推进游标。前端挂载面共享订阅及五秒只读轮询，最后一处卸载时停轮询。历史出站错误保留在诊断中，不据此将已恢复的当前同步状态判为离线。成员列表只映射已知自己，不编造远端 presence。
