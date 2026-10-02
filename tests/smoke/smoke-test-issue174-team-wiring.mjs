@@ -3,6 +3,7 @@ import { mkdtemp, writeFile, readFile, rm } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import vm from 'node:vm'
+import fs from 'node:fs'
 import { createFactStorePre } from '../../lib/fact-store.js'
 import { Readable } from 'node:stream'
 import { apply, API, MemoryEngine } from '../lib/audit-engine.mjs'
@@ -68,6 +69,22 @@ try {
  vm.createContext(ui);vm.runInContext(client.slice(start,end)+'\nthis.read=fetchTeamState;',ui);const shown=await ui.read()
  assert.equal(shown.team.conflictItems.length,2);assert.ok(shown.team.conflictItems.every(c=>c.local.includes('React')&&c.remote.includes('Vue')));assert.equal(shown.team.members[0].id,'member-a')
  assert.match(shown.team.debug.outbox.lastError,/send:/);assert.ok(shown.team.syncAt>0)
+ // An HTTP ACK is not a durable dequeue. Inject a real fs.renameSync
+ // failure at only the outbox target and observe formal sync/routes/UI.
+ engine._teamMerge.clear();assert.equal((await ui.read()).team.phase,'synced')
+ engine._teamOutbox.enqueue({kind:'fact',key:'durable-ack',payload:{text:'retain until disk commit'}})
+ holdPush={};const commit=engine._teamSync.tick();await new Promise(r=>timeout(r,0));assert.ok(holdPush.resolve)
+ engine._teamOutbox.enqueue({kind:'fact',key:'during-ack',payload:{text:'enqueued while first HTTP pending'}})
+ const outboxFile=engine._teamOutbox.file,oldDisk=await readFile(outboxFile,'utf8'),rename=fs.renameSync
+ let writeAttempts=0
+ try {
+  fs.renameSync=(from,to)=>{if(to===outboxFile){writeAttempts++;throw Object.assign(new Error('injected outbox rename denied'),{code:'EPERM'})}return rename(from,to)}
+  holdPush.resolve();holdPush=null;const failedCommit=await commit;assert.equal(failedCommit.failed,1);assert.match(failedCommit.error,/outbox-persist-failed/)
+ }finally{fs.renameSync=rename}
+ assert.ok(writeAttempts>0);assert.equal(engine._teamOutbox.size(),2);assert.equal(await readFile(outboxFile,'utf8'),oldDisk)
+ const failedState=await ui.read();assert.equal(failedState.team.phase,'offline');assert.match(failedState.team.error,/outbox-persist-failed/);assert.equal(failedState.team.queue,2);assert.equal(engine._teamSync.status().lastOk,null)
+ const retried=await engine._teamSync.tick();assert.equal(retried.failed,0);assert.equal(engine._teamOutbox.size(),0);assert.equal(JSON.parse(await readFile(outboxFile,'utf8')).items.length,0)
+ const recoveredState=await ui.read();assert.equal(recoveredState.team.phase,'synced');assert.equal(recoveredState.team.error,'');assert.match(recoveredState.team.debug.outbox.lastError,/injected outbox rename denied/)
  pullChanges=null
  // Responses outstanding at pause/close/dispose are invalidated. Already sent
  // requests may have remote effects; queued candidates stay on disk for recovery.
