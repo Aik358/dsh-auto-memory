@@ -2,10 +2,10 @@
 // in the VM test copy; hooks/DOM/HTTP are controlled boundaries, not a browser.
 import fs from 'node:fs/promises'
 import vm from 'node:vm'
-export async function completeClient({fetch,source}={}) {
+export async function completeClient({fetch,source,react}={}) {
   source ||= await fs.readFile(process.env.DAM_CLIENT_AUDIT_SOURCE || new URL('../../lib/client.js',import.meta.url),'utf8')
   let slots=[],cursor=0,effects=[],exposed
-  const React={Fragment:Symbol('Fragment'),createElement:(type,props,...children)=>({type,props:{...props,children}}),cloneElement:(node,props)=>({...node,props:{...node.props,...props}}),
+  const React=react||{Fragment:Symbol('Fragment'),createElement:(type,props,...children)=>({type,props:{...props,children}}),cloneElement:(node,props)=>({...node,props:{...node.props,...props}}),
     useState(initial){const i=cursor++;if(!slots[i])slots[i]={value:typeof initial==='function'?initial():initial};return [slots[i].value,value=>slots[i].value=typeof value==='function'?value(slots[i].value):value]},
     useRef(initial){return React.useState(()=>({current:initial}))[0]},useReducer(fn,initial){const [state,set]=React.useState(initial);return [state,action=>set(s=>fn(s,action))]},
     useEffect(fn,deps){const i=cursor++,old=slots[i];if(!old||!deps||deps.some((d,n)=>!Object.is(d,old.deps?.[n]))){if(old?.cleanup)old.cleanup();const state=slots[i]={deps};effects.push(()=>state.cleanup=fn())}}}
