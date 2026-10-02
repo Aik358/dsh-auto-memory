@@ -13,3 +13,5 @@ Full release dry-run still fails closed at the already-missing tools/reconcile-u
 This branch starts at upstream main 131ca794b9f0d07f78b19bf6feee3312939854ed and is independent of open PR #206. Refs #170 and #177.
 
 复审追加：同一行多个 inline 锚点和混合输入确实复现标题边界误吞；仅独占合法标记行吸收前标题。配置解释器与开发 venv 同路径时按去重优先级验收。远端 fc25e1d run 36981307760 为 246 PASS / 1 FAIL / 0 TIMEOUT，issue162 内部 23/2；对应 Node 22.23.3 原生单跑和隔离单跑、独立 main 各 25/0，尚未得到两个失败断言。失败输出限额改为每流64KiB，并完整打印该有界输出，以便后续 CI 给出可定位证据；不能据单跑结果把首轮 CI 记为通过。
+
+最新产品提交 `c9550e1def9c10aeea0e0e3fff524490c8219939` 已核对 fork 远端；对应 [CI 36983550483](https://github.com/Minervaowl7/dsh-auto-memory/actions/runs/36983550483) 完整结果为 **247 PASS / 0 FAIL / 0 TIMEOUT**（137.6 秒）。这一轮通过不改写首轮 fc25e1d 的失败记录；首轮两个断言的具体原因仍未恢复。与 PR #206 和团队/PLAN 产品提交 f8c0f45 的临时合成工作树 754b4c0 未推送，Node22.23.3、相同 CI 参数、临时 HOME 与外部服务隔离的完整回归为 **262 PASS / 0 FAIL / 0 TIMEOUT**（138.1 秒）。
