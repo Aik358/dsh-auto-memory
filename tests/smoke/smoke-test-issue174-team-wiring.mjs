@@ -6,10 +6,21 @@ import vm from 'node:vm'
 import fs from 'node:fs'
 import { createFactStorePre } from '../../lib/fact-store.js'
 import { Readable } from 'node:stream'
-import { apply, API, MemoryEngine } from '../lib/audit-engine.mjs'
+import { apply, API, MemoryEngine, flushDiagnostics } from '../lib/audit-engine.mjs'
 const root = await mkdtemp(path.join(os.tmpdir(), 'dam-team-e2e-'))
 const home = process.env.DSH_HOME, fetch = globalThis.fetch, timeout = globalThis.setTimeout, interval = globalThis.setInterval
-const load = MemoryEngine.prototype.loadConfigSync
+const load = MemoryEngine.prototype.loadConfigSync, refresh = MemoryEngine.prototype.refresh, doRefresh = MemoryEngine.prototype._doRefresh
+// apply starts refresh and L0 work without awaiting it. Keep the real promises;
+// cleanup must drain them and scheduled pull before restoring HOME/removing root.
+const background=[]
+const track=p=>{if(p&&typeof p.then==='function')background.push(p);return p}
+const watch=(target,key)=>{if(!target||typeof target[key]!=='function')return;const method=target[key];target[key]=function(...args){return track(method.apply(this,args))}}
+const watchHost=()=>{watch(engine,'syncL0IndexNow');watch(engine._teamPull,'pullOnce')}
+async function settle(){let seen=0;while(seen<background.length){const batch=background.slice(seen);seen=background.length;const results=await Promise.allSettled(batch);assert(results.every(r=>r.status==='fulfilled'),'background refresh/pull/index work rejected')}await flushDiagnostics()}
+const deferred=()=>{let resolve;const promise=new Promise(r=>resolve=r);return {promise,resolve}}
+let warmEngine,warmRelease,warmEntered
+MemoryEngine.prototype.refresh=function(...args){return track(refresh.apply(this,args))}
+MemoryEngine.prototype._doRefresh=async function(...args){if(this===warmEngine){warmEntered.resolve();await warmRelease.promise}return doRefresh.apply(this,args)}
 const handlers = new Map(['uncaughtException','unhandledRejection','exit'].map(k => [k,new Set(process.listeners(k))]))
 let engine, cleanup, rejectPush = false, network = []
 const timers = [], routes = []
@@ -27,6 +38,7 @@ try {
   return new Response(JSON.stringify(opts.method==='POST'?{ok:true}:{cursor:42,changes:[{kind:'fact',key:'f1',member:{id:'other'},payload:{text:'test'}}]}),{status:rejectPush?503:200})
  }
  apply({get:()=>undefined,credentials:{teamToken:'test-token'},on:()=>{},systemPrompt:{context:()=>()=>{},section:()=>()=>{}},tools:{register:()=>()=>{}},webServer:{register:r=>{routes.push(r);return()=>{}}},effect:f=>{cleanup=f()}},{})
+ watchHost()
  for(const [k,prev]of handlers)for(const h of process.listeners(k))if(!prev.has(h))process.removeListener(k,h)
  globalThis.setInterval=interval;globalThis.setTimeout=timeout
  assert.ok(engine._teamPull);assert.ok(timers.includes(engine._teamPullTimer));assert.equal(timers.filter(t=>t===engine._teamPullTimer).length,1)
@@ -37,7 +49,7 @@ try {
  rejectPush=true;engine._teamOutbox.enqueue({kind:'fact',key:'failed',payload:{text:'keep'}});await engine._teamSync.tick();assert.equal(engine._teamOutbox.size(),1)
  rejectPush=false
  engine._factStore={upsert:()=>({ok:true,outcome:'added'})}
- engine._teamPullTimer.callback();await new Promise(r=>timeout(r,30));assert.equal(engine._teamPull.status().since,42,JSON.stringify({network,status:engine._teamPull.status(),config:engine.config.teamEnabled}))
+ engine._teamPullTimer.callback();await settle();assert.equal(engine._teamPull.status().since,42,JSON.stringify({network,status:engine._teamPull.status(),config:engine.config.teamEnabled}))
  assert.ok(engine._teamInjectCandidates.length>0)
  const request=async(key,body,method=body?'POST':'GET')=>{
   let status,data;const req=Readable.from(body?[Buffer.from(JSON.stringify(body))]:[]);Object.assign(req,{method,url:API[key],socket:{remoteAddress:'127.0.0.1'},headers:{host:'127.0.0.1'}})
@@ -108,17 +120,28 @@ timers.length=0;routes.length=0
  await writeFile(path.join(root,'dsh-auto-memory.json'),JSON.stringify({teamEnabled:false,memoryRoot:path.join(root,'memory'),userMemoryDir:path.join(root,'user'),globalBriefEnabled:false}))
  globalThis.setInterval=globalThis.setTimeout=(callback,ms)=>{const t={callback,ms,unref(){}};timers.push(t);return t}
  apply({get:()=>undefined,on:()=>{},systemPrompt:{context:()=>()=>{},section:()=>()=>{}},tools:{register:()=>()=>{}},webServer:{register:r=>{routes.push(r);return()=>{}}},effect:f=>{cleanup=f()}},{})
+ watchHost()
  assert.equal(engine._teamPull,undefined);assert.equal(engine._teamSync,undefined);assert.equal(engine._teamPullTimer,undefined);assert.equal(network.length,0)
  cleanup();cleanup=null;timers.length=0;routes.length=0
  await writeFile(path.join(root,'dsh-auto-memory.json'),JSON.stringify({teamEnabled:true,teamServerUrl:'http://fake.invalid',teamId:'test-team',teamMemberId:'member-a',memoryRoot:path.join(root,'memory'),userMemoryDir:path.join(root,'user'),globalBriefEnabled:false}))
+ warmRelease=deferred();warmEntered=deferred()
  apply({get:()=>undefined,credentials:{teamToken:'test-token'},on:()=>{},systemPrompt:{context:()=>()=>{},section:()=>()=>{}},tools:{register:()=>()=>{}},webServer:{register:r=>{routes.push(r);return()=>{}}},effect:f=>{cleanup=f()}},{})
+ watchHost();warmEngine=engine
  assert.equal(engine._teamOutbox.size(),2);assert.ok(engine._teamPullTimer);assert.equal(timers.filter(t=>t===engine._teamPullTimer).length,1)
  retiredPull.callback();await retiredSync.tick();assert.equal(network.length,0)
  engine._teamPullTimer.callback();await new Promise(r=>timeout(r,0));assert.equal(network.filter(n=>n.opts.method==='GET').length,1)
+ // A deterministic late startup refresh proves teardown waits for completion;
+ // its real L0 writes and the last scheduled pull are tracked transitively.
+ await warmEntered.promise
+ let drained=false;const closing=settle().then(()=>{drained=true})
+ await Promise.resolve();assert.equal(drained,false,'cleanup cannot pass an unfinished refresh')
+ warmRelease.resolve();await closing;assert.equal(drained,true)
  console.log('PASS #174: real host assembly, auth/object body, failed queue, scheduled pull/injection, GET read-only, pause/reset, live config and off gate')
 } finally {
- globalThis.fetch=fetch;globalThis.setTimeout=timeout;globalThis.setInterval=interval;MemoryEngine.prototype.loadConfigSync=load
- if(cleanup)cleanup();for(const [k,prev]of handlers)for(const h of process.listeners(k))if(!prev.has(h))process.removeListener(k,h)
+ if(warmRelease)warmRelease.resolve();await settle()
+ if(cleanup)cleanup();await flushDiagnostics()
+ globalThis.fetch=fetch;globalThis.setTimeout=timeout;globalThis.setInterval=interval;MemoryEngine.prototype.loadConfigSync=load;MemoryEngine.prototype.refresh=refresh;MemoryEngine.prototype._doRefresh=doRefresh
+ for(const [k,prev]of handlers)for(const h of process.listeners(k))if(!prev.has(h))process.removeListener(k,h)
  if(home===undefined)delete process.env.DSH_HOME;else process.env.DSH_HOME=home
  await rm(root,{recursive:true,force:true})
 }
