@@ -14,3 +14,8 @@ const bare='<!-- memory:mem_'+ 'a'.repeat(32)+' -->\nold body\n<!-- memory:mem_'
 assert.deepEqual(splitTier0UnitsPre(bare).groups,[['old body'],['other body']])
 assert.deepEqual(splitTier0UnitsPre('### 单卡\n<!-- memory:mem_'+ 'c'.repeat(32)+' -->\n唯一结论').groups,[['### 单卡','','唯一结论']])
 console.log('PASS #177: 13-card title/body alignment in four source layers, LF/CRLF, old bare anchors and unanchored invariants')
+
+const inline = '### Legacy\nprefix <!-- memory:mem_'+'a'.repeat(32)+' --> first <!-- memory:mem_'+'b'.repeat(32)+' --> second'
+assert.deepEqual(splitTier0UnitsPre(inline).groups,[['first'],['second']])
+const mixed = inline+'\n### New\n<!-- memory:mem_'+'c'.repeat(32)+' -->\nnew body'
+assert.deepEqual(splitTier0UnitsPre(mixed).groups,[['first'],['second'],['### New','','new body']])

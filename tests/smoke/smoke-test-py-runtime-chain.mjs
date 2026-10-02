@@ -61,6 +61,9 @@ assert.ok(cands.some((c) => c.kind === 'dev-venv'), 'must include the dev venv (
 assert.ok(cands.some((c) => c.kind === 'system'), 'must include system python (C2 fallback)')
 const paths = cands.map((c) => c.path)
 assert.equal(new Set(paths).size, paths.length, 'candidates must be de-duplicated')
+const configuredDev = buildPythonCandidatesPre({ configured: VENV, dshHome: HOME, pluginDir: PLUGIN })
+assert.equal(configuredDev.filter(c => c.path === VENV).length, 1)
+assert.equal(configuredDev.find(c => c.path === VENV).kind, 'configured')
 console.log('PASS candidate chain covers configured / user-venv / dev-venv / system (' + cands.length + ' entries)')
 
 // ---- 5) 实际 fixture 解释器链：有隔离依赖的 dev venv 必须被选中 ----

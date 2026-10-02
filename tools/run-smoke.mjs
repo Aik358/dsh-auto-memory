@@ -43,7 +43,7 @@ const DEFAULT_TIMEOUT_MS = 60000
 /** ★T7-f（2026-09-20 用户裁定「默认并行」）：默认并发度。`--jobs=1` 可回退串行。 */
 const DEFAULT_JOBS = 4
 /** 每个套件保留的输出尾部字符数(用于定位卡点,不需要全量)。 */
-const TAIL_CHARS = 2000
+const TAIL_CHARS = 64 * 1024
 /** 收到退出信号后,最多再等多久收尸(毫秒),防止运行器自己挂住。 */
 const REAP_GRACE_MS = 5000
 
@@ -239,7 +239,7 @@ async function main() {
     console.log('')
     console.log('--- ' + r.status + ': ' + r.name + (r.status === 'TIMEOUT' ? '  (exceeded ' + opts.timeoutMs + 'ms)' : '  (exit=' + r.code + ')') + ' ---')
     console.log('last output tail:')
-    console.log(r.tail ? r.tail.split('\n').slice(-25).join('\n') : '(no output captured)')
+    console.log(r.tail ? r.tail : '(no output captured)')
   }
   console.log('=========================================')
 
