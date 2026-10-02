@@ -156,7 +156,7 @@ console.log('\n[S10] 引擎红线：零依赖、零写盘（IO 全在宿主 ⇒ 
   const CALLS = /\b(?:writeFileSync|writeFile|appendFileSync|appendFile|mkdirSync|mkdir|rmSync|unlinkSync|unlink|rm)\s*\(/
   ok(!CALLS.test(code), 'S10a 无文件写/删调用')
   const imports = (code.match(/^import .*$/gm) || []).join(' ')
-  ok(imports === "import { workspaceKey } from './workspace-key.js' import { createHash } from 'node:crypto'", 'S10b import 白名单仅 node:crypto（实得：' + imports + '）')
+  ok(imports === "import { workspaceKey, legacyWorkspaceKey } from './workspace-key.js' import { createHash } from 'node:crypto'", 'S10b import 白名单仅 node:crypto（实得：' + imports + '）')
 }
 
 console.log('\n[migrate-pack] ' + pass + ' passed, ' + fail + ' failed')

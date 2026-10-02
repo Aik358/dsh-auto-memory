@@ -694,7 +694,13 @@
       useEffect(function () {
         // ★2026-09-30（H3-1 · 单一出口）：内容一律问 damSharedSurfaceCss()，并**无条件同步**；
         //   两个 Surface 谁先挂载都收敛到同一张表，消除「先挂者定内容」的漂移。
-        var damWantCss = damSharedSurfaceCss()
+        var damWantCss = null
+        function syncCss() {
+          damWantCss = damSharedSurfaceCss()
+          if (style) style.textContent = damWantCss
+          damSkinEnsureCss()
+        }
+        syncCss()
         if (!damWantCss) return function () {}
         var style = document.getElementById('dam-shared-ui-style')
         if (!style) {
@@ -706,7 +712,9 @@
         }
         if (style.textContent !== damWantCss) style.textContent = damWantCss
         style.dataset.users = String(Number(style.dataset.users || 0) + 1)
+        window.addEventListener('dam-skin-changed', syncCss)
         return function () {
+          window.removeEventListener('dam-skin-changed', syncCss)
           var count = Number(style.dataset.users || 1) - 1
           style.dataset.users = String(count)
           if (!count) style.remove()
@@ -1516,7 +1524,7 @@
             h('option', { value: 'auto' }, L('auto 自动校准（推荐）', 'auto (calibrated)')),
             h('option', { value: 'fixed' }, L('fixed 固定阈值（旧行为）', 'fixed threshold (legacy)'))), t('fWaterModeHint')),
           field(t('fCompactionRatio'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 0.1, max: 1, step: 0.05, value: cfg.officialCompactionRatio === undefined ? 0.8 : cfg.officialCompactionRatio, onChange: function (e) { set('officialCompactionRatio', Math.max(0.1, Number(e.target.value) || 0.8)) } }), t('fCompactionRatioHint')),
-          field(t('fOfficialHeadroom'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 0, max: 1000000, step: 1024, value: cfg.officialHeadroomTokens === undefined ? 65536 : cfg.officialHeadroomTokens, onChange: function (e) { set('officialHeadroomTokens', Math.max(0, Number(e.target.value) || 65536)) } }), t('fOfficialHeadroomHint')),
+          field(t('fOfficialHeadroom'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 0, max: 1000000, step: 1024, value: cfg.officialHeadroomTokens === undefined ? 65536 : cfg.officialHeadroomTokens, onChange: function (e) { set('officialHeadroomTokens', (String(e.target.value).trim() !== '' && Number.isFinite(Number(e.target.value)) ? Math.max(0, Number(e.target.value)) : 65536)) } }), t('fOfficialHeadroomHint')),
           field(t('fAutoMargin'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 0.1, max: 1, step: 0.05, value: cfg.waterLevelAutoMargin === undefined ? 0.9 : cfg.waterLevelAutoMargin, onChange: function (e) { set('waterLevelAutoMargin', Math.max(0.1, Number(e.target.value) || 0.9)) } }), t('fAutoMarginHint')),
           field(t('fPromptCustom'), h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: function () { setPromptEditOpen(!promptEditOpen) } }, (promptEditOpen ? (L('收起', 'Collapse')) : (L('编辑 prompt 层', 'Edit prompt layers')))), t('fPromptCustomHint')),
           promptEditOpen ? [

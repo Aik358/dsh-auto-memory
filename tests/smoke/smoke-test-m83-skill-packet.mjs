@@ -1,3 +1,4 @@
+import { CorpusRegistry, buildSourceCatalog, canonicalize } from '../../lib/m4-corpus.js'
 // M6 act.skill 技能段测试(2026-08-30 P0,docs/HANDOFF-M8-M9-M10.md §2 P0 验收):
 //   S1  无 skill 时渲染逐字节不变(回归锚:固定边界 + 提示行在 Verify 之前)
 //   S2  合法 skill 进入 packet 且渲染出 checklist 段
@@ -43,7 +44,7 @@ function mkRec(tag, excerpt) {
     excerpt: excerpt != null ? excerpt : ('参考内容 ' + tag),
   }
 }
-const MIV = 'idx_pre_' + '7'.repeat(32)
+const MIV = new CorpusRegistry().get(buildSourceCatalog({ workspaceKey: canonicalize('c:/ws-a') })).snapshot.memoryIndexVersion
 function makeReq(o = {}) {
   const req = A.makeFakeActivationRequestPre({
     seed: o.seed || 'm83-seed', sessionId: 's1', agentId: 'a1', workspaceKey: 'c:/ws-a',
@@ -101,6 +102,7 @@ function runOffer(hub, req, cfgPatch = {}) {
   engine.runtimeFor = () => rt
   const host = createActivationHost({ engine })
   host.initCapability({ systemPrompt: { context: () => 'x' } })
+  host.capturePaths(rt.key, { ws: engine.state.ws })
   const offered = host.offerExternalActivation(req)
   const text = String(host.renderTailFor({ id: 'a1', session: { id: 's1' } }))
   return { offered, text, host, engine }

@@ -13,4 +13,4 @@ try {
   await writeFile(file, source + '\nexport { MemoryEngine, diag }; export const flushDiagnostics = () => _diagChain;')
   internals = await import(pathToFileURL(file).href)
 } finally { await rm(dir, { recursive: true, force: true }) }
-export const { MemoryEngine, diag, flushDiagnostics } = internals
+export const { MemoryEngine, diag, flushDiagnostics, apply, API } = internals

@@ -6,9 +6,9 @@ function block(start) { const i = client.indexOf(start); assert.ok(i >= 0); cons
 const calls = []
 const API = new Proxy({}, { get: (_, key) => String(key) })
 const mount = new Function('useState','useEffect','h','t','API','fetch','apiGet', block('    function DebugCenter() {') + '\nreturn DebugCenter()')
-mount(initial => [initial, () => {}], effect => effect(), () => null, key => key, API, async (url, opts) => { calls.push({ url, method: opts?.method || 'GET' }); return { status: 200 } }, async url => { calls.push({ url, method: 'GET' }); return {} })
+mount(initial => [initial, () => {}], effect => effect(), () => null, key => key, API, async (url, opts) => { calls.push({ url, method: opts?.method || 'GET' }); return { status: 200, json: async () => ({}) } }, async url => { calls.push({ url, method: 'GET' }); return {} })
 await new Promise(r => setImmediate(r))
-assert.ok(calls.length >= 7); assert.ok(calls.every(c => c.method === 'GET'))
+assert.equal(calls.length, 1); assert.ok(calls.every(c => c.method === 'GET'))
 assert.ok(!calls.some(c => ['greet','reflectAuto','summarize','recall'].includes(c.url)))
 const ja = client.match(/"hubScopeCounts": (function[^\n]+),/)
 assert.ok(ja); assert.equal(typeof new Function('return (' + ja[1] + ')')()(1,2), 'string')
@@ -43,3 +43,27 @@ const newer = buildKanbanPre({ entries: [] }, { cards: [{ ...source, body: 'x'.r
 const cardsOf = x => Object.values(x.lanes).flatMap(l => l.cards || l)
 assert.notEqual(cardsOf(older)[0].revision, cardsOf(newer)[0].revision)
 console.log('PASS F02 F18 F19 F20 F21: debug mount, ja function, cache revision/retry, family events, health predicate')
+
+// Preserve an explicit zero through each real settings onChange callback.
+const setters = [...client.matchAll(/onChange: function \(e\) \{ set\('officialHeadroomTokens', ([^\n]+?)\) \}/g)]
+assert.equal(setters.length, 3)
+for (const [, expression] of setters) {
+ const change = new Function('e', 'return ' + expression)
+ assert.equal(change({ target: { value: '0' } }), 0)
+ assert.equal(change({ target: { value: '' } }), 65536)
+ assert.equal(change({ target: { value: 'invalid' } }), 65536)
+}
+// Mount only the shared surface effect: skin events must update it without a page view.
+const surfaceEffects = [...client.matchAll(/(useEffect\(function \(\) \{\n[^]*?var damWantCss = null[^]*?\}, \[\]\))/g)]
+const shared = surfaceEffects.map(m => m[1].slice(m[1].lastIndexOf('useEffect(function () {', m[1].indexOf('var damWantCss')))).filter(s => s.includes('dam-shared-ui-style'))
+assert.equal(shared.length, 2)
+for (const effect of shared) {
+ let cleanup, css = 'legacy-css', ensured = 0
+ const win = new EventTarget(), elements = new Map()
+ const doc = { getElementById: id => elements.get(id), createElement: () => ({ dataset: {}, remove() { elements.delete(this.id) } }), head: { appendChild(el) { elements.set(el.id, el) } } }
+ new Function('useEffect','document','window','damSharedSurfaceCss','damSkinEnsureCss',effect)(f => { cleanup = f() },doc,win,() => css,() => { ensured++ })
+ assert.equal(elements.get('dam-shared-ui-style').textContent,'legacy-css')
+ css = 'instrument-css';win.dispatchEvent(new Event('dam-skin-changed'))
+ assert.equal(elements.get('dam-shared-ui-style').textContent,'instrument-css');assert.equal(ensured,2)
+ cleanup();win.dispatchEvent(new Event('dam-skin-changed'));assert.equal(ensured,2)
+}
