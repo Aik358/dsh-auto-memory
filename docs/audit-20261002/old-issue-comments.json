@@ -2,26 +2,36 @@
   {
     "id": "R01",
     "issue": 82,
-    "body": "基线 13f980ac3e199bbe4c7a488bb493f278c7d8017f（v3.2.7）复核残留：saveConfig 直接 writeFile 缺少原子替换与失败保全；load 坏文件隔离已修，不重复。当前补修局部 nextConfig，原子保存成功才发布，并覆盖父目录创建、序列化和写入失败。\n\n本补充基于源码复核及隔离回归；修复仍在独立复审中。"
+    "body": "基线 13f980ac3e199bbe4c7a488bb493f278c7d8017f（v3.2.7）复核残留：saveConfig 直接 writeFile 缺少原子替换与失败保全；load 坏文件隔离已修，不重复。当前补修局部 nextConfig，原子保存成功才发布，并覆盖父目录创建、序列化和写入失败。\n\n本补充基于源码复核及隔离回归；修复仍在独立复审中。",
+    "publication": "comment-submitted-by-user",
+    "url": "https://github.com/Aik358/dsh-auto-memory/issues/82"
   },
   {
     "id": "R02",
     "issue": 160,
-    "body": "基线 13f980ac3e199bbe4c7a488bb493f278c7d8017f（v3.2.7）复核残留：item3 classic/default frozen migration 未传 previewToken，后端令牌可选；修改需三种入口均携带预览token、后端强制校验。输入变化重新预览已修，不重复。\n\n本补充基于源码复核及隔离回归；修复仍在独立复审中。"
+    "body": "基线 13f980ac3e199bbe4c7a488bb493f278c7d8017f（v3.2.7）复核残留：item3 classic/default frozen migration 未传 previewToken，后端令牌可选；修改需三种入口均携带预览token、后端强制校验。输入变化重新预览已修，不重复。\n\n本补充基于源码复核及隔离回归；修复仍在独立复审中。",
+    "publication": "comment-submitted-by-user",
+    "url": "https://github.com/Aik358/dsh-auto-memory/issues/160"
   },
   {
     "id": "R03",
     "issue": 117,
-    "body": "基线 13f980ac3e199bbe4c7a488bb493f278c7d8017f（v3.2.7）复核残留：P3-8 diag 第一次 rotate 后 _diagRotated 永久为 true，后续无界增长；按每次串行追加重新检查大小。\n\n本补充基于源码复核及隔离回归；修复仍在独立复审中。"
+    "body": "基线 13f980ac3e199bbe4c7a488bb493f278c7d8017f（v3.2.7）复核残留：P3-8 diag 第一次 rotate 后 _diagRotated 永久为 true，后续无界增长；按每次串行追加重新检查大小。\n\n本补充基于源码复核及隔离回归；修复仍在独立复审中。",
+    "publication": "comment-submitted-by-user",
+    "url": "https://github.com/Aik358/dsh-auto-memory/issues/117"
   },
   {
     "id": "R04",
     "issue": 92,
-    "body": "基线 13f980ac3e199bbe4c7a488bb493f278c7d8017f（v3.2.7）复核残留：item1 _lastIndexDegrade 全局fallback仍跨会话污染诊断；只读取当前session的degrade映射。该issue其他已修部分不重复。\n\n本补充基于源码复核及隔离回归；修复仍在独立复审中。"
+    "body": "基线 13f980ac3e199bbe4c7a488bb493f278c7d8017f（v3.2.7）复核残留：item1 _lastIndexDegrade 全局fallback仍跨会话污染诊断；只读取当前session的degrade映射。该issue其他已修部分不重复。\n\n本补充基于源码复核及隔离回归；修复仍在独立复审中。",
+    "publication": "comment-submitted-by-user",
+    "url": "https://github.com/Aik358/dsh-auto-memory/issues/92"
   },
   {
     "id": "R05",
     "issue": 93,
-    "body": "基线 13f980ac3e199bbe4c7a488bb493f278c7d8017f（v3.2.7）复核残留：context-host 用 candidates[0] digest代表多文件coverage；按候选真实sourceRef/fileDigest分别计算coverage，不将其他文件证据错标为首文件。\n\n本补充基于源码复核及隔离回归；修复仍在独立复审中。"
+    "body": "基线 13f980ac3e199bbe4c7a488bb493f278c7d8017f（v3.2.7）复核残留：context-host 用 candidates[0] digest代表多文件coverage；按候选真实sourceRef/fileDigest分别计算coverage，不将其他文件证据错标为首文件。\n\n本补充基于源码复核及隔离回归；修复仍在独立复审中。",
+    "publication": "comment-submitted-by-user",
+    "url": "https://github.com/Aik358/dsh-auto-memory/issues/93"
   }
 ]
