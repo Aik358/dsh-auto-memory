@@ -78,6 +78,7 @@ ${methods}
     memoryIndexSnapshot: async () => ({}), _hubIoViewSnapshot: () => null,
     _factsPruneViewSnapshot: () => null, _logsViewSnapshot: () => null,
     capacityLimit: () => 1000, memToday: todayStr,
+    userDirOf: () => path.join(home, 'user'), projectDirOf: () => path.join(home, 'workspace'),
     resolvePaths: async () => Object.fromEntries(['ws', 'projectDir', 'handoffDir', 'userFile', 'notesPath', 'logPath', 'reflectDir', 'calendarPath'].map((key) => [key, path.join(home, key)])),
     appendText: async (file, text) => { await fsp.appendFile(file, text); return text },
     // ★合并适配（PR #161 + PR #162）：#161 把 writeFull 改为 docStore/rawDocStore 双路，
@@ -102,8 +103,16 @@ function session(home, id, content, { frames = 0, size = 0, name = 'session.json
 const secretError = () => Object.assign(new Error('Bearer credential123\nhttps://user:pass@host/private?token=URLSECRET\nC:\\Users\\PERSONAL\\secret.md /home/PERSONAL/secret.md\n正文私人内容\n' + 'X'.repeat(6000)), { code: 'EACCES' })
 const brokenQuery = () => ({ searchSessions: async () => { throw secretError() } })
 const absentSecrets = (value) => {
-  assert.doesNotMatch(JSON.stringify(value), /credential123|URLSECRET|PERSONAL|正文私人内容|user:pass|Bearer|\b39\b|descriptor v2|v0→v1/)
+  assert.doesNotMatch(JSON.stringify(value), /credential123|URLSECRET|PERSONAL|正文私人内容|user:pass|Bearer|\b39\s*(?:个?旧会话|old sessions\b)|descriptor v2|v0→v1/)
 }
+
+test('privacy checks accept timestamp second 39 but reject obsolete session claims and secrets', () => {
+  absentSecrets({ updatedAt: '2026-10-02T09:51:39.000Z', count: 39 })
+  for (const value of ['39个旧会话', '39 old sessions', 'credential123', 'URLSECRET', 'PERSONAL', '正文私人内容', 'user:pass', 'Bearer', 'descriptor v2', 'v0→v1']) {
+    assert.throws(() => absentSecrets(value), assert.AssertionError)
+  }
+})
+
 
 test('missing capability, missing method, successful empty and successful hit stay distinct', async () => {
   const { home, host } = await harness()
@@ -337,9 +346,10 @@ test('real debugInfo/persistence/dashboard path exposes failures and persistence
   session(home, 'local', 'needle')
   host._sessionQuery = brokenQuery()
   await host.recall('needle', 8, undefined, 'sessions')
+  assert.equal(host._degradeViewSnapshot().persisted, true)
   const data = await host.debugInfo()
   const degrade = data.associativeMemory.degrade
-  assert.equal(degrade.persisted, true)
+  assert.equal(degrade.persisted, false) // Diagnostic GET is read-only.
   assert.equal(degrade.counts['session-search'], 1)
   assert.equal(degrade.schemaVersion, 'degrade_pre_v1')
   const disk = JSON.parse(fs.readFileSync(path.join(home, 'memory/degrade/latest.json'), 'utf8'))
@@ -362,7 +372,7 @@ test('real debugInfo/persistence/dashboard path exposes failures and persistence
   assert.match(rendered, /session-search/)
   assert.match(rendered, /Error \/ EACCES/)
   assert.match(rendered, /累计失败历史/)
-  assert.match(rendered, /刷新诊断时更新到磁盘/)
+  assert.match(rendered, /实时只读快照/)
   absentSecrets(tree)
 
   const failed = await harness({ writeFileSync: () => { throw secretError() } })
