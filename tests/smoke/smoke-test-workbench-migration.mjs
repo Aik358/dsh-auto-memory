@@ -228,7 +228,7 @@ check('⑭ 同意门：建立入口显式传 consent + 无 consent 不建',
   const delSeg = delBranch > 0 ? idx.slice(delBranch, delBranch + 2600) : ''
   const guardAt = delSeg.indexOf('if (plan.targets.length === 0) return rep')
   const liveAt = delSeg.indexOf('if (live.length === 0) return rep')
-  const ledgerAt = delSeg.indexOf('this.saveArchiveLedger(ledger)')
+  const ledgerAt = delSeg.indexOf('await this.saveArchiveLedger({}, rep.deleted)')
   check('⑰c4 无可删项时提前返回且不写账本（幂等）',
     delBranch > 0 && guardAt > 0 && liveAt > guardAt && ledgerAt > liveAt,
     'delBranch@' + delBranch + ' guard@' + guardAt + ' live@' + liveAt + ' ledger@' + ledgerAt)

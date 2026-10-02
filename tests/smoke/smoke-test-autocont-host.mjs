@@ -105,6 +105,8 @@ function makeEngine(opts) {
     }
   }
   const eng = {
+    continuedSessionsFile: () => '/virtual/state',
+    async markContinuedSession(sid) { this._continuedSessions.add(this.waterKey(sid)); return true },
     config: (opts && opts.config) || {},
     _autoContState: undefined,
     hasReliableSessionIdentity(agent) { return !!(agent && agent.session && agent.session.id) },
@@ -148,8 +150,10 @@ function makeEngine(opts) {
     // 否则同样以"静默不生效"的形式失败。
     const obj = new Function('diag', 'AbortSignal', 'shouldArmAutoContinuePre',
       'DEFAULT_AUTO_CONTINUE_THRESHOLD', 'DEFAULT_WATER_LEVEL_THRESHOLD', 'contTitleStampPre', 'continuationProbePre', 'continuationRitualEndPre',
+      'continuedSourceState', 'reserveContinuedSource', 'releaseContinuedSource', 'setContinuedSourceTarget',
       'return {' + extractFn(h) + '};')(
-      () => {}, { timeout: () => undefined }, shouldArmAutoContinuePre, 0.75, 0.75, contTitleStampPre, continuationProbePre, continuationRitualEndPre)
+      () => {}, { timeout: () => undefined }, shouldArmAutoContinuePre, 0.75, 0.75, contTitleStampPre, continuationProbePre, continuationRitualEndPre,
+      (file, sid) => eng._continuedSessions.has(sid) ? {status:'done'} : null, async () => 'fixture-token', async () => {}, async () => {})
     const key = Object.keys(obj)[0]
     fns[key] = obj[key].bind(eng)
   }
@@ -490,10 +494,10 @@ console.log('[autocont-host] A10 卡面口径 + 已接续闩锁 + 会话归属(2
   ok(/if \(this\.isContinuedSession\(sid\)\) return/.test(SRC), 'armAutoContinue 对已接续会话直接返回')
   ok(!/engine\.markContinuedSession\(body\.fromSessionId, body\.toSessionId\)/.test(SRC),
     '权限回调不能代替材料接受，不再落闩')
-  ok(/this\.markContinuedSession\(oldSid, newId\)/.test(SRC), '宿主路径接续成功后落闩')
+  ok(/await this\.markContinuedSession\(oldSid, newId, reservation\)/.test(SRC), '宿主路径接续成功后落闩')
   ok(/path\.join\(dshHome\(\), 'memory', 'auto-continue-done\.json'\)/.test(SRC), '闩锁落盘(重启后依旧生效)')
   const fnHost = extractFn('async hostAutoContinue() {')
-  ok(fnHost.indexOf('this.markContinuedSession(oldSid, newId)') > fnHost.indexOf('await sc.prompt('),
+  ok(fnHost.indexOf('await this.markContinuedSession(oldSid, newId, reservation)') > fnHost.indexOf('await sc.prompt('),
     '落闩在投料成功之后(prompt 之前失败则不落闩,允许下次重试)')
 
   const eLatch = makeEngine({ config: { autoContinueEnabled: true, handoffEnabled: true, autoContinueThreshold: 0.75 }, continued: new Set(['a']) })

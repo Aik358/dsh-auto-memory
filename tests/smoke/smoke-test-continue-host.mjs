@@ -12,6 +12,7 @@
  *   H9 无 workspaceRegistry 服务 → 不抛错、workspaceId=''
  */
 import { apply } from '../../lib/index.js'
+import { continuedSourceFile, releaseContinuedSource } from '../../lib/continuation-state.js'
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, utimesSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
@@ -236,7 +237,7 @@ console.log('[continue-host] H11 源会话文件缺失时拒绝 _lastAgent 顶�
   ok(!String(r11.carryText || '').includes('H11OTHER-ONLY-MARKER'), 'H11 不混入别人的线程')
 }
 
-console.log('[continue-host] H12 真实插件路由：投递失败不落闩、重试完成后幂等')
+console.log('[continue-host] H12 真实插件路由：未知投递保留pending、核实后恢复并幂等')
 {
   const ctlCalls = []
   let rejectDelivery = true, created = 0
@@ -255,11 +256,17 @@ console.log('[continue-host] H12 真实插件路由：投递失败不落闩、�
   const first = await call(decidePath, 'POST', { action: 'manual', sessionId: SID })
   ok(first && !first.ok && first.error.includes('integration delivery rejected'), 'H12 投递拒绝透出真实错误')
   const doneFile = path.join(home, 'memory', 'auto-continue-done.json')
-  ok(!existsSync(doneFile), 'H12 投递失败没有写磁盘接续闩锁')
+  const sourceKey=SID.replace(/^session-/, ''), recordFile=continuedSourceFile(doneFile,sourceKey)
+  ok(!existsSync(doneFile) && JSON.parse(readFileSync(recordFile,'utf8')).status === 'pending', 'H12 保留独立pending记录，不修改旧闩锁文件')
+  const blocked=await call(decidePath,'POST',{action:'manual',sessionId:SID})
+  ok(blocked && !blocked.ok && blocked.continuationPending && blocked.sessionId==='integration-new-1' && created===1, 'H12 未核实的投递错误不能盲目再建会话')
+  // The fake controller conclusively rejected delivery. Operator recovery is
+  // explicit; production never infers this from an arbitrary exception string.
+  await releaseContinuedSource(doneFile,sourceKey,JSON.parse(readFileSync(recordFile,'utf8')).token)
   rejectDelivery = false
   const retried = await call(decidePath, 'POST', { action: 'manual', sessionId: SID })
   ok(retried && retried.ok && retried.sessionId === 'session-integration-new-2', 'H12 源会话仍可成功重试')
-  ok(existsSync(doneFile) && JSON.parse(readFileSync(doneFile, 'utf8')).sessions.some(row => row.to === 'integration-new-2'), 'H12 接受材料后才持久化真实后继')
+  ok(JSON.parse(readFileSync(recordFile,'utf8')).status==='done' && JSON.parse(readFileSync(recordFile,'utf8')).to==='integration-new-2', 'H12 接受材料后才持久化真实后继')
   const replay = await call(decidePath, 'POST', { action: 'manual', sessionId: SID })
   ok(replay && replay.ok && replay.sessionId === retried.sessionId && created === 2, 'H12 重复请求返回已有后继，不再建第三个会话')
   ok(ctlCalls[0][0] === 'cancel' && ctlCalls[0][1] === SID, 'H12 手动入口也停止指定旧回合')

@@ -19,7 +19,7 @@ function extract(src, header) {
   throw Error('unbalanced ' + header)
 }
 function compile(src, deps) { return new Function(...Object.keys(deps), 'return ' + src)(...Object.values(deps)) }
-const deps = { diag() {}, AbortSignal, continuationProbePre, continuationRitualEndPre, shouldArmAutoContinuePre,
+const deps = { continuedSourceState: () => ({status:'done'}), reserveContinuedSource: async () => 'fixture-token', setContinuedSourceTarget: async () => {}, releaseContinuedSource: async () => {}, diag() {}, AbortSignal, continuationProbePre, continuationRitualEndPre, shouldArmAutoContinuePre,
   DEFAULT_AUTO_CONTINUE_THRESHOLD: .75, contTitleStampPre: () => '09-30 12:00', randomUUID: () => 'ritual-request-001' }
 function method(header, extra = {}) {
   const obj = compile('({' + extract(host, header) + '})', { ...deps, ...extra })
@@ -27,7 +27,7 @@ function method(header, extra = {}) {
 }
 function engine() {
   const calls = [], marked = new Set()
-  const e = { config: { autoContinueEnabled: true, handoffEnabled: false }, state: {}, calls, marked,
+  const e = { continuedSessionsFile: () => '/virtual/state', waterKey: sid => sid, config: { autoContinueEnabled: true, handoffEnabled: false }, state: {}, calls, marked,
     hasReliableSessionIdentity: a => !!a?.session?.id, isContinuedSession: sid => marked.has(sid),
     markContinuedSession: (from, to) => { calls.push(['mark', from, to]); marked.add(from) },
     buildContinueCarry: async sid => ({ ok: true, prevSessionId: sid, carryText: 'source task', ws: 'C:/source', workspaceId: 'workspace-source', model: 'm', provider: 'p', agentPreset: 'agent', contSeq: 1 }),
