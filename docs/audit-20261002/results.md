@@ -48,7 +48,8 @@
 
 - 重新运行未修改产品基线：241 PASS / 3 FAIL / 0 TIMEOUT。
 - 补修提交3792ca8对应产品代码，本地CI参数串行完整回归：251 PASS / 3 FAIL / 0 TIMEOUT（135.7s，254套，新增10套audit）。随后补强外部简报水位/快照隔离断言：10套audit再次全通过；没有再修改产品代码。
-- 最新fork Node22 CI：[run36970675676](https://github.com/Minervaowl7/dsh-auto-memory/actions/runs/36970675676)，对应3792ca863849bb0f94d139e31538fac6089b19a6；最终结果待远端完成后更新。前版26195e1 CI及本地249/3/0只作为历史证据，不代替当前补修验证。
+- Fork Node22.23.3 CI：[run36970899464](https://github.com/Minervaowl7/dsh-auto-memory/actions/runs/36970899464)，对应4d97eb6dc2bef987358b499694f54fcd6d013870：251 PASS / 3 FAIL / 0 TIMEOUT（126.4s）。3792ca8后产品代码未再改变，只补强测试及报告；最终补充将诊断路由测试的配置/数据路径全部指向临时目录，并开启memoryFileIndex验证只读分支。
+- 前一轮3792ca8 CI run36970675676出现额外`js-semantic-host-recovery`失败（250/4/0）；CI只保留失败套件最后25行，未含具体失败断言。相同产品代码下一轮CI全套恢复251/3/0；下载与CI相同的Node22.23.3后，该套件本地隔离6/6通过。额外失败表现为间歇性，具体原因未证明，没有擅改无关超时参数或隐藏失败。前版26195e1的249/3/0只作为历史证据。
 - 三项基线失败分别为issue109-policy-parity缺`lib/policies`、py-runtime-chain缺开发venv、s2-skin缺assets。没有混入#168清理或#169–176既有问题的无关修复。
 - 新测试使用临时DSH_HOME/数据目录、假模型和假GitHub传输；本地全量运行额外拦截外网，只允许loopback及data:。无真实模型、QQ或外部通知调用。
 - UI以真实函数/hook/事件处理测试及生成器严格检查验证，未在真实DSH桌面GUI点击。GPU只验证provider选择和假会话输入，无GPU硬件/模型实测。

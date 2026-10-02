@@ -120,6 +120,7 @@ const interval=globalThis.setInterval,timeout=globalThis.setTimeout
 let cleanup;const routes=[]
 const handlers=new Map(['uncaughtException','unhandledRejection','exit'].map(name=>[name,new Set(process.listeners(name))]))
 try {
+ await writeFile(path.join(root2,'dsh-auto-memory.json'),JSON.stringify({memoryRoot:path.join(root2,'memory'),userMemoryDir:path.join(root2,'user'),memoryFileIndexEnabled:true}))
  globalThis.setInterval=globalThis.setTimeout=()=>({unref(){}})
  apply({get:()=>undefined,on:()=>{},systemPrompt:{context:()=>()=>{},section:()=>()=>{}},tools:{register:()=>()=>{}},webServer:{register:r=>{routes.push(r);return()=>{}}},effect:f=>{cleanup=f()}},{})
  globalThis.setInterval=interval;globalThis.setTimeout=timeout
