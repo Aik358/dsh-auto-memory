@@ -11,6 +11,7 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { createContextHost } from '../../lib/context-host.js'
+import { sessionRefOf, workspaceRefOf } from '../../lib/evidence-store.js'
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 const SRC = readFileSync(path.resolve(HERE, '..', '..', 'lib', 'context-host.js'), 'utf8')
@@ -25,8 +26,8 @@ const hex64 = (c) => c.repeat(64)
 const proj = (kind, mem, ts) => JSON.stringify({
   schemaVersion: 1, namespace: 'ctx-evidence-pre-v1', storePolicyVersion: 'evidence_store_pre_v1',
   evidenceId: 'evx_' + mem.slice(4, 12) + '_' + kind, kind, memoryId: mem,
-  anchorId: 'anc_' + mem.slice(4, 12), scope: 'Workspace', workspaceRef: 'Workspace:demo',
-  event: { sessionRef: 'session-demo', eventSeq: 1, contextVersion: 1, ts },
+  anchorId: 'anc_' + mem.slice(4, 12), scope: 'Workspace', workspaceRef: workspaceRefOf('/demo'),
+  event: { sessionRef: sessionRefOf('session-demo'), eventSeq: 1, contextVersion: 1, ts },
   source: { sourceRef: 'workspace:notes.md', sourceEpoch: '1', sourceVersion: 1, fileDigest: hex64('a'), recordDigest: hex64('b') },
   policyVersion: 'evidence_policy_pre_v1', recordedAt: ts,
 })
@@ -50,7 +51,7 @@ process.env.DSH_HOME = home
 const host = createContextHost({ engine: { config: { associativeMemoryEnabled: true, contextBridgeEnabled: true } } })
 
 console.log('[p9d] G1 修复后:窗口内 cite/read 可选出,投影形态 ts 生效')
-const got = host.recentEvidenceForSuccess(WINDOW)
+const got = host.recentEvidenceForSuccess(WINDOW, {sessionId: 'session-demo', workspaceKey: '/demo'})
 ok(Array.isArray(got) && got.length > 0, '不再恒返回空(选出 ' + (got ? got.length : 0) + ' 条)')
 ok(got.some((e) => e.kind === 'cite' && e.memoryId === memId('a')), '窗口内 cite(mem_a) 选出')
 ok(got.some((e) => e.kind === 'read' && e.memoryId === memId('b')), '窗口内 read(mem_b) 选出')
