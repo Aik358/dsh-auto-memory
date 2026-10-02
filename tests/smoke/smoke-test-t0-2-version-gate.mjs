@@ -155,8 +155,8 @@ console.log('[T0-2-5] 接线可达性（源码级）：投影携带版本四元�
   ok(!/const sameSession = !agentSessionId \|\| !gh/.test(idxCode),
     '★旧的 fail-open 会话判定已被移除（否则本条红）')
   ok(/tierCurrentMivPre\(\)/.test(idx), 'index.js 提供当前 miv（tierCurrentMivPre）')
-  ok(/tierCurrentMivPre\(\) \{/.test(idx) && /sourceFingerprint\(f\)/.test(idx),
-    'tierCurrentMivPre 用指纹判变化（零重读，不在热路径重建语料）')
+  ok(/tierCurrentMivPre\(\) \{/.test(idx) && /this\._tierCorpusRegistry\.get\(buildSourceCatalog\(/.test(idx),
+    'tierCurrentMivPre 使用共享 CorpusRegistry 指纹与语料版本')
   ok(/reuse: \{/.test(idx), 'tier0Meta 暴露复用账（面板/排障可观测）')
   ok(/statusFiltered: res\.hits/.test(idx), 'tier0Meta 暴露状态过滤账（I5 可见）')
 }

@@ -1,7 +1,16 @@
-import { readFile } from 'node:fs/promises'
+import { readFile, writeFile, mkdtemp, rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import path from 'node:path'
+import { pathToFileURL } from 'node:url'
 const indexUrl = new URL('../../lib/index.js', import.meta.url)
-// Keep the complete production module scope; expose internals only in this test copy.
+// Keep the complete production scope; expose internals only in this test copy.
 const source = (await readFile(indexUrl, 'utf8')).replace(/from '(\.\/[^']+)'/g,
   (_, relative) => 'from ' + JSON.stringify(new URL(relative, indexUrl).href))
-export const { MemoryEngine, diag, flushDiagnostics } = await import('data:text/javascript;base64,' +
-  Buffer.from(source + '\nexport { MemoryEngine, diag }; export const flushDiagnostics = () => _diagChain;').toString('base64'))
+const dir = await mkdtemp(path.join(tmpdir(), 'dam-audit-module-'))
+let internals
+try {
+  const file = path.join(dir, 'engine.mjs')
+  await writeFile(file, source + '\nexport { MemoryEngine, diag }; export const flushDiagnostics = () => _diagChain;')
+  internals = await import(pathToFileURL(file).href)
+} finally { await rm(dir, { recursive: true, force: true }) }
+export const { MemoryEngine, diag, flushDiagnostics } = internals

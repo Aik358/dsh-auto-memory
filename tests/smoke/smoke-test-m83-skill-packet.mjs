@@ -85,6 +85,7 @@ function makeEngine(hub, cfgPatch = {}) {
       pythonBackendEnabled: true, activationSource: 'python', // Python 档:无 query 的路径
       memoryHubEnabled: true, ...cfgPatch,
     },
+    wsKey: (ws) => ws,
     runtimes: new Map(),
     runtimeFor: () => null,
     state: { ws: 'c:/ws-a' },

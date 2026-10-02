@@ -28,8 +28,8 @@ import re
 PROVIDER_REAL = 'bge-m3-pre-v1'
 PROVIDER_REAL_INT8 = 'bge-m3-onnx-int8-pre-v1'
 PROVIDER_HASH = 'hash-pre-v1'
-CHUNK_POLICY_VERSION = 'm7_chunk_pre_v1'
-CHUNK_MAX_TOKENS = 512
+CHUNK_POLICY_VERSION = 'm7_chunk_pre_v2'
+CHUNK_MAX_TOKENS = 510  # payload budget; BGE-M3 adds CLS and SEP once
 QUERY_MAX_TOKENS = 256
 DIMENSION = 1024
 
@@ -162,12 +162,12 @@ class BgeM3Embedder:
         raise RuntimeError('content not found in tokenizer probe')
 
     def build_doc_ids(self, chunk_ids, max_total=512):
-        """Wrap chunk token ids with the model's special tokens exactly once,
+        """Reserve room for the model's special tokens without wrapping,
         capping total length at the XLM-R position limit (audit P0/P1)."""
         prefix, suffix = self._specials()
         budget = max_total - len(prefix) - len(suffix)
         body = list(chunk_ids)[:max(0, budget)]
-        return list(prefix) + body + list(suffix)
+        return body  # encode_ids owns the single special-token wrapper
 
     def encode_ids(self, ids_list, batch_size=8):
         torch = self._torch
@@ -259,7 +259,8 @@ class BgeM3OnnxInt8Embedder:
         onnx_rel = str(config.get('onnxFile') or 'onnx/model_int8.onnx')
         self.session = ort.InferenceSession(
             os.path.join(base, *onnx_rel.split('/')),
-            providers=['CPUExecutionProvider'])
+            providers=(['CUDAExecutionProvider', 'CPUExecutionProvider']
+                       if config.get('gpu') else ['CPUExecutionProvider']))
         self.tokenizer = AutoTokenizer.from_pretrained(base)
         self._inp = self.session.get_inputs()[0].name
         self._att = self.session.get_inputs()[1].name
@@ -277,7 +278,7 @@ class BgeM3OnnxInt8Embedder:
         prefix, suffix = self._specials()
         budget = max_total - len(prefix) - len(suffix)
         body = list(chunk_ids)[:max(0, budget)]
-        return list(prefix) + body + list(suffix)
+        return body  # encode_ids owns the single special-token wrapper
 
     def encode_ids(self, ids_list, batch_size=16):
         np = self._np

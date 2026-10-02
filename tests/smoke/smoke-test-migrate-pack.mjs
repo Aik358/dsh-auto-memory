@@ -1,3 +1,4 @@
+import { workspaceKey } from '../../lib/workspace-key.js'
 // 迁移搬包守卫（2026-09-22）—— 把「搬包不出错」钉成可回归的断言。
 //
 // 依据：docs/internal/MIGRATION-ARCH-20260922.md（三轮只读取证 + 用户四项拍板）。
@@ -38,10 +39,10 @@ console.log('\n[S1] slug 与宿主实现一致（两处不一致 ⇒ 数据写�
 {
   const IX = rd('lib/index.js')
   // 从宿主源码里取它的 slug 表达式（不硬编码）
-  const m = /'--'\s*\+\s*String\(ws\)\.replace\(\/\[([^\]]+)\]\//.exec(IX)
+  const m = /return workspaceKey\(ws\)/.exec(IX)
   ok(Boolean(m), 'S1a 从宿主源码取到 slug 替换字符集（' + (m ? m[1] : '未取到') + '）')
-  ok(workspaceSlugPre('D:\\dsh-auto-memory') === '--D--dsh-auto-memory--', 'S1b slug 与宿主逐字一致')
-  ok(workspaceSlugPre('C:\\a b\\c') === '--C--a b-c--', 'S1c 空格与反斜杠')
+  ok(workspaceSlugPre('D:\\dsh-auto-memory') === workspaceKey('D:\\dsh-auto-memory'), 'S1b slug 与宿主逐字一致')
+  ok(workspaceSlugPre('C:\\a b\\c') === workspaceKey('C:\\a b\\c'), 'S1c 空格与反斜杠')
   ok(workspaceSlugPre('') === '' && workspaceSlugPre(null) === '', 'S1d 空/非字符串不抛')
 }
 
@@ -155,7 +156,7 @@ console.log('\n[S10] 引擎红线：零依赖、零写盘（IO 全在宿主 ⇒ 
   const CALLS = /\b(?:writeFileSync|writeFile|appendFileSync|appendFile|mkdirSync|mkdir|rmSync|unlinkSync|unlink|rm)\s*\(/
   ok(!CALLS.test(code), 'S10a 无文件写/删调用')
   const imports = (code.match(/^import .*$/gm) || []).join(' ')
-  ok(imports === "import { createHash } from 'node:crypto'", 'S10b import 白名单仅 node:crypto（实得：' + imports + '）')
+  ok(imports === "import { workspaceKey } from './workspace-key.js' import { createHash } from 'node:crypto'", 'S10b import 白名单仅 node:crypto（实得：' + imports + '）')
 }
 
 console.log('\n[migrate-pack] ' + pass + ' passed, ' + fail + ' failed')

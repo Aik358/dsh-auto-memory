@@ -578,7 +578,7 @@
       var id=source&&source.id||''
       var detail=useIter5Data(function(){return id?apiGet(API.externalView,{source:id}):Promise.resolve(null)},[id,revision[0]])
       // ★2026-10-01（用户裁定 B）：全局简报 —— 一行汇总 + 抽屉展开（展开为逐条清单）。
-      var briefData=useIter5Data(function(){return apiGet(API.globalBrief)},[props.nonce,revision[0]])
+      var briefData=useIter5Data(function(){return apiGet(API.globalBrief, { sessionId: currentSessionIdClient() })},[props.nonce,revision[0]])
       var briefOpen=useState(false)
       var brief=briefData.data||null
       var identity=iter5Identity(), alive=useRef(true)
@@ -692,14 +692,19 @@
       var tick = useTick()
       useEffect(function () { return controller.subscribe(tick[1]) }, [])
       useEffect(function () {
+        // ★2026-09-30（H3-1 · 单一出口）：内容一律问 damSharedSurfaceCss()，并**无条件同步**；
+        //   两个 Surface 谁先挂载都收敛到同一张表，消除「先挂者定内容」的漂移。
+        var damWantCss = damSharedSurfaceCss()
+        if (!damWantCss) return function () {}
         var style = document.getElementById('dam-shared-ui-style')
         if (!style) {
           style = document.createElement('style')
           style.id = 'dam-shared-ui-style'
           style.dataset.plugin = '@a9i5k4/dsh-auto-memory'
-          style.textContent = ITER5_CSS
+          style.textContent = damWantCss
           document.head.appendChild(style)
         }
+        if (style.textContent !== damWantCss) style.textContent = damWantCss
         style.dataset.users = String(Number(style.dataset.users || 0) + 1)
         return function () {
           var count = Number(style.dataset.users || 1) - 1
@@ -801,6 +806,29 @@
         window.addEventListener('beforeunload', before)
         return function () { i5Alive.current = false; window.removeEventListener('beforeunload', before) }
       }, [])
+      // ★2026-09-30（D2 · 用户裁定「设置页必须全量同步」）：订阅唯一写出口的广播（见 saveConfigPatch 内 emit）。
+      //   两个入口此前各持挂载时快照 ⇒ A 保存后 B 还是旧值；现在任何地方保存成功即重取远端配置。
+      //   三条安全线：①有未保存草稿时不覆盖用户输入（只提示）；②busy 中不重取；③身份不符放弃。
+      useEffect(function () {
+        return controller.subscribe(function () {
+          if (busy) return
+          if (!i5Ok()) return
+          apiGet(API.config).then(function (d) {
+            if (!i5Ok()) return
+            var remote = configOf(d)
+            i5Base.current = remote
+            if (Object.keys(i5Draft.current).length) {
+              var changed = Object.keys(i5Draft.current).filter(function (key) { return JSON.stringify(remote[key]) !== JSON.stringify(i5Draft.current[key]) })
+              if (changed.length) setMsg(L("检测到其他入口的修改：", "Changes detected from another entry: ") + changed.join(", ") + L("。你的未保存输入未被覆盖。", " Your unsaved edits were not overwritten."))
+              setCfg(function (prev) { return Object.assign({}, remote, i5Draft.current) })
+            } else {
+              setCfg(remote)
+              setDirty(false)
+            }
+          }).catch(function () {})
+        })
+      }, [busy])
+
       function i5Ok() { return i5Alive.current && i5Identity === iter5Identity() }
       function i5Record(key, value) {
         if (JSON.stringify(value) === JSON.stringify((i5Base.current || {})[key])) { delete i5Draft.current[key]; delete i5Groups.current[key] }
@@ -1237,7 +1265,7 @@
             rows.push(L('当前档位', 'Resolved tier') + '：' + (tier === 'c3' ? 'C3 · Python' : tier === 'c2' ? 'C2 · JS' : tier ? ('C1 · ' + tier) : L('检测中', 'detecting')))
             if (sem && sem.pythonRuntime) {
               var rt = sem.pythonRuntime
-              var pyOk = rt.state === 'ready' && rt.depsOk !== false
+              var pyOk = (rt.state === 'verified-ok' || rt.state === 'ready') && rt.depsOk !== false
               rows.push(L('Python 运行时', 'Python runtime') + '：' + (pyOk ? L('可用', 'available') : (L('不可用', 'unavailable') + (rt.state ? ' (' + rt.state + ')' : ''))))
             }
             return h('div', { 'data-dam-gate-readout': '', 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { fontSize: 'calc(11.5px * var(--dam-scale))', lineHeight: 1.8, opacity: .82, marginTop: '4px' } },
@@ -1714,7 +1742,7 @@
         ]),
         section('skin', sectionLabels.skin, [
           // ★2026-09-28（用户第 1 大点）：本分区升格为「皮肤选择（皮肤中心）」——选择器置顶。
-          h(SkinPicker, { onSwitch: function () { try { setNonce(function (n) { return n + 1 }) } catch (ePick) {} } }),
+          h(SkinPicker, { onSwitch: function () {} }),
           h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { fontSize: 'calc(11.5px * var(--dam-scale))', opacity: .72, margin: '10px 0 4px' } },
             L('素材槽位（换图子功能，与皮肤选择正交）', 'Asset slots (image swapping; orthogonal to skin choice)')),
           // ★S2 皮肤(2026-09-27):6 槽位**真实渲染为 <img>**,取图走宿主只读路由
@@ -1868,10 +1896,10 @@
         if (migBusy) return
         if (!migPack) { setMigErr(t('migPickPack')); return }
         setMigBusy('preview'); setMigErr(''); setMigNote(''); setMigPlan(null); setMigResult(null)
-        apiPost(API.migrateInspect, { packPath: migPack, targetWs: currentWs() || undefined }).then(function (j) {
+        apiPost(API.migrateInspect, { packPath: migPack, targetWs: currentWs() || undefined, onConflict: migConflict }).then(function (j) {
           setMigBusy('')
           if (!j || j.ok === false) { migFail(t('migPreview'), j, null); return }
-          var p = j.plan || {}
+          var p = Object.assign({}, j.plan || {}, { previewToken: j.previewToken })
           setMigPlan(p)
           setMigNote(t('migPreview') + ' ✓ ' + (p.pathChanged ? t('migPathChanged') : t('migSamePath')) +
             (j.sourceMissing ? (L(' · ⚠ 源工作区已不存在', ' · warning: source workspace missing')) : ''))
@@ -1881,7 +1909,7 @@
         if (migBusy) return
         if (!migPack) { setMigErr(t('migPickPack')); return }
         setMigBusy('apply'); setMigErr(''); setMigNote('')
-        apiPost(API.migrateImport, { packPath: migPack, targetWs: currentWs() || undefined, onConflict: migConflict }).then(function (j) {
+        apiPost(API.migrateImport, { packPath: migPack, targetWs: currentWs() || undefined, onConflict: migConflict, previewToken: migPlan && migPlan.previewToken }).then(function (j) {
           setMigBusy('')
           if (!j || j.ok === false) { migFail(t('migApply'), j, null); return }
           setMigResult(j)

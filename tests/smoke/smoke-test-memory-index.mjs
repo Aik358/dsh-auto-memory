@@ -1,3 +1,4 @@
+import { workspaceKey } from '../../lib/workspace-key.js'
 // M3a 只读 MemoryFileIndex 测试(系统地图 M-06 契约 + 审查闭环轮2):
 // 不修改 Markdown / 确定性重建 / 文件级版本语义 / coverage() / stale(文件级+前置插入) /
 // 多字节字符 / CRLF / 模块级 5MB 上限 / 关闭零行为变化 / engine 版本递增 / 并发会话归属。
@@ -95,7 +96,7 @@ const { buildIndex, verifyRecord, coverage, splitByteLines, INDEX_MAX_FILE_BYTES
     memoryRoot, userMemoryDir: path.join(ws1, '.user-root'), projectMemoryDir: '.project-memory', externalSources: {},
   }), 'utf8')
   process.env.DSH_HOME = home
-  const keyOf = (p2) => '--' + p2.replace(/[\\/:*?"<>|]/g, '-') + '--'
+  const keyOf = (p2) => workspaceKey(p2)
   // 插件"今天"(dayBoundaryMinutes=450):00:00-07:30 归前一日,与引擎 memToday() 一致(跨天稳定)
   const plugToday = () => { const d = new Date(Date.now() - 450 * 60000); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0') }
   const TODAY_MD = plugToday() + '.md'

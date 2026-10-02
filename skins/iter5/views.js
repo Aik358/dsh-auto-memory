@@ -184,7 +184,7 @@ status[0]?h('p',{className:'i5-muted',role:'status'},status[0]):null,failure[0]?
       // ★2026-10-01（用户裁定 B 方案）：全局简报状态 —— 与「外部来源」同页展示。
       //   语义归位：简报 = 继承其他 Agent 的记忆，属「外部记忆」而非「长会话接续」。
       //   形态：**一行汇总 + 抽屉展开**（展开后是逐条清单），故取数与渲染都放在本组件内。
-      var briefData=useIter5Data(function(){return apiGet(API.globalBrief)},[props.nonce,revision[0]])
+      var briefData=useIter5Data(function(){return apiGet(API.globalBrief, { sessionId: currentSessionIdClient() })},[props.nonce,revision[0]])
       var briefOpen=useState(false)
       var brief=briefData.data||null
       var identity=iter5Identity(), alive=useRef(true)

@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { workspaceKey } from '../../lib/workspace-key.js'
 /** [contseq] 接续序号 v2 · 持久计数器回归(2026-09-13,NEXT-VERSION-TODO 改点2)。
  *
  * 背景:旧口径 contSeq = handoff 目录里 prev-session-*.md 文件数 +1,在落盘失败/跨工作区
@@ -117,7 +118,7 @@ ok(seq && Number(seq.byWorkspace[WS_A]) === 2, 'byWorkspace 记账:工作区 A �
 console.log('[contseq] S2 换工作区接续:不重复已有序号')
 await sessionStart(SID_B, WS_B)
 const stB = await call(API.state, 'GET')
-ok(stB && stB.planPath && stB.planPath.includes('--D--dam-contseq-proj-b--'), '切换后 handoff-state 指向新工作区(B 的记忆目录)')
+ok(stB && stB.planPath && stB.planPath.includes(workspaceKey("D:\\dam-contseq-proj-b")), '切换后 handoff-state 指向新工作区(B 的记忆目录)')
 const r3 = await call(API.cont, 'POST')
 ok(r3 && r3.ok === true && r3.contSeq === 3, '工作区 B 首次接续 contSeq=3(全局单调,不与 A 重复)')
 seq = readSeq()

@@ -334,7 +334,7 @@ storage = storage.slice(0, migrationStart) + `    var migRows = h(Iter5Migration
     })
 ` + storage.slice(migrationEnd)
 storage = replaceOnce(storage, 'function migPreview() {', 'function migPreview(conflict) {')
-storage = replaceOnce(storage, "apiPost(API.migrateInspect, { packPath: migPack, targetWs: currentWs() || undefined })", "apiPost(API.migrateInspect, { packPath: migPack, targetWs: currentWs() || undefined, onConflict: conflict || migConflict })")
+storage = replaceOnce(storage, "apiPost(API.migrateInspect, { packPath: migPack, targetWs: currentWs() || undefined, onConflict: migConflict })", "apiPost(API.migrateInspect, { packPath: migPack, targetWs: currentWs() || undefined, onConflict: conflict || migConflict })")
 storage = replaceOnce(storage, "return h('div', { 'data-dam-slot': 'timeline', 'data-dam-flow': '' }, rows)", `return h('div', { className: 'i5-storage-view i5-panel i5-instrument' }, h(Iter5Screws),
         deleteRequest[0] ? h(Iter5DeleteConfirmation, { payload: deleteRequest[0].payload, onClose: function () { deleteRequest[1](null) }, onConfirm: function () { var pending = deleteRequest[0]; deleteRequest[1](null); act('delete', pending.payload, pending.onDone, true) } }) : null,
         h('div', { className: 'i5-stats i5-stats-four' },
@@ -475,13 +475,14 @@ const d2Subscribe = [
   ""
 ].join("\n")
 // 幂等标记：进入生成前的快照里没有该注释才注入（对本脚本读入的 client 变量判一次即可）。
-if (!client.includes('订阅唯一写出口的广播')) {
+{
   const aliveAnchor = "        return function () { i5Alive.current = false; window.removeEventListener('beforeunload', before) }\n      }, [])"
   if (!client.includes(aliveAnchor)) throw new Error('D2: i5Alive anchor missing')
-  client = client.replace(aliveAnchor, aliveAnchor + '\n' + d2Subscribe)
+  if (!client.includes(aliveAnchor + '\n' + d2Subscribe)) client = client.replace(aliveAnchor, aliveAnchor + '\n' + d2Subscribe)
   // 第二个 I5 实例缩进多两级（生成块内嵌更深）
   const aliveAnchor2 = "          return function () { i5Alive.current = false; window.removeEventListener('beforeunload', before) }\n        }, [])"
-  if (client.includes(aliveAnchor2)) client = client.replace(aliveAnchor2, aliveAnchor2 + '\n' + d2Subscribe.replace(/^      /gm, '        '))
+  const subscribe2 = d2Subscribe.replace(/^      /gm, '        ')
+  if (client.includes(aliveAnchor2) && !client.includes(aliveAnchor2 + '\n' + subscribe2)) client = client.replace(aliveAnchor2, aliveAnchor2 + '\n' + subscribe2)
 }
 
 
@@ -673,7 +674,7 @@ if (!client.includes('F6 · 共享样式按皮肤分派') && !client.includes('H
       const blk = h31Blocks[bi]
       const whole = h31Lines.slice(blk.start, blk.end + 1).join('\n')
       if (!whole.includes('dam-shared-ui-style')) continue
-      if (whole.includes('damWantCss')) continue // 已改写过 ⇒ 跳过（幂等）
+      if (whole.includes('damWantCss')) { h31Rewritten += 1; continue } // 已归一的 effect 也计入守恒
       h31Rewritten += 1
       const indent = blk.indent
       const replacement = [

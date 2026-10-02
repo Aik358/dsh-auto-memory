@@ -23,6 +23,7 @@
         try { if (typeof damSkinStyleSet === 'function') damSkinStyleSet(next) } catch (e2) {}
       }
       iter5StyleListeners.forEach(function (listener) { listener(next) })
+      try { window.dispatchEvent(new Event('dam-skin-changed')) } catch (eSkin) {}
     }
     function useIter5Style() {
       var pair = useState(iter5ReadStyle)
