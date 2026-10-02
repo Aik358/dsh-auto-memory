@@ -42,7 +42,7 @@ function fixture() {
   process.env.DSH_HOME = path.join(dir, 'home')
   mkdirSync(pluginDir, { recursive:true }); mkdirSync(peer, { recursive:true }); mkdirSync(path.dirname(asset), { recursive:true })
   writeFileSync(asset, 'offline fixture only')
-  const control = value => writeFileSync(controlFile, JSON.stringify(value))
+  const control = value => { writeFileSync(controlFile + '.tmp', JSON.stringify(value)); renameSync(controlFile + '.tmp', controlFile) }
   control({})
   writeFileSync(path.join(peer, 'package.json'), JSON.stringify({name:'@huggingface/transformers',type:'module',main:'./index.js',exports:{'.':'./index.js'}}))
   writeFileSync(path.join(peer, 'index.js'), `
@@ -71,7 +71,7 @@ function fixture() {
   const snap = {memoryIndexVersion:'idx_pre_'+'a'.repeat(32), records:[{memoryId:'A',text:'alpha'},{memoryId:'B',text:'beta'}]}
   const logs = () => existsSync(logFile) ? readFileSync(logFile,'utf8').trim().split('\n').filter(Boolean).map(JSON.parse) : []
   const starts = () => logs().filter(row => row.kind === 'pipeline').length
-  return {host,semantic,snap,control,logs,starts,peer,asset,async dispose(){
+  return {host,semantic,snap,control,logs,starts,peer,asset,controlFile,async dispose(){
     semantic.dispose(); await until(() => logs().every(row => {try{process.kill(row.pid,0);return false}catch{return true}}))
     if(oldHome === undefined) delete process.env.DSH_HOME; else process.env.DSH_HOME = oldHome
     rmSync(dir,{recursive:true,force:true})
@@ -96,9 +96,12 @@ for (const failure of ['__crash__','__disconnect__','__hang__']) await test(`nor
     const recalls = Promise.all(Array.from({length:8},()=>f.host._semanticRankBest(f.snap,'ordinary recall')))
     await until(()=>f.starts()===2)
     assert.equal((await f.host.semanticAssetProbe()).ready,false,'Pending recovery remains degraded')
+    // A staging write must never publish an empty/partial control document to
+    // the child polling initWait. The old naked overwrite could do exactly that.
+    if(failure==='__crash__'){writeFileSync(f.controlFile+'.tmp','');await new Promise(resolve=>setTimeout(resolve,25))}
     f.control({})
     const results = await recalls
-    assert(results.every(result=>result && result.scores instanceof Map && result.scores.size===2))
+    assert(results.every(result=>result && result.scores instanceof Map && result.scores.size===2), JSON.stringify({status:f.semantic.status(),results:results.map(r=>r&&r.scores instanceof Map?[...r.scores]:r),logs:f.logs()}))
     assert.equal(f.starts(),2); assert.notEqual(f.semantic.status().workerPid,pid)
     assert.equal(f.semantic.status().degradedRetries,1); assert.equal(await f.host.resolveSemanticTier(),'c2')
     assert.equal(f.semantic.status().degraded,''); assert.equal(globalThis.DAM_HOST_RECOVERY_PEER_PID,undefined)
