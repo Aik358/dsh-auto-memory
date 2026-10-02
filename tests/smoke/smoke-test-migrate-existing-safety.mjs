@@ -93,6 +93,33 @@ try{
   const result=await importPack(f,'rename',view.previewToken);assert.equal(result.ok,false);assert.equal(result.error,'preview-stale')
   assert.equal(await fsp.readFile(path.join(f.dir,'MEMORY.from-pack.md'),'utf8'),large)
  })
+ await test('large PLAN overwrite uses its descriptor revision and keeps a complete backup',async()=>{
+  const f=await fixture({'handoff/PLAN.md':large},{'handoff/PLAN.md':'## revised PLAN\n'})
+  const view=await inspect(f,'overwrite'),result=await importPack(f,'overwrite',view.previewToken)
+  assert.equal(result.ok,true,JSON.stringify(result));assert.equal(await fsp.readFile(path.join(f.dir,'handoff/PLAN.md'),'utf8'),'## revised PLAN\n')
+  assert.equal(await fsp.readFile(path.join(result.backup,'handoff/PLAN.md'),'utf8'),large)
+ })
+ await test('large PLAN changed after planning emits a real revision conflict',async()=>{
+  const f=await fixture({'handoff/PLAN.md':large},{'handoff/PLAN.md':'## proposed\n'}),copy=engine.copyDir,view=await inspect(f,'overwrite')
+  const target=path.join(f.dir,'handoff/PLAN.md'),changed=large+'\nexternal edit\n'
+  engine.copyDir=async function(src,...args){await copy.call(this,src,...args);if(src===f.dir)await fsp.writeFile(target,changed)}
+  try{const result=await importPack(f,'overwrite',view.previewToken);assert.equal(result.ok,false);assert.match(result.detail,/plan-import-preview-conflict/);assert.equal(result.written.length,0)}finally{engine.copyDir=copy}
+  assert.equal(await fsp.readFile(target,'utf8'),changed)
+  const dir=path.join(f.dir,'handoff/conflicts'),files=await fsp.readdir(dir);assert.equal(files.length,1)
+  const conflict=JSON.parse(await fsp.readFile(path.join(dir,files[0]),'utf8'));assert.equal(conflict.current,changed);assert.equal(conflict.proposed,'## proposed\n');assert.match(conflict.expectedRevision,/^[a-f0-9]{64}$/)
+ })
+ await test('committed addition remains reported when temporary-file cleanup fails',async()=>{
+  const f=await fixture({}, {'fresh.md':'committed addition'}),view=await inspect(f),remove=fsp.rm
+  fsp.rm=async(file,...args)=>{if(String(file).startsWith(path.join(f.dir,'fresh.md.tmp-')))throw Object.assign(Error('injected temp cleanup failure'),{code:'EPERM'});return remove(file,...args)};syncBuiltinESMExports()
+  try{const result=await importPack(f,undefined,view.previewToken);assert.equal(result.ok,false);assert.equal(result.written.length,1);assert.equal(result.written[0].path,'fresh.md');assert.equal(result.cleanupErrors[0].stage,'temp-cleanup')}finally{fsp.rm=remove;syncBuiltinESMExports()}
+  assert.equal(await fsp.readFile(path.join(f.dir,'fresh.md'),'utf8'),'committed addition')
+ })
+ await test('committed overwrite remains reported when lock release fails',async()=>{
+  const f=await fixture({'MEMORY.md':'original'}, {'MEMORY.md':'committed replacement'}),view=await inspect(f,'overwrite'),unlink=fs.unlinkSync,lock=path.join(f.dir,'MEMORY.md.lock')
+  fs.unlinkSync=function(file,...args){if(String(file)===lock)throw Object.assign(Error('injected lock release failure'),{code:'EPERM'});return unlink(file,...args)};syncBuiltinESMExports()
+  try{const result=await importPack(f,'overwrite',view.previewToken);assert.equal(result.ok,false);assert.equal(result.written.length,1);assert.equal(result.written[0].path,'MEMORY.md');assert.equal(result.cleanupErrors[0].stage,'lock-release')}finally{fs.unlinkSync=unlink;syncBuiltinESMExports();await fsp.unlink(lock)}
+  assert.equal(await fsp.readFile(path.join(f.dir,'MEMORY.md'),'utf8'),'committed replacement')
+ })
 }finally{
  await drain();if(cleanup)cleanup();await flushDiagnostics()
  for(const [key,value]of Object.entries(methods))MemoryEngine.prototype[key]=value

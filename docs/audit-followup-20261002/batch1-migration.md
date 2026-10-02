@@ -35,3 +35,9 @@ JSON/JSONL 现在先验证格式，对每个原始字符串 token 解码，再�
 新测试 `smoke-test-migrate-existing-safety.mjs` 使用完整生产模块/apply/正式 POST 路由及隔离临时磁盘；读取失败为受控 IO 注入，提交竞争在真实 copyDir 完成后插入文件。HOME、DSH_HOME、cwd、定时器、监听器及后台 refresh/诊断排空后恢复。模型、QQ、通知及真实服务隔离，没有实机/实时服务验收声明。
 
 初始红例日志：`/tmp/dam-round2-import-red.log`（0/5）、`/tmp/dam-round2-json-red.log`（1/2）。修后扩展：正式路由 9/0、格式值 4/0；既有迁移纯逻辑 52/0、碰撞契约 25/0、宿主接线 24/0。源指纹随有意改动更新，70 路由断言和既有隐私断言未削弱；生成器 `--check --strict` 通过。隔离完整分支回归为260 PASS / 3 FAIL / 0 TIMEOUT（139.5秒），仅原有lib/policies、开发venv、skin assets缺失三项失败；不是CI全绿。对应固定 SHA CI 由交付记录补充。
+
+## 第一批独立复审补修
+
+父任务两位原生审查者指出新大文件描述符没有与PLAN版本分支衔接，以及提交后的tmp清理/锁释放错误会发生在written.push之前。四个新增正式路由用例在c87cef上为9/4：大PLAN显式overwrite、重算计划/备份后大PLAN变化的冲突候选、link成功后tmp删除失败、覆盖成功后unlock失败均失败。补修后13/0。
+
+PLAN大文件以描述符digest作为expectedRevision，当前正文经既有readPlanPre验证UTF-8后按真实revision比较；小文件/不存在沿用字符串revision。冲突仍保存current/proposed和真实expectedRevision，不把对象传给hash。written现在在真实link/原子写成功时、锁内立即登记；之后tmp清理或unlock失败仍终止并明确返回错误，但保留已提交路径及独立cleanupErrors(stage/path/error)。清理失败不吞，原始提交错误也不被tmp清理错误覆盖。没有把这些故障报为未写入。
