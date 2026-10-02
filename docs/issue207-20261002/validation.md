@@ -1,6 +1,6 @@
 # #207 候选固定提交与验证
 
-最终产品冻结：`f7d3b787dc9f2c38656a829eb964d91f5c3a7788`。首个产品提交`088d80f0a41e63241dac3eaeff82376385f56617`；f7d3b78只补冷迁移压缩残帧校验及对应回归。其后交付提交仅增加证据、PR正文、真正的自动tick回归及修正旧测试注释，不改产品。
+前一轮产品候选（已被复审补修替代）：`f7d3b787dc9f2c38656a829eb964d91f5c3a7788`。首个产品提交`088d80f0a41e63241dac3eaeff82376385f56617`；f7d3b78只补冷迁移压缩残帧校验及对应回归。其后交付提交仅增加证据、PR正文、真正的自动tick回归及修正旧测试注释，不改产品。
 
 基线重新fetch仍是`131ca794b9f0d07f78b19bf6feee3312939854ed`。新分支`Minervaowl7:fix/state-persistence-207-20261002`。现有#206 head857a422、#208 head513b613、#209 head1a4a6c4、#168 head85ef119保持不动。旧baseline三个失败不通过导入其它PR隐去。
 
@@ -35,7 +35,7 @@ DAM_STATE_ENGINE_SOURCE=/tmp/issue207-main-index.js node docs/issue207-20261002/
 
 [前一088d80f CI36998669854](https://github.com/Minervaowl7/dsh-auto-memory/actions/runs/36998669854)：244/3/0，137.4秒；本地准备阶段242/5包含H12旧自动重试预期和旧源码指纹，两者已定向更新后244/3。旧结果不代替最新。
 
-后续证据/自动tick测试交付提交的准确head及其CI在最终交付报告列出；产品冻结与CI以上述表为准。限定代码仍待父任务独立复审，未宣称通过审查。
+上一轮交付head9a3475ae4f6dbde4f3911fa15e49ef37db72bdaf对应CI36999785925为244/3/0，137.9秒。以上均为历史结果，不替代本轮验证。限定代码仍待父任务独立复审，未宣称通过审查。
 
 ## PR与边界
 
@@ -45,3 +45,13 @@ https://github.com/Aik358/dsh-auto-memory/compare/main...Minervaowl7:dsh-auto-me
 既有integration的createPullRequest权限拒绝按指示不重试，不换身份；未创建或改动#208/#209，未合并、发布或部署。只Refs #207，不关闭整单。
 
 永久分片总体空间线性增长，不能同时承诺永久记忆和恒定总空间；单记录身份/文件、旧JSON读取、锁等待有明确界限。未知pending必须核实真实后继/投递后恢复，不能按时间/PID盲目解除。旧200裁剪已丢身份无法恢复。所有共享写入实例须升级；跨机器恢复、不合作旧版/外部编辑及突然断电的目录项持久性不在证明范围。归档动作已发生而时间未提交时仍未知年龄，不造时间、不自动删除。完整取舍及恢复方法见design.md。
+
+## 独立复审补修（当前工作树）
+
+修复普通文件被readdir、leaf symlink锁/数据目标分裂、pending不可正式恢复以及后继ID规范化失真。新增正式npm包内维护入口与GET pending/completed；创建后保存失败保留pending并返回原始ID。真实子进程验证direct/leaf alias并发拒绝别名且目标不重号，父目录alias仍兼容。正式路由/维护命令覆盖重启状态、核验完成/解除、旧token/错误后继/无确认拒绝、活动投递不可解除、旧去前缀记录需人工核实原始ID。npm pack --dry-run --ignore-scripts确认维护入口包含在files列表，未发布包。
+
+本轮固定提交及隔离全量/CI结果由后续报告补充；未经独立复审不作为最终交付。
+
+复审补修首轮全量为242/5/0（136.2秒）：除三项基线失败，continue-host仍期待去前缀后继ID，switch-decouple抽取式unit未注入新增状态依赖。两项夹具已定向适配，保留所有行为断言；continue-host定向40/0。新增完整生产模块suite已在首轮全量通过，避免用抽取式假边界作为持久化证据。
+
+本轮state 12/0；processes与formal routes通过。正式维护入口不仅在npm pack dry-run文件列表中，也从仅包含实际打包依赖的隔离安装目录运行status通过。build-iter5-skin --check --strict和git diff --check通过。

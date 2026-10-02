@@ -112,3 +112,32 @@ test('cold migration checks all history and rejects incomplete compressed eviden
  await assert.rejects(e.allocContSeq('badzip'),/incomplete/);assert.equal(fs.existsSync(e.contSeqFile()),false)
  fs.writeFileSync(zip,valid);assert.equal(await e.allocContSeq('zip'),281)
 })
+
+test('real host directories ignore ordinary root/member files, but do not hide denied reads; SQLite-only refuses guessing and supports verified seed', async () => {
+ const e=engine(),sessions=path.join(home,'sessions');fs.mkdirSync(sessions,{recursive:true});fs.writeFileSync(path.join(sessions,'README.txt'),'ordinary')
+ const dir=path.join(sessions,'real-workspace','session-real');fs.mkdirSync(dir,{recursive:true});fs.writeFileSync(path.join(sessions,'real-workspace','ordinary-file'),'not a session');fs.writeFileSync(path.join(dir,'session.jsonl'),'{"title":"Cont.#320"}\n')
+ fs.rmSync(e.contSeqFile(),{force:true});assert.equal(await e.allocContSeq('with-files'),321)
+ fs.rmSync(e.contSeqFile());const promises=(await import('node:fs/promises')).default,read=promises.readdir
+ promises.readdir=async(p,...args)=>{if(p===sessions)throw Object.assign(Error('directory read denied'),{code:'EACCES'});return read(p,...args)};syncBuiltinESMExports()
+ try{await assert.rejects(e.allocContSeq('denied-directory'),/directory read denied/)}finally{promises.readdir=read;syncBuiltinESMExports()}
+ assert.equal(fs.existsSync(e.contSeqFile()),false)
+ const {DatabaseSync}=await import('node:sqlite'),dbFile=path.join(sessions,'sessions.sqlite'),db=new DatabaseSync(dbFile)
+ db.exec('PRAGMA application_id=1146308688; PRAGMA user_version=1; CREATE TABLE t_sessions (f_session_id TEXT, f_title TEXT)');db.prepare('INSERT INTO t_sessions VALUES (?,?)').run('sqlite-history','Cont.#350');db.close()
+ await assert.rejects(e.allocContSeq('sqlite-mixed'),/SQLite history requires a verified high-water seed/)
+ fs.rmSync(path.join(sessions,'real-workspace'),{recursive:true});assert.equal(fs.existsSync(e.contSeqFile()),false)
+ await assert.rejects(e.allocContSeq('sqlite-only'),/verified high-water seed/)
+ const {execFileSync}=await import('node:child_process'),{fileURLToPath}=await import('node:url')
+ const cmd=fileURLToPath(new URL('../../lib/continuation-maintenance.js',import.meta.url))
+ assert.throws(()=>execFileSync(process.execPath,[cmd,'seed-counter','--last','350'],{env:process.env,stdio:'pipe'}))
+ execFileSync(process.execPath,[cmd,'seed-counter','--last','350','--confirmed-history-reviewed'],{env:process.env,stdio:'pipe'})
+ assert.equal(await engine().allocContSeq('verified-sqlite'),351)
+})
+test('leaf file aliases are explicitly refused without replacing symlinks or duplicating direct-target reservations', async () => {
+ const direct=engine(),target=direct.contSeqFile(),alias=target+'.alias';fs.writeFileSync(target,'{"last":400,"byWorkspace":{}}');fs.symlinkSync(target,alias)
+ const indirect=engine();indirect.contSeqFile=()=>alias
+ const both=await Promise.allSettled([direct.allocContSeq('direct'),indirect.allocContSeq('alias')])
+ assert.equal(both[0].value,401);assert.equal(both[1].status,'rejected');assert.match(both[1].reason.message,/state-file-symlink/)
+ assert(fs.lstatSync(alias).isSymbolicLink());assert.equal(json(target).last,401);assert.equal(await engine().allocContSeq('restart'),402)
+ assert.throws(()=>indirect.saveContSeqState({last:403,byWs:{}}),/state-file-symlink/);assert.equal(json(target).last,402)
+ fs.rmSync(alias)
+})

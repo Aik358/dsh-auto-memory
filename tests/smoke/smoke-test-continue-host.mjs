@@ -259,14 +259,14 @@ console.log('[continue-host] H12 真实插件路由：未知投递保留pending�
   const sourceKey=SID.replace(/^session-/, ''), recordFile=continuedSourceFile(doneFile,sourceKey)
   ok(!existsSync(doneFile) && JSON.parse(readFileSync(recordFile,'utf8')).status === 'pending', 'H12 保留独立pending记录，不修改旧闩锁文件')
   const blocked=await call(decidePath,'POST',{action:'manual',sessionId:SID})
-  ok(blocked && !blocked.ok && blocked.continuationPending && blocked.sessionId==='integration-new-1' && created===1, 'H12 未核实的投递错误不能盲目再建会话')
+  ok(blocked && !blocked.ok && blocked.continuationPending && blocked.sessionId==='session-integration-new-1' && created===1, 'H12 未核实的投递错误不能盲目再建会话')
   // The fake controller conclusively rejected delivery. Operator recovery is
   // explicit; production never infers this from an arbitrary exception string.
   await releaseContinuedSource(doneFile,sourceKey,JSON.parse(readFileSync(recordFile,'utf8')).token)
   rejectDelivery = false
   const retried = await call(decidePath, 'POST', { action: 'manual', sessionId: SID })
   ok(retried && retried.ok && retried.sessionId === 'session-integration-new-2', 'H12 源会话仍可成功重试')
-  ok(JSON.parse(readFileSync(recordFile,'utf8')).status==='done' && JSON.parse(readFileSync(recordFile,'utf8')).to==='integration-new-2', 'H12 接受材料后才持久化真实后继')
+  ok(JSON.parse(readFileSync(recordFile,'utf8')).status==='done' && JSON.parse(readFileSync(recordFile,'utf8')).to==='session-integration-new-2', 'H12 接受材料后才持久化真实后继')
   const replay = await call(decidePath, 'POST', { action: 'manual', sessionId: SID })
   ok(replay && replay.ok && replay.sessionId === retried.sessionId && created === 2, 'H12 重复请求返回已有后继，不再建第三个会话')
   ok(ctlCalls[0][0] === 'cancel' && ctlCalls[0][1] === SID, 'H12 手动入口也停止指定旧回合')

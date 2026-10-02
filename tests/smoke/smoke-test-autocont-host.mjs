@@ -150,10 +150,10 @@ function makeEngine(opts) {
     // 否则同样以"静默不生效"的形式失败。
     const obj = new Function('diag', 'AbortSignal', 'shouldArmAutoContinuePre',
       'DEFAULT_AUTO_CONTINUE_THRESHOLD', 'DEFAULT_WATER_LEVEL_THRESHOLD', 'contTitleStampPre', 'continuationProbePre', 'continuationRitualEndPre',
-      'continuedSourceState', 'reserveContinuedSource', 'releaseContinuedSource', 'setContinuedSourceTarget',
+      'acquireSharedStateLock', 'continuedSourceFile', 'continuedSourceView', 'continuedSourceState', 'reserveContinuedSource', 'releaseContinuedSource', 'setContinuedSourceTarget',
       'return {' + extractFn(h) + '};')(
       () => {}, { timeout: () => undefined }, shouldArmAutoContinuePre, 0.75, 0.75, contTitleStampPre, continuationProbePre, continuationRitualEndPre,
-      (file, sid) => eng._continuedSessions.has(sid) ? {status:'done'} : null, async () => 'fixture-token', async () => {}, async () => {})
+      async () => () => {}, () => '/virtual/source', () => null, (file, sid) => eng._continuedSessions.has(sid) ? {status:'done'} : null, async () => 'fixture-token', async () => {}, async () => {})
     const key = Object.keys(obj)[0]
     fns[key] = obj[key].bind(eng)
   }

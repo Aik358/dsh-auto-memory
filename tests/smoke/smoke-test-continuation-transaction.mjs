@@ -19,7 +19,7 @@ function extract(src, header) {
   throw Error('unbalanced ' + header)
 }
 function compile(src, deps) { return new Function(...Object.keys(deps), 'return ' + src)(...Object.values(deps)) }
-const deps = { continuedSourceState: () => ({status:'done'}), reserveContinuedSource: async () => 'fixture-token', setContinuedSourceTarget: async () => {}, releaseContinuedSource: async () => {}, diag() {}, AbortSignal, continuationProbePre, continuationRitualEndPre, shouldArmAutoContinuePre,
+const deps = { acquireSharedStateLock:async()=>()=>{},continuedSourceFile:()=>'/virtual/source', continuedSourceState: () => ({status:'done'}), reserveContinuedSource: async () => 'fixture-token', setContinuedSourceTarget: async () => {}, releaseContinuedSource: async () => {}, diag() {}, AbortSignal, continuationProbePre, continuationRitualEndPre, shouldArmAutoContinuePre,
   DEFAULT_AUTO_CONTINUE_THRESHOLD: .75, contTitleStampPre: () => '09-30 12:00', randomUUID: () => 'ritual-request-001' }
 function method(header, extra = {}) {
   const obj = compile('({' + extract(host, header) + '})', { ...deps, ...extra })
@@ -100,15 +100,15 @@ await check('C05 permission-only callback cannot commit continuation', async () 
   await handler({}, {})
   assert.equal(e.marked.size, 0)
 })
-await check('C05 rejected material delivery leaves source retryable', async () => {
+await check('C05 creation failure before delivery leaves source retryable', async () => {
   const e = engine()
-  const prompt = e._sessionController.prompt
-  e._sessionController.prompt = async r => { if (r.sessionId === 'successor') throw Error('prompt rejected'); await prompt(r) }
+  const create = e._sessionController.create
+  e._sessionController.create = async () => { throw Error('create rejected before delivery') }
   const bad = await e.decideAutoContinue('manual', null, 'source')
   assert.equal(bad.ok, false)
   assert.equal(e.marked.size, 0)
   assert.equal(e._autoContState.executing, false)
-  e._sessionController.prompt = prompt
+  e._sessionController.create = create
   assert.equal((await e.decideAutoContinue('manual', null, 'source')).ok, true)
   assert(e.marked.has('source'))
 })
