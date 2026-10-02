@@ -75,6 +75,9 @@ ${methods}
   Object.assign(host, {
     _degradeSink: createDegradeSinkPre(), config: {}, state: {}, _observerStats: {},
     runtimes: { values: () => [] }, autoStats: { count: 0 },
+    // Unit projection harness has no live owner; formal owner/IO barriers are
+    // covered by smoke-test-debug-index-owner against complete production apply.
+    currentRuntime: () => ({state:host.state}), peekRuntime: () => undefined,
     memoryIndexSnapshot: async () => ({}), _hubIoViewSnapshot: () => null,
     _factsPruneViewSnapshot: () => null, _logsViewSnapshot: () => null,
     capacityLimit: () => 1000, memToday: todayStr,
