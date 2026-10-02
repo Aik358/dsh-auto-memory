@@ -121,6 +121,8 @@ settings = replaceOnce(settings, '      var tickPair = useTick()', `      var ti
       var i5Draft = useRef({})
       var i5Groups = useRef({})
       var i5Alive = useRef(true)
+      var i5Busy = useRef(false)
+      var i5ConfigGeneration = useRef(0)
       var i5Identity = iter5Identity()
       var i5DraftKey = i5Identity + '|' + (props && props.draftScope || 'workbench')
       var i5GroupsDef = { engine: ['engine'], memory: ['window', 'capacity', 'skills'], appearance: ['store', 'look', 'skin'], behavior: ['handoff', 'auto', 'team', 'about'] }
@@ -139,6 +141,14 @@ settings = replaceOnce(settings, '      var tickPair = useTick()', `      var ti
         else delete iter5SettingsDrafts[i5DraftKey]
       }
       function i5Cancel() { delete iter5SettingsDrafts[i5DraftKey]; i5Draft.current = {}; i5Groups.current = {}; setCfg(Object.assign({}, i5Base.current)); setDirty(false); setErr(''); setMsg('') }`)
+settings = replaceOnce(settings, '      var setBusy = busyPair[1]', `      function setBusy(value) {
+        i5Busy.current = value
+        i5ConfigGeneration.current += 1
+        busyPair[1](value)
+      }`)
+settings = replaceOnce(settings, '        var alive = true\n        apiGet(API.config)', '        var alive = true\n        var configRequest = ++i5ConfigGeneration.current\n        apiGet(API.config)')
+settings = replaceOnce(settings, '          if (!alive) return\n          setCfg(d.config)', '          if (!alive || i5Busy.current || configRequest !== i5ConfigGeneration.current) return\n          setCfg(d.config)')
+settings = replaceOnce(settings, '}).catch(function (e) { setErr(e.message) })', '}).catch(function (e) { if (alive && i5Ok() && configRequest === i5ConfigGeneration.current) setErr(e.message) })')
 settings = replaceOnce(settings, '          setCfg(d.config)', `          if (!i5Ok()) return
           i5Base.current = configOf(d)
           var recovered = iter5SettingsDrafts[i5DraftKey]
@@ -455,10 +465,11 @@ const d2Subscribe = [
   "      //   三条安全线：①有未保存草稿时不覆盖用户输入（只提示）；②busy 中不重取；③身份不符放弃。",
   "      useEffect(function () {",
   "        return controller.subscribe(function () {",
-  "          if (busy) return",
+  "          if (i5Busy.current) return",
   "          if (!i5Ok()) return",
+  "          var configRequest = ++i5ConfigGeneration.current",
   "          apiGet(API.config).then(function (d) {",
-  "            if (!i5Ok()) return",
+  "            if (!i5Ok() || i5Busy.current || configRequest !== i5ConfigGeneration.current) return",
   "            var remote = configOf(d)",
   "            i5Base.current = remote",
   "            if (Object.keys(i5Draft.current).length) {",
@@ -471,7 +482,7 @@ const d2Subscribe = [
   "            }",
   "          }).catch(function () {})",
   "        })",
-  "      }, [busy])",
+  "      }, [i5Identity])",
   ""
 ].join("\n")
 // 幂等标记：进入生成前的快照里没有该注释才注入（对本脚本读入的 client 变量判一次即可）。

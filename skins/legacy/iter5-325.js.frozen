@@ -808,6 +808,8 @@
       var i5Draft = useRef({})
       var i5Groups = useRef({})
       var i5Alive = useRef(true)
+      var i5Busy = useRef(false)
+      var i5ConfigGeneration = useRef(0)
       var i5Identity = iter5Identity()
       var i5DraftKey = i5Identity + '|' + (props && props.draftScope || 'workbench')
       var i5GroupsDef = { engine: ['engine'], memory: ['window', 'capacity', 'skills'], appearance: ['store', 'look', 'skin'], behavior: ['handoff', 'auto', 'team', 'about'] }
@@ -822,10 +824,11 @@
       //   三条安全线：①有未保存草稿时不覆盖用户输入（只提示）；②busy 中不重取；③身份不符放弃。
       useEffect(function () {
         return controller.subscribe(function () {
-          if (busy) return
+          if (i5Busy.current) return
           if (!i5Ok()) return
+          var configRequest = ++i5ConfigGeneration.current
           apiGet(API.config).then(function (d) {
-            if (!i5Ok()) return
+            if (!i5Ok() || i5Busy.current || configRequest !== i5ConfigGeneration.current) return
             var remote = configOf(d)
             i5Base.current = remote
             if (Object.keys(i5Draft.current).length) {
@@ -838,7 +841,7 @@
             }
           }).catch(function () {})
         })
-      }, [busy])
+      }, [i5Identity])
 
       function i5Ok() { return i5Alive.current && i5Identity === iter5Identity() }
       function i5Record(key, value) {
@@ -854,7 +857,11 @@
       var setCfg = cfgPair[1]
       var busyPair = useState(false)
       var busy = busyPair[0]
-      var setBusy = busyPair[1]
+      function setBusy(value) {
+        i5Busy.current = value
+        i5ConfigGeneration.current += 1
+        busyPair[1](value)
+      }
       var msgPair = useState('')
       var msg = msgPair[0]
       var setMsg = msgPair[1]
@@ -1026,8 +1033,9 @@
       useEffect(function () { return controller.subscribe(tickPair[1]) }, [])
       useEffect(function () {
         var alive = true
+        var configRequest = ++i5ConfigGeneration.current
         apiGet(API.config).then(function (d) {
-          if (!alive) return
+          if (!alive || i5Busy.current || configRequest !== i5ConfigGeneration.current) return
           if (!i5Ok()) return
           i5Base.current = configOf(d)
           var recovered = iter5SettingsDrafts[i5DraftKey]
@@ -1041,7 +1049,7 @@
           // ★P10-T1：分区清单随 config 应答体下发（宿主唯一真源；取不到就留空 ⇒ 面板给 fail-soft 提示）
           setPsecKeys(Array.isArray(d.promptSections) ? d.promptSections : [])
           setPsecMust(Array.isArray(d.promptSectionMust) ? d.promptSectionMust : [])
-        }).catch(function (e) { setErr(e.message) })
+        }).catch(function (e) { if (alive && i5Ok() && configRequest === i5ConfigGeneration.current) setErr(e.message) })
         // 打开设置页自动检查更新(host 有 12h 缓存,不重复查网)
         apiGet(API.updateCheck).then(function (d) { if (alive) setVerInfo(d) }).catch(function () {})
         return function () { alive = false }
