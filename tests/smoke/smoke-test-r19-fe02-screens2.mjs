@@ -153,7 +153,7 @@ eq(R.TeamScreensR19({ team: null }), null, 'H1 ★负路径：team=null ⇒ 整�
 const gs = R.TeamScreensR19({ team: { enabled: true } });
 eq(gs.props['data-dam-team-screens'], 'r19', 'H2 组装配根锚点 = r19');
 eq((gs.kids || []).length, 3, 'H3 ★组装配含 3 屏');
-eq(cnt(SRC, 'h(TeamScreensR19, { team: team })'), 1, 'H4 ★接线点恰 1 处');
+eq(cnt(SRC, 'h(TeamScreensR19, { team: team, debug: team.debug, onTakeover:'), 1, 'H4 ★接线点恰 1 处');
 // ── 三条不变量 ──
 ok(!/#[0-9a-fA-F]{3,8}\b/.test(SEG), 'I1 零裸 hex');
 ok(!/\brgba?\(/.test(SEG), 'I2 零裸 rgba');

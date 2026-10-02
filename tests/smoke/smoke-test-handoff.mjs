@@ -1,4 +1,7 @@
 #!/usr/bin/env node
+import { withCalendarLock, canonicalCalendarPath } from '../../lib/calendar-lock.js'
+import { writeTextAtomicPre } from '../../lib/config-io.js'
+import { readPlanPre, planRevisionPre, anchoredPlanPre, archivePlanPre, conflictPlanPre, preparePlanPre } from '../../lib/plan-store.js'
 /** [handoff] M-CM1 交接白板回归(PLAN.md 白板层 + 四段式交接账本 + 注入首位)。
  * 真实抽取 writePlanSnapshot/writeHandoffLedger/readLatestHandoff/handoffStamp/renderMemoryDynamic
  * (花括号配平),在临时目录与受控闭包里驱动 —— 测的是随包发布的真实代码:
@@ -68,6 +71,7 @@ function makeFakeEngine() {
     // （门的行为由 `smoke-test-t0-8-mutation-gate.mjs` 专测；门在真实引擎上的接线由该套件的
     //  T0-8B「三条写入路径都不能绕过」断言锁）。
     checkMutationPre() { return { ok: true } },
+    wbWsKeyPre: () => 'test-ws',
     // P2 sidecar(2026-09-16)桩: writeHandoffLedger/writePlanSnapshot 写盘后会调 writeSidecarEntryPre
     // (boardMode 默认 legacy 时它是 no-op, 但抽取式沙箱里 this 上必须有该方法, 否则 TypeError)。
     async writeSidecarEntryPre() {},
@@ -79,8 +83,8 @@ function makeFakeEngine() {
   }
 }
 const bindMethod = (header, fake, extra) => { // 方法简写 → 对象字面量 → 取出绑定 fake this(注入模块级符号+extra)
-  const names = ['path', 'existsSync', 'mkdir', 'writeFile', 'readdir', 'stat', 'handoffStamp', 'nowHm']
-  const vals = [path, existsSync, mkdir, writeFile, readdir, stat, handoffStampFn, nowHmFn]
+  const names = ['canonicalCalendarPath', 'withCalendarLock', 'writeTextAtomicPre', 'readPlanPre', 'planRevisionPre', 'anchoredPlanPre', 'archivePlanPre', 'conflictPlanPre', 'preparePlanPre', 'path', 'existsSync', 'mkdir', 'writeFile', 'readdir', 'stat', 'handoffStamp', 'nowHm']
+  const vals = [canonicalCalendarPath, withCalendarLock, writeTextAtomicPre, readPlanPre, planRevisionPre, anchoredPlanPre, archivePlanPre, conflictPlanPre, preparePlanPre, path, existsSync, mkdir, writeFile, readdir, stat, handoffStampFn, nowHmFn]
   for (const k of Object.keys(extra || {})) { names.push(k); vals.push(extra[k]) }
   const obj = new Function(...names, 'return {' + extractFn(header) + '};')(...vals)
   return obj[Object.keys(obj)[0]].bind(fake)
@@ -95,11 +99,11 @@ const writePlanSnapshot = bindMethod('async writePlanSnapshot(projectDir, conten
 const r1 = await writePlanSnapshot(proj, '# Plan v1\n全貌第一版')
 ok(r1.ok && !r1.archived, '首建成功且无归档')
 ok(existsSync(path.join(proj, 'handoff', 'PLAN.md')), 'PLAN.md 落盘')
-const r2 = await writePlanSnapshot(proj, '# Plan v2\n全貌第二版')
-ok(r2.ok && r2.archived && /archive[\\/]PLAN-\d{8}-\d{6}\.md$/.test(r2.archived), '改写触发旧版归档(' + path.basename(r2.archived) + ')')
+const r2 = await writePlanSnapshot(proj, '# Plan v2\n全貌第二版', { expectedRevision: planRevisionPre(await readPlanPre(path.join(proj, 'handoff', 'PLAN.md'))) })
+ok(r2.ok && r2.archived && /archive[\\/]PLAN-\d{8}-\d{6}-[a-f0-9-]+\.md$/.test(r2.archived), '改写触发旧版归档(' + path.basename(r2.archived) + ')')
 ok((await readFile(r2.archived, 'utf8')).includes('v1'), '归档内容=旧版 v1')
 ok((await readFile(path.join(proj, 'handoff', 'PLAN.md'), 'utf8')).includes('v2'), '当前 PLAN=新内容 v2')
-const r3 = await writePlanSnapshot(proj, '# Plan v2\n全貌第二版')
+const r3 = await writePlanSnapshot(proj, '# Plan v2\n全貌第二版', { expectedRevision: planRevisionPre(await readPlanPre(path.join(proj, 'handoff', 'PLAN.md'))) })
 ok(r3.ok && !r3.archived, '同内容重写不产生冗余归档')
 
 console.log('[handoff] G3 writeHandoffLedger + readLatestHandoff')

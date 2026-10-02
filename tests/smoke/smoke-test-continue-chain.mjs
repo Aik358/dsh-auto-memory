@@ -201,7 +201,7 @@ ok(bodyOf(SRC, 'async function refreshOldSession(onMsg, pinnedSid) {').includes(
   'G16 刷新仪式优先用钉死的 pinnedSid 取刷新目标(不现场重取身份)')
 ok(HSRC.includes('refreshRitualPrompt()') && HSRC.includes('autoContinueRefreshRitual === false') && HSRC.includes('refresh: this.config.autoContinueRefreshRitual'),
   'G12 host exposes refresh ritual (config-gated) via handoff-state')
-for (const layer of ['【第0层 · 白板 PLAN.md(节选)】', '【第1层 · 交接账本 ', '【第2层 · 近期线程', '【第3层 · 完整转写与检索(按需)】']) {
+for (const layer of ['【第0层 · 白板 PLAN.md(节选)；项目共享事实，不是本会话角色授权；修改前 memory_read(kind=plan) 取版本】', '【第1层 · 交接账本 ', '【第2层 · 近期线程', '【第3层 · 完整转写与检索(按需)】']) {
   ok(HSRC.includes(layer), 'G12 layered material: ' + layer)
 }
 ok(HSRC.includes('planMtime: planMt') && HSRC.includes('(白板比账本旧——以账本为准)'), 'G12 staleness hint + planMtime for refresh detection')

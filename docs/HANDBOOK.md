@@ -27,7 +27,7 @@
 | **BM25** | 经典词法相关性算法 |
 | **M8 / 记忆中枢** | 三层记忆存储（fact 事实／episodic 经历／procedure 技能）与编排器 memory-hub 的合称 |
 | **evidence（证据）** | 记忆被使用情况的记录，六类：`seen`（曝光）／`read`（读到原文）／`cite`（回复引用）／`reuse`（跨会话复用）／`success`（任务成功）／`correction`（用户纠正） |
-| **endpoint / 端点** | 后端 HTTP 接口，路径前缀统一为 `/api/dsh-auto-memory/`，共 69 条 |
+| **endpoint / 端点** | 后端 HTTP 接口，路径前缀统一为 `/api/dsh-auto-memory/`，共 70 条 |
 
 ---
 
@@ -169,7 +169,7 @@ dsh web --no-open --port 0
 
 ## 5. 后端状态来源（如何确认前端操作已生效）
 
-### 5.1 主要端点（`lib/index.js` 注册，共 **69** 条，前缀 `/api/dsh-auto-memory/`）
+### 5.1 主要端点（`lib/index.js` 注册，共 **70** 条，前缀 `/api/dsh-auto-memory/`）
 
 | 端点 | 用途 | 关键返回字段 |
 |---|---|---|
@@ -383,7 +383,7 @@ node tests/smoke/smoke-test-continue-chain.mjs              # 58
 | 工程根 | `D:\dsh-auto-memory` |
 | 宿主侧入口 | `lib/index.js` |
 | 浏览器侧入口 | `lib/client.js` |
-| 端点前缀 | `/api/dsh-auto-memory/`（69 条） |
+| 端点前缀 | `/api/dsh-auto-memory/`（70 条） |
 | 工具 | 19 个，`memory_*` |
 | 记忆根 | `C:\Users\JH Z\.dsh\memory` |
 | 证据事件 | `...\memory\evidence\events\YYYY-MM-DD.jsonl`（时间戳在 `event.ts`） |

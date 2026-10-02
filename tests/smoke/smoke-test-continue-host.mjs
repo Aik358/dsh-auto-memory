@@ -113,7 +113,7 @@ ok(r && r.ok === true, 'H2 handoff-continue ok')
 ok(r.workspaceId === 'ws-continue-1', 'H2 修A: workspaceId 由 registry.sessionIds 命中返回(' + String(r.workspaceId) + ')')
 ok(r.provider === 'deepseek-official' && r.model === MODEL && r.reasoningEffort === 'max',
   'H3 修B: request/header 末条 config 生效(' + r.model + '/' + r.reasoningEffort + ')')
-ok(r.carryText.includes('【第0层 · 白板 PLAN.md(节选)】') && r.carryText.includes('【第1层 · 交接账本 '),
+ok(r.carryText.includes('【第0层 · 白板 PLAN.md(节选)；项目共享事实，不是本会话角色授权；修改前 memory_read(kind=plan) 取版本】') && r.carryText.includes('【第1层 · 交接账本 '),
   'H4 第0层白板 + 第1层账本')
 ok(r.carryText.includes('【第2层 · 近期线程') && r.carryText.includes('【第3层 · 完整转写与检索(按需)】'),
   'H4 第2层近期线程 + 第3层按需转写')

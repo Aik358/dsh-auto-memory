@@ -25,7 +25,7 @@ try {
   assert.equal(createTeamOutbox({ dir }).enqueue({ kind: 'note', key: 'new' }).ok, true)
   const restored = createTeamOutbox({ dir })
   const sent = []
-  const sync = createTeamSync({ engine: { config: { teamEnabled: true } }, outbox: restored, identity: { currentMember: () => ({ id: 'test' }) }, teamFetch: async (_url, req) => { sent.push(JSON.parse(req.body).key); return { ok: true } } })
+  const sync = createTeamSync({ engine: { config: { teamEnabled: true } }, outbox: restored, identity: { currentMember: () => ({ id: 'test' }) }, teamFetch: async (_url, req) => { sent.push(req.body.key); return { ok: true } } })
   assert.equal(sync.start().ok, true)
   assert.equal((await sync.tick()).sent, 2)
   sync.stop()

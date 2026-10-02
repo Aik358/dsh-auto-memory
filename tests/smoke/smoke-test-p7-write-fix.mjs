@@ -1,4 +1,7 @@
 #!/usr/bin/env node
+import { withCalendarLock, canonicalCalendarPath } from '../../lib/calendar-lock.js'
+import { writeTextAtomicPre } from '../../lib/config-io.js'
+import { readPlanPre, planRevisionPre, anchoredPlanPre, archivePlanPre, conflictPlanPre, preparePlanPre } from '../../lib/plan-store.js'
 /** smoke-test-p7-write-fix —— P7 写入侧缺陷修复回归锁定(2026-09-09)。
  * 缺陷① 账本双标题:writeHandoffLedger 无条件前置标题,模型 content 自带标题行 → 单文件双标题
  *   且时间戳矛盾(实测最近 8 篇中 3 篇)。修复=写入前剔除 content 中「交接账本」标题行(正文零丢失)。
@@ -47,6 +50,7 @@ function makeFakeEngine() {
     // 本套件考的是**双标题剔除 / 老化分类**，不是门本身 ⇒ 恒过桩。
     // 门的真实行为由 `smoke-test-t0-8-mutation-gate.mjs` 专测。
     checkMutationPre() { return { ok: true } },
+    wbWsKeyPre: () => 'test-ws',
     // P2 sidecar(2026-09-16)桩: 同 handoff-pre —— 抽取式沙箱的 this 上必须有该方法。
     async writeSidecarEntryPre() {},
     // P2 events.jsonl(2026-09-16 补桩): 同属新增引擎方法 —— 缺桩会 TypeError → {ok:false} → 后续断言假红。
@@ -57,8 +61,8 @@ function makeFakeEngine() {
   }
 }
 const bindMethod = (header, fake, extra) => {
-  const names = ['path', 'existsSync', 'mkdir', 'writeFile', 'readdir', 'stat', 'handoffStamp', 'nowHm']
-  const vals = [path, existsSync, mkdir, writeFile, readdir, stat, handoffStampFn, nowHmFn]
+  const names = ['canonicalCalendarPath', 'withCalendarLock', 'writeTextAtomicPre', 'readPlanPre', 'planRevisionPre', 'anchoredPlanPre', 'archivePlanPre', 'conflictPlanPre', 'preparePlanPre', 'path', 'existsSync', 'mkdir', 'writeFile', 'readdir', 'stat', 'handoffStamp', 'nowHm']
+  const vals = [canonicalCalendarPath, withCalendarLock, writeTextAtomicPre, readPlanPre, planRevisionPre, anchoredPlanPre, archivePlanPre, conflictPlanPre, preparePlanPre, path, existsSync, mkdir, writeFile, readdir, stat, handoffStampFn, nowHmFn]
   for (const k of Object.keys(extra || {})) { names.push(k); vals.push(extra[k]) }
   const obj = new Function(...names, 'return {' + extractFn(header) + '};')(...vals)
   return obj[Object.keys(obj)[0]].bind(fake)
@@ -108,7 +112,8 @@ const writeLedger = bindMethod('async writeHandoffLedger(projectDir, content, op
 console.log('[p7-write-fix] G2 白板老化')
 const proj2 = path.join(tmpRoot, 'ws2')
 const eng2 = makeFakeEngine()
-const writePlan = bindMethod('async writePlanSnapshot(projectDir, content, opts) {', eng2)
+const writePlanBody = bindMethod('async writePlanSnapshot(projectDir, content, opts) {', eng2)
+const writePlan = async (project, content) => writePlanBody(project, content, { expectedRevision: planRevisionPre(await readPlanPre(path.join(project, 'handoff', 'PLAN.md'))) })
 
 // ① 混合内容:2 个当前节 + 3 个历史节 → PLAN.md 只留当前,历史 3 节整体移入 history 簿
 const mixed = [
@@ -127,7 +132,7 @@ const mixed = [
   ok(planText.includes('## 项目全貌') && planText.includes('## 当前状态'), '当前节保留在 PLAN.md')
   ok(!planText.includes('发布流水线要点') && !planText.includes('踩坑记录') && !planText.includes('2.2.5 历史状态'), 'PLAN.md 不再堆积历史(老化生效)')
   ok(r.final === planText, '返回值 final=写盘内容(状态字段一致)')
-  ok(r.historyPath && /PLAN-history-\d{8}-\d{6}\.md$/.test(r.historyPath), '历史簿落盘 archive/PLAN-history-<ts>.md')
+  ok(r.historyPath && /PLAN-history-\d{8}-\d{6}-[a-f0-9-]+\.md$/.test(r.historyPath), '历史簿落盘 archive/PLAN-history-<ts>.md')
   const histText = await readFile(r.historyPath, 'utf8')
   for (const h of ['## 发布流水线要点(踩坑记录)', '## 2.2.5 历史状态', '## 踩坑记录', 'npm 令牌必须钉前缀。', 'dist-tags 有缓存延迟。']) {
     ok(histText.includes(h), '历史簿零丢失: ' + h.slice(0, 20))
@@ -140,7 +145,7 @@ const mixed = [
   const r = await writePlan(proj2, plain)
   ok(r.ok && r.movedHistory === undefined && !r.historyPath, '无匹配节:movedHistory/historyPath 均空(旧版行为)')
   const planText = await readFile(r.path, 'utf8')
-  ok(planText === plain, 'PLAN.md 原样写入')
+  ok(planText === anchoredPlanPre('test-ws', plain), 'PLAN.md 原样写入')
   const archDir = path.join(proj2, 'handoff', 'archive')
   const histFiles = existsSync(archDir) ? readdirSync(archDir).filter((n) => n.startsWith('PLAN-history-')) : []
   ok(histFiles.length === 1, '无新 history 簿产生(仍只有上一次那份)')
@@ -149,7 +154,7 @@ const mixed = [
 {
   const oldPlan = await readFile(path.join(proj2, 'handoff', 'PLAN.md'), 'utf8')
   const r = await writePlan(proj2, '# 项目白板 v2\n\n## 当前状态\n- 全新状态。')
-  ok(r.ok && r.archived && /PLAN-\d{8}-\d{6}(-[a-z])?\.md$/.test(r.archived), '既有整体归档机制保留(PLAN-<ts>[-x].md)')
+  ok(r.ok && r.archived && /PLAN-\d{8}-\d{6}-[a-f0-9-]+\.md$/.test(r.archived), '既有整体归档机制保留(PLAN-<ts>[-x].md)')
   // ★2026-09-20（移植 issue #94② / PR #100）：`-[a-z]` 后缀是**同秒防撞**引入的，旧命名精确
   //   形态下同秒两次重写会算出同名并**静默覆盖**。放宽为「接受后缀」的同时，用下面 ③b 把
   //   强度补回来 —— 只放宽不加断言 = 降低保护。
@@ -188,7 +193,7 @@ const mixed = [
   const r = await writePlan(proj2, allHist)
   ok(r.ok && r.movedHistory === undefined, '全部节命中 → fail-soft 放弃老化(不留空白板)')
   const planText = await readFile(r.path, 'utf8')
-  ok(planText === allHist, '原样写入,内容零丢失')
+  ok(planText === anchoredPlanPre('test-ws', allHist), '原样写入,内容零丢失')
 }
 // ⑤ 同秒双写历史簿 → -b 后缀防撞,两份都不丢
 {
