@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { test, after } from 'node:test'
 import fs from 'node:fs'
+import { zstdCompressSync } from 'node:zlib'
 import { syncBuiltinESMExports } from 'node:module'
 import os from 'node:os'
 import path from 'node:path'
@@ -95,4 +96,19 @@ test('real archive sweep reports ledger commit failure and never deletes unknown
  assert.equal(report.ok,false);assert.deepEqual(report.archived,[sid]);assert.equal(report.errors[0].op,'archive-ledger');assert.deepEqual(json(file),{});assert(fs.existsSync(dir))
  const unknown=await e.sessionArchiveSweep(true);assert.deepEqual(unknown.deleted,[]);assert(fs.existsSync(dir))
  fs.rmSync(ws,{recursive:true})
+})
+
+test('cold migration checks all history and rejects incomplete compressed evidence', async () => {
+ const e=engine(),sessions=path.join(home,'sessions','history');fs.rmSync(e.contSeqFile(),{force:true})
+ for(let i=0;i<125;i++) {
+  const dir=path.join(sessions,'session-'+i);fs.mkdirSync(dir,{recursive:true});const file=path.join(dir,'session.jsonl')
+  fs.writeFileSync(file,JSON.stringify({title:i===0?'接续 #250':'ordinary'})+'\n');fs.utimesSync(file,i===0?new Date(0):new Date(),i===0?new Date(0):new Date())
+ }
+ assert.equal(await e.allocContSeq('oldest'),251)
+ fs.rmSync(sessions,{recursive:true});fs.rmSync(e.contSeqFile())
+ const zip=path.join(sessions,'session-compressed','session.v4.jsonl.zstd');fs.mkdirSync(path.dirname(zip),{recursive:true})
+ const valid=Buffer.concat([zstdCompressSync(Buffer.from('{"title":"接续 #270"}\n')),zstdCompressSync(Buffer.from('{"title":"Cont.#280"}\n'))])
+ fs.writeFileSync(zip,Buffer.concat([valid,Buffer.from([0x28,0xb5])]))
+ await assert.rejects(e.allocContSeq('badzip'),/incomplete/);assert.equal(fs.existsSync(e.contSeqFile()),false)
+ fs.writeFileSync(zip,valid);assert.equal(await e.allocContSeq('zip'),281)
 })
