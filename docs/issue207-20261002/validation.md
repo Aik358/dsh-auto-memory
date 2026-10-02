@@ -35,7 +35,7 @@ DAM_STATE_ENGINE_SOURCE=/tmp/issue207-main-index.js node docs/issue207-20261002/
 
 [前一088d80f CI36998669854](https://github.com/Minervaowl7/dsh-auto-memory/actions/runs/36998669854)：244/3/0，137.4秒；本地准备阶段242/5包含H12旧自动重试预期和旧源码指纹，两者已定向更新后244/3。旧结果不代替最新。
 
-上一轮交付head9a3475ae4f6dbde4f3911fa15e49ef37db72bdaf对应CI36999785925为244/3/0，137.9秒。以上均为历史结果，不替代本轮验证。限定代码仍待父任务独立复审，未宣称通过审查。
+上一轮交付head9a3475ae4f6dbde4f3911fa15e49ef37db72bdaf对应CI36999785925为244/3/0，137.9秒。以上均为历史结果，不替代本轮验证。这些历史结果不替代下面固定产品提交的测试和独立复审。
 
 ## PR与边界
 
@@ -46,11 +46,17 @@ https://github.com/Aik358/dsh-auto-memory/compare/main...Minervaowl7:dsh-auto-me
 
 永久分片总体空间线性增长，不能同时承诺永久记忆和恒定总空间；单记录身份/文件、旧JSON读取、锁等待有明确界限。未知pending必须核实真实后继/投递后恢复，不能按时间/PID盲目解除。旧200裁剪已丢身份无法恢复。所有共享写入实例须升级；跨机器恢复、不合作旧版/外部编辑及突然断电的目录项持久性不在证明范围。归档动作已发生而时间未提交时仍未知年龄，不造时间、不自动删除。完整取舍及恢复方法见design.md。
 
-## 独立复审补修（当前工作树）
+## 独立复审通过与最终收尾
 
 修复普通文件被readdir、leaf symlink锁/数据目标分裂、pending不可正式恢复以及后继ID规范化失真。新增正式npm包内维护入口与GET pending/completed；创建后保存失败保留pending并返回原始ID。真实子进程验证direct/leaf alias并发拒绝别名且目标不重号，父目录alias仍兼容。正式路由/维护命令覆盖重启状态、核验完成/解除、旧token/错误后继/无确认拒绝、活动投递不可解除、旧去前缀记录需人工核实原始ID。npm pack --dry-run --ignore-scripts确认维护入口包含在files列表，未发布包。
 
-本轮固定提交及隔离全量/CI结果由后续报告补充；未经独立复审不作为最终交付。
+产品固定SHA：`5bc5e2d57eff3f32abeebb0c2b0a1a149daf0d25`。父任务报告两位独立原生审查者均已通过限定产品源码复审，所有上轮阻塞已关闭。收尾不再改产品源码。
+
+本地该固定产品完整隔离回归244/3/0（136.7秒）；[对应CI37003322513](https://github.com/Minervaowl7/dsh-auto-memory/actions/runs/37003322513)同为244/3/0（139.5秒），三个新issue207 suite及相关流程均通过。三项失败仍是policies、开发venv、skin assets，CI不称全绿。
+
+最终旧token用例改为替换已有token，不再追加重复参数。正式CLI返回的JSON错误精确为`stale or mismatched pending record`（生产reservation/token校验错误），并验证pending文件原始字节不变；正式路由/CLI定向回归通过。最终交付head与其全量/CI在报告列出。
+
+兼容政策：SQLite冷初始化须人工核验全局最大号后显式seed；状态文件leaf symlink拒绝，父目录别名支持；未知投递须人工核实，不能盲目解除。CLI从已安装包根运行，或用安装脚本绝对路径。
 
 复审补修首轮全量为242/5/0（136.2秒）：除三项基线失败，continue-host仍期待去前缀后继ID，switch-decouple抽取式unit未注入新增状态依赖。两项夹具已定向适配，保留所有行为断言；continue-host定向40/0。新增完整生产模块suite已在首轮全量通过，避免用抽取式假边界作为持久化证据。
 

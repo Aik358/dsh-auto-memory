@@ -20,7 +20,7 @@ alloc在跨进程锁内重新读取、冷扫描、推进并原子提交。只有
 
 这是有意的兼容取舍：未核实的投递异常不自动重试，不宣称远端exactly-once。创建成功后即保留pending并保存原始后继ID，后续保存失败亦不自动解除；错误文本与当次GET状态返回实际新会话ID。保存失败再重启时，磁盘不知道后继ID，不猜测或补前缀。旧去前缀记录只显示successorKey，原始ID必须由操作者核实。
 
-正式只读入口为auto-continue GET状态（pending/completed可跨重启读取）和随npm包发布的维护命令。恢复时核实宿主实际后继及是否投递：
+正式只读入口为auto-continue GET状态（pending/completed可跨重启读取）和随npm包发布的维护命令。维护命令须从已安装包根目录运行（包含lib/的目录），或将脚本改为安装位置的绝对路径；DSH_HOME指向真实共享数据根。恢复时核实宿主实际后继及是否投递：
 
 ```sh
 DSH_HOME=/actual/home node lib/continuation-maintenance.js status --source session-SOURCE
@@ -48,7 +48,7 @@ legacy /handoff-continue只构造材料，仍不把权限回调冒充接续完�
 
 三个新suite均使用完整生产模块：正式apply注册legacy HTTP handler与正常decide/host路径；四个真实子进程共享HOME含symlink别名，验证冷历史#87起连续24个唯一号、唯一来源闩锁、归档合并、重启及SIGKILL已确认死亡锁owner恢复。新测试临时HOME/DSH_HOME，假控制器/假fetch，未调用模型、QQ、外部通知或真实用户服务。旧抽取式流程测试仅适配新增依赖；新suite补真实模块与IO证据。源码指纹按此限定变更更新，未删断言。
 
-此提交为待独立复审候选；整体回归及对应fork CI随固定提交核对后记入validation.md。未创建上游PR（既有integration权限拒绝，按指示不重试），未合并/发布/部署。
+限定产品源码冻结在5bc5e2d57eff3f32abeebb0c2b0a1a149daf0d25，已由两位独立原生审查者通过复审，上轮阻塞全部关闭。收尾仅纠正旧token回归与交付文档，不改产品范围；整体回归及对应fork CI记入validation.md及最终报告。未创建上游PR（既有integration权限拒绝，按指示不重试），未合并/发布/部署。
 
 ## 复审补修的冷迁移政策
 

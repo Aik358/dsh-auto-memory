@@ -63,7 +63,8 @@ try {
  const args=['--source','session-route-source','--token',observed.token,'--expected-successor',observed.expectedSuccessor,'--successor',observed.successorId]
  const before=fs.readFileSync(marker)
  assert.throws(()=>cli('complete',...args));assert.deepEqual(fs.readFileSync(marker),before)
- assert.throws(()=>cli('complete',...args,'--token','stale','--confirmed-delivered'));assert.deepEqual(fs.readFileSync(marker),before)
+ const staleArgs=[...args];staleArgs[staleArgs.indexOf('--token')+1]='stale'
+	 assert.throws(()=>cli('complete',...staleArgs,'--confirmed-delivered'),error=>{assert.equal(JSON.parse(String(error.stderr)).error,'stale or mismatched pending record');return true});assert.deepEqual(fs.readFileSync(marker),before)
  assert.equal(cli('complete',...args,'--confirmed-delivered').ok,true)
  assert.equal(JSON.parse(fs.readFileSync(marker)).status,'done');assert.equal(JSON.parse(fs.readFileSync(marker)).to,'session-new-1');assert.equal(new MemoryEngine().isContinuedSession('session-route-source'),true)
  const resolved=await call(API['auto-continue-state']+'?sessionId=session-route-source',{},'GET');assert.equal(resolved.value.pending,null);assert.equal(resolved.value.completed.successorId,'session-new-1');assert.equal(inspect(cli('status','--source','session-route-source').completed.successorId).id,'session-new-1')
