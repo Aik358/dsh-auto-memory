@@ -97,7 +97,6 @@ const pill2 = elNonFn.kids.filter((k) => k && k.props && k.props['data-dam-fold-
 eq(pill2.props.onClick, undefined, 'D8 ★负路径：onExpand 非函数 ⇒ onClick=undefined（不崩）');
 
 /* ── E. 守恒 ── */
-ok(cnt(SRC, 'setInterval') === 0 || true, 'E1 零新增定时器（人工核对：本轮未加）');
 eq((SRC.match(/(?<!function )MEMORY_TABS\(\)/g) || []).length, 2, 'E2 计数锁不变');
 ok(damNoMixedEol(SRC), 'E3 纯 CRLF');
 console.log('lib/client.js ' + Buffer.byteLength(SRC, 'utf8') + 'B / CRLF ' + (SRC.match(/\r\n/g) || []).length + ' / sha16 ' + createHash('sha256').update(SRC).digest('hex').slice(0, 16).toUpperCase())

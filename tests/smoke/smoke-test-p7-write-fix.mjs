@@ -96,7 +96,6 @@ const writeLedger = bindMethod('async writeHandoffLedger(projectDir, content, op
   const r = await writeLedger(proj1, '## 任务状态\n常规内容。')
   const fileText = await readFile(r.path, 'utf8')
   ok(countTitleLines(fileText) === 1 && fileText.includes('常规内容。'), '无自带标题:行为与旧版一致(回归)')
-  ok(existsSync(path.join(proj1, 'handoff', 'handoff-' + handoffStampFn() + '-b.md')) === false || true, '同秒防撞后缀逻辑保留')
 }
 // ③ content 只有一个标题行 → 剔除后正文为空,文件=标题+空体(不崩)
 {

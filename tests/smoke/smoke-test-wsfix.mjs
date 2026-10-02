@@ -103,8 +103,6 @@ process.env.DSH_HOME = HOME1
 const routes1 = [], handlers1 = {}, effects1 = []
 apply(makeCtx(routes1, handlers1, effects1), {})
 const call1 = makeCaller(routes1)
-const AG = 'agents'
-void AG
 agents[SID_A] = { session: { id: SID_A, header: { cwd: WS_A } } }
 agents[SID_B] = { session: { id: SID_B, header: { cwd: WS_B } } }
 agents[SID_C] = { session: { id: SID_C } }

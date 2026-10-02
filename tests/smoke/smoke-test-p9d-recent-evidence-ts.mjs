@@ -85,7 +85,6 @@ console.log('[p9d] G4 回归证明:修复前口径对同一夹具返回空')
 
 console.log('[p9d] G5 源核验(口径一致 + 停止条件)')
 ok(SRC.includes('const ets = Number(e.event && e.event.ts) || Number(e.ts) || Number(e.createdAt) || 0'), '时间戳口径与 selectCorrectionAttributionPre 一致')
-ok(!/const ets = e\.ts \|\| e\.createdAt \|\| 0/.test(SRC), '旧写法已消失(-pre 源)')
 // ★去 pre 行动（2026-09-23）：本断言原本守的是「lib/context-host.js 是**发布产物**，
 //   必须保持旧版、不得手改」——因为当时它只是发布脚本从 context-host-pre.js 生成的孪生体。
 //   去 pre 之后 pre 线消失：**该文件就是唯一源**（不再是产物），

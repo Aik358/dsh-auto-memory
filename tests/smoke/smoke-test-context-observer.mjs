@@ -117,13 +117,13 @@ const turnStartEvent = (seq, turn, time) => ({ type: 'turn/start', seq, time: ti
     // 2026-08-26 裁定:reasoningObserverEnabled/contextBridgeObserveChildSessions 默认 true
     // (开源模型为主,思维链/分支是主要观测面);其余实验开关仍默认 false
     for (const key of ['associativeMemoryEnabled', 'softInjectionEnabled', 'pythonBackendEnabled', 'procedurePromotionEnabled', 'streamingInterruptionEnabled']) {
+      if (cfg[key] !== false) throw new Error(key + ' default must be false, got ' + cfg[key])
+    }
     // ★2026-09-30（F 批 · 用户裁定「语义唤回相关应当默认打开」）——以下三键移出上面的「必须 false」清单，
     //   改为显式断言 **true**。用户原话：「L0 向量索引这些的语义唤回应当默认打开」。
     //   语义：默认开；用户仍可在向导/设置页显式关掉（回归由负路径覆盖）。
     for (const key of ['activationInboxEnabled', 'shadowRetrievalEnabled', 'contextBridgeEnabled', 'l0IndexEnabled']) {
       if (cfg[key] !== true) throw new Error(key + ' default must be true (2026-09-30 F-batch ruling), got ' + cfg[key])
-    }
-      if (cfg[key] !== false) throw new Error(key + ' default must be false, got ' + cfg[key])
     }
     if (cfg.reasoningObserverEnabled !== true) throw new Error('reasoningObserverEnabled default must be true (2026-08-26 ruling), got ' + cfg.reasoningObserverEnabled)
     if (cfg.contextBridgeObserveChildSessions !== true) throw new Error('contextBridgeObserveChildSessions default must be true (2026-08-26 ruling), got ' + cfg.contextBridgeObserveChildSessions)

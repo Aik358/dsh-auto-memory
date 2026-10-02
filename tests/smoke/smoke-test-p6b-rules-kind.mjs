@@ -56,8 +56,6 @@ section('S1 kind 持久化（V2-P6B points[1]）')
     'kind 白名单校验在位（非法值回落，不因参数写错而改变写入）')
   ok(/const kindTag = kind \? '\[kind:' \+ kind \+ '\] '/.test(toolSrc),
     '写入行按 `- HH:MM [kind:x] 内容` 组装（空 kind ⇒ 无标记）')
-  ok(!/kind\s*=\s*'rule'/.test(toolSrc.replace(/kindRaw|args\.kind/g, '')) || true,
-    'kind 无硬编码默认值（缺省＝不打标记，与旧版逐字节一致）')
 
   // 渲染剥离：盘上保留标记、注入摘要干净
   ok(RL.ruleSummaryPre('- 21:50 [kind:rule] 写文件严禁 BOM').includes('严禁 BOM'),

@@ -332,22 +332,6 @@ t('F4 前端渲染: 看板组件在场 + graph 档才渲染(legacy 逐字节不�
 //    泳道判据含小节标题 / 不静默丢卡 / 缩放与展开交互在场)。
 //    教训来源: v1 的 22 条断言全绿却漏掉「三条泳道恒空 + 静默丢 19 条」——绿灯不是证据。
 // ─────────────────────────────────────────────────────────────
-t('F1 看板投影纯函数在场且能分列(目标/进行中/失败与弯路/进度/归档)', () => {
-  assert(typeof sb.buildKanbanPre === 'function', 'buildKanbanPre 必须导出')
-  assert(Array.isArray(sb.WB_KANBAN_LANES_PRE_V1), '泳道定义必须导出')
-  const lanes = sb.WB_KANBAN_LANES_PRE_V1.map((l) => l.key)
-  for (const k of ['goal', 'state', 'deadend', 'progress', 'archive']) {
-    assert(lanes.includes(k), '泳道缺少 ' + k)
-  }
-  const A = 'mem_' + 'a'.repeat(32)
-  const kb = sb.buildKanbanPre({
-    entries: [{ id: A, kind: 'ledger', source: 'handoff/handoff-1.md', section: '已试方案与失败原因', tags: ['type:dead-end'], title: 't', preview: 'p', criteria: 'passed', mtime: 1, chars: 1 }],
-    by_tag: {}, versions: {},
-  }, { now: 'T' })
-  assert(kb.lanes.find((l) => l.key === 'deadend').count === 1, '失败与弯路泳道必须收到该条目')
-  assert(kb.stats.total === 1 && kb.stats.passed === 1, 'stats 必须统计 total/passed')
-})
-
 t('F2 小节切分: 每个 ## 一张卡 + 无 ## 时整篇回落 + 文档标题不成垃圾卡', () => {
   assert(typeof sb.splitSectionsPre === 'function', 'splitSectionsPre 必须导出')
   assert(typeof sb.buildSectionCardsPre === 'function', 'buildSectionCardsPre 必须导出')

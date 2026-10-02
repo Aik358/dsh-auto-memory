@@ -307,7 +307,7 @@
           }
         } },
           h('button', { className: 'i5-close-nav', 'data-i5-close-nav': '', onClick: closeMenu }, L('关闭导航', 'Close navigation')),
-          h('nav', { 'aria-label': L('记忆导航', 'Memory navigation') }, ITER5_PAGES.map(function (p, i) { return h(React.Fragment, { key: p[0] }, i === 4 ? h('small', { className: 'i5-nav-label' }, i === 0 ? L('工作', 'Work') : L('扩展', 'More')) : null,
+          h('nav', { 'aria-label': L('记忆导航', 'Memory navigation') }, ITER5_PAGES.map(function (p, i) { return h(React.Fragment, { key: p[0] }, i === 4 ? h('small', { className: 'i5-nav-label' }, L('扩展', 'More')) : null,
             h('button', { 'data-i5-nav': p[0], 'aria-current': page[0] === p[0] ? 'page' : undefined, onClick: function () { nav(p[0]) } }, h('span', { className: 'i5-badge', 'data-hue': p[3] }, h(Iter5Icon, { name: p[0] })), L(p[1], p[2]))) })),
           h('div', { className: 'i5-sidebar-foot' }, h('div', { className: 'i5-side-tools' }, h('button', { onClick: function () { nav('team') }, 'aria-current': page[0] === 'team' ? 'page' : undefined }, h(Iter5Icon, { name: 'mindmap' }), L('团队', 'Team')), h('button', { onClick: function () { nav('stats') }, 'aria-current': page[0] === 'stats' ? 'page' : undefined }, h(Iter5Icon, { name: 'pulse' }), L('统计', 'Stats'))),
             h('button', { 'data-dam-skin-v4-exit': '', onClick: exitClassic }, L('返回经典皮肤', 'Back to classic')))),

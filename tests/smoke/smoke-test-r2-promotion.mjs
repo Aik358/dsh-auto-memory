@@ -7,10 +7,7 @@
 //   ① 它存在且被 overview() 使用；
 //   ② 调它**不改任何状态**（关键：真调一次前后快照对比）；
 //   ③ 门限判定与 promote() **同序同码**（防两边漂移）。
-import { mkdtempSync } from 'node:fs'
-import { tmpdir } from 'node:os'
 import path from 'node:path'
-import { pathToFileURL } from 'node:url'
 import { createProcedureStorePre } from '../../lib/procedure-store.js'
 import { readFileSync } from 'node:fs'
 
@@ -44,7 +41,6 @@ t('R2a-3 ★★ 投影字段齐全（前端 R2/R4 依赖）', () => {
 
 console.log('\n=== R2-b 纯只读（行为级，最关键）===')
 
-const tmp = mkdtempSync(path.join(tmpdir(), 'dam-r2-'))
 let nowV = 1000
 const now = () => ++nowV
 const io = { load: () => null, save: () => {} }

@@ -38,7 +38,7 @@ ok(r.hasMore === true, '⑥ hasMore = true')
 //   不随 foldDays 变化 —— 若按「展开新增跨度 (span)」算，同一被折叠集合在不同窗口下会报不同天数，不合理。
 const dayStartT = new Date(NOW).setHours(0, 0, 0, 0)
 const D2 = 86400000
-const earliestFolded = Math.min(...r.visible.concat(cards).filter(() => false).map(() => Infinity), NOW - 30 * D)
+const earliestFolded = NOW - 30 * D
 const EXP_DAYS = Math.floor((dayStartT - earliestFolded) / D2) + 1
 ok(r.folded.days === EXP_DAYS, '⑦ ★更早天数 = ' + EXP_DAYS + '（由数据派生：floor((dayStart − 最早折叠卡 mtime)/D)+1，实测 ' + r.folded.days + '）')
 

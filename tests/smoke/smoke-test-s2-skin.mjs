@@ -136,7 +136,6 @@ eq(tabsAll, 3, "§7.1c 原始子串出现点 = 1 定义 + 2 调用 = 3（登记�
 ok(!/\r\r\n/.test(cli), '§7.2 client.js 无双 CR（CRLF 纪律）')
 ok(damNoMixedEol(cli), '§7.3 client.js 无裸 LF（纯 CRLF）')
 ok(!/\r\r\n/.test(idx), '§7.4 index.js 无双 CR')
-a: ok(true, '§7.5 守恒段结束')
 
 console.log('')
 console.log('================ S2 skin SUMMARY ================')

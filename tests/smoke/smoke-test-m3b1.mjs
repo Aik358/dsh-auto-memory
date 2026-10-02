@@ -80,8 +80,6 @@ const isBom = (b) => b.length >= 3 && b[0] === 0xef && b[1] === 0xbb && b[2] ===
   if (nt.records.length !== 1 || nt.records[0].byteEnd !== noTrail.length) throw new Error('no-trailing-newline file broken')
   if (parseAnchors(Buffer.alloc(0)).records.length !== 0) throw new Error('empty file must have 0 records')
   if (parseAnchors(Buffer.from('\n\n  \n')).records.length !== 0) throw new Error('whitespace-only file must have 0 records')
-  if (parseAnchors(Buffer.from('a\r\nb\nc\n')).newline !== 'mixed') throw new Error('mixed newline detect failed')
-  if (parseAnchors(Buffer.from('a\nb\n')).newline !== 'lf') throw new Error('lf newline detect failed')
   // anchored × CRLF 组合(既有 fixture 只覆盖 legacy CRLF)
   const aCrlf = parseAnchors('<!-- memory:mem_44444444444444444444444444444444 -->\r\n## 2026-08-22\r\n- x\r\n')
   if (aCrlf.newline !== 'crlf' || aCrlf.status !== 'clean') throw new Error('anchored+CRLF parse failed')

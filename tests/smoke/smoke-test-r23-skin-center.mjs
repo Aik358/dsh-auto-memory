@@ -124,7 +124,7 @@ ok(c.tokens['color.brand'] === '#111' && c.tokens['brand.name'] === 'me' && c.co
 eq(SKIN_TOKEN_KEYS.length, 42, 'D9 公开 token 清单 = 42（12 卷 §四）')
 
 /* ── E. 守恒 ── */
-ok(cnt(SRC, 'data-dam-region') === cnt(SRC, 'data-dam-region') && !/data-dam-block/.test(SEG.slice(SEG.indexOf('function SkinCenterPanel'))), 'E1 ★皮肤新段不引入 block 锚')
+ok(!/data-dam-block/.test(SEG.slice(SEG.indexOf('function SkinCenterPanel'))), 'E1 ★皮肤新段不引入 block 锚')
 ok(damNoMixedEol(SRC), 'E2 纯 CRLF')
 
 /* ── F. 皮肤选择中心的社区作者署名（★2026-09-28 引入；★2026-09-30 F 批改口径） ──

@@ -15,8 +15,7 @@
  *
  * 运行：node tests/smoke/smoke-test-migrate-host-wiring-pre.mjs
  */
-import { readFileSync, existsSync, mkdtempSync, rmSync, writeFileSync, mkdirSync } from 'node:fs'
-import { tmpdir } from 'node:os'
+import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
@@ -69,15 +68,7 @@ console.log('\n[H4] 真行为：宿主导出方法实跑（可达性，防同类
 {
   // 从 index.js 源码里抽 migrateExport + _wsSummaryRecord + _readExistingWorkspaceFiles + projectDirOf + wsKey
   // 用最小 ctx 实跑，不依赖 cordis。这样任何「引用未声明标识符」都会当场炸出来。
-  const tmp = mkdtempSync(path.join(tmpdir(), 'dam-h4-'))
   try {
-    const fakeHome = path.join(tmp, 'home')
-    const wsDir = path.join(fakeHome, 'memory', 'workspaces', '--D--proj--')
-    mkdirSync(wsDir, { recursive: true })
-    writeFileSync(path.join(wsDir, 'MEMORY.md'), '# hi\n', 'utf8')
-    writeFileSync(path.join(wsDir, '2026-09-22.md'), 'log\n', 'utf8')
-
-    const outPack = path.join(tmp, 'out.dam-pack')
     const mod = await import(pathToFileURL(path.join(ROOT, 'lib', 'migrate-pack.js')).href)
 
     // 直接用引擎 + 手写等价 IO 复现宿主导出语义（含 sourceHost 取值路径）
@@ -99,8 +90,6 @@ console.log('\n[H4] 真行为：宿主导出方法实跑（可达性，防同类
     ok(typeof h === 'string' && h.length > 0, 'H4c node:os 具名 hostname 可用（实得 ' + JSON.stringify(h) + '）')
   } catch (e) {
     ok(false, 'H4 真行为段抛错：' + String((e && e.message) || e))
-  } finally {
-    rmSync(tmp, { recursive: true, force: true })
   }
 }
 

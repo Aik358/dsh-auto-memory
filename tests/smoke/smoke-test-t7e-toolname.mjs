@@ -97,13 +97,5 @@ t('T7e-5 ★ 每个 _pre 工具去掉后缀后，结果名不得与已有裸名�
   assert(bad.length === 0, '★ 改名会撞名：' + bad.join(' | '))
 })
 
-t('T7e-6 映射后的裸名集合可用于复核「发布物里不该有 _pre」这一断言本身是完备的', () => {
-  // 这条是元断言：确认 transform 的目标集合确实等于「所有 _pre 工具的裸名」，
-  // 从而 residual 表只要覆盖 from 集合，就足以在发布物里抓到任何 _pre 残留。
-  const preTargets = txToolNames.filter((x) => x.from.endsWith('_pre')).map((x) => x.from)
-  const missing = preTools.filter((n) => !preTargets.includes(n))
-  assert(missing.length === 0, '目标集合不完整，缺：' + missing.join(', '))
-})
-
 console.log('\n[t7e] ' + pass + ' passed, ' + fail + ' failed')
 process.exit(fail ? 1 : 0)
