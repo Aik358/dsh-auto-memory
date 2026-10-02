@@ -79,6 +79,9 @@ copyDirExcluding(path.join(DEV, 'lib'), path.join(REL, 'lib'), /$^/)
 // 拷后按结构判定清理：①过渡垫片 ②非白名单扩展名 ③主名后带第二个点的副本（如 client.js.scratch）
 const DAM_LIB_DROPPED = []
 for (const f of readdirSync(path.join(REL, 'lib'))) {
+  // Runtime directories contain binary assets and policies, not source-copy filenames.
+  // Apply the extension/copy rules only to top-level files.
+  if (statSync(path.join(REL, 'lib', f)).isDirectory()) continue
   const isRawCopy = /\.[^.]+\./.test(f)          // 形如 x.y.z ⇒ 调试副本/备份
   if (SHIM_RE.test(f) || isRawCopy || !DAM_LIB_KEEP_RE.test(f)) {
     rmSync(path.join(REL, 'lib', f), { recursive: true, force: true })
