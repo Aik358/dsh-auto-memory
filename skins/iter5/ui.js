@@ -94,7 +94,9 @@
     async function iter5MemorySnapshot() {
       // /list has no workspace parameter on upstream 3.2.1. Prime the current
       // workspace through /state, then reject any list from a different root.
+      var noteSessionId = currentSessionIdClient()
       var state = await apiGet(API.state, { ws: currentWs() })
+      state = Object.assign({}, state, { noteSessionId: noteSessionId })
       var list = await apiGet(API.list)
       var expected = String(state.notesPath || '').replace(/[\\/][^\\/]+$/, '').replace(/\\/g, '/')
       var actual = String(list.projectDir || '').replace(/\\/g, '/')
@@ -144,7 +146,7 @@
       if (append[0]) return h('section', { className: 'i5-note-page' },
         h('h2', null, L('追加项目笔记', 'Append project note')),
         h('p', { className: 'i5-muted' }, L('记录决定、补充信息与下一步行动。', 'Record decisions, supporting details and next actions.')),
-        h(Iter5Note, { source: rowsData.data[1].notesPath, onSaved: rowsData.retry, onClose: function () { append[1](false) } }))
+        h(Iter5Note, { source: rowsData.data[1].notesPath, sessionId: rowsData.data[1].noteSessionId, onSaved: rowsData.retry, onClose: function () { append[1](false) } }))
       return h('div', { className: 'i5-panel i5-instrument' }, h(Iter5Screws),
         h('div', { className: 'i5-ph' }, h('h2', null, L('记忆文件', 'Memory files')), h('span', { className: 'i5-ph-right i5-num' }, rows.length)),
         h('div', { className: 'i5-toolbar' },

@@ -149,7 +149,9 @@
     async function iter5MemorySnapshot() {
       // /list has no workspace parameter on upstream 3.2.1. Prime the current
       // workspace through /state, then reject any list from a different root.
+      var noteSessionId = currentSessionIdClient()
       var state = await apiGet(API.state, { ws: currentWs() })
+      state = Object.assign({}, state, { noteSessionId: noteSessionId })
       var list = await apiGet(API.list)
       var expected = String(state.notesPath || '').replace(/[\\/][^\\/]+$/, '').replace(/\\/g, '/')
       var actual = String(list.projectDir || '').replace(/\\/g, '/')
@@ -202,7 +204,7 @@
           h('select', { 'aria-label': L('记忆范围', 'Memory scope'), value: scope[0], onChange: function (e) { scope[1](e.target.value) } }, [['all', L('全部范围', 'All scopes')], ['user', L('用户级', 'User')], ['project', L('本项目', 'This project')]].map(function (x) { return h('option', { key: x[0], value: x[0] }, x[1]) })),
           h('select', { 'aria-label': L('记忆分类', 'Memory category'), value: filter[0], onChange: function (e) { filter[1](e.target.value) } }, [['all', L('全部分类', 'All categories')], ['user', L('用户偏好', 'Preferences')], ['notes', L('项目笔记', 'Notes')], ['logs', L('日志', 'Logs')], ['reflections', L('反思', 'Reflections')]].map(function (x) { return h('option', { key: x[0], value: x[0] }, x[1]) })),
           h('button', { onClick: function () { if (append[0] && !window.confirm(L('关闭笔记编辑区？未保存的内容将丢失。', 'Close the note editor and discard unsaved text?'))) return; append[1](!append[0]) }, 'aria-expanded': append[0] }, L('追加笔记', 'Append note'))),
-        append[0] ? h(Iter5Card, { title: L('追加项目笔记', 'Append project note') }, h(Iter5Note, { onSaved: rowsData.retry })) : null,
+        append[0] ? h(Iter5Card, { title: L('追加项目笔记', 'Append project note') }, h(Iter5Note, { source: rowsData.data[1].notesPath, sessionId: rowsData.data[1].noteSessionId, onSaved: rowsData.retry })) : null,
         h('div', { className: 'i5-list-detail' },
           h('div', { className: 'i5-card i5-file-list', 'aria-label': L('记忆文件', 'Memory files') }, rows.length ? rows.map(function (r) {
               return h('button', { key: r.path, className: 'i5-file', 'aria-current': r.path === path ? 'true' : undefined, onClick: function () { selectFile(r.path) } }, h('span', { className: 'i5-badge i5-badge-lg', 'data-hue': r.kind === 'user' ? 'pink' : r.kind === 'reflections' ? 'purple' : 'blue' }, h(Iter5Icon, { name: r.kind === 'user' ? 'heart' : 'note' })), h('span', { className: 'i5-file-copy' }, h('strong', null, r.label), h('small', null, r.kind === 'user' ? L('长期偏好与规则', 'Lasting preferences and rules') : r.kind === 'notes' ? L('项目笔记', 'Project notes') : r.kind === 'logs' ? L('每日日志', 'Daily log') : L('反思记录', 'Reflection')), h('span', { className: 'i5-tag' }, r.scope === 'user' ? L('用户级', 'User') : L('本项目', 'Workspace'))), h('small', null, fmtSize(r.size)))
@@ -639,8 +641,9 @@
       useEffect(function(){alive.current=true;function protect(e){if(!draft[0].trim())return;e.preventDefault();e.returnValue=''}window.addEventListener('beforeunload',protect);return function(){alive.current=false;window.removeEventListener('beforeunload',protect)}},[draft[0]])
       function save(e){
         e.preventDefault();if(!draft[0].trim()||busy[0])return
+        if(!props.sessionId||props.sessionId!==currentSessionIdClient()||!props.source){error[1](L('会话或目标已变化，请刷新笔记表单。','Session or destination changed. Reload the note form.'));return}
         busy[1](true);error[1]('');message[1]('')
-        apiPost(API.note,{content:draft[0].trim()}).then(function(r){if(!alive.current||identity!==iter5Identity())return;if(r&&(r.ok===false||r.error))throw Error(r.error||r.reason);draft[1]('');message[1](r.result||L('已追加到项目笔记','Appended to project notes'));if(props.onSaved)props.onSaved()}).catch(function(e){if(alive.current&&identity===iter5Identity())error[1](e.message)}).finally(function(){if(alive.current)busy[1](false)})
+        apiPost(API.note,{content:draft[0].trim(),sessionId:props.sessionId,expectedNotesPath:props.source}).then(function(r){if(!alive.current||identity!==iter5Identity())return;if(r&&(r.ok===false||r.error))throw Error(r.error||r.reason);draft[1]('');message[1](r.result||L('已追加到项目笔记','Appended to project notes'));if(props.onSaved)props.onSaved()}).catch(function(e){if(alive.current&&identity===iter5Identity())error[1](e.message)}).finally(function(){if(alive.current)busy[1](false)})
       }
       return h('form',{onSubmit:save,'data-i5-dirty':draft[0].trim()?'true':'false',className:'i5-note-form'},h('label',{className:'i5-form-field'},L('值得记住的内容','Something worth remembering'),h('textarea',{'aria-label':L('追加项目笔记','Append project note'),rows:5,value:draft[0],disabled:busy[0],placeholder:L('写下决定、发现，或下一次需要记住的细节…','A decision, a discovery, or a detail for next time…'),onChange:function(e){draft[1](e.target.value)}})),h('div',{className:'i5-toolbar'},h('button',{type:'submit',className:'i5-primary',disabled:busy[0]||!draft[0].trim()},busy[0]?L('保存中…','Saving…'):L('追加','Append')),h('small',null,L('以追加方式保存，不覆盖已有笔记。','Appends without overwriting existing notes.'))),message[0]?h('p',{className:'i5-success',role:'status'},message[0]):null,error[0]?h(Iter5Error,{error:error[0]}):null)
     }
