@@ -10,12 +10,13 @@ import { apply, API, MemoryEngine, flushDiagnostics } from '../lib/audit-engine.
 const root = await mkdtemp(path.join(os.tmpdir(), 'dam-team-e2e-'))
 const home = process.env.DSH_HOME, fetch = globalThis.fetch, timeout = globalThis.setTimeout, interval = globalThis.setInterval
 const load = MemoryEngine.prototype.loadConfigSync, refresh = MemoryEngine.prototype.refresh, doRefresh = MemoryEngine.prototype._doRefresh
-// apply starts refresh and L0 work without awaiting it. Keep the real promises;
-// cleanup must drain them and scheduled pull before restoring HOME/removing root.
+// apply starts refresh without awaiting it. Keep the real refresh/pull promises.
+// This fixture has no agent and does not exercise derived L0 index writes.
 const background=[]
 const track=p=>{if(p&&typeof p.then==='function')background.push(p);return p}
-const watch=(target,key)=>{if(!target||typeof target[key]!=='function')return;const method=target[key];target[key]=function(...args){return track(method.apply(this,args))}}
-const watchHost=()=>{watch(engine,'syncL0IndexNow');watch(engine._teamPull,'pullOnce')}
+const watch=(target,key)=>{assert.equal(typeof target?.[key],'function',`required background method ${key} missing`);const method=target[key];target[key]=function(...args){return track(method.apply(this,args))}}
+let l0Calls=0
+const watchHost=()=>{watch(engine,'syncL0IndexPre');const sync=engine.syncL0IndexPre;engine.syncL0IndexPre=function(...args){l0Calls++;return sync.apply(this,args)};if(engine.config.teamEnabled){watch(engine._teamPull,'pullOnce')}else assert.equal(engine._teamPull,undefined)}
 async function settle(){let seen=0;while(seen<background.length){const batch=background.slice(seen);seen=background.length;const results=await Promise.allSettled(batch);assert(results.every(r=>r.status==='fulfilled'),'background refresh/pull/index work rejected')}await flushDiagnostics()}
 const deferred=()=>{let resolve;const promise=new Promise(r=>resolve=r);return {promise,resolve}}
 let warmEngine,warmRelease,warmEntered
@@ -131,11 +132,12 @@ timers.length=0;routes.length=0
  retiredPull.callback();await retiredSync.tick();assert.equal(network.length,0)
  engine._teamPullTimer.callback();await new Promise(r=>timeout(r,0));assert.equal(network.filter(n=>n.opts.method==='GET').length,1)
  // A deterministic late startup refresh proves teardown waits for completion;
- // its real L0 writes and the last scheduled pull are tracked transitively.
+ // the real refresh and last scheduled pull are drained before cleanup.
  await warmEntered.promise
  let drained=false;const closing=settle().then(()=>{drained=true})
  await Promise.resolve();assert.equal(drained,false,'cleanup cannot pass an unfinished refresh')
  warmRelease.resolve();await closing;assert.equal(drained,true)
+ assert.equal(l0Calls,0,'agentless fixture must not claim derived L0 coverage')
  console.log('PASS #174: real host assembly, auth/object body, failed queue, scheduled pull/injection, GET read-only, pause/reset, live config and off gate')
 } finally {
  if(warmRelease)warmRelease.resolve();await settle()
