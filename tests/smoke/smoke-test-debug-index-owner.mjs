@@ -6,6 +6,7 @@ import path from 'node:path'
 import os from 'node:os'
 import { syncBuiltinESMExports } from 'node:module'
 const root=fs.mkdtempSync(path.join(os.tmpdir(),'dam-debug-owner-'))
+const oldCwd=process.cwd();process.chdir(root)
 const oldEnv={HOME:process.env.HOME,DSH_HOME:process.env.DSH_HOME}
 process.env.HOME=root;process.env.DSH_HOME=path.join(root,'home')
 fs.mkdirSync(process.env.DSH_HOME,{recursive:true})
@@ -118,8 +119,22 @@ try{
  engine.config.unattendedMode=false
  await check('manual mode ignores the old unattended lock',path.join(root,'b'))
  const c=make('c'),cwd=c.session.header.cwd;fs.mkdirSync(cwd,{recursive:true});fs.mkdirSync(engine.projectDirOf(cwd),{recursive:true});fs.writeFileSync(path.join(engine.projectDirOf(cwd),'MEMORY.md'),'## C\n- fixture\n');delete c.session.header.cwd
- registry.list=()=>[{path:cwd,sessionIds:[c.session.id]}];await start(c)
+ registry.list=()=>[{path:cwd,sessionIds:[c.session.id]}];const tc=await start(c)
  await check('pending headerless owner resolves existing registry binding readonly',cwd)
+ await finish(tc)
+ // A real completed refresh can contain a previously unbound fallback. Later
+ // authoritative binding must precede that cached runtime path in diagnostics.
+ const d=make('d'),bound=d.session.header.cwd;delete d.session.header.cwd
+ fs.mkdirSync(bound,{recursive:true});fs.mkdirSync(engine.projectDirOf(bound),{recursive:true});fs.writeFileSync(path.join(engine.projectDirOf(bound),'MEMORY.md'),'## D\n- authoritative fixture\n')
+ registry.list=()=>[];const td=await start(d);await finish(td)
+ const runtimeD=engine.peekRuntime(d),negative=engine._wsFallbackCache.get(d.session.id)
+ assert.equal(runtimeD.state.ws,root,'actual completed refresh stored the unbound cwd fallback')
+ assert.equal(negative.v,'','actual resolver cached the missing binding')
+ registry.list=()=>[{path:bound,sessionIds:[d.session.id]}];negative.at=Date.now()-300001
+ await check('late authoritative binding overrides completed headerless fallback',bound)
+ assert.equal(runtimeD.state.ws,root,'diagnostic does not refresh or rewrite runtime paths')
+ assert.equal(engine.state.ws,root,'diagnostic does not change the default mirror')
+
  console.log('debug owner barriers: '+checks+' PASS / '+failures.length+' FAIL')
  assert.deepEqual(failures,[])
 }finally{
@@ -128,6 +143,6 @@ try{
  if(cleanup)cleanup();Object.assign(globalThis,timers);globalThis.fetch=oldFetch
  for(const [key,value]of Object.entries(original))MemoryEngine.prototype[key]=value
  for(const [event,prior]of listeners)for(const listener of process.listeners(event))if(!prior.has(listener))process.removeListener(event,listener)
- fs.rmSync(root,{recursive:true,force:true})
+ process.chdir(oldCwd);fs.rmSync(root,{recursive:true,force:true})
  for(const [key,value]of Object.entries(oldEnv))if(value===undefined)delete process.env[key];else process.env[key]=value
 }
