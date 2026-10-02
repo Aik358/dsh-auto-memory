@@ -103,8 +103,16 @@ function session(home, id, content, { frames = 0, size = 0, name = 'session.json
 const secretError = () => Object.assign(new Error('Bearer credential123\nhttps://user:pass@host/private?token=URLSECRET\nC:\\Users\\PERSONAL\\secret.md /home/PERSONAL/secret.md\n正文私人内容\n' + 'X'.repeat(6000)), { code: 'EACCES' })
 const brokenQuery = () => ({ searchSessions: async () => { throw secretError() } })
 const absentSecrets = (value) => {
-  assert.doesNotMatch(JSON.stringify(value), /credential123|URLSECRET|PERSONAL|正文私人内容|user:pass|Bearer|\b39\b|descriptor v2|v0→v1/)
+  assert.doesNotMatch(JSON.stringify(value), /credential123|URLSECRET|PERSONAL|正文私人内容|user:pass|Bearer|\b39\s*(?:个?旧会话|old sessions\b)|descriptor v2|v0→v1/)
 }
+
+test('privacy checks accept timestamp second 39 but reject obsolete session claims and secrets', () => {
+  absentSecrets({ updatedAt: '2026-10-02T09:51:39.000Z', count: 39 })
+  for (const value of ['39个旧会话', '39 old sessions', 'credential123', 'URLSECRET', 'PERSONAL', '正文私人内容', 'user:pass', 'Bearer', 'descriptor v2', 'v0→v1']) {
+    assert.throws(() => absentSecrets(value), assert.AssertionError)
+  }
+})
+
 
 test('missing capability, missing method, successful empty and successful hit stay distinct', async () => {
   const { home, host } = await harness()
