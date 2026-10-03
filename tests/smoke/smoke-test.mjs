@@ -1,3 +1,4 @@
+import { workspaceKey } from '../../lib/workspace-key.js'
 import { apply, name, inject, GUIDANCE } from '../../lib/index.js'
 // 2026-08-16: 适配 section→context 迁移 —— 静态纪律在 section(稳定锚), 动态记忆在 context(user-role 快照)
 
@@ -27,7 +28,7 @@ process.env.DSH_HOME = smkHome
 // 唯一标记:每次运行不同 nonce,使"真实文件不含本 run 写入"可被精确断言
 const smkNonce = 'smk' + Date.now() + 'x'
 const smkToday = (() => { const d = new Date(); if (d.getHours() * 60 + d.getMinutes() < 450) d.setDate(d.getDate() - 1); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0') })() // 与引擎 memToday 同界(dayBoundaryMinutes=450,07:30 前归前一天;修复凌晨窗口 flake)
-const realArkToday = path.join(homedir(), '.dsh', 'memory', 'workspaces', '--D--Ark9Tools--', smkToday)
+const realArkToday = path.join(homedir(), '.dsh', 'memory', 'workspaces', workspaceKey("D:\\Ark9Tools"), smkToday)
 
 const registeredTools = []
 const registeredRoutes = []
@@ -76,7 +77,7 @@ if (registeredTools.length !== 19) throw new Error('expected 19 tools (16 + T4 m
 //   判据（判据本身不变，只是计数随新增路由更新）：本文件 count 守卫 = 全量无条件路由条数。
 // ★2026-09-27：65 → 66（/team-compliance 落线）
 // ★2026-09-28 计数演进：67→68（新增 skin-library-fetch）。
-if (registeredRoutes.length !== 69) throw new Error('expected 69 routes, got ' + registeredRoutes.length)
+if (registeredRoutes.length !== 70) throw new Error('expected 70 routes, got ' + registeredRoutes.length)
 if (sections.length !== 1) throw new Error('expected 1 prompt section (static rules)')
 if (contexts.length !== 2) throw new Error('expected 2 dynamic contexts (memory snapshot + m6 reference tail surface), got ' + contexts.length)
 
@@ -123,7 +124,7 @@ if (dyn.includes('[记忆写入纪律')) throw new Error('dynamic context must n
     try { realText = readFileSync(realArkToday, 'utf8') } catch (e) {}
     if (realText.includes(smkNonce)) throw new Error('smoke test wrote into REAL user memory file: ' + realArkToday)
   }
-  const tempCentral = path.join(smkWs, '.memory-root', '--D--Ark9Tools--', smkToday + '.md')
+  const tempCentral = path.join(smkWs, '.memory-root', workspaceKey("D:\\Ark9Tools"), smkToday + '.md')
   if (!existsSync(tempCentral)) throw new Error('expected smoke log in temp memory root, missing: ' + tempCentral)
   if (!readFileSync(tempCentral, 'utf8').includes(smkNonce)) throw new Error('temp log missing nonce')
   // 真实 workspaces 根不得新增 dam-smoke-* 条目

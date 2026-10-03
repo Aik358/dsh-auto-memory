@@ -1,0 +1,7 @@
+# Follow-up group 6: asynchronous observation ownership
+
+Base 36dc801e0767490e20147e6a2a60a336449abac1. Four tests run real ingestEnvelope -> context host -> real activation host with controlled local rank/decide promises and actual source documents. Baseline 1/3; corrected 4/0. The passing baseline is the normal same-generation eager pump, including later segment acceptance and actual reference-tail delivery.
+
+Each observation captures its original contextVersion, query text, path identity and per-runtime generation before async work. Ranking and deciding use that captured query, and the frame cursor uses the original version. Stale observations are checked after ready/rank, before frame publication/decide, after decide, after the second skill rank await and before activation publication. Disposal, changed workspace/path identity and gates-off also invalidate the work. Cooldown is recorded only after a current activation is successfully offered; a stale result cannot set cooldown or touch a skill.
+
+Tests cover back-to-back A/B ingestion before microtasks, reversed rank completion, a stale decide completing before B, a second skill await overlapping B, and actual ordinary eager delivery. Existing actual JS/Python procedure-scope and context correction/multi-file evidence suites pass. Local ranking/model/service boundaries are isolated; no live Python/model/QQ/notification call occurred.

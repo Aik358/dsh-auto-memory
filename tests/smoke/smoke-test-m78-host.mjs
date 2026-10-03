@@ -1,3 +1,4 @@
+import { workspaceKey } from '../../lib/workspace-key.js'
 // M7-8 Host Index Sync Orchestration 测试(docs/PYTHON-SIDECAR-CONTRACT.md §19.10)。
 // 修复 live blocker 的专项验证:
 //   A) live-parity 复现——插件启动→已有 runtime→config 开三重门→pre-step capturePaths→
@@ -25,7 +26,7 @@ function eq(a, b, name) { ok(JSON.stringify(a) === JSON.stringify(b), name) }
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
 function canonicalizePath(p) { return path.resolve(p).replace(/\\/g, '/').toLowerCase() }
-function keyOf(p) { return '--' + p.replace(/[\\/:*?"<>|]/g, '-') + '--' }
+function keyOf(p) { return workspaceKey(p) }
 
 async function setupHarness(opts = {}) {
   const ws1 = mkdtempSync(path.join(tmpdir(), 'dam-m78-'))

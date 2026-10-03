@@ -47,7 +47,7 @@ if (registeredTools.length !== 19) throw new Error('expected 19 tools (16 + T4 m
 // ★2026-09-27：65 → 66（/team-compliance 落线）
 // ★2026-09-28 计数演进：67→68（新增 skin-library-fetch）。
 // ★2026-10-01 再演进：68→69（新增 /global-brief，全球动态简报批）。
-if (registeredRoutes.length !== 69) throw new Error('expected 68 routes, got ' + registeredRoutes.length)
+if (registeredRoutes.length !== 70) throw new Error('expected 68 routes, got ' + registeredRoutes.length)
 
 const cfgRoute = registeredRoutes.find((r2) => r2.path === '/api/dsh-auto-memory/config')
 let body

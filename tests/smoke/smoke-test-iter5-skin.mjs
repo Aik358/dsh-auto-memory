@@ -11,6 +11,7 @@ const source = readFileSync(new URL('../../lib/client.js', import.meta.url), 'ut
 // ★2026-09-30 双皮肤块（用户裁定：旧款为默认 + 三套变体经下拉选择）：
 //   生成区现有**两块**（legacy 旧款 + 三套变体）——本快照关心「剥掉生成区后的经典侧」，
 //   故两块都要拆；并把**分派行**归一回单分支形态，否则比对的就不是「经典档」而是「双块集成形态」。
+// 2026-10-02 intentional classic delta: bind note form session and expected destination.
 const classic = source
   .replace(/    \/\/ ===== ITER5-LEGACY-GENERATED:BEGIN =====[\s\S]*?    \/\/ ===== ITER5-LEGACY-GENERATED:END =====\n/, '')
   .replace(/    \/\/ ITER5-GENERATED:BEGIN[\s\S]*?    \/\/ ITER5-GENERATED:END\n/, '')
@@ -67,7 +68,8 @@ const classic = source
 //   (2) 附「向导 where ⇒ 设置页实名单」对照核验：11 个分区名逐条比对，本批后 4 种 where 取值中
 //       「语义记忆总开关」命中最多次（7 次），其余 3 种（记忆窗口 / 自动化 / 记忆中枢）为**批前既有**，未在本批范围内。
 //   守卫语义不变：生成块之外的任何**非意外**改动仍会被本锁抓住；本批期望值随之上移。
-assert.equal(createHash('sha256').update(classic).digest('hex'), '9899ee334d7e6e1cccc910a5b54012c02e07aab666e7157f578634215c291039', 'Reviewed native-reference entry baseline（R72 = R71 + 2026-10-01 ①接续开关默认开 + 欢迎向导开关 ②经典档接入 GlobalBriefRow 简报抽屉 ③damSharedSurfaceCss classic 分支归零修复；原 R71 = R70 + 2026-10-01 全局动态简报批（client.js 三面各加 8 个 globalBrief* 控件 + frozen 面补齐上批遗漏的 slimEveryRounds/fullEverySlims 两键）；原 R70 = R69 + #160/#162 修复：python 向导轮询/取消渲染、规则草稿与内容锚定、首屏 tour hero 挂载复原；生成块之外任何**非意外**改动仍会被本锁抓住）')
+// 2026-10-02 audit: intentional F02/F09/F18–F21/R02 shared-entry changes; behavior is covered by audit-ui-wiring.
+assert.equal(createHash('sha256').update(classic).digest('hex'), '92bbb318cde7563cbb161bb202d4bc4786f096522841df5c384e23aefb1dad40', 'Reviewed native-reference entry baseline（R72 = R71 + 2026-10-01 ①接续开关默认开 + 欢迎向导开关 ②经典档接入 GlobalBriefRow 简报抽屉 ③damSharedSurfaceCss classic 分支归零修复；原 R71 = R70 + 2026-10-01 全局动态简报批（client.js 三面各加 8 个 globalBrief* 控件 + frozen 面补齐上批遗漏的 slimEveryRounds/fullEverySlims 两键）；原 R70 = R69 + #160/#162 修复：python 向导轮询/取消渲染、规则草稿与内容锚定、首屏 tour hero 挂载复原；生成块之外任何**非意外**改动仍会被本锁抓住）')
 console.log('PASS reviewed shared-entry source baseline preserved')
 
 const css = readFileSync(new URL('../../skins/iter5/skin.css', import.meta.url), 'utf8')
@@ -103,7 +105,7 @@ const document = { documentElement: { getAttribute: () => '', style: { setProper
 const window = { localStorage, addEventListener() {}, removeEventListener() {}, confirm() { confirmCount++; return accept }, __ModuleLoader__: { load(def) { exposed = def.factory(name => { if (name === 'react') return React; throw Error('Test module unavailable: ' + name) }) } } }
 const context = vm.createContext({ window, document, localStorage, console: { log() {}, warn() {}, info() {}, error() {} }, navigator: { language: 'zh-CN' }, URL, URLSearchParams, requestAnimationFrame: fn=>fn(), setTimeout, clearTimeout, setInterval: () => 1, clearInterval() {}, fetch: () => { throw Error('Unexpected raw fetch') } })
 vm.runInContext(source.replace('    return module.exports', `    exports._i5test = { Iter5Notice: Iter5Notice, Iter5Summary: Iter5Summary, Iter5AutoContinue: Iter5AutoContinue, Iter5Storage: Iter5Storage, Iter5Migration: Iter5Migration, Iter5DeleteConfirmation: Iter5DeleteConfirmation, iter5WorkspaceLayout: iter5WorkspaceLayout, iter5MapLabel: iter5MapLabel, Iter5WorkspaceGraph: Iter5WorkspaceGraph, iter5SkillContent: iter5SkillContent, Iter5SkillBrowser: Iter5SkillBrowser, iter5SearchEntries: iter5SearchEntries, Iter5Note: Iter5Note, Iter5Search: Iter5Search, useIter5Data: useIter5Data, Iter5Home: Iter5Home, Iter5Settings: Iter5Settings, Iter5Tabs: Iter5Tabs, iter5MemoryRows: iter5MemoryRows, iter5MemorySnapshot: iter5MemorySnapshot, iter5LedgerTitle: iter5LedgerTitle, DialogHost: DialogHost, setDialog: function (d) { dialogState = d }, t: t,
-      transport: function (get, post) { apiGet = get; apiPost = post }, identity: function (value) { iter5Identity = function () { return value } } }
+      noteSession: function(value) { currentSessionIdClient = function() { return value } }, transport: function (get, post) { apiGet = get; apiPost = post }, identity: function (value) { iter5Identity = function () { return value } } }
     return module.exports`), context, { filename: fileURLToPath(new URL('../../lib/client.js', import.meta.url)) })
 const test = exposed._i5test
 // Execute the host theme reader against both current DSH and older host markers.
@@ -281,21 +283,21 @@ console.log('PASS late results cannot cross session/workspace identity')
 // Execute panel draft and selectable search behavior through the shipped components.
 function renderNative(component, props) { cursor=0;const tree=component(props);effects.splice(0).forEach(fn=>fn());return tree }
 function resetNative() { states=[];effects=[];cursor=0 }
-resetNative();test.identity('note-session-a|workspace-a')
-let note=renderNative(test.Iter5Note,{persistDraft:'panel'})
+resetNative();test.identity('note-session-a|workspace-a');test.noteSession('note-session-a')
+let note=renderNative(test.Iter5Note,{persistDraft:'panel',sessionId:'note-session-a',source:'/isolated/workspace-a/MEMORY.md'})
 nodes(note,n=>n.type==='textarea')[0].props.onChange({target:{value:'Keep this unsaved note'}})
 resetNative();test.identity('note-session-b|workspace-b')
-note=renderNative(test.Iter5Note,{persistDraft:'panel'})
+note=renderNative(test.Iter5Note,{persistDraft:'panel',sessionId:'note-session-a',source:'/isolated/workspace-a/MEMORY.md'})
 assert.equal(nodes(note,n=>n.type==='textarea')[0].props.value,'','A different session never receives the panel draft')
-resetNative();test.identity('note-session-a|workspace-a')
-note=renderNative(test.Iter5Note,{persistDraft:'panel'})
+resetNative();test.identity('note-session-a|workspace-a');test.noteSession('note-session-a')
+note=renderNative(test.Iter5Note,{persistDraft:'panel',sessionId:'note-session-a',source:'/isolated/workspace-a/MEMORY.md'})
 assert.equal(nodes(note,n=>n.type==='textarea')[0].props.value,'Keep this unsaved note','Closing and remounting restores the same-session draft')
 test.transport(async()=>({}),async()=>({ok:true}))
 note.props.onSubmit({preventDefault(){}})
 await new Promise(resolve=>setTimeout(resolve,0))
-resetNative();note=renderNative(test.Iter5Note,{persistDraft:'panel'})
+resetNative();note=renderNative(test.Iter5Note,{persistDraft:'panel',sessionId:'note-session-a',source:'/isolated/workspace-a/MEMORY.md'})
 assert.equal(nodes(note,n=>n.type==='textarea')[0].props.value,'','A successful append clears the recovered draft')
-console.log('PASS panel drafts survive remount, isolate identities and clear only after append')
+test.noteSession('');console.log('PASS panel drafts survive remount, isolate identities and clear only after append')
 resetNative()
 test.transport(async()=>({}),async()=>({answer:'Host summary',hits:[{where:'log-a.md',line:'First source passage'},{where:'log-b.md',line:'Second source passage'}],keywords:['source']}))
 let search=renderNative(test.Iter5Search,{nonce:0})

@@ -121,6 +121,11 @@ settings = replaceOnce(settings, '      var tickPair = useTick()', `      var ti
       var i5Draft = useRef({})
       var i5Groups = useRef({})
       var i5Alive = useRef(true)
+      var i5Busy = useRef(false)
+      var i5ConfigGeneration = useRef(0)
+      var i5ConfigRequest = useRef(0)
+      var i5AppliedRequest = useRef(0)
+      var i5Initialized = useRef(false)
       var i5Identity = iter5Identity()
       var i5DraftKey = i5Identity + '|' + (props && props.draftScope || 'workbench')
       var i5GroupsDef = { engine: ['engine'], memory: ['window', 'capacity', 'skills'], appearance: ['store', 'look', 'skin'], behavior: ['handoff', 'auto', 'team', 'about'] }
@@ -131,6 +136,26 @@ settings = replaceOnce(settings, '      var tickPair = useTick()', `      var ti
         return function () { i5Alive.current = false; window.removeEventListener('beforeunload', before) }
       }, [])
       function i5Ok() { return i5Alive.current && i5Identity === iter5Identity() }
+      function i5ApplyConfig(d, request) {
+        i5AppliedRequest.current = request
+        var remote = configOf(d)
+        var recovered = !i5Initialized.current && iter5SettingsDrafts[i5DraftKey]
+        i5Initialized.current = true
+        i5Base.current = remote
+        if (recovered) {
+          i5Draft.current = Object.assign({}, recovered.patch); i5Groups.current = Object.assign({}, recovered.groups)
+          setMsg(L('已恢复此会话未保存的修改，请核对后保存或取消。', 'Unsaved edits for this session were restored. Review before saving or discarding.'))
+          var conflict = Object.keys(recovered.patch).some(function (key) { return JSON.stringify(remote[key]) !== JSON.stringify(recovered.base[key]) })
+          setErr(conflict ? L('部分设置已在其他入口变更；恢复的草稿尚未覆盖服务器，请核对。', 'Some settings changed elsewhere. Restored edits have not overwritten the server; review them.') : '')
+        } else if (Object.keys(i5Draft.current).length) {
+          var changed = Object.keys(i5Draft.current).filter(function (key) { return JSON.stringify(remote[key]) !== JSON.stringify(i5Draft.current[key]) })
+          if (changed.length) setMsg(L('检测到其他入口的修改：', 'Changes detected from another entry: ') + changed.join(', ') + L('。你的未保存输入未被覆盖。', ' Your unsaved edits were not overwritten.'))
+        } else setErr('')
+        setCfg(Object.assign({}, remote, i5Draft.current))
+        setDirty(Object.keys(i5Draft.current).length > 0)
+        setPsecKeys(Array.isArray(d.promptSections) ? d.promptSections : [])
+        setPsecMust(Array.isArray(d.promptSectionMust) ? d.promptSectionMust : [])
+      }
       function i5Record(key, value) {
         if (JSON.stringify(value) === JSON.stringify((i5Base.current || {})[key])) { delete i5Draft.current[key]; delete i5Groups.current[key] }
         else { i5Draft.current[key] = value; i5Groups.current[key] = i5Group[0] }
@@ -139,16 +164,15 @@ settings = replaceOnce(settings, '      var tickPair = useTick()', `      var ti
         else delete iter5SettingsDrafts[i5DraftKey]
       }
       function i5Cancel() { delete iter5SettingsDrafts[i5DraftKey]; i5Draft.current = {}; i5Groups.current = {}; setCfg(Object.assign({}, i5Base.current)); setDirty(false); setErr(''); setMsg('') }`)
-settings = replaceOnce(settings, '          setCfg(d.config)', `          if (!i5Ok()) return
-          i5Base.current = configOf(d)
-          var recovered = iter5SettingsDrafts[i5DraftKey]
-          if (recovered) {
-            i5Draft.current = Object.assign({}, recovered.patch); i5Groups.current = Object.assign({}, recovered.groups)
-            setCfg(Object.assign({}, configOf(d), recovered.patch)); setDirty(true)
-            setMsg(L('已恢复此会话未保存的修改，请核对后保存或取消。', 'Unsaved edits for this session were restored. Review before saving or discarding.'))
-            var conflict = Object.keys(recovered.patch).some(function (key) { return JSON.stringify(configOf(d)[key]) !== JSON.stringify(recovered.base[key]) })
-            if (conflict) setErr(L('部分设置已在其他入口变更；恢复的草稿尚未覆盖服务器，请核对。', 'Some settings changed elsewhere. Restored edits have not overwritten the server; review them.'))
-          } else setCfg(configOf(d))`)
+settings = replaceOnce(settings, '      var setBusy = busyPair[1]', `      function setBusy(value) {
+        i5Busy.current = value
+        i5ConfigGeneration.current += 1
+        busyPair[1](value)
+      }`)
+settings = replaceOnce(settings, '        var alive = true\n        apiGet(API.config)', '        var alive = true\n        var configEpoch = i5ConfigGeneration.current\n        var configRequest = ++i5ConfigRequest.current\n        apiGet(API.config)')
+settings = replaceOnce(settings, '          if (!alive) return\n          setCfg(d.config)', '          if (!alive || !i5Ok() || i5Busy.current || configEpoch !== i5ConfigGeneration.current || configRequest < i5AppliedRequest.current) return\n          i5ApplyConfig(d, configRequest)')
+settings = replaceOnce(settings, '}).catch(function (e) { setErr(e.message) })', '}).catch(function (e) { if (alive && i5Ok() && configEpoch === i5ConfigGeneration.current && !i5Base.current) setErr(e.message) })')
+settings = replaceOnce(settings, '          setPsecKeys(Array.isArray(d.promptSections) ? d.promptSections : [])\n          setPsecMust(Array.isArray(d.promptSectionMust) ? d.promptSectionMust : [])', '')
 settings = replaceOnce(settings,
   'function set(key, value) { setCfg(function (prev) { var next = Object.assign({}, prev); next[key] = value; return next }); setDirty(true) }',
   `function set(key, value) {
@@ -334,7 +358,7 @@ storage = storage.slice(0, migrationStart) + `    var migRows = h(Iter5Migration
     })
 ` + storage.slice(migrationEnd)
 storage = replaceOnce(storage, 'function migPreview() {', 'function migPreview(conflict) {')
-storage = replaceOnce(storage, "apiPost(API.migrateInspect, { packPath: migPack, targetWs: currentWs() || undefined })", "apiPost(API.migrateInspect, { packPath: migPack, targetWs: currentWs() || undefined, onConflict: conflict || migConflict })")
+storage = replaceOnce(storage, "apiPost(API.migrateInspect, { packPath: migPack, targetWs: currentWs() || undefined, onConflict: migConflict })", "apiPost(API.migrateInspect, { packPath: migPack, targetWs: currentWs() || undefined, onConflict: conflict || migConflict })")
 storage = replaceOnce(storage, "return h('div', { 'data-dam-slot': 'timeline', 'data-dam-flow': '' }, rows)", `return h('div', { className: 'i5-storage-view i5-panel i5-instrument' }, h(Iter5Screws),
         deleteRequest[0] ? h(Iter5DeleteConfirmation, { payload: deleteRequest[0].payload, onClose: function () { deleteRequest[1](null) }, onConfirm: function () { var pending = deleteRequest[0]; deleteRequest[1](null); act('delete', pending.payload, pending.onDone, true) } }) : null,
         h('div', { className: 'i5-stats i5-stats-four' },
@@ -455,33 +479,27 @@ const d2Subscribe = [
   "      //   三条安全线：①有未保存草稿时不覆盖用户输入（只提示）；②busy 中不重取；③身份不符放弃。",
   "      useEffect(function () {",
   "        return controller.subscribe(function () {",
-  "          if (busy) return",
+  "          if (i5Busy.current) return",
   "          if (!i5Ok()) return",
+  "          var configEpoch = i5ConfigGeneration.current",
+  "          var configRequest = ++i5ConfigRequest.current",
   "          apiGet(API.config).then(function (d) {",
-  "            if (!i5Ok()) return",
-  "            var remote = configOf(d)",
-  "            i5Base.current = remote",
-  "            if (Object.keys(i5Draft.current).length) {",
-  "              var changed = Object.keys(i5Draft.current).filter(function (key) { return JSON.stringify(remote[key]) !== JSON.stringify(i5Draft.current[key]) })",
-  "              if (changed.length) setMsg(L(\"检测到其他入口的修改：\", \"Changes detected from another entry: \") + changed.join(\", \") + L(\"。你的未保存输入未被覆盖。\", \" Your unsaved edits were not overwritten.\"))",
-  "              setCfg(function (prev) { return Object.assign({}, remote, i5Draft.current) })",
-  "            } else {",
-  "              setCfg(remote)",
-  "              setDirty(false)",
-  "            }",
-  "          }).catch(function () {})",
+  "            if (!i5Ok() || i5Busy.current || configEpoch !== i5ConfigGeneration.current || configRequest < i5AppliedRequest.current) return",
+  "            i5ApplyConfig(d, configRequest)",
+  "          }).catch(function (e) { if (i5Ok() && configEpoch === i5ConfigGeneration.current && !i5Base.current) setErr(e.message) })",
   "        })",
-  "      }, [busy])",
+  "      }, [i5Identity])",
   ""
 ].join("\n")
 // 幂等标记：进入生成前的快照里没有该注释才注入（对本脚本读入的 client 变量判一次即可）。
-if (!client.includes('订阅唯一写出口的广播')) {
+{
   const aliveAnchor = "        return function () { i5Alive.current = false; window.removeEventListener('beforeunload', before) }\n      }, [])"
   if (!client.includes(aliveAnchor)) throw new Error('D2: i5Alive anchor missing')
-  client = client.replace(aliveAnchor, aliveAnchor + '\n' + d2Subscribe)
+  if (!client.includes(aliveAnchor + '\n' + d2Subscribe)) client = client.replace(aliveAnchor, aliveAnchor + '\n' + d2Subscribe)
   // 第二个 I5 实例缩进多两级（生成块内嵌更深）
   const aliveAnchor2 = "          return function () { i5Alive.current = false; window.removeEventListener('beforeunload', before) }\n        }, [])"
-  if (client.includes(aliveAnchor2)) client = client.replace(aliveAnchor2, aliveAnchor2 + '\n' + d2Subscribe.replace(/^      /gm, '        '))
+  const subscribe2 = d2Subscribe.replace(/^      /gm, '        ')
+  if (client.includes(aliveAnchor2) && !client.includes(aliveAnchor2 + '\n' + subscribe2)) client = client.replace(aliveAnchor2, aliveAnchor2 + '\n' + subscribe2)
 }
 
 
@@ -673,14 +691,19 @@ if (!client.includes('F6 · 共享样式按皮肤分派') && !client.includes('H
       const blk = h31Blocks[bi]
       const whole = h31Lines.slice(blk.start, blk.end + 1).join('\n')
       if (!whole.includes('dam-shared-ui-style')) continue
-      if (whole.includes('damWantCss')) continue // 已改写过 ⇒ 跳过（幂等）
       h31Rewritten += 1
       const indent = blk.indent
       const replacement = [
       indent + 'useEffect(function () {',
       indent + '  // ★2026-09-30（H3-1 · 单一出口）：内容一律问 damSharedSurfaceCss()，并**无条件同步**；',
       indent + '  //   两个 Surface 谁先挂载都收敛到同一张表，消除「先挂者定内容」的漂移。',
-      indent + '  var damWantCss = damSharedSurfaceCss()',
+      indent + '  var damWantCss = null',
+      indent + '  function syncCss() {',
+      indent + '    damWantCss = damSharedSurfaceCss()',
+      indent + '    if (style) style.textContent = damWantCss',
+      indent + '    damSkinEnsureCss()',
+      indent + '  }',
+      indent + '  syncCss()',
       indent + '  if (!damWantCss) return function () {}',
       indent + "  var style = document.getElementById('dam-shared-ui-style')",
       indent + '  if (!style) {',
@@ -692,7 +715,9 @@ if (!client.includes('F6 · 共享样式按皮肤分派') && !client.includes('H
       indent + '  }',
       indent + '  if (style.textContent !== damWantCss) style.textContent = damWantCss',
       indent + '  style.dataset.users = String(Number(style.dataset.users || 0) + 1)',
+      indent + "  window.addEventListener('dam-skin-changed', syncCss)",
       indent + '  return function () {',
+      indent + "    window.removeEventListener('dam-skin-changed', syncCss)",
       indent + '    var count = Number(style.dataset.users || 1) - 1',
       indent + '    style.dataset.users = String(count)',
       indent + '    if (!count) style.remove()',

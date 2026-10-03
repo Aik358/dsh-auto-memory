@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { workspaceKey } from '../../lib/workspace-key.js'
 /** [continue-host] 接续 host 半边真机回归(2026-09-08,2.2.4 修A/修B + 四条改进)。
  * 用真 apply(ctx) + 真实临时 DSH_HOME/session.jsonl 驱动真实 engine,验证:
  *   H1 handoff-state 暴露 planMtime 与 refresh{sessionId,prompt}(③刷新仪式入口)
@@ -112,7 +113,7 @@ ok(r && r.ok === true, 'H2 handoff-continue ok')
 ok(r.workspaceId === 'ws-continue-1', 'H2 修A: workspaceId 由 registry.sessionIds 命中返回(' + String(r.workspaceId) + ')')
 ok(r.provider === 'deepseek-official' && r.model === MODEL && r.reasoningEffort === 'max',
   'H3 修B: request/header 末条 config 生效(' + r.model + '/' + r.reasoningEffort + ')')
-ok(r.carryText.includes('【第0层 · 白板 PLAN.md(节选)】') && r.carryText.includes('【第1层 · 交接账本 '),
+ok(r.carryText.includes('【第0层 · 白板 PLAN.md(节选)；项目共享事实，不是本会话角色授权；修改前 memory_read(kind=plan) 取版本】') && r.carryText.includes('【第1层 · 交接账本 '),
   'H4 第0层白板 + 第1层账本')
 ok(r.carryText.includes('【第2层 · 近期线程') && r.carryText.includes('【第3层 · 完整转写与检索(按需)】'),
   'H4 第2层近期线程 + 第3层按需转写')
@@ -185,7 +186,7 @@ mkdirSync(sidBDir, { recursive: true })
 const linesB = [JSON.stringify({ agentPreset: 'default', cwd: WS_B })]
 linesB.push(JSON.stringify({ type: 'user/message', data: { message: { role: 'user', content: [{ type: 'text', text: 'B 工作区唯一消息' }] } } }))
 writeFileSync(path.join(sidBDir, 'session.jsonl'), linesB.join('\n') + '\n', 'utf8')
-const bucketBHandoff = path.join(root, '.memory-root', '--D--dam-continue-proj-b--', 'handoff')
+const bucketBHandoff = path.join(root, '.memory-root', workspaceKey("D:\\dam-continue-proj-b"), 'handoff')
 mkdirSync(bucketBHandoff, { recursive: true })
 writeFileSync(path.join(bucketBHandoff, 'PLAN.md'), '# 白板B\n## 当前目标\n- WSB-ONLY-MARKER\n', 'utf8')
 registryHolder.reg.list = () => [
@@ -196,7 +197,7 @@ const r10 = await call(API.cont, 'POST', { fromSessionId: SID_B })
 ok(r10 && r10.ok === true, 'H10 接续材料 ok')
 ok(r10.carryText.includes('WSB-ONLY-MARKER'), 'H10 第0层 PLAN 取自源会话工作区 B 桶(不再读当前工作区)')
 ok(!r10.carryText.includes('验证接续链路'), 'H10 不再把工作区 A 的 PLAN 混进材料')
-ok(!!r10.transcriptPath && r10.transcriptPath.includes('--D--dam-continue-proj-b--') && existsSync(r10.transcriptPath),
+ok(!!r10.transcriptPath && r10.transcriptPath.includes(workspaceKey("D:\\dam-continue-proj-b")) && existsSync(r10.transcriptPath),
   'H10 转写包落盘到源会话工作区 B 桶(' + String(r10.transcriptPath).split('.memory-root').pop() + ')')
 ok(r10.workspaceId === 'ws-b', 'H10 workspaceId 按 B 会话归属解析')
 ok(r10.wsBase === 'dam-continue-proj-b', 'H10 wsBase 取源会话 cwd 基名')
