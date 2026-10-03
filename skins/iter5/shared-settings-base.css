@@ -6,7 +6,7 @@
 [data-iter5] [data-settings-v3] .i5-setting-control{display:flex;align-items:center;justify-content:flex-end;gap:8px;min-width:0;}
 [data-iter5] [data-settings-v3] .i5-setting-control>input[type=number]{width:124px;text-align:right;}
 [data-iter5] [data-settings-v3] .i5-setting-control>input:not([type=checkbox]):not([type=radio]):not([type=number]){width:100%;}
-[data-iter5] [data-settings-v3] .i5-setting-field[data-wide=true]{grid-template-columns:minmax(0,1fr);gap:10px;}
+[data-iter5] [data-settings-v3] [data-dam-settings-row] .i5-setting-field[data-wide=true]{grid-template-columns:minmax(0,1fr);gap:10px;}
 [data-iter5] [data-settings-v3] .i5-setting-field[data-wide=true]>.i5-setting-control{justify-content:flex-start;}
 [data-iter5] [data-settings-v3] .i5-setting-field[data-wide=true]>.i5-setting-control>div{width:100%;min-width:0;}
 [data-iter5] [data-settings-v3] .i5-engine-radios{display:grid;gap:8px;width:100%;}

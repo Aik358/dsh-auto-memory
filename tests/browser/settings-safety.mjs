@@ -409,6 +409,12 @@ try{
    await page.screenshot({path:path.join(artifacts,'v3-'+group+'-'+width+'.png')})
    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2),false,'no horizontal page overflow: '+group+' '+width)
    if(width===390)assert(await page.locator('.i5-settings-mobile select').isVisible())
+   if(width===390 && group==='appearance'){
+    const welcome=page.locator('[data-i5-keys="welcomeTourEnabled"] .i5-setting-field')
+    assert.equal(await welcome.evaluate(el=>getComputedStyle(el).gridTemplateColumns.trim().split(/\s+/).length),1,'composite welcome row keeps one column beside its checkbox')
+    const widths=await welcome.locator('button').evaluateAll(nodes=>nodes.map(el=>el.getBoundingClientRect().width))
+    assert(widths.length>=2 && widths.every(width=>width>=80),'welcome action buttons retain usable width on mobile')
+   }
   }
  }
  evidence.push('PASS V3: every settings section rendered and captured at 1440×1000 and 390×844; mobile selector and horizontal overflow checked')
