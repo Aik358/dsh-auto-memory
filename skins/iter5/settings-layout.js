@@ -6,6 +6,18 @@
     ]
     function iter5SettingsGroup(value) { return {engine:'find',memory:'record',behavior:'continuity',store:'maintenance',look:'appearance',skin:'appearance',window:'find',capacity:'record',skills:'advanced',handoff:'continuity',auto:'continuity',team:'advanced',about:'advanced'}[value] || (ITER5_SETTINGS_GROUPS.some(function(g){return g[0]===value}) ? value : 'common') }
     function iter5SettingDef(key) { return ITER5_SETTINGS_SCHEMA.find(function(d){return d.key===key}) }
+    var iter5SettingsSearchIndexes=Object.create(null)
+    function iter5SettingsSearchIndex() {
+      if(iter5SettingsSearchIndexes[locale])return iter5SettingsSearchIndexes[locale]
+      var index=Object.create(null)
+      ITER5_SETTINGS_SCHEMA.forEach(function(def){
+        var aliases=(def.aliases||[]).map(function(alias,i,values){var translated=t(alias),copy=iter5SettingCopy(translated);var localized=/[\u4e00-\u9fff]/.test(alias)&&values[i+1]?L3(alias,values[i+1],values[i+2]):translated;return alias+' '+translated+' '+localized+' '+(copy?copy.label:'')}).join(' ')
+        var group=ITER5_SETTINGS_GROUPS.find(function(g){return g[0]===def.group})
+        index[def.key]=(def.key+' '+def.group+' '+L3.apply(null,group.slice(1))+' '+def.condition+' '+aliases).toLowerCase()
+      })
+      iter5SettingsSearchIndexes[locale]=index
+      return index
+    }
     function iter5SettingRow(label, control, hint, keys, busy, id, cfg) {
       cfg=cfg||{}
       var dependencies={autoConsolidateMinChars:cfg.autoConsolidate!==false,autoConsolidateCooldownMinutes:cfg.autoConsolidate!==false,autoConsolidateDailyMax:cfg.autoConsolidate!==false,consolidateScheduleTime:cfg.consolidateScheduleEnabled!==false,consolidateScheduleDays:cfg.consolidateScheduleEnabled!==false,maintainScheduleTime:cfg.maintainScheduleEnabled!==false,autoArchiveEnabled:cfg.sessionArchiveEnabled!==false,autoDeleteEnabled:cfg.sessionArchiveEnabled!==false,autoArchiveDays:cfg.sessionArchiveEnabled!==false&&cfg.autoArchiveEnabled!==false,autoDeleteDays:cfg.sessionArchiveEnabled!==false&&cfg.autoDeleteEnabled!==false}
@@ -14,6 +26,7 @@
       if(!keys.length && control && control.props && control.props['data-dam-key'])keys=[control.props['data-dam-key']]
       if(!keys.length && control && control.type===TeamSecretInput)keys=['teamSecretAccessKey']
       var def=keys.map(iter5SettingDef).filter(Boolean)[0]
+      var calibration=label===L('唤起阈值（校准策略）', 'Activation thresholds (calibrated)')
       var rowId=id+'-field-'+(keys[0] || 'entry')+'-'+encodeURIComponent(String(label))
       if(control && ['input','select','textarea'].indexOf(control.type)>=0)control=React.cloneElement(control,{'aria-label':shown,'aria-describedby':rowId+'-help',disabled:busy||dependentOff||control.props.disabled,role:control.type==='input'&&control.props.type==='checkbox'?'switch':undefined})
       var warnings={
@@ -32,7 +45,7 @@
       var warning=keys.map(function(k){return warnings[k]}).filter(Boolean).join(' ')
       if(dependentOff)warning=(warning?warning+' ':'')+L3('需先开启本组对应功能；已存值保留。','Enable the corresponding feature first; stored values are retained.','対応する機能を先に有効にします。保存値は保持されます。')
       if(!warning && typeof hint==='string' && /立即|即时|重启|删除|清零|需先|依赖|requires|restart|immediate|delet/i.test(hint)) warning=hint
-      return h('div',{'data-dam-settings-row':'','data-i5-field':label,'data-i5-keys':keys.join(' '),'data-i5-owner':def&&def.group,'data-i5-advanced':String(!!def&&def.advanced),id:rowId,tabIndex:-1},
+      return h('div',{'data-dam-settings-row':'','data-i5-field':label,'data-i5-keys':keys.join(' '),'data-i5-owner':calibration?'find':def&&def.group,'data-i5-advanced':String(calibration||!!def&&def.advanced),id:rowId,tabIndex:-1},
         h('div',{className:'i5-setting-field','data-wide':String(!!control&&(control.type!=='input'&&control.type!=='select'||control.props.type==='text'))},
           h('div',{className:'i5-setting-copy'},h('label',null,shown),warning?h('p',{className:'i5-setting-warning'},warning):null),
           h('div',{className:'i5-setting-control'},control)),
@@ -53,16 +66,40 @@
     }
     function Iter5SettingsSearch(props) {
       var query=useState(''),active=useState(-1),open=useState(false)
-      var input=useRef(null)
+      var input=useRef(null), destination=useRef(0)
+      useEffect(function(){return function(){destination.current++}},[])
       var text=query[0].trim().toLowerCase()
+      var labels={}
+      if(text&&props.root.current)Array.from(props.root.current.querySelectorAll('[data-i5-keys]')).forEach(function(node){var label=node.getAttribute('data-i5-field')+' '+node.textContent;node.dataset.i5Keys.split(' ').forEach(function(key){labels[key]=label})})
+      var index=iter5SettingsSearchIndex()
       var results=text?ITER5_SETTINGS_SCHEMA.filter(function(d){
-        var node=props.root.current&&Array.from(props.root.current.querySelectorAll('[data-i5-keys]')).find(function(n){return n.dataset.i5Keys.split(' ').indexOf(d.key)>=0})
-        var aliases=node?node.getAttribute('data-i5-field')+' '+node.textContent:''
-        return (d.key+' '+d.group+' '+d.condition+' '+(d.aliases||[]).join(' ')+' '+aliases).toLowerCase().indexOf(text)>=0
+        return (index[d.key]+' '+(labels[d.key]||'').toLowerCase()).indexOf(text)>=0
       }).sort(function(a,b){return Number(b.key.toLowerCase()===text)-Number(a.key.toLowerCase()===text)}).slice(0,30):[]
-      function choose(def){props.select(def.group);open[1](false);setTimeout(function(){var root=props.root.current;if(!root)return;var nodes=Array.from(root.querySelectorAll('[data-i5-keys]'));var row=nodes.find(function(n){return n.dataset.i5Keys.split(' ').indexOf(def.key)>=0});if(!row)row=root.querySelector('[data-i5-catalog-key="'+def.key.replace(/"/g,'')+'"]');if(!row)return;var parent=row.parentElement;while(parent&&parent!==root){if(parent.tagName==='DETAILS')parent.open=true;parent=parent.parentElement}row.scrollIntoView({block:'center'});row.focus()},0)}
+      function choose(def) {
+        var request=++destination.current, attempts=0
+        props.select(def.group)
+        if(props.edit)props.edit(def.key)
+        open[1](false)
+        function locate() {
+          var root=props.root.current
+          if(!root || !root.isConnected || request!==destination.current)return
+          var picker=Array.from(document.querySelectorAll('[data-native-model-picker]')).find(function(n){return n.dataset.i5SettingsId===props.id})
+          var owner=picker || root
+          var row=Array.from(owner.querySelectorAll('[data-i5-editor-keys]')).find(function(n){return n.dataset.i5EditorKeys.split(' ').indexOf(def.key)>=0})
+          // Keep focus inside the real dialog while its provider catalog loads.
+          if(picker&&!row&&attempts++<200){setTimeout(locate,20);return}
+          if(!row&&picker)row=picker.closest('.i5-dialog').querySelector('button,input,textarea,select')
+          if(!row)row=Array.from(root.querySelectorAll('[data-i5-keys]')).find(function(n){return n.dataset.i5Keys.split(' ').indexOf(def.key.split('.')[0])>=0})
+          if(!row)row=root.querySelector('[data-i5-catalog-key="'+def.key.replace(/"/g,'')+'"]')
+          if(!row)return
+          var parent=row.parentElement
+          while(parent&&parent!==root){if(parent.tagName==='DETAILS')parent.open=true;parent=parent.parentElement}
+          row.scrollIntoView({block:'center'});row.focus()
+        }
+        setTimeout(locate,0)
+      }
       return h('div',{className:'i5-settings-search'},h('input',{ref:input,type:'search',value:query[0],role:'combobox','aria-label':L3('搜索设置或配置键','Search settings or configuration keys','設定またはキーを検索'),'aria-expanded':open[0]&&results.length>0,'aria-controls':props.id+'-search-results','aria-activedescendant':active[0]>=0?props.id+'-result-'+active[0]:undefined,onFocus:function(){open[1](true)},onChange:function(e){query[1](e.target.value);active[1](-1);open[1](true)},onKeyDown:function(e){if(e.key==='Escape'){e.stopPropagation();open[1](false);active[1](-1);return}if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();open[1](true);active[1]((active[0]+(e.key==='ArrowDown'?1:results.length-1)+results.length)%Math.max(1,results.length))}if(e.key==='Enter'&&results.length){e.preventDefault();choose(results[Math.max(0,active[0])])}}}),
-        open[0]&&text?h('div',{id:props.id+'-search-results',role:'listbox',className:'i5-search-results'},results.length?results.map(function(d,i){return h('button',{type:'button',key:d.key,id:props.id+'-result-'+i,role:'option','aria-selected':active[0]===i,onClick:function(){choose(d)}},h('code',null,d.key),h('small',null,ITER5_SETTINGS_GROUPS.find(function(g){return g[0]===d.group})[1]))}):h('p',null,L('没有匹配项','No matches'))):null)
+        open[0]&&text?h('div',{id:props.id+'-search-results',role:'listbox',className:'i5-search-results'},results.length?results.map(function(d,i){return h('button',{type:'button',key:d.key,id:props.id+'-result-'+i,role:'option','aria-selected':active[0]===i,onClick:function(){choose(d)}},h('code',null,d.key),h('small',null,L3.apply(null,ITER5_SETTINGS_GROUPS.find(function(g){return g[0]===d.group}).slice(1))))}):h('p',null,L('没有匹配项','No matches'))):null)
     }
     function iter5SettingsCatalog(group) {
       var rows=ITER5_SETTINGS_SCHEMA.filter(function(d){return d.group===group})
@@ -71,7 +108,7 @@
         rows.map(function(d){return h('div',{key:d.key,'data-i5-catalog-key':d.key,tabIndex:-1},h('code',null,d.key),h('small',null,d.kind),h('p',null,d.condition),h('small',null,L3('核对状态：','Verification status: ','確認状態：')+d.status))}))
     }
     function Iter5SettingsCommon(props) {
-      var cfg=props.config||{},sem=props.semantic||{}
+      var cfg=props.config||{}
       var rows=[['record',L3('自动提炼','Automatic consolidation','自動抽出'),cfg.autoConsolidate!==false?L('开启','On'):L('关闭','Off'),String(cfg.autoConsolidateDailyMax===undefined?8:cfg.autoConsolidateDailyMax)+L(' 次/日，仅此任务',' per day, this task only')],['find',L3('旧记忆快照','Stored memory snapshots','記憶スナップショット'),cfg.injectEnabled!==false?L('开启','On'):L('关闭','Off'),String(cfg.injectBudgetChars===undefined?8000:cfg.injectBudgetChars)+L(' 字符，仅动态快照',' characters, dynamic snapshots only')],['find',L3('唤回投递','Recall delivery','想起の投信'),cfg.activationInboxEnabled===true?L('允许投递','Delivery enabled'):L('关闭','Off'),L('关联观察、检索与投递分别控制','Observation, retrieval and delivery are independent')]]
       return h('div',{className:'i5-settings-common'},h('p',null,L3('查看已保存状态，进入对应设置调整。','Review saved state and open the corresponding settings.','保存済みの状態を確認し、設定を開きます。')),
         rows.map(function(r){return h('div',{key:r[1],className:'i5-common-row'},h('div',null,h('strong',null,r[1]),h('small',null,r[3])),h('span',null,r[2]),h('button',{onClick:function(){props.select(r[0])}},L3('设置 →','Settings →','設定 →')))}),

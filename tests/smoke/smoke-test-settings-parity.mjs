@@ -18,7 +18,7 @@ function sliceBetween(src, a, b) {
 }
 const classic = canonicalSettings()
 const variants = shippedSettings(client)
-assert(client.includes('function SettingsPage() { return h(Iter5HostSettings) }'),'classic delegates to shared host surface')
+assert(client.includes("function SettingsPage() { return h(DamSharedSettings, { draftScope: 'workbench' }) }"),'classic workbench delegates to shared workbench scope')
 assert(frozen.includes('function Iter5Settings(props) { return h(DamSharedSettings, props) }'),'frozen skin delegates to shared root')
 assert(client.includes("function DamSharedSettings(props) { return h(Iter5Surface"),'shared legacy surface is wired')
 assert(client.includes("h(Iter5Settings, { key: identity[0], draftScope: 'host'"),'host surface mounts shared root')

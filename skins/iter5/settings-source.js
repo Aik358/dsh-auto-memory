@@ -20,9 +20,6 @@
       var dbgOpenPair = useState(false)
       var dbgOpen = dbgOpenPair[0]
       var setDbgOpen = dbgOpenPair[1]
-      var settingsSectionPair = useState('engine')
-      var settingsSection = settingsSectionPair[0]
-      var setSettingsSection = settingsSectionPair[1]
       var browseOpenPair = useState(false)
       var browseOpen = browseOpenPair[0]
       var setBrowseOpen = function(value){if(!value){browseRequest.current++;pickerRequest.current++}browseOpenPair[1](value)}
@@ -369,19 +366,11 @@
         store: L('存储与外部记忆', 'Storage'),
         look: L('外观与交互', 'Appearance'),
         team: L('团队协作', 'Teamwork'),
-        team: L('团队协作', 'Teamwork'),
         skin: L('皮肤素材', 'Skin assets'),
         about: L3('关于与维护', 'About & maintenance', '情報とメンテナンス'),
       }
       function section(key, title, content) { return h('section', { id: 'dam-settings-' + key, 'data-dam-settings-group': '' }, h('h3', null, title), content) }
-      function jumpToSection(key) {
-        setSettingsSection(key)
-        try { var el = document.getElementById('dam-settings-' + key); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }) } catch (e) {}
-      }
       return h('div', { 'data-dam-settings': '' },
-        h('nav', { 'data-dam-region': 'settings', 'data-dam-settings-nav': '', 'aria-label': L('设置分组', 'Settings sections') }, Object.keys(sectionLabels).map(function (key) {
-          return h('button', { key: key, 'data-dam-slot': 'actions', 'data-dam-btn': '', 'data-active': settingsSection === key ? 'true' : undefined, onClick: function () { jumpToSection(key) } }, sectionLabels[key])
-        })),
         h('div', { 'data-dam-settings-content': '' },
         section('window', sectionLabels.window, [
           // ★P10-T1/T2/T3（2026-09-22）注入分区开关：**一级只放入口**（中性文案，不推荐用户改），
@@ -406,7 +395,7 @@
               psecKeys.length ? psecKeys.map(function (k) {
                 return h('div', { key: k, 'data-dam-slot': 'list', 'data-dam-row': '', style: { alignItems: 'flex-start' } }, [
                   h('label', { style: { display: 'flex', gap: '6px', alignItems: 'center', flex: 1, cursor: 'pointer' } }, [
-                    h('input', { type: 'checkbox', 'data-dam-pswitch': k, checked: toggles[k] !== false, onChange: function (e) {
+                    h('input', { type: 'checkbox', 'data-i5-editor-keys': 'promptSectionToggles.' + k, 'data-dam-pswitch': k, checked: toggles[k] !== false, onChange: function (e) {
                       var t2 = Object.assign({}, toggles)
                       if (e.target.checked) delete t2[k]; else t2[k] = false
                       set('promptSectionToggles', t2)
@@ -451,13 +440,13 @@
           //   全部写 DEFAULT_CONFIG 内既有键（宿主白名单通过）。
           field(t('fTier0Share'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 0, max: 1, step: 0.05, value: cfg.tier0BudgetShare === undefined ? 0.25 : cfg.tier0BudgetShare, onChange: function (e) { set('tier0BudgetShare', Math.max(0, Number(e.target.value) || 0.25)) } }), t('fTier0ShareHint'), ["tier0BudgetShare"]),
           field(t('fTieredInject'), h('input', { type: 'checkbox', 'data-dam-key': 'snapshotTieredInject', checked: cfg.snapshotTieredInject !== false, onChange: function (e) { set('snapshotTieredInject', e.target.checked) } }), t('fTieredInjectHint'), ["snapshotTieredInject"]),
-          field(t('fPromptCustom'), h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: function () { setPromptEditOpen(!promptEditOpen) } }, (promptEditOpen ? (L('收起', 'Collapse')) : (L('编辑 prompt 层', 'Edit prompt layers')))), t('fPromptCustomHint'), []),
+          field(t('fPromptCustom'), h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', 'data-i5-editor': 'prompt', onClick: function () { setPromptEditOpen(!promptEditOpen) } }, (promptEditOpen ? (L('收起', 'Collapse')) : (L('编辑 prompt 层', 'Edit prompt layers')))), t('fPromptCustomHint'), ["promptLayerOverrides"]),
           promptEditOpen ? [
             h('div', { key: '__layers', style: { padding: '6px 0 2px', width: '100%' } },
             (Object.keys(DEFAULT_PROMPT_LAYERS_CLIENT)).map(function (k) {
               return h('div', { key: k, style: { marginBottom: '6px' } },
                 h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { fontWeight: 700, marginBottom: '2px' } }, k),
-                h('textarea', { 'data-dam-slot': 'form', 'data-dam-input': '', rows: 2, style: { width: '100%', fontFamily: 'monospace', fontSize: 'calc(11px * var(--dam-scale))' }, value: (cfg.promptLayerOverrides || {})[k] || '', placeholder: DEFAULT_PROMPT_LAYERS_CLIENT[k] || '(默认文案)', onChange: function (e) { var ov = Object.assign({}, cfg.promptLayerOverrides || {}); if (e.target.value.trim() === '') delete ov[k]; else ov[k] = e.target.value; set('promptLayerOverrides', ov) } }))
+                h('textarea', { 'data-dam-slot': 'form', 'data-dam-input': '', 'data-i5-editor-keys': 'promptLayerOverrides.' + k, rows: 2, style: { width: '100%', fontFamily: 'monospace', fontSize: 'calc(11px * var(--dam-scale))' }, value: (cfg.promptLayerOverrides || {})[k] || '', placeholder: DEFAULT_PROMPT_LAYERS_CLIENT[k] || '(默认文案)', onChange: function (e) { var ov = Object.assign({}, cfg.promptLayerOverrides || {}); if (e.target.value.trim() === '') delete ov[k]; else ov[k] = e.target.value; set('promptLayerOverrides', ov) } }))
             })),
             h('div', { key: '__reset', 'data-dam-slot': 'list', 'data-dam-row': '', style: { marginTop: '6px' } },
               h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: function () { set('promptLayerOverrides', {}) } }, L('一键恢复默认', 'Reset to defaults')))
@@ -687,7 +676,7 @@
           field(t('fReasoning'), h('input', { type: 'checkbox', checked: !!cfg.reasoningObserverEnabled, onChange: function (e) { set('reasoningObserverEnabled', e.target.checked) } }), t('fReasoningHint'), ["reasoningObserverEnabled"]),
           field(L('唤起阈值（校准策略）', 'Activation thresholds (calibrated)'), h('div', null,
             h('span', null, 'tauHi 0.45 · tauLo 0.35 · deltaExp 0.03 · deltaPro 0.05' + (sem.loaded ? ((L(' · 发射模式:', ' · emit: ')) + (sem.activationEmitMode || 'shadow')) : ''))),
-            t('fTuningHint'), ["loaded","activationEmitMode"]),
+            t('fTuningHint'), []),
         ]),
         section('capacity', sectionLabels.capacity, [
           field(t('fChildObs'), h('input', { type: 'checkbox', checked: !!cfg.contextBridgeObserveChildSessions, onChange: function (e) { set('contextBridgeObserveChildSessions', e.target.checked) } }), t('fChildObsHint'), ["contextBridgeObserveChildSessions"]),
@@ -752,7 +741,7 @@
           field(L('子代理模型 / 思考强度', 'Subagent model & reasoning effort'), h('div', { 'data-dam-slot': 'list', 'data-dam-row': '', style: { flex: 1 } },
             h('span', { style: { flex: 1, fontSize: 'calc(12px * var(--dam-scale))', wordBreak: 'break-all', opacity: cfg.subagentModel ? 1 : 0.6 } }, (cfg.subagentModel || (L('跟随路由默认', 'routing default'))) + (String(cfg.subagentReasoningEffort || '') ? ' · ' + String(cfg.subagentReasoningEffort) : '')),
             h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: openModels }, L('选择模型 / 强度', 'Pick model / effort'))),
-            L('★作用域=「记忆中枢」工作区(aik_auto_memory_use)下所有会话的默认模型与思考强度;后台子代理(问候/总结/沉淀/蒸馏)挂在该工作区下运行,因此也跟随这里。思考强度 off/low/high/max 只作用于本插件的子代理,不改你的主对话。留空=跟随宿主部署默认(agent-default-model)。保存后生效。', 'Scope: the DEFAULT model & reasoning effort for every session in the "Memory Hub" workspace (aik_auto_memory_use). Background subagents (greeting / summary / consolidation / distillation) run under that workspace, so they follow this too. Effort (off/low/high/max) applies only to this plugin`s subagents, never your main conversation. Empty = follow the deployment default (agent-default-model). Applies after saving.'), ["subagentModel","subagentReasoningEffort"]),
+            L('★作用域=「记忆中枢」工作区(aik_auto_memory_use)下所有会话的默认模型与思考强度;后台子代理(问候/总结/沉淀/蒸馏)挂在该工作区下运行,因此也跟随这里。思考强度 off/low/high/max 只作用于本插件的子代理,不改你的主对话。留空=跟随宿主部署默认(agent-default-model)。保存后生效。', 'Scope: the DEFAULT model & reasoning effort for every session in the "Memory Hub" workspace (aik_auto_memory_use). Background subagents (greeting / summary / consolidation / distillation) run under that workspace, so they follow this too. Effort (off/low/high/max) applies only to this plugin`s subagents, never your main conversation. Empty = follow the deployment default (agent-default-model). Applies after saving.'), ["subagentModel","subagentProvider","subagentReasoningEffort","subagentReasoningEffortLong","subagentReasoningEffortShort"]),
           mdlOpen ? buildModelDrawer() : null,
           // 欢迎向导:开关(首启自动播放)+ 立即重看按钮(闭包内直调 openDialog——同一作用域,点击立即弹;
           // 不走 window 全局入口,避免多实例时序导致"点了没反应要刷新")+ 查看更新日志(走 update 弹窗,

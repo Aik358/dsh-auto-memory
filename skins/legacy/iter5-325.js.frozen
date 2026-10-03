@@ -292,14 +292,14 @@
       var meta = ITER5_PAGES.filter(function (p) { return p[0] === page[0] })[0]
       var title = meta ? L(meta[1], meta[2]) : page[0] === 'team' ? L('团队协作', 'Teamwork') : page[0] === 'external' ? L('外部来源','External sources') : L('统计', 'Statistics')
       var nonce = String(props.nonce || 0) + ':' + refresh[0]
-      var components = { home: Iter5Home, library: Iter5Memory, handoff: Iter5Continue, calendar: Iter5Calendar, skills: Iter5Skills, recall: Iter5Recall, mindmap: Iter5Workspaces, storage: Iter5Storage, settings: Iter5Settings, team: TeamTab, stats: StatsTab }
+      var components = { home: Iter5Home, library: Iter5Memory, handoff: Iter5Continue, calendar: Iter5Calendar, skills: Iter5Skills, recall: Iter5Recall, mindmap: Iter5Workspaces, external: Iter5External, storage: Iter5Storage, settings: Iter5Settings, team: TeamTab, stats: StatsTab }
       var Component = components[page[0]] || Iter5Home
       function closeMenu() { menu[1](false); if (menuButton.current) menuButton.current.focus() }
       useEffect(function () {
         if (!menu[0] || !root.current) return
         var close = root.current.querySelector('[data-i5-close-nav]'); if (close) close.focus()
       }, [menu[0]])
-      return h('div', { ref: root, 'data-iter5': '', 'data-deep': deep ? 'true' : 'false', 'data-focus': String(focus[0]), role: focus[0] ? 'dialog' : undefined, 'aria-modal': focus[0] ? true : undefined, 'aria-label': focus[0] ? L('记忆工作台', 'Memory workbench') : undefined, onKeyDown: function (e) {
+      return h('div', { ref: root, 'data-iter5': '', 'data-page': page[0], 'data-deep': deep ? 'true' : 'false', 'data-focus': String(focus[0]), role: focus[0] ? 'dialog' : undefined, 'aria-modal': focus[0] ? true : undefined, 'aria-label': focus[0] ? L('记忆工作台', 'Memory workbench') : undefined, onKeyDown: function (e) {
         if (!focus[0]) return
         if (e.key === 'Escape' && !menu[0] && !root.current.querySelector('.i5-dialog')) { e.stopPropagation(); focus[1](false) }
         if (e.key === 'Tab') {

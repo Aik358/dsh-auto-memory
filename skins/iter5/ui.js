@@ -245,14 +245,6 @@
         if (!menu[0] || !root.current) return
         var close = root.current.querySelector('[data-i5-close-nav]'); if (close) close.focus()
       }, [menu[0]])
-      // 顶部仪器导轨读数窗:会话 / 检索档 / 自动沉淀计数 / 日期,全部为真实宿主数据
-      var railData = useIter5Data(function () { return Promise.allSettled([apiGet(API.state, { ws: currentWs(), sessionId:currentSessionIdClient() }), apiGet(API.semanticStatus)]) }, [props.nonce])
-      var railValues = railData.data || []
-      var railState = railValues[0] && railValues[0].status === 'fulfilled' ? railValues[0].value : null
-      var railSem = railValues[1] && railValues[1].status === 'fulfilled' ? railValues[1].value : null
-      var railTier = railSem ? railSem.resolvedTier === 'c3' ? 'C3 · Python' : railSem.resolvedTier === 'c2' ? 'C2 · ' + L('内置语义', 'Semantic') : 'C1 · BM25' : '—'
-      var railNow = new Date()
-      var railWD = L('周日|周一|周二|周三|周四|周五|周六', 'Sun|Mon|Tue|Wed|Thu|Fri|Sat').split('|')
       function railBtn(id, zh, en, icon) {
         return h('button', { key: id, className: 'i5-rail-btn', 'data-i5-nav': id, 'aria-current': damPrimaryPage(page[0]) === id ? 'page' : undefined, onClick: function () { nav(id) } }, h('span', null, L(zh, en)))
       }

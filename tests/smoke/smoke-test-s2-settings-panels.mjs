@@ -10,7 +10,7 @@
  *   G1 触发点与渲染点必须落在**同一个 section** 区间内，且该分区 = engine
  *   G2 面板/向导的渲染不得被任何折叠或编辑器开合状态包裹（AnimatedDisclosure / promptEditOpen）
  *   G3 触发链路齐全：⟳ → runDetect → setDetOpen(true)（唯一）+ 检测结果/切模式两条自动弹卡分支
- *   G4 根因前提：分区导航仍是滚动式（平铺渲染全部 section），engine 在 store 之前
+ *   G4 V3 分区导航与可见性：同一数据根按用途筛选，向导开启时展开高级项
  *   G5 反例自检：把面板人为搬回 store 后，G1 判据必须变红（证明守卫不是恒真）
  */
 import fs from 'node:fs'
@@ -144,19 +144,17 @@ console.log('[G3] 触发链路齐全')
   // 两条自动弹卡：检测结果驱动 + 切模式后资产未就绪驱动
   ok(/rec === 'setup-python'[\s\S]{0,80}setGuide\('python'\)/.test(SRC), 'G3d 检测结果 → 自动弹 Python 向导')
   ok(/(download-model|install-peer|setup-both)[\s\S]{0,120}setGuide\('js'\)/.test(SRC), 'G3e 检测结果 → 自动弹 JS 引导')
-  ok(/v === 'js' && !s.ready/.test(SRC), 'G3f 切 JS 模式且资产未就绪 → 自动弹引导')
-  ok(/v === 'python' && !s.pythonInt8Present/.test(SRC), 'G3g 切 Python 模式且资产未就绪 → 自动弹向导')
+  ok(/mode === 'js' && value.ready === false/.test(SRC) && SRC.includes('i5GuideMode.current = v'), 'G3f 切 JS 模式且资产未就绪 → 最新语义响应自动弹引导')
+  ok(/mode === 'python' && value.pythonInt8Present === false/.test(SRC) && SRC.includes('i5GuideMode.current = v'), 'G3g 切 Python 模式且资产未就绪 → 最新语义响应自动弹向导')
   ok(cnt(SRC, "setGuide(guide ? '' : ((cfg.semanticEngineMode === 'python') ? 'python' : 'js'))") === 1, 'G3h 🧩 常驻入口可开可收（不受资产状态 gate）')
 }
 
-console.log('[G4] 根因前提：导航为滚动式 + 块的物理位置')
+console.log('[G4] V3 分区导航、自动展开 + 块的物理位置')
 {
   ok(SRC.includes("'data-dam-settings-content': ''"), 'G4a 设置内容容器存在')
-  // L2（2026-09-27）契约更新：region 属性被注入到锚点**之前**，字面串前缀断言失效。
-  // 改为**顺序无关**断言，且比原判据更严：①导航由 h('nav',…) 创建 ②带 data-dam-settings-nav 锚点
-  // ③带 data-dam-region='settings'（L2 新增契约）。原断言只查②，新断言②+③。
-  ok(SRC.includes("h('nav', {") && SRC.includes("'data-dam-settings-nav'") && /'data-dam-region':\s*'settings'/.test(SRC), 'G4b 分区导航存在（含 L2 region 契约）')
-  ok(SRC.includes("el.scrollIntoView({ behavior: 'smooth', block: 'start' })"), 'G4c 导航为 scrollIntoView（滚动式，非分页）')
+  ok(SRC.includes('h(Iter5Tabs,') && SRC.includes('items:ITER5_SETTINGS_GROUPS.map') && SRC.includes("className:'i5-settings-mobile'"), 'G4b 共享七分区标签与移动端选择器存在')
+  const layout = fs.readFileSync(path.join(ROOT, 'skins/iter5/settings-layout.js'), 'utf8')
+  ok(SRC.includes('!!guide || detOpen') && layout.includes("open:key==='engine'&&setupOpen?true:undefined"), 'G4c 安装或检测展开同分区的高级容器')
   // 平铺渲染：engine 头之后仍能看到 window / capacity 头（说明不是按需渲染单分区）
   const engAt = SRC.indexOf("section('engine', sectionLabels.engine, [")
   ok(SRC.includes("section('window', sectionLabels.window, [") && engAt>=0, 'G4d 快照与引擎控件都保留，呈现顺序按用途调整')

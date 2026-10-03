@@ -5,6 +5,7 @@
 import { readFileSync } from 'node:fs'
 import { createHash } from 'node:crypto'
 import vm from 'node:vm'
+import { assertNavigationContract } from '../lib/navigation-contract.mjs'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
 
@@ -68,7 +69,7 @@ eq(MISS.length, 0, 'A1 ★fe02 全 66 锚点覆盖（缺:' + MISS.join(',') + '�
 eq(ALL.length + R18A.length, 66, 'A2 契约总需求 = 66');
 const cnt = (s, x) => s.split(x).length - 1;
 eq((SRC.match(/(?<!function )MEMORY_TABS\(\)/g) || []).length, 2, 'A3 ★计数锁 MEMORY_TABS() = 2');
-ok(['page-nav','page','settings'].every(region=>SRC.includes(region)) && SRC.includes('data-dam-primary-nav') && SRC.includes('data-dam-secondary-nav'), 'A4 四主入口、次级导航与设置结构契约在场');
+ok(assertNavigationContract(SRC).primary===4, 'A4 真执行四主入口、14旧tab+设置内容映射、12新旧款目的页均可达');
 ok(damNoMixedEol(SRC), 'A5 纯 CRLF');
 // 15 个 f* 键双语
 const FK = ['fTeamEnable','fTeamServer','fTeamId','fTeamMemberName','fTeamSyncMode','fTeamSyncInterval','fTeamScopeDefault','fTeamShareExternal','fTeamConflictPolicy','fTeamAttribution','fTeamSkin','fTeamAudit','fTeamTest','fTeamLeave'];

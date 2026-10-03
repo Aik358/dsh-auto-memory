@@ -5,6 +5,7 @@
 import { readFileSync } from 'node:fs'
 import { createHash } from 'node:crypto'
 import vm from 'node:vm'
+import { assertNavigationContract } from '../lib/navigation-contract.mjs'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
 
@@ -47,7 +48,7 @@ ok(!/'data-dam-block'/.test(SEG), 'A6 ★挂载点零 block 锚（结构层语�
 ok(!/'data-dam-kind'/.test(SEG), 'A7 ★挂载点零 kind 锚');
 // 守恒
 eq((SRC.match(/(?<!function )MEMORY_TABS\(\)/g) || []).length, 2, 'A8 ★计数锁 MEMORY_TABS() = 2');
-ok(['page-nav','page','settings'].every(region=>SRC.includes(region)) && SRC.includes('data-dam-primary-nav') && SRC.includes('data-dam-secondary-nav'), 'A9 四主入口、次级导航与设置结构契约在场');
+ok(assertNavigationContract(SRC).primary===4, 'A9 真执行四主入口、14旧tab+设置内容映射、12新旧款目的页均可达');
 ok(damNoMixedEol(SRC), 'A10 纯 CRLF');
 // 三处挂载点 + 原文案
 // ★2026-09-30 双皮肤块：生成区现有两块（legacy + 三套变体），故「经典源」必须两块都剥。

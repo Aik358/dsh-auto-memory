@@ -122,6 +122,7 @@ settings = replaceOnce(settings, '      var tickPair = useTick()', `      var ti
       var i5Draft = useRef({})
       var i5Groups = useRef({})
       var i5Alive = useRef(true), i5Read = useRef(0), i5Busy = useRef(false)
+      var i5GuideMode = useRef('')
       var i5Identity = iter5Identity()
       var i5DraftKey = i5Identity + '|' + (props && props.draftScope || 'workbench')
 
@@ -132,6 +133,14 @@ settings = replaceOnce(settings, '      var tickPair = useTick()', `      var ti
         return function () { i5Alive.current = false; window.removeEventListener('beforeunload', before) }
       }, [])
       function i5Ok() { return i5Alive.current && i5Identity === iter5Identity() }
+      function i5ApplySem(value) {
+        if (!i5Ok()) return
+        setSem(value)
+        var mode = i5GuideMode.current
+        if (!mode || (i5Base.current || {}).semanticEngineMode !== mode) return
+        i5GuideMode.current = ''
+        setGuide(mode === 'js' && value.ready === false ? 'js' : mode === 'python' && value.pythonInt8Present === false ? 'python' : '')
+      }
       function i5Record(key, value) {
         if (JSON.stringify(value) === JSON.stringify((i5Base.current || {})[key])) { delete i5Draft.current[key]; delete i5Groups.current[key] }
         else { i5Draft.current[key] = value; i5Groups.current[key] = (iter5SettingDef(key) || {}).group || i5Group[0] }
@@ -192,6 +201,7 @@ const modeEnd = settings.indexOf('      var sectionLabels =', modeStart)
 settings = settings.slice(0, modeStart) + `      function onEngineModeChange(e) {
         var v = e.target.value
         if (busy) return
+        i5GuideMode.current = ''
         i5Read.current++;i5Busy.current=true
         setBusy(true); setErr(''); setMsg('')
         saveConfigPatch({ semanticEngineMode: v }, {
@@ -200,11 +210,8 @@ settings = settings.slice(0, modeStart) + `      function onEngineModeChange(e) 
             i5Base.current = configOf(d)
             setCfg(Object.assign({}, configOf(d), i5Draft.current)); setBusy(false);i5Busy.current=false
             setMsg(L('检索模式已即时生效', 'Retrieval mode saved immediately'))
-            refreshSem(function (s) {
-              if (!i5Ok()) return
-              setSem(s)
-              setGuide(v === 'js' && !s.ready ? 'js' : v === 'python' && !s.pythonInt8Present ? 'python' : '')
-            },null,setSem)
+            i5GuideMode.current = v
+            refreshSem(i5ApplySem,null,setSem)
           }, onError: function (e) { if (i5Ok()) { setErr(e.message); setBusy(false);i5Busy.current=false } }
         })
       }
@@ -213,7 +220,8 @@ settings = replaceOnce(settings,
   "function section(key, title, content) { return h('section', { id: 'dam-settings-' + key, 'data-dam-settings-group': '' }, h('h3', null, title), content) }",
   "function section(key, title, content) { return iter5SettingSection(key, title, content, i5Group[0], i5SettingsId, !!guide || detOpen) }")
 settings = replaceOnce(settings, "      return h('div', { 'data-dam-settings': '' },", `      return h('div', { ref: i5Root, 'data-dam-settings': '', 'data-i5-dirty': dirty ? 'true' : 'false', 'data-settings-v3': '' },
-        h('div', { className: 'i5-settings-heading' }, h('h2', null, L3.apply(null, ITER5_SETTINGS_GROUPS.find(function(g){return g[0]===i5Group[0]}).slice(1))), h(Iter5SettingsSearch, { root:i5Root, select:i5Group[1], id:i5SettingsId })),
+        h('div', { className: 'i5-settings-heading' }, h('h2', null, L3.apply(null, ITER5_SETTINGS_GROUPS.find(function(g){return g[0]===i5Group[0]}).slice(1))), h(Iter5SettingsSearch, { root:i5Root, select:i5Group[1], id:i5SettingsId, edit:function(key){if(/^subagent(Model|Provider|ReasoningEffort)/.test(key))openModels();if(key.split('.')[0]==='promptLayerOverrides')setPromptEditOpen(true);if(key.split('.')[0]==='promptSectionToggles')setPsecOpen(true)} })),
+        h('style', { 'data-dam-settings-css': '' }, ITER5_SETTINGS_CSS),
         h('label', {className:'i5-settings-mobile'}, L3('设置分区','Settings section','設定セクション'), h('select', {'aria-label':L3('设置分区','Settings section','設定セクション'), value:i5Group[0], onChange:function(e){i5Group[1](e.target.value)}}, ITER5_SETTINGS_GROUPS.map(function(g){return h('option',{key:g[0],value:g[0]},L3.apply(null,g.slice(1)))}))),
         h(Iter5Tabs, { id: 'i5-settings', label: L('设置分组', 'Settings groups'), value:i5Group[0], onChange:i5Group[1], items:ITER5_SETTINGS_GROUPS.map(function(g){return [g[0],L3.apply(null,g.slice(1)),Object.keys(i5Groups.current).some(function(k){return i5Groups.current[k]===g[0]})]}) }),
         msg && !dirty ? h('p', {role:'status',className:'i5-settings-status'}, msg) : null,`)
@@ -244,12 +252,12 @@ settings = settings.replace("'tauHi 0.45 · tauLo 0.35 · deltaExp 0.03 · delta
 settings = replaceOnce(settings, "try { openDialog({ kind: 'welcomeTour' }) } catch (eTour) {}", "try { openManualWelcomeTourPre() } catch (eTour) {}")
 // Avoid global selector collisions with the classic settings surface.
 settings = replaceOnce(settings, "return h('div', { style: panelStyle }, kids)", `return h(Iter5Dialog, { title: L('子代理模型与思考强度', 'Subagent model and reasoning'), onClose: function () { setMdlOpen(false) } },
-          h('div', { 'data-native-model-picker': '' }, kids.slice(1)),
+          h('div', { 'data-native-model-picker': '', 'data-i5-settings-id': i5SettingsId }, kids.slice(1)),
           h('p', { className: 'i5-muted' }, L('选择会保留在设置草稿中，保存更改后生效。', 'Selections stay in the settings draft until you save changes.')))`)
 settings = replaceOnce(settings, "key: '__default__', 'data-dam-slot'", "key: '__default__', 'aria-pressed': !cfg.subagentModel, 'data-dam-slot'")
-settings = replaceOnce(settings, "key: p.id + '/' + m.id, 'data-dam-slot'", "key: p.id + '/' + m.id, 'aria-pressed': cfg.subagentModel === m.id && cfg.subagentProvider === p.id, 'data-dam-slot'")
-settings = replaceOnce(settings, "key: 'eff-' + row[0] + '-' + (o[0] || 'def'), 'data-dam-slot'", "key: 'eff-' + row[0] + '-' + (o[0] || 'def'), 'aria-pressed': cur === o[0], 'data-dam-slot'")
-settings = replaceOnce(settings, "key: '__manual__', 'data-dam-slot'", "key: '__manual__', 'aria-label': L('手动输入模型', 'Manual model ID'), 'data-dam-slot'")
+settings = replaceOnce(settings, "key: p.id + '/' + m.id, 'data-dam-slot'", "key: p.id + '/' + m.id, 'data-i5-editor-keys': 'subagentProvider', 'aria-pressed': cfg.subagentModel === m.id && cfg.subagentProvider === p.id, 'data-dam-slot'")
+settings = replaceOnce(settings, "key: 'eff-' + row[0] + '-' + (o[0] || 'def'), 'data-dam-slot'", "key: 'eff-' + row[0] + '-' + (o[0] || 'def'), 'data-i5-editor-keys': row[0], 'aria-pressed': cur === o[0], 'data-dam-slot'")
+settings = replaceOnce(settings, "key: '__manual__', 'data-dam-slot'", "key: '__manual__', 'data-i5-editor-keys': 'subagentModel', 'aria-label': L('手动输入模型', 'Manual model ID'), 'data-dam-slot'")
 settings = replaceOnce(settings, "browseOpen ? h('div', { style:", "browseOpen ? h(Iter5Dialog, { title: L('选择记忆目录', 'Choose memory directory'), onClose: function () { setBrowseOpen(false) } }, h('div', { 'data-native-path-browser': '', style:")
 settings = replaceOnce(settings, "onClick: function () { setBrowseOpen(false) } }, t('close'))))\n            : null", "onClick: function () { setBrowseOpen(false) } }, t('close')))))\n            : null")
 settings = replaceOnce(settings, "}, '📁 ' + d.name)", "}, h(Iter5Icon, { name: 'folder' }), d.name)")
@@ -266,6 +274,10 @@ settings = settings.replace("if (!alive) return", "if (!alive || request!==i5Rea
 settings = settings.replace("var gateOk = cfg.associativeMemoryEnabled === true && cfg.activationInboxEnabled === true", "var live = i5Base.current || {}; var gateOk = live.associativeMemoryEnabled === true && live.activationInboxEnabled === true")
 settings = settings.replace("setMsg(t('saved') + (d.migrated ? ' · ' + d.migrated : '') + (d.warning ? ' · ' + d.warning : ''))", "setMsg(t('saved') + (d.migrated ? ' ' + d.migrated : '') + (d.warning ? ' ' + d.warning : ''))")
 settings = settings.replaceAll('if (busy) return', 'if (i5Busy.current) return')
+// Every successful semantic read uses the same apply path. The save broadcast may
+// supersede the initiating request; its accepted response must still open setup.
+settings = settings.replaceAll('refreshSem(setSem)', 'refreshSem(i5ApplySem,null,setSem)')
+settings = replaceOnce(settings, 'function apply(value){if(alive)setSem(value)}', 'function apply(value){if(alive)i5ApplySem(value)}')
 let storage = client.slice(client.indexOf('    function StorageTab(props) {'), client.indexOf('    function NotesTab() {'))
 storage = replaceOnce(storage, 'function StorageTab(props)', 'function Iter5Storage(props)')
 storage = storage.replaceAll(".then(function (r) { return r.json() })", ".then(function (r) { return r.json().then(function (j) { if (!r.ok || (j && j.error)) throw Error(j && (j.error || j.reason) || 'Request failed'); return j }) })")
@@ -333,7 +345,8 @@ settings = settings.replace("L('引擎', 'Engine')", "L('查找与回忆', 'Find
 settings = settings.replace("L('shadow 只记录', 'shadow (record only)')", "L('只观察，不交给 AI', 'Observe only; do not supply to AI')").replace("L('canary 显式回忆注入', 'canary (explicit recall)')", "L('明确要求回忆时提供', 'Supply on explicit recall requests')").replace("L('active 全部注入', 'active (all)')", "L('主动提供相关记忆', 'Proactively supply matching memories')")
 settings = settings.replace("L('balanced 3×40', 'balanced 3×40')", "L('平衡：3 条 × 40 字符', 'Balanced: 3 × 40 characters')").replace("L('dense 6×20', 'dense 6×20')", "L('广泛：6 条 × 20 字符', 'Broad: 6 × 20 characters')").replace("L('custom 自定义', 'custom')", "L('自定义', 'Custom')")
 settings = settings.replace("['lexical', t('semLexOnly')], ['js', t('semJs')], ['python', t('semPy')]", "['lexical', L('按关键词查找（无需下载模型）', 'Keywords (no model download)')], ['js', L('按意思查找（需本地模型）', 'Meaning (requires a local model)')], ['python', L('Python 搜索工具（需单独安装）', 'Python search tools (separate setup)')]")
-const generated = begin + '\n    var ITER5_CSS = ' + JSON.stringify(css) + '\n' + ui + '\n' + readSkin('settings-schema.js') + '\n' + readSkin('settings-copy.js') + '\n' + readSkin('settings-layout.js') + '\n' + settings + storage + skills + stats + end + '\n'
+const settingsCss = readSkin('shared-settings-base.css') + '\n' + readSkin('settings-v3.css')
+const generated = begin + '\n    var ITER5_CSS = ' + JSON.stringify(css) + '\n    var ITER5_SETTINGS_CSS = ' + JSON.stringify(settingsCss) + '\n' + ui + '\n' + readSkin('settings-schema.js') + '\n' + readSkin('settings-copy.js') + '\n' + readSkin('settings-layout.js') + '\n' + settings + storage + skills + stats + end + '\n'
 const seam = '    // ===================== dam-skin:end (v4) ====================='
 // ★2026-10-01 修（病根 2）：seam 插入时**一并写出唯一的标记对**，让 generated 恰好被
 //   BEGIN/END 包住。这样每轮产物里产物块恒为 1 份 ⇒ 幂等；

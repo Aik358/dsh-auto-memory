@@ -20,7 +20,7 @@ assert(operationStart>=0 && operationEnd>operationStart)
 client=client.slice(0,operationStart)+client.slice(operationStart,operationEnd).replace('useEffect(function(){','operationEffect(function(){')+client.slice(operationEnd)
 client=client.replace('return { page: Iter5Page, css: ITER5_CSS }', 'return { page: Iter5Page, css: ITER5_CSS, Settings: Iter5Settings, Note: Iter5Note, Calendar: Iter5Calendar }')
 client=client.replace('    return module.exports', `    var fixtureSession='fixture-session';sessions={list:{getSnapshot:function(){return {current:fixtureSession,byId:{[fixtureSession]:{cwd:'/fixture/project',retainedBy:{mainView:1}}}}}}}
-    window.dshTest={setSession:function(sid){fixtureSession=sid;emit()},Panel:MemoryPanel,broadcast:emit,Schema:ITER5_SETTINGS_SCHEMA,Page:Iter5Page,LegacyPage:Legacy5Page,ClassicPage:MemoryPageView,Settings:Iter5Settings,LegacySettings:LEGACY_SKIN_NS.Settings,ClassicSettings:SettingsPage,Note:Iter5Note,LegacyNote:LEGACY_SKIN_NS.Note,ClassicNote:NotesTab,Calendar:Iter5Calendar,LegacyCalendar:LEGACY_SKIN_NS.Calendar,ClassicCalendar:CalendarTab,External:Iter5External,ClassicExternal:ConnectTab,controller:controller,locale:applyLocalePref,t:t,styles:CSS+'\\n'+ITER5_CSS,legacyStyles:LEGACY_ITER5_CSS}
+    window.dshTest={setSession:function(sid){fixtureSession=sid;emit()},Panel:MemoryPanel,broadcast:emit,Schema:ITER5_SETTINGS_SCHEMA,Surface:Iter5Surface,Workbench:MemoryPageView,HostSettings:Iter5HostSettings,Page:Iter5Page,LegacyPage:Legacy5Page,ClassicPage:MemoryPageView,Settings:Iter5Settings,LegacySettings:LEGACY_SKIN_NS.Settings,ClassicSettings:SettingsPage,Note:Iter5Note,LegacyNote:LEGACY_SKIN_NS.Note,ClassicNote:NotesTab,Calendar:Iter5Calendar,LegacyCalendar:LEGACY_SKIN_NS.Calendar,ClassicCalendar:CalendarTab,External:Iter5External,ClassicExternal:ConnectTab,controller:controller,locale:applyLocalePref,t:t,copy:iter5SettingCopy,baseStyles:CSS,skin:function(value){iter5SetStyle(value==='classic'?'legacy':value);damSkinSet(value==='classic'?'classic':'v4');damSkinEnsureCss();emit()}}
     return module.exports`)
 // Detect symbol names rather than silently omitting a surface.
 assert(client.includes('function Iter5External('))
@@ -33,8 +33,9 @@ window.operationEffect=function(effect,deps){React.useEffect(function(){
  return function(){pendingOperationSubscriptions=pendingOperationSubscriptions.filter(x=>x!==ticket);if(ticket.cleanup)ticket.cleanup()};
 },deps)};
 window.flushOperationSubscriptions=function(){deferOperationSubscription=false;let tickets=pendingOperationSubscriptions.slice();pendingOperationSubscriptions=[];tickets.forEach(ticket=>{ticket.cleanup=ticket.effect()})};
-window.mount=function(name,options){let Component=dshTest[name];uiRoot.render(React.createElement('div',{'data-iter5':'','data-i5-style':'instrument','data-deep':'false',style:{height:'100vh'}},React.createElement('style',null,dshTest.styles),React.createElement('main',{className:'i5-main'},React.createElement(Component,Object.assign({key:name+'-'+fixtureNonce,source:'/fixture/notes/MEMORY.md',nonce:fixtureNonce,onNav:function(){},onExit:function(){}},options||{})))))};
+window.mount=function(name,options){let Component=dshTest[name];uiRoot.render(React.createElement(dshTest.Surface,{kind:'page'},React.createElement('div',{'data-iter5':'','data-deep':'false',style:{height:'100vh'}},React.createElement('style',{'data-fixture-base-css':''},dshTest.baseStyles),React.createElement('main',{className:'i5-main'},React.createElement(Component,Object.assign({key:name+'-'+fixtureNonce,source:'/fixture/notes/MEMORY.md',nonce:fixtureNonce,onNav:function(){},onExit:function(){}},options||{}))))))};
 window.remount=function(name,options){fixtureNonce++;mount(name,options)};
+window.settingsPair=function(){fixtureNonce++;uiRoot.render(React.createElement(dshTest.Surface,{kind:'page'},React.createElement('style',{'data-fixture-base-css':''},dshTest.baseStyles),React.createElement('div',{'data-fixture-host':''},React.createElement(dshTest.HostSettings,{key:'host-'+fixtureNonce})),React.createElement('div',{'data-fixture-workbench':''},React.createElement(dshTest.ClassicSettings,{key:'workbench-'+fixtureNonce}))))};
 </script>`
 const server=createServer((req,res)=>{
   res.setHeader('Content-Type',req.url.endsWith('.js')?'text/javascript':'text/html')
@@ -48,6 +49,9 @@ const evidence=[], pageErrors=[]
 let config={boardMode:'graph',semanticEngineMode:'auto',associativeMemoryEnabled:true,activationInboxEnabled:true,jsDecideCandidateScheme:'balanced',jsDecideExcerptChars:75,dayBoundaryMinutes:450,workbenchLoopShort:10,workbenchLoopLong:24,memoryRoot:'/fixture/notes',userMemoryDir:'/fixture/user',teamEnabled:true,teamSyncTransport:'s3',teamSecretAccessKey:'fixture-secret-never-persist',autoSummaryTimes:[],injectExcludeSources:[],waterLevelThresholdMode:'auto'}
 let mode='shadow',failConfig=false,holdNote=null,holdCalendar=null,browseResolvers=[],recallResolvers=[],configResolvers=[],holdConfig=false,semanticResolvers=[],holdSemantic=false,noteWrites=0,calendarWrites=0,holdHandoff=false,handoffResolvers=[]
 let water={live:true,window:1000000,threshold:.67,thresholdMode:'auto'}
+const indexSource=readFileSync(path.join(root,'lib/index.js'),'utf8')
+const promptSections=[...indexSource.match(/PROMPT_SECTION_KEYS_PRE_V1 = Object.freeze\(\[([\s\S]*?)\]\)/)[1].matchAll(/^\s*'([^']+)'/gm)].map(m=>m[1])
+const promptMust=[...indexSource.match(/PROMPT_SECTION_MUST_PRE_V1 = Object.freeze\(\[([\s\S]*?)\]\)/)[1].matchAll(/^\s*'([^']+)'/gm)].map(m=>m[1])
 const page=await browser.newPage({viewport:{width:1280,height:900}})
 page.on('pageerror',e=>pageErrors.push(e.message))
 await page.route('**/api/dsh-auto-memory/**',async route=>{
@@ -56,14 +60,14 @@ await page.route('**/api/dsh-auto-memory/**',async route=>{
  if(pathname==='config'){
   if(request.method()==='GET'){
    const snapshot=structuredClone(config)
-   if(holdConfig){configResolvers.push(()=>respond({config:snapshot,promptSections:[],promptSectionMust:[]}));return}
-   return respond({config:snapshot,promptSections:[],promptSectionMust:[]})
+   if(holdConfig){configResolvers.push(()=>respond({config:snapshot,promptSections,promptSectionMust:promptMust}));return}
+   return respond({config:snapshot,promptSections,promptSectionMust:promptMust})
   }
   if(failConfig)return respond({error:'injected save failure: memoryRoot',fields:{memoryRoot:'invalid directory'}},400)
   config={...config,...body};return respond({config:structuredClone(config)})
  }
  if(pathname==='semantic-status'){
-  const snapshot={activationEmitMode:mode,resolvedTier:'c1',download:{phase:'idle'}}
+  const snapshot={ready:false,pythonInt8Present:false,activationEmitMode:mode,resolvedTier:'c1',download:{phase:'idle'}}
   if(holdSemantic){semanticResolvers.push(()=>respond(snapshot));return}
   return respond(snapshot)
  }
@@ -90,7 +94,7 @@ await page.route('**/api/dsh-auto-memory/**',async route=>{
  if(pathname==='recall'){recallResolvers.push(()=>respond({result:'result for '+body.query}));return}
  return respond({})
 })
-async function mounted(name,options={}){await page.evaluate(([name,options])=>window.remount(name,options),[name,options]);await page.waitForTimeout(80);if(name.includes('Settings'))await page.locator('[data-settings-v3]').waitFor()}
+async function mounted(name,options={}){await page.evaluate(([name,options])=>{dshTest.skin(name.startsWith('Classic')?'classic':name.startsWith('Legacy')?'legacy':'instrument');window.remount(name,options)},[name,options]);await page.waitForTimeout(80);if(name.includes('Settings'))await page.locator('[data-settings-v3]').waitFor()}
 async function tab(group){group=({engine:'find',memory:'find',behavior:'continuity'})[group]||group;const mobile=page.locator('.i5-settings-mobile select').first();if(await mobile.isVisible())await mobile.selectOption(group);else await page.locator('[role=tab][id$="-tab-'+group+'"]').first().click();await page.locator('.i5-settings-advanced').evaluateAll(nodes=>nodes.forEach(n=>n.open=true))}
 const field=key=>page.locator('[data-i5-field]').filter({has:page.locator('label')}).filter({hasText:key})
 const row=key=>page.locator('[data-i5-field]').filter({hasText:key}).first()
@@ -330,9 +334,34 @@ try{
  assert.equal(keys.length,359)
  for(const key of keys){
   await search().fill(key);await search().press('ArrowDown');await search().press('Enter')
-  await page.waitForFunction(key=>{const el=document.activeElement;return el?.dataset.i5CatalogKey===key || el?.dataset.i5Keys?.split(' ').includes(key)},key)
+  await page.waitForFunction(key=>{const el=document.activeElement;return el?.dataset.i5CatalogKey===key || el?.dataset.i5Keys?.split(' ').includes(key.split('.')[0]) || el?.dataset.i5EditorKeys?.split(' ').includes(key)},key)
+  if(await page.locator('[data-native-model-picker]').count())await page.keyboard.press('Escape')
  }
  evidence.push('PASS V3: all 359 source-backed keys locate a real field or explicit compatibility directory entry with ArrowDown + Enter')
+ for(const language of ['zh','en','ja']){
+  await page.evaluate(language=>dshTest.locale(language),language)
+  const labels=[]
+  for(const group of ['record','find','continuity','maintenance','appearance','advanced']){
+   await tab(group)
+   labels.push(...await page.locator('[data-i5-keys]').evaluateAll(rows=>rows.filter(row=>row.dataset.i5Keys).map(row=>({key:row.dataset.i5Keys.split(' ')[0],shown:row.querySelector('.i5-setting-copy>label')?.textContent,old:row.dataset.i5Field}))))
+  }
+  await tab('common')
+  console.log('Checking V3 cross-section labels: '+language+' ('+labels.length+' controls)')
+  for(const {key,shown,old} of labels)for(const label of new Set([shown,old])){
+   if(!label)continue
+   await page.getByRole('combobox').fill(label)
+   const matches=await page.locator('.i5-search-results code').allTextContents()
+   assert(matches.includes(key),'cross-section '+language+' label must find '+key+': '+label)
+  }
+  await page.getByRole('combobox').press('Escape')
+ }
+ await page.evaluate(()=>dshTest.locale('en'))
+ for(const key of ['promptLayerOverrides.snapshotHead','promptSectionToggles.rules-section','subagentProvider','subagentReasoningEffortLong','subagentReasoningEffortShort']){
+  await tab('common');await search().fill(key);await search().press('ArrowDown');await search().press('Enter')
+  await page.waitForFunction(key=>document.activeElement?.dataset.i5EditorKeys?.split(' ').includes(key),key)
+  if(await page.locator('[data-native-model-picker]').count())await page.keyboard.press('Escape')
+ }
+ evidence.push('PASS V3: every mounted control label and original label remains searchable from Common in zh/en/ja; nested prompt switches/layers and model provider/effort keys open and focus real editors')
  await search().fill('autoConsolidate');await search().press('ArrowDown');await search().press('ArrowUp');await search().press('Escape')
  assert.equal(await search().getAttribute('aria-expanded'),'false')
  assert.equal(await page.locator('[data-settings-v3]').count(),1,'Escape closes search without leaving the settings surface')
@@ -350,12 +379,12 @@ try{
  assert.equal(await archiveDays.inputValue(),beforeArchive);assert.equal(await deletionDays.inputValue(),beforeDelete)
  await page.getByRole('button',{name:'Discard changes',exact:true}).click()
  // Opening the actual shipped setup must reveal its UI under the same section.
- await tab('find');await page.getByRole('radio',{name:'Meaning (requires a local model)',exact:true}).check()
+ await tab('find');await page.getByRole('radio',{name:'Meaning (requires a local model)',exact:true}).click()
+ await page.waitForFunction(()=>document.querySelector('input[type=radio][value=js]')?.checked)
  await page.locator('[data-native-engine-guide="js"]').waitFor({state:'visible'})
  assert.equal(await page.locator('[data-dam-savebar]').isVisible(),false,'immediate mode changes remain independent of the normal save bar')
- await page.getByRole('radio',{name:'Auto (recommended)',exact:true}).check().catch(async()=>{
-  await page.locator('input[type=radio][value=auto]').check()
- })
+ await page.locator('input[type=radio][value=auto]').click()
+ await page.waitForFunction(()=>document.querySelector('input[type=radio][value=auto]')?.checked)
  evidence.push('PASS V3: dirty-only save bar, Cancel, recording/lifecycle dependency gates retain values, missing model setup opens visibly after immediate mode change')
  for(const width of [1440,390]){
   await page.setViewportSize({width,height:width===390?844:1000})
@@ -370,6 +399,8 @@ try{
  }
  evidence.push('PASS V3: every settings section rendered and captured at 1440×1000 and 390×844; mobile selector and horizontal overflow checked')
  await page.setViewportSize({width:1440,height:1000});await page.evaluate(()=>dshTest.locale('en'))
+ const acceptRouteLeave=dialog=>dialog.accept()
+ page.on('dialog',acceptRouteLeave)
  for(const surface of ['Page','LegacyPage','ClassicPage']){
   await page.evaluate(()=>{dshTest.controller.setPanelTab('overview')});await mounted(surface)
   if(surface==='ClassicPage'){
@@ -378,24 +409,74 @@ try{
    await page.locator('[data-settings-v3]').waitFor()
   }else{
    const nav=surface==='Page'?page.locator('.i5-rail-nav'):page.locator('.i5-sidebar nav')
-   const primary=nav.locator('[data-i5-nav]').filter({hasNot:page.locator('[data-i5-nav="team"]')})
    const ids=await nav.locator('[data-i5-nav]').evaluateAll(nodes=>nodes.map(n=>n.dataset.i5Nav).filter(id=>id!=='team'))
    assert.deepEqual(ids,['home','library','handoff','settings'])
    await nav.locator('[data-i5-nav="library"]').click()
+   await page.getByRole('button',{name:'Skills & approval',exact:true}).click()
+   await page.locator('[data-page="skills"]').waitFor()
+   await page.getByRole('button',{name:'Recall review',exact:true}).click()
+   await page.locator('[data-page="recall"]').waitFor()
+   await page.getByRole('button',{name:'External sources',exact:true}).click()
+   await page.locator('[data-page="external"]').waitFor()
+   await page.getByText('Source A',{exact:true}).first().waitFor()
    await page.getByRole('button',{name:'Workspace relationships',exact:true}).click()
-   assert.equal(await page.locator('[data-page="mindmap"]').count(),1)
+   await page.locator('[data-page="mindmap"]').waitFor()
    await nav.locator('[data-i5-nav="handoff"]').click()
    await page.locator('.i5-secondary-nav').getByRole('button',{name:'Calendar',exact:true}).click()
-   assert.equal(await page.locator('[data-page="calendar"]').count(),1)
+   await page.locator('[data-page="calendar"]').waitFor()
    await nav.locator('[data-i5-nav="home"]').click()
    await page.getByRole('button',{name:'Statistics & calls',exact:true}).click()
-   assert.equal(await page.locator('[data-page="stats"]').count(),1)
+   await page.locator('[data-page="stats"]').waitFor()
    await nav.locator('[data-i5-nav="settings"]').click();await tab('maintenance')
    await page.getByRole('button',{name:'Open maintenance center',exact:true}).click()
-   assert.equal(await page.locator('[data-page="storage"]').count(),1)
+   await page.locator('[data-page="storage"]').waitFor()
+   await nav.locator('[data-i5-nav="team"]').click()
+   await page.locator('[data-page="team"]').waitFor()
   }
  }
+ page.off('dialog',acceptRouteLeave)
  evidence.push('PASS V3: current/frozen/classic ship four primary destinations; actual secondary relationship/calendar/statistics/maintenance routes remain reachable')
+
+ // Exercise the real MemoryPageView skin dispatcher and actual stylesheet path.
+ // Only base CSS is supplied by the fixture; the shipped Surface, skin selector
+ // and shared settings form are responsible for every remaining stylesheet.
+ await page.evaluate(()=>{dshTest.setSession('v3-workbench-scope');dshTest.controller.setPanelTab('settings')})
+ async function workbench(skin){await page.evaluate(skin=>{dshTest.skin(skin);remount('Workbench')},skin);await page.locator('[data-settings-v3]').waitFor();await tab('record')}
+ await workbench('classic')
+ const calls=()=>page.locator('[data-i5-keys="autoConsolidateDailyMax"] input')
+ await calls().fill('14')
+ for(const skin of ['legacy','instrument','editorial','water','classic']){
+  await workbench(skin);assert.equal(await calls().inputValue(),'14','workbench draft survives skin '+skin)
+  assert(await page.locator('[data-dam-settings-css]').count(),'settings form owns shared stylesheet')
+  const flavor=await page.locator('#dam-shared-ui-style').getAttribute('data-dam-flavor')
+  const shared=await page.locator('#dam-shared-ui-style').textContent()
+  if(['classic','legacy'].includes(skin))assert(!shared.includes('[data-settings-v3]'),'legacy base sheet is not replaced by the variant stylesheet')
+  assert.equal(await page.locator('[data-i5-keys="autoConsolidateDailyMax"] .i5-setting-field').evaluate(el=>getComputedStyle(el).display),'grid')
+  for(const width of [1440,390]){
+   await page.setViewportSize({width,height:width===390?844:1000});await tab('record')
+   await page.screenshot({path:path.join(artifacts,'actual-'+skin+'-record-'+width+'.png')})
+   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2),false,'actual '+skin+' '+width+' horizontal overflow')
+   if(width===390)assert(await page.locator('.i5-settings-mobile select').isVisible())
+  }
+ }
+ await page.setViewportSize({width:1440,height:1000})
+ await page.getByRole('button',{name:'Discard changes',exact:true}).click()
+ await page.evaluate(()=>{dshTest.setSession('v3-isolated-settings');dshTest.skin('classic');settingsPair()})
+ await page.locator('[data-fixture-host] [data-settings-v3]').waitFor()
+ const host=page.locator('[data-fixture-host]'),work=page.locator('[data-fixture-workbench]')
+ async function pairRecord(){await host.locator('[role=tab][id$="-tab-record"]').click();await work.locator('[role=tab][id$="-tab-record"]').click()}
+ const hostCalls=()=>host.locator('[data-i5-keys="autoConsolidateDailyMax"] input'),workCalls=()=>work.locator('[data-i5-keys="autoConsolidateDailyMax"] input')
+ await pairRecord();const savedCalls=await workCalls().inputValue()
+ await hostCalls().fill('11');assert.equal(await workCalls().inputValue(),savedCalls,'host draft does not leak into classic workbench')
+ await workCalls().fill('12');await page.evaluate(()=>settingsPair());await pairRecord()
+ assert.equal(await hostCalls().inputValue(),'11');assert.equal(await workCalls().inputValue(),'12')
+ await host.getByRole('button',{name:'Discard changes',exact:true}).click();await page.evaluate(()=>settingsPair());await pairRecord()
+ assert.equal(await hostCalls().inputValue(),savedCalls);assert.equal(await workCalls().inputValue(),'12','host Cancel leaves workbench recovery record intact')
+ await hostCalls().fill('13');await host.locator('[data-dam-savebar] button[data-dirty]').click()
+ await page.waitForFunction(()=>!document.querySelector('[data-fixture-host] [data-i5-dirty=true]'))
+ assert.equal(await workCalls().inputValue(),'12','saving host retains workbench raw draft')
+ await work.getByRole('button',{name:'Discard changes',exact:true}).click();assert.equal(await workCalls().inputValue(),'13','Cancel uses synchronized committed state')
+ evidence.push('PASS V3: actual classic/legacy/three variants load their own shipped CSS; 1440/390 record screenshots and mobile controls; workbench drafts survive all skin switches; simultaneous classic workbench and host scopes stay isolated through remount, Cancel, save and broadcast')
 
  assert.deepEqual(pageErrors,[],'no browser exceptions')
  writeFileSync(path.join(artifacts,'browser-results.json'),JSON.stringify({environment:'Chromium + React 18; fixture host APIs',browser:browser.version(),evidence,noteWrites,pageErrors},null,2)+'\n')

@@ -116,7 +116,11 @@
     "advanced": true,
     "default": "",
     "condition": "短期axis优先，空回落subagentReasoningEffort；仅off/low/high/max有效；不是模型选择。",
-    "status": "源码定向核对"
+    "status": "源码定向核对",
+    "aliases": [
+      "子代理模型 / 思考强度",
+      "Subagent model & reasoning effort"
+    ]
   },
   {
     "key": "subagentReasoningEffortLong",
@@ -125,7 +129,11 @@
     "advanced": true,
     "default": "",
     "condition": "长期axis优先，空回落subagentReasoningEffort；仅off/low/high/max有效；不是模型选择。",
-    "status": "源码定向核对"
+    "status": "源码定向核对",
+    "aliases": [
+      "子代理模型 / 思考强度",
+      "Subagent model & reasoning effort"
+    ]
   },
   {
     "key": "workbenchRetryMs",
@@ -255,7 +263,11 @@
     "advanced": true,
     "default": "",
     "condition": "subAgentOptions与工作台路由消费；非空才传provider；与model成对，不同provider同名模型不能混认。",
-    "status": "源码定向核对"
+    "status": "源码定向核对",
+    "aliases": [
+      "子代理模型 / 思考强度",
+      "Subagent model & reasoning effort"
+    ]
   },
   {
     "key": "subagentReasoningEffort",
@@ -887,7 +899,10 @@
     "advanced": true,
     "default": "{}",
     "condition": "按key覆盖宿主默认文案；空串回默认；占位符date/ws/budget；非法文本不应清洗用户草稿。",
-    "status": "源码定向核对"
+    "status": "源码定向核对",
+    "aliases": [
+      "fPromptCustom"
+    ]
   },
   {
     "key": "autoPopupEnabled",
@@ -1505,7 +1520,10 @@
     "advanced": false,
     "default": "False",
     "condition": "显式开且连接可用才联网；其他正交项按实际消费者；不可把所有team键一概描述为此门下。",
-    "status": "源码定向核对"
+    "status": "源码定向核对",
+    "aliases": [
+      "teamEnabled"
+    ]
   },
   {
     "key": "teamProjectId",
@@ -1514,7 +1532,10 @@
     "advanced": true,
     "default": "",
     "condition": "显式非空优先，否则team-project-map从git remote派生项目身份；持久化配置仍是宿主共享。",
-    "status": "源码定向核对"
+    "status": "源码定向核对",
+    "aliases": [
+      "teamProjectId"
+    ]
   },
   {
     "key": "teamEndpoint",
@@ -1523,7 +1544,10 @@
     "advanced": true,
     "default": "",
     "condition": "teamEnabled构建S3 transport时传端点；空不出站；修改需重启重建传输。",
-    "status": "源码定向核对"
+    "status": "源码定向核对",
+    "aliases": [
+      "teamEndpoint"
+    ]
   },
   {
     "key": "teamBucket",
@@ -1532,7 +1556,10 @@
     "advanced": true,
     "default": "",
     "condition": "teamEnabled构建S3 transport时传bucket；不猜HTTP/folder也消费；修改需重启。",
-    "status": "源码定向核对"
+    "status": "源码定向核对",
+    "aliases": [
+      "teamBucket"
+    ]
   },
   {
     "key": "teamRegion",
@@ -1541,7 +1568,10 @@
     "advanced": true,
     "default": "",
     "condition": "teamEnabled构建S3 transport时传region；修改需重启。",
-    "status": "源码定向核对"
+    "status": "源码定向核对",
+    "aliases": [
+      "teamRegion"
+    ]
   },
   {
     "key": "teamPathStyle",
@@ -1550,7 +1580,10 @@
     "advanced": true,
     "default": "True",
     "condition": "构建S3 transport使用pathStyle；OSS/MinIO需要此档，AWS依实际连接；修改需重启。",
-    "status": "源码定向核对"
+    "status": "源码定向核对",
+    "aliases": [
+      "teamPathStyle"
+    ]
   },
   {
     "key": "teamSyncTransport",
@@ -1559,7 +1592,10 @@
     "advanced": true,
     "default": "s3",
     "condition": "main UI有s3/http/folder；安全复审核实HTTP装配未接线/folder未实现，正式整合需禁用并保留旧值。",
-    "status": "源码定向核对"
+    "status": "源码定向核对",
+    "aliases": [
+      "teamSyncTransport"
+    ]
   },
   {
     "key": "teamAccessKeyId",
@@ -1568,7 +1604,10 @@
     "advanced": true,
     "default": "",
     "condition": "S3 transport构建凭据ID，不能输出日志/浏览器localStorage；修改需重启。",
-    "status": "源码定向核对"
+    "status": "源码定向核对",
+    "aliases": [
+      "teamAccessKeyId"
+    ]
   },
   {
     "key": "teamSecretAccessKey",
@@ -1577,7 +1616,10 @@
     "advanced": true,
     "default": "",
     "condition": "S3 transport构建秘密；专用密码框/显隐/失败草稿；不得泄露或在原型接真密钥。",
-    "status": "源码定向核对"
+    "status": "源码定向核对",
+    "aliases": [
+      "teamSecretAccessKey"
+    ]
   },
   {
     "key": "teamSyncIntervalMs",
@@ -1586,7 +1628,10 @@
     "advanced": true,
     "default": "5000",
     "condition": "team-sync正整数间隔与宿主构建值；防抖下限，非定时轮询承诺；非法回落既有默认。",
-    "status": "源码定向核对"
+    "status": "源码定向核对",
+    "aliases": [
+      "teamSyncIntervalMs"
+    ]
   },
   {
     "key": "teamOutboxMaxItems",
@@ -1595,7 +1640,10 @@
     "advanced": true,
     "default": "500",
     "condition": "outbox构建正数向下取整，否则500；溢出丢最旧并降级；不是远端存储容量。",
-    "status": "源码定向核对"
+    "status": "源码定向核对",
+    "aliases": [
+      "teamOutboxMaxItems"
+    ]
   },
   {
     "key": "teamMaxConflicts",
@@ -1604,7 +1652,10 @@
     "advanced": true,
     "default": "200",
     "condition": "team-merge构建正数向下取整，否则200；冲突中心容量上限。",
-    "status": "源码定向核对"
+    "status": "源码定向核对",
+    "aliases": [
+      "teamMaxConflicts"
+    ]
   },
   {
     "key": "teamShowMemberBadges",
@@ -1613,7 +1664,10 @@
     "advanced": true,
     "default": "True",
     "condition": "TeamTab客户端挂载时读取config.teamShowMemberBadges!==false控制成员徽章/摘要（client.js:9287）；属于客户端显示，不是网络门。保存后已挂载组件是否重取待核。",
-    "status": "源码定向核对"
+    "status": "源码定向核对",
+    "aliases": [
+      "teamShowMemberBadges"
+    ]
   },
   {
     "key": "teamE2E",
@@ -1622,7 +1676,10 @@
     "advanced": true,
     "default": "off",
     "condition": "off明文；unsupported是声明不可用，严禁显示为已加密或静默退回明文。",
-    "status": "源码定向核对"
+    "status": "源码定向核对",
+    "aliases": [
+      "teamE2E"
+    ]
   },
   {
     "key": "teamUsageReport",
@@ -1631,7 +1688,10 @@
     "advanced": true,
     "default": "False",
     "condition": "仅本机日志留痕开关，无网络遥测；与teamEnabled正交。",
-    "status": "源码定向核对"
+    "status": "源码定向核对",
+    "aliases": [
+      "teamUsageReport"
+    ]
   },
   {
     "key": "teamUsageLog",
@@ -1640,7 +1700,10 @@
     "advanced": true,
     "default": "",
     "condition": "teamUsageReport=true时本地留痕路径，无网络。",
-    "status": "源码定向核对"
+    "status": "源码定向核对",
+    "aliases": [
+      "teamUsageLog"
+    ]
   },
   {
     "key": "teamInjectEnabled",
@@ -1649,7 +1712,10 @@
     "advanced": true,
     "default": "False",
     "condition": "teamEnabled∧teamInjectEnabled后团队快照注入；不改同步/连接总门。",
-    "status": "源码定向核对"
+    "status": "源码定向核对",
+    "aliases": [
+      "teamInjectEnabled"
+    ]
   },
   {
     "key": "teamDerivedDebounceMs",
@@ -1658,7 +1724,10 @@
     "advanced": true,
     "default": "2000",
     "condition": "derived构建正数向下取整，否则2000；重算防抖，毫秒。",
-    "status": "源码定向核对"
+    "status": "源码定向核对",
+    "aliases": [
+      "teamDerivedDebounceMs"
+    ]
   },
   {
     "key": "teamServerUrl",
@@ -1667,7 +1736,10 @@
     "advanced": true,
     "default": "",
     "condition": "team-auth有效服务地址(serverUrl或teamServerUrl)；和S3端点不同通路，不能把两者合成单一地址。",
-    "status": "源码定向核对"
+    "status": "源码定向核对",
+    "aliases": [
+      "teamServerUrl"
+    ]
   },
   {
     "key": "teamId",
@@ -1676,7 +1748,10 @@
     "advanced": true,
     "default": "",
     "condition": "team-auth非空服务地址+团队ID后才认证；空未加入团队。",
-    "status": "源码定向核对"
+    "status": "源码定向核对",
+    "aliases": [
+      "teamId"
+    ]
   },
   {
     "key": "teamMemberName",
@@ -1685,7 +1760,10 @@
     "advanced": true,
     "default": "",
     "condition": "未逐一验证精确门控/钳制；待核。以下消费者与源码注释供评审，不按名称推断。",
-    "status": "字段已收录/生效细节待核"
+    "status": "字段已收录/生效细节待核",
+    "aliases": [
+      "teamMemberName"
+    ]
   },
   {
     "key": "teamConflictPolicy",
@@ -1694,7 +1772,10 @@
     "advanced": true,
     "default": "ask",
     "condition": "ask/mine/theirs/both由冲突处理消费；未设置读取点历史回落keep-both与DEFAULT ask不同，保留当前显式值。",
-    "status": "源码定向核对"
+    "status": "源码定向核对",
+    "aliases": [
+      "teamConflictPolicy"
+    ]
   },
   {
     "key": "teamAuditEnabled",
@@ -1703,7 +1784,10 @@
     "advanced": true,
     "default": "False",
     "condition": "未逐一验证精确门控/钳制；待核。以下消费者与源码注释供评审，不按名称推断。",
-    "status": "字段已收录/生效细节待核"
+    "status": "字段已收录/生效细节待核",
+    "aliases": [
+      "teamAuditEnabled"
+    ]
   },
   {
     "key": "externalSources.workbuddy-user",
