@@ -1,0 +1,10274 @@
+[
+ {
+  "name": "data-dam-sidebar-btn",
+  "kind": "控件",
+  "css": 3,
+  "js": 3,
+  "read": 2,
+  "tags": [
+   "button"
+  ],
+  "first": 67,
+  "comps": [
+   "CSS×3",
+   "entryButtonRect",
+   "SidebarButton",
+   "apply"
+  ],
+  "lines": [
+   67,
+   1928,
+   1929,
+   1930,
+   3399,
+   7904
+  ],
+  "occComps": [
+   [
+    67,
+    "entryButtonRect",
+    ""
+   ],
+   [
+    1928,
+    "CSS",
+    ""
+   ],
+   [
+    1929,
+    "CSS",
+    ""
+   ],
+   [
+    1930,
+    "CSS",
+    ""
+   ],
+   [
+    3399,
+    "SidebarButton",
+    "button"
+   ],
+   [
+    7904,
+    "apply",
+    ""
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-page",
+  "kind": "容器",
+  "css": 40,
+  "js": 4,
+  "read": 0,
+  "tags": [
+   "(js)",
+   "div"
+  ],
+  "first": 1710,
+  "comps": [
+   "CSS×43",
+   "MemoryPageView"
+  ],
+  "lines": [
+   1710,
+   1713,
+   1746,
+   1750,
+   1751,
+   1778,
+   1780,
+   1784,
+   1785,
+   1786,
+   1787,
+   1792,
+   1797,
+   1798,
+   1799,
+   1801,
+   1804,
+   1805,
+   1807,
+   1811,
+   1813,
+   1820,
+   1829,
+   1830,
+   1831,
+   1832,
+   1833,
+   1835,
+   1835,
+   1838,
+   1838,
+   1839,
+   1840,
+   1841,
+   1844,
+   1844,
+   1845,
+   1845,
+   1846,
+   1846,
+   1909,
+   1909,
+   1912,
+   5933
+  ],
+  "occComps": [
+   [
+    1710,
+    "CSS",
+    ""
+   ],
+   [
+    1713,
+    "CSS",
+    ""
+   ],
+   [
+    1746,
+    "CSS",
+    ""
+   ],
+   [
+    1750,
+    "CSS",
+    ""
+   ],
+   [
+    1751,
+    "CSS",
+    ""
+   ],
+   [
+    1778,
+    "CSS",
+    ""
+   ],
+   [
+    1780,
+    "CSS",
+    ""
+   ],
+   [
+    1784,
+    "CSS",
+    ""
+   ],
+   [
+    1785,
+    "CSS",
+    ""
+   ],
+   [
+    1786,
+    "CSS",
+    ""
+   ],
+   [
+    1787,
+    "CSS",
+    ""
+   ],
+   [
+    1792,
+    "CSS",
+    ""
+   ],
+   [
+    1797,
+    "CSS",
+    ""
+   ],
+   [
+    1798,
+    "CSS",
+    ""
+   ],
+   [
+    1799,
+    "CSS",
+    ""
+   ],
+   [
+    1801,
+    "CSS",
+    ""
+   ],
+   [
+    1804,
+    "CSS",
+    ""
+   ],
+   [
+    1805,
+    "CSS",
+    ""
+   ],
+   [
+    1807,
+    "CSS",
+    ""
+   ],
+   [
+    1811,
+    "CSS",
+    ""
+   ],
+   [
+    1813,
+    "CSS",
+    ""
+   ],
+   [
+    1820,
+    "CSS",
+    ""
+   ],
+   [
+    1829,
+    "CSS",
+    ""
+   ],
+   [
+    1830,
+    "CSS",
+    ""
+   ],
+   [
+    1831,
+    "CSS",
+    ""
+   ],
+   [
+    1832,
+    "CSS",
+    ""
+   ],
+   [
+    1833,
+    "CSS",
+    ""
+   ],
+   [
+    1835,
+    "CSS",
+    ""
+   ],
+   [
+    1835,
+    "CSS",
+    ""
+   ],
+   [
+    1838,
+    "CSS",
+    ""
+   ],
+   [
+    1838,
+    "CSS",
+    ""
+   ],
+   [
+    1839,
+    "CSS",
+    ""
+   ],
+   [
+    1840,
+    "CSS",
+    ""
+   ],
+   [
+    1841,
+    "CSS",
+    ""
+   ],
+   [
+    1844,
+    "CSS",
+    ""
+   ],
+   [
+    1844,
+    "CSS",
+    ""
+   ],
+   [
+    1845,
+    "CSS",
+    ""
+   ],
+   [
+    1845,
+    "CSS",
+    ""
+   ],
+   [
+    1846,
+    "CSS",
+    ""
+   ],
+   [
+    1846,
+    "CSS",
+    ""
+   ],
+   [
+    1909,
+    "CSS",
+    ""
+   ],
+   [
+    1909,
+    "CSS",
+    ""
+   ],
+   [
+    1912,
+    "CSS",
+    ""
+   ],
+   [
+    5933,
+    "MemoryPageView",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-panel",
+  "kind": "JS 选择器",
+  "css": 15,
+  "js": 5,
+  "read": 2,
+  "tags": [
+   "(js)",
+   "div"
+  ],
+  "first": 1711,
+  "comps": [
+   "CSS×17",
+   "MemoryPanel",
+   "setMany",
+   "apply"
+  ],
+  "lines": [
+   1711,
+   1713,
+   1715,
+   1727,
+   1728,
+   1729,
+   1730,
+   1731,
+   1733,
+   1734,
+   1735,
+   1737,
+   1738,
+   1739,
+   1750,
+   1907,
+   1937,
+   6041,
+   7809,
+   7904
+  ],
+  "occComps": [
+   [
+    1711,
+    "CSS",
+    ""
+   ],
+   [
+    1713,
+    "CSS",
+    ""
+   ],
+   [
+    1715,
+    "CSS",
+    ""
+   ],
+   [
+    1727,
+    "CSS",
+    ""
+   ],
+   [
+    1728,
+    "CSS",
+    ""
+   ],
+   [
+    1729,
+    "CSS",
+    ""
+   ],
+   [
+    1730,
+    "CSS",
+    ""
+   ],
+   [
+    1731,
+    "CSS",
+    ""
+   ],
+   [
+    1733,
+    "CSS",
+    ""
+   ],
+   [
+    1734,
+    "CSS",
+    ""
+   ],
+   [
+    1735,
+    "CSS",
+    ""
+   ],
+   [
+    1737,
+    "CSS",
+    ""
+   ],
+   [
+    1738,
+    "CSS",
+    ""
+   ],
+   [
+    1739,
+    "CSS",
+    ""
+   ],
+   [
+    1750,
+    "CSS",
+    ""
+   ],
+   [
+    1907,
+    "CSS",
+    ""
+   ],
+   [
+    1937,
+    "CSS",
+    ""
+   ],
+   [
+    6041,
+    "MemoryPanel",
+    "div"
+   ],
+   [
+    7809,
+    "setMany",
+    "select"
+   ],
+   [
+    7904,
+    "apply",
+    ""
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-resize",
+  "kind": "容器",
+  "css": 2,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 1740,
+  "comps": [
+   "CSS×2",
+   "MemoryPanel"
+  ],
+  "lines": [
+   1740,
+   1743,
+   6069
+  ],
+  "occComps": [
+   [
+    1740,
+    "CSS",
+    ""
+   ],
+   [
+    1743,
+    "CSS",
+    ""
+   ],
+   [
+    6069,
+    "MemoryPanel",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-page-head",
+  "kind": "容器",
+  "css": 3,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "header"
+  ],
+  "first": 1762,
+  "comps": [
+   "CSS×3",
+   "MemoryPageView"
+  ],
+  "lines": [
+   1762,
+   1764,
+   1765,
+   5940
+  ],
+  "occComps": [
+   [
+    1762,
+    "CSS",
+    ""
+   ],
+   [
+    1764,
+    "CSS",
+    ""
+   ],
+   [
+    1765,
+    "CSS",
+    ""
+   ],
+   [
+    5940,
+    "MemoryPageView",
+    "header"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-page-main",
+  "kind": "容器",
+  "css": 3,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 1768,
+  "comps": [
+   "CSS×3",
+   "MemoryPageView"
+  ],
+  "lines": [
+   1768,
+   1777,
+   1789,
+   5956
+  ],
+  "occComps": [
+   [
+    1768,
+    "CSS",
+    ""
+   ],
+   [
+    1777,
+    "CSS",
+    ""
+   ],
+   [
+    1789,
+    "CSS",
+    ""
+   ],
+   [
+    5956,
+    "MemoryPageView",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-page-nav",
+  "kind": "容器",
+  "css": 6,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "nav"
+  ],
+  "first": 1769,
+  "comps": [
+   "CSS×6",
+   "MemoryPageView"
+  ],
+  "lines": [
+   1769,
+   1771,
+   1774,
+   1777,
+   1790,
+   1909,
+   5957
+  ],
+  "occComps": [
+   [
+    1769,
+    "CSS",
+    ""
+   ],
+   [
+    1771,
+    "CSS",
+    ""
+   ],
+   [
+    1774,
+    "CSS",
+    ""
+   ],
+   [
+    1777,
+    "CSS",
+    ""
+   ],
+   [
+    1790,
+    "CSS",
+    ""
+   ],
+   [
+    1909,
+    "CSS",
+    ""
+   ],
+   [
+    5957,
+    "MemoryPageView",
+    "nav"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-page-content",
+  "kind": "容器",
+  "css": 2,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 1776,
+  "comps": [
+   "CSS×2",
+   "MemoryPageView"
+  ],
+  "lines": [
+   1776,
+   1777,
+   5961
+  ],
+  "occComps": [
+   [
+    1776,
+    "CSS",
+    ""
+   ],
+   [
+    1777,
+    "CSS",
+    ""
+   ],
+   [
+    5961,
+    "MemoryPageView",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-section",
+  "kind": "控件",
+  "css": 1,
+  "js": 4,
+  "read": 0,
+  "tags": [
+   "button",
+   "div"
+  ],
+  "first": 1778,
+  "comps": [
+   "LogsTab×4",
+   "CSS"
+  ],
+  "lines": [
+   1778,
+   3881,
+   3882,
+   3883,
+   3888
+  ],
+  "occComps": [
+   [
+    1778,
+    "CSS",
+    ""
+   ],
+   [
+    3881,
+    "LogsTab",
+    "button"
+   ],
+   [
+    3882,
+    "LogsTab",
+    "div"
+   ],
+   [
+    3883,
+    "LogsTab",
+    "div"
+   ],
+   [
+    3888,
+    "LogsTab",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-fold",
+  "kind": "控件",
+  "css": 7,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "button"
+  ],
+  "first": 1780,
+  "comps": [
+   "CSS×7",
+   "FoldableLogs"
+  ],
+  "lines": [
+   1780,
+   1784,
+   1785,
+   1786,
+   1787,
+   1909,
+   1909,
+   3901
+  ],
+  "occComps": [
+   [
+    1780,
+    "CSS",
+    ""
+   ],
+   [
+    1784,
+    "CSS",
+    ""
+   ],
+   [
+    1785,
+    "CSS",
+    ""
+   ],
+   [
+    1786,
+    "CSS",
+    ""
+   ],
+   [
+    1787,
+    "CSS",
+    ""
+   ],
+   [
+    1909,
+    "CSS",
+    ""
+   ],
+   [
+    1909,
+    "CSS",
+    ""
+   ],
+   [
+    3901,
+    "FoldableLogs",
+    "button"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-body",
+  "kind": "容器",
+  "css": 8,
+  "js": 2,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 1792,
+  "comps": [
+   "CSS×8",
+   "MemoryPageView",
+   "MemoryPanel"
+  ],
+  "lines": [
+   1792,
+   1797,
+   1798,
+   1799,
+   1801,
+   1807,
+   1844,
+   1864,
+   5962,
+   6068
+  ],
+  "occComps": [
+   [
+    1792,
+    "CSS",
+    ""
+   ],
+   [
+    1797,
+    "CSS",
+    ""
+   ],
+   [
+    1798,
+    "CSS",
+    ""
+   ],
+   [
+    1799,
+    "CSS",
+    ""
+   ],
+   [
+    1801,
+    "CSS",
+    ""
+   ],
+   [
+    1807,
+    "CSS",
+    ""
+   ],
+   [
+    1844,
+    "CSS",
+    ""
+   ],
+   [
+    1864,
+    "CSS",
+    ""
+   ],
+   [
+    5962,
+    "MemoryPageView",
+    "div"
+   ],
+   [
+    6068,
+    "MemoryPanel",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-flow",
+  "kind": "控件",
+  "css": 11,
+  "js": 20,
+  "read": 0,
+  "tags": [
+   "(js)",
+   "div",
+   "button"
+  ],
+  "first": 1807,
+  "comps": [
+   "CSS×12",
+   "LogsTab×3",
+   "migRows×3",
+   "RefineTab×2",
+   "MemoryHubTab×2",
+   "PlanTab×2",
+   "ReflectionsTab×2",
+   "SearchTab×2",
+   "ConnectTab×2",
+   "body"
+  ],
+  "lines": [
+   1807,
+   1809,
+   1811,
+   1813,
+   1820,
+   1829,
+   1830,
+   1831,
+   1832,
+   1833,
+   1844,
+   1912,
+   3815,
+   3817,
+   3881,
+   3892,
+   3893,
+   4273,
+   4274,
+   4510,
+   4511,
+   4512,
+   4977,
+   4978,
+   5034,
+   5035,
+   5063,
+   5064,
+   5442,
+   5793,
+   5794
+  ],
+  "occComps": [
+   [
+    1807,
+    "CSS",
+    ""
+   ],
+   [
+    1809,
+    "CSS",
+    ""
+   ],
+   [
+    1811,
+    "CSS",
+    ""
+   ],
+   [
+    1813,
+    "CSS",
+    ""
+   ],
+   [
+    1820,
+    "CSS",
+    ""
+   ],
+   [
+    1829,
+    "CSS",
+    ""
+   ],
+   [
+    1830,
+    "CSS",
+    ""
+   ],
+   [
+    1831,
+    "CSS",
+    ""
+   ],
+   [
+    1832,
+    "CSS",
+    ""
+   ],
+   [
+    1833,
+    "CSS",
+    ""
+   ],
+   [
+    1844,
+    "CSS",
+    ""
+   ],
+   [
+    1912,
+    "CSS",
+    ""
+   ],
+   [
+    3815,
+    "RefineTab",
+    "div"
+   ],
+   [
+    3817,
+    "RefineTab",
+    "div"
+   ],
+   [
+    3881,
+    "LogsTab",
+    "button"
+   ],
+   [
+    3892,
+    "LogsTab",
+    "div"
+   ],
+   [
+    3893,
+    "LogsTab",
+    "div"
+   ],
+   [
+    4273,
+    "MemoryHubTab",
+    "div"
+   ],
+   [
+    4274,
+    "MemoryHubTab",
+    "div"
+   ],
+   [
+    4510,
+    "migRows",
+    "div"
+   ],
+   [
+    4511,
+    "migRows",
+    "div"
+   ],
+   [
+    4512,
+    "migRows",
+    "div"
+   ],
+   [
+    4977,
+    "PlanTab",
+    "div"
+   ],
+   [
+    4978,
+    "PlanTab",
+    "div"
+   ],
+   [
+    5034,
+    "ReflectionsTab",
+    "button"
+   ],
+   [
+    5035,
+    "ReflectionsTab",
+    "div"
+   ],
+   [
+    5063,
+    "SearchTab",
+    ""
+   ],
+   [
+    5064,
+    "SearchTab",
+    "div"
+   ],
+   [
+    5442,
+    "body",
+    "div"
+   ],
+   [
+    5793,
+    "ConnectTab",
+    "div"
+   ],
+   [
+    5794,
+    "ConnectTab",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-card",
+  "kind": "容器",
+  "css": 12,
+  "js": 6,
+  "read": 0,
+  "tags": [
+   "div",
+   "(js)"
+  ],
+  "first": 1820,
+  "comps": [
+   "CSS×12",
+   "RefineTab×2",
+   "body×2",
+   "Card",
+   "WorkspaceGraph"
+  ],
+  "lines": [
+   1820,
+   1829,
+   1830,
+   1831,
+   1832,
+   1833,
+   1844,
+   1891,
+   1893,
+   1894,
+   1898,
+   1900,
+   2294,
+   3815,
+   3822,
+   5180,
+   5441,
+   5444
+  ],
+  "occComps": [
+   [
+    1820,
+    "CSS",
+    ""
+   ],
+   [
+    1829,
+    "CSS",
+    ""
+   ],
+   [
+    1830,
+    "CSS",
+    ""
+   ],
+   [
+    1831,
+    "CSS",
+    ""
+   ],
+   [
+    1832,
+    "CSS",
+    ""
+   ],
+   [
+    1833,
+    "CSS",
+    ""
+   ],
+   [
+    1844,
+    "CSS",
+    ""
+   ],
+   [
+    1891,
+    "CSS",
+    ""
+   ],
+   [
+    1893,
+    "CSS",
+    ""
+   ],
+   [
+    1894,
+    "CSS",
+    ""
+   ],
+   [
+    1898,
+    "CSS",
+    ""
+   ],
+   [
+    1900,
+    "CSS",
+    ""
+   ],
+   [
+    2294,
+    "Card",
+    "div"
+   ],
+   [
+    3815,
+    "RefineTab",
+    "div"
+   ],
+   [
+    3822,
+    "RefineTab",
+    "div"
+   ],
+   [
+    5180,
+    "WorkspaceGraph",
+    ""
+   ],
+   [
+    5441,
+    "body",
+    "div"
+   ],
+   [
+    5444,
+    "body",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-btn",
+  "kind": "控件",
+  "css": 9,
+  "js": 134,
+  "read": 0,
+  "tags": [
+   "button",
+   "span",
+   "(js)"
+  ],
+  "first": 1835,
+  "comps": [
+   "setMany×32",
+   "CSS×9",
+   "MemoryHubTab×9",
+   "migRows×8",
+   "PlanTab×8",
+   "CalendarTab×8",
+   "ConnectTab×8",
+   "DialogHost×8",
+   "RulesEditPanel×5",
+   "MemoryPanel×5",
+   "KanbanView×4",
+   "SettingsPage×4",
+   "WhiteboardGraphView×3",
+   "PySetupWizard×3",
+   "OverviewTab×3",
+   "StorageTab×3",
+   "ReflectionsTab×3",
+   "body×3",
+   "GreetingCard×2",
+   "RefineTab×2",
+   "SearchTab×2",
+   "MemoryPageView×2",
+   "DebugCenter×2",
+   "AutoContinueHost×2",
+   "KanbanCard",
+   "KanbanBoard",
+   "LogsTab",
+   "FoldableLogs",
+   "NotesTab"
+  ],
+  "lines": [
+   1835,
+   1838,
+   1845,
+   1846,
+   1847,
+   1848,
+   1849,
+   1908,
+   1913,
+   2514,
+   2573,
+   2815,
+   2817,
+   2818,
+   2921,
+   3225,
+   3230,
+   3341,
+   3496,
+   3509,
+   3581,
+   3591,
+   3603,
+   3674,
+   3694,
+   3700,
+   3752,
+   3790,
+   3876,
+   3912,
+   4010,
+   4012,
+   4016,
+   4019,
+   4043,
+   4149,
+   4167,
+   4168,
+   4218,
+   4224,
+   4233,
+   4234,
+   4235,
+   4236,
+   4436,
+   4437,
+   4448,
+   4470,
+   4472,
+   4477,
+   4479,
+   4498,
+   4499,
+   4500,
+   4501,
+   4548,
+   4827,
+   4830,
+   4835,
+   4884,
+   4958,
+   4962,
+   4966,
+   4971,
+   5020,
+   5023,
+   5030,
+   5067,
+   5068,
+   5434,
+   5438,
+   5445,
+   5513,
+   5515,
+   5516,
+   5637,
+   5639,
+   5640,
+   5665,
+   5666,
+   5768,
+   5772,
+   5772,
+   5773,
+   5773,
+   5786,
+   5797,
+   5798,
+   5944,
+   5949,
+   6023,
+   6058,
+   6064,
+   6065,
+   6066,
+   6235,
+   6280,
+   6792,
+   6818,
+   6830,
+   6854,
+   6862,
+   6875,
+   6882,
+   6898,
+   7027,
+   7028,
+   7166,
+   7170,
+   7175,
+   7217,
+   7423,
+   7447,
+   7450,
+   7460,
+   7461,
+   7477,
+   7478,
+   7486,
+   7562,
+   7563,
+   7564,
+   7565,
+   7584,
+   7597,
+   7598,
+   7628,
+   7637,
+   7698,
+   7699,
+   7730,
+   7784,
+   7788,
+   7791,
+   7795,
+   7796,
+   7832,
+   7854,
+   7855,
+   7860,
+   7861,
+   7875,
+   7880
+  ],
+  "occComps": [
+   [
+    1835,
+    "CSS",
+    ""
+   ],
+   [
+    1838,
+    "CSS",
+    ""
+   ],
+   [
+    1845,
+    "CSS",
+    ""
+   ],
+   [
+    1846,
+    "CSS",
+    ""
+   ],
+   [
+    1847,
+    "CSS",
+    ""
+   ],
+   [
+    1848,
+    "CSS",
+    ""
+   ],
+   [
+    1849,
+    "CSS",
+    ""
+   ],
+   [
+    1908,
+    "CSS",
+    ""
+   ],
+   [
+    1913,
+    "CSS",
+    ""
+   ],
+   [
+    2514,
+    "KanbanCard",
+    "button"
+   ],
+   [
+    2573,
+    "KanbanBoard",
+    "button"
+   ],
+   [
+    2815,
+    "KanbanView",
+    "button"
+   ],
+   [
+    2817,
+    "KanbanView",
+    "button"
+   ],
+   [
+    2818,
+    "KanbanView",
+    "button"
+   ],
+   [
+    2921,
+    "KanbanView",
+    "button"
+   ],
+   [
+    3225,
+    "WhiteboardGraphView",
+    "button"
+   ],
+   [
+    3230,
+    "WhiteboardGraphView",
+    "button"
+   ],
+   [
+    3341,
+    "WhiteboardGraphView",
+    "button"
+   ],
+   [
+    3496,
+    "GreetingCard",
+    "button"
+   ],
+   [
+    3509,
+    "GreetingCard",
+    "button"
+   ],
+   [
+    3581,
+    "PySetupWizard",
+    "span"
+   ],
+   [
+    3591,
+    "PySetupWizard",
+    "button"
+   ],
+   [
+    3603,
+    "PySetupWizard",
+    "button"
+   ],
+   [
+    3674,
+    "OverviewTab",
+    "button"
+   ],
+   [
+    3694,
+    "OverviewTab",
+    "button"
+   ],
+   [
+    3700,
+    "OverviewTab",
+    "button"
+   ],
+   [
+    3752,
+    "RefineTab",
+    "button"
+   ],
+   [
+    3790,
+    "RefineTab",
+    "button"
+   ],
+   [
+    3876,
+    "LogsTab",
+    "button"
+   ],
+   [
+    3912,
+    "FoldableLogs",
+    "button"
+   ],
+   [
+    4010,
+    "RulesEditPanel",
+    "button"
+   ],
+   [
+    4012,
+    "RulesEditPanel",
+    "button"
+   ],
+   [
+    4016,
+    "RulesEditPanel",
+    "button"
+   ],
+   [
+    4019,
+    "RulesEditPanel",
+    "button"
+   ],
+   [
+    4043,
+    "RulesEditPanel",
+    "button"
+   ],
+   [
+    4149,
+    "MemoryHubTab",
+    "button"
+   ],
+   [
+    4167,
+    "MemoryHubTab",
+    "button"
+   ],
+   [
+    4168,
+    "MemoryHubTab",
+    "button"
+   ],
+   [
+    4218,
+    "MemoryHubTab",
+    "button"
+   ],
+   [
+    4224,
+    "MemoryHubTab",
+    "button"
+   ],
+   [
+    4233,
+    "MemoryHubTab",
+    "button"
+   ],
+   [
+    4234,
+    "MemoryHubTab",
+    "button"
+   ],
+   [
+    4235,
+    "MemoryHubTab",
+    "button"
+   ],
+   [
+    4236,
+    "MemoryHubTab",
+    "button"
+   ],
+   [
+    4436,
+    "StorageTab",
+    "button"
+   ],
+   [
+    4437,
+    "StorageTab",
+    "button"
+   ],
+   [
+    4448,
+    "StorageTab",
+    "button"
+   ],
+   [
+    4470,
+    "migRows",
+    "button"
+   ],
+   [
+    4472,
+    "migRows",
+    "button"
+   ],
+   [
+    4477,
+    "migRows",
+    "button"
+   ],
+   [
+    4479,
+    "migRows",
+    "button"
+   ],
+   [
+    4498,
+    "migRows",
+    "button"
+   ],
+   [
+    4499,
+    "migRows",
+    "button"
+   ],
+   [
+    4500,
+    "migRows",
+    "button"
+   ],
+   [
+    4501,
+    "migRows",
+    "button"
+   ],
+   [
+    4548,
+    "NotesTab",
+    "button"
+   ],
+   [
+    4827,
+    "PlanTab",
+    "button"
+   ],
+   [
+    4830,
+    "PlanTab",
+    "button"
+   ],
+   [
+    4835,
+    "PlanTab",
+    "button"
+   ],
+   [
+    4884,
+    "PlanTab",
+    "button"
+   ],
+   [
+    4958,
+    "PlanTab",
+    "button"
+   ],
+   [
+    4962,
+    "PlanTab",
+    "button"
+   ],
+   [
+    4966,
+    "PlanTab",
+    "button"
+   ],
+   [
+    4971,
+    "PlanTab",
+    "button"
+   ],
+   [
+    5020,
+    "ReflectionsTab",
+    "button"
+   ],
+   [
+    5023,
+    "ReflectionsTab",
+    "button"
+   ],
+   [
+    5030,
+    "ReflectionsTab",
+    "button"
+   ],
+   [
+    5067,
+    "SearchTab",
+    "button"
+   ],
+   [
+    5068,
+    "SearchTab",
+    "button"
+   ],
+   [
+    5434,
+    "body",
+    "button"
+   ],
+   [
+    5438,
+    "body",
+    "button"
+   ],
+   [
+    5445,
+    "body",
+    "button"
+   ],
+   [
+    5513,
+    "CalendarTab",
+    "button"
+   ],
+   [
+    5515,
+    "CalendarTab",
+    "button"
+   ],
+   [
+    5516,
+    "CalendarTab",
+    "button"
+   ],
+   [
+    5637,
+    "CalendarTab",
+    "button"
+   ],
+   [
+    5639,
+    "CalendarTab",
+    "button"
+   ],
+   [
+    5640,
+    "CalendarTab",
+    "button"
+   ],
+   [
+    5665,
+    "CalendarTab",
+    "button"
+   ],
+   [
+    5666,
+    "CalendarTab",
+    "button"
+   ],
+   [
+    5768,
+    "ConnectTab",
+    "button"
+   ],
+   [
+    5772,
+    "ConnectTab",
+    "button"
+   ],
+   [
+    5772,
+    "ConnectTab",
+    "button"
+   ],
+   [
+    5773,
+    "ConnectTab",
+    "button"
+   ],
+   [
+    5773,
+    "ConnectTab",
+    "button"
+   ],
+   [
+    5786,
+    "ConnectTab",
+    "button"
+   ],
+   [
+    5797,
+    "ConnectTab",
+    "button"
+   ],
+   [
+    5798,
+    "ConnectTab",
+    "button"
+   ],
+   [
+    5944,
+    "MemoryPageView",
+    "button"
+   ],
+   [
+    5949,
+    "MemoryPageView",
+    "button"
+   ],
+   [
+    6023,
+    "MemoryPanel",
+    ""
+   ],
+   [
+    6058,
+    "MemoryPanel",
+    "button"
+   ],
+   [
+    6064,
+    "MemoryPanel",
+    "button"
+   ],
+   [
+    6065,
+    "MemoryPanel",
+    "button"
+   ],
+   [
+    6066,
+    "MemoryPanel",
+    "button"
+   ],
+   [
+    6235,
+    "DebugCenter",
+    "button"
+   ],
+   [
+    6280,
+    "DebugCenter",
+    "button"
+   ],
+   [
+    6792,
+    "DialogHost",
+    "button"
+   ],
+   [
+    6818,
+    "DialogHost",
+    "button"
+   ],
+   [
+    6830,
+    "DialogHost",
+    "button"
+   ],
+   [
+    6854,
+    "DialogHost",
+    "button"
+   ],
+   [
+    6862,
+    "DialogHost",
+    "button"
+   ],
+   [
+    6875,
+    "DialogHost",
+    "button"
+   ],
+   [
+    6882,
+    "DialogHost",
+    "button"
+   ],
+   [
+    6898,
+    "DialogHost",
+    "button"
+   ],
+   [
+    7027,
+    "AutoContinueHost",
+    "button"
+   ],
+   [
+    7028,
+    "AutoContinueHost",
+    "button"
+   ],
+   [
+    7166,
+    "SettingsPage",
+    "button"
+   ],
+   [
+    7170,
+    "SettingsPage",
+    "button"
+   ],
+   [
+    7175,
+    "SettingsPage",
+    "button"
+   ],
+   [
+    7217,
+    "SettingsPage",
+    "button"
+   ],
+   [
+    7423,
+    "setMany",
+    "button"
+   ],
+   [
+    7447,
+    "setMany",
+    "button"
+   ],
+   [
+    7450,
+    "setMany",
+    "button"
+   ],
+   [
+    7460,
+    "setMany",
+    "button"
+   ],
+   [
+    7461,
+    "setMany",
+    "button"
+   ],
+   [
+    7477,
+    "setMany",
+    "button"
+   ],
+   [
+    7478,
+    "setMany",
+    "button"
+   ],
+   [
+    7486,
+    "setMany",
+    "button"
+   ],
+   [
+    7562,
+    "setMany",
+    "button"
+   ],
+   [
+    7563,
+    "setMany",
+    "button"
+   ],
+   [
+    7564,
+    "setMany",
+    "button"
+   ],
+   [
+    7565,
+    "setMany",
+    "button"
+   ],
+   [
+    7584,
+    "setMany",
+    "button"
+   ],
+   [
+    7597,
+    "setMany",
+    "button"
+   ],
+   [
+    7598,
+    "setMany",
+    "button"
+   ],
+   [
+    7628,
+    "setMany",
+    "button"
+   ],
+   [
+    7637,
+    "setMany",
+    "button"
+   ],
+   [
+    7698,
+    "setMany",
+    "button"
+   ],
+   [
+    7699,
+    "setMany",
+    "button"
+   ],
+   [
+    7730,
+    "setMany",
+    "button"
+   ],
+   [
+    7784,
+    "setMany",
+    "button"
+   ],
+   [
+    7788,
+    "setMany",
+    "button"
+   ],
+   [
+    7791,
+    "setMany",
+    "button"
+   ],
+   [
+    7795,
+    "setMany",
+    "button"
+   ],
+   [
+    7796,
+    "setMany",
+    "button"
+   ],
+   [
+    7832,
+    "setMany",
+    "button"
+   ],
+   [
+    7854,
+    "setMany",
+    "button"
+   ],
+   [
+    7855,
+    "setMany",
+    "button"
+   ],
+   [
+    7860,
+    "setMany",
+    "button"
+   ],
+   [
+    7861,
+    "setMany",
+    "button"
+   ],
+   [
+    7875,
+    "setMany",
+    "button"
+   ],
+   [
+    7880,
+    "setMany",
+    "button"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-tab",
+  "kind": "控件",
+  "css": 12,
+  "js": 2,
+  "read": 0,
+  "tags": [
+   "button",
+   "(js)"
+  ],
+  "first": 1835,
+  "comps": [
+   "CSS×12",
+   "TabScroller",
+   "MemoryPanel"
+  ],
+  "lines": [
+   1835,
+   1838,
+   1839,
+   1841,
+   1845,
+   1846,
+   1858,
+   1862,
+   1863,
+   1900,
+   1911,
+   1913,
+   5876,
+   6023
+  ],
+  "occComps": [
+   [
+    1835,
+    "CSS",
+    ""
+   ],
+   [
+    1838,
+    "CSS",
+    ""
+   ],
+   [
+    1839,
+    "CSS",
+    ""
+   ],
+   [
+    1841,
+    "CSS",
+    ""
+   ],
+   [
+    1845,
+    "CSS",
+    ""
+   ],
+   [
+    1846,
+    "CSS",
+    ""
+   ],
+   [
+    1858,
+    "CSS",
+    ""
+   ],
+   [
+    1862,
+    "CSS",
+    ""
+   ],
+   [
+    1863,
+    "CSS",
+    ""
+   ],
+   [
+    1900,
+    "CSS",
+    ""
+   ],
+   [
+    1911,
+    "CSS",
+    ""
+   ],
+   [
+    1913,
+    "CSS",
+    ""
+   ],
+   [
+    5876,
+    "TabScroller",
+    "button"
+   ],
+   [
+    6023,
+    "MemoryPanel",
+    ""
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-tabs-wrap",
+  "kind": "容器",
+  "css": 1,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 1850,
+  "comps": [
+   "CSS",
+   "TabScroller"
+  ],
+  "lines": [
+   1850,
+   5874
+  ],
+  "occComps": [
+   [
+    1850,
+    "CSS",
+    ""
+   ],
+   [
+    5874,
+    "TabScroller",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-tabs",
+  "kind": "容器",
+  "css": 2,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 1851,
+  "comps": [
+   "CSS×2",
+   "TabScroller"
+  ],
+  "lines": [
+   1851,
+   1852,
+   5876
+  ],
+  "occComps": [
+   [
+    1851,
+    "CSS",
+    ""
+   ],
+   [
+    1852,
+    "CSS",
+    ""
+   ],
+   [
+    5876,
+    "TabScroller",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-tab-strip",
+  "kind": "容器",
+  "css": 2,
+  "js": 2,
+  "read": 0,
+  "tags": [
+   "(js)",
+   "div"
+  ],
+  "first": 1854,
+  "comps": [
+   "CSS×3",
+   "TabScroller"
+  ],
+  "lines": [
+   1854,
+   1857,
+   1900,
+   5876
+  ],
+  "occComps": [
+   [
+    1854,
+    "CSS",
+    ""
+   ],
+   [
+    1857,
+    "CSS",
+    ""
+   ],
+   [
+    1900,
+    "CSS",
+    ""
+   ],
+   [
+    5876,
+    "TabScroller",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-tabs-arrow",
+  "kind": "控件",
+  "css": 5,
+  "js": 2,
+  "read": 0,
+  "tags": [
+   "button"
+  ],
+  "first": 1859,
+  "comps": [
+   "CSS×5",
+   "TabScroller×2"
+  ],
+  "lines": [
+   1859,
+   1860,
+   1861,
+   1908,
+   1913,
+   5875,
+   5877
+  ],
+  "occComps": [
+   [
+    1859,
+    "CSS",
+    ""
+   ],
+   [
+    1860,
+    "CSS",
+    ""
+   ],
+   [
+    1861,
+    "CSS",
+    ""
+   ],
+   [
+    1908,
+    "CSS",
+    ""
+   ],
+   [
+    1913,
+    "CSS",
+    ""
+   ],
+   [
+    5875,
+    "TabScroller",
+    "button"
+   ],
+   [
+    5877,
+    "TabScroller",
+    "button"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-settings",
+  "kind": "容器",
+  "css": 1,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 1865,
+  "comps": [
+   "CSS",
+   "setMany"
+  ],
+  "lines": [
+   1865,
+   7421
+  ],
+  "occComps": [
+   [
+    1865,
+    "CSS",
+    ""
+   ],
+   [
+    7421,
+    "setMany",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-settings-nav",
+  "kind": "容器",
+  "css": 3,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "nav"
+  ],
+  "first": 1866,
+  "comps": [
+   "CSS×3",
+   "setMany"
+  ],
+  "lines": [
+   1866,
+   1867,
+   1868,
+   7422
+  ],
+  "occComps": [
+   [
+    1866,
+    "CSS",
+    ""
+   ],
+   [
+    1867,
+    "CSS",
+    ""
+   ],
+   [
+    1868,
+    "CSS",
+    ""
+   ],
+   [
+    7422,
+    "setMany",
+    "nav"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-settings-content",
+  "kind": "容器",
+  "css": 1,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 1869,
+  "comps": [
+   "CSS",
+   "setMany"
+  ],
+  "lines": [
+   1869,
+   7425
+  ],
+  "occComps": [
+   [
+    1869,
+    "CSS",
+    ""
+   ],
+   [
+    7425,
+    "setMany",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-settings-group",
+  "kind": "容器",
+  "css": 3,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "section"
+  ],
+  "first": 1870,
+  "comps": [
+   "CSS×3",
+   "setMany"
+  ],
+  "lines": [
+   1870,
+   1871,
+   1872,
+   7416
+  ],
+  "occComps": [
+   [
+    1870,
+    "CSS",
+    ""
+   ],
+   [
+    1871,
+    "CSS",
+    ""
+   ],
+   [
+    1872,
+    "CSS",
+    ""
+   ],
+   [
+    7416,
+    "setMany",
+    "section"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-settings-row",
+  "kind": "容器",
+  "css": 2,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 1873,
+  "comps": [
+   "CSS×2",
+   "setMany"
+  ],
+  "lines": [
+   1873,
+   1877,
+   7349
+  ],
+  "occComps": [
+   [
+    1873,
+    "CSS",
+    ""
+   ],
+   [
+    1877,
+    "CSS",
+    ""
+   ],
+   [
+    7349,
+    "setMany",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-savebar",
+  "kind": "容器",
+  "css": 5,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 1874,
+  "comps": [
+   "CSS×5",
+   "setMany"
+  ],
+  "lines": [
+   1874,
+   1875,
+   1876,
+   1910,
+   1910,
+   7874
+  ],
+  "occComps": [
+   [
+    1874,
+    "CSS",
+    ""
+   ],
+   [
+    1875,
+    "CSS",
+    ""
+   ],
+   [
+    1876,
+    "CSS",
+    ""
+   ],
+   [
+    1910,
+    "CSS",
+    ""
+   ],
+   [
+    1910,
+    "CSS",
+    ""
+   ],
+   [
+    7874,
+    "setMany",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-row",
+  "kind": "容器",
+  "css": 3,
+  "js": 41,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 1877,
+  "comps": [
+   "setMany×13",
+   "DebugCenter×6",
+   "CalendarTab×5",
+   "PlanTab×4",
+   "CSS×3",
+   "migRows×3",
+   "ConnectTab×3",
+   "SettingsPage×2",
+   "OverviewTab",
+   "NotesTab",
+   "ReflectionsTab",
+   "SearchTab",
+   "body"
+  ],
+  "lines": [
+   1877,
+   1925,
+   1926,
+   3693,
+   4467,
+   4474,
+   4497,
+   4547,
+   4826,
+   4883,
+   4961,
+   4965,
+   5022,
+   5065,
+   5433,
+   5512,
+   5518,
+   5636,
+   5657,
+   5664,
+   5777,
+   5785,
+   5796,
+   6132,
+   6234,
+   6270,
+   6278,
+   6279,
+   6283,
+   7164,
+   7214,
+   7350,
+   7542,
+   7604,
+   7636,
+   7696,
+   7728,
+   7782,
+   7786,
+   7793,
+   7830,
+   7853,
+   7858,
+   7869
+  ],
+  "occComps": [
+   [
+    1877,
+    "CSS",
+    ""
+   ],
+   [
+    1925,
+    "CSS",
+    ""
+   ],
+   [
+    1926,
+    "CSS",
+    ""
+   ],
+   [
+    3693,
+    "OverviewTab",
+    "div"
+   ],
+   [
+    4467,
+    "migRows",
+    "div"
+   ],
+   [
+    4474,
+    "migRows",
+    "div"
+   ],
+   [
+    4497,
+    "migRows",
+    "div"
+   ],
+   [
+    4547,
+    "NotesTab",
+    "div"
+   ],
+   [
+    4826,
+    "PlanTab",
+    "div"
+   ],
+   [
+    4883,
+    "PlanTab",
+    "div"
+   ],
+   [
+    4961,
+    "PlanTab",
+    "div"
+   ],
+   [
+    4965,
+    "PlanTab",
+    "div"
+   ],
+   [
+    5022,
+    "ReflectionsTab",
+    "div"
+   ],
+   [
+    5065,
+    "SearchTab",
+    "div"
+   ],
+   [
+    5433,
+    "body",
+    "div"
+   ],
+   [
+    5512,
+    "CalendarTab",
+    "div"
+   ],
+   [
+    5518,
+    "CalendarTab",
+    "div"
+   ],
+   [
+    5636,
+    "CalendarTab",
+    "div"
+   ],
+   [
+    5657,
+    "CalendarTab",
+    "div"
+   ],
+   [
+    5664,
+    "CalendarTab",
+    "div"
+   ],
+   [
+    5777,
+    "ConnectTab",
+    "div"
+   ],
+   [
+    5785,
+    "ConnectTab",
+    "div"
+   ],
+   [
+    5796,
+    "ConnectTab",
+    "div"
+   ],
+   [
+    6132,
+    "DebugCenter",
+    "div"
+   ],
+   [
+    6234,
+    "DebugCenter",
+    "div"
+   ],
+   [
+    6270,
+    "DebugCenter",
+    "div"
+   ],
+   [
+    6278,
+    "DebugCenter",
+    "div"
+   ],
+   [
+    6279,
+    "DebugCenter",
+    "div"
+   ],
+   [
+    6283,
+    "DebugCenter",
+    "div"
+   ],
+   [
+    7164,
+    "SettingsPage",
+    "div"
+   ],
+   [
+    7214,
+    "SettingsPage",
+    "div"
+   ],
+   [
+    7350,
+    "setMany",
+    "div"
+   ],
+   [
+    7542,
+    "setMany",
+    "div"
+   ],
+   [
+    7604,
+    "setMany",
+    "div"
+   ],
+   [
+    7636,
+    "setMany",
+    "div"
+   ],
+   [
+    7696,
+    "setMany",
+    "div"
+   ],
+   [
+    7728,
+    "setMany",
+    "div"
+   ],
+   [
+    7782,
+    "setMany",
+    "div"
+   ],
+   [
+    7786,
+    "setMany",
+    "div"
+   ],
+   [
+    7793,
+    "setMany",
+    "div"
+   ],
+   [
+    7830,
+    "setMany",
+    "div"
+   ],
+   [
+    7853,
+    "setMany",
+    "div"
+   ],
+   [
+    7858,
+    "setMany",
+    "div"
+   ],
+   [
+    7869,
+    "setMany",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-graph-toolbar",
+  "kind": "容器",
+  "css": 2,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 1878,
+  "comps": [
+   "CSS×2",
+   "body"
+  ],
+  "lines": [
+   1878,
+   1879,
+   5438
+  ],
+  "occComps": [
+   [
+    1878,
+    "CSS",
+    ""
+   ],
+   [
+    1879,
+    "CSS",
+    ""
+   ],
+   [
+    5438,
+    "body",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-graph",
+  "kind": "容器",
+  "css": 4,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 1880,
+  "comps": [
+   "CSS×4",
+   "WorkspaceGraph"
+  ],
+  "lines": [
+   1880,
+   1881,
+   1882,
+   1883,
+   5150
+  ],
+  "occComps": [
+   [
+    1880,
+    "CSS",
+    ""
+   ],
+   [
+    1881,
+    "CSS",
+    ""
+   ],
+   [
+    1882,
+    "CSS",
+    ""
+   ],
+   [
+    1883,
+    "CSS",
+    ""
+   ],
+   [
+    5150,
+    "WorkspaceGraph",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-graph-node",
+  "kind": "JS 选择器",
+  "css": 1,
+  "js": 2,
+  "read": 1,
+  "tags": [
+   "g"
+  ],
+  "first": 1884,
+  "comps": [
+   "WorkspaceGraph×2",
+   "CSS"
+  ],
+  "lines": [
+   1884,
+   5104,
+   5164
+  ],
+  "occComps": [
+   [
+    1884,
+    "CSS",
+    ""
+   ],
+   [
+    5104,
+    "WorkspaceGraph",
+    ""
+   ],
+   [
+    5164,
+    "WorkspaceGraph",
+    "g"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-graph-legend",
+  "kind": "CSS 选择器",
+  "css": 1,
+  "js": 0,
+  "read": 0,
+  "tags": [],
+  "first": 1885,
+  "comps": [
+   "CSS"
+  ],
+  "lines": [
+   1885
+  ],
+  "occComps": [
+   [
+    1885,
+    "CSS",
+    ""
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-legend-dot",
+  "kind": "CSS 选择器",
+  "css": 3,
+  "js": 0,
+  "read": 0,
+  "tags": [],
+  "first": 1886,
+  "comps": [
+   "CSS×3"
+  ],
+  "lines": [
+   1886,
+   1887,
+   1888
+  ],
+  "occComps": [
+   [
+    1886,
+    "CSS",
+    ""
+   ],
+   [
+    1887,
+    "CSS",
+    ""
+   ],
+   [
+    1888,
+    "CSS",
+    ""
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-kv",
+  "kind": "容器",
+  "css": 2,
+  "js": 2,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 1889,
+  "comps": [
+   "CSS×2",
+   "OverviewTab×2"
+  ],
+  "lines": [
+   1889,
+   1890,
+   3682,
+   3701
+  ],
+  "occComps": [
+   [
+    1889,
+    "CSS",
+    ""
+   ],
+   [
+    1890,
+    "CSS",
+    ""
+   ],
+   [
+    3682,
+    "OverviewTab",
+    "div"
+   ],
+   [
+    3701,
+    "OverviewTab",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-disclosure",
+  "kind": "容器",
+  "css": 4,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 1895,
+  "comps": [
+   "CSS×4",
+   "AnimatedDisclosure"
+  ],
+  "lines": [
+   1895,
+   1896,
+   1897,
+   1900,
+   3391
+  ],
+  "occComps": [
+   [
+    1895,
+    "CSS",
+    ""
+   ],
+   [
+    1896,
+    "CSS",
+    ""
+   ],
+   [
+    1897,
+    "CSS",
+    ""
+   ],
+   [
+    1900,
+    "CSS",
+    ""
+   ],
+   [
+    3391,
+    "AnimatedDisclosure",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-banner",
+  "kind": "容器",
+  "css": 3,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 1898,
+  "comps": [
+   "CSS×3",
+   "Banner"
+  ],
+  "lines": [
+   1898,
+   1900,
+   1922,
+   2290
+  ],
+  "occComps": [
+   [
+    1898,
+    "CSS",
+    ""
+   ],
+   [
+    1900,
+    "CSS",
+    ""
+   ],
+   [
+    1922,
+    "CSS",
+    ""
+   ],
+   [
+    2290,
+    "Banner",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-tour-orb-wrap",
+  "kind": "容器",
+  "css": 19,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 1900,
+  "comps": [
+   "CSS×19",
+   "DialogHost"
+  ],
+  "lines": [
+   1900,
+   2027,
+   2029,
+   2079,
+   2080,
+   2081,
+   2082,
+   2083,
+   2084,
+   2085,
+   2205,
+   2206,
+   2207,
+   2208,
+   2209,
+   2210,
+   2211,
+   2212,
+   2213,
+   6693
+  ],
+  "occComps": [
+   [
+    1900,
+    "CSS",
+    ""
+   ],
+   [
+    2027,
+    "CSS",
+    ""
+   ],
+   [
+    2029,
+    "CSS",
+    ""
+   ],
+   [
+    2079,
+    "CSS",
+    ""
+   ],
+   [
+    2080,
+    "CSS",
+    ""
+   ],
+   [
+    2081,
+    "CSS",
+    ""
+   ],
+   [
+    2082,
+    "CSS",
+    ""
+   ],
+   [
+    2083,
+    "CSS",
+    ""
+   ],
+   [
+    2084,
+    "CSS",
+    ""
+   ],
+   [
+    2085,
+    "CSS",
+    ""
+   ],
+   [
+    2205,
+    "CSS",
+    ""
+   ],
+   [
+    2206,
+    "CSS",
+    ""
+   ],
+   [
+    2207,
+    "CSS",
+    ""
+   ],
+   [
+    2208,
+    "CSS",
+    ""
+   ],
+   [
+    2209,
+    "CSS",
+    ""
+   ],
+   [
+    2210,
+    "CSS",
+    ""
+   ],
+   [
+    2211,
+    "CSS",
+    ""
+   ],
+   [
+    2212,
+    "CSS",
+    ""
+   ],
+   [
+    2213,
+    "CSS",
+    ""
+   ],
+   [
+    6693,
+    "DialogHost",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-update-box",
+  "kind": "容器",
+  "css": 5,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 1900,
+  "comps": [
+   "CSS×5",
+   "DialogHost"
+  ],
+  "lines": [
+   1900,
+   2252,
+   2256,
+   2256,
+   2263,
+   6385
+  ],
+  "occComps": [
+   [
+    1900,
+    "CSS",
+    ""
+   ],
+   [
+    2252,
+    "CSS",
+    ""
+   ],
+   [
+    2256,
+    "CSS",
+    ""
+   ],
+   [
+    2256,
+    "CSS",
+    ""
+   ],
+   [
+    2263,
+    "CSS",
+    ""
+   ],
+   [
+    6385,
+    "DialogHost",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-tour-bokeh",
+  "kind": "容器",
+  "css": 6,
+  "js": 6,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 1901,
+  "comps": [
+   "CSS×6",
+   "DialogHost×6"
+  ],
+  "lines": [
+   1901,
+   2031,
+   2033,
+   2035,
+   2037,
+   2269,
+   6388,
+   6389,
+   6390,
+   6695,
+   6696,
+   6697
+  ],
+  "occComps": [
+   [
+    1901,
+    "CSS",
+    ""
+   ],
+   [
+    2031,
+    "CSS",
+    ""
+   ],
+   [
+    2033,
+    "CSS",
+    ""
+   ],
+   [
+    2035,
+    "CSS",
+    ""
+   ],
+   [
+    2037,
+    "CSS",
+    ""
+   ],
+   [
+    2269,
+    "CSS",
+    ""
+   ],
+   [
+    6388,
+    "DialogHost",
+    "div"
+   ],
+   [
+    6389,
+    "DialogHost",
+    "div"
+   ],
+   [
+    6390,
+    "DialogHost",
+    "div"
+   ],
+   [
+    6695,
+    "DialogHost",
+    "div"
+   ],
+   [
+    6696,
+    "DialogHost",
+    "div"
+   ],
+   [
+    6697,
+    "DialogHost",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-tour-slab",
+  "kind": "容器",
+  "css": 14,
+  "js": 6,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 1901,
+  "comps": [
+   "CSS×14",
+   "DialogHost×6"
+  ],
+  "lines": [
+   1901,
+   2045,
+   2051,
+   2054,
+   2057,
+   2058,
+   2059,
+   2060,
+   2062,
+   2063,
+   2064,
+   2270,
+   2271,
+   2272,
+   6392,
+   6393,
+   6394,
+   6699,
+   6700,
+   6701
+  ],
+  "occComps": [
+   [
+    1901,
+    "CSS",
+    ""
+   ],
+   [
+    2045,
+    "CSS",
+    ""
+   ],
+   [
+    2051,
+    "CSS",
+    ""
+   ],
+   [
+    2054,
+    "CSS",
+    ""
+   ],
+   [
+    2057,
+    "CSS",
+    ""
+   ],
+   [
+    2058,
+    "CSS",
+    ""
+   ],
+   [
+    2059,
+    "CSS",
+    ""
+   ],
+   [
+    2060,
+    "CSS",
+    ""
+   ],
+   [
+    2062,
+    "CSS",
+    ""
+   ],
+   [
+    2063,
+    "CSS",
+    ""
+   ],
+   [
+    2064,
+    "CSS",
+    ""
+   ],
+   [
+    2270,
+    "CSS",
+    ""
+   ],
+   [
+    2271,
+    "CSS",
+    ""
+   ],
+   [
+    2272,
+    "CSS",
+    ""
+   ],
+   [
+    6392,
+    "DialogHost",
+    "div"
+   ],
+   [
+    6393,
+    "DialogHost",
+    "div"
+   ],
+   [
+    6394,
+    "DialogHost",
+    "div"
+   ],
+   [
+    6699,
+    "DialogHost",
+    "div"
+   ],
+   [
+    6700,
+    "DialogHost",
+    "div"
+   ],
+   [
+    6701,
+    "DialogHost",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-tour-orb-core",
+  "kind": "CSS 选择器",
+  "css": 3,
+  "js": 0,
+  "read": 0,
+  "tags": [],
+  "first": 1901,
+  "comps": [
+   "CSS×3"
+  ],
+  "lines": [
+   1901,
+   2067,
+   2273
+  ],
+  "occComps": [
+   [
+    1901,
+    "CSS",
+    ""
+   ],
+   [
+    2067,
+    "CSS",
+    ""
+   ],
+   [
+    2273,
+    "CSS",
+    ""
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-update-stage",
+  "kind": "容器",
+  "css": 3,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 1902,
+  "comps": [
+   "CSS×3",
+   "DialogHost"
+  ],
+  "lines": [
+   1902,
+   2253,
+   2256,
+   6386
+  ],
+  "occComps": [
+   [
+    1902,
+    "CSS",
+    ""
+   ],
+   [
+    2253,
+    "CSS",
+    ""
+   ],
+   [
+    2256,
+    "CSS",
+    ""
+   ],
+   [
+    6386,
+    "DialogHost",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-update-content",
+  "kind": "容器",
+  "css": 7,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 1903,
+  "comps": [
+   "CSS×7",
+   "DialogHost"
+  ],
+  "lines": [
+   1903,
+   2257,
+   2259,
+   2260,
+   2261,
+   2262,
+   2263,
+   6397
+  ],
+  "occComps": [
+   [
+    1903,
+    "CSS",
+    ""
+   ],
+   [
+    2257,
+    "CSS",
+    ""
+   ],
+   [
+    2259,
+    "CSS",
+    ""
+   ],
+   [
+    2260,
+    "CSS",
+    ""
+   ],
+   [
+    2261,
+    "CSS",
+    ""
+   ],
+   [
+    2262,
+    "CSS",
+    ""
+   ],
+   [
+    2263,
+    "CSS",
+    ""
+   ],
+   [
+    6397,
+    "DialogHost",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-calendar",
+  "kind": "容器",
+  "css": 6,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 1907,
+  "comps": [
+   "CSS×6",
+   "CalendarTab"
+  ],
+  "lines": [
+   1907,
+   1908,
+   1911,
+   1914,
+   1915,
+   1916,
+   5671
+  ],
+  "occComps": [
+   [
+    1907,
+    "CSS",
+    ""
+   ],
+   [
+    1908,
+    "CSS",
+    ""
+   ],
+   [
+    1911,
+    "CSS",
+    ""
+   ],
+   [
+    1914,
+    "CSS",
+    ""
+   ],
+   [
+    1915,
+    "CSS",
+    ""
+   ],
+   [
+    1916,
+    "CSS",
+    ""
+   ],
+   [
+    5671,
+    "CalendarTab",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-calendar-event",
+  "kind": "容器",
+  "css": 3,
+  "js": 3,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 1907,
+  "comps": [
+   "CSS×3",
+   "CalendarTab×3"
+  ],
+  "lines": [
+   1907,
+   1917,
+   1918,
+   5552,
+   5613,
+   5620
+  ],
+  "occComps": [
+   [
+    1907,
+    "CSS",
+    ""
+   ],
+   [
+    1917,
+    "CSS",
+    ""
+   ],
+   [
+    1918,
+    "CSS",
+    ""
+   ],
+   [
+    5552,
+    "CalendarTab",
+    "div"
+   ],
+   [
+    5613,
+    "CalendarTab",
+    "div"
+   ],
+   [
+    5620,
+    "CalendarTab",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-calendar-modal",
+  "kind": "容器",
+  "css": 2,
+  "js": 2,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 1907,
+  "comps": [
+   "CSS×2",
+   "CalendarTab×2"
+  ],
+  "lines": [
+   1907,
+   1919,
+   5635,
+   5646
+  ],
+  "occComps": [
+   [
+    1907,
+    "CSS",
+    ""
+   ],
+   [
+    1919,
+    "CSS",
+    ""
+   ],
+   [
+    5635,
+    "CalendarTab",
+    "div"
+   ],
+   [
+    5646,
+    "CalendarTab",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-calendar-day",
+  "kind": "容器",
+  "css": 4,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 1908,
+  "comps": [
+   "CSS×4",
+   "CalendarTab"
+  ],
+  "lines": [
+   1908,
+   1911,
+   1915,
+   1916,
+   5538
+  ],
+  "occComps": [
+   [
+    1908,
+    "CSS",
+    ""
+   ],
+   [
+    1911,
+    "CSS",
+    ""
+   ],
+   [
+    1915,
+    "CSS",
+    ""
+   ],
+   [
+    1916,
+    "CSS",
+    ""
+   ],
+   [
+    5538,
+    "CalendarTab",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-input",
+  "kind": "控件",
+  "css": 1,
+  "js": 59,
+  "read": 0,
+  "tags": [
+   "input",
+   "textarea",
+   "(js)"
+  ],
+  "first": 1924,
+  "comps": [
+   "setMany×41",
+   "CalendarTab×5",
+   "RulesEditPanel×2",
+   "migRows×2",
+   "CSS",
+   "KanbanBoard",
+   "KanbanView",
+   "WhiteboardGraphView",
+   "StorageTab",
+   "NotesTab",
+   "PlanTab",
+   "SearchTab",
+   "MemoryPanel",
+   "SettingsPage"
+  ],
+  "lines": [
+   1924,
+   2589,
+   2814,
+   3243,
+   4004,
+   4035,
+   4446,
+   4468,
+   4475,
+   4546,
+   4836,
+   5066,
+   5656,
+   5658,
+   5661,
+   5662,
+   5663,
+   6023,
+   7189,
+   7429,
+   7430,
+   7431,
+   7440,
+   7619,
+   7622,
+   7624,
+   7625,
+   7626,
+   7634,
+   7642,
+   7644,
+   7645,
+   7646,
+   7647,
+   7649,
+   7650,
+   7658,
+   7659,
+   7660,
+   7661,
+   7679,
+   7682,
+   7683,
+   7684,
+   7689,
+   7720,
+   7729,
+   7734,
+   7735,
+   7737,
+   7738,
+   7740,
+   7763,
+   7775,
+   7780,
+   7781,
+   7783,
+   7798,
+   7803,
+   7821
+  ],
+  "occComps": [
+   [
+    1924,
+    "CSS",
+    ""
+   ],
+   [
+    2589,
+    "KanbanBoard",
+    "input"
+   ],
+   [
+    2814,
+    "KanbanView",
+    "input"
+   ],
+   [
+    3243,
+    "WhiteboardGraphView",
+    "input"
+   ],
+   [
+    4004,
+    "RulesEditPanel",
+    "textarea"
+   ],
+   [
+    4035,
+    "RulesEditPanel",
+    "textarea"
+   ],
+   [
+    4446,
+    "StorageTab",
+    "input"
+   ],
+   [
+    4468,
+    "migRows",
+    "input"
+   ],
+   [
+    4475,
+    "migRows",
+    "input"
+   ],
+   [
+    4546,
+    "NotesTab",
+    "textarea"
+   ],
+   [
+    4836,
+    "PlanTab",
+    "input"
+   ],
+   [
+    5066,
+    "SearchTab",
+    "input"
+   ],
+   [
+    5656,
+    "CalendarTab",
+    "input"
+   ],
+   [
+    5658,
+    "CalendarTab",
+    "input"
+   ],
+   [
+    5661,
+    "CalendarTab",
+    "input"
+   ],
+   [
+    5662,
+    "CalendarTab",
+    "input"
+   ],
+   [
+    5663,
+    "CalendarTab",
+    "textarea"
+   ],
+   [
+    6023,
+    "MemoryPanel",
+    ""
+   ],
+   [
+    7189,
+    "SettingsPage",
+    "input"
+   ],
+   [
+    7429,
+    "setMany",
+    "input"
+   ],
+   [
+    7430,
+    "setMany",
+    "input"
+   ],
+   [
+    7431,
+    "setMany",
+    "input"
+   ],
+   [
+    7440,
+    "setMany",
+    "input"
+   ],
+   [
+    7619,
+    "setMany",
+    "input"
+   ],
+   [
+    7622,
+    "setMany",
+    "input"
+   ],
+   [
+    7624,
+    "setMany",
+    "input"
+   ],
+   [
+    7625,
+    "setMany",
+    "input"
+   ],
+   [
+    7626,
+    "setMany",
+    "input"
+   ],
+   [
+    7634,
+    "setMany",
+    "textarea"
+   ],
+   [
+    7642,
+    "setMany",
+    "input"
+   ],
+   [
+    7644,
+    "setMany",
+    "input"
+   ],
+   [
+    7645,
+    "setMany",
+    "input"
+   ],
+   [
+    7646,
+    "setMany",
+    "input"
+   ],
+   [
+    7647,
+    "setMany",
+    "input"
+   ],
+   [
+    7649,
+    "setMany",
+    "input"
+   ],
+   [
+    7650,
+    "setMany",
+    "input"
+   ],
+   [
+    7658,
+    "setMany",
+    "input"
+   ],
+   [
+    7659,
+    "setMany",
+    "input"
+   ],
+   [
+    7660,
+    "setMany",
+    "input"
+   ],
+   [
+    7661,
+    "setMany",
+    "input"
+   ],
+   [
+    7679,
+    "setMany",
+    "input"
+   ],
+   [
+    7682,
+    "setMany",
+    "input"
+   ],
+   [
+    7683,
+    "setMany",
+    "input"
+   ],
+   [
+    7684,
+    "setMany",
+    "input"
+   ],
+   [
+    7689,
+    "setMany",
+    "input"
+   ],
+   [
+    7720,
+    "setMany",
+    "input"
+   ],
+   [
+    7729,
+    "setMany",
+    "input"
+   ],
+   [
+    7734,
+    "setMany",
+    "input"
+   ],
+   [
+    7735,
+    "setMany",
+    "input"
+   ],
+   [
+    7737,
+    "setMany",
+    "input"
+   ],
+   [
+    7738,
+    "setMany",
+    "input"
+   ],
+   [
+    7740,
+    "setMany",
+    "input"
+   ],
+   [
+    7763,
+    "setMany",
+    "input"
+   ],
+   [
+    7775,
+    "setMany",
+    "input"
+   ],
+   [
+    7780,
+    "setMany",
+    "input"
+   ],
+   [
+    7781,
+    "setMany",
+    "input"
+   ],
+   [
+    7783,
+    "setMany",
+    "input"
+   ],
+   [
+    7798,
+    "setMany",
+    "input"
+   ],
+   [
+    7803,
+    "setMany",
+    "input"
+   ],
+   [
+    7821,
+    "setMany",
+    "textarea"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-select",
+  "kind": "控件",
+  "css": 1,
+  "js": 14,
+  "read": 1,
+  "tags": [
+   "select",
+   "(js)"
+  ],
+  "first": 1924,
+  "comps": [
+   "setMany×11",
+   "CSS",
+   "StorageTab",
+   "CalendarTab",
+   "MemoryPanel"
+  ],
+  "lines": [
+   1924,
+   4443,
+   5659,
+   6023,
+   7432,
+   7436,
+   7442,
+   7556,
+   7670,
+   7800,
+   7807,
+   7809,
+   7812,
+   7814,
+   7816
+  ],
+  "occComps": [
+   [
+    1924,
+    "CSS",
+    ""
+   ],
+   [
+    4443,
+    "StorageTab",
+    "select"
+   ],
+   [
+    5659,
+    "CalendarTab",
+    "select"
+   ],
+   [
+    6023,
+    "MemoryPanel",
+    ""
+   ],
+   [
+    7432,
+    "setMany",
+    "select"
+   ],
+   [
+    7436,
+    "setMany",
+    "select"
+   ],
+   [
+    7442,
+    "setMany",
+    "select"
+   ],
+   [
+    7556,
+    "setMany",
+    "select"
+   ],
+   [
+    7670,
+    "setMany",
+    "select"
+   ],
+   [
+    7800,
+    "setMany",
+    "select"
+   ],
+   [
+    7807,
+    "setMany",
+    "select"
+   ],
+   [
+    7809,
+    "setMany",
+    "select"
+   ],
+   [
+    7812,
+    "setMany",
+    "select"
+   ],
+   [
+    7814,
+    "setMany",
+    "select"
+   ],
+   [
+    7816,
+    "setMany",
+    "select"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-hint",
+  "kind": "容器",
+  "css": 1,
+  "js": 162,
+  "read": 0,
+  "tags": [
+   "div",
+   "span",
+   "summary",
+   "label"
+  ],
+  "first": 1927,
+  "comps": [
+   "setMany×19",
+   "MemoryHubTab×17",
+   "PlanTab×17",
+   "migRows×10",
+   "KanbanBoard×9",
+   "RulesEditPanel×9",
+   "KanbanView×8",
+   "DebugCenter×8",
+   "WhiteboardGraphView×7",
+   "StorageTab×7",
+   "body×7",
+   "SettingsPage×6",
+   "KanbanCard×5",
+   "OverviewTab×5",
+   "GreetingCard×4",
+   "ConnectTab×4",
+   "WbgNode×3",
+   "SearchTab×3",
+   "KanbanMatrixCard×2",
+   "LogsTab×2",
+   "NotesTab×2",
+   "CalendarTab×2",
+   "AutoContinueHost×2",
+   "CSS",
+   "FoldableLogs",
+   "ReflectionsTab",
+   "MemoryPageView",
+   "MemoryPanel"
+  ],
+  "lines": [
+   1927,
+   2505,
+   2507,
+   2519,
+   2521,
+   2523,
+   2552,
+   2579,
+   2583,
+   2603,
+   2608,
+   2612,
+   2625,
+   2640,
+   2646,
+   2731,
+   2734,
+   2803,
+   2816,
+   2821,
+   2822,
+   2824,
+   2859,
+   2892,
+   2923,
+   3086,
+   3104,
+   3113,
+   3224,
+   3237,
+   3247,
+   3299,
+   3343,
+   3344,
+   3345,
+   3519,
+   3520,
+   3521,
+   3526,
+   3688,
+   3691,
+   3695,
+   3696,
+   3697,
+   3884,
+   3887,
+   3909,
+   3986,
+   3987,
+   3990,
+   3991,
+   3992,
+   3993,
+   3998,
+   4033,
+   4048,
+   4113,
+   4132,
+   4133,
+   4140,
+   4155,
+   4164,
+   4179,
+   4186,
+   4192,
+   4198,
+   4204,
+   4239,
+   4241,
+   4254,
+   4260,
+   4263,
+   4271,
+   4418,
+   4420,
+   4424,
+   4427,
+   4440,
+   4453,
+   4456,
+   4464,
+   4466,
+   4483,
+   4484,
+   4490,
+   4492,
+   4494,
+   4496,
+   4506,
+   4507,
+   4545,
+   4549,
+   4825,
+   4836,
+   4852,
+   4859,
+   4880,
+   4887,
+   4896,
+   4899,
+   4930,
+   4936,
+   4937,
+   4939,
+   4944,
+   4947,
+   4954,
+   4970,
+   4972,
+   5024,
+   5072,
+   5073,
+   5081,
+   5435,
+   5437,
+   5438,
+   5438,
+   5439,
+   5446,
+   5447,
+   5613,
+   5669,
+   5770,
+   5783,
+   5788,
+   5795,
+   5942,
+   6054,
+   6130,
+   6236,
+   6262,
+   6264,
+   6267,
+   6273,
+   6281,
+   6285,
+   7023,
+   7029,
+   7167,
+   7178,
+   7184,
+   7187,
+   7222,
+   7224,
+   7351,
+   7464,
+   7475,
+   7479,
+   7482,
+   7485,
+   7568,
+   7600,
+   7613,
+   7615,
+   7633,
+   7656,
+   7674,
+   7792,
+   7806,
+   7865,
+   7867,
+   7876,
+   7877
+  ],
+  "occComps": [
+   [
+    1927,
+    "CSS",
+    ""
+   ],
+   [
+    2505,
+    "KanbanCard",
+    "div"
+   ],
+   [
+    2507,
+    "KanbanCard",
+    "div"
+   ],
+   [
+    2519,
+    "KanbanCard",
+    "span"
+   ],
+   [
+    2521,
+    "KanbanCard",
+    "span"
+   ],
+   [
+    2523,
+    "KanbanCard",
+    "div"
+   ],
+   [
+    2552,
+    "KanbanBoard",
+    "div"
+   ],
+   [
+    2579,
+    "KanbanBoard",
+    "span"
+   ],
+   [
+    2583,
+    "KanbanBoard",
+    "span"
+   ],
+   [
+    2603,
+    "KanbanBoard",
+    "div"
+   ],
+   [
+    2608,
+    "KanbanBoard",
+    "div"
+   ],
+   [
+    2612,
+    "KanbanBoard",
+    "div"
+   ],
+   [
+    2625,
+    "KanbanBoard",
+    "div"
+   ],
+   [
+    2640,
+    "KanbanBoard",
+    "span"
+   ],
+   [
+    2646,
+    "KanbanBoard",
+    "div"
+   ],
+   [
+    2731,
+    "KanbanMatrixCard",
+    "span"
+   ],
+   [
+    2734,
+    "KanbanMatrixCard",
+    "div"
+   ],
+   [
+    2803,
+    "KanbanView",
+    "span"
+   ],
+   [
+    2816,
+    "KanbanView",
+    "span"
+   ],
+   [
+    2821,
+    "KanbanView",
+    "div"
+   ],
+   [
+    2822,
+    "KanbanView",
+    "div"
+   ],
+   [
+    2824,
+    "KanbanView",
+    "div"
+   ],
+   [
+    2859,
+    "KanbanView",
+    "span"
+   ],
+   [
+    2892,
+    "KanbanView",
+    "div"
+   ],
+   [
+    2923,
+    "KanbanView",
+    "div"
+   ],
+   [
+    3086,
+    "WbgNode",
+    "div"
+   ],
+   [
+    3104,
+    "WbgNode",
+    "div"
+   ],
+   [
+    3113,
+    "WbgNode",
+    "div"
+   ],
+   [
+    3224,
+    "WhiteboardGraphView",
+    "div"
+   ],
+   [
+    3237,
+    "WhiteboardGraphView",
+    "span"
+   ],
+   [
+    3247,
+    "WhiteboardGraphView",
+    "span"
+   ],
+   [
+    3299,
+    "WhiteboardGraphView",
+    "div"
+   ],
+   [
+    3343,
+    "WhiteboardGraphView",
+    "div"
+   ],
+   [
+    3344,
+    "WhiteboardGraphView",
+    "div"
+   ],
+   [
+    3345,
+    "WhiteboardGraphView",
+    "div"
+   ],
+   [
+    3519,
+    "GreetingCard",
+    "div"
+   ],
+   [
+    3520,
+    "GreetingCard",
+    "div"
+   ],
+   [
+    3521,
+    "GreetingCard",
+    "div"
+   ],
+   [
+    3526,
+    "GreetingCard",
+    "div"
+   ],
+   [
+    3688,
+    "OverviewTab",
+    "div"
+   ],
+   [
+    3691,
+    "OverviewTab",
+    "div"
+   ],
+   [
+    3695,
+    "OverviewTab",
+    "span"
+   ],
+   [
+    3696,
+    "OverviewTab",
+    "div"
+   ],
+   [
+    3697,
+    "OverviewTab",
+    "div"
+   ],
+   [
+    3884,
+    "LogsTab",
+    "div"
+   ],
+   [
+    3887,
+    "LogsTab",
+    "div"
+   ],
+   [
+    3909,
+    "FoldableLogs",
+    "div"
+   ],
+   [
+    3986,
+    "RulesEditPanel",
+    "div"
+   ],
+   [
+    3987,
+    "RulesEditPanel",
+    "div"
+   ],
+   [
+    3990,
+    "RulesEditPanel",
+    "div"
+   ],
+   [
+    3991,
+    "RulesEditPanel",
+    "div"
+   ],
+   [
+    3992,
+    "RulesEditPanel",
+    "div"
+   ],
+   [
+    3993,
+    "RulesEditPanel",
+    "div"
+   ],
+   [
+    3998,
+    "RulesEditPanel",
+    "div"
+   ],
+   [
+    4033,
+    "RulesEditPanel",
+    "div"
+   ],
+   [
+    4048,
+    "RulesEditPanel",
+    "div"
+   ],
+   [
+    4113,
+    "MemoryHubTab",
+    "div"
+   ],
+   [
+    4132,
+    "MemoryHubTab",
+    "span"
+   ],
+   [
+    4133,
+    "MemoryHubTab",
+    "div"
+   ],
+   [
+    4140,
+    "MemoryHubTab",
+    "span"
+   ],
+   [
+    4155,
+    "MemoryHubTab",
+    "div"
+   ],
+   [
+    4164,
+    "MemoryHubTab",
+    "span"
+   ],
+   [
+    4179,
+    "MemoryHubTab",
+    "span"
+   ],
+   [
+    4186,
+    "MemoryHubTab",
+    "span"
+   ],
+   [
+    4192,
+    "MemoryHubTab",
+    "div"
+   ],
+   [
+    4198,
+    "MemoryHubTab",
+    "summary"
+   ],
+   [
+    4204,
+    "MemoryHubTab",
+    "div"
+   ],
+   [
+    4239,
+    "MemoryHubTab",
+    "div"
+   ],
+   [
+    4241,
+    "MemoryHubTab",
+    "div"
+   ],
+   [
+    4254,
+    "MemoryHubTab",
+    "div"
+   ],
+   [
+    4260,
+    "MemoryHubTab",
+    "div"
+   ],
+   [
+    4263,
+    "MemoryHubTab",
+    "div"
+   ],
+   [
+    4271,
+    "MemoryHubTab",
+    "div"
+   ],
+   [
+    4418,
+    "StorageTab",
+    "div"
+   ],
+   [
+    4420,
+    "StorageTab",
+    "div"
+   ],
+   [
+    4424,
+    "StorageTab",
+    "div"
+   ],
+   [
+    4427,
+    "StorageTab",
+    "div"
+   ],
+   [
+    4440,
+    "StorageTab",
+    "div"
+   ],
+   [
+    4453,
+    "StorageTab",
+    "div"
+   ],
+   [
+    4456,
+    "StorageTab",
+    "div"
+   ],
+   [
+    4464,
+    "migRows",
+    "div"
+   ],
+   [
+    4466,
+    "migRows",
+    "div"
+   ],
+   [
+    4483,
+    "migRows",
+    "div"
+   ],
+   [
+    4484,
+    "migRows",
+    "div"
+   ],
+   [
+    4490,
+    "migRows",
+    "div"
+   ],
+   [
+    4492,
+    "migRows",
+    "div"
+   ],
+   [
+    4494,
+    "migRows",
+    "div"
+   ],
+   [
+    4496,
+    "migRows",
+    "div"
+   ],
+   [
+    4506,
+    "migRows",
+    "div"
+   ],
+   [
+    4507,
+    "migRows",
+    "div"
+   ],
+   [
+    4545,
+    "NotesTab",
+    "div"
+   ],
+   [
+    4549,
+    "NotesTab",
+    "span"
+   ],
+   [
+    4825,
+    "PlanTab",
+    "div"
+   ],
+   [
+    4836,
+    "PlanTab",
+    "label"
+   ],
+   [
+    4852,
+    "PlanTab",
+    "div"
+   ],
+   [
+    4859,
+    "PlanTab",
+    "div"
+   ],
+   [
+    4880,
+    "PlanTab",
+    "div"
+   ],
+   [
+    4887,
+    "PlanTab",
+    "div"
+   ],
+   [
+    4896,
+    "PlanTab",
+    "div"
+   ],
+   [
+    4899,
+    "PlanTab",
+    "span"
+   ],
+   [
+    4930,
+    "PlanTab",
+    "div"
+   ],
+   [
+    4936,
+    "PlanTab",
+    "span"
+   ],
+   [
+    4937,
+    "PlanTab",
+    "span"
+   ],
+   [
+    4939,
+    "PlanTab",
+    "div"
+   ],
+   [
+    4944,
+    "PlanTab",
+    "div"
+   ],
+   [
+    4947,
+    "PlanTab",
+    "div"
+   ],
+   [
+    4954,
+    "PlanTab",
+    "div"
+   ],
+   [
+    4970,
+    "PlanTab",
+    "div"
+   ],
+   [
+    4972,
+    "PlanTab",
+    "div"
+   ],
+   [
+    5024,
+    "ReflectionsTab",
+    "span"
+   ],
+   [
+    5072,
+    "SearchTab",
+    "div"
+   ],
+   [
+    5073,
+    "SearchTab",
+    "div"
+   ],
+   [
+    5081,
+    "SearchTab",
+    "span"
+   ],
+   [
+    5435,
+    "body",
+    "span"
+   ],
+   [
+    5437,
+    "body",
+    "div"
+   ],
+   [
+    5438,
+    "body",
+    "span"
+   ],
+   [
+    5438,
+    "body",
+    "span"
+   ],
+   [
+    5439,
+    "body",
+    "div"
+   ],
+   [
+    5446,
+    "body",
+    "div"
+   ],
+   [
+    5447,
+    "body",
+    "div"
+   ],
+   [
+    5613,
+    "CalendarTab",
+    "span"
+   ],
+   [
+    5669,
+    "CalendarTab",
+    "div"
+   ],
+   [
+    5770,
+    "ConnectTab",
+    "span"
+   ],
+   [
+    5783,
+    "ConnectTab",
+    "div"
+   ],
+   [
+    5788,
+    "ConnectTab",
+    "div"
+   ],
+   [
+    5795,
+    "ConnectTab",
+    "div"
+   ],
+   [
+    5942,
+    "MemoryPageView",
+    "span"
+   ],
+   [
+    6054,
+    "MemoryPanel",
+    "span"
+   ],
+   [
+    6130,
+    "DebugCenter",
+    "div"
+   ],
+   [
+    6236,
+    "DebugCenter",
+    "span"
+   ],
+   [
+    6262,
+    "DebugCenter",
+    "div"
+   ],
+   [
+    6264,
+    "DebugCenter",
+    "div"
+   ],
+   [
+    6267,
+    "DebugCenter",
+    "div"
+   ],
+   [
+    6273,
+    "DebugCenter",
+    "div"
+   ],
+   [
+    6281,
+    "DebugCenter",
+    "span"
+   ],
+   [
+    6285,
+    "DebugCenter",
+    "div"
+   ],
+   [
+    7023,
+    "AutoContinueHost",
+    "div"
+   ],
+   [
+    7029,
+    "AutoContinueHost",
+    "span"
+   ],
+   [
+    7167,
+    "SettingsPage",
+    "div"
+   ],
+   [
+    7178,
+    "SettingsPage",
+    "div"
+   ],
+   [
+    7184,
+    "SettingsPage",
+    "div"
+   ],
+   [
+    7187,
+    "SettingsPage",
+    "div"
+   ],
+   [
+    7222,
+    "SettingsPage",
+    "div"
+   ],
+   [
+    7224,
+    "SettingsPage",
+    "div"
+   ],
+   [
+    7351,
+    "setMany",
+    "div"
+   ],
+   [
+    7464,
+    "setMany",
+    "div"
+   ],
+   [
+    7475,
+    "setMany",
+    "div"
+   ],
+   [
+    7479,
+    "setMany",
+    "div"
+   ],
+   [
+    7482,
+    "setMany",
+    "div"
+   ],
+   [
+    7485,
+    "setMany",
+    "div"
+   ],
+   [
+    7568,
+    "setMany",
+    "div"
+   ],
+   [
+    7600,
+    "setMany",
+    "div"
+   ],
+   [
+    7613,
+    "setMany",
+    "div"
+   ],
+   [
+    7615,
+    "setMany",
+    "div"
+   ],
+   [
+    7633,
+    "setMany",
+    "div"
+   ],
+   [
+    7656,
+    "setMany",
+    "div"
+   ],
+   [
+    7674,
+    "setMany",
+    "div"
+   ],
+   [
+    7792,
+    "setMany",
+    "div"
+   ],
+   [
+    7806,
+    "setMany",
+    "div"
+   ],
+   [
+    7865,
+    "setMany",
+    "span"
+   ],
+   [
+    7867,
+    "setMany",
+    "span"
+   ],
+   [
+    7876,
+    "setMany",
+    "span"
+   ],
+   [
+    7877,
+    "setMany",
+    "span"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-error",
+  "kind": "容器",
+  "css": 1,
+  "js": 13,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 1931,
+  "comps": [
+   "setMany×4",
+   "ConnectTab×3",
+   "CalendarTab×2",
+   "SettingsPage×2",
+   "CSS",
+   "migRows",
+   "NotesTab"
+  ],
+  "lines": [
+   1931,
+   4463,
+   4551,
+   5667,
+   5670,
+   5707,
+   5780,
+   5800,
+   7168,
+   7305,
+   7466,
+   7572,
+   7574,
+   7882
+  ],
+  "occComps": [
+   [
+    1931,
+    "CSS",
+    ""
+   ],
+   [
+    4463,
+    "migRows",
+    "div"
+   ],
+   [
+    4551,
+    "NotesTab",
+    "div"
+   ],
+   [
+    5667,
+    "CalendarTab",
+    "div"
+   ],
+   [
+    5670,
+    "CalendarTab",
+    "div"
+   ],
+   [
+    5707,
+    "ConnectTab",
+    "div"
+   ],
+   [
+    5780,
+    "ConnectTab",
+    "div"
+   ],
+   [
+    5800,
+    "ConnectTab",
+    "div"
+   ],
+   [
+    7168,
+    "SettingsPage",
+    "div"
+   ],
+   [
+    7305,
+    "SettingsPage",
+    "div"
+   ],
+   [
+    7466,
+    "setMany",
+    "div"
+   ],
+   [
+    7572,
+    "setMany",
+    "div"
+   ],
+   [
+    7574,
+    "setMany",
+    "div"
+   ],
+   [
+    7882,
+    "setMany",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-muted",
+  "kind": "容器",
+  "css": 1,
+  "js": 6,
+  "read": 0,
+  "tags": [
+   "div",
+   "span"
+  ],
+  "first": 1932,
+  "comps": [
+   "GreetingCard×2",
+   "PlanTab×2",
+   "CSS",
+   "ReflectionsTab",
+   "ConnectTab"
+  ],
+  "lines": [
+   1932,
+   3501,
+   3514,
+   4890,
+   4967,
+   5026,
+   5761
+  ],
+  "occComps": [
+   [
+    1932,
+    "CSS",
+    ""
+   ],
+   [
+    3501,
+    "GreetingCard",
+    "div"
+   ],
+   [
+    3514,
+    "GreetingCard",
+    "span"
+   ],
+   [
+    4890,
+    "PlanTab",
+    "div"
+   ],
+   [
+    4967,
+    "PlanTab",
+    "div"
+   ],
+   [
+    5026,
+    "ReflectionsTab",
+    "div"
+   ],
+   [
+    5761,
+    "ConnectTab",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-loading",
+  "kind": "容器",
+  "css": 1,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 1933,
+  "comps": [
+   "CSS",
+   "Loading"
+  ],
+  "lines": [
+   1933,
+   3353
+  ],
+  "occComps": [
+   [
+    1933,
+    "CSS",
+    ""
+   ],
+   [
+    3353,
+    "Loading",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-spinner",
+  "kind": "容器",
+  "css": 1,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "span"
+  ],
+  "first": 1934,
+  "comps": [
+   "CSS",
+   "Loading"
+  ],
+  "lines": [
+   1934,
+   3353
+  ],
+  "occComps": [
+   [
+    1934,
+    "CSS",
+    ""
+   ],
+   [
+    3353,
+    "Loading",
+    "span"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-tour-backdrop",
+  "kind": "容器",
+  "css": 2,
+  "js": 2,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 1939,
+  "comps": [
+   "CSS×2",
+   "DialogHost×2"
+  ],
+  "lines": [
+   1939,
+   2199,
+   6458,
+   6681
+  ],
+  "occComps": [
+   [
+    1939,
+    "CSS",
+    ""
+   ],
+   [
+    2199,
+    "CSS",
+    ""
+   ],
+   [
+    6458,
+    "DialogHost",
+    "div"
+   ],
+   [
+    6681,
+    "DialogHost",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-tour",
+  "kind": "JS 选择器",
+  "css": 4,
+  "js": 5,
+  "read": 2,
+  "tags": [
+   "(js)",
+   "div"
+  ],
+  "first": 1942,
+  "comps": [
+   "CSS×5",
+   "DialogHost×4"
+  ],
+  "lines": [
+   1942,
+   1950,
+   1960,
+   2200,
+   2204,
+   6361,
+   6459,
+   6684,
+   6690
+  ],
+  "occComps": [
+   [
+    1942,
+    "CSS",
+    ""
+   ],
+   [
+    1950,
+    "CSS",
+    ""
+   ],
+   [
+    1960,
+    "CSS",
+    ""
+   ],
+   [
+    2200,
+    "CSS",
+    ""
+   ],
+   [
+    2204,
+    "CSS",
+    ""
+   ],
+   [
+    6361,
+    "DialogHost",
+    ""
+   ],
+   [
+    6459,
+    "DialogHost",
+    "div"
+   ],
+   [
+    6684,
+    "DialogHost",
+    "div"
+   ],
+   [
+    6690,
+    "DialogHost",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-tour-glare",
+  "kind": "容器",
+  "css": 1,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 1952,
+  "comps": [
+   "CSS",
+   "DialogHost"
+  ],
+  "lines": [
+   1952,
+   6691
+  ],
+  "occComps": [
+   [
+    1952,
+    "CSS",
+    ""
+   ],
+   [
+    6691,
+    "DialogHost",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-tour-close",
+  "kind": "控件",
+  "css": 2,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "button"
+  ],
+  "first": 1954,
+  "comps": [
+   "CSS×2",
+   "DialogHost"
+  ],
+  "lines": [
+   1954,
+   1956,
+   6692
+  ],
+  "occComps": [
+   [
+    1954,
+    "CSS",
+    ""
+   ],
+   [
+    1956,
+    "CSS",
+    ""
+   ],
+   [
+    6692,
+    "DialogHost",
+    "button"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-wb-setup",
+  "kind": "容器",
+  "css": 4,
+  "js": 2,
+  "read": 0,
+  "tags": [
+   "(js)",
+   "div"
+  ],
+  "first": 1958,
+  "comps": [
+   "CSS×5",
+   "DialogHost"
+  ],
+  "lines": [
+   1958,
+   1962,
+   1976,
+   1978,
+   2022,
+   6458
+  ],
+  "occComps": [
+   [
+    1958,
+    "CSS",
+    ""
+   ],
+   [
+    1962,
+    "CSS",
+    ""
+   ],
+   [
+    1976,
+    "CSS",
+    ""
+   ],
+   [
+    1978,
+    "CSS",
+    ""
+   ],
+   [
+    2022,
+    "CSS",
+    ""
+   ],
+   [
+    6458,
+    "DialogHost",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-wb-card",
+  "kind": "容器",
+  "css": 34,
+  "js": 3,
+  "read": 0,
+  "tags": [
+   "(js)",
+   "div"
+  ],
+  "first": 1958,
+  "comps": [
+   "CSS×35",
+   "DialogHost×2"
+  ],
+  "lines": [
+   1958,
+   1962,
+   1976,
+   1978,
+   1980,
+   1982,
+   1984,
+   1985,
+   1986,
+   1987,
+   1989,
+   1991,
+   1992,
+   1993,
+   1994,
+   1995,
+   1996,
+   1999,
+   2001,
+   2003,
+   2003,
+   2004,
+   2008,
+   2009,
+   2012,
+   2014,
+   2015,
+   2017,
+   2018,
+   2019,
+   2020,
+   2022,
+   2023,
+   2024,
+   2025,
+   6457,
+   6459
+  ],
+  "occComps": [
+   [
+    1958,
+    "CSS",
+    ""
+   ],
+   [
+    1962,
+    "CSS",
+    ""
+   ],
+   [
+    1976,
+    "CSS",
+    ""
+   ],
+   [
+    1978,
+    "CSS",
+    ""
+   ],
+   [
+    1980,
+    "CSS",
+    ""
+   ],
+   [
+    1982,
+    "CSS",
+    ""
+   ],
+   [
+    1984,
+    "CSS",
+    ""
+   ],
+   [
+    1985,
+    "CSS",
+    ""
+   ],
+   [
+    1986,
+    "CSS",
+    ""
+   ],
+   [
+    1987,
+    "CSS",
+    ""
+   ],
+   [
+    1989,
+    "CSS",
+    ""
+   ],
+   [
+    1991,
+    "CSS",
+    ""
+   ],
+   [
+    1992,
+    "CSS",
+    ""
+   ],
+   [
+    1993,
+    "CSS",
+    ""
+   ],
+   [
+    1994,
+    "CSS",
+    ""
+   ],
+   [
+    1995,
+    "CSS",
+    ""
+   ],
+   [
+    1996,
+    "CSS",
+    ""
+   ],
+   [
+    1999,
+    "CSS",
+    ""
+   ],
+   [
+    2001,
+    "CSS",
+    ""
+   ],
+   [
+    2003,
+    "CSS",
+    ""
+   ],
+   [
+    2003,
+    "CSS",
+    ""
+   ],
+   [
+    2004,
+    "CSS",
+    ""
+   ],
+   [
+    2008,
+    "CSS",
+    ""
+   ],
+   [
+    2009,
+    "CSS",
+    ""
+   ],
+   [
+    2012,
+    "CSS",
+    ""
+   ],
+   [
+    2014,
+    "CSS",
+    ""
+   ],
+   [
+    2015,
+    "CSS",
+    ""
+   ],
+   [
+    2017,
+    "CSS",
+    ""
+   ],
+   [
+    2018,
+    "CSS",
+    ""
+   ],
+   [
+    2019,
+    "CSS",
+    ""
+   ],
+   [
+    2020,
+    "CSS",
+    ""
+   ],
+   [
+    2022,
+    "CSS",
+    ""
+   ],
+   [
+    2023,
+    "CSS",
+    ""
+   ],
+   [
+    2024,
+    "CSS",
+    ""
+   ],
+   [
+    2025,
+    "CSS",
+    ""
+   ],
+   [
+    6457,
+    "DialogHost",
+    ""
+   ],
+   [
+    6459,
+    "DialogHost",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-wb-head",
+  "kind": "容器",
+  "css": 2,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 1980,
+  "comps": [
+   "CSS×2",
+   "DialogHost"
+  ],
+  "lines": [
+   1980,
+   1982,
+   6460
+  ],
+  "occComps": [
+   [
+    1980,
+    "CSS",
+    ""
+   ],
+   [
+    1982,
+    "CSS",
+    ""
+   ],
+   [
+    6460,
+    "DialogHost",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-wb-phase",
+  "kind": "容器",
+  "css": 3,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 1984,
+  "comps": [
+   "CSS×3",
+   "DialogHost"
+  ],
+  "lines": [
+   1984,
+   1985,
+   1986,
+   6460
+  ],
+  "occComps": [
+   [
+    1984,
+    "CSS",
+    ""
+   ],
+   [
+    1985,
+    "CSS",
+    ""
+   ],
+   [
+    1986,
+    "CSS",
+    ""
+   ],
+   [
+    6460,
+    "DialogHost",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-wb-sub",
+  "kind": "容器",
+  "css": 1,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 1987,
+  "comps": [
+   "CSS",
+   "DialogHost"
+  ],
+  "lines": [
+   1987,
+   6463
+  ],
+  "occComps": [
+   [
+    1987,
+    "CSS",
+    ""
+   ],
+   [
+    6463,
+    "DialogHost",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-wb-row",
+  "kind": "容器",
+  "css": 2,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 1989,
+  "comps": [
+   "CSS×2",
+   "DialogHost"
+  ],
+  "lines": [
+   1989,
+   2023,
+   6434
+  ],
+  "occComps": [
+   [
+    1989,
+    "CSS",
+    ""
+   ],
+   [
+    2023,
+    "CSS",
+    ""
+   ],
+   [
+    6434,
+    "DialogHost",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-wb-dot",
+  "kind": "容器",
+  "css": 1,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "span"
+  ],
+  "first": 1991,
+  "comps": [
+   "CSS",
+   "DialogHost"
+  ],
+  "lines": [
+   1991,
+   6435
+  ],
+  "occComps": [
+   [
+    1991,
+    "CSS",
+    ""
+   ],
+   [
+    6435,
+    "DialogHost",
+    "span"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-wb-state",
+  "kind": "容器",
+  "css": 3,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "span"
+  ],
+  "first": 1992,
+  "comps": [
+   "CSS×3",
+   "DialogHost"
+  ],
+  "lines": [
+   1992,
+   1993,
+   1994,
+   6435
+  ],
+  "occComps": [
+   [
+    1992,
+    "CSS",
+    ""
+   ],
+   [
+    1993,
+    "CSS",
+    ""
+   ],
+   [
+    1994,
+    "CSS",
+    ""
+   ],
+   [
+    6435,
+    "DialogHost",
+    "span"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-wb-label",
+  "kind": "容器",
+  "css": 1,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "span"
+  ],
+  "first": 1995,
+  "comps": [
+   "CSS",
+   "DialogHost"
+  ],
+  "lines": [
+   1995,
+   6436
+  ],
+  "occComps": [
+   [
+    1995,
+    "CSS",
+    ""
+   ],
+   [
+    6436,
+    "DialogHost",
+    "span"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-wb-detail",
+  "kind": "容器",
+  "css": 2,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "span"
+  ],
+  "first": 1996,
+  "comps": [
+   "CSS×2",
+   "DialogHost"
+  ],
+  "lines": [
+   1996,
+   2024,
+   6437
+  ],
+  "occComps": [
+   [
+    1996,
+    "CSS",
+    ""
+   ],
+   [
+    2024,
+    "CSS",
+    ""
+   ],
+   [
+    6437,
+    "DialogHost",
+    "span"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-wb-reason",
+  "kind": "容器",
+  "css": 1,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 1999,
+  "comps": [
+   "CSS",
+   "DialogHost"
+  ],
+  "lines": [
+   1999,
+   6481
+  ],
+  "occComps": [
+   [
+    1999,
+    "CSS",
+    ""
+   ],
+   [
+    6481,
+    "DialogHost",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-wb-dir",
+  "kind": "容器",
+  "css": 2,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 2001,
+  "comps": [
+   "CSS×2",
+   "DialogHost"
+  ],
+  "lines": [
+   2001,
+   2003,
+   6482
+  ],
+  "occComps": [
+   [
+    2001,
+    "CSS",
+    ""
+   ],
+   [
+    2003,
+    "CSS",
+    ""
+   ],
+   [
+    6482,
+    "DialogHost",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-wb-risk",
+  "kind": "容器",
+  "css": 2,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 2003,
+  "comps": [
+   "CSS×2",
+   "DialogHost"
+  ],
+  "lines": [
+   2003,
+   2004,
+   6487
+  ],
+  "occComps": [
+   [
+    2003,
+    "CSS",
+    ""
+   ],
+   [
+    2004,
+    "CSS",
+    ""
+   ],
+   [
+    6487,
+    "DialogHost",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-wb-actions",
+  "kind": "容器",
+  "css": 2,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 2008,
+  "comps": [
+   "CSS×2",
+   "DialogHost"
+  ],
+  "lines": [
+   2008,
+   2025,
+   6497
+  ],
+  "occComps": [
+   [
+    2008,
+    "CSS",
+    ""
+   ],
+   [
+    2025,
+    "CSS",
+    ""
+   ],
+   [
+    6497,
+    "DialogHost",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-wb-cta",
+  "kind": "控件",
+  "css": 2,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "button"
+  ],
+  "first": 2012,
+  "comps": [
+   "CSS×2",
+   "DialogHost"
+  ],
+  "lines": [
+   2012,
+   2014,
+   6498
+  ],
+  "occComps": [
+   [
+    2012,
+    "CSS",
+    ""
+   ],
+   [
+    2014,
+    "CSS",
+    ""
+   ],
+   [
+    6498,
+    "DialogHost",
+    "button"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-wb-cta2",
+  "kind": "控件",
+  "css": 2,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "button"
+  ],
+  "first": 2015,
+  "comps": [
+   "CSS×2",
+   "DialogHost"
+  ],
+  "lines": [
+   2015,
+   2017,
+   6504
+  ],
+  "occComps": [
+   [
+    2015,
+    "CSS",
+    ""
+   ],
+   [
+    2017,
+    "CSS",
+    ""
+   ],
+   [
+    6504,
+    "DialogHost",
+    "button"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-wb-foot",
+  "kind": "容器",
+  "css": 1,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 2020,
+  "comps": [
+   "CSS",
+   "DialogHost"
+  ],
+  "lines": [
+   2020,
+   6506
+  ],
+  "occComps": [
+   [
+    2020,
+    "CSS",
+    ""
+   ],
+   [
+    6506,
+    "DialogHost",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-tour-stage",
+  "kind": "容器",
+  "css": 2,
+  "js": 2,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 2041,
+  "comps": [
+   "CSS×2",
+   "DialogHost×2"
+  ],
+  "lines": [
+   2041,
+   2267,
+   6391,
+   6698
+  ],
+  "occComps": [
+   [
+    2041,
+    "CSS",
+    ""
+   ],
+   [
+    2267,
+    "CSS",
+    ""
+   ],
+   [
+    6391,
+    "DialogHost",
+    "div"
+   ],
+   [
+    6698,
+    "DialogHost",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-tour-app-tile",
+  "kind": "容器",
+  "css": 11,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 2076,
+  "comps": [
+   "CSS×11",
+   "DialogHost"
+  ],
+  "lines": [
+   2076,
+   2078,
+   2079,
+   2080,
+   2081,
+   2082,
+   2083,
+   2084,
+   2085,
+   2221,
+   2225,
+   6701
+  ],
+  "occComps": [
+   [
+    2076,
+    "CSS",
+    ""
+   ],
+   [
+    2078,
+    "CSS",
+    ""
+   ],
+   [
+    2079,
+    "CSS",
+    ""
+   ],
+   [
+    2080,
+    "CSS",
+    ""
+   ],
+   [
+    2081,
+    "CSS",
+    ""
+   ],
+   [
+    2082,
+    "CSS",
+    ""
+   ],
+   [
+    2083,
+    "CSS",
+    ""
+   ],
+   [
+    2084,
+    "CSS",
+    ""
+   ],
+   [
+    2085,
+    "CSS",
+    ""
+   ],
+   [
+    2221,
+    "CSS",
+    ""
+   ],
+   [
+    2225,
+    "CSS",
+    ""
+   ],
+   [
+    6701,
+    "DialogHost",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-tour-art",
+  "kind": "容器",
+  "css": 45,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 2088,
+  "comps": [
+   "CSS×45",
+   "DialogHost"
+  ],
+  "lines": [
+   2088,
+   2089,
+   2090,
+   2091,
+   2092,
+   2093,
+   2094,
+   2095,
+   2096,
+   2097,
+   2101,
+   2102,
+   2103,
+   2103,
+   2107,
+   2108,
+   2108,
+   2108,
+   2111,
+   2112,
+   2113,
+   2116,
+   2117,
+   2117,
+   2120,
+   2120,
+   2120,
+   2120,
+   2121,
+   2123,
+   2123,
+   2123,
+   2124,
+   2126,
+   2126,
+   2127,
+   2129,
+   2129,
+   2130,
+   2130,
+   2132,
+   2132,
+   2132,
+   2132,
+   2133,
+   6679
+  ],
+  "occComps": [
+   [
+    2088,
+    "CSS",
+    ""
+   ],
+   [
+    2089,
+    "CSS",
+    ""
+   ],
+   [
+    2090,
+    "CSS",
+    ""
+   ],
+   [
+    2091,
+    "CSS",
+    ""
+   ],
+   [
+    2092,
+    "CSS",
+    ""
+   ],
+   [
+    2093,
+    "CSS",
+    ""
+   ],
+   [
+    2094,
+    "CSS",
+    ""
+   ],
+   [
+    2095,
+    "CSS",
+    ""
+   ],
+   [
+    2096,
+    "CSS",
+    ""
+   ],
+   [
+    2097,
+    "CSS",
+    ""
+   ],
+   [
+    2101,
+    "CSS",
+    ""
+   ],
+   [
+    2102,
+    "CSS",
+    ""
+   ],
+   [
+    2103,
+    "CSS",
+    ""
+   ],
+   [
+    2103,
+    "CSS",
+    ""
+   ],
+   [
+    2107,
+    "CSS",
+    ""
+   ],
+   [
+    2108,
+    "CSS",
+    ""
+   ],
+   [
+    2108,
+    "CSS",
+    ""
+   ],
+   [
+    2108,
+    "CSS",
+    ""
+   ],
+   [
+    2111,
+    "CSS",
+    ""
+   ],
+   [
+    2112,
+    "CSS",
+    ""
+   ],
+   [
+    2113,
+    "CSS",
+    ""
+   ],
+   [
+    2116,
+    "CSS",
+    ""
+   ],
+   [
+    2117,
+    "CSS",
+    ""
+   ],
+   [
+    2117,
+    "CSS",
+    ""
+   ],
+   [
+    2120,
+    "CSS",
+    ""
+   ],
+   [
+    2120,
+    "CSS",
+    ""
+   ],
+   [
+    2120,
+    "CSS",
+    ""
+   ],
+   [
+    2120,
+    "CSS",
+    ""
+   ],
+   [
+    2121,
+    "CSS",
+    ""
+   ],
+   [
+    2123,
+    "CSS",
+    ""
+   ],
+   [
+    2123,
+    "CSS",
+    ""
+   ],
+   [
+    2123,
+    "CSS",
+    ""
+   ],
+   [
+    2124,
+    "CSS",
+    ""
+   ],
+   [
+    2126,
+    "CSS",
+    ""
+   ],
+   [
+    2126,
+    "CSS",
+    ""
+   ],
+   [
+    2127,
+    "CSS",
+    ""
+   ],
+   [
+    2129,
+    "CSS",
+    ""
+   ],
+   [
+    2129,
+    "CSS",
+    ""
+   ],
+   [
+    2130,
+    "CSS",
+    ""
+   ],
+   [
+    2130,
+    "CSS",
+    ""
+   ],
+   [
+    2132,
+    "CSS",
+    ""
+   ],
+   [
+    2132,
+    "CSS",
+    ""
+   ],
+   [
+    2132,
+    "CSS",
+    ""
+   ],
+   [
+    2132,
+    "CSS",
+    ""
+   ],
+   [
+    2133,
+    "CSS",
+    ""
+   ],
+   [
+    6679,
+    "DialogHost",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-tour-body",
+  "kind": "容器",
+  "css": 2,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 2134,
+  "comps": [
+   "CSS×2",
+   "DialogHost"
+  ],
+  "lines": [
+   2134,
+   2226,
+   6704
+  ],
+  "occComps": [
+   [
+    2134,
+    "CSS",
+    ""
+   ],
+   [
+    2226,
+    "CSS",
+    ""
+   ],
+   [
+    6704,
+    "DialogHost",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-tour-kicker",
+  "kind": "容器",
+  "css": 2,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 2135,
+  "comps": [
+   "CSS×2",
+   "DialogHost"
+  ],
+  "lines": [
+   2135,
+   2228,
+   6706
+  ],
+  "occComps": [
+   [
+    2135,
+    "CSS",
+    ""
+   ],
+   [
+    2228,
+    "CSS",
+    ""
+   ],
+   [
+    6706,
+    "DialogHost",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-tour-title",
+  "kind": "容器",
+  "css": 2,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 2136,
+  "comps": [
+   "CSS×2",
+   "DialogHost"
+  ],
+  "lines": [
+   2136,
+   2233,
+   6708
+  ],
+  "occComps": [
+   [
+    2136,
+    "CSS",
+    ""
+   ],
+   [
+    2233,
+    "CSS",
+    ""
+   ],
+   [
+    6708,
+    "DialogHost",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-tour-text",
+  "kind": "容器",
+  "css": 2,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 2137,
+  "comps": [
+   "CSS×2",
+   "DialogHost"
+  ],
+  "lines": [
+   2137,
+   2234,
+   6709
+  ],
+  "occComps": [
+   [
+    2137,
+    "CSS",
+    ""
+   ],
+   [
+    2234,
+    "CSS",
+    ""
+   ],
+   [
+    6709,
+    "DialogHost",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-tour-swap",
+  "kind": "容器",
+  "css": 1,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 2138,
+  "comps": [
+   "CSS",
+   "DialogHost"
+  ],
+  "lines": [
+   2138,
+   6704
+  ],
+  "occComps": [
+   [
+    2138,
+    "CSS",
+    ""
+   ],
+   [
+    6704,
+    "DialogHost",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-tour-dl",
+  "kind": "容器",
+  "css": 1,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 2140,
+  "comps": [
+   "CSS",
+   "DialogHost"
+  ],
+  "lines": [
+   2140,
+   6729
+  ],
+  "occComps": [
+   [
+    2140,
+    "CSS",
+    ""
+   ],
+   [
+    6729,
+    "DialogHost",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-tour-dl-row",
+  "kind": "容器",
+  "css": 1,
+  "js": 2,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 2141,
+  "comps": [
+   "DialogHost×2",
+   "CSS"
+  ],
+  "lines": [
+   2141,
+   6730,
+   6735
+  ],
+  "occComps": [
+   [
+    2141,
+    "CSS",
+    ""
+   ],
+   [
+    6730,
+    "DialogHost",
+    "div"
+   ],
+   [
+    6735,
+    "DialogHost",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-tour-dl-tier",
+  "kind": "容器",
+  "css": 1,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 2142,
+  "comps": [
+   "CSS",
+   "DialogHost"
+  ],
+  "lines": [
+   2142,
+   6737
+  ],
+  "occComps": [
+   [
+    2142,
+    "CSS",
+    ""
+   ],
+   [
+    6737,
+    "DialogHost",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-tour-dl-tier-row",
+  "kind": "容器",
+  "css": 4,
+  "js": 2,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 2143,
+  "comps": [
+   "CSS×4",
+   "DialogHost×2"
+  ],
+  "lines": [
+   2143,
+   2144,
+   2145,
+   2146,
+   6738,
+   6741
+  ],
+  "occComps": [
+   [
+    2143,
+    "CSS",
+    ""
+   ],
+   [
+    2144,
+    "CSS",
+    ""
+   ],
+   [
+    2145,
+    "CSS",
+    ""
+   ],
+   [
+    2146,
+    "CSS",
+    ""
+   ],
+   [
+    6738,
+    "DialogHost",
+    "div"
+   ],
+   [
+    6741,
+    "DialogHost",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-tour-bar",
+  "kind": "容器",
+  "css": 1,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 2147,
+  "comps": [
+   "CSS",
+   "DialogHost"
+  ],
+  "lines": [
+   2147,
+   6733
+  ],
+  "occComps": [
+   [
+    2147,
+    "CSS",
+    ""
+   ],
+   [
+    6733,
+    "DialogHost",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-tour-bar-i",
+  "kind": "容器",
+  "css": 1,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 2148,
+  "comps": [
+   "CSS",
+   "DialogHost"
+  ],
+  "lines": [
+   2148,
+   6734
+  ],
+  "occComps": [
+   [
+    2148,
+    "CSS",
+    ""
+   ],
+   [
+    6734,
+    "DialogHost",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-tour-dots",
+  "kind": "容器",
+  "css": 2,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 2149,
+  "comps": [
+   "CSS×2",
+   "DialogHost"
+  ],
+  "lines": [
+   2149,
+   2235,
+   6770
+  ],
+  "occComps": [
+   [
+    2149,
+    "CSS",
+    ""
+   ],
+   [
+    2235,
+    "CSS",
+    ""
+   ],
+   [
+    6770,
+    "DialogHost",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-tour-dot",
+  "kind": "控件",
+  "css": 6,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "button"
+  ],
+  "first": 2150,
+  "comps": [
+   "CSS×6",
+   "DialogHost"
+  ],
+  "lines": [
+   2150,
+   2151,
+   2152,
+   2236,
+   2237,
+   2238,
+   6772
+  ],
+  "occComps": [
+   [
+    2150,
+    "CSS",
+    ""
+   ],
+   [
+    2151,
+    "CSS",
+    ""
+   ],
+   [
+    2152,
+    "CSS",
+    ""
+   ],
+   [
+    2236,
+    "CSS",
+    ""
+   ],
+   [
+    2237,
+    "CSS",
+    ""
+   ],
+   [
+    2238,
+    "CSS",
+    ""
+   ],
+   [
+    6772,
+    "DialogHost",
+    "button"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-tour-foot",
+  "kind": "容器",
+  "css": 2,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 2153,
+  "comps": [
+   "CSS×2",
+   "DialogHost"
+  ],
+  "lines": [
+   2153,
+   2239,
+   6775
+  ],
+  "occComps": [
+   [
+    2153,
+    "CSS",
+    ""
+   ],
+   [
+    2239,
+    "CSS",
+    ""
+   ],
+   [
+    6775,
+    "DialogHost",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-tour-skip",
+  "kind": "控件",
+  "css": 3,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "button"
+  ],
+  "first": 2154,
+  "comps": [
+   "CSS×3",
+   "DialogHost"
+  ],
+  "lines": [
+   2154,
+   2155,
+   2240,
+   6776
+  ],
+  "occComps": [
+   [
+    2154,
+    "CSS",
+    ""
+   ],
+   [
+    2155,
+    "CSS",
+    ""
+   ],
+   [
+    2240,
+    "CSS",
+    ""
+   ],
+   [
+    6776,
+    "DialogHost",
+    "button"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-tour-btn",
+  "kind": "控件",
+  "css": 10,
+  "js": 2,
+  "read": 0,
+  "tags": [
+   "button"
+  ],
+  "first": 2156,
+  "comps": [
+   "CSS×10",
+   "DialogHost×2"
+  ],
+  "lines": [
+   2156,
+   2157,
+   2158,
+   2159,
+   2160,
+   2161,
+   2241,
+   2242,
+   2243,
+   2244,
+   6777,
+   6780
+  ],
+  "occComps": [
+   [
+    2156,
+    "CSS",
+    ""
+   ],
+   [
+    2157,
+    "CSS",
+    ""
+   ],
+   [
+    2158,
+    "CSS",
+    ""
+   ],
+   [
+    2159,
+    "CSS",
+    ""
+   ],
+   [
+    2160,
+    "CSS",
+    ""
+   ],
+   [
+    2161,
+    "CSS",
+    ""
+   ],
+   [
+    2241,
+    "CSS",
+    ""
+   ],
+   [
+    2242,
+    "CSS",
+    ""
+   ],
+   [
+    2243,
+    "CSS",
+    ""
+   ],
+   [
+    2244,
+    "CSS",
+    ""
+   ],
+   [
+    6777,
+    "DialogHost",
+    "button"
+   ],
+   [
+    6780,
+    "DialogHost",
+    "button"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-tour-badge",
+  "kind": "容器",
+  "css": 1,
+  "js": 2,
+  "read": 0,
+  "tags": [
+   "span"
+  ],
+  "first": 2162,
+  "comps": [
+   "DialogHost×2",
+   "CSS"
+  ],
+  "lines": [
+   2162,
+   6747,
+   6750
+  ],
+  "occComps": [
+   [
+    2162,
+    "CSS",
+    ""
+   ],
+   [
+    6747,
+    "DialogHost",
+    "span"
+   ],
+   [
+    6750,
+    "DialogHost",
+    "span"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-tour-rec",
+  "kind": "容器",
+  "css": 1,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "span"
+  ],
+  "first": 2163,
+  "comps": [
+   "CSS",
+   "DialogHost"
+  ],
+  "lines": [
+   2163,
+   6715
+  ],
+  "occComps": [
+   [
+    2163,
+    "CSS",
+    ""
+   ],
+   [
+    6715,
+    "DialogHost",
+    "span"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-tour-toggles",
+  "kind": "容器",
+  "css": 5,
+  "js": 2,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 2165,
+  "comps": [
+   "CSS×5",
+   "DialogHost×2"
+  ],
+  "lines": [
+   2165,
+   2166,
+   2167,
+   2168,
+   2245,
+   6710,
+   6719
+  ],
+  "occComps": [
+   [
+    2165,
+    "CSS",
+    ""
+   ],
+   [
+    2166,
+    "CSS",
+    ""
+   ],
+   [
+    2167,
+    "CSS",
+    ""
+   ],
+   [
+    2168,
+    "CSS",
+    ""
+   ],
+   [
+    2245,
+    "CSS",
+    ""
+   ],
+   [
+    6710,
+    "DialogHost",
+    "div"
+   ],
+   [
+    6719,
+    "DialogHost",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-tour-tg",
+  "kind": "控件",
+  "css": 6,
+  "js": 2,
+  "read": 0,
+  "tags": [
+   "button"
+  ],
+  "first": 2169,
+  "comps": [
+   "CSS×6",
+   "DialogHost×2"
+  ],
+  "lines": [
+   2169,
+   2170,
+   2171,
+   2172,
+   2246,
+   2247,
+   6713,
+   6723
+  ],
+  "occComps": [
+   [
+    2169,
+    "CSS",
+    ""
+   ],
+   [
+    2170,
+    "CSS",
+    ""
+   ],
+   [
+    2171,
+    "CSS",
+    ""
+   ],
+   [
+    2172,
+    "CSS",
+    ""
+   ],
+   [
+    2246,
+    "CSS",
+    ""
+   ],
+   [
+    2247,
+    "CSS",
+    ""
+   ],
+   [
+    6713,
+    "DialogHost",
+    "button"
+   ],
+   [
+    6723,
+    "DialogHost",
+    "button"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-tour-tg-txt",
+  "kind": "容器",
+  "css": 1,
+  "js": 2,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 2173,
+  "comps": [
+   "DialogHost×2",
+   "CSS"
+  ],
+  "lines": [
+   2173,
+   6714,
+   6724
+  ],
+  "occComps": [
+   [
+    2173,
+    "CSS",
+    ""
+   ],
+   [
+    6714,
+    "DialogHost",
+    "div"
+   ],
+   [
+    6724,
+    "DialogHost",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-tour-tg-name",
+  "kind": "容器",
+  "css": 1,
+  "js": 2,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 2174,
+  "comps": [
+   "DialogHost×2",
+   "CSS"
+  ],
+  "lines": [
+   2174,
+   6715,
+   6725
+  ],
+  "occComps": [
+   [
+    2174,
+    "CSS",
+    ""
+   ],
+   [
+    6715,
+    "DialogHost",
+    "div"
+   ],
+   [
+    6725,
+    "DialogHost",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-tour-tg-sub",
+  "kind": "容器",
+  "css": 1,
+  "js": 2,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 2175,
+  "comps": [
+   "DialogHost×2",
+   "CSS"
+  ],
+  "lines": [
+   2175,
+   6716,
+   6726
+  ],
+  "occComps": [
+   [
+    2175,
+    "CSS",
+    ""
+   ],
+   [
+    6716,
+    "DialogHost",
+    "div"
+   ],
+   [
+    6726,
+    "DialogHost",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-tour-sw",
+  "kind": "容器",
+  "css": 4,
+  "js": 2,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 2176,
+  "comps": [
+   "CSS×4",
+   "DialogHost×2"
+  ],
+  "lines": [
+   2176,
+   2177,
+   2178,
+   2179,
+   6717,
+   6727
+  ],
+  "occComps": [
+   [
+    2176,
+    "CSS",
+    ""
+   ],
+   [
+    2177,
+    "CSS",
+    ""
+   ],
+   [
+    2178,
+    "CSS",
+    ""
+   ],
+   [
+    2179,
+    "CSS",
+    ""
+   ],
+   [
+    6717,
+    "DialogHost",
+    "div"
+   ],
+   [
+    6727,
+    "DialogHost",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-tour-chips",
+  "kind": "容器",
+  "css": 2,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 2180,
+  "comps": [
+   "CSS×2",
+   "DialogHost"
+  ],
+  "lines": [
+   2180,
+   2249,
+   6745
+  ],
+  "occComps": [
+   [
+    2180,
+    "CSS",
+    ""
+   ],
+   [
+    2249,
+    "CSS",
+    ""
+   ],
+   [
+    6745,
+    "DialogHost",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-tour-links",
+  "kind": "容器",
+  "css": 1,
+  "js": 2,
+  "read": 0,
+  "tags": [
+   "(js)",
+   "div"
+  ],
+  "first": 2181,
+  "comps": [
+   "CSS×2",
+   "DialogHost"
+  ],
+  "lines": [
+   2181,
+   2184,
+   6760
+  ],
+  "occComps": [
+   [
+    2181,
+    "CSS",
+    ""
+   ],
+   [
+    2184,
+    "CSS",
+    ""
+   ],
+   [
+    6760,
+    "DialogHost",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-tour-link",
+  "kind": "控件",
+  "css": 3,
+  "js": 3,
+  "read": 0,
+  "tags": [
+   "a"
+  ],
+  "first": 2185,
+  "comps": [
+   "CSS×3",
+   "DialogHost×3"
+  ],
+  "lines": [
+   2185,
+   2191,
+   2193,
+   6761,
+   6763,
+   6766
+  ],
+  "occComps": [
+   [
+    2185,
+    "CSS",
+    ""
+   ],
+   [
+    2191,
+    "CSS",
+    ""
+   ],
+   [
+    2193,
+    "CSS",
+    ""
+   ],
+   [
+    6761,
+    "DialogHost",
+    "a"
+   ],
+   [
+    6763,
+    "DialogHost",
+    "a"
+   ],
+   [
+    6766,
+    "DialogHost",
+    "a"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-tour-links-note",
+  "kind": "容器",
+  "css": 1,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 2194,
+  "comps": [
+   "CSS",
+   "DialogHost"
+  ],
+  "lines": [
+   2194,
+   6768
+  ],
+  "occComps": [
+   [
+    2194,
+    "CSS",
+    ""
+   ],
+   [
+    6768,
+    "DialogHost",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-tour-where",
+  "kind": "容器",
+  "css": 3,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 2195,
+  "comps": [
+   "CSS×3",
+   "DialogHost"
+  ],
+  "lines": [
+   2195,
+   2196,
+   2248,
+   6752
+  ],
+  "occComps": [
+   [
+    2195,
+    "CSS",
+    ""
+   ],
+   [
+    2196,
+    "CSS",
+    ""
+   ],
+   [
+    2248,
+    "CSS",
+    ""
+   ],
+   [
+    6752,
+    "DialogHost",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-tour-halo",
+  "kind": "容器",
+  "css": 1,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 2214,
+  "comps": [
+   "CSS",
+   "DialogHost"
+  ],
+  "lines": [
+   2214,
+   6694
+  ],
+  "occComps": [
+   [
+    2214,
+    "CSS",
+    ""
+   ],
+   [
+    6694,
+    "DialogHost",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-tour-pedestal",
+  "kind": "容器",
+  "css": 1,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 2218,
+  "comps": [
+   "CSS",
+   "DialogHost"
+  ],
+  "lines": [
+   2218,
+   6703
+  ],
+  "occComps": [
+   [
+    2218,
+    "CSS",
+    ""
+   ],
+   [
+    6703,
+    "DialogHost",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-tour-head",
+  "kind": "容器",
+  "css": 1,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 2227,
+  "comps": [
+   "CSS",
+   "DialogHost"
+  ],
+  "lines": [
+   2227,
+   6705
+  ],
+  "occComps": [
+   [
+    2227,
+    "CSS",
+    ""
+   ],
+   [
+    6705,
+    "DialogHost",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-tour-stepchip",
+  "kind": "容器",
+  "css": 1,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 2232,
+  "comps": [
+   "CSS",
+   "DialogHost"
+  ],
+  "lines": [
+   2232,
+   6707
+  ],
+  "occComps": [
+   [
+    2232,
+    "CSS",
+    ""
+   ],
+   [
+    6707,
+    "DialogHost",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-update-click",
+  "kind": "容器",
+  "css": 2,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 2255,
+  "comps": [
+   "CSS×2",
+   "DialogHost"
+  ],
+  "lines": [
+   2255,
+   2256,
+   6396
+  ],
+  "occComps": [
+   [
+    2255,
+    "CSS",
+    ""
+   ],
+   [
+    2256,
+    "CSS",
+    ""
+   ],
+   [
+    6396,
+    "DialogHost",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-update-logo",
+  "kind": "容器",
+  "css": 7,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 2266,
+  "comps": [
+   "CSS×7",
+   "DialogHost"
+  ],
+  "lines": [
+   2266,
+   2267,
+   2269,
+   2270,
+   2271,
+   2272,
+   2273,
+   6387
+  ],
+  "occComps": [
+   [
+    2266,
+    "CSS",
+    ""
+   ],
+   [
+    2267,
+    "CSS",
+    ""
+   ],
+   [
+    2269,
+    "CSS",
+    ""
+   ],
+   [
+    2270,
+    "CSS",
+    ""
+   ],
+   [
+    2271,
+    "CSS",
+    ""
+   ],
+   [
+    2272,
+    "CSS",
+    ""
+   ],
+   [
+    2273,
+    "CSS",
+    ""
+   ],
+   [
+    6387,
+    "DialogHost",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-update-hint",
+  "kind": "容器",
+  "css": 1,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 2274,
+  "comps": [
+   "CSS",
+   "DialogHost"
+  ],
+  "lines": [
+   2274,
+   6395
+  ],
+  "occComps": [
+   [
+    2274,
+    "CSS",
+    ""
+   ],
+   [
+    6395,
+    "DialogHost",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-kx-full",
+  "kind": "容器",
+  "css": 0,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "pre"
+  ],
+  "first": 2475,
+  "comps": [
+   "KanbanDrawerBody"
+  ],
+  "lines": [
+   2475
+  ],
+  "occComps": [
+   [
+    2475,
+    "KanbanDrawerBody",
+    "pre"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-kcard",
+  "kind": "容器",
+  "css": 0,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 2490,
+  "comps": [
+   "KanbanCard"
+  ],
+  "lines": [
+   2490
+  ],
+  "occComps": [
+   [
+    2490,
+    "KanbanCard",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-kbar",
+  "kind": "容器",
+  "css": 0,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 2577,
+  "comps": [
+   "KanbanBoard"
+  ],
+  "lines": [
+   2577
+  ],
+  "occComps": [
+   [
+    2577,
+    "KanbanBoard",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-kanban",
+  "kind": "容器",
+  "css": 0,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 2627,
+  "comps": [
+   "KanbanBoard"
+  ],
+  "lines": [
+   2627
+  ],
+  "occComps": [
+   [
+    2627,
+    "KanbanBoard",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-layout",
+  "kind": "容器",
+  "css": 0,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 2627,
+  "comps": [
+   "KanbanBoard"
+  ],
+  "lines": [
+   2627
+  ],
+  "occComps": [
+   [
+    2627,
+    "KanbanBoard",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-lane",
+  "kind": "容器",
+  "css": 0,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 2633,
+  "comps": [
+   "KanbanBoard"
+  ],
+  "lines": [
+   2633
+  ],
+  "occComps": [
+   [
+    2633,
+    "KanbanBoard",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-kx-badge",
+  "kind": "容器",
+  "css": 0,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "span"
+  ],
+  "first": 2689,
+  "comps": [
+   "kxBadge"
+  ],
+  "lines": [
+   2689
+  ],
+  "occComps": [
+   [
+    2689,
+    "kxBadge",
+    "span"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-kx-card",
+  "kind": "容器",
+  "css": 0,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 2702,
+  "comps": [
+   "KanbanMatrixCard"
+  ],
+  "lines": [
+   2702
+  ],
+  "occComps": [
+   [
+    2702,
+    "KanbanMatrixCard",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-kx-lane",
+  "kind": "容器",
+  "css": 0,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 2703,
+  "comps": [
+   "KanbanMatrixCard"
+  ],
+  "lines": [
+   2703
+  ],
+  "occComps": [
+   [
+    2703,
+    "KanbanMatrixCard",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-kanban-view",
+  "kind": "容器",
+  "css": 0,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 2792,
+  "comps": [
+   "KanbanView"
+  ],
+  "lines": [
+   2792
+  ],
+  "occComps": [
+   [
+    2792,
+    "KanbanView",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-kx-scroll",
+  "kind": "容器",
+  "css": 0,
+  "js": 2,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 2799,
+  "comps": [
+   "KanbanView×2"
+  ],
+  "lines": [
+   2799,
+   2897
+  ],
+  "occComps": [
+   [
+    2799,
+    "KanbanView",
+    "div"
+   ],
+   [
+    2897,
+    "KanbanView",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-kx-warn",
+  "kind": "容器",
+  "css": 0,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "span"
+  ],
+  "first": 2808,
+  "comps": [
+   "KanbanView"
+  ],
+  "lines": [
+   2808
+  ],
+  "occComps": [
+   [
+    2808,
+    "KanbanView",
+    "span"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-kx-empty",
+  "kind": "容器",
+  "css": 0,
+  "js": 3,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 2821,
+  "comps": [
+   "KanbanView×3"
+  ],
+  "lines": [
+   2821,
+   2822,
+   2824
+  ],
+  "occComps": [
+   [
+    2821,
+    "KanbanView",
+    "div"
+   ],
+   [
+    2822,
+    "KanbanView",
+    "div"
+   ],
+   [
+    2824,
+    "KanbanView",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-kx-head",
+  "kind": "容器",
+  "css": 0,
+  "js": 2,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 2838,
+  "comps": [
+   "KanbanView×2"
+  ],
+  "lines": [
+   2838,
+   2846
+  ],
+  "occComps": [
+   [
+    2838,
+    "KanbanView",
+    "div"
+   ],
+   [
+    2846,
+    "KanbanView",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-kx-dot",
+  "kind": "容器",
+  "css": 0,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "span"
+  ],
+  "first": 2854,
+  "comps": [
+   "KanbanView"
+  ],
+  "lines": [
+   2854
+  ],
+  "occComps": [
+   [
+    2854,
+    "KanbanView",
+    "span"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-kx-row",
+  "kind": "容器",
+  "css": 0,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 2867,
+  "comps": [
+   "KanbanView"
+  ],
+  "lines": [
+   2867
+  ],
+  "occComps": [
+   [
+    2867,
+    "KanbanView",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-kx-cell",
+  "kind": "容器",
+  "css": 0,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 2883,
+  "comps": [
+   "KanbanView"
+  ],
+  "lines": [
+   2883
+  ],
+  "occComps": [
+   [
+    2883,
+    "KanbanView",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-kx-drawer",
+  "kind": "容器",
+  "css": 0,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 2905,
+  "comps": [
+   "KanbanView"
+  ],
+  "lines": [
+   2905
+  ],
+  "occComps": [
+   [
+    2905,
+    "KanbanView",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-chip",
+  "kind": "容器",
+  "css": 0,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "span"
+  ],
+  "first": 2931,
+  "comps": [
+   "KanbanView"
+  ],
+  "lines": [
+   2931
+  ],
+  "occComps": [
+   [
+    2931,
+    "KanbanView",
+    "span"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-wbg-node",
+  "kind": "容器",
+  "css": 0,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 3065,
+  "comps": [
+   "WbgNode"
+  ],
+  "lines": [
+   3065
+  ],
+  "occComps": [
+   [
+    3065,
+    "WbgNode",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-wbg-wrap",
+  "kind": "容器",
+  "css": 0,
+  "js": 2,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 3223,
+  "comps": [
+   "WhiteboardGraphView×2"
+  ],
+  "lines": [
+   3223,
+   3304
+  ],
+  "occComps": [
+   [
+    3223,
+    "WhiteboardGraphView",
+    "div"
+   ],
+   [
+    3304,
+    "WhiteboardGraphView",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-wbg-bar",
+  "kind": "容器",
+  "css": 0,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 3233,
+  "comps": [
+   "WhiteboardGraphView"
+  ],
+  "lines": [
+   3233
+  ],
+  "occComps": [
+   [
+    3233,
+    "WhiteboardGraphView",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-wbg-colhead",
+  "kind": "容器",
+  "css": 0,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 3286,
+  "comps": [
+   "WhiteboardGraphView"
+  ],
+  "lines": [
+   3286
+  ],
+  "occComps": [
+   [
+    3286,
+    "WhiteboardGraphView",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-wbg-canvas",
+  "kind": "容器",
+  "css": 0,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 3309,
+  "comps": [
+   "WhiteboardGraphView"
+  ],
+  "lines": [
+   3309
+  ],
+  "occComps": [
+   [
+    3309,
+    "WhiteboardGraphView",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-wbg-stage",
+  "kind": "容器",
+  "css": 0,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 3320,
+  "comps": [
+   "WhiteboardGraphView"
+  ],
+  "lines": [
+   3320
+  ],
+  "occComps": [
+   [
+    3320,
+    "WhiteboardGraphView",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-wbg-side",
+  "kind": "容器",
+  "css": 0,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 3333,
+  "comps": [
+   "WhiteboardGraphView"
+  ],
+  "lines": [
+   3333
+  ],
+  "occComps": [
+   [
+    3333,
+    "WhiteboardGraphView",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-content",
+  "kind": "容器",
+  "css": 0,
+  "js": 30,
+  "read": 0,
+  "tags": [
+   "div",
+   "pre"
+  ],
+  "first": 3459,
+  "comps": [
+   "MemoryHubTab×9",
+   "PlanTab×9",
+   "LogsTab×2",
+   "RulesEditPanel×2",
+   "SearchTab×2",
+   "ConnectTab×2",
+   "GreetingCard",
+   "StorageTab",
+   "ReflectionsTab",
+   "body"
+  ],
+  "lines": [
+   3459,
+   3875,
+   3886,
+   4015,
+   4049,
+   4131,
+   4158,
+   4163,
+   4177,
+   4199,
+   4245,
+   4246,
+   4267,
+   4269,
+   4432,
+   4824,
+   4861,
+   4867,
+   4892,
+   4903,
+   4933,
+   4954,
+   4957,
+   4969,
+   5019,
+   5071,
+   5085,
+   5446,
+   5782,
+   5787
+  ],
+  "occComps": [
+   [
+    3459,
+    "GreetingCard",
+    "div"
+   ],
+   [
+    3875,
+    "LogsTab",
+    "div"
+   ],
+   [
+    3886,
+    "LogsTab",
+    "div"
+   ],
+   [
+    4015,
+    "RulesEditPanel",
+    "div"
+   ],
+   [
+    4049,
+    "RulesEditPanel",
+    "pre"
+   ],
+   [
+    4131,
+    "MemoryHubTab",
+    "div"
+   ],
+   [
+    4158,
+    "MemoryHubTab",
+    "div"
+   ],
+   [
+    4163,
+    "MemoryHubTab",
+    "div"
+   ],
+   [
+    4177,
+    "MemoryHubTab",
+    "div"
+   ],
+   [
+    4199,
+    "MemoryHubTab",
+    "div"
+   ],
+   [
+    4245,
+    "MemoryHubTab",
+    "div"
+   ],
+   [
+    4246,
+    "MemoryHubTab",
+    "div"
+   ],
+   [
+    4267,
+    "MemoryHubTab",
+    "div"
+   ],
+   [
+    4269,
+    "MemoryHubTab",
+    "div"
+   ],
+   [
+    4432,
+    "StorageTab",
+    "div"
+   ],
+   [
+    4824,
+    "PlanTab",
+    "div"
+   ],
+   [
+    4861,
+    "PlanTab",
+    "div"
+   ],
+   [
+    4867,
+    "PlanTab",
+    "div"
+   ],
+   [
+    4892,
+    "PlanTab",
+    "div"
+   ],
+   [
+    4903,
+    "PlanTab",
+    "div"
+   ],
+   [
+    4933,
+    "PlanTab",
+    "div"
+   ],
+   [
+    4954,
+    "PlanTab",
+    "div"
+   ],
+   [
+    4957,
+    "PlanTab",
+    "div"
+   ],
+   [
+    4969,
+    "PlanTab",
+    "div"
+   ],
+   [
+    5019,
+    "ReflectionsTab",
+    "div"
+   ],
+   [
+    5071,
+    "SearchTab",
+    "div"
+   ],
+   [
+    5085,
+    "SearchTab",
+    "div"
+   ],
+   [
+    5446,
+    "body",
+    "div"
+   ],
+   [
+    5782,
+    "ConnectTab",
+    "div"
+   ],
+   [
+    5787,
+    "ConnectTab",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-collapsible",
+  "kind": "容器",
+  "css": 0,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 3673,
+  "comps": [
+   "OverviewTab"
+  ],
+  "lines": [
+   3673
+  ],
+  "occComps": [
+   [
+    3673,
+    "OverviewTab",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-rule",
+  "kind": "容器",
+  "css": 0,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 4029,
+  "comps": [
+   "RulesEditPanel"
+  ],
+  "lines": [
+   4029
+  ],
+  "occComps": [
+   [
+    4029,
+    "RulesEditPanel",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-scope",
+  "kind": "容器",
+  "css": 0,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "span"
+  ],
+  "first": 4139,
+  "comps": [
+   "MemoryHubTab"
+  ],
+  "lines": [
+   4139
+  ],
+  "occComps": [
+   [
+    4139,
+    "MemoryHubTab",
+    "span"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-scope-to",
+  "kind": "控件",
+  "css": 0,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "button"
+  ],
+  "first": 4149,
+  "comps": [
+   "MemoryHubTab"
+  ],
+  "lines": [
+   4149
+  ],
+  "occComps": [
+   [
+    4149,
+    "MemoryHubTab",
+    "button"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-key",
+  "kind": "控件",
+  "css": 0,
+  "js": 12,
+  "read": 0,
+  "tags": [
+   "button",
+   "input"
+  ],
+  "first": 4827,
+  "comps": [
+   "setMany×9",
+   "PlanTab×3"
+  ],
+  "lines": [
+   4827,
+   4830,
+   4835,
+   7621,
+   7623,
+   7651,
+   7665,
+   7677,
+   7678,
+   7681,
+   7854,
+   7855
+  ],
+  "occComps": [
+   [
+    4827,
+    "PlanTab",
+    "button"
+   ],
+   [
+    4830,
+    "PlanTab",
+    "button"
+   ],
+   [
+    4835,
+    "PlanTab",
+    "button"
+   ],
+   [
+    7621,
+    "setMany",
+    "input"
+   ],
+   [
+    7623,
+    "setMany",
+    "input"
+   ],
+   [
+    7651,
+    "setMany",
+    "input"
+   ],
+   [
+    7665,
+    "setMany",
+    "input"
+   ],
+   [
+    7677,
+    "setMany",
+    "input"
+   ],
+   [
+    7678,
+    "setMany",
+    "input"
+   ],
+   [
+    7681,
+    "setMany",
+    "input"
+   ],
+   [
+    7854,
+    "setMany",
+    "button"
+   ],
+   [
+    7855,
+    "setMany",
+    "button"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-official-band",
+  "kind": "容器",
+  "css": 0,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 4931,
+  "comps": [
+   "PlanTab"
+  ],
+  "lines": [
+   4931
+  ],
+  "occComps": [
+   [
+    4931,
+    "PlanTab",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-water-bar",
+  "kind": "容器",
+  "css": 0,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 4940,
+  "comps": [
+   "PlanTab"
+  ],
+  "lines": [
+   4940
+  ],
+  "occComps": [
+   [
+    4940,
+    "PlanTab",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-official-line",
+  "kind": "容器",
+  "css": 0,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 4942,
+  "comps": [
+   "PlanTab"
+  ],
+  "lines": [
+   4942
+  ],
+  "occComps": [
+   [
+    4942,
+    "PlanTab",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-stat-donut",
+  "kind": "容器",
+  "css": 0,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 5204,
+  "comps": [
+   "seg"
+  ],
+  "lines": [
+   5204
+  ],
+  "occComps": [
+   [
+    5204,
+    "seg",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-stat-bars",
+  "kind": "容器",
+  "css": 0,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 5219,
+  "comps": [
+   "seg"
+  ],
+  "lines": [
+   5219
+  ],
+  "occComps": [
+   [
+    5219,
+    "seg",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-stat-spark",
+  "kind": "容器",
+  "css": 0,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "svg"
+  ],
+  "first": 5252,
+  "comps": [
+   "y"
+  ],
+  "lines": [
+   5252
+  ],
+  "occComps": [
+   [
+    5252,
+    "y",
+    "svg"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-stat-heat",
+  "kind": "容器",
+  "css": 0,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 5265,
+  "comps": [
+   "y"
+  ],
+  "lines": [
+   5265
+  ],
+  "occComps": [
+   [
+    5265,
+    "y",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-stat",
+  "kind": "容器",
+  "css": 0,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 5282,
+  "comps": [
+   "y"
+  ],
+  "lines": [
+   5282
+  ],
+  "occComps": [
+   [
+    5282,
+    "y",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-stat-skeleton",
+  "kind": "容器",
+  "css": 0,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 5326,
+  "comps": [
+   "iv"
+  ],
+  "lines": [
+   5326
+  ],
+  "occComps": [
+   [
+    5326,
+    "iv",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-calendar-slot",
+  "kind": "容器",
+  "css": 0,
+  "js": 2,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 5611,
+  "comps": [
+   "CalendarTab×2"
+  ],
+  "lines": [
+   5611,
+   5618
+  ],
+  "occComps": [
+   [
+    5611,
+    "CalendarTab",
+    "div"
+   ],
+   [
+    5618,
+    "CalendarTab",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-float-toggle",
+  "kind": "控件",
+  "css": 0,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "button"
+  ],
+  "first": 5949,
+  "comps": [
+   "MemoryPageView"
+  ],
+  "lines": [
+   5949
+  ],
+  "occComps": [
+   [
+    5949,
+    "MemoryPageView",
+    "button"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-nav-item",
+  "kind": "控件",
+  "css": 0,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "button"
+  ],
+  "first": 5959,
+  "comps": [
+   "MemoryPageView"
+  ],
+  "lines": [
+   5959
+  ],
+  "occComps": [
+   [
+    5959,
+    "MemoryPageView",
+    "button"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-panel-host",
+  "kind": "容器",
+  "css": 0,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 6076,
+  "comps": [
+   "MemoryPanel"
+  ],
+  "lines": [
+   6076
+  ],
+  "occComps": [
+   [
+    6076,
+    "MemoryPanel",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-tour-",
+  "kind": "容器",
+  "css": 0,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 6400,
+  "comps": [
+   "DialogHost"
+  ],
+  "lines": [
+   6400
+  ],
+  "occComps": [
+   [
+    6400,
+    "DialogHost",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-autocont",
+  "kind": "容器",
+  "css": 0,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 7020,
+  "comps": [
+   "AutoContinueHost"
+  ],
+  "lines": [
+   7020
+  ],
+  "occComps": [
+   [
+    7020,
+    "AutoContinueHost",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-autocont-confirm",
+  "kind": "容器",
+  "css": 0,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 7021,
+  "comps": [
+   "AutoContinueHost"
+  ],
+  "lines": [
+   7021
+  ],
+  "occComps": [
+   [
+    7021,
+    "AutoContinueHost",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-detect-panel",
+  "kind": "容器",
+  "css": 0,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 7489,
+  "comps": [
+   "setMany"
+  ],
+  "lines": [
+   7489
+  ],
+  "occComps": [
+   [
+    7489,
+    "setMany",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-prompt-sections",
+  "kind": "容器",
+  "css": 0,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "div"
+  ],
+  "first": 7594,
+  "comps": [
+   "setMany"
+  ],
+  "lines": [
+   7594
+  ],
+  "occComps": [
+   [
+    7594,
+    "setMany",
+    "div"
+   ]
+  ]
+ },
+ {
+  "name": "data-dam-pswitch",
+  "kind": "控件",
+  "css": 0,
+  "js": 1,
+  "read": 0,
+  "tags": [
+   "input"
+  ],
+  "first": 7606,
+  "comps": [
+   "setMany"
+  ],
+  "lines": [
+   7606
+  ],
+  "occComps": [
+   [
+    7606,
+    "setMany",
+    "input"
+   ]
+  ]
+ }
+]

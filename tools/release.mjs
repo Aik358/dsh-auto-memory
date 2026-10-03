@@ -94,13 +94,16 @@ copyDirExcluding(path.join(DEV, 'python'), path.join(REL, 'python'), /(__pycache
 // ★2026-09-28(3.2.0) 补 skins：宿主路由 skin-library-fetch 与前端「皮肤选择中心」的默认仓库
 //   指向本仓库的 skins/ 目录 —— 若该目录不进发布包，GitHub 上就没有任何皮肤目录，「列出」必返空库，
 //   skins/README.md 里写着的内置皮肤表也会与仓库事实不符（真断链，与 CHANGELOG.md 当年漏拷同类）。
-// ★issue #211（2026-10-04）：**移除 'docs'** —— 内部文档占仓库约 97%（约 177MB），运行时零消费者，
-//   不再随 npm 包分发（README 仍留在仓库根，GitHub 上照常可读）。
+// ★2026-10-04（用户裁定，撤销同日 #211 批的扩大执行）：**恢复 'docs'** —— #211 只要求
+//   docs/teamwork-impl 与 docs/internal 移出「分发树」（npm files 已照做，包内仍无 docs）；
+//   但 GitHub 仓库侧整树移出导致 README 的 docs/screenshots 配图与约 20 处文档链接全部 404，
+//   属超范围执行。现恢复 docs 全树随 REL 仓分发（npm 侧由 package.json files 决定，维持精简）。
+// ★issue #211（2026-10-04，部分有效）：docs 不进 **npm 包**（files 口径）仍维持。
 for (const entry of ['cordis.patch.yml', 'README.md', 'README.zh-CN.md', 'LICENSE', 'notices.json', 'social-preview.html', '.github',
   // ★2026-09-21 补 CHANGELOG.md：两份 README **各有 3 处**链接到 `CHANGELOG.md`（导航条 / 文末链接区，
   //   共 6 处），但此文件此前**从不在复制清单里**，REL 仓也从未有过它 ⇒ GitHub 上点「Changelog」
   //   一直是 **404**（`git log --all -- CHANGELOG.md` 为空可证）。发版脚本漏拷，属真断链。
-  'CHANGELOG.md', 'skins',
+  'CHANGELOG.md', 'skins', 'docs',
   // ★2026-09-29（3.2.4 插件图标批）：宿主新增插件元数据机制（`@deepseek-ai/dsh-app-boot` 的
   //   readPluginMeta / iconOf / dictionariesOf）—— 插件用 package.json 的 `icon` 字段 +
   //   `locale/<lang>.json` 在设置页插件行显示图标与中/英标题描述。

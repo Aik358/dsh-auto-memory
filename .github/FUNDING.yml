@@ -1,0 +1,12 @@
+# These are supported funding model platforms.
+#
+# 显示规则（2026-10-04 两修）：
+#   1. GitHub 只渲染白名单平台键（github/patreon/.../custom），自定义键（如 dshapi:）被静默忽略；
+#      URL 必须是 YAML 值，不能写在 # 注释里。
+#   2. github: 条目要求账号**已开通 GitHub Sponsors**——两个账号目前都未开通
+#      （/sponsors/<user> 302 到个人主页），故暂时以 custom 链接代替；
+#      任一账号开通后（github.com/sponsors → Get started），把其用户名移回下一行即出现正式按钮：
+# github: [Aik358, Minervaowl7]
+custom:
+  ['https://api.dshapi.icu/register?aff=HJU27P7JL39N',
+   'https://github.com/Minervaowl7']

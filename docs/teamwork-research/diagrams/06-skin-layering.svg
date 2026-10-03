@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 900" width="1400" height="900" role="img" aria-label="皮肤分层示意图">
+<defs>
+  <marker id="arE" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#64748b"/></marker>
+  <marker id="arS" markerWidth="9" markerHeight="9" refX="1" refY="4.5" orient="auto"><path d="M9,0 L0,4.5 L9,9 z" fill="#64748b"/></marker>
+</defs>
+<rect x="0" y="0" width="1400" height="900" rx="0" fill="#ffffff" stroke="none" stroke-width="2"/>
+<text x="60" y="48" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="25" fill="#0f172a" font-weight="700">皮肤分层 · 四层叠加与优先级</text>
+<text x="60" y="78" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="14" fill="#475569">叠加顺序：底座 token → 主题包 → 企业覆盖 → 组件插槽；同键冲突时高优先级覆盖低优先级</text>
+<line x1="60" y1="92" x2="1340" y2="92" stroke="#cbd5e1" stroke-width="2"/>
+<rect x="80" y="118" width="980" height="414" rx="14" fill="#ffffff" stroke="#cbd5e1" stroke-width="2" stroke-dasharray="6 5"/>
+<text x="98" y="142" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#475569" font-weight="700">皮肤作用域（只读呈现层）</text>
+<text x="1042" y="142" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#dc2626" text-anchor="end">边界外：业务数据 / 同步 / 审计 —— 皮肤不得触碰</text>
+<path d="M 100 170 L 134 140 L 894 140 L 860 170 Z" fill="#f1f5f9" stroke="#64748b" stroke-width="1.5"/>
+<path d="M 860 170 L 894 140 L 894 206 L 860 236 Z" fill="#f1f5f9" stroke="#64748b" stroke-width="1.5"/>
+<rect x="100" y="170" width="760" height="66" rx="2" fill="#f1f5f9" stroke="#64748b" stroke-width="1.5"/>
+<text x="126" y="198" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="16" fill="#334155" font-weight="700">P0 底座 token（base tokens）</text>
+<text x="126" y="221" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#334155">颜色 / 间距 / 字号 / 圆角 / 动效时长 —— 插件自带，键名对齐官方主题变量</text>
+<path d="M 134 256 L 168 226 L 928 226 L 894 256 Z" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+<path d="M 894 256 L 928 226 L 928 292 L 894 322 Z" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+<rect x="134" y="256" width="760" height="66" rx="2" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+<text x="160" y="284" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="16" fill="#1e3a8a" font-weight="700">P1 主题包（theme pack）</text>
+<text x="160" y="307" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#1e3a8a">明暗主题 · 品牌色 · 密度档位 —— 用户或团队安装，可整体切换与回滚</text>
+<path d="M 168 342 L 202 312 L 962 312 L 928 342 Z" fill="#ffedd5" stroke="#ea580c" stroke-width="1.5"/>
+<path d="M 928 342 L 962 312 L 962 378 L 928 408 Z" fill="#ffedd5" stroke="#ea580c" stroke-width="1.5"/>
+<rect x="168" y="342" width="760" height="66" rx="2" fill="#ffedd5" stroke="#ea580c" stroke-width="1.5"/>
+<text x="194" y="370" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="16" fill="#9a3412" font-weight="700">P2 企业覆盖（enterprise override）</text>
+<text x="194" y="393" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#9a3412">管理员下发：强制品牌 / 对比度 / 禁用动画 / 水印 —— 只读，本地不可覆盖</text>
+<path d="M 202 428 L 236 398 L 996 398 L 962 428 Z" fill="#ede9fe" stroke="#7c3aed" stroke-width="1.5"/>
+<path d="M 962 428 L 996 398 L 996 464 L 962 494 Z" fill="#ede9fe" stroke="#7c3aed" stroke-width="1.5"/>
+<rect x="202" y="428" width="760" height="66" rx="2" fill="#ede9fe" stroke="#7c3aed" stroke-width="1.5"/>
+<text x="228" y="456" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="16" fill="#5b21b6" font-weight="700">P3 组件插槽（component slots）</text>
+<text x="228" y="479" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#5b21b6">面板 · 看板 · 抽屉 · 徽标 · 空态 —— 固定插槽注入，越槽节点直接丢弃</text>
+<line x1="962" y1="300" x2="962" y2="222" stroke="#64748b" stroke-width="2" marker-end="url(#arE)"/>
+<text x="950" y="314" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#64748b" text-anchor="end">合并方向</text>
+<rect x="1078" y="132" width="262" height="400" rx="12" fill="#ffffff" stroke="#e2e8f0" stroke-width="2"/>
+<text x="1094" y="158" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="14" fill="#334155" font-weight="700">优先级（同键：高者胜）</text>
+<rect x="1094" y="172" width="230" height="62" rx="8" fill="#ede9fe" stroke="#7c3aed" stroke-width="1.5"/>
+<text x="1110" y="198" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="14" fill="#5b21b6" font-weight="700">P3  组件插槽</text>
+<text x="1110" y="218" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#5b21b6">覆盖一切视觉细节</text>
+<line x1="1209" y1="236" x2="1209" y2="246" stroke="#94a3b8" stroke-width="2" marker-end="url(#arE)"/>
+<rect x="1094" y="248" width="230" height="62" rx="8" fill="#ffedd5" stroke="#ea580c" stroke-width="1.5"/>
+<text x="1110" y="274" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="14" fill="#9a3412" font-weight="700">P2  企业覆盖</text>
+<text x="1110" y="294" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#9a3412">组织策略优先</text>
+<line x1="1209" y1="312" x2="1209" y2="322" stroke="#94a3b8" stroke-width="2" marker-end="url(#arE)"/>
+<rect x="1094" y="324" width="230" height="62" rx="8" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+<text x="1110" y="350" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="14" fill="#1e3a8a" font-weight="700">P1  主题包</text>
+<text x="1110" y="370" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#1e3a8a">用户 / 团队偏好</text>
+<line x1="1209" y1="388" x2="1209" y2="398" stroke="#94a3b8" stroke-width="2" marker-end="url(#arE)"/>
+<rect x="1094" y="400" width="230" height="62" rx="8" fill="#f1f5f9" stroke="#64748b" stroke-width="1.5"/>
+<text x="1110" y="426" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="14" fill="#334155" font-weight="700">P0  底座 token</text>
+<text x="1110" y="446" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#334155">结构缺省值</text>
+<text x="1094" y="552" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#94a3b8">读取顺序：自 P0 逐层向上合并。</text>
+<rect x="80" y="580" width="1260" height="210" rx="14" fill="#fff7ed" stroke="#ea580c" stroke-width="2"/>
+<text x="100" y="608" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="15" fill="#9a3412" font-weight="700">fail-closed 边界 · 任一条件不满足 → 拒绝该层（不降级、不猜、不静默改写）</text>
+<text x="100" y="638" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#7c2d12">① 插槽未声明 → 该节点不渲染（丢弃，不得塞进相邻插槽）</text>
+<text x="100" y="664" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#7c2d12">② token 缺失 → 回退官方主题变量；官方也没有 → 用中性默认值</text>
+<text x="100" y="690" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#7c2d12">③ 主题包校验失败 → 整包拒绝加载，保留上一可用主题</text>
+<text x="700" y="638" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#7c2d12">④ 企业覆盖与本地主题冲突 → 企业覆盖胜，本地改动写审计后丢弃</text>
+<text x="700" y="664" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#7c2d12">⑤ 注入越槽 / 越权读取 → 直接拒绝并上报（越槽即丢，越权即拒）</text>
+<text x="700" y="690" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#7c2d12">⑥ 任一皮肤层失败 → 只影响该层，绝不阻断宿主启动与旧主题</text>
+<text x="100" y="726" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#9a3412" font-weight="700">边界判据：皮肤只改「呈现」；任何读写业务数据的调用即越界，按⑤处理。</text>
+<text x="100" y="752" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#b45309">对应实现：前端 13 页签各自声明插槽；企业覆盖由治理层下发并在客户端只读落盘；主题包与覆盖均带版本与来源。</text>
+<text x="100" y="776" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#b45309">回滚：任一高层失效即回落至上一层生效值，回落过程记本地日志与审计（不弹窗打断）。</text>
+<rect x="80" y="812" width="1260" height="44" rx="10" fill="#ffffff" stroke="#e2e8f0" stroke-width="2"/>
+<rect x="96" y="826" width="18" height="16" rx="4" fill="#f1f5f9" stroke="#64748b" stroke-width="2"/>
+<text x="120" y="839" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#475569">底座 token（中性）</text>
+<rect x="268" y="826" width="18" height="16" rx="4" fill="#dbeafe" stroke="#2563eb" stroke-width="2"/>
+<text x="292" y="839" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#475569">主题包（本地 / 蓝）</text>
+<rect x="452" y="826" width="18" height="16" rx="4" fill="#ffedd5" stroke="#ea580c" stroke-width="2"/>
+<text x="476" y="839" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#475569">企业覆盖（治理 / 橙）</text>
+<rect x="664" y="826" width="18" height="16" rx="4" fill="#ede9fe" stroke="#7c3aed" stroke-width="2"/>
+<text x="688" y="839" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#475569">组件插槽（共享 / 紫）</text>
+<rect x="876" y="826" width="18" height="16" rx="4" fill="#fee2e2" stroke="#dc2626" stroke-width="2"/>
+<text x="900" y="839" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#475569">拒绝 / 越界（红）</text>
+<rect x="1064" y="826" width="18" height="16" rx="4" fill="#dcfce7" stroke="#16a34a" stroke-width="2"/>
+<text x="1088" y="839" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#475569">可回滚 / 可用（绿）</text>
+<text x="1340" y="886" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" fill="#94a3b8" text-anchor="end">dsh-auto-memory · teamwork research · 2026-09</text>
+</svg>

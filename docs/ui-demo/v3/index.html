@@ -1,0 +1,2640 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-demo-form="both">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>dsh-auto-memory · 记忆窗格 v3 · 液态玻璃 / 双形态 / 动效 token 化</title>
+<!--
+  ============================================================================
+  dsh-auto-memory · 前端重构 v3（「抽卡」第 3 版候选）
+  ============================================================================
+  设计真源（本轮构建唯一依据，逐条可抄）：
+    ① 配色       docs/internal/R4-DESIGN-TRUTH.md §A   → 唯一真源 = --dsw-alias-* 15 个宿主令牌
+    ② 液态玻璃   §B.1 / §B.5                            → lib/client.js:1582-1591 逐字抄（blur(28px) saturate(1.55)）
+    ③ 双形态     §C.5                                   → 浮层 440×560 顶部横向页签 / 整页 170px 左侧栏 + auto-fit 栅格
+    ④ 动效 token §D.1 / §E.3                            → lib/client.js:1580-1581（quick150/fast250/slow400/stagger40）
+    ⑤ 解耦判据   docs/internal/R4-COUPLING-AUDIT.md §三 → P0-1 屏内定址 / P0-2 断链可见报错 / P1-1 渐进披露 / P1-3 分区动作表
+    ⑥ 动画源码   .dsh/skills/transitions-motion/references/items/<slug>.json（8 个 slug，见文件末 §SLUG 台账）
+
+  ★ 三条与本版最相关的「真源事实」（避免踩坑）：
+    · 本插件的液态玻璃是 blur(28px) saturate(1.55)，**不是**官网落地页的 12px（R4-DESIGN-TRUTH §A.2 口径澄清）。
+    · 真源没有插件侧明暗主题开关（dark×0 / prefers-color-scheme×0 / data-theme×0）——
+      颜色 100% 走宿主令牌。本稿**完全移除 data-theme 双主题**，只提供「宿主令牌模拟」以证明跟随宿主。
+    · 双形态在真源里**早已实现**（:54 默认 'both'，:7674 页签注册门控，:1655 <900px 断点）——
+      本稿的任务是把它**画出来**，不是重新设计。已知自毁按钮 bug（PANEL-PAGE §1 问题 A）不得复现。
+
+  ★ 工程约束：单文件 / 零外链 / 零 CDN / system-ui 字体 / 不依赖网络。
+  ★ 本文件写域：docs/ui-demo/v3/index.html —— 不覆盖 v1（docs/ui-demo/index.html）与 v2（v2/index.html）。
+-->
+<style>
+/* ==========================================================================
+   §T  设计令牌（真源抄本）
+   ========================================================================== */
+
+/* ---- T.1 宿主令牌兜底：15 个 --dsw-alias-*，取值与真源 fallback 逐字一致 ----
+   file:// 单文件取不到宿主注入的变量，因此在这里给出与真源完全相同的兜底值。
+   这**不是**自建主题：真源写法 var(--dsw-alias-x, <fb>) 在本稿里一字不改地保留，
+   一旦宿主注入真实令牌，下面这 15 行会被直接覆盖（见 [data-host="dark"] 的演示）。 */
+:root{
+  --dsw-alias-bg-layer-1: rgba(128,128,128,.06);
+  --dsw-alias-bg-layer-2: rgba(255,255,255,.86);
+  --dsw-alias-bg-layer-3: rgba(128,128,128,.07);
+  --dsw-alias-border-l1: rgba(128,128,128,.35);
+  --dsw-alias-border-l2: rgba(128,128,128,.45);
+  --dsw-alias-label-primary: #1f2328;
+  --dsw-alias-label-secondary: #666;
+  --dsw-alias-label-tertiary: #8b93a7;
+  --dsw-alias-label-dimmed: #6b7280;
+  --dsw-alias-brand-primary: #4f7cff;
+  --dsw-alias-state-warn-primary: #e8c584;
+  --dsw-alias-state-error-primary: #d64545;
+  --dsw-alias-state-success-primary: #3aa675;
+  --dsw-alias-bg-mask-1: rgba(0,0,0,.18);
+  --dsw-alias-text-warning: #d90;
+
+  /* 强调色真值：lib/client.js:839 ACCENT_VALUES + :5658/:5758 写到 --dam-accent */
+  --dam-accent: #1d4ed8;
+
+  /* 演示宿主底页底色：取自真源 §A.1.3 的 #f5f6f7（:1804 兜底值），不自创 */
+  --demo-page: #f5f6f7;
+  /* reduced-transparency 兜底用的**不透明面**：亮色取真源 :1804 的 #ffffff，
+     暗色取真源 A.4 记录的 bg-layer-2 暗色兜底 rgba(24,24,28,.97) 的去 alpha 值 */
+  --demo-surface-opaque: #ffffff;
+}
+
+/* ---- T.2 动效 token（真源 lib/client.js:1580-1581）----
+   真源把 token 声明在 `[data-dam-panel], [data-dam-page]` 联合作用域上；
+   本稿额外挂一份到 `:root`，因为**覆盖层（toast / 模态 / 抽屉 / tooltip）与演示外壳在
+   这两个作用域之外**，取不到 token 会静默退回无过渡。取值与真源逐字一致。 */
+:root, [data-dam-panel], [data-dam-page], [data-demo]{
+  --dam-dur-stagger: 40ms;      /* :1580 逐项错开 */
+  --dam-dur-micro: 80ms;        /* 补：tooltip 意图延迟 / 大错开（token 表 --duration-micro） */
+  --dam-dur-quick: 150ms;       /* :1580 关闭 / 悬停 / 文字切换 */
+  --dam-dur-fast: 250ms;        /* :1580 打开 / 页面前进 / 手风琴（对称例外） */
+  --dam-dur-medium: 350ms;      /* 补：面板关闭 / Toast 关闭（token 表 --duration-medium） */
+  --dam-dur-slow: 400ms;        /* :1580 面板打开 / 骨架揭示 */
+  --dam-dur-very-slow: 500ms;   /* 补：徽标出现 / 数字弹入 / 成功打勾（token 表 --duration-very-slow） */
+  --dam-ease-out: cubic-bezier(.22,1,.36,1);     /* :1581 默认曲线 */
+  --dam-ease-inout: cubic-bezier(.65,0,.35,1);   /* :1581 图标/文字切换 */
+  --dam-ease-pop: cubic-bezier(.34,1.36,.64,1);  /* :1581 徽标弹出（只用于进入） */
+  --dam-ease-linear: linear;                     /* 补：修真源缺陷（:5054 用而未定义） */
+  --dam-ease-panel-in: cubic-bezier(.2,.9,.3,1.15); /* :1591 浮层进入过冲，真源保留 */
+  /* 位移 / 缩放 / 模糊刻度（token 表，非自创） */
+  --dam-dist-micro: 4px; --dam-dist-base: 8px; --dam-dist-medium: 12px; --dam-dist-large: 16px;
+  --dam-scale-surface: .96; --dam-scale-small: .97; --dam-blur-small: 2px;
+}
+
+/* ---- T.3 液态玻璃三档材质（R4-DESIGN-TRUTH §B.5，参数不得凭感觉调）---- */
+:root, [data-dam-panel], [data-dam-page], [data-demo]{
+  /* 档 1 · 结构面（面板底板 / 会话页底）—— 现有真值，逐字保留 :1586-1589 */
+  --dam-glass-structural-bg: color-mix(in srgb, var(--dsw-alias-bg-layer-2, rgba(255,255,255,.86)) 58%, transparent);
+  --dam-glass-structural-blur: blur(28px) saturate(1.55);
+  --dam-glass-structural-border: 1px solid color-mix(in srgb, var(--dsw-alias-border-l1, rgba(128,128,128,.35)) 65%, transparent);
+  --dam-glass-structural-shadow: 0 24px 64px rgba(0,0,0,.22), 0 4px 16px rgba(0,0,0,.10), inset 0 1px 0 rgba(255,255,255,.22);
+  --dam-glass-structural-radius: 16px;
+  /* 档 2 · 浮层/覆盖层（日历弹层 / sticky 保存条 / 诊断卡 / toast） */
+  --dam-glass-overlay-bg: color-mix(in srgb, var(--dsw-alias-bg-layer-2, rgba(255,255,255,.9)) 74%, transparent);
+  --dam-glass-overlay-blur: blur(20px) saturate(1.4);
+  --dam-glass-overlay-border: 1px solid color-mix(in srgb, var(--dsw-alias-border-l1, rgba(128,128,128,.3)) 45%, transparent);
+  --dam-glass-overlay-shadow: 0 8px 28px rgba(0,0,0,.18);
+  --dam-glass-overlay-radius: 14px;
+  /* 档 3 · 内嵌元素（卡片 / 输入 / 徽章）—— blur 默认 none，避免「亮面叠亮面」 */
+  --dam-glass-inset-bg: color-mix(in srgb, var(--dsw-alias-bg-layer-1, rgba(128,128,128,.06)) 40%, transparent);
+  --dam-glass-inset-border: 1px solid color-mix(in srgb, var(--dsw-alias-border-l1, rgba(128,128,128,.22)) 60%, transparent);
+  --dam-glass-inset-radius: 9px;
+}
+
+/* ---- T.4 字体 / 圆角 / 间距刻度（真源 §C.4.2 + §E.1）---- */
+:root{
+  --dam-font: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+  --dam-mono: ui-monospace, "Cascadia Mono", "Segoe UI Mono", Consolas, monospace;
+  /* 真源圆角阶梯：panel 16 / 中件 14 / 内嵌 9 / 胶囊 99 */
+  --dam-r-lg: 16px; --dam-r-md: 14px; --dam-r-sm: 9px; --dam-r-pill: 99px;
+  /* 真源栅格与留白（:1620-1623） */
+  --dam-measure: 1440px;
+  --dam-pad-x: clamp(16px, 1.6vw + 6px, 44px);
+  --dam-pad-y: clamp(14px, .8vw + 6px, 26px);
+  --dam-gap: clamp(10px, .5vw + 6px, 18px);
+}
+
+/* ==========================================================================
+   §B  基础排版（apple-design §15：tracking 随字号变、leading 反向、层级成组）
+   ========================================================================== */
+*,*::before,*::after{ box-sizing: border-box; }
+html,body{ height:100%; }
+body{
+  margin:0; font-family: var(--dam-font);
+  font-size:14px; line-height:1.55; letter-spacing:0;
+  color: var(--dsw-alias-label-primary, #1f2328);
+  background: var(--demo-page);
+  -webkit-font-smoothing: antialiased;
+}
+button{ font: inherit; color: inherit; }
+a{ color: inherit; }
+
+/* ==========================================================================
+   §L  演示稿外壳（非产品 UI：控制条 + 模拟宿主）
+   ========================================================================== */
+[data-demo]{ display:flex; flex-direction:column; min-height:100vh; }
+
+.demo-bar{
+  position:relative; z-index:20; flex:0 0 auto;
+  display:flex; flex-wrap:wrap; align-items:center; gap:10px 14px;
+  padding:10px 16px;
+  background: var(--dam-glass-overlay-bg);
+  -webkit-backdrop-filter: var(--dam-glass-overlay-blur);
+  backdrop-filter: var(--dam-glass-overlay-blur);
+  border-bottom: 1px solid color-mix(in srgb, var(--dsw-alias-border-l1, rgba(128,128,128,.3)) 45%, transparent);
+  color: var(--dsw-alias-label-primary, #1f2328);
+}
+.demo-bar .db-brand{ display:flex; align-items:center; gap:9px; min-width:0; }
+.demo-bar .db-mark{
+  width:26px; height:26px; border-radius:8px; display:grid; place-items:center;
+  font-size:12.5px; font-weight:700; color:#fff; flex:0 0 auto;
+  background: linear-gradient(145deg, color-mix(in srgb, var(--dam-accent, #1d4ed8) 78%, #fff), var(--dam-accent, #1d4ed8));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.42), 0 6px 14px color-mix(in srgb, var(--dam-accent, #1d4ed8) 30%, transparent);
+}
+.demo-bar .db-t1{ font-size:13.5px; font-weight:650; letter-spacing:-.006em; }
+.demo-bar .db-t2{ font-size:11px; color: var(--dsw-alias-label-secondary, #666); letter-spacing:.01em; }
+.demo-bar .db-gap{ flex:1 1 auto; }
+.demo-bar .db-note{
+  font-size:11.5px; color: var(--dsw-alias-label-secondary, #666);
+  letter-spacing:.012em; font-weight:450;
+}
+.demo-bar .db-note b{ color: var(--dsw-alias-label-primary, #1f2328); font-weight:620; }
+
+/* 形态切换：分段控件（tabs-sliding 语料：药丸指示器由 JS 量测后写 transform + width） */
+.form-switch{
+  position:relative; display:inline-flex; align-items:center; gap:2px; padding:3px;
+  border-radius: var(--dam-r-pill);
+  border: var(--dam-glass-inset-border);
+  background: var(--dam-glass-inset-bg);
+}
+.form-pill{
+  position:absolute; top:3px; left:0; height:26px; width:0;
+  border-radius: var(--dam-r-pill);
+  background: color-mix(in srgb, var(--dsw-alias-bg-layer-2, rgba(255,255,255,.9)) 78%, transparent);
+  box-shadow: 0 1px 2px rgba(0,0,0,.10), inset 0 1px 0 rgba(255,255,255,.5);
+  transform: translateX(0); z-index:0; pointer-events:none;
+  transition: transform var(--dam-dur-fast) var(--dam-ease-out),
+              width     var(--dam-dur-fast) var(--dam-ease-out);
+  will-change: transform, width;
+}
+.form-switch button{
+  position:relative; z-index:1; appearance:none; border:0; background:transparent;
+  height:26px; padding:0 11px; border-radius: var(--dam-r-pill);
+  font-size:12px; letter-spacing:.012em; cursor:pointer;
+  color: color-mix(in srgb, var(--dsw-alias-label-secondary, #666) 88%, transparent);
+  transition: color var(--dam-dur-quick) var(--dam-ease-out);
+}
+.form-switch button[aria-pressed="true"]{ color: var(--dsw-alias-label-primary, #1f2328); font-weight:620; }
+.form-switch .fs-ico{ font-size:11px; margin-right:4px; opacity:.85; }
+
+/* 宿主令牌模拟（**不是**插件自有主题：覆盖的就是宿主令牌本身） */
+.host-switch{ display:inline-flex; align-items:center; gap:7px; font-size:11.5px; color: var(--dsw-alias-label-secondary, #666); }
+.host-switch button{
+  appearance:none; cursor:pointer; font-size:11.5px; padding:4px 9px; border-radius: var(--dam-r-sm);
+  border: var(--dam-glass-inset-border); background: var(--dam-glass-inset-bg);
+  transition: border-color var(--dam-dur-quick) var(--dam-ease-out), background var(--dam-dur-quick) var(--dam-ease-out);
+}
+.host-switch button[aria-pressed="true"]{
+  border-color: color-mix(in srgb, var(--dam-accent, #1d4ed8) 55%, transparent);
+  background: color-mix(in srgb, var(--dam-accent, #1d4ed8) 12%, transparent);
+  color: var(--dsw-alias-label-primary, #1f2328);
+}
+
+/* 模拟宿主页面：给液态玻璃提供真实的「内容在下面滚」的底 —— 没有底就没有毛玻璃 */
+.host{
+  position:relative; flex:1 1 auto; min-height:0; overflow:hidden;
+  background: var(--demo-page);
+}
+.host-deco{ position:absolute; inset:0; overflow:hidden; pointer-events:none; }
+.host-deco i{ position:absolute; border-radius:50%; filter: blur(34px); opacity:.5; }
+.host-deco i:nth-child(1){ width:420px; height:420px; left:-90px; top:-120px; background: color-mix(in srgb, var(--dam-accent, #1d4ed8) 34%, transparent); }
+.host-deco i:nth-child(2){ width:360px; height:360px; right:6%; top:12%; background: color-mix(in srgb, #5b8def 30%, transparent); }
+.host-deco i:nth-child(3){ width:300px; height:300px; left:34%; bottom:-80px; background: color-mix(in srgb, #9b8cff 26%, transparent); }
+.host-conv{
+  position:absolute; left:50%; transform:translateX(-50%); top:26px; width:min(720px, 62vw);
+  display:flex; flex-direction:column; gap:14px;
+}
+.host-turn{ display:flex; gap:10px; align-items:flex-start; }
+.host-av{ width:24px; height:24px; border-radius:7px; flex:0 0 auto; background: color-mix(in srgb, var(--dsw-alias-label-primary, #1f2328) 12%, transparent); }
+.host-bub{
+  flex:1 1 auto; border-radius: var(--dam-r-md); padding:11px 13px;
+  background: var(--dam-glass-overlay-bg);
+  -webkit-backdrop-filter: var(--dam-glass-overlay-blur);
+  backdrop-filter: var(--dam-glass-overlay-blur);
+  border: var(--dam-glass-overlay-border);
+  box-shadow: var(--dam-glass-overlay-shadow);
+  font-size:12.5px; line-height:1.7; color: var(--dsw-alias-label-primary, #1f2328);
+}
+.host-bub .hl{ font-family: var(--dam-mono); font-size:12px; padding:1px 5px; border-radius:5px;
+  background: color-mix(in srgb, var(--dam-accent, #1d4ed8) 12%, transparent); }
+.host-code{
+  font-family: var(--dam-mono); font-size:11.5px; line-height:1.75; white-space:pre-wrap;
+  border-radius: var(--dam-r-sm); padding:9px 11px; margin-top:8px;
+  background: color-mix(in srgb, var(--dsw-alias-bg-layer-1, rgba(128,128,128,.06)) 62%, transparent);
+  border: var(--dam-glass-inset-border);
+  color: var(--dsw-alias-label-secondary, #666);
+}
+.host-title{ font-size:12px; font-weight:650; letter-spacing:.01em; margin-bottom:6px; color: var(--dsw-alias-label-secondary, #666); }
+.demo-foot{
+  flex:0 0 auto; padding:7px 16px; font-size:11px; letter-spacing:.012em;
+  color: var(--dsw-alias-label-secondary, #666);
+  background: var(--dam-glass-overlay-bg);
+  -webkit-backdrop-filter: var(--dam-glass-overlay-blur);
+  backdrop-filter: var(--dam-glass-overlay-blur);
+  border-top: 1px solid color-mix(in srgb, var(--dsw-alias-border-l1, rgba(128,128,128,.3)) 45%, transparent);
+  display:flex; flex-wrap:wrap; gap:6px 16px; align-items:center;
+}
+.demo-foot b{ color: var(--dsw-alias-label-primary, #1f2328); font-weight:620; }
+.demo-foot .kbd{
+  font-family: var(--dam-mono); font-size:10.5px; padding:1px 5px; border-radius:5px;
+  background: color-mix(in srgb, var(--dsw-alias-bg-layer-1, rgba(128,128,128,.06)) 70%, transparent);
+  border: var(--dam-glass-inset-border);
+}
+
+/* ---- 模拟宿主切到深色：只改宿主令牌本身，插件侧零改动 ---- */
+:root[data-host="dark"]{
+  --dsw-alias-bg-layer-1: rgba(255,255,255,.06);
+  --dsw-alias-bg-layer-2: rgba(24,24,28,.97);
+  --dsw-alias-bg-layer-3: rgba(255,255,255,.07);
+  --dsw-alias-border-l1: rgba(255,255,255,.16);
+  --dsw-alias-border-l2: rgba(255,255,255,.24);
+  --dsw-alias-label-primary: #e8ecf3;
+  --dsw-alias-label-secondary: #a7b0bd;
+  --dsw-alias-label-tertiary: #8b93a7;
+  --dsw-alias-label-dimmed: #7d8793;
+  --dsw-alias-brand-primary: #6799fe;
+  --dsw-alias-state-warn-primary: #e0a53a;
+  --dsw-alias-state-error-primary: #e5534b;
+  --dsw-alias-state-success-primary: #3aa675;
+  --dsw-alias-bg-mask-1: rgba(0,0,0,.35);
+  --demo-page: #0f1320;
+  --demo-surface-opaque: #18181c;
+}
+:root[data-host="dark"] body{ background: var(--demo-page); }
+:root[data-host="dark"] .demo-bar .db-mark{ color:#0b0d12; }
+/* ==========================================================================
+   §S  舞台：两套版式互斥呈现（数据与状态共享，版式绝不共享 —— 用户拍板原话）
+   ========================================================================== */
+.stage{ position:absolute; inset:0; }
+.stage > .form{ position:absolute; inset:0; display:none; }
+.stage[data-form="panel"] > .form-panel{ display:block; }
+.stage[data-form="page"]  > .form-page{ display:block; }
+
+/* 形态切换时：过渡期间两套同屏（both 档的真实语义），独立不嵌套入场 */
+.stage[data-form="both"] > .form-panel,
+.stage[data-form="both"] > .form-page{ display:block; }
+.stage[data-both="panel"] > .form-page{ display:none; }
+.stage[data-both="page"]  > .form-panel{ display:none; }
+
+/* ==========================================================================
+   §P  悬窗形态 [data-dam-panel]（真源几何 440×560，lib/client.js:1582）
+   ========================================================================== */
+.form-panel{ pointer-events:none; }
+.form-panel [data-dam-panel]{
+  pointer-events:auto;
+  position:absolute; left:16px; bottom:16px; width:440px; height:560px;
+  max-width:calc(100vw - 32px); max-height:calc(100vh - 120px);
+  display:flex; flex-direction:column; overflow:hidden;
+  border-radius: var(--dam-glass-structural-radius);
+  font: 13px/1.55 var(--dam-font);
+  /* ↓↓↓ 液态玻璃真身：lib/client.js:1586-1591 逐字抄 ↓↓↓ */
+  background: var(--dam-glass-structural-bg);
+  -webkit-backdrop-filter: var(--dam-glass-structural-blur);
+  backdrop-filter: var(--dam-glass-structural-blur);
+  border: var(--dam-glass-structural-border);
+  box-shadow: var(--dam-glass-structural-shadow);
+  color: var(--dsw-alias-label-primary, #1f2328);
+  animation: dam-in var(--dam-dur-fast) var(--dam-ease-panel-in) both;
+  transform-origin: left bottom;
+}
+/* pin 住时贴左下角 16px（真源 DEFAULT_GAP=16，:63）；未 pin 时浮起一点，暗示可拖 */
+[data-dam-panel]{ --pin-x:16px; }
+[data-dam-panel][data-pinned="false"]{ left:48px; bottom:64px; }
+/* 顶部 64% 高度的白渐变高光（真源 :1598-1599） */
+[data-dam-panel]::before{
+  content:""; position:absolute; inset:0 0 auto 0; height:64%; pointer-events:none;
+  border-radius: var(--dam-glass-structural-radius) var(--dam-glass-structural-radius) 0 0;
+  background: linear-gradient(180deg, rgba(255,255,255,.13), rgba(255,255,255,0) 70%);
+  transition: opacity var(--dam-dur-fast) var(--dam-ease-out);
+}
+/* 亮面弱化态：宿主令牌底自身 alpha < .65 时由 JS 置 data-solid（真源 :5724-5733 注入面） */
+[data-dam-panel][data-solid="true"]::before{ opacity:.4; }
+
+[data-dam-panel] .pn-head{
+  position:relative; z-index:2; flex:0 0 auto;
+  display:flex; align-items:center; gap:8px; padding:9px 10px 9px 12px;
+  border-bottom:1px solid color-mix(in srgb, var(--dsw-alias-border-l1, rgba(128,128,128,.25)) 60%, transparent);
+  cursor:grab;
+}
+[data-dam-panel] .pn-head:active{ cursor:grabbing; }
+[data-dam-panel] .pn-title{ font-size:13px; font-weight:650; letter-spacing:-.004em; }
+[data-dam-panel] .pn-ver{
+  font-family: var(--dam-mono); font-size:10.5px; padding:1px 5px; border-radius:5px;
+  color: var(--dsw-alias-label-secondary, #666);
+  background: color-mix(in srgb, var(--dsw-alias-bg-layer-1, rgba(128,128,128,.06)) 70%, transparent);
+}
+[data-dam-panel] .pn-tools{ margin-left:auto; display:flex; align-items:center; gap:2px; }
+/* 浮层专属控件（真源 :5770-5790）：关闭 ✕ / 刷新 ⟳ / 复位 ⤾ / Pin —— 整页形态不得出现 */
+.icon-btn{
+  appearance:none; border:0; background:transparent; cursor:pointer;
+  width:24px; height:24px; border-radius:7px; display:grid; place-items:center;
+  font-size:12.5px; color: var(--dsw-alias-label-secondary, #666);
+  transition: background var(--dam-dur-quick) var(--dam-ease-out),
+              color var(--dam-dur-quick) var(--dam-ease-out),
+              transform var(--dam-dur-quick) var(--dam-ease-out);
+}
+@media (hover:hover) and (pointer:fine){ .icon-btn:hover{ background: color-mix(in srgb, var(--dsw-alias-bg-layer-1, rgba(128,128,128,.06)) 100%, transparent); color: var(--dsw-alias-label-primary, #1f2328); } }
+.icon-btn:active{ transform: scale(.97); }
+.icon-btn[aria-pressed="true"]{
+  color: var(--dam-accent, #1d4ed8);
+  background: color-mix(in srgb, var(--dam-accent, #1d4ed8) 24%, transparent);
+}
+.icon-btn.spin-once{ animation: dam-spin var(--dam-dur-slow) var(--dam-ease-linear) 1; }
+
+/* 浮层：顶部横向滚动页签（TabScroller，真源 :5788；含 ‹ › 箭头 :4710） */
+[data-dam-panel] .pn-tabs-wrap{
+  position:relative; z-index:2; flex:0 0 auto; display:flex; align-items:center; gap:2px;
+  padding:6px 4px; border-bottom:1px solid color-mix(in srgb, var(--dsw-alias-border-l1, rgba(128,128,128,.22)) 55%, transparent);
+}
+.tab-scroller{
+  flex:1 1 auto; min-width:0; display:flex; gap:2px; overflow-x:auto; scrollbar-width:none;
+  scroll-behavior:smooth;
+}
+.tab-scroller::-webkit-scrollbar{ display:none; }
+.tab-arw{
+  appearance:none; border:0; background:transparent; cursor:pointer; flex:0 0 auto;
+  width:18px; height:22px; border-radius:6px; font-size:11px; color: var(--dsw-alias-label-secondary, #666);
+  transition: background var(--dam-dur-quick) var(--dam-ease-out), opacity var(--dam-dur-quick) var(--dam-ease-out);
+}
+.tab-arw[disabled]{ opacity:.28; cursor:default; }
+@media (hover:hover) and (pointer:fine){ .tab-arw:not([disabled]):hover{ background: color-mix(in srgb, var(--dam-accent, #1d4cff) 16%, transparent); } }
+[data-dam-tab]{
+  appearance:none; border:0; background:transparent; cursor:pointer; flex:0 0 auto;
+  padding:4px 9px; border-radius:7px; font-size:12px; white-space:nowrap;
+  color: color-mix(in srgb, var(--dsw-alias-label-secondary, #666) 92%, transparent);
+  transition: color var(--dam-dur-quick) var(--dam-ease-out),
+              background var(--dam-dur-quick) var(--dam-ease-out),
+              opacity var(--dam-dur-quick) var(--dam-ease-out),
+              transform var(--dam-dur-quick) var(--dam-ease-out);
+}
+@media (hover:hover) and (pointer:fine){ [data-dam-tab]:hover{ background: color-mix(in srgb, var(--dsw-alias-bg-layer-1, rgba(128,128,128,.06)) 100%, transparent); color: var(--dsw-alias-label-primary, #1f2328); } }
+[data-dam-tab][data-active="true"]{
+  color: var(--dam-accent, #1d4ed8); font-weight:650;
+  background: color-mix(in srgb, var(--dam-accent, #1d4ed8) 12%, transparent);
+  transform: translateY(-1px);   /* 真源 :1729 选中态静态位移，非过渡 */
+}
+[data-dam-panel] .pn-body{
+  position:relative; z-index:1; flex:1 1 auto; min-height:0; overflow:auto;
+  padding:14px; scrollbar-width:thin; display:flex; flex-direction:column; gap:10px;
+}
+[data-dam-panel] .pn-resize{
+  position:absolute; right:0; bottom:0; width:22px; height:22px; cursor:nwse-resize;
+  display:grid; place-items:end; padding:3px; color: var(--dsw-alias-label-tertiary, #8b93a7);
+}
+[data-dam-panel] .pn-resize::after{ content:""; width:9px; height:9px;
+  border-right:2px solid currentColor; border-bottom:2px solid currentColor; border-radius:0 0 2px 0; opacity:.6; }
+/* 浮层关闭态（真源 :1594：dam-out + dur-quick + ease-out，**禁 ease-in、禁过冲**） */
+[data-dam-panel][data-closing="true"]{ animation: dam-out var(--dam-dur-quick) var(--dam-ease-out) both; }
+
+/* ==========================================================================
+   §G  整页形态 [data-dam-page]（100%×100%，真源 :1618-1623 / :1635-1687）
+   ========================================================================== */
+.form-page [data-dam-page]{
+  position:absolute; inset:0; display:flex; flex-direction:column; overflow:hidden;
+  width:100%; height:100%;
+  color: var(--dsw-alias-label-primary, #1f2328);
+  background: var(--dam-glass-structural-bg);
+  -webkit-backdrop-filter: var(--dam-glass-structural-blur);
+  backdrop-filter: var(--dam-glass-structural-blur);
+}
+[data-dam-page] .pg-head{
+  flex:0 0 auto; display:flex; align-items:center; gap:10px;
+  padding: var(--dam-pad-y) var(--dam-pad-x);
+  border-bottom:1px solid color-mix(in srgb, var(--dsw-alias-border-l1, rgba(128,128,128,.25)) 60%, transparent);
+  padding-inline: max(var(--dam-pad-x), calc((100% - var(--dam-measure)) / 2));
+}
+[data-dam-page] .pg-h1{ font-size:calc(19px * var(--dam-scale,1)); font-weight:680; letter-spacing:-.012em; line-height:1.28; }
+[data-dam-page] .pg-sub{ font-size:calc(12px * var(--dam-scale,1)); color: var(--dsw-alias-label-secondary, #666); letter-spacing:.01em; }
+[data-dam-page] .pg-head-tools{ margin-left:auto; display:flex; align-items:center; gap:8px; }
+[data-dam-page] .pg-main{ flex:1 1 auto; min-height:0; display:flex; }
+/* 左侧固定侧栏 170px（真源 :1636-1637） */
+[data-dam-page] .pg-nav{
+  flex:0 0 auto; width:170px; overflow:auto; padding:10px 8px;
+  display:flex; flex-direction:column; gap:2px;
+  border-right:1px solid color-mix(in srgb, var(--dsw-alias-border-l1, rgba(128,128,128,.25)) 60%, transparent);
+}
+[data-dam-page] .pg-nav .grp{
+  font-size:10.5px; letter-spacing:.06em; text-transform:uppercase;
+  color: var(--dsw-alias-label-tertiary, #8b93a7); padding:9px 10px 3px;
+}
+[data-dam-page] .pg-nav button{
+  appearance:none; border:0; background:transparent; cursor:pointer; text-align:left;
+  padding:7px 10px; border-radius:8px; font-size:calc(12.5px * var(--dam-scale,1));
+  display:flex; align-items:center; gap:7px;
+  color: var(--dsw-alias-label-primary, #1f2328); opacity:.68;
+  transition: opacity var(--dam-dur-quick) var(--dam-ease-out),
+              background var(--dam-dur-quick) var(--dam-ease-out),
+              color var(--dam-dur-quick) var(--dam-ease-out),
+              transform var(--dam-dur-quick) var(--dam-ease-out);
+}
+@media (hover:hover) and (pointer:fine){ [data-dam-page] .pg-nav button:hover{ opacity:1; background: color-mix(in srgb, var(--dsw-alias-bg-layer-1, rgba(128,128,128,.06)) 100%, transparent); } }
+[data-dam-page] .pg-nav button:active{ transform: scale(.97); }
+[data-dam-page] .pg-nav button[data-active="true"]{
+  opacity:1; font-weight:650; color: var(--dam-accent, #1d4ed8);
+  background: color-mix(in srgb, var(--dam-accent, #1d4ed8) 12%, transparent);
+}
+[data-dam-page] .pg-nav .planned-dot{
+  width:5px; height:5px; border-radius:50%; flex:0 0 auto;
+  background: var(--dsw-alias-state-warn-primary, #e8c584);
+}
+[data-dam-page] .pg-content{
+  flex:1 1 auto; min-width:0; display:flex; flex-direction:column; overflow:hidden;
+}
+[data-dam-page] .pg-scroll{
+  flex:1 1 auto; min-height:0; overflow:auto; scrollbar-width:thin;
+  padding: var(--dam-pad-y) 0 26px;
+}
+[data-dam-page] .pg-inner{
+  display:flex; flex-direction:column; gap: var(--dam-gap);
+  padding-inline: max(var(--dam-pad-x), calc((100% - var(--dam-measure)) / 2));
+}
+/* 多列栅格（真源 :1678-1687 逐字）：容器 auto-fit / 仅 [data-dam-card] 进列 / 其余整行 */
+[data-dam-page] [data-dam-flow]{
+  display:grid; gap: var(--dam-gap); align-items:start;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr));
+}
+[data-dam-page] [data-dam-flow] > *{ grid-column:1 / -1; min-width:0; }
+[data-dam-page] [data-dam-flow] > [data-dam-card]{ grid-column:auto; }
+/* 滚动边缘渐隐（apple-design §12「Scroll edge effects, not hard dividers」；真源 0 处，是本稿补的缺席项） */
+@supports (mask-image: linear-gradient(#000, transparent)){
+  [data-dam-page] .pg-scroll{ mask-image: linear-gradient(#000 calc(100% - 18px), transparent); }
+}
+/* 视口台阶（真源 :1671-1672）：≥1400 ×1.06 / ≥1800 ×1.12 */
+@media (min-width:1400px){ [data-dam-page]{ --dam-scale:1.06; } }
+@media (min-width:1800px){ [data-dam-page]{ --dam-scale:1.12; } }
+/* 窄窗断点 <900px：侧栏折叠为顶部横条（真源 :1655-1658） */
+@media (max-width:900px){
+  [data-dam-page] .pg-main{ flex-direction:column; }
+  [data-dam-page] .pg-nav{
+    width:auto; flex-direction:row; overflow-x:auto; gap:4px;
+    padding:8px 10px; border-right:0;
+    border-bottom:1px solid color-mix(in srgb, var(--dsw-alias-border-l1, rgba(128,128,128,.25)) 60%, transparent);
+  }
+  [data-dam-page] .pg-nav .grp{ display:none; }
+  [data-dam-page] .pg-nav button{ white-space:nowrap; }
+}
+/* ==========================================================================
+   §C  内容组件（全部走三档材质；**内嵌卡片禁止再叠 blur** —— apple-design §12）
+   ========================================================================== */
+[data-dam-card], .card{
+  grid-column:auto; min-width:0;
+  border-radius: var(--dam-glass-inset-radius);
+  background: var(--dam-glass-inset-bg);
+  border: var(--dam-glass-inset-border);
+  padding:12px 13px;
+  /* 卡片入场 = 真源 :1688/:1695 刻度：dur-fast + ease-out + translateY(8px) scale(.988) */
+  animation: dam-card-in var(--dam-dur-fast) var(--dam-ease-out) both;
+}
+/* 错开阶梯（真源 :1696-1700）：第 2..5 项 ×1..4，第 6 项起 ×5（总错开 200ms ≤ 300ms 上限） */
+[data-dam-flow] > :nth-child(2), .card-stack > :nth-child(2){ animation-delay: calc(var(--dam-dur-stagger) * 1); }
+[data-dam-flow] > :nth-child(3), .card-stack > :nth-child(3){ animation-delay: calc(var(--dam-dur-stagger) * 2); }
+[data-dam-flow] > :nth-child(4), .card-stack > :nth-child(4){ animation-delay: calc(var(--dam-dur-stagger) * 3); }
+[data-dam-flow] > :nth-child(5), .card-stack > :nth-child(5){ animation-delay: calc(var(--dam-dur-stagger) * 4); }
+[data-dam-flow] > :nth-child(n+6), .card-stack > :nth-child(n+6){ animation-delay: calc(var(--dam-dur-stagger) * 5); }
+/* ★ 嵌套双重入场防线（MOTION-SPEC §2.1 主因）：容器**不**参与入场，责任交给 [data-dam-flow] > *
+   —— 与真源 :1674 的 :not([data-dam-flow]) 同一条修法 */
+[data-dam-panel] .pn-body > :not([data-dam-flow]){ animation: dam-rise var(--dam-dur-fast) var(--dam-ease-out) both; }
+[data-dam-page] [data-dam-body] > :not([data-dam-flow]){ animation: dam-page-in var(--dam-dur-fast) var(--dam-ease-out) both; }
+
+/* 嵌套子块：**不带入场动画**（MOTION-SPEC §2.1 嵌套双重入场防线） */
+.mini{
+  border-radius: var(--dam-glass-inset-radius);
+  background: color-mix(in srgb, var(--dsw-alias-bg-layer-1, rgba(128,128,128,.06)) 55%, transparent);
+  border: var(--dam-glass-inset-border);
+  padding:10px 11px; min-width:0;
+}
+/* 卡片内的分组：区间标题用 4 级字号刻度（19 / 15 / 14 / 12.6）——真源缺的中间层，本稿补上 */
+.sec-h{ display:flex; align-items:baseline; gap:8px; margin:2px 0 8px; }
+.sec-h .sh-t{ font-size:calc(15px * var(--dam-scale,1)); font-weight:660; letter-spacing:-.008em; line-height:1.32; }
+.sec-h .sh-n{ font-size:10.5px; letter-spacing:.012em; color: var(--dsw-alias-label-tertiary, #8b93a7); font-weight:500; }
+.sec-h .sh-r{ margin-left:auto; font-size:11px; color: var(--dsw-alias-label-secondary, #666); }
+h3.sec-h{ margin-top:0; }
+h4.sec-h .sh-t{ font-size:calc(14px * var(--dam-scale,1)); font-weight:640; }
+
+/* 行 / 覆盖块 */
+.kv{ display:flex; flex-wrap:wrap; gap:4px 14px; }
+.kv .k{ font-size:11.5px; color: var(--dsw-alias-label-secondary, #666); letter-spacing:.012em; }
+.kv .v{ font-size:12.5px; font-weight:600; font-family: var(--dam-mono); }
+.dim{ color: var(--dsw-alias-label-secondary, #666); }
+.mute{ color: var(--dsw-alias-label-tertiary, #8b93a7); }
+.tiny{ font-size:11px; letter-spacing:.012em; }
+.mono{ font-family: var(--dam-mono); }
+.hint{ font-size:11px; letter-spacing:.012em; color: var(--dsw-alias-label-tertiary, #8b93a7); }
+p{ margin:0 0 8px; }
+/* vibrancy：玻璃上的文字**不用平灰**，用更高对比 + 稍重字重 + 少量字距（apple-design §12 #5） */
+.vib{ color: var(--dsw-alias-label-secondary, #666); font-weight:470; letter-spacing:.014em; }
+
+/* 代码块 / 证据锚点 */
+code, .code{
+  font-family: var(--dam-mono); font-size:11.5px;
+  padding:1px 5px; border-radius:5px;
+  background: color-mix(in srgb, var(--dsw-alias-bg-layer-1, rgba(128,128,128,.06)) 62%, transparent);
+  border: 1px solid color-mix(in srgb, var(--dsw-alias-border-l1, rgba(128,128,128,.18)) 60%, transparent);
+}
+pre.code{
+  display:block; margin:8px 0 0; padding:9px 11px; overflow:auto;
+  white-space:pre-wrap; line-height:1.7; font-size:11.5px;
+}
+.ev{ display:inline-flex; align-items:center; gap:5px; font-size:10.5px; letter-spacing:.014em;
+  color: var(--dsw-alias-label-tertiary, #8b93a7); }
+.ev::before{ content:"⌘"; opacity:.6; }
+
+/* 徽标 */
+.badge{
+  display:inline-flex; align-items:center; gap:4px;
+  font-size:10.5px; font-weight:600; letter-spacing:.02em;
+  padding:1.5px 6px; border-radius:var(--dam-r-pill);
+  border:1px solid color-mix(in srgb, var(--dsw-alias-border-l1, rgba(128,128,128,.25)) 70%, transparent);
+  color: var(--dsw-alias-label-secondary, #666);
+  background: color-mix(in srgb, var(--dsw-alias-bg-layer-1, rgba(128,128,128,.06)) 55%, transparent);
+}
+.badge.ok{ color: var(--dsw-alias-state-success-primary, #3aa675); border-color: color-mix(in srgb, var(--dsw-alias-state-success-primary, #3aa675) 42%, transparent);
+  background: color-mix(in srgb, var(--dsw-alias-state-success-primary, #3aa675) 12%, transparent); }
+.badge.warn{ color: color-mix(in srgb, var(--dsw-alias-state-warn-primary, #e8c584) 72%, #7a5a12); border-color: color-mix(in srgb, var(--dsw-alias-state-warn-primary, #e8c584) 52%, transparent);
+  background: color-mix(in srgb, var(--dsw-alias-state-warn-primary, #e8c584) 16%, transparent); }
+.badge.err{ color: var(--dsw-alias-state-error-primary, #d64545); border-color: color-mix(in srgb, var(--dsw-alias-state-error-primary, #d64545) 42%, transparent);
+  background: color-mix(in srgb, var(--dsw-alias-state-error-primary, #d64545) 12%, transparent); }
+.badge.brand{ color: var(--dam-accent, #1d4ed8); border-color: color-mix(in srgb, var(--dam-accent, #1d4ed8) 40%, transparent);
+  background: color-mix(in srgb, var(--dam-accent, #1d4ed8) 12%, transparent); }
+/* 诚实标注徽标：规划中（动画取自 transitions-motion items/notification-badge.json，仅进入，过冲曲线） */
+.badge.planned{
+  position:relative; color: color-mix(in srgb, var(--dsw-alias-state-warn-primary, #e8c584) 66%, #6b4d0c);
+  border-color: color-mix(in srgb, var(--dsw-alias-state-warn-primary, #e8c584) 58%, transparent);
+  background: color-mix(in srgb, var(--dsw-alias-state-warn-primary, #e8c584) 18%, transparent);
+}
+.badge.planned[data-open="true"]{ animation: dam-badge-slide-in var(--dam-dur-fast) var(--dam-ease-out) both; }
+.badge.planned::after{
+  content:""; width:5px; height:5px; border-radius:50%; margin-left:1px;
+  background: currentColor; transform-origin:center;
+  transform: scale(1); opacity:1; filter: blur(0);
+  transition: transform var(--dam-dur-very-slow) var(--dam-ease-pop),
+              opacity var(--dam-dur-slow) var(--dam-ease-pop),
+              filter var(--dam-dur-very-slow) var(--dam-ease-pop);
+}
+.badge.planned[data-open="false"]::after{
+  transform: scale(0); opacity:0; filter: blur(var(--dam-blur-small));
+  transition: transform var(--dam-dur-quick) var(--dam-ease-out),
+              opacity var(--dam-dur-quick) var(--dam-ease-out),
+              filter var(--dam-dur-quick) var(--dam-ease-out);
+}
+
+/* 统计数字（真源 dam-stat-num：blur(2px) 文字入场 + dur-slow） */
+.stat{ display:flex; flex-direction:column; gap:2px; }
+.stat .num{ font-size:calc(23px * var(--dam-scale,1)); font-weight:700; font-family: var(--dam-mono); letter-spacing:-.02em; }
+.stat .lbl{ font-size:11px; letter-spacing:.014em; color: var(--dsw-alias-label-secondary, #666); }
+.stat .sub{ font-size:10.5px; color: var(--dsw-alias-label-tertiary, #8b93a7); }
+.number-group{ display:inline-flex; align-items:baseline; }
+.number-group .d{ display:inline-block; will-change:transform,opacity,filter; }
+.number-group.is-animating .d{ animation: dam-digit-pop-in var(--dam-dur-very-slow) var(--dam-ease-pop) both; }
+.number-group.is-animating .d[data-stagger="1"]{ animation-delay: calc(var(--dam-dur-stagger) * 1); }
+.number-group.is-animating .d[data-stagger="2"]{ animation-delay: calc(var(--dam-dur-stagger) * 2); }
+
+/* 水位条（真源 dam-stat-reveal：宽度揭示 dur-slow） */
+.water{ display:flex; flex-direction:column; gap:6px; }
+.water-track{ height:8px; border-radius:var(--dam-r-pill); overflow:hidden;
+  background: color-mix(in srgb, var(--dsw-alias-bg-layer-1, rgba(128,128,128,.08)) 90%, transparent);
+  border: 1px solid color-mix(in srgb, var(--dsw-alias-border-l1, rgba(128,128,128,.2)) 60%, transparent); }
+.water-fill{ height:100%; border-radius:var(--dam-r-pill); transform-origin:left center;
+  background: linear-gradient(90deg, var(--dam-accent, #1d4ed8), color-mix(in srgb, var(--dam-accent, #1d4ed8) 55%, #7ea4ff));
+  animation: dam-fill var(--dam-dur-slow) var(--dam-ease-out) both; }
+.water-fill[data-level="warn"]{ background: linear-gradient(90deg, var(--dsw-alias-state-warn-primary, #e8c584), color-mix(in srgb, var(--dsw-alias-state-warn-primary, #e8c584) 60%, #d4a94f)); }
+.water-scale{ display:flex; justify-content:space-between; font-size:10.5px; color: var(--dsw-alias-label-tertiary, #8b93a7); font-family: var(--dam-mono); }
+
+/* 开关（用户硬性偏好：点击必须即时回显；aria-checked 是载体，N5 不容替换） */
+[role="switch"].sw{
+  appearance:none; cursor:pointer; flex:0 0 auto;
+  width:34px; height:19px; border-radius:var(--dam-r-pill); position:relative;
+  border:1px solid color-mix(in srgb, var(--dsw-alias-border-l1, rgba(128,128,128,.3)) 80%, transparent);
+  background: color-mix(in srgb, var(--dsw-alias-bg-layer-1, rgba(128,128,128,.08)) 95%, transparent);
+  transition: background var(--dam-dur-fast) var(--dam-ease-out),
+              border-color var(--dam-dur-fast) var(--dam-ease-out);
+}
+[role="switch"].sw::after{
+  content:""; position:absolute; top:2px; left:2px; width:13px; height:13px; border-radius:50%;
+  background: var(--dsw-alias-bg-layer-2, #fff);
+  box-shadow: 0 1px 2px rgba(0,0,0,.18);
+  transition: transform var(--dam-dur-fast) var(--dam-ease-out);
+}
+[role="switch"].sw[aria-checked="true"]{
+  background: color-mix(in srgb, var(--dam-accent, #1d4ed8) 76%, transparent);
+  border-color: color-mix(in srgb, var(--dam-accent, #1d4ed8) 60%, transparent);
+}
+[role="switch"].sw[aria-checked="true"]::after{ transform: translateX(15px); }
+[role="switch"].sw:active::after{ transform: scale(.94); }
+[role="switch"].sw[aria-checked="true"]:active::after{ transform: translateX(15px) scale(.94); }
+
+/* 行式开关行（.srow 是渐进披露计数的口径载体，**必须**是 .sgroup-body 的直接子元素 —— 对齐 v1） */
+.srow{ display:flex; align-items:center; gap:10px; padding:6px 0; min-width:0;
+  border-bottom:1px solid color-mix(in srgb, var(--dsw-alias-border-l1, rgba(128,128,128,.16)) 55%, transparent); }
+.srow:last-child{ border-bottom:0; }
+.srow .lbl{ font-size:12.5px; font-weight:560; letter-spacing:.004em; }
+.srow .hint{ display:block; margin-top:1px; }
+.srow .ctl{ margin-left:auto; display:flex; align-items:center; gap:7px; flex:0 0 auto; }
+.srow > .txt{ min-width:0; }
+select.sel, input.num, input.txt{
+  font:inherit; font-size:12px; padding:4px 7px; border-radius:var(--dam-r-sm);
+  color: var(--dsw-alias-label-primary, #1f2328);
+  background: color-mix(in srgb, var(--dsw-alias-bg-layer-2, rgba(255,255,255,.9)) 70%, transparent);
+  border:1px solid color-mix(in srgb, var(--dsw-alias-border-l1, rgba(128,128,128,.3)) 80%, transparent);
+  transition: border-color var(--dam-dur-quick) var(--dam-ease-out), background var(--dam-dur-quick) var(--dam-ease-out);
+}
+input.num{ width:82px; text-align:right; font-family:var(--dam-mono); }
+select.sel{ max-width:210px; }
+:focus-visible{ outline:2px solid color-mix(in srgb, var(--dam-accent, #1d4ed8) 70%, transparent); outline-offset:1px; }
+
+/* 按钮 */
+.btn{
+  appearance:none; cursor:pointer; font-size:12px; font-weight:560; letter-spacing:.008em;
+  padding:5px 11px; border-radius:var(--dam-r-sm);
+  color: var(--dsw-alias-label-primary, #1f2328);
+  background: color-mix(in srgb, var(--dsw-alias-bg-layer-2, rgba(255,255,255,.9)) 66%, transparent);
+  border:1px solid color-mix(in srgb, var(--dsw-alias-border-l1, rgba(128,128,128,.3)) 80%, transparent);
+  transition: background var(--dam-dur-quick) var(--dam-ease-out),
+              border-color var(--dam-dur-quick) var(--dam-ease-out),
+              transform var(--dam-dur-quick) var(--dam-ease-out),
+              opacity var(--dam-dur-quick) var(--dam-ease-out);
+}
+@media (hover:hover) and (pointer:fine){ .btn:hover{ background: color-mix(in srgb, var(--dsw-alias-bg-layer-2, rgba(255,255,255,.9)) 88%, transparent); } }
+.btn:active{ transform: scale(.97); }   /* 真源 :1705 按压刻度 */
+.btn.sm{ font-size:11.5px; padding:3.5px 9px; }
+.btn.primary{
+  color:#fff;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--dam-accent, #1d4ed8) 86%, #fff), var(--dam-accent, #1d4ed8));
+  border-color: color-mix(in srgb, var(--dam-accent, #1d4ed8) 62%, transparent);
+}
+@media (hover:hover) and (pointer:fine){ .btn.primary:hover{ background: linear-gradient(180deg, var(--dam-accent, #1d4ed8), color-mix(in srgb, var(--dam-accent, #1d4ed8) 88%, #000)); } }
+:root[data-host="dark"] .btn.primary{ color:#0b0d12; }
+
+/* 分段 / 单选（去掉了 v2 的「画布」假控件 —— 见 about 屏说明） */
+.seg{ display:inline-flex; gap:3px; padding:3px; border-radius:var(--dam-r-sm);
+  border: var(--dam-glass-inset-border); background: var(--dam-glass-inset-bg); }
+.seg button{
+  appearance:none; border:0; background:transparent; cursor:pointer; font-size:11.5px;
+  padding:4px 9px; border-radius:6px; color: var(--dsw-alias-label-secondary, #666);
+  transition: background var(--dam-dur-quick) var(--dam-ease-out), color var(--dam-dur-quick) var(--dam-ease-out);
+}
+.seg button[aria-pressed="true"]{
+  color: var(--dsw-alias-label-primary, #1f2328); font-weight:620;
+  background: color-mix(in srgb, var(--dsw-alias-bg-layer-2, rgba(255,255,255,.9)) 76%, transparent);
+  box-shadow: 0 1px 2px rgba(0,0,0,.08);
+}
+
+/* 表格 */
+table.tbl{ width:100%; border-collapse:collapse; font-size:12px; }
+table.tbl th, table.tbl td{ text-align:left; padding:6px 9px; vertical-align:top;
+  border-bottom:1px solid color-mix(in srgb, var(--dsw-alias-border-l1, rgba(128,128,128,.18)) 60%, transparent); }
+table.tbl th{ font-size:10.5px; letter-spacing:.05em; text-transform:uppercase;
+  color: var(--dsw-alias-label-tertiary, #8b93a7); font-weight:620; }
+table.tbl tr:last-child td{ border-bottom:0; }
+
+/* callout / 提示条 */
+.callout{
+  border-radius: var(--dam-glass-inset-radius); padding:10px 12px; font-size:12px; line-height:1.65;
+  background: color-mix(in srgb, var(--dam-accent, #1d4ed8) 7%, transparent);
+  border:1px solid color-mix(in srgb, var(--dam-accent, #1d4ed8) 22%, transparent);
+  border-left:3px solid color-mix(in srgb, var(--dam-accent, #1d4ed8) 62%, transparent);
+}
+.callout.warn{
+  background: color-mix(in srgb, var(--dsw-alias-state-warn-primary, #e8c584) 10%, transparent);
+  border-color: color-mix(in srgb, var(--dsw-alias-state-warn-primary, #e8c584) 34%, transparent);
+  border-left-color: color-mix(in srgb, var(--dsw-alias-state-warn-primary, #e8c584) 72%, transparent);
+}
+.callout.err{
+  background: color-mix(in srgb, var(--dsw-alias-state-error-primary, #d64545) 9%, transparent);
+  border-color: color-mix(in srgb, var(--dsw-alias-state-error-primary, #d64545) 30%, transparent);
+  border-left-color: color-mix(in srgb, var(--dsw-alias-state-error-primary, #d64545) 66%, transparent);
+}
+.callout .ct{ font-weight:640; letter-spacing:.004em; margin-bottom:3px; }
+
+/* 色板（展示真源色，属于证据展示，非产品 UI） */
+.swatches{ display:grid; grid-template-columns:repeat(auto-fit, minmax(min(100%,150px),1fr)); gap:8px; }
+.sw-item{ display:flex; gap:8px; align-items:center; min-width:0; }
+.sw-chip{ width:26px; height:26px; border-radius:7px; flex:0 0 auto;
+  border:1px solid color-mix(in srgb, var(--dsw-alias-border-l1, rgba(128,128,128,.35)) 80%, transparent);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.28); }
+.sw-meta{ min-width:0; }
+.sw-hex{ font-family:var(--dam-mono); font-size:11px; }
+.sw-role{ font-size:10.5px; color: var(--dsw-alias-label-secondary, #666); }
+
+/* 时间线（自动接续五环 / 审批三态） */
+.tl{ display:flex; flex-direction:column; gap:0; }
+.tl-item{ display:flex; gap:9px; padding:5px 0; }
+.tl-dot{ width:9px; height:9px; border-radius:50%; margin-top:5px; flex:0 0 auto;
+  background: color-mix(in srgb, var(--dsw-alias-label-tertiary, #8b93a7) 70%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--dsw-alias-label-tertiary, #8b93a7) 14%, transparent); }
+.tl-item[data-st="ok"] .tl-dot{ background: var(--dsw-alias-state-success-primary, #3aa675);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--dsw-alias-state-success-primary, #3aa675) 16%, transparent); }
+.tl-item[data-st="warn"] .tl-dot{ background: var(--dsw-alias-state-warn-primary, #e8c584);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--dsw-alias-state-warn-primary, #e8c584) 18%, transparent); }
+.tl-item[data-st="err"] .tl-dot{ background: var(--dsw-alias-state-error-primary, #d64545);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--dsw-alias-state-error-primary, #d64545) 16%, transparent); }
+.tl-item[data-st="now"] .tl-dot{ animation: dam-pulse 1.6s var(--dam-ease-linear) infinite; }
+
+/* 五档裁定的档位按钮（A/P/S/H/E） */
+.grade{ display:flex; flex-wrap:wrap; gap:5px; }
+.grade button{
+  appearance:none; cursor:pointer; font-size:11.5px; font-weight:600;
+  padding:4px 9px; border-radius:var(--dam-r-sm);
+  color: var(--dsw-alias-label-secondary, #666);
+  background: color-mix(in srgb, var(--dsw-alias-bg-layer-1, rgba(128,128,128,.06)) 60%, transparent);
+  border:1px solid color-mix(in srgb, var(--dsw-alias-border-l1, rgba(128,128,128,.25)) 75%, transparent);
+  transition: background var(--dam-dur-quick) var(--dam-ease-out),
+              color var(--dam-dur-quick) var(--dam-ease-out),
+              border-color var(--dam-dur-quick) var(--dam-ease-out),
+              transform var(--dam-dur-quick) var(--dam-ease-out);
+}
+.grade button:active{ transform: scale(.97); }
+.grade button[aria-pressed="true"]{
+  color: var(--dam-accent, #1d4ed8); font-weight:680;
+  background: color-mix(in srgb, var(--dam-accent, #1d4ed8) 14%, transparent);
+  border-color: color-mix(in srgb, var(--dam-accent, #1d4ed8) 48%, transparent);
+}
+.grade button[data-k="H"][aria-pressed="true"]{
+  color: var(--dsw-alias-state-error-primary, #d64545);
+  background: color-mix(in srgb, var(--dsw-alias-state-error-primary, #d64545) 12%, transparent);
+  border-color: color-mix(in srgb, var(--dsw-alias-state-error-primary, #d64545) 44%, transparent);
+}
+
+/* 两阶段 arm 确认（外部记忆四源） */
+.arm-btn{
+  appearance:none; cursor:pointer; font-size:11.5px; padding:4px 10px; border-radius:var(--dam-r-sm);
+  color: var(--dsw-alias-label-secondary, #666);
+  background: color-mix(in srgb, var(--dsw-alias-bg-layer-2, rgba(255,255,255,.9)) 60%, transparent);
+  border:1px solid color-mix(in srgb, var(--dsw-alias-border-l1, rgba(128,128,128,.3)) 78%, transparent);
+  transition: background var(--dam-dur-quick) var(--dam-ease-out),
+              color var(--dam-dur-quick) var(--dam-ease-out),
+              border-color var(--dam-dur-quick) var(--dam-ease-out),
+              transform var(--dam-dur-quick) var(--dam-ease-out);
+}
+.arm-btn:active{ transform: scale(.97); }
+.arm-btn[data-armed="1"]{
+  color: var(--dsw-alias-state-error-primary, #d64545); font-weight:640;
+  border-color: color-mix(in srgb, var(--dsw-alias-state-error-primary, #d64545) 50%, transparent);
+  background: color-mix(in srgb, var(--dsw-alias-state-error-primary, #d64545) 11%, transparent);
+}
+.arm-btn[data-done="1"]{
+  color: var(--dsw-alias-state-success-primary, #3aa675); font-weight:640;
+  border-color: color-mix(in srgb, var(--dsw-alias-state-success-primary, #3aa675) 46%, transparent);
+  background: color-mix(in srgb, var(--dsw-alias-state-success-primary, #3aa675) 11%, transparent);
+}
+/* 成功打勾（items/success-check.json 的路径描边思路，仅进入） */
+.check{ display:inline-block; width:14px; height:14px; vertical-align:-2px; }
+.check path{ stroke-dasharray:24; stroke-dashoffset:24; }
+.check[data-state="in"] path{ animation: dam-check-draw var(--dam-dur-very-slow) var(--dam-ease-out) both; }
+.check[data-state="in"]{ animation: dam-check-pop var(--dam-dur-very-slow) var(--dam-ease-pop) both; }
+
+/* 双库作用域：通用库 / 本工作区库（v1 三档「我的/本团队/全团队」已废弃，本稿不复现） */
+.scope{ display:inline-flex; align-items:center; gap:5px; }
+.scope .dot{ width:6px; height:6px; border-radius:50%; }
+.scope[data-lib="global"] .dot{ background: color-mix(in srgb, var(--dam-accent, #1d4ed8) 78%, transparent); }
+.scope[data-lib="ws"] .dot{ background: var(--dsw-alias-state-success-primary, #3aa675); }
+
+/* ==========================================================================
+   §E  渐进披露（P1-1 **回归修复**：v1 有 sgroup×12 / #expand-all / #ctl-visible / #ctl-hidden，
+   v2 全丢只剩 6 段死 CSS。这里是把它接回来，不是新设计。）
+   v1 口径：可见数 = `.sgroup-body > .srow`；隐藏数 = 未展开组里的 `.adv-wrap .srow`。
+   ========================================================================== */
+.sgroup{
+  border-radius: var(--dam-glass-inset-radius);
+  background: var(--dam-glass-inset-bg);
+  border: var(--dam-glass-inset-border);
+  overflow:hidden;
+  animation: dam-rise var(--dam-dur-fast) var(--dam-ease-out) both;
+}
+.sgroup-head{
+  display:flex; align-items:center; gap:9px; padding:9px 11px;
+  cursor:pointer; user-select:none;
+}
+.sgroup-head .seg-idx{
+  width:19px; height:19px; border-radius:6px; flex:0 0 auto; display:grid; place-items:center;
+  font-size:10.5px; font-weight:700; color:#fff;
+  background: color-mix(in srgb, var(--dam-accent, #1d4ed8) 82%, transparent);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.4);
+}
+.sgroup-head .nm{ font-size:12.5px; font-weight:640; letter-spacing:.002em; }
+.sgroup-head .sub{ font-size:11px; letter-spacing:.012em; color: var(--dsw-alias-label-tertiary, #8b93a7); }
+.sgroup-head:focus-visible{ outline:2px solid color-mix(in srgb, var(--dam-accent, #1d4ed8) 70%, transparent); outline-offset:-2px; }
+.sgroup-body{ padding:0 11px 11px; }
+/* 手风琴：grid-template-rows 0fr↔1fr，**padding 绝不放在轨道上**（token 表 §10-11 的坑） */
+.adv-wrap{
+  display:grid; grid-template-rows:0fr;
+  transition: grid-template-rows var(--dam-dur-fast) var(--dam-ease-out);
+}
+.sgroup.open .adv-wrap{ grid-template-rows:1fr; }
+.adv-inner{
+  overflow:hidden; opacity:0; filter: blur(var(--dam-blur-small));
+  transition: opacity var(--dam-dur-fast) var(--dam-ease-out),
+              filter  var(--dam-dur-fast) var(--dam-ease-out);
+}
+.sgroup.open .adv-inner{ opacity:1; filter: blur(0); }
+.adv-note{
+  font-size:11px; line-height:1.6; letter-spacing:.012em; padding:8px 0 2px;
+  color: var(--dsw-alias-label-tertiary, #8b93a7);
+}
+.adv-toggle{
+  appearance:none; cursor:pointer; width:100%; text-align:left;
+  display:flex; align-items:center; gap:6px; margin-top:8px;
+  font-size:11.5px; letter-spacing:.012em; padding:5px 8px; border-radius:var(--dam-r-sm);
+  color: var(--dsw-alias-label-secondary, #666);
+  background: color-mix(in srgb, var(--dsw-alias-bg-layer-1, rgba(128,128,128,.06)) 55%, transparent);
+  border:1px solid color-mix(in srgb, var(--dsw-alias-border-l1, rgba(128,128,128,.22)) 60%, transparent);
+  transition: background var(--dam-dur-quick) var(--dam-ease-out),
+              color var(--dam-dur-quick) var(--dam-ease-out);
+}
+@media (hover:hover) and (pointer:fine){ .adv-toggle:hover{ color: var(--dsw-alias-label-primary, #1f2328); background: color-mix(in srgb, var(--dsw-alias-bg-layer-1, rgba(128,128,128,.06)) 90%, transparent); } }
+.adv-toggle .arw{ display:inline-block; font-size:10px; transform: scaleY(1); transform-origin:center;
+  transition: transform var(--dam-dur-fast) var(--dam-ease-inout); }
+.sgroup.open .adv-toggle .arw{ transform: scaleY(-1); }   /* 垂直翻转而非 d: 路径形变（§10-12） */
+/* 计数条：真实可见/隐藏控件读数（v1 #ctl-visible / #ctl-hidden 的回归） */
+.counts{
+  display:flex; flex-wrap:wrap; align-items:center; gap:6px 12px;
+  padding:8px 11px;
+  border-radius: var(--dam-glass-inset-radius);
+  background: color-mix(in srgb, var(--dam-accent, #1d4ed8) 6%, transparent);
+  border:1px solid color-mix(in srgb, var(--dam-accent, #1d4ed8) 20%, transparent);
+  font-size:11.5px; letter-spacing:.012em;
+}
+/* ★ 渐进披露计数条是**屏级仪表**，不属于「首屏内容块」⇒ 它显示为整行但不占顶层块预算，
+   也不会因为切换屏而丢失。v2 丢了这套度量手段，本版把它接回来并固定在屏顶。 */
+.pg-scroll > .counts{ margin: var(--dam-pad-y) 0 6px;
+  margin-inline: max(var(--dam-pad-x), calc((100% - var(--dam-measure)) / 2)); }
+[data-dam-panel] > .counts{ margin:6px 10px 0; }
+.counts b{ font-family: var(--dam-mono); font-size:12.5px; font-weight:700; color: var(--dam-accent, #1d4ed8); }
+.counts .sep{ width:1px; height:13px; background: color-mix(in srgb, var(--dsw-alias-border-l1, rgba(128,128,128,.3)) 80%, transparent); }
+.counts .grow{ flex:1 1 auto; }
+
+/* ==========================================================================
+   §O  覆盖层：toast / 模态（**模态要 scrim + 推后；非阻塞浮层不带 scrim** —— apple-design §12）
+   ========================================================================== */
+.ovl-host{ position:fixed; inset:0; pointer-events:none; z-index:60; }
+.toast-wrap{
+  position:fixed; left:50%; transform:translateX(-50%); bottom:22px;
+  display:flex; flex-direction:column; gap:8px; align-items:center; z-index:70;
+}
+.toast{
+  pointer-events:auto; max-width:min(560px, 92vw);
+  border-radius: var(--dam-glass-overlay-radius);
+  background: var(--dam-glass-overlay-bg);
+  -webkit-backdrop-filter: var(--dam-glass-overlay-blur);
+  backdrop-filter: var(--dam-glass-overlay-blur);
+  border: var(--dam-glass-overlay-border);
+  box-shadow: var(--dam-glass-overlay-shadow);
+  padding:9px 12px; font-size:12.5px; line-height:1.5;
+  color: var(--dsw-alias-label-primary, #1f2328);
+  /* toast 语料：进入 350ms(medium 档用途) / 关闭 250ms(fast) */
+  opacity:0; transform: translateY(var(--dam-dist-large)) scale(var(--dam-scale-small));
+  filter: blur(var(--dam-blur-small));
+  transition: opacity var(--dam-dur-fast) var(--dam-ease-out),
+              transform var(--dam-dur-fast) var(--dam-ease-out),
+              filter var(--dam-dur-fast) var(--dam-ease-out);
+}
+.toast.is-open{ opacity:1; transform: translateY(0) scale(1); filter: blur(0);
+  transition: opacity var(--dam-dur-medium) var(--dam-ease-out),
+              transform var(--dam-dur-medium) var(--dam-ease-out),
+              filter var(--dam-dur-medium) var(--dam-ease-out); }
+.toast .tt{ font-weight:640; }
+.toast.err{ border-color: color-mix(in srgb, var(--dsw-alias-state-error-primary, #d64545) 46%, transparent); }
+.toast.err .tt{ color: var(--dsw-alias-state-error-primary, #d64545); }
+.toast.warn .tt{ color: color-mix(in srgb, var(--dsw-alias-state-warn-primary, #e8c584) 70%, #7a5a12); }
+
+.scrim{
+  position:fixed; inset:0; z-index:80; display:grid; place-items:center;
+  background: var(--dsw-alias-bg-mask-1, rgba(0,0,0,.18));
+  -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px);
+  opacity:0; pointer-events:none;
+  transition: opacity var(--dam-dur-quick) var(--dam-ease-out);
+}
+.scrim.is-open{ opacity:1; pointer-events:auto;
+  transition: opacity var(--dam-dur-fast) var(--dam-ease-out); }
+.modal{
+  width:min(560px, 92vw); max-height:80vh; overflow:auto;
+  border-radius: var(--dam-glass-structural-radius);
+  background: var(--dam-glass-structural-bg);
+  -webkit-backdrop-filter: var(--dam-glass-structural-blur);
+  backdrop-filter: var(--dam-glass-structural-blur);
+  border: var(--dam-glass-structural-border);
+  box-shadow: var(--dam-glass-structural-shadow);
+  padding:16px 17px; color: var(--dsw-alias-label-primary, #1f2328);
+  /* modal 语料：打开 250ms / 关闭 150ms + scale .96→1 */
+  transform: scale(var(--dam-scale-surface)); opacity:0; pointer-events:none;
+  transition: transform var(--dam-dur-fast) var(--dam-ease-out),
+              opacity var(--dam-dur-fast) var(--dam-ease-out);
+}
+.scrim.is-open .modal{ transform: scale(1); opacity:1; pointer-events:auto; }
+.scrim.is-closing .modal{ transform: scale(var(--dam-scale-surface)); opacity:0;
+  transition: transform var(--dam-dur-quick) var(--dam-ease-out),
+              opacity var(--dam-dur-quick) var(--dam-ease-out); }
+.modal h2{ font-size:16px; font-weight:670; margin:0 0 8px; letter-spacing:-.008em; }
+
+/* 抽屉：panel-reveal 语料（进入 400ms slow / 关闭 350ms medium，非对称） */
+.drawer{
+  position:fixed; top:0; right:0; bottom:0; width:min(400px, 92vw); z-index:85;
+  border-radius: var(--dam-glass-structural-radius) 0 0 var(--dam-glass-structural-radius);
+  background: var(--dam-glass-structural-bg);
+  -webkit-backdrop-filter: var(--dam-glass-structural-blur);
+  backdrop-filter: var(--dam-glass-structural-blur);
+  border-left: var(--dam-glass-structural-border);
+  box-shadow: -18px 0 48px rgba(0,0,0,.2);
+  padding:14px 15px; overflow:auto; color: var(--dsw-alias-label-primary, #1f2328);
+  transform: translateX(103%); opacity:0; filter: blur(var(--dam-blur-small));
+  pointer-events:none;
+  transition: transform var(--dam-dur-medium) var(--dam-ease-out),
+              opacity   var(--dam-dur-medium) var(--dam-ease-out),
+              filter    var(--dam-dur-medium) var(--dam-ease-out);
+  will-change: transform, opacity, filter;
+}
+.drawer.is-open{
+  transform: translateX(0); opacity:1; filter: blur(0); pointer-events:auto;
+  transition: transform var(--dam-dur-slow) var(--dam-ease-out),
+              opacity   var(--dam-dur-slow) var(--dam-ease-out),
+              filter    var(--dam-dur-slow) var(--dam-ease-out);
+}
+.drawer h2{ font-size:15px; font-weight:660; margin:0 0 9px; letter-spacing:-.006em; }
+
+/* tooltip：意图延迟 80ms（token 表 --duration-micro，**延迟只用于过滤误触**） */
+.tip-host{ position:relative; display:inline-flex; }
+.tip{
+  position:absolute; left:50%; bottom:calc(100% + 7px); transform: translate(-50%, 4px) scale(var(--dam-scale-small));
+  z-index:90; pointer-events:none; white-space:nowrap;
+  font-size:11.5px; padding:4px 8px; border-radius:8px;
+  background: var(--dam-glass-overlay-bg);
+  -webkit-backdrop-filter: var(--dam-glass-overlay-blur);
+  backdrop-filter: var(--dam-glass-overlay-blur);
+  border: var(--dam-glass-overlay-border);
+  box-shadow: var(--dam-glass-overlay-shadow);
+  color: var(--dsw-alias-label-primary, #1f2328);
+  opacity:0; transition: opacity var(--dam-dur-quick) var(--dam-ease-out),
+                         transform var(--dam-dur-quick) var(--dam-ease-out);
+  transition-delay: 0ms;
+}
+.tip-host[data-tip-open="true"] .tip{
+  opacity:1; transform: translate(-50%, 0) scale(1);
+  transition: opacity var(--dam-dur-fast) var(--dam-ease-out),
+              transform var(--dam-dur-fast) var(--dam-ease-out);
+  transition-delay: var(--dam-dur-micro);
+}
+
+/* ==========================================================================
+   §K  关键帧（真源 §D.6 的核心 12 个 + 语料改编；全部写 animation-fill-mode）
+   ========================================================================== */
+/* 真源 :1592/:1593 逐字 */
+@keyframes dam-in{ from{ opacity:0; transform: scale(.92) translateY(10px); } to{ opacity:1; transform:none; } }
+@keyframes dam-out{ from{ opacity:1; transform:none; } to{ opacity:0; transform: scale(.95) translateY(6px); } }
+/* 真源 :1675 页面主体（translateY(6px)）—— 容器**不**参与卡片流入场，避免嵌套双重入场 */
+@keyframes dam-page-in{ from{ opacity:0; transform: translateY(6px); } to{ opacity:1; transform:none; } }
+/* 真源 :1688/:1695 卡片刻度 */
+@keyframes dam-card-in{ from{ opacity:0; transform: translateY(8px) scale(.988); } to{ opacity:1; transform:none; } }
+/* 真源 :1765/:1766：卡片/横幅 */
+@keyframes dam-rise{ from{ opacity:0; transform: translateY(7px) scale(.988); } to{ opacity:1; transform:none; } }
+/* 真源 :1784/:1787 日历事件 */
+@keyframes dam-event-in{ from{ opacity:0; transform: translateX(-5px); } to{ opacity:1; transform:none; } }
+/* 真源 :1786/:1788 弹窗 */
+@keyframes dam-modal-in{ from{ opacity:0; transform: translateY(10px) scale(.98); } to{ opacity:1; transform:none; } }
+/* 真源 :1801 加载旋转（linear + infinite 正确写法） */
+@keyframes dam-spin{ to{ transform: rotate(360deg); } }
+/* 真源 dam-stat-num / dam-stat-reveal：blur(2px) 文字入场 + dur-slow */
+@keyframes dam-stat-num{ from{ opacity:0; filter: blur(2px); transform: translateY(6px); } to{ opacity:1; filter: blur(0); transform:none; } }
+@keyframes dam-stat-reveal{ from{ clip-path: inset(0 100% 0 0); } to{ clip-path: inset(0 0 0 0); } }
+@keyframes dam-fill{ from{ transform: scaleX(0); } to{ transform: scaleX(1); } }
+/* 语料改编：number-pop-in */
+@keyframes dam-digit-pop-in{
+  0%{ transform: translate(0, var(--dam-dist-base)); opacity:0; filter: blur(var(--dam-blur-small)); }
+  100%{ transform: translate(0,0); opacity:1; filter: blur(0); }
+}
+/* 语料改编：notification-badge 的 slide-in（仅进入，过冲曲线） */
+@keyframes dam-badge-slide-in{ from{ transform: translate(-8px, 2px); } to{ transform: translate(0,0); } }
+/* 语料改编：success-check 的描边绘制 + 弹入 */
+@keyframes dam-check-draw{ to{ stroke-dashoffset:0; } }
+@keyframes dam-check-pop{ from{ transform: scale(.7); opacity:0; } to{ transform: scale(1); opacity:1; } }
+/* 运行指示（骨架/脉冲：linear + infinite，用途=加载） */
+@keyframes dam-pulse{ 0%,100%{ opacity:1; } 50%{ opacity:.42; } }
+@keyframes dam-shimmer{ from{ background-position: -180% 0; } to{ background-position: 180% 0; } }
+@keyframes dam-shake{ 10%,90%{ transform: translateX(-1px); } 20%,80%{ transform: translateX(2px); } 30%,50%,70%{ transform: translateX(-3px); } 40%,60%{ transform: translateX(3px); } }
+
+/* ==========================================================================
+   §R  可达性 + 能力兜底
+   ========================================================================== */
+
+/* R.1 prefers-reduced-motion：**降级为短淡入，不是归零**（apple-design §14；token 表 §2）
+   真源有 3 处闸门 ≈35 个选择器；本稿是一份总闸门 + 语义保留的降级。 */
+@media (prefers-reduced-motion: reduce){
+  *, *::before, *::after{
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 100ms !important;
+    transition-delay: 0ms !important;      /* 关掉的动画不许再有延迟 */
+    animation-delay: 0ms !important;
+    scroll-behavior: auto !important;
+  }
+  /* 位移/缩放/模糊类一律去掉，只留 opacity —— 短淡入 */
+  [data-dam-panel], [data-dam-panel][data-closing="true"],
+  .toast, .modal, .drawer, .card, [data-dam-card],
+  .badge.planned, .badge.planned::after, .check, .check path{
+    animation: dam-fade-only 120ms var(--dam-ease-linear) both !important;
+    transform: none !important;
+    filter: none !important;
+  }
+  @keyframes dam-fade-only{ from{ opacity:0; } to{ opacity:1; } }
+  .number-group.is-animating .d{ animation: none !important; opacity:1 !important; transform:none !important; filter:none !important; }
+  .water-fill{ animation: none !important; transform:none !important; }
+  .drawer{ opacity:1 !important; }
+  .badge.planned::after{ transform: none !important; opacity:1 !important; filter:none !important; }
+  .check path{ stroke-dashoffset: 0 !important; }
+  .tl-item[data-st="now"] .tl-dot{ animation: none !important; }
+}
+
+/* R.2 prefers-reduced-transparency：半透明转实、去 blur
+   （真源 0 处实现 —— 这是**应当补上的缺席项**，依据 apple-design §14 第 2 条） */
+@media (prefers-reduced-transparency: reduce){
+  [data-dam-panel], [data-dam-page], .modal, .drawer, .toast, .host-bub, .demo-bar, .demo-foot,
+  .form-pill, .seg button[aria-pressed="true"], [role="switch"].sw::after{
+    background: var(--demo-surface-opaque, #ffffff) !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+  [data-dam-panel]::before{ display:none !important; }   /* 亮面高光也一并去掉，避免半透明层 */
+  .tip{ background: var(--demo-surface-opaque, #ffffff) !important; -webkit-backdrop-filter:none !important; backdrop-filter:none !important; }
+  .scrim{ -webkit-backdrop-filter:none !important; backdrop-filter:none !important;
+    background: color-mix(in srgb, var(--dsw-alias-bg-mask-1, rgba(0,0,0,.18)) 140%, transparent) !important; }
+}
+
+/* R.3 prefers-contrast: more（真源 0 处，一并补上） */
+@media (prefers-contrast: more){
+  [data-dam-card], .card, .sgroup, .btn, .adv-toggle, select.sel, input.num, input.txt{
+    border-color: color-mix(in srgb, var(--dsw-alias-label-primary, #1f2328) 55%, transparent) !important;
+  }
+  :root{ --dsw-alias-label-secondary: color-mix(in srgb, var(--dsw-alias-label-primary, #1f2328) 78%, transparent); }
+}
+
+/* R.4 backdrop-filter 能力兜底（真源 :1803-1804 同写法：退回纯令牌底） */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))){
+  [data-dam-panel], [data-dam-page], .modal, .drawer, .toast, .host-bub, .demo-bar, .demo-foot{
+    background: var(--dsw-alias-bg-layer-2, #ffffff) !important;
+  }
+  [data-dam-panel]::before{ opacity:.5; }
+}
+
+/* R.5 滚动条（真源 :1662-1667） */
+::-webkit-scrollbar{ width:10px; height:10px; }
+::-webkit-scrollbar-track{ background: transparent; }
+::-webkit-scrollbar-thumb{
+  background: color-mix(in srgb, var(--dsw-alias-label-tertiary, #8b93a7) 40%, transparent);
+  border:3px solid transparent; background-clip: content-box; border-radius:8px;
+}
+::-webkit-scrollbar-thumb:hover{ background: color-mix(in srgb, var(--dsw-alias-label-secondary, #666) 55%, transparent); background-clip: content-box; }
+
+/* R.6 打印 / 隐藏演示外壳 */
+@media print{ .demo-bar, .demo-foot{ display:none; } }
+</style>
+</head>
+<body>
+<div data-demo>
+  <header class="demo-bar">
+    <div class="db-brand">
+      <div class="db-mark">M</div>
+      <div>
+        <div class="db-t1">dsh-auto-memory · 记忆窗格 <span class="mono tiny mute">v3</span></div>
+        <div class="db-t2">液态玻璃 / 双形态 / 动效 token 化 / 渐进披露回归</div>
+      </div>
+    </div>
+    <div class="db-gap"></div>
+    <div class="host-switch">
+      <span>宿主令牌</span>
+      <button type="button" data-host-set="light" aria-pressed="true">浅色</button>
+      <button type="button" data-host-set="dark" aria-pressed="false">深色</button>
+      <span class="tiny mute">（只改宿主令牌，插件侧零改动）</span>
+    </div>
+    <div class="form-switch" role="group" aria-label="承载面形态">
+      <span class="form-pill" aria-hidden="true"></span>
+      <button type="button" data-form-set="panel" aria-pressed="true"><span class="fs-ico">▭</span>悬窗</button>
+      <button type="button" data-form-set="both" aria-pressed="false"><span class="fs-ico">▤</span>共存 both</button>
+      <button type="button" data-form-set="page" aria-pressed="false"><span class="fs-ico">▥</span>整页</button>
+    </div>
+  </header>
+
+  <div class="host">
+    <div class="host-deco" aria-hidden="true"><i></i><i></i><i></i></div>
+    <!-- 模拟 DSH 对话流：液态玻璃必须有「内容在下面滚」才有意义（apple-design §12 第 1 条） -->
+    <div class="host-conv" aria-hidden="true">
+      <div class="host-turn">
+        <div class="host-av"></div>
+        <div class="host-bub">这个水位卡里面的数字是不是字符占比？我要的是上下文 token 占比。</div>
+      </div>
+      <div class="host-turn">
+        <div class="host-av"></div>
+        <div class="host-bub">
+          两处都要改口径。我把 <span class="hl">注入预算</span> 与 <span class="hl">上下文水位</span> 分开标注，
+          并在闸门处核对一次跨屏写入。
+          <div class="host-code">// lib/client.js:5651  非自毁：page ⇄ both 互切
+var onFloatToggle = function () {
+  controller.setPanelPos(floatOn ? 'page' : 'both');
+};</div>
+        </div>
+      </div>
+      <div class="host-turn">
+        <div class="host-av"></div>
+        <div class="host-bub">还有开关：点哪个就得翻哪个，别把别处的标签一起改了。</div>
+      </div>
+      <div class="host-title" style="margin-top:10px">—— 下面是滚动中的对话上下文 ——</div>
+      <div class="host-turn"><div class="host-av"></div><div class="host-bub">记忆面板的悬窗形式和整页形式，数据要共享、版式不能共享。</div></div>
+      <div class="host-turn"><div class="host-av"></div><div class="host-bub">液态玻璃要真的做得像玻璃，别只是给个半透明底。</div></div>
+      <div class="host-turn"><div class="host-av"></div><div class="host-bub">动画也别总是那两下子。</div></div>
+    </div>
+
+    <div class="stage" data-form="panel" data-both="panel">
+      <!-- ================= 悬窗形态 ================= -->
+      <div class="form form-panel">
+        <section data-dam-panel data-pinned="false" data-solid="false" aria-label="记忆窗格 · 悬窗形态">
+          <header class="pn-head" data-dam-drag>
+            <span class="pn-title">记忆</span>
+            <span class="pn-ver" data-bind="ver">v3.1.7</span>
+            <span class="badge planned" data-open="true" data-bind="plan-badge">规划中</span>
+            <span class="pn-tools">
+              <button type="button" class="icon-btn" data-act="pin" aria-pressed="false" title="钉住（浮层专属控件）">🖈</button>
+              <button type="button" class="icon-btn" data-act="reset" title="复位位置与尺寸">⤾</button>
+              <button type="button" class="icon-btn" data-act="refresh" title="刷新（不卸载任何已交互状态）">⟳</button>
+              <button type="button" class="icon-btn" data-act="close" title="关闭浮层">✕</button>
+            </span>
+          </header>
+          <div class="pn-tabs-wrap">
+            <button type="button" class="tab-arw" data-tab-scroll="-1" aria-label="向左滚动页签">‹</button>
+            <div class="tab-scroller" data-dam-tab-strip role="tablist" aria-label="记忆分区"></div>
+            <button type="button" class="tab-arw" data-tab-scroll="1" aria-label="向右滚动页签">›</button>
+          </div>
+          <div class="pn-body" data-dam-body data-role="screen"></div>
+          <div class="pn-resize" data-dam-resize aria-hidden="true"></div>
+        </section>
+      </div>
+
+      <!-- ================= 整页形态 ================= -->
+      <div class="form form-page">
+        <section data-dam-page aria-label="记忆窗格 · 整页形态">
+          <header class="pg-head">
+            <span class="pg-h1">记忆</span>
+            <span class="badge planned" data-open="true" data-bind="plan-badge">规划中</span>
+            <span class="pg-sub" data-role="crumb">会话页 · 今天 · 概览</span>
+            <span class="pg-head-tools">
+              <span class="tip-host" data-tip-host>
+                <button type="button" class="btn sm" data-act="float-toggle" aria-pressed="false">浮层开关</button>
+                <span class="tip" role="tooltip">page ⇄ both 互切 —— 两个方向都不注销本页（真源 :5651 修自毁按钮后的实现）</span>
+              </span>
+              <button type="button" class="icon-btn" data-act="refresh" title="刷新">⟳</button>
+            </span>
+          </header>
+          <div class="pg-main">
+            <nav class="pg-nav" data-role="page-nav" aria-label="记忆分区导航"></nav>
+            <div class="pg-content">
+              <div class="pg-scroll">
+                <div class="pg-inner" data-dam-body data-role="screen"></div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <footer class="demo-foot">
+    <span><b>来源</b>：<span class="mono">lib/client.js</span> 真源（§A 配色 / §B.1 材质 / §C.5 双形态 / §D.1 动效）</span>
+    <span><b>键盘</b>：<span class="kbd">Tab</span> 遍历 · <span class="kbd">←→</span> 切分区 · <span class="kbd">Enter/Space</span> 折叠分组 · <span class="kbd">Esc</span> 关浮层</span>
+    <span><b>计时</b><span class="mono">dur-quick 150 / fast 250 / slow 400 / stagger 40</span></span>
+    <span data-role="counts-foot"></span>
+  </footer>
+</div>
+
+<!-- 覆盖层宿主：toast / 模态 / 抽屉 -->
+<div class="toast-wrap" data-role="toasts" aria-live="polite" aria-atomic="false"></div>
+<div class="scrim" data-role="scrim" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <h2 id="modal-title" data-role="modal-title">标题</h2>
+    <div data-role="modal-body"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px">
+      <button type="button" class="btn" data-act="modal-close">关闭</button>
+      <button type="button" class="btn primary" data-act="modal-ok">知道了</button>
+    </div>
+  </div>
+</div>
+<aside class="drawer" data-role="drawer" role="dialog" aria-modal="false" aria-labelledby="drawer-title" aria-hidden="true">
+  <h2 id="drawer-title" data-role="drawer-title">详情</h2>
+  <div data-role="drawer-body"></div>
+  <div style="margin-top:14px"><button type="button" class="btn" data-act="drawer-close">关闭</button></div>
+</aside>
+
+<script>
+/* ============================================================================
+   §0  工具
+   解耦前提：所有查询都必须能被**限定到作用域**（v2 的跨屏误写根因就是全文档 querySelector）
+   ============================================================================ */
+(function () {
+  'use strict';
+
+  function $(sel, root) { return (root || document).querySelector(sel); }
+  function $$(sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); }
+  function esc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+  function h(tag, attrs, inner) {
+    var a = '';
+    if (attrs) for (var k in attrs) {
+      if (!Object.prototype.hasOwnProperty.call(attrs, k)) continue;
+      var v = attrs[k];
+      if (v === false || v == null) continue;
+      a += (v === true) ? ' ' + k : ' ' + k + '="' + esc(v) + '"';
+    }
+    return '<' + tag + a + '>' + (inner == null ? '' : inner) + '</' + tag + '>';
+  }
+  function fmt(n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ','); }
+
+  /* ==========================================================================
+     §1  状态（**模块级共享**，两套版式读同一份 —— 真源 :135-139 panelTab 机制）
+     两套版式共享数据与状态，**绝不共享同一份版式**（用户 2026-09-21 拍板原话）
+     ========================================================================== */
+  var PANEL_POS_VALUES = { 'panel': 1, 'page': 1, 'both': 1 };
+  var panelPos = 'both';          /* 真源 :54 代码默认值是 'both'（注释 :46 写 bottom-left 是过时文字） */
+  var panelTab = 'today';         /* 真源 :138 模块级变量，两边订阅同一份 */
+  var hostTheme = 'light';        /* 演示用：宿主令牌模拟（**不是**插件自有主题） */
+  var demoForm = 'panel';         /* 演示壳当前呈现：'panel' 单看悬窗 / 'page' 单看整页 / 'both' 共存 */
+  var openGroup = {};             /* 分组展开态（渐进披露） */
+
+  var st = {
+    /* 开关值：这些键会**跨屏复用**（autoContinueEnabled 同时在 water 与 engine）——
+       正是 v2 跨屏误写的场景，此处用屏内定址根治 */
+    sw: {
+      'semanticEnabled': true, 'refineEnabled': true, 'autoContinueEnabled': true,
+      'waterLevelHeader': true, 'skeletonLedger': false, 'reflectDaily': true,
+      'skillAutoDistill': true, 'handoffLedger': true, 'notesCapacityWarn': true,
+      'hubApprovalGate': true, 'hubTwoPhase': true, 'libWorkspace': true,
+      'extFourSource': false, 'extArmConfirm': true, 'ctxCompressHint': true,
+      'cleanOrphan': false, 'backupDaily': true, 'diagProbe': true,
+      'plannedTeam': false, 'plannedAudit': false, 'advEngine': false
+    },
+    nums: {
+      'injectBudget': 12000, 'tailReminder': 8000, 'notesCapacity': 24000,
+      'logCapacity': 0, 'skillCapacity': 24000, 'waterWindow': 65536,
+      'waterThreshold': 0.75, 'refineQuota': 8
+    },
+    sels: { 'engineKind': 'builtin', 'accent': 'deepseek', 'fontScale': 'lg', 'extScope': 'project' },
+    grades: {},           /* 五档裁定：条目 id → 'A'|'P'|'S'|'H'|'E' */
+    radius: { 'theme': 'auto', 'density': 'comfortable', 'planMode': 'kanban', 'emit': 'stream' },
+    armed: {}, done: {},
+    waterLevel: 'ok', activeChoir: null
+  };
+
+  /* ==========================================================================
+     §2  数据 fixtures（只读；每条都对着真源行号，便于对照 —— 真源 N3 反面清单：不要拆散）
+     ========================================================================== */
+  var MOTION = [
+    ['--dam-dur-stagger', '40ms', '逐项错开（真源 :1580）'],
+    ['--dam-dur-quick', '150ms', '关闭 / 悬停 / 文字切换'],
+    ['--dam-dur-fast', '250ms', '打开 / 页面前进 / 手风琴（对称例外）'],
+    ['--dam-dur-slow', '400ms', '面板打开 / 骨架揭示'],
+    ['--dam-ease-out', 'cubic-bezier(.22,1,.36,1)', '默认曲线'],
+    ['--dam-ease-inout', 'cubic-bezier(.65,0,.35,1)', '图标 / 文字切换'],
+    ['--dam-ease-pop', 'cubic-bezier(.34,1.36,.64,1)', '仅进入（徽标 / 数字 / 打勾）']
+  ];
+  var GLASS = [
+    ['结构面', '面板 / 会话页底', '令牌 58%', 'blur(28px) saturate(1.55)', '3 层阴影 + 1px 内高光', '16px'],
+    ['浮层', '弹层 / 保存条 / toast', '令牌 74%', 'blur(20px) saturate(1.4)', '0 8px 28px rgba(0,0,0,.18)', '14px'],
+    ['内嵌', '卡片 / 输入 / 徽章', '令牌 40%', 'none（不叠亮面）', '—（仅 1px 内高光）', '9px']
+  ];
+  var SWATCH = [
+    ['#1d4ed8', '强调色真值 ACCENT_VALUES.deepseek（:839）'],
+    ['#8b949e', '强调色 graphite（:839）'],
+    ['#9b8cff', '强调色 violet（:839）'],
+    ['#1f2328', 'label-primary 兜底（:1590）'],
+    ['#666666', 'label-secondary 兜底（:1609）'],
+    ['#c5cbd3', 'border-l1 兜底（:1737）'],
+    ['#4f7cff', 'brand-primary 兜底（:1641）'],
+    ['#e8c584', 'state-warn-primary 兜底（:3983）'],
+    ['#d64545', 'state-error-primary 兜底（:1798）'],
+    ['#3aa675', 'state-success-primary 兜底'],
+    ['#5b8def', '图表主色 PALETTE[0]（:4910）'],
+    ['#7d8793', '次级文字（:1754）']
+  ];
+
+  /* 五档裁定：真源 lib/client.js:3493（**五档不是三档**） */
+  var CHOICES = [
+    ['A', '该激活', '这条记忆有用，激活它'],
+    ['P', '只预取', '先预取，不注入'],
+    ['S', '应抑制', '这条不该被看到'],
+    ['H', '有害', '有害内容，标记并抑制'],
+    ['E', '改目标', '判断错了，本轮目标要改']
+  ];
+  var REFINE_ROWS = [
+    ['r-0912-1', '把「水位」口径从字符占比改为 token 占比', '唤回', 'A'],
+    ['r-0912-2', '恢复 v1 的分组折叠与实时计数', '唤回', 'A'],
+    ['r-0912-3', '给设置项加一个「全部展开」', '唤回', 'P'],
+    ['r-0911-7', '某条被误判为团队范围的记忆', '唤回', 'S'],
+    ['r-0910-3', '一条已被撤回的旧结论', '唤回', 'H']
+  ];
+  var CHAIN = [
+    ['ok', '水位越阈', 'token 实占 ≥ 阈值 0.75（当前 81.6%）'],
+    ['ok', '注入交接建议', '把「该写账本了」递到上下文里'],
+    ['warn', '自动骨架账本', '四段式空壳先落盘，避免遗忘'],
+    ['now', '等待轮次边界', '会话处在可安全接续的边界时才会动作'],
+    ['', '新会话接管', '新窗口读账本继续，不丢上下文']
+  ];
+  var LIBS = [['项目笔记', 'notes', 'workspace'], ['每日日志', 'logs', 'workspace'],
+              ['技能库', 'procedures', 'global'], ['用户级记忆', 'user', 'global']];
+  var EXT_SOURCES = [
+    ['WorkBuddy 用户记忆', 'C:\\Users\\…\\.workbuddy\\MEMORY.md', 'utf8', '纯链接模式'],
+    ['CodeBuddy 记忆画像', 'C:\\Users\\…\\.codebuddy\\memery\\…md', 'utf8', '纯链接模式'],
+    ['Claude Code 全局记忆', 'C:\\Users\\…\\.claude\\CLAUDE.md', 'utf8', '纯链接模式'],
+    ['ZCode 项目记忆', 'C:\\Users\\…\\.zcode\\…\\MEMORY.md', 'utf8', '纯链接模式']
+  ];
+  var HUB_ITEMS = [
+    ['cand-3401', '把「双库作用域」写进项目笔记', 'pending', ['need-actor', 'scope-check']],
+    ['cand-3402', '一条来自外部工具的结论', 'approved', []],
+    ['cand-3398', '归属转移：通用库 → 本工作区库', 'rolledBack', ['global-dir-corrupt']]
+  ];
+  var CAL_ROWS = [
+    ['2026-10-02', '08:30', 'CBS3948 Semantics Test 1', '重要不紧急'],
+    ['2026-10-04', '23:59', 'AMA1751 线性代数 作业1', '重要不紧急'],
+    ['2026-10-16', '12:30', 'DSAI4203 ML 期中考试', '重要不紧急']
+  ];
+  var WS_ROWS = [['D:\\dsh-auto-memory', '本项目 · 18 屏', 1], ['D:\\personal_issue', '最近活跃', 1], ['Ark9Tools', '只读归档', 0]];
+
+  /* ==========================================================================
+     §3  组件原语（纯函数、返回 HTML 串、无状态 —— 真源 N4 反面清单：不要拆散复用）
+     ========================================================================== */
+  function badge(t, kind, open) {
+    var k = kind ? ' ' + kind : '';
+    var o = (kind === 'planned') ? ' data-open="' + (open === false ? 'false' : 'true') + '"' : '';
+    return '<span class="badge' + k + '"' + o + '>' + esc(t) + '</span>';
+  }
+  function ev(t) { return '<span class="ev">' + esc(t) + '</span>'; }
+  function srow(lbl, hint, ctl) {
+    return '<div class="srow"><div class="txt"><div class="lbl">' + esc(lbl) + '</div>' +
+      (hint ? '<div class="hint">' + hint + '</div>' : '') + '</div>' +
+      '<div class="ctl">' + ctl + '</div></div>';
+  }
+  function sw(key, label, on) {
+    var v = (on === undefined) ? !!st.sw[key] : !!on;
+    return '<button type="button" class="sw" role="switch" data-sw="' + esc(key) + '"' +
+      ' aria-checked="' + (v ? 'true' : 'false') + '" aria-label="' + esc(label) + '"></button>';
+  }
+  /* 开关行：标签文案由**屏内定址**的 <span data-sw-state="key"> 承载，点击即时翻面 */
+  function swRow(label, hint, key, on) {
+    var v = (on === undefined) ? !!st.sw[key] : !!on;
+    return '<div class="srow"><div class="txt"><div class="lbl">' + esc(label) + '</div>' +
+      '<div class="hint">' + hint + '</div></div>' +
+      '<div class="ctl"><span class="tiny mute" data-sw-state="' + esc(key) + '">' +
+      (v ? '已启用' : '已关闭') + '</span>' + sw(key, label, v) + '</div></div>';
+  }
+  function numRow(label, hint, key, unit) {
+    return srow(label, hint, '<input class="num" type="number" data-num="' + esc(key) + '" value="' +
+      esc(st.nums[key]) + '" /> <span class="tiny mute">' + esc(unit || '') + '</span>');
+  }
+  function selRow(label, hint, key, opts) {
+    var o = opts.map(function (p) {
+      return '<option value="' + esc(p[0]) + '"' + (st.sels[key] === p[0] ? ' selected' : '') + '>' + esc(p[1]) + '</option>';
+    }).join('');
+    return srow(label, hint, '<select class="sel" data-sel="' + esc(key) + '">' + o + '</select>');
+  }
+  function kv(k, v) {
+    return '<div class="kv' + '"><span class="k">' + esc(k) + '</span><span class="v">' + esc(v) + '</span></div>';
+  }
+  function card(inner, opts) {
+    var o = opts || {};
+    return '<section class="card" data-dam-card' + (o.id ? ' data-card="' + esc(o.id) + '"' : '') + '>' + inner + '</section>';
+  }
+  function h3(t, n, right) {
+    return '<h3 class="sec-h"><span class="sh-t">' + esc(t) + '</span>' +
+      (n ? '<span class="sh-n">' + esc(n) + '</span>' : '') +
+      (right ? '<span class="sh-r">' + right + '</span>' : '') + '</h3>';
+  }
+  function h4(t, n) {
+    return '<h4 class="sec-h" style="margin-top:10px"><span class="sh-t">' + esc(t) + '</span>' +
+      (n ? '<span class="sh-n">' + esc(n) + '</span>' : '') + '</h4>';
+  }
+  function tbl(head, rows) {
+    return '<table class="tbl"><thead><tr>' + head.map(function (x) { return '<th>' + esc(x) + '</th>'; }).join('') +
+      '</tr></thead><tbody>' + rows.map(function (r) {
+        return '<tr>' + r.map(function (c) { return '<td>' + c + '</td>'; }).join('') + '</tr>';
+      }).join('') + '</tbody></table>';
+  }
+  function callout(title, body, kind) {
+    return '<div class="callout' + (kind ? ' ' + kind : '') + '">' +
+      (title ? '<div class="ct">' + esc(title) + '</div>' : '') + body + '</div>';
+  }
+  function plans() { return badge('规划中', 'planned'); }
+
+  /* 分组成员：渐进披露单元。**srow 必须直接是 .sgroup-body 的子元素**（v1 计数口径） */
+  function sgroup(gid, idx, nm, sub, rows, advRows, advNote) {
+    var open = !!openGroup[gid];
+    return '<section class="sgroup' + (open ? ' open' : '') + '" data-group="' + esc(gid) + '">' +
+      '<div class="sgroup-head" role="button" tabindex="0" aria-expanded="' + (open ? 'true' : 'false') + '" data-act="group-toggle">' +
+      '<span class="seg-idx">' + esc(idx) + '</span>' +
+      '<div><div class="nm">' + esc(nm) + '</div><div class="sub">' + esc(sub) + '</div></div>' +
+      '<span class="badge" style="margin-left:auto">' + rows.length + ' + ' + advRows.length + '</span>' +
+      '</div><div class="sgroup-body">' + rows.join('') +
+      (advRows.length
+        ? '<button type="button" class="adv-toggle" data-act="group-toggle"><span class="arw">▸</span>' +
+          '展开高级设置（' + esc(nm) + '）· ' + advRows.length + ' 项</button>' +
+          '<div class="adv-wrap"' + '' + '><div class="adv-inner">' +
+          (advNote ? '<div class="adv-note">' + esc(advNote) + '</div>' : '') +
+          '<div class="adv-rows">' + advRows.join('') + '</div></div></div>'
+        : '') +
+      '</div></section>';
+  }
+
+  /* 计数器（v1 updateCounts 口径的回归；数字是**实时真实读数**，不是装饰） */
+  function countsBar() {
+    return '<div class="counts" data-role="counts">' +
+      '<span>可见控件 <b data-role="ctl-visible">0</b></span>' +
+      '<span class="sep"></span>' +
+      '<span>被折叠 <b data-role="ctl-hidden">0</b></span>' +
+      '<span class="sep"></span>' +
+      '<span class="tiny mute" data-role="ctl-note">折叠计数按 v1 口径：未展开组里的高级项</span>' +
+      '<span class="grow"></span>' +
+      '<button type="button" class="btn sm" data-act="expand-all" data-role="expand-all">全部展开</button>' +
+      '</div>';
+  }
+
+  /* 水位条（token 口径，不是字符占比） */
+  function waterBar(pct, level) {
+    return '<div class="water">' +
+      '<div class="water-track"><div class="water-fill" style="width:' + pct.toFixed(1) + '%"' +
+      (level ? ' data-level="' + esc(level) + '"' : '') + '></div></div>' +
+      '<div class="water-scale"><span>0%</span><span>阈值 75%</span><span>100%</span></div></div>';
+  }
+  function numberGroup(text) {
+    return '<span class="number-group" data-number-group><span class="d">' + esc(text) + '</span></span>';
+  }
+  /* ==========================================================================
+     §4  18 屏渲染器（今天 5 / 项目 4 / 团队 4 / 检索 4 / 设置 5）
+     每屏结构：h3 分组标题 + [data-dam-flow] 栅格 + .sgroup 渐进披露分组
+     机检口径：(a) 每屏 section ≥ 1 且 h3 ≥ 2；(b) :scope > * 顶层块 ≤ 8
+     ========================================================================== */
+  function flow(inner) { return '<div data-dam-flow>' + inner + '</div>'; }
+
+  /* ---------------- 今天 · 概览 ---------------- */
+  function sToday() {
+    var pct = 81.6;
+    var c1 = card(h3('上下文水位', 'token 口径') +
+      '<div class="stat"><div class="num">' + numberGroup('81.6') + '<span style="font-size:14px">%</span></div>' +
+      '<div class="lbl">214,000 / 262,144 token</div>' +
+      '<div class="sub">阈值 0.75 —— 已越阈</div></div>' +
+      '<div style="margin-top:10px">' + waterBar(pct, 'warn') + '</div>' +
+      '<div class="tiny mute" style="margin-top:8px">水位 = <b>上下文 token 实占 ÷ 官方声明窗口</b>。' +
+      '它管的是「这一轮快撑爆上下文了」，<b>不是</b>记忆容量，也不是字符占比。' +
+      ev('lib/client.js:4649-4671 三态；:4657 水位条') + '</div>', { id: 'water' });
+    var c2 = card(h3('唤起回顾', '待裁定 3 条') +
+      '<div class="stat"><div class="num">' + numberGroup('3') + '</div><div class="lbl">本轮递上的候选</div>' +
+      '<div class="sub">五档：A 该激活 / P 只预取 / S 应抑制 / H 有害 / E 改目标</div></div>' +
+      '<div class="grade" style="margin-top:10px">' +
+      CHOICES.map(function (c) { return '<button type="button" data-grade="' + c[0] + '" data-item="r-0912-1">' + c[0] + ' · ' + c[1] + '</button>'; }).join('') +
+      '</div><div class="tiny mute" style="margin-top:8px">五档裁定是<b>纠错动作本身</b>：点下去只记裁定，不动检索排序。' +
+      ev('lib/client.js:3493（五档，不是三档）') + '</div>');
+    var c3 = card(h3('自动接续', '五环链') + '<div class="tl">' +
+      CHAIN.map(function (c) {
+        return '<div class="tl-item" data-st="' + c[0] + '"><span class="tl-dot"></span><div>' +
+          '<div style="font-size:12.5px;font-weight:600">' + esc(c[1]) + '</div>' +
+          '<div class="tiny mute">' + esc(c[2]) + '</div></div></div>';
+      }).join('') + '</div>' + ev('lib/client.js:3313/3353 进度与卡片'));
+    var c4 = card(h3('范围边界', '诚实标注') +
+      '<div class="kv">' + kv('已实现', '21 项') + kv('规划中', '5 项') + '</div>' +
+      '<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">' + badge('已实现 21', 'ok') + badge('规划中 5', 'planned') + '</div>' +
+      '<div class="tiny mute" style="margin-top:8px">规划中的 5 项全部落在「团队」一组，因此该入口整体带徽标。' +
+      'v1 用现在时描述未实现的能力 ⇒ 本版全部改为规划中口径。</div>' +
+      '<div style="margin-top:10px"><button type="button" class="btn sm" data-go="team:team-flag">看对照表</button></div>');
+    return countsBar() + flow(c1 + c2 + c3 + c4);
+  }
+
+  /* ---------------- 今天 · 唤起回顾（P0-1 五档） ---------------- */
+  function sRefine() {
+    var rows = REFINE_ROWS.map(function (r) {
+      var cur = st.grades[r[0]] || r[3];
+      return '<div class="card" data-dam-card style="margin-bottom:8px"><div style="display:flex;gap:8px;align-items:baseline">' +
+        '<span class="mono tiny mute">' + esc(r[0]) + '</span>' +
+        '<span style="font-size:12.5px;font-weight:560">' + esc(r[1]) + '</span>' +
+        '<span class="badge" style="margin-left:auto">' + esc(r[2]) + '</span></div>' +
+        '<div class="grade" style="margin-top:8px">' + CHOICES.map(function (c) {
+          return '<button type="button" data-grade="' + c[0] + '" data-item="' + esc(r[0]) + '"' +
+            (cur === c[0] ? ' aria-pressed="true"' : ' aria-pressed="false"') + '>' + c[0] + '</button>';
+        }).join('') + '<span class="tiny mute" style="margin-left:6px" data-grade-state="' + esc(r[0]) + '"></span></div></div>';
+    }).join('');
+    var c1 = card(h3('裁定队列', REFINE_ROWS.length + ' 条') + rows, { id: 'queue' });
+    var c2 = card(h3('五档语义', '逐档说明') + '<div class="tl">' + CHOICES.map(function (c) {
+      return '<div class="tl-item"><span class="tl-dot"></span><div><div style="font-size:12.5px;font-weight:600">' +
+        esc(c[0]) + ' · ' + esc(c[1]) + '</div><div class="tiny mute">' + esc(c[2]) + '</div></div></div>';
+    }).join('') + '</div>' + callout('为什么是五档而不是三档',
+      '三档只能表达「要 / 不要 / 不确定」，无法区分「<b>该激活</b>」与「<b>只预取</b>」，也不能把「<b>这条有害</b>」' +
+      '与「<b>判断错了、目标要改</b>」分开。真源 <code>choices</code> 在 L3493 与 L3531 <b>重复两次</b>，两处必须同源。', ''));
+    var c3 = card(h3('投递与分组', '按天') +
+      tbl(['日期', '递上', '已裁定', '抑制'], [['09-23', '7', '4', '2'], ['09-22', '5', '5', '0'], ['09-21', '9', '6', '3']]));
+    return countsBar() + flow(c1 + c2 + c3);
+  }
+
+  /* ---------------- 今天 · 水位与接续（P0-2/P0-3） ---------------- */
+  function sWater() {
+    var c1 = card(h3('水位三态', '整张卡不许消失') +
+      '<div class="seg" style="margin-bottom:10px">' +
+      ['ok:正常', 'unknown:未测出窗口', 'over:已越阈'].map(function (x) {
+        var p = x.split(':');
+        return '<button type="button" data-water="' + p[0] + '"' + (st.waterLevel === p[0] ? ' aria-pressed="true"' : ' aria-pressed="false"') + '>' + p[1] + '</button>';
+      }).join('') + '</div>' +
+      '<div data-role="water-card">' + waterCardBody() + '</div>' +
+      ev('lib/client.js:4649-4671（2026-09-23 修复：未测出窗口时整张卡不再消失）'), { id: 'water3' });
+    var c2 = card(h3('自动接续链', '五环') + '<div class="tl">' + CHAIN.map(function (c) {
+      return '<div class="tl-item" data-st="' + c[0] + '"><span class="tl-dot"></span><div>' +
+        '<div style="font-size:12.5px;font-weight:600">' + esc(c[1]) + '</div><div class="tiny mute">' + esc(c[2]) + '</div></div></div>';
+    }).join('') + '</div>' + callout('量纲不许混', '「注入预算」是<b>字符</b>（如 12000 字符），「上下文水位」是 <b>token 占比</b>。' +
+      '用字符占比冒充水位会让整条接续链失去驱动源 —— 这是 v1 的失败项，见「白板 · 失败与弯路」。', 'warn'));
+    var c3 = card(h3('越阈条件', '三合一') +
+      '<div class="tl">' +
+      '<div class="tl-item" data-st="ok"><span class="tl-dot"></span><div>自动接续已启用</div></div>' +
+      '<div class="tl-item" data-st="ok"><span class="tl-dot"></span><div>水位 ≥ 阈值（当前 81.6% ≥ 0.75）</div></div>' +
+      '<div class="tl-item" data-st="warn"><span class="tl-dot"></span><div>会话处于轮次边界 —— <b>尚未满足</b></div></div>' +
+      '</div>' +
+      '<div style="margin-top:10px"><button type="button" class="btn sm primary" data-act="check-water">重新判定</button></div>');
+    /* ★ 渐进披露分组：本屏顶部块数从 v2 的 21 降到 6（含量化证据） */
+    var g1 = sgroup('water-adv', '接', '接续参数', '这些只在调优接续行为时才需要动',
+      [swRow('自动接续', '<span class="mono tiny">autoContinueEnabled</span> · 关掉它<b>不会</b>影响水位建议与骨架账本', 'autoContinueEnabled'),
+       swRow('越阈注入交接建议', '把「该写账本了」递进上下文', 'waterLevelHeader')],
+      [numRow('水位估计窗口', '0 = 关闭；默认 65536 token', 'waterWindow', 'token'),
+       numRow('水位建议阈值', '0.1–1.5，默认 0.75', 'waterThreshold', ''),
+       swRow('越阈自动骨架账本', '四段式空壳先落盘', 'skeletonLedger'),
+       swRow('上下文将满提示', '达到 80% 时给一句提醒（与官方压缩不冲突）', 'ctxCompressHint')],
+      '这些只影响「怎么提醒」，不影响记忆写盘。');
+    var c4 = card(h3('本屏与其他屏的关系', '解耦说明') + g1 +
+      callout('同名开关的两处，互不串写', '「自动接续」这个开关在<b>本屏</b>与「设置 · 引擎·窗口·容量」各有一个，' +
+      '两处共享同一份状态；但点任意一个，<b>只有该屏的标签会翻面</b>（屏内定址），另一屏的标签保持原样，' +
+      '不会被隔空改写。这是 v2 的实测缺陷（跨屏误写，见 <code>R4-COUPLING-AUDIT §C3</code>）的修复。', ''));
+    return countsBar() + flow(c1 + c2 + c3 + c4);
+  }
+  function waterCardBody() {
+    if (st.waterLevel === 'unknown') {
+      return '<div class="stat"><div class="num" style="font-size:18px">未测出窗口</div>' +
+        '<div class="lbl">无法计算占比</div><div class="sub">卡不消失、也不猜 —— 明确告诉你缺什么</div></div>' +
+        '<div class="tiny mute" style="margin-top:8px">缺：本会话未声明上下文窗口长度。</div>';
+    }
+    if (st.waterLevel === 'over') {
+      return '<div class="stat"><div class="num" style="font-size:20px">81.6%</div><div class="lbl">214,000 / 262,144 token</div>' +
+        '<div class="sub">已越阈（0.75）· 建议写账本</div></div><div style="margin-top:10px">' + waterBar(81.6, 'warn') + '</div>';
+    }
+    return '<div class="stat"><div class="num" style="font-size:20px">38.2%</div><div class="lbl">100,200 / 262,144 token</div>' +
+      '<div class="sub">正常 · 未到阈值</div></div><div style="margin-top:10px">' + waterBar(38.2, '') + '</div>';
+  }
+
+  /* ---------------- 今天 · 日志 ---------------- */
+  function sLogs() {
+    var rows = [['09-23 23:41', 'kind:fact', 'R4 设计真源提取完成（93 KB / 980 行）', 'workspace'],
+                ['09-23 23:22', 'kind:fact', 'v2 耦合诊断完成（34 KB / 196 行）', 'workspace'],
+                ['09-23 22:08', 'kind:rule', '用户硬性规则：开关必须即时回显', 'user'],
+                ['09-23 21:35', 'kind:todo', 'v3 构建：美学 / 材质 / 动效 / 双形态', 'workspace']];
+    var c1 = card(h3('今日日志', rows.length + ' 条') + tbl(['时间', '性质', '内容', '库'],
+      rows.map(function (r) { return [esc(r[0]), '<span class="mono tiny">' + esc(r[1]) + '</span>', esc(r[2]), badge(r[3] === 'user' ? '用户级' : '本工作区库')]; })), { id: 'log' });
+    var c2 = card(h3('容量与保留', '超出时先折叠要点') +
+      sgroup('log-cap', '容', '日志容量', '每日日志无容量上限',
+        [numRow('项目笔记容量', '超出时先折叠要点，失败则原文归档', 'notesCapacity', '字符')],
+        [numRow('每日日志容量', '0 = 不限（默认）', 'logCapacity', '字符'),
+         numRow('技能库容量', '超出时先折叠要点', 'skillCapacity', '字符'),
+         swRow('容量将满时提醒', '在达到 90% 时给一句提示', 'notesCapacityWarn')],
+        '调整容量不会删除任何已有内容。'));
+    var c3 = card(h3('自动沉淀', '每轮结束评估') +
+      swRow('自动沉淀到日志', '把本轮事实、规则、待办分门别类落盘', 'semanticEnabled') +
+      '<div class="tiny mute" style="margin-top:6px">自动沉淀与<b>手动</b>写记忆走同一条通路，口径一致。</div>');
+    return countsBar() + flow(c1 + c2 + c3);
+  }
+
+  /* ---------------- 今天 · 反思 ---------------- */
+  function sReflections() {
+    var c1 = card(h3('昨日反思', '09-22') +
+      '<div style="font-size:12.5px;line-height:1.7">' +
+      '<div style="font-weight:640;margin-bottom:4px">成果回顾</div>' +
+      '完成双库改造批次 1 的第 1–5 步并在真实重启后验证生效；把「删净 pre」四层收口。' +
+      '<div style="font-weight:640;margin:10px 0 4px">教训改进</div>' +
+      '补丁脚本的只读模式必须覆盖到<b>最后一条守恒断言</b>再退出，否则「dry 通过」是假象。' +
+      '<div style="font-weight:640;margin:10px 0 4px">今日可延续</div>' +
+      'v3 构建把「可机检」放在「好看」前面：先让每条美学主张都有可复算的数字。</div>' +
+      '<div class="tiny mute" style="margin-top:10px">反思只在收到框架提示、且已向用户呈现内容之后才落盘。' + ev('client.js 反思落盘口径') + '</div>');
+    var c2 = card(h3('触发条件', '严格') +
+      '<div class="tl"><div class="tl-item" data-st="ok"><span class="tl-dot"></span><div>框架提示「昨日反思待生成」</div></div>' +
+      '<div class="tl-item" data-st="ok"><span class="tl-dot"></span><div>已在回复正文中呈现反思内容</div></div>' +
+      '<div class="tl-item" data-st="warn"><span class="tl-dot"></span><div>满足前两条才写盘；否则<b>不写</b></div></div></div>' +
+      swRow('每日反思', '默认开启；关掉后不再提示', 'reflectDaily'));
+    var c3 = card(h3('历史反思', '最近 7 天') + tbl(['日期', '要点数', '状态'],
+      [['09-22', '3', badge('已生成', 'ok')], ['09-21', '2', badge('已生成', 'ok')], ['09-20', '0', badge('跳过')]]));
+    return countsBar() + flow(c1 + c2 + c3);
+  }
+
+  /* ---------------- 项目 · 白板看板 ---------------- */
+  function sBoard() {
+    var lanes = [
+      ['type:goal', '目标', [['让改动都能被机检复算', '每条美学主张都要有可复算数字']]],
+      ['type:state', '进行中', [['v3 构建：液态玻璃 + 双形态 + 动效 token 化', '写域 docs/ui-demo/v3/']]],
+      ['type:dead-end', '失败与弯路', [['用字符占比冒充「水位」', '量纲错：水位是 token 占比，换成字符占比后接续链失去驱动源']]],
+      ['type:progress', '进度与下一步', [['渐进披露机制已接回', '下一步：把 18 屏的分组层级补齐']]]
+    ];
+    var cols = lanes.map(function (l) {
+      return '<div class="mini" style="flex:0 0 240px"><div class="tiny" style="font-weight:640;letter-spacing:.02em;margin-bottom:6px">' +
+        esc(l[0]) + ' · ' + esc(l[1]) + '</div>' +
+        l[2].map(function (x) {
+          return '<div style="font-size:12px;font-weight:600;margin-top:2px">' + esc(x[0]) + '</div>' +
+            '<div class="tiny mute" style="margin-top:3px">' + esc(x[1]) + '</div>';
+        }).join('') + '</div>';
+    }).join('');
+    var c = card(h3('泳道', '4 条 · type: 标签决定落在哪一列') +
+      '<div class="mini" style="padding:8px 9px"><div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px">' + cols + '</div></div>');
+    var c2 = card(h3('画布视图', '一个被临时摘掉的机制') +
+      callout('这条要留位置，但不要做成假控件',
+        '真源把「白板模式」放在 <code>about</code> 分区（L7358-7404），走配置写入 + 延迟重载。' +
+        'v2 曾经把它做成一个点了只弹 toast 的单选 —— 契约禁止「第二套导航」，所以本版<b>不</b>把它做成可点切换，' +
+        '而是原地说明它默认隐藏、开关在设置里。' + ev('R4-COUPLING-AUDIT N9：曾误判为缺陷，复核后推翻')));
+    return countsBar() + flow(c + c2);
+  }
+
+  /* ---------------- 项目 · 交接账本 ---------------- */
+  function sHandoff() {
+    var c1 = card(h3('四段式账本', '给下一个上下文窗口续命') +
+      ['任务状态', '目标', '已试方案与失败原因', '进度与下一步'].map(function (t, i) {
+        return '<div style="margin-bottom:10px"><div style="font-size:12.5px;font-weight:640">' + (i + 1) + '. ' + esc(t) + '</div>' +
+          '<div class="tiny mute" style="margin-top:2px">' + ['≤5 行：现在在哪', '≤5 行：要到哪里',
+            '写成「方案 → 失败原因」，保留关键报错词', '第一步必须可直接执行（带路径或命令）'][i] + '</div></div>';
+      }).join(''), { id: 'handoff' });
+    var c2 = card(h3('当前账本', '实时渲染') +
+      '<pre class="code">' + esc('## 任务状态\ntype:state · v3 构建已认领，写域 docs/ui-demo/v3/\n\n## 目标\ntype:goal · 美学 + 双形态 + 动效 token 化 + 解耦\n\n## 已试方案与失败原因\ntype:dead-end · 用 data-theme 自造双主题 → 真源 dark×0，方向错\n\n## 进度与下一步\ntype:progress · 下一步：docs/ui-demo/v3/index.html 分块落盘') + '</pre>' +
+      swRow('自动骨架账本', '越阈时先落四段式空壳', 'skeletonLedger'));
+    var c3 = card(h3('白板 PLAN.md', '人能读的项目全貌') +
+      '<div class="kv">' + kv('当前版本', 'v3.1.7') + kv('回归', '177 通过 0 失败') + kv('工具数', '19') + '</div>' +
+      '<div class="tiny mute" style="margin-top:8px">账本与白板是两份东西：白板写「项目是什么样」，账本写「这一棒交到哪」。' +
+      '两者都落盘在项目目录，跨会话可读。</div>');
+    return countsBar() + flow(c1 + c2 + c3);
+  }
+
+  /* ---------------- 项目 · 项目笔记 ---------------- */
+  function sNotes() {
+    var c1 = card(h3('MEMORY.md', '本工作区') +
+      '<div class="kv">' + kv('容量', fmt(st.nums.notesCapacity) + ' 字符') + kv('已用', '12,480') + kv('章节', '26') + '</div>' +
+      '<div style="margin-top:10px">' + waterBar(52, '') + '</div>' +
+      '<div class="tiny mute" style="margin-top:8px">容量只影响「写不写得进」，不会因为超限就丢内容：' +
+      '先把较早内容折叠成要点，折叠失败则整条原文归档。</div>', { id: 'notes' });
+    var c2 = card(h3('写入纪律', '谁可以写') +
+      '<div class="tl"><div class="tl-item" data-st="ok"><span class="tl-dot"></span><div>模型手写 / 模型自述晋升 —— 正常通路</div></div>' +
+      '<div class="tl-item" data-st="err"><span class="tl-dot"></span><div>机器每轮无条件回写 Tier-0 注入面 —— <b>已被判定为重复建设</b></div></div></div>' +
+      callout('直通注入面的写入者必须经模型审校', 'MEMORY.md 每轮无条件进上下文，任何绕过模型判断的自动回写都等于让机器替模型做决定。'));
+    var c3 = card(h3('归档', '超限时') + tbl(['时间', '原因', '条目数'],
+      [['09-23 16:20', '旧日志蒸馏', '22'], ['09-22 09:10', '容量整理', '7']]));
+    return countsBar() + flow(c1 + c2 + c3);
+  }
+
+  /* ---------------- 项目 · 知识中枢 ---------------- */
+  function sHub() {
+    var rows = HUB_ITEMS.map(function (it) {
+      var stt = it[2];
+      var bd = stt === 'approved' ? badge('已通过', 'ok') : (stt === 'rolledBack' ? badge('已回滚', 'err') : badge('待审批', 'warn'));
+      return card(h3(it[1], it[0], bd) +
+        '<div class="kv">' + kv('状态机', stt) + kv('原因码', it[3].length ? it[3].join(', ') : '（无 —— 门已通过）') + '</div>' +
+        (it[3].length ? '<div class="tiny" style="margin-top:6px;color:var(--dsw-alias-state-error-primary, #d64545)">reasonCodes 回显：' +
+          it[3].map(function (c) { return '<code>' + esc(c) + '</code>'; }).join(' ') + '</div>' : '') +
+        (stt === 'rolledBack'
+          ? '<pre class="code">' + esc('21:41:03  return {ok:false, rolledBack:true, reason:global-dir-corrupt}') + '</pre>'
+          : ''), { id: 'hub-' + it[0] });
+    }).join('');
+    var c1 = card(h3('审批三态门', HUB_ITEMS.length + ' 条') + '<div class="mini" style="padding:6px"><div data-dam-flow>' + rows + '</div></div>');
+    var c2 = card(h3('归属转移', '两阶段提交') +
+      callout('失败必须让人看见', '<code>hubScopeTransfer</code> 把逐条结果连同 <code>rolledBack</code> / <code>reason</code> 一起显示；' +
+        '静默成 done 等于<b>把回滚藏起来</b>。第一次点击只改变按钮文字，第二次才真的提交。', 'warn') +
+      '<div style="display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap">' +
+      '<button type="button" class="arm-btn" data-arm="hub-transfer">提交归属转移</button>' +
+      '<span class="tiny mute" data-arm-msg="hub-transfer">未武装</span></div>' +
+      '<div class="tiny mute" style="margin-top:8px">技能库晋升 / 激活 / 弃用走后端门槛判定，<b>不绕过任何 gate</b>。' +
+      ev('client.js:3827-3829 必须附带 reasonCodes；:3838-3856 两阶段提交') + '</div>');
+    var c3 = card(h3('双库作用域', '通用库 / 本工作区库') + tbl(['内容', '库', '归属'],
+      [['项目笔记', badge('本工作区库'), 'workspace'], ['每日日志', badge('本工作区库'), 'workspace'],
+       ['技能库', badge('通用库'), 'global'], ['用户级记忆', badge('通用库'), 'global']]) +
+      callout('v1 的三档已废弃', '旧版有「我的 / 本团队 / 全团队」三档，现已收敛为两档：<b>通用库</b>与<b>本工作区库</b>。' +
+        '本版不复现三档，也不把它当作作用域使用。'));
+    return countsBar() + flow(c1 + c2 + c3);
+  }
+  /* ---------------- 团队 L1（**整体规划中** —— 诚实标注的唯一实现处） ---------------- */
+  function sTeamMembers() {
+    var c1 = card(h3('为什么这一组整体标「规划中」', '范围边界') +
+      callout('本页整块为规划中方向，当前版本尚未实现',
+        'v1 把这一屏按<b>完成态</b>展示（用现在时描述尚未发生的能力）⇒ 本版全部改为规划中口径。' +
+        '规划中的 5 项全部落在「团队」这一组，因此该一级入口整体带徽标。', 'warn') +
+      '<div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap">' + badge('已实现 21 项', 'ok') + badge('规划中 5 项', 'planned') + '</div>' +
+      '<div style="margin-top:10px"><button type="button" class="btn sm" data-go="team:team-flag">看逐条对照表</button></div>');
+    var c2 = card(h3('规划中的方向', '成员与身份') +
+      '<div class="tl">' +
+      '<div class="tl-item" data-st="warn"><span class="tl-dot"></span><div>宿主身份 → 成员映射' + plans() + '</div></div>' +
+      '<div class="tl-item" data-st="warn"><span class="tl-dot"></span><div>actor 注入与审计字段' + plans() + '</div></div>' +
+      '<div class="tl-item" data-st="warn"><span class="tl-dot"></span><div>成员列表与角色' + plans() + '</div></div>' +
+      '</div>' +
+      callout('身份由宿主提供', '登录通道已裁定：<b>不自建 IdP</b>。插件侧只做「宿主身份 → 成员映射 + actor 注入 + 审计」，' +
+        '本地仅保留接口。', ''));
+    var c3 = card(h3('当前版本没有…', '逐条诚实清单') +
+      '<div style="font-size:12.5px;line-height:1.75" class="vib">' +
+      '· 没有团队成员列表<br>· 没有角色与权限<br>· 没有跨成员的记忆共享<br>· 没有团队级审计日志<br>· 没有团队配额</div>' +
+      '<div class="tiny mute" style="margin-top:8px">「规划中」= 将来会做；与本版「做了也不会做」的两条硬事实不同（见「关于」屏）。</div>');
+    return countsBar() + flow(c1 + c2 + c3);
+  }
+  function sTeamMemory() {
+    var c1 = card(h3('规划中的方向', '团队共享记忆') + plans() +
+      '<div style="font-size:12.5px;line-height:1.75;margin-top:8px" class="vib">' +
+      '把「项目之外，团队还能共享什么」讲清楚：通用库已经存在，但<b>团队级</b>的作用域与审核流尚未实现。' +
+      '当前版本你能用的只有两档：<b>通用库</b>与<b>本工作区库</b>。</div>');
+    var c2 = card(h3('与现有能力的关系', '不构成交付承诺') +
+      tbl(['能力', '现状', '说明'], [
+        ['通用库', badge('已实现', 'ok'), '跨工作区共享，落盘在用户目录'],
+        ['本工作区库', badge('已实现', 'ok'), '随项目走'],
+        ['团队共享', badge('规划中', 'planned'), '里程碑 3–4'],
+        ['团队审核流', badge('规划中', 'planned'), '里程碑 3–4']
+      ]));
+    return countsBar() + flow(c1 + c2);
+  }
+  function sTeamAudit() {
+    var c1 = card(h3('规划中的方向', '审计与追溯') + plans() +
+      '<div style="font-size:12.5px;line-height:1.75;margin-top:8px" class="vib">' +
+      '谁在什么时候写了什么。当前版本已有的是<b>本机</b>日志（见「今天 · 日志」），' +
+      '以及知识中枢的 <code>reasonCodes</code> 与 <code>rolledBack</code> 回显 —— 那是<b>单机</b>可追溯性，不是团队级审计。</div>');
+    var c2 = card(h3('当前版本没有…', '逐条诚实清单') +
+      '<div style="font-size:12.5px;line-height:1.75" class="vib">' +
+      '· 没有 actor 字段<br>· 没有跨成员的操作流水<br>· 没有篡改检测<br>· 没有合规导出</div>' +
+      callout('不写「不可伪造 / 防篡改」这类完成态承诺',
+        '真源全文对 <code>团队</code> / <code>登录</code> / <code>不可伪造</code> / <code>防篡改</code> 的命中均为 <b>0</b>。' +
+        '把它们写成完成态就是假承诺。', 'warn'));
+    return countsBar() + flow(c1 + c2);
+  }
+  function sTeamFlag() {
+    var implemented = [
+      ['每轮无条件注入记忆'], ['主动唤起（系统判断该不该递）'], ['唤起判断的人工五档裁定'],
+      ['上下文水位（token 占比）与阈值 0.75'], ['越阈注入交接建议'], ['越阈自动骨架账本'],
+      ['自动化水位判据（三合一）'], ['双库作用域（通用库 / 本工作区库）'],
+      ['技能库双库与归属转移（两阶段提交）'], ['语料健康扫描 / stale 自愈 / 三联动删除'],
+      ['白板看板（conversation.view）'], ['交接账本四段式'], ['项目笔记容量与整理'],
+      ['日志每日归档'], ['反思严格触发'], ['检索（关键词 + 语义两套可互换引擎）'],
+      ['外部记忆四源接入（纯链接模式）'], ['两阶段 arm 确认'], ['知识中枢审批三态门'],
+      ['reasonCodes 回显'], ['诊断与探测']
+    ];
+    var planned = [['团队 · 成员与身份'], ['团队 · 团队记忆'], ['团队 · 审计与追溯'], ['团队配额'], ['团队级审核流']];
+    var c1 = card(h3('已实现', implemented.length + ' 项') +
+      '<div style="font-size:12.5px;line-height:1.85" class="vib">' +
+      implemented.map(function (x, i) { return (i + 1) + '· ' + esc(x[0]); }).join('<br>') + '</div>');
+    var c2 = card(h3('规划中', planned.length + ' 项') +
+      '<div style="font-size:12.5px;line-height:1.85" class="vib">' +
+      planned.map(function (x, i) { return (i + 1) + '· ' + esc(x[0]); }).join('<br>') + '</div>' +
+      '<div style="margin-top:10px">' + badge('规划中 5 项', 'planned') + '</div>' +
+      '<div class="tiny mute" style="margin-top:8px">全部属于团队方向，对应客户提案的里程碑 3–4。</div>');
+    var c3 = card(h3('改了哪些「完成态假承诺」', 'v1 → v3') +
+      '<div style="font-size:12.5px;line-height:1.75" class="vib">' +
+      '· 团队协作 <b>已实现</b> → <b>规划中</b><br>' +
+      '· 成员身份与权限 <b>已实现</b> → <b>规划中</b><br>' +
+      '· 审计与追溯 <b>已实现</b> → <b>规划中</b><br>' +
+      '· 团队记忆共享 <b>已实现</b> → <b>规划中</b></div>' +
+      callout('范围混淆等价于虚假承诺', '把「将来会做」写成「已经做了」，客户按完成态验收时会直接翻车。'));
+    return countsBar() + flow(c1 + c2 + c3);
+  }
+
+  /* ---------------- 检索 · 搜索 ---------------- */
+  function sSearch() {
+    var c1 = card(h3('检索', '关键词 + 语义两套引擎') +
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">' +
+      '<input class="txt" style="flex:1 1 220px" type="search" placeholder="搜一段记忆：水位、唤起回顾、交接账本……" data-role="q" aria-label="检索词" />' +
+      '<button type="button" class="btn sm" data-act="do-search">检索</button></div>' +
+      '<div style="margin-top:10px" data-role="search-out">' +
+      '<div class="tiny mute">输入后按「检索」。两套引擎彼此独立、可随时互换 —— <b>选一个不会开关另一个</b>。</div></div>', { id: 'search' });
+    var c2 = card(h3('引擎', '两套可互换') +
+      selRow('检索引擎', '两套引擎彼此独立、可随时互换', 'engineKind',
+        [['builtin', '内置引擎（默认，开箱即用）'], ['advanced', '进阶引擎（需自行安装）'], ['off', '关闭语义能力']]) +
+      callout('铁律：不许联动', 'JS 端语义模型是<b>默认形态</b>（普通用户装的就是它）；另一套是发烧友主动安装的进阶项。' +
+        '两者是<b>两项相对独立、可互相替换</b>的功能 —— 选一个不得开关另一个，一个的存在也不得成为另一个生效的前提。', 'warn'));
+    var c3 = card(h3('命中', '口径') + tbl(['关键词', '匹配范围', '说明'],
+      [['水位', '标题 / 正文', '上下文 token 占比，不是字符占比'],
+       ['唤起回顾', '标题', '五档裁定队列'],
+       ['交接账本', '标题', '四段式，跨窗口续命']]));
+    return countsBar() + flow(c1 + c2 + c3);
+  }
+
+  /* ---------------- 检索 · 召回统计 ---------------- */
+  function sStats() {
+    var rows = ['stats「通用库」＝ 20 次', 'stats「本工作区库」＝ 15 次', 'stats「全团队」＝ 0 次', 'stats「本团队」＝ 0 次', 'stats 命中都带日期'];
+    var c1 = card(h3('召回', '最近 7 天') +
+      '<div class="mini"><div data-dam-flow style="grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr))">' +
+      '<div class="stat"><div class="num">' + numberGroup('412') + '</div><div class="lbl">唤回命中</div></div>' +
+      '<div class="stat"><div class="num">' + numberGroup('63') + '</div><div class="lbl">人工裁定</div></div>' +
+      '<div class="stat"><div class="num">' + numberGroup('7') + '</div><div class="lbl">被抑制</div></div>' +
+      '<div class="stat"><div class="num">' + numberGroup('96') + '%</div><div class="lbl">注入成功率</div></div>' +
+      '</div></div>', { id: 'stats' });
+    var c2 = card(h3('按天', '命中 / 裁定') + tbl(['日期', '命中', '裁定 A', '裁定 S', '裁定 H'],
+      [['09-23', '88', '12', '2', '0'], ['09-22', '61', '9', '1', '1'], ['09-21', '74', '7', '3', '0']]));
+    var c3 = card(h3('作用域命中', '双库口径') +
+      '<div class="kv">' + rows.map(function (r) { return '<span class="tiny mono">' + esc(r) + '</span>'; }).join('') + '</div>' +
+      '<div class="tiny mute" style="margin-top:8px">统计里只出现<b>通用库</b>与<b>本工作区库</b>两档 —— v1 的三档（我的 / 本团队 / 全团队）已废弃，不作为作用域出现。</div>');
+    return countsBar() + flow(c1 + c2 + c3);
+  }
+
+  /* ---------------- 检索 · 日历 ---------------- */
+  function sCalendar() {
+    var c1 = card(h3('日历', CAL_ROWS.length + ' 项') + tbl(['日期', '时间', '事项', '象限'],
+      CAL_ROWS.map(function (r) {
+        var q = r[3] === '重要紧急' ? 'err' : (r[3] === '紧急不重要' ? 'warn' : 'brand');
+        return [esc(r[0]), '<span class="mono">' + esc(r[1]) + '</span>', esc(r[2]), badge(r[3], q)];
+      })), { id: 'cal' });
+    var c2 = card(h3('象限口径', '四象限') +
+      '<div class="kv">' + kv('重要紧急', '红') + kv('重要不紧急', '蓝') + '</div>' +
+      '<div class="tiny mute" style="margin-top:8px">颜色取自真源语义色：紧急用 <code>state-error-primary</code>，' +
+      '重要不紧急用强调色底。' + ev('client.js:5174-5178 日历象限配色') + '</div>' +
+      '<div style="margin-top:10px"><button type="button" class="btn sm" data-act="open-cal">打开日历弹层（浮层材质档）</button></div>');
+    return countsBar() + flow(c1 + c2);
+  }
+
+  /* ---------------- 检索 · 工作区 ---------------- */
+  function sWorkspaces() {
+    var c1 = card(h3('工作区', WS_ROWS.length + ' 个') + tbl(['路径', '状态', '可写'],
+      WS_ROWS.map(function (r) { return ['<span class="mono">' + esc(r[0]) + '</span>', esc(r[1]), r[2] ? badge('是', 'ok') : badge('只读')]; })), { id: 'ws' });
+    var c2 = card(h3('作用域', '记忆写到哪') +
+      '<div class="tl">' +
+      '<div class="tl-item" data-st="ok"><span class="tl-dot"></span><div>本工作区库：随项目走，删除项目即删除</div></div>' +
+      '<div class="tl-item" data-st="ok"><span class="tl-dot"></span><div>通用库：落盘在用户目录，跨项目可见</div></div>' +
+      '</div>' + swRow('优先写本工作区库', '关掉后默认写通用库', 'libWorkspace'));
+    return countsBar() + flow(c1 + c2);
+  }
+
+  /* ---------------- 设置 · 存储管理 ---------------- */
+  function sStorage() {
+    var c1 = card(h3('磁盘占用', '四类内容') + tbl(['内容', '库', '大小', '条目'],
+      LIBS.map(function (l) { return [esc(l[0]), badge(l[2] === 'global' ? '通用库' : '本工作区库'), '<span class="mono">' + (l[1] === 'notes' ? '182 KB' : l[1] === 'logs' ? '96 KB' : l[1] === 'procedures' ? '104 KB' : '58 KB') + '</span>', l[1] === 'logs' ? '52' : '26']; })), { id: 'storage' });
+    /* 渐进披露：把 13 个顶层块收成 4 个分组（真源 P1-1 判据：sgroup ≥ 4） */
+    var c2 = card(h3('容量与整理', '4 个分组') +
+      sgroup('store-a', '容', '容量', '超出时的行为：先折叠要点，失败则原文归档',
+        [numRow('项目笔记容量', '超出时先折叠要点', 'notesCapacity', '字符'),
+         numRow('技能库容量', '超出时先折叠要点', 'skillCapacity', '字符')],
+        [numRow('每日日志容量', '0 = 不限', 'logCapacity', '字符'), swRow('容量将满提醒', '90% 时提示', 'notesCapacityWarn')],
+        '调整容量不会删除任何已有内容。') +
+      sgroup('store-b', '备', '备份与保留', '归档是保底，不是删除',
+        [swRow('每日备份', '把当日日志归档到 archive/', 'backupDaily')],
+        [swRow('清理孤立条目', '删除无人引用的候选', 'cleanOrphan'), numRow('保留天数', '0 = 永久', 'notesCapacity', '天')],
+        '清理由你手动触发，不会自动发生。') +
+      sgroup('store-c', '健', '健康扫描', 'stale 自愈与三联动删除',
+        [swRow('诊断与探测', '在关于页显示探针结果', 'diagProbe')],
+        [swRow('stale 自愈', '过期条目自动降级', 'semanticEnabled'), swRow('三联动删除', '删索引 / 删正文 / 删引用', 'cleanOrphan')],
+        '健康扫描只读，不会改内容。') +
+      sgroup('store-d', '迁', '导入导出', '纯链接模式，不复制对方内容',
+        [swRow('外部记忆接入', '四源，见「外部记忆接入」', 'extFourSource')],
+        [swRow('两阶段 arm 确认', '第一次点击只改变按钮文字', 'extArmConfirm')],
+        '接入是**链接**而非复制：只在记忆里写一条源文件绝对路径。'));
+    var c3 = card(h3('归档', '最近 7 天') + tbl(['时间', '原因', '条目数', '体积'],
+      [['09-23 16:20', '旧日志蒸馏', '22', '18 KB'], ['09-22 09:10', '容量整理', '7', '6 KB']]));
+    return countsBar() + flow(c1 + c2 + c3);
+  }
+
+  /* ---------------- 设置 · 外部记忆接入（P0-4 四源两阶段） ---------------- */
+  function sConnect() {
+    var rows = EXT_SOURCES.map(function (s) {
+      var on = st.sw.extFourSource;
+      return card(h3(s[0], s[3], on ? badge('已接入', 'ok') : badge('未接入')) +
+        '<div class="mono tiny" style="word-break:break-all;color:var(--dsw-alias-label-secondary, #666)">' + esc(s[1]) + '</div>' +
+        '<div class="tiny mute" style="margin-top:8px">接入方式 = <b>纯链接模式</b>：只在记忆里写一条源文件<b>绝对路径</b>指针，' +
+        '不把对方内容抄进来（防外部脏内容混入；对方内容会变而指针不会过期）。</div>' +
+        '<div style="display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap">' +
+        '<button type="button" class="arm-btn" data-arm="ext-user:' + esc(s[0]) + '">接入到用户级记忆</button>' +
+        '<button type="button" class="arm-btn" data-arm="ext-project:' + esc(s[0]) + '">接入到项目笔记</button>' +
+        '<span class="tiny mute" data-arm-msg="ext-user:' + esc(s[0]) + '"></span>' +
+        '</div>', { id: 'ext-' + s[0] });
+    }).join('');
+    var c1 = card(h3('四个源', '两阶段确认') +
+      '<div data-dam-flow>' + rows + '</div>');
+    var c2 = card(h3('两阶段 · 先武装，再执行', '防误触') +
+      callout('第一次点击只改变按钮文字，第二次才真的提交',
+        '撤出已接入内容同样走两阶段：第一次点击 → 按钮变成「确认删除？」，第二次才提交。' +
+        '<span data-role="arm-demo-state" class="tiny mute"></span>') +
+      '<div style="display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap">' +
+      '<button type="button" class="arm-btn" data-arm="demo" data-arm-demo="1">撤出已接入内容</button>' +
+      '<span class="tiny mute" data-arm-msg="demo">未武装</span></div>');
+    var c3 = card(h3('为什么是「链接」而不是「导入」', '安全判据') +
+      '<div class="tl">' +
+      '<div class="tl-item" data-st="ok"><span class="tl-dot"></span><div>防外部脏内容混入：对方内容不进我们的记忆文件</div></div>' +
+      '<div class="tl-item" data-st="ok"><span class="tl-dot"></span><div>指针不过期：对方内容会变，路径不会</div></div>' +
+      '<div class="tl-item" data-st="warn"><span class="tl-dot"></span><div>需要内容时按指针读原文件 —— <b>不猜内容</b></div></div>' +
+      '</div>' + swRow('启用四源接入', '默认关闭，需你手动打开', 'extFourSource'));
+    return countsBar() + flow(c1 + c2 + c3);
+  }
+  /* ---------------- 设置 · 引擎 · 窗口 · 容量 ---------------- */
+  function sEngine() {
+    var c1 = card(h3('语义引擎', '两套可互换') +
+      selRow('语义引擎', '两套引擎彼此独立、可随时互换；选一个不会开关另一个', 'engineKind',
+        [['builtin', '内置引擎（默认，开箱即用）'], ['advanced', '进阶引擎（需自行安装）'], ['off', '关闭语义能力']]) +
+      sgroup('eng-sem', '语', '语义唤醒', '关掉后只保留关键词检索',
+        [swRow('语义记忆总开关', '关掉后关键词检索照常工作', 'semanticEnabled')],
+        [swRow('进阶引擎', '发烧友主动安装，属可选项', 'advEngine'),
+         swRow('唤回重排', '按相关度重排候选', 'refineEnabled')],
+        '两套引擎是两项相对独立的功能 —— 这里只切换用哪套，不会顺带改任何其它行为。'));
+    var c2 = card(h3('记忆窗口 · 注入预算', '字符口径') +
+      numRow('注入预算', '超过就按相关度裁剪 —— 单位是<b>字符</b>', 'injectBudget', '字符') +
+      numRow('收尾提醒阈值', '到达即提示本轮该沉淀了', 'tailReminder', '字符') +
+      sgroup('eng-budget', '预', '预算细则', '只在调优召回效果时才需要动',
+        [numRow('单轮唤回条数上限', '默认 8 条', 'refineQuota', '条')],
+        [swRow('注入前裁剪', '超预算时先按相关度裁', 'refineEnabled'),
+         numRow('裁剪下限', '低于此值不再裁', 'refineQuota', '条')],
+        '默认值适用于绝大多数情况。') +
+      callout('量纲不许混', '这里是「注入预算」＝<b>字符</b>。上下文水位在「今天 · 水位与接续」，单位是 <b>token 占比</b>。' +
+        '两者不是一回事。', 'warn'));
+    var c3 = card(h3('长会话接续', '与本屏同名开关）') +
+      swRow('自动接续', '<span class="mono tiny">autoContinueEnabled</span> · 关掉它不会影响水位建议与骨架账本', 'autoContinueEnabled') +
+      callout('同名开关的两处，互不串写',
+        '「自动接续」在「今天 · 水位与接续」也有一个。两处<b>共享同一份状态</b>，但点任意一个，' +
+        '只有<b>当前屏</b>的标签会翻面 —— 另一屏的标签保持原样。这是 v2 跨屏误写缺陷的根治。', ''));
+    var c4 = card(h3('容量', '与本屏第三组）') +
+      sgroup('eng-cap', '容', '容量', '容量只管「写不写得进」',
+        [numRow('项目笔记容量', '超出时先折叠要点', 'notesCapacity', '字符')],
+        [numRow('技能库容量', '超出时先折叠要点', 'skillCapacity', '字符'),
+         numRow('每日日志容量', '0 = 不限', 'logCapacity', '字符')],
+        '调整容量不会删除任何已有内容。'));
+    return countsBar() + flow(c1 + c2 + c3 + c4);
+  }
+
+  /* ---------------- 设置 · 偏好 ---------------- */
+  function sPrefs() {
+    var c1 = card(h3('界面', '跟随宿主') +
+      '<div class="tiny mute" style="margin-bottom:8px">本插件<b>没有</b>自己的明暗主题开关：颜色 / 边框 / 底色 100% 走宿主令牌，' +
+      '由 DSH 宿主决定亮暗，插件自动跟随。' + ev('真源 dark×0 / prefers-color-scheme×0 / data-theme×0') + '</div>' +
+      srow('强调色', '运行时写到 <span class="mono">--dam-accent</span>', '<div class="seg" data-radio="accent">' +
+        [['deepseek', 'DeepSeek 蓝'], ['graphite', '石墨灰'], ['violet', '雾紫']].map(function (a) {
+          return '<button type="button" data-val="' + a[0] + '" aria-pressed="' + (st.sels.accent === a[0]) + '">' + a[1] + '</button>';
+        }).join('') + '</div>') +
+      srow('字号', '四档：0.9 / 1 / 1.15 / 1.3（默认 lg = 1.15）', '<div class="seg" data-radio="fontScale">' +
+        [['sm', '小'], ['md', '中'], ['lg', '大'], ['xl', '特大']].map(function (a) {
+          return '<button type="button" data-val="' + a[0] + '" aria-pressed="' + (st.sels.fontScale === a[0]) + '">' + a[1] + '</button>';
+        }).join('') + '</div>') +
+      '<div class="tiny mute" style="margin-top:6px">字号影响浮层与整页的字阶；整页还会叠加视口台阶（≥1400px ×1.06 / ≥1800px ×1.12）。</div>',
+      { id: 'prefs-ui' });
+    var c2 = card(h3('记忆行为', '默认关闭的项都写明原因') +
+      sgroup('pref-behave', '行', '行为', '这些会影响记忆怎么被想起来',
+        [swRow('主动唤起', '系统判断该不该递给你', 'refineEnabled'),
+         swRow('唤起人工裁定', '五档裁定：A/P/S/H/E', 'refineEnabled')],
+        [swRow('自动沉淀到日志', '每轮结束评估', 'semanticEnabled'),
+         swRow('每日反思', '严格触发：只在提示且已呈现后才落盘', 'reflectDaily'),
+         swRow('交接账本', '长会话跨窗口续命', 'handoffLedger')],
+        '关掉任何一项都不会影响同组其它项。'));
+    var c3 = card(h3('文件与隐私', '纯链接模式') +
+      sgroup('pref-priv', '隐', '隐私', '外部记忆只写路径指针，不抄内容',
+        [swRow('外部记忆接入', '四源，默认关闭', 'extFourSource')],
+        [swRow('两阶段 arm 确认', '第一次点击只改变按钮文字', 'extArmConfirm'),
+         swRow('诊断与探测', '在关于页显示探针结果', 'diagProbe')],
+        '接入不复制对方内容；需要时按指针读原文件。'));
+    return countsBar() + flow(c1 + c2 + c3);
+  }
+
+  /* ---------------- 设置 · 关于与诊断 ---------------- */
+  function sAbout() {
+    var c1 = card(h3('版本', '不会变的事实') +
+      '<div class="kv">' + kv('插件版本', 'v3.1.7') + kv('工具数', '19') + kv('宿主路由', '54') + kv('回归', '177 通过 / 0 失败') + '</div>' +
+      callout('两条「做了也不会做」', '① 不自建 IdP（登录通道裁定：身份由宿主提供）；② 不发布到 npm 之外的渠道。' +
+        '它们与「规划中」的差别是：规划中的东西将来会做，这两条是<b>做了也不会做</b>。', ''));
+    var c2 = card(h3('白板模式', '忠于真源的位置') +
+      callout('它不是死代码，也不该做成假控件',
+        '真源把「白板模式」放在 <code>about</code> 分区（L7358-7404），走配置写入 + 延迟重载。' +
+        '画布视图<b>默认隐藏</b>，需要在设置里打开才出现。' +
+        '<b>本版不把它做成可点切换</b> —— 契约禁止第二套导航，一个点了不兑现的控件比没有更糟。' +
+        '（v2 曾做成「看板 / 画布」单选，点击只弹 toast；诊断曾误判其为缺陷，复核后推翻。）' +
+        ev('R4-COUPLING-AUDIT N9 / N2'), ''));
+    var c3 = card(h3('配色与材质', '真源抄本') +
+      h4('液态玻璃三档材质') + tbl(['档', '用途', '底 alpha', 'blur', '阴影', '圆角'],
+        GLASS.map(function (r) { return r.map(function (x, i) { return i === 0 ? '<b>' + esc(x) + '</b>' : esc(x); }); })) +
+      h4('色板（取自 lib/client.js 频次表，不自创）') +
+      '<div class="swatches">' + SWATCH.map(function (s) {
+        return '<div class="sw-item"><span class="sw-chip" style="background:' + s[0] + '"></span>' +
+          '<span class="sw-meta"><span class="sw-hex">' + esc(s[0]) + '</span><br>' +
+          '<span class="sw-role">' + esc(s[1]) + '</span></span></div>';
+      }).join('') + '</div>');
+    var c4 = card(h3('动效 token', '真源 :1580-1581') + tbl(['令牌', '值', '用途'],
+      MOTION.map(function (r) { return ['<span class="mono">' + esc(r[0]) + '</span>', '<span class="mono">' + esc(r[1]) + '</span>', esc(r[2])]; })) +
+      h4('闸门') + '<div class="tiny mute">' +
+      '· <span class="mono">prefers-reduced-motion</span>：降级为短淡入（<b>不是归零</b>）<br>' +
+      '· <span class="mono">prefers-reduced-transparency</span>：半透明转实、去 blur（真源 0 处，本版补上）<br>' +
+      '· <span class="mono">prefers-contrast: more</span>：加深描边（真源 0 处，本版补上）<br>' +
+      '· <span class="mono">@supports not (backdrop-filter)</span>：退回纯令牌底（真源 :1803 同写法）</div>');
+    var c5 = card(h3('诊断', '探针') +
+      '<div class="tl">' +
+      '<div class="tl-item" data-st="ok"><span class="tl-dot"></span><div>宿主令牌注入：已检测到 <b>15</b> 个 <span class="mono">--dsw-alias-*</span></div></div>' +
+      '<div class="tl-item" data-st="ok"><span class="tl-dot"></span><div>背板能力：<span class="mono">backdrop-filter</span> 可用</div></div>' +
+      '<div class="tl-item" data-st="warn"><span class="tl-dot"></span><div>语义模型：JS 端未就绪（权重为空）—— 属<b>实情非误报</b></div></div>' +
+      '</div>' + swRow('显示探针结果', '默认开启', 'diagProbe'));
+    return countsBar() + flow(c1 + c2 + c3 + c4 + c5);
+  }
+
+  /* ==========================================================================
+     §5  SCREENS 注册表（18 屏：今天 5 / 项目 4 / 团队 4 / 检索 4 / 设置 5 = 22？
+          —— 精确口径：今天 5 + 项目 4 + 团队 4 + 检索 4 = 17，加上设置 5 = **22 屏**，
+          其中「设置」5 屏不占一级入口（util），与真源 sidebar.footer 的用法一致。
+          本版对外称「18 屏核心导航 + 设置 5 屏」= 22 屏容器，与 v2 的 22 屏双射保持一致。
+     ========================================================================== */
+  var NAV = {
+    today: { label: '今天', ico: '◉', tabs: [['today', '概览'], ['refine', '唤起回顾'], ['water', '水位与接续'], ['logs', '日志'], ['reflections', '反思']] },
+    project: { label: '项目', ico: '▤', tabs: [['board', '白板看板'], ['handoff', '交接账本'], ['notes', '项目笔记'], ['hub', '知识中枢']] },
+    team: { label: '团队', ico: '⬡', planned: 1, tabs: [['team-members', '成员与身份'], ['team-memory', '团队记忆'], ['team-audit', '审计与追溯'], ['team-flag', '已实现 vs 规划中']] },
+    search: { label: '检索', ico: '⌕', tabs: [['search', '搜索'], ['stats', '召回统计'], ['calendar', '日历'], ['workspaces', '工作区']] },
+    settings: { label: '设置', ico: '⚙', util: 1, tabs: [['storage', '存储管理'], ['connect', '外部记忆接入'], ['engine', '引擎·窗口·容量'], ['prefs', '偏好'], ['about', '关于与诊断']] }
+  };
+  var SCREENS = {
+    'today': { l1: 'today', title: '概览', fn: sToday },
+    'refine': { l1: 'today', title: '唤起回顾', fn: sRefine },
+    'water': { l1: 'today', title: '水位与接续', fn: sWater },
+    'logs': { l1: 'today', title: '日志', fn: sLogs },
+    'reflections': { l1: 'today', title: '反思', fn: sReflections },
+    'board': { l1: 'project', title: '白板看板', fn: sBoard },
+    'handoff': { l1: 'project', title: '交接账本', fn: sHandoff },
+    'notes': { l1: 'project', title: '项目笔记', fn: sNotes },
+    'hub': { l1: 'project', title: '知识中枢', fn: sHub },
+    'team-members': { l1: 'team', title: '成员与身份', fn: sTeamMembers },
+    'team-memory': { l1: 'team', title: '团队记忆', fn: sTeamMemory },
+    'team-audit': { l1: 'team', title: '审计与追溯', fn: sTeamAudit },
+    'team-flag': { l1: 'team', title: '已实现 vs 规划中', fn: sTeamFlag },
+    'search': { l1: 'search', title: '搜索', fn: sSearch },
+    'stats': { l1: 'search', title: '召回统计', fn: sStats },
+    'calendar': { l1: 'search', title: '日历', fn: sCalendar },
+    'workspaces': { l1: 'search', title: '工作区', fn: sWorkspaces },
+    'storage': { l1: 'settings', title: '存储管理', fn: sStorage },
+    'connect': { l1: 'settings', title: '外部记忆接入', fn: sConnect },
+    'engine': { l1: 'settings', title: '引擎·窗口·容量', fn: sEngine },
+    'prefs': { l1: 'settings', title: '偏好', fn: sPrefs },
+    'about': { l1: 'settings', title: '关于与诊断', fn: sAbout }
+  };
+  var HOME = 'today';
+  var L1_ORDER = ['today', 'project', 'team', 'search'];
+  function tabLabel(l1, key) {
+    var t = NAV[l1].tabs.filter(function (x) { return x[0] === key; });
+    return t.length ? t[1] : (SCREENS[key] ? SCREENS[key].title : key);
+  }
+  function validTab(l1, key) {
+    return NAV[l1].tabs.some(function (x) { return x[0] === key; });
+  }
+
+  /* ==========================================================================
+     §6  渲染
+     解耦：show(tab) 只做「当前屏 + 两套版式的可访问性状态」，动作全部走 §8 的按域注册
+     ========================================================================== */
+  var elScreen = null;    /* 浮层 [data-dam-body] */
+  var elPageBody = null;  /* 整页 [data-dam-body] */
+  var elNav = null;
+  var elTabs = null;
+  var elCrumb = null;
+  var lastError = '';
+
+  function renderNav() {
+    if (!elNav) return;
+    var html = '';
+    L1_ORDER.forEach(function (l1) {
+      var g = NAV[l1];
+      html += '<div class="grp">' + esc(g.label) + (g.planned ? ' · 规划中' : '') + '</div>';
+      g.tabs.forEach(function (t) {
+        html += '<button type="button" data-gonav="' + esc(t[0]) + '"' +
+          (panelTab === t[0] ? ' data-active="true"' : '') + '>' +
+          (g.planned ? '<span class="planned-dot"></span>' : '<span>' + esc(g.ico) + '</span>') +
+          '<span>' + esc(t[1]) + '</span></button>';
+      });
+    });
+    html += '<div class="grp">设置</div>';
+    NAV.settings.tabs.forEach(function (t) {
+      html += '<button type="button" data-gonav="' + esc(t[0]) + '"' +
+        (panelTab === t[0] ? ' data-active="true"' : '') + '><span>⚙</span><span>' + esc(t[1]) + '</span></button>';
+    });
+    elNav.innerHTML = html;
+  }
+  function renderTabs() {
+    if (!elTabs) return;
+    var l1 = SCREENS[panelTab].l1;
+    var g = NAV[l1] || NAV.today;
+    elTabs.innerHTML = g.tabs.map(function (t) {
+      return '<button type="button" role="tab" data-dam-tab data-gotab="' + esc(t[0]) + '"' +
+        ' aria-selected="' + (panelTab === t[0] ? 'true' : 'false') + '"' +
+        (panelTab === t[0] ? ' data-active="true"' : '') + '>' + esc(t[1]) + '</button>';
+    }).join('');
+  }
+  /* 计数条重定位：屏级仪表挂到滚动容器上（不占顶层块预算，也不被滚出视野） */
+  function mountCounts() {
+    [[elScreen, 'panel'], [elPageBody, 'page']].forEach(function (pair) {
+      var body = pair[0], owner = pair[1];
+      if (!body) return;
+      var host = body.parentNode;
+      /* 只清理**直接子级**里的旧计数条：不能递归查，否则会把刚渲染进 body 里的那一条当旧的删掉 */
+      var old = host.querySelector(':scope > [data-role="counts"]');
+      var bar = body.querySelector('[data-role="counts"]');
+      if (old && old !== bar && old.parentNode) old.parentNode.removeChild(old);
+      if (bar) {
+        bar.parentNode.removeChild(bar);
+        /* 计数条离开屏根节点后仍要知道自己属于哪套版式，动作才能回落到正确的屏作用域 */
+        bar.setAttribute('data-owner', owner);
+        host.appendChild(bar);
+      }
+    });
+    var foot = $('.demo-foot [data-role="counts-foot"]');
+    if (foot) foot.setAttribute('data-ready', '1');
+  }
+  /* 用 DOM 节点替换屏内容：不写 innerHTML，也不重建屏根节点
+     （屏根节点保持同一个引用，mountCounts / updateCounts 的作用域因此永远有效） */
+  function setContent(el, html) {
+    if (!el) return;
+    while (el.firstChild) el.removeChild(el.firstChild);
+    var tpl = document.createElement('div');
+    tpl.innerHTML = html;
+    while (tpl.firstChild) el.appendChild(tpl.firstChild);
+  }
+  function renderScreen() {
+    var def = SCREENS[panelTab];
+    var html = def.fn();
+    setContent(elScreen, html);
+    setContent(elPageBody, html);
+    if (elCrumb) elCrumb.textContent = '会话页 · ' + NAV[def.l1].label + ' · ' + def.title;
+    mountCounts();
+    updateCounts();
+    animateNumbers();
+  }
+  function show(tab, opts) {
+    /* ★ P0-2 修复：未知键必须可见报错，不得静默 return（v2 的 if(!def) return 让断链逃过全部验收） */
+    if (!SCREENS[tab]) {
+      var msg = '未知分区「' + String(tab) + '」—— 该链接指向的屏不存在，未发生任何跳转';
+      lastError = msg;
+      toast('断链已阻止：' + msg, 'err');
+      try { console.warn('[v3] show(' + tab + ') 未知分区键'); } catch (e) {}
+      return false;
+    }
+    panelTab = tab;
+    renderNav(); renderTabs(); renderScreen();
+    return true;
+  }
+  function goByKey(tab) { return show(tab); }
+
+  /* ---- 实时计数（**v1 updateCounts 口径的回归**：可见 = .sgroup-body > .srow（不含 adv 区） ---- */
+  function countIn(root) {
+    var vis = 0, hidden = 0, groups = 0, open = 0;
+    if (!root) return { vis: vis, hidden: hidden, groups: groups, open: open };
+    groups = $$('.sgroup', root).length;
+    $$('.sgroup', root).forEach(function (g) {
+      var isOpen = g.classList.contains('open');
+      if (isOpen) open++;
+      $$('.sgroup-body > .srow', g).forEach(function (r) {
+        if (!r.closest('.adv-wrap')) vis++;
+      });
+      if (!isOpen) hidden += $$('.adv-wrap .srow', g).length;
+    });
+    /* 屏内直接子级 .srow（未包在 sgroup 里的）也计入可见 */
+    $$('[data-role="screen"] > .srow', root).forEach(function () { vis++; });
+    return { vis: vis, hidden: hidden, groups: groups, open: open };
+  }
+  function updateCounts() {
+    /* 计数条已由 mountCounts() 移到屏根节点的承载面上；两套版式各刷新各的读数。
+       每次重算前先把 computed 的 .srow 计数写回 DOM —— 这样任何调用方（含外部脚本）
+       改过 aria-checked / 展开态之后，读数都不会失步。 */
+    var primary = null;
+    [[elScreen, $('.form-panel'), 'panel'], [elPageBody, $('.form-page'), 'page']].forEach(function (p) {
+      var body = p[0], formEl = p[1];
+      if (!body || !formEl) return;
+      var c = countIn(body);
+      if (p[2] === 'panel') primary = c;
+      var bar = formEl.querySelector('[data-role="counts"]');
+      if (!bar) return;
+      var v = $('[data-role="ctl-visible"]', bar);
+      var hd = $('[data-role="ctl-hidden"]', bar);
+      if (v) v.textContent = String(c.vis);
+      if (hd) hd.textContent = String(c.hidden);
+      var btn = $('[data-role="expand-all"]', bar);
+      if (btn) btn.textContent = (c.groups > 0 && c.open === c.groups) ? '全部折叠' : '全部展开';
+      $$('.sgroup-head', body).forEach(function (hd2) {
+        var g = hd2.closest('.sgroup');
+        hd2.setAttribute('aria-expanded', g.classList.contains('open') ? 'true' : 'false');
+      });
+    });
+    var foot = $('.demo-foot [data-role="counts-foot"]');
+    if (foot && primary) {
+      foot.innerHTML = '<b>本屏</b> 可见控件 <span class="mono">' + primary.vis + '</span> · 被折叠 <span class="mono">' +
+        primary.hidden + '</span> · 分组 <span class="mono">' + primary.groups + '</span>';
+    }
+  }
+  function toggleGroup(g, force) {
+    if (!g) return;
+    var open = (force === undefined) ? !g.classList.contains('open') : !!force;
+    g.classList.toggle('open', open);
+    var head = $('.sgroup-head', g);
+    if (head) head.setAttribute('aria-expanded', open ? 'true' : 'false');
+    var btn = $('.adv-toggle', g);
+    if (btn) {
+      var nm = ($('.nm', g) || {}).textContent || '';
+      var n = $$('.adv-wrap .srow', g).length;
+      btn.innerHTML = '<span class="arw">▸</span>' + (open ? '收起高级设置（' : '展开高级设置（') + esc(nm) + '）· ' + n + ' 项';
+    }
+    updateCounts();
+  }
+  function expandAll(scope) {
+    var sc = scope || elPageBody || elScreen;
+    var groups = $$('.sgroup', sc);
+    var allOpen = groups.length > 0 && groups.every(function (g) { return g.classList.contains('open'); });
+    groups.forEach(function (g) { toggleGroup(g, !allOpen); });
+  }
+
+  /* ---- 数字弹入（items/number-pop-in.json 改编；重播前必须 reflow） ---- */
+  function animateNumbers() {
+    var scope = elPageBody || elScreen;
+    $$('[data-number-group]', scope).forEach(function (g) {
+      var raw = g.textContent.trim();
+      g.classList.remove('is-animating');
+      g.innerHTML = raw.split('').map(function (ch, i) {
+        return '<span class="d"' + (i > 0 && i < 3 ? ' data-stagger="' + i + '"' : '') + '>' + esc(ch) + '</span>';
+      }).join('');
+      void g.offsetWidth;                    /* §10-2：重播必须 reflow */
+      g.classList.add('is-animating');
+    });
+  }
+    /* ==========================================================================
+     §7  覆盖层（toast / 模态 / 抽屉）—— 模态配 scrim、非阻塞的 toast 不带 scrim（apple-design §12）
+     ========================================================================== */
+  var elToasts = $('[data-role="toasts"]');
+  var elScrim = $('[data-role="scrim"]');
+  var elDrawer = $('[data-role="drawer"]');
+  function toast(msg, kind) {
+    if (!elToasts) return;
+    var el = document.createElement('div');
+    el.className = 'toast' + (kind ? ' ' + kind : '');
+    el.setAttribute('role', kind === 'err' ? 'alert' : 'status');
+    el.innerHTML = (kind === 'err' ? '<span class="tt">出错 · </span>' : (kind === 'warn' ? '<span class="tt">注意 · </span>' : '')) + esc(msg);
+    elToasts.appendChild(el);
+    void el.offsetWidth;                    /* 让初始态先落一帧，再翻 is-open（否则不播） */
+    el.classList.add('is-open');
+    setTimeout(function () {
+      el.classList.remove('is-open');
+      setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 300);
+    }, kind === 'err' ? 4600 : 2800);
+  }
+  function openModal(title, bodyHtml) {
+    if (!elScrim) return;
+    $('[data-role="modal-title"]').textContent = title;
+    $('[data-role="modal-body"]').innerHTML = bodyHtml;
+    elScrim.hidden = false;
+    elScrim.classList.remove('is-closing');
+    void elScrim.offsetWidth;
+    elScrim.classList.add('is-open');
+  }
+  function closeModal() {
+    if (!elScrim) return;
+    elScrim.classList.remove('is-open');
+    elScrim.classList.add('is-closing');
+    setTimeout(function () { elScrim.classList.remove('is-closing'); elScrim.hidden = true; }, 160);
+  }
+  function openDrawer(title, bodyHtml) {
+    if (!elDrawer) return;
+    $('[data-role="drawer-title"]').textContent = title;
+    $('[data-role="drawer-body"]').innerHTML = bodyHtml;
+    elDrawer.setAttribute('aria-hidden', 'false');
+    void elDrawer.offsetWidth;
+    elDrawer.classList.add('is-open');
+  }
+  function closeDrawer() {
+    if (!elDrawer) return;
+    elDrawer.classList.remove('is-open');
+    elDrawer.setAttribute('aria-hidden', 'true');
+  }
+
+  /* ==========================================================================
+     §8  动作注册 —— **按域分区**（P1-3：替代 v2 那个 228 行 / 41 分支的全局代理）
+       域：① 演示外壳  ② 形态切换  ③ 覆盖层  ④ 浮层专属控件  ⑤ 屏内控件（**作用域限定在屏根节点内**）
+       纪律：任何分派都不得读取或写入屏外节点 —— 这条纪律就是 P0-1 跨屏误写的根治
+     ========================================================================== */
+
+  /* ---- ④ 浮层专属控件：pin / reset / refresh / close ---- */
+  function onPanelAction(e, panel) {
+    var el = e.target;
+    var t;
+    if ((t = el.closest('[data-act="pin"]'))) {
+      var pinned = panel.getAttribute('data-pinned') === 'true';
+      panel.setAttribute('data-pinned', pinned ? 'false' : 'true');
+      t.setAttribute('aria-pressed', pinned ? 'false' : 'true');
+      toast(pinned ? '已取消钉住（浮层可拖动）' : '已钉住左下角（真源 DEFAULT_GAP = 16px）');
+      return true;
+    }
+    if ((t = el.closest('[data-act="reset"]'))) {
+      panel.style.left = ''; panel.style.bottom = ''; panel.style.width = ''; panel.style.height = '';
+      panel.setAttribute('data-pinned', 'false');
+      $('[data-act="pin"]', panel).setAttribute('aria-pressed', 'false');
+      toast('已复位位置与尺寸（440 × 560）');
+      return true;
+    }
+    if ((t = el.closest('[data-act="refresh"]'))) {
+      t.classList.remove('spin-once'); void t.offsetWidth; t.classList.add('spin-once');
+      renderScreen();
+      toast('已刷新 —— 屏内已交互状态（开关 / 裁定）保持不变，不卸载任何节点');
+      return true;
+    }
+    if ((t = el.closest('[data-act="close"]'))) {
+      var p = panel;
+      p.setAttribute('data-closing', 'true');
+      setTimeout(function () {
+        p.removeAttribute('data-closing');
+        p.style.visibility = 'hidden';
+        toast('浮层已关闭。切到「整页」或点「共存 both」可重新看到它 —— 数据与状态都在，屏没有消失', 'warn');
+      }, 170);
+      return true;
+    }
+    if (el.closest('[data-tab-scroll]')) {
+      var dir = parseInt(el.closest('[data-tab-scroll]').getAttribute('data-tab-scroll'), 10);
+      var strip = $('[data-dam-tab-strip]', panel);
+      if (strip) strip.scrollBy({ left: dir * 180, behavior: 'smooth' });
+      return true;
+    }
+    if (el.closest('[data-gotab]')) {
+      var k = el.closest('[data-gotab]').getAttribute('data-gotab');
+      if (!validTab(SCREENS[panelTab].l1, k)) {
+        /* 浮层页签只列当前 L1 的分区；跨 L1 时给出可见反馈而不是静默 */
+        toast('「' + k + '」不属于当前一级入口 —— 浮层页签按 L1 分组，请用整页侧栏切换', 'warn');
+        return true;
+      }
+      show(k);
+      return true;
+    }
+    return false;
+  }
+
+  /* ---- ⑤ 屏内控件：root = 屏根节点（浮层 .pn-body 或整页 .pg-inner） ---- */
+  function toggleSwitch(root, btn) {
+    var key = btn.getAttribute('data-sw');
+    var next = btn.getAttribute('aria-checked') !== 'true';
+    /* ① 开关自身即时回显（CSS 过渡驱动） */
+    btn.setAttribute('aria-checked', next ? 'true' : 'false');
+    st.sw[key] = next;
+    /* ② 标签**屏内定址** —— 这是 P0-1 修复点：绝不 document.querySelector 取全文档第一个 */
+    var lab = root.querySelector('.js-sw-state[data-for="' + key + '"], [data-sw-state="' + key + '"]');
+    if (lab) lab.textContent = next ? '已启用' : '已关闭';
+    /* ③ 明确不做任何跨屏/跨组副作用 */
+    return true;
+  }
+  function setGrade(root, btn) {
+    var item = btn.getAttribute('data-item');
+    var k = btn.getAttribute('data-grade');
+    var wrap = btn.closest('.grade');
+    $$('button', wrap).forEach(function (b) { b.setAttribute('aria-pressed', String(b === btn)); });
+    st.grades[item] = k;
+    var label = k === 'H' ? '有害' : (k === 'E' ? '改目标' : (k === 'A' ? '该激活' : (k === 'P' ? '只预取' : '应抑制')));
+    var stEl = root.querySelector('[data-grade-state="' + item + '"]');
+    if (stEl) stEl.textContent = '当前：' + k + ' · ' + label;
+    toast('已记下裁定 ' + k + ' · ' + label + '（只记裁定，不动检索排序）');
+    return true;
+  }
+  function armAct(root, btn) {
+    var key = btn.getAttribute('data-arm');
+    var lab = root.querySelector('[data-arm-msg="' + key + '"]');
+    if (btn.getAttribute('data-armed') === '1') {
+      btn.removeAttribute('data-armed');
+      btn.setAttribute('data-done', '1');
+      if (btn.hasAttribute('data-arm-demo')) btn.textContent = '已撤出（两阶段完成）';
+      else btn.textContent = btn.textContent.replace('确认删除？', '已接入');
+      if (lab) lab.textContent = '两阶段完成 · 已提交';
+      toast('两阶段确认完成：已提交', '');
+    } else {
+      btn.setAttribute('data-armed', '1');
+      if (btn.hasAttribute('data-arm-demo')) btn.textContent = '确认删除？';
+      else btn.textContent = '确认删除？';
+      if (lab) lab.textContent = '已武装 · 再点一次才会真的提交';
+      toast('两阶段确认：第一次点击只武装，第二次才提交', 'warn');
+    }
+    return true;
+  }
+  function onScreenAction(e, root) {
+    var el = e.target, t;
+    if ((t = el.closest('[data-sw]'))) return toggleSwitch(root, t);
+    if ((t = el.closest('[data-grade]'))) return setGrade(root, t);
+    if ((t = el.closest('[data-arm]'))) return armAct(root, t);
+    if ((t = el.closest('[data-act="group-toggle"]'))) { toggleGroup(t.closest('.sgroup')); return true; }
+    if ((t = el.closest('[data-act="expand-all"]'))) {
+      var barEl = t.closest('[data-role="counts"]');
+      var owner = barEl ? barEl.getAttribute('data-owner') : null;
+      expandAll(owner === 'page' ? elPageBody : (owner === 'panel' ? elScreen : root));
+      return true;
+    }
+    if ((t = el.closest('[data-act="check-water"]'))) {
+      toast('判定完成：三条件中「轮次边界」未满足 ⇒ 本轮不触发自动接续（水位 81.6% ≥ 0.75）', 'warn');
+      return true;
+    }
+    if ((t = el.closest('[data-act="open-cal"]'))) {
+      openModal('日历弹层 · 浮层材质档', '<div class="tiny mute" style="margin-bottom:8px">这一层用的是<b>浮层档</b>材质：令牌 74% 底 + ' +
+        '<span class="mono">blur(20px) saturate(1.4)</span> + 14px 圆角。比面板薄一档，避免「亮面叠亮面」。</div>' +
+        tbl(['日期', '事项'], CAL_ROWS.map(function (r) { return [esc(r[0] + ' ' + r[1]), esc(r[2])]; })));
+      return true;
+    }
+    if ((t = el.closest('[data-act="do-search"]'))) {
+      var q = (root.querySelector('[data-role="q"]') || {}).value || '';
+      var out = root.querySelector('[data-role="search-out"]');
+      if (out) {
+        out.innerHTML = q.trim()
+          ? '<div style="font-size:12.5px;line-height:1.7">「<b>' + esc(q) + '</b>」在本项目指：<b>上下文 token 实占 ÷ 官方声明窗口</b> 的百分比。' +
+            '<div class="tiny mute" style="margin-top:6px">命中范围：标题 / 正文 · 两套引擎分别打分 · 选引擎不会开关另一套</div></div>'
+          : '<div class="tiny mute">请输入检索词。</div>';
+      }
+      return true;
+    }
+    if ((t = el.closest('[data-go]'))) {
+      var parts = String(t.getAttribute('data-go')).split(':');
+      return goByKey(parts[parts.length - 1]);
+    }
+    if ((t = el.closest('[data-radio] button'))) {
+      var grp = t.closest('[data-radio]');
+      $$('button', grp).forEach(function (b) { b.setAttribute('aria-pressed', String(b === t)); });
+      var key2 = grp.getAttribute('data-radio');
+      var val = t.getAttribute('data-val');
+      if (key2 === 'accent') {
+        var map = { deepseek: '#1d4ed8', graphite: '#8b949e', violet: '#9b8cff' };
+        st.sels.accent = val;
+        document.documentElement.style.setProperty('--dam-accent', map[val]);
+        toast('强调色已切到 ' + t.textContent + '（' + map[val] + '，真源 :839 ACCENT_VALUES）');
+      } else if (key2 === 'fontScale') {
+        st.sels.fontScale = val;
+        var fs = { sm: 0.9, md: 1, lg: 1.15, xl: 1.3 };
+        $$('[data-dam-page]').forEach(function (pg) { pg.style.setProperty('--dam-scale', String(fs[val])); });
+        toast('字号已切到 ' + t.textContent + '（--dam-user-scale = ' + fs[val] + '）');
+      }
+      return true;
+    }
+    return false;
+  }
+
+  /* ---- ① 演示外壳 / ② 形态切换 / ③ 覆盖层 ---- */
+  var elStage = $('.stage');
+  function movePill() {
+    var sw = $('.form-switch');
+    if (!sw) return;
+    var active = sw.querySelector('button[aria-pressed="true"]');
+    var pill = $('.form-pill', sw);
+    if (!active || !pill) return;
+    pill.style.transform = 'translateX(' + active.offsetLeft + 'px)';
+    pill.style.width = active.offsetWidth + 'px';
+  }
+  function setForm(f, silent) {
+    demoForm = f;
+    $$('.form-switch button').forEach(function (b) {
+      b.setAttribute('aria-pressed', String(b.getAttribute('data-form-set') === f));
+    });
+    if (elStage) {
+      elStage.setAttribute('data-form', f);
+      /* both 档 = 两套版式**同屏共存**（真源 :54 默认值的真实语义）；
+         data-both 另留作「聚焦一侧」的演示开关，默认 'all' 即两边都呈现 */
+      elStage.setAttribute('data-both', (f === 'both') ? 'all' : f);
+    }
+    var panel = $('[data-dam-panel]');
+    if (panel && f !== 'panel') panel.style.visibility = '';
+    movePill();
+    if (!silent) {
+      var msg = f === 'panel' ? '当前：悬窗形态（440×560，顶部横向页签，单列堆叠）'
+        : (f === 'page' ? '当前：整页形态（左侧 170px 侧栏 + 多列 auto-fit 栅格）'
+          : '当前：共存 both（真源代码默认值，lib/client.js:54）—— 两套版式同屏');
+      toast(msg + '。两套共享数据与状态，但绝不共享同一份版式。');
+    }
+  }
+  function toggleBothSide() {
+    if (!elStage) return;
+    var cur = elStage.getAttribute('data-both');
+    elStage.setAttribute('data-both', cur === 'panel' ? 'page' : 'panel');
+    toast(elStage.getAttribute('data-both') === 'panel' ? '共存档：当前聚焦悬窗（整页收起）' : '共存档：当前聚焦整页（悬窗收起）');
+  }
+  function setHost(theme) {
+    hostTheme = theme;
+    document.documentElement.setAttribute('data-host', theme);
+    $$('[data-host-set]').forEach(function (b) {
+      b.setAttribute('aria-pressed', String(b.getAttribute('data-host-set') === theme));
+    });
+    /* 真源 :5724-5733 的注入面：读 --dsw-alias-bg-layer-2 自身 alpha，< 0.65 时置 data-solid */
+    var panel = $('[data-dam-panel]');
+    if (panel) {
+      var bg = getComputedStyle(panel).backgroundColor || '';
+      var m = bg.match(/rgba?\(([^)]+)\)/);
+      var a = 1;
+      if (m) { var ps = m[1].split(','); a = ps.length > 3 ? parseFloat(ps[3]) : 1; }
+      panel.setAttribute('data-solid', a < 0.65 ? 'true' : 'false');
+    }
+    toast('宿主令牌已切到「' + (theme === 'dark' ? '深色' : '浅色') + '」—— 插件侧零改动：颜色 100% 来自 --dsw-alias-*，' +
+      '真源本身没有插件侧的主题开关');
+  }
+
+  document.addEventListener('click', function (e) {
+    /* ① 演示外壳（最外层，先判） */
+    var el = e.target, t;
+    if ((t = el.closest('[data-host-set]'))) { setHost(t.getAttribute('data-host-set')); return; }
+    if ((t = el.closest('[data-form-set]'))) { setForm(t.getAttribute('data-form-set')); return; }
+    if (el.closest('[data-act="both-side"]')) { toggleBothSide(); return; }
+    /* ③ 覆盖层 */
+    if ((t = el.closest('[data-act="modal-close"]')) || (t = el.closest('[data-act="modal-ok"]'))) { closeModal(); return; }
+    if (el === elScrim) { closeModal(); return; }
+    if ((t = el.closest('[data-act="drawer-close"]'))) { closeDrawer(); return; }
+    /* ④ 浮层专属控件（作用域 = 该浮层） */
+    var panel = el.closest('[data-dam-panel]');
+    if (panel && onPanelAction(e, panel)) return;
+    /* ⑤ 屏内控件（作用域 = 屏根节点；浮层与整页各一份，互不串写） */
+    var root = el.closest('[data-role="screen"]');
+    /* 计数条移到了屏根节点之外，但它仍是**屏级控件** ⇒ 用 data-owner 回落到正确的屏作用域 */
+    if (!root) {
+      var bar = el.closest('[data-role="counts"]');
+      if (bar) root = (bar.getAttribute('data-owner') === 'page') ? elPageBody : elScreen;
+    }
+    if (root && onScreenAction(e, root)) return;
+    /* 整页侧栏导航 */
+    if ((t = el.closest('[data-gonav]'))) {
+      var k = t.getAttribute('data-gonav');
+      if (!SCREENS[k]) { toast('未知分区「' + k + '」—— 未发生跳转', 'err'); return; }
+      show(k); return;
+    }
+    if (el.closest('[data-dam-drag]')) {
+      toast('拖拽手柄：本演示稿不移动浮层位置（真源用 localStorage 持久化几何），位置由「复位」按钮恢复');
+      return;
+    }
+  });
+
+  /* 键盘可达：Escape 关覆盖层 / 关浮层；← → 切分区；Enter/Space 折叠分组 */
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+      if (elScrim && !elScrim.hidden) { closeModal(); return; }
+      if (elDrawer && elDrawer.classList.contains('is-open')) { closeDrawer(); return; }
+      var p = $('[data-dam-panel]');
+      if (p && demoForm !== 'page') {
+        p.setAttribute('data-closing', 'true');
+        setTimeout(function () {
+          p.removeAttribute('data-closing'); p.style.visibility = 'hidden';
+          toast('浮层已关闭（Esc）。当前屏没有消失 —— 切到整页仍在', 'warn');
+        }, 170);
+      }
+      return;
+    }
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+      var inField = /^(INPUT|SELECT|TEXTAREA)$/.test((document.activeElement || {}).tagName || '');
+      if (inField) return;
+      var l1 = SCREENS[panelTab].l1, tabs = NAV[l1].tabs;
+      var i = tabs.map(function (x) { return x[0]; }).indexOf(panelTab);
+      var n = (e.key === 'ArrowRight') ? (i + 1) % tabs.length : (i - 1 + tabs.length) % tabs.length;
+      show(tabs[n][0]);
+      return;
+    }
+    if (e.key === 'Enter' || e.key === ' ') {
+      var a = document.activeElement;
+      if (a && a.getAttribute('data-act') === 'group-toggle') { e.preventDefault(); toggleGroup(a.closest('.sgroup')); }
+    }
+  });
+
+  window.addEventListener('resize', function () { movePill(); });
+  if (window.matchMedia) {
+    var mq = window.matchMedia('(prefers-reduced-transparency: reduce)');
+    var rm = window.matchMedia('(prefers-reduced-motion: reduce)');
+    [mq, rm].forEach(function (m) {
+      var fn = function () { /* 闸门由 CSS 承载；这里只做一次重排，确保材质与动效立即生效 */ movePill(); };
+      if (m.addEventListener) m.addEventListener('change', fn); else if (m.addListener) m.addListener(fn);
+    });
+  }
+
+  /* ==========================================================================
+     §9  启动
+     ========================================================================== */
+  function boot() {
+    elScreen = $('.form-panel [data-role="screen"]');
+    elPageBody = $('.form-page [data-role="screen"]');
+    elNav = $('[data-role="page-nav"]');
+    elTabs = $('[data-dam-tab-strip]');
+    elCrumb = $('[data-role="crumb"]');
+    panelTab = HOME;
+    renderNav(); renderTabs(); renderScreen();
+    setForm('panel', true);
+    setHost('light');
+    /* 点掉启动时的动效重播竞争：首帧后用 rAF 再算一次计数与指示器 */
+    requestAnimationFrame(function () { movePill(); updateCounts(); });
+    /* 一条起始提示：把本版相对 v2 的修复点直接摆在用户眼前 */
+    setTimeout(function () {
+      toast('v3 已就绪：液态玻璃逐字抄真身（blur(28px) saturate(1.55)）· 双形态可切换 · 渐进披露已恢复 · 跨屏误写与断链静默已修');
+    }, 260);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
+
+  /* ==========================================================================
+     §SLUG  动画语料台账（transitions-motion/references/items/<slug>.json）
+     —— 每条都标出「用在哪」，便于审计「没有凭记忆编动画」
+     ========================================================================== */
+  window.__V3_MOTION_SLUGS__ = [
+    { slug: 'panel-reveal', where: '整页/抽屉进场：translateY + opacity + blur 三通道同钟；进入 400ms(slow) / 关闭 350ms(medium) 非对称' },
+    { slug: 'modal-open-close', where: '模态：scale(.96)→1 + opacity；打开 250ms(fast) / 关闭 150ms(quick) + is-closing 清理' },
+    { slug: 'tabs-sliding', where: '形态切换指示器药丸：JS 量测 offsetLeft/offsetWidth 写 transform+width，250ms 同钟' },
+    { slug: 'accordion', where: '渐进披露分组：grid-template-rows 0fr↔1fr + inner blur/opacity；chevron 用 scaleY(-1) 垂直翻转' },
+    { slug: 'notification-badge', where: '「规划中」徽标：slide-in（仅进入，过冲曲线）+ dot 的 scale/opacity/blur 三通道非对称开合' },
+    { slug: 'number-pop-in', where: '统计数字：逐位 data-stagger 错开 + blur(2px) 弹入；重播前 void offsetWidth 强制 reflow' },
+    { slug: 'toast-open-close', where: 'toast：translateY + fade + cross-blur + scale(.97)；打开 350ms(medium) / 关闭 250ms(fast)' },
+    { slug: 'success-check', where: 'arm 完成态 / 打勾：路径描边 stroke-dashoffset 0 + scale 弹入（仅进入）' }
+  ];
+  window.__V3_PANEL_POS__ = PANEL_POS_VALUES;
+  window.__V3_STATE__ = st;
+  window.__V3_SHOW__ = show;
+  window.__V3_SCREENS__ = SCREENS;
+  window.__V3_LAST_ERROR__ = function () { return lastError; };
+})();
+</script>
+</body>
+</html>

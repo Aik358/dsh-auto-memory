@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>记忆中枢建立弹窗 · 视觉预览（改版后）</title>
+<style>
+  body { margin: 0; padding: 34px 20px 60px; background: #0d1220; color: #e7ecf6;
+         font: 14px/1.6 system-ui, "Segoe UI", sans-serif; }
+  h1 { font-size: 16px; font-weight: 700; margin: 0 0 6px; letter-spacing: .2px; }
+  .lede { font-size: 12.5px; color: #93a0bb; margin: 0 0 26px; }
+  .grid { display: flex; flex-wrap: wrap; gap: 26px; align-items: flex-start; }
+  .cell { flex: 0 0 auto; }
+  .cap { font-size: 11.5px; color: #7d8aa6; margin: 0 0 10px; letter-spacing: .3px; }
+  /* 预览用的「画布」：模拟 DSH 页面的明/暗两种底色，用来同时验对比度 */
+  .canvas { position: relative; padding: 30px; border-radius: 16px;
+            background: radial-gradient(ellipse at 50% 35%, #1b2440, #0a0f1c);
+            border: 1px solid rgba(255,255,255,.07); }
+  .canvas.lightbg { background: radial-gradient(ellipse at 50% 35%, #eef2fb, #dbe3f4);
+            border-color: rgba(0,0,0,.10); }
+  @media (max-width: 1240px) { .grid { flex-direction: column; } }
+
+  /* ═══ 以下 CSS 与 lib/client.js 中新增段落逐字一致（仅补上 --dsw-* 变量以脱离宿主预览）═══ */
+  :root { --dsw-alias-label-primary: #e8eefb; --dsw-alias-bg-layer-2: #1c2334; --dsw-alias-border-l1: rgba(255,255,255,.16); }
+  .canvas.lightbg { --dsw-alias-label-primary: #1f2328; --dsw-alias-bg-layer-2: #ffffff; --dsw-alias-border-l1: rgba(0,0,0,.16); }
+</style>
+<style id="wb-css">
+  [data-dam-wb-setup] [data-dam-wb-card] {
+    --wb-fg: var(--dsw-alias-label-primary, #1f2328);
+    --wb-muted: color-mix(in srgb, var(--dsw-alias-label-primary, #1f2328) 62%, transparent);
+    --wb-line: color-mix(in srgb, var(--dsw-alias-label-primary, #1f2328) 13%, transparent);
+    --wb-soft: color-mix(in srgb, var(--dsw-alias-label-primary, #1f2328) 5%, transparent);
+    --wb-ok: #17a673; --wb-bad: #e5484d; --wb-warn: #d97706;
+    width: min(560px, calc(100vw - 40px)); padding: 26px 26px 20px; border-radius: 18px;
+    background: color-mix(in srgb, var(--dsw-alias-bg-layer-2, #ffffff) 94%, transparent);
+    -webkit-backdrop-filter: blur(26px) saturate(1.5); backdrop-filter: blur(26px) saturate(1.5);
+    border: 1px solid var(--wb-line); color: var(--wb-fg);
+    font: 13.5px/1.62 system-ui, "Segoe UI", sans-serif;
+    box-shadow: 0 26px 70px rgba(8,14,38,.34), 0 3px 12px rgba(8,14,38,.16);
+    animation: dam-wb-pop .26s cubic-bezier(.2,.9,.3,1.1) both; }
+  @keyframes dam-wb-pop { from { opacity: 0; transform: scale(.965) translateY(10px); } to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) { [data-dam-wb-setup] [data-dam-wb-card] { animation: none; } }
+  [data-dam-wb-setup] [data-dam-wb-card]::before { content: none; }
+  [data-dam-wb-card] [data-dam-wb-head] { position: relative; padding-left: 11px; font-size: 17px;
+    font-weight: 700; letter-spacing: .2px; line-height: 1.35; }
+  [data-dam-wb-card] [data-dam-wb-head]::before { content: ""; position: absolute; left: 0; top: .34em;
+    width: 4px; height: 1.05em; border-radius: 3px; background: var(--wb-accent, #4a76f0); }
+  [data-dam-wb-card] [data-dam-wb-phase="exists"] { --wb-accent: var(--wb-ok); }
+  [data-dam-wb-card] [data-dam-wb-phase="done"] { --wb-accent: var(--wb-ok); }
+  [data-dam-wb-card] [data-dam-wb-phase="building"] { --wb-accent: var(--wb-warn); }
+  [data-dam-wb-card] [data-dam-wb-sub] { margin: 10px 0 15px; color: var(--wb-muted); font-size: 12.5px; line-height: 1.68; }
+  [data-dam-wb-card] [data-dam-wb-row] { display: grid; grid-template-columns: 20px minmax(0,1fr) auto; gap: 10px;
+    align-items: baseline; padding: 9px 12px; margin-bottom: 6px; border-radius: 10px; background: var(--wb-soft); }
+  [data-dam-wb-card] [data-dam-wb-dot] { font-size: 12px; font-weight: 700; text-align: center; }
+  [data-dam-wb-card] [data-dam-wb-state="ok"] { color: var(--wb-ok); }
+  [data-dam-wb-card] [data-dam-wb-state="bad"] { color: var(--wb-bad); }
+  [data-dam-wb-card] [data-dam-wb-state="na"] { color: var(--wb-muted); }
+  [data-dam-wb-card] [data-dam-wb-label] { font-size: 12.5px; font-weight: 600; }
+  [data-dam-wb-card] [data-dam-wb-detail] { max-width: 250px; text-align: right; font-size: 11.5px;
+    font-family: ui-monospace, Consolas, monospace; color: var(--wb-muted); overflow-wrap: anywhere; }
+  [data-dam-wb-card] [data-dam-wb-reason] { margin: 13px 0; padding: 8px 12px; border-radius: 9px; font-size: 12.5px;
+    border-left: 3px solid #4a76f0; background: color-mix(in srgb, #4a76f0 10%, transparent); }
+  [data-dam-wb-card] [data-dam-wb-dir] { margin-bottom: 12px; padding: 9px 12px; border-radius: 9px; background: var(--wb-soft);
+    font-size: 11.5px; line-height: 1.7; color: var(--wb-muted); overflow-wrap: anywhere; }
+  [data-dam-wb-card] [data-dam-wb-dir] strong, [data-dam-wb-card] [data-dam-wb-risk] strong { color: var(--wb-fg); }
+  [data-dam-wb-card] [data-dam-wb-risk] { margin-bottom: 18px; padding: 10px 12px 10px 13px; border-radius: 9px;
+    border-left: 3px solid var(--wb-warn); background: color-mix(in srgb, var(--wb-warn) 9%, transparent);
+    font-size: 11.5px; line-height: 1.72; color: var(--wb-muted); }
+  [data-dam-wb-card] [data-dam-wb-actions] { display: flex; align-items: center; gap: 10px; }
+  [data-dam-wb-card] button { padding: 10px 20px; border-radius: 10px; font: inherit; font-size: 12.5px;
+    font-weight: 600; line-height: 1; cursor: pointer;
+    transition: filter .16s ease, background .16s ease, border-color .16s ease; }
+  [data-dam-wb-card] button[data-dam-wb-cta] { border: 1px solid transparent; color: #fff;
+    background: linear-gradient(180deg, #527cf6, #2b56d4); box-shadow: 0 2px 8px rgba(35,74,190,.34); }
+  [data-dam-wb-card] button[data-dam-wb-cta]:hover { filter: brightness(1.08); }
+  [data-dam-wb-card] button[data-dam-wb-cta2] { color: var(--wb-fg); background: var(--wb-soft);
+    border: 1px solid color-mix(in srgb, var(--dsw-alias-label-primary, #1f2328) 24%, transparent); }
+  [data-dam-wb-card] button[data-dam-wb-cta2]:hover { background: color-mix(in srgb, var(--dsw-alias-label-primary, #1f2328) 12%, transparent); }
+  [data-dam-wb-card] button:focus-visible { outline: 2px solid #4a76f0; outline-offset: 2px; }
+  [data-dam-wb-card] button[disabled] { opacity: .58; cursor: default; filter: none; }
+  [data-dam-wb-card] [data-dam-wb-foot] { margin-top: 15px; padding-top: 13px; border-top: 1px solid var(--wb-line);
+    font-size: 11.5px; line-height: 1.7; color: var(--wb-muted); }
+  @media (max-width: 480px) { [data-dam-wb-setup] [data-dam-wb-card] { padding: 20px 16px 16px; }
+    [data-dam-wb-card] [data-dam-wb-row] { grid-template-columns: 20px minmax(0,1fr); }
+    [data-dam-wb-card] [data-dam-wb-detail] { grid-column: 2; max-width: none; text-align: left; }
+    [data-dam-wb-card] [data-dam-wb-actions] { flex-direction: column-reverse; align-items: stretch; } }
+</style>
+</head>
+<body>
+<h1>记忆中枢建立弹窗 · 视觉预览</h1>
+<p class="lede">与 <code>lib/client.js</code> 新增的 CSS 段逐字一致；四种相位 × 深/浅两种底各出一份，用来验对比度。按钮可悬停/聚焦试手感。</p>
+<div class="grid" id="grid"></div>
+
+<script>
+// 四种相位 × 深/浅底 —— DOM 结构与 lib/client.js 的渲染函数一致
+var PHASES = [
+  { phase: 'offer',    head: '建立「记忆中枢」', sub: '接下来会新建一个属于插件的工作区（目录「记忆中枢」）和一个工作台会话，并把初始化对话放进去；后台的记忆整理（问候 / 总结 / 沉淀 / 蒸馏）都挂在它下面运行，这样不会再往你的会话列表里塞子对话。', rows: [['① 工作区位置', 'na', 'C:\\Users\\JH Z\\.dsh\\aik_auto_memory_use'], ['② 权限（完全访问）', 'na', 'danger-full-access'], ['③ 期号（编号）', 'na', 'W1479 → W1479'], ['④ 工作区登记', 'na', 'C:\\Users\\JH Z\\.dsh\\aik_auto_memory_use']], reason: '当前状态：工作区尚未登记（点下面按钮会就地建立）', foot: '在建立完成前，所有后台记忆任务都会暂停（不会发送任何请求）；只有你点了「同意并建立」才会写入。' },
+  { phase: 'exists',   head: '记忆中枢已就绪', sub: '已经有「记忆中枢」了，直接可以使用。后台的记忆整理（问候 / 总结 / 沉淀 / 蒸馏）都挂在它下面运行。', rows: [['① 工作区位置', 'ok', 'C:\\Users\\JH Z\\.dsh\\aik_auto_memory_use'], ['② 权限（完全访问）', 'ok', 'danger-full-access'], ['③ 期号（编号）', 'ok', 'W1479 → W1479'], ['④ 工作区登记', 'ok', 'C:\\Users\\JH Z\\.dsh\\aik_auto_memory_use']], reason: '当前状态：ok', second: false, cta: '好，开始使用', foot: '后台记忆任务已在运行。之后可在 设置 → 自动化 里改工作台目录或轮换周期。' },
+  { phase: 'offer',    head: '建立「记忆中枢」', sub: '接下来会新建一个属于插件的工作区（目录「记忆中枢」）和一个工作台会话。', rows: [['① 工作区位置', 'ok', 'C:\\Users\\JH Z\\.dsh\\aik_auto_memory_use'], ['② 权限（完全访问）', 'bad', 'restricted'], ['③ 期号（编号）', 'na', 'W1479 → W1479'], ['④ 工作区登记', 'na', 'C:\\Users\\JH Z\\.dsh\\aik_auto_memory_use']], reason: '当前状态：工作台会话权限不是「完全访问」', foot: '在建立完成前，所有后台记忆任务都会暂停（不会发送任何请求）；只有你点了「同意并建立」才会写入。' },
+  { phase: 'building', head: '正在建立记忆中枢…', sub: '正在创建工作区与工作台会话，并把初始化对话放进去。请稍候，不要关闭本窗口。', rows: [['① 工作区位置', 'ok', 'C:\\Users\\JH Z\\.dsh\\aik_auto_memory_use'], ['② 权限（完全访问）', 'ok', 'danger-full-access'], ['③ 期号（编号）', 'ok', 'W1479 → W1479'], ['④ 工作区登记', 'na', 'C:\\Users\\JH Z\\.dsh\\aik_auto_memory_use']], reason: '当前状态：ok', busy: true, cta: '正在建立…', foot: '在建立完成前，所有后台记忆任务都会暂停（不会发送任何请求）。' }
+]
+var RISK = '<strong>必须「完全访问」：</strong>这个工作台会话必须使用「完全访问」权限——若用受限权限，后台任务会被沙箱拦住、<strong>读不到记忆条目</strong>，相关功能会静默失效（界面上看不到任何报错）。若上方第 ② 行未通过，请点「一键添加并修复」重建为该权限。该会话下的后台任务只做记忆整理，不会改动你的项目代码。'
+var DIR = '<strong>记忆目录：</strong>C:\\Users\\JH Z\\.dsh\\aik_auto_memory_use（DSH 本体目录下，跨平台一致；设置留空即自动）'
+
+function build(p, ctaText, showSecond) {
+  var rows = p.rows.map(function (r) {
+    return '<div data-dam-wb-row=""><span data-dam-wb-dot="" data-dam-wb-state="' + r[1] + '">' +
+      (r[1] === 'ok' ? '✓' : r[1] === 'bad' ? '✗' : '·') + '</span>' +
+      '<span data-dam-wb-label="">' + r[0] + '</span>' +
+      '<span data-dam-wb-detail="">' + r[2] + '</span></div>'
+  }).join('')
+  return '<div data-dam-tour-backdrop="" data-dam-wb-setup="" style="position:static;background:none;backdrop-filter:none;display:block">' +
+    '<div data-dam-tour="" data-dam-wb-card="" role="dialog" aria-modal="true">' +
+    '<div data-dam-wb-head="" data-dam-wb-phase="' + p.phase + '">' + p.head + '</div>' +
+    '<div data-dam-wb-sub="">' + p.sub + '</div>' + rows +
+    '<div data-dam-wb-reason="">' + p.reason + '</div>' +
+    '<div data-dam-wb-dir="">' + DIR + '</div>' +
+    '<div data-dam-wb-risk="">' + RISK + '</div>' +
+    '<div data-dam-wb-actions="">' +
+    '<button type="button" data-dam-wb-cta="' + p.phase + '"' + (p.busy ? ' disabled' : '') + '>' + (ctaText || '同意并建立') + '</button>' +
+    (showSecond ? '<button type="button" data-dam-wb-cta2="">稍后</button>' : '') +
+    '</div>' +
+    '<div data-dam-wb-foot="">' + p.foot + '</div>' +
+    '</div></div>'
+}
+var html = ''
+for (var i = 0; i < PHASES.length; i++) {
+  var p = PHASES[i]
+  var cta = p.cta || (p.phase === 'offer' ? '同意并建立' : '好，开始使用')
+  html += '<div class="cell"><p class="cap">相位 ' + p.phase + ' · 深色底</p><div class="canvas">' + build(p, cta, p.phase === 'offer' && !p.busy) + '</div></div>'
+  if (i < 2) html += '<div class="cell"><p class="cap">相位 ' + p.phase + ' · 浅色底</p><div class="canvas lightbg">' + build(p, cta, p.phase === 'offer' && !p.busy) + '</div></div>'
+}
+document.getElementById('grid').innerHTML = html
+</script>
+</body>
+</html>

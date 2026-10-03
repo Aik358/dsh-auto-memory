@@ -1,0 +1,1580 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DSH 主动联想记忆 | 整体系统地图</title>
+  <style>
+    :root {
+      --ink: #172238;
+      --muted: #64748b;
+      --paper: #edf2f8;
+      --surface: #ffffff;
+      --line: #d4deea;
+      --navy: #0d1b31;
+      --navy-2: #142744;
+      --native: #16816d;
+      --native-soft: #dff5ee;
+      --planned: #2864ce;
+      --planned-soft: #e7efff;
+      --research: #7451c8;
+      --research-soft: #eee9ff;
+      --guard: #c4473e;
+      --guard-soft: #ffebe8;
+      --amber: #a96a16;
+      --amber-soft: #fff2d9;
+      --shadow: 0 16px 40px rgba(23, 34, 56, .09);
+      --radius: 12px;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { margin: 0; color: var(--ink); background: var(--paper); font-family: Inter, "Segoe UI", "Microsoft YaHei", sans-serif; line-height: 1.55; }
+    a { color: #1c5fc5; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    button, input { font: inherit; }
+    button { cursor: pointer; }
+    code, pre, .mono { font-family: "Cascadia Code", Consolas, monospace; }
+    code { padding: 1px 4px; border-radius: 4px; color: #1b4f9e; background: #edf3fc; }
+    .topbar { position: sticky; top: 0; z-index: 30; color: #f7fbff; background: rgba(13, 27, 49, .97); border-bottom: 1px solid rgba(255,255,255,.12); backdrop-filter: blur(14px); }
+    .topbar-inner { max-width: 1680px; margin: 0 auto; padding: 13px 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+    .brand { display: flex; align-items: center; gap: 11px; min-width: 270px; }
+    .mark { width: 35px; height: 35px; display: grid; place-items: center; border-radius: 9px; color: white; background: #347df1; font-weight: 850; }
+    .brand-title { font-weight: 800; letter-spacing: .1px; }
+    .brand-sub { color: #a9b9d2; font-size: 11px; }
+    .top-actions { display: flex; align-items: center; gap: 7px; }
+    .top-actions a, .top-actions button { padding: 6px 9px; color: #dbe8fb; border: 1px solid transparent; border-radius: 6px; background: transparent; font-size: 12px; text-decoration: none; }
+    .top-actions a:hover, .top-actions button:hover { border-color: rgba(255,255,255,.18); background: rgba(255,255,255,.08); }
+    .page { max-width: 1680px; margin: 0 auto; padding: 25px 24px 52px; }
+    .hero { display: grid; grid-template-columns: minmax(0, 1fr) 390px; gap: 18px; margin-bottom: 18px; }
+    .hero-main { padding: 29px 32px 31px; border: 1px solid #243b61; border-radius: 16px; color: #f8fbff; background: var(--navy); box-shadow: var(--shadow); }
+    .eyebrow { color: #8ab9ff; font: 800 11px/1.2 Consolas, monospace; letter-spacing: 1.5px; text-transform: uppercase; }
+    h1 { max-width: 850px; margin: 10px 0 10px; font-size: clamp(29px, 4vw, 48px); line-height: 1.08; letter-spacing: -.7px; }
+    .lead { max-width: 920px; margin: 0; color: #cbd9ed; font-size: 15px; }
+    .hero-contract { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 20px; }
+    .contract-chip { padding: 4px 9px; border: 1px solid rgba(255,255,255,.2); border-radius: 999px; color: #e7f0ff; font-size: 11px; }
+    .contract-chip.native { border-color: #63c4ae; color: #bcefe0; }
+    .contract-chip.planned { border-color: #86b1ff; color: #d1e1ff; }
+    .contract-chip.research { border-color: #d3b6ff; color: #f0e6ff; }
+.contract-chip.implemented { border-color: #2aa876; color: #c9f7e0; }
+    .hero-note { padding: 23px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); box-shadow: var(--shadow); }
+    .hero-note .kicker { color: var(--guard); font: 800 11px/1.2 Consolas, monospace; letter-spacing: 1px; text-transform: uppercase; }
+    .hero-note h2 { margin: 8px 0 10px; font-size: 20px; line-height: 1.2; }
+    .hero-note p { margin: 0; color: var(--muted); font-size: 13px; }
+    .controlbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin: 15px 0; padding: 11px 13px; border: 1px solid var(--line); border-radius: 10px; background: rgba(255,255,255,.76); }
+    .control-group { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+    .control-label { color: var(--muted); font-size: 11px; margin-right: 3px; }
+    .filter, .zoom-btn, .copy-btn { min-height: 30px; padding: 5px 9px; border: 1px solid var(--line); border-radius: 6px; color: var(--ink); background: white; font-size: 11px; }
+    .filter:hover, .zoom-btn:hover, .copy-btn:hover { border-color: #9bb0ce; }
+    .filter.active { border-color: var(--planned); color: white; background: var(--planned); }
+    .filter.native.active { border-color: var(--native); background: var(--native); }
+    .filter.research.active { border-color: var(--research); background: var(--research); }
+    .filter.guard.active { border-color: var(--guard); background: var(--guard); }
+    .search { width: 220px; min-height: 31px; padding: 5px 9px; border: 1px solid var(--line); border-radius: 6px; color: var(--ink); background: white; font-size: 12px; }
+    .search:focus { outline: 2px solid rgba(40,100,206,.18); border-color: var(--planned); }
+    .canvas-layout { display: grid; grid-template-columns: minmax(0, 1fr) 376px; gap: 16px; align-items: start; }
+    .map-panel { min-width: 0; overflow: hidden; border: 1px solid #bfcddd; border-radius: var(--radius); background: #f8fbff; box-shadow: var(--shadow); }
+    .map-panel-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 13px 16px; border-bottom: 1px solid var(--line); background: #f2f6fb; }
+    .map-panel-head strong { font-size: 13px; }
+    .map-panel-head span { color: var(--muted); font-size: 11px; }
+    .diagram-scroll { overflow: auto; padding: 10px; background: #e9eff7; }
+    #systemMap { display: block; width: 100%; min-width: 1040px; height: auto; min-height: 590px; border: 1px solid #c8d5e5; border-radius: 9px; background: #f7faff; transform-origin: top left; transition: transform .16s ease; }
+    .map-caption { display: flex; flex-wrap: wrap; gap: 12px; padding: 10px 14px; color: var(--muted); background: white; border-top: 1px solid var(--line); font-size: 11px; }
+    .legend-item { display: inline-flex; align-items: center; gap: 5px; }
+    .legend-dot { width: 9px; height: 9px; border-radius: 50%; }
+    .legend-dot.native { background: var(--native); }
+    .legend-dot.planned { background: var(--planned); }
+    .legend-dot.research { background: var(--research); }
+    .legend-dot.guard { background: var(--guard); }
+.legend-dot.implemented { background: #2aa876; }
+.status-badge.implemented { background: #2aa876; }
+.svg-card .svg-state.implemented { background: #2aa876; }
+.node.implemented .node-shell { fill: #f3fff8; stroke: #2aa876; }
+.filter.implemented.active { border-color: #2aa876; background: #2aa876; }
+    .inspector { position: sticky; top: 78px; min-height: 590px; overflow: hidden; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow); }
+    .inspector-head { padding: 17px 18px 14px; color: #f8fbff; background: var(--navy); }
+    .inspector-code { color: #9eb9df; font: 800 10px/1.2 Consolas, monospace; letter-spacing: 1px; }
+    .inspector-title { margin: 6px 0 3px; font-size: 21px; line-height: 1.15; }
+    .inspector-summary { margin: 0; color: #c7d6eb; font-size: 12px; }
+    .status-badge { display: inline-flex; margin-top: 11px; padding: 3px 7px; border-radius: 5px; color: white; font: 800 10px/1.2 Consolas, monospace; text-transform: uppercase; letter-spacing: .5px; }
+    .status-badge.native { background: var(--native); }
+    .status-badge.planned { background: var(--planned); }
+    .status-badge.research { background: var(--research); }
+    .status-badge.guard { background: var(--guard); }
+    .inspector-tabs { display: flex; gap: 3px; padding: 9px 11px 0; border-bottom: 1px solid var(--line); background: #f5f8fc; }
+    .inspector-tab { padding: 7px 9px; border: 0; border-bottom: 2px solid transparent; color: var(--muted); background: transparent; font-size: 11px; }
+    .inspector-tab.active { border-bottom-color: var(--planned); color: var(--planned); font-weight: 800; }
+    .inspector-body { max-height: 540px; overflow: auto; padding: 15px 17px 20px; }
+    .detail-label { margin: 0 0 5px; color: #60738d; font: 800 10px/1.2 Consolas, monospace; letter-spacing: .8px; text-transform: uppercase; }
+    .detail-text { margin: 0 0 14px; color: #394b63; font-size: 13px; }
+    .io-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 15px; }
+    .io-box { padding: 9px 10px; border: 1px solid var(--line); border-radius: 7px; background: #f8fafc; }
+    .io-box strong { display: block; margin-bottom: 3px; color: var(--ink); font-size: 11px; }
+    .io-box span { display: block; color: var(--muted); font-size: 11px; line-height: 1.45; }
+    .detail-list { margin: 0 0 15px; padding-left: 17px; color: #485b74; font-size: 12px; }
+    .detail-list li { margin: 5px 0; }
+    .ref-list { display: grid; gap: 7px; margin-bottom: 12px; }
+    .ref { display: block; padding: 8px 9px; border: 1px solid #dce5f0; border-radius: 7px; background: #f8fbff; font-size: 11px; }
+    .ref strong { display: block; margin-bottom: 2px; font-size: 11px; }
+    .ref small { color: var(--muted); font-size: 10px; }
+    .inspector-footer { display: flex; gap: 7px; padding: 11px 14px; border-top: 1px solid var(--line); background: #f6f8fb; }
+    .module-index { margin-top: 16px; padding: 14px; border: 1px solid var(--line); border-radius: var(--radius); background: white; box-shadow: var(--shadow); }
+    .module-index h3 { margin: 0 0 10px; font-size: 13px; }
+    .module-index-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; }
+    .module-jump { overflow: hidden; padding: 6px 7px; border: 1px solid var(--line); border-radius: 5px; color: #51647d; background: #fbfcfe; text-align: left; text-overflow: ellipsis; white-space: nowrap; font-size: 10px; }
+    .module-jump:hover, .module-jump.active { border-color: var(--planned); color: var(--planned); background: var(--planned-soft); }
+    .contract-panel { display: grid; grid-template-columns: 1.08fr 1fr 1fr 1.1fr; gap: 12px; margin-top: 16px; }
+    .contract-card { padding: 15px 16px; border: 1px solid var(--line); border-radius: 10px; background: white; box-shadow: 0 6px 18px rgba(23,34,56,.045); }
+    .contract-card h3 { margin: 0 0 6px; font-size: 14px; }
+    .contract-card p { margin: 0; color: var(--muted); font-size: 12px; }
+    .contract-card pre { margin: 8px 0 0; padding: 9px; overflow: auto; border-radius: 6px; color: #dce8fb; background: var(--navy); font-size: 10px; line-height: 1.45; }
+    .source-rail { margin-top: 16px; padding: 16px; border: 1px solid var(--line); border-radius: var(--radius); background: white; box-shadow: var(--shadow); }
+    .source-rail-head { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; }
+    .source-rail h2 { margin: 0; font-size: 16px; }
+    .source-rail-head span { color: var(--muted); font-size: 11px; }
+    .source-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+    .source-chip { padding: 5px 8px; border: 1px solid #d7e2f0; border-radius: 6px; color: #315b9e; background: #f5f8fd; font-size: 11px; }
+    .uncertainty { margin-top: 16px; padding: 13px 15px; border-left: 4px solid var(--amber); border-radius: 0 8px 8px 0; color: #76521c; background: var(--amber-soft); font-size: 11px; }
+    .footer { display: flex; justify-content: space-between; gap: 10px; margin-top: 28px; padding-top: 14px; border-top: 1px solid var(--line); color: var(--muted); font-size: 10px; }
+
+    /* Authoritative implementation progress ledger */
+    .progress-ledger { margin: 18px 0; overflow: hidden; border: 1px solid #bfcddd; border-radius: 8px; background: var(--surface); box-shadow: var(--shadow); }
+    .progress-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; padding: 18px 20px 15px; color: #f8fbff; background: var(--navy); }
+    .progress-head h2 { margin: 4px 0 5px; font-size: 20px; line-height: 1.2; }
+    .progress-head p { max-width: 980px; margin: 0; color: #c7d6eb; font-size: 12px; }
+    .progress-kicker { color: #8ab9ff; font: 800 10px/1.2 Consolas, monospace; letter-spacing: 1px; text-transform: uppercase; }
+    .progress-head .copy-btn { flex: 0 0 auto; color: #f4f8ff; border-color: #607b9f; background: #172c4c; }
+    .progress-head .copy-btn:hover { border-color: #9bb8df; }
+    .progress-facts { display: grid; grid-template-columns: 1.2fr .75fr .85fr 1.2fr; border-bottom: 1px solid var(--line); background: #f5f8fc; }
+    .progress-fact { min-width: 0; padding: 11px 14px; border-right: 1px solid var(--line); }
+    .progress-fact:last-child { border-right: 0; }
+    .progress-fact span { display: block; margin-bottom: 2px; color: #71839b; font: 800 9px/1.2 Consolas, monospace; letter-spacing: .7px; text-transform: uppercase; }
+    .progress-fact strong { display: block; overflow-wrap: anywhere; color: #263a54; font-size: 11px; }
+    .progress-table-wrap { overflow: auto; }
+    .progress-table { width: 100%; min-width: 1040px; border-collapse: collapse; table-layout: fixed; }
+    .progress-table th, .progress-table td { padding: 10px 11px; border-bottom: 1px solid #e2e8f0; text-align: left; vertical-align: top; }
+    .progress-table th { color: #60738d; background: #f8fafc; font: 800 9px/1.2 Consolas, monospace; letter-spacing: .7px; text-transform: uppercase; }
+    .progress-table td { color: #42556f; font-size: 11px; line-height: 1.45; }
+    .progress-table tr:last-child td { border-bottom: 0; }
+    .progress-table .progress-id { width: 80px; color: #1e3f73; font: 800 11px/1.4 Consolas, monospace; }
+    .progress-table .progress-module { width: 170px; color: #1d2f49; font-weight: 750; }
+    .progress-table .progress-state-col { width: 96px; }
+    .progress-state { display: inline-flex; padding: 3px 6px; border-radius: 4px; color: white; font: 800 9px/1.1 Consolas, monospace; letter-spacing: .4px; text-transform: uppercase; white-space: nowrap; }
+    .progress-state.repair { background: #b45309; }
+    .progress-state.tested { background: var(--native); }
+    .progress-state.next { background: var(--planned); }
+    .progress-state.queued { color: #2d527e; background: #dbe8f8; }
+    .progress-state.blocked { color: #73531d; background: #f7e9bf; }
+    .progress-state.live { background: #16816d; }
+    .next-brief { display: grid; grid-template-columns: 220px minmax(0, 1fr); border-top: 1px solid var(--line); background: #f7f9fc; }
+    .next-brief-copy { padding: 15px 17px; }
+    .next-brief-copy h3 { margin: 0 0 6px; font-size: 14px; }
+    .next-brief-copy p { margin: 0; color: var(--muted); font-size: 11px; }
+    .next-brief pre { min-height: 150px; margin: 0; padding: 14px 16px; overflow: auto; color: #dce8fb; background: var(--navy); font-size: 10px; line-height: 1.55; white-space: pre-wrap; }
+
+    /* Meta code drawer styles */
+    .meta-backdrop { position: fixed; inset: 0; z-index: 60; background: rgba(13,27,49,.45); opacity: 0; pointer-events: none; transition: opacity .18s ease; }
+    .meta-backdrop.open { opacity: 1; pointer-events: auto; }
+    .meta-drawer { position: fixed; top: 0; right: 0; bottom: 0; width: min(820px, 94vw); z-index: 61; display: flex; flex-direction: column; color: #dce8fb; background: var(--navy); box-shadow: -18px 0 44px rgba(13,27,49,.35); transform: translateX(102%); transition: transform .22s cubic-bezier(.3,.7,.3,1); }
+    .meta-drawer.open { transform: translateX(0); }
+    .meta-drawer-head { display: flex; align-items: center; gap: 10px; padding: 13px 18px; background: var(--navy-2); border-bottom: 1px solid rgba(255,255,255,.12); }
+    .meta-drawer-head strong { color: #f2f7ff; font: 800 13px Consolas, monospace; letter-spacing: 1px; white-space: nowrap; }
+    .meta-drawer-head span { flex: 1; color: #9eb9df; font-size: 11px; }
+    .meta-drawer-close { width: 30px; height: 30px; flex: 0 0 auto; border: 1px solid rgba(255,255,255,.25); border-radius: 7px; color: #dbe8fb; background: transparent; font-size: 14px; line-height: 1; cursor: pointer; }
+    .meta-drawer-close:hover { background: rgba(255,255,255,.12); }
+    .meta-drawer-body { flex: 1; overflow: auto; padding: 16px 18px 28px; }
+    .meta-drawer-ring { margin-bottom: 12px; padding: 11px 13px; border: 1px solid rgba(255,255,255,.14); border-radius: 9px; background: rgba(255,255,255,.05); font: 10.5px/1.8 Consolas, monospace; color: #cbd9ed; }
+    .meta-drawer-ring b { color: #8ab9ff; }
+    .meta-drawer-body .meta-code { border: 1px solid rgba(255,255,255,.12); border-radius: 9px; }
+    .wiring-invariants { margin-top: 12px; padding: 12px 15px; color: #ffd9c2; background: #3a2a1a; border: 1px solid rgba(255,255,255,.1); border-radius: 9px; font-size: 11px; }
+    .wiring-invariants ul { margin: 6px 0 0; padding-left: 18px; }
+    .wiring-invariants li { margin: 3px 0; }
+    .meta-code { margin: 0; padding: 13px 16px; color: #dce8fb; background: var(--navy); font: 11.5px/1.62 Consolas, monospace; overflow: auto; white-space: pre; }
+    .meta-code .m-c { color: #8ab9ff; }
+    .meta-code .m-s { color: #ffd7a3; }
+    .meta-code .m-k { color: #7ee2c8; font-weight: 700; }
+    .wiring-jump { display: inline-block; margin: 0 0 10px; padding: 6px 9px; border: 1px solid var(--planned); border-radius: 6px; color: var(--planned); background: var(--planned-soft); font-size: 11px; font-weight: 700; cursor: pointer; }
+    .wiring-jump:hover { border-color: #164a9e; }
+    .inspector-body .meta-code { border-radius: 7px; border: 1px solid #243b61; }
+    @media print { .meta-drawer, .meta-backdrop { display: none !important; } }
+
+    /* SVG map styles */
+    .lane { stroke-width: 1; }
+    .lane-native { fill: #effaf7; stroke: #b6ddd3; }
+    .lane-control { fill: #f4f7ff; stroke: #c4d4f1; }
+    .lane-memory { fill: #fbf8ff; stroke: #d7cbee; }
+    .lane-governance { fill: #fffaf7; stroke: #ecd8c3; }
+    .lane-label { fill: #5c7190; font: 800 12px Consolas, monospace; letter-spacing: 1px; }
+    .edge { fill: none; stroke-width: 1.8; opacity: .22; pointer-events: none; transition: opacity .16s ease, stroke-width .16s ease; }
+    .edge.edge-primary { opacity: .82; stroke-width: 2.2; }
+    .edge.edge-related { opacity: .92; stroke-width: 2.8; }
+    .edge.native { stroke: var(--native); marker-end: url(#arrow-native); }
+    .edge.planned { stroke: var(--planned); stroke-dasharray: 7 5; marker-end: url(#arrow-planned); }
+    .edge.research { stroke: var(--research); stroke-dasharray: 2 5; marker-end: url(#arrow-research); }
+    .edge.guard { stroke: var(--guard); stroke-dasharray: 8 4 2 4; marker-end: url(#arrow-guard); }
+    .edge-label { fill: #60738d; font: 10px Consolas, monospace; paint-order: stroke; stroke: #f7faff; stroke-width: 4px; stroke-linejoin: round; opacity: 0; transition: opacity .16s ease; }
+    .edge-label.edge-primary-label, .edge-label.edge-related-label { opacity: .96; }
+    .node { cursor: pointer; outline: none; }
+    .node.dimmed { opacity: .13; }
+    .node.search-dimmed { opacity: .12; }
+    .node .node-shell { stroke-width: 1.5; }
+    .node.native .node-shell { fill: #f7fffd; stroke: #63b5a2; }
+    .node.planned .node-shell { fill: #f8faff; stroke: #7ea6e4; }
+    .node.research .node-shell { fill: #fcfaff; stroke: #a28bdd; }
+    .node.guard .node-shell { fill: #fffafa; stroke: #dc8d87; }
+    .node.node-selected .node-shell { stroke: #132c55; stroke-width: 3; filter: drop-shadow(0 4px 5px rgba(25,48,86,.18)); }
+    .node.node-focused .node-shell { stroke: #e39a1e; stroke-width: 3; }
+    .svg-card { width: 100%; height: 100%; padding: 8px 10px; color: #182840; font-family: Inter, "Segoe UI", "Microsoft YaHei", sans-serif; pointer-events: none; }
+    .svg-card .svg-code { color: #71839b; font: 800 9px/1.1 Consolas, monospace; letter-spacing: .5px; }
+    .svg-card .svg-title { margin-top: 4px; font-size: 12px; font-weight: 820; line-height: 1.15; }
+    .svg-card .svg-sub { margin-top: 4px; color: #61738c; font-size: 9px; line-height: 1.28; }
+    .svg-card .svg-state { display: inline-block; margin-top: 5px; padding: 2px 4px; border-radius: 3px; color: white; font: 800 8px/1 Consolas, monospace; text-transform: uppercase; }
+    .svg-card .svg-state.native { background: var(--native); }
+    .svg-card .svg-state.planned { background: var(--planned); }
+    .svg-card .svg-state.research { background: var(--research); }
+    .svg-card .svg-state.guard { background: var(--guard); }
+    .node-hit { fill: transparent; stroke: transparent; }
+    .node:focus-visible .node-shell { stroke: #e39a1e; stroke-width: 3; }
+
+    @media (max-width: 1180px) {
+      .hero { grid-template-columns: 1fr; }
+      .canvas-layout { grid-template-columns: 1fr; }
+      .inspector { position: static; min-height: 0; }
+      .inspector-body { max-height: none; }
+      .contract-panel { grid-template-columns: 1fr 1fr; }
+      .progress-facts { grid-template-columns: 1fr 1fr; }
+      .next-brief { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 700px) {
+      .topbar-inner { display: block; padding: 11px 15px; }
+      .brand { margin-bottom: 8px; }
+      .top-actions { overflow-x: auto; justify-content: flex-start; }
+      .top-actions a, .top-actions button { flex: 0 0 auto; white-space: nowrap; }
+      .page { padding: 16px 12px 36px; }
+      .hero-main { padding: 23px 20px 25px; }
+      h1 { font-size: 33px; }
+      .lead { font-size: 14px; }
+      .progress-head { display: block; padding: 16px; }
+      .progress-head .copy-btn { margin-top: 12px; }
+      .progress-facts { grid-template-columns: 1fr; }
+      .progress-fact { border-right: 0; border-bottom: 1px solid var(--line); }
+      .progress-fact:last-child { border-bottom: 0; }
+      .progress-table { min-width: 0; table-layout: auto; }
+      .progress-table thead { display: none; }
+      .progress-table tbody, .progress-table tr { display: block; }
+      .progress-table tr { padding: 11px 14px; border-bottom: 1px solid var(--line); }
+      .progress-table tr:last-child { border-bottom: 0; }
+      .progress-table td, .progress-table .progress-id, .progress-table .progress-module, .progress-table .progress-state-col { display: grid; grid-template-columns: 84px minmax(0, 1fr); gap: 9px; width: auto; padding: 4px 0; border: 0; }
+      .progress-table td::before { content: attr(data-label); color: #71839b; font: 800 9px/1.35 Consolas, monospace; letter-spacing: .5px; text-transform: uppercase; }
+      .progress-table .progress-id, .progress-table .progress-module { font-family: Inter, "Segoe UI", "Microsoft YaHei", sans-serif; font-size: 11px; line-height: 1.45; }
+      .progress-table .progress-id { color: #1e3f73; font-weight: 800; }
+      .controlbar { align-items: stretch; }
+      .control-group { width: 100%; }
+      .search { width: 100%; }
+      .contract-panel { grid-template-columns: 1fr; }
+      .module-index-grid { grid-template-columns: repeat(3, 1fr); }
+      .footer { flex-direction: column; }
+    }
+    @media print {
+      .topbar { position: static; color: var(--ink); background: white; }
+      .top-actions, .controlbar, .inspector-footer { display: none; }
+      .canvas-layout { display: block; }
+      .inspector { margin-top: 16px; position: static; box-shadow: none; }
+      .map-panel, .inspector, .contract-card, .source-rail { box-shadow: none; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand"><div class="mark">AM</div><div><div class="brand-title">dsh-auto-memory · System Map</div><div class="brand-sub">Host-side proactive associative memory for heterogeneous LLM agents</div></div></div>
+      <nav class="top-actions" aria-label="页面导航"><a href="#progress">实施进度</a><a href="#map">系统地图</a><a href="#contracts">数据契约</a><a href="#evidence">理论与实现</a><a href="./proactive-associative-memory-research-report.zh-CN.md">正式报告</a><button type="button" id="copySnapshot" title="复制架构不变量">复制快照</button><button type="button" id="metaDrawerOpenBtn" title="打开/关闭全局装配抽屉(X / Esc 关闭)">Meta 装配 ⓪</button></nav>
+    </div>
+  </header>
+
+  <div class="page">
+    <section class="hero">
+      <div class="hero-main">
+        <div class="eyebrow">Architecture Atlas / Authoritative System Map / Updated 2026-08-22</div>
+        <h1>让记忆在模型没有主动调用时，也能被当前情境唤回。</h1>
+        <p class="lead">一张图看清 DSH 原生事件链、稳定 Anchor/FileIndex、访问证据图、Host 主动联想层、渐进式程序技能激活、Python sidecar、Provider 适配和安全治理。点击任意模块，在右侧查看实现办法与理论依据。</p>
+        <div class="hero-contract"><span class="contract-chip native">Native: section/context → assemble → runtime projection → pre-step</span><span class="contract-chip planned">Planned: observe → retrieve → MemoryPacket → next-step Inbox</span><span class="contract-chip research">Research: dynamic retrieval signals</span></div>
+      </div>
+      <aside class="hero-note"><div class="kicker">Runtime boundary</div><h2>已发出的请求不能被原地改写</h2><p>所有动态内容必须在下一步请求边界生效。原生核心顺序是：claim → systemPrompt.assemble → runtime projection → pre-step → step/start → buildRequest → LLM。</p></aside>
+    </section>
+
+    <section class="progress-ledger" id="progress" aria-labelledby="progressTitle">
+      <div class="progress-head">
+        <div><div class="progress-kicker">Authoritative implementation ledger</div><h2 id="progressTitle">模块化实施进度与下一交付门</h2><p>目标架构与研究进度以本 HTML 为准；研究报告提供理论基线。当前实现事实仍以代码、DSH 类型和测试证据为准。架构节点的 native/planned/research/guard 表示机制性质，下表单独记录完成度。</p></div>
+        <button type="button" class="copy-btn" id="copyNextBrief" title="复制给下一编程模型">复制下一模型实施指令</button>
+      </div>
+      <div class="progress-facts">
+        <div class="progress-fact"><span>代码基线</span><strong id="progressRevision"></strong></div>
+        <div class="progress-fact"><span>工作分支</span><strong id="progressBranch"></strong></div>
+        <div class="progress-fact"><span>当前交付范围</span><strong id="progressScope"></strong></div>
+        <div class="progress-fact"><span>现有 GUI 加载</span><strong id="progressLiveTarget"></strong></div>
+      </div>
+      <div class="progress-table-wrap">
+        <table class="progress-table">
+          <thead><tr><th>里程碑</th><th>模块</th><th>状态</th><th>当前证据</th><th>下一交付物</th><th>验收门 / 依赖</th></tr></thead>
+          <tbody id="progressRows"></tbody>
+        </table>
+      </div>
+      <div class="next-brief">
+        <div class="next-brief-copy"><h3>下一编程模型范围</h3><p>JS 工程先做 M5 Context/Evidence Bridge，再做 M6 Activation Inbox/Reference Tail；Python M7 仅保留方向性契约，等待 M5/M6 live 后由更强 Agent 重写完整契约。</p></div>
+        <pre id="nextBriefText"></pre>
+      </div>
+    </section>
+
+    <div class="controlbar" id="map">
+      <div class="control-group"><span class="control-label">显示</span><button class="filter active" data-status-filter="all">全部</button><button class="filter native" data-status-filter="native">原生</button><button class="filter implemented" data-status-filter="implemented">已实现</button><button class="filter" data-status-filter="planned">设计</button><button class="filter research" data-status-filter="research">研究</button><button class="filter guard" data-status-filter="guard">安全</button></div>
+      <div class="control-group"><span class="control-label">聚焦</span><button class="filter active" data-group-filter="all">全景</button><button class="filter" data-group-filter="native">DSH 链路</button><button class="filter" data-group-filter="control">控制面</button><button class="filter" data-group-filter="memory">记忆面</button><button class="filter" data-group-filter="governance">治理面</button></div>
+      <div class="control-group"><input class="search" id="moduleSearch" type="search" placeholder="搜索模块 / 术语 / 论文" aria-label="搜索模块、术语或论文"><button class="zoom-btn" id="zoomOut" title="缩小">−</button><button class="zoom-btn" id="zoomReset" title="重置缩放">100%</button><button class="zoom-btn" id="zoomIn" title="放大">＋</button></div>
+    </div>
+
+    <div class="canvas-layout">
+      <section class="map-panel" aria-label="整体架构图">
+        <div class="map-panel-head"><strong>整体架构 · 点击节点查看细节</strong><span>实线 = 当前原生机制 · 虚线 = 计划实现 · 点线 = 理论依据 · 点划线 = 安全门 · 点模块 → 「Meta 代码」标签看实现草图</span></div>
+        <div class="diagram-scroll">
+          <svg id="systemMap" viewBox="0 0 1600 900" role="img" aria-label="DSH 主动联想记忆整体架构图">
+            <defs>
+              <marker id="arrow-native" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#16816d"></path></marker>
+              <marker id="arrow-planned" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#2864ce"></path></marker>
+              <marker id="arrow-research" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#7451c8"></path></marker>
+              <marker id="arrow-guard" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#c4473e"></path></marker>
+            </defs>
+            <rect x="18" y="20" width="1564" height="174" rx="12" class="lane lane-native"></rect>
+            <rect x="18" y="214" width="1564" height="202" rx="12" class="lane lane-control"></rect>
+            <rect x="18" y="436" width="1564" height="202" rx="12" class="lane lane-memory"></rect>
+            <rect x="18" y="658" width="1564" height="220" rx="12" class="lane lane-governance"></rect>
+            <text x="38" y="45" class="lane-label">NATIVE DSH REQUEST PLANE</text>
+            <text x="38" y="239" class="lane-label">PROACTIVE MEMORY CONTROL PLANE</text>
+            <text x="38" y="461" class="lane-label">COGNITIVE MEMORY PLANE</text>
+            <text x="38" y="683" class="lane-label">EVIDENCE · SAFETY · OPERATIONS</text>
+            <g id="edgeLayer"></g><g id="nodeLayer"></g>
+          </svg>
+        </div>
+        <div class="map-caption"><span class="legend-item"><i class="legend-dot native"></i>当前可确认的 DSH 原生机制</span><span class="legend-item"><i class="legend-dot implemented"></i>本项目已实现(preview 分支)</span><span class="legend-item"><i class="legend-dot planned"></i>本项目计划实现</span><span class="legend-item"><i class="legend-dot research"></i>论文 / 开源启发</span><span class="legend-item"><i class="legend-dot guard"></i>必须守住的安全门</span><span class="legend-item">点击节点后，高亮并显示其直接连线标签</span></div>
+      </section>
+
+      <aside class="inspector" id="inspector" aria-live="polite">
+        <div class="inspector-head"><div class="inspector-code" id="inspectorCode">C-06 · 主动控制面</div><div class="inspector-title" id="inspectorTitle">Injection Broker</div><p class="inspector-summary" id="inspectorSummary">决定候选记忆是否在下一请求边界变成 MemoryPacket。</p><span class="status-badge planned" id="inspectorStatus">planned</span></div>
+        <div class="inspector-tabs"><button class="inspector-tab active" data-tab="overview">概览</button><button class="inspector-tab" data-tab="implementation">实现</button><button class="inspector-tab" data-tab="evidence">依据</button><button class="inspector-tab" data-tab="meta">Meta 代码</button><button class="inspector-tab" data-tab="risk">风险 / 验收</button></div>
+        <div class="inspector-body" id="inspectorBody"></div>
+        <div class="inspector-footer"><button class="copy-btn" id="copyModule" title="复制当前模块摘要">复制模块摘要</button><a class="copy-btn" href="./proactive-associative-memory-research-report.zh-CN.md">打开正式报告</a></div>
+      </aside>
+    </div>
+
+    <section class="module-index"><h3>模块索引 · 也可以从这里选择</h3><button type="button" class="wiring-jump" id="metaIndexOpenBtn">⓪ 全局装配 · Meta Code(打开右上角抽屉)</button><div class="module-index-grid" id="moduleIndex"></div></section>
+
+    <section class="contract-panel" id="contracts">
+      <article class="contract-card"><h3>JS M5 · Context / Evidence Bridge</h3><p>JS 从 DSH 事件、稳定 Anchor/FileIndex 与真实 read 结果构建授权上下文和证据；M5 只用 Null/Fake sink，不启动 Python。</p><pre>Segment + read/correction
+→ AccessEvidencePre + aggregate
+→ ContextPushEnvelopePre
+→ ContextSinkPre (Null / Fake)
+→ no prompt change</pre></article>
+      <article class="contract-card"><h3>JS M6 · Activation Inbox / Reference Tail</h3><p>JS 接收 fake/未来 Python activation_request，做身份、scope、版本、TTL、预算和风险硬校验，再在下一请求边界投递参考尾注。</p><pre>ActivationRequestPre
+→ hard validation
+→ per-runtime Activation Inbox
+→ ReferenceTailPacketPre
+→ pre-step / user-message surface
+→ next request tail + delivery ack</pre></article>
+      <article class="contract-card"><h3>双轨语义层 · 三级算力（2026-08-25 固化）</h3><p>语义近似度由三级可选算力承载，唤起必要性始终由统一双通道策略管线回答（要不要=decision / 为什么=reasonCodes / 怎么唤起=lane→delivery），与算力档位解耦。</p><pre>C1 lexical_pre_v2 BM25        0GB     R@5=0.20  兜底(永远可用)
+C2 transformers.js e5-small   ~130MB  R@5=0.85  默认档(npm 资产包+首启下载)
+C3 sidecar bge-m3 int8/fp32   563MB/⏸ R@5=0.925 进阶档(int8=fp32 质量,快6×)
+三级同契约: L2 向量内积=余弦 + D6 融合(dense .7/BM25 .3)
+切换编码器 → vectors identity 变化 → stale → 重建(永不静默混用)</pre></article>
+      <article class="contract-card"><h3>JS / Python 接口与权威边界</h3><p>Python 决定“想起什么、何时建议激活”；JS 决定身份、授权、时序和如何投递。Python 不创建 evidence，也不直接注入。</p><pre>JS → ContextPushEnvelopePre
+Python → ContextAckPre / ActivationRequestPre
+JS → ReferenceTailPacketPre
+JS tier(e5-small q8) unavailable → lexical_pre_v2
+Python unavailable/int8 not installed → JS tier or lexical_pre_v2
+no safe surface → shadow only</pre></article>
+    </section>
+
+      <article class="contract-card"><h3>G-02 · Activation Observability / Calibration Console</h3><p>用户可查看每次 suppress、prefetch、activate、drop 和 delivery：触发上下文、lane、分数、候选 memoryId、来源、命中/抑制原因以及实际尾注内容摘要；用户决策只生成可审计 policy diff。</p><pre>activation decision
+→ why / lane / score / gate
+→ candidate memoryId + provenance
+→ suppress / prefetch / activate
+→ A / P / S / H / E review
+→ append-only policy diff
+→ shadow → canary</pre></article>
+    </section>
+
+      <article class="contract-card"><h3>分层 Memory Plane · 当前与未来</h3><p>不同 memory 层不是同一个模块：Working/Episodic 保存上下文与经历，Lexical/Entity 帮助精确对齐，Semantic/Profile 固化可验证事实，Procedural 固化可验证流程；Anchor/FileIndex 负责身份和定位。</p><pre>Working（M2 runtime ring）
+→ Episodic（M5 evidence-backed episodes）
+→ Lexical / Entity（M4/M7 retrieval aid）
+→ Semantic / Profile（M8 governed facts）
+→ Procedural（M9 validated skills）
+JS authority · Python suggestion</pre></article>
+
+    <section class="source-rail" id="evidence"><div class="source-rail-head"><h2>理论与实现依据</h2><span>点击模块后会显示该模块的精确引用</span></div><div class="source-chips" id="sourceChips"></div></section>
+    <div class="uncertainty"><strong>证据边界：</strong>本图使用已完成的论文/开源项目调研和本机 DSH 0.1.0-rc.7 构建审计结果。本轮没有再次调用 web_search，也没有调用视觉工具；2025+ 项目的版本、论文发表状态和新图的视觉布局仍应在后续预算恢复后重新核验。图中标为“设计”或“研究”的模块不代表当前插件已经实现。</div>
+    <footer class="footer"><span>DSH 主动联想记忆 · Authoritative System Map + Progress Ledger</span><span>工作区：D:\\dsh-auto-memory · 架构与进度更新：2026-08-23</span></footer>
+  </div>
+
+  <script>
+  (function () {
+    var progressLedger = {
+      updatedAt: "2026-08-25",
+      codeBaseline: "aa7d6f0 / preview v0.1.29（工作树未提交：M0-R/T0/M1/M2/P-A/M3/M4 全链路 live verified + lexical_pre_v2 + memoryAnchorEnabled=true；**M5 Context/Evidence Bridge 与 M6 Activation Inbox/Reference Tail 全部四阶段完成并 live verified(2026-08-23)**——context-bridge-pre/evidence-store-pre/context-host-pre/activation-inbox-pre/activation-inbox-state-pre/activation-host-pre 六模块+index.js 接线,默认 assoc/inbox/bridge/shadow=false、anchor=true;另含 compactLayer×anchor F1 记录级压缩修复(M3B §20)；**M7-0 Protocol+Fake Worker 与 M7-1 Authorized index_sync 已实现并 tested(2026-08-24)**——m7-wire-pre/python worker_pre_v1.py(纯标准库确定性)/python-sidecar-client-pre/context-sink-python-pre/index-sync-pre 五模块+三重门接线(pythonBackendEnabled=false 默认零进程零 IO),smoke-test-m70/m71 各 90 断言 exit 0,全量 22 项回归全绿;未 live；**M7-2 Embedding Benchmark 已完成并 tested(2026-08-24)**——冻结 BAAI/bge-m3(pinned revision,MIT)+m7_chunk_pre_v1=para-512-noov+NumPy exact cosine;双层语料(L1 合成 152 记录/88 查询+L2 真实 251 episodes/40 查询),报告/决策/fixture(21 断言零联网)齐全,python/bench 独立 venv+模型缓存(未跟踪目录),qwen3-0.6B 备选/multilingual-e5-large 淘汰;全量回归扩至 23 项全绿;未接生产 activation,未 live；M7-3 Production Dense+Hybrid tested(2026-08-24)：python/m7_embedding_pre_v1.py+worker_semantic_pre_v1.py(继承 worker_pre_v1 零协议回退;commit 建 versioned vectors+identity stale/重建;影子候选本地日志;无配置降级)+smoke-test-m73 55 断言+hybrid 对照→冻结 hybrid_fusion_pre_v1=weighted dense0.7+lexical0.3(L2 R@5 0.950/MRR 0.866 胜 dense-only;bm25s 交叉验证一致零新依赖);全量回归 24 项全绿;未 live;M7-4..M7-7.5 tested(2026-08-24):Clustering Shadow/agglomerative、rerank deferred、graph skipped、双阈值激活、judgement shadow、model-sparse 补测；M7-8 Phase E 全链路通过，Phase F 因 echo/activation 分离与 held-out gold 门停在 shadow；2026-08-25 校准轮：worker fv2 接线修复经主 Agent 重做并核实(dense_search []/append-mode/双 configHash fail-closed,m79 20/20+28/28)；heldout 口径修正(synthetic≠gold)后 69 条审批表 v2 → **67 条人工金标 held-out 打分验收 PASS**(actPrecision 0.917 CI[.727,1.0]/predictedEmit 12/emitOnSuppress 0/echo 层 7/7,docs/M7-ACTIVATION-V2-HOLDEDOUT-EVAL.md;4 条锚点记忆被蒸馏清理,anchor-recovery.json 恢复)；词法调优离线完成(b0.45 MRR+37%,lexical_pre_v3 未应用,docs/M7-LEXICAL-TUNING.md)；**双轨制裁定并实测**:三级语义层=词法0GB(live)/JS e5-small q8 ~130MB(R@5=0.85,默认档,npm 资产包+首启下载弹窗)/Python bge-m3 int8 563MB(R@5=0.925 与 fp32 delta=0.000,快6×)——fp32 2.3GB 暂停使用;m7_embedding_pre_v1 新增 provider bge-m3-onnx-int8-pre-v1(identity 隔离必重建,m73/m79 回归全绿)+js-semantic-tier.mjs 模块(smoke m80 7/7)+UI 资源原型(ui-assets/semantic-tier-ui.html);论文 v2 增补 §7 双轨架构(M7-ACTIVATION-V2-PAPER.md)；回归扩至 29 套件全绿）",
+      branch: "preview",
+      currentScope: "M7-8 收口：双轨制已裁定固化(用户×校准 Agent 双重评判)——等用户重启 3080 进受控 live shadow(18–24 条脚本请求)→active canary(explicit lane only)→标 live；三级语义层(词法/JS 默认/int8 进阶)实测就绪待发布工程窗口接线；G-02 Console 排期待主 Agent 定",
+      reviewRound: "2026-08-24 实施轮(M7-2 Embedding Benchmark):三模型 pinned revision(bge-m3 5617a9f MIT/qwen3 97b0c614 Apache-2.0/e5 3d7cfbda MIT,逐文件 sha256,hf-mirror 分段下载+上游 LFS oid 核验)×5 chunk 策略×双层语料;冻结 bge-m3+para-512-noov+NumPy exact cosine(L1 R@5 0.966/L2 0.925,e5 淘汰);tokenizer 自带 BPE 禁 jieba 预切;L2 真实语料 251 episodes 只读脱敏(97 secret/2 phone/85 path);CI fixture 42docs×8queries 零联网 21 断言;m70 G7 harness effect 空桩顺手修复(heartbeatTimer 清理丢失致进程不退出,断言本全过);全量回归 23 项全绿。历史: 2026-08-24 实施轮(M7-0/M7-1):协议冻结+fake worker+SidecarClient+index_sync;m70+m71 各 90 断言;顺手修复两处凌晨窗口 flake。2026-08-23 实施轮(M5/M6 全程+F1):M5 四阶段+live 八步;M6 三阶段+live;F1 记录级压缩修复。发布策略:完整项目完成前保持 _pre/-pre 不转换不发布;release.mjs 仅作 staging 工具(--dry-run 已验证),README/docs 的 _pre 文案扫描列入最终发布阶段任务。", _oldRound: "2026-08-24 实施轮(M7-0/M7-1):协议冻结+实现(m7_wire_pre_v1/canonical JSON 跨语言一致/envelope validator/帧类型双集合);纯标准库确定性 fake worker(stdout 只协议·两进程输出逐字节相同·唯一写路径 semantic-pre 原子替换);SidecarClient(no-shell lazy spawn·workerEpoch·partial/multi-line framing·256KiB 上限·timeout/abort/crash/breaker·结构化失败永不抛出·四身份不混用);PythonContextSinkPre 原样透传 M5 envelope;JS 授权 index_sync(scope 分组/64 条·256KiB 分页/page+final digest/七类失败整次拒绝/原子切换可重建);m70+m71 各 90 断言,全量 22 项回归全绿;顺手修复两处凌晨窗口 flake(maintain cutoff 取日期零点+smoke-test smkToday 对齐 450min 日界)。",
+      liveTarget: "现有 Web profile 两级链接均指向 D:/dsh-auto-memory；127.0.0.1:3080 已加载 preview，M5/M6 live verified；当前线上 assoc/inbox/bridge/shadow=false、anchor=true、pythonBackendEnabled=false(M7-0/M7-1 默认关闭,重启宿主后加载新接线但零 Python process)；C 盘稳定副本保留可回滚",
+      stateLabels: { repair: "需修复", tested: "已测试", next: "下一步", queued: "排队", blocked: "依赖阻塞", live: "live verified" },
+      modules: [
+        { id: "M0-R", title: "实验基线回归修复", state: "live", evidence: "DEFAULT_CONFIG 已恢复 7 个实验开关（全部默认 false）与 4 个 packet 预算参数（maxPacketItems=2/maxPacketChars=800/packetTtlSteps=2/injectionCooldownSteps=3）；loadConfig 展开合并兼容缺字段旧配置。审查修复轮：默认关闭语义契约定为方案 B——关闭时不建 ring、不存任何 payload/segment，仅最小计数（storage=counters-only），敏感内容零留存（P2 断言）。", deliverable: "P-A 加载验收时复核设置页不受影响；后续里程碑按开关逐个启用。", gate: "关闭时 model-visible prompt、14 个 _pre 工具、24 条路由、Markdown、自动沉淀、观察账本存储全部零变化；无 _dev/裸稳定名残留。" },
+        { id: "T0", title: "测试进程可结算", state: "live", evidence: "根因：ctx.effect(setup) 是工厂语义，mock 直接丢弃 setup 导致生产 interval（retry 5min/heartbeat 15s/notices 1h）永不清理。修复：smoke-test/reflect/external 现调用 setup 取回 disposer 再执行；三处补 fetch stub；reflect 测试改用临时 DSH_HOME 并按插件日界(450min)推算『插件昨天』（00:00-07:30 运行不再误判）。审查修复轮：reflect 显式覆盖 memoryRoot/userMemoryDir 到临时目录（默认 '~' 按真实 homedir 展开,仅 DSH_HOME 挡不住集中记忆迁移写穿），并在结束时断言真实用户 workspaces 目录零泄漏；历史泄漏的 16+40+6 个测试工作区已验证内容后清理。复审轮2 追加根因修复：isolation/consolidate-isolation 写的是旧配置名 dsh-auto-memory.json(引擎读 _pre 版)→ENOENT→默认真实根,已改名 _pre 并实测零泄漏;另发现并修复 resolvePaths 在 configLoaded 前的首调用竞态(前置 loadConfig 守卫)与主 smoke 的同源写穿(nonce 断言)。", deliverable: "保持六项测试可重复自然退出；新测试沿用同一 harness 纪律。", gate: "node --check lib/index.js=0；smoke-test/reflect/external/isolation/consolidate-isolation/context-observer 六项全部 exit 0（串行验证）。" },
+        { id: "M1", title: "SessionRuntime 会话隔离", state: "live", evidence: "f00ad23 落地 SessionRuntimeStore、AsyncLocalStorage、per-runtime consolidate 锁/冷却/队列；本轮复核 M1 不变量全部保持：state/autoStats 仍为 getter、turn-stopping 用 payload.agent、context.text 在 withAgent 内、每日额度引擎级全局。", deliverable: "M3a/M4 继续复用该 runtime，不得新建全局 observer state。", gate: "并发 A/B 的 cwd、segment、cursor、pending 与异步任务零串线——isolation 与 context-observer P3c/P3f 持续通过。" },
+        { id: "M2", title: "ContextObserver", state: "live", evidence: "C-01/C-02 已实现于 lib/index.js：ctx.on(session/event)+frozen ctx.on(tools/result)+agent/session-start/pre-step/turn-stopping/disposed/disposed adapters；EventEnvelope 含 schemaVersion/channel/eventType/timestamp/nativeSeq/callId/rootCallId/payloadDigest（digest 覆盖规范化最小 payload 全文）；eventSeq 对 accepted envelope 递增、contextVersion 仅对有效 Segment 递增；per-runtime envelope ring(128)/segment ring(64 条+32k 字符)；session-start 按 native seq 补放、live 游标去重；dispose 清空 ring/pending/callLinks 并 abort。新增 smoke-test-context-observer.mjs 断言组全过（P1 配置兼容/P2 关闭零差异+零留存/P3a-f 行为契约+强隔离/P4 双引擎确定性回放含原生时间戳/P5a-d 审查回归/P6 真实记忆零污染）。审查修复轮（2026-08-22）：Segment 身份改稳定原生坐标(seq:nativeSeq)使 live/resume 同 id；envelope.timestamp 保留原生 event.time 并另记 observedAt；严格身份解析阻断匿名 runtime；真实 ToolFailure 字段修正；seed replay 有界 ≤512；user/message 来源溯源。", deliverable: "P-A 加载真实 GUI 后升级 live verified；之后进入 M3a 只读索引（检索/注入仍禁止）。", gate: "事件可确定性回放✓(live=resume)；eventSeq 全观察递增✓；contextVersion 只随有效 Segment 变化✓；关闭时零行为差异且零 payload 留存✓；无 owner 不入任何 runtime✓。" },
+        { id: "P-A", title: "D 盘预览加载验收", state: "live", evidence: "2026-08-22 完成：profiles/web 两级链接(node_modules\dsh-auto-memory 与 @deepseek-ai\dsh-auto-memory)均指向 D:/dsh-auto-memory，package.json 依赖 link:D:/dsh-auto-memory；用户重启 dsh web 后实测——/models 枚举 13 provider(含 opencode-go-free/ox-alpha-free)、/state+/debug 呈现 observer 视图与真实会话 seed 回放(nativeCursor 75894/8500, 关闭态零 ring 留存)、/config subagentModel 写读回环、设置页模型抽屉标记齐全、外部记忆 7 源、workspaces 概览、日历 entries=2。回滚说明见 .tmp-pa-rollback.txt。", deliverable: "后续按里程碑正常迭代;如需回滚 C 盘稳定版按 .tmp-pa-rollback.txt 三步执行。", gate: "已完成。" },
+        { id: "M3a", title: "MemoryFileIndex 只读索引", state: "live", evidence: "2026-08-22 落地：lib/memory-index-pre.js(零依赖)——按标题行切块，UTF-8 半开字节区间+行号 locator+recordDigest+文件级 sourceVersion(变更+1)；verifyRecord/coverage(stale 拒绝、stale≠coverage=0)；DEFAULT_CONFIG 新增 memoryFileIndexEnabled=false，/debug 暴露 memoryIndex 快照(关闭时零 IO)；smoke-test-memory-index-pre.mjs 七组断言(B1-B5)全过，全量 7 测试 exit 0。", deliverable: "重启 3080 后 /debug 实测 memoryIndex 字段(live 确认)；之后进入 M3b 稳定 Anchor 写入与全写路径迁移。", gate: "同版本重复建索引确定一致✓；stale(含前置插入)明确拒绝✓；byte coverage/多字节/CRLF 测试✓；默认关闭零行为变化✓。" },
+        { id: "M3b", title: "稳定 Anchor 写入与迁移", state: "live", evidence: "M3a 已 live verified；docs/M3B-CONTRACT.md 已冻结。2026-08-22 M3b-1 完成：lib/memory-anchor-pre.js(纯只读、零依赖)——parseAnchors(anchored/legacy 分类、preamble 按 heading 切块、orphan/duplicate/malformed/orphan-content 一律 conflict fail closed、BOM 输入容忍)；buildSidecar/parseSidecar(digest 不变保版本、变化+1、无 prev 新 UUID epoch、8 字段+记录级校验)；planMigration(planId 确定性 sha256(file+digest)、复用键 digest#出现序号防同内容塌缩、digest 变化整份 stale 拒绝、conflict 即 aborted)。tests/m3b1-fixtures/ 6 个夹具；smoke-test-m3b1-pre.mjs C1-C9+C6.5+C18 共 11 组断言 exit 0，全量 8 项测试(7 旧+新)全绿，node --check/diff --check/BOM 扫描干净。真实写路径未接、真实 Markdown 未迁移。2026-08-22 M3b-2 完成：lib/memory-writer-pre.js(applyMigrationPlan/appendAnchoredRecord/renderReplace+atomicReplace tmp/fsync/rename+MemoryDocumentStore per-file 串行队列/digest precondition/backup/sidecar 自动续 prev/dirty 不回滚/fs 注入故障测试)；buildAnchoredIndex(M-06 rebuild anchor 语义)；idFactory 重试上限防死循环；smoke-test-m3b2-pre.mjs D1-D10 exit 0，全量 9 项测试全绿(6.6s)。2026-08-22 M3b-3 完成：DEFAULT_CONFIG.memoryAnchorEnabled=false+config POST 热切换；appendText 分流覆盖 15 调用点(log/note/user 工具+自动沉淀 LOG/NOTE/USER+GUI note+外部 import+maintain 归档)；writeFull 分流 §9 replace+writeFullRaw(CALENDAR ×3 显式排除,契约 §2.11)；writeFullSingle/store.replaceSingle(reflection 单记录粒度,契约 §3)；docStore lazy(sidecar index-pre/files)；smoke-test-m3b3-pre.mjs E1-E9 exit 0(含关闭态逐字节回归 E2/E9 与 maintain archive 保留原 ID E7)；意外修复生产 bug——DATE_RE 无捕获组致 maintain 从未选中任何旧日志(exec 取 m[1..3] 恒 undefined)。全量 10 项测试 7.5s 全绿。2026-08-22 M3b-4 真实迁移完成并 live：tools/migrate-m3b4.mjs 正式工具(--plan/--apply/--status,digest precondition+ID 持久化复用)；31 个真实记忆文件全部迁移(176 anchored 记录,reflections 单记录粒度),备份 34 文件可回滚；活体竞态 stale-plan 防御实战验证(personal_issue 日志 plan 后被写→拒绝→重规划应用)；sanitizeReservedSyntax 写入卫生(E2.5 锁定,字面保留语法落盘前清洗为豁免形式)；memoryAnchorEnabled=true 已 live,live 首条真实写入 anchored 追加成功(sidecar fresh=true)。E9 断言演进为零污染字节校验。全量 10 项 8.5s 全绿。", deliverable: "M3 已整体 live；M4 详细契约见 docs/M4-CONTRACT.md。M3 sidecar 只作为 fresh read source，M4 不得修改 Markdown、Anchor、MemoryId 或 sidecar 身份。", gate: "parser 分类完整✓；duplicate/malformed fail closed✓；plan 重跑 ID 稳定(incl.同 digest 块)且 digest stale 拒绝✓；sidecar 跨重启版本与损坏重建✓；默认关闭逐字节不变(未动旧写路径)✓；无 BOM✓。" },
+        { id: "M4", title: "Shadow Retrieval", state: "live", evidence: "M4-0 契约冻结 + M4-1 纯核心完成(2026-08-23)：lib/shadow-retrieval-pre.js(588 行,零 IO 零依赖)——SHADOW_GATE_POLICY_PRE_V1 冻结权重/滞回/cooldown=2、SHADOW_LEXICAL_BUDGET_PRE_V1 全预算、DROP_REASONS 版本化枚举、validateSnapshot、memoryIndexVersion(idx_pre_ 确定性)、NFKC/CJK 2-gram tokenizer+QueryPlan(32 terms/2048B/digest)、computeSignals+gatePreV1(8 级硬抑制顺序→权重滞回→explicitRecall floor 与 cooldown 绕过)、lexicalSearch(termCoverage/headingCoverage/phrase 边界/recency 30 天半衰+插件日界 future-dated/index-conflict fail closed/duplicate-content provenance/kept=8)、ret_pre_/cand_pre_ 确定性身份、sanitizeExcerpt 480B、replay pure core。smoke-test-m4-pre.mjs F1-F12 exit 0;全量 11 项测试(M0-M3 十项+M4)7.2s 全绿;lib/index.js 未接线。顺带修复 smoke-test-memory-index-pre B5 跨天日期硬编码(改插件日界动态 plugToday)。2026-08-23 M4-2 Corpus Adapter 完成：lib/m4-corpus-pre.js——canonicalize/buildSourceCatalog(三源固定顺序+sourceRef)/canonicalScopeGuard(mismatch+realpath 逃逸拒绝)/loadCorpusSnapshot(sidecar-missing/invalid/source-mismatch/stale-source/record-stale/oversized 六原因 fail closed+预算+idx_pre_ 版本)/CorpusRegistry(fingerprint size+mtimeMs 复用零重读,变化整体重建报告 reloaded)。G1-G6 shadow-copy 测试 exit 0。同日 M4-3 Host Shadow Wiring 完成：lib/shadow-host-pre.js(createShadowHost——per-runtime WeakMap state/latest-wins abort/durable audit retrieval-pre/audit jsonl 32KiB 截断+retention 14 天 32MiB/隐私投影无原文无绝对路径无 sessionId)+index.js 四处最小接线(import/host 创建+ingestEnvelope 钩子/debug shadowRetrieval 视图/dispose 清理/refreshAll paths 捕获)；payload 标量投影修正(inputSource 在 envelope.payload)；H1-H6 exit 0(默认关闭零留存/开关矩阵/retrieve 链路 audit 卫生/cooldown/plugin 抑制/dispose)；全量 13 项测试 10.3s 全绿。同日 lexical_pre_v2 检索升级：BM25(idf+tf 饱和+长度归一,Lucene 经典参数)替换朴素覆盖率+哈工大停用词表 507 词(STOPWORDS_HIT_PRE_V2)+policyVersion→lexical_pre_v2；JS 词法核心定位=Python sidecar(M7)主检索的安全回退层。", deliverable: "M4-4 Live Shadow Verification：SessionRuntime lazy Shadow state、accepted Segment 后 latest-wins 异步调度、config 热切换/abort/dispose、retrieval-pre durable audit+retention+显式 replay CLI;默认关闭,零注入。", gate: "默认关闭；C-03 必须先于任何检索✓；依赖 M2 ✓ + M3 ✓；候选只审计不注入✓；完整契约 docs/M4-CONTRACT.md §23。" },,
+        { id: "M5", title: "JS Context / Evidence Bridge", state: "live", evidence: "docs/M5-CONTRACT.md 指导契约已冻结；M5-1 纯核心完成(2026-08-23)：lib/context-bridge-pre.js——envelope/segment/ref/ack/evidence/aggregate validator 全 fail-closed、observationId(obs_pre_)/evidenceId(ev_pre_) canonical identity、M3 byte-range coverage adapter+freshness 门(stale≠coverage=0)、六类证据构造器(cite=memoryId token+provenance 强制/correction=词典∧token/reuse-success=身份对齐 tracker/seen 仅留给 M6 delivered)、Null/Fake sink、push bridge(幂等+latest-wins+abort)、replay pure core。smoke-test-m51-pre.mjs A1-A10 85 断言 exit 0；无 spawn/HTTP/Python 路径(静态扫描)。M5-2 Store/Aggregate 完成(2026-08-23)：lib/evidence-store-pre.js——sessionRef/workspaceRef 稳定哈希隐私投影(无裸标识/绝对路径/excerpt)、events/YYYY-MM-DD.jsonl append-only+进程内 evidenceId 幂等+retention(30 天/32MiB/16KiB)、rebuildAggregates(memoryId×scope×workspaceRef 桶,Session scope 排除,fresh/stale/unknown,byWorkspaceRef 推送侧过滤)。smoke-test-m52-pre.mjs B1-B9 52 断言 exit 0。M5-3 Host 接线完成(2026-08-23)：lib/context-host-pre.js(createContextHost——assoc∧contextBridge 双门、paths 共享捕获、自有 CorpusRegistry、memoryRefs=lexical_pre_v2 基线+m4-corpus 授权链、cite/correction/read coverage 三条 evidence 流经 EvidenceEventStore 隐私投影落盘、seen 结构性零路径)+index.js 六处最小接线(config 新增 contextBridgeEnabled=false/contextSinkMode='null')。smoke-test-m53-pre.mjs C1-C8 38 断言 exit 0；containment coverage 升级 v2(最长前缀字节比例)。全量回归 **16 项**(M0-M5)17.9s 全绿；node --check/diff-check/BOM/_dev 扫描全净。", deliverable: "M5-4 Live Verification：用户重启现有 3080 后按 §13 验收矩阵八步执行(关闭零 IO→临时开启→read coverage→correction→frame export(fake sink)→A/B 隔离→关闭恢复→prompt 零变化)；验证后恢复默认关闭。之后进入 M6-1。", gate: "依赖 M3/M4 live；Shadow hit 不追认为历史 evidence；M5 完成前不进入 M6 surface。" },
+        { id: "M6", title: "JS Activation Inbox / Reference Tail", state: "live", evidence: "M6-1/2/3/4 已完成并 live verified：ActivationRequest/Candidate validator、per-runtime Inbox、pre-step/dynamic-context surface、Reference Tail exactDigest、delivery ack 与 M5 seen 已由 53+36+23 断言、全量 20 项回归和真实会话尾注实证。完整证据见 docs/M6-CONTRACT.md §16-§19。", deliverable: "已完成；M7 只需输出兼容 ActivationRequestPre，JS M6 继续独占 hard validation、packet、render、delivery 与 seen。", gate: "只有实际进入下一请求 messages 才 delivered/seen；无安全 surface 降级 Shadow；systemPrompt.section 永不承载动态 tail。" },
+        { id: "M7", title: "Python Semantic Engine", state: "live", evidence: "**M7-0/M7-1 已实现并 tested(2026-08-24,默认关闭零进程零 IO 零目录;未 live)**：m7_wire_pre_v1 协议+纯标准库确定性 fake worker(python/worker_pre_v1.py)+SidecarClient(lazy no-shell spawn/workerEpoch/framing/timeout/abort/crash/breaker/结构化失败)+PythonContextSinkPre(M5 envelope 原样透传/deadline ack)+JS 授权 index_sync(scope 分组·64 条·256KiB·page/final digest·七类失败整次拒绝·semantic-pre 原子切换可重建)；fake activation 过现有 validateActivationRequestPre；m70/m71 各 90 断言 exit 0。**M7-2 Embedding Benchmark 已完成并 tested(2026-08-24)**：3 模型(bge-m3/qwen3-0.6B/multilingual-e5-large,pinned revision+逐文件 sha256)×5 chunk 策略×双层语料(L1 合成 88 查询+L2 真实 251 episodes/40 查询);冻结 bge-m3+para-512-noov(m7_chunk_pre_v1)+NumPy float32 exact cosine;e5 淘汰(zh→en xlang 0.60);supersede 裸 cosine 4/8 失败→交 M7-3 融合;scope 门证据=6 镜像泄漏 0;产物=docs/M7-EMBEDDING-BENCHMARK.md+docs/M7-ALGORITHM-DECISION.md+artifacts/m7-benchmark-pre/results.{json,csv}+tests fixture(42 docs×8 queries)+smoke-test-m72-pre.mjs 21 断言;外部真实语料只读脱敏 artifacts/m7-corpus-pre/。m70 顺手修复 G7 harness effect 空桩(heartbeatTimer 清理丢失致不退出,90 断言本全过)。全量回归 23 项全绿。证据:docs/PYTHON-SIDECAR-CONTRACT.md §19.4-19.6。M7-3 起零生产 embedding/零向量检索/零 RRF/零 reranker/零图。**2026-08-25 增补**：fv2 worker 接线修复完成并核实(m73 59/59+m79 20/20+28/28 全绿)；held-out 打分验收 **PASS**——67 条人工金标(actPrecision 0.917 CI[.727,1.0]/predictedEmit 12/harmfulEmit 0/emitOnSuppress 0/echo 层 7/7,en activate 6),hd-048/049 deferred(跨工作区设置项裁决)，报告 docs/M7-ACTIVATION-V2-HOLDEDOUT-EVAL.md；论文增补 §7 双轨部署架构(M7-ACTIVATION-V2-PAPER.md)。", deliverable: "M7-2..M7-7.5 tested；M7-8 离线验收全过(held-out PASS)；剩余=用户重启 3080→受控 live shadow(18–24 条脚本请求,核对线上字段 vs 离线决策)→单会话 active canary(explicit lane only,echo/correction 反例验证不注入)→恢复默认→标 live；active canary 仍禁止直至受控 shadow 通过。", gate: "M5/M6 live ✓；M7-2..M7-7.5 tested ✓；Phase F 只有 actPrecision≥0.7、harmfulEmit=0、correction/wrong-scope/stale leakage=0、held-out 支持量和中英正例门通过后，才允许单会话 active canary；未经用户控制 live 验证不标 live。 **2026-08-30 M7 标 live 收尾证据**——受控 shadow(int8 档,fp32 CPU 嵌入超 5s 预算是 stall 根因,31 超时/10 熔断;切 bge-m3-onnx-int8-pre-v1 后 worker 53/53 零超时):14 条脚本请求逐条对账(artifacts/m7-shadow-reconcile-20260830/)=检索层锚点 5/5 命中、防护类 4/4(echo/correction/chitchat/跨区)正确、emit 类受 candidateHit 接缝压制(refs 词法臂∩稠密候选 12/12 False——candidatehit_variant_study 早已预言)→ **变体 A 修复**(worker 词法臂 BM25 maxLexRaw≥12 信任,63 gold 复放 precision 0.846/emitOnSup 0)→ emit 恢复(hit=True/margin 0.034-0.129)。**Python canary**(deliverd/seen 实证):offers=18/accepted=17/rendered=3/delivered=3/seen=24,注入即泵对称扩展到 python 来源(同 JS 档时序证据);期间修通潜伏接线 bug=context-sink 从未注册 opts.onActivation(activation 帧静默蒸发)。文档化注意事项:①correction 硬门 live 需用户文本含完整 memoryId token+纠正词(校准为预置硬门)②fv2 query 含窗口文本,前轮回忆内容会抬后续轮 intent(滑动监测语义本身),二者为已记录调优项。emitMode=canary-explicit 运行。", gate: "M5/M6 live ✓；M7-2..M7-7.5 tested ✓；Phase F 只有 actPrecision≥0.7、harmfulEmit=0、correction/wrong-scope/stale leakage=0、held-out 支持量和中英正例门通过后，才允许单会话 active canary；未经用户控制 live 验证不标 live。" },
+        { id: "R-DUAL", title: "双轨语义层（发布工程）", state: "live", evidence: "用户×校准 Agent 双重评判裁定并实测固化(2026-08-25)：三级形态=C1 词法 BM25(0GB,R@5=0.20,live 兜底)/C2 JS 标准语义层(transformers.js+multilingual-e5-small q8 ~130MB,R@5=0.85,**默认档**,npm 资产包分发+首启一次性下载,查询 3.8ms/全库重建 5.5s)/C3 Python bge-m3 int8 ONNX(563MB,R@5=0.925 与 fp32 delta=0.000,编码快 6×,查询 p50 16ms)——**fp32 2.3GB 暂停使用**。产物：m7_embedding_pre_v1.py 新 provider bge-m3-onnx-int8-pre-v1(identity dtype=int8-dynamic-onnx,切档必重建索引,fp32 路径零改动,m73/m79 回归全绿)+artifacts/m7-live-pre/js-semantic-trial/js-semantic-tier.mjs 模块(零接线,smoke m80 7/7)+UI 资源原型 ui-assets/semantic-tier-ui.html(首启下载进度弹窗 kind=modelDownload priority85/设置内 JS-Python 切换/G-02 预留 A-P-S-H-E 反馈卡)+算法论述 docs/M7-ACTIVATION-V2-PAPER.md §7+决策文档 docs/RELEASE-SEMANTIC-OPTION.md。调研依据：Xenova/bge-m3 int8 为唯一有维护的现成量化产物(542MB,76k 月下载),GGUF≤Q6/OpenVINO/jina-v3(CC-BY-NC) 否决。", deliverable: "工程接线窗口=M7 live 后(主 Agent 已确认排期,2026-08-25 纠正版规范)：①C2 Asset Manager+Download Wizard(npm 资产包@deepseek-ai/dsh-auto-memory-model-e5small-q8,SHA256+版本+维度+最小推理自检,断点续传,临时文件下载校验后原子替换,禁执行模型包内脚本)；②C2 embedding/index adapter(shadow-host 按 D6 同款融合接 C2,模式选择默认 auto=C2 ready 则 C2 否则 C1,非裸 C2)；③fallback/router(C3 失败先回退 C2 再回退 C1;C2/C3 向量索引配置分开放置,退出高级模式不破坏 C2)；④设置页状态机 未下载/下载中/校验中/建库中/就绪/损坏/更新可用 + 安装/暂停/继续/重新校验/重建索引/卸载按钮；⑤G-02 可视化与设置页；⑥lexical_pre_v3(b0.45,MRR+37%)可合并采纳,须同步 Python _lexical_scores byte-twin。首启序列=先 C1 可用→弹一次安装向导(弹窗必须出现,下载需明确确认 立即安装/稍后)→后台下载→SHA256/版本/维度/最小推理自检通过后自动设为默认并后台建索引→ready 原子切换,建库期间继续 C1 不阻塞。统一候选契约增补 engineTier(C1|C2|C3)+modelIdentity 字段 **2026-08-28 增补：C2 默认档 JS 闭环实机全链 live verified**——m81 C2 接线(21/21)+m82 JS 判定核(fv2 策略工件纯 JS,9/9)+context-host 判定链(user/tool/reasoning/assistant 四类段触发,query 分源:CoT 段用 CoT 文本/user 段用消息文本)+判定观测(jsDecideRuns/Emits/Shadowed/ByKind 经 debugView+js-decide-shadow.jsonl 有界日志)+jsDecideDeltaExp=0.01 e5 校准增量旋钮(设置页可调;冻结决策核不动,调用侧克隆 policy 覆盖;依据=e5 margin 分布较 bge-m3 紧 3-4x 的受控实验 artifacts/e5-margin-calibration-20260828)。同日修复五项:①index.js readFileSync 未导入致 jsEmitMode() 恒 shadow ②JS 来源注入即泵(pumpClaimed 自 finishInject 提取共享;自然 claim 在回合中段必死:cv 每段自增+TTL3 步) ③fv2 特征孪生对齐(稠密 top-8→D6 融合序→融合序稠密分差,词法分经 _lex 传入) ④pre-step claim 失败不得擦除已泵入 claimed ⑤margin 校准归因=合成测试锚点 2026-08-25 经用户确认清出语料(非自动蒸馏)。实机证据:CoT emit(margin 0.0121/intent 0.99)→canary 放行→pump→下一轮 compose 渲染→delivered=1→seen×3 落盘(mem_af41b6794793=脚本预期 DSH 推理锚点,隐私投影干净);回归 34/34。Python 档保持 shadow/tested 不变。", gate: "不早于 M7 live；接线前 C2/C3 各自 L2 基准复验数字不回退；C2 启用失败静默回退 C1(G8/H9 同款断言)；切换 provider 必然 stale 重建；无原始查询持久化。" },
+        { id: "G-02", title: "Activation Observability / Calibration Console", state: "tested", evidence: "**v1 已实现并 tested(2026-08-30)**：①前端 RefineTab(记忆面板 refine 页签,M7.5 交付)——shadow 决策卡片(emit/prefetch/suppress 徽章+lane/intent/reasonCodes)+A/P/S/H/E 反馈按钮组(美术对齐 ui-assets 组件③)；②/shadow-recent 只读脱敏投影(24 行滚动,2026-08-30 增补 anchors(前3候选 12 字符前缀)/margin/candidateHit/maxLexRaw 观测维度)；③/review-feedback POST append-only review-queue.jsonl(落盘实测 1 行,不碰任何策略/参数)。实机:int8+变体 A 后 shadow 行含完整观测字段。**v2 余量**:决策↔delivery 关联时间线(activationInbox 事件流并读)、A/P/S/H/E 反馈消费端(精修队列→policy diff/回放)、policy diff 视图、多工作区切换。", deliverable: "v2:决策↔投递关联时间线+反馈消费(policy diff/回放)+跨区切换;gates 不变。", gate: "UI 不直接改线上阈值、不创建 AccessEvidence、不绕过 JS scope/PII/M6 hard gates；用户修改必须 append-only、可审计、先 shadow 后 canary。" },
+        { id: "M8", title: "Semantic / Profile Governance（记忆中枢）", state: "tested", evidence: "**基座已实现并 tested(2026-08-27 分叉会话交付,docs/M8-MEMORY-HUB.md)**：三店纯核心 lib/fact-store-pre.js(Fact schema/scope/provenance/ttl/revoked/supersede/冲突保留双方,41 断言)+lib/episodic-store-pre.js(episode intent/actions/entities/outcome+minSegments 巩固+retention)+lib/procedure-store-pre.js(见 M9)+编排器 lib/memory-hub-pre.js(ingestJudgement/consolidateEpisodes/crossFeed/renderChecklists/overview)。Host 接线:engine._memoryHub(memoryHubEnabled=false 默认)+GET/POST /memory-hub(overview/consolidate/feed/crossfeed)+设置页「记忆中枢」分组+记忆面板 hubTab 页签。**唯一活接线的消费点**:M7 emit 路径(context-host)query 词法匹配 active skill 标题→act.skill checklist 注入包→M6 Reference Tail。回归 34 套件含 m80/m81 全绿。**缺口(2026-08-28 审计)**:①三店 io 缺省 no-op 且 hub 创建未传→**纯内存,重启清零**(需接 ~/.dsh/memory/hub-pre/ 持久化)②喂数全部手动(ingestJudgement/consolidateEpisodes/crossFeed 仅 POST 端点,无 pipeline 喂送;Python judgement-shadow.jsonl suggestion 行与 JS 判定链均未自动流入)③检索侧未整合(hub 记忆不进 M7 语料,fact/episode 只存不召回)④用户审批/确认 UI 未做。", deliverable: "①三店 io 接线(落盘+restore)②judgement/episode 自动喂数(文件队列消费 judgement-shadow.jsonl+js-decide-shadow.jsonl;consolidateTurn 钩子喂 episodic)③fact 治理后经 memory-writer 治理式写入 MEMORY.md(进 M7 语料=供给侧闭环)④审批流(G-02 联动)。", gate: "Python 只能建议,JS 才能固化✓(schema 已按此设计);自动推断不得覆盖用户明确规则(fact-store 已实现);io 接线须 append-only+隐私投影;治理式写入必须走 docStore 原子事务(复用 M3b,禁裸写)。" },
+        { id: "M9", title: "Procedural Memory Lifecycle（技能固化）", state: "tested", evidence: "**生命周期核心已实现并 tested(2026-08-27 随 M8 基座交付,lib/procedure-store-pre.js)**：observed→candidate→validated→active→deprecated 全状态机;晋升门槛=跨会话多样性≥3+成功次数≥2+correction 占比≤30%+必须写明 successCriteria+高风险(SSH/部署/删除)需用户批准且永不因相似度自动执行;addEvidence(success/correction)验证链;renderChecklist(步骤+完成标准,注入预算 1200 字符);高风险自动降级 hint。**live 接线点(已验证)**:M7 emit 时 query 与 active skill 标题词法匹配→act.skill={procedureId,title,text} 附加进 ActivationRequestPre→M6 Reference Tail 渲染。**缺口**:①M5 evidence(success/correction)→procedures.observe 无自动喂送(evidence 落盘在 context-host.persistEvidence,未分流入店)②episode success→举一反三(crossFeed)仅手动端点③晋升/弃用的用户确认 UI 未做(G-02 联动)④procedure 标题匹配是 2-gram 词法,可升级为 C2 稠密匹配。", deliverable: "①evidence→observe 自动分流(复用 context-host 证据落盘点,memoryHubEnabled 门)②crossFeed 会话结束钩子③审批 UI(A/P/S/H/E,G-02 联动)④技能匹配稠密化(可选)。", gate: "一次成功≠可靠✓(门槛已固化);高风险永不自动执行✓;active 技能注入走 M6 硬校验+Reference Tail 边界✓;新 evidence 喂送不得绕过晋升门槛。" },
+        { id: "M10", title: "Memory Content Management / Storage Governance（存储管理）", state: "queued", evidence: "2026-08-28 存储审计(代码实证)：**已具备的底座**——①插件全部写路径走 MemoryDocumentStore 原子事务(backup→rename→重读校验→sidecar 从当前内容重建),自身写入零哈希失配;②删除原语已就绪(renderReplace 省略锚定 ID→removed 视为删除+expectedDigest 乐观锁 conflict-external-edit);③miv 漂移降级窗口设计完好(Python 向量 stale→dense 返回空 fail-closed→index_sync 自动重建;JS 内存缓存秒级);④证据 retention 30 天/32MiB 自动清理,孤儿自消化;⑤内容生命周期已存在(memory_maintain_pre 30 天蒸馏:提炼进笔记+原文保底归档 archive/+活跃日志移除;锚定记录 compaction);⑥语料天然滚动(=用户 MEMORY.md+项目笔记+今日日志,昨日日志隔日自动出语料)。**缺口**——①rebuildSidecar 原语存在但零调用方:外部/手动编辑文件→fileDigest 失配→整文件记录退出语料,自愈只能等下次插件写同一文件(失明窗口以天计)②在途激活包无级联清理(删除记忆时 pending/claimed 包照常渲染一次)③M8 facts 无源删除级联 revoke④correction 证据随记录删除失效(语义决策点)⑤无语料健康扫描/管理 UI。", deliverable: "①删除操作=docStore.replace(expectedDigest)+activationHost.purgeMemory(memoryId)+factStore.revokeBySource(sourceRef)+audit 隐私投影②语料健康扫描(4 类源文件×sidecar 状态×fileDigest 比对)→stale 自动 rebuildSidecar(只重建 sidecar 不改正文,零风险)或设置页一键修复③存储占用视图+批量清理(分批等 index ready 规避 miv 重建窗口)④管理 UI 入设置页/记忆面板。", gate: "删除必须走 docStore 原子事务(禁裸编辑文件);批量操作期间 fail-closed 降级可接受、错误内容注入不可接受;archive 保底不物理删除;管理 UI 不绕过 M6 硬校验与隐私投影;rebuildSidecar 重建不改 Markdown 字节。" },
+      ],
+      nextBrief: [
+        "工作区 D:/dsh-auto-memory，preview 分支 + 未提交工作树(M0-M6 live 成果与 M7-0/M7-1 全部在内,必须完整保留)；先运行 git status --short --branch。",
+        "M7-0/M7-1 已 tested(2026-08-24)：m7-wire-pre.js(协议+canonical JSON)+python/worker_pre_v1.py(纯标准库确定性 fake worker)+python-sidecar-client-pre.js(SidecarClient)+context-sink-python-pre.js(PythonContextSinkPre)+index-sync-pre.js(JS 授权 index_sync)；接线=engine._pythonSidecar 共享客户端+三重门(contextSinkMode='python' 需 assoc∧bridge∧pythonBackend;activationSource='python' 需 assoc∧inbox∧pythonBackend,经 offerExternalActivation 自然 claim 不做 pump)。",
+        "默认关闭语义已实测：pythonBackendEnabled=false → 零 Python process/零协议 IO/零 semantic-pre 目录；开启后进程生命周期=首流量 lazy spawn→epoch 绑定→exit/error 结构化失败并重生→dispose kill。",
+        "全量回归 23 项(smoke-test*.mjs 含 m70/m71/m72)全绿；m70/m71 各 90 断言、m72 21 断言；syntax/py_compile/diff-check/BOM/_dev 扫描全净。",
+        "M7-2..M7-7.5 已 tested：BGE-M3/para-512/D6 hybrid、三重 scope、correction hard-drop、Clustering Shadow、rerank deferred、graph skipped；当前 Phase F feature v2 接线 + held-out shadow，默认不 active。",
+        "M7 激活可解释性：每次 suppress/prefetch/activate/drop/delivery 都进入脱敏 shadow/audit；G-02 Calibration Console 将展示触发时机、候选语料、lane/score/gate/reason、实际 tail/delivery，并允许 A/P/S/H/E 审批形成 append-only policy diff；禁止 online 自改策略。",
+        "所有 preview 标识保持 _pre/-pre；UTF-8 无 BOM；未经用户明确要求不 commit、不 push、不 tag、不发布。",
+        "未来路线(2026-08-28 修订)：JS 默认闭环已全链 live verified(C2 检索+JS fv2 判定+M6 投递,canary-explicit delivered/seen 实证)→Python 档受控 shadow/canary→G-02 Calibration Console+审批流→M8 喂数/持久化/检索侧整合→M9 evidence 自动分流→M10 存储管理(删除级联+健康扫描)→最终发布与 _pre 转换。",
+      ]
+    };
+
+    var modules = {
+      events: {
+        code: 'N-01', group: 'native', status: 'native', x: 42, y: 65, w: 176, h: 100,
+        meta: `/* N-01 运行时事件 — 原生链路的可观测入口(append-only 事实源) */
+interface EventEnvelope {
+  schemaVersion: 1
+  sessionId: string;  agentId: string;  eventSeq: number
+  channel: 'session' | 'tools' | 'agent';  eventType: string
+  timestamp: number;  nativeSeq?: number;  turn?: number;  step?: number
+  sourceKind: 'user' | 'tool' | 'agent' | 'lifecycle'
+  messageId?: string;  callId?: string;  rootCallId?: string
+  payloadDigest: string
+  payload: JsonValue       // adapter 生成的有界最小投影, 绝不保留原始 DSH 对象
+}
+
+// 原生事实入口。session/event 的 seed 需在 session-start 按 native seq 补放:
+on('session/event', (session, event) => ingest(adaptSessionEvent(session, event)))
+on('tools/result',  (exec, result)  => ingest(adaptFrozenToolResult(exec, result)))
+on('agent/session-start', p => ingest(adaptLifecycle('session-start', p)))
+on('agent/turn-stopping', p => ingest(adaptLifecycle('turn-stopping', p)))
+
+// eventSeq 在 adapter 接受事件后按 runtime 单调分配; nativeSeq 保留原生回放坐标。
+// 没有可靠 agent/sessionId 的事件不得落入 default runtime。
+// 检索中间态绝不写入 Session; 回放不得伪造 session 事件。`,
+        title: '运行时事件', summary: '用户、工具、助手可见输出和 Agent 生命周期进入 Host 的可观测入口。',
+        inputs: ['session/event', 'frozen tools/result', 'agent lifecycle'], outputs: ['EventEnvelope', 'eventSeq', 'native replay coordinate'],
+        implementation: ['session/event 负责模型可见 user/message、tool/call、tool/result、assistant/message 与 turn/step 边界；tools/result 负责执行级最终结果和嵌套调用。', 'adapter 只保存有界、可序列化的最小 payload，并对规范化 payload 计算 digest；不序列化 Agent、AbortSignal 或整个 DSH 对象。', '用 channel/eventType/nativeSeq/callId/rootCallId 区分并关联执行观察与持久 surface 事件。', '【已接入 2026-08-22】lib/index.js ctx.on(session/event)+ctx.on(tools/result)+agent/session-start/pre-step/turn-stopping 已按本契约接线；无可靠 owner 的事件计入 droppedNoOwner 绝不落入任何 runtime(含匿名 agent-object:*)。', '【审查修复轮 2026-08-22】envelope.timestamp 优先保留原生 event.time(另记 observedAt 采集时间)；frozen tools/result 失败字段取自真实 ToolFailure 形状 error.message/error.info.name/code；user/message 记录 source.kind/plugin 来源溯源，供 M4/M5 区分用户事实与插件注入文本。'],
+        evidence: [{ label: '原生 dsh-session / dsh-tools', note: 'Session append-only；session/event 是 post-commit feed；tools/result 是 frozen 最终 observation。', url: 'https://github.com/deepseek-ai/deepseek-harness' }],
+        risks: ['事件被观察到不代表可以修改当前请求。', '不得把所有工具结果原样注入模型。', '不能用最近 Agent 猜测无 owner 的事件。'], acceptance: ['每个 accepted envelope 有 schemaVersion、sessionId、eventSeq、channel、eventType 和 payloadDigest。', '回放同一事件流得到相同 envelope/segment digest。', 'seed replay 与 live feed 按 nativeSeq 去重续接。']
+      },
+      session: {
+        code: 'N-02', group: 'native', status: 'native', x: 232, y: 65, w: 176, h: 100,
+        title: 'Session 事实源', summary: 'append-only、连续 seq、可重放的会话日志；不是随意可改写的缓存。',
+        inputs: ['seed / live events'], outputs: ['session/event', 'replay history'],
+        implementation: ['原生 Session 进入日志后同步派发 session/event；监听器失败被隔离。', '主动记忆的中间态留在插件 cache 或 sidecar，只有实际注入的 packet 进入可解释会话历史。', '用 event cursor 而不是 mtime 作为观察进度。'],
+        evidence: [{ label: '本机 dsh-session', note: 'dsh-session/lib/index.js:1405-1479；构建版本 0.1.0-rc.7。', url: 'https://github.com/deepseek-ai/deepseek-harness' }],
+        risks: ['把检索中间态大量写入 Session 会增加 token、污染回放并破坏事实源语义。'], acceptance: ['Session 回放与当前观察结果一致。', '检索失败不会伪造 session 事件。']
+      },
+      inbox: {
+        code: 'N-03', group: 'native', status: 'native', x: 422, y: 65, w: 176, h: 100,
+        meta: `/* N-03 Agent Inbox — durable next-turn / next-step projection(未来 MemoryPacket 通道, 不是唯一注入面) */
+// 当前维护路径: systemPrompt.context() → 原生 RuntimeContextProjection
+//   同快照不重复创建 user-context, 变化快照替换之前的 projection
+// 原生 Inbox 三原语:
+//   claim   步边界原子领取全部 next-step 输入 → 交给 assemble
+//   inject  写 next-step 但不唤醒(未来主动 packet 默认走这里)
+//   steer   写 next-step 并唤醒(仅用户 / 系统授权场景)
+
+function syncInbox(packet: MemoryPacket) {
+  // 先在 claimed 或可见 surface 找重复, 有则删除 pending 副本
+  if (alreadyClaimed(packet.exactDigest) || alreadyVisible(packet.exactDigest))
+    return dropPending(packet.id)
+  // durable splice: 先写 durable event, 再改 live projection
+  inbox.splice({ op: 'inject',
+                 message: nextStepUserMessage(packet) })
+}
+
+// 约束: next-step 不是临时内存, packet 持久存在直到被 claim 或显式移除;
+// 取消 / 重启 / 恢复后 pending 状态必须可重建`,
+        title: 'Agent Inbox', summary: '未来主动 MemoryPacket 的持久 next-turn / next-step projection，通过 durable splice 事件维护；当前动态维护快照走 systemPrompt.context()。',
+        inputs: ['pending user/message', 'durable splice event'], outputs: ['claimed messages', 'pending projection'],
+        implementation: ['claim 在步边界原子领取全部 next-step 输入；inject 写 next-step 但不唤醒，steer 写 next-step 并唤醒。', 'MessageId 唯一，splice 先写 durable event 再改变 live projection。', '未来主动 MemoryPacket 走 next-step user/message；稳定纪律留在 systemPrompt.section()，当前易变维护快照走 systemPrompt.context()，不复制到 Inbox。'],
+        evidence: [{ label: '本机 dsh-agent / dsh-agent-loop', note: 'dsh-agent/lib/index.js:11-170；inject 与 steer 都写 next-step。', url: 'https://github.com/deepseek-ai/deepseek-harness' }],
+        risks: ['next-step 不是临时内存；未处理的 packet 具有持久生命周期。', '错误的 replace/remove 会造成可见上下文不一致。'], acceptance: ['pending 与 visible surface 不重复。', '当前 runtime-context snapshot 与 pending packet 不重复。', '取消、重启、恢复后 packet 状态可重建。']
+      },
+      claim: {
+        code: 'N-04', group: 'native', status: 'native', x: 612, y: 65, w: 176, h: 100,
+        meta: `/* N-04 Claim / Assemble — 请求前的原子领取与组装(真实顺序的锚点) */
+// 真实顺序:  claim → systemPrompt.assemble(section + context) → runtime projection
+//            → agent/pre-step waterfall → step/start → buildRequest
+
+async function stepBoundary(session) {
+  const claimed  = inbox.claimAll(session)       // 原子领取 next-step + next-turn FIFO
+  const assembly = await systemPrompt.assemble({ session })
+  const sections = renderContextSections(assembly)
+  const context  = runtimeContext.project(joinContextSections(sections), sections)
+  return { claimed, assembly, context }
+}
+
+// 约束: section/context provider 都是同步求值, 不能在其中 await 异步检索;
+// 稳定规则留在 section, 易变维护快照留在 context;
+// 未来异步 MemoryPacket 先进入 Inbox 或 projection queue, 再交给 pre-step waterfall`,
+        title: 'Claim / Assemble', summary: '请求前先领取待处理消息，再组装 system prompt、runtime context 和工具。',
+        inputs: ['next-step inbox (future packet)', 'next-turn FIFO', 'systemPrompt.section/context'], outputs: ['claimed batch', 'assembled sections + runtime snapshot'],
+        implementation: ['真实顺序是 claim → systemPrompt.assemble → runtime projection → agent/pre-step waterfall → step/start → buildRequest。', 'section/context provider 只能同步返回；原生 context 由 RuntimeContextProjection 按完整快照去重和替换。', 'Stable discipline 与当前动态 snapshot 分离；未来异步 MemoryPacket 另走 Inbox / pre-step，减少缓存击穿。'],
+        evidence: [{ label: '本机 dsh-agent-loop', note: 'dsh-agent-loop/lib/index.js:492-555、606-739。', url: 'https://github.com/deepseek-ai/deepseek-harness' }],
+        risks: ['把异步检索塞入同步 systemPrompt provider 会产生空注入或竞态。'], acceptance: ['pre-step 前所有当前 projection tail 已完成或明确超时。']
+      },
+      prestep: {
+        code: 'N-05', group: 'native', status: 'native', x: 802, y: 65, w: 176, h: 100,
+        meta: `/* N-05 agent/pre-step — DSH 核心先组装, 再把 runtime context 交给 waterfall */
+async function nativePreStep(agent, target, position, signal) {
+  const claimed = agent.inbox.claim(target, position.turn)
+  const assembly = await agent.loopCtx.systemPrompt.assemble(assembleContextFor(agent, signal))
+  signal.throwIfAborted()
+  const sections = renderContextSections(assembly)
+  const context = agent.runtimeContext.project(joinContextSections(sections), sections)
+  const decision = await agent.dispatch.waterfall('agent/pre-step',
+    { messages: claimed, ...position, signal },
+    () => Promise.resolve({
+      kind: 'enter',
+      messages: context === undefined ? claimed : [...claimed, context]
+    }))
+  signal.throwIfAborted()
+  return decision.kind === 'reject' ? decision : { ...decision, assembly }
+}
+
+// 当前 native context 按完整文本去重; 变化时替换旧 projection
+// 未来 packet listener 只在 waterfall 中校验/保留/消费自己的 Inbox pending`,
+        title: 'agent/pre-step', summary: '原生 runtime-context snapshot 与未来 packet 在下一步请求前汇合的 waterfall 边界。',
+        inputs: ['claimed messages', 'assembled runtime context', 'future pending packet'], outputs: ['waterfall decision messages', 'rejected / retained pending'],
+        implementation: ['原生 DSH 在 assemble 后生成完整 runtime-context snapshot，再把它与 claimed messages 一起交给 agent/pre-step waterfall。', 'RuntimeContextProjection 按完整文本精确去重；变化时替换旧 projection，清空时发出清除快照。', '未来 packet 必须检查 session、context cursor、digest、TTL 和预算；被 reject 或首步为空时保留在 Inbox。'],
+        evidence: [{ label: '原生 dsh-agent-instructions', note: 'lib/index.js:1223-1287；pre-step await、compose、retain。', url: 'https://github.com/deepseek-ai/deepseek-harness' }],
+        risks: ['已发出的请求无法被改写。', '丢掉 pending 但未进入 waterfall decision.messages 会导致记忆无声消失。'], acceptance: ['只影响下一请求。', '相同 runtime snapshot 不重复追加。', 'reject、cancel、restart 后状态可解释。']
+      },
+      request: {
+        code: 'N-06', group: 'native', status: 'native', x: 992, y: 65, w: 176, h: 100,
+        meta: `/* N-06 Build Request — 精确成形; 此后任何事件只影响下一 step/turn */
+interface RequestAudit {
+  provider: string;  model: string
+  reasoning: 'none' | 'summary' | 'full' | 'unknown'
+  packetBytes: number;  packetDigest?: string
+  contextVersion: number
+}
+
+function buildRequest({ assembly, messages, tools, history }) {
+  return {
+    system: renderPrompt(assembly),              // section 稳定前缀 → KV cache 复用
+    messages: [...history.visible, ...messages], // context 是原生 user-role snapshot
+    tools,
+    _audit: new RequestAudit(),                 // 生效 provider/model/reasoning 可追踪
+  }
+}
+
+// 未来 MemoryPacket 也只能追加到下一请求 messages, 不能改写已发请求
+// 约束: 动态段每步变化会击穿前缀缓存, 与稳定段分开预算;
+// 字符预算 ≠ 模型 token 预算; packet 成本单独核算`,
+        title: 'Build Request', summary: '把 assembled context、可见历史、工具 schema 和当前路由形成精确请求。',
+        inputs: ['system prompt sections', 'runtime-context snapshot', 'visible history', 'tool schema', 'future packet'], outputs: ['provider request'],
+        implementation: ['请求建立后，后续事件只能影响下一 step/turn；runtime-context snapshot 在消息尾部生效。', '请求 header 和模型路由应记录生效 provider、model、reasoning defaults。', 'section 稳定前缀、context snapshot 和未来 packet 的 token 成本分别预算。'],
+        evidence: [{ label: '本机 dsh-agent-loop / dsh-llm', note: 'buildRequest 后才进入 LLM dispatch；KV cache 只对稳定前缀复用。', url: 'https://github.com/deepseek-ai/deepseek-harness' }],
+        risks: ['动态内容每步变化会击穿前缀缓存。', '字符预算不能直接等同模型 token 预算。'], acceptance: ['request 可审计；packet source 与 contextVersion 可追踪。']
+      },
+      model: {
+        code: 'N-07', group: 'native', status: 'native', x: 1182, y: 65, w: 176, h: 100,
+        meta: `/* N-07 模型 / Provider — 异构模型执行; 能力由 adapter 声明, 不按名字硬编码 */
+function dispatch(req: BuiltRequest) {
+  const cap = capability.snapshot(route(req))   // C-07 协商: reasoning / runtimeContext / packetPatch
+  return llm.complete(req)                       // → assistant output / tool calls / reasoning?
+}
+
+// 约束: 公开 reasoning ≠ 完整、忠实的内部状态(CoT faithfulness);
+// 闭源模型只依赖用户 / 工具 / 可见输出 / 运行时事件;
+// reasoning trace 不单独写入事实、授权副作用或晋升技能`,
+        title: '模型 / Provider', summary: '异构模型实际生成、调用工具并返回可观测结果。',
+        inputs: ['provider request'], outputs: ['assistant output', 'tool calls', 'reasoning if exposed'],
+        implementation: ['不按模型名字假设 reasoning 可见性；由 capability adapter 声明 none / summary / full / unknown。', '闭源模型依赖用户、工具、可见输出和运行时事件正常运行。', '公开 reasoning 只作为低信任短期信号。'],
+        evidence: [{ label: 'CoT faithfulness / monitorability', note: '可见 reasoning 不等于完整、忠实内部状态。', url: 'https://arxiv.org/abs/2305.04388' }, { label: 'Monitoring Monitorability', note: 'monitorability 需要持续测量而非静态假设。', url: 'https://arxiv.org/abs/2512.18311' }],
+        risks: ['reasoning trace 不能单独写入事实、授权副作用或晋升技能。'], acceptance: ['关闭 reasoning 观察器后主链仍可用。']
+      },
+      toolResult: {
+        code: 'N-08', group: 'native', status: 'native', x: 1372, y: 65, w: 176, h: 100,
+        meta: `/* N-08 工具结果 / Read 解析 — frozen tools/result + M3 locator coverage */
+on('tools/result', (exec, result) => {
+  observer.ingest(adaptFrozenToolResult(exec, result))   // M2: 只观察, 不注入
+  if (!accessEvidenceEnabled || result.isError) return   // M5 才生成证据
+
+  const read = normalizeReadResult(exec, result)         // tool-specific adapter
+  if (!read) return
+  for (const loc of memoryFileIndex.overlap(read)) {
+    const cov = coverage(read, loc)
+    if (cov.status !== 'fresh' || cov.ratio <= 0) continue // coverage=0 不形成证据
+    evidence.record({
+      kind: cov.ratio >= 1 ? 'read' : 'seen', memoryId: loc.memoryId,
+      coverage: cov.ratio, sourceVersion: loc.sourceVersion,
+      recordDigest: loc.recordDigest, sessionId: exec.agent.session.id,
+      callId: exec.callId, rootCallId: exec.rootCallId,
+    })
+  }
+})
+
+// read/seen 仍不等于 citation; 后续明确引用、动作复用和成功结果才升级证据。
+// tools/result 是 emit-only 观察点, 不得修改已结算结果或当前请求。`,
+        title: '工具结果 / Read 解析', summary: '从冻结 tools/result 中判断 Agent 实际读到了哪些记忆 block，并生成访问证据。',
+        inputs: ['tool dispatch', 'read result text'], outputs: ['tools/result', 'memory_access', 'evidence signal'],
+        implementation: ['原生 tools/result 是当前可确认的 frozen observation；Anchor overlap/coverage 解析是本项目计划层，Host 不解析模型自述。', '用 MemoryFileIndex 的 anchor 区间计算 coverage，记录 seen/read/cite/reuse/success/correction，不把 read 次数直接当 citation。', '只有工具明确产生下一步说明时才使用 deferContext；普通语义联想由 Host 检索器决定；step 内 touch 延迟到 step/end。'],
+        evidence: [{ label: '本机 dsh-tools / dsh-agent-instructions', note: 'tools/result 与 step/end 投影时序。', url: 'https://github.com/deepseek-ai/deepseek-harness' }],
+        risks: ['把冻结结果当成可原地修改对象是错误假设。', '打开文件但未覆盖 anchor 不能算读懂记忆。'], acceptance: ['成功、失败、abort、nested call 都能生成稳定 observation。', 'read 返回内容可映射到 memoryId、coverage、sourceVersion 和 digest。']
+      },
+      observer: {
+        code: 'C-01', group: 'control', status: 'implemented', x: 72, y: 270, w: 176, h: 105,
+        meta: `/* C-01 ContextObserver — EventEnvelope → 按 session 隔离的语义 Segment */
+function ingest(runtime: SessionRuntime, raw): Segment | null {
+  const env = adaptAndValidate(raw, runtime)
+  if (!env) return null
+  env.eventSeq = ++runtime.eventCursor             // 每个 accepted envelope 都推进
+  runtime.audit.push(env)                          // 可回放 envelope ring / debug ledger
+
+  const seg = observe(env)
+  if (!seg) return null                            // 生命周期噪声不改变检索上下文
+  seg.contextVersion = ++runtime.contextVersion   // 仅有效 Segment 推进
+  runtime.segments.push(seg)                       // 有界 ring: 保留语义边界
+  return seg
+}
+
+function observe(env: EventEnvelope): Segment | null {
+  if (env.schemaVersion !== 1 || !env.sessionId) return null
+  const text = sliceByEventType(env.eventType, env.payload)
+  if (!text) return null
+  return {
+    id: stableSegmentId(env.sessionId, env.eventSeq, env.payloadDigest),
+    sessionId: env.sessionId, kind: env.sourceKind, eventType: env.eventType,
+    eventSeq: env.eventSeq, contextVersion: 0, text,
+    entities: extractBounded(text), digest: digest(text), ts: env.timestamp,
+  }
+}
+
+// user message / tool call / final tool result / final assistant output 各自成段。
+// 不粗暴取最后 N token; chunk/reasoning 默认不形成持久 Segment。
+// eventSeq 与 contextVersion 不机械绑定; 跨 session 合并事件属于污染。`,
+        title: 'ContextObserver', summary: '把结构化 EventEnvelope 转换为按 session 隔离、可回放的语义上下文片段。',
+        inputs: ['EventEnvelope', 'per-session cursor', 'bounded adapters'], outputs: ['Segment ring', 'contextVersion', 'audit envelope ring'],
+        implementation: ['eventSeq 对每个 accepted envelope 递增；contextVersion 仅在有效 Segment 改变检索上下文时递增。', '按 eventType 保留用户消息、工具调用、最终工具结果、最终可见输出和必要生命周期边界，不解析模型自述，不取最后 N token。', 'Segment id/digest 必须由稳定输入确定生成；reasoning 仅在能力协商后作为可选低信任短期段，默认关闭且不持久化。', '【已实现 2026-08-22】lib/index.js MemoryEngine.ingestEnvelope/ingestSessionEventRecord/observeToolResult：EventEnvelope 含 schemaVersion/channel/eventType/timestamp/nativeSeq/callId/rootCallId/payloadDigest 与有界规范化 payload（digest 覆盖 payload 全文）；assistant/chunk 与未知事件只计数不入账本。', '【已实现 2026-08-22】Segment 切片：user/message→user、tool/call→tool_call(参数摘要)、持久 tool/result→tool_result(含失败)、assistant/message→assistant；生命周期边界仅进 envelope audit 不推进 contextVersion；frozen tools/result 只做执行级观察与 callLinks 关联，保证回放确定性。', '【审查修复轮 2026-08-22】默认关闭语义采用方案 B：associativeMemoryEnabled=false 时不建立任何 ring、不保存任何 payload/segment，仅保留最小计数（eventSeq 序号+标量元数据），工具参数/结果等潜在敏感内容零留存。', '【审查修复轮 2026-08-22】Segment 身份改用稳定原生坐标 sessionId+seq:nativeSeq+eventType+payloadDigest——live 运行与 dispose 后 resume 重放对同一持久事件生成相同 id/digest/顺序（P5c 验证）；envelope.timestamp 优先取原生 event.time，另记 observedAt 采集时间；user/message 记录 source.kind/plugin 来源溯源；seed replay 有界窗口 ≤512 条（尾部），截断计数留痕。', '【审查修复轮2 2026-08-22】生命周期入口(session-start/pre-step)同样走严格 session 身份守卫——无身份 agent 不得经 runtimeFor 伪造匿名 runtime,也不进 _lastAgent/stateFor/refresh(P5e)。', '【审查修复轮2 2026-08-22】ring/callLinks 惰性分配:关闭期间为 null,零对象;associativeMemoryEnabled true→false 切换时 purgeObserverStorage 立即清零全部已采集数据并归零 contextVersion,false→true 自切换点重新开始(P5f:旧 payload 不复活)。', '【测试证据】smoke-test-context-observer.mjs P1-P6：配置兼容、关闭零差异+零留存（storage=counters-only）、seed/live 去重、双游标分工、A/B digest 集合零交集、root/nested 关联、无 owner 排除（含匿名 runtime 阻断）、dispose 清理、双引擎确定性回放（含原生时间戳）、真实 ToolFailure 字段、live/resume 身份稳定、seed 上限、真实用户记忆零污染——全部自然 exit 0。'],
+        evidence: [{ label: '目标设计 + 原生事件契约', note: '基于 session/event 可回放事实源与 frozen tools/result；M2 不做检索或注入。', url: './proactive-associative-memory-research-report.zh-CN.md' }],
+        risks: ['跨 session 的事件合并会污染所有后续检索。', 'eventSeq/contextVersion 混用会造成异步结果无意义过期。'], acceptance: ['相同事件回放得到相同 Segment id、顺序和 digest。', 'contextVersion 单调且仅随有效 Segment 变化。', 'A/B ring、cursor、dispose 零串线。', '功能关闭时零行为差异。']
+      },
+      runtime: {
+        code: 'C-02', group: 'control', status: 'implemented', x: 277, y: 270, w: 176, h: 105,
+        meta: `/* C-02 SessionRuntime — M1 已有隔离基础, M2 增加 envelope/segment ring */
+const runtimes = new SessionRuntimeStore()              // current: WeakMap agent + Map session identity
+const execution = new AsyncLocalStorage<SessionRuntime>() // current: nested tool execution token
+
+interface SessionRuntime {
+  sessionId: string;  agentId: string
+  eventCursor: number;  contextVersion: number
+  envelopes: RingBuffer<EventEnvelope>   // M2: 可回放最小观察账本
+  segments: RingBuffer<Segment>           // M2: 有界语义上下文
+  pendingPacket?: MemoryPacket            // M6: 仍未实现
+  cooldownUntilStep?: number
+  abortController: AbortController
+}
+
+function teardown(agent) {
+  const rt = runtimes.get(agent)
+  rt.abortController.abort('agent disposed')
+  rt.envelopes.clear(); rt.segments.clear(); rt.pendingPacket = undefined
+  runtimes.dispose(agent)
+}
+
+// current M1: state/auto consolidate lock/queue/cooldown 已按 runtime 隔离。
+// next M2: envelope/segment/cursor 必须复用同一 runtime, 不新建全局 observer state。`,
+        title: 'SessionRuntime', summary: 'M1 已建立 per-agent/session 隔离基础；M2 在同一 runtime 上增加观察账本和语义上下文环。',
+        inputs: ['sessionId', 'agent identity', 'EventEnvelope'], outputs: ['state', 'envelope ring', 'segment ring', 'cursor', 'pending state'],
+        implementation: ['当前 f00ad23：SessionRuntimeStore 使用 WeakMap agent + Map session identity，AsyncLocalStorage 绑定嵌套工具执行；自动沉淀锁、队列和冷却已 per-runtime。', 'M2 只在现有 runtime 增加有界 envelopes/segments 与严格 cursor，不得重新引入 this.state 整体赋值或按 _lastAgent 猜会话。', 'agent/session/plugin dispose 时 abort 异步任务并清空 ring、pending 与 identity 映射。', '【已实现 2026-08-22】createSessionRuntime 增加 envelopes(ObserverRing 128 条)/segments(64 条+32768 字符预算)/nativeCursor/callLinks/observerDropped；store.dispose/disposeAll/disposeSession 同步清空 ring、pendingPacket、pendingConsolidations 并 abort。', '【M1 不变量复核】state/autoStats 保持 getter；turn-stopping 用 payload.agent 精确归属；context.text 在 withAgent 内执行；自动沉淀每日额度保持引擎级全局；全部写入 UTF-8 无 BOM。', '【测试证据】isolation/consolidate-isolation/context-observer 三套测试并发 A/B 的 envelope、segment、cursor、dispose 零串线，六项测试自然 exit 0。', '【审查修复轮 2026-08-22】观察路径启用严格身份解析：必须有 session.id/header.id 才允许归属，无身份对象计入 droppedNoOwner 且绝不调用会伪造 agent-object:* 匿名 runtime 的 get()（P3e 断言 runtime 总数不变）；关闭模式下 ring/payload 全部不建立，仅最小计数。'],
+
+        evidence: [{ label: '当前 preview M1', note: 'lib/index.js SessionRuntimeStore/createSessionRuntime/withAgent；f00ad23。', url: './implementation-handoff-context.zh-CN.md' }, { label: '原生 Agent identity', note: 'AgentLoop 为每个 agent/session 提供明确拥有和 teardown 边界。', url: 'https://github.com/deepseek-ai/deepseek-harness' }],
+        risks: ['全局状态会造成工作区、agent、packet 串线。', '另建 observer Map 会绕过 M1 的统一清理和执行 token。'], acceptance: ['现有 M1 并发隔离测试保持通过。', '新增 A/B envelope、segment、cursor、dispose 测试为零泄漏。']
+      },
+      gate: {
+        code: 'C-03', group: 'control', status: 'implemented', x: 482, y: 270, w: 176, h: 105,
+        meta: `/* C-03 Retrieval Gate — 动态判断"现在值不值得检索"(无 CoT 也成立) */
+type GateAction = 'retrieve' | 'prefetch' | 'suppress'
+interface GateDecision { action: GateAction; reason: string; hesitation: number; state: 'normal' | 'prefetch' | 'armed' | 'cooldown' }
+
+function decide(win: Segment[], seg: Segment, cur: ContextCursor): GateDecision {
+  const signals = {
+    explicitRecall: explicitRecallRequest(seg),                    // 用户明确要求回忆
+    novelty:     !win.some(s => s.digest === seg.digest),         // 新颖度
+    unresolved:  unresolvedEntities(win).length > 0,              // 未决实体
+    phaseShift:  taskPhase(win) !== taskPhase(win.slice(0, -1)),  // 任务阶段变化
+    toolFailure: seg.kind === 'tool' && !seg.ok,                  // 工具失败
+    conflict:    conflictCount(cur.sessionId) > 0,                // 冲突
+    historical:  hitRecent(cur.sessionId) !== null,               // 相似历史命中
+    repeated:    sameToolRepeat(win) + sameReadRepeat(win),           // 重复动作/读取
+    drift:       goalDrift(win),                                      // 目标漂移
+    unresolvedAge: unresolvedDuration(win),                            // 未决事项持续时间
+    monitor:     anchoredIntensity(cur.sessionId),                     // 可选锚定监控强度
+  }
+  if (ignoredMemory(cur, seg.digest)) return { action: 'suppress', reason: 'user-ignored', hesitation: 0, state: 'normal' }
+  const raw = weighted(signals)
+  const hesitation = hysteresis(cur.sessionId, raw, { on: 0.65, off: 0.42 })
+  if (cooldownActive(cur)) return { action: 'suppress', reason: 'cooldown', hesitation, state: 'cooldown' }
+  return hesitation >= 0.80 ? { action: 'retrieve', reason: 'hesitation+need', hesitation, state: 'armed' }
+       : hesitation >= 0.55 ? { action: 'prefetch', reason: 'warm', hesitation, state: 'prefetch' }
+       : { action: 'suppress', reason: 'below-threshold', hesitation, state: 'normal' }
+}
+
+// 公开模型可增加 uncertainty / reasoning 信号, 但不是硬依赖;
+// cognitive load 不是"记忆只在困难时出现"的硬门;
+// 滞回 + 冷却 + "已忽略记忆"抑制避免反复打扰`,
+        title: 'Retrieval Gate', summary: '动态判断现在是否值得检索，而不是每一步固定召回。',
+        inputs: ['explicit recall request', 'novelty', 'unresolved goals', 'tool errors', 'time/conflict', 'optional trace'], outputs: ['retrieve / prefetch / suppress decision'],
+        implementation: ['把用户明确回忆请求、新颖度、未决实体、任务阶段变化、工具失败、冲突和相似历史命中作为无 CoT 触发器。', '由重复工具、重试、目标漂移、未决时长和锚定强度形成 hesitation，使用 on/off 滞回而不是一次高分打断。', '公开模型可增加 uncertainty / reasoning signal，但不是硬依赖；冷却和“已忽略记忆”抑制避免反复打扰。'],
+        evidence: [{ label: 'FLARE', note: '不确定性触发 active retrieval。', url: 'https://arxiv.org/abs/2305.06983' }, { label: 'DRAGIN', note: '动态决定检索时机和查询。', url: 'https://arxiv.org/abs/2403.10081' }, { label: 'Self-RAG', note: 'retrieve / generate / critique gate。', url: 'https://arxiv.org/abs/2310.11511' }],
+        risks: ['不能把 cognitive load 当成“记忆只能在困难时出现”的硬门。'], acceptance: ['无 reasoning Provider 仍有可用 gate。', '低相关候选不会增加噪声。']
+      },
+      association: {
+        code: 'C-04', group: 'control', status: 'implemented', x: 687, y: 270, w: 176, h: 105,
+        meta: `/* C-04 Association Engine — 三级检索: 词法初筛 → 向量/时间过滤 → 图扩散 */
+async function recall(seg: Segment, cur: ContextCursor): Promise<Candidate[]> {
+  const hits: Candidate[] = []
+
+  // ① 关键词 / 实体快速初筛(永远可用)
+  hits.push(...lexical.hits(seg.entities, seg.text))            // M-05
+
+  // ② 向量 + 时间过滤(sidecar, 可降级)
+  const emb = await sidecar.embed(seg.text, cur)                // M-07
+  if (emb.ok) hits.push(...await sidecar.vsearch(emb.vec, cur.scope))
+  else hits.push(...fallbackKeyword(seg.text))                  // G-05 词法回退
+
+  // ③ 必要时图扩散(HippoRAG PPR / A-MEM 链接)
+  if (graphEnabled && hits.length < k)
+    hits.push(...await sidecar.graphExpand(seg.entities))
+
+  // embedding 元数据(model / dimension / version)随索引持久化, 版本不一致不得混用
+  // 图链接追加证据且可撤销, 避免一次错误扩散污染整个图
+  return hits
+}`,
+        title: 'Association Engine', summary: '从预索引记忆中找出当前情境可能自动唤回的候选。',
+        inputs: ['context segments', 'memory index', 'scope'], outputs: ['candidate memories', 'similarity', 'provenance'],
+        implementation: ['三级检索：关键词/实体快速初筛 → 向量和时间过滤 → 必要时图扩散。', '保存 embeddingModel、dimension、embeddingVersion；版本不一致不得混用。', '图链接追加证据并可撤销，避免一次错误扩散污染整个图。'],
+        evidence: [{ label: 'Generative Agents', note: 'memory stream + relevance / recency / importance。', url: 'https://arxiv.org/abs/2304.03442' }, { label: 'A-MEM', note: 'linked and evolving memory notes。', url: 'https://arxiv.org/abs/2502.12110' }, { label: 'HippoRAG', note: 'knowledge graph + Personalized PageRank。', url: 'https://arxiv.org/abs/2405.14831' }],
+        risks: ['相似度不是事实真值；低置信候选必须保留不确定性。'], acceptance: ['候选都有来源、scope、时间和版本。', 'embedding 不可用时回退词法检索。']
+      },
+      rank: {
+        code: 'C-05', group: 'control', status: 'implemented', x: 892, y: 270, w: 176, h: 105,
+        meta: `/* C-05 Rank / Dedupe / Budget — 把"相关"变成有限、可解释、不重复的候选集 */
+function run(cands: Candidate[], cur: ContextCursor): RankedResult {
+  const scored = cands
+    .filter(c => c.scope === cur.scope && c.expiresAt > now())    // scope + TTL
+    .map(c => ({ c, s: wSim * c.similarity + wSal * c.salience
+                   + wNov * novelty(c, cur) + wRec * recency(c, cur) }))
+    .sort((a, b) => b.s - a.s)
+
+  const kept = [], dropped = []
+  const seen = new Set()
+  for (const x of scored) {
+    const key = dedupeKey(x.c, cur)   // session/agent + context cursor
+                                      // + exact/semantic digest + schema/index 版本
+    if (seen.has(key)) { dropped.push({ id: x.c.id, reason: 'duplicate' }); continue }
+    if (bytes + x.c.payload.length > budget.candidateBytes)
+      { dropped.push({ id: x.c.id, reason: 'budget' }); continue }
+    seen.add(key); kept.push(x)
+  }
+  return { ranked: kept, dropped }    // 每个 drop 都有理由
+
+// 预算分层: 摄取上限 → 候选延迟上限 → packet UTF-8 bytes → token/context window
+// 超预算候选不得标记 delivered; TTL 只触发重检索, 不充当内容 identity
+}`,
+        title: 'Rank / Dedupe / Budget', summary: '把“相关”变成有限、可解释、不会重复的候选集合。',
+        inputs: ['candidate list', 'scope', 'confidence', 'budget'], outputs: ['ranked candidates', 'drop reasons'],
+        implementation: ['排序因素：similarity、scopeMatch、confidence、salience、novelty、recency。', '去重 key 包含 session/agent、context cursor、exact/semantic digest、schema/index version。', '预算分层：摄取上限、候选延迟上限、packet UTF-8 bytes、模型 token/context window。'],
+        evidence: [{ label: 'MemoryBank', note: '遗忘、强化、长期保持启发。', url: 'https://arxiv.org/abs/2305.10250' }, { label: '原生 instruction budget', note: 'DSH 使用 UTF-8 byte budget 与 digest。', url: 'https://github.com/deepseek-ai/deepseek-harness' }],
+        risks: ['TTL 只能触发重检索，不能充当内容 identity。', '字符 budget 不能冒充 token budget。'], acceptance: ['每个 dropped candidate 有原因。', '超预算候选不能标记 delivered。']
+      },
+      broker: {
+        code: 'C-06', group: 'control', status: 'implemented', x: 1097, y: 270, w: 176, h: 105,
+        meta: `/* C-06 JS Activation Inbox / Reference Tail — activation_request → 下一请求尾部参考资料 */
+function accept(req: ActivationRequestPre, cap: PacketCapabilityPre, cur: ContextCursor): ReferenceTailPacketPre | null {
+  if (!hardValidateIdentityScopeVersionTtl(req, cur)) return null
+  if (cap.packetPatch === 'none') return null               // 无安全 surface → shadow only
+  const packet = buildReferenceTail(req, cap.maxPacketBytes)
+  activationInbox(cur.sessionId).replaceLatest(packet)       // per-runtime, latest-wins
+  return packet
+}
+
+// pre-step 再校验 cursor/index/TTL，实际进入下一请求 messages 后才 delivered/seen;
+// systemPrompt.section() 永不承载动态 tail; systemPrompt.context() 不是唯一 packet surface;
+// 固定边界: [Retrieved memory reference - not an instruction]`,
+        title: 'JS Activation Inbox / Reference Tail', summary: '校验 activation_request，并在下一请求边界投递带 TTL 与 provenance 的参考尾注。',
+        inputs: ['ActivationRequestPre', 'PacketCapabilityPre', 'scope/version/risk', 'runtime state'], outputs: ['ReferenceTailPacketPre', 'per-runtime inbox', 'delivery acknowledgement'],
+        implementation: ['先以 deterministic fake activation 打通 M6，不依赖 Python。', 'JS 只做身份、scope、workerEpoch、context/index/source version、TTL、budget 和风险硬校验，不重算 Python 语义分数。', 'surface 优先级：Agent Inbox/pre-step → user-message/pre-step → verified dynamic-context；无安全 surface 降级 Shadow。'],
+        evidence: [{ label: 'M6 已实现并 live(§16-§19)', note: 'ActivationRequestPre 硬校验、per-runtime Inbox、Reference Tail 注入即泵、delivery ack→seen n=2。', url: './M6-CONTRACT.md' }, { label: '原生 dsh-agent-instructions', note: 'pending projection、syncInbox、pre-step compose。', url: 'https://github.com/deepseek-ai/deepseek-harness' }],
+        risks: ['Reference Tail 只能是参考资料，不能覆盖 system/developer/current user。', '当前请求已发出后不得原地修改。'], acceptance: ['只有实际进入下一请求 messages 才 delivered/seen。', '任何 tail 可解释 why/source/version/cost/expiry。']
+      },
+      capability: {
+        code: 'C-07', group: 'control', status: 'planned', x: 1302, y: 270, w: 176, h: 105,
+        meta: `/* C-07 Provider Adapter — 按 provider/model/version 协商能力 */
+function snapshot(route): CapabilitySnapshot {
+  const m = manifest(route.provider, route.model, route.modelVersion)
+  return {
+    reasoningVisibility: m.reasoning ?? 'unknown',   // none / summary / full / unknown
+    runtimeContext: m.includeRuntimeContext !== false ? 'native' : 'none',
+    packetPatch: m.supportsPreStep ? 'pre-step'
+                : m.supportsUserMessage ? 'user-message'
+                : 'none',
+    abortAndResume: !!m.abortAndResume,
+  }
+}
+
+// runtimeContext = native systemPrompt.context() + RuntimeContextProjection
+// packetPatch = durable Agent Inbox / future MemoryPacket path
+// Minimal complete persona: complete:true + includeRuntimeContext:false
+//   → includeRuntimeContext:false 时当前 native runtime-context 不生效
+//   → 未来 packet 仍需自建 pre-step user/message 路径, 否则安全降级 shadow retrieval
+// 约束: 不能按"模型名称"硬编码能力; preset 不支持 patch 时不强行改请求`,
+        title: 'Provider Adapter', summary: '按 Provider、model、version 协商 reasoning 与上下文注入能力。',
+        inputs: ['provider route', 'model version', 'session surface'], outputs: ['capability snapshot'],
+        implementation: ['声明 reasoningVisibility: none / summary / full / unknown。', '分开声明 runtimeContext(native / none) 与 packetPatch(pre-step / user-message / none)，避免把当前维护快照误当成未来 packet 通道。', 'Minimal complete persona 的 includeRuntimeContext:false 会抑制原生 context；未来 packet 需自建 pre-step user/message 路径，否则安全降级 shadow retrieval。'],
+        evidence: [{ label: 'DSH systemPrompt / Minimal', note: 'complete:true、includeRuntimeContext:false；section 与 user/message 是不同层。', url: 'https://github.com/deepseek-ai/deepseek-harness' }, { label: 'CoT faithfulness', note: '公开 trace 只是低信任信号。', url: 'https://arxiv.org/abs/2307.13702' }],
+        risks: ['不能按“模型名称”硬编码能力。'], acceptance: ['关闭 reasoning 仍可运行。', 'preset 不支持 patch 时不强行修改请求。']
+      },
+      working: {
+        code: 'M-01', group: 'memory', status: 'implemented', x: 72, y: 490, w: 176, h: 105,
+        meta: `/* M-01 Working Memory — session 内短期注意力缓冲(ring + TTL, 不跨 session) */
+class WorkingMemory {
+  ring: Segment[] = []
+  cap = 32;  ttl = 15 * 60_000
+
+  push(seg) { this.ring.push(seg); this.evict() }   // 按最旧/TTL/重复淘汰, 可解释
+  window()  { return this.ring.filter(s => now() - s.ts < this.ttl) }
+  signals() {                                        // → C-03 gate
+    return { unresolved: this.unresolved(), phase: this.phase(),
+             last: this.ring.at(-1) }
+  }
+}
+
+// 按语义片段而非粗暴最后 N token;
+// 高相关候选可静默预取(pending), 不必立即注入;
+// 容量无限增长会让"联想"退化成全量 RAG`,
+        title: 'Working Memory', summary: 'M2 已实现的当前 session 短期注意力缓冲：Segment ring、目标、未决事项、最近结果和 pending packet。',
+        inputs: ['observer segments', 'active packet'], outputs: ['retrieval signal', 'next-step context'],
+        implementation: ['M2 SessionRuntime 的 envelope/segment ring 提供 working context；容量、TTL、session isolation 和 dispose 已有测试。', 'Working ring 只保存当前上下文事实，不等于长期 Semantic/Profile。', '高相关候选可以静默预取，不必立即注入。'],
+        evidence: [{ label: 'M2 live', note: 'ContextObserver 的 per-runtime ring、TTL、隔离和回放测试。', url: './M4-CONTRACT.md' }, { label: 'CoALA', note: 'working memory 类型和读取/更新操作。', url: 'https://arxiv.org/abs/2309.02427' }],
+        risks: ['容量无限增长会让“联想”退化成全量 RAG。'], acceptance: ['每次窗口更新可解释淘汰原因。']
+      },
+      episodic: {
+        code: 'M-02', group: 'memory', status: 'implemented', x: 277, y: 490, w: 176, h: 105,
+        meta: `/* M-02 Episodic Memory — 带时间/动作/结果/失败证据的事件经验 */
+interface Episode {
+  intent: string;  actions: string[];  entities: string[]
+  unresolved: string[];  outcome: 'success' | 'failure'
+  provenance: string          // sessionId + '#' + turn + '.' + step
+}
+
+function record(ev) {
+  const ep = { intent: infer(ev), actions: ev.actions, entities: ev.entities,
+               unresolved: ev.unresolved, outcome: ev.ok ? 'success' : 'failure',
+               provenance: sessionId + '#' + turn + '.' + step }
+  sidecar.append('episodes.jsonl', ep)      // 轻量事件先落 sidecar
+  scheduleIdle(() => consolidate(ep))       // 空闲期摘要 + 巩固 → 候选进 M-03
+}
+
+// 失败经验默认是 candidate, 不直接是事实;
+// 错误自我解释被持久化 = 污染长期层`,
+        title: 'Episodic Memory', summary: 'M2/M5 已提供事件、工具结果和 AccessEvidence 基础；正式 Episodic episode store 与摘要治理仍待后续。',
+        inputs: ['tools/result', 'turn outcome', 'user correction'], outputs: ['lessons', 'procedure candidates'],
+        implementation: ['记录 intent、actions、entities、unresolved、outcome、provenance。', '轻量事件先落 sidecar；会话结束或空闲期再摘要和巩固。', '失败经验默认是 candidate，不直接是事实。'],
+        evidence: [{ label: 'Reflexion', note: 'verbal episodic feedback 供后续 trial 使用。', url: 'https://arxiv.org/abs/2303.11366' }, { label: 'Generative Agents', note: 'memory stream 与 reflection。', url: 'https://arxiv.org/abs/2304.03442' }],
+        risks: ['错误自我解释被持久化后会污染长期层。'], acceptance: ['每条事件可追溯到 session/turn/tool 证据。']
+      },
+      semantic: {
+        code: 'M-03', group: 'memory', status: 'implemented', x: 482, y: 490, w: 176, h: 105,
+        meta: `/* M-03 Semantic / Profile — 去重后的项目事实 / 环境约束 / 用户偏好 / 稳定决策 */
+interface Fact {
+  scope: Scope
+  subject: string;  predicate: string;  object?: string
+  provenance: string[];  confirmedAt: number
+  ttl?: number;  revoked?: boolean
+}
+
+function upsert(cand: FactCandidate) {
+  if (conflicts(cand)) return conflicts.add(cand)          // 冲突集保留双方 provenance
+  const existing = find(cand.subject, cand.predicate)
+  if (existing && cand.source === 'inference') return      // 自动推断不覆盖硬规则
+  store.put(merge(existing, cand))                          // → M-06 投影 + sidecar 索引
+}
+
+// 用户明确声明 > 模型推断; 项目事实 / 用户画像 / 术语分开;
+// 冲突可见、可确认、可撤销(revoked)`,
+        title: 'Semantic / Profile', summary: 'M7 只能提出 semantic/profile candidate；M8 才由 JS 治理层固化事实、偏好、约束和冲突。',
+        inputs: ['episodic candidates', 'explicit user facts', 'confirmed outcomes'], outputs: ['scoped facts', 'retrieval nodes'],
+        implementation: ['项目事实、用户画像、Lexical 术语分开。', '自动抽取先进入 candidate；用户明确声明优先于模型推断。', '冲突集保留双方 provenance、confirmedAt、TTL、revoked 状态。'],
+        evidence: [{ label: 'MemoryBank', note: '长期对话记忆的保持、更新与衰减。', url: 'https://arxiv.org/abs/2305.10250' }, { label: 'Mem0', note: '生产级长期记忆抽取/更新/检索。', url: 'https://github.com/mem0ai/mem0' }],
+        risks: ['新信息不能无条件覆盖硬规则。'], acceptance: ['自动推断不能覆盖用户硬规则。', '冲突可见、可确认、可撤销。']
+      },
+      procedural: {
+        code: 'M-04', group: 'memory', status: 'implemented', x: 687, y: 490, w: 176, h: 105,
+        meta: `/* M-04 Procedural Memory — 访问证据 + 重复成功 episode → 可验证 Skill */
+type Stage = 'observed' | 'candidate' | 'validated' | 'active' | 'deprecated'
+type ActivationLevel = 'index' | 'hint' | 'excerpt' | 'checklist' | 'resource' | 'full'
+
+interface Procedure {
+  procedureId: string;  sourceMemoryIds: string[];  sourceEpisodes: string[]
+  preconditions: string[];  steps: string[];  checks: string[]
+  successCriteria: string[];  rollback: string[]
+  riskLevel: 'low' | 'medium' | 'high';  requiresApproval: boolean
+  stage: Stage;  evidence: AccessEvidence[]
+}
+
+function promote(p: Procedure) {
+  const stats = evidence.stats(p)               // seen/read/cite/reuse/success/correction
+  if (stats.sessionDiversity < 3 || stats.successCount < 2) return keepCandidate()
+  if (stats.correctionRate > MAX_CORRECTION || contradictions(p).length) return keepCandidate()
+  if (!p.successCriteria.length || !crossSessionEvidence(p)) return keepCandidate()
+  if (p.riskLevel === 'high' && !userApproved) return { action: 'ask' }
+  p.stage = 'validated';  store.put(p)
+}
+
+// Lexical/Working 只贡献词和当前上下文; Procedure 来源必须是重复成功 episode;
+// 渐进激活: index → hint → excerpt → checklist → resource → full;
+// 高风险工具(SSH/部署/删除)永不因相似度自动执行; 一次成功或三次重复均不足以证明可靠`,
+        title: 'Procedural Memory', summary: 'M7 可发现 procedure candidate；M9 才根据跨 session reuse/success/correction 和用户确认晋升可验证流程。',
+        inputs: ['episodic patterns', 'memory_access evidence', 'tool/test evidence', 'user approval'], outputs: ['active procedure candidates', 'progressive checklist packet'],
+        implementation: ['状态机：observed → candidate → validated → active → deprecated；read/open 只贡献弱证据。', '晋升需要跨 session 成功、明确 successCriteria、低 correction/contradiction，并引用 sourceMemoryIds/sourceEpisodes。', '只作为 index/hint/excerpt/checklist/resource/full 渐进激活；高风险工具永不因相似度自动执行。'],
+        evidence: [{ label: 'Voyager', note: '经过环境验证的可执行 skill library。', url: 'https://arxiv.org/abs/2305.16291' }, { label: 'Reflexion', note: '失败反馈到后续经验。', url: 'https://arxiv.org/abs/2303.11366' }],
+        risks: ['一次成功或三次重复都不足以证明技能可靠。'], acceptance: ['跨独立 session 有证据。', '具备禁用、回滚和降级入口。']
+      },
+      lexical: {
+        code: 'M-05', group: 'memory', status: 'implemented', x: 892, y: 490, w: 176, h: 105,
+        meta: `/* M-05 Lexical / Entity — 术语/缩写/别名/实体对齐(检索增强层) */
+function hits(entities: string[], text: string): Candidate[] {
+  return entities
+    .flatMap(e => aliasIndex[e] ?? [])       // 别名展开
+    .map(n => ({ ...n, source: 'lexical', score: LOW_PRIOR }))
+}
+
+// 词法别名是低风险检索增强, 不直接提升事实置信度;
+// 实体关系可连接 semantic / episodic / procedure 节点;
+// 冲突别名保留来源与 scope; 可撤销且不覆盖原文; 共现 ≠ 偏好/事实`,
+        title: 'Lexical / Entity', summary: 'Lexical 检索已由 JS lexical_pre_v2 和 Python D6 hybrid 使用；Entity/alias 治理仍是后续增强，不等于用户画像。',
+        inputs: ['user phrasing', 'project terms', 'entity mentions'], outputs: ['aliases', 'keywords', 'entity links'],
+        implementation: ['lexical_pre_v2(BM25/停用词/标识符)是当前可解释检索基线和 Python fallback；不直接提升事实置信度。', 'M7 dense/hybrid 可使用 lexical exact 作为融合特征；Entity/alias graph 仍需后续治理。', '冲突别名必须保留来源和 scope，可撤销且不覆盖原文。'],
+        evidence: [{ label: 'A-MEM', note: '关键词、标签、上下文和记忆链接。', url: 'https://arxiv.org/abs/2502.12110' }, { label: 'HippoRAG', note: '实体-关系图支撑关联召回。', url: 'https://arxiv.org/abs/2405.14831' }],
+        risks: ['术语共现不等于偏好或事实。'], acceptance: ['别名错误可撤销且不会覆盖原文。']
+      },
+      projection: {
+        code: 'M-06', group: 'memory', status: 'implemented', x: 1097, y: 490, w: 176, h: 105,
+        meta: `/* M-06 Projection + Anchor Index — 稳定身份 + 当前文件定位 */
+interface MemoryLocator {
+  memoryId: string;  anchorId: string;  sourceFile: string
+  sourceVersion: number;  lineStart: number;  lineEnd: number
+  byteStart: number;  byteEnd: number;  recordDigest: string
+}
+
+function project(record: MemoryRecord) {
+  const memoryId = record.memoryId || allocateMemoryId() // 首次创建后永久保存, 不由内容 digest 派生
+  const anchorId = stableAnchor(memoryId)                 // <!-- memory:mem_x -->
+  const rendered = renderBlock(anchorId, { ...record, memoryId })
+  atomicWrite(target(record.scope), rendered)             // Markdown 可读投影
+  memoryFileIndex.rebuild(record.sourceFile)              // anchor → byte/line range + digest
+  sidecar.index({ ...record, memoryId, anchorId })         // 可重建派生索引
+}
+
+function coverage(readResult, loc: MemoryLocator, index: MemoryFileIndex) {
+  if (!index.isFresh(loc.sourceFile, loc.sourceVersion, loc.recordDigest))
+    return { status: 'stale', matchedBytes: 0, totalBytes: 0, ratio: 0 }
+  const returned = utf8HalfOpenRange(readResult)          // [start,end), 原始 UTF-8 bytes
+  const record = [loc.byteStart, loc.byteEnd]             // [start,end)
+  const matchedBytes = overlapBytes(returned, record)
+  const totalBytes = Math.max(1, loc.byteEnd - loc.byteStart)
+  return { status: 'fresh', matchedBytes, totalBytes, ratio: matchedBytes / totalBytes }
+}
+
+// memoryId/anchorId 是逻辑身份; 内容变化只改变 sourceVersion/recordDigest。
+// lineStart/lineEnd 只用于 UI/debug; stale 与 coverage=0 是不同结果。
+// M3 只计算 locator/coverage; seen/read/cite 等证据生成属于 M5。
+// sidecar 损坏可从 Markdown anchors 重建, 原子写入失败可恢复。`,
+        title: 'Readable Projection + Anchor Index', summary: 'Markdown 保持可读投影；稳定 Anchor 与 MemoryFileIndex 让 Agent 读到的 block 可跨改动定位。',
+        inputs: ['consolidator', 'explicit memory tools', 'read results', 'file updates'], outputs: ['MEMORY.md', 'daily log', 'MemoryFileIndex', 'sidecar index'],
+        implementation: ['memoryId 在记录首次创建时分配并永久稳定，anchorId 由 memoryId 派生；二者都不能包含内容 digest。', 'MemoryFileIndex 使用 UTF-8 半开 byte range [start,end) 计算 coverage；sourceVersion+recordDigest 不匹配返回 stale，不能伪装成 coverage=0。', '先交付不改 Markdown 的 M3a 可重建只读索引，再交付覆盖全部写路径的 M3b anchor 迁移；sidecar 始终是可重建派生物。'],
+        evidence: [{ label: '当前 dsh-auto-memory', note: 'lib/index.js MemoryEngine、renderMemory、consolidateTurn。', url: './proactive-associative-memory-research-report.zh-CN.md' }, { label: 'MemOS', note: '记忆对象和生命周期控制面启发。', url: 'https://arxiv.org/abs/2507.03724' }],
+        risks: ['写入和索引更新必须原子或可恢复。', '按内容 digest 生成 memoryId 会在编辑后破坏逻辑身份。'], acceptance: ['M3a 关闭或未启用时现有 Markdown 行为不变。', '同一记录跨内容编辑保持 memoryId，版本/digest 正确变化。', 'byte coverage、stale、前置插入和多字节字符测试通过。']
+      },
+      python: {
+        code: 'M-07', group: 'memory', status: 'planned', x: 1302, y: 490, w: 176, h: 105,
+        meta: `/* M-07 Python Semantic Engine — index_sync + context_push → 主动 ActivationRequestPre */
+async function observe(frame: ContextPushEnvelopePre): Promise<ContextAckPre> {
+  requireReadyIndex(frame.session.workspaceKey, frame.index.memoryIndexVersion)
+  sessionState(frame.session.sessionId).apply(frame)
+  const ranked = hybrid(embed(frame), sparse(frame), graphOptional(frame), frame.evidence)
+  const decision = activationPolicy(ranked, frame.cursor, frame.policy)
+  if (decision.score >= decision.threshold) emitActivationRequest(decision)
+  return { observationId: frame.observationId, accepted: true, workerEpoch }
+}
+
+// 完整 corpus 只经 JS 授权分页 index_sync；memoryRefs top-8 仅作即时上下文;
+// Python 决定 semantic score/threshold；JS 决定身份、scope、版本、TTL、风险和投递;
+// Python 不创建 evidence、不写 Markdown/FileIndex/Packet/prompt;
+// unavailable/timeout/stale → lexical_pre_v2；fallback failure → suppress`,
+        title: 'Python Semantic Engine', summary: '消费 JS 授权 index_sync 与实时 context_push，执行 embedding、dense/hybrid、可选 rerank/graph，并主动发出 ActivationRequestPre。',
+        inputs: ['ContextPushEnvelopePre', 'index_sync begin/page/commit', 'EvidenceAggregatePre'], outputs: ['ContextAckPre', 'candidate_result', 'ActivationRequestPre', 'judgement_suggestion'],
+        implementation: ['M7-0/M7-1 已实现并 tested(2026-08-24,默认关闭零进程零 IO;未 live)：m7_wire_pre_v1 协议、纯标准库确定性 fake worker(python/worker_pre_v1.py)、SidecarClient(lazy spawn/epoch/framing/timeout/crash/breaker)、JS 授权 index_sync(64 条·256KiB·canonical digest·七类失败整次拒绝·semantic-pre 原子切换可重建)；m70/m71 各 90 断言+全量 22 项回归全绿(契约 §19)。', '阶段顺序：协议/fake worker ✓→index_sync ✓→embedding(benchmark 门)→exact dense/hybrid→可选 rerank→benchmark 后可选 graph→主动 activation→judgement shadow→live(M7-8 用户控制)。', '当前约 176 条记录；M7-2 首轮比较 BGE-M3/Qwen3 embedding + NumPy exact cosine + sparse/RRF 与 lexical_pre_v2；tokenizer 替换占位 chunking(整记录单 chunk chk_pre_*)须升级 policyVersion 并重建 derived state；ANN/图数据库必须由 benchmark 证明必要。'],
+        evidence: [{ label: 'M7 完整契约', note: 'Live wire、index_sync、算法门、阶段与测试矩阵。', url: './PYTHON-SIDECAR-CONTRACT.md' }, { label: 'M7 实施报告', note: '开源选型、license 风险与 benchmark 计划。', url: './M7-PYTHON-IMPLEMENTATION-REPORT.md' }, { label: 'HippoRAG / A-MEM', note: 'PPR 与 linked-memory 的后置研究参考。', url: 'https://github.com/OSU-NLP-Group/HippoRAG' }],
+        risks: ['禁止凭直觉手写 embedding、ANN、矩阵或图算法。', 'Python 不能越过 JS Host 权威边界。'], acceptance: ['禁用时零 Python process/IO。', '所有 activation 通过现有 M6 validator。', 'Python 不可用回退 lexical_pre_v2。']
+      },
+      evidence: {
+        code: 'G-01', group: 'governance', status: 'implemented', x: 72, y: 710, w: 176, h: 105,
+        meta: `/* G-01 JS Context / Evidence Bridge — 可信证据 + Python 实时上下文对象 */
+type AccessKindPre = 'seen' | 'read' | 'cite' | 'reuse' | 'success' | 'correction'
+interface ContextPushEnvelopePre {
+  observationId: string; session: SessionScopePre; cursor: ContextCursor
+  trigger: ContextSegmentPre; window: ContextSegmentPre[]
+  memoryRefs: AuthorizedMemoryRefPre[]; evidence: EvidenceAggregatePre[]
+  policy: ContextPolicyPre; budget: ContextBudgetPre; deadlineAt: number
+}
+
+function exportContext(runtime, segment) {
+  if (!reliableOwner(runtime) || disabled()) return null
+  return fakeOrNullSink.push(buildBoundedContextFrame(runtime, segment))
+}
+
+// read 由 fresh Anchor/FileIndex byte overlap 创建; stale != coverage=0;
+// M4 Shadow hit 不追认为 seen/read; M6 实际 delivery ack 后才创建 seen;
+// Python 可消费 aggregate，但永远不能创建/修改 AccessEvidence`,
+        title: 'JS Context / Evidence Bridge', summary: '创建可信访问证据，并把有界实时上下文、授权 memory refs 和 evidence aggregate 输出给未来 Python。',
+        inputs: ['M2 Segment/tool result', 'M3 locator/provenance', 'M4 authorized corpus', 'M6 delivery ack'], outputs: ['AccessEvidencePre', 'EvidenceAggregatePre', 'ContextPushEnvelopePre'],
+        implementation: ['M5 先实现 schema/validator、Null/Fake ContextSink、coverage/evidence classifier、idempotency 和 pure replay，不启动 Python。', 'seen/read/cite/reuse/success/correction 分层；只有实际 read coverage 和 M6 delivery ack 才形成对应 evidence。', 'frame 只包含白名单、有界、scope 授权和版本化字段；无 owner/跨 workspace/stale 全部 fail closed。'],
+        evidence: [{ label: 'M5 已实现并 live(§15-18)', note: 'ContextPushEnvelopePre、AccessEvidencePre(seen/read/cite/correction live 落盘)与 Null/Fake sink。', url: './M5-CONTRACT.md' }, { label: 'M3/M4 live', note: '稳定 identity、freshness、scope 与 replay 基线。', url: './M4-CONTRACT.md' }],
+        risks: ['Shadow hit 追认污染。', '上下文 frame 或 evidence 落盘泄露原文。'], acceptance: ['默认关闭零 IO。', 'cross-session/cross-workspace leakage 为零。', 'M5 自身不改变 prompt。']
+      },
+      audit: {
+        code: 'G-02', group: 'governance', status: 'planned', x: 277, y: 710, w: 176, h: 105,
+        meta: `/* G-02 Activation Observability / Calibration Console — 每次唤醒为何发生、为何被压住、用户如何微调 */
+function recordActivationDecision(decision: ActivationDecision, candidates: Candidate[], delivery?: DeliveryAck) {
+  audit.log({
+    decisionId, sessionRef, contextVersion, lane: decision.lane,
+    action: decision.action, score: decision.score, reasonCodes: decision.reasonCodes,
+    features: decision.features, candidates: candidates.map(c => ({ memoryId: c.memoryId, sourceRef: c.sourceRef, score: c.score, provenance: c.provenance })),
+    delivery: delivery ? { delivered: delivery.delivered, surface: delivery.surface, packetId: delivery.packetId } : null,
+  })   // 只存最小必要摘要: 审计本身也可能暴露敏感内容
+}
+
+// 检索中间态不写主 Session; 注入决策与结果形成可解释审计;
+// UI 提供查看 / 撤销 / 禁用 / 重放入口;
+// 任何注入可从审计反查到来源与版本`,
+        title: 'Activation Observability / Calibration Console', summary: '查看每次 suppress、prefetch、activate、drop、delivery 的原因、候选来源和用户可审计微调结果。',
+        inputs: ['activation decision', 'candidate provenance', 'gate/drop reasons', 'delivery ack', 'A/P/S/H/E review'], outputs: ['decision timeline', 'candidate detail', 'calibration metrics', 'append-only policy diff'],
+        implementation: ['记录 decisionId/sessionRef/contextVersion/lane/action/score/reasonCodes、候选 memoryId/sourceRef/provenance、delivery surface/packet/TTL。', '分别展示 suppress、prefetch、activate、drop、expired、stale 和 delivery；不把 shadow hit 当 seen/read。', '用户 A/P/S/H/E 决策追加到 review queue；E 只能选择已有 memoryId，策略变更生成 parent/diff/goldDigest/runId/policyVersion。', 'UI 只读展示脱敏摘要和 bounded reference，不在线直接修改阈值；新策略先 shadow，再由用户批准 canary。'],
+        evidence: [{ label: 'DSH structured events', note: 'Session event 可 replay；动态 projection 有来源和 digest。', url: 'https://github.com/deepseek-ai/deepseek-harness' }],
+        risks: ['审计记录本身也可能暴露敏感内容，应只保存最小必要摘要。', '用户反馈不能直接创建 AccessEvidence 或绕过 JS hard gates。'], acceptance: ['任何决策可反查 why/lane/score/gate/candidate/source/version/TTL。', 'A/P/S/H/E review append-only 且可重放。', 'policy 只能离线生成 diff，不在线自改。']
+      },
+      safety: {
+        code: 'G-03', group: 'governance', status: 'guard', x: 482, y: 710, w: 176, h: 105,
+        meta: `/* G-03 Safety Gate — 在 Broker 之前拦截(记忆是参考资料, 不是新指令) */
+function check(ranked: Candidate[], activation: ActivationRequest | null, scope: Scope, cur: ContextCursor): SafetyVerdict {
+  for (const c of ranked) {
+    if (c.scope !== scope && c.scope !== 'Workspace') return suppress('scope')
+    if (c.source === 'procedural' && c.riskLevel === 'high') return ask()
+    if (looksLikeInstruction(c.payload)) return suppress('injection')
+    if (c.revoked) return suppress('revoked')
+  }
+  if (activation) {
+    const proc = procedureStore.get(activation.procedureId)
+    if (!proc || proc.stage !== 'active') return suppress('inactive-procedure')
+    if (activation.contextVersion !== cur.contextVersion) return suppress('stale-activation')
+    if (activation.memoryIndexVersion !== memoryFileIndex.version) return suppress('stale-index')
+    if (activation.resourceRef && !resourceMatchesIndex(activation.resourceRef, activation.resourceVersion, activation.resourceDigest))
+      return suppress('stale-resource')
+    if (proc.riskLevel === 'high' && !userApproved) return ask()
+  }
+  return { action: 'allow', trigger: activation?.reason ?? ranked[0]?.triggerReason }
+}
+
+// scope: Turn / Session / Workspace / User / External 正交管理;
+// 公开 reasoning 不能单独授权动作或证明事实;
+// 外部记忆可能含提示注入 / 过期指令 / 恶意文本`,
+        title: 'Safety Gate', summary: '记忆是参考资料，不是新指令；冲突、范围、风险和副作用必须在 Broker 前拦截。',
+        inputs: ['scope', 'activation_request', 'conflict state', 'risk level', 'provider capability'], outputs: ['allow', 'suppress', 'ask', 'fallback'],
+        implementation: ['scope：Turn / Session / Workspace / User / External 正交管理；activation_request 还必须匹配 contextVersion、resource digest 和 active procedure 状态。', 'Procedure、SSH、部署、删除等外部副作用默认需要用户确认。', '公开 reasoning 不能单独授权动作或证明事实。'],
+        evidence: [{ label: 'CoT faithfulness', note: '可见 CoT 不应作为唯一意图或授权依据。', url: 'https://arxiv.org/abs/2305.04388' }, { label: 'DSH approval / tools guard', note: '安全策略属于 Host plane。', url: 'https://github.com/deepseek-ai/deepseek-harness' }],
+        risks: ['外部记忆可能包含提示注入、过期指令或恶意文本。'], acceptance: ['记忆永远不能覆盖 system/developer/当前用户指令。']
+      },
+      metrics: {
+        code: 'G-04', group: 'governance', status: 'planned', x: 687, y: 710, w: 176, h: 105,
+        meta: `/* G-04 Evaluation / Metrics — 离线回放 + 基准评估主动召回的真实收益 */
+function observe(packet: MemoryPacket | null, verdict: SafetyVerdict, access?: AccessEvidence) {
+  metrics.inc('trigger', { hit: verdict.action === 'allow', reason: verdict.trigger })
+  metrics.inc('cost', { bytes: packet?.budgetBytes ?? 0, activationLevel: packet?.activationLevel })
+  if (access) metrics.inc('memory_access', { kind: access.kind, coverage: access.coverage ?? 0, sessionId: access.sessionId })
+  if (packet?.activationLevel) metrics.inc('activation', { level: packet.activationLevel, procedureIds: packet.items.map(x => x.id) })
+}
+
+// 基准: LongMemEval(跨 session/时间/知识更新) + LoCoMo(长对话单跳/多跳)
+// 指标: trigger precision/recall · helpful gain · harmful injection
+//       duplicate · contamination · latency · tokens · leakage
+// 路线: 先 Shadow Retrieval(只记录), 再 A/B Soft Injection
+// 只测最终答案会忽略触发时机和误注入伤害; cross-session leakage 必须为零`,
+        title: 'Evaluation / Metrics', summary: '用离线回放和基准评估主动召回是否真的提高任务结果。',
+        inputs: ['audit events', 'replay sessions', 'benchmarks'], outputs: ['precision/recall', 'gain/harm', 'latency/cost'],
+        implementation: ['LongMemEval：跨 session、时间、知识更新。LoCoMo：长对话单跳/多跳。', '新增 trigger precision/recall、helpful gain、harmful injection、duplicate、contamination、latency、tokens、leakage，以及 coverage/read/cite/reuse/success/correction 漏斗。', '先 Shadow Retrieval，再 A/B Soft Injection；比较渐进激活各级别是否减少无效 full-skill 注入。'],
+        evidence: [{ label: 'LongMemEval', note: '长期交互记忆 benchmark。', url: 'https://arxiv.org/abs/2410.10813' }, { label: 'LoCoMo', note: '长期多轮对话记忆 benchmark。', url: 'https://github.com/snap-research/locomo' }],
+        risks: ['只测最终答案会忽略触发时机和误注入伤害。'], acceptance: ['Cross-session leakage 必须为零。']
+      },
+      fallback: {
+        code: 'G-05', group: 'governance', status: 'guard', x: 892, y: 710, w: 176, h: 105,
+        meta: `/* G-05 Fallback / Degrade — 高级层关闭时, 基础对话与现有记忆功能不变 */
+function keywordRecall(seg: Segment, cur: ContextCursor): Candidate[] {
+  return lexicalIndex.search([...seg.entities, ...tokens(seg.text)])
+}
+
+// Python / embedding / reranker / 图检索: 全部有超时 + 失败回退
+// provider unavailable ≠ 删除文件(原生 pattern 回滚临时状态)
+// 过期 packet 丢弃且不标记 delivered; 下一事件可重新检索
+// 回退路径不悄悄改变现有 Markdown 注入语义`,
+        title: 'Fallback / Degrade', summary: '高级算法不可用时，系统仍保持 DSH 基础对话和当前记忆功能。',
+        inputs: ['timeout', 'provider unavailable', 'stale version', 'budget overflow'], outputs: ['keyword retrieval', 'no injection', 'retry later'],
+        implementation: ['Python、embedding、reranker、图检索都必须有超时和失败回退。', 'provider unavailable 不能当作文件删除；原生 pattern 会回滚临时状态。', '过期 packet 丢弃，不标记 delivered；下一事件可重新检索。'],
+        evidence: [{ label: '原生 instruction provider behavior', note: 'provider unavailable 回滚该批临时状态。', url: 'https://github.com/deepseek-ai/deepseek-harness' }],
+        risks: ['回退路径不能悄悄改变现有 Markdown 注入语义。'], acceptance: ['高级层关闭时基础插件 smoke test 仍通过。']
+      },
+      research: {
+        code: 'R-01', group: 'research', status: 'research', x: 1097, y: 710, w: 176, h: 105,
+        meta: `/* R-01 Research Signals — 论文启发 → 设计约束(不是现成 Host 实现) */
+const constraints = {
+  types:    CoALA,                                  // 记忆类型词汇
+  stream:   GenerativeAgents,                       // stream + relevance/recency/importance
+  paging:   MemGPT,                                 // 受限窗口 + 外部记忆分页
+  graph:    [A_MEM, HippoRAG],                      // 链接记忆 / KG + PPR 扩散
+  inGen:    [FLARE, IRCoT, DRAGIN, SelfRAG],        // 生成过程检索 → 只作触发启发
+  progressive: Proteus,                              // 渐进激活 → 仅概念借鉴，具体算法待核验
+  skills:   [Reflexion, Voyager],                   // 经验反馈 / 环境验证技能库
+  eval:     [LongMemEval, LoCoMo],                  // 评测
+}
+
+// 约束: 不能把生成侧方法描述成已实现的 Host 主动注入;
+// 每条设计类比在文档中标注"启发"而非"已实现"`,
+        title: 'Research Signals', summary: '论文提供触发、记忆类型、反思、技能和评测的参考，不是现成 Host 实现。',
+        inputs: ['CoALA', 'Generative Agents', 'FLARE / IRCoT / DRAGIN / Self-RAG'], outputs: ['design constraints', 'ablation hypotheses'],
+        implementation: ['CoALA：类型；Generative Agents：stream/retrieve/reflect；MemGPT：分页；A-MEM/HippoRAG：图关联。', 'FLARE/IRCoT/DRAGIN/Self-RAG：生成过程中的知识检索启发，不是长期记忆的 Host 主动注入。', 'Reflexion/Voyager：经验和程序验证；LongMemEval/LoCoMo：评测。'],
+        evidence: [{ label: 'FLARE', note: 'Uncertainty-triggered active retrieval。', url: 'https://arxiv.org/abs/2305.06983' }, { label: 'IRCoT', note: 'Reasoning-step retrieval。', url: 'https://arxiv.org/abs/2212.10509' }, { label: 'DRAGIN', note: 'Dynamic retrieval timing/query。', url: 'https://arxiv.org/abs/2403.10081' }, { label: 'Self-RAG', note: 'Retrieve, generate, critique。', url: 'https://arxiv.org/abs/2310.11511' }, { label: 'Proteus', note: 'Incremental memory activation 的概念启发；具体算法待进一步核验。', url: 'https://arxiv.org/abs/2608.16844' }],
+        risks: ['不能把生成侧方法直接描述成已实现的 Host 主动注入。'], acceptance: ['每条设计类比在文档中标注“启发”而非“已实现”。']
+      },
+      lexical2: {
+        code: 'R-02', group: 'research', status: 'research', x: 1302, y: 710, w: 176, h: 105,
+        meta: `/* R-02 Cognitive Model — 激活 / 衰减 / 扩散 / 抑制的工程化近似 */
+function activation(c: Candidate, seg: Segment, cur: ContextCursor): number {
+  return base(c.confidence)
+       + wRel * relevance(c, seg)     // 关联度
+       + wRec * recency(c, cur)       // 近因
+       + wFrq * frequency(c, cur)     // 频因
+       + wSal * salience(c)           // 显著性
+       - wSup * suppression(c, cur)   // 重复 / 已忽略抑制
+}
+
+// Activation 只用于排序, ≠ 真实性;
+// 认知状态(介入强度)与联想激活(候选)分离;
+// 每个权重可通过离线回放校准;
+// 不宣称软件分数等同真实脑机制或模型隐藏 attention`,
+        title: 'Cognitive Model', summary: '人类联想机制的工程抽象：激活、衰减、扩散与抑制。',
+        inputs: ['recency', 'frequency', 'relevance', 'salience'], outputs: ['scoring hypotheses', 'calibration experiments'],
+        implementation: ['Activation 只用于排序，不等于真实性。', '认知状态和联想激活分离：前者调整介入强度，后者决定候选。', '新颖度、范围匹配、置信度和重复抑制作为工程化近似。'],
+        evidence: [{ label: 'CoALA', note: '认知架构类型和操作。', url: 'https://arxiv.org/abs/2309.02427' }, { label: 'Generative Agents', note: 'relevance + recency + importance。', url: 'https://arxiv.org/abs/2304.03442' }],
+        risks: ['不要宣称软件分数等同真实脑机制或模型隐藏 attention。'], acceptance: ['每个权重可通过离线回放校准。']
+      }
+    };
+
+    var primaryEdgeKeys = new Set([
+      'events>session','inbox>claim','claim>prestep','prestep>request','request>model','model>toolResult','toolResult>events'
+    ]);
+    var edges = [
+      ['events','session','native','append'], ['session','observer','planned','observe'], ['observer','runtime','planned','scope'], ['runtime','working','planned','window'], ['working','gate','planned','signal'], ['gate','association','planned','retrieve'], ['association','rank','planned','candidates'], ['rank','broker','planned','policy'], ['broker','inbox','planned','packet'], ['inbox','claim','native','claim'], ['claim','prestep','native','assemble + waterfall'], ['prestep','request','native','request'], ['request','model','native','dispatch'], ['model','toolResult','native','feedback'], ['toolResult','events','native','replay'], ['toolResult','evidence','planned','memory_access'], ['projection','toolResult','planned','locate read'], ['episodic','association','planned','recall'], ['semantic','association','planned','recall'], ['procedural','association','guard','checklist'], ['procedural','broker','guard','progressive activation'], ['lexical','association','research','entity'], ['projection','semantic','planned','promote'], ['observer','evidence','planned','context frame'], ['rank','evidence','planned','authorized refs'], ['evidence','python','planned','context_push / evidence_sync'], ['python','broker','planned','activation_request'], ['evidence','episodic','planned','episode evidence'], ['evidence','semantic','planned','update'], ['evidence','procedural','guard','promote'], ['python','audit','planned','activation decision'], ['audit','broker','planned','audit'], ['audit','metrics','planned','review metrics'], ['safety','broker','guard','gate'], ['capability','broker','planned','adapter'], ['metrics','audit','planned','measure'], ['fallback','association','guard','degrade'], ['research','gate','research','trigger'], ['lexical2','association','research','model']
+    ];
+
+    var statusLabels = { native: 'native / 当前', planned: 'planned / 设计', research: 'research / 依据', guard: 'guard / 安全', implemented: 'implemented / 预览分支已实现' };
+    var groupLabels = { native: 'DSH 原生链路', control: '主动控制面', memory: '认知记忆面', governance: '治理与运营', research: '理论研究' };
+    var activeStatus = 'all';
+    var activeGroup = 'all';
+    var selectedId = 'broker';
+    var activeTab = 'overview';
+    var zoom = 1;
+    var svg = document.getElementById('systemMap');
+    var edgeLayer = document.getElementById('edgeLayer');
+    var nodeLayer = document.getElementById('nodeLayer');
+    var inspectorBody = document.getElementById('inspectorBody');
+    var sourceChips = document.getElementById('sourceChips');
+    var moduleIndex = document.getElementById('moduleIndex');
+    var SVG_NS = 'http://www.w3.org/2000/svg';
+
+    function escHtml(value) {
+      return String(value == null ? '' : value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+    function hlMeta(code) {
+      var re = /(\/\*[\s\S]*?\*\/|\/\/[^\n]*)|('[^'\n]*')|("[^"\n]*")|\b(interface|type|class|function|const|let|return|async|await|if|else|for|new|extends)\b/g;
+      var out = []; var last = 0; var m;
+      while ((m = re.exec(code))) {
+        out.push(escHtml(code.slice(last, m.index)));
+        var cls = m[1] ? 'm-c' : (m[2] || m[3]) ? 'm-s' : 'm-k';
+        out.push('<span class="' + cls + '">' + escHtml(m[0]) + '</span>');
+        last = m.index + m[0].length;
+      }
+      out.push(escHtml(code.slice(last)));
+      return out.join('');
+    }
+    function openMetaDrawer() {
+      var d = document.getElementById('metaDrawer');
+      var b = document.getElementById('metaBackdrop');
+      if (!d) return;
+      d.classList.add('open'); if (b) b.classList.add('open');
+      d.setAttribute('aria-hidden', 'false');
+      document.body.style.overflow = 'hidden';
+    }
+    function closeMetaDrawer() {
+      var d = document.getElementById('metaDrawer');
+      var b = document.getElementById('metaBackdrop');
+      if (!d) return;
+      d.classList.remove('open'); if (b) b.classList.remove('open');
+      d.setAttribute('aria-hidden', 'true');
+      document.body.style.overflow = '';
+    }
+    (function bindMetaDrawer() {
+      var btn = document.getElementById('metaDrawerOpenBtn');
+      var idx = document.getElementById('metaIndexOpenBtn');
+      var x = document.getElementById('metaDrawerClose');
+      var back = document.getElementById('metaBackdrop');
+      if (btn) btn.addEventListener('click', openMetaDrawer);
+      if (idx) idx.addEventListener('click', openMetaDrawer);
+      if (x) x.addEventListener('click', closeMetaDrawer);
+      if (back) back.addEventListener('click', closeMetaDrawer);
+      document.addEventListener('keydown', function (ev) {
+        var tag = (ev.target && ev.target.tagName) || '';
+        var typing = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (ev.target && ev.target.isContentEditable);
+        if (ev.key === 'Escape' || ((ev.key === 'X' || ev.key === 'x') && !typing)) closeMetaDrawer();
+      });
+      document.addEventListener('click', function (ev) {
+        var t = ev.target;
+        if (!t || !t.closest) return;
+        if (t.closest('.open-wiring-link')) { ev.preventDefault(); openMetaDrawer(); }
+        else if (t.closest('#metaDrawerClose')) closeMetaDrawer();
+      });
+    })();
+    function esc(value) {
+      return String(value == null ? '' : value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+    function svgEl(name, attrs) {
+      var el = document.createElementNS(SVG_NS, name);
+      Object.keys(attrs || {}).forEach(function (key) { el.setAttribute(key, attrs[key]); });
+      return el;
+    }
+    function centerOf(m) { return { x: m.x + m.w / 2, y: m.y + m.h / 2 }; }
+    function edgeAnchor(m, other) {
+      var c = centerOf(m);
+      var o = centerOf(other);
+      var dx = o.x - c.x;
+      var dy = o.y - c.y;
+      if (Math.abs(dx) >= Math.abs(dy)) return { x: c.x + (dx >= 0 ? m.w / 2 : -m.w / 2), y: c.y };
+      return { x: c.x, y: c.y + (dy >= 0 ? m.h / 2 : -m.h / 2) };
+    }
+    function edgePath(a, b) {
+      var p1 = edgeAnchor(a, b), p2 = edgeAnchor(b, a);
+      var dx = p2.x - p1.x, dy = p2.y - p1.y;
+      if (Math.abs(dx) >= Math.abs(dy)) {
+        var bend = Math.max(28, Math.abs(dx) * .34);
+        var dir = dx >= 0 ? 1 : -1;
+        return 'M ' + p1.x + ' ' + p1.y + ' C ' + (p1.x + bend * dir) + ' ' + p1.y + ', ' + (p2.x - bend * dir) + ' ' + p2.y + ', ' + p2.x + ' ' + p2.y;
+      }
+      var bendY = Math.max(28, Math.abs(dy) * .34);
+      var dirY = dy >= 0 ? 1 : -1;
+      return 'M ' + p1.x + ' ' + p1.y + ' C ' + p1.x + ' ' + (p1.y + bendY * dirY) + ', ' + p2.x + ' ' + (p2.y - bendY * dirY) + ', ' + p2.x + ' ' + p2.y;
+    }
+    function isVisible(m) {
+      var text = (m.title + ' ' + m.summary + ' ' + m.code + ' ' + (m.meta || '') + ' ' + (m.evidence || []).map(function (r) { return r.label + ' ' + r.note; }).join(' ')).toLowerCase();
+      var query = (document.getElementById('moduleSearch').value || '').trim().toLowerCase();
+      var statusOk = activeStatus === 'all' || m.status === activeStatus;
+      var groupOk = activeGroup === 'all' || m.group === activeGroup;
+      var searchOk = !query || text.indexOf(query) >= 0;
+      return { statusOk: statusOk, groupOk: groupOk, searchOk: searchOk, all: statusOk && groupOk && searchOk };
+    }
+    function drawEdges() {
+      edgeLayer.innerHTML = '';
+      edges.forEach(function (e) {
+        var a = modules[e[0]], b = modules[e[1]];
+        if (!a || !b) return;
+        var key = e[0] + '>' + e[1];
+        var primary = primaryEdgeKeys.has(key);
+        var related = selectedId && (e[0] === selectedId || e[1] === selectedId);
+        var edgeClass = 'edge ' + e[2] + (primary ? ' edge-primary' : '') + (related ? ' edge-related' : '');
+        var path = svgEl('path', { d: edgePath(a, b), class: edgeClass, 'data-from': e[0], 'data-to': e[1] });
+        edgeLayer.appendChild(path);
+        var p1 = centerOf(a), p2 = centerOf(b);
+        var labelClass = 'edge-label' + (primary ? ' edge-primary-label' : '') + (related ? ' edge-related-label' : '');
+        var label = svgEl('text', { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 - 5, class: labelClass, 'text-anchor': 'middle' });
+        label.textContent = e[3];
+        edgeLayer.appendChild(label);
+      });
+    }
+    function selectModule(id) {
+      if (!modules[id]) return;
+      selectedId = id;
+      activeTab = 'overview';
+      drawEdges();
+      renderNodes();
+      renderInspector();
+      document.querySelectorAll('.module-jump').forEach(function (b) { b.classList.toggle('active', b.dataset.id === id); });
+    }
+    function renderNodes() {
+      nodeLayer.innerHTML = '';
+      Object.keys(modules).forEach(function (id) {
+        var m = modules[id];
+        var vis = isVisible(m);
+        var g = svgEl('g', { transform: 'translate(' + m.x + ',' + m.y + ')', class: 'node ' + m.status + (id === selectedId ? ' node-selected' : '') + (!vis.all ? ' dimmed' : '') + (!vis.searchOk ? ' search-dimmed' : ''), tabindex: '0', role: 'button', 'aria-label': m.title });
+        var rect = svgEl('rect', { x: 0, y: 0, width: m.w, height: m.h, rx: 9, class: 'node-shell' });
+        var hit = svgEl('rect', { x: -7, y: -7, width: m.w + 14, height: m.h + 14, rx: 12, class: 'node-hit' });
+        var fo = document.createElementNS(SVG_NS, 'foreignObject');
+        fo.setAttribute('x', '3'); fo.setAttribute('y', '3'); fo.setAttribute('width', String(m.w - 6)); fo.setAttribute('height', String(m.h - 6));
+        fo.innerHTML = '<div xmlns="http://www.w3.org/1999/xhtml" class="svg-card"><div class="svg-code">' + esc(m.code) + ' · ' + esc(groupLabels[m.group]) + '</div><div class="svg-title">' + esc(m.title) + '</div><div class="svg-sub">' + esc(m.summary) + '</div><span class="svg-state ' + esc(m.status) + '">' + esc(statusLabels[m.status]) + '</span></div>';
+        g.appendChild(hit); g.appendChild(rect); g.appendChild(fo);
+        g.addEventListener('click', function () { selectModule(id); });
+        g.addEventListener('keydown', function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); selectModule(id); } });
+        nodeLayer.appendChild(g);
+      });
+    }
+    function listHtml(items) {
+      return '<ul class="detail-list">' + (items || []).map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>';
+    }
+    function refsHtml(refs) {
+      return '<div class="ref-list">' + (refs || []).map(function (r) { return '<a class="ref" href="' + esc(r.url) + '" target="_blank" rel="noopener"><strong>' + esc(r.label) + '</strong><small>' + esc(r.note) + '</small></a>'; }).join('') + '</div>';
+    }
+    function renderInspector() {
+      var m = modules[selectedId] || modules.broker;
+      document.getElementById('inspectorCode').textContent = m.code + ' · ' + groupLabels[m.group];
+      document.getElementById('inspectorTitle').textContent = m.title;
+      document.getElementById('inspectorSummary').textContent = m.summary;
+      var badge = document.getElementById('inspectorStatus'); badge.className = 'status-badge ' + m.status; badge.textContent = statusLabels[m.status];
+      document.querySelectorAll('.inspector-tab').forEach(function (b) { b.classList.toggle('active', b.dataset.tab === activeTab); });
+      if (activeTab === 'overview') {
+        inspectorBody.innerHTML = '<div class="detail-label">Purpose</div><p class="detail-text">' + esc(m.summary) + '</p><div class="io-grid"><div class="io-box"><strong>输入</strong><span>' + (m.inputs || []).map(esc).join('<br>') + '</span></div><div class="io-box"><strong>输出</strong><span>' + (m.outputs || []).map(esc).join('<br>') + '</span></div></div><div class="detail-label">当前状态</div><p class="detail-text">' + esc(statusLabels[m.status]) + ' · ' + esc(groupLabels[m.group]) + '</p><div class="detail-label">关键实现</div>' + listHtml((m.implementation || []).slice(0, 2));
+      } else if (activeTab === 'implementation') {
+        inspectorBody.innerHTML = '<div class="detail-label">Implementation</div>' + listHtml(m.implementation) + '<div class="detail-label">Data in / out</div><div class="io-grid"><div class="io-box"><strong>输入</strong><span>' + (m.inputs || []).map(esc).join('<br>') + '</span></div><div class="io-box"><strong>输出</strong><span>' + (m.outputs || []).map(esc).join('<br>') + '</span></div></div>';
+      } else if (activeTab === 'evidence') {
+        inspectorBody.innerHTML = '<div class="detail-label">Theory / open source / native DSH</div>' + refsHtml(m.evidence) + '<p class="detail-text">引用用于说明设计启发或原生实现事实；不代表相邻项目已经实现本图的完整 Host 主动注入组合。</p>';
+      } else if (activeTab === 'meta') {
+        inspectorBody.innerHTML = '<div class="detail-label">Meta code · 类型契约 + 关键逻辑骨架</div><pre class="meta-code">' + hlMeta(m.meta || '(no meta)') + '</pre><p class="detail-text">伪代码, 不编译; 共享类型与装配顺序见 <a href="#" class="open-wiring-link">⓪ 全局装配</a>。</p>';
+      } else {
+        inspectorBody.innerHTML = '<div class="detail-label">Risks</div>' + listHtml(m.risks) + '<div class="detail-label">Acceptance gate</div>' + listHtml(m.acceptance) + '<div class="detail-label">Non-negotiable</div><p class="detail-text">跨 session 泄漏必须为零；过期或版本不匹配的 packet 必须丢弃；记忆内容不能覆盖更高优先级指令。</p>';
+      }
+    }
+    function renderIndex() {
+      moduleIndex.innerHTML = '';
+      Object.keys(modules).forEach(function (id) {
+        var m = modules[id];
+        var b = document.createElement('button'); b.type = 'button'; b.className = 'module-jump'; b.dataset.id = id; b.textContent = m.code + ' ' + m.title; b.title = m.summary; b.addEventListener('click', function () { selectModule(id); }); moduleIndex.appendChild(b);
+      });
+    }
+    function renderSources() {
+      var seen = {};
+      var all = [];
+      Object.keys(modules).forEach(function (id) { (modules[id].evidence || []).forEach(function (r) { if (!seen[r.url]) { seen[r.url] = true; all.push(r); } }); });
+      sourceChips.innerHTML = all.slice(0, 22).map(function (r) { return '<a class="source-chip" href="' + esc(r.url) + '" target="_blank" rel="noopener">' + esc(r.label) + '</a>'; }).join('');
+    }
+    function renderProgress() {
+      document.getElementById('progressRevision').textContent = progressLedger.codeBaseline + ' · 更新 ' + progressLedger.updatedAt;
+      document.getElementById('progressBranch').textContent = progressLedger.branch;
+      document.getElementById('progressScope').textContent = progressLedger.currentScope;
+      document.getElementById('progressLiveTarget').textContent = progressLedger.liveTarget;
+      document.getElementById('progressRows').innerHTML = progressLedger.modules.map(function (m) {
+        return '<tr><td class="progress-id" data-label="里程碑">' + esc(m.id) + '</td><td class="progress-module" data-label="模块">' + esc(m.title) + '</td><td class="progress-state-col" data-label="状态"><span class="progress-state ' + esc(m.state) + '">' + esc(progressLedger.stateLabels[m.state]) + '</span></td><td data-label="当前证据">' + esc(m.evidence) + '</td><td data-label="下一交付物">' + esc(m.deliverable) + '</td><td data-label="验收门 / 依赖">' + esc(m.gate) + '</td></tr>';
+      }).join('');
+      document.getElementById('nextBriefText').textContent = progressLedger.nextBrief.join('\n');
+    }
+    function setFilters() { renderNodes(); }
+    document.querySelectorAll('[data-status-filter]').forEach(function (b) { b.addEventListener('click', function () { activeStatus = b.dataset.statusFilter; document.querySelectorAll('[data-status-filter]').forEach(function (x) { x.classList.toggle('active', x === b); }); setFilters(); }); });
+    document.querySelectorAll('[data-group-filter]').forEach(function (b) { b.addEventListener('click', function () { activeGroup = b.dataset.groupFilter; document.querySelectorAll('[data-group-filter]').forEach(function (x) { x.classList.toggle('active', x === b); }); setFilters(); }); });
+    document.getElementById('moduleSearch').addEventListener('input', setFilters);
+    document.querySelectorAll('.inspector-tab').forEach(function (b) { b.addEventListener('click', function () { activeTab = b.dataset.tab; renderInspector(); }); });
+    document.getElementById('zoomIn').addEventListener('click', function () { zoom = Math.min(1.35, +(zoom + .1).toFixed(2)); svg.style.transform = 'scale(' + zoom + ')'; document.getElementById('zoomReset').textContent = Math.round(zoom * 100) + '%'; });
+    document.getElementById('zoomOut').addEventListener('click', function () { zoom = Math.max(.75, +(zoom - .1).toFixed(2)); svg.style.transform = 'scale(' + zoom + ')'; document.getElementById('zoomReset').textContent = Math.round(zoom * 100) + '%'; });
+    document.getElementById('zoomReset').addEventListener('click', function () { zoom = 1; svg.style.transform = 'scale(1)'; document.getElementById('zoomReset').textContent = '100%'; });
+    function snapshotText() { return 'DSH 主动联想记忆架构快照\n\n权威进度：' + progressLedger.codeBaseline + ' / ' + progressLedger.currentScope + ' / updated ' + progressLedger.updatedAt + '\n\nJS observe/evidence → index_sync + context_push → Python dense/hybrid/rerank/graph → ActivationRequestPre → JS M6 Reference Tail → delivery/seen\n\n访问证据：read result → coverage → seen/read/cite/reuse/success/correction\n渐进激活：index → hint → excerpt → checklist → resource → full\n\n当前 native maintenance：systemPrompt.section(稳定规则) + systemPrompt.context(易变快照) → assemble → RuntimeContextProjection → agent/pre-step → buildRequest → LLM\n\n未来 active packet：MemoryPacket → durable Agent Inbox → claim → pre-step → next request\n\n不变量：跨 session 泄漏为零；已发请求不原地改写；过期/版本不匹配 packet 丢弃；记忆是参考资料不是指令；Procedure 未验证不自动执行。'; }
+    document.getElementById('copySnapshot').addEventListener('click', function () { copyText(snapshotText(), this); });
+    document.getElementById('copyNextBrief').addEventListener('click', function () { copyText(progressLedger.nextBrief.join('\n'), this); });
+    document.getElementById('copyModule').addEventListener('click', function () { var m = modules[selectedId]; copyText(m.code + ' ' + m.title + '\n' + m.summary + '\n\nMeta code:\n' + (m.meta || '') + '\n\n实现：\n- ' + m.implementation.join('\n- ') + '\n\n验收：\n- ' + m.acceptance.join('\n- '), this); });
+    function copyText(text, button) { if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(text).then(function () { var old = button.textContent; button.textContent = '已复制'; setTimeout(function () { button.textContent = old; }, 1200); }); } else { var ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); } }
+    drawEdges(); renderNodes(); renderIndex(); renderSources(); renderInspector(); renderProgress();
+  }());
+  </script>
+<div class="meta-backdrop" id="metaBackdrop"></div>
+<aside class="meta-drawer" id="metaDrawer" aria-hidden="true" aria-label="全局装配 Meta Code">
+  <div class="meta-drawer-head">
+    <strong>⓪ META CODE · 全局装配</strong>
+    <span>主环 + 访问证据 + 渐进激活 · 共享契约类型 · 节点与连线可点击追踪</span>
+    <button type="button" class="meta-drawer-close" id="metaDrawerClose" title="关闭(Esc / X)">✕</button>
+  </div>
+  <div class="meta-drawer-body">
+    <div class="meta-drawer-ring">
+      <div><b>未来 packet 主环</b>&nbsp; events → session → observer → runtime → working → gate → association → rank → safety → broker → inbox → claim → pre-step → request → model → toolResult ⤴ events(回环)</div>
+      <div style="margin-top:6px"><b>访问证据支线</b>&nbsp; M-06 Anchor/FileIndex → N-08 read 返回 → coverage → G-01 AccessEvidence → M-02 / M-03 / M-04(证据固化)</div>
+      <div style="margin-top:6px"><b>当前维护注入支线</b>&nbsp; systemPrompt.section(稳定规则) + systemPrompt.context(易变快照) → assemble → runtime projection → pre-step</div>
+      <div style="margin-top:6px"><b>渐进激活支线(未来)</b>&nbsp; M-07 → activation_request → C-06 + G-03 → index / hint / excerpt / checklist / resource / full → N-03 next-step</div>
+      <div style="margin-top:6px"><b>其他支线</b>&nbsp; episodic / semantic / procedural / lexical → association(召回) · observer/rank → G-01(JS context/evidence) → Python M7(context_push) → C-06(activation_request) · G-02 / G-03 / C-07 → broker · G-04 → G-02(度量) · G-05 → association(降级) · R-01 → C-03 · R-02 → C-04(启发)</div>
+    </div>
+    <pre class="meta-code"><span class="m-c">/* ⓪ 全局装配 — 各模块的啮合方式(与地图 30 条边一一对应)
+ *
+ * 主环(每步请求边界前最多走一次):
+ *   events → session → observer → runtime → working
+ *   → gate → association → rank → safety → broker → inbox
+ *   → claim → pre-step → buildRequest → model
+ *   → toolResult → events(回环)
+ *
+ * 访问证据支线:
+ *   M-06 Anchor/FileIndex → N-08 read result → coverage → G-01
+ *   G-01 → M-02/M-03/M-04                  (episode / fact / procedure 升格)
+ *
+ * 当前维护注入支线:
+ *   systemPrompt.section(稳定规则) + systemPrompt.context(易变快照)
+ *   → systemPrompt.assemble → RuntimeContextProjection → agent/pre-step
+ *
+ * 渐进激活支线(未来):
+ *   M-07 → activation_request → C-06 + G-03 → N-03
+ *   activationLevel: index → hint → excerpt → checklist → resource → full
+ *
+ * 其他支线:
+ *   M-02/03/04/05 + M-07 → association     (召回源)
+ *   G-02/G-03/C-07 → broker                (审计/安全门/能力)
+ *   G-04 → G-02 · G-05 → association       (度量/降级)
+ *   R-01 → C-03 · R-02 → C-04              (启发)
+ */</span>
+<span class="m-k">type</span> SourceKind = <span class="m-s">'user'</span> | <span class="m-s">'tool'</span> | <span class="m-s">'agent'</span> | <span class="m-s">'lifecycle'</span>
+<span class="m-k">type</span> EventChannel = <span class="m-s">'session'</span> | <span class="m-s">'tools'</span> | <span class="m-s">'agent'</span>
+<span class="m-k">type</span> Scope      = <span class="m-s">'Turn'</span> | <span class="m-s">'Session'</span> | <span class="m-s">'Workspace'</span> | <span class="m-s">'User'</span> | <span class="m-s">'External'</span>
+<span class="m-k">type</span> ActivationLevel = <span class="m-s">'index'</span> | <span class="m-s">'hint'</span> | <span class="m-s">'excerpt'</span> | <span class="m-s">'checklist'</span> | <span class="m-s">'resource'</span> | <span class="m-s">'full'</span>
+
+<span class="m-k">interface</span> EventEnvelope {
+  schemaVersion: 1;  sessionId: string;  agentId: string;  eventSeq: number
+  channel: EventChannel;  eventType: string;  timestamp: number;  nativeSeq?: number
+  turn?: number;  step?: number;  messageId?: string;  callId?: string;  rootCallId?: string
+  sourceKind: SourceKind;  payloadDigest: string;  payload: JsonValue
+}
+<span class="m-k">interface</span> ContextCursor { sessionId: string; eventSeq: number; contextVersion: number }
+<span class="m-k">interface</span> Segment {
+  id: string;  sessionId: string;  kind: SourceKind;  eventType: string
+  eventSeq: number;  contextVersion: number;  text: string
+  entities: string[];  digest: string;  ts: number
+}
+<span class="m-k">interface</span> MemoryLocator {
+  memoryId: string;  anchorId: string;  sourceFile: string
+  sourceVersion: number;  lineStart: number;  lineEnd: number
+  byteStart: number;  byteEnd: number;  recordDigest: string
+}
+<span class="m-k">interface</span> AccessEvidence {
+  kind: <span class="m-s">'seen'</span>|<span class="m-s">'read'</span>|<span class="m-s">'cite'</span>|<span class="m-s">'reuse'</span>|<span class="m-s">'success'</span>|<span class="m-s">'correction'</span>
+  memoryId: string;  sessionId: string;  coverage?: number
+  sourceVersion: number;  recordDigest: string
+}
+<span class="m-k">interface</span> ActivationRequest {
+  procedureId: string;  level: ActivationLevel
+  similarity: number;  hesitation: number;  contextVersion: number
+  memoryIndexVersion: string;  resourceRef?: string
+  resourceVersion?: number;  resourceDigest?: string;  reason: string
+}
+<span class="m-k">interface</span> Candidate {
+  id: string;  memoryId: string;  anchorId?: string
+  source: <span class="m-s">'episodic'</span>|<span class="m-s">'semantic'</span>|<span class="m-s">'procedural'</span>|<span class="m-s">'lexical'</span>
+  scope: Scope;  score: number;  confidence: number;  coverage?: number
+  sourceVersion: number;  recordDigest: string
+  provenance: string;  expiresAt: number;  payload: string;  resourceRef?: string
+}
+<span class="m-k">interface</span> MemoryPacket {
+  packetSchemaVersion: 1
+  contextCursor: ContextCursor;  retrievalVersion: string
+  triggerReason: string;  activationLevel: ActivationLevel;  items: Candidate[]
+  resourceRefs?: string[];  exactDigest: string;  semanticDigest: string
+  budgetBytes: number;  expiry: number
+}
+
+<span class="m-k">class</span> ProactiveMemoryHost {
+  observer   = <span class="m-k">new</span> ContextObserver()      <span class="m-c">// C-01</span>
+  runtime    = <span class="m-k">new</span> SessionRuntime()       <span class="m-c">// C-02</span>
+  fileIndex  = <span class="m-k">new</span> MemoryFileIndex()      <span class="m-c">// M-06</span>
+  sidecar    = <span class="m-k">new</span> PythonMemoryEngine()   <span class="m-c">// M-07</span>
+  gate       = <span class="m-k">new</span> RetrievalGate()        <span class="m-c">// C-03</span>
+  assoc      = <span class="m-k">new</span> AssociationEngine()    <span class="m-c">// C-04(注入 M-02/03/04/05/07 召回源)</span>
+  rank       = <span class="m-k">new</span> RankDedupeBudget()     <span class="m-c">// C-05</span>
+  safety     = <span class="m-k">new</span> SafetyGate()           <span class="m-c">// G-03</span>
+  broker     = <span class="m-k">new</span> InjectionBroker()      <span class="m-c">// C-06</span>
+  capability = <span class="m-k">new</span> ProviderAdapter()      <span class="m-c">// C-07</span>
+  audit      = <span class="m-k">new</span> InjectionAudit()       <span class="m-c">// G-02</span>
+  evidence   = <span class="m-k">new</span> AccessEvidenceGraph() <span class="m-c">// G-01</span>
+  metrics    = <span class="m-k">new</span> MetricsCollector()     <span class="m-c">// G-04</span>
+  fallback   = <span class="m-k">new</span> FallbackController()   <span class="m-c">// G-05</span>
+
+  <span class="m-c">/* N-01: 运行时事件入口 */</span>
+  onSessionEvent(env: EventEnvelope) {
+    <span class="m-k">const</span> seg = this.observer.observe(env)     <span class="m-c">// C-01</span>
+    <span class="m-k">if</span> (!seg) <span class="m-k">return</span>
+    this.runtime.push(seg)                     <span class="m-c">// C-02 → M-01</span>
+    this.proactiveTick(seg)                    <span class="m-c">// 主动链: 异步, 绝不阻塞原生链</span>
+  }
+
+  <span class="m-c">/* 主动链: 下一步请求边界前最多生效一次 */</span>
+  <span class="m-k">async</span> proactiveTick(seg: Segment) {
+    <span class="m-k">const</span> cur = this.runtime.cursor(seg.sessionId)
+
+    <span class="m-c">// C-03 门: 现在值不值得检索</span>
+    <span class="m-k">const</span> decision = this.gate.decide(this.runtime.window(seg.sessionId), seg, cur)
+    <span class="m-k">if</span> (decision.action === <span class="m-s">'suppress'</span>)
+      <span class="m-k">return</span> this.audit.suppressed(cur, decision.reason)
+
+    <span class="m-c">// C-04 召回(引擎级失败 → G-05 词法回退)</span>
+    <span class="m-k">const</span> cands = <span class="m-k">await</span> this.assoc.recall(seg, cur)
+        .catch(() =&gt; this.fallback.keywordRecall(seg, cur))
+
+    <span class="m-c">// C-05 排序/去重/预算 → G-03 安全门 → C-06 成包</span>
+    <span class="m-k">const</span> ranked  = this.rank.run(cands, cur)
+    <span class="m-k">const</span> activation = <span class="m-k">await</span> this.sidecar.activation(ranked, cur).catch(() =&gt; null) <span class="m-c">// M-07 只提建议</span>
+    <span class="m-k">const</span> verdict = this.safety.check(ranked, activation, this.runtime.scopeOf(seg.sessionId), cur)
+    <span class="m-k">const</span> packet  = this.broker.build(ranked, activation, verdict, this.capability.snapshot())
+
+    <span class="m-c">// G-02 审计 + G-04 度量(无论注入与否)</span>
+    this.audit.injection(packet, verdict)
+    this.metrics.observe(packet, verdict)
+
+    <span class="m-c">// 当前维护快照走 systemPrompt.context(), 由 native RuntimeContextProjection 去重/替换</span>
+    <span class="m-c">// C-06 → N-03(未来 active path): MemoryPacket 只写 next-step inbox, 不改当前请求</span>
+    <span class="m-k">if</span> (packet &amp;&amp; verdict.action === <span class="m-s">'allow'</span>) this.broker.syncInbox(packet)
+  }
+
+  <span class="m-c">/* N-08/G-01: 实际 read 返回 → anchor coverage → 访问证据图 */</span>
+  onToolResult(exec, result) {
+    this.observer.ingest(adaptFrozenToolResult(exec, result))   <span class="m-c">// M2 observation</span>
+    <span class="m-k">if</span> (!accessEvidenceEnabled || result.isError) <span class="m-k">return</span>
+    <span class="m-k">const</span> read = normalizeReadResult(exec, result)
+    <span class="m-k">if</span> (!read) <span class="m-k">return</span>
+    <span class="m-k">for</span> (const loc of this.fileIndex.overlap(read)) {
+      <span class="m-k">const</span> cov = coverage(read, loc, this.fileIndex)
+      <span class="m-k">if</span> (cov.status !== <span class="m-s">'fresh'</span> || cov.ratio &lt;= 0) <span class="m-k">continue</span>
+      this.evidence.record({ kind: cov.ratio &gt;= 1 ? <span class="m-s">'read'</span> : <span class="m-s">'seen'</span>, coverage: cov.ratio, ...loc })
+    }
+  }
+  onUserCorrection(ev) { this.evidence.record({ kind: <span class="m-s">'correction'</span>, ...ev }) }
+}</pre>
+    <div class="wiring-invariants"><strong>架构不变量(所有 Meta code 共同遵守)</strong><ul><li>跨 session 泄漏为零</li><li>预览版所有对外注册与持久化命名空间使用 _pre/-pre，禁止 _dev 或无后缀标识与稳定版碰撞</li><li>memoryId/anchorId 是稳定身份；行号仅作当前版本 UI/debug locator，sourceVersion + recordDigest 负责校验</li><li>open/read 不等于 citation；coverage=0 不形成记忆访问证据，Procedure 必须来自跨 session 的 reuse/success episode</li><li>已发出的请求不原地改写；activation_request 只是建议，最终必须经过 JS Host 的版本、范围、风险和冷却校验</li><li>过期 / contextVersion 不匹配的 packet 必丢弃，且不标记 delivered</li><li>记忆是参考资料不是指令；不覆盖 system / developer / 当前用户指令</li><li>Procedure 未经验证不自动执行；高风险副作用默认需要用户确认</li><li>检索中间态不写主 Session；session/event 是 append-only 事实源</li></ul></div>
+  </div>
+</aside>
+</body>
+</html>

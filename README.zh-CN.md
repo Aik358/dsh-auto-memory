@@ -679,7 +679,7 @@ DeepSeek Harness (Node, 127.0.0.1:3080)
 
 社区贡献者：
 
-- [@Minervaowl7](https://github.com/Minervaowl7) — **负责新版前端（开发版 UI）的完整开发**：参考图风格记忆工作台（九页导航、列表与详情、四组设置、专注查看、深色适配、窄屏导航），以生成器方式接入——新皮肤版本从经典组件派生，上游结构漂移即明确报错（[PR #146](https://github.com/Aik358/dsh-auto-memory/pull/146)）。同时也是贡献最活跃的贡献者：51 个 PR + 57 个 issue，覆盖工作区概览日志日期锚定、自动续跑宿主加固、语义索引自愈、python 下载链路、恢复候选生命周期等（[#16](https://github.com/Aik358/dsh-auto-memory/issues/16)–[#146](https://github.com/Aik358/dsh-auto-memory/pull/146)）
+- [@Minervaowl7](https://github.com/Minervaowl7) — **负责新版前端（开发版 UI）的完整开发与关键缺陷调试**：参考图风格记忆工作台（九页导航、列表与详情、四组设置、专注查看、深色适配、窄屏导航），以生成器方式接入——新皮肤版本从经典组件派生，上游结构漂移即明确报错（[PR #146](https://github.com/Aik358/dsh-auto-memory/pull/146)）。同时也是贡献最活跃的贡献者：51 个 PR + 57 个 issue，覆盖工作区概览日志日期锚定、自动续跑宿主加固、语义索引自愈、python 下载链路、恢复候选生命周期等（[#16](https://github.com/Aik358/dsh-auto-memory/issues/16)–[#146](https://github.com/Aik358/dsh-auto-memory/pull/146)）
 - [@JIE42393](https://github.com/JIE42393) — 7 个 issue，覆盖面板行为、召回质量与配置边界（[#15](https://github.com/Aik358/dsh-auto-memory/issues/15)、[#26](https://github.com/Aik358/dsh-auto-memory/issues/26)、[#30](https://github.com/Aik358/dsh-auto-memory/issues/30)、[#41](https://github.com/Aik358/dsh-auto-memory/issues/41)–[#43](https://github.com/Aik358/dsh-auto-memory/issues/43)、[#45](https://github.com/Aik358/dsh-auto-memory/issues/45)）
 - [@Fishsb](https://github.com/Fishsb) — 3 个 issue，关于记忆召回与注入行为（[#18](https://github.com/Aik358/dsh-auto-memory/issues/18)–[#20](https://github.com/Aik358/dsh-auto-memory/issues/20)）
 - [@messiahyl](https://github.com/messiahyl) — 2 个 issue（[#8](https://github.com/Aik358/dsh-auto-memory/issues/8)、[#9](https://github.com/Aik358/dsh-auto-memory/issues/9)）

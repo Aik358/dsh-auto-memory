@@ -1,0 +1,22 @@
+{
+  "checks": [
+    "isolated profile",
+    "instrument light 12px follows DSH",
+    "instrument dark 12px follows DSH",
+    "editorial light 12px follows DSH",
+    "editorial dark 12px follows DSH",
+    "water light 12px follows DSH",
+    "water dark 12px follows DSH",
+    "font family follows DSH token 12",
+    "instrument light 17px follows DSH",
+    "instrument dark 17px follows DSH",
+    "editorial light 17px follows DSH",
+    "editorial dark 17px follows DSH",
+    "water light 17px follows DSH",
+    "water dark 17px follows DSH",
+    "font family follows DSH token 17",
+    "narrow host form fits",
+    "no browser errors"
+  ],
+  "errors": []
+}

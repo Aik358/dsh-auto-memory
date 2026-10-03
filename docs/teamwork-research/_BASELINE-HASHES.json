@@ -1,0 +1,37 @@
+{
+  "capturedAtInitial": "2026-09-25T20:03:06.003Z",
+  "recapturedAt": "2026-09-25T20:14:04.959Z",
+  "purpose": "插件本体哈希基线。本轮调研全程不写 lib/ 与 client.js。",
+  "concurrencyCaveat": {
+    "finding": "lib/client.js 在本轮基线捕获后 6 秒（04:03:12 本地时间）被【本调研之外】的并发写入者改写：捕获时为 742,453 B / sha 1fb63aca…，随后变为 742,031 B / sha 020eb212…。lib/index.js 与 package.json 全程未变。",
+    "currentMatchesDocumentedHandoff": "742,031 B 与上一轮交接账本记录的 lib/client.js 终值（737,661 → 742,031 B）完全一致 ⇒ 当前内容即该账本所述的合法状态。",
+    "evidenceOfExternalWriter": [
+      "artifacts/_probe-*.mjs 在 04:00–04:08 每 30 秒左右新增一个（_probe-greetingcard / _probe-drawer-why / _probe-seg-mismatch / _probe-final-seg 等），与本调研无关",
+      "同一时段存在另一个 DSH 会话在排查「面板抽屉不渲染 / 子代理派单失败」（见当日工作日志）",
+      "本调研的两个子代理只被允许写 docs/teamwork-research/{skin,diagrams}/，其产物的 mtime 均在各自目录内"
+    ],
+    "myOwnWritesToLib": "0（本轮只创建 docs/teamwork-research/ 下的新文件）"
+  },
+  "files": {
+    "lib/index.js": {
+      "sha": "6977dde866f9ad2cf80926f2364274b468a8b2cc4330f112039342e6da39f6ff",
+      "size": 960443,
+      "mtimeLocal": "2026-09-26 03:42:39"
+    },
+    "lib/client.js": {
+      "sha": "020eb2122418d36b245f5b601f2958b9e146a0af66f785a7a4ac8ee3f7b0cc65",
+      "size": 742031,
+      "mtimeLocal": "2026-09-26 04:03:12"
+    },
+    "package.json": {
+      "sha": "436585b9536641744ab0a620af2ba94bb50bb04a4b6e93f6698bfdfb25e7dbd7",
+      "size": 1638,
+      "mtimeLocal": "2026-09-23 20:11:55"
+    }
+  },
+  "filesAtInitialCapture": {
+    "lib/index.js": "6977dde866f9ad2cf80926f2364274b468a8b2cc4330f112039342e6da39f6ff",
+    "lib/client.js": "1fb63acae43ab0a417df919ff555bab840ab1c49265f81b357ad177feb095f7c",
+    "package.json": "436585b9536641744ab0a620af2ba94bb50bb04a4b6e93f6698bfdfb25e7dbd7"
+  }
+}

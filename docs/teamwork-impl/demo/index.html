@@ -1,0 +1,1168 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>dsh-auto-memory · Teamwork 企业版 · 前端契约 demo</title>
+<style>
+/* ============================================================
+   [TOKENS-BEGIN] 皮肤令牌（唯一允许出现字面色值的区段）
+   与 docs/teamwork-research/skin/skin-token-contract.md 同名同义：
+   组件区一律 var(--skin-*)，换肤只改这一段。
+   ============================================================ */
+:root,
+[data-theme="light"] {
+  --skin-color-brand: var(--skin-ent-color-brand, #4f5bd5);
+  --skin-color-brand-strong: var(--skin-ent-color-brand-strong, #3944b8);
+  --skin-color-brand-weak: var(--skin-ent-color-brand-weak, #eef0ff);
+  --skin-color-team: var(--skin-ent-color-team, #7c5cff);
+  --skin-color-team-weak: var(--skin-ent-color-team-weak, #f1ecff);
+  --skin-color-ok: var(--skin-ent-color-ok, #22c55e);
+  --skin-color-ok-weak: var(--skin-ent-color-ok-weak, #e8f8ee);
+  --skin-color-warn: var(--skin-ent-color-warn, #f59e0b);
+  --skin-color-warn-weak: var(--skin-ent-color-warn-weak, #fdf3e2);
+  --skin-color-err: var(--skin-ent-color-err, #ef4444);
+  --skin-color-err-weak: var(--skin-ent-color-err-weak, #fdeaea);
+  --skin-color-info: var(--skin-ent-color-info, #3b82f6);
+  --skin-color-info-weak: var(--skin-ent-color-info-weak, #eaf2fe);
+  --skin-color-bg: var(--skin-ent-color-bg, #f5f7fc);
+  --skin-color-surface: var(--skin-ent-color-surface, #ffffff);
+  --skin-color-surface-2: var(--skin-ent-color-surface-2, #fbfcfe);
+  --skin-color-border: var(--skin-ent-color-border, #e8ecf3);
+  --skin-color-border-strong: var(--skin-ent-color-border-strong, #d7dded);
+  --skin-color-text: var(--skin-ent-color-text, #1f2937);
+  --skin-color-text-secondary: var(--skin-ent-color-text-secondary, #6b7280);
+  --skin-color-text-tertiary: var(--skin-ent-color-text-tertiary, #9ca3af);
+  --skin-color-overlay: var(--skin-ent-color-overlay, rgba(15, 20, 40, .42));
+  --skin-shadow-card: var(--skin-ent-shadow-card, 0 1px 2px rgba(16,24,40,.04), 0 1px 3px rgba(16,24,40,.06));
+  --skin-shadow-pop: var(--skin-ent-shadow-pop, 0 8px 24px rgba(16,24,40,.12));
+}
+[data-theme="dark"] {
+  --skin-color-brand: var(--skin-ent-color-brand, #8b93ff);
+  --skin-color-brand-strong: var(--skin-ent-color-brand-strong, #6f78ff);
+  --skin-color-brand-weak: var(--skin-ent-color-brand-weak, #1e2140);
+  --skin-color-team: var(--skin-ent-color-team, #a78bfa);
+  --skin-color-team-weak: var(--skin-ent-color-team-weak, #241f3d);
+  --skin-color-ok: var(--skin-ent-color-ok, #4ade80);
+  --skin-color-ok-weak: var(--skin-ent-color-ok-weak, #12321f);
+  --skin-color-warn: var(--skin-ent-color-warn, #fbbf24);
+  --skin-color-warn-weak: var(--skin-ent-color-warn-weak, #33280d);
+  --skin-color-err: var(--skin-ent-color-err, #f87171);
+  --skin-color-err-weak: var(--skin-ent-color-err-weak, #3a1a1a);
+  --skin-color-info: var(--skin-ent-color-info, #60a5fa);
+  --skin-color-info-weak: var(--skin-ent-color-info-weak, #14243d);
+  --skin-color-bg: var(--skin-ent-color-bg, #0f1117);
+  --skin-color-surface: var(--skin-ent-color-surface, #171a23);
+  --skin-color-surface-2: var(--skin-ent-color-surface-2, #1c2029);
+  --skin-color-border: var(--skin-ent-color-border, #262b36);
+  --skin-color-border-strong: var(--skin-ent-color-border-strong, #333a48);
+  --skin-color-text: var(--skin-ent-color-text, #e7eaf3);
+  --skin-color-text-secondary: var(--skin-ent-color-text-secondary, #a2a9ba);
+  --skin-color-text-tertiary: var(--skin-ent-color-text-tertiary, #6f7787);
+  --skin-color-overlay: var(--skin-ent-color-overlay, rgba(0, 0, 0, .58));
+  --skin-shadow-card: var(--skin-ent-shadow-card, 0 1px 2px rgba(0,0,0,.4), 0 1px 3px rgba(0,0,0,.3));
+  --skin-shadow-pop: var(--skin-ent-shadow-pop, 0 10px 28px rgba(0,0,0,.55));
+}
+[data-theme="contrast"] {
+  --skin-color-brand: var(--skin-ent-color-brand, #1b4fd8);
+  --skin-color-brand-strong: var(--skin-ent-color-brand-strong, #123fb0);
+  --skin-color-brand-weak: var(--skin-ent-color-brand-weak, #dfe8ff);
+  --skin-color-team: var(--skin-ent-color-team, #6b21a8);
+  --skin-color-team-weak: var(--skin-ent-color-team-weak, #f0e2fb);
+  --skin-color-ok: var(--skin-ent-color-ok, #046b3a);
+  --skin-color-ok-weak: var(--skin-ent-color-ok-weak, #dff5e8);
+  --skin-color-warn: var(--skin-ent-color-warn, #8a4b00);
+  --skin-color-warn-weak: var(--skin-ent-color-warn-weak, #ffeeda);
+  --skin-color-err: var(--skin-ent-color-err, #a8000f);
+  --skin-color-err-weak: var(--skin-ent-color-err-weak, #ffdfe1);
+  --skin-color-info: var(--skin-ent-color-info, #0b4a8f);
+  --skin-color-info-weak: var(--skin-ent-color-info-weak, #dceafb);
+  --skin-color-bg: var(--skin-ent-color-bg, #ffffff);
+  --skin-color-surface: var(--skin-ent-color-surface, #ffffff);
+  --skin-color-surface-2: var(--skin-ent-color-surface-2, #ffffff);
+  --skin-color-border: var(--skin-ent-color-border, #101010);
+  --skin-color-border-strong: var(--skin-ent-color-border-strong, #000000);
+  --skin-color-text: var(--skin-ent-color-text, #000000);
+  --skin-color-text-secondary: var(--skin-ent-color-text-secondary, #1f1f1f);
+  --skin-color-text-tertiary: var(--skin-ent-color-text-tertiary, #3a3a3a);
+  --skin-color-overlay: var(--skin-ent-color-overlay, rgba(0, 0, 0, .6));
+  --skin-shadow-card: var(--skin-ent-shadow-card, none);
+  --skin-shadow-pop: var(--skin-ent-shadow-pop, none);
+}
+[data-theme="warm"] {
+  --skin-color-brand: var(--skin-ent-color-brand, #c2571f);
+  --skin-color-brand-strong: var(--skin-ent-color-brand-strong, #9c4416);
+  --skin-color-brand-weak: var(--skin-ent-color-brand-weak, #fdeee2);
+  --skin-color-team: var(--skin-ent-color-team, #8d4f9e);
+  --skin-color-team-weak: var(--skin-ent-color-team-weak, #f6ebf9);
+  --skin-color-ok: var(--skin-ent-color-ok, #4d7c2a);
+  --skin-color-ok-weak: var(--skin-ent-color-ok-weak, #edf5e5);
+  --skin-color-warn: var(--skin-ent-color-warn, #b4801a);
+  --skin-color-warn-weak: var(--skin-ent-color-warn-weak, #fbf1dd);
+  --skin-color-err: var(--skin-ent-color-err, #b3352f);
+  --skin-color-err-weak: var(--skin-ent-color-err-weak, #fbe8e6);
+  --skin-color-info: var(--skin-ent-color-info, #3f6f96);
+  --skin-color-info-weak: var(--skin-ent-color-info-weak, #e8f0f6);
+  --skin-color-bg: var(--skin-ent-color-bg, #faf5ef);
+  --skin-color-surface: var(--skin-ent-color-surface, #fffdfa);
+  --skin-color-surface-2: var(--skin-ent-color-surface-2, #fdf7f0);
+  --skin-color-border: var(--skin-ent-color-border, #ece0d2);
+  --skin-color-border-strong: var(--skin-ent-color-border-strong, #dccbb7);
+  --skin-color-text: var(--skin-ent-color-text, #33271c);
+  --skin-color-text-secondary: var(--skin-ent-color-text-secondary, #6f5d4b);
+  --skin-color-text-tertiary: var(--skin-ent-color-text-tertiary, #9c8874);
+  --skin-color-overlay: var(--skin-ent-color-overlay, rgba(40, 25, 10, .42));
+  --skin-shadow-card: var(--skin-ent-shadow-card, 0 1px 2px rgba(60,40,20,.06), 0 1px 3px rgba(60,40,20,.05));
+  --skin-shadow-pop: var(--skin-ent-shadow-pop, 0 8px 24px rgba(60,40,20,.16));
+}
+/* 与主题无关的形状/排版/动效令牌（定于 :root，四套主题共用） */
+:root {
+  --skin-radius-xs: var(--skin-ent-radius-xs, 4px);
+  --skin-radius-sm: var(--skin-ent-radius-sm, 8px);
+  --skin-radius-card: var(--skin-ent-radius-card, 14px);
+  --skin-radius-lg: var(--skin-ent-radius-lg, 16px);
+  --skin-radius-pill: var(--skin-ent-radius-pill, 999px);
+  --skin-space-1: var(--skin-ent-space-1, 4px);
+  --skin-space-2: var(--skin-ent-space-2, 8px);
+  --skin-space-3: var(--skin-ent-space-3, 12px);
+  --skin-space-4: var(--skin-ent-space-4, 16px);
+  --skin-space-5: var(--skin-ent-space-5, 20px);
+  --skin-space-6: var(--skin-ent-space-6, 24px);
+  --skin-space-7: var(--skin-ent-space-7, 32px);
+  --skin-font-family: var(--skin-ent-font-family, "PingFang SC", "Microsoft YaHei", "Segoe UI", system-ui, -apple-system, sans-serif);
+  --skin-font-mono: var(--skin-ent-font-mono, "JetBrains Mono", Consolas, "Liberation Mono", monospace);
+  --skin-font-size-xs: var(--skin-ent-font-size-xs, 11px);
+  --skin-font-size-sm: var(--skin-ent-font-size-sm, 12px);
+  --skin-font-size-md: var(--skin-ent-font-size-md, 13px);
+  --skin-font-size-lg: var(--skin-ent-font-size-lg, 15px);
+  --skin-font-size-xl: var(--skin-ent-font-size-xl, 18px);
+  --skin-font-size-2xl: var(--skin-ent-font-size-2xl, 22px);
+  --skin-line-height: var(--skin-ent-line-height, 1.65);
+  --skin-duration-instant: var(--skin-ent-duration-instant, 90ms);
+  --skin-duration-fast: var(--skin-ent-duration-fast, 150ms);
+  --skin-duration-base: var(--skin-ent-duration-base, 220ms);
+  --skin-duration-slow: var(--skin-ent-duration-slow, 360ms);
+  --skin-ease-standard: var(--skin-ent-ease-standard, cubic-bezier(.2,.8,.2,1));
+  --skin-ease-emphasized: var(--skin-ent-ease-emphasized, cubic-bezier(.34,1.16,.64,1));
+  --skin-focus-ring-width: var(--skin-ent-focus-ring-width, 2px);
+  --skin-focus-ring-offset: var(--skin-ent-focus-ring-offset, 2px);
+  --skin-layout-sidebar: var(--skin-ent-layout-sidebar, 224px);
+  --skin-layout-max: var(--skin-ent-layout-max, 1440px);
+}
+/* [TOKENS-END] */
+</style>
+</head>
+<body>
+<style>
+/* ============================================================
+   [LAYOUT-CSS] 布局样式（全部走 var(--skin-*)，零字面色值）
+   ============================================================ */
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  font: var(--skin-font-size-md)/var(--skin-line-height) var(--skin-font-family);
+  background: var(--skin-color-bg);
+  color: var(--skin-color-text);
+  transition: background var(--skin-duration-base) var(--skin-ease-standard),
+              color var(--skin-duration-base) var(--skin-ease-standard);
+}
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible {
+  outline: var(--skin-focus-ring-width) solid var(--skin-color-brand);
+  outline-offset: var(--skin-focus-ring-offset);
+}
+/* --- 外壳 --- */
+.app { display: flex; min-height: 100vh; }
+.sidebar {
+  flex: 0 0 var(--skin-layout-sidebar);
+  background: var(--skin-color-surface);
+  border-right: 1px solid var(--skin-color-border);
+  padding: var(--skin-space-5) var(--skin-space-4);
+  position: sticky; top: 0; height: 100vh; overflow-y: auto;
+}
+.brand { display: flex; align-items: center; gap: var(--skin-space-3); margin-bottom: var(--skin-space-6); }
+.brand-logo {
+  width: 34px; height: 34px; border-radius: var(--skin-radius-sm); flex: none;
+  background: linear-gradient(135deg, var(--skin-color-brand), var(--skin-color-team));
+  display: grid; place-items: center; color: var(--skin-color-surface);
+  font-weight: 700; font-size: var(--skin-font-size-lg);
+}
+.brand-name { font-weight: 700; font-size: var(--skin-font-size-lg); line-height: 1.25; }
+.brand-sub { color: var(--skin-color-text-tertiary); font-size: var(--skin-font-size-xs); }
+.nav-title { font-size: var(--skin-font-size-xs); letter-spacing: .08em; color: var(--skin-color-text-tertiary); margin: var(--skin-space-5) 0 var(--skin-space-2); text-transform: uppercase; }
+.nav-btn {
+  display: flex; align-items: center; gap: var(--skin-space-2); width: 100%;
+  padding: var(--skin-space-2) var(--skin-space-3); margin-bottom: 2px;
+  border: 1px solid transparent; background: transparent; cursor: pointer;
+  border-radius: var(--skin-radius-sm); text-align: left; color: var(--skin-color-text-secondary);
+  transition: background var(--skin-duration-fast) var(--skin-ease-standard), color var(--skin-duration-fast) var(--skin-ease-standard);
+}
+.nav-btn:hover { background: var(--skin-color-brand-weak); color: var(--skin-color-text); }
+.nav-btn[aria-current="true"] {
+  background: var(--skin-color-brand); color: var(--skin-color-surface);
+  font-weight: 650; box-shadow: var(--skin-shadow-card);
+}
+.nav-num {
+  width: 18px; height: 18px; border-radius: var(--skin-radius-xs); flex: none;
+  display: grid; place-items: center; font-size: 10px; font-weight: 700;
+  background: var(--skin-color-brand-weak); color: var(--skin-color-brand-strong);
+}
+.nav-btn[aria-current="true"] .nav-num { background: var(--skin-color-surface); color: var(--skin-color-brand-strong); }
+.sidebar-foot {
+  margin-top: var(--skin-space-6); padding-top: var(--skin-space-4);
+  border-top: 1px dashed var(--skin-color-border);
+  color: var(--skin-color-text-tertiary); font-size: var(--skin-font-size-xs);
+}
+/* --- 主区 --- */
+.main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.topbar {
+  display: flex; align-items: center; gap: var(--skin-space-3); flex-wrap: wrap;
+  padding: var(--skin-space-4) var(--skin-space-6);
+  background: var(--skin-color-surface);
+  border-bottom: 1px solid var(--skin-color-border);
+  position: sticky; top: 0; z-index: 20;
+}
+.topbar h1 { margin: 0; font-size: var(--skin-font-size-xl); }
+.topbar .sub { color: var(--skin-color-text-tertiary); font-size: var(--skin-font-size-xs); }
+.spacer { flex: 1; }
+.content { padding: var(--skin-space-6); max-width: var(--skin-layout-max); width: 100%; }
+/* --- 通用控件 --- */
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 12px; border-radius: var(--skin-radius-sm); cursor: pointer;
+  border: 1px solid var(--skin-color-border-strong); background: var(--skin-color-surface);
+  color: var(--skin-color-text); font-size: var(--skin-font-size-sm);
+  transition: transform var(--skin-duration-instant) var(--skin-ease-standard), background var(--skin-duration-fast) var(--skin-ease-standard);
+}
+.btn:hover { background: var(--skin-color-brand-weak); }
+.btn:active { transform: translateY(1px); }
+.btn-primary { background: var(--skin-color-brand); border-color: var(--skin-color-brand); color: var(--skin-color-surface); font-weight: 650; }
+.btn-primary:hover { background: var(--skin-color-brand-strong); }
+.btn-danger { background: var(--skin-color-err); border-color: var(--skin-color-err); color: var(--skin-color-surface); font-weight: 650; }
+.btn-danger:hover { background: var(--skin-color-err); }
+.btn-ghost { background: transparent; border-color: transparent; color: var(--skin-color-text-secondary); }
+.btn-ghost:hover { background: var(--skin-color-surface-2); color: var(--skin-color-text); }
+.btn[disabled] { opacity: .5; cursor: not-allowed; }
+.card {
+  background: var(--skin-color-surface); border: 1px solid var(--skin-color-border);
+  border-radius: var(--skin-radius-card); padding: var(--skin-space-5);
+  box-shadow: var(--skin-shadow-card); margin-bottom: var(--skin-space-4);
+}
+.card h2, .card h3 { margin: 0 0 var(--skin-space-3); font-size: var(--skin-font-size-lg); }
+.card h2 { font-size: var(--skin-font-size-xl); }
+.grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: var(--skin-space-4); }
+.grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: var(--skin-space-4); }
+.muted { color: var(--skin-color-text-secondary); font-size: var(--skin-font-size-sm); }
+.faint { color: var(--skin-color-text-tertiary); font-size: var(--skin-font-size-xs); }
+.tag {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 1px 8px; border-radius: var(--skin-radius-pill);
+  font-size: var(--skin-font-size-xs); font-weight: 600;
+  background: var(--skin-color-brand-weak); color: var(--skin-color-brand-strong);
+}
+.tag-team { background: var(--skin-color-team-weak); color: var(--skin-color-team); }
+.tag-ok { background: var(--skin-color-ok-weak); color: var(--skin-color-ok); }
+.tag-warn { background: var(--skin-color-warn-weak); color: var(--skin-color-warn); }
+.tag-err { background: var(--skin-color-err-weak); color: var(--skin-color-err); }
+.tag-info { background: var(--skin-color-info-weak); color: var(--skin-color-info); }
+.bar { height: 8px; border-radius: var(--skin-radius-pill); background: var(--skin-color-surface-2); overflow: hidden; border: 1px solid var(--skin-color-border); }
+.bar > i { display: block; height: 100%; background: var(--skin-color-brand); transition: width var(--skin-duration-slow) var(--skin-ease-standard); }
+</style>
+
+<style>
+/* ============================================================
+   [SCREEN-CSS] 团队版 8 屏专用样式
+   断言：本段所有选择器都以 [data-dam-team- 或 .t- 开头；零字面色值。
+   ============================================================ */
+/* ① 同步状态条 */
+[data-dam-team-statusbar] {
+  display: flex; align-items: center; gap: var(--skin-space-3); flex-wrap: wrap;
+  padding: var(--skin-space-3) var(--skin-space-4); margin-bottom: var(--skin-space-4);
+  background: var(--skin-color-surface); border: 1px solid var(--skin-color-border);
+  border-radius: var(--skin-radius-card); box-shadow: var(--skin-shadow-card);
+}
+[data-dam-team-state] {
+  display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
+  padding: 3px 10px; border-radius: var(--skin-radius-pill); border: 1px solid transparent;
+  font-size: var(--skin-font-size-sm); font-weight: 650;
+  background: var(--skin-color-brand-weak); color: var(--skin-color-brand-strong);
+  transition: background var(--skin-duration-fast) var(--skin-ease-standard);
+}
+[data-dam-team-state][data-phase="synced"] { background: var(--skin-color-ok-weak); color: var(--skin-color-ok); }
+[data-dam-team-state][data-phase="syncing"] { background: var(--skin-color-brand-weak); color: var(--skin-color-brand-strong); }
+[data-dam-team-state][data-phase="offline"] { background: var(--skin-color-surface-2); color: var(--skin-color-text-tertiary); }
+[data-dam-team-state][data-phase="conflict"] { background: var(--skin-color-warn-weak); color: var(--skin-color-warn); }
+[data-dam-team-state][data-phase="paused"] { background: var(--skin-color-surface-2); color: var(--skin-color-text-secondary); }
+[data-dam-team-state] i {
+  width: 8px; height: 8px; border-radius: 50%; background: currentColor; display: inline-block;
+}
+[data-dam-team-state][data-phase="syncing"] i { animation: t-spin 1.1s linear infinite; }
+@keyframes t-spin { 0% { opacity: 1 } 50% { opacity: .25 } 100% { opacity: 1 } }
+[data-dam-team-queue], [data-dam-team-lastsync] { font-size: var(--skin-font-size-xs); color: var(--skin-color-text-secondary); }
+[data-dam-team-queue] b { font-family: var(--skin-font-mono); color: var(--skin-color-text); }
+[data-dam-team-conflict-badge] {
+  display: inline-flex; align-items: center; gap: 4px; cursor: pointer;
+  padding: 2px 9px; border-radius: var(--skin-radius-pill); border: 1px solid var(--skin-color-warn);
+  background: var(--skin-color-warn-weak); color: var(--skin-color-warn);
+  font-size: var(--skin-font-size-xs); font-weight: 700;
+}
+/* 开关（纯 CSS，无字面色值） */
+[data-dam-team-switch] {
+  width: 38px; height: 22px; border-radius: var(--skin-radius-pill); border: 1px solid var(--skin-color-border-strong);
+  background: var(--skin-color-surface-2); position: relative; cursor: pointer; flex: none; padding: 0;
+  transition: background var(--skin-duration-fast) var(--skin-ease-standard);
+}
+[data-dam-team-switch]::after {
+  content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px;
+  border-radius: 50%; background: var(--skin-color-surface); box-shadow: var(--skin-shadow-card);
+  transition: left var(--skin-duration-fast) var(--skin-ease-emphasized);
+}
+[data-dam-team-switch][data-on="true"] { background: var(--skin-color-brand); border-color: var(--skin-color-brand); }
+[data-dam-team-switch][data-on="true"]::after { left: 18px; }
+/* ② 成员 */
+[data-dam-team-members] { display: flex; flex-wrap: wrap; gap: var(--skin-space-3); }
+[data-dam-team-member] {
+  display: flex; align-items: center; gap: var(--skin-space-3);
+  padding: var(--skin-space-3); border: 1px solid var(--skin-color-border);
+  border-radius: var(--skin-radius-card); background: var(--skin-color-surface);
+  min-width: 200px; transition: transform var(--skin-duration-fast) var(--skin-ease-standard);
+}
+[data-dam-team-member]:hover { transform: translateY(-2px); box-shadow: var(--skin-shadow-card); }
+[data-dam-team-member-self] { border-color: var(--skin-color-brand); background: var(--skin-color-brand-weak); }
+[data-dam-team-avatar] {
+  width: 34px; height: 34px; border-radius: var(--skin-radius-pill); flex: none;
+  display: grid; place-items: center; font-weight: 700; font-size: var(--skin-font-size-sm);
+  background: hsl(var(--t-hue, 230) 62% 52%); color: var(--skin-color-surface);
+}
+[data-dam-team-presence-dot] {
+  width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex: none;
+  background: var(--skin-color-text-tertiary);
+}
+[data-dam-team-presence][data-presence="online"] [data-dam-team-presence-dot] { background: var(--skin-color-ok); }
+[data-dam-team-presence][data-presence="idle"] [data-dam-team-presence-dot] { background: var(--skin-color-warn); }
+[data-dam-team-presence][data-presence="offline"] [data-dam-team-presence-dot] { background: var(--skin-color-text-tertiary); }
+/* ③ 记忆库 */
+[data-dam-team-filterbar] {
+  display: flex; align-items: center; gap: var(--skin-space-3); flex-wrap: wrap;
+  padding: var(--skin-space-3); margin-bottom: var(--skin-space-4);
+  background: var(--skin-color-surface-2); border: 1px dashed var(--skin-color-border-strong);
+  border-radius: var(--skin-radius-card);
+}
+[data-dam-team-filterbar] select, [data-dam-team-filterbar] input {
+  padding: 4px 8px; border-radius: var(--skin-radius-sm);
+  border: 1px solid var(--skin-color-border-strong); background: var(--skin-color-surface);
+  font-size: var(--skin-font-size-sm);
+}
+[data-dam-team-libitem] {
+  display: flex; gap: var(--skin-space-3); align-items: flex-start;
+  padding: var(--skin-space-3) 0; border-bottom: 1px dashed var(--skin-color-border);
+}
+[data-dam-team-libitem]:last-child { border-bottom: none; }
+[data-dam-team-badge] {
+  display: inline-flex; align-items: center; gap: 4px; padding: 1px 8px;
+  border-radius: var(--skin-radius-pill); font-size: var(--skin-font-size-xs); font-weight: 600;
+  background: var(--skin-color-team-weak); color: var(--skin-color-team);
+}
+[data-dam-team-badge][data-scope="local"] { background: var(--skin-color-brand-weak); color: var(--skin-color-brand-strong); }
+[data-dam-team-badge][data-scope="imported"] { background: var(--skin-color-info-weak); color: var(--skin-color-info); }
+/* ④ 冲突中心 */
+[data-dam-team-conflicts] { display: flex; gap: var(--skin-space-4); align-items: flex-start; }
+[data-dam-team-conflict-list] { flex: 0 0 264px; display: flex; flex-direction: column; gap: var(--skin-space-2); }
+[data-dam-team-conflict] {
+  text-align: left; padding: var(--skin-space-3); cursor: pointer; width: 100%;
+  border: 1px solid var(--skin-color-border); border-radius: var(--skin-radius-sm);
+  background: var(--skin-color-surface); color: var(--skin-color-text);
+  transition: border-color var(--skin-duration-fast) var(--skin-ease-standard), background var(--skin-duration-fast) var(--skin-ease-standard);
+}
+[data-dam-team-conflict]:hover { border-color: var(--skin-color-brand); }
+[data-dam-team-conflict][aria-selected="true"] { border-color: var(--skin-color-brand); background: var(--skin-color-brand-weak); }
+[data-dam-team-diff] { display: grid; grid-template-columns: 1fr 1fr; gap: var(--skin-space-3); flex: 1; min-width: 0; }
+[data-dam-team-diff-local], [data-dam-team-diff-remote] {
+  border: 1px solid var(--skin-color-border); border-radius: var(--skin-radius-sm);
+  background: var(--skin-color-surface); overflow: hidden;
+}
+[data-dam-team-diff-local] header, [data-dam-team-diff-remote] header {
+  padding: 6px 10px; font-size: var(--skin-font-size-xs); font-weight: 700;
+  background: var(--skin-color-surface-2); border-bottom: 1px solid var(--skin-color-border);
+}
+[data-dam-team-diff-line] {
+  font-family: var(--skin-font-mono); font-size: var(--skin-font-size-sm);
+  padding: 3px 10px; white-space: pre-wrap; word-break: break-word; line-height: 1.5;
+}
+[data-dam-team-diff-line][data-op="add"] { background: var(--skin-color-ok-weak); color: var(--skin-color-ok); }
+[data-dam-team-diff-line][data-op="del"] { background: var(--skin-color-err-weak); color: var(--skin-color-err); text-decoration: line-through; }
+[data-dam-team-diff-line][data-op="same"] { color: var(--skin-color-text-secondary); }
+[data-dam-team-verdict] {
+  display: flex; gap: var(--skin-space-2); flex-wrap: wrap; align-items: center;
+  margin-top: var(--skin-space-3); padding-top: var(--skin-space-3);
+  border-top: 1px dashed var(--skin-color-border-strong);
+}
+/* ⑤ 技能审批 */
+[data-dam-team-skill] { border-left: 3px solid var(--skin-color-team); padding-left: var(--skin-space-4); }
+[data-dam-team-skill][data-risk="high"] { border-left-color: var(--skin-color-err); }
+[data-dam-team-skill][data-risk="medium"] { border-left-color: var(--skin-color-warn); }
+[data-dam-team-skill-evidence] { display: flex; gap: var(--skin-space-3); flex-wrap: wrap; margin: var(--skin-space-2) 0; }
+[data-dam-team-skill-evidence] span {
+  font-family: var(--skin-font-mono); font-size: var(--skin-font-size-xs);
+  padding: 1px 7px; border-radius: var(--skin-radius-pill);
+  background: var(--skin-color-surface-2); border: 1px solid var(--skin-color-border);
+}
+/* ⑥ 交接账本 */
+[data-dam-team-ledger] { display: flex; flex-direction: column; gap: var(--skin-space-3); }
+[data-dam-team-ledger-seg] {
+  border-left: 3px solid hsl(var(--dam-team-actor-hue, 230) 62% 52%);
+  padding: var(--skin-space-3) var(--skin-space-4);
+  background: var(--skin-color-surface-2); border-radius: 0 var(--skin-radius-sm) var(--skin-radius-sm) 0;
+}
+[data-dam-team-ledger-chain] { display: flex; align-items: center; gap: var(--skin-space-2); flex-wrap: wrap; }
+[data-dam-team-chain-node] {
+  display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
+  padding: 4px 10px; border-radius: var(--skin-radius-pill);
+  border: 1px solid var(--skin-color-border-strong); background: var(--skin-color-surface);
+  font-size: var(--skin-font-size-sm);
+  transition: transform var(--skin-duration-fast) var(--skin-ease-emphasized);
+}
+[data-dam-team-chain-node]:hover { transform: translateY(-2px); border-color: var(--skin-color-brand); }
+[data-dam-team-chain-link] { flex: 1; min-width: 22px; height: 2px; background: var(--skin-color-border-strong); position: relative; }
+[data-dam-team-chain-link]::after {
+  content: "›"; position: absolute; right: -3px; top: -12px; color: var(--skin-color-text-tertiary);
+}
+/* ⑦⑧ 设置与调试 */
+[data-dam-team-settings] .t-row,
+[data-dam-team-debug] .t-row {
+  display: flex; align-items: center; gap: var(--skin-space-3);
+  padding: var(--skin-space-3) 0; border-bottom: 1px dashed var(--skin-color-border);
+}
+[data-dam-team-settings] .t-row:last-child, [data-dam-team-debug] .t-row:last-child { border-bottom: none; }
+[data-dam-team-settings] .t-label, [data-dam-team-debug] .t-label { flex: 0 0 210px; font-size: var(--skin-font-size-sm); }
+[data-dam-team-settings] .t-hint, [data-dam-team-debug] .t-hint { color: var(--skin-color-text-tertiary); font-size: var(--skin-font-size-xs); }
+[data-dam-team-settings] input[type="text"], [data-dam-team-settings] input[type="number"], [data-dam-team-settings] select {
+  padding: 4px 8px; border-radius: var(--skin-radius-sm); border: 1px solid var(--skin-color-border-strong);
+  background: var(--skin-color-surface); min-width: 190px; font-size: var(--skin-font-size-sm);
+}
+[data-dam-team-debug-queue] { width: 100%; border-collapse: collapse; font-size: var(--skin-font-size-sm); }
+[data-dam-team-debug-queue] th, [data-dam-team-debug-queue] td {
+  text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--skin-color-border);
+}
+[data-dam-team-debug-queue] th { color: var(--skin-color-text-tertiary); font-weight: 600; font-size: var(--skin-font-size-xs); }
+[data-dam-team-debug-last], [data-dam-team-debug-cursor] {
+  font-family: var(--skin-font-mono); font-size: var(--skin-font-size-sm);
+  display: flex; gap: var(--skin-space-4); flex-wrap: wrap;
+}
+[data-dam-team-debug-errors] li { font-family: var(--skin-font-mono); font-size: var(--skin-font-size-xs); }
+/* 接口对照抽屉 */
+[data-dam-team-inspect] {
+  position: fixed; right: 0; top: 0; height: 100vh; width: 396px; max-width: 92vw; z-index: 60;
+  background: var(--skin-color-surface); border-left: 1px solid var(--skin-color-border);
+  box-shadow: var(--skin-shadow-pop); padding: var(--skin-space-5); overflow-y: auto;
+  transform: translateX(102%); transition: transform var(--skin-duration-base) var(--skin-ease-emphasized);
+}
+[data-dam-team-inspect][data-open="true"] { transform: translateX(0); }
+[data-dam-team-inspect] h3 { margin-top: 0; }
+[data-dam-team-inspect] code {
+  font-family: var(--skin-font-mono); font-size: var(--skin-font-size-xs);
+  background: var(--skin-color-surface-2); padding: 1px 5px; border-radius: var(--skin-radius-xs);
+  border: 1px solid var(--skin-color-border); word-break: break-all;
+}
+[data-dam-team-inspect] dt { font-size: var(--skin-font-size-xs); color: var(--skin-color-text-tertiary); margin-top: var(--skin-space-3); }
+[data-dam-team-inspect] dd { margin: 2px 0 0; }
+[data-dam-team-pickable] { cursor: crosshair; }
+[data-dam-team-pickable]:hover { outline: 2px dashed var(--skin-color-team); outline-offset: 2px; }
+[data-dam-team-inspect-close] { position: absolute; top: var(--skin-space-4); right: var(--skin-space-4); }
+[data-dam-team-toast] {
+  position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); z-index: 80;
+  background: var(--skin-color-text); color: var(--skin-color-surface);
+  padding: 9px 16px; border-radius: var(--skin-radius-pill); font-size: var(--skin-font-size-sm);
+  box-shadow: var(--skin-shadow-pop); opacity: 0; pointer-events: none;
+  transition: opacity var(--skin-duration-fast) var(--skin-ease-standard);
+}
+[data-dam-team-toast][data-show="true"] { opacity: 1; }
+@media (max-width: 900px) {
+  .app { flex-direction: column; }
+  .sidebar { position: static; height: auto; flex: none; width: 100%; }
+  [data-dam-team-conflicts] { flex-direction: column; }
+  [data-dam-team-conflict-list] { flex: none; width: 100%; }
+  [data-dam-team-diff] { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: 1ms !important; transition-duration: 1ms !important; }
+}
+</style>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-logo" aria-hidden="true">记</div>
+      <div>
+        <div class="brand-name">dsh-auto-memory</div>
+        <div class="brand-sub">Teamwork 企业版 · 前端契约 demo</div>
+      </div>
+    </div>
+    <div class="nav-title">团队版 8 屏</div>
+    <nav id="nav" aria-label="团队版屏幕"></nav>
+    <div class="sidebar-foot">
+      零依赖 · 零 CDN · 双击即开<br>
+      令牌与组件同源：换肤只改 <code>--skin-*</code>
+    </div>
+  </aside>
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <h1 id="page-title">同步状态总览</h1>
+        <div class="sub" id="page-sub">契约 §2 · 后端 /team-state</div>
+      </div>
+      <div class="spacer"></div>
+      <button class="btn" id="btn-inspect" data-api="—" data-field="—">接口对照</button>
+      <label class="btn" for="theme-pick">主题
+        <select id="theme-pick" style="border:none;background:transparent;color:inherit">
+          <option value="light">浅色（默认）</option>
+          <option value="dark">深色</option>
+          <option value="contrast">高对比（无障碍）</option>
+          <option value="warm">暖色（低饱和）</option>
+        </select>
+      </label>
+    </div>
+    <div class="content">
+      <section data-page="sync" data-title="① 同步状态总览" data-contract="§2" data-api="GET /team-state · POST /team-sync-now · POST /team-sync-pause">
+        <div data-dam-team-statusbar></div>
+        <div class="grid-3" id="sync-cards"></div>
+        <div class="card">
+          <h2>最近活动</h2>
+          <div id="sync-feed"></div>
+        </div>
+      </section>
+      <section data-page="members" data-title="② 团队成员与在场" data-contract="§3" data-api="GET /team-members · GET /team-presence" hidden>
+        <div class="card">
+          <h2>成员</h2>
+          <div class="muted" style="margin-bottom:12px">在场状态由后端下发；前端只是显示，不自行推算在线。</div>
+          <div data-dam-team-members></div>
+        </div>
+        <div class="card">
+          <h2>在场明细</h2>
+          <div id="presence-table"></div>
+        </div>
+      </section>
+      <section data-page="library" data-title="③ 记忆库" data-contract="§4" data-api="GET /memory-hub（既有） · GET /team-attribution" hidden>
+        <div data-dam-team-filterbar></div>
+        <div class="card">
+          <h2>记忆条目</h2>
+          <div id="lib-list"></div>
+        </div>
+      </section>
+      <section data-page="conflicts" data-title="④ 冲突中心" data-contract="§5.1" data-api="GET /team-conflicts · POST /team-conflicts/resolve" hidden>
+        <div class="card">
+          <h2>待裁决冲突</h2>
+          <div data-dam-team-conflicts>
+            <div data-dam-team-conflict-list id="conflict-list"></div>
+            <div style="flex:1;min-width:0" id="conflict-detail"></div>
+          </div>
+        </div>
+      </section>
+      <section data-page="skills" data-title="⑤ 团队技能审批" data-contract="§5.2" data-api="GET /team-skills · POST /team-skills/approve" hidden>
+        <div class="muted" style="margin-bottom:12px">统计闸门口径复用既有设置分区 <code>skills</code>（procedureMinSessions / procedureMinSuccess / procedureCorrectionCap）。</div>
+        <div data-dam-team-skills id="skill-list"></div>
+      </section>
+      <section data-page="handoff" data-title="⑥ 交接账本" data-contract="§5.3" data-api="GET /team-handoffs · POST /team-handoffs/takeover" hidden>
+        <div class="card">
+          <h2>接续链</h2>
+          <div data-dam-team-ledger-chain id="chain"></div>
+        </div>
+        <div class="card">
+          <h2>账本时间线（按人分色）</h2>
+          <div data-dam-team-ledger id="ledger"></div>
+        </div>
+      </section>
+      <section data-page="settings" data-title="⑦ 团队设置分区" data-contract="§6.1" data-api="GET /config（既有） · POST /config（saveConfigPatch）" hidden>
+        <div class="card" data-dam-team-settings id="team-settings">
+          <h2>团队与同步</h2>
+          <div class="faint" style="margin-bottom:8px">追加为既有设置页的第 10 分区；原 9 个分区一字不动。</div>
+          <div id="settings-rows"></div>
+          <div class="faint" style="margin-top:10px" id="cfg-preview"></div>
+        </div>
+      </section>
+      <section data-page="debug" data-title="⑧ 同步调试面板" data-contract="§6.2" data-api="GET /team-sync-debug · POST /team-sync-debug/retry" hidden>
+        <div class="card" data-dam-team-debug>
+          <h2>队列 / 最后同步 / 错误</h2>
+          <div class="grid-3">
+            <div><div class="faint">最后同步</div><div data-dam-team-debug-last id="dbg-last"></div></div>
+            <div><div class="faint">序列水位</div><div data-dam-team-debug-cursor id="dbg-cursor"></div></div>
+            <div><div class="faint">操作</div><div id="dbg-actions"></div></div>
+          </div>
+          <div style="margin-top:14px"><div class="faint" style="margin-bottom:6px">待同步队列</div><table data-dam-team-debug-queue id="dbg-queue"></table></div>
+          <div style="margin-top:14px"><div class="faint" style="margin-bottom:6px">错误</div><ul data-dam-team-debug-errors id="dbg-errors"></ul></div>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+<aside data-dam-team-inspect data-open="false" id="inspect" aria-label="接口对照">
+  <button class="btn btn-ghost" data-dam-team-inspect-close id="inspect-close">✕</button>
+  <h3>接口对照</h3>
+  <div class="faint">点页面上任意带虚线的元素，或直接点下面列表中的条目。</div>
+  <dl id="inspect-body"></dl>
+  <div class="faint" style="margin-top:20px;border-top:1px dashed var(--skin-color-border);padding-top:12px">
+    契约文档：<code>docs/teamwork-impl/frontend/02-团队版前端契约.md</code><br>
+    皮肤令牌：<code>docs/teamwork-research/skin/skin-token-contract.md</code>
+  </div>
+</aside>
+<div data-dam-team-toast id="toast" role="status"></div>
+<script>
+/* ============================================================
+   dsh-auto-memory · Teamwork 企业版前端 demo
+   全部为**假数据**，只用于验证契约里的交互与信息结构；
+   每个可点元素带 data-inspect，指向「接口对照」里的后端路由 / 数据字段。
+   ============================================================ */
+(function () {
+  'use strict';
+  var D = {
+    team: { id: "team-acme-0712", name: "ACME 记忆团队", server: "http://127.0.0.1:19387", members: 4, online: 3 },
+    state: { phase: "conflict", lastSyncAt: "2026-09-25T10:41:12+08:00", lastSyncBy: "林未", localSeq: 18422, serverSeq: 18395 },
+    queue: { pending: 7, inflight: 2, failed: 1 },
+    conflicts: { open: 2 },
+    paused: false,
+    members: [
+      { id: "u-01", name: "林未", role: "owner", isSelf: true,  hue: 232, presence: "online",  lastSeenAt: "2026-09-25T10:41:02+08:00", joinedAt: "2026-08-02", memories: 128 }
+      ,{ id: "u-02", name: "周叙", role: "editor", isSelf: false, hue: 276, presence: "online",  lastSeenAt: "2026-09-25T10:39:48+08:00", joinedAt: "2026-08-06", memories: 96 }
+      ,{ id: "u-03", name: "陈默", role: "editor", isSelf: false, hue: 12,  presence: "idle",    lastSeenAt: "2026-09-25T09:58:20+08:00", joinedAt: "2026-08-14", memories: 61 }
+      ,{ id: "u-04", name: "苏迟", role: "viewer", isSelf: false, hue: 158, presence: "offline", lastSeenAt: "2026-09-24T19:12:44+08:00", joinedAt: "2026-09-01", memories: 18 }
+    ],
+    memories: [
+      { id: "m-1041", title: "同步冲突的裁决必须二次确认", scope: "team", actorId: "u-02", sync: "conflicted", at: "2026-09-25 10:12", tags: ["同步", "冲突"] },
+      { id: "m-1038", title: "工作台轮换周期 ≤ 自动归档天数", scope: "team", actorId: "u-01", sync: "synced", at: "2026-09-25 09:40", tags: ["生命周期"] },
+      { id: "m-1033", title: "CRLF 源码打补丁要配 SHA256 前后比对", scope: "team", actorId: "u-03", sync: "synced", at: "2026-09-24 22:05", tags: ["工具"] },
+      { id: "m-1029", title: "本机宿主端口是 19387（非 3080）", scope: "local", actorId: "u-01", sync: "synced", at: "2026-09-24 18:31", tags: ["环境"] },
+      { id: "m-1022", title: "外部导入的记忆要标注来源再并入", scope: "imported", actorId: "u-04", sync: "pending", at: "2026-09-24 15:02", tags: ["外部记忆"] },
+      { id: "m-1017", title: "发布前 fetch 比对远端独有提交", scope: "team", actorId: "u-01", sync: "synced", at: "2026-09-23 21:18", tags: ["发布"] },
+      { id: "m-1010", title: "子代理不得再派下级子代理", scope: "local", actorId: "u-03", sync: "synced", at: "2026-09-23 14:47", tags: ["纪律"] }
+    ],
+    conflictsData: [
+      { id: "c-31", memoryId: "m-1041", kind: "content", title: "同步冲突的裁决必须二次确认", detectedAt: "2026-09-25 10:12",
+        local: "裁决动作必须二次确认。", remote: "裁决动作必须二次确认，并记录裁决人与时间。",
+        diff: [ { op: "same", text: "裁决动作必须二次确认" }, { op: "del", text: "。" }, { op: "add", text: "，并记录裁决人与时间。" } ] },
+      { id: "c-30", memoryId: "m-1038", kind: "meta", title: "工作台轮换周期 ≤ 自动归档天数", detectedAt: "2026-09-24 09:03",
+        local: "轮换周期 2 天（与归档一致）", remote: "轮换周期 3 天",
+        diff: [ { op: "same", text: "轮换周期 " }, { op: "del", text: "3 天" }, { op: "add", text: "2 天（与归档一致）" } ] }
+    ],
+    skills: [
+      { id: "s-08", title: "CRLF 源码打多点多行补丁（内容锚定 + 命中数断言 + SHA256 前后比对）", ownerId: "u-03", risk: "high", canApprove: true, blocked: "",
+        steps: ["进入脚本时先取原始快照", "逐条补丁用正面锚点，禁止借用邻接物", "打完改跑 node --check", "输出前后 SHA256 供比对"],
+        evidence: { seen: 14, success: 11, sessions: 5, reused: 4, corrections: 1 } },
+      { id: "s-07", title: "发布前跑全量回归并核对 SHA256", ownerId: "u-01", risk: "medium", canApprove: true, blocked: "",
+        steps: ["开发树提交", "全量回归", "改 CHANGELOG", "push 前 fetch 比对"],
+        evidence: { seen: 9, success: 9, sessions: 4, reused: 3, corrections: 0 } },
+      { id: "s-06", title: "插件设置页新增分区（追加式覆盖）", ownerId: "u-02", risk: "low", canApprove: false, blocked: "hubWhyNoCriteria",
+        steps: ["在 sectionLabels 追加键", "在 settings-content 追加 section", "zh/en 两段补文案"],
+        evidence: { seen: 3, success: 2, sessions: 2, reused: 1, corrections: 0 } }
+    ],
+    chain: [
+      { from: "u-01", to: "u-02", at: "2026-09-22 20:14", sessionId: "session-a13f" },
+      { from: "u-02", to: "u-03", at: "2026-09-24 01:02", sessionId: "session-b77c" },
+      { from: "u-03", to: "u-01", at: "2026-09-25 09:31", sessionId: "session-c90e" }
+    ],
+    ledger: [
+      { actorId: "u-01", at: "2026-09-25 09:31", title: "同步门禁与失败重试", body: "补了队列重试上限与退避；失败项进调试面板。" },
+      { actorId: "u-03", at: "2026-09-24 01:02", title: "冲突裁决按钮二次确认", body: "首次点击只进确认态，第二次才提交；防止误采纳。" },
+      { actorId: "u-02", at: "2026-09-22 20:14", title: "记忆卡作者徽标", body: "卡尾追加 data-dam-team-badge，不改既有卡片结构。" }
+    ],
+    debug: {
+      last: { at: "2026-09-25 10:41:12", ms: 412, bytes: 18432, outbound: 12, inbound: 34, result: "ok" },
+      items: [
+        { id: "q-911", kind: "memory.upsert", attempts: 3, lastError: "ETIMEDOUT", nextRetryAt: "10:43" },
+        { id: "q-910", kind: "memory.upsert", attempts: 1, lastError: "—", nextRetryAt: "10:42" },
+        { id: "q-908", kind: "skill.approve", attempts: 1, lastError: "—", nextRetryAt: "10:42" }
+      ],
+      errors: [ { at: "10:38", code: "ETIMEDOUT", message: "team server did not respond in 8000ms" }, { at: "10:21", code: "409", message: "seq mismatch: local 18422 > server 18395" } ]
+    },
+    settings: [
+      { key: "teamEnabled", label: "启用团队版", type: "switch", value: true, hint: "关：只停团队数据面，既有 13 页签/9 分区不受影响", api: "GET/POST /config", field: "config.teamEnabled" },
+      { key: "teamServer", label: "团队服务地址", type: "text", value: "http://127.0.0.1:19387", hint: "回环或内网 http(s)", api: "POST /config", field: "config.teamServer" },
+      { key: "teamId", label: "团队标识", type: "readonly", value: "team-acme-0712", hint: "加入后由服务端下发", api: "GET /team-state", field: "config.teamId" },
+      { key: "teamMemberName", label: "本机成员署名", type: "text", value: "林未", hint: "写入记忆时作为 actor.name", api: "POST /config", field: "config.teamMemberName" },
+      { key: "teamSyncMode", label: "同步模式", type: "select", value: "auto", options: ["off", "manual", "auto"], hint: "off 只停同步，与 teamEnabled 是两个独立旋钮", api: "POST /config", field: "config.teamSyncMode" },
+      { key: "teamSyncIntervalSec", label: "自动同步间隔（秒）", type: "number", value: 60, hint: "仅 auto 档生效，范围 15–3600", api: "POST /config", field: "config.teamSyncIntervalSec" },
+      { key: "teamScopeDefault", label: "新记忆默认范围", type: "select", value: "local", options: ["local", "team"], hint: "默认本机，显式选择才上团队", api: "POST /config", field: "config.teamScopeDefault" },
+      { key: "teamShareExternal", label: "外部导入结果同步给团队", type: "switch", value: false, hint: "默认关：涉及第三方来源", api: "POST /config", field: "config.teamShareExternal" },
+      { key: "teamConflictPolicy", label: "冲突默认策略", type: "select", value: "ask", options: ["ask", "prefer-team", "prefer-local"], hint: "ask = 每条都进冲突中心", api: "POST /config", field: "config.teamConflictPolicy" },
+      { key: "teamShowAttribution", label: "记忆卡显示作者徽标", type: "switch", value: true, hint: "对应 data-dam-team-badge", api: "POST /config", field: "config.teamShowAttribution" },
+      { key: "teamSkinId", label: "团队皮肤标识", type: "text", value: "", hint: "落到 ~/.dsh/memory/skins/team-<teamId>/", api: "POST /config", field: "config.teamSkinId" },
+      { key: "teamShowAudit", label: "记忆卡显示审计行", type: "switch", value: false, hint: "谁在何时改过", api: "POST /config", field: "config.teamShowAudit" }
+    ]
+  };
+
+  /* ---------- 小工具 ---------- */
+  function $(sel, root) { return (root || document).querySelector(sel); }
+  function $$(sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); }
+  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;" })[c]; }); }
+  function el(tag, attrs, kids) {
+    var n = document.createElement(tag);
+    Object.keys(attrs || {}).forEach(function (k) {
+      if (k === "text") n.textContent = attrs[k]; else if (k === "html") n.innerHTML = attrs[k]; else n.setAttribute(k, attrs[k]);
+    });
+    (kids || []).forEach(function (c) { if (c) n.appendChild(c); });
+    return n;
+  }
+  var toastTimer = null;
+  function toast(msg) {
+    var t = $("#toast"); t.textContent = msg; t.setAttribute("data-show", "true");
+    clearTimeout(toastTimer); toastTimer = setTimeout(function () { t.setAttribute("data-show", "false"); }, 1900);
+  }
+  function member(id) { for (var i = 0; i < D.members.length; i++) if (D.members[i].id === id) return D.members[i]; return { id: id, name: id, hue: 230 }; }
+  function initials(name) { return String(name).slice(0, 1); }
+  var PHASE = {
+    synced:   { label: "已同步",   tone: "ok" },
+    syncing:  { label: "同步中",   tone: "brand" },
+    offline:  { label: "离线",     tone: "muted" },
+    conflict: { label: "有冲突",   tone: "warn" },
+    paused:   { label: "已暂停",   tone: "muted" }
+  };
+  /* ---------- 接口对照抽屉 ---------- */
+  var INSPECT = {};
+  var pickMode = false;
+  function reg(key, info) { INSPECT[key] = info; return info; }
+  function openInspect(info) {
+    var body = $("#inspect-body");
+    body.innerHTML = "";
+    [["元素", info.el], ["契约章节", info.contract || "—"], ["后端路由", info.api || "—"],
+     ["数据字段", info.field || "—"], ["行为", info.behavior || "—"]].forEach(function (row) {
+      body.appendChild(el("dt", { text: row[0] }));
+      body.appendChild(el("dd", { html: "<code>" + esc(row[1]) + "</code>" }));
+    });
+    $("#inspect").setAttribute("data-open", "true");
+  }
+  document.addEventListener("click", function (e) {
+    var node = e.target && e.target.closest ? e.target.closest("[data-inspect]") : null;
+    if (!node || node.id === "inspect" || node.closest("#inspect")) return;
+    if (!(pickMode || node.getAttribute("data-inspect-always") === "1")) return;
+    openInspect(INSPECT[node.getAttribute("data-inspect")] || { el: node.tagName.toLowerCase(), api: "—", field: "—" });
+    if (pickMode) { pickMode = false; $$(".t-picking").forEach(function (n) { n.classList.remove("t-picking"); }); $("#btn-inspect").classList.remove("btn-primary"); }
+  });
+  $("#inspect-close").addEventListener("click", function () { $("#inspect").setAttribute("data-open", "false"); });
+  $("#btn-inspect").addEventListener("click", function () {
+    pickMode = !pickMode;
+    this.classList.toggle("btn-primary", pickMode);
+    $$("[data-inspect]").forEach(function (n) { n.classList.toggle("t-picking", pickMode); });
+    toast(pickMode ? "点任意元素查看它对应的后端路由" : "已退出拾取模式");
+  });
+  /* ---------- 主题 ---------- */
+  $("#theme-pick").addEventListener("change", function () { document.documentElement.setAttribute("data-theme", this.value); toast("主题：" + this.options[this.selectedIndex].textContent); });
+  /* ---------- 导航 ---------- */
+  var PAGES = $$("[data-page]");
+  var nav = $("#nav");
+  PAGES.forEach(function (sec, i) {
+    var key = sec.getAttribute("data-page");
+    var b = el("button", { "class": "nav-btn", type: "button", "data-go": key, "data-inspect": "nav-" + key, "data-inspect-always": "1" });
+    b.appendChild(el("span", { "class": "nav-num", text: String(i + 1) }));
+    b.appendChild(el("span", { text: sec.getAttribute("data-title") }));
+    nav.appendChild(b);
+    reg("nav-" + key, { el: "屏幕导航项", contract: sec.getAttribute("data-contract"), api: sec.getAttribute("data-api"), field: "—", behavior: "切换屏幕，不产生请求（demo）" });
+  });
+  function goto(key) {
+    PAGES.forEach(function (s) { s.hidden = s.getAttribute("data-page") !== key; });
+    $$("[data-go]").forEach(function (b) { b.setAttribute("aria-current", b.getAttribute("data-go") === key ? "true" : "false"); });
+    var sec = PAGES.filter(function (s) { return s.getAttribute("data-page") === key; })[0];
+    if (sec) { $("#page-title").textContent = sec.getAttribute("data-title"); $("#page-sub").textContent = "契约 " + sec.getAttribute("data-contract") + " · " + sec.getAttribute("data-api"); }
+  }
+  nav.addEventListener("click", function (e) { var b = e.target.closest("[data-go]"); if (b) goto(b.getAttribute("data-go")); });
+  /* ---------- ① 同步状态总览 ---------- */
+  function renderStatusbar() {
+    var host = $("[data-dam-team-statusbar]"); host.innerHTML = "";
+    var ph = D.paused ? "paused" : D.state.phase;
+    var st = el("button", { "data-dam-team-state": "", "data-phase": ph, type: "button", "data-inspect": "sb-state", "data-inspect-always": "1" });
+    st.appendChild(el("i", {}));
+    st.appendChild(el("span", { text: PHASE[ph].label }));
+    st.addEventListener("click", function () { toast("状态详情：" + JSON.stringify({ phase: ph, seq: D.state.serverSeq })); });
+    reg("sb-state", { el: "data-dam-team-state", contract: "§2", api: "GET /api/dsh-auto-memory/team-state", field: "state.phase（synced|syncing|offline|conflict|paused）", behavior: "点击展开详情；五态配色全部走 --skin-color-* token" });
+    var q = el("div", { "data-dam-team-queue": "", "data-inspect": "sb-queue", "data-inspect-always": "1" });
+    q.innerHTML = "队列：待发 <b>" + D.queue.pending + "</b> · 在途 <b>" + D.queue.inflight + "</b> · 失败 <b>" + D.queue.failed + "</b>";
+    reg("sb-queue", { el: "data-dam-team-queue", contract: "§2", api: "GET /api/dsh-auto-memory/team-state", field: "queue.pending / queue.inflight / queue.failed", behavior: "只读展示；重试入口在屏幕⑧调试面板" });
+    var last = el("div", { "data-dam-team-lastsync": "", "data-inspect": "sb-last", "data-inspect-always": "1" });
+    last.innerHTML = "最后同步 " + esc(D.state.lastSyncAt.slice(5, 16)) + " · by " + esc(member(D.state.lastSyncBy === "林未" ? "u-01" : "u-01").name);
+    reg("sb-last", { el: "data-dam-team-lastsync", contract: "§2", api: "GET /api/dsh-auto-memory/team-state", field: "state.lastSyncAt（ISO8601）/ state.lastSyncBy（成员 id）", behavior: "相对时间由前端显示层派生；后端时间是唯一真源" });
+    var badge = el("button", { "data-dam-team-conflict-badge": "", type: "button", text: "冲突 " + D.conflicts.open, "data-inspect": "sb-conflict", "data-inspect-always": "1" });
+    badge.addEventListener("click", function () { goto("conflicts"); toast("跳到冲突中心"); });
+    reg("sb-conflict", { el: "data-dam-team-conflict-badge", contract: "§2 / §5.1", api: "GET /api/dsh-auto-memory/team-state → conflicts.open", field: "conflicts.open", behavior: "点击跳屏幕④" });
+    var sw = el("button", { "data-dam-team-switch": "", "data-on": D.paused ? "false" : "true", type: "button", "aria-label": "暂停同步", "data-inspect": "sb-pause", "data-inspect-always": "1" });
+    sw.addEventListener("click", function () {
+      D.paused = !D.paused; sw.setAttribute("data-on", D.paused ? "false" : "true");
+      renderStatusbar(); renderSyncCards();
+      toast(D.paused ? "已暂停同步（本机开关，不广播）" : "已恢复同步");
+    });
+    reg("sb-pause", { el: "data-dam-team-switch", contract: "§2", api: "POST /api/dsh-auto-memory/team-sync-pause", field: "config.team.syncPaused（本机，不广播）", behavior: "即时回显：点击先翻面再写盘（用户纪律）" });
+    var lab = el("span", { "class": "faint", text: D.paused ? "已暂停" : "同步中" });
+    var sp = el("div", { "class": "spacer" });
+    host.appendChild(st); host.appendChild(q); host.appendChild(last); host.appendChild(sp); host.appendChild(badge); host.appendChild(lab); host.appendChild(sw);
+  }
+  function renderSyncCards() {
+    var host = $("#sync-cards"); host.innerHTML = "";
+    var lag = D.state.localSeq - D.state.serverSeq;
+    var cards = [
+      { t: "本地序列", v: D.state.localSeq, k: "localSeq", api: "GET /team-state", d: "本机已写入的记忆事件水位" },
+      { t: "服务端序列", v: D.state.serverSeq, k: "serverSeq", api: "GET /team-state", d: "团队已确认的水位" },
+      { t: "落后", v: lag + " 条", k: "lag", api: "前端派生（localSeq − serverSeq）", d: lag > 0 ? "还有 " + lag + " 条待推送" : "已追平" }
+    ];
+    cards.forEach(function (c, i) {
+      var card = el("div", { "class": "card", "data-inspect": "sc-" + i, "data-inspect-always": "1" });
+      card.appendChild(el("div", { "class": "faint", text: c.t }));
+      card.appendChild(el("div", { style: "font-size:var(--skin-font-size-2xl);font-weight:700", text: String(c.v) }));
+      card.appendChild(el("div", { "class": "muted", text: c.d }));
+      host.appendChild(card);
+      reg("sc-" + i, { el: c.t + " 卡片", contract: "§2", api: c.api, field: c.k, behavior: "只读派生展示" });
+    });
+    var feed = $("#sync-feed"); feed.innerHTML = "";
+    var events = [
+      ["10:41", "u-01", "推送 12 条记忆事件（成功）"],
+      ["10:39", "u-02", "拉取 34 条团队事件（成功）"],
+      ["10:38", "—", "同步失败：ETIMEDOUT，进入重试队列"],
+      ["10:21", "—", "序列不匹配：local 18422 > server 18395（已生成 2 条冲突）"]
+    ];
+    events.forEach(function (e, i) {
+      var m = member(e[1]);
+      var row = el("div", { "class": "t-row", style: "display:flex;gap:12px;padding:8px 0;border-bottom:1px dashed var(--skin-color-border)", "data-inspect": "feed-" + i, "data-inspect-always": "1" });
+      row.appendChild(el("span", { "class": "faint", style: "flex:0 0 52px;font-family:var(--skin-font-mono)", text: e[0] }));
+      var who = el("span", { "class": "tag", text: e[1] === "—" ? "系统" : m.name });
+      if (e[1] !== "—") who.style.setProperty("--t-hue", String(m.hue));
+      row.appendChild(who);
+      row.appendChild(el("span", { "class": "muted", text: e[2] }));
+      feed.appendChild(row);
+      reg("feed-" + i, { el: "同步事件行", contract: "§2", api: "GET /team-state", field: "state.lastSyncAt / queue / errors", behavior: "失败事件可点进屏幕⑧重试" });
+    });
+  }
+  /* ---------- ② 成员与在场 ---------- */
+  var PRESENCE_LABEL = { online: "在线", idle: "离开", offline: "离线" };
+  function renderMembers() {
+    var host = $("[data-dam-team-members]"); host.innerHTML = "";
+    D.members.forEach(function (m, i) {
+      var card = el("div", { "data-dam-team-member": "", "data-dam-team-presence": "", "data-presence": m.presence, "data-inspect": "mb-" + i, "data-inspect-always": "1" });
+      if (m.isSelf) card.setAttribute("data-dam-team-member-self", "");
+      var av = el("div", { "data-dam-team-avatar": "", text: initials(m.name) });
+      av.style.setProperty("--t-hue", String(m.hue));
+      var box = el("div", { style: "min-width:0" });
+      var line = el("div", { style: "display:flex;align-items:center;gap:6px" });
+      line.appendChild(el("span", { "data-dam-team-presence-dot": "" }));
+      line.appendChild(el("b", { text: m.name + (m.isSelf ? "（我）" : "") }));
+      box.appendChild(line);
+      box.appendChild(el("div", { "class": "faint", text: m.role + " · 贡献 " + m.memories + " 条 · " + PRESENCE_LABEL[m.presence] }));
+      card.appendChild(av); card.appendChild(box);
+      card.addEventListener("click", function () { toast(m.name + " · 最后活跃 " + m.lastSeenAt.slice(11, 16)); });
+      host.appendChild(card);
+      reg("mb-" + i, { el: "data-dam-team-member", contract: "§3", api: "GET /api/dsh-auto-memory/team-members + /team-presence", field: "member.{id,name,role,joinedAt,isSelf} · presence.{state,lastSeenAt}", behavior: "点击看最后活跃；在线判据由后端给，前端不推算" });
+    });
+    var tb = $("#presence-table"); tb.innerHTML = "";
+    var tbl = el("table", { style: "width:100%;border-collapse:collapse;font-size:var(--skin-font-size-sm)" });
+    tbl.innerHTML = "<thead><tr>" + ["成员", "角色", "状态", "最后活跃", "本机估", "记忆数"].map(function (h) { return "<th style=\"text-align:left;color:var(--skin-color-text-tertiary);font-size:var(--skin-font-size-xs);padding:6px 10px\">" + h + "</th>"; }).join("") + "</tr></thead>";
+    var body = el("tbody", { "data-inspect": "presence-table", "data-inspect-always": "1" });
+    D.members.forEach(function (m) {
+      body.innerHTML += "<tr>" +
+        "<td style=\"padding:6px 10px\">" + esc(m.name) + "</td>" +
+        "<td style=\"padding:6px 10px\">" + esc(m.role) + "</td>" +
+        "<td style=\"padding:6px 10px\">" + esc(PRESENCE_LABEL[m.presence]) + "</td>" +
+        "<td style=\"padding:6px 10px;font-family:var(--skin-font-mono)\">" + esc(m.lastSeenAt.slice(5, 16).replace("T", " ")) + "</td>" +
+        "<td style=\"padding:6px 10px\">" + (m.presence === "online" ? "≤90s" : "—") + "</td>" +
+        "<td style=\"padding:6px 10px\">" + m.memories + "</td>" +
+      "</tr>";
+    });
+    tbl.appendChild(body); tb.appendChild(tbl);
+    reg("presence-table", { el: "在场明细表", contract: "§3", api: "GET /team-presence", field: "presence[memberId].{state,lastSeenAt,client}", behavior: "「本机估」列是前端展示兜底，必须标注为估算" });
+  }
+
+  /* ---------- ③ 记忆库 ---------- */
+  var libFilter = { author: 'all', scope: 'all', sync: 'all' };
+  function renderLibrary() {
+    var bar = $('[data-dam-team-filterbar]'); bar.innerHTML = '';
+    function mkSelect(key, label, opts, inspectKey, field) {
+      var wrap = el('label', { style: 'display:inline-flex;align-items:center;gap:6px', 'data-inspect': inspectKey, 'data-inspect-always': '1' });
+      wrap.appendChild(el('span', { 'class': 'faint', text: label }));
+      var s = el('select', {});
+      opts.forEach(function (o) {
+        var op = el('option', { value: o[0], text: o[1] });
+        if (libFilter[key] === o[0]) op.selected = true;
+        s.appendChild(op);
+      });
+      s.addEventListener('change', function () { libFilter[key] = this.value; renderLibrary(); toast('筛选：' + label + ' = ' + this.value); });
+      wrap.appendChild(s);
+      reg(inspectKey, { el: 'data-dam-team-filter-' + key, contract: '§4', api: 'GET /api/dsh-auto-memory/team-attribution', field: field, behavior: '前端本地筛选（记忆库已一次拉全），不触发二次全量请求' });
+      return wrap;
+    }
+    var authorOpts = [['all', '全部作者']].concat(D.members.map(function (m) { return [m.id, m.name]; }));
+    bar.appendChild(mkSelect('author', '作者', authorOpts, 'fb-author', 'view.filterAuthors[] ← memory.actor.id'));
+    bar.appendChild(mkSelect('scope', '来源', [['all', '全部来源'], ['local', '本机'], ['team', '团队'], ['imported', '外部导入']], 'fb-scope', 'view.filterScope ← memory.scope'));
+    bar.appendChild(mkSelect('sync', '同步状态', [['all', '全部状态'], ['synced', '已同步'], ['pending', '待同步'], ['conflicted', '有冲突']], 'fb-sync', 'view.filterSync ← memory.syncState'));
+    var cnt = el('span', { 'class': 'faint' });
+    var host = $('#lib-list'); host.innerHTML = '';
+    var rows = D.memories.filter(function (m) {
+      return (libFilter.author === 'all' || m.actorId === libFilter.author) &&
+             (libFilter.scope === 'all' || m.scope === libFilter.scope) &&
+             (libFilter.sync === 'all' || m.sync === libFilter.sync);
+    });
+    cnt.textContent = '命中 ' + rows.length + ' / ' + D.memories.length + ' 条';
+    bar.appendChild(cnt);
+    rows.forEach(function (m, i) {
+      var m2 = member(m.actorId);
+      var row = el('div', { 'data-dam-team-libitem': '', 'data-inspect': 'lib-' + i, 'data-inspect-always': '1' });
+      var av = el('div', { 'data-dam-team-avatar': '', text: initials(m2.name) });
+      av.style.setProperty('--t-hue', String(m2.hue));
+      var body = el('div', { style: 'flex:1;min-width:0' });
+      body.appendChild(el('div', { style: 'font-weight:600', text: m.title }));
+      var meta = el('div', { 'class': 'faint', style: 'display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:4px' });
+      meta.appendChild(el('span', { text: m.at }));
+      meta.appendChild(el('span', { text: '· ' + m2.name }));
+      meta.appendChild(el('span', { style: 'font-family:var(--skin-font-mono)', text: m.id }));
+      meta.appendChild(el('span', { 'data-dam-team-badge': '', 'data-scope': m.scope, text: m.scope === 'team' ? '团队' : (m.scope === 'local' ? '本机' : '外部导入') }));
+      meta.appendChild(el('span', { 'class': 'tag ' + (m.sync === 'conflicted' ? 'tag-warn' : (m.sync === 'pending' ? 'tag-info' : 'tag-ok')), text: m.sync }));
+      m.tags.forEach(function (t) { meta.appendChild(el('span', { 'class': 'faint', text: '#' + t })); });
+      body.appendChild(meta);
+      row.appendChild(av); row.appendChild(body);
+      host.appendChild(row);
+      reg('lib-' + i, { el: 'data-dam-team-libitem + data-dam-team-badge', contract: '§4', api: 'GET /memory-hub（既有） + GET /team-attribution', field: 'memory.{id,title,scope,actor,syncState,updatedAt} + memory.teamId', behavior: '徽标是追加在记忆卡尾部的子节点，不改既有 data-dam-card 结构' });
+    });
+    if (!rows.length) host.appendChild(el('div', { 'class': 'muted', text: '没有命中条目 —— 把筛选调回「全部」试试。' }));
+  }
+
+  /* ---------- ④ 冲突中心 ---------- */
+  var selConflict = 0, verdictArmed = null;
+  function renderConflicts() {
+    var list = $('#conflict-list'); list.innerHTML = '';
+    D.conflictsData.forEach(function (c, i) {
+      var b = el('button', { 'data-dam-team-conflict': '', type: 'button', 'aria-selected': i === selConflict ? 'true' : 'false', 'data-inspect': 'cf-' + i, 'data-inspect-always': '1' });
+      b.appendChild(el('div', { style: 'font-weight:650', text: c.title }));
+      b.appendChild(el('div', { 'class': 'faint', text: c.detectedAt + ' · ' + c.kind }));
+      b.addEventListener('click', function () { selConflict = i; verdictArmed = null; renderConflicts(); });
+      list.appendChild(b);
+      reg('cf-' + i, { el: 'data-dam-team-conflict', contract: '§5.1', api: 'GET /api/dsh-auto-memory/team-conflicts', field: 'conflict.{id,memoryId,kind,title,detectedAt}', behavior: '选中后右侧渲染双栏差异' });
+    });
+    var detail = $('#conflict-detail'); detail.innerHTML = '';
+    if (!D.conflictsData.length) {
+      detail.appendChild(el('div', { 'class': 'muted', text: '没有待裁决冲突 —— 状态条会回到「已同步」。' }));
+      return;
+    }
+    var c = D.conflictsData[selConflict];
+    var head = el('div', { 'data-dam-team-conflict-head': '', 'data-inspect': 'cf-head', 'data-inspect-always': '1' });
+    head.appendChild(el('b', { text: c.title }));
+    head.appendChild(el('div', { 'class': 'faint', text: '冲突 ' + c.id + ' · 记忆 ' + c.memoryId + ' · 检出 ' + c.detectedAt }));
+    detail.appendChild(head);
+    reg('cf-head', { el: 'data-dam-team-conflict-head', contract: '§5.1', api: 'GET /team-conflicts', field: 'conflict.{id,memoryId,title,detectedAt}', behavior: '只读展示' });
+    var diff = el('div', { 'data-dam-team-diff': '', 'data-inspect': 'cf-diff', 'data-inspect-always': '1' });
+    var left = el('div', { 'data-dam-team-diff-local': '' });
+    left.appendChild(el('header', { text: '本机版本 · ' + member('u-01').name }));
+    var right = el('div', { 'data-dam-team-diff-remote': '' });
+    right.appendChild(el('header', { text: '团队版本 · 由 ' + member('u-02').name + ' 写入' }));
+    c.diff.forEach(function (d) {
+      if (d.op !== 'add') left.appendChild(el('div', { 'data-dam-team-diff-line': '', 'data-op': d.op, text: (d.op === 'del' ? '- ' : '  ') + d.text }));
+      if (d.op !== 'del') right.appendChild(el('div', { 'data-dam-team-diff-line': '', 'data-op': d.op === 'add' ? 'add' : 'same', text: (d.op === 'add' ? '+ ' : '  ') + d.text }));
+    });
+    diff.appendChild(left); diff.appendChild(right);
+    detail.appendChild(diff);
+    reg('cf-diff', { el: 'data-dam-team-diff', contract: '§5.1', api: 'GET /team-conflicts', field: 'conflict.diff[] = { op: same|add|del, text }', behavior: '左右两栏由同一份 diff 渲染；配色只用 --skin-color-ok/err' });
+    var verdict = el('div', { 'data-dam-team-verdict': '', 'data-inspect': 'cf-verdict', 'data-inspect-always': '1' });
+    reg('cf-verdict', { el: 'data-dam-team-verdict', contract: '§5.1', api: 'POST /api/dsh-auto-memory/team-conflicts/resolve', field: 'body: { id, choice, content?, assignee? }', behavior: '裁决动作区；皮肤插槽 conflict.actions 的挂载点，只允许追加按钮' });
+    function verdictBtn(label, choiceKey, danger, note) {
+      var b = el('button', { 'class': 'btn ' + (danger ? 'btn-danger' : 'btn-primary'), type: 'button', text: label, 'data-inspect': 'cf-' + choiceKey, 'data-inspect-always': '1' });
+      b.addEventListener('click', function () {
+        var token = c.id + ':' + choiceKey;
+        if (verdictArmed !== token) { verdictArmed = token; renderConflicts(); toast('确认态：再点一次才提交「' + label + '」'); return; }
+        D.conflicts.open = Math.max(0, D.conflicts.open - 1);
+        D.conflictsData.splice(selConflict, 1);
+        if (selConflict >= D.conflictsData.length) selConflict = 0;
+        verdictArmed = null;
+        renderConflicts(); renderStatusbar();
+        toast('已裁决（POST team-conflicts/resolve choice=' + choiceKey + '）');
+      });
+      reg('cf-' + choiceKey, { el: 'data-dam-team-verdict ' + label, contract: '§5.1', api: 'POST /api/dsh-auto-memory/team-conflicts/resolve', field: 'body: { id, choice: "' + choiceKey + '", content?, assignee? }', behavior: note });
+      return b;
+    }
+    verdict.appendChild(verdictBtn('采用本机', 'keep-local', false, '二次确认后提交；团队侧内容会丢失'));
+    verdict.appendChild(verdictBtn('采用团队', 'keep-remote', true, '二次确认后提交；本机内容会丢失'));
+    var merge = el('button', { 'class': 'btn', type: 'button', text: '手工合并', 'data-inspect': 'cf-merge', 'data-inspect-always': '1' });
+    merge.addEventListener('click', function () { toast('进入编辑态（demo 不实现正文编辑）'); });
+    verdict.appendChild(merge);
+    reg('cf-merge', { el: 'data-dam-team-verdict 手工合并', contract: '§5.1', api: 'POST /team-conflicts/resolve', field: 'body: { id, choice: "merge", content }', behavior: '需人工编辑后提交' });
+    var ask = el('button', { 'class': 'btn btn-ghost', type: 'button', text: '指派他人', 'data-inspect': 'cf-ask', 'data-inspect-always': '1' });
+    ask.addEventListener('click', function () { toast('已指派给 ' + member('u-03').name + '（demo）'); });
+    verdict.appendChild(ask);
+    reg('cf-ask', { el: 'data-dam-team-verdict 指派他人', contract: '§5.1', api: 'POST /team-conflicts/delegate', field: 'body: { id, assignee }', behavior: '皮肤插槽 conflict.actions 也挂这一行，只允许追加按钮' });
+    verdict.appendChild(el('span', { 'class': verdictArmed ? 'tag tag-warn' : 'faint', text: verdictArmed ? '再次点击确认' : '采纳不可逆：首次点击只进入确认态' }));
+    detail.appendChild(verdict);
+  }
+
+  /* ---------- ⑤ 团队技能审批 ---------- */
+  var RISK_LABEL = { high: '高风险（需人工批准）', medium: '中风险', low: '低风险' };
+  function renderSkills() {
+    var host = document.getElementById('skill-list'); host.innerHTML = '';
+    D.skills.forEach(function (s, i) {
+      var card = el('div', { 'class': 'card', 'data-dam-team-skill': '', 'data-risk': s.risk, 'data-inspect': 'sk-' + i, 'data-inspect-always': '1' });
+      var top = el('div', { style: 'display:flex;gap:8px;align-items:center;flex-wrap:wrap' });
+      top.appendChild(el('b', { text: s.title }));
+      top.appendChild(el('span', { 'class': 'tag ' + (s.risk === 'high' ? 'tag-err' : (s.risk === 'medium' ? 'tag-warn' : 'tag-ok')), text: RISK_LABEL[s.risk] }));
+      top.appendChild(el('span', { 'class': 'faint', 'data-dam-team-skill-owner': '', text: '提交人 ' + member(s.ownerId).name }));
+      card.appendChild(top);
+      var ev = el('div', { 'data-dam-team-skill-evidence': '' });
+      [['seen', '见过'], ['success', '成功'], ['sessions', '会话'], ['reused', '复用'], ['corrections', '纠正']].forEach(function (pair) {
+        ev.appendChild(el('span', { text: pair[1] + ' ' + s.evidence[pair[0]] }));
+      });
+      card.appendChild(ev);
+      var steps = el('div', { 'data-dam-team-skill-steps': '', 'class': 'muted', style: 'margin:8px 0' });
+      steps.appendChild(el('div', { 'class': 'faint', text: '步骤' }));
+      s.steps.forEach(function (t, k) { steps.appendChild(el('div', { text: (k + 1) + '. ' + t })); });
+      card.appendChild(steps);
+      var bar = el('div', { style: 'display:flex;gap:8px;align-items:center;flex-wrap:wrap' });
+      function actBtn(label, action, cls) {
+        var b = el('button', { 'class': 'btn ' + cls, type: 'button', text: label, 'data-inspect': 'sk-' + action + '-' + i, 'data-inspect-always': '1' });
+        if (action === 'approve' && !s.canApprove) { b.disabled = true; b.title = s.blocked; }
+        b.addEventListener('click', function () {
+          if (s.risk === 'high' && action === 'approve' && b.getAttribute('data-arm') !== '1') {
+            b.setAttribute('data-arm', '1'); b.textContent = '高风险 · 再点确认';
+            toast('高风险技能需二次确认');
+            return;
+          }
+          toast('POST team-skills/approve action=' + action + ' → ' + s.id);
+          D.skills.splice(i, 1); renderSkills();
+        });
+        reg('sk-' + action + '-' + i, { el: 'data-dam-team-skill 动作按钮', contract: '§5.2', api: 'POST /api/dsh-auto-memory/team-skills/approve', field: 'body: { id: "' + s.id + '", action: "' + action + '", steps?, criteria?, reason? }', behavior: action === 'approve' ? 'risk=high 需二次确认；canApprove=false 时禁用并显示真因' : '拒绝须填原因' });
+        return b;
+      }
+      bar.appendChild(actBtn('批准晋升', 'approve', 'btn-primary'));
+      bar.appendChild(actBtn('修改后批准', 'edit', 'btn'));
+      bar.appendChild(actBtn('拒绝', 'reject', 'btn-danger'));
+      if (!s.canApprove) bar.appendChild(el('span', { 'class': 'tag tag-warn', text: '闸门未过：' + s.blocked }));
+      card.appendChild(bar);
+      host.appendChild(card);
+      reg('sk-' + i, { el: 'data-dam-team-skill', contract: '§5.2', api: 'GET /api/dsh-auto-memory/team-skills', field: 'skill.{id,title,ownerId,riskLevel,steps,criteria,evidence,canApprove,approveBlockedReason}', behavior: '风险分级只改左侧色条；canApprove 由后端给，前端不推断' });
+    });
+    if (!D.skills.length) host.appendChild(el('div', { 'class': 'muted', text: '没有待审批技能。' }));
+  }
+
+  /* ---------- ⑥ 交接账本 ---------- */
+  function renderHandoff() {
+    var chain = document.getElementById('chain'); chain.innerHTML = '';
+    D.chain.forEach(function (c, i) {
+      var m = member(c.from);
+      var node = el('button', { 'data-dam-team-chain-node': '', type: 'button', 'data-inspect': 'ch-' + i, 'data-inspect-always': '1' });
+      var dot = el('span', { 'data-dam-team-avatar': '', style: 'width:18px;height:18px;font-size:10px', text: initials(m.name) });
+      dot.style.setProperty('--t-hue', String(m.hue));
+      node.appendChild(dot);
+      node.appendChild(el('span', { text: m.name + ' → ' + member(c.to).name }));
+      node.appendChild(el('span', { 'class': 'faint', text: c.at.slice(5, 16) }));
+      node.addEventListener('click', function () { toast('接续会话 ' + c.sessionId + '（sessions.open → remote.session.prompt）'); });
+      chain.appendChild(node);
+      if (i < D.chain.length - 1) chain.appendChild(el('span', { 'data-dam-team-chain-link': '' }));
+      reg('ch-' + i, { el: 'data-dam-team-chain-node', contract: '§5.3', api: 'GET /api/dsh-auto-memory/team-handoffs', field: 'chain[] = { from, to, at, sessionId }', behavior: '点击走既有宿主回程：sessions.open(:4645) + remote.session.prompt(:4591)' });
+    });
+    var ledger = document.getElementById('ledger'); ledger.innerHTML = '';
+    D.ledger.forEach(function (g, i) {
+      var m = member(g.actorId);
+      var seg = el('div', { 'data-dam-team-ledger-seg': '', 'data-actor': g.actorId, 'data-inspect': 'lg-' + i, 'data-inspect-always': '1' });
+      seg.style.setProperty('--dam-team-actor-hue', String(m.hue));
+      var h = el('div', { style: 'display:flex;gap:8px;align-items:center;flex-wrap:wrap' });
+      var av = el('span', { 'data-dam-team-avatar': '', style: 'width:20px;height:20px;font-size:10px', text: initials(m.name) });
+      av.style.setProperty('--t-hue', String(m.hue));
+      h.appendChild(av);
+      h.appendChild(el('b', { text: g.title }));
+      h.appendChild(el('span', { 'class': 'faint', text: m.name + ' · ' + g.at }));
+      seg.appendChild(h);
+      seg.appendChild(el('div', { 'class': 'muted', text: g.body }));
+      ledger.appendChild(seg);
+      reg('lg-' + i, { el: 'data-dam-team-ledger-seg', contract: '§5.3', api: 'GET /team-handoffs', field: 'segments[] = { id, actorId, at, title, body, sessionId }', behavior: '分色 = --dam-team-actor-hue（前端按 actorId 稳定哈希），不硬编码色值' });
+    });
+    if (!D.ledger.length) ledger.appendChild(el('div', { 'class': 'muted', text: '账本为空。' }));
+  }
+
+  /* ---------- ⑦ 团队设置分区 ---------- */
+  var cfgState = {};
+  function renderSettings() {
+    var host = document.getElementById('settings-rows'); host.innerHTML = '';
+    D.settings.forEach(function (f) {
+      var row = el('div', { 'class': 't-row', 'data-inspect': 'st-' + f.key, 'data-inspect-always': '1' });
+      row.appendChild(el('div', { 'class': 't-label', text: f.label }));
+      var ctl = el('div', { style: 'display:flex;align-items:center;gap:10px;flex-wrap:wrap' });
+      var val = cfgState[f.key] !== undefined ? cfgState[f.key] : f.value;
+      if (f.type === 'switch') {
+        var sw = el('button', { 'data-dam-team-switch': '', 'data-on': val ? 'true' : 'false', type: 'button', 'aria-label': f.label });
+        sw.addEventListener('click', function () {
+          cfgState[f.key] = !(cfgState[f.key] !== undefined ? cfgState[f.key] : f.value);
+          renderSettings();
+          toast('已保存 ' + f.key + ' = ' + cfgState[f.key] + '（即时回显，随后 patch /config）');
+        });
+        ctl.appendChild(sw);
+      } else if (f.type === 'select') {
+        var sel = el('select', {});
+        f.options.forEach(function (o) { var op = el('option', { value: o, text: o }); if (val === o) op.selected = true; sel.appendChild(op); });
+        sel.addEventListener('change', function () { cfgState[f.key] = this.value; renderSettings(); toast('已保存 ' + f.key + ' = ' + this.value); });
+        ctl.appendChild(sel);
+      } else if (f.type === 'readonly') {
+        ctl.appendChild(el('code', { style: 'font-family:var(--skin-font-mono);font-size:var(--skin-font-size-sm)', text: String(val) }));
+      } else {
+        var inp = el('input', { type: f.type === 'number' ? 'number' : 'text', value: String(val) });
+        if (f.key === 'teamSyncIntervalSec') { inp.min = '15'; inp.max = '3600'; }
+        inp.addEventListener('change', function () { cfgState[f.key] = this.value; toast('已保存 ' + f.key + ' = ' + this.value); });
+        ctl.appendChild(inp);
+      }
+      ctl.appendChild(el('span', { 'class': 't-hint', text: f.hint }));
+      row.appendChild(ctl);
+      host.appendChild(row);
+      reg('st-' + f.key, { el: 'data-dam-team-settings 行:' + f.label, contract: '§6.1', api: f.api, field: f.field, behavior: f.type === 'switch' ? '即时回显：先翻面再写盘（用户纪律）' : 'change 时经 saveConfigPatch 写盘' });
+    });
+    var test = el('button', { 'class': 'btn', type: 'button', text: '连通性自检', 'data-inspect': 'st-test', 'data-inspect-always': '1' });
+    test.addEventListener('click', function () { toast('POST /team-state → 200 · 412ms · seq 18395'); });
+    var leave = el('button', { 'class': 'btn btn-danger', type: 'button', text: '退出团队', 'data-inspect': 'st-leave', 'data-inspect-always': '1' });
+    leave.addEventListener('click', function () {
+      if (leave.getAttribute('data-arm') !== '1') { leave.setAttribute('data-arm', '1'); leave.textContent = '再点一次确认退出'; return; }
+      leave.removeAttribute('data-arm'); leave.textContent = '退出团队';
+      toast('demo：退出团队需要二次确认（同 removeArm 范式）');
+    });
+    var bar = el('div', { style: 'display:flex;gap:10px;margin-top:14px' });
+    bar.appendChild(test); bar.appendChild(leave);
+    host.appendChild(bar);
+    reg('st-test', { el: 'data-dam-team-test', contract: '§6.1', api: 'POST /api/dsh-auto-memory/team-state', field: '—', behavior: '结果落 data-dam-team-test-result' });
+    reg('st-leave', { el: 'data-dam-team-leave', contract: '§6.1', api: 'POST /team-leave', field: '—', behavior: '二次确认' });
+    document.getElementById('cfg-preview').textContent = '当前改动：' + (Object.keys(cfgState).length ? JSON.stringify(cfgState) : '（无）') + ' — 实际实现走 saveConfigPatch(patch)';
+  }
+
+  /* ---------- ⑧ 同步调试面板 ---------- */
+  function renderDebug() {
+    var L = document.getElementById('dbg-last'); L.innerHTML = '';
+    L.appendChild(el('div', { text: D.debug.last.at }));
+    L.appendChild(el('div', { text: D.debug.last.ms + 'ms · ' + D.debug.last.bytes + ' B · 出 ' + D.debug.last.outbound + ' / 入 ' + D.debug.last.inbound }));
+    L.appendChild(el('div', { 'class': 'tag tag-ok', text: D.debug.last.result }));
+    L.setAttribute('data-inspect', 'dbg-last'); L.setAttribute('data-inspect-always', '1');
+    reg('dbg-last', { el: 'data-dam-team-debug-last', contract: '§6.2', api: 'GET /api/dsh-auto-memory/team-sync-debug', field: 'last = { at, ms, bytes, outbound, inbound, result }', behavior: '只读展示' });
+    var C = document.getElementById('dbg-cursor'); C.innerHTML = '';
+    C.appendChild(el('div', { text: 'localSeq ' + D.state.localSeq }));
+    C.appendChild(el('div', { text: 'serverSeq ' + D.state.serverSeq }));
+    C.appendChild(el('div', { text: 'lag ' + (D.state.localSeq - D.state.serverSeq) }));
+    C.setAttribute('data-inspect', 'dbg-cursor'); C.setAttribute('data-inspect-always', '1');
+    reg('dbg-cursor', { el: 'data-dam-team-debug-cursor', contract: '§6.2', api: 'GET /team-sync-debug', field: 'localSeq / serverSeq / lag', behavior: 'lag 由前端派生' });
+    var A = document.getElementById('dbg-actions'); A.innerHTML = '';
+    var retry = el('button', { 'class': 'btn btn-primary', type: 'button', text: '重试失败项', 'data-inspect': 'dbg-retry', 'data-inspect-always': '1' });
+    retry.addEventListener('click', function () { toast('POST team-sync-debug/retry → 重试 ' + D.queue.failed + ' 项'); });
+    var reset = el('button', { 'class': 'btn btn-danger', type: 'button', text: '重置本地游标', 'data-inspect': 'dbg-reset', 'data-inspect-always': '1' });
+    reset.addEventListener('click', function () {
+      if (reset.getAttribute('data-arm') !== '1') { reset.setAttribute('data-arm', '1'); reset.textContent = '危险 · 再点确认'; return; }
+      reset.removeAttribute('data-arm'); reset.textContent = '重置本地游标'; toast('已重置（demo）');
+    });
+    A.appendChild(retry); A.appendChild(reset);
+    reg('dbg-retry', { el: 'data-dam-team-debug 重试按钮', contract: '§6.2', api: 'POST /team-sync-debug/retry', field: '—', behavior: '重试全部失败项' });
+    reg('dbg-reset', { el: 'data-dam-team-debug 重置按钮', contract: '§6.2', api: 'POST /team-sync-debug/reset', field: '—', behavior: '危险操作，二次确认' });
+    var T = document.getElementById('dbg-queue'); T.innerHTML = '';
+    var head = "<thead><tr>" + ['条目', '类型', '重试次数', '最后错误', '下次重试'].map(function (h) { return '<th>' + h + '</th>'; }).join('') + '</tr></thead>';
+    var rows = D.debug.items.map(function (q) {
+      return '<tr><td>' + esc(q.id) + '</td><td>' + esc(q.kind) + '</td><td>' + q.attempts + '</td><td>' + esc(q.lastError) + '</td><td>' + esc(q.nextRetryAt) + '</td></tr>';
+    }).join('');
+    T.innerHTML = head + '<tbody>' + rows + '</tbody>';
+    T.setAttribute('data-inspect', 'dbg-queue'); T.setAttribute('data-inspect-always', '1');
+    reg('dbg-queue', { el: 'data-dam-team-debug-queue', contract: '§6.2', api: 'GET /team-sync-debug', field: 'queue.items[] = { id, kind, attempts, lastError, nextRetryAt }', behavior: '表格只读；重试走按钮' });
+    var E = document.getElementById('dbg-errors'); E.innerHTML = '';
+    D.debug.errors.forEach(function (e) { E.appendChild(el('li', { text: e.at + ' · ' + e.code + ' · ' + e.message })); });
+    E.setAttribute('data-inspect', 'dbg-errors'); E.setAttribute('data-inspect-always', '1');
+    reg('dbg-errors', { el: 'data-dam-team-debug-errors', contract: '§6.2', api: 'GET /team-sync-debug', field: 'errors[] = { at, code, message, retryable }', behavior: '诊断 JSON 不得含记忆正文（后端脱敏）' });
+  }
+
+  /* ---------- 启动 ---------- */
+  function boot() {
+    renderStatusbar(); renderSyncCards(); renderMembers(); renderLibrary();
+    renderConflicts(); renderSkills(); renderHandoff(); renderSettings(); renderDebug();
+    goto('sync');
+  }
+  boot();
+})();
+</script>
+</body>
+</html>

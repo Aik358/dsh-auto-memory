@@ -1,0 +1,11 @@
+# 开工基线 B0（Phase 0.2 采集）
+# 采集时间：2026-09-26T09:42:49.953Z
+# 用途：G-I1「插件本体零写入」的增量归因基准（字面相等已不可用，见 CR-4）
+
+0d6561b8a28caaf5f42c34e321053a961fdf4b14a6a5701e4007ea411a600705  962241  lib/index.js
+020eb2122418d36b245f5b601f2958b9e146a0af66f785a7a4ac8ee3f7b0cc65  742031  lib/client.js
+436585b9536641744ab0a620af2ba94bb50bb04a4b6e93f6698bfdfb25e7dbd7  1638  package.json
+
+# E3 环境探测（同日）
+# wsl=可用但无发行版 / docker=无 / vmware=无 / vbox=无 / hyperv=无
+# ssh 客户端=有，已配置主机=0

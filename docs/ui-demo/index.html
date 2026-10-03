@@ -1,0 +1,2430 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0a0d14" />
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#eef2f7" />
+<title>dsh-auto-memory · 新版界面演示（v3.1.7）</title>
+<style>
+/* ============================================================
+   dsh-auto-memory 新版 UI 演示稿 · 单文件 · 零外部依赖
+   色板真源：TEAMWORK-R2-UI-CONTRACT-20260923 §3.1
+   ============================================================ */
+:root{
+  /* —— 深色（默认）—— */
+  --bg:#0a0d14;  --bg-soft:#141828;  --bg-elev:#0f1320;  --bg-code:#05070d;
+  --fg:#e8ecf3;  --fg-dim:#b8c0d0;
+  --accent:#3b82f6;  --accent-2:#60a5fa;  --accent-3:#93c5fd;
+  --accent-glow:rgba(59,130,246,.35);
+  /* —— 语义色（5 个，本轮新增，结束三套色并存）—— */
+  --ok:#2fa46a;  --warn:#d4a94f;  --err:#c44a4a;  --info:#4f7cff;  --muted:#8b93a5;
+  /* —— 作用域三色（派生自语义色，三处表达共用）—— */
+  --sc-mine:var(--info);  --sc-project:var(--ok);  --sc-team:var(--warn);
+  --sc-mine-soft:rgba(79,124,255,.14);
+  --sc-project-soft:rgba(47,164,106,.14);
+  --sc-team-soft:rgba(212,169,79,.16);
+  --accent-soft:rgba(59,130,246,.14);
+  --ok-soft:rgba(47,164,106,.14);
+  --warn-soft:rgba(212,169,79,.16);
+  --err-soft:rgba(196,74,74,.16);
+  --muted-soft:rgba(139,147,165,.14);
+  /* —— 线 / 面 —— */
+  --line:rgba(232,236,243,.10);
+  --line-2:rgba(232,236,243,.18);
+  --shadow:0 12px 32px rgba(0,0,0,.45);
+  /* —— 动效令牌（契约 §硬性约束：150–250ms / cubic-bezier(.2,.8,.2,1)）—— */
+  --dur-quick:150ms;   /* 关闭、悬停、按下 */
+  --dur-fast:250ms;    /* 打开、切换、页面推进 */
+  --ease:cubic-bezier(.2,.8,.2,1);
+  /* —— 字体（本机命中优先，零网络请求）—— */
+  --font-title:'Space Grotesk','Manrope',system-ui,-apple-system,'Segoe UI','Microsoft YaHei',sans-serif;
+  --font-body:'Manrope',system-ui,-apple-system,'Segoe UI','Microsoft YaHei',sans-serif;
+  --font-mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Consolas,'Courier New',monospace;
+  --r-sm:8px; --r:10px; --r-lg:14px;
+}
+html[data-theme="light"]{
+  --bg:#eef2f7;  --bg-soft:#e2e8f0;  --bg-elev:#ffffff;  --bg-code:var(--bg-soft);
+  --fg:#0f172a;  --fg-dim:#334155;
+  --accent:#2563eb;  --accent-2:#3b82f6;  --accent-3:#93c5fd;
+  --accent-glow:rgba(37,99,235,.2);
+  --accent-soft:rgba(37,99,235,.10);
+  --sc-mine-soft:rgba(79,124,255,.12);
+  --sc-project-soft:rgba(47,164,106,.12);
+  --sc-team-soft:rgba(212,169,79,.18);
+  --ok-soft:rgba(47,164,106,.12);
+  --warn-soft:rgba(212,169,79,.18);
+  --err-soft:rgba(196,74,74,.12);
+  --muted-soft:rgba(139,147,165,.16);
+  --line:rgba(15,23,42,.10);
+  --line-2:rgba(15,23,42,.20);
+  --shadow:0 12px 32px rgba(15,23,42,.14);
+}
+
+*,*::before,*::after{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;background:var(--bg);color:var(--fg);
+  font-family:var(--font-body);font-size:14px;line-height:1.55;
+  -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  overscroll-behavior:none;-webkit-tap-highlight-color:transparent;
+  -webkit-text-size-adjust:100%;
+}
+h1,h2,h3,h4,p{margin:0}
+h1,h2,h3,h4{font-family:var(--font-title);font-weight:600;letter-spacing:-.012em;line-height:1.3}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer;
+  touch-action:manipulation;user-select:none;-webkit-user-select:none}
+a{color:var(--accent-3);text-decoration:none}
+input,select{font:inherit;color:inherit}
+ul{margin:0;padding:0;list-style:none}
+table{border-collapse:collapse;width:100%}
+.mono{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+.dim{color:var(--fg-dim)}
+.mute{color:var(--muted)}
+.tiny{font-size:12px}
+.sec{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+::selection{background:var(--accent-glow)}
+:focus-visible{outline:2px solid var(--accent-2);outline-offset:2px;border-radius:6px}
+*::-webkit-scrollbar{width:10px;height:10px}
+*::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:8px;border:3px solid transparent;background-clip:content-box}
+*::-webkit-scrollbar-track{background:transparent}
+
+/* ================= 应用外壳：左导航 + 主区 ================= */
+.app{display:grid;grid-template-columns:238px minmax(0,1fr);height:100dvh;overflow:hidden}
+
+.sidebar{
+  display:flex;flex-direction:column;gap:14px;padding:16px 12px 12px;
+  background:var(--bg-elev);border-right:1px solid var(--line);overflow-y:auto;
+}
+.brand{display:flex;align-items:center;gap:10px;padding:2px 6px 10px;border-bottom:1px solid var(--line)}
+.brand-mark{
+  width:26px;height:26px;border-radius:8px;flex:none;
+  background:linear-gradient(150deg,var(--accent-2),var(--accent));
+  box-shadow:0 0 0 1px var(--line-2) inset, 0 6px 16px var(--accent-glow);
+  display:grid;place-items:center;color:#fff;font-family:var(--font-mono);font-size:12px;font-weight:700}
+.brand-name{font-family:var(--font-title);font-weight:600;font-size:14px;letter-spacing:-.01em}
+.brand-sub{font-size:11px;color:var(--muted)}
+.ver-chip{font-family:var(--font-mono);font-size:10.5px;color:var(--accent-3);
+  background:var(--accent-soft);border:1px solid var(--line-2);border-radius:999px;padding:1px 7px;margin-left:auto}
+
+.nav{display:flex;flex-direction:column;gap:2px}
+.nav-item{
+  position:relative;display:flex;align-items:center;gap:10px;width:100%;
+  padding:9px 10px 9px 12px;border-radius:var(--r-sm);color:var(--fg-dim);
+  transition:background var(--dur-quick) var(--ease), color var(--dur-quick) var(--ease);
+}
+.nav-item .ico{width:18px;text-align:center;font-size:15px;flex:none;opacity:.9}
+.nav-item .lbl{font-size:13.5px;font-weight:500}
+.nav-item .cnt{margin-left:auto;font-family:var(--font-mono);font-size:11px;color:var(--muted)}
+.nav-item::before{
+  content:"";position:absolute;left:4px;top:9px;bottom:9px;width:2px;border-radius:2px;
+  background:var(--accent-2);transform:scaleY(0);transform-origin:center;
+  transition:transform var(--dur-fast) var(--ease);
+}
+.nav-item[aria-current="page"]{background:var(--accent-soft);color:var(--fg)}
+.nav-item[aria-current="page"]::before{transform:scaleY(1)}
+@media (hover:hover) and (pointer:fine){
+  .nav-item:hover{background:var(--bg-soft);color:var(--fg)}
+}
+.sidebar-foot{margin-top:auto;display:flex;flex-direction:column;gap:8px;padding-top:12px;border-top:1px solid var(--line)}
+.me{display:flex;align-items:center;gap:9px;padding:8px;border-radius:var(--r-sm);border:1px solid var(--line);background:var(--bg-soft)}
+.avatar{width:26px;height:26px;border-radius:50%;flex:none;display:grid;place-items:center;
+  font-size:11px;font-weight:600;color:#fff;background:linear-gradient(150deg,var(--accent-2),var(--accent))}
+.me-name{font-size:12.5px;font-weight:600}
+.me-sub{font-size:11px;color:var(--muted);display:flex;align-items:center;gap:5px}
+
+.main{display:flex;flex-direction:column;min-width:0;overflow:hidden}
+.topbar{
+  display:flex;align-items:center;gap:12px;padding:12px 20px;
+  border-bottom:1px solid var(--line);background:var(--bg-elev);
+  position:sticky;top:0;z-index:5;
+}
+.crumb{display:flex;align-items:center;gap:8px;font-family:var(--font-title);font-size:15px;font-weight:600}
+.crumb .sep{color:var(--muted);font-weight:400}
+.topbar-tools{margin-left:auto;display:flex;align-items:center;gap:8px}
+
+/* 作用域图例：色 + 徽标 + 名称，全局常驻 */
+.legend{display:flex;align-items:center;gap:10px;padding:5px 10px;border:1px solid var(--line);
+  border-radius:999px;background:var(--bg-soft)}
+.legend-item{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--fg-dim);white-space:nowrap}
+
+/* 二级真页签（不是滚动锚点） */
+.l2{display:flex;gap:2px;padding:0 14px;border-bottom:1px solid var(--line);background:var(--bg-elev);overflow-x:auto}
+.l2-tab{
+  position:relative;padding:11px 12px 12px;color:var(--fg-dim);font-size:13.5px;white-space:nowrap;
+  transition:color var(--dur-quick) var(--ease);
+}
+.l2-tab::after{
+  content:"";position:absolute;left:10px;right:10px;bottom:-1px;height:2px;border-radius:2px;
+  background:var(--accent-2);transform:scaleX(0);transform-origin:left center;
+  transition:transform var(--dur-fast) var(--ease);
+}
+.l2-tab[aria-selected="true"]{color:var(--fg);font-weight:600}
+.l2-tab[aria-selected="true"]::after{transform:scaleX(1)}
+@media (hover:hover) and (pointer:fine){ .l2-tab:hover{color:var(--fg)} }
+.l2-tab .tag{margin-left:6px;font-family:var(--font-mono);font-size:10px;color:var(--muted)}
+
+.screens{flex:1;overflow-y:auto;overflow-x:hidden}
+.screen{display:none;padding:20px 22px 56px;max-width:1560px}
+.screen.is-active{display:block}
+.screen.is-active{animation:screenIn var(--dur-fast) var(--ease) both}
+@keyframes screenIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* ================= 通用件 ================= */
+.card{background:var(--bg-elev);border:1px solid var(--line);border-radius:var(--r-lg);
+  transition:border-color var(--dur-quick) var(--ease), transform var(--dur-quick) var(--ease)}
+@media (hover:hover) and (pointer:fine){
+  .card.hoverable:hover{border-color:var(--line-2);transform:translateY(-1px)}
+}
+.card-pad{padding:16px}
+.grid{display:grid;gap:14px}
+.cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.cols-4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.row{display:flex;align-items:center;gap:8px}
+.wrap{flex-wrap:wrap}
+.spread{display:flex;align-items:center;gap:10px;justify-content:space-between}
+.stack{display:flex;flex-direction:column;gap:10px}
+
+.btn{
+  display:inline-flex;align-items:center;gap:7px;padding:8px 13px;border-radius:var(--r-sm);
+  font-size:13px;font-weight:600;border:1px solid transparent;
+  transition:transform var(--dur-quick) var(--ease), background var(--dur-quick) var(--ease),
+             border-color var(--dur-quick) var(--ease), color var(--dur-quick) var(--ease);
+}
+.btn:active{transform:scale(.97)}
+.btn-primary{background:linear-gradient(160deg,var(--accent-2),var(--accent));color:#fff;
+  box-shadow:0 6px 18px var(--accent-glow)}
+.btn-outline{border-color:var(--line-2);color:var(--fg)}
+.btn-ghost{color:var(--fg-dim)}
+.btn-danger{border-color:var(--err);color:var(--err)}
+.btn-sm{padding:5px 10px;font-size:12px}
+@media (hover:hover) and (pointer:fine){
+  .btn-outline:hover{background:var(--bg-soft);border-color:var(--accent-2);color:var(--fg)}
+  .btn-ghost:hover{background:var(--bg-soft);color:var(--fg)}
+  .btn-primary:hover{filter:brightness(1.06)}
+}
+
+.badge{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:999px;
+  font-size:11.5px;font-weight:600;border:1px solid var(--line-2);color:var(--fg-dim);white-space:nowrap}
+.badge .dot{width:6px;height:6px;border-radius:50%;background:currentColor;flex:none}
+.badge.ok{color:var(--ok);border-color:var(--ok);background:var(--ok-soft)}
+.badge.warn{color:var(--warn);border-color:var(--warn);background:var(--warn-soft)}
+.badge.err{color:var(--err);border-color:var(--err);background:var(--err-soft)}
+.badge.info{color:var(--info);border-color:var(--info);background:var(--sc-mine-soft)}
+.badge.muted{color:var(--muted);background:var(--muted-soft)}
+
+/* 作用域三色（三重表达之一：色） */
+[data-scope="mine"]{--c:var(--sc-mine);--c-soft:var(--sc-mine-soft)}
+[data-scope="project"]{--c:var(--sc-project);--c-soft:var(--sc-project-soft)}
+[data-scope="team"]{--c:var(--sc-team);--c-soft:var(--sc-team-soft)}
+.scope-badge{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:999px;
+  font-size:11.5px;font-weight:600;color:var(--c);background:var(--c-soft);
+  border:1px solid var(--c);white-space:nowrap}
+.scope-bar{height:3px;border-radius:2px;background:var(--c);opacity:.85}
+.scope-head{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.scope-head .ttl{font-family:var(--font-title);font-size:16px;font-weight:600}
+.scope-head .hint{font-size:12px;color:var(--muted)}
+.scope-head .rule{flex:1;height:1px;background:var(--line)}
+
+.chip{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;
+  font-size:12px;border:1px solid var(--line);color:var(--fg-dim);background:var(--bg-soft);
+  transition:border-color var(--dur-quick) var(--ease), color var(--dur-quick) var(--ease)}
+.chip[aria-pressed="true"]{border-color:var(--accent-2);color:var(--fg);background:var(--accent-soft)}
+
+.kv{display:flex;align-items:baseline;gap:8px;font-size:12.5px}
+.kv .k{color:var(--muted);flex:none}
+.kv .v{font-family:var(--font-mono);color:var(--fg-dim)}
+
+.stat{padding:14px 16px}
+.stat .n{font-family:var(--font-mono);font-size:22px;font-weight:600;letter-spacing:-.02em}
+.stat .u{font-size:12px;color:var(--muted);margin-left:3px;font-family:var(--font-body)}
+.stat .t{font-size:12px;color:var(--fg-dim);margin-top:2px}
+
+.callout{display:flex;gap:10px;padding:11px 13px;border-radius:var(--r);
+  border:1px solid var(--line);background:var(--bg-soft);font-size:12.5px;color:var(--fg-dim)}
+.callout .mk{flex:none;font-size:14px;line-height:1.3}
+.callout.warn{border-color:var(--warn);background:var(--warn-soft)}
+.callout.err{border-color:var(--err);background:var(--err-soft)}
+.callout.ok{border-color:var(--ok);background:var(--ok-soft)}
+.callout b{color:var(--fg)}
+
+.meter{height:8px;border-radius:999px;background:var(--bg-code);border:1px solid var(--line);overflow:hidden;position:relative}
+.meter > i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,var(--accent),var(--accent-2));
+  transition:width var(--dur-fast) var(--ease)}
+.meter.warn > i{background:linear-gradient(90deg,var(--warn),#e0bd6a)}
+.meter .tick{position:absolute;top:-2px;bottom:-2px;width:1px;background:var(--line-2)}
+
+.tbl{font-size:12.5px}
+.tbl th{text-align:left;font-weight:600;color:var(--muted);font-size:11px;letter-spacing:.06em;
+  text-transform:uppercase;padding:8px 10px;border-bottom:1px solid var(--line-2);white-space:nowrap}
+.tbl td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+.tbl tr:last-child td{border-bottom:0}
+@media (hover:hover) and (pointer:fine){ .tbl tbody tr:hover{background:var(--bg-soft)} }
+.tbl .t{font-family:var(--font-mono);color:var(--fg-dim);white-space:nowrap}
+
+.empty-hint{font-size:12px;color:var(--muted);padding:10px 2px}
+.truncate{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* ================= 原语 2：右侧抽屉 ================= */
+.scrim{position:fixed;inset:0;background:rgba(4,6,12,.55);z-index:40;
+  opacity:0;transition:opacity var(--dur-fast) var(--ease)}
+.scrim.is-in{opacity:1}
+html[data-theme="light"] .scrim{background:rgba(15,23,42,.35)}
+.drawer{
+  position:fixed;top:0;right:0;bottom:0;width:min(468px,94vw);z-index:50;
+  display:flex;flex-direction:column;background:var(--bg-elev);
+  border-left:1px solid var(--line-2);box-shadow:var(--shadow);
+  transform:translateX(100%);
+  transition:transform var(--dur-fast) var(--ease);
+}
+.drawer.is-in{transform:none}
+.drawer-head{display:flex;align-items:flex-start;gap:12px;padding:16px 16px 13px;border-bottom:1px solid var(--line)}
+.drawer-body{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:14px}
+.drawer-foot{display:flex;gap:8px;justify-content:flex-end;padding:12px 16px;border-top:1px solid var(--line)}
+.drawer-foot:empty{display:none}
+
+/* ================= 原语 3：居中模态 ================= */
+.modal-wrap{position:fixed;inset:0;z-index:60;display:grid;place-items:center;padding:20px}
+.scrim-inline{position:absolute;inset:0}
+.modal{
+  position:relative;width:min(460px,94vw);background:var(--bg-elev);
+  border:1px solid var(--line-2);border-radius:var(--r-lg);padding:20px;
+  box-shadow:var(--shadow);transform:scale(.96);opacity:0;
+  transition:transform var(--dur-fast) var(--ease), opacity var(--dur-fast) var(--ease);
+}
+.modal-wrap.is-in .modal{transform:none;opacity:1}
+.modal-foot{display:flex;gap:8px;justify-content:flex-end;margin-top:18px}
+
+/* ================= 今天 ================= */
+.recall-card{
+  position:relative;overflow:hidden;border-radius:var(--r-lg);
+  border:1px solid var(--line-2);background:var(--bg-elev);
+  transition:border-color var(--dur-quick) var(--ease), transform var(--dur-quick) var(--ease);
+}
+.recall-card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--c,var(--accent))}
+.recall-in{padding:14px 16px 14px 18px}
+.recall-q{font-size:13.5px;color:var(--fg);font-weight:600}
+.recall-a{font-size:12.5px;color:var(--fg-dim);margin-top:6px}
+@media (hover:hover) and (pointer:fine){
+  .recall-card:hover{transform:translateY(-2px);border-color:var(--accent-2)}
+}
+.pipe{display:flex;align-items:stretch;gap:0;border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.pipe-step{flex:1;padding:11px 12px;background:var(--bg-elev);border-right:1px solid var(--line);min-width:0}
+.pipe-step:last-child{border-right:0}
+.pipe-step .n{font-family:var(--font-mono);font-size:11px;color:var(--accent-3)}
+.pipe-step .t{font-size:12.5px;font-weight:600;margin-top:3px}
+.pipe-step .d{font-size:11.5px;color:var(--muted);margin-top:2px}
+.pipe-step[data-active="1"]{background:var(--accent-soft)}
+.water-body{display:flex;flex-direction:column;gap:9px}
+.water-row{display:grid;grid-template-columns:76px 1fr 118px;align-items:center;gap:10px}
+.water-label{font-size:12px;color:var(--fg-dim)}
+.water-num{font-family:var(--font-mono);font-size:11.5px;color:var(--muted);text-align:right}
+.log-item{display:grid;grid-template-columns:64px 1fr auto;gap:12px;padding:9px 0;border-bottom:1px dashed var(--line)}
+.log-item:last-child{border-bottom:0}
+.log-time{font-family:var(--font-mono);font-size:11.5px;color:var(--muted);padding-top:1px}
+.log-txt{font-size:13px}
+.log-meta{font-size:11.5px;color:var(--muted);margin-top:2px}
+.tier{display:inline-block;font-family:var(--font-mono);font-size:10.5px;padding:1px 6px;border-radius:5px;
+  border:1px solid var(--line-2);color:var(--fg-dim);margin-right:6px;vertical-align:1px}
+
+/* ================= 看板泳道 ================= */
+.kanban{display:grid;grid-template-columns:repeat(5,minmax(240px,1fr));gap:12px;align-items:start}
+.kanban.z1{grid-template-columns:minmax(0,1fr)}
+.lane{background:var(--bg-soft);border:1px solid var(--line);border-radius:var(--r-lg);
+  display:flex;flex-direction:column;min-height:120px;overflow:hidden}
+.lane-head{display:flex;align-items:center;gap:8px;padding:11px 12px;border-bottom:1px solid var(--line)}
+.lane-head .dot{width:8px;height:8px;border-radius:50%;flex:none}
+.lane-head .nm{font-size:12.5px;font-weight:600}
+.lane-head .ct{margin-left:auto;font-family:var(--font-mono);font-size:11px;color:var(--muted)}
+.lane[data-lane="deadend"]{border-color:color-mix(in srgb, var(--err) 45%, transparent)}
+.lane-body{padding:10px;display:flex;flex-direction:column;gap:9px}
+.kcard{background:var(--bg-elev);border:1px solid var(--line);border-radius:var(--r);padding:11px 12px;
+  cursor:pointer;transition:border-color var(--dur-quick) var(--ease), transform var(--dur-quick) var(--ease)}
+.kcard .t{font-size:12.8px;font-weight:600;line-height:1.45}
+.kcard .m{font-size:11.5px;color:var(--muted);margin-top:6px}
+.kcard .tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.kcard .tag{font-family:var(--font-mono);font-size:10.5px;color:var(--fg-dim);border:1px solid var(--line);
+  border-radius:5px;padding:0 5px}
+.kcard[data-state="deadend"]{border-left:3px solid var(--err)}
+.kcard[data-state="goal"]{border-left:3px solid var(--accent-2)}
+.kcard[data-state="wip"]{border-left:3px solid var(--warn)}
+.kcard[data-state="next"]{border-left:3px solid var(--ok)}
+.kcard[data-state="arch"]{border-left:3px solid var(--muted)}
+@media (hover:hover) and (pointer:fine){ .kcard:hover{border-color:var(--accent-2);transform:translateY(-1px)} }
+.kcard .why{font-size:11.5px;color:var(--err);margin-top:7px;padding-top:7px;border-top:1px dashed var(--line)}
+.kanban.zoom1 .kcard .t{font-size:12px}
+.kanban.zoom1 .kcard .m{display:none}
+
+/* ================= 账本四段式 ================= */
+.four{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.seg{border:1px solid var(--line);border-radius:var(--r-lg);background:var(--bg-elev);overflow:hidden;
+  display:flex;flex-direction:column}
+.seg-head{display:flex;align-items:center;gap:9px;padding:12px 14px;border-bottom:1px solid var(--line)}
+.seg-idx{width:20px;height:20px;border-radius:6px;display:grid;place-items:center;flex:none;
+  font-family:var(--font-mono);font-size:11px;font-weight:700;color:#fff;background:var(--c,var(--accent))}
+.seg-body{padding:12px 14px;font-size:12.8px;color:var(--fg-dim);display:flex;flex-direction:column;gap:9px}
+.seg-body ul{display:flex;flex-direction:column;gap:7px}
+.seg-body li{display:flex;gap:8px}
+.seg-body li .b{flex:none;color:var(--muted);font-family:var(--font-mono);font-size:11px;line-height:1.7}
+.seg.fail{border-color:color-mix(in srgb, var(--err) 40%, transparent)}
+.timeline{position:relative;padding-left:18px}
+.timeline::before{content:"";position:absolute;left:5px;top:6px;bottom:6px;width:1px;background:var(--line-2)}
+.tl-item{position:relative;padding:0 0 14px}
+.tl-item:last-child{padding-bottom:0}
+.tl-item::before{content:"";position:absolute;left:-16px;top:5px;width:8px;height:8px;border-radius:50%;
+  background:var(--bg-elev);border:2px solid var(--c,var(--accent-2))}
+.tl-when{font-family:var(--font-mono);font-size:11px;color:var(--muted)}
+.tl-what{font-size:12.8px;margin-top:2px}
+
+/* ================= 检索 ================= */
+.searchbar{display:flex;align-items:center;gap:10px;padding:12px 14px;border:1px solid var(--line-2);
+  border-radius:var(--r-lg);background:var(--bg-elev);transition:border-color var(--dur-quick) var(--ease)}
+.searchbar:focus-within{border-color:var(--accent-2);box-shadow:0 0 0 3px var(--accent-soft)}
+.searchbar input{flex:1;border:0;background:none;outline:0;font-size:15px}
+.searchbar input::placeholder{color:var(--muted)}
+.hit{border:1px solid var(--line);border-radius:var(--r);background:var(--bg-elev);padding:12px 14px;
+  cursor:pointer;transition:border-color var(--dur-quick) var(--ease)}
+@media (hover:hover) and (pointer:fine){ .hit:hover{border-color:var(--accent-2)} }
+.hit mark{background:var(--accent-soft);color:var(--accent-3);border-radius:3px;padding:0 2px}
+.route{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+
+/* ================= 设置 ================= */
+.settings-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-items:start}
+.sgroup{border:1px solid var(--line);border-radius:var(--r-lg);background:var(--bg-elev);overflow:hidden}
+.sgroup-head{display:flex;align-items:center;gap:10px;padding:13px 15px;border-bottom:1px solid var(--line)}
+.sgroup-head .nm{font-family:var(--font-title);font-size:14px;font-weight:600}
+.sgroup-head .sub{font-size:11.5px;color:var(--muted)}
+.sgroup-body{padding:4px 15px 12px}
+.srow{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}
+.srow:last-child{border-bottom:0}
+.srow .lbl{font-size:12.8px}
+.srow .hint{font-size:11.5px;color:var(--muted);margin-top:1px}
+.srow .ctl{margin-left:auto;flex:none;display:flex;align-items:center;gap:8px}
+.adv-body{display:none}
+.sgroup.open .adv-body{display:block}
+.adv-wrap{display:none;border-top:1px dashed var(--line);padding:4px 0 2px}
+.sgroup.open .adv-wrap{display:block}
+.adv-toggle{display:flex;align-items:center;gap:8px;width:100%;padding:10px 0 8px;color:var(--accent-3);
+  font-size:12.5px;font-weight:600}
+.adv-toggle .arw{display:inline-block;transition:transform var(--dur-fast) var(--ease);font-size:11px}
+.sgroup.open .adv-toggle .arw{transform:rotate(90deg)}
+.adv-note{font-size:11.5px;color:var(--muted);padding:2px 0 8px}
+@media (hover:hover) and (pointer:fine){ .adv-toggle:hover{color:var(--accent-2)} }
+
+.sw{position:relative;width:40px;height:22px;border-radius:999px;background:var(--bg-code);
+  border:1px solid var(--line-2);flex:none;transition:background var(--dur-quick) var(--ease),border-color var(--dur-quick) var(--ease)}
+.sw::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;
+  background:var(--muted);transition:transform var(--dur-fast) var(--ease), background var(--dur-quick) var(--ease)}
+.sw[aria-checked="true"]{background:var(--accent-soft);border-color:var(--accent-2)}
+.sw[aria-checked="true"]::after{transform:translateX(18px);background:var(--accent-2)}
+.sel,.num{background:var(--bg-code);border:1px solid var(--line-2);border-radius:var(--r-sm);
+  padding:5px 9px;font-size:12.5px;outline:0;transition:border-color var(--dur-quick) var(--ease)}
+.sel:focus,.num:focus{border-color:var(--accent-2)}
+.num{width:92px;font-family:var(--font-mono);text-align:right}
+.radio{display:inline-flex;border:1px solid var(--line-2);border-radius:var(--r-sm);overflow:hidden}
+.radio button{padding:5px 11px;font-size:12.5px;color:var(--fg-dim);transition:background var(--dur-quick) var(--ease),color var(--dur-quick) var(--ease)}
+.radio button[aria-pressed="true"]{background:var(--accent-soft);color:var(--accent-3);font-weight:600}
+.ctl-count{display:inline-flex;align-items:baseline;gap:6px;font-family:var(--font-mono);font-size:13px}
+
+/* ================= 登录卡 ================= */
+.login-card{border:1px solid var(--line-2);border-radius:var(--r-lg);background:var(--bg-elev);padding:18px}
+.sso-btn{display:flex;align-items:center;gap:10px;width:100%;padding:10px 13px;border-radius:var(--r);
+  border:1px solid var(--line-2);background:var(--bg-soft);font-size:13.5px;font-weight:600;
+  transition:transform var(--dur-quick) var(--ease),border-color var(--dur-quick) var(--ease),background var(--dur-quick) var(--ease)}
+.sso-btn:active{transform:scale(.985)}
+@media (hover:hover) and (pointer:fine){ .sso-btn:hover{border-color:var(--accent-2);background:var(--accent-soft)} }
+.sso-brand{width:24px;height:24px;border-radius:6px;display:grid;place-items:center;flex:none;
+  font-size:11px;font-weight:700;color:#fff;background:var(--muted)}
+.prov-note{font-size:11.5px;color:var(--muted)}
+.stat-line{display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--muted)}
+.stat-line::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--ok);flex:none}
+
+/* ================= 响应式 ================= */
+@media (max-width:1400px){
+  .kanban{grid-template-columns:repeat(5,minmax(210px,1fr))}
+}
+@media (max-width:1180px){
+  .app{grid-template-columns:1fr}
+  .sidebar{position:fixed;left:0;top:0;bottom:0;width:238px;z-index:30;transform:translateX(-100%);
+    transition:transform var(--dur-fast) var(--ease);box-shadow:var(--shadow)}
+  .sidebar.is-open{transform:none}
+  .cols-4{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .cols-3,.settings-grid,.four{grid-template-columns:minmax(0,1fr)}
+  .kanban{grid-template-columns:repeat(2,minmax(200px,1fr))}
+  .legend{display:none}
+  .menu-btn{display:inline-flex !important}
+}
+@media (max-width:760px){
+  .cols-2,.cols-4{grid-template-columns:minmax(0,1fr)}
+  .kanban,.route{grid-template-columns:minmax(0,1fr)}
+  .water-row{grid-template-columns:70px 1fr;gap:8px}
+  .water-num{grid-column:2;text-align:left}
+}
+.menu-btn{display:none !important;align-items:center;gap:6px}
+
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;
+    transition-duration:.01ms !important}
+  .screen.is-active{animation:none}
+  .kcard:hover,.recall-card:hover,.card.hoverable:hover{transform:none}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">M</div>
+      <div style="min-width:0">
+        <div class="brand-name">dsh-auto-memory</div>
+        <div class="brand-sub">主动联想记忆 · 上下文管理</div>
+      </div>
+      <span class="ver-chip">v3.1.7</span>
+    </div>
+
+    <nav class="nav" aria-label="一级导航">
+      <button class="nav-item" data-l1="today" aria-current="page">
+        <span class="ico">◉</span><span class="lbl">今天</span><span class="cnt" data-nav-count="today">4</span>
+      </button>
+      <button class="nav-item" data-l1="project">
+        <span class="ico">▤</span><span class="lbl">项目</span><span class="cnt" data-nav-count="project">3</span>
+      </button>
+      <button class="nav-item" data-l1="team">
+        <span class="ico">⬡</span><span class="lbl">团队</span><span class="cnt" data-nav-count="team">4</span>
+      </button>
+      <button class="nav-item" data-l1="search">
+        <span class="ico">⌕</span><span class="lbl">检索</span><span class="cnt" data-nav-count="search">2</span>
+      </button>
+    </nav>
+
+    <div class="stack" style="gap:6px">
+      <div class="sec" style="padding:0 6px">本轮水位</div>
+      <div class="card card-pad" style="padding:11px 12px">
+        <div class="spread" style="margin-bottom:7px">
+          <span class="tiny dim">注入预算</span>
+          <span class="mono tiny" id="side-water-num">8,412 / 12,000</span>
+        </div>
+        <div class="meter" id="side-water"><i style="width:70%"></i><span class="tick" style="left:80%"></span></div>
+        <div class="tiny mute" style="margin-top:7px">距收尾提醒阈值 80% 还有 1,188 字符</div>
+      </div>
+    </div>
+
+    <div class="sidebar-foot">
+      <button class="nav-item util" data-l1="settings">
+        <span class="ico">⚙</span><span class="lbl">设置</span>
+        <span class="cnt tiny" style="color:var(--accent-3)">4 组</span>
+      </button>
+      <button class="nav-item" id="theme-toggle">
+        <span class="ico" id="theme-ico">☾</span><span class="lbl" id="theme-lbl">切换浅色</span>
+      </button>
+      <div class="me">
+        <div class="avatar">林</div>
+        <div style="min-width:0">
+          <div class="me-name truncate">林 · 平台组</div>
+          <div class="me-sub"><span class="badge ok" style="padding:0 6px">已登录</span>复用 DSH 身份</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div class="crumb" id="crumb"><span>今天</span></div>
+      <div class="topbar-tools">
+        <div class="legend" title="三个作用域：色 + 徽标 + 分区标题，三重表达">
+          <span class="legend-item" data-scope="mine"><span class="badge" style="color:var(--sc-mine);border-color:var(--sc-mine);background:var(--sc-mine-soft);padding:1px 7px">●</span>我的</span>
+          <span class="legend-item" data-scope="project"><span class="badge" style="color:var(--sc-project);border-color:var(--sc-project);background:var(--sc-project-soft);padding:1px 7px">●</span>本项目</span>
+          <span class="legend-item" data-scope="team"><span class="badge" style="color:var(--sc-team);border-color:var(--sc-team);background:var(--sc-team-soft);padding:1px 7px">●</span>全团队</span>
+        </div>
+        <button class="btn btn-outline btn-sm" data-open-modal="m-about-scope">这是什么</button>
+      </div>
+    </header>
+    <nav class="l2" id="l2" aria-label="二级导航"></nav>
+    <div class="screens" id="screens">
+      <!-- ============================================================
+           屏 1 · 今天
+           ============================================================ -->
+      <section class="screen is-active" id="screen-today" data-screen="today">
+        <div class="spread wrap" style="margin-bottom:14px">
+          <div>
+            <h1 style="font-size:19px">今天</h1>
+            <div class="dim" style="font-size:12.5px;margin-top:3px">
+              这一轮要用的东西已经递到眼前 —— 不用开口问，模型自己会带上。
+            </div>
+          </div>
+          <div class="row wrap">
+            <span class="badge ok"><span class="dot"></span>唤回 4 条已注入</span>
+            <span class="badge muted">本轮第 3 轮</span>
+            <button class="btn btn-outline btn-sm" data-open-drawer="round">本轮详情</button>
+          </div>
+        </div>
+
+        <div class="pipe" style="margin-bottom:16px">
+          <div class="pipe-step" data-active="1"><div class="n">01</div><div class="t">轮次开始</div><div class="d">读工作区上下文</div></div>
+          <div class="pipe-step" data-active="1"><div class="n">02</div><div class="t">主动联想</div><div class="d">词法 + 语义双路检索</div></div>
+          <div class="pipe-step" data-active="1"><div class="n">03</div><div class="t">排序裁剪</div><div class="d">按水位与相关度取舍</div></div>
+          <div class="pipe-step" data-active="1"><div class="n">04</div><div class="t">递到眼前</div><div class="d">模型开口前注入</div></div>
+          <div class="pipe-step"><div class="n">05</div><div class="t">收尾沉淀</div><div class="d">本轮结束后回写</div></div>
+        </div>
+
+        <div class="row spread wrap" style="margin-bottom:10px">
+          <div class="sec">本轮唤回 · 已递到眼前</div>
+          <div class="row" style="gap:6px">
+            <button class="chip" aria-pressed="true">全部 4</button>
+            <button class="chip" aria-pressed="false">我的 1</button>
+            <button class="chip" aria-pressed="false">本项目 2</button>
+            <button class="chip" aria-pressed="false">全团队 1</button>
+          </div>
+        </div>
+
+        <div class="grid cols-2" style="margin-bottom:16px">
+          <button class="recall-card" data-scope="project" data-open-drawer="recall-1" style="text-align:left">
+            <div class="recall-in">
+              <div class="spread" style="margin-bottom:7px">
+                <span class="scope-badge">本项目</span>
+                <span class="mono tiny mute">相关度 0.92 · 命中「水位」</span>
+              </div>
+              <div class="recall-q">收尾提醒固定在每轮尾部注入</div>
+              <div class="recall-a">
+                开头注入在长输出下会注意力丢失，收尾提醒是所有记忆插件必备的核心机制。
+                <span class="mute">— 2026-09-23 记录，2 次被引用</span>
+              </div>
+            </div>
+          </button>
+
+          <button class="recall-card" data-scope="team" data-open-drawer="recall-2" style="text-align:left">
+            <div class="recall-in">
+              <div class="spread" style="margin-bottom:7px">
+                <span class="scope-badge">全团队</span>
+                <span class="mono tiny mute">相关度 0.88 · 由 陈 沉淀</span>
+              </div>
+              <div class="recall-q">给宿主代码打补丁前先备好回滚点</div>
+              <div class="recall-a">
+                单写者文件（宿主主文件、浏览器端文件）改动前一律先备份，命名带时间戳。
+                <span class="mute">— 团队技能库，已复用 7 次</span>
+              </div>
+            </div>
+          </button>
+
+          <button class="recall-card" data-scope="mine" data-open-drawer="recall-3" style="text-align:left">
+            <div class="recall-in">
+              <div class="spread" style="margin-bottom:7px">
+                <span class="scope-badge">我的</span>
+                <span class="mono tiny mute">相关度 0.81 · 上轮沉淀</span>
+              </div>
+              <div class="recall-q">前端是重活，先用拟合模式收敛需求</div>
+              <div class="recall-a">
+                前端需求不靠一次性口头描述敲定，分批提问收敛方向后再动手。
+                <span class="mute">— 我的偏好，3 个工作日有效</span>
+              </div>
+            </div>
+          </button>
+
+          <button class="recall-card" data-scope="project" data-open-drawer="recall-4" style="text-align:left">
+            <div class="recall-in">
+              <div class="spread" style="margin-bottom:7px">
+                <span class="scope-badge">本项目</span>
+                <span class="badge warn" style="padding:1px 7px"><span class="dot"></span>已过时</span>
+              </div>
+              <div class="recall-q">设置页按 9 个分区铺开</div>
+              <div class="recall-a">
+                过时结论<b>照常返回但显式标记</b>，不静默丢弃 —— 已由「4 组 + 高级折叠」取代。
+                <span class="mute">— 点开看最新结论</span>
+              </div>
+            </div>
+          </button>
+        </div>
+
+        <div class="grid cols-2">
+          <div class="card card-pad">
+            <div class="spread" style="margin-bottom:12px">
+              <div class="sec">水位指示 · 4 条预算</div>
+              <span class="badge"><span class="dot" style="background:var(--accent-2)"></span>实时</span>
+            </div>
+            <div class="water-body">
+              <div class="water-row">
+                <span class="water-label">注入预算</span>
+                <div class="meter" style="--p:70%"><i style="width:70%"></i><span class="tick" style="left:80%"></span></div>
+                <span class="water-num">8,412 / 12,000</span>
+              </div>
+              <div class="water-row">
+                <span class="water-label">日记预算</span>
+                <div class="meter"><i style="width:46%"></i></div>
+                <span class="water-num">3,680 / 8,000</span>
+              </div>
+              <div class="water-row">
+                <span class="water-label">项目笔记</span>
+                <div class="meter"><i style="width:62%"></i></div>
+                <span class="water-num">14,880 / 24,000</span>
+              </div>
+              <div class="water-row">
+                <span class="water-label">技能库</span>
+                <div class="meter warn"><i style="width:86%"></i></div>
+                <span class="water-num">20,640 / 24,000</span>
+              </div>
+            </div>
+            <div class="callout warn" style="margin-top:13px">
+              <span class="mk">◔</span>
+              <div>
+                技能库已到 <b>86%</b>。超过上限时先由模型把较早条目折叠成要点，折叠失败则整条原文归档 ——
+                <b>信息不丢，也不会把新记忆堵在门外</b>。
+              </div>
+            </div>
+          </div>
+
+          <div class="card card-pad">
+            <div class="spread" style="margin-bottom:10px">
+              <div class="sec">本轮日志 · 三层自动沉淀</div>
+              <span class="tiny mute">写完即落盘</span>
+            </div>
+            <div class="log-item">
+              <div class="log-time">14:02</div>
+              <div>
+                <div class="log-txt"><span class="tier">T0</span>把「收尾提醒固定在尾部」写进项目笔记</div>
+                <div class="log-meta">无模型参与的写入在结构上不可能发生</div>
+              </div>
+              <span class="badge ok" style="padding:1px 7px">已生效</span>
+            </div>
+            <div class="log-item">
+              <div class="log-time">13:48</div>
+              <div>
+                <div class="log-txt"><span class="tier">T1</span>白板泳道新增「失败与弯路」</div>
+                <div class="log-meta">来源：本轮对话 · 已进入看板</div>
+              </div>
+              <span class="badge info" style="padding:1px 7px">已归档</span>
+            </div>
+            <div class="log-item">
+              <div class="log-time">13:20</div>
+              <div>
+                <div class="log-txt"><span class="tier">T2</span>任务收尾：前端信息架构重构批次 B 完成</div>
+                <div class="log-meta">沉淀为交接账本，供下一个上下文窗口接续</div>
+              </div>
+              <span class="badge" style="padding:1px 7px">已交接</span>
+            </div>
+            <button class="btn btn-ghost btn-sm" style="margin-top:10px" data-open-drawer="logs-all">查看全部 41 条日志 →</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================
+           屏 2 · 项目 · 白板看板
+           ============================================================ -->
+      <section class="screen" id="screen-board" data-screen="board">
+        <div class="spread wrap" style="margin-bottom:14px">
+          <div>
+            <h1 style="font-size:19px">白板看板</h1>
+            <div class="dim" style="font-size:12.5px;margin-top:3px">
+              项目全貌一屏看完。<b style="color:var(--err)">失败与弯路</b>是一等公民，和进展并排摆着 —— 踩过的坑不再沉底。
+            </div>
+          </div>
+          <div class="row wrap">
+            <button class="chip" aria-pressed="true" data-board-zoom>紧凑</button>
+            <button class="chip" aria-pressed="false">展开详情</button>
+            <button class="btn btn-outline btn-sm" data-open-drawer="board-legend">泳道说明</button>
+          </div>
+        </div>
+
+        <div class="kanban" id="kanban">
+          <div class="lane" data-lane="goal">
+            <div class="lane-head">
+              <span class="dot" style="background:var(--accent-2)"></span>
+              <span class="nm">目标</span>
+              <span class="badge muted" style="padding:0 6px">type:goal</span>
+              <span class="ct">2</span>
+            </div>
+            <div class="lane-body">
+              <div class="kcard" data-state="goal" data-open-drawer="k-goal-1">
+                <div class="t">新版界面：4 个一级入口说完整个产品</div>
+                <div class="m">今天 / 项目 / 团队 / 检索，二级每入口不超过 4 项</div>
+                <div class="tags"><span class="tag">界面</span><span class="tag">进行中</span></div>
+              </div>
+              <div class="kcard" data-state="goal" data-open-drawer="k-goal-2">
+                <div class="t">团队版：成员身份 + 共享记忆</div>
+                <div class="m">复用 DSH 宿主已有身份，插件只做成员映射与审计</div>
+                <div class="tags"><span class="tag">团队</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="lane" data-lane="wip">
+            <div class="lane-head">
+              <span class="dot" style="background:var(--warn)"></span>
+              <span class="nm">进行中</span>
+              <span class="badge muted" style="padding:0 6px">type:state</span>
+              <span class="ct">3</span>
+            </div>
+            <div class="lane-body">
+              <div class="kcard" data-state="wip" data-open-drawer="k-wip-1">
+                <div class="t">设置页：9 个分区收敛为 4 组</div>
+                <div class="m">高级项默认折叠，首屏控件从约 80 降到约 15</div>
+                <div class="tags"><span class="tag">界面</span><span class="tag">契约变更</span></div>
+              </div>
+              <div class="kcard" data-state="wip" data-open-drawer="k-wip-2">
+                <div class="t">交互原语收敛：导航 / 抽屉 / 模态</div>
+                <div class="m">原来 9 套并存，现统一为 3 套，且不引入「更多」折叠菜单</div>
+                <div class="tags"><span class="tag">界面</span></div>
+              </div>
+              <div class="kcard" data-state="wip" data-open-drawer="k-wip-3">
+                <div class="t">审计与追溯：actor 时间线</div>
+                <div class="m">谁在什么时候写了什么，写入路径上的 actor 不可伪造</div>
+                <div class="tags"><span class="tag">团队</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="lane" data-lane="deadend">
+            <div class="lane-head">
+              <span class="dot" style="background:var(--err)"></span>
+              <span class="nm">失败与弯路</span>
+              <span class="badge err" style="padding:0 6px">type:dead-end</span>
+              <span class="ct">3</span>
+            </div>
+            <div class="lane-body">
+              <div class="kcard" data-state="deadend" data-open-drawer="k-dead-1">
+                <div class="t">给设置页加「更多」折叠菜单</div>
+                <div class="why">失败原因：菜单里再藏菜单，用户找不到东西的根因没解决，反而多了一层。</div>
+                <div class="tags"><span class="tag">前端</span></div>
+              </div>
+              <div class="kcard" data-state="deadend" data-open-drawer="k-dead-2">
+                <div class="t">把失败项直接删掉、只留成功经验</div>
+                <div class="why">失败原因：同一个坑被重复踩了三次 —— 失败是教训，不是垃圾。</div>
+                <div class="tags"><span class="tag">记忆治理</span></div>
+              </div>
+              <div class="kcard" data-state="deadend" data-open-drawer="k-dead-3">
+                <div class="t">让机器自动回写项目笔记</div>
+                <div class="why">失败原因：绕过了模型审校，实测被劫持过一次；改为必须经模型判断。</div>
+                <div class="tags"><span class="tag">安全</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="lane" data-lane="next">
+            <div class="lane-head">
+              <span class="dot" style="background:var(--ok)"></span>
+              <span class="nm">进度与下一步</span>
+              <span class="badge ok" style="padding:0 6px">type:progress</span>
+              <span class="ct">3</span>
+            </div>
+            <div class="lane-body">
+              <div class="kcard" data-state="next" data-open-drawer="k-next-1">
+                <div class="t">界面演示稿已就绪</div>
+                <div class="m">下一步：由业务方逐屏确认信息架构</div>
+                <div class="tags"><span class="tag">已完成</span></div>
+              </div>
+              <div class="kcard" data-state="next" data-open-drawer="k-next-2">
+                <div class="t">单人版回归：177 项通过 0 失败</div>
+                <div class="m">下一步：团队版改动前先复核被守卫锁定的界面结构</div>
+                <div class="tags"><span class="tag">质量</span></div>
+              </div>
+              <div class="kcard" data-state="next" data-open-drawer="k-next-3">
+                <div class="t">待业务方拍板：团队记忆的可见范围默认值</div>
+                <div class="m">下一步：给出「默认只在本项目可见」与「默认全团队可见」的对照</div>
+                <div class="tags"><span class="tag">待确认</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="lane" data-lane="arch">
+            <div class="lane-head">
+              <span class="dot" style="background:var(--muted)"></span>
+              <span class="nm">版本归档</span>
+              <span class="badge muted" style="padding:0 6px">type:progress</span>
+              <span class="ct">3</span>
+            </div>
+            <div class="lane-body">
+              <div class="kcard" data-state="arch" data-open-drawer="k-arch-1">
+                <div class="t">v3.1.7 · 2026-09-23</div>
+                <div class="m">接续来源修复 + 两处缺陷；工作区即发布源</div>
+                <div class="tags"><span class="tag mono">已发布</span></div>
+              </div>
+              <div class="kcard" data-state="arch" data-open-drawer="k-arch-2">
+                <div class="t">v3.1.6 · 2026-09-23</div>
+                <div class="m">模块改名垫片清理，构建退化为纯复制</div>
+                <div class="tags"><span class="tag mono">已发布</span></div>
+              </div>
+              <div class="kcard" data-state="arch" data-open-drawer="k-arch-3">
+                <div class="t">v3.1.4 · 2026-09-22</div>
+                <div class="m">落地页深度档 + 记忆双库批次 1</div>
+                <div class="tags"><span class="tag mono">已发布</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="callout" style="margin-top:14px">
+          <span class="mk">◈</span>
+          <div>
+            <b>为什么失败要进看板：</b>多数企业检索产品是只读的 —— 人写记忆、AI 只读，所以「过时、冲突、走错路」在它们的数据模型里根本不存在。
+            我们处理的是<b>会写、会错、会改</b>的记忆，所以失败必须有位置。
+          </div>
+        </div>
+      </section>
+      <!-- ============================================================
+           屏 3 · 项目 · 交接账本
+           ============================================================ -->
+      <section class="screen" id="screen-handoff" data-screen="handoff">
+        <div class="spread wrap" style="margin-bottom:14px">
+          <div>
+            <h1 style="font-size:19px">交接账本</h1>
+            <div class="dim" style="font-size:12.5px;margin-top:3px">
+              换一个上下文窗口继续干时，上一轮把「干到哪、为什么失败、下一步做什么」原样交给它。
+            </div>
+          </div>
+          <div class="row wrap">
+            <span class="badge info"><span class="dot"></span>2026-09-23 20:15</span>
+            <span class="badge ok">当前有效</span>
+            <button class="btn btn-outline btn-sm" data-open-modal="m-new-handoff">新建账本</button>
+          </div>
+        </div>
+
+        <div class="four">
+          <div class="seg" data-scope="mine" style="--c:var(--accent-2)">
+            <div class="seg-head">
+              <span class="seg-idx">1</span>
+              <div>
+                <div style="font-size:13.5px;font-weight:600">任务状态</div>
+                <div class="tiny mute">一句话说清现在在哪</div>
+              </div>
+              <span class="badge muted" style="margin-left:auto;padding:0 6px">type:state</span>
+            </div>
+            <div class="seg-body">
+              <div>
+                <b style="color:var(--fg)">v3.1.7 已发布闭环。</b>开发树三笔提交 ⇒ 预演全过 ⇒ 真构建 ⇒ 与发布标签、仓库主线三处一致。
+              </div>
+              <ul>
+                <li><span class="b">·</span><span>发布包 257 个文件 / 17.7 MB，卫生检查全绿（无残留备份、无内部文档）</span></li>
+                <li><span class="b">·</span><span>界面重构批次 A 已完成，批次 B（导航与设置页）进行中</span></li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="seg" data-scope="mine" style="--c:var(--accent-2)">
+            <div class="seg-head">
+              <span class="seg-idx">2</span>
+              <div>
+                <div style="font-size:13.5px;font-weight:600">目标</div>
+                <div class="tiny mute">这一轮到底要得到什么</div>
+              </div>
+              <span class="badge muted" style="margin-left:auto;padding:0 6px">type:goal</span>
+            </div>
+            <div class="seg-body">
+              <ul>
+                <li><span class="b">1</span><span>让甲方业务方<b style="color:var(--fg)">点得动</b>地看到新版长什么样，消灭「晕」的观感</span></li>
+                <li><span class="b">2</span><span>团队版新故事落地：成员身份 + 团队共享记忆 + 失败与弯路一等公民</span></li>
+                <li><span class="b">3</span><span>企业交付口径不越界：登录复用宿主身份、审计只承诺到 actor 级</span></li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="seg fail" data-scope="mine" style="--c:var(--err)">
+            <div class="seg-head">
+              <span class="seg-idx" style="background:var(--err)">3</span>
+              <div>
+                <div style="font-size:13.5px;font-weight:600">已试方案与失败原因</div>
+                <div class="tiny mute">失败项保留原文，不删不改写</div>
+              </div>
+              <span class="badge err" style="margin-left:auto;padding:0 6px">type:dead-end</span>
+            </div>
+            <div class="seg-body">
+              <ul>
+                <li><span class="b">✕</span><span><b style="color:var(--fg)">方案：</b>给设置页加「更多」折叠菜单<br /><b style="color:var(--err)">失败原因：</b>菜单里再藏菜单，用户找不到东西的根因没解决，反而多一层。</span></li>
+                <li><span class="b">✕</span><span><b style="color:var(--fg)">方案：</b>机器自动回写项目笔记<br /><b style="color:var(--err)">失败原因：</b>绕过模型审校，实测被劫持过一次。</span></li>
+                <li><span class="b">✕</span><span><b style="color:var(--fg)">方案：</b>把过时结论从检索里直接剔除<br /><b style="color:var(--err)">失败原因：</b>用户看不到「为什么改了」，反而重复踩坑；改为<b style="color:var(--fg)">返回但标记</b>。</span></li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="seg" data-scope="mine" style="--c:var(--ok)">
+            <div class="seg-head">
+              <span class="seg-idx" style="background:var(--ok)">4</span>
+              <div>
+                <div style="font-size:13.5px;font-weight:600">进度与下一步</div>
+                <div class="tiny mute">下一步必须是能直接执行的第一步</div>
+              </div>
+              <span class="badge ok" style="margin-left:auto;padding:0 6px">type:progress</span>
+            </div>
+            <div class="seg-body">
+              <ul>
+                <li><span class="b">✓</span><span>界面演示稿已就绪，<b style="color:var(--fg)">8 屏可点</b>（含团队三屏）</span></li>
+                <li><span class="b">✓</span><span>单人版回归 177 项通过 0 失败</span></li>
+                <li><span class="b">→</span><span><b style="color:var(--fg)">下一步第一步：</b>业务方逐屏确认信息架构，重点看「团队记忆」三分区是否符合实际使用习惯</span></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid cols-2" style="margin-top:14px">
+          <div class="card card-pad">
+            <div class="sec" style="margin-bottom:10px">为什么是四段式</div>
+            <div class="dim" style="font-size:12.8px">
+              三段式（状态 / 目标 / 下一步）会把失败经验挤掉，于是「同一个坑踩三次」成为常态。
+              我们把它拆成四段，<b style="color:var(--fg)">给失败留一个固定栏目</b>，交接时强制写下来。
+            </div>
+            <div class="row wrap" style="margin-top:11px">
+              <span class="badge err">失败与弯路</span>
+              <span class="badge">四段式账本</span>
+              <span class="badge">跨窗口续命</span>
+            </div>
+          </div>
+          <div class="card card-pad">
+            <div class="sec" style="margin-bottom:10px">历史账本</div>
+            <div class="timeline">
+              <div class="tl-item" style="--c:var(--ok)">
+                <div class="tl-when">2026-09-23 20:15</div>
+                <div class="tl-what">v3.1.7 发布闭环 + 界面重构批次 B 启动</div>
+              </div>
+              <div class="tl-item" style="--c:var(--muted)">
+                <div class="tl-when">2026-09-23 14:40</div>
+                <div class="tl-what">「删净 pre」四层完成，构建退化为纯复制</div>
+              </div>
+              <div class="tl-item" style="--c:var(--muted)">
+                <div class="tl-when">2026-09-22 23:10</div>
+                <div class="tl-what">落地页深度档交付 + 记忆双库批次 1</div>
+              </div>
+            </div>
+            <button class="btn btn-ghost btn-sm" style="margin-top:6px" data-open-drawer="handoff-archive">全部 42 篇账本 →</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================
+           屏 4 · 团队 · 团队记忆（★ 新）
+           ============================================================ -->
+      <section class="screen" id="screen-team-memory" data-screen="team-memory">
+        <div class="spread wrap" style="margin-bottom:14px">
+          <div>
+            <h1 style="font-size:19px">团队记忆</h1>
+            <div class="dim" style="font-size:12.5px;margin-top:3px">
+              同一条记忆，三种可见范围。<b style="color:var(--fg)">色 + 徽标 + 分区标题</b>三处同时告诉你是谁的东西。
+            </div>
+          </div>
+          <div class="row wrap">
+            <div class="searchbar" style="padding:7px 11px">
+              <span class="mute">⌕</span>
+              <input type="search" placeholder="在团队记忆里搜…" data-live-search />
+            </div>
+          </div>
+        </div>
+
+        <div class="grid cols-3">
+          <!-- 我的 -->
+          <div class="card card-pad" data-scope="mine" style="border-top:3px solid var(--sc-mine)">
+            <div class="scope-head">
+              <span class="scope-badge">● 我的</span>
+              <span class="rule" style="background:var(--sc-mine);opacity:.5;height:2px"></span>
+            </div>
+            <div class="ttl" style="font-family:var(--font-title);font-size:15.5px;font-weight:600">只有我看得见</div>
+            <div class="tiny mute" style="margin:4px 0 12px">跟着我的账号走，换项目也在；不会被别人检索到。</div>
+            <div class="stack" style="gap:9px">
+              <button class="kcard" style="text-align:left;border-left:3px solid var(--sc-mine)" data-open-drawer="tm-mine-1">
+                <div class="t">前端需求先用拟合模式收敛</div>
+                <div class="m">我的偏好 · 3 个工作日内有效</div>
+              </button>
+              <button class="kcard" style="text-align:left;border-left:3px solid var(--sc-mine)" data-open-drawer="tm-mine-2">
+                <div class="t">写文件时分块写，单次别太大</div>
+                <div class="m">我的偏好 · 长期</div>
+              </button>
+              <button class="kcard" style="text-align:left;border-left:3px solid var(--sc-mine)" data-open-drawer="tm-mine-3">
+                <div class="t">这个仓库默认只改文件、不提交不发布</div>
+                <div class="m">我的约定 · 长期</div>
+              </button>
+            </div>
+            <div class="kv" style="margin-top:12px"><span class="k">可见范围</span><span class="v">1 人</span></div>
+          </div>
+
+          <!-- 这个项目的 -->
+          <div class="card card-pad" data-scope="project" style="border-top:3px solid var(--sc-project)">
+            <div class="scope-head">
+              <span class="scope-badge">● 这个项目的</span>
+              <span class="rule" style="background:var(--sc-project);opacity:.5;height:2px"></span>
+            </div>
+            <div class="ttl" style="font-family:var(--font-title);font-size:15.5px;font-weight:600">参与这个项目的人都能看</div>
+            <div class="tiny mute" style="margin:4px 0 12px">项目内共享，出了这个项目就看不到；项目间的记忆不串味。</div>
+            <div class="stack" style="gap:9px">
+              <button class="kcard" style="text-align:left;border-left:3px solid var(--sc-project)" data-open-drawer="tm-proj-1">
+                <div class="t">界面结构改动前先核对被守卫锁定的清单</div>
+                <div class="m">项目结论 · 由 林 沉淀 · 已复用 5 次</div>
+              </button>
+              <button class="kcard" style="text-align:left;border-left:3px solid var(--sc-project)" data-open-drawer="tm-proj-2">
+                <div class="t">术语只剩一套：工作区即发布源</div>
+                <div class="m">项目结论 · 由 陈 修正 · 已替代 1 条旧结论</div>
+              </button>
+              <button class="kcard" style="text-align:left;border-left:3px solid var(--sc-project)" data-open-drawer="tm-proj-3">
+                <div class="t">路由鉴权按回环地址判定</div>
+                <div class="m">项目结论 · 由 王 沉淀</div>
+              </button>
+            </div>
+            <div class="kv" style="margin-top:12px"><span class="k">可见范围</span><span class="v">项目成员 6 人</span></div>
+          </div>
+
+          <!-- 全团队的 -->
+          <div class="card card-pad" data-scope="team" style="border-top:3px solid var(--sc-team)">
+            <div class="scope-head">
+              <span class="scope-badge">● 全团队的</span>
+              <span class="rule" style="background:var(--sc-team);opacity:.5;height:2px"></span>
+            </div>
+            <div class="ttl" style="font-family:var(--font-title);font-size:15.5px;font-weight:600">组织内跨项目共享</div>
+            <div class="tiny mute" style="margin:4px 0 12px">方法论、踩坑、技能这类与项目无关的经验，全组织可用。</div>
+            <div class="stack" style="gap:9px">
+              <button class="kcard" style="text-align:left;border-left:3px solid var(--sc-team)" data-open-drawer="tm-team-1">
+                <div class="t">给宿主代码打补丁前先备回滚点</div>
+                <div class="m">团队技能 · 由 陈 晋升 · 已复用 7 次</div>
+              </button>
+              <button class="kcard" style="text-align:left;border-left:3px solid var(--sc-team)" data-open-drawer="tm-team-2">
+                <div class="t">发版四步必须按序走完，缺一不可</div>
+                <div class="m">团队技能 · 由 林 晋升 · 已复用 12 次</div>
+              </button>
+              <button class="kcard" style="text-align:left;border-left:3px solid var(--sc-team)" data-open-drawer="tm-team-3">
+                <div class="t">补丁脚本的换行守卫要判「性质不变」</div>
+                <div class="m">团队教训 · 是一等公民的失败项</div>
+              </button>
+            </div>
+            <div class="kv" style="margin-top:12px"><span class="k">可见范围</span><span class="v">全组织 38 人</span></div>
+          </div>
+        </div>
+
+        <div class="grid cols-2" style="margin-top:14px">
+          <div class="card card-pad">
+            <div class="sec" style="margin-bottom:10px">一条记忆怎么在三个作用域之间走</div>
+            <div class="pipe">
+              <div class="pipe-step"><div class="n">升</div><div class="t">我的 → 项目</div><div class="d">我觉得对同事有用</div></div>
+              <div class="pipe-step"><div class="n">升</div><div class="t">项目 → 团队</div><div class="d">与项目无关的方法论</div></div>
+              <div class="pipe-step"><div class="n">审</div><div class="t">每次升格留痕</div><div class="d">谁升的、什么时候</div></div>
+            </div>
+            <div class="tiny mute" style="margin-top:10px">记忆可以被提升，也可以被撤回；撤回的条目不被删除，而是标记为「已作废」并留下原因。</div>
+          </div>
+          <div class="card card-pad">
+            <div class="sec" style="margin-bottom:10px">记忆三态 · 过时不消失</div>
+            <div class="stack" style="gap:8px">
+              <div class="spread"><span class="badge ok"><span class="dot"></span>有效</span><span class="tiny dim">正常返回，正常参与唤回</span></div>
+              <div class="spread"><span class="badge warn"><span class="dot"></span>已被取代</span><span class="tiny dim">照常返回，但标记过时并指向最新结论</span></div>
+              <div class="spread"><span class="badge err"><span class="dot"></span>已作废</span><span class="tiny dim">当时就做错了，直接撤回并写明错在哪</span></div>
+            </div>
+            <div class="callout" style="margin-top:11px">
+              <span class="mk">◈</span>
+              <div>过时结论<b>返回但标记</b>，不静默丢 —— 只看得到最新结论的人，会重复踩已经踩过的坑。</div>
+            </div>
+          </div>
+        </div>
+      </section>
+      <!-- ============================================================
+           屏 5 · 团队 · 成员与登录（★ 新）
+           ============================================================ -->
+      <section class="screen" id="screen-team-members" data-screen="team-members">
+        <div class="spread wrap" style="margin-bottom:14px">
+          <div>
+            <h1 style="font-size:19px">成员与登录</h1>
+            <div class="dim" style="font-size:12.5px;margin-top:3px">
+              身份由平台提供，本插件不做第二套账号 —— 我们只负责把「平台账号」映射成「团队成员」，并记下谁做了什么。
+            </div>
+          </div>
+          <span class="badge ok"><span class="dot"></span>当前会话已登录</span>
+        </div>
+
+        <div class="grid cols-2" style="margin-bottom:14px">
+          <div class="login-card">
+            <div class="row" style="margin-bottom:4px">
+              <span class="badge info"><span class="dot"></span>推荐</span>
+              <span class="tiny mute">无需额外注册</span>
+            </div>
+            <h3 style="font-size:15px;margin:6px 0 4px">使用 DSH 账号登录</h3>
+            <div class="dim" style="font-size:12.5px;margin-bottom:14px">
+              复用 DSH 宿主已有身份。插件本地只留登录接口，不保存第二份账号密码。
+            </div>
+            <button class="sso-btn" data-open-modal="m-login-dsh" style="border-color:var(--accent-2);background:var(--accent-soft)">
+              <span class="sso-brand" style="background:linear-gradient(150deg,var(--accent-2),var(--accent))">DS</span>
+              使用 DSH 账号登录
+              <span style="margin-left:auto;color:var(--accent-3)">→</span>
+            </button>
+            <div class="row" style="margin:12px 0 8px"><span class="rule" style="flex:1;height:1px;background:var(--line)"></span><span class="tiny mute">可选</span><span class="rule" style="flex:1;height:1px;background:var(--line)"></span></div>
+            <div class="stack" style="gap:8px">
+              <button class="sso-btn" data-open-modal="m-login-alt" data-provider="Google">
+                <span class="sso-brand">G</span>使用 Google 登录
+              </button>
+              <button class="sso-btn" data-open-modal="m-login-alt" data-provider="阿里云">
+                <span class="sso-brand" style="background:#ff6a00">阿</span>使用阿里云登录
+              </button>
+            </div>
+            <div class="callout" style="margin-top:14px">
+              <span class="mk">◈</span>
+              <div>
+                <b>复用平台已有身份：</b>账号、密码、验证码全部由宿主与所选身份源处理，
+                本插件<b>不自建账号体系</b>，只做成员映射与审计留痕。
+              </div>
+            </div>
+          </div>
+
+          <div class="stack" style="gap:14px">
+            <div class="card card-pad">
+              <div class="sec" style="margin-bottom:10px">登录之后插件获得了什么</div>
+              <div class="stack" style="gap:9px">
+                <div class="stat-line">一个稳定的成员标识（用于审计留痕）</div>
+                <div class="stat-line">一个显示名与头像（用于成员列表）</div>
+                <div class="stat-line">一个角色（决定能不能改团队共享记忆）</div>
+              </div>
+              <div class="tiny mute" style="margin-top:11px">除此之外不再索取任何权限；不读取你在其它项目的记忆。</div>
+            </div>
+            <div class="card card-pad">
+              <div class="sec" style="margin-bottom:10px">当前登录</div>
+              <div class="row" style="gap:11px">
+                <div class="avatar" style="width:38px;height:38px;font-size:14px">林</div>
+                <div style="min-width:0">
+                  <div style="font-size:14px;font-weight:600">林 · 平台组</div>
+                  <div class="tiny mute">身份来源：DSH 账号 · 会话有效期 12 小时</div>
+                </div>
+                <button class="btn btn-ghost btn-sm" style="margin-left:auto" data-open-modal="m-logout">退出</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card card-pad">
+          <div class="spread wrap" style="margin-bottom:10px">
+            <div class="sec">成员列表 · 本项目 6 人</div>
+            <div class="row" style="gap:6px">
+              <span class="badge muted">管理员 2</span>
+              <span class="badge muted">成员 3</span>
+              <span class="badge muted">只读 1</span>
+            </div>
+          </div>
+          <table class="tbl">
+            <thead>
+              <tr><th>成员</th><th>身份来源</th><th>角色</th><th>能改团队记忆</th><th>最近活跃</th><th></th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><div class="row" style="gap:8px"><span class="avatar" style="width:22px;height:22px;font-size:10px">林</span>林 · 平台组</div></td>
+                <td><span class="badge">DSH 账号</span></td>
+                <td><span class="badge err"><span class="dot"></span>管理员</span></td>
+                <td>可以</td><td class="mono dim">刚刚</td>
+                <td style="text-align:right"><button class="btn btn-ghost btn-sm" data-open-drawer="member-1">详情</button></td>
+              </tr>
+              <tr>
+                <td><div class="row" style="gap:8px"><span class="avatar" style="width:22px;height:22px;font-size:10px;background:linear-gradient(150deg,#f59e0b,#d97706)">陈</span>陈 · 数据组</div></td>
+                <td><span class="badge">DSH 账号</span></td>
+                <td><span class="badge err"><span class="dot"></span>管理员</span></td>
+                <td>可以</td><td class="mono dim">2 小时前</td>
+                <td style="text-align:right"><button class="btn btn-ghost btn-sm" data-open-drawer="member-2">详情</button></td>
+              </tr>
+              <tr>
+                <td><div class="row" style="gap:8px"><span class="avatar" style="width:22px;height:22px;font-size:10px;background:linear-gradient(150deg,#10b981,#059669)">王</span>王 · 前端组</div></td>
+                <td><span class="badge">Google</span></td>
+                <td><span class="badge info"><span class="dot"></span>成员</span></td>
+                <td>可以</td><td class="mono dim">昨天</td>
+                <td style="text-align:right"><button class="btn btn-ghost btn-sm" data-open-drawer="member-3">详情</button></td>
+              </tr>
+              <tr>
+                <td><div class="row" style="gap:8px"><span class="avatar" style="width:22px;height:22px;font-size:10px;background:linear-gradient(150deg,#8b5cf6,#6d28d9)">赵</span>赵 · 测试组</div></td>
+                <td><span class="badge">阿里云</span></td>
+                <td><span class="badge info"><span class="dot"></span>成员</span></td>
+                <td>可以</td><td class="mono dim">3 天前</td>
+                <td style="text-align:right"><button class="btn btn-ghost btn-sm" data-open-drawer="member-4">详情</button></td>
+              </tr>
+              <tr>
+                <td><div class="row" style="gap:8px"><span class="avatar" style="width:22px;height:22px;font-size:10px;background:linear-gradient(150deg,#64748b,#475569)">孙</span>孙 · 产品组</div></td>
+                <td><span class="badge">Google</span></td>
+                <td><span class="badge info"><span class="dot"></span>成员</span></td>
+                <td>可以</td><td class="mono dim">5 天前</td>
+                <td style="text-align:right"><button class="btn btn-ghost btn-sm" data-open-drawer="member-5">详情</button></td>
+              </tr>
+              <tr>
+                <td><div class="row" style="gap:8px"><span class="avatar" style="width:22px;height:22px;font-size:10px;background:linear-gradient(150deg,#64748b,#475569)">外</span>外部顾问 · 审计</div></td>
+                <td><span class="badge">DSH 账号</span></td>
+                <td><span class="badge muted"><span class="dot"></span>只读</span></td>
+                <td>不可以</td><td class="mono dim">8 天前</td>
+                <td style="text-align:right"><button class="btn btn-ghost btn-sm" data-open-drawer="member-6">详情</button></td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="tiny mute" style="margin-top:11px">
+            成员身份与角色由平台侧下发；插件侧只保存「平台成员标识 → 团队角色」的映射，改角色不会改动平台账号。
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================
+           屏 6 · 团队 · 审计与追溯（★ 新）
+           ============================================================ -->
+      <section class="screen" id="screen-team-audit" data-screen="team-audit">
+        <div class="spread wrap" style="margin-bottom:14px">
+          <div>
+            <h1 style="font-size:19px">审计与追溯</h1>
+            <div class="dim" style="font-size:12.5px;margin-top:3px">
+              谁、在什么时候、写了什么、写到哪个作用域 —— 每条写入都带 actor，且这个 actor 在写入路径上不可伪造。
+            </div>
+          </div>
+          <div class="row wrap">
+            <button class="chip" aria-pressed="true">全部作用域</button>
+            <button class="chip" aria-pressed="false">我的</button>
+            <button class="chip" aria-pressed="false">本项目</button>
+            <button class="chip" aria-pressed="false">全团队</button>
+            <button class="btn btn-outline btn-sm" data-open-modal="m-export-audit">导出留档</button>
+          </div>
+        </div>
+
+        <div class="grid cols-4" style="margin-bottom:14px">
+          <div class="card stat"><div class="n">1,284</div><div class="t">条写入记录 · 近 30 天</div></div>
+          <div class="card stat"><div class="n">6<span class="u">人</span></div><div class="t">产生过写入的 actor</div></div>
+          <div class="card stat"><div class="n">23</div><div class="t">条被标记为过时或作废</div></div>
+          <div class="card stat"><div class="n">0</div><div class="t">条写入缺失 actor</div></div>
+        </div>
+
+        <div class="card card-pad" style="margin-bottom:14px">
+          <div class="spread wrap" style="margin-bottom:4px">
+            <div class="sec">actor 时间线 · 最近写入</div>
+            <span class="tiny mute">按时间倒序 · 可下钻到条目原文</span>
+          </div>
+          <table class="tbl">
+            <thead>
+              <tr><th style="width:150px">时间</th><th style="width:170px">actor（谁）</th><th>写了什么</th><th style="width:110px">作用域</th><th style="width:96px">性质</th><th></th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="t">2026-09-23 20:15</td>
+                <td>林 · 平台组 <span class="badge" style="padding:0 5px">DSH</span></td>
+                <td>v3.1.7 发布闭环 · 交接账本「任务状态」</td>
+                <td><span class="scope-badge" data-scope="project">● 本项目</span></td>
+                <td><span class="badge ok" style="padding:1px 7px">新增</span></td>
+                <td style="text-align:right"><button class="btn btn-ghost btn-sm" data-open-drawer="audit-1">查看</button></td>
+              </tr>
+              <tr>
+                <td class="t">2026-09-23 18:02</td>
+                <td>陈 · 数据组 <span class="badge" style="padding:0 5px">DSH</span></td>
+                <td>术语只剩一套：工作区即发布源（替代旧结论「pre 线 / dev 树」）</td>
+                <td><span class="scope-badge" data-scope="project">● 本项目</span></td>
+                <td><span class="badge warn" style="padding:1px 7px">取代旧条目</span></td>
+                <td style="text-align:right"><button class="btn btn-ghost btn-sm" data-open-drawer="audit-2">查看</button></td>
+              </tr>
+              <tr>
+                <td class="t">2026-09-23 15:40</td>
+                <td>陈 · 数据组 <span class="badge" style="padding:0 5px">DSH</span></td>
+                <td>技能「给宿主代码打补丁前先备回滚点」提升为全团队可见</td>
+                <td><span class="scope-badge" data-scope="team">● 全团队</span></td>
+                <td><span class="badge info" style="padding:1px 7px">升格</span></td>
+                <td style="text-align:right"><button class="btn btn-ghost btn-sm" data-open-drawer="audit-3">查看</button></td>
+              </tr>
+              <tr>
+                <td class="t">2026-09-23 14:22</td>
+                <td>林 · 平台组 <span class="badge" style="padding:0 5px">DSH</span></td>
+                <td>教训「机器自动回写项目笔记」标记为已作废（绕过模型审校）</td>
+                <td><span class="scope-badge" data-scope="team">● 全团队</span></td>
+                <td><span class="badge err" style="padding:1px 7px">作废</span></td>
+                <td style="text-align:right"><button class="btn btn-ghost btn-sm" data-open-drawer="audit-4">查看</button></td>
+              </tr>
+              <tr>
+                <td class="t">2026-09-23 11:07</td>
+                <td>王 · 前端组 <span class="badge" style="padding:0 5px">Google</span></td>
+                <td>我的偏好：界面改动后要用真实渲染核对，不靠读代码</td>
+                <td><span class="scope-badge" data-scope="mine">● 我的</span></td>
+                <td><span class="badge ok" style="padding:1px 7px">新增</span></td>
+                <td style="text-align:right"><button class="btn btn-ghost btn-sm" data-open-drawer="audit-5">查看</button></td>
+              </tr>
+              <tr>
+                <td class="t">2026-09-22 23:10</td>
+                <td>赵 · 测试组 <span class="badge" style="padding:0 5px">阿里云</span></td>
+                <td>项目结论：全量回归出现红旗时先做归属实验</td>
+                <td><span class="scope-badge" data-scope="project">● 本项目</span></td>
+                <td><span class="badge ok" style="padding:1px 7px">新增</span></td>
+                <td style="text-align:right"><button class="btn btn-ghost btn-sm" data-open-drawer="audit-6">查看</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="grid cols-2">
+          <div class="card card-pad">
+            <div class="sec" style="margin-bottom:10px">这条时间线保证什么、不保证什么</div>
+            <div class="stack" style="gap:9px">
+              <div class="callout ok">
+                <span class="mk">✓</span>
+                <div><b>保证：</b>写入路径上的 actor 不可伪造 —— 记录里写了是谁写的，就是谁写的。</div>
+              </div>
+              <div class="callout err">
+                <span class="mk">✕</span>
+                <div><b>不保证：</b>这不是防篡改级。任何能读到记忆文件的进程，都可以绕过本插件直接改盘上内容。</div>
+              </div>
+            </div>
+            <div class="tiny mute" style="margin-top:11px">口径：<b style="color:var(--fg)">审计级追溯（谁写了什么、什么时候），非防篡改级</b>。</div>
+          </div>
+          <div class="card card-pad">
+            <div class="sec" style="margin-bottom:10px">存储与加密 · 主动披露</div>
+            <div class="callout warn">
+              <span class="mk">◔</span>
+              <div>
+                记忆数据<b>本地明文存储</b>（开源可审计）。企业如需加密，由客户自行在存储层加密，
+                我们<b>预留加解密接口</b>。
+              </div>
+            </div>
+            <div class="tiny mute" style="margin-top:11px">
+              我们不做端到端加密的宣称 —— 说了做不到比不说更糟。开源意味着任何人都能自己核验这句话。
+            </div>
+          </div>
+        </div>
+      </section>
+      <!-- ============================================================
+           屏 7 · 检索
+           ============================================================ -->
+      <section class="screen" id="screen-search" data-screen="search">
+        <div class="spread wrap" style="margin-bottom:12px">
+          <div>
+            <h1 style="font-size:19px">检索</h1>
+            <div class="dim" style="font-size:12.5px;margin-top:3px">一个框找所有东西：日志、项目结论、技能、团队记忆、历史会话。</div>
+          </div>
+          <span class="badge muted">索引 12,486 条 · 其中 38 条已标记过时或作废</span>
+        </div>
+
+        <div class="searchbar" style="margin-bottom:10px">
+          <span class="mute" style="font-size:15px">⌕</span>
+          <input type="search" id="q" placeholder="试试搜「水位」「失败与弯路」「回滚点」…" />
+          <span class="chip" id="q-clear" style="cursor:pointer">清除</span>
+          <button class="btn btn-primary btn-sm" id="q-go">检索</button>
+        </div>
+
+        <div class="row wrap" style="gap:6px;margin-bottom:14px">
+          <span class="tiny mute" style="margin-right:2px">范围</span>
+          <button class="chip" aria-pressed="true">全部</button>
+          <button class="chip" aria-pressed="false">日志</button>
+          <button class="chip" aria-pressed="false">项目结论</button>
+          <button class="chip" aria-pressed="false">技能库</button>
+          <button class="chip" aria-pressed="false">团队记忆</button>
+          <button class="chip" aria-pressed="false">历史会话</button>
+        </div>
+
+        <div class="grid cols-3" style="margin-bottom:14px">
+          <div class="card stat">
+            <div class="n" id="stat-hits">7</div>
+            <div class="t">命中条目</div>
+            <div class="tiny mute" style="margin-top:6px">其中 1 条已过时（照常返回并标记）</div>
+          </div>
+          <div class="card stat">
+            <div class="n">112<span class="u">ms</span></div>
+            <div class="t">检索耗时</div>
+            <div class="tiny mute" style="margin-top:6px">词法检索常驻；向量补齐异步，分钟级</div>
+          </div>
+          <div class="card stat">
+            <div class="n">4</div>
+            <div class="t">覆盖来源层级</div>
+            <div class="tiny mute" style="margin-top:6px">我的 / 本项目 / 全团队 / 历史会话</div>
+          </div>
+        </div>
+
+        <div class="card card-pad" style="margin-bottom:14px">
+          <div class="sec" style="margin-bottom:10px">召回来源分流 · 本次命中的记忆是怎么来的</div>
+          <div class="route">
+            <div>
+              <div class="spread" style="margin-bottom:6px">
+                <span style="font-size:12.5px">主动唤起</span>
+                <span class="mono tiny dim">4 条 · 57%</span>
+              </div>
+              <div class="meter"><i style="width:57%"></i></div>
+              <div class="tiny mute" style="margin-top:6px">模型开口前自动递到眼前，你什么都没做</div>
+            </div>
+            <div>
+              <div class="spread" style="margin-bottom:6px">
+                <span style="font-size:12.5px">每轮注入</span>
+                <span class="mono tiny dim">2 条 · 29%</span>
+              </div>
+              <div class="meter"><i style="width:29%;background:linear-gradient(90deg,var(--ok),#48c489)"></i></div>
+              <div class="tiny mute" style="margin-top:6px">常驻目录与规则，每轮无条件在场</div>
+            </div>
+            <div>
+              <div class="spread" style="margin-bottom:6px">
+                <span style="font-size:12.5px">主动检索</span>
+                <span class="mono tiny dim">1 条 · 14%</span>
+              </div>
+              <div class="meter"><i style="width:14%;background:linear-gradient(90deg,var(--warn),#e0bd6a)"></i></div>
+              <div class="tiny mute" style="margin-top:6px">你刚刚在搜索框里敲出来的这一条</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="sec" style="margin-bottom:9px">结果 <span class="mute" style="text-transform:none;letter-spacing:0">按相关度排序</span></div>
+        <div class="stack" style="gap:10px">
+          <button class="hit" style="text-align:left" data-open-drawer="hit-1">
+            <div class="spread" style="margin-bottom:6px">
+              <div class="row" style="gap:7px">
+                <span class="scope-badge" data-scope="team">● 全团队</span>
+                <span class="badge muted" style="padding:1px 7px">看板泳道</span>
+              </div>
+              <span class="mono tiny mute">0.96 · 主动唤起</span>
+            </div>
+            <div style="font-size:13.5px;font-weight:600">「<mark>失败与弯路</mark>」是一等公民，不是一个标签</div>
+            <div class="dim" style="font-size:12.5px;margin-top:5px">
+              四段账本 + 失败泳道：业界把失败当负资产，我们让它进入看板，与进展并排。
+            </div>
+            <div class="tiny mute" style="margin-top:7px">2026-09-23 · 由 林 沉淀 · 被引用 9 次</div>
+          </button>
+
+          <button class="hit" style="text-align:left" data-open-drawer="hit-2">
+            <div class="spread" style="margin-bottom:6px">
+              <div class="row" style="gap:7px">
+                <span class="scope-badge" data-scope="project">● 本项目</span>
+                <span class="badge muted" style="padding:1px 7px">交接账本</span>
+              </div>
+              <span class="mono tiny mute">0.93 · 每轮注入</span>
+            </div>
+            <div style="font-size:13.5px;font-weight:600">方案：给设置页加「更多」折叠菜单 → 已走进<mark>弯路</mark></div>
+            <div class="dim" style="font-size:12.5px;margin-top:5px">
+              失败原因：菜单里再藏菜单，用户找不到东西的根因没解决，反而多了一层。
+            </div>
+            <div class="tiny mute" style="margin-top:7px">2026-09-23 · 由 陈 记录 · 关联 3 条后续结论</div>
+          </button>
+
+          <button class="hit" style="text-align:left" data-open-drawer="hit-3">
+            <div class="spread" style="margin-bottom:6px">
+              <div class="row" style="gap:7px">
+                <span class="scope-badge" data-scope="team">● 全团队</span>
+                <span class="badge ok" style="padding:1px 7px">团队技能</span>
+              </div>
+              <span class="mono tiny mute">0.88 · 主动唤起</span>
+            </div>
+            <div style="font-size:13.5px;font-weight:600">踩坑后总结出正确做法，就把它写成可复用的流程</div>
+            <div class="dim" style="font-size:12.5px;margin-top:5px">
+              判据：有明确步骤、可重复、下次遇到类似场景能直接照做。写完要附「怎么算跑通」。
+            </div>
+            <div class="tiny mute" style="margin-top:7px">2026-09-20 · 由 陈 晋升 · 已复用 7 次</div>
+          </button>
+
+          <button class="hit" style="text-align:left;border-color:color-mix(in srgb, var(--warn) 45%, transparent)" data-open-drawer="hit-4">
+            <div class="spread" style="margin-bottom:6px">
+              <div class="row" style="gap:7px">
+                <span class="scope-badge" data-scope="project">● 本项目</span>
+                <span class="badge warn" style="padding:1px 7px"><span class="dot"></span>已被取代</span>
+              </div>
+              <span class="mono tiny mute">0.84 · 主动检索</span>
+            </div>
+            <div style="font-size:13.5px;font-weight:600">失败的经验不值得留档，只留成功路径</div>
+            <div class="dim" style="font-size:12.5px;margin-top:5px">
+              这条结论<b style="color:var(--warn)">已过时</b>，仍然返回给你 —— 否则你会重复踩已经踩过的坑。
+            </div>
+            <div class="tiny mute" style="margin-top:7px">2026-08-30 · <b style="color:var(--fg-dim)">最新结论：</b>「失败与弯路」是一等公民，不是一个标签</div>
+          </button>
+
+          <button class="hit" style="text-align:left" data-open-drawer="hit-5">
+            <div class="spread" style="margin-bottom:6px">
+              <div class="row" style="gap:7px">
+                <span class="scope-badge" data-scope="mine">● 我的</span>
+                <span class="badge muted" style="padding:1px 7px">工作日志</span>
+              </div>
+              <span class="mono tiny mute">0.79 · 每轮注入</span>
+            </div>
+            <div style="font-size:13.5px;font-weight:600">前端需求先用拟合模式收敛，再动手</div>
+            <div class="dim" style="font-size:12.5px;margin-top:5px">
+              需求还模糊时不直接大规模写前端；分批提问、逐步收敛、用户确认后才开工。
+            </div>
+            <div class="tiny mute" style="margin-top:7px">2026-09-18 · 我的偏好 · 3 个工作日有效</div>
+          </button>
+
+          <button class="hit" style="text-align:left" data-open-drawer="hit-6">
+            <div class="spread" style="margin-bottom:6px">
+              <div class="row" style="gap:7px">
+                <span class="scope-badge" data-scope="project">● 本项目</span>
+                <span class="badge muted" style="padding:1px 7px">历史会话</span>
+              </div>
+              <span class="mono tiny mute">0.74 · 主动检索</span>
+            </div>
+            <div style="font-size:13.5px;font-weight:600">全量回归出红时，先判定「红是守卫守的什么」</div>
+            <div class="dim" style="font-size:12.5px;margin-top:5px">
+              归属实验先做，再决定改守卫还是改代码；不要用减法改动兜底未验证的猜测。
+            </div>
+            <div class="tiny mute" style="margin-top:7px">来自 2026-09-19 的历史会话 · 已归档进项目结论</div>
+          </button>
+        </div>
+      </section>
+
+      <!-- ============================================================
+           屏 8 · 设置
+           ============================================================ -->
+      <section class="screen" id="screen-settings" data-screen="settings">
+        <div class="spread wrap" style="margin-bottom:14px">
+          <div>
+            <h1 style="font-size:19px">设置</h1>
+            <div class="dim" style="font-size:12.5px;margin-top:3px">
+              原来的 9 个分区收敛成 <b style="color:var(--fg)">4 组</b>；能用的留下，调优的收进「展开高级设置」。
+            </div>
+          </div>
+          <div class="row wrap">
+            <div class="badge info" style="padding:5px 11px">
+              <span class="dot"></span>首屏控件 <span class="ctl-count" id="ctl-visible">15</span>
+            </div>
+            <div class="badge muted" style="padding:5px 11px">
+              折叠中 <span class="ctl-count" id="ctl-hidden">10</span>
+            </div>
+            <button class="btn btn-outline btn-sm" id="expand-all">全部展开</button>
+          </div>
+        </div>
+
+        <div class="callout" style="margin-bottom:14px">
+          <span class="mk">◈</span>
+          <div>
+            重构前：<b>9 个不相关主题 / 约 80 个控件同时铺在一个页面里</b>，从「总开关」滚到「关于」要穿过 8 次主题跳跃。
+            现在：<b>4 组</b>，首屏只露 <b>15 个</b>常用控件，其余在每组末尾一键展开。
+          </div>
+        </div>
+
+        <div class="settings-grid">
+          <!-- 引擎 -->
+          <div class="sgroup" data-group="engine">
+            <div class="sgroup-head">
+              <span class="seg-idx" style="background:var(--accent-2)">引</span>
+              <div>
+                <div class="nm">引擎</div>
+                <div class="sub">记忆怎么被想起来、留多少</div>
+              </div>
+              <span class="badge muted" style="margin-left:auto;padding:0 7px">4 + 3</span>
+            </div>
+            <div class="sgroup-body">
+              <div class="srow">
+                <div><div class="lbl">语义记忆总开关</div><div class="hint">关掉后只保留关键词检索</div></div>
+                <div class="ctl"><button class="sw" role="switch" aria-checked="true" aria-label="语义记忆总开关"></button></div>
+              </div>
+              <div class="srow">
+                <div><div class="lbl">语义引擎</div><div class="hint">两套引擎彼此独立、可随时互换</div></div>
+                <div class="ctl">
+                  <select class="sel">
+                    <option>内置引擎（默认，开箱即用）</option>
+                    <option>进阶引擎（需自行安装）</option>
+                    <option>关闭语义能力</option>
+                  </select>
+                </div>
+              </div>
+              <div class="srow">
+                <div><div class="lbl">记忆窗口 · 注入预算</div><div class="hint">超过就按相关度裁剪</div></div>
+                <div class="ctl"><input class="num" type="number" value="12000" /> <span class="tiny mute">字符</span></div>
+              </div>
+              <div class="srow">
+                <div><div class="lbl">收尾提醒阈值</div><div class="hint">到达即提示本轮该沉淀了</div></div>
+                <div class="ctl"><input class="num" type="number" value="8000" /> <span class="tiny mute">字符</span></div>
+              </div>
+
+              <button class="adv-toggle"><span class="arw">▸</span>展开高级设置（引擎）· 3 项</button>
+              <div class="adv-wrap">
+                <div class="adv-note">这些只在调优召回效果时才需要动。默认值适用于绝大多数情况。</div>
+                <div class="srow">
+                  <div><div class="lbl">关键词命中权重</div></div>
+                  <div class="ctl"><input class="num" type="number" value="60" /> <span class="tiny mute">%</span></div>
+                </div>
+                <div class="srow">
+                  <div><div class="lbl">语义相似权重</div></div>
+                  <div class="ctl"><input class="num" type="number" value="40" /> <span class="tiny mute">%</span></div>
+                </div>
+                <div class="srow">
+                  <div><div class="lbl">单轮唤回条数上限</div></div>
+                  <div class="ctl"><input class="num" type="number" value="8" /> <span class="tiny mute">条</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 内容 -->
+          <div class="sgroup" data-group="content">
+            <div class="sgroup-head">
+              <span class="seg-idx" style="background:var(--ok)">容</span>
+              <div>
+                <div class="nm">内容</div>
+                <div class="sub">沉淀什么、存到哪、留多久</div>
+              </div>
+              <span class="badge muted" style="margin-left:auto;padding:0 7px">3 + 3</span>
+            </div>
+            <div class="sgroup-body">
+              <div class="srow">
+                <div><div class="lbl">自动沉淀成技能</div><div class="hint">多步骤、可复用的流程自动进技能库</div></div>
+                <div class="ctl"><button class="sw" role="switch" aria-checked="true" aria-label="自动沉淀成技能"></button></div>
+              </div>
+              <div class="srow">
+                <div><div class="lbl">交接账本</div><div class="hint">长会话跨窗口续命，四段式</div></div>
+                <div class="ctl"><button class="sw" role="switch" aria-checked="true" aria-label="交接账本"></button></div>
+              </div>
+              <div class="srow">
+                <div><div class="lbl">技能库容量</div><div class="hint">超出时先折叠要点，折叠失败则原文归档</div></div>
+                <div class="ctl"><input class="num" type="number" value="24000" /> <span class="tiny mute">字符</span></div>
+              </div>
+
+              <button class="adv-toggle"><span class="arw">▸</span>展开高级设置（内容）· 3 项</button>
+              <div class="adv-wrap">
+                <div class="adv-note">容量相关信息；调整不会删除任何已有内容。</div>
+                <div class="srow">
+                  <div><div class="lbl">项目笔记容量</div></div>
+                  <div class="ctl"><input class="num" type="number" value="24000" /> <span class="tiny mute">字符</span></div>
+                </div>
+                <div class="srow">
+                  <div><div class="lbl">每日日志容量</div></div>
+                  <div class="ctl"><input class="num" type="number" value="0" /> <span class="tiny mute">0 = 不限</span></div>
+                </div>
+                <div class="srow">
+                  <div><div class="lbl">技能库可见范围</div></div>
+                  <div class="ctl">
+                    <select class="sel">
+                      <option>仅本项目</option>
+                      <option>本项目 + 全团队</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 偏好 -->
+          <div class="sgroup" data-group="prefs">
+            <div class="sgroup-head">
+              <span class="seg-idx" style="background:var(--warn)">好</span>
+              <div>
+                <div class="nm">偏好</div>
+                <div class="sub">看起来怎样、打扰到什么程度</div>
+              </div>
+              <span class="badge muted" style="margin-left:auto;padding:0 7px">4 + 2</span>
+            </div>
+            <div class="sgroup-body">
+              <div class="srow">
+                <div><div class="lbl">外观</div><div class="hint">演示稿默认深色</div></div>
+                <div class="ctl">
+                  <div class="radio" data-radio="theme">
+                    <button data-val="dark" aria-pressed="true">深色</button>
+                    <button data-val="light" aria-pressed="false">浅色</button>
+                    <button data-val="auto" aria-pressed="false">跟随系统</button>
+                  </div>
+                </div>
+              </div>
+              <div class="srow">
+                <div><div class="lbl">界面密度</div><div class="hint">舒适的留白，还是更多信息在屏上</div></div>
+                <div class="ctl">
+                  <div class="radio" data-radio="density">
+                    <button data-val="cozy" aria-pressed="true">舒适</button>
+                    <button data-val="compact" aria-pressed="false">紧凑</button>
+                  </div>
+                </div>
+              </div>
+              <div class="srow">
+                <div><div class="lbl">动效</div><div class="hint">过渡 150–250ms；系统开启减弱动效时自动跟随</div></div>
+                <div class="ctl"><button class="sw" role="switch" aria-checked="true" aria-label="动效"></button></div>
+              </div>
+              <div class="srow">
+                <div><div class="lbl">界面语言</div></div>
+                <div class="ctl">
+                  <select class="sel"><option>简体中文</option><option>English</option></select>
+                </div>
+              </div>
+
+              <button class="adv-toggle"><span class="arw">▸</span>展开高级设置（偏好）· 2 项</button>
+              <div class="adv-wrap">
+                <div class="srow">
+                  <div><div class="lbl">侧栏默认展开</div></div>
+                  <div class="ctl"><button class="sw" role="switch" aria-checked="true" aria-label="侧栏默认展开"></button></div>
+                </div>
+                <div class="srow">
+                  <div><div class="lbl">数字等宽对齐</div></div>
+                  <div class="ctl"><button class="sw" role="switch" aria-checked="false" aria-label="数字等宽对齐"></button></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 关于 -->
+          <div class="sgroup" data-group="about">
+            <div class="sgroup-head">
+              <span class="seg-idx" style="background:var(--muted)">于</span>
+              <div>
+                <div class="nm">关于</div>
+                <div class="sub">版本、许可、诊断</div>
+              </div>
+              <span class="badge muted" style="margin-left:auto;padding:0 7px">4 + 2</span>
+            </div>
+            <div class="sgroup-body">
+              <div class="srow">
+                <div><div class="lbl">版本</div><div class="hint">插件包名 @a9i5k4/dsh-auto-memory</div></div>
+                <div class="ctl"><span class="badge info mono" style="padding:2px 9px">v3.1.7</span></div>
+              </div>
+              <div class="srow">
+                <div><div class="lbl">开源许可</div><div class="hint">记忆数据本地明文存储，开源可审计</div></div>
+                <div class="ctl"><span class="badge">MIT</span></div>
+              </div>
+              <div class="srow">
+                <div><div class="lbl">更新说明</div><div class="hint">接续来源修复 + 两处缺陷（单行摘要）</div></div>
+                <div class="ctl"><button class="btn btn-ghost btn-sm" data-open-drawer="release-notes">查看</button></div>
+              </div>
+              <div class="srow">
+                <div><div class="lbl">诊断中心</div><div class="hint">环境检测、日志、导出排障包</div></div>
+                <div class="ctl"><button class="btn btn-outline btn-sm" data-open-drawer="diagnostics">打开</button></div>
+              </div>
+
+              <button class="adv-toggle"><span class="arw">▸</span>展开高级设置（关于）· 2 项</button>
+              <div class="adv-wrap">
+                <div class="srow">
+                  <div><div class="lbl">记忆存储路径</div><div class="hint">只读展示</div></div>
+                  <div class="ctl"><span class="mono tiny dim">~/.dsh/memory</span></div>
+                </div>
+                <div class="srow">
+                  <div><div class="lbl">日志级别</div></div>
+                  <div class="ctl">
+                    <select class="sel"><option>常规</option><option>详细（排障用）</option><option>静默</option></select>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tiny mute" style="margin-top:14px">
+          共 25 个控件（15 首屏 + 10 高级）。相比重构前的约 80 个同时铺开，首屏信息量下降约 80%。
+        </div>
+      </section>
+      <!--@@SCREENS@@-->
+    </div>
+  </main>
+</div>
+
+<!-- 交互原语 2：右侧抽屉（全局唯一） -->
+<div class="scrim" id="scrim" hidden></div>
+<aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="drawer-title" hidden>
+  <header class="drawer-head">
+    <div style="min-width:0">
+      <div class="sec" id="drawer-kind">详情</div>
+      <h2 id="drawer-title" style="font-size:16px">—</h2>
+    </div>
+    <button class="btn btn-ghost btn-sm" data-close-drawer aria-label="关闭抽屉">✕</button>
+  </header>
+  <div class="drawer-body" id="drawer-body"></div>
+  <footer class="drawer-foot" id="drawer-foot"></footer>
+</aside>
+
+<!-- 交互原语 3：居中模态（全局唯一） -->
+<div class="modal-wrap" id="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title" hidden>
+  <div class="scrim scrim-inline" data-close-modal></div>
+  <div class="modal">
+    <h2 id="modal-title" style="font-size:16px;margin-bottom:6px">—</h2>
+    <div id="modal-body" class="dim" style="font-size:13px"></div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" data-close-modal>取消</button>
+      <button class="btn btn-primary" id="modal-ok">确定</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   dsh-auto-memory 新版 UI 演示稿 · 交互脚本
+   零外部依赖 · 零网络请求 · 全部数据为内置假数据
+   ============================================================ */
+(function () {
+  'use strict';
+  var $ = function (s, r) { return (r || document).querySelector(s); };
+  var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+
+  /* ---------------- 二级页签的收纳关系（原 13 个页签零丢失） ---------------- */
+  var NAV = {
+    today: { label: '今天', tabs: [['today', '概览'], ['logs', '日志'], ['reflections', '反思'], ['refine', '唤起回顾']] },
+    project: { label: '项目', tabs: [['board', '白板看板'], ['handoff', '交接账本'], ['notes', '项目笔记'], ['hub', '知识库']] },
+    team: { label: '团队', tabs: [['team-memory', '团队记忆'], ['team-members', '成员与登录'], ['team-audit', '审计与追溯'], ['team-conflict', '冲突处理']] },
+    search: { label: '检索', tabs: [['search', '搜索 · 统计'], ['connect', '接续'], ['calendar', '日历'], ['workspaces', '工作区']] },
+    settings: { label: '设置', tabs: [['settings', '全部设置']] }
+  };
+  var HOME = 'today';
+
+  /* ---------------- 二级屏（JS 渲染，保证每个页签都点得动） ---------------- */
+  var SECONDARY = {
+    logs: {
+      title: '日志', sub: '每天做了什么、结果如何，按照时间顺序落盘；只有一天的全部记录才有价值。',
+      blocks: [
+        { stat: [['今天 3 条', '本轮对话沉淀'], ['近 7 天 46 条', '含自动沉淀'], ['未归档 12 天', '30 天后自动蒸馏']] },
+        { h: '今天 · 2026-09-23', tl: [
+          ['14:02', '【项目结论】收尾提醒固定在每轮尾部注入 —— 开头注入在长输出下会注意力丢失。'],
+          ['13:48', '【白板】泳道新增「失败与弯路」，与进展并排展示。'],
+          ['13:20', '【交接】批次 B 完成，写入四段式账本供下一个上下文窗口接续。']
+        ] },
+        { h: '昨天 · 2026-09-22', tl: [
+          ['23:10', '【交付】落地页深度档完成；记忆双库批次 1 六步全部完成。'],
+          ['19:40', '【教训】复核别人的数字前，先确认自己的判据口径与其一致。'],
+          ['11:16', '【对账】线上问题清单与本批范围逐条核对，未覆盖项已登记。']
+        ] },
+        { note: '日志是 append-only：只追加、不覆盖。写错了不改历史，而是再写一条说明 —— 追溯时看到的才是真实过程。' }
+      ]
+    },
+    reflections: {
+      title: '反思', sub: '把一天的工作再读一遍，只提炼能跨会话复用的东西。',
+      blocks: [
+        { h: '2026-09-22 · 成果回顾', ul: [
+          '落地页与记忆双库两条线并行收尾，均已产出可交付物。',
+          '把「复核别人数字前先统一判据口径」写成教训，避免下次重复。'
+        ] },
+        { h: '2026-09-22 · 教训与改进', ul: [
+          '先取证再下结论：根因结论必须附代码或日志证据，推断要显式标注为推断。',
+          '删除类操作前先确认「结论是否已被新结论取代」，二者处置方式不同。'
+        ] },
+        { h: '可延续要点', ul: [
+          '守卫锁定的界面结构，改动前必须逐条核对清单。',
+          '视觉类改动要用真实渲染核对，不靠读代码下判断。'
+        ] },
+        { note: '反思只在框架提示「昨日反思待生成」时产生，且必须先呈现给用户，再落盘。' }
+      ]
+    },
+    refine: {
+      title: '唤起回顾', sub: '这一轮模型到底把哪些记忆递到了眼前，逐条可查。',
+      blocks: [
+        { stat: [['4 条', '本轮唤回'], ['0.92', '最高相关度'], ['12,000', '注入预算（字符）']] },
+        { cards: [
+          { t: '收尾提醒固定在每轮尾部注入', m: '本项目 · 相关度 0.92 · 命中关键词「水位」', badge: '已采纳' },
+          { t: '给宿主代码打补丁前先备回滚点', m: '全团队 · 相关度 0.88 · 团队技能', badge: '已采纳' },
+          { t: '前端需求先用拟合模式收敛', m: '我的 · 相关度 0.81 · 个人偏好', badge: '已采纳' },
+          { t: '设置页按 9 个分区铺开', m: '本项目 · 已过时，照常返回但标记', badge: '已过时' }
+        ] },
+        { note: '唤起是「模型开口前」发生的：你不需要提问，它就已经在场。这一屏存在的意义是让你能复核它递得对不对。' }
+      ]
+    },
+    notes: {
+      title: '项目笔记', sub: '这个项目稳定下来的约定、决策与路径；跨会话有效，不被对话轮次冲掉。',
+      blocks: [
+        { cards: [
+          { t: '术语只剩一套：工作区即发布源', m: '2026-09-23 · 由 陈 修正 · 已替代 1 条旧结论', badge: '已生效' },
+          { t: '界面结构改动前先核对被守卫锁定的清单', m: '2026-09-23 · 已复用 5 次', badge: '已生效' },
+          { t: '宿主进程只能由用户手动重启', m: '2026-09-15 · 硬性约定', badge: '已生效' },
+          { t: '分块写文件，单次工具调用不要写超大内容', m: '长期有效', badge: '已生效' }
+        ] },
+        { note: '项目笔记有容量上限。超出时先由模型把较早内容折叠成要点，折叠失败则整条原文归档 —— 信息不丢，新记忆也不会被堵在门外。' }
+      ]
+    },
+    hub: {
+      title: '知识库', sub: '项目里被反复引用的结论汇聚在这里，按主题分片，供检索与唤回共用。',
+      blocks: [
+        { stat: [['38', '主题分片'], ['412', '条目'], ['23', '已标记过时或作废']] },
+        { tbl: { cols: ['主题分片', '条目', '最近更新', '主要贡献者'], rows: [
+          ['界面与交互', '86', '今天 14:02', '林 · 王'],
+          ['记忆治理与三态', '74', '今天 13:48', '陈 · 林'],
+          ['发布与构建', '63', '昨天 23:10', '林'],
+          ['鉴权与路由', '41', '3 天前', '王'],
+          ['语义引擎', '58', '5 天前', '赵 · 陈']
+        ] } },
+        { note: '分片是按主题自动归拢的，不做人工目录维护 —— 需要人手工整理的知识库，最后都会烂掉。' }
+      ]
+    },
+    'team-conflict': {
+      title: '冲突处理', sub: '同一个问题出现两条不一致的结论时，不静默取一条，而是摆出来让你选。',
+      blocks: [
+        { note: '这是「会写、会错、会改」的记忆才会有的问题：只读检索系统里，冲突在数据模型上根本不存在。' },
+        { cards: [
+          { t: '冲突：技能库容量上限取 24,000 还是 12,000', m: 'A（2026-09-23 · 陈）：24,000 字符。B（2026-09-18 · 林）：12,000 字符，理由是控制注入预算。', badge: '待裁定' },
+          { t: '冲突：默认作用域是「本项目」还是「我的」', m: 'A：默认本项目，方便同事复用。B：默认我的，避免误把临时内容扩散给全组。', badge: '待裁定' }
+        ] },
+        { h: '处理方式', ul: [
+          '选定一条：另一条被标记为「已被取代」并指向新结论，仍可检索到，但会显式提示过时。',
+          '两条都不对：两条都标记为「已作废」并分别写明错在哪 —— 错误本身就是教训，不删除。',
+          '暂不裁定：保持「待裁定」状态，唤回时两条一起呈现，由使用者当场判断。'
+        ] }
+      ]
+    },
+    connect: {
+      title: '接续', sub: '长会话被上下文窗口切断时，用交接账本把状态原样交给下一个窗口。',
+      blocks: [
+        { cards: [
+          { t: '2026-09-23 20:15 · 当前有效', m: '四段式账本：任务状态 / 目标 / 已试方案与失败原因 / 进度与下一步', badge: '已接续' },
+          { t: '2026-09-23 14:40', m: '「删净 pre」四层完成，构建退化为纯复制', badge: '已归档' },
+          { t: '2026-09-22 23:10', m: '落地页深度档交付 + 记忆双库批次 1', badge: '已归档' }
+        ] },
+        { note: '接续不是把全部历史塞回去，而是只交接「干到哪、为什么失败、下一步做什么」这三件最容易被丢失的事。' }
+      ]
+    },
+    calendar: {
+      title: '日历', sub: '从对话里识别出的时间点，自动进入日程；跨会话有效。',
+      blocks: [
+        { tbl: { cols: ['时间', '事项', '类型'], rows: [
+          ['2026-09-24 10:00', '甲方业务方逐屏确认新版界面', '重要'],
+          ['2026-09-25 15:00', '团队版成员与角色口径评审', '重要'],
+          ['2026-09-30 18:00', '企业交付：审计追溯范围确认', '待确认']
+        ] } },
+        { note: '日程从对话中提取，不需要手工录入 —— 但涉及外部承诺的时间点，仍建议在这里复核一遍。' }
+      ]
+    },
+    workspaces: {
+      title: '工作区', sub: '每个工作区一套独立记忆；跨工作区检索默认开启，但来源会明确标注。',
+      blocks: [
+        { tbl: { cols: ['工作区', '记忆条目', '最近活动', '上次使用'], rows: [
+          ['dsh-auto-memory（当前）', '1,284', '刚刚', '今天'],
+          ['landing-upgrade', '218', '昨天', '昨天'],
+          ['scratch-notes', '46', '3 天前', '3 天前']
+        ] } },
+        { note: '跨工作区检索时，命中结果会标注来源工作区，避免把别的项目的结论当成本项目的。' }
+      ]
+    }
+  };
+
+  /* 把二级屏渲染进 #screens */
+  function renderBlocks(blocks) {
+    var out = '';
+    blocks.forEach(function (b) {
+      if (b.stat) {
+        out += '<div class="grid cols-3" style="margin-bottom:14px">';
+        b.stat.forEach(function (s) {
+          out += '<div class="card stat"><div class="n" style="font-size:17px">' + s[0] + '</div><div class="t">' + s[1] + '</div></div>';
+        });
+        out += '</div>';
+      }
+      if (b.h) out += '<div class="sec" style="margin:14px 0 9px">' + b.h + '</div>';
+      if (b.tl) {
+        out += '<div class="card card-pad" style="margin-bottom:14px"><div class="timeline">';
+        b.tl.forEach(function (r) {
+          out += '<div class="tl-item"><div class="tl-when">' + r[0] + '</div><div class="tl-what">' + r[1] + '</div></div>';
+        });
+        out += '</div></div>';
+      }
+      if (b.tbl) {
+        out += '<div class="card card-pad" style="margin-bottom:14px"><table class="tbl"><thead><tr>';
+        b.tbl.cols.forEach(function (c) { out += '<th>' + c + '</th>'; });
+        out += '</tr></thead><tbody>';
+        b.tbl.rows.forEach(function (row) {
+          out += '<tr>';
+          row.forEach(function (c, i) { out += '<td' + (i === 0 ? ' style="color:var(--fg);font-weight:600"' : '') + '>' + c + '</td>'; });
+          out += '</tr>';
+        });
+        out += '</tbody></table></div>';
+      }
+      if (b.ul) {
+        out += '<div class="card card-pad" style="margin-bottom:14px"><div class="stack" style="gap:9px">';
+        b.ul.forEach(function (t) {
+          out += '<div class="row" style="gap:9px;align-items:flex-start"><span style="color:var(--accent-2);flex:none">·</span><span style="font-size:12.8px;color:var(--fg-dim)">' + t + '</span></div>';
+        });
+        out += '</div></div>';
+      }
+      if (b.cards) {
+        out += '<div class="grid cols-2" style="margin-bottom:14px">';
+        b.cards.forEach(function (c) {
+          out += '<div class="card card-pad" style="border-left:3px solid var(--accent-2)">' +
+            '<div class="spread" style="align-items:flex-start;margin-bottom:5px">' +
+            '<div style="font-size:13.2px;font-weight:600">' + c.t + '</div>' +
+            '<span class="badge muted" style="padding:1px 7px;flex:none">' + (c.badge || '') + '</span></div>' +
+            '<div class="tiny mute">' + c.m + '</div></div>';
+        });
+        out += '</div>';
+      }
+      if (b.note) out += '<div class="callout" style="margin-bottom:14px"><span class="mk">◈</span><div>' + b.note + '</div></div>';
+    });
+    return out;
+  }
+  function mountSecondary() {
+    var host = $('#screens');
+    Object.keys(SECONDARY).forEach(function (key) {
+      if ($('#screen-' + key)) return;
+      var s = SECONDARY[key];
+      var sec = document.createElement('section');
+      sec.className = 'screen';
+      sec.id = 'screen-' + key;
+      sec.setAttribute('data-screen', key);
+      sec.innerHTML = '<div style="margin-bottom:14px"><h1 style="font-size:19px">' + s.title + '</h1>' +
+        '<div class="dim" style="font-size:12.5px;margin-top:3px">' + s.sub + '</div></div>' + renderBlocks(s.blocks);
+      host.appendChild(sec);
+    });
+  }
+
+  /* ---------------- 抽屉内容（详情） ---------------- */
+  var DRAWER = {
+    round: { kind: '本轮', title: '本轮上下文是怎么凑齐的', body:
+      '<div class="callout"><span class="mk">◈</span><div>你在 14:02 发出了一句关于「水位」的提问。在你按下回车之前，系统已经完成了检索、排序与裁剪。</div></div>' +
+      '<table class="tbl"><tbody>' +
+      '<tr><td class="t">14:02:11</td><td>读工作区：当前工作区、活跃项目、最近 3 天日志</td></tr>' +
+      '<tr><td class="t">14:02:11</td><td>词法命中 12 条，语义命中 7 条，去重后 14 条</td></tr>' +
+      '<tr><td class="t">14:02:12</td><td>按相关度与水位置顶，取前 4 条</td></tr>' +
+      '<tr><td class="t">14:02:12</td><td>注入完成，占用 8,412 / 12,000 字符</td></tr>' +
+      '</tbody></table>' },
+    'recall-1': { kind: '唤回详情', title: '收尾提醒固定在每轮尾部注入', body:
+      '<div class="kv"><span class="k">作用域</span><span class="v">本项目</span></div>' +
+      '<div class="kv"><span class="k">来源</span><span class="v">2026-09-23 项目结论</span></div>' +
+      '<div class="kv"><span class="k">相关度</span><span class="v">0.92</span></div>' +
+      '<div class="callout"><span class="mk">◈</span><div>开头注入在长输出下会注意力丢失；收尾提醒是所有记忆插件必备的核心机制。</div></div>' },
+    'recall-2': { kind: '唤回详情', title: '给宿主代码打补丁前先备好回滚点', body:
+      '<div class="kv"><span class="k">作用域</span><span class="v">全团队（团队技能）</span></div>' +
+      '<div class="kv"><span class="k">贡献者</span><span class="v">陈 · 数据组</span></div>' +
+      '<div class="kv"><span class="k">复用次数</span><span class="v">7</span></div>' +
+      '<div class="callout ok"><span class="mk">✓</span><div>单写者文件改动前一律先备份、命名带时间戳；失败时按备份点回滚。</div></div>' },
+    'recall-3': { kind: '唤回详情', title: '前端是重活，先用拟合模式收敛需求', body:
+      '<div class="kv"><span class="k">作用域</span><span class="v">我的</span></div>' +
+      '<div class="kv"><span class="k">有效期</span><span class="v">3 个工作日</span></div>' +
+      '<div class="callout"><span class="mk">◈</span><div>需求还模糊时不直接大规模写前端：分批提问 → 收敛方向 → 用户确认 → 再动手。</div></div>' },
+    'recall-4': { kind: '唤回详情（已过时）', title: '设置页按 9 个分区铺开', body:
+      '<div class="callout warn"><span class="mk">◔</span><div>这条结论<b>已被取代</b>：现在按 4 组呈现，首屏控件从约 80 降到约 15。</div></div>' +
+      '<div class="callout"><span class="mk">◈</span><div>它仍然被返回给你，因为「为什么改」和「改成了什么」同样重要 —— 静默丢弃会让人重复踩坑。</div></div>' },
+    'logs-all': { kind: '日志', title: '全部 41 条日志', body:
+      '<div class="tiny mute" style="margin-bottom:8px">按时间倒序 · 每日一条，按需展开</div>' +
+      '<table class="tbl"><tbody>' +
+      '<tr><td class="t">09-23</td><td>界面重构批次 B、白板泳道、账本四段式落地</td></tr>' +
+      '<tr><td class="t">09-22</td><td>落地页深度档交付；记忆双库批次 1 完成</td></tr>' +
+      '<tr><td class="t">09-21</td><td>审计口径校正：只承诺 actor 不可伪造</td></tr>' +
+      '<tr><td class="t">09-20</td><td>技能库双库拆分；晋升门与成功标准</td></tr>' +
+      '</tbody></table>' },
+    'board-legend': { kind: '说明', title: '五条泳道各放什么', body:
+      '<table class="tbl"><tbody>' +
+      '<tr><td><span class="badge info"><span class="dot"></span>目标</span></td><td>这一阶段要达成什么，写结果不写任务</td></tr>' +
+      '<tr><td><span class="badge warn"><span class="dot"></span>进行中</span></td><td>此刻手上的事，超过 3 张就该砍</td></tr>' +
+      '<tr><td><span class="badge err"><span class="dot"></span>失败与弯路</span></td><td>方案 + 失败原因，原样保留，不删不改写</td></tr>' +
+      '<tr><td><span class="badge ok"><span class="dot"></span>进度与下一步</span></td><td>已完成项 + 可直接执行的下一步第一步</td></tr>' +
+      '<tr><td><span class="badge muted"><span class="dot"></span>版本归档</span></td><td>已发布版本与它的关键变更</td></tr>' +
+      '</tbody></table>' },
+    'handoff-archive': { kind: '账本', title: '全部 42 篇交接账本', body:
+      '<table class="tbl"><tbody>' +
+      '<tr><td class="t">09-23 20:15</td><td>v3.1.7 发布闭环 + 批次 B 启动</td></tr>' +
+      '<tr><td class="t">09-23 14:40</td><td>「删净 pre」四层完成</td></tr>' +
+      '<tr><td class="t">09-23 09:05</td><td>配置迁移紧急修复</td></tr>' +
+      '<tr><td class="t">09-22 23:10</td><td>落地页深度档 + 双库批次 1</td></tr>' +
+      '</tbody></table>' },
+    'release-notes': { kind: '版本', title: 'v3.1.7 更新说明', body:
+      '<div class="callout"><span class="mk">◈</span><div>接续来源修复 + 两处缺陷（单行摘要，与客户端内展示完全一致）。</div></div>' +
+      '<div class="kv"><span class="k">包</span><span class="v">@a9i5k4/dsh-auto-memory</span></div>' +
+      '<div class="kv"><span class="k">文件数</span><span class="v">257</span></div>' +
+      '<div class="kv"><span class="k">体积</span><span class="v">17.7 MB</span></div>' },
+    diagnostics: { kind: '诊断', title: '诊断中心', body:
+      '<div class="stack" style="gap:9px">' +
+      '<div class="stat-line">宿主连接正常</div>' +
+      '<div class="stat-line">内置语义引擎就绪</div>' +
+      '<div class="stat-line">记忆目录可读写</div>' +
+      '<div class="stat-line">回归 177 项通过 0 失败</div>' +
+      '</div><div class="tiny mute" style="margin-top:11px">诊断只读取本机状态，不外发任何内容。</div>' }
+  };
+
+  var GENERIC = {
+    k: function (el) {
+      var t = $('.t', el), m = $('.m', el), w = $('.why', el);
+      return { kind: '白板卡片', title: t ? t.textContent : '卡片',
+        body: (m ? '<div class="dim" style="font-size:12.8px">' + m.textContent + '</div>' : '') +
+          (w ? '<div class="callout err"><span class="mk">✕</span><div>' + w.textContent + '</div></div>' : '') +
+          '<div class="kv"><span class="k">所在泳道</span><span class="v">' + (el.closest('.lane') ? $('.nm', el.closest('.lane')).textContent : '—') + '</span></div>' +
+          '<div class="kv"><span class="k">最近更新</span><span class="v">2026-09-23</span></div>',
+        foot: '<button class="btn btn-ghost btn-sm" data-close-drawer>关闭</button>'
+      };
+    },
+    member: function (el) {
+      var row = el.closest('tr');
+      var tds = row ? $$('td', row) : [];
+      return { kind: '成员', title: tds[0] ? tds[0].textContent.trim() : '成员',
+        body: '<div class="kv"><span class="k">身份来源</span><span class="v">' + (tds[1] ? tds[1].textContent.trim() : '—') + '</span></div>' +
+          '<div class="kv"><span class="k">角色</span><span class="v">' + (tds[2] ? tds[2].textContent.trim() : '—') + '</span></div>' +
+          '<div class="kv"><span class="k">能改团队记忆</span><span class="v">' + (tds[3] ? tds[3].textContent.trim() : '—') + '</span></div>' +
+          '<div class="kv"><span class="k">最近活跃</span><span class="v">' + (tds[4] ? tds[4].textContent.trim() : '—') + '</span></div>' +
+          '<div class="callout"><span class="mk">◈</span><div>角色由平台侧身份决定；插件只保存「平台成员 → 团队角色」的映射。</div></div>',
+        foot: '<button class="btn btn-danger btn-sm" data-open-modal="m-remove-member">移出本项目</button><button class="btn btn-ghost btn-sm" data-close-drawer>关闭</button>'
+      };
+    },
+    audit: function (el) {
+      var row = el.closest('tr');
+      var tds = row ? $$('td', row) : [];
+      return { kind: '审计记录', title: tds[2] ? tds[2].textContent.trim() : '写入记录',
+        body: '<div class="kv"><span class="k">时间</span><span class="v">' + (tds[0] ? tds[0].textContent.trim() : '—') + '</span></div>' +
+          '<div class="kv"><span class="k">actor</span><span class="v">' + (tds[1] ? tds[1].textContent.trim() : '—') + '</span></div>' +
+          '<div class="kv"><span class="k">作用域</span><span class="v">' + (tds[3] ? tds[3].textContent.trim() : '—') + '</span></div>' +
+          '<div class="kv"><span class="k">性质</span><span class="v">' + (tds[4] ? tds[4].textContent.trim() : '—') + '</span></div>' +
+          '<div class="callout ok"><span class="mk">✓</span><div>写入路径上的 actor 不可伪造：这条记录里写了是谁写的，就是谁写的。</div></div>' +
+          '<div class="callout err"><span class="mk">✕</span><div>不是防篡改级：能读到记忆文件的进程可以绕过本插件直接改盘上内容。</div></div>',
+        foot: '<button class="btn btn-ghost btn-sm" data-close-drawer>关闭</button>'
+      };
+    },
+    hit: function (el) {
+      var title = $('div[style*="font-weight:600"]', el);
+      var meta = $('.tiny.mute', el);
+      return { kind: '检索命中', title: title ? title.textContent : '命中条目',
+        body: '<div class="dim" style="font-size:12.8px">' + (el.textContent.indexOf('失败原因') > -1 ? '失败原因：菜单里再藏菜单，用户找不到东西的根因没解决，反而多了一层。' : '命中片段按相关度排序，完整原文保留在工作区记忆中。') + '</div>' +
+          '<div class="kv"><span class="k">来源</span><span class="v">' + (meta ? meta.textContent : '—') + '</span></div>' +
+          '<div class="callout"><span class="mk">◈</span><div>过时条目照常返回，但会显式标注并指向最新结论。</div></div>',
+        foot: '<button class="btn btn-outline btn-sm" data-close-drawer>在项目中打开</button><button class="btn btn-ghost btn-sm" data-close-drawer>关闭</button>'
+      };
+    },
+    tm: function (el) {
+      var t = $('.t', el), m = $('.m', el), card = el.closest('[data-scope]');
+      var sc = card ? card.getAttribute('data-scope') : 'project';
+      var name = { mine: '我的', project: '这个项目的', team: '全团队的' }[sc];
+      return { kind: '记忆条目', title: t ? t.textContent : '条目',
+        body: '<div class="spread" style="margin-bottom:8px"><span class="scope-badge" data-scope="' + sc + '">● ' + name + '</span><span class="tiny mute">' + (m ? m.textContent : '') + '</span></div>' +
+          '<div class="kv"><span class="k">状态</span><span class="v">有效</span></div>' +
+          '<div class="kv"><span class="k">可见范围</span><span class="v">' + ({ mine: '仅我', project: '项目成员', team: '全组织' }[sc]) + '</span></div>' +
+          '<div class="callout"><span class="mk">◈</span><div>提升可见范围会留下审计记录：谁升的、什么时候升的。</div></div>',
+        foot: '<button class="btn btn-outline btn-sm" data-open-modal="m-promote">提升可见范围</button><button class="btn btn-ghost btn-sm" data-close-drawer>关闭</button>'
+      };
+    }
+  };
+  function genericFor(id, el) {
+    var p = id.split('-')[0];
+    var fn = GENERIC[p === 'k' ? 'k' : p];
+    if (p === 'k') fn = GENERIC.k;
+    else if (p === 'member') fn = GENERIC.member;
+    else if (p === 'audit') fn = GENERIC.audit;
+    else if (p === 'hit') fn = GENERIC.hit;
+    else if (p === 'tm') fn = GENERIC.tm;
+    else fn = null;
+    return fn && el ? fn(el) : null;
+  }
+
+  /* ---------------- 模态内容（确认） ---------------- */
+  var MODAL = {
+    'm-about-scope': { title: '三个作用域，一眼分清', body:
+      '<div class="stack" style="gap:9px">' +
+      '<div class="row" style="gap:9px"><span class="scope-badge" data-scope="mine">● 我的</span><span>只有我看得见，跟着我的账号走</span></div>' +
+      '<div class="row" style="gap:9px"><span class="scope-badge" data-scope="project">● 这个项目的</span><span>参与这个项目的人都能看</span></div>' +
+      '<div class="row" style="gap:9px"><span class="scope-badge" data-scope="team">● 全团队的</span><span>组织内跨项目共享</span></div>' +
+      '</div><div class="tiny mute" style="margin-top:12px">每一屏都用「色 + 徽标 + 分区标题」三处同时表达，不只靠文字。</div>',
+      ok: '知道了', cancel: null },
+    'm-new-handoff': { title: '新建交接账本？', body:
+      '新账本会按四段式生成空白骨架：任务状态 / 目标 / 已试方案与失败原因 / 进度与下一步。当前账本保持不变，仍可查阅。',
+      ok: '新建', cancel: '取消' },
+    'm-login-dsh': { title: '使用 DSH 账号登录', body:
+      '将跳转到宿主平台完成身份验证，插件不接触你的密码与验证码。登录后插件仅获得：一个稳定的成员标识、显示名与头像、一个角色。',
+      ok: '继续', cancel: '取消' },
+    'm-login-alt': { title: '使用第三方身份登录', body:
+      '身份由所选身份源提供，插件本地只留登录接口，不保存第二份账号密码。',
+      ok: '继续', cancel: '取消' },
+    'm-logout': { title: '退出当前会话？', body:
+      '退出只影响本机会话；团队记忆与已沉淀的项目结论不受影响，重新登录后仍然可见。',
+      ok: '退出', cancel: '取消' },
+    'm-remove-member': { title: '移出本项目？', body:
+      '该成员将失去本项目记忆的读取权限；其此前写入的条目与审计记录会保留，不会被删除。',
+      ok: '移出', cancel: '取消' },
+    'm-promote': { title: '提升可见范围？', body:
+      '提升后，更多同事可以检索到这条记忆。操作会留痕：谁升的、什么时候升的，都可以在审计与追溯里查到。',
+      ok: '提升', cancel: '取消' },
+    'm-export-audit': { title: '导出审计留档？', body:
+      '将导出近 30 天的 actor 时间线（1,284 条）为本地文件，包含时间、actor、内容摘要与作用域。',
+      ok: '导出', cancel: '取消' }
+  };
+  /* ---------------- 导航（一级 + 二级真页签） ---------------- */
+  var currentL1 = HOME, currentScreen = HOME;
+  var l2 = $('#l2');
+
+  function buildTabs(l1) {
+    var cfg = NAV[l1], html = '';
+    cfg.tabs.forEach(function (t) {
+      html += '<button class="l2-tab" role="tab" data-l2="' + t[0] + '" aria-selected="false">' + t[1] + '</button>';
+    });
+    l2.innerHTML = html;
+    l2.style.display = 'flex';
+  }
+  function paintNav() {
+    $$('.nav-item[data-l1]').forEach(function (b) {
+      if (b.getAttribute('data-l1') === currentL1) b.setAttribute('aria-current', 'page');
+      else b.removeAttribute('aria-current');
+    });
+    $$('.l2-tab').forEach(function (b) {
+      b.setAttribute('aria-selected', b.getAttribute('data-l2') === currentScreen ? 'true' : 'false');
+    });
+    var cfg = NAV[currentL1];
+    var tab = cfg.tabs.filter(function (t) { return t[0] === currentScreen; })[0];
+    $('#crumb').innerHTML = '<span>' + cfg.label + '</span>' +
+      (tab && tab[0] !== HOME ? '<span class="sep">/</span><span>' + tab[1] + '</span>' : '');
+  }
+  function show(screen) {
+    var el = $('#screen-' + screen);
+    if (!el) {
+      var sec = SECONDARY[screen];
+      if (!sec) return;
+      var s = document.createElement('section');
+      s.className = 'screen'; s.id = 'screen-' + screen; s.setAttribute('data-screen', screen);
+      s.innerHTML = '<div style="margin-bottom:14px"><h1 style="font-size:19px">' + sec.title + '</h1>' +
+        '<div class="dim" style="font-size:12.5px;margin-top:3px">' + sec.sub + '</div></div>' + renderBlocks(sec.blocks);
+      $('#screens').appendChild(s);
+    }
+    $$('.screen').forEach(function (x) { x.classList.remove('is-active'); });
+    $('#screen-' + screen).classList.add('is-active');
+    currentScreen = screen;
+    $('#screens').scrollTop = 0;
+    paintNav();
+    $('.sidebar').classList.remove('is-open');
+  }
+  function gotoL1(l1) {
+    if (!NAV[l1]) return;
+    currentL1 = l1;
+    buildTabs(l1);
+    show(NAV[l1].tabs[0][0]);
+  }
+
+  $$('.nav-item[data-l1]').forEach(function (b) {
+    b.addEventListener('click', function () { gotoL1(b.getAttribute('data-l1')); });
+  });
+  l2.addEventListener('click', function (e) {
+    var t = e.target.closest('.l2-tab');
+    if (t) show(t.getAttribute('data-l2'));
+  });
+
+  /* ---------------- 抽屉（详情） ---------------- */
+  var scrim = $('#scrim'), drawer = $('#drawer');
+  function closeDrawer() {
+    drawer.classList.remove('is-in');
+    scrim.classList.remove('is-in');
+    window.setTimeout(function () {
+      drawer.hidden = true; scrim.hidden = true;
+    }, window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 250);
+  }
+  function openDrawer(id, el) {
+    var d = DRAWER[id] || genericFor(id, el);
+    if (!d) return;
+    $('#drawer-kind').textContent = d.kind || '详情';
+    $('#drawer-title').textContent = d.title || '—';
+    $('#drawer-body').innerHTML = d.body || '';
+    $('#drawer-foot').innerHTML = d.foot || '<button class="btn btn-ghost btn-sm" data-close-drawer>关闭</button>';
+    scrim.hidden = false; drawer.hidden = false;
+    void drawer.offsetWidth;
+    scrim.classList.add('is-in'); drawer.classList.add('is-in');
+    $('[data-close-drawer]', drawer).focus();
+  }
+  document.addEventListener('click', function (e) {
+    var o = e.target.closest('[data-open-drawer]');
+    if (o) { openDrawer(o.getAttribute('data-open-drawer'), o); return; }
+    if (e.target.closest('[data-close-drawer]')) { closeDrawer(); return; }
+    if (e.target === scrim) { closeDrawer(); return; }
+  });
+
+  /* ---------------- 模态（确认） ---------------- */
+  var modal = $('#modal');
+  var modalOkHandler = null;
+  function closeModal() {
+    modal.classList.remove('is-in');
+    window.setTimeout(function () { modal.hidden = true; }, window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 250);
+  }
+  function openModal(id) {
+    var m = MODAL[id];
+    if (!m) return;
+    $('#modal-title').textContent = m.title;
+    $('#modal-body').innerHTML = m.body;
+    $('#modal-ok').textContent = m.ok || '确定';
+    $('#modal-ok').style.display = m.ok === null ? 'none' : '';
+    var cancelBtn = $('[data-close-modal].btn-ghost');
+    if (cancelBtn) cancelBtn.style.display = m.cancel === null ? 'none' : '';
+    modalOkHandler = m.onOk || null;
+    modal.hidden = false;
+    void modal.offsetWidth;
+    modal.classList.add('is-in');
+    $('#modal-ok').focus();
+  }
+  document.addEventListener('click', function (e) {
+    var o = e.target.closest('[data-open-modal]');
+    if (o) {
+      var id = o.getAttribute('data-open-modal');
+      if (MODAL[id] && o.getAttribute('data-provider')) {
+        MODAL[id] = Object.assign({}, MODAL[id], { title: '使用 ' + o.getAttribute('data-provider') + ' 登录' });
+      }
+      openModal(id); return;
+    }
+    if (e.target.closest('[data-close-modal]')) { closeModal(); return; }
+  });
+  $('#modal-ok').addEventListener('click', function () {
+    if (modalOkHandler) modalOkHandler();
+    closeModal();
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape') return;
+    if (!modal.hidden) closeModal();
+    else if (!drawer.hidden) closeDrawer();
+  });
+
+  /* ---------------- 开关 / 单选 / 高级折叠 ---------------- */
+  document.addEventListener('click', function (e) {
+    var sw = e.target.closest('.sw');
+    if (sw) {
+      var on = sw.getAttribute('aria-checked') === 'true';
+      sw.setAttribute('aria-checked', on ? 'false' : 'true');
+      return;
+    }
+    var rb = e.target.closest('[data-radio] button');
+    if (rb) {
+      var group = rb.closest('[data-radio]');
+      $$('button', group).forEach(function (b) { b.setAttribute('aria-pressed', 'false'); });
+      rb.setAttribute('aria-pressed', 'true');
+      if (group.getAttribute('data-radio') === 'theme') setTheme(rb.getAttribute('data-val'));
+      return;
+    }
+    var chip = e.target.closest('.chip[aria-pressed]');
+    if (chip) {
+      var siblings = chip.parentElement.querySelectorAll('.chip[aria-pressed]');
+      Array.prototype.forEach.call(siblings, function (c) { c.setAttribute('aria-pressed', 'false'); });
+      chip.setAttribute('aria-pressed', 'true');
+      if (chip.hasAttribute('data-board-zoom')) {
+        $('#kanban').classList.toggle('zoom1', true);
+      } else if (chip.textContent.indexOf('展开详情') > -1) {
+        $('#kanban').classList.toggle('zoom1', false);
+      }
+      return;
+    }
+    var adv = e.target.closest('.adv-toggle');
+    if (adv) {
+      adv.closest('.sgroup').classList.toggle('open');
+      updateCounts();
+      return;
+    }
+  });
+  function updateCounts() {
+    var groups = $$('.sgroup');
+    var open = groups.filter(function (g) { return g.classList.contains('open'); }).length;
+    var hidden = 0;
+    groups.forEach(function (g) {
+      if (!g.classList.contains('open')) {
+        hidden += $$('.adv-wrap .srow', g).length;
+      }
+    });
+    var vis = 0;
+    groups.forEach(function (g) {
+      vis += $$('.sgroup-body > .srow', g).length;
+    });
+    var cv = $('#ctl-visible'), ch = $('#ctl-hidden');
+    if (cv) cv.textContent = String(vis);
+    if (ch) ch.textContent = String(hidden);
+    var btn = $('#expand-all');
+    if (btn) btn.textContent = (open === groups.length ? '全部折叠' : '全部展开');
+  }
+  var expandAll = $('#expand-all');
+  if (expandAll) expandAll.addEventListener('click', function () {
+    var groups = $$('.sgroup');
+    var allOpen = groups.every(function (g) { return g.classList.contains('open'); });
+    groups.forEach(function (g) { g.classList.toggle('open', !allOpen); });
+    updateCounts();
+  });
+
+  /* ---------------- 主题 ---------------- */
+  function setTheme(v) {
+    var html = document.documentElement;
+    var resolved = v === 'auto'
+      ? (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark')
+      : v;
+    html.setAttribute('data-theme', resolved);
+    $('#theme-ico').textContent = resolved === 'dark' ? '☾' : '☀';
+    $('#theme-lbl').textContent = resolved === 'dark' ? '切换浅色' : '切换深色';
+    $$('.sgroup[data-group="prefs"] [data-radio="theme"] button').forEach(function (b) {
+      b.setAttribute('aria-pressed', b.getAttribute('data-val') === v ? 'true' : 'false');
+    });
+  }
+  $('#theme-toggle').addEventListener('click', function () {
+    setTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+  });
+
+  /* ---------------- 检索交互（纯本地假数据，无网络请求） ---------------- */
+  var hitList = $$('#screen-search .hit');
+  var q = $('#q');
+  function runSearch() {
+    var kw = (q && q.value || '').trim();
+    var n = 0;
+    hitList.forEach(function (h) {
+      var show = !kw || h.textContent.indexOf(kw) > -1;
+      h.style.display = show ? '' : 'none';
+      if (show) n++;
+    });
+    var st = $('#stat-hits');
+    if (st) st.textContent = String(n);
+  }
+  if (q) {
+    q.addEventListener('input', runSearch);
+    $('#q-go').addEventListener('click', runSearch);
+    $('#q-clear').addEventListener('click', function () { q.value = ''; runSearch(); q.focus(); });
+  }
+  $$('#screen-search .searchbar input').forEach(function (i) { i.addEventListener('input', function () {}); });
+  $$('[data-live-search]').forEach(function (i) {
+    i.addEventListener('input', function () {
+      var kw = i.value.trim();
+      $$('#screen-team-memory .kcard').forEach(function (c) {
+        c.style.display = (!kw || c.textContent.indexOf(kw) > -1) ? '' : 'none';
+      });
+    });
+  });
+
+  /* ---------------- 初始化 ---------------- */
+  mountSecondary();
+  gotoL1(HOME);
+  updateCounts();
+  setTheme('dark');
+  runSearch();
+})();
+
+</script>
+</body>
+</html>

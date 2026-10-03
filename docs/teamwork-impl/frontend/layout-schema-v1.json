@@ -1,0 +1,215 @@
+{
+  "$schema": "dam-l2-layout/v1",
+  "version": 1,
+  "regions": [
+    {
+      "name": "page",
+      "part": "page",
+      "order": 10,
+      "desc": "会话页整页承载面。28 卷 §3.2 R1：owner=auto-memory 的自定裸值；实测锚点 data-dam-page（anchors.json #1）。"
+    },
+    {
+      "name": "float",
+      "part": "am-panel",
+      "order": 20,
+      "desc": "浮层面板（左下角记忆浮窗）。官方 part `panel` 已被 pet / session-id / model-capabilities 三 owner 占用，按 37 卷 §3.2 定案自造裸值 am-panel，不扩大撞名面；实测锚点 data-dam-panel（anchors.json #2）。"
+    },
+    {
+      "name": "page-nav",
+      "part": "tab-bar",
+      "order": 30,
+      "desc": "会话页左侧固定导航 / 浮层顶部横向条。官方 part `tab-bar`（owner=ssh / skill-explorer），选择器须叠加 [data-dsh-plugin=\"auto-memory\"]；实测锚点 data-dam-page-nav（#6）、data-dam-nav-item（#155）。"
+    },
+    {
+      "name": "settings",
+      "part": "settings",
+      "order": 40,
+      "desc": "设置页整体。28 卷 §3.6 原样取用 `settings`；该值在 semantic-attrs 中属 data-dsh-surface 组（owner=shell）而非 part 组，锚定时须与 [role=\"dialog\"] 组合判定区分；实测锚点 data-dam-settings-nav（#20）、data-dam-settings-content（#21）。"
+    },
+    {
+      "name": "dialog",
+      "part": "dialog",
+      "order": 50,
+      "desc": "弹窗宿主（更新弹窗 / 首启向导 / 工作台弹窗）。官方 part `dialog`（owner=git-graph）；实测锚点 data-dam-tour（#53）、data-dam-tour-backdrop（#52）。"
+    },
+    {
+      "name": "sidebar-entry",
+      "part": "sidebar-entry",
+      "order": 60,
+      "desc": "侧栏入口按钮。官方 part `sidebar-entry`（owner=family）；实测锚点 data-dam-sidebar-btn（#0）。"
+    },
+    {
+      "name": "overlay",
+      "part": "overlay",
+      "order": 70,
+      "desc": "帧级浮层（auto-continue 宿主）。28 卷 §3.2 R7 / §3.6：owner=auto-memory 的自定裸值；同名值亦见于官方 data-dsh-surface 组（owner=shell），故须 data-dsh-plugin=\"auto-memory\" 限定；实测锚点 data-dam-autocont（#158）。"
+    }
+  ],
+  "slots": [
+    {
+      "name": "head",
+      "region": "page",
+      "part": "header",
+      "order": 10,
+      "existingAnchor": "data-dam-page-head"
+    },
+    {
+      "name": "actions",
+      "region": "*",
+      "part": null,
+      "order": 20,
+      "existingAnchor": "data-dam-btn"
+    },
+    {
+      "name": "nav",
+      "region": "page-nav",
+      "part": "tab-bar",
+      "order": 30,
+      "existingAnchor": "data-dam-nav-item"
+    },
+    {
+      "name": "summary",
+      "region": "page",
+      "part": "today-card",
+      "order": 40,
+      "existingAnchor": "data-dam-kv"
+    },
+    {
+      "name": "list",
+      "region": "page",
+      "part": null,
+      "order": 50,
+      "existingAnchor": "data-dam-row"
+    },
+    {
+      "name": "timeline",
+      "region": "page",
+      "part": null,
+      "order": 60,
+      "existingAnchor": "data-dam-flow"
+    },
+    {
+      "name": "board",
+      "region": "page",
+      "part": "column",
+      "order": 70,
+      "existingAnchor": "data-dam-kanban-view"
+    },
+    {
+      "name": "graph",
+      "region": "page",
+      "part": null,
+      "order": 80,
+      "existingAnchor": "data-dam-wbg-canvas"
+    },
+    {
+      "name": "calendar",
+      "region": "page",
+      "part": null,
+      "order": 90,
+      "existingAnchor": "data-dam-calendar"
+    },
+    {
+      "name": "detail",
+      "region": "page",
+      "part": "detail",
+      "order": 100,
+      "existingAnchor": "data-dam-kx-drawer"
+    },
+    {
+      "name": "chart",
+      "region": "page",
+      "part": "usage-chart",
+      "order": 110,
+      "existingAnchor": "data-dam-stat-donut"
+    },
+    {
+      "name": "stats-row",
+      "region": "page",
+      "part": "provider-row",
+      "order": 120,
+      "existingAnchor": "data-dam-stat"
+    },
+    {
+      "name": "badge",
+      "region": "*",
+      "part": "tag-badge",
+      "order": 130,
+      "existingAnchor": "data-dam-kx-badge"
+    },
+    {
+      "name": "hint",
+      "region": "*",
+      "part": null,
+      "order": 140,
+      "existingAnchor": "data-dam-hint"
+    },
+    {
+      "name": "form",
+      "region": "settings",
+      "part": "settings-row",
+      "order": 150,
+      "existingAnchor": "data-dam-input"
+    },
+    {
+      "name": "footer",
+      "region": "page",
+      "part": null,
+      "order": 160,
+      "existingAnchor": "data-dam-tour-foot"
+    },
+    {
+      "name": "empty",
+      "region": "*",
+      "part": null,
+      "order": 170,
+      "existingAnchor": "data-dam-kx-empty"
+    },
+    {
+      "name": "chart-legend",
+      "region": "page",
+      "part": null,
+      "order": 180,
+      "existingAnchor": "data-dam-legend-dot"
+    }
+  ],
+  "blockKinds": [
+    "badge",
+    "list",
+    "timeline",
+    "chart",
+    "stat",
+    "actions",
+    "form",
+    "prose",
+    "media",
+    "empty"
+  ],
+  "authorSurface": {
+    "reorder": {
+      "label": "改顺序",
+      "how": "[data-dam-region] 覆写 order，或父容器 display:flex|grid + grid-template-areas；slot 级用 [data-dam-slot=\"Y\"] { order: N }",
+      "source": "28 卷 §3.1 ① / §3.5 方式 A·B"
+    },
+    "resize": {
+      "label": "改尺寸",
+      "how": "覆写 --dam-region-w / --dam-region-h / --dam-region-min",
+      "source": "28 卷 §3.1 ②"
+    },
+    "visibility": {
+      "label": "显隐",
+      "how": "[data-dam-region=\"X\"] { display:none } / [data-dam-slot=\"Y\"] { display:none }",
+      "source": "28 卷 §3.1 ③"
+    },
+    "aesthetics": {
+      "label": "改块外观",
+      "how": "覆写 --dam-* token；块级用 [data-dam-block][data-dam-kind=\"Z\"]；换块外观可选消费 --dam-block-style（唯一需我方预留的消费点，28 卷 §3.5 方式 C）",
+      "source": "28 卷 §3.1 ④ / §3.5 方式 C"
+    },
+    "imagery": {
+      "label": "改图片与背景图 banner",
+      "how": "块图片 [data-dam-block][data-dam-kind=\"media|empty\"] background-image；帧级背景图 banner 走同族 token/属性，禁远程 URL、禁 @import",
+      "source": "28 卷 §3.4 media/empty + §3.6 authorSurface.imagery"
+    }
+  }
+}
