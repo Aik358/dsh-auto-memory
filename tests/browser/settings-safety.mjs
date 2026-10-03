@@ -12,6 +12,12 @@ const { chromium } = require('playwright-core')
 const reactPath=path.join(path.dirname(require.resolve('react/package.json')),'umd/react.development.js')
 const domPath=path.join(path.dirname(require.resolve('react-dom/package.json')),'umd/react-dom.development.js')
 let client=readFileSync(path.join(root,'lib/client.js'),'utf8')
+// Controlled scheduling seam: keep real React renders/commits, but defer only
+// this hook's subscription effect until after the actual request completes.
+// This verifies the render-to-subscription gap; it is not natural-scheduler timing.
+const operationStart=client.indexOf('    function useMemoryOperation('),operationEnd=client.indexOf('    function submitMemoryOperation(',operationStart)
+assert(operationStart>=0 && operationEnd>operationStart)
+client=client.slice(0,operationStart)+client.slice(operationStart,operationEnd).replace('useEffect(function(){','operationEffect(function(){')+client.slice(operationEnd)
 client=client.replace('return { page: Iter5Page, css: ITER5_CSS }', 'return { page: Iter5Page, css: ITER5_CSS, Settings: Iter5Settings, Note: Iter5Note, Calendar: Iter5Calendar }')
 client=client.replace('    return module.exports', `    var fixtureSession='fixture-session';sessions={list:{getSnapshot:function(){return {current:fixtureSession,byId:{[fixtureSession]:{cwd:'/fixture/project',retainedBy:{mainView:1}}}}}}}
     window.dshTest={setSession:function(sid){fixtureSession=sid;emit()},Panel:MemoryPanel,broadcast:emit,Settings:Iter5Settings,LegacySettings:LEGACY_SKIN_NS.Settings,ClassicSettings:SettingsPage,Note:Iter5Note,LegacyNote:LEGACY_SKIN_NS.Note,ClassicNote:NotesTab,Calendar:Iter5Calendar,LegacyCalendar:LEGACY_SKIN_NS.Calendar,ClassicCalendar:CalendarTab,External:Iter5External,ClassicExternal:ConnectTab,controller:controller,locale:applyLocalePref,t:t,styles:CSS+'\\n'+ITER5_CSS,legacyStyles:LEGACY_ITER5_CSS}
@@ -20,6 +26,13 @@ client=client.replace('    return module.exports', `    var fixtureSession='fixt
 assert(client.includes('function Iter5External('))
 const html=`<!doctype html><meta charset="utf-8"><div id="root"></div><script src="/react.js"></script><script src="/react-dom.js"></script><script>window.__ModuleLoader__={load:function(item){item.factory(function(name){if(name==='react')return React;if(name==='react-dom')return ReactDOM;return {}})}};</script><script src="/client.js"></script><script>
 let uiRoot=ReactDOM.createRoot(document.getElementById('root')),fixtureNonce=0;
+window.deferOperationSubscription=false;window.pendingOperationSubscriptions=[];
+window.operationEffect=function(effect,deps){React.useEffect(function(){
+ if(!window.deferOperationSubscription)return effect();
+ let ticket={effect:effect,cleanup:null};pendingOperationSubscriptions.push(ticket);
+ return function(){pendingOperationSubscriptions=pendingOperationSubscriptions.filter(x=>x!==ticket);if(ticket.cleanup)ticket.cleanup()};
+},deps)};
+window.flushOperationSubscriptions=function(){deferOperationSubscription=false;let tickets=pendingOperationSubscriptions.slice();pendingOperationSubscriptions=[];tickets.forEach(ticket=>{ticket.cleanup=ticket.effect()})};
 window.mount=function(name,options){let Component=dshTest[name];uiRoot.render(React.createElement('div',{'data-iter5':'','data-i5-style':'instrument','data-deep':'false',style:{height:'100vh'}},React.createElement('style',null,dshTest.styles),React.createElement('main',{className:'i5-main'},React.createElement(Component,Object.assign({key:name+'-'+fixtureNonce,source:'/fixture/notes/MEMORY.md',nonce:fixtureNonce,onNav:function(){},onExit:function(){}},options||{})))))};
 window.remount=function(name,options){fixtureNonce++;mount(name,options)};
 </script>`
@@ -242,6 +255,39 @@ try{
   }
  }
  evidence.push('PASS pending calendar remount matrix: classic/new/frozen × success/failure × unchanged A/new B; status and outcome synchronized')
+ // Request completes after the new instance renders/commits but before its
+ // controlled subscription effect runs. Keep initial replay for old saved ops.
+ for(const kind of ['note','calendar'])for(const destination of kind==='note'?['ClassicNote','Note','LegacyNote']:['ClassicCalendar','Calendar','LegacyCalendar']){
+  for(const fail of [false,true])for(const newer of [false,true]){
+   const a='effect gap A '+kind+' '+destination+' '+fail+' '+newer,b='new B '+a,holder={}
+   if(kind==='note'){
+    await mounted('ClassicNote');await page.locator('textarea').fill(a);holdNote=holder
+    await page.getByRole('button',{name:'Append',exact:true}).click()
+   }else{
+    await mounted('Calendar');if(!await page.locator('.i5-calendar-form').count())await page.getByRole('button',{name:/Add event/}).click()
+    await page.getByLabel('Title',{exact:true}).fill(a);holdCalendar=holder
+    await page.locator('.i5-calendar-form button[type=submit]').click()
+   }
+   await page.waitForTimeout(30)
+   await page.evaluate(()=>{deferOperationSubscription=true});await mounted(destination)
+   const editor=kind==='note'?page.locator('textarea'):destination==='ClassicCalendar'?page.getByPlaceholder('Item title…'):page.getByLabel('Title',{exact:true})
+   assert.equal(await editor.inputValue(),a)
+   assert.equal(await page.evaluate(()=>pendingOperationSubscriptions.length),1)
+   if(newer)await editor.fill(b)
+   await holder.resolve(fail);await page.waitForTimeout(40)
+   assert.equal(await editor.inputValue(),newer?b:a,'controlled effect has not subscribed yet')
+   await page.evaluate(()=>flushOperationSubscriptions());await page.waitForTimeout(40)
+   if(kind==='calendar' && !newer && !fail)assert.equal(await editor.count(),0)
+   else assert.equal(await editor.inputValue(),newer?b:fail?a:'')
+   assert(await page.getByText(fail?'injected pending '+kind+' failure':kind==='note'?'appended':'calendar appended',{exact:true}).count())
+   // A new draft equal to an older saved submission is a distinct edit. A saved
+   // operation already present at render must not clear it during initial replay.
+   if(kind==='note' && !fail){
+    await editor.fill(a);await mounted(destination);assert.equal(await page.locator('textarea').inputValue(),a)
+   }
+  }
+ }
+ evidence.push('PASS controlled React render/commit-to-subscription gap: note/calendar × three implementations × success/failure × A/B; old completed operation replay preserves new same-text note')
  // Water display ordering and identity for each shipped settings implementation.
  for(const surface of ['Settings','LegacySettings','ClassicSettings']){
   await mounted(surface);if(surface!=='ClassicSettings')await tab('behavior')
