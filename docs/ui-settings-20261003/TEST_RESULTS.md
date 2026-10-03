@@ -18,7 +18,7 @@ node tools/run-smoke.mjs --jobs=1 --timeout=90000 \
 | 干净 main / Node 24 | 244 | 241 | 3 | 0 |
 | 最终修复 / Node 22 | 246 | 243 | 3 | 0 |
 
-最终全量用时 138.3 秒，退出码 1（由以下三个基线失败导致）；修复未引入新增失败。新增两个设置套件又单独核验通过，含真实目录权限导致的原子配置写失败。
+最终全量用时 138.2 秒，退出码 1（由以下三个基线失败导致）；修复未引入新增失败。新增两个设置套件又单独核验通过，含真实目录权限导致的原子配置写失败。
 
 基线三个持续失败：
 
@@ -56,7 +56,7 @@ DSH_BROWSER_TOOLS=/tmp/dsh-browser-tools CHROMIUM_PATH=/usr/bin/chromium \
   node tests/browser/settings-safety.mjs
 ```
 
-测试加载完整出货 client factory 和真实 React 18；所有 API 为 fixture。16 组证据通过，浏览器异常 0：
+测试加载完整出货 client factory 和真实 React 18；所有 API 为 fixture。17 组证据通过，浏览器异常 0：
 
 - 保留原始换行/逗号、失败草稿、重挂载恢复、保存规范化、空时间数组关闭。
 - 同模型 ID 不同 provider 单一勾选、模态 Escape、密码显隐与 localStorage 不含假密钥、未接线传输禁用并保留旧值。
@@ -90,3 +90,15 @@ DSH_BROWSER_TOOLS=/tmp/dsh-browser-tools CHROMIUM_PATH=/usr/bin/chromium \
 补修后实际引擎/文件系统回归增加归属账本、失败后源更新、新调用恢复、外部目标编辑保留、第二根失败回滚第一根、配置写失败回滚副本，以及 canonical 等同/双向包含创建前拒绝。实际 handler 回归增加同请求并发 200/400、队列/flight 清理，恢复真实会话解析（活 agents、冷 registry、withAgent），及切根等已接纳笔记完成/拒绝新笔记/迁移包含已完成写入/提交后旧落点 409。
 
 统一最终 Node 22 smoke 为 243 通过/3 同基线失败/0 超时，138.3 秒；Chromium 16 组/0 异常。日志见 `artifacts/ui-settings-20261003/smoke-followup-node22.log`、`browser-followup.log`、`pre-fix-migration.log`、`pre-fix-pending-result.log`。Python 与其他原先不具备条件的验收未再次运行，状态不变。
+
+## 最终订阅窗口补修
+
+最终代码提交 `f30c92fb162daa914595b6d0cc1f5cc14f7ff915`。在隔离的 `5a228017` 源码拷贝上，真实 React render/commit 后仅延迟 `useMemoryOperation` 的订阅 effect，再完成实际 fixture 请求，明确复现笔记 A 未清：预期空字符串，实际 `effect gap A note ClassicNote false false`。这是可精确控制的调度测试，不是自然调度时序或完整 DSH 验收。
+
+补修捕获渲染时的操作身份和原始 status 字符串；订阅时状态已变化则按遗漏的实时事件回放，已有完成状态仍是初次回放。原先 A/B 提交快照保护继续生效。新增 24 个笔记/日历×三入口×成功/失败×A/B 场景全部通过，另验证成功后重新输入与旧 A 同文的新草稿再挂载不会被旧完成状态删除。原有 24 个 pending 重挂载场景也继续通过。
+
+余量 HTML min、onChange 和中英文提示统一为运行时已有的 0.3..1；源码与生成产物一致，运行时公式/默认值未改。
+
+最终 Node 22 项目 smoke：246 套件、243 通过/3 同基线失败/0 超时，138.2 秒、退出码 1。Chromium：17 组、0 异常。JS 语法、生成检查、diff 检查和本地 package dry-run 通过（3.2.7、629 文件）。Python、完整宿主、Windows、真实团队网络与完整键盘/每页布局仍未重跑或未运行，状态如前。
+
+最新日志：`smoke-passive-gap-node22.log`、`browser-passive-gap.log`、`pre-fix-passive-gap.log`。迁移账本的进程崩溃断点恢复、配置已提交后账本清理失败及后续恢复未测试；不宣称迁移具有崩溃一致性。

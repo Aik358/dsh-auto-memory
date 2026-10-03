@@ -1,0 +1,17 @@
+PASS raw newline/comma editing, failure retention, remount recovery, normalized save, empty-array off
+PASS provider+model identity, modal Escape/focus, secret masking/visibility/no localStorage, unsupported folder unavailable, transport-specific fields
+PASS directory picker close/reopen generations reject late obsolete response
+PASS actual React: saving A then typing B preserves B; classic/new/frozen note remount recovery
+PASS shipped floating panel: page/identity switches, close confirmation, accepted close and reopen restore scoped drafts
+PASS explicit note Cancel clears its confirmed shared draft
+PASS calendar location-only protection: Escape/Cancel, classic/new/frozen draft recovery and explicit discard
+PASS external lookup out-of-order completion, source selection identity
+PASS actual React settings and semantic GET disorder: older snapshots cannot replace newer state
+PASS semantic state synchronizes across simultaneous settings instances
+PASS pending note remount matrix: classic/new/frozen × success/failure × unchanged A/new B; status and outcome synchronized
+PASS pending calendar remount matrix: classic/new/frozen × success/failure × unchanged A/new B; status and outcome synchronized
+PASS controlled React render/commit-to-subscription gap: note/calendar × three implementations × success/failure × A/B; old completed operation replay preserves new same-text note
+PASS current/frozen/classic settings: handoff-state request disorder, changed session clears prior value and rejects old-session response
+PASS zh: current Settings four-tab navigation; appearance at 390/1280, Tab moves focus, no appearance page horizontal overflow (not full keyboard/all-page layout acceptance)
+PASS en: current Settings four-tab navigation; appearance at 390/1280, Tab moves focus, no appearance page horizontal overflow (not full keyboard/all-page layout acceptance)
+PASS ja: current Settings four-tab navigation; appearance at 390/1280, Tab moves focus, no appearance page horizontal overflow (not full keyboard/all-page layout acceptance)
