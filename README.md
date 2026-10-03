@@ -67,15 +67,12 @@
 <p align="center">
   <a href="./README.zh-CN.md"><img alt="中文" src="https://img.shields.io/badge/%E4%B8%AD%E6%96%87-%E5%88%87%E6%8D%A2-lightgrey?style=for-the-badge"></a>
   <a href="./README.md"><img alt="English" src="https://img.shields.io/badge/English-current-blue?style=for-the-badge"></a>
-</p>
-
-<p align="center">
   <a href="https://www.npmjs.com/package/@a9i5k4/dsh-auto-memory"><img alt="npm" src="https://img.shields.io/npm/v/@a9i5k4/dsh-auto-memory"></a>
   <a href="https://www.npmjs.com/package/@a9i5k4/dsh-auto-memory"><img alt="npm downloads" src="https://img.shields.io/npm/dt/@a9i5k4/dsh-auto-memory"></a>
 </p>
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/@a9i5k4/dsh-auto-memory"><img alt="立即下载" src="https://img.shields.io/badge/%E7%AB%8B%E5%8D%B3%E4%B8%8B%E8%BD%BD-npm%20install-C536BC?style=for-the-badge"></a>
+  <a href="https://www.npmjs.com/package/@a9i5k4/dsh-auto-memory"><img alt="立即下载" src="https://img.shields.io/badge/%E7%AB%8B%E5%8D%B3%E4%B8%8B%E8%BD%BD-npm%20install-4d6bfe?style=for-the-badge"></a>
   &nbsp;
   <code>pnpm add @a9i5k4/dsh-auto-memory@latest</code>
 </p>
