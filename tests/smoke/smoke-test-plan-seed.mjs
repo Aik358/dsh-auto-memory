@@ -1,3 +1,7 @@
+#!/usr/bin/env node
+import { withCalendarLock, canonicalCalendarPath } from '../../lib/calendar-lock.js'
+import { writeTextAtomicPre } from '../../lib/config-io.js'
+import { readPlanPre, planRevisionPre, anchoredPlanPre, archivePlanPre, conflictPlanPre, preparePlanPre } from '../../lib/plan-store.js'
 /**
  * smoke-test-plan-seed-pre.mjs —— 白板「自动首建 + 自动维护」守卫（2026-09-22 用户拍板）
  *
@@ -46,8 +50,8 @@ const handoffStampFn = new Function(padSrc + '\n' + extractFn('const handoffStam
 const nowHmSrc = SRC.match(/^const nowHm = \(\) => \{ const d = new Date\(\); return `\$\{pad\(d\.getHours\(\)\)\}:\$\{pad\(d\.getMinutes\(\)\)\}` \}$/m)[0]
 const nowHmFn = new Function(padSrc + '\n' + nowHmSrc + '\nreturn nowHm;')()
 const bindMethod = (header, fake, extra) => {
-  const names = ['path', 'existsSync', 'mkdir', 'writeFile', 'readdir', 'stat', 'handoffStamp', 'nowHm']
-  const vals = [path, existsSync, mkdir, writeFile, readdir, stat, handoffStampFn, nowHmFn]
+  const names = ['canonicalCalendarPath', 'withCalendarLock', 'writeTextAtomicPre', 'readPlanPre', 'planRevisionPre', 'anchoredPlanPre', 'archivePlanPre', 'conflictPlanPre', 'preparePlanPre', 'path', 'existsSync', 'mkdir', 'writeFile', 'readdir', 'stat', 'handoffStamp', 'nowHm']
+  const vals = [canonicalCalendarPath, withCalendarLock, writeTextAtomicPre, readPlanPre, planRevisionPre, anchoredPlanPre, archivePlanPre, conflictPlanPre, preparePlanPre, path, existsSync, mkdir, writeFile, readdir, stat, handoffStampFn, nowHmFn]
   for (const k of Object.keys(extra || {})) { names.push(k); vals.push(extra[k]) }
   const obj = new Function(...names, 'return {' + extractFn(header) + '};')(...vals)
   return obj[Object.keys(obj)[0]].bind(fake)
@@ -60,7 +64,7 @@ const nSkel = SRC.split('skeletonPlanTextPre() {').length - 1
 const nAgent = SRC.split('async ensurePlanBoardForAgentPre(agent) {').length - 1
 ok(nSeed === 1 && nSkel === 1 && nAgent === 1, '首建三件套各定义 1 次（定义/骨架/agent 包装）')
 ok(SRC.split('async writePlanSnapshot(projectDir, content, opts) {').length - 1 === 1 &&
-  SRC.indexOf('await this.writePlanSnapshot(projectDir, this.skeletonPlanTextPre())') !== -1,
+  SRC.indexOf('await this.writePlanSnapshot(projectDir, this.skeletonPlanTextPre(), { createOnly: true })') !== -1,
   '首建复用唯一白板写盘口 writePlanSnapshot（不自建第二条写盘路径）')
 // 首建必须挂在轮末（agent/turn-stopping）且**先于**水位测量：首建是"产物存在性"兜底，与水位阈值无关。
 const iHook = SRC.indexOf('void engine.ensurePlanBoardForAgentPre(agent)')
@@ -98,6 +102,7 @@ function makeFake(over) {
   const f = {
     config: { handoffEnabled: true },
     checkMutationPre: () => ({ ok: true }),
+    wbWsKeyPre: () => 'test-ws',
     async readTextSafe(p) { try { return (await readFile(p, 'utf8')) || '' } catch (_) { return '' } },
     async writeFullRaw(p, text) { await mkdir(path.dirname(p), { recursive: true }); await writeFile(p, text, 'utf8') },
     async writeSidecarEntryPre() {},

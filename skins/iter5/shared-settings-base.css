@@ -11,7 +11,7 @@
 [data-iter5] [data-settings-v3] .i5-setting-field[data-wide=true]>.i5-setting-control>div{width:100%;min-width:0;}
 [data-iter5] [data-settings-v3] .i5-engine-radios{display:grid;gap:8px;width:100%;}
 [data-iter5] [data-settings-v3] .i5-engine-choice{display:flex;align-items:center;gap:8px;min-height:44px;}
-[data-iter5] [data-settings-v3] [data-dam-savebar]{display:flex;flex-wrap:wrap;align-items:center;gap:10px;position:sticky;bottom:0;padding:12px 0;background:linear-gradient(var(--i5-surface,#fff),var(--i5-surface,#fff)) var(--i5-settings-surface,#fff);border-top:1px solid var(--i5-line);z-index:3;}
+[data-iter5] [data-settings-v3] [data-dam-savebar]{display:flex;flex-wrap:wrap;align-items:center;gap:10px;position:sticky;bottom:0;padding:12px 0;background:linear-gradient(var(--i5-surface,#fff),var(--i5-surface,#fff)) Canvas;border-top:1px solid var(--i5-line);z-index:3;}
 [data-iter5] [data-settings-v3] [data-dam-savebar] button[data-dirty]{margin-left:auto;}
 [data-iter5] [data-settings-v3] [data-dam-savebar] button[data-dirty=true]{background:var(--i5-primary,var(--i5-blue));color:var(--i5-on-accent,#fff);}
 [data-dam-body]>[data-dam-theme=settings]{width:100%;min-width:0;}

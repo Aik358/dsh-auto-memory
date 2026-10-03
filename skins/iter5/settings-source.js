@@ -488,7 +488,7 @@
             rows.push(L('当前档位', 'Resolved tier') + '：' + (tier === 'c3' ? 'C3 · Python' : tier === 'c2' ? 'C2 · JS' : tier ? ('C1 · ' + tier) : L('检测中', 'detecting')))
             if (sem && sem.pythonRuntime) {
               var rt = sem.pythonRuntime
-              var pyOk = rt.state === 'ready' && rt.depsOk !== false
+              var pyOk = (rt.state === 'verified-ok' || rt.state === 'ready') && rt.depsOk !== false
               rows.push(L('Python 运行时', 'Python runtime') + '：' + (pyOk ? L('可用', 'available') : (L('不可用', 'unavailable') + (rt.state ? ' (' + rt.state + ')' : ''))))
             }
             return h('div', { 'data-dam-gate-readout': '', 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { fontSize: 'calc(11.5px * var(--dam-scale))', lineHeight: 1.8, opacity: .82, marginTop: '4px' } },
@@ -887,7 +887,9 @@
         ]),
         section('skin', sectionLabels.skin, [
           // ★2026-09-28（用户第 1 大点）：本分区升格为「皮肤选择（皮肤中心）」——选择器置顶。
-          h(SkinPicker, { onSwitch: function () { try { setNonce(function (n) { return n + 1 }) } catch (ePick) {} } }),
+          // ★2026-10-03（G1-4/#196）：原回调引用组件局部不存在的 setNonce ⇒ ReferenceError 被 catch 吞。
+          //   家族切换的通知改由 dam-skin-changed 广播 + 挂载根订阅承担，此处不再需要非空回调。
+          h(SkinPicker, { onSwitch: function () {} }),
           h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { fontSize: 'calc(11.5px * var(--dam-scale))', opacity: .72, margin: '10px 0 4px' } },
             L('素材槽位（换图子功能，与皮肤选择正交）', 'Asset slots (image swapping; orthogonal to skin choice)')),
           // ★S2 皮肤(2026-09-27):6 槽位**真实渲染为 <img>**,取图走宿主只读路由

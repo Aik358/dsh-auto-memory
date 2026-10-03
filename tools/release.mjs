@@ -79,6 +79,9 @@ copyDirExcluding(path.join(DEV, 'lib'), path.join(REL, 'lib'), /$^/)
 // 拷后按结构判定清理：①过渡垫片 ②非白名单扩展名 ③主名后带第二个点的副本（如 client.js.scratch）
 const DAM_LIB_DROPPED = []
 for (const f of readdirSync(path.join(REL, 'lib'))) {
+  // Runtime directories contain binary assets and policies, not source-copy filenames.
+  // Apply the extension/copy rules only to top-level files.
+  if (statSync(path.join(REL, 'lib', f)).isDirectory()) continue
   const isRawCopy = /\.[^.]+\./.test(f)          // 形如 x.y.z ⇒ 调试副本/备份
   if (SHIM_RE.test(f) || isRawCopy || !DAM_LIB_KEEP_RE.test(f)) {
     rmSync(path.join(REL, 'lib', f), { recursive: true, force: true })
@@ -91,7 +94,9 @@ copyDirExcluding(path.join(DEV, 'python'), path.join(REL, 'python'), /(__pycache
 // ★2026-09-28(3.2.0) 补 skins：宿主路由 skin-library-fetch 与前端「皮肤选择中心」的默认仓库
 //   指向本仓库的 skins/ 目录 —— 若该目录不进发布包，GitHub 上就没有任何皮肤目录，「列出」必返空库，
 //   skins/README.md 里写着的内置皮肤表也会与仓库事实不符（真断链，与 CHANGELOG.md 当年漏拷同类）。
-for (const entry of ['cordis.patch.yml', 'README.md', 'README.zh-CN.md', 'LICENSE', 'notices.json', 'docs', 'social-preview.html', '.github',
+// ★issue #211（2026-10-04）：**移除 'docs'** —— 内部文档占仓库约 97%（约 177MB），运行时零消费者，
+//   不再随 npm 包分发（README 仍留在仓库根，GitHub 上照常可读）。
+for (const entry of ['cordis.patch.yml', 'README.md', 'README.zh-CN.md', 'LICENSE', 'notices.json', 'social-preview.html', '.github',
   // ★2026-09-21 补 CHANGELOG.md：两份 README **各有 3 处**链接到 `CHANGELOG.md`（导航条 / 文末链接区，
   //   共 6 处），但此文件此前**从不在复制清单里**，REL 仓也从未有过它 ⇒ GitHub 上点「Changelog」
   //   一直是 **404**（`git log --all -- CHANGELOG.md` 为空可证）。发版脚本漏拷，属真断链。
@@ -421,11 +426,10 @@ const relPkg = {
   //   ② 原 `!docs/**/*.bak` 与 `!docs/**/*.bak-*` 两条**依赖 npm 的 glob 语义**，而 `docs/**`
   //      中途另起一段的写法在部分 npm 版本上不生效 ⇒ 统一用 `!**/*.bak*` 一条兜住所有层级
   //      （`.bak` 与 `.bak-*` 都被覆盖），再补一条 `!lib/*.m8b*bak` 覆盖上述无点形态。
-  files: ['lib', 'python', 'docs', 'skins', 'icon.svg', 'locale', 'cordis.patch.yml', '!python/bench', '!python/__pycache__', '!docs/internal',
-    // ★2026-09-28 跟进社区作者 PR #146：补七条**设计稿/演示稿**排除（防止本地未跟踪材料随包发布）。
-    //   与 package.json 的 files 同源，两处必须一致 —— 发布包由本文件的 files 决定，package.json 是给 npm 的声明。
-    '!docs/ui-demo-*', '!docs/ui-demo', '!docs/ui-redesign-*', '!docs/ui-rebuild-handoff-*',
-    '!docs/teamwork-impl/concept', '!docs/teamwork-impl/_shots', '!**/node_modules',
+  // ★issue #211（2026-10-04）：`docs` 移出 files —— 与 package.json 同源，两处必须一致。
+  //   实测 docs/ 占仓库约 97%（约 177MB），其中 docs/internal 是审计/规划稿，运行时零消费者。
+  files: ['lib', 'python', 'skins', 'icon.svg', 'locale', 'cordis.patch.yml', '!python/bench', '!python/__pycache__',
+    '!**/node_modules',
     '!**/*.bak*', '!lib/*.m8b*bak*',
     // ★2026-10-01 修（issue #166）：**结构性排除** —— lib/ 下任何「主名后还有第二个点」的文件
     //   （`client.js.GOOD-1533` / `.scratch` / `.badcss` …）都是调试副本，一律不进包。

@@ -593,7 +593,7 @@
       var id=source&&source.id||''
       var detail=useIter5Data(function(){return id?apiGet(API.externalView,{source:id}):Promise.resolve(null)},[id,revision[0]])
       // ★2026-10-01（用户裁定 B）：全局简报 —— 一行汇总 + 抽屉展开（展开为逐条清单）。
-      var briefData=useIter5Data(function(){return apiGet(API.globalBrief)},[props.nonce,revision[0]])
+      var briefData=useIter5Data(function(){return apiGet(API.globalBrief, { sessionId: currentSessionIdClient() })},[props.nonce,revision[0]])
       var briefOpen=useState(false)
       var brief=briefData.data||null
       var identity=iter5Identity(), alive=useRef(true), lookup=useRef(0), activeSource=useRef(id)
@@ -904,10 +904,10 @@
         if (migBusy) return
         if (!migPack) { setMigErr(t('migPickPack')); return }
         setMigBusy('preview'); setMigErr(''); setMigNote(''); setMigPlan(null); setMigResult(null)
-        apiPost(API.migrateInspect, { packPath: migPack, targetWs: currentWs() || undefined }).then(function (j) {
+        apiPost(API.migrateInspect, { packPath: migPack, targetWs: currentWs() || undefined, onConflict: migConflict }).then(function (j) {
           setMigBusy('')
           if (!j || j.ok === false) { migFail(t('migPreview'), j, null); return }
-          var p = j.plan || {}
+          var p = Object.assign({}, j.plan || {}, { previewToken: j.previewToken })
           setMigPlan(p)
           setMigNote(t('migPreview') + ' ✓ ' + (p.pathChanged ? t('migPathChanged') : t('migSamePath')) +
             (j.sourceMissing ? (L(' · ⚠ 源工作区已不存在', ' · warning: source workspace missing')) : ''))
@@ -917,7 +917,7 @@
         if (migBusy) return
         if (!migPack) { setMigErr(t('migPickPack')); return }
         setMigBusy('apply'); setMigErr(''); setMigNote('')
-        apiPost(API.migrateImport, { packPath: migPack, targetWs: currentWs() || undefined, onConflict: migConflict }).then(function (j) {
+        apiPost(API.migrateImport, { packPath: migPack, targetWs: currentWs() || undefined, onConflict: migConflict, previewToken: migPlan && migPlan.previewToken }).then(function (j) {
           setMigBusy('')
           if (!j || j.ok === false) { migFail(t('migApply'), j, null); return }
           setMigResult(j)

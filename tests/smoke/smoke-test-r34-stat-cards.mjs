@@ -14,7 +14,10 @@ const eq = (a, b, m) => ok(Object.is(a, b), m + ' [got=' + JSON.stringify(a) + '
 /* ── 固定时间锚：2026-09-23（周三）12:00 本地时 —— 周一=09-21，周日=09-27 ── */
 const NOW = new Date(2026, 8, 23, 12, 0, 0).getTime()
 const DAY = 86400000
-const at = (d, h) => new Date(2026, 8, d, h || 12, 0, 0).getTime()
+const at = (d, h) => new Date(2026, 8, d, h ?? 12, 0, 0).getTime()
+// ★#176②：夹具自证 —— 旧写法 `h || 12` 把 0 当缺省，边界卡 at(23,0) 会落到 12:00，遮蔽 today 判据 `>=`→`>` 的变异。
+ok(new Date(at(23, 0)).getHours() === 0 && new Date(at(23, 0)).getMinutes() === 0,
+  '★0 夹具自证: at(23,0) = 当日 00:00 边界（实 ' + new Date(at(23, 0)).toString() + '）')
 const card = (m, src, extra) => Object.assign({ id: 'mem_' + String(m).slice(-8).padStart(32, '0'), source: src, mtime: m }, extra || {})
 
 /* ── ① 真构造：跨日/跨周精确落点 ── */

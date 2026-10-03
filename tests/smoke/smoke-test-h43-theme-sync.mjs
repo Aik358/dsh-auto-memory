@@ -111,9 +111,11 @@ console.log('PASS theme sync: 冻結页 ⇄ 模块级 双向接通（值 + 渲�
   const mut = FN_SET.replace(/\/\/ ★H43[\s\S]*?catch \(eB\) \{\}/, '')
   assert.notEqual(mut, FN_SET, 'MUTATION CHECK: 广播段锚点必须命中（否则负路径恒绿）')
   const h = harness(mut, FN_USE)
+  // ★#176①：必须真调用 setter，否则两条断言恒真（空转）；并去掉 `|| undefined` 逃逸（它与断言消息自相矛盾）。
+  h.o.set('light')
   ok(h.calls.length === 0, 'MUTATION: 删广播 ⇒ 模块级收不到（实 ' + JSON.stringify(h.calls) + '）')
-  ok(h.store.get('dam-skin-theme') === 'light' || h.store.get('dam-skin-theme') === undefined,
-    'MUTATION: 但本键仍写 ⇒ 精确复现「只写单键」症状')
+  ok(h.store.get('dam-skin-theme') === 'light',
+    'MUTATION: 但本键仍写 ⇒ 精确复现「只写单键」症状（实 ' + JSON.stringify(h.store.get('dam-skin-theme')) + '）')
 }
 // ⑤ 变异负路径 B：真删订阅 ⇒ 外部改档本页毫无反应
 {

@@ -47,7 +47,9 @@ if (registeredTools.length !== 19) throw new Error('expected 19 tools (16 + T4 m
 // ★2026-09-27：65 → 66（/team-compliance 落线）
 // ★2026-09-28 计数演进：67→68（新增 skin-library-fetch）。
 // ★2026-10-01 再演进：68→69（新增 /global-brief，全球动态简报批）。
-if (registeredRoutes.length !== 69) throw new Error('expected 68 routes, got ' + registeredRoutes.length)
+// ★2026-10-02 再演进：69→70（审计修复批 #174 新增 POST /team-control，loopback-only，无条件注册）。
+// ★issue #211（2026-10-04）再演进：70→71（新增 POST /python-setup/uninstall，无条件注册）。
+if (registeredRoutes.length !== 71) throw new Error('expected 71 routes, got ' + registeredRoutes.length)
 
 const cfgRoute = registeredRoutes.find((r2) => r2.path === '/api/dsh-auto-memory/config')
 let body

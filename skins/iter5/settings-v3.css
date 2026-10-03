@@ -1,6 +1,6 @@
 /* V3: one shared settings form, vertical rows and progressive help. */
-[data-iter5] [data-settings-v3]{--i5-settings-surface:#fff;max-width:1000px;width:100%;margin:auto;min-width:0;}
-[data-iter5][data-deep=true] [data-settings-v3],[data-dam-theme][data-deep=true] [data-settings-v3]{--i5-settings-surface:#102044;}
+[data-iter5] [data-settings-v3]{color-scheme:light;max-width:1000px;width:100%;margin:auto;min-width:0;}
+[data-iter5][data-deep=true] [data-settings-v3],[data-dam-theme][data-deep=true] [data-settings-v3]{color-scheme:dark;}
 [data-iter5] [data-settings-v3] [hidden]{display:none!important;}
 [data-iter5] [data-settings-v3] [data-dam-settings-content]{display:flex;flex-direction:column;align-items:stretch;gap:16px;}
 [data-iter5] [data-settings-v3] [data-i5-only-advanced=true]{order:8;}

@@ -78,6 +78,12 @@ await page.route('**/api/dsh-auto-memory/**',async route=>{
   if(holdHandoff){handoffResolvers.push(()=>respond(snapshot));return}
   return respond(snapshot)
  }
+ // Minimal declared host responses, preserving the production response shapes.
+ if(pathname==='debug')return respond({host:{version:'3.2.8',pid:1,indexPath:'/fixture/lib/index.js',startTime:0},config:structuredClone(config),heartbeat:{exists:false},associativeMemory:{},autoConsolidate:{pendingQueue:0,stats:{count:0,lastAt:0},consolidating:false},duplicateHeadings:0,subagents:{available:false,providers:[]},memoryFiles:{user:{exists:false,size:0},notes:{exists:false,size:0},log:{exists:false,size:0}}})
+ if(pathname==='team-state')return respond({enabled:false,outbox:{size:0},sync:{},pull:{}})
+ if(pathname==='team-attribution')return respond({attribution:{items:[]}})
+ if(pathname==='team-conflicts')return respond({conflicts:[]})
+ if(pathname==='team-sync-debug')return respond({pending:[]})
  if(pathname==='state')return respond({ws:'/fixture/project',notesPath:'/fixture/notes/MEMORY.md',userDir:'/fixture/user'})
  if(pathname==='note'){noteWrites++;if(holdNote){const holder=holdNote;holdNote=null;holder.resolve=(fail=false)=>respond(fail?{error:'injected pending note failure'}:{result:'appended'},fail?500:200);return}return respond({result:'appended'})}
  if(pathname==='calendar'){
@@ -336,14 +342,14 @@ try{
  assert.equal(await page.locator('[data-dam-savebar]').isVisible(),false,'clean settings do not show a save bar')
  const search=()=>page.getByRole('combobox',{name:'Search settings or configuration keys',exact:true})
  const keys=await page.evaluate(()=>dshTest.Schema.map(d=>d.key))
- assert.equal(keys.length,359)
+ assert.equal(keys.length,360)
  for(const key of keys){
   await search().fill(key);await search().press('ArrowDown');await search().press('Enter')
   try {await page.waitForFunction(key=>{const el=document.activeElement,keys=el?.dataset.i5Keys?.split(' ')||[];return el?.dataset.i5CatalogKey===key || keys.includes(key) || keys.includes(key.split('.')[0]) || el?.dataset.i5EditorKeys?.split(' ').includes(key)},key)}
   catch(error){throw new Error('V3 key did not locate: '+key,{cause:error})}
   if(await page.locator('[data-native-model-picker]').count())await page.keyboard.press('Escape')
  }
- evidence.push('PASS V3: all 359 source-backed keys locate a real field or explicit compatibility directory entry with ArrowDown + Enter')
+ evidence.push('PASS V3: all 360 source-backed keys locate a real field or explicit compatibility directory entry with ArrowDown + Enter')
  for(const language of ['zh','en','ja']){
   await page.evaluate(language=>dshTest.locale(language),language)
   await mounted('Settings')

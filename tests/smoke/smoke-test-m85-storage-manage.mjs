@@ -34,11 +34,12 @@ mkdirSync(wsDir, { recursive: true }); mkdirSync(userDir, { recursive: true }); 
 const NOTES = path.join(wsDir, 'MEMORY.md')
 const USER = path.join(userDir, 'MEMORY.md')
 const LOG = path.join(wsDir, '2026-08-30.md')
-// 字段同时满足两种风格:catalogFor 读 userDir/notesPath/logPath(engine.state 风格),
-// 也带上 workspaceMemoryPath/todayLogPath 便于断言时按语料字段名引用。
+// ★#188：只保留**契约名**一套（catalogFor 与全仓其余 buildSourceCatalog 调用点同源）。
+//   旧夹具同时喂 notesPath/logPath(engine.state 风格) 与契约名，掩盖了「宿主字段名对不上」的断裂
+//   —— 现在这里只给契约名，catalogFor 若退回读 p.notesPath/p.logPath 会立刻红（真阳性）。
 const PATHS = {
   workspaceKey: wsDir.replace(/\\/g, '/').toLowerCase(),
-  userDir: userDir, userMemoryPath: USER, notesPath: NOTES, logPath: LOG,
+  userMemoryPath: USER,
   workspaceMemoryPath: NOTES, todayLogPath: LOG,
 }
 const docStore = new MemoryDocumentStore({ sidecarDir })

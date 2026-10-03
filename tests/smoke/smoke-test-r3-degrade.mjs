@@ -234,15 +234,15 @@ console.log('\n[8] 接线断言：index.js 已把台账接进 debugInfo（同一
   const SRC = fs.readFileSync(path.join(ROOT, 'lib', 'index.js'), 'utf8')
 
   ok(SRC.includes('createDegradeSinkPre({})'), 'sink 已挂到引擎实例')
-  ok(SRC.includes('degrade: this._degradeViewSnapshot()'), '★ debugInfo 暴露 degrade（与各 host debugView 同出口）')
-  ok(SRC.includes('_degradeViewSnapshot() {'), '视图方法已定义')
+  ok(SRC.includes('degrade: this._degradeViewSnapshot({ readOnly: true })'), '★ debugInfo 暴露 degrade（与各 host debugView 同出口）')
+  ok(SRC.includes('_degradeViewSnapshot(opts = {}) {'), '视图方法已定义')
   ok(SRC.includes("memoryDir('degrade'), 'latest.json'"),
     '★ 落盘路径 = <dshHome>/memory/degrade-pre/latest.json')
   ok(SRC.includes('persistDegradeLedgerPre'),
     '视图方法调用持久化函数')
 
   // 顺序：视图方法定义必须在 debugInfo 之前（否则 this.xxx 在调用时不存在）
-  const iView = SRC.indexOf('_degradeViewSnapshot() {')
+  const iView = SRC.indexOf('_degradeViewSnapshot(opts = {}) {')
   const iDebug = SRC.indexOf('async debugInfo() {')
   ok(iView > 0 && iDebug > 0 && iView < iDebug, '视图方法定义先于 debugInfo')
 

@@ -1,11 +1,14 @@
-# V3 UI implementation — review candidate
+# Shipped V3 UI implementation
 
 This branch applies the approved information architecture to the shipped client.
 It is based on PR #213 at `72a146994fd6ed20f38b73715edf6cfbcafa6fef`.
-Upstream main was verified at `131ca794b9f0d07f78b19bf6feee3312939854ed`
-(package 3.2.7). PR #213 was still open and draft when implementation began.
-Review the UI delta against that commit; the eventual main-based PR depends on
-#213 and retains its persistence, migration, draft and asynchronous safety fixes.
+Upstream main was rechecked during implementation and advanced to
+`04f9ae365ff0cd2a53818a41c16867c384c9f77e` (3.2.8). This branch integrates that
+commit. PR #213 remains open and draft; its stricter settings persistence,
+additive migration, scoped draft and asynchronous safety behavior is retained.
+Review the final delta against current main. The PR includes the remaining #213
+changes until that dependent PR is merged; they must not be discarded as duplicate
+fixes when resolving the overlap with the 3.2.8 save serializer.
 
 ## Implementation
 
@@ -16,7 +19,8 @@ Review the UI delta against that commit; the eventual main-based PR depends on
   original controls, configuration keys, APIs, storage contracts and defaults.
 - Vertical rows, progressive help/default/key disclosure, visible destructive
   consequences and budget units, mobile section selector, dirty-only save bar.
-- The 359-entry source-backed index includes all 153 host configuration keys.
+- The original 359-entry index is preserved. The new main adds `localWasmPaths`,
+  bringing the index to 360 entries and all 154 host configuration keys.
   Compatibility, semantic-file, layout and browser entries without individual
   form controls are explicitly identified in the directory, not given new
   fictional switches. Original labels remain searchable aliases.
@@ -27,22 +31,24 @@ Review the UI delta against that commit; the eventual main-based PR depends on
 - Model/retrieval/semantic immediate actions keep their existing independent
   persistence boundaries. Backend implementation and defaults are unchanged.
 
-## Validation status at first review candidate
+## Validation
 
-Syntax and generator consistency passed. The existing real React 18 / Chromium
-fixture-host suite passed its 17 safety groups after adapting section navigation.
-The generated component smoke harness also passed. New V3 coverage is being
-completed for all 359 search keys, all settings sections, four-entry routing and
-1440 / 390 screenshots; this candidate is not a claim of final acceptance.
+The final Node 22 CI-equivalent smoke command completed with **257 pass / 5 fail /
+0 timeout**. Those five failures reproduce on pristine 3.2.8: missing local WASM
+package assets, developer Python venv, and three tests reading documentation that
+upstream removed. The pristine main also cannot start its official runner because
+`smoke-impact.mjs` is missing. The branch loads that optional helper only for
+`--impact` / `--impact-run`, allowing normal CI checks to execute. Those optional
+flags still require the upstream helper. A PLAN CAS test now uses temporary
+memory roots; its former real-home write failed in this sandbox.
 
-The initial full Node 22 check was 227 pass / 19 fail / 0 timeout. Three failures
-match the verified baseline: missing `lib/policies`, developer Python venv and
-six skin assets. The other failures were older static guards expecting copied
-settings bodies or the previous settings layout. These guards now inspect the
-shared shipped implementation and delegation seams; targeted reruns are being
-completed before the final full check. No baseline failure is suppressed.
+Generator consistency, R2 refusal, idempotence, syntax, navigation mutations,
+field parity, normalization and existing safety checks pass. Browser evidence
+uses the shipped factory and React 18 components with declared fixture host APIs.
+See [TEST_RESULTS.md](TEST_RESULTS.md) for the final browser result, screenshots,
+commands, failure evidence and untested environments. See
+[MIGRATION.md](MIGRATION.md) for every approved key and all 73 original entry/flow
+mappings plus the new upstream operation.
 
-Browser checks use the actual shipped factory and React components with fixture
-host APIs. They do not constitute full DSH, real model execution, Windows,
-screen-reader or real-device acceptance. Private prototype inputs are not
-included in this repository. No merge, release or deployment is part of this PR.
+Private prototype inputs are not included. No merge, release, deployment or
+change to an installed DSH profile is part of this PR.

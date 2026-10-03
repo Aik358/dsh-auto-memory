@@ -76,7 +76,11 @@ if (registeredTools.length !== 19) throw new Error('expected 19 tools (16 + T4 m
 //   判据（判据本身不变，只是计数随新增路由更新）：本文件 count 守卫 = 全量无条件路由条数。
 // ★2026-09-27：65 → 66（/team-compliance 落线）
 // ★2026-09-28 计数演进：67→68（新增 skin-library-fetch）。
-if (registeredRoutes.length !== 69) throw new Error('expected 69 routes, got ' + registeredRoutes.length)
+// ★2026-10-02 计数演进：69→70（审计修复批 #174 新增 POST /team-control；loopback-only，
+//   teamEnabled=false 时返回 409 但**仍无条件注册**，故任何档位下都 +1）。
+// ★issue #211（2026-10-04）计数演进：70→71（新增 POST /python-setup/uninstall —— Python 引擎卸载，
+//   loopback-only，pythonBackendEnabled=false 时也**无条件注册**并可用，故任何档位下都 +1）。
+if (registeredRoutes.length !== 71) throw new Error('expected 71 routes, got ' + registeredRoutes.length)
 if (sections.length !== 1) throw new Error('expected 1 prompt section (static rules)')
 if (contexts.length !== 2) throw new Error('expected 2 dynamic contexts (memory snapshot + m6 reference tail surface), got ' + contexts.length)
 

@@ -252,6 +252,8 @@ This borrows **OpenViking**'s tiering idea, recalibrated against real corpus mea
 
 Flow: `Tier-0 out first → narrow → descend to Tier-1 only if short → fetch Tier-2 only for evidence`. Single-turn injection still respects `injectBudgetChars` (default 8000 chars).
 
+**Full vs slim (the 3.2.6 narrowing)**: the full snapshot goes out at most once per turn — on the first turn of a live human request, and in unattended runs only after `fullEverySlims` (default 3) slim rounds, i.e. roughly once every 3×3 ≈ 9 steps. A slim refresh carries only the status frame (dates, water level, pending reminders); **it never carries the content body**. So a turn's injection can be a few hundred chars instead of the full budget.
+
 **Why it's built this way (measured, not guessed)**:
 - **The native corpus is smaller than you'd think**: source text p90 is only **1196 chars**, max **1692**. So OpenViking's `L0 → L1(2k) → L2` middle step can be dropped — jumping from a 140-char digest straight to a ≤2400 source chunk is an acceptable span.
 - **Pure priority makes tiering collapse**: on real corpus, the `project` layer's 77 chunks **consumed the entire 800-token budget**, leaving `whiteboard` / `user` / `log` with **zero** entries — "tiered" degenerating into single-tier. Hence **per-layer quotas** (e.g. `project ≤ 60% · B0`) — a hard rule, not a suggestion.
@@ -474,6 +476,14 @@ Three retrieval tiers, switchable in Settings → Semantic engine:/n/n- **Lexica
 
 Retrieval is time-aware too: ask for "last week" or "three days ago" and the matching memories rise to the top. Lexical retrieval (0GB) always works as a fallback; skipping the engine only lowers recall precision.
 
+**Removing the advanced engine**: Settings → Semantic engine has an "Uninstall and reclaim disk" button that deletes the whole `~/.dsh/python-engine/` directory (venv ~280-400MB + model ~539MB, about 850MB total). The same thing by hand:
+
+```bash
+rm -rf ~/.dsh/python-engine    # Windows: rmdir /s /q %USERPROFILE%\.dsh\python-engine
+```
+
+Only that directory is touched — memories and `embedding-config.json` stay where they are.
+
 ### AI-era installation
 
 Copy this to the AI assistant you're already using:
@@ -504,7 +514,7 @@ Config file `~/.dsh/dsh-auto-memory.json` (everything adjustable in the Settings
   "userMemoryDir": "~/.dsh/memory",
   "memoryRoot": "~/.dsh/memory/workspaces",
   "injectEnabled": true,
-  "injectBudgetChars": 2400,
+  "injectBudgetChars": 8000,
   "recentDaysInjected": 1,
   "reflectEnabled": true,
   "autoConsolidate": true,
@@ -527,7 +537,7 @@ Config file `~/.dsh/dsh-auto-memory.json` (everything adjustable in the Settings
 
 - **Zero runtime dependencies** beyond Node built-ins
 - **Prefix-cache friendly**: byte-stable injection keeps DeepSeek's prefix cache hitting — your history is never re-encoded
-- **Rate-limited AI**: auto-consolidation ≤8×/day with a 30-minute cooldown; dynamic injection defaults to a 2,400-char budget — useful memory without burning tokens
+- **Rate-limited AI**: auto-consolidation ≤8×/day with a 30-minute cooldown; dynamic injection defaults to an 8,000-char budget — useful memory without burning tokens
 - **Centralized storage**: all workspace memory under one root (`~/.dsh/memory/workspaces/`), readable from any session
 - **30-day distillation**: old logs are AI-distilled into project notes; originals archived, nothing lost
 
@@ -650,7 +660,7 @@ Papers were authored by the autonomous engineering agent (ZCode / GLM); all conc
 | [**Skin guide**](docs/SKIN-GUIDE.md) | How to build a skin: the three key layers (tokens / anchors / assets), the full token table, the readings↔routes map, and the acceptance checklist. Contributors: submit skins to the [`skins/` library](skins/README.md) via PR. |
 | [**Teamwork guide**](docs/TEAMWORK-GUIDE.md) | Teamwork as it stands: every config key, the 10 team routes, the data-flow diagram (outbox → transport → merge → conflicts), standalone-mode behaviour, and the honest "not implemented" list. |
 | [**Frontend co-creation plan**](docs/FRONTEND-CO-CREATION.md) | What can outside contributors change, what is off-limits, and how to do it — complete component/route/slot map included. |
-| [Feature Inventory](docs/internal/FEATURE-INVENTORY.md) | What features exist and where each one lives (39 user capabilities / 19 tools / 69 routes / 153 config keys) |
+| [Feature Inventory](docs/internal/FEATURE-INVENTORY.md) | What features exist and where each one lives (39 user capabilities / 19 tools / 71 routes / 154 config keys) |
 
 > **⚠️ Upgrading from before 3.0?** A batch of default values was **flipped** in 3.0.0 —
 > most notably whiteboard + ledger went from `off` to **`on`**. Do not trust pre-3.0

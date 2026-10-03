@@ -248,6 +248,8 @@ dsh-auto-memory 从第一天就不信这件事只能如此。她把记忆放在�
 
 流程：`Tier-0 先出 → 缩窄 → 命中不足才下探 Tier-1 → 需要证据才取 Tier-2`。单轮注入总长仍受 `injectBudgetChars`（默认 8000 字符）约束。
 
+**完整版与精简版（3.2.6 收窄）**：完整版每轮最多一次——真人发起的那一轮首次注入即给；无人（定时/接续）场景则攒够 `fullEverySlims`（默认 3）次精简版后才放行，约 3×3≈9 步一次。精简版只承载状态框架（日期、水位、待办提醒），**不承载内容本体**——所以单轮注入常常只有几百字符，远不到预算上限。
+
 **为什么这么设计（实测，不是拍脑袋）**：
 - **原生语料比想象的小**：原文本身 p90 只有 **1196 字符**、max **1692**。所以 OpenViking 那种 `L0 → L1(2k) → L2` 的中间档可以省掉——从 140 字符的摘要直接跳到 ≤2400 的原文块，跨度可接受。
 - **纯优先级会让分层退化**：真实语料实测，`project` 层 77 个块能把 800 token **全占**，`whiteboard` / `user` / `log` 一条都进不来——"分层"就成了单层。因此**每层有配额**（如 `project ≤ 60% · B0`），这是硬规则不是建议。
@@ -472,6 +474,14 @@ pnpm add @huggingface/transformers
 
 检索还带时间感知：问「上周」或「三天前」，命中的记忆会浮到前面。词法检索 0GB 永远兜底，不装也能用（仅召回精度较低）。
 
+**卸载高级引擎**：设置 → 自动记忆引擎 里有「卸载并回收磁盘」按钮，删除 `~/.dsh/python-engine/` 整目录（venv 约 280–400MB + 模型约 539MB，合计约 850MB）。手动等价命令：
+
+```bash
+rm -rf ~/.dsh/python-engine    # Windows: rmdir /s /q %USERPROFILE%\.dsh\python-engine
+```
+
+只删该目录，记忆正文与 `embedding-config.json` 都不动。
+
 ### AI 时代安装法
 
 复制下面这段发给你正在用的 AI 助手即可：
@@ -502,7 +512,7 @@ cd ~/.dsh/profiles/web && pnpm up @a9i5k4/dsh-auto-memory@latest
   "userMemoryDir": "~/.dsh/memory",
   "memoryRoot": "~/.dsh/memory/workspaces",
   "injectEnabled": true,
-  "injectBudgetChars": 2400,
+  "injectBudgetChars": 8000,
   "recentDaysInjected": 1,
   "reflectEnabled": true,
   "autoConsolidate": true,
@@ -525,7 +535,7 @@ cd ~/.dsh/profiles/web && pnpm up @a9i5k4/dsh-auto-memory@latest
 
 - **零运行时依赖**：Node 内建模块之外无任何依赖
 - **前缀缓存友好**：注入内容字节级稳定，DeepSeek 前缀缓存持续命中，不反复重编码历史
-- **限额 AI**：自动沉淀每日 ≤8 次、30 分钟冷却，动态注入默认预算 2400 字符——记忆有用，但不烧预算
+- **限额 AI**：自动沉淀每日 ≤8 次、30 分钟冷却，动态注入默认预算 8000 字符（完整版/精简版两档，见上文 3.2.6 收窄）——记忆有用，但不烧预算
 - **集中式存储**：全部工作区记忆收在 `~/.dsh/memory/workspaces/` 一个根下，任意会话可读
 - **30 天蒸馏**：旧日志由 AI 蒸馏进项目笔记，原文归档不丢失
 
@@ -646,7 +656,7 @@ DeepSeek Harness (Node, 127.0.0.1:3080)
 |---|---|
 | [**白皮书**](docs/WHITEPAPER.md) | 「有哪些**不能违反**的约束、哪些已知边界」——文中每个默认值都经代码自核 |
 | [**前端共创计划**](docs/FRONTEND-CO-CREATION.md) | 外部贡献者能改什么、什么是禁区、怎么改——含完整组件/路由/插槽地图 |
-| [功能全量清单](docs/internal/FEATURE-INVENTORY.md) | 「有哪些功能、各住在哪」（39 条用户能力 / 19 工具 / 69 路由 / 153 配置键） |
+| [功能全量清单](docs/internal/FEATURE-INVENTORY.md) | 「有哪些功能、各住在哪」（39 条用户能力 / 19 工具 / 71 路由 / 154 配置键） |
 
 > **⚠️ 从 3.0 之前升级上来的用户请注意**：3.0.0 有一批默认值**被翻转**——
 > 其中最重要的是白板 + 账本从「默认关」改为 **「默认开」**。

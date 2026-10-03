@@ -37,7 +37,7 @@ async function qq(text) {
   try { await sendGroupText(text) } catch (e) { console.error('[sync] QQ 发送失败:', e.message); process.exitCode = 1 }
 }
 
-if (ev.event_name === 'issues') {
+if (process.env.GITHUB_EVENT_NAME === 'issues') {
   const issue = ev.issue
   if (!hasLabel(issue)) { console.log('[sync] 非 group-report issue,忽略'); process.exit(0) }
   const t = clip(issue.title, 40)
@@ -48,7 +48,7 @@ if (ev.event_name === 'issues') {
     await comment(issue.number, `## 收到 ✅\n\n已确认收到该群反馈(${when()})。处理进度将自动同步到本 issue 与 QQ 群:收到 → 正在处理 → 处理完毕。\n\n要把修理工交给 Copilot:把本 issue 分配给 **@copilot** 即可,它开工开 PR 后这里会出现「正在处理」。\n\n${FOOT}`)
     await qq(`收到 ✅ 群反馈已建单 #${issue.number}「${t}」,处理进度会同步`)
   }
-} else if (ev.event_name === 'pull_request') {
+} else if (process.env.GITHUB_EVENT_NAME === 'pull_request') {
   const pr = ev.pull_request
   const refs = [...new Set([...`${pr.title}\n${pr.body || ''}`.matchAll(/#(\d+)/g)].map((m) => Number(m[1])))]
   if (!refs.length) { console.log('[sync] PR 未引用 issue,忽略'); process.exit(0) }
@@ -59,5 +59,5 @@ if (ev.event_name === 'issues') {
     await qq(`正在处理 🔧 群反馈 #${n} → PR #${pr.number}「${clip(pr.title, 36)}」`)
   }
 } else {
-  console.log('[sync] 未处理的事件:', ev.event_name, ev.action)
+  console.log('[sync] 未处理的事件:', process.env.GITHUB_EVENT_NAME, ev.action)
 }

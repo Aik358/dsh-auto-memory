@@ -3661,5 +3661,15 @@
     "default": "16",
     "condition": "见实际worker/安装消费者；activationPolicy是退休v1校准通道参数，不是正式用户投递控制。精确重载/默认钳制待核。",
     "status": "文件键已枚举/精确生效待核"
+  },
+  {
+    "key": "localWasmPaths",
+    "kind": "host-config",
+    "group": "advanced",
+    "advanced": true,
+    "default": "auto",
+    "condition": "v3.2.8 新增；auto 在本地存在 transformers WASM 资源时使用本地目录，否则保留原行为；off 不修改 WASM 路径。由 semantic-js/process/worker 消费。",
+    "status": "新增 main 键已按 DEFAULT_CONFIG 与 lib/wasm-paths.js 消费者核对；配置目录项，无独立 GUI 控件",
+    "aliases": ["本地 WASM 路径", "Local WASM paths"]
   }
 ]

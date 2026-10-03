@@ -113,7 +113,7 @@ ${METHODS}
     async readTextSafe(f) { try { return readFileSync(f, 'utf8') } catch (_) { return '' } },
     async writeFull(f, b) { writeFileSync(f, b, 'utf8') },
     async writeFullRaw(f, b) { writeFileSync(f, b, 'utf8') },
-    async appendText(f, b) { writeFileSync(f, (readFileSync(f, 'utf8') || '') + b, 'utf8') },
+    async appendText(f, b) { writeFileSync(f, (this.readTextSafe ? await this.readTextSafe(f) : '') + b, 'utf8') },
     // AI 不可用 ⇒ 走"整条归档"（这也正是节流窗口内的实际路径）
     async foldTextToSummaryPre() { return '' },
   })

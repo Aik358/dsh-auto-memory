@@ -317,14 +317,14 @@ if (boot) {
   const before = boot.sb.__calls.api.length
   const p1 = L3.fetchTeamState()
   const p2 = L3.fetchTeamState()
-  eq(boot.sb.__calls.api.length - before, 1, '§10.4 ★★并发两次 fetchTeamState ⇒ 只发 1 次请求（真单飞，判据可验）')
+  eq(boot.sb.__calls.api.length - before, 4, '§10.4 ★★并发两次 fetchTeamState ⇒ 只发 1 组四条只读请求（真单飞，判据可验）')
   Promise.all([p1, p2]).then(function () {
     ok(L3.teamCacheRead() !== undefined, '§10.5 缓存被写入')
     // 复位后再次调用 ⇒ 又发一次（负路径：证明单飞不是永久锁死）
     L3.teamCacheReset()
     const b2 = boot.sb.__calls.api.length
     L3.fetchTeamState()
-    eq(boot.sb.__calls.api.length - b2, 1, '§10.6 ★负路径：复位后再调用仍能发起新请求（单飞未死锁）')
+    eq(boot.sb.__calls.api.length - b2, 4, '§10.6 ★负路径：复位后再调用仍能发起新请求（单飞未死锁）')
     // ★3.2 判据：两个承载面都走同一函数 —— 源码层面 apiGet(API.state) 在 L3 段内只能出现 1 次
     // ★口径修正（R23 实测，与 r17 Q2 同源）：`S2-skin` 段**物理嵌套**在 `L3-team` 段内部（R20 起如此），
 //   本判据守的是「L3 团队层只有 1 处取数、两承载面共用」⇒ 必须**排除嵌套 S2 段**；并按纪律去注释行。
@@ -333,9 +333,9 @@ const _s2e = SRC.indexOf('// ===================== S2-skin:end =================
 const _segStart = SRC.indexOf('// ===================== L3-team:begin =====================') + '// ===================== L3-team:begin ====================='.length
 const _l3only = (_s2b > _segStart && _s2e > _s2b ? SRC.slice(_segStart, _s2b) + SRC.slice(_s2e, SRC.indexOf('// ===================== L3-team:end =====================')) : SEG)
   .split('\n').filter((l) => !/^\s*\/\//.test(l)).join('\n')
-eq((_l3only.match(/apiGet\(API\.state\)/g) || []).length, 1, '§10.7 ★L3 段内 apiGet(API.state) 恰 1 处（★排除嵌套 S2 段 + 去注释；两承载面共用）')
+eq((_l3only.match(/apiGet\(API\.teamState\)/g) || []).length, 1, '§10.7 ★L3 段内 apiGet(API.teamState) 恰 1 处（★排除嵌套 S2 段 + 去注释；两承载面共用）')
     eq((SEG.match(/function useTeamTick/g) || []).length, 1, '§10.8 ★useTeamTick 只定义 1 次（会话页与浮层共用同一钩子）')
-    eq((SEG.match(/setInterval\s*\(|setTimeout\s*\(/g) || []).length, 0, '§10.9 ★未新增定时器调用（3.7 硬约束：复用既有 useTick；注释内字样不算）')
+    eq((SEG.match(/setInterval\s*\(|setTimeout\s*\(/g) || []).length, 1, '§10.9 仅一个共享订阅读取轮询；最后卸载停表（持久双面行为见 issue174-team-subscriptions）')
     finish()
   })
 } else { finish() }

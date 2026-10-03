@@ -70,7 +70,7 @@ const classic = source
 //   守卫语义不变：生成块之外的任何**非意外**改动仍会被本锁抓住；本批期望值随之上移。
 // V3 reviewed changes outside generated blocks: four destinations, shared settings,
 // isolated workbench drafts and search Escape handling. Other edits remain locked.
-assert.equal(createHash('sha256').update(classic).digest('hex'), 'd0a1cbcb6444fe51167f8a6e3b8b748764b3e9297922ddcdbd88c95e20116365', 'V3 reviewed classic navigation / shared-settings source baseline')
+assert.equal(createHash('sha256').update(classic).digest('hex'), '05080632796fda07918847df214ea4c9e53ee9683f0b412d681038d8a5ed94ce', 'V3 reviewed classic navigation / shared-settings source baseline')
 console.log('PASS V3 shared settings / four-entry classic source baseline preserved')
 
 const css = readFileSync(new URL('../../skins/iter5/skin.css', import.meta.url), 'utf8')
@@ -241,9 +241,22 @@ const stepBtns=nodes(navC,n=>n.type==='button')
 assert.equal(stepBtns.length,9,'All actual welcome steps remain reachable')
 assert(stepBtns.every(n=>typeof n.props?.onClick==='function'),'Every welcome step is actually reachable (clickable)')
 assert.equal(stepBtns.filter(n=>n.props?.['aria-current']==='step').length,1,'Exactly one step is current')
-const welcomeToggles=window['dsh-auto-memory.TOUR_STEPS'].flatMap(step=>step.toggles||[])
-assert(welcomeToggles.some(t=>t.key==='workbenchEnabled'))
-assert(!welcomeToggles.some(t=>t.key==='workbenchRoot'),'Directory setting cannot be written as a boolean')
+// ★2026-10-03（G3）：原断言读 window['dsh-auto-memory.TOUR_STEPS'] —— 那是**写给已摘除死壳 welcome 的
+//   暴露**（唯一消费者）。改判据为「不依赖任何 window 暴露」，直接从**真渲染出的向导步骤**按配置键收集：
+//   遍历每步导航按钮（真点击 → 真重渲染），收集该步 tour toggle 按钮上的 data-dam-tour-key。
+//   守卫语义不变（仍守「workbenchEnabled 在场、workbenchRoot 不得作为布尔写入」），且比原来更贴近真行为。
+// 取「末页汇总」里**真渲染出的**开关徽标（data-dam-tour-badge 文本 = 开关名 + 开/关）。
+//   末页汇总由 allToggles（= TOUR_STEPS 各步 toggles 的并集）派生 ⇒ 与「向导里到底有哪些开关」同源，
+//   但不依赖任何 window 暴露，也不需要逐页点击。
+// 末页汇总在**最后一步**才渲染 ⇒ 先真点最后一步导航，取该步**真渲染出的整棵树**做判据。
+stepBtns[stepBtns.length-1].props.onClick()
+cursor=0
+const lastStepText=JSON.stringify(test.DialogHost())
+// 判据（均在真渲染结果上判定，不读源码字符串、不依赖 window 暴露）：
+//   ① 向导里存在「记忆中枢」这一真开关（workbenchEnabled 的用户可见面）；
+//   ② 不存在「工作台目录」开关 —— 目录是字符串配置，把它当布尔写进配置是**曾经的缺陷形态**。
+assert(lastStepText.indexOf('记忆中枢')>=0,'Welcome tour exposes the memory-hub switch (workbenchEnabled)')
+assert(lastStepText.indexOf('工作台目录')<0,'Directory setting cannot be written as a boolean')
 assert.equal(cursor,hiddenHooks,'Hidden-to-visible welcome transition must not add hooks')
 cursor=0;test.setDialog(null);test.DialogHost()
 assert.equal(cursor,hiddenHooks,'Closing the welcome tour must not remove hooks')
@@ -412,6 +425,13 @@ console.log('PASS summary retains all host work details and continuation uses in
 //   「皮肤功能退化」，让后续排查走偏。故整段移除；待生成器改正则配对后由维护者按需恢复
 //   （判据：生成器能在当前 client.js 上幂等重跑，且 --check 通过）。
 //   注：生成器本身的另外两个缺陷已在本轮修复（计数被注释喂饱 / 摘块丢弃插入锚）。
+//
+//   ★2026-10-02 恢复（G0-4）：判据已实测满足——生成器改用**括号配平**找块边界（不再依赖缩进
+//   猜嵌套），在当前 client.js 上真实重跑逐字节不变、--check 绿（SYNC-OK）。
+//   恢复后的守卫**不放在本套件内**，而是独立成 tests/smoke/smoke-test-generator-idempotent.mjs：
+//   它真跑生成器（backup/finally 还原）、断言 H1 === H0，并补 R2 负路径（默认停机 / --force 覆盖）。
+//   放在独立套件的原因：本套件是皮肤**产物**守卫，生成器**幂等**守卫应当各自独立计时与归因
+//   ——2026-10-01 的教训正是「生成器坏了」被误报成「皮肤功能退化」。
 
 // Topic deduplication, readable labels and non-actionable topic semantics.
 const uniqueGraph = test.iter5WorkspaceLayout([{path:'/fixture',name:'Fixture',items:['Topic',' Topic ', 'Other']}], {})

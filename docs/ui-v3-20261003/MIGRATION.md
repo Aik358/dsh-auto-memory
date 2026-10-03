@@ -1,8 +1,8 @@
 # Shipped V3 migration audit
 
 The approved inventory contains 359 entries. The shipped index in
-[`settings-schema.js`](../../skins/iter5/settings-schema.js) retains every key:
-153 host configuration entries, 51 nested entries, 94 layout-file entries,
+[`settings-schema.js`](../../skins/iter5/settings-schema.js) retains every approved key. Upstream 3.2.8 adds `localWasmPaths`, so the shipped
+index has 360 entries and 154 host configuration entries (originally 153), 51 nested entries, 94 layout-file entries,
 26 semantic-file entries, 20 browser preferences, 8 browser state entries,
 4 runtime compatibility entries, 2 historical entries and 1 browser-state pattern.
 The host list is checked against the actual `DEFAULT_CONFIG` declaration.
@@ -19,7 +19,7 @@ boundaries. Unknown consumer scope remains marked in the index. Automatic
 recording, stored snapshots, observation, retrieval and delivery remain separate;
 daily consolidation limits and character/token units are shown explicitly.
 
-The following 73 rows reconcile the approved entry/flow inventory. The source of
+Rows 1–73 reconcile the approved entry/flow inventory. The source of
 route truth is `MemoryTabBody`, `MEMORY_TABS`, the two `iter5PageForTab` functions,
 their real component maps and `Iter5Destinations`. The navigation smoke guard
 executes actual builders and the classic body dispatcher, checks exact sets and
@@ -102,9 +102,21 @@ model-dependent or dangerous operation was exercised in a live DSH host.
 | 71 | Team conflict/member/ownership/review/audit | Existing dedicated team screens and permission boundaries |
 | 72 | Statistics detail/reset | Workbench → statistics/calls; separate channels and reset confirmation |
 | 73 | Version check/update/open configuration | Advanced → original maintenance actions and restart requirements |
+| 74 | New 3.2.8 Python engine uninstall | Existing Python setup wizard → uninstall; original whole-directory deletion confirmation and size disclosure |
 
 Classic workbench settings use `workbench` draft scope, matching both skin
 families. The genuine host settings surface retains `host`. The form owns its
 scoped structural V3 stylesheet; legacy and classic continue to receive their
 frozen palette sheet through the existing shared-style dispatcher. The fixture
 does not globally inject variant CSS into those entries.
+
+Classic and frozen shared wrappers watch session/workspace identity and key their
+form by that identity. Each form pins its initial identity until remount, so the
+render-to-subscription interval cannot assign old raw drafts to a new workspace.
+Old reads and save results remain guarded; pending success clears only its own
+recovery record, while failure keeps that record for the original identity.
+
+The new `localWasmPaths` directory entry is based on `DEFAULT_CONFIG` and
+`lib/wasm-paths.js`: `auto` applies an available local WASM directory, while `off`
+leaves the library's path untouched. It keeps the existing file-only configuration
+boundary and adds no fictional model or network operation.
