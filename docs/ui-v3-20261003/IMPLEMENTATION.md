@@ -3,8 +3,9 @@
 This branch applies the approved information architecture to the shipped client.
 It is based on PR #213 at `72a146994fd6ed20f38b73715edf6cfbcafa6fef`.
 Upstream main was rechecked during implementation and advanced to
-`04f9ae365ff0cd2a53818a41c16867c384c9f77e` (3.2.8). This branch integrates that
-commit. PR #213 remains open and draft; its stricter settings persistence,
+`f2f7cc1cbf2d3caf2d2a99f425dfd2b5dd028218` (3.2.8), including the documentation
+restoration after `04f9ae3`. This branch integrates those commits.
+PR #213 remains open and draft; its stricter settings persistence,
 additive migration, scoped draft and asynchronous safety behavior is retained.
 Review the final delta against current main. The PR includes the remaining #213
 changes until that dependent PR is merged; they must not be discarded as duplicate
@@ -33,10 +34,10 @@ fixes when resolving the overlap with the 3.2.8 save serializer.
 
 ## Validation
 
-The final Node 22 CI-equivalent smoke command completed with **257 pass / 5 fail /
-0 timeout**. Those five failures reproduce on pristine 3.2.8: missing local WASM
-package assets, developer Python venv, and three tests reading documentation that
-upstream removed. The pristine main also cannot start its official runner because
+The final Node 22 CI-equivalent smoke command completed with **260 pass / 2 fail /
+0 timeout**. Both failures reproduce on pristine current main: missing local WASM
+package assets and developer Python venv. The restored documentation makes the
+three former documentation failures pass. Pristine main cannot start its official runner because
 `smoke-impact.mjs` is missing. The branch loads that optional helper only for
 `--impact` / `--impact-run`, allowing normal CI checks to execute. Those optional
 flags still require the upstream helper. A PLAN CAS test now uses temporary

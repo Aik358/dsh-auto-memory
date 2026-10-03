@@ -1,0 +1,10 @@
+{
+  "approvedEntries": 359,
+  "shippedEntries": 360,
+  "missingApprovedKeys": [],
+  "newMainKeys": [
+    "localWasmPaths"
+  ],
+  "changedApprovedDefaults": [],
+  "hostConfigurationKeys": 154
+}

@@ -1,0 +1,18 @@
+{
+  "upstreamIntegrated": "f2f7cc1cbf2d3caf2d2a99f425dfd2b5dd028218",
+  "dependencyPR": 213,
+  "dependencyHead": "72a146994fd6ed20f38b73715edf6cfbcafa6fef",
+  "lastFullSmokeCodeHead": "29033d42fc562c9985687026c96b62759b862861",
+  "fullSmoke": {
+    "pass": 260,
+    "fail": 2,
+    "timeout": 0
+  },
+  "laterChanges": "Floating settings CSS padding / bounded save notice height; browser layout and CSS guards rechecked. Later upstream commits change README / funding / sponsor assets only.",
+  "sourceHashes": {
+    "lib/client.js": "c7f0c6ab574ac9f329dbe5e2dc205ebf49f2312017c44901f6280bacb87bd3a9",
+    "lib/index.js": "1b0ef2ebed239d889ae103aa8bc6d7ee53f383b1579d6af727eda435f7c55832",
+    "skins/iter5/shared-settings-base.css": "4aa9c5caa6f620629e07d0983d7575e837be9791ef8c1325fff0f1e1de40c757",
+    "tests/browser/settings-safety.mjs": "2fc3d88e52fe2a80a9649dfdba9fd5d9d00435a579e7fd862bfd89ff791c7011"
+  }
+}
