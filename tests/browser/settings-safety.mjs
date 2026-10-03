@@ -14,7 +14,7 @@ const domPath=path.join(path.dirname(require.resolve('react-dom/package.json')),
 let client=readFileSync(path.join(root,'lib/client.js'),'utf8')
 client=client.replace('return { page: Iter5Page, css: ITER5_CSS }', 'return { page: Iter5Page, css: ITER5_CSS, Settings: Iter5Settings, Note: Iter5Note, Calendar: Iter5Calendar }')
 client=client.replace('    return module.exports', `    var fixtureSession='fixture-session';sessions={list:{getSnapshot:function(){return {current:fixtureSession,byId:{[fixtureSession]:{cwd:'/fixture/project',retainedBy:{mainView:1}}}}}}}
-    window.dshTest={setSession:function(sid){fixtureSession=sid;emit()},Panel:MemoryPanel,broadcast:emit,Settings:Iter5Settings,LegacySettings:LEGACY_SKIN_NS.Settings,Note:Iter5Note,LegacyNote:LEGACY_SKIN_NS.Note,ClassicNote:NotesTab,Calendar:Iter5Calendar,LegacyCalendar:LEGACY_SKIN_NS.Calendar,ClassicCalendar:CalendarTab,External:Iter5External,ClassicExternal:ConnectTab,controller:controller,locale:applyLocalePref,t:t,styles:CSS+'\\n'+ITER5_CSS,legacyStyles:LEGACY_ITER5_CSS}
+    window.dshTest={setSession:function(sid){fixtureSession=sid;emit()},Panel:MemoryPanel,broadcast:emit,Settings:Iter5Settings,LegacySettings:LEGACY_SKIN_NS.Settings,ClassicSettings:SettingsPage,Note:Iter5Note,LegacyNote:LEGACY_SKIN_NS.Note,ClassicNote:NotesTab,Calendar:Iter5Calendar,LegacyCalendar:LEGACY_SKIN_NS.Calendar,ClassicCalendar:CalendarTab,External:Iter5External,ClassicExternal:ConnectTab,controller:controller,locale:applyLocalePref,t:t,styles:CSS+'\\n'+ITER5_CSS,legacyStyles:LEGACY_ITER5_CSS}
     return module.exports`)
 // Detect symbol names rather than silently omitting a surface.
 assert(client.includes('function Iter5External('))
@@ -33,7 +33,8 @@ const browser=await chromium.launch({executablePath:process.env.CHROMIUM_PATH ||
 const artifacts=path.join(root,'artifacts/ui-settings-20261003');mkdirSync(artifacts,{recursive:true})
 const evidence=[], pageErrors=[]
 let config={boardMode:'graph',semanticEngineMode:'auto',associativeMemoryEnabled:true,activationInboxEnabled:true,jsDecideCandidateScheme:'balanced',jsDecideExcerptChars:75,dayBoundaryMinutes:450,workbenchLoopShort:10,workbenchLoopLong:24,memoryRoot:'/fixture/notes',userMemoryDir:'/fixture/user',teamEnabled:true,teamSyncTransport:'s3',teamSecretAccessKey:'fixture-secret-never-persist',autoSummaryTimes:[],injectExcludeSources:[],waterLevelThresholdMode:'auto'}
-let mode='shadow',failConfig=false,holdNote=null,browseResolvers=[],recallResolvers=[],configResolvers=[],holdConfig=false,semanticResolvers=[],holdSemantic=false,noteWrites=0
+let mode='shadow',failConfig=false,holdNote=null,holdCalendar=null,browseResolvers=[],recallResolvers=[],configResolvers=[],holdConfig=false,semanticResolvers=[],holdSemantic=false,noteWrites=0,calendarWrites=0,holdHandoff=false,handoffResolvers=[]
+let water={live:true,window:1000000,threshold:.67,thresholdMode:'auto'}
 const page=await browser.newPage({viewport:{width:1280,height:900}})
 page.on('pageerror',e=>pageErrors.push(e.message))
 await page.route('**/api/dsh-auto-memory/**',async route=>{
@@ -54,10 +55,20 @@ await page.route('**/api/dsh-auto-memory/**',async route=>{
   return respond(snapshot)
  }
  if(pathname==='semantic-emit'){mode=body.mode;return respond({ok:true,mode})}
- if(pathname==='handoff-state')return respond({enabled:true,waterLevel:{live:true,window:1000000,threshold:.67,thresholdMode:'auto'},ledgers:[]})
+ if(pathname==='handoff-state'){
+  const snapshot={enabled:true,waterLevel:structuredClone(water),ledgers:[]}
+  if(holdHandoff){handoffResolvers.push(()=>respond(snapshot));return}
+  return respond(snapshot)
+ }
  if(pathname==='state')return respond({ws:'/fixture/project',notesPath:'/fixture/notes/MEMORY.md',userDir:'/fixture/user'})
- if(pathname==='note'){noteWrites++;if(holdNote){const holder=holdNote;holdNote=null;holder.resolve=()=>respond({result:'appended'});return}return respond({result:'appended'})}
- if(pathname==='calendar')return respond({entries:[],ok:true})
+ if(pathname==='note'){noteWrites++;if(holdNote){const holder=holdNote;holdNote=null;holder.resolve=(fail=false)=>respond(fail?{error:'injected pending note failure'}:{result:'appended'},fail?500:200);return}return respond({result:'appended'})}
+ if(pathname==='calendar'){
+  if(request.method()==='POST'){
+   calendarWrites++
+   if(holdCalendar){const holder=holdCalendar;holdCalendar=null;holder.resolve=(fail=false)=>respond(fail?{error:'injected pending calendar failure'}:{result:'calendar appended',ok:true},fail?500:200);return}
+  }
+  return respond({entries:[],ok:true})
+ }
  if(pathname==='models')return respond({providers:[{id:'p1',name:'Provider 1',models:[{id:'shared-model'}]},{id:'p2',name:'Provider 2',models:[{id:'shared-model'}]}]})
  if(pathname==='pick-dir')return respond({native:false})
  if(pathname==='browse-dir'){const id=browseResolvers.length+1;browseResolvers.push(()=>respond({path:body.path,parent:'/fixture',dirs:[{name:'response-'+id,path:body.path+'/response-'+id}]}));return}
@@ -193,6 +204,64 @@ try{
  assert.equal(await emitSelects.count(),2);await emitSelects.nth(0).selectOption('active');await page.waitForTimeout(100)
  assert.equal(await emitSelects.nth(1).inputValue(),'active')
  evidence.push('PASS semantic state synchronizes across simultaneous settings instances')
+ // Resolve AFTER a new instance mounts, for all note/calendar implementations.
+ // Each surface covers success/failure with the submitted A and continued B.
+ for(const destination of ['ClassicNote','Note','LegacyNote']){
+  for(const fail of [false,true])for(const newer of [false,true]){
+   await mounted('ClassicNote');const a='pending A '+destination+' '+fail+' '+newer,b='new B '+a
+   await page.locator('textarea').fill(a);const holder={};holdNote=holder;const before=noteWrites
+   await page.getByRole('button',{name:'Append',exact:true}).click();await page.waitForTimeout(30)
+   assert.equal(noteWrites,before+1)
+   await mounted(destination);assert.equal(await page.locator('textarea').inputValue(),a)
+   assert(await page.getByRole('button',{name:/Saving/}).isDisabled())
+   if(newer)await page.locator('textarea').fill(b)
+   await holder.resolve(fail);await page.waitForTimeout(50)
+   assert.equal(await page.locator('textarea').inputValue(),newer?b:fail?a:'')
+   if(fail)assert(await page.getByText('injected pending note failure',{exact:true}).count())
+   else assert(await page.getByRole('status').filter({hasText:'appended'}).count())
+   assert.equal(noteWrites,before+1,'remount cannot resubmit the pending note')
+  }
+ }
+ evidence.push('PASS pending note remount matrix: classic/new/frozen × success/failure × unchanged A/new B; status and outcome synchronized')
+ for(const destination of ['ClassicCalendar','Calendar','LegacyCalendar']){
+  for(const fail of [false,true])for(const newer of [false,true]){
+   await mounted('Calendar');if(!await page.locator('.i5-calendar-form').count())await page.getByRole('button',{name:/Add event/}).click()
+   const a='pending calendar A '+destination+' '+fail+' '+newer,b='new B '+a
+   await page.getByLabel('Title',{exact:true}).fill(a);const holder={};holdCalendar=holder;const before=calendarWrites
+   await page.locator('.i5-calendar-form button[type=submit]').click();await page.waitForTimeout(30)
+   await mounted(destination)
+   const title=destination==='ClassicCalendar'?page.getByPlaceholder('Item title…'):page.getByLabel('Title',{exact:true})
+   assert.equal(await title.inputValue(),a);assert(await page.getByRole('button',{name:/Saving/}).isDisabled())
+   if(newer)await title.fill(b)
+   await holder.resolve(fail);await page.waitForTimeout(50)
+   if(newer || fail)assert.equal(await title.inputValue(),newer?b:a)
+   else assert.equal(await title.count(),0,'saved A dialog closes in the new instance')
+   if(fail)assert(await page.getByText('injected pending calendar failure',{exact:true}).count())
+   else assert(await page.getByText('calendar appended',{exact:true}).count())
+   assert.equal(calendarWrites,before+1,'remount cannot resubmit the pending calendar event')
+  }
+ }
+ evidence.push('PASS pending calendar remount matrix: classic/new/frozen × success/failure × unchanged A/new B; status and outcome synchronized')
+ // Water display ordering and identity for each shipped settings implementation.
+ for(const surface of ['Settings','LegacySettings','ClassicSettings']){
+  await mounted(surface);if(surface!=='ClassicSettings')await tab('behavior')
+  const readout=page.locator('[data-dam-effective-water]').first()
+  assert(await readout.count(),'effective readout exists in '+surface)
+  holdHandoff=true;handoffResolvers=[]
+  water={live:true,window:110,threshold:.61,thresholdMode:'fixed'};await page.evaluate(()=>dshTest.broadcast());await page.waitForTimeout(40)
+  water={live:true,window:220,threshold:.72,thresholdMode:'auto'};await page.evaluate(()=>dshTest.broadcast());await page.waitForTimeout(40)
+  assert.equal(handoffResolvers.length,2)
+  await handoffResolvers[1]();await page.waitForTimeout(30);await handoffResolvers[0]();await page.waitForTimeout(30)
+  assert((await readout.textContent()).includes('72%'));assert((await readout.textContent()).includes('220'))
+  water={live:true,window:330,threshold:.83,thresholdMode:'fixed'};await page.evaluate(()=>dshTest.broadcast());await page.waitForTimeout(40)
+  water={live:true,window:440,threshold:.94,thresholdMode:'auto'};await page.evaluate(()=>dshTest.setSession('water-session'));await page.waitForTimeout(40)
+  assert.equal(handoffResolvers.length,4)
+  assert(!(await readout.textContent()).includes('220'),'previous session value clears immediately')
+  await handoffResolvers[2]();await page.waitForTimeout(30);assert(!(await readout.textContent()).includes('330'))
+  await handoffResolvers[3]();await page.waitForTimeout(30);assert((await readout.textContent()).includes('94%'))
+  holdHandoff=false;await page.evaluate(()=>dshTest.setSession('fixture-session'));await page.waitForTimeout(40)
+ }
+ evidence.push('PASS current/frozen/classic settings: handoff-state request disorder, changed session clears prior value and rejects old-session response')
  for(const language of ['zh','en','ja']){
   await page.evaluate(language=>dshTest.locale(language),language);await mounted('Settings')
   for(const group of ['engine','memory','appearance','behavior']){await tab(group);assert.equal(await page.getByRole('tab',{selected:true}).count(),1)}
@@ -201,7 +270,7 @@ try{
   assert.equal(overflow,false,'no page horizontal overflow for '+language)
   await page.keyboard.press('Tab');assert(await page.evaluate(()=>document.activeElement!==document.body))
   await page.setViewportSize({width:1280,height:900});await page.screenshot({path:path.join(artifacts,'settings-'+language+'-1280.png')})
-  evidence.push('PASS '+language+': four tabs, 390/1280 viewports, keyboard focus, no horizontal page overflow')
+  evidence.push('PASS '+language+': current Settings four-tab navigation; appearance at 390/1280, Tab moves focus, no appearance page horizontal overflow (not full keyboard/all-page layout acceptance)')
  }
  assert.deepEqual(pageErrors,[],'no browser exceptions')
  writeFileSync(path.join(artifacts,'browser-results.json'),JSON.stringify({environment:'Chromium + React 18; fixture host APIs',browser:browser.version(),evidence,noteWrites,pageErrors},null,2)+'\n')
