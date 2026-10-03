@@ -70,7 +70,7 @@ const classic = source
 //   守卫语义不变：生成块之外的任何**非意外**改动仍会被本锁抓住；本批期望值随之上移。
 // V3 reviewed changes outside generated blocks: four destinations, shared settings,
 // isolated workbench drafts and search Escape handling. Other edits remain locked.
-assert.equal(createHash('sha256').update(classic).digest('hex'), 'bc36dbe90c231b7edfd7f6daaf89c4ae1d5001422412ed157fa91fd017f083df', 'V3 reviewed classic navigation / shared-settings source baseline')
+assert.equal(createHash('sha256').update(classic).digest('hex'), 'd0a1cbcb6444fe51167f8a6e3b8b748764b3e9297922ddcdbd88c95e20116365', 'V3 reviewed classic navigation / shared-settings source baseline')
 console.log('PASS V3 shared settings / four-entry classic source baseline preserved')
 
 const css = readFileSync(new URL('../../skins/iter5/skin.css', import.meta.url), 'utf8')

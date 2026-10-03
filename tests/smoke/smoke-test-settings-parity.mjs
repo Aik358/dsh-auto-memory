@@ -20,7 +20,7 @@ const classic = canonicalSettings()
 const variants = shippedSettings(client)
 assert(client.includes("function SettingsPage() { return h(DamSharedSettings, { draftScope: 'workbench' }) }"),'classic workbench delegates to shared workbench scope')
 assert(frozen.includes('function Iter5Settings(props) { return h(DamSharedSettings, props) }'),'frozen skin delegates to shared root')
-assert(client.includes("function DamSharedSettings(props) { return h(Iter5Surface"),'shared legacy surface is wired')
+assert(/function DamSharedSettings\(props\) \{[\s\S]*?h\(Iter5Settings, Object.assign\(\{\}, props, \{ key: identity\[0\] \}\)\)/.test(client),'shared classic/frozen surface is keyed by watched identity')
 assert(client.includes("h(Iter5Settings, { key: identity[0], draftScope: 'host'"),'host surface mounts shared root')
 assert(client.includes('var iter5SettingsDrafts = damSettingsDrafts'),'one draft registry is shared across skins')
 

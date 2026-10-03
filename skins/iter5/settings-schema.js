@@ -2448,7 +2448,10 @@
     "advanced": true,
     "default": "both",
     "condition": "由浏览器消费者读取；保留旧键读取/迁移。与宿主配置独立，不作为记忆能力开关。",
-    "status": "静态键全量枚举；动态键模板另列"
+    "status": "静态键全量枚举；动态键模板另列",
+    "aliases": [
+      "fPanelPos"
+    ]
   },
   {
     "key": "dsh-auto-memory.presentation.v1",
@@ -3429,7 +3432,10 @@
     "advanced": false,
     "default": "shadow",
     "condition": "assoc/inbox及当前引擎链路就绪；shadow仅观察，canary-explicit仅显式回忆车道，active放行相关emit；快照/工具读取独立。",
-    "status": "独立接口源码核对"
+    "status": "独立接口源码核对",
+    "aliases": [
+      "fEmitMode"
+    ]
   },
   {
     "key": "embedding-config.activationPolicy",

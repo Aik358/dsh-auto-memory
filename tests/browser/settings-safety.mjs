@@ -19,8 +19,8 @@ const operationStart=client.indexOf('    function useMemoryOperation('),operatio
 assert(operationStart>=0 && operationEnd>operationStart)
 client=client.slice(0,operationStart)+client.slice(operationStart,operationEnd).replace('useEffect(function(){','operationEffect(function(){')+client.slice(operationEnd)
 client=client.replace('return { page: Iter5Page, css: ITER5_CSS }', 'return { page: Iter5Page, css: ITER5_CSS, Settings: Iter5Settings, Note: Iter5Note, Calendar: Iter5Calendar }')
-client=client.replace('    return module.exports', `    var fixtureSession='fixture-session';sessions={list:{getSnapshot:function(){return {current:fixtureSession,byId:{[fixtureSession]:{cwd:'/fixture/project',retainedBy:{mainView:1}}}}}}}
-    window.dshTest={setSession:function(sid){fixtureSession=sid;emit()},Panel:MemoryPanel,broadcast:emit,Schema:ITER5_SETTINGS_SCHEMA,Surface:Iter5Surface,Workbench:MemoryPageView,HostSettings:Iter5HostSettings,Page:Iter5Page,LegacyPage:Legacy5Page,ClassicPage:MemoryPageView,Settings:Iter5Settings,LegacySettings:LEGACY_SKIN_NS.Settings,ClassicSettings:SettingsPage,Note:Iter5Note,LegacyNote:LEGACY_SKIN_NS.Note,ClassicNote:NotesTab,Calendar:Iter5Calendar,LegacyCalendar:LEGACY_SKIN_NS.Calendar,ClassicCalendar:CalendarTab,External:Iter5External,ClassicExternal:ConnectTab,controller:controller,locale:applyLocalePref,t:t,copy:iter5SettingCopy,baseStyles:CSS,skin:function(value){iter5SetStyle(value==='classic'?'legacy':value);damSkinSet(value==='classic'?'classic':'v4');damSkinEnsureCss();emit()}}
+client=client.replace('    return module.exports', `    var fixtureSession='fixture-session',fixtureWorkspace='/fixture/project';sessions={list:{getSnapshot:function(){return {current:fixtureSession,byId:{[fixtureSession]:{cwd:fixtureWorkspace,retainedBy:{mainView:1}}}}}}}
+    window.dshTest={setSession:function(sid){fixtureSession=sid;emit()},setWorkspace:function(ws){fixtureWorkspace=ws;emit()},Panel:MemoryPanel,broadcast:emit,Schema:ITER5_SETTINGS_SCHEMA,Surface:Iter5Surface,Workbench:MemoryPageView,HostSettings:Iter5HostSettings,Page:Iter5Page,LegacyPage:Legacy5Page,ClassicPage:MemoryPageView,Settings:Iter5Settings,LegacySettings:LEGACY_SKIN_NS.Settings,ClassicSettings:SettingsPage,Note:Iter5Note,LegacyNote:LEGACY_SKIN_NS.Note,ClassicNote:NotesTab,Calendar:Iter5Calendar,LegacyCalendar:LEGACY_SKIN_NS.Calendar,ClassicCalendar:CalendarTab,External:Iter5External,ClassicExternal:ConnectTab,controller:controller,locale:applyLocalePref,t:t,copy:iter5SettingCopy,baseStyles:CSS,skin:function(value){iter5SetStyle(value==='classic'?'legacy':value);damSkinSet(value==='classic'?'classic':'v4');damSkinEnsureCss();emit()}}
     return module.exports`)
 // Detect symbol names rather than silently omitting a surface.
 assert(client.includes('function Iter5External('))
@@ -46,8 +46,8 @@ const url='http://127.0.0.1:'+server.address().port
 const browser=await chromium.launch({executablePath:process.env.CHROMIUM_PATH || '/usr/bin/chromium',headless:true,args:['--no-sandbox']})
 const artifacts=path.join(root,'artifacts/ui-v3-20261003');mkdirSync(artifacts,{recursive:true})
 const evidence=[], pageErrors=[]
-let config={boardMode:'graph',semanticEngineMode:'auto',associativeMemoryEnabled:true,activationInboxEnabled:true,jsDecideCandidateScheme:'balanced',jsDecideExcerptChars:75,dayBoundaryMinutes:450,workbenchLoopShort:10,workbenchLoopLong:24,memoryRoot:'/fixture/notes',userMemoryDir:'/fixture/user',teamEnabled:true,teamSyncTransport:'s3',teamSecretAccessKey:'fixture-secret-never-persist',autoSummaryTimes:[],injectExcludeSources:[],waterLevelThresholdMode:'auto'}
-let mode='shadow',failConfig=false,holdNote=null,holdCalendar=null,browseResolvers=[],recallResolvers=[],configResolvers=[],holdConfig=false,semanticResolvers=[],holdSemantic=false,noteWrites=0,calendarWrites=0,holdHandoff=false,handoffResolvers=[]
+let config={boardMode:'graph',semanticEngineMode:'auto',associativeMemoryEnabled:true,activationInboxEnabled:true,injectEnabled:true,injectBudgetChars:8000,jsDecideCandidateScheme:'balanced',jsDecideExcerptChars:75,dayBoundaryMinutes:450,workbenchLoopShort:10,workbenchLoopLong:24,memoryRoot:'/fixture/notes',userMemoryDir:'/fixture/user',teamEnabled:true,teamSyncTransport:'s3',teamSecretAccessKey:'fixture-secret-never-persist',autoSummaryTimes:[],injectExcludeSources:[],waterLevelThresholdMode:'auto'}
+let mode='shadow',failConfig=false,holdNote=null,holdCalendar=null,browseResolvers=[],recallResolvers=[],configResolvers=[],holdConfig=false,configSaveResolvers=[],holdConfigSave=false,semanticResolvers=[],holdSemantic=false,noteWrites=0,calendarWrites=0,holdHandoff=false,handoffResolvers=[]
 let water={live:true,window:1000000,threshold:.67,thresholdMode:'auto'}
 const indexSource=readFileSync(path.join(root,'lib/index.js'),'utf8')
 const promptSections=[...indexSource.match(/PROMPT_SECTION_KEYS_PRE_V1 = Object.freeze\(\[([\s\S]*?)\]\)/)[1].matchAll(/^\s*'([^']+)'/gm)].map(m=>m[1])
@@ -60,10 +60,11 @@ await page.route('**/api/dsh-auto-memory/**',async route=>{
  if(pathname==='config'){
   if(request.method()==='GET'){
    const snapshot=structuredClone(config)
-   if(holdConfig){configResolvers.push(()=>respond({config:snapshot,promptSections,promptSectionMust:promptMust}));return}
+   if(holdConfig){const resume=()=>respond({config:snapshot,promptSections,promptSectionMust:promptMust});resume.dailyMax=snapshot.autoConsolidateDailyMax;configResolvers.push(resume);return}
    return respond({config:snapshot,promptSections,promptSectionMust:promptMust})
   }
   if(failConfig)return respond({error:'injected save failure: memoryRoot',fields:{memoryRoot:'invalid directory'}},400)
+  if(holdConfigSave){const snapshot={...config,...body};configSaveResolvers.push(fail=>respond(fail?{error:'injected identity-save failure'}:{config:snapshot},fail?500:200));return}
   config={...config,...body};return respond({config:structuredClone(config)})
  }
  if(pathname==='semantic-status'){
@@ -307,10 +308,14 @@ try{
   assert((await readout.textContent()).includes('72%'));assert((await readout.textContent()).includes('220'))
   water={live:true,window:330,threshold:.83,thresholdMode:'fixed'};await page.evaluate(()=>dshTest.broadcast());await page.waitForTimeout(40)
   water={live:true,window:440,threshold:.94,thresholdMode:'auto'};await page.evaluate(()=>dshTest.setSession('water-session'));await page.waitForTimeout(40)
-  assert.equal(handoffResolvers.length,4)
+  // Shared classic/frozen settings now remount immediately for identity changes;
+  // their new effect issues one additional read. Raw component fixture stays put.
+  assert([4,5].includes(handoffResolvers.length),'old read plus new identity read(s) were issued')
+  await tab('continuity')
   assert(!(await readout.textContent()).includes('220'),'previous session value clears immediately')
   await handoffResolvers[2]();await page.waitForTimeout(30);assert(!(await readout.textContent()).includes('330'))
-  await handoffResolvers[3]();await page.waitForTimeout(30);assert((await readout.textContent()).includes('94%'))
+  for(const resume of handoffResolvers.slice(3).reverse())await resume()
+  await page.waitForTimeout(30);assert((await readout.textContent()).includes('94%'))
   holdHandoff=false;await page.evaluate(()=>dshTest.setSession('fixture-session'));await page.waitForTimeout(40)
  }
  evidence.push('PASS current/frozen/classic settings: handoff-state request disorder, changed session clears prior value and rejects old-session response')
@@ -334,12 +339,14 @@ try{
  assert.equal(keys.length,359)
  for(const key of keys){
   await search().fill(key);await search().press('ArrowDown');await search().press('Enter')
-  await page.waitForFunction(key=>{const el=document.activeElement;return el?.dataset.i5CatalogKey===key || el?.dataset.i5Keys?.split(' ').includes(key.split('.')[0]) || el?.dataset.i5EditorKeys?.split(' ').includes(key)},key)
+  try {await page.waitForFunction(key=>{const el=document.activeElement,keys=el?.dataset.i5Keys?.split(' ')||[];return el?.dataset.i5CatalogKey===key || keys.includes(key) || keys.includes(key.split('.')[0]) || el?.dataset.i5EditorKeys?.split(' ').includes(key)},key)}
+  catch(error){throw new Error('V3 key did not locate: '+key,{cause:error})}
   if(await page.locator('[data-native-model-picker]').count())await page.keyboard.press('Escape')
  }
  evidence.push('PASS V3: all 359 source-backed keys locate a real field or explicit compatibility directory entry with ArrowDown + Enter')
  for(const language of ['zh','en','ja']){
   await page.evaluate(language=>dshTest.locale(language),language)
+  await mounted('Settings')
   const labels=[]
   for(const group of ['record','find','continuity','maintenance','appearance','advanced']){
    await tab(group)
@@ -356,6 +363,7 @@ try{
   await page.getByRole('combobox').press('Escape')
  }
  await page.evaluate(()=>dshTest.locale('en'))
+ await mounted('Settings')
  for(const key of ['promptLayerOverrides.snapshotHead','promptSectionToggles.rules-section','subagentProvider','subagentReasoningEffortLong','subagentReasoningEffortShort']){
   await tab('common');await search().fill(key);await search().press('ArrowDown');await search().press('Enter')
   await page.waitForFunction(key=>document.activeElement?.dataset.i5EditorKeys?.split(' ').includes(key),key)
@@ -424,13 +432,16 @@ try{
    await nav.locator('[data-i5-nav="handoff"]').click()
    await page.locator('.i5-secondary-nav').getByRole('button',{name:'Calendar',exact:true}).click()
    await page.locator('[data-page="calendar"]').waitFor()
+   // The previous safety matrix deliberately left a recoverable calendar draft.
+   // Use its genuine Cancel action and confirmation before navigating away.
+   if(await page.locator('.i5-dialog').count())await page.locator('.i5-dialog').getByRole('button',{name:'Cancel',exact:true}).click()
    await nav.locator('[data-i5-nav="home"]').click()
    await page.getByRole('button',{name:'Statistics & calls',exact:true}).click()
    await page.locator('[data-page="stats"]').waitFor()
    await nav.locator('[data-i5-nav="settings"]').click();await tab('maintenance')
    await page.getByRole('button',{name:'Open maintenance center',exact:true}).click()
    await page.locator('[data-page="storage"]').waitFor()
-   await nav.locator('[data-i5-nav="team"]').click()
+   await page.locator('[data-i5-nav="team"]').click()
    await page.locator('[data-page="team"]').waitFor()
   }
  }
@@ -473,10 +484,64 @@ try{
  await host.getByRole('button',{name:'Discard changes',exact:true}).click();await page.evaluate(()=>settingsPair());await pairRecord()
  assert.equal(await hostCalls().inputValue(),savedCalls);assert.equal(await workCalls().inputValue(),'12','host Cancel leaves workbench recovery record intact')
  await hostCalls().fill('13');await host.locator('[data-dam-savebar] button[data-dirty]').click()
- await page.waitForFunction(()=>!document.querySelector('[data-fixture-host] [data-i5-dirty=true]'))
+  await page.waitForFunction(()=>!document.querySelector('[data-fixture-host] [data-i5-dirty=true]'))
+  await work.getByText(/Changes detected from another entry:/).waitFor()
  assert.equal(await workCalls().inputValue(),'12','saving host retains workbench raw draft')
  await work.getByRole('button',{name:'Discard changes',exact:true}).click();assert.equal(await workCalls().inputValue(),'13','Cancel uses synchronized committed state')
  evidence.push('PASS V3: actual classic/legacy/three variants load their own shipped CSS; 1440/390 record screenshots and mobile controls; workbench drafts survive all skin switches; simultaneous classic workbench and host scopes stay isolated through remount, Cancel, save and broadcast')
+
+ for(const surface of ['Workbench','Panel'])for(const fail of [false,true])for(const axis of ['session','workspace']){
+  const sessionA='/fixture/identity-'+surface+'-'+fail+'-'+axis+'-A',sessionB='/fixture/identity-'+surface+'-'+fail+'-'+axis+'-B'
+  const switchIdentity=value=>page.evaluate(([axis,value])=>{if(axis==='workspace')dshTest.setWorkspace(value);else dshTest.setSession(value)},[axis,value])
+  config={...config,autoConsolidateDailyMax:20}
+  await page.evaluate(([surface,axis,identity])=>{dshTest.skin('classic');dshTest.setWorkspace('/fixture/project');dshTest.setSession(identity);if(axis==='workspace')dshTest.setWorkspace(identity);dshTest.controller.setPanelTab('settings');dshTest.controller.open();remount(surface)},[surface,axis,sessionA])
+  await page.locator('[data-settings-v3]').waitFor();await tab('record');assert.equal(await calls().inputValue(),'20')
+  if(surface==='Panel'){
+   assert(await page.locator('[data-settings-v3]').evaluate(el=>el.getBoundingClientRect().width>300),'actual floating settings form keeps its available width')
+   assert(await page.locator('.i5-settings-mobile select').isVisible(),'floating settings uses its container width for the section selector')
+  }
+  const mounting=await page.evaluate(()=>fixtureNonce)
+  await calls().fill('21')
+  holdConfig=true;configResolvers=[];await page.evaluate(()=>dshTest.broadcast());await page.waitForTimeout(40)
+  assert(configResolvers.length,'old-identity reads are held')
+  config={...config,autoConsolidateDailyMax:30}
+  await switchIdentity(sessionB)
+  await page.waitForFunction(()=>document.querySelector('[data-settings-v3]')===null)
+  await page.waitForTimeout(60)
+  const newer=configResolvers.filter(resume=>resume.dailyMax===30),older=configResolvers.filter(resume=>resume.dailyMax===20)
+  assert(newer.length&&older.length)
+  for(const resume of newer)await resume()
+  await page.locator('[data-settings-v3]').waitFor();await tab('record');assert.equal(await calls().inputValue(),'30')
+  await calls().fill('31')
+  for(const resume of older)await resume()
+  await page.waitForTimeout(40);assert.equal(await calls().inputValue(),'31','old GET cannot replace the new identity draft')
+  holdConfig=false;configResolvers=[]
+  config={...config,autoConsolidateDailyMax:20}
+  await switchIdentity(sessionA)
+  await page.locator('[data-settings-v3]').waitFor();await tab('record')
+  await page.waitForFunction(()=>document.querySelector('[data-i5-keys="autoConsolidateDailyMax"] input')?.value==='21')
+  assert.equal(await page.evaluate(()=>fixtureNonce),mounting,'outer workbench/panel stays mounted through A → B → A')
+  holdConfigSave=true;configSaveResolvers=[];await save();await page.waitForTimeout(50);assert.equal(configSaveResolvers.length,1)
+  config={...config,autoConsolidateDailyMax:30}
+  await switchIdentity(sessionB)
+  await page.locator('[data-settings-v3]').waitFor();await tab('record')
+  await page.waitForFunction(()=>document.querySelector('[data-i5-keys="autoConsolidateDailyMax"] input')?.value==='31')
+  await configSaveResolvers[0](fail);await page.waitForTimeout(60)
+  assert.equal(await calls().inputValue(),'31','late save result never overwrites the other identity')
+  assert.equal(await calls().isDisabled(),false,'old pending operation does not lock the new identity')
+  holdConfigSave=false;configSaveResolvers=[]
+  config={...config,autoConsolidateDailyMax:fail?20:21}
+  await switchIdentity(sessionA)
+  await page.locator('[data-settings-v3]').waitFor();await tab('record')
+  await page.waitForFunction(()=>document.querySelector('[data-i5-keys="autoConsolidateDailyMax"] input')?.value==='21')
+  assert.equal(await page.locator('[data-dam-savebar]').isVisible(),fail,'only failed save retains the original identity recovery record')
+ }
+ for(const width of [1440,390]){
+  await page.setViewportSize({width,height:width===390?844:1000});await tab('record')
+  await page.screenshot({path:path.join(artifacts,'actual-classic-panel-record-'+width+'.png')})
+  assert.equal(await page.locator('[data-dam-body]').evaluate(el=>el.scrollWidth>el.clientWidth+2),false,'floating settings has no horizontal overflow')
+ }
+ evidence.push('PASS V3: actual classic workbench/panel remain mounted A → B → A for session and workspace switches; distinct raw drafts, delayed old GETs and success/failure save results cannot cross identity or lock the new form')
 
  assert.deepEqual(pageErrors,[],'no browser exceptions')
  writeFileSync(path.join(artifacts,'browser-results.json'),JSON.stringify({environment:'Chromium + React 18; fixture host APIs',browser:browser.version(),evidence,noteWrites,pageErrors},null,2)+'\n')

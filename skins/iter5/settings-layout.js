@@ -42,7 +42,7 @@
         memoryRoot:L3('保存会迁移数据；旧源保留，失败时配置与草稿保留。','Saving migrates data; source files remain, and failure preserves configuration and edits.','保存時に移行します。元ファイルは保持され、失敗時は設定と編集を保持します。'),
         userMemoryDir:L3('用户级跨工作区目录；保存会迁移数据，旧源保留。','User memory shared across workspaces; saving migrates data and preserves source files.','ワークスペース間で共有。保存時に移行し、元ファイルを保持します。')
       }
-      var warning=keys.map(function(k){return warnings[k]}).filter(Boolean).join(' ')
+      var warning=keys.map(function(k){return warnings[k] || (k.indexOf('embedding-config.')===0?warnings[k.slice('embedding-config.'.length)]:null)}).filter(Boolean).join(' ')
       if(dependentOff)warning=(warning?warning+' ':'')+L3('需先开启本组对应功能；已存值保留。','Enable the corresponding feature first; stored values are retained.','対応する機能を先に有効にします。保存値は保持されます。')
       if(!warning && typeof hint==='string' && /立即|即时|重启|删除|清零|需先|依赖|requires|restart|immediate|delet/i.test(hint)) warning=hint
       return h('div',{'data-dam-settings-row':'','data-i5-field':label,'data-i5-keys':keys.join(' '),'data-i5-owner':calibration?'find':def&&def.group,'data-i5-advanced':String(calibration||!!def&&def.advanced),id:rowId,tabIndex:-1},
@@ -61,7 +61,7 @@
       var names={window:{find:L3('旧记忆快照与注入','Stored memory snapshots & injection','記憶スナップショットと注入')},engine:{find:L('关联观察与主动检索','Observation & proactive retrieval'),advanced:L('检索诊断与安装','Retrieval diagnostics & setup'),record:L('观察记录','Observation recording'),maintenance:L('索引维护','Index maintenance')},capacity:{record:L('对话后自动提炼','Post-turn consolidation'),maintenance:L('容量与保留','Capacity & retention')},store:{record:L('日志与反思','Logs & reflections'),find:L('来源与跨工作区背景','Sources & workspace context'),maintenance:L('记忆目录','Memory directories')},skills:{record:L('记忆积累','Memory accumulation'),find:L('使用可复用流程','Use reusable workflows'),advanced:L('技能治理','Skill governance')},auto:{record:L('定时日志固化','Scheduled log distillation'),continuity:L('提醒与免打扰','Reminders & quiet mode'),maintenance:L('定时数据整理','Scheduled upkeep'),appearance:L('使用引导','Welcome guide'),advanced:L('模型与思考强度','Model & reasoning')}}
       var heading=names[key]&&names[key][group]||title
       var basic=buckets[group+'|false']||[],advanced=buckets[group+'|true']||[]
-      return h('section',{key:key,id:id+'-section-'+key,'data-dam-settings-group':'',hidden:!basic.length&&!advanced.length},
+      return h('section',{key:key,id:id+'-section-'+key,'data-dam-settings-group':'','data-i5-only-advanced':String(!basic.length&&!!advanced.length),hidden:!basic.length&&!advanced.length},
         h('h3',null,heading),basic,advanced.length?h('details',{className:'i5-settings-advanced',open:key==='engine'&&setupOpen?true:undefined},h('summary',null,L3('高级设置','Advanced settings','詳細設定')),advanced):null)
     }
     function Iter5SettingsSearch(props) {
@@ -89,7 +89,7 @@
           // Keep focus inside the real dialog while its provider catalog loads.
           if(picker&&!row&&attempts++<200){setTimeout(locate,20);return}
           if(!row&&picker)row=picker.closest('.i5-dialog').querySelector('button,input,textarea,select')
-          if(!row)row=Array.from(root.querySelectorAll('[data-i5-keys]')).find(function(n){return n.dataset.i5Keys.split(' ').indexOf(def.key.split('.')[0])>=0})
+          if(!row)row=Array.from(root.querySelectorAll('[data-i5-keys]')).find(function(n){var keys=n.dataset.i5Keys.split(' ');return keys.indexOf(def.key)>=0||keys.indexOf(def.key.split('.')[0])>=0})
           if(!row)row=root.querySelector('[data-i5-catalog-key="'+def.key.replace(/"/g,'')+'"]')
           if(!row)return
           var parent=row.parentElement
@@ -98,7 +98,7 @@
         }
         setTimeout(locate,0)
       }
-      return h('div',{className:'i5-settings-search'},h('input',{ref:input,type:'search',value:query[0],role:'combobox','aria-label':L3('搜索设置或配置键','Search settings or configuration keys','設定またはキーを検索'),'aria-expanded':open[0]&&results.length>0,'aria-controls':props.id+'-search-results','aria-activedescendant':active[0]>=0?props.id+'-result-'+active[0]:undefined,onFocus:function(){open[1](true)},onChange:function(e){query[1](e.target.value);active[1](-1);open[1](true)},onKeyDown:function(e){if(e.key==='Escape'){e.stopPropagation();open[1](false);active[1](-1);return}if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();open[1](true);active[1]((active[0]+(e.key==='ArrowDown'?1:results.length-1)+results.length)%Math.max(1,results.length))}if(e.key==='Enter'&&results.length){e.preventDefault();choose(results[Math.max(0,active[0])])}}}),
+      return h('div',{className:'i5-settings-search'},h('input',{ref:input,type:'search',value:query[0],role:'combobox',placeholder:L3('搜索设置或配置键','Search settings or configuration keys','設定またはキーを検索'),'aria-label':L3('搜索设置或配置键','Search settings or configuration keys','設定またはキーを検索'),'aria-expanded':open[0]&&results.length>0,'aria-controls':props.id+'-search-results','aria-activedescendant':active[0]>=0?props.id+'-result-'+active[0]:undefined,onFocus:function(){open[1](true)},onChange:function(e){query[1](e.target.value);active[1](-1);open[1](true)},onKeyDown:function(e){if(e.key==='Escape'){e.stopPropagation();open[1](false);active[1](-1);return}if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();open[1](true);active[1]((active[0]+(e.key==='ArrowDown'?1:results.length-1)+results.length)%Math.max(1,results.length))}if(e.key==='Enter'&&results.length){e.preventDefault();choose(results[Math.max(0,active[0])])}}}),
         open[0]&&text?h('div',{id:props.id+'-search-results',role:'listbox',className:'i5-search-results'},results.length?results.map(function(d,i){return h('button',{type:'button',key:d.key,id:props.id+'-result-'+i,role:'option','aria-selected':active[0]===i,onClick:function(){choose(d)}},h('code',null,d.key),h('small',null,L3.apply(null,ITER5_SETTINGS_GROUPS.find(function(g){return g[0]===d.group}).slice(1))))}):h('p',null,L('没有匹配项','No matches'))):null)
     }
     function iter5SettingsCatalog(group) {

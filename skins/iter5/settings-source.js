@@ -461,7 +461,7 @@
           field(t('fEmitMode'), h('select', { 'data-dam-select': '', value: (sem && sem.activationEmitMode) || 'shadow', onChange: function (e) { var m = e.target.value; apiPost(API.semanticEmit, { mode: m }).then(function () { refreshSem(setSem) }).catch(function () {}) } },
             h('option', { value: 'shadow' }, L('shadow 只记录', 'shadow (record only)')),
             h('option', { value: 'canary-explicit' }, L('canary 显式回忆注入', 'canary (explicit recall)')),
-            h('option', { value: 'active' }, L('active 全部注入', 'active (all)'))), t('fEmitModeHint'), ["activationEmitMode"]),
+            h('option', { value: 'active' }, L('active 全部注入', 'active (all)'))), t('fEmitModeHint'), ["embedding-config.activationEmitMode"]),
           // ★2026-09-30（C1 · 用户裁定：设置面必须全量、不得缺项）——
           //   唤起链路的**四道真闸门**此前只有宿主读、没有任何 UI 入口（实测 client.js 零引用）：
           //   ① activationInboxEnabled = 「记忆唤回」总闸（activation-host effectiveEnabled 的第二个条件，
@@ -874,7 +874,7 @@
             Object.keys(FONT_SCALES).map(function (k) { return h('option', { key: k, value: k }, t('fs' + k.charAt(0).toUpperCase() + k.slice(1))) })), t('fFontSizeHint'), ["dsh-auto-memory.fontScale.v2"]),
           // 面板位置(2026-09-21):左下角 / 顶部 / 两者共存。改动立即生效并同步两处形态(用户硬规则:即时回显)。
           field(t('fPanelPos'), h('select', { 'data-dam-select': '', value: controller.panelPos(), onChange: function (e) { controller.setPanelPos(e.target.value) } },
-            h('option', { value: 'bottom-left' }, t('posBottomLeft')), h('option', { value: 'page' }, t('posPage')), h('option', { value: 'both' }, t('posBoth'))), t('fPanelPosHint'), ["dsh-auto-memory.panelPos.v2"]),
+            h('option', { value: 'bottom-left' }, t('posBottomLeft')), h('option', { value: 'page' }, t('posPage')), h('option', { value: 'both' }, t('posBoth'))), t('fPanelPosHint'), ["dsh-auto-memory.panel.pos"]),
           field(L3('强调色（立即生效）','Accent color (immediate)','アクセント色（即時適用）'), h('select', { 'data-dam-select': '', value: accentTheme, onChange: function (e) { setAccent(e.target.value) } },
             h('option', { value: 'deepseek' }, L('DeepSeek 蓝', 'DeepSeek blue')), h('option', { value: 'graphite' }, L('石墨灰', 'Graphite')), h('option', { value: 'violet' }, L('雾紫', 'Violet'))), L('默认使用 DeepSeek 蓝；日历与状态颜色保持语义色。', 'DeepSeek blue by default; calendar and status colors stay semantic.'), ["dsh-auto-memory.accentTheme.v1"]),
           field(L3('关系图密度（立即生效）','Graph density (immediate)','グラフ密度（即時適用）'), h('select', { 'data-dam-select': '', value: graphDensity, onChange: function (e) { setDensity(e.target.value) } },

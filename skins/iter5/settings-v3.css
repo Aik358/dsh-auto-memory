@@ -1,7 +1,9 @@
 /* V3: one shared settings form, vertical rows and progressive help. */
-[data-iter5] [data-settings-v3]{max-width:1000px;width:100%;margin:auto;min-width:0;}
+[data-iter5] [data-settings-v3]{--i5-settings-surface:#fff;max-width:1000px;width:100%;margin:auto;min-width:0;}
+[data-iter5][data-deep=true] [data-settings-v3],[data-dam-theme][data-deep=true] [data-settings-v3]{--i5-settings-surface:#102044;}
 [data-iter5] [data-settings-v3] [hidden]{display:none!important;}
-[data-iter5] [data-settings-v3] [data-dam-settings-content]{display:flex;flex-direction:column;gap:16px;}
+[data-iter5] [data-settings-v3] [data-dam-settings-content]{display:flex;flex-direction:column;align-items:stretch;gap:16px;}
+[data-iter5] [data-settings-v3] [data-i5-only-advanced=true]{order:8;}
 [data-iter5] [data-settings-v3] [data-dam-settings-group]{padding:0;border:0;border-radius:0;background:transparent;box-shadow:none;overflow:visible;}
 [data-iter5] [data-settings-v3] [data-dam-settings-group]>h3{margin:8px 0;font-size:16px;}
 [data-iter5] [data-settings-v3] [data-dam-settings-row]{padding:16px 0;border-bottom:1px solid var(--i5-line);}
@@ -16,7 +18,7 @@
 [data-iter5] [data-settings-v3] .i5-settings-mobile{display:none;}
 [data-iter5] [data-settings-v3] .i5-settings-search{position:relative;max-width:380px;min-width:220px;flex:1;}
 [data-iter5] [data-settings-v3] .i5-settings-search input{width:100%;min-height:42px;}
-[data-iter5] [data-settings-v3] .i5-search-results{position:absolute;top:100%;left:0;right:0;max-height:320px;overflow:auto;z-index:10;background:var(--i5-face);border:1px solid var(--i5-line);box-shadow:var(--i5-shadow);}
+[data-iter5] [data-settings-v3] .i5-search-results{position:absolute;top:100%;left:0;right:0;max-height:320px;overflow:auto;z-index:10;background:var(--i5-face,var(--i5-surface,#fff));border:1px solid var(--i5-line);box-shadow:var(--i5-shadow);}
 [data-iter5] [data-settings-v3] .i5-search-results button{display:flex;flex-direction:column;width:100%;align-items:flex-start;overflow-wrap:anywhere;border:0;border-radius:0;text-align:left;padding:10px;}
 [data-iter5] [data-settings-v3] .i5-search-results button[aria-selected=true]{background:var(--i5-soft);}
 [data-iter5] [data-settings-v3] .i5-settings-catalog{order:10;border-top:1px solid var(--i5-line);padding:16px 0;font-size:12px;}

@@ -123,7 +123,7 @@ settings = replaceOnce(settings, '      var tickPair = useTick()', `      var ti
       var i5Groups = useRef({})
       var i5Alive = useRef(true), i5Read = useRef(0), i5Busy = useRef(false)
       var i5GuideMode = useRef('')
-      var i5Identity = iter5Identity()
+      var i5Identity = useRef(iter5Identity()).current
       var i5DraftKey = i5Identity + '|' + (props && props.draftScope || 'workbench')
 
       useEffect(function () {
@@ -148,7 +148,7 @@ settings = replaceOnce(settings, '      var tickPair = useTick()', `      var ti
         if (Object.keys(i5Draft.current).length) iter5SettingsDrafts[i5DraftKey] = { patch: Object.assign({}, i5Draft.current), groups: Object.assign({}, i5Groups.current), base: Object.assign({}, i5Base.current) }
         else delete iter5SettingsDrafts[i5DraftKey]
       }
-      function i5Cancel() { delete iter5SettingsDrafts[i5DraftKey]; i5Draft.current = {}; i5Groups.current = {}; setCfg(Object.assign({}, i5Base.current)); setDirty(false); setErr(''); setMsg('') }`)
+      function i5Cancel() { if(!i5Ok() || i5Busy.current)return; delete iter5SettingsDrafts[i5DraftKey]; i5Draft.current = {}; i5Groups.current = {}; setCfg(Object.assign({}, i5Base.current)); setDirty(false); setErr(''); setMsg('') }`)
 settings = replaceOnce(settings, '          setCfg(d.config)', `          if (!i5Ok()) return
           i5Base.current = configOf(d)
           var recovered = iter5SettingsDrafts[i5DraftKey]
@@ -171,7 +171,7 @@ settings = replaceOnce(settings, 'function setMany(patch) { setCfg(function (pre
 const saveStart = settings.indexOf('      function save() {')
 const fieldStart = settings.indexOf('      function field(')
 settings = settings.slice(0, saveStart) + `      function save() {
-        if (i5Busy.current || !Object.keys(i5Draft.current).length) return
+        if (!i5Ok() || i5Busy.current || !Object.keys(i5Draft.current).length) return
         i5Read.current++;i5Busy.current=true
         setBusy(true); setMsg(''); setErr('')
         var patch = Object.assign({}, i5Draft.current)
@@ -247,7 +247,7 @@ const savebar = settings.slice(savebarStart, savebarEnd).trimEnd().replace(/,$/,
 settings = settings.slice(0, savebarStart) + settings.slice(savebarEnd)
 settings = replaceOnce(settings, "err ? h('div', { 'data-dam-error': '' }, err) : null))", "err ? h('div', { 'data-dam-error': '' }, err) : null),\n" + savebar + ')')
 settings = replaceOnce(settings, "L('有未保存的更改', 'Unsaved changes')", "String(new Set(Object.keys(i5Groups.current).map(function (k) { return i5Groups.current[k] })).size) + L(' 个分区有未保存修改', ' sections with unsaved changes')")
-settings = replaceOnce(settings, "apiPost(API.semanticEmit, { mode: m }).then(function () { refreshSem(setSem) }).catch(function () {})", "apiPost(API.semanticEmit, { mode: m }).then(function () { if (i5Ok()) refreshSem(setSem) }).catch(function (e) { if (i5Ok()) setErr(e.message) })")
+settings = replaceOnce(settings, "apiPost(API.semanticEmit, { mode: m }).then(function () { refreshSem(setSem) }).catch(function () {})", "if(!i5Ok())return; apiPost(API.semanticEmit, { mode: m }).then(function () { if (i5Ok()) refreshSem(setSem) }).catch(function (e) { if (i5Ok()) setErr(e.message) })")
 settings = settings.replace("'tauHi 0.45 · tauLo 0.35 · deltaExp 0.03 · deltaPro 0.05'", "L('阈值由宿主校准策略管理；当前接口未提供有效数值', 'Thresholds are managed by the host policy; current values are unavailable')")
 settings = replaceOnce(settings, "try { openDialog({ kind: 'welcomeTour' }) } catch (eTour) {}", "try { openManualWelcomeTourPre() } catch (eTour) {}")
 // Avoid global selector collisions with the classic settings surface.
@@ -273,7 +273,7 @@ settings = settings.replace("if (!alive) return", "if (!alive || request!==i5Rea
 // Effective gate readout uses committed settings, so drafts cannot claim to be live.
 settings = settings.replace("var gateOk = cfg.associativeMemoryEnabled === true && cfg.activationInboxEnabled === true", "var live = i5Base.current || {}; var gateOk = live.associativeMemoryEnabled === true && live.activationInboxEnabled === true")
 settings = settings.replace("setMsg(t('saved') + (d.migrated ? ' · ' + d.migrated : '') + (d.warning ? ' · ' + d.warning : ''))", "setMsg(t('saved') + (d.migrated ? ' ' + d.migrated : '') + (d.warning ? ' ' + d.warning : ''))")
-settings = settings.replaceAll('if (busy) return', 'if (i5Busy.current) return')
+settings = settings.replaceAll('if (busy) return', 'if (i5Busy.current || !i5Ok()) return')
 // Every successful semantic read uses the same apply path. The save broadcast may
 // supersede the initiating request; its accepted response must still open setup.
 settings = settings.replaceAll('refreshSem(setSem)', 'refreshSem(i5ApplySem,null,setSem)')
