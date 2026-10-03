@@ -10,20 +10,24 @@
   <a href="https://htmlpreview.github.io/?https://github.com/Aik358/dsh-auto-memory/blob/preview/docs/landing/index.html"><strong>🌐 宣传主页（功能全景 · 数据流 · 论文 · 截图）</strong></a>
 </p>
 
-<p align="center">
-  <a href="docs/screenshots/promo/promo-0-banner-v4.png"><img width="820" alt="dsh-auto-memory 主视觉：无问自忆，且件件可查" src="docs/screenshots/promo/promo-0-banner-v4.png"></a>
-</p>
-
-<p align="center">
-  <a href="docs/screenshots/promo/promo-0-banner-v4.png"><img width="130" alt="主视觉" src="docs/screenshots/promo/promo-0-banner-v4.png"></a>
-  <a href="docs/screenshots/promo/promo-1b-auto-recall.png"><img width="130" alt="自动唤起" src="docs/screenshots/promo/promo-1b-auto-recall.png"></a>
-  <a href="docs/screenshots/promo/promo-2-tour.png"><img width="130" alt="欢迎向导" src="docs/screenshots/promo/promo-2-tour.png"></a>
-  <a href="docs/screenshots/promo/promo-3-recall.png"><img width="130" alt="唤起与固化" src="docs/screenshots/promo/promo-3-recall.png"></a>
-  <a href="docs/screenshots/promo/promo-4-unattended.png"><img width="130" alt="无人值守" src="docs/screenshots/promo/promo-4-unattended.png"></a>
-  <a href="docs/screenshots/promo/promo-5-external.png"><img width="130" alt="外部记忆继承" src="docs/screenshots/promo/promo-5-external.png"></a>
-  <a href="docs/screenshots/promo/promo-6-greeting.png"><img width="130" alt="定时问候" src="docs/screenshots/promo/promo-6-greeting.png"></a>
-</p>
-<p align="center"><sub>宣传图七幕 · 点击任意一张查看大图</sub></p>
+<table align="center">
+  <tr>
+    <td width="63%" align="center" valign="middle">
+      <a href="docs/screenshots/promo/promo-0-banner-v4.png"><img width="560" alt="dsh-auto-memory 主视觉：无问自忆，且件件可查" src="docs/screenshots/promo/promo-0-banner-v4.png"></a>
+    </td>
+    <td width="37%" align="center">
+      <a href="docs/screenshots/promo/promo-1b-auto-recall.png"><img width="115" alt="自动唤起" src="docs/screenshots/promo/promo-1b-auto-recall.png"></a>
+      <a href="docs/screenshots/promo/promo-2-tour.png"><img width="115" alt="欢迎向导" src="docs/screenshots/promo/promo-2-tour.png"></a>
+      <br>
+      <a href="docs/screenshots/promo/promo-3-recall.png"><img width="115" alt="唤起与固化" src="docs/screenshots/promo/promo-3-recall.png"></a>
+      <a href="docs/screenshots/promo/promo-4-unattended.png"><img width="115" alt="无人值守" src="docs/screenshots/promo/promo-4-unattended.png"></a>
+      <br>
+      <a href="docs/screenshots/promo/promo-5-external.png"><img width="115" alt="外部记忆继承" src="docs/screenshots/promo/promo-5-external.png"></a>
+      <a href="docs/screenshots/promo/promo-6-greeting.png"><img width="115" alt="定时问候" src="docs/screenshots/promo/promo-6-greeting.png"></a>
+    </td>
+  </tr>
+</table>
+<p align="center"><sub>宣传图廊 · 点击任意一张查看大图 · 分幕浏览见下方折叠区</sub></p>
 
 <details>
 <summary><b>宣传图分幕浏览</b>（点击展开，逐幕翻看）</summary>
@@ -65,18 +69,17 @@
 
 <p align="center">
   <a href="https://www.npmjs.com/package/@a9i5k4/dsh-auto-memory"><img alt="npm" src="https://img.shields.io/npm/v/@a9i5k4/dsh-auto-memory"></a>
-  <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/License-BSD--3--Clause-yellow.svg"></a>
   <a href="https://www.npmjs.com/package/@a9i5k4/dsh-auto-memory"><img alt="npm downloads" src="https://img.shields.io/npm/dt/@a9i5k4/dsh-auto-memory"></a>
-  <img alt="Platform" src="https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey">
 </p>
 
 <p align="center">
+  <a href="https://www.npmjs.com/package/@a9i5k4/dsh-auto-memory"><img alt="立即下载" src="https://img.shields.io/badge/%E7%AB%8B%E5%8D%B3%E4%B8%8B%E8%BD%BD-npm%20install-C536BC?style=for-the-badge"></a>
+  &nbsp;
   <code>pnpm add @a9i5k4/dsh-auto-memory@latest</code>
 </p>
 
 <p align="center">
   <a href="docs/USER-GUIDE.zh-CN.md"><strong>📖 用户手册</strong></a> ·
-  <a href="docs/USER-GUIDE.en.md"><strong>📖 User guide</strong></a> ·
   <a href="docs/SKIN-GUIDE.md"><strong>🎨 皮肤白皮书</strong></a> ·
   <a href="docs/TEAMWORK-GUIDE.md"><strong>👥 团队协作白皮书</strong></a> ·
   <a href="CHANGELOG.md">更新日志</a> ·
@@ -89,19 +92,14 @@
   <a href="https://github.com/Minervaowl7"><strong>@Minervaowl7</strong></a> 完整开发
 </h3>
 
+<p align="center"><sub><strong>重要贡献者</strong> —— 负责了前端的构筑工作，以及本轮关键漏洞的扫描与调试工作。</sub></p>
+
 <p align="center">
   <a href="docs/skin-figures/skin-theme-compare.gif"><img width="720" alt="暗色与亮色主题滑动对比" src="docs/skin-figures/skin-theme-compare.gif"></a>
 </p>
 <p align="center"><sub>
 暗色 ⇄ 亮色滑动对比 · 自动循环预览（GitHub README 不支持真实拖动；面板右上角可实时切换 <strong>暗色 / 亮色 / 跟随系统</strong>）。
 </sub></p>
-
-<p align="center">
-  <img width="172" alt="记忆库" src="docs/skin-figures/skin-library-zh.png">
-  &nbsp;<img width="172" alt="设置" src="docs/skin-figures/skin-settings-zh.png">
-  &nbsp;<img width="172" alt="专注查看" src="docs/skin-figures/skin-tour-zh.png">
-  &nbsp;<img width="172" alt="紧凑布局" src="docs/skin-figures/skin-compact-zh.png">
-</p>
 
 <p align="center"><sub>
 一套参考图风格的记忆工作台：九页主导航、列表与详情分栏、四组设置分区、
@@ -676,6 +674,16 @@ DeepSeek Harness (Node, 127.0.0.1:3080)
 ## 社区致谢
 
 **反馈与交流：**欢迎加入 QQ 交流群——[点击加入 dsh-auto-memory 交流群](https://qm.qq.com/q/v7Asxn6vPa)——问题反馈、使用技巧交流，响应比 issue 更快。
+
+### 🏆 赞助商 · Sponsors
+
+| Logo | 简介 |
+|---|---|
+| <img width="72" alt="dshapi" src="docs/sponsors/dshapi.png"> | **dshapi · API 中转站** —— 为本项目的开发、回归测试，以及 M 系列语义引擎的选型与激活策略研究提供模型端点。没有这些额度，那些基准实验根本跑不起来。<br>[立即注册 →](https://api.dshapi.icu/register?aff=HJU27P7JL39N) |
+
+<!-- 追加赞助商行模板（logo 文件放 docs/sponsors/ 后取消注释并填空）：
+| <img width="72" alt="名称" src="docs/sponsors/logo文件名.png"> | **名称** —— 简介文字。<br>[链接文字 →](URL) |
+-->
 
 社区贡献者：
 

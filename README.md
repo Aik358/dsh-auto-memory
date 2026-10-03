@@ -10,20 +10,24 @@
   <a href="https://htmlpreview.github.io/?https://github.com/Aik358/dsh-auto-memory/blob/preview/docs/landing/index.html"><strong>🌐 Landing page (full feature tour · data flow · papers · screenshots)</strong></a>
 </p>
 
-<p align="center">
-  <a href="docs/screenshots/promo/promo-0-banner-v4.png"><img width="820" alt="dsh-auto-memory hero: she remembers, unbidden" src="docs/screenshots/promo/promo-0-banner-v4.png"></a>
-</p>
-
-<p align="center">
-  <a href="docs/screenshots/promo/promo-0-banner-v4.png"><img width="130" alt="hero" src="docs/screenshots/promo/promo-0-banner-v4.png"></a>
-  <a href="docs/screenshots/promo/promo-1b-auto-recall.png"><img width="130" alt="auto recall" src="docs/screenshots/promo/promo-1b-auto-recall.png"></a>
-  <a href="docs/screenshots/promo/promo-2-tour.png"><img width="130" alt="welcome tour" src="docs/screenshots/promo/promo-2-tour.png"></a>
-  <a href="docs/screenshots/promo/promo-3-recall.png"><img width="130" alt="recall & crystallization" src="docs/screenshots/promo/promo-3-recall.png"></a>
-  <a href="docs/screenshots/promo/promo-4-unattended.png"><img width="130" alt="unattended mode" src="docs/screenshots/promo/promo-4-unattended.png"></a>
-  <a href="docs/screenshots/promo/promo-5-external.png"><img width="130" alt="external memory inheritance" src="docs/screenshots/promo/promo-5-external.png"></a>
-  <a href="docs/screenshots/promo/promo-6-greeting.png"><img width="130" alt="scheduled greetings" src="docs/screenshots/promo/promo-6-greeting.png"></a>
-</p>
-<p align="center"><sub>Promo gallery · seven frames · click any thumbnail to view full size</sub></p>
+<table align="center">
+  <tr>
+    <td width="63%" align="center" valign="middle">
+      <a href="docs/screenshots/promo/promo-0-banner-v4.png"><img width="560" alt="dsh-auto-memory hero: she remembers, unbidden" src="docs/screenshots/promo/promo-0-banner-v4.png"></a>
+    </td>
+    <td width="37%" align="center">
+      <a href="docs/screenshots/promo/promo-1b-auto-recall.png"><img width="115" alt="auto recall" src="docs/screenshots/promo/promo-1b-auto-recall.png"></a>
+      <a href="docs/screenshots/promo/promo-2-tour.png"><img width="115" alt="welcome tour" src="docs/screenshots/promo/promo-2-tour.png"></a>
+      <br>
+      <a href="docs/screenshots/promo/promo-3-recall.png"><img width="115" alt="recall & crystallization" src="docs/screenshots/promo/promo-3-recall.png"></a>
+      <a href="docs/screenshots/promo/promo-4-unattended.png"><img width="115" alt="unattended mode" src="docs/screenshots/promo/promo-4-unattended.png"></a>
+      <br>
+      <a href="docs/screenshots/promo/promo-5-external.png"><img width="115" alt="external memory inheritance" src="docs/screenshots/promo/promo-5-external.png"></a>
+      <a href="docs/screenshots/promo/promo-6-greeting.png"><img width="115" alt="scheduled greetings" src="docs/screenshots/promo/promo-6-greeting.png"></a>
+    </td>
+  </tr>
+</table>
+<p align="center"><sub>Promo gallery · click any thumbnail to view full size · frame-by-frame flip-through below</sub></p>
 
 
 
@@ -61,24 +65,23 @@
 </details>
 
 <p align="center">
-  <a href="./README.zh-CN.md"><img alt="中文" src="https://img.shields.io/badge/%E4%B8%AD%E6%96%87-switch-lightgrey?style=for-the-badge"></a>
+  <a href="./README.zh-CN.md"><img alt="中文" src="https://img.shields.io/badge/%E4%B8%AD%E6%96%87-%E5%88%87%E6%8D%A2-lightgrey?style=for-the-badge"></a>
   <a href="./README.md"><img alt="English" src="https://img.shields.io/badge/English-current-blue?style=for-the-badge"></a>
 </p>
 
 <p align="center">
   <a href="https://www.npmjs.com/package/@a9i5k4/dsh-auto-memory"><img alt="npm" src="https://img.shields.io/npm/v/@a9i5k4/dsh-auto-memory"></a>
-  <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/License-BSD--3--Clause-yellow.svg"></a>
   <a href="https://www.npmjs.com/package/@a9i5k4/dsh-auto-memory"><img alt="npm downloads" src="https://img.shields.io/npm/dt/@a9i5k4/dsh-auto-memory"></a>
-  <img alt="Platform" src="https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey">
 </p>
 
 <p align="center">
+  <a href="https://www.npmjs.com/package/@a9i5k4/dsh-auto-memory"><img alt="立即下载" src="https://img.shields.io/badge/%E7%AB%8B%E5%8D%B3%E4%B8%8B%E8%BD%BD-npm%20install-C536BC?style=for-the-badge"></a>
+  &nbsp;
   <code>pnpm add @a9i5k4/dsh-auto-memory@latest</code>
 </p>
 
 <p align="center">
   <a href="docs/USER-GUIDE.en.md"><strong>📖 User guide</strong></a> ·
-  <a href="docs/USER-GUIDE.zh-CN.md"><strong>📖 用户手册</strong></a> ·
   <a href="docs/SKIN-GUIDE.md"><strong>🎨 Skin guide</strong></a> ·
   <a href="docs/TEAMWORK-GUIDE.md"><strong>👥 Teamwork guide</strong></a> ·
   <a href="CHANGELOG.md">Changelog</a> ·
@@ -91,6 +94,8 @@
   <a href="https://github.com/Minervaowl7"><strong>@Minervaowl7</strong></a>
 </h3>
 
+<p align="center"><sub><strong>Key contributor</strong> — built the entire frontend, and drove the critical vulnerability scan &amp; debugging work for this release.</sub></p>
+
 <p align="center">
   <a href="docs/skin-figures/skin-theme-compare.gif"><img width="720" alt="dark and light theme slider preview" src="docs/skin-figures/skin-theme-compare.gif"></a>
 </p>
@@ -98,13 +103,6 @@
 Dark ⇄ Light slider preview · auto-playing loop (GitHub READMEs can't run a real drag widget) —
 in the app, switch <strong>Dark / Light / Follow system</strong> from the panel header.
 </sub></p>
-
-<p align="center">
-  <img width="172" alt="memory library" src="docs/skin-figures/skin-library-zh.png">
-  &nbsp;<img width="172" alt="settings" src="docs/skin-figures/skin-settings-zh.png">
-  &nbsp;<img width="172" alt="focus view" src="docs/skin-figures/skin-tour-zh.png">
-  &nbsp;<img width="172" alt="compact layout" src="docs/skin-figures/skin-compact-zh.png">
-</p>
 
 <p align="center"><sub>
 A reference-style memory workbench: nine-page navigation, list &amp; detail views,
@@ -680,6 +678,16 @@ Papers were authored by the autonomous engineering agent (ZCode / GLM); all conc
 ## Community
 
 **Feedback & chat:** join the community QQ group — [Join the dsh-auto-memory group](https://qm.qq.com/q/v7Asxn6vPa) — for bug reports, usage tips, and quick responses faster than GitHub issues.
+
+### 🏆 Sponsors · 赞助商
+
+| Logo | 简介 |
+|---|---|
+| <img width="72" alt="dshapi" src="docs/sponsors/dshapi.png"> | **dshapi · API 中转站** —— 为本项目的开发、回归测试，以及 M 系列语义引擎的选型与激活策略研究提供模型端点。没有这些额度，那些基准实验根本跑不起来。<br>[立即注册 →](https://api.dshapi.icu/register?aff=HJU27P7JL39N) |
+
+<!-- 追加赞助商行模板（logo 文件放 docs/sponsors/ 后取消注释并填空）：
+| <img width="72" alt="名称" src="docs/sponsors/logo文件名.png"> | **名称** —— 简介文字。<br>[链接文字 →](URL) |
+-->
 
 Community contributors:
 
