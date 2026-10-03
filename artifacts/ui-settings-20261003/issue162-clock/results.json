@@ -1,0 +1,71 @@
+{
+  "sourceBefore": "25822056457d2d0abcde2fef9c9d445e5d59c688",
+  "node": "22.23.3",
+  "TZ": "UTC in fixed-clock runs",
+  "productionChanged": false,
+  "preload": "tests/lib/issue162-fixed-clock.mjs; Date fixed and process.uptime()=0",
+  "results": [
+    {
+      "stage": "before",
+      "clock": "minute39",
+      "pass": 25,
+      "fail": 1,
+      "sha256": "eecb785cd1835e32dc2f02e63056283ccd47d41b794b2f87940cd4e9bac11e8f",
+      "file": "before-minute39.tap",
+      "failedSubtest": "not ok 15 - real debugInfo/persistence/dashboard path exposes failures and persistence failure stays observable",
+      "failedAssertion": "absentSecrets(tree), old line 373; doesNotMatch on standalone 39",
+      "runtimeCell": "31558 / 11:39:17 AM"
+    },
+    {
+      "stage": "before",
+      "clock": "second39",
+      "pass": 25,
+      "fail": 1,
+      "sha256": "85d242a8ae3ea6ce20156e6e7eae95453cbd9968ee8c84760a23eb64b0c8418c",
+      "file": "before-second39.tap",
+      "failedSubtest": "not ok 15 - real debugInfo/persistence/dashboard path exposes failures and persistence failure stays observable",
+      "failedAssertion": "absentSecrets(tree), old line 373; doesNotMatch on standalone 39",
+      "runtimeCell": "31551 / 11:17:39 AM"
+    },
+    {
+      "stage": "before",
+      "clock": "control",
+      "pass": 26,
+      "fail": 0,
+      "sha256": "9e51a1f159369823f58cb2934d83bd551344dfddb4a1e3931ce1fa52194d41b9",
+      "file": "before-control.tap"
+    },
+    {
+      "stage": "after",
+      "clock": "minute39",
+      "pass": 27,
+      "fail": 0,
+      "sha256": "6c739244ba343c014d65b74da6bd1c46060f0840616c9953757ac06695de987d",
+      "file": "after-minute39.tap"
+    },
+    {
+      "stage": "after",
+      "clock": "second39",
+      "pass": 27,
+      "fail": 0,
+      "sha256": "66475d5345fbaaacbf03c5441931608f25573b157a08b3c6e13c4a7796392e53",
+      "file": "after-second39.tap"
+    },
+    {
+      "stage": "after",
+      "clock": "control",
+      "pass": 27,
+      "fail": 0,
+      "sha256": "fde7666f90e5a285f70e684f4784105996d4d094b4087ed515893c4edfa93802",
+      "file": "after-control.tap"
+    },
+    {
+      "stage": "after",
+      "clock": "actual-clock",
+      "pass": 27,
+      "fail": 0,
+      "sha256": "5497cfe733c621199f73b1d21fffa12ab534db745e44e86629aef787caa6b702",
+      "file": "after-actual-clock.tap"
+    }
+  ]
+}

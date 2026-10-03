@@ -1,0 +1,31 @@
+PASS raw newline/comma editing, failure retention, remount recovery, normalized save, empty-array off
+PASS provider+model identity, modal Escape/focus, secret masking/visibility/no localStorage, unsupported folder unavailable, transport-specific fields
+PASS directory picker close/reopen generations reject late obsolete response
+PASS actual React: saving A then typing B preserves B; classic/new/frozen note remount recovery
+PASS shipped floating panel: page/identity switches, close confirmation, accepted close and reopen restore scoped drafts
+PASS explicit note Cancel clears its confirmed shared draft
+PASS calendar location-only protection: Escape/Cancel, classic/new/frozen draft recovery and explicit discard
+PASS external lookup out-of-order completion, source selection identity
+PASS actual React settings and semantic GET disorder: older snapshots cannot replace newer state
+PASS semantic state synchronizes across simultaneous settings instances
+Browser errors: []
+node:internal/modules/run_main:123
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
++ actual - expected
+
++ 'pending A ClassicNote false false'
+- ''
+
+    at file:///tmp/dsh-followup-pre-fix/tests/browser/settings-safety.mjs:219:11 {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: 'pending A ClassicNote false false',
+  expected: '',
+  operator: 'strictEqual',
+  diff: 'simple'
+}
+
+Node.js v22.23.3
