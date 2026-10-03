@@ -1,0 +1,28 @@
+  ok - 从 lib/index.js 取到端点字面量(71 条)
+  ok - 端点前缀为裸名（去 pre 后无 -pre 变体）
+  ok - 从 lib/index.js 取到诊断日志与配置文件名
+  ok - 诊断日志/配置名均无 -pre 拼写
+  ok - 从 lib/index.js 取到 memory 子目录集合(6 个)
+  ok - 源码 memory 子目录集合无 -pre 后缀（去 pre 已落地）
+  ok - docs/HANDBOOK.md: 诊断日志给的是真名 dsh-auto-memory-diagnose.log
+  ok - docs/HANDBOOK.md: hub 目录给的是分隔完整的 memory/hub/
+  ok - docs/HANDBOOK.md: 证据事件给的是 memory/evidence/events
+  ok - docs/HANDBOOK.md: 无写死维护者用户名的机器绝对路径
+  ok - docs/HANDBOOK.md: 文档不得残留 -pre 拼写（去 pre 承诺）
+  ok - docs/USER-GUIDE.zh-CN.md: 诊断日志给的是真名 dsh-auto-memory-diagnose.log
+  ok - docs/USER-GUIDE.zh-CN.md: hub 目录给的是分隔完整的 memory/hub/
+  ok - docs/USER-GUIDE.zh-CN.md: 证据事件给的是 memory/evidence/events
+  ok - docs/USER-GUIDE.zh-CN.md: 无写死维护者用户名的机器绝对路径
+  ok - docs/USER-GUIDE.zh-CN.md: 文档不得残留 -pre 拼写（去 pre 承诺）
+  ok - docs/USER-GUIDE.en.md: 诊断日志给的是真名 dsh-auto-memory-diagnose.log
+  ok - docs/USER-GUIDE.en.md: hub 目录给的是分隔完整的 memory/hub/
+  ok - docs/USER-GUIDE.en.md: 证据事件给的是 memory/evidence/events
+  ok - docs/USER-GUIDE.en.md: 无写死维护者用户名的机器绝对路径
+  ok - docs/USER-GUIDE.en.md: 文档不得残留 -pre 拼写（去 pre 承诺）
+  ok - HANDBOOK: 端点前缀给的是真名 /api/dsh-auto-memory/
+  ok - HANDBOOK: §5.1 端点条数以「共 **N** 条」形式给出
+  ok - HANDBOOK: §5.1 端点条数 = 代码里 unique 端点字面量数
+  ok - HANDBOOK: 含「端点」的行内数量与代码一致
+  ok - HANDBOOK: 含「端点」的行内数量与代码一致
+
+[issue111-docs] pass=26 fail=0

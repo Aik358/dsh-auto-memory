@@ -1,0 +1,27 @@
+Checking V3 cross-section labels: zh (132 controls)
+Checking V3 cross-section labels: en (132 controls)
+Checking V3 cross-section labels: ja (132 controls)
+PASS raw newline/comma editing, failure retention, remount recovery, normalized save, empty-array off
+PASS provider+model identity, modal Escape/focus, secret masking/visibility/no localStorage, unsupported folder unavailable, transport-specific fields
+PASS directory picker close/reopen generations reject late obsolete response
+PASS actual React: saving A then typing B preserves B; classic/new/frozen note remount recovery
+PASS shipped floating panel: page/identity switches, close confirmation, accepted close and reopen restore scoped drafts
+PASS explicit note Cancel clears its confirmed shared draft
+PASS calendar location-only protection: Escape/Cancel, classic/new/frozen draft recovery and explicit discard
+PASS external lookup out-of-order completion, source selection identity
+PASS actual React settings and semantic GET disorder: older snapshots cannot replace newer state
+PASS semantic state synchronizes across simultaneous settings instances
+PASS pending note remount matrix: classic/new/frozen × success/failure × unchanged A/new B; status and outcome synchronized
+PASS pending calendar remount matrix: classic/new/frozen × success/failure × unchanged A/new B; status and outcome synchronized
+PASS controlled React render/commit-to-subscription gap: note/calendar × three implementations × success/failure × A/B; old completed operation replay preserves new same-text note
+PASS current/frozen/classic settings: handoff-state request disorder, changed session clears prior value and rejects old-session response
+PASS zh: current Settings seven-section navigation; appearance at 390/1280, Tab moves focus, no appearance page horizontal overflow (not full keyboard/all-page layout acceptance)
+PASS en: current Settings seven-section navigation; appearance at 390/1280, Tab moves focus, no appearance page horizontal overflow (not full keyboard/all-page layout acceptance)
+PASS ja: current Settings seven-section navigation; appearance at 390/1280, Tab moves focus, no appearance page horizontal overflow (not full keyboard/all-page layout acceptance)
+PASS V3: all 360 source-backed keys locate a real field or explicit compatibility directory entry with ArrowDown + Enter
+PASS V3: every mounted control label and original label remains searchable from Common in zh/en/ja; nested prompt switches/layers and model provider/effort keys open and focus real editors
+PASS V3: dirty-only save bar, Cancel, recording/lifecycle dependency gates retain values, missing model setup opens visibly after immediate mode change
+PASS V3: every settings section rendered and captured at 1440×1000 and 390×844; mobile selector and horizontal overflow checked
+PASS V3: current/frozen/classic ship four primary destinations; actual secondary relationship/calendar/statistics/maintenance routes remain reachable
+PASS V3: actual classic/legacy/three variants load their own shipped CSS; 1440/390 record screenshots and mobile controls; workbench drafts survive all skin switches; simultaneous classic workbench and host scopes stay isolated through remount, Cancel, save and broadcast
+PASS V3: actual classic workbench/panel remain mounted A → B → A for session and workspace switches; distinct raw drafts, delayed old GETs and success/failure save results cannot cross identity or lock the new form

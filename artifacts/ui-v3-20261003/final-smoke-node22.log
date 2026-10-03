@@ -1,0 +1,584 @@
+[run-smoke] 262 suite(s) in tests/smoke, per-suite timeout=90000ms, sequential (never parallel)
+
+[PASS   ] smoke-test-api-paths.mjs  (0.1s)
+   └─   0% [1/262]  已耗时 0s  最近: smoke-test-api-paths.mjs
+[PASS   ] smoke-test-archive-hub-scope.mjs  (0.0s)
+   └─   1% [2/262]  已耗时 0s  最近: smoke-test-archive-hub-scope.mjs
+[FAIL   ] smoke-test-audit-g-207.mjs  (0.7s)  exit=1 sig=null
+   └─   1% [3/262]  已耗时 1s  最近: smoke-test-audit-g-207.mjs
+[PASS   ] smoke-test-audit-g-consolidate-filter.mjs  (0.8s)
+   └─   2% [4/262]  已耗时 2s  最近: smoke-test-audit-g-consolidate-filter.mjs
+[PASS   ] smoke-test-autocont-host.mjs  (30.2s)
+   └─   2% [5/262]  已耗时 32s  最近: smoke-test-autocont-host.mjs
+[PASS   ] smoke-test-away-popup-fix.mjs  (0.0s)
+   └─   2% [6/262]  已耗时 32s  最近: smoke-test-away-popup-fix.mjs
+[PASS   ] smoke-test-batch10-20260919.mjs  (0.0s)
+   └─   3% [7/262]  已耗时 32s  最近: smoke-test-batch10-20260919.mjs
+[PASS   ] smoke-test-batch11-20260919.mjs  (0.1s)
+   └─   3% [8/262]  已耗时 32s  最近: smoke-test-batch11-20260919.mjs
+[PASS   ] smoke-test-batch2-20260919.mjs  (0.1s)
+   └─   3% [9/262]  已耗时 32s  最近: smoke-test-batch2-20260919.mjs
+[PASS   ] smoke-test-batch3-20260919.mjs  (0.0s)
+   └─   4% [10/262]  已耗时 32s  最近: smoke-test-batch3-20260919.mjs
+[PASS   ] smoke-test-batch4-20260919.mjs  (0.0s)
+   └─   4% [11/262]  已耗时 32s  最近: smoke-test-batch4-20260919.mjs
+[PASS   ] smoke-test-batch5-20260919.mjs  (0.0s)
+   └─   5% [12/262]  已耗时 32s  最近: smoke-test-batch5-20260919.mjs
+[PASS   ] smoke-test-batch6-20260919.mjs  (0.0s)
+   └─   5% [13/262]  已耗时 32s  最近: smoke-test-batch6-20260919.mjs
+[PASS   ] smoke-test-batch7-20260919.mjs  (0.0s)
+   └─   5% [14/262]  已耗时 32s  最近: smoke-test-batch7-20260919.mjs
+[PASS   ] smoke-test-batch8-20260919.mjs  (0.0s)
+   └─   6% [15/262]  已耗时 32s  最近: smoke-test-batch8-20260919.mjs
+[PASS   ] smoke-test-batch9-20260919.mjs  (0.0s)
+   └─   6% [16/262]  已耗时 32s  最近: smoke-test-batch9-20260919.mjs
+[PASS   ] smoke-test-board-index-atomic.mjs  (0.0s)
+   └─   6% [17/262]  已耗时 32s  最近: smoke-test-board-index-atomic.mjs
+[PASS   ] smoke-test-bugfix-a-persistent-memory.mjs  (0.1s)
+   └─   7% [18/262]  已耗时 32s  最近: smoke-test-bugfix-a-persistent-memory.mjs
+[PASS   ] smoke-test-builtin-tokens.mjs  (0.0s)
+   └─   7% [19/262]  已耗时 32s  最近: smoke-test-builtin-tokens.mjs
+[PASS   ] smoke-test-c5-tier-inject.mjs  (0.1s)
+   └─   8% [20/262]  已耗时 32s  最近: smoke-test-c5-tier-inject.mjs
+[PASS   ] smoke-test-capture-paths.mjs  (0.0s)
+   └─   8% [21/262]  已耗时 33s  最近: smoke-test-capture-paths.mjs
+[PASS   ] smoke-test-carry-source-subagent.mjs  (0.1s)
+   └─   8% [22/262]  已耗时 33s  最近: smoke-test-carry-source-subagent.mjs
+[PASS   ] smoke-test-client-loadable.mjs  (0.1s)
+   └─   9% [23/262]  已耗时 33s  最近: smoke-test-client-loadable.mjs
+[PASS   ] smoke-test-consolidate-isolation.mjs  (8.1s)
+   └─   9% [24/262]  已耗时 41s  最近: smoke-test-consolidate-isolation.mjs
+[PASS   ] smoke-test-context-observer.mjs  (1.2s)
+   └─  10% [25/262]  已耗时 42s  最近: smoke-test-context-observer.mjs
+[PASS   ] smoke-test-continuation-transaction.mjs  (0.1s)
+   └─  10% [26/262]  已耗时 42s  最近: smoke-test-continuation-transaction.mjs
+[PASS   ] smoke-test-continue-chain.mjs  (0.1s)
+   └─  10% [27/262]  已耗时 42s  最近: smoke-test-continue-chain.mjs
+[PASS   ] smoke-test-continue-host.mjs  (1.5s)
+   └─  11% [28/262]  已耗时 44s  最近: smoke-test-continue-host.mjs
+[PASS   ] smoke-test-contseq.mjs  (2.8s)
+   └─  11% [29/262]  已耗时 46s  最近: smoke-test-contseq.mjs
+[PASS   ] smoke-test-default-model-fallback.mjs  (0.1s)
+   └─  11% [30/262]  已耗时 47s  最近: smoke-test-default-model-fallback.mjs
+[PASS   ] smoke-test-depre-residue.mjs  (0.1s)
+   └─  12% [31/262]  已耗时 47s  最近: smoke-test-depre-residue.mjs
+[PASS   ] smoke-test-doc-code-consistency.mjs  (0.1s)
+   └─  12% [32/262]  已耗时 47s  最近: smoke-test-doc-code-consistency.mjs
+[PASS   ] smoke-test-embed-incremental.mjs  (0.1s)
+   └─  13% [33/262]  已耗时 47s  最近: smoke-test-embed-incremental.mjs
+[PASS   ] smoke-test-evidence-agg.mjs  (0.0s)
+   └─  13% [34/262]  已耗时 47s  最近: smoke-test-evidence-agg.mjs
+[PASS   ] smoke-test-external.mjs  (0.1s)
+   └─  13% [35/262]  已耗时 47s  最近: smoke-test-external.mjs
+[PASS   ] smoke-test-extract-chunk-flood.mjs  (0.0s)
+   └─  14% [36/262]  已耗时 47s  最近: smoke-test-extract-chunk-flood.mjs
+[PASS   ] smoke-test-f1.mjs  (7.2s)
+   └─  14% [37/262]  已耗时 54s  最近: smoke-test-f1.mjs
+[PASS   ] smoke-test-followup-110-102.mjs  (0.1s)
+   └─  15% [38/262]  已耗时 54s  最近: smoke-test-followup-110-102.mjs
+[PASS   ] smoke-test-frozen-mirror.mjs  (0.1s)
+   └─  15% [39/262]  已耗时 54s  最近: smoke-test-frozen-mirror.mjs
+[PASS   ] smoke-test-g1-gate-unify.mjs  (13.5s)
+   └─  15% [40/262]  已耗时 1m08s  最近: smoke-test-g1-gate-unify.mjs
+[PASS   ] smoke-test-g3-note-status-wire.mjs  (0.1s)
+   └─  16% [41/262]  已耗时 1m08s  最近: smoke-test-g3-note-status-wire.mjs
+[PASS   ] smoke-test-g4-whiteboard.mjs  (0.1s)
+   └─  16% [42/262]  已耗时 1m08s  最近: smoke-test-g4-whiteboard.mjs
+[PASS   ] smoke-test-gap-rounds-three-surface.mjs  (0.1s)
+   └─  16% [43/262]  已耗时 1m08s  最近: smoke-test-gap-rounds-three-surface.mjs
+[PASS   ] smoke-test-gate-atomicity.mjs  (0.0s)
+   └─  17% [44/262]  已耗时 1m08s  最近: smoke-test-gate-atomicity.mjs
+[PASS   ] smoke-test-generator-guard.mjs  (0.6s)
+   └─  17% [45/262]  已耗时 1m09s  最近: smoke-test-generator-guard.mjs
+[PASS   ] smoke-test-generator-idempotent.mjs  (0.7s)
+   └─  18% [46/262]  已耗时 1m09s  最近: smoke-test-generator-idempotent.mjs
+[PASS   ] smoke-test-global-brief.mjs  (0.0s)
+   └─  18% [47/262]  已耗时 1m09s  最近: smoke-test-global-brief.mjs
+[PASS   ] smoke-test-graph-mode.mjs  (0.2s)
+   └─  18% [48/262]  已耗时 1m10s  最近: smoke-test-graph-mode.mjs
+[PASS   ] smoke-test-h1-outer-surface-skin.mjs  (0.0s)
+   └─  19% [49/262]  已耗时 1m10s  最近: smoke-test-h1-outer-surface-skin.mjs
+[PASS   ] smoke-test-h1-v1-lane-retired.mjs  (9.8s)
+   └─  19% [50/262]  已耗时 1m20s  最近: smoke-test-h1-v1-lane-retired.mjs
+[PASS   ] smoke-test-h43-theme-sync.mjs  (0.0s)
+   └─  19% [51/262]  已耗时 1m20s  最近: smoke-test-h43-theme-sync.mjs
+[PASS   ] smoke-test-handoff-anchor.mjs  (0.0s)
+   └─  20% [52/262]  已耗时 1m20s  最近: smoke-test-handoff-anchor.mjs
+[PASS   ] smoke-test-handoff.mjs  (0.3s)
+   └─  20% [53/262]  已耗时 1m20s  最近: smoke-test-handoff.mjs
+[PASS   ] smoke-test-i18n-really.mjs  (0.0s)
+   └─  21% [54/262]  已耗时 1m20s  最近: smoke-test-i18n-really.mjs
+[PASS   ] smoke-test-i5-status-filter.mjs  (0.1s)
+   └─  21% [55/262]  已耗时 1m20s  最近: smoke-test-i5-status-filter.mjs
+[PASS   ] smoke-test-isolation.mjs  (0.8s)
+   └─  21% [56/262]  已耗时 1m21s  最近: smoke-test-isolation.mjs
+[PASS   ] smoke-test-issue103-105-portfix.mjs  (0.2s)
+   └─  22% [57/262]  已耗时 1m21s  最近: smoke-test-issue103-105-portfix.mjs
+[PASS   ] smoke-test-issue109-policy-parity.mjs  (0.0s)
+   └─  22% [58/262]  已耗时 1m21s  最近: smoke-test-issue109-policy-parity.mjs
+[PASS   ] smoke-test-issue110-hub-batch-entry.mjs  (0.1s)
+   └─  23% [59/262]  已耗时 1m21s  最近: smoke-test-issue110-hub-batch-entry.mjs
+[PASS   ] smoke-test-issue110-hub-io.mjs  (0.0s)
+   └─  23% [60/262]  已耗时 1m21s  最近: smoke-test-issue110-hub-io.mjs
+[PASS   ] smoke-test-issue111-docs-real-names.mjs  (0.0s)
+   └─  23% [61/262]  已耗时 1m21s  最近: smoke-test-issue111-docs-real-names.mjs
+[PASS   ] smoke-test-issue112-hermetic-home.mjs  (0.1s)
+   └─  24% [62/262]  已耗时 1m21s  最近: smoke-test-issue112-hermetic-home.mjs
+[PASS   ] smoke-test-issue113-116-webhook-guards.mjs  (0.9s)
+   └─  24% [63/262]  已耗时 1m22s  最近: smoke-test-issue113-116-webhook-guards.mjs
+[PASS   ] smoke-test-issue132-tail-brace.mjs  (0.1s)
+   └─  24% [64/262]  已耗时 1m22s  最近: smoke-test-issue132-tail-brace.mjs
+[PASS   ] smoke-test-issue162-diagnostic-integrity.mjs  (0.3s)
+   └─  25% [65/262]  已耗时 1m22s  最近: smoke-test-issue162-diagnostic-integrity.mjs
+[PASS   ] smoke-test-issue164-plan-cas.mjs  (0.2s)
+   └─  25% [66/262]  已耗时 1m23s  最近: smoke-test-issue164-plan-cas.mjs
+[PASS   ] smoke-test-issue164-plan-processes.mjs  (0.6s)
+   └─  26% [67/262]  已耗时 1m23s  最近: smoke-test-issue164-plan-processes.mjs
+[PASS   ] smoke-test-issue164-plan-tools.mjs  (0.3s)
+   └─  26% [68/262]  已耗时 1m24s  最近: smoke-test-issue164-plan-tools.mjs
+[PASS   ] smoke-test-issue170-release-resources.mjs  (0.1s)
+   └─  26% [69/262]  已耗时 1m24s  最近: smoke-test-issue170-release-resources.mjs
+[PASS   ] smoke-test-issue170-skin-http.mjs  (0.3s)
+   └─  27% [70/262]  已耗时 1m24s  最近: smoke-test-issue170-skin-http.mjs
+[PASS   ] smoke-test-issue174-team-subscriptions.mjs  (0.1s)
+   └─  27% [71/262]  已耗时 1m24s  最近: smoke-test-issue174-team-subscriptions.mjs
+[PASS   ] smoke-test-issue174-team-ui.mjs  (0.0s)
+   └─  27% [72/262]  已耗时 1m24s  最近: smoke-test-issue174-team-ui.mjs
+[PASS   ] smoke-test-issue174-team-wiring.mjs  (5.3s)
+   └─  28% [73/262]  已耗时 1m29s  最近: smoke-test-issue174-team-wiring.mjs
+[PASS   ] smoke-test-issue177-tier0-card-boundaries.mjs  (0.0s)
+   └─  28% [74/262]  已耗时 1m29s  最近: smoke-test-issue177-tier0-card-boundaries.mjs
+[PASS   ] smoke-test-issue211-python-uninstall.mjs  (0.0s)
+   └─  29% [75/262]  已耗时 1m29s  最近: smoke-test-issue211-python-uninstall.mjs
+[PASS   ] smoke-test-issue30-procedure-promotion.mjs  (0.1s)
+   └─  29% [76/262]  已耗时 1m29s  最近: smoke-test-issue30-procedure-promotion.mjs
+[PASS   ] smoke-test-issue38.mjs  (0.1s)
+   └─  29% [77/262]  已耗时 1m30s  最近: smoke-test-issue38.mjs
+[PASS   ] smoke-test-issue45-recall-corpus.mjs  (4.1s)
+   └─  30% [78/262]  已耗时 1m34s  最近: smoke-test-issue45-recall-corpus.mjs
+[PASS   ] smoke-test-issue48.mjs  (0.2s)
+   └─  30% [79/262]  已耗时 1m34s  最近: smoke-test-issue48.mjs
+[PASS   ] smoke-test-issue51.mjs  (0.1s)
+   └─  31% [80/262]  已耗时 1m34s  最近: smoke-test-issue51.mjs
+[PASS   ] smoke-test-issue52.mjs  (0.1s)
+   └─  31% [81/262]  已耗时 1m34s  最近: smoke-test-issue52.mjs
+[PASS   ] smoke-test-issue54.mjs  (0.1s)
+   └─  31% [82/262]  已耗时 1m34s  最近: smoke-test-issue54.mjs
+[PASS   ] smoke-test-issue55-58.mjs  (0.1s)
+   └─  32% [83/262]  已耗时 1m34s  最近: smoke-test-issue55-58.mjs
+[PASS   ] smoke-test-iter5-skin.mjs  (0.2s)
+   └─  32% [84/262]  已耗时 1m34s  最近: smoke-test-iter5-skin.mjs
+[PASS   ] smoke-test-js-semantic-host-recovery.mjs  (0.9s)
+   └─  32% [85/262]  已耗时 1m35s  最近: smoke-test-js-semantic-host-recovery.mjs
+[PASS   ] smoke-test-l0-extract.mjs  (0.0s)
+   └─  33% [86/262]  已耗时 1m35s  最近: smoke-test-l0-extract.mjs
+[PASS   ] smoke-test-l0-index.mjs  (0.0s)
+   └─  33% [87/262]  已耗时 1m35s  最近: smoke-test-l0-index.mjs
+[PASS   ] smoke-test-l0-layer.mjs  (0.0s)
+   └─  34% [88/262]  已耗时 1m35s  最近: smoke-test-l0-layer.mjs
+[PASS   ] smoke-test-l1-render-decouple.mjs  (0.1s)
+   └─  34% [89/262]  已耗时 1m36s  最近: smoke-test-l1-render-decouple.mjs
+[PASS   ] smoke-test-l3-carry-budget.mjs  (0.1s)
+   └─  34% [90/262]  已耗时 1m36s  最近: smoke-test-l3-carry-budget.mjs
+[PASS   ] smoke-test-l3-team.mjs  (0.1s)
+   └─  35% [91/262]  已耗时 1m36s  最近: smoke-test-l3-team.mjs
+[PASS   ] smoke-test-l35-attachment.mjs  (0.1s)
+   └─  35% [92/262]  已耗时 1m36s  最近: smoke-test-l35-attachment.mjs
+[PASS   ] smoke-test-l36-prev-session.mjs  (0.1s)
+   └─  35% [93/262]  已耗时 1m36s  最近: smoke-test-l36-prev-session.mjs
+[PASS   ] smoke-test-layer-filter.mjs  (0.0s)
+   └─  36% [94/262]  已耗时 1m36s  最近: smoke-test-layer-filter.mjs
+[PASS   ] smoke-test-layout-config.mjs  (0.0s)
+   └─  36% [95/262]  已耗时 1m36s  最近: smoke-test-layout-config.mjs
+[PASS   ] smoke-test-m1-contract-line.mjs  (0.0s)
+   └─  37% [96/262]  已耗时 1m36s  最近: smoke-test-m1-contract-line.mjs
+[PASS   ] smoke-test-m2-lint.mjs  (0.0s)
+   └─  37% [97/262]  已耗时 1m36s  最近: smoke-test-m2-lint.mjs
+[PASS   ] smoke-test-m25a-l0-qualitygate.mjs  (0.0s)
+   └─  37% [98/262]  已耗时 1m36s  最近: smoke-test-m25a-l0-qualitygate.mjs
+[PASS   ] smoke-test-m25b-layer-arm.mjs  (0.0s)
+   └─  38% [99/262]  已耗时 1m36s  最近: smoke-test-m25b-layer-arm.mjs
+[PASS   ] smoke-test-m3b1.mjs  (0.0s)
+   └─  38% [100/262]  已耗时 1m36s  最近: smoke-test-m3b1.mjs
+[PASS   ] smoke-test-m3b2.mjs  (0.1s)
+   └─  39% [101/262]  已耗时 1m36s  最近: smoke-test-m3b2.mjs
+[PASS   ] smoke-test-m3b3.mjs  (0.5s)
+   └─  39% [102/262]  已耗时 1m37s  最近: smoke-test-m3b3.mjs
+[PASS   ] smoke-test-m4.mjs  (0.0s)
+   └─  39% [103/262]  已耗时 1m37s  最近: smoke-test-m4.mjs
+[PASS   ] smoke-test-m42-corpus.mjs  (0.0s)
+   └─  40% [104/262]  已耗时 1m37s  最近: smoke-test-m42-corpus.mjs
+[PASS   ] smoke-test-m43.mjs  (2.7s)
+   └─  40% [105/262]  已耗时 1m40s  最近: smoke-test-m43.mjs
+[PASS   ] smoke-test-m51.mjs  (0.1s)
+   └─  40% [106/262]  已耗时 1m40s  最近: smoke-test-m51.mjs
+[PASS   ] smoke-test-m52.mjs  (0.1s)
+   └─  41% [107/262]  已耗时 1m40s  最近: smoke-test-m52.mjs
+[PASS   ] smoke-test-m53.mjs  (6.5s)
+   └─  41% [108/262]  已耗时 1m46s  最近: smoke-test-m53.mjs
+[PASS   ] smoke-test-m61.mjs  (0.0s)
+   └─  42% [109/262]  已耗时 1m46s  最近: smoke-test-m61.mjs
+[PASS   ] smoke-test-m62.mjs  (0.0s)
+   └─  42% [110/262]  已耗时 1m46s  最近: smoke-test-m62.mjs
+[PASS   ] smoke-test-m63.mjs  (2.3s)
+   └─  42% [111/262]  已耗时 1m49s  最近: smoke-test-m63.mjs
+[PASS   ] smoke-test-m70.mjs  (8.2s)
+   └─  43% [112/262]  已耗时 1m57s  最近: smoke-test-m70.mjs
+[PASS   ] smoke-test-m71.mjs  (0.2s)
+   └─  43% [113/262]  已耗时 1m57s  最近: smoke-test-m71.mjs
+[PASS   ] smoke-test-m72.mjs  (0.0s)
+   └─  44% [114/262]  已耗时 1m57s  最近: smoke-test-m72.mjs
+[PASS   ] smoke-test-m73.mjs  (3.7s)
+   └─  44% [115/262]  已耗时 2m01s  最近: smoke-test-m73.mjs
+[PASS   ] smoke-test-m76.mjs  (5.5s)
+   └─  44% [116/262]  已耗时 2m06s  最近: smoke-test-m76.mjs
+[PASS   ] smoke-test-m77.mjs  (0.6s)
+   └─  45% [117/262]  已耗时 2m07s  最近: smoke-test-m77.mjs
+[PASS   ] smoke-test-m78-host.mjs  (8.7s)
+   └─  45% [118/262]  已耗时 2m16s  最近: smoke-test-m78-host.mjs
+[PASS   ] smoke-test-m80-fact.mjs  (0.1s)
+   └─  45% [119/262]  已耗时 2m16s  最近: smoke-test-m80-fact.mjs
+[PASS   ] smoke-test-m80-js-semantic.mjs  (0.0s)
+   └─  46% [120/262]  已耗时 2m16s  最近: smoke-test-m80-js-semantic.mjs
+[PASS   ] smoke-test-m81-c2-wiring.mjs  (0.3s)
+   └─  46% [121/262]  已耗时 2m16s  最近: smoke-test-m81-c2-wiring.mjs
+[PASS   ] smoke-test-m81-fact-metadata.mjs  (0.0s)
+   └─  47% [122/262]  已耗时 2m16s  最近: smoke-test-m81-fact-metadata.mjs
+[PASS   ] smoke-test-m81-hub.mjs  (0.1s)
+   └─  47% [123/262]  已耗时 2m16s  最近: smoke-test-m81-hub.mjs
+[PASS   ] smoke-test-m82-js-decide.mjs  (0.0s)
+   └─  47% [124/262]  已耗时 2m16s  最近: smoke-test-m82-js-decide.mjs
+[PASS   ] smoke-test-m83-skill-packet.mjs  (0.1s)
+   └─  48% [125/262]  已耗时 2m16s  最近: smoke-test-m83-skill-packet.mjs
+[PASS   ] smoke-test-m84-intent-clean.mjs  (0.0s)
+   └─  48% [126/262]  已耗时 2m16s  最近: smoke-test-m84-intent-clean.mjs
+[PASS   ] smoke-test-m85-storage-manage.mjs  (0.1s)
+   └─  48% [127/262]  已耗时 2m16s  最近: smoke-test-m85-storage-manage.mjs
+[PASS   ] smoke-test-m9-capacity-default.mjs  (0.1s)
+   └─  49% [128/262]  已耗时 2m16s  最近: smoke-test-m9-capacity-default.mjs
+[PASS   ] smoke-test-m9-e2e.mjs  (0.0s)
+   └─  49% [129/262]  已耗时 2m17s  最近: smoke-test-m9-e2e.mjs
+[PASS   ] smoke-test-memory-importance.mjs  (0.0s)
+   └─  50% [130/262]  已耗时 2m17s  最近: smoke-test-memory-importance.mjs
+[PASS   ] smoke-test-memory-index.mjs  (0.4s)
+   └─  50% [131/262]  已耗时 2m17s  最近: smoke-test-memory-index.mjs
+[PASS   ] smoke-test-migrate-host-wiring.mjs  (0.1s)
+   └─  50% [132/262]  已耗时 2m17s  最近: smoke-test-migrate-host-wiring.mjs
+[PASS   ] smoke-test-migrate-pack-safe-import.mjs  (0.0s)
+   └─  51% [133/262]  已耗时 2m17s  最近: smoke-test-migrate-pack-safe-import.mjs
+[PASS   ] smoke-test-migrate-pack.mjs  (0.1s)
+   └─  51% [134/262]  已耗时 2m17s  最近: smoke-test-migrate-pack.mjs
+[PASS   ] smoke-test-multiworkspace.mjs  (0.1s)
+   └─  52% [135/262]  已耗时 2m17s  最近: smoke-test-multiworkspace.mjs
+[PASS   ] smoke-test-native-skin-dark-route.mjs  (0.0s)
+   └─  52% [136/262]  已耗时 2m17s  最近: smoke-test-native-skin-dark-route.mjs
+[PASS   ] smoke-test-note-status.mjs  (0.0s)
+   └─  52% [137/262]  已耗时 2m17s  最近: smoke-test-note-status.mjs
+[PASS   ] smoke-test-p0-4d-inject-exclude.mjs  (0.1s)
+   └─  53% [138/262]  已耗时 2m17s  最近: smoke-test-p0-4d-inject-exclude.mjs
+[PASS   ] smoke-test-p1-concurrency.mjs  (0.0s)
+   └─  53% [139/262]  已耗时 2m17s  最近: smoke-test-p1-concurrency.mjs
+[PASS   ] smoke-test-p1-ledger-criteria.mjs  (0.0s)
+   └─  53% [140/262]  已耗时 2m17s  最近: smoke-test-p1-ledger-criteria.mjs
+[PASS   ] smoke-test-p2-delta-engine.mjs  (0.1s)
+   └─  54% [141/262]  已耗时 2m17s  最近: smoke-test-p2-delta-engine.mjs
+[PASS   ] smoke-test-p2-semantic-recall.mjs  (0.0s)
+   └─  54% [142/262]  已耗时 2m18s  最近: smoke-test-p2-semantic-recall.mjs
+[PASS   ] smoke-test-p23-wb-sidecar.mjs  (0.1s)
+   └─  55% [143/262]  已耗时 2m18s  最近: smoke-test-p23-wb-sidecar.mjs
+[PASS   ] smoke-test-p3-batchb-guards.mjs  (0.1s)
+   └─  55% [144/262]  已耗时 2m18s  最近: smoke-test-p3-batchb-guards.mjs
+[PASS   ] smoke-test-p3-fusion.mjs  (0.0s)
+   └─  55% [145/262]  已耗时 2m18s  最近: smoke-test-p3-fusion.mjs
+[PASS   ] smoke-test-p3-recall-decision.mjs  (0.0s)
+   └─  56% [146/262]  已耗时 2m18s  最近: smoke-test-p3-recall-decision.mjs
+[PASS   ] smoke-test-p4-l0-response.mjs  (0.1s)
+   └─  56% [147/262]  已耗时 2m18s  最近: smoke-test-p4-l0-response.mjs
+[PASS   ] smoke-test-p4-rerank-window.mjs  (0.1s)
+   └─  56% [148/262]  已耗时 2m18s  最近: smoke-test-p4-rerank-window.mjs
+[PASS   ] smoke-test-p5-acceptance.mjs  (0.0s)
+   └─  57% [149/262]  已耗时 2m18s  最近: smoke-test-p5-acceptance.mjs
+[PASS   ] smoke-test-p6a-rules-layer.mjs  (0.1s)
+   └─  57% [150/262]  已耗时 2m18s  最近: smoke-test-p6a-rules-layer.mjs
+[PASS   ] smoke-test-p6b-rules-kind.mjs  (0.0s)
+   └─  58% [151/262]  已耗时 2m18s  最近: smoke-test-p6b-rules-kind.mjs
+[PASS   ] smoke-test-p7-write-fix.mjs  (0.1s)
+   └─  58% [152/262]  已耗时 2m18s  最近: smoke-test-p7-write-fix.mjs
+[PASS   ] smoke-test-p8-rrf-wiring.mjs  (0.1s)
+   └─  58% [153/262]  已耗时 2m18s  最近: smoke-test-p8-rrf-wiring.mjs
+[PASS   ] smoke-test-p9-rules-lifecycle.mjs  (0.1s)
+   └─  59% [154/262]  已耗时 2m18s  最近: smoke-test-p9-rules-lifecycle.mjs
+[PASS   ] smoke-test-p9a-correction-attribution.mjs  (0.0s)
+   └─  59% [155/262]  已耗时 2m18s  最近: smoke-test-p9a-correction-attribution.mjs
+[PASS   ] smoke-test-p9d-recent-evidence-ts.mjs  (0.0s)
+   └─  60% [156/262]  已耗时 2m18s  最近: smoke-test-p9d-recent-evidence-ts.mjs
+[PASS   ] smoke-test-panel-position.mjs  (0.1s)
+   └─  60% [157/262]  已耗时 2m18s  最近: smoke-test-panel-position.mjs
+[PASS   ] smoke-test-peer-probe.mjs  (0.0s)
+   └─  60% [158/262]  已耗时 2m18s  最近: smoke-test-peer-probe.mjs
+[PASS   ] smoke-test-plan-seed.mjs  (0.1s)
+   └─  61% [159/262]  已耗时 2m19s  最近: smoke-test-plan-seed.mjs
+[PASS   ] smoke-test-plugin-icon.mjs  (0.0s)
+   └─  61% [160/262]  已耗时 2m19s  最近: smoke-test-plugin-icon.mjs
+[PASS   ] smoke-test-procedure-dual-approval.mjs  (0.0s)
+   └─  61% [161/262]  已耗时 2m19s  最近: smoke-test-procedure-dual-approval.mjs
+[PASS   ] smoke-test-promotion-override.mjs  (0.0s)
+   └─  62% [162/262]  已耗时 2m19s  最近: smoke-test-promotion-override.mjs
+[PASS   ] smoke-test-prompt-var-sanitize.mjs  (0.0s)
+   └─  62% [163/262]  已耗时 2m19s  最近: smoke-test-prompt-var-sanitize.mjs
+[PASS   ] smoke-test-prsync-20260919.mjs  (0.0s)
+   └─  63% [164/262]  已耗时 2m19s  最近: smoke-test-prsync-20260919.mjs
+[FAIL   ] smoke-test-py-runtime-chain.mjs  (1.5s)  exit=1 sig=null
+   └─  63% [165/262]  已耗时 2m20s  最近: smoke-test-py-runtime-chain.mjs
+[PASS   ] smoke-test-py-runtime-probe.mjs  (0.1s)
+   └─  63% [166/262]  已耗时 2m20s  最近: smoke-test-py-runtime-probe.mjs
+[PASS   ] smoke-test-r10-block-consume-b.mjs  (0.2s)
+   └─  64% [167/262]  已耗时 2m21s  最近: smoke-test-r10-block-consume-b.mjs
+[PASS   ] smoke-test-r11-kanban-dedup.mjs  (0.1s)
+   └─  64% [168/262]  已耗时 2m21s  最近: smoke-test-r11-kanban-dedup.mjs
+[PASS   ] smoke-test-r11b-kanban-wire.mjs  (0.1s)
+   └─  65% [169/262]  已耗时 2m21s  最近: smoke-test-r11b-kanban-wire.mjs
+[PASS   ] smoke-test-r11c-kanban-archive.mjs  (0.0s)
+   └─  65% [170/262]  已耗时 2m21s  最近: smoke-test-r11c-kanban-archive.mjs
+[PASS   ] smoke-test-r12-statcards.mjs  (0.1s)
+   └─  65% [171/262]  已耗时 2m21s  最近: smoke-test-r12-statcards.mjs
+[PASS   ] smoke-test-r13-fold-earlier.mjs  (0.0s)
+   └─  66% [172/262]  已耗时 2m21s  最近: smoke-test-r13-fold-earlier.mjs
+[PASS   ] smoke-test-r14-members.mjs  (0.0s)
+   └─  66% [173/262]  已耗时 2m21s  最近: smoke-test-r14-members.mjs
+[PASS   ] smoke-test-r15-left-rail.mjs  (0.9s)
+   └─  66% [174/262]  已耗时 2m22s  最近: smoke-test-r15-left-rail.mjs
+[PASS   ] smoke-test-r17-dual-surface.mjs  (0.1s)
+   └─  67% [175/262]  已耗时 2m22s  最近: smoke-test-r17-dual-surface.mjs
+[PASS   ] smoke-test-r18-fe02-screens.mjs  (0.1s)
+   └─  67% [176/262]  已耗时 2m22s  最近: smoke-test-r18-fe02-screens.mjs
+[PASS   ] smoke-test-r19-fe02-screens2.mjs  (0.1s)
+   └─  68% [177/262]  已耗时 2m22s  最近: smoke-test-r19-fe02-screens2.mjs
+[PASS   ] smoke-test-r1r6-readability.mjs  (0.0s)
+   └─  68% [178/262]  已耗时 2m22s  最近: smoke-test-r1r6-readability.mjs
+[PASS   ] smoke-test-r2-promotion.mjs  (0.0s)
+   └─  68% [179/262]  已耗时 2m22s  最近: smoke-test-r2-promotion.mjs
+[PASS   ] smoke-test-r21-skin-mount.mjs  (0.1s)
+   └─  69% [180/262]  已耗时 2m22s  最近: smoke-test-r21-skin-mount.mjs
+[PASS   ] smoke-test-r22-skin-mount-b.mjs  (0.0s)
+   └─  69% [181/262]  已耗时 2m22s  最近: smoke-test-r22-skin-mount-b.mjs
+[PASS   ] smoke-test-r23-skin-center.mjs  (0.1s)
+   └─  69% [182/262]  已耗时 2m22s  最近: smoke-test-r23-skin-center.mjs
+[PASS   ] smoke-test-r25-fold-click.mjs  (0.1s)
+   └─  70% [183/262]  已耗时 2m22s  最近: smoke-test-r25-fold-click.mjs
+[PASS   ] smoke-test-r26-cross-layer.mjs  (0.1s)
+   └─  70% [184/262]  已耗时 2m22s  最近: smoke-test-r26-cross-layer.mjs
+[PASS   ] smoke-test-r27-timeline-card.mjs  (0.1s)
+   └─  71% [185/262]  已耗时 2m22s  最近: smoke-test-r27-timeline-card.mjs
+[PASS   ] smoke-test-r28-skin-slots.mjs  (0.1s)
+   └─  71% [186/262]  已耗时 2m22s  最近: smoke-test-r28-skin-slots.mjs
+[PASS   ] smoke-test-r29-team-layer.mjs  (0.1s)
+   └─  71% [187/262]  已耗时 2m23s  最近: smoke-test-r29-team-layer.mjs
+[PASS   ] smoke-test-r2e1-evidence-guard.mjs  (0.0s)
+   └─  72% [188/262]  已耗时 2m23s  最近: smoke-test-r2e1-evidence-guard.mjs
+[PASS   ] smoke-test-r3-degrade.mjs  (0.1s)
+   └─  72% [189/262]  已耗时 2m23s  最近: smoke-test-r3-degrade.mjs
+[PASS   ] smoke-test-r30-layout-config.mjs  (0.0s)
+   └─  73% [190/262]  已耗时 2m23s  最近: smoke-test-r30-layout-config.mjs
+[PASS   ] smoke-test-r31-layout-five-faces.mjs  (0.1s)
+   └─  73% [191/262]  已耗时 2m23s  最近: smoke-test-r31-layout-five-faces.mjs
+[PASS   ] smoke-test-r33-kanban-dedupe.mjs  (0.1s)
+   └─  73% [192/262]  已耗时 2m23s  最近: smoke-test-r33-kanban-dedupe.mjs
+[PASS   ] smoke-test-r34-stat-cards.mjs  (0.0s)
+   └─  74% [193/262]  已耗时 2m23s  最近: smoke-test-r34-stat-cards.mjs
+[PASS   ] smoke-test-r35-expand-earlier.mjs  (0.1s)
+   └─  74% [194/262]  已耗时 2m23s  最近: smoke-test-r35-expand-earlier.mjs
+[PASS   ] smoke-test-r36-all-members.mjs  (0.0s)
+   └─  74% [195/262]  已耗时 2m23s  最近: smoke-test-r36-all-members.mjs
+[PASS   ] smoke-test-r38-foldopen-white-screen.mjs  (0.0s)
+   └─  75% [196/262]  已耗时 2m23s  最近: smoke-test-r38-foldopen-white-screen.mjs
+[PASS   ] smoke-test-r4-budget-lockup.mjs  (0.1s)
+   └─  75% [197/262]  已耗时 2m23s  最近: smoke-test-r4-budget-lockup.mjs
+[PASS   ] smoke-test-r4-quota-probe.mjs  (0.0s)
+   └─  76% [198/262]  已耗时 2m23s  最近: smoke-test-r4-quota-probe.mjs
+[PASS   ] smoke-test-r4-recall-layers.mjs  (0.1s)
+   └─  76% [199/262]  已耗时 2m23s  最近: smoke-test-r4-recall-layers.mjs
+[PASS   ] smoke-test-r40-rail-drives-main.mjs  (0.0s)
+   └─  76% [200/262]  已耗时 2m23s  最近: smoke-test-r40-rail-drives-main.mjs
+[PASS   ] smoke-test-r41-tag-and-lane-colors.mjs  (0.0s)
+   └─  77% [201/262]  已耗时 2m23s  最近: smoke-test-r41-tag-and-lane-colors.mjs
+[PASS   ] smoke-test-r5-envelope-structural.mjs  (0.0s)
+   └─  77% [202/262]  已耗时 2m23s  最近: smoke-test-r5-envelope-structural.mjs
+[PASS   ] smoke-test-r5-lesson-candidate.mjs  (0.0s)
+   └─  77% [203/262]  已耗时 2m23s  最近: smoke-test-r5-lesson-candidate.mjs
+[PASS   ] smoke-test-r7-region-consume.mjs  (0.1s)
+   └─  78% [204/262]  已耗时 2m23s  最近: smoke-test-r7-region-consume.mjs
+[PASS   ] smoke-test-r8-config-consume-b.mjs  (0.2s)
+   └─  78% [205/262]  已耗时 2m24s  最近: smoke-test-r8-config-consume-b.mjs
+[PASS   ] smoke-test-r9-structure-consume-a.mjs  (0.2s)
+   └─  79% [206/262]  已耗时 2m24s  最近: smoke-test-r9-structure-consume-a.mjs
+[PASS   ] smoke-test-recall-stats.mjs  (0.1s)
+   └─  79% [207/262]  已耗时 2m24s  最近: smoke-test-recall-stats.mjs
+[PASS   ] smoke-test-reflect.mjs  (0.2s)
+   └─  79% [208/262]  已耗时 2m24s  最近: smoke-test-reflect.mjs
+[PASS   ] smoke-test-s2-settings-panels.mjs  (0.1s)
+   └─  80% [209/262]  已耗时 2m24s  最近: smoke-test-s2-settings-panels.mjs
+[PASS   ] smoke-test-s2-skin.mjs  (0.1s)
+   └─  80% [210/262]  已耗时 2m24s  最近: smoke-test-s2-skin.mjs
+[PASS   ] smoke-test-session-kind.mjs  (0.0s)
+   └─  81% [211/262]  已耗时 2m24s  最近: smoke-test-session-kind.mjs
+[PASS   ] smoke-test-session-search-fallback.mjs  (0.1s)
+   └─  81% [212/262]  已耗时 2m24s  最近: smoke-test-session-search-fallback.mjs
+[PASS   ] smoke-test-settings-parity.mjs  (0.1s)
+   └─  81% [213/262]  已耗时 2m24s  最近: smoke-test-settings-parity.mjs
+[PASS   ] smoke-test-settings-routes-safety.mjs  (0.1s)
+   └─  82% [214/262]  已耗时 2m24s  最近: smoke-test-settings-routes-safety.mjs
+[PASS   ] smoke-test-settings-safety.mjs  (0.2s)
+   └─  82% [215/262]  已耗时 2m25s  最近: smoke-test-settings-safety.mjs
+[PASS   ] smoke-test-settings-sync.mjs  (0.0s)
+   └─  82% [216/262]  已耗时 2m25s  最近: smoke-test-settings-sync.mjs
+[PASS   ] smoke-test-sidecar-watchdog.mjs  (2.1s)
+   └─  83% [217/262]  已耗时 2m27s  最近: smoke-test-sidecar-watchdog.mjs
+[PASS   ] smoke-test-skin-pluggable.mjs  (0.0s)
+   └─  83% [218/262]  已耗时 2m27s  最近: smoke-test-skin-pluggable.mjs
+[PASS   ] smoke-test-startup-dispatch.mjs  (0.0s)
+   └─  84% [219/262]  已耗时 2m27s  最近: smoke-test-startup-dispatch.mjs
+[PASS   ] smoke-test-state-commit.mjs  (0.0s)
+   └─  84% [220/262]  已耗时 2m27s  最近: smoke-test-state-commit.mjs
+[PASS   ] smoke-test-style-variants.mjs  (0.0s)
+   └─  84% [221/262]  已耗时 2m27s  最近: smoke-test-style-variants.mjs
+[PASS   ] smoke-test-subagent-gc.mjs  (0.1s)
+   └─  85% [222/262]  已耗时 2m27s  最近: smoke-test-subagent-gc.mjs
+[PASS   ] smoke-test-switch-decouple.mjs  (0.2s)
+   └─  85% [223/262]  已耗时 2m27s  最近: smoke-test-switch-decouple.mjs
+[PASS   ] smoke-test-sync-takeover.mjs  (0.1s)
+   └─  85% [224/262]  已耗时 2m27s  最近: smoke-test-sync-takeover.mjs
+[PASS   ] smoke-test-t0-2-version-gate.mjs  (0.0s)
+   └─  86% [225/262]  已耗时 2m27s  最近: smoke-test-t0-2-version-gate.mjs
+[PASS   ] smoke-test-t0-3-budget-ledger.mjs  (0.0s)
+   └─  86% [226/262]  已耗时 2m27s  最近: smoke-test-t0-3-budget-ledger.mjs
+[PASS   ] smoke-test-t0-8-mutation-gate.mjs  (0.1s)
+   └─  87% [227/262]  已耗时 2m27s  最近: smoke-test-t0-8-mutation-gate.mjs
+[PASS   ] smoke-test-t1-prompt-sections.mjs  (0.0s)
+   └─  87% [228/262]  已耗时 2m27s  最近: smoke-test-t1-prompt-sections.mjs
+[PASS   ] smoke-test-t3b-rawjson-scope.mjs  (0.1s)
+   └─  87% [229/262]  已耗时 2m28s  最近: smoke-test-t3b-rawjson-scope.mjs
+[PASS   ] smoke-test-t4-procedure-model-write.mjs  (0.0s)
+   └─  88% [230/262]  已耗时 2m28s  最近: smoke-test-t4-procedure-model-write.mjs
+[PASS   ] smoke-test-t7a-defaults.mjs  (0.0s)
+   └─  88% [231/262]  已耗时 2m28s  最近: smoke-test-t7a-defaults.mjs
+[PASS   ] smoke-test-t7bcd.mjs  (0.0s)
+   └─  89% [232/262]  已耗时 2m28s  最近: smoke-test-t7bcd.mjs
+[PASS   ] smoke-test-t7e-toolname.mjs  (0.0s)
+   └─  89% [233/262]  已耗时 2m28s  最近: smoke-test-t7e-toolname.mjs
+[PASS   ] smoke-test-t8-configio.mjs  (0.0s)
+   └─  89% [234/262]  已耗时 2m28s  最近: smoke-test-t8-configio.mjs
+[PASS   ] smoke-test-t9-diag-home.mjs  (0.0s)
+   └─  90% [235/262]  已耗时 2m28s  最近: smoke-test-t9-diag-home.mjs
+[PASS   ] smoke-test-tail-score-visible.mjs  (0.0s)
+   └─  90% [236/262]  已耗时 2m28s  最近: smoke-test-tail-score-visible.mjs
+[PASS   ] smoke-test-team-compliance.mjs  (0.0s)
+   └─  90% [237/262]  已耗时 2m28s  最近: smoke-test-team-compliance.mjs
+[PASS   ] smoke-test-team-identity-seam.mjs  (0.0s)
+   └─  91% [238/262]  已耗时 2m28s  最近: smoke-test-team-identity-seam.mjs
+[PASS   ] smoke-test-team-routes.mjs  (0.1s)
+   └─  91% [239/262]  已耗时 2m28s  最近: smoke-test-team-routes.mjs
+[PASS   ] smoke-test-team-transport-http.mjs  (0.4s)
+   └─  92% [240/262]  已耗时 2m28s  最近: smoke-test-team-transport-http.mjs
+[PASS   ] smoke-test-team-transport.mjs  (0.1s)
+   └─  92% [241/262]  已耗时 2m28s  最近: smoke-test-team-transport.mjs
+[PASS   ] smoke-test-temporal-parse.mjs  (0.0s)
+   └─  92% [242/262]  已耗时 2m28s  最近: smoke-test-temporal-parse.mjs
+[PASS   ] smoke-test-three-layer.mjs  (0.1s)
+   └─  93% [243/262]  已耗时 2m29s  最近: smoke-test-three-layer.mjs
+[PASS   ] smoke-test-tier0-catalog.mjs  (0.0s)
+   └─  93% [244/262]  已耗时 2m29s  最近: smoke-test-tier0-catalog.mjs
+[PASS   ] smoke-test-two-bugs-20260923.mjs  (0.1s)
+   └─  94% [245/262]  已耗时 2m29s  最近: smoke-test-two-bugs-20260923.mjs
+[PASS   ] smoke-test-ui-host-limits.mjs  (0.0s)
+   └─  94% [246/262]  已耗时 2m29s  最近: smoke-test-ui-host-limits.mjs
+[PASS   ] smoke-test-ui-v3.mjs  (0.1s)
+   └─  94% [247/262]  已耗时 2m29s  最近: smoke-test-ui-v3.mjs
+[PASS   ] smoke-test-v313-guide-sessname.mjs  (0.0s)
+   └─  95% [248/262]  已耗时 2m29s  最近: smoke-test-v313-guide-sessname.mjs
+[PASS   ] smoke-test-v314-gate-scope-j.mjs  (0.0s)
+   └─  95% [249/262]  已耗时 2m29s  最近: smoke-test-v314-gate-scope-j.mjs
+[PASS   ] smoke-test-v314-kanban-hooks.mjs  (0.1s)
+   └─  95% [250/262]  已耗时 2m29s  最近: smoke-test-v314-kanban-hooks.mjs
+[PASS   ] smoke-test-v314-plan-contract.mjs  (0.0s)
+   └─  96% [251/262]  已耗时 2m29s  最近: smoke-test-v314-plan-contract.mjs
+[PASS   ] smoke-test-water-hard-trigger.mjs  (0.0s)
+   └─  96% [252/262]  已耗时 2m29s  最近: smoke-test-water-hard-trigger.mjs
+[PASS   ] smoke-test-water-step.mjs  (0.0s)
+   └─  97% [253/262]  已耗时 2m29s  最近: smoke-test-water-step.mjs
+[PASS   ] smoke-test-water-window.mjs  (0.0s)
+   └─  97% [254/262]  已耗时 2m29s  最近: smoke-test-water-window.mjs
+[PASS   ] smoke-test-workbench-gaps.mjs  (0.1s)
+   └─  97% [255/262]  已耗时 2m29s  最近: smoke-test-workbench-gaps.mjs
+[PASS   ] smoke-test-workbench-migration.mjs  (0.1s)
+   └─  98% [256/262]  已耗时 2m29s  最近: smoke-test-workbench-migration.mjs
+[PASS   ] smoke-test-workbench-v2-shape.mjs  (0.0s)
+   └─  98% [257/262]  已耗时 2m29s  最近: smoke-test-workbench-v2-shape.mjs
+[PASS   ] smoke-test-write-gate-messages.mjs  (0.1s)
+   └─  98% [258/262]  已耗时 2m29s  最近: smoke-test-write-gate-messages.mjs
+[PASS   ] smoke-test-ws-hint-first-round.mjs  (0.0s)
+   └─  99% [259/262]  已耗时 2m29s  最近: smoke-test-ws-hint-first-round.mjs
+[PASS   ] smoke-test-ws-overview-rank.mjs  (0.0s)
+   └─  99% [260/262]  已耗时 2m29s  最近: smoke-test-ws-overview-rank.mjs
+[PASS   ] smoke-test-wsfix.mjs  (0.1s)
+   └─ 100% [261/262]  已耗时 2m30s  最近: smoke-test-wsfix.mjs
+[PASS   ] smoke-test.mjs  (0.1s)
+   └─ 100% [262/262]  已耗时 2m30s  最近: smoke-test.mjs
+
+================ SUMMARY ================
+PASS 260 / FAIL 2 / TIMEOUT 0   (total 149.7s)
+FAILED: smoke-test-audit-g-207.mjs, smoke-test-py-runtime-chain.mjs
+
+--- FAIL: smoke-test-audit-g-207.mjs  (exit=1) ---
+last output tail:
+  ok - ① cont-seq.json 已落盘
+  ok - ① 计数器内容正确（last=1 + byWorkspace）
+  ok - ① 原子写未留 tmp 残渣
+  ok - ③ 坏账本被判为 corrupted（不静默当空对象）
+  ok - ③ 坏账本已留存到隔离文件（证据不丢）
+  ok - ③ 隔离文件保留原始字节（可取证）
+  ok - ③ 负路径：正常账本正常读取且不被隔离
+  ok - ③ 归档账本读取改用 readJsonQuarantinePreSync（接线）
+  ok - ③ 负路径：旧的「catch 直接吞掉返回 {}」已不存在
+[audit-G-207] D wasm 本地化 + localWasmPaths 开关
+  ok - off：保持上游 CDN 行为（开关解耦）
+  ok - auto+本地无资产：不动 env（fail-safe）
+  ok - worker 已接线 applyLocalWasmPathsPre（调用点存在）
+  ok - worker 接收 localWasmPaths 开关
+  ok - 宿主以 getter 惰性读取 config.localWasmPaths（改完即生效）
+  ok - DEFAULT_CONFIG 新增 localWasmPaths（默认 auto）
+
+[audit-G-207] 30 passed, 4 failed
+[dsh-auto-memory] process exit code=1
+
+--- stderr ---
+  FAIL - transformers dist 目录存在（前置） workspace/dsh-v3/node_modules/@huggingface/transformers/dist/
+  FAIL - resolveLocalWasmDirPre 命中真实 wasm 资产目录
+  FAIL - auto：wasmPaths 从 CDN 改写为本地目录 {"applied":false,"mode":"auto","dir":"","reason":"no-local-wasm"}
+  FAIL - env 无 wasm 配置：返回结构化失败不抛 {"applied":false,"mode":"auto","dir":"","reason":"no-local-wasm"}
+
+--- FAIL: smoke-test-py-runtime-chain.mjs  (exit=1) ---
+last output tail:
+PASS failure is attributable: "spawn definitely-not-a-python-binary-xyz ENOENT"
+PASS timeout is explicitly attributed + flagged for retry
+PASS genuine dependency failure is not retried and stays attributable
+PASS candidate chain covers configured / user-venv / dev-venv / system (5 entries)
+
+--- stderr ---
+node:internal/modules/run_main:123
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: dev venv missing on this machine — C3 acceptance cannot be executed here
+    at file:///workspace/dsh-v3/tests/smoke/smoke-test-py-runtime-chain.mjs:58:10
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5) {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: false,
+  expected: true,
+  operator: '==',
+  diff: 'simple'
+}
+
+Node.js v22.23.3
+=========================================
