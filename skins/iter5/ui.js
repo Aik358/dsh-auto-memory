@@ -94,7 +94,7 @@
     async function iter5MemorySnapshot() {
       // /list has no workspace parameter on upstream 3.2.1. Prime the current
       // workspace through /state, then reject any list from a different root.
-      var state = await apiGet(API.state, { ws: currentWs() })
+      var state = await apiGet(API.state, { ws: currentWs(), sessionId:currentSessionIdClient() })
       var list = await apiGet(API.list)
       var expected = String(state.notesPath || '').replace(/[\\/][^\\/]+$/, '').replace(/\\/g, '/')
       var actual = String(list.projectDir || '').replace(/\\/g, '/')
@@ -105,7 +105,7 @@
       var rowsData = useIter5Data(iter5MemorySnapshot, [props.nonce])
       var intent = props.intent || {}
       var filter = useState(intent.category || 'all'), scope = useState(intent.scope || 'all'), query = useState(''), selected = useState(intent.path || '')
-      var append = useState(false)
+      var append = useState(function(){return !!memoryNoteDrafts[memoryDraftIdentity()]})
       var reader = useRef(null)
       var rows = rowsData.data ? iter5MemoryRows(rowsData.data[0], rowsData.data[1]).filter(function (r) {
         return (filter[0] === 'all' || r.kind === filter[0]) && (scope[0] === 'all' || r.scope === scope[0]) && (r.label + ' ' + r.path).toLowerCase().indexOf(query[0].toLowerCase()) >= 0
@@ -245,7 +245,7 @@
         var close = root.current.querySelector('[data-i5-close-nav]'); if (close) close.focus()
       }, [menu[0]])
       // 顶部仪器导轨读数窗:会话 / 检索档 / 自动沉淀计数 / 日期,全部为真实宿主数据
-      var railData = useIter5Data(function () { return Promise.allSettled([apiGet(API.state, { ws: currentWs() }), apiGet(API.semanticStatus)]) }, [props.nonce])
+      var railData = useIter5Data(function () { return Promise.allSettled([apiGet(API.state, { ws: currentWs(), sessionId:currentSessionIdClient() }), apiGet(API.semanticStatus)]) }, [props.nonce])
       var railValues = railData.data || []
       var railState = railValues[0] && railValues[0].status === 'fulfilled' ? railValues[0].value : null
       var railSem = railValues[1] && railValues[1].status === 'fulfilled' ? railValues[1].value : null

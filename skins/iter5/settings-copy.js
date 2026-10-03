@@ -16,7 +16,7 @@
         semMode: ['用什么方式查找', 'How to search', '不确定时选「自动」。可用时按意思查找，否则按关键词查找；切换后立即保存，不用再点保存设置。', 'Choose Auto when unsure: search by meaning when available, otherwise by keywords. Changes save immediately.'],
         fAnchorIndex: ['启用记忆检查与修复', 'Enable memory checks and repair', '需要在「存储管理」检查、修复索引或联动删除记忆时开启；普通记忆读写与检索不依赖它。', 'Enable for index checks, repair and linked deletion in Storage. Ordinary reading, writing and search do not require it.'],
         fIncEmbed: ['只更新有变化的搜索索引', 'Update only changed search entries', '通常保持开启，减少重复计算；仅在排查索引问题时考虑关闭。', 'Usually keep this on to avoid repeated computation. Turn off only when investigating index problems.'],
-        fJsCooldown: ['两次主动回忆的间隔（分钟）', 'Minimum recall interval (minutes)', '刚提供过记忆后，等待多久再尝试。调大可减少重复回忆；0 表示不等待。', 'Wait this long after supplying a memory before trying again. Increase to reduce repeated recall; 0 means no wait.'],
+        fJsCooldown: ['两次主动回忆的间隔（轮）', 'Minimum recall interval (turns)', '刚提供过记忆后，等待多久再尝试。调大可减少重复回忆；0 表示不等待。', 'Wait this long after supplying a memory before trying again. Increase to reduce repeated recall; 0 means no wait.'],
         fJsDelta: ['区分相似结果的严格程度', 'How clearly the best match must stand out', '最相关的两条记忆得分太接近时不提供。调大更谨慎，调小更容易触发；0 关闭这项过滤。', 'Skip matches when the top two scores are too close. Higher is more cautious; lower recalls more easily. 0 disables this filter.'],
         fJsExcerpt: ['每条回忆提供多少文字（字符）', 'Text supplied per recalled memory (characters)', '较短更省 token；较长能直接提供更多内容。AI 仍可按需读取全文。', 'Shorter excerpts use fewer tokens; longer ones provide more content directly. AI can still read the full memory when needed.'],
         fCandScheme: ['一次参考多少条候选记忆', 'Candidate memory preset', '平衡：3 条，每条 40 字符；广泛：6 条，每条 20 字符。只在需要微调回忆效果时更改。', 'Balanced: 3 × 40 characters. Broad: 6 × 20 characters. Change only to tune recall.'],
@@ -45,9 +45,9 @@
         fProcRisk: ['高风险流程需你批准', 'Require approval for high-risk workflows', '涉及部署、删除等高风险流程，收为技能前需你批准；不会仅凭相似度自动执行。', 'High-risk workflows such as deployment or deletion need approval before promotion and never execute on similarity alone.'],
         fProcLevel: ['给 AI 的流程说明有多详细', 'Workflow detail supplied to AI', '可提供完整步骤、摘要或仅提示参考；高风险流程只给参考提示。', 'Choose full steps, a summary or a reference hint. High-risk workflows use hints only.'],
         fHandoff: ['保存任务交接材料', 'Keep task handoff notes', '用白板和交接记录保存计划、进展与下一步，方便长对话换窗口后继续。可在「白板」查看。', 'Keeps plans, progress and next steps in the whiteboard and handoff notes for continuing long tasks. View them in Whiteboard.'],
-        fAutoContinue: ['对话快满时询问是否换新会话', 'Offer a new session when context is nearly full', '达到阈值后显示确认卡，你同意后才接续到新会话；沿用工作区、模型和思考档位。此功能仍在测试。', 'Shows a confirmation card at the threshold. Only continues after you agree, keeping workspace, model and reasoning effort. Still experimental.'],
+        fAutoContinue: ['对话快满时询问是否换新会话', 'Offer a new session when context is nearly full', '达到阈值后显示确认卡；同意或无人值守倒计时结束后接续到新会话；沿用工作区、模型和思考档位。此功能仍在测试。', 'Shows a confirmation card at the threshold. Continues after approval or the unattended countdown, keeping workspace, model and reasoning effort. Still experimental.'],
         fWaterThreshold: ['何时准备交接（占比）', 'When to prepare a handoff (ratio)', '例如 0.75 表示上下文使用达到 75% 时准备交接材料与建议。', 'For example, 0.75 prepares handoff notes and advice at 75% context usage.'],
-        fWaterWindow: ['上下文估算窗口（token）', 'Estimated context window (tokens)', '用于估算对话空间；按所用模型调整，0 关闭此项估算。通常不必手动修改。', 'Used to estimate conversation space. Match it to your model; 0 disables this estimate. Usually no manual change is needed.'],
+        fWaterWindow: ['上下文估算窗口（token）', 'Estimated context window (tokens)', '用于估算对话空间；按所用模型调整，0 自动检测模型窗口。通常不必手动修改。', 'Used to estimate conversation space. Match it to your model; 0 auto-detects the model window. Usually no manual change is needed.'],
         fWaterAdvisory: ['提醒 AI 准备交接', 'Ask AI to prepare a handoff', '对话空间超过阈值时，提醒 AI 更新白板和交接记录。', 'Asks AI to update the whiteboard and handoff notes when context passes the threshold.'],
         fWaterAuto: ['自动补一份基础交接记录', 'Create fallback handoff notes', '超过阈值时每个会话自动写一次基础记录，避免遗漏交接材料。', 'Writes one fallback record per session at the threshold so basic handoff material is available.'],
         fCriteriaGate: ['检查交接内容是否达到要求', 'Check handoff note quality', '白板和交接记录满足质量规则后才采纳，减少把未确认的推测保存为结论。', 'Accepts whiteboard and handoff sections only after quality checks, reducing unconfirmed conclusions.'],
@@ -71,7 +71,10 @@
       var key = Object.keys(rows).find(function (key) { return t(key) === label })
       if (!key) return null
       var r = rows[key]
-      return { key: key, label: L(r[0], r[1]), summary: L(r[2], r[3]) }
+      var summary=L(r[2], r[3])
+      if(key==='fJsExcerpt')summary += L3(' 仅自定义方案生效；平衡为 3×40，广泛为 6×20。',' Custom only; Balanced uses 3×40 and Broad 6×20.',' カスタムのみ。標準は3×40、広範囲は6×20。')
+      if(key==='fWaterThreshold')summary += L3(' 仅固定模式生效；自动模式按压缩参数计算。',' Fixed mode only; Auto derives this from compaction parameters.',' 固定モードのみ。自動では圧縮設定から計算します。')
+      return { key: key, label: L(r[0], r[1]), summary: summary }
     }
 
     function iter5SettingsIntro(group) {
@@ -81,5 +84,5 @@
         appearance: L('调整显示方式与文件位置。当前设置页的字体和字号由 DSH 全局设置控制。', 'Adjust display preferences and file locations. This settings page uses the global DSH font and text size.'),
         behavior: L('长对话接续、免打扰和定时整理都在这里。接续会先询问你；定时任务需要 DSH 运行。', 'Configure long-session continuation, quiet mode and scheduled maintenance. Continuation asks first; scheduled work requires DSH running.')
       }
-      return h('p', { className: 'i5-settings-intro' }, copy[group], ' ', L('除标有「立即生效」的选项外，修改后请点击底部保存。', 'Save changes at the bottom unless an option is marked immediate.'))
+      return h('p', { className: 'i5-settings-intro' }, copy[group], ' ', L('除标有「立即生效」的选项外，修改后请点击底部保存。立即生效项不会被取消修改撤销；标有重启的设置保存后需重启。', 'Save at the bottom unless marked immediate. Discard does not undo immediate changes. Options marked restart require a restart after saving.'))
     }

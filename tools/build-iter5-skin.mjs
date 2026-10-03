@@ -120,7 +120,7 @@ settings = replaceOnce(settings, '      var tickPair = useTick()', `      var ti
       var i5Base = useRef(null)
       var i5Draft = useRef({})
       var i5Groups = useRef({})
-      var i5Alive = useRef(true)
+      var i5Alive = useRef(true), i5Read = useRef(0), i5Busy = useRef(false)
       var i5Identity = iter5Identity()
       var i5DraftKey = i5Identity + '|' + (props && props.draftScope || 'workbench')
       var i5GroupsDef = { engine: ['engine'], memory: ['window', 'capacity', 'skills'], appearance: ['store', 'look', 'skin'], behavior: ['handoff', 'auto', 'team', 'about'] }
@@ -161,20 +161,22 @@ settings = replaceOnce(settings, 'function setMany(patch) { setCfg(function (pre
 const saveStart = settings.indexOf('      function save() {')
 const fieldStart = settings.indexOf('      function field(')
 settings = settings.slice(0, saveStart) + `      function save() {
-        if (busy || !Object.keys(i5Draft.current).length) return
+        if (i5Busy.current || !Object.keys(i5Draft.current).length) return
+        i5Read.current++;i5Busy.current=true
         setBusy(true); setMsg(''); setErr('')
         var patch = Object.assign({}, i5Draft.current)
         saveConfigPatch(patch, {
           onSaved: function (d) {
+            var stored=iter5SettingsDrafts[i5DraftKey]
+            if(stored && JSON.stringify(stored.patch)===JSON.stringify(patch))delete iter5SettingsDrafts[i5DraftKey]
             if (!i5Ok()) return
             i5Base.current = configOf(d)
-            delete iter5SettingsDrafts[i5DraftKey]
             i5Draft.current = {}; i5Groups.current = {}
-            setCfg(configOf(d)); setDirty(false); setBusy(false); setMsg(t('saved'))
+            setCfg(configOf(d)); setDirty(false); setBusy(false);i5Busy.current=false; setMsg(t('saved') + (d.migrated ? ' · ' + d.migrated : '') + (d.warning ? ' · ' + d.warning : ''))
             if (configOf(d).locale) applyLocalePref(configOf(d).locale)
             refreshSem(setSem)
           },
-          onError: function (e) { if (i5Ok()) { setErr(e.message); setBusy(false) } }
+          onError: function (e) { if (i5Ok()) { setErr(e.message); setBusy(false);i5Busy.current=false } }
         })
       }
 ` + settings.slice(fieldStart)
@@ -201,19 +203,20 @@ const modeEnd = settings.indexOf('      var sectionLabels =', modeStart)
 settings = settings.slice(0, modeStart) + `      function onEngineModeChange(e) {
         var v = e.target.value
         if (busy) return
+        i5Read.current++;i5Busy.current=true
         setBusy(true); setErr(''); setMsg('')
         saveConfigPatch({ semanticEngineMode: v }, {
           onSaved: function (d) {
             if (!i5Ok()) return
             i5Base.current = configOf(d)
-            setCfg(Object.assign({}, configOf(d), i5Draft.current)); setBusy(false)
+            setCfg(Object.assign({}, configOf(d), i5Draft.current)); setBusy(false);i5Busy.current=false
             setMsg(L('检索模式已即时生效', 'Retrieval mode saved immediately'))
             refreshSem(function (s) {
               if (!i5Ok()) return
               setSem(s)
               setGuide(v === 'js' && !s.ready ? 'js' : v === 'python' && !s.pythonInt8Present ? 'python' : '')
-            })
-          }, onError: function (e) { if (i5Ok()) { setErr(e.message); setBusy(false) } }
+            },null,setSem)
+          }, onError: function (e) { if (i5Ok()) { setErr(e.message); setBusy(false);i5Busy.current=false } }
         })
       }
 ` + settings.slice(modeEnd)
@@ -235,6 +238,7 @@ settings = replaceOnce(settings,
             var label = node.props && node.props['data-i5-field']
             if (label === t('semMode')) mode.push(node)
             else if (label === t('fAssocEngine') || label === t('fEmitMode')) primary.push(node)
+            else if (node.props && node.props['data-dam-gate-readout'] !== undefined) primary.push(node)
             else if (label) advanced.push(node)
             else support.push(node)
           })
@@ -244,15 +248,15 @@ settings = replaceOnce(settings,
             h('details', { className: 'i5-settings-advanced i5-setup-card', open: !!guide || detOpen }, h('summary', null, L('安装与检查查找工具', 'Install and check search tools')), support),
             h('details', { className: 'i5-settings-advanced' }, h('summary', null, L('进阶：回忆频率、准确度与索引维护', 'Advanced: recall frequency, matching and index maintenance')), advanced))
         }
-        var titles = { window: L('把已有记忆交给 AI', 'Give AI existing memories'), capacity: L('记录对话与保留内容', 'Record conversations and keep content'), skills: L('从经历中积累可复用流程', 'Build reusable workflows'), handoff: L('长对话换窗口后继续', 'Continue long tasks in a new session'), auto: L('免打扰与定时整理', 'Quiet mode and scheduled upkeep'), store: L('记忆文件保存在哪里', 'Where memory files are stored'), look: L('显示与操作习惯', 'Display and interaction'), team: L('与团队共享记忆', 'Share memory with a team'), skin: L('自定义插画素材', 'Custom illustration assets') }
+        var titles = { window: L('把已有记忆交给 AI', 'Give AI existing memories'), capacity: L('记录对话与保留内容', 'Record conversations and keep content'), skills: L('从经历中积累可复用流程', 'Build reusable workflows'), handoff: L('长对话换窗口后继续', 'Continue long tasks in a new session'), auto: L3('自动化、免打扰与定时整理', 'Automation, quiet mode and scheduled upkeep', '自動化・サイレントモード・定期整理'), store: L('记忆文件保存在哪里', 'Where memory files are stored'), look: L('显示与操作习惯', 'Display and interaction'), team: L('与团队共享记忆', 'Share memory with a team'), skin: L('自定义插画素材', 'Custom illustration assets') }
         title = titles[key] || title
-        var common = { window: ['fInject', 'fBudget', 'fDays'], capacity: ['fAutoConsolidate', 'fConsolidate', 'fConsolidateMax'], skills: ['fMemoryHub', 'fProcInject', 'fProcRisk'], handoff: ['fHandoff', 'fAutoContinue'], auto: ['fAutoPopup', 'fUnattended', 'fUnattendedAuto', 'fAutoSum', 'fConsSchedule', 'fConsScheduleTime', 'fConsScheduleDays', 'fMaintSchedule', 'fMaintScheduleTime'], store: ['fMemoryRoot', 'fUserDir', 'fProjectDir'], look: ['fWelcomeTour', 'fLocale', 'fFontSize', 'fPanelPos'] }
+        var common = { window: ['fInject', 'fBudget', 'fDays', 'fExclude'], capacity: ['fAutoConsolidate', 'fConsolidate', 'fConsolidateMax'], skills: ['fMemoryHub', 'fProcInject', 'fProcRisk'], handoff: ['fHandoff', 'fAutoContinue'], auto: ['fAutoPopup', 'fUnattended', 'fUnattendedAuto', 'fAutoSum', 'fConsSchedule', 'fConsScheduleTime', 'fConsScheduleDays', 'fMaintSchedule', 'fMaintScheduleTime'], store: ['fMemoryRoot', 'fUserDir', 'fProjectDir'], look: ['fWelcomeTour', 'fLocale', 'fFontSize', 'fPanelPos'] }
         if (common[key]) {
           var basic = [], extra = [], extrasStarted = false
           content.forEach(function (node) {
             if (!node) return
             var label = node.props && node.props['data-i5-field']
-            if (label) extrasStarted = !common[key].some(function (k) { return t(k) === label })
+            if (label) extrasStarted = !common[key].some(function (k) { return t(k) === label }) && !(key === 'auto' && label === L('子代理模型 / 思考强度', 'Subagent model & reasoning effort'))
             ;(extrasStarted ? extra : basic).push(node)
           })
           if (key === 'capacity') basic.sort(function (a, b) { return common[key].map(t).indexOf(a.props['data-i5-field']) - common[key].map(t).indexOf(b.props['data-i5-field']) })
@@ -306,6 +310,12 @@ settings = replaceOnce(settings, "h('div', { 'data-dam-settings-content': '',", 
 // Instance-local tabs/sections avoid collisions when host and workbench settings coexist.
 settings = settings.replace('var i5Group = useState', "var i5SettingsId = useRef('i5-settings-' + (++iter5SettingsSequence)).current\n      var i5Group = useState")
 settings = settings.replaceAll("'i5-settings'", 'i5SettingsId').replaceAll("'i5-settings-panel'", "i5SettingsId + '-panel'").replaceAll("'i5-settings-tab-'", "i5SettingsId + '-tab-'").replaceAll("'i5-settings-section-'", "i5SettingsId + '-section-'")
+settings = settings.replace("var alive = true\n        apiGet(API.config)", "var alive = true, request=++i5Read.current\n        apiGet(API.config)")
+settings = settings.replace("if (!alive) return", "if (!alive || request!==i5Read.current) return")
+// Effective gate readout uses committed settings, so drafts cannot claim to be live.
+settings = settings.replace("var gateOk = cfg.associativeMemoryEnabled === true && cfg.activationInboxEnabled === true", "var live = i5Base.current || {}; var gateOk = live.associativeMemoryEnabled === true && live.activationInboxEnabled === true")
+settings = settings.replace("setMsg(t('saved') + (d.migrated ? ' · ' + d.migrated : '') + (d.warning ? ' · ' + d.warning : ''))", "setMsg(t('saved') + (d.migrated ? ' ' + d.migrated : '') + (d.warning ? ' ' + d.warning : ''))")
+settings = settings.replaceAll('if (busy) return', 'if (i5Busy.current) return')
 let storage = client.slice(client.indexOf('    function StorageTab(props) {'), client.indexOf('    function NotesTab() {'))
 storage = replaceOnce(storage, 'function StorageTab(props)', 'function Iter5Storage(props)')
 storage = storage.replaceAll(".then(function (r) { return r.json() })", ".then(function (r) { return r.json().then(function (j) { if (!r.ok || (j && j.error)) throw Error(j && (j.error || j.reason) || 'Request failed'); return j }) })")
@@ -455,10 +465,11 @@ const d2Subscribe = [
   "      //   三条安全线：①有未保存草稿时不覆盖用户输入（只提示）；②busy 中不重取；③身份不符放弃。",
   "      useEffect(function () {",
   "        return controller.subscribe(function () {",
-  "          if (busy) return",
+  "          if (i5Busy.current) return",
   "          if (!i5Ok()) return",
+  "          var request=++i5Read.current",
   "          apiGet(API.config).then(function (d) {",
-  "            if (!i5Ok()) return",
+  "            if (!i5Ok() || request!==i5Read.current) return",
   "            var remote = configOf(d)",
   "            i5Base.current = remote",
   "            if (Object.keys(i5Draft.current).length) {",

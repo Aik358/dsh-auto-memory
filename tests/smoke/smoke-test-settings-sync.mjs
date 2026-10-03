@@ -25,6 +25,7 @@ function runPatch(ok) {
     welcomeTourConfig: null,
     dismissWelcomeTourPre: () => {},
     emit: () => { emits++ },
+    prepareSettingsPatch: patch => patch,
     apiPost: () => ok ? Promise.resolve({ config: { a: 1 } }) : Promise.reject(new Error('boom')),
   }
   const code = patchSrc + '\nreturn saveConfigPatch'
@@ -49,6 +50,7 @@ async function runSilent(ok) {
     welcomeTourConfig: null,
     dismissWelcomeTourPre: () => {},
     emit: () => { emits++ },
+    prepareSettingsPatch: patch => patch,
     apiPost: () => ok ? Promise.resolve({}) : Promise.reject(new Error('nope')),
   }
   const call = vm.runInNewContext('(function(){' + patchSrc + '\nreturn saveConfigPatch})()', ctx)

@@ -102,8 +102,15 @@ function session(home, id, content, { frames = 0, size = 0, name = 'session.json
 const secretError = () => Object.assign(new Error('Bearer credential123\nhttps://user:pass@host/private?token=URLSECRET\nC:\\Users\\PERSONAL\\secret.md /home/PERSONAL/secret.md\n正文私人内容\n' + 'X'.repeat(6000)), { code: 'EACCES' })
 const brokenQuery = () => ({ searchSessions: async () => { throw secretError() } })
 const absentSecrets = (value) => {
-  assert.doesNotMatch(JSON.stringify(value), /credential123|URLSECRET|PERSONAL|正文私人内容|user:pass|Bearer|\b39\b|descriptor v2|v0→v1/)
+  // Real ISO timestamps can contain second/minute 39; only prose must reject the stale hardcoded count.
+  const inspected = JSON.stringify(value, (key, item) => ['at', 'updatedAt'].includes(key) && typeof item === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$/.test(item) ? '[timestamp]' : item)
+  assert.doesNotMatch(inspected, /credential123|URLSECRET|PERSONAL|正文私人内容|user:pass|Bearer|\b39\b|descriptor v2|v0→v1/)
 }
+
+test('secret guard permits ISO timestamps containing 39 but rejects stale prose and credentials', () => {
+  absentSecrets({updatedAt:'2026-10-03T09:41:39.000Z',recent:[{at:'2026-10-03T09:39:00.000Z',reason:'message=[redacted]'}]})
+  for(const value of ['39 old sessions','Bearer credential123',{at:'credential123'}])assert.throws(()=>absentSecrets(value))
+})
 
 test('missing capability, missing method, successful empty and successful hit stay distinct', async () => {
   const { home, host } = await harness()
