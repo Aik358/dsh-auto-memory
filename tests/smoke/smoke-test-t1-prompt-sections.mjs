@@ -108,7 +108,7 @@ ok(CL.indexOf('不推荐修改') >= 0, 'G4d 二级页含「不推荐修改」中
 {
   // ★作用域必须限定在 SettingsPage 内，且锚点必须是**真实早退语句**：
   //   文件里 6045/6058 的注释也含 `if (!cfg)` 字样，用裸 indexOf 会命中注释 ⇒ 恒假（本次踩过）。
-  const spStart = CL.indexOf('function SettingsPage() {')
+  const spStart = CL.indexOf('function Iter5Settings(props) {', CL.indexOf('// ===== ITER5-LEGACY-GENERATED:END ====='))
   const sp = CL.slice(spStart)
   const hooksRel = sp.indexOf('var psecOpenPair = useState(false)')
   const earlyRel = sp.indexOf('if (!cfg) return')

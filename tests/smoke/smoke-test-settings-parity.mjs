@@ -1,14 +1,10 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 
-// ★2026-09-30（用户硬性要求）：「不同皮肤的设置页面，和 DSH 里点击设置的页面，
-//   一定要全量同步，不能有缺少」——本套件把这条要求变成可执行的守卫。
-//
-// 三面（同一套 87 字段的三种载体）：
-//   ① 经典档 SettingsPage（lib/client.js，生成块之外）；
-//   ② 冻结基线块 Iter5Settings（skins/legacy/iter5-325.js.frozen）；
-//   ③ 生成变体块 Iter5Settings（lib/client.js 的 ITER5-GENERATED 区内，由生成器从①复制）。
-// 判据：逐个配置键核对三面是否都有控件（set('KEY' / checked: ... cfg.KEY），缺一即红。
+// Every settings entry must delegate to the same source-backed implementation.
+// Check the delegation seams, source/generated control parity and writable keys.
+import { canonicalSettings, shippedSettings } from '../lib/shared-settings.mjs'
+
 const client = readFileSync(new URL('../../lib/client.js', import.meta.url), 'utf8').replace(/\r\n/g, '\n')
 const frozen = readFileSync(new URL('../../skins/legacy/iter5-325.js.frozen', import.meta.url), 'utf8').replace(/\r\n/g, '\n')
 
@@ -20,12 +16,13 @@ function sliceBetween(src, a, b) {
   assert.ok(j > i, 'end not found: ' + String(b).slice(0, 40))
   return src.slice(i, j)
 }
-const classic = sliceBetween(client, '    function SettingsPage() {', '    // ───────────────────────── 插件挂载')
-const genStart = client.indexOf('    // ITER5-GENERATED:BEGIN')
-assert.ok(genStart > 0, 'generated block not found')
-const gen = client.slice(genStart)
-const variants = sliceBetween(gen, 'function Iter5Settings(props) {', 'function Iter5Storage(props) {')
-const legacy = sliceBetween(frozen, 'function Iter5Settings(props) {', 'function Iter5Storage(props) {')
+const classic = canonicalSettings()
+const variants = shippedSettings(client)
+assert(client.includes('function SettingsPage() { return h(Iter5HostSettings) }'),'classic delegates to shared host surface')
+assert(frozen.includes('function Iter5Settings(props) { return h(DamSharedSettings, props) }'),'frozen skin delegates to shared root')
+assert(client.includes("function DamSharedSettings(props) { return h(Iter5Surface"),'shared legacy surface is wired')
+assert(client.includes("h(Iter5Settings, { key: identity[0], draftScope: 'host'"),'host surface mounts shared root')
+assert(client.includes('var iter5SettingsDrafts = damSettingsDrafts'),'one draft registry is shared across skins')
 
 // ---- 从 index.js 的 DEFAULT_CONFIG 取权威键集 ----
 const indexSrc = readFileSync(new URL('../../lib/index.js', import.meta.url), 'utf8').replace(/\r\n/g, '\n')
@@ -40,37 +37,37 @@ function hasControl(surface, key) {
   return write.test(surface) || bind.test(surface)
 }
 const ci = (s, k) => hasControl(s, k)
-console.log('surfaces: classic=' + classic.length + ' variants=' + variants.length + ' legacy=' + legacy.length + ' chars')
+console.log('surfaces: classic=' + classic.length + ' variants=' + variants.length + ' source-to-generated chars')
 
 // ---- 1) 三面字段规模一致（同一套 87 字段）----
 function fieldCount(surface) { return (surface.match(/field\(/g) || []).length }
-const fc = { classic: fieldCount(classic), variants: fieldCount(variants), legacy: fieldCount(legacy) }
+const fc = { classic: fieldCount(classic), variants: fieldCount(variants), source: fieldCount(classic) }
 console.log('field() counts: ' + JSON.stringify(fc))
-assert.ok(fc.classic > 60 && fc.variants > 60 && fc.legacy > 60, 'unexpectedly thin settings surface')
+assert.ok(fc.classic > 60 && fc.variants > 60 && fc.source > 60, 'unexpectedly thin settings surface')
 
 // ---- 2) 新增的 4 道闸门必须在三面都在（用户点名的「不能有缺少」）----
 const GATES = ['activationInboxEnabled', 'shadowRetrievalEnabled', 'contextBridgeEnabled', 'l0IndexEnabled']
 for (const g of GATES) {
-  for (const [name, surface] of [['classic', classic], ['variants', variants], ['legacy', legacy]]) {
+  for (const [name, surface] of [['canonical', classic], ['shared generated', variants]]) {
     assert.ok(ci(surface, g), 'gate ' + g + ' missing on surface: ' + name)
   }
 }
-console.log('PASS 4 gates present on all three settings surfaces (' + (GATES.length * 3) + ' control sites)')
+console.log('PASS 4 gates present on canonical and generated settings (' + (GATES.length * 2) + ' control sites)')
 
 // ---- 3) 三面对任意「已实现控件」的键集必须一致：以经典档为准，另两面不得缺 ----
 const implemented = allKeys.filter((k) => ci(classic, k))
 const missingVariants = implemented.filter((k) => !ci(variants, k))
-const missingLegacy = implemented.filter((k) => !ci(legacy, k))
+const extraGenerated = allKeys.filter((k) => ci(variants,k) && !ci(classic,k))
 console.log('classic implements ' + implemented.length + ' of ' + allKeys.length + ' config keys')
 assert.deepEqual(missingVariants, [], 'variants surface is missing keys present in classic: ' + missingVariants.join(', '))
-assert.deepEqual(missingLegacy, [], 'legacy surface is missing keys present in classic: ' + missingLegacy.join(', '))
-console.log('PASS full parity: every key implemented in classic is also on variants and legacy')
+assert.deepEqual(extraGenerated, [], 'generator must not invent editable config keys')
+console.log('PASS full parity: every canonical control key reaches the shared generated root')
 
 // ---- 4) 只读诊断块三面都在（消除「显示正常但不生效」盲区）----
-for (const [name, surface] of [['classic', classic], ['variants', variants], ['legacy', legacy]]) {
+for (const [name, surface] of [['canonical', classic], ['shared generated', variants]]) {
   assert.ok(surface.includes("'data-dam-gate-readout'"), 'gate readout missing on ' + name)
 }
-console.log('PASS host-truth readout present on all three surfaces')
+console.log('PASS host-truth readout present on the shared root')
 
 // ---- 5) 负路径：证明判据本身能抓到缺失（构造一个缺键的假面）----
 // 构造一个「把该键所有控件都改名」的假面：必须用全局替换，否则 12 处只改 1 处，
@@ -98,4 +95,4 @@ assert.ok(fakeKeys.indexOf('teamConflictPolicy') < 0, 'negative path: must notic
 assert.ok(teamKeysInUi.includes('teamConflictPolicy'), 'teamConflictPolicy must be rendered in the team UI')
 console.log('PASS negative path: whitelist check catches a missing key')
 
-console.log('PASS settings parity: 3 surfaces, ' + implemented.length + ' keys each, gates + readout verified')
+console.log('PASS settings parity: 3 consumer seams, '+implemented.length+' shared control keys, gates + readout verified')

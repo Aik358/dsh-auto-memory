@@ -1,8 +1,8 @@
     // Source embedded by tools/build-iter5-skin.mjs inside the host React factory.
     var ITER5_PAGES = [
       ['home', '工作台', 'Workbench', 'blue', 'overview'],
-      ['library', '记忆库', 'Memory', 'indigo', 'logs'],
-      ['handoff', '接续', 'Continue', 'cyan', 'plan'],
+      ['library', '记忆', 'Memory', 'indigo', 'logs'],
+      ['handoff', '任务', 'Tasks', 'cyan', 'plan'],
       ['calendar', '日程', 'Calendar', 'orange', 'calendar'],
       ['skills', '技能', 'Skills', 'green', 'hub'],
       ['recall', '唤起回顾', 'Recall review', 'purple', 'refine'],
@@ -13,7 +13,7 @@
     function iter5Identity() { return String(currentSessionIdClient() || '') + '|' + String(currentWs() || '') }
     function iter5PageForTab(tab) {
       if (['notes', 'logs', 'reflections', 'search'].indexOf(tab) >= 0) return 'library'
-      if (tab === 'connect') return 'handoff'
+      if (tab === 'connect') return 'external'
       if (tab === 'team' || tab === 'stats') return tab
       var row = ITER5_PAGES.filter(function (p) { return p[4] === tab })[0]
       return row ? row[0] : 'home'
@@ -172,8 +172,8 @@
         h('div', { role: 'tabpanel', id: 'i5-memory-panel', 'aria-labelledby': 'i5-memory-tab-' + tab[0] }, h(component, { key: tab[0], kind: tab[0], nonce: props.nonce, intent: props.intent })))
     }
     function Iter5Continue(props) {
-      var tab = useState(controller.panelTab() === 'connect' ? 'external' : 'task')
-      var items = [['task', L('当前任务', 'Current task')], ['board', L('白板', 'Whiteboard')], ['external', L('外部来源', 'External sources')]]
+      var tab = useState('task')
+      var items = [['task', L('当前任务', 'Current task')], ['board', L('白板', 'Whiteboard')]]
       return h('div', null, h(Iter5Tabs, { id: 'i5-continue', label: L('接续分区', 'Continuation sections'), items: items, value: tab[0], onChange: tab[1] }),
         h('div', { role: 'tabpanel', id: 'i5-continue-panel', 'aria-labelledby': 'i5-continue-tab-' + tab[0], className: 'i5-continue-content' },
           tab[0] === 'external' ? h(Iter5External, { nonce: props.nonce }) : h(Iter5Handoff, { key: tab[0], nonce: props.nonce, boardOnly: tab[0] === 'board' })))
@@ -233,11 +233,12 @@
         var row = ITER5_PAGES.filter(function (p) { return p[0] === id })[0]
         if (row && id !== 'settings') controller.setPanelTab(row[4])
         if (id === 'team' || id === 'stats') controller.setPanelTab(id)
+        if (id === 'external') controller.setPanelTab('connect')
       }
       var meta = ITER5_PAGES.filter(function (p) { return p[0] === page[0] })[0]
-      var title = meta ? L(meta[1], meta[2]) : page[0] === 'team' ? L('团队协作', 'Teamwork') : L('统计', 'Statistics')
+      var title = meta ? L(meta[1], meta[2]) : page[0] === 'team' ? L('团队协作', 'Teamwork') : page[0] === 'external' ? L('外部来源','External sources') : L('统计', 'Statistics')
       var nonce = String(props.nonce || 0) + ':' + refresh[0]
-      var components = { home: Iter5Home, library: Iter5Memory, handoff: Iter5Continue, calendar: Iter5Calendar, skills: Iter5Skills, recall: Iter5Recall, mindmap: Iter5Workspaces, storage: Iter5Storage, settings: Iter5Settings, team: Iter5Team, stats: Iter5Stats }
+      var components = { home: Iter5Home, library: Iter5Memory, handoff: Iter5Continue, calendar: Iter5Calendar, skills: Iter5Skills, recall: Iter5Recall, mindmap: Iter5Workspaces, storage: Iter5Storage, settings: Iter5Settings, team: Iter5Team, stats: Iter5Stats, external: Iter5External }
       var Component = components[page[0]] || Iter5Home
       function closeMenu() { menu[1](false); if (menuButton.current) menuButton.current.focus() }
       useEffect(function () {
@@ -253,7 +254,7 @@
       var railNow = new Date()
       var railWD = L('周日|周一|周二|周三|周四|周五|周六', 'Sun|Mon|Tue|Wed|Thu|Fri|Sat').split('|')
       function railBtn(id, zh, en, icon) {
-        return h('button', { key: id, className: 'i5-rail-btn', 'data-i5-nav': id, 'aria-current': page[0] === id ? 'page' : undefined, onClick: function () { nav(id) } }, h('span', null, L(zh, en)))
+        return h('button', { key: id, className: 'i5-rail-btn', 'data-i5-nav': id, 'aria-current': damPrimaryPage(page[0]) === id ? 'page' : undefined, onClick: function () { nav(id) } }, h('span', null, L(zh, en)))
       }
       function pageActions() { return h('div', { className: 'i5-page-actions' }, h('button', { 'aria-label': focus[0] ? L('退出专注查看', 'Exit focused view') : L('专注查看', 'Focused view'), 'aria-pressed': focus[0], onClick: function () { focus[1](!focus[0]) } }, h('svg', { width:16,height:16,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:1.5,'aria-hidden':true },h('path',{d:focus[0]?'M4 9h5V4M20 9h-5V4M4 15h5v5M20 15h-5v5':'M9 4H4v5M15 4h5v5M4 15v5h5M20 15v5h-5'}))), h('button', { 'aria-label': L('刷新当前页', 'Refresh current page'), onClick: function () { if (root.current.querySelector('[data-i5-dirty="true"]') && !window.confirm(L('刷新会放弃未保存修改，继续？', 'Discard changes and refresh?'))) return; if (page[0] === 'settings') delete iter5SettingsDrafts[iter5Identity() + '|workbench']; refresh[1](refresh[0] + 1) } }, h(Iter5Icon,{name:'timeline'}))) }
       function railReadout(k, v) { return h('div', { className: 'i5-rs', key: k }, h('span', { className: 'i5-rs-k' }, k), h('span', { className: 'i5-rs-v i5-num' }, v)) }
@@ -284,15 +285,7 @@
               h('line', { x1: 16, y1: 16, x2: 9.4, y2: 22.6, strokeWidth: 2, strokeLinecap: 'round', style: { stroke: 'var(--i5-blue)' } }),
               h('circle', { cx: 16, cy: 16, r: 2, style: { fill: 'var(--i5-text)' } })),
             h('div', null, h('b', null, L('自动记忆', 'Auto Memory')), h('span', null, 'DSH-AUTO-MEMORY'))),
-          h('nav', { className: 'i5-rail-nav', 'aria-label': L('记忆导航', 'Memory navigation') },
-            h('div', { className: 'i5-rail-group' }, ITER5_PAGES.slice(0, 4).map(function (p) { return railBtn(p[0], p[1], p[2], p[0]) })),
-            h('div', { className: 'i5-rail-group' }, ITER5_PAGES.slice(4, 8).map(function (p) { return railBtn(p[0], p[1], p[2], p[0]) })),
-            h('div', { className: 'i5-rail-group' }, [railBtn('settings', '设置', 'Settings', 'settings'), railBtn('team', '团队', 'Team', 'mindmap'), railBtn('stats', '统计', 'Stats', 'pulse')])),
-          h('div', { className: 'i5-rail-status' },
-            railReadout(L('当前会话', 'Session'), currentWs() ? pathName(currentWs()) : L('尚未选择', 'Not selected')),
-            railReadout(L('检索', 'Retrieval'), railTier),
-            railReadout(L('自动沉淀', 'Auto memory'), railState && railState.autoStats && typeof railState.autoStats.count === 'number' ? String(railState.autoStats.count) : '—'),
-            railReadout(L('日期', 'Date'), iter5Date(railNow) + ' ' + railWD[railNow.getDay()])),
+          h('nav', { className:'i5-rail-nav', 'aria-label':L3('主导航','Primary navigation','メインナビゲーション') }, h('div',{className:'i5-rail-group'},ITER5_PAGES.filter(function(p){return ['home','library','handoff','settings'].indexOf(p[0])>=0}).map(function(p){return railBtn(p[0],p[1],p[2],p[0])})),railBtn('team','团队','Team','mindmap')),
           h(Iter5StylePicker), h(Iter5ModePicker), pageActions(),
           h('button', { className: 'i5-rail-exit', 'data-dam-skin-v4-exit': '', onClick: exitClassic }, L('返回经典', 'Classic'))),
         h('button', { className: 'i5-mobile-menu', ref: menuButton, 'aria-expanded': menu[0], 'aria-label': L('打开导航', 'Open navigation'), onClick: function () { menu[1](!menu[0]) } }, '☰ ', L('记忆中枢', 'Memory')),
@@ -307,13 +300,18 @@
           }
         } },
           h('button', { className: 'i5-close-nav', 'data-i5-close-nav': '', onClick: closeMenu }, L('关闭导航', 'Close navigation')),
-          h('nav', { 'aria-label': L('记忆导航', 'Memory navigation') }, ITER5_PAGES.map(function (p, i) { return h(React.Fragment, { key: p[0] }, i === 4 ? h('small', { className: 'i5-nav-label' }, i === 0 ? L('工作', 'Work') : L('扩展', 'More')) : null,
-            h('button', { 'data-i5-nav': p[0], 'aria-current': page[0] === p[0] ? 'page' : undefined, onClick: function () { nav(p[0]) } }, h('span', { className: 'i5-badge', 'data-hue': p[3] }, h(Iter5Icon, { name: p[0] })), L(p[1], p[2]))) })),
-          h('div', { className: 'i5-sidebar-foot' }, h('div', { className: 'i5-side-tools' }, h('button', { onClick: function () { nav('team') }, 'aria-current': page[0] === 'team' ? 'page' : undefined }, h(Iter5Icon, { name: 'mindmap' }), L('团队', 'Team')), h('button', { onClick: function () { nav('stats') }, 'aria-current': page[0] === 'stats' ? 'page' : undefined }, h(Iter5Icon, { name: 'pulse' }), L('统计', 'Stats'))),
+          h('nav', { 'aria-label': L('记忆导航', 'Memory navigation') }, ITER5_PAGES.filter(function(p){return ['home','library','handoff','settings'].indexOf(p[0])>=0}).map(function (p, i) { return h(React.Fragment, { key: p[0] }, i === 4 ? h('small', { className: 'i5-nav-label' }, i === 0 ? L('工作', 'Work') : L('扩展', 'More')) : null,
+            h('button', { 'data-i5-nav': p[0], 'aria-current': damPrimaryPage(page[0]) === p[0] ? 'page' : undefined, onClick: function () { nav(p[0]) } }, h('span', { className: 'i5-badge', 'data-hue': p[3] }, h(Iter5Icon, { name: p[0] })), L(p[1], p[2]))) })),
+          h('div', { className: 'i5-sidebar-foot' }, h('div', { className: 'i5-side-tools' }, h('button', { onClick: function () { nav('team') }, 'aria-current': page[0] === 'team' ? 'page' : undefined }, h(Iter5Icon, { name: 'mindmap' }), L('团队', 'Team'))),
             h('button', { 'data-dam-skin-v4-exit': '', onClick: exitClassic }, L('返回经典皮肤', 'Back to classic')))),
         h('main', { ref: content, className: 'i5-main', key: identity, 'aria-label': title },
-          h('header', { className: 'i5-page-head' }, h('div', null, h('h1', null, title), h('p', null, locale === 'zh' ? ({ home: '查看最近记录、今日日程与当前会话，继续手头的工作。', library: '集中查看用户偏好、项目笔记、每日日志与反思记录。', handoff: '让当前的目标、进度与经验，在下一段会话中继续。', calendar: '把待办与重要时刻放在一起，让每一天更从容。', recall: '回顾每一次记忆唤起，查看判定依据并留下反馈。', skills: '让反复验证的经验，沉淀为可复用的工作方法。', mindmap: '从工作区与记忆之间，发现持续连接的脉络。', storage: '查看记忆语料、维护索引，以及迁移你的积累。', settings: '决定记忆如何记录、唤回与接续，让它更适合你。' }[page[0]] || '记忆与任务，按当前工作区呈现') : 'Memory and tasks for the current workspace')),
+          h('header', { className: 'i5-page-head', hidden: page[0] === 'settings' }, h('div', null, h('h1', null, title), h('p', null, locale === 'zh' ? ({ home: '查看最近记录、今日日程与当前会话，继续手头的工作。', library: '集中查看用户偏好、项目笔记、每日日志与反思记录。', handoff: '让当前的目标、进度与经验，在下一段会话中继续。', calendar: '把待办与重要时刻放在一起，让每一天更从容。', recall: '回顾每一次记忆唤起，查看判定依据并留下反馈。', skills: '让反复验证的经验，沉淀为可复用的工作方法。', mindmap: '从工作区与记忆之间，发现持续连接的脉络。', storage: '查看记忆语料、维护索引，以及迁移你的积累。', settings: '决定记忆如何记录、唤回与接续，让它更适合你。' }[page[0]] || '记忆与任务，按当前工作区呈现') : 'Memory and tasks for the current workspace')),
             null),
-          h('div', { className: '' }, h(Component, { key: page[0] + ':' + nonce + ':' + JSON.stringify(intent[0]), nonce: nonce, onNav: nav, intent: intent[0] })),
-          page[0] === 'storage' ? h('details', { className: 'i5-card' }, h('summary', null, L('调试中心', 'Diagnostics')), h(DebugCenter), h('button', { onClick: function () { nav('settings', { group: 'behavior' }) } }, L('检查更新与高级设置', 'Updates and advanced settings'))) : null))
+          h(Iter5Destinations, {page:page[0],nav:nav}), h('div', { className: '' }, h(Component, { key: page[0] + ':' + nonce + ':' + JSON.stringify(intent[0]), nonce: nonce, onNav: nav, intent: intent[0] })),
+          page[0] === 'storage' ? h('details', { className: 'i5-card' }, h('summary', null, L('调试中心', 'Diagnostics')), h(DebugCenter), h('button', { onClick: function () { nav('settings', { group: 'advanced' }) } }, L('检查更新与高级设置', 'Updates and advanced settings'))) : null))
+    }
+    function Iter5Destinations(props) {
+      var memory=['library','skills','recall','mindmap','external'],tasks=['handoff','calendar']
+      var items=memory.indexOf(props.page)>=0 ? [['library',L('浏览与检索','Browse & search')],['skills',L('技能与审批','Skills & approval')],['recall',L('唤起回顾','Recall review')],['external',L('外部来源','External sources')],['mindmap',L('工作区关系','Workspace relationships')]] : tasks.indexOf(props.page)>=0 ? [['handoff',L('任务与白板','Task & whiteboard')],['calendar',L('日程','Calendar')]] : ['home','stats'].indexOf(props.page)>=0 ? [['home',L('概览','Overview')],['stats',L('统计与调用明细','Statistics & calls')]] : props.page==='storage' ? [['settings',L('设置','Settings')],['storage',L('维护中心','Maintenance center')]] : []
+      return items.length ? h('nav',{className:'i5-secondary-nav','aria-label':L3('当前入口分区','Sections in this destination','このページのセクション')},items.map(function(r){return h('button',{key:r[0],'aria-current':props.page===r[0]?'page':undefined,onClick:function(){props.nav(r[0])}},r[1])})) : null
     }

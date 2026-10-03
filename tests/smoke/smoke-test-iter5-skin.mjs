@@ -68,8 +68,8 @@ const classic = source
 //   (2) 附「向导 where ⇒ 设置页实名单」对照核验：11 个分区名逐条比对，本批后 4 种 where 取值中
 //       「语义记忆总开关」命中最多次（7 次），其余 3 种（记忆窗口 / 自动化 / 记忆中枢）为**批前既有**，未在本批范围内。
 //   守卫语义不变：生成块之外的任何**非意外**改动仍会被本锁抓住；本批期望值随之上移。
-assert.equal(createHash('sha256').update(classic).digest('hex'), '050b2cc46740b79707ed6d4d8576fb9b6a801676ccabda9a6cc2e0be75b5afcd', 'Reviewed native-reference entry baseline（R72 = R71 + 2026-10-01 ①接续开关默认开 + 欢迎向导开关 ②经典档接入 GlobalBriefRow 简报抽屉 ③damSharedSurfaceCss classic 分支归零修复；原 R71 = R70 + 2026-10-01 全局动态简报批（client.js 三面各加 8 个 globalBrief* 控件 + frozen 面补齐上批遗漏的 slimEveryRounds/fullEverySlims 两键）；原 R70 = R69 + #160/#162 修复：python 向导轮询/取消渲染、规则草稿与内容锚定、首屏 tour hero 挂载复原；生成块之外任何**非意外**改动仍会被本锁抓住）')
-console.log('PASS reviewed shared-entry source baseline preserved')
+assert.equal(createHash('sha256').update(classic).digest('hex'), 'db9f6c2215abd4aea7abebb5f4598af629537d562689a907588b69bd57368f58', 'V3 source consolidation and four-destination baseline（R72 = R71 + 2026-10-01 ①接续开关默认开 + 欢迎向导开关 ②经典档接入 GlobalBriefRow 简报抽屉 ③damSharedSurfaceCss classic 分支归零修复；原 R71 = R70 + 2026-10-01 全局动态简报批（client.js 三面各加 8 个 globalBrief* 控件 + frozen 面补齐上批遗漏的 slimEveryRounds/fullEverySlims 两键）；原 R70 = R69 + #160/#162 修复：python 向导轮询/取消渲染、规则草稿与内容锚定、首屏 tour hero 挂载复原；生成块之外任何**非意外**改动仍会被本锁抓住）')
+console.log('PASS V3 shared settings / four-entry classic source baseline preserved')
 
 const css = readFileSync(new URL('../../skins/iter5/skin.css', import.meta.url), 'utf8')
 for (const line of css.split('\n')) {
@@ -137,21 +137,27 @@ function nodes(tree, predicate, out = []) { if (!tree || typeof tree !== 'object
 function field(tree, key) { const label = test.t(key); const row = nodes(tree, n => n.props?.['data-i5-field'] === label)[0]; const found = nodes(row, n => n.type === 'input'); assert(found.length, 'Input exists: ' + label); return found[0] }
 function button(tree, label) { const found = nodes(tree, n => n.type === 'button' && n.props.children.flat(Infinity).includes(label)); assert(found.length, 'Button exists: ' + label); return found[0] }
 render(); let tree = await settle()
+function select(group){const tabs=nodes(tree,n=>n.type===test.Iter5Tabs)[0];tabs.props.onChange(group);tree=render();return tree}
+select('maintenance')
 assert.equal(field(tree, 'fNoteCap').props.value, 24000)
 assert.equal(field(tree, 'fUserCap').props.value, 24000)
 console.log('PASS generated settings preserve both upstream capacity defaults')
-const engineSections = nodes(tree, n => n.props?.className === 'i5-engine-grid')[0]
+select('find')
+const engineSections = nodes(tree,n=>n.type==='section'&&n.props.id?.endsWith('-section-engine'))[0]
 const engineAdvanced = nodes(engineSections, n => n.type === 'details' && n.props.className === 'i5-settings-advanced')[0]
 assert.equal(nodes(engineAdvanced, n => n.props?.['data-i5-field'] === test.t('fEmitMode')).length, 0, 'Actual delivery mode must not be hidden in advanced settings')
 assert.equal(nodes(engineAdvanced, n => n.props?.['data-i5-field'] === test.t('fJsCooldown')).length, 1, 'Tuning remains available in advanced settings')
 assert.equal(field(tree, 'fAssocEngine').props['aria-label'], '主动查找相关记忆', 'Accessible name matches plain-language visible label')
+select('record')
 const memorySection = nodes(tree, n => n.type === 'section' && n.props.id?.endsWith('-section-capacity'))[0]
 assert.equal(nodes(memorySection, n => n.props?.['data-i5-field'] === test.t('fAutoConsolidate')).length, 1, 'Automatic recording stays reachable after regrouping')
 assert.equal(nodes(memorySection, n => n.type === 'details' && n.props.className === 'i5-settings-advanced').length, 1)
 console.log('PASS beginner settings expose recall delivery and preserve advanced controls')
-const appearance=nodes(tree,n=>n.type==='section'&&n.props.id&&n.props.id.endsWith('-section-look'))[0]
+select('appearance')
+const appearance=tree
 assert(button(appearance,test.t('tourReplay')),'Manual welcome entry stays in appearance group')
 console.log('PASS welcome replay is reachable under appearance settings')
+select('find')
 field(tree, 'fJsCooldown').props.onChange({ target: { value: '7' } })
 tree = render()
 assert.equal(tree.props['data-i5-dirty'], 'true')
@@ -182,13 +188,13 @@ console.log('PASS failed save preserves draft and exposes error; cancel restores
 field(tree, 'fJsCooldown').props.onChange({ target: { value: '11' } }); tree = render()
 const postsBeforeRemount = requests.length
 states = []; effects = []; cursor = 0
-tree = render(); tree = await settle()
+tree = render(); tree = await settle();select('find')
 assert.equal(field(tree, 'fJsCooldown').props.value, 11)
 assert.equal(tree.props['data-i5-dirty'], 'true')
 assert.equal(requests.length, postsBeforeRemount, 'Recovery cannot auto-save')
 button(tree, '取消修改').props.onClick(); tree = render()
 states = []; effects = []; cursor = 0
-tree = render(); tree = await settle()
+tree = render(); tree = await settle();select('find')
 assert.equal(field(tree, 'fJsCooldown').props.value, 7)
 assert.equal(tree.props['data-i5-dirty'], 'false', 'Discard removes recovery draft')
 console.log('PASS host remount restores unsaved edits without browser persistence or automatic writes')

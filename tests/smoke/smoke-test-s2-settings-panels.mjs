@@ -16,7 +16,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { stripGeneratedSkin } from '../lib/skin-bundle.mjs'
+import { sharedSettingsClient } from '../lib/shared-settings.mjs'
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 const ROOT = path.resolve(HERE, '../..')
@@ -29,15 +29,15 @@ const cnt = (h, n) => { let c = 0, i = 0; for (;;) { const p = h.indexOf(n, i); 
 //   而生成区把若干经典组件派生了一份新皮肤版本（SettingsPage→Iter5Settings 等）⇒ 计数翻倍假红。
 //   故此处剥离生成区再断言 —— 不是放宽判据，而是把作用域限定到它真正该守的经典档。
 //   皮肤自身由 smoke-test-iter5-skin.mjs 验收（含「剥离后与基线逐字节一致」的守恒断言）。
-const SRC = stripGeneratedSkin(fs.readFileSync(path.join(ROOT, 'lib/client.js'), 'utf8'))
+const SRC = sharedSettingsClient(fs.readFileSync(path.join(ROOT, 'lib/client.js'), 'utf8'))
 
-const KEYS = ['engine', 'window', 'capacity', 'skills', 'handoff', 'auto', 'store', 'look', 'about']
+const KEYS = ['window', 'engine', 'capacity', 'skills', 'handoff', 'auto', 'store', 'look', 'about']
 const STORE_HEAD = "section('store', sectionLabels.store, ["
 const MARK_START = 'M-CM6-B v3·环境检测面板:⟳ 按钮触发'
 // ★MARK_START 故意不含行首的 `// ` 与 10 空格缩进（这样 indexOf 抗缩进漂移）；
 //   但用它做「行首邻接」判定时必须补回注释标记，否则恒假（本次踩过）。
 const MARK_LINE = '// ' + MARK_START
-const INSERT_ANCHOR = "]), t('semModeHint')),"
+const INSERT_ANCHOR = "]), t('semModeHint'), [\"semanticEngineMode\"]),"
 
 /**
  * 面板块的正面边界（★不可用「store 头前的 fUserDir 行」当终点）：
@@ -104,7 +104,7 @@ function coLocationViolations(src) {
 console.log('[G1] 触发点 ↔ 渲染点 同分区（核心不变量）')
 {
   const bounds = sectionBounds(SRC)
-  eq(bounds.map((b) => b.key).join(','), 'engine,window,capacity,skills,handoff,auto,store,look,about', 'G1a 九个分区头齐备且顺序不变')
+  eq(bounds.map((b) => b.key).join(','), 'window,engine,capacity,skills,handoff,auto,store,look,about', 'G1a 九个来源分区齐备，快照优先')
   const bad = coLocationViolations(SRC)
   ok(bad.length === 0, 'G1b 三对触发↔渲染全部同区且落在 engine' + (bad.length ? ' ⇒ ' + JSON.stringify(bad) : ''))
   const detSec = sectionOf(bounds, SRC.indexOf('data-dam-detect-panel'))
@@ -144,8 +144,8 @@ console.log('[G3] 触发链路齐全')
   // 两条自动弹卡：检测结果驱动 + 切模式后资产未就绪驱动
   ok(/rec === 'setup-python'[\s\S]{0,80}setGuide\('python'\)/.test(SRC), 'G3d 检测结果 → 自动弹 Python 向导')
   ok(/(download-model|install-peer|setup-both)[\s\S]{0,120}setGuide\('js'\)/.test(SRC), 'G3e 检测结果 → 自动弹 JS 引导')
-  ok(/s2\.ready === false\) setGuide\('js'\)/.test(SRC), 'G3f 切 JS 模式且资产未就绪 → 自动弹引导')
-  ok(/s2\.pythonInt8Present === false\) setGuide\('python'\)/.test(SRC), 'G3g 切 Python 模式且资产未就绪 → 自动弹向导')
+  ok(/v === 'js' && !s.ready/.test(SRC), 'G3f 切 JS 模式且资产未就绪 → 自动弹引导')
+  ok(/v === 'python' && !s.pythonInt8Present/.test(SRC), 'G3g 切 Python 模式且资产未就绪 → 自动弹向导')
   ok(cnt(SRC, "setGuide(guide ? '' : ((cfg.semanticEngineMode === 'python') ? 'python' : 'js'))") === 1, 'G3h 🧩 常驻入口可开可收（不受资产状态 gate）')
 }
 
@@ -159,7 +159,7 @@ console.log('[G4] 根因前提：导航为滚动式 + 块的物理位置')
   ok(SRC.includes("el.scrollIntoView({ behavior: 'smooth', block: 'start' })"), 'G4c 导航为 scrollIntoView（滚动式，非分页）')
   // 平铺渲染：engine 头之后仍能看到 window / capacity 头（说明不是按需渲染单分区）
   const engAt = SRC.indexOf("section('engine', sectionLabels.engine, [")
-  ok(SRC.indexOf("section('window', sectionLabels.window, [") > engAt, 'G4d 分区平铺渲染（engine 之后仍渲染 window）')
+  ok(SRC.includes("section('window', sectionLabels.window, [") && engAt>=0, 'G4d 快照与引擎控件都保留，呈现顺序按用途调整')
   // 块的物理位置：紧贴 semMode 行之后，且仍在 store 头之前
   // ★2026-09-29（C2 增量嵌入设置项）：semMode 行后面插入了 fIncEmbed 开关行（普通 field，
   //   无面板语义）⇒ 「行号差=1」放宽为「差=2、且中间那行确为 fIncEmbed 开关」——

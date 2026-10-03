@@ -10,7 +10,7 @@ import { GUIDANCE } from '../../lib/index.js'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { stripGeneratedSkin } from '../lib/skin-bundle.mjs'
+import { sharedSettingsClient } from '../lib/shared-settings.mjs'
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 const SRC = readFileSync(path.resolve(HERE, '..', '..', 'lib', 'index.js'), 'utf8')
@@ -18,7 +18,7 @@ const SRC = readFileSync(path.resolve(HERE, '..', '..', 'lib', 'index.js'), 'utf
 //   而生成区把若干经典组件派生了一份新皮肤版本（SettingsPage→Iter5Settings 等）⇒ 计数翻倍假红。
 //   故此处剥离生成区再断言 —— 不是放宽判据，而是把作用域限定到它真正该守的经典档。
 //   皮肤自身由 smoke-test-iter5-skin.mjs 验收（含「剥离后与基线逐字节一致」的守恒断言）。
-const CLI = stripGeneratedSkin(readFileSync(path.resolve(HERE, '..', '..', 'lib', 'client.js'), 'utf8'))
+const CLI = sharedSettingsClient(readFileSync(path.resolve(HERE, '..', '..', 'lib', 'client.js'), 'utf8'))
 let pass = 0, fail = 0
 const t = (name, fn) => { try { fn(); pass++; console.log('  ok - ' + name) } catch (e) { fail++; console.log('  FAIL - ' + name + ': ' + (e && e.message)) } }
 const assert = (c, m) => { if (!c) throw new Error(m || 'assertion failed') }

@@ -17,20 +17,23 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import assert from 'node:assert'
 import { test } from 'node:test'
-import { stripGeneratedSkin } from '../lib/skin-bundle.mjs'
+import { shippedSettings } from '../lib/shared-settings.mjs'
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 // ★2026-09-28（集成 iter5 皮肤）：本套件断言的是**经典档契约**（函数式更新写法等），
 //   而生成区把若干经典组件派生了一份新皮肤版本（SettingsPage→Iter5Settings 等）⇒ 计数/唯一性失真。
 //   故此处剥离生成区再断言 —— 不是放宽判据，而是把作用域限定到它真正该守的经典档。
 //   皮肤自身由 smoke-test-iter5-skin.mjs 验收（含「剥离后与基线逐字节一致」的守恒断言）。
-const SRC = stripGeneratedSkin(readFileSync(path.resolve(HERE, '..', '..', 'lib', 'client.js'), 'utf8').replace(/\r\n/g, '\n'))
+const SRC = shippedSettings(readFileSync(path.resolve(HERE, '..', '..', 'lib', 'client.js'), 'utf8').replace(/\r\n/g, '\n'))
 
 // —— 抽取真实实现 ——
-const setLine = SRC.match(/\n {4}function set\(key, value\) \{[^\n]*\n/)
-assert.ok(setLine, '未定位到 set() 实现')
-const setManyLine = SRC.match(/\n {4}function setMany\(patch\) \{[^\n]*\n/)
-assert.ok(setManyLine, '未定位到 setMany() 实现')
+function extract(name) {
+  const from=SRC.indexOf('function '+name+'(');assert(from>=0,'missing shipped '+name)
+  const start=SRC.indexOf('{',from);let depth=0
+  for(let i=start;i<SRC.length;i++){if(SRC[i]==='{')depth++;if(SRC[i]==='}'&&--depth===0)return [SRC.slice(from,i+1)]}
+  throw Error('unterminated '+name)
+}
+const setLine=extract('set'),setManyLine=extract('setMany')
 
 /**
  * 用真实函数体构造一个受控 harness。
@@ -41,6 +44,7 @@ function makeHarness(initial) {
   let latest = initial
   const factory = new Function('setCfg', 'setDirty', `
     var cfg = ${JSON.stringify(initial)}
+    var i5Busy={current:false};function i5Record(){}
     ${setManyLine[0].trim()}
     ${setLine[0].trim()}
     return { set: set, setMany: setMany }

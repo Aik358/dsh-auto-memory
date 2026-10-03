@@ -20,7 +20,7 @@ assert(operationStart>=0 && operationEnd>operationStart)
 client=client.slice(0,operationStart)+client.slice(operationStart,operationEnd).replace('useEffect(function(){','operationEffect(function(){')+client.slice(operationEnd)
 client=client.replace('return { page: Iter5Page, css: ITER5_CSS }', 'return { page: Iter5Page, css: ITER5_CSS, Settings: Iter5Settings, Note: Iter5Note, Calendar: Iter5Calendar }')
 client=client.replace('    return module.exports', `    var fixtureSession='fixture-session';sessions={list:{getSnapshot:function(){return {current:fixtureSession,byId:{[fixtureSession]:{cwd:'/fixture/project',retainedBy:{mainView:1}}}}}}}
-    window.dshTest={setSession:function(sid){fixtureSession=sid;emit()},Panel:MemoryPanel,broadcast:emit,Settings:Iter5Settings,LegacySettings:LEGACY_SKIN_NS.Settings,ClassicSettings:SettingsPage,Note:Iter5Note,LegacyNote:LEGACY_SKIN_NS.Note,ClassicNote:NotesTab,Calendar:Iter5Calendar,LegacyCalendar:LEGACY_SKIN_NS.Calendar,ClassicCalendar:CalendarTab,External:Iter5External,ClassicExternal:ConnectTab,controller:controller,locale:applyLocalePref,t:t,styles:CSS+'\\n'+ITER5_CSS,legacyStyles:LEGACY_ITER5_CSS}
+    window.dshTest={setSession:function(sid){fixtureSession=sid;emit()},Panel:MemoryPanel,broadcast:emit,Schema:ITER5_SETTINGS_SCHEMA,Page:Iter5Page,LegacyPage:Legacy5Page,ClassicPage:MemoryPageView,Settings:Iter5Settings,LegacySettings:LEGACY_SKIN_NS.Settings,ClassicSettings:SettingsPage,Note:Iter5Note,LegacyNote:LEGACY_SKIN_NS.Note,ClassicNote:NotesTab,Calendar:Iter5Calendar,LegacyCalendar:LEGACY_SKIN_NS.Calendar,ClassicCalendar:CalendarTab,External:Iter5External,ClassicExternal:ConnectTab,controller:controller,locale:applyLocalePref,t:t,styles:CSS+'\\n'+ITER5_CSS,legacyStyles:LEGACY_ITER5_CSS}
     return module.exports`)
 // Detect symbol names rather than silently omitting a surface.
 assert(client.includes('function Iter5External('))
@@ -43,7 +43,7 @@ const server=createServer((req,res)=>{
 await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve))
 const url='http://127.0.0.1:'+server.address().port
 const browser=await chromium.launch({executablePath:process.env.CHROMIUM_PATH || '/usr/bin/chromium',headless:true,args:['--no-sandbox']})
-const artifacts=path.join(root,'artifacts/ui-settings-20261003');mkdirSync(artifacts,{recursive:true})
+const artifacts=path.join(root,'artifacts/ui-v3-20261003');mkdirSync(artifacts,{recursive:true})
 const evidence=[], pageErrors=[]
 let config={boardMode:'graph',semanticEngineMode:'auto',associativeMemoryEnabled:true,activationInboxEnabled:true,jsDecideCandidateScheme:'balanced',jsDecideExcerptChars:75,dayBoundaryMinutes:450,workbenchLoopShort:10,workbenchLoopLong:24,memoryRoot:'/fixture/notes',userMemoryDir:'/fixture/user',teamEnabled:true,teamSyncTransport:'s3',teamSecretAccessKey:'fixture-secret-never-persist',autoSummaryTimes:[],injectExcludeSources:[],waterLevelThresholdMode:'auto'}
 let mode='shadow',failConfig=false,holdNote=null,holdCalendar=null,browseResolvers=[],recallResolvers=[],configResolvers=[],holdConfig=false,semanticResolvers=[],holdSemantic=false,noteWrites=0,calendarWrites=0,holdHandoff=false,handoffResolvers=[]
@@ -90,8 +90,8 @@ await page.route('**/api/dsh-auto-memory/**',async route=>{
  if(pathname==='recall'){recallResolvers.push(()=>respond({result:'result for '+body.query}));return}
  return respond({})
 })
-async function mounted(name,options={}){await page.evaluate(([name,options])=>window.remount(name,options),[name,options]);await page.waitForTimeout(80)}
-async function tab(group){await page.locator('[role=tab][id$="-tab-'+group+'"]').first().click()}
+async function mounted(name,options={}){await page.evaluate(([name,options])=>window.remount(name,options),[name,options]);await page.waitForTimeout(80);if(name.includes('Settings'))await page.locator('[data-settings-v3]').waitFor()}
+async function tab(group){group=({engine:'find',memory:'find',behavior:'continuity'})[group]||group;const mobile=page.locator('.i5-settings-mobile select').first();if(await mobile.isVisible())await mobile.selectOption(group);else await page.locator('[role=tab][id$="-tab-'+group+'"]').first().click();await page.locator('.i5-settings-advanced').evaluateAll(nodes=>nodes.forEach(n=>n.open=true))}
 const field=key=>page.locator('[data-i5-field]').filter({has:page.locator('label')}).filter({hasText:key})
 const row=key=>page.locator('[data-i5-field]').filter({hasText:key}).first()
 const save=()=>page.locator('[data-dam-savebar] button[data-dirty]').first().click()
@@ -100,7 +100,7 @@ try{
  await page.goto(url);await page.waitForFunction(()=>window.dshTest)
  await page.evaluate(()=>dshTest.locale('en'))
  await mounted('Settings')
- assert.equal(await page.getByRole('tab').count(),4)
+ assert.equal(await page.getByRole('tab').count(),7)
  await tab('memory')
  const exclude=row('Memory sources AI should not use').locator('textarea')
  await exclude.fill('source-A\n\n');assert.equal(await exclude.inputValue(),'source-A\n\n')
@@ -116,6 +116,7 @@ try{
  await times.fill('');await save();await page.waitForTimeout(80);assert.deepEqual(config.autoSummaryTimes,[])
  evidence.push('PASS raw newline/comma editing, failure retention, remount recovery, normalized save, empty-array off')
  // Model identity compares provider as well as model ID.
+ await tab('advanced')
  await page.getByRole('button',{name:'Pick model / effort',exact:true}).click()
  await page.getByRole('button',{name:'shared-model',exact:true}).first().click()
  await page.getByRole('button',{name:'Pick model / effort',exact:true}).click()
@@ -132,11 +133,11 @@ try{
  const transport=page.locator('select[data-dam-key=teamSyncTransport]')
  assert.equal(await transport.locator('option[value=folder]').isDisabled(),true)
  assert.equal(await transport.locator('option[value=http]').isDisabled(),true)
- config.teamSyncTransport='http';await mounted('Settings');await tab('behavior');assert.equal(await secret.count(),0);assert.equal(await transport.inputValue(),'http')
- config.teamSyncTransport='s3';await mounted('Settings');await tab('behavior')
+ config.teamSyncTransport='http';await mounted('Settings');await tab('advanced');assert.equal(await secret.count(),0);assert.equal(await transport.inputValue(),'http')
+ config.teamSyncTransport='s3';await mounted('Settings');await tab('advanced')
  evidence.push('PASS provider+model identity, modal Escape/focus, secret masking/visibility/no localStorage, unsupported folder unavailable, transport-specific fields')
  // Native fallback and browse close/reopen: obsolete path must not win.
- await tab('appearance')
+ await tab('maintenance')
  await page.locator('[data-i5-field]').filter({hasText:'Where workspace memories are stored'}).getByRole('button').click()
  await page.waitForFunction(()=>document.querySelector('[data-native-path-browser]'))
  await page.waitForTimeout(30);assert.equal(browseResolvers.length,1)
@@ -206,13 +207,14 @@ try{
  assert.equal(configResolvers.length,2);assert.equal(semanticResolvers.length,2)
  await configResolvers[1]();await semanticResolvers[1]();await page.waitForTimeout(30)
  await configResolvers[0]();await semanticResolvers[0]();await page.waitForTimeout(30)
- assert.equal(await page.locator('[data-i5-field]').filter({hasText:'How to use matches'}).locator('select').inputValue(),'active')
- await tab('behavior');assert.equal(await page.locator('[data-i5-field='+JSON.stringify(await page.evaluate(()=>dshTest.t('fDayBoundary')))+'] input').inputValue(),'702')
+ await tab('find');assert.equal(await page.locator('[data-i5-field]').filter({hasText:'How to use matches'}).locator('select').inputValue(),'active')
+ await tab('record');assert.equal(await page.locator('[data-i5-field='+JSON.stringify(await page.evaluate(()=>dshTest.t('fDayBoundary')))+'] input').inputValue(),'702')
  holdConfig=false;holdSemantic=false;mode='shadow'
  evidence.push('PASS actual React settings and semantic GET disorder: older snapshots cannot replace newer state')
  // Both mounted settings instances receive semantic-emit broadcasts.
  await page.evaluate(()=>{fixtureNonce++;uiRoot.render(React.createElement('div',{'data-iter5':'','data-i5-style':'instrument','data-deep':'false'},React.createElement('style',null,dshTest.styles),React.createElement('main',{className:'i5-main'},React.createElement(dshTest.Settings,{key:'one',draftScope:'one'}),React.createElement(dshTest.Settings,{key:'two',draftScope:'two'}))))})
  await page.waitForTimeout(100)
+ await page.locator('[role=tab][id$="-tab-find"]').evaluateAll(nodes=>nodes.forEach(n=>n.click()));await page.waitForTimeout(30)
  const emitSelects=page.locator('[data-i5-field]').filter({hasText:'How to use matches'}).locator('select')
  assert.equal(await emitSelects.count(),2);await emitSelects.nth(0).selectOption('active');await page.waitForTimeout(100)
  assert.equal(await emitSelects.nth(1).inputValue(),'active')
@@ -290,7 +292,7 @@ try{
  evidence.push('PASS controlled React render/commit-to-subscription gap: note/calendar × three implementations × success/failure × A/B; old completed operation replay preserves new same-text note')
  // Water display ordering and identity for each shipped settings implementation.
  for(const surface of ['Settings','LegacySettings','ClassicSettings']){
-  await mounted(surface);if(surface!=='ClassicSettings')await tab('behavior')
+  await mounted(surface);await tab('continuity')
   const readout=page.locator('[data-dam-effective-water]').first()
   assert(await readout.count(),'effective readout exists in '+surface)
   holdHandoff=true;handoffResolvers=[]
@@ -310,14 +312,91 @@ try{
  evidence.push('PASS current/frozen/classic settings: handoff-state request disorder, changed session clears prior value and rejects old-session response')
  for(const language of ['zh','en','ja']){
   await page.evaluate(language=>dshTest.locale(language),language);await mounted('Settings')
-  for(const group of ['engine','memory','appearance','behavior']){await tab(group);assert.equal(await page.getByRole('tab',{selected:true}).count(),1)}
+  for(const group of ['common','record','find','continuity','maintenance','appearance','advanced']){await tab(group);assert.equal(await page.getByRole('tab',{selected:true}).count(),1)}
   await page.setViewportSize({width:390,height:844});await tab('appearance');await page.screenshot({path:path.join(artifacts,'settings-'+language+'-390.png')})
   const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>document.documentElement.clientWidth+2)
   assert.equal(overflow,false,'no page horizontal overflow for '+language)
   await page.keyboard.press('Tab');assert(await page.evaluate(()=>document.activeElement!==document.body))
   await page.setViewportSize({width:1280,height:900});await page.screenshot({path:path.join(artifacts,'settings-'+language+'-1280.png')})
-  evidence.push('PASS '+language+': current Settings four-tab navigation; appearance at 390/1280, Tab moves focus, no appearance page horizontal overflow (not full keyboard/all-page layout acceptance)')
+  evidence.push('PASS '+language+': current Settings seven-section navigation; appearance at 390/1280, Tab moves focus, no appearance page horizontal overflow (not full keyboard/all-page layout acceptance)')
  }
+ // V3 acceptance uses these same shipped React components and fixture APIs.
+ await page.evaluate(()=>dshTest.locale('en'));await mounted('Settings')
+ assert.equal(await page.getByRole('tab').count(),7)
+ if(await page.locator('[data-dam-savebar]').isVisible())await page.getByRole('button',{name:'Discard changes',exact:true}).click()
+ assert.equal(await page.locator('[data-dam-savebar]').isVisible(),false,'clean settings do not show a save bar')
+ const search=()=>page.getByRole('combobox',{name:'Search settings or configuration keys',exact:true})
+ const keys=await page.evaluate(()=>dshTest.Schema.map(d=>d.key))
+ assert.equal(keys.length,359)
+ for(const key of keys){
+  await search().fill(key);await search().press('ArrowDown');await search().press('Enter')
+  await page.waitForFunction(key=>{const el=document.activeElement;return el?.dataset.i5CatalogKey===key || el?.dataset.i5Keys?.split(' ').includes(key)},key)
+ }
+ evidence.push('PASS V3: all 359 source-backed keys locate a real field or explicit compatibility directory entry with ArrowDown + Enter')
+ await search().fill('autoConsolidate');await search().press('ArrowDown');await search().press('ArrowUp');await search().press('Escape')
+ assert.equal(await search().getAttribute('aria-expanded'),'false')
+ assert.equal(await page.locator('[data-settings-v3]').count(),1,'Escape closes search without leaving the settings surface')
+ // Progressive disclosure and known dependency gates retain stored values.
+ await tab('record');await page.locator('.i5-settings-advanced').evaluateAll(nodes=>nodes.forEach(n=>n.open=false))
+ const recording=page.locator('[data-i5-keys="autoConsolidate"] input')
+ const maxCalls=page.locator('[data-i5-keys="autoConsolidateDailyMax"] input')
+ await recording.uncheck();assert(await maxCalls.isDisabled());assert(await page.locator('[data-dam-savebar]').isVisible())
+ await page.getByRole('button',{name:'Discard changes',exact:true}).click();assert.equal(await page.locator('[data-dam-savebar]').isVisible(),false)
+ await tab('maintenance');const lifecycle=page.locator('[data-i5-keys="sessionArchiveEnabled"] input')
+ const archiveDays=page.locator('[data-i5-keys="autoArchiveDays"] input')
+ const deletionDays=page.locator('[data-i5-keys="autoDeleteDays"] input')
+ const beforeArchive=await archiveDays.inputValue(),beforeDelete=await deletionDays.inputValue()
+ await lifecycle.uncheck();assert(await archiveDays.isDisabled());assert(await deletionDays.isDisabled())
+ assert.equal(await archiveDays.inputValue(),beforeArchive);assert.equal(await deletionDays.inputValue(),beforeDelete)
+ await page.getByRole('button',{name:'Discard changes',exact:true}).click()
+ // Opening the actual shipped setup must reveal its UI under the same section.
+ await tab('find');await page.getByRole('radio',{name:'Meaning (requires a local model)',exact:true}).check()
+ await page.locator('[data-native-engine-guide="js"]').waitFor({state:'visible'})
+ assert.equal(await page.locator('[data-dam-savebar]').isVisible(),false,'immediate mode changes remain independent of the normal save bar')
+ await page.getByRole('radio',{name:'Auto (recommended)',exact:true}).check().catch(async()=>{
+  await page.locator('input[type=radio][value=auto]').check()
+ })
+ evidence.push('PASS V3: dirty-only save bar, Cancel, recording/lifecycle dependency gates retain values, missing model setup opens visibly after immediate mode change')
+ for(const width of [1440,390]){
+  await page.setViewportSize({width,height:width===390?844:1000})
+  await page.evaluate(()=>dshTest.locale('zh'));await mounted('Settings')
+  for(const group of ['common','record','find','continuity','maintenance','appearance','advanced']){
+   await tab(group);await page.locator('.i5-settings-advanced').evaluateAll(nodes=>nodes.forEach(n=>n.open=false))
+   await page.locator('.i5-main').first().evaluate(el=>{el.scrollTop=0})
+   await page.screenshot({path:path.join(artifacts,'v3-'+group+'-'+width+'.png')})
+   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2),false,'no horizontal page overflow: '+group+' '+width)
+   if(width===390)assert(await page.locator('.i5-settings-mobile select').isVisible())
+  }
+ }
+ evidence.push('PASS V3: every settings section rendered and captured at 1440×1000 and 390×844; mobile selector and horizontal overflow checked')
+ await page.setViewportSize({width:1440,height:1000});await page.evaluate(()=>dshTest.locale('en'))
+ for(const surface of ['Page','LegacyPage','ClassicPage']){
+  await page.evaluate(()=>{dshTest.controller.setPanelTab('overview')});await mounted(surface)
+  if(surface==='ClassicPage'){
+   assert.equal(await page.locator('[data-dam-primary-nav] button').count(),4)
+   await page.locator('[data-dam-primary-nav] button').filter({hasText:'Settings'}).click()
+   await page.locator('[data-settings-v3]').waitFor()
+  }else{
+   const nav=surface==='Page'?page.locator('.i5-rail-nav'):page.locator('.i5-sidebar nav')
+   const primary=nav.locator('[data-i5-nav]').filter({hasNot:page.locator('[data-i5-nav="team"]')})
+   const ids=await nav.locator('[data-i5-nav]').evaluateAll(nodes=>nodes.map(n=>n.dataset.i5Nav).filter(id=>id!=='team'))
+   assert.deepEqual(ids,['home','library','handoff','settings'])
+   await nav.locator('[data-i5-nav="library"]').click()
+   await page.getByRole('button',{name:'Workspace relationships',exact:true}).click()
+   assert.equal(await page.locator('[data-page="mindmap"]').count(),1)
+   await nav.locator('[data-i5-nav="handoff"]').click()
+   await page.locator('.i5-secondary-nav').getByRole('button',{name:'Calendar',exact:true}).click()
+   assert.equal(await page.locator('[data-page="calendar"]').count(),1)
+   await nav.locator('[data-i5-nav="home"]').click()
+   await page.getByRole('button',{name:'Statistics & calls',exact:true}).click()
+   assert.equal(await page.locator('[data-page="stats"]').count(),1)
+   await nav.locator('[data-i5-nav="settings"]').click();await tab('maintenance')
+   await page.getByRole('button',{name:'Open maintenance center',exact:true}).click()
+   assert.equal(await page.locator('[data-page="storage"]').count(),1)
+  }
+ }
+ evidence.push('PASS V3: current/frozen/classic ship four primary destinations; actual secondary relationship/calendar/statistics/maintenance routes remain reachable')
+
  assert.deepEqual(pageErrors,[],'no browser exceptions')
  writeFileSync(path.join(artifacts,'browser-results.json'),JSON.stringify({environment:'Chromium + React 18; fixture host APIs',browser:browser.version(),evidence,noteWrites,pageErrors},null,2)+'\n')
  console.log(evidence.join('\n'))

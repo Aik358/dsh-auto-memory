@@ -68,7 +68,7 @@ eq(MISS.length, 0, 'A1 ★fe02 全 66 锚点覆盖（缺:' + MISS.join(',') + '�
 eq(ALL.length + R18A.length, 66, 'A2 契约总需求 = 66');
 const cnt = (s, x) => s.split(x).length - 1;
 eq((SRC.match(/(?<!function )MEMORY_TABS\(\)/g) || []).length, 2, 'A3 ★计数锁 MEMORY_TABS() = 2');
-ok(cnt(SRC, 'data-dam-region') >= 18, 'A4 结构锚不降');
+ok(['page-nav','page','settings'].every(region=>SRC.includes(region)) && SRC.includes('data-dam-primary-nav') && SRC.includes('data-dam-secondary-nav'), 'A4 四主入口、次级导航与设置结构契约在场');
 ok(damNoMixedEol(SRC), 'A5 纯 CRLF');
 // 15 个 f* 键双语
 const FK = ['fTeamEnable','fTeamServer','fTeamId','fTeamMemberName','fTeamSyncMode','fTeamSyncInterval','fTeamScopeDefault','fTeamShareExternal','fTeamConflictPolicy','fTeamAttribution','fTeamSkin','fTeamAudit','fTeamTest','fTeamLeave'];

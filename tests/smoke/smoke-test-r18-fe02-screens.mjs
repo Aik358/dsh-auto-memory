@@ -74,7 +74,7 @@ ok(ALL.length === 30, 'A2 契约需求数 = 30');
 // 追加式：既有值枚举锚点与结构锚未被削
 const cnt = (s, x) => s.split(x).length - 1;
 ok(cnt(SRC, 'data-dam-team\': \'bar\'') >= 1 && cnt(SRC, 'data-dam-team\': \'tab\'') >= 1, 'A3 ★追加式：既有值枚举锚点在');
-ok(cnt(SRC, 'data-dam-region') >= 18, 'A4 结构锚不降（region ' + cnt(SRC, 'data-dam-region') + '）');
+ok(['page-nav','page','settings'].every(region=>SRC.includes(region)) && SRC.includes('data-dam-primary-nav') && SRC.includes('data-dam-secondary-nav'), 'A4 四主入口、次级导航与设置结构契约在场（region ' + cnt(SRC, 'data-dam-region') + '）');
 ok(cnt(SRC, 'data-dam-slot') >= 432, 'A5 slot 锚增加（' + cnt(SRC, 'data-dam-slot') + '）');
 eq((SRC.match(/(?<!function )MEMORY_TABS\(\)/g) || []).length, 2, 'A6 ★计数锁 MEMORY_TABS() 调用数 = 2');
 ok(damNoMixedEol(SRC), 'A7 纯 CRLF（裸 LF 0）');

@@ -8,7 +8,7 @@ import { createHash } from 'node:crypto'
 import vm from 'node:vm'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
-import { stripGeneratedSkin } from '../lib/skin-bundle.mjs'
+import { sharedSettingsClient } from '../lib/shared-settings.mjs'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 const ROOT = join(HERE, '..', '..')
@@ -23,7 +23,7 @@ function eq (a, b, m) { ok(Object.is(a, b), m + '  [got=' + JSON.stringify(a) + 
 //   而生成区把若干经典组件派生了一份新皮肤版本（SettingsPage→Iter5Settings 等）⇒ 计数翻倍假红。
 //   故此处剥离生成区再断言 —— 不是放宽判据，而是把作用域限定到它真正该守的经典档。
 //   皮肤自身由 smoke-test-iter5-skin.mjs 验收（含「剥离后与基线逐字节一致」的守恒断言）。
-const SRC = stripGeneratedSkin(readFileSync(CLIENT, 'utf8'))
+const SRC = sharedSettingsClient(readFileSync(CLIENT, 'utf8'))
 
 // ───────────────────────── §1 抽取真实源码（不是重写） ─────────────────────────
 const BEGIN = '// ===================== L3-team:begin ====================='

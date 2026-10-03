@@ -113,17 +113,18 @@ function replaceOnce(text, old, value) {
   if (text.split(old).length !== 2) throw new Error('Expected exactly one settings seam: ' + old.slice(0, 90))
   return text.replace(old, value)
 }
-let settings = client.slice(client.indexOf('    function SettingsPage() {'), client.indexOf('    // ───────────────────────── 插件挂载'))
+let settings = readFileSync(path.join(root, 'skins/iter5/settings-source.js'), 'utf8').replace(/\r\n/g, '\n')
 settings = replaceOnce(settings, 'function SettingsPage()', 'function Iter5Settings(props)')
 settings = replaceOnce(settings, '      var tickPair = useTick()', `      var tickPair = useTick()
-      var i5Group = useState(props && props.intent && ['engine', 'memory', 'appearance', 'behavior'].indexOf(props.intent.group) >= 0 ? props.intent.group : 'engine')
+      var i5Group = useState(iter5SettingsGroup(props && props.intent && props.intent.group))
+      var i5Root = useRef(null)
       var i5Base = useRef(null)
       var i5Draft = useRef({})
       var i5Groups = useRef({})
       var i5Alive = useRef(true), i5Read = useRef(0), i5Busy = useRef(false)
       var i5Identity = iter5Identity()
       var i5DraftKey = i5Identity + '|' + (props && props.draftScope || 'workbench')
-      var i5GroupsDef = { engine: ['engine'], memory: ['window', 'capacity', 'skills'], appearance: ['store', 'look', 'skin'], behavior: ['handoff', 'auto', 'team', 'about'] }
+
       useEffect(function () {
         i5Alive.current = true
         function before(e) { if (!Object.keys(i5Draft.current).length) return; e.preventDefault(); e.returnValue = '' }
@@ -133,7 +134,7 @@ settings = replaceOnce(settings, '      var tickPair = useTick()', `      var ti
       function i5Ok() { return i5Alive.current && i5Identity === iter5Identity() }
       function i5Record(key, value) {
         if (JSON.stringify(value) === JSON.stringify((i5Base.current || {})[key])) { delete i5Draft.current[key]; delete i5Groups.current[key] }
-        else { i5Draft.current[key] = value; i5Groups.current[key] = i5Group[0] }
+        else { i5Draft.current[key] = value; i5Groups.current[key] = (iter5SettingDef(key) || {}).group || i5Group[0] }
         setDirty(Object.keys(i5Draft.current).length > 0)
         if (Object.keys(i5Draft.current).length) iter5SettingsDrafts[i5DraftKey] = { patch: Object.assign({}, i5Draft.current), groups: Object.assign({}, i5Groups.current), base: Object.assign({}, i5Base.current) }
         else delete iter5SettingsDrafts[i5DraftKey]
@@ -180,24 +181,12 @@ settings = settings.slice(0, saveStart) + `      function save() {
         })
       }
 ` + settings.slice(fieldStart)
-settings = replaceOnce(settings, "      function field(label, control, hint) {\n        return", `      function field(label, control, hint) {
-        var plain = iter5SettingCopy(label)
-        var shownLabel = plain ? plain.label : label
-        if (control && (control.type === 'input' || control.type === 'select' || control.type === 'textarea')) control = React.cloneElement(control, { 'aria-label': shownLabel, disabled: busy || control.props.disabled, role: control.type === 'input' && control.props.type === 'checkbox' ? 'switch' : undefined })
-        return`)
-settings = replaceOnce(settings, "return h('div', { 'data-dam-settings-row': '' },", "return h('div', { 'data-dam-settings-row': '', 'data-i5-field': label },")
-settings = replaceOnce(settings,
-  "h('div', { 'data-dam-slot': 'list', 'data-dam-row': '' }, h('label', null, label), control),\n          hint ? h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, hint) : null)",
-  `h('div', { 'data-dam-slot': 'list', 'data-dam-row': '', className: 'i5-setting-field', 'data-wide': String(!!control && (control.type !== 'input' && control.type !== 'select' || control.props.type === 'text')) },
-            h('div', { className: 'i5-setting-copy' }, h('label', null, shownLabel), plain ? h('div', { 'data-dam-hint': '' }, plain.summary) : hint ? (function () {
-              if (typeof hint !== 'string') return h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, hint)
-              var cut = hint.indexOf('。'), tail = cut + 1
-              if (cut < 0) { cut = hint.indexOf('. '); tail = cut + 2 }
-              if (cut < 8 || cut >= hint.length - 2) return h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, hint)
-              var lead = hint.slice(0, tail)
-              return h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, h('span', { className: 'i5-hint-lead' }, lead), h('details', { className: 'i5-hint-more' }, h('summary', null, L('详细说明', 'Details')), h('span', null, hint.slice(tail))))
-            })() : null),
-            h('div', { className: 'i5-setting-control' }, control)))`)
+const rowStart = settings.indexOf('      function field(')
+const fieldEnd = settings.indexOf('      function setAccent(', rowStart)
+settings = settings.slice(0, rowStart) + `      function field(label, control, hint) {
+        return iter5SettingRow(label, control, hint, arguments[3] || [], busy, i5SettingsId, cfg)
+      }
+` + settings.slice(fieldEnd)
 const modeStart = settings.indexOf('      function onEngineModeChange(e) {')
 const modeEnd = settings.indexOf('      var sectionLabels =', modeStart)
 settings = settings.slice(0, modeStart) + `      function onEngineModeChange(e) {
@@ -222,53 +211,14 @@ settings = settings.slice(0, modeStart) + `      function onEngineModeChange(e) 
 ` + settings.slice(modeEnd)
 settings = replaceOnce(settings,
   "function section(key, title, content) { return h('section', { id: 'dam-settings-' + key, 'data-dam-settings-group': '' }, h('h3', null, title), content) }",
-  `var i5WelcomeControl = null
-      function section(key, title, content) {
-        if (key === 'window' && content[0] && content[0].props['data-i5-field'] === t('fPromptSections')) {
-          var promptEntry = React.cloneElement(content[0], { 'data-i5-advanced-entry': 'true' })
-          content = content.slice(2).concat([promptEntry, content[1]])
-        }
-        if (key === 'auto') content = content.filter(function (node) { if (node && node.props && node.props['data-i5-field'] === t('fWelcomeTour')) { i5WelcomeControl = node; return false } return true })
-        if (key === 'look' && i5WelcomeControl) content = [i5WelcomeControl].concat(content)
-        var hidden = i5GroupsDef[i5Group[0]].indexOf(key) < 0
-        if (key === 'engine') {
-          var mode = [], primary = [], advanced = [], support = []
-          content.forEach(function (node) {
-            if (!node) return
-            var label = node.props && node.props['data-i5-field']
-            if (label === t('semMode')) mode.push(node)
-            else if (label === t('fAssocEngine') || label === t('fEmitMode')) primary.push(node)
-            else if (node.props && node.props['data-dam-gate-readout'] !== undefined) primary.push(node)
-            else if (label) advanced.push(node)
-            else support.push(node)
-          })
-          return h('div', { id: 'dam-settings-' + key, className: 'i5-engine-grid', hidden: hidden },
-            h(Iter5Card, { title: L('让 AI 想起相关的事', 'Recall relevant memories'), icon: 'pulse', hue: 'green' }, primary),
-            h(Iter5Card, { className: 'i5-mode-card', title: L('如何查找记忆', 'How to find memories'), icon: 'search', hue: 'blue' }, mode),
-            h('details', { className: 'i5-settings-advanced i5-setup-card', open: !!guide || detOpen }, h('summary', null, L('安装与检查查找工具', 'Install and check search tools')), support),
-            h('details', { className: 'i5-settings-advanced' }, h('summary', null, L('进阶：回忆频率、准确度与索引维护', 'Advanced: recall frequency, matching and index maintenance')), advanced))
-        }
-        var titles = { window: L('把已有记忆交给 AI', 'Give AI existing memories'), capacity: L('记录对话与保留内容', 'Record conversations and keep content'), skills: L('从经历中积累可复用流程', 'Build reusable workflows'), handoff: L('长对话换窗口后继续', 'Continue long tasks in a new session'), auto: L3('自动化、免打扰与定时整理', 'Automation, quiet mode and scheduled upkeep', '自動化・サイレントモード・定期整理'), store: L('记忆文件保存在哪里', 'Where memory files are stored'), look: L('显示与操作习惯', 'Display and interaction'), team: L('与团队共享记忆', 'Share memory with a team'), skin: L('自定义插画素材', 'Custom illustration assets') }
-        title = titles[key] || title
-        var common = { window: ['fInject', 'fBudget', 'fDays', 'fExclude'], capacity: ['fAutoConsolidate', 'fConsolidate', 'fConsolidateMax'], skills: ['fMemoryHub', 'fProcInject', 'fProcRisk'], handoff: ['fHandoff', 'fAutoContinue'], auto: ['fAutoPopup', 'fUnattended', 'fUnattendedAuto', 'fAutoSum', 'fConsSchedule', 'fConsScheduleTime', 'fConsScheduleDays', 'fMaintSchedule', 'fMaintScheduleTime'], store: ['fMemoryRoot', 'fUserDir', 'fProjectDir'], look: ['fWelcomeTour', 'fLocale', 'fFontSize', 'fPanelPos'] }
-        if (common[key]) {
-          var basic = [], extra = [], extrasStarted = false
-          content.forEach(function (node) {
-            if (!node) return
-            var label = node.props && node.props['data-i5-field']
-            if (label) extrasStarted = !common[key].some(function (k) { return t(k) === label }) && !(key === 'auto' && label === L('子代理模型 / 思考强度', 'Subagent model & reasoning effort'))
-            ;(extrasStarted ? extra : basic).push(node)
-          })
-          if (key === 'capacity') basic.sort(function (a, b) { return common[key].map(t).indexOf(a.props['data-i5-field']) - common[key].map(t).indexOf(b.props['data-i5-field']) })
-          content = basic.concat(extra.length ? [h('details', { className: 'i5-settings-advanced' }, h('summary', null, L('进阶选项：', 'Advanced: ') + title), extra)] : [])
-        }
-        var icons = { window: 'library', capacity: 'storage', skills: 'skills', handoff: 'handoff', auto: 'timeline', store: 'folder', look: 'settings', team: 'mindmap', skin: 'spark', about: 'note' }
-        var subs = {}
-        return h('section', { id: 'dam-settings-' + key, 'data-dam-settings-group': '', hidden: hidden }, h('h3', { className: 'i5-card-title' }, h('span', { className: 'i5-badge', 'data-hue': key === 'skills' ? 'green' : key === 'handoff' ? 'cyan' : key === 'auto' ? 'orange' : 'blue' }, h(Iter5Icon, { name: icons[key] || 'settings' })), h('span', { className: 'i5-card-title-txt' }, title, subs[key] ? h('span', { className: 'i5-card-sub' }, subs[key]) : null)), content)
-      }`)
-settings = replaceOnce(settings, "      return h('div', { 'data-dam-settings': '' },", `      return h('div', { 'data-dam-settings': '', 'data-i5-dirty': dirty ? 'true' : 'false' },
-        h(Iter5Tabs, { id: 'i5-settings', label: L('设置分组', 'Settings groups'), value: i5Group[0], onChange: i5Group[1], items: [['engine', L('引擎', 'Engine')], ['memory', L('记忆', 'Memory')], ['appearance', L('外观与目录', 'Appearance & paths')], ['behavior', L('行为与维护', 'Behavior & maintenance')]].map(function (r) { return [r[0], r[1], Object.keys(i5Groups.current).some(function (k) { return i5Groups.current[k] === r[0] })] }) }),`)
-settings = replaceOnce(settings, "h('div', { 'data-dam-settings-content': '' },", "h('div', { 'data-dam-settings-content': '', role: 'tabpanel', id: 'i5-settings-panel', 'aria-labelledby': 'i5-settings-tab-' + i5Group[0] }, iter5SettingsIntro(i5Group[0]),")
+  "function section(key, title, content) { return iter5SettingSection(key, title, content, i5Group[0], i5SettingsId, !!guide || detOpen) }")
+settings = replaceOnce(settings, "      return h('div', { 'data-dam-settings': '' },", `      return h('div', { ref: i5Root, 'data-dam-settings': '', 'data-i5-dirty': dirty ? 'true' : 'false', 'data-settings-v3': '' },
+        h('div', { className: 'i5-settings-heading' }, h('h2', null, L3.apply(null, ITER5_SETTINGS_GROUPS.find(function(g){return g[0]===i5Group[0]}).slice(1))), h(Iter5SettingsSearch, { root:i5Root, select:i5Group[1], id:i5SettingsId })),
+        h('label', {className:'i5-settings-mobile'}, L3('设置分区','Settings section','設定セクション'), h('select', {'aria-label':L3('设置分区','Settings section','設定セクション'), value:i5Group[0], onChange:function(e){i5Group[1](e.target.value)}}, ITER5_SETTINGS_GROUPS.map(function(g){return h('option',{key:g[0],value:g[0]},L3.apply(null,g.slice(1)))}))),
+        h(Iter5Tabs, { id: 'i5-settings', label: L('设置分组', 'Settings groups'), value:i5Group[0], onChange:i5Group[1], items:ITER5_SETTINGS_GROUPS.map(function(g){return [g[0],L3.apply(null,g.slice(1)),Object.keys(i5Groups.current).some(function(k){return i5Groups.current[k]===g[0]})]}) }),
+        msg && !dirty ? h('p', {role:'status',className:'i5-settings-status'}, msg) : null,`)
+settings = replaceOnce(settings, "h('div', { 'data-dam-settings-content': '' },", "h('div', { 'data-dam-settings-content': '', role: 'tabpanel', id: 'i5-settings-panel', 'aria-labelledby': 'i5-settings-tab-' + i5Group[0] }, i5Group[0] === 'common' ? h(Iter5SettingsCommon, { config:i5Base.current || {}, semantic:sem, select:i5Group[1] }) : null, i5Group[0] === 'maintenance' ? h('button',{onClick:function(){if(props && props.onNav)props.onNav('storage');else {controller.setPanelTab('storage');controller.open()} }},L3('打开维护中心','Open maintenance center','管理センターを開く')) : null, i5Group[0] !== 'common' ? iter5SettingsCatalog(i5Group[0]) : null,")
+settings = settings.replace("h('div', { style: { marginTop: '14px', borderTop:", "h('div', { hidden: i5Group[0] !== 'advanced', style: { marginTop: '14px', borderTop:")
 const radioOld = `h('select', { 'data-dam-select': '', style: { flex: 1 }, value: cfg.semanticEngineMode || 'auto', onChange: onEngineModeChange },
               h('option', { value: 'auto' }, t('semAuto')),
               h('option', { value: 'lexical' }, t('semLexOnly')),
@@ -279,7 +229,7 @@ settings = replaceOnce(settings, radioOld, `h('div', { className: 'i5-engine-rad
 // The wizard's shortcut uses the same immediate save path, never a separate draft write.
 const shortcut = "setGuide(''); var n2 = Object.assign({}, cfg); n2.semanticEngineMode = guide; if (guide === 'js') { n2.activationSource = 'js'; n2.contextSinkMode = 'null' } else if (guide === 'python') { n2.activationSource = 'python'; n2.contextSinkMode = 'python' } setCfg(n2); setDirty(true)"
 settings = replaceOnce(settings, shortcut, "onEngineModeChange({ target: { value: guide } })")
-settings = replaceOnce(settings, "h('div', { 'data-dam-savebar': '' },", "h('div', { 'data-dam-savebar': '', role: 'status' },\n          h('button', { onClick: i5Cancel, disabled: busy || !dirty }, L('取消修改', 'Discard changes')),")
+settings = replaceOnce(settings, "h('div', { 'data-dam-savebar': '' },", "h('div', { 'data-dam-savebar': '', role: 'status', hidden: !dirty },\n          h('button', { onClick: i5Cancel, disabled: busy || !dirty }, L('取消修改', 'Discard changes')),")
 settings = replaceOnce(settings, 'onClick: save, disabled: busy', 'onClick: save, disabled: busy || !dirty')
 // Save actions are a sibling of the scrolling content, never an overlay on a field.
 const savebarStart = settings.indexOf("        h('div', { 'data-dam-savebar':")
@@ -375,7 +325,7 @@ stats = replaceOnce(stats, "      h('div', { style: { opacity: .72, fontSize: '1
 // Zero-event channels used to repeat statsNoInject in all three cards; their own hint now carries the empty state.
 stats = replaceOnce(stats, "        : h('div', { style: { opacity: .5, fontSize: '12px' } }, t('statsNoInject'))))", "        : ch.events ? h('div', { className: 'i5-native-stat-empty' }, t('statsNoInject')) : null))")
 const readSkin = name => readFileSync(path.join(root, 'skins/iter5', name), 'utf8').replace(/\r\n/g, '\n')
-const css = (readSkin('skin.css') + '\n' + readSkin('native-tour.css') + '\n' + readSkin('native-panel.css') + '\n' + readSkin('native-settings.css') + '\n' + readSkin('native-workbench.css') + '\n' + readSkin('native-library.css') + '\n' + readSkin('native-operations.css') + '\n' + readSkin('native-secondary.css') + '\n' + readSkin('style-variants.css')).trim()
+const css = (readSkin('skin.css') + '\n' + readSkin('native-tour.css') + '\n' + readSkin('native-panel.css') + '\n' + readSkin('native-settings.css') + '\n' + readSkin('native-workbench.css') + '\n' + readSkin('native-library.css') + '\n' + readSkin('native-operations.css') + '\n' + readSkin('native-secondary.css') + '\n' + readSkin('style-variants.css') + '\n' + readSkin('settings-v3.css')).trim()
   .replace('[data-iter5]{--i5-blue:', '[data-iter5],[data-dam-theme]{--i5-blue:')
   .replace('[data-iter5][data-deep=true]{--i5-blue:', '[data-iter5][data-deep=true],[data-dam-theme][data-deep=true],[data-dam-theme][data-deep=true] [data-iter5]{--i5-blue:')
 const ui = readSkin('style-choice.js').trimEnd() + '\n' + readSkin('alternate-home.js').trimEnd() + '\n' + readSkin('ui.js').trimEnd() + '\n' + readSkin('views.js').trimEnd() + '\n' + readSkin('surfaces.js').trimEnd() + '\n' + readSkin('native-panel.js').trimEnd() + '\n' + readSkin('native-workbench.js').trimEnd() + '\n' + readSkin('native-search.js').trimEnd() + '\n' + readSkin('native-skills.js').trimEnd() + '\n' + readSkin('native-storage.js').trimEnd() + '\n' + readSkin('native-team.js').trimEnd() + '\n' + readSkin('native-map.js').trimEnd() + '\n' + readSkin('native-messages.js').trimEnd()
@@ -383,7 +333,7 @@ settings = settings.replace("L('引擎', 'Engine')", "L('查找与回忆', 'Find
 settings = settings.replace("L('shadow 只记录', 'shadow (record only)')", "L('只观察，不交给 AI', 'Observe only; do not supply to AI')").replace("L('canary 显式回忆注入', 'canary (explicit recall)')", "L('明确要求回忆时提供', 'Supply on explicit recall requests')").replace("L('active 全部注入', 'active (all)')", "L('主动提供相关记忆', 'Proactively supply matching memories')")
 settings = settings.replace("L('balanced 3×40', 'balanced 3×40')", "L('平衡：3 条 × 40 字符', 'Balanced: 3 × 40 characters')").replace("L('dense 6×20', 'dense 6×20')", "L('广泛：6 条 × 20 字符', 'Broad: 6 × 20 characters')").replace("L('custom 自定义', 'custom')", "L('自定义', 'Custom')")
 settings = settings.replace("['lexical', t('semLexOnly')], ['js', t('semJs')], ['python', t('semPy')]", "['lexical', L('按关键词查找（无需下载模型）', 'Keywords (no model download)')], ['js', L('按意思查找（需本地模型）', 'Meaning (requires a local model)')], ['python', L('Python 搜索工具（需单独安装）', 'Python search tools (separate setup)')]")
-const generated = begin + '\n    var ITER5_CSS = ' + JSON.stringify(css) + '\n' + ui + '\n' + readSkin('settings-copy.js') + '\n' + settings + storage + skills + stats + end + '\n'
+const generated = begin + '\n    var ITER5_CSS = ' + JSON.stringify(css) + '\n' + ui + '\n' + readSkin('settings-schema.js') + '\n' + readSkin('settings-copy.js') + '\n' + readSkin('settings-layout.js') + '\n' + settings + storage + skills + stats + end + '\n'
 const seam = '    // ===================== dam-skin:end (v4) ====================='
 // ★2026-10-01 修（病根 2）：seam 插入时**一并写出唯一的标记对**，让 generated 恰好被
 //   BEGIN/END 包住。这样每轮产物里产物块恒为 1 份 ⇒ 幂等；
