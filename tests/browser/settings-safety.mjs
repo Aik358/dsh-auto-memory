@@ -551,7 +551,10 @@ try{
   assert.equal(await page.locator('[data-dam-savebar]').isVisible(),fail,'only failed save retains the original identity recovery record')
  }
  for(const width of [1440,390]){
-  await page.setViewportSize({width,height:width===390?844:1000});await tab('record')
+  await page.setViewportSize({width,height:width===390?844:1000})
+  // Fixture mounts the shipped factory without the host apply() resize listener.
+  // Invoke its real geometry clamp after a synthetic viewport resize.
+  await page.evaluate(()=>dshTest.controller.setGeom({}));await tab('record')
   const viewport=page.locator('[data-dam-panel] [data-dam-settings-content]')
   await viewport.evaluate(el=>{el.scrollTop=0})
   assert(await viewport.evaluate(el=>el.clientHeight>=100),'floating settings retains a usable scrolling field area with a recovered draft')
@@ -560,6 +563,7 @@ try{
   await page.waitForTimeout(300)
   await page.screenshot({path:path.join(artifacts,'actual-classic-panel-record-'+width+'.png')})
   assert.equal(await page.locator('[data-dam-body]').evaluate(el=>el.scrollWidth>el.clientWidth+2),false,'floating settings has no horizontal overflow')
+  assert(await page.locator('[data-dam-panel]').evaluate(el=>el.getBoundingClientRect().bottom<=innerHeight),'floating save bar stays within the resized viewport')
  }
  evidence.push('PASS V3: actual classic workbench/panel remain mounted A → B → A for session and workspace switches; distinct raw drafts, delayed old GETs and success/failure save results cannot cross identity or lock the new form')
 
