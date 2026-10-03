@@ -28,6 +28,7 @@ export function assertNavigationContract(client) {
     const primary=nodes(tree,n=>Object.hasOwn(n.props,'data-dam-primary-nav'))[0]
     assert.deepEqual(primary.children.map(n=>n.children[0]),['Workbench','Memory','Tasks','Settings'])
     assert.equal(primary.children.length,4)
+    if(owner==='settings')assert.equal(nodes(tree,n=>n.type==='button'&&n.children[0]==='Settings').length,1,'settings primary destination is not repeated in secondary navigation')
     for(const button of nodes(tree,n=>n.type==='button')) {button.props.onClick();reachable.add(selected)}
   }
   assert.deepEqual([...reachable].sort(),Object.keys(expectedClassic).sort(),'all 14 old tabs plus settings have a visible navigation path')

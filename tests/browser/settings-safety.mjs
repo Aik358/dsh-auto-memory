@@ -477,6 +477,8 @@ try{
   assert.equal(await page.locator('[data-i5-keys="autoConsolidateDailyMax"] .i5-setting-field').evaluate(el=>getComputedStyle(el).display),'grid')
   for(const width of [1440,390]){
    await page.setViewportSize({width,height:width===390?844:1000});await tab('record')
+   await page.waitForFunction(()=>Array.from(document.querySelectorAll('[data-settings-v3], [data-settings-v3] .i5-tabs, [data-settings-v3] .i5-settings-mobile')).every(el=>getComputedStyle(el).display==='none'||getComputedStyle(el).opacity==='1'))
+   await page.waitForTimeout(300) // Let shipped entrance animations finish before visual evidence.
    await page.screenshot({path:path.join(artifacts,'actual-'+skin+'-record-'+width+'.png')})
    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2),false,'actual '+skin+' '+width+' horizontal overflow')
    if(width===390)assert(await page.locator('.i5-settings-mobile select').isVisible())
@@ -550,6 +552,12 @@ try{
  }
  for(const width of [1440,390]){
   await page.setViewportSize({width,height:width===390?844:1000});await tab('record')
+  const viewport=page.locator('[data-dam-panel] [data-dam-settings-content]')
+  await viewport.evaluate(el=>{el.scrollTop=0})
+  assert(await viewport.evaluate(el=>el.clientHeight>=100),'floating settings retains a usable scrolling field area with a recovered draft')
+  const firstControl=page.locator('[data-i5-keys="autoConsolidate"] input')
+  assert(await firstControl.evaluate(el=>{const r=el.getBoundingClientRect(),p=el.closest('[data-dam-settings-content]').getBoundingClientRect();return r.bottom>p.top&&r.top<p.bottom}),'first recording control is visible above the floating save bar')
+  await page.waitForTimeout(300)
   await page.screenshot({path:path.join(artifacts,'actual-classic-panel-record-'+width+'.png')})
   assert.equal(await page.locator('[data-dam-body]').evaluate(el=>el.scrollWidth>el.clientWidth+2),false,'floating settings has no horizontal overflow')
  }

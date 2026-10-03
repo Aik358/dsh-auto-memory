@@ -69,8 +69,8 @@ const classic = source
 //       「语义记忆总开关」命中最多次（7 次），其余 3 种（记忆窗口 / 自动化 / 记忆中枢）为**批前既有**，未在本批范围内。
 //   守卫语义不变：生成块之外的任何**非意外**改动仍会被本锁抓住；本批期望值随之上移。
 // V3 reviewed changes outside generated blocks: four destinations, shared settings,
-// isolated workbench drafts and search Escape handling. Other edits remain locked.
-assert.equal(createHash('sha256').update(classic).digest('hex'), '05080632796fda07918847df214ea4c9e53ee9683f0b412d681038d8a5ed94ce', 'V3 reviewed classic navigation / shared-settings source baseline')
+// isolated workbench drafts, search Escape handling and removal of the duplicate Settings destination. Other edits remain locked.
+assert.equal(createHash('sha256').update(classic).digest('hex'), '394b20f68f14a208cc2ce8ca9721adadc93671c8ad53186b00db9b9e7f86f8d2', 'V3 reviewed classic navigation / shared-settings source baseline')
 console.log('PASS V3 shared settings / four-entry classic source baseline preserved')
 
 const css = readFileSync(new URL('../../skins/iter5/skin.css', import.meta.url), 'utf8')
