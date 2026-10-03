@@ -79,4 +79,4 @@ DSH_BROWSER_TOOLS=/tmp/dsh-browser-tools CHROMIUM_PATH=/usr/bin/chromium \
 - `git diff --check`：通过。
 - `npm pack --dry-run --json --ignore-scripts`：本地 dry run；settings-safety.js 在包清单中，测试私有 harness 与 artifacts 不进入包，版本仍 3.2.7。没有实际打包发布或版本变更。
 
-原始日志、浏览器结果 JSON 与截图在 `artifacts/ui-settings-20261003/`。代码编写后的逐项复审见同目录文档 `REVIEW.md`；为同执行代理第二遍审查，未使用独立第三方代理。
+完整日志（仅清除行尾空白）、浏览器结果 JSON 与截图在 `artifacts/ui-settings-20261003/`。代码编写后的逐项复审见同目录文档 `REVIEW.md`；为同执行代理第二遍审查，未使用独立第三方代理。

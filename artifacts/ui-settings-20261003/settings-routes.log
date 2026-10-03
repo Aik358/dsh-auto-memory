@@ -1,0 +1,3 @@
+PASS actual /config handler: field-specific errors are all-or-nothing; zero midnight and empty off array accepted
+PASS actual /semantic-emit handler: atomic failure never acknowledges success; gates align after commit; invalid existing JSON preserved
+PASS actual /note handler: scoped session, destination CAS, strict disk reads, duplicate refusal, write failure preserves destination
