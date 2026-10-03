@@ -12,10 +12,13 @@
     "PASS external lookup out-of-order completion, source selection identity",
     "PASS actual React settings and semantic GET disorder: older snapshots cannot replace newer state",
     "PASS semantic state synchronizes across simultaneous settings instances",
-    "PASS zh: four tabs, 390/1280 viewports, keyboard focus, no horizontal page overflow",
-    "PASS en: four tabs, 390/1280 viewports, keyboard focus, no horizontal page overflow",
-    "PASS ja: four tabs, 390/1280 viewports, keyboard focus, no horizontal page overflow"
+    "PASS pending note remount matrix: classic/new/frozen × success/failure × unchanged A/new B; status and outcome synchronized",
+    "PASS pending calendar remount matrix: classic/new/frozen × success/failure × unchanged A/new B; status and outcome synchronized",
+    "PASS current/frozen/classic settings: handoff-state request disorder, changed session clears prior value and rejects old-session response",
+    "PASS zh: current Settings four-tab navigation; appearance at 390/1280, Tab moves focus, no appearance page horizontal overflow (not full keyboard/all-page layout acceptance)",
+    "PASS en: current Settings four-tab navigation; appearance at 390/1280, Tab moves focus, no appearance page horizontal overflow (not full keyboard/all-page layout acceptance)",
+    "PASS ja: current Settings four-tab navigation; appearance at 390/1280, Tab moves focus, no appearance page horizontal overflow (not full keyboard/all-page layout acceptance)"
   ],
-  "noteWrites": 1,
+  "noteWrites": 13,
   "pageErrors": []
 }
