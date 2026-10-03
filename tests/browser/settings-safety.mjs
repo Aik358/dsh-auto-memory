@@ -559,7 +559,7 @@ try{
   await viewport.evaluate(el=>{el.scrollTop=0})
   assert(await viewport.evaluate(el=>el.clientHeight>=100),'floating settings retains a usable scrolling field area with a recovered draft')
   const firstControl=page.locator('[data-i5-keys="autoConsolidate"] input')
-  assert(await firstControl.evaluate(el=>{const r=el.getBoundingClientRect(),p=el.closest('[data-dam-settings-content]').getBoundingClientRect();return r.bottom>p.top&&r.top<p.bottom}),'first recording control is visible above the floating save bar')
+  assert(await firstControl.evaluate(el=>{const r=el.getBoundingClientRect(),p=el.closest('[data-dam-settings-content]').getBoundingClientRect();return r.top>=p.top&&r.bottom<=p.bottom}),'first recording control is fully visible above the floating save bar')
   await page.waitForTimeout(300)
   await page.screenshot({path:path.join(artifacts,'actual-classic-panel-record-'+width+'.png')})
   assert.equal(await page.locator('[data-dam-body]').evaluate(el=>el.scrollWidth>el.clientWidth+2),false,'floating settings has no horizontal overflow')
