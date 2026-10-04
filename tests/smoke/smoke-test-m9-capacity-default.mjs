@@ -119,10 +119,10 @@ t('M9-6 ★ 迁移接在两个加载路径上（同步路径是注册期真正�
   //    ⇒ 断言以「找不到」的形式失败（症状离真因很远：报的是"必须同步落盘"）。
   //    ⚠️ 教训：**用固定字符窗口截方法体的断言，会因为无关改动而静默失效**。
   //    这里放宽窗口并保留断言强度；若要更稳，应改为按方法体边界切片（见 sliceMethod）。
-  const sync = SRC.slice(SRC.indexOf('loadConfigSync()'), SRC.indexOf('loadConfigSync()') + 1800)
+  const sync = SRC.slice(SRC.indexOf('_loadConfigSyncLocked()'), SRC.indexOf('_loadConfigSyncLocked()') + 1800)
   assert(/this\.upgradeCapacityDefaultsPre\(parsed\)/.test(sync), '★ loadConfigSync 必须调用迁移并传 parsed')
   assert(/persistConfigSyncPre\(\)/.test(sync), '★ loadConfigSync 必须同步落盘')
-  const asyncAt = SRC.indexOf('async loadConfig()')
+  const asyncAt = SRC.indexOf('async _loadConfigLocked()')
   const asyncSeg = SRC.slice(asyncAt, asyncAt + 1800)
   assert(/this\.upgradeCapacityDefaultsPre\(parsed\)/.test(asyncSeg), '★ loadConfig 也必须调用迁移并传 parsed')
   assert(/persistConfigPre/.test(asyncSeg), '★ 异步路径须把抬升结果落盘(否则设置页显示 12000 与实际不一致)')

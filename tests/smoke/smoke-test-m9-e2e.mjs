@@ -52,6 +52,7 @@ const PREV = C('DEFAULT_CAPACITY_CHARS_PREV'), VER = C('CAPACITY_DEFAULTS_VERSIO
 const modSrc = `
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs'
 import path from 'node:path'
+import { withConfigLockSync, readConfigSnapshot } from '${pathToFileURL(path.resolve('lib', 'config-lock.js')).href}'
 // ★#82：注入被测函数的真实实现（ESM 必须用 file:// URL，不能用裸盘符路径）
 import {
   writeTextAtomicPreSync,
@@ -85,6 +86,7 @@ export class Engine {
   ${sliceMethod('_mergeConfigPre(parsed) {')}
   ${sliceMethod('upgradeCapacityDefaultsPre(rawCfg) {')}
   ${sliceMethod('loadConfigSync() {')}
+  ${sliceMethod('_loadConfigSyncLocked() {')}
   ${sliceMethod('persistConfigSyncPre() {')}
 }
 `
@@ -175,15 +177,15 @@ t('M9E-5 ★ **默认值污染判据**回归锁: 守卫读 rawCfg, 不得读 thi
   assert(deriveLine, '未找到 onDiskVer 的派生行')
   assert(/rawCfg/.test(deriveLine), '★ onDiskVer 必须派生自 rawCfg(磁盘原文), 实际: ' + deriveLine.trim())
   assert(!/this\.config/.test(deriveLine), '★ onDiskVer 不得派生自 this.config, 实际: ' + deriveLine.trim())
-  const sync = sliceMethod('loadConfigSync() {')
+  const sync = sliceMethod('_loadConfigSyncLocked() {')
   assert(/upgradeCapacityDefaultsPre\(parsed\)/.test(sync), '★ loadConfigSync 必须传 parsed')
-  const ai = SRC.indexOf('async loadConfig()')
+  const ai = SRC.indexOf('async _loadConfigLocked()')
   const asyncSeg = SRC.slice(ai, ai + 900)
   assert(/upgradeCapacityDefaultsPre\(parsed\)/.test(asyncSeg), '★ loadConfig 必须传 parsed')
 })
 
 t('M9E-6 ★ 注册期路径必须**同步**落盘(loadConfigSync 是唯一真正跑的那条)', () => {
-  const sync = sliceMethod('loadConfigSync() {')
+  const sync = sliceMethod('_loadConfigSyncLocked() {')
   assert(/persistConfigSyncPre\(\)/.test(sync), '★ loadConfigSync 必须调用同步落盘')
   assert(!/await /.test(sync), '★ 同步路径里不得出现 await(apply 不是 async)')
   assert(/persistConfigSyncPre\(\) \{/.test(SRC), 'persistConfigSyncPre 方法应存在')

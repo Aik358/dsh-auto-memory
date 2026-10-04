@@ -44,6 +44,7 @@
  *   一致则打印 SYNC-OK —— 这是 R1 的唯一通过判据。
  */
 import { readFileSync, writeFileSync } from 'node:fs'
+import vm from 'node:vm'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 
@@ -831,6 +832,17 @@ if (!client.includes('F6 · 共享样式按皮肤分派') && !client.includes('H
   if (/if \(style\.textContent !== damSharedCss\)/.test(client)) throw new Error('H3-1: H1 leftover sync line survived')
   console.log('H3-1: ' + h31Rewritten + ' shared-style effect(s) collapsed onto one source of truth')
 }
+// Settings placeholders are generated from the host literal, never from a
+// second hand-maintained dictionary. Evaluate only that literal, not the host.
+const hostSource = readFileSync(path.join(root, 'lib/index.js'), 'utf8').replace(/\r\n/g, '\n')
+const promptLiteral = hostSource.match(/const DEFAULT_PROMPT_LAYERS = Object\.freeze\((\{[\s\S]*?\n\})\)/)
+if (!promptLiteral) throw new Error('host prompt defaults literal missing')
+const promptDefaults = vm.runInNewContext('(' + promptLiteral[1] + ')', {}, { timeout: 1000 })
+if (!Object.values(promptDefaults).every(value => typeof value === 'string')) throw new Error('prompt defaults must be strings')
+const promptMirror = /var DEFAULT_PROMPT_LAYERS_CLIENT = \{[\s\S]*?\n    \}/g
+if ((client.match(promptMirror) || []).length !== 1) throw new Error('client prompt defaults mirror must be unique')
+const promptRows = Object.entries(promptDefaults).map(([key, value]) => '      ' + key + ': ' + JSON.stringify(value) + ',')
+client = client.replace(promptMirror, () => 'var DEFAULT_PROMPT_LAYERS_CLIENT = {\n' + promptRows.join('\n') + '\n    }')
 const output = client.replace(/\n/g, newline)
 
 // ==== 覆盖前停机（2026-10-01 加告警；2026-10-02 用户改裁为默认停机）====================
