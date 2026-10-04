@@ -20,6 +20,10 @@ function extract(src, header) {
 }
 function compile(src, deps) { return new Function(...Object.keys(deps), 'return ' + src)(...Object.values(deps)) }
 const deps = { diag() {}, AbortSignal, continuationProbePre, continuationRitualEndPre, shouldArmAutoContinuePre,
+  // ★2026-10-04：armAutoContinue 新增外部依赖 isSubAgentSession（子代理会话不得 arm）。抽出的方法体在
+  //   new Function 里重建，作用域中没有模块级绑定 ⇒ 必须一并注入，否则 ReferenceError 会被该方法自身的
+  //   catch 吞掉，表现为"明明达标却不 arm"（同 2026-09-14 shouldArmAutoContinuePre 的教训）。
+  isSubAgentSession: (x) => { const h = x && x.session && x.session.header; if (!h) return false; if (String(h.origin || '') === 'subagent') return true; const d = Number(h.delegationDepth); return Number.isFinite(d) && d > 0 },
   DEFAULT_AUTO_CONTINUE_THRESHOLD: .75, contTitleStampPre: () => '09-30 12:00', randomUUID: () => 'ritual-request-001' }
 function method(header, extra = {}) {
   const obj = compile('({' + extract(host, header) + '})', { ...deps, ...extra })

@@ -137,6 +137,145 @@ await t('#5-2 memory_log **零改动**（日志是流水，append 本正确）',
     '★ 日志工具段内**零** G3 痕迹（设计稿硬约束）')
 })
 
+// ═══ 6. ★ 运行时产物：真实注册的 tool 定义 ═══
+// ★2026-10-04（Gemini 路由 HTTP 400 事故）：本仓**已有**产物断言（smoke-test.mjs:88-90 查注册产物
+//   memory_log.parameters、graph-mode.mjs:95-101 查 expand/trace 产物、issue164-plan-tools.mjs:18
+//   查 read.kind.enum / note.expectedRevision / note.cardId），但**没有任何一条覆盖 `items` 透传**。
+//   `defineTool` 把 spec 表**重建**成 JSON Schema，它不透传某个键，源码写得再对产物里也没有 ——
+//   `items` 就是这么丢的：memory_note 的 4 个 array 参数在产物里退化成 `{ type: 'array' }`，
+//   Google Vertex 校验 function declaration 时**直接拒**整轮请求：
+//     GenerateContentRequest.tools[0].function_declarations[N].parameters.properties[X].items: missing field
+//   ⇒ 本段补的正是这条缺口，走仓库既有路子：**真实 apply 后从注册产物上断言**。
+//   ★为什么不用"正则提取源码 + new Function 求值"：那个方案已被实测证伪 —— 剥注释的正则不是词法器，
+//     会删掉字符串里的 `/*` `//`（`items.description:'/*must preserve*/'` 变成空串）、漏掉
+//     `defineTool ('x', …)` 这种合法写法、把模板插值名当字面名；更糟的是下面这个反例里
+//        const marker1='/*';  defineTool('future','d',{x:{type:'array'}},()=>{});  const marker2='*/';
+//     剥注释会把**真调用一起删掉** ⇒ 提取数与裸计数同时少一个，"两边相同"照样假绿。
+//   ★为什么采集要放进 worker（同进程方案已被实证否掉）：apply 启动的异步任务
+//     （末尾的 void engine.checkUpdate(false) → 真网络、fetchNotices、diag 写盘）在 apply 返回后才跑，
+//     同进程里一旦恢复 globals 或删临时目录就会与之竞争 —— 实测会打到真实网络、rm 抛 ENOTEMPTY
+//     并重建目录、还会残留 3 个进程监听器。worker 独占 stub 与临时 home，采集完即 terminate，
+//     父进程随后删目录不存在竞争。详见 tests/lib/collect-tool-schemas.mjs 的段首注释。
+//   判据只覆盖**已证实**的形态：`items` 缺失已实测被 Vertex 拒并导致整轮 400；`items` 不是对象
+//   （true / 'junk'）被本机 DSH 的 assertSupportedJsonSchema 拒（"must be a schema object"）。
+//   而 `items: {}` 在 DSH 侧合法（它就是原始 schema 里"任意 JSON"的写法），Vertex 对它的行为
+//   **未证实**，故只作提示、不计失败。注意本段**不声称**是完整合法性验证 —— 例如 `{evil:1}`
+//   这类"非法关键词对象"只有 DSH 校验器才认得出，这里不做等价断言。
+console.log('\n[6] 运行时产物 · 真实注册的 tool schema（★ 防"源码对、产物缺"）')
+
+const REGISTERED_TOOLS = []
+/** armAutoContinue 守卫探针的回收结果（由 worker 回传）。 */
+let ARM_PROBE = null
+{
+  const { mkdtemp, rm } = await import('node:fs/promises')
+  const osMod = await import('node:os')
+  const pathMod = await import('node:path')
+  const { Worker } = await import('node:worker_threads')
+  const root6 = await mkdtemp(pathMod.join(osMod.tmpdir(), 'dam-g3-tools-'))
+  const worker = new Worker(new URL('../lib/collect-tool-schemas.mjs', import.meta.url), {
+    workerData: { home: root6 },
+  })
+  let collected = null
+  try {
+    collected = await new Promise((resolve, reject) => {
+      worker.once('message', resolve)
+      worker.once('error', reject)
+    })
+  } catch (e) {
+    // worker 失败不向上抛：让 #6-1~#6-5 以正常 FAIL 计入套件统计，而非未捕获异常中断整个文件
+    console.log('  note - 采集 worker 失败：' + String((e && e.message) || e))
+  } finally {
+    await worker.terminate() // 残留的启动异步任务随 worker 一起消失（这是同进程方案给不了的确定性）
+  }
+  for (const t of (collected && collected.tools) || []) REGISTERED_TOOLS.push(t)
+  ARM_PROBE = (collected && collected.armProbe) || null
+  // worker 已终止 ⇒ 删临时目录不再与写盘竞争
+  try { await rm(root6, { recursive: true, force: true }) } catch { /* 删不掉就留给系统清理，不让套件失败 */ }
+}
+
+/** JSON Schema 的基本类型（本机 DSH 校验器实测：type:'json' 之类的自定义名会被拒）。 */
+const BASE_TYPES = new Set(['object', 'array', 'string', 'number', 'integer', 'boolean', 'null'])
+/** items 必须是**对象**：DSH 接受 `{}`（任意 JSON）与 `{description}`，拒绝 true/'junk'（不是 schema 对象）。 */
+const validItems = (it) => !!it && typeof it === 'object' && !Array.isArray(it)
+/** 空 items 对象：DSH 合法、Vertex 未证实 —— 提示而非失败。 */
+const isEmptyItemsObj = (it) => validItems(it) && Object.keys(it).length === 0
+
+/** 递归收集问题节点：array 缺合法 items、以及非法的 type 取值（含嵌套 properties / items / 组合子）。 */
+function collectSchemaProblems(node, where, out) {
+  if (!node || typeof node !== 'object') return
+  if (node.type !== undefined && !BASE_TYPES.has(node.type)) {
+    out.push(where + '：type=' + JSON.stringify(node.type) + ' 不是 JSON Schema 基本类型')
+  }
+  if (node.type === 'array' && !validItems(node.items)) {
+    out.push(where + '：array 的 items=' + JSON.stringify(node.items) + '（缺失或不是对象）')
+  }
+  for (const [k, v] of Object.entries(node.properties || {})) collectSchemaProblems(v, where + '.' + k, out)
+  if (node.items && typeof node.items === 'object') collectSchemaProblems(node.items, where + '[]', out)
+  for (const kw of ['oneOf', 'anyOf', 'allOf']) {
+    const branches = node[kw]
+    if (Array.isArray(branches)) branches.forEach((v, i) => collectSchemaProblems(v, where + '.' + kw + '[' + i + ']', out))
+  }
+}
+/** 递归收集"空 items 对象"的 array 节点（提示用，含组合子）。 */
+function collectEmptyItemsNodes(node, where, out) {
+  if (!node || typeof node !== 'object') return
+  if (node.type === 'array' && isEmptyItemsObj(node.items)) out.push(where)
+  for (const [k, v] of Object.entries(node.properties || {})) collectEmptyItemsNodes(v, where + '.' + k, out)
+  if (node.items && typeof node.items === 'object') collectEmptyItemsNodes(node.items, where + '[]', out)
+  for (const kw of ['oneOf', 'anyOf', 'allOf']) {
+    const branches = node[kw]
+    if (Array.isArray(branches)) branches.forEach((v, i) => collectEmptyItemsNodes(v, where + '.' + kw + '[' + i + ']', out))
+  }
+}
+
+await t('#6-1 真实 apply 后拿到注册产物（断言对象是插件交给 DSH 的那一份）', () => {
+  ok(REGISTERED_TOOLS.length >= 19, '注册工具 ' + REGISTERED_TOOLS.length + ' 个（≥19）')
+  ok(REGISTERED_TOOLS.every((x) => x && x.parameters && x.parameters.type === 'object'),
+    '每个注册工具的 parameters 都是 object root')
+  ok(REGISTERED_TOOLS.filter((x) => x.name === 'memory_note').length === 1, 'memory_note 恰好注册一次')
+})
+
+await t('#6-2 ★★★ memory_note 的 4 个 array 参数在产物里带 items.type=string（Gemini 400 的直接成因）', () => {
+  const note = REGISTERED_TOOLS.find((x) => x.name === 'memory_note')
+  ok(!!note, 'memory_note 已注册')
+  if (!note) return
+  for (const key of ['supersedes', 'retract', 'restore', 'archivedIds']) {
+    const p = note.parameters.properties[key]
+    ok(!!p && p.type === 'array', 'memory_note.' + key + ' 是 array')
+    ok(!!p && !!p.items && p.items.type === 'string', '★ memory_note.' + key + '.items.type === string')
+  }
+})
+
+await t('#6-3 ★★ 全部注册产物里，array 节点的 items 必须存在且是对象（递归，含嵌套与组合子）', () => {
+  const bad = []
+  for (const x of REGISTERED_TOOLS) collectSchemaProblems(x.parameters, x.name, bad)
+  ok(bad.length === 0, '★ 无 array 缺 items / items 不是对象 / 非法 type' + (bad.length ? '；违规：' + bad.join('；') : ''))
+})
+
+await t('#6-4 ★ 注册的工具名稳定（防注册退化被静默吞掉）', () => {
+  const names = REGISTERED_TOOLS.map((x) => x.name).sort()
+  ok(names.includes('memory_note') && names.includes('memory_read') && names.includes('memory_expand'),
+    '核心工具都在（memory_note / memory_read / memory_expand）')
+  ok(new Set(names).size === names.length, '工具名无重复（' + names.length + ' 个）')
+})
+
+await t('#6-5 ★★ armAutoContinue 必须拒绝子代理会话、且不误伤普通会话', () => {
+  ok(!!ARM_PROBE, '探针已回传')
+  if (!ARM_PROBE) return
+  ok(ARM_PROBE.ok === true, '探针执行无异常' + (ARM_PROBE.error ? '：' + ARM_PROBE.error : ''))
+  ok(ARM_PROBE.hasEngine === true, '已捕获 MemoryEngine 实例')
+  ok(ARM_PROBE.armedForSubAgent === false,
+    '★ 子代理会话不得 arm（否则接续走通用 session 路由必被宿主拒，且失败不落闩 ⇒ 反复报错）')
+  ok(ARM_PROBE.armedForNormal === true, '普通会话仍能 arm（守卫未误伤正常路径）')
+})
+// 提示（不计失败）：空 items 对象在 DSH 侧合法，Vertex 行为未证实 —— 只报告，不判死。
+{
+  const emptyItems = []
+  for (const x of REGISTERED_TOOLS) collectEmptyItemsNodes(x.parameters, x.name, emptyItems)
+  if (emptyItems.length > 0) {
+    console.log('  note - 以下 array 用了空 items 对象（DSH 合法；Vertex 是否接受未证实）：' + emptyItems.join(', '))
+  }
+}
 console.log('\n--- g3-wire 回归锁 ---')
 console.log('pass=' + pass + ' fail=' + fail)
 process.exit(fail ? 1 : 0)
