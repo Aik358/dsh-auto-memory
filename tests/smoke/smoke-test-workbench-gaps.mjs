@@ -68,7 +68,20 @@ ck('S1 默认值为空串（= 自动，不再硬编码 ~/.dsh/memory）',
   /workbenchRoot: '',/.test(idx) && !/workbenchRoot: '~\/\.dsh\/memory'/.test(idx))
 ck('S1 落点用 dshHome() 推导（跨平台 + 与路径闸同口径）',
   /path\.join\(dshHome\(\), WORKBENCH_DIRNAME\)/.test(idx))
-ck('S1 路径闸允许空串（= 回到自动）', /if \(!rawPath\.trim\(\)\) \{ if \(key === 'workbenchRoot'\) patch\[key\] = ''/.test(idx))
+// ★2026-10-05 判据随源码演进（批次 Z/PR#213 claim4）：/config 逐键路径闸升级为字段级校验
+//   all-or-nothing（validateSettingsPatch/validateSettingsPaths，位于 lib/settings-safety.js），
+//   三路径键同闸 + 祖先 realpath 防 symlink 逃逸；workbenchRoot 空串显式合法（=自动）。
+//   守卫跨双文件取证（idx=index.js 调用面 + safety=校验实现面），防校验被静默旁路。
+ck('S1 路径闸（批次 Z 后形态）：/config 走字段级校验且 import 齐全',
+  /const fields = \{ \.\.\.validateSettingsPatch\(patch\), \.\.\.await validateSettingsPaths\(patch, dshHome\(\)/.test(idx)
+  && /import \{ migrateSettingsTree, validateSettingsPatch, validateSettingsPaths, readSettingsForSave \} from '\.\/settings-safety\.js'/.test(idx))
+ck('S1 workbenchRoot 走宿主路径闸（与 memoryRoot 同口径，三键同闸 + 空串合法）',
+  (function () {
+    const safety = fs.readFileSync(path.join(ROOT, 'lib/settings-safety.js'), 'utf8')
+    return /\['memoryRoot', 'userMemoryDir', 'workbenchRoot'\]/.test(safety)
+      && /key === 'workbenchRoot' && patch\[key\] === ''\) continue/.test(safety)
+      && /validateSettingsPaths/.test(idx)
+  })())
 ck('S1 status 回显解析后的默认落点', /rootDefault: path\.join\(dshHome\(\), WORKBENCH_DIRNAME\)/.test(idx))
 ck('S1 _workbenchCwd 读 config.workbenchRoot',
   /_workbenchCwd\(\) \{\r?\n\s+const raw = String\(this\.config\.workbenchRoot/.test(idx))
@@ -94,8 +107,7 @@ ck('S1 目录选择器按调用方指定的键回填（不串改另一个设置�
   /function openBrowser\(targetKey\)/.test(cli) && /set\(_targetKey, d\.dir\)/.test(cli) &&   /set\(browseKey \|\| 'memoryRoot', browsePath\)/.test(cli))
 ck('S1 设置页占位显示 aik_auto_memory_use（留空=自动）',
   /placeholder: 'aik_auto_memory_use'/.test(cli) && /value: \(cfg\.workbenchRoot \|\| ''\)/.test(cli))
-ck('S1 workbenchRoot 走宿主路径闸（与 memoryRoot 同口径）',
-  /key === 'memoryRoot' \|\| key === 'userMemoryDir' \|\| key === 'workbenchRoot'/.test(idx))
+ck('S1 workbenchRoot 走宿主路径闸（批次 Z 后形态已上移到 validateSettingsPaths 双文件取证，见上）', true)
 // S6：必须同时校验「工作区登记」与「会话存在」（用户原话「检测到底有没有这个工作区和对话出现」）
 ck('S6 校验工作区登记（workspace-unregistered）', /workspace-unregistered/.test(idx))
 ck('S6 用 registry.list() 只读判定（不产生副作用）', /wbReg\.list\(\)/.test(idx))

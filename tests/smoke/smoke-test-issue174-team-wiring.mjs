@@ -120,5 +120,7 @@ timers.length=0;routes.length=0
  globalThis.fetch=fetch;globalThis.setTimeout=timeout;globalThis.setInterval=interval;MemoryEngine.prototype.loadConfigSync=load
  if(cleanup)cleanup();for(const [k,prev]of handlers)for(const h of process.listeners(k))if(!prev.has(h))process.removeListener(k,h)
  if(home===undefined)delete process.env.DSH_HOME;else process.env.DSH_HOME=home
- await rm(root,{recursive:true,force:true})
+ // ★2026-10-05：收尾清理重试——引擎 cleanup 后可能仍有 in-flight 原子写（tmp→rename）尚未落定，
+ //   立即 rm 会撞 ENOTEMPTY（实测本套件 Windows 上偶发 ~35%）。全部断言已 PASS，纯属清理竞态。
+ for(let i=0;i<10;i++){try{await rm(root,{recursive:true,force:true});break}catch(e){if(i===9)throw e;await new Promise(r=>setTimeout(r,100))}}
 }
