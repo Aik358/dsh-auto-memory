@@ -10,6 +10,8 @@ Root migration excludes `.lock`, `.lock.acquire`, `.tmp`, `.tmp-*` and `.tmp.*` 
 
 The V3 inventory reader normalizes CRLF. Controlled config-commit failure replaces a platform-dependent chmod assumption; Windows directory junctions exercise path escape and overlap checks.
 
+The team-wiring fixture now awaits its final scheduled pull and diagnostic writes before removing its temporary root. Exact-head fork CI exposed an `ENOTEMPTY` cleanup race; upstream PR CI passed that same test on the same head.
+
 ## Local verification
 
 Windows, Node v24.15.0; temporary memory roots. Each command exited zero.
@@ -24,6 +26,7 @@ Windows, Node v24.15.0; temporary memory roots. Each command exited zero.
 - `node tests/smoke/smoke-test-generator-guard.mjs` — 24 PASS / 0 FAIL
 - `node tests/smoke/smoke-test-generator-idempotent.mjs` — 14 PASS / 0 FAIL
 - `node tests/smoke/smoke-test-settings-migration-boundaries.mjs` — 2 PASS / 0 FAIL
+- `node tests/smoke/smoke-test-issue174-team-wiring.mjs` — PASS, with scheduled pull and diagnostics drained before cleanup
 - `node --check lib/index.js`
 - `node --check lib/client.js`
 - `node tools/build-iter5-skin.mjs --check` — SYNC-OK

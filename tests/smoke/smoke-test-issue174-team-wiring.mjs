@@ -6,12 +6,12 @@ import vm from 'node:vm'
 import fs from 'node:fs'
 import { createFactStorePre } from '../../lib/fact-store.js'
 import { Readable } from 'node:stream'
-import { apply, API, MemoryEngine } from '../lib/audit-engine.mjs'
+import { apply, API, MemoryEngine, flushDiagnostics } from '../lib/audit-engine.mjs'
 const root = await mkdtemp(path.join(os.tmpdir(), 'dam-team-e2e-'))
 const home = process.env.DSH_HOME, fetch = globalThis.fetch, timeout = globalThis.setTimeout, interval = globalThis.setInterval
 const load = MemoryEngine.prototype.loadConfigSync
 const handlers = new Map(['uncaughtException','unhandledRejection','exit'].map(k => [k,new Set(process.listeners(k))]))
-let engine, cleanup, rejectPush = false, network = []
+let engine, cleanup, scheduledPull, rejectPush = false, network = []
 const timers = [], routes = []
 let holdPush=null,holdPull=null,pullChanges=null
 MemoryEngine.prototype.loadConfigSync = function () { engine = this; return load.call(this) }
@@ -114,11 +114,16 @@ timers.length=0;routes.length=0
  apply({get:()=>undefined,credentials:{teamToken:'test-token'},on:()=>{},systemPrompt:{context:()=>()=>{},section:()=>()=>{}},tools:{register:()=>()=>{}},webServer:{register:r=>{routes.push(r);return()=>{}}},effect:f=>{cleanup=f()}},{})
  assert.equal(engine._teamOutbox.size(),2);assert.ok(engine._teamPullTimer);assert.equal(timers.filter(t=>t===engine._teamPullTimer).length,1)
  retiredPull.callback();await retiredSync.tick();assert.equal(network.length,0)
- engine._teamPullTimer.callback();await new Promise(r=>timeout(r,0));assert.equal(network.filter(n=>n.opts.method==='GET').length,1)
+ const finalPull=engine._teamPull.pullOnce.bind(engine._teamPull)
+ engine._teamPull.pullOnce=(...args)=>scheduledPull=finalPull(...args)
+ engine._teamPullTimer.callback();assert.ok(scheduledPull,'scheduled callback invokes the real pull')
+ await scheduledPull;assert.equal(network.filter(n=>n.opts.method==='GET').length,1)
  console.log('PASS #174: real host assembly, auth/object body, failed queue, scheduled pull/injection, GET read-only, pause/reset, live config and off gate')
 } finally {
- globalThis.fetch=fetch;globalThis.setTimeout=timeout;globalThis.setInterval=interval;MemoryEngine.prototype.loadConfigSync=load
  if(cleanup)cleanup();for(const [k,prev]of handlers)for(const h of process.listeners(k))if(!prev.has(h))process.removeListener(k,h)
+ if(scheduledPull)await scheduledPull.catch(()=>{})
+ await flushDiagnostics()
+ globalThis.fetch=fetch;globalThis.setTimeout=timeout;globalThis.setInterval=interval;MemoryEngine.prototype.loadConfigSync=load
  if(home===undefined)delete process.env.DSH_HOME;else process.env.DSH_HOME=home
  await rm(root,{recursive:true,force:true})
 }
