@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import { buildKanbanPre } from '../../lib/wb-sidecar.js'
-const client = await readFile(new URL('../../lib/client.js', import.meta.url), 'utf8')
+// Source expressions are identical in LF/CRLF checkouts; normalize only line endings.
+const client = (await readFile(new URL('../../lib/client.js', import.meta.url), 'utf8')).replace(/\r\n/g, '\n')
 function block(start) { const i = client.indexOf(start); assert.ok(i >= 0); const skip = start.includes('wbFullCache') ? client.indexOf('function useCardFull', i) + 20 : i + start.length; const end = client.indexOf('\n    function ', skip); return client.slice(i, end) }
 const calls = []
 const API = new Proxy({}, { get: (_, key) => String(key) })

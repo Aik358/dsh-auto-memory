@@ -13,11 +13,15 @@
 - `ui.js`：外壳、导航、原文浏览、页签与请求生命周期。
 - `views.js`：工作台、日程、唤起详情、交接材料、外部来源、笔记、检索和关系图。
 - `skin.css`：局部作用域样式、浅色与深色、响应式布局。
-- `../../tools/build-iter5-skin.mjs`：将源码嵌入 `lib/client.js` 的 `ITER5-GENERATED` 区间，并从当前上游经典设置、存储和技能组件生成独立新皮肤版本。每个变换点要求唯一匹配；上游结构改变时明确失败，避免悄悄生成错误界面。
+- `../../tools/build-iter5-skin.mjs`：将源码嵌入 `lib/client.js` 的 `ITER5-GENERATED` 区间，并从当前上游经典设置、存储和技能组件生成独立新皮肤版本。replaceOnce 群要求唯一匹配；其余变换点在 G0-2 后同样响亮失败（源结构改变即 exit 2 并点名变换点），避免悄悄生成错误界面。
+
+两条铁律（2026-10-02）：**R1 同步即通过** —— 生成器算出的产物与磁盘上的 `lib/client.js` 逐字节一致才是通过；**R2 失配即停机** —— 变换点失配、切片锚点消失、产物含无主内容，一律 exit 2 硬停，不允许静默生成、不允许告警后照写。
 
 ```powershell
-node tools/build-iter5-skin.mjs
-node tools/build-iter5-skin.mjs --check
+# SOP 首位：R1 —— 先证明「源 × 生成器 == 产物」
+node tools/build-iter5-skin.mjs --check     # 绿 ⇒ SYNC-OK；对产物做任一字节扰动都会非零退出
+node tools/build-iter5-skin.mjs             # 需要重建时；orphan 非空 ⇒ exit 2 拒写（R2-b）
+node tools/build-iter5-skin.mjs --force     # 只有确认那些行是垃圾、明确放弃时才用
 node --check lib/client.js
 node tests/smoke/smoke-test-iter5-skin.mjs
 ```
@@ -50,6 +54,28 @@ node tests/smoke/smoke-test-iter5-skin.mjs
 实现：style-choice.js 管理偏好及主题覆盖，alternate-home.js 用同一首页数据渲染编辑/活水布局，style-variants.css 控制跨页与独立浮层外观。新增源文件需随生成器 fixture 一起维护。验证见 artifacts/three-skins-20260930/ACCEPTANCE.md。
 
 最终参考、配色与验证见 [实拍验收](../../docs/skin-figures/iter5-final/README.md)。
+
+## 三面同步与冻结镜像（2026-10-02）
+
+设置页有**三面、跨两个文件**，改一处不够：
+
+| 面 | 位置 | 改法 |
+|---|---|---|
+| classic（手写区） | `lib/client.js` 生成块**之外**的 `SettingsPage` | 直接改 client.js（不在生成区内，不会被覆盖） |
+| v4（变体块） | `lib/client.js` 的 `ITER5-GENERATED` 区间 | 改生成器切片源，再跑生成器重建 |
+| **frozen** | `skins/legacy/iter5-325.js.frozen`（旧款皮肤的唯一真源） | **手工镜像**，无任何重建通道 |
+
+frozen 是第三副本且**没有「改源重建」路径**：改了忘了镜像，不会有任何机制在构建期报错。故新增
+`tests/smoke/smoke-test-frozen-mirror.mjs`（G0-5）常驻比对三面：
+
+- 签名级：四个自宿主组件（Settings / Storage / Skills / Stats）的签名与生成器切片锚三面在位；
+- 表达式级：pyOk 真值表达式三面逐字一致；Settings 面 `set('<KEY>', <表达式>)` 的键集 frozen ⊇ classic/v4；
+  三面共有键的**表达式**逐字一致 —— 差异必须逐条登记在该套件的 `KNOWN_DRIFT` 里（自清算：三面一旦
+  一致，套件会红并要求删除该条豁免）。
+
+**同步节**：改动设置页任一行为表达式（不只是键名）后，按序做三件事——
+① 改 classic（client.js 手写区）；② 改对应的生成器切片源并重建；③ **手工把同一表达式镜像进 frozen**，
+再跑 `node tests/smoke/smoke-test-frozen-mirror.mjs`（绿=三面一致）。漏第 ③ 步该套件会点名组件与键。
 
 宿主设置入口的字体与字号直接跟随 DSH 全局变量；独立插件字号不在此入口叠加，展开设置与换肤不改变这一规则。工作台的排版倍率不受影响。
 

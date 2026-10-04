@@ -68,8 +68,28 @@ const classic = source
 //   (2) 附「向导 where ⇒ 设置页实名单」对照核验：11 个分区名逐条比对，本批后 4 种 where 取值中
 //       「语义记忆总开关」命中最多次（7 次），其余 3 种（记忆窗口 / 自动化 / 记忆中枢）为**批前既有**，未在本批范围内。
 //   守卫语义不变：生成块之外的任何**非意外**改动仍会被本锁抓住；本批期望值随之上移。
-// 2026-10-02 audit: intentional F02/F09/F18–F21/R02 shared-entry changes; behavior is covered by audit-ui-wiring.
-assert.equal(createHash('sha256').update(classic).digest('hex'), '92bbb318cde7563cbb161bb202d4bc4786f096522841df5c384e23aefb1dad40', 'Reviewed native-reference entry baseline（R72 = R71 + 2026-10-01 ①接续开关默认开 + 欢迎向导开关 ②经典档接入 GlobalBriefRow 简报抽屉 ③damSharedSurfaceCss classic 分支归零修复；原 R71 = R70 + 2026-10-01 全局动态简报批（client.js 三面各加 8 个 globalBrief* 控件 + frozen 面补齐上批遗漏的 slimEveryRounds/fullEverySlims 两键）；原 R70 = R69 + #160/#162 修复：python 向导轮询/取消渲染、规则草稿与内容锚定、首屏 tour hero 挂载复原；生成块之外任何**非意外**改动仍会被本锁抓住）')
+// ★2026-10-02 本快照第十一次演进（审计修复批 F02/#184，增量归因）：
+//   手写区 DebugCenter 的 refresh() 原对 11 个端点发探活请求（其中 greet/workspaces/reflectAuto 是
+//   **有真实副作用的业务端点**：greet 缺缓存时真调模型 + 写 workbench.json 计数；reflectAuto 无
+//   pending 时回退最近日志日并整篇覆盖 reflections/<date>.md）⇒ 打开调试中心即产生真实写入。
+//   本批收敛为**单次只读 GET API.debug**，并把探测表从 11 端点缩到 1（诊断覆盖变窄，可接受）。
+//   守卫语义不变：生成块之外的任何**非意外**改动仍会被本锁抓住；本批期望值随之上移。
+// 2026-10-03 批次 C（审计修复 #186..#204 + R01/R02）：默认关闭/改写的共享入口有意演进，行为由 audit-* 套件覆盖；固化哈希按最终字节重钉。
+// ★2026-10-03 本快照第十二次演进（前端收尾批 5a–5d，增量归因）：
+//   (1) 手写区：useCardFull 缓存键带版本身份 + 失败不缓存 + 上限 256（G1-7/#195）；
+//   (2) 挂载根：MemoryPageView / MemoryPanelFloat 订阅 dam-skin-changed（G1-4/#196）；
+//   (3) 三处 SkinPicker onSwitch 无害化（同一项，源+产物成对）；
+//   (4) pyOk 白名单加 verified-ok（G1-5/#197 四处成组）；
+//   (5) normalizeGapRounds 上提到工厂层（G1-1，修「定义在 damSkinCssText 体内、调用点词法不可达」）；
+//   (6) I18N.ja 七个 __fn 占位还原真函数字面量 + t() 兜底（G1-2）；
+//   (7) G3 死壳摘除：DamSkinV4Page/Screen/Home/Welcome/Settings + DAM_SKIN_V4_PAGES/HOSTED、
+//       renderTeamSettings15 家族、TOUR_STEPS 的 window 暴露；StatsTab 缩进统一。
+//   (8) 同批为 tour 开关按钮补 'data-dam-tour-key' —— 让 G3 后的行为级验收能按配置键断言（不再读源码字符串）。
+//   守卫语义不变：生成块之外的任何**非意外**改动仍会被本锁抓住；本批期望值随之上移。
+// ★issue #211（2026-10-04）第十三次演进：Python 卸载入口（手写区 PySetupWizard 加二次确认按钮 +
+//   API.pyUninstall 新键 + 三语 pyWizUninstall/pyWizUninstallConfirm 文案）。守卫语义不变。
+// 2026-10-04 PR #212 main merge: keep owner-bound note writes and settings read generation/initial-broadcast guards alongside upstream UI hardening; rebuild remains byte-idempotent.
+assert.equal(createHash('sha256').update(classic).digest('hex'), 'ad8b4b5425f7452b6535704bb8545a827d21f1f9533e525be9cc1ced88935ad0', 'Reviewed native-reference entry baseline（R76 = R75 + 2026-10-04 发版三件套（v3.2.8：指纹行 + 应用内 CHANGELOG 字典 3.2.8 条目；内容见 CHANGELOG.md 同版段）；原 R75 = R74 + 2026-10-04 issue #211 前端：Python 引擎卸载按钮（二次确认）+ pyUninstall 路由键 + 三语体积披露；原 R74 = R72 + 2026-10-02 审计修复批 A+B（增量归因：手写区 DebugCenter 收敛为只读 GET + 团队层接 4 条专用路由（API 表新增 5 键）+ TeamTab 挂载补回调 + L3 段共享订阅轮询）；原 R72 = R71 + 2026-10-01 ①接续开关默认开 + 欢迎向导开关 ②经典档接入 GlobalBriefRow 简报抽屉 ③damSharedSurfaceCss classic 分支归零修复；原 R71 = R70 + 2026-10-01 全局动态简报批（client.js 三面各加 8 个 globalBrief* 控件 + frozen 面补齐上批遗漏的 slimEveryRounds/fullEverySlims 两键）；原 R70 = R69 + #160/#162 修复：python 向导轮询/取消渲染、规则草稿与内容锚定、首屏 tour hero 挂载复原；生成块之外任何**非意外**改动仍会被本锁抓住）')
 console.log('PASS reviewed shared-entry source baseline preserved')
 
 const css = readFileSync(new URL('../../skins/iter5/skin.css', import.meta.url), 'utf8')
@@ -234,9 +254,22 @@ const stepBtns=nodes(navC,n=>n.type==='button')
 assert.equal(stepBtns.length,9,'All actual welcome steps remain reachable')
 assert(stepBtns.every(n=>typeof n.props?.onClick==='function'),'Every welcome step is actually reachable (clickable)')
 assert.equal(stepBtns.filter(n=>n.props?.['aria-current']==='step').length,1,'Exactly one step is current')
-const welcomeToggles=window['dsh-auto-memory.TOUR_STEPS'].flatMap(step=>step.toggles||[])
-assert(welcomeToggles.some(t=>t.key==='workbenchEnabled'))
-assert(!welcomeToggles.some(t=>t.key==='workbenchRoot'),'Directory setting cannot be written as a boolean')
+// ★2026-10-03（G3）：原断言读 window['dsh-auto-memory.TOUR_STEPS'] —— 那是**写给已摘除死壳 welcome 的
+//   暴露**（唯一消费者）。改判据为「不依赖任何 window 暴露」，直接从**真渲染出的向导步骤**按配置键收集：
+//   遍历每步导航按钮（真点击 → 真重渲染），收集该步 tour toggle 按钮上的 data-dam-tour-key。
+//   守卫语义不变（仍守「workbenchEnabled 在场、workbenchRoot 不得作为布尔写入」），且比原来更贴近真行为。
+// 取「末页汇总」里**真渲染出的**开关徽标（data-dam-tour-badge 文本 = 开关名 + 开/关）。
+//   末页汇总由 allToggles（= TOUR_STEPS 各步 toggles 的并集）派生 ⇒ 与「向导里到底有哪些开关」同源，
+//   但不依赖任何 window 暴露，也不需要逐页点击。
+// 末页汇总在**最后一步**才渲染 ⇒ 先真点最后一步导航，取该步**真渲染出的整棵树**做判据。
+stepBtns[stepBtns.length-1].props.onClick()
+cursor=0
+const lastStepText=JSON.stringify(test.DialogHost())
+// 判据（均在真渲染结果上判定，不读源码字符串、不依赖 window 暴露）：
+//   ① 向导里存在「记忆中枢」这一真开关（workbenchEnabled 的用户可见面）；
+//   ② 不存在「工作台目录」开关 —— 目录是字符串配置，把它当布尔写进配置是**曾经的缺陷形态**。
+assert(lastStepText.indexOf('记忆中枢')>=0,'Welcome tour exposes the memory-hub switch (workbenchEnabled)')
+assert(lastStepText.indexOf('工作台目录')<0,'Directory setting cannot be written as a boolean')
 assert.equal(cursor,hiddenHooks,'Hidden-to-visible welcome transition must not add hooks')
 cursor=0;test.setDialog(null);test.DialogHost()
 assert.equal(cursor,hiddenHooks,'Closing the welcome tour must not remove hooks')
@@ -405,6 +438,13 @@ console.log('PASS summary retains all host work details and continuation uses in
 //   「皮肤功能退化」，让后续排查走偏。故整段移除；待生成器改正则配对后由维护者按需恢复
 //   （判据：生成器能在当前 client.js 上幂等重跑，且 --check 通过）。
 //   注：生成器本身的另外两个缺陷已在本轮修复（计数被注释喂饱 / 摘块丢弃插入锚）。
+//
+//   ★2026-10-02 恢复（G0-4）：判据已实测满足——生成器改用**括号配平**找块边界（不再依赖缩进
+//   猜嵌套），在当前 client.js 上真实重跑逐字节不变、--check 绿（SYNC-OK）。
+//   恢复后的守卫**不放在本套件内**，而是独立成 tests/smoke/smoke-test-generator-idempotent.mjs：
+//   它真跑生成器（backup/finally 还原）、断言 H1 === H0，并补 R2 负路径（默认停机 / --force 覆盖）。
+//   放在独立套件的原因：本套件是皮肤**产物**守卫，生成器**幂等**守卫应当各自独立计时与归因
+//   ——2026-10-01 的教训正是「生成器坏了」被误报成「皮肤功能退化」。
 
 // Topic deduplication, readable labels and non-actionable topic semantics.
 const uniqueGraph = test.iter5WorkspaceLayout([{path:'/fixture',name:'Fixture',items:['Topic',' Topic ', 'Other']}], {})

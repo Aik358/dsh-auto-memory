@@ -100,6 +100,24 @@ if (T) {
   T.setLoc('en')
   ok(T.L3('甲', 'Yi', 'コウ') === 'Yi', 'L3 en ⇒ 第二参')
 
+  // ⑧b ★2026-10-03（G1-2）：ja 函数键**必须是真函数字面量**（真执行取值 + typeof 断言）。
+  //   历史缺陷：PR #143 把日文字典以 JSON 序列化带入，7 个函数键降级成 { __fn:true, src:'function…' } 占位对象，
+  //   19 个裸调点（t('hubScopeCounts')(…) 等）在 ja 档取到对象再调用 ⇒ TypeError ⇒ 无错误边界的真 React
+  //   整根白屏。修法 = 还原函数字面量 + t() 的 __fn 兜底；本块锁住「还原」这一半（兜底另见 lib/client.js:2460）。
+  const jaFnKeys = ['hubEvLine', 'hubScopeCounts', 'hubScopeReasons', 'hubWhyCorrectionRate', 'hubWhyDiversity', 'hubWhyHasCorrection', 'hubWhySuccess']
+  for (const key of jaFnKeys) {
+    const v = (T.I18N.ja || {})[key]
+    ok(typeof v === 'function', 'I18N.ja[' + key + '] typeof === function（真执行取值；实际 ' + typeof v + '）')
+    ok(!(v && v.__fn), 'I18N.ja[' + key + '] 不是 __fn 占位对象（' + key + '）')
+  }
+  // 真调用：占位对象形态会在此抛 TypeError —— 这正是用户侧的故障形态，负路径由上面两条覆盖。
+  try {
+    ok(T.I18N.ja.hubScopeCounts(3, 4).indexOf('3 件') >= 0, '真调用 I18N.ja.hubScopeCounts(3,4) 返回可读文案')
+    ok(typeof T.I18N.ja.hubScopeReasons('not-found') === 'string', '真调用 I18N.ja.hubScopeReasons(\'not-found\') 返回字符串')
+  } catch (eFn) {
+    ok(false, '真调用 ja 函数键抛异常（占位对象回归）: ' + eFn.message)
+  }
+
   // ⑨ 字典规模（真计数）
   const zhN = Object.keys(T.I18N.zh || {}).length
   const enN = Object.keys(T.I18N.en || {}).length

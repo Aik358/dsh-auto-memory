@@ -224,11 +224,37 @@ ok(damNoMixedEol(SRC), 'E2 纯 CRLF')
 //   判据守恒：路由数 68 不变；配置键 143 不变（activationPolicy 属 embedding-config，不在 DEFAULT_CONFIG）；
 //   依赖面 {} 不变。本基线只反映 index.js 的 ①。
 //   判据守恒：路由数 68 不变、配置键 143 不变、依赖面 {} 不变；仅默认值与注释演进。
-// 2026-10-02 PR209 team/PLAN plus reviewed PR206 owner synchronization: diagnostic selects one ALS/last-agent owner; real route barriers validate paths and readonly IO.
-// 2026-10-02 follow-up batch 1: complete migration inventory and exclusive additions; preserve 70 routes and the preceding owner contract.
-eq(createHash('sha256').update(IX).digest('hex').slice(0, 16).toUpperCase(), '45EDB2EBB5224ED4', 'E3 ★宿主 lib/index.js 基线守恒（R72 = R71 + 2026-10-01 接续开关默认开：DEFAULT_CONFIG.globalBriefEnabled false→true（用户裁定「把读取外部记忆的开关默认打开」）；前序 R71 = R70 + 2026-10-01 自写豁免接线 + 团队注入候选生产者：①_noteSelfWritePre 原为零调用点 ⇒ 挂到 4 个写盘原语（appendText/writeFullRaw/writeFullSingle/writeFull）⇒ 豁免真正生效；②_teamInjectCandidates 原只有 = [] 两次赋值、无生产者 ⇒ 把 pullOnce 的 appliedEntries 经 normalizeTeamSegmentsPre 喂入。前序 R70 = 记忆注入优化；原 R70 说明：（R70 + 2026-10-01 全局动态简报批：新增 lib/global-brief.js 纯模块 + 8 个 globalBrief* 配置键 + 精简版注入路径补 diag（用户要求可计量）+ 简报段并入注入主路径；前序 R70 = R69 + 记忆注入优化：精简版瘦身 + 完整版两档门槛 + 2 个配置键 + 2 层提示词；原 R69 说明：①规则编辑 GUI 路由按 expect 内容锚定防索引漂移 ②两处 _degradePre 死代码改接真实 _degradeSink ③sessions 兜底说明不再写死「39 个旧会话/descriptor v2」改为如实输出；归一化 LF 后计。前序 R68 = R67 + G 批发射闸单钥匙化；R63→R65 放行 = skinAssetRelOfPre/skinAbsPathOfPre 加 deep 参数（素材路由 ?deep=1 选暗色资源）+ #152 增量开关每轮取值 + #153 默认模型回退共用解析器（provider/实现名不再混用）+ #154 接续创建失败显式报错不丢源工作区 + 上述 3.2.5 全部修复保留，理由见上）')
+// 2026-10-02 #164 收口: 白板 CAS/修订版身份接线（plan-store CAS + withCalendarLock + 原子提交 + 归档命名 -<uuid>）——宿主 lib/index.js 有意演进，基线按新哈希重钉。
+// ★2026-10-02 基线演 R72→R73（审计修复批 #182/#178/#205，增量归因）：
+//   ① #182/F06+F31：共享日历三条写 API 改「锁内读盘最新原文 → 单条修改 → 原子写回」，
+//      新增 _calendarTransactionPre，并给 writeFullRaw 的 CALENDAR.md 分支接 writeTextAtomicPre；
+//      同时 parseCalendar 与 migrate-pack.calendarMergePre 的正则补 `--:--`（原会把合法无时限条目静默丢掉）。
+//   ② #178/F01：compactLegacyLayer 的归档提到回写量护栏之前，且归档「全部」被移除段
+//      （原实现只归档 while 循环移出的前缀段，单老段场景零归档后被护栏清空）。
+//   ③ #205/F30：saveConfig 用户记忆目录迁移补 mkdir + 失败回滚 + 原子写（失败不再静默切真源）。
+//   判据守恒：路由数 69 不变（#205 只改迁移语义，未新增路由；本批新增的 /team-control 在下一段落地后再计）、
+//      依赖面 {} 不变。**守卫语义不变**：仍锁「index.js 一经改动即被本锁抓住」。
+// 2026-10-03 批次 C（审计修复 #186..#204 + R01/R02）：宿主 lib/index.js 有意演进（E4 路由数仍为 69 不变）；E3 固化哈希按最终字节重钉。
+// ★2026-10-03 基线演 R73→R74（审计 §G1/G2 批次 G，增量归因）：
+//   ① #167/P0：自动沉淀 [USER] 一律不再直写全局用户级 MEMORY.md，改落待确认区
+//      PENDING-USER-MEMORY.md；**同一语义的第二处直写点**（consolidateMemory 做梦式固化）
+//      同轮改齐，否则只改一处＝半修。
+//   ② #167/P1：解析层新增**确定性过滤**（filterPointsPre，纯函数零随机/时钟）——
+//      拦空壳变体/过程叙述开头/过短/重复，三档 log/note/user 各过滤一次。
+//   ③ #207：三处「读→改→裸 writeFileSync」改按路径串行 + tmp→rename 原子写
+//      （cont-seq.json / continued-sessions.json / 归档账本），并删除自建的第二套按文件链
+//      （统一复用 lib/path-write-queue.js，不另起第三套锁）；归档账本读取端改
+//      readJsonQuarantinePreSync（损坏先隔离，不再静默丢史）。
+//   ④ #207-4：新增 DEFAULT_CONFIG.localWasmPaths（auto 默认 / off）+ 以 getter 惰性读取，
+//      供 semantic-js-worker 把 onnxruntime-web 的 wasm 路径本地化。
+//   判据守恒：路由数 70 不变（本批零新增路由）；依赖面 {} 不变。
+//   **守卫语义不变**：仍锁「index.js 一经改动即被本锁抓住」。
+// ★2026-10-04 issue #211：宿主新增 py-setup-uninstall 路由（Python 引擎卸载）⇒ 基线按最终字节重钉，
+//   路由数 70→71（同批 E4 判据同步）。守卫语义不变：仍锁「index.js 一经改动即被本锁抓住」。
+// 2026-10-04 PR #212 main merge: retain strict owner evidence, authoritative diagnostic owner and exclusive/CAS migration commits; integrate main PLAN/team, pending USER filtering, WASM and Python uninstall (71 routes).
+eq(createHash('sha256').update(IX).digest('hex').slice(0, 16).toUpperCase(), '06CD6A4780197BD6', 'E3 ★宿主 lib/index.js 基线守恒（R75 = R74 + 2026-10-04 issue #211：新增 /python-setup/uninstall 路由 + python-setup 模块 uninstall()（删 <userDir>/python-engine 整目录）；原 R74 = R73 + 2026-10-03 批次 G：①#167/P0 [USER] 不直写全局（自动沉淀 + 做梦式固化两处同改，落 PENDING-USER-MEMORY.md）；②#167/P1 解析层确定性过滤（filterPointsPre，三档各一次）；③#207 三处裸写改按路径串行 + 原子写（cont-seq / 接续闩 / 归档账本），删自建第二套按文件链统一走 path-write-queue，归档账本读取改损坏隔离；④#207-4 新增 localWasmPaths 键 + worker wasm 路径本地化。前序 R73 = R72 + 2026-10-02 审计修复批 A+B 批：#182/#178/#205/#184 + #174/#185 团队接线（含 /team-control 路由、装配段 pull 定时器移位、_teamOutbox.load、真实卸载路径接团队 dispose）：①日历三写入口改锁内读盘+原子写，正则补 --:--；②compactLegacyLayer 归档提到护栏前且归档全部被移除段；③saveConfig 迁移补 mkdir+失败回滚+原子写。前序 R72 = R71 + 2026-10-01 接续开关默认开：DEFAULT_CONFIG.globalBriefEnabled false→true（用户裁定「把读取外部记忆的开关默认打开」）；前序 R71 = R70 + 2026-10-01 自写豁免接线 + 团队注入候选生产者：①_noteSelfWritePre 原为零调用点 ⇒ 挂到 4 个写盘原语（appendText/writeFullRaw/writeFullSingle/writeFull）⇒ 豁免真正生效；②_teamInjectCandidates 原只有 = [] 两次赋值、无生产者 ⇒ 把 pullOnce 的 appliedEntries 经 normalizeTeamSegmentsPre 喂入。前序 R70 = 记忆注入优化；原 R70 说明：（R70 + 2026-10-01 全局动态简报批：新增 lib/global-brief.js 纯模块 + 8 个 globalBrief* 配置键 + 精简版注入路径补 diag（用户要求可计量）+ 简报段并入注入主路径；前序 R70 = R69 + 记忆注入优化：精简版瘦身 + 完整版两档门槛 + 2 个配置键 + 2 层提示词；原 R69 说明：①规则编辑 GUI 路由按 expect 内容锚定防索引漂移 ②两处 _degradePre 死代码改接真实 _degradeSink ③sessions 兜底说明不再写死「39 个旧会话/descriptor v2」改为如实输出；归一化 LF 后计。前序 R68 = R67 + G 批发射闸单钥匙化；R63→R65 放行 = skinAssetRelOfPre/skinAbsPathOfPre 加 deep 参数（素材路由 ?deep=1 选暗色资源）+ #152 增量开关每轮取值 + #153 默认模型回退共用解析器（provider/实现名不再混用）+ #154 接续创建失败显式报错不丢源工作区 + 上述 3.2.5 全部修复保留，理由见上）')
 // ★2026-09-28 计数演进：67→68（新增 skin-library-fetch，见 E3 同批）。语义保留：仍锁路由数不漂移。
-eq(cnt(IX, "path: API[") + cnt(IX, 'path: API.'), 70, 'E4 ★路由数守恒 = 70（#209团队/PLAN分支保持70，#206基线69）')
+eq(cnt(IX, "path: API[") + cnt(IX, 'path: API.'), 71, 'E4 ★路由数守恒 = 71（2026-10-04 issue #211 /python-setup/uninstall +1；2026-09-28 皮肤库 +1；2026-10-01 /global-brief +1；2026-10-02 审计修复批 #174 /team-control +1；其余零新增）')
 console.log('lib/client.js ' + Buffer.byteLength(SRC, 'utf8') + 'B / CRLF ' + (SRC.match(/\r\n/g) || []).length + ' / sha16 ' + createHash('sha256').update(SRC).digest('hex').slice(0, 16).toUpperCase())
 console.log('PASS ' + p + ' / FAIL ' + f)
 fails.forEach((x) => console.log('  FAIL: ' + x))

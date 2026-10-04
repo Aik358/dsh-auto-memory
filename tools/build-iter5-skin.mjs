@@ -22,14 +22,26 @@
  *   于是用户报「改了很多次还是不对」，而所有守卫全绿。
  *   判据：client.js 与 .frozen 两处都没有、git log -S 为空 => 从未落源。
  *
- * 【本脚本现在会自己拦】（2026-10-01 加）
+ * 【本脚本现在会自己拦】（2026-10-01 加；2026-10-02 按用户改裁升级为 R2）
  *   运行前对比「磁盘现有」与「本次将写出」，把**只在磁盘上、会被本次覆盖掉的行**
  *   连行号列出来 —— 这就是「有改动没落源」的直接证据。
- *     - 默认：打印醒目告警，**仍按你的指示写盘**（不吃掉你的决定权）
- *     - --strict：发现这类行就**拒绝写盘**并以非零码退出（CI / 拿不准时用）
- *   用法：node tools/build-iter5-skin.mjs [--check] [--strict]
+ *     - 默认（2026-10-02 起）：这类行非空 ⇒ **拒绝写盘并以 exit 2 退出**（R2-b 失配即停机）
+ *     - --force：**明确放弃**这些内容的信号 —— 打印完整清单后照写（原默认行为）
+ *     - --strict：--force 的反义别名（等价于新默认），保留以免外部脚本失效
+ *   用法：node tools/build-iter5-skin.mjs [--check] [--force] [--strict]
  *
- * 【--check】只读：算出的结果与磁盘比对，不一致就报 stale 并退出，绝不写盘。
+ * 【两条铁律（2026-10-02 用户裁定）】
+ *   R1 同步即通过：生成器算出的产物与磁盘上的 lib/client.js **逐字节一致 ⇒ 通过**（--check 绿）。
+ *   R2 失配即停机：源改了而生成器没同步（变换点失配 / 产物含无主内容 / 切片锚点消失）
+ *      ⇒ **硬停**，不允许静默生成、不允许告警后照写。
+ *   ★裁定变更（2026-10-02）：本文件原先记录的「默认只告警不拦 —— 不能太严格、不要动不动回滚」
+ *     自本日起被 R2 取代；--force 是唯一的显式覆盖通道。
+ *
+ * 【运行顺序纪律（G0-6）】唯一合法序列 = --check 绿 →（需重建时）无 flag 实跑（默认即停机）
+ *   → 若被 orphan 拦下：先确认那些行该不该在（该在就搬进生成源），不该在才用 --force。
+ *
+ * 【--check】只读：算出的结果与磁盘比对，不一致就报 stale 并退出，绝不写盘；
+ *   一致则打印 SYNC-OK —— 这是 R1 的唯一通过判据。
  */
 import { readFileSync, writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
@@ -53,6 +65,11 @@ const legacyEnd = '    // ===== ITER5-LEGACY-GENERATED:END ====='
 const legacySrc = readFileSync(path.join(root, 'skins/legacy/iter5-325.js.frozen'), 'utf8').split('\r\n').join('\n')
 const lbIdx = legacySrc.indexOf('    // ITER5-GENERATED:BEGIN')
 const leIdx = legacySrc.indexOf('    // ITER5-GENERATED:END')
+// ★2026-10-02 G0-2（R2-a）：原先不查 -1 —— 标记被改坏时 slice(-1, …) 会静默切出一段废片，
+//   产物照样写盘。frozen 是「旧款皮肤」的唯一真源，标记坏掉必须硬停。
+requireAnchor(legacySrc, '    // ITER5-GENERATED:BEGIN', 'G0-2/frozen:54 冻结源 BEGIN 标记')
+requireAnchor(legacySrc, '    // ITER5-GENERATED:END', 'G0-2/frozen:55 冻结源 END 标记')
+if (lbIdx < 0 || leIdx < 0 || leIdx < lbIdx) throw g2Miss('G0-2/frozen:56 冻结源切片区间', 'BEGIN 在 END 之前且都非负', 'lbIdx=' + lbIdx + ', leIdx=' + leIdx)
 const legacyBody = legacySrc.slice(lbIdx, leIdx + '    // ITER5-GENERATED:END'.length)
 const legacyWrapped = legacyBegin + '\n' +
   '    // 3.2.5 的「新款」皮肤（用户裁定的默认）。整体包 IIFE：内部仍用原来的 Iter5* 名字，' + '\n' +
@@ -97,7 +114,9 @@ function stripBlocks(text, bMark, eMark) {
     const i = out.indexOf(bMark)
     if (i < 0) break
     const j = out.indexOf(eMark, i)
-    if (j < 0) break
+    // ★2026-10-02 G0-2（用户裁定 R2「失配即停机」）：原来这里直接 break —— 「BEGIN 有而 END 无」
+    //   时半截产物留在原地，语法坏掉却无人报错。现在响亮失败。
+    if (j < 0) throw g2Miss('产物块标记不成对（' + bMark.trim() + ' 后找不到 ' + eMark.trim() + '）', 1, 0)
     // 连同标记所在整行一起摘除
     const lineStart = out.lastIndexOf('\n', i) + 1
     const afterEnd = j + eMark.length
@@ -112,6 +131,70 @@ client = stripBlocks(client, begin, end)
 function replaceOnce(text, old, value) {
   if (text.split(old).length !== 2) throw new Error('Expected exactly one settings seam: ' + old.slice(0, 90))
   return text.replace(old, value)
+}
+// ── G0-2：R2-a 变换点响亮化（2026-10-02 用户裁定「源改了而生成器没跟上 ⇒ 必须硬停」）──────
+//   病根：String.replace(old, value) 在 old 不存在时**静默 no-op** —— 产物因此「少了一处改动
+//   却仍然自洽」，node --check 与全部静态守卫照样全绿，缺陷只会在界面上暴露。
+//   本批把每个变换点的期望命中数写死，命中数不符即按统一文案点名并 exit 2。
+//   ★实现纪律：只在原文里按下标切片替换（不用 split/join 拼产物），产物字节不变；
+//     容错计数（忽略 CRLF / 行尾空白 / 空行差异）**只进错误文案**，不参与定位 ——
+//     否则归一化后的下标与原文下标不一致，会切错位置。
+function g2Normalize(text) {
+  return String(text).replace(/\r\n/g, '\n').replace(/[ \t]+(?=\n)/g, '\n').replace(/\n{2,}/g, '\n')
+}
+function g2Count(text, old) {
+  return String(text).split(old).length - 1
+}
+function g2Miss(name, want, got) {
+  return new Error('[G2] 源已变，生成器未同步：' + name + '（期望 ' + want + '，实际 ' + got + '）'
+    + '——请同步 tools/build-iter5-skin.mjs 的该变换点，不要绕过生成器。')
+}
+/** 唯一命中替换：命中数必须恰为 1，否则硬停。 */
+function replaceT(text, old, value, name) {
+  const hits = g2Count(text, old)
+  if (hits !== 1) {
+    const tolerant = g2Normalize(text).split(g2Normalize(old)).length - 1
+    throw g2Miss(name + (tolerant !== hits ? '（含行尾空白/空行差异后为 ' + tolerant + '）' : ''), 1, hits)
+  }
+  const i = text.indexOf(old)
+  return text.slice(0, i) + value + text.slice(i + old.length)
+}
+/** 计数命中替换：命中数必须恰为 count（用于 replaceAll 类变换点）。 */
+function replaceAllT(text, old, value, name, count) {
+  const hits = g2Count(text, old)
+  if (hits !== count) {
+    const tolerant = g2Normalize(text).split(g2Normalize(old)).length - 1
+    throw g2Miss(name + (tolerant !== hits ? '（含行尾空白/空行差异后为 ' + tolerant + '）' : ''), count, hits)
+  }
+  return text.split(old).join(value)
+}
+/** 迁移式替换：旧形态在则唯一改写并验迁移后形态；旧形态已不在则断言迁移后形态在；两者皆无即硬停。 */
+function replaceMigrated(text, old, value, name, migratedMarker) {
+  const hits = g2Count(text, old)
+  if (hits > 1) throw g2Miss(name, 1, hits)
+  if (hits === 1) {
+    const next = replaceT(text, old, value, name)
+    const done = g2Count(next, migratedMarker)
+    if (done < 1) throw g2Miss(name + '（改写后未见迁移后形态）', '不小于 1', done)
+    return next
+  }
+  const done = g2Count(text, migratedMarker)
+  if (done < 1) throw g2Miss(name + '（旧形态与迁移后形态都不存在）', '不小于 1', 0)
+  return text
+}
+/** R2-a 失配的停机码约定：与 orphan 停机（G0-3）同为 exit 2，便于 CI / 外部脚本统一判定。 */
+process.on('uncaughtException', function (err) {
+  const msg = String((err && err.message) || err)
+  if (msg.indexOf('[G2]') === 0) { console.error(msg); process.exit(2) }
+  console.error((err && err.stack) || msg)
+  process.exit(1)
+})
+/** 切片锚点断言：命中数不足即硬停。 */
+function requireAnchor(text, anchor, name, want) {
+  const need = want == null ? 1 : want
+  const hits = g2Count(text, anchor)
+  if (hits < need) throw g2Miss(name, '不小于 ' + need, hits)
+  return hits
 }
 let settings = client.slice(client.indexOf('    function SettingsPage() {'), client.indexOf('    // ───────────────────────── 插件挂载'))
 settings = replaceOnce(settings, 'function SettingsPage()', 'function Iter5Settings(props)')
@@ -184,6 +267,10 @@ settings = replaceOnce(settings,
 settings = replaceOnce(settings, 'function setMany(patch) { setCfg(function (prev) { return Object.assign({}, prev, patch) }); setDirty(true) }', 'function setMany(patch) { if (busy) return; Object.keys(patch).forEach(function (k) { i5Record(k, patch[k]) }); setCfg(function (prev) { return Object.assign({}, prev, patch) }) }')
 const saveStart = settings.indexOf('      function save() {')
 const fieldStart = settings.indexOf('      function field(')
+// ★2026-10-02 G0-2（R2-a）：锚点消失时 slice(0, -1) 会静默切掉尾字符、拼出坏产物。
+requireAnchor(settings, '      function save() {', 'G0-2/settings:161 经典设置页 save() 切片锚点')
+requireAnchor(settings, '      function field(', 'G0-2/settings:162 经典设置页 field() 切片锚点')
+if (saveStart < 0 || fieldStart < 0 || fieldStart < saveStart) throw g2Miss('G0-2/settings:163 切片区间', 'save() 在 field() 之前且都非负', 'saveStart=' + saveStart + ', fieldStart=' + fieldStart)
 settings = settings.slice(0, saveStart) + `      function save() {
         if (busy || !Object.keys(i5Draft.current).length) return
         setBusy(true); setMsg(''); setErr('')
@@ -222,6 +309,10 @@ settings = replaceOnce(settings,
             h('div', { className: 'i5-setting-control' }, control)))`)
 const modeStart = settings.indexOf('      function onEngineModeChange(e) {')
 const modeEnd = settings.indexOf('      var sectionLabels =', modeStart)
+// ★2026-10-02 G0-2（R2-a）：同族静默切片（见上）。
+requireAnchor(settings, '      function onEngineModeChange(e) {', 'G0-2/settings:201 即时生效模式 onChange 切片锚点')
+requireAnchor(settings, '      var sectionLabels =', 'G0-2/settings:202 sectionLabels 切片终点锚点')
+if (modeStart < 0 || modeEnd < 0 || modeEnd < modeStart) throw g2Miss('G0-2/settings:203 切片区间', 'modeStart 在 modeEnd 之前且都非负', 'modeStart=' + modeStart + ', modeEnd=' + modeEnd)
 settings = settings.slice(0, modeStart) + `      function onEngineModeChange(e) {
         var v = e.target.value
         if (busy) return
@@ -310,7 +401,7 @@ settings = settings.slice(0, savebarStart) + settings.slice(savebarEnd)
 settings = replaceOnce(settings, "err ? h('div', { 'data-dam-error': '' }, err) : null))", "err ? h('div', { 'data-dam-error': '' }, err) : null),\n" + savebar + ')')
 settings = replaceOnce(settings, "L('有未保存的更改', 'Unsaved changes')", "String(new Set(Object.keys(i5Groups.current).map(function (k) { return i5Groups.current[k] })).size) + L(' 个分区有未保存修改', ' sections with unsaved changes')")
 settings = replaceOnce(settings, "apiPost(API.semanticEmit, { mode: m }).then(function () { refreshSem(setSem) }).catch(function () {})", "apiPost(API.semanticEmit, { mode: m }).then(function () { if (i5Ok()) refreshSem(setSem) }).catch(function (e) { if (i5Ok()) setErr(e.message) })")
-settings = settings.replace("'tauHi 0.45 · tauLo 0.35 · deltaExp 0.03 · deltaPro 0.05'", "L('阈值由宿主校准策略管理；当前接口未提供有效数值', 'Thresholds are managed by the host policy; current values are unavailable')")
+settings = replaceT(settings, "'tauHi 0.45 · tauLo 0.35 · deltaExp 0.03 · deltaPro 0.05'", "L('阈值由宿主校准策略管理；当前接口未提供有效数值', 'Thresholds are managed by the host policy; current values are unavailable')", 'G0-2/settings:289 校准阈值占位文案')
 settings = replaceOnce(settings, "try { openDialog({ kind: 'welcomeTour' }) } catch (eTour) {}", "try { openManualWelcomeTourPre() } catch (eTour) {}")
 // Avoid global selector collisions with the classic settings surface.
 settings = replaceOnce(settings, "return h('div', { style: panelStyle }, kids)", `return h(Iter5Dialog, { title: L('子代理模型与思考强度', 'Subagent model and reasoning'), onClose: function () { setMdlOpen(false) } },
@@ -324,15 +415,18 @@ settings = replaceOnce(settings, "browseOpen ? h('div', { style:", "browseOpen ?
 settings = replaceOnce(settings, "onClick: function () { setBrowseOpen(false) } }, t('close'))))\n            : null", "onClick: function () { setBrowseOpen(false) } }, t('close')))))\n            : null")
 settings = replaceOnce(settings, "}, '📁 ' + d.name)", "}, h(Iter5Icon, { name: 'folder' }), d.name)")
 settings = replaceOnce(settings, "return h('div', { style: { border: '1px solid color-mix(in srgb, var(--dam-accent, #2456c4) 40%, transparent)'", "return h('div', { 'data-native-engine-guide': guide, style: { border: '1px solid color-mix(in srgb, var(--dam-accent, #2456c4) 40%, transparent)'")
-settings = settings.replaceAll("id: 'dam-settings-'", "id: 'i5-settings-section-'")
+settings = replaceAllT(settings, "id: 'dam-settings-'", "id: 'i5-settings-section-'", 'G0-2/settings:303 设置分节 id 前缀（dam-settings- 改 i5-settings-section-）', 2)
 // Host settings stay native; workbench appearance controls belong in their named group.
 settings = replaceOnce(settings, "h('div', { 'data-dam-settings-content': '',", "props && props.draftScope === 'host' && i5Group[0] === 'appearance' ? h('div', { className: 'i5-workbench-appearance' }, h('strong', null, L3('工作台外观', 'Workbench appearance', 'ワークベンチの外観')), h(Iter5StylePicker), h(Iter5ModePicker)) : null, h('div', { 'data-dam-settings-content': '',")
 // Instance-local tabs/sections avoid collisions when host and workbench settings coexist.
-settings = settings.replace('var i5Group = useState', "var i5SettingsId = useRef('i5-settings-' + (++iter5SettingsSequence)).current\n      var i5Group = useState")
-settings = settings.replaceAll("'i5-settings'", 'i5SettingsId').replaceAll("'i5-settings-panel'", "i5SettingsId + '-panel'").replaceAll("'i5-settings-tab-'", "i5SettingsId + '-tab-'").replaceAll("'i5-settings-section-'", "i5SettingsId + '-section-'")
+settings = replaceT(settings, 'var i5Group = useState', "var i5SettingsId = useRef('i5-settings-' + (++iter5SettingsSequence)).current\n      var i5Group = useState", 'G0-2/settings:307 实例级设置区 id 注入')
+settings = replaceAllT(settings, "'i5-settings'", 'i5SettingsId', 'G0-2/settings:308 设置区 id 实例化', 1)
+settings = replaceAllT(settings, "'i5-settings-panel'", "i5SettingsId + '-panel'", 'G0-2/settings:308 面板 id 实例化', 1)
+settings = replaceAllT(settings, "'i5-settings-tab-'", "i5SettingsId + '-tab-'", 'G0-2/settings:308 页签 id 前缀实例化', 1)
+settings = replaceAllT(settings, "'i5-settings-section-'", "i5SettingsId + '-section-'", 'G0-2/settings:308 分节 id 前缀实例化', 2)
 let storage = client.slice(client.indexOf('    function StorageTab(props) {'), client.indexOf('    function NotesTab() {'))
 storage = replaceOnce(storage, 'function StorageTab(props)', 'function Iter5Storage(props)')
-storage = storage.replaceAll(".then(function (r) { return r.json() })", ".then(function (r) { return r.json().then(function (j) { if (!r.ok || (j && j.error)) throw Error(j && (j.error || j.reason) || 'Request failed'); return j }) })")
+storage = replaceAllT(storage, ".then(function (r) { return r.json() })", ".then(function (r) { return r.json().then(function (j) { if (!r.ok || (j && j.error)) throw Error(j && (j.error || j.reason) || 'Request failed'); return j }) })", 'G0-2/storage:311 请求失败判定（r.json 包装）', 2)
 storage = replaceOnce(storage, "      var delPair = useState('')", "      var deleteRequest = useState(null)\n      var delPair = useState('')")
 storage = replaceOnce(storage, "      function act(action, payload, onDone) {\n        setMsg('')", `      function act(action, payload, onDone, confirmed) {
         if (action === 'delete' && !confirmed) { deleteRequest[1]({ payload: payload, onDone: onDone }); return }
@@ -382,21 +476,29 @@ skills = replaceOnce(skills, "return h('div', { 'data-dam-slot': 'timeline', 'da
         h(Iter5SkillBrowser, { active: activeList, pipeline: pipeline, rows: rows }))`)
 let stats = client.slice(client.indexOf('function StatsTab() {'), client.indexOf('function WorkspaceTab() {'))
 stats = replaceOnce(stats, 'function StatsTab()', 'function Iter5Stats()')
-stats = replaceOnce(stats, "return h('div', null,\n    h(Card, { title: t('statsTitle') },", "return h('div', { className: 'i5-native-stats' },\n    h(Iter5StatsOverview, null,")
-stats = replaceOnce(stats, "h('div', { style: { display: 'flex', gap: 18, flexWrap: 'wrap', marginTop: 4 } },", "h('div', { className: 'i5-native-stat-metrics' },")
+// ★2026-10-03（G3 · StatsTab 缩进统一）：StatsTab 函数体整体 +2 空格后，本变换点的实参缩进随之改变
+//   （JS 允许两种写法，但内容锚必须与源逐字一致）。判据不变：仍是「唯一的 stats 返回值重写」。
+stats = replaceOnce(stats, "  return h('div', null,\n      h(Card, { title: t('statsTitle') },", "  return h('div', { className: 'i5-native-stats' },\n      h(Iter5StatsOverview, null,")
+stats = replaceOnce(stats, "h('div', { style: { display: 'flex', gap: 18, flexWrap: 'wrap', marginTop: 4 } },", "h('div', { className: 'i5-native-stat-metrics' },") // 该串缩进未变（嵌套位置不变）
 stats = replaceOnce(stats, "return h(Card, { title: m.name },", "return h(Iter5Card, { title: m.name, icon: id === 'model' ? 'search' : id === 'inject' ? 'library' : 'recall', className: 'i5-native-stat-card', 'data-chan': id },")
 stats = replaceOnce(stats, "      h('div', { style: { opacity: .72, fontSize: '12px', marginBottom: 2 } }, m.hint),", "      h('div', { className: 'i5-native-stat-hint' }, m.hint),")
 // Zero-event channels used to repeat statsNoInject in all three cards; their own hint now carries the empty state.
 stats = replaceOnce(stats, "        : h('div', { style: { opacity: .5, fontSize: '12px' } }, t('statsNoInject'))))", "        : ch.events ? h('div', { className: 'i5-native-stat-empty' }, t('statsNoInject')) : null))")
 const readSkin = name => readFileSync(path.join(root, 'skins/iter5', name), 'utf8').replace(/\r\n/g, '\n')
-const css = (readSkin('skin.css') + '\n' + readSkin('native-tour.css') + '\n' + readSkin('native-panel.css') + '\n' + readSkin('native-settings.css') + '\n' + readSkin('native-workbench.css') + '\n' + readSkin('native-library.css') + '\n' + readSkin('native-operations.css') + '\n' + readSkin('native-secondary.css') + '\n' + readSkin('style-variants.css')).trim()
-  .replace('[data-iter5]{--i5-blue:', '[data-iter5],[data-dam-theme]{--i5-blue:')
-  .replace('[data-iter5][data-deep=true]{--i5-blue:', '[data-iter5][data-deep=true],[data-dam-theme][data-deep=true],[data-dam-theme][data-deep=true] [data-iter5]{--i5-blue:')
+const cssRaw = (readSkin('skin.css') + '\n' + readSkin('native-tour.css') + '\n' + readSkin('native-panel.css') + '\n' + readSkin('native-settings.css') + '\n' + readSkin('native-workbench.css') + '\n' + readSkin('native-library.css') + '\n' + readSkin('native-operations.css') + '\n' + readSkin('native-secondary.css') + '\n' + readSkin('style-variants.css')).trim()
+let css = replaceT(cssRaw, '[data-iter5]{--i5-blue:', '[data-iter5],[data-dam-theme]{--i5-blue:', 'G0-2/css:370 变体表浅色主题选择器前缀')
+css = replaceT(css, '[data-iter5][data-deep=true]{--i5-blue:', '[data-iter5][data-deep=true],[data-dam-theme][data-deep=true],[data-dam-theme][data-deep=true] [data-iter5]{--i5-blue:', 'G0-2/css:371 变体表深色主题选择器前缀')
 const ui = readSkin('style-choice.js').trimEnd() + '\n' + readSkin('alternate-home.js').trimEnd() + '\n' + readSkin('ui.js').trimEnd() + '\n' + readSkin('views.js').trimEnd() + '\n' + readSkin('surfaces.js').trimEnd() + '\n' + readSkin('native-panel.js').trimEnd() + '\n' + readSkin('native-workbench.js').trimEnd() + '\n' + readSkin('native-search.js').trimEnd() + '\n' + readSkin('native-skills.js').trimEnd() + '\n' + readSkin('native-storage.js').trimEnd() + '\n' + readSkin('native-team.js').trimEnd() + '\n' + readSkin('native-map.js').trimEnd() + '\n' + readSkin('native-messages.js').trimEnd()
-settings = settings.replace("L('引擎', 'Engine')", "L('查找与回忆', 'Find & recall')").replace("L('记忆', 'Memory')", "L('记录与使用', 'Record & use')").replace("L('行为与维护', 'Behavior & maintenance')", "L('接续与维护', 'Continue & maintain')")
-settings = settings.replace("L('shadow 只记录', 'shadow (record only)')", "L('只观察，不交给 AI', 'Observe only; do not supply to AI')").replace("L('canary 显式回忆注入', 'canary (explicit recall)')", "L('明确要求回忆时提供', 'Supply on explicit recall requests')").replace("L('active 全部注入', 'active (all)')", "L('主动提供相关记忆', 'Proactively supply matching memories')")
-settings = settings.replace("L('balanced 3×40', 'balanced 3×40')", "L('平衡：3 条 × 40 字符', 'Balanced: 3 × 40 characters')").replace("L('dense 6×20', 'dense 6×20')", "L('广泛：6 条 × 20 字符', 'Broad: 6 × 20 characters')").replace("L('custom 自定义', 'custom')", "L('自定义', 'Custom')")
-settings = settings.replace("['lexical', t('semLexOnly')], ['js', t('semJs')], ['python', t('semPy')]", "['lexical', L('按关键词查找（无需下载模型）', 'Keywords (no model download)')], ['js', L('按意思查找（需本地模型）', 'Meaning (requires a local model)')], ['python', L('Python 搜索工具（需单独安装）', 'Python search tools (separate setup)')]")
+settings = replaceT(settings, "L('引擎', 'Engine')", "L('查找与回忆', 'Find & recall')", 'G0-2/settings:372 分组标题「引擎」')
+settings = replaceT(settings, "L('记忆', 'Memory')", "L('记录与使用', 'Record & use')", 'G0-2/settings:372 分组标题「记忆」')
+settings = replaceT(settings, "L('行为与维护', 'Behavior & maintenance')", "L('接续与维护', 'Continue & maintain')", 'G0-2/settings:372 分组标题「行为与维护」')
+settings = replaceT(settings, "L('shadow 只记录', 'shadow (record only)')", "L('只观察，不交给 AI', 'Observe only; do not supply to AI')", 'G0-2/settings:373 发射模式「shadow 只记录」')
+settings = replaceT(settings, "L('canary 显式回忆注入', 'canary (explicit recall)')", "L('明确要求回忆时提供', 'Supply on explicit recall requests')", 'G0-2/settings:373 发射模式「canary 显式回忆注入」')
+settings = replaceT(settings, "L('active 全部注入', 'active (all)')", "L('主动提供相关记忆', 'Proactively supply matching memories')", 'G0-2/settings:373 发射模式「active 全部注入」')
+settings = replaceT(settings, "L('balanced 3×40', 'balanced 3×40')", "L('平衡：3 条 × 40 字符', 'Balanced: 3 × 40 characters')", 'G0-2/settings:374 回忆预算「balanced 3×40」')
+settings = replaceT(settings, "L('dense 6×20', 'dense 6×20')", "L('广泛：6 条 × 20 字符', 'Broad: 6 × 20 characters')", 'G0-2/settings:374 回忆预算「dense 6×20」')
+settings = replaceT(settings, "L('custom 自定义', 'custom')", "L('自定义', 'Custom')", 'G0-2/settings:374 回忆预算「custom 自定义」')
+settings = replaceT(settings, "['lexical', t('semLexOnly')], ['js', t('semJs')], ['python', t('semPy')]", "['lexical', L('按关键词查找（无需下载模型）', 'Keywords (no model download)')], ['js', L('按意思查找（需本地模型）', 'Meaning (requires a local model)')], ['python', L('Python 搜索工具（需单独安装）', 'Python search tools (separate setup)')]", 'G0-2/settings:375 检索模式短标三元组')
 const generated = begin + '\n    var ITER5_CSS = ' + JSON.stringify(css) + '\n' + ui + '\n' + readSkin('settings-copy.js') + '\n' + settings + storage + skills + stats + end + '\n'
 const seam = '    // ===================== dam-skin:end (v4) ====================='
 // ★2026-10-01 修（病根 2）：seam 插入时**一并写出唯一的标记对**，让 generated 恰好被
@@ -407,7 +509,14 @@ const seam = '    // ===================== dam-skin:end (v4) ===================
 client = replaceOnce(client, seam, generated + seam)
 // Only the opt-in skin mount and its stylesheet gain the new implementation.
 
-client = client.replace("h(DamSkinV4Page, { nonce: nonce, onExit:", "h(Iter5Page, { nonce: nonce, onExit:")
+// ★2026-10-03（G3 · 死壳摘除，用户裁定）：原变换点 :386 把挂载点上的 DamSkinV4Page 改名为 Iter5Page。
+//   死壳族（DamSkinV4Page/Screen/Home/Welcome/Settings + DAM_SKIN_V4_PAGES/HOSTED）已于本批从
+//   client.js 摘除 ⇒ 该变换点**退化为断言**：断言源里已无 DamSkinV4Page 引用。
+//   R2 语义不变：若有人把死壳引用改回来，这里立刻硬停（而不是静默改写）。
+{
+  const deadShellRefs = g2Count(client, 'DamSkinV4Page')
+  if (deadShellRefs !== 0) throw g2Miss('G3/dead-shell:386 死壳引用回归', 0, deadShellRefs)
+}
 // ★2026-09-30 双皮肤块：插入 legacy 块 + 挂载点双分派 + 样式旋钮
 {
   const newBlockAnchor = '    // ITER5-GENERATED:BEGIN'
@@ -416,13 +525,13 @@ client = client.replace("h(DamSkinV4Page, { nonce: nonce, onExit:", "h(Iter5Page
     client = client.slice(0, ni) + legacyWrapped + client.slice(ni)
   }
   if (!client.includes('damSkinLegacy()')) {
-    client = client.replace("h('div', { 'data-dam-skin-v4-root': '1' }, h(Iter5Page, { nonce: nonce, onExit: function () { damSkinRemoveCss(); setNonce(nonce + 1) } })))",
+    client = replaceT(client, "h('div', { 'data-dam-skin-v4-root': '1' }, h(Iter5Page, { nonce: nonce, onExit: function () { damSkinRemoveCss(); setNonce(nonce + 1) } })))",
       "h('div', { 'data-dam-skin-v4-root': '1' }, damSkinLegacy()\n" +
       "            ? h(Legacy5Page, { nonce: nonce, onExit: function () { damSkinRemoveCss(); setNonce(nonce + 1) } })\n" +
-      "            : h(Iter5Page, { nonce: nonce, onExit: function () { damSkinRemoveCss(); setNonce(nonce + 1) } })))")
+      "            : h(Iter5Page, { nonce: nonce, onExit: function () { damSkinRemoveCss(); setNonce(nonce + 1) } })))", 'G0-2/mount:395 挂载点皮肤双分派')
   }
   if (!client.includes('function damSkinLegacy()')) {
-    client = client.replace('    function damSkinSet(name) {', legacyKnob + '    function damSkinSet(name) {')
+    client = replaceT(client, '    function damSkinSet(name) {', legacyKnob + '    function damSkinSet(name) {', 'G0-2/knob:401 皮肤旋钮注入')
   }
     // ★2026-09-30（A 批：皮肤可插拔 · 基线永不变）样式表按**当前皮肤**分派——
   //   两份皮肤 CSS 共用 i5-* 命名空间，绝不同时注入；flavor 兼作 data-dam-skin-css 标记值，
@@ -438,11 +547,11 @@ client = client.replace("h(DamSkinV4Page, { nonce: nonce, onExit:", "h(Iter5Page
       "      if (!want) return",
       "",
     ].join('\n')
-    if (client.includes(oldEnsureHead)) client = client.replace(oldEnsureHead, newEnsureHead)
+    if (client.includes(oldEnsureHead)) client = replaceT(client, oldEnsureHead, newEnsureHead, 'G0-2/ensureCss:417 ensureCss 首部迁移')
     const oldText = "el.textContent = '/* dam-skin:begin (v4) */\\n' + DAM_SKIN_V4_CSS + '\\n' + ITER5_CSS + '\\n/* dam-skin:end (v4) */'"
-    if (client.includes(oldText)) client = client.replace(oldText, 'el.textContent = want')
+    if (client.includes(oldText)) client = replaceT(client, oldText, 'el.textContent = want', 'G0-2/ensureCss:419 textContent 迁移')
     const oldMark = "el.setAttribute('data-dam-skin-css', 'v4')"
-    if (client.includes(oldMark)) client = client.replace(oldMark, "el.setAttribute('data-dam-skin-css', flavor)")
+    if (client.includes(oldMark)) client = replaceT(client, oldMark, "el.setAttribute('data-dam-skin-css', flavor)", 'G0-2/ensureCss:421 flavor 标记迁移')
     const helper = [
       "      function damSkinCssFlavor() {",
       "        if (damSkinActive() === 'classic') return 'classic'",
@@ -456,17 +565,17 @@ client = client.replace("h(DamSkinV4Page, { nonce: nonce, onExit:", "h(Iter5Page
       "      }",
       "",
     ].join('\n')
-    if (!client.includes('function damSkinCssText()')) client = client.replace('    function damSkinEnsureCss() {', helper + '    function damSkinEnsureCss() {')
+    if (!client.includes('function damSkinCssText()')) client = replaceT(client, '    function damSkinEnsureCss() {', helper + '    function damSkinEnsureCss() {', 'G0-2/ensureCss:435 判档助手定义注入')
   }
 }
 
-client = client.replace('try { ensureStyle() } catch', "try { ensureStyle(); if (damSkinActive() !== 'classic') damSkinEnsureCss() } catch")
+client = replaceMigrated(client, 'try { ensureStyle() } catch', "try { ensureStyle(); if (damSkinActive() !== 'classic') damSkinEnsureCss() } catch", 'G0-2/apply:439 ensureStyle 后补挂皮肤 CSS（目标态为无档位条件，见 H35b）', 'try { ensureStyle(); damSkinEnsureCss() }')
 // Upstream welcome branch called a hook after its early return, causing React #310
 // on first replay. Keep the hook unconditional; all tour actions stay unchanged.
-if (!/function DialogHost\(\) \{[\s\S]{0,1800}?var tourDeep = use(?:Iter5|Deep)Theme\(\)/.test(client)) client = client.replace('function DialogHost() {\n      var tickPair = useTick()', 'function DialogHost() {\n      var tourDeep = useDeepTheme()\n      var tickPair = useTick()')
-client = client.replace("tourStep === 0 ? h(SkinHero, { slot: 'hero.welcome', deep: useDeepTheme() })", "tourStep === 0 ? h(SkinHero, { slot: 'hero.welcome', deep: tourDeep })")
+if (!/function DialogHost\(\) \{[\s\S]{0,1800}?var tourDeep = use(?:Iter5|Deep)Theme\(\)/.test(client)) client = replaceT(client, 'function DialogHost() {\n      var tickPair = useTick()', 'function DialogHost() {\n      var tourDeep = useDeepTheme()\n      var tickPair = useTick()', 'G0-2/dialog:442 DialogHost 无条件 hook 声明')
+client = replaceMigrated(client, "tourStep === 0 ? h(SkinHero, { slot: 'hero.welcome', deep: useDeepTheme() })", "tourStep === 0 ? h(SkinHero, { slot: 'hero.welcome', deep: tourDeep })", 'G0-2/dialog:443 导览首屏 hero deep 取值', "h(SkinHero, { slot: 'hero.welcome', deep: tourDeep })")
 // Welcome artwork must follow the same explicit light/dark preference as its portal.
-client = client.replace('var tourDeep = useDeepTheme()', 'var tourDeep = useIter5Theme()')
+client = replaceMigrated(client, 'var tourDeep = useDeepTheme()', 'var tourDeep = useIter5Theme()', 'G0-2/dialog:445 tourDeep 改用 useIter5Theme', 'var tourDeep = useIter5Theme()')
 // ★2026-09-30（D2 · 用户裁定「设置页必须全量同步」）——两个 I5 实例补「广播即重取」effect。
 //   为什么放生成器而不是手改 client.js：Iter5Settings（宿主面板 + 工作台页两个实例）是**生成产物**，
 //   手改会被下一次再生成覆盖（实测：手插后 --check 报 stale、clean 生成会丢掉该块）。
@@ -495,11 +604,13 @@ const d2Subscribe = [
 {
   const aliveAnchor = "        return function () { i5Alive.current = false; window.removeEventListener('beforeunload', before) }\n      }, [])"
   if (!client.includes(aliveAnchor)) throw new Error('D2: i5Alive anchor missing')
-  if (!client.includes(aliveAnchor + '\n' + d2Subscribe)) client = client.replace(aliveAnchor, aliveAnchor + '\n' + d2Subscribe)
-  // 第二个 I5 实例缩进多两级（生成块内嵌更深）
+  requireAnchor(client, aliveAnchor, 'G0-2/D2:481 首个 I5 实例锚点')
+  if (!client.includes(aliveAnchor + '\n' + d2Subscribe)) client = replaceT(client, aliveAnchor, aliveAnchor + '\n' + d2Subscribe, 'G0-2/D2:481 广播重取 effect 注入（首个 I5 实例）')
+  // 第二个 I5 实例缩进多两级（生成块内嵌更深）；已有订阅不重复注入。
   const aliveAnchor2 = "          return function () { i5Alive.current = false; window.removeEventListener('beforeunload', before) }\n        }, [])"
+  requireAnchor(client, aliveAnchor2, 'G0-2/D2:484 第二个 I5 实例锚点')
   const subscribe2 = d2Subscribe.replace(/^      /gm, '        ')
-  if (client.includes(aliveAnchor2) && !client.includes(aliveAnchor2 + '\n' + subscribe2)) client = client.replace(aliveAnchor2, aliveAnchor2 + '\n' + subscribe2)
+  if (!client.includes(aliveAnchor2 + '\n' + subscribe2)) client = replaceT(client, aliveAnchor2, aliveAnchor2 + '\n' + subscribe2, 'G0-2/D2:484 广播重取 effect 注入（第二个 I5 实例）')
 }
 
 
@@ -642,7 +753,7 @@ if (!client.includes('F6 · 共享样式按皮肤分派') && !client.includes('H
       for (let k = b; k < client.length; k++) { if (client[k] === '{') d++; else if (client[k] === '}') { d--; if (!d) { e = k; break } } }
       client = client.slice(0, s) + client.slice(e + 1).replace(/^\s*\r?\n\s*\r?\n?/, '')
     }
-    client = client.replace(h31Anchor, h31Single + h31Anchor)
+    client = replaceT(client, h31Anchor, h31Single + h31Anchor, 'G0-2/H3-1:627 共享样式判档真源插入')
   }
   if ((client.match(/function damSharedSurfaceCss\(\)/g) || []).length !== 1) throw new Error('H3-1: damSharedSurfaceCss definition count != 1')
 
@@ -747,11 +858,12 @@ if (!client.includes('F6 · 共享样式按皮肤分派') && !client.includes('H
 }
 const output = client.replace(/\n/g, newline)
 
-// ==== 覆盖前告警（2026-10-01 用户裁定「给生成器加提醒」）========================
+// ==== 覆盖前停机（2026-10-01 加告警；2026-10-02 用户改裁为默认停机）====================
 // 背景：有人把修复只写进 client.js 的生成区、没落进源文件 => 本脚本一跑就静默还原，
 //       而 node --check 与全部静态守卫**全绿**（产物自洽，只是修复没了）。实测发生过一次。
 // 判据：对比「磁盘现有」与「本次将写出」，**只在磁盘上、会被本次覆盖掉的行**即为未落源改动。
-// 纪律：默认只**告警**（用户裁定「不能太严格、不要动不动回滚」）；要硬拦请显式加 --strict。
+// 纪律（★2026-10-02 用户改裁，取代「默认只告警」）：非空即 exit 2 拒写；
+//       只有显式 --force 才照写（=明确放弃这些内容）；--strict 是其反义别名。
 function orphanedLines(curText, nextText) {
   const cut = (t) => t.replace(/\r\n/g, '\n').split('\n')
   const cur = cut(curText), nxt = cut(nextText)
@@ -771,6 +883,10 @@ function orphanedLines(curText, nextText) {
 
 const onDisk = readFileSync(file, 'utf8')
 const isCheckOnly = process.argv.includes('--check')
+// ★2026-10-02 G0-3（R2-b · 用户改裁「失配即停机」，取代原「默认只告警」）：
+//   orphan 非空 ⇒ **默认拒绝写盘**（exit 2）；只有显式 --force 才照写（=明确放弃这些内容）。
+//   --strict 保留为 --force 的反义别名（等价于新默认），避免外部脚本失效。
+const isForce = process.argv.includes('--force') && !process.argv.includes('--strict')
 const orphans = isCheckOnly ? [] : orphanedLines(onDisk, output)
 if (orphans.length) {
   const head = orphans.slice(0, 12)
@@ -786,17 +902,23 @@ if (orphans.length) {
   if (orphans.length > head.length) console.error('   ...（余 ' + (orphans.length - head.length) + ' 行）')
   console.error(' 确认是垃圾就忽略；确认是修复就**先搬进源文件**再重跑。')
   console.error('')
-  if (process.argv.includes('--strict')) {
-    console.error('[--strict] 拒绝写盘：请先把上面的改动搬进生成源，或用不带 --strict 的命令明确覆盖。')
+  if (!isForce) {
+    console.error('[R2] 拒绝写盘：以上 ' + orphans.length + ' 行只存在于 lib/client.js，本次生成会把它们丢掉。')
+    console.error('     是修复就**先搬进生成源**（skins/legacy/iter5-325.js.frozen 或 skins/iter5/*）再重跑；')
+    console.error('     确认是垃圾、明确放弃它们，才用 --force 重跑（--strict 等价于本默认）。')
     process.exit(2)
   }
+  console.error('[--force] 已按显式指示放弃以上内容，继续写盘。')
 }
 
 if (isCheckOnly) {
-  if (onDisk !== output) throw new Error('Embedded iter5 skin is stale; run node tools/build-iter5-skin.mjs')
+  // ★2026-10-01 G0-1（R1「同步即通过」）：--check 是唯一 PASS 判据，绿时显式打出 SYNC-OK。
+  if (onDisk !== output) throw new Error('Embedded iter5 skin is stale; run node tools/build-iter5-skin.mjs'
+    + '（若源刚改过，这属正常，请重建；若没改过源，说明产物被人手改，见本文件头 R2。）')
+  console.log('SYNC-OK: sources × generator == lib/client.js')
   console.log('iter5 bundle source is up to date')
 } else {
   writeFileSync(file, output)
-  console.log('Embedded iter5 skin (' + Buffer.byteLength(generated) + ' bytes)' +
-    (orphans.length ? '  警告：覆盖了 ' + orphans.length + ' 行未落源内容（见上方）' : ''))
+  console.log('Embedded iter5 skin (' + Buffer.byteLength(generated) + ' bytes)')
+  if (orphans.length) console.log('  --force：已放弃 ' + orphans.length + ' 行只存在于 lib/client.js 的内容（清单见上方）')
 }

@@ -15,14 +15,16 @@ import { rankFusionRRFPre, RECALL_FUSION_VERSION } from '../../lib/recall-fusion
 import { readFile } from 'node:fs/promises'
 
 let pass = 0, fail = 0
-const t = (name, fn) => {
-  try { fn(); pass++; console.log('  ok - ' + name) }
+// ★#176③：helper 必须 await 用例 —— 原同步 `fn(); pass++` 对 async 用例先计数、其失败转为 unhandled rejection，
+// 且汇总早于用例 settle（计数/日志失真）。改 async/await 后，末尾汇总在所有用例完成之后执行。
+const t = async (name, fn) => {
+  try { await fn(); pass++; console.log('  ok - ' + name) }
   catch (e) { fail++; console.log('  FAIL - ' + name + ': ' + (e && e.message || e)) }
 }
 const ids = (arr) => arr.map((x) => x.memoryId || x)
 
 // ---------- T3-1 秩不变性 ----------
-t('T3-1 每臂排名不变、只改分数间距 ⇒ 融合 ID 顺序不变', () => {
+await t('T3-1 每臂排名不变、只改分数间距 ⇒ 融合 ID 顺序不变', () => {
   const base = [
     { memoryId: 'm1', dense: 0.91, lex: 3 },
     { memoryId: 'm2', dense: 0.87, lex: 3 },
@@ -37,7 +39,7 @@ t('T3-1 每臂排名不变、只改分数间距 ⇒ 融合 ID 顺序不变', () 
 })
 
 // ---------- T3-2 顺序贯穿(融合序 ≠ 稠密序的反例 fixture) ----------
-t('T3-2 融合序与稠密序相反时, 展示顺序按 finalRank 贯穿并带 #N 标签', () => {
+await t('T3-2 融合序与稠密序相反时, 展示顺序按 finalRank 贯穿并带 #N 标签', () => {
   // 稠密臂 m3 > m1; 词法臂 m1 > m3 —— RRF 下两臂贡献对称 → 平局按 memoryId 升序(确定性)
   const pairs = [
     { memoryId: 'm1', dense: 0.80, lex: 5 },
@@ -57,7 +59,7 @@ t('T3-2 融合序与稠密序相反时, 展示顺序按 finalRank 贯穿并带 #
 })
 
 // ---------- T3-3 臂独立(词法独有候选进融合 + 关稠密降级) ----------
-t('T3-3 词法独有候选(无 dense)能进入融合, 且凭词法秩压过稠密秩靠后者', () => {
+await t('T3-3 词法独有候选(无 dense)能进入融合, 且凭词法秩压过稠密秩靠后者', () => {
   // d1/d2 lex 缺席(null,非 0): dense 臂 d1 rank1 d2 rank2; lex 臂 lex_only rank1 other rank2
   // lex_only fused = 1/(60+1/60) > d2 fused = 1/(60+2/60) → 词法独有者胜稠密秩靠后者
   const out = rankFusionRRFPre([
@@ -73,7 +75,7 @@ t('T3-3 词法独有候选(无 dense)能进入融合, 且凭词法秩压过稠�
   assert.ok(ids(out).indexOf('lex_only') < ids(out).indexOf('d2'), '词法独有者排在稠密秩靠后者之前')
 })
 
-t('T3-3b 关闭稠密(全条目 dense 缺席) ⇒ 纯词法序仍返回(降级可用)', () => {
+await t('T3-3b 关闭稠密(全条目 dense 缺席) ⇒ 纯词法序仍返回(降级可用)', () => {
   const out = rankFusionRRFPre([
     { memoryId: 'a', dense: null, lex: 1 },
     { memoryId: 'b', dense: null, lex: 3 },
@@ -82,7 +84,7 @@ t('T3-3b 关闭稠密(全条目 dense 缺席) ⇒ 纯词法序仍返回(降级�
 })
 
 // ---------- R2 决策/排序解耦(现状守卫) ----------
-t('R2 fused 只用于排序; 决策用绝对分阈值 — 现状源码守卫(recall-fusion 注释+接线)', async () => {
+await t('R2 fused 只用于排序; 决策用绝对分阈值 — 现状源码守卫(recall-fusion 注释+接线)', async () => {
   const src = await readFile('lib/index.js', 'utf8')
   // 决策门: l0Hits 过滤用 lex>0 || sem>=0.5(绝对), 不用 fused
   assert.ok(src.includes('c.lex > 0 || (typeof c.sem === \'number\' && c.sem >= 0.5)'), '准入决策 = 词法>0 或 绝对分>=0.5(现状 R2 守卫)')
@@ -91,7 +93,7 @@ t('R2 fused 只用于排序; 决策用绝对分阈值 — 现状源码守卫(rec
 })
 
 // ---------- R1 双显示接线守卫 ----------
-t('R1 双显示: 绝对分在前 + "#N"融合序在后; legacy 路径无 #N(回滚开关可用)', async () => {
+await t('R1 双显示: 绝对分在前 + "#N"融合序在后; legacy 路径无 #N(回滚开关可用)', async () => {
   const src = await readFile('lib/index.js', 'utf8')
   const iFinal = src.indexOf("const fr = Number.isInteger(c.finalRank)")
   const iLegacy = src.indexOf("(opts && opts.fusion) !== 'legacy'")
@@ -104,7 +106,7 @@ t('R1 双显示: 绝对分在前 + "#N"融合序在后; legacy 路径无 #N(回�
 })
 
 // ---------- T3-6 同一 observation 只能形成一个主激活 ----------
-t('T3-6 同一 observationId 二次 offer 被拒(duplicate-observation), 不产生第二个主激活', async () => {
+await t('T3-6 同一 observationId 二次 offer 被拒(duplicate-observation), 不产生第二个主激活', async () => {
   const { createActivationInboxPre } = await import('../../lib/activation-inbox-state.js')
   const { makeFakeActivationRequestPre } = await import('../../lib/activation-inbox.js')
   const identity = { sessionId: 's1', agentId: 'a1', workspaceKey: 'D:\\ws' }

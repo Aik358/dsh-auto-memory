@@ -1511,14 +1511,14 @@
             ])
           })() : null,
   field(t('fInject'), h('input', { type: 'checkbox', checked: !!cfg.injectEnabled, onChange: function (e) { set('injectEnabled', e.target.checked) } }), t('fInjectHint')),
-          field(t('fBudget'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 400, value: cfg.injectBudgetChars, onChange: function (e) { set('injectBudgetChars', Number(e.target.value) || 2400) } }), t('fBudgetHint')),
+          field(t('fBudget'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 400, value: cfg.injectBudgetChars, onChange: function (e) { set('injectBudgetChars', Number(e.target.value) || 8000) } }), t('fBudgetHint')),
           // 2026-09-22 补接线(设置页缺口审计 P0-3/P0-4/P0-6):目录层与规则分层此前只有后端实现。
           field(t('fTier0Catalog'), h('input', { type: 'checkbox', 'data-dam-key': 'tier0CatalogEnabled', checked: cfg.tier0CatalogEnabled !== false, onChange: function (e) { set('tier0CatalogEnabled', e.target.checked) } }), t('fTier0CatalogHint')),
           field(t('fTier0Max'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 100, value: cfg.tier0MaxTokens === undefined ? 400 : cfg.tier0MaxTokens, onChange: function (e) { set('tier0MaxTokens', Math.max(100, Number(e.target.value) || 400)) } }), t('fTier0MaxHint')),
           field(t('fRulesLayering'), h('input', { type: 'checkbox', 'data-dam-key': 'rulesLayeringMode', checked: String(cfg.rulesLayeringMode || 'self').toLowerCase() !== 'off', onChange: function (e) { set('rulesLayeringMode', e.target.checked ? 'self' : 'off') } }), t('fRulesLayeringHint')),
           field(t('fDays'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 1, max: 14, value: cfg.recentDaysInjected, onChange: function (e) { set('recentDaysInjected', Number(e.target.value) || 1) } }), t('fDaysHint')),
           field(t('fExtBudget'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 200, value: cfg.externalInjectionChars === undefined ? 1400 : cfg.externalInjectionChars, onChange: function (e) { set('externalInjectionChars', Number(e.target.value) || 1400) } }), t('fExtBudgetHint')),
-          field(t('fSnapGap'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 0, max: 50, value: cfg.snapshotMinGapRounds === undefined ? 5 : cfg.snapshotMinGapRounds, onChange: function (e) { set('snapshotMinGapRounds', Number(e.target.value) || 5) } }), t('fSnapGapHint')),
+          field(t('fSnapGap'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 0, max: 50, value: cfg.snapshotMinGapRounds === undefined ? 5 : cfg.snapshotMinGapRounds, onChange: function (e) { set('snapshotMinGapRounds', normalizeGapRounds(e.target.value, 5)) } }), t('fSnapGapHint')),
           // ★2026-10-01（用户裁定）：精简版节奏两键 —— 与服务端 DEFAULT_CONFIG 的 slimEveryRounds/fullEverySlims 一一对应。
           field(t('fSlimEvery'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 1, max: 50, value: cfg.slimEveryRounds === undefined ? 3 : cfg.slimEveryRounds, onChange: function (e) { set('slimEveryRounds', normalizeGapRounds(e.target.value, 3)) } }), t('fSlimEveryHint')),
           field(t('fFullEverySlims'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 1, max: 20, value: cfg.fullEverySlims === undefined ? 3 : cfg.fullEverySlims, onChange: function (e) { set('fullEverySlims', normalizeGapRounds(e.target.value, 3)) } }), t('fFullEverySlimsHint')),
@@ -1765,6 +1765,8 @@
         ]),
         section('skin', sectionLabels.skin, [
           // ★2026-09-28（用户第 1 大点）：本分区升格为「皮肤选择（皮肤中心）」——选择器置顶。
+          // ★2026-10-03（G1-4/#196）：原回调引用组件局部不存在的 setNonce ⇒ ReferenceError 被 catch 吞。
+          //   家族切换的通知改由 dam-skin-changed 广播 + 挂载根订阅承担，此处不再需要非空回调。
           h(SkinPicker, { onSwitch: function () {} }),
           h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { fontSize: 'calc(11.5px * var(--dam-scale))', opacity: .72, margin: '10px 0 4px' } },
             L('素材槽位（换图子功能，与皮肤选择正交）', 'Asset slots (image swapping; orthogonal to skin choice)')),

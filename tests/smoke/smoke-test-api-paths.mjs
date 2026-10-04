@@ -29,9 +29,9 @@ const HOST_ONLY_WHITELIST = [
   // ★B0（2026-09-25）：子代理契约探针 —— 消费者是本仓只读取证脚本（artifacts/_b0-probe-call.mjs），
   //   界面侧零引用。**它不是死端点**：可复用子代理（B1）的架构决策依赖它产出的真实契约数据。
   '/api/dsh-auto-memory/subagent-probe',
-  // ★Teamwork B10（2026-09-26）：/team-state 是**前端「团队」页签的数据源**（GET 只读、loopback）。
-  //   该页签属 B10 批次（改 client.js），数据源先落地 ⇒ 在此之前它暂无界面消费者，
-  //   故暂列白名单；B10 完成后应**移出白名单**（届时它不再是「宿主独有」）。其非界面消费者：无。
+  // ★2026-10-02 审计修复批 #174：/team-state、/team-attribution、/team-conflicts、/team-sync-debug
+  //   四条**已移出本白名单** —— client.js 团队层已改为真实消费这 4 条专用路由
+  //   （fetchTeamState 的 Promise.all），不再是「宿主独有」。这正是 B10 注释预告的收口。
   // ★B11c（2026-09-26）：团队线 8 条路由 —— **已接上界面**（B10 前端团队页签的数据源；
   //   A 档只读 / B 档本机动作）。此注即「界面消费者」标注。
   '/api/dsh-auto-memory/team-members',

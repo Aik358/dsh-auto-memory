@@ -59,8 +59,14 @@ function parseArgs(argv) {
   //      实测无超时；若日后见到「单套件 TIMEOUT 但单独跑就过」，优先怀疑这一条，
   //      用 `--jobs=2` 或 `--jobs=1` 复验即可确认。
   //   ④ 可回退：`--jobs=1` 恢复逐字节等价的串行路径（原代码路径保留，未删改）。
-  const opts = { timeoutMs: DEFAULT_TIMEOUT_MS, filter: '', exclude: [], jobs: DEFAULT_JOBS }
+  // ★2026-10-02（用户裁定「跑之前先看一下哪儿会有变化」）：`--impact` 只做只读影响面预检，
+  //   不跑任何套件（秒级返回）。`--impact-run` 先打印预检、再只跑命中集（省掉盲跑全量的 75s）。
+  const opts = { timeoutMs: DEFAULT_TIMEOUT_MS, filter: '', exclude: [], jobs: DEFAULT_JOBS, impact: false, impactRun: false, quiet: false }
   for (const a of argv) {
+    if (a === '--impact') { opts.impact = true; continue }
+    if (a === '--impact-run') { opts.impactRun = true; continue }
+    if (a === '--quiet') { opts.quiet = true; continue }
+    if (a === '--impact-all') { opts.impactAll = true; continue }
     const m = /^--timeout=(\d+)$/.exec(a)
     if (m) { opts.timeoutMs = Number(m[1]); continue }
     const f = /^--filter=(.+)$/.exec(a)
@@ -175,7 +181,39 @@ async function main() {
     console.log('usage: node tools/run-smoke.mjs [--timeout=<ms>] [--filter=<substr>] [--exclude=<substr>]...')
     return 0
   }
-  const suites = listSuites(opts.filter, opts.exclude)
+  // ★影响面预检（只读）：列出改动文件、正文引用它们的套件、以及基线锁套件。
+  let impact = null
+  if (opts.impact || opts.impactRun) {
+    const { analyzeImpact } = await import('./smoke-impact.mjs')
+    impact = analyzeImpact({ root: ROOT, smokeDir: SMOKE_DIR })
+    console.log('[impact] ===== 需要动手改的（基线锁）=====')
+    if (impact.coreTouched) {
+      console.log('[impact] ⚠ lib/index.js 或 lib/client.js 在改动集内 ⇒ 以下 ' + impact.lock.length + ' 个套件锁着「文件一改就得跟着上移的常量」，跑之前先预期它们会红：')
+      for (const name of impact.lock) console.log('  * ' + name)
+    } else {
+      console.log('[impact] lib/index.js 与 lib/client.js 均未改 ⇒ 基线锁套件预期不受影响（无需重钉常量）。')
+    }
+    console.log('[impact] ===== 会被波及的（依赖边）=====')
+    console.log('[impact] 本次改动 ' + impact.changed.length + ' 个受管源码文件:')
+    for (const c of impact.changed) console.log('  - ' + c)
+    const hitNames = [...impact.hit.keys()]
+    const CAP = 25
+    console.log('[impact] 依赖这些文件的套件共 ' + hitNames.length + ' 个' + (hitNames.length > CAP ? '（只列前 ' + CAP + '，完整清单加 --impact-all）' : '') + ':')
+    for (const name of hitNames.slice(0, opts.impactAll ? hitNames.length : CAP)) {
+      console.log('  - ' + name + '   <- ' + impact.hit.get(name).join(', '))
+    }
+  }
+  if (opts.impact) {
+    console.log('[impact] 只读预检结束（未运行任何套件）。加 --impact-run 可只跑命中集。')
+    return 0
+  }
+
+  let suites = listSuites(opts.filter, opts.exclude)
+  if (impact && opts.impactRun) {
+    const focus = new Set([...impact.hit.keys(), ...(impact.coreTouched ? impact.lock : [])])
+    suites = suites.filter((n) => focus.has(n))
+    console.log('[impact-run] 收窄到 ' + suites.length + ' 个命中/锁套件（全量仍由不带该开关的运行负责）。')
+  }
   if (!suites.length) {
     console.error('[run-smoke] no suites matched in ' + SMOKE_DIR + (opts.filter ? ' (filter=' + opts.filter + ')' : ''))
     return 2
@@ -235,6 +273,13 @@ async function main() {
   console.log('================ SUMMARY ================')
   console.log('PASS ' + pass.length + ' / FAIL ' + fail.length + ' / TIMEOUT ' + timeout.length
     + '   (total ' + totalSeconds.toFixed(1) + 's)')
+  // ★2026-10-02（用户反馈「跑完没有打印出 fail 的地方，还得重跑一遍」）：
+  //   把失败套件名**紧贴计数行**输出。此前明细在文件末尾，任何 `| Select-Object -Last N`
+  //   或只看尾部的取用方式都会把明细截掉，只剩计数 ⇒ 被迫重跑一次 80s 的回归才能定位。
+  //   现约定：**计数行之后 1 行内必给出全部失败套件名**（可复算，与下方明细同源）。
+  if (timeout.length || fail.length) {
+    console.log('FAILED: ' + [...timeout, ...fail].map((r) => r.name).join(', '))
+  }
   for (const r of [...timeout, ...fail]) {
     console.log('')
     console.log('--- ' + r.status + ': ' + r.name + (r.status === 'TIMEOUT' ? '  (exceeded ' + opts.timeoutMs + 'ms)' : '  (exit=' + r.code + ')') + ' ---')

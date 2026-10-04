@@ -88,7 +88,8 @@ async function main() {
   const API = mod.API || {}
 
   // ① 真 import 产线模块，取真 API 表（不是正则抓源码文本）
-  ok(Object.keys(API).length === 70, '真 API 表 = 70 条（team-control +1）（2026-09-28 skin-library-fetch +1；2026-10-01 /global-brief +1，与计数锁一致）', Object.keys(API).length)
+  // ★issue #211（2026-10-04）：新增 py-setup-uninstall（Python 引擎卸载，回收 ~850MB）⇒ 70→71。
+  ok(Object.keys(API).length === 71, '真 API 表 = 71 条（2026-10-04 issue #211 py-setup-uninstall +1；此前 team-control / skin-library-fetch / global-brief 各 +1，与计数锁一致）', Object.keys(API).length)
   for (const [name] of ROUTES) {
     const camel = camelOf(name)
     ok(!!API[camel], '真 API 表含 ' + camel, API[camel])

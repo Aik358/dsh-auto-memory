@@ -112,7 +112,9 @@ const turnStartEvent = (seq, turn, time) => ({ type: 'turn/start', seq, time: ti
     // ★G-F3/G-F5（2026-09-27）：65 → 66 —— 新增 /team-compliance（合规档位只读明示，无条件注册）。
     // ★2026-09-28 计数演进：67→68（新增 skin-library-fetch，用户点名「皮肤库机制」）。仍锁「不意外增加」。
 // ★2026-10-01 再演进：68→69（新增 /global-brief）。
-    if (h.registeredRoutes.length !== 70) throw new Error('route count drifted (expected 70, unconditional routes): ' + h.registeredRoutes.length)
+// ★2026-10-02 再演进：69→70（审计修复批 #174 新增 POST /team-control，loopback-only，无条件注册）。
+// ★issue #211（2026-10-04）再演进：70→71（新增 POST /python-setup/uninstall，无条件注册）。
+    if (h.registeredRoutes.length !== 71) throw new Error('route count drifted (expected 71, unconditional routes): ' + h.registeredRoutes.length)
     const cfg = await h.prime()
     // 2026-08-26 裁定:reasoningObserverEnabled/contextBridgeObserveChildSessions 默认 true
     // (开源模型为主,思维链/分支是主要观测面);其余实验开关仍默认 false
