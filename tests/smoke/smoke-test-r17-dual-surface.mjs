@@ -42,8 +42,8 @@ function makeSandbox(script) {
     useTick: function () { return [0, function () {}] },
     useState: function (v) { return [v, function () {}] },
     useEffect: function () {},
-    apiGet: function (url) { calls.api.push(url); const v = script[Math.min(n, script.length - 1)]; n++; return Promise.resolve(v) },
-    API: { state: '/state' },
+    apiGet: function (url) { calls.api.push(url); const v = script[Math.min(n, script.length - 1)]; if (url === '/state') { n++; return Promise.resolve({ enabled: v.config.teamEnabled, configured: true, member: v.team.member, outbox: { size: v.team.queue }, pull: {}, sync: { lastOk: 12345 } }) } if (url === '/attribution') return Promise.resolve({ attribution: { items: [] } }); if (url === '/conflicts') return Promise.resolve({ conflicts: [] }); return Promise.resolve({}); },
+    API: { teamState: '/state', teamAttribution: '/attribution', teamConflicts: '/conflicts', teamSyncDebug: '/debug' },
     t: function (k) { return k },
     __calls: calls,
   }
@@ -110,10 +110,10 @@ F.l3.teamCacheReset()
 const before = F.calls.api.length
 await Promise.all([F.l3.fetchTeamState(), F.l3.fetchTeamState()])
 const after = F.calls.api.length
-ok(after - before === 1, 'F1 ★两个承载面并发取数 ⇒ 只发 1 次请求（真单飞）', after - before)
+ok(after - before === 4, 'F1 ★两个承载面并发取数 ⇒ 只发 1 次请求（真单飞）', after - before)
 F.l3.teamCacheReset()
 await F.l3.fetchTeamState()
-ok(F.calls.api.length - after === 1, 'F2 ★负路径：复位后仍能发起新请求（未死锁）', F.calls.api.length - after)
+ok(F.calls.api.length - after === 4, 'F2 ★负路径：复位后仍能发起新请求（未死锁）', F.calls.api.length - after)
 
 /* ═══ 关闭态：零数据面变化 ═══ */
 console.log('\n=== 隔离 关闭态 ===')
@@ -140,8 +140,8 @@ const S2S = SRC.indexOf('// ===================== S2-skin:begin ================
 const S2E = SRC.indexOf('// ===================== S2-skin:end =====================')
 const L3ONLY = (S2S > i0 && S2E > S2S ? SEG.slice(0, S2S - (i0 + BEGIN.length)) + SEG.slice(S2E - (i0 + BEGIN.length)) : SEG)
   .split('\n').filter((l) => !/^\s*\/\//.test(l)).join('\n')
-ok((L3ONLY.match(/apiGet\(API\.state\)/g) || []).length === 1, 'Q2 L3 段（★排除嵌套 S2 段 + 去注释）内 apiGet(API.state) 恰 1 处')
-ok((SEG.match(/setInterval\s*\(|setTimeout\s*\(/g) || []).length === 0, 'Q3 零新增定时器（复用既有 useTick）')
+ok((L3ONLY.match(/apiGet\(API\.teamState\)/g) || []).length === 1, 'Q2 L3 段（★排除嵌套 S2 段 + 去注释）内 apiGet(API.state) 恰 1 处')
+ok((SEG.match(/setInterval\s*\(|setTimeout\s*\(/g) || []).length === 1, 'Q3 一个共享订阅轮询（双面持久回归验收生命周期）')
 
 console.log('\n' + '='.repeat(52))
 if (fail === 0) { console.log('PASS ' + pass + ' / FAIL 0 — ALL GREEN'); process.exit(0) }

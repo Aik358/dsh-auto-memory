@@ -259,7 +259,8 @@ class BgeM3OnnxInt8Embedder:
         onnx_rel = str(config.get('onnxFile') or 'onnx/model_int8.onnx')
         self.session = ort.InferenceSession(
             os.path.join(base, *onnx_rel.split('/')),
-            providers=['CPUExecutionProvider'])
+            providers=(['CUDAExecutionProvider', 'CPUExecutionProvider']
+                       if config.get('gpu') else ['CPUExecutionProvider']))
         self.tokenizer = AutoTokenizer.from_pretrained(base)
         self._inp = self.session.get_inputs()[0].name
         self._att = self.session.get_inputs()[1].name
