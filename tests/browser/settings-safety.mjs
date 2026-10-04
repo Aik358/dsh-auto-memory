@@ -43,11 +43,14 @@ const server=createServer((req,res)=>{
 await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve))
 const url='http://127.0.0.1:'+server.address().port
 const browser=await chromium.launch({executablePath:process.env.CHROMIUM_PATH || '/usr/bin/chromium',headless:true,args:['--no-sandbox']})
-const artifacts=path.join(root,'artifacts/ui-settings-20261003');mkdirSync(artifacts,{recursive:true})
+const artifacts=process.env.DSH_BROWSER_ARTIFACTS || path.join(root,'artifacts/ui-settings-20261003');mkdirSync(artifacts,{recursive:true})
 const evidence=[], pageErrors=[]
 let config={boardMode:'graph',semanticEngineMode:'auto',associativeMemoryEnabled:true,activationInboxEnabled:true,jsDecideCandidateScheme:'balanced',jsDecideExcerptChars:75,dayBoundaryMinutes:450,workbenchLoopShort:10,workbenchLoopLong:24,memoryRoot:'/fixture/notes',userMemoryDir:'/fixture/user',teamEnabled:true,teamSyncTransport:'s3',teamSecretAccessKey:'fixture-secret-never-persist',autoSummaryTimes:[],injectExcludeSources:[],waterLevelThresholdMode:'auto'}
 let mode='shadow',failConfig=false,holdNote=null,holdCalendar=null,browseResolvers=[],recallResolvers=[],configResolvers=[],holdConfig=false,semanticResolvers=[],holdSemantic=false,noteWrites=0,calendarWrites=0,holdHandoff=false,handoffResolvers=[]
 let water={live:true,window:1000000,threshold:.67,thresholdMode:'auto'}
+const indexSource=readFileSync(path.join(root,'lib/index.js'),'utf8')
+const promptSections=[...indexSource.match(/PROMPT_SECTION_KEYS_PRE_V1 = Object.freeze\(\[([\s\S]*?)\]\)/)[1].matchAll(/^\s*'([^']+)'/gm)].map(m=>m[1])
+const promptMust=[...indexSource.match(/PROMPT_SECTION_MUST_PRE_V1 = Object.freeze\(\[([\s\S]*?)\]\)/)[1].matchAll(/^\s*'([^']+)'/gm)].map(m=>m[1])
 const page=await browser.newPage({viewport:{width:1280,height:900}})
 page.on('pageerror',e=>pageErrors.push(e.message))
 await page.route('**/api/dsh-auto-memory/**',async route=>{
@@ -56,8 +59,8 @@ await page.route('**/api/dsh-auto-memory/**',async route=>{
  if(pathname==='config'){
   if(request.method()==='GET'){
    const snapshot=structuredClone(config)
-   if(holdConfig){configResolvers.push(()=>respond({config:snapshot,promptSections:[],promptSectionMust:[]}));return}
-   return respond({config:snapshot,promptSections:[],promptSectionMust:[]})
+   if(holdConfig){configResolvers.push((fail=false)=>fail?respond({error:'injected config read failure'},500):respond({config:snapshot,promptSections,promptSectionMust:promptMust}));return}
+   return respond({config:snapshot,promptSections,promptSectionMust:promptMust})
   }
   if(failConfig)return respond({error:'injected save failure: memoryRoot',fields:{memoryRoot:'invalid directory'}},400)
   config={...config,...body};return respond({config:structuredClone(config)})
@@ -210,6 +213,30 @@ try{
  await tab('behavior');assert.equal(await page.locator('[data-i5-field='+JSON.stringify(await page.evaluate(()=>dshTest.t('fDayBoundary')))+'] input').inputValue(),'702')
  holdConfig=false;holdSemantic=false;mode='shadow'
  evidence.push('PASS actual React settings and semantic GET disorder: older snapshots cannot replace newer state')
+
+ // Initial hydration belongs to whichever config response is current. Test both
+ // response orders on the shipped current/frozen implementations.
+ for(const destination of ["Settings","LegacySettings"])for(const firstResponse of ['broadcast','initial'])for(const failedBroadcast of [false,true]){
+  await mounted(destination);await tab('appearance');await page.locator('details').evaluateAll(ns=>ns.forEach(n=>n.open=true))
+  const draftInput=page.locator('[data-i5-field="Day boundary (minutes)"] input'),draftValue=firstResponse==='broadcast'?'999':'998'
+  await draftInput.fill(draftValue)
+  configResolvers=[];holdConfig=true
+  await page.evaluate(name=>window.remount(name),destination);await page.waitForTimeout(80)
+  assert.equal(configResolvers.length,1,'initial config request is held')
+  await page.evaluate(()=>dshTest.broadcast());await page.waitForTimeout(80)
+  assert.equal(configResolvers.length,2,'broadcast requests a newer configuration')
+  for(const index of firstResponse==='broadcast'?[1,0]:[0,1]){await configResolvers[index](failedBroadcast&&index===1);await page.waitForTimeout(30)}
+  holdConfig=false
+  await tab('appearance');await page.locator('details').evaluateAll(ns=>ns.forEach(n=>n.open=true))
+  assert.equal(await draftInput.inputValue(),draftValue,destination+' restores unsaved text when initial GET is superseded')
+  assert.equal(await page.locator('[data-dam-settings]').getAttribute('data-i5-dirty'),'true')
+  await tab('memory')
+  await page.getByRole('button',{name:/Advanced: per-section injection/}).click()
+  assert.equal(await page.locator('[data-dam-prompt-sections] input[type=checkbox]').count(),promptSections.length,'newest GET also hydrates prompt section metadata')
+  await page.locator('[data-dam-savebar]').getByRole('button',{name:'Discard changes',exact:true}).click()
+ }
+ evidence.push('PASS initial config and broadcast: both response orders and failed newer reads retain scoped drafts, dirty state and prompt metadata')
+
  // Both mounted settings instances receive semantic-emit broadcasts.
  await page.evaluate(()=>{fixtureNonce++;uiRoot.render(React.createElement('div',{'data-iter5':'','data-i5-style':'instrument','data-deep':'false'},React.createElement('style',null,dshTest.styles),React.createElement('main',{className:'i5-main'},React.createElement(dshTest.Settings,{key:'one',draftScope:'one'}),React.createElement(dshTest.Settings,{key:'two',draftScope:'two'}))))})
  await page.waitForTimeout(100)
