@@ -72,8 +72,15 @@ ck('S1 路径闸允许空串（= 回到自动）', /if \(!rawPath\.trim\(\)\) \{
 ck('S1 status 回显解析后的默认落点', /rootDefault: path\.join\(dshHome\(\), WORKBENCH_DIRNAME\)/.test(idx))
 ck('S1 _workbenchCwd 读 config.workbenchRoot',
   /_workbenchCwd\(\) \{\r?\n\s+const raw = String\(this\.config\.workbenchRoot/.test(idx))
-ck('S1 路径收窄到 dshHome 之下（非法 ⇒ fail-soft 回默认）',
-  /path\.relative\(dshHome\(\), p\)[\s\S]{0,200}?return fallback/.test(idx))
+// ★2026-10-05 判据随源码演进（社区报告：Android `/data/user/0` ↔ `/data/data` 符号链接别名恒 cwd-mismatch）：
+//   路径收窄与 fail-soft 回默认的逻辑本体未变，只是两侧先经 `_canonPath`（realpath）归一再比较 ——
+//   守卫同步钉住归一形态，防止未来有人把字面比较改回去（那会让符号链接环境再次恒判 cwd-mismatch）。
+ck('S1 路径收窄到 dshHome 之下（非法 ⇒ fail-soft 回默认）——归一形态',
+  /path\.relative\(this\._canonPath\(dshHome\(\)\), this\._canonPath\(p\)\)[\s\S]{0,200}?return this\._canonPath\(fallback\)/.test(idx))
+ck('S1+ 归一函数存在且 verify/登记两处比较点都走归一（防字面比较回流）',
+  /_canonPath\(p\) \{/.test(idx)
+  && /this\._canonPath\(cwd\) !== this\._canonPath\(this\._workbenchCwd\(\)\)/.test(idx)
+  && /norm\(this\._canonPath\(w\.path\)\) === wsPath/.test(idx))
 // ★2026-09-28 口径收窄：本条原断言 `set('workbenchRoot')` **且** `key: 'workbenchRoot'` 同时成立，
 //   把两件事混在一起——（a）设置页有工作台目录项（b）向导里也有同名开关。
 //   向导侧的目录项已被**更合理的布尔开关** `workbenchEnabled` 取代：旧写法把**目录路径（字符串）**
