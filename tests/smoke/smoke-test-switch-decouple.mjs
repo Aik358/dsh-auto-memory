@@ -94,8 +94,11 @@ const bindMethod = (header, fake, extra) => {
     //   本套件用"源码抽取 + new Function"执行方法体 ⇒ 被抽出的代码里的自由变量必须在这里显式注入，
     //   否则会抛 `DEFAULT_AUTO_CONTINUE_THRESHOLD is not defined`（实测已发生）。
     //   ⚠️ 注入的是**与生产同值**的常量（0.75），不是放宽断言。
-    'DEFAULT_AUTO_CONTINUE_THRESHOLD', 'DEFAULT_WATER_LEVEL_THRESHOLD']
-  const vals = [path, SRC && null, mkdir, writeFile, readdir, stat, handoffStampFn, nowHmFn, assembleCarryPreFn, 0.75, 0.75]
+    'DEFAULT_AUTO_CONTINUE_THRESHOLD', 'DEFAULT_WATER_LEVEL_THRESHOLD',
+    // #207: this unit checks switch eligibility only; real disk views/recovery
+    // are exercised by smoke-test-issue207-routes with complete production apply.
+    'continuedSourceState', 'continuedSourceView']
+  const vals = [path, SRC && null, mkdir, writeFile, readdir, stat, handoffStampFn, nowHmFn, assembleCarryPreFn, 0.75, 0.75, () => null, () => null]
   vals[1] = (p) => { try { return readFileSync(p) != null } catch (e) { return false } }
   for (const k of Object.keys(extra || {})) { names.push(k); vals.push(extra[k]) }
   const obj = new Function(...names, 'return {' + extractFn(header) + '};')(...vals)
@@ -141,11 +144,12 @@ console.log('[switch-decouple] D1b 行为:接续资格只看 autoContinueEnabled
   const fake = {
     config: { autoContinueEnabled: true, handoffEnabled: false },
     _autoContState: {},
+    continuedSessionsFile: () => 'unused-unit-state.json',
     waterKey: (s) => String(s || ''),
   }
   const st = bindMethod('autoContinueState(selfSid) {', fake)
   ok(st('session-x').enabled === true, 'autoContinueState.enabled=true(接续开,白板关)')
-  const fake2 = { config: { autoContinueEnabled: false, handoffEnabled: true }, _autoContState: {}, waterKey: (s) => String(s || '') }
+  const fake2 = { config: { autoContinueEnabled: false, handoffEnabled: true }, _autoContState: {}, continuedSessionsFile: () => 'unused-unit-state.json', waterKey: (s) => String(s || '') }
   const st2 = bindMethod('autoContinueState(selfSid) {', fake2)
   ok(st2('session-x').enabled === false, 'autoContinueState.enabled=false(接续关)')
   const armed = []
@@ -329,9 +333,9 @@ console.log('[switch-decouple] D4 接线:两页共用同一对配置键 + 默认
     '白板页:开关卡在「已启用」分支同样渲染(白板开着也能从本页关掉)')
   // 设置页保存不得再 POST 整份快照(宿主端是合并语义,整份快照会把别的入口期间的改动回滚)
   ok(!/saveConfigPatch\(cfg,/.test(CSRC), '设置页保存不再整份快照 POST(旧写法会把其它入口的改动回滚)')
-  ok(/JSON\.stringify\(cfg\[k\]\) !== JSON\.stringify\(remote\[k\]\)/.test(CSRC),
-    '设置页保存改为只提交「与宿主当前配置不同」的键(跨入口改动不再被覆盖)')
-  ok(CSRC.includes('apiGet(API.config).then(function (d0)'), '设置页保存前先取回宿主当前配置再比对')
+  ok(CSRC.includes('var patch = Object.assign({}, i5Draft.current)') && CSRC.includes('JSON.stringify((i5Base.current || {})[key])'),
+    '设置页保存改为只提交「与本页加载基线不同（用户实际编辑）」的键(跨入口改动不再被覆盖)')
+  ok(CSRC.includes('i5Base.current = remote') && CSRC.includes('i5Draft.current'), '共享设置订阅远端基准并提交独立diff草稿')
   // 2026-09-14 补:白板页 autoSave 必须把**配置键**映射回**本地状态字段**。
   // 旧实现 `Object.assign({}, p, patch)` 写的是 autoCfg.autoContinueEnabled,而按钮读 autoCfg.enabled
   // ⇒ 配置其实写成功了,但按钮不回弹 ⇒ 用户观感「自动接续无法开关」(阈值输入同病)。这条是承重断言。

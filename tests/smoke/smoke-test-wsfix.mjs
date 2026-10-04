@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { workspaceKey } from '../../lib/workspace-key.js'
 /** [wsfix] 工作区切换修复回归(2026-09-13,终端用户 C 类诊断实证)。
  *
  * 背景:①面板 handoffPanelData 用全局单值 state.*,sessionId 只喂给水位——查看非活跃会话时
@@ -115,7 +116,7 @@ const rA = await call1('/api/dsh-auto-memory/handoff-state?sessionId=' + SID_A)
 ok(rA && rA.ws === WS_A && rA.wsBound === true, 'W1 会话 A 解析到 A 的工作区(wsBound=true)')
 const rB = await call1('/api/dsh-auto-memory/handoff-state?sessionId=' + SID_B)
 ok(rB && rB.ws === WS_B && rB.wsBound === true, 'W2 会话 B 解析到 B 的工作区(修复前恒为 A/启动目录)')
-ok(rA.planPath !== rB.planPath && rA.planPath.includes('--D--wsfix-proj-a--') && rB.planPath.includes('--D--wsfix-proj-b--'),
+ok(rA.planPath !== rB.planPath && rA.planPath.includes(workspaceKey("D:\\wsfix-proj-a")) && rB.planPath.includes(workspaceKey("D:\\wsfix-proj-b")),
   'W2b 白板/账本路径按会话分目录(不再全局单值)')
 agents[SID_A].session.header.cwd = WS_C2
 const rA2 = await call1('/api/dsh-auto-memory/handoff-state?sessionId=' + SID_A)

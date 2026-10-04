@@ -5,7 +5,7 @@ import vm from 'node:vm'
 const { SKIN_ASSETS, SKIN_ASSET_KEYS, assetOf } = await import(new URL('../../lib/skin-assets.js', import.meta.url).href)
 const { resolveSkinTheme, composeSkinTheme, buildSkinSlots, skinCenterStatus, SKIN_TOKEN_KEYS, isCssSafe } = await import(new URL('../../lib/skin-center.js', import.meta.url).href)
 import { fileURLToPath } from 'node:url'
-import { stripGeneratedSkin } from '../lib/skin-bundle.mjs'
+import { sharedSettingsClient } from '../lib/shared-settings.mjs'
 
 /** 平台无关行尾守恒：存在 CRLF 时不得有裸 LF；全 LF 合法（CI/Linux 检出态）。
  *  ★2026-09-28：原断言写作 cnt(NL)===cnt(CRNL)（即"必须全 CRLF"），在 Linux CI 上必红——
@@ -53,7 +53,7 @@ function __mkI18nStub(self) {
 //   而生成区把若干经典组件派生了一份新皮肤版本（SettingsPage→Iter5Settings 等）⇒ 计数翻倍假红。
 //   故此处剥离生成区再断言 —— 不是放宽判据，而是把作用域限定到它真正该守的经典档。
 //   皮肤自身由 smoke-test-iter5-skin.mjs 验收（含「剥离后与基线逐字节一致」的守恒断言）。
-const SRC = stripGeneratedSkin(readFileSync(damPath('lib/client.js'), 'utf8'))
+const SRC = sharedSettingsClient(readFileSync(damPath('lib/client.js'), 'utf8'))
 const IX = readFileSync(damPath('lib/index.js'), 'utf8')
 let p = 0, f = 0; const fails = []
 const ok = (c, m) => { if (c) p++; else { f++; fails.push(m) } }

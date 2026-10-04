@@ -1,0 +1,22 @@
+{
+  "base": "131ca794b9f0d07f78b19bf6feee3312939854ed",
+  "finalSmoke": {
+    "node": "22.23.3",
+    "pass": 243,
+    "fail": 3,
+    "timeout": 0,
+    "suites": 246,
+    "exitCode": 1
+  },
+  "sha256": {
+    "lib/index.js": "269e44a20c7c2268898843c5d644c3d8ce209e4aeb7da75a7d5d85f8b7a1fcc4",
+    "lib/client.js": "1fdd2e93a11ca3ea95f1a5e54f67d0d01fa0fd020a06b0c1de5dfa3360657a14",
+    "lib/settings-safety.js": "a7a9d578e69a181a975123526d24ef1fbe8f8c734a99ef665e9744065fb5bd9b",
+    "tools/build-iter5-skin.mjs": "443d34bfcfafb91add45d1cb0a392fff1f937219a78a42757ce7ecc72dbe69f1",
+    "skins/iter5/native-panel.js": "7b23b716300c9a0ca871aee3bb05bbdf39ad54c6e8d41558d2b57000b1bc3ca1",
+    "skins/iter5/settings-copy.js": "c327d1026a947e5e23ec193f9aa3f35699e5416f684d883b7c3feb01bb49d253",
+    "skins/iter5/ui.js": "fbb5702ff169f52e93b2b7a880c1b68b2c93373ba6876118760106bd87f7f724",
+    "skins/iter5/views.js": "76e0941207f7c113fc125fc9ad926e304ce4f91ad6cb88408e22d51ef1b7c686",
+    "skins/legacy/iter5-325.js.frozen": "c24d4550edc4bf57e3eed1f2cbd3d41ade2259234268d4ae347f13d1ec3dbade"
+  }
+}

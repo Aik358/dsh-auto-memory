@@ -5,6 +5,7 @@
 import { readFileSync } from 'node:fs'
 import { createHash } from 'node:crypto'
 import vm from 'node:vm'
+import { assertNavigationContract } from '../lib/navigation-contract.mjs'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
 
@@ -80,7 +81,7 @@ eq(MISS.length, 0, 'A1 ★fe02 全锚点覆盖（缺:' + MISS.join(',') + '）')
 eq(ALL.length + R18A.length, 57, 'A2 契约总需求 = 57（G3 后：死壳 15 → 现行 settings-* 6）');
 const cnt = (s, x) => s.split(x).length - 1;
 eq((SRC.match(/(?<!function )MEMORY_TABS\(\)/g) || []).length, 2, 'A3 ★计数锁 MEMORY_TABS() = 2');
-ok(cnt(SRC, 'data-dam-region') >= 18, 'A4 结构锚不降');
+ok(assertNavigationContract(SRC).primary===4, 'A4 真执行四主入口、14旧tab+设置内容映射、12新旧款目的页均可达');
 ok(damNoMixedEol(SRC), 'A5 纯 CRLF');
 // 15 个 f* 键双语
 const FK = ['fTeamEnable','fTeamServer','fTeamId','fTeamMemberName','fTeamSyncMode','fTeamSyncInterval','fTeamScopeDefault','fTeamShareExternal','fTeamConflictPolicy','fTeamAttribution','fTeamSkin','fTeamAudit','fTeamTest','fTeamLeave'];
@@ -157,7 +158,7 @@ sb2.globalThis = sb2
 __mkI18nStub(sb2)
 vm.createContext(sb2)
 try {
-  vm.runInContext(SRC.slice(TK0, TK1) + '\n' + RTSEG + ';globalThis.__R2 = { renderTeamSettings: renderTeamSettings, TEAM_SETTING_KEYS: TEAM_SETTING_KEYS };', vm.createContext(sb2), { filename: 'client.js#teamSettings' })
+  vm.runInContext(SRC.slice(SRC.indexOf('    function TeamSecretInput(props) {'),SRC.indexOf('    function saveConfigPatch(')) + '\n' + SRC.slice(TK0, TK1) + '\n' + RTSEG + ';globalThis.__R2 = { renderTeamSettings: renderTeamSettings, TEAM_SETTING_KEYS: TEAM_SETTING_KEYS };', vm.createContext(sb2), { filename: 'client.js#teamSettings' })
   ok(!!sb2.__R2, 'F0c ★屏⑦ 实现与键表在 vm 中真执行成功')
 } catch (eRT) { ok(false, 'F0c 真执行失败: ' + eRT.message) }
 const R2 = sb2.__R2
@@ -172,6 +173,7 @@ const els = []
   if (Array.isArray(el)) { for (const c of el) walk(c); return }
   if (!el.props) return
   els.push(el)
+  if(typeof el.type==='function')walk(el.type(el.props))
   for (const c of (el.kids || [])) walk(c)
 })(g2)
 const keys = els.map((e) => e.props['data-dam-key']).filter(Boolean)

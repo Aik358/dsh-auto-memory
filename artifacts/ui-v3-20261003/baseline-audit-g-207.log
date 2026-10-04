@@ -1,0 +1,42 @@
+[audit-G-207] A 按路径串行 + 原子落盘
+  ok - 同路径 40 次并发读改写无丢更新（最终 40）
+  ok - 负路径：绕开队列的并发读改写确实丢更新（证明判据能红）
+  ok - 不同路径各自落盘（按路径而非全局串行）
+  ok - 队列登记路径数 >1（size=3）
+  ok - 单次写失败不污染后续入队
+[audit-G-207] B 三处裸写已收口
+  ok - ① cont-seq：不再裸 writeFileSync
+  ok - ① cont-seq：落盘改走 writeTextAtomicPreSync
+  ok - ① cont-seq：读改写整体入按路径串行链
+  ok - ② 接续闩：mark 不再重读文件再整写
+  ok - ② 接续闩：mark 走按路径串行原子写
+  ok - ③ 归档账本：save 走按路径串行原子写
+  ok - ③ 归档账本：不再整对象裸覆盖写
+  ok - 负路径：已并入 path-write-queue，旧的自建第二套链已删除
+[audit-G-207] C 端到端落盘（真 apply + 真文件）
+[dsh-auto-memory] ready: engine + 19 tools + injection + 71 routes (external memory: 13 sources)
+  ok - 初始不存在 cont-seq.json
+  ok - 接续序号 1 分配成功
+  ok - ① cont-seq.json 已落盘
+  ok - ① 计数器内容正确（last=1 + byWorkspace）
+  ok - ① 原子写未留 tmp 残渣
+  ok - ③ 坏账本被判为 corrupted（不静默当空对象）
+  ok - ③ 坏账本已留存到隔离文件（证据不丢）
+  ok - ③ 隔离文件保留原始字节（可取证）
+  ok - ③ 负路径：正常账本正常读取且不被隔离
+  ok - ③ 归档账本读取改用 readJsonQuarantinePreSync（接线）
+  ok - ③ 负路径：旧的「catch 直接吞掉返回 {}」已不存在
+[audit-G-207] D wasm 本地化 + localWasmPaths 开关
+  FAIL - transformers dist 目录存在（前置） workspace/dsh-main-328/node_modules/@huggingface/transformers/dist/
+  FAIL - resolveLocalWasmDirPre 命中真实 wasm 资产目录
+  FAIL - auto：wasmPaths 从 CDN 改写为本地目录 {"applied":false,"mode":"auto","dir":"","reason":"no-local-wasm"}
+  ok - off：保持上游 CDN 行为（开关解耦）
+  ok - auto+本地无资产：不动 env（fail-safe）
+  FAIL - env 无 wasm 配置：返回结构化失败不抛 {"applied":false,"mode":"auto","dir":"","reason":"no-local-wasm"}
+  ok - worker 已接线 applyLocalWasmPathsPre（调用点存在）
+  ok - worker 接收 localWasmPaths 开关
+  ok - 宿主以 getter 惰性读取 config.localWasmPaths（改完即生效）
+  ok - DEFAULT_CONFIG 新增 localWasmPaths（默认 auto）
+
+[audit-G-207] 30 passed, 4 failed
+[dsh-auto-memory] process exit code=1

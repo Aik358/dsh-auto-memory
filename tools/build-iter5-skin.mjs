@@ -130,9 +130,9 @@ client = stripBlocks(client, legacyBegin, legacyEnd)
 // 新块全部摘净；重插锚点由下方 seam 插入处**一并写出**（BEGIN/generated/END + seam）。
 client = stripBlocks(client, begin, end)
 function replaceOnce(text, old, value) {
-  if (text.split(old).length !== 2) throw new Error('Expected exactly one settings seam: ' + old.slice(0, 90))
-  return text.replace(old, value)
+  return replaceT(text, old, value, 'V3/shared settings: ' + old.slice(0, 90))
 }
+let settings = readFileSync(path.join(root, 'skins/iter5/settings-source.js'), 'utf8').replace(/\r\n/g, '\n')
 // ── G0-2：R2-a 变换点响亮化（2026-10-02 用户裁定「源改了而生成器没跟上 ⇒ 必须硬停」）──────
 //   病根：String.replace(old, value) 在 old 不存在时**静默 no-op** —— 产物因此「少了一处改动
 //   却仍然自洽」，node --check 与全部静态守卫照样全绿，缺陷只会在界面上暴露。
@@ -197,17 +197,19 @@ function requireAnchor(text, anchor, name, want) {
   if (hits < need) throw g2Miss(name, '不小于 ' + need, hits)
   return hits
 }
-let settings = client.slice(client.indexOf('    function SettingsPage() {'), client.indexOf('    // ───────────────────────── 插件挂载'))
 settings = replaceOnce(settings, 'function SettingsPage()', 'function Iter5Settings(props)')
 settings = replaceOnce(settings, '      var tickPair = useTick()', `      var tickPair = useTick()
-      var i5Group = useState(props && props.intent && ['engine', 'memory', 'appearance', 'behavior'].indexOf(props.intent.group) >= 0 ? props.intent.group : 'engine')
+      var i5Group = useState(iter5SettingsGroup(props && props.intent && props.intent.group))
+      var i5Root = useRef(null)
       var i5Base = useRef(null)
       var i5Draft = useRef({})
       var i5Groups = useRef({})
-      var i5Alive = useRef(true)
-      var i5Identity = iter5Identity()
+      var i5Alive = useRef(true), i5Read = useRef(0), i5Busy = useRef(false)
+      var i5Initialized = useRef(false), i5AppliedRead = useRef(0)
+      var i5GuideMode = useRef('')
+      var i5Identity = useRef(iter5Identity()).current
       var i5DraftKey = i5Identity + '|' + (props && props.draftScope || 'workbench')
-      var i5GroupsDef = { engine: ['engine'], memory: ['window', 'capacity', 'skills'], appearance: ['store', 'look', 'skin'], behavior: ['handoff', 'auto', 'team', 'about'] }
+
       useEffect(function () {
         i5Alive.current = true
         function before(e) { if (!Object.keys(i5Draft.current).length) return; e.preventDefault(); e.returnValue = '' }
@@ -215,24 +217,45 @@ settings = replaceOnce(settings, '      var tickPair = useTick()', `      var ti
         return function () { i5Alive.current = false; window.removeEventListener('beforeunload', before) }
       }, [])
       function i5Ok() { return i5Alive.current && i5Identity === iter5Identity() }
+      function i5ApplyConfig(d, request) {
+        i5AppliedRead.current = request
+        var remote = configOf(d)
+        var recovered = !i5Initialized.current && iter5SettingsDrafts[i5DraftKey]
+        i5Initialized.current = true
+        i5Base.current = remote
+        if (recovered) {
+          i5Draft.current = Object.assign({}, recovered.patch); i5Groups.current = Object.assign({}, recovered.groups)
+          setMsg(L('已恢复此会话未保存的修改，请核对后保存或取消。', 'Unsaved edits for this session were restored. Review before saving or discarding.'))
+          var conflict = Object.keys(recovered.patch).some(function (key) { return JSON.stringify(remote[key]) !== JSON.stringify(recovered.base[key]) })
+          setErr(conflict ? L('部分设置已在其他入口变更；恢复的草稿尚未覆盖服务器，请核对。', 'Some settings changed elsewhere. Restored edits have not overwritten the server; review them.') : '')
+        } else if (Object.keys(i5Draft.current).length) {
+          var changed = Object.keys(i5Draft.current).filter(function (key) { return JSON.stringify(remote[key]) !== JSON.stringify(i5Draft.current[key]) })
+          if (changed.length) setMsg(L('检测到其他入口的修改：', 'Changes detected from another entry: ') + changed.join(', ') + L('。你的未保存输入未被覆盖。', ' Your unsaved edits were not overwritten.'))
+        }
+        setCfg(Object.assign({}, remote, i5Draft.current))
+        setDirty(Object.keys(i5Draft.current).length > 0)
+        setPsecKeys(Array.isArray(d.promptSections) ? d.promptSections : [])
+        setPsecMust(Array.isArray(d.promptSectionMust) ? d.promptSectionMust : [])
+      }
+      function i5ApplySem(value) {
+        if (!i5Ok()) return
+        setSem(value)
+        var mode = i5GuideMode.current
+        if (!mode || (i5Base.current || {}).semanticEngineMode !== mode) return
+        i5GuideMode.current = ''
+        setGuide(mode === 'js' && value.ready === false ? 'js' : mode === 'python' && value.pythonInt8Present === false ? 'python' : '')
+      }
       function i5Record(key, value) {
         if (JSON.stringify(value) === JSON.stringify((i5Base.current || {})[key])) { delete i5Draft.current[key]; delete i5Groups.current[key] }
-        else { i5Draft.current[key] = value; i5Groups.current[key] = i5Group[0] }
+        else { i5Draft.current[key] = value; i5Groups.current[key] = (iter5SettingDef(key) || {}).group || i5Group[0] }
         setDirty(Object.keys(i5Draft.current).length > 0)
         if (Object.keys(i5Draft.current).length) iter5SettingsDrafts[i5DraftKey] = { patch: Object.assign({}, i5Draft.current), groups: Object.assign({}, i5Groups.current), base: Object.assign({}, i5Base.current) }
         else delete iter5SettingsDrafts[i5DraftKey]
       }
-      function i5Cancel() { delete iter5SettingsDrafts[i5DraftKey]; i5Draft.current = {}; i5Groups.current = {}; setCfg(Object.assign({}, i5Base.current)); setDirty(false); setErr(''); setMsg('') }`)
+      function i5Cancel() { if(!i5Ok() || i5Busy.current)return; delete iter5SettingsDrafts[i5DraftKey]; i5Draft.current = {}; i5Groups.current = {}; setCfg(Object.assign({}, i5Base.current)); setDirty(false); setErr(''); setMsg('') }`)
 settings = replaceOnce(settings, '          setCfg(d.config)', `          if (!i5Ok()) return
-          i5Base.current = configOf(d)
-          var recovered = iter5SettingsDrafts[i5DraftKey]
-          if (recovered) {
-            i5Draft.current = Object.assign({}, recovered.patch); i5Groups.current = Object.assign({}, recovered.groups)
-            setCfg(Object.assign({}, configOf(d), recovered.patch)); setDirty(true)
-            setMsg(L('已恢复此会话未保存的修改，请核对后保存或取消。', 'Unsaved edits for this session were restored. Review before saving or discarding.'))
-            var conflict = Object.keys(recovered.patch).some(function (key) { return JSON.stringify(configOf(d)[key]) !== JSON.stringify(recovered.base[key]) })
-            if (conflict) setErr(L('部分设置已在其他入口变更；恢复的草稿尚未覆盖服务器，请核对。', 'Some settings changed elsewhere. Restored edits have not overwritten the server; review them.'))
-          } else setCfg(configOf(d))`)
+          i5ApplyConfig(d, request)`)
+settings = replaceOnce(settings, '}).catch(function (e) { setErr(e.message) })', '}).catch(function (e) { if (alive && i5Ok() && request>=i5AppliedRead.current && !i5Base.current) setErr(e.message) })')
 settings = replaceOnce(settings,
   'function set(key, value) { setCfg(function (prev) { var next = Object.assign({}, prev); next[key] = value; return next }); setDirty(true) }',
   `function set(key, value) {
@@ -249,41 +272,31 @@ requireAnchor(settings, '      function save() {', 'G0-2/settings:161 经典设�
 requireAnchor(settings, '      function field(', 'G0-2/settings:162 经典设置页 field() 切片锚点')
 if (saveStart < 0 || fieldStart < 0 || fieldStart < saveStart) throw g2Miss('G0-2/settings:163 切片区间', 'save() 在 field() 之前且都非负', 'saveStart=' + saveStart + ', fieldStart=' + fieldStart)
 settings = settings.slice(0, saveStart) + `      function save() {
-        if (busy || !Object.keys(i5Draft.current).length) return
+        if (!i5Ok() || i5Busy.current || !Object.keys(i5Draft.current).length) return
+        i5AppliedRead.current=++i5Read.current;i5Busy.current=true
         setBusy(true); setMsg(''); setErr('')
         var patch = Object.assign({}, i5Draft.current)
         saveConfigPatch(patch, {
           onSaved: function (d) {
+            var stored=iter5SettingsDrafts[i5DraftKey]
+            if(stored && JSON.stringify(stored.patch)===JSON.stringify(patch))delete iter5SettingsDrafts[i5DraftKey]
             if (!i5Ok()) return
             i5Base.current = configOf(d)
-            delete iter5SettingsDrafts[i5DraftKey]
             i5Draft.current = {}; i5Groups.current = {}
-            setCfg(configOf(d)); setDirty(false); setBusy(false); setMsg(t('saved'))
+            setCfg(configOf(d)); setDirty(false); setBusy(false);i5Busy.current=false; setMsg(t('saved') + (d.migrated ? ' · ' + d.migrated : '') + (d.warning ? ' · ' + d.warning : ''))
             if (configOf(d).locale) applyLocalePref(configOf(d).locale)
             refreshSem(setSem)
           },
-          onError: function (e) { if (i5Ok()) { setErr(e.message); setBusy(false) } }
+          onError: function (e) { if (i5Ok()) { setErr(e.message); setBusy(false);i5Busy.current=false } }
         })
       }
 ` + settings.slice(fieldStart)
-settings = replaceOnce(settings, "      function field(label, control, hint) {\n        return", `      function field(label, control, hint) {
-        var plain = iter5SettingCopy(label)
-        var shownLabel = plain ? plain.label : label
-        if (control && (control.type === 'input' || control.type === 'select' || control.type === 'textarea')) control = React.cloneElement(control, { 'aria-label': shownLabel, disabled: busy || control.props.disabled, role: control.type === 'input' && control.props.type === 'checkbox' ? 'switch' : undefined })
-        return`)
-settings = replaceOnce(settings, "return h('div', { 'data-dam-settings-row': '' },", "return h('div', { 'data-dam-settings-row': '', 'data-i5-field': label },")
-settings = replaceOnce(settings,
-  "h('div', { 'data-dam-slot': 'list', 'data-dam-row': '' }, h('label', null, label), control),\n          hint ? h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, hint) : null)",
-  `h('div', { 'data-dam-slot': 'list', 'data-dam-row': '', className: 'i5-setting-field', 'data-wide': String(!!control && (control.type !== 'input' && control.type !== 'select' || control.props.type === 'text')) },
-            h('div', { className: 'i5-setting-copy' }, h('label', null, shownLabel), plain ? h('div', { 'data-dam-hint': '' }, plain.summary) : hint ? (function () {
-              if (typeof hint !== 'string') return h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, hint)
-              var cut = hint.indexOf('。'), tail = cut + 1
-              if (cut < 0) { cut = hint.indexOf('. '); tail = cut + 2 }
-              if (cut < 8 || cut >= hint.length - 2) return h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, hint)
-              var lead = hint.slice(0, tail)
-              return h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, h('span', { className: 'i5-hint-lead' }, lead), h('details', { className: 'i5-hint-more' }, h('summary', null, L('详细说明', 'Details')), h('span', null, hint.slice(tail))))
-            })() : null),
-            h('div', { className: 'i5-setting-control' }, control)))`)
+const rowStart = settings.indexOf('      function field(')
+const fieldEnd = settings.indexOf('      function setAccent(', rowStart)
+settings = settings.slice(0, rowStart) + `      function field(label, control, hint) {
+        return iter5SettingRow(label, control, hint, arguments[3] || [], busy, i5SettingsId, cfg)
+      }
+` + settings.slice(fieldEnd)
 const modeStart = settings.indexOf('      function onEngineModeChange(e) {')
 const modeEnd = settings.indexOf('      var sectionLabels =', modeStart)
 // ★2026-10-02 G0-2（R2-a）：同族静默切片（见上）。
@@ -293,70 +306,32 @@ if (modeStart < 0 || modeEnd < 0 || modeEnd < modeStart) throw g2Miss('G0-2/sett
 settings = settings.slice(0, modeStart) + `      function onEngineModeChange(e) {
         var v = e.target.value
         if (busy) return
+        i5GuideMode.current = ''
+        i5AppliedRead.current=++i5Read.current;i5Busy.current=true
         setBusy(true); setErr(''); setMsg('')
         saveConfigPatch({ semanticEngineMode: v }, {
           onSaved: function (d) {
             if (!i5Ok()) return
             i5Base.current = configOf(d)
-            setCfg(Object.assign({}, configOf(d), i5Draft.current)); setBusy(false)
+            setCfg(Object.assign({}, configOf(d), i5Draft.current)); setBusy(false);i5Busy.current=false
             setMsg(L('检索模式已即时生效', 'Retrieval mode saved immediately'))
-            refreshSem(function (s) {
-              if (!i5Ok()) return
-              setSem(s)
-              setGuide(v === 'js' && !s.ready ? 'js' : v === 'python' && !s.pythonInt8Present ? 'python' : '')
-            })
-          }, onError: function (e) { if (i5Ok()) { setErr(e.message); setBusy(false) } }
+            i5GuideMode.current = v
+            refreshSem(i5ApplySem,null,setSem)
+          }, onError: function (e) { if (i5Ok()) { setErr(e.message); setBusy(false);i5Busy.current=false } }
         })
       }
 ` + settings.slice(modeEnd)
 settings = replaceOnce(settings,
   "function section(key, title, content) { return h('section', { id: 'dam-settings-' + key, 'data-dam-settings-group': '' }, h('h3', null, title), content) }",
-  `var i5WelcomeControl = null
-      function section(key, title, content) {
-        if (key === 'window' && content[0] && content[0].props['data-i5-field'] === t('fPromptSections')) {
-          var promptEntry = React.cloneElement(content[0], { 'data-i5-advanced-entry': 'true' })
-          content = content.slice(2).concat([promptEntry, content[1]])
-        }
-        if (key === 'auto') content = content.filter(function (node) { if (node && node.props && node.props['data-i5-field'] === t('fWelcomeTour')) { i5WelcomeControl = node; return false } return true })
-        if (key === 'look' && i5WelcomeControl) content = [i5WelcomeControl].concat(content)
-        var hidden = i5GroupsDef[i5Group[0]].indexOf(key) < 0
-        if (key === 'engine') {
-          var mode = [], primary = [], advanced = [], support = []
-          content.forEach(function (node) {
-            if (!node) return
-            var label = node.props && node.props['data-i5-field']
-            if (label === t('semMode')) mode.push(node)
-            else if (label === t('fAssocEngine') || label === t('fEmitMode')) primary.push(node)
-            else if (label) advanced.push(node)
-            else support.push(node)
-          })
-          return h('div', { id: 'dam-settings-' + key, className: 'i5-engine-grid', hidden: hidden },
-            h(Iter5Card, { title: L('让 AI 想起相关的事', 'Recall relevant memories'), icon: 'pulse', hue: 'green' }, primary),
-            h(Iter5Card, { className: 'i5-mode-card', title: L('如何查找记忆', 'How to find memories'), icon: 'search', hue: 'blue' }, mode),
-            h('details', { className: 'i5-settings-advanced i5-setup-card', open: !!guide || detOpen }, h('summary', null, L('安装与检查查找工具', 'Install and check search tools')), support),
-            h('details', { className: 'i5-settings-advanced' }, h('summary', null, L('进阶：回忆频率、准确度与索引维护', 'Advanced: recall frequency, matching and index maintenance')), advanced))
-        }
-        var titles = { window: L('把已有记忆交给 AI', 'Give AI existing memories'), capacity: L('记录对话与保留内容', 'Record conversations and keep content'), skills: L('从经历中积累可复用流程', 'Build reusable workflows'), handoff: L('长对话换窗口后继续', 'Continue long tasks in a new session'), auto: L('免打扰与定时整理', 'Quiet mode and scheduled upkeep'), store: L('记忆文件保存在哪里', 'Where memory files are stored'), look: L('显示与操作习惯', 'Display and interaction'), team: L('与团队共享记忆', 'Share memory with a team'), skin: L('自定义插画素材', 'Custom illustration assets') }
-        title = titles[key] || title
-        var common = { window: ['fInject', 'fBudget', 'fDays'], capacity: ['fAutoConsolidate', 'fConsolidate', 'fConsolidateMax'], skills: ['fMemoryHub', 'fProcInject', 'fProcRisk'], handoff: ['fHandoff', 'fAutoContinue'], auto: ['fAutoPopup', 'fUnattended', 'fUnattendedAuto', 'fAutoSum', 'fConsSchedule', 'fConsScheduleTime', 'fConsScheduleDays', 'fMaintSchedule', 'fMaintScheduleTime'], store: ['fMemoryRoot', 'fUserDir', 'fProjectDir'], look: ['fWelcomeTour', 'fLocale', 'fFontSize', 'fPanelPos'] }
-        if (common[key]) {
-          var basic = [], extra = [], extrasStarted = false
-          content.forEach(function (node) {
-            if (!node) return
-            var label = node.props && node.props['data-i5-field']
-            if (label) extrasStarted = !common[key].some(function (k) { return t(k) === label })
-            ;(extrasStarted ? extra : basic).push(node)
-          })
-          if (key === 'capacity') basic.sort(function (a, b) { return common[key].map(t).indexOf(a.props['data-i5-field']) - common[key].map(t).indexOf(b.props['data-i5-field']) })
-          content = basic.concat(extra.length ? [h('details', { className: 'i5-settings-advanced' }, h('summary', null, L('进阶选项：', 'Advanced: ') + title), extra)] : [])
-        }
-        var icons = { window: 'library', capacity: 'storage', skills: 'skills', handoff: 'handoff', auto: 'timeline', store: 'folder', look: 'settings', team: 'mindmap', skin: 'spark', about: 'note' }
-        var subs = {}
-        return h('section', { id: 'dam-settings-' + key, 'data-dam-settings-group': '', hidden: hidden }, h('h3', { className: 'i5-card-title' }, h('span', { className: 'i5-badge', 'data-hue': key === 'skills' ? 'green' : key === 'handoff' ? 'cyan' : key === 'auto' ? 'orange' : 'blue' }, h(Iter5Icon, { name: icons[key] || 'settings' })), h('span', { className: 'i5-card-title-txt' }, title, subs[key] ? h('span', { className: 'i5-card-sub' }, subs[key]) : null)), content)
-      }`)
-settings = replaceOnce(settings, "      return h('div', { 'data-dam-settings': '' },", `      return h('div', { 'data-dam-settings': '', 'data-i5-dirty': dirty ? 'true' : 'false' },
-        h(Iter5Tabs, { id: 'i5-settings', label: L('设置分组', 'Settings groups'), value: i5Group[0], onChange: i5Group[1], items: [['engine', L('引擎', 'Engine')], ['memory', L('记忆', 'Memory')], ['appearance', L('外观与目录', 'Appearance & paths')], ['behavior', L('行为与维护', 'Behavior & maintenance')]].map(function (r) { return [r[0], r[1], Object.keys(i5Groups.current).some(function (k) { return i5Groups.current[k] === r[0] })] }) }),`)
-settings = replaceOnce(settings, "h('div', { 'data-dam-settings-content': '' },", "h('div', { 'data-dam-settings-content': '', role: 'tabpanel', id: 'i5-settings-panel', 'aria-labelledby': 'i5-settings-tab-' + i5Group[0] }, iter5SettingsIntro(i5Group[0]),")
+  "function section(key, title, content) { return iter5SettingSection(key, title, content, i5Group[0], i5SettingsId, !!guide || detOpen) }")
+settings = replaceOnce(settings, "      return h('div', { 'data-dam-settings': '' },", `      return h('div', { ref: i5Root, 'data-dam-settings': '', 'data-i5-dirty': dirty ? 'true' : 'false', 'data-settings-v3': '' },
+        h('div', { className: 'i5-settings-heading' }, h('h2', null, L3.apply(null, ITER5_SETTINGS_GROUPS.find(function(g){return g[0]===i5Group[0]}).slice(1))), h(Iter5SettingsSearch, { root:i5Root, select:i5Group[1], id:i5SettingsId, edit:function(key){if(/^subagent(Model|Provider|ReasoningEffort)/.test(key))openModels();if(key.split('.')[0]==='promptLayerOverrides')setPromptEditOpen(true);if(key.split('.')[0]==='promptSectionToggles')setPsecOpen(true)} })),
+        h('style', { 'data-dam-settings-css': '' }, ITER5_SETTINGS_CSS),
+        h('label', {className:'i5-settings-mobile'}, L3('设置分区','Settings section','設定セクション'), h('select', {'aria-label':L3('设置分区','Settings section','設定セクション'), value:i5Group[0], onChange:function(e){i5Group[1](e.target.value)}}, ITER5_SETTINGS_GROUPS.map(function(g){return h('option',{key:g[0],value:g[0]},L3.apply(null,g.slice(1)))}))),
+        h(Iter5Tabs, { id: 'i5-settings', label: L('设置分组', 'Settings groups'), value:i5Group[0], onChange:i5Group[1], items:ITER5_SETTINGS_GROUPS.map(function(g){return [g[0],L3.apply(null,g.slice(1)),Object.keys(i5Groups.current).some(function(k){return i5Groups.current[k]===g[0]})]}) }),
+        msg && !dirty ? h('p', {role:'status',className:'i5-settings-status'}, msg) : null,`)
+settings = replaceOnce(settings, "h('div', { 'data-dam-settings-content': '' },", "h('div', { 'data-dam-settings-content': '', role: 'tabpanel', id: 'i5-settings-panel', 'aria-labelledby': 'i5-settings-tab-' + i5Group[0] }, i5Group[0] === 'common' ? h(Iter5SettingsCommon, { config:i5Base.current || {}, semantic:sem, select:i5Group[1] }) : null, i5Group[0] === 'maintenance' ? h('button',{onClick:function(){if(props && props.onNav)props.onNav('storage');else {controller.setPanelTab('storage');controller.open()} }},L3('打开维护中心','Open maintenance center','管理センターを開く')) : null, i5Group[0] !== 'common' ? iter5SettingsCatalog(i5Group[0]) : null,")
+settings = replaceT(settings, "h('div', { style: { marginTop: '14px', borderTop:", "h('div', { hidden: i5Group[0] !== 'advanced', style: { marginTop: '14px', borderTop:", "V3/settings:320")
 const radioOld = `h('select', { 'data-dam-select': '', style: { flex: 1 }, value: cfg.semanticEngineMode || 'auto', onChange: onEngineModeChange },
               h('option', { value: 'auto' }, t('semAuto')),
               h('option', { value: 'lexical' }, t('semLexOnly')),
@@ -367,7 +342,7 @@ settings = replaceOnce(settings, radioOld, `h('div', { className: 'i5-engine-rad
 // The wizard's shortcut uses the same immediate save path, never a separate draft write.
 const shortcut = "setGuide(''); var n2 = Object.assign({}, cfg); n2.semanticEngineMode = guide; if (guide === 'js') { n2.activationSource = 'js'; n2.contextSinkMode = 'null' } else if (guide === 'python') { n2.activationSource = 'python'; n2.contextSinkMode = 'python' } setCfg(n2); setDirty(true)"
 settings = replaceOnce(settings, shortcut, "onEngineModeChange({ target: { value: guide } })")
-settings = replaceOnce(settings, "h('div', { 'data-dam-savebar': '' },", "h('div', { 'data-dam-savebar': '', role: 'status' },\n          h('button', { onClick: i5Cancel, disabled: busy || !dirty }, L('取消修改', 'Discard changes')),")
+settings = replaceOnce(settings, "h('div', { 'data-dam-savebar': '' },", "h('div', { 'data-dam-savebar': '', role: 'status', hidden: !dirty },\n          h('button', { onClick: i5Cancel, disabled: busy || !dirty }, L('取消修改', 'Discard changes')),")
 settings = replaceOnce(settings, 'onClick: save, disabled: busy', 'onClick: save, disabled: busy || !dirty')
 // Save actions are a sibling of the scrolling content, never an overlay on a field.
 const savebarStart = settings.indexOf("        h('div', { 'data-dam-savebar':")
@@ -377,30 +352,38 @@ const savebar = settings.slice(savebarStart, savebarEnd).trimEnd().replace(/,$/,
 settings = settings.slice(0, savebarStart) + settings.slice(savebarEnd)
 settings = replaceOnce(settings, "err ? h('div', { 'data-dam-error': '' }, err) : null))", "err ? h('div', { 'data-dam-error': '' }, err) : null),\n" + savebar + ')')
 settings = replaceOnce(settings, "L('有未保存的更改', 'Unsaved changes')", "String(new Set(Object.keys(i5Groups.current).map(function (k) { return i5Groups.current[k] })).size) + L(' 个分区有未保存修改', ' sections with unsaved changes')")
-settings = replaceOnce(settings, "apiPost(API.semanticEmit, { mode: m }).then(function () { refreshSem(setSem) }).catch(function () {})", "apiPost(API.semanticEmit, { mode: m }).then(function () { if (i5Ok()) refreshSem(setSem) }).catch(function (e) { if (i5Ok()) setErr(e.message) })")
-settings = replaceT(settings, "'tauHi 0.45 · tauLo 0.35 · deltaExp 0.03 · deltaPro 0.05'", "L('阈值由宿主校准策略管理；当前接口未提供有效数值', 'Thresholds are managed by the host policy; current values are unavailable')", 'G0-2/settings:289 校准阈值占位文案')
+settings = replaceOnce(settings, "apiPost(API.semanticEmit, { mode: m }).then(function () { refreshSem(setSem) }).catch(function () {})", "if(!i5Ok())return; apiPost(API.semanticEmit, { mode: m }).then(function () { if (i5Ok()) refreshSem(setSem) }).catch(function (e) { if (i5Ok()) setErr(e.message) })")
+settings = replaceT(settings, "'tauHi 0.45 · tauLo 0.35 · deltaExp 0.03 · deltaPro 0.05'", "L('阈值由宿主校准策略管理；当前接口未提供有效数值', 'Thresholds are managed by the host policy; current values are unavailable')", "V3/settings:342")
 settings = replaceOnce(settings, "try { openDialog({ kind: 'welcomeTour' }) } catch (eTour) {}", "try { openManualWelcomeTourPre() } catch (eTour) {}")
 // Avoid global selector collisions with the classic settings surface.
 settings = replaceOnce(settings, "return h('div', { style: panelStyle }, kids)", `return h(Iter5Dialog, { title: L('子代理模型与思考强度', 'Subagent model and reasoning'), onClose: function () { setMdlOpen(false) } },
-          h('div', { 'data-native-model-picker': '' }, kids.slice(1)),
+          h('div', { 'data-native-model-picker': '', 'data-i5-settings-id': i5SettingsId }, kids.slice(1)),
           h('p', { className: 'i5-muted' }, L('选择会保留在设置草稿中，保存更改后生效。', 'Selections stay in the settings draft until you save changes.')))`)
 settings = replaceOnce(settings, "key: '__default__', 'data-dam-slot'", "key: '__default__', 'aria-pressed': !cfg.subagentModel, 'data-dam-slot'")
-settings = replaceOnce(settings, "key: p.id + '/' + m.id, 'data-dam-slot'", "key: p.id + '/' + m.id, 'aria-pressed': cfg.subagentModel === m.id && cfg.subagentProvider === p.id, 'data-dam-slot'")
-settings = replaceOnce(settings, "key: 'eff-' + row[0] + '-' + (o[0] || 'def'), 'data-dam-slot'", "key: 'eff-' + row[0] + '-' + (o[0] || 'def'), 'aria-pressed': cur === o[0], 'data-dam-slot'")
-settings = replaceOnce(settings, "key: '__manual__', 'data-dam-slot'", "key: '__manual__', 'aria-label': L('手动输入模型', 'Manual model ID'), 'data-dam-slot'")
+settings = replaceOnce(settings, "key: p.id + '/' + m.id, 'data-dam-slot'", "key: p.id + '/' + m.id, 'data-i5-editor-keys': 'subagentProvider', 'aria-pressed': cfg.subagentModel === m.id && cfg.subagentProvider === p.id, 'data-dam-slot'")
+settings = replaceOnce(settings, "key: 'eff-' + row[0] + '-' + (o[0] || 'def'), 'data-dam-slot'", "key: 'eff-' + row[0] + '-' + (o[0] || 'def'), 'data-i5-editor-keys': row[0], 'aria-pressed': cur === o[0], 'data-dam-slot'")
+settings = replaceOnce(settings, "key: '__manual__', 'data-dam-slot'", "key: '__manual__', 'data-i5-editor-keys': 'subagentModel', 'aria-label': L('手动输入模型', 'Manual model ID'), 'data-dam-slot'")
 settings = replaceOnce(settings, "browseOpen ? h('div', { style:", "browseOpen ? h(Iter5Dialog, { title: L('选择记忆目录', 'Choose memory directory'), onClose: function () { setBrowseOpen(false) } }, h('div', { 'data-native-path-browser': '', style:")
 settings = replaceOnce(settings, "onClick: function () { setBrowseOpen(false) } }, t('close'))))\n            : null", "onClick: function () { setBrowseOpen(false) } }, t('close')))))\n            : null")
 settings = replaceOnce(settings, "}, '📁 ' + d.name)", "}, h(Iter5Icon, { name: 'folder' }), d.name)")
 settings = replaceOnce(settings, "return h('div', { style: { border: '1px solid color-mix(in srgb, var(--dam-accent, #2456c4) 40%, transparent)'", "return h('div', { 'data-native-engine-guide': guide, style: { border: '1px solid color-mix(in srgb, var(--dam-accent, #2456c4) 40%, transparent)'")
-settings = replaceAllT(settings, "id: 'dam-settings-'", "id: 'i5-settings-section-'", 'G0-2/settings:303 设置分节 id 前缀（dam-settings- 改 i5-settings-section-）', 2)
 // Host settings stay native; workbench appearance controls belong in their named group.
 settings = replaceOnce(settings, "h('div', { 'data-dam-settings-content': '',", "props && props.draftScope === 'host' && i5Group[0] === 'appearance' ? h('div', { className: 'i5-workbench-appearance' }, h('strong', null, L3('工作台外观', 'Workbench appearance', 'ワークベンチの外観')), h(Iter5StylePicker), h(Iter5ModePicker)) : null, h('div', { 'data-dam-settings-content': '',")
 // Instance-local tabs/sections avoid collisions when host and workbench settings coexist.
-settings = replaceT(settings, 'var i5Group = useState', "var i5SettingsId = useRef('i5-settings-' + (++iter5SettingsSequence)).current\n      var i5Group = useState", 'G0-2/settings:307 实例级设置区 id 注入')
-settings = replaceAllT(settings, "'i5-settings'", 'i5SettingsId', 'G0-2/settings:308 设置区 id 实例化', 1)
-settings = replaceAllT(settings, "'i5-settings-panel'", "i5SettingsId + '-panel'", 'G0-2/settings:308 面板 id 实例化', 1)
-settings = replaceAllT(settings, "'i5-settings-tab-'", "i5SettingsId + '-tab-'", 'G0-2/settings:308 页签 id 前缀实例化', 1)
-settings = replaceAllT(settings, "'i5-settings-section-'", "i5SettingsId + '-section-'", 'G0-2/settings:308 分节 id 前缀实例化', 2)
+settings = replaceT(settings, 'var i5Group = useState', "var i5SettingsId = useRef('i5-settings-' + (++iter5SettingsSequence)).current\n      var i5Group = useState", "V3/settings:360")
+settings = replaceT(settings, "'i5-settings'", 'i5SettingsId', 'V3/settings:tab id')
+settings = replaceT(settings, "'i5-settings-panel'", "i5SettingsId + '-panel'", 'V3/settings:panel id')
+settings = replaceT(settings, "'i5-settings-tab-'", "i5SettingsId + '-tab-'", 'V3/settings:tab prefix')
+settings = replaceT(settings, "var alive = true\n        apiGet(API.config)", "var alive = true, request=++i5Read.current\n        apiGet(API.config)", "V3/settings:362")
+settings = replaceT(settings, "if (!alive) return", "if (!alive || request<i5AppliedRead.current) return", "V3/settings:363")
+// Effective gate readout uses committed settings, so drafts cannot claim to be live.
+settings = replaceT(settings, "var gateOk = cfg.associativeMemoryEnabled === true && cfg.activationInboxEnabled === true", "var live = i5Base.current || {}; var gateOk = live.associativeMemoryEnabled === true && live.activationInboxEnabled === true", "V3/settings:365")
+settings = replaceT(settings, "setMsg(t('saved') + (d.migrated ? ' · ' + d.migrated : '') + (d.warning ? ' · ' + d.warning : ''))", "setMsg(t('saved') + (d.migrated ? ' ' + d.migrated : '') + (d.warning ? ' ' + d.warning : ''))", "V3/settings:366")
+settings = replaceAllT(settings, 'if (busy) return', 'if (i5Busy.current || !i5Ok()) return', "V3/settings:367", 3)
+// Every successful semantic read uses the same apply path. The save broadcast may
+// supersede the initiating request; its accepted response must still open setup.
+settings = replaceAllT(settings, 'refreshSem(setSem)', 'refreshSem(i5ApplySem,null,setSem)', "V3/settings:370", 5)
+settings = replaceOnce(settings, 'function apply(value){if(alive)setSem(value)}', 'function apply(value){if(alive)i5ApplySem(value)}')
 let storage = client.slice(client.indexOf('    function StorageTab(props) {'), client.indexOf('    function NotesTab() {'))
 storage = replaceOnce(storage, 'function StorageTab(props)', 'function Iter5Storage(props)')
 storage = replaceAllT(storage, ".then(function (r) { return r.json() })", ".then(function (r) { return r.json().then(function (j) { if (!r.ok || (j && j.error)) throw Error(j && (j.error || j.reason) || 'Request failed'); return j }) })", 'G0-2/storage:311 请求失败判定（r.json 包装）', 2)
@@ -462,21 +445,15 @@ stats = replaceOnce(stats, "      h('div', { style: { opacity: .72, fontSize: '1
 // Zero-event channels used to repeat statsNoInject in all three cards; their own hint now carries the empty state.
 stats = replaceOnce(stats, "        : h('div', { style: { opacity: .5, fontSize: '12px' } }, t('statsNoInject'))))", "        : ch.events ? h('div', { className: 'i5-native-stat-empty' }, t('statsNoInject')) : null))")
 const readSkin = name => readFileSync(path.join(root, 'skins/iter5', name), 'utf8').replace(/\r\n/g, '\n')
-const cssRaw = (readSkin('skin.css') + '\n' + readSkin('native-tour.css') + '\n' + readSkin('native-panel.css') + '\n' + readSkin('native-settings.css') + '\n' + readSkin('native-workbench.css') + '\n' + readSkin('native-library.css') + '\n' + readSkin('native-operations.css') + '\n' + readSkin('native-secondary.css') + '\n' + readSkin('style-variants.css')).trim()
-let css = replaceT(cssRaw, '[data-iter5]{--i5-blue:', '[data-iter5],[data-dam-theme]{--i5-blue:', 'G0-2/css:370 变体表浅色主题选择器前缀')
-css = replaceT(css, '[data-iter5][data-deep=true]{--i5-blue:', '[data-iter5][data-deep=true],[data-dam-theme][data-deep=true],[data-dam-theme][data-deep=true] [data-iter5]{--i5-blue:', 'G0-2/css:371 变体表深色主题选择器前缀')
+const css = (readSkin('skin.css') + '\n' + readSkin('native-tour.css') + '\n' + readSkin('native-panel.css') + '\n' + readSkin('native-settings.css') + '\n' + readSkin('native-workbench.css') + '\n' + readSkin('native-library.css') + '\n' + readSkin('native-operations.css') + '\n' + readSkin('native-secondary.css') + '\n' + readSkin('style-variants.css') + '\n' + readSkin('settings-v3.css')).trim()
+  .replace('[data-iter5]{--i5-blue:', '[data-iter5],[data-dam-theme]{--i5-blue:')
+  .replace('[data-iter5][data-deep=true]{--i5-blue:', '[data-iter5][data-deep=true],[data-dam-theme][data-deep=true],[data-dam-theme][data-deep=true] [data-iter5]{--i5-blue:')
 const ui = readSkin('style-choice.js').trimEnd() + '\n' + readSkin('alternate-home.js').trimEnd() + '\n' + readSkin('ui.js').trimEnd() + '\n' + readSkin('views.js').trimEnd() + '\n' + readSkin('surfaces.js').trimEnd() + '\n' + readSkin('native-panel.js').trimEnd() + '\n' + readSkin('native-workbench.js').trimEnd() + '\n' + readSkin('native-search.js').trimEnd() + '\n' + readSkin('native-skills.js').trimEnd() + '\n' + readSkin('native-storage.js').trimEnd() + '\n' + readSkin('native-team.js').trimEnd() + '\n' + readSkin('native-map.js').trimEnd() + '\n' + readSkin('native-messages.js').trimEnd()
-settings = replaceT(settings, "L('引擎', 'Engine')", "L('查找与回忆', 'Find & recall')", 'G0-2/settings:372 分组标题「引擎」')
-settings = replaceT(settings, "L('记忆', 'Memory')", "L('记录与使用', 'Record & use')", 'G0-2/settings:372 分组标题「记忆」')
-settings = replaceT(settings, "L('行为与维护', 'Behavior & maintenance')", "L('接续与维护', 'Continue & maintain')", 'G0-2/settings:372 分组标题「行为与维护」')
-settings = replaceT(settings, "L('shadow 只记录', 'shadow (record only)')", "L('只观察，不交给 AI', 'Observe only; do not supply to AI')", 'G0-2/settings:373 发射模式「shadow 只记录」')
-settings = replaceT(settings, "L('canary 显式回忆注入', 'canary (explicit recall)')", "L('明确要求回忆时提供', 'Supply on explicit recall requests')", 'G0-2/settings:373 发射模式「canary 显式回忆注入」')
-settings = replaceT(settings, "L('active 全部注入', 'active (all)')", "L('主动提供相关记忆', 'Proactively supply matching memories')", 'G0-2/settings:373 发射模式「active 全部注入」')
-settings = replaceT(settings, "L('balanced 3×40', 'balanced 3×40')", "L('平衡：3 条 × 40 字符', 'Balanced: 3 × 40 characters')", 'G0-2/settings:374 回忆预算「balanced 3×40」')
-settings = replaceT(settings, "L('dense 6×20', 'dense 6×20')", "L('广泛：6 条 × 20 字符', 'Broad: 6 × 20 characters')", 'G0-2/settings:374 回忆预算「dense 6×20」')
-settings = replaceT(settings, "L('custom 自定义', 'custom')", "L('自定义', 'Custom')", 'G0-2/settings:374 回忆预算「custom 自定义」')
-settings = replaceT(settings, "['lexical', t('semLexOnly')], ['js', t('semJs')], ['python', t('semPy')]", "['lexical', L('按关键词查找（无需下载模型）', 'Keywords (no model download)')], ['js', L('按意思查找（需本地模型）', 'Meaning (requires a local model)')], ['python', L('Python 搜索工具（需单独安装）', 'Python search tools (separate setup)')]", 'G0-2/settings:375 检索模式短标三元组')
-const generated = begin + '\n    var ITER5_CSS = ' + JSON.stringify(css) + '\n' + ui + '\n' + readSkin('settings-copy.js') + '\n' + settings + storage + skills + stats + end + '\n'
+settings = replaceT(replaceT(replaceT(settings, "L('shadow 只记录', 'shadow (record only)')", "L('只观察，不交给 AI', 'Observe only; do not supply to AI')", "V3/settings:438"), "L('canary 显式回忆注入', 'canary (explicit recall)')", "L('明确要求回忆时提供', 'Supply on explicit recall requests')", "V3/settings:438"), "L('active 全部注入', 'active (all)')", "L('主动提供相关记忆', 'Proactively supply matching memories')", "V3/settings:438")
+settings = replaceT(replaceT(replaceT(settings, "L('balanced 3×40', 'balanced 3×40')", "L('平衡：3 条 × 40 字符', 'Balanced: 3 × 40 characters')", "V3/settings:439"), "L('dense 6×20', 'dense 6×20')", "L('广泛：6 条 × 20 字符', 'Broad: 6 × 20 characters')", "V3/settings:439"), "L('custom 自定义', 'custom')", "L('自定义', 'Custom')", "V3/settings:439")
+settings = replaceT(settings, "['lexical', t('semLexOnly')], ['js', t('semJs')], ['python', t('semPy')]", "['lexical', L('按关键词查找（无需下载模型）', 'Keywords (no model download)')], ['js', L('按意思查找（需本地模型）', 'Meaning (requires a local model)')], ['python', L('Python 搜索工具（需单独安装）', 'Python search tools (separate setup)')]", "V3/settings:440")
+const settingsCss = readSkin('shared-settings-base.css') + '\n' + readSkin('settings-v3.css')
+const generated = begin + '\n    var ITER5_CSS = ' + JSON.stringify(css) + '\n    var ITER5_SETTINGS_CSS = ' + JSON.stringify(settingsCss) + '\n' + ui + '\n' + readSkin('settings-schema.js') + '\n' + readSkin('settings-copy.js') + '\n' + readSkin('settings-layout.js') + '\n' + settings + storage + skills + stats + end + '\n'
 const seam = '    // ===================== dam-skin:end (v4) ====================='
 // ★2026-10-01 修（病根 2）：seam 插入时**一并写出唯一的标记对**，让 generated 恰好被
 //   BEGIN/END 包住。这样每轮产物里产物块恒为 1 份 ⇒ 幂等；
@@ -565,20 +542,12 @@ const d2Subscribe = [
   "      //   三条安全线：①有未保存草稿时不覆盖用户输入（只提示）；②busy 中不重取；③身份不符放弃。",
   "      useEffect(function () {",
   "        return controller.subscribe(function () {",
-  "          if (busy) return",
+  "          if (i5Busy.current) return",
   "          if (!i5Ok()) return",
+  "          var request=++i5Read.current",
   "          apiGet(API.config).then(function (d) {",
-  "            if (!i5Ok()) return",
-  "            var remote = configOf(d)",
-  "            i5Base.current = remote",
-  "            if (Object.keys(i5Draft.current).length) {",
-  "              var changed = Object.keys(i5Draft.current).filter(function (key) { return JSON.stringify(remote[key]) !== JSON.stringify(i5Draft.current[key]) })",
-  "              if (changed.length) setMsg(L(\"检测到其他入口的修改：\", \"Changes detected from another entry: \") + changed.join(\", \") + L(\"。你的未保存输入未被覆盖。\", \" Your unsaved edits were not overwritten.\"))",
-  "              setCfg(function (prev) { return Object.assign({}, remote, i5Draft.current) })",
-  "            } else {",
-  "              setCfg(remote)",
-  "              setDirty(false)",
-  "            }",
+  "            if (!i5Ok() || request<i5AppliedRead.current) return",
+  "            i5ApplyConfig(d, request)",
   "          }).catch(function () {})",
   "        })",
   "      }, [busy])",
@@ -589,11 +558,9 @@ if (!client.includes('订阅唯一写出口的广播')) {
   const aliveAnchor = "        return function () { i5Alive.current = false; window.removeEventListener('beforeunload', before) }\n      }, [])"
   if (!client.includes(aliveAnchor)) throw new Error('D2: i5Alive anchor missing')
   client = replaceT(client, aliveAnchor, aliveAnchor + '\n' + d2Subscribe, 'G0-2/D2:481 广播重取 effect 注入（首个 I5 实例）')
-  // 第二个 I5 实例缩进多两级（生成块内嵌更深）
-  const aliveAnchor2 = "          return function () { i5Alive.current = false; window.removeEventListener('beforeunload', before) }\n        }, [])"
-  // ★2026-10-02 G0-2（R2-a）：原先 includes 未命中即**静默跳过**（第二个 I5 实例收不到广播重取）。
-  requireAnchor(client, aliveAnchor2, 'G0-2/D2:484 第二个 I5 实例锚点')
-  client = replaceT(client, aliveAnchor2, aliveAnchor2 + '\n' + d2Subscribe.replace(/^      /gm, '        '), 'G0-2/D2:484 广播重取 effect 注入（第二个 I5 实例）')
+  // V3 has one generated settings implementation; classic and frozen delegate to it.
+  if (g2Count(client, 'function Iter5Settings(props) {') !== 2) throw g2Miss('V3/D2 shared settings + frozen delegation', 2, g2Count(client, 'function Iter5Settings(props) {'))
+  requireAnchor(client, 'function Iter5Settings(props) { return h(DamSharedSettings, props) }', 'V3/D2 frozen delegation')
 }
 
 

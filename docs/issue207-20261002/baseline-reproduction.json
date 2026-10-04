@@ -1,0 +1,18 @@
+{
+  "baseline": "131ca794b9f0d07f78b19bf6feee3312939854ed",
+  "failedSerialAllocationResults": [
+    13,
+    13
+  ],
+  "counterDiskLast": 12,
+  "failedLatchReportedSuccess": true,
+  "failedLatchMemoryMembership": true,
+  "failedLatchDiskExists": false,
+  "archiveWriteFailureThrew": false,
+  "archiveDisk": {
+    "old": 123
+  },
+  "continuedDiskCount": 200,
+  "restartedContainsFirstSource": false,
+  "restartedContainsLastSource": true
+}

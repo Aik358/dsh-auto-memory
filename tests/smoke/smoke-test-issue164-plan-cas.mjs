@@ -9,7 +9,7 @@ import {planCardsPre,planRevisionPre,anchoredPlanPre,archivePlanPre} from '../..
 const root=await mkdtemp(path.join(os.tmpdir(),'dam-plan-cas-'))
 const home=process.env.DSH_HOME;process.env.DSH_HOME=root
 try {
- const a=new MemoryEngine(),b=new MemoryEngine();for(const e of[a,b]){e.configLoaded=true;e.config.criteriaGate=false;e.config.boardMode='graph'}
+ const a=new MemoryEngine(),b=new MemoryEngine();for(const e of[a,b]){e.configLoaded=true;e.config.criteriaGate=false;e.config.boardMode='graph';e.config.memoryRoot=path.join(root,'memory');e.config.userMemoryDir=path.join(root,'user')}
  const project=path.join(root,'project'),file=path.join(project,'handoff','PLAN.md')
  const original='# Board\r\n\r\n## Alpha\r\n'+'Stable original Alpha body sufficiently detailed for criteria.\r\n<!--user-->Keep  two spaces\r\n<!--/user-->\r\n\r\n## Beta\r\nStable original Beta body sufficiently detailed for criteria.\r\n'
  const created=await a.writePlanSnapshot(project,original);assert.equal(created.ok,true,created.error)

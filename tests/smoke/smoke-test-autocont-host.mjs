@@ -72,7 +72,13 @@ function makeEngine(opts) {
   const sc = {
     // createFailWs(2026-09-28):仅当带 workspaceId 时失败 —— 专测「workspaceId 失效 → 回退 cwd」，
     // 与 createFail(无条件失败)区分开。
-    create: async (r) => { calls.create.push(r); calls.order.push('create'); if (opts && opts.createFail) throw new Error('create failed'); if (opts && opts.createFailScoped && (r.workspaceId || r.cwd)) throw new Error('source workspace unavailable'); if (opts && opts.createFailWs && r && r.workspaceId) throw new Error('bad workspace'); return { sessionId: 'session-new-' + calls.create.length } },
+    create: async (r) => {
+      calls.create.push(r); calls.order.push('create')
+      if (opts && opts.createFail) throw new Error('create failed')
+      if (opts && (opts.createFailScoped || opts.createFailWs) && r.workspaceId) throw Object.assign(new Error('workspace not found'), {code:'workspace/not-found', details:{workspaceId:r.workspaceId}})
+      if (opts && opts.createFailScoped && r.cwd) throw new Error('source workspace unavailable')
+      return { sessionId: 'session-new-' + calls.create.length }
+    },
     selectModel: async (r) => { calls.select.push(r); calls.order.push('selectModel') },
     prompt: async (r) => { calls.prompt.push(r); calls.order.push('prompt:' + String(r && r.sessionId)) },
     rename: async (r) => { calls.rename.push(r) },
@@ -105,6 +111,8 @@ function makeEngine(opts) {
     }
   }
   const eng = {
+    continuedSessionsFile: () => '/virtual/state',
+    async markContinuedSession(sid) { this._continuedSessions.add(this.waterKey(sid)); return true },
     config: (opts && opts.config) || {},
     _autoContState: undefined,
     hasReliableSessionIdentity(agent) { return !!(agent && agent.session && agent.session.id) },
@@ -149,8 +157,10 @@ function makeEngine(opts) {
     const obj = new Function('diag', 'AbortSignal', 'shouldArmAutoContinuePre',
       'isSubAgentSession',
       'DEFAULT_AUTO_CONTINUE_THRESHOLD', 'DEFAULT_WATER_LEVEL_THRESHOLD', 'contTitleStampPre', 'continuationProbePre', 'continuationRitualEndPre',
+      'acquireSharedStateLock', 'continuedSourceFile', 'continuedSourceView', 'continuedSourceState', 'reserveContinuedSource', 'releaseContinuedSource', 'setContinuedSourceTarget',
       'return {' + extractFn(h) + '};')(
-      () => {}, { timeout: () => undefined }, shouldArmAutoContinuePre, (x) => { const h = x && x.session && x.session.header; if (!h) return false; if (String(h.origin || '') === 'subagent') return true; const d = Number(h.delegationDepth); return Number.isFinite(d) && d > 0 }, 0.75, 0.75, contTitleStampPre, continuationProbePre, continuationRitualEndPre)
+      () => {}, { timeout: () => undefined }, shouldArmAutoContinuePre, (x) => { const h = x && x.session && x.session.header; if (!h) return false; if (String(h.origin || '') === 'subagent') return true; const d = Number(h.delegationDepth); return Number.isFinite(d) && d > 0 }, 0.75, 0.75, contTitleStampPre, continuationProbePre, continuationRitualEndPre,
+      async () => () => {}, () => '/virtual/source', () => null, (file, sid) => eng._continuedSessions.has(sid) ? {status:'done'} : null, async () => 'fixture-token', async () => {}, async () => {})
     const key = Object.keys(obj)[0]
     fns[key] = obj[key].bind(eng)
   }
@@ -267,7 +277,7 @@ const rScoped = await eScoped.fns.hostAutoContinue()
 ok(rScoped && !rScoped.ok && /source workspace unavailable/.test(rScoped.error), 'both source-workspace creates fail => explicit failure')
 ok(eScoped.calls.create.length === 2 && eScoped.calls.create.every(r => r.workspaceId || r.cwd), 'no third unscoped create')
 ok(eScoped.calls.prompt.length === 0, 'failed scoped create sends neither carry material nor success notice')
-ok(!eScoped.eng._autoContState.lastOk && !eScoped.eng._continuedSessions.has('session-a'), 'failed create leaves source uncontinued for a later retry')
+ok(!eScoped.eng._autoContState.lastOk && rScoped.continuationPending, 'unknown fallback creation retains pending rather than authorizing a blind retry')
 
 // ★2026-09-28（搭线补完 + 三级回退）：workspaceId 失效（工作区被删/registry 过期）→ create 自动回退
 //   cwd（与浏览器 executeContinue 同款）；接续完成后给**旧会话**投一条搭线通知（mode:queue），
@@ -491,10 +501,10 @@ console.log('[autocont-host] A10 卡面口径 + 已接续闩锁 + 会话归属(2
   ok(/if \(this\.isContinuedSession\(sid\)\) return/.test(SRC), 'armAutoContinue 对已接续会话直接返回')
   ok(!/engine\.markContinuedSession\(body\.fromSessionId, body\.toSessionId\)/.test(SRC),
     '权限回调不能代替材料接受，不再落闩')
-  ok(/this\.markContinuedSession\(oldSid, newId\)/.test(SRC), '宿主路径接续成功后落闩')
+  ok(/await this\.markContinuedSession\(oldSid, newId, reservation\)/.test(SRC), '宿主路径接续成功后落闩')
   ok(/path\.join\(dshHome\(\), 'memory', 'auto-continue-done\.json'\)/.test(SRC), '闩锁落盘(重启后依旧生效)')
   const fnHost = extractFn('async hostAutoContinue() {')
-  ok(fnHost.indexOf('this.markContinuedSession(oldSid, newId)') > fnHost.indexOf('await sc.prompt('),
+  ok(fnHost.indexOf('await this.markContinuedSession(oldSid, newId, reservation)') > fnHost.indexOf('await sc.prompt('),
     '落闩在投料成功之后(prompt 之前失败则不落闩,允许下次重试)')
 
   const eLatch = makeEngine({ config: { autoContinueEnabled: true, handoffEnabled: true, autoContinueThreshold: 0.75 }, continued: new Set(['a']) })

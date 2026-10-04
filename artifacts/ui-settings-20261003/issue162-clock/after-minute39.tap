@@ -1,0 +1,172 @@
+TAP version 13
+# Subtest: secret guard permits ISO timestamps containing 39 but rejects stale prose and credentials
+ok 1 - secret guard permits ISO timestamps containing 39 but rejects stale prose and credentials
+  ---
+  duration_ms: 4.346833
+  type: 'test'
+  ...
+# Subtest: dashboard fixture fixes only runtime clock/PID and keeps the integrity guard strict
+ok 2 - dashboard fixture fixes only runtime clock/PID and keeps the integrity guard strict
+  ---
+  duration_ms: 6.046592
+  type: 'test'
+  ...
+# Subtest: missing capability, missing method, successful empty and successful hit stay distinct
+ok 3 - missing capability, missing method, successful empty and successful hit stay distinct
+  ---
+  duration_ms: 25.358944
+  type: 'test'
+  ...
+# Subtest: thrown host query uses truthful fallback and the real counters/recent, once per call
+ok 4 - thrown host query uses truthful fallback and the real counters/recent, once per call
+  ---
+  duration_ms: 22.068318
+  type: 'test'
+  ...
+# Subtest: empty fallback reports bounded scan, and recovery carries no stale request diagnostics
+ok 5 - empty fallback reports bounded scan, and recovery carries no stale request diagnostics
+  ---
+  duration_ms: 16.608934
+  type: 'test'
+  ...
+# Subtest: concurrent requests share history but never explanations or hits
+ok 6 - concurrent requests share history but never explanations or hits
+  ---
+  duration_ms: 8.172517
+  type: 'test'
+  ...
+# Subtest: missing decoder, absent directory and root IO failure do not masquerade as empty success
+ok 7 - missing decoder, absent directory and root IO failure do not masquerade as empty success
+  ---
+  duration_ms: 16.881485
+  type: 'test'
+  ...
+# Subtest: scan read/decode failures aggregate once and preserve usable hits
+ok 8 - scan read/decode failures aggregate once and preserve usable hits
+  ---
+  duration_ms: 13.098346
+  type: 'test'
+  ...
+# Subtest: scan cap counts failed attempts, newest order and oversized skip before file read
+ok 9 - scan cap counts failed attempts, newest order and oversized skip before file read
+  ---
+  duration_ms: 41.791701
+  type: 'test'
+  ...
+# Subtest: frame and byte budgets really constrain production head decoding
+ok 10 - frame and byte budgets really constrain production head decoding
+  ---
+  duration_ms: 24.610282
+  type: 'test'
+  ...
+# Subtest: throwing and rejecting sinks/scanners cannot break fail-soft recall
+ok 11 - throwing and rejecting sinks/scanners cannot break fail-soft recall
+  ---
+  duration_ms: 16.11054
+  type: 'test'
+  ...
+# Subtest: exception projection redacts messages, paths, query secrets, content and malicious values within bounds
+ok 12 - exception projection redacts messages, paths, query secrets, content and malicious values within bounds
+  ---
+  duration_ms: 2.868958
+  type: 'test'
+  ...
+# Subtest: note status write failure is recorded, private error hidden, previous text kept, recovery truthful
+ok 13 - note status write failure is recorded, private error hidden, previous text kept, recovery truthful
+  ---
+  duration_ms: 16.318895
+  type: 'test'
+  ...
+# Subtest: real read failure cannot overwrite from a stale body or claim a successful save
+ok 14 - real read failure cannot overwrite from a stale body or claim a successful save
+  ---
+  duration_ms: 5.10504
+  type: 'test'
+  ...
+# Subtest: audit log failure and post-save failure report what actually persisted
+ok 15 - audit log failure and post-save failure report what actually persisted
+  ---
+  duration_ms: 7.886595
+  type: 'test'
+  ...
+# Subtest: real debugInfo/persistence/dashboard path exposes failures and persistence failure stays observable
+ok 16 - real debugInfo/persistence/dashboard path exposes failures and persistence failure stays observable
+  ---
+  duration_ms: 25.055957
+  type: 'test'
+  ...
+# Subtest: unchanged retention bounds apply to newly wired diagnostic events
+ok 17 - unchanged retention bounds apply to newly wired diagnostic events
+  ---
+  duration_ms: 4.792436
+  type: 'test'
+  ...
+# Subtest: malformed successful host response is reported as processing failure, not a thrown host search
+ok 18 - malformed successful host response is reported as processing failure, not a thrown host search
+  ---
+  duration_ms: 9.371119
+  type: 'test'
+  ...
+# Subtest: note-status remains fail-soft with a broken sink and unchanged skipped-status behavior
+ok 19 - note-status remains fail-soft with a broken sink and unchanged skipped-status behavior
+  ---
+  duration_ms: 6.298374
+  type: 'test'
+  ...
+# Subtest: real memory_note callback confirms the completed note write and safely reports a status exception
+ok 20 - real memory_note callback confirms the completed note write and safely reports a status exception
+  ---
+  duration_ms: 5.375398
+  type: 'test'
+  ...
+# Subtest: normal head-budget truncation is visible and is not recorded as an unexpected decode failure
+ok 21 - normal head-budget truncation is visible and is not recorded as an unexpected decode failure
+  ---
+  duration_ms: 19.729958
+  type: 'test'
+  ...
+# Subtest: scope=all preserves empty fallback explanation without fabricating a sessions hit section
+ok 22 - scope=all preserves empty fallback explanation without fabricating a sessions hit section
+  ---
+  duration_ms: 8.182027
+  type: 'test'
+  ...
+# Subtest: analogous Python rank catch records an actual sidecar exception once, while empty success stays quiet
+ok 23 - analogous Python rank catch records an actual sidecar exception once, while empty success stays quiet
+  ---
+  duration_ms: 6.083859
+  type: 'test'
+  ...
+# Subtest: migration candidates use newest mtime, v3 wins ties, and stat failure retains a usable candidate
+ok 24 - migration candidates use newest mtime, v3 wins ties, and stat failure retains a usable candidate
+  ---
+  duration_ms: 9.964928
+  type: 'test'
+  ...
+# Subtest: head decoder recovers prefix and reports structural corruption only inside frame and byte budgets
+ok 25 - head decoder recovers prefix and reports structural corruption only inside frame and byte budgets
+  ---
+  duration_ms: 0.943246
+  type: 'test'
+  ...
+# Subtest: truncated header, block, checksum and reserved block type retain preceding complete frames
+ok 26 - truncated header, block, checksum and reserved block type retain preceding complete frames
+  ---
+  duration_ms: 0.479235
+  type: 'test'
+  ...
+# Subtest: fallback keeps usable hits while aggregating an in-budget corrupt tail into the real sink
+ok 27 - fallback keeps usable hits while aggregating an in-budget corrupt tail into the real sink
+  ---
+  duration_ms: 3.353561
+  type: 'test'
+  ...
+1..27
+# tests 27
+# suites 0
+# pass 27
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 446.138181

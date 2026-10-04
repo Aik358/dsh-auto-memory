@@ -1,0 +1,228 @@
+TAP version 13
+# Subtest: missing capability, missing method, successful empty and successful hit stay distinct
+ok 1 - missing capability, missing method, successful empty and successful hit stay distinct
+  ---
+  duration_ms: 16.452039
+  type: 'test'
+  ...
+# Subtest: thrown host query uses truthful fallback and the real counters/recent, once per call
+not ok 2 - thrown host query uses truthful fallback and the real counters/recent, once per call
+  ---
+  duration_ms: 8.358495
+  type: 'test'
+  location: '/workspace/dsh-baseline/tests/smoke/smoke-test-issue162-diagnostic-integrity.mjs:131:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    The input was expected to not match the regular expression /credential123|URLSECRET|PERSONAL|正文私人内容|user:pass|Bearer|\b39\b|descriptor v2|v0→v1/. Input:
+
+    '{"schemaVersion":"degrade_pre_v1","updatedAt":"2026-10-03T09:41:39.000Z","counts":{"session-search":2},"recent":[{"kind":"session-search","reason":"type=Error; code=EACCES; message=[redacted]","at":"2026-10-03T09:41:39.000Z"},{"kind":"session-search","reason":"type=Error; code=EACCES; message=[redacted]","at":"2026-10-03T09:41:39.000Z"}],"evicted":0,"cap":200}'
+
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: '{"schemaVersion":"degrade_pre_v1","updatedAt":"2026-10-03T09:41:39.000Z","counts":{"session-search":2},"recent":[{"kind":"session-search","reason":"type=Error; code=EACCES; message=[redacted]","at":"2026-10-03T09:41:39.000Z"},{"kind":"session-search","reason":"type=Error; code=EACCES; message=[redacted]","at":"2026-10-03T09:41:39.000Z"}],"evicted":0,"cap":200}'
+  operator: 'doesNotMatch'
+  stack: |-
+    absentSecrets (file:///workspace/dsh-baseline/tests/smoke/smoke-test-issue162-diagnostic-integrity.mjs:105:10)
+    TestContext.<anonymous> (file:///workspace/dsh-baseline/tests/smoke/smoke-test-issue162-diagnostic-integrity.mjs:147:3)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: empty fallback reports bounded scan, and recovery carries no stale request diagnostics
+ok 3 - empty fallback reports bounded scan, and recovery carries no stale request diagnostics
+  ---
+  duration_ms: 6.254281
+  type: 'test'
+  ...
+# Subtest: concurrent requests share history but never explanations or hits
+ok 4 - concurrent requests share history but never explanations or hits
+  ---
+  duration_ms: 9.246799
+  type: 'test'
+  ...
+# Subtest: missing decoder, absent directory and root IO failure do not masquerade as empty success
+ok 5 - missing decoder, absent directory and root IO failure do not masquerade as empty success
+  ---
+  duration_ms: 11.375229
+  type: 'test'
+  ...
+# Subtest: scan read/decode failures aggregate once and preserve usable hits
+ok 6 - scan read/decode failures aggregate once and preserve usable hits
+  ---
+  duration_ms: 6.592954
+  type: 'test'
+  ...
+# Subtest: scan cap counts failed attempts, newest order and oversized skip before file read
+ok 7 - scan cap counts failed attempts, newest order and oversized skip before file read
+  ---
+  duration_ms: 14.484332
+  type: 'test'
+  ...
+# Subtest: frame and byte budgets really constrain production head decoding
+ok 8 - frame and byte budgets really constrain production head decoding
+  ---
+  duration_ms: 22.353907
+  type: 'test'
+  ...
+# Subtest: throwing and rejecting sinks/scanners cannot break fail-soft recall
+ok 9 - throwing and rejecting sinks/scanners cannot break fail-soft recall
+  ---
+  duration_ms: 12.707584
+  type: 'test'
+  ...
+# Subtest: exception projection redacts messages, paths, query secrets, content and malicious values within bounds
+ok 10 - exception projection redacts messages, paths, query secrets, content and malicious values within bounds
+  ---
+  duration_ms: 3.101661
+  type: 'test'
+  ...
+# Subtest: note status write failure is recorded, private error hidden, previous text kept, recovery truthful
+not ok 11 - note status write failure is recorded, private error hidden, previous text kept, recovery truthful
+  ---
+  duration_ms: 8.313987
+  type: 'test'
+  location: '/workspace/dsh-baseline/tests/smoke/smoke-test-issue162-diagnostic-integrity.mjs:290:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    The input was expected to not match the regular expression /credential123|URLSECRET|PERSONAL|正文私人内容|user:pass|Bearer|\b39\b|descriptor v2|v0→v1/. Input:
+
+    '{"schemaVersion":"degrade_pre_v1","updatedAt":"2026-10-03T09:41:39.000Z","counts":{"note-status":1},"recent":[{"kind":"note-status","reason":"type=Error; code=EACCES; message=[redacted]","at":"2026-10-03T09:41:39.000Z"}],"evicted":0,"cap":200}'
+
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: '{"schemaVersion":"degrade_pre_v1","updatedAt":"2026-10-03T09:41:39.000Z","counts":{"note-status":1},"recent":[{"kind":"note-status","reason":"type=Error; code=EACCES; message=[redacted]","at":"2026-10-03T09:41:39.000Z"}],"evicted":0,"cap":200}'
+  operator: 'doesNotMatch'
+  stack: |-
+    absentSecrets (file:///workspace/dsh-baseline/tests/smoke/smoke-test-issue162-diagnostic-integrity.mjs:105:10)
+    TestContext.<anonymous> (file:///workspace/dsh-baseline/tests/smoke/smoke-test-issue162-diagnostic-integrity.mjs:300:3)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: real read failure cannot overwrite from a stale body or claim a successful save
+ok 12 - real read failure cannot overwrite from a stale body or claim a successful save
+  ---
+  duration_ms: 4.773041
+  type: 'test'
+  ...
+# Subtest: audit log failure and post-save failure report what actually persisted
+ok 13 - audit log failure and post-save failure report what actually persisted
+  ---
+  duration_ms: 6.791625
+  type: 'test'
+  ...
+# Subtest: real debugInfo/persistence/dashboard path exposes failures and persistence failure stays observable
+not ok 14 - real debugInfo/persistence/dashboard path exposes failures and persistence failure stays observable
+  ---
+  duration_ms: 5.926946
+  type: 'test'
+  location: '/workspace/dsh-baseline/tests/smoke/smoke-test-issue162-diagnostic-integrity.mjs:335:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    The input was expected to not match the regular expression /credential123|URLSECRET|PERSONAL|正文私人内容|user:pass|Bearer|\b39\b|descriptor v2|v0→v1/. Input:
+
+    '{"schemaVersion":"degrade_pre_v1","updatedAt":"2026-10-03T09:41:39.000Z","counts":{"session-search":1},"recent":[{"kind":"session-search","reason":"type=Error; code=EACCES; message=[redacted]","at":"2026-10-03T09:41:39.000Z"}],"evicted":0,"cap":200,"quota":{"schemaVersion":"quota_probe_pre_v1","updatedAt":null,"samples":[],"evicted":0,"cap":0,"verdict":{"version":"quota_verdict_pre_v1","verdict":"insufficient-data","samples":0,"dropRate":0,"usage":0,"perLayer":{},"reasons":["无采样"]}}}'
+
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: '{"schemaVersion":"degrade_pre_v1","updatedAt":"2026-10-03T09:41:39.000Z","counts":{"session-search":1},"recent":[{"kind":"session-search","reason":"type=Error; code=EACCES; message=[redacted]","at":"2026-10-03T09:41:39.000Z"}],"evicted":0,"cap":200,"quota":{"schemaVersion":"quota_probe_pre_v1","updatedAt":null,"samples":[],"evicted":0,"cap":0,"verdict":{"version":"quota_verdict_pre_v1","verdict":"insufficient-data","samples":0,"dropRate":0,"usage":0,"perLayer":{},"reasons":["无采样"]}}}'
+  operator: 'doesNotMatch'
+  stack: |-
+    absentSecrets (file:///workspace/dsh-baseline/tests/smoke/smoke-test-issue162-diagnostic-integrity.mjs:105:10)
+    TestContext.<anonymous> (file:///workspace/dsh-baseline/tests/smoke/smoke-test-issue162-diagnostic-integrity.mjs:349:3)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: unchanged retention bounds apply to newly wired diagnostic events
+ok 15 - unchanged retention bounds apply to newly wired diagnostic events
+  ---
+  duration_ms: 2.827687
+  type: 'test'
+  ...
+# Subtest: malformed successful host response is reported as processing failure, not a thrown host search
+ok 16 - malformed successful host response is reported as processing failure, not a thrown host search
+  ---
+  duration_ms: 3.861953
+  type: 'test'
+  ...
+# Subtest: note-status remains fail-soft with a broken sink and unchanged skipped-status behavior
+ok 17 - note-status remains fail-soft with a broken sink and unchanged skipped-status behavior
+  ---
+  duration_ms: 4.853452
+  type: 'test'
+  ...
+# Subtest: real memory_note callback confirms the completed note write and safely reports a status exception
+ok 18 - real memory_note callback confirms the completed note write and safely reports a status exception
+  ---
+  duration_ms: 3.179941
+  type: 'test'
+  ...
+# Subtest: normal head-budget truncation is visible and is not recorded as an unexpected decode failure
+ok 19 - normal head-budget truncation is visible and is not recorded as an unexpected decode failure
+  ---
+  duration_ms: 9.741547
+  type: 'test'
+  ...
+# Subtest: scope=all preserves empty fallback explanation without fabricating a sessions hit section
+ok 20 - scope=all preserves empty fallback explanation without fabricating a sessions hit section
+  ---
+  duration_ms: 6.76241
+  type: 'test'
+  ...
+# Subtest: analogous Python rank catch records an actual sidecar exception once, while empty success stays quiet
+not ok 21 - analogous Python rank catch records an actual sidecar exception once, while empty success stays quiet
+  ---
+  duration_ms: 2.542487
+  type: 'test'
+  location: '/workspace/dsh-baseline/tests/smoke/smoke-test-issue162-diagnostic-integrity.mjs:459:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    The input was expected to not match the regular expression /credential123|URLSECRET|PERSONAL|正文私人内容|user:pass|Bearer|\b39\b|descriptor v2|v0→v1/. Input:
+
+    '{"schemaVersion":"degrade_pre_v1","updatedAt":"2026-10-03T09:41:39.000Z","counts":{"semantic-arm":1},"recent":[{"kind":"semantic-arm","reason":"type=Error; code=EACCES; message=[redacted]","at":"2026-10-03T09:41:39.000Z"}],"evicted":0,"cap":200}'
+
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: '{"schemaVersion":"degrade_pre_v1","updatedAt":"2026-10-03T09:41:39.000Z","counts":{"semantic-arm":1},"recent":[{"kind":"semantic-arm","reason":"type=Error; code=EACCES; message=[redacted]","at":"2026-10-03T09:41:39.000Z"}],"evicted":0,"cap":200}'
+  operator: 'doesNotMatch'
+  stack: |-
+    absentSecrets (file:///workspace/dsh-baseline/tests/smoke/smoke-test-issue162-diagnostic-integrity.mjs:105:10)
+    TestContext.<anonymous> (file:///workspace/dsh-baseline/tests/smoke/smoke-test-issue162-diagnostic-integrity.mjs:474:3)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: migration candidates use newest mtime, v3 wins ties, and stat failure retains a usable candidate
+ok 22 - migration candidates use newest mtime, v3 wins ties, and stat failure retains a usable candidate
+  ---
+  duration_ms: 8.214137
+  type: 'test'
+  ...
+# Subtest: head decoder recovers prefix and reports structural corruption only inside frame and byte budgets
+ok 23 - head decoder recovers prefix and reports structural corruption only inside frame and byte budgets
+  ---
+  duration_ms: 1.329451
+  type: 'test'
+  ...
+# Subtest: truncated header, block, checksum and reserved block type retain preceding complete frames
+ok 24 - truncated header, block, checksum and reserved block type retain preceding complete frames
+  ---
+  duration_ms: 0.341576
+  type: 'test'
+  ...
+# Subtest: fallback keeps usable hits while aggregating an in-budget corrupt tail into the real sink
+ok 25 - fallback keeps usable hits while aggregating an in-budget corrupt tail into the real sink
+  ---
+  duration_ms: 2.80928
+  type: 'test'
+  ...
+1..25
+# tests 25
+# suites 0
+# pass 21
+# fail 4
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 199.424668

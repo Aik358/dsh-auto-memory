@@ -19,10 +19,7 @@ function extract(src, header) {
   throw Error('unbalanced ' + header)
 }
 function compile(src, deps) { return new Function(...Object.keys(deps), 'return ' + src)(...Object.values(deps)) }
-const deps = { diag() {}, AbortSignal, continuationProbePre, continuationRitualEndPre, shouldArmAutoContinuePre,
-  // ★2026-10-04：armAutoContinue 新增外部依赖 isSubAgentSession（子代理会话不得 arm）。抽出的方法体在
-  //   new Function 里重建，作用域中没有模块级绑定 ⇒ 必须一并注入，否则 ReferenceError 会被该方法自身的
-  //   catch 吞掉，表现为"明明达标却不 arm"（同 2026-09-14 shouldArmAutoContinuePre 的教训）。
+const deps = { acquireSharedStateLock:async()=>()=>{},continuedSourceFile:()=>'/virtual/source', continuedSourceState: () => ({status:'done'}), reserveContinuedSource: async () => 'fixture-token', setContinuedSourceTarget: async () => {}, releaseContinuedSource: async () => {}, diag() {}, AbortSignal, continuationProbePre, continuationRitualEndPre, shouldArmAutoContinuePre,
   isSubAgentSession: (x) => { const h = x && x.session && x.session.header; if (!h) return false; if (String(h.origin || '') === 'subagent') return true; const d = Number(h.delegationDepth); return Number.isFinite(d) && d > 0 },
   DEFAULT_AUTO_CONTINUE_THRESHOLD: .75, contTitleStampPre: () => '09-30 12:00', randomUUID: () => 'ritual-request-001' }
 function method(header, extra = {}) {
@@ -31,7 +28,7 @@ function method(header, extra = {}) {
 }
 function engine() {
   const calls = [], marked = new Set()
-  const e = { config: { autoContinueEnabled: true, handoffEnabled: false }, state: {}, calls, marked,
+  const e = { continuedSessionsFile: () => '/virtual/state', waterKey: sid => sid, config: { autoContinueEnabled: true, handoffEnabled: false }, state: {}, calls, marked,
     hasReliableSessionIdentity: a => !!a?.session?.id, isContinuedSession: sid => marked.has(sid),
     markContinuedSession: (from, to) => { calls.push(['mark', from, to]); marked.add(from) },
     buildContinueCarry: async sid => ({ ok: true, prevSessionId: sid, carryText: 'source task', ws: 'C:/source', workspaceId: 'workspace-source', model: 'm', provider: 'p', agentPreset: 'agent', contSeq: 1 }),
@@ -104,17 +101,15 @@ await check('C05 permission-only callback cannot commit continuation', async () 
   await handler({}, {})
   assert.equal(e.marked.size, 0)
 })
-await check('C05 rejected material delivery leaves source retryable', async () => {
+await check('C05 ambiguous creation failure retains pending without delivery or completion', async () => {
   const e = engine()
-  const prompt = e._sessionController.prompt
-  e._sessionController.prompt = async r => { if (r.sessionId === 'successor') throw Error('prompt rejected'); await prompt(r) }
+  e._sessionController.create = async () => { throw Error('create rejected before delivery') }
   const bad = await e.decideAutoContinue('manual', null, 'source')
   assert.equal(bad.ok, false)
+  assert.equal(bad.continuationPending, true)
   assert.equal(e.marked.size, 0)
   assert.equal(e._autoContState.executing, false)
-  e._sessionController.prompt = prompt
-  assert.equal((await e.decideAutoContinue('manual', null, 'source')).ok, true)
-  assert(e.marked.has('source'))
+  assert(!e.calls.some(c => c[0] === 'prompt'))
 })
 await check('C06 simultaneous manual/automatic intents create only one successor', async () => {
   const e = engine(); arm(e)

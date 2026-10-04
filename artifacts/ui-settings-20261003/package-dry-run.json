@@ -1,0 +1,8 @@
+{
+  "dryRun": true,
+  "fileCount": 627,
+  "settingsSafetyIncluded": true,
+  "privateHarnessExcluded": true,
+  "artifactsExcluded": true,
+  "version": "3.2.7"
+}

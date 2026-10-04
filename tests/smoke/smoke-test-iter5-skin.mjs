@@ -1,3 +1,5 @@
+// #218/#219: generated prompt mirror and read-only diagnostic wording; preserve all reviewed behavior checks.
+// Audit integration 2026-10-04: reviewed PR 212 classic NotesTab session/path binding on PR 215 shared settings.
 import assert from 'node:assert/strict'
 import { readFileSync, mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -11,6 +13,7 @@ const source = readFileSync(new URL('../../lib/client.js', import.meta.url), 'ut
 // ★2026-09-30 双皮肤块（用户裁定：旧款为默认 + 三套变体经下拉选择）：
 //   生成区现有**两块**（legacy 旧款 + 三套变体）——本快照关心「剥掉生成区后的经典侧」，
 //   故两块都要拆；并把**分派行**归一回单分支形态，否则比对的就不是「经典档」而是「双块集成形态」。
+// 2026-10-02 intentional classic delta: bind note form session and expected destination.
 const classic = source
   .replace(/    \/\/ ===== ITER5-LEGACY-GENERATED:BEGIN =====[\s\S]*?    \/\/ ===== ITER5-LEGACY-GENERATED:END =====\n/, '')
   .replace(/    \/\/ ITER5-GENERATED:BEGIN[\s\S]*?    \/\/ ITER5-GENERATED:END\n/, '')
@@ -43,6 +46,7 @@ const classic = source
 // ★2026-09-30（D2 · 设置双向实时同步）本快照第七次演进：saveConfigPatch 成功后 emit 广播（唯一写出口
 //   一处收口）；两个 I5 入口（宿主设置面板 / 工作台设置页）各增一个「广播即重取」effect，含三条安全线
 //   （有草稿不覆盖用户输入 / busy 不重取 / 身份不符放弃）。功能性验收见 smoke-test-settings-sync.mjs。
+// 2026-10-03 reviewed update: draft persistence/CAS, strict save errors, raw editor strings, request generations, settings grouping, secret masking, truthful current defaults. See docs/ui-settings-20261003/REVIEW.md.
 // ★2026-09-30（D3 · 提示词层镜像 12→23 逐字一致）本快照第八次演进：DEFAULT_PROMPT_LAYERS_CLIENT
 //   由 12 层扩为与服务端同键序的 23 层、逐字一致（此前 snapshotHead/snapshotWelcomeBody 为截断版）。
 //   守卫升级：g4-whiteboard 新增 G4-6d（键集相等 + 逐键求值比对），并把原 G4-6b 的键序假设改为花括号配对抽取。
@@ -67,28 +71,10 @@ const classic = source
 //   (2) 附「向导 where ⇒ 设置页实名单」对照核验：11 个分区名逐条比对，本批后 4 种 where 取值中
 //       「语义记忆总开关」命中最多次（7 次），其余 3 种（记忆窗口 / 自动化 / 记忆中枢）为**批前既有**，未在本批范围内。
 //   守卫语义不变：生成块之外的任何**非意外**改动仍会被本锁抓住；本批期望值随之上移。
-// ★2026-10-02 本快照第十一次演进（审计修复批 F02/#184，增量归因）：
-//   手写区 DebugCenter 的 refresh() 原对 11 个端点发探活请求（其中 greet/workspaces/reflectAuto 是
-//   **有真实副作用的业务端点**：greet 缺缓存时真调模型 + 写 workbench.json 计数；reflectAuto 无
-//   pending 时回退最近日志日并整篇覆盖 reflections/<date>.md）⇒ 打开调试中心即产生真实写入。
-//   本批收敛为**单次只读 GET API.debug**，并把探测表从 11 端点缩到 1（诊断覆盖变窄，可接受）。
-//   守卫语义不变：生成块之外的任何**非意外**改动仍会被本锁抓住；本批期望值随之上移。
-// 2026-10-03 批次 C（审计修复 #186..#204 + R01/R02）：默认关闭/改写的共享入口有意演进，行为由 audit-* 套件覆盖；固化哈希按最终字节重钉。
-// ★2026-10-03 本快照第十二次演进（前端收尾批 5a–5d，增量归因）：
-//   (1) 手写区：useCardFull 缓存键带版本身份 + 失败不缓存 + 上限 256（G1-7/#195）；
-//   (2) 挂载根：MemoryPageView / MemoryPanelFloat 订阅 dam-skin-changed（G1-4/#196）；
-//   (3) 三处 SkinPicker onSwitch 无害化（同一项，源+产物成对）；
-//   (4) pyOk 白名单加 verified-ok（G1-5/#197 四处成组）；
-//   (5) normalizeGapRounds 上提到工厂层（G1-1，修「定义在 damSkinCssText 体内、调用点词法不可达」）；
-//   (6) I18N.ja 七个 __fn 占位还原真函数字面量 + t() 兜底（G1-2）；
-//   (7) G3 死壳摘除：DamSkinV4Page/Screen/Home/Welcome/Settings + DAM_SKIN_V4_PAGES/HOSTED、
-//       renderTeamSettings15 家族、TOUR_STEPS 的 window 暴露；StatsTab 缩进统一。
-//   (8) 同批为 tour 开关按钮补 'data-dam-tour-key' —— 让 G3 后的行为级验收能按配置键断言（不再读源码字符串）。
-//   守卫语义不变：生成块之外的任何**非意外**改动仍会被本锁抓住；本批期望值随之上移。
-// ★issue #211（2026-10-04）第十三次演进：Python 卸载入口（手写区 PySetupWizard 加二次确认按钮 +
-//   API.pyUninstall 新键 + 三语 pyWizUninstall/pyWizUninstallConfirm 文案）。守卫语义不变。
-assert.equal(createHash('sha256').update(classic).digest('hex'), '4bcf2a49ce5676cfc928335ac3b4bca71ff3f9d1ed0ccbfacddccc93aaa0ae8c', 'Reviewed native-reference entry baseline（R77 = R76 + #219 默认提示镜像由主机生成、诊断只读文案；R76 = R75 + 2026-10-04 发版三件套（v3.2.8：指纹行 + 应用内 CHANGELOG 字典 3.2.8 条目；内容见 CHANGELOG.md 同版段）；原 R75 = R74 + 2026-10-04 issue #211 前端：Python 引擎卸载按钮（二次确认）+ pyUninstall 路由键 + 三语体积披露；原 R74 = R72 + 2026-10-02 审计修复批 A+B（增量归因：手写区 DebugCenter 收敛为只读 GET + 团队层接 4 条专用路由（API 表新增 5 键）+ TeamTab 挂载补回调 + L3 段共享订阅轮询）；原 R72 = R71 + 2026-10-01 ①接续开关默认开 + 欢迎向导开关 ②经典档接入 GlobalBriefRow 简报抽屉 ③damSharedSurfaceCss classic 分支归零修复；原 R71 = R70 + 2026-10-01 全局动态简报批（client.js 三面各加 8 个 globalBrief* 控件 + frozen 面补齐上批遗漏的 slimEveryRounds/fullEverySlims 两键）；原 R70 = R69 + #160/#162 修复：python 向导轮询/取消渲染、规则草稿与内容锚定、首屏 tour hero 挂载复原；生成块之外任何**非意外**改动仍会被本锁抓住）')
-console.log('PASS reviewed shared-entry source baseline preserved')
+// V3 reviewed changes outside generated blocks: four destinations, shared settings,
+// isolated workbench drafts, search Escape handling and removal of the duplicate Settings destination. Other edits remain locked.
+assert.equal(createHash('sha256').update(classic).digest('hex'), '6ebf89aae87beb96a4edbdd96fbd7a88f9f355914af38eb8d9cb6b5ff22393ec', 'V3 reviewed classic navigation / shared-settings source baseline')
+console.log('PASS V3 shared settings / four-entry classic source baseline preserved')
 
 const css = readFileSync(new URL('../../skins/iter5/skin.css', import.meta.url), 'utf8')
 for (const line of css.split('\n')) {
@@ -123,7 +109,7 @@ const document = { documentElement: { getAttribute: () => '', style: { setProper
 const window = { localStorage, addEventListener() {}, removeEventListener() {}, confirm() { confirmCount++; return accept }, __ModuleLoader__: { load(def) { exposed = def.factory(name => { if (name === 'react') return React; throw Error('Test module unavailable: ' + name) }) } } }
 const context = vm.createContext({ window, document, localStorage, console: { log() {}, warn() {}, info() {}, error() {} }, navigator: { language: 'zh-CN' }, URL, URLSearchParams, requestAnimationFrame: fn=>fn(), setTimeout, clearTimeout, setInterval: () => 1, clearInterval() {}, fetch: () => { throw Error('Unexpected raw fetch') } })
 vm.runInContext(source.replace('    return module.exports', `    exports._i5test = { Iter5Notice: Iter5Notice, Iter5Summary: Iter5Summary, Iter5AutoContinue: Iter5AutoContinue, Iter5Storage: Iter5Storage, Iter5Migration: Iter5Migration, Iter5DeleteConfirmation: Iter5DeleteConfirmation, iter5WorkspaceLayout: iter5WorkspaceLayout, iter5MapLabel: iter5MapLabel, Iter5WorkspaceGraph: Iter5WorkspaceGraph, iter5SkillContent: iter5SkillContent, Iter5SkillBrowser: Iter5SkillBrowser, iter5SearchEntries: iter5SearchEntries, Iter5Note: Iter5Note, Iter5Search: Iter5Search, useIter5Data: useIter5Data, Iter5Home: Iter5Home, Iter5Settings: Iter5Settings, Iter5Tabs: Iter5Tabs, iter5MemoryRows: iter5MemoryRows, iter5MemorySnapshot: iter5MemorySnapshot, iter5LedgerTitle: iter5LedgerTitle, DialogHost: DialogHost, setDialog: function (d) { dialogState = d }, t: t,
-      transport: function (get, post) { apiGet = get; apiPost = post }, identity: function (value) { iter5Identity = function () { return value } } }
+      noteSession: function(value) { currentSessionIdClient = function() { return value } }, transport: function (get, post) { apiGet = get; apiPost = post }, identity: function (value) { iter5Identity = function () { return value }; memoryDraftIdentity = function () { return value } } }
     return module.exports`), context, { filename: fileURLToPath(new URL('../../lib/client.js', import.meta.url)) })
 const test = exposed._i5test
 // Execute the host theme reader against both current DSH and older host markers.
@@ -156,21 +142,27 @@ function nodes(tree, predicate, out = []) { if (!tree || typeof tree !== 'object
 function field(tree, key) { const label = test.t(key); const row = nodes(tree, n => n.props?.['data-i5-field'] === label)[0]; const found = nodes(row, n => n.type === 'input'); assert(found.length, 'Input exists: ' + label); return found[0] }
 function button(tree, label) { const found = nodes(tree, n => n.type === 'button' && n.props.children.flat(Infinity).includes(label)); assert(found.length, 'Button exists: ' + label); return found[0] }
 render(); let tree = await settle()
+function select(group){const tabs=nodes(tree,n=>n.type===test.Iter5Tabs)[0];tabs.props.onChange(group);tree=render();return tree}
+select('maintenance')
 assert.equal(field(tree, 'fNoteCap').props.value, 24000)
 assert.equal(field(tree, 'fUserCap').props.value, 24000)
 console.log('PASS generated settings preserve both upstream capacity defaults')
-const engineSections = nodes(tree, n => n.props?.className === 'i5-engine-grid')[0]
+select('find')
+const engineSections = nodes(tree,n=>n.type==='section'&&n.props.id?.endsWith('-section-engine'))[0]
 const engineAdvanced = nodes(engineSections, n => n.type === 'details' && n.props.className === 'i5-settings-advanced')[0]
 assert.equal(nodes(engineAdvanced, n => n.props?.['data-i5-field'] === test.t('fEmitMode')).length, 0, 'Actual delivery mode must not be hidden in advanced settings')
 assert.equal(nodes(engineAdvanced, n => n.props?.['data-i5-field'] === test.t('fJsCooldown')).length, 1, 'Tuning remains available in advanced settings')
 assert.equal(field(tree, 'fAssocEngine').props['aria-label'], '主动查找相关记忆', 'Accessible name matches plain-language visible label')
+select('record')
 const memorySection = nodes(tree, n => n.type === 'section' && n.props.id?.endsWith('-section-capacity'))[0]
 assert.equal(nodes(memorySection, n => n.props?.['data-i5-field'] === test.t('fAutoConsolidate')).length, 1, 'Automatic recording stays reachable after regrouping')
 assert.equal(nodes(memorySection, n => n.type === 'details' && n.props.className === 'i5-settings-advanced').length, 1)
 console.log('PASS beginner settings expose recall delivery and preserve advanced controls')
-const appearance=nodes(tree,n=>n.type==='section'&&n.props.id&&n.props.id.endsWith('-section-look'))[0]
+select('appearance')
+const appearance=tree
 assert(button(appearance,test.t('tourReplay')),'Manual welcome entry stays in appearance group')
 console.log('PASS welcome replay is reachable under appearance settings')
+select('find')
 field(tree, 'fJsCooldown').props.onChange({ target: { value: '7' } })
 tree = render()
 assert.equal(tree.props['data-i5-dirty'], 'true')
@@ -201,13 +193,13 @@ console.log('PASS failed save preserves draft and exposes error; cancel restores
 field(tree, 'fJsCooldown').props.onChange({ target: { value: '11' } }); tree = render()
 const postsBeforeRemount = requests.length
 states = []; effects = []; cursor = 0
-tree = render(); tree = await settle()
+tree = render(); tree = await settle();select('find')
 assert.equal(field(tree, 'fJsCooldown').props.value, 11)
 assert.equal(tree.props['data-i5-dirty'], 'true')
 assert.equal(requests.length, postsBeforeRemount, 'Recovery cannot auto-save')
 button(tree, '取消修改').props.onClick(); tree = render()
 states = []; effects = []; cursor = 0
-tree = render(); tree = await settle()
+tree = render(); tree = await settle();select('find')
 assert.equal(field(tree, 'fJsCooldown').props.value, 7)
 assert.equal(tree.props['data-i5-dirty'], 'false', 'Discard removes recovery draft')
 console.log('PASS host remount restores unsaved edits without browser persistence or automatic writes')
@@ -314,21 +306,21 @@ console.log('PASS late results cannot cross session/workspace identity')
 // Execute panel draft and selectable search behavior through the shipped components.
 function renderNative(component, props) { cursor=0;const tree=component(props);effects.splice(0).forEach(fn=>fn());return tree }
 function resetNative() { states=[];effects=[];cursor=0 }
-resetNative();test.identity('note-session-a|workspace-a')
-let note=renderNative(test.Iter5Note,{persistDraft:'panel'})
+resetNative();test.identity('note-session-a|workspace-a');test.noteSession('note-session-a')
+let note=renderNative(test.Iter5Note,{persistDraft:'panel',sessionId:'note-session-a',source:'/isolated/workspace-a/MEMORY.md'})
 nodes(note,n=>n.type==='textarea')[0].props.onChange({target:{value:'Keep this unsaved note'}})
 resetNative();test.identity('note-session-b|workspace-b')
-note=renderNative(test.Iter5Note,{persistDraft:'panel'})
+note=renderNative(test.Iter5Note,{persistDraft:'panel',sessionId:'note-session-a',source:'/isolated/workspace-a/MEMORY.md'})
 assert.equal(nodes(note,n=>n.type==='textarea')[0].props.value,'','A different session never receives the panel draft')
-resetNative();test.identity('note-session-a|workspace-a')
-note=renderNative(test.Iter5Note,{persistDraft:'panel'})
+resetNative();test.identity('note-session-a|workspace-a');test.noteSession('note-session-a')
+note=renderNative(test.Iter5Note,{persistDraft:'panel',sessionId:'note-session-a',source:'/isolated/workspace-a/MEMORY.md'})
 assert.equal(nodes(note,n=>n.type==='textarea')[0].props.value,'Keep this unsaved note','Closing and remounting restores the same-session draft')
 test.transport(async()=>({}),async()=>({ok:true}))
 note.props.onSubmit({preventDefault(){}})
 await new Promise(resolve=>setTimeout(resolve,0))
-resetNative();note=renderNative(test.Iter5Note,{persistDraft:'panel'})
+resetNative();note=renderNative(test.Iter5Note,{persistDraft:'panel',sessionId:'note-session-a',source:'/isolated/workspace-a/MEMORY.md'})
 assert.equal(nodes(note,n=>n.type==='textarea')[0].props.value,'','A successful append clears the recovered draft')
-console.log('PASS panel drafts survive remount, isolate identities and clear only after append')
+test.noteSession('');console.log('PASS panel drafts survive remount, isolate identities and clear only after append')
 resetNative()
 test.transport(async()=>({}),async()=>({answer:'Host summary',hits:[{where:'log-a.md',line:'First source passage'},{where:'log-b.md',line:'Second source passage'}],keywords:['source']}))
 let search=renderNative(test.Iter5Search,{nonce:0})

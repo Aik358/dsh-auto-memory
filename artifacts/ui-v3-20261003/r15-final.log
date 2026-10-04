@@ -1,0 +1,69 @@
+=== R15 左侧栏 8 项（48 卷 L54–L57 · 42 卷 Q2）===
+  ok   - ① buildRailPre 是函数（真导出）
+  ok   - ② railToViewPre 是函数（真导出）
+  ok   - ③ ★常量恰 8 项（实测 8）
+  ok   - ④a 权威串自身切出 8 项（实测 8）
+  ok   - ④ ★★8 项名称与 48 卷 L55 **逐字且顺序一致**（实测 首页/时间轴/交接账本/记忆库/召回审查/团队/日历/设置）
+  ok   - ⑤a order 从 0 连续递增
+  ok   - ⑤b key 唯一（不做重复项）
+  ok   - ⑤c total 与 items 一致（8）
+  ok   - ⑥ ★默认选中 index=1 / key=timeline（实测 1/timeline）
+  ok   - ⑥b active 恰 1 项（不出现多选/零选）
+  ok   - ⑦ 7 个非默认 key 均可正确激活
+  ok   - ⑧ ★15b：8 个 key 的视图映射是**恒等且全覆盖**（不丢项）
+  ok   - ⑨ 未知 key ⇒ 回落 timeline（与默认一致）
+  ok   - ⑩ 空/null/undefined ⇒ timeline
+  ok   - ⑪ 非字符串 ⇒ timeline
+  ok   - ⑫ ★不变量：任意畸形 active ⇒ activeKey 恒为 8 项之一且不抛
+  ok   - ⑬ 8 种畸形 opts 不抛（实测 0）
+  ok   - ⑭ ★无状态污染：连续两次默认调用结果一致（纯函数，不记忆上一次 active）
+  ok   - ⑮ ★常量未被调用污染（仍 8 项）
+  ok   - ⑯ 被删锚串①恰命中 1 次
+  ok   - ⑰ 被删锚串②恰命中 1 次
+  ok   - ⑱ 导出集合含三者（导出数 38）
+  ok   - ⑲ ★client.js 已挂左栏（data-dam-rail）
+  ok   - ⑳ ★KanbanBoardRail 组件在场（页签内自带，不新增宿主 view）
+  ok   - ㉑ ★调用点已换用 KanbanBoardRail
+  ok   - ㉒ ★KanbanBoard 本体仍在（未被替换/吞掉）
+  ok   - ㉓ ★client.js 内联 DAM_RAIL_ITEMS 表可解析
+  ok   - ㉔ ★内联表恰 8 项（实测 8）
+  ok   - ㉕ ★★跨层 key 顺序逐项一致
+  ok   - ㉖ ★★跨层 label 逐项一致（首页/时间轴/交接账本/记忆库/召回审查/团队/日历/设置）
+  ok   - ㉗ 13 页签计数锁：MEMORY_TABS( 仍 3（子串）
+  ok   - ㉘ ★client.js 无 ESM import 语句（浏览器 bundle 纪律）
+  ok   - ㉙ ★工具栏组件在场（48 卷 L62–L75）
+  ok   - ㉚ ★工具栏 DOM 锚（toolbar + search）
+  ok   - ㉛ ★两个筛选胶囊（全部成员 / 全部泳道，44 卷 L65）
+  ok   - ㉜ ★视图切换组（3 按钮由 map 产出）
+  ok   - ㉝ ★统计条组件在场（48 卷 L78–L89）
+  ok   - ㉞ ★统计元 4 项 key 齐（today/week/members/archived）
+  ok   - ㉟ ★每张卡带 data-dam-stat 锚（供视觉回归定位）
+  ok   - ㊱ ★统计条容器锚
+  ok   - ㊲ ★折叠条组件 + 容器锚 + 胶囊锚（46 卷 L122–L124）
+  ok   - ㊳ ★折叠条三量落 DOM 属性（days / count）
+  ok   - ㊴ 折叠条字号 12px（按 token）
+  ok   - ㊵0 ★豁免后仍保留 ≥90% 源文（实测 99.6%，防豁免退化为放宽）
+  ok   - ㊵ ★非默认档零裸 hex（默认档玻璃段豁免；段外实测 0）
+  ok   - ㊶ ★非默认档零裸 rgba（默认档玻璃段豁免；段外实测 0）
+  ok   - ㊷c ★默认档玻璃段确实存在且为字面量实现（hex=14 rgba=37）
+  ok   - ㊷b ★D1 真值全在白名单（实测 radius,skin-backdrop-opacity,bg-deep,team-actor-hue）
+  ok   - ㊸b ★D1 无兜底项 = 0（视觉安全）
+  ok   - ㊹b ★--dam-skin-ratio 客户覆写点已闭合（定义 + 消费）
+  ok   - ㊺b ★--dam-user-scale 由 JS 运行时注入（非缺陷，有据）
+  ok   - ㊻b ★D9 订正：@supports 括号配平（原判「括号错误」有误）
+  ok   - ㊷ ★三组件共存：KanbanBoard 本体 + Rail 包裹 + 主区三件套
+  ok   - ㊸ ★三组件各 1 定义 + 1 调用（不重复挂载）
+  ok   - ㊹ ★时间轴列表 + 卡片两组件在场
+  ok   - ㊺ ★容器锚 + 日期分组锚（48 卷 L94）
+  ok   - ㊻ ★卡片锚 + 左列竖线/节点圆点锚（48 卷 L104–L112）
+  ok   - ㊼ ★右列四行锚（身份/标题/摘要/元信息，48 卷 L114–L124）
+  ok   - ㊽ ★空态锚
+  ok   - ㊾ ★「N 条活动」计数文案（48 卷 L96）
+  ok   - ㊿ ★双语星期表（48 卷 L95「· 星期日」）
+  ok   - ① ★工具栏视图态上提到 rail（三视图真实可切）
+  ok   - ② ★timeline 分支渲染时间轴列表（list/lane 回落 KanbanBoard）
+  ok   - ③ ★本地分组两个纯助手在场（不改宿主、不加路由）
+  ok   - ④ ★不渲染头像/徽标（49 卷「个人版不渲染」）
+  ok   - ⑤ ★两组件各 1 定义 + 1 调用
+
+[r15] PASS 66 / FAIL 0

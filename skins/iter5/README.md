@@ -6,11 +6,12 @@
 
 使用加载本仓库的 DSH web，打开会话的「记忆」页。沿用上游 3.2.4 默认新款的行为，显式选择过经典版的用户仍保留经典；可点「新款」切入。顶栏选择仪器、编辑、活水，并独立选择跟随宿主、浅色、深色。专注查看可展开工作台，Escape 恢复内嵌视图。
 
-主导航：工作台、记忆库、接续、日程、技能、唤起回顾、工作区关系、存储与维护、设置。团队与统计保留独立入口。轻面板和首次向导继续由宿主触发，不添加 demo 假入口。
+主导航：工作台、记忆、任务、设置。技能、唤起回顾、外部来源与工作区关系归入记忆，日程归入任务，统计归入工作台，存储与维护归入设置。团队保留次级入口。轻面板和首次向导继续由宿主触发，不添加 demo 假入口。
 
 ## 源码与生成
 
 - `ui.js`：外壳、导航、原文浏览、页签与请求生命周期。
+- `settings-source.js`：共享设置控件唯一源；`settings-schema.js`、`settings-copy.js`、`settings-layout.js` 提供索引、字段描述与渐进布局。
 - `views.js`：工作台、日程、唤起详情、交接材料、外部来源、笔记、检索和关系图。
 - `skin.css`：局部作用域样式、浅色与深色、响应式布局。
 - `../../tools/build-iter5-skin.mjs`：将源码嵌入 `lib/client.js` 的 `ITER5-GENERATED` 区间，并从当前上游经典设置、存储和技能组件生成独立新皮肤版本。replaceOnce 群要求唯一匹配；其余变换点在 G0-2 后同样响亮失败（源结构改变即 exit 2 并点名变换点），避免悄悄生成错误界面。
@@ -55,28 +56,24 @@ node tests/smoke/smoke-test-iter5-skin.mjs
 
 最终参考、配色与验证见 [实拍验收](../../docs/skin-figures/iter5-final/README.md)。
 
-## 三面同步与冻结镜像（2026-10-02）
+## 共享设置与冻结契约（2026-10-03 V3）
 
-设置页有**三面、跨两个文件**，改一处不够：
+经典工作台、冻结旧款与三个变体共用由 `settings-source.js` 生成的
+`Iter5Settings`。经典 `SettingsPage` 和冻结 `Iter5Settings` 仅委托
+`DamSharedSettings`，不再复制控件业务；冻结文件仍是其余旧款页面的唯一源。
+宿主设置使用 `host` 草稿作用域，工作台与浮层使用 `workbench`。共享注册表按
+session/workspace 与承载作用域隔离，外壳监听身份并按 key 重挂表单；表单固定
+挂载时身份，旧请求与事件不能跨身份改草稿。
 
-| 面 | 位置 | 改法 |
-|---|---|---|
-| classic（手写区） | `lib/client.js` 生成块**之外**的 `SettingsPage` | 直接改 client.js（不在生成区内，不会被覆盖） |
-| v4（变体块） | `lib/client.js` 的 `ITER5-GENERATED` 区间 | 改生成器切片源，再跑生成器重建 |
-| **frozen** | `skins/legacy/iter5-325.js.frozen`（旧款皮肤的唯一真源） | **手工镜像**，无任何重建通道 |
+修改设置：改 `settings-source.js` 或相应描述/布局源，运行既有生成器；保留
+冻结委托和宿主接线。`smoke-test-settings-parity`、`smoke-test-frozen-mirror`
+与 `smoke-test-gap-rounds-three-surface` 检查源到实际共享实现、委托契约及真执行
+数字规范化，负路径仍必须失败。不要把新设置逻辑重新拷回冻结或经典外壳。
+R1 逐字节一致及 R2 失配停机保持有效。
 
-frozen 是第三副本且**没有「改源重建」路径**：改了忘了镜像，不会有任何机制在构建期报错。故新增
-`tests/smoke/smoke-test-frozen-mirror.mjs`（G0-5）常驻比对三面：
+共享表单自行注入 `shared-settings-base.css` 与 `settings-v3.css` 的局部结构规则；
+经典/旧款仍从既有出口获得冻结配色，不能用整份变体样式覆盖它们。窄浮层依据
+自己的容器宽度显示分区选择器。宿主字体与字号、原外观偏好及独立宿主底色规则
+保持既有契约。
 
-- 签名级：四个自宿主组件（Settings / Storage / Skills / Stats）的签名与生成器切片锚三面在位；
-- 表达式级：pyOk 真值表达式三面逐字一致；Settings 面 `set('<KEY>', <表达式>)` 的键集 frozen ⊇ classic/v4；
-  三面共有键的**表达式**逐字一致 —— 差异必须逐条登记在该套件的 `KNOWN_DRIFT` 里（自清算：三面一旦
-  一致，套件会红并要求删除该条豁免）。
-
-**同步节**：改动设置页任一行为表达式（不只是键名）后，按序做三件事——
-① 改 classic（client.js 手写区）；② 改对应的生成器切片源并重建；③ **手工把同一表达式镜像进 frozen**，
-再跑 `node tests/smoke/smoke-test-frozen-mirror.mjs`（绿=三面一致）。漏第 ③ 步该套件会点名组件与键。
-
-宿主设置入口的字体与字号直接跟随 DSH 全局变量；独立插件字号不在此入口叠加，展开设置与换肤不改变这一规则。工作台的排版倍率不受影响。
-
-宿主设置的底色和材料独立于工作台皮肤：浅色白底、深色跟随宿主。工作台皮肤/明暗选择位于“外观与目录”。
+验证与完整入口迁移见 [V3 实现记录](../../docs/ui-v3-20261003/IMPLEMENTATION.md)。

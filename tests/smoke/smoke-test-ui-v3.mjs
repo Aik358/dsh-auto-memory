@@ -1,0 +1,33 @@
+import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
+import vm from 'node:vm'
+import { assertNavigationContract } from '../lib/navigation-contract.mjs'
+
+const read=file=>readFileSync(new URL('../../'+file,import.meta.url),'utf8').replace(/\r\n/g,'\n')
+const client=read('lib/client.js'),index=read('lib/index.js')
+const schema=vm.runInNewContext(read('skins/iter5/settings-schema.js')+'\nITER5_SETTINGS_SCHEMA')
+assert.equal(schema.length,360)
+assert.equal(new Set(schema.map(d=>d.key)).size,360)
+const defaults=index.slice(index.indexOf('const DEFAULT_CONFIG = {'),index.indexOf('\n}\n',index.indexOf('const DEFAULT_CONFIG = {')))
+const hostKeys=[...defaults.matchAll(/^\s{2}(\w+):/gm)].map(m=>m[1]).sort()
+assert.equal(hostKeys.length,154)
+assert.deepEqual(Array.from(schema.filter(d=>d.kind==='host-config'),d=>d.key).sort(),hostKeys)
+assert(schema.every(d=>['record','find','continuity','maintenance','appearance','advanced'].includes(d.group)))
+assert(schema.every(d=>d.condition&&d.status&&Object.hasOwn(d,'default')))
+const canonical=read('skins/iter5/settings-source.js')
+const metadata=[...canonical.matchAll(/,\s*\[((?:"[^"]+",?)+)\]\)/g)].flatMap(m=>JSON.parse('['+m[1]+']'))
+assert(metadata.length>100)
+for(const key of metadata)assert(schema.some(d=>d.key===key),'every field metadata key is an actual indexed storage key: '+key)
+assertNavigationContract(client)
+const missingPrimary=client.replace("['plan',L3('任务','Tasks','タスク')],",'')
+assert.notEqual(missingPrimary,client)
+assert.throws(()=>assertNavigationContract(missingPrimary),'removed primary button must fail')
+const wrongBody=client.replace("if (tab === 'connect') return h(ConnectTab)","if (tab === 'connect') return h(OverviewTab)")
+assert.throws(()=>assertNavigationContract(wrongBody),'wrong route body must fail')
+assert(client.includes("function SettingsPage() { return h(DamSharedSettings, { draftScope: 'workbench' }) }"))
+assert(client.includes("h(Iter5Settings, { key: identity[0], draftScope: 'host'"))
+assert(client.includes('var i5Identity = useRef(iter5Identity()).current'),'form identity is pinned until keyed remount')
+assert(client.includes('h(Iter5Settings, Object.assign({}, props, { key: identity[0] }))'),'shared classic/frozen shell keys the form by watched identity')
+assert(client.includes("h('style', { 'data-dam-settings-css': '' }, ITER5_SETTINGS_CSS)"))
+assert(read('skins/iter5/shared-settings-base.css').includes('[data-settings-v3] .i5-setting-field{display:grid;'))
+console.log('PASS V3: 360 unique entries / 154 host keys; exact navigation and negative mutations; separate workbench/host scopes; shared settings CSS owned by the form')

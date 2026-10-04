@@ -34,7 +34,6 @@ import { readdirSync, statSync } from 'node:fs'
 import { spawn, spawnSync } from 'node:child_process'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { analyzeImpact } from './smoke-impact.mjs'
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 const ROOT = path.resolve(HERE, '..')
@@ -185,6 +184,7 @@ async function main() {
   // ★影响面预检（只读）：列出改动文件、正文引用它们的套件、以及基线锁套件。
   let impact = null
   if (opts.impact || opts.impactRun) {
+    const { analyzeImpact } = await import('./smoke-impact.mjs')
     impact = analyzeImpact({ root: ROOT, smokeDir: SMOKE_DIR })
     console.log('[impact] ===== 需要动手改的（基线锁）=====')
     if (impact.coreTouched) {

@@ -17,20 +17,23 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import assert from 'node:assert'
 import { test } from 'node:test'
-import { stripGeneratedSkin } from '../lib/skin-bundle.mjs'
+import { shippedSettings } from '../lib/shared-settings.mjs'
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 // ★2026-09-28（集成 iter5 皮肤）：本套件断言的是**经典档契约**（函数式更新写法等），
 //   而生成区把若干经典组件派生了一份新皮肤版本（SettingsPage→Iter5Settings 等）⇒ 计数/唯一性失真。
 //   故此处剥离生成区再断言 —— 不是放宽判据，而是把作用域限定到它真正该守的经典档。
 //   皮肤自身由 smoke-test-iter5-skin.mjs 验收（含「剥离后与基线逐字节一致」的守恒断言）。
-const SRC = stripGeneratedSkin(readFileSync(path.resolve(HERE, '..', '..', 'lib', 'client.js'), 'utf8').replace(/\r\n/g, '\n'))
+const SRC = shippedSettings(readFileSync(path.resolve(HERE, '..', '..', 'lib', 'client.js'), 'utf8').replace(/\r\n/g, '\n'))
 
 // —— 抽取真实实现 ——
-const setLine = SRC.match(/\n {4}function set\(key, value\) \{[^\n]*\n/)
-assert.ok(setLine, '未定位到 set() 实现')
-const setManyLine = SRC.match(/\n {4}function setMany\(patch\) \{[^\n]*\n/)
-assert.ok(setManyLine, '未定位到 setMany() 实现')
+function extract(name) {
+  const from=SRC.indexOf('function '+name+'(');assert(from>=0,'missing shipped '+name)
+  const start=SRC.indexOf('{',from);let depth=0
+  for(let i=start;i<SRC.length;i++){if(SRC[i]==='{')depth++;if(SRC[i]==='}'&&--depth===0)return [SRC.slice(from,i+1)]}
+  throw Error('unterminated '+name)
+}
+const setLine=extract('set'),setManyLine=extract('setMany')
 
 /**
  * 用真实函数体构造一个受控 harness。
@@ -38,15 +41,16 @@ assert.ok(setManyLine, '未定位到 setMany() 实现')
  * 更新函数拿到的是**最新**的 prev —— 这正是修复能生效的机制。
  */
 function makeHarness(initial) {
-  let latest = initial
-  const factory = new Function('setCfg', 'setDirty', `
+  let latest = initial, currentIdentity = true
+  const factory = new Function('setCfg', 'setDirty', 'i5Ok', `
     var cfg = ${JSON.stringify(initial)}
+    var i5Busy={current:false};function i5Record(){}
     ${setManyLine[0].trim()}
     ${setLine[0].trim()}
     return { set: set, setMany: setMany }
   `)
-  const api = factory(function (v) { latest = (typeof v === 'function') ? v(latest) : v }, function () {})
-  return { api, current: () => latest }
+  const api = factory(function (v) { latest = (typeof v === 'function') ? v(latest) : v }, function () {}, () => currentIdentity)
+  return { api, current: () => latest, leaveIdentity: () => { currentIdentity = false } }
 }
 
 test('S0 源码守卫:set 不得再读闭包快照 cfg;setMany 必须走函数式更新', () => {
@@ -113,7 +117,15 @@ test('S7 连续两次单字段 set 也不再互相覆盖(函数式更新的通�
   assert.equal(h.current().subagentProvider, 'prov-B')
 })
 
-test('S8 调用点已改用 setMany（三个成对入口全部覆盖）', () => {
+test('S8 离开会话/工作区后旧表单不能再写入单字段或批量变更', () => {
+  const h = makeHarness({ subagentModel: 'model-A', subagentProvider: 'prov-A' })
+  h.leaveIdentity()
+  h.api.set('subagentModel', 'stale')
+  h.api.setMany({ subagentModel: 'stale', subagentProvider: 'stale' })
+  assert.deepEqual(h.current(), { subagentModel: 'model-A', subagentProvider: 'prov-A' })
+})
+
+test('S9 调用点已改用 setMany（三个成对入口全部覆盖）', () => {
   const setManyCalls = SRC.match(/setMany\(\{ subagentModel: [^}]*\}\)/g) || []
   assert.equal(setManyCalls.length, 3, '默认/选模型/手输 三个入口都必须走 setMany，实得 ' + setManyCalls.length)
   assert.ok(setManyCalls.some((s) => /subagentModel: ''/.test(s) || /subagentModel: ''/.test(s)) || setManyCalls.some((s) => s.includes("subagentModel: ''")),
