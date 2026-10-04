@@ -72,7 +72,13 @@ function makeEngine(opts) {
   const sc = {
     // createFailWs(2026-09-28):仅当带 workspaceId 时失败 —— 专测「workspaceId 失效 → 回退 cwd」，
     // 与 createFail(无条件失败)区分开。
-    create: async (r) => { calls.create.push(r); calls.order.push('create'); if (opts && opts.createFail) throw new Error('create failed'); if (opts && opts.createFailScoped && (r.workspaceId || r.cwd)) throw new Error('source workspace unavailable'); if (opts && opts.createFailWs && r && r.workspaceId) throw new Error('bad workspace'); return { sessionId: 'session-new-' + calls.create.length } },
+    create: async (r) => {
+      calls.create.push(r); calls.order.push('create')
+      if (opts && opts.createFail) throw new Error('create failed')
+      if (opts && (opts.createFailScoped || opts.createFailWs) && r.workspaceId) throw Object.assign(new Error('workspace not found'), {code:'workspace/not-found', details:{workspaceId:r.workspaceId}})
+      if (opts && opts.createFailScoped && r.cwd) throw new Error('source workspace unavailable')
+      return { sessionId: 'session-new-' + calls.create.length }
+    },
     selectModel: async (r) => { calls.select.push(r); calls.order.push('selectModel') },
     prompt: async (r) => { calls.prompt.push(r); calls.order.push('prompt:' + String(r && r.sessionId)) },
     rename: async (r) => { calls.rename.push(r) },
@@ -270,7 +276,7 @@ const rScoped = await eScoped.fns.hostAutoContinue()
 ok(rScoped && !rScoped.ok && /source workspace unavailable/.test(rScoped.error), 'both source-workspace creates fail => explicit failure')
 ok(eScoped.calls.create.length === 2 && eScoped.calls.create.every(r => r.workspaceId || r.cwd), 'no third unscoped create')
 ok(eScoped.calls.prompt.length === 0, 'failed scoped create sends neither carry material nor success notice')
-ok(!eScoped.eng._autoContState.lastOk && !eScoped.eng._continuedSessions.has('session-a'), 'failed create leaves source uncontinued for a later retry')
+ok(!eScoped.eng._autoContState.lastOk && rScoped.continuationPending, 'unknown fallback creation retains pending rather than authorizing a blind retry')
 
 // ★2026-09-28（搭线补完 + 三级回退）：workspaceId 失效（工作区被删/registry 过期）→ create 自动回退
 //   cwd（与浏览器 executeContinue 同款）；接续完成后给**旧会话**投一条搭线通知（mode:queue），

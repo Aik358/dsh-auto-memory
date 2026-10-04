@@ -1,5 +1,23 @@
 # #207 候选固定提交与验证
 
+## 2026-10-04 子代理复核补修
+
+独立复核在 `494af9f9ab42ae647b12bb24c29fa7e54610b200` 上发现部分创建异常会重复创建并丢弃首个ID。只读装机 `@deepseek-ai/dsh-api-session-controller` 0.2.0-rc.2 的 `lib/index.js:686-714` 确认：ensureSession 后的 attachSession 失败会抛 `session/workspace-attach-failed`，details 含已创建 sessionId。装机源与执行其 create 原文的隔离 fixture 均支持该边界；未在真实用户服务注入故障。
+
+修正：已创建的原始后继ID持久化为pending；未知创建异常保留pending，重启阻止盲目重复创建；仅匹配本次 workspaceId 的 typed `workspace/not-found` 允许源cwd回退。泛化普通Error的旧“副作用前失败”测试预期改为unknown/pending，确认无投递后才能人工release。Windows文件symlink无权限只跳过该分支，不吞其他故障；真实目录junction、多进程及重启断言继续执行。
+
+Windows / Node v24.15.0，本轮定向验证：
+
+- `smoke-test-issue207-create-boundaries.mjs`：旧head先红，新代码4组PASS，包含绑定失败原始ID保留、未知创建重启保护、可信创建前回退、错误身份和fallback未知错误。
+- `smoke-test-issue207-routes.mjs`：PASS，正式HTTP路由、真实MemoryEngine、恢复CLI、pending持久化与重启保护。
+- `smoke-test-issue207-state.mjs`：11 PASS / 0 FAIL / 1 SKIP（Windows文件symlink权限）。
+- `smoke-test-issue207-processes.mjs`：真实并发、目录junction、重启及死亡锁owner恢复PASS；文件symlink分支明确SKIP。
+- `smoke-test-continuation-transaction.mjs`：13 PASS；`smoke-test-autocont-host.mjs`：106 PASS；`smoke-test-continue-host.mjs`：40 PASS；`smoke-test-contseq.mjs`：20 PASS。
+- `smoke-test-r26-cross-layer.mjs`：23 PASS。完整index指纹按本轮限定变化更新，保留原断言。
+- `node --check lib/index.js`、`node tools/build-iter5-skin.mjs --check --strict`、`git diff --check`：PASS。
+
+控制器/模型服务为隔离fixture；实际模块及文件IO运行。最新head及全量CI结果记入当前PR正文。下列历史验证均不替代本轮结果。
+
 前一轮产品候选（已被复审补修替代）：`f7d3b787dc9f2c38656a829eb964d91f5c3a7788`。首个产品提交`088d80f0a41e63241dac3eaeff82376385f56617`；f7d3b78只补冷迁移压缩残帧校验及对应回归。其后交付提交仅增加证据、PR正文、真正的自动tick回归及修正旧测试注释，不改产品。
 
 基线重新fetch仍是`131ca794b9f0d07f78b19bf6feee3312939854ed`。新分支`Minervaowl7:fix/state-persistence-207-20261002`。现有#206 head857a422、#208 head513b613、#209 head1a4a6c4、#168 head85ef119保持不动。旧baseline三个失败不通过导入其它PR隐去。

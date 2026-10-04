@@ -23,9 +23,14 @@ try {
  await new Promise((resolve,reject)=>{held.stdout.on('data',b=>{if(String(b).includes('HELD'))resolve()});held.on('error',reject);held.on('exit',code=>reject(Error('owner exited before hold '+code)))})
  const closed=new Promise(resolve=>held.once('exit',resolve));held.kill('SIGKILL');await closed
  const recovered=await run('recovered',home);assert.equal(recovered.values[0],120)
- const fileAlias=path.join(root,'counter-alias.json'),target=path.join(home,'memory','cont-seq.json');fs.symlinkSync(target,fileAlias)
+ const fileAlias=path.join(root,'counter-alias.json'),target=path.join(home,'memory','cont-seq.json')
+ let fileAliasAvailable=true
+ try { fs.symlinkSync(target,fileAlias) }
+ catch(e) { if(process.platform==='win32'&&e.code==='EPERM')fileAliasAvailable=false;else throw e }
+ if (fileAliasAvailable) {
  const concurrent=await Promise.allSettled([run('direct-file',home),run('alias-file',home,fileAlias)])
  assert.equal(concurrent[0].value.values[0],128);assert.equal(concurrent[1].status,'rejected');assert.match(concurrent[1].reason.message,/state-file-symlink/);assert(fs.lstatSync(fileAlias).isSymbolicLink())
  const afterAlias=await run('after-alias',home);assert.equal(afterAlias.values[0],136)
+ } else console.log('SKIP leaf file-alias checks: Windows file-symlink permission unavailable; directory-junction/concurrency/restart checks executed')
  console.log('PASS real four-process allocation, alias locking, one-source latch, archive delta merge, restart and dead-lock-owner recovery')
 }finally{fs.rmSync(root,{recursive:true,force:true})}

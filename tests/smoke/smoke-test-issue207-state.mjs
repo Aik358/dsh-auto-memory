@@ -132,8 +132,10 @@ test('real host directories ignore ordinary root/member files, but do not hide d
  execFileSync(process.execPath,[cmd,'seed-counter','--last','350','--confirmed-history-reviewed'],{env:process.env,stdio:'pipe'})
  assert.equal(await engine().allocContSeq('verified-sqlite'),351)
 })
-test('leaf file aliases are explicitly refused without replacing symlinks or duplicating direct-target reservations', async () => {
- const direct=engine(),target=direct.contSeqFile(),alias=target+'.alias';fs.writeFileSync(target,'{"last":400,"byWorkspace":{}}');fs.symlinkSync(target,alias)
+test('leaf file aliases are explicitly refused without replacing symlinks or duplicating direct-target reservations', async (t) => {
+ const direct=engine(),target=direct.contSeqFile(),alias=target+'.alias';fs.writeFileSync(target,'{"last":400,"byWorkspace":{}}')
+ try { fs.symlinkSync(target,alias) }
+ catch (e) { if (process.platform==='win32' && e.code==='EPERM') {t.skip('Windows file-symlink permission unavailable');return};throw e }
  const indirect=engine();indirect.contSeqFile=()=>alias
  const both=await Promise.allSettled([direct.allocContSeq('direct'),indirect.allocContSeq('alias')])
  assert.equal(both[0].value,401);assert.equal(both[1].status,'rejected');assert.match(both[1].reason.message,/state-file-symlink/)

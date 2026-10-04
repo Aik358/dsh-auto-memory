@@ -78,7 +78,10 @@ try {
  session('session-unknown-source');controller.prompt=async req=>{if(req.sessionId.startsWith('session-new-'))throw Error('delivery result unknown')}
  const unknown=await engine.decideAutoContinue('manual',null,'session-unknown-source');assert.equal(unknown.ok,false);assert.equal(unknown.continuationPending,true);assert.equal(new MemoryEngine().isContinuedSession('session-unknown-source'),true)
  session('session-pre-effect-source');controller.create=async()=>{throw Error('create rejected before delivery')};controller.prompt=async()=>{}
- const early=await engine.decideAutoContinue('manual',null,'session-pre-effect-source');assert.equal(early.ok,false);assert.equal(new MemoryEngine().isContinuedSession('session-pre-effect-source'),false)
+ const early=await engine.decideAutoContinue('manual',null,'session-pre-effect-source');assert.equal(early.ok,false);assert.equal(early.continuationPending,true);assert.equal(new MemoryEngine().isContinuedSession('session-pre-effect-source'),true)
+ const earlyState=cli('status','--source','session-pre-effect-source').pending
+ assert.equal(earlyState.expectedSuccessor,'')
+ assert.equal(cli('release','--source','session-pre-effect-source','--token',earlyState.token,'--expected-successor','','--confirmed-not-delivered').ok,true)
  controller.create=async()=>({sessionId:'session-new-'+(++creates)});assert.equal((await engine.decideAutoContinue('manual',null,'session-pre-effect-source')).ok,true)
  session('session-auto-source');engine._autoContState={};engine.armAutoContinue({session:{id:'session-auto-source',header:{cwd:workspace}}},{ratio:.99,modelKnown:true})
  assert.equal(engine._autoContState.armed.sessionId,'session-auto-source');engine._autoContState.armed.expiresAt=Date.now()-1

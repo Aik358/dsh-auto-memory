@@ -18,7 +18,9 @@ alloc在跨进程锁内重新读取、冷扫描、推进并原子提交。只有
 
 宿主在外部取消/创建之前持久化pending来源预留；不同engine同时准备材料也只有一个能预留并创建。新会话投递前再持久化后继ID。材料投递成功后才完成done；完成写失败明确返回ok:false、continuationPending与后继ID，并保持原pending。投递异常不能仅凭报错字符串证明远端未接受，保守保留pending，重启/再次手动请求亦返回pending及后继ID。副作用前失败会按token移除自己的预留，失败的移除仍留保护并报告。
 
-这是有意的兼容取舍：未核实的投递异常不自动重试，不宣称远端exactly-once。创建成功后即保留pending并保存原始后继ID，后续保存失败亦不自动解除；错误文本与当次GET状态返回实际新会话ID。保存失败再重启时，磁盘不知道后继ID，不猜测或补前缀。旧去前缀记录只显示successorKey，原始ID必须由操作者核实。
+这是有意的兼容取舍：未核实的创建或投递异常不自动重试，不宣称远端exactly-once。装机 DSH 0.2.0-rc.2 的 create 可能先完成 ensureSession，再因 attachSession 失败抛出 session/workspace-attach-failed；其中 details.sessionId 是已创建原始ID。本插件保留该ID及pending后返回失败，不再创建第二个会话或向绑定未完成的会话投递。无ID的不确定创建错误也保留pending，操作者须核实宿主实际结果。只有 workspace/not-found 且 details.workspaceId 精确匹配本次请求，才能证明创建前失败，允许回退源cwd；未知错误和错误身份不放行回退。
+
+创建成功后即保留pending并保存原始后继ID，后续保存失败亦不自动解除；错误文本与当次GET状态返回实际新会话ID。保存失败再重启时，磁盘不知道后继ID，不猜测或补前缀。旧去前缀记录只显示successorKey，原始ID必须由操作者核实。
 
 正式只读入口为auto-continue GET状态（pending/completed可跨重启读取）和随npm包发布的维护命令。维护命令须从已安装包根目录运行（包含lib/的目录），或将脚本改为安装位置的绝对路径；DSH_HOME指向真实共享数据根。恢复时核实宿主实际后继及是否投递：
 

@@ -100,17 +100,15 @@ await check('C05 permission-only callback cannot commit continuation', async () 
   await handler({}, {})
   assert.equal(e.marked.size, 0)
 })
-await check('C05 creation failure before delivery leaves source retryable', async () => {
+await check('C05 ambiguous creation failure retains pending without delivery or completion', async () => {
   const e = engine()
-  const create = e._sessionController.create
   e._sessionController.create = async () => { throw Error('create rejected before delivery') }
   const bad = await e.decideAutoContinue('manual', null, 'source')
   assert.equal(bad.ok, false)
+  assert.equal(bad.continuationPending, true)
   assert.equal(e.marked.size, 0)
   assert.equal(e._autoContState.executing, false)
-  e._sessionController.create = create
-  assert.equal((await e.decideAutoContinue('manual', null, 'source')).ok, true)
-  assert(e.marked.has('source'))
+  assert(!e.calls.some(c => c[0] === 'prompt'))
 })
 await check('C06 simultaneous manual/automatic intents create only one successor', async () => {
   const e = engine(); arm(e)
