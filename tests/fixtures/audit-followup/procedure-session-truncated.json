@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "namespace": "dsh-auto-memory-pre",
+  "policyVersion": "procedure_store_pre_v1",
+  "savedAt": 1000,
+  "procedures": [
+    {
+      "procedureId": "proc_pre_9298bb240a61b4be83823bdd26ecfb3a",
+      "title": "Legacy deployment",
+      "stage": "observed",
+      "riskLevel": "low",
+      "requiresApproval": false,
+      "sourceMemoryIds": [
+        "mem_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      ],
+      "sourceEpisodes": [],
+      "preconditions": [],
+      "steps": [
+        "Build and verify"
+      ],
+      "checks": [],
+      "successCriteria": [
+        "Verified"
+      ],
+      "rollback": [],
+      "createdAt": 1000,
+      "updatedAt": 1000,
+      "lastUsedAt": 1000,
+      "pinned": false,
+      "origin": "agent",
+      "scope": "global",
+      "workspaceRef": "",
+      "addedBy": "",
+      "evidence": {
+        "seen": 0,
+        "read": 2,
+        "cite": 0,
+        "reuse": 0,
+        "success": 1,
+        "correction": 0,
+        "sessions": 2
+      },
+      "approved": true,
+      "approvals": [],
+      "_sessions": [
+        "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "B"
+      ]
+    }
+  ]
+}

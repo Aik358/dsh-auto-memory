@@ -16,6 +16,7 @@ import { createHash } from 'node:crypto'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { CorpusRegistry, buildSourceCatalog, canonicalize } from '../../lib/m4-corpus.js'
 
 process.on('uncaughtException', (e) => { console.error('[M83-TEST] FATAL:', (e && (e.stack || e.message)) || e); process.exit(1) })
 process.on('unhandledRejection', (r) => { console.error('[M83-TEST] REJ:', r); process.exit(1) })
@@ -43,7 +44,9 @@ function mkRec(tag, excerpt) {
     excerpt: excerpt != null ? excerpt : ('参考内容 ' + tag),
   }
 }
-const MIV = 'idx_pre_' + '7'.repeat(32)
+// 批次 X(claim 7①):capturePaths 生效后 currentMiv 会为捕获工作区算真实语料版本,
+// 假请求的 memoryIndexVersion 必须与之同源(与 PR 同款适配),否则 offer 被判 stale-index。
+const MIV = new CorpusRegistry().get(buildSourceCatalog({ workspaceKey: canonicalize('c:/ws-a') })).snapshot.memoryIndexVersion
 function makeReq(o = {}) {
   const req = A.makeFakeActivationRequestPre({
     seed: o.seed || 'm83-seed', sessionId: 's1', agentId: 'a1', workspaceKey: 'c:/ws-a',
@@ -100,6 +103,8 @@ function runOffer(hub, req, cfgPatch = {}) {
   engine.runtimeFor = () => rt
   const host = createActivationHost({ engine })
   host.initCapability({ systemPrompt: { context: () => 'x' } })
+  // 批次 X(claim 7①):激活注入前有工作区绑定校验,假引擎必须先 capturePaths。
+  host.capturePaths(rt.key, { ws: engine.state.ws })
   const offered = host.offerExternalActivation(req)
   const text = String(host.renderTailFor({ id: 'a1', session: { id: 's1' } }))
   return { offered, text, host, engine }
