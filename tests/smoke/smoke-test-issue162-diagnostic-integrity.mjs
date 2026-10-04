@@ -407,7 +407,7 @@ test('real debugInfo/persistence/dashboard path exposes failures and persistence
   assert.match(rendered, /session-search/)
   assert.match(rendered, /Error \/ EACCES/)
   assert.match(rendered, /累计失败历史/)
-  assert.match(rendered, /只读快照/)
+  assert.match(rendered, /只读(?:诊断)?快照/)
   assert.doesNotMatch(rendered, /刷新诊断时更新到磁盘/)
   absentSecrets(tree)
 
