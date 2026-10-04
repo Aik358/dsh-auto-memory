@@ -147,9 +147,10 @@ function makeEngine(opts) {
     // 纪律:此后凡被抽出的函数**新增外部依赖**(模块级绑定/全局),都必须加进这张注入表,
     // 否则同样以"静默不生效"的形式失败。
     const obj = new Function('diag', 'AbortSignal', 'shouldArmAutoContinuePre',
+      'isSubAgentSession',
       'DEFAULT_AUTO_CONTINUE_THRESHOLD', 'DEFAULT_WATER_LEVEL_THRESHOLD', 'contTitleStampPre', 'continuationProbePre', 'continuationRitualEndPre',
       'return {' + extractFn(h) + '};')(
-      () => {}, { timeout: () => undefined }, shouldArmAutoContinuePre, 0.75, 0.75, contTitleStampPre, continuationProbePre, continuationRitualEndPre)
+      () => {}, { timeout: () => undefined }, shouldArmAutoContinuePre, (x) => { const h = x && x.session && x.session.header; if (!h) return false; if (String(h.origin || '') === 'subagent') return true; const d = Number(h.delegationDepth); return Number.isFinite(d) && d > 0 }, 0.75, 0.75, contTitleStampPre, continuationProbePre, continuationRitualEndPre)
     const key = Object.keys(obj)[0]
     fns[key] = obj[key].bind(eng)
   }

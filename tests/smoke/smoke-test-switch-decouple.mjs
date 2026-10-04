@@ -159,6 +159,7 @@ console.log('[switch-decouple] D1b 行为:接续资格只看 autoContinueEnabled
   }
   const arm = bindMethod('armAutoContinue(agent, wl, opts = null) {', eng, {
     diag: () => {}, shouldArmAutoContinuePre,
+    isSubAgentSession: (x) => { const h = x && x.session && x.session.header; if (!h) return false; if (String(h.origin || '') === 'subagent') return true; const d = Number(h.delegationDepth); return Number.isFinite(d) && d > 0 },
   })
   arm({ session: { id: 'session-arm' } }, { ratio: 0.95, tokens: 950, window: 1000, source: 'manual', modelKnown: true, hard: false })
   ok(!!(eng._autoContState && eng._autoContState.armed), 'armAutoContinue 在白板关时代照常落 armed(闸不再被白板开关挡住)')
