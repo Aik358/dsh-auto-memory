@@ -14,3 +14,8 @@
 tests/m3b1-fixtures/*.md text eol=crlf
 
 # 其余文件维持仓库既有默认（不在此处声明，避免全局重规范化）
+
+# Frozen skin source has a strict LF contract (h43 theme-sync regression).
+# ★批次 W（2026-10-05，PR#210 拆取）：与上方 m3b1 CRLF 夹具契约**并存的并集**（PR 原版按
+#   「上游无此文件」写的 new file，整文件替换会顶掉 m3b1 契约——此处只追加，不改既有规则）。
+skins/legacy/*.frozen text eol=lf

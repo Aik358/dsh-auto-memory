@@ -39,9 +39,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
 
-      # 本插件零运行时依赖（package.json 无 dependencies），因此**不跑 install**：
-      # 装依赖会引入非确定性，而这里要验的正是"仓库原样即可跑"。
+      # 无必需 npm 依赖；可移植测试使用标准库 Python 临时 venv 与本地 fixture。
+      # 不安装可选模型依赖；真实 C2/C3 装机验收保留在 -live 套件中。
       - name: 环境自述
         run: |
           node --version
