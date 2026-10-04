@@ -13,6 +13,12 @@ An isolated reproduction using each branch's committed source also observed this
 sequence at PR #210 `f4105b87ca7f7c76cffbc784f0e956a21cd646a9` and PR #215
 `f518edd3e949e2ef368bfc0a874da3cc9ea4006f`.
 
+The first admission/drain commit `62013b5d3b83cead493fd51b334a9fdc6d7d2ddd`
+did not cover automatic seeders still awaiting their initial PLAN read before
+entering the writer. Further peer review reproduced a completed migration during
+that read and a successful seed only under the inactive old root. The final
+repair also protects path resolution and this earlier seed read boundary.
+
 ## Repair and scope
 
 PLAN writers register a flight synchronously before the first await, including
@@ -24,6 +30,14 @@ The native lock callback also rechecks the captured `memoryRoot` and
 admitted writer releases its flight in `finally`. Invalid path arguments fail
 before registration.
 
+Changing `projectMemoryDir` also closes admission and drains existing PLAN
+flights, including writers already past the root check inside the native lock
+callback. This does not expand the existing root copy policy. Automatic seeders
+capture both root configuration fields before path resolution/PLAN reads and
+recheck them after those awaits. The registered PLAN tool compares the resolved
+project directory with the current directory for its resolved workspace before
+entering the writer.
+
 The existing cross-process PLAN lock, card/full-document CAS, protected user
 regions, atomic commit, conflict evidence and archive behavior are retained.
 The migration admission/drain barrier coordinates this engine's writers; this
@@ -32,11 +46,22 @@ engines or processes.
 
 ## Local isolated verification
 
-- `node tests/smoke/smoke-test-settings-plan-migration.mjs`: four PASS cases with
+- `node tests/smoke/smoke-test-settings-plan-migration.mjs`: nine PASS cases with
   the actual MemoryEngine, native PLAN lock, temporary filesystem, durable
   configuration and PLAN revisions. The active root contains the acknowledged
   queued revision; new writers are rejected during migration; changed root
   bindings are rejected; failed writes and invalid arguments leave no flights.
+  Actual automatic seed read/path resolution boundaries reject stale roots and
+  retry successfully in the active root. Absolute project binding changes wait
+  both for a writer queued on the native lock and one already inside its callback
+  awaiting completion of the actual sidecar operation. The actual registered
+  PLAN tool rejects a stale path and retries only in the active root. Its resolver
+  completion delay is an injected scheduling boundary, not a claim that the
+  resolver performs another filesystem await after calculating the path.
+- Three isolated negative mutations (removing the seed root check, excluding
+  project binding changes from the drain, removing the PLAN tool path check)
+  each made this suite fail at the corresponding boundary. Production source was
+  not changed by these negative checks.
 - Existing settings safety, migration name and sync suites: PASS. Windows file
   symlink validation remains an explicit permission-dependent SKIP; directory
   junction and canonical-overlap cases passed.
