@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import vm from 'node:vm'
 import { assertNavigationContract } from '../lib/navigation-contract.mjs'
 
-const read=file=>readFileSync(new URL('../../'+file,import.meta.url),'utf8')
+const read=file=>readFileSync(new URL('../../'+file,import.meta.url),'utf8').replace(/\r\n/g,'\n')
 const client=read('lib/client.js'),index=read('lib/index.js')
 const schema=vm.runInNewContext(read('skins/iter5/settings-schema.js')+'\nITER5_SETTINGS_SCHEMA')
 assert.equal(schema.length,360)

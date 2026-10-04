@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict'
 import * as fs from 'node:fs/promises'
+import mutableFs from 'node:fs/promises'
+import { syncBuiltinESMExports } from 'node:module'
 import path from 'node:path'
 import { tmpdir } from 'node:os'
 import { loadPrivateEngine } from '../lib/load-private-engine.mjs'
@@ -21,6 +23,7 @@ try {
   await fs.mkdir(path.join(user,'greetings'),{recursive:true})
   await fs.mkdir(path.join(user,'semantic'),{recursive:true})
   await fs.writeFile(path.join(user,'MEMORY.md'),'user memory')
+  await fs.writeFile(path.join(user,'PENDING-USER-MEMORY.md'),'pending user candidate')
   await fs.writeFile(path.join(user,'summaries','2026-10-03.md'),'summary')
   await fs.writeFile(path.join(user,'greetings','2026-10-03.json'),'{}')
   await fs.writeFile(path.join(user,'semantic','cache.json'),'runtime')
@@ -43,6 +46,7 @@ try {
   assert(saved.warning.includes('saved'))
   assert.equal(engine.config.memoryRoot,target)
   assert.equal(await fs.readFile(path.join(target,'ws','handoff','PLAN.md'),'utf8'),'plan')
+  assert.equal(await fs.readFile(path.join(nextUser,'PENDING-USER-MEMORY.md'),'utf8'),'pending user candidate')
   assert.equal(await fs.readFile(path.join(target,'ws','a.md'),'utf8'),'A updated after migration failure')
   assert.equal(await fs.readFile(path.join(nextUser,'summaries','2026-10-03.md'),'utf8'),'summary')
   assert.equal(await fs.readFile(path.join(nextUser,'greetings','2026-10-03.json'),'utf8'),'{}')
@@ -61,7 +65,16 @@ try {
   const beforeWriteFailure=await fs.readFile(configPath,'utf8'),beforeLocale=engine.config.locale
   const rollbackTarget=path.join(home,'config-failure-target')
   await fs.mkdir(rollbackTarget)
-  await fs.chmod(home,0o555)
+  const renameBefore = mutableFs.rename
+  let deniedCommits = 0
+  mutableFs.rename = async (from, to) => {
+    if (to === configPath) {
+      deniedCommits++
+      throw Object.assign(new Error('injected configuration commit denied'), {code:'EPERM'})
+    }
+    return renameBefore(from, to)
+  }
+  syncBuiltinESMExports()
   try {
     await assert.rejects(engine.saveConfig({locale:'ja',memoryRoot:rollbackTarget}),/Configuration save failed/)
     assert.equal(engine.config.locale,beforeLocale)
@@ -69,8 +82,9 @@ try {
     assert.equal(await fs.readFile(configPath,'utf8'),beforeWriteFailure)
     await assert.rejects(fs.stat(path.join(rollbackTarget,'ws','a.md')),{code:'ENOENT'})
     await assert.rejects(fs.stat(path.join(rollbackTarget,'.dsh-settings-migration.json')),{code:'ENOENT'})
-  } finally { await fs.chmod(home,0o755) }
-  console.log('PASS actual atomic config writer: unwritable directory preserves durable bytes and live config')
+    assert(deniedCommits > 0, 'fault reaches the atomic config commit after migration')
+  } finally { mutableFs.rename = renameBefore; syncBuiltinESMExports() }
+  console.log('PASS actual atomic config writer: denied commit preserves durable bytes and live config')
   const firstRoot=path.join(home,'first-complete'),secondRoot=path.join(home,'second-failure')
   await fs.mkdir(secondRoot);await fs.writeFile(path.join(secondRoot,'greetings'),'directory blocker')
   await assert.rejects(engine.saveConfig({memoryRoot:firstRoot,userMemoryDir:secondRoot}),/userMemoryDir: migration failed/)
@@ -96,10 +110,18 @@ try {
   assert((await validateSettingsPaths({memoryRoot:home+'-escape'},home,expand)).memoryRoot)
   assert((await validateSettingsPaths({userMemoryDir:''},home,expand)).userMemoryDir)
   assert.deepEqual(await validateSettingsPaths({workbenchRoot:''},home,expand),{})
-  await fs.symlink(tmpdir(),path.join(home,'escape'),'dir')
+  await fs.symlink(tmpdir(),path.join(home,'escape'),process.platform==='win32'?'junction':'dir')
   assert((await validateSettingsPaths({memoryRoot:path.join(home,'escape','external')},home,expand)).memoryRoot)
-  await fs.writeFile(path.join(home,'plain-file'),'file');await fs.symlink(path.join(home,'plain-file'),path.join(home,'file-link'))
-  assert((await validateSettingsPaths({workbenchRoot:path.join(home,'file-link','child')},home,expand)).workbenchRoot)
+  await fs.writeFile(path.join(home,'plain-file'),'file')
+  assert((await validateSettingsPaths({workbenchRoot:path.join(home,'plain-file','child')},home,expand)).workbenchRoot)
+  let fileSymlinkAvailable = true
+  try { await fs.symlink(path.join(home,'plain-file'),path.join(home,'file-link')) }
+  catch (e) {
+    if (process.platform !== 'win32' || e.code !== 'EPERM') throw e
+    fileSymlinkAvailable = false
+    console.log('SKIP file-symlink validation: Windows file-symlink permission unavailable')
+  }
+  if (fileSymlinkAvailable) assert((await validateSettingsPaths({workbenchRoot:path.join(home,'file-link','child')},home,expand)).workbenchRoot)
   console.log('PASS validation: HH:MM, empty off array, integer boundaries, DSH_HOME and symlink escape')
   // Fault injection into real copy workflow: a partial temporary must never land as a final file.
   const injectSrc=path.join(home,'inject-src'),injectDst=path.join(home,'inject-dst')
@@ -142,7 +164,7 @@ try {
   console.log('PASS migration rollback preserves externally edited owned files and refuses uncertain publication')
   // Real DSH_HOME symlink aliases: reject equality and either containment before mkdir.
   const canonicalRoot=path.join(home,'canonical'),alias=path.join(home,'alias')
-  await fs.mkdir(path.join(canonicalRoot,'mem'),{recursive:true});await fs.symlink(canonicalRoot,alias,'dir')
+  await fs.mkdir(path.join(canonicalRoot,'mem'),{recursive:true});await fs.symlink(canonicalRoot,alias,process.platform==='win32'?'junction':'dir')
   const canonicalSrc=path.join(canonicalRoot,'mem'),nestedAlias=path.join(alias,'mem','nested')
   assert.deepEqual(await validateSettingsPaths({memoryRoot:nestedAlias},home,expand),{})
   for(const [from,to] of [[canonicalSrc,nestedAlias],[canonicalSrc,path.join(alias,'mem')],[path.join(canonicalSrc,'missing'),alias]])await assert.rejects(migrateSettingsTree(from,to),/must not overlap/)

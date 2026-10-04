@@ -204,6 +204,7 @@ settings = replaceOnce(settings, '      var tickPair = useTick()', `      var ti
       var i5Draft = useRef({})
       var i5Groups = useRef({})
       var i5Alive = useRef(true), i5Read = useRef(0), i5Busy = useRef(false)
+      var i5Initialized = useRef(false), i5AppliedRead = useRef(0)
       var i5GuideMode = useRef('')
       var i5Identity = useRef(iter5Identity()).current
       var i5DraftKey = i5Identity + '|' + (props && props.draftScope || 'workbench')
@@ -215,6 +216,26 @@ settings = replaceOnce(settings, '      var tickPair = useTick()', `      var ti
         return function () { i5Alive.current = false; window.removeEventListener('beforeunload', before) }
       }, [])
       function i5Ok() { return i5Alive.current && i5Identity === iter5Identity() }
+      function i5ApplyConfig(d, request) {
+        i5AppliedRead.current = request
+        var remote = configOf(d)
+        var recovered = !i5Initialized.current && iter5SettingsDrafts[i5DraftKey]
+        i5Initialized.current = true
+        i5Base.current = remote
+        if (recovered) {
+          i5Draft.current = Object.assign({}, recovered.patch); i5Groups.current = Object.assign({}, recovered.groups)
+          setMsg(L('已恢复此会话未保存的修改，请核对后保存或取消。', 'Unsaved edits for this session were restored. Review before saving or discarding.'))
+          var conflict = Object.keys(recovered.patch).some(function (key) { return JSON.stringify(remote[key]) !== JSON.stringify(recovered.base[key]) })
+          setErr(conflict ? L('部分设置已在其他入口变更；恢复的草稿尚未覆盖服务器，请核对。', 'Some settings changed elsewhere. Restored edits have not overwritten the server; review them.') : '')
+        } else if (Object.keys(i5Draft.current).length) {
+          var changed = Object.keys(i5Draft.current).filter(function (key) { return JSON.stringify(remote[key]) !== JSON.stringify(i5Draft.current[key]) })
+          if (changed.length) setMsg(L('检测到其他入口的修改：', 'Changes detected from another entry: ') + changed.join(', ') + L('。你的未保存输入未被覆盖。', ' Your unsaved edits were not overwritten.'))
+        }
+        setCfg(Object.assign({}, remote, i5Draft.current))
+        setDirty(Object.keys(i5Draft.current).length > 0)
+        setPsecKeys(Array.isArray(d.promptSections) ? d.promptSections : [])
+        setPsecMust(Array.isArray(d.promptSectionMust) ? d.promptSectionMust : [])
+      }
       function i5ApplySem(value) {
         if (!i5Ok()) return
         setSem(value)
@@ -232,15 +253,8 @@ settings = replaceOnce(settings, '      var tickPair = useTick()', `      var ti
       }
       function i5Cancel() { if(!i5Ok() || i5Busy.current)return; delete iter5SettingsDrafts[i5DraftKey]; i5Draft.current = {}; i5Groups.current = {}; setCfg(Object.assign({}, i5Base.current)); setDirty(false); setErr(''); setMsg('') }`)
 settings = replaceOnce(settings, '          setCfg(d.config)', `          if (!i5Ok()) return
-          i5Base.current = configOf(d)
-          var recovered = iter5SettingsDrafts[i5DraftKey]
-          if (recovered) {
-            i5Draft.current = Object.assign({}, recovered.patch); i5Groups.current = Object.assign({}, recovered.groups)
-            setCfg(Object.assign({}, configOf(d), recovered.patch)); setDirty(true)
-            setMsg(L('已恢复此会话未保存的修改，请核对后保存或取消。', 'Unsaved edits for this session were restored. Review before saving or discarding.'))
-            var conflict = Object.keys(recovered.patch).some(function (key) { return JSON.stringify(configOf(d)[key]) !== JSON.stringify(recovered.base[key]) })
-            if (conflict) setErr(L('部分设置已在其他入口变更；恢复的草稿尚未覆盖服务器，请核对。', 'Some settings changed elsewhere. Restored edits have not overwritten the server; review them.'))
-          } else setCfg(configOf(d))`)
+          i5ApplyConfig(d, request)`)
+settings = replaceOnce(settings, '}).catch(function (e) { setErr(e.message) })', '}).catch(function (e) { if (alive && i5Ok() && request>=i5AppliedRead.current && !i5Base.current) setErr(e.message) })')
 settings = replaceOnce(settings,
   'function set(key, value) { setCfg(function (prev) { var next = Object.assign({}, prev); next[key] = value; return next }); setDirty(true) }',
   `function set(key, value) {
@@ -258,7 +272,7 @@ requireAnchor(settings, '      function field(', 'G0-2/settings:162 经典设置
 if (saveStart < 0 || fieldStart < 0 || fieldStart < saveStart) throw g2Miss('G0-2/settings:163 切片区间', 'save() 在 field() 之前且都非负', 'saveStart=' + saveStart + ', fieldStart=' + fieldStart)
 settings = settings.slice(0, saveStart) + `      function save() {
         if (!i5Ok() || i5Busy.current || !Object.keys(i5Draft.current).length) return
-        i5Read.current++;i5Busy.current=true
+        i5AppliedRead.current=++i5Read.current;i5Busy.current=true
         setBusy(true); setMsg(''); setErr('')
         var patch = Object.assign({}, i5Draft.current)
         saveConfigPatch(patch, {
@@ -292,7 +306,7 @@ settings = settings.slice(0, modeStart) + `      function onEngineModeChange(e) 
         var v = e.target.value
         if (busy) return
         i5GuideMode.current = ''
-        i5Read.current++;i5Busy.current=true
+        i5AppliedRead.current=++i5Read.current;i5Busy.current=true
         setBusy(true); setErr(''); setMsg('')
         saveConfigPatch({ semanticEngineMode: v }, {
           onSaved: function (d) {
@@ -360,7 +374,7 @@ settings = replaceT(settings, "'i5-settings'", 'i5SettingsId', 'V3/settings:tab 
 settings = replaceT(settings, "'i5-settings-panel'", "i5SettingsId + '-panel'", 'V3/settings:panel id')
 settings = replaceT(settings, "'i5-settings-tab-'", "i5SettingsId + '-tab-'", 'V3/settings:tab prefix')
 settings = replaceT(settings, "var alive = true\n        apiGet(API.config)", "var alive = true, request=++i5Read.current\n        apiGet(API.config)", "V3/settings:362")
-settings = replaceT(settings, "if (!alive) return", "if (!alive || request!==i5Read.current) return", "V3/settings:363")
+settings = replaceT(settings, "if (!alive) return", "if (!alive || request<i5AppliedRead.current) return", "V3/settings:363")
 // Effective gate readout uses committed settings, so drafts cannot claim to be live.
 settings = replaceT(settings, "var gateOk = cfg.associativeMemoryEnabled === true && cfg.activationInboxEnabled === true", "var live = i5Base.current || {}; var gateOk = live.associativeMemoryEnabled === true && live.activationInboxEnabled === true", "V3/settings:365")
 settings = replaceT(settings, "setMsg(t('saved') + (d.migrated ? ' · ' + d.migrated : '') + (d.warning ? ' · ' + d.warning : ''))", "setMsg(t('saved') + (d.migrated ? ' ' + d.migrated : '') + (d.warning ? ' ' + d.warning : ''))", "V3/settings:366")
@@ -531,17 +545,8 @@ const d2Subscribe = [
   "          if (!i5Ok()) return",
   "          var request=++i5Read.current",
   "          apiGet(API.config).then(function (d) {",
-  "            if (!i5Ok() || request!==i5Read.current) return",
-  "            var remote = configOf(d)",
-  "            i5Base.current = remote",
-  "            if (Object.keys(i5Draft.current).length) {",
-  "              var changed = Object.keys(i5Draft.current).filter(function (key) { return JSON.stringify(remote[key]) !== JSON.stringify(i5Draft.current[key]) })",
-  "              if (changed.length) setMsg(L(\"检测到其他入口的修改：\", \"Changes detected from another entry: \") + changed.join(\", \") + L(\"。你的未保存输入未被覆盖。\", \" Your unsaved edits were not overwritten.\"))",
-  "              setCfg(function (prev) { return Object.assign({}, remote, i5Draft.current) })",
-  "            } else {",
-  "              setCfg(remote)",
-  "              setDirty(false)",
-  "            }",
+  "            if (!i5Ok() || request<i5AppliedRead.current) return",
+  "            i5ApplyConfig(d, request)",
   "          }).catch(function () {})",
   "        })",
   "      }, [busy])",
