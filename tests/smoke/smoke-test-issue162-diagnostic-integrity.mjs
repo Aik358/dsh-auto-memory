@@ -407,8 +407,8 @@ test('real debugInfo/persistence/dashboard path exposes failures and persistence
   assert.match(rendered, /session-search/)
   assert.match(rendered, /Error \/ EACCES/)
   assert.match(rendered, /累计失败历史/)
-  if (client.includes('刷新诊断不会写入磁盘')) assert.match(rendered, /刷新诊断不会写入磁盘/)
-  else assert.match(rendered, /刷新诊断时更新到磁盘/)
+  assert.match(rendered, /只读快照/)
+  assert.doesNotMatch(rendered, /刷新诊断时更新到磁盘/)
   absentSecrets(tree)
 
   const failed = await harness({ writeFileSync: () => { throw secretError() } })
