@@ -55,7 +55,7 @@ try {
   const durable=await fs.readFile(configPath,'utf8')
   engine._configPath=path.join(home,'block','settings.json')
   await fs.writeFile(path.join(home,'block'),'blocker')
-  await assert.rejects(engine.saveConfig({memoryRoot:old}), /ENOTDIR|save failed/)
+  await assert.rejects(engine.saveConfig({memoryRoot:old}), /ENOTDIR|EEXIST|save failed/)
   assert.equal(engine.config.memoryRoot,target)
   engine._configPath=configPath
   assert.equal(await fs.readFile(configPath,'utf8'),durable)

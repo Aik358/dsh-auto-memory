@@ -9,5 +9,5 @@ export function shippedSettings(source) {
   if(from<0 || to<from)throw Error('shared shipped settings implementation missing')
   return source.slice(from,to)
 }
-export function sharedSettingsClient(source) { return stripGeneratedSkin(source)+'\n'+shippedSettings(source) }
+export function sharedSettingsClient(source) { return stripGeneratedSkin(source)+(source.includes('\r\n')?'\r\n':'\n')+shippedSettings(source) }
 export function canonicalSettings() { return readFileSync(new URL('../../skins/iter5/settings-source.js',import.meta.url),'utf8') }
