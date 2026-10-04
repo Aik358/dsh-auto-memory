@@ -23,7 +23,10 @@ const P8 = {
   '3.1 状态条': ["'data-dam-team': 'bar'", "'data-dam-team': 'member'", "'data-dam-team': 'synced'", "'data-dam-team': 'queue'", "'data-dam-team': 'conflicts'"],
   '3.2 作者徽标': ['data-dam-team-badge'],
   '3.3 冲突中心': ["'data-dam-team': 'conflict-center'", "'data-dam-team': 'conflict-empty'"],
-  '3.4 团队设置分区': ['dam-team-settings'],
+  // ★2026-10-03（G3 死壳摘除）：原锚点 'dam-team-settings' 属于**已摘除的死代码** renderTeamSettings15
+  //   （零调用者；FRONTEND-FIX-PLAN §6 裁定摘除）。屏⑦ 的现行实现是 renderTeamSettings(ctx)，
+  //   分区锚点形态为 data-dam-team="settings-*" + data-dam-key=<配置键>。判据随实现迁移，覆盖面不缩小。
+  '3.4 团队设置分区': ["'data-dam-team': 'settings-section'", "'data-dam-team': 'settings-switch'", "'data-dam-team': 'settings-state'"],
   '3.5 成员在场': ['TeamMembersScreen'],
   '3.6 CSS 令牌': ['.dam-team-bar'],
   '3.7 轮询钩子(复用 useTick)': ['useTeamTick'],

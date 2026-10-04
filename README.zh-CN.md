@@ -10,20 +10,24 @@
   <a href="https://htmlpreview.github.io/?https://github.com/Aik358/dsh-auto-memory/blob/preview/docs/landing/index.html"><strong>🌐 宣传主页（功能全景 · 数据流 · 论文 · 截图）</strong></a>
 </p>
 
-<p align="center">
-  <a href="docs/screenshots/promo/promo-0-banner-v4.png"><img width="820" alt="dsh-auto-memory 主视觉：无问自忆，且件件可查" src="docs/screenshots/promo/promo-0-banner-v4.png"></a>
-</p>
-
-<p align="center">
-  <a href="docs/screenshots/promo/promo-0-banner-v4.png"><img width="130" alt="主视觉" src="docs/screenshots/promo/promo-0-banner-v4.png"></a>
-  <a href="docs/screenshots/promo/promo-1b-auto-recall.png"><img width="130" alt="自动唤起" src="docs/screenshots/promo/promo-1b-auto-recall.png"></a>
-  <a href="docs/screenshots/promo/promo-2-tour.png"><img width="130" alt="欢迎向导" src="docs/screenshots/promo/promo-2-tour.png"></a>
-  <a href="docs/screenshots/promo/promo-3-recall.png"><img width="130" alt="唤起与固化" src="docs/screenshots/promo/promo-3-recall.png"></a>
-  <a href="docs/screenshots/promo/promo-4-unattended.png"><img width="130" alt="无人值守" src="docs/screenshots/promo/promo-4-unattended.png"></a>
-  <a href="docs/screenshots/promo/promo-5-external.png"><img width="130" alt="外部记忆继承" src="docs/screenshots/promo/promo-5-external.png"></a>
-  <a href="docs/screenshots/promo/promo-6-greeting.png"><img width="130" alt="定时问候" src="docs/screenshots/promo/promo-6-greeting.png"></a>
-</p>
-<p align="center"><sub>宣传图七幕 · 点击任意一张查看大图</sub></p>
+<table align="center">
+  <tr>
+    <td width="63%" align="center" valign="middle">
+      <a href="docs/screenshots/promo/promo-0-banner-v4.png"><img width="560" alt="dsh-auto-memory 主视觉：无问自忆，且件件可查" src="docs/screenshots/promo/promo-0-banner-v4.png"></a>
+    </td>
+    <td width="37%" align="center">
+      <a href="docs/screenshots/promo/promo-1b-auto-recall.png"><img width="115" alt="自动唤起" src="docs/screenshots/promo/promo-1b-auto-recall.png"></a>
+      <a href="docs/screenshots/promo/promo-2-tour.png"><img width="115" alt="欢迎向导" src="docs/screenshots/promo/promo-2-tour.png"></a>
+      <br>
+      <a href="docs/screenshots/promo/promo-3-recall.png"><img width="115" alt="唤起与固化" src="docs/screenshots/promo/promo-3-recall.png"></a>
+      <a href="docs/screenshots/promo/promo-4-unattended.png"><img width="115" alt="无人值守" src="docs/screenshots/promo/promo-4-unattended.png"></a>
+      <br>
+      <a href="docs/screenshots/promo/promo-5-external.png"><img width="115" alt="外部记忆继承" src="docs/screenshots/promo/promo-5-external.png"></a>
+      <a href="docs/screenshots/promo/promo-6-greeting.png"><img width="115" alt="定时问候" src="docs/screenshots/promo/promo-6-greeting.png"></a>
+    </td>
+  </tr>
+</table>
+<p align="center"><sub>宣传图廊 · 点击任意一张查看大图 · 分幕浏览见下方折叠区</sub></p>
 
 <details>
 <summary><b>宣传图分幕浏览</b>（点击展开，逐幕翻看）</summary>
@@ -61,22 +65,18 @@
 <p align="center">
   <a href="./README.zh-CN.md"><img alt="中文" src="https://img.shields.io/badge/%E4%B8%AD%E6%96%87-%E5%BD%93%E5%89%8D-blue?style=for-the-badge"></a>
   <a href="./README.md"><img alt="English" src="https://img.shields.io/badge/English-switch-lightgrey?style=for-the-badge"></a>
-</p>
-
-<p align="center">
   <a href="https://www.npmjs.com/package/@a9i5k4/dsh-auto-memory"><img alt="npm" src="https://img.shields.io/npm/v/@a9i5k4/dsh-auto-memory"></a>
-  <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/License-BSD--3--Clause-yellow.svg"></a>
   <a href="https://www.npmjs.com/package/@a9i5k4/dsh-auto-memory"><img alt="npm downloads" src="https://img.shields.io/npm/dt/@a9i5k4/dsh-auto-memory"></a>
-  <img alt="Platform" src="https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey">
 </p>
 
 <p align="center">
+  <a href="https://www.npmjs.com/package/@a9i5k4/dsh-auto-memory"><img alt="立即下载" src="https://img.shields.io/badge/%E7%AB%8B%E5%8D%B3%E4%B8%8B%E8%BD%BD-npm%20install-4d6bfe?style=for-the-badge"></a>
+  &nbsp;
   <code>pnpm add @a9i5k4/dsh-auto-memory@latest</code>
 </p>
 
 <p align="center">
   <a href="docs/USER-GUIDE.zh-CN.md"><strong>📖 用户手册</strong></a> ·
-  <a href="docs/USER-GUIDE.en.md"><strong>📖 User guide</strong></a> ·
   <a href="docs/SKIN-GUIDE.md"><strong>🎨 皮肤白皮书</strong></a> ·
   <a href="docs/TEAMWORK-GUIDE.md"><strong>👥 团队协作白皮书</strong></a> ·
   <a href="CHANGELOG.md">更新日志</a> ·
@@ -89,19 +89,14 @@
   <a href="https://github.com/Minervaowl7"><strong>@Minervaowl7</strong></a> 完整开发
 </h3>
 
+<p align="center"><sub><strong>重要贡献者</strong> —— 负责了前端的构筑工作，以及本轮关键漏洞的扫描与调试工作。</sub></p>
+
 <p align="center">
   <a href="docs/skin-figures/skin-theme-compare.gif"><img width="720" alt="暗色与亮色主题滑动对比" src="docs/skin-figures/skin-theme-compare.gif"></a>
 </p>
 <p align="center"><sub>
 暗色 ⇄ 亮色滑动对比 · 自动循环预览（GitHub README 不支持真实拖动；面板右上角可实时切换 <strong>暗色 / 亮色 / 跟随系统</strong>）。
 </sub></p>
-
-<p align="center">
-  <img width="172" alt="记忆库" src="docs/skin-figures/skin-library-zh.png">
-  &nbsp;<img width="172" alt="设置" src="docs/skin-figures/skin-settings-zh.png">
-  &nbsp;<img width="172" alt="专注查看" src="docs/skin-figures/skin-tour-zh.png">
-  &nbsp;<img width="172" alt="紧凑布局" src="docs/skin-figures/skin-compact-zh.png">
-</p>
 
 <p align="center"><sub>
 一套参考图风格的记忆工作台：九页主导航、列表与详情分栏、四组设置分区、
@@ -247,6 +242,8 @@ dsh-auto-memory 从第一天就不信这件事只能如此。她把记忆放在�
 | **Tier-2 · 原文块**（证据层） | `chunkId = hash(记忆ID, 内容摘要, 序号)` | ≤ `B2` = **2400 字符** / 次 | 需要证据才取 |
 
 流程：`Tier-0 先出 → 缩窄 → 命中不足才下探 Tier-1 → 需要证据才取 Tier-2`。单轮注入总长仍受 `injectBudgetChars`（默认 8000 字符）约束。
+
+**完整版与精简版（3.2.6 收窄）**：完整版每轮最多一次——真人发起的那一轮首次注入即给；无人（定时/接续）场景则攒够 `fullEverySlims`（默认 3）次精简版后才放行，约 3×3≈9 步一次。精简版只承载状态框架（日期、水位、待办提醒），**不承载内容本体**——所以单轮注入常常只有几百字符，远不到预算上限。
 
 **为什么这么设计（实测，不是拍脑袋）**：
 - **原生语料比想象的小**：原文本身 p90 只有 **1196 字符**、max **1692**。所以 OpenViking 那种 `L0 → L1(2k) → L2` 的中间档可以省掉——从 140 字符的摘要直接跳到 ≤2400 的原文块，跨度可接受。
@@ -472,6 +469,14 @@ pnpm add @huggingface/transformers
 
 检索还带时间感知：问「上周」或「三天前」，命中的记忆会浮到前面。词法检索 0GB 永远兜底，不装也能用（仅召回精度较低）。
 
+**卸载高级引擎**：设置 → 自动记忆引擎 里有「卸载并回收磁盘」按钮，删除 `~/.dsh/python-engine/` 整目录（venv 约 280–400MB + 模型约 539MB，合计约 850MB）。手动等价命令：
+
+```bash
+rm -rf ~/.dsh/python-engine    # Windows: rmdir /s /q %USERPROFILE%\.dsh\python-engine
+```
+
+只删该目录，记忆正文与 `embedding-config.json` 都不动。
+
 ### AI 时代安装法
 
 复制下面这段发给你正在用的 AI 助手即可：
@@ -502,7 +507,7 @@ cd ~/.dsh/profiles/web && pnpm up @a9i5k4/dsh-auto-memory@latest
   "userMemoryDir": "~/.dsh/memory",
   "memoryRoot": "~/.dsh/memory/workspaces",
   "injectEnabled": true,
-  "injectBudgetChars": 2400,
+  "injectBudgetChars": 8000,
   "recentDaysInjected": 1,
   "reflectEnabled": true,
   "autoConsolidate": true,
@@ -525,7 +530,7 @@ cd ~/.dsh/profiles/web && pnpm up @a9i5k4/dsh-auto-memory@latest
 
 - **零运行时依赖**：Node 内建模块之外无任何依赖
 - **前缀缓存友好**：注入内容字节级稳定，DeepSeek 前缀缓存持续命中，不反复重编码历史
-- **限额 AI**：自动沉淀每日 ≤8 次、30 分钟冷却，动态注入默认预算 2400 字符——记忆有用，但不烧预算
+- **限额 AI**：自动沉淀每日 ≤8 次、30 分钟冷却，动态注入默认预算 8000 字符（完整版/精简版两档，见上文 3.2.6 收窄）——记忆有用，但不烧预算
 - **集中式存储**：全部工作区记忆收在 `~/.dsh/memory/workspaces/` 一个根下，任意会话可读
 - **30 天蒸馏**：旧日志由 AI 蒸馏进项目笔记，原文归档不丢失
 
@@ -646,7 +651,7 @@ DeepSeek Harness (Node, 127.0.0.1:3080)
 |---|---|
 | [**白皮书**](docs/WHITEPAPER.md) | 「有哪些**不能违反**的约束、哪些已知边界」——文中每个默认值都经代码自核 |
 | [**前端共创计划**](docs/FRONTEND-CO-CREATION.md) | 外部贡献者能改什么、什么是禁区、怎么改——含完整组件/路由/插槽地图 |
-| [功能全量清单](docs/internal/FEATURE-INVENTORY.md) | 「有哪些功能、各住在哪」（39 条用户能力 / 19 工具 / 69 路由 / 153 配置键） |
+| [功能全量清单](docs/internal/FEATURE-INVENTORY.md) | 「有哪些功能、各住在哪」（39 条用户能力 / 19 工具 / 71 路由 / 154 配置键） |
 
 > **⚠️ 从 3.0 之前升级上来的用户请注意**：3.0.0 有一批默认值**被翻转**——
 > 其中最重要的是白板 + 账本从「默认关」改为 **「默认开」**。
@@ -667,9 +672,19 @@ DeepSeek Harness (Node, 127.0.0.1:3080)
 
 **反馈与交流：**欢迎加入 QQ 交流群——[点击加入 dsh-auto-memory 交流群](https://qm.qq.com/q/v7Asxn6vPa)——问题反馈、使用技巧交流，响应比 issue 更快。
 
+### 🏆 赞助商 · Sponsors
+
+| Logo | 简介 |
+|---|---|
+| <img width="72" alt="dshapi" src="docs/sponsors/dshapi.png"> | **dshapi · API 中转站** —— 为本项目的开发、回归测试，以及 M 系列语义引擎的选型与激活策略研究提供模型端点。没有这些额度，那些基准实验根本跑不起来。<br>[立即注册 →](https://api.dshapi.icu/register?aff=HJU27P7JL39N) |
+
+<!-- 追加赞助商行模板（logo 文件放 docs/sponsors/ 后取消注释并填空）：
+| <img width="72" alt="名称" src="docs/sponsors/logo文件名.png"> | **名称** —— 简介文字。<br>[链接文字 →](URL) |
+-->
+
 社区贡献者：
 
-- [@Minervaowl7](https://github.com/Minervaowl7) — **负责新版前端（开发版 UI）的完整开发**：参考图风格记忆工作台（九页导航、列表与详情、四组设置、专注查看、深色适配、窄屏导航），以生成器方式接入——新皮肤版本从经典组件派生，上游结构漂移即明确报错（[PR #146](https://github.com/Aik358/dsh-auto-memory/pull/146)）。同时也是贡献最活跃的贡献者：51 个 PR + 57 个 issue，覆盖工作区概览日志日期锚定、自动续跑宿主加固、语义索引自愈、python 下载链路、恢复候选生命周期等（[#16](https://github.com/Aik358/dsh-auto-memory/issues/16)–[#146](https://github.com/Aik358/dsh-auto-memory/pull/146)）
+- [@Minervaowl7](https://github.com/Minervaowl7) — **负责新版前端（开发版 UI）的完整开发与关键缺陷调试**：参考图风格记忆工作台（九页导航、列表与详情、四组设置、专注查看、深色适配、窄屏导航），以生成器方式接入——新皮肤版本从经典组件派生，上游结构漂移即明确报错（[PR #146](https://github.com/Aik358/dsh-auto-memory/pull/146)）。同时也是贡献最活跃的贡献者：51 个 PR + 57 个 issue，覆盖工作区概览日志日期锚定、自动续跑宿主加固、语义索引自愈、python 下载链路、恢复候选生命周期等（[#16](https://github.com/Aik358/dsh-auto-memory/issues/16)–[#146](https://github.com/Aik358/dsh-auto-memory/pull/146)）
 - [@JIE42393](https://github.com/JIE42393) — 7 个 issue，覆盖面板行为、召回质量与配置边界（[#15](https://github.com/Aik358/dsh-auto-memory/issues/15)、[#26](https://github.com/Aik358/dsh-auto-memory/issues/26)、[#30](https://github.com/Aik358/dsh-auto-memory/issues/30)、[#41](https://github.com/Aik358/dsh-auto-memory/issues/41)–[#43](https://github.com/Aik358/dsh-auto-memory/issues/43)、[#45](https://github.com/Aik358/dsh-auto-memory/issues/45)）
 - [@Fishsb](https://github.com/Fishsb) — 3 个 issue，关于记忆召回与注入行为（[#18](https://github.com/Aik358/dsh-auto-memory/issues/18)–[#20](https://github.com/Aik358/dsh-auto-memory/issues/20)）
 - [@messiahyl](https://github.com/messiahyl) — 2 个 issue（[#8](https://github.com/Aik358/dsh-auto-memory/issues/8)、[#9](https://github.com/Aik358/dsh-auto-memory/issues/9)）

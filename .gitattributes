@@ -1,0 +1,2 @@
+# Frozen skin source has a strict LF contract (h43 theme-sync regression).
+skins/legacy/*.frozen text eol=lf

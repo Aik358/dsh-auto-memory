@@ -23,6 +23,10 @@
         try { if (typeof damSkinStyleSet === 'function') damSkinStyleSet(next) } catch (e2) {}
       }
       iter5StyleListeners.forEach(function (listener) { listener(next) })
+      // ★2026-10-03（G1-4/#196）：家族切换权威状态在 localStorage，但已挂载组件树无人通知 ——
+      //   旧实现要等无关 tick 或重载才切换（SkinPicker 高亮停留旧值）。此处广播无害事件，
+      //   由挂载根订阅后自身 bump nonce；try 包住，事件 API 缺失时静默降级，不影响持久化语义。
+      try { window.dispatchEvent(new Event('dam-skin-changed')) } catch (eSkin) {}
     }
     function useIter5Style() {
       var pair = useState(iter5ReadStyle)

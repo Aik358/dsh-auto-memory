@@ -57,15 +57,27 @@ const SRC = readFileSync(join(ROOT, 'lib', 'client.js'), 'utf8');
 const ANCH = {
   s5: ['skills','skill','skill-owner','skill-evidence','skill-steps','skill-approve','skill-reject','skill-edit'],
   s6: ['ledger','ledger-seg','ledger-chain','chain-node','chain-link','takeover'],
-  s7: ['enable','server','id','member-name','sync-mode','sync-interval','scope-default','share-external','conflict-policy','attribution-show','skin-url','audit-show','test','test-result','leave'],
+  // ★2026-10-03（G3 死壳摘除）：原 s7 的 15 个 data-dam-team-<name> 锚点属于**已摘除的死代码**
+  //   renderTeamSettings15（零调用者；FRONTEND-FIX-PLAN §6 裁定摘除）。屏⑦ 的**现行实现**是全文级
+  //   renderTeamSettings(ctx)，其锚点形态为 data-dam-team="settings-*" 值枚举 + data-dam-key=<配置键>。
+  //   判据随实现迁移，屏⑦ 仍受真执行验收（下方 F0–F9 段）：注入 renderTeamSettings 真跑并不变量。
+  s7: ['settings-section','settings-state','settings-switch','settings-select','settings-number','settings-text'],
   s8: ['debug','debug-queue','debug-last','debug-errors','debug-cursor','debug-copy','debug-reset']
 };
 const ALL = Object.values(ANCH).reduce((a, b) => a.concat(b), []);
 // ★全 66 锚点（R18 30 + R19 36）
 const R18A = ['statusbar','state','queue','lastsync','conflict-badge','pause','members','member','member-self','presence','presence-dot','member-filter','filterbar','filter-author','filter-source','filter-sync','badge','badge-scope','conflicts','conflict','conflict-head','diff','diff-local','diff-remote','diff-line','verdict','verdict-keep-local','verdict-keep-remote','verdict-merge','verdict-ask'];
-const MISS = ALL.concat(R18A).filter((n) => !new RegExp("data-dam-team-" + n + "'").test(SRC));
-eq(MISS.length, 0, 'A1 ★fe02 全 66 锚点覆盖（缺:' + MISS.join(',') + '）');
-eq(ALL.length + R18A.length, 66, 'A2 契约总需求 = 66');
+// 锚点形态两类（均为契约逐字属性名）：
+//   ① R18/R19 其余屏：data-dam-team-<name>'（独立属性名）
+//   ② 屏⑦（现行 renderTeamSettings）：data-dam-team' : 'settings-*'（值枚举）
+const MISS = ALL.concat(R18A).filter((n) => {
+  if (new RegExp("data-dam-team-" + n + "'").test(SRC)) return false
+  return !new RegExp("data-dam-team'\\s*:\\s*'" + n + "'").test(SRC)
+});
+eq(MISS.length, 0, 'A1 ★fe02 全锚点覆盖（缺:' + MISS.join(',') + '）');
+// ★2026-10-03（G3）：原契约总需求 66（R18 30 + R19 36）中，屏⑦ 15 个死代码锚点随死壳摘除退场，
+//   以现行实现的 6 个 settings-* 锚点接替 ⇒ 总数 66→57。判据随实现迁移，覆盖面不缩小。
+eq(ALL.length + R18A.length, 57, 'A2 契约总需求 = 57（G3 后：死壳 15 → 现行 settings-* 6）');
 const cnt = (s, x) => s.split(x).length - 1;
 eq((SRC.match(/(?<!function )MEMORY_TABS\(\)/g) || []).length, 2, 'A3 ★计数锁 MEMORY_TABS() = 2');
 ok(cnt(SRC, 'data-dam-region') >= 18, 'A4 结构锚不降');
@@ -78,7 +90,8 @@ const B0 = '    // ═══════════════ fe02 八屏契�
 const i0 = SRC.indexOf(B0), i1 = SRC.indexOf('    // ===================== L3-team:end');
 ok(i0 > 0 && i1 > i0, 'B1 R19 段可定位');
 const SEG = SRC.slice(i0, i1);
-ok(SEG.length > 9000, 'B2 R19 段字节 (' + SEG.length + ')');
+// G3 摘除死壳（renderTeamSettings15 71 行）后，R19 段自然变短；阈值随实测量级下调，判据不变（段仍须完整可执行）。
+ok(SEG.length > 6500, 'B2 R19 段字节 (' + SEG.length + ')');
 const h = function (type, props) {
   const rest = Array.prototype.slice.call(arguments, 2), kids = [];
   const push = (k) => { if (k === null || k === undefined || k === false) return; if (Array.isArray(k)) { k.forEach(push) } else kids.push(k) };
@@ -92,7 +105,10 @@ const sb = { console: console, h: h, locale: 'zh', Date: Date, useState: (v) => 
 sb.globalThis = sb;
 const ctx = __mkI18nStub(sb)
 vm.createContext(sb);
-vm.runInContext(SEG + ';globalThis.__R = { TeamSkillsScreen: TeamSkillsScreen, TeamLedgerScreen: TeamLedgerScreen, TeamDebugPanel: TeamDebugPanel, TeamScreensR19: TeamScreensR19, renderTeamSettings15: renderTeamSettings15, teamActorHue: teamActorHue, TEAM_FIELD_DEFS: TEAM_FIELD_DEFS, TEAM_SEL_OPTS: TEAM_SEL_OPTS };', ctx, { filename: 'client.js#R19' });
+// ★2026-10-03（G3 死壳摘除）：原 renderTeamSettings15 / TEAM_FIELD_DEFS / TEAM_SEL_OPTS 是**零调用者死代码**，
+//   已按 FRONTEND-FIX-PLAN §6 从 client.js 摘除；屏⑦ 的现行实现是全文级的 renderTeamSettings(ctx)
+//   （配 TEAM_SETTING_KEYS 守恒断言）。本套件对屏⑦ 的验收随之改为**真执行现行实现**，断言语义只增不减。
+vm.runInContext(SEG + ';globalThis.__R = { TeamSkillsScreen: TeamSkillsScreen, TeamLedgerScreen: TeamLedgerScreen, TeamDebugPanel: TeamDebugPanel, TeamScreensR19: TeamScreensR19, teamActorHue: teamActorHue };', ctx, { filename: 'client.js#R19' });
 const R = sb.__R;
 ok(!!R, 'B3 R19 段在 vm 中真执行成功');
 const attrs = (el, out) => { out = out || {}; if (!el || !el.props) return out; for (const k of Object.keys(el.props)) if (k.indexOf('data-dam-team-') === 0) out[k.slice(14)] = el.props[k]; (el.kids || []).forEach((c) => attrs(c, out)); return out };
@@ -120,40 +136,82 @@ ok(segEl && segEl.props.style && segEl.props.style['--dam-team-actor-hue'] !== u
 // ── 屏⑧ 调试 ──
 const a8 = flat(R.TeamDebugPanel({ debug: { queue: { pending: [1], failed: [] }, errors: [{ code: 'E1', message: 'x' }], localSeq: 3, serverSeq: 5 } }));
 ANCH.s8.forEach((n) => ok(a8.indexOf(n) !== -1, 'E1 屏⑧ 锚点 ' + n));
-// ── 屏⑦ 15 控件（真调用）──
-const cfg = { teamEnabled: true, teamServer: 'http://x', teamSyncMode: 'auto', teamSyncIntervalSec: 60 };
-const calls = [];
-const set = (k, v) => calls.push([k, v]);
-const g = R.renderTeamSettings15({ cfg: cfg, set: set });
-const a7 = flat(g);
-ANCH.s7.forEach((n) => ok(a7.indexOf(n) !== -1, 'F1 屏⑦ 锚点 ' + n));
-eq(R.TEAM_FIELD_DEFS.length, 12, 'F2 字段表 12 行（+3 特殊控件 = 15 锚点）');
-eq(Object.keys(R.TEAM_SEL_OPTS).length, 3, 'F3 三个 select 的选项表');
-eq(R.TEAM_SEL_OPTS.teamSyncMode.join('|'), 'off|manual|auto', 'F4 ★同步模式三档互斥（契约 §6.1）');
-ok(R.TEAM_SEL_OPTS.teamSyncMode.indexOf('off') !== -1 && R.TEAM_SEL_OPTS.teamSyncMode.indexOf('auto') !== -1, 'F5 off/auto 是两个独立档位');
-// ★即时回显：onChange 立刻 set（控件可能嵌在 label 内 ⇒ 递归找）
-const findByAttr = (el, name) => {
-  if (el && el.props && el.props['data-dam-team-' + name] !== undefined) return el;
-  for (const c of (el && el.kids) || []) { const r = findByAttr(c, name); if (r) return r }
-  return null
-};
-const enInput = findByAttr(g, 'enable');
-ok(!!enInput, 'G1 enable 控件在（递归定位）');
-calls.length = 0; enInput.props.onChange({ target: { checked: false } });
-eq(calls.length, 1, 'G2 ★即时回显：onChange 同步调用 set 恰 1 次');
-eq(calls[0][0], 'teamEnabled', 'G3 ★改动的是 teamEnabled 本身');
-// ★开关解耦：改 sync-mode 不得动 teamEnabled
-const modeSel = findByAttr(g, 'sync-mode');
-calls.length = 0; modeSel.props.onChange({ target: { value: 'auto' } });
-eq(calls.length, 1, 'G4 ★改 sync-mode 只触发 1 次 set');
-eq(calls[0][0], 'teamSyncMode', 'G5 ★★开关解耦：只改 teamSyncMode，绝不动 teamEnabled');
-ok(calls.every((c) => c[0] !== 'teamEnabled'), 'G6 ★★无任何副作用键被顺带修改');
+// ── 屏⑦ 团队设置（真调用**现行实现** renderTeamSettings）──
+// ★2026-10-03（G3）：旧 renderTeamSettings15 为死代码（零调用者），已摘除；现行实现是全文级
+//   renderTeamSettings(ctx)，由经典档/legacy 块/v4 块三面共用，键集合受 TEAM_SETTING_KEYS 守恒断言保护。
+//   本段改为：真抽该函数源码 → vm 真执行 → 真调用 → 断言真实返回锚点/键/即时回显/开关解耦。
+const RT0 = SRC.indexOf('    function renderTeamSettings(ctx) {')
+const RT1 = SRC.indexOf('    // ===================== L3-team:end', RT0)
+ok(RT0 > 0 && RT1 > RT0, 'F0 ★现行 renderTeamSettings 可定位（屏⑦ 实现存在）')
+const RTSEG = SRC.slice(RT0, RT1)
+// Main shares the real password/show-toggle component with all settings surfaces.
+const TS0 = SRC.indexOf('    function TeamSecretInput(props) {')
+const TS1 = SRC.indexOf('    function saveConfigPatch(', TS0)
+ok(TS0 > 0 && TS1 > TS0, 'F0d ★TeamSecretInput 可定位（真组件，不用桩替代）')
+const TSSEG = SRC.slice(TS0, TS1)
+// 键集合守恒所需的 TEAM_SETTING_KEYS 同段抽取
+const TK0 = SRC.indexOf('    var TEAM_SETTING_KEYS = [')
+const TK1 = SRC.indexOf('\n', SRC.indexOf(']', TK0))
+ok(TK0 > 0 && TK1 > TK0, 'F0b ★TEAM_SETTING_KEYS 可定位（键集合守恒的权威表）')
+const sb2 = {
+  console: console, h: h, locale: 'zh', useState: (v) => [v, function () {}],
+  useEffect: () => {}, apiGet: () => Promise.resolve(null), API: {},
+  t: (k) => k,
+}
+sb2.globalThis = sb2
+__mkI18nStub(sb2)
+vm.createContext(sb2)
+try {
+  vm.runInContext(TSSEG + '\n' + SRC.slice(TK0, TK1) + '\n' + RTSEG + ';globalThis.__R2 = { renderTeamSettings: renderTeamSettings, TEAM_SETTING_KEYS: TEAM_SETTING_KEYS };', vm.createContext(sb2), { filename: 'client.js#teamSettings' })
+  ok(!!sb2.__R2, 'F0c ★屏⑦ 实现与键表在 vm 中真执行成功')
+} catch (eRT) { ok(false, 'F0c 真执行失败: ' + eRT.message) }
+const R2 = sb2.__R2
+const cfg = { teamEnabled: true, teamServerUrl: 'http://x', teamSyncMode: 'auto', teamSyncIntervalSec: 60 }
+const calls = []
+const set = (k, v) => calls.push([k, v])
+const g2 = R2.renderTeamSettings({ cfg: cfg, set: set, field: (l, c) => c })
+const els = []
+// renderTeamSettings 返回**数组**（[section]），walker 需同时吃数组与元素。
+;(function walk(el) {
+  if (!el) return
+  if (Array.isArray(el)) { for (const c of el) walk(c); return }
+  // Materialize function components with the real source and hook harness.
+  if (typeof el.type === 'function') { walk(el.type(el.props)); return }
+  if (!el.props) return
+  els.push(el)
+  for (const c of (el.kids || [])) walk(c)
+})(g2)
+const keys = els.map((e) => e.props['data-dam-key']).filter(Boolean)
+ok(keys.length >= 20, 'F1 ★屏⑦ 真渲染出的键数 ' + keys.length + ' ≥ 20')
+for (const k of ['teamEnabled', 'teamServerUrl', 'teamId', 'teamMemberName', 'teamConflictPolicy', 'teamSyncIntervalMs']) {
+  ok(keys.indexOf(k) !== -1, 'F1b 屏⑦ 含契约键 ' + k)
+}
+eq(keys.slice().sort().join(','), R2.TEAM_SETTING_KEYS.slice().sort().join(','), 'F2 ★守恒：渲染键集 === TEAM_SETTING_KEYS（防两处漂移）')
+const findKey = (k) => els.filter((e) => e.props['data-dam-key'] === k)[0]
+const secretInput = findKey('teamSecretAccessKey')
+eq(secretInput && secretInput.props.type, 'password', 'F2b ★密钥实际控件默认遮罩')
+calls.length = 0
+secretInput.props.onChange({ target: { value: 'fixture-secret' } })
+eq(calls[0]?.[0], 'teamSecretAccessKey', 'F2c ★实际密钥控件接线到唯一配置键')
+const enInput = findKey('teamEnabled')
+ok(!!enInput, 'F3 teamEnabled 控件在')
+calls.length = 0
+enInput.props.onChange({ target: { checked: false } })
+eq(calls.length, 1, 'F4 ★即时回显：onChange 同步调用 set 恰 1 次')
+eq(calls[0][0], 'teamEnabled', 'F5 ★改动的是 teamEnabled 本身')
+const conflictSel = findKey('teamConflictPolicy')
+ok(!!conflictSel, 'F6 teamConflictPolicy 控件在')
+calls.length = 0
+conflictSel.props.onChange({ target: { value: 'mine' } })
+eq(calls.length, 1, 'F7 ★★开关解耦：改冲突策略只触发 1 次 set')
+eq(calls[0][0], 'teamConflictPolicy', 'F8 ★★不改 teamEnabled')
+ok(calls.every((c) => c[0] !== 'teamEnabled'), 'F9 ★★无任何副作用键被顺带修改');
 // ── 组装配 + 负路径 ──
 eq(R.TeamScreensR19({ team: null }), null, 'H1 ★负路径：team=null ⇒ 整组 null');
 const gs = R.TeamScreensR19({ team: { enabled: true } });
 eq(gs.props['data-dam-team-screens'], 'r19', 'H2 组装配根锚点 = r19');
 eq((gs.kids || []).length, 3, 'H3 ★组装配含 3 屏');
-eq(cnt(SRC, 'h(TeamScreensR19, { team: team })'), 1, 'H4 ★接线点恰 1 处');
+eq(cnt(SRC, 'h(TeamScreensR19, { team: team, debug: team.debug, onTakeover:'), 1, 'H4 ★接线点恰 1 处');
 // ── 三条不变量 ──
 ok(!/#[0-9a-fA-F]{3,8}\b/.test(SEG), 'I1 零裸 hex');
 ok(!/\brgba?\(/.test(SEG), 'I2 零裸 rgba');

@@ -157,8 +157,8 @@ ok(kt.length === 4 && want2.every((f, i) => kt[i] === f), 'G2c ★组装配四�
 eq((gEl.props['data-dam-team-screens']), 'r18', 'G2d 组装配根锚点值 = r18');
 // ★签名演进（2026-09-28，用户点名「谁改动/头像标记先加在旧版上」）：挂载点补 badges 传参
 //   （TeamTab 取 config.teamShowMemberBadges 消费，经 R18 下传成员屏）。语义保留：接线点仍恰 1 处。
-ok(SRC.indexOf('h(TeamScreensR18, { team: team, badges: badgesOn })') !== -1, 'G3 ★接线点：TeamTab 内已挂载（含 badges 下传）');
-eq(cnt(SRC, 'h(TeamScreensR18, { team: team, badges: badgesOn })'), 1, 'G4 接线点恰 1 处');
+ok(SRC.indexOf('h(TeamScreensR18, { team: team, badges: badgesOn, conflicts: team.conflictItems, onPause:') !== -1, 'G3 ★接线点：TeamTab 内已挂载（含 badges 下传）');
+eq(cnt(SRC, 'h(TeamScreensR18, { team: team, badges: badgesOn, conflicts: team.conflictItems, onPause:'), 1, 'G4 接线点恰 1 处');
 
 // 三条不变量（fe02 §8.3）
 ok(!/#[0-9a-fA-F]{3,8}\b/.test(SEG) && !/\brgba?\(/.test(SEG) && !/\bhsla?\(/.test(SEG), 'H1 ★零字面色值（§8.3 断言 3）');
