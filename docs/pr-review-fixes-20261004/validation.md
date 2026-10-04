@@ -8,6 +8,8 @@ Every accepted settings-config read runs one hydration path for scoped drafts, d
 
 Root migration includes `PENDING-USER-MEMORY.md` and excludes writer locks, acquisition gates and temporary write files. The pending-file assertion executes through the real `MemoryEngine.saveConfig` migration. Controlled config-commit failure replaces a platform-dependent chmod assumption; Windows directory junctions exercise path escape and overlap checks.
 
+The independent delegate review found that the initial suffix filter also excluded persistent `.tmp.` names and directories. The corrected filter applies only to regular files with `.lock`, `.lock.acquire`, plain `.tmp` or numeric temporary suffixes. Durable Markdown names and directories are retained. Both initial enumeration and final verification use entry types. The new regression failed on the previous head, then passed after correction through actual `MemoryEngine.saveConfig`; an artifact becoming a directory during migration also triggers rollback.
+
 ## Local verification
 
 Windows, Node v24.15.0; temporary memory roots. Each command exited zero.
@@ -17,6 +19,7 @@ Windows, Node v24.15.0; temporary memory roots. Each command exited zero.
 - `node tests/smoke/smoke-test-settings-safety.mjs`
 - `node tests/smoke/smoke-test-settings-sync.mjs`
 - `node tests/smoke/smoke-test-settings-routes-safety.mjs`
+- `node tests/smoke/smoke-test-settings-migration-names.mjs` — 2 PASS / 0 FAIL
 - `node tests/smoke/smoke-test-iter5-skin.mjs`
 - `node --check lib/index.js`
 - `node --check lib/client.js`
