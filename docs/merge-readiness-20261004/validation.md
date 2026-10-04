@@ -17,3 +17,9 @@ Baseline: merge upstream f2f7cc1cbf2d3caf2d2a99f425dfd2b5dd028218 into a610c26c3
 - First isolated Windows full CI-parameter run: 261 PASS / 2 FAIL / 0 TIMEOUT (263 suites). The failures were frozen CRLF and P3's truncated source window. After correction, h43: 14/0 with both mutation controls intact; P3: 20/0. Every other suite passed in that run.
 - Final remote complete CI and exact head bindings are recorded in the PR description and local artifacts/pr-readiness-20261004. Do not infer a final full-run PASS from the local split verification alone.
 - Original user workspace tracked changes remain separate. This merge does not establish installed-model, physical device, live provider or installed DSH acceptance. Ready for review is a request for human review.
+
+## PLAN migration correction (2026-10-05)
+
+The independent delegate reproduced a main integration interaction: a real PLAN writer waiting on the native file lock could be acknowledged after migration while its new revision existed only in the inactive old root. Register admitted PLAN writes before their first await; root migration drains those writes before copying and rejects newly arriving PLAN writes until config publication. The original native lock and CAS remain. Recheck memoryRoot and projectMemoryDir inside the lock, and release the flight on every completion path.
+
+Actual MemoryEngine/native-lock migration regression: 4 PASS. Existing PLAN CAS, two-process CAS and plan seed regressions pass; R26 23/0 with the exact updated source fingerprint. This coordinates participating operations on the same engine; it does not add a shared configuration transaction across separate engines/processes. Final complete CI evidence is recorded in the PR description and artifacts after the correction is pushed.
