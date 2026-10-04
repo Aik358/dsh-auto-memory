@@ -6,7 +6,9 @@ Baseline: `e70f00b9ebd99689c571ce7547ba35a09c352016`.
 
 Every accepted settings-config read runs one hydration path for scoped drafts, dirty state, conflict feedback and prompt-section metadata. Ordering follows the latest successfully applied response; a failed newer broadcast cannot suppress a successful initial read. Beginning a save advances the applied-request barrier, rejecting reads from before that write. The generator was updated and `lib/client.js` regenerated.
 
-Root migration excludes `.lock`, `.lock.acquire`, `.tmp`, `.tmp-*` and `.tmp.*` writer artifacts. The regression holds the real source PLAN lock during migration, then acquires the target lock and writes successfully. User-root migration copies `PENDING-USER-MEMORY.md`, preserves the source and retains an existing target candidate file.
+Root migration excludes regular writer files with `.lock`, `.lock.acquire`, plain `.tmp` or numeric temporary suffixes. The independent delegate review found that the initial filter also excluded persistent `.tmp.` names and directories. The corrected filter retains durable Markdown names and all data directories; initial enumeration and final verification both use entry types. The new regression reproduces the previous-head omission through actual `MemoryEngine.saveConfig` and verifies correction, existing-target retention and source preservation. An artifact becoming a directory during migration triggers rollback.
+
+The lock regression holds the real source PLAN lock during migration, then acquires the target lock and writes successfully. User-root migration copies `PENDING-USER-MEMORY.md`, preserves the source and retains an existing target candidate file.
 
 The V3 inventory reader normalizes CRLF. Controlled config-commit failure replaces a platform-dependent chmod assumption; Windows directory junctions exercise path escape and overlap checks.
 
@@ -26,6 +28,7 @@ Windows, Node v24.15.0; temporary memory roots. Each command exited zero.
 - `node tests/smoke/smoke-test-generator-guard.mjs` — 24 PASS / 0 FAIL
 - `node tests/smoke/smoke-test-generator-idempotent.mjs` — 14 PASS / 0 FAIL
 - `node tests/smoke/smoke-test-settings-migration-boundaries.mjs` — 2 PASS / 0 FAIL
+- `node tests/smoke/smoke-test-settings-migration-names.mjs` — 2 PASS / 0 FAIL
 - `node tests/smoke/smoke-test-issue174-team-wiring.mjs` — PASS, with scheduled pull and diagnostics drained before cleanup
 - `node --check lib/index.js`
 - `node --check lib/client.js`
