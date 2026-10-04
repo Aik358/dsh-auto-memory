@@ -19,6 +19,7 @@ Windows, Node v24.15.0; temporary memory roots.
 | `node tests/smoke/smoke-test-success-evidence-ownership.mjs` | 5 PASS / 0 FAIL |
 | `node tests/smoke/smoke-test-procedure-session-upgrade.mjs` | 2 PASS / 0 FAIL |
 | `node tests/smoke/smoke-test-m52.mjs` | 52 assertions PASS / 0 FAIL |
+| `node tests/smoke/smoke-test-p9d-recent-evidence-ts.mjs` | PASS valid timestamp selection, strict corrupt-ledger refusal, tolerant display and repair recovery |
 | `node --check lib/evidence-store.js` | PASS |
 | `git diff --check` | PASS |
 
