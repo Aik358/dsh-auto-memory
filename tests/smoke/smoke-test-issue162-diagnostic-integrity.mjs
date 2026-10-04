@@ -74,10 +74,8 @@ ${methods}
   const host = make(overrides)
   Object.assign(host, {
     _degradeSink: createDegradeSinkPre(), config: {}, state: {}, _observerStats: {},
+    currentRuntime: () => ({ agent: null }), peekRuntime: () => null,
     runtimes: { values: () => [] }, autoStats: { count: 0 },
-    // Unit projection harness has no live owner; formal owner/IO barriers are
-    // covered by smoke-test-debug-index-owner against complete production apply.
-    currentRuntime: () => ({state:host.state}), peekRuntime: () => undefined,
     memoryIndexSnapshot: async () => ({}), _hubIoViewSnapshot: () => null,
     _factsPruneViewSnapshot: () => null, _logsViewSnapshot: () => null,
     capacityLimit: () => 1000, memToday: todayStr,
@@ -106,8 +104,41 @@ function session(home, id, content, { frames = 0, size = 0, name = 'session.json
 const secretError = () => Object.assign(new Error('Bearer credential123\nhttps://user:pass@host/private?token=URLSECRET\nC:\\Users\\PERSONAL\\secret.md /home/PERSONAL/secret.md\n正文私人内容\n' + 'X'.repeat(6000)), { code: 'EACCES' })
 const brokenQuery = () => ({ searchSessions: async () => { throw secretError() } })
 const absentSecrets = (value) => {
-  assert.doesNotMatch(JSON.stringify(value), /credential123|URLSECRET|PERSONAL|正文私人内容|user:pass|Bearer|\b39\s*(?:个?旧会话|old sessions\b)|descriptor v2|v0→v1/)
+  // Real ISO timestamps can contain second/minute 39; only prose must reject the stale hardcoded count.
+  const inspected = JSON.stringify(value, (key, item) => ['at', 'updatedAt'].includes(key) && typeof item === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$/.test(item) ? '[timestamp]' : item)
+  assert.doesNotMatch(inspected, /credential123|URLSECRET|PERSONAL|正文私人内容|user:pass|Bearer|\b39\s*(?:个?旧会话|old sessions\b)|"39"|descriptor v2|v0→v1/)
 }
+
+test('secret guard permits ISO timestamps containing 39 but rejects stale prose and credentials', () => {
+  absentSecrets({updatedAt:'2026-10-03T09:41:39.000Z',recent:[{at:'2026-10-03T09:39:00.000Z',reason:'message=[redacted]'}]})
+  for(const value of ['39 old sessions','Bearer credential123',{at:'credential123'}])assert.throws(()=>absentSecrets(value))
+})
+
+// This suite checks diagnostic integrity, not host clock/PID formatting. Real
+// debugInfo values vary across runs and a locale clock can contain standalone 39.
+// Fix only the two runtime display inputs; keep the secret/stale-prose guard intact.
+function dashboardFixture(data) {
+  assert.ok(Number.isSafeInteger(data.host.pid) && data.host.pid > 0, 'debugInfo PID is numeric')
+  assert.ok(typeof data.host.startTime === 'number' && Number.isFinite(data.host.startTime), 'debugInfo startTime is numeric')
+  return { ...data, host: { ...data.host, pid: 162, startTime: Date.UTC(2026, 8, 30) } }
+}
+
+test('dashboard fixture fixes only runtime clock/PID and keeps the integrity guard strict', () => {
+  for (const stamp of ['2026-10-03T11:39:17.000Z', '2026-10-03T11:17:39.000Z']) {
+    const data = { host: { pid: 39, startTime: Date.parse(stamp), version: 'fixture' } }
+    const fixture = dashboardFixture(data)
+    assert.deepEqual(fixture.host, { pid: 162, startTime: Date.UTC(2026, 8, 30), version: 'fixture' })
+    assert.deepEqual(data.host, { pid: 39, startTime: Date.parse(stamp), version: 'fixture' }, 'original debugInfo stays intact')
+    absentSecrets(fixture)
+    for (const bad of ['39 old sessions', '39', 'Bearer credential123', 'URLSECRET', 'PERSONAL', '正文私人内容', 'user:pass', 'descriptor v2', 'v0→v1']) {
+      assert.throws(() => absentSecrets(dashboardFixture({ ...data, children: [bad] })), 'guard still rejects ' + bad)
+      assert.throws(() => absentSecrets(dashboardFixture({ ...data, host: { ...data.host, version: bad } })), 'other host fields are inspected')
+    }
+    for (const key of ['pid', 'startTime']) {
+      assert.throws(() => dashboardFixture({ ...data, host: { ...data.host, [key]: 'Bearer credential123' } }), 'runtime fixture requires numeric ' + key)
+    }
+  }
+})
 
 test('privacy checks accept timestamp second 39 but reject obsolete session claims and secrets', () => {
   absentSecrets({ updatedAt: '2026-10-02T09:51:39.000Z', count: 39 })
@@ -360,6 +391,7 @@ test('real debugInfo/persistence/dashboard path exposes failures and persistence
   assert.equal(disk.recent.length, 1)
   assert.equal(disk.quota.schemaVersion, 'quota_probe_pre_v1')
   absentSecrets(disk)
+  const dashboardData = dashboardFixture(data)
 
   const start = client.indexOf('    function diagnosticFailureRowsPre(')
   assert.ok(start >= 0, 'dashboard projection present')
@@ -368,14 +400,15 @@ test('real debugInfo/persistence/dashboard path exposes failures and persistence
   let calls = 0
   const tree = new Function('useState', 'useEffect', 'h', 'L', 't', 'locale', 'currentWs', 'fmtSize',
     componentSource + '\nreturn DebugCenter()')(
-    (value) => [calls++ === 0 ? data : value, () => {}], () => {},
+    (value) => [calls++ === 0 ? dashboardData : value, () => {}], () => {},
     (tag, props, ...children) => ({ tag, props, children }), (zh) => zh, (key) => key, 'zh', () => '', String)
   const rendered = JSON.stringify(tree)
   assert.match(rendered, /data-dam-degrade-ledger/)
   assert.match(rendered, /session-search/)
   assert.match(rendered, /Error \/ EACCES/)
   assert.match(rendered, /累计失败历史/)
-  assert.match(rendered, /实时只读快照/)
+  if (client.includes('刷新诊断不会写入磁盘')) assert.match(rendered, /刷新诊断不会写入磁盘/)
+  else assert.match(rendered, /刷新诊断时更新到磁盘/)
   absentSecrets(tree)
 
   const failed = await harness({ writeFileSync: () => { throw secretError() } })

@@ -47,7 +47,7 @@ console.log('PASS F02 F18 F19 F20 F21: debug mount, ja function, cache revision/
 
 // Preserve an explicit zero through each real settings onChange callback.
 const setters = [...client.matchAll(/onChange: function \(e\) \{ set\('officialHeadroomTokens', ([^\n]+?)\) \}/g)]
-assert.equal(setters.length, 3)
+assert.equal(setters.length, client.includes('function DamSharedSettings(') ? 1 : 3)
 for (const [, expression] of setters) {
  const change = new Function('e', 'return ' + expression)
  assert.equal(change({ target: { value: '0' } }), 0)

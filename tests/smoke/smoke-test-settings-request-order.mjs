@@ -13,7 +13,7 @@ for(const mode of ['variant','legacy'])for(const scenario of ['busy','late-befor
  }})
  const {audit,render,nodes,spin,reset}=app; audit.session('A','/isolated/A')
  const component=mode==='variant'?audit.Iter5Settings:audit.legacy.settings
- const props={intent:{group:'engine'},draftScope:mode+scenario}
+ const props={intent:{group:app.sharedSettings?'maintenance':'engine'},draftScope:mode+scenario}
  try{
   let tree=render(component,props);await spin();tree=render(component,props)
   const checkbox=()=>nodes(tree,n=>n.type==='input'&&String(n.props.onChange).includes("set('memoryAnchorEnabled'"))[0]

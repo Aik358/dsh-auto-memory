@@ -18,9 +18,9 @@ export async function completeClient({fetch,source,react}={}) {
       session: function(id,ws) { sessions = { list: { getSnapshot: function() { var byId={};byId[id]={cwd:ws};return { current:id,byId:byId } } } } } }
     return module.exports`)
   vm.runInContext(source,context,{filename:'complete-production-client.js'})
-  const render=(component,props={})=>{cursor=0;const tree=component(props);effects.splice(0).forEach(f=>f());return tree}
+  const render=(component,props={})=>{cursor=0;let tree=component(props);function unwrap(n,depth=0){if(!n||typeof n!=='object')return n;if(depth>8)throw Error('component wrapper cycle');if(Array.isArray(n))return n.map(x=>unwrap(x,depth));if(typeof n.type==='function'&&['Iter5Settings','DamSharedSettings'].includes(n.type.name))return unwrap(n.type(n.props),depth+1);if(n.props?.children)n.props.children=unwrap(n.props.children,depth);return n}tree=unwrap(tree);effects.splice(0).forEach(f=>f());return tree}
   const reset=()=>{for(const s of slots)if(s?.cleanup)s.cleanup();slots=[];cursor=0;effects=[]}
   const nodes=(tree,predicate)=>{const out=[];const walk=n=>{if(!n||typeof n!=='object')return;if(Array.isArray(n)){n.forEach(walk);return}if(predicate(n))out.push(n);walk(n.props?.children)};walk(tree);return out}
   const spin=async()=>{for(let i=0;i<12;i++)await Promise.resolve()}
-  return {audit:exposed.audit,render,reset,nodes,spin,context}
+  return {audit:exposed.audit,render,reset,nodes,spin,context,sharedSettings:source.includes('function DamSharedSettings(')}
 }

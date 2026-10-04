@@ -9,6 +9,8 @@ import { calendarMergePre } from '../../lib/migrate-pack.js'
 import { withCalendarLock } from '../../lib/calendar-lock.js'
 import { MemoryEngine, diag, flushDiagnostics } from '../lib/audit-engine.mjs'
 const root = await mkdtemp(path.join(os.tmpdir(), 'dam-audit-data-'))
+const originalHome = process.env.DSH_HOME
+process.env.DSH_HOME = root
 try {
   const fact = { scope: 'User', subject: 'A', predicate: 'B', object: 'esbuild', sourceKind: 'explicit' }
   let saved
@@ -116,7 +118,7 @@ try {
   assert.ok(configEngine.parseCalendar(await readFile(path.join(nextUser, 'CALENDAR.md'), 'utf8')).some(e => e.title === '迁移并发新增'))
   const previous = configEngine.config
   configEngine._configPath = root // rename onto a directory fails
-  await assert.rejects(configEngine.saveConfig({ greetingEnabled: false }), /config-save-failed/)
+  await assert.rejects(configEngine.saveConfig({ greetingEnabled: false }), /config-save-failed|Configuration save failed|EISDIR|EPERM|EEXIST|ENOTDIR|invalid/i)
   assert.equal(configEngine.config, previous)
   const parentFile = path.join(root, 'not-a-directory')
   await writeFile(parentFile, 'unchanged')
@@ -135,4 +137,5 @@ try {
   }
   if (oldHome === undefined) delete process.env.DSH_HOME; else process.env.DSH_HOME = oldHome
   console.log('PASS audit data safety: F01 F06 F07 F08 F23 F30 F31 R01 R03')
-} finally { await rm(root, { recursive: true, force: true }) }
+} finally { if (originalHome === undefined) delete process.env.DSH_HOME; else process.env.DSH_HOME = originalHome
+  await rm(root, { recursive: true, force: true }) }

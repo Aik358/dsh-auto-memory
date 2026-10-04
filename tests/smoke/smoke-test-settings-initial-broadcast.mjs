@@ -10,7 +10,7 @@ for(const mode of ['variant','legacy'])for(const scenario of ['broadcast-success
   return {ok:true,json:async()=>({})}
  }})
  const {audit,render,nodes,spin,reset}=app;audit.session('A','/isolated/A')
- const component=mode==='variant'?audit.Iter5Settings:audit.legacy.settings,props={intent:{group:'engine'},draftScope:'retained-draft'}
+ const component=mode==='variant'?audit.Iter5Settings:audit.legacy.settings,props={intent:{group:app.sharedSettings?'maintenance':'engine'},draftScope:'retained-draft'}
  try{
   let tree=render(component,props);await spin();tree=render(component,props)
   const checkbox=()=>nodes(tree,n=>n.type==='input'&&String(n.props.onChange).includes("set('memoryAnchorEnabled'"))[0]
@@ -24,9 +24,10 @@ for(const mode of ['variant','legacy'])for(const scenario of ['broadcast-success
   pending[0].resolve(payload(c0,'initial-section'));await spin();tree=render(component,props)
   assert(checkbox(),'initialization completes despite a failed newer read');assert.equal(checkbox().props.checked,true,'unmounted draft restored by whichever successful response initializes')
   assert.equal(save().props.disabled,false,'restored edits remain dirty')
+  if(app.sharedSettings){nodes(tree,n=>n.props?.onChange&&n.props.items?.some?.(x=>x[0]==='find'))[0].props.onChange('find');tree=render(component,props)}
   const modeInput=nodes(tree,n=>n.type==='input'&&n.props.type==='radio'&&n.props.checked&&String(n.props.onChange).includes('onEngineModeChange'))[0]
   assert.equal(modeInput.props.value,scenario==='broadcast-success'?'python':'js','latest successful config remains base')
-  nodes(tree,n=>n.props?.onChange&&n.props.items?.some?.(x=>x[0]==='memory'))[0].props.onChange('memory');tree=render(component,props)
+  nodes(tree,n=>n.props?.onChange&&n.props.items?.some?.(x=>x[0]===(app.sharedSettings?'find':'memory')))[0].props.onChange(app.sharedSettings?'find':'memory');tree=render(component,props)
   nodes(tree,n=>n.type==='button'&&String(n.props.onClick).includes('setPsecOpen(!psecOpen)'))[0].props.onClick();tree=render(component,props)
   const key=scenario==='broadcast-success'?'broadcast-section':'initial-section'
   assert.equal(nodes(tree,n=>n.props?.['data-dam-pswitch']===key).length,1,'winning response supplies section metadata')

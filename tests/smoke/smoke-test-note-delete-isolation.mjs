@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 // Complete production apply + migration routes; filesystem and home are isolated.
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
@@ -54,14 +55,14 @@ try {
  const purge=engine._activationHost.purgeMemory,purged=[];engine._activationHost.purgeMemory=function(id){purged.push(id);return purge.call(this,id)}
  const seed=async()=>{await ds.replaceRaw(pa.notesPath,original);purged.length=0;for(const [i,id]of ids.entries())facts.upsert({scope:'Workspace',subject:'project '+i,predicate:'uses framework',object:'React',sourceKind:'explicit',provenance:[id]})}
  const holdReads=count=>{const io=ds.fs,entered=deferred(),release=deferred();let seen=0;ds.fs={...io,async readFile(file,...args){const buf=await io.readFile(file,...args);if(String(file)===pa.notesPath&&++seen<=count){if(seen===count)entered.resolve();await release.promise}return buf}};return {entered,release,restore:()=>ds.fs=io}}
- await test('formal digestless delete/delete cannot revive a removed anchor or cascade a rejected delete',async()=>{
-  await seed();const hold=holdReads(2)
-  try {const first=request('storage-manage',{action:'delete',filePath:pa.notesPath,memoryId:ids[0]}),second=request('storage-manage',{action:'delete',filePath:pa.notesPath,memoryId:ids[1]});await hold.entered.promise;hold.release.resolve();const results=await Promise.all([first,second]);assert(results.every(r=>r.status===200));assert.equal(results.filter(r=>r.data.ok).length,1);assert.equal(results.find(r=>!r.data.ok).data.reason,'conflict-external-edit');const winner=results.find(r=>r.data.ok).data.memoryId,text=await fsp.readFile(pa.notesPath,'utf8');assert(!text.includes(winner));assert.deepEqual(purged,[winner]);assert.equal(facts.snapshot({includeRevoked:true}).facts.find(f=>f.provenance.includes(winner)).revoked,true)}
+ await test('version-bound delete/delete cannot revive a removed anchor or cascade a rejected delete',async()=>{
+  await seed();const expectedDigest=createHash('sha256').update(await fsp.readFile(pa.notesPath)).digest('hex');const hold=holdReads(2)
+  try {const first=request('storage-manage',{action:'delete',filePath:pa.notesPath,memoryId:ids[0],expectedDigest}),second=request('storage-manage',{action:'delete',filePath:pa.notesPath,memoryId:ids[1],expectedDigest});await hold.entered.promise;hold.release.resolve();const results=await Promise.all([first,second]);assert(results.every(r=>r.status===200));assert.equal(results.filter(r=>r.data.ok).length,1);assert.equal(results.find(r=>!r.data.ok).data.reason,'conflict-external-edit');const winner=results.find(r=>r.data.ok).data.memoryId,text=await fsp.readFile(pa.notesPath,'utf8');assert(!text.includes(winner));assert.deepEqual(purged,[winner]);assert.equal(facts.snapshot({includeRevoked:true}).facts.find(f=>f.provenance.includes(winner)).revoked,true)}
   finally{hold.release.resolve();hold.restore()}
  })
- await test('formal digestless delete/GUI append preserves the new record and rejects stale deletion',async()=>{
-  await seed();const hold=holdReads(1)
-  try{const deletion=request('storage-manage',{action:'delete',filePath:pa.notesPath,memoryId:ids[0]});await hold.entered.promise;const append=await request('note',{content:'new concurrent decision',sessionId:'A',expectedNotesPath:pa.notesPath});assert.equal(append.status,200,JSON.stringify(append));hold.release.resolve();const result=await deletion;assert.equal(result.data.ok,false);assert.equal(result.data.reason,'conflict-external-edit');const text=await fsp.readFile(pa.notesPath,'utf8');assert(text.includes(ids[0]));assert(text.includes('new concurrent decision'));assert.deepEqual(purged,[])}finally{hold.release.resolve();hold.restore()}
+ await test('version-bound delete/GUI append preserves the new record and rejects stale deletion',async()=>{
+  await seed();const expectedDigest=createHash('sha256').update(await fsp.readFile(pa.notesPath)).digest('hex');const hold=holdReads(1)
+  try{const deletion=request('storage-manage',{action:'delete',filePath:pa.notesPath,memoryId:ids[0],expectedDigest});await hold.entered.promise;const append=await request('note',{content:'new concurrent decision',sessionId:'A',expectedNotesPath:pa.notesPath});assert.equal(append.status,200,JSON.stringify(append));hold.release.resolve();const result=await deletion;assert.equal(result.data.ok,false);assert.equal(result.data.reason,'conflict-external-edit');const text=await fsp.readFile(pa.notesPath,'utf8');assert(text.includes(ids[0]));assert(text.includes('new concurrent decision'));assert.deepEqual(purged,[])}finally{hold.release.resolve();hold.restore()}
  })
 }finally{
  await drain();if(cleanup)cleanup();await flushDiagnostics()
