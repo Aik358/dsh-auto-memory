@@ -7,3 +7,7 @@ Register PLAN flights before the first await. Root migration drains existing not
 Targeted Windows validation: actual MemoryEngine migration/native-lock regression 4 PASS, existing PLAN CAS and two-process CAS PASS, settings routes and migration boundaries PASS, R26 23/0 with the exact updated fingerprint. All four regression cases exercise production source. No UI source changed. Final full fork/upstream CI evidence is recorded in the PR description after push.
 
 This coordinates participating writes on the same engine. Independent engines/processes do not share a configuration migration transaction. Installed DSH, real models/providers and hardware acceptance remain unperformed.
+
+Final caller/binding correction: automatic seeding checks both bindings across PLAN reads and workspace path resolution; the registered PLAN tool rejects paths that no longer match the active workspace mapping. Absolute projectMemoryDir changes also drain existing writers, including those already inside the native lock callback. This does not expand file-copy policy.
+
+Expanded actual production regression: 9 PASS, actual PLAN tool read/update/conflict/recovery PASS, plan seed 27/0 and R26 23/0. The resolver-completion experiment uses an injected scheduling barrier and does not establish production race frequency.
