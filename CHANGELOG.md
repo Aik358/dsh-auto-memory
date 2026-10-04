@@ -4,6 +4,21 @@ All notable changes to dsh-auto-memory.
 
 ---
 
+## [3.2.9] — 2026-10-05 · 工作台符号链接路径归一（Android 修复）+ 新建熔断
+
+> **一条主线**：社区用户真机报告（Android/DSH 移动壳）：工作台三重校验恒判 `cwd-mismatch`——`DSH_HOME` 环境变量给的是 `/data/user/0` 写法，而宿主把会话 `header.cwd` 与工作区登记归一成 realpath（`/data/data`），两者是符号链接别名、`path.resolve` 字面比较永不相等 ⇒ 工作台建不起来、9 类后台记忆任务静默停摆、且每次重试都新建一个「记忆中枢」会话（真机 16 个）。回归 **268 套件全绿**。
+
+### ★ 修复
+
+- **路径归一（四处比较点）**：新增 `_canonPath`（realpath 自身 → realpath 父目录+basename 兜底 → resolve 兜底），`_verifyWorkbench` 第①项 cwd 比较、工作区登记比较、`_workbenchCwd` 返回值与包含判定全部改走归一；`_workbenchCwd` 返回 realpath 形态，使 mkdir / 工作区登记 / workbench.json 落盘与宿主写入口径一致（治本）。macOS `/var→/private/var` 同类别名一并覆盖。
+- **主流平台行为不变（硬约束）**：无符号链接时 `_canonPath` 为恒等映射（逐字节相等），新增 parity 套件以真实引擎方法逐断言对照新旧产出；win32 剥离旧版 libuv 可能返回的 `\\?\` 扩展前缀（裸 UNC 不误伤）。
+- **同族缺陷顺带修复**：显式 `workbenchRoot` 写成另一种路径别名时，旧代码会判"逃出 dshHome"并**静默丢弃**配置退回默认——归一后包含判定按真实位置判定；Windows 8.3 短名与长名混用（TEMP/宿主两侧写法不一）同属此缺陷类，一并治愈。
+- **新建熔断**：同一 (期号， 失败原因) 连续 3 次 verify-after-create 失败即停止新建、只回报原因码——任何未来不能自愈的失败都不会再无限堆「记忆中枢」会话；成功清零、换因重计、重启清零；未经同意绝不新建的既有不变式不受影响。
+
+### ★ 测试
+
+- 新增 `smoke-test-workbench-canon`（31 断言：主流 parity 逐字节对照 + junction 真实复现符号链接场景）与 `smoke-test-workbench-create-breaker`（16 断言行为级：同意门不误伤 / 3 败熔断 / 换因重计 / 成功清零）；workbench-gaps S1 守卫随源码演进同步；E3 宿主基线重钉 R76、iter5-skin 基线重钉 R77。
+
 ## [3.2.8] — 2026-10-04 · 社区审计 40+ 项全量闭环 + 生成器两条铁律 + 团队端到端接线
 
 > **一条主线**：社区贡献者（Minervaowl7 等，AI 辅助）对本仓做了一次全量审计（39 项 issue + 4 条 PR），逐条核查后 36 项确认成立并全部修复入库；同时给前端生成器立了两条铁律（**R1 源产物一致才放行 / R2 失配即停机**），终结了 3.2.5→3.2.6 期间"生成器覆盖修复"的事故模式。回归 **266 套件全绿**。
