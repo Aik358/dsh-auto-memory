@@ -6,6 +6,7 @@ import { MemoryEngine } from '../lib/audit-engine.mjs'
 import { createActivationInboxPre } from '../../lib/activation-inbox-state.js'
 import { makeFakeActivationRequestPre } from '../../lib/activation-inbox.js'
 import { buildPackPre } from '../../lib/migrate-pack.js'
+import { createStorageManagerPre } from '../../lib/storage-manage.js'
 const src = await readFile(new URL('../../lib/index.js', import.meta.url), 'utf8')
 const root = await mkdtemp(path.join(os.tmpdir(), 'dam-audit-host-'))
 const previous = process.env.DSH_HOME; process.env.DSH_HOME = root
@@ -34,8 +35,15 @@ try {
   assert.equal(route({ _scopedProcedureIo:{ migrate: rows => { transferred=rows;return {ok:true} } }, rehydrateProcedureScopes:()=>({ok:true}) },{procedureId:'proc_test',scope:'workspace'},'transfer-scope',{},(_res,status,data)=>({status,data}),()=>{}).status,200)
   assert.equal(transferred[0].procedureId,'proc_test')
   const pStart=src.indexOf('    pathsOf: () => (engine.state');const pEnd=src.indexOf('\n    activationHostOf:',pStart)
-  const getter=new Function('engine','canonicalize','path','return ('+src.slice(pStart,pEnd).trim().replace(/^pathsOf: /,'').replace(/,$/,'')+')')({state:{ws:root,notesPath:'notes',logPath:'log'}}, x=>x,path)
-  assert.equal(getter().notesPath,'notes'); assert.equal(getter().logPath,'log')
+  const notesPath=path.join(root,'notes'), logPath=path.join(root,'log')
+  const getter=new Function('engine','canonicalize','path','return ('+src.slice(pStart,pEnd).trim().replace(/^pathsOf: /,'').replace(/,$/,'')+')')({state:{ws:root,notesPath,logPath}}, x=>x,path)
+  // Read the actual production factory and require the names consumed by storage-manage.
+  assert.equal(getter().workspaceMemoryPath,notesPath); assert.equal(getter().todayLogPath,logPath)
+  const storage = createStorageManagerPre({ pathsOf: getter, io: { sidecarDir: root } })
+  const catalog = storage.scanHealth()
+  assert.equal(catalog.ok,true)
+  assert.equal(catalog.sources.find(s => s.kind === 'workspace').file,notesPath)
+  assert.equal(catalog.sources.find(s => s.kind === 'workspace-log').file,logPath)
   const rich={id:'mem_test',source:'PLAN.md',title:'流程',tags:['topic:deploy'],cues:['rsync'],preview:'流程正文',kind:'plan'}
   const index=await engine._writeSidecarIndexPre(root,{entries:[rich]})
   assert.deepEqual(index.by_tag['topic:deploy'],[rich.id]);assert.deepEqual(index.by_cue.rsync,[rich.id])
