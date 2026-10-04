@@ -1,0 +1,95 @@
+{
+  "generatedAt": "2026-09-27",
+  "algorithm": "white-to-alpha (dead-zone 242, full 150) — 纯白抠透明，保留原色，贴深色底",
+  "source": "lib/assets/skin/{backgrounds,slots}/*.png（浅色原版，未改动）",
+  "discipline": "docs/teamwork-impl/53-深色版背景生成规范.md",
+  "darkPageBg": "#0F1115",
+  "count": 8,
+  "totalBytes": 1993782,
+  "library": {
+    "backgrounds": [
+      {
+        "file": "bg-01-forest.webp",
+        "size": [
+          1600,
+          1000
+        ],
+        "bytes": 195894,
+        "sha256": "34ef3a64f256851a5e8da3b8ec3f8fb55f4528ce2ca9f44b23a05fedae8c46f1",
+        "transparentPct": 82.6
+      },
+      {
+        "file": "bg-02-forest-tall.webp",
+        "size": [
+          2000,
+          1400
+        ],
+        "bytes": 321114,
+        "sha256": "5373a3f5beeb68a7c29c988fcbaf906bfe98bb3ffad6a66ad24fc9b6470de986",
+        "transparentPct": 80.3
+      },
+      {
+        "file": "bg-03-hero-banner.webp",
+        "size": [
+          1600,
+          600
+        ],
+        "bytes": 113064,
+        "sha256": "fd6831e05c9140f114d504e899151a82d5b6eed12cb15ef7c5aaa365e79324b9",
+        "transparentPct": 86.6
+      },
+      {
+        "file": "bg-04-lake.webp",
+        "size": [
+          1600,
+          1000
+        ],
+        "bytes": 355906,
+        "sha256": "4e01691d157e763f329c3ed6c868253fae3a761cfc27ec475fa13550573b8141",
+        "transparentPct": 60.4
+      },
+      {
+        "file": "bg-05-woodland.webp",
+        "size": [
+          1600,
+          1000
+        ],
+        "bytes": 261394,
+        "sha256": "53e87cf9d2e32e55b0a1941d79c7ae42eb3c470fdcdf992c6fb40ae7806bf4c6",
+        "transparentPct": 81.4
+      },
+      {
+        "file": "bg-06-coast.webp",
+        "size": [
+          1600,
+          1000
+        ],
+        "bytes": 229402,
+        "sha256": "125b7785c219941b5a89c8a4ab4bd05dc0c97cd3549271be710478d955c0c83d",
+        "transparentPct": 76.8
+      }
+    ],
+    "slots": [
+      {
+        "file": "bg.mindmap.webp",
+        "size": [
+          2000,
+          1400
+        ],
+        "bytes": 321114,
+        "sha256": "5373a3f5beeb68a7c29c988fcbaf906bfe98bb3ffad6a66ad24fc9b6470de986",
+        "transparentPct": 80.3
+      },
+      {
+        "file": "hero.welcome.webp",
+        "size": [
+          1600,
+          1000
+        ],
+        "bytes": 195894,
+        "sha256": "34ef3a64f256851a5e8da3b8ec3f8fb55f4528ce2ca9f44b23a05fedae8c46f1",
+        "transparentPct": 82.6
+      }
+    ]
+  }
+}
