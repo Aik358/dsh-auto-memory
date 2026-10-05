@@ -23,7 +23,7 @@ const tools = [], routes = [], disposers = []
 const agent = { session: { id: 'audit-session', header: { cwd: workspace } } }
 const ctx = {
   get: key => key === 'agents' ? { get: id => id === agent.session.id ? agent : null } : key === 'workspaceRegistry' ? { list: () => [{ path: workspace, sessionIds: [agent.session.id] }, { path: other, sessionIds: [] }] } : undefined,
-  on: () => () => {}, effect: fn => { disposers.push(fn); return () => {} },
+  on: () => () => {}, effect: fn => { const cleanup = fn(); if (typeof cleanup === 'function') disposers.push(cleanup); return () => {} },
   systemPrompt: { context: () => () => {}, section: () => () => {} },
   tools: { register: tool => { tools.push(tool); return () => {} } },
   webServer: { register: route => { routes.push(route); return () => {} } },
@@ -59,14 +59,28 @@ try {
     assert.ok(text.includes('（`' + workspace + '`）'))
     assert.ok(!text.includes('（`' + process.cwd() + '`）'))
   })
-  await check('F5 workspace GUI activation uses the skill owner despite a different current project', async () => {
+  await check('F5 foreign-owner activation fails visibly and retries in the owning workspace', async () => {
     const store = engine._memoryHub.stores.procedures
-    const p = store.observe({ title: 'Other project skill', steps: ['Read other source'], successCriteria: ['Source read'], riskLevel: 'low', scope: 'workspace', workspaceRef: engine.wsKey(other) }).procedure
-    store.promote(p.procedureId, {}, { authorizedBy: 'user' })
+    engine.state.ws = other
+    const observed = store.observe({ title: 'Other project skill', steps: ['Read other source'], successCriteria: ['Source read'], riskLevel: 'low', scope: 'workspace', workspaceRef: engine.wsKey(other) })
+    assert.equal(observed.ok, true)
+    assert.equal(observed.persisted, true)
+    const p = observed.procedure
+    assert.equal(store.promote(p.procedureId, {}, { authorizedBy: 'user' }).ok, true)
     engine.state.ws = workspace
+    const refused = await activateViaGui(p.procedureId)
+    assert.equal(refused.ok, false)
+    assert.equal(refused.persisted, false)
+    assert.match(refused.error, /foreign-workspace/)
+    assert.equal(refused.skillExport, undefined, 'failed commit must not report a successful export')
+    engine.state.ws = other
     const result = await activateViaGui(p.procedureId)
+    assert.equal(result.ok, true)
+    assert.equal(result.persisted, true)
     assert.equal(result.skillExport.ok, true)
     assert.ok(fs.readFileSync(result.skillExport.file, 'utf8').includes('（`' + other + '`）'))
+    const ownerFile = path.join(root, 'memory', 'workspaces', engine.wsKey(other), 'hub', 'procedures.json')
+    assert.equal(JSON.parse(fs.readFileSync(ownerFile, 'utf8')).procedures.find(row => row.procedureId === p.procedureId).stage, 'active')
   })
   await check('F5 unknown global source remains activated without a fabricated export project', async () => {
     const store = engine._memoryHub.stores.procedures
