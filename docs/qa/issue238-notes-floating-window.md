@@ -46,5 +46,14 @@ pwsh -NoProfile -File tools/qa/verify-notes-floating-window.ps1 -Session <active
 源码语法、核心 smoke、API 路径、水位窗口、面板承载面、皮肤分派及 Iter5 回归通过。
 Iter5 手写区哈希随本次四行浮窗改动更新；生成块与生成器检查保持一致。
 
-上游全量运行器当前引用缺失的 `tools/smoke-impact.mjs`，无法启动；
-本次未将其报告为全量通过。截图来自隔离 web 宿主；未把候选包部署到用户日常桌面实例。
+首次 CI 因上游缺失 `tools/smoke-impact.mjs` 而无法启动。后续修复已恢复该模块，
+发布同步会连同运行器一起复制它；新增回归执行真实发布复制路径，覆盖 CLI 导入、
+影响面预检、过滤、非零失败及超时退出。
+
+离线 WASM 路径回归使用独立文件夹；Python 探测回归使用真实 Python 进程与临时 venv，
+只以空模块验证依赖选择，模型质量与安装验收保留在 `smoke-test-py-runtime-live.mjs`。
+CI 明确安装 Python 3.12，沿用原有 live 测试排除规则。
+冻结皮肤保持 LF；沉淀测试按现有工作台所有权设置隔离夹具，并确保断言异常返回失败。
+完整回归结论以 PR 最新提交的 Checks 为准。
+
+截图来自隔离 web 宿主；未把候选包部署到用户日常桌面实例。
