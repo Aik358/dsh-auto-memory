@@ -129,7 +129,9 @@ t('P3B-3a ★ env 闸常量写法 + 默认关闭', () => {
 t('P3B-3b ★★ 生产候选形态的 m7-live-pre 只剩 1 处（且必须在 devTreeRoot 内）', () => {
   const hits = [...SJ.matchAll(/path\.join\([^)]*m7-live-pre[^)]*\)/g)].map((m) => m[0])
   assert(hits.length === 1, '★ 候选形态 m7-live-pre 命中 ' + hits.length + '（期望 1）\n' + hits.join('\n'))
-  within(SJ, /function devTreeRoot\(pluginDir\) \{/, 300, 'm7-live-pre', '★ 唯一那处不在 devTreeRoot 内')
+    const start = SJ.indexOf('function devTreeRoot(pluginDir) {')
+  const end = SJ.indexOf('\nfunction ', start + 1)
+  assert(start >= 0 && end > start && SJ.slice(start, end).includes('m7-live-pre'), '★ 唯一那处不在 devTreeRoot 内')
 })
 
 // ★2026-09-22 P10-C 契约变更（用户裁定）：dev 树候选的闸门由「环境变量显式开启」统一为
