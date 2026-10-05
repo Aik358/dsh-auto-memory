@@ -90,11 +90,14 @@ function setExpr(src, key, from) {
 }
 
 // 三面 × 三键 + frozen 的对应三键
+const canonical = norm(readFileSync(path.join(ROOT,'skins/iter5/settings-source.js'),'utf8'))
+ok(classicFace.includes("function SettingsPage() { return h(DamSharedSettings, { draftScope: 'workbench' }) }"),'classic reaches the shared workbench form')
+ok(legacyFace.includes('function Iter5Settings(props) { return h(DamSharedSettings, props) }') && frozen.includes('function Iter5Settings(props) { return h(DamSharedSettings, props) }'),'legacy/frozen delegate to the real shared implementation')
 const SURFACES = [
-  { name: 'classic', text: classicFace, keys: ['snapshotMinGapRounds', 'slimEveryRounds', 'fullEverySlims'] },
-  { name: 'legacy(生成块)', text: legacyFace, keys: ['snapshotMinGapRounds', 'slimEveryRounds', 'fullEverySlims'] },
+  { name: 'classic via canonical source', text: canonical, keys: ['snapshotMinGapRounds', 'slimEveryRounds', 'fullEverySlims'] },
+  { name: 'legacy via shipped shared root', text: v4Face, keys: ['snapshotMinGapRounds', 'slimEveryRounds', 'fullEverySlims'] },
   { name: 'v4(生成块)', text: v4Face, keys: ['snapshotMinGapRounds', 'slimEveryRounds', 'fullEverySlims'] },
-  { name: 'frozen(源)', text: frozen, keys: ['snapshotMinGapRounds', 'slimEveryRounds', 'fullEverySlims'] },
+  { name: 'frozen via shipped shared root', text: v4Face, keys: ['snapshotMinGapRounds', 'slimEveryRounds', 'fullEverySlims'] },
 ]
 
 const FALLBACK = { snapshotMinGapRounds: 5, slimEveryRounds: 3, fullEverySlims: 3 }
@@ -137,7 +140,7 @@ for (const s of SURFACES) {
 
 // ---- ③ 负路径：删掉定义必须抛 ReferenceError（证明本套件真的依赖它，非恒绿） ----
 {
-  const expr = setExpr(classicFace, 'snapshotMinGapRounds')
+  const expr = setExpr(canonical, 'snapshotMinGapRounds')
   let threw = null
   try {
     const sb = { console, captured: null }
@@ -156,8 +159,8 @@ for (const s of SURFACES) {
   const defN = cnt(client, FN_SIG)
   ok(defN === 1, 'G1-1：定义恰 1 处（实际 ' + defN + '）')
   const callN = cnt(client, 'normalizeGapRounds(') - defN
-  ok(callN === 9, 'G1-1：client 侧调用点 9 处（classic 3 + legacy 块 3 + v4 块 3，实际 ' + callN + '）')
-  ok(cnt(frozen, 'normalizeGapRounds(') === 3, 'G1-1：frozen 源 3 处调用（实际 ' + cnt(frozen, 'normalizeGapRounds(') + '）')
+  ok(callN === 3, 'G1-1：shared client 侧调用点 3 处，实际 ' + callN + '）')
+  ok(cnt(frozen, 'normalizeGapRounds(') === 0 && cnt(canonical,'normalizeGapRounds(')===3, 'G1-1：frozen delegate / canonical 3 calls（实际 ' + cnt(frozen, 'normalizeGapRounds(') + '）')
   ok(cnt(genSrc, 'normalizeGapRounds') === 0, 'G1-1：生成器无 normalizeGapRounds 变换点（属手写区/源直改，不该出现在生成器里）')
 }
 

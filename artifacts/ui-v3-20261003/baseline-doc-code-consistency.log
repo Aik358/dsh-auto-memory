@@ -1,0 +1,46 @@
+  ok - 代码侧：定位 lib/index.js 的 DEFAULT_CONFIG 字面量
+  ok - 代码侧：定位 lib/tier-layer-inject.js 的 TIER_BUDGET_PRE_V1 字面量
+  ok - 代码可解析 l0IndexEnabled = true
+  ok - 文档写明默认值 l0IndexEnabled（SPEC 至少一条「默认 **X**」声明）
+  ok - 默认值一致 l0IndexEnabled（代码 true / 文档 SEMANTIC-ARCHITECTURE-SPEC.md:33=true）
+  ok - 无漂移声明 l0IndexEnabled（检查 2 处声明，隔离 0 处）
+  ok - 代码可解析 tier0CatalogEnabled = true
+  ok - 文档写明默认值 tier0CatalogEnabled（SPEC 至少一条「默认 **X**」声明）
+  ok - 默认值一致 tier0CatalogEnabled（代码 true / 文档 SEMANTIC-ARCHITECTURE-SPEC.md:30=true）
+  ok - 无漂移声明 tier0CatalogEnabled（检查 1 处声明，隔离 0 处）
+  ok - 代码可解析 injectBudgetChars = 8000
+  ok - 文档写明默认值 injectBudgetChars（SPEC 至少一条「默认 **X**」声明）
+  ok - 默认值一致 injectBudgetChars（代码 8000 / 文档 SEMANTIC-ARCHITECTURE-SPEC.md:29=8000, SEMANTIC-ARCHITECTURE-SPEC.md:223=8000）
+  ok - 无漂移声明 injectBudgetChars（检查 4 处声明，隔离 0 处）
+  ok - 代码可解析 tier0MaxTokens = 400
+  ok - 文档写明默认值 tier0MaxTokens（SPEC 至少一条「默认 **X**」声明）
+  ok - 默认值一致 tier0MaxTokens（代码 400 / 文档 SEMANTIC-ARCHITECTURE-SPEC.md:31=400）
+  ok - 无漂移声明 tier0MaxTokens（检查 3 处声明，隔离 0 处）
+  ok - 代码可解析 tier0BudgetShare = 0.25
+  ok - 文档写明默认值 tier0BudgetShare（SPEC 至少一条「默认 **X**」声明）
+  ok - 默认值一致 tier0BudgetShare（代码 0.25 / 文档 SEMANTIC-ARCHITECTURE-SPEC.md:32=0.25）
+  ok - 无漂移声明 tier0BudgetShare（检查 1 处声明，隔离 0 处）
+  ok - 代码可解析 B0 = 800
+  ok - 文档写明该值 B0（SPEC 至少一条明确声明）
+  ok - 无漂移声明 B0（检查 8 处声明，隔离 0 处）
+  ok - 代码可解析 B2 = 2400
+  ok - 文档写明该值 B2（SPEC 至少一条明确声明）
+  ok - 无漂移声明 B2（检查 5 处声明，隔离 0 处）
+  ok - tier0MaxTokens 口径写清（同一行含 默认/400/B0/800/上限）
+  ok - tier0BudgetShare 默认值与代码一致（0.25，已由上表覆盖）
+  ok - B2 统一到代码真值 2400（SPEC 明确「已统一」）
+  ok - SPEC 版本已升 v2（标题 + 变更记录 + 用户裁定依据）
+  ok - SPEC 明文承认 §7/S9 的「定调错误」
+  ok - S9 已是分档四条（S9.1 兼容档 / S9.2 最优档三件套 / S9.3 共用接口 / S9.4 禁当目标形态）
+  ok - §7 已是分档成本模型（两档各自的「谁付费」）
+  ok - S9.2 三件套写全（成本 + 门控 + 无 LLM 时的降级路径）
+  ok - 「轻度用户」仅出现在兼容档语境/历史说明（本仓口径自查，机械版 grep）
+  ok - 反向对照：文档里故意写错的值必须被解析出来（= 守卫能红）
+  ok - 反向对照：正确的值解析后与代码一致（不误报）
+  ok - 反向对照：值在字段名之前不构成该字段的声明
+  ok - 无 BOM：lib/index.js
+  ok - 无 BOM：lib/tier-layer-inject.js
+  ok - 无 BOM：docs/internal/SEMANTIC-ARCHITECTURE-SPEC.md
+  ok - 无 BOM：docs/internal/THREE-LAYER-CONTRACT.md
+
+[doc-code-consistency-pre] pass=44 fail=0

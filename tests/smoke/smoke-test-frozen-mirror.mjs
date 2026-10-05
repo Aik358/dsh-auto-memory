@@ -93,7 +93,7 @@ function setExprs(text) {
 
 // ============================ ① 签名级 ============================
 const COMPONENTS = [
-  { name: 'Settings', classicSig: '    function SettingsPage() {', iter5Sig: 'function Iter5Settings(props) {', genAnchor: "    function SettingsPage() {", frozen: true },
+  { name: 'Settings', classicSig: '    function SettingsPage() {', iter5Sig: 'function Iter5Settings(props) {', genAnchor: "readFileSync(path.join(root, 'skins/iter5/settings-source.js')", frozen: true },
   { name: 'Storage', classicSig: '    function StorageTab(props) {', iter5Sig: 'function Iter5Storage(props) {', genAnchor: '    function StorageTab(props) {', frozen: true },
   { name: 'Skills', classicSig: '    function MemoryHubTab(props) {', iter5Sig: 'function Iter5Skills(props) {', genAnchor: '    function MemoryHubTab(props) {', frozen: true },
   // Stats：frozen 侧无 Iter5Stats —— 旧款皮肤的统计页由宿主托管（frozen 内 'stats' 走 i5-hosted 卡），
@@ -114,9 +114,12 @@ ok(cnt(v4Face, 'function Iter5Skills(props) {') === 1, '签名级：v4 面有 It
 ok(cnt(v4Face, 'function Iter5Stats() {') === 1, '签名级：v4 面有 Iter5Stats 定义')
 
 // ============================ ② 表达式级 ============================
-const classicSettings = bodyOf(classicFace, '    function SettingsPage() {')
-const frozenSettings = bodyOf(frozen, 'function Iter5Settings(props) {')
+const canonical = norm(readFileSync(path.join(ROOT,'skins/iter5/settings-source.js'),'utf8'))
+ok(bodyOf(classicFace,'    function SettingsPage() {').includes("h(DamSharedSettings, { draftScope: 'workbench' })"),'classic workbench delegates to the shared implementation')
+ok(bodyOf(frozen,'function Iter5Settings(props) {').includes('return h(DamSharedSettings, props)'), 'frozen delegates to the shared implementation')
+const classicSettings = bodyOf(canonical, '    function SettingsPage() {')
 const v4Settings = bodyOf(v4Face, 'function Iter5Settings(props) {')
+const frozenSettings = v4Settings // The verified frozen delegate reaches this exact shared root.
 ok(!!classicSettings && !!frozenSettings && !!v4Settings, '表达式级：三面 Settings 函数体均可配平抽取')
 
 // (a) pyOk 真值表达式三面逐字一致
@@ -197,17 +200,17 @@ ok(usedExempt.length === KNOWN_DRIFT.length, '全部豁免条目都仍在使用�
   ok(defAt > 0 && defAt < cssTextAt, 'G1-1：定义在 damSkinCssText 之前的工厂层（def@' + defAt + ' < cssText@' + cssTextAt + '）')
   const clientAll = norm(readFileSync(CLIENT, 'utf8'))
   const callN = cnt(clientAll, 'normalizeGapRounds(') - defN
-  ok(callN === 9, 'G1-1：client 侧调用点 9 处 = classic 3 + legacy 块 3 + v4 块 3（实际 ' + callN + '）')
+  ok(callN === 3, 'G1-1：shared client keeps three normalization calls（actual ' + callN + '）')
   const legacyCallN = cnt(L.slice(legacyBegin, legacyEnd + 1).join('\n'), 'normalizeGapRounds(')
-  ok(legacyCallN === 3, 'G1-1：legacy 生成块 3 处调用（实际 ' + legacyCallN + '）')
+  ok(legacyCallN === 0, 'G1-1：legacy delegate has no copied settings normalization')
   const fCallN = cnt(frozen, 'normalizeGapRounds(')
-  ok(fCallN === 3, 'G1-1：frozen 源 3 处调用（fSnapGap + slimEvery + fullEverySlims，实际 ' + fCallN + '）')
+  ok(fCallN === 0 && cnt(canonical,'normalizeGapRounds(') === 3, 'G1-1：frozen delegates; canonical source owns all three normalization calls')
 }
 
 // (d) 组件切片锚：三处关键锚串在生成器与经典面同源
 // 每条的期望命中数按实际切片语句数给出（Storage 同时是 skills 的终锚 ⇒ 2）。
 for (const [anchor, want] of [
-  ["client.slice(client.indexOf('    function SettingsPage() {'), client.indexOf('    // ───────────────────────── 插件挂载'))", 1],
+  ["readFileSync(path.join(root, 'skins/iter5/settings-source.js')", 1],
   ["client.slice(client.indexOf('    function StorageTab(props) {'), client.indexOf('    function NotesTab() {'))", 1],
   ["client.slice(client.indexOf('    function MemoryHubTab(props) {'), client.indexOf('    function StorageTab(props) {'))", 1],
   ["client.slice(client.indexOf('function StatsTab() {'), client.indexOf('function WorkspaceTab() {'))", 1],

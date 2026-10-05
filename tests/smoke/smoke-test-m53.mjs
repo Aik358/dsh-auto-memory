@@ -1,3 +1,4 @@
+import { workspaceKey } from '../../lib/workspace-key.js'
 // M5-3 Context Bridge Host Wiring 测试(docs/M5-CONTRACT.md §12 M5-3/§13):
 // 默认关闭零留存/开关矩阵/fake sink envelope/read coverage 持久化隐私/cite-correction/
 // Shadow hit 不追认/关闭恢复零残留/prompt 零变化。语料=shadow-copy;真实记忆零接触。
@@ -120,7 +121,7 @@ async function setupHarness(opts = {}) {
     settle: async () => { for (const s of effectSetups) { try { const td = await s(); if (typeof td === 'function') await td() } catch (_) {} } },
     cleanup: () => { try { rmSync(ws1, { recursive: true, force: true }) } catch (_) {} } }
 }
-function keyOf(p) { return '--' + p.replace(/[\\/:*?"<>|]/g, '-') + '--' }
+function keyOf(p) { return workspaceKey(p) }
 function evidenceEventsDir(home) { return path.join(home, 'memory', 'evidence', 'events') }
 function readEvidenceLines(home) {
   const dir = evidenceEventsDir(home)

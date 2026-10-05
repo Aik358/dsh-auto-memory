@@ -1,0 +1,57 @@
+{
+  "upstream": "a63495e63606045218a66546b7f1ffc9c7669772",
+  "results": [
+    {
+      "suite": "audit-g-207",
+      "exitCode": 1,
+      "tail": [
+        "  ok - 宿主以 getter 惰性读取 config.localWasmPaths（改完即生效）",
+        "  ok - DEFAULT_CONFIG 新增 localWasmPaths（默认 auto）",
+        "",
+        "[audit-G-207] 30 passed, 4 failed",
+        "[dsh-auto-memory] process exit code=1"
+      ]
+    },
+    {
+      "suite": "doc-code-consistency",
+      "exitCode": 0,
+      "tail": [
+        "  ok - 无 BOM：lib/tier-layer-inject.js",
+        "  ok - 无 BOM：docs/internal/SEMANTIC-ARCHITECTURE-SPEC.md",
+        "  ok - 无 BOM：docs/internal/THREE-LAYER-CONTRACT.md",
+        "",
+        "[doc-code-consistency-pre] pass=44 fail=0"
+      ]
+    },
+    {
+      "suite": "issue111-docs-real-names",
+      "exitCode": 0,
+      "tail": [
+        "  ok - HANDBOOK: §5.1 端点条数 = 代码里 unique 端点字面量数",
+        "  ok - HANDBOOK: 含「端点」的行内数量与代码一致",
+        "  ok - HANDBOOK: 含「端点」的行内数量与代码一致",
+        "",
+        "[issue111-docs] pass=26 fail=0"
+      ]
+    },
+    {
+      "suite": "py-runtime-chain",
+      "exitCode": 1,
+      "tail": [
+        "  operator: '==',",
+        "  diff: 'simple'",
+        "}",
+        "",
+        "Node.js v22.23.3"
+      ]
+    },
+    {
+      "suite": "r26-cross-layer",
+      "exitCode": 0,
+      "tail": [
+        "lib/client.js 1175463B / CRLF 0 / sha16 92645AA31370E930",
+        "PASS 23 / FAIL 0"
+      ]
+    }
+  ]
+}

@@ -25,6 +25,7 @@ function runPatch(ok) {
     welcomeTourConfig: null,
     dismissWelcomeTourPre: () => {},
     emit: () => { emits++ },
+    prepareSettingsPatch: patch => patch,
     apiPost: () => ok ? Promise.resolve({ config: { a: 1 } }) : Promise.reject(new Error('boom')),
   }
   const code = patchSrc + '\nreturn saveConfigPatch'
@@ -49,6 +50,7 @@ async function runSilent(ok) {
     welcomeTourConfig: null,
     dismissWelcomeTourPre: () => {},
     emit: () => { emits++ },
+    prepareSettingsPatch: patch => patch,
     apiPost: () => ok ? Promise.resolve({}) : Promise.reject(new Error('nope')),
   }
   const call = vm.runInNewContext('(function(){' + patchSrc + '\nreturn saveConfigPatch})()', ctx)
@@ -62,9 +64,9 @@ console.log('PASS silent saves broadcast on success only')
 
 // ---- 3) 两个 I5 入口都必须订阅广播并重取（接线完整性）----
 const subscribeCount = (source.match(/\/\/ ★2026-09-30（D2 · 用户裁定「设置页必须全量同步」）：订阅唯一写出口的广播/g) || []).length
-assert.equal(subscribeCount, 2, 'both settings entries (host panel + workbench page) must subscribe; got ' + subscribeCount)
+assert.equal(subscribeCount, 1, 'one shared root must subscribe for all settings entries; got ' + subscribeCount)
 const refetchCount = (source.match(/i5Base\.current = remote/g) || []).length
-assert.equal(refetchCount, 2, 'both entries must refresh their base snapshot; got ' + refetchCount)
+assert.equal(refetchCount, 1, 'the shared root must refresh its base snapshot; got ' + refetchCount)
 // 安全线：草稿保护必须存在（有未保存输入时不得覆盖）
 assert.ok(source.includes('你的未保存输入未被覆盖'), 'draft-protection message must exist (do not clobber user edits)')
 console.log('PASS both settings entries subscribe + refetch with draft protection')

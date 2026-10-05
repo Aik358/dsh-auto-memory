@@ -1,3 +1,4 @@
+import { workspaceKey } from '../../lib/workspace-key.js'
 // M6-3 Surface Adapter 测试(docs/M6-CONTRACT.md §7-§11,§14):
 // capability/fake 注入/pre-step claim/渲染即投递/seen 接线/TTL/冷却/section 零动态/关闭零残留。
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, readdirSync, existsSync } from 'node:fs'
@@ -24,7 +25,7 @@ async function setupHarness(opts = {}) {
     memoryRoot, userMemoryDir: path.join(ws1, 'user'), projectMemoryDir: '.project-memory',
     externalSources: {}, ...(opts.configPatch || {}) }), 'utf8')
   process.env.DSH_HOME = home
-  const keyOf = (p) => '--' + p.replace(/[\\/:*?"<>|]/g, '-') + '--'
+  const keyOf = (p) => workspaceKey(p)
   const aaId = 'mem_' + 'aa'.repeat(16), bbId = 'mem_' + 'bb'.repeat(16)
   const md = '<!-- memory:' + aaId + ' -->\n## 用户偏好\n- 用户偏好中文回复与分步验证,部署流程使用 pnpm build\n\n' +
     '<!-- memory:' + bbId + ' -->\n## 部署流程\n- 登录模块部署流程使用 pnpm build 与 rsync'

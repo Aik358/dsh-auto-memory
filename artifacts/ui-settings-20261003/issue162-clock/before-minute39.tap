@@ -1,0 +1,183 @@
+TAP version 13
+# Subtest: secret guard permits ISO timestamps containing 39 but rejects stale prose and credentials
+ok 1 - secret guard permits ISO timestamps containing 39 but rejects stale prose and credentials
+  ---
+  duration_ms: 1.774195
+  type: 'test'
+  ...
+# Subtest: missing capability, missing method, successful empty and successful hit stay distinct
+ok 2 - missing capability, missing method, successful empty and successful hit stay distinct
+  ---
+  duration_ms: 21.129285
+  type: 'test'
+  ...
+# Subtest: thrown host query uses truthful fallback and the real counters/recent, once per call
+ok 3 - thrown host query uses truthful fallback and the real counters/recent, once per call
+  ---
+  duration_ms: 7.802458
+  type: 'test'
+  ...
+# Subtest: empty fallback reports bounded scan, and recovery carries no stale request diagnostics
+ok 4 - empty fallback reports bounded scan, and recovery carries no stale request diagnostics
+  ---
+  duration_ms: 9.605255
+  type: 'test'
+  ...
+# Subtest: concurrent requests share history but never explanations or hits
+ok 5 - concurrent requests share history but never explanations or hits
+  ---
+  duration_ms: 7.86401
+  type: 'test'
+  ...
+# Subtest: missing decoder, absent directory and root IO failure do not masquerade as empty success
+ok 6 - missing decoder, absent directory and root IO failure do not masquerade as empty success
+  ---
+  duration_ms: 18.106981
+  type: 'test'
+  ...
+# Subtest: scan read/decode failures aggregate once and preserve usable hits
+ok 7 - scan read/decode failures aggregate once and preserve usable hits
+  ---
+  duration_ms: 7.631959
+  type: 'test'
+  ...
+# Subtest: scan cap counts failed attempts, newest order and oversized skip before file read
+ok 8 - scan cap counts failed attempts, newest order and oversized skip before file read
+  ---
+  duration_ms: 23.38605
+  type: 'test'
+  ...
+# Subtest: frame and byte budgets really constrain production head decoding
+ok 9 - frame and byte budgets really constrain production head decoding
+  ---
+  duration_ms: 28.279794
+  type: 'test'
+  ...
+# Subtest: throwing and rejecting sinks/scanners cannot break fail-soft recall
+ok 10 - throwing and rejecting sinks/scanners cannot break fail-soft recall
+  ---
+  duration_ms: 14.184435
+  type: 'test'
+  ...
+# Subtest: exception projection redacts messages, paths, query secrets, content and malicious values within bounds
+ok 11 - exception projection redacts messages, paths, query secrets, content and malicious values within bounds
+  ---
+  duration_ms: 0.686399
+  type: 'test'
+  ...
+# Subtest: note status write failure is recorded, private error hidden, previous text kept, recovery truthful
+ok 12 - note status write failure is recorded, private error hidden, previous text kept, recovery truthful
+  ---
+  duration_ms: 10.966305
+  type: 'test'
+  ...
+# Subtest: real read failure cannot overwrite from a stale body or claim a successful save
+ok 13 - real read failure cannot overwrite from a stale body or claim a successful save
+  ---
+  duration_ms: 4.660993
+  type: 'test'
+  ...
+# Subtest: audit log failure and post-save failure report what actually persisted
+ok 14 - audit log failure and post-save failure report what actually persisted
+  ---
+  duration_ms: 12.545234
+  type: 'test'
+  ...
+# Subtest: real debugInfo/persistence/dashboard path exposes failures and persistence failure stays observable
+not ok 15 - real debugInfo/persistence/dashboard path exposes failures and persistence failure stays observable
+  ---
+  duration_ms: 21.022943
+  type: 'test'
+  location: '/workspace/dsh-latest-ui/tests/smoke/smoke-test-issue162-diagnostic-integrity.mjs:342:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    The input was expected to not match the regular expression /credential123|URLSECRET|PERSONAL|正文私人内容|user:pass|Bearer|\b39\b|descriptor v2|v0→v1/. Input:
+    
+    '{"tag":"div","props":{"data-native-diagnostics":""},"children":[{"tag":"div","props":{"data-dam-slot":"list","data-dam-row":""},"children":[{"tag":"button","props":{"data-dam-slot":"actions","data-dam-btn":"","disabled":false},"children":["dbgRefresh"]},{"tag":"span","props":{"data-dam-slot":"hint","data-dam-hint":""},"children":["/tmp/issue162-Qe9rdN/home-17/harness.mjs"]}]},{"tag":"section","props":null,"children":[{"tag":"h3","props":null,"children":["运行环境"]},{"tag":"div","props":{"data-dam-slot":"list","data-dam-row":"","data-native-diag-row":"","style":{"marginBottom":"3px"}},"children":[{"tag":"span","props":{"style":{"flex":"0 0 140px","opacity":0.7,"fontSize":"calc(11.5px * var(--dam-scale))"}},"children":["kvVersion"]},{"tag":"span","props":{"style":{"fontSize":"calc(11.5px * var(--dam-scale))","wordBreak":"break-all"}},"children":["kvUnreadable"]}]},{"tag":"div","props":{"data-dam-slot":"list","data-dam-row":"","data-native-diag-row":"","style":{"marginBottom":"3px"}},"children":[{"tag":"span","props":{"style":{"flex":"0 0 140px","opacity":0.7,"fontSize":"calc(11.5px * var(--dam-scale))"}},"children":["kvPid"]},{"tag":"span","props":{"style":{"fontSize":"calc(11.5px * var(--dam-scale))","wordBreak":"break-all"}},"children":["31558 / 11:39:17 AM"]}]},{"tag":"div","props":{"data-dam-slot":"list","data-dam-row":"","data-native-diag-row":"","data-warning":"true","style":{"marginBottom":"3px"}},"children":[{"tag":"span","props":{"style":{"flex":"0 0 140px","opacity":0.7,"fontSize":"calc(11.5px * var(--dam-scale))"}},"children":["kvRestart"]},{"tag":"span","props":{"style":{"fontSize":"calc(11.5px * var(--dam-scale))","wordBreak":"break-all","color":"var(--dsw-alias-state-warn-primary, #e6a23c)"}},"children":["kvRestartYes"]}]},{"tag":"div","props":{"data-dam-slot":"list","data-dam-row":"","data-native-diag-row":"","data-warning":"true","style":{"marginBottom":"3px"}},"children":[{"tag":"span","props":{"style":{"flex":"0 0 140px","opacity":0.7,"fontSize":"calc(11.5px * var(--dam-scale))"}},"children":["kvHeartbeat"]},{"tag":"span","props":{"style":{"fontSize":"calc(11.5px * var(--dam-scale))","wordBreak":"break-all","color":"var(--dsw-alias-state-warn-primary, #e6a23c)"}},"children":["hbNone"]}]},{"tag":"div","props":{"data-dam-slot":"list","data-dam-row":"","data-native-diag-row":"","style":{"marginBottom":"3px"}},"children":[{"tag":"span","props":{"style":{"flex":"0 0 140px","opacity":0.7,"fontSize":"calc(11.5px * var(--dam-scale))"}},"children":["kvWs"]},{"tag":"span","props":{"style":{"fontSize":"calc(11.5px * var(--dam-scale))","wordBreak":"break-all"}},"children":["kvWsUnknown"]}]}]},{"tag":"section","props":null,"children":[{"tag":"h3","props":null,"children":["记忆与整理"]},{"tag":"div","props":{"data-dam-slot":"list","data-dam-row":"","data-native-diag-row":"","style":{"marginBottom":"3px"}},"children":[{"tag":"span","props":{"style":{"flex":"0 0 140px","opacity":0.7,"fontSize":"calc(11.5px * var(--dam-scale))"}},"children":["kvQueue"]},{"tag":"span","props":{"style":{"fontSize":"calc(11.5px * var(--dam-scale))","wordBreak":"break-all"}},"children":["0kvCountSuffix"]}]},{"tag":"div","props":{"data-dam-slot":"list","data-dam-row":"","data-native-diag-row":"","style":{"marginBottom":"3px"}},"children":[{"tag":"span","props":{"style":{"flex":"0 0 140px","opacity":0.7,"fontSize":"calc(11.5px * var(--dam-scale))"}},"children":["kvToday"]},{"tag":"span","props":{"style":{"fontSize":"calc(11.5px * var(--dam-scale))","wordBreak":"break-all"}},"children":["0kvRecentPrefix—"]}]},{"tag":"div","props":{"data-dam-slot":"list","data-dam-row":"","data-native-diag-row":"","style":{"marginBottom":"3px"}},"children":[{"tag":"span","props":{"style":{"flex":"0 0 140px","opacity":0.7,"fontSize":"calc(11.5px * var(--dam-scale))"}},"children":["kvBusy"]},{"tag":"span","props":{"style":{"fontSize":"calc(11.5px * var(--dam-scale))","wordBreak":"break-all"}},"children":["kvNo"]}]},{"tag":"div","props":{"data-dam-slot":"list","data-dam-row":"","data-native-diag-row":"","style":{"marginBottom":"3px"}},"children":[{"tag":"span","props":{"style":{"flex":"0 0 140px","opacity":0.7,"fontSize":"calc(11.5px * var(--dam-scale))"}},"children":["kvDup"]},{"tag":"span","props":{"style":{"fontSize":"calc(11.5px * var(--dam-scale))","wordBreak":"break-all"}},"children":["0kvDupCount"]}]},{"tag":"div","props":{"data-dam-slot":"list","data-dam-row":"","data-native-diag-row":"","data-warning":"true","style":{"marginBottom":"3px"}},"children":[{"tag":"span","props":{"style":{"flex":"0 0 140px","opacity":0.7,"fontSize":"calc(11.5px * var(--dam-scale))"}},"children":["kvMem"]},{"tag":"span","props":{"style":{"fontSize":"calc(11.5px * var(--dam-scale))","wordBreak":"break-all","color":"var(--dsw-alias-state-warn-primary, #e6a23c)"}},"children":["kvMemUser kvMemMissing · kvMemNotes kvMemMissing · kvMemLog kvMemMissing"]}]},null,null]},{"tag":"section","props":{"data-dam-degrade-ledger":""},"children":[{"tag":"h3","props":null,"children":["会话检索与笔记状态诊断"]},{"tag":"div","props":{"data-dam-slot":"list","data-dam-row":"","data-native-diag-row":"","style":{"marginBottom":"3px"}},"children":[{"tag":"span","props":{"style":{"flex":"0 0 140px","opacity":0.7,"fontSize":"calc(11.5px * var(--dam-scale))"}},"children":["台账落盘"]},{"tag":"span","props":{"style":{"fontSize":"calc(11.5px * var(--dam-scale))","wordBreak":"break-all"}},"children":["成功"]}]},{"tag":"div","props":{"className":"dam-muted"},"children":["台账在刷新诊断时更新到磁盘；每次召回不会立即写入 latest.json。"]},{"tag":"div","props":{"data-dam-hint":""},"children":["以下为本次运行的累计失败历史，恢复后仍保留；不代表当前能力状态。"]},[{"tag":"div","props":{"data-dam-slot":"list","data-dam-row":"","data-native-diag-row":"","style":{"marginBottom":"3px"}},"children":[{"tag":"span","props":{"style":{"flex":"0 0 140px","opacity":0.7,"fontSize":"calc(11.5px * var(--dam-scale))"}},"children":["session-search"]},{"tag":"span","props":{"style":{"fontSize":"calc(11.5px * var(--dam-scale))","wordBreak":"break-all"}},"children":["1 次 · Error / EACCES"]}]}]]},{"tag":"section","props":null,"children":[{"tag":"h3","props":null,"children":["诊断日志"]},{"tag":"div","props":{"data-dam-slot":"list","data-dam-row":"","data-native-diag-row":"","style":{"marginBottom":"3px"}},"children":[{"tag":"span","props":{"style":{"flex":"0 0 140px","opacity":0.7,"fontSize":"calc(11.5px * var(--dam-scale))"}},"children":["dbgLogs"]},{"tag":"span","props":{"style":{"fontSize":"calc(11.5px * var(--dam-scale))","wordBreak":"break-all"}},"children":["kvUnreadable"]}]},null,null]},{"tag":"section","props":null,"children":[{"tag":"h3","props":null,"children":["服务与接口"]},{"tag":"div","props":{"data-dam-slot":"list","data-dam-row":"","data-native-diag-row":"","data-warning":"true","style":{"marginBottom":"3px"}},"children":[{"tag":"span","props":{"style":{"flex":"0 0 140px","opacity":0.7,"fontSize":"calc(11.5px * var(--dam-scale))"}},"children":["subagents"]},{"tag":"span","props":{"style":{"fontSize":"calc(11.5px * var(--dam-scale))","wordBreak":"break-all","color":"var(--dsw-alias-state-warn-primary, #e6a23c)"}},"children":["kvUnavail"]}]},{"tag":"div","props":{"data-dam-slot":"list","data-dam-row":"","data-native-diag-row":"","style":{"marginBottom":"3px"}},"children":[{"tag":"span","props":{"style":{"flex":"0 0 140px","opacity":0.7,"fontSize":"calc(11.5px * var(--dam-scale))"}},"children":["kvApi"]},{"tag":"span","props":{"style":{"fontSize":"calc(11.5px * var(--dam-scale))","wordBreak":"break-all"}},"children":["…"]}]},{"tag":"div","props":{"data-dam-slot":"list","data-dam-row":"","style":{"marginTop":"3px","flexDirection":"column","alignItems":"stretch"}},"children":[{"tag":"div","props":{"data-dam-slot":"list","data-dam-row":"","data-native-diag-row":"","style":{"marginBottom":"3px"}},"children":[{"tag":"span","props":{"style":{"flex":"0 0 140px","opacity":0.7,"fontSize":"calc(11.5px * var(--dam-scale))"}},"children":["kvPyTitle"]},{"tag":"span","props":{"style":{"fontSize":"calc(11.5px * var(--dam-scale))","wordBreak":"break-all"}},"children":["kvPyOff"]}]},{"tag":"div","props":{"data-dam-slot":"list","data-dam-row":"","data-native-diag-row":"","style":{"marginBottom":"3px"}},"children":[{"tag":"span","props":{"style":{"flex":"0 0 140px","opacity":0.7,"fontSize":"calc(11.5px * var(--dam-scale))"}},"children":["kvPyWatchdog"]},{"tag":"span","props":{"style":{"fontSize":"calc(11.5px * var(--dam-scale))","wordBreak":"break-all"}},"children":["无（未触发）"]}]},{"tag":"div","props":{"data-dam-slot":"hint","data-dam-hint":"","style":{"marginTop":"3px"}},"children":["kvPyStderr：确实没有输出（不是被截断）",null]}]}]},{"tag":"section","props":null,"children":[{"tag":"h3","props":null,"children":["文件内容检查"]},{"tag":"div","props":{"data-dam-slot":"list","data-dam-row":"","style":{"marginTop":"6px","alignItems":"flex-start","flexDirection":"column"}},"children":[{"tag":"div","props":{"data-dam-slot":"list","data-dam-row":""},"children":[{"tag":"button","props":{"data-dam-slot":"actions","data-dam-btn":"","title":"prion-scan 式四类启发式,只报位置不含正文","disabled":false},"children":["扫描脏 token"]},{"tag":"span","props":{"data-dam-slot":"hint","data-dam-hint":"","style":{"marginLeft":"8px"}},"children":["检查用户级/笔记/日志/反思的 mojibake / raw JSON / 超长行 / base64 / 重复块"]}]},null]}]}]}'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: '{"tag":"div","props":{"data-native-diagnostics":""},"children":[{"tag":"div","props":{"data-dam-slot":"list","data-dam-row":""},"children":[{"tag":"button","props":{"data-dam-slot":"actions","data-dam-btn":"","disabled":false},"children":["dbgRefresh"]},{"tag":"span","props":{"data-dam-slot":"hint","data-dam-hint":""},"children":["/tmp/issue162-Qe9rdN/home-17/harness.mjs"]}]},{"tag":"section","props":null,"children":[{"tag":"h3","props":null,"children":["运行环境"]},{"tag":"div","props":{"data-dam-slot":"list","data-dam-row":"","data-native-diag-row":"","style":{"marginBottom":"3px"}},"children":[{"tag":"span","props":{"style":{"flex":"0 0 140px","opacity":0.7,"fontSize":"calc(11.5px * var(--dam-scale))"}},"children":["kvVersion"]},{"tag":"span","props":{"style":{"fontSize":"calc(11.5px * var(--dam-scale))","wordBreak":"break-all"}},"children":["kvUnreadable"]}]},{"tag":"div","props":{"data-dam-slot":"list","data-dam-row":"","data-native-diag-row":"","style":{"marginBottom":"3px"}},"children":[{"tag":"span","props":{"style":{"flex":"0 0 140px","opacity":0.7,"fontSize":"calc(11.5px * var(--dam-scale))"}},"children":["kvPid"]},{"tag":"span","props":{"style":{"fontSize":"calc(11.5px * var(--dam-scale))","wordBreak":"break-all"}},"children":["31558 / 11:39:17 AM"]}]},{"tag":"div","props":{"data-dam-slot":"list","data-dam-row":"","data-native-diag-row":"","data-warning":"true","style":{"marginBottom":"3px"}},"children":[{"tag":"span","props":{"style":{"flex":"0 0 140px","opacity":0.7,"fontSize":"calc(11.5px * var(--dam-scale))"}},"children":["kvRestart"]},{"tag":"span","props":{"style":{"fontSize":"calc(11.5px * var(--dam-scale))","wordBreak":"break-all","color":"var(--dsw-alias-state-warn-primary, #e6a23c)"}},"children":["kvRestartYes"]}]},{"tag":"div","props":{"data-dam-slot":"list","data-dam-row":"","data-native-diag-row":"","data-warning":"true","style":{"marginBottom":"3px"}},"children":[{"tag":"span","props":{"style":{"flex":"0 0 140px","opacity":0.7,"fontSize":"calc(11.5px * var(--dam-scale))"}},"children":["kvHeartbeat"]},{"tag":"span","props":{"style":{"fontSize":"calc(11.5px * var(--dam-scale))","wordBreak":"break-all","color":"var(--dsw-alias-state-warn-primary, #e6a23c)"}},"children":["hbNone"]}]},{"tag":"div","props":{"data-dam-slot":"list","data-dam-row":"","data-native-diag-row":"","style":{"marginBottom":"3px"}},"children":[{"tag":"span","props":{"style":{"flex":"0 0 140px","opacity":0.7,"fontSize":"calc(11.5px * var(--dam-scale))"}},"children":["kvWs"]},{"tag":"span","props":{"style":{"fontSize":"calc(11.5px * var(--dam-scale))","wordBreak":"break-all"}},"children":["kvWsUnknown"]}]}]},{"tag":"section","props":null,"children":[{"tag":"h3","props":null,"children":["记忆与整理"]},{"tag":"div","props":{"data-dam-slot":"list","data-dam-row":"","data-native-diag-row":"","style":{"marginBottom":"3px"}},"children":[{"tag":"span","props":{"style":{"flex":"0 0 140px","opacity":0.7,"fontSize":"calc(11.5px * var(--dam-scale))"}},"children":["kvQueue"]},{"tag":"span","props":{"style":{"fontSize":"calc(11.5px * var(--dam-scale))","wordBreak":"break-all"}},"children":["0kvCountSuffix"]}]},{"tag":"div","props":{"data-dam-slot":"list","data-dam-row":"","data-native-diag-row":"","style":{"marginBottom":"3px"}},"children":[{"tag":"span","props":{"style":{"flex":"0 0 140px","opacity":0.7,"fontSize":"calc(11.5px * var(--dam-scale))"}},"children":["kvToday"]},{"tag":"span","props":{"style":{"fontSize":"calc(11.5px * var(--dam-scale))","wordBreak":"break-all"}},"children":["0kvRecentPrefix—"]}]},{"tag":"div","props":{"data-dam-slot":"list","data-dam-row":"","data-native-diag-row":"","style":{"marginBottom":"3px"}},"children":[{"tag":"span","props":{"style":{"flex":"0 0 140px","opacity":0.7,"fontSize":"calc(11.5px * var(--dam-scale))"}},"children":["kvBusy"]},{"tag":"span","props":{"style":{"fontSize":"calc(11.5px * var(--dam-scale))","wordBreak":"break-all"}},"children":["kvNo"]}]},{"tag":"div","props":{"data-dam-slot":"list","data-dam-row":"","data-native-diag-row":"","style":{"marginBottom":"3px"}},"children":[{"tag":"span","props":{"style":{"flex":"0 0 140px","opacity":0.7,"fontSize":"calc(11.5px * var(--dam-scale))"}},"children":["kvDup"]},{"tag":"span","props":{"style":{"fontSize":"calc(11.5px * var(--dam-scale))","wordBreak":"break-all"}},"children":["0kvDupCount"]}]},{"tag":"div","props":{"data-dam-slot":"list","data-dam-row":"","data-native-diag-row":"","data-warning":"true","style":{"marginBottom":"3px"}},"children":[{"tag":"span","props":{"style":{"flex":"0 0 140px","opacity":0.7,"fontSize":"calc(11.5px * var(--dam-scale))"}},"children":["kvMem"]},{"tag":"span","props":{"style":{"fontSize":"calc(11.5px * var(--dam-scale))","wordBreak":"break-all","color":"var(--dsw-alias-state-warn-primary, #e6a23c)"}},"children":["kvMemUser kvMemMissing · kvMemNotes kvMemMissing · kvMemLog kvMemMissing"]}]},null,null]},{"tag":"section","props":{"data-dam-degrade-ledger":""},"children":[{"tag":"h3","props":null,"children":["会话检索与笔记状态诊断"]},{"tag":"div","props":{"data-dam-slot":"list","data-dam-row":"","data-native-diag-row":"","style":{"marginBottom":"3px"}},"children":[{"tag":"span","props":{"style":{"flex":"0 0 140px","opacity":0.7,"fontSize":"calc(11.5px * var(--dam-scale))"}},"children":["台账落盘"]},{"tag":"span","props":{"style":{"fontSize":"calc(11.5px * var(--dam-scale))","wordBreak":"break-all"}},"children":["成功"]}]},{"tag":"div","props":{"className":"dam-muted"},"children":["台账在刷新诊断时更新到磁盘；每次召回不会立即写入 latest.json。"]},{"tag":"div","props":{"data-dam-hint":""},"children":["以下为本次运行的累计失败历史，恢复后仍保留；不代表当前能力状态。"]},[{"tag":"div","props":{"data-dam-slot":"list","data-dam-row":"","data-native-diag-row":"","style":{"marginBottom":"3px"}},"children":[{"tag":"span","props":{"style":{"flex":"0 0 140px","opacity":0.7,"fontSize":"calc(11.5px * var(--dam-scale))"}},"children":["session-search"]},{"tag":"span","props":{"style":{"fontSize":"calc(11.5px * var(--dam-scale))","wordBreak":"break-all"}},"children":["1 次 · Error / EACCES"]}]}]]},{"tag":"section","props":null,"children":[{"tag":"h3","props":null,"children":["诊断日志"]},{"tag":"div","props":{"data-dam-slot":"list","data-dam-row":"","data-native-diag-row":"","style":{"marginBottom":"3px"}},"children":[{"tag":"span","props":{"style":{"flex":"0 0 140px","opacity":0.7,"fontSize":"calc(11.5px * var(--dam-scale))"}},"children":["dbgLogs"]},{"tag":"span","props":{"style":{"fontSize":"calc(11.5px * var(--dam-scale))","wordBreak":"break-all"}},"children":["kvUnreadable"]}]},null,null]},{"tag":"section","props":null,"children":[{"tag":"h3","props":null,"children":["服务与接口"]},{"tag":"div","props":{"data-dam-slot":"list","data-dam-row":"","data-native-diag-row":"","data-warning":"true","style":{"marginBottom":"3px"}},"children":[{"tag":"span","props":{"style":{"flex":"0 0 140px","opacity":0.7,"fontSize":"calc(11.5px * var(--dam-scale))"}},"children":["subagents"]},{"tag":"span","props":{"style":{"fontSize":"calc(11.5px * var(--dam-scale))","wordBreak":"break-all","color":"var(--dsw-alias-state-warn-primary, #e6a23c)"}},"children":["kvUnavail"]}]},{"tag":"div","props":{"data-dam-slot":"list","data-dam-row":"","data-native-diag-row":"","style":{"marginBottom":"3px"}},"children":[{"tag":"span","props":{"style":{"flex":"0 0 140px","opacity":0.7,"fontSize":"calc(11.5px * var(--dam-scale))"}},"children":["kvApi"]},{"tag":"span","props":{"style":{"fontSize":"calc(11.5px * var(--dam-scale))","wordBreak":"break-all"}},"children":["…"]}]},{"tag":"div","props":{"data-dam-slot":"list","data-dam-row":"","style":{"marginTop":"3px","flexDirection":"column","alignItems":"stretch"}},"children":[{"tag":"div","props":{"data-dam-slot":"list","data-dam-row":"","data-native-diag-row":"","style":{"marginBottom":"3px"}},"children":[{"tag":"span","props":{"style":{"flex":"0 0 140px","opacity":0.7,"fontSize":"calc(11.5px * var(--dam-scale))"}},"children":["kvPyTitle"]},{"tag":"span","props":{"style":{"fontSize":"calc(11.5px * var(--dam-scale))","wordBreak":"break-all"}},"children":["kvPyOff"]}]},{"tag":"div","props":{"data-dam-slot":"list","data-dam-row":"","data-native-diag-row":"","style":{"marginBottom":"3px"}},"children":[{"tag":"span","props":{"style":{"flex":"0 0 140px","opacity":0.7,"fontSize":"calc(11.5px * var(--dam-scale))"}},"children":["kvPyWatchdog"]},{"tag":"span","props":{"style":{"fontSize":"calc(11.5px * var(--dam-scale))","wordBreak":"break-all"}},"children":["无（未触发）"]}]},{"tag":"div","props":{"data-dam-slot":"hint","data-dam-hint":"","style":{"marginTop":"3px"}},"children":["kvPyStderr：确实没有输出（不是被截断）",null]}]}]},{"tag":"section","props":null,"children":[{"tag":"h3","props":null,"children":["文件内容检查"]},{"tag":"div","props":{"data-dam-slot":"list","data-dam-row":"","style":{"marginTop":"6px","alignItems":"flex-start","flexDirection":"column"}},"children":[{"tag":"div","props":{"data-dam-slot":"list","data-dam-row":""},"children":[{"tag":"button","props":{"data-dam-slot":"actions","data-dam-btn":"","title":"prion-scan 式四类启发式,只报位置不含正文","disabled":false},"children":["扫描脏 token"]},{"tag":"span","props":{"data-dam-slot":"hint","data-dam-hint":"","style":{"marginLeft":"8px"}},"children":["检查用户级/笔记/日志/反思的 mojibake / raw JSON / 超长行 / base64 / 重复块"]}]},null]}]}]}'
+  operator: 'doesNotMatch'
+  stack: |-
+    absentSecrets (file:///workspace/dsh-latest-ui/tests/smoke/smoke-test-issue162-diagnostic-integrity.mjs:107:10)
+    TestContext.<anonymous> (file:///workspace/dsh-latest-ui/tests/smoke/smoke-test-issue162-diagnostic-integrity.mjs:373:3)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: unchanged retention bounds apply to newly wired diagnostic events
+ok 16 - unchanged retention bounds apply to newly wired diagnostic events
+  ---
+  duration_ms: 17.510568
+  type: 'test'
+  ...
+# Subtest: malformed successful host response is reported as processing failure, not a thrown host search
+ok 17 - malformed successful host response is reported as processing failure, not a thrown host search
+  ---
+  duration_ms: 5.429917
+  type: 'test'
+  ...
+# Subtest: note-status remains fail-soft with a broken sink and unchanged skipped-status behavior
+ok 18 - note-status remains fail-soft with a broken sink and unchanged skipped-status behavior
+  ---
+  duration_ms: 9.285051
+  type: 'test'
+  ...
+# Subtest: real memory_note callback confirms the completed note write and safely reports a status exception
+ok 19 - real memory_note callback confirms the completed note write and safely reports a status exception
+  ---
+  duration_ms: 9.7935
+  type: 'test'
+  ...
+# Subtest: normal head-budget truncation is visible and is not recorded as an unexpected decode failure
+ok 20 - normal head-budget truncation is visible and is not recorded as an unexpected decode failure
+  ---
+  duration_ms: 15.156926
+  type: 'test'
+  ...
+# Subtest: scope=all preserves empty fallback explanation without fabricating a sessions hit section
+ok 21 - scope=all preserves empty fallback explanation without fabricating a sessions hit section
+  ---
+  duration_ms: 6.730335
+  type: 'test'
+  ...
+# Subtest: analogous Python rank catch records an actual sidecar exception once, while empty success stays quiet
+ok 22 - analogous Python rank catch records an actual sidecar exception once, while empty success stays quiet
+  ---
+  duration_ms: 9.223217
+  type: 'test'
+  ...
+# Subtest: migration candidates use newest mtime, v3 wins ties, and stat failure retains a usable candidate
+ok 23 - migration candidates use newest mtime, v3 wins ties, and stat failure retains a usable candidate
+  ---
+  duration_ms: 9.342047
+  type: 'test'
+  ...
+# Subtest: head decoder recovers prefix and reports structural corruption only inside frame and byte budgets
+ok 24 - head decoder recovers prefix and reports structural corruption only inside frame and byte budgets
+  ---
+  duration_ms: 1.53261
+  type: 'test'
+  ...
+# Subtest: truncated header, block, checksum and reserved block type retain preceding complete frames
+ok 25 - truncated header, block, checksum and reserved block type retain preceding complete frames
+  ---
+  duration_ms: 0.491995
+  type: 'test'
+  ...
+# Subtest: fallback keeps usable hits while aggregating an in-budget corrupt tail into the real sink
+ok 26 - fallback keeps usable hits while aggregating an in-budget corrupt tail into the real sink
+  ---
+  duration_ms: 3.579867
+  type: 'test'
+  ...
+1..26
+# tests 26
+# suites 0
+# pass 25
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 377.170244

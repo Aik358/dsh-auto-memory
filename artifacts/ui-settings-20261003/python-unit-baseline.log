@@ -1,0 +1,40 @@
+setUpClass (__main__.TestGoldenParity) ... ERROR
+test_completeness_unknown_downgrades_emit_to_prefetch (__main__.TestRuleSemantics.test_completeness_unknown_downgrades_emit_to_prefetch) ... ok
+test_dense_top_arm_also_suppresses_proactive_echo (__main__.TestRuleSemantics.test_dense_top_arm_also_suppresses_proactive_echo) ... ok
+test_explicit_restatement_with_question_is_not_echo_vetoed (__main__.TestRuleSemantics.test_explicit_restatement_with_question_is_not_echo_vetoed) ... ok
+test_fail_closed_on_corrupted_config_hash (__main__.TestRuleSemantics.test_fail_closed_on_corrupted_config_hash) ... /workspace/dsh-baseline/tests/test_m7_features_v2.py:256: ResourceWarning: unclosed file <_io.TextIOWrapper name='/workspace/dsh-baseline/python/policies/recall_intent_lr_v1.json' mode='r' encoding='utf-8'>
+  ip = json.load(open(INTENT_P, encoding='utf-8'))
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/workspace/dsh-baseline/tests/test_m7_features_v2.py:257: ResourceWarning: unclosed file <_io.TextIOWrapper name='/workspace/dsh-baseline/python/policies/activation_policy_v2.json' mode='r' encoding='utf-8'>
+  ap = json.load(open(POLICY_P, encoding='utf-8'))
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/workspace/dsh-baseline/tests/test_m7_features_v2.py:259: ResourceWarning: unclosed file <_io.TextIOWrapper name='/tmp/tmp_cs1ivmu/i.json' mode='w' encoding='utf-8'>
+  json.dump(ip, open(ip_bad, 'w', encoding='utf-8'))
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/workspace/dsh-baseline/tests/test_m7_features_v2.py:260: ResourceWarning: unclosed file <_io.TextIOWrapper name='/tmp/tmp_cs1ivmu/a.json' mode='w' encoding='utf-8'>
+  json.dump(ap, open(ap_bad, 'w', encoding='utf-8'))
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+ok
+test_harmful_hard_gate_beats_everything (__main__.TestRuleSemantics.test_harmful_hard_gate_beats_everything) ... ok
+test_interrogative_form_blocks_proactive_echo_arm (__main__.TestRuleSemantics.test_interrogative_form_blocks_proactive_echo_arm) ... ok
+test_life_topic_repeat_stays_suppressed_via_echo (__main__.TestRuleSemantics.test_life_topic_repeat_stays_suppressed_via_echo) ... ok
+test_proactive_echo_hard_suppress (__main__.TestRuleSemantics.test_proactive_echo_hard_suppress) ... ok
+test_repetition_never_activates_alone (__main__.TestRuleSemantics.test_repetition_never_activates_alone) ... ok
+test_wrong_scope_hard_gate (__main__.TestRuleSemantics.test_wrong_scope_hard_gate) ... ok
+
+======================================================================
+ERROR: setUpClass (__main__.TestGoldenParity)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/dsh-baseline/tests/test_m7_features_v2.py", line 43, in setUpClass
+    cls.fixtures = load_fixtures()
+                   ^^^^^^^^^^^^^^^
+  File "/workspace/dsh-baseline/tests/test_m7_features_v2.py", line 36, in load_fixtures
+    return [json.loads(l) for l in open(FIXTURES, encoding='utf-8')
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/workspace/dsh-baseline/artifacts/m7-live-pre/label-review-cal20260824-1954/golden-parity-fixtures-v1.jsonl'
+
+----------------------------------------------------------------------
+Ran 10 tests in 0.019s
+
+FAILED (errors=1)

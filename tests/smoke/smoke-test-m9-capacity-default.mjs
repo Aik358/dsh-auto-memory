@@ -10,7 +10,7 @@ import { GUIDANCE } from '../../lib/index.js'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { stripGeneratedSkin } from '../lib/skin-bundle.mjs'
+import { sharedSettingsClient } from '../lib/shared-settings.mjs'
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 const SRC = readFileSync(path.resolve(HERE, '..', '..', 'lib', 'index.js'), 'utf8')
@@ -18,7 +18,7 @@ const SRC = readFileSync(path.resolve(HERE, '..', '..', 'lib', 'index.js'), 'utf
 //   而生成区把若干经典组件派生了一份新皮肤版本（SettingsPage→Iter5Settings 等）⇒ 计数翻倍假红。
 //   故此处剥离生成区再断言 —— 不是放宽判据，而是把作用域限定到它真正该守的经典档。
 //   皮肤自身由 smoke-test-iter5-skin.mjs 验收（含「剥离后与基线逐字节一致」的守恒断言）。
-const CLI = stripGeneratedSkin(readFileSync(path.resolve(HERE, '..', '..', 'lib', 'client.js'), 'utf8'))
+const CLI = sharedSettingsClient(readFileSync(path.resolve(HERE, '..', '..', 'lib', 'client.js'), 'utf8'))
 let pass = 0, fail = 0
 const t = (name, fn) => { try { fn(); pass++; console.log('  ok - ' + name) } catch (e) { fail++; console.log('  FAIL - ' + name + ': ' + (e && e.message)) } }
 const assert = (c, m) => { if (!c) throw new Error(m || 'assertion failed') }
@@ -119,10 +119,10 @@ t('M9-6 ★ 迁移接在两个加载路径上（同步路径是注册期真正�
   //    ⇒ 断言以「找不到」的形式失败（症状离真因很远：报的是"必须同步落盘"）。
   //    ⚠️ 教训：**用固定字符窗口截方法体的断言，会因为无关改动而静默失效**。
   //    这里放宽窗口并保留断言强度；若要更稳，应改为按方法体边界切片（见 sliceMethod）。
-  const sync = SRC.slice(SRC.indexOf('loadConfigSync()'), SRC.indexOf('loadConfigSync()') + 1800)
+  const sync = SRC.slice(SRC.indexOf('_loadConfigSyncLocked()'), SRC.indexOf('_loadConfigSyncLocked()') + 1800)
   assert(/this\.upgradeCapacityDefaultsPre\(parsed\)/.test(sync), '★ loadConfigSync 必须调用迁移并传 parsed')
   assert(/persistConfigSyncPre\(\)/.test(sync), '★ loadConfigSync 必须同步落盘')
-  const asyncAt = SRC.indexOf('async loadConfig()')
+  const asyncAt = SRC.indexOf('async _loadConfigLocked()')
   const asyncSeg = SRC.slice(asyncAt, asyncAt + 1800)
   assert(/this\.upgradeCapacityDefaultsPre\(parsed\)/.test(asyncSeg), '★ loadConfig 也必须调用迁移并传 parsed')
   assert(/persistConfigPre/.test(asyncSeg), '★ 异步路径须把抬升结果落盘(否则设置页显示 12000 与实际不一致)')

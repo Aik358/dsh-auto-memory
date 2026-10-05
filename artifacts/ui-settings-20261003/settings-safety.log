@@ -1,0 +1,6 @@
+PASS actual MemoryEngine: failure preserves old config; retry fills nested gaps; target preserved; durable user subdirectories only
+PASS actual atomic config writer: unwritable directory preserves durable bytes and live config
+PASS actual MemoryEngine: write failure, concurrent saves, corrupt config preservation
+PASS validation: HH:MM, empty off array, integer boundaries, DSH_HOME and symlink escape
+PASS migration fault injection: read errors observable, partial copy cleanup, complete retry
+PASS migration final verification: early copied files cannot silently change during later copying

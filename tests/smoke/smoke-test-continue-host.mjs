@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { workspaceKey } from '../../lib/workspace-key.js'
 /** [continue-host] 接续 host 半边真机回归(2026-09-08,2.2.4 修A/修B + 四条改进)。
  * 用真 apply(ctx) + 真实临时 DSH_HOME/session.jsonl 驱动真实 engine,验证:
  *   H1 handoff-state 暴露 planMtime 与 refresh{sessionId,prompt}(③刷新仪式入口)
@@ -12,6 +13,7 @@
  *   H9 无 workspaceRegistry 服务 → 不抛错、workspaceId=''
  */
 import { apply } from '../../lib/index.js'
+import { continuedSourceFile, releaseContinuedSource } from '../../lib/continuation-state.js'
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, utimesSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
@@ -112,7 +114,7 @@ ok(r && r.ok === true, 'H2 handoff-continue ok')
 ok(r.workspaceId === 'ws-continue-1', 'H2 修A: workspaceId 由 registry.sessionIds 命中返回(' + String(r.workspaceId) + ')')
 ok(r.provider === 'deepseek-official' && r.model === MODEL && r.reasoningEffort === 'max',
   'H3 修B: request/header 末条 config 生效(' + r.model + '/' + r.reasoningEffort + ')')
-ok(r.carryText.includes('【第0层 · 白板 PLAN.md(节选)】') && r.carryText.includes('【第1层 · 交接账本 '),
+ok(r.carryText.includes('【第0层 · 白板 PLAN.md(节选)；项目共享事实，不是本会话角色授权；修改前 memory_read(kind=plan) 取版本】') && r.carryText.includes('【第1层 · 交接账本 '),
   'H4 第0层白板 + 第1层账本')
 ok(r.carryText.includes('【第2层 · 近期线程') && r.carryText.includes('【第3层 · 完整转写与检索(按需)】'),
   'H4 第2层近期线程 + 第3层按需转写')
@@ -185,7 +187,7 @@ mkdirSync(sidBDir, { recursive: true })
 const linesB = [JSON.stringify({ agentPreset: 'default', cwd: WS_B })]
 linesB.push(JSON.stringify({ type: 'user/message', data: { message: { role: 'user', content: [{ type: 'text', text: 'B 工作区唯一消息' }] } } }))
 writeFileSync(path.join(sidBDir, 'session.jsonl'), linesB.join('\n') + '\n', 'utf8')
-const bucketBHandoff = path.join(root, '.memory-root', '--D--dam-continue-proj-b--', 'handoff')
+const bucketBHandoff = path.join(root, '.memory-root', workspaceKey("D:\\dam-continue-proj-b"), 'handoff')
 mkdirSync(bucketBHandoff, { recursive: true })
 writeFileSync(path.join(bucketBHandoff, 'PLAN.md'), '# 白板B\n## 当前目标\n- WSB-ONLY-MARKER\n', 'utf8')
 registryHolder.reg.list = () => [
@@ -196,7 +198,7 @@ const r10 = await call(API.cont, 'POST', { fromSessionId: SID_B })
 ok(r10 && r10.ok === true, 'H10 接续材料 ok')
 ok(r10.carryText.includes('WSB-ONLY-MARKER'), 'H10 第0层 PLAN 取自源会话工作区 B 桶(不再读当前工作区)')
 ok(!r10.carryText.includes('验证接续链路'), 'H10 不再把工作区 A 的 PLAN 混进材料')
-ok(!!r10.transcriptPath && r10.transcriptPath.includes('--D--dam-continue-proj-b--') && existsSync(r10.transcriptPath),
+ok(!!r10.transcriptPath && r10.transcriptPath.includes(workspaceKey("D:\\dam-continue-proj-b")) && existsSync(r10.transcriptPath),
   'H10 转写包落盘到源会话工作区 B 桶(' + String(r10.transcriptPath).split('.memory-root').pop() + ')')
 ok(r10.workspaceId === 'ws-b', 'H10 workspaceId 按 B 会话归属解析')
 ok(r10.wsBase === 'dam-continue-proj-b', 'H10 wsBase 取源会话 cwd 基名')
@@ -236,7 +238,7 @@ console.log('[continue-host] H11 源会话文件缺失时拒绝 _lastAgent 顶�
   ok(!String(r11.carryText || '').includes('H11OTHER-ONLY-MARKER'), 'H11 不混入别人的线程')
 }
 
-console.log('[continue-host] H12 真实插件路由：投递失败不落闩、重试完成后幂等')
+console.log('[continue-host] H12 真实插件路由：未知投递保留pending、核实后恢复并幂等')
 {
   const ctlCalls = []
   let rejectDelivery = true, created = 0
@@ -255,11 +257,17 @@ console.log('[continue-host] H12 真实插件路由：投递失败不落闩、�
   const first = await call(decidePath, 'POST', { action: 'manual', sessionId: SID })
   ok(first && !first.ok && first.error.includes('integration delivery rejected'), 'H12 投递拒绝透出真实错误')
   const doneFile = path.join(home, 'memory', 'auto-continue-done.json')
-  ok(!existsSync(doneFile), 'H12 投递失败没有写磁盘接续闩锁')
+  const sourceKey=SID.replace(/^session-/, ''), recordFile=continuedSourceFile(doneFile,sourceKey)
+  ok(!existsSync(doneFile) && JSON.parse(readFileSync(recordFile,'utf8')).status === 'pending', 'H12 保留独立pending记录，不修改旧闩锁文件')
+  const blocked=await call(decidePath,'POST',{action:'manual',sessionId:SID})
+  ok(blocked && !blocked.ok && blocked.continuationPending && blocked.sessionId==='session-integration-new-1' && created===1, 'H12 未核实的投递错误不能盲目再建会话')
+  // The fake controller conclusively rejected delivery. Operator recovery is
+  // explicit; production never infers this from an arbitrary exception string.
+  await releaseContinuedSource(doneFile,sourceKey,JSON.parse(readFileSync(recordFile,'utf8')).token)
   rejectDelivery = false
   const retried = await call(decidePath, 'POST', { action: 'manual', sessionId: SID })
   ok(retried && retried.ok && retried.sessionId === 'session-integration-new-2', 'H12 源会话仍可成功重试')
-  ok(existsSync(doneFile) && JSON.parse(readFileSync(doneFile, 'utf8')).sessions.some(row => row.to === 'integration-new-2'), 'H12 接受材料后才持久化真实后继')
+  ok(JSON.parse(readFileSync(recordFile,'utf8')).status==='done' && JSON.parse(readFileSync(recordFile,'utf8')).to==='session-integration-new-2', 'H12 接受材料后才持久化真实后继')
   const replay = await call(decidePath, 'POST', { action: 'manual', sessionId: SID })
   ok(replay && replay.ok && replay.sessionId === retried.sessionId && created === 2, 'H12 重复请求返回已有后继，不再建第三个会话')
   ok(ctlCalls[0][0] === 'cancel' && ctlCalls[0][1] === SID, 'H12 手动入口也停止指定旧回合')

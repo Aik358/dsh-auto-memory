@@ -81,6 +81,7 @@
         function guard(e) {
           // A sibling portal dialog owns focus and Escape until it closes.
           if (document.querySelector('.i5-overlay-root')) return
+          if(e.type==='keydown' && e.key==='Escape' && e.target && e.target.closest && e.target.closest('.i5-settings-search') && e.target.getAttribute('aria-expanded')==='true')return
           var el = root.current, dialog = slot.current && slot.current.closest('[role=dialog]')
           if (e.type === 'keydown' && e.key === 'Escape' && expanded[0] && !dialogState) {
             e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation(); expanded[1](false); return
@@ -120,5 +121,5 @@
     }
     // Keep unsaved edits across host-driven unmounts, scoped to session/workspace.
     // Never persist configuration (which may include credentials) to browser storage.
-    var iter5SettingsDrafts = Object.create(null)
+    var iter5SettingsDrafts = damSettingsDrafts
     var iter5SettingsSequence = 0

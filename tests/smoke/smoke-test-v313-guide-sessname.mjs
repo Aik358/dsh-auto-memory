@@ -25,7 +25,7 @@ const ok = (c, n, d) => { if (c) { pass++; console.log('  ✓ ' + n) } else { fa
 const cnt = (h, n) => { let c = 0, i = 0; for (;;) { const p = h.indexOf(n, i); if (p < 0) return c; c++; i = p + n.length } }
 
 const ix = fs.readFileSync(IX, 'utf8')
-const cl = fs.readFileSync(CL, 'utf8')
+const cl = fs.readFileSync(CL, 'utf8') + fs.readFileSync(path.join(ROOT,'skins/iter5/settings-schema.js'),'utf8')
 const gc = fs.readFileSync(GC, 'utf8')
 
 console.log('=== V1 会话文件名去硬编码 ===')
@@ -80,7 +80,7 @@ ok(ix.includes('本键当前**无消费者**'), 'V5b softInjectionEnabled 已标
 //   （用户裁定「机械通路已被我弃用」）⇒ 断言反转为「控件与配置键都不该再出现」，
 //   否则会留下「写盘成功但界面无变化」的死控件（用户明确列为「功能坏了」）。
 ok(!cl.includes(`'data-dam-key': 'hubMechanicalProcedureFeedEnabled'`), 'V5c ★A-1 设置页死控件已移除（机械切片已退役）')
-ok(!cl.includes('hubMechanicalProcedureFeedEnabled'), 'V5d ★A-1 前端不再引用已退役的配置键')
+ok(!/cfg\.hubMechanicalProcedureFeedEnabled|set\('hubMechanicalProcedureFeedEnabled'/.test(cl), 'V5d ★A-1 前端无已退役键的读写控件（兼容目录可保留）')
 
 console.log('\n[汇总] ' + pass + ' passed, ' + fail + ' failed')
 process.exit(fail ? 1 : 0)

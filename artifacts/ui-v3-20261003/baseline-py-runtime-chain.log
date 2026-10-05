@@ -1,0 +1,20 @@
+PASS failure is attributable: "spawn definitely-not-a-python-binary-xyz ENOENT"
+PASS timeout is explicitly attributed + flagged for retry
+PASS genuine dependency failure is not retried and stays attributable
+PASS candidate chain covers configured / user-venv / dev-venv / system (5 entries)
+node:internal/modules/run_main:123
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: dev venv missing on this machine — C3 acceptance cannot be executed here
+    at file:///workspace/dsh-main-328/tests/smoke/smoke-test-py-runtime-chain.mjs:58:10
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5) {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: false,
+  expected: true,
+  operator: '==',
+  diff: 'simple'
+}
+
+Node.js v22.23.3
