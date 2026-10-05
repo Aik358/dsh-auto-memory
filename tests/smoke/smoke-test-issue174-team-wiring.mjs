@@ -6,13 +6,13 @@ import vm from 'node:vm'
 import fs from 'node:fs'
 import { createFactStorePre } from '../../lib/fact-store.js'
 import { Readable } from 'node:stream'
-import { apply, API, MemoryEngine } from '../lib/audit-engine.mjs'
+import { apply, API, MemoryEngine, flushDiagnostics } from '../lib/audit-engine.mjs'
 const root = await mkdtemp(path.join(os.tmpdir(), 'dam-team-e2e-'))
 const home = process.env.DSH_HOME, fetch = globalThis.fetch, timeout = globalThis.setTimeout, interval = globalThis.setInterval
 const load = MemoryEngine.prototype.loadConfigSync
 // apply starts real async warmup/update work without awaiting it. Keep those
 // flights inside the fixture lifetime before restoring DSH_HOME or deleting it.
-const startupMethods = new Map(['findLatestGlobalHandoff', 'checkUpdate', 'fetchNotices'].map(name => [name, MemoryEngine.prototype[name]]))
+const startupMethods = new Map(['refresh', 'findLatestGlobalHandoff', 'checkUpdate', 'fetchNotices'].map(name => [name, MemoryEngine.prototype[name]]))
 const startupFlights = []
 for (const [name, original] of startupMethods) MemoryEngine.prototype[name] = function (...args) {
  const flight = original.apply(this, args)
@@ -128,6 +128,7 @@ timers.length=0;routes.length=0
 } finally {
  if(cleanup)cleanup()
  await Promise.allSettled(startupFlights)
+ await flushDiagnostics()
  for (const [name, original] of startupMethods) MemoryEngine.prototype[name] = original
  globalThis.fetch=fetch;globalThis.setTimeout=timeout;globalThis.setInterval=interval;MemoryEngine.prototype.loadConfigSync=load
  for(const [k,prev]of handlers)for(const h of process.listeners(k))if(!prev.has(h))process.removeListener(k,h)
