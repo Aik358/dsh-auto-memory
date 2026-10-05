@@ -22,6 +22,15 @@ const deferred=()=>{let resolve;const promise=new Promise(r=>resolve=r);return {
 let warmEngine,warmRelease,warmEntered
 MemoryEngine.prototype.refresh=function(...args){return track(refresh.apply(this,args))}
 MemoryEngine.prototype._doRefresh=async function(...args){if(this===warmEngine){warmEntered.resolve();await warmRelease.promise}return doRefresh.apply(this,args)}
+// apply starts real async warmup/update work without awaiting it. Keep those
+// flights inside the fixture lifetime before restoring DSH_HOME or deleting it.
+const startupMethods = new Map(['findLatestGlobalHandoff', 'checkUpdate', 'fetchNotices'].map(name => [name, MemoryEngine.prototype[name]]))
+const startupFlights = []
+for (const [name, original] of startupMethods) MemoryEngine.prototype[name] = function (...args) {
+ const flight = original.apply(this, args)
+ startupFlights.push(Promise.resolve(flight))
+ return flight
+}
 const handlers = new Map(['uncaughtException','unhandledRejection','exit'].map(k => [k,new Set(process.listeners(k))]))
 let engine, cleanup, rejectPush = false, network = []
 const timers = [], routes = []
@@ -141,7 +150,10 @@ timers.length=0;routes.length=0
  console.log('PASS #174: real host assembly, auth/object body, failed queue, scheduled pull/injection, GET read-only, pause/reset, live config and off gate')
 } finally {
  if(warmRelease)warmRelease.resolve();await settle()
- if(cleanup)cleanup();await flushDiagnostics()
+ if(cleanup)cleanup()
+ await Promise.allSettled(startupFlights)
+ await flushDiagnostics()
+ for (const [name, original] of startupMethods) MemoryEngine.prototype[name] = original
  globalThis.fetch=fetch;globalThis.setTimeout=timeout;globalThis.setInterval=interval;MemoryEngine.prototype.loadConfigSync=load;MemoryEngine.prototype.refresh=refresh;MemoryEngine.prototype._doRefresh=doRefresh
  for(const [k,prev]of handlers)for(const h of process.listeners(k))if(!prev.has(h))process.removeListener(k,h)
  if(home===undefined)delete process.env.DSH_HOME;else process.env.DSH_HOME=home
