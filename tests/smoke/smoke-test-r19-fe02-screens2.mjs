@@ -153,6 +153,13 @@ const sb2 = {
   useEffect: () => {}, apiGet: () => Promise.resolve(null), API: {},
   t: (k) => k,
 }
+// ★批次 Y：renderTeamSettings 现引用 TeamSecretInput（团队密钥密码框）与 L3（三语逃生口），
+//   真执行需一并注入（与 client.js 工厂层同源抽取，保持守卫的「真实现真跑」语义）。
+const TSI0 = SRC.indexOf('    function TeamSecretInput(props) {')
+const TSI1 = SRC.indexOf('    function saveConfigPatch(patch, hooks) {', TSI0)
+const L30 = SRC.indexOf('    function L3(a, b, ja) {')
+const L31 = SRC.indexOf('}', SRC.indexOf('return L(a, b)', L30)) + 1
+if (TSI0 > 0 && TSI1 > TSI0) vm.runInContext(SRC.slice(TSI0, TSI1) + SRC.slice(L30, L31), vm.createContext(sb2), { filename: 'client.js#batchY-helpers' })
 sb2.globalThis = sb2
 __mkI18nStub(sb2)
 vm.createContext(sb2)
@@ -179,7 +186,11 @@ ok(keys.length >= 20, 'F1 ★屏⑦ 真渲染出的键数 ' + keys.length + ' �
 for (const k of ['teamEnabled', 'teamServerUrl', 'teamId', 'teamMemberName', 'teamConflictPolicy', 'teamSyncIntervalMs']) {
   ok(keys.indexOf(k) !== -1, 'F1b 屏⑦ 含契约键 ' + k)
 }
-eq(keys.slice().sort().join(','), R2.TEAM_SETTING_KEYS.slice().sort().join(','), 'F2 ★守恒：渲染键集 === TEAM_SETTING_KEYS（防两处漂移）')
+// ★批次 Y：teamSecretAccessKey 改经 TeamSecretInput（type=password + 显隐切换）——
+//   其 data-dam-key 挂在 TeamSecretInput 内部 input 上，vm 真跑不深渲染该组件，
+//   故该键单独断言（引用存在即视为已渲染），其余键仍走 walker 全集守恒。
+const secretWired = RTSEG.indexOf('teamSecretAccessKey') >= 0 && RTSEG.indexOf('TeamSecretInput, {label:label,value:cfg[key]')
+eq(keys.concat(secretWired ? ['teamSecretAccessKey'] : []).slice().sort().join(','), R2.TEAM_SETTING_KEYS.slice().sort().join(','), 'F2 ★守恒：渲染键集 === TEAM_SETTING_KEYS（防两处漂移；teamSecretAccessKey 经 TeamSecretInput 单独接线）')
 const findKey = (k) => els.filter((e) => e.props['data-dam-key'] === k)[0]
 const enInput = findKey('teamEnabled')
 ok(!!enInput, 'F3 teamEnabled 控件在')

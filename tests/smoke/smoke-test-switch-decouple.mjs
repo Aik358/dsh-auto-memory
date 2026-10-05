@@ -332,8 +332,10 @@ console.log('[switch-decouple] D4 接线:两页共用同一对配置键 + 默认
     '白板页:开关卡在「已启用」分支同样渲染(白板开着也能从本页关掉)')
   // 设置页保存不得再 POST 整份快照(宿主端是合并语义,整份快照会把别的入口期间的改动回滚)
   ok(!/saveConfigPatch\(cfg,/.test(CSRC), '设置页保存不再整份快照 POST(旧写法会把其它入口的改动回滚)')
-  ok(/JSON\.stringify\(cfg\[k\]\) !== JSON\.stringify\(remote\[k\]\)/.test(CSRC),
-    '设置页保存改为只提交「与宿主当前配置不同」的键(跨入口改动不再被覆盖)')
+  // ★批次 Y（#212 claim5 前端）：比对基线由「远端快照」升级为「本页加载基线 settingsBase」——
+  //   远端快照包含加载后其他入口的改动，比它会把那些改动一并回滚成加载时值；基线才是「本页改了什么」的真源。
+  ok(/JSON\.stringify\(cfg\[k\]\) !== JSON\.stringify\(\(settingsBase\.current \|\| \{\}\)\[k\]\)/.test(CSRC),
+    '设置页保存改为只提交「与加载基线不同」的键(跨入口改动不再被覆盖；批次 Y 基线=settingsBase)')
   ok(CSRC.includes('apiGet(API.config).then(function (d0)'), '设置页保存前先取回宿主当前配置再比对')
   // 2026-09-14 补:白板页 autoSave 必须把**配置键**映射回**本地状态字段**。
   // 旧实现 `Object.assign({}, p, patch)` 写的是 autoCfg.autoContinueEnabled,而按钮读 autoCfg.enabled
