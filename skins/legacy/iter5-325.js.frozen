@@ -688,7 +688,9 @@
     }
     // Each registered surface owns a theme boundary, including sibling overlays.
     function Iter5Surface(props) {
-      var deep = useIter5Theme()[1]
+      var skinDeep = useIter5Theme()[1], hostDeep = useDeepTheme()
+      // Expanded and embedded host settings share DSH's theme, not the workbench preference.
+      var deep = props.kind === 'settings' ? hostDeep : skinDeep
       var tick = useTick()
       useEffect(function () { return controller.subscribe(tick[1]) }, [])
       useEffect(function () {

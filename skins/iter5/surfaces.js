@@ -1,9 +1,10 @@
     // Each registered surface owns a theme boundary, including sibling overlays.
     function Iter5Surface(props) {
-      // ★H36：契约（L10374）要求皮肤内取深/浅一律同源；原 settings 分支直取宿主 ⇒ 设置页
-      //   永远不随皮肤档变化（用户实报「这也没啥变化」）。四类外壳统一走 skinDeep。
       var skinDeep = useIter5Theme(), skinStyle = useIter5Style()
-      var deep = skinDeep
+      var hostDeep = useDeepTheme()
+      // Native host settings follow DSH, including when expanded into a body portal.
+      // The separate workbench appearance preference still governs plugin surfaces.
+      var deep = props.kind === 'settings' ? hostDeep : skinDeep
       var tick = useTick()
       var boundary = useRef(null)
       useEffect(function () { return controller.subscribe(tick[1]) }, [])

@@ -2,19 +2,36 @@
 [data-dam-theme][data-dam-theme][data-dam-theme]{
   --dam-compat-bg:#f6f7f9;--dam-compat-face:#ffffff;--dam-compat-text:#1a1a1c;
   --dam-compat-secondary:#55555a;--dam-compat-muted:#66666c;--dam-compat-line:#d6d9df;
+  --dam-compat-fallback-face:#ffffff;--dam-compat-fallback-text:#1a1a1c;
+  --dam-compat-fallback-secondary:#55555a;--dam-compat-fallback-line:#d6d9df;
 }
 [data-dam-theme][data-dam-theme][data-dam-theme][data-deep=true]{
   --dam-compat-bg:#18191d;--dam-compat-face:#24262c;--dam-compat-text:#ededf0;
   --dam-compat-secondary:#bfc2cb;--dam-compat-muted:#afb3be;--dam-compat-line:#454953;
+  --dam-compat-fallback-face:#24262c;--dam-compat-fallback-text:#ededf0;
+  --dam-compat-fallback-secondary:#bfc2cb;--dam-compat-fallback-line:#454953;
 }
 [data-dam-theme=settings][data-dam-theme][data-dam-theme][data-dam-theme],
+[data-dam-theme=settings][data-dam-theme][data-dam-theme][data-dam-theme] [data-i5-embedded],
 html[data-dam-mobile] [data-dam-theme][data-dam-theme][data-dam-theme]{
   --i5-bg:var(--dam-compat-bg)!important;--i5-surface:var(--dam-compat-face)!important;
   --i5-face:var(--dam-compat-face)!important;--i5-side:var(--dam-compat-bg)!important;
   --i5-text:var(--dam-compat-text)!important;--i5-secondary:var(--dam-compat-secondary)!important;
   --i5-muted:var(--dam-compat-muted)!important;--i5-line:var(--dam-compat-line)!important;
-  --dsw-alias-bg-layer-1:var(--dam-compat-bg)!important;
-  --dsw-alias-bg-layer-2:var(--dam-compat-face)!important;
+}
+/* Reset workbench aliases at BOTH roots before using native host colors. Otherwise
+   their i5 references create cycles, or replace DSH's theme with workbench colors. */
+[data-dam-theme=settings][data-dam-theme][data-dam-theme][data-dam-theme],
+[data-dam-theme=settings][data-dam-theme][data-dam-theme][data-dam-theme] [data-i5-embedded]{
+  --dsw-alias-bg-layer-1:inherit!important;--dsw-alias-bg-layer-2:inherit!important;
+  --dsw-alias-label-primary:inherit!important;--dsw-alias-label-secondary:inherit!important;
+  --dsw-alias-border-l1:inherit!important;--dsw-alias-border-l2:inherit!important;
+  --dam-compat-bg:var(--dsw-alias-bg-layer-2,var(--dam-compat-fallback-face));
+  --dam-compat-face:var(--dam-compat-bg);
+  --dam-compat-text:var(--dsw-alias-label-primary,var(--dam-compat-fallback-text));
+  --dam-compat-secondary:var(--dsw-alias-label-secondary,var(--dam-compat-fallback-secondary));
+  --dam-compat-muted:var(--dam-compat-secondary);
+  --dam-compat-line:var(--dsw-alias-border-l2,var(--dam-compat-fallback-line));
 }
 [data-dam-theme=settings][data-dam-theme][data-dam-theme][data-dam-theme] [data-i5-embedded]{
   background:var(--dam-compat-bg)!important;color:var(--dam-compat-text)!important;
@@ -26,7 +43,7 @@ html[data-dam-mobile] [data-dam-theme][data-dam-theme][data-dam-theme]{
   padding-top:var(--dsh-mobile-top-inset,env(safe-area-inset-top,0px));
   padding-bottom:max(env(safe-area-inset-bottom,0px),var(--dsh-android-system-bottom,0px));
 }
-[data-dam-theme=settings][data-dam-theme][data-dam-theme][data-dam-theme] [data-i5-embedded]>.i5-main{
+[data-dam-theme=settings][data-dam-theme][data-dam-theme][data-dam-theme] [data-i5-embedded][data-i5-embedded]>.i5-main{
   background:var(--dam-compat-bg)!important;min-width:0;min-height:0;
 }
 [data-dam-theme=settings][data-dam-theme][data-dam-theme][data-dam-theme] [data-i5-embedded][data-expanded=true]>.i5-main{

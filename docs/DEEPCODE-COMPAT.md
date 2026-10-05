@@ -75,7 +75,7 @@ node tests/smoke/smoke-test-workbench-gaps.mjs
 - Windows / Node 24.15.0：46 个相关 smoke，46 PASS / 0 FAIL / 0 TIMEOUT。
 - 本机 Ubuntu WSL / Node 23.11.1：12 个针对路径、工作台、接续、主题同步和生成器的 smoke，12 PASS / 0 FAIL / 0 TIMEOUT。使用真实 Linux symlink，不仅是模拟平台变量。
 - Windows DSH 实际浏览器页面：桌面未展开、桌面展开（均 1502×624）、窄屏展开（320×720）三种状态，各四款皮肤 × 深浅主题 × 四个页签，共 96 组探针全部通过。未展开的宿主滚动、保存区可点击也纳入探针。
-- 语法、生成器同步及 diff whitespace 检查通过。未发现剩余需要修复的高/中等问题。
+- 语法、生成器同步及 diff whitespace 检查通过。上述 96 组探针仅验证布局、透明度和保存区，未检查宿主主题与插件主题是否一致；后续截图反馈发现的遗漏见下文。
 
 首次 smoke CI 在执行测试前因缺失 `tools/smoke-impact.mjs` 失败；对照基线确认其同样导入该文件且未包含该文件。随后按用户要求修复 CI，不再将入口失败作为交付状态。
 
@@ -104,3 +104,29 @@ Windows / Node 24.15.0 / Python 3.12.10：同一命令 264 PASS / 0 FAIL / 0 TIM
 ![Windows 未展开设置页保留底部保存区](screenshots/deepcode-compat/settings-windows-embedded.png)
 
 **验收边界：未连接 Android 手机，未运行 DeepCode APK；浏览器尺寸检查不等于 DeepCode 真机验收。** 手机系统栏、安全区、软键盘和具体 WebView 版本仍需设备复测。未发布、未合并。
+
+## 截图反馈后的宿主主题修复
+
+用户指出 PR 的桌面截图中，DSH 已使用深色主题，但插件设置页仍是白底。实际页面复现：宿主为 dark、工作台外观为 light 时，设置根背景为 `rgb(246,247,249)`，卡片、页签和保存区为白色。切换工作台外观为 system 后才变暗，说明设置入口错误使用了独立的工作台偏好。
+
+- 经典冻结源和变体源的 settings 边界始终使用宿主主题；展开到 body 的设置页也遵守同一规则。工作台、浮窗及其他插件页面保留 light/dark/system 的独立选择。
+- 在设置边界和嵌入根节点恢复 DSH 背景、文字、边框变量的继承，消除工作台别名覆盖和变量循环；无宿主变量时仍有实色深浅回落。控件表面变量在两层根上统一，避免经典皮肤保留半透明输入框。
+- 提高设置主体实色规则的优先级，避免后加载的透明材质规则覆盖它。
+- 切换皮肤后重开设置的检查发现另一条原生样式仍无条件限制主体高度、隐藏溢出。修复后未展开页面继续随宿主滚动；展开页保留独立内容滚动和固定保存区。
+
+修复前新增的回归测试实际失败于宿主浅色、工作台深色组合；修复后执行两套真实主题边界，覆盖 settings/page/panel/dialogs/autocont 的宿主与工作台深浅组合。原有主题偏好持久化、跨皮肤同步与清理测试继续通过。
+
+增强后的只读浏览器探针同时检查主题与宿主一致、原生颜色继承、实色主体/页签/保存区/卡片/文本控件、说明文字至少 4.5:1 对比度，以及原有宽度、滚动和保存区可点击性。
+
+最终验证：
+
+- Windows DSH 0.2.0-rc.2 实际页面：2 种宿主主题 × 3 种布局（1502×624 未展开/展开、320×720 展开）× 4 款皮肤 × 3 种工作台主题 × 4 个页签，共 **288 PASS / 0 FAIL**。包括宿主和工作台主题相反的组合，以及切换皮肤再重开设置。
+- Windows / Node 24.15.0 / Python 3.12.10 与 Ubuntu WSL / Node 23.11.1 / Python 3.12.3，分别重新执行上面的标准 CI 命令：各 **264 PASS / 0 FAIL / 0 TIMEOUT**。
+- 语法、生成源同步、主题偏好同步和 diff whitespace 检查通过。
+- OCR delegation 增量复核 6 个可审查代码文件，6 reviewed / 0 skipped，覆盖率 100%；冻结源、本文档与 4 张截图另逐项人工核对。
+
+下方两张 Windows 截图分别使用“宿主深色 + 工作台浅色”和“宿主浅色 + 工作台深色”，设置页都与宿主一致。320px 浅色与 390px 深色窄屏截图也已替换。
+
+![Windows 深色宿主设置](screenshots/deepcode-compat/settings-windows-embedded.png)
+
+![Windows 浅色宿主设置](screenshots/deepcode-compat/settings-windows-light.png)

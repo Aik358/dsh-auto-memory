@@ -46,6 +46,31 @@ assert.ok(!attrs.has('data-dam-mobile'))
 assert.equal(listeners.size, 0)
 console.log('PASS actual mobile lifecycle: narrow / DeepCode bridge / mobile marker / desktop / cleanup')
 
+// Render each production theme boundary, including the frozen classic implementation.
+// Workbench preferences must never turn the native host settings into the opposite theme.
+for (const file of ['../../skins/iter5/surfaces.js', '../../skins/legacy/iter5-325.js.frozen']) {
+  const code = readFileSync(new URL(file, import.meta.url), 'utf8')
+  const start = code.indexOf('    function Iter5Surface(props) {')
+  const end = code.indexOf('    function Iter5HostSettings(props) {', start)
+  let hostDeep, skinDeep
+  const render = vm.runInNewContext('(function(){' + code.slice(start, end) + ';return Iter5Surface})()', {
+    h: (type, props) => ({ type, props }),
+    useDeepTheme: () => hostDeep,
+    useIter5Theme: () => file.includes('legacy') ? ['system', skinDeep] : skinDeep,
+    useIter5Style: () => 'legacy', useTick: () => [0, () => {}],
+    useRef: () => ({ current: null }), useEffect: () => {}, createPortal: node => node,
+    document: { body: {} }, FONT_SCALE_VALUES: { normal: '1' }, fontScale: 'normal',
+  })
+  for (hostDeep of [false, true]) for (skinDeep of [false, true]) {
+    for (const kind of ['settings', 'page', 'panel', 'dialogs', 'autocont']) {
+      const expected = kind === 'settings' ? hostDeep : skinDeep
+      assert.equal(render({ kind }).props['data-deep'], String(expected),
+        `${file}: ${kind}, host=${hostDeep}, workbench=${skinDeep}`)
+    }
+  }
+}
+console.log('PASS both production boundaries: settings follow host; workbench and overlays retain their preference')
+
 for (const file of ['../../skins/iter5/surfaces.js', '../../skins/legacy/iter5-325.js.frozen']) {
   const code = readFileSync(new URL(file, import.meta.url), 'utf8')
   const start = code.indexOf('    function Iter5HostSettings(props) {')
