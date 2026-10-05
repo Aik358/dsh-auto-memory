@@ -10,6 +10,15 @@ import { apply, API, MemoryEngine } from '../lib/audit-engine.mjs'
 const root = await mkdtemp(path.join(os.tmpdir(), 'dam-team-e2e-'))
 const home = process.env.DSH_HOME, fetch = globalThis.fetch, timeout = globalThis.setTimeout, interval = globalThis.setInterval
 const load = MemoryEngine.prototype.loadConfigSync
+// apply starts real async warmup/update work without awaiting it. Keep those
+// flights inside the fixture lifetime before restoring DSH_HOME or deleting it.
+const startupMethods = new Map(['findLatestGlobalHandoff', 'checkUpdate', 'fetchNotices'].map(name => [name, MemoryEngine.prototype[name]]))
+const startupFlights = []
+for (const [name, original] of startupMethods) MemoryEngine.prototype[name] = function (...args) {
+ const flight = original.apply(this, args)
+ startupFlights.push(Promise.resolve(flight))
+ return flight
+}
 const handlers = new Map(['uncaughtException','unhandledRejection','exit'].map(k => [k,new Set(process.listeners(k))]))
 let engine, cleanup, rejectPush = false, network = []
 const timers = [], routes = []
@@ -117,8 +126,11 @@ timers.length=0;routes.length=0
  engine._teamPullTimer.callback();await new Promise(r=>timeout(r,0));assert.equal(network.filter(n=>n.opts.method==='GET').length,1)
  console.log('PASS #174: real host assembly, auth/object body, failed queue, scheduled pull/injection, GET read-only, pause/reset, live config and off gate')
 } finally {
+ if(cleanup)cleanup()
+ await Promise.allSettled(startupFlights)
+ for (const [name, original] of startupMethods) MemoryEngine.prototype[name] = original
  globalThis.fetch=fetch;globalThis.setTimeout=timeout;globalThis.setInterval=interval;MemoryEngine.prototype.loadConfigSync=load
- if(cleanup)cleanup();for(const [k,prev]of handlers)for(const h of process.listeners(k))if(!prev.has(h))process.removeListener(k,h)
+ for(const [k,prev]of handlers)for(const h of process.listeners(k))if(!prev.has(h))process.removeListener(k,h)
  if(home===undefined)delete process.env.DSH_HOME;else process.env.DSH_HOME=home
  await rm(root,{recursive:true,force:true})
 }
