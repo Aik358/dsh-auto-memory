@@ -21,7 +21,7 @@ const parentCalls = []
 const subagents = {
   list() { return ['spawn'] },
   async start(provider, options) {
-    parentCalls.push({ provider, parent: options.parent, model: options.agentOptions ? options.agentOptions.model : undefined })
+    parentCalls.push({ provider, parent: options.parent, model: options.agentOptions ? options.agentOptions.model : undefined, prompt: options.prompt })
     await new Promise((resolve) => setTimeout(resolve, 15))
     return { result: Promise.resolve({ output: [{ type: 'text', text: '[TOPIC] isolated\n[LOG]\n- session-specific consolidation' }] }) }
   },
@@ -37,8 +37,22 @@ const ctx = {
   tools: { register(def) { registeredTools.push(def); return () => {} } },
   webServer: { register() { return () => {} } },
 }
-const { apply } = await import('../../lib/index.js')
-apply(ctx, {})
+const { apply, MemoryEngine } = await import('../lib/audit-engine.mjs')
+let engine
+const loadConfig = MemoryEngine.prototype.loadConfigSync
+MemoryEngine.prototype.loadConfigSync = function (...args) { engine = this; return loadConfig.apply(this, args) }
+try { apply(ctx, {}) } finally { MemoryEngine.prototype.loadConfigSync = loadConfig }
+// This test owns a pre-provisioned local workbench fixture. It exercises the
+// shared workbench parent and isolated source messages, never real setup.
+const workbenchId = 'fixture-workbench'
+const workbenchParent = { ctx: { get: () => undefined }, session: { id: workbenchId, header: { id: workbenchId, cwd: ws } } }
+writeFileSync(engine._workbenchFile(), JSON.stringify({
+  version: 2, current: { sessionId: workbenchId, cwd: ws },
+  epoch: engine._workbenchEpoch(Date.now()), phase: 'active',
+  epochToken: engine._workbenchEpochToken(engine._workbenchEpoch(Date.now()), workbenchId),
+}), 'utf8')
+engine._workbenchReady = true
+engine._workbenchParent = workbenchParent
 const makeAgent = (id, cwd) => ({
   id,
   ctx: { get: () => undefined },
@@ -69,9 +83,9 @@ const waitUntil = async (predicate, { timeoutMs = 8000, stepMs = 20 } = {}) => {
   }
 }
 // 插件的每轮沉淀并非在处理器内同步执行,而是「turn-stopping 处理器 + 600ms 延迟」后才调
-// consolidateTurn;其被去重/冷却挡掉的原因会写进 diag 日志(<DSH_HOME>/dsh-auto-memory-pre-diagnose.log)。
+// consolidateTurn;其被去重/冷却挡掉的原因会写进 diag 日志(<DSH_HOME>/dsh-auto-memory-diagnose.log)。
 // 「没有第 3 次调用」是否定命题,无法轮询出结论;但可以轮询到肯定信号——去重判定确实发生过。
-const diagLogPath = path.join(home, 'dsh-auto-memory-pre-diagnose.log')
+const diagLogPath = path.join(home, 'dsh-auto-memory-diagnose.log')
 const readDiagLog = () => { try { return readFileSync(diagLogPath, 'utf8') } catch (e) { return '' } }
 
 await Promise.all([
@@ -82,7 +96,12 @@ if (!await waitUntil(() => parentCalls.length >= 2)) {
   throw new Error('expected one subagent call per top-level session, got ' + parentCalls.length)
 }
 if (parentCalls.some((call) => !call.parent)) throw new Error('subagent parent missing')
-if (parentCalls[0].parent === parentCalls[1].parent) throw new Error('subagent parent crossed sessions')
+if (parentCalls.some(call => call.parent !== workbenchParent)) throw new Error('subagent escaped its owned workbench parent')
+const prompts = parentCalls.map(call => JSON.stringify(call.prompt))
+if (!prompts.some(text => text.includes('user work for agent-a') && !text.includes('user work for agent-b')) ||
+    !prompts.some(text => text.includes('user work for agent-b') && !text.includes('user work for agent-a'))) {
+  throw new Error('consolidation source messages crossed sessions')
+}
 // 设置页「总结/问候默认模型」端到端:config.subagentModel 必须透传为 agentOptions.model
 if (parentCalls.some((call) => call.model !== 'probe-model-x')) throw new Error('subagentModel not passed through: ' + JSON.stringify(parentCalls.map((c) => c.model)))
 
@@ -102,4 +121,4 @@ if (parentCalls.length !== 2) throw new Error('same-session turn was not dedupli
 
 for (const dispose of disposers) { try { const teardown = dispose(); if (typeof teardown === 'function') teardown() } catch (e) {} }
 rmSync(ws, { recursive: true, force: true })
-console.log('M1 consolidation isolation test passed: A/B locks, parent agents, and turn deduplication are isolated (' + dedupLine + ')')
+console.log('M1 consolidation isolation test passed: A/B messages and locks, owned workbench parent, and turn deduplication are isolated (' + dedupLine + ')')
