@@ -39,6 +39,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
+      # Offline protocol/runtime regressions launch real standard-library Python
+      # processes. Model dependencies remain unnecessary for this gate.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
 
       # 本插件零运行时依赖（package.json 无 dependencies），因此**不跑 install**：
       # 装依赖会引入非确定性，而这里要验的正是"仓库原样即可跑"。
@@ -46,6 +51,7 @@ jobs:
         run: |
           node --version
           npm --version
+          python --version
           echo "--- 套件总数 ---"
           ls tests/smoke/*.mjs | wc -l
 

@@ -57,7 +57,7 @@ node tests/smoke/smoke-test-workbench-gaps.mjs
 
 浏览器只读探针保存在 `tests/browser/deepcode-ui-probe.js`，可在打开真实记忆设置页后通过 BrowserSkill 的 evaluate 运行。测试与页面检查结果、截图位于本地忽略目录 `.qa-deepcode/`。
 
-上游标准 smoke runner 依赖的 `tools/smoke-impact.mjs` 在本次基线中缺失，因此使用隔离 DSH_HOME/HOME/USERPROFILE 的逐文件执行器运行上述相关套件。
+首次验证时，上游标准 smoke runner 依赖的 `tools/smoke-impact.mjs` 在基线中缺失，因此上述专项结果使用隔离 DSH_HOME/HOME/USERPROFILE 的逐文件执行器取得。后续 CI 修复已恢复标准运行器依赖，见下文。
 
 ## 最终复核（PR #237）
 
@@ -77,7 +77,27 @@ node tests/smoke/smoke-test-workbench-gaps.mjs
 - Windows DSH 实际浏览器页面：桌面未展开、桌面展开（均 1502×624）、窄屏展开（320×720）三种状态，各四款皮肤 × 深浅主题 × 四个页签，共 96 组探针全部通过。未展开的宿主滚动、保存区可点击也纳入探针。
 - 语法、生成器同步及 diff whitespace 检查通过。未发现剩余需要修复的高/中等问题。
 
-PR 的 smoke CI 在执行测试前因缺失 `tools/smoke-impact.mjs` 失败；对照基线确认其同样导入该文件且未包含该文件，属于上游测试入口问题。上述本地结果不能替代 GitHub CI 通过。
+首次 smoke CI 在执行测试前因缺失 `tools/smoke-impact.mjs` 失败；对照基线确认其同样导入该文件且未包含该文件。随后按用户要求修复 CI，不再将入口失败作为交付状态。
+
+## CI 修复
+
+- 恢复运行器所需的 `tools/smoke-impact.mjs`，加入发布同步清单，避免下次发布再次丢失。
+- 新增隔离仓库中的 CLI 回归：发布复制后的入口启动、帮助、中文重命名影响面、局部运行、筛选/排除、真实失败退出与超时。
+- CI 显式准备 Python 3.12。标准回归不安装模型或第三方运行时依赖，原有排除项保持不变。
+- WASM 路径测试使用含中文与空格的临时资产目录；可通过 `DSH_TEST_TRANSFORMERS_DIST` 指定真实已安装资产。该项验证路径选择，不执行 WASM。
+- Python 解释器链测试改用真实 Python 进程和临时 venv，覆盖缺失/缺依赖/就绪、选择顺序、超时重试与失败诊断。空导入模块仅作为依赖探测夹具。原有真实 C2/C3 模型断言保留在 `smoke-test-py-runtime-live.mjs`，通过 `DSH_TEST_PLUGIN_DIR` 指定安装目录；本次未运行模型验收。
+- 沉淀隔离测试预置自身工作台，验证 A/B 源消息隔离、工作台归属和同轮去重；断言异常现在强制非零退出，负向探针验证不会被宿主异常监听器吞成成功。
+- 修正截取固定 300 字符的旧源码守卫，并按已审查的 DeepCode 改动同步宿主哈希基线；行为断言和路由计数继续保留。
+
+全量命令（隔离 DSH_HOME/HOME/USERPROFILE）：
+
+```sh
+node tools/run-smoke.mjs --jobs=1 --timeout=90000 --exclude=-live --exclude=m79-feature-v2 --exclude=m710-fv2-emit --exclude=c4-fresh-install
+```
+
+Ubuntu WSL / Node 23.11.1 / Python 3.12.3：264 PASS / 0 FAIL / 0 TIMEOUT。本机 WSL 为匹配 CI 的 Python 命令名，在临时 PATH 中为 python3 提供 python 别名，没有改动系统安装。
+
+Windows / Node 24.15.0 / Python 3.12.10：同一命令 264 PASS / 0 FAIL / 0 TIMEOUT。CI 修复的 10 个可审查文件逐项复核，0 跳过；本文档另人工核对。本机结果与 GitHub 的 Node 22 门禁结果分别记录。
 
 桌面未展开修复后的实际截图：
 

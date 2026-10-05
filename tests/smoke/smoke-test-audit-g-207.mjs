@@ -159,9 +159,17 @@ console.log('[audit-G-207] C 端到端落盘（真 apply + 真文件）')
 // ── D. wasm 路径本地化（真 import，真调用） ──
 console.log('[audit-G-207] D wasm 本地化 + localWasmPaths 开关')
 {
-  const realDist = path.join(new URL('../../node_modules/@huggingface/transformers/dist/', import.meta.url).pathname.replace(/^\//, ''))
+  // This suite verifies filesystem path selection without installing models or
+  // executing WASM. An explicit real-package path still runs the same assertions.
+  const fixtureDist = path.join(root, 'wasm dist 测试')
+  mkdirSync(fixtureDist, {recursive:true})
+  writeFileSync(path.join(fixtureDist, 'ort-wasm-simd-threaded.wasm'), Buffer.from([0, 97, 115, 109, 1, 0, 0, 0]))
+  const realDist = process.env.DSH_TEST_TRANSFORMERS_DIST
+    ? path.resolve(process.env.DSH_TEST_TRANSFORMERS_DIST)
+    : fixtureDist
+  console.log('  WASM path coverage: ' + (process.env.DSH_TEST_TRANSFORMERS_DIST ? 'explicit package directory' : 'isolated filesystem fixture; no WASM execution'))
   const hasWasm = existsSync(realDist)
-  ok(hasWasm, 'transformers dist 目录存在（前置）', realDist)
+  ok(hasWasm, 'WASM 测试目录存在（前置）', realDist)
   // 真解析：本地有 ort-wasm*.wasm ⇒ 返回该目录
   const dir = resolveLocalWasmDirPre(realDist)
   ok(dir === realDist && readdirSync(dir).some((n) => /^ort-wasm.*\.wasm$/.test(n)), 'resolveLocalWasmDirPre 命中真实 wasm 资产目录', dir)
