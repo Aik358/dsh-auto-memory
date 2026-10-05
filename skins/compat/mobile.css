@@ -1,0 +1,89 @@
+/* Shared by every skin. Opaque settings also protect expanded desktop portals. */
+[data-dam-theme][data-dam-theme][data-dam-theme]{
+  --dam-compat-bg:#f6f7f9;--dam-compat-face:#ffffff;--dam-compat-text:#1a1a1c;
+  --dam-compat-secondary:#55555a;--dam-compat-muted:#66666c;--dam-compat-line:#d6d9df;
+}
+[data-dam-theme][data-dam-theme][data-dam-theme][data-deep=true]{
+  --dam-compat-bg:#18191d;--dam-compat-face:#24262c;--dam-compat-text:#ededf0;
+  --dam-compat-secondary:#bfc2cb;--dam-compat-muted:#afb3be;--dam-compat-line:#454953;
+}
+[data-dam-theme=settings][data-dam-theme][data-dam-theme][data-dam-theme],
+html[data-dam-mobile] [data-dam-theme][data-dam-theme][data-dam-theme]{
+  --i5-bg:var(--dam-compat-bg)!important;--i5-surface:var(--dam-compat-face)!important;
+  --i5-face:var(--dam-compat-face)!important;--i5-side:var(--dam-compat-bg)!important;
+  --i5-text:var(--dam-compat-text)!important;--i5-secondary:var(--dam-compat-secondary)!important;
+  --i5-muted:var(--dam-compat-muted)!important;--i5-line:var(--dam-compat-line)!important;
+  --dsw-alias-bg-layer-1:var(--dam-compat-bg)!important;
+  --dsw-alias-bg-layer-2:var(--dam-compat-face)!important;
+}
+[data-dam-theme=settings][data-dam-theme][data-dam-theme][data-dam-theme] [data-i5-embedded]{
+  background:var(--dam-compat-bg)!important;color:var(--dam-compat-text)!important;
+  min-width:0;max-width:100%;box-sizing:border-box;
+}
+[data-dam-theme=settings][data-dam-theme][data-dam-theme][data-dam-theme] [data-i5-embedded][data-expanded=true]{
+  position:fixed;inset:0;z-index:2147482800;display:flex;flex-direction:column;
+  width:100%;height:100vh;height:100dvh;margin:0;overflow:hidden;
+  padding-top:var(--dsh-mobile-top-inset,env(safe-area-inset-top,0px));
+  padding-bottom:max(env(safe-area-inset-bottom,0px),var(--dsh-android-system-bottom,0px));
+}
+[data-dam-theme=settings][data-dam-theme][data-dam-theme][data-dam-theme] [data-i5-embedded]>.i5-main{
+  background:var(--dam-compat-bg)!important;min-width:0;min-height:0;overflow:hidden;
+}
+[data-dam-theme=settings][data-dam-theme][data-dam-theme][data-dam-theme] [data-i5-embedded][data-expanded=true]>.i5-main{
+  flex:1;height:auto;padding:0 16px;
+}
+[data-dam-theme=settings][data-dam-theme][data-dam-theme][data-dam-theme] [data-dam-settings]{
+  display:flex;flex-direction:column;height:100%;min-height:0;min-width:0;
+}
+[data-dam-theme=settings][data-dam-theme][data-dam-theme][data-dam-theme] .i5-settings-frame-head,
+[data-dam-theme=settings][data-dam-theme][data-dam-theme][data-dam-theme] .i5-tabs,
+[data-dam-theme=settings][data-dam-theme][data-dam-theme][data-dam-theme] [data-dam-savebar]{
+  background:var(--dam-compat-face)!important;flex:none;backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+}
+[data-dam-theme=settings][data-dam-theme][data-dam-theme][data-dam-theme] .i5-tabs{
+  position:static;display:flex;overflow-x:auto;flex-wrap:nowrap;gap:16px;margin:0 0 12px;
+}
+[data-dam-theme=settings][data-dam-theme][data-dam-theme][data-dam-theme] .i5-tabs>button{flex:none;white-space:nowrap;}
+[data-dam-theme=settings][data-dam-theme][data-dam-theme][data-dam-theme] [data-dam-settings-content]{
+  flex:1;min-height:0;min-width:0;overflow:auto;overscroll-behavior:contain;
+  padding-bottom:12px;align-content:start;grid-auto-rows:max-content;
+}
+[data-dam-theme=settings][data-dam-theme][data-dam-theme][data-dam-theme] [data-dam-savebar]{
+  position:static;margin:0;padding:12px 0;border-top:1px solid var(--dam-compat-line);box-shadow:none;
+}
+[data-dam-theme=settings][data-dam-theme][data-dam-theme][data-dam-theme] .i5-card,
+[data-dam-theme=settings][data-dam-theme][data-dam-theme][data-dam-theme] [data-dam-settings-group]{
+  background:var(--dam-compat-face)!important;border:1px solid var(--dam-compat-line)!important;
+  min-width:0;box-sizing:border-box;
+}
+[data-dam-theme=settings][data-dam-theme][data-dam-theme][data-dam-theme] .i5-setting-control>div{min-width:0;flex-wrap:wrap;}
+[data-dam-theme=settings][data-dam-theme][data-dam-theme][data-dam-theme] .i5-setting-control{min-width:0;max-width:100%;}
+[data-dam-theme=settings][data-dam-theme][data-dam-theme][data-dam-theme] .i5-engine-radios{min-width:0;flex:1 0 100%;}
+/* DeepCode's Android bridge covers its desktop mode; narrow browsers get the same fallback. */
+html[data-dam-mobile] [data-dam-theme][data-dam-theme][data-dam-theme] [data-dam-panel],
+html[data-dam-mobile] [data-dam-theme][data-dam-theme][data-dam-theme] [data-dam-tour],
+html[data-dam-mobile] [data-dam-theme][data-dam-theme][data-dam-theme] .i5-dialog{
+  background:var(--dam-compat-face)!important;color:var(--dam-compat-text)!important;
+  backdrop-filter:none!important;-webkit-backdrop-filter:none!important;
+}
+html[data-dam-mobile] [data-dam-theme][data-dam-theme][data-dam-theme] [data-dam-panel]>header,
+html[data-dam-mobile] [data-dam-theme][data-dam-theme][data-dam-theme] [data-dam-card],
+html[data-dam-mobile] [data-dam-theme][data-dam-theme][data-dam-theme] [data-dam-savebar]{
+  background:var(--dam-compat-face)!important;
+}
+html[data-dam-mobile] [data-dam-theme][data-dam-theme][data-dam-theme] [data-dam-panel]::before{display:none!important;}
+html[data-dam-mobile] [data-dam-theme] [data-dam-wb-row],
+html[data-dam-mobile] [data-dam-theme] [data-dam-wb-dir]{background:var(--dam-compat-bg)!important;}
+html[data-dam-mobile] [data-dam-theme] [data-dam-wb-detail]{overflow-wrap:anywhere;}
+html[data-dam-mobile] [data-dam-theme] [data-dam-wb-actions]{position:sticky;bottom:0;background:var(--dam-compat-face);padding:10px 0;}
+html[data-dam-mobile] [data-dam-theme] .i5-tabs>button,
+html[data-dam-mobile] [data-dam-theme] [data-dam-savebar]>button,
+html[data-dam-mobile] [data-dam-theme] .i5-settings-frame-head>button{min-height:44px;}
+html[data-dam-mobile] [data-dam-theme] [data-dam-settings-content] :is(input,select,textarea){max-width:100%;box-sizing:border-box;}
+@media(max-width:767px){
+  [data-dam-theme=settings][data-dam-theme][data-dam-theme][data-dam-theme] .i5-engine-grid,
+  [data-dam-theme=settings][data-dam-theme][data-dam-theme][data-dam-theme] [data-dam-settings-content]{grid-template-columns:minmax(0,1fr);gap:12px;}
+  [data-dam-theme=settings][data-dam-theme][data-dam-theme][data-dam-theme] .i5-settings-frame-head{padding:8px 12px;gap:8px;}
+  [data-dam-theme=settings][data-dam-theme][data-dam-theme][data-dam-theme] [data-i5-embedded][data-expanded=true]>.i5-main{padding:0 12px;}
+}

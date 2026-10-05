@@ -54,12 +54,18 @@
       var identity = useState(iter5Identity)
       var root = useRef(null)
       var slot = useRef(null)
+      var autoExpand = useRef(true)
       var expanded = useState(false)
       var target = useState(function () { return createPortal ? document.createElement('div') : null })[0]
       useEffect(function () {
         var el = slot.current
         if (!el || !target) return
-        function measure() { if (el.clientWidth > 0 && el.clientWidth < 360) expanded[1](true) }
+        function measure() {
+          if (autoExpand.current && el.clientWidth > 0 && el.clientWidth < 360) {
+            autoExpand.current = false
+            expanded[1](true)
+          }
+        }
         measure()
         var observer = typeof ResizeObserver === 'function' ? new ResizeObserver(measure) : null
         if (observer) observer.observe(el)
@@ -83,7 +89,7 @@
           if (document.querySelector('.i5-overlay-root')) return
           var el = root.current, dialog = slot.current && slot.current.closest('[role=dialog]')
           if (e.type === 'keydown' && e.key === 'Escape' && expanded[0] && !dialogState) {
-            e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation(); expanded[1](false); return
+            e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation(); autoExpand.current = false; expanded[1](false); return
           }
           if (!el || !dialog || !el.querySelector('[data-i5-dirty=true]')) return
           if (e.type === 'click' && (!dialog.contains(e.target) || el.contains(e.target) || !e.target.closest('button'))) return
@@ -112,7 +118,7 @@
             else if (!e.shiftKey && document.activeElement === nodes[nodes.length - 1]) { e.preventDefault(); nodes[0].focus() }
           } },
           h('header', { className: 'i5-settings-frame-head' }, h('strong', null, L('记忆设置', 'Memory settings')),
-            h('button', { 'data-i5-settings-return': '', onClick: function () { expanded[1](!expanded[0]) } }, expanded[0] ? L('返回宿主设置', 'Back to host settings') : L('展开设置', 'Expand settings'))),
+            h('button', { 'data-i5-settings-return': '', onClick: function () { autoExpand.current = false; expanded[1](!expanded[0]) } }, expanded[0] ? L('返回宿主设置', 'Back to host settings') : L('展开设置', 'Expand settings'))),
           h('div', { className: 'i5-main' }, h(Iter5Settings, { key: identity[0], draftScope: 'host', close: props && props.close }))))
       return h('div', { ref: slot, 'data-i5-settings-slot': '' },
         expanded[0] ? h('button', { onClick: function () { if (root.current) root.current.querySelector('button').focus() } }, L('记忆设置已展开', 'Memory settings expanded')) : null,

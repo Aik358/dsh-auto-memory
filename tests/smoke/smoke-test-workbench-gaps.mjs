@@ -79,8 +79,9 @@ ck('S1 路径收窄到 dshHome 之下（非法 ⇒ fail-soft 回默认）——�
   /path\.relative\(this\._canonPath\(dshHome\(\)\), this\._canonPath\(p\)\)[\s\S]{0,200}?return this\._canonPath\(fallback\)/.test(idx))
 ck('S1+ 归一函数存在且 verify/登记两处比较点都走归一（防字面比较回流）',
   /_canonPath\(p\) \{/.test(idx)
-  && /this\._canonPath\(cwd\) !== this\._canonPath\(this\._workbenchCwd\(\)\)/.test(idx)
-  && /norm\(this\._canonPath\(w\.path\)\) === wsPath/.test(idx))
+  && /const canonical = this\._canonPath\(p\)/.test(idx)
+  && /this\._pathKey\(cwd\) !== this\._pathKey\(this\._workbenchCwd\(\)\)/.test(idx)
+  && /this\._pathKey\(w\.path\) === wsPath/.test(idx))
 // ★2026-09-28 口径收窄：本条原断言 `set('workbenchRoot')` **且** `key: 'workbenchRoot'` 同时成立，
 //   把两件事混在一起——（a）设置页有工作台目录项（b）向导里也有同名开关。
 //   向导侧的目录项已被**更合理的布尔开关** `workbenchEnabled` 取代：旧写法把**目录路径（字符串）**
@@ -158,7 +159,7 @@ ck('S6/⑰ 工作区登记删除仅经受控入口（含三条自保判据）',
   /String\(w\.title \|\| ''\) !== '记忆中枢'/.test(idxNoCmt) &&
   /Array\.isArray\(w\.sessionIds\) \? w\.sessionIds : \[\]/.test(idxNoCmt) &&
   /if \(ids\.length > 0\) continue/.test(idxNoCmt) &&
-  /if \(norm\(w\.path\) === keep\) continue/.test(idxNoCmt))
+  /if \(!w\.path \|\| this\._pathKey\(w\.path\) === keep\) continue/.test(idxNoCmt))
 
 console.log('\nPASS ' + P + ' / FAIL ' + F)
 process.exit(F ? 1 : 0)
