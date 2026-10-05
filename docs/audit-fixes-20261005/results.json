@@ -1,0 +1,83 @@
+{
+  "baseline_commit": "4de0497a34e2c3cc5a089d02dec10b0cca0a11f2",
+  "baseline_tree": "f94b4163a05af2b6273093c99f6f08d7a14254af",
+  "upstream_main": "e260677804362fb8440ad83784d14f1515021bc8",
+  "runtime": {
+    "node": "v24.19.0",
+    "python": "3.12.14",
+    "platform": "Linux"
+  },
+  "final_smoke": {
+    "pass": 302,
+    "fail": 0,
+    "timeout": 0,
+    "seconds": 155.7
+  },
+  "new_workflow_groups": 20,
+  "negative_controls": [
+    {
+      "suite": "scoped-durability",
+      "exit": 1,
+      "failures": [
+        "FAIL F1 corrupt receiver and donor preserve both original files: Expected values to be strictly deep-equal:",
+        "FAIL F2 failed workspace persistence is visible and can be retried: Expected values to be strictly equal:",
+        "FAIL F1 rollback failure remains visible and preserves the donor copy: Expected values to be strictly equal:",
+        "FAIL F2 both failures, unknown workspace and corrupt refusal never acknowledge persistence: Expected values to be strictly equal:",
+        "FAIL F2 store accepts legacy void saves but respects explicit failed results: Expected values to be strictly equal:"
+      ]
+    },
+    {
+      "suite": "path-boundaries",
+      "exit": 1,
+      "failures": [
+        "FAIL F4 existing and missing target suffixes accept a physical DSH_HOME alias: Expected values to be strictly deep-equal:",
+        "FAIL F7 real loader rejects a symlink to the adjacent prefix directory: Expected values to be strictly deep-equal:",
+        "FAIL F7 preserve real internal files, links and declared-root aliases: Expected values to be strictly equal:",
+        "FAIL F7 POSIX source identity distinguishes case-only directory names: Expected values to be strictly deep-equal:"
+      ]
+    },
+    {
+      "suite": "host-provenance",
+      "exit": 1,
+      "failures": [
+        "FAIL F3 actual plugin restart restores prior authors and preserves them on write: Expected values to be strictly equal:",
+        "FAIL F5 actual model tool exports the bound session project: The expression evaluated to a falsy value:",
+        "FAIL F5 workspace GUI activation uses the skill owner despite a different current project: The expression evaluated to a falsy value:",
+        "FAIL F5 unknown global source remains activated without a fabricated export project: Expected values to be strictly equal:",
+        "FAIL F3 unreadable startup does not later overwrite an unseen history file: Expected values to be strictly equal:"
+      ]
+    },
+    {
+      "suite": "model-integrity",
+      "exit": 1,
+      "failures": [
+        "FAIL F6 full fetch/stream/rename path rejects cleanly terminated short model responses: Expected values to be strictly equal:",
+        "FAIL F6 valid-sized sparse artifact with malformed tokenizer JSON never becomes ready: Expected values to be strictly equal:",
+        "FAIL F6 mirror retries after integrity failure and publishes config only after all validations: Expected values to be strictly equal:",
+        "FAIL F6 cancellation never publishes successful model/config state: Expected values to be strictly equal:"
+      ]
+    }
+  ],
+  "generator": "SYNC-OK",
+  "syntax_checks": "six changed runtime modules passed",
+  "git_diff_check": "passed",
+  "pack": {
+    "files": 243,
+    "bytes": 24572165
+  },
+  "source_sha256": {
+    "lib/hub-io.js": "5212ab5de1b5d35425da4bcea4be24bfffcc655e12ad906b4308e48ae65ed5ca",
+    "lib/index.js": "0f659a409ca06ea08524b11ffadaf49e0ab28c03a849754f0022ebd81b1e082c",
+    "lib/m4-corpus.js": "a8214a9ba33372a314e73fb31e271750a0627b394e38ea177c4521ad1169fb1e",
+    "lib/procedure-store.js": "2a4b5e401eecee302e0d88591ed92d9365bdcbe1c9768cbea8a917e670475e8e",
+    "lib/python-setup.js": "21345fe559a19394de5b3c148b19e9031a4236b35eda760e36da56de8764a7f1",
+    "lib/settings-safety.js": "24ad6ef264a93abfe4d829a50ed44b4c9863b14d39a022ffe500186e0e4df146"
+  },
+  "logs_sha256": {
+    "fix-smoke-full.log": "9bc3ce2c9b4b9e13073db76b56e13e24a66f27c9262909342f0ba4b410d0dc87",
+    "fix-smoke-final.log": "f6e19d15f20f434fbfdcedde46f73fb651d464ced9370b728d8e861dcde95200",
+    "fix-npm-pack.json": "c068a3695c8a59e4af026dd289b0064f2685b1a70222cf7a1fafdcee14b4c852"
+  },
+  "issue_publication": "blocked by upstream 403 and disabled fork Issues; seven drafts prepared",
+  "live_validation": "not performed"
+}

@@ -1,0 +1,56 @@
+dsh-auto-memory 七项审计修复（2026-10-05，Asia/Shanghai）
+
+基准
+上游 main e260677804362fb8440ad83784d14f1515021bc8（v3.2.9），与已验证的整合底座 0bf909301d65c8be51231bcb63e9193236bcbbcc 合并。
+整合底座包含 PR #210/#212/#213/#215/#217/#221 的准确 HEAD，另含 #220/#222 跟进和整合测试兼容调整。
+本地基准合并提交 4de0497a34e2c3cc5a089d02dec10b0cca0a11f2；其 tree 为审计报告记录的 f94b4163a05af2b6273093c99f6f08d7a14254af。
+修复独立工作树 /workspace/dsh-auto-memory-fixes；原仓库和原审计快照保留。
+
+Issue 发布状态
+用户要求先提 issue 后修。已先准备全部七项内容并实际尝试发布：
+  上游 Aik358/dsh-auto-memory：REST/GraphQL 均返回 403 Resource not accessible by integration。
+  Fork Minervaowl7/dsh-auto-memory：Issues 关闭，创建返回 410；开启 Issues 的请求返回 403。
+尚未创建任何新 issue，不能将草稿编号 F1-F7 当作 GitHub issue 编号。已向用户说明阻挡，并将待发布内容保存在同目录 issues-prepared.json。
+发布受阻后继续完成已授权的本地修复；不把自动审核拒绝当作原因，这是 GitHub API 权限/仓库设置阻挡。
+
+修复内容
+F1（P1）：技能双库迁移在任一原件不可解析时停止，保持两库字节；健康路径仅回滚实际写过的目录，回滚失败不再伪报 rolledBack=true。
+F2（P1）：scoped save 汇总失败并返回 ok=false；procedure store 识别显式失败结果，approve/dispose 暴露 persisted=false、错误统计；旧 void-save 适配器继续兼容。
+F3（P2）：团队作者索引按 reader.ok/value 加载。未读到且未留存的原件禁止被新空状态覆盖，成功恢复后新增记录保留旧作者。
+F4（P2）：设置路径先解析既有祖先和缺失后缀，用真实目标与真实 DSH_HOME 做严格内部校验；支持 home 别名，同时拒绝越界、根本身和文件占位。
+F5（P2）：自动导出共用来源解析：工具使用绑定的会话项目；工作区技能可按 registry/current-workspace 与 workspaceRef 匹配到来源。GUI 激活全局技能缺少来源凭据时返回 project-source-unknown，激活仍成功，但不会编造宿主项目的导出物。
+F6（P2）：模型下载回读准确声明大小并调用既有摘要检查；tokenizer JSON 需可解析为对象，sentencepiece 不得为空。完整校验及配置提交成功后才置 ready，失败清理坏产物、切换镜像，取消不报成功。
+F7（P2）：语料守卫按平台的路径身份检查来源，真实文件必须是实际声明根的严格子项；拒绝相邻同前缀目录、POSIX 大小写差异和越界链接，同时支持合法内部链接及声明根别名。
+
+回归测试
+新增四个生产模块工作流套件，合计 20 个工作流组：
+  node tests/smoke/smoke-test-audit-scoped-durability.mjs
+  node tests/smoke/smoke-test-audit-path-boundaries.mjs
+  node tests/smoke/smoke-test-audit-host-provenance.mjs
+  node tests/smoke/smoke-test-audit-model-integrity.mjs
+覆盖真实 EISDIR、未知工作区、损坏拒写、donor 故障和回滚失败；实际 apply 和注册工具/HTTP 路由；symlink/junction、真实 sidecar/corpus loader；实际网络流下载以及稀疏文件完整性状态。全程只使用临时数据，不调用真实模型/团队服务。
+
+负对照
+将四个最终新增套件的 import 重定向到未修复的原审计快照，四个 Node 子进程均退出 1，并分别检出全部七项原缺陷。不是只比较源码字符串，也不是只断言新实现的内部常量。
+原快照的库迁移原件被清空、persisted 误报、团队历史丢失、目录别名拒绝、技能来源错误、模型假 ready 和语料越界均在实际路径得到对应失败。
+
+验证记录
+Linux，Node v24.19.0，Python 3.12.14。
+首轮全量 302 套件：301 PASS / 1 FAIL / 0 TIMEOUT。唯一失败是既有 m42-corpus 注入 realpath 返回“文件等于声明根”的守卫，修复时继续保留原断言，并将包含关系收紧为严格子项；原套件和新增路径套件均通过，随后复跑全量。
+最终全量结果见本目录 results.json；执行命令：
+  node tools/run-smoke.mjs --jobs=1 --timeout=90000 --exclude=-live --exclude=m79-feature-v2 --exclude=m710-fv2-emit --exclude=c4-fresh-install
+运行使用隔离 DSH_HOME 和 USERPROFILE。
+生成器 node tools/build-iter5-skin.mjs --check：SYNC-OK，client 生成产物无需改动。
+六个修改的运行模块 node --check 与 git diff --check 均通过。
+npm pack --dry-run --json：243 个文件、24572165 字节。
+源码哈希守卫只按已检查的 host 改动上移精确指纹，保留其校验；没有删除、额外排除或放宽行为测试。
+
+验证边界
+现有 CI 排除规则保持。未执行真实模型推理、DSH 实机浏览器、Android/Windows 实机或真实云服务验收。
+模型 spec 尚无冻结 SHA256，因此当前下载的生产校验为声明大小和 tokenizer JSON 形态；明确记录 size-only 降级，不将其称为加密完整性证明。正确大小的稀疏测试模型只验证该路径的状态和元数据，不代表可执行 ONNX。
+原审计的 Python golden parity fixture 缺失问题仍在，未宣称该 unittest 已通过。
+
+本地证据
+/workspace/scratch/dsh-audit-20261005/negative-controls/results.json 及四项负对照日志。
+/workspace/scratch/dsh-audit-20261005/fix-smoke-full.log（首轮）、fix-smoke-final.log（最终）、fix-npm-pack.json。
+本目录保存可公开复核的精确结果摘要和待发布 issue 内容。

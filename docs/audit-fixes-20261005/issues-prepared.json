@@ -1,0 +1,44 @@
+{
+  "publication_status": "blocked",
+  "upstream": "Aik358/dsh-auto-memory",
+  "upstream_error": "403 Resource not accessible by integration",
+  "fork": "Minervaowl7/dsh-auto-memory",
+  "fork_error": "410 Issues disabled; enabling issues returned 403",
+  "issues": [
+    {
+      "key": "F1",
+      "title": "[Bug][P1] 技能归属迁移回滚将损坏 procedures.json 原件覆盖为空库",
+      "body": "基准：上游 main e260677（v3.2.9）加 #210/#212/#213/#215/#217/#221 的审计整合树 f94b4163a05af2b6273093c99f6f08d7a14254af。底座为已发布的 Minervaowl7/dsh-auto-memory@0bf9093，另含 #220/#222 跟进。以下已在 Linux / Node 24 上用临时目录和生产模块实际复现；没有操作真实用户记忆。\n\n## 复现与实际结果\n全局 procedures.json 是包含重要条目的截断 JSON；工作区 procedures.json 有正常技能 move-me。调用 createScopedHubIoPre(...).migrate([{procedureId:'move-me',scope:'global'}])，即 UI transfer-scope 的实际调用链。\n\n迁移返回 ok:false、rolledBack:true，但全局原始字节被替换成 {\"schemaVersion\":1,\"procedures\":[]}。尚可人工恢复的原件已经被清空。\n\n## 根因\nlib/hub-io.js 中 readOne 将坏库记入 corrupt 并返回 null。接收阶段拒绝写坏库后，rollbackBoth 无条件将 null 快照替换为空库保存；它不判断该文件是否曾被本次迁移改写，且绕过 corrupt 拒写。\n\n## 修复验收\n损坏任一库时停止迁移并保留两库原始字节，不得报告虚假的回滚成功。健康库发生阶段失败时仍要恢复本次真实改写的文件；覆盖接收、捐赠、读回验证及回滚失败。"
+    },
+    {
+      "key": "F2",
+      "title": "[Bug][P1] 工作区技能写失败仍返回 persisted=true，重启后丢失",
+      "body": "基准：上游 main e260677（v3.2.9）加 #210/#212/#213/#215/#217/#221 的审计整合树 f94b4163a05af2b6273093c99f6f08d7a14254af。底座为已发布的 Minervaowl7/dsh-auto-memory@0bf9093，另含 #220/#222 跟进。以下已在 Linux / Node 24 上用临时目录和生产模块实际复现；没有操作真实用户记忆。\n\n## 复现与实际结果\n全局库可写，把工作区 procedures.json 占用为目录，制造真实 EISDIR。用实际 procedure store 创建 scope=workspace 的高风险候选并 approve。\n\napprove 返回 {ok:true,persisted:true}，persistFailures=0、lastPersistError=null；实际 scoped IO 的 wroteWorkspace=false，hub health 已有写错误。全局空库被写成功；重新加载后该技能不存在。\n\n## 根因\nlib/hub-io.js 的 scoped save 捕获写失败并在返回值记录，ok 采用 wroteGlobal || wroteWorkspace。lib/procedure-store.js 的 persist 忽略 io.save 返回值，只要没有抛异常就返回 persisted:true。\n\n## 与旧问题的关系\n#110 已增加抛异常路径的诊断。本项是 scoped IO 与 store 返回值契约不一致，现有保护没有覆盖。\n\n## 修复验收\n任一必需库未落盘时返回失败，未知工作区、损坏库拒写也不能报成功；store 必须传播 persisted:false 和错误统计。成功保存后真实重新加载能恢复批准状态，失败后内存候选可重试。"
+    },
+    {
+      "key": "F3",
+      "title": "[Bug][P2] 团队作者索引启动解包字段错误，下一次写入覆盖历史",
+      "body": "基准：上游 main e260677（v3.2.9）加 #210/#212/#213/#215/#217/#221 的审计整合树 f94b4163a05af2b6273093c99f6f08d7a14254af。底座为已发布的 Minervaowl7/dsh-auto-memory@0bf9093，另含 #220/#222 跟进。以下已在 Linux / Node 24 上用临时目录和生产模块实际复现；没有操作真实用户记忆。\n\n## 复现与实际结果\nteamEnabled=true，预置合法 team-attribution.json，items 含 old-key/prior-member。实际 apply 初始化后，engine._teamAttribution.get('old-key') 为 null。记录 new-key 后，实际落盘文件只剩新键，历史作者归因已丢失。\n\n## 根因\nlib/index.js 初始化使用 (rawA && rawA.data) ? rawA.data : rawA。lib/config-io.js 的 readJsonQuarantinePreSync 成功契约是 {ok:true,value:parsed}；包装对象传入 load 后没有 items，恢复为空索引。\n\n## 修复验收\n按 reader.ok/value 恢复；实际插件初始化和后续落盘保留旧键与新键。读取失败必须留痕，不能用错误解包产生的空状态覆盖有效历史。"
+    },
+    {
+      "key": "F4",
+      "title": "[Bug][P2] 设置路径校验拒绝 DSH_HOME 内有效的物理目录别名",
+      "body": "基准：上游 main e260677（v3.2.9）加 #210/#212/#213/#215/#217/#221 的审计整合树 f94b4163a05af2b6273093c99f6f08d7a14254af。底座为已发布的 Minervaowl7/dsh-auto-memory@0bf9093，另含 #220/#222 跟进。以下已在 Linux / Node 24 上用临时目录和生产模块实际复现；没有操作真实用户记忆。\n\n## 复现与实际结果\nDSH_HOME=/tmp/alias-home，符号链接指向 /tmp/real-home；输入 workbenchRoot=/tmp/real-home/workbench。真实目标位于 DSH_HOME 的物理目录内，但 validateSettingsPaths 返回 Directory must be inside DSH_HOME。\n\n## 根因与范围\n待合并设置实现 lib/settings-safety.js 已求 realHome，却在 realpath 判断前使用未归一的 home/target 做 lexical inside 判定。memoryRoot、userMemoryDir 同样受影响。上游 v3.2.9 工作台运行时已支持物理路径别名，保存入口却先拒绝。\n\n## 与 #222 的区别\n#222 修的是通过路径校验后，将同一物理目录误判为需复制迁移。本项在路径校验阶段拒绝 home 拼写不同的真实内部目标，尚未进入迁移判断。\n\n## 修复验收\n现存目录和缺失后缀均按 canonical home/target 校验；有效 home 别名可保存，真实越界链接、../ 逃逸、文件占位、DSH_HOME 本身仍拒绝。覆盖 Linux symlink 与 Windows junction。"
+    },
+    {
+      "key": "F5",
+      "title": "[Bug][P2] 自动导出技能以宿主 cwd 标注适用项目，忽略调用会话项目",
+      "body": "基准：上游 main e260677（v3.2.9）加 #210/#212/#213/#215/#217/#221 的审计整合树 f94b4163a05af2b6273093c99f6f08d7a14254af。底座为已发布的 Minervaowl7/dsh-auto-memory@0bf9093，另含 #220/#222 跟进。以下已在 Linux / Node 24 上用临时目录和生产模块实际复现；没有操作真实用户记忆。\n\n## 复现与实际结果\n实际注册的 memory_procedure.execute 在 agent.session.header.cwd=/tmp/.../actual-project 的会话中激活技能。宿主 process.cwd()=/workspace/dsh-auto-memory-audit。\n\n生成 SKILL.md 的适用项目却是 dsh-auto-memory-audit（宿主 cwd），完全不含实际会话项目。导出文案要求根据这个字段判断可否直接使用，错误归因会误导跨项目迁移判断。\n\n## 根因\nlib/index.js 的工具 activate 和 GUI activate 入口均将 projectPath:process.cwd() 传给 exportSkillForPre；没有根据调用会话/技能来源工作区解析。\n\n## 修复验收\n工具使用绑定的会话项目；GUI 对工作区技能使用其来源项目。来源未知不得拿宿主 cwd 冒充，应返回可见失败或明确通用/未知来源。用实际工具和真实导出文件测试不同宿主/会话 cwd，以及跨工作区 GUI 激活。"
+    },
+    {
+      "key": "F6",
+      "title": "[Bug][P2] Python 下载向导接受不完整模型和非法 tokenizer 并报告 ready",
+      "body": "基准：上游 main e260677（v3.2.9）加 #210/#212/#213/#215/#217/#221 的审计整合树 f94b4163a05af2b6273093c99f6f08d7a14254af。底座为已发布的 Minervaowl7/dsh-auto-memory@0bf9093，另含 #220/#222 跟进。以下已在 Linux / Node 24 上用临时目录和生产模块实际复现；没有操作真实用户记忆。\n\n## 复现与实际结果\n替换网络响应，完整执行实际 fetch→Readable.fromWeb→pipeline→rename→downloadModel 路径。模型 HTTP 200 正常结束，内容为 105906176 字节（101 MiB），tokenizer 响应为 not-json。\n\n向导返回 phase:ready、modelReady:true、configOk:true，而声明的模型大小为 568456694 字节。这不是可用 ONNX/tokenizer；未运行真实模型推理。\n\n## 根因与旧问题关系\nlib/python-setup.js 的 downloadModel 仅检查模型大于 100 MiB，下载 tokenizer 后直接置 ready。verifyArtifact 已定义却未接到生产路径。#105 修好了实际流写入与续传，但完整性检查仍未执行。\n\n## 修复验收\n置 ready 和写成功配置前回读准确模型大小/声明摘要、解析 tokenizer JSON；失败不得留下正式坏产物或假成功状态，应切换镜像并可重试。测试正常结束的错误长度、非法 JSON、正确产物、取消及镜像重试。"
+    },
+    {
+      "key": "F7",
+      "title": "[Bug][P2] 语料路径守卫接受相邻同前缀目录的越界符号链接",
+      "body": "基准：上游 main e260677（v3.2.9）加 #210/#212/#213/#215/#217/#221 的审计整合树 f94b4163a05af2b6273093c99f6f08d7a14254af。底座为已发布的 Minervaowl7/dsh-auto-memory@0bf9093，另含 #220/#222 跟进。以下已在 Linux / Node 24 上用临时目录和生产模块实际复现；没有操作真实用户记忆。\n\n## 复现与实际结果\n声明目录为 /tmp/.../workspace；其 MEMORY.md 链接到 /tmp/.../workspace-other/MEMORY.md。为当前 sourceFile 构建合法 sidecar 后，canonicalScopeGuard 返回 ok:true，实际 loadCorpusSnapshot 接受并返回含目录外文本的 Workspace 记录。\n\n## 根因与前提\nlib/m4-corpus.js 使用 real.startsWith(declaredRoot)，缺少目录段边界，因此 workspace-other 也通过 workspace 前缀。前提是本地符号链接和合法 sidecar，不是匿名远程读文件入口；结果是该模块声明的目录边界失效，越界内容进入可检索语料。\n\n## 修复验收\n使用真实源/声明根的 path.relative 包含判定并遵循平台大小写语义；相邻前缀、大小写不同的 POSIX 目录及越界链接应拒绝。合法内部文件、内部链接和根目录别名应可读，实际 loader 不得返回越界正文。"
+    }
+  ]
+}
