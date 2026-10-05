@@ -12,6 +12,7 @@
 | `/config` 对合法别名目录静默丢弃 | `workbenchRoot`、`memoryRoot`、`userMemoryDir` 均按物理路径判断是否位于 DSH_HOME 下 |
 | 根目录中的符号链接可绕过上述字面包含校验 | 解析后确实落到根外的路径继续拒绝，不改变原配置 |
 | 清理旧工作台时，将当前目录的另一种写法误删为旧登记 | 同一物理目录的登记保留；含会话的登记仍保留；缺失路径的登记不清理 |
+| 新一期会话建立时仍按字面路径登记，可能产生重复工作区 | 先查找同一物理目录已有的工作区并复用 id；缺失时仅登记一次 |
 | 接续会话按 cwd 查工作区时，别名匹配不到，落入未分组 | 保留 sessionIds 的优先级，再按物理路径寻找所属工作区 |
 | Linux/Android 登记比较无条件转小写，可能混淆两个目录 | Windows 忽略大小写；Android/Linux/macOS 保留路径大小写 |
 | `..phone` 等合法子目录名被当成父目录遍历 | 仅拒绝 `..` 路径段；合法子目录照常使用 |
@@ -23,6 +24,7 @@
 - 共享兼容样式由 `skins/compat/mobile.css` 提供，随生成器嵌入客户端，适用于基线、仪器、编辑和活水四款皮肤。
 - 设置页使用实色背景、清楚的文字和边框，避免宿主侧栏和设置透字。
 - 展开页使用视口高度及 Android 安全区变量。内容单独滚动，保存按钮保留在底部，页签可横向滚动。
+- 未展开的桌面设置页继续随宿主滚动，页签和保存区保持 sticky；独立滚动布局只约束展开状态。
 - 控件容器可以收缩，检索按钮可以换行；“端到端加密档位”等长选项不再撑宽页面。
 - 小屏下浮窗、引导和工作台确认弹窗使用实色背景，关闭模糊效果。
 - 检测 `window.androidBridge` 和 DeepCode 的移动布局标记，兼顾手机端的宽屏模式；普通窄浏览器也有回落。
@@ -56,5 +58,29 @@ node tests/smoke/smoke-test-workbench-gaps.mjs
 浏览器只读探针保存在 `tests/browser/deepcode-ui-probe.js`，可在打开真实记忆设置页后通过 BrowserSkill 的 evaluate 运行。测试与页面检查结果、截图位于本地忽略目录 `.qa-deepcode/`。
 
 上游标准 smoke runner 依赖的 `tools/smoke-impact.mjs` 在本次基线中缺失，因此使用隔离 DSH_HOME/HOME/USERPROFILE 的逐文件执行器运行上述相关套件。
+
+## 最终复核（PR #237）
+
+按 Open Code Review delegation 流程对照 `e260677` 审查全部差异。OCR 可审查项 12 个，逐项 reviewed，skipped 0，覆盖率 100%。另人工核对 OCR 因扩展名或二进制排除的文档、冻结源及三张截图（共 5 项）；全部差异共 17 个文件。
+
+覆盖 `.gitattributes`、`lib/client.js`、`lib/index.js`、`skins/compat/mobile.css`、`skins/iter5/surfaces.js`、`tests/browser/deepcode-ui-probe.js`、两个 DeepCode smoke、Iter5 skin smoke、workbench canon/gaps smoke、生成器。冻结源与生成客户端同步检查通过。
+
+复核发现并修复两个中等问题：
+
+1. 工作台新会话登记未按物理路径复用已有工作区，别名可造成重复分组。先加真实 MemoryEngine 回归复现失败，再合并登记入口，按物理目录复用 id。另覆盖缺失登记仅调用一次、登记失败返回诊断状态。
+2. 兼容 CSS 把未展开的桌面设置页也改成了隐藏溢出和静态保存区。Windows 实际页面中保存区滚到视口外（顶部约 1229px，视口高 624px）；现将隐藏溢出限定到展开状态，未展开恢复 sticky 页签和保存区。修复后保存区位于 507–576px，可点击。
+
+最终验证：
+
+- Windows / Node 24.15.0：46 个相关 smoke，46 PASS / 0 FAIL / 0 TIMEOUT。
+- 本机 Ubuntu WSL / Node 23.11.1：12 个针对路径、工作台、接续、主题同步和生成器的 smoke，12 PASS / 0 FAIL / 0 TIMEOUT。使用真实 Linux symlink，不仅是模拟平台变量。
+- Windows DSH 实际浏览器页面：桌面未展开、桌面展开（均 1502×624）、窄屏展开（320×720）三种状态，各四款皮肤 × 深浅主题 × 四个页签，共 96 组探针全部通过。未展开的宿主滚动、保存区可点击也纳入探针。
+- 语法、生成器同步及 diff whitespace 检查通过。未发现剩余需要修复的高/中等问题。
+
+PR 的 smoke CI 在执行测试前因缺失 `tools/smoke-impact.mjs` 失败；对照基线确认其同样导入该文件且未包含该文件，属于上游测试入口问题。上述本地结果不能替代 GitHub CI 通过。
+
+桌面未展开修复后的实际截图：
+
+![Windows 未展开设置页保留底部保存区](screenshots/deepcode-compat/settings-windows-embedded.png)
 
 **验收边界：未连接 Android 手机，未运行 DeepCode APK；浏览器尺寸检查不等于 DeepCode 真机验收。** 手机系统栏、安全区、软键盘和具体 WebView 版本仍需设备复测。未发布、未合并。

@@ -21,7 +21,7 @@ ck('workspaceRegistry.create 被调用（而非只读）',
   'idx')
 ck('注册后写 diag（可观测）', /workbench workspace registered/.test(idx))
 ck('注册失败不影响工作台（try 包住）',
-  /try \{[\s\S]{0,400}?reg\.create\(cwd[\s\S]{0,300}?catch \(eW\)/.test(idx))
+  /let wsId = ''\s+try \{[\s\S]{0,1300}?reg\.create\(cwd[\s\S]{0,300}?catch \(eW\)/.test(idx))
 
 console.log('\n══ 缺口③：greeting loop（S4 纠错后：换**子代理代次**，不换会话）══')
 ck('workbench.json 写入 greetCount', /greetCount: 0,/.test(idx))
@@ -101,7 +101,10 @@ ck('S1 workbenchRoot 走宿主路径闸（与 memoryRoot 同口径）',
 ck('S6 校验工作区登记（workspace-unregistered）', /workspace-unregistered/.test(idx))
 ck('S6 用 registry.list() 只读判定（不产生副作用）', /wbReg\.list\(\)/.test(idx))
 ck('S6 未登记时就地补登记，且先 list 查重（不重复 create）',
-  /workbench workspace re-registered/.test(idx) && /if \(!exists\) \{ const w2 = await regFix\.create/.test(idx))
+  /existing = reg\.list\(\)\.find/.test(idx)
+  && /this\._pathKey\(w\.path\) === this\._pathKey\(cwd\)/.test(idx)
+  && /else if \(reg && typeof reg\.create === 'function'\)/.test(idx)
+  && !/regFix\.create/.test(idx))
 ck('S6 弹窗展示第 ④ 行「工作区登记」', /④ 工作区登记/.test(cli))
 // S8：后端自动配置成功 ⇒ 居中弹窗**自动消失**（用户原话「或者等它自动配置完再消失」）
 ck('S8 有撤窗助手 dismissWorkbenchSetupPre', /function dismissWorkbenchSetupPre\(\)/.test(cli))

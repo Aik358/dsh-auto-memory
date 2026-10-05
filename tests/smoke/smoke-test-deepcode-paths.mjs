@@ -66,6 +66,48 @@ try {
     assert.equal(eng.resolveWorkspaceIdForSession('owned', nestedReal), 'owned-workspace')
     assert.equal(eng.resolveWorkspaceIdForSession('new-session', path.join(real, 'elsewhere')), '')
   })
+  await test('new workbench sessions reuse the registered physical workspace', async () => {
+    const fresh = new MemoryEngine()
+    fresh.configLoaded = true
+    fresh.config.workbenchEnabled = true
+    fresh.config.workbenchRoot = nestedAlias
+    let state = null, registryCreates = 0, selectedWorkspace = ''
+    const workspaces = [{ id: 'existing-phone-hub', title: '记忆中枢', path: nestedAlias, sessionIds: ['prior-period'] }]
+    const agent = { session: { id: 'new-period', header: { cwd: nestedAlias } } }
+    fresh._readWorkbench = async () => state
+    fresh._writeWorkbench = async value => { state = value }
+    fresh._agentBySessionId = () => agent
+    fresh._ctxRef = { get: key => key === 'agents' ? { create: async () => { throw Error('wrong create service') } } : null }
+    fresh._workspaceRegistry = {
+      list: () => workspaces,
+      create: async cwd => {
+        registryCreates++
+        const registered = { id: 'duplicate-hub', title: '记忆中枢', path: cwd, sessionIds: [] }
+        workspaces.push(registered)
+        return registered
+      },
+    }
+    fresh._sessionController = { create: async args => { selectedWorkspace = args.workspaceId; return { sessionId: 'new-period' } } }
+    fresh._permPresets = () => ({ current: () => 'danger-full-access', set: () => {} })
+    fresh._applyWorkbenchRoute = fresh._ensureWorkbenchVisible = async () => {}
+    const result = await fresh.ensureWorkbench({ consent: true })
+    assert.equal(result.ok, true)
+    assert.equal(registryCreates, 0, 'existing alias must not produce another registration')
+    assert.equal(selectedWorkspace, 'existing-phone-hub', 'new session belongs to the existing workspace')
+    state = { ...state, current: { sessionId: 'existing-session' } }
+    workspaces.length = 0
+    assert.equal((await fresh._verifyWorkbench(Date.now())).reason, 'workspace-unregistered')
+    const repaired = await fresh.ensureWorkbench({ consent: true })
+    assert.equal(repaired.ok, true)
+    assert.equal(registryCreates, 1, 'missing workspace must be registered exactly once')
+    assert.equal(selectedWorkspace, 'duplicate-hub')
+    state = null
+    workspaces.length = 0
+    fresh._workspaceRegistry.create = async () => { throw Error('registry unavailable') }
+    const failed = await fresh.ensureWorkbench({ consent: true })
+    assert.equal(failed.reason, 'workspace-unregistered', 'registration errors return verification status')
+    assert.equal(failed.needPrompt, true)
+  })
   await test('path identity preserves case on Android/Linux and folds it on Windows', () => {
     assert.equal(eng._pathKey(path.join(real, 'Case-Hub')) === eng._pathKey(path.join(real, 'case-hub')),
       process.platform === 'win32')
