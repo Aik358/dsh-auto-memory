@@ -39,7 +39,7 @@ t('T9a-3 ★★ unhandledRejection 必须计数（原实现只打一行日志）
 })
 
 t('T9a-4 ★ 计数必须暴露在诊断面（只计数不可见等于没留痕）', () => {
-  assert(/unhandledRejection guard #' \+ rejStat\.count/.test(IDX), '日志未带序号')
+  assert(/unhandledRejection monitor #' \+ rejStat\.count/.test(IDX), '日志未带序号')
   assert(/process\._dshAutoMemoryRejectionStat = rejStat/.test(IDX), '未挂到 process 供诊断读取')
 })
 

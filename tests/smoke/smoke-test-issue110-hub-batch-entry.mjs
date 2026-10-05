@@ -140,7 +140,7 @@ console.log('[E6] 接线守卫：批控制由宿主注入，HTTP feed 入口经�
   const feedNext = code.indexOf("if (action === ", feedAt + 1)
   const feedSeg = feedAt >= 0 ? code.slice(feedAt, feedNext < 0 ? feedAt + 900 : feedNext) : ''
   ok(feedSeg.includes('ingestJudgementRows('), "HTTP `action=feed` 仍走 ingestJudgementRows ⇒ 自动获得批量")
-  ok(feedSeg.length > 0 && feedSeg.length < 900, 'feed 分支段长度合理（实得 ' + feedSeg.length + '）')
+  ok(feedAt >= 0 && feedNext > feedAt && feedSeg.includes('committedBatch'), 'feed 分支边界有效且传播最外层提交结果')
   ok(/function ingestJudgementRows/.test(readFileSync(path.join(ROOT, 'lib', 'memory-hub.js'), 'utf8').replace(/^\s*\/\/.*$/gm, '')), 'memory-hub 侧函数在场（守卫范围）')
 }
 
