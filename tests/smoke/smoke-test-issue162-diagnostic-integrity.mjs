@@ -23,9 +23,11 @@ after(() => fs.rmSync(temp, { recursive: true, force: true }))
 const url = (name) => pathToFileURL(path.join(root, 'lib', name)).href
 const { decodeZstdFramesHead, decodeZstdFrames, scanZstdFrames } = await import(url('subagent-gc.js'))
 const extract = (marker) => {
-  const start = source.indexOf('  ' + marker)
-  assert.ok(start >= 0, 'production method exists: ' + marker)
-  assert.equal(source.indexOf('  ' + marker, start + marker.length + 2), -1, 'unique method')
+  const needle = '\n  ' + marker
+  const match = source.indexOf(needle)
+  assert.ok(match >= 0, 'production method exists: ' + marker)
+  assert.equal(source.indexOf(needle, match + needle.length), -1, 'unique class method: ' + marker)
+  const start = match + 1
   const end = source.indexOf('\n  }\n', start)
   assert.ok(end > start)
   return source.slice(start, end + 5).replace(/import\('\.\/([^']+)'\)/g, (_, name) => `import(${JSON.stringify(url(name))})`)
@@ -34,7 +36,17 @@ const methods = [
   'async searchSessionHistory(', 'lexicalSessionScanFallback(', 'async applyNoteStatusPre(',
   'async recall(', 'async readTextSafe(', 'async writeFull(', '_degradeViewSnapshot(',
   '_quotaViewSnapshot(', '_persistObservabilityPre(', 'async debugInfo(',
-].map(extract).join('\n')
+].concat([
+  '_assertTeamActionPre(', '_teamWriteActionPre(', 'get docStore()', 'get rawDocStore()',
+  'expandUserPath(', '_withMemoryMutationPre(', '_maintenanceTaskViewPre(',
+].filter(marker => source.includes('\n  ' + marker))).map(extract).join('\n')
+// Keep production policy and transaction modules in the harness. Old-source
+// counterfactuals lack these methods, so only import modules that exist there.
+const policyImports = [
+  ['team-policy.js', 'assertTeamActionPre'], ['config-lock.js', 'readConfigSnapshot'],
+  ['memory-mutation-transaction.js', 'captureMemoryMutationPre, withMemoryMutationPre'],
+].filter(([file]) => fs.existsSync(path.join(root, 'lib', file)))
+  .map(([file, names]) => `import { ${names} } from ${JSON.stringify(url(file))}`).join('\n')
 const constants = ['OBSERVER_SCHEMA_VERSION', 'ENVELOPE_RING_LIMIT', 'SEGMENT_RING_LIMIT', 'SEGMENT_RING_CHAR_BUDGET', 'SEED_REPLAY_MAX_EVENTS']
   .map((name) => { const found = source.match(new RegExp('const ' + name + ' = [^\\n]+')); assert.ok(found); return found[0] }).join('\n')
 let fixtureNumber = 0
@@ -48,7 +60,9 @@ import * as nativePromises from 'node:fs/promises'
 import path from 'node:path'
 import { homedir } from 'node:os'
 import { fileURLToPath } from 'node:url'
-import { memoryWriteError } from ${JSON.stringify(url('memory-writer.js'))}
+import { createHash } from 'node:crypto'
+import { MemoryDocumentStore, memoryWriteError } from ${JSON.stringify(url('memory-writer.js'))}
+${policyImports}
 import { persistDegradeLedgerPre, deriveQuotaVerdictPre } from ${JSON.stringify(url('degrade.js'))}
 import { decodeZstdFramesHead as realDecode } from ${JSON.stringify(url('subagent-gc.js'))}
 import { recordDiagnosticErrorPre } from ${JSON.stringify(pathToFileURL(path.join(ownRoot, 'lib/diagnostic-error.js')).href)}
@@ -73,7 +87,9 @@ ${methods}
   const { make } = await import(pathToFileURL(modulePath).href)
   const host = make(overrides)
   Object.assign(host, {
-    _degradeSink: createDegradeSinkPre(), config: {}, state: {}, _observerStats: {},
+    _degradeSink: createDegradeSinkPre(),
+    _configPath: path.join(home, 'settings.json'),
+    config: { memoryRoot: home, userMemoryDir: path.join(home, 'user'), projectMemoryDir: '.dsh-memory' }, state: {}, _observerStats: {},
     runtimes: { values: () => [] }, autoStats: { count: 0 },
     memoryIndexSnapshot: async () => ({}), _hubIoViewSnapshot: () => null,
     _factsPruneViewSnapshot: () => null, _logsViewSnapshot: () => null,
@@ -81,10 +97,8 @@ ${methods}
     userDirOf: () => path.join(home, 'user'), projectDirOf: () => path.join(home, 'workspace'),
     resolvePaths: async () => Object.fromEntries(['ws', 'projectDir', 'handoffDir', 'userFile', 'notesPath', 'logPath', 'reflectDir', 'calendarPath'].map((key) => [key, path.join(home, key)])),
     appendText: async (file, text) => { await fsp.appendFile(file, text); return text },
-    // ★合并适配（PR #161 + PR #162）：#161 把 writeFull 改为 docStore/rawDocStore 双路，
-    //   本 harness 只提供 rawDocStore 分支；写入失败语义由测试通过替换 writeFull 自身来注入。
-    rawDocStore: { replaceRaw: async (p, text) => { await fsp.mkdir(path.dirname(p), { recursive: true }); await fsp.writeFile(p, String(text == null ? '' : String(text)), 'utf8'); return { ok: true } } },
   })
+  await fsp.writeFile(host._configPath, JSON.stringify(host.config))
   return { home, host }
 }
 function todayStr() { return '2026-09-30' }
@@ -296,6 +310,16 @@ async function noteFixture(overrides) {
   await fsp.writeFile(fixture.notes, noteBody)
   return fixture
 }
+test('diagnostic harness uses actual durable team admission and document replacement', async () => {
+  const { notes, host } = await noteFixture()
+  Object.assign(host.config, { teamEnabled: true, teamId: 'synthetic-team', teamMemberId: 'synthetic-member', teamMemberRole: 'administrator' })
+  await fsp.writeFile(host._configPath, JSON.stringify({ ...host.config, teamMemberRole: 'viewer' }))
+  await assert.rejects(host.writeFull(notes, 'Must not be saved'), { code: 'team-forbidden' })
+  assert.equal(await fsp.readFile(notes, 'utf8'), noteBody)
+  await fsp.writeFile(host._configPath, JSON.stringify(host.config))
+  await host.writeFull(notes, 'Accepted administrator write')
+  assert.equal(await fsp.readFile(notes, 'utf8'), 'Accepted administrator write')
+})
 test('note status write failure is recorded, private error hidden, previous text kept, recovery truthful', async () => {
   const { notes, host } = await noteFixture()
   const write = host.writeFull.bind(host)

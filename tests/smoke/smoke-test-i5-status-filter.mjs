@@ -25,6 +25,7 @@ import {
   filterCurrentHitsPre,
 } from '../../lib/tier-layer-inject.js'
 import { isCurrentPre, L0_STATUSES } from '../../lib/l0-extract.js'
+import { filterSensitiveHits } from '../../lib/injection-policy.js'
 
 let pass = 0, fail = 0
 const ok = (cond, name) => { if (cond) { pass++; console.log('  ok   - ' + name) } else { fail++; console.error('  RED  - ' + name) } }
@@ -137,12 +138,27 @@ console.log('[I5-6] 接线可达性（源码级）：注入路径真的把 hits 
   // T0-3 给这个调用补了 `extraDegradations` 并改成多行 ⇒ 原断言变红，但那**不是行为回归**
   // （接线还在），只是"把源码排版当断言"。改为断言**参数语义**（hits 确实被传入）。
   const inj = idx.slice(idx.indexOf('buildTierLayerInjection(agent) {'), idx.indexOf('renderMemoryDynamic(context) {'))
-  const call = inj.slice(inj.indexOf('composeTieredInjectionPre({'))
-  const callArgs = call.slice(0, call.indexOf('})') + 1)
+  // The sources map contains its own `})`; stop at the result consumer rather
+  // than mistaking that nested closure for the end of the assembler call.
+  const callAt = inj.indexOf('composeTieredInjectionPre({')
+  const endAt = inj.indexOf('s.tier0LayerText = res.text', callAt)
+  ok(callAt >= 0 && endAt > callAt, '装配器调用与结果消费均存在')
+  const callArgs = inj.slice(callAt, endAt)
   ok(/\bhits\b/.test(callArgs), 'index.js 的 buildTierLayerInjection 把 hits 交给装配器（I5 在真实注入路径上生效）')
   ok(/\bhits,/.test(callArgs) || /hits\s*:/.test(callArgs), 'hits 作为实参传入，不是仅在同名字段里出现')
   ok(inj.includes('const hits = ') && inj.includes('selectReusableTierHitsPre'),
     'hits 先过 T0-2 版本门（复用失败则为空 ⇒ 本轮不下探 Tier-1）')
+  ok(/const admitted = filterSensitiveHits\(reuse\.reuse \? reuse\.hits : \[\], sources\)/.test(inj)
+    && /const hits = admitted\.kept/.test(inj), '父来源敏感准入后的 hits 才交给共同状态过滤')
+  const safe = filterSensitiveHits([
+    { memoryId: ID('1'), status: 'current', sourceRef: 'source', lineStart: 2, lineEnd: 2, excerpt: 'SYNTHETIC_SENSITIVE' },
+    { memoryId: ID('2'), status: 'retracted', sourceRef: 'source', lineStart: 4, lineEnd: 4, excerpt: 'Ordinary retracted' },
+    { memoryId: ID('3'), status: 'current', sourceRef: 'source', lineStart: 5, lineEnd: 5, excerpt: 'Ordinary current', score: 1 },
+  ], [{ path: 'source', text: '## 凭据\nSYNTHETIC_SENSITIVE\n## 普通\nOrdinary retracted\nOrdinary current' }])
+  const composed = composeTieredInjectionPre({ catalog, hits: safe.kept, question: '再看看' })
+  ok(composed.text.includes('Ordinary current'), '敏感过滤后普通 current 仍真正下探')
+  ok(!composed.text.includes('Ordinary retracted') && !composed.text.includes('SYNTHETIC_SENSITIVE'),
+    '敏感准入不会撤掉非 current 状态过滤')
   // 过滤是**无条件**的：不受 tier0CatalogEnabled / criteriaGate 这类开关影响 ——
   // 「新旧开关不能撤掉共同保护」（ROUND3 §3.7 第 4 条）。
   const mod = readFileSync(new URL('../../lib/tier-layer-inject.js', import.meta.url), 'utf8')
