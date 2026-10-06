@@ -4,10 +4,10 @@
  */
 import assert from 'node:assert/strict'
 import { test, after } from 'node:test'
-import { mkdtemp, writeFile, readFile, rm } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
+import { mkdtemp, writeFile, readFile, rm, mkdir } from 'node:fs/promises'
+import { tmpdir, homedir } from 'node:os'
 import path from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 
 const root = path.resolve(process.env.AUDIT_SOURCE_ROOT || fileURLToPath(new URL('../../', import.meta.url)))
 const sandbox = await mkdtemp(path.join(tmpdir(), 'calendar254-'))
@@ -21,6 +21,14 @@ after(async () => {
   await rm(sandbox, { recursive: true, force: true })
 })
 const source = (await readFile(path.join(root, 'lib/index.js'), 'utf8')).replace(/\r\n/g, '\n')
+const load = name => import(pathToFileURL(path.join(root, 'lib', name)).href)
+const { withCalendarLock } = await load('calendar-lock.js')
+const { writeTextAtomicPre } = await load('config-io.js')
+const { readConfigSnapshot } = await load('config-lock.js')
+// Only load gates declared by this production version; the old-source negative
+// control has no such call sites. Never replace an active gate with a fixture.
+const mutation = source.includes("from './memory-mutation-transaction.js'") ? await load('memory-mutation-transaction.js') : {}
+const policy = source.includes("from './team-policy.js'") ? await load('team-policy.js') : {}
 function method(signature, optional = false) {
   const marker = '  ' + signature
   const start = source.indexOf(marker)
@@ -33,13 +41,19 @@ function method(signature, optional = false) {
 const methods = [
   method('parseCalendar(text) {'), method('renderCalendar(entries) {'),
   method('calendarEditTextPre(text, action, item) {', true),
+  method('expandUserPath(p) {'),
+  method('_noteSelfWriteAtPre(p) {'),
+  method('_withMemoryMutationPre(file, job, admission) {', true),
+  method('_assertTeamActionPre(action, durable = readConfigSnapshot(this._configPath) || this.config) {', true),
+  method('_teamWriteActionPre(p) {', true),
+  method('async writeFullRaw(p, text) {'),
   method('async _calendarTransactionPre(agent, job) {'),
   method('async calendarAdd(item, agent) {'),
   method('async calendarDone(date, time, title, agent) {'),
   method('async calendarRemove(date, time, title, agent) {'),
 ].join('\n')
-const Harness = new Function('readFile', 'todayStr', 'withCalendarLock',
-  'return class CalendarHarness {\n' + methods + '\n}')(readFile, () => '2026-10-07', async (_file, job) => job())
+const Harness = new Function('readFile', 'writeFile', 'mkdir', 'path', 'homedir', 'todayStr', 'withCalendarLock', 'writeTextAtomicPre', 'readConfigSnapshot', 'withMemoryMutationPre', 'assertTeamActionPre',
+  'return class CalendarHarness {\n' + methods + '\n}')(readFile, writeFile, mkdir, path, homedir, () => '2026-10-07', withCalendarLock, writeTextAtomicPre, readConfigSnapshot, mutation.withMemoryMutationPre, policy.assertTeamActionPre)
 const first = { date: '2026-10-07', time: '09:00', quadrant: '未分类', title: 'Appointment', note: 'Call Alice' }
 async function fixture(content = '') {
   const dir = await mkdtemp(path.join(sandbox, 'case-'))
@@ -47,14 +61,19 @@ async function fixture(content = '') {
   if (content) await writeFile(calendarPath, content)
   const engine = new Harness()
   engine.state = {}
+  engine.config = { memoryRoot: path.join(dir, 'projects'), userMemoryDir: dir, projectMemoryDir: '.dsh-memory', teamEnabled: false }
+  engine._configPath = path.join(dir, 'settings.json')
+  await writeFile(engine._configPath, JSON.stringify(engine.config), 'utf8')
+  if (mutation.bindMemoryDirectoryPre) mutation.bindMemoryDirectoryPre(engine, dir, 'user')
   let writes = 0
   engine.resolvePaths = async () => ({ calendarPath })
   engine.writeFullRaw = async (file, text) => {
     assert.equal(file, calendarPath)
+    await Harness.prototype.writeFullRaw.call(engine, file, text)
     writes++
-    await writeFile(file, text, 'utf8')
   }
-  return { engine, read: () => readFile(calendarPath, 'utf8').catch(e => { if (e.code === 'ENOENT') return ''; throw e }), writes: () => writes }
+  return { engine, read: () => readFile(calendarPath, 'utf8').catch(e => { if (e.code === 'ENOENT') return ''; throw e }), writes: () => writes,
+    saveConfig: async patch => { engine.config = { ...engine.config, ...patch }; await writeFile(engine._configPath, JSON.stringify(engine.config), 'utf8') } }
 }
 test('new multiline and ambiguous title are explicitly rejected before any write', async () => {
   for (const changed of [
@@ -119,3 +138,17 @@ test('unparseable new date/time/quadrant is rejected without clearing existing f
     assert.equal(f.writes(), 0)
   }
 })
+if (mutation.withMemoryMutationPre && policy.assertTeamActionPre) {
+  test('integrated migration and team gates reject before mutation using the actual production boundaries', async () => {
+    const f = await fixture('original markdown\n')
+    f.engine._settingsMigrationActive = true
+    await assert.rejects(f.engine.calendarAdd(first), error => error.code === 'SETTINGS_MIGRATION_ACTIVE')
+    assert.equal(f.writes(), 0)
+    assert.equal(await f.read(), 'original markdown\n')
+    f.engine._settingsMigrationActive = false
+    await f.saveConfig({ teamEnabled: true, teamMemberId: 'fixture-viewer', teamMemberRole: 'viewer' })
+    await assert.rejects(f.engine.calendarAdd(first), error => error.code === 'team-forbidden')
+    assert.equal(f.writes(), 0)
+    assert.equal(await f.read(), 'original markdown\n')
+  })
+}
