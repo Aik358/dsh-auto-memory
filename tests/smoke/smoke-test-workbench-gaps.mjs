@@ -95,11 +95,16 @@ ck('S1 _workbenchCwd 读 config.workbenchRoot',
   //   越界与绝对路径一律 fail-soft 回默认」。
   ck('S1 路径收窄到 dshHome 之下（非法 ⇒ fail-soft 回默认）——归一形态',
     /path\.relative\(this\._canonPath\(dshHome\(\)\), this\._canonPath\(p\)\)[\s\S]{0,400}?return this\._canonPath\(fallback\)/.test(idx))
+  // ★2026-10-06 批次 V2-1 判据演进：realpath 实现已收敛到 lib/file-boundary.js 单一来源，
+  //   引擎的归一函数改为**委托**（原两处自带实现细节随之消失）。**判据意图不变**：仍钉住
+  //   「归一函数存在 + verify/登记两处比较点都走归一」，只是按委托形态取证（改回字面比较仍必红）。
+  //   ⚠️ 注释不得逐字抄回被替换的旧写法——否则会把「旧写法已归零」类断言喂饱（本仓踩过）。
   ck('S1+ 归一函数存在且 verify/登记两处比较点都走归一（防字面比较回流）',
-    /_canonPath\(p\) \{/.test(idx)
+    /_canonPath\(p\) \{ return canonPath\(p\) \}/.test(idx)
     && /this\._pathKey\(cwd\) !== this\._pathKey\(this\._workbenchCwd\(\)\)/.test(idx)
     && /this\._pathKey\(w\.path\) === wsPath/.test(idx)
-    && /const canonical = this\._canonPath\(p\)/.test(idx))
+    && /_pathKey\(p\) \{ return pathKey\(p\) \}/.test(idx)
+    && /export function canonPath\(p\) \{/.test(fs.readFileSync(path.join(ROOT, 'lib/file-boundary.js'), 'utf8')))
 // ★2026-09-28 口径收窄：本条原断言 `set('workbenchRoot')` **且** `key: 'workbenchRoot'` 同时成立，
 //   把两件事混在一起——（a）设置页有工作台目录项（b）向导里也有同名开关。
 //   向导侧的目录项已被**更合理的布尔开关** `workbenchEnabled` 取代：旧写法把**目录路径（字符串）**

@@ -18,6 +18,9 @@ import path from 'node:path'
 import os from 'node:os'
 import vm from 'node:vm'
 import { MemoryEngine } from '../lib/audit-engine.mjs'
+// ★V2-1：_pathKey 已改为委托公共工具（lib/file-boundary.js 的 pathKey → canonPath），
+//   本段的 vm 抽取执行需要该模块函数在作用域内（否则 ReferenceError）。
+import { canonPath, pathKey } from '../../lib/file-boundary.js'
 
 let pass = 0, fail = 0
 const ok = (c, m, extra) => { if (c) { pass++; console.log('  ok   - ' + m) } else { fail++; console.error('  FAIL - ' + m + (extra === undefined ? '' : '  ' + extra)) } }
@@ -105,11 +108,17 @@ try {
   console.log('══ ⑤ _pathKey 平台大小写收敛（vm 换 platform 真跑函数体）══')
   {
     ok(eng._pathKey('') === '', '_pathKey(空串) === 空串（不因归一而伪造路径）')
-    const fnSrc = '({' + eng._pathKey.toString() + '})._pathKey'
+    // ★V2-1 适配：_pathKey 已委托给公共工具（lib/file-boundary.js 的 pathKey），
+    //   '({\'' + '...\'})._pathKey' 抽出的函数体现在**只含 return pathKey(p)**，在 vm 里捕获的是真·模块函数，
+    //   '假 process.platform 对它无效（实测 linux/darwin 也被折叠成 true ⇒ 实测值必然失真）。
+    //   改为对**公共工具本体**做同一 vm 换平台实验（它才是平台大小写判据的唯一来源）；
+    //   委托关系与调用点行为另由 ⑦ 的形态守卫 + 真路径断言覆盖。
+    const modSrc = fs.readFileSync('lib/file-boundary.js', 'utf8')
+    const keyFnSrc = modSrc.slice(modSrc.indexOf('export function pathKey'), modSrc.indexOf('/** 组件级包含判定'))
+      .replace('export function pathKey', 'function pathKey')
     for (const platform of ['linux', 'darwin', 'win32']) {
-      const key = vm.runInNewContext(fnSrc, { process: { platform } })
-      const host = { _canonPath: (v) => v }
-      const same = key.call(host, '/phone/Case-Hub') === key.call(host, '/phone/case-hub')
+      const key = vm.runInNewContext(keyFnSrc + '\n;pathKey', { process: { platform }, path: await import('node:path').then((m) => m.default), canonPath: (v) => v })
+      const same = key('/phone/Case-Hub') === key('/phone/case-hub')
       ok(same === (platform === 'win32'), '⑤ platform=' + platform + ' ⇒ 大小写折叠=' + (platform === 'win32') + '（实得 ' + same + '）')
     }
     ok(eng._pathKey(realDsh) === eng._pathKey(aliasDsh), '⑤ 别名与真路径的 pathKey 相等（归一 + 平台口径合并判据）')
