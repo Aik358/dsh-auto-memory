@@ -92,6 +92,8 @@ try {
 
 HTTP 方法、字段及写入门以对应 handler 为准；只读核对可先取 `/state` 与 `/config`。
 
+`GET /api/dsh-auto-memory/debug` 的 `maintenanceTasks` 提供本进程最近一次固化和维护回执，包括任务键、尝试时间、运行状态、确认写入数和脱敏错误。`failed` 表示未确认写入，`partial` 表示已有写入后仍存在失败。定时任务每天只自动尝试一次，避免重复模型调用或重复部分写入；排除故障后，可显式使用 `memory_consolidate` 或 `memory_maintain` 恢复。相同会话和工作区的恢复回执带 `recoveryOf`。回执随进程重启清空，开始和终结状态也写入既有诊断日志。
+
 ## 真实宿主验证
 
 使用隔离 profile / home 和测试素材，记录代码身份、监听地址与实际加载路径。
