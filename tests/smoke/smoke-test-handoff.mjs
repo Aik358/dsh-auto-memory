@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 import { withCalendarLock, canonicalCalendarPath } from '../../lib/calendar-lock.js'
+import { stripSensitiveSections } from '../../lib/injection-policy.js'
+import { assertTeamActionPre } from '../../lib/team-policy.js'
 import { writeTextAtomicPre } from '../../lib/config-io.js'
 import { readPlanPre, planRevisionPre, anchoredPlanPre, archivePlanPre, conflictPlanPre, preparePlanPre } from '../../lib/plan-store.js'
 /** [handoff] M-CM1 交接白板回归(PLAN.md 白板层 + 四段式交接账本 + 注入首位)。
@@ -71,6 +73,7 @@ function makeFakeEngine() {
     // （门的行为由 `smoke-test-t0-8-mutation-gate.mjs` 专测；门在真实引擎上的接线由该套件的
     //  T0-8B「三条写入路径都不能绕过」断言锁）。
     checkMutationPre() { return { ok: true } },
+    _assertTeamActionPre(action) { return assertTeamActionPre(this.config || {}, action) },
     wbWsKeyPre: () => 'test-ws',
     // P2 sidecar(2026-09-16)桩: writeHandoffLedger/writePlanSnapshot 写盘后会调 writeSidecarEntryPre
     // (boardMode 默认 legacy 时它是 no-op, 但抽取式沙箱里 this 上必须有该方法, 否则 TypeError)。
@@ -155,7 +158,7 @@ const grab = (name) => { // 逐行扫描+(){} 混合配平(兼容 Object.freeze 
   }
   return buf
 }
-const helpers = ['DEFAULT_PROMPT_LAYERS', 'neutralizePromptTemplateVars', 'truncateHead', 'truncateLinesBounded', 'stripSensitiveSections', 'sanitizeForInjection', 'scrubJunkLines', 'reflectionDigest', 'mojibakeDensity', 'MOJIBAKE_RE', 'detectStutter', 'hasStutter', 'BASE64_LINE', 'todayStr'] // ★2026-09-29 hasStutter 改调 detectStutter(P0-2 语种盲区修复),抽取清单同步补符号,否则 eval 沙箱 ReferenceError
+const helpers = ['DEFAULT_PROMPT_LAYERS', 'neutralizePromptTemplateVars', 'truncateHead', 'truncateLinesBounded', 'sanitizeForInjection', 'scrubJunkLines', 'reflectionDigest', 'mojibakeDensity', 'MOJIBAKE_RE', 'detectStutter', 'hasStutter', 'BASE64_LINE', 'todayStr'] // ★2026-09-29 hasStutter 改调 detectStutter(P0-2 语种盲区修复),抽取清单同步补符号,否则 eval 沙箱 ReferenceError
 // ★T7-a（2026-09-20 · 上游 #86-4）：水位/接续默认值已抽为**模块级常量**，本套件同样是
 //   "源码抽取 + new Function"执行 `renderMemoryDynamic`，故必须显式注入这两个自由变量，
 //   否则抛 `ReferenceError: DEFAULT_WATER_LEVEL_THRESHOLD is not defined`（实测已发生）。
@@ -170,7 +173,7 @@ const helperCode = helpers.map((h) => grab(h)).join('\n')
 // 都必须显式提供，否则测的就不是真代码。
 const envelopeCode = readFileSync(path.resolve(HERE, '..', '..', 'lib', 'memory-envelope.js'), 'utf8')
   .replace(/^export /gm, '')
-const renderFn = new Function(helperCode + '\n' + envelopeCode + '\nreturn {' + dynSrc + '};')()['renderMemoryDynamic']
+const renderFn = new Function('stripSensitiveSections', helperCode + '\n' + envelopeCode + '\nreturn {' + dynSrc + '};')(stripSensitiveSections)['renderMemoryDynamic']
 const run = (fake) => renderFn.call(fake, {})
 const out1 = run(makeFakeThis(PLAN_LONG, '# 交接账本 · 2026-09-06 12:00\n## 任务状态\n第二阶段', true))
 const iPlan = out1.indexOf('白板 PLAN.md')
