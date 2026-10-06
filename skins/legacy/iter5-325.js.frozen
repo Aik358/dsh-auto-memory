@@ -715,7 +715,9 @@
     }
     // Each registered surface owns a theme boundary, including sibling overlays.
     function Iter5Surface(props) {
-      var deep = useIter5Theme()[1]
+      var skinDeep = useIter5Theme()[1]
+      var hostDeep = useDeepTheme()
+      var deep = props.kind === 'settings' ? hostDeep : skinDeep
       var tick = useTick()
       useEffect(function () { return controller.subscribe(tick[1]) }, [])
       useEffect(function () {
@@ -750,7 +752,8 @@
       useEffect(function () {
         var el = slot.current
         if (!el || !target) return
-        function measure() { if (el.clientWidth > 0 && el.clientWidth < 360) expanded[1](true) }
+        var measured = false
+        function measure() { if (!measured && el.clientWidth > 0) { measured = true; if (el.clientWidth < 360) expanded[1](true) } }
         measure()
         var observer = typeof ResizeObserver === 'function' ? new ResizeObserver(measure) : null
         if (observer) observer.observe(el)

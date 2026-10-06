@@ -523,7 +523,8 @@ settings = replaceT(settings, "L('balanced 3×40', 'balanced 3×40')", "L('平�
 settings = replaceT(settings, "L('dense 6×20', 'dense 6×20')", "L('广泛：6 条 × 20 字符', 'Broad: 6 × 20 characters')", 'G0-2/settings:374 回忆预算「dense 6×20」')
 settings = replaceT(settings, "L('custom 自定义', 'custom')", "L('自定义', 'Custom')", 'G0-2/settings:374 回忆预算「custom 自定义」')
 settings = replaceT(settings, "['lexical', t('semLexOnly')], ['js', t('semJs')], ['python', t('semPy')]", "['lexical', L('按关键词查找（无需下载模型）', 'Keywords (no model download)')], ['js', L('按意思查找（需本地模型）', 'Meaning (requires a local model)')], ['python', L('Python 搜索工具（需单独安装）', 'Python search tools (separate setup)')]", 'G0-2/settings:375 检索模式短标三元组')
-const generated = begin + '\n    var ITER5_CSS = ' + JSON.stringify(css) + '\n' + ui + '\n' + readSkin('settings-copy.js') + '\n' + settings + storage + skills + stats + end + '\n'
+const hostSettingsCss = readSkin('host-settings.css').trim()
+const generated = begin + '\n    var DAM_HOST_SETTINGS_CSS = ' + JSON.stringify(hostSettingsCss) + '\n    var ITER5_CSS = ' + JSON.stringify(css) + '\n' + ui + '\n' + readSkin('settings-copy.js') + '\n' + settings + storage + skills + stats + end + '\n'
 const seam = '    // ===================== dam-skin:end (v4) ====================='
 // ★2026-10-01 修（病根 2）：seam 插入时**一并写出唯一的标记对**，让 generated 恰好被
 //   BEGIN/END 包住。这样每轮产物里产物块恒为 1 份 ⇒ 幂等；
@@ -831,7 +832,7 @@ if (!client.includes('F6 · 共享样式按皮肤分派') && !client.includes('H
       indent + 'useEffect(function () {',
       indent + '  // ★2026-09-30（H3-1 · 单一出口）：内容一律问 damSharedSurfaceCss()，并**无条件同步**；',
       indent + '  //   两个 Surface 谁先挂载都收敛到同一张表，消除「先挂者定内容」的漂移。',
-      indent + '  var damWantCss = damSharedSurfaceCss()',
+      indent + "  var damWantCss = damSharedSurfaceCss() + '\\n' + DAM_HOST_SETTINGS_CSS",
       indent + '  if (!damWantCss) return function () {}',
       indent + "  var style = document.getElementById('dam-shared-ui-style')",
       indent + '  if (!style) {',

@@ -1,9 +1,8 @@
     // Each registered surface owns a theme boundary, including sibling overlays.
     function Iter5Surface(props) {
-      // ★H36：契约（L10374）要求皮肤内取深/浅一律同源；原 settings 分支直取宿主 ⇒ 设置页
-      //   永远不随皮肤档变化（用户实报「这也没啥变化」）。四类外壳统一走 skinDeep。
       var skinDeep = useIter5Theme(), skinStyle = useIter5Style()
-      var deep = skinDeep
+      var hostDeep = useDeepTheme()
+      var deep = props.kind === 'settings' ? hostDeep : skinDeep
       var tick = useTick()
       var boundary = useRef(null)
       useEffect(function () { return controller.subscribe(tick[1]) }, [])
@@ -59,7 +58,8 @@
       useEffect(function () {
         var el = slot.current
         if (!el || !target) return
-        function measure() { if (el.clientWidth > 0 && el.clientWidth < 360) expanded[1](true) }
+        var measured = false
+        function measure() { if (!measured && el.clientWidth > 0) { measured = true; if (el.clientWidth < 360) expanded[1](true) } }
         measure()
         var observer = typeof ResizeObserver === 'function' ? new ResizeObserver(measure) : null
         if (observer) observer.observe(el)
