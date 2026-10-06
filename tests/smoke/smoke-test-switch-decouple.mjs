@@ -88,8 +88,16 @@ const assembleCarryPreFn = new Function(
   extractFn('export function assembleCarryPre({ head = [], nav = [], bulk = [], budget = 18000 } = {}) {')
     .replace(/^export\s+/, '') + '\nreturn assembleCarryPre;'
 )()
+// ★2026-10-06 批次 A-1f② 配套：armAutoContinue 现在带 `isSubAgentSession(agent)` 守卫（子代理不得 arm）。
+//   本套件用「源码抽取 + new Function」执行方法体 ⇒ 该自由变量必须**显式注入**，否则方法体抛
+//   `isSubAgentSession is not defined` 被自身 catch 吞掉、armed 永不落位 ⇒ D1b 假红（实测已发生）。
+//   注入的是**从生产源码同源抽出的真函数**（不是放宽判据的桩）：判据本身就该是真件。
+const SESSION_SUBAGENT_ORIGIN = new Function(grab('SESSION_SUBAGENT_ORIGIN') + '\nreturn SESSION_SUBAGENT_ORIGIN;')()
+const sessionHeaderOfFn = new Function(grab('sessionHeaderOf') + '\nreturn sessionHeaderOf;')()
+const isSubAgentSessionFn = new Function('sessionHeaderOf', 'SESSION_SUBAGENT_ORIGIN',
+  grab('isSubAgentSession') + '\nreturn isSubAgentSession;')(sessionHeaderOfFn, SESSION_SUBAGENT_ORIGIN)
 const bindMethod = (header, fake, extra) => {
-  const names = ['path', 'existsSync', 'mkdir', 'writeFile', 'readdir', 'stat', 'handoffStamp', 'nowHm', 'assembleCarryPre',
+  const names = ['path', 'existsSync', 'mkdir', 'writeFile', 'readdir', 'stat', 'handoffStamp', 'nowHm', 'assembleCarryPre', 'isSubAgentSession',
     // ★T7-a（2026-09-20 · 上游 #86-4）：水位/接续默认值已抽为**模块级常量**。
     //   本套件用"源码抽取 + new Function"执行方法体 ⇒ 被抽出的代码里的自由变量必须在这里显式注入，
     //   否则会抛 `DEFAULT_AUTO_CONTINUE_THRESHOLD is not defined`（实测已发生）。
@@ -98,7 +106,7 @@ const bindMethod = (header, fake, extra) => {
     // #207: this unit checks switch eligibility only; real disk views/recovery
     // are exercised by smoke-test-issue207-routes with complete production apply.
     'continuedSourceState', 'continuedSourceView']
-  const vals = [path, SRC && null, mkdir, writeFile, readdir, stat, handoffStampFn, nowHmFn, assembleCarryPreFn, 0.75, 0.75, () => null, () => null]
+  const vals = [path, SRC && null, mkdir, writeFile, readdir, stat, handoffStampFn, nowHmFn, assembleCarryPreFn, isSubAgentSessionFn, 0.75, 0.75, () => null, () => null]
   vals[1] = (p) => { try { return readFileSync(p) != null } catch (e) { return false } }
   for (const k of Object.keys(extra || {})) { names.push(k); vals.push(extra[k]) }
   const obj = new Function(...names, 'return {' + extractFn(header) + '};')(...vals)
@@ -166,6 +174,11 @@ console.log('[switch-decouple] D1b 行为:接续资格只看 autoContinueEnabled
   })
   arm({ session: { id: 'session-arm' } }, { ratio: 0.95, tokens: 950, window: 1000, source: 'manual', modelKnown: true, hard: false })
   ok(!!(eng._autoContState && eng._autoContState.armed), 'armAutoContinue 在白板关时代照常落 armed(闸不再被白板开关挡住)')
+  // ★A-1f② 负路径：子代理会话**不得** arm（否则接续走通用 session 路由必被宿主拒，且失败不落闩 ⇒ 反复报错）。
+  const engSub = Object.assign({}, eng, { _autoContState: {} })
+  const armSub = bindMethod('armAutoContinue(agent, wl, opts = null) {', engSub, { diag: () => {}, shouldArmAutoContinuePre })
+  armSub({ session: { id: 'session-sub', header: { origin: 'subagent' } } }, { ratio: 0.95, tokens: 950, window: 1000, source: 'manual', modelKnown: true, hard: false })
+  ok(!(engSub._autoContState && engSub._autoContState.armed), '★ 子代理会话不得 arm（A-1f② 守卫）')
 }
 
 console.log('[switch-decouple] D2 行为:真实 checkWaterLevel —— 白板关仍测量,但不写 PLAN/账本产物(镜像保护)')

@@ -155,10 +155,15 @@ function makeEngine(opts) {
     // 纪律:此后凡被抽出的函数**新增外部依赖**(模块级绑定/全局),都必须加进这张注入表,
     // 否则同样以"静默不生效"的形式失败。
     const obj = new Function('diag', 'AbortSignal', 'shouldArmAutoContinuePre',
+      // ★2026-10-06 批次 A-1f② 配套（逐 hunk 移植自 PR#217）：armAutoContinue 新增外部依赖
+      //   isSubAgentSession（子代理会话不得 arm）。抽出的方法体在 new Function 里重建，作用域中
+      //   没有模块级绑定 ⇒ 必须一并注入，否则 ReferenceError 被该方法自身的 catch 吞掉，
+      //   表现为「水位达标却不 arm」（同 2026-09-14 shouldArmAutoContinuePre 的教训）。
+      'isSubAgentSession',
       'DEFAULT_AUTO_CONTINUE_THRESHOLD', 'DEFAULT_WATER_LEVEL_THRESHOLD', 'contTitleStampPre', 'continuationProbePre', 'continuationRitualEndPre',
       'acquireSharedStateLock', 'continuedSourceFile', 'continuedSourceView', 'continuedSourceState', 'reserveContinuedSource', 'releaseContinuedSource', 'setContinuedSourceTarget', 'CONTINUE_CREATE_FALLBACK_ALLOWED_CODES',
       'return {' + extractFn(h) + '};')(
-      () => {}, { timeout: () => undefined }, shouldArmAutoContinuePre, 0.75, 0.75, contTitleStampPre, continuationProbePre, continuationRitualEndPre,
+      () => {}, { timeout: () => undefined }, shouldArmAutoContinuePre, (x) => { const h = x && x.session && x.session.header; if (!h) return false; if (String(h.origin || '') === 'subagent') return true; const d = Number(h.delegationDepth); return Number.isFinite(d) && d > 0 }, 0.75, 0.75, contTitleStampPre, continuationProbePre, continuationRitualEndPre,
       async () => () => {}, () => '/virtual/source', () => null, (file, sid) => eng._continuedSessions.has(sid) ? {status:'done'} : null, async () => 'fixture-token', async () => {}, async () => {}, ['workspace/not-found'])
     const key = Object.keys(obj)[0]
     fns[key] = obj[key].bind(eng)
