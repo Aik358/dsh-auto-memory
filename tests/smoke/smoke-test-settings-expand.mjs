@@ -26,7 +26,9 @@ for (const [index, code] of surfaces.entries()) {
     useIter5Style: () => 'legacy', useTick: () => [0, () => {}],
     useRef: () => ({ current: null }), useEffect: fn => effects.push(fn),
     createPortal: node => node, controller: { subscribe: () => () => {} },
-    document, FONT_SCALE_VALUES: { normal: '1' }, fontScale: 'normal',
+    document, window: { addEventListener() {}, removeEventListener() {} },
+    damSkinEnsureCss() {}, damSkinCssFlavor: () => 'legacy',
+    FONT_SCALE_VALUES: { normal: '1' }, fontScale: 'normal',
     damSharedSurfaceCss: () => 'skin-base', DAM_HOST_SETTINGS_CSS: hostCss,
   })
   for (hostDeep of [false, true]) for (skinDeep of [false, true]) {

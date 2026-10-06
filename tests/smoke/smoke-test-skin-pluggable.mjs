@@ -94,7 +94,7 @@ assert.ok(!legacyLineNoLegacy.includes('ITER5_CSS'), 'legacy branch line must no
 console.log('PASS css dispatch: flavor branches are mutually exclusive and baseline carries the shell')
 
 // ---- 3) ensure 重建判据（P0 回归拦截）----
-const ensureBlock = block('    function damSkinEnsureCss() {', '        document.head.appendChild(el)')
+const ensureBlock = block('    function damSkinEnsureCss() {', '    function damSkinRemoveCss() {')
 // ⚠️ 判据陷阱（本项目已固化）：注释里也会出现同一串字面量 ⇒ 必须**行锚定**匹配真实代码行，
 //   否则负路径恒红/恒绿（把注释包住的旧写法当成代码）。
 assert.ok(!/^\s*if \(el\) return\s*$/m.test(ensureBlock), 'P0: bare early-return on existing <style> must be gone')

@@ -126,10 +126,12 @@ const br = (mask(CL).match(/rgba?\(/g) || []).length
 //   引用令牌反而会把玻璃涂成蓝色（实测取色确认）。故该段必须写真值，属**正当例外**。
 //   裁定原话：「默认情况就是有玻璃的那个是守卫，守的是不默认的，就是一个社区创作者的皮肤插件」。
 //   ⇒ 本守卫的语义改为：**非默认档（社区创作者皮肤）必须零裸色值**；默认档玻璃段整体豁免。
-//   隔离方式：只把 `damLegacyOverlayGlass()` 的函数体挖掉再扫描（该段外仍须为 0）——
-//   实测挖掉后 hex=0 / rgba=0，说明**全部裸值都出自该段，别无遗漏**（不是放宽整文件）。
+//   玻璃现由 canonical CSS 生成；只豁免与源文件逐字一致的那一个常量（段外仍须为 0）。
 // ★防「豁免变成放宽」：挖掉后必须**仍有实质内容**（不得为空/近空），否则断言会退化成恒真。
-const CL_SKINNABLE = CL.replace(/function damLegacyOverlayGlass\(\) \{[\s\S]*?\n    \}/, '')
+const glassDeclaration = CL.match(/^\s*var DAM_LEGACY_OVERLAY_CSS = ("(?:[^"\\]|\\.)*")\r?$/m)
+const canonicalGlass = readFileSync(path.join(ROOT, 'skins', 'legacy', 'overlay-glass.css'), 'utf8').replace(/\r\n/g, '\n').trim()
+ok(!!glassDeclaration && JSON.parse(glassDeclaration[1]) === canonicalGlass, '㊵c ★豁免常量逐字等于 canonical 玻璃源')
+const CL_SKINNABLE = glassDeclaration ? CL.replace(glassDeclaration[0], '') : CL
 ok(CL_SKINNABLE.length > CL.length * 0.9, '㊵0 ★豁免后仍保留 ≥90% 源文（实测 ' + (CL_SKINNABLE.length / CL.length * 100).toFixed(1) + '%，防豁免退化为放宽）')
 const bare = scanAppearance(CL_SKINNABLE)
 ok(bare.hex === 0, '㊵ ★非默认档零裸 hex（默认档玻璃段豁免；段外实测 ' + bare.hex + '）')
@@ -137,6 +139,8 @@ ok(bare.rgba === 0, '㊶ ★非默认档零裸 rgba（默认档玻璃段豁免�
 // 负路径守卫：豁免段必须**恰好是那一段** —— 若哪天它被删/被改坏，这条会立刻红
 const bareFull = scanAppearance(CL)
 ok(bareFull.hex > 0 && bareFull.rgba > 0, '㊷c ★默认档玻璃段确实存在且为字面量实现（hex=' + bareFull.hex + ' rgba=' + bareFull.rgba + '）')
+ok(scanAppearance(CL_SKINNABLE + '\nvar unexpectedColor = "#123456"').hex > 0, '㊷d ★玻璃段之外新增裸 hex 仍被抓住')
+ok(scanAppearance(CL_SKINNABLE + '\nvar unexpectedColor = "rgba(1,2,3,.5)"').rgba > 0, '㊷e ★玻璃段之外新增裸 rgba 仍被抓住')
 
 /* ---- ㊷b–㊹b ★R18 外观层收口（D1 / D9 核查）---- */
 /* ★度量复用共享模块（第 9 条纪律）：去注释后统计「有消费·无定义」。
