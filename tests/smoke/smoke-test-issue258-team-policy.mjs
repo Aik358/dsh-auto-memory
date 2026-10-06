@@ -52,7 +52,8 @@ try {
   await policy('administrator')
   assert.equal((await call({ teamId: 'new-team' })).status, 200)
   await policy('viewer')
-  const files = { memory: path.join(root, 'MEMORY.md'), calendar: path.join(root, 'CALENDAR.md'), plan: path.join(root, 'handoff', 'PLAN.md') }
+  const userDir = engine.userDirOf(), projectDir = engine.projectDirOf(path.join(root, 'workspace'))
+  const files = { memory: path.join(userDir, 'MEMORY.md'), calendar: path.join(userDir, 'CALENDAR.md'), plan: path.join(projectDir, 'handoff', 'PLAN.md') }
   await fs.mkdir(path.dirname(files.plan), { recursive: true })
   for (const file of Object.values(files)) await fs.writeFile(file, '# Original\n')
   for (const method of ['appendText', 'writeFull', 'writeFullSingle', 'writeFullRaw']) {
@@ -61,12 +62,46 @@ try {
       assert.equal(await fs.readFile(file, 'utf8'), '# Original\n')
     }
   }
-  engine.resolvePaths = async () => ({ calendarPath: files.calendar })
   await assert.rejects(engine.calendarAdd({ date: '2026-10-07', title: 'synthetic appointment' }), /team-forbidden/)
   await policy('editor')
   await engine.appendText(files.memory, '\nOrdinary editor write\n')
   await engine.calendarAdd({ date: '2026-10-07', title: 'synthetic appointment' })
   assert.match(await fs.readFile(files.calendar, 'utf8'), /synthetic appointment/)
+  // A real mutation queued behind the shared config gate already passed the
+  // fast admin check. Another engine demotes that member under the same gate;
+  // only the lock-internal durable guard can reject the eventual commit.
+  await policy('administrator')
+  const { withConfigLock } = await securityModule('config-lock.js')
+  const admin = new MemoryEngine(); admin.config = { ...engine.config }; admin.configLoaded = true; admin.refresh = async () => {}
+  const barrier = () => { let resolve; const promise = new Promise(r => { resolve = r }); return { promise, resolve } }
+  const ready = barrier(), demote = barrier(), demoted = barrier(), unlock = barrier()
+  const holder = withConfigLock(engine._configPath, async () => {
+    ready.resolve(); await demote.promise
+    await admin.saveConfig({ teamMemberRole: 'viewer' })
+    demoted.resolve(); await unlock.promise
+  })
+  await ready.promise
+  const originalGuard = engine._assertTeamActionPre, checks = []
+  engine._assertTeamActionPre = function (action, durable) {
+    checks.push({ action, role: durable?.teamMemberRole || 'fast-check' })
+    return originalGuard.call(this, action, durable)
+  }
+  const beforeDemotion = await fs.readFile(files.memory, 'utf8')
+  const waiting = engine.appendText(files.memory, '\nMust not survive durable demotion\n').then(() => ({ accepted: true }), error => ({ error }))
+  try {
+    await new Promise(resolve => setImmediate(resolve))
+    assert(checks.some(check => check.role === 'fast-check'))
+    demote.resolve(); await demoted.promise; unlock.resolve(); await holder
+    const rejected = await waiting
+    assert.equal(rejected.error?.code, 'team-forbidden')
+    assert(checks.some(check => check.role === 'viewer' && check.action === 'write-own-memory'))
+    assert.equal(await fs.readFile(files.memory, 'utf8'), beforeDemotion)
+    assert.equal(JSON.parse(await fs.readFile(engine._configPath, 'utf8')).teamMemberRole, 'viewer')
+    console.log('PASS shared-gate waiting writer: cross-engine durable demotion defeats earlier fast authorization before any document bytes commit')
+  } finally {
+    demote.resolve(); unlock.resolve(); await holder
+    engine._assertTeamActionPre = originalGuard
+  }
   for (const extra of [{ teamEnabled: false }, { teamMemberId: '' }, { teamMemberRole: 'unknown-role' }]) {
     await policy('viewer', extra)
     await engine.appendText(files.memory, '\nExempt personal write ' + JSON.stringify(extra) + '\n')
