@@ -405,6 +405,11 @@ console.log('[release] pre→正式 替换:', totalReplaced, '处 /', transformF
 }
 
 // ---------- 4. 生成正式 package.json ----------
+// 打包清单只在源 package.json 维护，避免发版覆盖新增排除项。
+const sourceFiles = JSON.parse(readFileSync(path.join(DEV, 'package.json'), 'utf8')).files
+if (!Array.isArray(sourceFiles) || !sourceFiles.length || sourceFiles.some(f => typeof f !== 'string' || !f.trim())) {
+  console.error('[release] ❌ 源 package.json.files 必须是非空字符串数组'); process.exit(1)
+}
 const relPkg = {
   name: '@a9i5k4/dsh-auto-memory',
   description: 'Proactive associative memory for DSH: zero-prompt recall injected before the model speaks, three-layer auto-consolidation, skill crystallization, and Astra-style context management - handoff ledgers, PLAN whiteboard, water-level sensing. Local-first, model-agnostic, zero deps. 主动联想记忆+Astra 式上下文管理:自动唤回/自动沉淀/技能固化/交接账本与白板跨窗口续命/水位感知。',
@@ -420,25 +425,7 @@ const relPkg = {
     './package.json': './package.json',
     './locale/*.json': './locale/*.json',
   },
-  // #20:python/ 运行时(worker+语义引擎+策略)必须随包;bench(539MB 模型夹具)与 __pycache__ 永久排除
-  // #106:发布物剔除非运行时负载 —— docs/internal(内部审计/规划/分诊)与 .bak/.bak-* 一律不进包
-  // ★2026-09-23(3.1.6) 补两处**实测到的真实泄漏**（dry-run 构建里点名核对得到）：
-  //   ① `lib` 此前**完全没有排除规则** —— 13 个源码备份（`index.js.m8b5bak` 811 KB、
-  //      `client.js.m8b6bak-…` 658 KB 等，合计 **6.66 MB**，含 5 份 index.js / 4 份 client.js 全文）
-  //      会随 3.1.6 一起发布。成因：拷入 REL 时用的正则 `/\.bak/` 只匹配**字面** `.bak`，
-  //      而 .m8b* 系列的备份命名是 `xxx.m8b5bak` / `xxx.m8b1bak`（bak 前无点）⇒ 逃过过滤。
-  //   ② 原 `!docs/**/*.bak` 与 `!docs/**/*.bak-*` 两条**依赖 npm 的 glob 语义**，而 `docs/**`
-  //      中途另起一段的写法在部分 npm 版本上不生效 ⇒ 统一用 `!**/*.bak*` 一条兜住所有层级
-  //      （`.bak` 与 `.bak-*` 都被覆盖），再补一条 `!lib/*.m8b*bak` 覆盖上述无点形态。
-  // ★issue #211（2026-10-04）：`docs` 移出 files —— 与 package.json 同源，两处必须一致。
-  //   实测 docs/ 占仓库约 97%（约 177MB），其中 docs/internal 是审计/规划稿，运行时零消费者。
-  files: ['lib', 'python', 'skins', 'icon.svg', 'locale', 'cordis.patch.yml', '!python/bench', '!python/__pycache__',
-    '!**/node_modules',
-    '!**/*.bak*', '!lib/*.m8b*bak*',
-    // ★2026-10-01 修（issue #166）：**结构性排除** —— lib/ 下任何「主名后还有第二个点」的文件
-    //   （`client.js.GOOD-1533` / `.scratch` / `.badcss` …）都是调试副本，一律不进包。
-    //   与上面 `copyDirExcluding` 的白名单同源，双保险：源侧不拷 + npm 侧不选。
-    '!lib/*.*.*'],
+  files: sourceFiles,
   dsh: {
     bundle: { patch: './cordis.patch.yml' },
     client: {
