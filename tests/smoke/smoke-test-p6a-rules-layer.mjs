@@ -208,8 +208,14 @@ console.log('[P6A-5b] ★新 turn 首次注入强制完整版（用户裁定 A �
   const code = idx.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '')
   ok(/turnBoundaryKeyPre\(agent\) \{/.test(code), '引擎侧提供 turnBoundaryKeyPre')
   ok(/engine\.turnBoundaryKeyPre\(agent\)/.test(code), '注入路径调用 turnBoundaryKeyPre')
-  ok(/_humanFullKey !== tk/.test(code), '★每个 turn 只强制一次（_humanFullKey 去重，长任务不会每步灌全文）')
-ok(code.indexOf("diag('tiered inject: 完整版") !== -1, '强制完整版时留痕（可观测）')
+  // ★2026-10-05 判据更新：去重键由 turn 号改为「本轮唯一键」（真人轮用真人消息 seq，非真人轮用 turn 号）。
+  //   原因：宿主 turn/start 落地与 context() 渲染有时序差，首次渲染时 turn 号可能仍是上一个
+  //   ⇒ 真人轮被误判为「同 turn 后续」而降级（实测 turn17）。seq 单调递增且与消息同批落地。
+  ok(/_humanFullKey !== turnKey/.test(code), '★每轮只强制一次（_humanFullKey 去重，长任务不会每步灌全文）')
+  ok(/const turnKey = \(isHuman && humanKey\) \? humanKey : tk/.test(code),
+    '★★去重键对真人轮用真人消息 seq（防 turn 号时序滞后把真人轮降级）')
+  ok(/humanTurnSeqPre\(agent\) \{/.test(code), '引擎侧提供 humanTurnSeqPre（真人消息 seq）')
+  ok(code.indexOf("diag('tiered inject: → 完整版") !== -1, '强制完整版时留痕（可观测）')
   // ★★把"判据必须是 turn 号"钉死：首版 A 只认"抓到真人消息"，实测在首次装配 context 时事件流里
   //    还没有那条 user/message（宿主投递与观察器落地不同步）⇒ 要到本 turn 第 3 次注入才升完整版
   //    （用户报告的现象："点发送后没立刻注入，完成一次工具调用后才注入完整版"）。

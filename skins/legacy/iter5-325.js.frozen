@@ -1780,6 +1780,19 @@
             h('option', { value: 'deepseek' }, L('DeepSeek 蓝', 'DeepSeek blue')), h('option', { value: 'graphite' }, L('石墨灰', 'Graphite')), h('option', { value: 'violet' }, L('雾紫', 'Violet'))), L('默认使用 DeepSeek 蓝；日历与状态颜色保持语义色。', 'DeepSeek blue by default; calendar and status colors stay semantic.')),
           field(L3('关系图密度（立即生效）','Graph density (immediate)','グラフ密度（即時適用）'), h('select', { 'data-dam-select': '', value: graphDensity, onChange: function (e) { setDensity(e.target.value) } },
             h('option', { value: 'relaxed' }, L('舒展', 'Relaxed')), h('option', { value: 'compact' }, L('紧凑', 'Compact'))), L('影响工作区关系图的节点间距和显示数量。', 'Controls node spacing and detail in the workspace graph.')),
+          // 群反馈第 4 条:排除来源(每行一条)。textarea 便于粘贴多行路径;
+          // 空行/纯空白在写回时被过滤,避免"看起来配了其实没配"。
+          // ★批次 Y：onChange 持原始串（中间态可编辑），提交时由 prepareSettingsPatch 归一化。
+          field(t('fExclude'), h('textarea', {
+            'data-dam-slot': 'form', 'data-dam-input': '', rows: 3,
+            style: { width: '100%', resize: 'vertical', fontFamily: 'inherit' },
+            value: typeof cfg.injectExcludeSources === 'string' ? cfg.injectExcludeSources : (Array.isArray(cfg.injectExcludeSources) ? cfg.injectExcludeSources : []).join('\n'),
+            placeholder: 'mem_0123456789abcdef0123456789abcdef\nD:\\ws\\.dsh-memory\\archive\\\nlog',
+            onChange: function (e) {
+              var lines = e.target.value
+              set('injectExcludeSources', lines)
+            },
+          }), t('fExcludeHint')),
         ]),
         section('team', sectionLabels.team, [
           renderTeamSettings({ cfg: cfg, set: set, field: field }),

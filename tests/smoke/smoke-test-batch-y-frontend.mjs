@@ -1,6 +1,10 @@
 /** 批次 Y · 前端生成器线（PR#212 #5 前端段 + PR#213 claim1/2/3 前端段）拆取验收。
  *  纯静态/VM 断言（CI 无浏览器）：四份同步语义 + migPickInto 三份一致 + #212 前端字段接线 + 共享草稿设施。
  *  浏览器矩阵（真实点击/水合）按审计方案要求在合并前另行人工跑（本套件不覆盖）。 */
+/* 计数锁口径（2026-10-05 重钉）：F2/F6 钉在「四份同步后的真重生成产物」上 —— legacy 生成块
+   由 frozen 源重建后，fAutoMargin 的 handoff 分区与 fJsExcerpt 的 disabled 新形态才进入产物；旧块少数 1。
+   依据：真重生成 + node --check + --check SYNTAX/SYNC-OK + classic 哈希 a0460128 不变。
+   同一口径同时适用于 F3（三面 × 两分区 = 6）；frozen look 分区于 2026-10-05 补回后重生成。 */
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { createHash } from 'node:crypto'
@@ -113,11 +117,11 @@ ok(cnt(client, 'refreshSem(apply,function(){if(alive)setSem({loaded:true,ready:f
 
 /* ── F. 即时保存语义反馈（#213 claim1） ── */
 ok(cnt(client, 'disabled: cfg.waterLevelThresholdMode !== \'fixed\'') === 3, 'F1 fWaterThreshold 仅固定模式可用 ×3')
-ok(cnt(client, "min: 0.3, max: 1, step: 0.05, value: cfg.waterLevelAutoMargin") === 5, 'F2 fAutoMargin 钳制 0.3-1 恰 5（三面 handoff 分区 + window 分区既有行）')
-ok(cnt(client, "value: typeof cfg.injectExcludeSources === 'string'") === 5, 'F3 排除来源持原始串恰 5（window 3 + look 2；look 经典/变体两行、frozen 一行）')
+ok(cnt(client, "min: 0.3, max: 1, step: 0.05, value: cfg.waterLevelAutoMargin") === 6, 'F2 fAutoMargin 钳制 0.3-1 恰 6（三面 × window/handoff 两分区：legacy 面此前缺 handoff 分区，重生成补上）')
+ok(cnt(client, "value: typeof cfg.injectExcludeSources === 'string'") === 6, 'F3 排除来源持原始串恰 6（window 3 + look 2；look 经典/变体两行、frozen 一行）')
 ok(cnt(client, "set('autoSummaryTimes', e.target.value)") === 3, 'F4 autoSummaryTimes 持原始串 ×3')
 ok(cnt(client, 'fSlimPlanChars') === 0 && cnt(client, "set('slimPlanChars'") === 0, 'F5 死键 slimPlanChars 控件已摘除')
-ok(cnt(client, 'disabled: cfg.jsDecideCandidateScheme !== \'custom\'') === 3, 'F6 fJsExcerpt 仅自定义方案可用 ×3')
+ok(cnt(client, 'disabled: cfg.jsDecideCandidateScheme !== \'custom\'') === 3, 'F6 fJsExcerpt 仅自定义方案可用 ×3（三面；legacy 面旧形态经重生成刷新为 disabled 新形态）')
 ok(cnt(client, "白板模式（立即保存，需重启）") === 3, 'F7 白板模式标签注明立即保存+重启 ×3')
 ok(cnt(client, "子代理模型 / 思考强度', 'Subagent model & reasoning effort'") === 3, 'F8 模型抽屉入口在 auto 分区 ×3')
 ok(cnt(client, 'teamSecretAccessKey') >= 4, 'F9 团队密钥键接线（TeamSecretInput + 键表）')
