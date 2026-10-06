@@ -8,6 +8,7 @@
 <p align="center"><a href="../README.md">← Back to README</a></p>
 
 > She remembers, unbidden: memory never waits for your command — the right memory surfaces on its own; every entry has provenance — checkable, editable, deletable.
+> Source defaults checked 2026-10-06 against upstream v3.2.10; see [SOURCE-REFERENCE.md](SOURCE-REFERENCE.md).
 > Applies to version **3.0+** · Changelog: in-plugin **Settings → Appearance → View changelog**.
 > 中文版：[USER-GUIDE.zh-CN.md](./USER-GUIDE.zh-CN.md)
 
@@ -44,13 +45,13 @@
 - Install into the DSH web profile directory (`~/.dsh/profiles/web`): `pnpm add @a9i5k4/dsh-auto-memory@latest`, then append `"@a9i5k4/dsh-auto-memory"` to the `dsh.profile.bundles` array in that directory's `package.json` (or one-click from the DSH plugin marketplace).
 - **You must restart dsh web after installing**: the injection surface (manifest) loads at startup. Same after changing host code.
 - After a browser-side update, **hard-refresh** (Ctrl+Shift+R) to load the new client.js.
-- pnpm v11 blocks packages published <24h ago (`minimumReleaseAge`): set `minimumReleaseAge: 0` in `pnpm-workspace.yaml` or pin an explicit version for same-day updates.
+- Follow the actual package-manager messages for release-age and native-build policies.
 - Entry: the **Memory** button at the bottom of the sidebar → the memory panel.
 - Panel title bar: a **pin** (line-drawn icon, matching ⟳ ⤾ ✕; click to pin so clicking outside won't collapse the panel; click again to unpin; pinned state persists), **⤾** reset position, **⟳** refresh, **✕** close. Unpinned, clicking outside or pressing Esc collapses it.
 - The version number in the panel title and in Settings → "Check for updates" both show the **installed** version.
 - A **floating pin** (line-drawn quick-access icon) also lives in the sidebar for one-click access to memory actions from anywhere.
 - Since DSH 0.1.2-rc.1 the Web UI sits behind a token gate (new token every restart; the `?token=…` URL in the startup log is your address). This plugin's HTTP endpoints are loopback-only and unaffected by the gate.
-- All data stays on your machine: `~/.dsh/memory/` (memory files), `~/.dsh/dsh-auto-memory.json` (config). **Note**: after the de-pre migration the source name *is* the published name — the repo and the npm build use identical paths, so every path below applies to both.
+- These are default paths; configuration can override them and `DSH_HOME` controls the host data root. All data stays on your machine: `~/.dsh/memory/` (memory files), `~/.dsh/dsh-auto-memory.json` (config). **Note**: after the de-pre migration the source name *is* the published name — the repo and the npm build use identical paths, so every path below applies to both.
 
 ## 2. First launch
 
@@ -181,15 +182,15 @@ The static injection face: the `<memory_system>` block composed into every turn.
 
 | Setting | Default | How to tune |
 |---|---|---|
-| Handoff whiteboard (`handoffEnabled`) | off | **PLAN.md snapshot + four-part handoff ledger**: written by the model at milestones, injected first in the dynamic snapshot, live in the Whiteboard tab — context that survives windows. Recommended on |
+| Handoff whiteboard (`handoffEnabled`) | on | PLAN.md and four-part ledgers; independent of auto-continue |
 | Plan budget (`handoffPlanChars`) | 1200 | Hard truncation for injecting PLAN.md; full text via `memory_read` or the Whiteboard tab |
 | Ledger budget (`handoffLedgerChars`) | 800 | Injection budget for the latest ledger; internally truncated by section weight (failure reasons .35 ＞ next step .30 ＞ goals .20 ＞ state .15, trimmed from the lightest section first) |
 | Water-level window override (`waterLevelWindowTokens`) | 0 = auto | 0 = auto: official routed capacity first, then settings.yaml for the active model. **Keep 0 unless you have an exotic model** |
-| Advisory threshold (`waterLevelThreshold`) | 0.75 | Past the threshold: inject the handoff advisory and backfill the ledger. **0.75, not 0.8**: the host's own compaction fires at 80%; sitting right under 80% means the host compresses before the handoff finishes — the 5% margin (~50K tokens on a 1M window) is the room to complete it |
+| Advisory threshold (`waterLevelThreshold`) | 0.75 (fixed/fallback) | Default `waterLevelThresholdMode=auto` uses official compaction parameters and `waterLevelAutoMargin=0.9`; independent of auto-continue |
 | Water-level advisory (`waterLevelAdvisory`) | on | Inject the "write the ledger / refresh the plan / open a new window" advisory past the threshold; silent in unattended mode |
 | Auto skeleton ledger (`waterLevelAutoHandoff`) | on | Past the threshold, auto-write one system skeleton ledger per session, so handoff material exists even if the model ignores the advisory |
-| Subagent GC (`subagentGcEnabled`) | on (code default) / **retired** | **Capability retired**: moving session traces does **not** reduce front-end render load (for subagents the host only downgrades status and **never deletes the projection store**); it can only create "session unavailable" ghost entries. Kept for backward compatibility; this machine sets it to `false` ⇒ not running |
-| Fallback keep days (`subagentGcKeepDays`) | 3 (code default) / **disabled** | Read only inside `subagentGcSweep`, which early-returns on its first line when `subagentGcEnabled === false` ⇒ no effect here. Kept for backward compatibility |
+| Subagent GC (`subagentGcEnabled`) | on (code default) / **retired** | **Capability retired**: moving session traces does **not** reduce front-end render load (for subagents the host only downgrades status and **never deletes the projection store**); it can only create "session unavailable" ghost entries. Kept for backward compatibility; the actual saved configuration determines whether it runs |
+| Fallback keep days (`subagentGcKeepDays`) | 3 (code default) / **disabled** | Read only inside `subagentGcSweep`, which early-returns on its first line when `subagentGcEnabled === false` ⇒ disabled when the saved switch is false. Kept for backward compatibility |
 
 > The auto-continue toggle and threshold live **not in Settings** but in the **auto-continue card** on the panel's Whiteboard tab (see §8.4).
 
@@ -306,7 +307,7 @@ The material says "fetch on demand, don't read through" — the new session cont
 
 ### 8.4 Auto-continue (buttonless, recommended)
 
-Whiteboard tab → auto-continue card: toggle (default on) + threshold (default 0.75, synced with the water-level threshold).
+Whiteboard tab → auto-continue card: toggle (default off) + threshold (default 0.75, independent of the advisory threshold).
 
 - **Trigger**: water level ≥ threshold **and** the harness's authoritative `running` bit turns `false` at a turn boundary (the session is truly idle). Long tool calls don't false-trigger.
 - **Host backstop**: past the threshold, the countdown runs host-side — page backgrounded, tab closed, or nobody at the keyboard, the host itself completes "refresh plan/ledger → create session → inherit model & workspace → inject materials" when the countdown ends.
@@ -337,7 +338,7 @@ Three **safety boundaries** (we do not recommend loosening them):
 - **A session archived in the same sweep tick is not deleted** (avoids "archived and immediately deleted");
 - **If any member of a family is protected, the whole family is skipped**; the workbench session itself is also rejected by the archive/delete entry points.
 
-**④ The old "subagent trace GC" is retired** (this machine sets `subagentGcEnabled` to `false`; both `recycleSubagentSession` and `subagentGcSweep` early-return): the original premise was **falsified** — moving or deleting session traces does **not** reduce front-end render load (for `origin=subagent` the host only downgrades status and **never deletes the projection store**), and it can desync the catalog from disk. For a growing session list use **②③** above. The old `node tools/subagent-gc.mjs` instruction is removed — `tools/` is not shipped in the npm package, so the file does not exist on user machines.
+**④ The old "subagent trace GC" is retired** (set `subagentGcEnabled=false` to disable it; both `recycleSubagentSession` and `subagentGcSweep` early-return): the original premise was **falsified** — moving or deleting session traces does **not** reduce front-end render load (for `origin=subagent` the host only downgrades status and **never deletes the projection store**), and it can desync the catalog from disk. For a growing session list use **②③** above. The old `node tools/subagent-gc.mjs` instruction is removed — `tools/` is not shipped in the npm package, so the file does not exist on user machines.
 
 > **Troubleshooting**: if the diagnostics log shows `wb-rotate: sealing -> create ... ok=true` **repeating every 60 seconds**, rotation is not converging (older builds had this defect; fixed in 3.1.7). A host restart self-heals it.
 
@@ -390,7 +391,7 @@ All three write tools (log/note/user) pass the **write gate**: GBK mojibake, stu
 | Session list getting slow | **Not** "trace GC is off": deleting/moving subagent session directories does **not** reduce render load (the host only downgrades status for subagents, never deletes the projection store); that GC capability is retired. Use Settings → auto-maintenance instead: archive (default 2 days) → delete (default 7 days) |
 | Recall review shows only prefetch, never injection | The emit gate is on shadow (record only) — switch to canary-explicit or active; or lower the margin threshold |
 | Mojibake / duplicates in memory | The write gate guards new entries; for existing ones use Storage → "Scan dirty tokens" (locations only) and clean by position (back up first) |
-| pnpm blocks a same-day update | pnpm v11 `minimumReleaseAge` blocks <24h packages: set `minimumReleaseAge: 0` or pin the version |
+| Package-manager policy blocks installation | Read the actual error and project policy; pinning a version does not necessarily bypass the policy |
 | Web UI asks for a token | DSH 0.1.2-rc.1 security gate; the token is in the `dsh web` startup-log URL and rotates each restart |
 | Sidebar Memory button vanished | Likely a conflict with another sidebar-injecting plugin; disable the suspect in plugin management |
 | Feedback / grab logs | `~/.dsh/dsh-auto-memory-diagnose.log` (run `ls -l ~/.dsh/*diagnose*.log` first to confirm it is non-empty); QQ group in README |
@@ -401,7 +402,7 @@ All three write tools (log/note/user) pass the **write gate**: GBK mojibake, stu
 
 | Content | Path |
 |---|---|
-| Plugin config | `~/.dsh/dsh-auto-memory.json` (this repo's pre dev tree uses `dsh-auto-memory.json`) |
+| Plugin config | `~/.dsh/dsh-auto-memory.json` (with `DSH_HOME`, use the actual host data root) |
 | User-level memory | `~/.dsh/memory/MEMORY.md` |
 | Workspace memory | `~/.dsh/memory/workspaces/<workspace>/` (MEMORY.md, daily logs, handoff/, reflections/, summaries/) |
 | Whiteboard & ledgers | `~/.dsh/memory/workspaces/<workspace>/handoff/` (PLAN.md + handoff-*.md) |
