@@ -21,7 +21,9 @@ ck('workspaceRegistry.create 被调用（而非只读）',
   'idx')
 ck('注册后写 diag（可观测）', /workbench workspace registered/.test(idx))
 ck('注册失败不影响工作台（try 包住）',
-  /try \{[\s\S]{0,400}?reg\.create\(cwd[\s\S]{0,300}?catch \(eW\)/.test(idx))
+  // ★C-1b：登记块由「就地补登记」收敛为「复用优先 + 缺登记才 create」（PR#237），
+  //   两分支仍完整包在同一 try/catch 内 ⇒ 判据意图不变（注册失败不影响工作台）。
+  /let wsId = '[\s\S]{0,1400}?reg\.create\(cwd[\s\S]{0,400}?catch \(eW\)/.test(idx))
 
 console.log('\n══ 缺口③：greeting loop（S4 纠错后：换**子代理代次**，不换会话）══')
 ck('workbench.json 写入 greetCount', /greetCount: 0,/.test(idx))
@@ -88,12 +90,16 @@ ck('S1 _workbenchCwd 读 config.workbenchRoot',
 // ★2026-10-05 判据随源码演进（社区报告：Android `/data/user/0` ↔ `/data/data` 符号链接别名恒 cwd-mismatch）：
 //   路径收窄与 fail-soft 回默认的逻辑本体未变，只是两侧先经 `_canonPath`（realpath）归一再比较 ——
 //   守卫同步钉住归一形态，防止未来有人把字面比较改回去（那会让符号链接环境再次恒判 cwd-mismatch）。
-ck('S1 路径收窄到 dshHome 之下（非法 ⇒ fail-soft 回默认）——归一形态',
-  /path\.relative\(this\._canonPath\(dshHome\(\)\), this\._canonPath\(p\)\)[\s\S]{0,200}?return this\._canonPath\(fallback\)/.test(idx))
-ck('S1+ 归一函数存在且 verify/登记两处比较点都走归一（防字面比较回流）',
-  /_canonPath\(p\) \{/.test(idx)
-  && /this\._canonPath\(cwd\) !== this\._canonPath\(this\._workbenchCwd\(\)\)/.test(idx)
-  && /norm\(this\._canonPath\(w\.path\)\) === wsPath/.test(idx))
+  // ★C-1b（PR#237）：rel 的越界判据由「前缀匹配」改为「组件级」（恰为 '..' 或 '..' + sep 开头）——
+  //   否则同级的 `..foo` 目录会被误判为越界。**判据意图不变**：仍钉住「先从归一父根算 rel、
+  //   越界与绝对路径一律 fail-soft 回默认」。
+  ck('S1 路径收窄到 dshHome 之下（非法 ⇒ fail-soft 回默认）——归一形态',
+    /path\.relative\(this\._canonPath\(dshHome\(\)\), this\._canonPath\(p\)\)[\s\S]{0,400}?return this\._canonPath\(fallback\)/.test(idx))
+  ck('S1+ 归一函数存在且 verify/登记两处比较点都走归一（防字面比较回流）',
+    /_canonPath\(p\) \{/.test(idx)
+    && /this\._pathKey\(cwd\) !== this\._pathKey\(this\._workbenchCwd\(\)\)/.test(idx)
+    && /this\._pathKey\(w\.path\) === wsPath/.test(idx)
+    && /const canonical = this\._canonPath\(p\)/.test(idx))
 // ★2026-09-28 口径收窄：本条原断言 `set('workbenchRoot')` **且** `key: 'workbenchRoot'` 同时成立，
 //   把两件事混在一起——（a）设置页有工作台目录项（b）向导里也有同名开关。
 //   向导侧的目录项已被**更合理的布尔开关** `workbenchEnabled` 取代：旧写法把**目录路径（字符串）**
@@ -111,8 +117,18 @@ ck('S1 workbenchRoot 走宿主路径闸（批次 Z 后形态已上移到 validat
 // S6：必须同时校验「工作区登记」与「会话存在」（用户原话「检测到底有没有这个工作区和对话出现」）
 ck('S6 校验工作区登记（workspace-unregistered）', /workspace-unregistered/.test(idx))
 ck('S6 用 registry.list() 只读判定（不产生副作用）', /wbReg\.list\(\)/.test(idx))
-ck('S6 未登记时就地补登记，且先 list 查重（不重复 create）',
-  /workbench workspace re-registered/.test(idx) && /if \(!exists\) \{ const w2 = await regFix\.create/.test(idx))
+  // ★C-1b（PR#237）：补登记由「触发式 re-register」收敛为「登记块内复用优先」。
+  //   判据意图不变：**复用已有登记而不是重复 create**（原为 list 查重 + regFix.create，
+  //   现为 list().find 复用 + 仅缺失时 create）。
+  ck('S6 登记缺失时复用已有 id，缺登记才 create（不重复建）',
+    /existing = reg\.list\(\)\.find/.test(idx) && /this\._pathKey\(w\.path\) === this\._pathKey\(cwd\)/.test(idx)
+    && /else if \(reg && typeof reg\.create === 'function'\)/.test(idx)
+    // ★C-1b：PR#237 原判据断言补登记块被整体删除；本批**有意保留**该块（它保「复用分支」在登记缺失时
+    //   也能自愈，删掉会让该路径不再自愈）⇒ 判据改为「补登记块存在且同样先查重、判据走 _pathKey、
+    //   不再自写第二份 toLowerCase」。
+    && /if \(!exists\) \{ const w2 = await regFix\.create/.test(idx)
+    && /this\._pathKey\(w\.path\) === this\._pathKey\(cwd\)\) \} catch \(eL\)/.test(idx)
+    && !/const norm2 = \(x\) => String/.test(idx))
 ck('S6 弹窗展示第 ④ 行「工作区登记」', /④ 工作区登记/.test(cli))
 // S8：后端自动配置成功 ⇒ 居中弹窗**自动消失**（用户原话「或者等它自动配置完再消失」）
 ck('S8 有撤窗助手 dismissWorkbenchSetupPre', /function dismissWorkbenchSetupPre\(\)/.test(cli))
@@ -170,7 +186,7 @@ ck('S6/⑰ 工作区登记删除仅经受控入口（含三条自保判据）',
   /String\(w\.title \|\| ''\) !== '记忆中枢'/.test(idxNoCmt) &&
   /Array\.isArray\(w\.sessionIds\) \? w\.sessionIds : \[\]/.test(idxNoCmt) &&
   /if \(ids\.length > 0\) continue/.test(idxNoCmt) &&
-  /if \(norm\(w\.path\) === keep\) continue/.test(idxNoCmt))
+  /if \(!w\.path \|\| this\._pathKey\(w\.path\) === keep\) continue/.test(idxNoCmt))
 
 console.log('\nPASS ' + P + ' / FAIL ' + F)
 process.exit(F ? 1 : 0)

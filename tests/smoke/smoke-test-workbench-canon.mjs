@@ -142,10 +142,13 @@ try {
   const idx = fs.readFileSync(path.join(ROOT, 'lib/index.js'), 'utf8')
   ck('import 引入 realpathSync', /import \{[^}]*\brealpathSync\b[^}]*\} from 'node:fs'/.test(idx))
   ck('_canonPath 存在', /_canonPath\(p\) \{/.test(idx))
+  // ★C-1b（PR#237 后端拆取）判据随源码演进：cwd 比较由 `_canonPath` 升为 `_pathKey`
+  //   （= _canonPath + win32 小写化）。**判据意图不变**：仍钉住「不再走 path.resolve 字面比较」这一防回流语义。
   ck('verify 第①项走归一（不再 path.resolve 字面比较）',
-    /this\._canonPath\(cwd\) !== this\._canonPath\(this\._workbenchCwd\(\)\)/.test(idx)
+    /this\._pathKey\(cwd\) !== this\._pathKey\(this\._workbenchCwd\(\)\)/.test(idx)
     && !/path\.resolve\(cwd\) !== path\.resolve\(this\._workbenchCwd\(\)\)/.test(idx))
-  ck('登记比较走归一', /norm\(this\._canonPath\(w\.path\)\) === wsPath/.test(idx))
+  ck('登记比较走归一', /this\._pathKey\(w\.path\) === wsPath/.test(idx)
+    && /const canonical = this\._canonPath\(p\)/.test(idx))
   ck('包含判定走归一', /path\.relative\(this\._canonPath\(dshHome\(\)\), this\._canonPath\(p\)\)/.test(idx))
   ck('新建熔断存在（同 (epoch, 原因) 连 3 败停新建）',
     /create-breaker:/.test(idx) && /_wbCreateFailStreak/.test(idx) && /count >= 3/.test(idx))
