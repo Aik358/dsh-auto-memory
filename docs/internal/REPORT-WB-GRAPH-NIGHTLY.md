@@ -99,7 +99,7 @@
 
 | 项 | 规划原文要求 | 本次落点 | 验证 |
 | --- | --- | --- | --- |
-| **P0-1** | 新建 `docs/archive/handoffs/HANDOFF-CRITERIA.md`（判据表 + 正反例 + 引用关系） | 新文件（H1-H4/P-H1/P-S1 全表 + 正反例 + 5 处引用关系） | 文件存在 |
+| **P0-1** | 新建 `docs/HANDOFF-CRITERIA.md`（判据表 + 正反例 + 引用关系） | 新文件（H1-H4/P-H1/P-S1 全表 + 正反例 + 5 处引用关系） | 文件存在 |
 | **P2-3** | `searchHandoffCorpus` 升 **tag/段级优先 + 词法兜底** | 改为**两段式**：结构化臂消费 `by_tag`/`by_cue` 倒排（label `白板结构化/<source> [<id8>]`），词法臂原样保留作兜底 | E3 |
 | **P2-4** | 注入端锚点表区扩展 **tag 摘要行** | `buildContinueCarry` 内调 `whiteboardTagMapPre(null, p)` 注入「【白板 tag 地图(结构化导航)】」+ 工具用法提示 | E1 |
 | **P2-5** | GUI 加 **tag/段视图**；fileQ 放行 `.json` | 后端 `handoffPanelData` 返回 `structured`（tags 倒排 + 按 kind 段视图）与 `boardMode`；前端**条件渲染**两张卡 | E4 |

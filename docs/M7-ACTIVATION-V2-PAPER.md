@@ -6,7 +6,7 @@
 > 工作区：D:\dsh-auto-memory（preview 分支）· 数据与代码：`artifacts/m7-live-pre/label-review-cal20260824-1954/`
 > 图表：`docs/paper-figures-v2/`（英文）· 策略工件：`python/policies/*.json`
 > 效力声明：本文为研究性总结；实现规范以 `docs/M7-ACTIVATION-FEATURE-DESIGN.md` 为准，
-> 派发依据以 `docs/archive/handoffs/M7-ACTIVATION-V2-HANDOFF.md` 为准。所有实验均在离线重放中完成，
+> 派发依据以 `docs/M7-ACTIVATION-V2-HANDOFF.md` 为准。所有实验均在离线重放中完成，
 > 生产默认配置全程未动，未产生任何 active 流量。§7 双轨部署为 2026-08-25 增补：
 > JS 标准层与 Python int8 档均为离线实测结论，工程接线尚未发生。
 
@@ -300,4 +300,4 @@ provider/dtype 字段随之变化，旧索引自动判 stale 并重建，杜绝�
 [R2] M7 嵌入/融合/激活研究报告. docs/M7-RESEARCH-PAPER.md
 [R3] M7 Activation Feature Design（设计权威）. docs/M7-ACTIVATION-FEATURE-DESIGN.md
 [R4] M7 激活算法扩展参考（中文方向与跨语言）. docs/M7-ACTIVATION-ALGO-REFERENCES.md
-[R5] M7 Activation v2 移交文档. docs/archive/handoffs/M7-ACTIVATION-V2-HANDOFF.md
+[R5] M7 Activation v2 移交文档. docs/M7-ACTIVATION-V2-HANDOFF.md

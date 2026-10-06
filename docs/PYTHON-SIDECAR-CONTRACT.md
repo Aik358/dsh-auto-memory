@@ -1,6 +1,3 @@
-> 阶段契约；当前接口与默认值见[源码速查](SOURCE-REFERENCE.md)。
-
-
 # M7 Python Semantic Engine 完整实施契约
 
 > 状态：M7-0 Contract Freeze 已完成；Python 运行时代码尚未实现
@@ -11,7 +8,7 @@
 >
 > 实施研究：docs/M7-PYTHON-IMPLEMENTATION-REPORT.md
 >
-> 执行交接：docs/archive/handoffs/M7-AGENT-HANDOFF-PROMPT.md
+> 执行交接：docs/M7-AGENT-HANDOFF-PROMPT.md
 >
 > 本会话禁止：启动 Python、安装模型或向量依赖、修改线上开关、commit/push/publish
 
@@ -483,7 +480,7 @@ M7-3 输入:决策 D4(worker_semantic_pre_v1.py 新文件复用 worker_pre_v1 �
 3. 准备 embedding 配置文件(任选):
    A. 离线确定性:{"provider":"hash-pre-v1","dimension":64}(零模型,验证协议链路);
    B. 真模型:{"provider":"bge-m3-pre-v1","modelDir":"D:/dsh-auto-memory/python/bench/.hf-cache/models--BAAI--bge-m3/snapshots/5617a9f61b028005a4858fdac845db406aefb181","modelRevision":"5617a9f61b028005a4858fdac845db406aefb181","dimension":1024,"torchThreads":16}
-   可选键:"search":{"mode":"hybrid","wDense":0.7}(默认即 D6 融合)、"lexicalStopwords":…（宿主拥有的词法停用词策略注入点）、"activationPolicy":{…}(mode/tOn/tOff/cooldownObs;**M7-8 首轮必须 mode='shadow'**,校准后再切 active)。
+   可选键:"search":{"mode":"hybrid","wDense":0.7}(默认即 D6 融合)、"lexicalStopwords":[…](宿主拥有的词法停用词策略注入点)、"activationPolicy":{…}(mode/tOn/tOff/cooldownObs;**M7-8 首轮必须 mode='shadow'**,校准后再切 active)。
    并设置宿主进程环境变量 DSH_M7_EMBEDDING_CONFIG=<该文件路径>;worker 路径指向 python/worker_semantic_pre_v1.py(config pythonBackendWorkerPath)。
 4. **重启 3080 宿主**(用户手动;Agent 全程不碰)。
 5. 开启链路(config POST,一次一项观察):associativeMemoryEnabled=true→contextBridgeEnabled=true→pythonBackendEnabled=true→contextSinkMode='python'→activationInboxEnabled=true→activationSource='python'(激活帧消费需 activationPolicy.mode='active';首轮保持 shadow 仅观察影子日志)。

@@ -38,7 +38,7 @@
 | --- | --- | --- |
 | `docs/M7-RESEARCH-PAPER.md` | 43.5 KB | 嵌入检索选型研究，含 RQ1–4、L1/L2 语料构建、效度威胁章节——**章节结构与写法可直接借鉴** |
 | `docs/M7-ACTIVATION-V2-PAPER.md` | 26.3 KB | 激活策略研究，含回声陷阱发现、金标演进、消融与证伪、跨语言迁移 |
-| `docs/archive/plans/M7-BENCHMARK-PLAN.md`、`M7-TASK-DISPATCH.md`、`M7-LABEL-REVIEW-REPORT.md` | 4–12 KB | 基准方案、任务派发、标注复核流程——标注信度的现成流程模板 |
+| `docs/M7-BENCHMARK-PLAN.md`、`M7-TASK-DISPATCH.md`、`M7-LABEL-REVIEW-REPORT.md` | 4–12 KB | 基准方案、任务派发、标注复核流程——标注信度的现成流程模板 |
 | `E:\dsh_dynamic_adjust\project_feasibility_report.md` | 620 行 | 锚定线完整技术叙事（含三波段、相变、路径承诺、措辞实验） |
 
 > ⚠️ 待核验项：以上外部条目的作者名、年份、卷期需在正式引用前逐条核（本清单只保证「存在且相关」，不保证书目字段准确）。

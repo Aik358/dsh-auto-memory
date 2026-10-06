@@ -91,7 +91,7 @@
 
 ## 四、前缀缓存约束（I1 字节级稳定的实现）
 
-**不变量出处**：`docs/archive/plans/CONTINUITY-FLOW.md:159-168` 定义 I1-I5（I1=前缀缓存字节级稳定：只动动态快照层，静态纪律层字节不碰；I3=凭证永不进提示词；I4=绝不阻塞接续）。代码中显式引用 I4 的注释在 `lib/index.js:2715`。
+**不变量出处**：`docs/CONTINUITY-FLOW.md:159-168` 定义 I1-I5（I1=前缀缓存字节级稳定：只动动态快照层，静态纪律层字节不碰；I3=凭证永不进提示词；I4=绝不阻塞接续）。代码中显式引用 I4 的注释在 `lib/index.js:2715`。
 
 **静态/动态分离（I1 的实现点）**
 
@@ -141,7 +141,7 @@
 | 2 | `writeHandoffLedger` 入口插校验（或 1674 `writeFullRaw` 之前） | `lib/index.js:1667-1679` | ① `memory_note` 7084；② 水位骨架 2019 | `writeFullRaw`(3798)、`handoffStamp`(464)、`memToday`(3208)、`nowHm`(462) | ~5 行 |
 | 3 | `writePlanSnapshot` 入口插校验 | `lib/index.js:1620-1662` | 仅 `memory_note` 7083 | `writeFullRaw`(1657) | ~5 行 |
 | 4 | 工具层拒绝文案：把判据 gate 并入 7079-7081 的 `sanitizeForWrite` 判定处，仿 `WRITE_GATE_REASON`(6092) 模式返回可执行的改写指引 | `lib/index.js:7078-7091` | harness 工具分发 | 新校验函数 | ~10 行 |
-| 5 | 水位骨架路径的 fail-soft 策略：校验不过时照写+diag+骨架内加警示行（或仅记日志跳过），**不得阻塞接续**（I4，`docs/archive/plans/CONTINUITY-FLOW.md:165`） | `lib/index.js:2002-2024` | `checkWaterLevel`(1867) ← pre-step 钩子 2049 与 `agent/turn-stopping` 钩子 6868/6884 | 通路 2 | ~5 行 |
+| 5 | 水位骨架路径的 fail-soft 策略：校验不过时照写+diag+骨架内加警示行（或仅记日志跳过），**不得阻塞接续**（I4，`docs/CONTINUITY-FLOW.md:165`） | `lib/index.js:2002-2024` | `checkWaterLevel`(1867) ← pre-step 钩子 2049 与 `agent/turn-stopping` 钩子 6868/6884 | 通路 2 | ~5 行 |
 | 6 | 回归测试：仿 `tests/smoke/smoke-test-handoff-anchor-pre.mjs`（fixture 锁定+源码守卫）；注意 `tests/smoke/smoke-test-handoff-pre.mjs` 的 G0 源码守卫断言了写入/注入块的存在与顺序（文件头 13-17），插校验后需同步 | tests/smoke | — | — | ~60 行 |
 
 ### P2 结构化存储改造（Markdown → 附加结构，增量兼容）

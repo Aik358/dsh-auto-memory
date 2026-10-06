@@ -1,6 +1,3 @@
-> 阶段契约；当前接口与默认值见[源码速查](SOURCE-REFERENCE.md)。
-
-
 # M6 JS Activation Inbox / Reference Tail 指导性契约
 
 > 状态：M6-0 指导契约冻结；尚未实现 M6 运行时代码

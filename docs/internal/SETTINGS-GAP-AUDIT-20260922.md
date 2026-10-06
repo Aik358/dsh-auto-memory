@@ -85,7 +85,7 @@
 
 | # | 配置键 | 前端写入证据(file:line) | 宿主检索结果 | 为什么是死控件（机制） | 用户影响 | 建议处置 | 是否需重启 dsh web 生效 |
 |---|---|---|---|---|---|---|---|
-| 1 | `pythonGpu` | `client.js:5939`（引擎向导「启用并继续」：`var n2 = Object.assign({}, cfg); … n2.pythonGpu = true; setCfg(n2); setDirty(true)`）；值来自 `localStorage['dsh-auto-memory-pre.pyGpu']`（`client.js:2812`、`2816`） | **宿主 `lib/` 全文 0 读取**：`grep pythonGpu` 仅命中 `lib/client.js` 与 `docs/` | 「保存更改」只提交与远端**不同**的键（`client.js:5713-5715`）⇒ `pythonGpu` 进入 patch ⇒ `POST /config` 按 `Object.keys(DEFAULT_CONFIG)` 白名单过滤（`index.js:11342-11344`，非白名单键既不报错也不落盘）⇒ **被静默丢弃** | **P0（死控件）**：用户以为"启用 Python 引擎 + 带上 GPU 偏好"已保存；GPU 偏好实际只走 `embedding-config.json` 那条通路（`python-setup-pre.js:215`），本键是历史残留 | **删掉 `client.js:5939` 的 `n2.pythonGpu = true`**（仓库已有同一结论：`docs/internal/TODO-BACKLOG.md:172`、`docs/archive/plans/UI-REFACTOR-PRE-RESEARCH.md:97`、`docs/internal/DESIGN-OVERHAUL-PRE-RESEARCH.md:46`）。若确需把 GPU 偏好放进配置，应同时加 `DEFAULT_CONFIG` 键 + 让消费端读它，否则不要写 | 删除前端那一行**无需重启**（刷新页面即消失）；若改成真配置键，则宿主侧需重启才注册新键语义 |
+| 1 | `pythonGpu` | `client.js:5939`（引擎向导「启用并继续」：`var n2 = Object.assign({}, cfg); … n2.pythonGpu = true; setCfg(n2); setDirty(true)`）；值来自 `localStorage['dsh-auto-memory-pre.pyGpu']`（`client.js:2812`、`2816`） | **宿主 `lib/` 全文 0 读取**：`grep pythonGpu` 仅命中 `lib/client.js` 与 `docs/` | 「保存更改」只提交与远端**不同**的键（`client.js:5713-5715`）⇒ `pythonGpu` 进入 patch ⇒ `POST /config` 按 `Object.keys(DEFAULT_CONFIG)` 白名单过滤（`index.js:11342-11344`，非白名单键既不报错也不落盘）⇒ **被静默丢弃** | **P0（死控件）**：用户以为"启用 Python 引擎 + 带上 GPU 偏好"已保存；GPU 偏好实际只走 `embedding-config.json` 那条通路（`python-setup-pre.js:215`），本键是历史残留 | **删掉 `client.js:5939` 的 `n2.pythonGpu = true`**（仓库已有同一结论：`docs/internal/TODO-BACKLOG.md:172`、`docs/UI-REFACTOR-PRE-RESEARCH.md:97`、`docs/internal/DESIGN-OVERHAUL-PRE-RESEARCH.md:46`）。若确需把 GPU 偏好放进配置，应同时加 `DEFAULT_CONFIG` 键 + 让消费端读它，否则不要写 | 删除前端那一行**无需重启**（刷新页面即消失）；若改成真配置键，则宿主侧需重启才注册新键语义 |
 | 2 | `procedurePromotionEnabled`（**灰控件：写盘成功但结构性无效**） | `client.js:5023`（向导 TOUR_STEPS `key: 'procedurePromotionEnabled'`）→ `5075` 组 patch → `5083` `saveConfigPatch(patch)` | 键**在** `DEFAULT_CONFIG`（`index.js:560`），`/config` **接受**写入；但宿主解析走 `procedure-switch-pre.js:26-32` | `resolveProcedureInjectEnabledPre` 第 28 行 `if (typeof c.procedureInjectEnabled === 'boolean') return c.procedureInjectEnabled` **先命中**；而 `_mergeConfigPre` 是 `{...DEFAULT_CONFIG, ...parsed}`（`index.js:1912`），`DEFAULT_CONFIG.procedureInjectEnabled === true`（`index.js:554`）⇒ 合并结果里该键**恒为布尔** ⇒ 第 30 行的旧键别名**结构性不可达** | **P0**：向导那个「技能固化与晋升」开关点击后 UI 会翻面（乐观更新 `5076-5077`）、写盘也成功，但**宿主永远读不到新值**——开关是摆设 | ① `client.js:5023` 的 `key` 改为 `procedureInjectEnabled`，同时改 `sub` 文案（它管的是**注入/唤起总闸**，不是"晋升"）；② 设置页记忆中枢补 `procedureInjectEnabled` 行（§1 第 1 行）；③ 旧键保留在 `DEFAULT_CONFIG`（兼容老配置）但 UI 不再写它 | 改向导键**无需重启**（宿主每次读 `this.config`）；前端改动需刷新页面 |
 
 ### 2.1 反向确认：除 `pythonGpu` 外无其它"写了宿主不认"的键
@@ -183,7 +183,7 @@
 ### 5.4 修正的两处既有说法（硬证据优先）
 
 1. 「DEFAULT_CONFIG 49 个键」→ **2026-09-25 实测 115 键**（`index.js:328-715`）。49 是**路由**数（插件 ready 日志 `index.js:14419` 打印 routes 数；2026-09-25 实测路由数为 **56**）。
-2. 文档 `docs/archive/plans/UI-REFACTOR-PRE-RESEARCH.md:97` / `DESIGN-OVERHAUL-PRE-RESEARCH.md:46` 称 `pythonGpu` 写在 `client.js:4106/4154` —— **行号已漂移**，当前实际写入点是 **`client.js:5939`**（另 `2812/2816` 为 `localStorage` 读写）。结论不变（宿主零引用）。
+2. 文档 `docs/UI-REFACTOR-PRE-RESEARCH.md:97` / `DESIGN-OVERHAUL-PRE-RESEARCH.md:46` 称 `pythonGpu` 写在 `client.js:4106/4154` —— **行号已漂移**，当前实际写入点是 **`client.js:5939`**（另 `2812/2816` 为 `localStorage` 读写）。结论不变（宿主零引用）。
 
 ### 5.5 本审计未做的事（边界声明）
 

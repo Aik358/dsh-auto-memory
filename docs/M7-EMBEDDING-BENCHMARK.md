@@ -1,7 +1,7 @@
 # M7-2 Embedding / Tokenizer / Chunking Benchmark 报告
 
 > 日期:2026-08-24 · 阶段:M7-2(tested,未 live)
-> 计划:docs/archive/plans/M7-BENCHMARK-PLAN.md · 决策:docs/M7-ALGORITHM-DECISION.md
+> 计划:docs/M7-BENCHMARK-PLAN.md · 决策:docs/M7-ALGORITHM-DECISION.md
 > 机器可读:artifacts/m7-benchmark-pre/results.{json,csv};全量明细 runs/<runId>/
 > 语料:python/bench/m7b_corpus.py(L1 合成 152 记录/88 查询)+
 > artifacts/m7-corpus-pre/(L2 真实 251 episodes/40 手写查询)

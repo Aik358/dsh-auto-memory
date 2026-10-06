@@ -45,7 +45,7 @@
 
 | 拍板结果 | 立即动作 | 工程量 |
 | --- | --- | --- |
-| 按推荐 | ①写 `docs/archive/handoffs/HANDOFF-CRITERIA.md` 判据约定（P0，零代码）②实现 P1 判据校验中间件（≈190 行，咽喉 `writeHandoffLedger`/`writePlanSnapshot`）+ 回归（**工具数不变**） | 半天～1 天 |
+| 按推荐 | ①写 `docs/HANDOFF-CRITERIA.md` 判据约定（P0，零代码）②实现 P1 判据校验中间件（≈190 行，咽喉 `writeHandoffLedger`/`writePlanSnapshot`）+ 回归（**工具数不变**） | 半天～1 天 |
 | 允许 P2/P3 | 按方案 §5 改动清单执行（sidecar + 两工具；**工具数 14→16，三处测试硬锁同步**：`smoke-test.mjs:67` / mapi-paths 等） | 约 2 天 |
 | 看板化 | 出「看板格式约定文档」→ 真实工作区试两周 → 再定交互方案 (a/b/c) | 试点期 |
 
