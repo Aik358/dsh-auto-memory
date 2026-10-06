@@ -22,6 +22,7 @@ import { readFile, mkdir, writeFile, readdir, stat } from 'node:fs/promises'
 import path from 'node:path'
 import os from 'node:os'
 import { fileURLToPath } from 'node:url'
+import { loadMemoryFixtureFactory } from '../lib/memory-engine-fixture.mjs'
 import { checkPlanCriteriaPre } from '../../lib/wb-contract.js'
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
@@ -98,27 +99,18 @@ ok(/type:state/.test(skel) && /type:progress/.test(skel), '骨架含看板泳道
 
 // —— G2：ensurePlanBoardPre 端到端（真 fs）——
 console.log('[plan-seed] G2 ensurePlanBoardPre 端到端（真 fs 临时工作区）')
-function makeFake(over) {
-  const f = {
-    config: { handoffEnabled: true },
+const makeFixture = await loadMemoryFixtureFactory(tmpRoot)
+function makeFake(over = {}) {
+  return makeFixture({
+    // Seed content criteria are independently exercised above; the real
+    // transaction and authority prototypes protect all filesystem effects.
     checkMutationPre: () => ({ ok: true }),
     wbWsKeyPre: () => 'test-ws',
-    _withMemoryMutationPre: (_file, job) => job(),
-    async readTextSafe(p) { try { return (await readFile(p, 'utf8')) || '' } catch (_) { return '' } },
-    async writeFullRaw(p, text) { await mkdir(path.dirname(p), { recursive: true }); await writeFile(p, text, 'utf8') },
-    async writeSidecarEntryPre() {},
-    async appendSidecarEventPre() {},
-    wbWsKeyPre: () => 'test-ws',
     memToday: () => '2026-09-22',
-  }
-  Object.assign(f, over || {})
-  // 沙箱里 `this.xxx` 必须自己挂上：真引擎上这两个是类方法，抽取式沙箱没有原型链。
-  f.skeletonPlanTextPre = bindMethod('skeletonPlanTextPre() {', f)
-  f.writePlanSnapshot = bindMethod('async writePlanSnapshot(projectDir, content, opts) {', f, { path })
-  if (over && over.writePlanSnapshot) f.writePlanSnapshot = over.writePlanSnapshot
-  return f
+    ...over,
+  })
 }
-const ensure = (fake) => bindMethod('async ensurePlanBoardPre(projectDir) {', fake, { path })
+const ensure = fake => fake.ensurePlanBoardPre.bind(fake)
 
 // 12. 空工作区 → 真建文件
 const ws1 = path.join(tmpRoot, 'fresh')

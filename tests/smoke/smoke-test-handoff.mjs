@@ -18,6 +18,7 @@ import { readFile, writeFile, mkdir, readdir, stat } from 'node:fs/promises'
 import path from 'node:path'
 import os from 'node:os'
 import { fileURLToPath } from 'node:url'
+import { loadMemoryFixtureFactory } from '../lib/memory-engine-fixture.mjs'
 // 2.2.4:resolveWaterWindow 把 settings.yaml 解析抽成纯函数(block+flow 双支持);测试用 new Function 抽取方法体执行,须显式注入。
 import { parseModelWindowsPre, pickWindowPre, findOfficialContextWindowPre, findSessionModelPre, scanPressureSignalsPre } from '../../lib/water-window.js'
 
@@ -66,25 +67,17 @@ const stamp = handoffStampFn()
 ok(/^\d{8}-\d{6}$/.test(stamp), '时间戳格式 YYYYMMDD-HHMMSS(' + stamp + ')')
 
 // —— 真实 fs 假引擎(临时目录) ——
+const makeFixture = await loadMemoryFixtureFactory(tmpRoot)
 function makeFakeEngine() {
-  return {
-    // P0（2026-09-14）：两个写入函数现在先过 `checkMutationPre`（判据门 + 共同保护门）。
-    // 本套件考的是**归档/截断/注入行为**，不是门本身 ⇒ 这里给一个恒过的桩
-    // （门的行为由 `smoke-test-t0-8-mutation-gate.mjs` 专测；门在真实引擎上的接线由该套件的
-    //  T0-8B「三条写入路径都不能绕过」断言锁）。
+  return makeFixture({
+    // These suites isolate content archive/format behavior. Shared config
+    // admission, raw document writes and team policy remain real.
     checkMutationPre() { return { ok: true } },
-    _assertTeamActionPre(action) { return assertTeamActionPre(this.config || {}, action) },
     wbWsKeyPre: () => 'test-ws',
-    // P2 sidecar(2026-09-16)桩: writeHandoffLedger/writePlanSnapshot 写盘后会调 writeSidecarEntryPre
-    // (boardMode 默认 legacy 时它是 no-op, 但抽取式沙箱里 this 上必须有该方法, 否则 TypeError)。
-    async writeSidecarEntryPre() {},
-    // P2 events.jsonl(2026-09-16 补桩): 同属新增引擎方法 —— 缺桩会 TypeError → {ok:false} → 后续断言假红。
-    async appendSidecarEventPre() {},
     memToday: () => '2026-09-06',
-    async readTextSafe(p) { try { return (await readFile(p, 'utf8')) || '' } catch (e) { return '' } },
-    async writeFullRaw(p, text) { await mkdir(path.dirname(p), { recursive: true }); await writeFile(p, text, 'utf8') },
-  }
+  })
 }
+
 const bindMethod = (header, fake, extra) => { // 方法简写 → 对象字面量 → 取出绑定 fake this(注入模块级符号+extra)
   const names = ['canonicalCalendarPath', 'withCalendarLock', 'writeTextAtomicPre', 'readPlanPre', 'planRevisionPre', 'anchoredPlanPre', 'archivePlanPre', 'conflictPlanPre', 'preparePlanPre', 'path', 'existsSync', 'mkdir', 'writeFile', 'readdir', 'stat', 'handoffStamp', 'nowHm']
   const vals = [canonicalCalendarPath, withCalendarLock, writeTextAtomicPre, readPlanPre, planRevisionPre, anchoredPlanPre, archivePlanPre, conflictPlanPre, preparePlanPre, path, existsSync, mkdir, writeFile, readdir, stat, handoffStampFn, nowHmFn]
@@ -98,7 +91,7 @@ const proj = path.join(tmpRoot, 'ws')
 const fake2 = makeFakeEngine()
 // P0（2026-09-14）：两个写入函数的签名新增可选 `opts`（`skipCriteria` 供水位骨架 A6 降级路径用），
 // 故抽取 header 同步带上 `, opts)`。这是**签名扩展**而非行为回归：不传 opts 时语义完全不变。
-const writePlanSnapshot = bindMethod('async writePlanSnapshot(projectDir, content, opts) {', fake2)
+const writePlanSnapshot = fake2.writePlanSnapshot.bind(fake2)
 const r1 = await writePlanSnapshot(proj, '# Plan v1\n全貌第一版')
 ok(r1.ok && !r1.archived, '首建成功且无归档')
 ok(existsSync(path.join(proj, 'handoff', 'PLAN.md')), 'PLAN.md 落盘')
@@ -111,8 +104,8 @@ ok(r3.ok && !r3.archived, '同内容重写不产生冗余归档')
 
 console.log('[handoff] G3 writeHandoffLedger + readLatestHandoff')
 const fake3 = makeFakeEngine()
-const writeHandoffLedger = bindMethod('async writeHandoffLedger(projectDir, content, opts) {', fake3)
-const readLatestHandoff = bindMethod('async readLatestHandoff(handoffDir) {', fake3)
+const writeHandoffLedger = fake3.writeHandoffLedger.bind(fake3)
+const readLatestHandoff = fake3.readLatestHandoff.bind(fake3)
 const l1 = await writeHandoffLedger(proj, '## 任务状态\n第一阶段')
 const l2 = await writeHandoffLedger(proj, '## 任务状态\n第二阶段')
 ok(l1.ok && l2.ok && l1.path !== l2.path, '同秒双写不撞名(-b 后缀)')
@@ -349,7 +342,6 @@ function makeWaterFake(opts, ledgerCalls) {
         officialRatio, officialTokens: Math.floor(officialRatio * W), margin: 0.9, source: 'test-injected',
       }
     },
-    state: {},
   })
   fake._rt = rt
   return fake

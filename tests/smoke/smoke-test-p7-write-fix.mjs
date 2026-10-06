@@ -15,6 +15,7 @@ import { readFile, writeFile, mkdir, stat, readdir } from 'node:fs/promises'
 import path from 'node:path'
 import os from 'node:os'
 import { fileURLToPath } from 'node:url'
+import { loadMemoryFixtureFactory } from '../lib/memory-engine-fixture.mjs'
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 const SRC = readFileSync(path.resolve(HERE, '..', '..', 'lib', 'index.js'), 'utf8')
@@ -44,22 +45,17 @@ const tmpRoot = path.join(os.tmpdir(), 'dam-p7-test-' + Date.now())
 mkdirSync(tmpRoot, { recursive: true })
 
 // ---------- 假引擎(真实 tmp fs) ----------
+const makeFixture = await loadMemoryFixtureFactory(tmpRoot)
 function makeFakeEngine() {
-  return {
-    // P0（2026-09-14）：写入函数现在先过 `checkMutationPre`（判据门 + 共同保护门）。
-    // 本套件考的是**双标题剔除 / 老化分类**，不是门本身 ⇒ 恒过桩。
-    // 门的真实行为由 `smoke-test-t0-8-mutation-gate.mjs` 专测。
+  return makeFixture({
+    // These suites isolate content archive/format behavior. Shared config
+    // admission, raw document writes and team policy remain real.
     checkMutationPre() { return { ok: true } },
     wbWsKeyPre: () => 'test-ws',
-    // P2 sidecar(2026-09-16)桩: 同 handoff-pre —— 抽取式沙箱的 this 上必须有该方法。
-    async writeSidecarEntryPre() {},
-    // P2 events.jsonl(2026-09-16 补桩): 同属新增引擎方法 —— 缺桩会 TypeError → {ok:false} → 后续断言假红。
-    async appendSidecarEventPre() {},
     memToday: () => '2026-09-09',
-    async readTextSafe(p) { try { return (await readFile(p, 'utf8')) || '' } catch (e) { return '' } },
-    async writeFullRaw(p, text) { await mkdir(path.dirname(p), { recursive: true }); await writeFile(p, text, 'utf8') },
-  }
+  })
 }
+
 const bindMethod = (header, fake, extra) => {
   const names = ['canonicalCalendarPath', 'withCalendarLock', 'writeTextAtomicPre', 'readPlanPre', 'planRevisionPre', 'anchoredPlanPre', 'archivePlanPre', 'conflictPlanPre', 'preparePlanPre', 'path', 'existsSync', 'mkdir', 'writeFile', 'readdir', 'stat', 'handoffStamp', 'nowHm']
   const vals = [canonicalCalendarPath, withCalendarLock, writeTextAtomicPre, readPlanPre, planRevisionPre, anchoredPlanPre, archivePlanPre, conflictPlanPre, preparePlanPre, path, existsSync, mkdir, writeFile, readdir, stat, handoffStampFn, nowHmFn]
@@ -81,7 +77,7 @@ ok(/engine\.state\.latestHandoffText = '# 交接账本 · ' \+ engine\.memToday\
 console.log('[p7-write-fix] G1 账本双标题修复')
 const proj1 = path.join(tmpRoot, 'ws1')
 const eng1 = makeFakeEngine()
-const writeLedger = bindMethod('async writeHandoffLedger(projectDir, content, opts) {', eng1)
+const writeLedger = eng1.writeHandoffLedger.bind(eng1)
 
 // ① 模型 content 自带标题(实锤形态:标题行 + 时间戳不一致) → 文件恰好 1 个标题行,正文零丢失
 {
@@ -112,7 +108,7 @@ const writeLedger = bindMethod('async writeHandoffLedger(projectDir, content, op
 console.log('[p7-write-fix] G2 白板老化')
 const proj2 = path.join(tmpRoot, 'ws2')
 const eng2 = makeFakeEngine()
-const writePlanBody = bindMethod('async writePlanSnapshot(projectDir, content, opts) {', eng2)
+const writePlanBody = eng2.writePlanSnapshot.bind(eng2)
 const writePlan = async (project, content) => writePlanBody(project, content, { expectedRevision: planRevisionPre(await readPlanPre(path.join(project, 'handoff', 'PLAN.md'))) })
 
 // ① 混合内容:2 个当前节 + 3 个历史节 → PLAN.md 只留当前,历史 3 节整体移入 history 簿
