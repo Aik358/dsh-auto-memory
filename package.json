@@ -23,7 +23,12 @@
     "!**/node_modules",
     "!**/*.bak*",
     "!lib/*.m8b*bak*",
-    "!lib/*.*.*"
+    "!lib/*.*.*",
+    "!lib/assets/skin/backgrounds",
+    "!lib/assets/skin/backgrounds-dark",
+    "!lib/assets/skin/elements",
+    "!lib/assets/skin/icons",
+    "!lib/assets/skin/refs"
   ],
   "dsh": {
     "bundle": {
