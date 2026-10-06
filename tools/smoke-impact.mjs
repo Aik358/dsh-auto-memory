@@ -28,10 +28,41 @@ const SOURCE_RE = /\.(mjs|cjs|js|json|py|css)$/
 
 function git(root, args) { return execFileSync('git', args, { cwd: root, encoding: 'utf8', maxBuffer: 1 << 28 }) }
 
+/**
+ * 解析 `git status --porcelain -z` 的原样输出，返回涉及的文件路径（rename/copy 的新旧路径都给）。
+ *
+ * ★2026-10-04：改用 `-z`，因为默认 `--porcelain` 会把**非 ASCII 路径做八进制转义并加引号** ——
+ *   中文名 `lib/中文.js` 会变成 `"lib/\344\270\255\346\226\207.js"`。此前实现只去掉首尾引号，
+ *   于是拿到 `lib//344/270/255/346/226/207.js` 这种不存在的路径 ⇒ **中文文件名一律漏命中**
+ *   （本机是中文环境，仓库路径也常含中文）。
+ *   `-z` 用 NUL 分隔且不做路径转义；在该格式下 rename/copy 会**多跟一条源路径记录**
+ *   （那条本身没有 `XY ` 前缀），所以不能按行解析。
+ *   注意：`-z` 下路径保留原样（第 3 个字符起），**不要 trim** —— 路径本身可以以空格开头。
+ *
+ * @param raw `git status --porcelain -z` 的输出
+ * @returns 文件路径数组（未去重、未过滤）
+ */
+export function parsePorcelainZ(raw) {
+  const parts = String(raw).split('\0')
+  const out = []
+  for (let i = 0; i < parts.length; i++) {
+    const rec = parts[i]
+    if (!rec || rec.length < 4) continue // 最短形态 `XY P`
+    const xy = rec.slice(0, 2)
+    const p = rec.slice(3)
+    if (!p) continue
+    out.push(p)
+    if (xy[0] === 'R' || xy[0] === 'C' || xy[1] === 'R' || xy[1] === 'C') {
+      const from = parts[i + 1] // rename/copy 的源路径
+      if (from) { out.push(from); i++ }
+    }
+  }
+  return out
+}
+
 function changedManaged(root) {
-  return [...new Set(git(root, ['status', '--porcelain']).split('\n')
-    .map((l) => l.slice(3).trim()).filter(Boolean)
-    .map((p) => p.replace(/^"|"$/g, '').replace(/\\/g, '/'))
+  return [...new Set(parsePorcelainZ(git(root, ['status', '--porcelain', '-z']))
+    .map((p) => p.replace(/\\/g, '/'))
     .filter((p) => !p.endsWith('/') && MANAGED_RE.test(p) && SOURCE_RE.test(p)))]
 }
 
