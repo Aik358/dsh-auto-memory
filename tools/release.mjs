@@ -130,7 +130,7 @@ for (const entry of ['cordis.patch.yml', 'README.md', 'README.zh-CN.md', 'LICENS
 //   使 relName() 把 /api/dsh-auto-memory/ 推成 /bpi/dsh-buto-memory-pre/，issue111 八条断言集体假红。
 //   改用字符串 split 形态，对扫描正则不可见。
 // The runner's statically imported dependency must survive release sync as well.
-for (const toolFile of 'run-smoke.mjs,smoke-impact.mjs,release.mjs'.split(',')) {
+for (const toolFile of 'run-smoke.mjs,smoke-impact.mjs,release.mjs,reconcile-upstream.mjs'.split(',')) {
   const src = path.join(DEV, 'tools', toolFile)
   if (!existsSync(src)) continue
   mkdirSync(path.join(REL, 'tools'), { recursive: true })
@@ -293,37 +293,35 @@ for (const [from, to] of libRenameMap) {
 //   于是「在 main 上修」= 白修;且 main 会被下次发布强推覆盖(PR #118/#119/#120 的合并提交
 //   在本机已 `missing`)。代价:#103/#104/#105 三条 P1 修了两轮、用户侧从未拿到。
 //   详见 docs/internal/WHY-FIXES-MISSING-20260922.md。
-// 本自检把「上游修复必须先回流 pre 线」变成**发版前的硬闸门**:缺任一产物即拒绝构建,
-//   并点名缺什么、该怎么补。清单维护在 tools/reconcile-upstream.mjs(MUST_BE_IN_PRE / MUST_MARKERS)。
+// 保留上游修复产物和关键标记的硬闸门；源码名已统一为发布名。
+// 对账只检查交付的源码，不依赖 origin/main、历史对象或发布机未跟踪文件。
+// 清单由 tools/reconcile-upstream.mjs 维护，并随发布源码一起复制。
 {
   try {
     const { execFileSync } = await import('node:child_process')
-    const out = execFileSync(process.execPath, [path.join(DEV, 'tools', 'reconcile-upstream.mjs'), '--json'], {
+    const out = execFileSync(process.execPath, [path.join(DEV, 'tools', 'reconcile-upstream.mjs'), '--json', '--strict'], {
       cwd: DEV, encoding: 'utf8',
     })
     const r = JSON.parse(out)
-    const missing = (r.artifacts || []).filter((a) => !a.present)
-    const unreg = r.unregistered || []
-    const orphans = (r.orphans || []).filter((o) => o.state === 'missing')
+    if (r.version !== 1 || !Array.isArray(r.artifacts) || !r.artifacts.length
+      || r.artifacts.some(a => !a || typeof a.p !== 'string' || typeof a.present !== 'boolean')
+      || !Array.isArray(r.unregistered) || r.unregistered.some(name => typeof name !== 'string')) {
+      throw new Error('Invalid release reconciliation result; expected version 1 with artifact evidence')
+    }
+    const missing = r.artifacts.filter((a) => !a.present)
+    const unreg = r.unregistered
     if (missing.length || unreg.length) {
       console.error('\n❌ 上游回流自检未过(这些上游产物没有落在 pre 线,发出去就是「修了但用户拿不到」):')
       for (const m of missing) console.error('   · ' + m.p + (m.needle ? '  ⟨' + m.needle + '⟩' : '') + '  — ' + m.why)
       for (const u of unreg) console.error('   · 未登记 -pre 模块: ' + u)
-      console.error('   修法:把 main 上的该修复移植进 pre 线(命名带 -pre),或把产物清单同步进')
-      console.error('         tools/reconcile-upstream.mjs 的 MUST_BE_IN_PRE / MUST_MARKERS 后重跑。')
+      console.error('   修法:恢复缺失修复或更新经审查的 tools/reconcile-upstream.mjs 产物合同后重跑。')
       process.exit(1)
     }
-    const fork = r.fork || {}
-    console.log('[release] 上游回流: OK(产物清单 ' + (r.artifacts || []).length + ' 项齐全'
-      + (orphans.length ? ';注意 main 侧已有 ' + orphans.length + ' 个孤儿提交' : '') + ')')
-    if (fork.preOnly !== undefined) {
-      console.log('[release] 分叉度: pre 独有 ' + fork.preOnly + ' / main 独有 ' + fork.mainOnly
-        + '(merge-base ' + fork.mergeBase + ' @ ' + String(fork.mergeBaseDate).slice(0, 10) + ')')
-    }
+    console.log('[release] 上游回流: OK(源码产物与修复标记 ' + r.artifacts.length + ' 项齐全)')
   } catch (e) {
     // fail closed:拿不到对账结果本身就是异常(缺文件/脚本报错),不允许带疑发布。
     console.error('\n❌ 上游回流自检无法执行:' + String((e && e.message) || e).slice(0, 200))
-    console.error('   期望 tools/reconcile-upstream.mjs 存在且可运行;若确要临时跳过,请先说明理由。')
+    console.error('   期望 tools/reconcile-upstream.mjs 及必需源码产物完整；对账失败不得跳过。')
     process.exit(1)
   }
 }
