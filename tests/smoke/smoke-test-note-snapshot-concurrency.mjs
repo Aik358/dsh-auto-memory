@@ -35,6 +35,13 @@ try {
       assert(!result.includes('状态已更新'))
       console.log('PASS status CAS preserves accepted append; anchor=' + anchored)
     } catch (e) { failures.push('status anchor=' + anchored + ': ' + e.message) }
+    await fs.writeFile(file, '')
+    const emptyResult = await engine.applyNoteStatusPre(file, { retract: [id] }, initial)
+    try {
+      assert.equal(await fs.readFile(file, 'utf8'), '')
+      assert(emptyResult.includes('笔记为空'))
+      console.log('PASS successful empty disk read never revives stale fallback; anchor=' + anchored)
+    } catch (e) { failures.push('empty status anchor=' + anchored + ': ' + e.message) }
   }
   for (const layer of ['note', 'user']) {
     const engine = new MemoryEngine()
