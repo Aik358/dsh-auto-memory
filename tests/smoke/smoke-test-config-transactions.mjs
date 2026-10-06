@@ -23,6 +23,7 @@ import { fork, spawn } from 'node:child_process'
 import { once } from 'node:events'
 import { fileURLToPath } from 'node:url'
 import { withConfigLock, withConfigLockSync } from '../../lib/config-lock.js'
+import { directoryLink, probeFileSymlinks, unprovenFileLink } from '../lib/link-fixture.mjs'
 
 const root = await mkdtemp(path.join(tmpdir(), 'dam-config-transactions-'))
 const home = path.join(root, 'home'), file = path.join(home, 'dsh-auto-memory.json')
@@ -58,6 +59,7 @@ function call(child, payload, timeoutMs = 20000) {
 }
 const save = (child, patch) => call(child, { op: 'save', patch })
 try {
+  const fileSymlinks = probeFileSymlinks(root)
   const { MemoryEngine, flushDiagnostics } = await import('../lib/audit-engine.mjs')
 
   /* ── ① 两个独立进程并发保存互不相关字段（20 轮） ── */
@@ -116,10 +118,28 @@ try {
   const linkPath = path.join(home, 'linked-config.json')
   await writeFile(target, JSON.stringify(baseline))
   await rm(linkPath, { force: true })
-  await symlink(target, linkPath, 'file')
-  await assert.rejects(withConfigLock(linkPath, async () => {}), /config-file-symlink refused/)
-  assert.equal(JSON.parse(await readFile(target, 'utf8')).locale, 'zh', 'symlink target must be untouched')
-  console.log('PASS: symlinked configuration file is refused and its target is untouched')
+  if (fileSymlinks.available) {
+    await symlink(target, linkPath, 'file')
+    let entered = false
+    await assert.rejects(withConfigLock(linkPath, async () => { entered = true }), /config-file-symlink refused/)
+    assert.equal(entered, false, 'file-link refusal must precede the protected callback')
+    assert.equal(JSON.parse(await readFile(target, 'utf8')).locale, 'zh', 'symlink target must be untouched')
+    console.log('PASS: real file-symlink configuration is refused before callback and target stays untouched')
+  } else unprovenFileLink(fileSymlinks, '⑤ final-entry configuration file link refusal')
+  // Mandatory final-entry reparse refusal without Windows file-link privilege.
+  // This is a directory junction; it does not claim file-symlink coverage.
+  const targetDir = path.join(home, 'real-config-dir'), directoryConfig = path.join(home, 'linked-directory-config.json')
+  await mkdir(targetDir)
+  const outsideConfig = path.join(targetDir, 'dsh-auto-memory.json'), original = JSON.stringify(baseline)
+  await writeFile(outsideConfig, original)
+  directoryLink(targetDir, directoryConfig)
+  let enteredDirectory = false
+  await assert.rejects(withConfigLock(directoryConfig, async () => {
+    enteredDirectory = true; await writeFile(outsideConfig, 'MUST_NOT_WRITE')
+  }), /config-file-symlink refused/)
+  assert.equal(enteredDirectory, false)
+  assert.equal(await readFile(outsideConfig, 'utf8'), original)
+  console.log('PASS: actual final-entry directory link refuses config callback; target bytes unchanged (file-link capability is separate)')
 
   /* ── ⑥ 负路径：活持有者 ⇒ 超时拒绝；死持有者 ⇒ 可回收 ── */
   const exited = spawn(process.execPath, ['-e', ''], { stdio: 'ignore' })

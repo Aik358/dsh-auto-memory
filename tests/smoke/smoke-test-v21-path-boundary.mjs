@@ -17,6 +17,7 @@ import { validateSettingsPaths } from '../../lib/settings-safety.js'
 import { canonicalScopeGuard, canonicalize, buildSourceCatalog, loadCorpusSnapshot } from '../../lib/m4-corpus.js'
 import { buildSidecar } from '../../lib/memory-anchor.js'
 import { createHash, randomUUID } from 'node:crypto'
+import { directoryLink, probeFileSymlinks, unprovenFileLink } from '../lib/link-fixture.mjs'
 
 let pass = 0, fail = 0
 const ok = (c, m, extra) => { if (c) { pass++; console.log('  ok   - ' + m) } else { fail++; console.error('  FAIL - ' + m + (extra === undefined ? '' : '  ' + JSON.stringify(extra))) } }
@@ -26,6 +27,7 @@ const prevHome = process.env.DSH_HOME
 const prevFetch = globalThis.fetch
 
 try {
+  const fileSymlinks = probeFileSymlinks(tmp)
   console.log('\n══ ① 公共工具 lib/file-boundary.js —— 单一来源判据本身（真调用）══')
   {
     const root = path.join(tmp, 'fb-root'); fs.mkdirSync(root, { recursive: true })
@@ -48,10 +50,9 @@ try {
     ok(fileWithinRoots(path.join(root, 'missing.md'), [root]) === null, '① 负路径：allowMissing=false 时缺失路径 ⇒ null')
     ok(fileWithinRoots(path.join(root, 'missing.md'), [root], { allowMissing: true }) !== null, '① 别名必过：allowMissing=true 时缺失路径可解析')
     // 悬空链接 = 已存在条目，不得当作安全的新子目录
-    let dangling = ''
-    try { dangling = path.join(root, 'dangling'); fs.symlinkSync(path.join(tmp, 'nowhere'), dangling, 'junction') } catch (_) { dangling = '' }
-    if (dangling) ok(fileWithinRoots(dangling, [root], { allowMissing: true }) === null, '① 越界必拒：悬空链接虽 ENOENT 但 lstat 存在 ⇒ null')
-    else console.log('  skip - 悬空链接不可建（平台限制）')
+    const dangling = path.join(root, 'dangling')
+    directoryLink(path.join(tmp, 'nowhere'), dangling)
+    ok(fileWithinRoots(dangling, [root], { allowMissing: true }) === null, '① 越界必拒：悬空链接虽 ENOENT 但 lstat 存在 ⇒ null')
     // 链接越界（真链接 + 真判定）
     const esc = path.join(root, 'esc'); fs.symlinkSync(sibling, esc, 'junction')
     ok(fileWithinRoots(path.join(esc, 'evil.md'), [root]) === null, '① 越界必拒：树内 junction 指向相邻目录 ⇒ null（零 IO 词法判据会放行）')
@@ -104,6 +105,7 @@ try {
     const outText = '<!-- memory:' + MEM + ' -->\nOUT-OF-TREE-CORPUS-236\n'
     fs.writeFileSync(path.join(wsOther, 'MEMORY.md'), outText)
     fs.writeFileSync(path.join(elsewhere, 'MEMORY.md'), outText)
+    if (fileSymlinks.available) {
     fs.symlinkSync(path.join(wsOther, 'MEMORY.md'), path.join(ws, 'MEMORY.md'), 'file')
     fs.writeFileSync(path.join(ws, 'inner.md'), '<!-- memory:' + MEM + ' -->\nIN-TREE\n')
     fs.symlinkSync(path.join(ws, 'inner.md'), path.join(ws, 'link-ok.md'), 'file')
@@ -131,6 +133,30 @@ try {
     fs.writeFileSync(path.join(sidecarDir, sha(Buffer.from(canonicalize(d3), 'utf8')) + '.json'), JSON.stringify(s3.sidecar))
     const g3 = canonicalScopeGuard(c3.sources[0], s3.sidecar.sourceFile)
     ok(g3.ok === true, '③ 树内合法链接必过：同目录链接 ⇒ ok', g3)
+    } else {
+      for (const label of ['③ same-prefix outside file link + corpus rejection', '③ different-prefix outside file link', '③ tree-local file link admission']) unprovenFileLink(fileSymlinks, label)
+    }
+    // Mandatory directory reparse boundaries and ordinary-source positive
+    // control; these remain distinct from the Linux real file-link matrix.
+    const sideDir = path.join(tmp, 'c236-directory-side'); fs.mkdirSync(sideDir)
+    const checkSource = (file, rejected, label) => {
+      const built = buildSidecar({ sourceFile: file, content: fs.readFileSync(file, 'utf8'), sourceEpoch: randomUUID(), now: Date.now() })
+      assert(built.ok)
+      fs.writeFileSync(path.join(sideDir, createHash('sha256').update(canonicalize(file)).digest('hex') + '.json'), JSON.stringify(built.sidecar))
+      const catalog = buildSourceCatalog({ workspaceKey: 'directory-link-control', workspaceMemoryPath: file })
+      const guard = canonicalScopeGuard(catalog.sources[0], built.sidecar.sourceFile)
+      ok(rejected ? guard.reason === 'cross-workspace' : guard.ok === true, '③ mandatory ' + label + ': actual scope result', guard)
+      const snapshot = loadCorpusSnapshot(catalog, { sidecarDir: sideDir })
+      ok(snapshot.ok && snapshot.snapshot.records.length === (rejected ? 0 : 1), '③ mandatory ' + label + ': corpus content admission', snapshot.dropped)
+      if (rejected) ok(!JSON.stringify(snapshot.snapshot.records).includes('OUT-OF-TREE'), '③ mandatory ' + label + ': outside text absent')
+    }
+    for (const [name, destination] of [['escape-sibling', wsOther], ['escape-other', elsewhere]]) {
+      const link = path.join(ws, name); directoryLink(destination, link)
+      checkSource(path.join(link, 'MEMORY.md'), true, 'directory link ' + name)
+    }
+    const ordinary = path.join(ws, 'ordinary.md')
+    fs.writeFileSync(ordinary, '<!-- memory:' + MEM + ' -->\nIN-TREE\n')
+    checkSource(ordinary, false, 'ordinary source positive control')
   }
 
   console.log('\n══ ④ #228 /file 路由 + fileQ —— 真注册真调用真 IO（真实 engine 解析）══')
@@ -208,7 +234,8 @@ try {
     fs.writeFileSync(path.join(handoffDir, 'PLAN.md'), '# PLAN-OK\n')
     const outsideDir = path.join(tmp, 'h228q-out'); fs.mkdirSync(outsideDir, { recursive: true })
     fs.writeFileSync(path.join(outsideDir, 'secret.txt'), 'OUTSIDE-SECRET-228Q')
-    fs.symlinkSync(path.join(outsideDir, 'secret.txt'), path.join(handoffDir, 'events.jsonl'), 'file')
+    if (fileSymlinks.available) fs.symlinkSync(path.join(outsideDir, 'secret.txt'), path.join(handoffDir, 'events.jsonl'), 'file')
+    else unprovenFileLink(fileSymlinks, '④b events.jsonl outside file link rejection')
     const innerPlan = path.join(handoffDir, 'archive', 'PLAN-history-20261001-000000.md')
     fs.writeFileSync(innerPlan, '# ARCHIVE-INNER\n')
     const oldEnv = process.env.DSH_HOME
@@ -223,9 +250,21 @@ try {
     engine.readTextSafe = MemoryEngine.prototype.readTextSafe.bind(engine)
     const q1 = await engine.handoffPanelData('PLAN.md')
     ok(q1.enabled === true && q1.text === '# PLAN-OK\n', '④b fileQ 合法名 ⇒ 正常返回正文', q1.error || q1.text)
-    const q2 = await engine.handoffPanelData('events.jsonl')
-    ok(q2.error === 'path outside memory tree', '④b 越界必拒：fileQ 命中目录内越界链接 ⇒ 拒绝（修复前返回 OUTSIDE-SECRET）', q2)
-    ok(!JSON.stringify(q2).includes('OUTSIDE-SECRET'), '④b 越界必拒：fileQ 响应不泄露树外内容')
+    if (fileSymlinks.available) {
+      const q2 = await engine.handoffPanelData('events.jsonl')
+      ok(q2.error === 'path outside memory tree', '④b 越界必拒：fileQ 命中目录内越界链接 ⇒ 拒绝（修复前返回 OUTSIDE-SECRET）', q2)
+      ok(!JSON.stringify(q2).includes('OUTSIDE-SECRET'), '④b 越界必拒：fileQ 响应不泄露树外内容')
+    }
+    const archive = path.join(handoffDir, 'archive'), archiveNormal = path.join(handoffDir, 'archive-normal')
+    fs.renameSync(archive, archiveNormal)
+    fs.writeFileSync(path.join(outsideDir, path.basename(innerPlan)), 'OUTSIDE-SECRET-228Q-ARCHIVE')
+    directoryLink(outsideDir, archive)
+    const qDirectory = await engine.handoffPanelData('archive/' + path.basename(innerPlan))
+    ok(qDirectory.error === 'path outside memory tree', '④b mandatory：真实 archive directory link 越界拒绝', qDirectory)
+    ok(!JSON.stringify(qDirectory).includes('OUTSIDE-SECRET'), '④b mandatory：目录链接响应无树外正文')
+    fs.unlinkSync(archive); fs.renameSync(archiveNormal, archive)
+    const qOrdinaryArchive = await engine.handoffPanelData('archive/' + path.basename(innerPlan))
+    ok(qOrdinaryArchive.text === '# ARCHIVE-INNER\n', '④b mandatory：普通 archive 正控仍返回正文', qOrdinaryArchive)
     const q3 = await engine.handoffPanelData('archive/../PLAN.md')
     ok(q3.error === 'bad file name', '④b 越界必拒：非白名单名 ⇒ bad file name（既有契约不变）', q3)
     process.env.DSH_HOME = oldEnv
