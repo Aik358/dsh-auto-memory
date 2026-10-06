@@ -165,13 +165,22 @@ test('frozen filesystem error keeps its original cause/code and recovery metadat
   assert.equal(e.cause,original); assert.equal(e.code,'EPERM'); assert.equal(e.recoveryComplete,true)
 })
 test('80 appends across 8 stores sharing one backend do not lose/duplicate records', async (t) => {
-  const { target } = await fixture(t); const tried=new Set()
-  const api={...fs, async rename(a,b) { if (b===target && !tried.has(a)) { tried.add(a); throw errorOf('EPERM') } return fs.rename(a,b) } }
-  const stores=Array.from({length:8},()=>store(api)); assert.equal(stores[0]._locks,stores[7]._locks)
+  const { target } = await fixture(t); const tried=new Set(), firstAttempts=new Map(), retryWaits=[]
+  const api={...fs, async rename(a,b) {
+    if (b===target && !tried.has(a)) { tried.add(a); firstAttempts.set(a,performance.now()); throw errorOf('EPERM') }
+    if (b===target && firstAttempts.has(a)) { retryWaits.push(performance.now()-firstAttempts.get(a)); firstAttempts.delete(a) }
+    return fs.rename(a,b)
+  } }
+  // Real filesystem pressure must retain the production retry waits. noSleep
+  // belongs to deterministic fault-only unit cases; it collapses five bounded
+  // Windows handle-contention attempts into an immediate failure burst here.
+  const stores=Array.from({length:8},()=>store(api,{atomicOptions:{}})); assert.equal(stores[0]._locks,stores[7]._locks)
   const out=await Promise.all(Array.from({length:80},(_,i)=>stores[i%8].append(target,'record-'+i)))
-  assert.ok(out.every((r)=>r.ok)); const parsed=parseAnchors(await fs.readFile(target)); assert.equal(parsed.status,'clean')
+  assert.ok(out.every((r)=>r.ok), JSON.stringify(out.map((result,index)=>({ index,...result })).filter(result=>!result.ok))); const parsed=parseAnchors(await fs.readFile(target)); assert.equal(parsed.status,'clean')
   const anchored=parsed.records.filter((r)=>r.kind==='anchored'); assert.equal(anchored.length,80)
   assert.equal(new Set(anchored.map((r)=>r.memoryId)).size,80)
+  assert.equal(retryWaits.length,80)
+  assert.ok(retryWaits.every(ms=>ms>=40), 'real production 50ms first retry must not be bypassed: '+JSON.stringify(retryWaits))
   const text=await fs.readFile(target,'utf8'); for(let i=0;i<80;i++) assert.equal(text.split('\n').filter((line)=>line==='record-'+i).length,1)
   await Promise.resolve(); assert.equal(stores[0]._locks.size,0)
 })
