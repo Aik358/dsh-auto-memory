@@ -42,7 +42,10 @@ try{for(const mode of ['directory','file','partial','corrupt']){
    assert.equal(restored.query()[0].evidence.read,1,'repair then replay still deduplicates the original event')
    assert.equal(await fsp.readFile(file,'utf8'),before)
   }
-  console.log('PASS '+mode+' read failure');pass++
+  host.disposeAll('disposed-api')
+  assert.deepEqual(await host.appendEvidence(ev.evidence),{ok:false,reason:'context-host-disposed'},'disposed API refuses before reading or appending ledger')
+  assert.equal(await fsp.readFile(file,'utf8'),mode==='corrupt'?before:preservedBytes,'disposed API preserves durable evidence bytes')
+  console.log('PASS '+mode+' read failure + disposed API refusal');pass++
  }catch(e){console.error('FAIL '+mode+' '+e.stack);fail++}finally{fs.readFileSync=read;fs.readdirSync=readdir;syncBuiltinESMExports();host.disposeAll('test')}
 }}finally{if(old===undefined)delete process.env.DSH_HOME;else process.env.DSH_HOME=old;await fsp.rm(root,{recursive:true,force:true})}
 console.log('PASS '+pass+' / FAIL '+fail);process.exitCode=fail?1:0

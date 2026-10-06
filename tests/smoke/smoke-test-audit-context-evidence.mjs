@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { mkdtemp, mkdir, readFile, rm } from 'node:fs/promises'
+import { mkdtemp, mkdir, readFile, readdir, rm } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { MemoryEngine } from '../lib/audit-engine.mjs'
@@ -45,5 +45,21 @@ try {
   await new Promise(r => setTimeout(r, 60))
   assert.equal(host.getStats().readsCovered, 2)
   assert.equal(host.getStats().stalesSeen, 0)
-  console.log('PASS F05/R05: session/workspace attribution, explicit target isolation, multi-file coverage')
+  // The exported API is also used by real seen/success producers. A queued
+  // producer must consume the host lifecycle, not inherit an always-true default.
+  const eventsDir = path.join(process.env.DSH_HOME, 'memory/evidence/events')
+  const files = await readdir(eventsDir)
+  const beforeLedger = await Promise.all(files.map(file => readFile(path.join(eventsDir, file))))
+  const lateEvidence = makeRead(a, 'one', 99, ws, Date.now())
+  const queued = Promise.resolve().then(() => host.appendEvidence(lateEvidence))
+  host.disposeAll('test-disposed-api')
+  assert.deepEqual(await queued, { ok: false, reason: 'context-host-disposed' })
+  assert.deepEqual(await readdir(eventsDir), files)
+  assert.deepEqual(await Promise.all(files.map(file => readFile(path.join(eventsDir, file)))), beforeLedger)
+  const otherHost = createContextHost({ engine })
+  engine._disposed = true
+  assert.deepEqual(await otherHost.appendEvidence(lateEvidence), { ok: false, reason: 'context-host-disposed' })
+  otherHost.disposeAll('test-engine-disposed')
+  assert.deepEqual(await Promise.all(files.map(file => readFile(path.join(eventsDir, file)))), beforeLedger)
+  console.log('PASS F05/R05: session/workspace attribution, explicit target isolation, multi-file coverage, queued host/engine-disposed append API refusal and unchanged ledger bytes')
 } finally { if (host) host.disposeAll('test'); await rm(root, { recursive: true, force: true }); if (previous === undefined) delete process.env.DSH_HOME; else process.env.DSH_HOME = previous }
