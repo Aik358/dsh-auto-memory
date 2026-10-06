@@ -185,14 +185,19 @@ test('failed transaction releases queue; later success never replays stale snaps
   assert.ok(candidate.includes('failed-first')); assert.ok(!candidate.includes('success-second'))
   await Promise.resolve(); assert.equal(a._locks.size,0)
 })
-test('different files are not globally serialized and rejection does not poison queues', async () => {
+test('different files are not globally serialized and rejection does not poison queues', async (t) => {
+  const { dir } = await fixture(t)
   const s=store(); let release
   const held=new Promise((r)=>{release=r}); const events=[]
-  const first=s._queue('/issue48/a',async()=>{events.push('a'); await held; throw new Error('first failure')})
+  let started
+  const start=new Promise(r=>{started=r})
+  const first=s._queue(path.join(dir,'a'),async()=>{events.push('a'); started(); await held; throw new Error('first failure')})
   const rejection=assert.rejects(first,/first failure/)
-  await s._queue('/issue48/b',async()=>events.push('b'))
+  // Wait for A to own its distinct file; lock acquisition now performs real I/O.
+  await Promise.race([start,first])
+  await s._queue(path.join(dir,'b'),async()=>events.push('b'))
   assert.deepEqual(events,['a','b']); release(); await rejection
-  await s._queue('/issue48/a',async()=>events.push('again')); assert.deepEqual(events,['a','b','again'])
+  await s._queue(path.join(dir,'a'),async()=>events.push('again')); assert.deepEqual(events,['a','b','again'])
 })
 test('Windows case/separator aliases share keys; POSIX case distinctions survive', () => {
   assert.equal(memoryWriteLockKey('C:\\Users\\Alice\\notes\\MEMORY.md','win32'), memoryWriteLockKey('c:/users/alice/notes/memory.md','win32'))

@@ -2,6 +2,7 @@
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
+import { apply, MemoryEngine } from '../lib/audit-engine.mjs'
 
 const ws = mkdtempSync(path.join(tmpdir(), 'dam-consolidate-'))
 const home = path.join(ws, '.dsh-home')
@@ -21,7 +22,7 @@ const parentCalls = []
 const subagents = {
   list() { return ['spawn'] },
   async start(provider, options) {
-    parentCalls.push({ provider, parent: options.parent, model: options.agentOptions ? options.agentOptions.model : undefined })
+    parentCalls.push({ provider, parent: options.parent, prompt: options.prompt, model: options.agentOptions ? options.agentOptions.model : undefined })
     await new Promise((resolve) => setTimeout(resolve, 15))
     return { result: Promise.resolve({ output: [{ type: 'text', text: '[TOPIC] isolated\n[LOG]\n- session-specific consolidation' }] }) }
   },
@@ -37,8 +38,17 @@ const ctx = {
   tools: { register(def) { registeredTools.push(def); return () => {} } },
   webServer: { register() { return () => {} } },
 }
-const { apply } = await import('../../lib/index.js')
-apply(ctx, {})
+let engine
+const load = MemoryEngine.prototype.loadConfigSync
+MemoryEngine.prototype.loadConfigSync = function () { engine = this; return load.call(this) }
+try { apply(ctx, {}) } finally { MemoryEngine.prototype.loadConfigSync = load }
+// The current contract uses one approved workbench parent, while source-session
+// consolidation locks and captured input remain isolated. Seed its real ledger.
+const workbench = { ctx: { get() {} }, session: { id: 'fixture-workbench' } }
+await engine._writeWorkbench({ version: 1, sessionId: workbench.session.id, epoch: engine._workbenchEpoch(Date.now()), consentGranted: true })
+engine._workbenchReady = true
+engine._workbenchParent = workbench
+engine._workbenchParentEpoch = engine._workbenchEpoch(Date.now())
 const makeAgent = (id, cwd) => ({
   id,
   ctx: { get: () => undefined },
@@ -71,7 +81,7 @@ const waitUntil = async (predicate, { timeoutMs = 8000, stepMs = 20 } = {}) => {
 // 插件的每轮沉淀并非在处理器内同步执行,而是「turn-stopping 处理器 + 600ms 延迟」后才调
 // consolidateTurn;其被去重/冷却挡掉的原因会写进 diag 日志(<DSH_HOME>/dsh-auto-memory-pre-diagnose.log)。
 // 「没有第 3 次调用」是否定命题,无法轮询出结论;但可以轮询到肯定信号——去重判定确实发生过。
-const diagLogPath = path.join(home, 'dsh-auto-memory-pre-diagnose.log')
+const diagLogPath = path.join(home, 'dsh-auto-memory-diagnose.log')
 const readDiagLog = () => { try { return readFileSync(diagLogPath, 'utf8') } catch (e) { return '' } }
 
 await Promise.all([
@@ -82,7 +92,13 @@ if (!await waitUntil(() => parentCalls.length >= 2)) {
   throw new Error('expected one subagent call per top-level session, got ' + parentCalls.length)
 }
 if (parentCalls.some((call) => !call.parent)) throw new Error('subagent parent missing')
-if (parentCalls[0].parent === parentCalls[1].parent) throw new Error('subagent parent crossed sessions')
+if (parentCalls.some(call => call.parent !== workbench)) throw new Error('subagent escaped approved workbench parent')
+for (const id of ['agent-a', 'agent-b']) {
+  const matching = parentCalls.filter(call => call.prompt.some(block => String(block.text).includes('user work for ' + id)))
+  if (matching.length !== 1) throw new Error('source-session prompt not isolated: ' + id)
+  const other = id === 'agent-a' ? 'agent-b' : 'agent-a'
+  if (matching[0].prompt.some(block => String(block.text).includes('user work for ' + other))) throw new Error('source-session prompt crossed sessions')
+}
 // 设置页「总结/问候默认模型」端到端:config.subagentModel 必须透传为 agentOptions.model
 if (parentCalls.some((call) => call.model !== 'probe-model-x')) throw new Error('subagentModel not passed through: ' + JSON.stringify(parentCalls.map((c) => c.model)))
 
