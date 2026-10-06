@@ -1,2 +1,4 @@
 # The canonical frozen skin and its theme regression require LF on Windows too.
 skins/legacy/iter5-325.js.frozen text eol=lf
+docs/architecture/system-map.html text eol=lf linguist-generated=true whitespace=-blank-at-eol
+docs/architecture/*.json text eol=lf
