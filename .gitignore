@@ -2,8 +2,6 @@ node_modules/
 *.log
 .dsh-memory/
 .DS_Store
-
-# M7-7.5 hardening (audit P2, corrected): model weights + raw external corpus never enter git
 python/bench/.hf-cache/
 python/bench/models/
 python/bench/.venv/
@@ -11,8 +9,6 @@ python/bench/*.log
 artifacts/m7-corpus-pre/*.jsonl
 artifacts/m7-vector-pre/
 artifacts/m7-semantic-pre/
-
-# 发布工程大资产(2026-08-30 git 备份前盘点):模型权重与依赖树不入库
 python/bench/models-xenova-bge-m3-int8/
 python/bench/__pycache__/
 python/__pycache__/
@@ -23,18 +19,16 @@ _tmp-e5/
 __pycache__/
 artifacts/release-c2-asset-pack/package/
 artifacts/release-c2-asset-pack/*.tgz
-
-# 发布基座不得含备份文件（2026-09-21）
 *.bak
 *.bak-*
-
-
-# 含个人记忆的隔离扫描截图,禁止提交/上传(handoff 规定)
 artifacts/pr146-native-ui/operations-外部来源.png
-artifacts/pr146-native-ui/host.pid
-
-# --- 2026-10-01 补漏（issue #166）：源码副本/调试残留 ---
-# 3.2.6 曾把 7 份 client.js 调试残留发上 npm（约 14.97 MB）：它们不含 bak，
-# 躲过了 *.bak* 系列规则。故改为**结构性**规则：任何「主名之后还有第二个点」的
-# lib/ 文件都是副本/备份（如 client.js.scratch、index.js.GOOD-1533），一律不入库。
+artifacts/pr146-native-ui/host.pid
 lib/*.*.*
+
+# 正式切片统一放在 lib/assets/skin/，不再提交旧试验与相同副本。
+docs/teamwork-impl/concept/_dark-test/
+docs/teamwork-impl/concept/generated/bak/
+docs/teamwork-impl/concept/generated/raw-white/*-WHITE.png
+docs/teamwork-impl/concept/generated/elements/
+docs/teamwork-impl/concept/generated/icons/
+docs/teamwork-impl/concept/generated/bg-refs/
