@@ -40,6 +40,7 @@ function method(signature, optional = false) {
 }
 const methods = [
   method('parseCalendar(text) {'), method('renderCalendar(entries) {'),
+  method('calendarLinesPre(text) {', true),
   method('calendarEditTextPre(text, action, item) {', true),
   method('expandUserPath(p) {'),
   method('_noteSelfWriteAtPre(p) {'),
@@ -129,6 +130,54 @@ test('date sections and unrelated handwritten bytes remain on add/remove, missin
   assert.match(await f.engine.calendarDone(first.date, '13:00', 'Missing'), /未找到/)
   assert.match(await f.engine.calendarRemove(first.date, '13:00', 'Missing'), /未找到/)
   assert.equal(f.writes(), writes)
+})
+const sectionCases = () => ['\n', '\r\n'].flatMap(eol => ['# Appendix', '## Appendix', '### Nested notes', '###### Notes'].map(heading => {
+  const row = '- [ ] 09:00 | 未分类 | Appointment | Call Alice'
+  const preface = '# Intro' + eol + row + eol + eol
+  const dated = '## 2026-10-07' + eol + row + eol + eol
+  const appendix = heading + eol + row + eol + '- [ ] 11:00 | 未分类 | Appendix only' + eol + eol
+  const later = '## 2026-10-08' + eol + '- [ ] --:-- | 未分类 | Later' + eol
+  return { eol, preface, dated, appendix, later, original: preface + dated + appendix + later, row }
+}))
+test('parser terminates each date at ordinary headings and excludes preface/appendix rows', async () => {
+  const f = await fixture()
+  for (const c of sectionCases()) {
+    assert.deepEqual(f.engine.parseCalendar(c.original), [{ ...first, done: false },
+      { date: '2026-10-08', time: '--:--', quadrant: '未分类', title: 'Later', note: '', done: false }])
+    assert.deepEqual(f.engine.parseCalendar(c.preface + c.appendix), [])
+  }
+  assert.deepEqual(f.engine.parseCalendar('- [ ] 09:00 | 未分类 | Undated\n'), [])
+})
+test('Add inserts inside the active date before any ordinary heading and preserves all other bytes', async () => {
+  for (const c of sectionCases()) {
+    const f = await fixture(c.original)
+    await f.engine.calendarAdd({ ...first, time: '10:00', title: 'Added' })
+    assert.equal(await f.read(), c.preface + c.dated + '- [ ] 10:00 | 未分类 | Added | Call Alice' + c.eol + c.appendix + c.later)
+    await f.engine.calendarRemove(first.date, '10:00', 'Added')
+    assert.equal(await f.read(), c.original)
+  }
+})
+test('Done selects only a dated row and never an identical preface/appendix row', async () => {
+  for (const c of sectionCases()) {
+    const f = await fixture(c.original)
+    await f.engine.calendarDone(first.date, first.time, first.title)
+    assert.equal(await f.read(), c.preface + c.dated.replace('- [ ]', '- [x]') + c.appendix + c.later)
+    const writes = f.writes()
+    assert.match(await f.engine.calendarDone(first.date, '11:00', 'Appendix only'), /未找到/)
+    assert.equal(await f.read(), c.preface + c.dated.replace('- [ ]', '- [x]') + c.appendix + c.later)
+    assert.equal(f.writes(), writes)
+  }
+})
+test('Remove preserves identical preface/appendix rows and other date sections byte for byte', async () => {
+  for (const c of sectionCases()) {
+    const f = await fixture(c.original)
+    await f.engine.calendarRemove(first.date, first.time, first.title)
+    assert.equal(await f.read(), c.preface + c.dated.replace(c.row + c.eol, '') + c.appendix + c.later)
+    const writes = f.writes()
+    assert.match(await f.engine.calendarRemove(first.date, '11:00', 'Appendix only'), /未找到/)
+    assert.equal(await f.read(), c.preface + c.dated.replace(c.row + c.eol, '') + c.appendix + c.later)
+    assert.equal(f.writes(), writes)
+  }
 })
 test('unparseable new date/time/quadrant is rejected without clearing existing file', async () => {
   for (const changed of [{ date: '2026-02-30' }, { date: 'bad\n## 2000-01-01' }, { time: '99:99' }, { quadrant: 'other' }]) {
