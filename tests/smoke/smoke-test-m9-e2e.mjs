@@ -58,6 +58,11 @@ import {
   writeTextAtomicPre,
   readJsonQuarantinePreSync,
 } from '${pathToFileURL(path.resolve('lib', 'config-io.js')).href}'
+// ★B-1b（2026-10-06）：loadConfigSync / persistConfigSyncPre 现经 lib/config-lock.js 进锁。
+//   切片注入的模块里同样没有这些符号 ⇒ 与上方 #82 同型：ReferenceError 被函数自身的
+//   fail-soft catch 吞掉，表现为「迁移没发生」（症状离真因很远）。按本文件既有纪律
+//   **注入真实实现**（不打桩）；真实锁会以配置文件所在目录为锁目录，本用例天然隔离。
+import { withConfigLockSync, withConfigLock, readConfigSnapshot } from '${pathToFileURL(path.resolve('lib', 'config-lock.js')).href}'
 const DEFAULT_NOTE_CAPACITY_CHARS = ${NOTE}
 const DEFAULT_USER_CAPACITY_CHARS = ${USER}
 const DEFAULT_CAPACITY_CHARS_PREV = ${PREV}
@@ -84,7 +89,10 @@ export class Engine {
   constructor(configPath) { this._configPath = configPath; this.config = { ...DEFAULT_CONFIG }; this._readError = null }
   ${sliceMethod('_mergeConfigPre(parsed) {')}
   ${sliceMethod('upgradeCapacityDefaultsPre(rawCfg) {')}
+  ${sliceMethod('_readConfigDiskPre(maxBytes = 65536) {')}
+  ${sliceMethod('_persistConfigMergePre() {')}
   ${sliceMethod('loadConfigSync() {')}
+  ${sliceMethod('_loadConfigSyncLocked() {')}
   ${sliceMethod('persistConfigSyncPre() {')}
 }
 `
@@ -175,15 +183,22 @@ t('M9E-5 ★ **默认值污染判据**回归锁: 守卫读 rawCfg, 不得读 thi
   assert(deriveLine, '未找到 onDiskVer 的派生行')
   assert(/rawCfg/.test(deriveLine), '★ onDiskVer 必须派生自 rawCfg(磁盘原文), 实际: ' + deriveLine.trim())
   assert(!/this\.config/.test(deriveLine), '★ onDiskVer 不得派生自 this.config, 实际: ' + deriveLine.trim())
-  const sync = sliceMethod('loadConfigSync() {')
+  // ★B-1b（2026-10-06）判据更新：固定字符窗口 → 真实方法边界。
+  //   两入口现为「薄壳（进锁）+ 被锁体（真实读/迁移/落盘）」：迁裁判据落在被锁体上，
+  //   并额外断言薄壳确实走了锁（否则等于把迁移能力锁在门外）。判据语义未削弱。
+  const shellSync = sliceMethod('loadConfigSync() {')
+  assert(/withConfigLockSync\(/.test(shellSync), '★ loadConfigSync 必须整体进配置锁')
+  const sync = sliceMethod('_loadConfigSyncLocked() {')
   assert(/upgradeCapacityDefaultsPre\(parsed\)/.test(sync), '★ loadConfigSync 必须传 parsed')
-  const ai = SRC.indexOf('async loadConfig()')
-  const asyncSeg = SRC.slice(ai, ai + 900)
+  const shellAsync = sliceMethod('async loadConfig() {')
+  assert(/withConfigLock\(/.test(shellAsync), '★ loadConfig 必须整体进配置锁')
+  const asyncSeg = sliceMethod('async _loadConfigLocked() {')
   assert(/upgradeCapacityDefaultsPre\(parsed\)/.test(asyncSeg), '★ loadConfig 必须传 parsed')
 })
 
 t('M9E-6 ★ 注册期路径必须**同步**落盘(loadConfigSync 是唯一真正跑的那条)', () => {
-  const sync = sliceMethod('loadConfigSync() {')
+  // ★B-1b：同步落盘现发生在被锁体内（薄壳只负责进锁）。
+  const sync = sliceMethod('_loadConfigSyncLocked() {')
   assert(/persistConfigSyncPre\(\)/.test(sync), '★ loadConfigSync 必须调用同步落盘')
   assert(!/await /.test(sync), '★ 同步路径里不得出现 await(apply 不是 async)')
   assert(/persistConfigSyncPre\(\) \{/.test(SRC), 'persistConfigSyncPre 方法应存在')
