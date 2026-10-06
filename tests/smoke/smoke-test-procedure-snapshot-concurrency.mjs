@@ -10,7 +10,7 @@ import { loadIsolatedEngine } from '../lib/load-isolated-engine.mjs'
 const repo = process.env.AUDIT_TEST_REPO || path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
 const { createScopedHubIoPre } = await import(pathToFileURL(path.join(repo, 'lib/hub-io.js')))
 const { createProcedureStorePre } = await import(pathToFileURL(path.join(repo, 'lib/procedure-store.js')))
-const { withConfigLock } = await import(pathToFileURL(path.join(repo, 'lib/config-lock.js')))
+const { withConfigLock, withConfigLockSync } = await import(pathToFileURL(path.join(repo, 'lib/config-lock.js')))
 const candidate = title => ({ title, steps: ['Perform ' + title], successCriteria: ['Verify ' + title], sourceMemoryIds: [], sourceEpisodes: [], origin: 'user', scope: 'global' })
 const adapter = (dir, extra = {}) => createScopedHubIoPre({ globalDir: dir, resolveWorkspace: () => ({ dir: '', key: '' }), ...extra })
 if (process.argv[2] === 'child') {
@@ -105,6 +105,11 @@ if (process.argv[2] === 'child') {
       const started = Date.now(), result = busy.save({ schemaVersion: 1, procedures: [p] })
       assert.equal(result.ok, false); assert.match(result.error, /lock-busy/); assert(Date.now() - started < 500)
     })
+    let asyncChild, enteredAsyncChild = false
+    withConfigLockSync(file, () => {
+      asyncChild = withConfigLock(file, async () => { enteredAsyncChild = true }).then(() => ({ ok: true }), error => ({ error }))
+    })
+    assert.equal((await asyncChild).error?.code, 'CONFIG_LOCK_BUSY'); assert.equal(enteredAsyncChild, false)
     let deny = true
     const fault = adapter(home, { fsApi: { renameSync: (from, to) => { if (deny) throw Object.assign(new Error('injected write denied'), { code: 'ENOSPC' }); return syncFs.renameSync(from, to) } } })
     fault.load(); assert.equal(fault.save({ schemaVersion: 1, procedures: [p] }).ok, false)
