@@ -90,7 +90,7 @@ node --check lib\index.js; node --check lib\client.js
 - **未经明确同意，严禁停止/重启 dsh web 宿主进程**（会截断工具调用）；host 改完只改文件并提示用户重启。
 - **未经明确要求，不要 `npm publish` / push GitHub / 打 tag**。
 - **写任何文件严禁 BOM**（保持 UTF-8 无 BOM；写完可用前三字节校验）。
-- 界面文案与文档的**文风**遵循 `docs/PROMO-STYLE-GUIDE.md`（产品拟人称"她"、厂商腔黑名单、母比喻=一本书）。
+- 界面文案与文档的**文风**遵循 `docs/archive/promo/PROMO-STYLE-GUIDE.md`（产品拟人称"她"、厂商腔黑名单、母比喻=一本书）。
 
 ---
 
@@ -158,8 +158,8 @@ Get-ChildItem tests\smoke -File -Filter *.mjs | ForEach-Object { node $_.FullNam
 | `docs/internal/NEXT-VERSION-TODO.md` | 下一版三点待改（水位口径 / 接续序号 / 流程外包）+ 验收 |
 | `docs/internal/DESIGN-OVERHAUL-PRE-RESEARCH.md` | 界面×文档×首页大排期预研（诊断 + P0-P6 + 判据） |
 | `docs/internal/ART-DIRECTION-WIREFRAME.md` | 美术方向 + 24fps 规格 + Astra 交付契约 |
-| `docs/PROMO-STYLE-GUIDE.md` | 文风守则（README/landing/公告必须遵循） |
-| `docs/UI-INVENTORY-RAW.md` | 界面逐条盘点（12 页签 / 85 键 / 46 端点，带行号） |
+| `docs/archive/promo/PROMO-STYLE-GUIDE.md` | 文风守则（README/landing/公告必须遵循） |
+| `docs/archive/plans/UI-INVENTORY-RAW.md` | 界面逐条盘点（12 页签 / 85 键 / 46 端点，带行号） |
 | `docs/USER-GUIDE.{en,zh-CN}.md` · `README{,.zh-CN}.md` | 面向用户的四份文档（待大改） |
 | `docs/landing/index.html` | 首页（单文件、双语） |
 | `tools/release.mjs` | 发布构建器 + 版本标识闸门（§5.05） |

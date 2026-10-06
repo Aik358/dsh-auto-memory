@@ -97,4 +97,4 @@ git diff --stat
 
 ---
 
-> 背景：`docs/STATUS-BOARD.md` §8（时间臂之后）；诊断见 `docs/prompts/M8-2-ADJUDICATION.md` §6.4 及今日工作日志 §11。
+> 背景：`docs/archive/plans/STATUS-BOARD.md` §8（时间臂之后）；诊断见 `docs/prompts/M8-2-ADJUDICATION.md` §6.4 及今日工作日志 §11。

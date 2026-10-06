@@ -1,3 +1,6 @@
+> 阶段契约；当前接口与默认值见[源码速查](SOURCE-REFERENCE.md)。
+
+
 # M7 接口契约摘要（上下文压缩恢复用速查）
 
 > 生成:2026-08-24,来源:主 Agent 派发的只读研究(精读 lib/*.js + M5/M6-CONTRACT
@@ -128,7 +131,7 @@ backpressure→busy;其余→unsupported。close_session→notify。异常永不
 13. suppressMemories(correction/revoked)命中任一候选=整单拒。
 14. Python 管语义分,JS 管身份/时序/预算;threshold 不能替代用户授权。
 
-## I. M7 阶段门(来自任务集 docs/M7-TASKSET-DISPATCH.md)
+## I. M7 阶段门(来自任务集 docs/archive/plans/M7-TASKSET-DISPATCH.md)
 
 M7-2 benchmark(本阶段)→M7-3 dense/sparse/hybrid(bm25s/FTS5/weighted/RRF,
 RRF k=60 研究初值需消融冻结)→M7-4 bounded rerank(bge-reranker-v2-m3/

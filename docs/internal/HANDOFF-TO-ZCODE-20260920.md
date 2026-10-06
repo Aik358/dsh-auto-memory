@@ -105,7 +105,7 @@ D:\dsh-auto-memory\docs\internal\ART-DIRECTION-DEEPSEEK-20260920.md
 **索引文档（按需查，不必通读）**：
 
 - `docs/internal/UI-INVENTORY-RAW.md` —— 设置项 8 组 / 85 键的原始清单
-- `docs/UI-REFACTOR-PRE-RESEARCH.md` —— 界面重构预研
+- `docs/archive/plans/UI-REFACTOR-PRE-RESEARCH.md` —— 界面重构预研
 - `docs/internal/ISSUE10-FIX-EXECUTION-20260919.md` —— ⑩ 系列修复执行记录（下文的「变更」多出自此）
 - `README.md` / `docs/USER-GUIDE.zh-CN.md` —— 面向用户的现有说明（**已知覆盖不全**，见 §4-A）
 

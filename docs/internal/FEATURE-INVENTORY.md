@@ -1,3 +1,5 @@
+> **历史清单（2026-09-20）**：下文关于 `lib/*-pre.js` 生效、裸名为陈旧副本的描述已被后续迁移取代；保留原证据，不用作当前代码地图。当前清单见[源码速查](../SOURCE-REFERENCE.md)。
+
 # FEATURE-INVENTORY · dsh-auto-memory 三层功能全量清单
 
 > 生成：2026-09-20（ZCode 线，交接任务 §4-A）。枚举基准：本仓工作区 `lib/index.js`（11,463 行）、`lib/client.js`（5,706 行）及 `lib/*-pre.js` 生效模块，全部**机械枚举**（node 脚本 + grep），非手工抄录。

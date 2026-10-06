@@ -1,3 +1,6 @@
+> 阶段契约；当前接口与默认值见[源码速查](SOURCE-REFERENCE.md)。
+
+
 # M5 JS Context / Evidence Bridge 指导性契约
 
 > 状态：M5-0 指导契约冻结；尚未实现 M5 运行时代码

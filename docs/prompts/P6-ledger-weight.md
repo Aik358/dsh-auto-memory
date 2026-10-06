@@ -13,7 +13,7 @@
 4. 纯函数 + fixture 锁定解析与排序
 
 **需先检索的仓库路径与符号关键词**：
-- 路径：`lib/index.js`、`docs/M-CM7-HANDOFF-LAYERED-RETRIEVAL.md`
+- 路径：`lib/index.js`、`docs/archive/handoffs/M-CM7-HANDOFF-LAYERED-RETRIEVAL.md`
 - 关键词：`readLatestHandoff`、`## 任务状态`、`## 已试方案与失败原因`、`handoffLedgerChars`、`handoffPlanChars`、`writeHandoffLedger`
 - 必须先确认：① 四段标题的**确切字符串**（含空格/全半角）② 是否存在 `handoffLedgerChars` 等配置项（若有则复用，勿硬编码）
 

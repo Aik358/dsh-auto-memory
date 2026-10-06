@@ -11,9 +11,9 @@
 
 | 出处 | 内容 |
 |---|---|
-| `docs/HANDOFF-M8-M9-M10.md:31` | `M8 Hermes 移植 \| tested \| touch/setPinned/自动归档/gates getter 活读` |
+| `docs/archive/handoffs/HANDOFF-M8-M9-M10.md:31` | `M8 Hermes 移植 \| tested \| touch/setPinned/自动归档/gates getter 活读` |
 | `docs/landing/index.html:1704` | `M8: 记忆中枢三店持久化 + fact 治理式写回 MEMORY.md + Hermes 借鉴（procedure touch/pinned/90 天归档/evidence 直达分流）` |
-| `docs/M-CM-PLAN.md:51` | `90 天归档复用 Hermes 规则` |
+| `docs/archive/plans/M-CM-PLAN.md:51` | `90 天归档复用 Hermes 规则` |
 
 **结论**：Hermes 借鉴**只覆盖 M-04 Procedural 层的具体机制**（touch / setPinned / 90 天归档 / evidence 直达分流）。**episodic / semantic / procedural 这个三层分类本身并非来自 Hermes**——其权威设计源是：
 

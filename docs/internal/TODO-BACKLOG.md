@@ -88,7 +88,7 @@
 ### K.4 顺带发现的 3 处文档与代码不一致（②的返工里一并修）
 
 1. `docs/M8-3-enable-verify.md:7`：「`index.js:365` `memoryHubEnabled: false`，M8 三层记忆系统默认关闭」→ 实际 `index.js:403` 已是 **`true`**（2.3.0 起默认启用）。
-2. `docs/INTEGRATION-ANALYSIS.md` §4.2：把 `recall-fusion-pre.js`、锚点表标为"未接线"→ 实际**均已接线**；仍真"未接线"的只有 `l0-index-pre.js`。
+2. `docs/archive/plans/INTEGRATION-ANALYSIS.md` §4.2：把 `recall-fusion-pre.js`、锚点表标为"未接线"→ 实际**均已接线**；仍真"未接线"的只有 `l0-index-pre.js`。
 3. 插件 guidance（`lib/index.js:2737`、`:2812-2816`）让模型使用 `scope='sessions'`，**未交代前提**（需宿主开启内容检索且历史格式兼容）。
 
 ### K.5 明确推后（不在本轮打勾）
@@ -101,7 +101,7 @@
 
 - [ ] 🔴 **大排期的 6 个拍板点**（`docs/internal/DESIGN-OVERHAUL-PRE-RESEARCH.md` §8）：①首页托管（htmlpreview vs GitHub Pages）②设计主张（面板靠 DSH 原生 / 首页留品牌色，接受"两种语境"？）③浮层面板是否降级为"状态+快捷入口"④`associativeMemoryEnabled` 是否改出厂默认（**建议保持 false + 向导明说并一键开启**）⑤docs 是否分层出包 ⑥排期节奏（P0-P6 顺序 vs 先集中做界面）。
 - [ ] 🔴 **大排期开工需要的 3 样输入**（`docs/internal/ART-DIRECTION-WIREFRAME.md` §8）：①官方 DSH 网页的 URL/截图（全网只搜到第三方介绍文）②角色基准（默认用 `docs/banner.jpg` 的水彩版做线稿化，或用户另给设定图）③风格探针许可（需用户在 Ark9 生图面板点批准）。
-- [ ] 🟡 **是否解除 `docs/PROJECT-FREEZE-AND-ROADMAP.md:8`「大版本完成前禁止改 README」**的冻结（本次排期就是那个大版本）。
+- [ ] 🟡 **是否解除 `docs/archive/plans/PROJECT-FREEZE-AND-ROADMAP.md:8`「大版本完成前禁止改 README」**的冻结（本次排期就是那个大版本）。
 - [ ] 🎯 **WB-GRAPH 拍板点（8 点 + 看板化 7 点）→ 已整理成一页纸 `docs/internal/WB-GRAPH-DECISIONS-20260914.md`**：**P0 判据文档约定（零代码）+ P1 判据校验中间件（≈190 行）不等拍板，可立即做**；P2/P3（sidecar + 两工具）与看板化需拍板（方案 §8 / §10）。用户已定方向：**把看板/流程图 combine 进自己的白板**，让用户实时看到进展与整个项目流程。
 - [ ] 🟡 **procedure 记忆机制整体逻辑重构（等用户统一拍板，期间不动引擎）**：现状 = 插件的 procedure store（`lib/procedure-store-pre.js`：observed→candidate→validated→active 晋升状态机、M6 六级渐进激活、`renderChecklist` 渲染进动态快照）整体沿用 **Hermes 的记忆方式**；而 Hermes 的记忆工具在社区里**褒贬不一**，用户对这套机制整体不满，届时**统一重构整体逻辑**，不做零敲碎打。审计补充（2026-09-13）：①数据层从未产出过任何 active procedure（全机 7 个工作区均无 `procedures.json`）②`renderChecklist` 语义是"主对话自己照步骤执行"，无"执行类流程派子代理"出口 ③`memory_recall` 无 procedures scope（只能被动注入）。此前提议的两个小改点（delegate 出口 + procedures scope）**并入**这次统一重构，不单独做。过渡期执行类流程的固化走**仓库任务书通道**（`docs/prompts/*-AGENT.md` + 角色分工，主对话派子代理）。用户更详细的不满与改进建议见 **QQ 群反馈与 GitHub issues**（发版后的反馈核查任务要专门检索 procedure/技能/记忆/skill 相关条目）。
 
@@ -153,7 +153,7 @@
 
 ## E. 文档体系
 
-- [ ] 🟡 **README 大改**（490 行 / 说明书式内容占 30%）：落地 `docs/NEXT-MAJOR-README-DRAFT.zh.md` 前必须先修 —— 它沿用「十个页签」旧错（实为 12）、含违反 `PROMO-STYLE-GUIDE.md:70` 的句式、`memory_search` 工具名不存在（实为 `memory_recall`）、安装位置反而更靠后。目标 ≤120 行五段式。
+- [ ] 🟡 **README 大改**（490 行 / 说明书式内容占 30%）：落地 `docs/archive/promo/NEXT-MAJOR-README-DRAFT.zh.md` 前必须先修 —— 它沿用「十个页签」旧错（实为 12）、含违反 `PROMO-STYLE-GUIDE.md:70` 的句式、`memory_search` 工具名不存在（实为 `memory_recall`）、安装位置反而更靠后。目标 ≤120 行五段式。
 - [ ] 🟡 **USER-GUIDE 改任务导向**（现各 382 行、页面导向、61 个配置键）：目标 ≤260 行；删 `-pre` 期命名泄漏与不可用命令（`node tools/subagent-gc.mjs` —— `tools/` 根本没打包）。
 - [ ] 🟡 **6 处事实性错误**：①handoff「默认开启」写 4 处（实为 false）②「Ten tabs」实为 12 ③`memory_search` 实为 `memory_recall` ④`README.md:294` 的 `/n/n` ⑤英文 README 的 H1 是中文 ⑥配置路径写成非 `-pre` 名（`dsh-auto-memory.json` vs 实际 `dsh-auto-memory-pre.json`）。
 - [ ] 🟡 **双语对账脚本**（`tools/check-readme-parity.mjs`）：锁标题序列 + 命令块 + 关键数字（0GB/130MB/563MB、0.75/0.80、8000/200000）逐字符一致 —— 现在只靠人工纪律，已漏过。

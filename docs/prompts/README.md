@@ -5,7 +5,7 @@
 > **🚀 按轮次执行？先看 [`FEEDING-SCRIPT.md`](FEEDING-SCRIPT.md)** —— 每一轮投喂哪两个文件、Agent 要读哪些仓库文件、产出与验收，一张表说清。
 > **⚠️ 2026-09-09 收官后补做段：`P8` + `M8-2b`，裁决依据见 [`M8-2-ADJUDICATION.md`](M8-2-ADJUDICATION.md)**（M8-2 排序目标未达成，**不降级，拆两段补做**）。
 
-从 `docs/PROMPT-SET-STRICT.md` 拆分而来（脚本切片，内容未改），每个文件是一个**独立可投喂单元**。
+从 `docs/archive/handoffs/PROMPT-SET-STRICT.md` 拆分而来（脚本切片，内容未改），每个文件是一个**独立可投喂单元**。
 
 ---
 

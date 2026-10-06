@@ -1,3 +1,6 @@
+> 阶段契约；当前接口与默认值见[源码速查](SOURCE-REFERENCE.md)。
+
+
 # M4 Shadow Retrieval 契约
 
 > 状态：M4-0 契约冻结；M4 运行时代码尚未实施

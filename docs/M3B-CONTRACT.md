@@ -1,3 +1,6 @@
+> 阶段契约；当前接口与默认值见[源码速查](SOURCE-REFERENCE.md)。
+
+
 # M3b 稳定 Anchor 与持久索引契约
 
 > 状态：M3b-4 真实迁移已完成并 live verified（31/31 文件、176 anchored 记录、31 sidecar）；本文保留 M3b-0..3 的历史设计与实施记录
@@ -300,7 +303,7 @@ memoryAnchorEnabled: false  // DEFAULT_CONFIG 默认值；2026-08-22 线上实�
 5. 按 docs/M4-CONTRACT.md §20 只实施 M4-1 纯模块与 fixtures：C-03 Gate、RetrievalContextSnapshot validator、tokenizer/QueryPlan、候选评分/排序/去重/预算和 pure replay。
 6. 新持久化命名空间使用 _pre/-pre。
 7. 运行全量 10 项既有回归与 M4-1 新增测试、node --check、git diff --check 和 BOM 扫描。
-8. 回写 system-map progressLedger、docs/M4-CONTRACT.md 实施状态与 docs/PREVIEW-NEXT-STEPS.md。
+8. 回写 system-map progressLedger、docs/M4-CONTRACT.md 实施状态与 docs/archive/plans/PREVIEW-NEXT-STEPS.md。
 9. 不 commit、不 push、不发布、不启动替代 GUI。
 
 ## 15. 实施状态（M3b-1 完成，2026-08-22）
@@ -458,4 +461,3 @@ memoryAnchorEnabled: false  // DEFAULT_CONFIG 默认值；2026-08-22 线上实�
 5. 目标文件无 sidecar 时返回 'not-anchored' 回退旧文本路径（anchor 关闭行为逐字节不变，G4 锁定）。
 
 测试 smoke-test-f1-pre.mjs G1-G4 共 **20 断言 exit 0**：超预算触发压缩/今天记录无条件保留/最旧两条整条移除且归档逐字节包含（marker+日期标题+正文）/归档不含今天记录/主文件 clean+sidecar FRESH+保留 id 稳定+被移除 id 删除/腾位后继续写入成功/无 BOM/anchor 关闭旧路径回归。全量回归 **20 项** 23.3s 全部 exit 0。d §20。
-

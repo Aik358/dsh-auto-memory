@@ -101,9 +101,9 @@
 
 | 文档 | 大小 | 作用（据其自述） |
 |---|---|---|
-| **`docs/NEXT-MAJOR-README-DRAFT.zh.md`** | 12.9 KB | ⭐ **主页骨架**——「下一大版本 README 替换草稿（中文版）」，hero copy + 段落结构；标注【保留区】（从现 README 原样迁移）与【占位】（随大版本落地替换） |
-| `docs/NEXT-MAJOR-PROMO.md` | 24.9 KB | **全量文案库**——品牌句/开场/每个功能的成稿/工程说明/场景物料/发布公告；「组装 README / landing / npm 简介 / QQ 公告时从这里取材」 |
-| `docs/PROMO-STYLE-GUIDE.md` | 5.4 KB | **文风守则**（「热叙述体」，产品拟人作「她」=可靠/克制）；自称**可整套复用到其他项目主页** |
+| **`docs/archive/promo/NEXT-MAJOR-README-DRAFT.zh.md`** | 12.9 KB | ⭐ **主页骨架**——「下一大版本 README 替换草稿（中文版）」，hero copy + 段落结构；标注【保留区】（从现 README 原样迁移）与【占位】（随大版本落地替换） |
+| `docs/archive/promo/NEXT-MAJOR-PROMO.md` | 24.9 KB | **全量文案库**——品牌句/开场/每个功能的成稿/工程说明/场景物料/发布公告；「组装 README / landing / npm 简介 / QQ 公告时从这里取材」 |
+| `docs/archive/promo/PROMO-STYLE-GUIDE.md` | 5.4 KB | **文风守则**（「热叙述体」，产品拟人作「她」=可靠/克制）；自称**可整套复用到其他项目主页** |
 
 > **判定**：用户说的应是 **`NEXT-MAJOR-README-DRAFT.zh.md`**（唯一同时具备「主页风格」与「Markdown」两个属性的骨架稿）；
 > `NEXT-MAJOR-PROMO.md` 是它的**素材库**，`PROMO-STYLE-GUIDE.md` 是**文风依据**。三份互有交叉引用，排版时应**成套使用**。

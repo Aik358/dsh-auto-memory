@@ -99,7 +99,7 @@ node tests/smoke/smoke-test-autocont-host-pre.mjs 2>&1 | tail -1       # 29
 
 **轮次 8 · P6 账本权重化截断**（前置：轮次 2 完成）
 - 投喂：`_COMMON.md` + `P6-ledger-weight.md`
-- Agent 要读的仓库文件：`lib/index.js`、`docs/M-CM7-HANDOFF-LAYERED-RETRIEVAL.md`
+- Agent 要读的仓库文件：`lib/index.js`、`docs/archive/handoffs/M-CM7-HANDOFF-LAYERED-RETRIEVAL.md`
 - 应产出：`lib/handoff-anchor-pre.js` + smoke + `buildContinueCarry` 接线
 
 **轮次 9 · M8-2 importance 接线**（前置：轮次 6 完成；否则只交付纯函数不接线）

@@ -1,3 +1,6 @@
+> 阶段契约；当前接口与默认值见[源码速查](SOURCE-REFERENCE.md)。
+
+
 # M8 记忆中枢（Memory Hub）：三层记忆系统路径/功能图
 
 > 状态：M8-0/1/2/3 纯核心已实现并 tested（2026-08-27）；Host 接线（engine._memoryHub + /memory-hub 端点 + 设置页 + 面板页签）已完成；live 验证待用户重启 3080。
