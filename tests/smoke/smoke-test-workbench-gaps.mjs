@@ -40,7 +40,7 @@ ck('状态回显 gen 视图', /gen: \(st && st\.gen/.test(idx))
 
 console.log('\n══ 缺口⑤：打开时复查（不轮询）══')
 ck('visibilitychange 复查', /visibilitychange/.test(cli))
-ck('focus 复查', /addEventListener\('focus'/.test(cli))
+ck('focus 复查', /mount\.listen\(window, 'focus'/.test(cli))
 ck('未新增 setInterval 用于工作台',
   // ★必须先剥注释：注释里那句「无 setInterval」会命中字面量 ⇒ 假红（第 15 次判据错）
   (() => {
@@ -172,7 +172,7 @@ ck('S9 changelog 受工作台就绪闸门约束', /var wbPending = \(wbReady ===
 ck('S9 三处 update 弹窗全走闸门', (cli.match(/dialogQueue\.push\(_upd\d\)/g) || []).length === 3)
 ck('S9 先定就绪状态再分发（同批触发）', /dispatchStartupDialog\(pair\[0\], cfg, workbenchReadyState\)/.test(cli))
 ck('S9 就绪判定有 5s 一次性上限（拒绝=未知 ⇒ 不阻塞更新通知）',
-  /Promise\.race\(\[[\s\S]{0,240}?setTimeout\(function \(\) \{ r\(null\) \}, 5000\)/.test(cli))
+  /Promise\.race\(\[[\s\S]{0,240}?mount\.timeout\(function \(\) \{ r\(null\) \}, 5000\)/.test(cli))
 ck('S9 设置窗去重键带状态（关掉后可再次弹出，否则失败后永远配不上）',
   /'workbenchSetup:' \+ \(\(\(d\.status \|\| \{\}\)\.reason\) \|\| 'unknown'\)/.test(cli))
 // 负向：补登记不得引入删除（与守卫⑰同源）
@@ -192,6 +192,56 @@ ck('S6/⑰ 工作区登记删除仅经受控入口（含三条自保判据）',
   /Array\.isArray\(w\.sessionIds\) \? w\.sessionIds : \[\]/.test(idxNoCmt) &&
   /if \(ids\.length > 0\) continue/.test(idxNoCmt) &&
   /if \(!w\.path \|\| this\._pathKey\(w\.path\) === keep\) continue/.test(idxNoCmt))
+
+// Execute the real startup Promise.race and real mount timer owner. The shape
+// assertion above must retain the 5-second unknown fallback; this checks behavior.
+const raceStart = cli.indexOf('Promise.race([', cli.indexOf('function apply(ctx)'))
+const raceEnd = cli.indexOf(']).then(function (st)', raceStart)
+const raceSource = cli.slice(raceStart, raceEnd + 2)
+const ownerStart = cli.indexOf('function createClientMountPre(ctx) {')
+const ownerEnd = cli.indexOf('    async function apiGet(', ownerStart)
+const ownerSource = cli.slice(ownerStart, ownerEnd)
+function startupOwner(source = ownerSource) {
+  let next = 0
+  const timers = new Map(), effects = []
+  const set = (fn, ms) => { const id = ++next; timers.set(id, { fn, ms }); return id }
+  const clear = id => timers.delete(id)
+  const make = new Function('setTimeout', 'clearTimeout', 'setInterval', 'clearInterval',
+    'var clientMount = null, clientMountGeneration = 0, surfacesRefreshHook = null, dialogState = null, dialogQueue = []; '
+    + source + '; return createClientMountPre')
+  const mount = make(set, clear, set, clear)({ effect: fn => effects.push(fn()) })
+  const pending = new Function('checkWorkbenchPre', 'mount', 'return (' + raceSource + ')')(
+    () => new Promise(() => {}), mount)
+  return { mount, pending, timers, effects }
+}
+{
+  const live = startupOwner()
+  const deadlines = [...live.timers.values()]
+  ck('S9 真 startup race 创建且仅创建一个 5000ms deadline', deadlines.length === 1 && deadlines[0].ms === 5000)
+  live.timers.delete([...live.timers.keys()][0]) // Browser removes fired timeout from its scheduler.
+  deadlines[0].fn()
+  ck('S9 deadline 到期实际返回 unknown(null) 不堵通知', await live.pending === null)
+  live.mount.dispose()
+  ck('S9 已执行 deadline 从 owner 集合移除，卸载无 timer', live.timers.size === 0)
+  const dead = startupOwner(), callbacks = [...dead.timers.values()].map(timer => timer.fn)
+  let resolved = false
+  dead.pending.then(() => { resolved = true })
+  dead.mount.dispose(); dead.mount.dispose()
+  callbacks.forEach(fn => fn()); await Promise.resolve(); await Promise.resolve()
+  ck('S9 卸载清 deadline 且已排队回调不能跨 owner resolve', dead.timers.size === 0 && resolved === false)
+  const focusRegistration = cli.split('\n').find(line => line.includes("mount.listen(window, 'focus',"))
+  let focusLive = true, checks = 0, focusCallback
+  const mount = { isLive: () => focusLive, listen: (_target, _event, fn) => { focusCallback = fn } }
+  new Function('mount', 'window', 'checkWorkbenchPre', focusRegistration)(mount, {}, () => { checks++ })
+  focusCallback(); focusLive = false; focusCallback()
+  ck('focus 真注册回调仅 live owner 复查，失活回调不发请求', checks === 1)
+  new Function('mount', 'window', 'checkWorkbenchPre', focusRegistration.replace('mount.isLive()', 'true'))(mount, {}, () => { checks++ })
+  focusCallback()
+  ck('focus 移除 liveness guard 的负控确实发出旧回调', checks === 2)
+  const negative = startupOwner(ownerSource.replace('timeouts.add(id); return id', 'return id'))
+  negative.mount.dispose()
+  ck('S9 移除 timer ownership 的负控实际留 timer，不能冒充清理成功', negative.timers.size === 1)
+}
 
 console.log('\nPASS ' + P + ' / FAIL ' + F)
 process.exit(F ? 1 : 0)

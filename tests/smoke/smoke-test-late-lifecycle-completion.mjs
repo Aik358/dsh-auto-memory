@@ -187,4 +187,3 @@ try {
   await fs.rm(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 40 })
 }
 if (failures) process.exitCode = 1
-

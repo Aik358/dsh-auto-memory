@@ -36,14 +36,14 @@ ok(end > start, '函数体花括号配平抽取成功')
 const fnSrc = CLIENT_SRC.slice(start, end + 1)
 
 // —— 受控闭包工厂:prevAwayState/hostAway 等闭包变量与 client.js 同名同初值 ——
-function build(mock) {
-  const factory = new Function('controller', 'openDialog', 'document', 'isAway', `
+function build(mock, source = fnSrc) {
+  const factory = new Function('controller', 'openDialog', 'document', 'isAway', 'mount', `
     var prevAwayState = null
     var hostAway = false
     var hostAwayReady = false
     var autoPopupEnabled = true
     var lastPendingSummary = null
-    ${fnSrc}
+    ${source}
     return {
       run: autoOpenOnReturn,
       setHost: function (away, ready) { hostAway = away; hostAwayReady = ready },
@@ -51,10 +51,11 @@ function build(mock) {
       get prev() { return prevAwayState },
     }
   `)
-  return factory(mock.controller, mock.openDialog, mock.document, mock.isAway)
+  return factory(mock.controller, mock.openDialog, mock.document, mock.isAway, mock.mount)
 }
 function makeMock() {
   const mock = {
+    alive: true,
     opens: 0,
     dialogs: [],
     controller: { isOpen: () => false, open() { mock.opens++ } },
@@ -62,6 +63,7 @@ function makeMock() {
     document: { hidden: false },
     isAway: () => true,
   }
+  mock.mount = { isLive: () => mock.alive }
   return mock
 }
 
@@ -114,6 +116,18 @@ console.log('[away-popup-fix] G5 打开页面时正处于 away → 不立即弹'
   env.setHost(true, true)
   env.run() // 首次轮询:同步 away=true
   ok(m.opens === 0 && env.prev === true, '首查只同步状态不弹窗(prev=true)')
+}
+
+console.log('[away-popup-fix] G6 已卸载 owner 拒绝迟到回归回调；去掉 guard 的负控必须捕获重开')
+{
+  const m = makeMock(), env = build(m)
+  env.setHost(true, true); env.run()
+  m.alive = false; env.setHost(false, true); env.run()
+  ok(m.opens === 0 && m.dialogs.length === 0 && env.prev === true, '失活 owner 不开窗、不提交状态')
+  const negative = makeMock(), old = build(negative, fnSrc.replace(/if \(!mount\.isLive\(\)\) return/, ''))
+  old.setHost(true, true); old.run()
+  negative.alive = false; old.setHost(false, true); old.run()
+  ok(negative.opens === 1 && negative.dialogs.length === 1, '移除 lifecycle guard 的负控实际重开，判据能红')
 }
 
 console.log(`[away-popup-fix] pass=${pass} fail=${fail}`)

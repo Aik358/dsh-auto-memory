@@ -51,20 +51,42 @@ const IDX = rd('lib/index.js')
 
 console.log('=== P3B-1 · P3-3(a) pathsByKey 必须随 disposeRuntime 释放 ===')
 
-t('P3B-1a ★★ delete 必须在 disposeRuntime 函数体内（不是"全文某处有"）', () => {
-  within(CH, /function disposeRuntime\(runtime\) \{/, 700,
-    "pathsByKey.delete(String(runtime.key || ''))",
-    '★ disposeRuntime 未释放 pathsByKey')
+const singleDispose = CH.slice(CH.indexOf('  function disposeRuntime(runtime) {'), CH.indexOf('  function disposeAll(reason) {'))
+const allDispose = CH.slice(CH.indexOf('  function disposeAll(reason) {'), CH.indexOf('  return {', CH.indexOf('  function disposeAll(reason) {')))
+t('P3B-1a ★★ delete 必须在 disposeRuntime 函数体内且使用规范化 key', () => {
+  assert(/const key = String\(runtime\.key \|\| ''\)/.test(singleDispose), '★ 单会话 owner 未规范化 key')
+  assert(/pathsByKey\.delete\(key\)/.test(singleDispose), '★ 单会话没有删除取得的 key')
 })
-
-t('P3B-1b ★ 键口径必须与三处读点一致（String(runtime.key || \'\')）', () => {
+t('P3B-1b ★ 键口径必须与读点一致；单会话不得清空其他会话', () => {
   assert(count(CH, /pathsByKey\.get\(String\(runtime\.key \|\| ''\)\)/g) >= 3, '★ 读点键口径变了')
-  assert(count(CH, /pathsByKey\.delete\(String\(runtime\.key \|\| ''\)\)/g) === 1, '★ 键口径与读点不一致')
+  assert(!/pathsByKey\.clear\(/.test(singleDispose), '★ 单会话清理误伤其他 owner')
+  const check = source => {
+    const paths = new Map([['session:a', {}], ['session:b', {}]])
+    const dispose = new Function('pathsByKey', 'states', 'retiredRuntimes', 'return (' + source + ')')(
+      paths, new WeakMap(), new WeakSet())
+    dispose({ key: 'session:a' })
+    return !paths.has('session:a') && paths.has('session:b') && paths.size === 1
+  }
+  assert(check(singleDispose), '★ 生产单会话函数没有独立释放 A / 保留 B')
+  assert(!check(singleDispose.replace('pathsByKey.delete(key)', 'pathsByKey.clear()')), '★ clear 泛滥负控未被捕获')
+  assert(!check(singleDispose.replace('pathsByKey.delete(key)', '')), '★ 漏 delete 负控未被捕获')
 })
-
-t('P3B-1c ★ 写入点仍唯一（=1）；delete/clear 不得泛滥', () => {
+t('P3B-1c ★ 唯一写入点；clear 只归全插件 owner，必须收集 lazy-state 之外的 orphan', () => {
   assert(count(CH, /pathsByKey\.set\(/g) === 1, '★ 写入点不是 1 处')
-  assert(count(CH, /pathsByKey\.clear\(\)/g) === 0, '★ 出现 clear() 一刀切（会误伤未 dispose 的 runtime）')
+  assert(count(CH, /pathsByKey\.clear\(\)/g) === 1 && /pathsByKey\.clear\(\)/.test(allDispose), '★ 全插件退出必须且仅在自身 owner 清 orphan')
+  assert(/if \(disposed\) return/.test(allDispose) && /disposed = true/.test(allDispose), '★ 全插件终态/幂等保护丢失')
+})
+await ta('P3B-1d ★ 真 host API：A 释放保留 B，全量退出收孤儿，晚到 capture 不复活', async () => {
+  const { createContextHost } = await load('context-host.js')
+  const isolated = mkdtempSync(path.join(tmpdir(), 'dam-p3b-context-'))
+  const a = { key: 'session:a' }, b = { key: 'session:b' }
+  const host = createContextHost({ engine: { __dshHomeOverride: isolated, config: { associativeMemoryEnabled: true, contextBridgeEnabled: true }, runtimes: { values: () => [a, b] } } })
+  const paths = { ws: isolated }
+  host.capturePaths(a.key, paths); host.capturePaths(b.key, paths); host.capturePaths('orphan', paths)
+  host.disposeRuntime(a)
+  assert(JSON.stringify(host.debugView().capturedPathKeys) === JSON.stringify(['session:b', 'orphan']), '★ 单会话影响 peers')
+  host.disposeAll('test'); host.disposeAll('test'); host.capturePaths('late', paths)
+  assert(host.debugView().capturedPathKeys.length === 0, '★ orphan/晚到 capture 未释放')
 })
 
 console.log('\n=== P3B-2 · P3-12 异步原子写接有界退避 rename ===')

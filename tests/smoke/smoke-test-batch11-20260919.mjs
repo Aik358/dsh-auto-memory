@@ -171,7 +171,26 @@ ok(!idxCode.includes('（M8 固化）'), '★M8-R2 已无「（M8 固化）」�
 ok(idxCode.includes('const hubFeedTick = () => {'), '★M8-R2 保留 hubFeedTick（判定行喂数不受退役影响）')
 ok(idxCode.includes('const hubCorpusLookup = async (memoryId) => {'), '★M8-R2 保留 hubCorpusLookup（heading 富化不受退役影响）')
 ok(idxCode.includes('const hubFeedTimer = setInterval(hubFeedTick, 60 * 1000)'), '★M8-R2 保留喂数定时器')
-ok(idxCode.includes('clearInterval(hubFeedTimer); clearTimeout(hubBootTimer)'), '★M8-R2 disposer 只清理残留的两个喂数侧定时器')
+// Each timer is owned immediately after acquisition; cleanup no longer waits
+// for both timers to exist. Execute the production acquisition/disposer fragment.
+const timerStart = idxCode.indexOf('const hubFeedTimer = setInterval(hubFeedTick, 60 * 1000)')
+const timerEnd = idxCode.indexOf('hubBootTimer.unref()', timerStart) + 'hubBootTimer.unref()'.length
+const timerOwnerCode = idxCode.slice(timerStart, timerEnd)
+function exerciseTimerOwners(source) {
+  const engine = { _hubFeedDisposers: [] }, cleared = []
+  const feed = { unref() {} }, boot = { unref() { throw Error('fixture unref failure') } }
+  try {
+    new Function('engine', 'hubFeedTick', 'setInterval', 'setTimeout', 'clearInterval', 'clearTimeout', source)(
+      engine, () => {}, () => feed, () => boot, id => cleared.push(['interval', id]), id => cleared.push(['timeout', id]))
+  } catch (error) { if (error.message !== 'fixture unref failure') throw error }
+  for (const cleanup of engine._hubFeedDisposers) cleanup()
+  return cleared.filter(([kind, id]) => kind === 'interval' && id === feed).length === 1
+    && cleared.filter(([kind, id]) => kind === 'timeout' && id === boot).length === 1 && cleared.length === 2
+}
+ok(timerStart >= 0 && timerEnd > timerStart && exerciseTimerOwners(timerOwnerCode),
+  '★M8-R2 两个真实喂数定时器即时取得 owner，后续失败仍各回收一次')
+ok(!exerciseTimerOwners(timerOwnerCode.replace(/engine\._hubFeedDisposers\.push\(\(\) => clearTimeout\(hubBootTimer\)\)/, '')),
+  '★M8-R2 删除 boot timer owner 的负控不能通过回收判据')
 
 console.log('\n[10] 判据导出与向后兼容（⑨ 的既有契约不得破）')
 const R = RUNTIME_ENVELOPE_PRE_V1
