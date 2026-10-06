@@ -29,6 +29,53 @@ try {
   Object.assign(engine, { external: { cache: [] }, peekRuntime: () => ({ contextVersion: 1 }),
     tierCurrentMivPre: () => 'test-miv', isUnattendedNow: () => false, renderPlanUpdateRequest: () => '' })
   const agent = { session: { id: 'isolated-session', header: { cwd: root } } }
+  const { sensitiveSections } = await securityModule('injection-policy.js')
+  // Read supported BOM files through the real engine before injection. Matrix
+  // controls include ordinary first headings and both disk newline formats.
+  for (const newline of ['\n', '\r\n']) for (const bom of ['', '\uFEFF']) for (const sensitiveFirst of [true, false]) {
+    const first = sensitiveFirst ? '凭据' : '普通事项'
+    const marker = 'SYNTHETIC_BOM_SEC257'
+    const body = bom + ['## ' + first, '<!-- memory:mem_' + '3'.repeat(32) + ' -->', '- ' + marker,
+      '## 普通后续', '<!-- memory:mem_' + '4'.repeat(32) + ' -->', '- Ordinary BOM control', ''].join(newline)
+    await fs.writeFile(sourcePath, body)
+    const disk = await fs.readFile(sourcePath)
+    const read = await engine.readTextSafe(sourcePath)
+    assert.equal(read, body, 'read/explicit full text must retain original BOM and newline')
+    const policy = sensitiveSections(read)
+    assert.equal(policy.lines[0], bom + '## ' + first + (newline === '\r\n' ? '\r' : ''))
+    Object.assign(engine.state, { userText: read, notesText: '', logText: '', planText: '', latestReflection: '', recentLogs: [] })
+    delete engine._tierGateHits
+    const directory = engine.buildTierLayerInjection(agent)
+    assert.equal(directory.includes(marker), !sensitiveFirst, 'first heading admission disagrees with source')
+    assert(directory.includes('Ordinary BOM control'), 'ordinary negative control must survive')
+    assert.equal(engine.renderMemoryDynamic().includes(marker), !sensitiveFirst, 'final directory prompt admission drift')
+    assert.equal(policy.blocked[0], sensitiveFirst)
+    if (sensitiveFirst) assert.equal(policy.ranges[0].end, Buffer.byteLength(policy.lines[0] + '\n'), 'recognition changed original byte coordinate')
+    engine._tierGateHits = { sessionId: agent.session.id, workspaceKey: canonicalize(root), at: Date.now(), contextVersion: 1,
+      miv: 'test-miv', observationId: 'bom-observation', question: '请给原文证据出处', hits: [
+        { memoryId: 'mem_' + '3'.repeat(32), score: 1, status: 'current', layer: 'user', sourceRef: 'user:MEMORY.md', excerpt: marker, lineStart: 3, lineEnd: 3 },
+        { memoryId: 'mem_' + '4'.repeat(32), score: 0.9, status: 'current', layer: 'user', sourceRef: 'user:MEMORY.md', excerpt: 'Ordinary BOM control', lineStart: 6, lineEnd: 6 },
+      ] }
+    const drilldown = engine.buildTierLayerInjection(agent)
+    assert(drilldown.includes('[Tier-1') && drilldown.includes('[Tier-2') && drilldown.includes('Ordinary BOM control'), 'BOM matrix must actually drill down')
+    assert.equal(drilldown.includes(marker), !sensitiveFirst, 'BOM Tier-1/Tier-2 admission drift')
+    assert.equal(engine.renderMemoryDynamic().includes(marker), !sensitiveFirst, 'BOM final drilldown prompt drift')
+    const matrixSidecars = path.join(root, 'bom-sidecars'); await fs.mkdir(matrixSidecars, { recursive: true })
+    const matrixBuilt = buildSidecar({ sourceFile: sourcePath, content: read })
+    assert(matrixBuilt.ok && matrixBuilt.sidecar.records.length === 2)
+    await fs.writeFile(path.join(matrixSidecars, createHash('sha256').update(canonicalize(sourcePath)).digest('hex') + '.json'), JSON.stringify(matrixBuilt.sidecar))
+    const matrixSnapshot = loadCorpusSnapshot(buildSourceCatalog({ workspaceKey: root, userMemoryPath: sourcePath }), { sidecarDir: matrixSidecars })
+    assert(matrixSnapshot.ok)
+    assert.equal(matrixSnapshot.snapshot.records.length, sensitiveFirst ? 1 : 2, 'M4 admission differs from injection')
+    for (const kept of matrixSnapshot.snapshot.records) {
+      const original = matrixBuilt.sidecar.records.find(r => r.memoryId === kept.memoryId)
+      for (const key of ['memoryId', 'lineStart', 'lineEnd', 'byteStart', 'byteEnd', 'recordDigest', 'fileDigest']) assert.equal(kept[key], original[key], 'BOM ' + key + ' identity drift')
+    }
+    assert.deepEqual(await fs.readFile(sourcePath), disk, 'automatic admission changed disk bytes')
+  }
+  console.log('PASS #257 read -> Tier0/Tier1/Tier2/final/M4: BOM/no-BOM x LF/CRLF x sensitive/ordinary first heading, source byte/line/digest identity')
+  delete engine._tierGateHits
+  await fs.writeFile(sourcePath, text)
   for (const source of ['userText', 'notesText', 'logText', 'planText', 'latestReflection']) {
     Object.assign(engine.state, { userText: '', notesText: '', logText: '', planText: '', latestReflection: '', [source]: text })
     const injected = engine.buildTierLayerInjection(agent)
