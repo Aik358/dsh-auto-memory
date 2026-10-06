@@ -17,6 +17,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import os from 'node:os'
 import vm from 'node:vm'
+import { fileURLToPath } from 'node:url'
 import { MemoryEngine } from '../lib/audit-engine.mjs'
 // ★V2-1：_pathKey 已改为委托公共工具（lib/file-boundary.js 的 pathKey → canonPath），
 //   本段的 vm 抽取执行需要该模块函数在作用域内（否则 ReferenceError）。
@@ -148,7 +149,7 @@ try {
   console.log('')
   console.log('══ ⑦ 防回流：旧的两份判据形态不得复活 ══')
   {
-    const idx = fs.readFileSync(path.join(path.dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1')), '..', '..', 'lib', 'index.js'), 'utf8')
+    const idx = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..', 'lib', 'index.js'), 'utf8')
     const oldRenorm = (idx.match(/norm\(this\._canonPath\(w\.path\)\)/g) || []).length
     const oldNorm2 = (idx.match(/const norm2 = \(x\) => String/g) || []).length
     ok(oldRenorm === 0, '⑦ 旧写法 norm(_canonPath(w.path)) 已归零（实得 ' + oldRenorm + '）')

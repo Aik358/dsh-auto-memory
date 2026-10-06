@@ -19,6 +19,8 @@
       iter5StyleValue = next
       if (persist !== false) {
         try { localStorage.setItem(ITER5_STYLE_KEY, next) } catch (e) {}
+        // Selecting a family must also leave an explicitly selected classic shell.
+        try { if (next === 'legacy') localStorage.removeItem('dam-skin'); else localStorage.setItem('dam-skin', 'v4') } catch (eSkinMode) {}
         // 两个开关互斥保持同步：选 legacy 则挂载点走旧块，否则走本块。
         try { if (typeof damSkinStyleSet === 'function') damSkinStyleSet(next) } catch (e2) {}
       }

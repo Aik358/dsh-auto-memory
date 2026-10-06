@@ -1,0 +1,46 @@
+/* The classic glass treatment belongs to the floating memory panel only.
+   Settings, permission/onboarding dialogs, notices, drawers and continuation
+   confirmations keep the opaque surfaces supplied by their active skin. */
+[data-dam-theme="panel"][data-dam-theme="panel"][data-deep="true"],
+[data-dam-theme="panel"][data-dam-theme="panel"][data-deep="true"] [data-iter5]{
+ --i5-bg:rgba(18,18,20,.52);--i5-surface:rgba(30,30,32,.42);
+ --i5-side:rgba(24,24,26,.52);--i5-soft:rgba(48,48,52,.38);
+ --i5-line:rgba(255,255,255,.10);--i5-text:#EDEDED;--i5-secondary:#B8B8BC;--i5-muted:#8E8E93;
+ --dsw-alias-bg-layer-1:rgba(18,18,20,.52);--dsw-alias-bg-layer-2:rgba(30,30,32,.42);
+ --dsw-alias-border-l1:rgba(255,255,255,.10);--dsw-alias-label-primary:#EDEDED;--dsw-alias-label-secondary:#B8B8BC;
+}
+[data-dam-theme="panel"][data-dam-theme="panel"][data-deep="false"],
+[data-dam-theme="panel"][data-dam-theme="panel"][data-deep="false"] [data-iter5]{
+ --i5-bg:rgba(246,246,247,.62);--i5-surface:rgba(252,252,252,.52);
+ --i5-side:rgba(240,240,242,.62);--i5-soft:rgba(236,236,238,.55);
+ --i5-line:rgba(0,0,0,.10);--i5-text:#1A1A1C;--i5-secondary:#55555A;--i5-muted:#808085;
+ --dsw-alias-bg-layer-1:rgba(246,246,247,.62);--dsw-alias-bg-layer-2:rgba(252,252,252,.52);
+ --dsw-alias-border-l1:rgba(0,0,0,.10);--dsw-alias-label-primary:#1A1A1C;--dsw-alias-label-secondary:#55555A;
+}
+[data-dam-theme="panel"][data-dam-theme="panel"],
+[data-dam-theme="panel"][data-dam-theme="panel"] [data-iter5]{
+ font:calc(14px * var(--dam-user-scale,1))/1.6 var(--dsw-font-family,system-ui),"Segoe UI","Microsoft YaHei",sans-serif!important;
+}
+[data-dam-theme="panel"][data-dam-theme="panel"] [data-dam-panel]{
+ background:rgba(30,30,32,.42)!important;backdrop-filter:blur(28px) saturate(1.55)!important;
+ -webkit-backdrop-filter:blur(28px) saturate(1.55)!important;
+ border:1px solid rgba(255,255,255,.14)!important;border-radius:var(--dam-radius-xxl,16px)!important;
+ box-shadow:0 24px 64px rgba(0,0,0,.34),0 4px 16px rgba(0,0,0,.16),inset 0 1px 0 rgba(255,255,255,.20),inset 0 0 0 1px rgba(255,255,255,.04)!important;color:#EDEDED!important;
+}
+/* The panel owns the glass backing. Its content layers must not obscure it. */
+[data-dam-theme="panel"][data-dam-theme="panel"] [data-iter5],
+[data-dam-theme="panel"][data-dam-theme="panel"] [data-iter5] .i5-main,
+[data-dam-theme="panel"][data-dam-theme="panel"] [data-dam-body]{background:transparent!important;}
+[data-dam-theme="panel"][data-dam-theme="panel"] [data-dam-panel]::before{
+ content:""!important;position:absolute!important;inset:0 0 auto 0!important;height:64%!important;
+ pointer-events:none!important;border-radius:inherit!important;background:linear-gradient(180deg,rgba(255,255,255,.13),rgba(255,255,255,0) 70%)!important;
+}
+[data-dam-theme="panel"][data-dam-theme="panel"][data-deep="false"] [data-dam-panel]::before{background:linear-gradient(180deg,rgba(255,255,255,.42),rgba(255,255,255,0) 70%)!important;}
+[data-dam-theme="panel"][data-dam-theme="panel"][data-deep="false"] [data-dam-panel]{
+ background:rgba(252,252,252,.52)!important;border:1px solid rgba(0,0,0,.12)!important;color:#1A1A1C!important;
+ box-shadow:0 24px 64px rgba(0,0,0,.16),0 4px 16px rgba(0,0,0,.08),inset 0 1px 0 rgba(255,255,255,.65)!important;
+}
+[data-dam-theme="panel"][data-dam-theme="panel"] [data-dam-panel]>header,
+[data-dam-theme="panel"][data-dam-theme="panel"] [data-dam-panel] [data-dam-card]{background:rgba(255,255,255,.045)!important;}
+[data-dam-theme="panel"][data-dam-theme="panel"][data-deep="false"] [data-dam-panel]>header,
+[data-dam-theme="panel"][data-dam-theme="panel"][data-deep="false"] [data-dam-panel] [data-dam-card]{background:rgba(255,255,255,.58)!important;}

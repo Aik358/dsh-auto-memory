@@ -21,14 +21,14 @@
 import { mkdtempSync, writeFileSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
-import { pathToFileURL } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 
 let pass = 0, fail = 0
 const t = (name, fn) => { try { fn(); pass++; console.log('  ok - ' + name) } catch (e) { fail++; console.log('  FAIL - ' + name + ': ' + (e && e.message)) } }
 const assert = (c, m) => { if (!c) throw new Error(m || 'assertion failed') }
 const eq = (a, b, m) => assert(Object.is(a, b), m + ' [got=' + JSON.stringify(a) + ' want=' + JSON.stringify(b) + ']')
 
-const repo = path.resolve(path.dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1')), '..', '..')
+const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..')
 const { MemoryEngine } = await import(pathToFileURL(path.join(repo, 'tests', 'lib', 'audit-engine.mjs')).href)
 assert(typeof MemoryEngine === 'function', '★ 真 import 生产引擎失败（MemoryEngine）')
 

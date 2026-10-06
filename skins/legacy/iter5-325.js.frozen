@@ -443,7 +443,7 @@
         if (node) node.focus()
         return function () { if (before && before.isConnected && before.focus) before.focus() }
       }, [])
-      return kxPortal(h('div', { 'data-iter5': '', 'data-deep': deep ? 'true' : 'false', className: 'i5-overlay-root', style: { position: 'fixed', inset: 0, zIndex: 11000, height: 'auto', background: 'transparent', display: 'block' } }, h('div', { className: 'i5-dialog-backdrop', onMouseDown: function (e) { if (e.target === e.currentTarget) props.onClose() } },
+      return kxPortal(h('div', { 'data-iter5': '', 'data-deep': deep ? 'true' : 'false', className: 'i5-overlay-root', style: { position: 'fixed', inset: 0, zIndex: 2147483200, height: 'auto', background: 'transparent', display: 'block' } }, h('div', { className: 'i5-dialog-backdrop', onMouseDown: function (e) { if (e.target === e.currentTarget) props.onClose() } },
         h('section', { ref: ref, className: 'i5-dialog', role: 'dialog', 'aria-modal': true, 'aria-label': props.title, onKeyDown: function (e) {
           if (e.key === 'Escape') { e.stopPropagation(); props.onClose() }
           if (e.key !== 'Tab') return
@@ -715,7 +715,9 @@
     }
     // Each registered surface owns a theme boundary, including sibling overlays.
     function Iter5Surface(props) {
-      var deep = useIter5Theme()[1]
+      var skinDeep = useIter5Theme()[1]
+      var hostDeep = useDeepTheme()
+      var deep = props.kind === 'settings' ? hostDeep : skinDeep
       var tick = useTick()
       useEffect(function () { return controller.subscribe(tick[1]) }, [])
       useEffect(function () {
@@ -750,7 +752,8 @@
       useEffect(function () {
         var el = slot.current
         if (!el || !target) return
-        function measure() { if (el.clientWidth > 0 && el.clientWidth < 360) expanded[1](true) }
+        var measured = false
+        function measure() { if (!measured && el.clientWidth > 0) { measured = true; if (el.clientWidth < 360) expanded[1](true) } }
         measure()
         var observer = typeof ResizeObserver === 'function' ? new ResizeObserver(measure) : null
         if (observer) observer.observe(el)

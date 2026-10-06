@@ -1,0 +1,2 @@
+# The canonical frozen skin and its theme regression require LF on Windows too.
+skins/legacy/iter5-325.js.frozen text eol=lf
