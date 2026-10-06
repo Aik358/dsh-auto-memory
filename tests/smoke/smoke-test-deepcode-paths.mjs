@@ -148,7 +148,7 @@ try {
   console.log('')
   console.log('══ ⑦ 防回流：旧的两份判据形态不得复活 ══')
   {
-    const idx = fs.readFileSync(path.join(path.dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1')), '..', '..', 'lib', 'index.js'), 'utf8')
+    const idx = fs.readFileSync(new URL('../../lib/index.js', import.meta.url), 'utf8')
     const oldRenorm = (idx.match(/norm\(this\._canonPath\(w\.path\)\)/g) || []).length
     const oldNorm2 = (idx.match(/const norm2 = \(x\) => String/g) || []).length
     ok(oldRenorm === 0, '⑦ 旧写法 norm(_canonPath(w.path)) 已归零（实得 ' + oldRenorm + '）')

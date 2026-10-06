@@ -20,6 +20,9 @@ writeFileSync(path.join(t0Home, 'dsh-auto-memory.json'), JSON.stringify({
   userMemoryDir: path.join(ws, '.user-root'),
   projectMemoryDir: '.project-memory',
   externalSources: {},
+  // This flow checks full reflection content; cadence has separate regressions.
+  snapshotTieredInject: false,
+  snapshotMinGapRounds: 0,
 }), 'utf8')
 process.env.DSH_HOME = t0Home
 

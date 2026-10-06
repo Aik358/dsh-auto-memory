@@ -14,6 +14,9 @@ writeFileSync(path.join(home, 'dsh-auto-memory.json'), JSON.stringify({
   userMemoryDir: userRoot,
   projectMemoryDir: '.project-memory',
   externalSources: {},
+  // Test snapshot ownership; tiered delivery intentionally changes between reads.
+  snapshotTieredInject: false,
+  snapshotMinGapRounds: 0,
 }), 'utf8')
 process.env.DSH_HOME = home
 globalThis.fetch = async () => ({ ok: false, status: 503, json: async () => ({}) })
