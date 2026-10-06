@@ -129,7 +129,8 @@ for (const entry of ['cordis.patch.yml', 'README.md', 'README.zh-CN.md', 'LICENS
 //   ⚠️ 本注释的早先版本就踩了这个坑 —— 那个示例短对被收进表内、且位置在真表之前（**先于真表生效**），
 //   使 relName() 把 /api/dsh-auto-memory/ 推成 /bpi/dsh-buto-memory-pre/，issue111 八条断言集体假红。
 //   改用字符串 split 形态，对扫描正则不可见。
-for (const toolFile of 'run-smoke.mjs,release.mjs'.split(',')) {
+// The runner's statically imported dependency must survive release sync as well.
+for (const toolFile of 'run-smoke.mjs,smoke-impact.mjs,release.mjs'.split(',')) {
   const src = path.join(DEV, 'tools', toolFile)
   if (!existsSync(src)) continue
   mkdirSync(path.join(REL, 'tools'), { recursive: true })
