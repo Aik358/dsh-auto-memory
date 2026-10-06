@@ -48,7 +48,7 @@ const raw = fs.readFileSync(SRC, 'utf8')
 const lines = raw.split(/\r?\n/)
 console.log(`源: lib/index.js  ${Buffer.byteLength(raw, 'utf8')} B / ${lines.length} 行`)
 
-const FIELD = '(_[A-Za-z0-9]*(?:Busy|Inflight|Flight))'
+const FIELD = '(_[A-Za-z0-9]*(?:Busy|Inflight|Flight))(?![A-Za-z0-9_$])'
 const strip = (l) => {
   const t = l.trim()
   if (t.startsWith('//') || t.startsWith('*') || t.startsWith('/*')) return ''
