@@ -120,9 +120,16 @@ console.log("=== 分档 10：【INJ-1 · S2】出厂默认值 = 10，且满 10 �
 {
   // 夹具参数取自产线 DEFAULT_CONFIG（避免夹具自带 3 与产线漂移：旧夹具默认 fullEverySlims=3，
   // 若写死 10 就只是测夹具自己的字面量，测不到出厂默认）。
+  // ★INJ-2（2026-10-06）：`fullEverySlims` 现**引用常量** `DEFAULT_FULL_EVERY_SLIMS`
+  //   （与容量键同风格、防双源漂移）⇒ 旧解析只认字面量数字会取到 NaN。
+  //   改为「先取标识符、再解析该常量」，判据强度不变：仍测产线真实默认值。
   const DEF_FULL = (() => {
-    const m = SRC.slice(SRC.indexOf("const DEFAULT_CONFIG = {")).match(/(?:^|\n)\s*fullEverySlims:\s*(\d+)/)
-    return m ? Number(m[1]) : NaN
+    const seg = SRC.slice(SRC.indexOf("const DEFAULT_CONFIG = {"))
+    const m = seg.match(/(?:^|\n)\s*fullEverySlims:\s*([A-Za-z_$][\w$]*|\d+)/)
+    if (!m) return NaN
+    if (/^\d+$/.test(m[1])) return Number(m[1])
+    const c = SRC.match(new RegExp('const ' + m[1] + ' = (\\d+)'))
+    return c ? Number(c[1]) : NaN
   })()
   ok(DEF_FULL === 10, "★出厂默认 fullEverySlims = 10（用户拍板值；实测 " + DEF_FULL + "）")
   const E = mk({ snapshotMinGapRounds: 999, fullEverySlims: DEF_FULL })

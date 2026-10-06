@@ -167,7 +167,17 @@ const isSlim = (o) => !!o && o.includes("SLIM")
 // T10【INJ-1 · S2】出厂默认 10：连续自主步在满 10 次精简前不得出现完整版
 {
   // 夹具参数取自产线 DEFAULT_CONFIG，避免「只测夹具自己的字面量」。
-  const DEF_FULL = (() => { const m = SRC.match(/(?:^|\n)\s*fullEverySlims:\s*(\d+)/); return m ? Number(m[1]) : NaN })()
+  // ★INJ-2（2026-10-06）：`fullEverySlims` 在 DEFAULT_CONFIG 里改为**引用常量**
+  //   （`DEFAULT_FULL_EVERY_SLIMS`，与容量键同风格、防双源漂移）⇒ 旧解析只认字面量数字，
+  //   会取到 NaN，症状是「出厂默认 = NaN」（离真因很远）。现按「先取标识符、再解析该常量」两级求值，
+  //   判据强度不变：仍然测的是**产线真实默认值**，不是夹具自己的字面量。
+  const DEF_FULL = (() => {
+    const m = SRC.match(/(?:^|\n)\s*fullEverySlims:\s*([A-Za-z_$][\w$]*|\d+)/)
+    if (!m) return NaN
+    if (/^\d+$/.test(m[1])) return Number(m[1])
+    const c = SRC.match(new RegExp('const ' + m[1] + ' = (\\d+)'))
+    return c ? Number(c[1]) : NaN
+  })()
   ok(DEF_FULL === 10, "T10-a ★出厂默认 fullEverySlims = 10（实测 " + DEF_FULL + "）")
   const E = mkEngine({ human: false, cfg: { snapshotMinGapRounds: 999, fullEverySlims: DEF_FULL } })
   ok(isFull(E.run("turn:0", mkSnap("日志0"), 999)), "T10-b 首次注入 ⇒ 完整版（计数起点不计入连投）")
