@@ -51,8 +51,8 @@ if (process.argv[2] === 'child') {
     console.log('PASS two actual processes: nested user ancestor cannot authorize stale workspace writes; refreshed engine still rejects old receipt')
     child.send('stop'); await once(child, 'exit'); child = null
 
-    // Detached refresh descendants inherit ALS, start under the settings gate,
-    // then cross an await. The gate cannot release until their admitted IO ends.
+    // Post-commit refresh starts outside the settings gate. Its detached writer
+    // obtains its own document/config admission; migration still drains that IO.
     const readyWrite = deferred(), resume = deferred(); release = resume.resolve
     let descendant
     engine.refresh = async () => {
@@ -69,13 +69,13 @@ if (process.argv[2] === 'child') {
     const finalRoot = path.join(user, 'final-workspaces')
     const migration = other.saveConfig({ memoryRoot: finalRoot }).then(value => { migrated = true; return value })
     await new Promise(r => setTimeout(r, 40))
-    assert.equal(firstDone, false); assert.equal(migrated, false)
+    assert.equal(firstDone, true); assert.equal(migrated, false)
     await fs.access(engine._configPath + '.lock')
     resume.resolve(); release = null
     await Promise.all([first, descendant, migration])
     const finalFile = path.join(other.projectDirOf(ws), 'MEMORY.md')
     assert.match(await fs.readFile(finalFile, 'utf8'), /Accepted detached refresh/)
-    console.log('PASS admitted detached refresh write drains before lock release and next engine migration copies its accepted bytes')
+    console.log('PASS post-commit refresh writer owns a fresh gate and next engine migration copies its accepted bytes')
 
     // Canonical config identity is shared through junction/symlink aliases.
     const alias = path.join(home, 'home-alias')
