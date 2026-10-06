@@ -46,8 +46,8 @@ try{
  assert.equal(await fs.readFile(semanticPath,'utf8'),'broken semantic config')
  console.log('PASS actual /semantic-emit handler: atomic failure never acknowledges success; gates align after commit; invalid existing JSON preserved')
  // Scoped notes use the selected session and strict disk reads, not another session's cache.
- const notesPath=path.join(home,'project-notes.md'),otherPath=path.join(home,'other-notes.md')
- await fs.writeFile(notesPath,'# Correct session notes\n');await fs.writeFile(otherPath,'# Other session data\n')
+ const notesPath=path.join(engine.projectDirOf('/scoped-ws'),'MEMORY.md'),otherPath=path.join(engine.projectDirOf('/other-ws'),'MEMORY.md')
+ await fs.mkdir(path.dirname(notesPath),{recursive:true});await fs.mkdir(path.dirname(otherPath),{recursive:true});await fs.writeFile(notesPath,'# Correct session notes\n');await fs.writeFile(otherPath,'# Other session data\n')
  engine.state.notesPath=otherPath;engine.state.notesText='cached unrelated data'
  const resolveForSession=engine.resolvePathsForSession
  // ★批次 Z 适配：现树 /note（X2 语义）要求解析结果 wsBound 且 ws 非空（比 PR 更严的一层防御），
@@ -86,25 +86,25 @@ try{
  assert.equal(await fs.readFile(realB.notesPath,'utf8'),'# B\n')
  assert.equal(engine._noteRouteQueues.size,0);assert.equal(engine._settingsNoteFlights.size,0)
  console.log('PASS actual resolver: live agents, cold-session registry, withAgent runtime isolation; concurrent same-note requests serialize deduplication')
- // Hold an admitted note while migration starts; migration waits, new notes fail,
- // and the committed destination includes the completed old-root note.
+ // A route paused before mutation admission must reject its old destination after
+ // migration, preserve the payload, and succeed when retried at the active path.
  const append=engine.appendText.bind(engine);let entered,release
  const started=new Promise(resolve=>{entered=resolve}),held=new Promise(resolve=>{release=resolve})
  engine.appendText=async(...args)=>{entered();await held;return append(...args)}
  const pending=call(noteHandler,{...duplicate,content:'note admitted before root migration'})
  await started
  const nextRoot=path.join(home,'migrated-real-roots'),saving=engine.saveConfig({memoryRoot:nextRoot})
- while(!engine._settingsMigrationActive)await new Promise(resolve=>setImmediate(resolve))
- assert.equal((await call(noteHandler,{...duplicate,content:'rejected during migration'})).status,409)
- assert.notEqual(engine.config.memoryRoot,nextRoot)
- release();assert.equal((await pending).status,200);await saving
+ await saving
+ release();assert.equal((await pending).status,409)
  engine.appendText=append
  const movedA=await engine.resolvePathsForSession('real-A')
  assert(movedA.notesPath.startsWith(nextRoot))
+ assert.doesNotMatch(await fs.readFile(movedA.notesPath,'utf8'),/note admitted before root migration/)
+ assert.equal((await call(noteHandler,{...duplicate,content:'note admitted before root migration',expectedNotesPath:movedA.notesPath})).status,200)
  assert.match(await fs.readFile(movedA.notesPath,'utf8'),/note admitted before root migration/)
  assert.equal((await call(noteHandler,{...duplicate,content:'stale old destination'})).status,409)
  assert.equal(engine._settingsNoteFlights.size,0);assert.equal(engine._settingsMigrationActive,false)
- console.log('PASS local /note migration coordination: drain admitted writes, reject new writes, copy completed data, reject stale destination after commit')
+ console.log('PASS /note rejects an old destination after migration and preserves the request for explicit retry at the active path')
 
 }finally{
  if(previous===undefined)delete process.env.DSH_HOME;else process.env.DSH_HOME=previous

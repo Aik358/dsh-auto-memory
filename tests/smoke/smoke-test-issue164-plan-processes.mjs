@@ -7,6 +7,7 @@ import path from 'node:path'
 import {MemoryEngine} from '../lib/audit-engine.mjs'
 import {planCardsPre} from '../../lib/plan-store.js'
 const root=await mkdtemp(path.join(os.tmpdir(),'dam-plan-process-')),file=path.join(root,'handoff','PLAN.md')
+const previousHome=process.env.DSH_HOME;process.env.DSH_HOME=root
 const engineUrl=new URL('../lib/audit-engine.mjs',import.meta.url).href
 function run(card,body){return new Promise((resolve,reject)=>{const script=`import{MemoryEngine}from${JSON.stringify(engineUrl)};const e=new MemoryEngine();e.configLoaded=true;e.config.criteriaGate=false;const r=await e.writePlanSnapshot(${JSON.stringify(root)},${JSON.stringify(body)},{cardId:${JSON.stringify(card.id)},expectedCardRevision:${JSON.stringify(card.revision)}});console.log(JSON.stringify(r));`;const p=spawn(process.execPath,['--input-type=module','-e',script],{env:{...process.env,DSH_HOME:root},stdio:['ignore','pipe','pipe']});let out='',err='';p.stdout.on('data',b=>out+=b);p.stderr.on('data',b=>err+=b);p.on('error',reject);p.on('exit',code=>{if(code)reject(new Error(err));else resolve(JSON.parse(out))})})}
 try {
@@ -22,4 +23,4 @@ try {
  const owner=spawn(process.execPath,['--input-type=module','-e',`import{withCalendarLock}from${JSON.stringify(lockUrl)};await withCalendarLock(${JSON.stringify(file)},async()=>{console.log('locked');await new Promise(r=>setTimeout(r,60000))});`],{stdio:['ignore','pipe','pipe']});await once(owner.stdout,'data');const before=await readFile(file,'utf8');owner.kill('SIGKILL');await once(owner,'exit');assert.equal(await readFile(file,'utf8'),before)
  const card=planCardsPre(before)[1];assert.equal((await run(card,card.text.replace('Updated','Recovered'))).ok,true);assert.match(await readFile(file,'utf8'),/Recovered card B/)
  console.log('PASS #164: two real processes preserve distinct cards, reject same-card stale CAS with both candidates, survive killed lock owner and recover after restart')
-}finally{await rm(root,{recursive:true,force:true})}
+}finally{if(previousHome===undefined)delete process.env.DSH_HOME;else process.env.DSH_HOME=previousHome;await rm(root,{recursive:true,force:true})}

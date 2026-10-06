@@ -35,11 +35,9 @@ try {
   let migrated = false
   migration = engine.saveConfig({ memoryRoot: nextRoot }).then(result => { migrated = true; return result })
   // Native PLAN.lock is still held: the production writer is admitted but cannot commit.
-  for (let attempt = 0; attempt < 100 && !engine._settingsMigrationActive && !migrated; attempt++) await wait(5)
-  const during = await engine.writePlanSnapshot(project, updated, { expectedRevision: planRevisionPre(original) })
-  assert.equal(during.ok, false)
-  assert.equal(during.error, 'settings-migration-active')
-  assert.equal((await engine.ensurePlanBoardForAgentPre({ session: { id: 'migration-test', header: { cwd: path.join(root, 'workspace') } } })).error, 'settings-migration-active')
+  await wait(30)
+  await access(engine._configPath + '.lock')
+  assert.equal(!!engine._settingsMigrationActive, false, 'migration cannot enter until the shared outer writer gate drains')
   assert.equal(migrated, false, 'migration must await the writer already queued on PLAN.lock')
   assert.equal(engine.config.memoryRoot, oldRoot)
   releaseLock(); releaseLock = undefined
@@ -52,7 +50,7 @@ try {
   assert.equal(await readFile(migratedFile, 'utf8'), updated, 'active root must contain the acknowledged PLAN revision')
   assert.equal(engine._settingsPlanFlights.size, 0)
   console.log('PASS admitted PLAN writer drains before migration and its committed revision is copied')
-  console.log('PASS new PLAN writer during migration fails explicitly without modifying the old root')
+  console.log('PASS migration waits outside the config transaction while the admitted native writer is blocked')
 
   // A caller waiting on the native lock must not use its captured root after it changes.
   let enteredAgain
@@ -137,8 +135,8 @@ try {
   writer = engine.writePlanSnapshot(path.dirname(path.dirname(boundFile)), boundText, { expectedRevision: planRevisionPre(boundText) })
   let rebound = false
   migration = engine.saveConfig({ projectMemoryDir: path.join(root, 'absolute-project-binding') }).then(result => { rebound = true; return result })
-  for (let attempt = 0; attempt < 100 && !engine._settingsMigrationActive && !rebound; attempt++) await wait(5)
-  assert.equal(engine._settingsMigrationActive, true)
+  await wait(30); await access(engine._configPath + '.lock')
+  assert.equal(!!engine._settingsMigrationActive, false)
   assert.equal(rebound, false, 'projectMemoryDir publication also drains the admitted PLAN writer')
   releaseLock(); releaseLock = undefined
   await holder
@@ -159,8 +157,8 @@ try {
   await access(path.join(absoluteProject, 'handoff', 'PLAN.md.lock'))
   let reboundInside = false
   migration = engine.saveConfig({ projectMemoryDir: path.join(root, 'second-absolute-binding') }).then(result => { reboundInside = true; return result })
-  for (let attempt = 0; attempt < 100 && !engine._settingsMigrationActive && !reboundInside; attempt++) await wait(5)
-  assert.equal(engine._settingsMigrationActive, true)
+  await wait(30); await access(engine._configPath + '.lock')
+  assert.equal(!!engine._settingsMigrationActive, false)
   assert.equal(reboundInside, false, 'binding publication must wait after the lock callback root check too')
   assert.equal(engine.config.projectMemoryDir, absoluteProject)
   releaseSeed(); releaseSeed = undefined

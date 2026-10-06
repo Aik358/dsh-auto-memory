@@ -103,6 +103,7 @@ function makeFake(over) {
     config: { handoffEnabled: true },
     checkMutationPre: () => ({ ok: true }),
     wbWsKeyPre: () => 'test-ws',
+    _withMemoryMutationPre: (_file, job) => job(),
     async readTextSafe(p) { try { return (await readFile(p, 'utf8')) || '' } catch (_) { return '' } },
     async writeFullRaw(p, text) { await mkdir(path.dirname(p), { recursive: true }); await writeFile(p, text, 'utf8') },
     async writeSidecarEntryPre() {},
