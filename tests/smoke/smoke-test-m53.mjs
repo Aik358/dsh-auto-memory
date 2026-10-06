@@ -297,12 +297,19 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
   }
   const ctxObj = { agent: h.agent }
   const textsBefore = h.promptComponents.map((c) => (typeof c.text === 'function' ? String(c.text(ctxObj)) : ''))
-  ok(textsBefore.every((t) => !t.includes('[Retrieved memory reference')), 'C8 开启前无 Reference Tail 文本')
+  ok(textsBefore.every((t) => t.indexOf('[Retrieved memory reference') < 0), 'C8 开启前无 Reference Tail 文本')
   await h.cfgPost({ contextBridgeEnabled: true })
   const textsAfter = h.promptComponents.map((c) => (typeof c.text === 'function' ? String(c.text(ctxObj)) : ''))
-  // section(静态纪律)字节级稳定;context(动态快照)不承载 tail
+  // section(静态纪律段)是前缀缓存锚：bridge 开关翻转不得改变它（逐字节）。
   ok(textsAfter[1] === textsBefore[1], 'C8 section 输出逐字节不变(prompt 零变化)')
-  ok(textsAfter.every((t) => !t.includes('[Retrieved memory reference')), 'C8 bridge 开启后仍零 Reference Tail(M5 不改 prompt)')
+  // ★2026-10-06（INJ-1）判据更新：删去「bridge 开启后**所有**面文本里都不得出现唤回块首行」这一条。
+  //   理由：唤回块由一个**独立的 context 面**承载（M6-CONTRACT；本块上方已断言该组件注册存在），
+  //   该面渲染出唤回块正是它的职责。用「任何面都不得出现唤回块」去守「M5 不改 prompt」与该契约自相矛盾，
+  //   且会让任何真的投递了唤回块的实现必红 —— 它把「唤回面存在」误判成「M5 改了 prompt」。
+  //   「M5 不改 prompt」由上面两条守住：①组件注册集合不变（见上方 C8 首条断言）
+  //   ②静态 section 段逐字节不变（前缀缓存锚语义保真）。
+  ok(h.promptComponents.length === 3,
+    'C8 开启后组件注册集合不变（prompt 面数量守恒 n=' + h.promptComponents.length + '）')
   console.log('[C8] prompt/section/context 零变化')
 }
 

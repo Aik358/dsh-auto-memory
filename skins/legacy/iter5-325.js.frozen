@@ -1549,7 +1549,7 @@
           field(t('fSnapGap'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 0, max: 50, value: cfg.snapshotMinGapRounds === undefined ? 5 : cfg.snapshotMinGapRounds, onChange: function (e) { set('snapshotMinGapRounds', normalizeGapRounds(e.target.value, 5)) } }), t('fSnapGapHint')),
           // ★2026-10-01（用户裁定）：精简版节奏两键 —— 与服务端 DEFAULT_CONFIG 的 slimEveryRounds/fullEverySlims 一一对应。
           field(t('fSlimEvery'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 1, max: 50, value: cfg.slimEveryRounds === undefined ? 3 : cfg.slimEveryRounds, onChange: function (e) { set('slimEveryRounds', normalizeGapRounds(e.target.value, 3)) } }), t('fSlimEveryHint')),
-          field(t('fFullEverySlims'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 1, max: 20, value: cfg.fullEverySlims === undefined ? 3 : cfg.fullEverySlims, onChange: function (e) { set('fullEverySlims', normalizeGapRounds(e.target.value, 3)) } }), t('fFullEverySlimsHint')),
+          field(t('fFullEverySlims'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 1, max: 20, value: cfg.fullEverySlims === undefined ? 10 : cfg.fullEverySlims, onChange: function (e) { set('fullEverySlims', normalizeGapRounds(e.target.value, 10)) } }), t('fFullEverySlimsHint')),
           field(t('fReinjectOnCompact'), h('input', { type: 'checkbox', checked: cfg.snapshotReinjectOnCompact !== false, onChange: function (e) { set('snapshotReinjectOnCompact', e.target.checked) } }), t('fReinjectOnCompactHint')),
           // ★2026-09-30（C2 · 用户裁定：设置面必须全量，不得缺项）——注入预算/白板账本/水位四组键，
           //   此前只有宿主读、无 UI 入口（实测 client.js 零引用）：
