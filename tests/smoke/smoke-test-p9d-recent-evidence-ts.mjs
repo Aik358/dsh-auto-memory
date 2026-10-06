@@ -3,14 +3,16 @@
  * 缺陷:旧写法 e.ts || e.createdAt || 0,但 store 投影事件顶层无 ts/createdAt(时间戳在 event.ts)
  *       → 恒 0 → 窗口全跳过 → 恒返回空 → success 证据链(index.js:4575 唯一调用方)结构性断裂。
  * 覆盖:真实 host 实例(DSH_HOME 注入 + 磁盘投影形态 fixture)下窗口内 cite/read 可选出 /
- *       窗口外排除 / kind 过滤 / memoryId 去重 / 坏条目跳过 / 修复前同夹具返回空(回归证明)。
+ *       窗口外排除 / kind 过滤 / memoryId 去重 / 损坏账本停止 success、展示仍跳过坏行 / 修复前同夹具返回空。
+ * 批次 X(拆取自 PR#212 claim 7②):owner 必填(会话+工作区归属)与 strict 读账本语义一并锁定。
  */
 import assert from 'node:assert/strict'
-import { readFileSync, mkdtempSync, writeFileSync, mkdirSync } from 'node:fs'
+import { readFileSync, mkdtempSync, writeFileSync, mkdirSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { createContextHost } from '../../lib/context-host.js'
+import { EvidenceEventStore, sessionRefOf, workspaceRefOf } from '../../lib/evidence-store.js'
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 const SRC = readFileSync(path.resolve(HERE, '..', '..', 'lib', 'context-host.js'), 'utf8')
@@ -25,8 +27,8 @@ const hex64 = (c) => c.repeat(64)
 const proj = (kind, mem, ts) => JSON.stringify({
   schemaVersion: 1, namespace: 'ctx-evidence-pre-v1', storePolicyVersion: 'evidence_store_pre_v1',
   evidenceId: 'evx_' + mem.slice(4, 12) + '_' + kind, kind, memoryId: mem,
-  anchorId: 'anc_' + mem.slice(4, 12), scope: 'Workspace', workspaceRef: 'Workspace:demo',
-  event: { sessionRef: 'session-demo', eventSeq: 1, contextVersion: 1, ts },
+  anchorId: 'anc_' + mem.slice(4, 12), scope: 'Workspace', workspaceRef: workspaceRefOf('/demo'),
+  event: { sessionRef: sessionRefOf('session-demo'), eventSeq: 1, contextVersion: 1, ts },
   source: { sourceRef: 'workspace:notes.md', sourceEpoch: '1', sourceVersion: 1, fileDigest: hex64('a'), recordDigest: hex64('b') },
   policyVersion: 'evidence_policy_pre_v1', recordedAt: ts,
 })
@@ -41,16 +43,18 @@ const lines = [
   proj('cite', memId('a'), NOW - 10 * 1000),      // 同 memoryId 第二条(去重)
   proj('seen', memId('c'), NOW - 20 * 1000),      // 仅 seen → 不选
   proj('cite', memId('d'), NOW - WINDOW - 1000),  // 窗口外 → 排除
-  proj('read', memId('e'), 'not-a-number'),       // event.ts 非法 → 跳过
-  'broken-line{{{',                                // 坏行 → 跳过
+  proj('read', memId('e'), 'not-a-number'),       // 非法时间戳不进入 success 时间窗口
 ].join('\n')
-writeFileSync(path.join(eventsDir, '2026-09-09.jsonl'), lines + '\n', 'utf8')
+const ledgerFile = path.join(eventsDir, '2026-09-09.jsonl')
+writeFileSync(ledgerFile, lines + '\n', 'utf8')
 
+const previousHome = process.env.DSH_HOME
 process.env.DSH_HOME = home
 const host = createContextHost({ engine: { config: { associativeMemoryEnabled: true, contextBridgeEnabled: true } } })
+const OWNER = { sessionId: 'session-demo', workspaceKey: '/demo' }
 
 console.log('[p9d] G1 修复后:窗口内 cite/read 可选出,投影形态 ts 生效')
-const got = host.recentEvidenceForSuccess(WINDOW)
+const got = host.recentEvidenceForSuccess(WINDOW, OWNER)
 ok(Array.isArray(got) && got.length > 0, '不再恒返回空(选出 ' + (got ? got.length : 0) + ' 条)')
 ok(got.some((e) => e.kind === 'cite' && e.memoryId === memId('a')), '窗口内 cite(mem_a) 选出')
 ok(got.some((e) => e.kind === 'read' && e.memoryId === memId('b')), '窗口内 read(mem_b) 选出')
@@ -59,10 +63,20 @@ console.log('[p9d] G2 过滤与去重语义')
 ok(!got.some((e) => e.memoryId === memId('c')), '仅 seen 不被选(kind 过滤仍生效)')
 ok(!got.some((e) => e.memoryId === memId('d')), '窗口外排除')
 ok(got.filter((e) => e.memoryId === memId('a')).length === 1, '同 memoryId 去重(2 条 → 1 条)')
+ok(!got.some((e) => e.memoryId === memId('e')), '非法时间戳不进入 success 候选')
+ok(host.recentEvidenceForSuccess(WINDOW).length === 0, '缺 owner(会话/工作区)不返回任何候选(claim 7①)')
 
-console.log('[p9d] G3 坏条目不抛错(非法 ts / 坏行跳过)')
-ok(!got.some((e) => e.memoryId === memId('e')), 'event.ts 非法条目被跳过')
-ok(!got.some((e) => e.memoryId === undefined), '无 memoryId 残留(坏行不产出)')
+console.log('[p9d] G3 损坏账本停止 success，展示查询仍跳过非法 ts / 坏行')
+const corruptBytes = lines + '\nbroken-line{{{\n'
+writeFileSync(ledgerFile, corruptBytes, 'utf8')
+const corrupted = host.recentEvidenceForSuccess(WINDOW, OWNER)
+ok(Array.isArray(corrupted) && corrupted.length === 0, '损坏账本不能生成 success 候选')
+const display = new EvidenceEventStore({ eventsDir }).loadEvents()
+ok(display.badLines === 1 && display.events.length === 6, '展示查询保留可解析行并统计一条坏行')
+ok(!display.events.some((e) => e.memoryId === undefined), '展示查询不产出坏行条目')
+ok(readFileSync(ledgerFile, 'utf8') === corruptBytes, '查询未修改损坏账本字节')
+writeFileSync(ledgerFile, lines + '\n', 'utf8')
+ok(host.recentEvidenceForSuccess(WINDOW, OWNER).length === got.length, '修复账本后恢复正常时间窗口选择')
 
 console.log('[p9d] G4 回归证明:修复前口径对同一夹具返回空')
 {
@@ -96,4 +110,8 @@ ok(SRC.includes('Number(e.event && e.event.ts)'), '源 context-host.js 含修复
 ok(!/const ets = e\.ts \|\| e\.createdAt \|\| 0/.test(SRC), '源 context-host.js 已无旧写法（保留面：防退回）')
 
 console.log(`\n[p9d] ${pass}/${pass + fail} assertions passed`)
-if (fail) process.exit(1)
+host.disposeAll('test')
+if (previousHome === undefined) delete process.env.DSH_HOME
+else process.env.DSH_HOME = previousHome
+rmSync(home, { recursive: true, force: true })
+process.exitCode = fail ? 1 : 0

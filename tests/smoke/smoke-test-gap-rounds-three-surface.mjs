@@ -97,7 +97,9 @@ const SURFACES = [
   { name: 'frozen(源)', text: frozen, keys: ['snapshotMinGapRounds', 'slimEveryRounds', 'fullEverySlims'] },
 ]
 
-const FALLBACK = { snapshotMinGapRounds: 5, slimEveryRounds: 3, fullEverySlims: 3 }
+// ★2026-10-06（INJ-1 · S2）：fullEverySlims 的界面回落值随服务端默认一并改为 10（三面同改）。
+//   本表必须与三面 UI 字面量同步，否则「空串/非法值回落」用例会红 —— 这正是它该有的行为。
+const FALLBACK = { snapshotMinGapRounds: 5, slimEveryRounds: 3, fullEverySlims: 10 }
 // #160-7 语义：0 合法保留；正整数向下取整且 ≤1000；空串/非法/负数回落 fallback。
 const CASES = [
   { input: '0', want: 0, why: '#160-7：显式 0 必须存得进（旧 Number(v)||fallback 会顶成 fallback）' },

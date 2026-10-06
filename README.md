@@ -655,7 +655,7 @@ Papers were authored by the autonomous engineering agent (ZCode / GLM); all conc
 | [**Skin guide**](docs/SKIN-GUIDE.md) | How to build a skin: the three key layers (tokens / anchors / assets), the full token table, the readings↔routes map, and the acceptance checklist. Contributors: submit skins to the [`skins/` library](skins/README.md) via PR. |
 | [**Teamwork guide**](docs/TEAMWORK-GUIDE.md) | Teamwork as it stands: every config key, the 10 team routes, the data-flow diagram (outbox → transport → merge → conflicts), standalone-mode behaviour, and the honest "not implemented" list. |
 | [**Frontend co-creation plan**](docs/FRONTEND-CO-CREATION.md) | What can outside contributors change, what is off-limits, and how to do it — complete component/route/slot map included. |
-| [Feature Inventory](docs/internal/FEATURE-INVENTORY.md) | What features exist and where each one lives (39 user capabilities / 19 tools / 71 routes / 154 config keys) |
+| [Feature Inventory](docs/internal/FEATURE-INVENTORY.md) | What features exist and where each one lives (39 user capabilities / 19 tools / 71 routes / 155 config keys) |
 
 > **⚠️ Upgrading from before 3.0?** A batch of default values was **flipped** in 3.0.0 —
 > most notably whiteboard + ledger went from `off` to **`on`**. Do not trust pre-3.0

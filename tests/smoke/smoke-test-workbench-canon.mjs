@@ -140,12 +140,27 @@ try {
 
   console.log('\n══ ⑤ 源码形态守卫：四处比较点 + 熔断（防回流）══')
   const idx = fs.readFileSync(path.join(ROOT, 'lib/index.js'), 'utf8')
+  const boundarySrc = fs.readFileSync(path.join(ROOT, 'lib/file-boundary.js'), 'utf8')
   ck('import 引入 realpathSync', /import \{[^}]*\brealpathSync\b[^}]*\} from 'node:fs'/.test(idx))
-  ck('_canonPath 存在', /_canonPath\(p\) \{/.test(idx))
+  // ★2026-10-06 批次 V2-1 判据演进（R82→R83）：realpath 实现已**收敛到单一来源** lib/file-boundary.js，
+  //   实例方法 _canonPath 由「自带函数体」改为对同一函数的**委托**（全仓只剩一份 realpath 判据）。
+  //   **判据意图不变**：仍钉住「归一函数存在且被引擎持有」，只是把「函数体在 index.js 里」换成
+  //   「index.js 委托公共工具 + 公共工具真有该实现」——改回字面比较仍必红。
+  ck('_canonPath 存在（委托公共工具）',
+    /_canonPath\(p\) \{ return canonPath\(p\) \}/.test(idx)
+    && /import \{ canonPath, pathKey, fileWithinRoots \} from '\.\/file-boundary\.js'/.test(idx)
+    && /export function canonPath\(p\) \{/.test(boundarySrc))
+  // ★C-1b（PR#237 后端拆取）判据随源码演进：cwd 比较由 `_canonPath` 升为 `_pathKey`
+  //   （= _canonPath + win32 小写化）。**判据意图不变**：仍钉住「不再走 path.resolve 字面比较」这一防回流语义。
   ck('verify 第①项走归一（不再 path.resolve 字面比较）',
-    /this\._canonPath\(cwd\) !== this\._canonPath\(this\._workbenchCwd\(\)\)/.test(idx)
+    /this\._pathKey\(cwd\) !== this\._pathKey\(this\._workbenchCwd\(\)\)/.test(idx)
     && !/path\.resolve\(cwd\) !== path\.resolve\(this\._workbenchCwd\(\)\)/.test(idx))
-  ck('登记比较走归一', /norm\(this\._canonPath\(w\.path\)\) === wsPath/.test(idx))
+  // ★2026-10-06 批次 V2-1：`const canonical = this._canonPath(p)` 这一**实现细节**已上移进公共工具
+  //   （_pathKey 现委托 pathKey，内部仍做 canonical + win32 小写化）。判据改为钉「登记比较确实走
+  //   _pathKey」+「_pathKey 委托到公共工具」——防回流语义不变。
+  ck('登记比较走归一', /this\._pathKey\(w\.path\) === wsPath/.test(idx)
+    && /_pathKey\(p\) \{ return pathKey\(p\) \}/.test(idx)
+    && /export function pathKey\(p\) \{/.test(boundarySrc))
   ck('包含判定走归一', /path\.relative\(this\._canonPath\(dshHome\(\)\), this\._canonPath\(p\)\)/.test(idx))
   ck('新建熔断存在（同 (epoch, 原因) 连 3 败停新建）',
     /create-breaker:/.test(idx) && /_wbCreateFailStreak/.test(idx) && /count >= 3/.test(idx))

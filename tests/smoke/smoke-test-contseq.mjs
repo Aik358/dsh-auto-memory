@@ -5,13 +5,13 @@
  * (handoffDir 按工作区解析)/carry 复用时不递增、重复或为空 —— 为空即 rename 被跳过,
  * 新会话标题退回自动生成(用户两次实机观察到「新窗口序号不对」)。
  * 新口径:~/.dsh/memory/cont-seq.json 持久计数器,全局单调(跨工作区不重号),缺失时从
- * 历史「接续 #N」标题解析兜底;分配→写包→失败回滚,保证不跳号。
+ * 历史「接续 #N」标题解析兜底;持久预留→写包；失败保留高水位，允许空洞但不重复编号。
  *
  * 用真 apply(ctx) + 真实临时 DSH_HOME 驱动,验证:
  *   S0 源码守卫:接线完整(先分配后写包/失败回滚/取值链/rename fail-soft)
  *   S1 同工作区连续接续:contSeq 依次 1,2;计数器文件落盘
  *   S2 换工作区接续:不重复已有序号(全局单调 3),byWorkspace 记账
- *   S3 包落盘失败:回滚计数器,不跳号(重试复用同一序号)
+ *   S3 包落盘失败:保留预留高水位(重试分配新序号)
  *   S4 计数器缺失:从历史标题「接续 #5」解析兜底 → 下一号 6
  *   S5 重启后(新 engine 实例):持久计数器继续递增(7)
  */
@@ -91,12 +91,12 @@ console.log('[contseq] S0 源码守卫')
   const SRC = readFileSync(new URL('../../lib/index.js', import.meta.url), 'utf8')
   ok(/contSeqFile\(\) \{ return path\.join\(dshHome\(\), 'memory', 'cont-seq\.json'\) \}/.test(SRC),
     '计数器文件在全局记忆根(~/.dsh/memory/cont-seq.json),不随工作区 handoffDir 漂移')
-  ok(/let contSeq = 0\s*\n\s*try \{ contSeq = await this\.allocContSeq\(p\.ws\) \} catch \(eSeq\)/.test(SRC),
+  ok(/let contSeq = 0\s*\n\s*contSeq = await this\.allocContSeq\(p\.ws\)/.test(SRC),
     'buildPrevSessionPack:写包前先分配序号')
   ok(/catch \(eW\) \{[\s\S]{0,200}?rollbackContSeq\(p\.ws, contSeq\)[\s\S]{0,120}?throw eW\s*\}/.test(SRC),
-    'buildPrevSessionPack:写包失败回滚(不跳号)')
-  ok(/let contSeq = Number\(pack && pack\.contSeq\) \|\| 0[\s\S]{0,400}?if \(!contSeq\) contSeq = 1/.test(SRC),
-    'buildContinueCarry 取值链:pack → 持久计数器 → 旧文件数+1 → 1(contSeq 恒非空,rename 不再被跳过)')
+    'buildPrevSessionPack:写包失败走兼容rollback入口，高水位不降低')
+  ok(/let contSeq = Number\(pack && pack\.contSeq\) \|\| 0\s*if \(!contSeq\) contSeq = await this\.allocContSeq\(p\.ws\)/.test(SRC),
+    'buildContinueCarry 取值链:pack → 持久预留，失败不猜文件数或常量1')
   ok(/if \(d\.contSeq && typeof sc\.rename === 'function'\)/.test(SRC), '宿主 rename 保留 fail-soft(旧 harness 不炸)')
   ok(/allocContSeq\(wsKey\) \{[\s\S]{0,600}?scanMaxContSeq\(\)/.test(SRC), '计数器缺失时从历史标题解析兜底(兼容老数据)')
 }
@@ -123,7 +123,7 @@ ok(r3 && r3.ok === true && r3.contSeq === 3, '工作区 B 首次接续 contSeq=3
 seq = readSeq()
 ok(seq && Number(seq.byWorkspace[WS_B]) === 3 && seq.last === 3, 'byWorkspace 记账:工作区 B → 3')
 
-console.log('[contseq] S3 包落盘失败:回滚计数器,不跳号')
+console.log('[contseq] S3 包落盘失败:保留预留高水位')
 // 用「同名文件占位」堵死工作区 B 的 handoff 目录(mkdir/writeFile 必败,跨平台可靠)
 const handoffDirB = path.dirname(stB.planPath)
 rmSync(handoffDirB, { recursive: true, force: true })
@@ -131,10 +131,10 @@ writeFileSync(handoffDirB, 'blocker', 'utf8')
 const r4 = await call(API.cont, 'POST')
 ok(r4 && r4.ok === false, 'handoff 目录被堵死 → 本次接续无材料(ok:false)')
 seq = readSeq()
-ok(seq && seq.last === 3, '分配已回滚:last 停在 3,不跳号(不烧掉 4)')
+ok(seq && seq.last === 4, '失败包装保留预留高水位4，不复用已发序号')
 rmSync(handoffDirB, { force: true })   // 撤除堵死的文件(此刻必为文件)
 const r5 = await call(API.cont, 'POST')
-ok(r5 && r5.ok === true && r5.contSeq === 4, '恢复后重试 → contSeq=4(复用被回滚的号,无空洞)')
+ok(r5 && r5.ok === true && r5.contSeq === 5, '恢复后重试 → contSeq=5，不复用失败预留')
 
 console.log('[contseq] S4 计数器缺失:从历史标题解析兜底')
 // 伪造一个带「接续 #5」标题的历史会话日志(v2.4.2 老数据形态)

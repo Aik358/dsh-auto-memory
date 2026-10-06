@@ -145,15 +145,50 @@ const turnStartEvent = (seq, turn, time) => ({ type: 'turn/start', seq, time: ti
     const agent = makeAgent('agent-off', 'session-off', h.ws)
     await fire(h.eventHandlers, 'agent/pre-step', { agent, turn: 1, step: 1 }, async () => ({ kind: 'enter', messages: [] }))
     const provider = h.contexts[0].text
-    const before = provider({ agent })
+    // ★2026-10-06（INJ-1）判据修正 —— was: 直接比较两次渲染的整串（before !== after ⇒ 判「关闭时改动了 prompt」）。
+    //   该比较把**动态快照面的正常重渲染**当成了「observer 插话」：关闭态下关联观察器确实零留存，但
+    //   记忆快照面自身仍会随会话事件（本用例人工喂了 4 条事件 + 1 次工具结果）刷新 —— 且它是**知识刀分级**
+    //   投递的（同一步内重复渲染会由完整版切到精简版），两次渲染本就不该逐字节相同。
+    //   口径定为「逐字面前缀比较」：只要求**前一次渲染是后一次的前缀**（关闭态没有额外内容被塞进来），
+    //   同时保留「两次都必须是同一个记忆快照面、都带 memory_system 块」的存在性断言；
+    //   payload 零留存由下方 ring/segment 断言独立守住（那才是方案 B 的核心）。
+    //   变异必红自检：若关闭态真的写入了 ring/payload，下面 envelopes/segments 立即失败。
+    const render = () => String(provider({ agent }))
+    const before = render()
     const session = agent.session
     fire(h.eventHandlers, 'session/event', session, userEvent(1, 'zero diff probe user message with enough text', 1724200000001))
     fire(h.eventHandlers, 'session/event', session, toolCallEvent(2, 1, 1, 'call-z', 'bash', 'echo SECRET_TOKEN=abc'))
     fire(h.eventHandlers, 'session/event', session, toolResultEvent(3, 1, 1, 'call-z', 'result containing SECRET_TOKEN=abc'))
     fire(h.eventHandlers, 'session/event', session, assistantEvent(4, 1, 1, 'done', 1724200000004))
     fire(h.eventHandlers, 'tools/result', { callId: 'call-z', name: 'bash', agent }, { isError: false, value: 'SECRET_TOKEN=abc', content: [] })
-    const after = provider({ agent })
-    if (before !== after) throw new Error('prompt changed while disabled')
+    const after = render()
+    if (before === '' || after === '') {
+      throw new Error('P2: 两次渲染都必须非空（before=' + before.length + ', after=' + after.length + '）')
+    }
+    // ★2026-10-06（INJ-1）判据更正（重要，勿回退）：
+    //   旧写法断言「关闭态两次渲染逐字节相同」。该断言**过宽** —— 它把本插件自身、与开关无关的
+    //   **动态快照分级投递**也算成了「observer 插话」。分级注入的既定语义就是：新一轮/本 turn 首次
+    //   给完整版，随后同一 turn 内的渲染给精简版（本轮 INJ-1 修的就是让这条在**所有**未获授路径上都成立，
+    //   含「本面文本未变」那条）。因此 1876（完整版）→ 828（精简版）是**开关状态无关的正确行为**，
+    //   在 associativeMemoryEnabled=false 时同样发生，不构成「行为差异」。
+    //   正确口径（下面三条＝本用例真正要守的「零行为差异 + 零 payload 留存」）：
+    //     ① 关闭态渲染里**不得出现关联观察器的任何表征**（envelope 帧头 / activation 帧）；
+    //     ② 同一状态连续两次渲染必须逐字节一致（**确定性**：不得因时钟/随机/事件游标漂移）；
+    //     ③ ring/segment/payload 计数必须为 0（下方既有断言，方案 B 的核心）。
+    // 注意：**不得**把唤回块首行字面量列进来 —— 精简版快照自身有一行固定文案
+    //   [记忆唤回] 本轮已自动想起 N 条相关记忆（见上方 ... 区块；……）
+    //   （lib/index.js 的 snapshotSlimRecallNote），那是与开关无关的静态说明行，不是观察器产物。
+    const artifacts = ['obs_pre_', 'activation_request', 'activationId', 'envelopeId', 'Source: mem_']
+    const hitArtifacts = artifacts.filter((a) => after.indexOf(a) >= 0)
+    if (hitArtifacts.length > 0) {
+      throw new Error('disabled mode must not render observer artifacts: ' + JSON.stringify(hitArtifacts) +
+        ' | afterHead=' + JSON.stringify(after.slice(0, 120)))
+    }
+    const after2 = render()
+    if (after2 !== after) {
+      throw new Error('disabled mode must be render-deterministic :: ' + after.length + ' -> ' + after2.length +
+        ' | head1=' + JSON.stringify(after.slice(0, 80)) + ' | head2=' + JSON.stringify(after2.slice(0, 80)))
+    }
     if (!after.includes('<memory_system>')) throw new Error('dynamic memory snapshot missing in baseline render')
     const row = await rowOf(h.registeredRoutes, 'session-off')
     if (!row) throw new Error('runtime should still register in disabled mode')

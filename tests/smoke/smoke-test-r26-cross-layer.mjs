@@ -256,7 +256,104 @@ ok(damNoMixedEol(SRC), 'E2 纯 CRLF')
 //   ①新增 _canonPath（realpathSync.native → realpathSync → 父目录+basename 兜底 → resolve；win32 剥 \\?\ 扩展前缀）；
 //   ②_workbenchCwd 返回值与包含判定、_verifyWorkbench 第①项 cwd 比较、工作区登记比较四处改走 realpath 归一；
 //   ③新建熔断 _wbCreateFailStreak：同 (epoch, 失败原因) 连续 3 次 verify-after-create 失败即停新建只报 needPrompt（成功清零、换因重计）。
-eq(createHash('sha256').update(IX).digest('hex').slice(0, 16).toUpperCase(), 'DA7EF9025DB0108C', 'E3 ★宿主 lib/index.js 基线守恒（R76 = R75 + 2026-10-05 工作台路径符号链接归一 + 新建熔断（见上方注释）；原 R75 = R74 + 2026-10-04 issue #211：新增 /python-setup/uninstall 路由 + python-setup 模块 uninstall()（删 <userDir>/python-engine 整目录）；原 R74 = R73 + 2026-10-03 批次 G：①#167/P0 [USER] 不直写全局（自动沉淀 + 做梦式固化两处同改，落 PENDING-USER-MEMORY.md）；②#167/P1 解析层确定性过滤（filterPointsPre，三档各一次）；③#207 三处裸写改按路径串行 + 原子写（cont-seq / 接续闩 / 归档账本），删自建第二套按文件链统一走 path-write-queue，归档账本读取改损坏隔离；④#207-4 新增 localWasmPaths 键 + worker wasm 路径本地化。前序 R73 = R72 + 2026-10-02 审计修复批 A+B 批：#182/#178/#205/#184 + #174/#185 团队接线（含 /team-control 路由、装配段 pull 定时器移位、_teamOutbox.load、真实卸载路径接团队 dispose）：①日历三写入口改锁内读盘+原子写，正则补 --:--；②compactLegacyLayer 归档提到护栏前且归档全部被移除段；③saveConfig 迁移补 mkdir+失败回滚+原子写。前序 R72 = R71 + 2026-10-01 接续开关默认开：DEFAULT_CONFIG.globalBriefEnabled false→true（用户裁定「把读取外部记忆的开关默认打开」）；前序 R71 = R70 + 2026-10-01 自写豁免接线 + 团队注入候选生产者：①_noteSelfWritePre 原为零调用点 ⇒ 挂到 4 个写盘原语（appendText/writeFullRaw/writeFullSingle/writeFull）⇒ 豁免真正生效；②_teamInjectCandidates 原只有 = [] 两次赋值、无生产者 ⇒ 把 pullOnce 的 appliedEntries 经 normalizeTeamSegmentsPre 喂入。前序 R70 = 记忆注入优化；原 R70 说明：（R70 + 2026-10-01 全局动态简报批：新增 lib/global-brief.js 纯模块 + 8 个 globalBrief* 配置键 + 精简版注入路径补 diag（用户要求可计量）+ 简报段并入注入主路径；前序 R70 = R69 + 记忆注入优化：精简版瘦身 + 完整版两档门槛 + 2 个配置键 + 2 层提示词；原 R69 说明：①规则编辑 GUI 路由按 expect 内容锚定防索引漂移 ②两处 _degradePre 死代码改接真实 _degradeSink ③sessions 兜底说明不再写死「39 个旧会话/descriptor v2」改为如实输出；归一化 LF 后计。前序 R68 = R67 + G 批发射闸单钥匙化；R63→R65 放行 = skinAssetRelOfPre/skinAbsPathOfPre 加 deep 参数（素材路由 ?deep=1 选暗色资源）+ #152 增量开关每轮取值 + #153 默认模型回退共用解析器（provider/实现名不再混用）+ #154 接续创建失败显式报错不丢源工作区 + 上述 3.2.5 全部修复保留，理由见上）')
+// ★2026-10-05 批次 W（PR#210 拆取）：基线按最终字节重钉。守卫语义不变：仍锁「index.js 一经改动即被本锁抓住」。
+//   R77 = R76 + 2026-10-05 批次 W（PR#210 拆取）：cont-seq 锁内持久预留/失败不发号 + 冷扫放开 120（leaf 跳过/目录拒绝指路/SQLite seed 门槛）+
+//   回滚变 no-op（允许空洞、永不回收，用户裁定）+ 锁与 calendar-lock 物理合一；接续闩分片 auto-continue-done.d + (mtime,size) 缓存；
+//   pending 三段持久化 + 两入口拦截 + 恢复 CLI；归档账本锁内 delta 合并 + 提交失败外显并跳过删除；W5 创建门类型化回退放行单。
+// ★2026-10-05 批次 X（PR#212 拆取）：基线按最终字节重钉。守卫语义不变：仍锁「index.js 一经改动即被本锁抓住」。
+//   R78 = R77 + 2026-10-05 批次 X（PR#212「Fix seven residual data-safety and ownership issues」后端拆取，只取 #1/#2/#3/#4/#7 五项）：
+//   ①X1 删除 CAS：storage-manage.deleteMemory 对实际读到的 buf 算 sha256 无条件传 expectedDigest（GUI 免 digest 请求也进 CAS），冲突 conflict-external-edit。
+//   ②X2 note 绑定服务端：/note 路由 sessionId+expectedNotesPath 必填、resolvePathsForSession+wsBound 判定、目的地漂移 409、去重读目标盘而非全局 notesText 缓存、写成功仅当 state 指向同工作区同文件才更新缓存。
+//   ③X3 JSON 路径重写：migrate-pack 新增 rewriteJsonPathsPre（.json/.jsonl 逐行 parse 验证 → 字符串 token 解码重写重编码，未触及 token 字面保留），rewritePackForTargetPre 按扩展名分派。
+//   ④X4 procedure 证据五子项：①owner 限定（consolidate success 块 owner=sessionId+canonicalize(ws) 双归属，直接 addEvidence 改为先落盘后由 persistEvidence 按 appended 喂统计；context-host/activation-host 注入按捕获工作区 ref 检索 + activation-host 加 runtime 工作区绑定校验）；②recentEvidenceForSuccess 加 owner 过滤与 success-exclusion（5 分钟窗同源身份不重复计）；③procedureWorkspaceRef 用现行 canonicalize（m4-corpus canonicalWorkspaceKey），不引入 PR 的 workspace-key.js（#179 领地）；④procedure-store normalizeSessions 统一 sessionRefOf 同盐同长哈希身份（sessionIdentityVersion=2，≥24 字符遗留截断保留 _legacySessions 不计数）；⑤evidence-store loadEvents 加 strict（ledger-read-failed/ledger-corrupt fail closed，display 保持容忍），strict 读加 30s 指纹校验进程内缓存（读失败不缓存、append 失效）消 IO 放大。
+//   ⑤X5 导入安全：_readExistingWorkspaceFiles 全量占用名清单（>8MB 带 {kind,bytes,digest}、目录/特殊文件占位、除根 ENOENT 外错误上抛）；inspect/import 两处 catch(_){} 改 fail closed（target-inspection-failed）；migrationPreviewToken 覆盖全部占用名；commit 前逐文件 lstat+digest 复核（PLAN too-large 用流式摘要作期望版本）；additions 弃用 PR 的 wx+link()（网络盘 EPERM 风险）改 lstat 确认空闲+原子写+成功才 recordCommit；逐文件套 withCalendarLock；backup 名加 randomUUID 防同秒撞名。
+// ★2026-10-05 批次 Z（PR#213 拆取）：基线按最终字节重钉。守卫语义不变：仍锁「index.js 一经改动即被本锁抓住」。
+//   R79 = R78 + 2026-10-05 批次 Z（PR#213「Fix settings persistence, scoped drafts and runtime control feedback」后端拆取）：
+//   ①Z1 新 lib/settings-safety.js 全文（readSettingsForSave 保存期严格读——损坏配置拒绝保存，绝不把默认写回真源，与启动期 config-io quarantine 分工；validateSettingsPatch 字段级校验（HH:MM/数组/整数域/枚举）；validateSettingsPaths 祖先 realpath 防 symlink 逃逸；migrateSettingsTree 所有权日志迁移器——dev/ino+sha256 回执 ⇒ 回滚只删自己拷的、重试安全、首扫+复扫 TOCTOU 拦截）。
+//   ②Z2 saveConfig 事务体重放 _saveConfigChecked：仍走 R01 的 _configSaveChain 单一串行队列（不另设 PR 的 _settingsSaveQueue 第二套）；迁移失败回滚并回滚已拷文件、原子写失败回滚迁移（pendingCommit 日志成功才清理）、refresh 失败转 warning（持久化已成功不谎报）；#205 用户记忆迁移 mkdir 语义保留。
+//   ③Z3 /config 路由字段级 400 all-or-nothing（error+fields 带字段名；#117/S1 路径闸语义由 validateSettingsPaths 接管且更强；injectExcludeSources 校验通过后仍 trim+去空）。
+//   ④Z4 迁移过滤精确化：copyDir 逐文件 COPYFILE_EXCL + retained 回执；只滤普通文件 .lock/.lock.acquire/.tmp[-.N] 数字链（.tmp. 持久名与 .lock 目录不误伤）；user 级 level-0 白名单 MEMORY/CALENDAR/PENDING-USER-MEMORY.md + summaries/greetings 子目录；migrateSettingsTree 首扫+复扫按 entry types。
+//   ⑤Z5 /note 迁移协调（迁移中 409 settings-migration-active + _settingsNoteFlights drain + per-notesPath 串行队列 _noteRouteQueues）+ 白板迁移屏障（ensurePlanBoardPre/ensurePlanBoardForAgentPre/writePlanSnapshot 的 migration-active/root-changed 门 + _settingsPlanFlights drain + memory_note 工具 plan 分支 projectDir 复验）+ /semantic-emit 损坏配置原样保留 + 原子写失败显式 500。
+//   ⑥Z6 writePlanSnapshot 挂 _settingsPlanFlights，#164 CAS（expectedRevision + latest!==existing 冲突判据）原样保留不回退。
+// ★2026-10-05 上下文节省修复（调查 3 · 注入节奏未生效）：基线按最终字节重钉。守卫语义不变：仍锁「index.js 一经改动即被本锁抓住」。
+//   R80 = R79 + 2026-10-05 分级注入收口（renderMemoryDynamic 的 4 个返回路径共用一份「本轮是否获授完整版」判据）：
+//   ①旧实现的两个下游兜底返回点恒给 snap（完整版）：日志指纹未变时整段节流被跳过 ⇒ 直接落到函数末尾返回全文，
+//     即「每轮都灌 4000+ 字完整版」。诊断日志里「精简版 3545 / 完整版 35」是假账——那条 diag 打在真实返回之前，
+//     且 fullEverySlims 门槛命中 0 次（_slimCount 只在极少走的节流分支里自增）。
+//   ②新增函数级 tieredFullGranted（获授标志）与 countTieredSlim()（精简计数助手，两个返回路径共用）。
+//   ③降级条件（R80 当时）= gap>0 && snap && tieredNewTurn && !tieredFullGranted && slimText —— 只有「新 turn 且未获授」才给精简版；
+//     同 turn 内的后续注入保持完整版（文本逐字节相同，宿主 project() 去重，不额外投递；降级会破坏 context-observer 的 prompt 不变契约）。
+//   ④首次注入（st._snapFp===undefined）与 gap=0 / snapshotTieredInject=false 三条既有语义原样保留，均给完整版。
+//   ⑤收口修正（同日复核）：降级条件曾收窄为「新 turn 且未获授」—— 该收窄已被 R81 推翻（见下），此处保留历史记录。
+//     破坏 context-observer 的 prompt 逐字节不变契约；同时恢复两个下游分支的完整版语义：
+//     首次注入、内容已变且间距已满足、暂缓放行三个分支均给完整版（它们的语义本就是「该给的时候给足」），
+//     仅「新 turn 且未获授」时才降级为精简版。
+//   ★R81 = R80 + 2026-10-05 二次修复（第一轮修复无效，真根因在指纹正则）：
+//   ①真根因：日志段指纹前瞻 (?=\n\[|...) 里的「换行+左方括号」会命中日志**正文**中以 [YYYY-MM-DD] 开头的行
+//     ⇒ 惰性 [\s\S]*? 立刻收尾。实测匹配结果就是 [最近 1 天工作日志(尾部)] 共 **16 字符**，
+//     而该段真实长约 **769 字符**（覆盖仅 2%）⇒ 标题行是常量 ⇒ logFp 恒等 ⇒ 不等判据永假
+//     ⇒ 节流整段被跳过 ⇒ 每轮都落到函数尾返回完整版。修法：前瞻加 (?!\d{4}-) 排除日期行，
+//     并把该逻辑收敛为单一助手 snapshotLogFpPre（原两处各自内联，改了一处会留半修）。
+//   ②第二层：尾部守卫原要求 tieredNewTurn（仅新 turn 首次降级），于是同 turn 内每个 step 都返回完整版。
+//     实测基线（本会话真实投递 131 次）：完整版 118 / 精简版 13，累计投递 2,431,806 字节。
+//     现改为「本轮未获授完整版即降级」；唯一例外是快照与上次注入逐字节相同（返回全文交宿主 project() 去重）。
+//     修复后同一回放：完整版 18 / 精简版 114，累计 370,857 字节 ⇒ **降 85%**。
+//   ③同一步内重复调用的**逐字节一致性**（context-observer / m53 契约）：尾部例外分支条件是"快照与此前已注入的那份相同"，
+//     与是否新 turn 无关。写成「新 turn 且快照相同」会让同一步第二次调用返回精简版 ⇒ prompt 在同一步内变化 ⇒ 两套件红。
+//   ⑤计量盲区一并修掉：原 diag 打在**所有 return 之前**，「日志显示精简版」≠ 真返回精简版。现改为在每个真实返回点就近打点（共 7 处）。
+//   ④判据纪律：上一轮用**合成夹具**验证，日志正文是普通行 ⇒ 漏掉真根因（假绿）。
+//     本轮改为「含日期行的真实结构夹具」，并对旧正则做**变异反向验证**（旧正则下 T1-d/T4/T4-b 三红，还原复绿）。
+// ★2026-10-06 批次 V2-1 重钉（R82 → R83）：lib/index.js 有意演进 —— 路径安全统一修（AUDIT §3.0 铁律 2 / §3.4，五项同根）：
+//   ①**落 lib/file-boundary.js 为路径边界判据的单一来源**（canonPath / pathKey / withinRoot / fileWithinRoots，
+//     判据=物理归一 + path.relative 四联；后三者逐字承接 PR#230 的 fileWithinRoots 语义，含 allowMissing 与悬空链接拒）；
+//   ②_canonPath / _pathKey 由「自带函数体」改为**委托**该模块（消除全仓最后一份重复 realpath 判据），调用点与行为逐字不变；
+//   ③#228：isUnderMemoryTree 由纯词法 resolve+startsWith 改双侧物理归一，并新增 memoryTreePathOf 返回**被校验过的物理路径**——
+//     /file 路由改为「判定与读取同一物理路径」（原先「校验词法路径、按原路径读盘」⇒ 树内 junction 越界读 200）；
+//     handoffPanelData.fileQ 与 skinAbsPathOfPre 两个同族面一并接线；
+//   ④#236：m4-corpus.canonicalScopeGuard 的 real.startsWith(declaredRoot) 改组件级 withinRoot（相邻同前缀目录不再漏检）；
+//   ⑤#233：settings-safety.validateSettingsPaths 删去 realpath 之前的未归一词法 inside 闸，位置判定全部走 canonicalDirectory（与 migrateSettingsTree 同函数）；
+//   ⑥#222：_saveConfigChecked 的迁移判据由展开后**字符串**比较改物理同根（rootChanged 单一判据，两处使用），物理同根跳过迁移照常原子写；
+//   ⑦#229：皮肤名正则首字符限 [A-Za-z0-9_] 且显式拒纯点，另加**两处**落点物理归属校验（请求级 + 每文件写盘前）。
+//   守卫语义不变：仍锁「宿主 lib/index.js 归一化 LF 后的 sha256 前 16 位大写」这一基线常量，只更新被锁的字节值。
+// ★2026-10-06 批次 C-1 重钉（R81 → R82）：lib/index.js 有意演进 —— C-1b（PR#237 后端拆取，AUDIT §3.6）：
+//   ①_canonPath 由「realpath(自身) → realpath(父目录)+basename → resolve」改为**循环向上找最近存在祖先 + 完整缺失后缀**
+//     （DeepCode 自定义多层新目录在 mkdir 前也必须保持同一物理路径；旧实现只回拼一层 basename）；
+//   ②新增 _pathKey（= _canonPath + win32 小写化），把原先 5 处各写一份的「去尾斜杠 + toLowerCase」判据收敛为单一 helper
+//     （_verifyWorkbench 登记比较 / _pruneStaleWorkbenchWorkspaces / 第①项 cwd 比较 / resolveWorkspaceIdForSession / 补登记查重）；
+//   ③_workbenchCwd 的 rel 越界判据由**前缀匹配**改为**组件级**（rel === '..' 或 '..' + path.sep 开头），
+//     消除「同级的 `..foo` 目录被误判越界」；同批 C-1a 另接 python-setup verifyArtifact（不改本文件）。
+//   守卫语义不变：仍锁「宿主 lib/index.js 归一化 LF 后的 sha256 前 16 位大写」这一基线常量，只更新被锁的字节值。
+// ★2026-10-06 批次 B-1 重钉（R80 → R81）：lib/index.js 有意演进 —— 落地 #218 跨进程配置事务
+// ★2026-10-06 批次 B-1 重钉（R80 → R81）：lib/index.js 有意演进 —— 落地 #218 跨进程配置事务
+//   （新增 lib/config-lock.js；loadConfigSync/loadConfig/saveConfig 三入口进锁 + _configReadOnly 抑制
+//   启动期两处裸写 + ★容量迁移两处写点纳入同一事务并锁内新鲜读合并 + loadConfigSync 拆为薄壳/_loadConfigSyncLocked）
+//   与 #225（compactAnchoredLayer 快照 CAS + 冲突重读重算重试 + 归档改走 store 串行队列）。
+//   守卫语义不变：仍锁「宿主 lib/index.js 归一化 LF 后的 sha256 前 16 位大写」这一基线常量，只更新被锁的字节值。
+// ★2026-10-06 批次 A-1 重钉（R79 → R80）：lib/index.js 有意演进 —— A-1a/A-1b（hub-io save 失败可见化 + procedure-store 六处落盘结果传播）、A-1c（rollbackBoth 四修）、A-1d（team-attribution 解包按 ok 门控）、A-1e（#234 导出适用项目改用调用会话项目）、A-1f（defineTool items 透传 + armAutoContinue 子代理守卫）。
+//   守卫语义不变：仍锁「宿主 lib/index.js 归一化 LF 后的 sha256 前 16 位大写」这一基线常量，只更新被锁的字节值。
+// ★2026-10-06 批次 INJ-1 重钉（R83 → R84）：lib/index.js 有意演进 —— 注入分级三修（DESIGN-20261006-INJECTION-ASYMMETRY-FIX §B.4）：
+//   ①S1：`renderMemoryDynamic` 的「本面与此前已注入的那份逐字节相同」分支**不再作为返回完整版的判据**（该判据假设
+//     「本面不变 ⇒ 宿主 project() 会抑制本次投递」，而宿主去重粒度是**全部 context 面拼接后的整串**，唤回面一变即失效）；
+//     该分支改为与其它未获授路径一致：先计一次精简投递再返回精简版，「本面未变」事实仅保留用于 diag 留痕。
+//   ②S2：`DEFAULT_CONFIG.fullEverySlims` 3 → 10；计数口径由「`_slimStep` 每满 `slimEveryRounds` 步折算一次」改为
+//     **每次实际返回精简版即 +1**（`_slimCount` = 精简版投递次数；`_slimStep` 降级为纯诊断计数，不参与门控）。
+//   ③S3：该 `text()` 回调所有 return 路径收口 —— 返完整版的分支一律不计数，返精简版的分支一律计数；
+//     末尾兜底新增「未获授且本可给精简版 ⇒ 给精简版」护栏，杜绝退回「每轮灌全文」。
+//   判据守恒：路由数 71 不变、依赖面 {} 不变。
+//   守卫语义不变：仍锁「宿主 lib/index.js 归一化 LF 后的 sha256 前 16 位大写」这一基线常量，只更新被锁的字节值。
+// ★2026-10-06 批次 INJ-2 重钉（R84 → R85）：lib/index.js 有意演进 —— 完整版门槛出厂默认的**一次性迁移**
+//   （本批新增，与 2026-09-18 的容量默认迁移同型同根因）：
+//   ①常量区三联：`DEFAULT_FULL_EVERY_SLIMS = 10`（唯一真源）/ `DEFAULT_FULL_EVERY_SLIMS_PREV = 3`（迁移判据）
+//     / `FULL_EVERY_SLIM_DEFAULTS_VERSION = 1`（只升一次的档位守门）；`DEFAULT_CONFIG.fullEverySlims`
+//     改引常量，并新增同风格的版本号键 `fullEverySlimsDefaultsVersion`。
+//   ②新增方法 `upgradeFullEverySlimsDefaultPre(rawCfg)`：仅在配置里**恰好**还是上一版默认(3)时才抬到 10
+//     （用户自设值如 5/20 一律不动），异常一律吞掉（fail-soft）。
+//   ③接线：`_loadConfigSyncLocked` 与 `_loadConfigLocked` **两条加载路径**都把该迁移并入既有 bumped 数组，
+//     并**同样传磁盘原文 `parsed`** —— 合并结果里版本号恒等于当前值，拿它当守卫会结构性恒真。
+//   回归守卫 = 新增套件 smoke-test-inj2-full-every-slims-migrate（13 条，含正/负/陷阱回归/幂等/fail-soft 与真磁盘副作用）。
+//   判据守恒：路由数 71 不变、依赖面 {} 不变、既有 capacityDefaultsVersion 键与两条容量迁移调用点均未动。
+//   守卫语义不变：仍锁「宿主 lib/index.js 归一化 LF 后的 sha256 前 16 位大写」这一基线常量，只更新被锁的字节值。
+eq(createHash('sha256').update(IX).digest('hex').slice(0, 16).toUpperCase(), '3B2B988A0E1FE2EB', 'E3 ★宿主 lib/index.js 基线守恒（R80 = R79 + 2026-10-06 #226 改法A（异常监听具名化 + 卸载 removeListener + 复位两个 guard 标志）＝ R79 = R78 + 2026-10-05 批次 Z（PR#213「Fix seven residual data-safety and ownership issues」后端拆取）：X1 删除 CAS（deleteMemory 对实际 buf 无条件 sha256 CAS，冲突 conflict-external-edit）；X2 note 绑定服务端（/note 路由 sessionId+expectedNotesPath 必填 + resolvePathsForSession + 409 漂移 + 读盘去重 + 缓存按归属更新）；X3 JSON 路径重写（rewriteJsonPathsPre token 级重写，.json/.jsonl 分派）；X4 procedure 证据五子项（owner 双归属限定 + 先持久化后统计 + success-exclusion + procedureWorkspaceRef=canonicalize 不引入 workspace-key.js（#179 领地）+ normalizeSessions 统一哈希身份 + loadEvents strict（30s 指纹缓存，读失败不缓存，display 保持容忍））；X5 导入安全（全量占用名清单 + target-inspection-failed fail closed + token 全覆盖 + commit 前 lstat/digest 复核 + additions 不用 link() 改 lstat 空闲确认+原子写 + 逐文件 withCalendarLock + backup randomUUID 防同秒撞名）。；原 R77 = R76 + 2026-10-05 批次 W（PR#210「Make continuation and archive state durable (#207)」拆取采纳）：①W1 cont-seq：allocContSeq 改跨进程共享锁内「重读→(仅 last≤0 时)冷扫→推进→原子提交→成功才发布」，写失败抛错不发号；冷扫放开 120 上限（leaf 读取失败跳过、目录级错误拒绝并指路、SQLite 维持拒绝+seed 指引）；rollbackContSeq 变 no-op（「不跳号」翻转为「允许空洞、永不回收」，2026-10-05 用户裁定）；锁模块与 calendar-lock 物理合一（calendar-lock.js 变薄壳 re-export）。②W2 接续闩分片：auto-continue-done.d/<SHA256>.json + token + 旧格式只读兼容 + (mtime,size) 读取缓存，删 200 条 slice 上限。③W3 pending/恢复：reserve→setTarget(rawId)→finish 三段持久化、autoContinueState 加 pending/completed、decideAutoContinue manual 与 hostAutoContinue(armed) 两入口 pending 拦截、恢复 CLI lib/continuation-maintenance.js（三重校验+.active 锁）。④W4 归档账本 delta：saveArchiveLedger(updates,removed) 锁内新鲜读→合并→原子写；sweep 删 _saLedger 缓存每轮新鲜读；归档分支账本提交失败 rep.ok=false+errors 外显+提前 return 跳过本轮删除。⑤W5 创建门：createSuccessor 包装 —— details.sessionId 存在即持久化原始 ID 不二建；仅类型化放行单（CONTINUE_CREATE_FALLBACK_ALLOWED_CODES）且 workspaceId 规范化精确匹配才放行源 cwd 回退，其余保留 pending。；原 R76 = R75 + 2026-10-05 工作台路径符号链接归一 + 新建熔断（见上方注释）；原 R75 = R74 + 2026-10-04 issue #211：新增 /python-setup/uninstall 路由 + python-setup 模块 uninstall()（删 <userDir>/python-engine 整目录）；原 R74 = R73 + 2026-10-03 批次 G：①#167/P0 [USER] 不直写全局（自动沉淀 + 做梦式固化两处同改，落 PENDING-USER-MEMORY.md）；②#167/P1 解析层确定性过滤（filterPointsPre，三档各一次）；③#207 三处裸写改按路径串行 + 原子写（cont-seq / 接续闩 / 归档账本），删自建第二套按文件链统一走 path-write-queue，归档账本读取改损坏隔离；④#207-4 新增 localWasmPaths 键 + worker wasm 路径本地化。前序 R73 = R72 + 2026-10-02 审计修复批 A+B 批：#182/#178/#205/#184 + #174/#185 团队接线（含 /team-control 路由、装配段 pull 定时器移位、_teamOutbox.load、真实卸载路径接团队 dispose）：①日历三写入口改锁内读盘+原子写，正则补 --:--；②compactLegacyLayer 归档提到护栏前且归档全部被移除段；③saveConfig 迁移补 mkdir+失败回滚+原子写。前序 R72 = R71 + 2026-10-01 接续开关默认开：DEFAULT_CONFIG.globalBriefEnabled false→true（用户裁定「把读取外部记忆的开关默认打开」）；前序 R71 = R70 + 2026-10-01 自写豁免接线 + 团队注入候选生产者：①_noteSelfWritePre 原为零调用点 ⇒ 挂到 4 个写盘原语（appendText/writeFullRaw/writeFullSingle/writeFull）⇒ 豁免真正生效；②_teamInjectCandidates 原只有 = [] 两次赋值、无生产者 ⇒ 把 pullOnce 的 appliedEntries 经 normalizeTeamSegmentsPre 喂入。前序 R70 = 记忆注入优化；原 R70 说明：（R70 + 2026-10-01 全局动态简报批：新增 lib/global-brief.js 纯模块 + 8 个 globalBrief* 配置键 + 精简版注入路径补 diag（用户要求可计量）+ 简报段并入注入主路径；前序 R70 = R69 + 记忆注入优化：精简版瘦身 + 完整版两档门槛 + 2 个配置键 + 2 层提示词；原 R69 说明：①规则编辑 GUI 路由按 expect 内容锚定防索引漂移 ②两处 _degradePre 死代码改接真实 _degradeSink ③sessions 兜底说明不再写死「39 个旧会话/descriptor v2」改为如实输出；归一化 LF 后计。前序 R68 = R67 + G 批发射闸单钥匙化；R63→R65 放行 = skinAssetRelOfPre/skinAbsPathOfPre 加 deep 参数（素材路由 ?deep=1 选暗色资源）+ #152 增量开关每轮取值 + #153 默认模型回退共用解析器（provider/实现名不再混用）+ #154 接续创建失败显式报错不丢源工作区 + 上述 3.2.5 全部修复保留，理由见上）')
 // ★2026-09-28 计数演进：67→68（新增 skin-library-fetch，见 E3 同批）。语义保留：仍锁路由数不漂移。
 eq(cnt(IX, "path: API[") + cnt(IX, 'path: API.'), 71, 'E4 ★路由数守恒 = 71（2026-10-04 issue #211 /python-setup/uninstall +1；2026-09-28 皮肤库 +1；2026-10-01 /global-brief +1；2026-10-02 审计修复批 #174 /team-control +1；其余零新增）')
 console.log('lib/client.js ' + Buffer.byteLength(SRC, 'utf8') + 'B / CRLF ' + (SRC.match(/\r\n/g) || []).length + ' / sha16 ' + createHash('sha256').update(SRC).digest('hex').slice(0, 16).toUpperCase())

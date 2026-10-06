@@ -4,6 +4,48 @@ All notable changes to dsh-auto-memory.
 
 ---
 
+## [3.2.10] — 2026-10-06 · 上游 25 条报告核查闭环 + 前端 V4-1 三项
+
+> **一条主线**：对上游 20 条 open issue + 10 条 open PR 做了一次**全量只读核查**（25 项逐条裁决：成立 15 / 需采纳 PR 7 / 诉求合理 1 / 误报 1 / 组合特有 1），确认成立的全部修复入库；同时完成前端 V4-1 三项（#238 浮窗 / #223 侧栏入口 / #226 异常监听）。回归 **299 套件全绿**。
+
+### ★ 数据安全（P1）
+
+- **配置并发丢更新（#218）**：保存队列原为**实例级**，而配置写入共 8 处、其中 4 处绕过队列同步裸写 ⇒ 多进程场景实测 20 次丢 17 次。新增跨进程文件锁 `lib/config-lock.js`（wx 独占创建 + host/pid/ino 死锁回收 + AsyncLocalStorage 可重入），**8 处写点一次改全**。A/B 实证：裸写 20/20 丢 → 加锁 0/20 丢。
+- **笔记压缩覆盖新记录（#225）**：compactAnchoredLayer 读快照后直接 replace，未传 expectedDigest ⇒ 等待折叠期间成功追加的记录被旧快照整体盖掉。改为写回时带摘要，冲突则重读重算重试一次，仍冲突明确失败绝不覆盖。
+- **迁移回滚用空库覆盖原件（#231）**：rollbackBoth() 对损坏库 save 空壳 ⇒ 不可逆覆盖。改为：只回滚本次真改过的库；corrupt 库拒绝回滚并保留原件字节（如实返回 rollbackRefused）；回滚前额外留存原件。
+- **技能写盘失败仍返回 ok（#227）**：根治在下一层——hub-io.js 的 save() 吞错，使上层失败侦测**恒为 0**。改为收集 failures[] 并据其判定，抽出受保护的单一写路径 writeLibGuarded（拒写 corrupt + dirty 集作回滚凭据）；procedure-store 9 处 void persist() 改收返回值。
+- **团队作者索引首写覆盖（#232）**：字段契约错位（读侧返回 {ok,value}，调用点用 ?? 兜底）⇒ 载入 0 条、首写覆盖历史，每次启动命中。改为按 ok 门控（不加兜底，否则损坏分支的包装对象照样被当有效数据载入）。
+
+### ★ 路径安全（P1，同根统一修）
+
+- **同根判据**：一切「词法路径运算 vs 物理文件系统别名」之争。新增 `lib/file-boundary.js` 作为**唯一判据来源**（canonPath 最深存在祖先 realpath + 缺失后缀回拼 / pathKey / withinRoot 组件级 relative 四联 / fileWithinRoots 返回被校验过的物理路径），弃用 startsWith。
+- **本地文件接口 junction 越界读（#228）**、**语料守卫相邻同前缀目录越界（#236）**、**皮肤名 .. 越界写（#229）**、**DSH_HOME 别名被 400 误拒（#233，批次 Z 回归）**、**同一物理目录别名被误判迁移（#222）** 五项一并修复。
+
+### ★ 功能与正确性
+
+- **defineTool 丢失 items（#216）**：产物级实测确认为 spec 键中唯一被丢的键（全仓仅 memory_note 声明过它）⇒ Gemini/Vertex 会话每轮 HTTP 400。补透传；同批修 armAutoContinue 缺 isSubAgentSession() 门禁。
+- **Python 向导误报 ready（#235）**：verifyArtifact 能力完整但零调用点。:260 后接线（精确 size / sha256 回读 / JSON 解析），tokenizer 按件传 kind=json；sha256 为空时状态面如实标「仅校验 size」。初始化路径接入 verifyArtifactsOnDisk()。
+- **自动导出技能用宿主 cwd 标项目（#234）**：两处 process.cwd() 改用会话项目；来源未知时不再拿 cwd 冒充。
+
+### ★ 前端（V4-1）与注入
+
+- **#238 浮窗消失**：梦幻皮肤把 [data-dam-panel] 误标 composer 并注入普通特异性 position:relative，压过无 !important 的 fixed ⇒ 浮窗被挤进文档流。浮窗加 inline position:fixed（同优先级压过外部普通规则）+ role=dialog/aria-label（命中 composer 候选排除条件，治本）。
+- **#223 侧栏入口与承载面同源**：该按钮唯一行为是 toggle 左下角浮层，而浮层只在承载面含 bottom-left 时渲染 ⇒ 旧实现无条件注册，切「会话页」时按钮点了无反应（空按钮）。判据由 boardMode 更正为 panelPos；顺带去掉两处 label 里过期的 (pre)（pre 线术语已废弃）。
+- **#226 异常监听**（⚠️ 行为契约变更）：监听具名化 + 卸载时 removeListener + 复位两个进程级 guard 标志。原实现匿名箭头无法注销，且 guard 恒真导致重装时连日志都不再记（幽灵监听）；run-smoke 按退出码判定 ⇒ 数十支套件假绿。
+- **注入分级三修 + 门槛默认迁移**：完整版门槛出厂默认 3→10，并加一次性迁移（仅当配置恰为旧默认 3 时抬升，用户自设值不动，fail-soft、走配置锁）。
+- **发布包缺陷**：tools/release.mjs 拷贝清单缺 smoke-impact.mjs ⇒ 发布包一跑 smoke 即 ERR_MODULE_NOT_FOUND。
+
+### ★ 测试
+
+- 新增 smoke-test-inj2-full-every-slims-migrate（13 断言：正/负/陷阱/幂等/fail-soft + 真磁盘副作用）、smoke-test-config-transactions 等；#216 附产物级反证测试（实测 spec 键全集）。
+- 基线锁随批重钉并声明「守卫语义不变」：r26 E3 → 3B2B988A0E1FE2EB；iter5-skin → R79 26b00133…。
+
+### ★ 流程
+
+- 上游 30 条（20 issue + 10 PR）逐条回执；10 条 PR 做礼貌性合并（保留贡献者提交记录与署名，不引入其伴随 diff——实质修复已按 hunk 逐项拆取落地）。
+
+---
+
 ## [3.2.9] — 2026-10-05 · 工作台符号链接路径归一（Android 修复）+ 新建熔断
 
 > **一条主线**：社区用户真机报告（Android/DSH 移动壳）：工作台三重校验恒判 `cwd-mismatch`——`DSH_HOME` 环境变量给的是 `/data/user/0` 写法，而宿主把会话 `header.cwd` 与工作区登记归一成 realpath（`/data/data`），两者是符号链接别名、`path.resolve` 字面比较永不相等 ⇒ 工作台建不起来、9 类后台记忆任务静默停摆、且每次重试都新建一个「记忆中枢」会话（真机 16 个）。回归 **268 套件全绿**。

@@ -87,7 +87,22 @@ const classic = source
 //   守卫语义不变：生成块之外的任何**非意外**改动仍会被本锁抓住；本批期望值随之上移。
 // ★issue #211（2026-10-04）第十三次演进：Python 卸载入口（手写区 PySetupWizard 加二次确认按钮 +
 //   API.pyUninstall 新键 + 三语 pyWizUninstall/pyWizUninstallConfirm 文案）。守卫语义不变。
-assert.equal(createHash('sha256').update(classic).digest('hex'), 'dc6192a3ca52bd0f8b812c5b9557a5d914720e77c8db21baf18be993165346c9', 'Reviewed native-reference entry baseline（R77 = R76 + 2026-10-05 发版三件套（v3.2.9：指纹行 + 应用内 CHANGELOG 字典 3.2.9 条目；内容见 CHANGELOG.md 同版段）；原 R76 = R75 + 2026-10-04 发版三件套（v3.2.8：指纹行 + 应用内 CHANGELOG 字典 3.2.8 条目；内容见 CHANGELOG.md 同版段）；原 R75 = R74 + 2026-10-04 issue #211 前端：Python 引擎卸载按钮（二次确认）+ pyUninstall 路由键 + 三语体积披露；原 R74 = R72 + 2026-10-02 审计修复批 A+B（增量归因：手写区 DebugCenter 收敛为只读 GET + 团队层接 4 条专用路由（API 表新增 5 键）+ TeamTab 挂载补回调 + L3 段共享订阅轮询）；原 R72 = R71 + 2026-10-01 ①接续开关默认开 + 欢迎向导开关 ②经典档接入 GlobalBriefRow 简报抽屉 ③damSharedSurfaceCss classic 分支归零修复；原 R71 = R70 + 2026-10-01 全局动态简报批（client.js 三面各加 8 个 globalBrief* 控件 + frozen 面补齐上批遗漏的 slimEveryRounds/fullEverySlims 两键）；原 R70 = R69 + #160/#162 修复：python 向导轮询/取消渲染、规则草稿与内容锚定、首屏 tour hero 挂载复原；生成块之外任何**非意外**改动仍会被本锁抓住）')
+// ★2026-10-06 本快照第十四次演进（INJ-1 · 注入分级三修，增量归因）：
+//   三面设置页的 fullEverySlims 界面回落值 3 → 10，与服务端 DEFAULT_CONFIG.fullEverySlims 同步：
+//   ①经典面（client.js 手写区）、②legacy 生成块、③frozen 源（skins/legacy/iter5-325.js.frozen）三面同改；
+//   动因：计数口径改为「精简版实际投递次数」后，出厂节奏定为「每满 10 次精简放行一次完整版」，
+//   界面若仍回落 3，用户一动设置页就会把 3 写回盘上，节奏被静默改回旧语义。
+//   守卫语义不变：生成块之外的任何**非意外**改动仍会被本锁抓住；本批期望值随之上移。
+// ★2026-10-06 本快照第十五次演进（R79 · 前端 V4-1/#238/#223）——手写区三处改动：
+//   ①#238（上游 PR#239 采纳）：浮窗 floatStyle 加 inline position:'fixed' + 节点加 role:'dialog'/aria-label
+//     （梦幻皮肤把 [data-dam-panel] 误判为 composer 并用普通特异性 position:relative 压过 fixed ⇒ 浮窗被挤进文档流）；
+//   ②#223：侧栏入口与**承载面**同源（旧实现无条件注册 ⇒ panelPos='page' 档下按钮点了无反应，是空按钮）；
+//   ③两处 label 去掉过期的 '(pre)'（pre 线术语 2026-09-23 已废弃）。
+//   ⚠️ 重钉复算必须用**本套件自己的算法**（剥两块生成区 + 四处归一化），不可另写一份简化剥离：
+//     2026-10-06 首轮误按「只去指纹行/首块注释」复算，得 6a9c0587…（错值），回归随即复红；
+//     改用本文件 14-22 行的 classic 表达式复算得 26b00133…，与锁一致。
+//   守卫语义不变：生成块之外的任何**非意外**改动仍会被本锁抓住。
+assert.equal(createHash('sha256').update(classic).digest('hex'), '26b00133b7eef7896bff5c66fe0dff50a895a739eca5c2eb57321a4f0f10883d', 'Reviewed native-reference entry baseline（R78 = R77 + 2026-10-05 批次 Y（PR#212 #5/#6 + PR#213 前端拆取，生成器线一次过）：①共享草稿设施 memoryNoteDrafts/memoryCalendarDrafts/memoryDraftIdentity(sessionId|ws)/memoryNoteWrites/calendarWrites/memoryOperations/useMemoryOperation/submitMemoryOperation/prepareSettingsPatch/TeamSecretInput 落手写区；②面板 close() 前置草稿脏确认 + beforeunload 保护；③refreshSem 加 WeakMap 代次（迟到的旧状态不覆盖新状态）；④经典 NotesTab/CalendarTab 草稿接入 + 按身份重挂；⑤两 I5 实例：i5Read/i5Busy/i5ConfigGeneration/i5Initialized/i5AppliedRead 五 ref + 统一 i5ApplyConfig（草稿恢复 i5Initialized 单次 + 已有草稿只提示不覆盖 + psec 水合）+ save/onEngineModeChange 推进代次并回显 migrated/warning 回执 + setBusy 包 ref 同步；⑥gateOk 改读生效基线 i5Base（草稿态不再冒充已生效）+ gate-readout 归入主闸卡；⑦生效水位读数 data-dam-effective-water（handoff-state 实测，广播重取）；⑧browseTo/openBrowser 请求代次守卫 + D2 广播重取升级为 i5Busy 感知 + 请求号；⑨migPickInto 三份统一 migAlive 幂等守卫（修 pr-213 frozen 份 request 未声明 ReferenceError 点名缺陷）；⑩ConnectTab/Iter5External 异步取数身份守卫（去 pr-213 重复行）；⑪#212 前端：三份 iter5MemorySnapshot 注入 noteSessionId + 三份 Iter5Note 发 sessionId+expectedNotesPath（X2 服务端必填）；⑫设置分组再平衡（fExclude/model 移区、slims 死键控件摘除、fJsExcerpt/fWaterThreshold disabled+说明、即时项 L3 标签、团队 http/folder 禁选+TeamSecretInput 密码框）；⑬字典修正（fAutoContinue/handoffSwitch/fHandoff/fWaterWindow zh/en/ja + fAutoMargin 0.3-1 + settings-copy fJsCooldown 分钟→轮）；⑭skins 源 views/ui/native-panel/settings-copy 同步 + frozen LF 镜像 + 生成器 replaceT/切片补丁/断言化（--check SYNC-OK）。；原 R77 = R76 + 2026-10-05 发版三件套（v3.2.9：指纹行 + 应用内 CHANGELOG 字典 3.2.9 条目；内容见 CHANGELOG.md 同版段）；原 R76 = R75 + 2026-10-04 发版三件套（v3.2.8：指纹行 + 应用内 CHANGELOG 字典 3.2.8 条目；内容见 CHANGELOG.md 同版段）；原 R75 = R74 + 2026-10-04 issue #211 前端：Python 引擎卸载按钮（二次确认）+ pyUninstall 路由键 + 三语体积披露；原 R74 = R72 + 2026-10-02 审计修复批 A+B（增量归因：手写区 DebugCenter 收敛为只读 GET + 团队层接 4 条专用路由（API 表新增 5 键）+ TeamTab 挂载补回调 + L3 段共享订阅轮询）；原 R72 = R71 + 2026-10-01 ①接续开关默认开 + 欢迎向导开关 ②经典档接入 GlobalBriefRow 简报抽屉 ③damSharedSurfaceCss classic 分支归零修复；原 R71 = R70 + 2026-10-01 全局动态简报批（client.js 三面各加 8 个 globalBrief* 控件 + frozen 面补齐上批遗漏的 slimEveryRounds/fullEverySlims 两键）；原 R70 = R69 + #160/#162 修复：python 向导轮询/取消渲染、规则草稿与内容锚定、首屏 tour hero 挂载复原；生成块之外任何**非意外**改动仍会被本锁抓住）')
 console.log('PASS reviewed shared-entry source baseline preserved')
 
 const css = readFileSync(new URL('../../skins/iter5/skin.css', import.meta.url), 'utf8')
@@ -123,7 +138,14 @@ const document = { documentElement: { getAttribute: () => '', style: { setProper
 const window = { localStorage, addEventListener() {}, removeEventListener() {}, confirm() { confirmCount++; return accept }, __ModuleLoader__: { load(def) { exposed = def.factory(name => { if (name === 'react') return React; throw Error('Test module unavailable: ' + name) }) } } }
 const context = vm.createContext({ window, document, localStorage, console: { log() {}, warn() {}, info() {}, error() {} }, navigator: { language: 'zh-CN' }, URL, URLSearchParams, requestAnimationFrame: fn=>fn(), setTimeout, clearTimeout, setInterval: () => 1, clearInterval() {}, fetch: () => { throw Error('Unexpected raw fetch') } })
 vm.runInContext(source.replace('    return module.exports', `    exports._i5test = { Iter5Notice: Iter5Notice, Iter5Summary: Iter5Summary, Iter5AutoContinue: Iter5AutoContinue, Iter5Storage: Iter5Storage, Iter5Migration: Iter5Migration, Iter5DeleteConfirmation: Iter5DeleteConfirmation, iter5WorkspaceLayout: iter5WorkspaceLayout, iter5MapLabel: iter5MapLabel, Iter5WorkspaceGraph: Iter5WorkspaceGraph, iter5SkillContent: iter5SkillContent, Iter5SkillBrowser: Iter5SkillBrowser, iter5SearchEntries: iter5SearchEntries, Iter5Note: Iter5Note, Iter5Search: Iter5Search, useIter5Data: useIter5Data, Iter5Home: Iter5Home, Iter5Settings: Iter5Settings, Iter5Tabs: Iter5Tabs, iter5MemoryRows: iter5MemoryRows, iter5MemorySnapshot: iter5MemorySnapshot, iter5LedgerTitle: iter5LedgerTitle, DialogHost: DialogHost, setDialog: function (d) { dialogState = d }, t: t,
-      transport: function (get, post) { apiGet = get; apiPost = post }, identity: function (value) { iter5Identity = function () { return value } } }
+      transport: function (get, post) { apiGet = get; apiPost = post }, identity: function (value) { iter5Identity = function () { return value } },
+      // ★批次 Y：草稿身份改由 memoryDraftIdentity()（会话|工作区）派生 ⇒ 守卫用 identity(value) 同步
+      //   注入 host sessions 快照（value 形如 'sid|ws'），与 iter5Identity 同源同值，跨会话隔离判据不变。
+      session: function (value) {
+        var parts = String(value).split('|')
+        var byId = {}; byId[parts[0]] = { cwd: parts[1] || '', retainedBy: { mainView: 1 } }
+        sessions = { list: { getSnapshot: function () { return { current: parts[0], ids: [parts[0]], byId: byId } } } }
+      } }
     return module.exports`), context, { filename: fileURLToPath(new URL('../../lib/client.js', import.meta.url)) })
 const test = exposed._i5test
 // Execute the host theme reader against both current DSH and older host markers.
@@ -314,19 +336,19 @@ console.log('PASS late results cannot cross session/workspace identity')
 // Execute panel draft and selectable search behavior through the shipped components.
 function renderNative(component, props) { cursor=0;const tree=component(props);effects.splice(0).forEach(fn=>fn());return tree }
 function resetNative() { states=[];effects=[];cursor=0 }
-resetNative();test.identity('note-session-a|workspace-a')
-let note=renderNative(test.Iter5Note,{persistDraft:'panel'})
+resetNative();test.identity('note-session-a|workspace-a');test.session('note-session-a|workspace-a')
+let note=renderNative(test.Iter5Note,{persistDraft:'panel',source:'/ws-a/MEMORY.md'})
 nodes(note,n=>n.type==='textarea')[0].props.onChange({target:{value:'Keep this unsaved note'}})
-resetNative();test.identity('note-session-b|workspace-b')
-note=renderNative(test.Iter5Note,{persistDraft:'panel'})
+resetNative();test.identity('note-session-b|workspace-b');test.session('note-session-b|workspace-b')
+note=renderNative(test.Iter5Note,{persistDraft:'panel',source:'/ws-a/MEMORY.md'})
 assert.equal(nodes(note,n=>n.type==='textarea')[0].props.value,'','A different session never receives the panel draft')
-resetNative();test.identity('note-session-a|workspace-a')
-note=renderNative(test.Iter5Note,{persistDraft:'panel'})
+resetNative();test.identity('note-session-a|workspace-a');test.session('note-session-a|workspace-a')
+note=renderNative(test.Iter5Note,{persistDraft:'panel',source:'/ws-a/MEMORY.md'})
 assert.equal(nodes(note,n=>n.type==='textarea')[0].props.value,'Keep this unsaved note','Closing and remounting restores the same-session draft')
 test.transport(async()=>({}),async()=>({ok:true}))
 note.props.onSubmit({preventDefault(){}})
 await new Promise(resolve=>setTimeout(resolve,0))
-resetNative();note=renderNative(test.Iter5Note,{persistDraft:'panel'})
+resetNative();note=renderNative(test.Iter5Note,{persistDraft:'panel',source:'/ws-a/MEMORY.md'})
 assert.equal(nodes(note,n=>n.type==='textarea')[0].props.value,'','A successful append clears the recovered draft')
 console.log('PASS panel drafts survive remount, isolate identities and clear only after append')
 resetNative()

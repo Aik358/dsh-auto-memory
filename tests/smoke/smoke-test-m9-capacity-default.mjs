@@ -109,6 +109,18 @@ t('M9-5 ★ 幂等：只升一次 —— 用户日后手动改回 12000 不再�
 // ─────────────────────────────────────────────────────────────
 // M9-6..7 接线与落盘
 // ─────────────────────────────────────────────────────────────
+/** ★B-1：按花括号配平切出真实方法体（本文件早已推荐的稳定口径，见 M9-6 注释）。 */
+function sliceMethod(sig) {
+  const i = SRC.indexOf(sig)
+  assert(i >= 0, '未找到方法: ' + sig)
+  let depth = 0, started = false
+  for (let k = i; k < SRC.length; k++) {
+    const ch = SRC[k]
+    if (ch === '{') { depth++; started = true }
+    else if (ch === '}') { depth--; if (started && depth === 0) return SRC.slice(i, k + 1) }
+  }
+  throw new Error('花括号未配平: ' + sig)
+}
 t('M9-6 ★ 迁移接在两个加载路径上（同步路径是注册期真正跑的那条）', () => {
   // ⚠️ 2026-09-18 起调用是 `this.upgradeCapacityDefaultsPre(parsed)`(必须传磁盘原文);
   //    同步路径还要**自己落盘**(persistConfigSyncPre) —— 它是注册期唯一真跑的那条。
@@ -119,11 +131,21 @@ t('M9-6 ★ 迁移接在两个加载路径上（同步路径是注册期真正�
   //    ⇒ 断言以「找不到」的形式失败（症状离真因很远：报的是"必须同步落盘"）。
   //    ⚠️ 教训：**用固定字符窗口截方法体的断言，会因为无关改动而静默失效**。
   //    这里放宽窗口并保留断言强度；若要更稳，应改为按方法体边界切片（见 sliceMethod）。
-  const sync = SRC.slice(SRC.indexOf('loadConfigSync()'), SRC.indexOf('loadConfigSync()') + 1800)
+  // ★B-1（2026-10-06）判据更新：固定字符窗口 → **方法体边界切片**。
+  //   上方注释早已写明「用固定字符窗口截方法体的断言，会因为无关改动而静默失效」，
+  //   并点名了正确做法（见 sliceMethod）。B-1b 给 loadConfigSync 加配置锁接线后该窗口
+  //   再次失效（症状仍离真因很远：报「必须同步落盘」）。现按本文件自己推荐的口径切到
+  //   真实方法边界；判据语义未削弱，只把「在哪找」从字符窗口换成方法边界。
+  //   两入口现均为薄壳（薄壳负责进锁）+ 被锁体（被锁体负责真实读/迁移/落盘），两者都断言。
+  const shellSync = sliceMethod('loadConfigSync() {')
+  assert(/withConfigLockSync\(/.test(shellSync), '★ loadConfigSync 必须整体进配置锁')
+  assert(/_loadConfigSyncLocked\(\)/.test(shellSync), '★ loadConfigSync 必须委托被锁体')
+  const sync = sliceMethod('_loadConfigSyncLocked() {')
   assert(/this\.upgradeCapacityDefaultsPre\(parsed\)/.test(sync), '★ loadConfigSync 必须调用迁移并传 parsed')
   assert(/persistConfigSyncPre\(\)/.test(sync), '★ loadConfigSync 必须同步落盘')
-  const asyncAt = SRC.indexOf('async loadConfig()')
-  const asyncSeg = SRC.slice(asyncAt, asyncAt + 1800)
+  const shellAsync = sliceMethod('async loadConfig() {')
+  assert(/withConfigLock\(/.test(shellAsync), '★ loadConfig 必须整体进配置锁')
+  const asyncSeg = sliceMethod('async _loadConfigLocked() {')
   assert(/this\.upgradeCapacityDefaultsPre\(parsed\)/.test(asyncSeg), '★ loadConfig 也必须调用迁移并传 parsed')
   assert(/persistConfigPre/.test(asyncSeg), '★ 异步路径须把抬升结果落盘(否则设置页显示 12000 与实际不一致)')
 })

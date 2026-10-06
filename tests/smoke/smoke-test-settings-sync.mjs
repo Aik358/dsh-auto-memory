@@ -27,7 +27,11 @@ function runPatch(ok) {
     emit: () => { emits++ },
     apiPost: () => ok ? Promise.resolve({ config: { a: 1 } }) : Promise.reject(new Error('boom')),
   }
-  const code = patchSrc + '\nreturn saveConfigPatch'
+  // ★批次 Y：saveConfigPatch 现经 prepareSettingsPatch 归一化（保存唯一出口内），真执行需一并注入。
+  const prepSrc = source.slice(source.indexOf('    function prepareSettingsPatch(patch) {'), source.indexOf('    function TeamSecretInput(props) {'))
+  const code = prepSrc + patchSrc + '\nreturn saveConfigPatch'
+
+
   const call = vm.runInNewContext('(function(){' + code + '})()', ctx)
   const p = call({ a: 1 }, { onSaved: () => { savedCalls++ }, onError: () => { errorCalls++ } })
   return p.then(() => ({ emits, savedCalls, errorCalls }), () => ({ emits, savedCalls, errorCalls }))
@@ -51,7 +55,9 @@ async function runSilent(ok) {
     emit: () => { emits++ },
     apiPost: () => ok ? Promise.resolve({}) : Promise.reject(new Error('nope')),
   }
-  const call = vm.runInNewContext('(function(){' + patchSrc + '\nreturn saveConfigPatch})()', ctx)
+  // ★批次 Y：静默路径同样经 prepareSettingsPatch（真执行注入）。
+  const prepSilent = source.slice(source.indexOf('    function prepareSettingsPatch(patch) {'), source.indexOf('    function TeamSecretInput(props) {'))
+  const call = vm.runInNewContext('(function(){' + prepSilent + patchSrc + '\nreturn saveConfigPatch})()', ctx)
   await call({ b: 2 }).catch(() => {})
   await new Promise((r) => setTimeout(r, 0))
   return emits

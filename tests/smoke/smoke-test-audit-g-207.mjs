@@ -4,7 +4,7 @@
  * 审计 §G2 四项：
  *   ① cont-seq.json 计数器  ② continued-sessions.json 接续闩  ③ 归档账本
  *       —— 旧实现「readFileSync → 改 → writeFileSync 整写」，并发丢更新 / 中断撕裂；
- *          改为复用既有 writeTextAtomicPreSync + 按路径串行队列（不另起第三套锁）。
+ *          共享队列原语仍单测；生产 issue207 通过跨进程锁、持久预留与严格读取加强。
  *   ④ semantic-js-worker 的 wasm 路径本地化 + localWasmPaths 开关。
  *
  * 全部为**真 import → 真构造 → 真调用 → 断言返回值/副作用**；每条附负路径。
@@ -13,6 +13,7 @@ import assert from 'node:assert/strict'
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, readdirSync, statSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import { createPathWriteQueuePre } from '../../lib/path-write-queue.js'
 import { writeTextAtomicPreSync, readJsonQuarantinePreSync } from '../../lib/config-io.js'
 import { resolveLocalWasmDirPre, applyLocalWasmPathsPre } from '../../lib/wasm-paths.js'
@@ -70,18 +71,36 @@ console.log('[audit-G-207] A 按路径串行 + 原子落盘')
   ok(good && good.ok === true && readFileSync(path.join(root, 'c.json'), 'utf8') === 'ok', '单次写失败不污染后续入队')
 }
 
-// ── B. 三处调用点确实改用了原子写 + 串行（接线守卫，含负路径） ──
-console.log('[audit-G-207] B 三处裸写已收口')
+// ── B. Production issue207 state: shared locks, durable reservations and delta writes ──
+console.log('[audit-G-207] B durable cross-process state wiring')
 {
-  const src = readFileSync(new URL('../../lib/index.js', import.meta.url), 'utf8').replace(/\r\n/g, '\n')
-  ok(!/writeFileSync\(this\.contSeqFile\(\)/.test(src), '① cont-seq：不再裸 writeFileSync')
-  ok(/saveContSeqState\(st\)[\s\S]{0,400}?writeTextAtomicPreSync\(this\.contSeqFile\(\)/.test(src), '① cont-seq：落盘改走 writeTextAtomicPreSync')
-  ok(/_pathWriteQueuePre\(\)\.run\(this\.contSeqFile\(\)/.test(src), '① cont-seq：读改写整体入按路径串行链')
-  ok(!/const obj = JSON\.parse\(readFileSync\(this\.continuedSessionsFile\(\)/.test(src.replace(/loadContinuedSessions\(\)[\s\S]*?\n  \}/, '')), '② 接续闩：mark 不再重读文件再整写')
-  ok(/_pathWriteQueuePre\(\)\.write\(file, JSON\.stringify\(\{ sessions: arr/.test(src), '② 接续闩：mark 走按路径串行原子写')
-  ok(/saveArchiveLedger\(ledger\)[\s\S]{0,400}?_pathWriteQueuePre\(\)\.write\(/.test(src), '③ 归档账本：save 走按路径串行原子写')
-  ok(!/saveArchiveLedger\(ledger\)[\s\S]{0,260}?writeFileSync\(path\.join\(dshHome\(\), 'auto-memory-archive-ledger\.json'\)/.test(src), '③ 归档账本：不再整对象裸覆盖写')
-  ok(!/_serializeByFilePre/.test(src), '负路径：已并入 path-write-queue，旧的自建第二套链已删除')
+  const home = path.join(root, 'state-wiring')
+  mkdirSync(home, { recursive: true })
+  process.env.DSH_HOME = home
+  const { MemoryEngine } = await import('../lib/state-engine.mjs')
+  const engine = () => Object.assign(new MemoryEngine(), { config: { handoffEnabled: false, autoContinueEnabled: false } })
+  const a = engine(), b = engine()
+  a.scanMaxContSeq = b.scanMaxContSeq = async () => 0
+  const values = await Promise.all(Array.from({ length: 40 }, (_, i) => (i % 2 ? a : b).allocContSeq('audit-' + i)))
+  ok(new Set(values).size === 40 && Math.max(...values) === 40, '① independent engines reserve 40 unique sequence numbers')
+  const counterFile = a.contSeqFile()
+  ok(JSON.parse(readFileSync(counterFile, 'utf8')).last === 40, '① successful reservations are durable before returning')
+  a.rollbackContSeq('audit-0', values[0])
+  ok(JSON.parse(readFileSync(counterFile, 'utf8')).last === 40, '① failed consumers cannot recycle reserved sequence numbers')
+  await Promise.all([a.markContinuedSession('audit-source-a', 'raw-successor-a'), b.markContinuedSession('audit-source-b', 'raw-successor-b')])
+  const restarted = engine()
+  ok(restarted.isContinuedSession('audit-source-a') && restarted.isContinuedSession('audit-source-b'), '② independent source latches survive engine restart')
+  ok(await restarted.markContinuedSession('audit-source-a', 'duplicate') === false, '② repeated source cannot create another completed latch')
+  const file = path.join(home, 'auto-memory-archive-ledger.json')
+  writeFileSync(file, '{}', 'utf8')
+  await Promise.all([a.saveArchiveLedger({ first: 100 }), b.saveArchiveLedger({ second: 200 })])
+  ok(a.loadArchiveLedger().first === 100 && a.loadArchiveLedger().second === 200, '③ concurrent archive deltas preserve both writers')
+  await b.saveArchiveLedger({}, ['first'])
+  ok(a.loadArchiveLedger().first === undefined && a.loadArchiveLedger().second === 200, '③ explicit deletion preserves unrelated archive evidence')
+  writeFileSync(file, '{broken', 'utf8')
+  let refused = false
+  try { a.loadArchiveLedger() } catch (e) { refused = e.statePersistence === true }
+  ok(refused && readFileSync(file, 'utf8') === '{broken', '③ corrupt archive evidence is refused and original bytes preserved')
 }
 
 // ── C. 真实端到端：接续闩与计数器落盘（真 apply + 真路由） ──
@@ -151,7 +170,7 @@ console.log('[audit-G-207] C 端到端落盘（真 apply + 真文件）')
   writeFileSync(okFile, JSON.stringify({ s1: 123 }), 'utf8')
   const qr2 = readJsonQuarantinePreSync(okFile)
   ok(qr2.ok === true && qr2.value.s1 === 123 && existsSync(okFile), '③ 负路径：正常账本正常读取且不被隔离')
-  ok(/readJsonQuarantinePreSync\(f\)/.test(src), '③ 归档账本读取改用 readJsonQuarantinePreSync（接线）')
+  ok(/readStateJson\(path\.join\(dshHome\(\), 'auto-memory-archive-ledger\.json'\), Object\.create\(null\), parseArchiveLedger\)/.test(src), '③ 归档账本接线严格持久状态读取（腐败拒绝已实测）')
   ok(!/loadArchiveLedger\(\)[\s\S]{0,300}?catch \(e\) \{ return \{\} \}/.test(src), '③ 负路径：旧的「catch 直接吞掉返回 {}」已不存在')
   for (const d of effects) { try { const t = d(); if (typeof t === 'function') t() } catch (e) {} }
 }
@@ -159,9 +178,17 @@ console.log('[audit-G-207] C 端到端落盘（真 apply + 真文件）')
 // ── D. wasm 路径本地化（真 import，真调用） ──
 console.log('[audit-G-207] D wasm 本地化 + localWasmPaths 开关')
 {
-  const realDist = path.join(new URL('../../node_modules/@huggingface/transformers/dist/', import.meta.url).pathname.replace(/^\//, ''))
+  // This suite verifies filesystem path selection without installing models or
+  // executing WASM. An explicit real-package path still runs the same assertions.
+  const fixtureDist = path.join(root, 'wasm dist 测试')
+  mkdirSync(fixtureDist, {recursive:true})
+  writeFileSync(path.join(fixtureDist, 'ort-wasm-simd-threaded.wasm'), Buffer.from([0, 97, 115, 109, 1, 0, 0, 0]))
+  const realDist = process.env.DSH_TEST_TRANSFORMERS_DIST
+    ? path.resolve(process.env.DSH_TEST_TRANSFORMERS_DIST)
+    : fileURLToPath(pathToFileURL(fixtureDist))
+  console.log('  WASM path coverage: ' + (process.env.DSH_TEST_TRANSFORMERS_DIST ? 'explicit package directory' : 'isolated filesystem fixture; no WASM execution'))
   const hasWasm = existsSync(realDist)
-  ok(hasWasm, 'transformers dist 目录存在（前置）', realDist)
+  ok(hasWasm, 'WASM 测试目录存在（前置）', realDist)
   // 真解析：本地有 ort-wasm*.wasm ⇒ 返回该目录
   const dir = resolveLocalWasmDirPre(realDist)
   ok(dir === realDist && readdirSync(dir).some((n) => /^ort-wasm.*\.wasm$/.test(n)), 'resolveLocalWasmDirPre 命中真实 wasm 资产目录', dir)

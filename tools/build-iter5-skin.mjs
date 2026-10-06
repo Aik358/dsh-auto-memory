@@ -203,7 +203,8 @@ settings = replaceOnce(settings, '      var tickPair = useTick()', `      var ti
       var i5Base = useRef(null)
       var i5Draft = useRef({})
       var i5Groups = useRef({})
-      var i5Alive = useRef(true)
+      var i5Alive = useRef(true), i5Read = useRef(0), i5Busy = useRef(false), i5ConfigGeneration = useRef(0)
+      var i5Initialized = useRef(false), i5AppliedRead = useRef(0)
       var i5Identity = iter5Identity()
       var i5DraftKey = i5Identity + '|' + (props && props.draftScope || 'workbench')
       var i5GroupsDef = { engine: ['engine'], memory: ['window', 'capacity', 'skills'], appearance: ['store', 'look', 'skin'], behavior: ['handoff', 'auto', 'team', 'about'] }
@@ -214,6 +215,29 @@ settings = replaceOnce(settings, '      var tickPair = useTick()', `      var ti
         return function () { i5Alive.current = false; window.removeEventListener('beforeunload', before) }
       }, [])
       function i5Ok() { return i5Alive.current && i5Identity === iter5Identity() }
+      // ★批次 Y（#212 claim5 / #213 claim3）：统一的配置应答应用口 ——
+      //   i5AppliedRead 单调代次（迟到的旧响应不覆盖新状态）+ 草稿恢复（i5Initialized 仅一次）
+      //   + 已有草稿时只提示不覆盖 + psec 清单随应答体水合。
+      function i5ApplyConfig(d, request) {
+        i5AppliedRead.current = request
+        var remote = configOf(d)
+        var recovered = !i5Initialized.current && iter5SettingsDrafts[i5DraftKey]
+        i5Initialized.current = true
+        i5Base.current = remote
+        if (recovered) {
+          i5Draft.current = Object.assign({}, recovered.patch); i5Groups.current = Object.assign({}, recovered.groups)
+          setMsg(L('已恢复此会话未保存的修改，请核对后保存或取消。', 'Unsaved edits for this session were restored. Review before saving or discarding.'))
+          var conflict = Object.keys(recovered.patch).some(function (key) { return JSON.stringify(remote[key]) !== JSON.stringify(recovered.base[key]) })
+          setErr(conflict ? L('部分设置已在其他入口变更；恢复的草稿尚未覆盖服务器，请核对。', 'Some settings changed elsewhere. Restored edits have not overwritten the server; review them.') : '')
+        } else if (Object.keys(i5Draft.current).length) {
+          var changed = Object.keys(i5Draft.current).filter(function (key) { return JSON.stringify(remote[key]) !== JSON.stringify(i5Draft.current[key]) })
+          if (changed.length) setMsg(L('检测到其他入口的修改：', 'Changes detected from another entry: ') + changed.join(', ') + L('。你的未保存输入未被覆盖。', ' Your unsaved edits were not overwritten.'))
+        }
+        setCfg(Object.assign({}, remote, i5Draft.current))
+        setDirty(Object.keys(i5Draft.current).length > 0)
+        setPsecKeys(Array.isArray(d.promptSections) ? d.promptSections : [])
+        setPsecMust(Array.isArray(d.promptSectionMust) ? d.promptSectionMust : [])
+      }
       function i5Record(key, value) {
         if (JSON.stringify(value) === JSON.stringify((i5Base.current || {})[key])) { delete i5Draft.current[key]; delete i5Groups.current[key] }
         else { i5Draft.current[key] = value; i5Groups.current[key] = i5Group[0] }
@@ -222,25 +246,29 @@ settings = replaceOnce(settings, '      var tickPair = useTick()', `      var ti
         else delete iter5SettingsDrafts[i5DraftKey]
       }
       function i5Cancel() { delete iter5SettingsDrafts[i5DraftKey]; i5Draft.current = {}; i5Groups.current = {}; setCfg(Object.assign({}, i5Base.current)); setDirty(false); setErr(''); setMsg('') }`)
-settings = replaceOnce(settings, '          setCfg(d.config)', `          if (!i5Ok()) return
-          i5Base.current = configOf(d)
-          var recovered = iter5SettingsDrafts[i5DraftKey]
-          if (recovered) {
-            i5Draft.current = Object.assign({}, recovered.patch); i5Groups.current = Object.assign({}, recovered.groups)
-            setCfg(Object.assign({}, configOf(d), recovered.patch)); setDirty(true)
-            setMsg(L('已恢复此会话未保存的修改，请核对后保存或取消。', 'Unsaved edits for this session were restored. Review before saving or discarding.'))
-            var conflict = Object.keys(recovered.patch).some(function (key) { return JSON.stringify(configOf(d)[key]) !== JSON.stringify(recovered.base[key]) })
-            if (conflict) setErr(L('部分设置已在其他入口变更；恢复的草稿尚未覆盖服务器，请核对。', 'Some settings changed elsewhere. Restored edits have not overwritten the server; review them.'))
-          } else setCfg(configOf(d))`)
+settings = replaceOnce(settings, '          setCfg(d.config)', `          if (!i5Ok() || request<i5AppliedRead.current) return
+          i5ApplyConfig(d, request)`)
+// ★批次 Y：初始 GET 失败仅在「尚无基线且未被打断」时提示 —— 失败的新 GET 不压制初始水合。
+settings = replaceOnce(settings, '          setPsecMust(Array.isArray(d.promptSectionMust) ? d.promptSectionMust : [])\n        }).catch(function (e) { setErr(e.message) })',
+  '          setPsecMust(Array.isArray(d.promptSectionMust) ? d.promptSectionMust : [])\n        }).catch(function (e) { if (alive && i5Ok() && request>=i5AppliedRead.current && !i5Base.current) setErr(e.message) })')
+// ★批次 Y：初始 GET 带单调请求号（classic 切片的 settingsBase effect 保持原样，仅 I5 侧加代次）。
+settings = replaceOnce(settings, '        var alive = true\n        apiGet(API.config).then(function (d) {', '        var alive = true, request=++i5Read.current\n        apiGet(API.config).then(function (d) {')
 settings = replaceOnce(settings,
   'function set(key, value) { setCfg(function (prev) { var next = Object.assign({}, prev); next[key] = value; return next }); setDirty(true) }',
   `function set(key, value) {
-        if (busy) return
+        if (i5Busy.current) return
         if (key === 'associativeMemoryEnabled' && value === false && cfg.associativeMemoryEnabled && !window.confirm(L('关闭自动记忆引擎并保存后，将清零全部观察数据。记忆正文保留。确定关闭？', 'Saving with the engine disabled clears all observation data. Memory files are preserved. Disable?'))) return
         i5Record(key, value)
         setCfg(function (prev) { var next = Object.assign({}, prev); next[key] = value; return next })
       }`)
-settings = replaceOnce(settings, 'function setMany(patch) { setCfg(function (prev) { return Object.assign({}, prev, patch) }); setDirty(true) }', 'function setMany(patch) { if (busy) return; Object.keys(patch).forEach(function (k) { i5Record(k, patch[k]) }); setCfg(function (prev) { return Object.assign({}, prev, patch) }) }')
+settings = replaceOnce(settings, 'function setMany(patch) { setCfg(function (prev) { return Object.assign({}, prev, patch) }); setDirty(true) }', 'function setMany(patch) { if (i5Busy.current) return; Object.keys(patch).forEach(function (k) { i5Record(k, patch[k]) }); setCfg(function (prev) { return Object.assign({}, prev, patch) }) }')
+// ★批次 Y（#212 claim5）：setBusy 包一层 —— busy 位同步进 ref（i5Busy）并推进配置代次（i5ConfigGeneration），
+//   使「保存进行中」对广播重取与迟到响应可见。
+settings = replaceOnce(settings, '      var setBusy = busyPair[1]', `      function setBusy(value) {
+        i5Busy.current = value
+        i5ConfigGeneration.current += 1
+        busyPair[1](value)
+      }`)
 const saveStart = settings.indexOf('      function save() {')
 const fieldStart = settings.indexOf('      function field(')
 // ★2026-10-02 G0-2（R2-a）：锚点消失时 slice(0, -1) 会静默切掉尾字符、拼出坏产物。
@@ -248,20 +276,22 @@ requireAnchor(settings, '      function save() {', 'G0-2/settings:161 经典设�
 requireAnchor(settings, '      function field(', 'G0-2/settings:162 经典设置页 field() 切片锚点')
 if (saveStart < 0 || fieldStart < 0 || fieldStart < saveStart) throw g2Miss('G0-2/settings:163 切片区间', 'save() 在 field() 之前且都非负', 'saveStart=' + saveStart + ', fieldStart=' + fieldStart)
 settings = settings.slice(0, saveStart) + `      function save() {
-        if (busy || !Object.keys(i5Draft.current).length) return
+        if (i5Busy.current || !Object.keys(i5Draft.current).length) return
+        i5AppliedRead.current=++i5Read.current;i5Busy.current=true
         setBusy(true); setMsg(''); setErr('')
         var patch = Object.assign({}, i5Draft.current)
         saveConfigPatch(patch, {
           onSaved: function (d) {
+            var stored=iter5SettingsDrafts[i5DraftKey]
+            if(stored && JSON.stringify(stored.patch)===JSON.stringify(patch))delete iter5SettingsDrafts[i5DraftKey]
             if (!i5Ok()) return
             i5Base.current = configOf(d)
-            delete iter5SettingsDrafts[i5DraftKey]
             i5Draft.current = {}; i5Groups.current = {}
-            setCfg(configOf(d)); setDirty(false); setBusy(false); setMsg(t('saved'))
+            setCfg(configOf(d)); setDirty(false); setBusy(false);i5Busy.current=false; setMsg(t('saved') + (d.migrated ? ' · ' + d.migrated : '') + (d.warning ? ' · ' + d.warning : ''))
             if (configOf(d).locale) applyLocalePref(configOf(d).locale)
             refreshSem(setSem)
           },
-          onError: function (e) { if (i5Ok()) { setErr(e.message); setBusy(false) } }
+          onError: function (e) { if (i5Ok()) { setErr(e.message); setBusy(false);i5Busy.current=false } }
         })
       }
 ` + settings.slice(fieldStart)
@@ -291,20 +321,21 @@ requireAnchor(settings, '      var sectionLabels =', 'G0-2/settings:202 sectionL
 if (modeStart < 0 || modeEnd < 0 || modeEnd < modeStart) throw g2Miss('G0-2/settings:203 切片区间', 'modeStart 在 modeEnd 之前且都非负', 'modeStart=' + modeStart + ', modeEnd=' + modeEnd)
 settings = settings.slice(0, modeStart) + `      function onEngineModeChange(e) {
         var v = e.target.value
-        if (busy) return
+        if (i5Busy.current) return
+        i5AppliedRead.current=++i5Read.current;i5Busy.current=true
         setBusy(true); setErr(''); setMsg('')
         saveConfigPatch({ semanticEngineMode: v }, {
           onSaved: function (d) {
             if (!i5Ok()) return
             i5Base.current = configOf(d)
-            setCfg(Object.assign({}, configOf(d), i5Draft.current)); setBusy(false)
+            setCfg(Object.assign({}, configOf(d), i5Draft.current)); setBusy(false);i5Busy.current=false
             setMsg(L('检索模式已即时生效', 'Retrieval mode saved immediately'))
             refreshSem(function (s) {
               if (!i5Ok()) return
               setSem(s)
               setGuide(v === 'js' && !s.ready ? 'js' : v === 'python' && !s.pythonInt8Present ? 'python' : '')
-            })
-          }, onError: function (e) { if (i5Ok()) { setErr(e.message); setBusy(false) } }
+            },null,setSem)
+          }, onError: function (e) { if (i5Ok()) { setErr(e.message); setBusy(false);i5Busy.current=false } }
         })
       }
 ` + settings.slice(modeEnd)
@@ -326,6 +357,7 @@ settings = replaceOnce(settings,
             var label = node.props && node.props['data-i5-field']
             if (label === t('semMode')) mode.push(node)
             else if (label === t('fAssocEngine') || label === t('fEmitMode')) primary.push(node)
+            else if (node.props && node.props['data-dam-gate-readout'] !== undefined) primary.push(node)
             else if (label) advanced.push(node)
             else support.push(node)
           })
@@ -364,8 +396,14 @@ const radioOld = `h('select', { 'data-dam-select': '', style: { flex: 1 }, value
 settings = replaceOnce(settings, radioOld, `h('div', { className: 'i5-engine-radios', role: 'radiogroup', 'aria-label': L('检索模式（即时生效）', 'Retrieval mode (immediate)') },
               [['auto', t('semAuto')], ['lexical', t('semLexOnly')], ['js', t('semJs')], ['python', t('semPy')]].map(function (r) { return h('label', { className: 'i5-engine-choice', key: r[0] }, h('input', { type: 'radio', name: 'i5-engine', value: r[0], checked: (cfg.semanticEngineMode || 'auto') === r[0], disabled: busy, onChange: onEngineModeChange }), h('span', null, r[1])) }))`)
 // The wizard's shortcut uses the same immediate save path, never a separate draft write.
-const shortcut = "setGuide(''); var n2 = Object.assign({}, cfg); n2.semanticEngineMode = guide; if (guide === 'js') { n2.activationSource = 'js'; n2.contextSinkMode = 'null' } else if (guide === 'python') { n2.activationSource = 'python'; n2.contextSinkMode = 'python' } setCfg(n2); setDirty(true)"
-settings = replaceOnce(settings, shortcut, "onEngineModeChange({ target: { value: guide } })")
+// ★批次 Y（#213 claim3 前端拆取）：经典档的启用按钮已改为直调 onEngineModeChange（手写区已改），
+//   本变换点退化为断言：源里不得再出现「写本地草稿」的旧形态（有人改回去立即硬停）。
+{
+  const legacyShortcut = g2Count(settings, "setGuide(''); var n2 = Object.assign({}, cfg); n2.semanticEngineMode = guide")
+  if (legacyShortcut !== 0) throw g2Miss('G0-2/settings:368 向导快捷方式（直调即时保存路径）', 0, legacyShortcut)
+  const direct = g2Count(settings, 'onEngineModeChange({ target: { value: guide } })')
+  if (direct !== 1) throw g2Miss('G0-2/settings:368 向导快捷方式直调断言', 1, direct)
+}
 settings = replaceOnce(settings, "h('div', { 'data-dam-savebar': '' },", "h('div', { 'data-dam-savebar': '', role: 'status' },\n          h('button', { onClick: i5Cancel, disabled: busy || !dirty }, L('取消修改', 'Discard changes')),")
 settings = replaceOnce(settings, 'onClick: save, disabled: busy', 'onClick: save, disabled: busy || !dirty')
 // Save actions are a sibling of the scrolling content, never an overlay on a field.
@@ -400,6 +438,16 @@ settings = replaceAllT(settings, "'i5-settings'", 'i5SettingsId', 'G0-2/settings
 settings = replaceAllT(settings, "'i5-settings-panel'", "i5SettingsId + '-panel'", 'G0-2/settings:308 面板 id 实例化', 1)
 settings = replaceAllT(settings, "'i5-settings-tab-'", "i5SettingsId + '-tab-'", 'G0-2/settings:308 页签 id 前缀实例化', 1)
 settings = replaceAllT(settings, "'i5-settings-section-'", "i5SettingsId + '-section-'", 'G0-2/settings:308 分节 id 前缀实例化', 2)
+// ★批次 Y（#213 claim1）：gateOk 读**生效基线**（i5Base）——草稿态的开关值不再冒充「已生效」。
+settings = replaceT(settings, "var gateOk = cfg.associativeMemoryEnabled === true && cfg.activationInboxEnabled === true",
+  "var live = i5Base.current || {}; var gateOk = live.associativeMemoryEnabled === true && live.activationInboxEnabled === true",
+  'PR213/settings: gateOk 读生效基线')
+// ★批次 Y（#212 claim5）：屏障完整性断言 —— 切片内不得残留 'if (busy) return'
+//   （set/setMany/onEngineModeChange 已由上方重写覆盖为 i5Busy；有残留即硬停）。
+{
+  const leftover = g2Count(settings, 'if (busy) return')
+  if (leftover !== 0) throw g2Miss('PR213/settings: I5 侧 busy 屏障完整性', 0, leftover)
+}
 let storage = client.slice(client.indexOf('    function StorageTab(props) {'), client.indexOf('    function NotesTab() {'))
 storage = replaceOnce(storage, 'function StorageTab(props)', 'function Iter5Storage(props)')
 storage = replaceAllT(storage, ".then(function (r) { return r.json() })", ".then(function (r) { return r.json().then(function (j) { if (!r.ok || (j && j.error)) throw Error(j && (j.error || j.reason) || 'Request failed'); return j }) })", 'G0-2/storage:311 请求失败判定（r.json 包装）', 2)
@@ -564,20 +612,12 @@ const d2Subscribe = [
   "      //   三条安全线：①有未保存草稿时不覆盖用户输入（只提示）；②busy 中不重取；③身份不符放弃。",
   "      useEffect(function () {",
   "        return controller.subscribe(function () {",
-  "          if (busy) return",
+  "          if (i5Busy.current) return",
   "          if (!i5Ok()) return",
+  "          var request=++i5Read.current",
   "          apiGet(API.config).then(function (d) {",
-  "            if (!i5Ok()) return",
-  "            var remote = configOf(d)",
-  "            i5Base.current = remote",
-  "            if (Object.keys(i5Draft.current).length) {",
-  "              var changed = Object.keys(i5Draft.current).filter(function (key) { return JSON.stringify(remote[key]) !== JSON.stringify(i5Draft.current[key]) })",
-  "              if (changed.length) setMsg(L(\"检测到其他入口的修改：\", \"Changes detected from another entry: \") + changed.join(\", \") + L(\"。你的未保存输入未被覆盖。\", \" Your unsaved edits were not overwritten.\"))",
-  "              setCfg(function (prev) { return Object.assign({}, remote, i5Draft.current) })",
-  "            } else {",
-  "              setCfg(remote)",
-  "              setDirty(false)",
-  "            }",
+  "            if (!i5Ok() || request<i5AppliedRead.current) return",
+  "            i5ApplyConfig(d, request)",
   "          }).catch(function () {})",
   "        })",
   "      }, [busy])",
