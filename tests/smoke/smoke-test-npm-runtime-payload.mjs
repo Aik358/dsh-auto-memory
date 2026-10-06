@@ -31,8 +31,12 @@ for (const file of ['slots/hero.welcome.png', 'slots/hero.welcome-memory-v2.png'
   assert.ok(existsSync(path.join(root, 'lib/assets/skin', file)), 'source image must remain available')
   assert.ok(!files.has('lib/assets/skin/' + file), 'obsolete image included: ' + file)
 }
-for (const file of ['lib/index.js', 'lib/client.js', 'icon.svg', 'locale/en.json', 'locale/zh.json', 'cordis.patch.yml', 'skins/classic/theme.json', 'skins/v4/theme.json', 'skins/v4/skin.css', 'python/worker_v1.py', 'python/worker_semantic_v1.py', 'lib/policies/activation_policy_v2.json', 'python/policies/activation_policy_v2.json']) {
+for (const file of ['lib/index.js', 'lib/client.js', 'icon.svg', 'locale/en.json', 'locale/zh.json', 'cordis.patch.yml', 'skins/classic/theme.json', 'skins/v4/theme.json', 'skins/v4/skin.css', 'python/worker_v1.py', 'python/worker_semantic_v1.py']) {
   assert.ok(files.has(file), 'runtime payload missing: ' + file)
+}
+for (const dir of ['lib', 'python']) for (const name of ['activation_policy_v2', 'recall_intent_lr_v1']) {
+  const file = dir + '/policies/' + name + '.json'
+  assert.ok(files.has(file), 'semantic policy missing: ' + file)
 }
 
 // Run the real manifest-writing phase without the unrelated copy/reconcile gates.
