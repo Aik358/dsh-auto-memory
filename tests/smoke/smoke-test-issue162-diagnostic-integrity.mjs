@@ -48,6 +48,7 @@ import * as nativePromises from 'node:fs/promises'
 import path from 'node:path'
 import { homedir } from 'node:os'
 import { fileURLToPath } from 'node:url'
+import { createHash } from 'node:crypto'
 import { memoryWriteError } from ${JSON.stringify(url('memory-writer.js'))}
 import { persistDegradeLedgerPre, deriveQuotaVerdictPre } from ${JSON.stringify(url('degrade.js'))}
 import { decodeZstdFramesHead as realDecode } from ${JSON.stringify(url('subagent-gc.js'))}
@@ -65,9 +66,10 @@ export function make(overrides) {
  const { readdirSync, readFileSync, statSync, existsSync, mkdirSync, writeFileSync, readFile, readdir, stat, mkdir, writeFile } = io
  const zstdDec = 'zstdDec' in overrides ? overrides.zstdDec : true
  const decodeZstdFramesHead = overrides.decodeZstdFramesHead || realDecode
- return new (class ProductionHarness {
+ const instance = new (class ProductionHarness {
 ${methods}
  })()
+ return instance
 }
 `)
   const { make } = await import(pathToFileURL(modulePath).href)

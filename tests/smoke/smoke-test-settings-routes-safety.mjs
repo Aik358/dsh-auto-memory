@@ -104,7 +104,7 @@ try{
  assert.match(await fs.readFile(movedA.notesPath,'utf8'),/note admitted before root migration/)
  assert.equal((await call(noteHandler,{...duplicate,content:'stale old destination'})).status,409)
  assert.equal(engine._settingsNoteFlights.size,0);assert.equal(engine._settingsMigrationActive,false)
- console.log('PASS local /note migration coordination: drain admitted writes, reject new writes, copy completed data, reject stale destination after commit')
+ console.log('PASS local /note migration coordination under unified admission: new writes 409 during migration; the admitted write is drained and copied into the new root; the stale old destination stays 409')
 
 }finally{
  if(previous===undefined)delete process.env.DSH_HOME;else process.env.DSH_HOME=previous

@@ -79,7 +79,8 @@ await t('#3-1 走既有写入通道（不绕过事务/备份）', () => {
   const i = CODE.indexOf('async applyNoteStatusPre(')
   ok(i > 0, '方法存在')
   const body = CODE.slice(i, i + 4000)
-  ok(/await this\.writeFull\(notesPath, text\)/.test(body), '★ 用 writeFull（既有事务）')
+  ok(/await this\.writeFull\(notesPath,\s*text(?:,\s*\{\s*expectedDigest:\s*snapshotDigest\s*\})?\)/.test(body),
+    '★ 用 writeFull（既有事务，允许传递快照 CAS；不允许替换写盘通道）')
   ok(!/writeFile\(notesPath/.test(body), '★ 未直接 writeFile 绕过通道')
 })
 await t('#3-2 ★ 只动目标条目（其余字节不变）', () => {
