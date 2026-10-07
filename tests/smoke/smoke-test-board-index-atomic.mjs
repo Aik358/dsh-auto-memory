@@ -32,8 +32,8 @@ console.log('== ① 源码接线：sidecar 索引必须原子替换，不得裸�
   const m = INDEX.match(/async _writeSidecarIndexPre\(projectDir, index\) \{[\s\S]*?\n  \}/)
   ok(!!m, '_writeSidecarIndexPre 存在（锚点命中，否则本套件空转）')
   const wrapper = m ? m[0] : ''
-  ok(/this\._withMemoryMutationPre\(projectDir,/.test(wrapper) && /this\._writeSidecarIndexBoundPre\(projectDir, index\)/.test(wrapper), '公开入口在真实事务门内委托原子写者')
-  const bound = INDEX.match(/async _writeSidecarIndexBoundPre\(projectDir, index\) \{[\s\S]*?\n  \}/)
+  ok(/this\._withMemoryMutationPre\(projectDir, physicalDir => this\._writeSidecarIndexBoundPre\(physicalDir, index, this\.wbWsKeyPre\(projectDir\)\)/.test(wrapper), '公开入口把真实事务门准入的物理路径交给原子写者')
+  const bound = INDEX.match(/async _writeSidecarIndexBoundPre\(projectDir, index, workspaceKey\) \{[\s\S]*?\n  \}/)
   ok(!!bound, '被委托原子写者存在')
   const body = bound ? bound[0] : ''
   ok(/await writeTextAtomicPre\(idxPath,/.test(body), '★写临时文件（index.json.tmp）而不是直接写目标')

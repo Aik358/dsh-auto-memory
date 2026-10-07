@@ -96,8 +96,8 @@ t('M7 端到端(真 fs): 两咽喉写盘 → index.json 生成 → expand 命中
     //   写 PlanSnapshot → writeSidecarEntryPre(projectDir, 'handoff/PLAN.md', …)
     //   写 HandoffLedger → writeSidecarEntryPre(projectDir, 'handoff/' + basename(p), …)
     const src = await readFile('lib/index.js', 'utf8')
-    assert.ok(src.includes("writeSidecarEntryPre(projectDir, 'handoff/' + path.basename(p)"), 'writeHandoffLedger 已挂 sidecar(正斜杠口径)')
-    assert.ok(src.includes("writeSidecarEntryPre(projectDir, 'handoff/PLAN.md'"), 'writePlanSnapshot 已挂 sidecar')
+    assert.ok(src.includes("writeSidecarEntryPre(physicalProjectDir, 'handoff/' + path.basename(p)"), 'writeHandoffLedger 将准入物理目录传给 sidecar(正斜杠口径)')
+    assert.ok(src.includes("writeSidecarEntryPre(physicalProjectDir, 'handoff/PLAN.md'"), 'writePlanSnapshot 将准入物理目录传给 sidecar')
     assert.ok(src.includes('仅 boardMode=graph'), '接线带闸门注释')
   } finally { await rm(dir, { recursive: true, force: true }).catch(() => {}) }
 })
