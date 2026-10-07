@@ -334,6 +334,38 @@ console.log('[A2] ⑧ #274 落盘失败：返回失败且不落半成品')
   ok(after.length === 1 && String(after[0].object) === 'beta', '⑧ 磁盘仍是失败前那一条', JSON.stringify(after.map((f) => f.object)))
 }
 
+// ══ ⑩ #250 带 pending 的装载路径：本进程未落盘的改动与别人新增互不吞并 ══
+console.log('[A2] ⑩ #250 load({pendingSnapshot})：pending 差分叠加到磁盘态')
+{
+  const dir = path.join(temp, 'lib10')
+  const a = await procIo(dir)
+  a.save({ schemaVersion: 1, namespace: 'dsh-auto-memory-pre', procedures: [SEED_ROW('proc-p1', 'v1')] })
+  // 另一个写者（同进程、独立实例 = 独立「上次看到的版本」）新增 proc-p2
+  const b = await procIo(dir)
+  const bSnap = b.load() || { schemaVersion: 1, procedures: [] }
+  bSnap.procedures.push(SEED_ROW('proc-p2', 'P2'))
+  const bRes = b.save(bSnap)
+  ok(bRes.ok === true, '⑩ 第二个写者新增成功', JSON.stringify(bRes.failures || bRes.error))
+  const merged = a.load({ pendingSnapshot: { schemaVersion: 1, procedures: [SEED_ROW('proc-p1', 'v2')] } })
+  const ids = (merged.procedures || []).map((p) => String(p.procedureId) + '@' + p.title).sort()
+  ok(JSON.stringify(ids) === JSON.stringify(['proc-p1@v2', 'proc-p2@P2']),
+    '⑩ pending 的改动生效、别人新增的那条同时保住', JSON.stringify(ids))
+  // 负路径：本进程看到 p1 之后，**别人又改过 p1**，此时 pending 再改 p1 ⇒ 必须明确抛冲突，而不是拿一边覆盖
+  const c1 = await procIo(dir)
+  c1.load()
+  const c2 = await procIo(dir)
+  const c2Snap = c2.load()
+  const row = (c2Snap.procedures || []).find((p) => String(p.procedureId) === 'proc-p1')
+  row.title = '别改的版本'
+  ok(c2.save(c2Snap).ok === true, '⑩ 第二个写者改掉 proc-p1（本进程 a 已看不到这次改动）', '')
+  let conflict = null
+  try {
+    c1.load({ pendingSnapshot: { schemaVersion: 1, procedures: [SEED_ROW('proc-p1', '我改的版本')] } })
+  } catch (e) { conflict = e && e.code }
+  ok(conflict === 'DAM-PROCEDURE-CONFLICT', '⑩ 磁盘已被别人改过的行 ⇒ 明确抛冲突（不静默覆盖）', String(conflict))
+  ok(readLibRow(dir, 'proc-p1').title === '别改的版本', '⑩ 冲突后盘上仍是磁盘方的版本（抛错路径一个字节没写）', JSON.stringify(readLibRow(dir, 'proc-p1')))
+}
+
 // ══════════════════════════════════════════════════════════════════════════
 // ⑨ 负路径：回退树（真删两处接线）⇒ 关键断言必红
 // ══════════════════════════════════════════════════════════════════════════
