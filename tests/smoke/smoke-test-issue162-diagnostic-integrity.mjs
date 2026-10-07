@@ -86,7 +86,13 @@ ${methods}
     _degradeSink: createDegradeSinkPre(), config: {}, state: {}, _observerStats: {},
     runtimes: { values: () => [] }, autoStats: { count: 0 },
     memoryIndexSnapshot: async () => ({}), _hubIoViewSnapshot: () => null,
+    // ★L-E（2026-10-08）夹具同步（非回滚 · 依据 §9.3-2 口径与上文 R1 同型）：#261 给 debugInfo 新增了
+    //   诊断投影 `schedule: this._scheduleViewSnapshot()`（与既有 _hubIo/_factsPrune/_logs 三个 *ViewSnapshot
+    //   **同一出口纪律**：只读快照、最小投影）。本 harness 抽取真产线方法体、`this` 无原型链 ⇒ 缺该桩即
+    //   TypeError: this._scheduleViewSnapshot is not a function。**属夹具侧假红，非产品缺陷**；
+    //   投影的真实行为由 smoke-test-le-261-schedule-failure.mjs（真执行 + 变异负路径）专测。
     _factsPruneViewSnapshot: () => null, _logsViewSnapshot: () => null,
+    _scheduleViewSnapshot: () => null,
     capacityLimit: () => 1000, memToday: todayStr,
     userDirOf: () => path.join(home, 'user'), projectDirOf: () => path.join(home, 'workspace'),
     resolvePaths: async () => Object.fromEntries(['ws', 'projectDir', 'handoffDir', 'userFile', 'notesPath', 'logPath', 'reflectDir', 'calendarPath'].map((key) => [key, path.join(home, key)])),
