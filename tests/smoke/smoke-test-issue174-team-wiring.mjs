@@ -5,6 +5,7 @@ import path from 'node:path'
 import vm from 'node:vm'
 import fs from 'node:fs'
 import { createFactStorePre } from '../../lib/fact-store.js'
+import { createHubIoPre } from '../../lib/hub-io.js'
 import { Readable } from 'node:stream'
 import { apply, API, MemoryEngine } from '../lib/audit-engine.mjs'
 const root = await mkdtemp(path.join(os.tmpdir(), 'dam-team-e2e-'))
@@ -69,6 +70,23 @@ try {
  vm.createContext(ui);vm.runInContext(client.slice(start,end)+'\nthis.read=fetchTeamState;',ui);const shown=await ui.read()
  assert.equal(shown.team.conflictItems.length,2);assert.ok(shown.team.conflictItems.every(c=>c.local.includes('React')&&c.remote.includes('Vue')));assert.equal(shown.team.members[0].id,'member-a')
  assert.match(shown.team.debug.outbox.lastError,/send:/);assert.ok(shown.team.syncAt>0)
+ // Formal host applier must atomically persist remote receipts with facts.
+ const retryDir=path.join(root,'pull-receipts'),retryFile=path.join(retryDir,'facts.json')
+ const retryIo=createHubIoPre({dir:retryDir,fsApi:{renameSync:(...args)=>fs.renameSync(...args)}})('facts.json')
+ const retryFacts=createFactStorePre({io:retryIo});engine._factStore=retryFacts
+ assert.equal(retryFacts.upsert(candidate('receipt fixture')).ok,true)
+ pullChanges=[{kind:'fact',key:'receipt-conflict',revision:101,payload:{...candidate('receipt fixture'),object:'Vue'}},{kind:'fact',key:'receipt-create',revision:102,payload:candidate('receipt second')}]
+ engine._teamPull.reset()
+ const originalRename=fs.renameSync;let receiptWrites=0
+ try{
+  fs.renameSync=(from,to)=>{if(to===retryFile&&++receiptWrites===2)throw Object.assign(new Error('receipt second save denied'),{code:'EPERM'});return originalRename(from,to)}
+  const first=await engine._teamPull.pullOnce();assert.equal(first.ok,false);assert.equal(first.since,0);assert.equal(retryFacts.snapshot().conflicts.length,1)
+ }finally{fs.renameSync=originalRename}
+ const recovered=await engine._teamPull.pullOnce();assert.equal(recovered.ok,true);assert.equal(recovered.since,43);assert.equal(retryFacts.snapshot().conflicts.length,1)
+ assert.equal(retryFacts.snapshot().teamReceipts.length,2)
+ const restartFacts=createFactStorePre({io:retryIo});assert(restartFacts.restore(retryIo.load()).ok);engine._factStore=restartFacts
+ engine._teamPull.reset();const replay=await engine._teamPull.pullOnce();assert.equal(replay.applied,0);assert.equal(restartFacts.snapshot().conflicts.length,1)
+ engine._factStore=facts
  // An HTTP ACK is not a durable dequeue. Inject a real fs.renameSync
  // failure at only the outbox target and observe formal sync/routes/UI.
  engine._teamMerge.clear();assert.equal((await ui.read()).team.phase,'synced')
