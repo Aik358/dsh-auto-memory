@@ -56,8 +56,27 @@ try {
     engine._pythonSetup = { cancelDownload() { pythonCancels++ } }
     assert.equal(downloader.start('intl').ok, true)
     await until(() => signal && (phase === 'fetch' ? resolveFetch : body.locked))
+    // Start a real MemoryEngine call with a synthetic provider, then dispose
+    // through the actual host effect. No model/network request is made.
+    engine._workbenchReady = true
+    engine._workbenchParent = { session: { id: 'fixture' }, ctx: { get: () => null } }
+    engine._readWorkbench = async () => ({ sessionId: 'fixture', epoch: engine._workbenchEpoch(Date.now()), gen: {} })
+    engine.bumpGenFor = async () => ({ ok: true })
+    let subagentSignal, subagentDisposed = 0
+    engine._subagents = { list: () => ['spawn'], start: async (_provider, request) => {
+      subagentSignal = request.signal
+      return { result: new Promise(resolve => request.signal.addEventListener('abort', () => resolve({ output: [{ type: 'text', text: 'late output' }] }), { once: true })), dispose: async () => { subagentDisposed++ } }
+    } }
+    const subagent = engine.runSubagent('offline disposal fixture', 'smart-kw', undefined, 1000)
+    await until(() => subagentSignal)
+    assert.equal(engine._subagentControllers.size, 1)
     cleanup(); cleanup(); cleanup = null
     assert.equal(engine._disposed, true)
+    assert.equal(subagentSignal.aborted, true)
+    assert.equal(await subagent, '')
+    assert.equal(subagentDisposed, 1)
+    assert.equal(engine._subagentControllers.size, 0)
+    assert.equal(engine._subagentInflight, 0)
     await until(() => !alive(pid), 'semantic worker still alive after host unload')
     assert.equal(signal.aborted, true)
     assert.equal(pythonCancels, 1, 'host cleanup is idempotent')
