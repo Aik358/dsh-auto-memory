@@ -49,7 +49,11 @@ try{
   for(const name of ['.workspace-owner.json','hub/procedures.json','history.jsonl']){const value=JSON.parse(await fsp.readFile(path.join(f.dir,name),'utf8'));assert.equal(value.workspace,ws);assert.deepEqual(value.steps,[ws+'/task']);assert.equal(value.literal,'tab\t and newline\n')}
  })
  await test('default keep preserves both 9MiB files and creates a complete backup',async()=>{
-  const f=await fixture({'MEMORY.md':large,'history.jsonl':large},{'MEMORY.md':'incoming','history.jsonl':'incoming history'})
+  // Keep the legacy pack key so this still exercises legacy-to-current key
+  // rewriting. JSONL inputs must be valid for the existing token rewrite.
+  const incomingHistory=JSON.stringify({text:'incoming history'})+'\n'
+  assert.deepEqual(JSON.parse(incomingHistory),{text:'incoming history'})
+  const f=await fixture({'MEMORY.md':large,'history.jsonl':large},{'MEMORY.md':'incoming','history.jsonl':incomingHistory})
   const view=await inspect(f);assert.equal(view.ok,true)
   const result=await importPack(f,undefined,view.previewToken);assert.equal(result.ok,true)
   for(const name of ['MEMORY.md','history.jsonl'])assert.equal(await fsp.readFile(path.join(f.dir,name),'utf8'),large)
