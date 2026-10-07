@@ -102,6 +102,12 @@ function makeFake(over) {
   const f = {
     config: { handoffEnabled: true },
     checkMutationPre: () => ({ ok: true }),
+    // ★R1（2026-10-08）判据/夹具同步（非回滚 · 依据 2026-10-01 裁定）：#258 给 writePlanSnapshot 加了
+    //   本地角色门 `this._assertTeamActionPre('edit-board')`；抽取式沙箱（new Function）的 this 没有
+    //   原型链 ⇒ 必须补桩，否则 TypeError → {ok:false} → 后续断言假红。
+    //   门的真实行为由 smoke-test-la-audit-fixes.mjs（真引擎 viewer 被拒）与
+    //   smoke-test-t0-8-mutation-gate.mjs 专测；本套件考的是归档/老化/幂等，不是门本身。
+    _assertTeamActionPre() {},
     wbWsKeyPre: () => 'test-ws',
     async readTextSafe(p) { try { return (await readFile(p, 'utf8')) || '' } catch (_) { return '' } },
     async writeFullRaw(p, text) { await mkdir(path.dirname(p), { recursive: true }); await writeFile(p, text, 'utf8') },

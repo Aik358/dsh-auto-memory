@@ -71,6 +71,12 @@ function makeFakeEngine() {
     // （门的行为由 `smoke-test-t0-8-mutation-gate.mjs` 专测；门在真实引擎上的接线由该套件的
     //  T0-8B「三条写入路径都不能绕过」断言锁）。
     checkMutationPre() { return { ok: true } },
+    // ★R1（2026-10-08）判据/夹具同步（非回滚 · 依据 2026-10-01 裁定）：#258 给 writePlanSnapshot 加了
+    //   本地角色门 `this._assertTeamActionPre('edit-board')`；抽取式沙箱（new Function）的 this 没有
+    //   原型链 ⇒ 必须补桩，否则 TypeError → {ok:false} → 后续断言假红。
+    //   门的真实行为由 smoke-test-la-audit-fixes.mjs（真引擎 viewer 被拒）与
+    //   smoke-test-t0-8-mutation-gate.mjs 专测；本套件考的是归档/老化/幂等，不是门本身。
+    _assertTeamActionPre() {},
     wbWsKeyPre: () => 'test-ws',
     // P2 sidecar(2026-09-16)桩: writeHandoffLedger/writePlanSnapshot 写盘后会调 writeSidecarEntryPre
     // (boardMode 默认 legacy 时它是 no-op, 但抽取式沙箱里 this 上必须有该方法, 否则 TypeError)。
@@ -155,7 +161,12 @@ const grab = (name) => { // 逐行扫描+(){} 混合配平(兼容 Object.freeze 
   }
   return buf
 }
-const helpers = ['DEFAULT_PROMPT_LAYERS', 'neutralizePromptTemplateVars', 'truncateHead', 'truncateLinesBounded', 'stripSensitiveSections', 'sanitizeForInjection', 'scrubJunkLines', 'reflectionDigest', 'mojibakeDensity', 'MOJIBAKE_RE', 'detectStutter', 'hasStutter', 'BASE64_LINE', 'todayStr'] // ★2026-09-29 hasStutter 改调 detectStutter(P0-2 语种盲区修复),抽取清单同步补符号,否则 eval 沙箱 ReferenceError
+// ★R1（2026-10-08）判据同步（非回滚 · 依据 2026-10-01 裁定）：`stripSensitiveSections` 已由
+//   #257 SEC-01 从 index.js 的**本地定义**改为从 `lib/injection-policy.js` **import**
+//   ⇒ 本套件的 grab() 只在本文件里找定义，找不到即抛 helper not found。
+//   修法与下面对 `memory-envelope.js` 的既有做法**完全同款**：把那个模块整体注入沙箱
+//   （injection-policy.js 零 import，可直接内联）。守卫语义不变，仍是抽取真代码执行。
+const helpers = ['DEFAULT_PROMPT_LAYERS', 'neutralizePromptTemplateVars', 'truncateHead', 'truncateLinesBounded', 'sanitizeForInjection', 'scrubJunkLines', 'reflectionDigest', 'mojibakeDensity', 'MOJIBAKE_RE', 'detectStutter', 'hasStutter', 'BASE64_LINE', 'todayStr'] // ★2026-09-29 hasStutter 改调 detectStutter(P0-2 语种盲区修复),抽取清单同步补符号,否则 eval 沙箱 ReferenceError
 // ★T7-a（2026-09-20 · 上游 #86-4）：水位/接续默认值已抽为**模块级常量**，本套件同样是
 //   "源码抽取 + new Function"执行 `renderMemoryDynamic`，故必须显式注入这两个自由变量，
 //   否则抛 `ReferenceError: DEFAULT_WATER_LEVEL_THRESHOLD is not defined`（实测已发生）。
@@ -163,6 +174,10 @@ const helpers = ['DEFAULT_PROMPT_LAYERS', 'neutralizePromptTemplateVars', 'trunc
 //   否则测的就不是真代码（与上面 composeMemoryEnvelopePre 那条同因）。
 const helperCode = helpers.map((h) => grab(h)).join('\n')
   + '\nconst DEFAULT_WATER_LEVEL_THRESHOLD = 0.75\nconst DEFAULT_AUTO_CONTINUE_THRESHOLD = 0.75\n'
+  // ★R1（2026-10-08）：同上 —— #257 把 stripSensitiveSections/filterSensitiveHits 收进
+  //   injection-policy.js（index.js 只 import）；抽取式沙箱须显式提供其实现，否则
+  //   `new Function` 作用域里没有该符号（renderMemoryDynamic :7611/:7613/:7660/:7661 四处调用）。
+  + readFileSync(path.resolve(HERE, '..', '..', 'lib', 'injection-policy.js'), 'utf8').replace(/^export /gm, '') + '\n'
 // ⚠️ 2026-09-14 T0-3：`renderMemoryDynamic` 现在把序列化交给**分项账本**（`composeMemoryEnvelopePre`），
 // 所以源码抽取式测试必须**连那个模块一起注入**——否则 `new Function` 作用域里没有这个符号
 // （报 `ReferenceError: composeMemoryEnvelopePre is not defined`）。

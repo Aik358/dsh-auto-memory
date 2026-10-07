@@ -75,6 +75,14 @@ ${methods}
   const { make } = await import(pathToFileURL(modulePath).href)
   const host = make(overrides)
   Object.assign(host, {
+    // ★R1（2026-10-08）夹具同步（非回滚 · 依据 2026-10-01 裁定）：#258 给整篇写原语 `writeFull`
+    //   加了本地角色门 `this._assertTeamActionPre(this._teamWriteActionPre(p))`。本 harness 抽取的是
+    //   **真产线方法体**、`this` 上只有下面显式挂的成员（无原型链）⇒ 缺桩即 TypeError，被
+    //   applyNoteStatusPre 的 fail-soft catch 吞成「状态写入失败」⇒ /状态已更新/ 断言假红。
+    //   门的真实行为由 smoke-test-la-audit-fixes.mjs（真引擎 viewer 被拒）专测，本套件测的是
+    //   诊断完整性（失败要如实上报、私密错误不外泄），故这里给恒过桩。
+    _assertTeamActionPre: () => {},
+    _teamWriteActionPre: () => 'write-own-memory',
     _degradeSink: createDegradeSinkPre(), config: {}, state: {}, _observerStats: {},
     runtimes: { values: () => [] }, autoStats: { count: 0 },
     memoryIndexSnapshot: async () => ({}), _hubIoViewSnapshot: () => null,

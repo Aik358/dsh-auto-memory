@@ -40,6 +40,20 @@ const within = (src, start, span, needle, msg) => {
   assert(seg.indexOf(needle) >= 0, (msg || '') + '：起点后 ' + span + ' 字符内找不到 ' + needle)
 }
 const count = (s, re) => (s.match(re) || []).length
+/** 函数体内是否按运行时键口径调用了 pathsByKey.delete（内联字面量或已绑定的局部 `key`）。 */
+const pathsKeyDelete = (body) => /pathsByKey\.delete\(\s*key\s*\)/.test(body) || /pathsByKey\.delete\(String\(runtime\.key \|\| ''\)\)/.test(body)
+/** 取 `start` 匹配点处函数的**函数体**（花括号配平）——用于「必须在函数体内」类判据。 */
+const fnBody = (src, start) => {
+  const i = typeof start === 'string' ? src.indexOf(start) : src.search(start)
+  assert(i >= 0, '找不到函数起点 ' + start)
+  const open = src.indexOf('{', i)
+  let depth = 0
+  for (let k = open; k < src.length; k++) {
+    if (src[k] === '{') depth++
+    else if (src[k] === '}') { depth--; if (depth === 0) return src.slice(open + 1, k) }
+  }
+  throw new Error('unbalanced: ' + start)
+}
 
 const CH = rd('lib/context-host.js')
 const CI = rd('lib/config-io.js')
@@ -51,20 +65,49 @@ const IDX = rd('lib/index.js')
 
 console.log('=== P3B-1 · P3-3(a) pathsByKey 必须随 disposeRuntime 释放 ===')
 
+// ★R1（2026-10-08）判据同步（非回滚 · 依据 2026-10-01 裁定）：#253 把释放逻辑从
+//   「一行内联 delete」改成「先归一化到 `const key = String(runtime.key || '')` 再 delete(key)」
+//   —— 释放**确实发生了**（且比旧版更强：#253 新增的 owned 变量让 closeSession 也有据可依），
+//   只是「锚串 + 700 字符窗」这一定位方式过期（新函数体因新增注释与 closeSession 分支而变长）。
+//   改判据为**函数体抽取**（花括号配平）后在该体内断言，比原字符窗更严、不再随注释长度漂移。
 t('P3B-1a ★★ delete 必须在 disposeRuntime 函数体内（不是"全文某处有"）', () => {
-  within(CH, /function disposeRuntime\(runtime\) \{/, 700,
-    "pathsByKey.delete(String(runtime.key || ''))",
-    '★ disposeRuntime 未释放 pathsByKey')
+  const body = fnBody(CH, /function disposeRuntime\(runtime\) \{/)
+  assert(/\.delete\([^)]*\)/.test(body), '★ disposeRuntime 函数体内没有任何 pathsByKey.delete 调用')
+  assert(/\.delete\(\s*key\s*\)/.test(body) || /pathsByKey\.delete\(String\(runtime\.key \|\| ''\)\)/.test(body),
+    '★ disposeRuntime 未按运行时键口径释放 pathsByKey')
 })
 
+// ★R1（2026-10-08）判据同步（非回滚 · 依据 2026-10-01 裁定）：#253 把释放改为「函数内先归一化
+//   `const key = String(runtime.key || '')`，再 `pathsByKey.delete(key)`」。判据的**语义**
+//   （写入键与三处读点同口径）不变，故改为同时接受两种等价形态：内联字面量，或同一函数体内
+//   由 `String(runtime.key || '')` 绑定出的局部键。弱化点为零 —— 局部键必须能在同一函数体内溯源。
 t('P3B-1b ★ 键口径必须与三处读点一致（String(runtime.key || \'\')）', () => {
   assert(count(CH, /pathsByKey\.get\(String\(runtime\.key \|\| ''\)\)/g) >= 3, '★ 读点键口径变了')
-  assert(count(CH, /pathsByKey\.delete\(String\(runtime\.key \|\| ''\)\)/g) === 1, '★ 键口径与读点不一致')
+  const inline = count(CH, /pathsByKey\.delete\(String\(runtime\.key \|\| ''\)\)/g)
+  const body = fnBody(CH, /function disposeRuntime\(runtime\) \{/)
+  const localKey = /(?:const|let|var)\s+key\s*=\s*String\(runtime\.key\s*\|\|\s*''\)/.test(body) && pathsKeyDelete(body)
+  const deletes = count(body, /pathsByKey\.delete\(/g)
+  assert(inline + (localKey ? 1 : 0) === 1 && deletes === 1,
+    '★ 键口径与读点不一致（内联 ' + inline + ' 处 / 局部键 ' + (localKey ? 1 : 0) + ' 处 / 函数体内 delete ' + deletes + ' 处）')
 })
 
-t('P3B-1c ★ 写入点仍唯一（=1）；delete/clear 不得泛滥', () => {
+// ★R1（2026-10-08）判据同步（非回滚 · 依据 2026-10-01 裁定）：原判据写「clear() 必须 0 处」。
+//   事实是 #253 有意在 **disposeAll**（整插件卸载路径）补了一次 `pathsByKey.clear()`，理由是
+//   capturePaths 是**急切**写入而 states 是**惰性**创建 —— 从未被引擎轮询解析过的会话只有路径
+//   快照、没有 state，collectStates() 收不到它 ⇒ 仅靠 disposeRuntime 会残留。这正是该守卫
+//   当初担心的「一刀切」的反面：在**全量拆除**里 clear 是对的，在**单会话释放**里才是错的。
+//   故把判据从「计数为 0」改钉为「clear() 只允许出现在 disposeAll 内、且不得出现在
+//   disposeRuntime 内」—— 鉴别力不降反升（旧判据只看总数，新判据锁定了归属函数）。
+t('P3B-1c ★ 写入点仍唯一（=1）；clear() 只允许在 disposeAll（全量拆除）内', () => {
   assert(count(CH, /pathsByKey\.set\(/g) === 1, '★ 写入点不是 1 处')
-  assert(count(CH, /pathsByKey\.clear\(\)/g) === 0, '★ 出现 clear() 一刀切（会误伤未 dispose 的 runtime）')
+  const total = count(CH, /pathsByKey\.clear\(\)/g)
+  const allBody = fnBody(CH, /function disposeAll\(reason\) \{/)
+  const rtBody = fnBody(CH, /function disposeRuntime\(runtime\) \{/)
+  const inAll = count(allBody, /pathsByKey\.clear\(\)/g)
+  const inRt = count(rtBody, /pathsByKey\.clear\(\)/g)
+  assert(total <= 1, '★ clear() 泛滥（' + total + ' 处，一刀切会误伤未 dispose 的 runtime）')
+  assert(total === inAll && inAll === 1, '★ clear() 不在 disposeAll 内（全量拆除是它唯一合法位置）')
+  assert(inRt === 0, '★ disposeRuntime（单会话释放）内出现 clear() 一刀切 —— 会误伤其它未 dispose 的 runtime')
 })
 
 console.log('\n=== P3B-2 · P3-12 异步原子写接有界退避 rename ===')
