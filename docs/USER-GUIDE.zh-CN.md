@@ -8,6 +8,7 @@
 <p align="center"><a href="../README.zh-CN.md">← 返回 README</a></p>
 
 > 无问自忆：记忆不靠你吩咐，该想起的自己浮现；每条都有出处，可查、可改、可删。
+> 源码默认值核对：2026-10-06（母仓库 v3.2.10）；完整清单见 [SOURCE-REFERENCE.md](SOURCE-REFERENCE.md)。
 > 适用版本：**3.0+** · 更新日志见插件内「设置 → 外观 → 查看更新日志」。
 > English version: [USER-GUIDE.en.md](./USER-GUIDE.en.md)
 
@@ -44,13 +45,13 @@
 - 安装：在 DSH 的 web profile 目录（`~/.dsh/profiles/web`）执行 `pnpm add @a9i5k4/dsh-auto-memory@latest`，并在同目录 `package.json` 的 `dsh.profile.bundles` 数组里追加 `"@a9i5k4/dsh-auto-memory"`（或在 DSH 插件市场一键安装）。
 - **装完必须重启 dsh web**：插件的注入面（manifest）在启动时加载；改完 host 代码同理。
 - 浏览器端更新后需**硬刷新**（Ctrl+Shift+R）才会加载新 client.js。
-- pnpm v11 会拦截发布不足 24 小时的新版本（`minimumReleaseAge`）：当天更新请在 `pnpm-workspace.yaml` 设 `minimumReleaseAge: 0`，或直接 pin 版本号。
+- 包管理器的发布时间限制或原生构建策略以实际安装提示为准。
 - 入口：左侧栏底部 **记忆** 按钮 → 记忆面板。
 - 面板标题栏按钮：**图钉**（线描图标，与 ⟳ ⤾ ✕ 同画风；点一下钉住，点面板外不再自动收起，再点取消；钉住状态会记住）、**⤾** 恢复默认位置、**⟳** 刷新、**✕** 关闭。未钉住时点击面板外或按 Esc 即收起。
 - 面板标题里的版本号与 设置 →「检查更新」显示的都是**当前安装的版本**。
 - 侧栏还有一颗**悬浮钉**（线描快捷入口），可从任何页面快速唤出记忆操作。
 - DSH 0.1.2-rc.1 起 Web UI 有 token 认证闸门（每次重启换新 token，启动日志里 `?token=…` 即访问地址）；本插件的 HTTP 端点仅本机回环可访问，不受闸门影响。
-- 数据全在本机：`~/.dsh/memory/`（记忆文件）、`~/.dsh/dsh-auto-memory.json`（配置）。**注意**：去 pre 后源码名即发布名，仓库与 npm 安装的路径**完全一致**，下面所有路径两边通用。
+- 下述为默认目录，配置可覆盖；`DSH_HOME` 另控制宿主数据根。数据全在本机：`~/.dsh/memory/`（记忆文件）、`~/.dsh/dsh-auto-memory.json`（配置）。**注意**：去 pre 后源码名即发布名，仓库与 npm 安装的路径**完全一致**，下面所有路径两边通用。
 
 ## 2. 第一次启动
 
@@ -181,15 +182,15 @@
 
 | 项 | 默认 | 怎么调 |
 |---|---|---|
-| 交接白板（handoffEnabled） | 关 | **PLAN.md 全貌快照 + 四段式交接账本**：模型在理解全貌/阶段完成时写入，注入动态快照首位，白板页签实时可看，跨窗口续命。建议开启 |
+| 交接白板（handoffEnabled） | 开 | PLAN.md 与四段式交接账本；与自动接续开关独立 |
 | 白板注入预算（handoffPlanChars） | 1200 | PLAN.md 注入动态快照的硬截断预算；全文经 `memory_read` 或白板页查看 |
 | 账本注入预算（handoffLedgerChars） | 800 | 最新账本的注入预算；账本内部按四段权重截断（失败原因 .35 ＞ 下一步 .30 ＞ 目标 .20 ＞ 状态 .15，从最低权重段起截） |
 | 水位估计窗口（token）（waterLevelWindowTokens） | 0=自动 | 0 表示自动：优先官方路由容量，其次按当前会话模型查 settings.yaml。**除非特殊模型，保持 0** |
-| 水位建议阈值（waterLevelThreshold） | 0.75 | 越阈即注入交接建议并自动补写账本。**默认 0.75 而非 0.8**：官方自动压缩阈值是 80%，贴着 80% 常被官方抢先压缩，留 5% 余量（1M 窗口约 50K token）才来得及走完交接 |
+| 水位建议阈值（waterLevelThreshold） | 0.75（固定/回退值） | 默认 `waterLevelThresholdMode=auto`，按官方压缩参数和 `waterLevelAutoMargin=0.9` 动态计算；与自动接续阈值独立 |
 | 水位交接建议（waterLevelAdvisory） | 开 | 越阈时在动态快照注入交接建议（写账本/刷新白板/建议开新窗）；无人值守时静默 |
 | 水位自动骨架账本（waterLevelAutoHandoff） | 开 | 越阈时自动写一篇系统骨架账本（每会话一次），防止模型忽视建议时交接材料缺失 |
-| 子代理痕迹回收（subagentGcEnabled） | 开（代码默认）／**已判废** | **该能力已判废**：搬移会话痕迹**不减轻**前端渲染负担（宿主对子代理只降级 status、**不删投影 store**），只可能造出「会话无法读取」的幽灵条目。开关保留仅为兼容旧配置；本机用户配置已置 `false` ⇒ 实际未运行 |
-| 兜底回收保留天数（subagentGcKeepDays） | 3（代码默认）／**已停用** | 该键只在 `subagentGcSweep` 内被读取，而该函数在 `subagentGcEnabled === false` 时首行即早退 ⇒ 本机无效果。保留键仅为兼容旧配置 |
+| 子代理痕迹回收（subagentGcEnabled） | 开（代码默认）／**已判废** | **该能力已判废**：搬移会话痕迹**不减轻**前端渲染负担（宿主对子代理只降级 status、**不删投影 store**），只可能造出「会话无法读取」的幽灵条目。开关保留仅为兼容旧配置；实际是否运行以用户保存配置为准 |
+| 兜底回收保留天数（subagentGcKeepDays） | 3（代码默认）／**已停用** | 该键只在 `subagentGcSweep` 内被读取，而该函数在 `subagentGcEnabled === false` 时首行即早退 ⇒ 开关为 false 时无效果。保留键仅为兼容旧配置 |
 
 > 「自动接续」的开关与阈值**不在设置页**，在**记忆面板 → 白板页签**的「自动接续」卡片（见 §8.4）。
 
@@ -306,7 +307,7 @@
 
 ### 8.4 自动接续（免按钮，推荐）
 
-白板页签 →「自动接续」卡：开关（默认开）+ 阈值（默认 0.75，与水位阈值同步）。
+白板页签 →「自动接续」卡：开关（默认关）+ 阈值（默认 0.75，与水位建议阈值独立）。
 
 - **触发条件**：水位 ≥ 阈值 **且** harness 权威 `running` 位在轮次边界转为 `false`（会话真空闲）。长工具调用不会误触发。
 - **宿主兜底**：达阈值后在宿主侧开倒计时——页面被后台节流、标签页关了、甚至人不在，倒计时一到宿主自己完成「刷新白板/账本 → 建新会话 → 沿用模型与工作区 → 注入交接材料」。
@@ -338,7 +339,7 @@
 - **与本次扫描同一轮刚归档的会话，不删**（避免「刚归档就被删」）；
 - **家族里只要有一个受保护成员，整个家族跳过**；工作台会话本身也被归档/删除入口拒绝。
 
-**④ 旧的「子代理痕迹回收」已判废停用**（本机 `subagentGcEnabled` 为 `false`，`recycleSubagentSession` 与 `subagentGcSweep` 双早退）：判废的理由是**否证了原假设**——把会话痕迹搬走或删掉**并不减轻**前端渲染负担（宿主对 `origin=subagent` 只降级 status、**不删投影 store**），却会让 catalog 与磁盘不同步。会话列表变大请走上面的 **②③**。原 `node tools/subagent-gc.mjs` 指引已删除——`tools/` 不随 npm 包发布，用户机上没有该文件。
+**④ 旧的「子代理痕迹回收」已判废停用**（可配置 `subagentGcEnabled=false` 停用，`recycleSubagentSession` 与 `subagentGcSweep` 双早退）：判废的理由是**否证了原假设**——把会话痕迹搬走或删掉**并不减轻**前端渲染负担（宿主对 `origin=subagent` 只降级 status、**不删投影 store**），却会让 catalog 与磁盘不同步。会话列表变大请走上面的 **②③**。原 `node tools/subagent-gc.mjs` 指引已删除——`tools/` 不随 npm 包发布，用户机上没有该文件。
 
 > **排障提示**：若诊断日志里出现 `wb-rotate: sealing -> create ... ok=true` **每分钟重复**，说明轮换没收敛（旧版本存在此缺陷，已在 3.1.7 修复）。重启宿主即自愈。
 
@@ -391,7 +392,7 @@ AI 在对话中可直接调用（共 14 个，你不需要记）：
 | 会话列表越用越卡 | **不是「痕迹回收没开」**：删除/搬移子代理会话目录**不减轻**渲染负担（宿主对 `origin=subagent` 只降级 status、**不删投影 store**）；该回收能力已判废停用。改用设置 → 自动维护：归档（默认 2 天）→ 删除（默认 7 天） |
 | 唤起回顾里全是 prefetch 不见注入 | 发射门在 shadow 档（只记录）——设成 canary-explicit 或 active；或 margin 阈值调小 |
 | 记忆乱码 / 重复 | 写入口有卫生闸门；存量问题到 存储管理 页签「扫描脏 token」定位（只报位置），按位置手工清理（先备份） |
-| pnpm 安装当天新版被拦 | pnpm v11 `minimumReleaseAge` 拦 24h 内新版：`minimumReleaseAge: 0` 或 pin 版本 |
+| 包管理器策略拦截安装 | 查看实际报错及项目安装策略；不要把指定版本号当作必然绕过策略的方法 |
 | Web UI 打开要 token | DSH 0.1.2-rc.1 起的安全闸门，token 在 `dsh web` 启动日志的 URL 里，重启即换 |
 | 侧栏插件按钮消失 | 可能与其他注入侧栏的插件冲突，到插件管理停用嫌疑插件 |
 | 想反馈 / 拿日志 | `~/.dsh/dsh-auto-memory-diagnose.log`（打包前先 `ls -l ~/.dsh/*diagnose*.log` 确认非空）；QQ 群见 README |
@@ -402,7 +403,7 @@ AI 在对话中可直接调用（共 14 个，你不需要记）：
 
 | 内容 | 路径 |
 |---|---|
-| 插件配置 | `~/.dsh/dsh-auto-memory.json`（本仓库 pre 开发树为 `dsh-auto-memory.json`） |
+| 插件配置 | `~/.dsh/dsh-auto-memory.json`（设置 `DSH_HOME` 时以实际宿主数据根为准） |
 | 用户级记忆 | `~/.dsh/memory/MEMORY.md` |
 | 工作区记忆 | `~/.dsh/memory/workspaces/<工作区>/`（MEMORY.md、每日日志、handoff/、reflections/、summaries/） |
 | 白板与账本 | `~/.dsh/memory/workspaces/<工作区>/handoff/`（PLAN.md + handoff-*.md） |

@@ -92,8 +92,8 @@ ok(!gm.includes('380+ MB'), 'GM53 无 380+MB 笔误', '—', '—');
 ok(gm.includes('400 token 预算'), 'GM53 Tier-0 = 400 token', getKey('tier0MaxTokens'), 400);
 
 console.log('\n── 前端共创 docs/FRONTEND-CO-CREATION.md ──');
-eq(pick(cc, /后端 (\d+) 个模型工具/), tools.size, '共创 模型工具 = 代码实测');
-eq(pick(cc, /(\d+) 条路由/), routes.size, '共创 路由 = 代码实测');
+eq(pick(cc, /(\d+) 个模型工具/), tools.size, '共创 模型工具 = 代码实测');
+eq(pick(cc, /(\d+) 个(?:普通唯一)?路由/), routes.size, '共创 路由 = 代码实测');
 eq(pick(cc, /共 (\d+) 个配置键/), keys.length, '共创 配置键 = 代码实测');
 ok(/12 页签/.test(cc), '共创 12 页签', '12', '12');
 

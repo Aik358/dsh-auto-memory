@@ -610,11 +610,15 @@ Most of this release adds no new buttons. It changes *what makes a memory trustw
 
 ## Architecture
 
+![DSH Auto Memory architecture overview](docs/architecture/overview-en.png)
+
+This overview describes the implemented plugin at **v3.2.10 / [`8280500`](https://github.com/Aik358/dsh-auto-memory/tree/828050056cf053c53fb2c237706f6e89c7baef09)**. Most boxes are modules inside the Node host. See the [full architecture map and source guide](docs/ARCHITECTURE.md) for optional features, storage boundaries and pinned source links; the refactoring proposed in [#241](https://github.com/Aik358/dsh-auto-memory/issues/241) is not shown as implemented.
+
 All milestones are implemented and live-verified. The full interactive architecture map lives at [docs/proactive-associative-memory-system-map.html](docs/proactive-associative-memory-system-map.html); the core layering:
 
 ```
 DeepSeek Harness (Node, 127.0.0.1:3080)
-├─ JS memory core (lib/*_pre.js, zero runtime deps)
+├─ JS memory core (lib/*.js, zero runtime deps)
 │   M1 session isolation · M2 ContextObserver projection
 │   M3 memory anchoring (anchored records + sidecar identity)
 │   M4 corpus adapter + shadow retrieval host (evidence store)
@@ -623,7 +627,7 @@ DeepSeek Harness (Node, 127.0.0.1:3080)
 │   lexical_pre_v2 lexical fallback retrieval (BM25 + CJK 2gram, 0GB always-on)
 │   C2 built-in semantic tier (e5-small q8 ~130MB, default)
 └─ Python sidecar M7 (optional, lazy-spawned child process)
-    worker_semantic_pre_v1.py
+    worker_semantic_v1.py
     ├─ index_sync: JS-authorized paged index build (digest checks, scope grouping)
     ├─ dense: BGE-M3 int8 + para-512 chunks + cosine (R@5 0.925)
     ├─ hybrid: dense 0.7 + lexical 0.3 fusion
