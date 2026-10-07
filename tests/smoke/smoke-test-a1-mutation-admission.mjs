@@ -352,8 +352,11 @@ if (!process.env.A1_SOURCE_ROOT) {
   // #249：摘掉 store 的 admission 边界（写盘通道不再有统一门）
   // 只回退**接线**，保留模块自身默认值：否则模块 import 即崩，红的不是被测行为。
   //   （admission 无来源 ⇒ target 为 undefined ⇒ 写盘读状态即 TypeError —— 回退树的真实行为。）
+  // ★2026-10-08（P2a #263）判据同步：_queue 的调用形态已随 #263 改为「把边界给出的有效路径
+  //   传进写盘链」（`(bound) => within(bound || target)`）。回退语义**一字未改**：仍是「摘掉
+  //   admission 边界（写盘通道不再有统一门）」，只把锚串对齐到新形态。
   revert(path.join(negRoot, 'lib/memory-writer.js'), [
-    ['    const run = prev.then(() => this.mutationBoundary(target, () => job(target)), () => this.mutationBoundary(target, () => job(target)))', '    const run = prev.then(job, job)'],
+    ['      () => this.mutationBoundary(target, (bound) => within(bound || target), admission),\r\n      () => this.mutationBoundary(target, (bound) => within(bound || target), admission),\r\n', '      () => prev.then(job, job),\r\n'],
   ])
   const child = spawnSync(process.execPath, [fileURLToPath(import.meta.url)], {
     env: { ...process.env, A1_SOURCE_ROOT: negRoot },
