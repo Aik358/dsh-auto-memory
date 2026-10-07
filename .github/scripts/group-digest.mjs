@@ -23,6 +23,7 @@
  * CLI: --print 只打印不投递;--no-send 同 --print
  */
 import { readFileSync, appendFileSync, existsSync } from 'node:fs'
+import { createHash } from 'node:crypto'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 
@@ -45,6 +46,18 @@ const clip = (s, n) => {
   return t.length > n ? t.slice(0, n) + '…' : t
 }
 const daysSince = (iso) => (Date.now() - new Date(iso).getTime()) / 86400000
+const feedbackKey = (line) => createHash('sha256').update(line).digest('hex')
+
+/**
+ * ★#265:反馈队列的**消费位置**。游标只在「投递成功后的确认」里推进,读取本身绝不动 gist。
+ * 游标必须能对着**当前文件前缀**复算(webhook 端是 400 行环形,截断会让位置漂移):
+ * 复算不通过就退回 0 —— 宁可重发也不丢,与原实现「取出即清空」相反。
+ */
+function feedbackQueueStart(lines, cursor) {
+  if (Number.isInteger(cursor?.count) && cursor.count >= 0 && cursor.count <= lines.length &&
+      feedbackKey(lines.slice(0, cursor.count).join('\n')) === cursor.prefixHash) return cursor.count
+  return 0
+}
 
 async function fetchJson(url, opts = {}) {
   const res = await fetch(url, opts)
@@ -128,31 +141,39 @@ async function collect() {
     out.npmVersion = json?.version || null
   } catch (e) { console.warn('[digest] npm 版本采集失败:', e.message) }
   out.groupFeedbackLines = null
+  out.feedbackCursor = null
+  out.feedbackCursorPending = null
   out.trackedIssues = []
   if (env.FEEDBACK_GIST_ID && env.FEEDBACK_GH_PAT) {
     try {
       const r = await fetch(`https://api.github.com/gists/${env.FEEDBACK_GIST_ID}`, { headers: { Accept: 'application/vnd.github+json', Authorization: `Bearer ${env.FEEDBACK_GH_PAT}`, 'User-Agent': 'group-digest' } })
+      if (!r.ok) throw new Error(`HTTP ${r.status}`)
       const j = await r.json().catch(() => null)
       // 2026-09-13 修复:只读**钉死的文件名**(与 webhook 的 gistAppend/report 同名)——旧实现取
       // 「第一个文件」,raw-debug 先建/清空后第一个文件会换人,反馈与原始调试混写。
       const fname = env.FEEDBACK_FILE || 'group-feedback.jsonl'
       const content = (j?.files?.[fname]?.content || '').trim()
-      if (content) {
-        out.groupFeedbackLines = content.split('\n').map((l) => l.trim()).filter((l) => l && !l.startsWith('<!--')).slice(-120)
-        await fetch(`https://api.github.com/gists/${env.FEEDBACK_GIST_ID}`, {
-          method: 'PATCH',
-          headers: { Accept: 'application/vnd.github+json', Authorization: `Bearer ${env.FEEDBACK_GH_PAT}`, 'User-Agent': 'group-digest' },
-          // 置空字符串会**删除** gist 文件(删除后 webhook 端的「第一个文件」就会换人)——
-          // 改写成一个换行,保留文件本身,只清空内容。
-          body: JSON.stringify({ files: { [fname]: { content: '\n' } } }),
-        })
-        console.log(`[digest] 群反馈原始消息 ${out.groupFeedbackLines.length} 条已取出(文件保留,内容已清空)`)
-      }
       // 未解决事项跟踪状态(2026-09-13):与反馈文件同一个 gist 的 group-issues.json,跨期持续列出/自动销账
       try {
         const si = JSON.parse(j?.files?.['group-issues.json']?.content || '{}')
         if (Array.isArray(si.issues)) out.trackedIssues = si.issues
+        out.feedbackCursor = si.feedbackCursor || null
       } catch (e) {}
+      if (content) {
+        // ★#265:这里只**读**队列并算出待投递切片;对队列的消费(推进游标)一律推迟到
+        // 投递成功之后(见 acknowledgeFeedback)。旧实现在这里就 PATCH 清空 gist —— 于是
+        // --print(只打印)与投递失败(HTTP 非 2xx / 网络错)两条路径都会把消息吞掉。
+        const lines = content.split('\n').map((l) => l.trim()).filter((l) => l && !l.startsWith('<!--'))
+        const start = feedbackQueueStart(lines, out.feedbackCursor)
+        out.groupFeedbackLines = lines.slice(start, start + 120)
+        if (out.groupFeedbackLines.length) {
+          const count = start + out.groupFeedbackLines.length
+          // 待确认游标(= 本批投递成功后才生效的位置);out.feedbackCursor 仍是**已确认**的旧位置,
+          // ④ 与任何提前落盘都只能写旧位置,否则失败路径又变成「先消费后投递」。
+          out.feedbackCursorPending = { version: 2, count, prefixHash: feedbackKey(lines.slice(0, count).join('\n')) }
+        }
+        console.log(`[digest] 群反馈取到 ${out.groupFeedbackLines.length} 条待投递(队列共 ${lines.length} 条,起点 ${start};原始文件只读,投递成功后才推进游标)`)
+      }
     } catch (e) { console.warn('[digest] 群反馈 gist 读取失败(忽略):', e.message) }
   }
   return out
@@ -323,6 +344,7 @@ async function send(text) {
 }
 
 // ---------- 主流程 ----------
+// ★#265 顺序约束(勿调换):collect() 只读队列 → send() 投递 → 成功后才 acknowledgeFeedback() 推进游标。
 const d = await collect()
 // ---------- 群内反馈跟踪(2026-09-13):未解决事项跨期持续列出;群里确认修复或发版说明写明修复 → 自动销账 ----------
 const tracked = { open: (Array.isArray(d.trackedIssues) ? d.trackedIssues : []).filter((x) => x && typeof x.title === 'string'), resolvedTitles: [], staleTitles: [] }
@@ -428,14 +450,35 @@ if ((newBullets.length || changelogTail) && env.LLM_API_KEY) {
   tracked.open = tracked.open.slice(0, 10)
 }
 // ④状态落盘(有变化才写):group-issues.json 与反馈文件同一个 gist
+// ★#265:PATCH 是整文件替换 ⇒ 必须把**已确认**的反馈游标原样带回,否则这次只写 issues 的
+// 状态回写会把游标抹掉,下次又从头重发(不丢消息,但会刷屏)。
 if (env.FEEDBACK_GIST_ID && env.FEEDBACK_GH_PAT && (tracked.merged || newBullets.length || tracked.staleTitles.length)) {
   try {
     await fetch(`https://api.github.com/gists/${env.FEEDBACK_GIST_ID}`, {
       method: 'PATCH',
       headers: { Accept: 'application/vnd.github+json', Authorization: `Bearer ${env.FEEDBACK_GH_PAT}`, 'User-Agent': 'group-digest' },
-      body: JSON.stringify({ files: { 'group-issues.json': { content: JSON.stringify({ issues: tracked.open, updatedAt: new Date().toISOString() }) } } }),
+      body: JSON.stringify({ files: { 'group-issues.json': { content: JSON.stringify({ issues: tracked.open, feedbackCursor: d.feedbackCursor, updatedAt: new Date().toISOString() }) } } }),
     })
   } catch (e) { console.warn('[digest] group-issues.json 写入失败(下期会重复列出):', e.message) }
+}
+
+/**
+ * ★#265:投递**成功**后的确认。只有走到这里才把游标推进到本批末尾;
+ * --print / DIGEST_CHANNEL=none / 投递抛错都不会调用它 ⇒ 队列原样保留待下轮重试。
+ * 确认本身失败时抛错(本次 run 记失败),同样不动队列 —— 宁可重发,不可丢。
+ */
+async function acknowledgeFeedback() {
+  if (!(env.FEEDBACK_GIST_ID && env.FEEDBACK_GH_PAT)) return
+  // 没有新投递批次 ⇒ 无需确认(游标没动过就不要写盘,避免每天都刷一次 gist)
+  const feedbackCursor = d.feedbackCursorPending
+  if (!feedbackCursor) return
+  const r = await fetch(`https://api.github.com/gists/${env.FEEDBACK_GIST_ID}`, {
+    method: 'PATCH',
+    headers: { Accept: 'application/vnd.github+json', Authorization: `Bearer ${env.FEEDBACK_GH_PAT}`, 'User-Agent': 'group-digest' },
+    body: JSON.stringify({ files: { 'group-issues.json': { content: JSON.stringify({ issues: tracked.open, feedbackCursor, updatedAt: new Date().toISOString() }) } } }),
+  })
+  if (!r.ok) throw new Error(`反馈队列确认失败 HTTP ${r.status}(队列未推进,下期重复投递)`)
+  console.log(`[digest] 群反馈已确认投递 ${d.groupFeedbackLines.length} 条(游标 → ${feedbackCursor.count})`)
 }
 d.groupFeedbackTracked = tracked
 const text = compose(d)
@@ -455,9 +498,11 @@ if (NO_SEND) {
   try {
     const used = await send(text)
     console.log(`[digest] ✅ 已通过 ${used} 投递。`)
+    // ★#265:确认放在 send 之后 —— 投递抛错时这行不执行,反馈队列保持原样。
+    await acknowledgeFeedback()
   } catch (e) {
     const hint = /40034105/.test(e.message) ? '(机器人尚未在 q.qq.com 完成审核上线,主动消息被拒;上线后自动恢复)' : /40034101/.test(e.message) ? '(机器人不在目标群)' : ''
-    console.error(`[digest] ❌ 投递失败(${CHANNEL}):`, e.message, hint)
+    console.error(`[digest] ❌ 本期同步未完成(${CHANNEL}):`, e.message, hint)
     process.exitCode = 1
   }
 }

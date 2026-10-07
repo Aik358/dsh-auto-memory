@@ -5,7 +5,7 @@
  *   例: node tools/release.mjs 0.1.30 --dry-run
  * 流程: 复制预览版 → 反转全部 _pre/-pre 标识(发布转换输入禁止出现 _dev/auto-memory-dev) →
  *       生成正式 package.json → 语法/BOM/残留验证。
- * 源目录: 默认 D:\dsh-auto-memory(preview 分支),可用环境变量 DSH_AUTO_MEMORY_DEV 覆盖。
+ * 源目录: 默认 = 本脚本所在仓库的根(相对脚本自身位置解析,任意克隆/CI 均可运行),可用环境变量 DSH_AUTO_MEMORY_DEV 覆盖(覆盖优先)。
  * 目标目录: 默认 D:\dsh_debug\_publish_dsh-auto-memory,可用环境变量 DSH_AUTO_MEMORY_REL 覆盖;
  *           --dry-run 时强制改用临时 staging 目录,不触碰真实发布基座,不做任何发布动作。
  */
@@ -13,6 +13,7 @@ import { cpSync, readFileSync, writeFileSync, rmSync, existsSync, readdirSync, s
 import { execSync } from 'node:child_process'
 import path from 'node:path'
 import { tmpdir } from 'node:os'
+import { fileURLToPath } from 'node:url'
 
 // ---------- 1. 参数 ----------
 const argv = process.argv.slice(2)
@@ -23,7 +24,11 @@ if (!/^\d+\.\d+\.\d+$/.test(version || '')) {
   process.exit(1)
 }
 
-const DEV = process.env.DSH_AUTO_MEMORY_DEV || 'D:\\dsh-auto-memory'          // 预览版源(preview 工作区)
+// ★#256（2026-10-08）去本机路径依赖：源目录默认**相对脚本自身位置**解析，
+//   使本脚本在任意克隆/CI 上可直接运行（旧实现硬编码 'D:\\dsh-auto-memory'，
+//   在 CI/他人机器上该目录不存在 ⇒ 连第一步就崩，其后的上游回流自检更无从谈起）。
+//   `DSH_AUTO_MEMORY_DEV` 覆盖**优先保留**：本机工作流用它指向另一棵源树。
+const DEV = process.env.DSH_AUTO_MEMORY_DEV || path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 let REL = process.env.DSH_AUTO_MEMORY_REL || 'D:\\dsh_debug\\_publish_dsh-auto-memory' // 发布基座(保留 .git)
 
 // ---------- 2. 复制预览版文件(--dry-run 使用临时 staging) ----------
@@ -31,6 +36,27 @@ console.log('[release] 版本:', version, dryRun ? '(dry-run staging)' : '')
 if (dryRun) {
   REL = path.join(tmpdir(), 'dam-release-staging-' + Date.now())
   console.log('[release] staging 目录:', REL)
+}
+// ★#256 护栏（**自毁风险**，fail closed）：本脚本第 2 步是「先清空 REL，再从 DEV 复制」。
+//   DEV 一旦相对化，**在发布基座自己的克隆里运行本脚本时 DEV === REL** ⇒ 先清空该目录、
+//   再从「已被清空的源」复制 ⇒ **发布基座自毁**。而发布树 tools/ 下同样有 release.mjs
+//   （本脚本的 tools 拷贝清单把它原样带入）⇒ 这不是假想路径。
+//   位置说明：置于 dry-run 的 REL 改写**之后** —— 那时 REL 已是 tmpdir，
+//   既不会误拒无害的 dry-run，又对真正的破坏性路径（非 dry-run）保持 fail closed。
+//   判据：win32 大小写不敏感、分隔符归一（`\`/`/` 等价），同目录即拒绝执行。
+const sameDir = (x, y) => {
+  const n = (s) => path.resolve(String(s)).replace(/[\\/]+$/, '').replace(/\\/g, '/')
+  const a = n(x), b = n(y)
+  return process.platform === 'win32' ? a.toLowerCase() === b.toLowerCase() : a === b
+}
+if (sameDir(DEV, REL)) {
+  console.error('[release] ❌ 源目录与发布基座是同一个目录,拒绝执行(会先清空它再从已清空的源复制 ⇒ 自毁):')
+  console.error('   DEV = ' + DEV)
+  console.error('   REL = ' + REL)
+  console.error('   修法:①在**别的**克隆里运行本脚本(源 = 本脚本所在仓库);或')
+  console.error('        ②显式指定源树:  set DSH_AUTO_MEMORY_DEV=<另一棵源树>;或')
+  console.error('          用环境变量 DSH_AUTO_MEMORY_REL 把发布基座指向别处。')
+  process.exit(1)
 }
 if (!existsSync(DEV)) { console.error('[release] ❌ 源目录不存在:', DEV); process.exit(1) }
 mkdirSync(REL, { recursive: true })
@@ -130,7 +156,13 @@ for (const entry of ['cordis.patch.yml', 'README.md', 'README.zh-CN.md', 'LICENS
 //   使 relName() 把 /api/dsh-auto-memory/ 推成 /bpi/dsh-buto-memory-pre/，issue111 八条断言集体假红。
 //   改用字符串 split 形态，对扫描正则不可见。
 // The runner's statically imported dependency must survive release sync as well.
-for (const toolFile of 'run-smoke.mjs,smoke-impact.mjs,release.mjs'.split(',')) {
+// ★#256（2026-10-08）：`reconcile-upstream.mjs` 并入本清单。
+//   事故机理：tools/ 用**白名单**入包，该文件从未被列入 ⇒ **永远进不了发布树**；
+//   而 GitHub `main` 正是由发布树生成 ⇒ 即使它在开发树里已跟踪（ca94bf6 v3.1.4 批 J），
+//   `main`/干净克隆也永远拿不到它。而下方 3.7 段**无条件调用**它 ⇒ 干净克隆跑 release 必崩。
+//   ⚠️ 本清单式循环对缺失是 `continue`（**静默跳过**）—— 故另配下方「交付核对」硬检查，
+//      否则会重演「以为交付了其实没有」。
+for (const toolFile of 'run-smoke.mjs,smoke-impact.mjs,release.mjs,reconcile-upstream.mjs'.split(',')) {
   const src = path.join(DEV, 'tools', toolFile)
   if (!existsSync(src)) continue
   mkdirSync(path.join(REL, 'tools'), { recursive: true })
@@ -164,6 +196,21 @@ for (const toolFile of 'build-iter5-skin.mjs'.split(',')) {
   if (!existsSync(src)) { console.error('[release] ❌ tools/' + toolFile + ' 缺失 — 发布树将无法重新生成皮肤'); process.exit(1) }
   mkdirSync(path.join(REL, 'tools'), { recursive: true })
   cpSync(src, path.join(REL, 'tools', toolFile))
+}
+// ★#256（2026-10-08）②交付核对（fail closed）：上面两个清单式循环对缺失一律 `continue`
+//   （**静默跳过**）—— 这正是本缺陷的成因：文件没被列入，构建照样「成功」。
+//   故此处**不信任清单**，直接核对**交付结果**：每个必需工具必须已落在 REL 里。
+//   判据从「源侧有没有」改为「产物侧有没有」—— 与 3.7 的调用点严格配套。
+const REQUIRED_RELEASE_TOOLS = ['run-smoke.mjs', 'smoke-impact.mjs', 'release.mjs', 'build-iter5-skin.mjs', 'reconcile-upstream.mjs']
+{
+  const absent = REQUIRED_RELEASE_TOOLS.filter((f) => !existsSync(path.join(REL, 'tools', f)))
+  if (absent.length) {
+    console.error('[release] ❌ 发布树 tools/ 缺必需文件: ' + absent.join(', '))
+    console.error('   修法:确认它们存在于 ' + path.join(DEV, 'tools') + '，且已列入上方 tools 拷贝清单；')
+    console.error('         其中 reconcile-upstream.mjs 是 3.7 上游回流自检的**调用目标**，缺它则发布物自带断链（#256）。')
+    process.exit(1)
+  }
+  console.log('[release] tools/ 交付核对: OK(' + REQUIRED_RELEASE_TOOLS.length + ' 个必需文件均已在发布树)')
 }
 
 // ---------- 3. pre → 正式 反转(精确替换;转换输入一律 _pre,禁止 _dev) ----------
@@ -638,7 +685,16 @@ const pyMissing = pyMust.filter((f) => !existsSync(path.join(pyDir, f)))
 if (pyMissing.length) { console.error('[release] ❌ python/ 运行时缺失: ' + pyMissing.join(', ')); process.exit(1) }
 if (existsSync(path.join(pyDir, 'bench'))) { console.error('[release] ❌ python/bench(含 539MB 模型夹具)不得进入发布包 — 检查 package.json files 排除规则'); process.exit(1) }
 if (!existsSync(path.join(REL, 'lib', 'client.js'))) { console.error('[release] ❌ lib/client.js 缺失'); process.exit(1) }
+// ★#256（2026-10-08）③交付断言：`reconcile-upstream.mjs` 是 3.7 上游回流自检的**调用目标**，
+//   它若没进发布树，则发布出去的 `tools/release.mjs` 自带断链（干净克隆跑 release 必 MODULE_NOT_FOUND）。
+//   本断言使「漏拷」在**发版当场**暴露，而不是等使用者克隆后才发现（§5.5 完整性口径）。
+if (!existsSync(path.join(REL, 'tools', 'reconcile-upstream.mjs'))) {
+  console.error('[release] ❌ 发布物完整性: tools/reconcile-upstream.mjs 缺失 — 该文件是 release 自身上游回流自检的调用目标，#256')
+  console.error('   修法:确认它在 ' + path.join(DEV, 'tools') + ' 存在，且已列入 tools 拷贝清单（本脚本第 2 步）。')
+  process.exit(1)
+}
 console.log('[release] python/ 运行时完整 ✓ bench 已排除 ✓')
+console.log('[release] 发布物完整性 ✓(含 tools/reconcile-upstream.mjs，见 #256)')
 
 // ---------- 6. 完成 ----------
 console.log('\n✅ 构建输出目录:', REL, '(version ' + version + ')' + (dryRun ? ' [dry-run staging,未触碰真实发布基座]' : ''))

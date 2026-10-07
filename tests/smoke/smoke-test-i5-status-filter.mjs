@@ -138,7 +138,23 @@ console.log('[I5-6] 接线可达性（源码级）：注入路径真的把 hits 
   // （接线还在），只是"把源码排版当断言"。改为断言**参数语义**（hits 确实被传入）。
   const inj = idx.slice(idx.indexOf('buildTierLayerInjection(agent) {'), idx.indexOf('renderMemoryDynamic(context) {'))
   const call = inj.slice(inj.indexOf('composeTieredInjectionPre({'))
-  const callArgs = call.slice(0, call.indexOf('})') + 1)
+  // ★R1（2026-10-08）判据同步（非回滚 · 依据 2026-10-01 裁定）：原判据用 `call.indexOf('})')`
+  //   找实参表终点 —— 该写法只有在「每个实参各占一行、且无嵌套对象/箭头函数」时才成立。
+  //   #257 SEC-01 把第一个实参改成
+  //   `sources: sources.map(source => ({ ...source, text: stripSensitiveSections(source.text, { preserveLines: true }) }))`
+  //   ⇒ 第一个 `})` 落在**这个嵌套表达式内部**（偏移 146），实参表被截断到 hits 之前 ⇒ 假红。
+  //   接线本身没变。改为**圆括号配平**取完整实参表：比原写法更严（不再依赖排版），
+  //   断言语义一字未改（hits 必须作为实参传入）。
+  const callArgs = (() => {
+    const open = call.indexOf('(')
+    let depth = 0
+    for (let i = open; i < call.length; i++) {
+      if (call[i] === '(') depth++
+      else if (call[i] === ')') { depth--; if (depth === 0) return call.slice(open, i + 1) }
+    }
+    return ''
+  })()
+  ok(callArgs.length > 0, 'index.js 的 composeTieredInjectionPre 调用实参表可完整定位（圆括号配平）')
   ok(/\bhits\b/.test(callArgs), 'index.js 的 buildTierLayerInjection 把 hits 交给装配器（I5 在真实注入路径上生效）')
   ok(/\bhits,/.test(callArgs) || /hits\s*:/.test(callArgs), 'hits 作为实参传入，不是仅在同名字段里出现')
   ok(inj.includes('const hits = ') && inj.includes('selectReusableTierHitsPre'),

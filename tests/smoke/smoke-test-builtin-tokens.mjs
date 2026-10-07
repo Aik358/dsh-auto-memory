@@ -35,16 +35,23 @@ function definitionsOf(text, scopeStart, scopeEnd) {
   return set
 }
 function referencedTokens(cssSegment) {
-  // 返回 Map<token, hasFallback>：★判据只对「无 fallback」的引用要求必须有定义
-  //   （带 fallback 的 var(--x, V) 在 --x 未定义时回落到 V，属合法写法，不算缺陷 —— 60 卷 §二同规则）
-  const map = new Map()
+  // ★#275 修法（2026-10-08）：**逐引用判定**，不再按 token 做 OR 汇总。
+  //   旧实现：`if (!map.has(t) || hasFallback) map.set(t, hasFallback ? true : (map.get(t) || false))`
+  //   ⇒ 同一 token 只要**任意一处**带 fallback，整条 token 就被标成「豁免定义」；
+  //     而 `var(--x)`（无 fallback）与 `var(--x, red)` 同时出现时，那处**无 fallback 的引用**
+  //     本应要求 `--x` 有定义，却被 OR 汇总静默放行 —— 报告者离线复现即此。
+  //   现在返回两组引用（都按**引用点**计数，不再 OR 汇总）：
+  //     · noFallback：不带 fallback 的引用 token（**每一处**都要求有定义）
+  //     · withFallback：带 fallback 的引用 token（合法免定义）
+  const noFallback = new Set()
+  const withFallback = new Set()
   const re = /var\(\s*(--dam-[a-z0-9-]+)\s*([,)])/g
   let m
   while ((m = re.exec(cssSegment))) {
-    const hasFallback = m[2] === ','
-    if (!map.has(m[1]) || hasFallback) map.set(m[1], hasFallback ? true : (map.get(m[1]) || false))
+    if (m[2] === ',') withFallback.add(m[1])
+    else noFallback.add(m[1])
   }
-  return map
+  return { noFallback, withFallback, size: new Set([...noFallback, ...withFallback]).size }
 }
 
 // ── 取出追加段（dam-team / dam-skin 整块，含其之前紧邻的定义块）──
@@ -59,16 +66,17 @@ const allDefs = definitionsOf(raw, 0, raw.length)
 for (const tk of REQUIRED) ok('§2 定义存在 ' + tk, allDefs.has(tk))
 
 // ── §3 ★核心判据：追加段内 var() 引用的 token 必须全部有定义 ──────
+// ★#275 修法（2026-10-08）：**逐引用判定** —— 不带 fallback 的**每一处**引用都要求有定义。
 const refs = referencedTokens(appendedBlock)
-const noFb = [...refs].filter(([tk, fb]) => !fb)
-const missing = noFb.filter(([tk]) => !allDefs.has(tk))
-const withFb = [...refs].filter(([tk, fb]) => fb)
+const noFb = [...refs.noFallback]
+const missing = noFb.filter((tk) => !allDefs.has(tk))
+const withFb = [...refs.withFallback]
 ok('§3.1 追加段引用 token 数 ≥ 8（实测 ' + refs.size + '）', refs.size >= 8)
 ok('§3.2 ★零「无 fallback 且无定义」的引用（实测 ' + missing.length + ' 个）', missing.length === 0)
 ok('§3.3 带 fallback 的引用（合法免定义）数 = ' + withFb.length + '（--dam-radius / --dam-skin-ratio）', withFb.length >= 2)
-if (missing.length) console.log('      缺：' + missing.map(([x]) => x).join(', '))
+if (missing.length) console.log('      缺：' + missing.join(', '))
 
-// ── §4 负路径：把定义注释掉，判据必须变红 ───────────────────
+// ── §4 负路径：把定义真删，判据必须变红 ───────────────────
 // ★负路径必须【真删定义】，且必须先断言锚串命中次数=1（否则替换无效 ⇒ 假负路径恒绿）
 const FRAG = '--dam-warn: #d97706;'
 const fragHits = raw.split(FRAG).length - 1
@@ -76,10 +84,30 @@ ok('§4.0 负路径锚串在源码中恰命中 1 次（实测 ' + fragHits + '�
 const broken = raw.replace(FRAG, '')
 const brokenDefs = definitionsOf(broken, 0, broken.length)
 const brokenRefs = referencedTokens(broken.slice(broken.indexOf('dam-team:begin'), broken.indexOf('dam-team:end')))
-// ★注意：brokenRefs 是 Map ⇒ 展开后是 [token, hasFallback] entry；比较前必须 .map 取出 token
-const brokenMissing = [...brokenRefs].filter(([tk, fb]) => !fb && !brokenDefs.has(tk)).map(([tk]) => tk)
+const brokenMissing = [...brokenRefs.noFallback].filter((tk) => !brokenDefs.has(tk))
 ok('§4 ★负路径生效（删掉 --dam-warn 定义 ⇒ 无 fallback 引用变红）', brokenMissing.includes('--dam-warn'))
-ok('§4b 正路径对照：未删时该 token 不红', ![...refs].filter(([tk, fb]) => !fb && !allDefs.has(tk)).includes('--dam-warn'))
+ok('§4b 正路径对照：未删时该 token 不红', ![...refs.noFallback].filter((tk) => !allDefs.has(tk)).includes('--dam-warn'))
+
+// ── §4c ★#275 专项：同一 token 混用「有/无 fallback」时必须逐引用判定 ──
+//   旧实现按 token 做 OR 汇总 ⇒ `var(--x)` 与 `var(--x, red)` 同时出现时，
+//   **无 fallback 的那处**被静默豁免（报告者离线复现）。此处用合成样本做变异反向验证：
+//   同一 token 先无 fallback 引用、后带 fallback 引用 ⇒ 删其定义后**必须**报缺失。
+{
+  const TOK = '--dam-or-probe'
+  const sample = 'a{color:var(' + TOK + ')}b{color:var(' + TOK + ', red)}'
+  const s = referencedTokens(sample)
+  ok('§4c.1 逐引用判定：无 fallback 引用被单独记入（合成样本）', s.noFallback.has(TOK))
+  ok('§4c.2 逐引用判定：带 fallback 引用被单独记入（合成样本）', s.withFallback.has(TOK))
+  const noDefs = new Set()   // 该 token 无定义（真删的等价样本）
+  const perRefMissing = [...s.noFallback].filter((tk) => !noDefs.has(tk))
+  ok('§4c.3 ★无 fallback 的那处必须报缺失（旧 OR 口径会静默放行）', perRefMissing.includes(TOK))
+  // 反向：旧 OR 口径在同一合成样本上**不会**报缺失（证明本用例真能区分两种口径）
+  const orMap = new Map()
+  { const re = /var\(\s*(--dam-[a-z0-9-]+)\s*([,)])/g; let m; while ((m = re.exec(sample))) { const h = m[2] === ','; if (!orMap.has(m[1]) || h) orMap.set(m[1], h ? true : (orMap.get(m[1]) || false)) } }
+  const orMissing = [...orMap].filter(([tk, h]) => !h && !noDefs.has(tk)).map(([tk]) => tk)
+  ok('§4c.4 对照：旧 OR 口径在同样本上放行（hence 修法有鉴别力）', !orMissing.includes(TOK))
+}
+
 
 // ── §5 可复算物理量 ───────────────────────────────────────
 // ★物理量断言必须锚定【不变量】而非快照：快照每轮都会变（会导致测试变成伪红）

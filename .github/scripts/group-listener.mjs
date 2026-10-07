@@ -35,6 +35,10 @@ for (const k of ['QQ_APP_ID', 'QQ_APP_SECRET', 'QQ_GROUP_OPENID', 'GH_TOKEN']) {
 }
 
 const seen = new Set(existsSync(STATE) ? JSON.parse(readFileSync(STATE, 'utf8')).seen || [] : [])
+// ★#266 不变式:**seen = 已处理完的事件**,不含「正在处理」的事件。
+// 建单是外部副作用,事件在建单成功之前绝不可持久化为已见,否则一次失败就永久吞掉这条反馈。
+// pending 只活在内存里(阻塞并发重入),进程重启后自然清空 ⇒ 网关重放该事件时仍会被重新处理。
+const pending = new Set()
 const saveSeen = () => { try { writeFileSync(STATE, JSON.stringify({ seen: [...seen].slice(-500) })) } catch { /* 状态丢失可接受 */ } }
 const clip = (s, n) => { const t = String(s || '').replace(/\s+/g, ' ').trim(); return t.length > n ? t.slice(0, n) + '…' : t }
 const now = () => new Intl.DateTimeFormat('zh-CN', { timeZone: 'Asia/Shanghai', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date())
@@ -83,34 +87,42 @@ async function ensureLabel() {
 
 async function handleGroupMessage(d) {
   const id = d.id || `${d.timestamp}|${d.author?.openid}|${d.content}`
-  if (seen.has(id)) return
-  seen.add(id); saveSeen()
-  const text = String(d.content || '').replace(/<@!\d+>/g, '').trim()
-  const lower = text.toLowerCase()
-  const hit = TRIGGERS.find((w) => lower.includes(w.toLowerCase()))
-  if (!hit) { console.log('[listener] 忽略:', clip(text, 30)); return }
-  console.log('[listener] 命中反馈:', clip(text, 60))
-  const title = `[群反馈] ${clip(text, 30)}`
-  const body = [
-    '## QQ 群反馈(群助手自动建单)', '',
-    `- 汇报人: ${clip(d.author?.openid || '匿名', 12)}(脱敏标识)`,
-    `- 时间: ${now()}(北京)`, '',
-    '**原文:**', '',
-    ...String(d.content || '').split(/\r?\n/).map((l) => '> ' + l), '',
-    '---', '',
-    '处理状态自动同步:收到 → 正在处理 → 处理完毕(issue 评论 + QQ 群)。',
-    '把修理工交给 Copilot:将本 issue 分配给 **@copilot**。', '',
-    '<sub>由 group-listener 自动创建</sub>',
-  ].join('\n')
-  await ensureLabel()
-  const r = await gh(`/repos/${REPO}/issues`, { method: 'POST', body: JSON.stringify({ title, body, labels: ['group-report'] }) })
-  if (!r.ok) {
-    console.error('[listener] 建 issue 失败', r.status, JSON.stringify(r.body).slice(0, 200))
-    await qqSend(`收到 ✅(建单通道抖了一下,管理员会人工补记)「${clip(text, 24)}」`).catch(() => {})
-    return
+  if (seen.has(id) || pending.has(id)) return
+  pending.add(id)
+  try {
+    const text = String(d.content || '').replace(/<@!\d+>/g, '').trim()
+    const lower = text.toLowerCase()
+    const hit = TRIGGERS.find((w) => lower.includes(w.toLowerCase()))
+    // 不命中触发词 = 本条事件已彻底处理完(无需外部副作用)⇒ 可以立刻记住,避免重连后重复刷日志
+    if (!hit) { seen.add(id); saveSeen(); console.log('[listener] 忽略:', clip(text, 30)); return }
+    console.log('[listener] 命中反馈:', clip(text, 60))
+    const title = `[群反馈] ${clip(text, 30)}`
+    const body = [
+      '## QQ 群反馈(群助手自动建单)', '',
+      `- 汇报人: ${clip(d.author?.openid || '匿名', 12)}(脱敏标识)`,
+      `- 时间: ${now()}(北京)`, '',
+      '**原文:**', '',
+      ...String(d.content || '').split(/\r?\n/).map((l) => '> ' + l), '',
+      '---', '',
+      '处理状态自动同步:收到 → 正在处理 → 处理完毕(issue 评论 + QQ 群)。',
+      '把修理工交给 Copilot:将本 issue 分配给 **@copilot**。', '',
+      '<sub>由 group-listener 自动创建</sub>',
+    ].join('\n')
+    await ensureLabel()
+    const r = await gh(`/repos/${REPO}/issues`, { method: 'POST', body: JSON.stringify({ title, body, labels: ['group-report'] }) })
+    if (!r.ok) {
+      // ★#266:这里**不写** seen —— 建单没成 ⇒ 事件必须保持「可重放」,网关重投时仍会走完整流程
+      console.error('[listener] 建 issue 失败', r.status, JSON.stringify(r.body).slice(0, 200))
+      await qqSend(`收到 ✅(建单通道抖了一下,管理员会人工补记)「${clip(text, 24)}」`).catch(() => {})
+      return
+    }
+    console.log('[listener] 已建 issue #' + r.body.number)
+    // ★#266:先建单成功,再持久化 seen(顺序不可调换)
+    seen.add(id); saveSeen()
+    await qqSend(`收到 ✅ 群反馈已建单 #${r.body.number}「${clip(text, 24)}」,处理进度会同步`).catch((e) => console.error('[listener]', e.message))
+  } finally {
+    pending.delete(id)
   }
-  console.log('[listener] 已建 issue #' + r.body.number)
-  await qqSend(`收到 ✅ 群反馈已建单 #${r.body.number}「${clip(text, 24)}」,处理进度会同步`).catch((e) => console.error('[listener]', e.message))
 }
 
 // ---------- 网关 ----------

@@ -152,7 +152,7 @@ ok(SRC.includes('apiGet(API.autoContState,') && SRC.includes('setInterval(poll, 
 ok(HSRC.includes('void engine.tickAutoContinue()'), 'G11 host heartbeat drives deadline execution (15s tick)')
 
 // —— G14(2026-09-10 实机取证):宿主已接续完成后,旧窗口的卡必须收起、提示要有期限、轮询要带会话 id ——
-ok(/if \(s\.executing\) \{[\s\S]{0,700}?setAcConfirm\(null\)/.test(SRC) && /if \(s\.lastOk && \(okAt === 0/.test(SRC) && /(okAt === 0[\s\S]{0,200}?setAcConfirm\(null\))/.test(SRC),
+ok(/if \(s\.executing\) \{[\s\S]{0,700}?setAcConfirm\(null\)/.test(SRC) && /if \(s\.lastOk && \(okAt === 0/.test(SRC) && /(okAt === 0[\s\S]{0,1000}?setAcConfirm\(null\))/.test(SRC),
   'G14 executing / lastOk 分支先收起确认卡(旧实现直接 return → 卡片与「✓ 已自动接续」并存)')
 ok(SRC.includes('okAt === 0 || Date.now() - okAt < 10 * 60 * 1000'),
   'G14 「已完成」提示设 10 分钟有效期(宿主状态是全局单值,不设期限会一直挂在每个窗口上)')

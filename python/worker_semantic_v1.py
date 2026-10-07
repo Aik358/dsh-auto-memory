@@ -1364,10 +1364,11 @@ def run_loop(worker):
                                  'sentAt': obj.get('sentAt', 0)}
         except (UnicodeDecodeError, ValueError):
             obj = None
-        # P13:recall_rank(JS→PY 新请求类型)在 base.envelope_shape_ok 的 JS_TYPES 白名单外,
-        # 在此显式放行(其余字段仍按协议帧校验);handler 在 SemanticWorker.handle_frame 拦截。
-        obj_type_ok = isinstance(obj, dict) and obj.get('type') == 'recall_rank'
-        if not isinstance(obj, dict) or not (obj_type_ok or base.envelope_shape_ok(obj)):
+        # recall_rank 只扩展类型白名单（#270）：先把类型代换为白名单内的占位类型，
+        # 再走完整的 envelope_shape_ok —— protocolVersion / frameId / requestId /
+        # workerEpoch / payload / sentAt 逐项照常校验，不再因为类型在白名单外而整体绕过。
+        envelope = dict(obj, type='health') if isinstance(obj, dict) and obj.get('type') == 'recall_rank' else obj
+        if not base.envelope_shape_ok(envelope):
             out.write((base.dumps(worker.error_frame(req_for_error,
                                                      'invalid-envelope')) + '\n').encode('utf-8'))
             out.flush()

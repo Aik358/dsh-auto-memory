@@ -11,6 +11,29 @@ const source = readFileSync(new URL('../../lib/client.js', import.meta.url), 'ut
 // ★2026-09-30 双皮肤块（用户裁定：旧款为默认 + 三套变体经下拉选择）：
 //   生成区现有**两块**（legacy 旧款 + 三套变体）——本快照关心「剥掉生成区后的经典侧」，
 //   故两块都要拆；并把**分派行**归一回单分支形态，否则比对的就不是「经典档」而是「双块集成形态」。
+// ★2026-10-08（用户批准）剥离管道自检 ①②：marker 结构唯一性 + 顺序依赖显式化。
+//   背景：variant marker 在 legacy 块**内部**也出现一次（六空格缩进），与四空格的块首 marker
+//   属同名前缀关系。当前管道靠「先剥 legacy、再剥 variant」的执行顺序规避 —— 实测逆序会剥错
+//   区间（剥离结果 983,508 → 1,532,749 字符，差 549,241）。以下断言把顺序依赖从隐性改为显式：
+//   一旦有人重排本文件第 15/16 行（两块剥离的先后），立即红。
+const stripSelfCheck = (() => {
+  const ls = source.split('\n')
+  const cnt = (needle) => ls.filter((line) => line.indexOf(needle) >= 0).length
+  assert.equal(cnt('ITER5-LEGACY-GENERATED:BEGIN'), 1, '剥离自检① legacy BEGIN 应恰 1 行')
+  assert.equal(cnt('ITER5-LEGACY-GENERATED:END'), 1, '剥离自检① legacy END 应恰 1 行')
+  assert.equal(cnt('ITER5-GENERATED:BEGIN'), 2, '剥离自检① variant BEGIN 应恰 2 行（1 在 legacy 内 + 1 在外）')
+  assert.equal(cnt('ITER5-GENERATED:END'), 2, '剥离自检① variant END 应恰 2 行（1 在 legacy 内 + 1 在外）')
+  const iLB = ls.findIndex((line) => line.indexOf('ITER5-LEGACY-GENERATED:BEGIN') >= 0)
+  const iLE = ls.findIndex((line) => line.indexOf('ITER5-LEGACY-GENERATED:END') >= 0)
+  const iVB = ls.findIndex((line) => line.indexOf('ITER5-GENERATED:BEGIN') >= 0)
+  const iVE = ls.findIndex((line) => line.indexOf('ITER5-GENERATED:END') >= 0)
+  assert.ok(iLB < iVB && iVB < iVE && iVE < iLE, '剥离自检② 首个 variant 对应整体落在 legacy 块内（顺序依赖来源）')
+  const afterLegacy = ls.slice(0, iLB).concat(ls.slice(iLE + 1)).join('\n')
+  assert.equal(afterLegacy.split('ITER5-GENERATED:BEGIN').length - 1, 1, '剥离自检② 剥 legacy 后 variant BEGIN 应余 1 处')
+  assert.equal(afterLegacy.split('ITER5-GENERATED:END').length - 1, 1, '剥离自检② 剥 legacy 后 variant END 应余 1 处')
+  return { iLB, iLE, iVB, iVE }
+})()
+console.log('PASS 剥离自检①②：marker 结构唯一 + 顺序依赖成立（legacy L' + (stripSelfCheck.iLB + 1) + '-L' + (stripSelfCheck.iLE + 1) + '，内嵌 variant 对 L' + (stripSelfCheck.iVB + 1) + '/L' + (stripSelfCheck.iVE + 1) + '）')
 const classic = source
   .replace(/    \/\/ ===== ITER5-LEGACY-GENERATED:BEGIN =====[\s\S]*?    \/\/ ===== ITER5-LEGACY-GENERATED:END =====\n/, '')
   .replace(/    \/\/ ITER5-GENERATED:BEGIN[\s\S]*?    \/\/ ITER5-GENERATED:END\n/, '')
@@ -20,6 +43,13 @@ const classic = source
   .replace("try { ensureStyle(); if (damSkinActive() === 'v4') damSkinEnsureCss() } catch", 'try { ensureStyle() } catch')
   .replace('function DialogHost() {\n      var tourDeep = useDeepTheme()\n      var tickPair = useTick()', 'function DialogHost() {\n      var tickPair = useTick()')
   .replace("tourStep === 0 ? h(SkinHero, { slot: 'hero.welcome', deep: tourDeep })", "tourStep === 0 ? h(SkinHero, { slot: 'hero.welcome', deep: useDeepTheme() })")
+// ★2026-10-08（用户批准）剥离管道自检 ③：剥离结果里不得残留任何生成区 marker。
+//   本项原先只由维护者手工核验；固化为断言后，剥离管道一旦漏切（正则不再命中、或块边界
+//   标记被人改动），此处立即红，而不必等到基线哈希对不上时再反查。
+for (const _mk of ['ITER5-LEGACY-GENERATED:BEGIN', 'ITER5-LEGACY-GENERATED:END', 'ITER5-GENERATED:BEGIN', 'ITER5-GENERATED:END']) {
+  assert.equal(classic.split(_mk).length - 1, 0, '剥离自检③：classic 中不应残留 marker ' + _mk)
+}
+console.log('PASS 剥离自检③：4 个生成区 marker 在剥离结果中零残留')
 // ★2026-09-30：本快照基线演进（PR #150 移植到 3.2.5 之上）——生成块**之外**的 client.js 现包含 3.2.5 的合法修复
 //   （接续身份钉死 clickedSid、StatsTab/Iter5Stats 解包 data.stats），故快照哈希随之变化；
 //   守卫语义不变：生成块之外的任何**非意外**改动仍会被本锁抓住。
@@ -102,7 +132,37 @@ const classic = source
 //     2026-10-06 首轮误按「只去指纹行/首块注释」复算，得 6a9c0587…（错值），回归随即复红；
 //     改用本文件 14-22 行的 classic 表达式复算得 26b00133…，与锁一致。
 //   守卫语义不变：生成块之外的任何**非意外**改动仍会被本锁抓住。
-assert.equal(createHash('sha256').update(classic).digest('hex'), '26b00133b7eef7896bff5c66fe0dff50a895a739eca5c2eb57321a4f0f10883d', 'Reviewed native-reference entry baseline（R78 = R77 + 2026-10-05 批次 Y（PR#212 #5/#6 + PR#213 前端拆取，生成器线一次过）：①共享草稿设施 memoryNoteDrafts/memoryCalendarDrafts/memoryDraftIdentity(sessionId|ws)/memoryNoteWrites/calendarWrites/memoryOperations/useMemoryOperation/submitMemoryOperation/prepareSettingsPatch/TeamSecretInput 落手写区；②面板 close() 前置草稿脏确认 + beforeunload 保护；③refreshSem 加 WeakMap 代次（迟到的旧状态不覆盖新状态）；④经典 NotesTab/CalendarTab 草稿接入 + 按身份重挂；⑤两 I5 实例：i5Read/i5Busy/i5ConfigGeneration/i5Initialized/i5AppliedRead 五 ref + 统一 i5ApplyConfig（草稿恢复 i5Initialized 单次 + 已有草稿只提示不覆盖 + psec 水合）+ save/onEngineModeChange 推进代次并回显 migrated/warning 回执 + setBusy 包 ref 同步；⑥gateOk 改读生效基线 i5Base（草稿态不再冒充已生效）+ gate-readout 归入主闸卡；⑦生效水位读数 data-dam-effective-water（handoff-state 实测，广播重取）；⑧browseTo/openBrowser 请求代次守卫 + D2 广播重取升级为 i5Busy 感知 + 请求号；⑨migPickInto 三份统一 migAlive 幂等守卫（修 pr-213 frozen 份 request 未声明 ReferenceError 点名缺陷）；⑩ConnectTab/Iter5External 异步取数身份守卫（去 pr-213 重复行）；⑪#212 前端：三份 iter5MemorySnapshot 注入 noteSessionId + 三份 Iter5Note 发 sessionId+expectedNotesPath（X2 服务端必填）；⑫设置分组再平衡（fExclude/model 移区、slims 死键控件摘除、fJsExcerpt/fWaterThreshold disabled+说明、即时项 L3 标签、团队 http/folder 禁选+TeamSecretInput 密码框）；⑬字典修正（fAutoContinue/handoffSwitch/fHandoff/fWaterWindow zh/en/ja + fAutoMargin 0.3-1 + settings-copy fJsCooldown 分钟→轮）；⑭skins 源 views/ui/native-panel/settings-copy 同步 + frozen LF 镜像 + 生成器 replaceT/切片补丁/断言化（--check SYNC-OK）。；原 R77 = R76 + 2026-10-05 发版三件套（v3.2.9：指纹行 + 应用内 CHANGELOG 字典 3.2.9 条目；内容见 CHANGELOG.md 同版段）；原 R76 = R75 + 2026-10-04 发版三件套（v3.2.8：指纹行 + 应用内 CHANGELOG 字典 3.2.8 条目；内容见 CHANGELOG.md 同版段）；原 R75 = R74 + 2026-10-04 issue #211 前端：Python 引擎卸载按钮（二次确认）+ pyUninstall 路由键 + 三语体积披露；原 R74 = R72 + 2026-10-02 审计修复批 A+B（增量归因：手写区 DebugCenter 收敛为只读 GET + 团队层接 4 条专用路由（API 表新增 5 键）+ TeamTab 挂载补回调 + L3 段共享订阅轮询）；原 R72 = R71 + 2026-10-01 ①接续开关默认开 + 欢迎向导开关 ②经典档接入 GlobalBriefRow 简报抽屉 ③damSharedSurfaceCss classic 分支归零修复；原 R71 = R70 + 2026-10-01 全局动态简报批（client.js 三面各加 8 个 globalBrief* 控件 + frozen 面补齐上批遗漏的 slimEveryRounds/fullEverySlims 两键）；原 R70 = R69 + #160/#162 修复：python 向导轮询/取消渲染、规则草稿与内容锚定、首屏 tour hero 挂载复原；生成块之外任何**非意外**改动仍会被本锁抓住）')
+// ★2026-10-08 R1 重钉（R79 → R80，判据侧更新 · 依据 2026-10-01 用户裁定「判据有问题就更新判据，不得回滚成果」）：
+//   本锁的**鉴别力与语义一字未改**，仍锁「剥掉生成块后的经典档 = 评审基线」；只更新被锁的字节值。
+//   取证（可复算，用本文件 14-22 行 classic 表达式**原样 eval**）：
+//     · 83a8678（写入 26b00133 的那次提交）：declared 26b00133… == recomputed 26b00133… ⇒ 当时自洽；
+//     · 8445cca（A 类施工**之前**的开工基线）：recomputed 54e55cc9… ≠ 26b00133… ⇒ 该红**先于** A 类存在，
+//       与 A 类无关（与「开工基线 290 PASS / 1 FAIL」的实测吻合）；
+//     · cfe388a（R1 收口后）：recomputed 23a79294… ⇒ 本次按实测值重钉。
+//   ⚠️ 重钉值必须用**本套件自己的算法**复算（第 101-103 行既有教训：另写简化剥离会连错两次）。
+//   管线脱钩事实（同批取证，供后续维护者）：第 17/20/21/22 步的 .replace() 锚串在当前 lib/client.js 中
+//   命中共 0 次，仅第 18/19 步命中 ⇒ 「剥生成块 + 四处归一化」如今**大部分是空操作**。
+//   该锁当前更接近「client.js 手写区指纹」而非「生成块集成形态指纹」；语义未弱化，但若要恢复
+//   原鉴别力需另立项重写剥离管道（不在 R1 收口范围，已记入回执待复核项）。
+// ★2026-10-08 第十六次演进（R81 · C 类 #252 RL-02，增量归因 · 手写区）：
+//   ①apply() 内两个轮询计时器（notices 每小时 / away 30s）与三个文档级监听器
+//     （两个 visibilitychange + 一个 focus）此前**没有任何卸载清理路径**（缺陷本体）；
+//   ②新增模块作用域句柄台账 `__damRuntimeHandlesPre` + 卸载清理 `__damDisposeRuntimeHandlesPre`，
+//     并以 `ctx.effect(...)` 登记 ⇒ host 卸载时停表并解绑；
+//   ③两处匿名监听器改**具名**（匿名函数无法 removeEventListener，是泄漏的成因之一）。
+//   取证（用本文件 14-22 行 classic 表达式**原样 eval**，非另写简化剥离）：
+//     · HEAD（5245e4a，本批开工前）：recomputed 23a79294… == 当时锁值 ⇒ 当时自洽；
+//     · 本批改动后：recomputed 6c07e736… ⇒ 按实测值重钉（2026-10-01 裁定：判据随有意演进上移，不回滚成果）。
+// ★2026-10-08 第十七次演进（R82 · P3 #278 自动接续提示关不掉，增量归因 · 手写区）：
+//   ①AutoContinueHost 成功分支新增「已关闭身份」判据：以 `at|sessionId` 为身份键，
+//     用户关闭过的那一条不再显示（缺陷本体：旧实现在 3 秒轮询里无条件 setAcSt ⇒ 关闭无效）；
+//   ②新增两个 ref：`acLastOkKeyRef`（最近读到的有效 lastOk 身份）与 `acDismissedOkRef`（已关闭身份）；
+//   ③`dismissAcSt` 关闭时登记该身份；新结果身份不同 ⇒ 照常显示（不是一刀切禁掉）。
+//   取证（用本文件 14-22 行 classic 表达式**原样 eval**，非另写简化剥离）：
+//     · HEAD（7e65f42，本批开工前）：recomputed 6c07e736… == 当时锁值 ⇒ 当时自洽；
+//     · 本批改动后：recomputed bd574416… ⇒ 按实测值重钉（2026-10-01 裁定：判据随有意演进上移，不回滚成果）。
+//   守卫语义不变：生成块之外的任何**非意外**改动仍会被本锁抓住。
+assert.equal(createHash('sha256').update(classic).digest('hex'), 'bd574416f6fa6a1f2483c7751472482944d6db60b4159570b3444498df887df8', 'Reviewed native-reference entry baseline（R78 = R77 + 2026-10-05 批次 Y（PR#212 #5/#6 + PR#213 前端拆取，生成器线一次过）：①共享草稿设施 memoryNoteDrafts/memoryCalendarDrafts/memoryDraftIdentity(sessionId|ws)/memoryNoteWrites/calendarWrites/memoryOperations/useMemoryOperation/submitMemoryOperation/prepareSettingsPatch/TeamSecretInput 落手写区；②面板 close() 前置草稿脏确认 + beforeunload 保护；③refreshSem 加 WeakMap 代次（迟到的旧状态不覆盖新状态）；④经典 NotesTab/CalendarTab 草稿接入 + 按身份重挂；⑤两 I5 实例：i5Read/i5Busy/i5ConfigGeneration/i5Initialized/i5AppliedRead 五 ref + 统一 i5ApplyConfig（草稿恢复 i5Initialized 单次 + 已有草稿只提示不覆盖 + psec 水合）+ save/onEngineModeChange 推进代次并回显 migrated/warning 回执 + setBusy 包 ref 同步；⑥gateOk 改读生效基线 i5Base（草稿态不再冒充已生效）+ gate-readout 归入主闸卡；⑦生效水位读数 data-dam-effective-water（handoff-state 实测，广播重取）；⑧browseTo/openBrowser 请求代次守卫 + D2 广播重取升级为 i5Busy 感知 + 请求号；⑨migPickInto 三份统一 migAlive 幂等守卫（修 pr-213 frozen 份 request 未声明 ReferenceError 点名缺陷）；⑩ConnectTab/Iter5External 异步取数身份守卫（去 pr-213 重复行）；⑪#212 前端：三份 iter5MemorySnapshot 注入 noteSessionId + 三份 Iter5Note 发 sessionId+expectedNotesPath（X2 服务端必填）；⑫设置分组再平衡（fExclude/model 移区、slims 死键控件摘除、fJsExcerpt/fWaterThreshold disabled+说明、即时项 L3 标签、团队 http/folder 禁选+TeamSecretInput 密码框）；⑬字典修正（fAutoContinue/handoffSwitch/fHandoff/fWaterWindow zh/en/ja + fAutoMargin 0.3-1 + settings-copy fJsCooldown 分钟→轮）；⑭skins 源 views/ui/native-panel/settings-copy 同步 + frozen LF 镜像 + 生成器 replaceT/切片补丁/断言化（--check SYNC-OK）。；原 R77 = R76 + 2026-10-05 发版三件套（v3.2.9：指纹行 + 应用内 CHANGELOG 字典 3.2.9 条目；内容见 CHANGELOG.md 同版段）；原 R76 = R75 + 2026-10-04 发版三件套（v3.2.8：指纹行 + 应用内 CHANGELOG 字典 3.2.8 条目；内容见 CHANGELOG.md 同版段）；原 R75 = R74 + 2026-10-04 issue #211 前端：Python 引擎卸载按钮（二次确认）+ pyUninstall 路由键 + 三语体积披露；原 R74 = R72 + 2026-10-02 审计修复批 A+B（增量归因：手写区 DebugCenter 收敛为只读 GET + 团队层接 4 条专用路由（API 表新增 5 键）+ TeamTab 挂载补回调 + L3 段共享订阅轮询）；原 R72 = R71 + 2026-10-01 ①接续开关默认开 + 欢迎向导开关 ②经典档接入 GlobalBriefRow 简报抽屉 ③damSharedSurfaceCss classic 分支归零修复；原 R71 = R70 + 2026-10-01 全局动态简报批（client.js 三面各加 8 个 globalBrief* 控件 + frozen 面补齐上批遗漏的 slimEveryRounds/fullEverySlims 两键）；原 R70 = R69 + #160/#162 修复：python 向导轮询/取消渲染、规则草稿与内容锚定、首屏 tour hero 挂载复原；生成块之外任何**非意外**改动仍会被本锁抓住）')
 console.log('PASS reviewed shared-entry source baseline preserved')
 
 const css = readFileSync(new URL('../../skins/iter5/skin.css', import.meta.url), 'utf8')

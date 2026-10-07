@@ -48,6 +48,7 @@ import * as nativePromises from 'node:fs/promises'
 import path from 'node:path'
 import { homedir } from 'node:os'
 import { fileURLToPath } from 'node:url'
+import { createHash } from 'node:crypto'
 import { memoryWriteError } from ${JSON.stringify(url('memory-writer.js'))}
 import { persistDegradeLedgerPre, deriveQuotaVerdictPre } from ${JSON.stringify(url('degrade.js'))}
 import { decodeZstdFramesHead as realDecode } from ${JSON.stringify(url('subagent-gc.js'))}
@@ -65,18 +66,33 @@ export function make(overrides) {
  const { readdirSync, readFileSync, statSync, existsSync, mkdirSync, writeFileSync, readFile, readdir, stat, mkdir, writeFile } = io
  const zstdDec = 'zstdDec' in overrides ? overrides.zstdDec : true
  const decodeZstdFramesHead = overrides.decodeZstdFramesHead || realDecode
- return new (class ProductionHarness {
+ const instance = new (class ProductionHarness {
 ${methods}
  })()
+ return instance
 }
 `)
   const { make } = await import(pathToFileURL(modulePath).href)
   const host = make(overrides)
   Object.assign(host, {
+    // ★R1（2026-10-08）夹具同步（非回滚 · 依据 2026-10-01 裁定）：#258 给整篇写原语 `writeFull`
+    //   加了本地角色门 `this._assertTeamActionPre(this._teamWriteActionPre(p))`。本 harness 抽取的是
+    //   **真产线方法体**、`this` 上只有下面显式挂的成员（无原型链）⇒ 缺桩即 TypeError，被
+    //   applyNoteStatusPre 的 fail-soft catch 吞成「状态写入失败」⇒ /状态已更新/ 断言假红。
+    //   门的真实行为由 smoke-test-la-audit-fixes.mjs（真引擎 viewer 被拒）专测，本套件测的是
+    //   诊断完整性（失败要如实上报、私密错误不外泄），故这里给恒过桩。
+    _assertTeamActionPre: () => {},
+    _teamWriteActionPre: () => 'write-own-memory',
     _degradeSink: createDegradeSinkPre(), config: {}, state: {}, _observerStats: {},
     runtimes: { values: () => [] }, autoStats: { count: 0 },
     memoryIndexSnapshot: async () => ({}), _hubIoViewSnapshot: () => null,
+    // ★L-E（2026-10-08）夹具同步（非回滚 · 依据 §9.3-2 口径与上文 R1 同型）：#261 给 debugInfo 新增了
+    //   诊断投影 `schedule: this._scheduleViewSnapshot()`（与既有 _hubIo/_factsPrune/_logs 三个 *ViewSnapshot
+    //   **同一出口纪律**：只读快照、最小投影）。本 harness 抽取真产线方法体、`this` 无原型链 ⇒ 缺该桩即
+    //   TypeError: this._scheduleViewSnapshot is not a function。**属夹具侧假红，非产品缺陷**；
+    //   投影的真实行为由 smoke-test-le-261-schedule-failure.mjs（真执行 + 变异负路径）专测。
     _factsPruneViewSnapshot: () => null, _logsViewSnapshot: () => null,
+    _scheduleViewSnapshot: () => null,
     capacityLimit: () => 1000, memToday: todayStr,
     userDirOf: () => path.join(home, 'user'), projectDirOf: () => path.join(home, 'workspace'),
     resolvePaths: async () => Object.fromEntries(['ws', 'projectDir', 'handoffDir', 'userFile', 'notesPath', 'logPath', 'reflectDir', 'calendarPath'].map((key) => [key, path.join(home, key)])),

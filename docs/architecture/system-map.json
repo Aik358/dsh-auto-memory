@@ -1,0 +1,900 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "DSH Auto Memory · 完整架构 · v3.2.10",
+    "locale": "zh-CN",
+    "output": "docs/architecture/system-map.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/Aik358/dsh-auto-memory.git",
+      "revision": "828050056cf053c53fb2c237706f6e89c7baef09",
+      "provider": "github",
+      "link_mode": "web"
+    }
+  },
+  "components": [
+    {
+      "id": "client",
+      "type": "frontend",
+      "label": "DSH 浏览器记忆界面",
+      "sublabel": "面板 · 看板 · 设置 · 皮肤",
+      "pos": [
+        410,
+        60
+      ],
+      "size": [
+        240,
+        86
+      ],
+      "sources": [
+        {
+          "path": "lib/client.js",
+          "line": 18463,
+          "end_line": 18507
+        },
+        {
+          "path": "package.json",
+          "line": 5,
+          "end_line": 22
+        }
+      ],
+      "tag": "宿主 React / Iter5 / slots"
+    },
+    {
+      "id": "api",
+      "type": "security",
+      "label": "插件 API 与模型工具",
+      "sublabel": "本机路由 · 工具 · 配置事务",
+      "pos": [
+        410,
+        310
+      ],
+      "size": [
+        240,
+        86
+      ],
+      "sources": [
+        {
+          "path": "lib/index.js",
+          "line": 15884,
+          "end_line": 15901
+        },
+        {
+          "path": "lib/index.js",
+          "line": 17725,
+          "end_line": 17736
+        },
+        {
+          "path": "lib/index.js",
+          "line": 3001,
+          "end_line": 3058
+        }
+      ],
+      "tag": "loopback / 配置锁"
+    },
+    {
+      "id": "engine",
+      "type": "backend",
+      "label": "Node 宿主 · MemoryEngine",
+      "sublabel": "会话隔离 · 刷新 · 生命周期",
+      "pos": [
+        410,
+        528
+      ],
+      "size": [
+        240,
+        150
+      ],
+      "sources": [
+        {
+          "path": "lib/index.js",
+          "line": 2028,
+          "end_line": 2057
+        },
+        {
+          "path": "lib/index.js",
+          "line": 13682,
+          "end_line": 13697
+        },
+        {
+          "path": "lib/index.js",
+          "line": 14920,
+          "end_line": 14961
+        }
+      ],
+      "tag": "会话运行态 + AsyncLocalStorage"
+    },
+    {
+      "id": "lifecycle",
+      "type": "backend",
+      "label": "水位、接续与记忆工作台",
+      "sublabel": "预留 · 仪式 · 建会话 · 提交",
+      "pos": [
+        40,
+        310
+      ],
+      "size": [
+        240,
+        86
+      ],
+      "sources": [
+        {
+          "path": "lib/index.js",
+          "line": 5150,
+          "end_line": 5192
+        },
+        {
+          "path": "lib/index.js",
+          "line": 5216,
+          "end_line": 5273
+        },
+        {
+          "path": "lib/continuation-state.js",
+          "line": 133,
+          "end_line": 149
+        }
+      ],
+      "tag": "跨进程锁 / pending → done"
+    },
+    {
+      "id": "sessions",
+      "type": "external",
+      "label": "DSH 宿主会话与模型",
+      "sublabel": "控制器 · 模型选择 · 子代理",
+      "pos": [
+        40,
+        60
+      ],
+      "size": [
+        240,
+        86
+      ],
+      "sources": [
+        {
+          "path": "lib/index.js",
+          "line": 5216,
+          "end_line": 5260
+        },
+        {
+          "path": "lib/index.js",
+          "line": 11859,
+          "end_line": 11866
+        }
+      ],
+      "tag": "create / prompt / subagents"
+    },
+    {
+      "id": "observe",
+      "type": "backend",
+      "label": "观察、证据与激活管线",
+      "sublabel": "分段 · 证据 · 判定 · Inbox",
+      "pos": [
+        780,
+        810
+      ],
+      "size": [
+        240,
+        86
+      ],
+      "sources": [
+        {
+          "path": "lib/index.js",
+          "line": 2354,
+          "end_line": 2363
+        },
+        {
+          "path": "lib/context-host.js",
+          "line": 129,
+          "end_line": 173
+        },
+        {
+          "path": "lib/activation-host.js",
+          "line": 63,
+          "end_line": 77
+        }
+      ],
+      "tag": "联想总门 + 各子功能门"
+    },
+    {
+      "id": "prompt",
+      "type": "backend",
+      "label": "DSH Prompt 装配",
+      "sublabel": "规则 · 动态快照 · Reference Tail",
+      "pos": [
+        780,
+        560
+      ],
+      "size": [
+        240,
+        86
+      ],
+      "sources": [
+        {
+          "path": "lib/index.js",
+          "line": 15047,
+          "end_line": 15075
+        },
+        {
+          "path": "lib/index.js",
+          "line": 15316,
+          "end_line": 15333
+        },
+        {
+          "path": "lib/index.js",
+          "line": 7662,
+          "end_line": 7671
+        }
+      ],
+      "tag": "分项预算 / 精简与完整快照"
+    },
+    {
+      "id": "brief",
+      "type": "backend",
+      "label": "工作区变更简报",
+      "sublabel": "项目文档 · 外部记忆 · 变更",
+      "pos": [
+        780,
+        60
+      ],
+      "size": [
+        240,
+        86
+      ],
+      "sources": [
+        {
+          "path": "lib/index.js",
+          "line": 12496,
+          "end_line": 12549
+        },
+        {
+          "path": "lib/index.js",
+          "line": 12611,
+          "end_line": 12622
+        },
+        {
+          "path": "lib/index.js",
+          "line": 7662,
+          "end_line": 7667
+        }
+      ],
+      "tag": "默认开启 / 仅变化时提示"
+    },
+    {
+      "id": "writer",
+      "type": "backend",
+      "label": "写入、沉淀与白板维护",
+      "sublabel": "模型提炼 · 内容门 · CAS 写入",
+      "pos": [
+        40,
+        1060
+      ],
+      "size": [
+        240,
+        86
+      ],
+      "sources": [
+        {
+          "path": "lib/index.js",
+          "line": 7903,
+          "end_line": 7929
+        },
+        {
+          "path": "lib/index.js",
+          "line": 11902,
+          "end_line": 11944
+        },
+        {
+          "path": "lib/plan-store.js",
+          "line": 9,
+          "end_line": 100
+        }
+      ],
+      "tag": "共享文件队列 / 冲突保护"
+    },
+    {
+      "id": "markdown",
+      "type": "database",
+      "label": "Markdown 与待确认候选",
+      "sublabel": "记忆真源 · USER 候选暂存",
+      "pos": [
+        40,
+        1310
+      ],
+      "size": [
+        240,
+        86
+      ],
+      "sources": [
+        {
+          "path": "lib/index.js",
+          "line": 3201,
+          "end_line": 3217
+        },
+        {
+          "path": "lib/index.js",
+          "line": 11913,
+          "end_line": 11944
+        },
+        {
+          "path": "lib/index.js",
+          "line": 7903,
+          "end_line": 7929
+        }
+      ],
+      "tag": "PENDING 不自动进全局记忆"
+    },
+    {
+      "id": "recall",
+      "type": "backend",
+      "label": "召回与分层检索",
+      "sublabel": "L0 摘要 · RRF · 按需展开",
+      "pos": [
+        410,
+        810
+      ],
+      "size": [
+        240,
+        86
+      ],
+      "sources": [
+        {
+          "path": "lib/index.js",
+          "line": 8178,
+          "end_line": 8192
+        },
+        {
+          "path": "lib/index.js",
+          "line": 8210,
+          "end_line": 8275
+        },
+        {
+          "path": "lib/index.js",
+          "line": 8072,
+          "end_line": 8111
+        }
+      ],
+      "tag": "本地 / 外部 / DSH 历史会话"
+    },
+    {
+      "id": "semantic",
+      "type": "backend",
+      "label": "语义排序与索引编排",
+      "sublabel": "C3 → C2 → 词法降级",
+      "pos": [
+        410,
+        1060
+      ],
+      "size": [
+        240,
+        86
+      ],
+      "sources": [
+        {
+          "path": "lib/index.js",
+          "line": 14490,
+          "end_line": 14525
+        },
+        {
+          "path": "lib/index.js",
+          "line": 14538,
+          "end_line": 14565
+        },
+        {
+          "path": "lib/semantic-js.js",
+          "line": 307,
+          "end_line": 361
+        }
+      ],
+      "tag": "模型资产探测 / 引擎版本"
+    },
+    {
+      "id": "jsworker",
+      "type": "backend",
+      "label": "JS 语义推理 Worker",
+      "sublabel": "独立进程 · e5-small q8",
+      "pos": [
+        410,
+        1310
+      ],
+      "size": [
+        240,
+        86
+      ],
+      "sources": [
+        {
+          "path": "lib/semantic-js-process.js",
+          "line": 85,
+          "end_line": 110
+        },
+        {
+          "path": "lib/semantic-js-worker.js",
+          "line": 66,
+          "end_line": 94
+        }
+      ],
+      "tag": "fork / IPC / Transformers peer"
+    },
+    {
+      "id": "python",
+      "type": "backend",
+      "label": "可选 Python 语义侧车",
+      "sublabel": "独立进程 · BGE-M3 · JSONL",
+      "pos": [
+        40,
+        1560
+      ],
+      "size": [
+        240,
+        86
+      ],
+      "sources": [
+        {
+          "path": "lib/python-sidecar-client.js",
+          "line": 379,
+          "end_line": 408
+        },
+        {
+          "path": "lib/index.js",
+          "line": 14510,
+          "end_line": 14520
+        },
+        {
+          "path": "lib/index.js",
+          "line": 14668,
+          "end_line": 14682
+        }
+      ],
+      "tag": "排序与激活的启用门不同"
+    },
+    {
+      "id": "hub",
+      "type": "backend",
+      "label": "记忆中枢与流程治理",
+      "sublabel": "情节 · 事实 · 流程三层",
+      "pos": [
+        780,
+        1060
+      ],
+      "size": [
+        240,
+        86
+      ],
+      "sources": [
+        {
+          "path": "lib/index.js",
+          "line": 14060,
+          "end_line": 14089
+        },
+        {
+          "path": "lib/index.js",
+          "line": 14175,
+          "end_line": 14223
+        },
+        {
+          "path": "lib/memory-hub.js",
+          "line": 122,
+          "end_line": 152
+        }
+      ],
+      "tag": "结构 / 证据 / 高风险批准门"
+    },
+    {
+      "id": "hubstore",
+      "type": "database",
+      "label": "中枢与证据持久资产",
+      "sublabel": "JSON 快照 · JSONL 证据",
+      "pos": [
+        780,
+        1310
+      ],
+      "size": [
+        240,
+        86
+      ],
+      "sources": [
+        {
+          "path": "lib/index.js",
+          "line": 14016,
+          "end_line": 14087
+        },
+        {
+          "path": "lib/hub-io.js",
+          "line": 108,
+          "end_line": 140
+        },
+        {
+          "path": "lib/context-host.js",
+          "line": 167,
+          "end_line": 173
+        }
+      ],
+      "tag": "流程库分用户 / 工作区"
+    },
+    {
+      "id": "skill",
+      "type": "database",
+      "label": "可复用 SKILL.md",
+      "sublabel": "激活后导出 · 绑定来源项目",
+      "pos": [
+        780,
+        1560
+      ],
+      "size": [
+        240,
+        86
+      ],
+      "sources": [
+        {
+          "path": "lib/index.js",
+          "line": 15760,
+          "end_line": 15771
+        },
+        {
+          "path": "lib/skill-export-host.js",
+          "line": 78,
+          "end_line": 130
+        }
+      ],
+      "tag": "DSH_HOME/skills/"
+    },
+    {
+      "id": "team",
+      "type": "backend",
+      "label": "可选团队协作",
+      "sublabel": "身份 · Outbox · 合并 · 归属",
+      "pos": [
+        40,
+        560
+      ],
+      "size": [
+        240,
+        86
+      ],
+      "sources": [
+        {
+          "path": "lib/index.js",
+          "line": 13705,
+          "end_line": 13748
+        },
+        {
+          "path": "lib/index.js",
+          "line": 13766,
+          "end_line": 13825
+        }
+      ],
+      "tag": "teamEnabled=true 才装配"
+    },
+    {
+      "id": "remote",
+      "type": "external",
+      "label": "配置的团队远端",
+      "sublabel": "同步 API 与 S3 对象通道",
+      "pos": [
+        40,
+        810
+      ],
+      "size": [
+        240,
+        86
+      ],
+      "sources": [
+        {
+          "path": "lib/team-sync.js",
+          "line": 112,
+          "end_line": 148
+        },
+        {
+          "path": "lib/team-transport.js",
+          "line": 492,
+          "end_line": 520
+        },
+        {
+          "path": "lib/index.js",
+          "line": 13715,
+          "end_line": 13729
+        }
+      ],
+      "tag": "HTTP 传输工厂未在此注入"
+    },
+    {
+      "id": "governance",
+      "type": "backend",
+      "label": "配置安全、存储与迁移",
+      "sublabel": "锁 · 校验 · 修复 · 迁移计划",
+      "pos": [
+        40,
+        1840
+      ],
+      "size": [
+        240,
+        86
+      ],
+      "sources": [
+        {
+          "path": "lib/index.js",
+          "line": 3001,
+          "end_line": 3058
+        },
+        {
+          "path": "lib/index.js",
+          "line": 14111,
+          "end_line": 14122
+        },
+        {
+          "path": "lib/index.js",
+          "line": 17029,
+          "end_line": 17076
+        }
+      ],
+      "tag": "路径边界 / 迁移所有权日志"
+    },
+    {
+      "id": "governedstore",
+      "type": "database",
+      "label": "文件、配置与派生索引",
+      "sublabel": "CAS · 原子写 · 冲突保护",
+      "pos": [
+        410,
+        1840
+      ],
+      "size": [
+        240,
+        86
+      ],
+      "sources": [
+        {
+          "path": "lib/settings-safety.js",
+          "line": 92,
+          "end_line": 184
+        },
+        {
+          "path": "lib/storage-manage.js",
+          "line": 168,
+          "end_line": 202
+        },
+        {
+          "path": "lib/memory-writer.js",
+          "line": 454,
+          "end_line": 510
+        }
+      ],
+      "tag": "维护区展开同一存储"
+    }
+  ],
+  "connections": [
+    {
+      "id": "ui-api",
+      "from": "client",
+      "to": "api",
+      "label": "本机 HTTP",
+      "variant": "default"
+    },
+    {
+      "id": "api-engine",
+      "from": "api",
+      "to": "engine",
+      "label": "调用",
+      "variant": "default"
+    },
+    {
+      "id": "engine-life",
+      "from": "engine",
+      "to": "lifecycle",
+      "label": "会话编排",
+      "variant": "default"
+    },
+    {
+      "id": "life-session",
+      "from": "lifecycle",
+      "to": "sessions",
+      "label": "建会话 / 投递",
+      "variant": "default"
+    },
+    {
+      "id": "engine-prompt",
+      "from": "engine",
+      "to": "prompt",
+      "label": "规则 / 快照",
+      "variant": "default"
+    },
+    {
+      "id": "brief-prompt",
+      "from": "brief",
+      "to": "prompt",
+      "label": "变更提醒",
+      "variant": "default"
+    },
+    {
+      "id": "engine-observe",
+      "from": "engine",
+      "to": "observe",
+      "label": "事件（开关门）",
+      "variant": "dashed"
+    },
+    {
+      "id": "observe-tail",
+      "from": "observe",
+      "to": "prompt",
+      "label": "Tail（开关门）",
+      "variant": "dashed"
+    },
+    {
+      "id": "engine-write",
+      "from": "engine",
+      "to": "writer",
+      "label": "工具 / 沉淀",
+      "variant": "default"
+    },
+    {
+      "id": "writer-md",
+      "from": "writer",
+      "to": "markdown",
+      "label": "写入 / 候选",
+      "variant": "emphasis"
+    },
+    {
+      "id": "engine-recall",
+      "from": "engine",
+      "to": "recall",
+      "label": "查询",
+      "variant": "default"
+    },
+    {
+      "id": "recall-md",
+      "from": "recall",
+      "to": "markdown",
+      "label": "读语料",
+      "variant": "default"
+    },
+    {
+      "id": "recall-semantic",
+      "from": "recall",
+      "to": "semantic",
+      "label": "排序 / 索引",
+      "variant": "default"
+    },
+    {
+      "id": "semantic-js",
+      "from": "semantic",
+      "to": "jsworker",
+      "label": "fork / IPC",
+      "variant": "default"
+    },
+    {
+      "id": "semantic-python",
+      "from": "semantic",
+      "to": "python",
+      "label": "JSONL（按条件）",
+      "variant": "dashed"
+    },
+    {
+      "id": "engine-hub",
+      "from": "engine",
+      "to": "hub",
+      "label": "观察 / 判定",
+      "variant": "default"
+    },
+    {
+      "id": "hub-state",
+      "from": "hub",
+      "to": "hubstore",
+      "label": "快照读写",
+      "variant": "default"
+    },
+    {
+      "id": "hub-skill",
+      "from": "hub",
+      "to": "skill",
+      "label": "激活后导出",
+      "variant": "default"
+    },
+    {
+      "id": "engine-team",
+      "from": "engine",
+      "to": "team",
+      "label": "开启才装配",
+      "variant": "dashed"
+    },
+    {
+      "id": "team-remote",
+      "from": "team",
+      "to": "remote",
+      "label": "配置后联网",
+      "variant": "dashed"
+    },
+    {
+      "id": "governance-io",
+      "from": "governance",
+      "to": "governedstore",
+      "label": "受控读写",
+      "variant": "default"
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "独立 JS 推理进程",
+      "wraps": [
+        "jsworker"
+      ],
+      "pad": 24
+    },
+    {
+      "kind": "region",
+      "label": "可选 Python 进程",
+      "wraps": [
+        "python"
+      ],
+      "pad": 24
+    },
+    {
+      "kind": "region",
+      "label": "维护能力展开 · 同一配置与记忆真源",
+      "wraps": [
+        "governance",
+        "governedstore"
+      ],
+      "pad": 24
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "上游源码身份",
+      "items": [
+        "来源：Aik358/dsh-auto-memory 的远端默认分支 main，提交 828050056cf053c53fb2c237706f6e89c7baef09；package.json 版本 3.2.10。",
+        "依据独立、干净的远端检出核对源码；不纳入本地评测、未提交修改、个人 fork 的独有内容或未合并 PR。节点来源链接全部固定到该上游提交。",
+        "主图展开宿主内模块及其数据关系；JS 推理与 Python 是独立进程。下方维护区是同一存储的维护职责，不代表副本。"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "界面、注入与写入",
+      "items": [
+        "Cordis bundle 加载 Node 入口；client.js 使用宿主 React、UI slots、Iter5 表面与控制器注册面板、设置、会话页和看板。",
+        "systemPrompt.section 承载静态纪律；context 承载规则、Tier-0 目录与分层动态快照；Reference Tail 是独立动态 surface。memory-envelope 统一分项预算。",
+        "自动沉淀由 DSH 子代理提炼，consolidate-filter 过滤后写日志 / 项目笔记。自动 [USER] 候选只暂存 PENDING-USER-MEMORY.md，待人工确认，不直接进入全局 MEMORY.md。",
+        "用户显式 memory_user / memory_rules 仍可维护全局规则。memory-writer 用共享文件队列、CAS 与原子替换；PLAN 写入另有版本 / 归档 / 冲突校验。"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "召回、推理与实际投递",
+      "items": [
+        "memory_recall 读取本地、外部与会话材料；L0 摘要按需展开；RRF、语义、证据重要度、时间信号参与排序；未命中不表示覆盖了所有历史。",
+        "m4-corpus / memory-index / l0-index-sync / m7-index-sync-host 维护派生索引。auto 在 Python 资产可用时可尝试 C3，失败后 C2，再回落词法。",
+        "semantic-js-process 用 fork / IPC 调用独立 Worker，Transformers、ONNX 与 e5-small q8 只在子进程加载；禁止回落为宿主内导入。Python 用 stdin/stdout JSONL，解释器由 python-runtime 探测。",
+        "联想总门默认 false；shadowRetrieval / contextBridge / activationInbox 子门默认 true，仍需总门开启。Python 激活另需 pythonBackendEnabled；版本、来源、证据和 Inbox 控制实际 Tail 投递。"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "中枢与可复用流程",
+      "items": [
+        "memory-hub 将情节、事实、流程交给 episodic-store / fact-store / procedure-store；hub-io 持久快照、批处理并记录健康度；流程库分用户与工作区。",
+        "judgement-shadow.jsonl 增量喂入有 memoryHubEnabled 门；事实自动回写 Markdown 的 hubFlushTick 已退役，保持模型审校的写入路径。",
+        "流程晋升由结构、成功证据、矛盾与高风险批准门控制；激活成功后导出 SKILL.md，来源项目未知时不拿 process.cwd() 代替。"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "接续、简报与团队",
+      "items": [
+        "handoffEnabled 默认 true；autoContinueEnabled 默认 false；水位建议与自动接续阈值独立。接续跨进程预留 source，完成投递后提交 done；创建或投递不确定时保留 pending。",
+        "PLAN 记录稳定项目事实，handoff 账本记录动态状态。工作台使用宿主会话能力，session-archive / subagent-gc 管理归档；共享状态与日历有跨进程锁。",
+        "global-brief 默认开启：按工作区文件水印识别记忆、文档、外部工具和团队变化，自身写入豁免，仅有变化时生成提示，不直接复制外部正文。",
+        "团队开关默认 false；开启后装配身份、Outbox、心跳、拉取、合并、看板、注入预算与归属索引。API 同步与 S3 对象通道不同；HTTP transport 工厂在本提交入口未注入。"
+      ]
+    },
+    {
+      "dot": "slate",
+      "title": "配置、迁移与工程交付",
+      "items": [
+        "config-lock 保护跨进程配置事务；settings-safety 在保存时严格读配置、校验字段与路径，并用所有权日志管理迁移 / 回滚。",
+        "storage-manage 复用写原语做扫描、修复和删除联动；migrate-pack 校验迁移包、规划冲突和路径改写，实际 IO 由宿主引擎执行。",
+        "源码交付链为 tests/smoke、tools/run-smoke.mjs、tools/release.mjs、皮肤生成器及 GitHub Actions。此图描述上游源码结构，不宣称当前桌面安装或远端部署状态。"
+      ]
+    }
+  ]
+}

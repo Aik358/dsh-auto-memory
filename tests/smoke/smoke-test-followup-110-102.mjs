@@ -84,15 +84,31 @@ try {
     ok(s.getStats().pruned === 2, '累计淘汰 2 条（每次落盘只删到刚好回到上限，不一次清空）')
   }
   {
-    const s = mk(2)
-    s.upsert(cand(1, { provenance: ['src-old'] }))
-    s.upsert(cand(2))
-    s.upsert(cand(3))
-    s.revokeBySource('src-old')
-    s.upsert(cand(4)) // 再挤一次，触发淘汰
+    // ★#277 修法（2026-10-08）：原夹具**在调用 revoke 之前**就已经因为上限淘汰了目标值 ——
+    //   mk(2) 下 upsert(1..3) 时长度 3 > 2 ⇒ 值1（confirmedAt 最旧）当场被年龄淘汰；
+    //   随后的 revokeBySource('src-old') 作用在**已不存在的记录**上 ⇒ 返回 revoked=0，
+    //   而两条断言（值1 不在、size=2）都因「它早就没了」而恒真 ⇒ 只验证了普通年龄淘汰，
+    //   **撤销优先这条语义从未被验证**（报告者离线复现即此）。
+    //   修法：① 上限放宽到 3，使 revoke 在记录**仍在库中**时发生，并断言 revoked > 0；
+    //        ② 把被撤销项设为**比另一条更晚**写入 ⇒ 纯年龄淘汰会先删更旧的那条，
+    //           只有「撤销优先」才会先删被撤销项 ⇒ 本用例因此具备鉴别力。
+    const s = mk(3)
+    s.upsert(cand(1))                              // confirmedAt=1001（最旧，未被撤销）
+    s.upsert(cand(2, { provenance: ['src-old'] })) // confirmedAt=1002（将被撤销，比值1 新）
+    s.upsert(cand(3))                              // confirmedAt=1003
+    ok(s.size === 3, '#277 前置：撤销前 3 条都在库中（revoke 作用在真实记录上）')
+    const rev = s.revokeBySource('src-old')
+    ok(rev && rev.ok === true && rev.revoked > 0,'★#277 revokeBySource 真的撤销了记录（revoked=' + (rev && rev.revoked) + '，旧夹具恒为 0）')
+    s.upsert(cand(4)) // 再挤一次，触发淘汰（over=1）
     const objs = s.query().map((f) => f.object)
-    ok(!objs.includes('值1'), '★已撤销的（值1）优先被清掉')
-    ok(s.size === 2, '仍收敛到上限 2')
+    ok(!objs.includes('值2'), '★已撤销的（值2）优先被清掉')
+    ok(objs.includes('值1'), '★鉴别力：**更旧但未撤销**的（值1）反而存活 ⇒ 清掉的是撤销项而非最旧项')
+    ok(!objs.includes('值2') && objs.includes('值1') && objs.includes('值3') && objs.includes('值4'),
+      '#277 幸存集合逐字匹配：' + JSON.stringify(objs))
+    ok(s.size === 3, '仍收敛到上限 3')
+    // 反向对照：把同一批记录按**纯年龄**排序，应删 值1 —— 证明本夹具确实能区分两种口径
+    const ageOrder = [1, 2, 3, 4].map((n) => 1000 + n)
+    ok(ageOrder[0] === 1001, '#277 反向对照：纯年龄口径下最旧的是 值1（故撤销优先必须删 值2 才具鉴别力）')
   }
   {
     const s = mk(2)

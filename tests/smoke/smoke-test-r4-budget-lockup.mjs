@@ -40,6 +40,8 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { parseAnchors } from '../../lib/memory-anchor.js'
+import { readFile } from 'node:fs/promises'
+import { createHash } from 'node:crypto'
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..')
 const SRC = readFileSync(path.join(ROOT, 'lib', 'index.js'), 'utf8').replace(/\r\n/g, '\n')
@@ -91,13 +93,13 @@ function makeHost(o = {}) {
   const userFile = path.join(dir, 'user.md')
   const p = { ws: dir, projectDir: dir, notesPath, userFile }
   const Cls = new Function('deps', `
-    const { path, parseAnchors, dshHome, mkdir, COMPACT_THROTTLE_MS, COMPACT_PROTECT_RECENT_CHARS,
+    const { path, parseAnchors, dshHome, mkdir, readFile, createHash, COMPACT_THROTTLE_MS, COMPACT_PROTECT_RECENT_CHARS,
             DEFAULT_NOTE_CAPACITY_CHARS, DEFAULT_USER_CAPACITY_CHARS } = deps
     return class H {
 ${METHODS}
     }
   `)({
-    path, parseAnchors, dshHome: () => TMP, mkdir: (d, x) => mkdirSync(d, x),
+    path, parseAnchors, readFile, createHash, dshHome: () => TMP, mkdir: (d, x) => mkdirSync(d, x),
     COMPACT_THROTTLE_MS: THROTTLE, COMPACT_PROTECT_RECENT_CHARS: PROTECT,
     DEFAULT_NOTE_CAPACITY_CHARS: DEF_NOTE, DEFAULT_USER_CAPACITY_CHARS: DEF_USER,
   })

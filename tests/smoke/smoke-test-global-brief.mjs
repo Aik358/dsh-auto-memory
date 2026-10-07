@@ -143,15 +143,38 @@ t('[负] 豁免有时效：过期登记不再命中（120s 窗口）', () => {
   engine._selfWrites[0].at = Date.now() - 121000
   assert.equal(engine._isSelfWritePre('C:/ws/OLD.md'), false, '过期后不应再豁免')
 })
+/** 取函数体（花括号配平）：判据锚定在**函数体内**，不随注释/前置语句长度漂移。
+ *  ⚠️ 必须先从参数表开括号配平圆括号再取花括号 —— 否则 `writeFull(p, text, opts = {})` 里
+ *  解构默认值的 `{}` 会被误当函数体（实测：返回空体，判据假红）。 */
+const fnBody = (src, anchor) => {
+  const i = src.indexOf(anchor)
+  assert.ok(i >= 0, '找不到函数起点 ' + anchor)
+  let paren = 0, open = -1
+  for (let k = src.indexOf('(', i); k >= 0 && k < src.length; k++) {
+    if (src[k] === '(') paren++
+    else if (src[k] === ')') { paren--; if (paren === 0) { open = src.indexOf('{', k); break } }
+  }
+  assert.ok(open >= 0, '找不到函数体起点 ' + anchor)
+  let depth = 0
+  for (let k = open; k < src.length; k++) {
+    if (src[k] === '{') depth++
+    else if (src[k] === '}') { depth--; if (depth === 0) return src.slice(open + 1, k) }
+  }
+  throw new Error('unbalanced: ' + anchor)
+}
 t('四个写盘原语都挂了登记（守卫，非功能证据；调用点计数）', () => {
   const calls = (SOURCE.match(/_noteSelfWriteAtPre\(/g) || []).length
   assert.ok(calls >= 5, '_noteSelfWriteAtPre( 出现应 >= 5（1 定义 + 4 调用），实测 ' + calls)
+  // ★R1（2026-10-08）判据同步（非回滚 · 依据 2026-10-01 裁定）：#258 给四个写盘原语加了本地角色门
+  //   `this._assertTeamActionPre(this._teamWriteActionPre(p))`，登记调用因此后移到 273 字符
+  //   （writeFull）⇒ 原「函数头后 260 字符」窗过期。改为**函数体抽取**（花括号配平）后断言：
+  //   不再受前置换行/注释长度影响，且比原字符窗更严（锚定在函数体内，而不是「附近某处」）。
   for (const m of // ★2026-10-01 判据同步：`writeFull` 签名因 #160（整篇写改走 rawDocStore + expectedDigest CAS）
 //   增加了可选 `opts = {}` 第三参 ⇒ 原锚串过期。改为**前缀锚**（只锁函数头，不含参数表尾部），
 //   这样后续再增可选参数也不必改判据；其余三个原语签名未变，保持不变。
 ['  async appendText(p, text) {', '  async writeFullRaw(p, text) {', '  async writeFullSingle(p, text) {', '  async writeFull(p, text']) {
-    const seg = SOURCE.slice(SOURCE.indexOf(m), SOURCE.indexOf(m) + 260)
-    assert.ok(seg.includes('_noteSelfWriteAtPre(p)'), m + ' 后应紧跟登记调用')
+    const seg = fnBody(SOURCE, m)
+    assert.ok(seg.includes('_noteSelfWriteAtPre(p)'), m + ' 函数体内未挂登记调用')
   }
 })
 console.log('== C. 团队注入候选生产者（抽取真实回调体 + vm 真执行）==')

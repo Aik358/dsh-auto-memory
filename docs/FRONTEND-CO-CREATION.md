@@ -6,11 +6,13 @@
 
 ---
 
+> **入口地图核对**：2026-10-06；接口与默认值见 [SOURCE-REFERENCE.md](SOURCE-REFERENCE.md)。历史审计行号须重新定位。
+
 ## 一、为什么把前端交给社区
 
 三条实话：
 
-1. **功能已经稳定，前端是短板。** 后端 19 个模型工具、71 条路由、155 个设置键都在跑，
+1. **功能已经稳定，前端是短板。** 源码声明 19 个模型工具、71 个普通唯一路由和 155 个默认配置键，
    但记忆面板的信息密度高、布局拥挤，用户第一眼常常不知道该看哪里。
 2. **前端的取舍没有唯一答案。** 「唤起回顾该怎么展示」「12 个页签该不该合并」
    这类问题取决于你自己的工作方式——而你们的工作方式比我们更丰富。
@@ -157,11 +159,11 @@ node tools/run-smoke.mjs --timeout=90000 \
 
 | 文档 | 内容 |
 |---|---|
-| `docs/internal/FEATURE-INVENTORY.md` | 三层功能全量清单：L1 39 条用户能力 / L2 承载面 / L3 工程细节（含全部 19 工具、56 路由、115 键） |
+| `docs/internal/FEATURE-INVENTORY.md` | 三层功能全量清单：L1 39 条用户能力 / L2 承载面 / L3 工程细节（历史枚举，不作当前接口/默认值真源） |
 | `docs/internal/ARCHITECTURE-FOR-ZCODE-20260920.md` | 面向新开发者的结构文档，61 个模块职责表 |
 | `docs/internal/ART-DIRECTION-DEEPSEEK-20260920.md` | 现行美术方向（DeepSeek 官网体系） |
-| `.dsh/skills/transitions-motion/` | 43 个生产级动效的完整源码与技法文档（含 motion token 刻度） |
-| `site/` | 项目主页（纯静态，可直接本地打开） |
+| `docs/teamwork-research/` | 历史设计研究与资源，按各文日期解读 |
+| `docs/landing/` | 项目主页（纯静态，可直接本地打开） |
 
 ---
 

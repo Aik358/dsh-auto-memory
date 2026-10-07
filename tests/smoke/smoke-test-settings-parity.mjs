@@ -21,10 +21,33 @@ function sliceBetween(src, a, b) {
   return src.slice(i, j)
 }
 const classic = sliceBetween(client, '    function SettingsPage() {', '    // ───────────────────────── 插件挂载')
-const genStart = client.indexOf('    // ITER5-GENERATED:BEGIN')
-assert.ok(genStart > 0, 'generated block not found')
+// ★#276 修法（2026-10-08）：**行锚匹配**，不再用 `indexOf` 的子串命中。
+//   旧实现 `client.indexOf('    // ITER5-GENERATED:BEGIN')`（四空格 + 注释体）：
+//   client.js 内 legit 变体块的 marker 是 **8 空格缩进**（`      // ITER5-GENERATED:BEGIN`），
+//   其「后四个空格 + 注释体」正好满足四空格子串 ⇒ indexOf **命中 8 空格那条**，
+//   于是 variants 实际切的是**legacy 块之前的另一条生成块**（实测切出的内容与 frozen legacy 高度同源），
+//   判据因此退化成「重复检查冻结面」，**当前变体块从未被检查**（报告者原案）。
+//   现改为整行严格相等（行锚）：只认「行内容 == '    // ITER5-GENERATED:BEGIN'」的那一行。
+const genLineNo = (() => {
+  const ls = client.split('\n')
+  const hits = []
+  for (let i = 0; i < ls.length; i++) if (ls[i] === '    // ITER5-GENERATED:BEGIN') hits.push(i)
+  assert.equal(hits.length, 1, 'line-anchored BEGIN marker must be unique, got ' + hits.length)
+  return hits[0]
+})()
+const genStart = client.split('\n').slice(0, genLineNo).join('\n').length + (genLineNo ? 1 : 0)
+assert.ok(genStart > 0, 'generated block not found (line anchor)')
+// 行锚必须**确实**选中当前变体块：其后的第一个 Iter5Settings 必须早于第一条 8 空格 marker 之后的内容
+// ★行锚鉴别力自检：老口径（子串 indexOf）命中 8 空格 marker ⇒ 切到的是**另一条**生成块，
+//   其内容与 frozen legacy 高度同源 ⇒ 判据退化成「重复检查冻结面」。
+const buggyStart = client.indexOf('    // ITER5-GENERATED:BEGIN')
+const buggySlice = sliceBetween(client.slice(buggyStart), 'function Iter5Settings(props) {', 'function Iter5Storage(props) {')
+assert.ok(buggyStart !== genStart, 'line anchor must differ from the legacy substring hit (got the same offset)')
+assert.ok(buggyStart < genStart, 'legacy substring hit sits earlier in the file than the true top-level block')
+console.log('slice check: buggy=' + buggySlice.length + ' (substring hit) vs line-anchored=' + (client.length - genStart) + ' (true block)')
 const gen = client.slice(genStart)
 const variants = sliceBetween(gen, 'function Iter5Settings(props) {', 'function Iter5Storage(props) {')
+assert.notEqual(variants, buggySlice, 'line-anchored variant slice must differ from the legacy substring slice')
 const legacy = sliceBetween(frozen, 'function Iter5Settings(props) {', 'function Iter5Storage(props) {')
 
 // ---- 从 index.js 的 DEFAULT_CONFIG 取权威键集 ----
@@ -40,6 +63,22 @@ function hasControl(surface, key) {
   return write.test(surface) || bind.test(surface)
 }
 const ci = (s, k) => hasControl(s, k)
+// ★鉴别力实验（#276 原报告）：把**当前变体**里某 key 改名为 __renamed_gate__ ⇒ parity 必须红。
+//   做法：只在该变体切片的字符区间内做替换，再走同一条行锚切片路径重算。
+const RENAME_KEY = 'activationInboxEnabled'
+const renamedClient = client.slice(0, genStart + gen.indexOf('function Iter5Settings(props) {'))
+  + variants.split(RENAME_KEY).join('__renamed_gate__')
+  + client.slice(genStart + gen.indexOf('function Iter5Storage(props) {'))
+const renamedAnchor = (() => {
+  const ls = renamedClient.split('\n')
+  let a = -1
+  for (let k = 0; k < ls.length; k++) if (ls[k] === '    // ITER5-GENERATED:BEGIN') a = k
+  return ls.slice(0, a).join('\n').length + 1
+})()
+const renamedVariants = sliceBetween(renamedClient.slice(renamedAnchor), 'function Iter5Settings(props) {', 'function Iter5Storage(props) {')
+assert.ok(!ci(renamedVariants, RENAME_KEY), '★鉴别力实验：当前变体改名 ⇒ 该键在变体面必须判缺失')
+assert.ok(ci(renamedVariants, '__renamed_gate__'), '★鉴别力实验：改名后的键名仍应可被检测器识别（检测器本身没坏）')
+console.log('PASS discrimination: renaming a key inside the current variant makes the variant surface red')
 console.log('surfaces: classic=' + classic.length + ' variants=' + variants.length + ' legacy=' + legacy.length + ' chars')
 
 // ---- 1) 三面字段规模一致（同一套 87 字段）----
