@@ -48,6 +48,12 @@
 之后把采集地址填到 secret `FEEDBACK_URL`(relay 提供 `GET /feedback?hours=N` 返回
 `{"items":[{"user","text"}]}`),日报自动多一栏「群内反馈」。relay 可后补,不阻塞日报上线。
 
+### QQ HTTP 反馈与 Gist 存储
+
+配置 `FEEDBACK_GIST_ID` 和 `FEEDBACK_GH_PAT` 时，QQ webhook 将每条反馈写为独立 Gist 评论，日报和 `/report` 合并旧 `group-feedback.jsonl` 与评论中的最近 400 条记录。旧文件不改写，历史评论不自动删除；消费游标仍在 `group-issues.json`。令牌需要 Gists 读写权限。[追加接口文档](https://docs.github.com/en/rest/gists/comments#create-a-gist-comment)
+
+升级时先让 `.github/scripts/group-digest.mjs` 生效，再从新版 `.github/cloud/qq-webhook/index.js` 重新打包部署，不复用旧 `index.zip`；新版读取器兼容旧 JSONL，新版写入器需要新版读取器。部署核对标记为 `webhook-feedback-append-20261007a`。离线回归不能代替实际云函数部署和投递验证。
+
 ### C. 其他平台 webhook
 
 TG / Discord / 飞书 / 钉钉按表配即可,适合"先进别的群/推给自己,再转发 QQ 群"的过渡期。

@@ -52,6 +52,7 @@ globalThis.fetch = async (url, opts = {}) => {
     fixture.llmCalls++
     return Response.json({ choices: [{ message: { content: fixture.llmCalls === 1 ? '• unrelated topic —— summary omits original details' : JSON.stringify({ issues: [], resolved_titles: [] }) } }] })
   }
+  if (url.startsWith('https://api.github.com/gists/fixture/comments?')) return Response.json([])
   if (url === 'https://api.github.com/gists/fixture') {
     if (method === 'PATCH') {
       const files = JSON.parse(opts.body).files

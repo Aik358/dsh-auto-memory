@@ -3,9 +3,10 @@
  *
  * 部署形态:腾讯云函数「Web 函数」(Node.js 18/20/24)或任何能常驻跑 Node 的地方
  * 职责:接收 QQ 开放平台 HTTP 事件回调(op=13 URL 验证 + GROUP_AT_MESSAGE_CREATE)
- *   ① 命中反馈触发词/问题关键词的消息 → 追加进 GitHub Gist(group-feedback.jsonl)→ @ 消息回「已记录」
+ *   ① 命中反馈触发词/问题关键词的消息 → 追加独立 GitHub Gist 评论 → @ 消息回「已记录」
  *   ② 其他 @ 消息 → 配了 LLM_API_KEY 就让大模型被动回复,没配则沉默
- *   ※ 不再自动建 GitHub issue;日报读取 gist、归纳并确认独立消费游标,原始反馈保留最近 400 条
+ *   ※ 不再自动建 GitHub issue;日报读取 gist、归纳并确认独立消费游标,读取最近 400 条反馈
+ *   ※ 评论追加协议须与 group-digest.mjs 同步部署；旧 JSONL 保留兼容读取。
  *
  * 环境变量:QQ_APP_ID / QQ_APP_SECRET / QQ_GROUP_OPENID / GH_TOKEN(需 Gists 读写)/
  *          GIST_ID(收集文件的 gist)/ REPO(备用)/
@@ -90,8 +91,8 @@ const CFG = {
 for (const k of ['appId', 'appSecret', 'groupId', 'ghToken']) {
   if (!CFG[k]) { console.error(`[webhook] 缺少环境变量 ${k}`); process.exit(1) }
 }
-const VERSION = 'webhook-failclosed-20260921a' // 部署核对标记:diag 端点与错误响应都会带它(20260914a=@ 答疑优先于已记录;20260921a=#113-#116 四条默认值全部改 fail-closed)
-const FEEDBACK_FILE = 'group-feedback.jsonl' // 反馈收集钉死文件名(digest 与 report 同读此名,清空时保留文件本身)
+const VERSION = 'webhook-feedback-append-20261007a' // 部署核对标记：独立评论追加；既有 fail-closed 默认值保留。
+const FEEDBACK_FILE = 'group-feedback.jsonl' // Historical feedback remains readable; new occurrences are independent comments.
 let lastError = null // 最近一次内部错误(diag 可见)
 let botMentionToken = null // 从「@机器人+反馈词」消息里学习的机器人 mention 标识
 // ★ issue #116:RAW_DEBUG **默认关**(设 1 才开)。旧默认 `(env || '1') !== '0'` ⇒ 不配就是开,
@@ -296,24 +297,35 @@ const gh = (p, opts = {}) =>
   fetch(`https://api.github.com${p}`, {
     ...opts,
     headers: { Accept: 'application/vnd.github+json', Authorization: `Bearer ${CFG.ghToken}`, 'User-Agent': 'qq-webhook', ...(opts.headers || {}) },
-  }).then(async (r) => ({ ok: r.ok, status: r.status, body: r.status === 204 ? null : await r.json().catch(() => null) }))
+  }).then(async (r) => ({ ok: r.ok, status: r.status, link: r.headers.get('link'), body: r.status === 204 ? null : await r.json().catch(() => null) }))
 
 async function gistAppend(line) {
-  // 2026-09-13 修复:反馈一律写进**钉死的文件名** group-feedback.jsonl(PATCH 到不存在的文件名会自动创建)。
-  // 旧实现取「gist 里第一个文件」——raw-debug 文件先建/清空后文件被删,第一个文件就会换人,
-  // 反馈与原始调试混写(实测 14:29 的反馈行混进了 group-raw-debug.txt)。
   const message = JSON.parse(line)
   if (!message || typeof message !== 'object' || Array.isArray(message)) throw new Error('反馈必须为 JSON 对象')
   // Each append is a distinct occurrence, even when timestamp/text are equal.
   // Generate the identity here; incoming metadata cannot choose or reuse it.
   line = JSON.stringify({ ...message, feedbackId: crypto.randomUUID() })
-  const r0 = await gh(`/gists/${CFG.gistId}`)
-  if (!r0.ok) throw new Error(`读 gist 失败 ${r0.status}`)
-  const prev = (r0.body.files[FEEDBACK_FILE]?.content || '').split('\n').filter(Boolean)
-  prev.push(line)
-  while (prev.length > 400) prev.shift() // 只保留最近 400 条
-  const r = await gh(`/gists/${CFG.gistId}`, { method: 'PATCH', body: JSON.stringify({ files: { [FEEDBACK_FILE]: { content: prev.join('\n') + '\n' } } }) })
-  if (!r.ok) throw new Error(`写 gist 失败 ${r.status}`)
+  // POST creates an independent record across instances; never PATCH a stale
+  // whole-file snapshot. Readers retain the existing latest-400 view.
+  const r = await gh(`/gists/${CFG.gistId}/comments`, { method: 'POST', body: JSON.stringify({ body: '<!-- dsh-group-feedback:v1 -->\n' + line }) })
+  if (r.status !== 201 || !Number.isSafeInteger(r.body?.id)) throw new Error(`写 gist 反馈失败 ${r.status}`)
+}
+
+// Kept identical in the standalone webhook and digest deployment scripts.
+async function feedbackComments(read, gistId) {
+  const get = async page => {
+    const r = await read(`/gists/${gistId}/comments?per_page=100&page=${page}`)
+    if (!r.ok || !Array.isArray(r.body)) throw new Error(`读 gist 反馈失败 ${r.status}`)
+    return r
+  }
+  const first = await get(1)
+  const last = Number(first.link?.match(/<[^>]*[?&]page=(\d+)[^>]*>;\s*rel="last"/)?.[1] || 1)
+  let rows = []
+  for (let page = last; page >= 1 && rows.length < 400; page--) {
+    const r = page === 1 ? first : await get(page)
+    rows = r.body.filter(c => typeof c.body === 'string' && c.body.startsWith('<!-- dsh-group-feedback:v1 -->\n')).concat(rows)
+  }
+  return rows.sort((a, b) => a.id - b.id).slice(-400).map(c => c.body.slice('<!-- dsh-group-feedback:v1 -->\n'.length))
 }
 
 // 状态文件(bot-state.json,与反馈收集同一个 gist):@问答配额/定时班去重都落这里,防冷启动失忆
@@ -613,10 +625,11 @@ const server = http.createServer((req, res) => {
         try {
           if (CFG.gistId) {
             const r0 = await gh(`/gists/${CFG.gistId}`)
-            // 只读钉死的反馈文件(与 gistAppend/digest 同名);2026-09-13 前旧数据混在第一个文件里,不再兼容读取
-            const content = r0.body.files[FEEDBACK_FILE]?.content || ''
+            if (!r0.ok) throw new Error(`读 gist 失败 ${r0.status}`)
+            const legacy = r0.body.files[FEEDBACK_FILE]?.content || ''
+            const lines = legacy.split('\n').filter(Boolean).concat(await feedbackComments(gh, CFG.gistId)).slice(-400)
             const cutoff = Date.now() - hours * 3600e3
-            for (const line of content.split('\n')) {
+            for (const line of lines) {
               try {
                 const o = JSON.parse(line)
                 if (new Date(o.t).getTime() >= cutoff) out.items.push(o)

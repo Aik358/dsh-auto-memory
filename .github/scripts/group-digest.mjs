@@ -48,6 +48,23 @@ const clip = (s, n) => {
 const daysSince = (iso) => (Date.now() - new Date(iso).getTime()) / 86400000
 const feedbackKey = (line) => createHash('sha256').update(line).digest('hex')
 
+// Kept identical in the standalone webhook and digest deployment scripts.
+async function feedbackComments(read, gistId) {
+  const get = async page => {
+    const r = await read(`/gists/${gistId}/comments?per_page=100&page=${page}`)
+    if (!r.ok || !Array.isArray(r.body)) throw new Error(`读 gist 反馈失败 ${r.status}`)
+    return r
+  }
+  const first = await get(1)
+  const last = Number(first.link?.match(/<[^>]*[?&]page=(\d+)[^>]*>;\s*rel="last"/)?.[1] || 1)
+  let rows = []
+  for (let page = last; page >= 1 && rows.length < 400; page--) {
+    const r = page === 1 ? first : await get(page)
+    rows = r.body.filter(c => typeof c.body === 'string' && c.body.startsWith('<!-- dsh-group-feedback:v1 -->\n')).concat(rows)
+  }
+  return rows.sort((a, b) => a.id - b.id).slice(-400).map(c => c.body.slice('<!-- dsh-group-feedback:v1 -->\n'.length))
+}
+
 function feedbackStart(lines, cursor) {
   if (Number.isInteger(cursor?.count) && cursor.count >= 0 && cursor.count <= lines.length &&
       feedbackKey(lines.slice(0, cursor.count).join('\n')) === cursor.prefixHash) return cursor.count
@@ -158,16 +175,20 @@ async function collect() {
       const r = await fetch(`https://api.github.com/gists/${env.FEEDBACK_GIST_ID}`, { headers: { Accept: 'application/vnd.github+json', Authorization: `Bearer ${env.FEEDBACK_GH_PAT}`, 'User-Agent': 'group-digest' } })
       if (!r.ok) throw new Error(`HTTP ${r.status}`)
       const j = await r.json().catch(() => null)
-      // 2026-09-13 修复:只读**钉死的文件名**(与 webhook 的 gistAppend/report 同名)——旧实现取
-      // 「第一个文件」,raw-debug 先建/清空后第一个文件会换人,反馈与原始调试混写。
+      // Legacy file plus independent comment records; never rewrite raw feedback.
       const fname = env.FEEDBACK_FILE || 'group-feedback.jsonl'
+      const readComments = async p => {
+        const r = await fetch('https://api.github.com' + p, { headers: { Accept: 'application/vnd.github+json', Authorization: `Bearer ${env.FEEDBACK_GH_PAT}`, 'User-Agent': 'group-digest' } })
+        return { ok: r.ok, status: r.status, link: r.headers.get('link'), body: await r.json().catch(() => null) }
+      }
+      const comments = await feedbackComments(readComments, env.FEEDBACK_GIST_ID)
       const content = (j?.files?.[fname]?.content || '').trim()
       let state = {}
       try { state = JSON.parse(j?.files?.['group-issues.json']?.content || '{}') } catch {}
       if (Array.isArray(state.issues)) out.trackedIssues = state.issues
       out.feedbackCursor = state.feedbackCursor || null
-      if (content) {
-        const lines = content.split('\n').map((l) => l.trim()).filter((l) => l && !l.startsWith('<!--'))
+      if (content || comments.length) {
+        const lines = content.split('\n').map((l) => l.trim()).filter((l) => l && !l.startsWith('<!--')).concat(comments).slice(-400)
         const cursor = out.feedbackCursor
         const start = feedbackStart(lines, cursor)
         out.groupFeedbackLines = lines.slice(start, start + 120)
