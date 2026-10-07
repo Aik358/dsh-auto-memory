@@ -11,6 +11,29 @@ const source = readFileSync(new URL('../../lib/client.js', import.meta.url), 'ut
 // ★2026-09-30 双皮肤块（用户裁定：旧款为默认 + 三套变体经下拉选择）：
 //   生成区现有**两块**（legacy 旧款 + 三套变体）——本快照关心「剥掉生成区后的经典侧」，
 //   故两块都要拆；并把**分派行**归一回单分支形态，否则比对的就不是「经典档」而是「双块集成形态」。
+// ★2026-10-08（用户批准）剥离管道自检 ①②：marker 结构唯一性 + 顺序依赖显式化。
+//   背景：variant marker 在 legacy 块**内部**也出现一次（六空格缩进），与四空格的块首 marker
+//   属同名前缀关系。当前管道靠「先剥 legacy、再剥 variant」的执行顺序规避 —— 实测逆序会剥错
+//   区间（剥离结果 983,508 → 1,532,749 字符，差 549,241）。以下断言把顺序依赖从隐性改为显式：
+//   一旦有人重排本文件第 15/16 行（两块剥离的先后），立即红。
+const stripSelfCheck = (() => {
+  const ls = source.split('\n')
+  const cnt = (needle) => ls.filter((line) => line.indexOf(needle) >= 0).length
+  assert.equal(cnt('ITER5-LEGACY-GENERATED:BEGIN'), 1, '剥离自检① legacy BEGIN 应恰 1 行')
+  assert.equal(cnt('ITER5-LEGACY-GENERATED:END'), 1, '剥离自检① legacy END 应恰 1 行')
+  assert.equal(cnt('ITER5-GENERATED:BEGIN'), 2, '剥离自检① variant BEGIN 应恰 2 行（1 在 legacy 内 + 1 在外）')
+  assert.equal(cnt('ITER5-GENERATED:END'), 2, '剥离自检① variant END 应恰 2 行（1 在 legacy 内 + 1 在外）')
+  const iLB = ls.findIndex((line) => line.indexOf('ITER5-LEGACY-GENERATED:BEGIN') >= 0)
+  const iLE = ls.findIndex((line) => line.indexOf('ITER5-LEGACY-GENERATED:END') >= 0)
+  const iVB = ls.findIndex((line) => line.indexOf('ITER5-GENERATED:BEGIN') >= 0)
+  const iVE = ls.findIndex((line) => line.indexOf('ITER5-GENERATED:END') >= 0)
+  assert.ok(iLB < iVB && iVB < iVE && iVE < iLE, '剥离自检② 首个 variant 对应整体落在 legacy 块内（顺序依赖来源）')
+  const afterLegacy = ls.slice(0, iLB).concat(ls.slice(iLE + 1)).join('\n')
+  assert.equal(afterLegacy.split('ITER5-GENERATED:BEGIN').length - 1, 1, '剥离自检② 剥 legacy 后 variant BEGIN 应余 1 处')
+  assert.equal(afterLegacy.split('ITER5-GENERATED:END').length - 1, 1, '剥离自检② 剥 legacy 后 variant END 应余 1 处')
+  return { iLB, iLE, iVB, iVE }
+})()
+console.log('PASS 剥离自检①②：marker 结构唯一 + 顺序依赖成立（legacy L' + (stripSelfCheck.iLB + 1) + '-L' + (stripSelfCheck.iLE + 1) + '，内嵌 variant 对 L' + (stripSelfCheck.iVB + 1) + '/L' + (stripSelfCheck.iVE + 1) + '）')
 const classic = source
   .replace(/    \/\/ ===== ITER5-LEGACY-GENERATED:BEGIN =====[\s\S]*?    \/\/ ===== ITER5-LEGACY-GENERATED:END =====\n/, '')
   .replace(/    \/\/ ITER5-GENERATED:BEGIN[\s\S]*?    \/\/ ITER5-GENERATED:END\n/, '')
@@ -20,6 +43,13 @@ const classic = source
   .replace("try { ensureStyle(); if (damSkinActive() === 'v4') damSkinEnsureCss() } catch", 'try { ensureStyle() } catch')
   .replace('function DialogHost() {\n      var tourDeep = useDeepTheme()\n      var tickPair = useTick()', 'function DialogHost() {\n      var tickPair = useTick()')
   .replace("tourStep === 0 ? h(SkinHero, { slot: 'hero.welcome', deep: tourDeep })", "tourStep === 0 ? h(SkinHero, { slot: 'hero.welcome', deep: useDeepTheme() })")
+// ★2026-10-08（用户批准）剥离管道自检 ③：剥离结果里不得残留任何生成区 marker。
+//   本项原先只由维护者手工核验；固化为断言后，剥离管道一旦漏切（正则不再命中、或块边界
+//   标记被人改动），此处立即红，而不必等到基线哈希对不上时再反查。
+for (const _mk of ['ITER5-LEGACY-GENERATED:BEGIN', 'ITER5-LEGACY-GENERATED:END', 'ITER5-GENERATED:BEGIN', 'ITER5-GENERATED:END']) {
+  assert.equal(classic.split(_mk).length - 1, 0, '剥离自检③：classic 中不应残留 marker ' + _mk)
+}
+console.log('PASS 剥离自检③：4 个生成区 marker 在剥离结果中零残留')
 // ★2026-09-30：本快照基线演进（PR #150 移植到 3.2.5 之上）——生成块**之外**的 client.js 现包含 3.2.5 的合法修复
 //   （接续身份钉死 clickedSid、StatsTab/Iter5Stats 解包 data.stats），故快照哈希随之变化；
 //   守卫语义不变：生成块之外的任何**非意外**改动仍会被本锁抓住。
