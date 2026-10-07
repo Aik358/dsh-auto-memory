@@ -5,6 +5,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, readdirSyn
 import { createHash } from 'node:crypto'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
+import { workspaceKeyPre } from '../../lib/workspace-directory.js'
 process.on('uncaughtException', (e) => { console.error('[M53-TEST] FATAL:', (e && (e.stack || e.message)) || e); process.exit(1) })
 process.on('unhandledRejection', (r) => { console.error('[M53-TEST] REJ:', r); process.exit(1) })
 globalThis.fetch = async () => ({ ok: false, status: 503, json: async () => ({}) })
@@ -61,7 +62,7 @@ async function setupHarness(opts = {}) {
   const bbId = 'mem_' + 'bb'.repeat(16)
   const combinedMd = '<!-- memory:' + aaId + ' -->\n## 用户偏好\n- 用户偏好中文回复与分步验证,部署流程使用 pnpm build\n\n' +
     '<!-- memory:' + bbId + ' -->\n## 部署流程\n- 登录模块部署流程使用 pnpm build 与 rsync'
-  const wsFile = path.join(memoryRoot, keyOf(wsA), 'MEMORY.md')
+  const wsFile = path.join(memoryRoot, workspaceKeyPre(wsA), 'MEMORY.md')
   mkdirSync(path.dirname(wsFile), { recursive: true })
   writeFileSync(wsFile, combinedMd, 'utf8')
   const buf0 = readFileSync(wsFile)
@@ -120,7 +121,6 @@ async function setupHarness(opts = {}) {
     settle: async () => { for (const s of effectSetups) { try { const td = await s(); if (typeof td === 'function') await td() } catch (_) {} } },
     cleanup: () => { try { rmSync(ws1, { recursive: true, force: true }) } catch (_) {} } }
 }
-function keyOf(p) { return '--' + p.replace(/[\\/:*?"<>|]/g, '-') + '--' }
 function evidenceEventsDir(home) { return path.join(home, 'memory', 'evidence', 'events') }
 function readEvidenceLines(home) {
   const dir = evidenceEventsDir(home)

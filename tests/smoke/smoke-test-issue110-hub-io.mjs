@@ -187,7 +187,8 @@ try {
 
     ok(/save\(data\)[\s\S]{0,700}throw e/.test(HUB_IO), '★模块内 save 失败路径确实重新抛出（防被改成静默）')
     ok(!/save\(data\)[\s\S]{0,300}catch \(_\) \{\}/.test(HUB_IO), '模块内 save 不存在 `catch (_) {}` 静默分支')
-    ok(/clear\(\)[\s\S]{0,300}throw e/.test(HUB_IO), 'clear 失败同样抛出')
+    const clearMethod = HUB_IO.slice(HUB_IO.indexOf('clear() {'), HUB_IO.indexOf('clear() {') + 1000)
+    ok(/catch\s*\(e\)[\s\S]*throw e/.test(clearMethod), 'clear 失败同样抛出')
 
     if (RELEASE === null) console.log('  – SKIP: release.mjs 登记检查（发布线未含 tools/；该节需发布线工具）')
     else {

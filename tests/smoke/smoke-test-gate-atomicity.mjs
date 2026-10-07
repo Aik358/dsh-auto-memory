@@ -57,8 +57,8 @@ const strip = (l) => {
 /** 闸门检查（坑②：不限定行尾字符） */
 const GATE_RE = new RegExp('^\\s*if\\s*\\(\\s*!?\\s*this\\.' + FIELD + '[^)]*\\)')
 /** 占位/释放赋值。m[1]=字段名，m[2]=**右值**（坑④：别再拿 m[1] 当右值） */
-const SET_RE = new RegExp('^\\s*this\\.' + FIELD + '\\s*=(.*)$')
-const isReleaseRhs = (rhs) => /Math\.max/.test(rhs) || /^\s*(false|null|undefined|0)\s*;?\s*$/.test(rhs)
+const SET_RE = new RegExp('\\bthis\\.' + FIELD + '\\s*=(?!=)(.*)$')
+const isReleaseRhs = (rhs) => /Math\.max/.test(rhs) || /^\s*(false|null|undefined|0)\s*(?:[;}]|$)/.test(rhs)
 
 const gates = []
 const placeholders = []
@@ -70,7 +70,8 @@ for (let i = 0; i < lines.length; i++) {
   const m = s.match(SET_RE)
   if (m) {
     const rec = { line: i, field: m[1], rhs: m[2] }
-    if (isReleaseRhs(m[2])) releases.push(rec); else placeholders.push(rec)
+    if (isReleaseRhs(m[2])) releases.push(rec)
+    else if (/^\s*this\./.test(s)) placeholders.push(rec)
   }
 }
 
@@ -120,20 +121,19 @@ console.log('\n【判据 C】按字段配对：每个闸门的占位都必须有
 for (const g of gates) {
   const ph = placeholders.filter((p) => p.field === g.field && p.line > g.line)
   const rel = releases.filter((r) => r.field === g.field && r.line > g.line)
-  // 释放器形态（本轮修法）：_wbReleaseInflight 是幂等函数，字段级释放体现为函数体内的 Math.max
-  const relFn = raw.includes(g.field.replace('_', '_')) && new RegExp('[Rr]elease[\\w$]*\\s*=').test(raw)
+  // Releases inside an idempotent helper are already scanned by field.
+  // An unrelated Release function must never excuse a missing field reset.
   ck({
     name: `${g.field} 占位与释放配对`,
-    ok: rel.length >= ph.length || relFn,
-    detail: `占位 ${ph.length} 处 / 直接释放 ${rel.length} 处 / 释放器存在=${relFn}`,
+    ok: rel.length >= ph.length,
+    detail: `占位 ${ph.length} 处 / 字段释放 ${rel.length} 处`,
   })
 }
 // 全局守恒：每个闸门字段都必须能被释放（否则闸门永久卡死）
 for (const f of [...new Set(gates.map((g) => g.field))]) {
   const hasDirect = releases.some((r) => r.field === f)
-  const hasFn = new RegExp('[Rr]elease[\\w$]*\\s*=\\s*(\\(|function)').test(raw)
   // 说明：_subagentInflight 走幂等释放器；其余走 finally 内直接复位
-  ck({ name: `★${f} 存在释放路径`, ok: hasDirect || hasFn, detail: `直接=${hasDirect} 释放器=${hasFn}` })
+  ck({ name: `★${f} 存在释放路径`, ok: hasDirect, detail: `字段释放=${hasDirect}` })
 }
 
 /* ══ 判据 D ══ */

@@ -1,3 +1,4 @@
+import { workspaceKeyPre } from '../../lib/workspace-directory.js'
 import { apply, name, inject, GUIDANCE } from '../../lib/index.js'
 // 2026-08-16: 适配 section→context 迁移 —— 静态纪律在 section(稳定锚), 动态记忆在 context(user-role 快照)
 
@@ -127,7 +128,7 @@ if (dyn.includes('[记忆写入纪律')) throw new Error('dynamic context must n
     try { realText = readFileSync(realArkToday, 'utf8') } catch (e) {}
     if (realText.includes(smkNonce)) throw new Error('smoke test wrote into REAL user memory file: ' + realArkToday)
   }
-  const tempCentral = path.join(smkWs, '.memory-root', '--D--Ark9Tools--', smkToday + '.md')
+  const tempCentral = path.join(smkWs, '.memory-root', workspaceKeyPre(agent.session.header.cwd), smkToday + '.md')
   if (!existsSync(tempCentral)) throw new Error('expected smoke log in temp memory root, missing: ' + tempCentral)
   if (!readFileSync(tempCentral, 'utf8').includes(smkNonce)) throw new Error('temp log missing nonce')
   // 真实 workspaces 根不得新增 dam-smoke-* 条目

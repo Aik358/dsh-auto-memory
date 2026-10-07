@@ -1,3 +1,4 @@
+import { workspaceKeyPre } from '../../lib/workspace-directory.js'
 // F1 结构修复测试:anchor 开启时 compactLayer 记录级压缩(整条保留/移除,经 store.replace,永不字符切片)。
 // 超预算触发→今天记录无条件保留→最旧记录整条入归档(writeFullRaw)→腾位后可继续写入。临时 DSH_HOME。
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, readdirSync, existsSync } from 'node:fs'
@@ -54,7 +55,7 @@ console.log('[G1/G2/G3] anchor 开启:超预算 → 记录级压缩(整条归档
   const fmtD = (dd) => dd.getFullYear() + '-' + pad2F1(dd.getMonth() + 1) + '-' + pad2F1(dd.getDate())
   const daysAgo = (n) => { const x = new Date(dAdjF1); x.setDate(x.getDate() - n); return fmtD(x) }
   const p = { root: path.join(h.ws1, 'mem'), dir: null }
-  p.dir = path.join(p.root, '--' + h.wsA.replace(/[\\/:*?"<>|]/g, '-') + '--')
+  p.dir = path.join(p.root, workspaceKeyPre(h.wsA))
   mkdirSync(p.dir, { recursive: true })
   const notesFile = path.join(p.dir, 'MEMORY.md')
   const recA = '<!-- memory:' + idA + ' -->\n## ' + daysAgo(5) + '\n' + 'A'.repeat(2400)

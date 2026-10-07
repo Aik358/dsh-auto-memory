@@ -25,6 +25,7 @@
 import { readFileSync, appendFileSync, existsSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
+import { createHash } from 'node:crypto'
 
 const env = process.env
 const REPO = env.REPO || env.GITHUB_REPOSITORY || 'Aik358/dsh-auto-memory'
@@ -45,6 +46,7 @@ const clip = (s, n) => {
   return t.length > n ? t.slice(0, n) + '…' : t
 }
 const daysSince = (iso) => (Date.now() - new Date(iso).getTime()) / 86400000
+const feedbackKey = (line) => createHash('sha256').update(line).digest('hex')
 
 async function fetchJson(url, opts = {}) {
   const res = await fetch(url, opts)
@@ -132,27 +134,30 @@ async function collect() {
   if (env.FEEDBACK_GIST_ID && env.FEEDBACK_GH_PAT) {
     try {
       const r = await fetch(`https://api.github.com/gists/${env.FEEDBACK_GIST_ID}`, { headers: { Accept: 'application/vnd.github+json', Authorization: `Bearer ${env.FEEDBACK_GH_PAT}`, 'User-Agent': 'group-digest' } })
+      if (!r.ok) throw new Error(`HTTP ${r.status}`)
       const j = await r.json().catch(() => null)
       // 2026-09-13 修复:只读**钉死的文件名**(与 webhook 的 gistAppend/report 同名)——旧实现取
       // 「第一个文件」,raw-debug 先建/清空后第一个文件会换人,反馈与原始调试混写。
       const fname = env.FEEDBACK_FILE || 'group-feedback.jsonl'
       const content = (j?.files?.[fname]?.content || '').trim()
+      let state = {}
+      try { state = JSON.parse(j?.files?.['group-issues.json']?.content || '{}') } catch {}
+      if (Array.isArray(state.issues)) out.trackedIssues = state.issues
+      out.feedbackCursor = state.feedbackCursor || null
       if (content) {
-        out.groupFeedbackLines = content.split('\n').map((l) => l.trim()).filter((l) => l && !l.startsWith('<!--')).slice(-120)
-        await fetch(`https://api.github.com/gists/${env.FEEDBACK_GIST_ID}`, {
-          method: 'PATCH',
-          headers: { Accept: 'application/vnd.github+json', Authorization: `Bearer ${env.FEEDBACK_GH_PAT}`, 'User-Agent': 'group-digest' },
-          // 置空字符串会**删除** gist 文件(删除后 webhook 端的「第一个文件」就会换人)——
-          // 改写成一个换行,保留文件本身,只清空内容。
-          body: JSON.stringify({ files: { [fname]: { content: '\n' } } }),
-        })
-        console.log(`[digest] 群反馈原始消息 ${out.groupFeedbackLines.length} 条已取出(文件保留,内容已清空)`)
+        const lines = content.split('\n').map((l) => l.trim()).filter((l) => l && !l.startsWith('<!--'))
+        const cursor = out.feedbackCursor
+        // Prefix identity + offset distinguish identical consecutive messages.
+        // A rotated/edited file fails the prefix check and is replayed safely.
+        const start = Number.isInteger(cursor?.count) && cursor.count >= 0 && cursor.count <= lines.length &&
+          feedbackKey(lines.slice(0, cursor.count).join('\n')) === cursor.prefixHash ? cursor.count : 0
+        out.groupFeedbackLines = lines.slice(start, start + 120)
+        if (out.groupFeedbackLines.length) {
+          const count = start + out.groupFeedbackLines.length
+          out.feedbackCursor = { count, prefixHash: feedbackKey(lines.slice(0, count).join('\n')) }
+        }
+        console.log(`[digest] 群反馈待投递消息 ${out.groupFeedbackLines.length} 条(原始文件只读)`)
       }
-      // 未解决事项跟踪状态(2026-09-13):与反馈文件同一个 gist 的 group-issues.json,跨期持续列出/自动销账
-      try {
-        const si = JSON.parse(j?.files?.['group-issues.json']?.content || '{}')
-        if (Array.isArray(si.issues)) out.trackedIssues = si.issues
-      } catch (e) {}
     } catch (e) { console.warn('[digest] 群反馈 gist 读取失败(忽略):', e.message) }
   }
   return out
@@ -255,13 +260,12 @@ function compose(d) {
   }
   L.push('')
   L.push(`—— 本消息由 GitHub Actions 定时统计(每天 12:00 / 21:00),有问题直接群里说`)
-  let text = L.join('\n')
-  if (CHANNEL === 'qq_official') text = text.replace(/https?:\/\/\S+/g, '(链接略)')
-  return text
+  return L.join('\n')
 }
 
 // ---------- 投递通道 ----------
-async function send(text) {
+let qqSendToken = null
+async function sendChunk(text, sequence) {
   const post = async (url, headers, body) => {
     const { res, json, text: raw } = await fetchJson(url, {
       method: 'POST',
@@ -274,11 +278,14 @@ async function send(text) {
   switch (CHANNEL) {
     // 常见 QQ 错误码:40034105 主动消息无权限(机器人未在 q.qq.com 审核上线)/ 40034101 机器人不在群里
     case 'qq_official': {
-      const t = await post('https://bots.qq.com/app/getAppAccessToken', {}, { appId: env.QQ_APP_ID, clientSecret: env.QQ_APP_SECRET })
-      if (!t?.access_token) throw new Error(`取 access_token 失败:${JSON.stringify(t).slice(0, 240)}`)
-      const body = { content: text, msg_type: 0, msg_seq: 1 }
+      if (!qqSendToken) {
+        const t = await post('https://bots.qq.com/app/getAppAccessToken', {}, { appId: env.QQ_APP_ID, clientSecret: env.QQ_APP_SECRET })
+        if (!t?.access_token) throw new Error(`取 access_token 失败:${JSON.stringify(t).slice(0, 240)}`)
+        qqSendToken = t.access_token
+      }
+      const body = { content: text, msg_type: 0, msg_seq: sequence }
       if (env.QQ_MSG_ID) body.msg_id = env.QQ_MSG_ID
-      const r = await post(`${(env.QQ_API_BASE || 'https://api.sgroup.qq.com').replace(/\/$/, '')}/v2/groups/${env.QQ_GROUP_OPENID}/messages`, { Authorization: `QQBot ${t.access_token}` }, body)
+      const r = await post(`${(env.QQ_API_BASE || 'https://api.sgroup.qq.com').replace(/\/$/, '')}/v2/groups/${env.QQ_GROUP_OPENID}/messages`, { Authorization: `QQBot ${qqSendToken}` }, body)
       if (r && typeof r.retcode === 'number' && r.retcode !== 0) throw new Error(`QQ retcode=${r.retcode} ${JSON.stringify(r).slice(0, 240)}`)
       return 'qq_official'
     }
@@ -293,12 +300,12 @@ async function send(text) {
       return 'napcat'
     }
     case 'telegram': {
-      const r = await post(`https://api.telegram.org/bot${env.TG_BOT_TOKEN}/sendMessage`, {}, { chat_id: env.TG_CHAT_ID, text: text.slice(0, 4000), disable_web_page_preview: true })
+      const r = await post(`https://api.telegram.org/bot${env.TG_BOT_TOKEN}/sendMessage`, {}, { chat_id: env.TG_CHAT_ID, text, disable_web_page_preview: true })
       if (!r?.ok) throw new Error(`TG 应答异常:${JSON.stringify(r).slice(0, 240)}`)
       return 'telegram'
     }
     case 'discord': {
-      await post(env.DISCORD_WEBHOOK_URL, {}, { content: text.slice(0, 1990) })
+      await post(env.DISCORD_WEBHOOK_URL, {}, { content: text })
       return 'discord'
     }
     case 'feishu': {
@@ -347,7 +354,7 @@ if (tracked.open.length) {
     if (r.ok) changelogTail = (await r.text()).split(/\n(?=## )/).slice(0, 4).join('\n').slice(0, 3500)
   } catch (e) {}
 }
-// 群内反馈 AI 归纳:原始消息在 collect 里已取出并清空 gist;这里先归纳本窗口新反馈,再与跟踪状态合并
+// 群内反馈 AI 归纳:读取成功投递游标之后的消息,发送成功前不推进游标。
 if (d.groupFeedbackLines?.length && env.LLM_API_KEY) {
   try {
     const r = await fetch(`${(env.LLM_BASE_URL || 'https://api.deepseek.com').replace(/\/$/, '')}/chat/completions`, {
@@ -427,18 +434,51 @@ if ((newBullets.length || changelogTail) && env.LLM_API_KEY) {
   }
   tracked.open = tracked.open.slice(0, 10)
 }
-// ④状态落盘(有变化才写):group-issues.json 与反馈文件同一个 gist
-if (env.FEEDBACK_GIST_ID && env.FEEDBACK_GH_PAT && (tracked.merged || newBullets.length || tracked.staleTitles.length)) {
-  try {
-    await fetch(`https://api.github.com/gists/${env.FEEDBACK_GIST_ID}`, {
+// ④发送成功后确认本批次。只写独立状态文件,不与 webhook 争写原始反馈文件。
+// 确认失败会在下一次重复投递,但不会丢消息;预览和未配置通道不改变状态。
+async function acknowledgeFeedback() {
+  if (env.FEEDBACK_GIST_ID && env.FEEDBACK_GH_PAT && (d.groupFeedbackLines?.length || tracked.merged || newBullets.length || tracked.staleTitles.length)) {
+    const r = await fetch(`https://api.github.com/gists/${env.FEEDBACK_GIST_ID}`, {
       method: 'PATCH',
       headers: { Accept: 'application/vnd.github+json', Authorization: `Bearer ${env.FEEDBACK_GH_PAT}`, 'User-Agent': 'group-digest' },
-      body: JSON.stringify({ files: { 'group-issues.json': { content: JSON.stringify({ issues: tracked.open, updatedAt: new Date().toISOString() }) } } }),
+      body: JSON.stringify({ files: { 'group-issues.json': { content: JSON.stringify({ issues: tracked.open, feedbackCursor: d.feedbackCursor, updatedAt: new Date().toISOString() }) } } }),
     })
-  } catch (e) { console.warn('[digest] group-issues.json 写入失败(下期会重复列出):', e.message) }
+    if (!r.ok) throw new Error(`反馈投递确认失败 HTTP ${r.status}(下期会重复投递)`)
+  }
+}
+
+async function send(text) {
+  // Send the complete rendered batch. A successful summary is insufficient
+  // to acknowledge raw feedback omitted by AI summarization or clipping.
+  const limit = CHANNEL === 'telegram' ? 4000 : CHANNEL === 'discord' ? 1990 : 2000
+  let used = null
+  let sequence = 0
+  for (let start = 0; start < text.length;) {
+    let end = Math.min(start + limit, text.length)
+    const last = text.charCodeAt(end - 1)
+    if (end < text.length && last >= 0xd800 && last <= 0xdbff) end--
+    used = await sendChunk(text.slice(start, end), ++sequence)
+    start = end
+  }
+  return used
 }
 d.groupFeedbackTracked = tracked
-const text = compose(d)
+// The cursor acknowledges only this fully delivered raw batch, independent
+// of AI input limits, fallback previews, or tracked-issue display priority.
+let text = compose(d)
+if (d.groupFeedbackLines?.length) {
+  const originals = d.groupFeedbackLines.map((line, i) => {
+    let message
+    try { message = JSON.parse(line) } catch { return `${i + 1}. ${line}` }
+    if (typeof message?.m !== 'string') throw new Error(`反馈第${i + 1}条缺少文本字段,原队列未确认`)
+    // Publish user text and timestamp only, never arbitrary JSONL metadata.
+    return `${i + 1}. ${typeof message.t === 'string' ? message.t : ''}\n${message.m}`
+  })
+  text += `\n\n▍本期群反馈原文(${d.groupFeedbackLines.length}条)\n` + originals.join('\n\n')
+}
+// QQ prohibits URLs; transform the complete text BEFORE splitting, preserving
+// the channel's established redaction without broken URL fragments.
+if (CHANNEL === 'qq_official') text = text.replace(/https?:\/\/\S+/g, '(链接略)')
 console.log('─────────────── 生成摘要 ───────────────')
 console.log(text)
 console.log('────────────────────────────────────────')
@@ -455,9 +495,10 @@ if (NO_SEND) {
   try {
     const used = await send(text)
     console.log(`[digest] ✅ 已通过 ${used} 投递。`)
+    await acknowledgeFeedback()
   } catch (e) {
     const hint = /40034105/.test(e.message) ? '(机器人尚未在 q.qq.com 完成审核上线,主动消息被拒;上线后自动恢复)' : /40034101/.test(e.message) ? '(机器人不在目标群)' : ''
-    console.error(`[digest] ❌ 投递失败(${CHANNEL}):`, e.message, hint)
+    console.error(`[digest] ❌ 本期同步未完成(${CHANNEL}):`, e.message, hint)
     process.exitCode = 1
   }
 }

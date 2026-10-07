@@ -85,13 +85,17 @@ try {
   }
   {
     const s = mk(2)
-    s.upsert(cand(1, { provenance: ['src-old'] }))
-    s.upsert(cand(2))
-    s.upsert(cand(3))
-    s.revokeBySource('src-old')
-    s.upsert(cand(4)) // 再挤一次，触发淘汰
+    s.upsert(cand(1)) // 比撤销目标更旧的活跃记录:淘汰顺序的对照
+    s.upsert(cand(2, { provenance: ['src-revoked'] }))
+    ok(s.query().some((f) => f.object === '值2'), '撤销目标仍在库中,没有被插入前淘汰')
+    const revoked = s.revokeBySource('src-revoked')
+    ok(revoked.ok === true && revoked.revoked === 1, 'revokeBySource 确实撤销一条现存记录')
+    const snapshot = s.snapshot({ includeRevoked: true }).facts.find((f) => f.object === '值2')
+    ok(snapshot?.revoked === true, '快照保留真实撤销标记')
+    s.upsert(cand(3)) // 超限一次:必须先删已撤销但更新的目标
     const objs = s.query().map((f) => f.object)
-    ok(!objs.includes('值1'), '★已撤销的（值1）优先被清掉')
+    const retained = s.snapshot({ includeRevoked: true }).facts.map((f) => f.object)
+    ok(!retained.includes('值2') && retained.includes('值1') && retained.includes('值3'), '★已撤销的（值2）比更老的活跃值1先被清掉')
     ok(s.size === 2, '仍收敛到上限 2')
   }
   {

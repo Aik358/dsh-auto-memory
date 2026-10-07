@@ -8,10 +8,13 @@
 //   静态哨兵覆盖：三处埋点接线、安全六条（备份/keep/checksum/merge/不带索引/不碰 sessions）。
 //
 // 零依赖（只用 node 内置 + 本仓 lib 模块）。
-import { readFileSync } from 'node:fs'
+import { readFileSync, mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs'
 import { createRequire } from 'node:module'
+import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
+import { workspaceKeyPre } from '../../lib/workspace-directory.js'
+import { loadIsolatedEngine } from '../lib/load-isolated-engine.mjs'
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 const ROOT = path.resolve(HERE, '..', '..')
@@ -34,15 +37,72 @@ const {
   MIGRATE_PACK_FORMAT_PRE,
 } = ENG
 
-console.log('\n[S1] slug 与宿主实现一致（两处不一致 ⇒ 数据写进错误目录）')
+console.log('\n[S1] 当前 slug 与宿主真实目录一致，旧 dam-pack-v1 仍兼容')
 {
-  const IX = rd('lib/index.js')
-  // 从宿主源码里取它的 slug 表达式（不硬编码）
-  const m = /'--'\s*\+\s*String\(ws\)\.replace\(\/\[([^\]]+)\]\//.exec(IX)
-  ok(Boolean(m), 'S1a 从宿主源码取到 slug 替换字符集（' + (m ? m[1] : '未取到') + '）')
-  ok(workspaceSlugPre('D:\\dsh-auto-memory') === '--D--dsh-auto-memory--', 'S1b slug 与宿主逐字一致')
-  ok(workspaceSlugPre('C:\\a b\\c') === '--C--a b-c--', 'S1c 空格与反斜杠')
+  // The wire fallback remains historical; the host supplies its actual key.
+  // Comparing a duplicated replacement expression cannot verify that boundary.
+  ok(workspaceSlugPre('D:\\dsh-auto-memory') === '--D--dsh-auto-memory--', 'S1b 旧包 slug 字节兼容')
+  ok(workspaceSlugPre('C:\\a b\\c') === '--C--a b-c--', 'S1c 旧包空格与反斜杠兼容')
   ok(workspaceSlugPre('') === '' && workspaceSlugPre(null) === '', 'S1d 空/非字符串不抛')
+  const fromWs = 'D:\\proj', toWs = 'C:\\work\\proj'
+  const sourceSlug = workspaceKeyPre(fromWs), targetSlug = workspaceKeyPre(toWs)
+  const current = buildPackPre({ ws: fromWs, sourceSlug,
+    files: { 'MEMORY.md': 'Library ' + sourceSlug, 'hub/procedures.json': JSON.stringify({ procedures: [{ workspaceRef: sourceSlug, procedureId: 'proc-preserved' }] }) } }).pack
+  ok(current.source.slug === sourceSlug, 'S1e 当前包记录宿主传入的完整 workspace key')
+  const moved = planImportPre(current, { targetWs: toWs, targetSlug })
+  ok(moved.target.slug === targetSlug && moved.writeFiles['MEMORY.md'] === 'Library ' + targetSlug,
+    'S1f 当前 SHA key 正文与目标计划归属同源')
+  const procedure = JSON.parse(moved.writeFiles['hub/procedures.json']).procedures[0]
+  ok(procedure.workspaceRef === targetSlug && procedure.procedureId === 'proc-preserved',
+    'S1g 当前 JSON workspaceRef 重写，procedureId 保持')
+  const oldSlug = workspaceSlugPre(fromWs)
+  const legacy = buildPackPre({ ws: fromWs, files: { 'MEMORY.md': 'Library ' + oldSlug } }).pack
+  const recovered = planImportPre(legacy, { targetWs: toWs, targetSlug })
+  ok(legacy.source.slug === oldSlug && recovered.writeFiles['MEMORY.md'] === 'Library ' + targetSlug,
+    'S1h 历史包旧 slug 仍可导入当前 SHA key 目录')
+  const same = rewritePackForTargetPre(current, { targetWs: fromWs, targetSlug: sourceSlug })
+  ok(same.plan.pathChanged === false && same.files['MEMORY.md'] === current.files['MEMORY.md'],
+    'S1i 当前同路径同 key 正文逐字节保持')
+
+  const home = mkdtempSync(path.join(tmpdir(), 'dam-pack-current-key-'))
+  Object.assign(process.env, { HOME: home, USERPROFILE: home, DSH_HOME: home })
+  globalThis.fetch = async () => { throw new Error('offline migrate-pack fixture') }
+  try {
+    const { MemoryEngine, DEFAULT_CONFIG } = await loadIsolatedEngine(home, ROOT)
+    const engine = new MemoryEngine()
+    engine.config = { ...DEFAULT_CONFIG, memoryRoot: path.join(home, 'memory'), userMemoryDir: path.join(home, 'user'), memoryAnchorEnabled: false, boardMode: 'graph' }
+    engine.configLoaded = true
+    engine._configPath = path.join(home, 'settings.json')
+    writeFileSync(engine._configPath, JSON.stringify(engine.config))
+    const sourceWs = path.join(home, 'source-workspace'), targetWs = path.join(home, 'target-workspace')
+    mkdirSync(sourceWs); mkdirSync(targetWs)
+    const sourceDir = engine.projectDirOf(sourceWs), targetDir = engine.projectDirOf(targetWs)
+    const hostSourceKey = engine.wsKey(sourceWs), hostTargetKey = engine.wsKey(targetWs)
+    mkdirSync(sourceDir, { recursive: true })
+    const before = 'Reference ' + hostSourceKey + '\nProject ' + sourceWs + '\n'
+    writeFileSync(path.join(sourceDir, 'MEMORY.md'), before)
+    await engine._writeSidecarIndexPre(sourceDir, { entries: [] })
+    const packPath = path.join(home, 'current.dam-pack')
+    const exported = await engine.migrateExport({ ws: sourceWs, outPath: packPath, compress: false })
+    const pack = JSON.parse(readFileSync(packPath, 'utf8'))
+    ok(exported.ok === true && pack.source.slug === hostSourceKey && path.basename(sourceDir) === hostSourceKey,
+      'S1a 实际宿主导出包 slug 与真实项目目录 key 一致')
+    const inspected = await engine.migrateInspect({ packPath, targetWs })
+    ok(inspected.ok === true && inspected.plan.target.slug === hostTargetKey && path.basename(targetDir) === hostTargetKey,
+      'S1j 实际宿主预览 target.slug 与真实目标目录 key 一致')
+    const imported = await engine.migrateImport({ packPath, targetWs, previewToken: inspected.previewToken })
+    const targetText = readFileSync(path.join(targetDir, 'MEMORY.md'), 'utf8')
+    ok(imported.ok === true && imported.targetSlug === hostTargetKey && targetText.includes(hostTargetKey) && !targetText.includes(hostSourceKey),
+      'S1k 实际宿主搬包将正文 key 写入正确当前目录')
+    ok(JSON.parse(readFileSync(path.join(targetDir, 'handoff/index.json'), 'utf8')).ws === hostTargetKey,
+      'S1l 实际宿主搬包重写派生 index.ws 工作区 key')
+    ok(readFileSync(path.join(sourceDir, 'MEMORY.md'), 'utf8') === before,
+      'S1m 实际宿主搬包保持源目录原字节')
+  } finally {
+    const resolved = path.resolve(home), tempParent = path.resolve(tmpdir())
+    if (!resolved.startsWith(tempParent + path.sep)) throw new Error('fixture cleanup outside temporary parent')
+    rmSync(resolved, { recursive: true, force: true })
+  }
 }
 
 console.log('\n[S2] 路径 4 种形态（少一种就会漏改，到 B 机变死链）')

@@ -21,9 +21,16 @@ function sliceBetween(src, a, b) {
   return src.slice(i, j)
 }
 const classic = sliceBetween(client, '    function SettingsPage() {', '    // ───────────────────────── 插件挂载')
-const genStart = client.indexOf('    // ITER5-GENERATED:BEGIN')
-assert.ok(genStart > 0, 'generated block not found')
-const gen = client.slice(genStart)
+function currentGeneratedBlock(src) {
+  // The frozen namespace embeds the same marker with six spaces. Match the current top-level pair.
+  const starts = [...src.matchAll(/^    \/\/ ITER5-GENERATED:BEGIN$/gm)]
+  const ends = [...src.matchAll(/^    \/\/ ITER5-GENERATED:END$/gm)]
+  assert.equal(starts.length, 1, 'expected one current generated block start')
+  assert.equal(ends.length, 1, 'expected one current generated block end')
+  assert.ok(ends[0].index > starts[0].index, 'generated block markers out of order')
+  return src.slice(starts[0].index, ends[0].index)
+}
+const gen = currentGeneratedBlock(client)
 const variants = sliceBetween(gen, 'function Iter5Settings(props) {', 'function Iter5Storage(props) {')
 const legacy = sliceBetween(frozen, 'function Iter5Settings(props) {', 'function Iter5Storage(props) {')
 
@@ -79,6 +86,12 @@ const fake = classic.split("activationInboxEnabled").join('__renamed_gate__')
 assert.ok(!ci(fake, 'activationInboxEnabled'), 'negative path: detector must notice a removed control')
 assert.ok(implemented.includes('activationInboxEnabled'), 'activationInboxEnabled must be among implemented keys')
 console.log('PASS negative path: detector catches a removed gate control')
+// Remove a gate only from the actual current generated block; the frozen copy must not mask it.
+const mutant = client.replace(gen, gen.split('activationInboxEnabled').join('__renamed_gate__'))
+const mutantVariants = sliceBetween(currentGeneratedBlock(mutant), 'function Iter5Settings(props) {', 'function Iter5Storage(props) {')
+assert.ok(!ci(mutantVariants, 'activationInboxEnabled'), 'negative path: current generated gate removal must be detected')
+assert.ok(ci(legacy, 'activationInboxEnabled'), 'control: frozen gate remains present')
+console.log('PASS negative path: current generated block removal is detected independently of frozen copy')
 
 
 // ---- 6) ★写入白名单一致性（D1 · 2026-09-30）----

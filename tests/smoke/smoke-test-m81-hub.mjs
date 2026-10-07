@@ -185,11 +185,20 @@ console.log('[M8-3] 默认启用守卫')
   ok(!hostSrc.includes('memoryHubEnabled: false'), '旧默认 false 已不存在')
   // 三处消费门与常开设施仍在(开关只门控消费,store 构建/restore/端点不受门控)
   ok(hostSrc.includes('if (this.config.memoryHubEnabled === true && hub && hub.stores && hub.stores.episodic)'), 'crossFeed 消费门在位')
-  // ★M8-R2（2026-09-23）：原为 2 处（喂数 hubFeedTick + 回写 hubFlushTick）。回写通路经用户拍板
-  //   整段退役（docs/internal/M8-PATHWAY-REVIEW-20260923.md §6.5）⇒ 其门控随之消失，现余 1 处。
-  //   判据不变：门控必须存在且各为「!== true 早退」；仅计数随有意移除的对象同步。
-  ok((hostSrc.match(/engine\.config\.memoryHubEnabled !== true/g) || []).length === 1,
-    'judgement 行消费门在位（回写退役后余 1 处，各 !== true 早退）')
+  // One feed owner remains after retirement of hubFlushTick. Its entry gate
+  // must still reject disabled consumption; additional checks protect awaits.
+  const feedStart = hostSrc.indexOf('const hubFeedTick = () => {')
+  const feedEnd = hostSrc.indexOf('const hubFeedTimer =', feedStart)
+  const feed = feedStart >= 0 && feedEnd > feedStart ? hostSrc.slice(feedStart, feedEnd) : ''
+  const entryEnd = feed.indexOf('const hub = engine._memoryHub')
+  const entry = entryEnd >= 0 ? feed.slice(0, entryEnd) : ''
+  ok((entry.match(/engine\.config\.memoryHubEnabled !== true/g) || []).length === 1 &&
+    /if \(engine\._disposed \|\| engine\.config\.memoryHubEnabled !== true\) return/.test(entry),
+  'judgement 单一喂数入口仍以 !== true 早退（不把 await 后复验误计为另一入口）')
+  ok(/await hubCorpusLookup\(src\)\s*if \(engine\._disposed \|\| engine\.config\.memoryHubEnabled !== true\) return/.test(feed),
+    'judgement 异步富化后复验启用状态和生命周期')
+  ok(/if \(engine\._disposed \|\| engine\.config\.memoryHubEnabled !== true\) return\s*const result = hub\.ingestJudgementRows\(enriched\)/.test(feed),
+    'judgement 实际批消费前复验启用状态和生命周期')
   ok(hostSrc.includes("memoryDir('hub')"), 'hubIo 落盘目录 hub 在位(restore 常开,不受开关门控)')
   ok(hostSrc.includes("API['memory-hub']"), 'loopback 端点 memory-hub 在位')
 }

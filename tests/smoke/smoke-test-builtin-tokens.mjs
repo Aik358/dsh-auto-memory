@@ -35,17 +35,21 @@ function definitionsOf(text, scopeStart, scopeEnd) {
   return set
 }
 function referencedTokens(cssSegment) {
-  // 返回 Map<token, hasFallback>：★判据只对「无 fallback」的引用要求必须有定义
+  // 返回 Map<token, allHaveFallback>:任意一处无 fallback 都要求有定义。
   //   （带 fallback 的 var(--x, V) 在 --x 未定义时回落到 V，属合法写法，不算缺陷 —— 60 卷 §二同规则）
   const map = new Map()
   const re = /var\(\s*(--dam-[a-z0-9-]+)\s*([,)])/g
   let m
   while ((m = re.exec(cssSegment))) {
     const hasFallback = m[2] === ','
-    if (!map.has(m[1]) || hasFallback) map.set(m[1], hasFallback ? true : (map.get(m[1]) || false))
+    map.set(m[1], (map.has(m[1]) ? map.get(m[1]) : true) && hasFallback)
   }
   return map
 }
+for (const text of ['var(--dam-missing) var(--dam-missing, red)', 'var(--dam-missing, red) var(--dam-missing)']) {
+  ok('混合 fallback 不掩盖无 fallback 引用: ' + text, referencedTokens(text).get('--dam-missing') === false)
+}
+ok('全部带 fallback 可以免定义', referencedTokens('var(--dam-missing, red) var(--dam-missing, blue)').get('--dam-missing') === true)
 
 // ── 取出追加段（dam-team / dam-skin 整块，含其之前紧邻的定义块）──
 const iTeamBegin = raw.indexOf('dam-team:begin')
@@ -79,7 +83,7 @@ const brokenRefs = referencedTokens(broken.slice(broken.indexOf('dam-team:begin'
 // ★注意：brokenRefs 是 Map ⇒ 展开后是 [token, hasFallback] entry；比较前必须 .map 取出 token
 const brokenMissing = [...brokenRefs].filter(([tk, fb]) => !fb && !brokenDefs.has(tk)).map(([tk]) => tk)
 ok('§4 ★负路径生效（删掉 --dam-warn 定义 ⇒ 无 fallback 引用变红）', brokenMissing.includes('--dam-warn'))
-ok('§4b 正路径对照：未删时该 token 不红', ![...refs].filter(([tk, fb]) => !fb && !allDefs.has(tk)).includes('--dam-warn'))
+ok('§4b 正路径对照：未删时该 token 不红', ![...refs].filter(([tk, fb]) => !fb && !allDefs.has(tk)).map(([tk]) => tk).includes('--dam-warn'))
 
 // ── §5 可复算物理量 ───────────────────────────────────────
 // ★物理量断言必须锚定【不变量】而非快照：快照每轮都会变（会导致测试变成伪红）

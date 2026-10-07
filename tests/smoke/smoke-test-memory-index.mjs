@@ -4,6 +4,7 @@
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
+import { workspaceKeyPre } from '../../lib/workspace-directory.js'
 
 process.on('uncaughtException', (e) => { console.error('\n[M3A-TEST] FATAL uncaughtException:', (e && (e.stack || e.message)) || e); process.exit(1) })
 process.on('unhandledRejection', (r) => { console.error('\n[M3A-TEST] FATAL unhandledRejection:', (r && (r.stack || r.message)) || r); process.exit(1) })
@@ -95,7 +96,9 @@ const { buildIndex, verifyRecord, coverage, splitByteLines, INDEX_MAX_FILE_BYTES
     memoryRoot, userMemoryDir: path.join(ws1, '.user-root'), projectMemoryDir: '.project-memory', externalSources: {},
   }), 'utf8')
   process.env.DSH_HOME = home
-  const keyOf = (p2) => '--' + p2.replace(/[\\/:*?"<>|]/g, '-') + '--'
+  // Current libraries use the same canonical workspace identity as the host.
+  // This fixture tests indexing, rather than claiming an ambiguous legacy owner.
+  const keyOf = workspaceKeyPre
   // 插件"今天"(dayBoundaryMinutes=450):00:00-07:30 归前一日,与引擎 memToday() 一致(跨天稳定)
   const plugToday = () => { const d = new Date(Date.now() - 450 * 60000); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0') }
   const TODAY_MD = plugToday() + '.md'

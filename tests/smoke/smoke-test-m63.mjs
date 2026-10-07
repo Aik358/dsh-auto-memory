@@ -4,6 +4,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, readdirSyn
 import { createHash } from 'node:crypto'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
+import { workspaceKeyPre } from '../../lib/workspace-directory.js'
 process.on('uncaughtException', (e) => { console.error('[M63B-TEST] FATAL:', (e && (e.stack || e.message)) || e); process.exit(1) })
 process.on('unhandledRejection', (r) => { console.error('[M63B-TEST] REJ:', r); process.exit(1) })
 globalThis.fetch = async () => ({ ok: false, status: 503, json: async () => ({}) })
@@ -24,11 +25,10 @@ async function setupHarness(opts = {}) {
     memoryRoot, userMemoryDir: path.join(ws1, 'user'), projectMemoryDir: '.project-memory',
     externalSources: {}, ...(opts.configPatch || {}) }), 'utf8')
   process.env.DSH_HOME = home
-  const keyOf = (p) => '--' + p.replace(/[\\/:*?"<>|]/g, '-') + '--'
   const aaId = 'mem_' + 'aa'.repeat(16), bbId = 'mem_' + 'bb'.repeat(16)
   const md = '<!-- memory:' + aaId + ' -->\n## 用户偏好\n- 用户偏好中文回复与分步验证,部署流程使用 pnpm build\n\n' +
     '<!-- memory:' + bbId + ' -->\n## 部署流程\n- 登录模块部署流程使用 pnpm build 与 rsync'
-  const wsFile = path.join(memoryRoot, keyOf(wsA), 'MEMORY.md')
+  const wsFile = path.join(memoryRoot, workspaceKeyPre(wsA), 'MEMORY.md')
   mkdirSync(path.dirname(wsFile), { recursive: true })
   writeFileSync(wsFile, md, 'utf8')
   const buf = readFileSync(wsFile)

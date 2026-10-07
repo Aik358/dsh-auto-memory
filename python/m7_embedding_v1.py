@@ -69,6 +69,10 @@ def config_hash(provider, model_revision, dimension):
                         'overlap': 0},
         'queryMaxTokens': QUERY_MAX_TOKENS,
     }
+    if provider in (PROVIDER_REAL, PROVIDER_REAL_INT8):
+        # Rebuild old real-provider corpus vectors after correcting specials.
+        # Hash-provider templates are unchanged and retain their fingerprint.
+        payload['embeddingTemplateVersion'] = 'single-specials-v2'
     return 'cfgh_' + sha_hex(canonical(payload).encode('utf-8'))
 
 
@@ -78,7 +82,7 @@ def chunk_id_for(memory_id, record_digest, ordinal):
          '\u0000' + str(ordinal)).encode('utf-8'))[:32]
 
 
-def chunk_record_token_ids(tokenizer, text):
+def chunk_record_token_ids(tokenizer, text, max_tokens=CHUNK_MAX_TOKENS):
     """para-512-noov over tokenizer ids; returns list of id-lists."""
     paras = []
     for p in text.split('\n'):
@@ -87,17 +91,17 @@ def chunk_record_token_ids(tokenizer, text):
             paras.append(ids)
     chunks, cur = [], []
     for ids in paras:
-        if cur and len(cur) + len(ids) <= CHUNK_MAX_TOKENS:
+        if cur and len(cur) + len(ids) <= max_tokens:
             cur.extend(ids)
             continue
         if cur:
             chunks.append(cur)
             cur = []
-        if len(ids) <= CHUNK_MAX_TOKENS:
+        if len(ids) <= max_tokens:
             cur = list(ids)
         else:
-            for i in range(0, len(ids), CHUNK_MAX_TOKENS):
-                chunks.append(ids[i:i + CHUNK_MAX_TOKENS])
+            for i in range(0, len(ids), max_tokens):
+                chunks.append(ids[i:i + max_tokens])
     if cur:
         chunks.append(cur)
     return chunks or [[]]
@@ -170,13 +174,13 @@ class BgeM3Embedder:
         return list(prefix) + body + list(suffix)
 
     def encode_ids(self, ids_list, batch_size=8):
+        """Encode raw content token IDs; add specials once within 512 total."""
         torch = self._torch
-        prefix, suffix = self._specials()
         pad = (self.tokenizer.pad_token_id if self.tokenizer.pad_token_id
                is not None else self.tokenizer.eos_token_id)
         vecs = []
         for i in range(0, len(ids_list), batch_size):
-            part = [list(prefix) + list(ids) + list(suffix)
+            part = [self.build_doc_ids(ids)
                     for ids in ids_list[i:i + batch_size]]
             maxlen = max(len(x) for x in part)
             inp = torch.full((len(part), maxlen), pad, dtype=torch.long)
@@ -208,7 +212,8 @@ class BgeM3Embedder:
         return self.encode_ids(ids_list)
 
     def chunk_and_encode(self, text):
-        id_chunks = chunk_record_token_ids(self.tokenizer, text)
+        id_chunks = chunk_record_token_ids(self.tokenizer, text,
+                                          512 - len(self.build_doc_ids([])))
         return id_chunks, self.encode_ids(id_chunks)
 
     def encode_texts(self, texts, batch_size=8):
@@ -281,13 +286,13 @@ class BgeM3OnnxInt8Embedder:
         return list(prefix) + body + list(suffix)
 
     def encode_ids(self, ids_list, batch_size=16):
+        """Encode raw content token IDs; add specials once within 512 total."""
         np = self._np
-        prefix, suffix = self._specials()
         pad = (self.tokenizer.pad_token_id if self.tokenizer.pad_token_id
                is not None else self.tokenizer.eos_token_id)
         vecs = []
         for i in range(0, len(ids_list), batch_size):
-            part = [list(prefix) + list(ids) + list(suffix)
+            part = [self.build_doc_ids(ids)
                     for ids in ids_list[i:i + batch_size]]
             maxlen = max(len(x) for x in part)
             inp = np.full((len(part), maxlen), pad, dtype=np.int64)
@@ -314,7 +319,8 @@ class BgeM3OnnxInt8Embedder:
         return self.encode_ids(ids_list)
 
     def chunk_and_encode(self, text):
-        id_chunks = chunk_record_token_ids(self.tokenizer, text)
+        id_chunks = chunk_record_token_ids(self.tokenizer, text,
+                                          512 - len(self.build_doc_ids([])))
         return id_chunks, self.encode_ids(id_chunks)
 
     def encode_texts(self, texts, batch_size=16):

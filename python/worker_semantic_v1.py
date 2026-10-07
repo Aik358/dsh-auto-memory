@@ -307,12 +307,13 @@ class SemanticWorker(base.Worker):
         for rec in entry['records']:
             if real:
                 # audit fix P0: real provider embeds TOKEN IDS from the model
-                # tokenizer directly (chunk_record_token_ids -> build_doc_ids
-                # -> encode_ids); never decode->re-encode drift, and
+                # tokenizer directly (chunk_record_token_ids -> encode_ids);
+                # the embedder alone adds specials, never decode->re-encode drift, and
                 # encode_texts exists on both providers but the id path is
                 # the canonical one for corpus building.
                 id_chunks = emb.chunk_record_token_ids(self.embedder.tokenizer,
-                                                       rec.get('text') or '')
+                                                       rec.get('text') or '',
+                                                       512 - len(self.embedder.build_doc_ids([])))
                 texts = [self.embedder.tokenizer.decode(ids, skip_special_tokens=True)
                          for ids in id_chunks]
                 for ordinal, (ids, ctext) in enumerate(zip(id_chunks, texts)):
@@ -333,7 +334,7 @@ class SemanticWorker(base.Worker):
                         'occurredAt': rec.get('occurredAt'),
                         'excerpt': (ctext[:160] + '…') if len(ctext) > 160 else ctext,
                     })
-                    encode_items.append(self.embedder.build_doc_ids(ids))
+                    encode_items.append(ids)
             else:
                 texts = self._chunk_texts_for(rec.get('text') or '')
                 for ordinal, ctext in enumerate(texts):
@@ -1364,10 +1365,10 @@ def run_loop(worker):
                                  'sentAt': obj.get('sentAt', 0)}
         except (UnicodeDecodeError, ValueError):
             obj = None
-        # P13:recall_rank(JS→PY 新请求类型)在 base.envelope_shape_ok 的 JS_TYPES 白名单外,
-        # 在此显式放行(其余字段仍按协议帧校验);handler 在 SemanticWorker.handle_frame 拦截。
-        obj_type_ok = isinstance(obj, dict) and obj.get('type') == 'recall_rank'
-        if not isinstance(obj, dict) or not (obj_type_ok or base.envelope_shape_ok(obj)):
+        # recall_rank extends only the type whitelist; retain every envelope
+        # field/type check before epoch lookup and dispatch.
+        envelope = dict(obj, type='health') if isinstance(obj, dict) and obj.get('type') == 'recall_rank' else obj
+        if not base.envelope_shape_ok(envelope):
             out.write((base.dumps(worker.error_frame(req_for_error,
                                                      'invalid-envelope')) + '\n').encode('utf-8'))
             out.flush()

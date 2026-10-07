@@ -5,6 +5,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, readdirSyn
 import { createHash } from 'node:crypto'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
+import { workspaceKeyPre } from '../../lib/workspace-directory.js'
 process.on('uncaughtException', (e) => { console.error('[M43-TEST] FATAL:', (e && (e.stack || e.message)) || e); process.exit(1) })
 process.on('unhandledRejection', (r) => { console.error('[M43-TEST] REJ:', r); process.exit(1) })
 globalThis.fetch = async () => ({ ok: false, status: 503, json: async () => ({}) })
@@ -57,7 +58,7 @@ async function setupHarness(opts = {}) {
   process.env.DSH_HOME = home
   // 语料:用户级 + workspace MEMORY.md(anchored)
   const userMem = makeShadow(memoryRoot, 'user-MEMORY.md', 'mem_' + 'aa'.repeat(16), '用户偏好', '- 用户偏好中文回复与分步验证,部署流程使用 pnpm build')
-  const wsMem = makeShadow(memoryRoot, keyOf(wsA) + '/MEMORY.md', 'mem_' + 'bb'.repeat(16), '部署流程', '- 登录模块部署流程使用 pnpm build 与 rsync')
+  const wsMem = makeShadow(memoryRoot, workspaceKeyPre(wsA) + '/MEMORY.md', 'mem_' + 'bb'.repeat(16), '部署流程', '- 登录模块部署流程使用 pnpm build 与 rsync')
   const sideDir = path.join(home, 'memory', 'index', 'files')
   userMem.writeSidecarTo(sideDir)
   wsMem.writeSidecarTo(sideDir)
@@ -93,7 +94,6 @@ async function setupHarness(opts = {}) {
   const toolCallEvent = (seq) => ({ type: 'tool/call', seq, time: Date.now(), data: { turn: 1, step: seq, callId: 'c' + seq, name: 'bash', arguments: 'x' } })
   return { ws1, home, sideDir, memoryRoot, wsA, agent, fire, dbg, cfgPost, userMem, wsMem, settle: async () => { for (const s of effectSetups) { try { const td = await s(); if (typeof td === 'function') await td() } catch (_) {} } }, cleanup: () => { try { rmSync(ws1, { recursive: true, force: true }) } catch (_) {} } }
 }
-function keyOf(p) { return '--' + p.replace(/[\\/:*?"<>|]/g, '-') + '--' }
 // cleanup 内部不能有顶层 await——改用同步 settle 包装
 function settleSync(harness) { /* effectSetups teardown 在各测试尾部单独处理 */ }
 

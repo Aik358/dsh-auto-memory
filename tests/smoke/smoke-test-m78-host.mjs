@@ -11,6 +11,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, existsSync
 import { createHash } from 'node:crypto'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
+import { workspaceKeyPre } from '../../lib/workspace-directory.js'
 import { fileURLToPath } from 'node:url'
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 process.on('uncaughtException', (e) => { console.error('[M78-TEST] FATAL:', (e && (e.stack || e.message)) || e); process.exit(1) })
@@ -25,7 +26,6 @@ function eq(a, b, name) { ok(JSON.stringify(a) === JSON.stringify(b), name) }
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
 function canonicalizePath(p) { return path.resolve(p).replace(/\\/g, '/').toLowerCase() }
-function keyOf(p) { return '--' + p.replace(/[\\/:*?"<>|]/g, '-') + '--' }
 
 async function setupHarness(opts = {}) {
   const ws1 = mkdtempSync(path.join(tmpdir(), 'dam-m78-'))
@@ -41,7 +41,7 @@ async function setupHarness(opts = {}) {
   const aaId = 'mem_' + 'aa'.repeat(16), bbId = 'mem_' + 'bb'.repeat(16)
   const md = '<!-- memory:' + aaId + ' -->\n## 用户偏好\n- 用户偏好中文回复与分步验证,部署流程使用 pnpm build\n\n' +
     '<!-- memory:' + bbId + ' -->\n## 部署流程\n- 登录模块部署流程使用 pnpm build 与 rsync'
-  const wsFile = path.join(memoryRoot, keyOf(wsA), 'MEMORY.md')
+  const wsFile = path.join(memoryRoot, workspaceKeyPre(wsA), 'MEMORY.md')
   mkdirSync(path.dirname(wsFile), { recursive: true }); writeFileSync(wsFile, md, 'utf8')
   const buf0 = readFileSync(wsFile); const p0 = parseAnchors(buf0)
   const records0 = p0.records.filter((r) => r.kind === 'anchored').map((r) => ({

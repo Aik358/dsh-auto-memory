@@ -28,8 +28,13 @@ async function fixture(anchor = true) {
   engine.config = { ...DEFAULT_CONFIG, memoryAnchorEnabled: anchor, memoryRoot: alias, userMemoryDir: path.join(dir, 'user'), boardMode: 'graph' }
   engine.configLoaded = true
   await fs.writeFile(engine._configPath, JSON.stringify(engine.config))
-  const project = engine.projectDirOf(path.join(dir, 'workspace'))
-  const relative = path.relative(alias, project), physicalProject = path.join(real, relative), outsideProject = path.join(outside, relative)
+  const admittedProject = engine.projectDirOf(path.join(dir, 'workspace'))
+  const relative = path.relative(real, boundary.resolvePhysicalTarget(admittedProject))
+  assert.equal(path.isAbsolute(relative), false)
+  assert.equal(relative.split(path.sep).includes('..'), false)
+  const project = path.join(alias, relative), physicalProject = path.join(real, relative), outsideProject = path.join(outside, relative)
+  assert.notEqual(project, physicalProject)
+  assert.notEqual(outsideProject, physicalProject)
   await fs.mkdir(project, { recursive: true }); await fs.mkdir(outsideProject, { recursive: true })
   const file = path.join(project, 'MEMORY.md'), physicalFile = path.join(physicalProject, 'MEMORY.md'), outsideFile = path.join(outsideProject, 'MEMORY.md')
   await fs.writeFile(file, originalText); await fs.writeFile(outsideFile, originalText)
