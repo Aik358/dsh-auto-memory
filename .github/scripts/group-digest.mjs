@@ -48,6 +48,28 @@ const clip = (s, n) => {
 const daysSince = (iso) => (Date.now() - new Date(iso).getTime()) / 86400000
 const feedbackKey = (line) => createHash('sha256').update(line).digest('hex')
 
+function feedbackStart(lines, cursor) {
+  if (Number.isInteger(cursor?.count) && cursor.count >= 0 && cursor.count <= lines.length &&
+      feedbackKey(lines.slice(0, cursor.count).join('\n')) === cursor.prefixHash) return cursor.count
+  // The webhook retains a 400-row ring. Match the surviving acknowledged
+  // suffix to the current prefix instead of replaying the ring on every append.
+  // Hash whole rows (including producer occurrence IDs), never deduplicate text.
+  const acknowledged = cursor?.version === 2 && Array.isArray(cursor.acknowledgedHashes) &&
+    cursor.acknowledgedHashes.length <= 400 && cursor.acknowledgedHashes.every((key) => /^[a-f0-9]{64}$/.test(key))
+    ? cursor.acknowledgedHashes : []
+  const current = lines.slice(0, acknowledged.length).map(feedbackKey)
+  let overlap = 0
+  for (let size = 1; size <= Math.min(acknowledged.length, current.length); size++) {
+    if (acknowledged.slice(-size).every((key, i) => key === current[i])) {
+      // Legacy identical rows can admit several positions. Replay when the
+      // occurrence cannot be proved, rather than acknowledging an unsent row.
+      if (overlap) return 0
+      overlap = size
+    }
+  }
+  return overlap
+}
+
 async function fetchJson(url, opts = {}) {
   const res = await fetch(url, opts)
   const text = await res.text()
@@ -147,14 +169,16 @@ async function collect() {
       if (content) {
         const lines = content.split('\n').map((l) => l.trim()).filter((l) => l && !l.startsWith('<!--'))
         const cursor = out.feedbackCursor
-        // Prefix identity + offset distinguish identical consecutive messages.
-        // A rotated/edited file fails the prefix check and is replayed safely.
-        const start = Number.isInteger(cursor?.count) && cursor.count >= 0 && cursor.count <= lines.length &&
-          feedbackKey(lines.slice(0, cursor.count).join('\n')) === cursor.prefixHash ? cursor.count : 0
+        const start = feedbackStart(lines, cursor)
         out.groupFeedbackLines = lines.slice(start, start + 120)
         if (out.groupFeedbackLines.length) {
           const count = start + out.groupFeedbackLines.length
-          out.feedbackCursor = { count, prefixHash: feedbackKey(lines.slice(0, count).join('\n')) }
+          out.feedbackCursor = {
+            version: 2,
+            count,
+            prefixHash: feedbackKey(lines.slice(0, count).join('\n')),
+            acknowledgedHashes: lines.slice(Math.max(0, count - 400), count).map(feedbackKey),
+          }
         }
         console.log(`[digest] 群反馈待投递消息 ${out.groupFeedbackLines.length} 条(原始文件只读)`)
       }

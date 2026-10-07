@@ -5,7 +5,7 @@
  * 职责:接收 QQ 开放平台 HTTP 事件回调(op=13 URL 验证 + GROUP_AT_MESSAGE_CREATE)
  *   ① 命中反馈触发词/问题关键词的消息 → 追加进 GitHub Gist(group-feedback.jsonl)→ @ 消息回「已记录」
  *   ② 其他 @ 消息 → 配了 LLM_API_KEY 就让大模型被动回复,没配则沉默
- *   ※ 不再自动建 GitHub issue;日报时由 group-digest.mjs 读 gist、AI 归纳成问题清单后清空
+ *   ※ 不再自动建 GitHub issue;日报读取 gist、归纳并确认独立消费游标,原始反馈保留最近 400 条
  *
  * 环境变量:QQ_APP_ID / QQ_APP_SECRET / QQ_GROUP_OPENID / GH_TOKEN(需 Gists 读写)/
  *          GIST_ID(收集文件的 gist)/ REPO(备用)/
@@ -302,6 +302,11 @@ async function gistAppend(line) {
   // 2026-09-13 修复:反馈一律写进**钉死的文件名** group-feedback.jsonl(PATCH 到不存在的文件名会自动创建)。
   // 旧实现取「gist 里第一个文件」——raw-debug 文件先建/清空后文件被删,第一个文件就会换人,
   // 反馈与原始调试混写(实测 14:29 的反馈行混进了 group-raw-debug.txt)。
+  const message = JSON.parse(line)
+  if (!message || typeof message !== 'object' || Array.isArray(message)) throw new Error('反馈必须为 JSON 对象')
+  // Each append is a distinct occurrence, even when timestamp/text are equal.
+  // Generate the identity here; incoming metadata cannot choose or reuse it.
+  line = JSON.stringify({ ...message, feedbackId: crypto.randomUUID() })
   const r0 = await gh(`/gists/${CFG.gistId}`)
   if (!r0.ok) throw new Error(`读 gist 失败 ${r0.status}`)
   const prev = (r0.body.files[FEEDBACK_FILE]?.content || '').split('\n').filter(Boolean)
