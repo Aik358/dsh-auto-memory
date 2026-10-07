@@ -21,7 +21,7 @@ try {
   await fs.writeFile(engine._configPath, JSON.stringify(engine.config))
   const migrate = engine.migrateLegacy.bind(engine), mutation = engine._withMemoryMutationPre.bind(engine)
   engine.migrateLegacy = async (...args) => { waitingRefresh.resolve(); await resumeRefresh.promise; return migrate(...args) }
-  engine._withMemoryMutationPre = (file, job, admission) => mutation(file, async () => { enteredMutation.resolve(); return job() }, admission)
+  engine._withMemoryMutationPre = (file, job, admission) => mutation(file, async physicalTarget => { enteredMutation.resolve(); return job(physicalTarget) }, admission)
   fs.rename = async (from, to) => {
     const result = await originalRename(from, to)
     if (to === engine._configPath) committedConfig.resolve()

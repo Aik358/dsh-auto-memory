@@ -148,7 +148,8 @@ try {
   //   「index.js 委托公共工具 + 公共工具真有该实现」——改回字面比较仍必红。
   ck('_canonPath 存在（委托公共工具）',
     /_canonPath\(p\) \{ return canonPath\(p\) \}/.test(idx)
-    && /import \{ canonPath, pathKey, fileWithinRoots \} from '\.\/file-boundary\.js'/.test(idx)
+    && ['canonPath', 'pathKey', 'fileWithinRoots'].every(name =>
+      (idx.match(/import \{([^}\n]+)\} from '\.\/file-boundary\.js'/)?.[1] || '').split(',').map(value => value.trim()).includes(name))
     && /export function canonPath\(p\) \{/.test(boundarySrc))
   // ★C-1b（PR#237 后端拆取）判据随源码演进：cwd 比较由 `_canonPath` 升为 `_pathKey`
   //   （= _canonPath + win32 小写化）。**判据意图不变**：仍钉住「不再走 path.resolve 字面比较」这一防回流语义。

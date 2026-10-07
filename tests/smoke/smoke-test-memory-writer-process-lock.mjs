@@ -12,10 +12,13 @@ const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
 
 if (process.argv[2] === '--writer') {
   const [file, mode, label, sidecarDir] = process.argv.slice(3)
+  // Actual document IO now uses the admitted physical spelling. Match it and
+  // the old spelling so the same snapshot barrier still tests both versions.
+  const physicalFile = await fs.realpath(file)
   let reads = 0
   const api = { ...fs, async readFile(target, ...args) {
     const value = await fs.readFile(target, ...args)
-    if (target === file && ++reads === (mode === 'raw' ? 2 : 1)) {
+    if ((target === file || target === physicalFile) && ++reads === (mode === 'raw' ? 2 : 1)) {
       process.send({ phase: 'snapshot' })
       await new Promise(resolve => process.once('message', resolve))
     }
