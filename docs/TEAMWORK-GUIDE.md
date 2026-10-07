@@ -132,12 +132,24 @@
 | 端到端加密 | **未实装**（`teamE2E` 只做「声明不可用」的明示，不加密数据） |
 | 多端成员可见性 | 本机只见自己；多成员需服务端 upsert 后可见 |
 | 团队皮肤分发 | 支持：放 `~/.dsh/memory/skins/team-<teamId>/`，作为团队层覆盖个人（见 SKIN-GUIDE / skins/README.md） |
+| 下行重试与重放 | 暂时 IO/锁失败保留游标；未装配的类型记录拒绝后允许分页继续。`fact-store.js` 在同一事务提交事实/冲突与事件回执，重启或全量重拉跳过已处理事件 |
+| 回执保留 | `teamReceipts` 随事实快照保存，当前不自动过期，大小随成功事件数增长。不能只按数量或时间截断：游标重置后旧事件可能重放并重复创建冲突 |
+
+维护同步代码时，`brief-sync.js` 统一处理简报水位、待发补入和旧格式读取；
+`process-file-lock.js` 统一处理物理路径与跨进程锁获取。配置锁保留同步拒绝与异步可重入规则，
+共享状态锁保留异步等待规则；两者使用相同的 `.lock` / `.lock.acquire` 协议。
+
+安全清理回执需要服务端提供稳定事件身份、明确的历史重放下限，以及与本地数据原子提交的持久游标。
+客户端只有确认服务端不会再交付已清理区间，且全量重拉遵守同一下限，才能移除对应回执。
+当前协议没有这些保证；无身份的旧协议按游标、页内位置和内容去重，只覆盖稳定原页的重放。
 
 ---
 
 ## 9. 验收与守卫
 
 - `tests/smoke/smoke-test-team-routes.mjs`：10 条路由真执行 + API 表计数锁。
+- `smoke-test-team-retry-regressions.mjs`：忙锁补发、重启恢复、旧水位迁移、分页、回执原子回滚与跨进程重放。
+- `smoke-test-config-transactions.mjs`：配置/共享状态接口互斥，配置并发保存、迁移、路径别名与死进程恢复。
 - `smoke-test-r17-dual-surface.mjs`：两个承载面（会话页/浮层）数据同源 + 单机态一致。
 - `smoke-test-r29-team-layer.mjs`：`teamFromState` 门控（无 state ⇒ null；单机 ⇒ localOnly 本机态）。
 - `smoke-test-l3-team.mjs`：团队段零字面色值（§9.2）+ 复用既有定时器（零新增 setInterval）。

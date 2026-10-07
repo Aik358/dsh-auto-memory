@@ -23,6 +23,7 @@ import { fork, spawn } from 'node:child_process'
 import { once } from 'node:events'
 import { fileURLToPath } from 'node:url'
 import { withConfigLock, withConfigLockSync } from '../../lib/config-lock.js'
+import { withSharedStateLock } from '../../lib/shared-state-lock.js'
 import { directoryLink, probeFileSymlinks, unprovenFileLink } from '../lib/link-fixture.mjs'
 
 const root = await mkdtemp(path.join(tmpdir(), 'dam-config-transactions-'))
@@ -60,6 +61,17 @@ function call(child, payload, timeoutMs = 20000) {
 const save = (child, patch) => call(child, { op: 'save', patch })
 try {
   const fileSymlinks = probeFileSymlinks(root)
+  // Both interfaces must contend on the same physical protocol while keeping
+  // their own timeout/reentrancy behavior, including directory aliases.
+  await withSharedStateLock(file, async () => {
+    assert.throws(() => withConfigLockSync(file, () => {}), { code: 'CONFIG_LOCK_BUSY' })
+    await assert.rejects(withConfigLock(file, async () => {}, { timeoutMs: 40 }), /config-lock-timeout/)
+  })
+  await withConfigLock(file, async () => {
+    await assert.rejects(withSharedStateLock(file, async () => {}, { timeoutMs: 40 }), /state-lock-timeout/)
+  })
+  assert.equal(withConfigLockSync(file, () => 'released'), 'released')
+  console.log('PASS: shared-state/config interfaces mutually exclude and release')
   const { MemoryEngine, flushDiagnostics } = await import('../lib/audit-engine.mjs')
 
   /* ── ① 两个独立进程并发保存互不相关字段（20 轮） ── */

@@ -360,7 +360,7 @@ ok(damNoMixedEol(SRC), 'E2 纯 CRLF')
 // Keep the existing whole-host LF-normalized SHA16 guard; refresh only reviewed bytes.
 // 2026-10-07: reviewed subagent disposal checks, engine-owned cancellation,
 // and fallback/result lifetime checks; offline lifecycle regressions cover them.
-eq(createHash('sha256').update(IX).digest('hex').slice(0, 16).toUpperCase(), '0BEC93B3E0A70926', 'E3 reviewed host baseline (2026-10-07 durable brief retry and remote fact receipts)')
+eq(createHash('sha256').update(IX).digest('hex').slice(0, 16).toUpperCase(), '3595370533BC2CD7', 'E3 reviewed host baseline (2026-10-07 brief sync module extraction; retry semantics preserved)')
 // ★2026-09-28 计数演进：67→68（新增 skin-library-fetch，见 E3 同批）。语义保留：仍锁路由数不漂移。
 eq(cnt(IX, "path: API[") + cnt(IX, 'path: API.'), 71, 'E4 ★路由数守恒 = 71（2026-10-04 issue #211 /python-setup/uninstall +1；2026-09-28 皮肤库 +1；2026-10-01 /global-brief +1；2026-10-02 审计修复批 #174 /team-control +1；其余零新增）')
 console.log('lib/client.js ' + Buffer.byteLength(SRC, 'utf8') + 'B / CRLF ' + (SRC.match(/\r\n/g) || []).length + ' / sha16 ' + createHash('sha256').update(SRC).digest('hex').slice(0, 16).toUpperCase())

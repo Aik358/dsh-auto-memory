@@ -1,4 +1,6 @@
 import fs from 'node:fs/promises'
+import fsApi from 'node:fs'
+import { syncBuiltinESMExports } from 'node:module'
 import path from 'node:path'
 import os from 'node:os'
 import assert from 'node:assert/strict'
@@ -73,6 +75,32 @@ try {
   await fs.unlink(readme)
   assert(engine.external.briefDetectSyncPre(), 'deletion with an empty watch set still detects')
   assert.equal(box.size(), 1)
+  await box.flush(async () => ({ ok: true }))
+
+  // A failed first commit must leave both watermark and outbox untouched.
+  const before = await fs.readFile(wmFile, 'utf8')
+  await fs.writeFile(readme, 'synthetic commit failure fixture')
+  await fs.mkdir(wmFile + '.tmp')
+  assert.equal(engine.external.briefDetectSyncPre(), '')
+  assert.equal(await fs.readFile(wmFile, 'utf8'), before)
+  assert.equal(box.size(), 0)
+  await fs.rmdir(wmFile + '.tmp')
+  // Fail only acknowledgement replacement after the first durable commit.
+  // The next detection must recover the retained event without another brief.
+  const rename = fsApi.renameSync
+  let replaces = 0
+  fsApi.renameSync = (from, to) => {
+    if (to === wmFile && ++replaces === 2) throw Error('synthetic acknowledgement failure')
+    return rename(from, to)
+  }
+  syncBuiltinESMExports()
+  try { assert(engine.external.briefDetectSyncPre()) }
+  finally { fsApi.renameSync = rename; syncBuiltinESMExports() }
+  assert.equal((await pending()).length, 1, 'failed acknowledgement preserves durable pending event')
+  assert.equal(box.size(), 1)
+  assert.equal(engine.external.briefDetectSyncPre(), '')
+  assert.equal((await pending()).length, 0)
+  assert.equal(box.size(), 1, 'recovery keeps one latest event per path')
   await box.flush(async () => ({ ok: true }))
 
   const fact = { scope: 'Workspace', subject: 'fixture project', predicate: 'uses', object: 'synthetic compiler', sourceKind: 'explicit', provenance: ['mem_' + '1'.repeat(32)] }
