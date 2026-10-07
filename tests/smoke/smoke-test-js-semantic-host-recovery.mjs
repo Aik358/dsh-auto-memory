@@ -42,7 +42,13 @@ function fixture() {
   process.env.DSH_HOME = path.join(dir, 'home')
   mkdirSync(pluginDir, { recursive:true }); mkdirSync(peer, { recursive:true }); mkdirSync(path.dirname(asset), { recursive:true })
   writeFileSync(asset, 'offline fixture only')
-  const control = value => writeFileSync(controlFile, JSON.stringify(value))
+  // The child polls this file while initialization is paused. Publish a whole
+  // JSON value atomically; truncating the live file can invent a peer failure.
+  const control = value => {
+    const tmp = controlFile + '.tmp'
+    writeFileSync(tmp, JSON.stringify(value))
+    renameSync(tmp, controlFile)
+  }
   control({})
   writeFileSync(path.join(peer, 'package.json'), JSON.stringify({name:'@huggingface/transformers',type:'module',main:'./index.js',exports:{'.':'./index.js'}}))
   writeFileSync(path.join(peer, 'index.js'), `
