@@ -1,5 +1,7 @@
 # 2026-10-07 审计问题修复记录
 
+本页保存首次交付 `99b18cd/e9aa0b1` 的历史证据。后续剩余失败项修复、OCR 新发现的 #263/#264 及其独立闭环见 [PR #262 OCR 复审记录](PR262-OCR-REVIEW-20261007.md)。最终全量结果与 Ready 状态以 [PR #262](https://github.com/Aik358/dsh-auto-memory/pull/262) 的精确提交记录为准。
+
 ## 身份与范围
 
 基线7c0d61441ee4685bd9683fd05ca7ffcd7612f1ff：upstream main828050056cf053c53fb2c237706f6e89c7baef09，加#240/#242/#243/#244/#245/#246/#247的固定未合并PR头。修复范围为 [#248](https://github.com/Aik358/dsh-auto-memory/issues/248)–[#261](https://github.com/Aik358/dsh-auto-memory/issues/261) 共14个已发布issue。修复以草稿候选交付；没有远端合并、部署或关闭issue。原dirty checkout的tracked diff SHA256开始/复核相同。
