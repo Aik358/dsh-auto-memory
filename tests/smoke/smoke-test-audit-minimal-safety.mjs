@@ -109,6 +109,61 @@ async function maintenance() {
   await engine.maintain(30)
   assert.ok(!fs.existsSync(source), 'unchanged, fully archived log should still be deleted')
   assert.ok(fs.readFileSync(path.join(projectDir, 'archive/2020-01-01.md'), 'utf8').includes(amendment))
+
+  // Two independent engines can overlap; the engine-local single-flight map
+  // does not protect the archive from a stale snapshot in the other engine.
+  fs.writeFileSync(source, '## Original log\n- Original archived fact.\n')
+  const other = new mod.MemoryEngine()
+  other.configLoaded = true
+  other.config = { ...engine.config }
+  other.resolvePaths = engine.resolvePaths
+  for (const e of [engine, other]) {
+    e._subagents = {}
+    e.runSubagent = async () => '### Stable summary\n- Original reusable fact.'
+  }
+  const archiveFile = path.join(projectDir, 'archive/2020-01-01.md')
+  let signalPaused, signalResume, signalArchived
+  const paused = new Promise(r => { signalPaused = r })
+  const resume = new Promise(r => { signalResume = r })
+  const archiveDone = new Promise(r => { signalArchived = r })
+  const write = engine.writeFull.bind(engine)
+  engine.writeFull = async (file, text) => {
+    if (file === archiveFile) { signalPaused(); await resume }
+    const result = await write(file, text)
+    if (file === archiveFile) signalArchived()
+    return result
+  }
+  const appendOther = other.appendText.bind(other)
+  other.appendText = async (file, text) => {
+    const result = await appendOther(file, text)
+    if (file === notesPath) { signalResume(); await archiveDone }
+    return result
+  }
+  const agent = { session: { id: 'isolated-overlapping-maintain' } }
+  const first = engine.maintain(30, agent)
+  await paused
+  let acknowledgedSecond = false
+  const secondAppend = appendOther(source, '\n- ' + amendment + '\n').then(result => {
+    acknowledgedSecond = result.includes(amendment)
+  })
+  // Old code admits the append and second archive while the stale writer is
+  // paused. Shared archive publication defers the writer until release.
+  const admittedEarly = await Promise.race([secondAppend.then(() => true), new Promise(r => setTimeout(() => r(false), 80))])
+  if (!admittedEarly) signalResume()
+  await secondAppend
+  await Promise.all([first, other.maintain(30, agent)])
+  assert.ok(acknowledgedSecond)
+  assert.ok(fs.readFileSync(archiveFile, 'utf8').includes(amendment), 'overlapping maintainer replaced newer archive and deleted its source')
+  engine.writeFull = write
+  // A changed archive also invalidates deletion even with an unchanged source.
+  fs.writeFileSync(source, '## Original log\n- Original archived fact.\n')
+  engine.appendText = async (file, text) => {
+    const result = await append(file, text)
+    if (file === notesPath) await engine.writeFull(archiveFile, '## Updated archive\n- New archive content.\n')
+    return result
+  }
+  await engine.maintain(30, agent)
+  assert.ok(fs.existsSync(source), 'maintenance deleted the source after its archive changed')
 }
 
 async function outbox() {
