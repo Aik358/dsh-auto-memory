@@ -81,16 +81,21 @@ async function migration() {
 }
 
 async function maintenance() {
-  const home = dir('maintenance')
+  for (const anchored of [false, true]) await maintenanceMode(anchored)
+}
+
+async function maintenanceMode(anchored) {
+  const name = 'maintenance-' + anchored
+  const home = dir(name)
   const mod = await loadIsolatedEngine(home, repo)
   flushDiagnostics = mod.flushDiagnostics
-  const projectDir = dir('maintenance/project'), userDir = dir('maintenance/user')
+  const projectDir = dir(name + '/project'), userDir = dir(name + '/user')
   const notesPath = path.join(projectDir, 'MEMORY.md'), source = path.join(projectDir, '2020-01-01.md')
   fs.writeFileSync(notesPath, '## Existing notes\n- Original reusable fact.\n')
   fs.writeFileSync(source, '## Existing log\n- Original archived fact.\n')
   const engine = new mod.MemoryEngine()
   engine.configLoaded = true
-  engine.config = { ...engine.config, handoffEnabled: false, associativeMemoryEnabled: false, userMemoryDir: userDir, memoryRoot: home }
+  engine.config = { ...engine.config, memoryAnchorEnabled: anchored, handoffEnabled: false, associativeMemoryEnabled: false, userMemoryDir: userDir, memoryRoot: home }
   engine.resolvePaths = async () => ({ ws: projectDir, projectDir, userDir, notesPath })
   const append = engine.appendText.bind(engine)
   let acknowledged = false
@@ -129,9 +134,8 @@ async function maintenance() {
   const write = engine.writeFull.bind(engine)
   engine.writeFull = async (file, text) => {
     if (file === archiveFile) { signalPaused(); await resume }
-    const result = await write(file, text)
-    if (file === archiveFile) signalArchived()
-    return result
+    try { return await write(file, text) }
+    finally { if (file === archiveFile) signalArchived() }
   }
   const appendOther = other.appendText.bind(other)
   other.appendText = async (file, text) => {
@@ -164,6 +168,39 @@ async function maintenance() {
   }
   await engine.maintain(30, agent)
   assert.ok(fs.existsSync(source), 'maintenance deleted the source after its archive changed')
+
+  // An independent writer of the archive may join the document queue while
+  // the maintainer is reading its source. It must succeed without waiting for
+  // a config-lock timeout or making the maintainer wait on its own successor.
+  engine.appendText = append
+  other.appendText = appendOther
+  const boundary = engine._withMemoryMutationPre.bind(engine)
+  let signalReading, signalReadResume, intercepted = false
+  const reading = new Promise(r => { signalReading = r })
+  const readResume = new Promise(r => { signalReadResume = r })
+  engine._withMemoryMutationPre = (file, job, admission) => boundary(file, async physicalFile => {
+    if (file === source && !intercepted) { intercepted = true; signalReading(); await readResume }
+    return job(physicalFile)
+  }, admission)
+  const maintenanceFlight = engine.maintain(30, agent)
+  await reading
+  const writer = other.writeFull(archiveFile, '## Independent archive edit\n- Archive correction.\n')
+  // Allow the queue predecessor to request its lock in the negative control.
+  await new Promise(r => setTimeout(r, 40))
+  signalReadResume()
+  let deadline
+  try {
+    const outcome = await Promise.race([
+      Promise.allSettled([maintenanceFlight, writer]),
+      new Promise((_, reject) => { deadline = setTimeout(() => reject(Error('archive queue/config lock-order stall')), 3000) })
+    ])
+    assert.ok(outcome.every(r => r.status === 'fulfilled'), 'legitimate concurrent archive writer failed')
+    assert.ok(fs.existsSync(source), 'edited archive must keep the unarchived source')
+  } finally {
+    clearTimeout(deadline)
+    await Promise.allSettled([maintenanceFlight, writer])
+    engine._withMemoryMutationPre = boundary
+  }
 }
 
 async function outbox() {
