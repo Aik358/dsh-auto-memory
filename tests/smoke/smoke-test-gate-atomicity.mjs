@@ -117,25 +117,79 @@ for (const g of gates) {
  * 正解：**按字段配对** —— 对每个闸门字段，断言「存在释放该字段的行」，
  *       且释放行数 ≥ 该字段的占位行数（多占位必须多释放，否则泄漏）。 */
 console.log('\n【判据 C】按字段配对：每个闸门的占位都必须有释放')
-for (const g of gates) {
-  const ph = placeholders.filter((p) => p.field === g.field && p.line > g.line)
-  const rel = releases.filter((r) => r.field === g.field && r.line > g.line)
-  // 释放器形态（本轮修法）：_wbReleaseInflight 是幂等函数，字段级释放体现为函数体内的 Math.max
-  const relFn = raw.includes(g.field.replace('_', '_')) && new RegExp('[Rr]elease[\\w$]*\\s*=').test(raw)
-  ck({
-    name: `${g.field} 占位与释放配对`,
-    ok: rel.length >= ph.length || relFn,
-    detail: `占位 ${ph.length} 处 / 直接释放 ${rel.length} 处 / 释放器存在=${relFn}`,
-  })
-}
-// 全局守恒：每个闸门字段都必须能被释放（否则闸门永久卡死）
-for (const f of [...new Set(gates.map((g) => g.field))]) {
-  const hasDirect = releases.some((r) => r.field === f)
-  const hasFn = new RegExp('[Rr]elease[\\w$]*\\s*=\\s*(\\(|function)').test(raw)
-  // 说明：_subagentInflight 走幂等释放器；其余走 finally 内直接复位
-  ck({ name: `★${f} 存在释放路径`, ok: hasDirect || hasFn, detail: `直接=${hasDirect} 释放器=${hasFn}` })
+/* ★#267 修法（2026-10-08）：释放配对必须**按字段绑定** ——
+ *   旧判据只要求「字段名出现 + 全文件存在任意 `…Release… =` 赋值」⇒ 删掉某字段的释放
+ *   仍能靠**别的字段**的释放器蒙混过关（报告者离线复现：删 `_wbRotateBusy` 释放后套件仍全绿）。
+ *   新判据两条、都必须**逐字段**成立：
+ *     ① 该字段有**同名字段**的直接复位（`this._f = false/null/0/Math.max(...)`），或
+ *     ② 存在一个**只复位该字段**的幂等释放器（定义体含 `this.<field>` 且含复位形态），
+ *        且该释放器**真被调用过**（定义而零调用点 = 未接线，不算释放路径）。
+ *   ⚠️ 反向陷阱：`relFn` 这类「全文件存在某个释放器」的写法对**任何**字段都恒真 —— 已删除。 */
+function releaseBindingPre(field) {
+  // ★同字段释放的**两种合法形态**（都必须在**闸门之后**被看到）：
+  //   ① 整行赋值：`this._f = false/null/0/undefined/Math.max(...)`
+  //   ② 行内复位：`finally { this._f = false }` 等同一行写法 —— 旧 SET_RE 要求行首 `this._`
+  //      ⇒ 会**漏掉**这种形态（本仓 _wbRotateBusy 正是此形），漏检不是缺陷、是检测器不全。
+  //   取**最后一次**出现（`===` 比较与 `=` 赋值同行的情形，如 _smartRecallFlight）。
+  const direct = []
+  for (let k = 0; k < lines.length; k++) {
+    const s = strip(lines[k])
+    const at = s.lastIndexOf('this.' + field)
+    if (at < 0) continue
+    const tail = s.slice(at)
+    const eq = tail.indexOf('=')
+    if (eq < 0) continue
+    if (tail.charAt(eq + 1) === '=') continue   // `===` 比较，不是赋值
+    const rhs = tail.slice(eq + 1).replace(/[}\s;]+$/, '')
+    if (isReleaseRhs(rhs)) direct.push({ line: k, field, rhs: '(inline)' })
+  }
+  // 释放器：const/let/var <name> = (…) => { … }，取 400 字符窗口内的定义体，
+  //   要求「定义体内复位该字段」且「该释放器**真被调用过**」（定义而零调用点 = 未接线）。
+  const owned = []
+  for (const d of raw.matchAll(/(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*(?:\([^)]*\)|function[^(]*\([^)]*\))\s*=>\s*\{([\s\S]{0,400}?)\n\s*\}/g)) {
+    const name = d[1], bodyText = d[2]
+    if (!new RegExp('this\\.' + field + '\\b').test(bodyText)) continue
+    if (!/Math\.max|=\s*(?:false|null|undefined|0)\b/.test(bodyText)) continue
+    owned.push(name)
+  }
+  const called = owned.filter((n) => new RegExp('\\b' + n + '\\s*\\(').test(raw))
+  return { direct, owned, called }
 }
 
+console.log('\n【判据 C】按字段配对：每个闸门的占位都必须有**同字段**的释放')
+for (const g of gates) {
+  const ph = placeholders.filter((p) => p.field === g.field && p.line > g.line)
+  const { direct, owned, called } = releaseBindingPre(g.field)
+  ck({
+    name: `★${g.field} 占位与释放配对（按字段绑定）`,
+    ok: (ph.length > 0 && direct.filter((r) => r.line > g.line).length >= ph.length) || called.length > 0,
+    detail: `占位 ${ph.length} 处 / 闸门后同字段直接释放 ${direct.filter((r) => r.line > g.line).length} 处 / 同字段释放器 ${JSON.stringify(owned)}（已调用 ${JSON.stringify(called)}）`,
+  })
+}
+// 全局守恒：每个闸门字段都必须能被释放（否则闸门永久卡死）——同样按字段绑定
+for (const f of [...new Set(gates.map((g) => g.field))]) {
+  const { direct, owned, called } = releaseBindingPre(f)
+  ck({
+    name: `★${f} 存在释放路径（同字段）`,
+    ok: direct.some((r) => { const g = gates.find((x) => x.field === f); return !!g && r.line > g.line }) || called.length > 0,
+    detail: `同字段直接释放=${direct.length} 同字段释放器=${JSON.stringify(called)}`,
+  })
+}
+
+/* ══ 负向样本：字段级配对必须能抓到「释放错字段」 ══ */
+console.log('\n【判据 C 负向样本】释放器释放在**别的字段**上必须判失配')
+{
+  // 样本：闸门在 _demoBusy，释放器却在复位 _otherBusy ⇒ 旧判据放行、新判据必须拒绝
+  const SAMPLE = '    const _demoRelease = () => {\n      this._otherBusy = Math.max(0, this._otherBusy - 1)\n    }'
+  const bodyRe = /(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*(?:\([^)]*\)|function[^(]*\([^)]*\))\s*=>\s*\{([\s\S]{0,400}?)\n\s*\}/g
+  const hit = [...SAMPLE.matchAll(bodyRe)]
+  const ownedForDemo = hit.filter((d) => /this\._demoBusy\b/.test(d[2]))
+  ck({ name: '★负向样本被识别为「不同字段」（ownedForDemo 为空）', ok: hit.length === 1 && ownedForDemo.length === 0 })
+  const ownedForOther = hit.filter((d) => /this\._otherBusy\b/.test(d[2]))
+  ck({ name: '★负向样本确实复位的是 _otherBusy（样本有效，不是空样本）', ok: ownedForOther.length === 1 })
+}
+
+/* ══ 判据 D ══ */
 /* ══ 判据 D ══ */
 console.log('\n【判据 D】反向：每个占位都应有对应闸门')
 const NON_MUTEX = new Set(['_scheduleBusy'])   // 登记豁免：一次性状态旗标（只置位+复位，从不判）
