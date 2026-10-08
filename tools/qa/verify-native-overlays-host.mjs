@@ -15,7 +15,7 @@ const browser=await chromium.launch({executablePath:process.env.CHROME_PATH||'C:
 const rows=[],errors=[]
 try {
   for(const mode of ['legacy','classic'])for(const theme of ['light','dark'])for(const viewport of [{width:1280,height:900},{width:390,height:844}]){
-    let state='idle',done='fixture-1'
+    let state='idle',done='fixture-1',doneAt=Date.now()
     const context=await browser.newContext({viewport}),page=await context.newPage()
     page.on('pageerror',e=>errors.push(e.message))
     await page.addInitScript(({mode,theme})=>{
@@ -32,7 +32,7 @@ try {
     await page.route('**/api/dsh-auto-memory/**',route=>{
       const endpoint=new URL(route.request().url()).pathname.split('/').pop();let data={}
       if(endpoint==='config')data={config:{autoContinueEnabled:true,autoContinueThreshold:.75,welcomeTourEnabled:false,workbenchEnabled:false,semanticEngineMode:'lexical',memoryRoot:'/fixture'}}
-      if(endpoint==='auto-continue-state')data=state==='idle'?{}:state==='confirm'?{armed:{ratio:.8,tokens:80000,window:100000,ring:.8,wall:110000,edgeAt:1,expiresAt:Date.now()+35000}}:state==='progress'?{executing:true}:{lastOk:{at:0,sessionId:done,model:'fixture'}}
+      if(endpoint==='auto-continue-state')data=state==='idle'?{}:state==='confirm'?{armed:{ratio:.8,tokens:80000,window:100000,ring:.8,wall:110000,edgeAt:1,expiresAt:Date.now()+35000}}:state==='progress'?{executing:true}:{lastOk:{at:doneAt,sessionId:done,model:'fixture'}}
       if(endpoint==='version')data={current:'3.2.11'}
       if(endpoint==='notices')data={notices:[]}
       if(endpoint==='workbench-status')data={ready:true}
@@ -47,7 +47,7 @@ try {
     if(await intro.count())await intro.click()
     for(const kind of ['success','confirm','progress','notice','welcomeBack']){
       await page.evaluate(()=>qaHost.clear())
-      state=kind;done='fixture-'+kind
+      state=kind;done='fixture-'+kind;doneAt=Date.now()
       const selector=kind==='notice'||kind==='welcomeBack'?'.i5-native-notice':'[data-dam-autocont]'
       if(kind==='notice'||kind==='welcomeBack')await page.evaluate(kind=>{qaHost.clear();qaHost.open({kind,notice:{id:'fixture',title:'插件通知',message:'隔离 DSH 宿主验证。'}})},kind)
       else await page.waitForFunction(kind=>document.querySelector('[data-native-continuation]')?.getAttribute('data-native-continuation')===(kind==='confirm'?'confirm':kind==='progress'?'progress':'notice'),kind)

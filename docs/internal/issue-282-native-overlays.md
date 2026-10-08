@@ -71,3 +71,49 @@ Two validation-only baseline corrections preserve existing assertions:
 The repair has no functional dependency on #283/#284. It shares the skin
 generator and generated client with other UI fixes, so regeneration should use
 their combined canonical sources when integrating them.
+
+## 2026-10-08 combined-client fixture correction
+
+The six narrow variant confirmation failures were initial-visibility assertions,
+not unreachable actions. With the complete combined client at `ebfc6416`, the
+390×844 card is bounded at y=16–828 and scrolls internally. The agree button
+initially ends at y=864.09; scrolling 37px exposes its complete rectangle at
+y=781.30–827.09, with a successful pointer hit and decision request. No CSS,
+component structure, generated bundle or fingerprint change is needed.
+
+The fixture now supplies a stable, valid success timestamp, and a new identity
+for layout reopens. It still asserts that the same dismissed success stays
+closed across polling; clients with persistent consumption additionally prove
+closure across remount before a new identity appears. Host fixtures also use
+valid timestamps. The tested surfaces and handlers retain their production
+module scope; only test exports are inserted into the complete client in memory.
+
+Action checks require real wheel scrolling and Tab navigation, complete button
+rectangles inside both the viewport and card, minimum height, and pointer
+hit-testing. Long notice and reason strings remain intact. `--initial-geometry`
+retains the former assertion for comparison: the combined client still produces
+exactly six failures. A client mutation replacing `overflow:auto` with
+`overflow:clip` is rejected by the long-content regression.
+
+Current verification uses isolated Chromium **153.0.8010.12**, React 18.3.1:
+
+- Independent PR client: 100/100 states plus 40 long-notice/skin-switch checks.
+- Complete combined client: 100/100 states plus 100 long-notice, long-reason
+  agree/reject/close-reopen and skin-switch checks; no page errors.
+- Nine focused smoke suites pass. Combined hard-confirm, success-lifecycle,
+  priority and polling-order fixtures pass in a separate local source copy.
+- Canonical generator `--check` reports `SYNC-OK`; runtime and fingerprint
+  files remain byte-for-byte unchanged.
+
+To check another complete combined client without modifying this PR, run:
+
+```powershell
+node tools/qa/verify-native-overlays.mjs --deps=<dependency-directory> --client=<complete-client.js> --output=<evidence-directory> --require-reason --require-consumption
+```
+
+Set DSH_HOME, HOME and USERPROFILE to an isolated directory and CHROME_PATH to
+the test browser. The fixture blocks unexpected browser network requests.
+The installed Chrome 154 rejected isolated debugging startup in this run;
+the earlier 154 component and 40-case host results above are historical evidence.
+This follow-up does not revalidate a DSH host, real continuation execution or
+human acceptance.
