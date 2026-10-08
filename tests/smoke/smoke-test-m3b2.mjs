@@ -372,15 +372,15 @@ const load = (f) => readFileSync(path.join(FIX, f))
   try {
     const real = fsDefault
     let tamperNext = false
-    let mdReads = 0
+    let renamed = false
     const spy = {
       ...real,
+      rename: async (...args) => { await real.rename(...args); renamed = true },
       readFile: async (p) => {
         const buf = await real.readFile(p)
         if (String(p).endsWith('.md')) {
-          mdReads += 1
-          // 第 1 次 .md 读取是 _readState(读原文件);第 2 次是 _commit 的步骤8 重读——只篡改重读
-          if (tamperNext && mdReads >= 2) { tamperNext = false; return Buffer.from('TAMPERED', 'utf8') }
+          // Default snapshot CAS also reads before rename. Only tamper verification.
+          if (tamperNext && renamed) { tamperNext = false; return Buffer.from('TAMPERED', 'utf8') }
         }
         return buf
       },

@@ -249,6 +249,9 @@ console.log('[⑤] 负路径（真变异）：去掉写盘前复核 ⇒ outside-
   if (!cap.ok) { console.error('  !! junction 不可用 ⇒ 本组跳过（如实计 FAIL）'); fail++ } else {
     // 变异：把 rename 前的复核与入队时的复核都摘掉（等价于 #263 未修）
     const mut = await loadWriter([   /* anchors below */
+      // #321 adds independent default CAS protection; disable it in this old-bug control.
+      ['const res = await this._commit(file, app.text, { prevSidecar: opts.prevSidecar, expectedDigest: state.fileDigest })',
+        'const res = await this._commit(file, app.text, { prevSidecar: opts.prevSidecar })'],
       // ① 摘掉 rename 前的复核（源码该行缩进 8 空格）
       ['        if (this._rootGuard) {', '        if (false) {'],
       // ② 摘掉边界层的复核（源码该两行缩进 6 空格）
