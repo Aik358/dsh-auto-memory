@@ -23,6 +23,7 @@ async function fixture(requests, toolCount = 0, withHandoff = false) {
   await mkdir(workspace, { recursive: true })
   await mkdir(sessionDir, { recursive: true })
   const events = [{ cwd: workspace }]
+  events.push({ seq: events.length, type: 'request/header', data: { header: { config: { provider: 'fixture', model: 'fixture-model' } } } })
   for (const text of requests) events.push({ seq: events.length, type: 'user/message', data: { message: { role: 'user', content: [{ type: 'text', text }] } } })
   for (let i = 0; i < toolCount; i++) {
     events.push({ seq: events.length, type: 'tool/call', data: { name: 'read', arguments: { path: 'input.txt' } } })
@@ -38,6 +39,7 @@ async function fixture(requests, toolCount = 0, withHandoff = false) {
   e._sessionController = {
     cancel: async () => calls.push('cancel'),
     create: async () => { calls.push('create'); return { sessionId: sid + '-next' } },
+    selectModel: async r => ({ selected: { provider: r.provider, model: r.model } }),
     prompt: async r => calls.push({ session: r.sessionId, text: r.content[0].text }),
   }
   if (withHandoff) {
