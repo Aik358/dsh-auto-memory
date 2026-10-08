@@ -21,10 +21,11 @@ try {
   const controller = {
     cancel: async request => calls.push(['cancel', request.sessionId]),
     create: async () => { calls.push(['create']); return { sessionId: 'isolated-successor' } },
+    selectModel: async request => ({ selected: { provider: request.provider, model: request.model } }),
     prompt: async request => calls.push(['prompt', request.sessionId]),
   }
   engine._ctxRef = { get: name => name === 'agents' ? new Map([[source.session.id, source]]) : name === 'sessionController' ? controller : undefined }
-  const carry = async sid => ({ ok: true, prevSessionId: sid, carryText: 'isolated task', ws: root })
+  const carry = async sid => ({ ok: true, prevSessionId: sid, carryText: 'isolated task', ws: root, provider: 'fixture', model: 'fixture-model' })
   engine.buildContinueCarry = carry
   Date.now = () => now
   engine.armAutoContinue(source, { ratio: .9, modelKnown: true }, { awaitIdle: true })
