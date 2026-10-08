@@ -164,7 +164,11 @@ ok(/setAcConfirm\(\{ ratio: Number\(arm\.ratio\) \|\| 0[\s\S]{0,220}?wall: Numbe
   'G14 确认卡把双口径 ring/wall 拷进 acConfirm(宿主透出但这里丢了 → 那行永不渲染)')
 
 // —— G15(2026-09-28 修「接续必须搭线」):宿主兜底接续后,前端补 sessions.open 把发件人切到新会话 ——
-ok(/fromSidAc && sidQ === fromSidAc && doneSid !== acOpenedSidRef\.current[\s\S]{0,260}?sessions\.open\(doneSid\)/.test(SRC),
+// ★2026-10-08 判据放宽：""#289"" 在 fromSid 收窄之后插入了「跳转前重读当前会话」的跨会话复核
+//   （sidNowJump === sidQ），把原来要求的字面相邻撑破。四项语义要求（fromSid 收窄 / sidQ === fromSidAc /
+//   幂等键 / sessions.open(doneSid)）全部仍在，只是顺序中间多了一道守卫 ⇒ 按 2026-10-01 裁定「判据过期改判据」
+//   放宽相邻窗口，不改产线语义。
+ok(/fromSidAc &&[\s\S]{0,120}?sidQ === fromSidAc &&[\s\S]{0,120}?doneSid !== acOpenedSidRef\.current[\s\S]{0,260}?sessions\.open\(doneSid\)/.test(SRC),
   'G15 lastOk 命中时补 sessions.open(宿主兜底路径原本缺 UI 切换 → 发件人留在旧会话形成循环)')
 ok(SRC.includes("var fromSidAc = String((s.lastOk && s.lastOk.fromSid) || '')") && /sidQ === fromSidAc/.test(SRC),
   'G15 只切「正看着旧会话」的窗口(fromSid 收窄;lastOk 全局透出,无差别 open 会拉走别的标签页)')

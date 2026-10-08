@@ -26,6 +26,31 @@
         window.addEventListener('resize', fit)
         return function () { if (observer) observer.disconnect(); window.removeEventListener('resize', fit) }
       }, [props.kind])
+      // ★2026-10-08（会话页铺满）：kind='page' 的会话页**可见**期间给 body 打标记，
+      //   由 client.js 手写 CSS 隐藏宿主发送栏 ⇒ 记忆页 / 白板看板页占满右侧整列。
+      //   为什么按可见性而不是只在挂载时置位：宿主可能保留非活动视图的 DOM；
+      //   IntersectionObserver 在视图被隐藏 / 切走时回调 isIntersecting=false，自动摘掉标记。
+      //   零副作用：切回「对话」标签页标记消失，输入栏原样恢复。
+      useEffect(function () {
+        if (props.kind !== 'page') return
+        var el = boundary.current
+        if (!el) return
+        function mark(on) {
+          try {
+            if (on) document.body.setAttribute('data-dam-fullpage', 'true')
+            else document.body.removeAttribute('data-dam-fullpage')
+          } catch (e) {}
+        }
+        if (typeof IntersectionObserver !== 'function') {
+          mark(true)
+          return function () { mark(false) }
+        }
+        var io = new IntersectionObserver(function (entries) {
+          for (var k = 0; k < entries.length; k += 1) mark(entries[k].isIntersecting)
+        })
+        io.observe(el)
+        return function () { try { io.disconnect() } catch (e) {} mark(false) }
+      }, [props.kind])
       useEffect(function () {
         var style = document.getElementById('dam-shared-ui-style')
         if (!style) {

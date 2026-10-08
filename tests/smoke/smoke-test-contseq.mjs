@@ -93,7 +93,10 @@ console.log('[contseq] S0 源码守卫')
     '计数器文件在全局记忆根(~/.dsh/memory/cont-seq.json),不随工作区 handoffDir 漂移')
   ok(/let contSeq = 0\s*\n\s*contSeq = await this\.allocContSeq\(p\.ws\)/.test(SRC),
     'buildPrevSessionPack:写包前先分配序号')
-  ok(/catch \(eW\) \{[\s\S]{0,200}?rollbackContSeq\(p\.ws, contSeq\)[\s\S]{0,120}?throw eW\s*\}/.test(SRC),
+  // ★2026-10-08 判据放宽：""#291"" 在同一条 catch 内、rollbackContSeq 之前新增了一行
+  //   EEXIST diag（拒绝覆盖时留痕），把原 200 字符窗口撑破。三项语义要求
+  //   （rollbackContSeq(p.ws, contSeq) / 高水位不降 / throw eW）全部仍在 ⇒ 按 2026-10-01 裁定放宽窗口，不改产线。
+  ok(/catch \(eW\) \{[\s\S]{0,400}?rollbackContSeq\(p\.ws, contSeq\)[\s\S]{0,200}?throw eW\s*\}/.test(SRC),
     'buildPrevSessionPack:写包失败走兼容rollback入口，高水位不降低')
   ok(/let contSeq = Number\(pack && pack\.contSeq\) \|\| 0\s*if \(!contSeq\) contSeq = await this\.allocContSeq\(p\.ws\)/.test(SRC),
     'buildContinueCarry 取值链:pack → 持久预留，失败不猜文件数或常量1')

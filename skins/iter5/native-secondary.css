@@ -162,6 +162,13 @@
 [data-dam-theme] [data-native-dialog] [data-dam-btn]{padding:8px 16px;min-height:36px;border-radius:7px!important;}
 [data-dam-theme] [data-dam-autocont]{background:linear-gradient(180deg,var(--i5-face) 0%,color-mix(in srgb,var(--i5-face) 96%,var(--i5-bg)) 60%)!important;color:var(--i5-text)!important;padding:20px!important;border:1px solid var(--i5-line)!important;border-radius:14px!important;box-shadow:0 16px 48px color-mix(in srgb,var(--i5-text) 18%,transparent),inset 0 1px 0 color-mix(in srgb,var(--i5-on-accent) 60%,transparent)!important;backdrop-filter:none!important;font-family:inherit!important;font-size:calc(14px * var(--dam-user-scale,1))!important;line-height:1.7!important;max-height:calc(100dvh - 32px);overflow:auto;}
 [data-dam-theme] [data-dam-autocont]:has([data-dam-autocont-confirm]){width:620px;max-width:calc(100vw - 32px)!important;right:50%!important;bottom:50%!important;transform:translate(50%,50%);}
+/* ★#283（2026-10-08）：弹窗族补 `box-sizing:border-box`。全局 reset 的唯一形态是
+ *   `[data-iter5] *{box-sizing:border-box}`，而 DialogHost 挂载链（client.js:17047 → Iter5Surface）
+ *   返回的节点只带 data-dam-theme / data-i5-style / data-deep、**不带 data-iter5** ⇒ reset 够不到；
+ *   弹窗内是 content-box ⇒ padding 与 width:min(640px,calc(100vw - 32px)) 相加后横向越界（新版外观）。
+ *   只给该弹窗族明确补一条，不扩大 reset 作用域（不给子树补 data-iter5 —— 那会让整棵子树吃到全量 reset）。 */
+[data-dam-theme] [data-native-dialog],[data-dam-theme] [data-dam-status-dialog],[data-dam-theme] [data-native-dialog-overlay]{box-sizing:border-box;}
+[data-dam-theme] [data-native-dialog] *,[data-dam-theme] [data-dam-status-dialog] *,[data-dam-theme] [data-native-dialog-overlay] *{box-sizing:border-box;}
 @media(max-width:600px){[data-dam-theme] [data-dam-kx-scroll]{padding:14px!important;}[data-dam-theme] [data-native-dialog]{padding:18px!important;}[data-dam-theme] [data-dam-autocont]{padding:16px!important;}[data-dam-theme] [data-dam-wbg-side]{max-width:calc(100vw - 24px);}}
 /* The fallback retains its independent original components and navigation. */
 [data-dam-theme] [data-dam-body]>div:has(>[data-dam-kv][data-dam-block=prose]){display:grid;gap:18px;}

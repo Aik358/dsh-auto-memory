@@ -67,6 +67,13 @@ function extractFnBody (src, header) {
 }
 const AC_BODY = extractFnBody(SRC, 'function AutoContinueHost() {')
 ok(AC_BODY.length > 1500, '④ 真组件体已抽出（' + AC_BODY.length + ' 字符）')
+// ★#289 夹具开缝自检：组件体必须真的**引用** sessions（否则外部补桩进不去、跳转断言恒假绿）。
+//   判据 = 抽取出的真组件体里 sessions 的引用数 ≥ 1；「补桩命中数 = 1」的运行期断言在新套件
+//   smoke-test-minervaowl7-a2-autocont-display.mjs 的「跳转」用例里（那里才会真正触发跳转）。
+{
+  const uses = (AC_BODY.match(/\bsessions\b/g) || []).length
+  ok(uses >= 1, '④b 夹具开缝：真组件体引用 sessions（次数=' + uses + '，≥1 才可能补桩）')
+}
 
 /**
  * 受控渲染：cells 跨渲染持久（模拟 React state/ref），effects 只收集首次挂载的，
@@ -95,8 +102,12 @@ function mountAutoContinueHost (opts) {
   const apiGet = o.apiGet || (() => Promise.resolve(null))
   const apiPost = () => Promise.resolve({ ok: true })
   const API = { config: '/api/config', autoContState: '/api/auto-cont-state', autoContDecide: '/api/auto-cont-decide' }
-  const sessions = { open: () => {} }
-  const currentSessionIdClient = () => o.sid || 'sid-A'
+  // ★#289 夹具开缝（2026-10-08）：`sessions` 原为硬编码空替身 `{ open: () => {} }`，而组件体
+  //   闭包捕获它 ⇒ 外部注入进不去，任何「跳转是否发生」的断言都恒为空数组（首版探针因此假绿）。
+  //   此处允许 opts.sessions 覆盖；默认值逐字不变（既有 17 条断言语义零影响）。
+  const sessions = o.sessions || { open: () => {} }
+  // ★#289：会话身份必须可驱动（跳转/身份校验都读它）；默认值逐字不变。
+  const currentSessionIdClient = typeof o.sidOf === 'function' ? o.sidOf : () => o.sid || 'sid-A'
   // ★必须把 setInterval / clearInterval 注入为**受控替身**：组件体直接引用全局 setInterval，
   //   若让它拿到 Node 真全局，测试会留下真 3 秒定时器 ⇒ **进程永不退出（实测挂死）**，
   //   且「推进 3 秒轮询」无法由用例驱动。故一并传入受控实现。
