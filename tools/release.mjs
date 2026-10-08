@@ -44,18 +44,57 @@ if (dryRun) {
 //   位置说明：置于 dry-run 的 REL 改写**之后** —— 那时 REL 已是 tmpdir，
 //   既不会误拒无害的 dry-run，又对真正的破坏性路径（非 dry-run）保持 fail closed。
 //   判据：win32 大小写不敏感、分隔符归一（`\`/`/` 等价），同目录即拒绝执行。
-const sameDir = (x, y) => {
-  const n = (s) => path.resolve(String(s)).replace(/[\\/]+$/, '').replace(/\\/g, '/')
-  const a = n(x), b = n(y)
-  return process.platform === 'win32' ? a.toLowerCase() === b.toLowerCase() : a === b
+// ★#309（2026-10-08）：**同目录只是包含关系的一个特例**。旧判据只做字符串相等 ⇒
+//   DEV = REL/source（源在发布目标内部）时放行：第 3 步「清空 REL」的循环会**先把源目录整个删掉**，
+//   随后的复制因源已不存在而失败，源里的文件就此丢失（实测夹具 source/lib/marker.txt 被删除、进程退出 1）。
+//   显式配置 DSH_AUTO_MEMORY_DEV 到发布基座内部是**配置得出来的**，不是假想路径 ⇒ 必须 fail closed。
+//   新判据（组件级 + 物理路径，遵循 lib/file-boundary.js 的「唯一来源」纪律）：
+//     ① 相等                      ⇒ 拒（原有语义）
+//     ② DEV 在 REL 之内            ⇒ 拒（清空 REL 必然删除源）
+//     ③ REL 在 DEV 之内            ⇒ 拒（发布基座会把自己的源树覆盖/污染）
+//   物理路径解析：两侧都做 realpath，**并把 junction/symlink 一并解析**——否则
+//   「REL 是指向 DEV 的 junction」会绕过相等判据（realpath 后两者相等）。
+//   REL 尚不存在时（首次发布）以其**最近存在祖先**为基准解析（canonPath 同款语义）。
+const { realpathSync } = await import('node:fs')
+function physPath(p) {
+  const abs = path.resolve(String(p))
+  try { return realpathSync.native(abs) } catch (e) { /* 不存在 ⇒ 回落拼接 */ }
+  // 最近存在祖先 realpath + 缺失后缀
+  let cur = abs
+  const suffix = []
+  for (;;) {
+    const par = path.dirname(cur)
+    if (par === cur) break
+    suffix.unshift(path.basename(cur))
+    cur = par
+    try { return path.join(realpathSync.native(cur), ...suffix) } catch (e) { /* 继续上溯 */ }
+  }
+  return abs
 }
-if (sameDir(DEV, REL)) {
-  console.error('[release] ❌ 源目录与发布基座是同一个目录,拒绝执行(会先清空它再从已清空的源复制 ⇒ 自毁):')
-  console.error('   DEV = ' + DEV)
+// 组件级包含：child 是否等于 root 或位于 root 之下（两侧均已物理归一，大小写按键归一）
+const keyOf = (s) => (process.platform === 'win32' ? s.toLowerCase() : s)
+function within(parentPhys, childPhys) {
+  const rel = path.relative(keyOf(parentPhys), keyOf(childPhys))
+  if (rel === '') return true
+  return rel !== '..' && !rel.startsWith('..' + path.sep) && !path.isAbsolute(rel)
+}
+const DEV_PHYS = physPath(DEV)
+const REL_BASE = physPath(existsSync(REL) ? REL : path.dirname(REL))
+const REL_PHYS = existsSync(REL) ? REL_BASE : path.join(REL_BASE, path.basename(path.resolve(String(REL))))
+const devInsideRel = within(REL_PHYS, DEV_PHYS)
+const relInsideDev = within(DEV_PHYS, REL_PHYS)
+if (keyOf(DEV_PHYS) === keyOf(REL_PHYS) || devInsideRel || relInsideDev) {
+  const why = keyOf(DEV_PHYS) === keyOf(REL_PHYS) ? '是同一个目录'
+    : devInsideRel ? '位于发布基座**内部**(清空基座会连源一起删除)'
+      : '**包含**了发布基座(复制会覆盖源树自身)'
+  console.error('[release] ❌ 源目录与发布基座冲突,拒绝执行(第 3 步会先清空发布基座,再从未清空的源复制 ⇒ 自毁):')
+  console.error('   原因: 源目录' + why)
+  console.error('   DEV = ' + DEV + (DEV_PHYS !== path.resolve(String(DEV)) ? '  (物理: ' + DEV_PHYS + ')' : ''))
   console.error('   REL = ' + REL)
   console.error('   修法:①在**别的**克隆里运行本脚本(源 = 本脚本所在仓库);或')
   console.error('        ②显式指定源树:  set DSH_AUTO_MEMORY_DEV=<另一棵源树>;或')
   console.error('          用环境变量 DSH_AUTO_MEMORY_REL 把发布基座指向别处。')
+  console.error('        (源与发布基座不得相同,也不得有任一方向的包含关系,含 junction/symlink 解析后)')
   process.exit(1)
 }
 if (!existsSync(DEV)) { console.error('[release] ❌ 源目录不存在:', DEV); process.exit(1) }
