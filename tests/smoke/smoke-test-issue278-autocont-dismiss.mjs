@@ -66,6 +66,7 @@ function extractFnBody (src, header) {
   throw new Error('unbalanced: ' + header)
 }
 const AC_BODY = extractFnBody(SRC, 'function AutoContinueHost() {')
+const AC_CONSUMPTION = SRC.slice(SRC.indexOf('    // #287:'), SRC.indexOf('    function AutoContinueHost() {'))
 ok(AC_BODY.length > 1500, '④ 真组件体已抽出（' + AC_BODY.length + ' 字符）')
 
 /**
@@ -101,7 +102,7 @@ function mountAutoContinueHost (opts) {
   //   若让它拿到 Node 真全局，测试会留下真 3 秒定时器 ⇒ **进程永不退出（实测挂死）**，
   //   且「推进 3 秒轮询」无法由用例驱动。故一并传入受控实现。
   const render = new Function('useState', 'useEffect', 'useRef', 'useReducer', 'useMemo', 'useCallback', 'h', 'L', 't', 'apiGet', 'apiPost', 'API', 'sessions', 'currentSessionIdClient', 'Iter5AutoContinue', 'configOf', 'setInterval', 'clearInterval',
-    AC_BODY + '\nreturn AutoContinueHost()')
+    AC_CONSUMPTION + '\n' + AC_BODY + '\nreturn AutoContinueHost()')
   const show = () => {
     cursor = 0
     const vnode = render(useState, useEffect, useRef, (r, i) => [i, () => {}], (f) => f(), (f) => f, h, L, t, apiGet, apiPost, API, sessions, currentSessionIdClient, h, (d) => d, setIntervalSpy, clearIntervalSpy)
