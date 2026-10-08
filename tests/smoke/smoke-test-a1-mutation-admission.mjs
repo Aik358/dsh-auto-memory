@@ -331,48 +331,58 @@ console.log('[A1] ④ #251 apply 挂载失败回滚')
 // ══ 负路径（变异反向验证）：把 #248/#249 的修复**真删**得到回退树 ⇒ 断言必红 ══
 if (!process.env.A1_SOURCE_ROOT) {
   console.log('[A1] ⑤ 负路径：回退树（真删 CAS + admission 接线）必须让断言变红')
-  const negRoot = path.join(temp, 'a1-negative')
-  await fsp.cp(path.join(ownRoot, 'lib'), path.join(negRoot, 'lib'), { recursive: true })
-  await fsp.cp(path.join(ownRoot, 'tests', 'lib'), path.join(negRoot, 'tests', 'lib'), { recursive: true })
-  const revert = (file, pairs) => {
-    let text = fs.readFileSync(file, 'utf8')
-    for (const [from, to] of pairs) {
-      assert.ok(text.includes(from), '回退锚点必须唯一存在: ' + file + ' :: ' + from.slice(0, 60))
-      text = text.split(from).join(to)
+  for (const eol of ['\n', '\r\n']) {
+    const eolName = eol === '\n' ? 'LF' : 'CRLF'
+    const negRoot = path.join(temp, 'a1-negative-' + eolName)
+    await fsp.cp(path.join(ownRoot, 'lib'), path.join(negRoot, 'lib'), { recursive: true })
+    await fsp.cp(path.join(ownRoot, 'tests', 'lib'), path.join(negRoot, 'tests', 'lib'), { recursive: true })
+    // Exercise the anchor matcher against both checkout line endings.
+    for (const name of ['index.js', 'memory-writer.js']) {
+      const file = path.join(negRoot, 'lib', name)
+      const text = fs.readFileSync(file, 'utf8').replace(/\r\n/g, '\n')
+      fs.writeFileSync(file, text.replace(/\n/g, eol), 'utf8')
     }
-    fs.writeFileSync(file, text, 'utf8')
+    const revert = (file, pairs) => {
+      let text = fs.readFileSync(file, 'utf8').replace(/\r\n/g, '\n')
+      for (const [from, to] of pairs) {
+        const anchor = from.replace(/\r\n/g, '\n')
+        assert.equal(text.split(anchor).length - 1, 1, '回退锚点必须唯一存在: ' + file + ' :: ' + anchor.slice(0, 60))
+        text = text.replace(anchor, to.replace(/\r\n/g, '\n'))
+      }
+      fs.writeFileSync(file, text.replace(/\n/g, eol), 'utf8')
+    }
+    // #248：摘掉两处 expectedDigest（快照 CAS 消失）
+    revert(path.join(negRoot, 'lib/index.js'), [
+      ['await this.writeFull(notesPath, text, { expectedDigest: snapshotDigest })', 'await this.writeFull(notesPath, text)'],
+      ['await this.writeFull(filePath, body, { expectedDigest: snapshotDigest })', 'await this.writeFull(filePath, body)'],
+      ['        mutationAdmission: file => captureMemoryMutationPre(this, file),\r\n        mutationBoundary: (file, job, admission) => this._withMemoryMutationPre(file, job, admission),\r\n', ''],
+      ['      mutationAdmission: file => captureMemoryMutationPre(this, file),\r\n      mutationBoundary: (file, job, admission) => this._withMemoryMutationPre(file, job, admission),\r\n', ''],
+    ])
+    // #249：摘掉 store 的 admission 边界（写盘通道不再有统一门）
+    // 只回退**接线**，保留模块自身默认值：否则模块 import 即崩，红的不是被测行为。
+    //   （admission 无来源 ⇒ target 为 undefined ⇒ 写盘读状态即 TypeError —— 回退树的真实行为。）
+    // ★2026-10-08（P2a #263）判据同步：_queue 的调用形态已随 #263 改为「把边界给出的有效路径
+    //   传进写盘链」（`(bound) => within(bound || target)`）。回退语义**一字未改**：仍是「摘掉
+    //   admission 边界（写盘通道不再有统一门）」，只把锚串对齐到新形态。
+    revert(path.join(negRoot, 'lib/memory-writer.js'), [
+      ['      () => this.mutationBoundary(target, (bound) => within(bound || target), admission),\r\n      () => this.mutationBoundary(target, (bound) => within(bound || target), admission),\r\n', '      () => prev.then(job, job),\r\n'],
+    ])
+    const child = spawnSync(process.execPath, [fileURLToPath(import.meta.url)], {
+      env: { ...process.env, A1_SOURCE_ROOT: negRoot },
+      encoding: 'utf8',
+      timeout: 240000,
+    })
+    const out = String(child.stdout || '')
+    // 回退树可能直接以未捕获异常结束（模块契约被摘掉后的真实后果）：也算可用红。
+    const crashed = child.status === 1 && !/结果: /.test(out)
+    const fails = out.split('\n').filter((l) => /FAIL/.test(l))
+    ok(child.status === 1, '⑤ 回退树：套件必须以非零退出（变异必红）', 'status=' + child.status)
+    ok(crashed || fails.length >= 4, '⑤ 回退树：断言变红或直接崩溃（覆盖 ①②③）', 'fails=' + fails.length + ' crashed=' + crashed)
+    ok(crashed || /已被接受的追加\*\*未被覆盖\*\*|磁盘上只有被接受的那次写/.test(out), '⑤ 回退树：① 静默覆盖被断言抓到', '')
+    ok(crashed || /仍在主文件/.test(out), '⑤ 回退树：② 整理覆盖被断言抓到', '')
+    ok(crashed || /SETTINGS_MIGRATION_ACTIVE|SETTINGS_ROOT_CHANGED/.test(fails.join('\n')), '⑤ 回退树：③ admission 缺失被断言抓到', fails.join(' | ').slice(0, 200))
+    console.log('  [负路径 ' + eolName + '] 回退树子进程 status=' + child.status + '，红断言 ' + fails.length + ' 条')
   }
-  // #248：摘掉两处 expectedDigest（快照 CAS 消失）
-  revert(path.join(negRoot, 'lib/index.js'), [
-    ['await this.writeFull(notesPath, text, { expectedDigest: snapshotDigest })', 'await this.writeFull(notesPath, text)'],
-    ['await this.writeFull(filePath, body, { expectedDigest: snapshotDigest })', 'await this.writeFull(filePath, body)'],
-    ['        mutationAdmission: file => captureMemoryMutationPre(this, file),\r\n        mutationBoundary: (file, job, admission) => this._withMemoryMutationPre(file, job, admission),\r\n', ''],
-    ['      mutationAdmission: file => captureMemoryMutationPre(this, file),\r\n      mutationBoundary: (file, job, admission) => this._withMemoryMutationPre(file, job, admission),\r\n', ''],
-  ])
-  // #249：摘掉 store 的 admission 边界（写盘通道不再有统一门）
-  // 只回退**接线**，保留模块自身默认值：否则模块 import 即崩，红的不是被测行为。
-  //   （admission 无来源 ⇒ target 为 undefined ⇒ 写盘读状态即 TypeError —— 回退树的真实行为。）
-  // ★2026-10-08（P2a #263）判据同步：_queue 的调用形态已随 #263 改为「把边界给出的有效路径
-  //   传进写盘链」（`(bound) => within(bound || target)`）。回退语义**一字未改**：仍是「摘掉
-  //   admission 边界（写盘通道不再有统一门）」，只把锚串对齐到新形态。
-  revert(path.join(negRoot, 'lib/memory-writer.js'), [
-    ['      () => this.mutationBoundary(target, (bound) => within(bound || target), admission),\r\n      () => this.mutationBoundary(target, (bound) => within(bound || target), admission),\r\n', '      () => prev.then(job, job),\r\n'],
-  ])
-  const child = spawnSync(process.execPath, [fileURLToPath(import.meta.url)], {
-    env: { ...process.env, A1_SOURCE_ROOT: negRoot },
-    encoding: 'utf8',
-    timeout: 240000,
-  })
-  const out = String(child.stdout || '')
-  // 回退树可能直接以未捕获异常结束（模块契约被摘掉后的真实后果）：也算可用红。
-  const crashed = child.status === 1 && !/结果: /.test(out)
-  const fails = out.split('\n').filter((l) => /FAIL/.test(l))
-  ok(child.status === 1, '⑤ 回退树：套件必须以非零退出（变异必红）', 'status=' + child.status)
-  ok(crashed || fails.length >= 4, '⑤ 回退树：断言变红或直接崩溃（覆盖 ①②③）', 'fails=' + fails.length + ' crashed=' + crashed)
-  ok(crashed || /已被接受的追加\*\*未被覆盖\*\*|磁盘上只有被接受的那次写/.test(out), '⑤ 回退树：① 静默覆盖被断言抓到', '')
-  ok(crashed || /仍在主文件/.test(out), '⑤ 回退树：② 整理覆盖被断言抓到', '')
-  ok(crashed || /SETTINGS_MIGRATION_ACTIVE|SETTINGS_ROOT_CHANGED/.test(fails.join('\n')), '⑤ 回退树：③ admission 缺失被断言抓到', fails.join(' | ').slice(0, 200))
-  console.log('  [负路径] 回退树子进程 status=' + child.status + '，红断言 ' + fails.length + ' 条')
 }
 
 console.log('\n结果: ' + pass + ' PASS / ' + fail + ' FAIL')
