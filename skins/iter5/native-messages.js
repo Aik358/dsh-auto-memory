@@ -33,6 +33,7 @@
         confirmation ? h('div', { 'data-dam-autocont-confirm': '' },
           h('p', { className: 'i5-continuation-warning' }, t('autoContConfirm').replace('{p}', String(Math.round((confirmation.ratio || 0) * 100)))),
           h('dl', { className: 'i5-continuation-facts' },
+            confirmation.reasonText ? [h('dt', { key: 'reason-label' }, L('触发原因', 'Trigger reason')), h('dd', { key: 'reason' }, confirmation.reasonText)] : null,
             h('dt', null, L('当前工作区', 'Current workspace')), h('dd', null, currentWs() || L('尚未定位', 'Not available')),
             h('dt', null, L('上下文用量', 'Context use')), h('dd', null, (confirmation.tokens || 0).toLocaleString() + ' / ' + (confirmation.window || 0).toLocaleString() + ' token'),
             confirmation.wall > 0 ? [h('dt', { key: 'wall-label' }, L('距硬上限', 'To hard limit')), h('dd', { key: 'wall' }, Math.max(0, confirmation.wall - confirmation.tokens).toLocaleString() + ' token')] : null,

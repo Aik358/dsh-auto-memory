@@ -85,7 +85,7 @@ try {
     handoffEnabled: false, waterLevelThresholdMode: 'auto', waterLevelThreshold: .75,
     waterLevelAutoMargin: .9, officialCompactionRatio: .8, officialHeadroomTokens: 65536,
   }
-  function makeEngine(fromSid, age = 120000) {
+  function makeEngine(fromSid, age = 120000, scenario = 'ordinary-high') {
     const runtime = {}
     const engine = {
       config, state: {}, _autoContState: { lastRunAt: now - age, lastOk: { sessionId: 'previous-new', fromSid, model: 'fixture' } },
@@ -93,83 +93,93 @@ try {
       rememberWaterRecord() {}, handoffChainEnabledPre: () => false, hasReliableSessionIdentity: () => true,
       isContinuedSession: () => false, waterKey: sid => sid, continuedSessionsFile: () => path.join(isolatedHome, 'done.json'),
     }
-    for (const header of ['_resolveWaterLevelPre(triggerWin, reserve, sessModel) {', 'async checkWaterLevel(agent) {', 'armAutoContinue(agent, wl, opts = null) {', 'autoContinueState(selfSid) {']) {
+    for (const header of ['_resolveWaterLevelPre(triggerWin, reserve, sessModel) {', 'async checkWaterLevel(agent) {', 'checkWaterLevelAtStep(agent, minGapMs = 0) {', 'armAutoContinue(agent, wl, opts = null) {', 'autoContinueState(selfSid) {']) {
       const fn = Object.values(new Function(...Object.keys(deps), 'return ({' + extract(host, header) + '})')(...Object.values(deps)))[0]
       engine[fn.name] = fn.bind(engine)
     }
     const agent = {
       session: { id: 'old-A', events: [
-        { seq: 1, type: 'request/header', data: { header: { config: { provider: 'fixture', model: 'fixture-model', maxTokens: 384000 } } } },
+        { seq: 1, type: 'request/header', data: { header: { config: { provider: 'fixture', model: 'fixture-model', maxTokens: scenario === 'wall' ? 600000 : scenario === 'ordinary-high' ? 100000 : 384000 } } } },
         { seq: 2, type: 'request/context', data: { contextWindow: 1000000 } },
       ] },
-      ctx: { get: () => ({ measure: () => ({ totalTokens: 800000, baseline: { kind: 'usage' } }) }) },
+      ctx: { get: () => ({ measure: () => ({ totalTokens: scenario === 'ordinary-high' ? 800000 : 450000, baseline: { kind: 'usage' } }) }) },
     }
     return { engine, agent, runtime }
   }
-  async function arm(engine, agent, runtime) {
+  async function arm(engine, agent, runtime, scenario = 'ordinary-high') {
     await engine.checkWaterLevel(agent)
-    engine.armAutoContinue(agent, {
-      ratio: runtime.waterLevel, tokens: runtime.waterLevelTokens, window: runtime.waterLevelWindow,
-      modelKnown: runtime.waterLevelModelKnown, hard: runtime.waterLevelHard,
-    }, { awaitIdle: true })
+    if (scenario === 'compaction') agent.session.events.push({ seq: 3, type: 'compaction/summary', data: { compactionId: 'fixture-c1', summary: [] } })
+    if (scenario === 'overflow') agent.session.events.push({ seq: 3, type: 'assistant/attempt', data: { stream: [{ chunk: { type: 'finish', reason: { failure: { code: 'CONTEXT_WINDOW_EXCEEDED' } } } }] } })
+    engine.checkWaterLevelAtStep(agent)
+    await new Promise(resolve => setImmediate(resolve))
+    await new Promise(resolve => setImmediate(resolve))
   }
 
-  for (const fromSid of ['old-A', 'another-source']) {
-    for (const dismissed of [false, true]) {
-      const { engine, agent, runtime } = makeEngine(fromSid)
-      const ui = mount(() => engine.autoContinueState('old-A'), config)
-      const initial = await ui.settle()
-      check('historical success control: ' + fromSid + '/' + dismissed, () => assert.match(initial?.props.status || '', /^✓/))
-      if (dismissed) { initial.props.onDismiss(); ui.show(); await ui.tick() }
-      const opensBeforeArm = ui.opened.length
-      await arm(engine, agent, runtime)
-      const response = engine.autoContinueState('old-A')
-      check('production host arms after 1-minute cooldown: ' + fromSid + '/' + dismissed, () => {
-        assert.equal(response.armed?.ratio, .8)
-        assert.equal(response.lastOk?.at, now - 120000)
-      })
-      if (!dismissed) {
-        const coldUi = mount(() => response, config)
-        const cold = await coldUi.settle()
-        check('first poll displays current intent without consuming history: ' + fromSid, () => {
-          assert.equal(cold?.props.confirmation?.edgeAt, response.armed.edgeAt)
-          assert.equal(cold?.props.status, '')
-          assert.deepEqual(coldUi.opened, [])
+  for (const scenario of ['ordinary-high', 'compaction', 'overflow', 'wall']) {
+    for (const fromSid of ['old-A', 'another-source']) {
+      for (const dismissed of [false, true]) {
+        const { engine, agent, runtime } = makeEngine(fromSid, 120000, scenario)
+        const ui = mount(() => engine.autoContinueState('old-A'), config)
+        const initial = await ui.settle()
+        check('historical success control: ' + fromSid + '/' + dismissed, () => assert.match(initial?.props.status || '', /^✓/))
+        if (dismissed) { initial.props.onDismiss(); ui.show(); await ui.tick() }
+        const opensBeforeArm = ui.opened.length
+        await arm(engine, agent, runtime, scenario)
+        const response = engine.autoContinueState('old-A')
+        check('production host arms after 1-minute cooldown: ' + scenario + '/' + fromSid + '/' + dismissed, () => {
+          assert.ok(response.armed, 'current host intent exists')
+          assert.equal(response.armed.triggerReason, scenario === 'ordinary-high' ? 'threshold' : scenario)
+          assert.equal(response.lastOk?.at, now - 120000)
         })
-      }
-      const current = await ui.tick()
-      check('current intent beats ' + (dismissed ? 'dismissed' : 'visible') + ' success: ' + fromSid, () => {
-        assert.equal(current?.props.confirmation?.edgeAt, response.armed.edgeAt)
-        assert.equal(current?.props.countdown, 35)
-        assert.equal(current?.props.status, '')
-        assert.equal(ui.opened.length, opensBeforeArm, 'history must not navigate during a new intent')
-      })
-      check('source filtering still hides another session intent', () => assert.equal(engine.autoContinueState('other-window').armed, null))
+        if (!dismissed) {
+          const coldUi = mount(() => response, config)
+          const cold = await coldUi.settle()
+          check('first poll displays current intent without consuming history: ' + fromSid, () => {
+            assert.equal(cold?.props.confirmation?.edgeAt, response.armed.edgeAt)
+            assert.equal(cold?.props.status, '')
+            assert.deepEqual(coldUi.opened, [])
+          })
+        }
+        const current = await ui.tick()
+        check(scenario + ': current intent beats ' + (dismissed ? 'dismissed' : 'visible') + ' success: ' + fromSid, () => {
+          assert.equal(current?.props.confirmation?.edgeAt, response.armed.edgeAt)
+          assert.equal(current?.props.confirmation?.ratio, scenario === 'ordinary-high' ? .8 : .45)
+          assert.equal(current?.props.confirmation?.tokens, scenario === 'ordinary-high' ? 800000 : 450000)
+          assert.equal(current?.props.confirmation?.window, 1000000)
+          assert.equal(current?.props.confirmation?.ring, response.armed.ring)
+          assert.equal(current?.props.confirmation?.wall, response.armed.wall)
+          assert.ok(current?.props.confirmation?.reasonText)
+          assert.equal(current?.props.countdown, 35)
+          assert.equal(current?.props.status, '')
+          assert.equal(ui.opened.length, opensBeforeArm, 'history must not navigate during a new intent')
+        })
+        check('source filtering still hides another session intent', () => assert.equal(engine.autoContinueState('other-window').armed, null))
 
-      engine._autoContState.executing = true
-      const executing = await ui.tick()
-      check('executing beats armed and historical success', () => {
-        assert.equal(executing?.props.confirmation, null)
-        assert.equal(executing?.props.countdown, 0)
-        assert.match(executing?.props.status || '', /^宿主正在自动接续/)
-      })
-      engine._autoContState.executing = false
-      engine._autoContState.armed = null
-      engine._autoContState.lastRunAt = now
-      engine._autoContState.lastOk = { fromSid: 'old-A', sessionId: 'current-new', model: 'fixture' }
-      const done = await ui.tick()
-      check('normal completion clears confirmation and opens the successor once', () => {
-        assert.equal(done?.props.confirmation, null)
-        assert.equal(done?.props.countdown, 0)
-        assert.match(done?.props.status || '', /^✓/)
-        assert.equal(ui.opened.at(-1), 'current-new')
-      })
-      const opensAfterDone = ui.opened.length
-      await ui.tick()
-      check('completion navigation stays idempotent', () => assert.equal(ui.opened.length, opensAfterDone))
-      done.props.onDismiss(); ui.show()
-      const afterDismiss = await ui.tick()
-      check('completed result remains dismissed on the next poll', () => assert.equal(afterDismiss, null))
+        engine._autoContState.executing = true
+        const executing = await ui.tick()
+        check('executing beats armed and historical success', () => {
+          assert.equal(executing?.props.confirmation, null)
+          assert.equal(executing?.props.countdown, 0)
+          assert.match(executing?.props.status || '', /^宿主正在自动接续/)
+        })
+        engine._autoContState.executing = false
+        engine._autoContState.armed = null
+        engine._autoContState.lastRunAt = now
+        engine._autoContState.lastOk = { fromSid: 'old-A', sessionId: 'current-new', model: 'fixture' }
+        const done = await ui.tick()
+        check('normal completion clears confirmation and opens the successor once', () => {
+          assert.equal(done?.props.confirmation, null)
+          assert.equal(done?.props.countdown, 0)
+          assert.match(done?.props.status || '', /^✓/)
+          assert.equal(ui.opened.at(-1), 'current-new')
+        })
+        const opensAfterDone = ui.opened.length
+        await ui.tick()
+        check('completion navigation stays idempotent', () => assert.equal(ui.opened.length, opensAfterDone))
+        done.props.onDismiss(); ui.show()
+        const afterDismiss = await ui.tick()
+        check('completed result remains dismissed on the next poll', () => assert.equal(afterDismiss, null))
+      }
     }
   }
   const { engine, agent, runtime } = makeEngine('another-source', 30000)
@@ -178,9 +188,37 @@ try {
   const errorUi = mount(() => ({ error: 'fixture failure', lastOk: null, armed: null, executing: false }), config)
   const error = await errorUi.settle()
   check('error without an active intent still displays', () => assert.equal(error?.props.status, '✗ fixture failure'))
-  const belowThresholdUi = mount(() => ({ armed: { ratio: .45, edgeAt: now, expiresAt: now + 35000 }, lastOk: null, executing: false }), config)
+  const belowThresholdUi = mount(() => ({ armed: { ratio: .45, tokens: 450000, window: 1000000, edgeAt: now, expiresAt: now + 35000 }, lastOk: null, executing: false }), config)
   const belowThreshold = await belowThresholdUi.settle()
-  check('ordinary client threshold behavior is unchanged', () => assert.equal(belowThreshold, null))
+  check('host-authorized low ratio intent is visible', () => assert.equal(belowThreshold?.props.confirmation?.ratio, .45))
+  // Serialized host intent is authoritative even when its arm ratio is below the config threshold.
+  for (const fromSid of ['old-A', 'another-source']) {
+    for (const dismissed of [false, true]) {
+      const historical = { at: now - 120000, sessionId: 'previous-new', fromSid }
+      let response = { lastOk: historical, armed: null, executing: false }
+      const ui = mount(() => response, config)
+      const initial = await ui.settle()
+      if (dismissed) { initial.props.onDismiss(); ui.show(); await ui.tick() }
+      const opensBeforeArm = ui.opened.length
+      response = { ...response, armed: { ratio: .45, tokens: 450000, window: 1000000,
+        triggerReason: 'compaction', hard: true, edgeAt: now, expiresAt: now + 35000 } }
+      const current = await ui.tick()
+      check('serialized low arm ratio beats history: ' + fromSid + '/' + dismissed, () => {
+        assert.equal(current?.props.confirmation?.ratio, .45)
+        assert.equal(current?.props.confirmation?.reasonText, '检测到新的上下文压缩')
+        assert.equal(current?.props.confirmation?.edgeAt, now)
+        assert.equal(current?.props.countdown, 35)
+        assert.equal(current?.props.status, '')
+        assert.equal(ui.opened.length, opensBeforeArm)
+      })
+    }
+  }
+  const low = makeEngine('another-source', 120000, 'ordinary-low')
+  await arm(low.engine, low.agent, low.runtime, 'ordinary-low')
+  check('ordinary low ratio is still rejected by the host', () => assert.equal(low.engine.autoContinueState('old-A').armed, null))
+  const expiredUi = mount(() => ({ lastOk: { at: now - 600001, sessionId: 'expired', fromSid: 'old-A' }, armed: null, executing: false }), config)
+  const expired = await expiredUi.settle()
+  check('expired history neither displays nor navigates', () => { assert.equal(expired, null); assert.deepEqual(expiredUi.opened, []) })
 } finally {
   Date.now = originalNow
   rmSync(isolatedHome, { recursive: true, force: true })
