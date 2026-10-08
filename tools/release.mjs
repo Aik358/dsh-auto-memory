@@ -98,6 +98,26 @@ if (keyOf(DEV_PHYS) === keyOf(REL_PHYS) || devInsideRel || relInsideDev) {
   process.exit(1)
 }
 if (!existsSync(DEV)) { console.error('[release] ❌ 源目录不存在:', DEV); process.exit(1) }
+const REQUIRED_RELEASE_TOOLS = ['run-smoke.mjs', 'smoke-impact.mjs', 'release.mjs', 'build-iter5-skin.mjs', 'reconcile-upstream.mjs']
+const pyMust = ['worker_v1.py', 'worker_semantic_v1.py', 'm7_activation_features_v2.py', 'm7_embedding_v1.py']
+// #323: Reject invalid copy inputs before creating or clearing the release tree.
+// Keep artifact-side verification below independent of this source preflight.
+try {
+  if (!statSync(DEV).isDirectory()) throw new Error('源目录不是目录: ' + DEV)
+  for (const entry of ['lib', 'tests', 'python']) {
+    if (!statSync(path.join(DEV, entry)).isDirectory()) throw new Error('源目录缺少必需目录: ' + entry)
+    readdirSync(path.join(DEV, entry))
+  }
+  for (const entry of ['lib/index.js', 'lib/client.js', 'cordis.patch.yml', 'CHANGELOG.md',
+    ...REQUIRED_RELEASE_TOOLS.map((f) => 'tools/' + f), ...pyMust.map((f) => 'python/' + f)]) {
+    const file = path.join(DEV, entry)
+    if (!statSync(file).isFile()) throw new Error('源目录缺少必需文件: ' + entry)
+    readFileSync(file)
+  }
+} catch (error) {
+  console.error('[release] ❌ 源输入检查失败,未清空发布基座: ' + error.message)
+  process.exit(1)
+}
 mkdirSync(REL, { recursive: true })
 for (const entry of readdirSync(REL)) {
   if (entry === '.git' || entry === '.gitignore') continue
@@ -240,7 +260,6 @@ for (const toolFile of 'build-iter5-skin.mjs'.split(',')) {
 //   （**静默跳过**）—— 这正是本缺陷的成因：文件没被列入，构建照样「成功」。
 //   故此处**不信任清单**，直接核对**交付结果**：每个必需工具必须已落在 REL 里。
 //   判据从「源侧有没有」改为「产物侧有没有」—— 与 3.7 的调用点严格配套。
-const REQUIRED_RELEASE_TOOLS = ['run-smoke.mjs', 'smoke-impact.mjs', 'release.mjs', 'build-iter5-skin.mjs', 'reconcile-upstream.mjs']
 {
   const absent = REQUIRED_RELEASE_TOOLS.filter((f) => !existsSync(path.join(REL, 'tools', f)))
   if (absent.length) {
@@ -719,7 +738,6 @@ console.log('[release] 语法 ✓ BOM ✓ 无 pre/dev 残留 ✓')
 
 // ---------- 5.5 发布物完整性(#20):python/ 运行时必须在、bench 夹具必须排除 ----------
 const pyDir = path.join(REL, 'python')
-const pyMust = ['worker_v1.py', 'worker_semantic_v1.py', 'm7_activation_features_v2.py', 'm7_embedding_v1.py']
 const pyMissing = pyMust.filter((f) => !existsSync(path.join(pyDir, f)))
 if (pyMissing.length) { console.error('[release] ❌ python/ 运行时缺失: ' + pyMissing.join(', ')); process.exit(1) }
 if (existsSync(path.join(pyDir, 'bench'))) { console.error('[release] ❌ python/bench(含 539MB 模型夹具)不得进入发布包 — 检查 package.json files 排除规则'); process.exit(1) }

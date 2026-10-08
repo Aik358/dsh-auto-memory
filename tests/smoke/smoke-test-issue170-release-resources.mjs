@@ -13,8 +13,13 @@ try {
  const debugNames=['GOOD-1533','PRE-GEN-1556','badcss','curtest','headtest','pregen-1522','scratch'].map(n=>'lib/client.js.'+n)
  for(const name of debugNames)samples[name]='must drop'
  for(const [name,body]of Object.entries(samples))writeFileSync(path.join(fixture,name),body)
- // Exercise the real copy/filter phase. A missing reconcile tool deliberately
- // stops this isolated source afterward; this is not a successful release build.
+ writeFileSync(path.join(fixture,'cordis.patch.yml'),'- id: auto-memory\n  package: "@a9i5k4/dsh-auto-memory"\n')
+ writeFileSync(path.join(fixture,'CHANGELOG.md'),'## [3.2.7]\n')
+ for(const name of ['worker_v1.py','worker_semantic_v1.py','m7_activation_features_v2.py','m7_embedding_v1.py'])writeFileSync(path.join(fixture,'python',name),'# fixture\n')
+ for(const name of ['run-smoke.mjs','smoke-impact.mjs','release.mjs'])writeFileSync(path.join(fixture,'tools',name),'// fixture\n')
+ writeFileSync(path.join(fixture,'tools/reconcile-upstream.mjs'),'console.log(JSON.stringify({artifacts:[],unregistered:[]}))\n')
+ // Exercise the real copy/filter phase with complete mandatory copy inputs.
+ // Version metadata is deliberately incomplete; this is not a successful release build.
  const run=spawnSync(process.execPath,[path.join(root,'tools/release.mjs'),'3.2.7','--dry-run'],{env:{...process.env,DSH_AUTO_MEMORY_DEV:fixture},encoding:'utf8'})
  staging=run.stdout.match(/staging 目录: (.+)/)?.[1]?.trim();assert.ok(staging,run.stdout+run.stderr)
  for(const name of ['lib/assets/skin/icon.multiple.dots.png','lib/policies/policy.json','lib/runtime.js'])assert.equal(readFileSync(path.join(staging,name),'utf8'),samples[name])

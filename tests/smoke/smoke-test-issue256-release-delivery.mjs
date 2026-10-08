@@ -72,6 +72,9 @@ try {
   for (const dir of ['lib', 'tests', 'python', 'tools', 'locale']) mkdirSync(path.join(fixture, dir), { recursive: true })
   writeFileSync(path.join(fixture, 'lib', 'index.js'), 'export const fixture = true' + String.fromCharCode(10))
   writeFileSync(path.join(fixture, 'lib', 'client.js'), 'export const fixture = true' + String.fromCharCode(10))
+  writeFileSync(path.join(fixture, 'cordis.patch.yml'), '- id: auto-memory\n  package: "@a9i5k4/dsh-auto-memory"\n')
+  writeFileSync(path.join(fixture, 'CHANGELOG.md'), '## [3.2.10]\n')
+  for (const f of ['worker_v1.py', 'worker_semantic_v1.py', 'm7_activation_features_v2.py', 'm7_embedding_v1.py']) writeFileSync(path.join(fixture, 'python', f), '# fixture\n')
   for (const f of ['run-smoke.mjs', 'smoke-impact.mjs', 'build-iter5-skin.mjs']) writeFileSync(path.join(fixture, 'tools', f), '// fixture' + String.fromCharCode(10))
   // ★关键：release.mjs **本体**拷进 fixture，使其相对解析的 DEV == fixture。
   cpSync(RELEASE, path.join(fixture, 'tools', 'release.mjs'))
