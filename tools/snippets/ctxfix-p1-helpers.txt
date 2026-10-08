@@ -1,0 +1,41 @@
+  /**
+   * ★2026-09-29 修（回收链路从未生效）：引擎上下文引用。
+   *
+   * 真根因：本文件对旧写法「引擎点 ctx」**没有任何写入点**（类里也没有该 getter），
+   *   唯一写入的是 `engine._ctxRef = ctx`（apply() 内）⇒ 旧写法恒 undefined
+   *   ⇒ reg 恒 null ⇒ 归档分支整段跳过、删除分支无 archivedAt 可依
+   *   ⇒ 归档/删除**静默空转**（42 天诊断日志 0 条 session archive 为证）。
+   * 纪律：取不到时必须留痕，否则同类「引用名写错」仍会零日志静默失效。
+   */
+  _engineCtx() {
+    const c = this._ctxRef
+    if (c && typeof c.get === 'function') return c
+    diagThrottled('sa-ctx-missing', 'session archive: engine ctx missing (_ctxRef) - archive/delete skipped', 1800000)
+    return null
+  }
+
+  /**
+   * ★2026-09-29（用户硬约束）：本功能只回收记忆中枢工作区自己的会话。
+   *
+   * 口径：工作台会话（workbench.json 的 current/previous）所在的 sessions 项目目录
+   *   = 记忆中枢工作区。用户原话：「为了保证不出什么奇怪的 bug，还是只回收记忆中枢
+   *   工作区的这些内容」「不要把用户其他子代理有用的东西全部删掉」。
+   * fail-closed：解析不出任何中枢目录 ⇒ 返回空集 ⇒ 调用方整体跳过（绝不退化成全盘扫描）。
+   */
+  _hubProjectDirs(index) {
+    const dirs = new Set()
+    try {
+      if (!index || !index.byId) return dirs
+      for (const sid of this.workbenchSessionIds()) {
+        const s = String(sid)
+        // ★兼容两种 id 形态：sessions 根下**裸 uuid 与 session-<uuid> 并存**
+        //   （见本文件 locateSessionDir 的同款注释），名册索引一律按规范 id 建键。
+        const d = index.byId.get(s) || index.byId.get(s.startsWith('session-') ? s.slice(8) : 'session-' + s)
+        if (d) dirs.add(path.dirname(String(d)))
+      }
+    } catch (e) {}
+    return dirs
+  }
+
+  workbenchSessionIds() {
+    const out = new Set()

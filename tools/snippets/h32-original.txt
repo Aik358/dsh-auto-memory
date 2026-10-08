@@ -1,0 +1,7 @@
+      var versions = dialogState.versions || []
+      var lastV = versions.length ? versions[versions.length - 1].version : ''
+      return h(Iter5Update, { versions: versions, version: dialogState.currentVersion || lastV, onClose: function () {
+        try { var seenV = (dialogState && dialogState.currentVersion) || lastV; if (seenV) localStorage.setItem('dsh-auto-memory.seenVersion', seenV) } catch (eX) {}
+        closeDialog()
+      } })
+    }

@@ -1,0 +1,9 @@
+        return h('div', { 'data-dam-tour-backdrop': '',
+            onMouseMove: function (e) {
+              // Liquid Glass 动态响应:高光/图标 3D 倾斜跟随鼠标(卡内坐标百分比)
+              var el = e.currentTarget.querySelector('[data-dam-tour]')
+              if (!el) return
+              var r = el.getBoundingClientRect()
+              el.style.setProperty('--dam-mx', (((e.clientX - r.left) / r.width) * 100).toFixed(1) + '%')
+              el.style.setProperty('--dam-my', (((e.clientY - r.top) / r.height) * 100).toFixed(1) + '%')
+            } },

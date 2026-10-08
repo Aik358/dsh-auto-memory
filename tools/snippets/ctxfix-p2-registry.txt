@@ -1,0 +1,13 @@
+      // ★2026-09-29 修根因：旧写法（引擎点 ctx）全文件零写入点 ⇒ reg 恒 null ⇒ 整条链路静默空转。
+      //   改为引擎真实持有的 `_ctxRef`；取不到时留痕（不再零日志）。
+      const ctx = this._engineCtx()
+      const reg = ctx ? ctx.get('workspaceRegistry') : null
+      if (!reg) diagThrottled('sa-no-registry', 'session archive: workspaceRegistry unavailable - archive skipped', 1800000)
+
+      // ★2026-09-29（用户硬约束）：只回收记忆中枢工作区。中枢 = 工作台会话所在的项目目录；
+      //   解析不出即整体跳过，绝不退化成「全盘扫描 ⇒ 误伤其他工作区的会话」。
+      const hubDirs = this._hubProjectDirs(index)
+      if (hubDirs.size === 0) {
+        diagThrottled('sa-no-hub', 'session archive: memory-hub project unresolved - sweep skipped (fail-closed)', 1800000)
+        return { ok: false, reason: 'hub-unresolved' }
+      }

@@ -176,9 +176,7 @@ console.log('[P2] 守恒：短请求 => 不新增文件 + carry 逐字节不变'
     ok(!carry.carryText, '★ 失败时**不返回** carryText（杜绝半份材料被投递）')
     // ③ 源回合未被取消：hostAutoContinue 的顺序是「先 carry 后 cancel」，carry 抛错即在 cancel 之前终止
     let cancelCalls = 0
-    // ★#303 预检前置后：替身须提供 selectModel，否则静态预检会在 cancel 之前拦下（那是正确行为，
-    //   但会让本段测不到「写失败 ⇒ 中止」的目标路径）。
-    eng._sessionController = { create: async () => ({ sessionId: 'n1' }), prompt: async () => ({ ok: true }), cancel: async () => { cancelCalls++ }, selectModel: async () => ({ ok: true }) }
+    eng._sessionController = { create: async () => ({ ok: true }), prompt: async () => ({ ok: true }), cancel: async () => { cancelCalls++ } }
     eng._autoContState = { armed: { sessionId: SID, manual: true }, executing: false }
     const res = await eng.hostAutoContinue()
     eq(res.ok, false, '★ ③hostAutoContinue 失败（接续被中止）')
@@ -273,7 +271,7 @@ console.log('[D] 负路径（变异必红 -> 还原必绿）')
       ok(!!c2 && c2.ok !== false, 'M2 变异 ⇒ buildContinueCarry 仍 ok:true（材料不完整却继续）')
       // 源回合会被照常取消（缺陷语义复现）
       let cancel2 = 0
-      e2._sessionController = { create: async () => ({ sessionId: 'n1' }), prompt: async () => ({ ok: true }), cancel: async () => { cancel2++ }, selectModel: async () => ({ ok: true }) }
+      e2._sessionController = { create: async () => ({ ok: true }), prompt: async () => ({ ok: true }), cancel: async () => { cancel2++ } }
       e2._autoContState = { armed: { sessionId: SID, manual: true }, executing: false }
       await e2.hostAutoContinue()
       ok(cancel2 === 1, 'M2 变异 ⇒ 源回合**被取消**（cancel=' + cancel2 + '）：正是契约要防的「先破坏用户现场再发现丢料」')

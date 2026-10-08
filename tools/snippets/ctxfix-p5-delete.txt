@@ -1,0 +1,5 @@
+        // ★纵深防御：即便 plan.targets 被将来改动污染，删除前仍复验目录属于中枢。
+        const live = plan.targets.filter((id) => {
+          const d = index.byId.get(id)
+          return d !== undefined && hubDirs.has(path.dirname(String(d)))
+        })

@@ -1,0 +1,3 @@
+      // ★2026-09-29 同上：旧写法（引擎点 ctx）零写入点 ⇒ 恒 undefined。改用 _ctxRef。
+      const _c = this._engineCtx()
+      const sp = _c ? _c.get('sessionPersistence') : null

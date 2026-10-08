@@ -1,0 +1,32 @@
+/* ★H35-LEGACY-OVERLAY-GLASS(2026-10-01)：经典/默认档浮层玻璃恢复（双轨制·仅经典档注入）。
+ *   根因：3.2.6 新增 Iter5Surface 外壳给每个 shell.overlay 条目挂 [data-dam-theme]，
+ *   使冻结表里原本**恒不匹配(休眠)**的这条规则复活：
+ *     [data-dam-theme] :is([data-dam-panel],[data-dam-tour],[data-dam-autocont])
+ *       { background:var(--i5-surface)!important; backdrop-filter:none!important; ... }
+ *   ⇒ 浮窗/引导被强制改成不透明 i5 面色并杀掉毛玻璃（用户实报「蓝底」）。
+ *   本段用**更高特异性**还原主样式表原本的液态玻璃配方（不改任何 --i5-* 变量定义，
+ *   故设置页深浅双档 #FFFFFF/#1D293D 完全不受影响）。
+ *   作用域：只匹配本插件自挂的 [data-dam-theme]（dam- 前缀 = 本插件命名空间），
+ *   其他创作者插件/皮肤不含该属性 ⇒ 零干扰。
+ *   仅注入于 legacy 档（damSkinCssText 的 legacy 分支）；变体档(iter5)保持社区作者原样。
+ */
+[data-dam-theme][data-dam-theme] [data-dam-panel]{
+  background: color-mix(in srgb, var(--dsw-alias-bg-layer-2, rgba(255,255,255,.86)) 58%, transparent) !important;
+  backdrop-filter: blur(28px) saturate(1.55) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(1.55) !important;
+  border: 1px solid color-mix(in srgb, var(--dsw-alias-border-l1, rgba(128,128,128,.35)) 65%, transparent) !important;
+  border-radius: var(--dam-radius-xxl, 16px) !important;
+  box-shadow: var(--dam-shadow-x1, 0 24px 64px rgba(0,0,0,.22), 0 4px 16px rgba(0,0,0,.10), inset 0 1px 0 rgba(255,255,255,.22)) !important;
+  color: var(--dsw-alias-label-primary, #1f2328) !important;
+}
+[data-dam-theme][data-dam-theme] [data-dam-tour]{
+  background: color-mix(in srgb, var(--dsw-alias-bg-layer-2, rgba(30,34,46,.9)) 60%, transparent) !important;
+  backdrop-filter: blur(30px) saturate(1.6) !important;
+  -webkit-backdrop-filter: blur(30px) saturate(1.6) !important;
+  border: 1px solid var(--dam-white-50, rgba(255,255,255,.5)) !important;
+  border-radius: var(--dam-radius-xxxl2, 22px) !important;
+  box-shadow: var(--dam-shadow-x5, 0 32px 90px rgba(8,14,38,.5), 0 6px 24px rgba(8,14,38,.28), inset 0 1px 0 rgba(255,255,255,.5), inset 0 -1px 0 rgba(255,255,255,.14)) !important;
+  color: var(--dsw-alias-label-primary, #1f2328) !important;
+}
+/* 浮层玻璃下，浅色档文字对比度由主表保证；此处仅补回被 backdrop-filter:none 顺带影响的层级 */
+[data-dam-theme][data-dam-theme] :is([data-dam-panel],[data-dam-tour]){ isolation: isolate; }
