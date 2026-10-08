@@ -121,10 +121,14 @@ console.log('[③] #312 目录迁移失败**不得**留下已处理缓存（旧�
 
 
 // ══════════════════════════════════════════════════════════════
-console.log('[④] #305 受理登记真实 mutation flight + 提交时复核持久配置根')
+console.log('[④] #320 受理登记、有限等待与配置锁内持久根复核')
 // ══════════════════════════════════════════════════════════════
 {
-  const mkEngine = (cfg, mig) => ({ config: cfg, _settingsMigrationActive: !!mig, expandUserPath: (p) => String(p || '') })
+  const mkEngine = (cfg, mig) => {
+    const root = mkroot('320'), file = path.join(root, 'settings.json')
+    writeFileSync(file, JSON.stringify(cfg))
+    return { config: cfg, _configPath: file, _settingsMigrationActive: !!mig, expandUserPath: p => p ? path.resolve(p) : '' }
+  }
   // ④-1 flight 登记后必须能被 drain 到，settle 后集合清空（不悬挂）
   const e1 = mkEngine({ memoryRoot: 'D:/r1' })
   const reg = MT.registerMemoryMutationFlightPre(e1, 'D:/r1/f.md')
@@ -137,16 +141,17 @@ console.log('[④] #305 受理登记真实 mutation flight + 提交时复核持�
   ok(e1._memoryMutationFlights.size === 0, '★ ④ settle 后集合清空（不悬挂；实 ' + e1._memoryMutationFlights.size + '）')
   // ④-2 drain 必须有界：永不 settle 的 flight 不能让迁移卡死
   const e2 = mkEngine({ memoryRoot: 'D:/r2' })
-  MT.registerMemoryMutationFlightPre(e2, 'D:/r2/f.md')
+  const reg2 = MT.registerMemoryMutationFlightPre(e2, 'D:/r2/f.md')
   const t0 = Date.now()
   const d2 = await MT.drainMemoryMutationFlightsPre(e2, { timeoutMs: 300 })
   const elapsed = Date.now() - t0
   ok(d2.settled === false && elapsed < 3000, '★ ④ drain 有界（不 settle 时不卡死；实 elapsed=' + elapsed + 'ms ' + JSON.stringify(d2) + '）')
+  reg2.settle()
   // ④-3 提交时复核持久根：写期间根被改 ⇒ 结构化 409（不给出「成功但落在旧根」的回执）
   const e3 = mkEngine({ memoryRoot: 'D:/old' })
   const adm3 = MT.captureMemoryMutationPre(e3, 'D:/old/f.md')
   let threw3 = null
-  try { await MT.withMemoryMutationPre(e3, 'D:/old/f.md', async () => { e3.config = { memoryRoot: 'D:/new' }; return 'wrote' }, adm3) } catch (e) { threw3 = e }
+  try { await MT.withMemoryMutationPre(e3, 'D:/old/f.md', async () => { writeFileSync(e3._configPath, JSON.stringify({ memoryRoot: 'D:/new' })); return 'wrote' }, adm3) } catch (e) { threw3 = e }
   ok(threw3 && threw3.code === 'SETTINGS_ROOT_CHANGED' && threw3.statusCode === 409, '★ ④ 写期间根被改 ⇒ 409 SETTINGS_ROOT_CHANGED（旧实现静默成功；实 ' + (threw3 ? threw3.code : 'NO-THROW') + '）')
   // ④-4 负路径的另一半：根**没**变 ⇒ 不得误拒（含中间有 await 的正常写）
   const e4 = mkEngine({ memoryRoot: 'D:/same' })
@@ -155,9 +160,8 @@ console.log('[④] #305 受理登记真实 mutation flight + 提交时复核持�
   ok(out4 === 'ok', '★ ④ 根未变 ⇒ 正常写不受影响（无假拒绝；实 ' + JSON.stringify(out4) + '）')
   // ④-5 迁移窗口仍照旧 409
   const e5 = mkEngine({}, true)
-  const adm5 = MT.captureMemoryMutationPre(e5, 'D:/z/f.md')
   let threw5 = null
-  try { await MT.withMemoryMutationPre(e5, 'D:/z/f.md', async () => 'x', adm5) } catch (e) { threw5 = e }
+  try { await MT.withMemoryMutationPre(e5, 'D:/z/f.md', async () => 'x') } catch (e) { threw5 = e }
   ok(threw5 && threw5.code === 'SETTINGS_MIGRATION_ACTIVE', '★ ④ 迁移窗口 409 语义未变（实 ' + (threw5 ? threw5.code : 'NO-THROW') + '）')
 }
 console.log('\n结果: ' + pass + ' PASS / ' + fail + ' FAIL')
