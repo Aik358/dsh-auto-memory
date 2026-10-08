@@ -142,5 +142,15 @@ await check('oversized result identity cannot enlarge persistent consumption sto
   h.state = result(now, 'normal'); await h.tick(); assert.ok(shown(h)); await h.dismiss()
   assert.ok(disk.getItem(storeKey).length < 4096)
 })
+await check('quota failure with a full saved history cannot evict the memory fallback', async () => {
+  let saved = JSON.stringify(Array.from({ length: 64 }, (_, i) => ({ key: now + '|old-' + i, at: now }))), blocked = true
+  const disk = { getItem: () => saved, setItem(k, v) { if (blocked) throw Error('quota'); saved = v } }
+  const p = page(disk)
+  const h = p.mount(); await h.settle(); await h.dismiss()
+  for (let i = 0; i < 70; i++) await h.tick()
+  h.unmount(); const remount = p.mount(); await remount.settle(); assert.ok(!shown(remount))
+  blocked = false; remount.state = result(now, 'recovered'); await remount.tick(); assert.ok(shown(remount)); await remount.dismiss()
+  const reload = page(disk).mount(result(now, 'recovered')); await reload.settle(); assert.ok(!shown(reload))
+})
 console.log(`${passed} passed, ${failed} failed`)
 if (failed) process.exitCode = 1
