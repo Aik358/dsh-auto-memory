@@ -90,7 +90,7 @@ const CFG = {
 for (const k of ['appId', 'appSecret', 'groupId', 'ghToken']) {
   if (!CFG[k]) { console.error(`[webhook] 缺少环境变量 ${k}`); process.exit(1) }
 }
-const VERSION = 'webhook-failclosed-20260921a' // 部署核对标记:diag 端点与错误响应都会带它(20260914a=@ 答疑优先于已记录;20260921a=#113-#116 四条默认值全部改 fail-closed)
+const VERSION = 'webhook-cas-20261008a' // 部署核对标记:diag 端点与错误响应都会带它(20260914a=@ 答疑优先于已记录;20260921a=#113-#116 四条默认值全部改 fail-closed;20261008a=#310 群反馈写 gist 改条件请求 CAS,防并发覆盖丢行)
 const FEEDBACK_FILE = 'group-feedback.jsonl' // 反馈收集钉死文件名(digest 与 report 同读此名,清空时保留文件本身)
 let lastError = null // 最近一次内部错误(diag 可见)
 let botMentionToken = null // 从「@机器人+反馈词」消息里学习的机器人 mention 标识
@@ -292,23 +292,92 @@ async function llmReply(userText) {
 }
 
 // ---------- GitHub(Gist 收集) ----------
+// ★2026-10-08(issue #310):API 基址可覆盖(默认官方)。存在的唯一理由是**可测** ——
+//   本缺陷是「读-改-写」的并发交错,只有让套件在本进程内起一个**真的 HTTP 假 GitHub**、
+//   让真身真的并发打两次请求,才能复现"两行只剩一行";打桩/源码 grep 都证明不了并发行为。
+const GH_API_BASE = (process.env.GITHUB_API_BASE || 'https://api.github.com').replace(/\/$/, '')
 const gh = (p, opts = {}) =>
-  fetch(`https://api.github.com${p}`, {
+  fetch(`${GH_API_BASE}${p}`, {
     ...opts,
     headers: { Accept: 'application/vnd.github+json', Authorization: `Bearer ${CFG.ghToken}`, 'User-Agent': 'qq-webhook', ...(opts.headers || {}) },
-  }).then(async (r) => ({ ok: r.ok, status: r.status, body: r.status === 204 ? null : await r.json().catch(() => null) }))
+  }).then(async (r) => ({
+    ok: r.ok,
+    status: r.status,
+    // ★#310:并发协调靠的是**服务端版本号**(条件请求),故必须把这两个头带出来。
+    etag: r.headers.get('etag') || '',
+    lastModified: r.headers.get('last-modified') || '',
+    body: r.status === 204 ? null : await r.json().catch(() => null),
+  }))
+
+/** 反馈文件行数上界(与旧实现一致:只保留最近 400 条)。 */
+const FEEDBACK_MAX_LINES = 400
+
+/**
+ * ★#310:对共享 gist 文件的「读-改-写」并发布(**条件请求 CAS**)。
+ *
+ * 旧实现(gistAppend 直接 GET → 本地追加 → PATCH 整份)的失效形态:
+ * 两次调用(两个云函数实例 / 冷启动期的两个并发请求)从**同一份快照**出发,各自 PATCH 自己那份
+ * ⇒ 后写者把先写者的行整行抹掉,群反馈**静默丢失**。单实例内的 Promise 队列治不了它:
+ * 云函数是多实例的,实例之间没有共享内存;文件锁也落不到别人的容器里。
+ *
+ * 因此把协调交给**服务端**:
+ *   ① 每次 PATCH 带 `If-Match: <读出时的 ETag>`(缺失时回退 `If-Unmodified-Since: <Last-Modified>`);
+ *   ② 版本已被别人推进 ⇒ 服务端回 **412** ⇒ 重读最新内容 → 重算 → 重试(有界退避);
+ *   ③ 重试耗尽 ⇒ **显式抛错**(调用方按"这条没写成功"处理)——
+ *      **绝不**在拿不准版本时盲写:盲写等于用旧快照覆盖别人的新行,正是本缺陷的危害本身。
+ *   ④ 写完回读一次,确认**本行确实在文件里**(把"PATCH 返回 ok 但行没落进去"这种情况也变成失败)。
+ *      注意回读只认「本行在不在」,不去断言"旧行一条都不能少" —— 日报脚本本来就会清空该文件,
+ *      那种"消失"是业务语义,不是并发丢失。
+ *
+ * @param {(prevText:string)=>string} mutate 纯函数:读到的内容 → 期望写回的内容(重试会再调一次)
+ * @returns {Promise<{attempts:number}>}
+ */
+async function gistCasAppend(mutate) {
+  const ATTEMPTS = 5
+  let lastStatus = 0
+  for (let attempt = 1; attempt <= ATTEMPTS; attempt++) {
+    const r0 = await gh(`/gists/${CFG.gistId}`)
+    if (!r0.ok) throw new Error(`读 gist 失败 ${r0.status}`)
+    const cur = String((r0.body && r0.body.files && r0.body.files[FEEDBACK_FILE] && r0.body.files[FEEDBACK_FILE].content) || '')
+    const next = mutate(cur)
+    const headers = { 'Content-Type': 'application/json' }
+    if (r0.etag) headers['If-Match'] = r0.etag
+    else if (r0.lastModified) headers['If-Unmodified-Since'] = r0.lastModified
+    else throw new Error('gist 响应既无 ETag 也无 Last-Modified:无法判定版本,拒绝盲写(宁可丢本次记录也不覆盖别人的新行)')
+    const r = await gh(`/gists/${CFG.gistId}`, { method: 'PATCH', headers, body: JSON.stringify({ files: { [FEEDBACK_FILE]: { content: next } } }) })
+    if (r.ok) {
+      // 回读确认本行落地(见上注 ④):读不到就一定不是"成功",不许当成功返回
+      const rb = await gh(`/gists/${CFG.gistId}`)
+      const after = String((rb.body && rb.body.files && rb.body.files[FEEDBACK_FILE] && rb.body.files[FEEDBACK_FILE].content) || '')
+      if (after === next) return { attempts: attempt }
+      lastStatus = 0   // 写成功但内容被并发改写 ⇒ 当冲突处理,重读重算
+      if (attempt === ATTEMPTS) throw new Error('写 gist 后被并发改写,回读校验未通过(本行未确认落地)')
+    } else if (r.status === 412) {
+      lastStatus = 412
+    } else {
+      throw new Error(`写 gist 失败 ${r.status}`)   // 非冲突类错误(鉴权/网络/限流)不重试,直接如实上报
+    }
+    if (attempt < ATTEMPTS) {
+      // 有界退避:让抢先者先落库,降低双方反复相撞的概率(云函数实例数很少,收敛很快)
+      await new Promise((res) => setTimeout(res, 30 * attempt + Math.floor(Math.random() * 30)))
+    }
+  }
+  throw new Error(`写 gist 冲突未收敛(已重试 ${ATTEMPTS} 次,末次状态 ${lastStatus}):并发写者过密,本次反馈未记录`)
+}
 
 async function gistAppend(line) {
   // 2026-09-13 修复:反馈一律写进**钉死的文件名** group-feedback.jsonl(PATCH 到不存在的文件名会自动创建)。
   // 旧实现取「gist 里第一个文件」——raw-debug 文件先建/清空后文件被删,第一个文件就会换人,
   // 反馈与原始调试混写(实测 14:29 的反馈行混进了 group-raw-debug.txt)。
-  const r0 = await gh(`/gists/${CFG.gistId}`)
-  if (!r0.ok) throw new Error(`读 gist 失败 ${r0.status}`)
-  const prev = (r0.body.files[FEEDBACK_FILE]?.content || '').split('\n').filter(Boolean)
-  prev.push(line)
-  while (prev.length > 400) prev.shift() // 只保留最近 400 条
-  const r = await gh(`/gists/${CFG.gistId}`, { method: 'PATCH', body: JSON.stringify({ files: { [FEEDBACK_FILE]: { content: prev.join('\n') + '\n' } } }) })
-  if (!r.ok) throw new Error(`写 gist 失败 ${r.status}`)
+  // ★2026-10-08(#310):上面的"读出的整份 → 追加 → 写回"必须整段放进 CAS 重试里 ——
+  //   把它拆成"先读一次,再带版本写一次"是不够的:412 之后必须用**新读到的内容**重算下一份,
+  //   否则重试写的还是过期快照,只是把覆盖延后一轮。
+  await gistCasAppend((cur) => {
+    const prev = cur.split('\n').filter(Boolean)
+    prev.push(line)
+    while (prev.length > FEEDBACK_MAX_LINES) prev.shift() // 只保留最近 400 条
+    return prev.join('\n') + '\n'
+  })
 }
 
 // 状态文件(bot-state.json,与反馈收集同一个 gist):@问答配额/定时班去重都落这里,防冷启动失忆

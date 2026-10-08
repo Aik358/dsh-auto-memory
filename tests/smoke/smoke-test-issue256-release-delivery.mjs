@@ -41,8 +41,18 @@ ok(copyList.includes('reconcile-upstream.mjs'), '★ tools 拷贝清单含 recon
 const reqIdx = SRC.indexOf('REQUIRED_RELEASE_TOOLS')
 ok(reqIdx >= 0 && SRC.slice(reqIdx).includes('reconcile-upstream.mjs'), '★ 有「产物侧」必需工具清单且含 reconcile-upstream.mjs（不信任源侧清单）')
 ok(SRC.includes("path.join(REL, 'tools', 'reconcile-upstream.mjs')"), '★ §5.5 发布物完整性断言 tools/reconcile-upstream.mjs 存在')
-ok(SRC.includes('const sameDir = (x, y) =>') && SRC.includes('if (sameDir(DEV, REL))'), '★ DEV === REL 同目录 fail closed（DEV 相对化后的自毁风险）')
-ok(SRC.includes("process.platform === 'win32' ? a.toLowerCase() === b.toLowerCase()"), '★ 同目录判据在 win32 下大小写不敏感')
+// ★2026-10-08 重钉（#309）：本组原先钉的是旧实现的**源码形态**（const sameDir = … / process.platform 三元）。
+//   实现按 #309 演进了 —— 同目录只是包含关系的一个特例，旧判据只做字符串相等，会放行
+//   「DEV = REL/source」（清空 REL 时先删掉源 ⇒ 自毁）。现改为**真实物理路径 + 组件级包含**判定，
+//   形态自然变了 ⇒ 属「判据过期、非缺陷」，按 2026-10-01 裁定按意图改为新形态取证（不回滚成果）。
+//   意图不变：①同目录必须 fail closed；②win32 大小写不敏感。
+//   注意：真正有鉴别力的是下方 B 段的**真执行**（fixture 内哨兵 + 明确非零退出），本组只是源码接线守卫。
+ok(SRC.includes('const devInsideRel = within(REL_PHYS, DEV_PHYS)') && SRC.includes('if (keyOf(DEV_PHYS) === keyOf(REL_PHYS) || devInsideRel || relInsideDev)'),
+  '★ DEV === REL 同目录 fail closed（DEV 相对化后的自毁风险）')
+ok(SRC.includes("const keyOf = (s) => (process.platform === 'win32' ? s.toLowerCase() : s)"), '★ 同目录判据在 win32 下大小写不敏感')
+// ★#309 新增：两个方向的**包含关系**也必须 fail closed（旧判据只防字符串相等，这是本条缺陷）。
+ok(SRC.includes('const relInsideDev = within(DEV_PHYS, REL_PHYS)'), '★ #309 DEV 在 REL 之内（源在发布目标内部）fail closed')
+ok(SRC.includes("const { realpathSync } = await import('node:fs')"), '★ #309 判据基于 realpath（junction/symlink 指向源时同样被拦）')
 
 console.log('[#256] B. 真执行：复制/交付阶段（fixture 隔离，不触碰真实发布基座）')
 const fixture = mkdtempSync(path.join(tmpdir(), 'dam-256-delivery-'))
