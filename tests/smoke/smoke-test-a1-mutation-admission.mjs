@@ -195,10 +195,19 @@ console.log('[A1] ③ #249 生产文档 mutation 统一 admission')
     try { await engine.writeFull(target, 'AFTER\n') } catch (e) { err = e }
     ok(!!err && err.code === 'SETTINGS_MIGRATION_ACTIVE' && err.statusCode === 409, '③ 迁移窗口：writeFull 明确拒绝（409 / SETTINGS_MIGRATION_ACTIVE）', err && (err.code + '/' + err.statusCode))
     ok(await fsp.readFile(target, 'utf8') === 'BEFORE\n', '③ 迁移窗口：目标字节未被改写')
-    // 已受理的写照常完成：路由 flight 已登记时（本仓 /note、白板的既有语义）不得二次拒绝
+    // Another route's flight does not authorize this request during migration.
     engine._settingsNoteFlights = new Set([Promise.resolve()])
-    await engine.writeFull(target, 'AFTER_ADMITTED\n')
-    ok(await fsp.readFile(target, 'utf8') === 'AFTER_ADMITTED\n', '③ 已受理（有路由 flight）的写不被二次拒绝')
+    let unrelated = null
+    try { await engine.writeFull(target, 'UNRELATED\n') } catch (e) { unrelated = e }
+    ok(unrelated?.code === 'SETTINGS_MIGRATION_ACTIVE', '③ 其他路由 flight 不放行当前请求', unrelated?.code)
+    ok(await fsp.readFile(target, 'utf8') === 'BEFORE\n', '③ 未受理请求没有改写目标字节')
+    engine._settingsMigrationActive = false
+    await engine._withMemoryAdmissionScopePre(async () => {
+      engine._settingsMigrationActive = true
+      try { await engine.writeFull(target, 'AFTER_ADMITTED\n') }
+      finally { engine._settingsMigrationActive = false }
+    })
+    ok(await fsp.readFile(target, 'utf8') === 'AFTER_ADMITTED\n', '③ 当前请求的已受理 scope 允许完成写入')
     engine._settingsNoteFlights = new Set()
     engine._settingsMigrationActive = false
     await engine.writeFull(target, 'AFTER\n')
@@ -335,9 +344,10 @@ if (!process.env.A1_SOURCE_ROOT) {
   await fsp.cp(path.join(ownRoot, 'lib'), path.join(negRoot, 'lib'), { recursive: true })
   await fsp.cp(path.join(ownRoot, 'tests', 'lib'), path.join(negRoot, 'tests', 'lib'), { recursive: true })
   const revert = (file, pairs) => {
-    let text = fs.readFileSync(file, 'utf8')
-    for (const [from, to] of pairs) {
-      assert.ok(text.includes(from), '回退锚点必须唯一存在: ' + file + ' :: ' + from.slice(0, 60))
+    let text = fs.readFileSync(file, 'utf8').replace(/\r\n/g, '\n')
+    for (const [rawFrom, rawTo] of pairs) {
+      const from = rawFrom.replace(/\r\n/g, '\n'), to = rawTo.replace(/\r\n/g, '\n')
+      assert.equal(text.split(from).length - 1, 1, '回退锚点必须唯一存在: ' + file + ' :: ' + from.slice(0, 60))
       text = text.split(from).join(to)
     }
     fs.writeFileSync(file, text, 'utf8')
