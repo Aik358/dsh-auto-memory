@@ -80,6 +80,8 @@ function readZipEntry(zipPath, wanted) {
 
 const TMP = fs.mkdtempSync(path.join(os.tmpdir(), 'qq310-cas-'))
 const sha256 = (b) => crypto.createHash('sha256').update(b).digest('hex')
+// Deployment/Git text uses LF; Windows checkouts may transparently use CRLF.
+const deployBytes = (file) => Buffer.from(fs.readFileSync(file, 'utf8').replace(/\r\n/g, '\n'))
 const ENTRY_CJS = path.join(TMP, 'index.cjs')
 fs.copyFileSync(ENTRY, ENTRY_CJS)
 const ENTRY_SHA = sha256(fs.readFileSync(ENTRY))
@@ -223,14 +225,14 @@ async function main() {
   {
     const zipPath = path.join(ROOT, '.github', 'cloud', 'qq-webhook', 'index.zip')
     const zip = readZipEntry(zipPath, 'index.js')
-    const srcBytes = fs.readFileSync(REAL_ENTRY)
+    const srcBytes = deployBytes(REAL_ENTRY)
     ok(!!zip, '#310 index.zip 可解析且含 index.js 条目', zipPath)
     if (zip) {
       ok(zip.length === srcBytes.length && zip.equals(srcBytes),
-        '★#310 index.zip 里的 index.js 与源文件**逐字节一致**(源改了必须重新打包,否则线上跑的是旧字节)',
+        '★#310 index.zip 与 LF 部署源码逐字节一致(源改了必须重新打包)',
         'zip=' + zip.length + 'B src=' + srcBytes.length + 'B sha(zip)=' + sha256(zip).slice(0, 16) + ' sha(src)=' + sha256(srcBytes).slice(0, 16))
       const bootZip = readZipEntry(zipPath, 'scf_bootstrap')
-      const bootSrc = fs.readFileSync(path.join(ROOT, '.github', 'cloud', 'qq-webhook', 'scf_bootstrap'))
+      const bootSrc = deployBytes(path.join(ROOT, '.github', 'cloud', 'qq-webhook', 'scf_bootstrap'))
       ok(!!bootZip && bootZip.equals(bootSrc), '#310 index.zip 里的 scf_bootstrap 也与源同步', bootZip ? 'zip=' + bootZip.length : 'missing')
     }
     console.log('  [物理量] 源 index.js ' + srcBytes.length + 'B sha256=' + sha256(srcBytes))
@@ -303,7 +305,7 @@ async function main() {
       const s = await startServer(g.port); servers.push(s)
       const before = g.state.content
       const r = await signedPost(s.port, feedbackEvent('M-E', '反馈 戊:无版本号场景'))
-      ok(r.status === 200, '#310 无版本号时事件本身仍被受理(云函数不能因此崩)', String(r.status))
+      ok(r.status === 503, '#324 无版本号不能持久保存时返回 503,允许平台重试', String(r.status))
       ok(g.state.patches.length === 0, '★#310 负路径:没有版本号时**一个 PATCH 都没发**(拒绝盲写)', 'patches=' + JSON.stringify(g.state.patches))
       ok(g.state.content === before, '★#310 负路径:既有内容逐字节未变(没有被覆盖)', JSON.stringify(g.state.content).slice(0, 200))
       ok(/收集失败/.test(s.log()), '#310 负路径:失败被写成可读日志,不是静默吞掉', s.log().slice(-300))
@@ -314,7 +316,7 @@ async function main() {
     //   变异 = 把「条件请求」这一步去掉（PATCH 不再带 If-Match）——这正是 #310 的旧形态。
     // =====================================================================
     if (!CHILD) {
-      const real = fs.readFileSync(REAL_ENTRY, 'utf8')
+      const real = fs.readFileSync(REAL_ENTRY, 'utf8').replace(/\r\n/g, '\n')
       const ANCHOR = "    if (r0.etag) headers['If-Match'] = r0.etag\n"
         + "    else if (r0.lastModified) headers['If-Unmodified-Since'] = r0.lastModified\n"
         + "    else throw new Error('gist 响应既无 ETag 也无 Last-Modified:无法判定版本,拒绝盲写(宁可丢本次记录也不覆盖别人的新行)')"
