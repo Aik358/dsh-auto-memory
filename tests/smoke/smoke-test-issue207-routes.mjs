@@ -17,7 +17,7 @@ fs.mkdirSync(workspace,{recursive:true})
 fs.writeFileSync(path.join(root,'dsh-auto-memory.json'),JSON.stringify({memoryRoot:path.join(root,'memory'),userMemoryDir:path.join(root,'user'),handoffEnabled:false,autoContinueEnabled:true,teamEnabled:false,externalSources:{}}))
 function session(sid) {
  const dir=path.join(root,'sessions','project',sid);fs.mkdirSync(dir,{recursive:true})
- fs.writeFileSync(path.join(dir,'session.jsonl'),[JSON.stringify({cwd:workspace,agentPreset:'default'}),JSON.stringify({type:'user/message',data:{message:{role:'user',content:[{type:'text',text:'continue isolated task'}]}}})].join('\n')+'\n')
+ fs.writeFileSync(path.join(dir,'session.jsonl'),[JSON.stringify({cwd:workspace,agentPreset:'default'}),JSON.stringify({type:'request/header',data:{header:{config:{provider:'fixture',model:'fixture-model'}}}}),JSON.stringify({type:'user/message',data:{message:{role:'user',content:[{type:'text',text:'continue isolated task'}]}}})].join('\n')+'\n')
 }
 function call(p,body,method='POST') {
  const route=routes.find(r=>r.path===p.split('?')[0]);assert(route)
@@ -30,7 +30,7 @@ try {
  apply({get:()=>undefined,on:()=>()=>{},systemPrompt:{context:()=>()=>{},section:()=>()=>{}},tools:{register:()=>()=>{}},webServer:{register:r=>{routes.push(r);return()=>{}}},effect:f=>cleanup=f()},{})
  globalThis.setInterval=interval;globalThis.setTimeout=timeout;MemoryEngine.prototype.loadConfigSync=load
  assert(engine);engine.configLoaded=true
- const controller={create:async()=>({sessionId:'session-new-'+(++creates)}),cancel:async()=>{},rename:async()=>{},prompt:async req=>{if(req.sessionId.startsWith('session-new-')){if(failDelivery)throw Error('delivery result unknown');denyFinal=true}}}
+ const controller={create:async()=>({sessionId:'session-new-'+(++creates)}),cancel:async()=>{},rename:async()=>{},selectModel:async r=>({selected:{provider:r.provider,model:r.model}}),prompt:async req=>{if(req.sessionId.startsWith('session-new-')){if(failDelivery)throw Error('delivery result unknown');denyFinal=true}}}
  const setup=e=>{e.config={...engine.config};e.configLoaded=true;e._sessionController=controller;e.inheritPermissionForContinue=async()=>({ok:false,reason:'isolated permission service'})}
  setup(engine)
  fs.renameSync=(from,to)=>{if((denyCounter&&to===engine.contSeqFile())||(denyFinal&&to.includes('auto-continue-done.d')&&to.endsWith('.json')))throw Object.assign(new Error('isolated commit denied'),{code:'EPERM'});return rename(from,to)};syncBuiltinESMExports()

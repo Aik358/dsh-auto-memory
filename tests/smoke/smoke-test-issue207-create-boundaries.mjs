@@ -16,6 +16,7 @@ function engineFor(source, create) {
   fs.mkdirSync(dir, {recursive:true})
   fs.writeFileSync(path.join(dir, 'session.jsonl'), [
     JSON.stringify({cwd:workspace, agentPreset:'default'}),
+    JSON.stringify({type:'request/header', data:{header:{config:{provider:'fixture', model:'fixture-model'}}}}),
     JSON.stringify({type:'user/message', data:{message:{role:'user', content:[{type:'text', text:'continue isolated task'}]}}}),
   ].join('\n') + '\n')
   const engine = new MemoryEngine()
@@ -23,7 +24,7 @@ function engineFor(source, create) {
   engine.configLoaded = true
   engine.resolveWorkspaceIdForSession = () => 'workspace-source'
   engine.inheritPermissionForContinue = async () => ({ok:false})
-  engine._sessionController = {create, cancel:async () => {}, rename:async () => {}, prompt:async request => {
+  engine._sessionController = {create, cancel:async () => {}, rename:async () => {}, selectModel:async r => ({selected:{provider:r.provider,model:r.model}}), prompt:async request => {
     if (request.sessionId !== source) delivered++
   }}
   return engine
