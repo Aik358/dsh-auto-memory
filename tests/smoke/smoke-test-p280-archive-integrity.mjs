@@ -269,7 +269,9 @@ console.log('[P280] ③ A1 变异负路径：恢复「同键一律 dup（不看�
 {
   const mutated = path.join(temp, 'team-outbox-old.mjs')
   let s = fs.readFileSync(path.join(ROOT, 'lib/team-outbox.js'), 'utf8')
-  const start = s.indexOf('      const previous = seen.get(dk)')
+  // The real outbox now shares the production path lock; keep the copied mutant resolvable.
+  s = s.replace("'./shared-state-lock.js'", JSON.stringify(pathToFileURL(path.join(ROOT, 'lib/shared-state-lock.js')).href))
+  const start = s.indexOf('      const previous = seen.get(dk)', s.indexOf('    enqueue(entry)'))
   const end = s.indexOf('      queue.push(item)', start)
   assert.ok(start > 0 && end > start, 'mutation span located')
   s = s.slice(0, start) + '      if (seen.has(dk)) return { ok: true, id, dup: true, dropped: 0, size: queue.length }\n' + s.slice(end)

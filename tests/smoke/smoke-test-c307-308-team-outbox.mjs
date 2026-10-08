@@ -128,15 +128,17 @@ async function main() {
       ok(threw === null, "#307 锁被占用时 enqueue 仍不抛(fail-soft)", threw && threw.message)
       ok(r !== null && typeof r === "object" && typeof r.ok === "boolean",
         "★#307 enqueue 是**同步返回**的结构化结果(不是 Promise;既有调用点直接读 .ok)", "实得 " + JSON.stringify(r))
-      ok(elapsed >= 180, "★#307 同步锁真的与 shared-state-lock 互斥(被挡了≈等待上限,实得 " + elapsed + "ms)", "elapsed=" + elapsed)
-      ok(r && r.ok === true && r.persisted !== false, "★#307 超时后 fail-soft 降级仍能落盘(重读+合并兜底)", JSON.stringify(r))
+      ok(elapsed < 150, "★#307 同步入口不阻塞异步锁所有者的事件循环", "elapsed=" + elapsed)
+      ok(r && r.ok === false && /state-lock-busy/.test(r.reason), "★#307 锁忙可见失败，不允许无锁读改写", JSON.stringify(r))
       release()
-      ok(diskKeys(dir).join(",") === "L", "#307 降级路径写下的条目确实在盘上", JSON.stringify(diskKeys(dir)))
+      ok(diskKeys(dir).length === 0, "#307 被拒绝的争锁写没有覆盖磁盘", JSON.stringify(diskKeys(dir)))
       // 释放后再入队:这次应当不必等满上限(锁已可用)
       const t1 = Date.now()
       const r2 = ob.enqueue({ kind: "handoff", key: "M", payload: { n: 2 } })
       const fast = Date.now() - t1
       ok(r2 && r2.ok === true && fast < 150, "★#307 锁可用时入队几乎不等待(实得 " + fast + "ms)", JSON.stringify(r2))
+      const retry = ob.enqueue({ kind: "handoff", key: "L", payload: { n: 1 } })
+      ok(retry.ok === true && diskKeys(dir).join(",") === "L,M", "#307 释放锁后显式重试可持久化", JSON.stringify(retry))
     }
   }
 
@@ -229,21 +231,20 @@ async function main() {
     const real = fs.readFileSync(REAL_SRC, "utf8")
 
     // 变异①#307 回退：去掉 writeLockedPre 里的「重读磁盘 + 合并」，退回整份快照直写
-    const m1Start = real.indexOf("      const disk = mergeDiskPrePre()")
-    const M1_END = "      return saved\n    } finally {"
-    const m1End = real.indexOf(M1_END, m1Start)
-    ok(m1Start > 0 && m1End > m1Start && m1End - m1Start < 3000, "变异定位:#307 合并块", "s=" + m1Start + " e=" + m1End)
+    const writeStart = real.indexOf("function writeLockedPre(candidate)")
+    const M1_ANCHOR = "const merged = mergeCandidatePre(candidate)"
+    const m1Start = real.indexOf(M1_ANCHOR, writeStart)
+    ok(writeStart > 0 && m1Start > writeStart, "变异定位:#307 锁内重读", "s=" + m1Start)
     const m1Path = path.join(TMP, "mutated-307.mjs")
-    fs.writeFileSync(m1Path, real.slice(0, m1Start)
-      + "      const saved = writeNowPre(candidate)\n      if (!saved.ok) { try { api.load() } catch (_) {} }\n      return saved\n    } finally {"
-      + real.slice(m1End + M1_END.length))
+    const resolvable = source => source.replace("'./shared-state-lock.js'", JSON.stringify(pathToFileURL(path.join(ROOT, "lib/shared-state-lock.js")).href))
+    fs.writeFileSync(m1Path, resolvable(real.slice(0, m1Start) + "const merged = { ok: true, items: candidate }" + real.slice(m1Start + M1_ANCHOR.length)))
 
     // 变异②#308 回退：dup 分支不再看 persisted（旧写法：一律短路）
     const DUP_ANCHOR = "if (previous.persisted === true && sameEntryPre(previous, item)) {"
     const dupHits = real.split(DUP_ANCHOR).length - 1
     ok(dupHits === 1, "变异定位:#308 dup 短路锚点恰命中 1 次", "hits=" + dupHits)
     const m2Path = path.join(TMP, "mutated-308.mjs")
-    fs.writeFileSync(m2Path, real.replace(DUP_ANCHOR, "if (sameEntryPre(previous, item)) {"))
+    fs.writeFileSync(m2Path, resolvable(real.replace(DUP_ANCHOR, "if (sameEntryPre(previous, item)) {")))
 
     const cases = [["#307 回退(取消重读合并)", m1Path], ["#308 回退(dup 无条件短路)", m2Path]]
     for (const pair of cases) {

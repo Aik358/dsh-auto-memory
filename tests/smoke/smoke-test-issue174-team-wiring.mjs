@@ -14,6 +14,7 @@ const handlers = new Map(['uncaughtException','unhandledRejection','exit'].map(k
 let engine, cleanup, rejectPush = false, network = []
 const timers = [], routes = []
 let holdPush=null,holdPull=null,pullChanges=null
+const makeHold=()=>{let reached;const started=new Promise(resolve=>{reached=resolve});return {started,reached}}
 MemoryEngine.prototype.loadConfigSync = function () { engine = this; return load.call(this) }
 process.env.DSH_HOME = root
 try {
@@ -22,7 +23,7 @@ try {
  globalThis.fetch = async (url,opts) => {
   assert.equal(new URL(url).hostname,'fake.invalid');network.push({url:String(url),opts})
   const hold=opts.method==='POST'?holdPush:holdPull
-  if(hold)return new Promise(resolve=>{hold.signal=opts.signal;hold.resolve=()=>resolve(new Response(JSON.stringify(opts.method==='POST'?{ok:true}:{cursor:99,changes:[{kind:'fact',key:'late',payload:{scope:'Workspace',subject:'late response',predicate:'value',object:'forbidden',sourceKind:'explicit'}}]})));opts.signal.addEventListener('abort',()=>resolve(new Response('{}',{status:499})),{once:true})})
+  if(hold)return new Promise(resolve=>{hold.signal=opts.signal;hold.resolve=()=>resolve(new Response(JSON.stringify(opts.method==='POST'?{ok:true}:{cursor:99,changes:[{kind:'fact',key:'late',payload:{scope:'Workspace',subject:'late response',predicate:'value',object:'forbidden',sourceKind:'explicit'}}]})));opts.signal.addEventListener('abort',()=>resolve(new Response('{}',{status:499})),{once:true});hold.reached()})
   if(opts.method==='GET'&&pullChanges)return new Response(JSON.stringify({cursor:43,changes:pullChanges}))
   return new Response(JSON.stringify(opts.method==='POST'?{ok:true}:{cursor:42,changes:[{kind:'fact',key:'f1',member:{id:'other'},payload:{text:'test'}}]}),{status:rejectPush?503:200})
  }
@@ -73,7 +74,7 @@ try {
  // failure at only the outbox target and observe formal sync/routes/UI.
  engine._teamMerge.clear();assert.equal((await ui.read()).team.phase,'synced')
  engine._teamOutbox.enqueue({kind:'fact',key:'durable-ack',payload:{text:'retain until disk commit'}})
- holdPush={};const commit=engine._teamSync.tick();await new Promise(r=>timeout(r,0));assert.ok(holdPush.resolve)
+ holdPush=makeHold();const commit=engine._teamSync.tick();await holdPush.started;assert.ok(holdPush.resolve)
  engine._teamOutbox.enqueue({kind:'fact',key:'during-ack',payload:{text:'enqueued while first HTTP pending'}})
  const outboxFile=engine._teamOutbox.file,oldDisk=await readFile(outboxFile,'utf8'),rename=fs.renameSync
  let writeAttempts=0
@@ -94,7 +95,7 @@ try {
  for(const mode of ['pause','pause-resume','close','dispose']){
   engine._teamOutbox.clear();engine._teamOutbox.enqueue({kind:'fact',key:'held-first',payload:{text:'one'}});engine._teamOutbox.enqueue({kind:'fact',key:'held-second',payload:{text:'two'}})
   const file=engine._teamOutbox.file,disk=await readFile(file,'utf8'),snapshot=factSnapshot(),cursor=engine._teamPull.status().since
-  holdPush={};holdPull={};const count=network.length,push=engine._teamSync.tick(),pull=engine._teamPull.pullOnce();await new Promise(r=>timeout(r,0));assert.ok(holdPush.resolve&&holdPull.resolve)
+  holdPush=makeHold();holdPull=makeHold();const count=network.length,push=engine._teamSync.tick(),pull=engine._teamPull.pullOnce();await Promise.all([holdPush.started,holdPull.started]);assert.ok(holdPush.resolve&&holdPull.resolve)
   if(mode.startsWith('pause')){await request('teamControl',{action:'pause',paused:true});if(mode==='pause-resume')await request('teamControl',{action:'pause',paused:false})}
   else if(mode==='close')engine.config={...engine.config,teamEnabled:false}
   else {cleanup();cleanup=null;assert.equal(holdPush.signal.aborted,true);assert.equal(holdPull.signal.aborted,true)}
