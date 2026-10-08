@@ -10,6 +10,8 @@
 | [完整交互图](architecture/system-map.html) | 展开观察与激活、记忆中枢、技能导出、团队协作、配置与迁移；节点附固定提交的源码链接 |
 | [完整图源文件](architecture/system-map.json) | 可编辑的组件、连线、布局、说明和源码行号 |
 | [总览图生成提示词](architecture/overview-prompts.json) | 中英文生图提示词，包含准确的节点和箭头要求 |
+| [★专业版总览 · 中文](architecture/overview-zh-CN-pro.png) / [English](architecture/overview-en-pro.png) | **由本仓源码直接生成**（非生图模型）：21 个组件、21 条依赖关系、3 处进程/维护边界，全部取自 `system-map.json`，**不新增任何推断关系**；含分层带与类型配色 |
+| [专业版总览脚本](https://github.com/Aik358/dsh-auto-memory/blob/main/tools/arch-overview-pro.py) | `tools/arch-overview-pro.py`（Python + matplotlib）—— `--locale zh-CN|en`，**重跑即与 `system-map.json` 同步** |
 
 GitHub 文件页会显示 HTML 源码。下载 `system-map.html`，用浏览器打开，即可缩放、切换主题、查看源码出处和导出图片；文件本身包含查看器，无需安装插件。
 
