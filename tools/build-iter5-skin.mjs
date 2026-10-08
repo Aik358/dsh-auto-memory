@@ -71,12 +71,18 @@ requireAnchor(legacySrc, '    // ITER5-GENERATED:BEGIN', 'G0-2/frozen:54 冻结�
 requireAnchor(legacySrc, '    // ITER5-GENERATED:END', 'G0-2/frozen:55 冻结源 END 标记')
 if (lbIdx < 0 || leIdx < 0 || leIdx < lbIdx) throw g2Miss('G0-2/frozen:56 冻结源切片区间', 'BEGIN 在 END 之前且都非负', 'lbIdx=' + lbIdx + ', leIdx=' + leIdx)
 const legacyBody = legacySrc.slice(lbIdx, leIdx + '    // ITER5-GENERATED:END'.length)
+// ★#282（2026-10-08）：经典/默认档原生浮层最小样式补丁。
+//   只附加到 legacy 表（LEGACY_ITER5_CSS）；变体表（ITER5_CSS）一字节不变 ⇒ iter5 档行为逐字节守恒。
+//   注意：此处位于 readSkin 定义之前 ⇒ 直接按同口径读文件（CRLF→LF + trim）。
+const legacyOverlayCss = readFileSync(path.join(root, 'skins/iter5/legacy-native-overlays.css'), 'utf8').replace(/\r\n/g, '\n').trim()
+const LEGACY_OVERLAY_EXTRA_DEF = '    var LEGACY_OVERLAY_EXTRA = ' + JSON.stringify(String.fromCharCode(10) + legacyOverlayCss + String.fromCharCode(10)) + String.fromCharCode(10)
 const legacyWrapped = legacyBegin + '\n' +
   '    // 3.2.5 的「新款」皮肤（用户裁定的默认）。整体包 IIFE：内部仍用原来的 Iter5* 名字，' + '\n' +
   '    // 作用域隔离 ⇒ 与三套变体块零冲突；只导出 page/css 两个跨块符号。' + '\n' +
   '    var LEGACY_SKIN_NS = (function () {' + '\n' +
+  LEGACY_OVERLAY_EXTRA_DEF + '\n' +
   legacyBody.split('\n').map(function (l) { return l ? '  ' + l : l }).join('\n') + '\n' +
-  '      return { page: Iter5Page, css: ITER5_CSS }' + '\n' +
+  '      return { page: Iter5Page, css: ITER5_CSS + LEGACY_OVERLAY_EXTRA }' + '\n' +
   '    })()' + '\n' +
   '    var Legacy5Page = LEGACY_SKIN_NS.page' + '\n' +
   '    var LEGACY_ITER5_CSS = LEGACY_SKIN_NS.css' + '\n' +
@@ -828,28 +834,38 @@ if (!client.includes('F6 · 共享样式按皮肤分派') && !client.includes('H
       h31Rewritten += 1
       const indent = blk.indent
       const replacement = [
-      indent + 'useEffect(function () {',
-      indent + '  // ★2026-09-30（H3-1 · 单一出口）：内容一律问 damSharedSurfaceCss()，并**无条件同步**；',
-      indent + '  //   两个 Surface 谁先挂载都收敛到同一张表，消除「先挂者定内容」的漂移。',
-      indent + '  var damWantCss = damSharedSurfaceCss()',
-      indent + '  if (!damWantCss) return function () {}',
-      indent + "  var style = document.getElementById('dam-shared-ui-style')",
-      indent + '  if (!style) {',
-      indent + "    style = document.createElement('style')",
-      indent + "    style.id = 'dam-shared-ui-style'",
-      indent + "    style.dataset.plugin = '@a9i5k4/dsh-auto-memory'",
-      indent + '    style.textContent = damWantCss',
-      indent + '    document.head.appendChild(style)',
-      indent + '  }',
-      indent + '  if (style.textContent !== damWantCss) style.textContent = damWantCss',
-      indent + '  style.dataset.users = String(Number(style.dataset.users || 0) + 1)',
-      indent + '  return function () {',
-      indent + '    var count = Number(style.dataset.users || 1) - 1',
-      indent + '    style.dataset.users = String(count)',
-      indent + '    if (!count) style.remove()',
-      indent + '  }',
-        indent + '}, [])',
-      ].join('\n')
+        indent + "useEffect(function () {",
+        indent + "  // ★2026-09-30（H3-1 · 单一出口）：内容一律问 damSharedSurfaceCss()，并**无条件同步**；",
+        indent + "  //   两个 Surface 谁先挂载都收敛到同一张表，消除「先挂者定内容」的漂移。",
+        indent + "  // ★#284（2026-10-08）：换肤时也必须同步 —— 旧实现只在挂载时跑一次，而换肤经",
+        indent + "  //   dam-skin-changed 广播只触发重渲染、不重挂载 ⇒ #dam-shared-ui-style 滞留旧档内容，",
+        indent + "  //   直到另一个 Surface 挂载才被改写（实测症状）。依赖仍为 []（不每次渲染都跑），",
+        indent + "  //   改由事件监听重跑同步函数；同步函数只更新样式内容，不触碰其它功能行为。",
+        indent + "  var damSyncShared = function () {",
+        indent + "    var damWantCss = damSharedSurfaceCss()",
+        indent + "    if (!damWantCss) return null",
+        indent + "    var el = document.getElementById('dam-shared-ui-style')",
+        indent + "    if (!el) {",
+        indent + "      el = document.createElement('style')",
+        indent + "      el.id = 'dam-shared-ui-style'",
+        indent + "      el.dataset.plugin = '@a9i5k4/dsh-auto-memory'",
+        indent + "      el.textContent = damWantCss",
+        indent + "      document.head.appendChild(el)",
+        indent + "    } else if (el.textContent !== damWantCss) { el.textContent = damWantCss }",
+        indent + "    return el",
+        indent + "  }",
+        indent + "  var style = damSyncShared()",
+        indent + "  if (!style) return function () {}",
+        indent + "  style.dataset.users = String(Number(style.dataset.users || 0) + 1)",
+        indent + "  try { window.addEventListener('dam-skin-changed', damSyncShared) } catch (eSkinSync) {}",
+        indent + "  return function () {",
+        indent + "    try { window.removeEventListener('dam-skin-changed', damSyncShared) } catch (eSkinSync2) {}",
+        indent + "    var count = Number(style.dataset.users || 1) - 1",
+        indent + "    style.dataset.users = String(count)",
+        indent + "    if (!count) style.remove()",
+        indent + "  }",
+        indent + "}, [])",
+      ].join("\n")
       // 原位替换：块区间之前的行 + 新块 + 块区间之后的行
       const rebuilt = h31Lines.slice(0, blk.start).concat(replacement, h31Lines.slice(blk.end + 1))
       h31Lines.length = 0

@@ -1,0 +1,31 @@
+/* ★#282（2026-10-08）：经典 / 默认档（legacy · classic）**原生浮层最小样式**。
+ *   问题：共享样式单一出口（damSharedSurfaceCss）对 legacy/classic 返回冻结 3.2.5 表（LEGACY_ITER5_CSS），
+ *   而该表对下面这四族选择器的命中数 = 0/0/0/0（现行变体表 = 1/12/8/6）⇒
+ *   「新组件（Iter5Notice / Iter5AutoContinue / DialogHost）× 旧表」= 浮层无任何样式（裸 DOM）。
+ *   为什么单开文件：本文件只进 **LEGACY_ITER5_CSS**（由生成器附加），变体表一字节不变 ⇒
+ *   iter5 档行为逐字节守恒（#282 的硬要求）。作用域一律 `[data-dam-theme]`（本插件自挂命名空间）。
+ * ★#283（2026-10-08）：其中 `box-sizing:border-box` 一并覆盖 **弹窗族** ——
+ *   全局 reset 只写成 `[data-iter5] *{box-sizing:border-box}`，而浮层挂载节点只有
+ *   `data-dam-theme`（不带 data-iter5）⇒ reset 够不到，content-box 导致横向越界。
+ */
+[data-dam-theme] [data-native-dialog-overlay]{position:fixed;inset:auto;left:50%;bottom:50%;transform:translate(-50%,50%);z-index:2147483000;width:min(640px,calc(100vw - 32px));max-height:calc(100dvh - 32px);display:flex;flex-direction:column;box-sizing:border-box;}
+[data-dam-theme] :is([data-native-dialog-overlay=notice],[data-native-dialog-overlay=welcomeBack]){left:auto;right:16px;bottom:16px;transform:none;width:min(400px,calc(100vw - 32px));}
+[data-dam-theme] [data-dam-status-dialog],[data-dam-theme] [data-native-dialog]{box-sizing:border-box;width:min(640px,calc(100vw - 32px));max-width:calc(100vw - 32px);max-height:calc(100dvh - 32px);overflow:auto;padding:20px;border:1px solid var(--i5-line,var(--dsw-alias-border-l1,rgba(128,128,128,.35)));border-radius:14px;background:var(--i5-face,var(--dsw-alias-bg-layer-2,rgba(24,26,32,.92)));color:var(--i5-text,inherit);box-shadow:0 16px 48px color-mix(in srgb,var(--i5-text,#000) 18%,transparent);font-size:calc(13px * var(--dam-user-scale,1));line-height:1.7;}
+[data-dam-theme] [data-native-dialog] :is(div,section,header,footer,p,ul,ol,li,h1,h2,h3,h4,button,input,select,textarea,a,span){box-sizing:border-box;}
+[data-dam-theme] :is([data-native-dialog=notice],[data-native-dialog=welcomeBack]){width:100%;}
+[data-dam-theme] [data-native-dialog] [data-dam-btn]{box-sizing:border-box;padding:8px 16px;min-height:36px;border-radius:8px;border:1px solid var(--i5-line,var(--dsw-alias-border-l1,rgba(128,128,128,.35)));background:color-mix(in srgb,var(--i5-blue,#4f7cff) 10%,transparent);color:inherit;cursor:pointer;}
+[data-dam-theme] [data-native-dialog] [data-dam-btn][data-primary=true]{background:var(--dsw-alias-brand-primary,#4f7cff);color:#fff;border-color:transparent;}
+[data-dam-theme] aside.i5-native-notice{box-sizing:border-box;position:fixed;right:20px;bottom:20px;z-index:2147483200;width:min(420px,calc(100vw - 32px));max-height:calc(100dvh - 32px);overflow:auto;padding:18px;border:1px solid var(--i5-line,var(--dsw-alias-border-l1,rgba(128,128,128,.35)));border-radius:14px;background:var(--i5-face,var(--dsw-alias-bg-layer-2,rgba(24,26,32,.92)));color:var(--i5-text,inherit);box-shadow:0 16px 48px color-mix(in srgb,var(--i5-text,#000) 18%,transparent);font-size:calc(13px * var(--dam-user-scale,1));line-height:1.7;}
+[data-dam-theme] aside.i5-native-notice *{box-sizing:border-box;}
+[data-dam-theme] .i5-native-notice>header{display:flex;gap:10px;align-items:center;padding-bottom:10px;border-bottom:1px solid var(--i5-hair,rgba(128,128,128,.25));}
+[data-dam-theme] .i5-native-notice h2{font-size:calc(16px * var(--dam-user-scale,1));font-weight:650;margin:0;flex:1;}
+[data-dam-theme] .i5-native-notice>footer{display:flex;gap:10px;justify-content:flex-end;align-items:center;margin-top:12px;}
+[data-dam-theme] [data-native-continuation]{box-sizing:border-box;position:fixed;right:16px;bottom:16px;z-index:2147483200;width:min(500px,calc(100vw - 32px));max-height:calc(100dvh - 32px);overflow:auto;padding:18px;border:1px solid var(--i5-line,var(--dsw-alias-border-l1,rgba(128,128,128,.35)));border-radius:14px;background:var(--i5-face,var(--dsw-alias-bg-layer-2,rgba(24,26,32,.92)));color:var(--i5-text,inherit);box-shadow:0 16px 48px color-mix(in srgb,var(--i5-text,#000) 18%,transparent);font-size:calc(13px * var(--dam-user-scale,1));line-height:1.7;}
+[data-dam-theme] [data-native-continuation] *{box-sizing:border-box;}
+[data-dam-theme] [data-native-continuation=confirm]{width:min(680px,calc(100vw - 32px));}
+[data-dam-theme] .i5-continuation-heading{display:flex;gap:12px;align-items:center;padding-bottom:12px;border-bottom:1px solid var(--i5-hair,rgba(128,128,128,.25));}
+[data-dam-theme] .i5-continuation-heading h2{font-size:calc(17px * var(--dam-user-scale,1));font-weight:650;margin:0;flex:1;}
+[data-dam-theme] .i5-continuation-heading button{display:grid;place-items:center;min-width:30px;min-height:30px;padding:0;border:1px solid var(--i5-line,rgba(128,128,128,.35));border-radius:7px;background:transparent;color:inherit;cursor:pointer;}
+[data-dam-theme] .i5-continuation-warning{padding:12px 14px;margin:16px 0;border-radius:10px;background:color-mix(in srgb,var(--i5-orange,#f59e0b) 12%,transparent);font-weight:600;}
+[data-dam-theme] .i5-continuation-facts{display:grid;grid-template-columns:120px minmax(0,1fr);gap:12px;margin:16px 0;}
+@media(max-width:600px){[data-dam-theme] [data-native-dialog]{padding:16px;}[data-dam-theme] [data-native-continuation]{padding:14px;}}
