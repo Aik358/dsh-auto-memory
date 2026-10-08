@@ -1,6 +1,7 @@
 /** Full production replay: unfinished requests survive bounded transfer summaries. */
 import assert from 'node:assert/strict'
-import { mkdtemp, mkdir, writeFile, readFile, rm } from 'node:fs/promises'
+import { mkdtemp, mkdir, writeFile, readFile, utimes, rm } from 'node:fs/promises'
+import { createHash } from 'node:crypto'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { zstdCompressSync } from 'node:zlib'
@@ -96,6 +97,32 @@ try {
     assert(transcripts.includes(path.basename(pack.transcriptPath)))
     assert(!transcripts.includes(path.basename(pack.userRequestsPath)))
     assert(!ledgers.includes(path.basename(pack.userRequestsPath)))
+  })
+  await check('one carry preserves latest transcript and long request history in a mixed legacy directory', async () => {
+    const request = 'COMBINED_TRANSCRIPT_TARGET ' + 'context'.repeat(11000) + 'COMBINED_UNFINISHED_GOAL'
+    const later = ['Continue the unfinished task.', 'Only refresh PLAN and reply 已刷新.']
+    const f = await fixture([request, ...later], 12, true)
+    for (let i = 0; i < 8; i++) {
+      const old = path.join(f.handoffDir, 'prev-session-ffffffff-10000' + i + '.md')
+      await writeFile(old, 'older transcript ' + i)
+      await utimes(old, new Date('2000-01-01T00:00:00Z'), new Date('2000-01-01T00:00:00Z'))
+    }
+    const pack = await f.e.buildContinueCarry(f.sid)
+    assert.equal(pack.ok, true)
+    const sourceKey = createHash('sha256').update(f.sid).digest('hex')
+    assert.match(path.basename(pack.transcriptPath), new RegExp('^prev-session-' + sourceKey + '-[0-9]{17}-' + pack.contSeq + '\\.md$'))
+    assert(pack.carryText.includes(pack.transcriptPath))
+    assert(pack.carryText.includes(pack.userRequestsPath))
+    assert(pack.carryText.length <= 18000)
+    const raw = await readFile(pack.userRequestsPath, 'utf8')
+    for (const text of [request, ...later]) assert(raw.includes(text), 'all historical requests remain readable in full')
+    assert(!((await readFile(pack.transcriptPath, 'utf8')).includes('COMBINED_UNFINISHED_GOAL')), 'transcript budget remains bounded independently')
+    const files = await f.e.listPrevSessionTranscripts(f.handoffDir)
+    assert.equal(files.length, 8)
+    assert.equal(files[0], path.basename(pack.transcriptPath))
+    assert(!files.includes(path.basename(pack.userRequestsPath)))
+    const hits = await f.e.searchHandoffCorpus(['combined_transcript_target'], 20, { handoffDir: f.handoffDir })
+    assert(hits.some(hit => hit.where === '旧会话转写/' + path.basename(pack.transcriptPath)))
   })
   await check('failed full-request persistence cannot stop the source or silently use PLAN', async () => {
     const f = await fixture(['context'.repeat(400) + 'PRESERVE_BEFORE_CANCEL'], 12, true)
