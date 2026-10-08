@@ -135,5 +135,12 @@ await check('legacy timestamp-free result remains valid and can be consumed', as
   const reload = page(disk).mount(result(0)); reload.time += 660000
   await reload.settle(); assert.ok(!shown(reload))
 })
+await check('oversized result identity cannot enlarge persistent consumption storage', async () => {
+  const disk = storage(), h = page(disk).mount(result(now, 'x'.repeat(5000)))
+  await h.settle(); assert.ok(shown(h)); await h.dismiss(); await h.tick(); assert.ok(!shown(h))
+  assert.equal(disk.getItem(storeKey), null)
+  h.state = result(now, 'normal'); await h.tick(); assert.ok(shown(h)); await h.dismiss()
+  assert.ok(disk.getItem(storeKey).length < 4096)
+})
 console.log(`${passed} passed, ${failed} failed`)
 if (failed) process.exitCode = 1
