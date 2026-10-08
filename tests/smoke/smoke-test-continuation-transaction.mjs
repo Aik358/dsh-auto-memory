@@ -40,7 +40,7 @@ function engine() {
     _sessionController: {
       cancel: async r => calls.push(['cancel', r.sessionId]),
       create: async r => { calls.push(['create', r]); return { sessionId: 'successor' } },
-      selectModel: async r => calls.push(['model', r]), rename: async r => calls.push(['rename', r]),
+      selectModel: async r => { calls.push(['model', r]); return { selected: { provider: r.provider, model: r.model, reasoningEffort: r.reasoningEffort } } }, rename: async r => calls.push(['rename', r]),
       prompt: async r => calls.push(['prompt', r.sessionId, r.requestId, r.content[0].text]),
     },
   }

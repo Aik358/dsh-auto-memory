@@ -244,7 +244,7 @@ console.log('[continue-host] H12 真实插件路由：未知投递保留pending�
   controllerHolder.sc = {
     cancel: async r => ctlCalls.push(['cancel', r.sessionId]),
     create: async r => { ctlCalls.push(['create', r]); return { sessionId: 'session-integration-new-' + (++created) } },
-    rename: async () => {}, selectModel: async () => {},
+    rename: async () => {}, selectModel: async r => ({ selected: { provider: r.provider, model: r.model, reasoningEffort: r.reasoningEffort } }),
     prompt: async r => {
       ctlCalls.push(['prompt', r.sessionId])
       if (rejectDelivery && r.sessionId !== SID) throw new Error('integration delivery rejected')

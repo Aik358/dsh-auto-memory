@@ -79,7 +79,7 @@ function makeEngine(opts) {
       if (opts && opts.createFailScoped && r.cwd) throw new Error('source workspace unavailable')
       return { sessionId: 'session-new-' + calls.create.length }
     },
-    selectModel: async (r) => { calls.select.push(r); calls.order.push('selectModel') },
+    selectModel: async (r) => { calls.select.push(r); calls.order.push('selectModel'); return { selected: { provider: r.provider, model: r.model, reasoningEffort: r.reasoningEffort } } },
     prompt: async (r) => { calls.prompt.push(r); calls.order.push('prompt:' + String(r && r.sessionId)) },
     rename: async (r) => { calls.rename.push(r) },
   }
