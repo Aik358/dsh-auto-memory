@@ -819,37 +819,17 @@ if (!client.includes('F6 · 共享样式按皮肤分派') && !client.includes('H
   {
     const h31Lines = client.split('\n')
     const h31Blocks = h31FindEffects(client)
+    const hookStart = h31Lines.findIndex((line) => line.includes('function damUseSharedSurfaceCss()'))
+    const hookEnd = h31Lines.findIndex((line, i) => i > hookStart && /^    function /.test(line))
     // 从后往前改，避免前面的改写让后面的行号漂移
     for (let bi = h31Blocks.length - 1; bi >= 0; bi -= 1) {
       const blk = h31Blocks[bi]
+      if (hookStart >= 0 && blk.start > hookStart && blk.end < hookEnd) continue
       const whole = h31Lines.slice(blk.start, blk.end + 1).join('\n')
       if (!whole.includes('dam-shared-ui-style')) continue
-      if (whole.includes('damWantCss')) continue // 已改写过 ⇒ 跳过（幂等）
       h31Rewritten += 1
       const indent = blk.indent
-      const replacement = [
-      indent + 'useEffect(function () {',
-      indent + '  // ★2026-09-30（H3-1 · 单一出口）：内容一律问 damSharedSurfaceCss()，并**无条件同步**；',
-      indent + '  //   两个 Surface 谁先挂载都收敛到同一张表，消除「先挂者定内容」的漂移。',
-      indent + '  var damWantCss = damSharedSurfaceCss()',
-      indent + '  if (!damWantCss) return function () {}',
-      indent + "  var style = document.getElementById('dam-shared-ui-style')",
-      indent + '  if (!style) {',
-      indent + "    style = document.createElement('style')",
-      indent + "    style.id = 'dam-shared-ui-style'",
-      indent + "    style.dataset.plugin = '@a9i5k4/dsh-auto-memory'",
-      indent + '    style.textContent = damWantCss',
-      indent + '    document.head.appendChild(style)',
-      indent + '  }',
-      indent + '  if (style.textContent !== damWantCss) style.textContent = damWantCss',
-      indent + '  style.dataset.users = String(Number(style.dataset.users || 0) + 1)',
-      indent + '  return function () {',
-      indent + '    var count = Number(style.dataset.users || 1) - 1',
-      indent + '    style.dataset.users = String(count)',
-      indent + '    if (!count) style.remove()',
-      indent + '  }',
-        indent + '}, [])',
-      ].join('\n')
+      const replacement = indent + 'damUseSharedSurfaceCss()'
       // 原位替换：块区间之前的行 + 新块 + 块区间之后的行
       const rebuilt = h31Lines.slice(0, blk.start).concat(replacement, h31Lines.slice(blk.end + 1))
       h31Lines.length = 0
@@ -858,14 +838,10 @@ if (!client.includes('F6 · 共享样式按皮肤分派') && !client.includes('H
     client = h31Lines.join('\n')
   }
   if (h31Rewritten < 1) throw new Error('H3-1: no shared-style effect matched (expect >=1)')
-  // 守恒（不写死数量）：真源定义 1 处 + 每个被重写 effect 各 1 次调用
-  // ★2026-10-01 修（用户裁定「那就修守卫」同批）：原口径直接数全文 /damSharedSurfaceCss\(\)/g ——
-  //   而**被重写的 effect 里那句注释本身也含该串**（见上方替换文本 `// …一律问 damSharedSurfaceCss()`）
-  //   ⇒ 每个 effect 多算 1 次：实测 2 个 effect 时数到 5（应为 3）⇒ 断言恒失败、生成器不可用。
-  //   这正是既有纪律所指的「计数断言被自己的注释喂饱」。修法：**先剥行注释再计数**。
+  // Both Surface families use the canonical lifecycle hook; only it reads the sheet.
   const h31Code = client.split('\n').map((l) => l.replace(/\/\/.*$/, '')).join('\n')
-  const h31Refs = (h31Code.match(/damSharedSurfaceCss\(\)/g) || []).length
-  if (h31Refs !== h31Rewritten + 1) throw new Error('H3-1: expected ' + (h31Rewritten + 1) + ' refs, got ' + h31Refs)
+  if ((h31Code.match(/damUseSharedSurfaceCss\(\)/g) || []).length !== 3) throw new Error('H3-1: expected one shared hook and two Surface callers')
+  if ((h31Code.match(/damSharedSurfaceCss\(\)/g) || []).length !== 2) throw new Error('H3-1: expected one shared-sheet definition and one hook read')
   // 负路径：旧形态不得残留（只判代码形态，避免被自己的注释喂饱）
   if (/damSkinCssFlavor\(\)\s*===\s*'iter5'\s*\?\s*ITER5_CSS/.test(client)) throw new Error('H3-1: inline flavor ternary survived')
   if (/if \(style\.textContent !== damSharedCss\)/.test(client)) throw new Error('H3-1: H1 leftover sync line survived')

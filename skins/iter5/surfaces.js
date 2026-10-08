@@ -1,3 +1,26 @@
+    function damUseSharedSurfaceCss() {
+      useEffect(function () {
+        // Shared ownership lasts until unmount, independently of skin changes.
+        var style = document.getElementById('dam-shared-ui-style')
+        if (!style) {
+          style = document.createElement('style')
+          style.id = 'dam-shared-ui-style'
+          style.dataset.plugin = '@a9i5k4/dsh-auto-memory'
+          document.head.appendChild(style)
+        }
+        style.dataset.users = String(Number(style.dataset.users || 0) + 1)
+        return function () {
+          var count = Number(style.dataset.users || 1) - 1
+          style.dataset.users = String(count)
+          if (!count) style.remove()
+        }
+      }, [])
+      useEffect(function () {
+        var style = document.getElementById('dam-shared-ui-style')
+        var damWantCss = damSharedSurfaceCss()
+        if (style && style.textContent !== damWantCss) style.textContent = damWantCss
+      }, [damSkinCssFlavor()])
+    }
     // Each registered surface owns a theme boundary, including sibling overlays.
     function Iter5Surface(props) {
       // ★H36：契约（L10374）要求皮肤内取深/浅一律同源；原 settings 分支直取宿主 ⇒ 设置页
@@ -26,22 +49,7 @@
         window.addEventListener('resize', fit)
         return function () { if (observer) observer.disconnect(); window.removeEventListener('resize', fit) }
       }, [props.kind])
-      useEffect(function () {
-        var style = document.getElementById('dam-shared-ui-style')
-        if (!style) {
-          style = document.createElement('style')
-          style.id = 'dam-shared-ui-style'
-          style.dataset.plugin = '@a9i5k4/dsh-auto-memory'
-          style.textContent = ITER5_CSS
-          document.head.appendChild(style)
-        }
-        style.dataset.users = String(Number(style.dataset.users || 0) + 1)
-        return function () {
-          var count = Number(style.dataset.users || 1) - 1
-          style.dataset.users = String(count)
-          if (!count) style.remove()
-        }
-      }, [])
+      damUseSharedSurfaceCss()
       var node = h('div', { ref: boundary, 'data-dam-theme': props.kind || 'overlay', 'data-i5-style': skinStyle, 'data-deep': String(deep),
         style: { '--dam-user-scale': FONT_SCALE_VALUES[fontScale] || '1' } }, props.children)
       // shell.overlay lives in a z-index:20 host stacking context, below settings.
