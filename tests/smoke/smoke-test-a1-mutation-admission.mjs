@@ -335,8 +335,10 @@ if (!process.env.A1_SOURCE_ROOT) {
   await fsp.cp(path.join(ownRoot, 'lib'), path.join(negRoot, 'lib'), { recursive: true })
   await fsp.cp(path.join(ownRoot, 'tests', 'lib'), path.join(negRoot, 'tests', 'lib'), { recursive: true })
   const revert = (file, pairs) => {
-    let text = fs.readFileSync(file, 'utf8')
-    for (const [from, to] of pairs) {
+    // CI checkout 可为 LF；变异锚点与临时源统一换行，不改变被回退的行为或断言。
+    let text = fs.readFileSync(file, 'utf8').replace(/\r\n/g, '\n')
+    for (const [fromRaw, toRaw] of pairs) {
+      const from = fromRaw.replace(/\r\n/g, '\n'), to = toRaw.replace(/\r\n/g, '\n')
       assert.ok(text.includes(from), '回退锚点必须唯一存在: ' + file + ' :: ' + from.slice(0, 60))
       text = text.split(from).join(to)
     }
