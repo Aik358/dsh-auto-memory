@@ -44,7 +44,7 @@ function engine() {
       prompt: async r => calls.push(['prompt', r.sessionId, r.requestId, r.content[0].text]),
     },
   }
-  for (const h of ['armAutoContinue(agent, wl, opts = null) {', 'async tickAutoContinue() {', 'async hostAutoContinue() {', 'async decideAutoContinue(action, edgeAt, sessionId) {', 'async hostRefreshRitual(oldSid) {']) {
+  for (const h of ['armAutoContinue(agent, wl, opts = null) {', 'deferAutoContinueUntilIdle(armed) {', 'agentForSessionId(sid) {', 'async tickAutoContinue() {', 'async hostAutoContinue() {', 'async decideAutoContinue(action, edgeAt, sessionId) {', 'async hostRefreshRitual(oldSid) {']) {
     const fn = method(h), name = /(?:async )?(\w+)\(/.exec(h)[1]
     e[name] = fn
   }

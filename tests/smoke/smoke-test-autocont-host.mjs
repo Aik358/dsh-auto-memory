@@ -144,7 +144,7 @@ function makeEngine(opts) {
   const fns = {}
   // 2026-09-10:hostAutoContinue 现在会调 this.inheritPermissionPreset / hostRefreshRitual 继承权限与刷材料,
   // 夹具是"从源码抽方法拼假 engine",新增的被调方法必须一并抽取,否则 this 上不存在(TypeError)。
-  for (const h of ['armAutoContinue(agent, wl, opts = null) {', 'async tickAutoContinue() {', 'async hostAutoContinue() {', 'autoContinueState(selfSid) {', 'async decideAutoContinue(action, edgeAt, sessionId) {', 'async inheritPermissionPreset(oldAgent, newSid, opts = {}) {', 'agentForSessionId(sid) {', 'async inheritPermissionForContinue(fromSessionId, toSessionId, opts = {}) {', 'async hostRefreshRitual(oldSid) {', 'waterKey(sid) {', 'loadContinuedSessions() {', 'isContinuedSession(sid) {']) {
+  for (const h of ['armAutoContinue(agent, wl, opts = null) {', 'deferAutoContinueUntilIdle(armed) {', 'async tickAutoContinue() {', 'async hostAutoContinue() {', 'autoContinueState(selfSid) {', 'async decideAutoContinue(action, edgeAt, sessionId) {', 'async inheritPermissionPreset(oldAgent, newSid, opts = {}) {', 'agentForSessionId(sid) {', 'async inheritPermissionForContinue(fromSessionId, toSessionId, opts = {}) {', 'async hostRefreshRitual(oldSid) {', 'waterKey(sid) {', 'loadContinuedSessions() {', 'isContinuedSession(sid) {']) {
     // 2026-09-14:armAutoContinue 起用模块级纯函数 shouldArmAutoContinuePre(会话真实模型未知时
     // 不许按比例 arm)。抽出的函数体在 new Function 里重建,作用域中没有模块级绑定 ⇒
     // 必须与 diag/AbortSignal 一并注入,否则抛 ReferenceError 并被 armAutoContinue 自身的
@@ -531,6 +531,94 @@ console.log('[autocont-host] A10 卡面口径 + 已接续闩锁 + 会话归属(2
   // 不再扣预留输出),但「是否翻回默认开」要等用户实机验证后再定夺 —— 在用户明确拍板之前,不允许悄悄翻回 true。
   const defAutoCont = /^\s*autoContinueEnabled: (true|false),/m.exec(SRC)
   ok(defAutoCont && defAutoCont[1] === 'false', '出厂默认为关(autoContinueEnabled: false),翻回默认开须用户拍板')
+
+console.log('[autocont-host] A9 source turn idle deadline (#286)')
+{
+  const realNow = Date.now
+  let now = 1800000000000
+  Date.now = () => now
+  const source = { session: { id: 'source-active' }, status: 'running' }
+  const other = { session: { id: 'other-active' }, status: 'running' }
+  const registry = new Map([[source.session.id, source], [other.session.id, other]])
+  const fixture = (agents = registry) => {
+    const e = makeEngine({ config: { autoContinueEnabled: true, autoContinueRefreshRitual: false }, agents })
+    e.fns.armAutoContinue(source, wl, { awaitIdle: true })
+    return e
+  }
+  const deadline = async (e) => {
+    now = e.eng._autoContState.armed.expiresAt + 1
+    await e.fns.tickAutoContinue()
+  }
+  try {
+    const silent = fixture()
+    silent.eng._globalLastActiveAt = now
+    await deadline(silent)
+    ok(silent.calls.cancel.length === 0 && silent.calls.create.length === 0,
+      '35s silent tool remains running: no cancellation or successor')
+    ok(!!silent.eng._autoContState.armed, 'silent tool retains pending intent')
+
+    const active = fixture()
+    for (let i = 0; i < 8 && active.eng._autoContState.armed; i++) {
+      active.eng._globalLastActiveAt = active.eng._autoContState.armed.expiresAt + 1
+      await deadline(active)
+    }
+    ok(active.calls.cancel.length === 0 && active.calls.create.length === 0 && !!active.eng._autoContState.armed,
+      'continuous running survives more than five deferrals')
+
+    const unrelatedEnd = fixture()
+    other.status = 'idle'
+    unrelatedEnd.eng._globalLastActiveAt = 0
+    await deadline(unrelatedEnd)
+    ok(unrelatedEnd.calls.cancel.length === 0, 'another session ending cannot complete the source turn')
+
+    source.status = 'idle'
+    other.status = 'running'
+    const ended = fixture()
+    ended.eng._globalLastActiveAt = ended.eng._autoContState.armed.expiresAt + 1
+    await deadline(ended)
+    ok(ended.calls.create.length === 1 && ended.calls.cancel[0]?.sessionId === source.session.id,
+      'ended source proceeds despite recent activity in another session')
+
+    for (const [name, agents] of [
+      ['missing registry', null], ['source removed', new Map()],
+      ['unknown status', new Map([[source.session.id, { session: source.session }]])],
+      ['mismatched identity', new Map([[source.session.id, other]])],
+      ['registry throws', { get() { throw new Error('registry unavailable') } }],
+    ]) {
+      const e = fixture(agents)
+      await deadline(e)
+      ok(e.calls.cancel.length === 0 && e.calls.create.length === 0 && !!e.eng._autoContState.armed,
+        name + ': unknown source state keeps waiting')
+    }
+
+    const resumed = fixture()
+    const prepare = resumed.eng.buildContinueCarry
+    resumed.eng.buildContinueCarry = async (sid) => {
+      const carry = await prepare(sid)
+      source.status = 'running'
+      return carry
+    }
+    await deadline(resumed)
+    ok(resumed.calls.cancel.length === 0 && resumed.calls.create.length === 0 && !!resumed.eng._autoContState.armed,
+      'source restarting during material preparation is rechecked before cancel')
+    ok(!resumed.eng._autoContState.executing && !resumed.eng._autoContState.lastRunAt,
+      'deferred preparation leaves execution and cooldown clear')
+    source.status = 'idle'
+    resumed.eng.buildContinueCarry = prepare
+    if (resumed.eng._autoContState.armed) await deadline(resumed)
+    ok(resumed.calls.create.length === 1, 'deferred preparation retries when source is idle')
+
+    source.status = 'running'
+    const agreed = fixture()
+    const agreement = await agreed.fns.decideAutoContinue('agree', agreed.eng._autoContState.armed.edgeAt, source.session.id)
+    ok(agreement?.ok && agreed.calls.cancel[0]?.sessionId === source.session.id && agreed.calls.create.length === 1,
+      'explicit agreement immediately stops the running source independently of awaitIdle')
+    const manual = fixture()
+    const result = await manual.fns.decideAutoContinue('manual', null, source.session.id)
+    ok(result?.ok && manual.calls.cancel.length === 1 && manual.calls.create.length === 1,
+      'manual continuation can explicitly stop a running source')
+  } finally { Date.now = realNow }
+}
 
 console.log('\n[autocont-host] ' + pass + '/' + (pass + fail) + ' assertions passed')
 if (fail) process.exit(1)
