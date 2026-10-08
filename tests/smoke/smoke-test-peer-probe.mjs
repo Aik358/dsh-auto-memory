@@ -9,13 +9,12 @@
  * 命中判定走 realpathSync 归一(探测主路径 require.resolve 返回 realpath,静态兜底返回
  * 构造路径,两者在 8.3 短名/符号链接环境下字符串可能不同但语义相同)。
  * 全离线、零网络;stub 包只用于 existsSync/require.resolve 探测,不执行推理。 */
-import { existsSync, mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync, readdirSync, copyFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
-const LIB_SRC = path.resolve(HERE, '..', '..', 'lib')
 let pass = 0, fail = 0, skip = 0
 const ok = (cond, name) => { if (cond) { pass++; console.log('  ok -', name) } else { fail++; console.log('  FAIL -', name) } }
 /** 前提不成立 ⇒ 显式跳过并说明（issue #112：环境噪音不是契约回归，不判红也不静默）。 */
@@ -29,6 +28,25 @@ const skipped = (name, detail) => { skip++; console.log('  SKIP -', name); if (d
 const HERMETIC_DSH_HOME = realpathSync(mkdtempSync(path.join(tmpdir(), 'peer-probe-home-')))
 process.env.DSH_HOME = HERMETIC_DSH_HOME
 console.log('[peer-probe] 隔离: DSH_HOME →', path.basename(HERMETIC_DSH_HOME), '(一次性临时目录)')
+// ★2026-10-08（本套件隔离缺口修复）：原实现把被测 lib 指向**真实仓库** lib/。
+//   问题：G8 断言「无 extraDirs 时必须 miss」，但 createRequire 从真实 lib/ 起解析，
+//   只要**本机装过** @huggingface/transformers（本机 node_modules/ 里就有），解析必成功
+//   ⇒ 该断言退化为「依赖这台机器没装 peer」，在装了 peer 的机器上恒红（假红）。
+//   修法：把 lib/ 复制到一次性隔离树（peer 不可达）⇒ 断言与机器环境解耦（真 hermetic）。
+const LIB_SRC_REAL = path.resolve(HERE, '..', '..', 'lib')
+const LIB_SRC = (() => {
+  const dest = path.join(HERMETIC_DSH_HOME, 'iso-lib')
+  const copyLib = (a, b) => {
+    mkdirSync(b, { recursive: true })
+    for (const e of readdirSync(a, { withFileTypes: true })) {
+      if (e.name === 'node_modules') continue
+      const x = path.join(a, e.name), y = path.join(b, e.name)
+      if (e.isDirectory()) copyLib(x, y)
+      else if (e.isFile()) copyFileSync(x, y)
+    }
+  }
+  try { copyLib(LIB_SRC_REAL, dest); return dest } catch (_) { return LIB_SRC_REAL }
+})()
 
 // 共享实现直接从源码导入(与 index.js semanticAssetProbe 同一函数)
 const semMod = await import(pathToFileURL(path.join(LIB_SRC, 'semantic-js.js')).href)

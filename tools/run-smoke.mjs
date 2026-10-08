@@ -30,7 +30,7 @@
  * 退出码:有任何 FAIL 或 TIMEOUT → 非 0;全绿 → 0。
  */
 
-import { readdirSync, statSync } from 'node:fs'
+import { readdirSync, statSync, mkdirSync, rmSync, existsSync } from 'node:fs'
 import { spawn, spawnSync } from 'node:child_process'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -43,6 +43,48 @@ const SMOKE_DIR = path.join(ROOT, 'tests', 'smoke')
 const DEFAULT_TIMEOUT_MS = 60000
 /** ★T7-f（2026-09-20 用户裁定「默认并行」）：默认并发度。`--jobs=1` 可回退串行。 */
 const DEFAULT_JOBS = 4
+/**
+ * ★2026-10-08（用户实报 C 盘被临时副本吃满 51GB，根因见下）：
+ *   112 个套件用 os.tmpdir() + mkdtempSync 做**整树副本**，且 89 个套件只排除 .git/node_modules
+ *   —— python/(10.3GB) 与 artifacts/(2.2GB) 也会被复制；断言失败或被强杀时 rmSync 不执行，
+ *   于是副本永久残留在系统盘（实测 TEMP 下 dam-* 累积 24,238 个）。
+ *
+ *   修法（本运行器一处收口，不动 112 个套件）：
+ *   ① 给**每个子进程**把 TEMP/TMP 指向本仓同盘的专属运行目录 ⇒ 副本不再写系统盘；
+ *   ② 启动时先清扫**上次运行**遗留（同名前缀），退出时（含异常/信号）整目录删除；
+ *   ③ 每次运行只用一个根 ⇒ 残留上界 = 1 个运行目录，不再无界增长。
+ *   为兼容不读 TEMP 的写法，同时在子进程 env 里给出 DSH_SMOKE_TMP（套件可选用）。
+ */
+// ★必须放在**仓库树之外**：放在仓库内会让 Node 的模块解析向上走到仓库 node_modules，
+//   从而破坏「隔离树里解析不到 peer」这类套件的前提（实测 peer-probe 因此假红）。
+//   放在同盘（D:）的仓库同级目录：既同盘提速，又与仓库模块解析链无关。
+const RUN_TMP_ROOT = path.join(path.dirname(ROOT), '.dsh-smoke-tmp')
+const RUN_TMP = path.join(RUN_TMP_ROOT, 'run-' + process.pid + '-' + Date.now().toString(36))
+
+/** 清扫本运行器自己产生的历史运行目录（只认自己的前缀，绝不碰别的进程的临时文件）。 */
+function sweepStaleRuns() {
+  try {
+    if (!existsSync(RUN_TMP_ROOT)) return 0
+    const now = Date.now()
+    let n = 0
+    for (const e of readdirSync(RUN_TMP_ROOT, { withFileTypes: true })) {
+      if (!e.isDirectory() || !e.name.startsWith('run-')) continue
+      const p = path.join(RUN_TMP_ROOT, e.name)
+      // 保留 10 分钟内的（可能是并发/其它会话仍在跑），其余清掉
+      try {
+        if (now - statSync(p).mtimeMs < 600000) continue
+        rmSync(p, { recursive: true, force: true })
+        n += 1
+      } catch (e2) {}
+    }
+    return n
+  } catch (e) { return 0 }
+}
+
+function cleanupRunTmp() {
+  try { rmSync(RUN_TMP, { recursive: true, force: true }) } catch (e) {}
+}
+
 /** 每个套件保留的输出尾部字符数(用于定位卡点,不需要全量)。 */
 const TAIL_CHARS = 2000
 /** 收到退出信号后,最多再等多久收尸(毫秒),防止运行器自己挂住。 */
@@ -123,6 +165,8 @@ function runSuite(file, timeoutMs) {
       cwd: ROOT,
       stdio: ['ignore', 'pipe', 'pipe'],
       windowsHide: true,
+      // ★副本一律落到本仓同盘专属目录（见 RUN_TMP 注释）：不写系统盘、跑完即删。
+      env: Object.assign({}, process.env, { TEMP: RUN_TMP, TMP: RUN_TMP, DSH_SMOKE_TMP: RUN_TMP }),
     })
     let out = ''
     let err = ''
@@ -178,6 +222,15 @@ function runSuite(file, timeoutMs) {
 
 async function main() {
   const opts = parseArgs(process.argv.slice(2))
+  // ★本运行的临时根（见 RUN_TMP 注释）：建好并把子进程 TEMP 指过来，跑完由 cleanupRunTmp 删除。
+  try {
+    mkdirSync(RUN_TMP, { recursive: true })
+    const swept = sweepStaleRuns()
+    if (swept > 0 && !opts.quiet) console.log('[run-smoke] 已清扫上次遗留的临时运行目录 ' + swept + ' 个')
+  } catch (eTmp) {
+    // fail-soft：建不出来就退回系统 TEMP（老行为），绝不因为优化把回归跑挂
+    console.error('[run-smoke] 临时目录不可用，回退系统 TEMP：' + (eTmp && eTmp.message))
+  }
   if (opts.help) {
     console.log('usage: node tools/run-smoke.mjs [--timeout=<ms>] [--filter=<substr>] [--exclude=<substr>]...')
     return 0
@@ -291,7 +344,19 @@ async function main() {
   return (fail.length || timeout.length) ? 1 : 0
 }
 
-main().then((code) => process.exit(code)).catch((e) => {
+// ★无论正常/异常/被中断，都要把本运行的临时目录删掉（避免 2026-10-08 那次系统盘被副本吃满）。
+process.on('exit', cleanupRunTmp)
+for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP']) {
+  try { process.on(sig, () => { cleanupRunTmp(); process.exit(130) }) } catch (e) {}
+}
+process.on('uncaughtException', (e) => {
+  console.error('[run-smoke] uncaught: ' + (e && (e.stack || e.message) || e))
+  cleanupRunTmp()
+  process.exit(2)
+})
+
+main().then((code) => { cleanupRunTmp(); process.exit(code) }).catch((e) => {
   console.error('[run-smoke] runner crashed: ' + (e && (e.stack || e.message) || e))
+  cleanupRunTmp()
   process.exit(2)
 })
