@@ -145,9 +145,8 @@ async function main() {
   // =====================================================================
   // #308：首次落盘失败 → 同条重试必须真写盘
   //   故障注入：盘上先放一份**合法空队列**（保证 load 成功、走的正是 enqueue 的写路径），
-  //   再把文件置为只读 ⇒ 原子 rename 必 EPERM（读得动、写不进），不是打桩、不是假设。
-  //   ⚠️ 该注入依赖「只读文件不可被 rename 覆盖」这一 Windows 语义；若在别的平台失效，
-  //   下面 `r1.ok === false` 那条前提断言会先红（宁可红，也不要变成"没测到还全绿"）。
+  //   Windows 使用真实只读目标；POSIX 可覆盖只读文件，故只针对目标 rename 注入 EACCES。
+  //   两种方式均必须证明磁盘未改、内存保留待重试；后续断言保持相同。
   // =====================================================================
   {
     const dir = fresh("fault")
@@ -158,10 +157,19 @@ async function main() {
     const onDiskBefore = fs.readFileSync(f, "utf8")
     let r1 = null
     let threw = null
-    try { r1 = await ob.enqueue({ kind: "handoff", key: "k1", payload: { v: 1 } }) } catch (e) { threw = e }
+    const realRename = fs.renameSync
+    if (process.platform !== "win32" || process.env.DAM_OUTBOX_TEST_FAULT === "rename") {
+      fs.renameSync = (from, to) => {
+        if (path.resolve(String(to)) === path.resolve(f)) throw Object.assign(new Error("fixture target rename denied"), { code: "EACCES" })
+        return realRename(from, to)
+      }
+    }
+    try { r1 = await ob.enqueue({ kind: "handoff", key: "k1", payload: { v: 1 } }) }
+    catch (e) { threw = e }
+    finally { fs.renameSync = realRename }
     ok(threw === null, "#308 落盘失败时 enqueue 不抛(契约=结构化返回)", threw && threw.message)
     ok(r1 && r1.ok === false && typeof r1.reason === "string" && r1.reason.length > 0,
-      "#308 前提:首次落盘确实失败(只读目标不可被 rename 覆盖) ⇒ ok:false + reason", JSON.stringify(r1))
+      "#308 前提:首次目标提交确实失败 ⇒ ok:false + reason", JSON.stringify(r1))
     ok(fs.readFileSync(f, "utf8") === onDiskBefore, "#308 前提:第一跳失败后磁盘逐字节未变(确实什么都没写进去)")
     ok(ob.size() === 1, "#308 前提:失败的那条**留在内存队列**(issue 原文:保留 queue/seen)", "size=" + ob.size())
     fs.chmodSync(f, 0o666) // 故障解除
