@@ -79,7 +79,9 @@ const legacyWrapped = legacyBegin + '\n' +
   '      return { page: Iter5Page, css: ITER5_CSS }' + '\n' +
   '    })()' + '\n' +
   '    var Legacy5Page = LEGACY_SKIN_NS.page' + '\n' +
-  '    var LEGACY_ITER5_CSS = LEGACY_SKIN_NS.css' + '\n' +
+  // Shared surfaces render the current native components in both old flavors.
+  // Append only their compat layout, without replacing the frozen page sheet.
+  '    var LEGACY_ITER5_CSS = LEGACY_SKIN_NS.css + "\\n" + ' + JSON.stringify(readFileSync(path.join(root, 'skins/iter5/legacy-native-overlays.css'), 'utf8').replace(/\r\n/g, '\n').trim()) + '\n' +
   legacyEnd + '\n'
 const legacyKnob = [
   "    // ★2026-09-30（用户裁定）：默认旧款（3.2.5 新款皮肤）；三套变体经下拉选择。",

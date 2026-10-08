@@ -1,0 +1,27 @@
+/* Current notice/continuation components also mount in legacy/classic.
+   Supply their layout only; retain the frozen skin's colors and page rules. */
+[data-dam-theme] :is(.i5-native-notice,[data-native-continuation]){box-sizing:border-box;position:fixed;right:16px;bottom:16px;z-index:2147483200;max-height:calc(100dvh - 32px);padding:20px;overflow:auto;overflow-wrap:anywhere;}
+[data-dam-theme] [data-native-continuation]{width:min(500px,calc(100vw - 32px));}
+[data-dam-theme] [data-native-continuation=confirm]{width:min(680px,calc(100vw - 32px));}
+[data-dam-theme] .i5-native-notice{width:min(430px,calc(100vw - 32px));background:var(--i5-surface);color:var(--i5-text);border:1px solid var(--i5-line);border-radius:16px;box-shadow:0 16px 48px color-mix(in srgb,var(--i5-text) 16%,transparent);}
+[data-dam-theme] :is(.i5-native-notice>header,.i5-continuation-heading){display:flex;gap:12px;align-items:center;padding-bottom:16px;border-bottom:1px solid var(--i5-line);}
+[data-dam-theme] :is(.i5-native-notice>header,.i5-continuation-heading)>svg{color:var(--i5-blue);flex:none;}
+[data-dam-theme] :is(.i5-native-notice,.i5-continuation-heading) h2{font:inherit;font-size:calc(20px * var(--dam-user-scale,1));font-weight:650;line-height:1.4;margin:0;min-width:0;flex:1;}
+[data-dam-theme] .i5-continuation-heading button{display:grid;place-items:center;flex:none;width:34px;height:34px;padding:0;border:1px solid var(--i5-line);border-radius:8px;background:var(--i5-surface);color:var(--i5-secondary);}
+[data-dam-theme] .i5-notice-led{width:6px;height:6px;border-radius:50%;flex:none;background:var(--i5-error);}
+[data-dam-theme] :is(.i5-notice-copy,.i5-continuation-status){line-height:1.8;white-space:pre-wrap;margin:18px 0;}
+[data-dam-theme] :is(.i5-native-notice>footer,[data-dam-autocont-confirm]>footer){display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:flex-end;padding-top:16px;border-top:1px solid var(--i5-line);}
+[data-dam-theme] :is(.i5-native-notice>footer>a,[data-dam-autocont-confirm]>footer>span){margin-right:auto;color:var(--i5-secondary);}
+[data-dam-theme] :is(.i5-native-notice,[data-native-continuation]) [data-dam-btn]{padding:8px 16px;}
+[data-dam-theme] :is(.i5-native-notice,[data-native-continuation]) [data-primary=true]{background:var(--i5-blue);color:var(--i5-surface);border-color:var(--i5-blue);}
+[data-dam-theme] .i5-continuation-warning{padding:12px 16px;background:var(--i5-soft);border:1px solid var(--i5-line);border-radius:8px;margin:20px 0;}
+[data-dam-theme] .i5-continuation-facts{display:grid;grid-template-columns:120px minmax(0,1fr);gap:12px;margin:20px 0;}
+[data-dam-theme] .i5-continuation-facts dt{color:var(--i5-secondary);}
+[data-dam-theme] .i5-continuation-facts dd{margin:0;overflow-wrap:anywhere;font-variant-numeric:tabular-nums;}
+[data-dam-theme] .i5-continuation-info{background:var(--i5-bg);border:1px solid var(--i5-line);border-radius:8px;padding:16px;}
+[data-dam-theme] [data-dam-autocont-confirm]>footer{margin-top:20px;}
+[data-dam-theme] .i5-continuation-progress{height:6px;border-radius:4px;background:var(--i5-soft);overflow:hidden;margin:20px 0;}
+[data-dam-theme] .i5-continuation-progress>span{display:block;width:40%;height:100%;background:var(--i5-blue);animation:i5-legacy-progress-run 1.8s ease-in-out infinite alternate;}
+@keyframes i5-legacy-progress-run{from{transform:translateX(0)}to{transform:translateX(150%)}}
+@media(prefers-reduced-motion:reduce){[data-dam-theme] .i5-continuation-progress>span{animation:none;}}
+@media(max-width:600px){[data-dam-theme] .i5-continuation-facts{grid-template-columns:1fr;gap:4px;}[data-dam-theme] .i5-continuation-facts dd{margin-bottom:8px;}[data-dam-theme] :is(.i5-native-notice,.i5-continuation-heading) h2{font-size:18px;}}
