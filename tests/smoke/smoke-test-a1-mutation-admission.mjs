@@ -335,10 +335,11 @@ if (!process.env.A1_SOURCE_ROOT) {
   await fsp.cp(path.join(ownRoot, 'lib'), path.join(negRoot, 'lib'), { recursive: true })
   await fsp.cp(path.join(ownRoot, 'tests', 'lib'), path.join(negRoot, 'tests', 'lib'), { recursive: true })
   const revert = (file, pairs) => {
-    let text = fs.readFileSync(file, 'utf8')
+    let text = fs.readFileSync(file, 'utf8').replace(/\r\n/g, '\n')
     for (const [from, to] of pairs) {
-      assert.ok(text.includes(from), '回退锚点必须唯一存在: ' + file + ' :: ' + from.slice(0, 60))
-      text = text.split(from).join(to)
+      const needle = from.replace(/\r\n/g, '\n')
+      assert.equal(text.split(needle).length - 1, 1, '回退锚点必须唯一存在: ' + file + ' :: ' + needle.slice(0, 60))
+      text = text.replace(needle, to.replace(/\r\n/g, '\n'))
     }
     fs.writeFileSync(file, text, 'utf8')
   }

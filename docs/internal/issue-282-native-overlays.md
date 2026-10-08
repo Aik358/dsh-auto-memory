@@ -50,7 +50,7 @@ are cleared through an in-memory test export. No models, notifications or real
 memory/session data are used. This verifies host layout/interaction integration;
 it does not assert live continuation execution or human visual acceptance.
 
-Screenshots: [legacy desktop](../screenshots/issue-282/legacy-desktop.png) and
+Component matrix screenshots: [legacy desktop](../screenshots/issue-282/legacy-desktop.png) and
 [classic narrow dark](../screenshots/issue-282/classic-narrow-dark.png).
 
 ## Automated checks and inherited gates
