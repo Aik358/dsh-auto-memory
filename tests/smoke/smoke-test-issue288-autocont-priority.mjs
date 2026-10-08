@@ -12,6 +12,8 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
 const isolatedHome = mkdtempSync(path.join(os.tmpdir(), 'dsh-issue288-'))
 for (const key of ['DSH_HOME', 'USERPROFILE', 'HOME']) process.env[key] = isolatedHome
 const client = readFileSync(path.join(root, 'lib/client.js'), 'utf8')
+const consumptionStart = client.indexOf('    // #287:')
+const consumption = consumptionStart < 0 ? '' : client.slice(consumptionStart, client.indexOf('    function AutoContinueHost() {'))
 const host = readFileSync(path.join(root, 'lib/index.js'), 'utf8')
 const originalNow = Date.now
 const now = 1800000000000
@@ -35,7 +37,8 @@ function extract(src, header) {
 
 // Execute the actual component body with persistent hooks and controlled polling.
 function mount(stateOf, config) {
-  const cells = new Map(), effects = [], intervals = new Map(), opened = []
+  const cells = new Map(), effects = [], intervals = new Map(), opened = [], stored = new Map()
+  const storage = { getItem: key => stored.get(key) || null, setItem: (key, value) => stored.set(key, String(value)) }
   let cursor = 0, first = true, seq = 0
   const useState = initial => {
     const key = cursor++
@@ -48,15 +51,15 @@ function mount(stateOf, config) {
     return cells.get(key)
   }
   const h = (type, props) => ({ type, props })
-  const render = new Function('useState', 'useRef', 'useEffect', 'h', 'L', 't', 'apiGet', 'apiPost', 'API', 'sessions', 'currentSessionIdClient', 'Iter5AutoContinue', 'configOf', 'setInterval', 'clearInterval',
-    extract(client, 'function AutoContinueHost() {') + '\nreturn AutoContinueHost()')
+  const render = new Function('useState', 'useRef', 'useEffect', 'h', 'L', 't', 'apiGet', 'apiPost', 'API', 'sessions', 'currentSessionIdClient', 'Iter5AutoContinue', 'configOf', 'setInterval', 'clearInterval', 'localStorage',
+    consumption + '\n' + extract(client, 'function AutoContinueHost() {') + '\nreturn AutoContinueHost()')
   const show = () => {
     cursor = 0
     const result = render(useState, useRef, fn => { if (first) effects.push(fn) }, h,
       zh => zh, key => key, async endpoint => endpoint === '/config' ? config : stateOf(),
       async () => ({ ok: true }), { config: '/config', autoContState: '/state', autoContDecide: '/decide' },
       { open: sid => opened.push(sid) }, () => 'old-A', 'AutoContinueCard', d => d,
-      fn => { intervals.set(++seq, fn); return seq }, id => intervals.delete(id))
+      fn => { intervals.set(++seq, fn); return seq }, id => intervals.delete(id), storage)
     first = false
     return result
   }
