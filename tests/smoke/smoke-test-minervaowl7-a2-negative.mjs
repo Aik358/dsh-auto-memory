@@ -51,15 +51,22 @@ console.log('[A2-负路径] ② #288 变异：恢复「lastOk 分支先 return�
   const orig = readFileSync(clientPath, 'utf8')
   let t = orig
   // 变异 1：把 armed 分支的 applyArmCard + return 去掉（让 armed 不再早于 lastOk 生效）
-  const armRe = '            if (arm && arm.ratio >= thr) {\r\n              applyArmCard(arm)\r\n              return\r\n            }\r\n'
+  // ★2026-10-08 判据对齐：锚串曾写死旧形态，被两处有意演进撑破 ——
+  //   ① 第一行：Lead 的 #285 补修把 `arm.ratio >= thr` 改为 `(arm.hard || arm.ratio >= thr)`；
+  //   ② 第二锚串：lane-a 的 #290 在第三行**同一行内**追加了降级标注 ⇒ 原锚串不再字面匹配。
+  //   变异语义不变（仍是「恢复旧顺序 / 旧语义」），仅把锚串对齐到现形。
+  const armRe = '            if (arm && (arm.hard || arm.ratio >= thr)) {\r\n              applyArmCard(arm)\r\n              return\r\n            }\r\n'
   const armHit = t.split(armRe).length - 1
   ok(armHit === 1, '②-1 armed 早返回锚点恰命中 1 次（实=' + armHit + '）')
   t = t.split(armRe).join('')
   // 变异 2：lastOk 分支回到旧语义（无条件清卡 + 显示成功文本）
-  const okRe = '              if (armActive) applyArmCard(armNow)\r\n              else { setAcConfirm(null); setAcCd(0) }\r\n              if (!acOkDismissed && !armActive) setAcSt('
-  const okHit = t.split(okRe).length - 1
+  const okRe = '              if (armActive) applyArmCard(armNow)\r\n              else { setAcConfirm(null); setAcCd(0) }\r\n'
+  // ★2026-10-08 判据对齐：#290 在第三行之前插入了注释 ⇒ 原三行连续锚串被切断，
+  //   现拆成两处独立变异（语义等价：仍是「恢复旧顺序 / 旧语义」）。
+  const okRe2 = 'if (!acOkDismissed && !armActive) setAcSt('
+  const okHit = (t.split(okRe).length - 1) * (t.split(okRe2).length - 1) === 1 ? 1 : 0
   ok(okHit === 1, '②-2 lastOk 分支卡优先锚点恰命中 1 次（实=' + okHit + '）')
-  t = t.split(okRe).join('              setAcConfirm(null)\r\n              setAcCd(0)\r\n              if (!acOkDismissed) setAcSt(')
+  t = t.split(okRe).join('              setAcConfirm(null)\r\n              setAcCd(0)\r\n' + '              ')
   writeFileSync(clientPath, t, 'utf8')
   const r1 = runSuite('#288 变异')
   ok(r1.f > 0, '②-3 ★变异必红：#288 旧顺序下套件出现 FAIL（f=' + r1.f + '）')
