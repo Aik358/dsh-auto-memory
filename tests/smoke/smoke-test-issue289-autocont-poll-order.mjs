@@ -7,6 +7,8 @@ const source = readFileSync(process.env.DSH_TEST_CLIENT_SOURCE || new URL('../..
 const helperSource = readFileSync(new URL('./smoke-test-issue278-autocont-dismiss.mjs', import.meta.url), 'utf8')
 const extract = new Function(helperSource.slice(helperSource.indexOf('function extractFnBody ('), helperSource.indexOf('const AC_BODY =')) + ';return extractFnBody')()
 const body = extract(source, 'function AutoContinueHost() {')
+const consumptionStart = source.indexOf('    // #287:')
+const consumption = consumptionStart < 0 ? '' : source.slice(consumptionStart, source.indexOf('    function AutoContinueHost() {'))
 const sleep = () => new Promise((resolve) => setImmediate(resolve))
 // Preserve #278's harness; add cleanup and optional real timers for this suite.
 const helper = helperSource.slice(helperSource.indexOf('function mountAutoContinueHost (opts) {'), helperSource.indexOf('const statusOf ='))
@@ -16,7 +18,7 @@ const helper = helperSource.slice(helperSource.indexOf('function mountAutoContin
   .replace('intervals.delete(id)', 'if (o.realTimers) clearInterval(id); intervals.delete(id)')
   .replace('void c', 'if (typeof c === "function") cleanups.push(c)')
   .replace('show, intervals, effects,', 'show, intervals, effects, unmount: () => { for (const c of cleanups.splice(0)) c() },')
-const mount = new Function('AC_BODY', 'sleep', helper + ';return mountAutoContinueHost')(body, sleep)
+const mount = new Function('AC_BODY', 'AC_CONSUMPTION', 'sleep', helper + ';return mountAutoContinueHost')(body, consumption, sleep)
 const executing = { executing: true, armed: null, lastOk: null }
 const armed = { executing: false, lastOk: null, armed: { ratio: .8, edgeAt: Date.now(), expiresAt: Date.now() + 35000 } }
 const success = { executing: false, armed: null, lastOk: { at: Date.now(), fromSid: 'A', sessionId: 'A-next' } }
