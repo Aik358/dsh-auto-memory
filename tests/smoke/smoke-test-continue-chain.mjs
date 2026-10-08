@@ -160,7 +160,7 @@ ok(SRC.includes('apiGet(API.autoContState, sidQ ? { sessionId: sidQ } : {})') &&
   'G14 轮询携带当前会话 id(宿主据此只在本窗口弹确认卡)')
 ok(HSRC.includes("url.searchParams.get('sessionId')") && HSRC.includes('autoContinueState(selfSid)'),
   'G14 宿主侧按 sessionId 过滤 armed(取不到 id 时 fail-open)')
-ok(/setAcConfirm\(\{ ratio: Number\(arm\.ratio\) \|\| 0[\s\S]{0,220}?wall: Number\(arm\.wall\) \|\| 0/.test(SRC),
+ok(/setAcConfirm\(\{ ratio: measuredRatio[\s\S]{0,220}?ring: Number\(arm\.ring\) \|\| 0, wall: Number\(arm\.wall\) \|\| 0/.test(SRC),
   'G14 确认卡把双口径 ring/wall 拷进 acConfirm(宿主透出但这里丢了 → 那行永不渲染)')
 
 // —— G15(2026-09-28 修「接续必须搭线」):宿主兜底接续后,前端补 sessions.open 把发件人切到新会话 ——

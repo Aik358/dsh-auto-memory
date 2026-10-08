@@ -84,6 +84,8 @@ try {
     await e.checkWaterLevel(agent)
     assert.equal(e.autoContinueState('old-A').armed.triggerReason, response.armed.triggerReason, 'pending intent preserves its trigger across later measurements')
     assert.equal(card.ratio, tokens / 1000000, 'display measured use, not the raised arm ratio')
+    assert.equal(card.ring, response.armed.ring, 'preserve host ring reading')
+    assert.equal(card.wall, response.armed.wall, 'preserve host wall reading')
     assert.ok(card.reasonText, 'display a trigger explanation')
     assert.equal(h.lastRender().props.countdown, (response.armed.expiresAt - now) / 1000, 'same host deadline')
     const stale = await e.decideAutoContinue('agree', response.armed.edgeAt - 1)
