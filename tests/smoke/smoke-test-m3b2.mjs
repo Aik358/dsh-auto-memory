@@ -372,15 +372,22 @@ const load = (f) => readFileSync(path.join(FIX, f))
   try {
     const real = fsDefault
     let tamperNext = false
-    let mdReads = 0
+    // ★2026-10-09 判据重钉（#321 配套，非缺陷）：
+    //   旧判据用「第几次读 .md」定位篡改点（`mdReads >= 2`）—— 那是**按次数**建模,
+    //   隐含前提是「_readState 读一次、_commit 步骤8 重读一次」。
+    //   #321 让**默认** append 也携带 `state.fileDigest`（CAS）后，提交边界会在 rename **之前**再读一次做摘要比对
+    //   ⇒ 读到「TAMPERED」的其实是**那次 CAS 比对**，于是先返回 conflict-external-edit、根本走不到步骤8 重读。
+    //   判据意图不变（「写入后重读被篡改 ⇒ verify-mismatch」），改为按**语义阶段**定位：
+    //   只在 rename **已经发生之后**（= 文档已落盘）才篡改重读 ⇒ 稳定命中步骤8 的重读比对。
+    //   注：报告人 PR #318 遇到同一冲突并采用同一思路（加 rename 钩子），此处独立实现但语义一致。
+    let renamed = false
     const spy = {
       ...real,
+      rename: async (...args) => { await real.rename(...args); renamed = true },
       readFile: async (p) => {
         const buf = await real.readFile(p)
         if (String(p).endsWith('.md')) {
-          mdReads += 1
-          // 第 1 次 .md 读取是 _readState(读原文件);第 2 次是 _commit 的步骤8 重读——只篡改重读
-          if (tamperNext && mdReads >= 2) { tamperNext = false; return Buffer.from('TAMPERED', 'utf8') }
+          if (tamperNext && renamed) { tamperNext = false; return Buffer.from('TAMPERED', 'utf8') }
         }
         return buf
       },

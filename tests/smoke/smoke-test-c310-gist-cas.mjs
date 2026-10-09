@@ -303,7 +303,15 @@ async function main() {
       const s = await startServer(g.port); servers.push(s)
       const before = g.state.content
       const r = await signedPost(s.port, feedbackEvent('M-E', '反馈 戊:无版本号场景'))
-      ok(r.status === 200, '#310 无版本号时事件本身仍被受理(云函数不能因此崩)', String(r.status))
+      // ★2026-10-09 判据重钉（#324 配套，判据过期非缺陷）：
+      //   旧判据断言「无版本号 ⇒ 仍回 200（云函数不能因此崩）」。它钉的是**当时的语义**：
+      //     收集失败只记 lastError，请求照样成功返回。
+      //   #324 把语义**有意收紧**为「持久化失败 ⇒ 回可重试的 503」——于是同一场景现在是 503。
+      //   判据意图不变（「不能崩」= 不能 5xx 崩溃 / 不能抛未捕获异常 / 不能污染既有内容），
+      //   改为钉**新契约**：503 + 可重试语义（带上错误码），而不是 200。
+      //   同块其余三条断言（一个 PATCH 都不发 / 内容逐字节未变 / 失败写成可读日志）语义未变、继续有效。
+      ok(r.status === 503, '★#310 负路径:无版本号 ⇒ 拒绝盲写并按 #324 回**可重试的 503**(旧契约是 200，此为该场景有意收紧)', String(r.status))
+      ok(/feedback_persistence_failed/.test(r.text), '#310 负路径:503 回执带可重试错误码(便于上游重投)', String(r.text).slice(0, 160))
       ok(g.state.patches.length === 0, '★#310 负路径:没有版本号时**一个 PATCH 都没发**(拒绝盲写)', 'patches=' + JSON.stringify(g.state.patches))
       ok(g.state.content === before, '★#310 负路径:既有内容逐字节未变(没有被覆盖)', JSON.stringify(g.state.content).slice(0, 200))
       ok(/收集失败/.test(s.log()), '#310 负路径:失败被写成可读日志,不是静默吞掉', s.log().slice(-300))
