@@ -98,6 +98,68 @@ if (keyOf(DEV_PHYS) === keyOf(REL_PHYS) || devInsideRel || relInsideDev) {
   process.exit(1)
 }
 if (!existsSync(DEV)) { console.error('[release] ❌ 源目录不存在:', DEV); process.exit(1) }
+// ---------- 2.0 ★#323 源侧预检（必须在**首次创建/删除发布目标之前**完成） ----------
+// 事故形态：源是普通文件 / 缺必需目录 / 缺必需工具 / 缺 Python 运行时文件时，旧实现在这里一声不响地
+//   往下走 —— 先把 REL 里的旧内容循环 rmSync 掉，到了后面的拷贝/校验步骤才报错退出。
+//   于是「一次失败的发布」把**上一版发布基座**毁掉了（上游对照实测 16 PASS / 4 FAIL / 5 SKIP）。
+//
+// ★强度按**损害模型**分级（不是「一刀切严格」，也不是不查）：
+//   · 非 dry-run：目标是**真实发布基座**，清空不可逆 ⇒ 发现问题一律 fail closed（不碰目标）。
+//   · dry-run：REL 已被改写成新建的 tmp staging 目录（见上），清空它没有任何真实损害 ⇒
+//     只告警不中止。理由是既有的 dry-run 套件（issue170/issue256）用**故意的部分夹具**
+//     来驱动拷贝/过滤/交付核对相位，若在这里一刀切中止，会把它们一起打红（实测已验证过一次）。
+//   ⇒ 结论：**损害可能发生的地方严格，不可能发生的地方告警**，两侧都如实留痕。
+//
+// ⚠️ 与 §2 的「产物侧交付核对」分工不同、都要留：这里是**源能不能用**，那里是**产物有没有交出来**。
+const REQUIRED_SOURCE_DIRS = ['lib', 'tests', 'python']
+const REQUIRED_SOURCE_FILES = [
+  'lib/index.js', 'lib/client.js',
+  'cordis.patch.yml', 'CHANGELOG.md',
+  // 上游回流自检的调用目标：缺它 ⇒ 发布物自带断链（#256），属「源不能用」而非「产物没交」
+  'tools/run-smoke.mjs', 'tools/smoke-impact.mjs', 'tools/release.mjs', 'tools/build-iter5-skin.mjs',
+  'tools/reconcile-upstream.mjs',
+]
+// Python 运行时四件套。判据用「按需」：python/ 里没有任何 .py 视为该树不含 Python 运行时（最小夹具），
+//   不强制；一旦有 .py，就要求这四件齐全 —— 真实发布树永远走这条分支。
+const REQUIRED_PYTHON_RUNTIME = ['worker_v1.py', 'worker_semantic_v1.py', 'm7_activation_features_v2.py', 'm7_embedding_v1.py']
+const sourceProblems = []
+try {
+  if (!statSync(DEV).isDirectory()) throw new Error('源目录不是目录: ' + DEV)
+  for (const dir of REQUIRED_SOURCE_DIRS) {
+    const p = path.join(DEV, dir)
+    if (!statSync(p).isDirectory()) { sourceProblems.push('缺少必需目录: ' + dir); continue }
+    readdirSync(p)   // 可读性：目录在但读不了，同属「不能用来构建」
+  }
+  for (const rel of REQUIRED_SOURCE_FILES) {
+    const p = path.join(DEV, rel)
+    if (!statSync(p).isFile()) { sourceProblems.push('缺少必需文件: ' + rel); continue }
+    readFileSync(p)  // 可读性：存在但读不了（EACCES）同样前置拒绝
+  }
+  const pyEntries = readdirSync(path.join(DEV, 'python')).filter((f) => /\.py$/.test(f))
+  if (pyEntries.length) {
+    for (const f of REQUIRED_PYTHON_RUNTIME) {
+      const p = path.join(DEV, 'python', f)
+      if (!statSync(p).isFile()) { sourceProblems.push('缺少 Python 运行时文件: python/' + f); continue }
+      readFileSync(p)
+    }
+  }
+} catch (error) {
+  sourceProblems.push('不可读/不可访问: ' + ((error && error.message) || error))
+}
+if (sourceProblems.length) {
+  if (dryRun) {
+    console.warn('[release] ⚠ 源侧预检发现问题（dry-run 的 REL 是新建 tmp staging，无真实损害，继续）:')
+    for (const p of sourceProblems) console.warn('   · ' + p)
+  } else {
+    console.error('[release] ❌ 源输入检查失败，**未创建/未清空发布目标**:')
+    for (const p of sourceProblems) console.error('   · ' + p)
+    console.error('   修法:补齐上面点名的源侧文件/目录后重跑；本脚本在源侧预检通过前不会碰发布基座。')
+    process.exit(1)
+  }
+} else {
+  console.log('[release] 源侧预检: OK(' + REQUIRED_SOURCE_DIRS.length + ' 个必需目录 + ' + REQUIRED_SOURCE_FILES.length + ' 个必需文件)')
+}
+
 mkdirSync(REL, { recursive: true })
 for (const entry of readdirSync(REL)) {
   if (entry === '.git' || entry === '.gitignore') continue

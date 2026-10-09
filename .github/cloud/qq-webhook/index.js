@@ -90,7 +90,7 @@ const CFG = {
 for (const k of ['appId', 'appSecret', 'groupId', 'ghToken']) {
   if (!CFG[k]) { console.error(`[webhook] 缺少环境变量 ${k}`); process.exit(1) }
 }
-const VERSION = 'webhook-cas-20261008a' // 部署核对标记:diag 端点与错误响应都会带它(20260914a=@ 答疑优先于已记录;20260921a=#113-#116 四条默认值全部改 fail-closed;20261008a=#310 群反馈写 gist 改条件请求 CAS,防并发覆盖丢行)
+const VERSION = 'webhook-retry-20261009a' // 部署核对标记:diag 端点与错误响应都会带它(20260914a=@ 答疑优先于已记录;20260921a=#113-#116 四条默认值全部改 fail-closed;20261008a=#310 群反馈写 gist 改条件请求 CAS,防并发覆盖丢行;20261009a=#324 去重标记改为持久成功后才发布,持久失败回可重试 503)
 const FEEDBACK_FILE = 'group-feedback.jsonl' // 反馈收集钉死文件名(digest 与 report 同读此名,清空时保留文件本身)
 let lastError = null // 最近一次内部错误(diag 可见)
 let botMentionToken = null // 从「@机器人+反馈词」消息里学习的机器人 mention 标识
@@ -394,6 +394,15 @@ async function saveBotState(st) {
 // ---------- 事件处理 ----------
 const seen = new Set()
 const recentByContent = new Map() // 作者+内容 → 最近处理时间(重复推送去重,2026-09-14)
+// ★#324:去重标记是「这次事件已成功处置」的断言 ⇒ **只在持久化成功后才发布**(见 handleEvent 末尾)。
+//   旧实现把 seen.add / recentByContent.set 都放在 await gistAppend **之前**,而 gistAppend 失败只记
+//   lastError 就继续往下走 ⇒ 接口照常回 200、标记却已落 ⇒ 平台重推时直接 return,事件**永久未保存**。
+function publishSeen(id, dedupKey, nowMs) {
+  seen.add(id)
+  if (seen.size > 500) seen.delete(seen.values().next().value)
+  recentByContent.set(dedupKey, nowMs)
+  if (recentByContent.size > 500) recentByContent.delete(recentByContent.keys().next().value)
+}
 const clip = (s, n) => { const t = String(s || '').replace(/\s+/g, ' ').trim(); return t.length > n ? t.slice(0, n) + '…' : t }
 const when = () => new Intl.DateTimeFormat('zh-CN', { timeZone: 'Asia/Shanghai', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date())
 
@@ -415,8 +424,7 @@ async function handleEvent(payload, verified = false) {
     const d = payload.d || {}
     const id = d.id || `${d.timestamp}|${d.author?.username || d.author?.openid}|${d.content}`
     if (seen.has(id)) return
-    seen.add(id)
-    if (seen.size > 500) seen.delete(seen.values().next().value)
+    // ★#324:这里**只查不记** —— 记由 publishSeen(…, nowMs) 在「持久化成功之后」统一发布(见本函数末尾)。
     // 重复推送去重(2026-09-14 实测):平台会把同一条消息推两次(相隔 7-8 秒),**两次的 d.id 不同**
     // (id 尾部含递增 seq),故上面的 id 去重拦不住 —— 会导致群反馈记两遍、即查/答疑各回两次。
     // 这里按「作者 + 内容」做短窗口语义去重;时间戳字段缺失时退化为「作者+内容」永久去重(仅在 500 条窗口内)。
@@ -424,8 +432,7 @@ async function handleEvent(payload, verified = false) {
     const nowMs = Date.now()
     const prevAt = recentByContent.get(dedupKey)
     if (prevAt && nowMs - prevAt < 60000) { console.log('[webhook] 重复推送已忽略:', clip(d.content, 30)); return }
-    recentByContent.set(dedupKey, nowMs)
-    if (recentByContent.size > 500) recentByContent.delete(recentByContent.keys().next().value)
+    // ★#324:同 id 一样,语义去重标记也延后到持久化成功之后发布(publishSeen)。
     const mentions = [...String(d.content || '').matchAll(/<@!?([0-9A-Fa-f]+)>/g)].map((m) => m[1].toUpperCase())
     const text = String(d.content || '').replace(/<@!?[0-9A-Fa-f]+>/g, '').trim()
     const lower = text.toLowerCase()
@@ -449,8 +456,20 @@ async function handleEvent(payload, verified = false) {
         await gistAppend(JSON.stringify({ t: d.timestamp || new Date().toISOString(), u: clip(d.author?.username || d.author?.member_openid || '?', 16), w: collected, m: clip(text, 200) }))
         recorded = true
         console.log('[webhook] 已收集:', clip(text, 50), isAt ? '(随 @ 答疑合并确认)' : '(非 @,静默)')
-      } catch (e) { lastError = 'collect: ' + e.message; console.error('[webhook] 收集失败:', e.message) }
+      } catch (e) {
+        // ★#324:**这条反馈没落盘就不能算处理成功**。旧实现只记 lastError 后继续往下走,接口照常回 200,
+        //   而 seen/recentByContent 早在写入之前就落了标记 ⇒ 平台重推被去重挡死,事件永久丢失。
+        //   现在给错误打上标记 → 一路冒泡到 HTTP 层 → 回 503(可重试),且本次**不**发布任何去重标记。
+        lastError = 'collect: ' + e.message
+        e.feedbackPersistence = true
+        console.error('[webhook] 收集失败(将回 503 让平台重试):', e.message)
+        throw e
+      }
     }
+
+    // ★#324:到此为止本次事件已**成功处置**(无需收集 / 收集已落盘)才发布去重标记 ——
+    //   上方失败路径已经 throw 出去,不会走到这里,所以那两个缓存天然保住「可重试」。
+    publishSeen(id, dedupKey, nowMs)
 
     // ② @ 机器人的消息:先查即查指令(零 LLM,不占答疑额度);不是指令才走 LLM 答疑。
     if (isAt) {
@@ -810,8 +829,10 @@ const server = http.createServer((req, res) => {
       else res.end(JSON.stringify({ ...(out || {}), v: VERSION }))
     } catch (e) {
       console.error('[webhook] 处理异常:', e.message)
-      res.writeHead(200, { 'Content-Type': 'application/json' })
-      res.end('{}')
+      // ★#324:反馈持久化失败必须回**可重试**的 503 —— 回 200 等于告诉 QQ 平台「收下了」,平台不再重推,
+      //   而这次事件根本没进 gist。其余异常沿用既有行为(200 + {}),避免把无关故障变成重试风暴。
+      res.writeHead(e.feedbackPersistence ? 503 : 200, { 'Content-Type': 'application/json' })
+      res.end(e.feedbackPersistence ? JSON.stringify({ error: 'feedback_persistence_failed' }) : '{}')
     }
   })
 })

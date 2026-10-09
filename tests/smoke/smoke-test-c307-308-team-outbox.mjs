@@ -228,15 +228,29 @@ async function main() {
   if (!CHILD) {
     const real = fs.readFileSync(REAL_SRC, "utf8")
 
-    // 变异①#307 回退：去掉 writeLockedPre 里的「重读磁盘 + 合并」，退回整份快照直写
-    const m1Start = real.indexOf("      const disk = mergeDiskPrePre()")
-    const M1_END = "      return saved\n    } finally {"
-    const m1End = real.indexOf(M1_END, m1Start)
-    ok(m1Start > 0 && m1End > m1Start && m1End - m1Start < 3000, "变异定位:#307 合并块", "s=" + m1Start + " e=" + m1End)
+    // 变异①#307 回退：跳过「读-改-写」的合并裁决，直接把候选当合并结果落盘
+    //   ★2026-10-09 判据形态更新（#322 让 #307 的写路径收敛到 mergeItemsPre 单点）：
+    //   旧锚点（"const disk = mergeDiskPrePre()" + 一段内联合并）在实现收敛后已不存在
+    //   ⇒ 属**判据过期、非缺陷**（2026-10-01 裁定）。按判据意图不变改钉新形态。
+    //   ★★锚点必须**整块精确匹配**：旧写法用 indexOf(锚串) 取首个命中，而 writeLockedPre / snapshotLockedPre
+    //   / ackLockedPre 三处都有同样的首行 ⇒ 命中了错误的那一处、切出语法坏文件，变异红成了「崩溃红」
+    //   （正是本仓记过的教训：锚点命中 0 次或命中错处会被误读成套件损坏）。
+    const M1_BLOCK = [
+      "      const disk = mergeDiskPrePre()",
+      "      let merged = candidate",
+      "      if (disk.ok) {",
+      "        merged = mergeItemsPre(candidate, disk.items)",
+      "        if (disk.disk && typeof disk.disk === 'object') {",
+      "          const d = Number(disk.disk.dropped)",
+      "          if (Number.isFinite(d) && d > dropped) dropped = Math.floor(d)",
+      "        }",
+      "      }",
+    ].join("\n")
+    const m1Hits = real.split(M1_BLOCK).length - 1
+    ok(m1Hits === 1, "变异定位:#307 写路径合并块恰命中 1 次", "hits=" + m1Hits)
     const m1Path = path.join(TMP, "mutated-307.mjs")
-    fs.writeFileSync(m1Path, real.slice(0, m1Start)
-      + "      const saved = writeNowPre(candidate)\n      if (!saved.ok) { try { api.load() } catch (_) {} }\n      return saved\n    } finally {"
-      + real.slice(m1End + M1_END.length))
+    //   回退语义 = 跳过读-改-写的合并裁决，直接把候选当合并结果落盘（#307 的旧行为）
+    fs.writeFileSync(m1Path, real.replace(M1_BLOCK, "      let merged = candidate"))
 
     // 变异②#308 回退：dup 分支不再看 persisted（旧写法：一律短路）
     const DUP_ANCHOR = "if (previous.persisted === true && sameEntryPre(previous, item)) {"
