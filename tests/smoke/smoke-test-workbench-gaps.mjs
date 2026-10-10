@@ -165,8 +165,16 @@ ck('D8b 验证不通过时同步清内存就绪位（让惰性门控可重跑）
 ck('D9 同意门：结构性失败时未经同意不得新建（只回报 needPrompt）',
   /opts && opts\.consent === true/.test(idx) && /consentRequired: true/.test(idx))
 ck('D9 唯一建立入口显式传 consent', /ensureWorkbench\(\{ consent: true \}\)/.test(idx))
+// ★2026-10-10 判据重钉（#330，判据过期非缺陷）：
+//   本守卫守的**不变量本体未变** —— 「瞬态分支必须先于同意门返回 `transient+retry`，把重启自愈路径堵死」。
+//   #330 让该分支多了一种归因（`host-conflict` = 另一宿主 writer-held）并加了 `resolveError`，
+//   于是那行返回从**单行字面量**变成**多行对象**，原逐字正则匹配不到（形态守卫钉文本的固有脆性）。
+//   按判据**意图**改钉：仍要求该分支返回 transient+retry，且**仍在 consent 门之前**返回（顺序不变）。
+//   新增两条更贴近意图的断言：① host-conflict 只在显式同意时才越过；② 非 host-conflict 一律不越。
 ck('D9 同意门不得拦复用/瞬态分支（否则重启自愈被堵死）',
-  /session-not-loaded', epoch, sessionId: v\.sessionId, transient: true, retry: true/.test(idx))
+  /reason: this\._workbenchReason, epoch, sessionId: v\.sessionId,\s*transient: true, retry: true/.test(idx)
+  && /if \(v\.reason === 'session-not-loaded'\) \{/.test(idx)
+  && /if \(!\(wbHostConflict && opts && opts\.consent === true\)\) \{/.test(idx))
 // S9：新手引导 → 工作台设置窗 → **才** changelog（用户原话「配置好才能让它正常使用…或者它配置完以后再弹 change log」）
 ck('S9 changelog 受工作台就绪闸门约束', /var wbPending = \(wbReady === false\)/.test(cli))
 ck('S9 三处 update 弹窗全走闸门', (cli.match(/dialogQueue\.push\(_upd\d\)/g) || []).length === 3)
