@@ -4,6 +4,30 @@ All notable changes to dsh-auto-memory.
 
 ---
 
+## [3.3.1] — 2026-10-12 · 设置区块补到「插件管理页的插件详情页」
+
+> **一条主线**：3.3.0 把设置入口注册到了 `settings.plugins.tab` —— 按宿主契约那是**「设置 → 插件」分区内的一页**，
+> 而用户实际查看的是**左侧栏「插件」的插件管理页 / 详情页**（带「卸载」「检查更新」的那一页）。两者是**完全不同的界面**，
+> 所以用户在插件详情页里看不到任何设置。本版把同一份设置组件补注册到该页的官方扩展点。
+
+### ★ 缺陷修复
+
+- **插件详情页缺少「记忆设置」区块**：宿主对插件管理页声明了三个扩展点，设置区块对应 **`plugins.detail.section`**（`{ kind:'list', scope:'root' }`，在该页自身内容之下渲染，即「包含的组件」之后）。现在向其注册同一份 `Iter5HostSettings` —— 与另外两处**共用同一配置、同一写出口**。
+  - **按包名认领**：仅当 `subject.kind === 'bundle' && subject.pkg.name === '@a9i5k4/dsh-auto-memory'` 时才渲染；
+  - **其余 subject 一律返回 `null`**（宿主契约硬要求 *"An entry renders null for a subject it has nothing for"*）⇒ 不会污染其它插件的详情页；
+  - 包名取自本文件 `__ModuleLoader__.load({ id })`，并与宿主 half 及 `package.json` 三处交叉核对一致（无硬编码猜测）。
+
+### 质量
+
+- 认领逻辑以**真执行**验收（不是源码字符串断言）：从产线源码抽出该渲染函数求值，用哨兵替身区分「返回 null」与「进入渲染分支」，覆盖 **1 条正路径 + 4 条负路径**（item 形态 / 他包 / row 形态 / 无 subject）。
+- 永久套件 `smoke-test-i335-settings-entry.mjs` 扩到 **30 PASS / 0 FAIL**。
+- **全量回归：334 PASS / 0 FAIL / 0 TIMEOUT**；`--check --strict` = SYNC-OK；`verify-docs.mjs` 全部一致。
+- 判据重钉 1 处（**判据过期、非缺陷**）：`iter5-skin` 经典档基线 **R94→R95**（本次只在手写区新增该注册）。
+
+> **皮肤生成器**：`tools/build-iter5-skin.mjs --check --strict` 报 SYNC-OK；本版对 `client.js` 的改动位于生成区之外（手写区）。
+
+---
+
 ## [3.3.0] — 2026-10-12 · 技能库「原地修订」+ 设置入口可关 + 工作区关系图布局重排
 
 > **一条主线**：吸收上一批（#331–#335、PR #334）并补齐缺口，其中两项是**本批新造的洞**：
