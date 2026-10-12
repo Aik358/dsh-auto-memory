@@ -66,6 +66,40 @@ ok(bothOff(DS) === true && bothOff(PG) === true, '② ★双关纠正：两个�
 const broken = makeGuard({ [DS]: false, [PG]: false }, (s) => s.replace(/if \(!ds && !pg\) \{[\s\S]*?return \{ ds: true, pg: true \}\s*\}/, ''))
 ok(broken(DS) === false && broken(PG) === false, '③ 负路径：忠实回退双关纠正后，两个入口确实都被隐藏（证明②的纠正断言有鉴别力）')
 
+// ── ③b ★#335b（2026-10-12 修正）：**插件管理页详情页**是独立槽位族，与「设置 → 插件」分区无关 ──
+//   根因：初版把 `settings.plugins.tab` 当成「插件界面」，实际它住在 DSH 设置里的插件分区；
+//   用户在左侧栏「插件」看到的**插件管理页**走的是 `plugins.*` 槽位（详情页扩展点是 plugins.detail.section）。
+ok(CLI.includes("slots.inject('plugins.detail.section'"), '③b 已向**插件管理页详情页**注册（plugins.detail.section）')
+ok(CLI.includes("subj.pkg.name !== '@a9i5k4/dsh-auto-memory'"), '③b 按包名认领：非本包的 subject 不渲染')
+ok(/subj\.kind !== 'bundle'/.test(CLI), '③b 仅认领 bundle 形态（row/item 不渲染）')
+ok(/plugins\.detail\.section[\s\S]{0,400}return null/.test(CLI), '③b 对无关 subject 返回 null（宿主契约硬要求）')
+
+// ── ③c 认领逻辑**真执行**：真跑到注册出的组件并断言返回值（不是源码字符串断言） ──
+//   复用本套件既有的 vm 装载方式太重；这里直接从产线源码抽出该组件体求值，
+//   断言四条负路径 + 一条正路径 —— 与 .diag 探针同口径，但固化为永久断言。
+// 精确边界：组件体止于 `})` + `}))`（用「本包名 」这一行之后的收尾做终点锚，避免吞掉后续代码）
+const fnDetail = /function \(props\) \{[\s\S]*?\r?\n            \}\)/.exec(
+  CLI.slice(CLI.indexOf("slots.inject('plugins.detail.section'")),
+)
+ok(!!fnDetail, '③c 能从产线源码抽出 plugins.detail.section 的渲染函数')
+if (fnDetail) {
+  // 把组件体做成可调用函数：h 与 t 用替身，null 语义保持
+  // 只去掉 slots.register( 的收尾右括号 ⇒ 片段以函数体的 `}` 结束
+const body = fnDetail[0].replace(/\)$/, '')
+  // Iter5HostSettings 用「哨兵」替身：走到渲染分支即抛该哨兵，借此区分「返回 null」与「进入渲染」
+const SENTINEL = 'REACHED_RENDER'
+const Iter5HostSettingsStub = function () { throw new Error(SENTINEL) }
+const make = () => new Function('h', 't', 'Iter5HostSettings', 'return (' + body + ')')((tag, p) => ({ tag, p }), (k) => k, Iter5HostSettingsStub)
+// 判定：null ⇒ 未认领；抛 SENTINEL ⇒ 已认领并进入渲染
+const claim = (subject) => { const f = make(); try { return f({ subject }) === null ? 'null' : 'rendered' } catch (e) { return String(e && e.message) === SENTINEL ? 'rendered' : 'throw:' + (e && e.message) } }
+const callClaim = (subject) => claim(subject) === 'rendered' ? {} : null
+  ok(callClaim({ kind: 'item', id: 'x' }) === null, '③c 真执行：item 形态 ⇒ null')
+  ok(callClaim({ kind: 'bundle', pkg: { name: 'other-pkg', rows: [] } }) === null, '③c 真执行：他包 ⇒ null（防越权认领）')
+  ok(callClaim({ kind: 'row', pkg: { name: '@a9i5k4/dsh-auto-memory' }, row: {} }) === null, '③c 真执行：row 形态 ⇒ null')
+  ok(callClaim(null) === null && make()({}) === null, '③c 真执行：无 subject ⇒ null')
+  ok(callClaim({ kind: 'bundle', pkg: { name: '@a9i5k4/dsh-auto-memory', version: '3.3.0', installed: true, enabled: true, rows: [] } }) !== null, '③c 真执行：本包 bundle ⇒ 渲染')
+}
+
 // ── ④ 落点接线：三处，且两处 DSH 入口受 helper 控制、面板入口常驻不可关 ──
 ok(CLI.includes("if (settingsEntryPre('" + DS + "')) surfaceDisposers.push(slots.inject('settings.section'"), '④ DSH 设置页入口受 helper 控制（可关）')
 ok(CLI.includes("if (settingsEntryPre('" + PG + "')) surfaceDisposers.push(slots.inject('settings.plugins.tab'"), '④ DSH「插件」页入口受 helper 控制（可关）')
