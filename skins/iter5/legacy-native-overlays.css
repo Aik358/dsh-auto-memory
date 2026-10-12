@@ -104,3 +104,10 @@
  */
 body:has([data-native-dialog-overlay=welcomeBack]) [data-native-continuation]{bottom:calc(28px + 224px * var(--dam-scale,1));}
 body:has([data-native-continuation]) aside.i5-native-notice[data-native-dialog=welcomeBack]{max-height:calc(224px * var(--dam-scale,1));overflow:auto;}
+
+/* The workspace network needs the full pane for readable wrapped card bands. */
+[data-iter5] .i5-workspaces-view .i5-map-columns{grid-template-columns:minmax(0,1fr);gap:20px;}
+[data-iter5] .i5-workspaces-view .i5-map-card{padding:0;}
+[data-iter5] .i5-workspaces-view .i5-map-card>.i5-section-heading{padding:16px 16px 0;}
+[data-iter5] .i5-workspaces-view .i5-map-card>.i5-map-legend{padding:12px 16px;}
+[data-iter5] .i5-workspaces-view .i5-map-detail{border-left:0;border-top:1px solid var(--i5-line);padding:20px 0 0;}

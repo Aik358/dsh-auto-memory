@@ -692,7 +692,7 @@
       return h('div',{className:'i5-history'},props.kind==='reflections'?h('div',{className:'i5-info-callout'},h(Iter5Icon,{name:'spark'}),h('div',null,h('strong',null,L('让经历，变成下一次的经验','Turn experience into a lesson for next time')),h('p',null,L('基于已有记录生成反思，保留原文供你回顾。','Generate a reflection from existing records, and keep the source for review.'))),h('button',{className:'i5-primary-soft',disabled:busy[0],onClick:reflect},busy[0]?L('生成中…','Generating…'):L('生成反思','Generate reflection'))):null,error[0]?h(Iter5Error,{error:error[0]}):null,message[0]?h('p',{className:'i5-success',role:'status'},message[0]):null,h(Iter5Browse,{key:props.kind+revision[0],nonce:props.nonce,intent:{category:props.kind,scope:'project'}}),props.kind==='logs'?h('details',{className:'i5-card i5-secondary-details'},h('summary',null,L('长期规则与原始日志工具','Long-term rules and original log tools')),h('div',{className:'i5-hosted'},h(LogsTab))):null)
     }
     function Iter5Workspaces(props) {
-      var revision=useState(0),scale=useState(1),selected=useState(null)
+      var revision=useState(0),scale=useState(1),selected=useState(null),fitKey=useState(0)
       var result=useIter5Data(function(){return apiPost(API.workspaces,{force:revision[0]>0})},[props.nonce,revision[0]])
       var data=result.data,workspaces=data&&data.workspaces||[]
       var current=selected[0]&&workspaces.find(function(w){return w.path===selected[0].path})||workspaces[0]
@@ -703,8 +703,8 @@
         h(Iter5Stat,{icon:'timeline',hue:'purple',label:L('日志文件','Log files'),value:data?logs:null,hint:L('这些工作区中的记录累计','Records in these workspaces')}),
         h(Iter5Stat,{icon:'mindmap',hue:'blue',label:L('主题关联','Topic connections'),value:data&&data.graph&&Array.isArray(data.graph.links)?data.graph.links.length:null,hint:L('宿主返回的工作区关联','Workspace connections returned by the host')})),
         result.error?h(Iter5Error,{error:result.error,retry:result.retry}):null,
-        h('div',{className:'i5-map-columns'},h(Iter5Card,{className:'i5-map-card'},h('div',{className:'i5-section-heading'},h('h2',null,L('记忆之间的连接','Connections between memories')),h('div',{className:'i5-button-group'},h('button',{'aria-label':L('缩小关系图','Zoom out'),onClick:function(){resize(scale[0]-.1)}},'−'),h('span',{className:'i5-muted'},Math.round(scale[0]*100)+'%'),h('button',{'aria-label':L('放大关系图','Zoom in'),onClick:function(){resize(scale[0]+.1)}},'+'),h('button',{onClick:function(){scale[1](1)}},L('适应','Fit')))),
-          result.loading?h(Loading):workspaces.length?h('div',{className:'i5-map-canvas'},h(WorkspaceGraph,{workspaces:workspaces,graph:data.graph,scale:scale[0],onSelect:selected[1]})):h(Iter5Empty,{title:L('连接，从第一份记忆开始','Connections start with your first memory'),text:L('工作区积累了日志与主题后，关系会在这里逐渐展开。','As workspaces collect records and topics, their connections appear here.')}),
+        h('div',{className:'i5-map-columns'},h(Iter5Card,{className:'i5-map-card'},h('div',{className:'i5-section-heading'},h('h2',null,L('记忆之间的连接','Connections between memories')),h('div',{className:'i5-button-group'},h('button',{'aria-label':L('缩小关系图','Zoom out'),onClick:function(){resize(scale[0]-.1)}},'−'),h('span',{className:'i5-muted'},Math.round(scale[0]*100)+'%'),h('button',{'aria-label':L('放大关系图','Zoom in'),onClick:function(){resize(scale[0]+.1)}},'+'),h('button',{onClick:function(){scale[1](1);fitKey[1](fitKey[0]+1)}},L('适应','Fit')))),
+          result.loading?h(Loading):workspaces.length?h('div',{className:'i5-map-canvas'},h(WorkspaceGraph,{current:current,workspaces:workspaces,graph:data.graph,scale:scale[0],fitKey:fitKey[0],onSelect:selected[1]})):h(Iter5Empty,{title:L('连接，从第一份记忆开始','Connections start with your first memory'),text:L('工作区积累了日志与主题后，关系会在这里逐渐展开。','As workspaces collect records and topics, their connections appear here.')}),
           h('div',{className:'i5-map-legend'},h('span',null,L('中心：工作区','Centers: workspaces')),h('span',null,L('分支：记忆主题','Branches: topics')),h('span',null,L('虚线：共享主题','Dashed links: shared topics')))),
           current?h(Iter5Card,{className:'i5-map-detail'},h('div',{className:'i5-source-heading'},h('span',{className:'i5-badge i5-badge-lg','data-hue':'green'},h(Iter5Icon,{name:'folder'})),h('div',null,h('h2',null,current.name||pathName(current.path)),h('small',null,L('工作区记忆节点','Workspace memory node')))),
             current.summary?h(Iter5Document,{text:current.summary}):h('p',{className:'i5-muted'},L('这个工作区暂未生成摘要。','No summary has been generated for this workspace.')),
@@ -1780,6 +1780,13 @@
             h('option', { value: 'deepseek' }, L('DeepSeek 蓝', 'DeepSeek blue')), h('option', { value: 'graphite' }, L('石墨灰', 'Graphite')), h('option', { value: 'violet' }, L('雾紫', 'Violet'))), L('默认使用 DeepSeek 蓝；日历与状态颜色保持语义色。', 'DeepSeek blue by default; calendar and status colors stay semantic.')),
           field(L3('关系图密度（立即生效）','Graph density (immediate)','グラフ密度（即時適用）'), h('select', { 'data-dam-select': '', value: graphDensity, onChange: function (e) { setDensity(e.target.value) } },
             h('option', { value: 'relaxed' }, L('舒展', 'Relaxed')), h('option', { value: 'compact' }, L('紧凑', 'Compact'))), L('影响工作区关系图的节点间距和显示数量。', 'Controls node spacing and detail in the workspace graph.')),
+          // ★#335（2026-10-12 用户裁定「都放」）：设置入口暴露开关；与经典档/生成档三面同键（parity 契约）。
+          field(L3('在 DSH 设置页显示本插件设置', 'Show this plugin in DSH Settings', 'DSH 設定にこのプラグインを表示'),
+            h('input', { type: 'checkbox', 'data-dam-slot': 'form', checked: cfg.settingsEntryInDsSettings !== false, onChange: function (e) { set('settingsEntryInDsSettings', e.target.checked) } }),
+            L('关闭后，DSH 自带设置页里不再出现「自动记忆」入口；记忆面板内的设置页签始终保留。', 'When off, the Auto Memory entry disappears from DSH Settings; the settings tab inside the memory panel always stays.')),
+          field(L3('在 DSH「插件」页显示本插件设置', 'Show this plugin in the DSH Plugins page', 'DSH「プラグイン」ページに表示'),
+            h('input', { type: 'checkbox', 'data-dam-slot': 'form', checked: cfg.settingsEntryInPluginsPage !== false, onChange: function (e) { set('settingsEntryInPluginsPage', e.target.checked) } }),
+            L('关闭后，DSH「插件」页里不再出现本插件的设置标签；面板内的设置页签始终保留。', 'When off, the plugin settings tab disappears from the DSH Plugins page; the tab inside the panel always stays.')),
           // 群反馈第 4 条:排除来源(每行一条)。textarea 便于粘贴多行路径;
           // 空行/纯空白在写回时被过滤,避免"看起来配了其实没配"。
           // ★批次 Y：onChange 持原始串（中间态可编辑），提交时由 prepareSettingsPatch 归一化。

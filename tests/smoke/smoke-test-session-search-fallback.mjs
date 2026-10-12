@@ -152,6 +152,33 @@ ok(r5.length >= 2 && r5.some((l) => l.includes('proj-b')), '⑤第二会话可�
   ok(!rm.join('').includes('兜底口径]'), '⑥变异后说明行字面量改变(断言非恒真)')
 }
 
+
+// ── ⑦ #331（2026-10-12）：**v4 命名宿主必须可扫到**（固定候选表缺陷回归）──
+//   报告人实测：宿主已迁 `session.v4.jsonl.zstd`，而旧实现只认 v3 / 无版本两张**固定名**
+//   ⇒ 一个候选都选不中、attempted 恒 0、`scope=sessions` 静默失效（与 #173 同缺陷类）。
+//   本套件原夹具只用 `session.jsonl.zstd`，故修前也「全绿」——这正是漏网原因，此处补齐。
+{
+  const wsV4 = '--D-v4-only--'
+  const mkV4 = (sid, events, fname) => {
+    const dir = join(tmpHome, 'sessions', wsV4, sid)
+    mkdirSync(dir, { recursive: true })
+    writeFileSync(join(dir, fname), zstdFramesJsonl(events))
+    return dir
+  }
+  const d7 = mkV4('v4aaa-1111', [hdrOf('v4aaa-1111', 'D:\\proj-v4a'),
+    JSON.stringify({ type: 'user/message', seq: 1, data: { content: 'v4 宿主下的水位感知校准结论' } })], 'session.v4.jsonl.zstd')
+  // 负路径：同目录放一个**非会话**文件，不得被误当候选（也就不得假绿）
+  writeFileSync(join(d7, '_debug_child.jsonl'), Buffer.from('{"type":"session","id":"bogus"}\n'))
+  const r7 = host.lexicalSessionScanFallback('水位感知', 8)
+  ok(r7.some((l) => l.includes('proj-v4a')), '⑦v4 命名会话可被扫到（修前恒 0 个候选）', r7.length)
+  const diag7 = r7.diagnostic || ''
+  ok(/本次尝试 [1-9]\d* 个/.test(diag7), '⑦诊断如实报出 attempted>0（修前恒 0）', diag7.slice(0, 48))
+  // 负路径：该会话目录里只有非会话文件 ⇒ 不产生条目（不假绿）
+  mkV4('v4bbb-2222', [JSON.stringify({ type: 'user/message', seq: 1, data: { content: '非会话文件不该被扫到' } })], '_debug_child.jsonl')
+  const r7b = host.lexicalSessionScanFallback('非会话文件不该被扫到', 8)
+  ok(!r7b.some((l) => l.includes('不该被扫到')), '⑦负路径：非会话文件不被当候选（不假绿）', r7b.length)
+}
+
 // ── 清理 ──
 try { rmSync(tmpHome, { recursive: true, force: true }) } catch (e) { /* 临时目录清理失败不碍事 */ }
 
