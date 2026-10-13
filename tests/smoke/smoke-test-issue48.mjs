@@ -188,10 +188,19 @@ test('failed transaction releases queue; later success never replays stale snaps
 test('different files are not globally serialized and rejection does not poison queues', async () => {
   const s=store(); let release
   const held=new Promise((r)=>{release=r}); const events=[]
+  // ★2026-10-13 CI：`assert.rejects(first, …)` 挂上后，first 的 settle 时机**不受测试控制**；
+  //   实测（探针）：await 完 b 之后 first 仍是 pending，release() 之后才在微任务里 settle。
+  //   本机负载低时能赶上，CI 高负载下该微任务排到测试结束之后 ⇒ node:test 报
+  //   「generated asynchronous activity after the test ended / Missing expected rejection」。
+  //   修法：**显式等 first settle** 再断言，把时序钉死（语义不变：仍是「拒绝不污染队列」）。
   const first=s._queue('/issue48/a',async()=>{events.push('a'); await held; throw new Error('first failure')})
-  const rejection=assert.rejects(first,/first failure/)
+  let firstErr=null
+  const firstSettled=first.then(()=>{throw new Error('expected rejection but resolved')},(e)=>{firstErr=e})
   await s._queue('/issue48/b',async()=>events.push('b'))
-  assert.deepEqual(events,['a','b']); release(); await rejection
+  assert.deepEqual(events,['a','b'])
+  release()
+  await firstSettled
+  assert.match(String(firstErr&&firstErr.message),/first failure/)
   await s._queue('/issue48/a',async()=>events.push('again')); assert.deepEqual(events,['a','b','again'])
 })
 test('Windows case/separator aliases share keys; POSIX case distinctions survive', () => {
