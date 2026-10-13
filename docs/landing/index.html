@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>dsh-auto-memory — 无问自忆 · 记忆不断线</title>
+<title>dsh-auto-memory — Ambient Recall · 「潜藏追忆，如影随形」</title>
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#eef2f7">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -32,11 +32,14 @@
   }
   * { box-sizing: border-box; } html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
   :root {
-    --duration-stagger: 40ms; --duration-micro: 80ms; --duration-quick: 150ms;
+    --duration-stagger: 70ms; --duration-micro: 80ms; --duration-quick: 150ms;
     --duration-fast: 250ms; --duration-medium: 350ms; --duration-slow: 400ms; --duration-very-slow: 500ms;
     --ease-smooth-out: cubic-bezier(0.22, 1, 0.36, 1); --ease-in-out: ease-in-out; --ease-out: ease-out; --ease-linear: linear;
     --distance-micro: 4px; --distance-small: 6px; --distance-base: 8px; --distance-medium: 12px;
     --blur-small: 2px; --blur-medium: 3px;
+        --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1); --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
+        --ease-in-out-quart: cubic-bezier(0.76, 0, 0.24, 1); --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+        --duration-entrance: 720ms; --duration-hover: 450ms; --duration-press: 120ms;
   }
   body { margin: 0; background: var(--bg); color: var(--fg); font-family: 'Manrope', system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; -webkit-font-smoothing: antialiased; overflow-x: hidden; line-height: 1.6; transition: background-color 0.4s, color 0.4s; }
   body::before { content: ''; position: fixed; inset: 0; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E"); opacity: 0.03; pointer-events: none; z-index: 1; mix-blend-mode: overlay; }
@@ -44,25 +47,33 @@
   .font-mono { font-family: 'JetBrains Mono', ui-monospace, Consolas, monospace; }
   .accent { color: var(--accent); }
   .gradient-text { background: linear-gradient(120deg, var(--accent) 0%, var(--accent-2) 50%, var(--accent-3) 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+  /* hero 层级：名号(小) 在上，宣传语(大) 在下 */
+  .hero-name { display: block; font-size: clamp(1rem, 1.75vw, 1.5rem); font-weight: 600; line-height: 1.3; letter-spacing: 0.01em; margin-bottom: 0.15em; }
+  .hero-en { display: block; font-family: 'Space Grotesk', 'Manrope', system-ui, sans-serif; font-size: clamp(1rem, 1.75vw, 1.5rem); font-weight: 600; line-height: 1.3; letter-spacing: -0.01em; color: var(--muted); margin-bottom: 0.7em; }
+    /* 「潜藏追忆，如影随形」= 8 字 + 1 全角逗号 + 2 引号，用 nowrap 断在逗号后，强行两行 */
+  .hero-tag { display: block; font-size: clamp(1.95rem, 5.35vw, 4.2rem); font-weight: 700;
+    line-height: 1.18; letter-spacing: 0.005em; text-wrap: balance; }
+  .hero-tag .tag-l1, .hero-tag .tag-l2 { display: block; white-space: nowrap; }
+  @media (max-width: 640px) { .hero-name, .hero-en { font-size: clamp(0.92rem, 4.1vw, 1.15rem); } .hero-tag { font-size: clamp(1.7rem, 8vw, 2.5rem); letter-spacing: 0; } .hero-tag .tag-l1, .hero-tag .tag-l2 { white-space: normal; } }
   .brand-logo svg { width: 100%; height: 100%; }
   .brand-logo .brain-path { stroke: currentColor; stroke-width: 1.9; fill: none; stroke-linecap: round; stroke-linejoin: round; }
   .brand-logo:hover .brain-path { stroke: var(--accent); }
   @keyframes pulse-soft { 0%{stroke-dashoffset:0} 100%{stroke-dashoffset:-30} }
   .brand-logo .pulse { stroke-dasharray: 3 2; animation: pulse-soft 4s linear infinite; }
   .nav-blur { backdrop-filter: blur(24px) saturate(180%); -webkit-backdrop-filter: blur(24px) saturate(180%); background: color-mix(in srgb, var(--bg) 80%, transparent); border-bottom: 1px solid var(--border); }
-  .btn-primary { background: var(--accent); color: #fff; transition: all 0.35s cubic-bezier(0.4,0,0.2,1); position: relative; overflow: hidden; }
+  .btn-primary { background: var(--accent); color: #fff; position: relative; overflow: hidden; transition: filter var(--duration-hover) var(--ease-out-expo), box-shadow var(--duration-hover) var(--ease-out-expo), transform var(--duration-hover) var(--ease-out-expo); }
   .btn-primary::before { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent); transform: translateX(-100%); transition: transform 0.6s; }
   .btn-primary:hover::before { transform: translateX(100%); }
   .btn-primary:hover { filter: brightness(1.08); box-shadow: 0 12px 40px var(--accent-glow); transform: translateY(-2px); }
   .btn-ghost { background: transparent; border: 1px solid var(--border-strong); transition: all 0.3s; color: var(--fg); }
   .btn-ghost:hover { background: var(--card-hover); border-color: var(--accent); color: var(--accent); transform: translateY(-1px); }
-  .glass-card { background: var(--card); border: 1px solid var(--border); backdrop-filter: blur(10px); transition: all 0.4s; position: relative; overflow: hidden; box-shadow: var(--shadow); }
+  .glass-card { background: var(--card); border: 1px solid var(--border); backdrop-filter: blur(10px); position: relative; overflow: hidden; box-shadow: var(--shadow); transition: background-color var(--duration-hover) var(--ease-out-expo), border-color var(--duration-hover) var(--ease-out-expo), box-shadow var(--duration-hover) var(--ease-out-expo), transform var(--duration-hover) var(--ease-out-expo); }
   [data-theme="light"] .glass-card { background: var(--bg-elev); }
   .shot-img { aspect-ratio: 4 / 3; object-fit: contain; object-position: center; background: var(--bg-soft); }
   .glass-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, var(--accent), transparent); opacity: 0; transition: opacity 0.4s; }
   .glass-card:hover { background: var(--card-hover); border-color: var(--border-strong); transform: translateY(-4px); }
   .glass-card:hover::before { opacity: 1; }
-  .reveal { opacity: 0; transform: translateY(var(--distance-medium)); transition: opacity var(--duration-very-slow) var(--ease-smooth-out), transform var(--duration-very-slow) var(--ease-smooth-out); }
+  .reveal { opacity: 0; transform: translateY(20px); transition: opacity var(--duration-entrance) var(--ease-out-expo), transform var(--duration-entrance) var(--ease-out-expo); }
   .reveal.visible { opacity: 1; transform: translateY(0); filter: blur(0); }
   .reveal-delay-1 { transition-delay: calc(var(--duration-stagger) * 1); } .reveal-delay-2 { transition-delay: calc(var(--duration-stagger) * 2); } .reveal-delay-3 { transition-delay: calc(var(--duration-stagger) * 3); } .reveal-delay-4 { transition-delay: calc(var(--duration-stagger) * 4); }
   pre { background: var(--bg-code); border: 1px solid var(--border); border-radius: 10px; padding: 1.25rem 1.5rem; overflow-x: auto; font-family: 'JetBrains Mono', monospace; font-size: 12.5px; line-height: 1.75; margin: 0; color: #e8ecf3; }
@@ -151,7 +162,7 @@
   .view.active { display: block; opacity: 1; transform: none; transition: opacity var(--duration-slow) var(--ease-smooth-out), transform var(--duration-slow) var(--ease-smooth-out); }
   @starting-style { .view.active { opacity: 0; transform: translateY(var(--distance-base)); } }
   
-  .magnetic { transition: transform var(--duration-fast) var(--ease-smooth-out); }
+  .magnetic { will-change: transform; backface-visibility: hidden; }   /* 位移由 rAF 趋近驱动，此处不能再叠 transition（两者会互相打架 ⇒ 硬拖感） */
   /* 记忆系统专属：召回演示的命中行 */
   .hit-row { display: flex; align-items: flex-start; gap: 10px; padding: 9px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-elev); transition: all 0.25s; }
   .hit-row+.hit-row { margin-top: 6px; }
@@ -262,9 +273,35 @@
     transition: opacity var(--duration-fast) var(--ease-smooth-out), filter var(--duration-fast) var(--ease-smooth-out);
   }
   details[open] p { opacity: 1; filter: blur(0); }
+
+  /* ══ Step5 修改版增量（署名：Step5 · 2026-10-13）══ */
+
+  /* 全页背景：固定环境光层 —— 页面滚动时背景始终在场（背景不再"消失"） */
+  body::after {
+    content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+    background:
+      radial-gradient(1100px 560px at 88% -6%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 62%),
+      radial-gradient(900px 520px at -8% 38%, color-mix(in srgb, var(--accent-3) 9%, transparent), transparent 60%),
+      radial-gradient(800px 500px at 50% 110%, color-mix(in srgb, var(--accent-2) 7%, transparent), transparent 64%);
+  }
+  [data-theme="dark"] body::after { opacity: .6; }
 </style>
 </head>
 <body>
+
+<!-- ══════════════════════════════════════════════════════════════════════
+     正式版 · docs/landing/index.html · 2026-10-13（由 Step5 修改版转正）
+     上一版完整保留在 index_old.html，两者可随时对照。
+     相对上一版的改动：
+       1) hero 基准图重绘：fig-model-selection-r5.step5.svg（横向条形 / 品牌色 /
+          BGE-M3 para-512 高亮 / 大字号），hero 改网格双栏、图表占满右栏；
+       2) 第三数据位 "0GB 词法保底" → "100% 本地运行"（数字滚动动画）；
+       3) 技术报告区七张卡按内容类型重排：模型与范式在前，生态与工程在后；
+       4) 全页背景：新增固定环境光层；纯白大色块改为带色半透明底，
+          背景连续、不再出现"全白"区段；
+       5) 修正 i18n 词典漂移（papers「三篇」→「七篇」、EN features「Nine」→
+          「Twelve」、截图「七张」→「六张」等）；导航 / CTA 指向 news/index.step5.html。
+     ══════════════════════════════════════════════════════════════════════ -->
 
 <!-- ══ 顶栏 ══ -->
 <header class="nav-blur fixed top-0 left-0 right-0 z-50">
@@ -283,12 +320,12 @@
         </svg>
       </a>
       <div class="font-display font-bold text-[15px]" style="color:var(--fg)">dsh-auto-memory</div>
-      <span class="font-mono text-[10px] px-2 py-0.5 rounded" style="color:var(--accent);border:1px solid var(--accent)" id="top-ver">v3.1.4</span>
+      <span class="font-mono text-[10px] px-2 py-0.5 rounded" style="color:var(--accent);border:1px solid var(--accent)" id="top-ver">v3.3.2</span>
     </div>
     <nav class="hidden lg:flex items-center gap-7">
       <a href="#about" class="nav-link" data-i18n="nav.about">是什么</a>
       <a href="#features" class="nav-link" data-i18n="nav.features">能力</a>
-      <a href="#demo" class="nav-link" data-i18n="nav.demo">实机演示</a>
+      <a href="#demo" class="nav-link" data-i18n="nav.demo">实机演示</a> <a href="news/index.step5.html" class="nav-link font-semibold" style="color:var(--accent)">技术报告</a>
       <a href="#architecture" class="nav-link" data-i18n="nav.architecture">分层</a>
       <a href="#install" class="nav-link" data-i18n="nav.install">安装</a>
       <a href="#roadmap" class="nav-link" data-i18n="nav.roadmap">历程</a>
@@ -312,6 +349,7 @@
     <a href="#about" class="block pt-4 nav-link" data-i18n="nav.about">是什么</a>
     <a href="#features" class="block nav-link" data-i18n="nav.features">能力</a>
     <a href="#demo" class="block nav-link" data-i18n="nav.demo">实机演示</a>
+    <a href="news/index.step5.html" class="block nav-link font-semibold" style="color:var(--accent)">技术报告</a>
     <a href="#architecture" class="block nav-link" data-i18n="nav.architecture">分层</a>
     <a href="#install" class="block nav-link" data-i18n="nav.install">安装</a>
     <a href="#roadmap" class="block nav-link" data-i18n="nav.roadmap">历程</a>
@@ -324,37 +362,44 @@
 <a id="top"></a>
 
 <!-- ── 01 HERO ── -->
-<section class="relative min-h-screen flex items-center pt-24 pb-20 overflow-hidden">
+<section class="relative pt-24 pb-20 overflow-hidden">
   <div class="absolute inset-0 grid-bg" style="opacity:0.7"></div>
   <div class="blob" style="width:520px;height:520px;background:var(--accent);top:-10%;right:-8%"></div>
   <div class="blob" style="width:420px;height:420px;background:var(--accent-3);bottom:-12%;left:-6%"></div>
   <canvas id="hero-canvas" class="absolute inset-0 w-full h-full" style="opacity:0.5"></canvas>
   <div class="relative max-w-7xl mx-auto px-6 w-full">
+    <div class="grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.06fr)] gap-12 lg:gap-14 items-center">
     <div class="max-w-3xl">
-      <div class="badge-pill mb-8 reveal reveal-lead"><span class="dot"></span><span data-i18n="hero.badge">v3.1.4 · 无问自忆 · 2026-09-22</span></div>
-      <h1 class="font-display font-bold leading-[1.02] tracking-tight mb-6 reveal reveal-delay-1 reveal-lead" style="font-size:clamp(2.6rem,7vw,5.6rem)"><span data-i18n="hero.title1" style="color:var(--fg)">无问自忆</span><br><span class="gradient-text" data-i18n="hero.title2">记忆不断线</span></h1>
+      <div class="badge-pill mb-8 reveal reveal-lead"><span class="dot"></span><span data-i18n="hero.badge">v3.3.2 · 无问自忆 · 2026-10-13</span></div>
+      <h1 class="font-display font-bold tracking-tight mb-6 reveal reveal-delay-1 reveal-lead">
+        <span class="hero-name" style="color:var(--fg)" data-i18n="hero.name">无问自忆</span>
+        <span class="hero-en" data-i18n="hero.en">Ambient Recall</span>
+        <span class="hero-tag gradient-text"><span class="tag-l1" data-i18n="hero.tag1">「潜藏追忆，</span><span class="tag-l2" data-i18n="hero.tag2">如影随形」</span></span>
+      </h1>
       <p class="text-lg md:text-xl max-w-2xl mb-4 reveal reveal-delay-2 reveal-lead leading-relaxed" style="color:var(--fg-dim)" data-i18n="hero.subtitle">她不是数据库，是一个会主动想起你的同事。跨窗口、跨会话、跨工具 —— 记忆长在你自己的机器上。</p>
-      <p class="text-base max-w-2xl mb-10 reveal reveal-delay-2 reveal-lead" style="color:var(--muted)"><span data-i18n="hero.subtitle2">宿主侧主动联想中间件：持续观察对话情境，双轨检索，在你开口之前把该想起的送进下一拍。零运行时依赖，BSD-3-Clause。</span></p>
+      <p class="text-base max-w-2xl mb-10 reveal reveal-delay-2 reveal-lead" style="color:var(--muted)"><span data-i18n="hero.subtitle2">宿主侧主动联想中间件：持续观察对话情境，双轨检索，在你开口之前把该想起的送进下一拍。</span></p>
       <div class="flex flex-wrap gap-3 mb-12 reveal reveal-delay-3">
         <button class="btn-primary px-7 py-3.5 rounded-lg font-medium flex items-center gap-2 magnetic copy-cmd" data-copy="pnpm add @a9i5k4/dsh-auto-memory">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
           <span data-i18n="hero.cta1">安装</span><span class="font-mono text-xs opacity-80">pnpm add dsh-auto-memory</span>
         </button>
         <a href="https://github.com/Aik358/dsh-auto-memory" target="_blank" rel="noreferrer" class="btn-ghost px-7 py-3.5 rounded-lg font-medium flex items-center gap-2 magnetic"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2.2c-3.3.7-4-1.6-4-1.6-.5-1.4-1.3-1.8-1.3-1.8-1.1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.7-1.6-2.7-.3-5.5-1.3-5.5-6 0-1.3.5-2.4 1.2-3.2-.1-.3-.5-1.5.1-3.2 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0c2.3-1.5 3.3-1.2 3.3-1.2.6 1.7.2 2.9.1 3.2.8.8 1.2 1.9 1.2 3.2 0 4.6-2.8 5.7-5.5 6 .4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A12 12 0 0 0 12 .3"/></svg><span data-i18n="hero.cta2">GitHub</span></a>
-        <a href="#demo" class="btn-ghost px-7 py-3.5 rounded-lg font-medium magnetic" style="border-color:var(--accent);color:var(--accent)" data-i18n="hero.cta3">看实机演示 →</a>
+        <a href="news/index.step5.html" class="btn-ghost px-7 py-3.5 rounded-lg font-medium magnetic" style="border-color:var(--accent);color:var(--accent)" data-i18n="hero.cta3">技术报告 →</a>
       </div>
       <div class="grid grid-cols-3 gap-6 max-w-lg reveal reveal-delay-4">
         <div><div class="stat-num" id="stat-tools">0</div><div class="text-xs mt-1 font-mono uppercase tracking-wider" style="color:var(--muted)" data-i18n="hero.stat1">模型工具</div></div>
-        <div><div class="stat-num">0.925</div><div class="text-xs mt-1 font-mono uppercase tracking-wider" style="color:var(--muted)" data-i18n="hero.stat2">BGE-M3 召回</div></div>
-        <div><div class="stat-num">0<span class="text-base">GB</span></div><div class="text-xs mt-1 font-mono uppercase tracking-wider" style="color:var(--muted)" data-i18n="hero.stat3">词法保底</div></div>
+        <div><div class="stat-num"><span id="stat-recall">0.000</span></div><div class="text-xs mt-1 font-mono uppercase tracking-wider" style="color:var(--muted)" data-i18n="hero.stat2">R@5 召回 · BGE-M3</div></div>
+        <div><div class="stat-num"><span id="stat-local">0</span><span class="text-base">%</span></div><div class="text-xs mt-1 font-mono uppercase tracking-wider" style="color:var(--muted)" data-i18n="hero.stat3">本地运行</div></div>
       </div>
     </div>
-    <!-- 主视觉：banner-v4 -->
-    <div class="mt-16 lg:mt-0 lg:absolute lg:right-6 lg:top-1/2 lg:-translate-y-1/2 lg:w-[42%] reveal reveal-delay-3">
-      <div class="glass-card rounded-2xl p-2 floating">
-        <img src="../screenshots/promo/promo-0-banner-v4.png" alt="dsh-auto-memory 主视觉：会记得你的她" class="w-full rounded-xl block" loading="eager">
+    <!-- 主视觉：语义检索实测数据 + 三级算力 -->
+    <div class="reveal reveal-delay-3">
+      <div class="glass-card rounded-2xl p-5">
+        <div class="font-mono text-[10px] uppercase tracking-widest mb-1" style="color:var(--accent)" data-i18n="hero.figure.kicker">Measured · 双层基准</div>
+        <div class="font-display font-semibold text-sm mb-4" style="color:var(--fg)" data-i18n="hero.figure.title">真实语料层检索质量(R@5)</div>
+        <img src="news/assets/figures/fig-model-selection-r5.step5.svg" alt="六种模型–策略组合在真实语料层 L2 上的 R@5 对比:BGE-M3 para-512 以 0.925 居首" class="w-full block" loading="eager" style="border-radius:12px">
+        <a href="news/2026-08-24-retrieval-selection.html" class="font-mono text-[11px] mt-4 inline-flex items-center gap-1" style="color:var(--accent)" data-i18n="hero.figure.link">完整基准报告 →</a>
       </div>
-      <div class="absolute -bottom-6 left-1/2 -translate-x-1/2 font-mono text-[10px] tracking-widest uppercase whitespace-nowrap" style="color:var(--muted)" data-i18n="hero.imgCap">她记得，不必吩咐</div>
     </div>
   </div>
   <div class="scroll-hint" data-i18n="hero.scroll">向下</div>
@@ -381,7 +426,7 @@
   </div>
 </section>
 <!-- ── 03 FEATURES ── -->
-<section id="features" class="py-28 relative" style="background:var(--bg-elev)">
+<section id="features" class="py-28 relative" style="background:color-mix(in srgb, var(--bg-elev) 55%, transparent)">
   <div class="max-w-7xl mx-auto px-6">
     <div class="text-center mb-20 reveal">
       <div class="section-num mb-4">02 / <span data-i18n="features.kicker">十二个能力</span></div>
@@ -493,8 +538,70 @@
     </div>
   </div>
 </section>
+
+<!-- ── 03.5 TECHNICAL REPORTS · 门面入口（自 #gallery 迁出独立成节）── -->
+<section id="papers" class="py-28 relative" style="background:var(--bg-soft)">
+  <div class="max-w-7xl mx-auto px-6">
+<div class="mt-20 reveal">
+      <div class="text-center mb-10">
+        <div class="section-num mb-4" data-i18n="papers.kicker">技术报告 · 门面</div>
+        <h2 class="font-display font-bold text-4xl md:text-6xl leading-tight mb-6" style="color:var(--fg)" data-i18n="papers.title">七篇技术报告，<br><span class="gradient-text">结论不是拍的，是算出来的。</span></h2>
+        <p class="text-base max-w-2xl mx-auto" style="color:var(--fg-dim)" data-i18n="papers.subtitle">检索选型、激活策略、前缀缓存、注入成本、架构治理 —— 全部来自可复现实验，结论冻结为工程决策台账，并已进入生产实现。</p>
+      </div>
+      <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-5">
+        <a href="news/2026-08-19-host-side-memory.html" class="glass-card rounded-xl p-6 reveal block">
+          <div class="font-mono text-[10px] uppercase tracking-widest mb-3" style="color:var(--accent)">2026-08-19 · 研究综述</div>
+          <div class="font-display font-semibold text-base mb-2" style="color:var(--fg)">宿主侧主动联想记忆中间件</div>
+          <p class="text-sm leading-relaxed mb-4" style="color:var(--fg-dim)">把「主动联想」定义成可判定的运行时边界，并排查它与「模型调用记忆工具」的根本区别。</p>
+          <span class="font-mono text-[11px]" style="color:var(--accent)">阅读 →</span>
+        </a>
+        <a href="news/2026-08-24-retrieval-selection.html" class="glass-card rounded-xl p-6 reveal reveal-delay-1 block">
+          <div class="font-mono text-[10px] uppercase tracking-widest mb-3" style="color:var(--accent)">2026-08-24 · 基准研究</div>
+          <div class="font-display font-semibold text-base mb-2" style="color:var(--fg)">多语言嵌入式检索选型研究</div>
+          <p class="text-sm leading-relaxed mb-4" style="color:var(--fg-dim)">3 模型 × 5 分块 × 6 通道 ≈ 90 个评测单元。BGE-M3 真实层 R@5 0.925，领先次名 12.5 个百分点。</p>
+          <span class="font-mono text-[11px]" style="color:var(--accent)">阅读 →</span>
+        </a>
+        <a href="news/2026-08-25-echo-trap.html" class="glass-card rounded-xl p-6 reveal reveal-delay-2 block">
+          <div class="font-mono text-[10px] uppercase tracking-widest mb-3" style="color:var(--accent)">2026-08-25 · 技术报告</div>
+          <div class="font-display font-semibold text-base mb-2" style="color:var(--fg)">从语义相关到唤起必要</div>
+          <p class="text-sm leading-relaxed mb-4" style="color:var(--fg-dim)">「像不像」与「该不该」是两个目标，在分布上甚至反向。单阈值策略在 86 条金标上精确率为 0。</p>
+          <span class="font-mono text-[11px]" style="color:var(--accent)">阅读 →</span>
+        </a>
+        <a href="news/2026-09-01-memory-systems-survey.html" class="glass-card rounded-xl p-6 reveal reveal-delay-3 block">
+          <div class="font-mono text-[10px] uppercase tracking-widest mb-3" style="color:var(--accent)">2026-09-01 · 技术观察</div>
+          <div class="font-display font-semibold text-base mb-2" style="color:var(--fg)">记忆不在存，而在取</div>
+          <p class="text-sm leading-relaxed mb-4" style="color:var(--fg-dim)">五套开源记忆系统横向观察。分野不在存了多少，而在「取的时候由谁决定取什么」。</p>
+          <span class="font-mono text-[11px]" style="color:var(--accent)">阅读 →</span>
+        </a>
+        <a href="news/2026-10-05-cache-visibility.html" class="glass-card rounded-xl p-6 reveal reveal-delay-0 block">
+          <div class="font-mono text-[10px] uppercase tracking-widest mb-3" style="color:var(--accent)">2026-10-05 · 工程调查</div>
+          <div class="font-display font-semibold text-base mb-2" style="color:var(--fg)">缓存在那里，只是有时看不见</div>
+          <p class="text-sm leading-relaxed mb-4" style="color:var(--fg-dim)">同站、同端、同时段，两个模型的缓存表现相差 20.9 倍。847 条真实请求的对照测量。</p>
+          <span class="font-mono text-[11px]" style="color:var(--accent)">阅读 →</span>
+        </a>
+        <a href="news/2026-09-22-injection-cost.html" class="glass-card rounded-xl p-6 reveal reveal-delay-1 block">
+          <div class="font-mono text-[10px] uppercase tracking-widest mb-3" style="color:var(--accent)">2026-09-22 · 工程调查</div>
+          <div class="font-display font-semibold text-base mb-2" style="color:var(--fg)">每一轮都在送出的固定前缀</div>
+          <p class="text-sm leading-relaxed mb-4" style="color:var(--fg-dim)">完整版 18,291 字符，为预算的 228.6%。规则段一段占 41.7%，且每轮必到、不参与裁剪。</p>
+          <span class="font-mono text-[11px]" style="color:var(--accent)">阅读 →</span>
+        </a>
+        <a href="news/2026-10-08-plugin-split.html" class="glass-card rounded-xl p-6 reveal reveal-delay-2 block">
+          <div class="font-mono text-[10px] uppercase tracking-widest mb-3" style="color:var(--accent)">2026-10-08 · 可行性研究</div>
+          <div class="font-display font-semibold text-base mb-2" style="color:var(--fg)">一个 18,525 行文件的拆分之道</div>
+          <p class="text-sm leading-relaxed mb-4" style="color:var(--fg-dim)">110 个模块、158 条依赖边、68 个零出边叶子。真正的障碍是那个 10,852 行的单类。</p>
+          <span class="font-mono text-[11px]" style="color:var(--accent)">阅读 →</span>
+        </a>
+      </div>
+      <div class="text-center mt-8">
+        <a href="news/index.step5.html" class="btn-primary inline-flex px-8 py-4 rounded-lg font-medium" data-i18n="papers.all" data-i18n="papers.all">全部技术报告 →</a>
+      </div>
+    </div>
+  </div>
+
+  </div>
+</section>
 <!-- ── 05 ARCHITECTURE ── -->
-<section id="architecture" class="py-28 relative" style="background:var(--bg-elev)">
+<section id="architecture" class="py-28 relative" style="background:color-mix(in srgb, var(--bg-elev) 55%, transparent)">
   <div class="max-w-7xl mx-auto px-6">
     <div class="grid lg:grid-cols-12 gap-12 mb-16">
       <div class="lg:col-span-6 reveal">
@@ -571,15 +678,15 @@
 </section>
 
 <!-- ── 07 ROADMAP ── -->
-<section id="roadmap" class="py-28 relative" style="background:var(--bg-elev)">
+<section id="roadmap" class="py-28 relative" style="background:color-mix(in srgb, var(--bg-elev) 55%, transparent)">
   <div class="max-w-7xl mx-auto px-6">
     <div class="text-center mb-20 reveal">
       <div class="section-num mb-4">06 / <span data-i18n="roadmap.kicker">版本历程</span></div>
-      <h2 class="font-display font-bold text-4xl md:text-6xl leading-tight mb-6" style="color:var(--fg)" data-i18n="roadmap.title">从 v0.1.30<br><span class="gradient-text">到 v3.1.4。</span></h2>
+      <h2 class="font-display font-bold text-4xl md:text-6xl leading-tight mb-6" style="color:var(--fg)" data-i18n="roadmap.title">从 v0.1.30<br><span class="gradient-text">到 v3.3.2。</span></h2>
       <p class="text-lg max-w-2xl mx-auto" style="color:var(--fg-dim)" data-i18n="roadmap.subtitle">七个版本条目，每一步都留下了可回查的 CHANGELOG 与守卫断言。</p>
     </div>
     <div class="max-w-3xl mx-auto space-y-10 pl-8" style="border-left:1px solid var(--border)">
-      <div class="timeline-item relative reveal"><div class="flex items-center gap-3 mb-2 flex-wrap"><span class="font-mono text-xs px-2 py-0.5 border rounded" style="color:var(--accent);border-color:var(--accent)">v3.1.4</span><span class="font-mono text-xs" style="color:var(--muted)">2026-09-22</span></div><h3 class="font-display font-semibold text-xl mb-2" style="color:var(--fg)" data-i18n="roadmap.v314.title">当前版本 · 记忆中枢治理</h3><p class="text-sm leading-relaxed" style="color:var(--fg-dim)" data-i18n="roadmap.v314.body">三店持久化 + 治理式写回 + 迁移搬包三步向导。全量回归 173/173 绿，tarball 256 文件 / 17.7MB。</p></div>
+      <div class="timeline-item relative reveal"><div class="flex items-center gap-3 mb-2 flex-wrap"><span class="font-mono text-xs px-2 py-0.5 border rounded" style="color:var(--accent);border-color:var(--accent)">v3.3.2</span><span class="font-mono text-xs" style="color:var(--muted)">2026-10-13</span></div><h3 class="font-display font-semibold text-xl mb-2" style="color:var(--fg)" data-i18n="roadmap.v332.title">当前版本 · 团队层与前端收口</h3><p class="text-sm leading-relaxed" style="color:var(--fg-dim)" data-i18n="roadmap.v332.body">工作区关系图整体重做、技能库审批链补全、注入节奏可配置。全量回归 346/346 绿，本轮 18 项 issue 与 PR 全部闭环。</p></div>
       <div class="timeline-item relative reveal reveal-delay-1"><div class="flex items-center gap-3 mb-2 flex-wrap"><span class="font-mono text-xs px-2 py-0.5 border rounded" style="color:var(--muted);border-color:var(--border-strong)">v3.0.0</span><span class="font-mono text-xs" style="color:var(--muted)">2026-09</span></div><h3 class="font-display font-semibold text-xl mb-2" style="color:var(--fg)" data-i18n="roadmap.v300.title">Fable 大版本 · 技能固化</h3><p class="text-sm leading-relaxed" style="color:var(--fg-dim)" data-i18n="roadmap.v300.body">技能四级晋升、90 天归档、激活观测台、无人值守模式 —— 从「记事本」长成「同事」。</p></div>
       <div class="timeline-item relative reveal reveal-delay-2"><div class="flex items-center gap-3 mb-2 flex-wrap"><span class="font-mono text-xs px-2 py-0.5 border rounded" style="color:var(--muted);border-color:var(--border-strong)">v0.1.30</span><span class="font-mono text-xs" style="color:var(--muted)">2026-08</span></div><h3 class="font-display font-semibold text-xl mb-2" style="color:var(--fg)" data-i18n="roadmap.v0130.title">欢迎向导 + 双语义引擎</h3><p class="text-sm leading-relaxed" style="color:var(--fg-dim)" data-i18n="roadmap.v0130.body">每个功能、当场看懂、当场开关；所有用户升级后自动播放一次。JS 与 Python 两套语义引擎解耦成可互换形态。</p></div>
       <div class="timeline-item relative reveal reveal-delay-3"><div class="flex items-center gap-3 mb-2 flex-wrap"><span class="font-mono text-xs px-2 py-0.5 border rounded" style="color:var(--muted);border-color:var(--border-strong)">v0.1.x</span><span class="font-mono text-xs" style="color:var(--muted)" data-i18n="roadmap.early">早期</span></div><h3 class="font-display font-semibold text-xl mb-2" style="color:var(--fg)" data-i18n="roadmap.v01.title">她学会了记事与问候</h3><p class="text-sm leading-relaxed" style="color:var(--fg-dim)" data-i18n="roadmap.v01.body">最早的两个能力：每轮结束自己记下值得留的；你隔一段时间回来，她按时段用合适的语气打招呼。人格从这里定下。</p></div>
@@ -592,7 +699,7 @@
   <div class="max-w-7xl mx-auto px-6">
     <div class="text-center mb-16 reveal">
       <div class="section-num mb-4">07 / <span data-i18n="gallery.kicker">界面</span></div>
-      <h2 class="font-display font-bold text-4xl md:text-6xl leading-tight mb-6" style="color:var(--fg)" data-i18n="gallery.title">七张实机截图，<br><span class="gradient-text">不是示意图。</span></h2>
+      <h2 class="font-display font-bold text-4xl md:text-6xl leading-tight mb-6" style="color:var(--fg)" data-i18n="gallery.title">六张实机截图，<br><span class="gradient-text">不是示意图。</span></h2>
       <p class="text-lg max-w-2xl mx-auto" style="color:var(--fg-dim)" data-i18n="gallery.subtitle">面板 / 设置 / 记忆中枢 / 激活观测台 / 欢迎向导 / 无人值守 / 外部继承 —— 全部来自实机。</p>
     </div>
     <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -622,36 +729,10 @@
       </a>
     </div>
 
-    <!-- 轮播：七幕宣传图 -->
-    <div class="mt-16 reveal">
-      <div class="text-center mb-8">
-        <div class="section-num" data-i18n="gallery.capKicker">宣传套图 · 七幕</div>
-      </div>
-      <div class="relative glass-card rounded-2xl p-3 overflow-hidden">
-        <div id="promo-track" class="flex transition-transform duration-500" style="will-change:transform">
-          <img src="../screenshots/promo/promo-1-hero.png" alt="第一幕：她记得，不必吩咐" class="w-full flex-shrink-0 rounded-xl block">
-          <img src="../screenshots/promo/promo-1b-auto-recall.png" alt="第二幕：主动唤起" class="w-full flex-shrink-0 rounded-xl block">
-          <img src="../screenshots/promo/promo-2-tour.png" alt="第三幕：欢迎向导" class="w-full flex-shrink-0 rounded-xl block">
-          <img src="../screenshots/promo/promo-3-recall.png" alt="第四幕：召回与固化" class="w-full flex-shrink-0 rounded-xl block">
-          <img src="../screenshots/promo/promo-4-unattended.png" alt="第五幕：无人值守" class="w-full flex-shrink-0 rounded-xl block">
-          <img src="../screenshots/promo/promo-5-external.png" alt="第六幕：外部继承" class="w-full flex-shrink-0 rounded-xl block">
-          <img src="../screenshots/promo/promo-6-greeting.png" alt="第七幕：定时问候" class="w-full flex-shrink-0 rounded-xl block">
-        </div>
-        <div class="flex items-center justify-between mt-3 px-1">
-          <div class="font-mono text-[10px] uppercase tracking-widest" style="color:var(--muted)"><span data-i18n="gallery.cap">七幕</span> · <span id="promo-idx">1</span>/7</div>
-          <div class="flex gap-1.5" id="promo-dots"></div>
-          <div class="flex gap-2">
-            <button class="play-btn ghost" id="promo-prev" aria-label="prev">←</button>
-            <button class="play-btn ghost" id="promo-next" aria-label="next">→</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
+    </section>
 
 <!-- ── 09 COMPARE ── -->
-<section id="compare" class="py-28 relative" style="background:var(--bg-elev)">
+<section id="compare" class="py-28 relative" style="background:color-mix(in srgb, var(--bg-elev) 55%, transparent)">
   <div class="max-w-7xl mx-auto px-6">
     <div class="text-center mb-16 reveal">
       <div class="section-num mb-4">08 / <span data-i18n="compare.kicker">对比</span></div>
@@ -710,7 +791,7 @@
 </section>
 
 <!-- ── 11 CTA ── -->
-<section class="py-32 relative overflow-hidden" style="background:var(--bg-elev)">
+<section class="py-32 relative overflow-hidden" style="background:color-mix(in srgb, var(--bg-elev) 55%, transparent)">
   <div class="blob" style="width:600px;height:600px;background:var(--accent);top:-20%;left:50%;transform:translateX(-50%)"></div>
   <div class="relative max-w-4xl mx-auto px-6 text-center reveal">
     <div class="section-num mb-4">10 / <span data-i18n="cta.kicker">一起养大</span></div>
@@ -731,7 +812,7 @@
       <div class="md:col-span-5">
         <div class="flex items-center gap-3 mb-4">
           <div class="brand-logo w-9 h-9" style="color:var(--fg)"><svg viewBox="0 0 40 40" fill="none"><g class="brain-path"><path d="M20 6c-4 0-7 2.5-7 6 0 1 .2 2 .6 2.8C11 15.6 9.5 17.4 9.5 19.6c0 1.6.9 3 2.3 3.8-.2.6-.3 1.2-.3 1.9 0 3.2 2.6 5.7 6 5.7 1 0 1.9-.2 2.5-.7"/><path d="M20 6c4 0 7 2.5 7 6 0 1-.2 2-.6 2.8 2.6.8 4.1 2.6 4.1 4.8 0 1.6-.9 3-2.3 3.8.2.6.3 1.2.3 1.9 0 3.2-2.6 5.7-6 5.7-1 0-1.9-.2-2.5-.7"/><path d="M20 6v25"/></g></svg></div>
-          <div><div class="font-display font-semibold" style="color:var(--fg)">dsh-auto-memory</div><div class="text-[10px] font-mono tracking-wider" style="color:var(--muted)">无问自忆 · 记忆不断线 · v3.1.4</div></div>
+          <div><div class="font-display font-semibold" style="color:var(--fg)">dsh-auto-memory</div><div class="text-[10px] font-mono tracking-wider" style="color:var(--muted)">Ambient Recall · 「潜藏追忆，如影随形」 · v3.3.2</div></div>
         </div>
         <p class="text-sm leading-relaxed max-w-md" style="color:var(--fg-dim)" data-i18n="footer.desc">DSH 插件：宿主侧主动联想记忆中间件。她记得，不必吩咐 —— 记忆长在你自己的机器上。BSD-3-Clause。</p>
       </div>
@@ -755,7 +836,7 @@
       </div>
     </div>
     <div class="mt-12 pt-6 text-xs font-mono flex flex-col md:flex-row justify-between gap-3" style="border-top:1px solid var(--border);color:var(--muted)">
-      <div>© 2026 dsh-auto-memory · Aik358 · <span data-i18n="footer.rights">BSD-3-Clause</span></div>
+      <div>© 2026 dsh-auto-memory · Aik358 · <span data-i18n="footer.rights">BSD-3-Clause</span> · <a href="index_old.html" class="nav-link">上一版 index_old.html</a></div>
       <div><span data-i18n="footer.built">记忆在你自己的机器上 · 可审计 · 可删除</span></div>
     </div>
   </div>
@@ -767,13 +848,13 @@
 const i18n = {
 zh: {
   'nav.about':'是什么','nav.features':'能力','nav.demo':'实机演示','nav.architecture':'分层','nav.install':'安装','nav.roadmap':'历程','nav.faq':'问答',
-  'hero.badge':'v3.1.4 · 无问自忆 · 2026-09-22',
-  'hero.title1':'无问自忆','hero.title2':'记忆不断线',
+  'hero.badge':'v3.3.2 · 无问自忆 · 2026-10-13',
+  'hero.name':'无问自忆','hero.en':'Ambient Recall','hero.tag1':'「潜藏追忆，','hero.tag2':'如影随形」',
   'hero.subtitle':'她不是数据库，是一个会主动想起你的同事。跨窗口、跨会话、跨工具 —— 记忆长在你自己的机器上。',
-  'hero.subtitle2':'宿主侧主动联想中间件：持续观察对话情境，双轨检索，在你开口之前把该想起的送进下一拍。零运行时依赖，BSD-3-Clause。',
-  'hero.cta1':'安装','hero.cta2':'GitHub','hero.cta3':'看实机演示 →',
-  'hero.stat1':'模型工具','hero.stat2':'R@5 召回 · BGE-M3','hero.stat3':'词法保底',
-  'hero.imgCap':'她记得，不必吩咐','hero.scroll':'向下',
+  'hero.subtitle2':'宿主侧主动联想中间件：持续观察对话情境，双轨检索，在你开口之前把该想起的送进下一拍。',
+  'hero.cta1':'安装','hero.cta2':'GitHub','hero.cta3':'技术报告 →',
+  'hero.stat1':'模型工具','hero.stat2':'R@5 召回 · BGE-M3','hero.stat3':'本地运行',
+  'hero.imgCap':'结论可复算','hero.scroll':'向下',
   'about.kicker':'是什么',
   'about.title':'市面上的记忆方案，<br><span class="gradient-text">都要求模型「记得去查」。</span>',
   'about.lead':'忘了调，记忆就等于不存在 —— 这是所有「工具式记忆」的结构性缺陷。dsh-auto-memory 换了一条路：把记忆放在宿主侧，让她持续观察、主动联想、在模型开口之前把该想起的送进下一拍。JS 权威层做最终仲裁，AI 只在边界内干活。',
@@ -826,14 +907,17 @@ zh: {
   'install.step2.title':'2 · 重启 DSH','install.step2.desc':'重启 dsh web 后欢迎向导自动走出。已有用户升级后自动播放一次：',
   'install.copy':'复制','install.req.h':'要求','install.req1':'DSH 0.1.6-alpha 及以上','install.req2':'JS 内置 e5-small ~130MB 首启自动下载','install.req3':'Python BGE-M3 563MB · 设置页一键装',
   'install.ai.title':'（推荐）给 AI 一段提示词','install.ai.desc':'把下面这段贴给你的 AI，她会自己读懂怎么用这个插件：',
-  'roadmap.kicker':'版本历程','roadmap.title':'从 v0.1.30<br><span class="gradient-text">到 v3.1.4。</span>',
-  'roadmap.subtitle':'七个版本条目，每一步都留下了可回查的 CHANGELOG 与守卫断言。',
+  'hero.figure.kicker':'Measured · 双层基准','hero.figure.title':'真实语料层检索质量(R@5)','hero.figure.link':'完整基准报告 →',
+  'papers.kicker':'技术报告','papers.title':'七篇技术报告，<br><span class="gradient-text">结论不是拍的，是算出来的。</span>','papers.subtitle':'检索选型、激活策略、前缀缓存、注入成本、架构治理 —— 每一张图表都来自可复现实验，结论冻结为工程决策台账，并已进入生产实现。','papers.all':'全部技术报告 →',
+  'roadmap.v332.title':'当前版本 · 团队层与前端收口','roadmap.v332.body':'工作区关系图整体重做、技能库审批链补全、注入节奏可配置。全量回归 346/346 绿，本轮 18 项 issue 与 PR 全部闭环。',
+  'roadmap.kicker':'版本历程','roadmap.title':'从 v0.1.30<br><span class="gradient-text">到 v3.3.2。</span>',
+  'roadmap.subtitle':'每一步都留下了可回查的 CHANGELOG 与守卫断言。',
   'roadmap.v314.title':'当前版本 · 记忆中枢治理','roadmap.v314.body':'三店持久化 + 治理式写回 + 迁移搬包三步向导。全量回归 173/173 绿，tarball 256 文件 / 17.7MB。',
   'roadmap.v300.title':'Fable 大版本 · 技能固化','roadmap.v300.body':'技能四级晋升、90 天归档、激活观测台、无人值守模式 —— 从「记事本」长成「同事」。',
   'roadmap.v0130.title':'欢迎向导 + 双语义引擎','roadmap.v0130.body':'每个功能、当场看懂、当场开关；所有用户升级后自动播放一次。JS 与 Python 两套语义引擎解耦成可互换形态。',
   'roadmap.early':'早期','roadmap.v01.title':'她学会了记事与问候','roadmap.v01.body':'最早的两个能力：每轮结束自己记下值得留的；你隔一段时间回来，她按时段用合适的语气打招呼。人格从这里定下。',
   'roadmap.next':'排队中','roadmap.v32.title':'存储治理（M10）','roadmap.v32.body':'删除级联撤销、语料健康扫描、管理界面。底座（原子事务 / 保留策略 / 30 天蒸馏）已就绪。',
-  'gallery.kicker':'界面','gallery.title':'七张实机截图，<br><span class="gradient-text">不是示意图。</span>',
+  'gallery.kicker':'界面','gallery.title':'六张实机截图，<br><span class="gradient-text">不是示意图。</span>',
   'gallery.subtitle':'面板 / 设置 / 记忆中枢 / 激活观测台 / 欢迎向导 / 无人值守 / 外部继承 —— 全部来自实机。',
   'gallery.g1.title':'记忆中枢','gallery.g2.title':'设置页','gallery.g3.title':'激活观测台','gallery.g4.title':'欢迎向导','gallery.g5.title':'无人值守','gallery.g6.title':'外部记忆继承',
   'gallery.capKicker':'宣传套图 · 七幕','gallery.cap':'七幕',
@@ -857,13 +941,13 @@ zh: {
 },
 en: {
   'nav.about':'What','nav.features':'Features','nav.demo':'Live Demos','nav.architecture':'Layers','nav.install':'Install','nav.roadmap':'History','nav.faq':'FAQ',
-  'hero.badge':'v3.1.4 · She remembers, unbidden · 2026-09-22',
-  'hero.title1':'She remembers','hero.title2':'unbidden.',
+  'hero.badge':'v3.3.2 · She remembers, unbidden · 2026-10-13',
+  'hero.name':'She remembers','hero.en':'Ambient Recall','hero.tag1':'Memory that surfaces','hero.tag2':'unbidden.',
   'hero.subtitle':'Not a database — a colleague who thinks of you first. Across windows, sessions and tools. Your memory lives on your own disk.',
-  'hero.subtitle2':'Host-side proactive recall middleware: it watches the conversation, searches two channels, and delivers what you should remember before the model speaks. Zero runtime deps, BSD-3-Clause.',
-  'hero.cta1':'Install','hero.cta2':'GitHub','hero.cta3':'See it run →',
-  'hero.stat1':'model tools','hero.stat2':'R@5 recall · BGE-M3','hero.stat3':'lexical floor',
-  'hero.imgCap':'She remembers, unbidden','hero.scroll':'Scroll',
+  'hero.subtitle2':'Host-side proactive recall middleware: it watches the conversation, searches two channels, and delivers what you should remember before the model speaks.',
+  'hero.cta1':'Install','hero.cta2':'GitHub','hero.cta3':'Technical reports →',
+  'hero.stat1':'model tools','hero.stat2':'R@5 recall · BGE-M3','hero.stat3':'fully local',
+  'hero.imgCap':'Reproducible','hero.scroll':'Scroll',
   'about.kicker':'What it is',
   'about.title':'Every memory system out there<br><span class="gradient-text">makes the model remember to look.</span>',
   'about.lead':'Forget to call the tool, and the memory might as well not exist — that is the structural flaw of every "tool-style memory". dsh-auto-memory takes the other road: memory on the host side, watching continuously, recalling proactively, delivering into the next turn before the model even opens its mouth. The JS authority layer has the final say; the AI only works inside the boundary.',
@@ -871,7 +955,7 @@ en: {
   'about.card2.title':'The memory is yours','about.card2.body':'Everything stays on your own disk, every entry carries an evidence chain: which message, which tool, which late-night reflection. Auditable, editable, deletable — one sentence and she forgets.',
   'about.card3.title':'Prefix-cache friendly','about.card3.body':'The injection point sits at a byte-stable offset in the prompt, so the cache keeps hitting — you never pay twice for memory. A design constraint, not an afterthought.',
   'about.card4.title':'Two swappable semantic engines','about.card4.body':'Built-in e5-small on the JS side (~130MB, works out of the box) and BGE-M3 on the Python side (563MB, the enthusiast tier) — independent, interchangeable, never holding each other hostage.',
-  'features.kicker':'Nine capabilities',
+  'features.kicker':'Twelve capabilities',
   'features.title':'Four features carry the spine.<br><span class="gradient-text">The rest grow around it.</span>',
   'features.subtitle':'Notes and greetings / emergent proactive recall / skill crystallization / context handoff — each with its own switch, each recall with evidence.',
   'features.f1.title':'Proactive recall','features.f1.body':'Not "remember to look" but thinking of it while you work. The host watches, the model judges, the memory walks in through a fixed boundary.',
@@ -916,14 +1000,17 @@ en: {
   'install.step2.title':'2 · Restart DSH','install.step2.desc':'The welcome tour walks out after restart. Existing users get it played once on upgrade:',
   'install.copy':'Copy','install.req.h':'Requirement','install.req1':'DSH 0.1.6-alpha or newer','install.req2':'Built-in e5-small ~130MB downloads on first run','install.req3':'Python BGE-M3 563MB · one click in settings',
   'install.ai.title':'(Recommended) Give your AI a prompt','install.ai.desc':'Paste this to your AI and she will understand how to use the plugin:',
-  'roadmap.kicker':'Version history','roadmap.title':'From v0.1.30<br><span class="gradient-text">to v3.1.4.</span>',
+  'hero.figure.kicker':'Measured · two-tier benchmark','hero.figure.title':'Real-corpus retrieval quality (R@5)','hero.figure.link':'Full benchmark report →',
+  'papers.kicker':'Technical reports','papers.title':'Seven technical reports,<br><span class="gradient-text">conclusions computed, not asserted.</span>','papers.subtitle':'Retrieval selection, activation policy, prefix cache, injection cost, architecture governance — every chart comes from a reproducible experiment, and every conclusion is frozen into an engineering decision ledger.','papers.all':'All technical reports →',
+  'roadmap.v332.title':'Current · teamwork layer and frontend close-out','roadmap.v332.body':'Workspace graph rebuilt, skill approval chain completed, injection cadence configurable. Full regression 346/346 green; this round closed 18 issues plus a PR.',
+  'roadmap.kicker':'Version history','roadmap.title':'From v0.1.30<br><span class="gradient-text">to v3.3.2.</span>',
   'roadmap.subtitle':'Seven release entries, each leaving an auditable CHANGELOG and guard assertions behind.',
   'roadmap.v314.title':'Current · memory hub governance','roadmap.v314.body':'Three-store persistence, governed write-back, and a three-step migration wizard. Full suite 173/173 green, tarball 256 files / 17.7MB.',
   'roadmap.v300.title':'Fable · skill crystallization','roadmap.v300.body':'Four-stage skill promotion, 90-day archiving, activation console, unattended mode — growing from notebook into colleague.',
   'roadmap.v0130.title':'Welcome tour + dual semantic engines','roadmap.v0130.body':'Every feature explained and toggled on the spot, auto-played once for all users after upgrade. JS and Python semantic engines decoupled into swappable forms.',
   'roadmap.early':'early','roadmap.v01.title':'She learned to take notes and greet','roadmap.v01.body':'The first two abilities: after every conversation she wrote down what was worth keeping; when you came back she greeted you in a fitting tone. Her character was set here.',
   'roadmap.next':'queued','roadmap.v32.title':'Storage governance (M10)','roadmap.v32.body':'Cascade deletes with revoke, corpus health scan, management UI. The foundation (atomic transactions, retention, 30-day distillation) is already in place.',
-  'gallery.kicker':'Interface','gallery.title':'Seven real screenshots,<br><span class="gradient-text">not mockups.</span>',
+  'gallery.kicker':'Interface','gallery.title':'Six real screenshots,<br><span class="gradient-text">not mockups.</span>',
   'gallery.subtitle':'Hub / settings / memory center / activation console / welcome tour / unattended / external inheritance — all captured from the running plugin.',
   'gallery.g1.title':'Memory hub','gallery.g2.title':'Settings','gallery.g3.title':'Activation console','gallery.g4.title':'Welcome tour','gallery.g5.title':'Unattended','gallery.g6.title':'External memory',
   'gallery.capKicker':'Promo gallery · seven frames','gallery.cap':'seven frames',
@@ -1007,6 +1094,35 @@ window.addEventListener('scroll', ()=>{ clearTimeout(window.__rfT); window.__rfT
   ob.observe(el);
 })();
 
+/* ══════ 数字滚动 · Step5 修改版新增（0.925 / 100%，尊重 reduced-motion）══════ */
+(function(){
+  var reduce = false;
+  try { reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch(e){}
+  function countUp(el, target, decimals, dur){
+    if (!el) return;
+    if (reduce){ el.textContent = decimals ? target.toFixed(decimals) : String(target); return; }
+    var t0 = null;
+    function frame(t){
+      if (t0 == null) t0 = t;
+      var p = Math.min(1, (t - t0) / dur);
+      el.textContent = decimals ? (target * p).toFixed(decimals) : String(Math.round(target * p));
+      if (p < 1) requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  }
+  var recall = document.getElementById('stat-recall');
+  var local = document.getElementById('stat-local');
+  var fired = false;
+  var ob = new IntersectionObserver(function(es){ es.forEach(function(x){
+    if (!x.isIntersecting || fired) return;
+    fired = true; ob.disconnect();
+    countUp(recall, 0.925, 3, 900);
+    countUp(local, 100, 0, 900);
+  }); }, { threshold: 0.4 });
+  var anchor = document.getElementById('stat-tools');
+  if (anchor) ob.observe(anchor);
+})();
+
 /* ══════ 粒子背景 ══════ */
 class HeroBG{
   constructor(c){
@@ -1055,16 +1171,40 @@ if (heroCanvas){
   new IntersectionObserver(es=>{ es.forEach(x=>{ window.__heroInst._pause = !x.isIntersecting; }); },{ threshold:0.02 }).observe(heroCanvas);
 }
 
-/* ══════ 磁吸按钮 ══════ */
-document.querySelectorAll('.magnetic').forEach(e=>{
+/* ══════ 磁吸按钮：rAF 指数趋近（跟手，但不硬拖） ══════ */
+(function(){
+  var reduce = false;
+  try { reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch(e){}
+  if (reduce) return;
   if (!window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
-  e.addEventListener('mousemove', ev=>{
-    const r = e.getBoundingClientRect();
-    e.style.transform = `translate(${(ev.clientX-r.left-r.width/2)*0.12}px,${(ev.clientY-r.top-r.height/2)*0.12}px)`;
+  var PULL = 0.17;   /* 位移比例：越大越"吸" */
+  var EASE = 0.17;   /* 每帧趋近系数：跟手 ↔ 顺滑的平衡点 */
+  var SETTLE = 0.06; /* 收敛阈值（px），到这个距离就直接吸附并停帧 */
+  var items = [].slice.call(document.querySelectorAll('.magnetic'));
+  items.forEach(function(el){
+    var tx=0, ty=0, cx=0, cy=0, raf=0, hovering=false, live=true;
+    el.__magStop = function(){ live=false; if(raf) cancelAnimationFrame(raf); raf=0; };
+    function frame(){
+      raf = 0;
+      var dx = tx-cx, dy = ty-cy;
+      cx += dx*EASE; cy += dy*EASE;
+      if (Math.abs(tx-cx) < SETTLE) cx = tx;
+      if (Math.abs(ty-cy) < SETTLE) cy = ty;
+      el.style.transform = 'translate3d(' + cx.toFixed(2) + 'px,' + cy.toFixed(2) + 'px,0)';
+      var moving = Math.abs(tx-cx) > 0.02 || Math.abs(ty-cy) > 0.02;
+      if (live && (hovering || moving)) raf = requestAnimationFrame(frame);
+    }
+    function kick(){ if (live && !raf) raf = requestAnimationFrame(frame); }
+    el.addEventListener('mouseenter', function(){ hovering = true; kick(); }, { passive:true });
+    el.addEventListener('mousemove', function(ev){
+      var r = el.getBoundingClientRect();
+      tx = (ev.clientX - (r.left + r.width/2) - cx) * PULL;
+      ty = (ev.clientY - (r.top + r.height/2) - cy) * PULL;
+      kick();
+    }, { passive:true });
+    el.addEventListener('mouseleave', function(){ hovering = false; tx = 0; ty = 0; kick(); }, { passive:true });
   });
-  e.addEventListener('mouseleave', ()=>e.style.transform = 'translate(0,0)');
-});
-
+})();
 /* ══════ 复制 ══════ */
 function flash(btn, ok){
   const old = btn.innerHTML;
@@ -1090,7 +1230,7 @@ document.querySelectorAll('.copy-el').forEach(b=>b.addEventListener('click', ()=
   copyText(el ? el.textContent : '', b);
 }));
 
-/* ══════ 宣传图轮播 ══════ */
+/* ══════ 宣传图轮播(元素已移除,守卫提前 return,保留以免改动 DOM 顺序) ══════ */
 (function(){
   const track = document.getElementById('promo-track'); if (!track) return;
   const frames = track.querySelectorAll('img');

@@ -1,0 +1,110 @@
+name: pages(宣传主页与论文站)
+
+# 把 `docs/` 整树作为 GitHub Pages 站点发布 ⇒ 新版主页面不再依赖第三方代理
+# （此前 README 用的是 htmlpreview.github.io/?… 代理渲染：第三方依赖 + 拿不到真静态托管）。
+#
+# 站点根 = docs/ ；入口 docs/index.html 跳转到 docs/landing/index.html（新版宣传主页）。
+#   · 首页      https://aik358.github.io/dsh-auto-memory/
+#   · 宣传主页  https://aik358.github.io/dsh-auto-memory/landing/
+#   · 技术报告  https://aik358.github.io/dsh-auto-memory/landing/news/
+#
+# ★ 为什么发 docs/ 整树，而不是只发 docs/landing/：
+#   宣传主页的配图用相对路径 `../screenshots/...`（见 docs/archive/internal/LANDING-UPGRADE-20260922/
+#   05-CONTENT.md：「保持这个前缀，不要改成绝对路径」），截图在 docs/screenshots/ —— 只发 landing/
+#   会让所有配图 404。整树发布同时让 docs/CONTRIBUTORS.html 等既有页面也一并可达。
+#
+# ★ 触发口径：只在 main 上触发 —— 站点对外可见，必须以「已发布到 main 的内容」为准；
+#   工作分支（wip/* 等）的提交不发布，避免半成品主页被外人看到。
+#
+# ★ 本文件的断链自检**刻意不依赖仓库 tools/**：发布树里 tools/ 只按白名单带 4 个文件，
+#   自检脚本若放 tools/ 会在 main 上缺失（CI 必红）。故用带引号定界符的 heredoc 内联，
+#   既自包含、又不受 shell 引号转义影响。
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/**'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 站点自检（入口与主页必须在场）
+        run: |
+          set -e
+          test -f docs/index.html            || { echo "::error::缺 docs/index.html（站点入口）"; exit 1; }
+          test -f docs/landing/index.html    || { echo "::error::缺 docs/landing/index.html（宣传主页）"; exit 1; }
+          test -f docs/landing/news/index.html || { echo "::error::缺 docs/landing/news/index.html（技术报告索引）"; exit 1; }
+          test -f docs/.nojekyll             || { echo "::error::缺 docs/.nojekyll"; exit 1; }
+          echo "入口 / 宣传主页 / 技术报告索引 / .nojekyll 均在位"
+
+      - name: 断链自检（docs 下 HTML 的相对引用必须落到真实文件）
+        run: |
+          set -e
+          cat > "$RUNNER_TEMP/check-links.mjs" <<'CHECKEOF'
+          import fs from 'node:fs'
+          import path from 'node:path'
+          const root = path.resolve('docs')
+          const html = []
+          const walk = (d) => {
+            for (const e of fs.readdirSync(d, { withFileTypes: true })) {
+              const p = path.join(d, e.name)
+              if (e.isDirectory()) walk(p)
+              else if (e.name.endsWith('.html')) html.push(p)
+            }
+          }
+          walk(root)
+          const broken = []
+          let checked = 0
+          for (const f of html) {
+            const s = fs.readFileSync(f, 'utf8')
+            for (const m of s.matchAll(/(?:src|href)\s*=\s*["']([^"']+)["']/g)) {
+              const u = m[1]
+              if (/^(https?:|#|data:|mailto:|\/\/)/.test(u)) continue
+              const c = u.split('#')[0].split('?')[0]
+              if (!c) continue
+              checked++
+              if (!fs.existsSync(path.resolve(path.dirname(f), c))) broken.push(path.relative(root, f) + ' -> ' + u)
+            }
+          }
+          console.log('检查 ' + html.length + ' 个 HTML / ' + checked + ' 条相对引用')
+          if (broken.length) { console.error('断链 ' + broken.length + ' 条:'); for (const b of broken.slice(0, 40)) console.error('  ' + b); process.exit(1) }
+          console.log('✓ 0 断链')
+          CHECKEOF
+          node "$RUNNER_TEMP/check-links.mjs"
+
+      - name: 配置 Pages（首次自动启用）
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - name: 上传站点产物
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: 发布到 GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 480" width="880" height="480" preserveAspectRatio="xMidYMid meet" role="img" style="font-variant-numeric:tabular-nums" font-family="Manrope,'Space Grotesk','PingFang SC','Microsoft YaHei',system-ui,sans-serif">
+<title>三种嵌入模型的权重体积、加载时间与峰值 RSS 对照</title>
+<rect width="880" height="480" fill="#ffffff"/>
+<!--region canvas 0 0 880 480-->
+<!--region gap0 284 84 36 340-->
+<!--region gap1 560 84 36 340-->
+<!--region r0 44 106 240 318-->
+<!--region r1 320 106 240 318-->
+<!--region r2 596 106 240 318-->
+<rect x="44" y="22" width="22" height="13" fill="#2563eb"/><text x="75" y="32" font-size="12.5" font-weight="700" fill="#1e232c">BGE-M3</text><rect x="149.75" y="22" width="22" height="13" fill="#60a5fa"/><text x="180.75" y="32" font-size="12.5" font-weight="700" fill="#1e232c">Qwen3 0.6B</text><rect x="276.38" y="22" width="22" height="13" fill="#94a3b8"/><text x="307.38" y="32" font-size="12.5" font-weight="700" fill="#1e232c">E5-Large</text>
+<text x="44" y="460" font-size="13.5" font-weight="700" fill="#c0504d">Qwen3 峰值 RSS 4.65 GB ≈ 空闲内存的 47% —— 常驻形态下不可接受</text>
+<text x="44" y="99" font-size="15" font-weight="700" fill="#1e232c">权重体积 (GB)</text>
+<line x1="72" y1="299.33" x2="284" y2="299.33" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4 5"/><text x="60" y="303.29" text-anchor="end" font-size="11" font-weight="700" fill="#1e232c">1.0</text><line x1="72" y1="217.67" x2="284" y2="217.67" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4 5"/><text x="60" y="221.63" text-anchor="end" font-size="11" font-weight="700" fill="#1e232c">2.0</text><line x1="72" y1="136" x2="284" y2="136" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4 5"/><text x="60" y="139.96" text-anchor="end" font-size="11" font-weight="700" fill="#1e232c">3.0</text><line x1="72" y1="381" x2="284" y2="381" stroke="#94a3b8" stroke-width="1.4" data-role="axis" data-orient="h" data-panel="r0" data-base="381"/><text x="106.67" y="401" text-anchor="middle" font-size="12" font-weight="700" fill="#1e232c">BGE-M3</text><text x="176" y="401" text-anchor="middle" font-size="12" font-weight="700" fill="#1e232c">Qwen3 0.6B</text><text x="245.33" y="401" text-anchor="middle" font-size="12" font-weight="700" fill="#1e232c">E5-Large</text>
+<rect x="80" y="193.98" width="53.33" height="187.02" fill="#2563eb" data-role="bar" data-panel="r0" data-base="381" data-value="2.29"/>
+<text x="106.67" y="185.98" text-anchor="middle" font-size="12.5" font-weight="700" fill="#1e232c">2.29</text>
+<rect x="149.33" y="282.18" width="53.33" height="98.82" fill="#60a5fa" data-role="bar" data-panel="r0" data-base="381" data-value="1.21"/>
+<text x="176" y="274.18" text-anchor="middle" font-size="12.5" font-weight="700" fill="#1e232c">1.21</text>
+<rect x="218.67" y="196.43" width="53.33" height="184.57" fill="#94a3b8" data-role="bar" data-panel="r0" data-base="381" data-value="2.26"/>
+<text x="245.33" y="188.43" text-anchor="middle" font-size="12.5" font-weight="700" fill="#1e232c">2.26</text>
+<text x="320" y="99" font-size="15" font-weight="700" fill="#1e232c">加载时间 (s)</text>
+<line x1="348" y1="301.38" x2="560" y2="301.38" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4 5"/><text x="336" y="305.33" text-anchor="end" font-size="11" font-weight="700" fill="#1e232c">1.3</text><line x1="348" y1="215.63" x2="560" y2="215.63" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4 5"/><text x="336" y="219.59" text-anchor="end" font-size="11" font-weight="700" fill="#1e232c">2.7</text><line x1="348" y1="136" x2="560" y2="136" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4 5"/><text x="336" y="139.96" text-anchor="end" font-size="11" font-weight="700" fill="#1e232c">4.0</text><line x1="348" y1="381" x2="560" y2="381" stroke="#94a3b8" stroke-width="1.4" data-role="axis" data-orient="h" data-panel="r1" data-base="381"/><text x="382.67" y="401" text-anchor="middle" font-size="12" font-weight="700" fill="#1e232c">BGE-M3</text><text x="452" y="401" text-anchor="middle" font-size="12" font-weight="700" fill="#1e232c">Qwen3 0.6B</text><text x="521.33" y="401" text-anchor="middle" font-size="12" font-weight="700" fill="#1e232c">E5-Large</text>
+<rect x="356" y="212.56" width="53.33" height="168.44" fill="#2563eb" data-role="bar" data-panel="r1" data-base="381" data-value="2.75"/>
+<text x="382.67" y="204.56" text-anchor="middle" font-size="12.5" font-weight="700" fill="#1e232c">2.75</text>
+<rect x="425.33" y="310.56" width="53.33" height="70.44" fill="#60a5fa" data-role="bar" data-panel="r1" data-base="381" data-value="1.15"/>
+<text x="452" y="302.56" text-anchor="middle" font-size="12.5" font-weight="700" fill="#1e232c">1.15</text>
+<rect x="494.67" y="188.06" width="53.33" height="192.94" fill="#94a3b8" data-role="bar" data-panel="r1" data-base="381" data-value="3.15"/>
+<text x="521.33" y="180.06" text-anchor="middle" font-size="12.5" font-weight="700" fill="#1e232c">3.15</text>
+<text x="596" y="99" font-size="15" font-weight="700" fill="#1e232c">峰值 RSS (GB)</text>
+<line x1="631" y1="332" x2="836" y2="332" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4 5"/><text x="619" y="335.96" text-anchor="end" font-size="11" font-weight="700" fill="#1e232c">2.0</text><line x1="631" y1="283" x2="836" y2="283" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4 5"/><text x="619" y="286.96" text-anchor="end" font-size="11" font-weight="700" fill="#1e232c">4.0</text><line x1="631" y1="234" x2="836" y2="234" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4 5"/><text x="619" y="237.96" text-anchor="end" font-size="11" font-weight="700" fill="#1e232c">6.0</text><line x1="631" y1="185" x2="836" y2="185" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4 5"/><text x="619" y="188.96" text-anchor="end" font-size="11" font-weight="700" fill="#1e232c">8.0</text><line x1="631" y1="136" x2="836" y2="136" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4 5"/><text x="619" y="139.96" text-anchor="end" font-size="11" font-weight="700" fill="#1e232c">10.0</text><line x1="631" y1="381" x2="836" y2="381" stroke="#94a3b8" stroke-width="1.4" data-role="axis" data-orient="h" data-panel="r2" data-base="381"/><text x="664.5" y="401" text-anchor="middle" font-size="12" font-weight="700" fill="#1e232c">BGE-M3</text><text x="731.5" y="401" text-anchor="middle" font-size="12" font-weight="700" fill="#1e232c">Qwen3 0.6B</text><text x="798.5" y="401" text-anchor="middle" font-size="12" font-weight="700" fill="#1e232c">E5-Large</text>
+<line x1="631" y1="136" x2="836" y2="136" stroke="#c0504d" stroke-width="1.6" stroke-dasharray="7 5"/>
+<text x="834" y="129" text-anchor="end" font-size="11.5" font-weight="700" fill="#c0504d">本机空闲 RAM 10 GB</text>
+<rect x="639" y="327.1" width="51" height="53.9" fill="#2563eb" data-role="bar" data-panel="r2" data-base="381" data-value="2.2"/>
+<text x="664.5" y="319.1" text-anchor="middle" font-size="12.5" font-weight="700" fill="#1e232c">2.2</text>
+<rect x="706" y="267.08" width="51" height="113.92" fill="#60a5fa" data-role="bar" data-panel="r2" data-base="381" data-value="4.65"/>
+<text x="731.5" y="259.08" text-anchor="middle" font-size="12.5" font-weight="700" fill="#1e232c">4.65</text>
+<rect x="773" y="286.68" width="51" height="94.32" fill="#94a3b8" data-role="bar" data-panel="r2" data-base="381" data-value="3.85"/>
+<text x="798.5" y="278.68" text-anchor="middle" font-size="12.5" font-weight="700" fill="#1e232c">3.85</text>
+</svg>

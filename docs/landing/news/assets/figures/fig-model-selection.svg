@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 480" width="880" height="480" preserveAspectRatio="xMidYMid meet" role="img" style="font-variant-numeric:tabular-nums" font-family="Manrope,'Space Grotesk','PingFang SC','Microsoft YaHei',system-ui,sans-serif">
+<title>六种嵌入模型的 R@5 / MRR / nDCG@10 对比,BGE-M3 para-512 三项同时最高</title>
+<rect width="880" height="480" fill="#ffffff"/>
+<!--region canvas 0 0 880 480-->
+<!--region p 52 84 776 340-->
+<rect x="52" y="22" width="22" height="13" fill="#2563eb"/><text x="83" y="32" font-size="12.5" font-weight="700" fill="#1e232c">R@5</text><rect x="134.88" y="22" width="22" height="13" fill="#60a5fa"/><text x="165.88" y="32" font-size="12.5" font-weight="700" fill="#1e232c">MRR</text><rect x="218.63" y="22" width="22" height="13" fill="#94a3b8"/><text x="249.63" y="32" font-size="12.5" font-weight="700" fill="#1e232c">nDCG@10</text>
+<text x="52" y="460" font-size="13.5" font-weight="700" fill="#2563eb">BGE-M3 para-512 三项指标同时最高 —— 选型因此冻结</text>
+<line x1="107" y1="301.2" x2="828" y2="301.2" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4 5"/><text x="95" y="305.34" text-anchor="end" font-size="11.5" font-weight="700" fill="#1e232c">0.2</text><line x1="107" y1="255.4" x2="828" y2="255.4" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4 5"/><text x="95" y="259.54" text-anchor="end" font-size="11.5" font-weight="700" fill="#1e232c">0.4</text><line x1="107" y1="209.6" x2="828" y2="209.6" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4 5"/><text x="95" y="213.74" text-anchor="end" font-size="11.5" font-weight="700" fill="#1e232c">0.6</text><line x1="107" y1="163.8" x2="828" y2="163.8" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4 5"/><text x="95" y="167.94" text-anchor="end" font-size="11.5" font-weight="700" fill="#1e232c">0.8</text><line x1="107" y1="118" x2="828" y2="118" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4 5"/><text x="95" y="122.14" text-anchor="end" font-size="11.5" font-weight="700" fill="#1e232c">1.0</text><line x1="107" y1="347" x2="828" y2="347" stroke="#94a3b8" stroke-width="1.4" data-role="axis" data-orient="h" data-panel="p" data-base="347"/><text transform="translate(65 232.5) rotate(-90)" text-anchor="middle" font-size="11.5" font-weight="700" fill="#1e232c">R@5(真实语料层 L2)</text><text x="166.42" y="367" text-anchor="middle" font-size="12.5" font-weight="700" fill="#1e232c">BGE-M3</text><text x="166.42" y="384" text-anchor="middle" font-size="12.5" font-weight="700" fill="#1e232c">para-512</text><text x="166.42" y="401" text-anchor="middle" font-size="11" font-weight="400" fill="#454545">(MIT)</text><text x="285.25" y="367" text-anchor="middle" font-size="12.5" font-weight="700" fill="#1e232c">BGE-M3</text><text x="285.25" y="384" text-anchor="middle" font-size="12.5" font-weight="700" fill="#1e232c">fixed-256</text><text x="404.08" y="367" text-anchor="middle" font-size="12.5" font-weight="700" fill="#1e232c">Qwen3-0.6B</text><text x="404.08" y="384" text-anchor="middle" font-size="12.5" font-weight="700" fill="#1e232c">fixed-256</text><text x="522.92" y="367" text-anchor="middle" font-size="12.5" font-weight="700" fill="#1e232c">Qwen3-0.6B</text><text x="522.92" y="384" text-anchor="middle" font-size="12.5" font-weight="700" fill="#1e232c">para-512</text><text x="641.75" y="367" text-anchor="middle" font-size="12.5" font-weight="700" fill="#1e232c">e5-large</text><text x="641.75" y="384" text-anchor="middle" font-size="12.5" font-weight="700" fill="#1e232c">fixed-1024</text><text x="760.58" y="367" text-anchor="middle" font-size="12.5" font-weight="700" fill="#1e232c">e5-large</text><text x="760.58" y="384" text-anchor="middle" font-size="12.5" font-weight="700" fill="#1e232c">fixed-512</text>
+<rect x="122.42" y="135.17" width="26" height="211.83" fill="#2563eb" data-role="bar" data-panel="p" data-base="347" data-value="0.925"/>
+<text x="135.42" y="128.17" text-anchor="middle" font-size="11.5" font-weight="700" fill="#1e232c">0.925</text>
+<rect x="153.42" y="165.4" width="26" height="181.6" fill="#60a5fa" data-role="bar" data-panel="p" data-base="347" data-value="0.793"/>
+<text x="166.42" y="158.4" text-anchor="middle" font-size="11.5" font-weight="700" fill="#1e232c">0.793</text>
+<rect x="184.42" y="155.33" width="26" height="191.67" fill="#94a3b8" data-role="bar" data-panel="p" data-base="347" data-value="0.837"/>
+<text x="197.42" y="148.33" text-anchor="middle" font-size="11.5" font-weight="700" fill="#1e232c">0.837</text>
+<rect x="241.25" y="146.63" width="26" height="200.37" fill="#2563eb" data-role="bar" data-panel="p" data-base="347" data-value="0.875"/>
+<text x="254.25" y="139.63" text-anchor="middle" font-size="11.5" font-weight="700" fill="#1e232c">0.875</text>
+<rect x="272.25" y="171.82" width="26" height="175.18" fill="#60a5fa" data-role="bar" data-panel="p" data-base="347" data-value="0.765"/>
+<text x="285.25" y="164.82" text-anchor="middle" font-size="11.5" font-weight="700" fill="#1e232c">0.765</text>
+<rect x="303.25" y="156.93" width="26" height="190.07" fill="#94a3b8" data-role="bar" data-panel="p" data-base="347" data-value="0.83"/>
+<text x="316.25" y="149.93" text-anchor="middle" font-size="11.5" font-weight="700" fill="#1e232c">0.83</text>
+<rect x="360.08" y="158.08" width="26" height="188.92" fill="#2563eb" data-role="bar" data-panel="p" data-base="347" data-value="0.825"/>
+<text x="373.08" y="151.08" text-anchor="middle" font-size="11.5" font-weight="700" fill="#1e232c">0.825</text>
+<rect x="391.08" y="188.3" width="26" height="158.7" fill="#60a5fa" data-role="bar" data-panel="p" data-base="347" data-value="0.693"/>
+<text x="404.08" y="181.3" text-anchor="middle" font-size="11.5" font-weight="700" fill="#1e232c">0.693</text>
+<rect x="422.08" y="176.17" width="26" height="170.83" fill="#94a3b8" data-role="bar" data-panel="p" data-base="347" data-value="0.746"/>
+<text x="435.08" y="169.17" text-anchor="middle" font-size="11.5" font-weight="700" fill="#1e232c">0.746</text>
+<rect x="478.92" y="163.8" width="26" height="183.2" fill="#2563eb" data-role="bar" data-panel="p" data-base="347" data-value="0.8"/>
+<text x="491.92" y="156.8" text-anchor="middle" font-size="11.5" font-weight="700" fill="#1e232c">0.8</text>
+<rect x="509.92" y="190.82" width="26" height="156.18" fill="#60a5fa" data-role="bar" data-panel="p" data-base="347" data-value="0.682"/>
+<text x="522.92" y="183.82" text-anchor="middle" font-size="11.5" font-weight="700" fill="#1e232c">0.682</text>
+<rect x="540.92" y="181.89" width="26" height="165.11" fill="#94a3b8" data-role="bar" data-panel="p" data-base="347" data-value="0.721"/>
+<text x="553.92" y="174.89" text-anchor="middle" font-size="11.5" font-weight="700" fill="#1e232c">0.721</text>
+<rect x="597.75" y="158.08" width="26" height="188.92" fill="#2563eb" data-role="bar" data-panel="p" data-base="347" data-value="0.825"/>
+<text x="610.75" y="151.08" text-anchor="middle" font-size="11.5" font-weight="700" fill="#1e232c">0.825</text>
+<rect x="628.75" y="186.7" width="26" height="160.3" fill="#60a5fa" data-role="bar" data-panel="p" data-base="347" data-value="0.7"/>
+<text x="641.75" y="179.7" text-anchor="middle" font-size="11.5" font-weight="700" fill="#1e232c">0.7</text>
+<rect x="659.75" y="173.42" width="26" height="173.58" fill="#94a3b8" data-role="bar" data-panel="p" data-base="347" data-value="0.758"/>
+<text x="672.75" y="166.42" text-anchor="middle" font-size="11.5" font-weight="700" fill="#1e232c">0.758</text>
+<rect x="716.58" y="163.8" width="26" height="183.2" fill="#2563eb" data-role="bar" data-panel="p" data-base="347" data-value="0.8"/>
+<text x="729.58" y="156.8" text-anchor="middle" font-size="11.5" font-weight="700" fill="#1e232c">0.8</text>
+<rect x="747.58" y="187.16" width="26" height="159.84" fill="#60a5fa" data-role="bar" data-panel="p" data-base="347" data-value="0.698"/>
+<text x="760.58" y="180.16" text-anchor="middle" font-size="11.5" font-weight="700" fill="#1e232c">0.698</text>
+<rect x="778.58" y="175.48" width="26" height="171.52" fill="#94a3b8" data-role="bar" data-panel="p" data-base="347" data-value="0.749"/>
+<text x="791.58" y="168.48" text-anchor="middle" font-size="11.5" font-weight="700" fill="#1e232c">0.749</text>
+</svg>

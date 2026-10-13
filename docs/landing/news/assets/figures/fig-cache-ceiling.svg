@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 440" width="880" height="440" preserveAspectRatio="xMidYMid meet" role="img" style="font-variant-numeric:tabular-nums" font-family="Manrope,'Space Grotesk','PingFang SC','Microsoft YaHei',system-ui,sans-serif">
+<title>八条请求的输入规模相差六倍,读到的缓存量分毫不差,恒为 36,186</title>
+<rect width="880" height="440" fill="#ffffff"/>
+<!--region canvas 0 0 880 440-->
+<!--region p 76 84 752 300-->
+<text x="76" y="32" font-size="17.5" font-weight="700" fill="#1e232c">八条请求的 prompt 天差地别,读到的缓存却分毫不差</text>
+<text x="76" y="54" font-size="12.5" fill="#454545">GLM 通道 674 条请求中出现 36,186 的次数为 0</text>
+<rect x="76" y="66" width="22" height="13" fill="#60a5fa"/><text x="107" y="76" font-size="12.5" font-weight="700" fill="#1e232c">prompt</text><rect x="172.88" y="66" width="22" height="13" fill="#2563eb"/><text x="203.88" y="76" font-size="12.5" font-weight="700" fill="#1e232c">cache_read</text>
+<text x="76" y="420" font-size="13.5" font-weight="700" fill="#c0504d">prompt 从 10 万涨到 66 万,读到的一直是同一个 3.6 万 —— 缓存里只剩系统提示与工具定义</text>
+<line x1="114" y1="304.86" x2="828" y2="304.86" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4 5"/><text x="102" y="309" text-anchor="end" font-size="11.5" font-weight="700" fill="#1e232c">100k</text><line x1="114" y1="272.71" x2="828" y2="272.71" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4 5"/><text x="102" y="276.85" text-anchor="end" font-size="11.5" font-weight="700" fill="#1e232c">200k</text><line x1="114" y1="240.57" x2="828" y2="240.57" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4 5"/><text x="102" y="244.71" text-anchor="end" font-size="11.5" font-weight="700" fill="#1e232c">300k</text><line x1="114" y1="208.43" x2="828" y2="208.43" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4 5"/><text x="102" y="212.57" text-anchor="end" font-size="11.5" font-weight="700" fill="#1e232c">400k</text><line x1="114" y1="176.29" x2="828" y2="176.29" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4 5"/><text x="102" y="180.43" text-anchor="end" font-size="11.5" font-weight="700" fill="#1e232c">500k</text><line x1="114" y1="144.14" x2="828" y2="144.14" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4 5"/><text x="102" y="148.28" text-anchor="end" font-size="11.5" font-weight="700" fill="#1e232c">600k</text><line x1="114" y1="112" x2="828" y2="112" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4 5"/><text x="102" y="116.14" text-anchor="end" font-size="11.5" font-weight="700" fill="#1e232c">700k</text><line x1="114" y1="337" x2="828" y2="337" stroke="#94a3b8" stroke-width="1.4" data-role="axis" data-orient="h" data-panel="p" data-base="337"/><text x="468" y="357" text-anchor="middle" font-size="13.5" fill="#454545">八条请求(按 prompt 升序)</text>
+<rect x="119.5" y="303.25" width="33.25" height="33.75" fill="#60a5fa" data-role="bar" data-panel="p" data-base="337" data-value="105000"/>
+<text x="136.13" y="296.25" text-anchor="middle" font-size="11" font-weight="700" fill="#454545">105k</text>
+<rect x="163.75" y="325.37" width="33.25" height="11.63" fill="#2563eb" data-role="bar" data-panel="p" data-base="337" data-value="36186"/>
+<text x="180.38" y="318.37" text-anchor="middle" font-size="11" font-weight="700" fill="#2563eb">36.2k</text>
+<rect x="208" y="285.57" width="33.25" height="51.43" fill="#60a5fa" data-role="bar" data-panel="p" data-base="337" data-value="160000"/>
+<text x="224.63" y="278.57" text-anchor="middle" font-size="11" font-weight="700" fill="#454545">160k</text>
+<rect x="252.25" y="325.37" width="33.25" height="11.63" fill="#2563eb" data-role="bar" data-panel="p" data-base="337" data-value="36186"/>
+<text x="268.88" y="318.37" text-anchor="middle" font-size="11" font-weight="700" fill="#2563eb">36.2k</text>
+<rect x="296.5" y="281.39" width="33.25" height="55.61" fill="#60a5fa" data-role="bar" data-panel="p" data-base="337" data-value="173000"/>
+<text x="313.13" y="274.39" text-anchor="middle" font-size="11" font-weight="700" fill="#454545">173k</text>
+<rect x="340.75" y="325.37" width="33.25" height="11.63" fill="#2563eb" data-role="bar" data-panel="p" data-base="337" data-value="36186"/>
+<text x="357.38" y="318.37" text-anchor="middle" font-size="11" font-weight="700" fill="#2563eb">36.2k</text>
+<rect x="385" y="252.14" width="33.25" height="84.86" fill="#60a5fa" data-role="bar" data-panel="p" data-base="337" data-value="264000"/>
+<text x="401.63" y="245.14" text-anchor="middle" font-size="11" font-weight="700" fill="#454545">264k</text>
+<rect x="429.25" y="325.37" width="33.25" height="11.63" fill="#2563eb" data-role="bar" data-panel="p" data-base="337" data-value="36186"/>
+<text x="445.88" y="318.37" text-anchor="middle" font-size="11" font-weight="700" fill="#2563eb">36.2k</text>
+<rect x="473.5" y="199.75" width="33.25" height="137.25" fill="#60a5fa" data-role="bar" data-panel="p" data-base="337" data-value="427000"/>
+<text x="490.13" y="192.75" text-anchor="middle" font-size="11" font-weight="700" fill="#454545">427k</text>
+<rect x="517.75" y="325.37" width="33.25" height="11.63" fill="#2563eb" data-role="bar" data-panel="p" data-base="337" data-value="36186"/>
+<text x="534.38" y="318.37" text-anchor="middle" font-size="11" font-weight="700" fill="#2563eb">36.2k</text>
+<rect x="562" y="124.54" width="33.25" height="212.46" fill="#60a5fa" data-role="bar" data-panel="p" data-base="337" data-value="661000"/>
+<text x="578.63" y="117.54" text-anchor="middle" font-size="11" font-weight="700" fill="#454545">661k</text>
+<rect x="606.25" y="325.37" width="33.25" height="11.63" fill="#2563eb" data-role="bar" data-panel="p" data-base="337" data-value="36186"/>
+<text x="622.88" y="318.37" text-anchor="middle" font-size="11" font-weight="700" fill="#2563eb">36.2k</text>
+<rect x="650.5" y="124.21" width="33.25" height="212.79" fill="#60a5fa" data-role="bar" data-panel="p" data-base="337" data-value="662000"/>
+<text x="667.13" y="117.21" text-anchor="middle" font-size="11" font-weight="700" fill="#454545">662k</text>
+<rect x="694.75" y="325.37" width="33.25" height="11.63" fill="#2563eb" data-role="bar" data-panel="p" data-base="337" data-value="36186"/>
+<text x="711.38" y="318.37" text-anchor="middle" font-size="11" font-weight="700" fill="#2563eb">36.2k</text>
+<rect x="739" y="124.86" width="33.25" height="212.14" fill="#60a5fa" data-role="bar" data-panel="p" data-base="337" data-value="660000"/>
+<text x="755.63" y="117.86" text-anchor="middle" font-size="11" font-weight="700" fill="#454545">660k</text>
+<rect x="783.25" y="325.37" width="33.25" height="11.63" fill="#2563eb" data-role="bar" data-panel="p" data-base="337" data-value="36186"/>
+<text x="799.88" y="318.37" text-anchor="middle" font-size="11" font-weight="700" fill="#2563eb">36.2k</text>
+</svg>

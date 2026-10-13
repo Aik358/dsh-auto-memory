@@ -2,12 +2,12 @@
 
 **dsh-auto-memory** — *She remembers, unbidden.*
 
-> **中文** 该想起的，自己浮现。跨窗口 · 跨会话 · 跨工具，记忆不断线
+> **中文** 该想起的，自己浮现。跨窗口 · 跨会话 · 跨工具 —— Ambient Recall · 「潜藏追忆，如影随形」
 >
 > **EN** Now, across windows, too. Context that survives windows, sessions, and tools
 
 <p align="center">
-  <a href="https://htmlpreview.github.io/?https://github.com/Aik358/dsh-auto-memory/blob/preview/docs/landing/index.html"><strong>🌐 宣传主页（功能全景 · 数据流 · 论文 · 截图）</strong></a>
+  <a href="https://aik358.github.io/dsh-auto-memory/landing/"><strong>🌐 宣传主页（功能全景 · 数据流 · 论文 · 截图）</strong></a> · <a href="https://aik358.github.io/dsh-auto-memory/landing/news/"><strong>📄 技术报告</strong></a>
 </p>
 
 <table align="center">
@@ -80,7 +80,7 @@
   <a href="docs/SKIN-GUIDE.md"><strong>🎨 皮肤白皮书</strong></a> ·
   <a href="docs/TEAMWORK-GUIDE.md"><strong>👥 团队协作白皮书</strong></a> ·
   <a href="CHANGELOG.md">更新日志</a> ·
-  <a href="https://htmlpreview.github.io/?https://github.com/Aik358/dsh-auto-memory/blob/main/docs/CONTRIBUTORS.html">贡献者与赞助</a> ·
+  <a href="https://aik358.github.io/dsh-auto-memory/CONTRIBUTORS.html">贡献者与赞助</a> ·
   <a href="https://qm.qq.com/q/v7Asxn6vPa">QQ 交流群</a>
 </p>
 
@@ -698,7 +698,7 @@ DeepSeek Harness (Node, 127.0.0.1:3080)
 - [@humou44](https://github.com/humou44) — 日文界面本地化：[PR #143](https://github.com/Aik358/dsh-auto-memory/pull/143) 提出，已并入主线并扩展为**字典查表式** i18n 层，覆盖整个面板（602 条内联文案 + 583 条词典条目）；后续语言沿用同一层接入
 - [@alexchenzl](https://github.com/alexchenzl)（[#6](https://github.com/Aik358/dsh-auto-memory/issues/6)）· [@ALuoXue](https://github.com/ALuoXue)（[#2](https://github.com/Aik358/dsh-auto-memory/issues/2)）· [@Architectxz](https://github.com/Architectxz)（[#1](https://github.com/Aik358/dsh-auto-memory/issues/1)）· [@cuohua](https://github.com/cuohua)（[#40](https://github.com/Aik358/dsh-auto-memory/issues/40)）· [@eclgo](https://github.com/eclgo)（[#13](https://github.com/Aik358/dsh-auto-memory/issues/13)）· [@jeffsui](https://github.com/jeffsui)（[#39](https://github.com/Aik358/dsh-auto-memory/issues/39)）· [@lhbsaa](https://github.com/lhbsaa)（[#3](https://github.com/Aik358/dsh-auto-memory/issues/3)）· [@moonltppt](https://github.com/moonltppt)（[#14](https://github.com/Aik358/dsh-auto-memory/issues/14)）· [@swtseaman](https://github.com/swtseaman)（[#21](https://github.com/Aik358/dsh-auto-memory/issues/21)）· [@xiaochaZ](https://github.com/xiaochaZ)（[#38](https://github.com/Aik358/dsh-auto-memory/issues/38)）· [@zjj871114037](https://github.com/zjj871114037)（[#7](https://github.com/Aik358/dsh-auto-memory/issues/7)）— 问题反馈与功能建议
 
-完整名单（含基础设施赞助）：**[贡献者与赞助](https://htmlpreview.github.io/?https://github.com/Aik358/dsh-auto-memory/blob/main/docs/CONTRIBUTORS.html)**
+完整名单（含基础设施赞助）：**[贡献者与赞助](https://aik358.github.io/dsh-auto-memory/CONTRIBUTORS.html)**
 
 ---
 
@@ -708,7 +708,7 @@ DeepSeek Harness (Node, 127.0.0.1:3080)
 
 - **[DSH API](https://api.dshapi.icu/register?aff=HJU27P7JL39N)** — API 中转站，为本项目的开发、测试以及 M 系列语义引擎研究提供模型端点。感谢一路同行。
 
-基础设施与 API 额度赞助方列在 **[贡献者与赞助](https://htmlpreview.github.io/?https://github.com/Aik358/dsh-auto-memory/blob/main/docs/CONTRIBUTORS.html)** 页面。如希望支持本项目，欢迎提 issue 或加入 QQ 交流群。
+基础设施与 API 额度赞助方列在 **[贡献者与赞助](https://aik358.github.io/dsh-auto-memory/CONTRIBUTORS.html)** 页面。如希望支持本项目，欢迎提 issue 或加入 QQ 交流群。
 
 ---
 

@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 660" width="880" height="660" preserveAspectRatio="xMidYMid meet" role="img" style="font-variant-numeric:tabular-nums" font-family="Manrope,'Space Grotesk','PingFang SC','Microsoft YaHei',system-ui,sans-serif">
+<title>完整版注入块逐段成本,总计 18,291 字符,为预算 8,000 的 228.6%</title>
+<rect width="880" height="660" fill="#ffffff"/>
+<!--region canvas 0 0 880 660-->
+<!--region h 44 84 792 520-->
+<!--region h-col5000 381.43 110 442.28 434.04-->
+<!--region h-col10000 528.86 110 294.86 434.04-->
+<!--region h-col15000 676.28 110 147.43 434.04-->
+<!--region h-col20000 823.71 110 0 434.04-->
+<text x="44" y="32" font-size="17.5" font-weight="700" fill="#1e232c">每一轮都在送出的固定前缀</text>
+<text x="44" y="54" font-size="12.5" fill="#454545">完整版 18,291 字符 = 预算(8,000)的 228.6%;精简版 9,886 字符 = 123.6%</text>
+<text x="44" y="76" font-size="12.5" fill="#454545">实测来源:会话记录里真实发给模型的 messages,逐段量长,非估算</text>
+<text x="44" y="640" font-size="13.5" font-weight="700" fill="#c0504d">规则段一段就占 41.7%,且按设计每轮无条件注入、不参与裁剪</text>
+<line x1="234" y1="110" x2="234" y2="556" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4 5"/><text x="234" y="575" text-anchor="middle" font-size="11" font-weight="700" fill="#454545">0</text><line x1="381.43" y1="110" x2="381.43" y2="556" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4 5"/><text x="381.43" y="575" text-anchor="middle" font-size="11" font-weight="700" fill="#454545">5k</text><line x1="528.86" y1="110" x2="528.86" y2="556" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4 5"/><text x="528.86" y="575" text-anchor="middle" font-size="11" font-weight="700" fill="#454545">10k</text><line x1="676.28" y1="110" x2="676.28" y2="556" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4 5"/><text x="676.28" y="575" text-anchor="middle" font-size="11" font-weight="700" fill="#454545">15k</text><line x1="823.71" y1="110" x2="823.71" y2="556" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4 5"/><text x="823.71" y="575" text-anchor="middle" font-size="11" font-weight="700" fill="#454545">20k</text><line x1="234" y1="556" x2="823.71" y2="556" stroke="#94a3b8" stroke-width="1.4" data-role="axis" data-orient="h" data-panel="h" data-base="556" data-origin="234"/><text x="528.86" y="596" text-anchor="middle" font-size="13" fill="#454545">每轮注入字符数(红线 = 配置预算 8,000)</text>
+<rect x="469.88" y="110" width="2.2" height="434" fill="#c0504d"/>
+<rect x="234" y="110" width="225.09" height="33.42" fill="#94a3b8" data-role="hrow"/>
+<text x="222" y="131.21" text-anchor="end" font-size="13" fill="#1e232c">规则段</text>
+<text x="222" y="142.71" text-anchor="end" font-size="10.5" fill="#2563eb">每轮必到</text>
+<text x="830" y="131.21" text-anchor="end" font-size="12" font-weight="700" fill="#1e232c">7,634</text>
+<text x="346.55" y="131.21" text-anchor="middle" font-size="11" font-weight="700" fill="#1e232c">41.7%</text>
+<rect x="234" y="146.42" width="6.69" height="33.42" fill="#94a3b8" data-role="hrow"/>
+<text x="222" y="167.63" text-anchor="end" font-size="13" fill="#1e232c">框架头 + 定位</text>
+<text x="830" y="167.63" text-anchor="end" font-size="12" font-weight="700" fill="#1e232c">227</text>
+<text x="237.35" y="167.63" text-anchor="middle" font-size="11" font-weight="700" fill="#1e232c">1.2%</text>
+<rect x="234" y="182.84" width="36.83" height="33.42" fill="#94a3b8" data-role="hrow"/>
+<text x="222" y="204.05" text-anchor="end" font-size="13" fill="#1e232c">Tier-0 索引</text>
+<text x="222" y="215.55" text-anchor="end" font-size="10.5" fill="#2563eb">每轮必到</text>
+<text x="830" y="204.05" text-anchor="end" font-size="12" font-weight="700" fill="#1e232c">1,249</text>
+<text x="252.41" y="204.05" text-anchor="middle" font-size="11" font-weight="700" fill="#1e232c">6.8%</text>
+<rect x="234" y="219.26" width="50.3" height="33.42" fill="#94a3b8" data-role="hrow"/>
+<text x="222" y="240.47" text-anchor="end" font-size="13" fill="#1e232c">项目笔记</text>
+<text x="830" y="240.47" text-anchor="end" font-size="12" font-weight="700" fill="#1e232c">1,706</text>
+<text x="259.15" y="240.47" text-anchor="middle" font-size="11" font-weight="700" fill="#1e232c">9.3%</text>
+<rect x="234" y="255.68" width="49.24" height="33.42" fill="#94a3b8" data-role="hrow"/>
+<text x="222" y="276.89" text-anchor="end" font-size="13" fill="#1e232c">用户级记忆</text>
+<text x="830" y="276.89" text-anchor="end" font-size="12" font-weight="700" fill="#1e232c">1,670</text>
+<text x="258.62" y="276.89" text-anchor="middle" font-size="11" font-weight="700" fill="#1e232c">9.1%</text>
+<rect x="234" y="292.1" width="33.53" height="33.42" fill="#94a3b8" data-role="hrow"/>
+<text x="222" y="313.31" text-anchor="end" font-size="13" fill="#1e232c">铭文</text>
+<text x="830" y="313.31" text-anchor="end" font-size="12" font-weight="700" fill="#1e232c">1,137</text>
+<text x="250.76" y="313.31" text-anchor="middle" font-size="11" font-weight="700" fill="#1e232c">6.2%</text>
+<rect x="234" y="328.52" width="32.79" height="33.42" fill="#94a3b8" data-role="hrow"/>
+<text x="222" y="349.73" text-anchor="end" font-size="13" fill="#1e232c">白板</text>
+<text x="830" y="349.73" text-anchor="end" font-size="12" font-weight="700" fill="#1e232c">1,112</text>
+<text x="250.39" y="349.73" text-anchor="middle" font-size="11" font-weight="700" fill="#1e232c">6.1%</text>
+<rect x="234" y="364.94" width="24.09" height="33.42" fill="#94a3b8" data-role="hrow"/>
+<text x="222" y="386.15" text-anchor="end" font-size="13" fill="#1e232c">外部记忆</text>
+<text x="830" y="386.15" text-anchor="end" font-size="12" font-weight="700" fill="#1e232c">817</text>
+<text x="246.04" y="386.15" text-anchor="middle" font-size="11" font-weight="700" fill="#1e232c">4.5%</text>
+<rect x="234" y="401.36" width="23.06" height="33.42" fill="#94a3b8" data-role="hrow"/>
+<text x="222" y="422.57" text-anchor="end" font-size="13" fill="#1e232c">账本</text>
+<text x="830" y="422.57" text-anchor="end" font-size="12" font-weight="700" fill="#1e232c">782</text>
+<text x="245.53" y="422.57" text-anchor="middle" font-size="11" font-weight="700" fill="#1e232c">4.3%</text>
+<rect x="234" y="437.78" width="23" height="33.42" fill="#94a3b8" data-role="hrow"/>
+<text x="222" y="458.99" text-anchor="end" font-size="13" fill="#1e232c">日志</text>
+<text x="830" y="458.99" text-anchor="end" font-size="12" font-weight="700" fill="#1e232c">780</text>
+<text x="245.5" y="458.99" text-anchor="middle" font-size="11" font-weight="700" fill="#1e232c">4.3%</text>
+<rect x="234" y="474.2" width="19.11" height="33.42" fill="#94a3b8" data-role="hrow"/>
+<text x="222" y="495.41" text-anchor="end" font-size="13" fill="#1e232c">日历</text>
+<text x="830" y="495.41" text-anchor="end" font-size="12" font-weight="700" fill="#1e232c">648</text>
+<text x="243.55" y="495.41" text-anchor="middle" font-size="11" font-weight="700" fill="#1e232c">3.5%</text>
+<rect x="234" y="510.62" width="15.6" height="33.42" fill="#94a3b8" data-role="hrow"/>
+<text x="222" y="531.83" text-anchor="end" font-size="13" fill="#1e232c">反思</text>
+<text x="830" y="531.83" text-anchor="end" font-size="12" font-weight="700" fill="#1e232c">529</text>
+<text x="241.8" y="531.83" text-anchor="middle" font-size="11" font-weight="700" fill="#1e232c">2.9%</text>
+<text x="767.32" y="122" text-anchor="end" font-size="14" font-weight="700" fill="#2563eb">18,291</text>
+<text x="476.88" y="550" font-size="11.5" font-weight="700" fill="#c0504d">injectBudgetChars = 8,000</text>
+</svg>

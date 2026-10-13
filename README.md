@@ -4,10 +4,10 @@
 
 > **EN** Now, across windows, too. Context that survives windows, sessions, and tools
 >
-> **中文** 该想起的，自己浮现。跨窗口 · 跨会话 · 跨工具，记忆不断线
+> **中文** 该想起的，自己浮现。跨窗口 · 跨会话 · 跨工具 —— Ambient Recall · 「潜藏追忆，如影随形」
 
 <p align="center">
-  <a href="https://htmlpreview.github.io/?https://github.com/Aik358/dsh-auto-memory/blob/preview/docs/landing/index.html"><strong>🌐 Landing page (full feature tour · data flow · papers · screenshots)</strong></a>
+  <a href="https://aik358.github.io/dsh-auto-memory/landing/"><strong>🌐 Landing page (full feature tour · data flow · papers · screenshots)</strong></a> · <a href="https://aik358.github.io/dsh-auto-memory/landing/news/"><strong>📄 Technical reports</strong></a>
 </p>
 
 <table align="center">
@@ -82,7 +82,7 @@
   <a href="docs/SKIN-GUIDE.md"><strong>🎨 Skin guide</strong></a> ·
   <a href="docs/TEAMWORK-GUIDE.md"><strong>👥 Teamwork guide</strong></a> ·
   <a href="CHANGELOG.md">Changelog</a> ·
-  <a href="https://htmlpreview.github.io/?https://github.com/Aik358/dsh-auto-memory/blob/main/docs/CONTRIBUTORS.html">Contributors &amp; Sponsors</a> ·
+  <a href="https://aik358.github.io/dsh-auto-memory/CONTRIBUTORS.html">Contributors &amp; Sponsors</a> ·
   <a href="https://qm.qq.com/q/v7Asxn6vPa">QQ group</a>
 </p>
 
@@ -702,7 +702,7 @@ Community contributors:
 - [@humou44](https://github.com/humou44) — Japanese UI localisation: proposed in [PR #143](https://github.com/Aik358/dsh-auto-memory/pull/143) and landed as a dictionary-driven i18n layer covering the whole panel (602 inline strings + 583 dictionary keys); more languages will plug into the same layer
 - [@alexchenzl](https://github.com/alexchenzl) ([#6](https://github.com/Aik358/dsh-auto-memory/issues/6)) · [@ALuoXue](https://github.com/ALuoXue) ([#2](https://github.com/Aik358/dsh-auto-memory/issues/2)) · [@Architectxz](https://github.com/Architectxz) ([#1](https://github.com/Aik358/dsh-auto-memory/issues/1)) · [@cuohua](https://github.com/cuohua) ([#40](https://github.com/Aik358/dsh-auto-memory/issues/40)) · [@eclgo](https://github.com/eclgo) ([#13](https://github.com/Aik358/dsh-auto-memory/issues/13)) · [@jeffsui](https://github.com/jeffsui) ([#39](https://github.com/Aik358/dsh-auto-memory/issues/39)) · [@lhbsaa](https://github.com/lhbsaa) ([#3](https://github.com/Aik358/dsh-auto-memory/issues/3)) · [@moonltppt](https://github.com/moonltppt) ([#14](https://github.com/Aik358/dsh-auto-memory/issues/14)) · [@swtseaman](https://github.com/swtseaman) ([#21](https://github.com/Aik358/dsh-auto-memory/issues/21)) · [@xiaochaZ](https://github.com/xiaochaZ) ([#38](https://github.com/Aik358/dsh-auto-memory/issues/38)) · [@zjj871114037](https://github.com/zjj871114037) ([#7](https://github.com/Aik358/dsh-auto-memory/issues/7)) — bug reports and feature requests
 
-Full credits, including infrastructure sponsors: **[Contributors & Sponsors](https://htmlpreview.github.io/?https://github.com/Aik358/dsh-auto-memory/blob/main/docs/CONTRIBUTORS.html)**
+Full credits, including infrastructure sponsors: **[Contributors & Sponsors](https://aik358.github.io/dsh-auto-memory/CONTRIBUTORS.html)**
 
 ---
 
@@ -712,7 +712,7 @@ Development resources for this project are partly provided by:
 
 - **[DSH API](https://api.dshapi.icu/register?aff=HJU27P7JL39N)** — API relay station providing the model endpoints used for development, testing, and the semantic-engine research behind the M-series features. Thank you for keeping the lights on.
 
-Infrastructure and API-quota sponsors are listed on the **[Contributors & Sponsors](https://htmlpreview.github.io/?https://github.com/Aik358/dsh-auto-memory/blob/main/docs/CONTRIBUTORS.html)** page. If you would like to support the project, open an issue or join the QQ group.
+Infrastructure and API-quota sponsors are listed on the **[Contributors & Sponsors](https://aik358.github.io/dsh-auto-memory/CONTRIBUTORS.html)** page. If you would like to support the project, open an issue or join the QQ group.
 
 ---
 

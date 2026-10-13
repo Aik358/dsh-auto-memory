@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 400" width="880" height="400" preserveAspectRatio="xMidYMid meet" role="img" style="font-variant-numeric:tabular-nums" font-family="Manrope,'Space Grotesk','PingFang SC','Microsoft YaHei',system-ui,sans-serif">
+<title>双层语料基准:分块粒度偏好在 L1 合成层与 L2 真实层之间发生反转</title>
+<rect width="880" height="400" fill="#ffffff"/>
+<!--region canvas 0 0 880 400-->
+<!--region gap0 420 84 40 260-->
+<!--region p0 44 84 376 260-->
+<!--region p1 460 84 376 260-->
+<text x="44" y="32" font-size="17.5" font-weight="700" fill="#1e232c">双层语料基准</text>
+<text x="44" y="54" font-size="12.5" fill="#454545">同一套实验,两层语料给出相反的结论</text>
+<rect x="44" y="66" width="22" height="13" fill="#60a5fa"/><text x="75" y="76" font-size="12.5" font-weight="700" fill="#1e232c">L1 合成压力层</text><rect x="182.5" y="66" width="22" height="13" fill="#2563eb"/><text x="213.5" y="76" font-size="12.5" font-weight="700" fill="#1e232c">L2 真实语料层</text>
+<text x="44" y="380" font-size="13.5" font-weight="700" fill="#c0504d">在合成语料上得到的调参结论,换一层语料就可能完全相反</text>
+<text x="44" y="99" font-size="15" font-weight="700" fill="#1e232c">L1 合成压力层</text>
+<text x="44" y="117" font-size="12" fill="#454545">偏好小窗 → 256 最优</text>
+<line x1="79" y1="263.75" x2="420" y2="263.75" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4 5"/><text x="67" y="267.71" text-anchor="end" font-size="11" font-weight="700" fill="#1e232c">0.85</text><line x1="79" y1="226.5" x2="420" y2="226.5" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4 5"/><text x="67" y="230.46" text-anchor="end" font-size="11" font-weight="700" fill="#1e232c">0.90</text><line x1="79" y1="189.25" x2="420" y2="189.25" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4 5"/><text x="67" y="193.21" text-anchor="end" font-size="11" font-weight="700" fill="#1e232c">0.95</text><line x1="79" y1="152" x2="420" y2="152" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4 5"/><text x="67" y="155.96" text-anchor="end" font-size="11" font-weight="700" fill="#1e232c">1.00</text><line x1="79" y1="301" x2="420" y2="301" stroke="#94a3b8" stroke-width="1.4" data-role="axis" data-orient="h" data-panel="p0" data-base="301"/><text x="134.83" y="321" text-anchor="middle" font-size="13" font-weight="700" fill="#1e232c">256</text><text x="246.5" y="321" text-anchor="middle" font-size="13" font-weight="700" fill="#1e232c">512</text><text x="358.17" y="321" text-anchor="middle" font-size="13" font-weight="700" fill="#1e232c">1024</text>
+<rect x="103.83" y="160.2" width="62" height="140.8" fill="#60a5fa" data-role="bar" data-panel="p0" data-base="301" data-value="0.989"/>
+<text x="134.83" y="152.2" text-anchor="middle" font-size="12.5" font-weight="700" fill="#60a5fa">0.989</text>
+<rect x="215.5" y="177.33" width="62" height="123.67" fill="#60a5fa" data-role="bar" data-panel="p0" data-base="301" data-value="0.966"/>
+<text x="246.5" y="169.33" text-anchor="middle" font-size="12.5" font-weight="700" fill="#60a5fa">0.966</text>
+<rect x="327.17" y="185.53" width="62" height="115.47" fill="#60a5fa" data-role="bar" data-panel="p0" data-base="301" data-value="0.955"/>
+<text x="358.17" y="177.53" text-anchor="middle" font-size="12.5" font-weight="700" fill="#60a5fa">0.955</text>
+<text x="460" y="99" font-size="15" font-weight="700" fill="#1e232c">L2 真实语料层</text>
+<text x="460" y="117" font-size="12" fill="#454545">偏好大窗 → 512 / 1024 并列</text>
+<line x1="495" y1="263.75" x2="836" y2="263.75" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4 5"/><text x="483" y="267.71" text-anchor="end" font-size="11" font-weight="700" fill="#1e232c">0.85</text><line x1="495" y1="226.5" x2="836" y2="226.5" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4 5"/><text x="483" y="230.46" text-anchor="end" font-size="11" font-weight="700" fill="#1e232c">0.90</text><line x1="495" y1="189.25" x2="836" y2="189.25" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4 5"/><text x="483" y="193.21" text-anchor="end" font-size="11" font-weight="700" fill="#1e232c">0.95</text><line x1="495" y1="152" x2="836" y2="152" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4 5"/><text x="483" y="155.96" text-anchor="end" font-size="11" font-weight="700" fill="#1e232c">1.00</text><line x1="495" y1="301" x2="836" y2="301" stroke="#94a3b8" stroke-width="1.4" data-role="axis" data-orient="h" data-panel="p1" data-base="301"/><text x="550.83" y="321" text-anchor="middle" font-size="13" font-weight="700" fill="#1e232c">256</text><text x="662.5" y="321" text-anchor="middle" font-size="13" font-weight="700" fill="#1e232c">512</text><text x="774.17" y="321" text-anchor="middle" font-size="13" font-weight="700" fill="#1e232c">1024</text>
+<rect x="519.83" y="245.13" width="62" height="55.87" fill="#2563eb" data-role="bar" data-panel="p1" data-base="301" data-value="0.875"/>
+<text x="550.83" y="237.13" text-anchor="middle" font-size="12.5" font-weight="700" fill="#2563eb">0.875</text>
+<rect x="631.5" y="207.88" width="62" height="93.12" fill="#2563eb" data-role="bar" data-panel="p1" data-base="301" data-value="0.925"/>
+<text x="662.5" y="199.88" text-anchor="middle" font-size="12.5" font-weight="700" fill="#2563eb">0.925</text>
+<rect x="743.17" y="207.88" width="62" height="93.12" fill="#2563eb" data-role="bar" data-panel="p1" data-base="301" data-value="0.925"/>
+<text x="774.17" y="199.88" text-anchor="middle" font-size="12.5" font-weight="700" fill="#2563eb">0.925</text>
+</svg>
