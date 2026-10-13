@@ -43,7 +43,7 @@
     function Iter5WorkspaceGraph(props) {
       var root = useRef(null), width = useState(1000), drag = useRef(null), overview = useState(!!props.allWorkspaces), selected = useState(null)
       var current = props.current || (props.workspaces || []).find(function (ws) { return selected[0] && ws.path === selected[0].path }) || (props.workspaces || [])[0]
-      function choose(ws) { selected[1](ws); if (props.onSelect) props.onSelect(ws) }
+      function choose(ws, reveal) { selected[1](ws); if (props.onSelect) props.onSelect(ws, !!reveal) }
       var shown = overview[0] ? props.workspaces || [] : current ? [current] : []
       var layout = iter5WorkspaceLayout(shown, props.graph, Math.max(248, width[0] - 32))
       var fit = Math.min(1, (width[0] - 32) / layout.width), factor = Math.max(.01, fit) * Math.max(.25, Number(props.scale) || 1)
@@ -77,7 +77,7 @@
           }),
           layout.nodes.map(function (node) {
             var active = node.kind === 'workspace', picked = active && current && node.workspace.path === current.path
-            function select() { choose(node.workspace) }
+            function select() { choose(node.workspace, true) }
             return h('g', { key: node.id, 'data-native-map-node': node.kind, 'data-dam-graph-node': active ? '' : undefined, 'data-dam-network-selected': picked ? 'true' : undefined, role: active ? 'button' : 'img', tabIndex: active ? 0 : undefined, 'aria-label': node.label + (node.detail ? ': ' + node.detail : ''), 'aria-pressed': active ? !!picked : undefined, onClick: active ? select : undefined, onKeyDown: active ? function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); select() } } : undefined },
               h('title', null, node.label + (node.detail ? '\n' + node.detail : '') + (active ? '\n' + node.workspace.path : '')),
               h('foreignObject', { x: node.x - node.width / 2, y: node.y - node.height / 2, width: node.width, height: node.height },
