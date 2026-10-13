@@ -104,7 +104,14 @@ const failStore = createStore({ io: { save() { return { ok: false, error: 'disk 
 const w2 = failStore.observe({ title: '落盘失败样本', steps: ['a'], successCriteria: ['x'] })
 const uf = failStore.update(w2.procedure.procedureId, { steps: ['b'] })
 ok(uf.ok === false && uf.persisted === false, '④ 落盘失败 ⇒ ok 转 false 且 persisted=false（不谎报成功）')
-ok(failStore.get(w2.procedure.procedureId).steps[0] === 'b', '④ 落盘失败但内存已改（如实语义，与 observe 同口径）')
+// ★#338（2026-10-13）语义收敛：update 落盘失败时**回滚内存**。
+//   旧断言曾锁「落盘失败但内存已改」——那正是 #338 的缺陷形态：内存已是新值 ⇒ 调用方按提示「同参重试」时
+//   differs() 全 false，被 no-effective-change 截断，磁盘永远停在旧值（一次瞬时写失败 = 修订永久丢失）。
+//   现判据：失败 ⇒ 已回滚（reverted=true）+ 内存为改动前的值；同参重试必须真的写下去。
+ok(uf.reverted === true, '④ 落盘失败 ⇒ 返回值报告 reverted=true')
+ok(failStore.get(w2.procedure.procedureId).steps[0] === 'a', '④ 落盘失败 ⇒ 内存已回滚到改动前的值（#338）')
+const uf2 = failStore.update(w2.procedure.procedureId, { steps: ['b'] })
+ok(uf2.ok === false && uf2.persisted === false, '④ 同参重试仍如实报失败（磁盘依旧不可写，不谎报成功）')
 
 // ── ⑤ 宿主接线（含首次修复的语法事故回归） ──
 ok(IDX.includes("enum: ['write', 'activate', 'update']"), '⑤ 宿主工具 enum 已含 update')

@@ -23,7 +23,7 @@ import os from 'node:os'
 import { fileURLToPath } from 'node:url'
 import {
   parseModelWindowsPre, pickWindowPre, findOfficialContextWindowPre, findSessionModelPre,
-  scanPressureSignalsPre, shouldArmAutoContinuePre, reusableWindowCachePre,
+  scanPressureSignalsPre, shouldArmAutoContinuePre, reusableWindowCachePre, sessionModelSigPre,
 } from '../../lib/water-window.js'
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
@@ -96,7 +96,61 @@ const SESSION_SUBAGENT_ORIGIN = new Function(grab('SESSION_SUBAGENT_ORIGIN') + '
 const sessionHeaderOfFn = new Function(grab('sessionHeaderOf') + '\nreturn sessionHeaderOf;')()
 const isSubAgentSessionFn = new Function('sessionHeaderOf', 'SESSION_SUBAGENT_ORIGIN',
   grab('isSubAgentSession') + '\nreturn isSubAgentSession;')(sessionHeaderOfFn, SESSION_SUBAGENT_ORIGIN)
-const bindMethod = (header, fake, extra) => {
+/**
+ * ★issue#349(2026-10-13):「注入表必须覆盖方法体引用的全部宿主符号」的**结构性守卫**。
+ *
+ * 为什么需要它:本套件用「源码抽取 + new Function」执行生产方法体,被抽出的代码里的自由变量
+ * 必须在注入表里显式给出,否则抛 ReferenceError —— 而 checkWaterLevel 的外层是
+ * `catch (eWin) {}`,异常被**静默吞掉** ⇒ 断言只是变成「modelKnown 不为 true」,看不出真因。
+ * 2026-09 已发生过一次同型事故(DEFAULT_AUTO_CONTINUE_THRESHOLD is not defined,见下方注入注释),
+ * 2026-10-13 #349 是第二次(sessionModelSigPre 未注入)。本守卫让第三次直接响亮地失败。
+ *
+ * 判定(保守,只报高置信度类别,避免假阳性):
+ *   ① **被调用**的自由标识符(`id(` 形式的调用目标)—— #349 正是这一类;
+ *   ② **全大写**的自由标识符(模块级常量,如 DEFAULT_AUTO_CONTINUE_THRESHOLD)—— 2026-09 那一类。
+ * 排除:注入表已给出的、方法体内部声明的(const/let/var/function/参数/捕获变量)、JS 全局、语言关键字、
+ * 以及紧跟 `.` 的属性访问与 `{ key: ... }` 属性名。
+ *
+ * @param {string} body - 抽取出的方法体源码。
+ * @param {string[]} injectedNames - 本次注入表里的名字。
+ * @returns {string[]} 疑似未注入的名字(空数组 = 覆盖完整)。
+ */
+const JS_GLOBALS_PRE = new Set(['Math', 'JSON', 'String', 'Number', 'Boolean', 'Array', 'Object', 'Date', 'Buffer', 'Promise',
+  'Set', 'Map', 'WeakMap', 'WeakSet', 'RegExp', 'Error', 'TypeError', 'RangeError', 'Symbol', 'BigInt', 'Intl',
+  'parseInt', 'parseFloat', 'isNaN', 'isFinite', 'encodeURIComponent', 'decodeURIComponent', 'structuredClone',
+  'console', 'process', 'globalThis', 'require', 'setTimeout', 'clearTimeout', 'setInterval', 'clearInterval',
+  'Function', 'Proxy', 'Reflect', 'ArrayBuffer', 'Uint8Array', 'TextEncoder', 'TextDecoder', 'URL', 'URLSearchParams'])
+const KEYWORDS_PRE = new Set(['if', 'for', 'while', 'switch', 'catch', 'return', 'typeof', 'instanceof', 'new', 'delete',
+  'void', 'in', 'of', 'do', 'else', 'try', 'finally', 'throw', 'function', 'const', 'let', 'var', 'await', 'async',
+  'yield', 'class', 'extends', 'super', 'this', 'null', 'true', 'false', 'undefined', 'NaN', 'Infinity'])
+function missingInjectedSymbolsPre(body, injectedNames) {
+  const inj = new Set(injectedNames.map(String))
+  let src = String(body)
+  src = src.replace(/\/\*[\s\S]*?\*\//g, ' ')          // 块注释
+  src = src.replace(/\/\/[^\n]*/g, ' ')                    // 行注释
+  src = src.replace(/'(?:[^'\\]|\\.)*'/g, ' __STR__ ')     // 单引号串(含转义)
+  src = src.replace(/"(?:[^"\\]|\\.)*"/g, ' __STR__ ')     // 双引号串
+  src = src.replace(/\/(?:[^\/\\\n]|\\.)+\/[gimsuy]*/g, ' __RE__ ') // 正则字面量
+  const headerText = src.slice(0, Math.max(0, src.indexOf('{')))
+  const locals = new Set()
+  for (const m of headerText.matchAll(/[A-Za-z_$][\w$]*/g)) locals.add(m[0])
+  for (const m of src.matchAll(/\b(?:const|let|var|function|class)\s+([A-Za-z_$][\w$]*)/g)) locals.add(m[1])
+  for (const m of src.matchAll(/\bcatch\s*\(\s*([A-Za-z_$][\w$]*)/g)) locals.add(m[1])
+  const missing = new Set()
+  const consider = (id) => {
+    if (!id || locals.has(id) || inj.has(id) || JS_GLOBALS_PRE.has(id) || KEYWORDS_PRE.has(id)) return
+    missing.add(id)
+  }
+  // ① 调用目标
+  for (const m of src.matchAll(/(?:^|[^.\w$])([A-Za-z_$][\w$]*)\s*\(/g)) consider(m[1])
+  // ② 全大写常量(未在注入表/本地声明)
+  for (const m of src.matchAll(/(?:^|[^.\w$])([A-Z][A-Z0-9_]{3,})(?![\w$])/g)) consider(m[1])
+  return Array.from(missing).sort()
+}
+/** ★issue#349:strict 模式开关 —— 见上方 missingInjectedSymbolsPre 的说明。
+ *  仅对「本套件主测方法」开启:其余抽取(如 resolveWaterWindow)另有与本次缺陷无关的既有注入缺口,
+ *  开启会让整套件因**别的**原因变红(已单独报告 Lead)。 */
+const bindMethod = (header, fake, extra, opts) => {
   const names = ['path', 'existsSync', 'mkdir', 'writeFile', 'readdir', 'stat', 'handoffStamp', 'nowHm', 'assembleCarryPre', 'isSubAgentSession',
     // ★T7-a（2026-09-20 · 上游 #86-4）：水位/接续默认值已抽为**模块级常量**。
     //   本套件用"源码抽取 + new Function"执行方法体 ⇒ 被抽出的代码里的自由变量必须在这里显式注入，
@@ -109,6 +163,12 @@ const bindMethod = (header, fake, extra) => {
   const vals = [path, SRC && null, mkdir, writeFile, readdir, stat, handoffStampFn, nowHmFn, assembleCarryPreFn, isSubAgentSessionFn, 0.75, 0.75, () => null, () => null]
   vals[1] = (p) => { try { return readFileSync(p) != null } catch (e) { return false } }
   for (const k of Object.keys(extra || {})) { names.push(k); vals.push(extra[k]) }
+  // ★issue#349 结构性守卫:注入表没覆盖到被调用/被引用的宿主符号 ⇒ 这里立刻响亮失败
+  const missingSyms = opts && opts.strictInjection ? missingInjectedSymbolsPre(extractFn(header), names) : []
+  if (missingSyms.length) {
+    throw new Error('[switch-decouple] ' + header + ' 注入表缺少方法体引用的宿主符号: ' + missingSyms.join(', ') +
+      ' —— 会导致 ReferenceError 被 checkWaterLevel 的 catch (eWin) 静默吞掉(见 #349 / 2026-09 同型事故)')
+  }
   const obj = new Function(...names, 'return {' + extractFn(header) + '};')(...vals)
   return obj[Object.keys(obj)[0]].bind(fake)
 }
@@ -230,8 +290,8 @@ const wlBind = (fake) => {
   return bindMethod('async checkWaterLevel(agent) {', fake, {
     extractSessionMessages: (a) => a.messages, diag: () => {}, reflectionDigest: reflectionDigestFn,
     truncateHead: truncateHeadFn, sessionEventsOf: sessionEventsOfFn,
-    findOfficialContextWindowPre, findSessionModelPre, scanPressureSignalsPre, reusableWindowCachePre,
-  })
+    findOfficialContextWindowPre, findSessionModelPre, scanPressureSignalsPre, reusableWindowCachePre, sessionModelSigPre,
+  }, { strictInjection: true })
 }
 // 会话事件里带真实模型(request/header)→ 白板关时这个「模型已知」也必须有地方落下去
 const agentModelKnown = {

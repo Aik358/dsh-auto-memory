@@ -195,11 +195,51 @@ console.log('[A1] ③ #249 生产文档 mutation 统一 admission')
     try { await engine.writeFull(target, 'AFTER\n') } catch (e) { err = e }
     ok(!!err && err.code === 'SETTINGS_MIGRATION_ACTIVE' && err.statusCode === 409, '③ 迁移窗口：writeFull 明确拒绝（409 / SETTINGS_MIGRATION_ACTIVE）', err && (err.code + '/' + err.statusCode))
     ok(await fsp.readFile(target, 'utf8') === 'BEFORE\n', '③ 迁移窗口：目标字节未被改写')
-    // 已受理的写照常完成：路由 flight 已登记时（本仓 /note、白板的既有语义）不得二次拒绝
-    engine._settingsNoteFlights = new Set([Promise.resolve()])
-    await engine.writeFull(target, 'AFTER_ADMITTED\n')
-    ok(await fsp.readFile(target, 'utf8') === 'AFTER_ADMITTED\n', '③ 已受理（有路由 flight）的写不被二次拒绝')
-    engine._settingsNoteFlights = new Set()
+    // ★#345（2026-10-13）：**「已受理」必须是本次请求自己的身份，不能是「全局集合非空」。**
+    //   旧断言只是「任意一条 flight 存在 ⇒ 放行」——它**恰好也是旧实现的实现**，
+    //   所以删掉生产防护它也恒绿（无鉴别力）。新判据拆两半，各自可失败：
+    //   Ⅰ 无关 flight ⇒ **不得**放行当前目标的写（授权粒度 = 本次请求，不是全局）；
+    //   Ⅱ 本目标自己的受理标记 ⇒ 才放行（正路径，证明判据不是一刀切拒绝）。
+    const adm = await import(pathToFileURL(path.join(root, 'lib/memory-mutation-transaction.js')).href)
+    {
+      // Ⅰ 反例（关键）：**无关 flight + 对「别的目标」在途的路由队列** 同时存在。
+      //   这正是旧实现的授权路径：全局非空即放行 ⇒ 本次写被错误放行、落进正在搬空的旧根。
+      //   新实现下身份信号可用 ⇒ 不再回落全局判据 ⇒ 本次写必须被拒。
+      //   ★键口径与生产一致：memoryWriteLockKey(target)（lib/memory-writer.js:386）。
+      const mw = await import(pathToFileURL(path.join(root, 'lib/memory-writer.js')).href)
+      const otherFile = path.join(path.dirname(target), 'OTHER.md')
+      engine._settingsNoteFlights = new Set([Promise.resolve()])
+      engine._noteRouteQueues = new Map([[mw.memoryWriteLockKey(otherFile), Promise.resolve()]])
+      let errUnrelated = null
+      try { await engine.writeFull(target, 'AFTER_UNRELATED\n') } catch (e) { errUnrelated = e }
+      ok(!!errUnrelated && errUnrelated.code === 'SETTINGS_MIGRATION_ACTIVE',
+        '★#345 无关 flight＋无关在途队列 不得放行当前目标的写入（授权粒度＝本次请求身份；旧全局判据此处必红）',
+        errUnrelated ? errUnrelated.code : '未抛错(被错误放行)')
+      ok(await fsp.readFile(target, 'utf8') === 'BEFORE\n',
+        '★#345 被拒的那次写**没有落到旧根**（逐字节未变）', await fsp.readFile(target, 'utf8'))
+      // Ⅲ 反向负对照：把在途队列换成**该目标自己**的键 ⇒ 必须照常放行（不许误伤真受理的请求）
+      engine._noteRouteQueues = new Map([[mw.memoryWriteLockKey(target), Promise.resolve()]])
+      await engine.writeFull(target, 'AFTER_OWN_ROUTE\n')
+      ok(await fsp.readFile(target, 'utf8') === 'AFTER_OWN_ROUTE\n',
+        '★#345 反向对照：本目标自己确在途 ⇒ 照常放行（判据不是一刀切拒绝）')
+      engine._settingsNoteFlights = new Set()
+      engine._noteRouteQueues = new Map()
+    }
+    {
+      // Ⅱ 正路径：**本目标自己的**受理身份已登记 ⇒ 放行并照常落盘
+      const mark = adm.markMemoryAdmissionPre(engine, { target: target })
+      ok(mark && mark.ok === true, '③ 前提：本目标的受理身份登记成功', JSON.stringify(mark))
+      await engine.writeFull(target, 'AFTER_ADMITTED\n')
+      ok(await fsp.readFile(target, 'utf8') === 'AFTER_ADMITTED\n',
+        '★#345 已受理（**本目标自己的身份**）的写不被二次拒绝')
+      mark.release()
+      // 注销之后同一目标应重新被拒 —— 证明放行确实来自「本次身份」而不是残留状态
+      let errAfterRelease = null
+      try { await engine.writeFull(target, 'AFTER_RELEASED\n') } catch (e) { errAfterRelease = e }
+      ok(!!errAfterRelease && errAfterRelease.code === 'SETTINGS_MIGRATION_ACTIVE',
+        '★#345 受理身份注销后 ⇒ 同一目标重新被拒（放行来自本次身份，不是残留/全局状态）',
+        errAfterRelease ? errAfterRelease.code : '未抛错')
+    }
     engine._settingsMigrationActive = false
     await engine.writeFull(target, 'AFTER\n')
     ok(await fsp.readFile(target, 'utf8') === 'AFTER\n', '③ 负路径：非迁移窗口 ⇒ 同一写路径照常成功')

@@ -228,10 +228,24 @@ async function main() {
     const f = queueFile(dir)
     fs.writeFileSync(f, JSON.stringify({ v: 1, items: [] }))   // 合法空队列 ⇒ load 成功
     const a = createTeamOutbox({ dir })
-    fs.chmodSync(f, 0o444)                                     // 确定性故障注入:原子 rename 必 EPERM
+    // ★2026-10-13 并集注入：Windows 靠文件只读挡 rename；Linux 的 rename 只校验目录 ⇒ 须再锁目录。
+    fs.chmodSync(f, 0o444)
+    fs.chmodSync(dir, 0o555)
+    // 探针：任一机制生效即注入有效；都失效（如 root）则如实跳过，不假绿。
+    let injEffective = false
+    try { fs.writeFileSync(path.join(dir, ".probe"), "x"); fs.unlinkSync(path.join(dir, ".probe")) } catch (_) { injEffective = true }
+    if (!injEffective) {
+      try {
+        const t1 = path.join(dir, ".probe-tmp"), d1 = path.join(dir, ".probe-ro")
+        fs.writeFileSync(t1, "x"); fs.writeFileSync(d1, "x"); fs.chmodSync(d1, 0o444)
+        try { fs.renameSync(t1, d1) } catch (_) { injEffective = true }
+        try { fs.chmodSync(d1, 0o666); fs.unlinkSync(d1) } catch (_) {}
+        try { fs.unlinkSync(t1) } catch (_) {}
+      } catch (_) {}
+    }
     const r1 = a.enqueue({ kind: 'handoff', key: 'U1', payload: {} })
-    ok(r1.ok === false, '#308 前提:首次落盘失败(enqueue 回 ok:false)', JSON.stringify(r1))
-    fs.chmodSync(f, 0o666)
+    ok(injEffective ? r1.ok === false : true, '#308 前提:首次落盘失败(enqueue 回 ok:false)' + (injEffective ? '' : ' [SKIP: 注入在本平台无效]'), JSON.stringify(r1))
+    fs.chmodSync(f, 0o666); fs.chmodSync(dir, 0o755)
     const sent = []
     const fr = await a.flush((it) => { sent.push(it.key) })
     ok(sent.join(',') === 'U1', '★#308 未持久条目照常参与本次投递', JSON.stringify(sent))

@@ -73,9 +73,14 @@ t('G4-5 ★ 顺带维护=同一次回复内完成, 不新增管线(零新增注�
 //   - 缓存纪律：本段走 systemPrompt.context()（user-role，追加在历史尾部），不击穿前缀缓存。
 // ─────────────────────────────────────────────────────────────
 t('G4-6 ★【2026-09-20 用户裁定】铭文恢复收尾自检正文——三大方向齐备', () => {
-  const m = SRC.match(/snapshotInscription: '([\s\S]*?)',\r?\n/)
-  assert(m, '应能找到 snapshotInscription')
-  const tpl = m[1]
+  //   ★2026-10-13 量法修正（本批复盘发现）：**旧写法从一开始就量错了对象** ——
+  //   正则 `/snapshotInscription: '([\s\S]*?)',\r?\n/` 不是「解析字符串字面量」，它把
+  //   源码里的拼接胶水（`\n'` + 换行 + 缩进 + `+ '`）与 `\n` 转义序列**一起截进来**，
+  //   量到的是「源码文本」而不是「模型看到的内容」（实测差 74 字符，v3.2.15→v3.3.1 恒为 74）。
+  //   现改为直接量 **DEFAULT_PROMPT_LAYERS 的求值结果**（本文件已 import），
+  //   即模型每轮真正读到的字符数。所有内容断言（三大方向/分类/tag/三态）随之测真值。
+  const tpl = DEFAULT_PROMPT_LAYERS.snapshotInscription
+  assert(typeof tpl === 'string' && tpl.length > 800, '应能取到求值后的铭文（实测 ' + (tpl || '').length + ' 字符）')
   // 保留 {date} 占位（否则日期无法渲染）
   assert(/\{date\}/.test(tpl), '铭文须保留 {date} 占位, 实测为 ' + tpl)
   // ★ 三大方向（用户 2026-09-20 明确要求）
@@ -103,8 +108,22 @@ t('G4-6 ★【2026-09-20 用户裁定】铭文恢复收尾自检正文——三�
   //   实测约 950 字符 ≈ 475 token = injectBudgetChars(8000) 的 12%，仍在可接受区间；
   //   且本段走 systemPrompt.context()（不击穿前缀缓存），内容不变时 dsh-agent-loop project() 去重不加发。
   //   ★2026-10-12 上限由 1200 提到 1400（用户裁定）：技能库**分工作区库/通用库**、写接口无 scope 等边界
-//   必须让模型在收尾位就知道（否则会误以为能选库）；实测 1244 字符（+63），仍在护栏内，成本占比不变（走 context() 不击穿前缀缓存）。
-  assert(tpl.length <= 1400, '★ 铭文须守住每轮成本(≤1400 字符), 实测 ' + tpl.length)
+  //   必须让模型在收尾位就知道（否则会误以为能选库）；实测 1244 字符（+63），仍在护栏内。
+  //   ★2026-10-13 上限 1400 → 1500（#333②，同一用户裁定方向）：新增 snapshotInscriptionArchive 层（246 字符），
+  //   铭文由「单层」变为「两层拼接渲染」。
+  //   ⚠️ 同时修正了一个**假绿守卫**：旧断言只量单层 ⇒ 新增的 ⑦ 层完全不在被量范围内。现量两层拼接。
+  //   ★2026-10-13 量法修正（#333② 复盘中发现的**系统性偏差**）：此前用**源码正则**截取字面量来量，
+  //   而源码里的 `\n` 是**两个字符**（反斜杠+n）、求值后是**一个真换行**。实测该偏差恒为 74 字符
+  //   （v3.2.15→v3.3.1 各版本一致），会让人误判「爆限额」。现统一改为**求值后口径**：
+  //   直接量 DEFAULT_PROMPT_LAYERS（已 import 的求值结果），= 模型真正看到的字符数。
+  assert(tpl.length <= 1500, '★ 铭文单层须守住成本(≤1500 字符), 实测 ' + tpl.length)
+  // ★真正该守的是「模型每轮实际看到的铭文字符数」= 两层求值后拼接（含 ⑦ 归档层）。
+  const archReal = DEFAULT_PROMPT_LAYERS.snapshotInscriptionArchive
+  assert(typeof archReal === 'string' && archReal.length > 0, '应能取到 ⑦ 归档层（求值后非空）')
+  const total = tpl + archReal
+  assert(total.length <= 1500, '★ 铭文**渲染总量**须守住每轮成本(≤1500 字符, 含 Archive 层), 实测 ' + total.length)
+  assert(total.length > tpl.length, '★ 总量必须 > 单层（防止 Archive 层被静默移除导致守卫失效）')
+  assert(total.length + 1 <= 1500, '★ 计入 pushPart 前导 \\n 后仍须 ≤1500（真实交付给宿主的上限）')
 })
 
 /** 从 client.js 抽取 DEFAULT_PROMPT_LAYERS_CLIENT 并**求值**为真实对象（花括号配对，与键序解耦）。 */
@@ -133,7 +152,7 @@ t('G4-6b ★ 铭文与服务端逐字一致(镜像漂移守卫)', () => {
   assert(srv === cliVal, '★ 服务端与客户端铭文必须逐字一致（服务端 ' + srv.length + ' 字符 / 客户端 ' + cliVal.length + ' 字符）')
 })
 
-t('G4-6d ★ 提示词层镜像：客户端 25 层与服务端逐键逐字一致（D3 / 2026-09-30，2026-10-01 +2 层）', () => {
+t('G4-6d ★ 提示词层镜像：客户端 26 层与服务端逐键逐字一致（D3 / 2026-09-30，2026-10-01 +2 层，2026-10-13 +1 层）', () => {
   // 用户裁定「设置页必须全量同步，不能有缺少」。此前客户端镜像只有 12 层，且 snapshotHead /
   // snapshotWelcomeBody 是截断版（46/49 字符 vs 服务端 302/149）⇒ 设置页「提示词层级」展示的
   // 内容与实际注入不符（用户以为某层没注入，实为镜像缺失）。
@@ -141,7 +160,9 @@ t('G4-6d ★ 提示词层镜像：客户端 25 层与服务端逐键逐字一致
   const cliObj = evalClientLayers()
   const srvKeys = Object.keys(DEFAULT_PROMPT_LAYERS)
   const cliKeys = Object.keys(cliObj)
-  assert(srvKeys.length === 25, '服务端层数应为 25（实测 ' + srvKeys.length + '）')
+  // ★2026-10-13（#333②）：25 → 26 —— 新增 snapshotInscriptionArchive（归档取回通道）层，
+  //   服务端与客户端镜像**同步新增**（本次同一提交内补齐，无漏钉）。
+  assert(srvKeys.length === 26, '服务端层数应为 26（实测 ' + srvKeys.length + '）')
   const missing = srvKeys.filter((k) => !cliKeys.includes(k))
   const extra = cliKeys.filter((k) => !srvKeys.includes(k))
   assert(missing.length === 0, '★ 客户端缺失层: ' + missing.join(', '))

@@ -29,6 +29,14 @@ import zlib from 'node:zlib'
 import { fileURLToPath } from 'node:url'
 
 const ROOT = path.resolve(fileURLToPath(new URL('../..', import.meta.url)))
+// ★2026-10-13 #346：**行尾归一的比较口径**。
+//   CI 是 LF 检出、本机开发树是 CRLF；而本套件有两类「换个行尾就假红」的比较：
+//   ① 多行锚串（含 `\n`）—— 在 CRLF 源码上 split 命中 0 次；
+//   ② index.zip 与源文件的**逐字节**一致 —— src 检出为 CRLF 时天然多出换行字节。
+//   判据的本意是「**内容**没漂移 / 锚点还在」，不是「行尾恰好是 LF」⇒ 比较双方都先归一。
+//   ★归一**只**去掉 CRLF 的 CR：真正改内容仍然必红（负对照不受影响）。
+const toLF = (s) => String(s).replace(/\r\n/g, '\n')
+const toLFBytes = (b) => Buffer.from(toLF(Buffer.isBuffer(b) ? b.toString('utf8') : b), 'utf8')
 const REAL_ENTRY = path.join(ROOT, '.github', 'cloud', 'qq-webhook', 'index.js')
 // QQWEBHOOK_ENTRY 只给变异子进程用：指向一份「把条件请求去掉」的副本，验证本套件真的会红。
 const ENTRY = process.env.QQWEBHOOK_ENTRY ? path.resolve(process.env.QQWEBHOOK_ENTRY) : REAL_ENTRY
@@ -226,12 +234,16 @@ async function main() {
     const srcBytes = fs.readFileSync(REAL_ENTRY)
     ok(!!zip, '#310 index.zip 可解析且含 index.js 条目', zipPath)
     if (zip) {
-      ok(zip.length === srcBytes.length && zip.equals(srcBytes),
-        '★#310 index.zip 里的 index.js 与源文件**逐字节一致**(源改了必须重新打包,否则线上跑的是旧字节)',
-        'zip=' + zip.length + 'B src=' + srcBytes.length + 'B sha(zip)=' + sha256(zip).slice(0, 16) + ' sha(src)=' + sha256(srcBytes).slice(0, 16))
+      //   ★#346：源文件在 CRLF 检出下会比 zip 多出换行字节 ⇒ 先把**两侧都归一到 LF** 再比；
+      //   内容真的改了（不只是行尾）仍然必红。同时额外钉住「zip 内条目自身不得含 CR」。
+      const zipLF = toLFBytes(zip), srcLF = toLFBytes(srcBytes)
+      ok(zipLF.equals(srcLF),
+        '★#310 index.zip 里的 index.js 与源文件**逐字节一致（按 LF 归一后）**(源改了必须重新打包,否则线上跑的是旧字节)',
+        'zip=' + zipLF.length + 'B src=' + srcLF.length + 'B sha(zip/LF)=' + sha256(zipLF).slice(0, 16) + ' sha(src/LF)=' + sha256(srcLF).slice(0, 16))
+      ok(!/\r/.test(zip.toString('utf8')), '★#310 index.zip 内条目自身为纯 LF（打包产物不得混入 CR）')
       const bootZip = readZipEntry(zipPath, 'scf_bootstrap')
       const bootSrc = fs.readFileSync(path.join(ROOT, '.github', 'cloud', 'qq-webhook', 'scf_bootstrap'))
-      ok(!!bootZip && bootZip.equals(bootSrc), '#310 index.zip 里的 scf_bootstrap 也与源同步', bootZip ? 'zip=' + bootZip.length : 'missing')
+      ok(!!bootZip && toLFBytes(bootZip).equals(toLFBytes(bootSrc)), '#310 index.zip 里的 scf_bootstrap 也与源同步（LF 归一后）', bootZip ? 'zip=' + bootZip.length : 'missing')
     }
     console.log('  [物理量] 源 index.js ' + srcBytes.length + 'B sha256=' + sha256(srcBytes))
   }
@@ -326,10 +338,12 @@ async function main() {
       const ANCHOR = "    if (r0.etag) headers['If-Match'] = r0.etag\n"
         + "    else if (r0.lastModified) headers['If-Unmodified-Since'] = r0.lastModified\n"
         + "    else throw new Error('gist 响应既无 ETag 也无 Last-Modified:无法判定版本,拒绝盲写(宁可丢本次记录也不覆盖别人的新行)')"
-      const hits = real.split(ANCHOR).length - 1
-      ok(hits === 1, '变异定位:#310 条件头锚点恰命中 1 次', 'hits=' + hits)
+      //   ★#346：多行锚串必须**行尾归一后**匹配，否则 CRLF 检出下命中 0 次（实测 23/3）。
+      const realLF = toLF(real)
+      const hits = realLF.split(toLF(ANCHOR)).length - 1
+      ok(hits === 1, '变异定位:#310 条件头锚点恰命中 1 次（LF 归一后）', 'hits=' + hits)
       const mutated = path.join(TMP, 'mutated-310.cjs')
-      fs.writeFileSync(mutated, real.replace(ANCHOR, "    // [变异取证] 去掉条件请求:退回 #310 旧形态(无条件 PATCH)"))
+      fs.writeFileSync(mutated, realLF.replace(toLF(ANCHOR), "    // [变异取证] 去掉条件请求:退回 #310 旧形态(无条件 PATCH)"))
       const syn = spawnSyncCheck(mutated)
       ok(syn === 0, '变异文件语法可用', 'node --check exit=' + syn)
       const r = spawnSyncRun(mutated)

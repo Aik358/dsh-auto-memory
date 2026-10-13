@@ -30,7 +30,13 @@ function mkReq(over = {}) {
     workerEpoch: 'worker-e1', sessionId: 'sess-9', agentId: 'agent-9', workspaceKey: 'd:/ws',
     scope: 'Workspace', contextVersion: 7,
     memoryIndexVersion: over.memoryIndexVersion || ('idx_pre_' + 'ab'.repeat(16)),
-    threshold: { policyVersion: 'thr_v1', score: 0.91, threshold: 0.8, reason: 'semantic match above threshold' },
+    // ★2026-10-13 #353：原实现在这里**硬编码** threshold，从不采纳 over.threshold ⇒ 调用方
+    //   传进来的恶意文本根本没进被测函数，随之的「已清洗」断言只是对默认良性文案恒真
+    //   （负例空转：把生产的 sanitizeTailText 换成 String() 套件仍全绿）。
+    //   现在逐字段采纳 over.threshold（未提供的字段仍取默认值，保持既有用例语义不变）。
+    threshold: Object.assign(
+      { policyVersion: 'thr_v1', score: 0.91, threshold: 0.8, reason: 'semantic match above threshold' },
+      over.threshold || {}),
     level: over.level || 'excerpt',
     candidates: over.candidates || [mkCand(memA), mkCand(memB)],
     ttlSteps: 2, createdAt: 1700000000000, expiresAt: 1700000000120000 }
@@ -70,7 +76,15 @@ const multi = A.dedupeCandidates([mkCand(memA, { score: 0.5 }), mkCand(memB, { s
 eq(multi.map((c) => c.memoryId), [memB, memA, memC], '按 score 降序、平局按 memoryId 字典序')
 
 console.log('[D4] 固定边界渲染')
+// ★2026-10-13 #353：先**证明污染字段真的进入了被测函数**，再验清洗结果。
+//   否则「清洗后不含 `<!--`」这类断言对「文本压根没传进去」同样成立（恒真、无鉴别力）。
+//   判据落点：构建出的 packet 与渲染文本都能反查阈值（packetId 由四元组含 exactDigest 决定，
+//   而 exactDigest = 渲染文本 sha256 ⇒ 只要渲染文本不同，packetId 必不同）。
 const req1 = mkReq()
+const INJ = 'bad\nreason\r\nwith<!--inject-->'
+const reqInj = mkReq({ threshold: { policyVersion: 't', score: 1, threshold: 0.8, reason: INJ } })
+ok(reqInj.threshold.reason === INJ, '★ #353 前提：恶意 reason 已真的进入被测 request 对象（原实现 hardcode threshold ⇒ 此处必红）实=' + JSON.stringify(reqInj.threshold.reason))
+ok(JSON.stringify(reqInj) !== JSON.stringify(req1), '★ #353 前提：污染 request 与基线 request 不同（证明候选/阈值字段未被 helper 吞掉）')
 const built = A.buildReferenceTailPacketPre({ request: req1, triggerReason: 'explicit recall', nowStep: 100 })
 ok(built.ok, 'packet 构建成功')
 const text = built.rendered
@@ -81,9 +95,12 @@ ok(/Source: mem_[0-9a-f]{32} \/ Workspace \/ v2 \/ [0-9a-f]{16}/.test(text), 'So
 ok(text.includes('Reason: semantic match above threshold'), 'Reason 行来自 threshold.reason')
 ok(!text.includes('<!--') && !text.includes('-->'), '无 Markdown 注释语法泄漏')
 ok(!text.includes('C:\\'), '无绝对路径')
-const built2 = A.buildReferenceTailPacketPre({ request: mkReq({ threshold: { policyVersion: 't', score: 1, threshold: 0.8, reason: 'bad\nreason\r\nwith<!--inject-->' } }), triggerReason: 'x', nowStep: 100 })
-ok(!built2.rendered.includes('\n') || !built2.rendered.match(/Reason: .*\n.*\n.*Reason:/), 'Reason 单行化(换行折叠)')
-ok(!built2.rendered.includes('<!--'), '注释语法被剥离')
+const built2 = A.buildReferenceTailPacketPre({ request: reqInj, triggerReason: 'x', nowStep: 100 })
+ok(!built2.rendered.includes('<!--'), '★ #353 注释语法被剥离（恶意 reason 已进入被测函数）')
+ok(built2.rendered.includes('Reason: bad; reason; withinject'), '★ #353 Reason 单行化 + 注释剥离的**精确形态**（换行折成「; 」、注释标记整体删除）实=' + JSON.stringify((built2.rendered.match(/Reason: .*/) || [''])[0]))
+ok(!/Reason: [^\n]*\n[^\n]*\n[^\n]*Reason:/.test(built2.rendered), '★ #353 Reason 未把后续块挤成多行（对照基线：单条 Reason 行）')
+// 鉴别力对照：清洗结果必须与「未清洗」可区分（否则 String() 变异也能过）
+ok(!built2.rendered.includes(INJ), '★ #353 干净文本不得原样残留（含 \r\n 与 <!-- --> 的原文必被改写）')
 
 console.log('[D5] byte 预算/provenance 完整性/exactDigest/packetId')
 eq(built.packet.exactDigest, A.computeExactDigest(text), 'exactDigest=渲染文本 sha256')

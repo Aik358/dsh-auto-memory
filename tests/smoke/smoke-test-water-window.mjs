@@ -230,10 +230,28 @@ try {
   const INDEX_SRC = readFileSync(new URL('../../lib/index.js', import.meta.url), 'utf8')
   ok('W26 已导入 reusableWindowCachePre',
     /import \{[^}]*\breusableWindowCachePre\b[^}]*\} from '\.\/water-window\.js'/.test(INDEX_SRC))
+  // ★issue#349:接线守卫同步扩到「模型签名」——调用点必须把**当前**事件算出的签名传进去,
+  // 且缓存写入与判定必须用**同一个**签名变量,否则两侧漂移(判定用旧的、写入用新的)仍会假复用。
+  ok('W26b 已导入 sessionModelSigPre',
+    /import \{[^}]*\bsessionModelSigPre\b[^}]*\} from '\.\/water-window\.js'/.test(INDEX_SRC))
+  const RE_CACHE_CALL = /if \(reusableWindowCachePre\(cached, sid, eventsForModel\.length, Date\.now\(\)[,)]/
   ok('W26 checkWaterLevel 用它判定缓存复用(传入的是当前事件数)',
-    /if \(reusableWindowCachePre\(cached, sid, eventsForModel\.length, Date\.now\(\)\)\)/.test(INDEX_SRC))
+    RE_CACHE_CALL.test(INDEX_SRC))
+  ok('W26c 复用判定传入当前模型签名(issue#349:模型/provider/contextWindow/maxTokens 变化必须失效)',
+    /reusableWindowCachePre\(cached, sid, eventsForModel\.length, Date\.now\(\), undefined, modelSrcSig\)/.test(INDEX_SRC))
+  ok('W26d 判定与写入用同一个签名变量(防两侧漂移导致假复用)',
+    /const modelSrcSig = sessionModelSigPre\(authModel\)/.test(INDEX_SRC)
+      && /sessModel = authModel/.test(INDEX_SRC)
+      && /info: sessModel, events: eventsForModel\.length, modelSig: modelSrcSig/.test(INDEX_SRC))
   ok('W26 写入缓存时带 events 字段(否则空结果没有重扫依据,修复即失效)',
     /info: sessModel, events: eventsForModel\.length/.test(INDEX_SRC))
+  // 负路径:守卫必须**真的能鉴别「宿主没调用」**。把调用整行换成 if (false) 后,上面两条接线
+  // 断言必须失配 —— 否则守卫等于恒真(与本套件 W26 设立时的初衷相悖)。
+  const INDEX_NO_CALL = INDEX_SRC.replace(/if \(reusableWindowCachePre\([\s\S]*?\)\) \{/, 'if (false) {')
+  ok('W26 负路径:删掉宿主调用后守卫失配(证明不是恒真守卫)',
+    INDEX_NO_CALL !== INDEX_SRC
+      && !RE_CACHE_CALL.test(INDEX_NO_CALL)
+      && !/reusableWindowCachePre\(cached, sid, eventsForModel\.length, Date\.now\(\), undefined, modelSrcSig\)/.test(INDEX_NO_CALL))
 } catch (e) {
   fail++
   console.log('  FAIL - 未捕获异常: ' + (e && e.stack ? e.stack : e))
