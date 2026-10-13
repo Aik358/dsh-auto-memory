@@ -1,6 +1,21 @@
 # M8 记忆中枢（Memory Hub）：三层记忆系统路径/功能图
 
-> 状态：M8-0/1/2/3 纯核心已实现并 tested（2026-08-27）；Host 接线（engine._memoryHub + /memory-hub 端点 + 设置页 + 面板页签）已完成；live 验证待用户重启 3080。
+> **状态**：已完工 · 2026-08-27（纯核心）+ 2026-09-09（live 验证通过）
+> **性质**：设计定稿 + 验收报告 —— 本文为**完成后的技术记录**，不再作为待执行计划。
+> **落点**：`docs/M8-MEMORY-HUB.md`；纯核心落于记忆中枢模块，Host 接线为 `engine._memoryHub` + `/memory-hub` 端点 + 设置页 + 面板页签。
+> **验收**：§7 验收矩阵全部勾选：fact store 41 断言 + hub 综合 33 断言、全量回归 35 套件全绿、live 验证于 2026-09-09 经 loopback 代验通过（`GET /memory-hub` 200 / 177ms 三层 overview；`hub-pre` 落盘 episodes=22 / facts=3 / procedures=9，含重启后新会话条目；fv2 emit explicit_lane 激活）。
+
+## 摘要
+
+记忆中枢把三层记忆（经历 / 事实 / 技能）串成一条链：从对话沉淀经历 → 固化事实 → 把反复成功的流程固化为技能 → 相似场景自动召回注入。这是 M7 记忆召回系统的「供给侧」—— M7 决定「怎么送达」，记忆中枢决定「有什么可送达」。M8-0/1/2/3 纯核心于 2026-08-27 实现并 tested，Host 接线完成，live 验证于 2026-09-09 经 loopback 代验通过。
+
+## 文档规范
+
+- 改写依据：`docs/internal/DOC-REWRITE-STYLE.md`
+- 本文件体例：**设计定稿 + 验收报告**。§7 验收矩阵为逐条勾选后的最终结果。
+- 语态纪律：主语用「本项目 / 本方案」，不使用第一人称叙述。
+
+---
 > 权威设计源：docs/proactive-associative-memory-system-map.html M-02/M-03/M-04 模块卡。
 
 ## 1. 一句话

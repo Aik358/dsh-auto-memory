@@ -1,5 +1,17 @@
 # 长期记忆系统 逻辑审计报告 · 第 2 批：事实/情节写入与去重链路
 
+> **状态**：已完工 · 2026-09-21
+> **性质**：验收报告 —— 本文为**完成后的技术记录**，不再作为待执行计划。
+> **落点**：取证基线为 `lib/fact-store-pre.js`（24,181 B / mtime 09-19 05:22）、`lib/episodic-store-pre.js`、`lib/memory-hub-pre.js`、`lib/intent-clean-safe-pre.js`、`lib/index.js`；运行时数据 `~/.dsh/memory/hub-pre/facts.json`（10 条）、`episodes.json`（35,688 B）
+> **验收**：本报告只做诊断，未改任何代码；文末给出 10 项待办的性质分类（产品/逻辑/卫生）
+
+## 摘要
+
+本文是长期记忆逻辑审计第 2 批，审计事实与情节写入链路及去重语义。取证以文件体量/ mtime 与运行时真实库数据为基线，结论先行后逐条给出代码行号证据。文末给出 10 项处置清单及其性质划分（事实性判据、溯源回填、evidence 校验/死代码清理/v1 删除），并声明按用户既有硬规则需经拍板方可实施，本报告只出诊断、等拍板。
+
+---
+
+
 > 审计日期：2026-09-21 · 对象 `D:\dsh-auto-memory`（pre 线）
 > 取证基线：`lib/fact-store-pre.js`(24,181 B / mtime 09-19 05:22)、`lib/episodic-store-pre.js`、
 > `lib/memory-hub-pre.js`、`lib/intent-clean-safe-pre.js`、`lib/index.js`

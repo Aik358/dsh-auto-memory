@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 460" width="880" height="460" preserveAspectRatio="xMidYMid meet" role="img" style="font-variant-numeric:tabular-nums" font-family="Manrope,'Space Grotesk','PingFang SC','Microsoft YaHei',system-ui,sans-serif">
+<title>分块粒度偏好在 L1 合成层与 L2 真实层之间反转</title>
+<rect width="880" height="460" fill="#ffffff"/>
+<!--region canvas 0 0 880 460-->
+<!--region p 52 84 776 320-->
+<text x="52" y="32" font-size="12.5" fill="#454545">合成层 256 最优(0.989);真实层 512 / 1024 并列(0.925)</text>
+<rect x="52" y="44" width="22" height="13" fill="#60a5fa"/><text x="83" y="54" font-size="12.5" font-weight="700" fill="#1e232c">L1 合成语料层</text><rect x="190.5" y="44" width="22" height="13" fill="#2563eb"/><text x="221.5" y="54" font-size="12.5" font-weight="700" fill="#1e232c">L2 真实语料层</text>
+<text x="52" y="440" font-size="13.5" font-weight="700" fill="#c0504d">在合成语料上得到的调参结论,换一层语料就可能完全相反</text>
+<line x1="107" y1="294.8" x2="828" y2="294.8" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4 5"/><text x="95" y="298.94" text-anchor="end" font-size="11.5" font-weight="700" fill="#1e232c">0.2</text><line x1="107" y1="249.6" x2="828" y2="249.6" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4 5"/><text x="95" y="253.74" text-anchor="end" font-size="11.5" font-weight="700" fill="#1e232c">0.4</text><line x1="107" y1="204.4" x2="828" y2="204.4" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4 5"/><text x="95" y="208.54" text-anchor="end" font-size="11.5" font-weight="700" fill="#1e232c">0.6</text><line x1="107" y1="159.2" x2="828" y2="159.2" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4 5"/><text x="95" y="163.34" text-anchor="end" font-size="11.5" font-weight="700" fill="#1e232c">0.8</text><line x1="107" y1="114" x2="828" y2="114" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4 5"/><text x="95" y="118.14" text-anchor="end" font-size="11.5" font-weight="700" fill="#1e232c">1.0</text><line x1="107" y1="340" x2="828" y2="340" stroke="#94a3b8" stroke-width="1.4" data-role="axis" data-orient="h" data-panel="p" data-base="340"/><text transform="translate(65 227) rotate(-90)" text-anchor="middle" font-size="11.5" font-weight="700" fill="#1e232c">R@5</text><text x="225.83" y="360" text-anchor="middle" font-size="14" font-weight="700" fill="#1e232c">256</text><text x="463.5" y="360" text-anchor="middle" font-size="14" font-weight="700" fill="#1e232c">512</text><text x="701.17" y="360" text-anchor="middle" font-size="14" font-weight="700" fill="#1e232c">1024</text><text x="463.5" y="383" text-anchor="middle" font-size="13.5" fill="#454545">分块粒度(tokens)</text>
+<rect x="138.42" y="116.49" width="56" height="223.51" fill="#60a5fa" data-role="bar" data-panel="p" data-base="340" data-value="0.989"/>
+<text x="166.42" y="108.49" text-anchor="middle" font-size="12.5" font-weight="700" fill="#60a5fa">0.989</text>
+<rect x="257.25" y="142.25" width="56" height="197.75" fill="#2563eb" data-role="bar" data-panel="p" data-base="340" data-value="0.875"/>
+<text x="285.25" y="134.25" text-anchor="middle" font-size="12.5" font-weight="700" fill="#2563eb">0.875</text>
+<rect x="376.08" y="121.68" width="56" height="218.32" fill="#60a5fa" data-role="bar" data-panel="p" data-base="340" data-value="0.966"/>
+<text x="404.08" y="113.68" text-anchor="middle" font-size="12.5" font-weight="700" fill="#60a5fa">0.966</text>
+<rect x="494.92" y="130.95" width="56" height="209.05" fill="#2563eb" data-role="bar" data-panel="p" data-base="340" data-value="0.925"/>
+<text x="522.92" y="122.95" text-anchor="middle" font-size="12.5" font-weight="700" fill="#2563eb">0.925</text>
+<rect x="613.75" y="124.17" width="56" height="215.83" fill="#60a5fa" data-role="bar" data-panel="p" data-base="340" data-value="0.955"/>
+<text x="641.75" y="116.17" text-anchor="middle" font-size="12.5" font-weight="700" fill="#60a5fa">0.955</text>
+<rect x="732.58" y="130.95" width="56" height="209.05" fill="#2563eb" data-role="bar" data-panel="p" data-base="340" data-value="0.925"/>
+<text x="760.58" y="122.95" text-anchor="middle" font-size="12.5" font-weight="700" fill="#2563eb">0.925</text>
+</svg>

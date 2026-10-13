@@ -1,5 +1,17 @@
 # PROMPT-GAP-AUDIT — 代码能力 vs 模型 prompt 全量对账
 
+> **状态**：已完工 · 2026-09-20
+> **性质**：验收报告 —— 本文为**完成后的技术记录**，不再作为待执行计划。
+> **落点**：扫描对象为 `lib/*.js` 的 `export const` 枚举/契约常量 + 17 个 `defineTool` 的 description + `renderMemoryStatic` / `renderDynamic` 注入文本
+> **验收**：铁律为只做对账、不判断该不该补；结论为共 17 条缺口分四类，其中 6 条模型根本判断不了（零入口）、11 条有入口但语义域没讲全
+
+## 摘要
+
+本次对账由用户提问触发：「有什么是我代码应该让模型知道的内容，模型现在还不知道，就是注入里面还没讲」。方法为全量扫描 `lib/*.js` 的 `export const` 枚举/契约常量、17 个 `defineTool` 的 description 与 `renderMemoryStatic` / `renderDynamic` 注入文本，逐条比对「代码有语义域 / prompt 有解释」。结论为共 17 条缺口分四类，其中 6 条是模型根本判断不了的（零入口）、11 条是有入口但语义域没讲全。铁律为本表只做对账、不判断该不该补——补哪条由用户拍板。
+
+---
+
+
 > 生成：2026-09-20 · 触发：用户「有什么是我代码应该让模型知道的内容，模型现在还不知道，就是注入里面还没讲」
 > 方法：全量扫描 `lib/*.js` 的 `export const` 枚举/契约常量 + 17 个 `defineTool` 的 description + `renderMemoryStatic` / `renderDynamic` 注入文本，逐条比对"代码有语义域 / prompt 有解释"。
 > 铁律：本表**只做对账，不判断该不该补**——补哪条由用户拍板。

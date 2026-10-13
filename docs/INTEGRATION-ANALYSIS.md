@@ -1,5 +1,22 @@
 # 集成分析：本地仓库深度解读 × 四仓库可吸收性评估
 
+> **状态**：已完工 · 2026-09-09（分析定稿）
+> **性质**：研究结论 —— 本文为**完成后的技术记录**，不再作为待执行计划。
+> **落点**：`docs/INTEGRATION-ANALYSIS.md`；上位为 `docs/ROADMAP.md`（总规划）与 `docs/PROMPT-PACK-LAYERED-RECALL.md`（外包 prompt 包）。
+> **验收**：本文基于实际读到的代码与联网检索，非推测；§6 单列「信息不足说明」，标明下更硬结论所需的前提。
+
+## 摘要
+
+本文件对本地仓库做深度解读，并对四个参考仓库（OpenViking、Hindsight、MetaMem、MemOS）做系统性可吸收性评估。§0 先修正前几轮基于 3 个文件的错误判断（「没有分层」「没有索引」「没有 importance 维度」「实现广度浅」）；§1 给出本地仓库的技术栈、目录结构、架构分层与核心模块接口约定；§2-§3 逐仓库梳理并逐维度比对；§4 给出集成方案与分阶段实施顺序；§5 给出回归风险、性能影响与验证方式。
+
+## 文档规范
+
+- 改写依据：`docs/internal/DOC-REWRITE-STYLE.md`
+- 本文件体例：**分析结论**。§4「集成方案」为可选路径设计，实际采纳情况见 `docs/ROADMAP.md` 与 `CHANGELOG.md`。
+- 语态纪律：主语用「本项目 / 本方案」，不使用第一人称叙述。
+
+---
+
 > 写于 2026-09-09。基于**实际读到的代码与联网检索**，非推测。
 > 上位：[ROADMAP.md](ROADMAP.md)（总规划）、[PROMPT-PACK-LAYERED-RECALL.md](PROMPT-PACK-LAYERED-RECALL.md)（外包 prompt 包）。
 

@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 440" width="880" height="440" preserveAspectRatio="xMidYMid meet" role="img" style="font-variant-numeric:tabular-nums" font-family="Manrope,'Space Grotesk','PingFang SC','Microsoft YaHei',system-ui,sans-serif">
+<title>依赖图 110 个模块中 68 个没有出边</title>
+<rect width="880" height="440" fill="#ffffff"/>
+<!--region canvas 0 0 880 440-->
+<text x="44" y="32" font-size="17.5" font-weight="700" fill="#1e232c">110 个模块中,68 个没有出边</text>
+<text x="44" y="54" font-size="12.5" fill="#454545">依赖图 110 节点 / 158 边;出边最多的是 index.js(78 条),整体呈星形拓扑</text>
+<text x="44" y="420" font-size="13.5" font-weight="700" fill="#2563eb">叶子模块可整组搬进子包 —— 真正难拆的是那个 10,852 行的单类</text>
+<rect x="44" y="112" width="383.3" height="72" fill="#2563eb"/>
+<rect x="427.3" y="112" width="236.7" height="72" fill="#cbd5e1"/>
+<text x="60" y="154" font-size="15" font-weight="700" fill="#ffffff">叶子模块 68(61.8%)</text>
+<text x="443.3" y="154" font-size="15" font-weight="700" fill="#1e232c">其余 42</text>
+<text x="44" y="214" font-size="13" font-weight="700" fill="#1e232c">file-boundary.js / datadir.js / dsh-home.js</text>
+<text x="836" y="214" text-anchor="end" font-size="12.5" fill="#454545">被引 5 / 5 / 7,零出边</text>
+<text x="44" y="242" font-size="13" font-weight="700" fill="#1e232c">config-io.js / config-lock.js / shared-state-lock.js</text>
+<text x="836" y="242" text-anchor="end" font-size="12.5" fill="#454545">零出边</text>
+<text x="44" y="270" font-size="13" font-weight="700" fill="#1e232c">semantic-js.js / shadow-retrieval.js / python-sidecar-client.js</text>
+<text x="836" y="270" text-anchor="end" font-size="12.5" fill="#454545">零出边</text>
+<text x="44" y="298" font-size="13" font-weight="700" fill="#1e232c">wb-sidecar.js / wb-contract.js / board-mode.js</text>
+<text x="836" y="298" text-anchor="end" font-size="12.5" fill="#454545">零出边</text>
+</svg>

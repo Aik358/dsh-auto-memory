@@ -66,11 +66,31 @@ t('T7c-3 ★ 有进度行输出（百分比 + 已完成/总数 + 已耗时）', 
   assert(/done \+ '\/' \+ suites\.length/.test(RUNNER), '缺少 done/total 计数')
   assert(/已耗时/.test(RUNNER), '缺少已耗时显示')
 })
+// ★2026-10-13 判据更新（用户实报「并行会有 2~3 项 timeout」后引入双车道）：
+//   旧判据钉死了实现内的字面量 `Math.min(jobs, suites.length)`；实现已重构为可复用的
+//   `runPool(list, width)`（同一有界语义，重/轻两条车道各调一次）⇒ 字面量不再存在，
+//   **属判据过期而非缺陷**。新判据改为断言**被保护的语义不变量**：
+//     ① 必须有游标（有界池的必要条件，仍禁无界扇出）；
+//     ② worker 数必须经 Math.min(width, list.length) 取上界（宽度可来自任一车道）。
 t('T7c-4 ★ 并发实现是"有界工作池"，不是无界 Promise.all 扇出', () => {
   assert(/let cursor = 0/.test(RUNNER), '缺少游标（有界池的必要条件）')
-  assert(/Array\.from\(\{ length: Math\.min\(jobs, suites\.length\) \}/.test(RUNNER), '缺少按 jobs 限流的 worker 数')
+  // 不变量：worker 数 = min(宽度, 队列长度)，宽度必须是变量（jobs / heavyJobs 均可）。
+  assert(/Array\.from\(\{ length: Math\.min\(\w+, \w+\.length\) \}/.test(RUNNER), '缺少按宽度限流的 worker 数')
+  // 反例：不得出现无界扇出（直接把整个队列长度当 worker 数）。
+  assert(!/Array\.from\(\{ length: \w+\.length \}/.test(RUNNER), '出现无界扇出（worker 数未钳制）')
 })
 
+t('T7c-5 ★ 双车道：重车道串行 + 轻车道并行，且可 --lanes=off 回退', () => {
+  // 分道表必须存在且非空（否则重负载会被并回并行池，退回本次修复前的假红）。
+  assert(/const HEAVY_MS = \{/.test(RUNNER), '缺少重负载实测表 HEAVY_MS')
+  assert(/function splitLanes\(/.test(RUNNER), '缺少车道划分函数')
+  // 两条车道必须**同时**开跑（否则总墙钟变成两段之和，比单池更慢）。
+  assert(/runPool\(lanePlan\.heavy/.test(RUNNER), '重车道未被调度')
+  assert(/runPool\(lanePlan\.light/.test(RUNNER), '轻车道未被调度')
+  // 回退闸门：默认分道开启，--lanes=off 可回到旧行为。
+  assert(/lanes: true/.test(RUNNER), '分道未默认开启')
+  assert(/--lanes=off/.test(RUNNER), '缺少 --lanes=off 回退开关')
+})
 console.log('\n=== T7-d 收尾提醒硬映射（本轮用户报的"行为对不上"根因）===')
 t('T7d-1 ★★ 铭文② 必须是可判定硬映射：改过 lib/ ⇒ 必写 kind=handoff', () => {
   assert(/改过 lib\/ 下任何文件/.test(IDX), '缺少"改过 lib/ ⇒ 必写账本"的硬映射')

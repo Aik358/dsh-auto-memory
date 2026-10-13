@@ -1,4 +1,16 @@
-# 长期记忆系统 · BUG 总清单（可执行版）
+# 长期记忆系统 · BUG 总清单与已办结清单
+
+> **状态**：已完工 · 2026-09-22
+> **性质**：施工记录 —— 本文为**完成后的技术记录**，不再作为待执行计划。
+> **落点**：A 批 9 条改动落于 `lib/intent-clean-safe-pre.js`、`lib/index.js`、`lib/note-status-pre.js`、`lib/client.js`、`lib/procedure-store-pre.js`、`lib/fact-store-pre.js`、`lib/episodic-store-pre.js`，并新增 `tests/smoke/smoke-test-bugfix-a-persistent-memory-pre.mjs`；被该套件真读，文件名不得改动
+> **验收**：新守卫套件 PASS 44 / FAIL 0；全量回归 PASS 149 / FAIL 0 / TIMEOUT 0（49s，基线 148 套 → 本轮新增 1 套）；`node --check` 8/8 OK；对 `git HEAD` 逐条跑，期望 RED 的两条实测均 RED
+
+## 摘要
+
+本文是长期记忆系统 BUG 总清单的可执行版，来源为 4 批审计报告 + 1 份子代理探针复核。A 批 9 条确定性 bug 已按用户授权全部修完（2026-09-22 落地，守卫套件 44/44，全量回归 PASS 149 / FAIL 0），另有 P2 若干一并落地；B 批 4 条需用户定形态、C 批 3 条架构收敛、D 批存量数据清理、E 批召回注入链路。文中记录了本轮两个方法论修正（CRLF 让「去注释」失效导致负向断言假红/假绿，修法为 `split(/\r?\n/)`；断言要按代码形态写而非想象中的形态写）与 §9.5 队友自报的 R-1~R-7 残留判定，其中 R-1 已核销、其余转入下批决策项。
+
+---
+
 
 > 2026-09-21 · 对象 `D:\dsh-auto-memory`（pre 线）
 > 来源：4 批审计报告 + 1 份子代理探针复核

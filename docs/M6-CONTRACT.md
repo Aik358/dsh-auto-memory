@@ -1,6 +1,11 @@
 # M6 JS Activation Inbox / Reference Tail 指导性契约
 
-> 状态：M6-0 指导契约冻结；尚未实现 M6 运行时代码
+> **状态**：已完工 · 2026-08-23（M6-1..M6-4 全部完成，M6 整体完成）
+> **性质**：设计定稿 + 施工记录 —— 本文为**完成后的技术记录**，不再作为待执行计划；§13「实施分段」为原始设计记录，实际实施状态见 §16-§19。
+> **落点**：`docs/M6-CONTRACT.md`；§16-§19 为逐段实施状态。
+> **验收**：§19 记载 M6-4 Live Verification 通过（2026-08-23），M6 整体完成。
+> **摘要**：M6 是 JS 工程的第二阶段。它先用 deterministic fake activation 实现完整投递轨道，使后续 Python 只需发送 activation_request，不需要理解或修改 DSH prompt 生命周期。交付 ActivationRequest 硬校验、ReferenceTailPacket、投递 surface 优先级、pre-step 时序与 per-runtime Activation Inbox。原为「契约冻结、尚未实现」的本文件，其 §13 实施分段（M6-0 → M6-4）已全部执行完毕。
+> **文档规范**：改写依据 `docs/internal/DOC-REWRITE-STYLE.md`；语态纪律——主语用「本项目 / 本方案」，不使用第一人称叙述。
 >
 > 前置：M5 Context/Evidence Bridge tested/live
 >

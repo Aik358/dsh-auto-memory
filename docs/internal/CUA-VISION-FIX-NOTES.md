@@ -1,5 +1,17 @@
 # dsh-cua-pre · 截图自动识图「派 max 档子代理」问题 · 修复思路
 
+> **状态**：已完工 · 2026-09-10
+> **性质**：研究结论 —— 本文为**完成后的技术记录**，不再作为待执行计划。
+> **落点**：分析对象为 `E:\dsh-cua-pre`（dsh-cua-pre 插件，符号链接进 `~/.dsh/profiles/web/node_modules/@a9i5k4/dsh-cua-pre`）；本仓未改动任何文件
+> **验收**：本阶段结束时未单独留档套件名与 PASS 数（该插件不在本仓内），结论以逐行事实链与两条实测观察为证据
+
+## 摘要
+
+本文记录 dsh-cua-pre 截图后自动识图会派一个 max 档子代理的问题。结论先行：不是 Harness 的行为，是插件自己的设计 + 默认值组合出来的——`afterScreenshot` 在 `visionEnabled && visionAutoDescribe` 时自动追加 `[vision]` 描述，而识图走的是完整子代理（有 session、会进任务板、会走 `subagent/end` 结算），且 `visionModel` 为空时不传 `agentOptions`，子代理因此继承当前会话路由（`deepseek-flash` + `reasoningEffort: max`）。文末另记一条独立观察：帧坐标 → 屏幕坐标的写路径与读路径不一致（`mouse_move(1435,222)` 后 `cursor_position` 返回 (818,614)，既非 1:1 也无一致换算），本次任务因此改用「键盘 + 直接读图」绕过，未再动窗口位置。
+
+---
+
+
 > 观察日期 2026-09-10;live 插件源码 `E:\dsh-cua-pre`(符号链接进 `~/.dsh/profiles/web/node_modules/@a9i5k4/dsh-cua-pre`)。
 > 结论:不是 Harness 的行为,是插件自己的设计 + 默认值组合出来的。
 

@@ -1,5 +1,17 @@
 # AUDIT · WB-GRAPH 白板线全量粗检（2026-09-16）
 
+> **状态**：已完工 · 2026-09-16
+> **性质**：验收报告 —— 本文为**完成后的技术记录**，不再作为待执行计划。
+> **落点**：范围为 `lib/board-mode-pre.js`、`lib/wb-sidecar-pre.js`、`lib/ledger-criteria-pre.js`、`lib/index.js` 白板线改动、`lib/client.js` 开关 UI、`vendor/dsh-graph/` 与两个新套件
+> **验收**：每条结论附 `文件:行号` 或可复跑命令；复跑探针 `node artifacts/_audit-p23-probe.mjs`、`node artifacts/_audit-id-repro.mjs`
+
+## 摘要
+
+本文因用户裁定「15 号下午到 16 号凌晨的修改比较不严谨」而做全量逻辑粗检 + 与规划/项目约定对账，方法为只采信代码/配置/实测输出，推翻自审结论的如实标注。结论先行部分给出判定分类计数；文中含推翻自审结论 1 条，并记录了 `WB-GRAPH-INTEGRATION-PLAN §5` 三态判定与「规划自身缺口」的区分。最重要的一条纠正是：回归全绿不构成对白板线新功能的任何保证（结构性假绿），此项已列入给外部复核的三点。
+
+---
+
+
 > **触发**：用户裁定「15 号下午到 16 号凌晨的修改比较不严谨」，要求做全量逻辑粗检 + 与规划/项目约定对账。
 > **方法**：只采信代码/配置/实测输出；每条结论附 `文件:行号` 或可复跑命令。**推翻自审结论的，如实标注**。
 > **复跑探针**：`node artifacts/_audit-p23-probe.mjs`、`node artifacts/_audit-id-repro.mjs`

@@ -1,6 +1,20 @@
-> **给使用者的说明**：**P8 验收通过后再投喂本段**。同样自包含（硬约束内联 + 绝对路径），复制时从 `你是一名严谨的修复 Agent` 开始复制到文件末尾。
+# FIX-AGENT-M8-2b · evidence → 聚合 → importance → 检索排序管道（已完工）
+
+> **状态**：已完工 · 2026-09-09（原文记录的最后一次核实日）
+> **性质**：派工任务书（存档）—— 本文为完成后的技术记录，不再作为待执行计划。
+> **落点**：新增 `lib/evidence-agg.js`（原文记作 `lib/evidence-agg-pre.js`）；`lib/index.js` 的 `recall()` L0 加权段；套件 `tests/smoke/smoke-test-evidence-agg.mjs`、`smoke-test-memory-importance.mjs`。
+> **验收**：`smoke-test-evidence-agg.mjs` 通过；`memory-importance` smoke ≥17 断言；只读性断言通过；已并入全量回归。
+
+## 摘要
+
+该段要补上「evidence 事件 → 聚合 → importance → 参与检索排序」这条管道——数据已按日 JSONL 落盘，只是没人读。方案是新增 `lib/evidence-agg.js` 聚合六类证据并在 `recall()` 的 L0 分支对 dense 臂加权。该段完成后 M8-2 的原始目标（311e2e8 仅交付纯核心）随之达成。
+
+> **存档声明**：本文为该轮派工任务书的原文存档，正文中的「你要做 / 必须 / 禁止」等祈使句**均为当时下达的要求**，不代表当前待办；实际结果以页首「落点 / 验收」为准。
 
 ---
+
+> **投喂方式（存档）**：该轮要求 **P8 验收通过后再投喂本段**；同样自包含（硬约束内联 + 绝对路径）。
+
 
 你是一名严谨的修复 Agent。工作目录：`D:\dsh-auto-memory`（Node.js 项目，BSD-3-Clause，v2.2.6，零运行时依赖）。
 

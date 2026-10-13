@@ -1,5 +1,22 @@
 # dsh-auto-memory 宣传网页大纲（LANDING-OUTLINE）
 
+> **状态**：已完工 · 2026-09-01（大纲随产物落盘）
+> **性质**：设计定稿（页面大纲） —— 本文为**完成后的技术记录**，不再作为待执行计划。
+> **落点**：`docs/LANDING-OUTLINE.md`；产物为 `docs/landing/index.html`。
+> **验收**：大纲要求「覆盖本大纲全部功能点；不省略、不虚增」，逐节对应落地于 `docs/landing/index.html`。
+
+## 摘要
+
+本文件是宣传网页的大纲定稿，交付方为混元 4，产物为 `docs/landing/index.html`（单文件、零依赖、响应式、中英双语切换）。内容含全局设计语言、Hero 首屏、数据流一图流、12 节功能全景、界面速览、快速开始、社区与链接及页脚。美术与创意不设限，参考的是 `docs/proactive-associative-memory-system-map.html` 的内容叙事（模块划分、数据流动、三层协作），并要求覆盖大纲全部功能点、不省略不虚增、截图相对路径引用、不改仓库其他文件。
+
+## 文档规范
+
+- 改写依据：`docs/internal/DOC-REWRITE-STYLE.md`
+- 本文件体例：**页面上线前的大纲留档**。产物 `docs/landing/index.html` 后续经 v3.1.5（按模板整体重写）与 2026-10-13（去二次元化 + news 板块）两轮演进，当前形态以文件本身为准。
+- 语态纪律：主语用「本项目 / 本方案」，不使用第一人称叙述。
+
+---
+
 > 交付方：混元 4 · 产物：`docs/landing/index.html`（单文件、零依赖、响应式、中英双语切换）
 > **美术与创意完全由你自由发挥**——角色、配色、版式、动效、叙事方式都不设限。
 > 需要参考的是 `docs/proactive-associative-memory-system-map.html` 的**内容本身**：

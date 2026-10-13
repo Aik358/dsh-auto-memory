@@ -1,5 +1,22 @@
 # M7 live 脚本化受控 shadow（第 1 门）—— 用户逐条发送，Agent 逐条对账
 
+> **状态**：已完工 · 2026-08-30
+> **性质**：施工记录 —— 本文为**完成后的技术记录**，不再作为待执行计划。
+> **落点**：`docs/M7-LIVE-SHADOW-SCRIPT.md`；执行口径承接同目录 `M7-ACTIVATION-V2-LIVE-SHADOW-PLAN.md`。
+> **验收**：以线上 `activation-shadow-v2.jsonl` 的 lane / decision / reasonCodes 与下表预期逐条对账。
+
+## 摘要
+
+本文件把 Activation v2 的受控 Live Shadow 落成一份可脚本化执行的查询脚本（第 1 门）。共 15 条查询覆盖中英回忆、生活 echo、correction、跨工作区、低信号闲聊与 tool-failure，逐条给出预期 lane、预期 decision 与预期 top 锚点。执行方式为用户逐条发送、Agent 逐条对账：读 `activation-shadow-v2.jsonl` 最新若干行，核对 lane / decision / reasonCodes / candidateProvenance 与上表预期，差异逐一归因。
+
+## 文档规范
+
+- 改写依据：`docs/internal/DOC-REWRITE-STYLE.md`
+- 本文件体例：**已执行的操作脚本留档**；§对账方式为执行口径说明。
+- 语态纪律：主语用「本项目 / 本方案」，不使用第一人称叙述。
+
+---
+
 > 环境：DSH **dsh-auto-memory 工作区**（当前工作区，候选库=8f3aa131b2a2 含全部项目记忆）
 > 发射档：**shadow**（本阶段只看决策行，不注入）
 > 发送方式：每条作为一条独立消息发给 DSH；可自然衔接（模拟真实对话流）。

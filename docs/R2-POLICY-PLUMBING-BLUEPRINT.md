@@ -1,7 +1,21 @@
-# R2：JS Policy Plumbing 实施蓝图（2026-08-26 用户批准启动）
+# R2：JS Policy Plumbing 实施蓝图
 
-> 状态：**规划阶段**——用户已确认 R2 启动（「既然现在基本都OK了，那我们就往R2往上走着」），
-> 本文是设计基线。**尚未动代码**；待用户终裁范围/默认值后实施。
+> **状态**：设计定稿 · 2026-08-26（用户批准启动）；**四项均无代码落地记录**
+> **性质**：设计定稿（未实施） —— 本文为**完成后的技术记录**，不再作为待执行计划。
+> **落点**：`docs/R2-POLICY-PLUMBING-BLUEPRINT.md`（蓝图本体）；本文所述四项（PII 三档硬过滤 / cross-workspace relay / append-only policy registry / 文件审批队列写回）在本仓尚无代码落地。
+> **验收**：本文为设计基线与用户裁定记录；落地与否以用户终裁范围与默认值为准。
+
+## 摘要
+
+本文件是 R2（JS Policy Plumbing）的设计蓝图与用户裁定记录，经用户于 2026-08-26 确认启动。范围含四项：PII 三档硬过滤、cross-workspace relay（用户开关）、append-only policy registry、文件审批队列写回，另附项目文档总览一项。文中完整保留用户的裁定结构与两条默认值修订意见。本文为设计基线，四项在本仓尚无代码落地。
+
+## 文档规范
+
+- 改写依据：`docs/internal/DOC-REWRITE-STYLE.md`
+- 本文件体例：**设计定稿（未实施）**。§1 各小节给出的是设计内容与用户裁定，不是已落地的功能说明。
+- 语态纪律：主语用「本项目 / 本方案」，不使用第一人称叙述。
+
+---
 > 权威范围：docs/M7-ACTIVATION-V2-HANDOFF.md §第二轮（PII 三档硬过滤 / cross-workspace relay /
 > append-only policy registry / 文件审批队列写回）；与第一轮（Python feature v2）不得混合。
 
@@ -91,7 +105,7 @@ worker 的 requiresRelayFlag 由 JS 下发真实值替代硬编码 False。
 - registry：变更记录 append-only、可追溯 parent+diff+goldDigest。
 - 审批写回：review-queue 消费 → 覆盖表 → fv2 决策读覆盖表（一条 A 覆盖生效）。
 
-## 4. 待用户终裁
+## 4. 待终裁事项（留档）
 - ~~PII 三档分类器~~ → **已定**：冻结词典+正则（零模型成本）。
 - ~~relay 默认值~~ → **已定方向**：off 为安全初始值，但最终决定权在用户（逐档/逐条可决断）。
 - ~~registry 位置~~ → 倾向沿用 python/policies 的 append-only 模式；与分层记忆协调后定。

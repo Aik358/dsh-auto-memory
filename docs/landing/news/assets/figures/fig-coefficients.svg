@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 440" width="880" height="440" preserveAspectRatio="xMidYMid meet" role="img" style="font-variant-numeric:tabular-nums" font-family="Manrope,'Space Grotesk','PingFang SC','Microsoft YaHei',system-ui,sans-serif">
+<title>可部署特征的逻辑回归系数,mark 的权重是 denseTop 的 34 倍</title>
+<rect width="880" height="440" fill="#ffffff"/>
+<!--region canvas 0 0 880 440-->
+<!--region h 44 84 792 300-->
+<!--region h-col0.6 297.27 118 360.73 206-->
+<!--region h-col1.1 410 118 248 206-->
+<!--region h-col1.7 545.27 118 112.73 206-->
+<!--region h-col2.2 658 118 0 206-->
+<text x="44" y="32" font-size="17.5" font-weight="700" fill="#1e232c">逻辑回归系数(可部署特征)</text>
+<text x="44" y="54" font-size="12.5" fill="#454545">数值取自重拟合工件,非论文早期版本</text>
+<text x="44" y="420" font-size="13.5" font-weight="700" fill="#2563eb">「是否在问」的权重是「有多像」的 34 倍</text>
+<line x1="162" y1="118" x2="162" y2="336" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4 5"/><text x="162" y="355" text-anchor="middle" font-size="11.5" font-weight="700" fill="#454545">0.0</text><line x1="297.27" y1="118" x2="297.27" y2="336" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4 5"/><text x="297.27" y="355" text-anchor="middle" font-size="11.5" font-weight="700" fill="#454545">0.6</text><line x1="410" y1="118" x2="410" y2="336" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4 5"/><text x="410" y="355" text-anchor="middle" font-size="11.5" font-weight="700" fill="#454545">1.1</text><line x1="545.27" y1="118" x2="545.27" y2="336" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4 5"/><text x="545.27" y="355" text-anchor="middle" font-size="11.5" font-weight="700" fill="#454545">1.7</text><line x1="658" y1="118" x2="658" y2="336" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4 5"/><text x="658" y="355" text-anchor="middle" font-size="11.5" font-weight="700" fill="#454545">2.2</text><line x1="162" y1="336" x2="658" y2="336" stroke="#94a3b8" stroke-width="1.4" data-role="axis" data-orient="h" data-panel="h" data-base="336" data-origin="162"/><text x="410" y="376" text-anchor="middle" font-size="13" fill="#454545">逻辑回归系数</text>
+<rect x="162" y="118" width="459.93" height="31" fill="#2563eb" data-role="hrow"/>
+<text x="150" y="138" text-anchor="end" font-size="12.5" font-weight="700" font-family="'JetBrains Mono','Space Grotesk',ui-monospace,Consolas,monospace" fill="#1e232c">mark</text>
+<text x="716" y="138" text-anchor="end" font-size="12.5" font-weight="700" fill="#2563eb">+2.04</text>
+<text x="836" y="138" text-anchor="end" font-size="12" font-weight="700" fill="#454545">疑问/回忆标记</text>
+<rect x="162" y="153" width="356.22" height="31" fill="#2563eb" data-role="hrow"/>
+<text x="150" y="173" text-anchor="end" font-size="12.5" font-weight="700" font-family="'JetBrains Mono','Space Grotesk',ui-monospace,Consolas,monospace" fill="#1e232c">containment</text>
+<text x="716" y="173" text-anchor="end" font-size="12.5" font-weight="700" fill="#2563eb">+1.58</text>
+<text x="836" y="173" text-anchor="end" font-size="12" font-weight="700" fill="#454545">词面覆盖</text>
+<rect x="162" y="188" width="72.15" height="31" fill="#60a5fa" data-role="hrow"/>
+<text x="150" y="208" text-anchor="end" font-size="12.5" font-weight="700" font-family="'JetBrains Mono','Space Grotesk',ui-monospace,Consolas,monospace" fill="#1e232c">intentProb</text>
+<text x="716" y="208" text-anchor="end" font-size="12.5" font-weight="700" fill="#1e232c">+0.32</text>
+<text x="836" y="208" text-anchor="end" font-size="12" font-weight="700" fill="#454545">校准意图头</text>
+<rect x="162" y="223" width="58.62" height="31" fill="#60a5fa" data-role="hrow"/>
+<text x="150" y="243" text-anchor="end" font-size="12.5" font-weight="700" font-family="'JetBrains Mono','Space Grotesk',ui-monospace,Consolas,monospace" fill="#1e232c">margin</text>
+<text x="716" y="243" text-anchor="end" font-size="12.5" font-weight="700" fill="#1e232c">+0.26</text>
+<text x="836" y="243" text-anchor="end" font-size="12" font-weight="700" fill="#454545">融合分数差</text>
+<rect x="162" y="258" width="13.53" height="31" fill="#cbd5e1" data-role="hrow"/>
+<text x="150" y="278" text-anchor="end" font-size="12.5" font-weight="700" font-family="'JetBrains Mono','Space Grotesk',ui-monospace,Consolas,monospace" fill="#1e232c">denseTop</text>
+<text x="716" y="278" text-anchor="end" font-size="12.5" font-weight="700" fill="#1e232c">+0.06</text>
+<text x="836" y="278" text-anchor="end" font-size="12" font-weight="700" fill="#454545">稠密相似度</text>
+<rect x="162" y="293" width="0" height="31" fill="#cbd5e1" data-role="hrow"/>
+<text x="150" y="313" text-anchor="end" font-size="12.5" font-weight="700" font-family="'JetBrains Mono','Space Grotesk',ui-monospace,Consolas,monospace" fill="#1e232c">nCand</text>
+<text x="716" y="313" text-anchor="end" font-size="12.5" font-weight="700" fill="#1e232c">+0.00</text>
+<text x="836" y="313" text-anchor="end" font-size="12" font-weight="700" fill="#454545">候选数</text>
+</svg>

@@ -1,5 +1,17 @@
 # L-A8（PR#303 第 1 点「静态预检前置」）回退说明 · 2026-10-08
 
+> **状态**：已完工 · 2026-10-08
+> **性质**：验收报告 —— 本文为**完成后的技术记录**，不再作为待执行计划。
+> **落点**：回退 commit `169fd13`；落点为 issue207 相关静态预检逻辑
+> **验收**：归属实验（完整树 + 换 HEAD~1 的 `lib/index.js`）：HEAD~1 (`9dabde2`) issue207-create-boundaries 与 issue207-routes 均 PASS；HEAD (`169fd13`) 两个都 FAIL（`assert.equal(continuationPending, true)` 实得 undefined）
+
+## 摘要
+
+本文说明 L-A8（PR#303 第 1 点「静态预检前置」）的回退。结论为回退 commit `169fd13`——预检与用户已裁定的「允许降级、如实标注」在产品语义上互斥，并非当初以为的「纯增益叠加」。取证方式为归属实验（完整树 + 换 HEAD~1 的 `lib/index.js`）：HEAD~1 (`9dabde2`) 下 issue207-create-boundaries 与 issue207-routes 均 PASS，HEAD (`169fd13`) 下两个都 FAIL（`assert.equal(continuationPending, true)` 实得 undefined）。留下的价值是一次以归属实验证伪「纯增益」判断的回退留痕。
+
+---
+
+
 ## 结论
 **回退 commit 169fd13。** 预检与用户已裁定的「允许降级、如实标注」在产品语义上互斥，
 并非我当初以为的「纯增益叠加」。

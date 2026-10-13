@@ -1,4 +1,21 @@
-# M7-2 Benchmark Plan(冻结版)
+# M7-2 Benchmark Plan（冻结版）
+
+> **状态**：已完工 · 2026-08-30
+> **性质**：施工记录 —— 本文为**完成后的技术记录**，不再作为待执行计划。
+> **落点**：`docs/M7-BENCHMARK-PLAN.md`；产物落于 `docs/M7-EMBEDDING-BENCHMARK.md`、`docs/M7-ALGORITHM-DECISION.md`。
+> **验收**：本文件冻结于 2026-08-24，方法与已执行步骤一致；顺序偏差披露于 `docs/M7-AUTONOMOUS-STATE.md` 的 `exactDecisions`。
+
+## 摘要
+
+本文件冻结 M7-2 的基准评测口径，用于回答「语义后端该选哪一档」。给出研究问题、两层语料、方法、指标与决策规则，并划定本阶段不做的事项。评测产物落于 `docs/M7-EMBEDDING-BENCHMARK.md`，结论落于 `docs/M7-ALGORITHM-DECISION.md`。
+
+## 文档规范
+
+- 改写依据：`docs/internal/DOC-REWRITE-STYLE.md`
+- 本文件体例：**冻结的评测口径**，各节给出的是已执行的评测设计，非待办项。
+- 语态纪律：主语用「本项目 / 本方案」，不使用第一人称叙述。
+
+---
 
 > 冻结:2026-08-24(自主模式接管时补写;模型 pinned/下载发生在本文件落笔前,
 > 方法与已执行步骤一致,顺序偏差已披露于 AUTONOMOUS-STATE exactDecisions)

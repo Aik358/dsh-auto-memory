@@ -1,4 +1,16 @@
-站长你好，反馈一个 `openai-responses` 协议下的冲突问题。
+# 反馈稿 · 中转站 `openai-responses` 协议的 call_id 撞车问题
+
+> **状态**：已完工 · 2026-09-14
+> **性质**：研究结论 —— 本文为**完成后的技术记录**，不再作为待执行计划。
+> **落点**：接收方为 `api.dshapi.icu` 中转站运营方（GitHub/站内渠道提交，需用户操作）；本仓未改动任何文件
+> **验收**：本阶段结束时未单独留档套件名与 PASS 数；证据为同配置下其他中转（sub-vankit、vankit-glm）无此问题、`chat/completions` 端点实测正常返回
+
+## 摘要
+
+本文是给中转站运营方的反馈稿全文。现象为：用 `api: openai-responses` 走 `https://api.dshapi.icu/v1` + `deepseek-v4.1-flash` 时，客户端会话会永久损坏，模型开始报 `400 Duplicate 'call_id'`，之后该会话只能手工清历史。原因判定为 responses 协议里工具调用的 id 字段与返回的 `tool_calls[].id` 使用同一套 `call_xx_xxxx` 命名规则，两边算出的 id 撞车。文末提出两项请求：确认是否支持标准 `chat/completions` 协议（实测该端点正常返回，改用即可绕过），以及若必须用 responses 能否让返回里的工具调用 id 与请求中的 id 明确区分。
+
+---
+
 
 **现象**：用 `api: openai-responses` 走 `https://api.dshapi.icu/v1` + `deepseek-v4.1-flash`，客户端（DSH）的会话会永久损坏——所有模型开始报 `400 Duplicate 'call_id'`，之后该会话再也不能用，只能手工清历史。
 

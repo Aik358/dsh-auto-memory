@@ -1,5 +1,17 @@
 # 轨二调研 R1/R2 — 每轮注入成本逐项实测 + 分档注入节奏评估
 
+> **状态**：已完工 · 2026-09-22
+> **性质**：研究结论 —— 本文为**完成后的技术记录**，不再作为待执行计划。
+> **落点**：探针脚本 `.vision-tmp/inject-probe-0{1,2,3,4,5}-*.mjs`（前缀 `inject-probe-`）；本轮未修改 `lib/` 与 `tests/` 下任何文件，未 commit/push，未重启宿主
+> **验收**：只读调研；R1 主证据 `inject-probe-04-sections.mjs`（真实注入文本逐段量长）、R2 主证据 `inject-probe-05-cadence.mjs`（分档节奏 diag 真值），均给出可复跑命令
+
+## 摘要
+
+本文是轨二调研 R1/R2 的成果：对每轮注入成本逐项实测，并评估分档注入节奏。调研为只读，本轮未修改 `lib/` 与 `tests/` 下任何文件，未 commit/push、未重启宿主。文中 §0 先给出口径与证据来源（避免把结论当估算），并以 `inject-probe-04-sections.mjs`（真实注入文本逐段量长）与 `inject-probe-05-cadence.mjs`（分档节奏 diag 真值）作为 R1/R2 主证据，均给出可复跑命令。执行记录为 2026-09-22 · docs-hermetic（task-11）。
+
+---
+
+
 > 调研类型：**只读**。本轮未修改 `lib/` 与 `tests/` 下任何文件，未 commit/push，未重启宿主。
 > 探针脚本：`.vision-tmp/inject-probe-0{1,2,3,4,5}-*.mjs`（前缀 `inject-probe-`）。
 > 日期：2026-09-22 ｜ 执行：docs-hermetic（task-11）

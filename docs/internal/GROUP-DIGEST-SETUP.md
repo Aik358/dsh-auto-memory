@@ -1,4 +1,16 @@
-# 群同步日报(GROUP-DIGEST)部署说明
+# 群同步日报（GROUP-DIGEST）部署说明
+
+> **状态**：已完工 · 2026-09-12
+> **性质**：施工记录 —— 本文为**完成后的技术记录**，不再作为待执行计划。
+> **落点**：落点为 GitHub Actions（每日北京时间 12:00 / 21:00 统计仓库 issues/PRs/commits/release 并投递到 QQ 群）；本机从未登录任何 QQ 协议端
+> **验收**：云端执行，本机电脑关机也照常运行；已知限制：GitHub schedule 可能有 5~30 分钟调度延迟（按窗口统计、不丢数据）
+
+## 摘要
+
+本文是群同步日报（GROUP-DIGEST）的部署说明，2026-09-12 搭建。链路为 GitHub Actions 每天北京时间 12:00 / 21:00 自动统计仓库 issues / PRs / commits / release，生成中文摘要投递到 QQ 群「dsh-auto-memory交流群」；跑在 GitHub 云端，本机电脑关机也照常执行，本机从未登录任何 QQ 协议端。文末列出运维操作（临时改备注直接在 GitHub 网页编辑 main 的 `.github/digest/NOTES.md`）与已知限制（schedule 延迟 5~30 分钟、首次运行窗口为过去 12 小时、secret 没配齐时该通道报错且 run 页面能直接看到原因）。
+
+---
+
 
 > 2026-09-12 搭建。每天北京时间 **12:00 / 21:00** 由 **GitHub Actions** 自动统计仓库
 > issues / PRs / commits / release,生成中文摘要投递到 QQ 群「dsh-auto-memory交流群」。

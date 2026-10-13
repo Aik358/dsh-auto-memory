@@ -1,5 +1,22 @@
 # GM5.3 主页构建 Prompt（可直接粘贴）
 
+> **状态**：已完工 · 2026-09-01（产物落盘）
+> **性质**：设计定稿（构建 Prompt） —— 本文为**完成后的技术记录**，不再作为待执行计划。
+> **落点**：`docs/GM53-HOMEPAGE-PROMPT.md`；产出为 `docs/promo/homepage.html`，功能底表见 `docs/HOMEPAGE-CONTENT-FOR-GM53.md`（由 `tools/verify-docs.mjs` 校验）。
+> **验收**：产物 `docs/promo/homepage.html` 于 2026-09-01 落盘；§五「自查清单（交付前逐条过）」为交付时逐条核过的验收口径。
+
+## 摘要
+
+本文件是可直接粘贴给 GM5.3 的主页构建 Prompt，自带全部上下文。产出为一个可直接打开的静态站点（`index.html` + `assets/site.css` + `assets/site.js`）。内容含技术/视觉/内容/法务四类硬约束、11 节逐页内容、功能底表、交付要求与交付前自查清单。
+
+## 文档规范
+
+- 改写依据：`docs/internal/DOC-REWRITE-STYLE.md`
+- 本文件体例：**一次性构建 Prompt 留档**。§五「自查清单」为交付时已逐条核过的口径。
+- 语态纪律：主语用「本项目 / 本方案」，不使用第一人称叙述。
+
+---
+
 > **用法**：把本文件**全文**粘给 GM5.3。它自带全部上下文，不需要再读别的文件。
 > **产出**：一个可直接打开的静态站点（`index.html` + `assets/site.css` + `assets/site.js`）。
 > **不要问澄清问题**——所有决策已在本 prompt 内给定。

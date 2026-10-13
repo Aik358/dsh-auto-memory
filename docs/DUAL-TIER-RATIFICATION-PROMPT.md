@@ -1,8 +1,25 @@
 # 致项目管理主 Agent · 双轨制路线固化与下一步规划请求
 
+> **状态**：已完工 · 2026-08-25（裁定已作出并固化）
+> **性质**：研究结论（裁定通知留档） —— 本文为**完成后的技术记录**，不再作为待执行计划。
+> **落点**：`docs/DUAL-TIER-RATIFICATION-PROMPT.md`；三层形态的落点见 `docs/RELEASE-SEMANTIC-OPTION.md`。
+> **验收**：裁定经用户逐项批准（2026-08-25），并同步更新权威架构图 `docs/proactive-associative-memory-system-map.html`（`progressLedger.updatedAt=2026-08-25`，新增 milestone `R-DUAL`）。
+
+## 摘要
+
+本文件是校准 Agent 经用户逐项批准后，向项目管理主 Agent 发出的双轨制路线固化通知与规划请求。裁定内容为：语义检索采用双轨制（实为三级形态）。文中列出支撑事实、请求主 Agent 决策的四个问题、以及到达最终发布前的完整步骤清单。该裁定已作为既定路线固化，权威架构图与 progressLedger 已同步更新。
+
+## 文档规范
+
+- 改写依据：`docs/internal/DOC-REWRITE-STYLE.md`
+- 本文件体例：**已送达的裁定通知留档**。§三「四个问题」与 §四「步骤清单」为发出时点的请求内容。
+- 语态纪律：主语用「本项目 / 本方案」，不使用第一人称叙述。
+
+---
+
 > 发起：校准 Agent（ox-alpha），经用户逐项批准 · 日期：2026-08-25
 > 性质：**双重评判后的正式裁定通知 + 规划请求**。本文件所述决定已由用户最终拍板，
-> 请将其作为既定路线固定、固化进你的总体规划与 progressLedger（权威架构图
+> 已将其作为既定路线固化进总体规划与 progressLedger（权威架构图
 > `docs/proactive-associative-memory-system-map.html` 已由本轮同步更新，
 > progressLedger.updatedAt=2026-08-25，新增 milestone `R-DUAL`，请以它为准）。
 
@@ -42,7 +59,7 @@
    `docs/M7-LEXICAL-TUNING.md`），采纳需升 lexical_pre_v3 并同步 Python byte-twin。
 5. 回归现状：29 个 smoke 套件全绿；3080 未重启（运行中仍是修复前代码）。
 
-## 三、提请你决策的四个问题
+## 三、提出决策的四个问题（已发出）
 
 1. **受控 live shadow 排期**：等用户手动重启 3080 后执行 18–24 条脚本化请求
    （中英回忆/生活 echo/correction/wrong-scope/stale/tool failure），
@@ -53,7 +70,7 @@
 3. **lexical_pre_v3 是否随接线窗口合并采纳**（b0.45+否定词豁免）？
 4. **G-02 Console 的优先级**：维持"M7 live 后单独实现"，还是提前并行？
 
-## 四、到达最终发布前的完整步骤清单（按依赖序，请复核补充）
+## 四、到达最终发布前的完整步骤清单（按依赖序）
 
 1. M7 受控 live shadow → active canary（explicit lane only）→ 恢复默认 → 标 live
 2. G-02 Activation Observability Console（决策时间线/provenance/A-P-S-H-E 写回）

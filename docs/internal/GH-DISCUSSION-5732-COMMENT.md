@@ -1,5 +1,17 @@
 # 补充确认：同轮内重复 tool_call_id（相邻双写形态）
 
+> **状态**：已完工 · 2026-09-14
+> **性质**：研究结论 —— 本文为**完成后的技术记录**，不再作为待执行计划。
+> **落点**：接收方为 deepseek-ai/deepseek-harness Discussion #5732 系列（PAT 无权外仓发言，需用户浏览器粘贴）；本仓未改动任何文件
+> **验收**：环境 Windows 11 / Node 24 / dsh `0.1.5-rc.1` + strict OpenAI-compatible relay（Console Go，唯一 id 校验）；修复经实测有效（删第二次出现的 `tool/call`+`tool/result` 对）
+
+## 摘要
+
+本文是给上游 Discussion #5732 系列的补充确认，报告同轮内重复 `tool_call_id` 的相邻双写形态：会话因此永久不可用，每次模型调用都失败。环境为 Windows 11 / Node 24 / dsh `0.1.5-rc.1` + 严格 OpenAI 兼容中转（Console Go，含唯一 id 校验）。文末给出经实测有效的修复方式（删除第二次出现的 `tool/call`+`tool/result` 对，其余保留）及其约束：会话日志是追加式多帧 zstd、一帧一事件、首帧必须恰好是 session 头一行，压成单帧会导致启动失败。
+
+---
+
+
 ## EN
 
 **Environment**: Windows 11 / Node 24 / dsh `0.1.5-rc.1`, strict OpenAI-compatible relay (Console Go, unique-id check).

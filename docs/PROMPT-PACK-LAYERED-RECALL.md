@@ -1,9 +1,21 @@
 # 分层语义唤回 · 外包 Prompt 包（PROMPT-PACK）
 
-> 写于 2026-09-09。基于 v2.2.6 源码 + 本轮联网核实结论。
-> 用途：把 T2–T12 拆成**自包含、可并行外包**的独立 prompt。每段一次对话可完成。
-> 上位：[ROADMAP.md](ROADMAP.md)（总规划）、[S2-DEEP-ABSORPTION.md](S2-DEEP-ABSORPTION.md)（Hindsight 深挖）。
-> **已完成无需再做**：T1（`lib/l0-extract-pre.js`，18 断言 + 153 条验证）、G1/G3（接续指令文案）。
+> **状态**：已完工 · 2026-09-09（语料定稿；T1 与 G1/G3 已完成）
+> **性质**：研究结论 + 施工记录（外包 prompt 包） —— 本文为**完成后的技术记录**，不再作为待执行计划。
+> **落点**：`docs/PROMPT-PACK-LAYERED-RECALL.md`；T1 落点为 `lib/l0-extract.js`，总规划见 `docs/ROADMAP.md`。
+> **验收**：§0.1 来源清单为联网核实的硬证据；T1 已完成（18 断言 + 153 条验证），G1/G3（接续指令文案）已完成。其余任务项的逐项完成度以 `CHANGELOG.md` 与 `docs/STATUS-BOARD.md` 为准。
+
+## 摘要
+
+本文件把分层语义唤回拆成可自包含、可并行外包的独立 prompt，每段一次对话可完成。§0 是联网核实的硬证据（OpenViking 官方来源清单、检索流水线、分层检索算法、接口签名、存储架构与本地嵌合性评估）；§1 为全局前置约定；§2 为任务编号与依赖顺序；§3 为 prompt 正文；§4 为执行者交接检查清单。上位文档为 `docs/ROADMAP.md`（总规划）与 `docs/S2-DEEP-ABSORPTION.md`（Hindsight 深挖）。
+
+## 文档规范
+
+- 改写依据：`docs/internal/DOC-REWRITE-STYLE.md`
+- 本文件体例：**外包 prompt 语料 + 联网核实结论**。§2 的任务编号与依赖顺序为派单时的编排；主体正文按文首「用法」保留原样投喂。
+- 语态纪律：主语用「本项目 / 本方案」，不使用第一人称叙述。
+
+---
 
 ---
 

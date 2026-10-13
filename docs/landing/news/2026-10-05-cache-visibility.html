@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-lang="zh" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>前缀缓存的间歇性可见性缺失 — dsh-auto-memory</title>
+<meta name="description" content="同一中转站、同一客户端、同一时段，两个模型的缓存表现相差 20.9 倍。847 条真实请求的对照测量与根因排查。">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#eef2f7">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Manrope:wght@200;300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/prose.css">
+<link rel="stylesheet" href="assets/step5-motion.css">
+<style>
+  /* ══════════════════════════════════════════════════════════════════════
+     外壳层 · 与落地页同血脉
+     只定义外壳：导航 / 页脚 / 按钮 / 卡片 / 文章头部 / 图表 / 表格 / 代码块 /
+     相关报告。版式令牌来自 assets/prose.css，本块为其补一层暗色与容器别名。
+     正文论证、数字、图表引用、章节编号一字未动。
+     ══════════════════════════════════════════════════════════════════════ */
+
+  /* ── 0. 与主页对齐的字体工具类 ── */
+  .font-display { font-family: 'Space Grotesk', 'Manrope', var(--sans); letter-spacing: -.025em; }
+  .font-mono { font-family: 'JetBrains Mono', ui-monospace, Consolas, monospace; }
+
+  /* ── 0-b. 令牌别名：本页外壳沿用 --c-* 命名，prose.css 用主页的 --bg/--fg/--accent。
+     此处把 --c-* 直接映射到主页令牌，保证两套外壳解析到同一组值（原先 --c-* 只有深色块里
+     定义、浅色下为 null，导致 .nav-blur 背景透明、语言胶囊与主题圆钮无底无框）。 ── */
+  :root {
+    --c-brand: var(--accent); --c-brand-deep: var(--accent);
+    --c-text: var(--fg); --c-text-2: var(--fg-dim); --c-text-3: var(--muted);
+    --c-border: var(--border); --c-border-subtle: var(--border);
+    --c-surface-3: var(--card); --c-code-bg: var(--bg-soft);
+    --c-page: var(--bg); --c-code-dark: var(--bg-code);
+  }
+
+  /* ── 1. 主题令牌：浅色为基准，暗色只覆盖颜色（prose.css 原本只有浅色） ── */
+  :root { color-scheme: light; --c-code-dark: #0f172a; }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --c-brand: #60a5fa; --c-brand-deep: #93c5fd;
+    --c-text: #e8ecf3; --c-text-2: rgba(255, 255, 255, .74); --c-text-3: rgba(255, 255, 255, .62);
+    --c-border: rgba(255, 255, 255, .12); --c-border-subtle: rgba(255, 255, 255, .07);
+    --c-surface-3: rgba(255, 255, 255, .045); --c-code-bg: rgba(255, 255, 255, .07);
+    --c-page: #0a0d14; --c-code-dark: #05070d;
+  }
+
+  /* ── 2. 页宽容器 ── */
+  .wrap { width: min(100% - 96px, 1110px); margin-inline: auto; }  /* 与 prose.css 的 .pwrap 同像素 */
+
+  /* ── 3. 导航（nav.nav-blur > .nav-in） ── */
+  .nav-blur {
+    position: sticky; top: 0; z-index: 50;
+    background: rgba(249, 248, 248, .86);
+    background: color-mix(in srgb, var(--c-page) 82%, transparent);
+    backdrop-filter: blur(24px) saturate(180%); -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border-bottom: 1px solid var(--c-border-subtle);
+  }
+  :root[data-theme="dark"] .nav-blur { background: color-mix(in srgb, var(--c-page) 78%, transparent); }
+  .nav-in { height: 62px; display: flex; align-items: center; justify-content: space-between; gap: var(--sp-5); }
+  .nav-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--c-text); }
+  .nav-brand .brand-logo { width: 24px; height: 24px; display: block; flex: none; color: var(--c-brand); }
+  .brand-logo svg { width: 100%; height: 100%; display: block; }
+  .brand-logo .brain-path { stroke: currentColor; stroke-width: 1.9; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+  .brand-logo .pulse { stroke: currentColor; stroke-width: 1.4; fill: none; stroke-dasharray: 3 2; animation: pulse-soft 4s linear infinite; }
+  @keyframes pulse-soft { from { stroke-dashoffset: 0 } to { stroke-dashoffset: -30 } }
+  .nav-brand .brand-name { font-size: 15px; font-weight: 700; color: var(--c-text); letter-spacing: -.02em; }
+  .nav-links { display: flex; align-items: center; gap: 20px; }
+  .pnav-links .nav-link {
+    position: relative; background: transparent; border: none; cursor: pointer;
+    color: var(--c-text-2); font-size: 13.5px; text-decoration: none;
+    transition: color .18s ease-out;
+  }
+  .pnav-links .nav-link:hover { color: var(--c-brand); }
+  .pnav-links .nav-link::after {
+    content: ''; position: absolute; left: 0; bottom: -5px; width: 100%; height: 1px;
+    background: var(--c-brand); transform: scaleX(0); transform-origin: left;
+    transition: transform .25s cubic-bezier(.22, 1, .36, 1);
+  }
+  @media (hover: hover) and (pointer: fine) { .pnav-links .nav-link:hover::after { transform: scaleX(1); } }
+  .pnav-links .nav-link.is-active { color: var(--c-brand); font-weight: 500; }
+  .pnav-links .nav-link.is-active::after { transform: scaleX(1); }
+  @media (max-width: 900px) { .nav-links { gap: 14px; } .pnav-links .nav-link { font-size: 13px; } }
+  @media (max-width: 760px) { .pnav-links .nav-opt { display: none; } }
+  @media (max-width: 520px) { .nav-links .lang-switch { display: none; } }
+
+  /* 语言切换 / 主题按钮（主页同款） */
+  .lang-switch { display: inline-flex; padding: 3px; border-radius: 999px; background: var(--c-surface-3); border: 1px solid var(--c-border-subtle); }
+  .lang-switch button {
+    padding: 4px 11px; border: none; border-radius: 999px; background: transparent;
+    font-family: 'JetBrains Mono', var(--mono); font-size: 11px; font-weight: 600;
+    color: var(--c-text-3); cursor: pointer; transition: background-color .2s, color .2s;
+  }
+  .lang-switch button.is-on, .lang-switch button.active { background: var(--c-brand); color: #fff; }
+  .theme-toggle-btn {
+    position: relative; width: 36px; height: 36px; flex: none;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 999px; border: 1px solid var(--c-border-subtle);
+    background: var(--c-surface-3); color: var(--c-text-2);
+    cursor: pointer; transition: border-color .2s, color .2s;
+  }
+  .theme-toggle-btn:hover { border-color: var(--c-brand); color: var(--c-brand); }
+  #theme-toggle > svg {
+    position: absolute; inset: 0; margin: auto;
+    transition: opacity .25s ease-in-out, rotate .25s ease-in-out, filter .25s ease-in-out;
+  }
+  :root[data-theme="light"] #theme-icon-moon,
+  :root[data-theme="dark"] #theme-icon-sun { opacity: 0; rotate: -90deg; filter: blur(2px); }
+  :root[data-theme="light"] #theme-icon-sun,
+  :root[data-theme="dark"] #theme-icon-moon { opacity: 1; rotate: 0deg; filter: blur(0); }
+
+  /* ── 4. 按钮：主页同款高光扫过 + hover 抬升 ── */
+  .btn-primary {
+    position: relative; overflow: hidden; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 9px 18px; border: none; border-radius: 10px; background: var(--c-brand); color: #fff;
+    font-size: 13.5px; font-weight: 500; text-decoration: none; cursor: pointer;
+    transition: filter .25s ease-out, box-shadow .25s ease-out, transform .25s cubic-bezier(.22, 1, .36, 1), scale .15s ease-out;
+  }
+  .btn-primary::before {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .22), transparent);
+    transform: translateX(-100%); transition: transform .6s;
+  }
+  .btn-primary:hover::before { transform: translateX(100%); }
+  .btn-primary:hover { filter: brightness(1.08); box-shadow: 0 12px 34px color-mix(in srgb, var(--c-brand) 35%, transparent); transform: translateY(-2px); }
+  .btn-ghost {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 9px 18px; border-radius: 10px; background: transparent; border: 1px solid var(--c-border);
+    color: var(--c-text-2); font-size: 13.5px; text-decoration: none; cursor: pointer;
+    transition: background-color .25s, border-color .25s, color .25s, transform .25s cubic-bezier(.22, 1, .36, 1), scale .15s;
+  }
+  .btn-ghost:hover { background: var(--c-surface-3); border-color: var(--c-brand); color: var(--c-brand); transform: translateY(-1px); }
+  .btn-primary:active, .btn-ghost:active { scale: .97; }
+  /* 旧类名兼容：.pnav-cta 保持可用（描边胶囊） */
+  .pnav-cta {
+    display: inline-flex; align-items: center; padding: 6px 14px; border-radius: 999px;
+    border: 1px solid var(--c-border); color: var(--c-text-2); font-size: 13px; text-decoration: none;
+    transition: border-color .2s, color .2s, background-color .2s;
+  }
+  .pnav-cta:hover { border-color: var(--c-brand); color: var(--c-brand); background: var(--c-surface-3); }
+
+  /* ── 5. 卡片 / 装饰 ── */
+  .glass-card {
+    position: relative; overflow: hidden; border: 1px solid var(--c-border-subtle); border-radius: var(--r-media);
+    background: rgba(255, 255, 255, .72); background: color-mix(in srgb, #fff 72%, transparent);
+    backdrop-filter: blur(10px); box-shadow: 0 4px 24px rgba(0, 0, 0, .05);
+    transition: transform .25s cubic-bezier(.22, 1, .36, 1), border-color .25s, background-color .25s, box-shadow .25s;
+  }
+  :root[data-theme="dark"] .glass-card { background: color-mix(in srgb, #fff 4%, transparent); }
+  .glass-card::before {
+    content: ''; position: absolute; left: 0; right: 0; top: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--c-brand), transparent);
+    opacity: 0; transition: opacity .35s;
+  }
+  .glass-card:hover { transform: translateY(-4px); border-color: color-mix(in srgb, var(--c-brand) 30%, transparent); }
+  .glass-card:hover::before { opacity: 1; }
+  .feature-icon {
+    width: 44px; height: 44px; flex: none; display: flex; align-items: center; justify-content: center;
+    border-radius: 10px; color: var(--c-brand);
+    background: color-mix(in srgb, var(--c-brand) 14%, transparent);
+    border: 1px solid color-mix(in srgb, var(--c-brand) 26%, transparent);
+    transition: background-color .25s, color .25s, transform .25s cubic-bezier(.22, 1, .36, 1);
+  }
+  .glass-card:hover .feature-icon { background: var(--c-brand); color: #fff; transform: rotate(-5deg) scale(1.05); }
+  .badge-pill {
+    display: inline-flex; align-items: center; gap: 8px; padding: 5px 12px; border-radius: 999px;
+    font-family: 'JetBrains Mono', var(--mono); font-size: 11.5px; font-weight: 500; color: var(--c-brand);
+    background: color-mix(in srgb, var(--c-brand) 8%, transparent);
+    border: 1px solid color-mix(in srgb, var(--c-brand) 30%, transparent);
+  }
+  .badge-pill .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; animation: pulse-glow 2s ease-in-out infinite; }
+  @keyframes pulse-glow { 0%, 100% { opacity: .4; transform: scale(1) } 50% { opacity: .8; transform: scale(1.05) } }
+
+  /* ── 6. 文章头部 ── */
+  .phero {
+    position: relative; overflow: hidden;
+    padding: var(--sp-9) 0 var(--sp-8);
+    background: linear-gradient(180deg, #edf2f6 0%, #ffffff 100%);
+    background: linear-gradient(180deg, color-mix(in srgb, var(--c-brand) 6%, var(--c-page)) 0%, var(--c-page) 100%);
+    border-bottom: 1px solid var(--c-border-subtle);
+  }
+  .ptitle {
+    font-family: 'Space Grotesk', var(--sans);
+    font-size: clamp(2rem, 5.2vw, 3.05rem); font-weight: 700;
+    letter-spacing: -.032em; line-height: 1.16;
+    margin: 0 0 var(--sp-4);
+  }
+  .psub { font-size: 18px; line-height: 1.6; color: var(--c-text-2); margin: 0 0 var(--sp-5); }
+  .pmeta { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-4); font-size: 14px; line-height: 1.5; color: var(--c-text-3); font-variant-numeric: tabular-nums; }
+  .pmeta .tagline { color: var(--c-brand-deep); font-weight: 500; }
+  .pmeta .dot { width: 3px; height: 3px; border-radius: 50%; background: currentColor; opacity: .5; }
+  .pabstract {
+    margin-top: var(--sp-6); padding: var(--sp-5) var(--sp-6);
+    border: 1px solid var(--c-border-subtle); border-left: 3px solid var(--c-brand);
+    border-radius: var(--r-media);
+    background: rgba(255, 255, 255, .62); background: color-mix(in srgb, #fff 62%, transparent);
+    font-size: 15px; line-height: 1.75; color: var(--c-text-2);
+  }
+  :root[data-theme="dark"] .pabstract { background: color-mix(in srgb, #fff 4%, transparent); }
+  .pabstract p { margin: 0 0 var(--sp-3); }
+  .pabstract p:last-child { margin-bottom: 0; }
+  .pabstract strong { color: var(--c-text); }
+
+  /* ── 7. 正文排版精修 ── */
+  .prose { line-height: 1.8; font-variant-numeric: tabular-nums; }
+  .prose h2 {
+    font-family: 'Space Grotesk', var(--sans);
+    font-size: 26px; font-weight: 600; letter-spacing: -.028em; line-height: 1.3;
+    margin: var(--sp-8) 0 var(--sp-4); scroll-margin-top: 96px;
+  }
+  .prose h3 {
+    font-family: 'Space Grotesk', var(--sans);
+    font-size: 19.5px; font-weight: 600; letter-spacing: -.018em; line-height: 1.45;
+    margin: var(--sp-7) 0 var(--sp-3); scroll-margin-top: 96px;
+  }
+  .prose h4 { letter-spacing: -.012em; }
+  .prose p { font-size: 16px; line-height: 1.85; margin: 0 0 var(--sp-5); }
+  .prose li { line-height: 1.8; }
+  /* 中英混排光学间距：交给排版引擎按脚本边界自动加隙（渐进增强，不手插空格） */
+  .prose, .ptitle, .psub, .pmeta, .pabstract { text-autospace: normal; }
+  /* 断行禁则：行首不许落 」』】）！？，行尾不许掉 （「『【 */
+  .prose p, .prose li, .prose td, .prose th, .prose blockquote,
+  .pabstract p, .afterword p, .pmeta, .psub {
+    line-break: strict; overflow-wrap: break-word; text-wrap: pretty;
+  }
+
+  /* ── 8. 图表 ── */
+  .prose figure { margin: var(--sp-8) 0; }
+  .prose figure img { display: block; width: 100%; border-radius: calc(var(--r-media) - 2px); }
+  .figbox { padding: var(--sp-5); border: 1px solid var(--c-border-subtle); border-radius: var(--r-media); background: #fff; }
+  .prose figcaption {
+    display: block; max-width: var(--col-w); margin: var(--sp-3) auto 0;
+    text-align: center; font-size: 13px; line-height: 1.6;
+    color: var(--c-text-3); font-variant-numeric: tabular-nums;
+  }
+
+  /* ── 9. 表格：sticky 表头 + 极淡斑马纹 + 数字等宽 ── */
+  .tbl {
+    position: relative; overflow: auto; max-height: 72vh;
+    margin: var(--sp-5) 0; border: 1px solid var(--c-border); border-radius: var(--r-media);
+    -webkit-overflow-scrolling: touch;
+  }
+  .prose table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 15px; font-variant-numeric: tabular-nums; }
+  .prose thead th {
+    position: sticky; top: 0; z-index: 2;
+    background: #f2f4f8; background: color-mix(in srgb, var(--c-brand) 5%, var(--c-page));
+  }
+  :root[data-theme="dark"] .prose thead th { background: color-mix(in srgb, var(--c-brand) 12%, var(--c-page)); }
+  .prose th, .prose td { line-height: 1.5; padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--c-border-subtle); color: var(--c-text); }
+  .prose tbody tr:nth-child(even) td { background: color-mix(in srgb, var(--c-brand) 3%, transparent); }
+  .prose tbody tr:hover td { background: color-mix(in srgb, var(--c-brand) 7%, transparent); }
+  .prose tbody tr:last-child td { border-bottom: none; }
+  .prose td.num, .prose th.num { font-variant-numeric: tabular-nums; text-align: right; }
+  .prose td.hi { color: var(--c-brand-deep); font-weight: 600; }
+
+  /* ── 10. 代码块：圆角 / 内边距 / 行高与主页 pre 对齐 ── */
+  .prose pre {
+    margin: var(--sp-5) 0; padding: 1.25rem 1.5rem;
+    border: 1px solid var(--c-border); border-radius: 10px;
+    background: var(--c-code-dark); color: #e8ecf3;
+    font-family: 'JetBrains Mono', ui-monospace, Consolas, monospace;
+    font-size: 12.5px; line-height: 1.75; overflow-x: auto;
+  }
+  .prose pre code {
+    padding: 0; border-radius: 0; background: none; color: inherit;
+    font-family: inherit; font-size: 12.5px; line-height: 1.75;
+  }
+
+  /* ── 11. 相关报告：卡片网格（.relgrid 为冻结容器名） ── */
+  .pflex { display: flex; }
+  .prelated { padding: var(--sp-9) 0 var(--sp-10); }
+  .prelated-in { border-top: 1px solid var(--c-border-subtle); padding-top: var(--sp-8); }
+  .prelated > .pwrap > h2, .prelated h2 {
+    font-family: 'Space Grotesk', var(--sans);
+    font-size: 20px; font-weight: 600; letter-spacing: -.02em; margin: 0 0 var(--sp-5);
+  }
+  .relgrid, .prelated-grid { display: grid; grid-template-columns: 1fr; gap: var(--sp-4); margin-top: var(--sp-5); }
+  @media (min-width: 768px) { .relgrid, .prelated-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  .relgrid .pcard, .prelated-grid .pcard {
+    display: flex; flex-direction: column; gap: 6px; padding: var(--sp-5);
+    border: 1px solid var(--c-border-subtle); border-radius: var(--r-media);
+    background: rgba(255, 255, 255, .66); background: color-mix(in srgb, #fff 66%, transparent);
+    text-decoration: none; color: inherit;
+    transition: transform .25s cubic-bezier(.22, 1, .36, 1), border-color .25s, background-color .25s, box-shadow .25s, scale .15s;
+  }
+  .relgrid .pcard:hover, .prelated-grid .pcard:hover {
+    transform: translateY(-3px); border-color: color-mix(in srgb, var(--c-brand) 34%, transparent);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, .06);
+  }
+  .relgrid .pcard:active, .prelated-grid .pcard:active { scale: .985; }
+  .relgrid .pcard .kind, .prelated-grid .pcard .kind {
+    font-family: 'JetBrains Mono', var(--mono); font-size: 11px; letter-spacing: .04em;
+    color: var(--c-brand); margin-bottom: 0;
+  }
+  .relgrid .pcard h3, .prelated-grid .pcard h3 {
+    font-family: 'Space Grotesk', var(--sans); font-size: 16px; font-weight: 600;
+    letter-spacing: -.015em; line-height: 1.45; margin: 0; color: var(--c-text);
+  }
+  .relgrid .pcard p, .prelated-grid .pcard p { margin: 0; font-size: 13.5px; line-height: 1.6; color: var(--c-text-3); }
+  .relgrid .pcard .go, .prelated-grid .pcard .go {
+    margin-top: auto; padding-top: var(--sp-3);
+    font-family: 'JetBrains Mono', var(--mono); font-size: 12px; color: var(--c-brand);
+  }
+  :root[data-theme="dark"] .relgrid .pcard, :root[data-theme="dark"] .prelated-grid .pcard { background: color-mix(in srgb, #fff 4%, transparent); }
+
+  /* ── 12. 页脚（与主页同构） ── */
+  .pfoot { border-top: 1px solid var(--c-border-subtle); padding: var(--sp-8) 0 var(--sp-9); font-size: 14px; color: var(--c-text-3); }
+  .pfoot-grid { display: grid; grid-template-columns: 1fr; gap: var(--sp-6); }
+  @media (min-width: 860px) { .pfoot-grid { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 1fr); gap: var(--sp-7); } }
+  .pfoot-brand { display: flex; align-items: center; gap: 10px; margin-bottom: var(--sp-4); }
+  .pfoot-brand .brand-logo { width: 28px; height: 28px; flex: none; color: var(--c-brand); }
+  .pfoot-name { display: block; font-size: 15px; font-weight: 600; color: var(--c-text); }
+  .pfoot-tag { display: block; font-family: 'JetBrains Mono', var(--mono); font-size: 10px; letter-spacing: .08em; color: var(--c-text-3); }
+  .pfoot-desc { margin: 0; max-width: 42ch; font-size: 13.5px; line-height: 1.7; color: var(--c-text-3); }
+  .pfoot .col-title {
+    margin-bottom: var(--sp-3); font-family: 'JetBrains Mono', var(--mono);
+    font-size: 11px; text-transform: uppercase; letter-spacing: .12em; color: var(--c-text-3);
+  }
+  .pfoot ul { list-style: none; display: flex; flex-direction: column; gap: var(--sp-2); margin: 0; padding: 0; }
+  .pfoot .nav-link { font-size: 13.5px; }
+  .pfoot a { color: var(--c-text-2); text-decoration: none; transition: color .18s ease-out; }
+  .pfoot a:hover { color: var(--c-brand); }
+  .pfoot-base {
+    display: flex; flex-wrap: wrap; gap: var(--sp-3); justify-content: space-between;
+    margin-top: var(--sp-8); padding-top: var(--sp-5);
+    border-top: 1px solid var(--c-border-subtle);
+    font-family: 'JetBrains Mono', var(--mono); font-size: 12px; color: var(--c-text-3);
+  }
+  /* prose.css 旧结构兼容（.pfoot .row 等） */
+  .pfoot .row { display: flex; flex-wrap: wrap; gap: var(--sp-5); align-items: center; justify-content: space-between; }
+
+  /* ── 13. 旧导航类名兼容：老文件残留标记仍需显示正常 ── */
+  .pnav { position: sticky; top: 0; z-index: 50; }
+  .pnav-in { width: min(100% - 48px, 1110px); margin-inline: auto; height: 62px; display: flex; align-items: center; justify-content: space-between; gap: var(--sp-5); }
+  .pnav-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--c-text); font-weight: 600; letter-spacing: -.01em; }
+  .pnav-brand i { display: block; width: 22px; height: 22px; border-radius: 6px; background: var(--c-brand); }
+  .pnav-links { display: flex; align-items: center; gap: 20px; }
+
+  /* ── 14. 动效与可访问性 ── */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+    html { scroll-behavior: auto; }
+  }
+  @media (hover: none) {
+    .glass-card:hover, .btn-primary:hover, .btn-ghost:hover,
+    .relgrid .pcard:hover, .prelated-grid .pcard:hover { transform: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- 2026-10-13 · 动效增强（署名：Step5）：入场浮现 / 滚动显现 / hover 过渡。
+     仅新增 assets/step5-motion.css + assets/step5-motion.js 两个资产引用，正文一字未改。 -->
+<nav class="pnav nav-blur" aria-label="站内导航">
+  <div class="pnav-in nav-in">
+    <a class="pnav-brand nav-brand" href="../index.html" aria-label="dsh-auto-memory 首页">
+      <span class="brand-logo" aria-hidden="true">
+        <svg viewBox="0 0 40 40" fill="none">
+            <g class="brain-path">
+              <path d="M20 6c-4 0-7 2.5-7 6 0 1 .2 2 .6 2.8C11 15.6 9.5 17.4 9.5 19.6c0 1.6.9 3 2.3 3.8-.2.6-.3 1.2-.3 1.9 0 3.2 2.6 5.7 6 5.7 1 0 1.9-.2 2.5-.7"/>
+              <path d="M20 6c4 0 7 2.5 7 6 0 1-.2 2-.6 2.8 2.6.8 4.1 2.6 4.1 4.8 0 1.6-.9 3-2.3 3.8.2.6.3 1.2.3 1.9 0 3.2-2.6 5.7-6 5.7-1 0-1.9-.2-2.5-.7"/>
+              <path d="M20 6v25"/>
+            </g>
+        <g class="pulse"><circle cx="20" cy="20" r="14" opacity=".5"/></g>
+        </svg>
+      </span>
+      <span class="brand-name font-display">dsh-auto-memory</span>
+    </a>
+    <div class="pnav-links nav-links">
+      <a class="nav-link" href="../index.html">主页</a>
+      <a class="nav-link is-active" href="index.html" aria-current="page">技术报告</a>
+      <a class="nav-link nav-opt" href="https://github.com/Aik358/dsh-auto-memory" target="_blank" rel="noreferrer">GitHub</a>
+      <a class="nav-link nav-opt" href="https://github.com/Aik358/dsh-auto-memory/blob/main/CHANGELOG.md" target="_blank" rel="noreferrer">更新日志</a>
+      <span class="lang-switch" role="group" aria-label="语言">
+        <button type="button" data-lang="zh" class="is-on" aria-pressed="true">中</button>
+        <button type="button" data-lang="en" aria-pressed="false">EN</button>
+      </span>
+      <button id="theme-toggle" class="theme-toggle-btn" type="button" aria-label="切换主题" aria-pressed="false">
+        <svg id="theme-icon-sun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+        <svg id="theme-icon-moon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<header class="phero">
+  <div class="pwrap">
+    <div class="phero-in">
+      <h1 class="ptitle font-display" data-i18n-hash="cc18de57" data-i18n-zh="缓存在那里，只是有时看不见">缓存在那里，只是有时看不见</h1>
+      <p class="psub" data-i18n-hash="bfc32d09" data-i18n-zh="一次 847 条真实请求的前缀缓存对照测量">一次 847 条真实请求的前缀缓存对照测量</p>
+      <div class="pmeta">
+        <span class="tagline">工程调查</span><span class="dot"></span>
+        <span>2026-10-05</span><span class="dot"></span>
+        <span>847 条请求 · 3.25 亿 token</span>
+      </div>
+      <div class="pabstract">
+        <p data-i18n-hash="0b313b0d" data-i18n-zh="&lt;strong&gt;摘要&lt;/strong&gt; 本文记录一次对前缀缓存（prompt cache）异常行为的测量。样本取自同一中转站、同一客户端、同一时段内的真实用量账单：847 条请求，325,243,165 个 token，¥9.69。"><strong>摘要</strong>　本文记录一次对前缀缓存（prompt cache）异常行为的测量。样本取自同一中转站、同一客户端、同一时段内的真实用量账单：847 条请求，325,243,165 个 token，¥9.69。</p>
+        <p data-i18n-hash="43ddef30" data-i18n-zh="测量的核心事实是：两个模型在同一时段的缓存表现相差一个数量级。其中一组存在一个约 &lt;strong&gt;36k token 的恒定可缓存前缀&lt;/strong&gt;，且失效后 5–14 秒内又能读回同一份内容。后一现象决定了归因方向——不是缓存被清除，而是请求没有落到持有缓存的实例上。">测量的核心事实是：两个模型在同一时段的缓存表现相差一个数量级。其中一组存在一个约 <strong>36k token 的恒定可缓存前缀</strong>，且失效后 5–14 秒内又能读回同一份内容。后一现象决定了归因方向——不是缓存被清除，而是请求没有落到持有缓存的实例上。</p>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="pwrap">
+  <div class="pgrid">
+    <aside class="ptoc">
+      <ul class="ptoc-list">
+        <li><a href="#s1">一　两个数</a></li>
+        <li><a href="#s2">二　五秒之内的失效</a></li>
+        <li><a href="#s3">三　走失又回来</a></li>
+        <li><a href="#s4">四　三六一八六</a></li>
+        <li><a href="#s5">五　排除法</a></li>
+        <li><a href="#s6">六　归因与边界</a></li>
+        <li><a href="#after">写在后面的话</a></li>
+      </ul>
+    </aside>
+    <main class="particle prose">
+
+<p data-i18n-hash="7ccfea31" data-i18n-zh="前缀缓存是长上下文成本的主要变量。当一份上下文被反复送入模型时，命中部分按远低于新增 token 的价格计费；一旦前缀被判定为新内容，整段历史都要重新计价。对以长对话为常态的 Agent 类负载而言，这一项往往占账单的多半。">前缀缓存是长上下文成本的主要变量。当一份上下文被反复送入模型时，命中部分按远低于新增 token 的价格计费；一旦前缀被判定为新内容，整段历史都要重新计价。对以长对话为常态的 Agent 类负载而言，这一项往往占账单的多半。</p>
+
+<p data-i18n-hash="c585c14e" data-i18n-zh="2026 年 10 月 5 日的一份用量账单显示，同一中转站、同一客户端、同一时段的两个模型，缓存表现相差一个数量级。以下是对这份账单的逐项测量。">2026 年 10 月 5 日的一份用量账单显示，同一中转站、同一客户端、同一时段的两个模型，缓存表现相差一个数量级。以下是对这份账单的逐项测量。</p>
+
+<h2 id="s1" data-i18n-hash="731cb322" data-i18n-zh="一 两个数">一　两个数</h2>
+
+<div class="tbl">
+<table>
+  <thead><tr><th data-i18n-hash="1dfc810a" data-i18n-zh="指标">指标</th><th class="num" data-i18n-hash="ca074cd0" data-i18n-zh="一组">一组</th><th class="num" data-i18n-hash="4adcdf95" data-i18n-zh="对照组">对照组</th><th class="num" data-i18n-hash="aaa58ce7" data-i18n-zh="差异">差异</th></tr></thead>
+  <tbody>
+    <tr><td data-i18n-hash="b28376ff" data-i18n-zh="请求数">请求数</td><td class="num">173</td><td class="num">674</td><td class="num">—</td></tr>
+    <tr><td data-i18n-hash="58f74979" data-i18n-zh="整体缓存命中率">整体缓存命中率</td><td class="num">60.4%</td><td class="num">87.2%</td><td class="num">−26.8pt</td></tr>
+    <tr><td data-i18n-hash="e91e35b8" data-i18n-zh="严重未命中率（命中 &amp;lt;20%）">严重未命中率（命中 &lt;20%）</td><td class="num hi">38.2%</td><td class="num">12.9%</td><td class="num">2.96×</td></tr>
+    <tr><td data-i18n-hash="f06092fa" data-i18n-zh="命中时的命中深度">命中时的命中深度</td><td class="num">91.6%</td><td class="num">99.6%</td><td class="num">−8.0pt</td></tr>
+    <tr><td data-i18n-hash="313d359f" data-i18n-zh="命中时平均漏算 token">命中时平均漏算 token</td><td class="num hi">31,568</td><td class="num">1,511</td><td class="num">20.9×</td></tr>
+    <tr><td data-i18n-hash="cb2d5598" data-i18n-zh="单位成本（每百万 token）">单位成本（每百万 token）</td><td class="num">¥0.041</td><td class="num">¥0.027</td><td class="num">+52%</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p data-i18n-hash="7f21d459" data-i18n-zh="单看命中率，可以解释为「这一路的负载更重」。但把请求按相邻间隔切开之后，这个解释站不住。">单看命中率，可以解释为「这一路的负载更重」。但把请求按相邻间隔切开之后，这个解释站不住。</p>
+
+<h2 id="s2" data-i18n-hash="a5b2f099" data-i18n-zh="二 五秒之内的失效">二　五秒之内的失效</h2>
+
+<figure>
+  <div class="figbox"><img src="assets/figures/fig-cache-interval.svg" alt="按相邻请求间隔分档的缓存命中率对比：0–10 秒档一组 84.8%、对照组 99.5%；10–20 秒档一组跌至 60.4%、对照组仍为 99.0%"></div>
+  <figcaption data-i18n-hash="bb6aeb28" data-i18n-zh="图 1 相邻请求间隔与命中率。若失效源于缓存过期，间隔越短命中应越高。">图 1　相邻请求间隔与命中率。若失效源于缓存过期，间隔越短命中应越高。</figcaption>
+</figure>
+
+<p data-i18n-hash="5a4dbd4f" data-i18n-zh="对照组在 0–20 秒窗口内稳定保持在 99% 以上。实验组在 &lt;strong&gt;10–20 秒&lt;/strong&gt;这一档就已经跌到 60.4%，0–10 秒档内仍有 15.2% 未命中。">对照组在 0–20 秒窗口内稳定保持在 99% 以上。实验组在 <strong>10–20 秒</strong>这一档就已经跌到 60.4%，0–10 秒档内仍有 15.2% 未命中。</p>
+
+<p data-i18n-hash="a1349797" data-i18n-zh="任何以时间为基础的过期策略，都无法解释五秒到二十秒之内的缓存失效。">任何以时间为基础的过期策略，都无法解释五秒到二十秒之内的缓存失效。</p>
+
+<h2 id="s3" data-i18n-hash="5527625b" data-i18n-zh="三 走失又回来">三　走失又回来</h2>
+
+<p data-i18n-hash="4ce48357" data-i18n-zh="排查中出现了一个高度一致的时序模式：某条请求完全未命中（读取量接近 0），而它之后五到十四秒内的下一条请求，却完整读到了几乎相同的上下文。">排查中出现了一个高度一致的时序模式：某条请求完全未命中（读取量接近 0），而它之后五到十四秒内的下一条请求，却完整读到了几乎相同的上下文。</p>
+
+<pre><code>15:57:21  prompt=176,576  命中 99.8%   ← 正常
+15:57:40  prompt=177,245  命中  2.2%   ← 同一上下文，缓存整个消失
+15:57:49  prompt=177,623  命中 99.8%   ← 九秒后自动恢复
+
+16:02:20  prompt=182,000  命中 99.5%
+16:02:29  prompt=186,233  命中  0.0%   ← 完全未命中
+16:02:37  prompt=189,000  命中 98.6%   ← 八秒后恢复</code></pre>
+
+<p data-i18n-hash="555e566a" data-i18n-zh="这一现象排除了一整类解释。缓存若真被清除，下一条不可能在十秒之内读回。唯一自洽的读法是：&lt;strong&gt;缓存内容客观存在且可用，只是中间那一条请求没有落到持有缓存的实例上。&lt;/strong&gt;">这一现象排除了一整类解释。缓存若真被清除，下一条不可能在十秒之内读回。唯一自洽的读法是：<strong>缓存内容客观存在且可用，只是中间那一条请求没有落到持有缓存的实例上。</strong></p>
+
+<p data-i18n-hash="7806b2bd" data-i18n-zh="统计口径上，153 条全未命中请求中有 116 条（75.8%）在下一条同内容请求上恢复。">统计口径上，153 条全未命中请求中有 116 条（75.8%）在下一条同内容请求上恢复。</p>
+
+<h2 id="s4" data-i18n-hash="f69aedda" data-i18n-zh="四 三六一八六">四　三六一八六</h2>
+
+<figure>
+  <div class="figbox"><img src="assets/figures/fig-cache-ceiling.svg" alt="八条请求的 prompt 从 105,139 到 662,203 不等，但 cache_read 全部恰好等于 36,186"></div>
+  <figcaption data-i18n-hash="4e1970c6" data-i18n-zh="图 2 八条请求的输入规模相差六倍，读到的缓存量分毫不差。">图 2　八条请求的输入规模相差六倍，读到的缓存量分毫不差。</figcaption>
+</figure>
+
+<p data-i18n-hash="0bf45855" data-i18n-zh="实验组有八条请求的缓存读取量&lt;strong&gt;恰好等于 36,186&lt;/strong&gt;，而它们各自的输入规模从十万到六十六万不等。对照组 674 条请求中，出现该值的次数为零。">实验组有八条请求的缓存读取量<strong>恰好等于 36,186</strong>，而它们各自的输入规模从十万到六十六万不等。对照组 674 条请求中，出现该值的次数为零。</p>
+
+<p data-i18n-hash="088e31fc" data-i18n-zh="这提示存在一个约 36k token 的固定可缓存前缀——大致相当于系统提示与工具定义的部分。超出该范围的内容，在某些请求上完全无法命中。">这提示存在一个约 36k token 的固定可缓存前缀——大致相当于系统提示与工具定义的部分。超出该范围的内容，在某些请求上完全无法命中。</p>
+
+<p data-i18n-hash="4b2d61d8" data-i18n-zh="与之呼应的是未命中请求的读取量分布：全部落在 0 到 36k 之间，而这些请求的输入普遍在 30 万到 66 万。&lt;strong&gt;缓存里只剩下不足 5% 的内容。&lt;/strong&gt;">与之呼应的是未命中请求的读取量分布：全部落在 0 到 36k 之间，而这些请求的输入普遍在 30 万到 66 万。<strong>缓存里只剩下不足 5% 的内容。</strong></p>
+
+<h2 id="s5" data-i18n-hash="8b6958c3" data-i18n-zh="五 排除法">五　排除法</h2>
+
+<p data-i18n-hash="97ba80cf" data-i18n-zh="把可能性逐条放回数据里检验，只剩一条站得住。">把可能性逐条放回数据里检验，只剩一条站得住。</p>
+
+<h3 data-i18n-hash="8c6f19e1" data-i18n-zh="过期策略">过期策略</h3>
+<p data-i18n-hash="51a022b3" data-i18n-zh="排除。0–10 秒窗口内仍有 15.2% 的失效率。以时间为基础的策略不可能在十秒内失效，而十秒之后又自动恢复。">排除。0–10 秒窗口内仍有 15.2% 的失效率。以时间为基础的策略不可能在十秒内失效，而十秒之后又自动恢复。</p>
+
+<h3 data-i18n-hash="97195229" data-i18n-zh="客户端改写前缀">客户端改写前缀</h3>
+<p data-i18n-hash="c78af6c6" data-i18n-zh="排除。命中请求的读取量&lt;strong&gt;恰好等于输入减去本轮新增的少量 token&lt;/strong&gt;，正是「前缀不变、只在尾部追加」的标准形态。若前缀每轮被改写，命中行的读取量会接近零，而不是二十万到四十二万。">排除。命中请求的读取量<strong>恰好等于输入减去本轮新增的少量 token</strong>，正是「前缀不变、只在尾部追加」的标准形态。若前缀每轮被改写，命中行的读取量会接近零，而不是二十万到四十二万。</p>
+
+<p data-i18n-hash="17512118" data-i18n-zh="同一份客户端代码、同一条网络出口（账单中来源地址全部一致），只有一组异常。">同一份客户端代码、同一条网络出口（账单中来源地址全部一致），只有一组异常。</p>
+
+<h3 data-i18n-hash="9bd58a6a" data-i18n-zh="上游多实例调度">上游多实例调度</h3>
+<p data-i18n-hash="155d0ce4" data-i18n-zh="&lt;strong&gt;主因。&lt;/strong&gt;一条线索同时解释了三件事：五到二十秒内失效（过期策略解释不了）、失效后五到十四秒又能读回（缓存被删解释不了）、38.2% 的严重失效率（与两到三个实例轮询的理论值吻合）。失效与恢复交替出现且间隔不规律，符合负载均衡调度的特征。"><strong>主因。</strong>一条线索同时解释了三件事：五到二十秒内失效（过期策略解释不了）、失效后五到十四秒又能读回（缓存被删解释不了）、38.2% 的严重失效率（与两到三个实例轮询的理论值吻合）。失效与恢复交替出现且间隔不规律，符合负载均衡调度的特征。</p>
+
+<h3 data-i18n-hash="aa3d2f24" data-i18n-zh="可缓存容量上限偏低">可缓存容量上限偏低</h3>
+<p data-i18n-hash="a6a72863" data-i18n-zh="&lt;strong&gt;并存因素。&lt;/strong&gt;恒定值的存在、命中深度仅 91.6%、以及 p90 漏算 121,586 token，都指向容量侧的另一重限制。"><strong>并存因素。</strong>恒定值的存在、命中深度仅 91.6%、以及 p90 漏算 121,586 token，都指向容量侧的另一重限制。</p>
+
+<h2 id="s6" data-i18n-hash="79db8b55" data-i18n-zh="六 归因与边界">六　归因与边界</h2>
+
+<p data-i18n-hash="43c2bd97" data-i18n-zh="本文的全部证据来自账单侧，属间接证据。上游侧日志方能给出最终定论。">本文的全部证据来自账单侧，属间接证据。上游侧日志方能给出最终定论。</p>
+
+<p data-i18n-hash="67eb3a8a" data-i18n-zh="若主因确为多实例调度，则修复方向是明确的：对同一 API Key 或同一会话启用粘性路由，把请求固定到同一上游实例。这一项不需要改动客户端。">若主因确为多实例调度，则修复方向是明确的：对同一 API Key 或同一会话启用粘性路由，把请求固定到同一上游实例。这一项不需要改动客户端。</p>
+
+<p data-i18n-hash="806b65c5" data-i18n-zh="本文因此不作「缓存坏了」的结论，只作一个更弱的、可被证伪的判断：&lt;strong&gt;缓存在那里，只是有时看不见。&lt;/strong&gt;">本文因此不作「缓存坏了」的结论，只作一个更弱的、可被证伪的判断：<strong>缓存在那里，只是有时看不见。</strong></p>
+
+<section class="afterword">
+      <h2 data-i18n-hash="b4150dcc" data-i18n-zh="写在后面的话">写在后面的话</h2>
+      <blockquote data-i18n-hash="2a82b4b7" data-i18n-zh="「物有本末，事有终始，知所先后，则近道矣。」">「物有本末，事有终始，知所先后，则近道矣。」</blockquote>
+      <p data-i18n-hash="662e5287" data-i18n-zh="这份报告最初是想写一封投诉信。写到一半发现投诉不成立——问题不在服务坏了，而在我们看错了对象：把「命中率低」当成「缓存少」，于是所有排查都朝着容量和过期两个方向走，越走越偏。">这份报告最初是想写一封投诉信。写到一半发现投诉不成立——问题不在服务坏了，而在我们看错了对象：把「命中率低」当成「缓存少」，于是所有排查都朝着容量和过期两个方向走，越走越偏。</p>
+      <p data-i18n-hash="1a3d413c" data-i18n-zh="真正把方向掰回来的，是那条「失效后九秒又读回」的时序。它本身不构成结论，却排除了一整类解释。测量中最有价值的往往不是均值，而是那些不符合预期的个例——它们不告诉你答案，只告诉你不可能是哪个答案。">真正把方向掰回来的，是那条「失效后九秒又读回」的时序。它本身不构成结论，却排除了一整类解释。测量中最有价值的往往不是均值，而是那些不符合预期的个例——它们不告诉你答案，只告诉你不可能是哪个答案。</p>
+      <p data-i18n-hash="11342fa4" data-i18n-zh="另一个细节值得记下：那个恒定的 36,186。它在八条规模相差六倍的请求上分毫不差地重复出现。一个陌生常量反复出现，通常意味着背后有一条我们还没看到的规则。">另一个细节值得记下：那个恒定的 36,186。它在八条规模相差六倍的请求上分毫不差地重复出现。一个陌生常量反复出现，通常意味着背后有一条我们还没看到的规则。</p>
+      <p class="sign">dsh-auto-memory 项目组 · 2026</p>
+    </section>
+
+    </main>
+  </div>
+</div>
+
+<section class="prelated">
+  <div class="pwrap prelated-in">
+    <h2 data-i18n-hash="5f475b84" data-i18n-zh="相关报告">相关报告</h2>
+    <div class="relgrid">
+      <a class="pcard" href="2026-09-22-injection-cost.html">
+        <div class="kind">工程调查</div>
+        <h3 data-i18n-hash="d8a1612a" data-i18n-zh="每一轮都在送出的固定前缀">每一轮都在送出的固定前缀</h3>
+        <p data-i18n-hash="d2ffcf56" data-i18n-zh="缓存的成本取决于送进去多少；这篇量的是「送出量」本身。">缓存的成本取决于送进去多少；这篇量的是「送出量」本身。</p>
+        <span class="go">阅读 →</span>
+      </a>
+      <a class="pcard" href="2026-10-08-plugin-split.html">
+        <div class="kind">可行性研究</div>
+        <h3 data-i18n-hash="0dfdfab8" data-i18n-zh="一个 18,525 行文件的拆分之道">一个 18,525 行文件的拆分之道</h3>
+        <p data-i18n-hash="57c2c955" data-i18n-zh="AST 级耦合测绘：110 个模块、158 条边，以及那个 10,852 行的单类。">AST 级耦合测绘：110 个模块、158 条边，以及那个 10,852 行的单类。</p>
+        <span class="go">阅读 →</span>
+      </a>
+      <a class="pcard" href="index.html">
+        <div class="kind">索引</div>
+        <h3 data-i18n-hash="5a4b56d0" data-i18n-zh="全部技术报告">全部技术报告</h3>
+        <p data-i18n-hash="7d9dd78e" data-i18n-zh="完整索引与关键结论速查表。">完整索引与关键结论速查表。</p>
+        <span class="go">阅读 →</span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<footer class="pfoot">
+  <div class="pwrap">
+    <div class="pfoot-grid">
+      <div>
+        <div class="pfoot-brand">
+          <span class="brand-logo" aria-hidden="true">
+            <svg viewBox="0 0 40 40" fill="none">
+            <g class="brain-path">
+              <path d="M20 6c-4 0-7 2.5-7 6 0 1 .2 2 .6 2.8C11 15.6 9.5 17.4 9.5 19.6c0 1.6.9 3 2.3 3.8-.2.6-.3 1.2-.3 1.9 0 3.2 2.6 5.7 6 5.7 1 0 1.9-.2 2.5-.7"/>
+              <path d="M20 6c4 0 7 2.5 7 6 0 1-.2 2-.6 2.8 2.6.8 4.1 2.6 4.1 4.8 0 1.6-.9 3-2.3 3.8.2.6.3 1.2.3 1.9 0 3.2-2.6 5.7-6 5.7-1 0-1.9-.2-2.5-.7"/>
+              <path d="M20 6v25"/>
+            </g>
+          </span>
+          <span>
+            <span class="pfoot-name font-display">dsh-auto-memory</span>
+            <span class="pfoot-tag">Ambient Recall · 「潜藏追忆，如影随形」</span>
+          </span>
+        </div>
+        <p class="pfoot-desc">DSH 插件：宿主侧主动联想记忆中间件。她记得，不必吩咐 —— 记忆长在你自己的机器上。BSD-3-Clause。</p>
+      </div>
+      <div>
+        <div class="col-title">项目</div>
+        <ul>
+          <li><a class="nav-link" href="../index.html">主页</a></li>
+          <li><a class="nav-link" href="index.html">全部报告</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="col-title">资源</div>
+        <ul>
+          <li><a class="nav-link" href="https://github.com/Aik358/dsh-auto-memory" target="_blank" rel="noreferrer">GitHub</a></li>
+          <li><a class="nav-link" href="https://www.npmjs.com/package/@a9i5k4/dsh-auto-memory" target="_blank" rel="noreferrer">npm</a></li>
+          <li><a class="nav-link" href="https://github.com/Aik358/dsh-auto-memory/blob/main/CHANGELOG.md" target="_blank" rel="noreferrer">CHANGELOG</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="pfoot-base">
+      <div>© 2026 dsh-auto-memory · Aik358 · BSD-3-Clause</div>
+      <div>记忆在你自己的机器上 · 可审计 · 可删除</div>
+    </div>
+  </div>
+</footer>
+<script>
+(function () {
+  var links = [].slice.call(document.querySelectorAll('.ptoc-list a'));
+  var heads = links.map(function (a) { return document.getElementById(a.getAttribute('href').slice(1)); });
+  if (!('IntersectionObserver' in window)) return;
+  var io = new IntersectionObserver(function (es) {
+    es.forEach(function (e) {
+      var i = heads.indexOf(e.target);
+      if (i < 0) return;
+      if (e.isIntersecting) { links.forEach(function (l) { l.classList.remove('on'); }); links[i].classList.add('on'); }
+    });
+  }, { rootMargin: '-96px 0px -70% 0px', threshold: 0 });
+  heads.forEach(function (h) { if (h) io.observe(h); });
+})();
+</script>
+<script type="application/json" id="i18n-en">{"17512118":"One client codebase, one network egress (every source address in the bill agrees), yet only one group misbehaves.","97195229":"Client rewrites the prefix","cc18de57":"The cache is there, sometimes invisible","bfc32d09":"A controlled measurement of prefix caching over 847 real requests","0b313b0d":"<strong>Abstract<\/strong>　This report documents a measurement of anomalous prefix-cache (prompt cache) behaviour. The sample comes from real usage bills on one relay station, one client, within one time window: 847 requests, 325,243,165 tokens, ¥9.69.","43ddef30":"The central fact is that two models in the same window differ by an order of magnitude in cache performance. One group carries a <strong>constant cacheable prefix of roughly 36k tokens<\/strong>, and after a miss the same content becomes readable again within 5–14 seconds. That second observation fixes the direction of attribution — not that the cache was cleared, but that the request never reached the instance holding it.","7ccfea31":"Prefix caching is the main variable in long-context cost. When the same context is sent repeatedly, the matched part bills far below the price of fresh tokens; once the prefix is judged to be new content, the entire history is repriced. For Agent-class workloads, where long conversations are the norm, this line item usually takes the larger share of the bill.","c585c14e":"A usage bill dated 5 October 2026 shows two models on the same relay station, same client, same window, differing by an order of magnitude in cache behaviour. What follows is an item-by-item measurement of that bill.","731cb322":"1　Two numbers","1dfc810a":"Metric","ca074cd0":"Group A","4adcdf95":"Control","aaa58ce7":"Delta","b28376ff":"Requests","58f74979":"Overall cache hit rate","e91e35b8":"Severe miss rate (hit <20%)","f06092fa":"Hit depth when cached","313d359f":"Mean unbilled tokens on a hit","cb2d5598":"Unit cost (per million tokens)","7f21d459":"Taken alone, the hit rate could be explained as \"this route carries a heavier load\". Split the requests by adjacent interval, and that explanation collapses.","a5b2f099":"2　Failure within five seconds","bb6aeb28":"Figure 1　Hit rate by adjacent-request interval. If the misses came from expiry, shorter intervals would hit more often.","5a4dbd4f":"The control holds above 99% throughout the 0–20 second window. Group A has already fallen to 60.4% in the <strong>10–20 second<\/strong> bucket, and still misses 15.2% within 0–10 seconds.","a1349797":"No time-based expiry policy can explain cache failure between five and twenty seconds.","5527625b":"3　Lost, then found","4ce48357":"One highly consistent timing pattern emerged during the investigation: a request misses completely (reads close to zero), and the next request within five to fourteen seconds reads back almost the same context in full.","555e566a":"This rules out an entire class of explanations. Had the cache truly been cleared, the next request could not read it back within ten seconds. The only self-consistent reading is that <strong>the cached content objectively exists and is usable — the request in between simply never reached the instance holding it.<\/strong>","7806b2bd":"On the counting: of 153 fully-missed requests, 116 (75.8%) recover on the next request carrying the same content.","f69aedda":"4　Thirty-six one eighty-six","4e1970c6":"Figure 2　Eight requests whose input sizes differ sixfold, reading exactly the same amount of cache.","0bf45855":"Eight requests in Group A read <strong>exactly 36,186<\/strong> tokens from cache, while their inputs range from 100k to 660k. Across the 674 control requests, that value never appears.","088e31fc":"This points to a fixed cacheable prefix of roughly 36k tokens — about the size of the system prompt and tool definitions. Anything beyond it fails to hit on some requests.","4b2d61d8":"A parallel signal comes from the read distribution of missed requests: all fall between 0 and 36k, while their inputs generally run 300k to 660k. <strong>Less than 5% of the cache survives.<\/strong>","8b6958c3":"5　Elimination","97ba80cf":"Put each possibility back into the data and test it. One survives.","8c6f19e1":"Expiry policy","51a022b3":"Eliminated. The 0–10 second window still shows a 15.2% failure rate. No time-based policy can fail within ten seconds and then recover automatically after ten.","c78af6c6":"Eliminated. On hits, the read volume is <strong>exactly the input minus the small increment of this turn<\/strong> — the standard shape of \"prefix unchanged, append at the tail\". Had the prefix been rewritten each turn, hit volumes would approach zero rather than the 200k–420k observed.","9bd58a6a":"Upstream multi-instance scheduling","155d0ce4":"<strong>Primary cause.<\/strong> One explanation accounts for three facts at once: failure within five to twenty seconds (which expiry cannot explain), readability again five to fourteen seconds later (which a cleared cache cannot explain), and a 38.2% severe miss rate (matching the theoretical value for round-robin across two to three instances). Failures and recoveries alternate at irregular intervals, consistent with load-balanced scheduling.","aa3d2f24":"Cacheable capacity set too low","a6a72863":"<strong>Coexisting factor.<\/strong> The existence of a constant, a hit depth of only 91.6%, and a p90 unbilled volume of 121,586 tokens all point to a second constraint on the capacity side.","79db8b55":"6　Attribution and its limits","43c2bd97":"Every piece of evidence here comes from the billing side, and is therefore indirect. Upstream logs would settle it definitively.","67eb3a8a":"If multi-instance scheduling is indeed the primary cause, the fix is clear: enable sticky routing for the same API key or session, pinning requests to one upstream instance. No client changes are required.","806b65c5":"This report therefore does not conclude that \"the cache is broken\", only a weaker and falsifiable claim: <strong>the cache is there, sometimes invisible.<\/strong>","b4150dcc":"A closing word","2a82b4b7":"「物有本末，事有终始，知所先后，则近道矣。」<span class=\"epi-en\">Things have roots and branches; affairs have ends and beginnings. Know what comes first, and you are near the Way. — The Great Learning<\/span>","662e5287":"This report began as a complaint letter. Halfway through, it became clear the complaint did not hold: the problem was not that the service had broken, but that we were looking at the wrong object. We took \"a low hit rate\" for \"too little cache\", and every lead ran toward capacity and expiry — further and further off.","1a3d413c":"What turned the investigation around was the timing of that nine-second recovery. On its own it proves nothing, yet it eliminated an entire class of explanations. In measurement the most valuable results are often not the means but the outliers — they do not tell you the answer, only which answers are impossible.","11342fa4":"One more detail worth recording: that constant, 36,186. It recurred to the digit across eight requests whose sizes differ sixfold. A strange constant that keeps appearing usually means a rule we have not yet seen.","5f475b84":"Related reports","d8a1612a":"The fixed prefix sent every single turn","d2ffcf56":"Cache cost depends on how much you send; that report measures the sending itself.","0dfdfab8":"How to split an 18,525-line file","57c2c955":"AST-level coupling mapping: 110 modules, 158 edges, and one 10,852-line class.","5a4b56d0":"All technical reports","7d9dd78e":"Full index and a quick-reference of key conclusions.","__title__":"The intermittent invisibility of a prefix cache — dsh-auto-memory"}</script>
+<script src="assets/i18n.js" defer></script>
+<script src="assets/theme.js" defer></script>
+<script src="assets/step5-motion.js" defer></script>
+</body>
+</html>

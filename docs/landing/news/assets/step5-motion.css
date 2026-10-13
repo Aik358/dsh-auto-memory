@@ -1,0 +1,43 @@
+/* ══════════════════════════════════════════════════════════════════════
+   step5-motion.css — Step5 修改版 · 文章页基础动效（署名：Step5 · 2026-10-13）
+   只加「浮现 + 过渡」，不改版式、不改颜色；所有动效在
+   prefers-reduced-motion: reduce 下全部退化为直出。
+   配合 assets/step5-motion.js 使用（JS 给元素挂 .s5-r / .s5-hero-r 类）。
+   ══════════════════════════════════════════════════════════════════════ */
+
+:root { scroll-behavior: smooth; }
+
+/* 滚动浮现：进入视口时由 JS 加 .s5-vis 触发 */
+.s5-r { opacity: 0; transform: translateY(18px); }
+.s5-r.s5-vis {
+  opacity: 1; transform: none;
+  transition: opacity .65s cubic-bezier(.22, 1, .36, 1), transform .65s cubic-bezier(.22, 1, .36, 1);
+}
+
+/* 首屏 hero：载入即依次浮现（不等滚动） */
+.s5-hero-r { opacity: 0; transform: translateY(14px); animation: s5-up .7s cubic-bezier(.22, 1, .36, 1) forwards; }
+.s5-hero-r.d1 { animation-delay: .07s; }
+.s5-hero-r.d2 { animation-delay: .14s; }
+.s5-hero-r.d3 { animation-delay: .21s; }
+.s5-hero-r.d4 { animation-delay: .28s; }
+.s5-hero-r.d5 { animation-delay: .35s; }
+@keyframes s5-up { to { opacity: 1; transform: none; } }
+
+/* 图表 / 表格 / 卡片 / 代码块：hover 与描边过渡 */
+.figbox { transition: border-color .3s ease, transform .3s cubic-bezier(.22, 1, .36, 1); }
+.figbox:hover { border-color: var(--accent); transform: translateY(-2px); }
+.tbl tbody tr { transition: background-color .25s ease; }
+.tbl { transition: border-color .3s ease; }
+.prose a { transition: color .2s ease, text-underline-offset .2s ease; }
+.ptoc { transition: border-color .3s ease; }
+.relgrid a { transition: border-color .25s ease, transform .25s cubic-bezier(.22, 1, .36, 1), background-color .25s ease; }
+.relgrid a:hover { transform: translateY(-3px); }
+pre { transition: border-color .3s ease; }
+.pcard { transition: border-color .25s ease, transform .25s cubic-bezier(.22, 1, .36, 1); }
+
+@media (prefers-reduced-motion: reduce) {
+  :root { scroll-behavior: auto; }
+  .s5-r, .s5-r.s5-vis, .s5-hero-r { opacity: 1 !important; transform: none !important; animation: none !important; transition: none !important; }
+  .figbox:hover, .relgrid a:hover, .pcard:hover { transform: none; }
+  * { scroll-behavior: auto !important; }
+}

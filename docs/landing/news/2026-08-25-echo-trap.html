@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-lang="zh" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>从语义相关到唤起必要：回声陷阱的发现、度量与修正 — dsh-auto-memory</title>
+<meta name="description" content="「像不像」与「该不该」是两个预测目标，在分布上不仅不重合，甚至反向。单阈值策略在 86 条人工金标上精确率为 0，最终路径达到 precision 0.818。">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#eef2f7">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Manrope:wght@200;300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/prose.css">
+<link rel="stylesheet" href="assets/step5-motion.css">
+<style>
+  /* ══════════════════════════════════════════════════════════════════════
+     外壳层 · 与落地页同血脉
+     只定义外壳：导航 / 页脚 / 按钮 / 卡片 / 文章头部 / 图表 / 表格 / 代码块 /
+     相关报告。版式令牌来自 assets/prose.css，本块为其补一层暗色与容器别名。
+     正文论证、数字、图表引用、章节编号一字未动。
+     ══════════════════════════════════════════════════════════════════════ */
+
+  /* ── 0. 与主页对齐的字体工具类 ── */
+  .font-display { font-family: 'Space Grotesk', 'Manrope', var(--sans); letter-spacing: -.025em; }
+  .font-mono { font-family: 'JetBrains Mono', ui-monospace, Consolas, monospace; }
+
+  /* ── 0-b. 令牌别名：本页外壳沿用 --c-* 命名，prose.css 用主页的 --bg/--fg/--accent。
+     此处把 --c-* 直接映射到主页令牌，保证两套外壳解析到同一组值（原先 --c-* 只有深色块里
+     定义、浅色下为 null，导致 .nav-blur 背景透明、语言胶囊与主题圆钮无底无框）。 ── */
+  :root {
+    --c-brand: var(--accent); --c-brand-deep: var(--accent);
+    --c-text: var(--fg); --c-text-2: var(--fg-dim); --c-text-3: var(--muted);
+    --c-border: var(--border); --c-border-subtle: var(--border);
+    --c-surface-3: var(--card); --c-code-bg: var(--bg-soft);
+    --c-page: var(--bg); --c-code-dark: var(--bg-code);
+  }
+
+  /* ── 1. 主题令牌：浅色为基准，暗色只覆盖颜色（prose.css 原本只有浅色） ── */
+  :root { color-scheme: light; --c-code-dark: #0f172a; }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --c-brand: #60a5fa; --c-brand-deep: #93c5fd;
+    --c-text: #e8ecf3; --c-text-2: rgba(255, 255, 255, .74); --c-text-3: rgba(255, 255, 255, .62);
+    --c-border: rgba(255, 255, 255, .12); --c-border-subtle: rgba(255, 255, 255, .07);
+    --c-surface-3: rgba(255, 255, 255, .045); --c-code-bg: rgba(255, 255, 255, .07);
+    --c-page: #0a0d14; --c-code-dark: #05070d;
+  }
+
+  /* ── 2. 页宽容器 ── */
+  .wrap { width: min(100% - 96px, 1110px); margin-inline: auto; }  /* 与 prose.css 的 .pwrap 同像素 */
+
+  /* ── 3. 导航（nav.nav-blur > .nav-in） ── */
+  .nav-blur {
+    position: sticky; top: 0; z-index: 50;
+    background: rgba(249, 248, 248, .86);
+    background: color-mix(in srgb, var(--c-page) 82%, transparent);
+    backdrop-filter: blur(24px) saturate(180%); -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border-bottom: 1px solid var(--c-border-subtle);
+  }
+  :root[data-theme="dark"] .nav-blur { background: color-mix(in srgb, var(--c-page) 78%, transparent); }
+  .nav-in { height: 62px; display: flex; align-items: center; justify-content: space-between; gap: var(--sp-5); }
+  .nav-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--c-text); }
+  .nav-brand .brand-logo { width: 24px; height: 24px; display: block; flex: none; color: var(--c-brand); }
+  .brand-logo svg { width: 100%; height: 100%; display: block; }
+  .brand-logo .brain-path { stroke: currentColor; stroke-width: 1.9; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+  .brand-logo .pulse { stroke: currentColor; stroke-width: 1.4; fill: none; stroke-dasharray: 3 2; animation: pulse-soft 4s linear infinite; }
+  @keyframes pulse-soft { from { stroke-dashoffset: 0 } to { stroke-dashoffset: -30 } }
+  .nav-brand .brand-name { font-size: 15px; font-weight: 700; color: var(--c-text); letter-spacing: -.02em; }
+  .nav-links { display: flex; align-items: center; gap: 20px; }
+  .pnav-links .nav-link {
+    position: relative; background: transparent; border: none; cursor: pointer;
+    color: var(--c-text-2); font-size: 13.5px; text-decoration: none;
+    transition: color .18s ease-out;
+  }
+  .pnav-links .nav-link:hover { color: var(--c-brand); }
+  .pnav-links .nav-link::after {
+    content: ''; position: absolute; left: 0; bottom: -5px; width: 100%; height: 1px;
+    background: var(--c-brand); transform: scaleX(0); transform-origin: left;
+    transition: transform .25s cubic-bezier(.22, 1, .36, 1);
+  }
+  @media (hover: hover) and (pointer: fine) { .pnav-links .nav-link:hover::after { transform: scaleX(1); } }
+  .pnav-links .nav-link.is-active { color: var(--c-brand); font-weight: 500; }
+  .pnav-links .nav-link.is-active::after { transform: scaleX(1); }
+  @media (max-width: 900px) { .nav-links { gap: 14px; } .pnav-links .nav-link { font-size: 13px; } }
+  @media (max-width: 760px) { .pnav-links .nav-opt { display: none; } }
+  @media (max-width: 520px) { .nav-links .lang-switch { display: none; } }
+
+  /* 语言切换 / 主题按钮（主页同款） */
+  .lang-switch { display: inline-flex; padding: 3px; border-radius: 999px; background: var(--c-surface-3); border: 1px solid var(--c-border-subtle); }
+  .lang-switch button {
+    padding: 4px 11px; border: none; border-radius: 999px; background: transparent;
+    font-family: 'JetBrains Mono', var(--mono); font-size: 11px; font-weight: 600;
+    color: var(--c-text-3); cursor: pointer; transition: background-color .2s, color .2s;
+  }
+  .lang-switch button.is-on, .lang-switch button.active { background: var(--c-brand); color: #fff; }
+  .theme-toggle-btn {
+    position: relative; width: 36px; height: 36px; flex: none;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 999px; border: 1px solid var(--c-border-subtle);
+    background: var(--c-surface-3); color: var(--c-text-2);
+    cursor: pointer; transition: border-color .2s, color .2s;
+  }
+  .theme-toggle-btn:hover { border-color: var(--c-brand); color: var(--c-brand); }
+  #theme-toggle > svg {
+    position: absolute; inset: 0; margin: auto;
+    transition: opacity .25s ease-in-out, rotate .25s ease-in-out, filter .25s ease-in-out;
+  }
+  :root[data-theme="light"] #theme-icon-moon,
+  :root[data-theme="dark"] #theme-icon-sun { opacity: 0; rotate: -90deg; filter: blur(2px); }
+  :root[data-theme="light"] #theme-icon-sun,
+  :root[data-theme="dark"] #theme-icon-moon { opacity: 1; rotate: 0deg; filter: blur(0); }
+
+  /* ── 4. 按钮：主页同款高光扫过 + hover 抬升 ── */
+  .btn-primary {
+    position: relative; overflow: hidden; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 9px 18px; border: none; border-radius: 10px; background: var(--c-brand); color: #fff;
+    font-size: 13.5px; font-weight: 500; text-decoration: none; cursor: pointer;
+    transition: filter .25s ease-out, box-shadow .25s ease-out, transform .25s cubic-bezier(.22, 1, .36, 1), scale .15s ease-out;
+  }
+  .btn-primary::before {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .22), transparent);
+    transform: translateX(-100%); transition: transform .6s;
+  }
+  .btn-primary:hover::before { transform: translateX(100%); }
+  .btn-primary:hover { filter: brightness(1.08); box-shadow: 0 12px 34px color-mix(in srgb, var(--c-brand) 35%, transparent); transform: translateY(-2px); }
+  .btn-ghost {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 9px 18px; border-radius: 10px; background: transparent; border: 1px solid var(--c-border);
+    color: var(--c-text-2); font-size: 13.5px; text-decoration: none; cursor: pointer;
+    transition: background-color .25s, border-color .25s, color .25s, transform .25s cubic-bezier(.22, 1, .36, 1), scale .15s;
+  }
+  .btn-ghost:hover { background: var(--c-surface-3); border-color: var(--c-brand); color: var(--c-brand); transform: translateY(-1px); }
+  .btn-primary:active, .btn-ghost:active { scale: .97; }
+  /* 旧类名兼容：.pnav-cta 保持可用（描边胶囊） */
+  .pnav-cta {
+    display: inline-flex; align-items: center; padding: 6px 14px; border-radius: 999px;
+    border: 1px solid var(--c-border); color: var(--c-text-2); font-size: 13px; text-decoration: none;
+    transition: border-color .2s, color .2s, background-color .2s;
+  }
+  .pnav-cta:hover { border-color: var(--c-brand); color: var(--c-brand); background: var(--c-surface-3); }
+
+  /* ── 5. 卡片 / 装饰 ── */
+  .glass-card {
+    position: relative; overflow: hidden; border: 1px solid var(--c-border-subtle); border-radius: var(--r-media);
+    background: rgba(255, 255, 255, .72); background: color-mix(in srgb, #fff 72%, transparent);
+    backdrop-filter: blur(10px); box-shadow: 0 4px 24px rgba(0, 0, 0, .05);
+    transition: transform .25s cubic-bezier(.22, 1, .36, 1), border-color .25s, background-color .25s, box-shadow .25s;
+  }
+  :root[data-theme="dark"] .glass-card { background: color-mix(in srgb, #fff 4%, transparent); }
+  .glass-card::before {
+    content: ''; position: absolute; left: 0; right: 0; top: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--c-brand), transparent);
+    opacity: 0; transition: opacity .35s;
+  }
+  .glass-card:hover { transform: translateY(-4px); border-color: color-mix(in srgb, var(--c-brand) 30%, transparent); }
+  .glass-card:hover::before { opacity: 1; }
+  .feature-icon {
+    width: 44px; height: 44px; flex: none; display: flex; align-items: center; justify-content: center;
+    border-radius: 10px; color: var(--c-brand);
+    background: color-mix(in srgb, var(--c-brand) 14%, transparent);
+    border: 1px solid color-mix(in srgb, var(--c-brand) 26%, transparent);
+    transition: background-color .25s, color .25s, transform .25s cubic-bezier(.22, 1, .36, 1);
+  }
+  .glass-card:hover .feature-icon { background: var(--c-brand); color: #fff; transform: rotate(-5deg) scale(1.05); }
+  .badge-pill {
+    display: inline-flex; align-items: center; gap: 8px; padding: 5px 12px; border-radius: 999px;
+    font-family: 'JetBrains Mono', var(--mono); font-size: 11.5px; font-weight: 500; color: var(--c-brand);
+    background: color-mix(in srgb, var(--c-brand) 8%, transparent);
+    border: 1px solid color-mix(in srgb, var(--c-brand) 30%, transparent);
+  }
+  .badge-pill .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; animation: pulse-glow 2s ease-in-out infinite; }
+  @keyframes pulse-glow { 0%, 100% { opacity: .4; transform: scale(1) } 50% { opacity: .8; transform: scale(1.05) } }
+
+  /* ── 6. 文章头部 ── */
+  .phero {
+    position: relative; overflow: hidden;
+    padding: var(--sp-9) 0 var(--sp-8);
+    background: linear-gradient(180deg, #edf2f6 0%, #ffffff 100%);
+    background: linear-gradient(180deg, color-mix(in srgb, var(--c-brand) 6%, var(--c-page)) 0%, var(--c-page) 100%);
+    border-bottom: 1px solid var(--c-border-subtle);
+  }
+  .ptitle {
+    font-family: 'Space Grotesk', var(--sans);
+    font-size: clamp(2rem, 5.2vw, 3.05rem); font-weight: 700;
+    letter-spacing: -.032em; line-height: 1.16;
+    margin: 0 0 var(--sp-4);
+  }
+  .psub { font-size: 18px; line-height: 1.6; color: var(--c-text-2); margin: 0 0 var(--sp-5); }
+  .pmeta { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-4); font-size: 14px; line-height: 1.5; color: var(--c-text-3); font-variant-numeric: tabular-nums; }
+  .pmeta .tagline { color: var(--c-brand-deep); font-weight: 500; }
+  .pmeta .dot { width: 3px; height: 3px; border-radius: 50%; background: currentColor; opacity: .5; }
+  .pabstract {
+    margin-top: var(--sp-6); padding: var(--sp-5) var(--sp-6);
+    border: 1px solid var(--c-border-subtle); border-left: 3px solid var(--c-brand);
+    border-radius: var(--r-media);
+    background: rgba(255, 255, 255, .62); background: color-mix(in srgb, #fff 62%, transparent);
+    font-size: 15px; line-height: 1.75; color: var(--c-text-2);
+  }
+  :root[data-theme="dark"] .pabstract { background: color-mix(in srgb, #fff 4%, transparent); }
+  .pabstract p { margin: 0 0 var(--sp-3); }
+  .pabstract p:last-child { margin-bottom: 0; }
+  .pabstract strong { color: var(--c-text); }
+
+  /* ── 7. 正文排版精修 ── */
+  .prose { line-height: 1.8; font-variant-numeric: tabular-nums; }
+  .prose h2 {
+    font-family: 'Space Grotesk', var(--sans);
+    font-size: 26px; font-weight: 600; letter-spacing: -.028em; line-height: 1.3;
+    margin: var(--sp-8) 0 var(--sp-4); scroll-margin-top: 96px;
+  }
+  .prose h3 {
+    font-family: 'Space Grotesk', var(--sans);
+    font-size: 19.5px; font-weight: 600; letter-spacing: -.018em; line-height: 1.45;
+    margin: var(--sp-7) 0 var(--sp-3); scroll-margin-top: 96px;
+  }
+  .prose h4 { letter-spacing: -.012em; }
+  .prose p { font-size: 16px; line-height: 1.85; margin: 0 0 var(--sp-5); }
+  .prose li { line-height: 1.8; }
+  /* 中英混排光学间距：交给排版引擎按脚本边界自动加隙（渐进增强，不手插空格） */
+  .prose, .ptitle, .psub, .pmeta, .pabstract { text-autospace: normal; }
+  /* 断行禁则：行首不许落 」』】）！？，行尾不许掉 （「『【 */
+  .prose p, .prose li, .prose td, .prose th, .prose blockquote,
+  .pabstract p, .afterword p, .pmeta, .psub {
+    line-break: strict; overflow-wrap: break-word; text-wrap: pretty;
+  }
+
+  /* ── 8. 图表 ── */
+  .prose figure { margin: var(--sp-8) 0; }
+  .prose figure img { display: block; width: 100%; border-radius: calc(var(--r-media) - 2px); }
+  .figbox { padding: var(--sp-5); border: 1px solid var(--c-border-subtle); border-radius: var(--r-media); background: #fff; }
+  .prose figcaption {
+    display: block; max-width: var(--col-w); margin: var(--sp-3) auto 0;
+    text-align: center; font-size: 13px; line-height: 1.6;
+    color: var(--c-text-3); font-variant-numeric: tabular-nums;
+  }
+
+  /* ── 9. 表格：sticky 表头 + 极淡斑马纹 + 数字等宽 ── */
+  .tbl {
+    position: relative; overflow: auto; max-height: 72vh;
+    margin: var(--sp-5) 0; border: 1px solid var(--c-border); border-radius: var(--r-media);
+    -webkit-overflow-scrolling: touch;
+  }
+  .prose table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 15px; font-variant-numeric: tabular-nums; }
+  .prose thead th {
+    position: sticky; top: 0; z-index: 2;
+    background: #f2f4f8; background: color-mix(in srgb, var(--c-brand) 5%, var(--c-page));
+  }
+  :root[data-theme="dark"] .prose thead th { background: color-mix(in srgb, var(--c-brand) 12%, var(--c-page)); }
+  .prose th, .prose td { line-height: 1.5; padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--c-border-subtle); color: var(--c-text); }
+  .prose tbody tr:nth-child(even) td { background: color-mix(in srgb, var(--c-brand) 3%, transparent); }
+  .prose tbody tr:hover td { background: color-mix(in srgb, var(--c-brand) 7%, transparent); }
+  .prose tbody tr:last-child td { border-bottom: none; }
+  .prose td.num, .prose th.num { font-variant-numeric: tabular-nums; text-align: right; }
+  .prose td.hi { color: var(--c-brand-deep); font-weight: 600; }
+
+  /* ── 10. 代码块：圆角 / 内边距 / 行高与主页 pre 对齐 ── */
+  .prose pre {
+    margin: var(--sp-5) 0; padding: 1.25rem 1.5rem;
+    border: 1px solid var(--c-border); border-radius: 10px;
+    background: var(--c-code-dark); color: #e8ecf3;
+    font-family: 'JetBrains Mono', ui-monospace, Consolas, monospace;
+    font-size: 12.5px; line-height: 1.75; overflow-x: auto;
+  }
+  .prose pre code {
+    padding: 0; border-radius: 0; background: none; color: inherit;
+    font-family: inherit; font-size: 12.5px; line-height: 1.75;
+  }
+
+  /* ── 11. 相关报告：卡片网格（.relgrid 为冻结容器名） ── */
+  .pflex { display: flex; }
+  .prelated { padding: var(--sp-9) 0 var(--sp-10); }
+  .prelated-in { border-top: 1px solid var(--c-border-subtle); padding-top: var(--sp-8); }
+  .prelated > .pwrap > h2, .prelated h2 {
+    font-family: 'Space Grotesk', var(--sans);
+    font-size: 20px; font-weight: 600; letter-spacing: -.02em; margin: 0 0 var(--sp-5);
+  }
+  .relgrid, .prelated-grid { display: grid; grid-template-columns: 1fr; gap: var(--sp-4); margin-top: var(--sp-5); }
+  @media (min-width: 768px) { .relgrid, .prelated-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  .relgrid .pcard, .prelated-grid .pcard {
+    display: flex; flex-direction: column; gap: 6px; padding: var(--sp-5);
+    border: 1px solid var(--c-border-subtle); border-radius: var(--r-media);
+    background: rgba(255, 255, 255, .66); background: color-mix(in srgb, #fff 66%, transparent);
+    text-decoration: none; color: inherit;
+    transition: transform .25s cubic-bezier(.22, 1, .36, 1), border-color .25s, background-color .25s, box-shadow .25s, scale .15s;
+  }
+  .relgrid .pcard:hover, .prelated-grid .pcard:hover {
+    transform: translateY(-3px); border-color: color-mix(in srgb, var(--c-brand) 34%, transparent);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, .06);
+  }
+  .relgrid .pcard:active, .prelated-grid .pcard:active { scale: .985; }
+  .relgrid .pcard .kind, .prelated-grid .pcard .kind {
+    font-family: 'JetBrains Mono', var(--mono); font-size: 11px; letter-spacing: .04em;
+    color: var(--c-brand); margin-bottom: 0;
+  }
+  .relgrid .pcard h3, .prelated-grid .pcard h3 {
+    font-family: 'Space Grotesk', var(--sans); font-size: 16px; font-weight: 600;
+    letter-spacing: -.015em; line-height: 1.45; margin: 0; color: var(--c-text);
+  }
+  .relgrid .pcard p, .prelated-grid .pcard p { margin: 0; font-size: 13.5px; line-height: 1.6; color: var(--c-text-3); }
+  .relgrid .pcard .go, .prelated-grid .pcard .go {
+    margin-top: auto; padding-top: var(--sp-3);
+    font-family: 'JetBrains Mono', var(--mono); font-size: 12px; color: var(--c-brand);
+  }
+  :root[data-theme="dark"] .relgrid .pcard, :root[data-theme="dark"] .prelated-grid .pcard { background: color-mix(in srgb, #fff 4%, transparent); }
+
+  /* ── 12. 页脚（与主页同构） ── */
+  .pfoot { border-top: 1px solid var(--c-border-subtle); padding: var(--sp-8) 0 var(--sp-9); font-size: 14px; color: var(--c-text-3); }
+  .pfoot-grid { display: grid; grid-template-columns: 1fr; gap: var(--sp-6); }
+  @media (min-width: 860px) { .pfoot-grid { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 1fr); gap: var(--sp-7); } }
+  .pfoot-brand { display: flex; align-items: center; gap: 10px; margin-bottom: var(--sp-4); }
+  .pfoot-brand .brand-logo { width: 28px; height: 28px; flex: none; color: var(--c-brand); }
+  .pfoot-name { display: block; font-size: 15px; font-weight: 600; color: var(--c-text); }
+  .pfoot-tag { display: block; font-family: 'JetBrains Mono', var(--mono); font-size: 10px; letter-spacing: .08em; color: var(--c-text-3); }
+  .pfoot-desc { margin: 0; max-width: 42ch; font-size: 13.5px; line-height: 1.7; color: var(--c-text-3); }
+  .pfoot .col-title {
+    margin-bottom: var(--sp-3); font-family: 'JetBrains Mono', var(--mono);
+    font-size: 11px; text-transform: uppercase; letter-spacing: .12em; color: var(--c-text-3);
+  }
+  .pfoot ul { list-style: none; display: flex; flex-direction: column; gap: var(--sp-2); margin: 0; padding: 0; }
+  .pfoot .nav-link { font-size: 13.5px; }
+  .pfoot a { color: var(--c-text-2); text-decoration: none; transition: color .18s ease-out; }
+  .pfoot a:hover { color: var(--c-brand); }
+  .pfoot-base {
+    display: flex; flex-wrap: wrap; gap: var(--sp-3); justify-content: space-between;
+    margin-top: var(--sp-8); padding-top: var(--sp-5);
+    border-top: 1px solid var(--c-border-subtle);
+    font-family: 'JetBrains Mono', var(--mono); font-size: 12px; color: var(--c-text-3);
+  }
+  /* prose.css 旧结构兼容（.pfoot .row 等） */
+  .pfoot .row { display: flex; flex-wrap: wrap; gap: var(--sp-5); align-items: center; justify-content: space-between; }
+
+  /* ── 13. 旧导航类名兼容：老文件残留标记仍需显示正常 ── */
+  .pnav { position: sticky; top: 0; z-index: 50; }
+  .pnav-in { width: min(100% - 48px, 1110px); margin-inline: auto; height: 62px; display: flex; align-items: center; justify-content: space-between; gap: var(--sp-5); }
+  .pnav-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--c-text); font-weight: 600; letter-spacing: -.01em; }
+  .pnav-brand i { display: block; width: 22px; height: 22px; border-radius: 6px; background: var(--c-brand); }
+  .pnav-links { display: flex; align-items: center; gap: 20px; }
+
+  /* ── 14. 动效与可访问性 ── */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+    html { scroll-behavior: auto; }
+  }
+  @media (hover: none) {
+    .glass-card:hover, .btn-primary:hover, .btn-ghost:hover,
+    .relgrid .pcard:hover, .prelated-grid .pcard:hover { transform: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- 2026-10-13 · 动效增强（署名：Step5）：入场浮现 / 滚动显现 / hover 过渡。
+     仅新增 assets/step5-motion.css + assets/step5-motion.js 两个资产引用，正文一字未改。 -->
+<nav class="pnav nav-blur" aria-label="站内导航">
+  <div class="pnav-in nav-in">
+    <a class="pnav-brand nav-brand" href="../index.html" aria-label="dsh-auto-memory 首页">
+      <span class="brand-logo" aria-hidden="true">
+        <svg viewBox="0 0 40 40" fill="none">
+            <g class="brain-path">
+              <path d="M20 6c-4 0-7 2.5-7 6 0 1 .2 2 .6 2.8C11 15.6 9.5 17.4 9.5 19.6c0 1.6.9 3 2.3 3.8-.2.6-.3 1.2-.3 1.9 0 3.2 2.6 5.7 6 5.7 1 0 1.9-.2 2.5-.7"/>
+              <path d="M20 6c4 0 7 2.5 7 6 0 1-.2 2-.6 2.8 2.6.8 4.1 2.6 4.1 4.8 0 1.6-.9 3-2.3 3.8.2.6.3 1.2.3 1.9 0 3.2-2.6 5.7-6 5.7-1 0-1.9-.2-2.5-.7"/>
+              <path d="M20 6v25"/>
+            </g>
+        <g class="pulse"><circle cx="20" cy="20" r="14" opacity=".5"/></g>
+        </svg>
+      </span>
+      <span class="brand-name font-display">dsh-auto-memory</span>
+    </a>
+    <div class="pnav-links nav-links">
+      <a class="nav-link" href="../index.html">主页</a>
+      <a class="nav-link is-active" href="index.html" aria-current="page">技术报告</a>
+      <a class="nav-link nav-opt" href="https://github.com/Aik358/dsh-auto-memory" target="_blank" rel="noreferrer">GitHub</a>
+      <a class="nav-link nav-opt" href="https://github.com/Aik358/dsh-auto-memory/blob/main/CHANGELOG.md" target="_blank" rel="noreferrer">更新日志</a>
+      <span class="lang-switch" role="group" aria-label="语言">
+        <button type="button" data-lang="zh" class="is-on" aria-pressed="true">中</button>
+        <button type="button" data-lang="en" aria-pressed="false">EN</button>
+      </span>
+      <button id="theme-toggle" class="theme-toggle-btn" type="button" aria-label="切换主题" aria-pressed="false">
+        <svg id="theme-icon-sun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+        <svg id="theme-icon-moon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<header class="phero">
+  <div class="pwrap">
+    <div class="phero-in">
+      <h1 class="ptitle font-display" data-i18n-hash="7b0695c3" data-i18n-zh="从语义相关到唤起必要">从语义相关到唤起必要</h1>
+      <p class="psub" data-i18n-hash="1c41a448" data-i18n-zh="个人记忆系统激活策略的回声陷阱：发现、度量与修正">个人记忆系统激活策略的回声陷阱：发现、度量与修正</p>
+      <div class="pmeta">
+        <span class="tagline">技术报告</span><span class="dot"></span>
+        <span>2026-08-25</span><span class="dot"></span>
+        <span>86 条人工金标</span><span class="dot"></span>
+        <span>离线重放 · 零 active 流量</span>
+      </div>
+      <div class="pabstract">
+        <p data-i18n-hash="7ec01ba6" data-i18n-zh="&lt;strong&gt;摘要&lt;/strong&gt; 主动记忆系统需要在用户没有显式调用时决定「是否把一条历史记忆注入当前上下文」。我们把这一决策分解为两个可分别度量的预测目标——&lt;strong&gt;语义相关性&lt;/strong&gt;（材料与当前话题的相似程度）与&lt;strong&gt;唤起必要性&lt;/strong&gt;（现在注入能否实质帮助任务），并在一个运行于开发者宿主内的双语个人记忆系统上证明：二者不可相互替代。"><strong>摘要</strong>　主动记忆系统需要在用户没有显式调用时决定「是否把一条历史记忆注入当前上下文」。我们把这一决策分解为两个可分别度量的预测目标——<strong>语义相关性</strong>（材料与当前话题的相似程度）与<strong>唤起必要性</strong>（现在注入能否实质帮助任务），并在一个运行于开发者宿主内的双语个人记忆系统上证明：二者不可相互替代。</p>
+        <p data-i18n-hash="99328880" data-i18n-zh="在检索底座完全不变的前提下，仅用稠密相似度的现行单阈值策略在 86 条人工金标上精确率为 &lt;strong&gt;0&lt;/strong&gt;——其唯一一次激活恰由一条与生活记录近乎复述的闲聊触发（「回声陷阱」）。我们构建了三批共 86 条人工裁决金标，提出双通道决策架构与四组特征，并以可审计的轻量意图头替换手工规则。最终路径达到 &lt;strong&gt;precision 0.818 / recall 0.237&lt;/strong&gt;（含完整性门；无门时 0.516/0.421 但伴随 8 次越级）。">在检索底座完全不变的前提下，仅用稠密相似度的现行单阈值策略在 86 条人工金标上精确率为 <strong>0</strong>——其唯一一次激活恰由一条与生活记录近乎复述的闲聊触发（「回声陷阱」）。我们构建了三批共 86 条人工裁决金标，提出双通道决策架构与四组特征，并以可审计的轻量意图头替换手工规则。最终路径达到 <strong>precision 0.818 / recall 0.237</strong>（含完整性门；无门时 0.516/0.421 但伴随 8 次越级）。</p>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="pwrap">
+  <div class="pgrid">
+    <aside class="ptoc">
+      <ul class="ptoc-list">
+        <li><a href="#s1">1　问题的出现</a></li>
+        <li><a href="#s2">2　两个预测目标</a></li>
+        <li><a href="#s3">3　回声陷阱的定量证据</a></li>
+        <li><a href="#s4">4　金标是怎么造的</a></li>
+        <li><a href="#s5">5　四条路径</a></li>
+        <li><a href="#s6">6　三条被证伪的捷径</a></li>
+        <li><a href="#s7">7　决策顺序的消融</a></li>
+        <li><a href="#s8">8　为什么「是否在问」比「有多像」重要</a></li>
+        <li><a href="#s9">9　双轨部署架构</a></li>
+        <li><a href="#s10">10　局限与效度威胁</a></li>
+        <li><a href="#s11">11　结论</a></li>
+        <li><a href="#after">写在后面的话</a></li>
+      </ul>
+    </aside>
+    <main class="particle prose">
+
+<h2 id="s1" data-i18n-hash="e4818b50" data-i18n-zh="1 问题的出现">1　问题的出现</h2>
+
+<p data-i18n-hash="c15abbae" data-i18n-zh="dsh-auto-memory 是一个宿主侧主动关联记忆系统：JS 宿主在每个请求边界之前，可以把历史记忆以「参考尾注」的形式注入模型可见的消息；Python 侧车负责语义计算并提出激活建议。此前的阶段已完成嵌入选型、分块策略与混合检索，激活部分采用的是一条朴素的骨架——按分数排序，用一对阈值（&lt;code&gt;tOn&lt;/code&gt; / &lt;code&gt;tOff&lt;/code&gt;）做滞回判定，分三档输出：抑制、预取、激活。">dsh-auto-memory 是一个宿主侧主动关联记忆系统：JS 宿主在每个请求边界之前，可以把历史记忆以「参考尾注」的形式注入模型可见的消息；Python 侧车负责语义计算并提出激活建议。此前的阶段已完成嵌入选型、分块策略与混合检索，激活部分采用的是一条朴素的骨架——按分数排序，用一对阈值（<code>tOn</code> / <code>tOff</code>）做滞回判定，分三档输出：抑制、预取、激活。</p>
+
+<p data-i18n-hash="2409f2ce" data-i18n-zh="上线观察期间，&lt;code&gt;emit = 0&lt;/code&gt; 被解读为「安全」。但人工审查发现，得分最高的样本是一条与生活记录近乎复述的闲聊：">上线观察期间，<code>emit = 0</code> 被解读为「安全」。但人工审查发现，得分最高的样本是一条与生活记录近乎复述的闲聊：</p>
+
+<blockquote data-i18n-hash="a89d92b4" data-i18n-zh="&lt;p&gt;「中午那碗面条挺不错的。」 （denseTop = 0.834）&lt;/p&gt;"><p>「中午那碗面条挺不错的。」　　（denseTop = 0.834）</p></blockquote>
+
+<p data-i18n-hash="88a5b407" data-i18n-zh="它的得分&lt;strong&gt;高于全部真实召回问句&lt;/strong&gt;。换句话说，稠密相似度度量的是「像不像」，而激活需要的是「该不该」；两者在分布上不仅不重合，甚至反向。">它的得分<strong>高于全部真实召回问句</strong>。换句话说，稠密相似度度量的是「像不像」，而激活需要的是「该不该」；两者在分布上不仅不重合，甚至反向。</p>
+
+<h2 id="s2" data-i18n-hash="7003eb95" data-i18n-zh="2 两个预测目标">2　两个预测目标</h2>
+
+<p data-i18n-hash="301d7d9c" data-i18n-zh="我们把激活决策拆解为：">我们把激活决策拆解为：</p>
+
+<ul>
+  <li data-i18n-hash="97b3360d" data-i18n-zh="&lt;strong&gt;语义相关性&lt;/strong&gt;（retrieval relevance）：候选材料与当前话题的相关程度，由检索层给出（稠密 / 词法 / 融合分数）；"><strong>语义相关性</strong>（retrieval relevance）：候选材料与当前话题的相关程度，由检索层给出（稠密 / 词法 / 融合分数）；</li>
+  <li data-i18n-hash="db9d0273" data-i18n-zh="&lt;strong&gt;唤起必要性&lt;/strong&gt;（activation eligibility）：现在注入是否实质帮助任务、不打扰用户，由意图、对话行为、任务依赖、完整性与硬性约束共同决定。"><strong>唤起必要性</strong>（activation eligibility）：现在注入是否实质帮助任务、不打扰用户，由意图、对话行为、任务依赖、完整性与硬性约束共同决定。</li>
+</ul>
+
+<p data-i18n-hash="c0fd01df" data-i18n-zh="二者的关系是&lt;strong&gt;同步计算、分层裁决&lt;/strong&gt;：相关性负责「什么材料进入候选」，必要性负责「此刻是否打断」。两条通路的先后顺序相反，且都必要——显式召回通路意图先行、关联验证；主动通路关联先行、语境批准。">二者的关系是<strong>同步计算、分层裁决</strong>：相关性负责「什么材料进入候选」，必要性负责「此刻是否打断」。两条通路的先后顺序相反，且都必要——显式召回通路意图先行、关联验证；主动通路关联先行、语境批准。</p>
+
+<h2 id="s3" data-i18n-hash="ca64a35e" data-i18n-zh="3 回声陷阱的定量证据">3　回声陷阱的定量证据</h2>
+
+<figure>
+  <div class="figbox"><img src="assets/figures/fig-echo-trap.svg" alt="三类人工金标的语义分数分布区间：抑制类的最高分 0.651 高于激活类的最高分 0.5914，两个阈值线 0.62 与 0.52 落在两者之间"></div>
+  <figcaption data-i18n-hash="c7e6e4d3" data-i18n-zh="图 1 86 条人工金标的语义分数分布。抑制类呈双峰，其高位峰&lt;strong&gt;整体越过阈值线&lt;/strong&gt;，而激活类的上限反在其下。">图 1　86 条人工金标的语义分数分布。抑制类呈双峰，其高位峰<strong>整体越过阈值线</strong>，而激活类的上限反在其下。</figcaption>
+</figure>
+
+<p data-i18n-hash="99835cbc" data-i18n-zh="在 86 条人工金标上，三类的分布是：">在 86 条人工金标上，三类的分布是：</p>
+
+<div class="tbl">
+<table>
+  <thead><tr><th data-i18n-hash="ed9f6d4d" data-i18n-zh="类别">类别</th><th class="num">n</th><th class="num" data-i18n-hash="ac38bdf7" data-i18n-zh="分数区间">分数区间</th><th class="num" data-i18n-hash="ae4f390f" data-i18n-zh="该类最高分">该类最高分</th></tr></thead>
+  <tbody>
+    <tr><td data-i18n-hash="9d02dd93" data-i18n-zh="激活（Activate）">激活（Activate）</td><td class="num">38</td><td class="num">0.280 – 0.5914</td><td class="num">0.5914</td></tr>
+    <tr><td data-i18n-hash="01177d4d" data-i18n-zh="预取（Prefetch）">预取（Prefetch）</td><td class="num">29</td><td class="num">0.315 – 0.430</td><td class="num">0.430</td></tr>
+    <tr><td data-i18n-hash="0ee61907" data-i18n-zh="抑制（Suppress）">抑制（Suppress）</td><td class="num">19</td><td class="num">0.255 – 0.651</td><td class="num hi">0.651</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p data-i18n-hash="46c5ab74" data-i18n-zh="两条阈值线（&lt;code&gt;tOn = 0.62&lt;/code&gt; / &lt;code&gt;tOff = 0.52&lt;/code&gt;）落在&lt;strong&gt;抑制类高位峰的正中间&lt;/strong&gt;。也就是说：在阈值之上「看起来最安全」的样本，恰好全是回声。抑制类呈明显的双峰——低位组是正常的无关记录，高位组则与当前对话几乎逐字复述。">两条阈值线（<code>tOn = 0.62</code> / <code>tOff = 0.52</code>）落在<strong>抑制类高位峰的正中间</strong>。也就是说：在阈值之上「看起来最安全」的样本，恰好全是回声。抑制类呈明显的双峰——低位组是正常的无关记录，高位组则与当前对话几乎逐字复述。</p>
+
+<p data-i18n-hash="e39acd6b" data-i18n-zh="这就是&lt;strong&gt;回声陷阱&lt;/strong&gt;：当用户随口复述了一句生活记录时，那条记录与当前上下文的相似度天然极高。相似度没有错，它只是回答了另一个问题。">这就是<strong>回声陷阱</strong>：当用户随口复述了一句生活记录时，那条记录与当前上下文的相似度天然极高。相似度没有错，它只是回答了另一个问题。</p>
+
+<h2 id="s4" data-i18n-hash="debf421d" data-i18n-zh="4 金标是怎么造的">4　金标是怎么造的</h2>
+
+<p data-i18n-hash="2af48811" data-i18n-zh="如果金标只是「随手标一批」，那么任何结论都可能是标注偏见的产物。我们采用&lt;strong&gt;对抗式构造&lt;/strong&gt;：">如果金标只是「随手标一批」，那么任何结论都可能是标注偏见的产物。我们采用<strong>对抗式构造</strong>：</p>
+
+<ul>
+  <li data-i18n-hash="6503f8cb" data-i18n-zh="&lt;strong&gt;最小对照对&lt;/strong&gt;（counterfactual pairs）：同一真实记忆，在不同对话意图下构成一对——材料相同、语境不同，只有「是否该唤起」不同。这类标注直接检验「模型是否在看意图而不是在看材料」。"><strong>最小对照对</strong>（counterfactual pairs）：同一真实记忆，在不同对话意图下构成一对——材料相同、语境不同，只有「是否该唤起」不同。这类标注直接检验「模型是否在看意图而不是在看材料」。</li>
+  <li data-i18n-hash="d30fe463" data-i18n-zh="&lt;strong&gt;跨工作区同文异 scope 对照&lt;/strong&gt;：同一段文字在两个工作区各存一份，用其中一个的语境去查另一个——正确答案是「不许跨库」，用于硬断言泄漏。"><strong>跨工作区同文异 scope 对照</strong>：同一段文字在两个工作区各存一份，用其中一个的语境去查另一个——正确答案是「不许跨库」，用于硬断言泄漏。</li>
+  <li data-i18n-hash="07bfed0f" data-i18n-zh="&lt;strong&gt;多目标完整性对照&lt;/strong&gt;：一个查询需要同时召回多条记录才算完整，用于检验「只召回一条就激活」的越级行为。"><strong>多目标完整性对照</strong>：一个查询需要同时召回多条记录才算完整，用于检验「只召回一条就激活」的越级行为。</li>
+</ul>
+
+<p data-i18n-hash="acea8998" data-i18n-zh="三批合计 86 条人工裁决金标（其中 58 条构成早期 human gold 批次）。标注过程&lt;strong&gt;零代码改动、零阈值调整&lt;/strong&gt;——目的就是让金标独立于被检验对象。">三批合计 86 条人工裁决金标（其中 58 条构成早期 human gold 批次）。标注过程<strong>零代码改动、零阈值调整</strong>——目的就是让金标独立于被检验对象。</p>
+
+<h2 id="s5" data-i18n-hash="77a303cf" data-i18n-zh="5 四条路径">5　四条路径</h2>
+
+<figure>
+  <div class="figbox"><img src="assets/figures/fig-pr-paths.svg" alt="四条激活路径的精确率–召回率对比：单阈值路径落在原点，规则级联落在召回 0.5、精确率 1.0，纯学习路径精确率 0.516，最终路径落在召回 0.289、精确率 1.0"></div>
+  <figcaption data-i18n-hash="c80b6bb2" data-i18n-zh="图 2 四条路径的精确率–召回率权衡。最终路径在统一口径下取得 precision 1.000 / recall 0.289。">图 2　四条路径的精确率–召回率权衡。最终路径在统一口径下取得 precision 1.000 / recall 0.289。</figcaption>
+</figure>
+
+<div class="tbl">
+<table>
+  <thead><tr><th data-i18n-hash="9132e087" data-i18n-zh="路径">路径</th><th class="num">precision</th><th class="num">recall</th><th data-i18n-hash="26670dda" data-i18n-zh="说明">说明</th></tr></thead>
+  <tbody>
+    <tr><td data-i18n-hash="31fdcb24" data-i18n-zh="v1 单阈值（现行）">v1 单阈值（现行）</td><td class="num">0.000</td><td class="num">0.000</td><td data-i18n-hash="62a57cdb" data-i18n-zh="唯一一次激活由闲聊触发">唯一一次激活由闲聊触发</td></tr>
+    <tr><td data-i18n-hash="34da586d" data-i18n-zh="v2 手工规则级联">v2 手工规则级联</td><td class="num">1.000</td><td class="num">0.500</td><td data-i18n-hash="9b3d52ef" data-i18n-zh="精确但召回偏低，规则难以维护">精确但召回偏低，规则难以维护</td></tr>
+    <tr><td data-i18n-hash="bf69858f" data-i18n-zh="纯学习 · 无完整性门">纯学习 · 无完整性门</td><td class="num">0.516</td><td class="num">0.421</td><td data-i18n-hash="dc3cc14c" data-i18n-zh="伴随 8 次 prefetch 类越级">伴随 8 次 prefetch 类越级</td></tr>
+    <tr><td data-i18n-hash="1df35ec6" data-i18n-zh="&lt;strong&gt;最终路径 · 含完整性门&lt;/strong&gt;"><strong>最终路径 · 含完整性门</strong></td><td class="num hi">0.818</td><td class="num hi">0.237</td><td data-i18n-hash="49947466" data-i18n-zh="决策顺序修正 + 结构化完整性门">决策顺序修正 + 结构化完整性门</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p data-i18n-hash="71ff5f21" data-i18n-zh="四条路径分别代表四个极端：不学、只靠规则、只靠学习、以及混合。结论是——&lt;strong&gt;两个极端都不成立&lt;/strong&gt;：纯规则精确但召回低且难维护，纯学习召回稍好但会把「只是相关」当成「该召回」。混合架构（校准意图头 + 双 lane 规则骨架 + 结构化完整性门）是唯一同时可部署且可解释的解。">四条路径分别代表四个极端：不学、只靠规则、只靠学习、以及混合。结论是——<strong>两个极端都不成立</strong>：纯规则精确但召回低且难维护，纯学习召回稍好但会把「只是相关」当成「该召回」。混合架构（校准意图头 + 双 lane 规则骨架 + 结构化完整性门）是唯一同时可部署且可解释的解。</p>
+
+<h2 id="s6" data-i18n-hash="838a8656" data-i18n-zh="6 三条被证伪的捷径">6　三条被证伪的捷径</h2>
+
+<p data-i18n-hash="631c357a" data-i18n-zh="这一节是本文最希望被引用的部分。以下三条做法都曾在内部被认真讨论过，实测全部不成立。">这一节是本文最希望被引用的部分。以下三条做法都曾在内部被认真讨论过，实测全部不成立。</p>
+
+<h3 data-i18n-hash="f0a09778" data-i18n-zh="6.1 词面覆盖率单独不可判回声">6.1　词面覆盖率单独不可判回声</h3>
+
+<figure>
+  <div class="figbox"><img src="assets/figures/fig-containment.svg" alt="词法覆盖率中位数对比：回声抑制类 0.273，激活类 0.462，激活类反而更高"></div>
+  <figcaption data-i18n-hash="1209c896" data-i18n-zh="图 3 词法覆盖率中位数。方向与直觉相反：应为回声的抑制类&lt;strong&gt;更低&lt;/strong&gt;，真正该召回的激活类&lt;strong&gt;更高&lt;/strong&gt;。">图 3　词法覆盖率中位数。方向与直觉相反：应为回声的抑制类<strong>更低</strong>，真正该召回的激活类<strong>更高</strong>。</figcaption>
+</figure>
+
+<p data-i18n-hash="d39e4c07" data-i18n-zh="直觉上，「关键词重合度高的候选」最像回声，应该一刀切掉。实测（图 3）方向是反的：抑制类中位数 &lt;strong&gt;0.273&lt;/strong&gt;，激活类中位数 &lt;strong&gt;0.462&lt;/strong&gt;。任何「词法覆盖硬封顶」的规则，都会先砍掉真正该召回的那一类。">直觉上，「关键词重合度高的候选」最像回声，应该一刀切掉。实测（图 3）方向是反的：抑制类中位数 <strong>0.273</strong>，激活类中位数 <strong>0.462</strong>。任何「词法覆盖硬封顶」的规则，都会先砍掉真正该召回的那一类。</p>
+
+<p data-i18n-hash="42bf19c2" data-i18n-zh="&lt;em&gt;为什么？&lt;/em&gt; 因为回声是&lt;strong&gt;逐字复述&lt;/strong&gt;，而多数中文闲聊句很短，与结构化记忆条目的词面重合并不高；真正该召回的问句反而包含大量记忆条目里的专有名词与路径。"><em>为什么？</em> 因为回声是<strong>逐字复述</strong>，而多数中文闲聊句很短，与结构化记忆条目的词面重合并不高；真正该召回的问句反而包含大量记忆条目里的专有名词与路径。</p>
+
+<h3 data-i18n-hash="ae1873b8" data-i18n-zh="6.2 纯文本三分类不可判必要性">6.2　纯文本三分类不可判必要性</h3>
+
+<p data-i18n-hash="15a6a0d3" data-i18n-zh="把「该不该唤起」当作一个纯文本三分类问题，在同一批金标上 macroF1 仅 &lt;strong&gt;0.494&lt;/strong&gt;，其中 prefetch 类 &lt;strong&gt;8/19 被误判为 activate&lt;/strong&gt;。脱离任务语境，文本本身无法区分「该召回」与「只是相关」。">把「该不该唤起」当作一个纯文本三分类问题，在同一批金标上 macroF1 仅 <strong>0.494</strong>，其中 prefetch 类 <strong>8/19 被误判为 activate</strong>。脱离任务语境，文本本身无法区分「该召回」与「只是相关」。</p>
+
+<h3 data-i18n-hash="6d4cdf8c" data-i18n-zh="6.3 全局前置回声否决会误伤显式追问">6.3　全局前置回声否决会误伤显式追问</h3>
+
+<p data-i18n-hash="4438c665" data-i18n-zh="把回声检测放在决策链最前面、对所有通路一律否决，看起来是最安全的做法。实测它会连显式追问一起砍掉——用户明明在问「上次那个结论是什么」，而那条结论恰好与上文高度重合。">把回声检测放在决策链最前面、对所有通路一律否决，看起来是最安全的做法。实测它会连显式追问一起砍掉——用户明明在问「上次那个结论是什么」，而那条结论恰好与上文高度重合。</p>
+
+<h2 id="s7" data-i18n-hash="25ef68bf" data-i18n-zh="7 决策顺序的消融">7　决策顺序的消融</h2>
+
+<figure>
+  <div class="figbox"><img src="assets/figures/fig-order-ablation.svg" alt="决策顺序消融：缺陷顺序下激活精确率 0.818、召回 0.237、抑制越界 1；修正顺序下精确率 1.000、召回 0.289、抑制越界 0"></div>
+  <figcaption data-i18n-hash="e1a4bcf8" data-i18n-zh="图 4 同一批数据、同一组特征，&lt;strong&gt;只调整判断顺序&lt;/strong&gt;：越界数从 1 降到 0，精确率从 0.818 升到 1.000。">图 4　同一批数据、同一组特征，<strong>只调整判断顺序</strong>：越界数从 1 降到 0，精确率从 0.818 升到 1.000。</figcaption>
+</figure>
+
+<div class="tbl">
+<table>
+  <thead><tr><th data-i18n-hash="1dfc810a" data-i18n-zh="指标">指标</th><th class="num" data-i18n-hash="39087cd0" data-i18n-zh="缺陷顺序&lt;br&gt;（回声否决全局前置）">缺陷顺序<br>（回声否决全局前置）</th><th class="num" data-i18n-hash="cd815a85" data-i18n-zh="修正顺序&lt;br&gt;（回声否决仅作用于主动车道）">修正顺序<br>（回声否决仅作用于主动车道）</th></tr></thead>
+  <tbody>
+    <tr><td data-i18n-hash="f26605a8" data-i18n-zh="激活精确率">激活精确率</td><td class="num">0.818</td><td class="num hi">1.000</td></tr>
+    <tr><td data-i18n-hash="ef1efad2" data-i18n-zh="激活召回率">激活召回率</td><td class="num">0.237</td><td class="num hi">0.289</td></tr>
+    <tr><td data-i18n-hash="6f0157ed" data-i18n-zh="抑制越界数">抑制越界数</td><td class="num">1.000</td><td class="num hi">0.000</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p data-i18n-hash="03c988ac" data-i18n-zh="这是全篇最有冲击力的对照：&lt;strong&gt;没有换模型、没有加特征、没有调参数&lt;/strong&gt;，只是把回声否决从「全局前置」移到「主动车道内部」，三项指标同时改善。">这是全篇最有冲击力的对照：<strong>没有换模型、没有加特征、没有调参数</strong>，只是把回声否决从「全局前置」移到「主动车道内部」，三项指标同时改善。</p>
+
+<p data-i18n-hash="0b4b49d6" data-i18n-zh="修正后的决策链为：显式通路先判意图、再验证关联；主动通路先做关联、再由语境批准。回声否决只在前者之外生效。">修正后的决策链为：显式通路先判意图、再验证关联；主动通路先做关联、再由语境批准。回声否决只在前者之外生效。</p>
+
+<h2 id="s8" data-i18n-hash="ef741b06" data-i18n-zh="8 为什么「是否在问」比「有多像」重要">8　为什么「是否在问」比「有多像」重要</h2>
+
+<figure>
+  <div class="figbox"><img src="assets/figures/fig-coefficients.svg" alt="逻辑回归特征系数：mark 为 2.04，containment 为 1.58，intentProb 为 0.32，margin 为 0.26，denseTop 为 0.06，nCand 为 0"></div>
+  <figcaption data-i18n-hash="9c60620a" data-i18n-zh="图 5 可部署特征的逻辑回归系数。&lt;strong&gt;mark（疑问/回忆标记）的权重是 denseTop（稠密相似度）的 34 倍。&lt;/strong&gt;">图 5　可部署特征的逻辑回归系数。<strong>mark（疑问/回忆标记）的权重是 denseTop（稠密相似度）的 34 倍。</strong></figcaption>
+</figure>
+
+<div class="tbl">
+<table>
+  <thead><tr><th data-i18n-hash="672c1db9" data-i18n-zh="特征">特征</th><th class="num" data-i18n-hash="3dd19442" data-i18n-zh="系数">系数</th><th data-i18n-hash="104d11e4" data-i18n-zh="含义">含义</th></tr></thead>
+  <tbody>
+    <tr><td><code>mark</code></td><td class="num hi">+2.04</td><td data-i18n-hash="c8accab7" data-i18n-zh="疑问 / 回忆标记（「上次」「刚才说的」）">疑问 / 回忆标记（「上次」「刚才说的」）</td></tr>
+    <tr><td><code>containment</code></td><td class="num">+1.58</td><td data-i18n-hash="826ff0a7" data-i18n-zh="词面覆盖">词面覆盖</td></tr>
+    <tr><td><code>intentProb</code></td><td class="num">+0.32</td><td data-i18n-hash="69649786" data-i18n-zh="校准意图头输出">校准意图头输出</td></tr>
+    <tr><td><code>margin</code></td><td class="num">+0.26</td><td data-i18n-hash="bd77ecfa" data-i18n-zh="融合分数差">融合分数差</td></tr>
+    <tr><td><code>denseTop</code></td><td class="num">+0.06</td><td data-i18n-hash="c48d33a9" data-i18n-zh="稠密相似度">稠密相似度</td></tr>
+    <tr><td><code>nCand</code></td><td class="num">+0.00</td><td data-i18n-hash="f630f9df" data-i18n-zh="候选数">候选数</td></tr>
+  </tbody>
+</table>
+</div>
+
+<blockquote data-i18n-hash="58beeefd" data-i18n-zh="&lt;p&gt;&lt;strong&gt;口径说明&lt;/strong&gt; 本文采用重拟合工件中的系数（与离线图一致）。项目内部早期版本的说明文档中记录了一组不同的数值，属同一路径的历史中间态，已被此次重拟合取代；此处以工件为准。&lt;/p&gt;"><p><strong>口径说明</strong>　本文采用重拟合工件中的系数（与离线图一致）。项目内部早期版本的说明文档中记录了一组不同的数值，属同一路径的历史中间态，已被此次重拟合取代；此处以工件为准。</p></blockquote>
+
+<h3 data-i18n-hash="22184939" data-i18n-zh="8.1 概率校准是「免费」的">8.1　概率校准是「免费」的</h3>
+
+<figure>
+  <div class="figbox"><img src="assets/figures/fig-calibration.svg" alt="Platt 校准收益：准确率从 0.744 提升到 0.872，Brier 分数从 0.227 降到 0.131"></div>
+  <figcaption data-i18n-hash="943a1ea1" data-i18n-zh="图 6 Platt 校准的收益。准确率 +12.8 个百分点，Brier 分数减半。">图 6　Platt 校准的收益。准确率 +12.8 个百分点，Brier 分数减半。</figcaption>
+</figure>
+
+<p data-i18n-hash="dfe2d458" data-i18n-zh="阈值策略直接消费概率，因此校准本身不改变排序、却直接改善决策——准确率从 &lt;strong&gt;0.744&lt;/strong&gt; 升到 &lt;strong&gt;0.872&lt;/strong&gt;，Brier 分数从 &lt;strong&gt;0.227&lt;/strong&gt; 降到 &lt;strong&gt;0.131&lt;/strong&gt;。这是整条管线里性价比最高的一步。">阈值策略直接消费概率，因此校准本身不改变排序、却直接改善决策——准确率从 <strong>0.744</strong> 升到 <strong>0.872</strong>，Brier 分数从 <strong>0.227</strong> 降到 <strong>0.131</strong>。这是整条管线里性价比最高的一步。</p>
+
+<h3 data-i18n-hash="7f2d697a" data-i18n-zh="8.2 独立金标验收">8.2　独立金标验收</h3>
+
+<p data-i18n-hash="07e78dfb" data-i18n-zh="冻结策略在另一次独立的离线验收中复核：&lt;strong&gt;67 条&lt;/strong&gt;人工标注、actPrecision &lt;strong&gt;0.917&lt;/strong&gt;、有害注入 &lt;strong&gt;0&lt;/strong&gt;、echo 层 &lt;strong&gt;7/7&lt;/strong&gt;，配置哈希校验通过。">冻结策略在另一次独立的离线验收中复核：<strong>67 条</strong>人工标注、actPrecision <strong>0.917</strong>、有害注入 <strong>0</strong>、echo 层 <strong>7/7</strong>，配置哈希校验通过。</p>
+
+<h2 id="s9" data-i18n-hash="ea733b22" data-i18n-zh="9 双轨部署架构">9　双轨部署架构</h2>
+
+<p data-i18n-hash="bc10643b" data-i18n-zh="同一分离原则延伸到部署维度：&lt;strong&gt;语义近似程度&lt;/strong&gt;由三级可选算力档承载，而&lt;strong&gt;唤起必要程度&lt;/strong&gt;始终由统一的双通道策略管线回答，与档位彻底解耦。">同一分离原则延伸到部署维度：<strong>语义近似程度</strong>由三级可选算力档承载，而<strong>唤起必要程度</strong>始终由统一的双通道策略管线回答，与档位彻底解耦。</p>
+
+<div class="tbl">
+<table>
+  <thead><tr><th data-i18n-hash="2cfe7e40" data-i18n-zh="档位">档位</th><th data-i18n-hash="1165d986" data-i18n-zh="形态">形态</th><th class="num" data-i18n-hash="f6da5992" data-i18n-zh="常驻内存">常驻内存</th><th class="num">R@5</th></tr></thead>
+  <tbody>
+    <tr><td data-i18n-hash="6431e85c" data-i18n-zh="纯词法">纯词法</td><td data-i18n-hash="0547d298" data-i18n-zh="零模型，宿主内 BM25 复刻">零模型，宿主内 BM25 复刻</td><td class="num">0 MB</td><td class="num">0.20</td></tr>
+    <tr><td data-i18n-hash="b1903d20" data-i18n-zh="Node 内轻量语义">Node 内轻量语义</td><td data-i18n-hash="27d9782a" data-i18n-zh="e5-small 量化">e5-small 量化</td><td class="num">118 MB</td><td class="num">0.85</td></tr>
+    <tr><td data-i18n-hash="549b0983" data-i18n-zh="&lt;strong&gt;Python 侧车&lt;/strong&gt;"><strong>Python 侧车</strong></td><td>BGE-M3 int8</td><td class="num">563 MB</td><td class="num hi">0.925</td></tr>
+  </tbody>
+</table>
+</div>
+
+<figure>
+  <div class="figbox"><img src="assets/figures/fig-tier-curve.svg" alt="三级算力档的 Recall@5 与常驻内存：0 / 118 / 563 MB 对应 0.200 / 0.850 / 0.925，收益递减而内存陡增"></div>
+  <figcaption data-i18n-hash="1d340c8e" data-i18n-zh="图 7 三级算力档的召回率与常驻内存。收益递减而内存陡增：第二档多花 118 MB 换来 65.0 个百分点，第三档多花 445 MB 只换来 7.5 个。">图 7　三级算力档的召回率与常驻内存。收益递减而内存陡增：第二档多花 118 MB 换来 65.0 个百分点，第三档多花 445 MB 只换来 7.5 个。</figcaption>
+</figure>
+<p data-i18n-hash="f6ae0520" data-i18n-zh="int8 档与 fp32 档召回持平、速度约快 6 倍，因此生产默认取 int8。三级形态的意义在于：&lt;strong&gt;「用多大代价换多好的相似度」是用户的选择，而「该不该打断」的判断标准始终一致&lt;/strong&gt;。低配机器不会因为召回弱而变得更吵。">int8 档与 fp32 档召回持平、速度约快 6 倍，因此生产默认取 int8。三级形态的意义在于：<strong>「用多大代价换多好的相似度」是用户的选择，而「该不该打断」的判断标准始终一致</strong>。低配机器不会因为召回弱而变得更吵。</p>
+
+<h2 id="s10" data-i18n-hash="85f3e85f" data-i18n-zh="10 局限与效度威胁">10　局限与效度威胁</h2>
+
+<ul>
+  <li data-i18n-hash="a4e432b8" data-i18n-zh="&lt;strong&gt;金标规模&lt;/strong&gt;。86 条是人工裁决，规模有限；精确率与召回的点估计有较宽的置信区间，我们给出 bootstrap 区间而非单点结论。"><strong>金标规模</strong>。86 条是人工裁决，规模有限；精确率与召回的点估计有较宽的置信区间，我们给出 bootstrap 区间而非单点结论。</li>
+  <li data-i18n-hash="0381418a" data-i18n-zh="&lt;strong&gt;gold 内选择偏差&lt;/strong&gt;。全部阈值选择都在同一批 gold 上完成，存在选择偏差。因此规定：&lt;strong&gt;held-out 真实流量验证是冻结的前置条件&lt;/strong&gt;。"><strong>gold 内选择偏差</strong>。全部阈值选择都在同一批 gold 上完成，存在选择偏差。因此规定：<strong>held-out 真实流量验证是冻结的前置条件</strong>。</li>
+  <li data-i18n-hash="83d65a6b" data-i18n-zh="&lt;strong&gt;实验环境&lt;/strong&gt;。全部实验在离线重放中完成，生产默认配置全程未动，未产生任何 active 流量。这保证了安全，也意味着在线行为仍需独立验证。"><strong>实验环境</strong>。全部实验在离线重放中完成，生产默认配置全程未动，未产生任何 active 流量。这保证了安全，也意味着在线行为仍需独立验证。</li>
+  <li data-i18n-hash="c158996d" data-i18n-zh="&lt;strong&gt;语言与场景&lt;/strong&gt;。语料为双语（中英混写）的开发者记忆，结论是否适用于其他语域未经检验。"><strong>语言与场景</strong>。语料为双语（中英混写）的开发者记忆，结论是否适用于其他语域未经检验。</li>
+</ul>
+
+<h2 id="s11" data-i18n-hash="82c40f9e" data-i18n-zh="11 结论">11　结论</h2>
+
+<ol>
+  <li data-i18n-hash="381fafd0" data-i18n-zh="&lt;strong&gt;「没有报错」不等于「做对了」&lt;/strong&gt;——一个什么都不输出的系统，可以让精确率为 0 的错误长期不被发现。"><strong>「没有报错」不等于「做对了」</strong>——一个什么都不输出的系统，可以让精确率为 0 的错误长期不被发现。</li>
+  <li data-i18n-hash="e357c077" data-i18n-zh="&lt;strong&gt;相似度与必要性是两个目标&lt;/strong&gt;，可以分别度量，也必须分别裁决。"><strong>相似度与必要性是两个目标</strong>，可以分别度量，也必须分别裁决。</li>
+  <li data-i18n-hash="91da08d2" data-i18n-zh="&lt;strong&gt;决策顺序是免费的改进&lt;/strong&gt;——在参数完全不动的前提下，仅调整顺序就同时提升了精确率与召回率。"><strong>决策顺序是免费的改进</strong>——在参数完全不动的前提下，仅调整顺序就同时提升了精确率与召回率。</li>
+  <li data-i18n-hash="cd16996e" data-i18n-zh="&lt;strong&gt;否定结果值得发表&lt;/strong&gt;——三条被证伪的捷径，每一条都比正面结论更能防止后来者重走一遍。"><strong>否定结果值得发表</strong>——三条被证伪的捷径，每一条都比正面结论更能防止后来者重走一遍。</li>
+</ol>
+
+<section class="afterword">
+      <h2 data-i18n-hash="b4150dcc" data-i18n-zh="写在后面的话">写在后面的话</h2>
+      <blockquote data-i18n-hash="f77586ab" data-i18n-zh="「知人者智，自知者明。」">「知人者智，自知者明。」</blockquote>
+      <p data-i18n-hash="c260c530" data-i18n-zh="「中午那碗面条挺不错的。」这句话让我们停下了一个已经完成的阶段。它拿到了全库最高的语义相似度，而它本该被抑制。">「中午那碗面条挺不错的。」这句话让我们停下了一个已经完成的阶段。它拿到了全库最高的语义相似度，而它本该被抑制。</p>
+      <p data-i18n-hash="4bbccc9c" data-i18n-zh="如果我们只看「没有有害注入」这个指标，这次上线会是一次成功的静默失败——系统什么都没输出，所以什么都没报错。">如果我们只看「没有有害注入」这个指标，这次上线会是一次成功的静默失败——系统什么都没输出，所以什么都没报错。</p>
+      <p data-i18n-hash="00ff7b34" data-i18n-zh="随后我们做了三件事：给这个现象起名、构造能反驳自己的金标、把三条最诱人的捷径逐一证伪。第三条尤其值得记住：「把关键词重合度高的候选一刀切掉」看起来天经地义，实测方向却是反的。">随后我们做了三件事：给这个现象起名、构造能反驳自己的金标、把三条最诱人的捷径逐一证伪。第三条尤其值得记住：「把关键词重合度高的候选一刀切掉」看起来天经地义，实测方向却是反的。</p>
+      <p class="sign">dsh-auto-memory 项目组 · 2026</p>
+    </section>
+
+    </main>
+  </div>
+</div>
+
+<section class="prelated">
+  <div class="pwrap prelated-in">
+    <h2 data-i18n-hash="5f475b84" data-i18n-zh="相关报告">相关报告</h2>
+    <div class="relgrid">
+      <a class="pcard" href="2026-08-24-retrieval-selection.html">
+        <div class="kind">基准研究</div>
+        <h3 data-i18n-hash="2bc7e96f" data-i18n-zh="面向开发者记忆系统的多语言嵌入式检索选型研究">面向开发者记忆系统的多语言嵌入式检索选型研究</h3>
+        <p data-i18n-hash="d5be39d8" data-i18n-zh="这篇回答「什么材料进入候选」；检索层是激活策略的底座。">这篇回答「什么材料进入候选」；检索层是激活策略的底座。</p>
+        <span class="go">阅读 →</span>
+      </a>
+      <a class="pcard" href="2026-08-19-host-side-memory.html">
+        <div class="kind">研究综述</div>
+        <h3 data-i18n-hash="ad1c329b" data-i18n-zh="面向异构大语言模型 Agent 的宿主侧主动联想记忆中间件">面向异构大语言模型 Agent 的宿主侧主动联想记忆中间件</h3>
+        <p data-i18n-hash="1af86d06" data-i18n-zh="主动注入为什么必须在模型之外发生，以及它的三级介入边界。">主动注入为什么必须在模型之外发生，以及它的三级介入边界。</p>
+        <span class="go">阅读 →</span>
+      </a>
+      <a class="pcard" href="index.html">
+        <div class="kind">索引</div>
+        <h3 data-i18n-hash="5a4b56d0" data-i18n-zh="全部技术报告">全部技术报告</h3>
+        <p data-i18n-hash="1dc46d65" data-i18n-zh="三篇报告的完整索引与关键结论速查表。">三篇报告的完整索引与关键结论速查表。</p>
+        <span class="go">阅读 →</span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<footer class="pfoot">
+  <div class="pwrap">
+    <div class="pfoot-grid">
+      <div>
+        <div class="pfoot-brand">
+          <span class="brand-logo" aria-hidden="true">
+            <svg viewBox="0 0 40 40" fill="none">
+            <g class="brain-path">
+              <path d="M20 6c-4 0-7 2.5-7 6 0 1 .2 2 .6 2.8C11 15.6 9.5 17.4 9.5 19.6c0 1.6.9 3 2.3 3.8-.2.6-.3 1.2-.3 1.9 0 3.2 2.6 5.7 6 5.7 1 0 1.9-.2 2.5-.7"/>
+              <path d="M20 6c4 0 7 2.5 7 6 0 1-.2 2-.6 2.8 2.6.8 4.1 2.6 4.1 4.8 0 1.6-.9 3-2.3 3.8.2.6.3 1.2.3 1.9 0 3.2-2.6 5.7-6 5.7-1 0-1.9-.2-2.5-.7"/>
+              <path d="M20 6v25"/>
+            </g>
+          </span>
+          <span>
+            <span class="pfoot-name font-display">dsh-auto-memory</span>
+            <span class="pfoot-tag">Ambient Recall · 「潜藏追忆，如影随形」</span>
+          </span>
+        </div>
+        <p class="pfoot-desc">DSH 插件：宿主侧主动联想记忆中间件。她记得，不必吩咐 —— 记忆长在你自己的机器上。BSD-3-Clause。</p>
+      </div>
+      <div>
+        <div class="col-title">项目</div>
+        <ul>
+          <li><a class="nav-link" href="../index.html">主页</a></li>
+          <li><a class="nav-link" href="index.html">全部报告</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="col-title">资源</div>
+        <ul>
+          <li><a class="nav-link" href="https://github.com/Aik358/dsh-auto-memory" target="_blank" rel="noreferrer">GitHub</a></li>
+          <li><a class="nav-link" href="https://www.npmjs.com/package/@a9i5k4/dsh-auto-memory" target="_blank" rel="noreferrer">npm</a></li>
+          <li><a class="nav-link" href="https://github.com/Aik358/dsh-auto-memory/blob/main/CHANGELOG.md" target="_blank" rel="noreferrer">CHANGELOG</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="pfoot-base">
+      <div>© 2026 dsh-auto-memory · Aik358 · BSD-3-Clause</div>
+      <div>记忆在你自己的机器上 · 可审计 · 可删除</div>
+    </div>
+  </div>
+</footer>
+<script>
+(function () {
+  var links = [].slice.call(document.querySelectorAll('.ptoc-list a'));
+  var heads = links.map(function (a) { return document.getElementById(a.getAttribute('href').slice(1)); });
+  if (!('IntersectionObserver' in window)) return;
+  var io = new IntersectionObserver(function (es) {
+    es.forEach(function (e) {
+      var i = heads.indexOf(e.target);
+      if (i < 0) return;
+      if (e.isIntersecting) { links.forEach(function (l) { l.classList.remove('on'); }); links[i].classList.add('on'); }
+    });
+  }, { rootMargin: '-96px 0px -70% 0px', threshold: 0 });
+  heads.forEach(function (h) { if (h) io.observe(h); });
+})();
+</script>
+<script type="application/json" id="i18n-en">{"22184939":"8.1　Probability calibration is free","49947466":"Decision-order correction + structured completeness gate","69649786":"Calibrated intent head output","99328880":"With the retrieval substrate entirely unchanged, the incumbent single-threshold policy using dense similarity alone scored precision <strong>0<\/strong> on 86 human gold items — its single activation was triggered by small talk that nearly restated a life log (the \"echo trap\"). We built three batches totalling 86 human-adjudicated gold items, proposed a dual-channel decision architecture with four feature groups, and replaced hand-written rules with an auditable lightweight intent head. The final path reaches <strong>precision 0.818 / recall 0.237<\/strong> (with the completeness gate; 0.516/0.421 without it, but with 8 overruns).","7b0695c3":"From semantic relevance to recall necessity","1c41a448":"The echo trap in personal memory activation policy: discovery, measurement and correction","7ec01ba6":"<strong>Abstract<\/strong>　A proactive memory system must decide, without any explicit call from the user, whether to inject a historical memory into the current context. We decompose that decision into two separately measurable prediction targets — <strong>semantic relevance<\/strong> (how similar the material is to the current topic) and <strong>recall necessity<\/strong> (whether injecting now would genuinely help the task) — and show on a bilingual personal memory system running inside a developer host that the two cannot substitute for each other.","e4818b50":"1　How the problem appeared","c15abbae":"dsh-auto-memory is a host-side proactive associative memory system: before each request boundary the JS host can inject historical memories into model-visible messages as \"reference endnotes\"; a Python sidecar handles semantic computation and proposes activations. Earlier stages had settled embedding selection, chunking policy and hybrid retrieval, so activation ran on a naive skeleton — sort by score, use a pair of thresholds (<code>tOn<\/code> / <code>tOff<\/code>) for hysteresis, and emit one of three tiers: suppress, prefetch, activate.","2409f2ce":"During launch observation, <code>emit = 0<\/code> was read as \"safe\". But manual review found the highest-scoring sample was small talk that nearly restated a life log:","a89d92b4":"<p>\"That bowl of noodles at noon was pretty good.\"　　（denseTop = 0.834）<\/p>","88a5b407":"Its score was <strong>higher than every genuine recall question<\/strong>. In other words, dense similarity measures \"looks alike\", while activation needs \"should surface\"; the two are not merely non-overlapping in distribution — they run in opposite directions.","7003eb95":"2　Two prediction targets","301d7d9c":"We decompose the activation decision as follows:","97b3360d":"<strong>Semantic relevance<\/strong>: how related the candidate material is to the current topic, produced by the retrieval layer (dense / lexical / fused scores);","db9d0273":"<strong>Activation eligibility<\/strong>: whether injecting now materially helps the task without disturbing the user, decided jointly by intent, conversational act, task dependency, completeness and hard constraints.","c0fd01df":"Their relationship is <strong>computed together, adjudicated in layers<\/strong>: relevance decides which material enters the candidate set, necessity decides whether to interrupt now. The two paths run in opposite orders and both are necessary — the explicit recall path judges intent first and then verifies association; the proactive path associates first and then seeks contextual approval.","ca64a35e":"3　Quantitative evidence for the echo trap","c7e6e4d3":"Figure 1　Semantic score distribution over 86 human gold items. The suppress class is bimodal, and its upper mode <strong>crosses the threshold line entirely<\/strong>, while the activate class tops out below it.","99835cbc":"Across the 86 human gold items, the three classes distribute as:","ed9f6d4d":"Class","ac38bdf7":"Score range","ae4f390f":"Class maximum","9d02dd93":"Activate","01177d4d":"Prefetch","0ee61907":"Suppress","46c5ab74":"Both thresholds (<code>tOn = 0.62<\/code> / <code>tOff = 0.52<\/code>) fall <strong>squarely inside the upper mode of the suppress class<\/strong>. That is: the samples that look \"safest\" above the threshold are precisely the echoes. The suppress class is clearly bimodal — the lower group is ordinary unrelated records, the upper group restates the current conversation almost word for word.","e39acd6b":"This is the <strong>echo trap<\/strong>: when a user casually repeats a line from a life log, that record is naturally extremely similar to the current context. The similarity is not wrong; it simply answered a different question.","debf421d":"4　How the gold set was built","2af48811":"If the gold set were merely \"a batch labelled casually\", any conclusion could be an artefact of annotation bias. We used <strong>adversarial construction<\/strong>:","6503f8cb":"<strong>Minimal counterfactual pairs<\/strong>: the same real memory under two different conversational intents forms a pair — same material, different context, differing only in whether it should be recalled. These labels directly test whether the model is reading intent rather than material.","d30fe463":"<strong>Cross-workspace, same-text different-scope control<\/strong>: the same passage stored in two workspaces, queried with one workspace's context against the other — the correct answer is \"no cross-store access\", used as a hard assertion against leakage.","07bfed0f":"<strong>Multi-target completeness control<\/strong>: a query that only counts as complete when several records are recalled together, testing for the overreach of activating after recalling just one.","acea8998":"Together the three batches make 86 human-adjudicated gold items (58 of them forming an earlier human-gold batch). The labelling process involved <strong>zero code changes and zero threshold adjustments<\/strong> — precisely so the gold set stays independent of the object under test.","77a303cf":"5　Four paths","c80b6bb2":"Figure 2　Precision–recall trade-off across four paths. Under a unified protocol the final path reaches precision 1.000 / recall 0.289.","9132e087":"Path","26670dda":"Notes","31fdcb24":"v1 single threshold (incumbent)","62a57cdb":"Its only activation was triggered by small talk","34da586d":"v2 hand-written rule cascade","9b3d52ef":"Precise but low recall; rules hard to maintain","bf69858f":"Learned only · no completeness gate","dc3cc14c":"Accompanied by 8 prefetch-class overruns","1df35ec6":"<strong>Final path · with completeness gate<\/strong>","71ff5f21":"The four paths represent four extremes: no learning, rules only, learning only, and hybrid. The conclusion is that <strong>neither extreme holds<\/strong>: pure rules are precise but low-recall and hard to maintain; pure learning has slightly better recall but mistakes \"merely related\" for \"should recall\". The hybrid architecture (calibrated intent head + dual-lane rule skeleton + structured completeness gate) is the only solution that is both deployable and interpretable.","838a8656":"6　Three falsified shortcuts","631c357a":"This section is what we most hope gets cited. All three approaches below were seriously discussed internally, and all three failed under measurement.","f0a09778":"6.1　Lexical coverage alone cannot judge an echo","1209c896":"Figure 3　Median lexical coverage. The direction is counter-intuitive: the suppress class, which should be an echo, is <strong>lower<\/strong>, and the activate class, which genuinely should be recalled, is <strong>higher<\/strong>.","d39e4c07":"Intuitively, \"candidates with high keyword overlap\" look most like echoes and should be cut outright. Measurement (Figure 3) runs the other way: suppress median <strong>0.273<\/strong>, activate median <strong>0.462<\/strong>. Any \"hard cap on lexical coverage\" rule cuts the class that genuinely should be recalled first.","42bf19c2":"<em>Why?<\/em> Because an echo is a <strong>verbatim restatement<\/strong>, and most Chinese small-talk sentences are short, overlapping little with a structured memory entry; whereas the questions that should be recalled carry lots of proper nouns and paths from those entries.","ae1873b8":"6.2　Plain-text three-way classification cannot judge necessity","15a6a0d3":"Treating \"should it be recalled\" as a plain-text three-way classification problem yields macroF1 of only <strong>0.494<\/strong> on the same gold set, with <strong>8 of 19 prefetch cases misclassified as activate<\/strong>. Detached from task context, the text alone cannot separate \"should recall\" from \"merely related\".","6d4cdf8c":"6.3　A global upfront echo veto harms explicit follow-ups","4438c665":"Putting echo detection first in the decision chain and vetoing every path looks like the safest arrangement. Measured, it also cuts explicit follow-ups — the user is plainly asking \"what was that conclusion last time\", and that conclusion happens to overlap heavily with the preceding text.","25ef68bf":"7　Ablating the decision order","e1a4bcf8":"Figure 4　Same data, same feature set, <strong>only the order of judgement changed<\/strong>: overruns fall from 1 to 0 and precision rises from 0.818 to 1.000.","1dfc810a":"Metric","39087cd0":"Flawed order<br>(echo veto global and upfront)","cd815a85":"Corrected order<br>(echo veto only within the proactive lane)","f26605a8":"Activation precision","ef1efad2":"Activation recall","6f0157ed":"Suppression overruns","03c988ac":"This is the most striking comparison in the report: <strong>no model change, no added features, no tuned parameters<\/strong> — only moving the echo veto from \"global and upfront\" into \"inside the proactive lane\" improves all three metrics at once.","0b4b49d6":"The corrected decision chain reads: the explicit path judges intent first, then verifies association; the proactive path associates first, then seeks contextual approval. The echo veto applies only outside the former.","ef741b06":"8　Why \"is it asking\" matters more than \"how similar\"","9c60620a":"Figure 5　Logistic regression coefficients of deployable features. <strong>The weight of mark (question / recall markers) is 34 times that of denseTop (dense similarity).<\/strong>","672c1db9":"Feature","3dd19442":"Coefficient","104d11e4":"Meaning","c8accab7":"Question / recall markers (\"last time\", \"what you just said\")","826ff0a7":"Lexical coverage","bd77ecfa":"Fused score gap","c48d33a9":"Dense similarity","f630f9df":"Candidate count","58beeefd":"<p><strong>On the figures<\/strong>　This report uses the coefficients from the refitted artefact (consistent with the offline figure). An earlier internal version of the notes recorded a different set of values, a historical intermediate state along the same path now superseded by this refit; the artefact governs here.<\/p>","943a1ea1":"Figure 6　The gain from Platt calibration. Accuracy +12.8 percentage points, Brier score halved.","dfe2d458":"A threshold policy consumes probabilities directly, so calibration does not change the ranking yet directly improves decisions — accuracy rises from <strong>0.744<\/strong> to <strong>0.872<\/strong>, and the Brier score falls from <strong>0.227<\/strong> to <strong>0.131<\/strong>. This is the best value-for-effort step in the entire pipeline.","7f2d697a":"8.2　Independent gold-set acceptance","07e78dfb":"The frozen policy was re-checked in a separate offline acceptance run: <strong>67<\/strong> human labels, actPrecision <strong>0.917<\/strong>, harmful injections <strong>0<\/strong>, echo layer <strong>7/7<\/strong>, with the configuration hash verified.","ea733b22":"9　Dual-track deployment architecture","bc10643b":"The same separation principle extends to deployment: <strong>semantic proximity<\/strong> is carried by three optional compute tiers, while <strong>recall necessity<\/strong> is always answered by one unified dual-channel policy pipeline, fully decoupled from the tier.","2cfe7e40":"Tier","1165d986":"Form","f6da5992":"Resident memory","6431e85c":"Lexical only","0547d298":"No model; BM25 reimplemented in the host","b1903d20":"Lightweight semantics in Node","27d9782a":"quantised e5-small","549b0983":"<strong>Python sidecar<\/strong>","1d340c8e":"Figure 7　Recall rate and resident memory across three compute tiers. Diminishing returns with steep memory growth: the second tier spends 118 MB for 65.0 percentage points, the third spends 445 MB for 7.5.","f6ae0520":"The int8 tier matches fp32 on recall and runs about 6× faster, so production defaults to int8. The point of the three forms is that <strong>how much to pay for how good a similarity is the user's choice, while the standard for whether to interrupt stays identical<\/strong>. A low-spec machine does not become noisier because its recall is weaker.","85f3e85f":"10　Limitations and threats to validity","a4e432b8":"<strong>Gold-set size.<\/strong> 86 items is a human-adjudicated but limited set; point estimates of precision and recall carry wide confidence intervals, so we report bootstrap intervals rather than single points.","0381418a":"<strong>Selection bias within gold.<\/strong> Every threshold was chosen on the same gold set, which introduces selection bias. We therefore stipulate that <strong>held-out real-traffic validation is a precondition for freezing<\/strong>.","83d65a6b":"<strong>Experimental environment.<\/strong> All experiments ran in offline replay; the production default configuration was untouched throughout and generated no active traffic. That guarantees safety, and also means online behaviour still needs independent verification.","c158996d":"<strong>Language and setting.<\/strong> The corpus is bilingual (Chinese–English) developer memory; whether the conclusions transfer to other registers is untested.","82c40f9e":"11　Conclusion","381fafd0":"<strong>\"No errors\" is not \"did it right\"<\/strong> — a system that outputs nothing can keep a precision-zero error hidden indefinitely.","e357c077":"<strong>Similarity and necessity are two targets<\/strong>, measurable separately and necessarily adjudicated separately.","91da08d2":"<strong>Decision order is a free improvement<\/strong> — with parameters entirely untouched, reordering alone raised precision and recall together.","cd16996e":"<strong>Negative results deserve publication<\/strong> — each of the three falsified shortcuts prevents a later reader from repeating the walk more than a positive result would.","b4150dcc":"A closing word","f77586ab":"「知人者智，自知者明。」<span class=\"epi-en\">To know others is wisdom; to know oneself is clarity. — Tao Te Ching<\/span>","c260c530":"\"That bowl of noodles at noon was pretty good.\" That sentence stopped a stage we had already considered finished. It scored the highest semantic similarity in the entire store, and it should have been suppressed.","4bbccc9c":"Had we looked only at \"no harmful injections\", this launch would have been a successful silent failure — the system output nothing, so nothing reported an error.","00ff7b34":"We then did three things: named the phenomenon, built a gold set capable of refuting ourselves, and falsified the three most tempting shortcuts one by one. The third is especially worth remembering: \"cut every candidate with high keyword overlap\" looks self-evident, but measurement runs the other way.","5f475b84":"Related reports","2bc7e96f":"Multilingual embedding retrieval selection for developer memory systems","d5be39d8":"That report answers what material enters the candidate set; the retrieval layer is the substrate of activation policy.","ad1c329b":"Host-side proactive recall memory middleware for heterogeneous LLM Agents","1af86d06":"Why proactive injection must happen outside the model, and its three intervention levels.","5a4b56d0":"All technical reports","1dc46d65":"Full index of the seven reports with a quick-reference of key conclusions.","__title__":"From semantic relevance to recall necessity — dsh-auto-memory"}</script>
+<script src="assets/i18n.js" defer></script>
+<script src="assets/theme.js" defer></script>
+<script src="assets/step5-motion.js" defer></script>
+</body>
+</html>

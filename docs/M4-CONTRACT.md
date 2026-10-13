@@ -1,6 +1,11 @@
 # M4 Shadow Retrieval 契约
 
-> 状态：M4-0 契约冻结；M4 运行时代码尚未实施
+> **状态**：已完工 · 2026-08-23（M4-1..M4-4 全部完成，M4-4 Live Verification 通过）
+> **性质**：设计定稿 + 施工记录 —— 本文为**完成后的技术记录**，不再作为待执行计划；§20「实施分段」为原始设计记录，实际实施状态见 §23-§27。
+> **落点**：`docs/M4-CONTRACT.md`；§23-§27 为逐段实施状态。
+> **验收**：§26 记载 M4-4 Live Verification 通过（2026-08-23）；§27 记载 lexical_pre_v2 检索质量升级（2026-08-23，用户批准 C 轻量版）。
+> **摘要**：M4 交付 Shadow Retrieval 的完整契约与实现（审计-only、默认关闭）：C-03 Retrieval Gate、确定性词法检索引擎、M3 Corpus Adapter、Scope/Freshness、Host Shadow Wiring 与审计回放。原为「契约冻结、运行时代码尚未实施」的本文件，其 §20 实施分段（M4-0 → M4-4）已全部执行完毕。
+> **文档规范**：改写依据 `docs/internal/DOC-REWRITE-STYLE.md`；语态纪律——主语用「本项目 / 本方案」，不使用第一人称叙述。
 >
 > 工作区：D:\dsh-auto-memory（preview 分支）
 >
@@ -12,7 +17,7 @@
 >
 > 前置状态：M0-R / T0 / M1 / M2 / P-A / M3a / M3b-1/2/3/4 均已 live verified；M3 整体完成
 >
-> 下一实施范围：只实施 M4-1 C-03 Retrieval Gate + 确定性词法检索纯核心；不得接入真实 Host 或持久审计
+> 当时的下一实施范围：只实施 M4-1 C-03 Retrieval Gate + 确定性词法检索纯核心；不得接入真实 Host 或持久审计（该约束随后按 M4-2..M4-4 逐段放开并完成）
 
 ## 1. 本阶段目标
 

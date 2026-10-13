@@ -1,4 +1,16 @@
-# 新用户引导改版方案（2026-09-22 · 待用户拍板）
+# 新用户引导改版方案（2026-09-22）
+
+> **状态**：已完工 · 2026-09-22
+> **性质**：设计定稿 —— 本文为**完成后的技术记录**，不再作为待执行计划。
+> **落点**：依据 `ONBOARDING-AUDIT-20260922.md`（只读审计，368 行）+ 本轮 Lead 侧代码取证；本文档仅方案、未改任何源码
+> **验收**：现状硬证据本轮全部复核，含引导步骤定义 `lib/client.js:5853-5919` 的 `TOUR_STEPS` 数组（9 步：WELCOME / CORE / SNAPSHOT / EXPERIENCE / DAILY ASSISTANT / EXTERNAL / RETRIEVAL / ACTIVATION / READY）
+
+## 摘要
+
+本文是新用户引导的改版方案，依据 `ONBOARDING-AUDIT-20260922.md`（只读审计，368 行）与本轮 Lead 侧代码取证。用户要求「先出个方案就行」，故本文档仅方案、未改任何源码。文中 §0 列出经本轮复核的现状硬证据，含引导步骤定义 `lib/client.js:5853-5919` 的 `TOUR_STEPS` 数组（9 步：WELCOME / CORE / SNAPSHOT / EXPERIENCE / DAILY ASSISTANT / EXTERNAL / RETRIEVAL / ACTIVATION / READY）。留下的价值是逐条对应现状证据的改版路径。
+
+---
+
 
 > 依据：`docs/internal/ONBOARDING-AUDIT-20260922.md`（只读审计，368 行）+ 本轮 Lead 侧代码取证
 > 状态：**仅方案，未改任何源码**（用户要求「先出个方案就行」）

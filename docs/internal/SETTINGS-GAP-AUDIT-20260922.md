@@ -1,5 +1,17 @@
 # 设置页缺口审计 · dsh-auto-memory（2026-09-22）
 
+> **状态**：已完工 · 2026-09-22
+> **性质**：验收报告 —— 本文为**完成后的技术记录**，不再作为待执行计划。
+> **落点**：审计对象宿主 `lib/index.js`（DEFAULT_CONFIG，`index.js:260-606`，实测 101 键）∪ `lib/*-pre.js` 实际读取的配置键，对照浏览器端 `lib/client.js`（SettingsPage `5479-6120`、sectionLabels `5779-5786`、向导 TOUR_STEPS toggles `4971-5035`）
+> **验收**：独立只读审计，未修改 `lib/` 下任何文件、未提交/推送、未重启任何进程；每条结论带 file:line，无代码证据的判断显式标注「推断」
+
+## 摘要
+
+本文是设置页的缺口审计，属独立只读审计（未修改 `lib/` 下任何文件，未提交/推送，未重启任何进程），审计对象为宿主 `lib/index.js` 的 DEFAULT_CONFIG（`index.js:260-606`，实测 101 键）并集 `lib/*-pre.js` 实际读取的配置键，对照浏览器端 `lib/client.js`（SettingsPage `5479-6120`、sectionLabels `5779-5786`、向导 TOUR_STEPS toggles `4971-5035`）。§0 结论摘要以数字先行，证据纪律为每条结论带 file:line、无代码证据的判断显式标注「推断」。
+
+---
+
+
 > 独立只读审计，**未修改 `lib/` 下任何文件**，未提交/推送，未重启任何进程。
 > 审计对象：宿主 `lib/index.js`（DEFAULT_CONFIG，`index.js:260-606`，**实测 101 键**）∪ `lib/*-pre.js` 实际读取的配置键
 > vs 浏览器端 `lib/client.js`（SettingsPage `5479-6120`、sectionLabels `5779-5786`、向导 TOUR_STEPS toggles `4971-5035`）。

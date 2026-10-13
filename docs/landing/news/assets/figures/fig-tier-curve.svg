@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 400" width="880" height="400" preserveAspectRatio="xMidYMid meet" role="img" style="font-variant-numeric:tabular-nums" font-family="Manrope,'Space Grotesk','PingFang SC','Microsoft YaHei',system-ui,sans-serif">
+<title>Recall@5 随算力档位变化(0 / 118 / 563 MB 对应 0.200 / 0.850 / 0.925),以及三档的常驻内存</title>
+<rect width="880" height="400" fill="#ffffff"/>
+<!--region canvas 0 0 880 400-->
+<!--region gap0 424 84 40 260-->
+<!--region p 52 84 372 260-->
+<!--region q 464 84 372 260-->
+<text x="52" y="32" font-size="17.5" font-weight="700" fill="#1e232c">三档算力下的召回率与常驻内存</text>
+<text x="52" y="54" font-size="12.5" fill="#454545">Recall@5 0.200 → 0.850 → 0.925;代价是常驻内存 0 → 118 → 563 MB</text>
+<text x="52" y="380" font-size="13.5" font-weight="700" fill="#c0504d">收益递减而内存陡增:第二档多花 118 MB 换来 65.0 个百分点,第三档多花 445 MB 只换来 7.5 个</text>
+<line x1="106" y1="260.4" x2="424" y2="260.4" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4 5"/><text x="94" y="264.36" text-anchor="end" font-size="11" font-weight="700" fill="#1e232c">0.2</text><line x1="106" y1="223.8" x2="424" y2="223.8" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4 5"/><text x="94" y="227.76" text-anchor="end" font-size="11" font-weight="700" fill="#1e232c">0.4</text><line x1="106" y1="187.2" x2="424" y2="187.2" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4 5"/><text x="94" y="191.16" text-anchor="end" font-size="11" font-weight="700" fill="#1e232c">0.6</text><line x1="106" y1="150.6" x2="424" y2="150.6" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4 5"/><text x="94" y="154.56" text-anchor="end" font-size="11" font-weight="700" fill="#1e232c">0.8</text><line x1="106" y1="114" x2="424" y2="114" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4 5"/><text x="94" y="117.96" text-anchor="end" font-size="11" font-weight="700" fill="#1e232c">1</text><line x1="106" y1="297" x2="424" y2="297" stroke="#94a3b8" stroke-width="1.4" data-role="axis" data-orient="h" data-panel="p" data-base="297"/><text transform="translate(65 205.5) rotate(-90)" text-anchor="middle" font-size="11" font-weight="700" fill="#1e232c">R@5</text><text x="106" y="317" text-anchor="middle" font-size="12" font-weight="700" fill="#1e232c">0 MB</text><text x="166.78" y="317" text-anchor="middle" font-size="12" font-weight="700" fill="#1e232c">118 MB</text><text x="396" y="317" text-anchor="middle" font-size="12" font-weight="700" fill="#1e232c">563 MB</text>
+<path d="M106,297 L106,260 L167,141 L396,128 L396,297 Z" fill="#2563eb" opacity="0.07"/>
+<polyline points="106,260.4 166.78,141.45 396,127.73" fill="none" stroke="#2563eb" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="106" cy="260.4" r="4.5" fill="#2563eb" stroke="#ffffff" stroke-width="1.5"/>
+<text x="106" y="250.4" font-size="12" font-weight="700" fill="#2563eb">0.200</text>
+<circle cx="166.78" cy="141.45" r="4.5" fill="#2563eb" stroke="#ffffff" stroke-width="1.5"/>
+<text x="166.78" y="131.45" text-anchor="middle" font-size="12" font-weight="700" fill="#2563eb">0.850</text>
+<circle cx="396" cy="127.73" r="4.5" fill="#2563eb" stroke="#ffffff" stroke-width="1.5"/>
+<text x="396" y="117.73" text-anchor="end" font-size="12" font-weight="700" fill="#2563eb">0.925</text>
+<line x1="521" y1="236" x2="836" y2="236" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4 5"/><text x="509" y="239.96" text-anchor="end" font-size="11" font-weight="700" fill="#1e232c">200</text><line x1="521" y1="175" x2="836" y2="175" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4 5"/><text x="509" y="178.96" text-anchor="end" font-size="11" font-weight="700" fill="#1e232c">400</text><line x1="521" y1="114" x2="836" y2="114" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4 5"/><text x="509" y="117.96" text-anchor="end" font-size="11" font-weight="700" fill="#1e232c">600</text><line x1="521" y1="297" x2="836" y2="297" stroke="#94a3b8" stroke-width="1.4" data-role="axis" data-orient="h" data-panel="q" data-base="297"/><text transform="translate(477 205.5) rotate(-90)" text-anchor="middle" font-size="11" font-weight="700" fill="#1e232c">常驻内存 MB</text><text x="571.83" y="317" text-anchor="middle" font-size="12" font-weight="700" fill="#1e232c">0 MB</text><text x="673.5" y="317" text-anchor="middle" font-size="12" font-weight="700" fill="#1e232c">118 MB</text><text x="775.17" y="317" text-anchor="middle" font-size="12" font-weight="700" fill="#1e232c">563 MB</text>
+<rect x="543.83" y="294" width="56" height="3" fill="#cbd5e1" data-role="bar" data-panel="q" data-base="297" data-value="0"/>
+<text x="571.83" y="288" text-anchor="middle" font-size="12.5" font-weight="700" fill="#1e232c">0</text>
+<rect x="645.5" y="261.01" width="56" height="35.99" fill="#3b82f6" data-role="bar" data-panel="q" data-base="297" data-value="118"/>
+<text x="673.5" y="252.01" text-anchor="middle" font-size="12.5" font-weight="700" fill="#1e232c">118</text>
+<rect x="747.17" y="125.29" width="56" height="171.71" fill="#c0504d" data-role="bar" data-panel="q" data-base="297" data-value="563"/>
+<text x="775.17" y="116.29" text-anchor="middle" font-size="12.5" font-weight="700" fill="#c0504d">563</text>
+</svg>

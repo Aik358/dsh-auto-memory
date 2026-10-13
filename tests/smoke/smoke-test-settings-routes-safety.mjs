@@ -15,10 +15,14 @@ try{
  const engine=new MemoryEngine();engine.refresh=async()=>{}
  await fs.writeFile(engine._configPath,JSON.stringify({...DEFAULT_CONFIG,memoryRoot:path.join(home,'memory','workspaces'),userMemoryDir:path.join(home,'memory')}))
  const source=await fs.readFile(new URL('../../lib/index.js',import.meta.url),'utf8')
+ const envLogs=[]
  function handler(marker,extra={}){
   const route=source.indexOf(marker),start=source.indexOf('handler: ',route)+9,end=source.indexOf('\n      },',start)
   assert(route>=0 && end>start)
-  const env={engine,DEFAULT_CONFIG,path,readFile:fs.readFile,sanitizeForWrite,tailHas,writeGateRefusalTextPre,memoryWriteLockKey,validateSettingsPatch,validateSettingsPaths,dshHome:()=>home,isLoopbackRequest:()=>true,readJsonBody:async req=>req.body,writeJson:(res,status,body)=>{res.status=status;res.body=body},memoryDir:name=>path.join(home,'memory',name),writeTextAtomicPreSync,...extra}
+  const env={engine,DEFAULT_CONFIG,path,readFile:fs.readFile,sanitizeForWrite,tailHas,writeGateRefusalTextPre,memoryWriteLockKey,validateSettingsPatch,validateSettingsPaths,dshHome:()=>home,isLoopbackRequest:()=>true,readJsonBody:async req=>req.body,writeJson:(res,status,body)=>{res.status=status;res.body=body},memoryDir:name=>path.join(home,'memory',name),writeTextAtomicPreSync,
+   // 2026-10-13：端点新增诊断留痕（diag()）。本沙箱用 new Function 重建 handler，只注入白名单变量
+   // ⇒ 模块顶层的 diag 不在作用域内，必须显式注入。此处收进 logs 数组，顺便断言「失败必留痕」。
+   diag:(m)=>{envLogs.push(String(m))},...extra}
   return new Function(...Object.keys(env),'return ('+source.slice(start,end)+'\n})')(...Object.values(env))
  }
  const configHandler=handler('      path: API.config,')
@@ -37,6 +41,11 @@ try{
  const failure=await call(failed,{mode:'active'})
  assert.equal(failure.status,500);assert.match(failure.body.error,/atomic writer failure/)
  assert.equal(JSON.parse(await fs.readFile(semanticPath,'utf8')).activationEmitMode,'shadow')
+ // 2026-10-13：失败必须留痕 —— 用户现场是「界面报保存失败、盘上零日志」，支持端无从归因。
+ // 判据：走完一次失败调用后 envLogs 里必须出现 semantic-emit 的留痕，且写明是写失败。
+ assert(envLogs.some(m=>m.includes('semantic-emit: WRITE-FAILED')), 'atomic failure must leave a diag trace')
+ // 负路径对照：损坏配置也必须留痕且注明 CORRUPT（而不是误报 MISSING）。
+ envLogs.length=0
  const semantic=handler("      path: API['semantic-emit'],")
  assert.equal((await call(semantic,{mode:'active'})).status,200)
  const saved=JSON.parse(await fs.readFile(semanticPath,'utf8'))
@@ -44,6 +53,8 @@ try{
  await fs.writeFile(semanticPath,'broken semantic config')
  assert.equal((await call(semantic,{mode:'shadow'})).status,500)
  assert.equal(await fs.readFile(semanticPath,'utf8'),'broken semantic config')
+ assert(envLogs.some(m=>m.includes('semantic-emit: cfg CORRUPT kept-as-is')), 'corrupt config must leave a CORRUPT trace')
+ assert(!envLogs.some(m=>m.includes('MISSING(ENOENT)')), 'corrupt must NOT be reported as missing')
  console.log('PASS actual /semantic-emit handler: atomic failure never acknowledges success; gates align after commit; invalid existing JSON preserved')
  // Scoped notes use the selected session and strict disk reads, not another session's cache.
  const notesPath=path.join(home,'project-notes.md'),otherPath=path.join(home,'other-notes.md')

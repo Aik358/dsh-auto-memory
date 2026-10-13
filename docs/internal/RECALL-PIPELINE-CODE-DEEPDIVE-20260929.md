@@ -1,5 +1,17 @@
 # 唤回管线代码级深读 + 四个演进方向的落点设计
 
+> **状态**：已完工 · 2026-09-29
+> **性质**：研究结论 —— 本文为**完成后的技术记录**，不再作为待执行计划。
+> **落点**：配套 `OFFICIAL-MEMORY-PRESTUDY-20260929.md` 的规划篇；实读 `index.js`(15822 行) 唤回相关全部模块 + `worker_semantic_v1.py` 检索核
+> **验收**：全部结论带文件:行号；真机验证 L0 落盘索引 12 文件 / 984 条 / 7.86MB / 384 维
+
+## 摘要
+
+本文是唤回管线的代码级深读报告与四个演进方向的落点设计，作为 `OFFICIAL-MEMORY-PRESTUDY-20260929.md` 的规划篇。方法为实读 `index.js`(15822 行) 中唤回相关全部模块，并覆盖 semantic-js、l0-extract、l0-index、l0-index-sync、shadow-retrieval、context-bridge、context-host、activation-host、activation-inbox、semantic-decide、memory-anchor、foldSessionLogEvents 与 `worker_semantic_v1.py` 检索核；真机验证 L0 落盘索引为 12 文件 / 984 条 / 7.86MB / 384 维。文中逐条给出文件:行号，并给出四个演进方向的落点设计。
+
+---
+
+
 日期：2026-09-29
 性质：代码深读报告（配套 OFFICIAL-MEMORY-PRESTUDY-20260929.md 的规划篇；本篇全部结论带文件:行号）
 方法：实读 index.js(15822 行) 唤回相关全部模块 + semantic-js/l0-extract/l0-index/l0-index-sync/shadow-retrieval/context-bridge/context-host/activation-host/activation-inbox/semantic-decide/memory-anchor/foldSessionLogEvents + worker_semantic_v1.py 检索核；真机验证 L0 落盘索引 12 文件/984 条/7.86MB/384 维。

@@ -1,5 +1,22 @@
 # M-CM7 · 交接分层检索（Handoff Layered Retrieval）
 
+> **状态**：已完工 · 2026-09-08 起实施；多项结论已落为独立模块
+> **性质**：研究结论 + 设计定稿 —— 本文为**完成后的技术记录**，不再作为待执行计划。
+> **落点**：`docs/M-CM7-HANDOFF-LAYERED-RETRIEVAL.md`；结论的落地模块：`lib/handoff-anchor.js`（账本权重化截断，模块头自述对应 M-CM7 §C/§G4）、`lib/tier-layer-inject.js`（分层注入）、`lib/recall-fusion.js`（RRF 融合）。
+> **验收**：本阶段结束时未单独留档 H1–H6 的逐项完成度；相关结论的落地与验收见 `docs/STATUS-BOARD.md` 与 `CHANGELOG.md`。
+
+## 摘要
+
+本文件把分层检索引入**衔接通路**，解决「新窗口消费旧内容只有全量读与机械截断两档、缺中间层」的问题。§1 修正了初版「没有分层」的误判：源码核对确认 `buildContinueCarry()`（`index.js:2126`）已实现四层材料；§3 给出 HLR 三层结构（L0 锚点层 / L1 段落层 / L2 原文层）与层间收敛流程；§3.5 给出改造清单 G1–G6；§5 为 H1–H6 实施规划；§6 为与 S1 同源的评估指标。借鉴来源为 OpenViking 公开 README 与论文 VikingMem（arXiv:2605.29640），不涉其源码。
+
+## 文档规范
+
+- 改写依据：`docs/internal/DOC-REWRITE-STYLE.md`
+- 本文件体例：**研究与设计定稿**。§5「实施规划」为 H1–H6 的阶段设计；本阶段结束时未单独留档其逐项完成度，落地证据见 `docs/STATUS-BOARD.md` 与 `CHANGELOG.md`。
+- 语态纪律：主语用「本项目 / 本方案」，不使用第一人称叙述。
+
+---
+
 > 写于 2026-09-08，基于 v2.2.5 源码。上位：[M-CM-PLAN.md](M-CM-PLAN.md)、[S3-TARGET-ARCHITECTURE.md](S3-TARGET-ARCHITECTURE.md)。
 > **问题**：接续已从"能不能接上"推进到"接得准不贵"。当前新窗口消费旧内容只有"全量读"与"机械截断"两档，缺中间层。本文探索把分层检索引入**衔接通路**，并给出实施规划。
 > 借鉴来源：OpenViking 公开 README 与论文 VikingMem（arXiv:2605.29640）所描述的分层上下文与目录递归检索机制；**不涉其源码**（AGPLv3，见 S1 §0）。

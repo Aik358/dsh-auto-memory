@@ -1,4 +1,20 @@
+# FIX-AGENT-P13 · 给 recall 接 C3（Python BGE-M3）语义臂（已完工）
+
+> **状态**：已完工 · 2026-09-09（原文记录的最后一次核实日）
+> **性质**：派工任务书（存档）—— 本文为完成后的技术记录，不再作为待执行计划。
+> **落点**：`python/worker_semantic_pre_v1.py`、`lib/index.js`、`lib/python-sidecar-client.js`（原文记作 `lib/python-sidecar-client-pre.js`）；套件 `tests/smoke/smoke-test-py-runtime-chain.mjs`。
+> **验收**：静态自检通过（不重启）；相关 smoke 通过；已并入全量回归。
+
+## 摘要
+
+该段给 `recall` 接上 C3（Python BGE-M3）语义臂，分三块实施：B1 在 Python worker 新增 `recall_rank` 命令、B2 在 JS 侧加 `engine._pySemanticRank`、B3 做 recall 择优接线并放宽守卫。该段为发版后投喂段，Agent 不能重启 dsh web，只做静态验证。
+
+> **存档声明**：本文为该轮派工任务书的原文存档，正文中的「你要做 / 必须 / 禁止」等祈使句**均为当时下达的要求**，不代表当前待办；实际结果以页首「落点 / 验收」为准。
+
+---
+
 > **投喂方式**：发版后投喂。复制时从 `你是 DSH 环境里的执行 Agent` 开始到文件末尾（自包含，无需 `_COMMON.md`）。
+
 > ⚠️ 改 `python/worker_semantic_pre_v1.py` + `lib/index.js` +（可能）`lib/python-sidecar-client-pre.js`，**不能重启 dsh web**（会截断对话），改完只做静态验证。
 
 ---

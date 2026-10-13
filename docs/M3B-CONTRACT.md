@@ -1,12 +1,17 @@
 # M3b 稳定 Anchor 与持久索引契约
 
-> 状态：M3b-4 真实迁移已完成并 live verified（31/31 文件、176 anchored 记录、31 sidecar）；本文保留 M3b-0..3 的历史设计与实施记录
+> **状态**：已完工 · 2026-08-23（M3b-4 真实迁移完成并 live verified：31/31 文件、176 anchored 记录、31 sidecar）
+> **性质**：设计定稿 + 施工记录 —— 本文为**完成后的技术记录**，不再作为待执行计划；§12 实施分段与 M3b-0..3 的历史设计与实施记录原样保留。
+> **落点**：`docs/M3B-CONTRACT.md`；实施记录见本文 §15-§20。
+> **验收**：M3b-4 真实迁移 live verified（2026-08-23）；§20 记载 compactLayer × anchor 兼容修复（F1 结构修复，用户批准）。
+> **摘要**：M3b 在保持 Markdown 可读、可编辑、可恢复的前提下，为每个逻辑记忆记录加入稳定身份，并把 M3a 的临时只读索引升级为可跨重启维护的 sidecar 索引。原为计划态的本文件，其 §12 实施分段（M3b-0 契约冻结 → M3b-4 真实迁移）已全部执行完毕。
+> **文档规范**：改写依据 `docs/internal/DOC-REWRITE-STYLE.md`；语态纪律——主语用「本项目 / 本方案」，不使用第一人称叙述。
 >
 > 工作区：D:\dsh-auto-memory（preview 分支）
 >
 > 权威架构：docs/proactive-associative-memory-system-map.html（M-06）
 >
-> 前置状态：M0-R / T0 / M1 / M2 / P-A / M3a / M3b-1/2/3/4 均已 live verified；当前下一里程碑为 M4 Shadow Retrieval（审计-only、默认关闭）
+> 前置状态：M0-R / T0 / M1 / M2 / P-A / M3a / M3b-1/2/3/4 均已 live verified；后续里程碑 M4 Shadow Retrieval（审计-only、默认关闭）随后亦已完成，见 `docs/M4-CONTRACT.md`
 
 ## 1. 本阶段目标
 

@@ -1,5 +1,17 @@
 # 官方反馈定稿（子代理报告路由）
 
+> **状态**：已完工 · 2026-09-23
+> **性质**：研究结论 —— 本文为**完成后的技术记录**，不再作为待执行计划。
+> **落点**：目标仓库 `deepseek-ai/deepseek-harness`（Discussions · 分类 General），发帖入口为 discussions/new?category=general；待用户浏览器操作发布
+> **验收**：帖内已按社区规则标注第三方插件 dsh-auto-memory 为非官方项目；本阶段结束时未单独留档发布结果
+
+## 摘要
+
+本文是给上游官方反馈的定稿，主题为子代理报告路由。目标仓库为 `deepseek-ai/deepseek-harness` 的 Discussions（分类 General），文中给出标题与可直接粘贴的正文，并说明第三方插件 dsh-auto-memory 为非官方项目、已按社区规则在帖内标注。遗留项为待用户通过浏览器发帖（PAT 无权外仓发言）；本阶段结束时未单独留档发布结果，结论见 `DSH-DESCRIPTOR-V2-REPORT.md` 与 `GH-DISCUSSION-5732-COMMENT.md` 同一通道。
+
+---
+
+
 > 目标仓库:`deepseek-ai/deepseek-harness`(Discussions · 分类 **General**)
 > 发帖入口:https://github.com/deepseek-ai/deepseek-harness/discussions/new?category=general
 > 说明:第三方插件 dsh-auto-memory 为**非官方**项目,帖内已按社区规则标注。

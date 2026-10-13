@@ -1,7 +1,22 @@
+# M8-2 · evidence → importance 权重接入检索排序（已完工）
+
+> **状态**：已完工 · 2026-09-09（原文记录的最后一次核实日）
+> **性质**：派工任务书（存档）—— 本文为完成后的技术记录，不再作为待执行计划。
+> **落点**：`lib/memory-importance.js`（原文记作 `lib/memory-importance-pre.js`）与 `lib/index.js` 的 `recall()` 加权段；套件 `tests/smoke/smoke-test-memory-importance.mjs`。
+> **验收**：`smoke-test-memory-importance.mjs` 通过；已并入全量回归。
+
+## 摘要
+
+该段要把六类证据（`seen/read/cite/reuse/success/correction`）从「只用于 M-04 技能晋升」扩展到参与记忆检索排序的 importance 权重。该段首版仅交付纯核心，原始排序目标由 `M8-2b-evidence-pipeline.md` 补做完成，补做理由见 `M8-2-ADJUDICATION.md`。
+
+> **存档声明**：本文为该轮派工任务书的原文存档，正文中的「你要做 / 必须 / 禁止」等祈使句**均为当时下达的要求**，不代表当前待办；实际结果以页首「落点 / 验收」为准。
+
+---
+
 > **投喂方式**：本段须与 `_COMMON.md` 一并投喂。
 > 依赖：**M8-1**（可选，不强依赖）；建议 P3（融合层）之后再执行，避免权重叠加冲突。
 
-## 【M8-2】evidence → importance 权重接入检索排序
+## 【M8-2】evidence → importance 权重接入检索排序 · 原任务书
 
 **背景（有代码证据）**：
 - 六类证据 `['seen','read','cite','reuse','success','correction']` 已由 M5 写入：`lib/context-bridge-pre.js:45`（枚举）、`:292`（cite）、`:307/:309`（correction）、`:112`（聚合，含 `distinctSessions`）。

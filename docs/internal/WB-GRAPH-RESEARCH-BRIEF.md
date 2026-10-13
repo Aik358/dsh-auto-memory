@@ -1,5 +1,17 @@
 # 预研任务书：白板接续 + dsh-graph 范式 + MRAgent 主动重建的整合方案
 
+> **状态**：已完工 · 2026-09-13
+> **性质**：决策记录 —— 本文为**完成后的技术记录**，不再作为待执行计划。
+> **落点**：来源为用户 2026-09-13 指定的调查 Prompt（原文收录，作为唯一任务书）；产出为 `WB-GRAPH-RESEARCH-LOCAL.md` / `WB-GRAPH-RESEARCH-EXTERNAL.md` / `WB-GRAPH-INTEGRATION-PLAN.md`（最终交付）
+> **验收**：执行方式为 R1（本地代码审计）+ R2（外部资产调研）并行 → R3（综合成方案）；三份产出均已交付
+
+## 摘要
+
+本文是白板接续预研的任务书，内容是白板接续、dsh-graph 范式与 MRAgent 主动重建的整合方案调查任务，原文收录用户 2026-09-13 指定的调查 Prompt 并作为唯一任务书。执行方式为 R1（本地代码审计）与 R2（外部资产调研）并行、再由 R3 综合成方案；对应产出为 `WB-GRAPH-RESEARCH-LOCAL.md`、`WB-GRAPH-RESEARCH-EXTERNAL.md` 与最终交付 `WB-GRAPH-INTEGRATION-PLAN.md`，三份均已交付。
+
+---
+
+
 > 来源：用户 2026-09-13 指定的调查 Prompt（原文收录，作为唯一任务书）。
 > 执行方式：R1（本地代码审计）+ R2（外部资产调研）并行 → R3（综合成方案）。
 > 产出：`WB-GRAPH-RESEARCH-LOCAL.md` / `WB-GRAPH-RESEARCH-EXTERNAL.md` / **`WB-GRAPH-INTEGRATION-PLAN.md`（最终交付）**。

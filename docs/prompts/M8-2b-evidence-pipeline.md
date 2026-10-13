@@ -1,8 +1,23 @@
+# M8-2b · evidence → 检索数据管道 + importance 加权接入（已完工）
+
+> **状态**：已完工 · 2026-09-09（原文记录的最后一次核实日）
+> **性质**：派工任务书（存档）—— 本文为完成后的技术记录，不再作为待执行计划。
+> **落点**：新增 `lib/evidence-agg.js`（原文记作 `lib/evidence-agg-pre.js`）；`lib/index.js` 的 `recall()` L0 加权段；套件 `tests/smoke/smoke-test-evidence-agg.mjs`。
+> **验收**：`smoke-test-evidence-agg.mjs` 通过；`memory-importance` smoke ≥17 断言；只读性断言通过；已并入全量回归。
+
+## 摘要
+
+该段补上「evidence 事件 → 检索数据管道 → importance 加权」的缺口：证据事件已按日 JSONL 落盘，只是没人读。本段完成 M8-2 的原始目标（首版 `311e2e8` 仅交付纯核心）；依赖 P8 必须已完成，因为 importance 加权需要 P8 建好的融合入口。
+
+> **存档声明**：本文为该轮派工任务书的原文存档，正文中的「你要做 / 必须 / 禁止」等祈使句**均为当时下达的要求**，不代表当前待办；实际结果以页首「落点 / 验收」为准。
+
+---
+
 > **投喂方式**：本段须与 `_COMMON.md` 一并投喂。
 > 依赖：**P8（必须已完成）** —— importance 加权需要 P8 建好的融合入口。
 > 本段完成 M8-2 的原始目标（311e2e8 仅交付纯核心）。
 
-## 【M8-2b】evidence → 检索数据管道 + importance 加权接入
+## 【M8-2b】evidence → 检索数据管道 + importance 加权接入 · 原任务书
 
 **背景（实读代码，2026-09-09 核实）**：
 - **数据在盘上，只是没人读**：evidence 事件落盘于 `~/.dsh/memory/evidence-pre/events/`，**按日 JSONL**（如 `2026-08-23.jsonl` 2491B、`2026-08-25.jsonl` 18102B），行结构含 `{kind, memoryId, ts 或 event.ts}`。

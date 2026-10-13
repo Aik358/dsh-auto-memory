@@ -1,5 +1,22 @@
 # dsh-auto-memory 3.0 宣传图 · 单发完整 Prompt
 
+> **状态**：已完工 · 完工日期未单独留档
+> **性质**：设计定稿（出图 Prompt） —— 本文为**完成后的技术记录**，不再作为待执行计划。
+> **落点**：`docs/PROMO-PROMPT-3.0.md`；对应版本为 3.0.0（见 `CHANGELOG.md`），素材落于 `docs/screenshots/promo/`。
+> **验收**：本文含出图后的文字准确性自检清单与事实依据核对表；成图效果未在本文单独留档。
+
+## 摘要
+
+本文件是 dsh-auto-memory 3.0 宣传图的单发完整 Prompt，整段粘进生图工具即可一次出图。内容含推荐参数（`gpt-image-2.5` / quality `high` / size `1536x1024`，竖版换取 `1024x1536`）、Prompt 正文、出图后的文字准确性自检清单、写 prompt 时的事实来源与负面提示。
+
+## 文档规范
+
+- 改写依据：`docs/internal/DOC-REWRITE-STYLE.md`
+- 本文件体例：**一次性出图 Prompt 留档**。§「出图后必做」为交付时的自检口径。
+- 语态纪律：主语用「本项目 / 本方案」，不使用第一人称叙述。
+
+---
+
 > **用法**：整段粘进生图工具，一次出图。
 > **推荐参数**：`gpt-image-2.5` / quality `high` / size `1536x1024`（16:9 横版）
 > 若要竖版封面用 `1024x1536`，把构图描述里的「left / right」换成「top / bottom」。
@@ -20,7 +37,7 @@ CHARACTER (right side, occupying right 45%, full body from head to knees): A gen
 LEFT PANEL TOP — main title block:
 Large bold Chinese title text, two lines, white with a subtle cyan glow:
 "无问自忆"
-"记忆不断线"
+"Ambient Recall · 「潜藏追忆，如影随形」"
 Below it, smaller light-blue English subtitle in a clean sans-serif:
 "She remembers, unbidden."
 Below that, one line of small gray-blue Chinese text:
@@ -52,7 +69,7 @@ STYLE: Premium dark UI illustration, deep blue and cyan palette with small warm 
 
 AI 生图的**中文长文本**仍可能出错（缺笔画、错字、糊字）。逐项核对：
 
-- [ ] 主标题「无问自忆」「记忆不断线」——**这两行最重要**，错一个字就重出
+- [ ] 主标题「无问自忆」与「Ambient Recall · 潜藏追忆，如影随形」——**这两行最重要**，错一个字就重出
 - [ ] 英文副标题 `She remembers, unbidden.`
 - [ ] 四张卡片标题：自动记忆 / 写入闸门 / 交接账本 / 三层记忆
 - [ ] 卡片小字（错字可接受，糊字不行 —— 小字允许后期覆盖）
