@@ -28,7 +28,12 @@ const ok = (c, n, d) => { if (c) { pass++; console.log('  ok - ' + n) } else { f
 function extractNoteRoute(src) {
   const a = src.indexOf('      path: API.note,')
   // 路由对象以 4 空格缩进的 '{' 起头；不能用 6 空格缩进（会命中不相邻的别的对象）。
-  const braceStart = src.lastIndexOf('\r\n    {', a) + 2
+  // ★#333-CI：不得硬编码 \r\n —— 仓库 blob 存 LF、开发机检出可能是 CRLF，
+  //   写死行尾会让 Linux CI 上 lastIndexOf 返回 -1，+2 后变成 1 ⇒ 抽出
+  //   「mport { memoryDir } from ...」这种残片，new Function 直接 SyntaxError。
+  const lfStart = src.lastIndexOf('\n    {', a)
+  assert.ok(lfStart > 0, '抽取 /note 路由段：4 空格缩进的对象起括号命中（行尾无关）')
+  const braceStart = lfStart + 1
   const end = src.indexOf('    // ── ★R7', a)
   assert.ok(a > 0 && braceStart > 0 && end > braceStart, '抽取 /note 路由段命中')
   return src.slice(braceStart, end).trim().replace(/,\s*$/, '')

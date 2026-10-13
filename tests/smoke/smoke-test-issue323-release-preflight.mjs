@@ -217,7 +217,8 @@ rejectCase('missing-python-runtime', {
 //    RELEASE_PATH=<该副本> node tests/smoke/smoke-test-issue323-release-preflight.mjs ⇒ 必红。
 // =====================================================================
 if (!MUTANT_MODE) {
-  const real = fs.readFileSync(REAL_RELEASE, 'utf8')
+  // ★2026-10-13 CI：锚点比对必须**行尾无关**（仓库 blob 存 LF、Windows 检出 CRLF）。
+  const real = fs.readFileSync(REAL_RELEASE, 'utf8').replace(/\r\n/g, '\n')
   // ★变异用**语义等价的最小回退**，不做整块剪贴：
   //   整块剪贴要自己找「块尾」——本仓已记过教训：块边界借邻接物当终点，会把中间内容一起吞掉
   //   （本次实测正是如此：剪出来的变异文件语法坏掉，变异红成了「崩溃红」，鉴别力归零）。
@@ -228,7 +229,7 @@ if (!MUTANT_MODE) {
     '    for (const p of sourceProblems) console.error(\'   · \' + p)',
     "    console.error('   修法:补齐上面点名的源侧文件/目录后重跑；本脚本在源侧预检通过前不会碰发布基座。')",
     '    process.exit(1)',
-  ].join('\r\n')
+  ].join('\n')
   const mutHits = real.split(MUT_ANCHOR).length - 1
   ok(mutHits === 1, '变异定位:#323「拒绝构建」整块锚点恰命中 1 次', 'hits=' + mutHits)
   if (mutHits === 1) {
