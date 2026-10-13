@@ -32,11 +32,13 @@ function runSuite (label) {
 
 function mutate (rel, from, to, label) {
   const f = path.join(root, rel)
-  let t = readFileSync(f, 'utf8')
-  const hit = t.split(from).length - 1
+  // ★2026-10-13 CI：被变异源的行尾随检出变化，锚串写死 \n ⇒ 两侧归一。
+  let t = readFileSync(f, 'utf8').replace(/\r\n/g, '\n')
+  const fromN = from.replace(/\r\n/g, '\n')
+  const hit = t.split(fromN).length - 1
   ok(hit === 1, label + '｜变异锚点恰命中 1 次（实=' + hit + '）')
   if (hit !== 1) return false
-  writeFileSync(f, t.split(from).join(to), 'utf8')
+  writeFileSync(f, t.split(fromN).join(to), 'utf8')
   return true
 }
 
@@ -48,25 +50,28 @@ ok(base.f === 0 && base.p >= 18, '基线 0 FAIL 且 PASS ≥ 18（实 ' + base.p
 console.log('[A2-负路径] ② #288 变异：恢复「lastOk 分支先 return、确认卡后置」的旧顺序')
 {
   const clientPath = path.join(root, 'lib', 'client.js')
-  const orig = readFileSync(clientPath, 'utf8')
+  const orig = readFileSync(clientPath, 'utf8').replace(/\r\n/g, '\n')
   let t = orig
   // 变异 1：把 armed 分支的 applyArmCard + return 去掉（让 armed 不再早于 lastOk 生效）
   // ★2026-10-08 判据对齐：锚串曾写死旧形态，被两处有意演进撑破 ——
   //   ① 第一行：Lead 的 #285 补修把 `arm.ratio >= thr` 改为 `(arm.hard || arm.ratio >= thr)`；
   //   ② 第二锚串：lane-a 的 #290 在第三行**同一行内**追加了降级标注 ⇒ 原锚串不再字面匹配。
   //   变异语义不变（仍是「恢复旧顺序 / 旧语义」），仅把锚串对齐到现形。
-  const armRe = '            if (arm && (arm.hard || arm.ratio >= thr)) {\r\n              applyArmCard(arm)\r\n              return\r\n            }\r\n'
-  const armHit = t.split(armRe).length - 1
+  const armRe = '            if (arm && (arm.hard || arm.ratio >= thr)) {\n              applyArmCard(arm)\n              return\n            }\n'
+  const armReN = armRe.replace(/\r\n/g, '\n')
+  const armHit = t.split(armReN).length - 1
   ok(armHit === 1, '②-1 armed 早返回锚点恰命中 1 次（实=' + armHit + '）')
-  t = t.split(armRe).join('')
+  t = t.split(armReN).join('')
   // 变异 2：lastOk 分支回到旧语义（无条件清卡 + 显示成功文本）
-  const okRe = '              if (armActive) applyArmCard(armNow)\r\n              else { setAcConfirm(null); setAcCd(0) }\r\n'
+  const okRe = '              if (armActive) applyArmCard(armNow)\n              else { setAcConfirm(null); setAcCd(0) }\n'
+  const okReN = okRe.replace(/\r\n/g, '\n')
   // ★2026-10-08 判据对齐：#290 在第三行之前插入了注释 ⇒ 原三行连续锚串被切断，
   //   现拆成两处独立变异（语义等价：仍是「恢复旧顺序 / 旧语义」）。
   const okRe2 = 'if (!acOkDismissed && !armActive) setAcSt('
-  const okHit = (t.split(okRe).length - 1) * (t.split(okRe2).length - 1) === 1 ? 1 : 0
+  const okRe2N = okRe2.replace(/\r\n/g, '\n')
+  const okHit = (t.split(okReN).length - 1) * (t.split(okRe2N).length - 1) === 1 ? 1 : 0
   ok(okHit === 1, '②-2 lastOk 分支卡优先锚点恰命中 1 次（实=' + okHit + '）')
-  t = t.split(okRe).join('              setAcConfirm(null)\r\n              setAcCd(0)\r\n' + '              ')
+  t = t.split(okReN).join('              setAcConfirm(null)\n              setAcCd(0)\n' + '              ')
   writeFileSync(clientPath, t, 'utf8')
   const r1 = runSuite('#288 变异')
   ok(r1.f > 0, '②-3 ★变异必红：#288 旧顺序下套件出现 FAIL（f=' + r1.f + '）')
@@ -80,7 +85,7 @@ console.log('[A2-负路径] ③ #289 变异：抽掉请求代次 + 会话身份�
   const clientPath = path.join(root, 'lib', 'client.js')
   const orig = readFileSync(clientPath, 'utf8')
   // 变异：acFresh 的判据恒真（等价于旧实现「不做任何代次/身份校验」）
-  const freshRe = '            if (!alive || mySeq !== pollSeq) return false\r\n            if (!sidQ) return true\r\n            try { return String(currentSessionIdClient() || \'\') === sidQ } catch (eSq) { return true }'
+  const freshRe = '            if (!alive || mySeq !== pollSeq) return false\n            if (!sidQ) return true\n            try { return String(currentSessionIdClient() || \'\') === sidQ } catch (eSq) { return true }'
   const hit = orig.split(freshRe).length - 1
   ok(hit === 1, '③-1 代次/身份判据锚点恰命中 1 次（实=' + hit + '）')
   const t = orig.split(freshRe).join('            return !!alive')

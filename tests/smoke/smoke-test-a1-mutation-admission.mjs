@@ -335,10 +335,12 @@ if (!process.env.A1_SOURCE_ROOT) {
   await fsp.cp(path.join(ownRoot, 'lib'), path.join(negRoot, 'lib'), { recursive: true })
   await fsp.cp(path.join(ownRoot, 'tests', 'lib'), path.join(negRoot, 'tests', 'lib'), { recursive: true })
   const revert = (file, pairs) => {
-    let text = fs.readFileSync(file, 'utf8')
+    // ★2026-10-13 CI：回退树文件行尾随检出变化，锚串写死 \n ⇒ 两侧归一后再匹配。
+    let text = fs.readFileSync(file, 'utf8').replace(/\r\n/g, '\n')
     for (const [from, to] of pairs) {
-      assert.ok(text.includes(from), '回退锚点必须唯一存在: ' + file + ' :: ' + from.slice(0, 60))
-      text = text.split(from).join(to)
+      const fromN = from.replace(/\r\n/g, '\n')
+      assert.ok(text.includes(fromN), '回退锚点必须唯一存在: ' + file + ' :: ' + fromN.slice(0, 60))
+      text = text.split(fromN).join(to)
     }
     fs.writeFileSync(file, text, 'utf8')
   }
@@ -346,8 +348,8 @@ if (!process.env.A1_SOURCE_ROOT) {
   revert(path.join(negRoot, 'lib/index.js'), [
     ['await this.writeFull(notesPath, text, { expectedDigest: snapshotDigest })', 'await this.writeFull(notesPath, text)'],
     ['await this.writeFull(filePath, body, { expectedDigest: snapshotDigest })', 'await this.writeFull(filePath, body)'],
-    ['        mutationAdmission: file => captureMemoryMutationPre(this, file),\r\n        mutationBoundary: (file, job, admission) => this._withMemoryMutationPre(file, job, admission),\r\n', ''],
-    ['      mutationAdmission: file => captureMemoryMutationPre(this, file),\r\n      mutationBoundary: (file, job, admission) => this._withMemoryMutationPre(file, job, admission),\r\n', ''],
+    ['        mutationAdmission: file => captureMemoryMutationPre(this, file),\n        mutationBoundary: (file, job, admission) => this._withMemoryMutationPre(file, job, admission),\n', ''],
+    ['      mutationAdmission: file => captureMemoryMutationPre(this, file),\n      mutationBoundary: (file, job, admission) => this._withMemoryMutationPre(file, job, admission),\n', ''],
   ])
   // #249：摘掉 store 的 admission 边界（写盘通道不再有统一门）
   // 只回退**接线**，保留模块自身默认值：否则模块 import 即崩，红的不是被测行为。
@@ -356,7 +358,7 @@ if (!process.env.A1_SOURCE_ROOT) {
   //   传进写盘链」（`(bound) => within(bound || target)`）。回退语义**一字未改**：仍是「摘掉
   //   admission 边界（写盘通道不再有统一门）」，只把锚串对齐到新形态。
   revert(path.join(negRoot, 'lib/memory-writer.js'), [
-    ['      () => this.mutationBoundary(target, (bound) => within(bound || target), admission),\r\n      () => this.mutationBoundary(target, (bound) => within(bound || target), admission),\r\n', '      () => prev.then(job, job),\r\n'],
+    ['      () => this.mutationBoundary(target, (bound) => within(bound || target), admission),\n      () => this.mutationBoundary(target, (bound) => within(bound || target), admission),\n', '      () => prev.then(job, job),\n'],
   ])
   const child = spawnSync(process.execPath, [fileURLToPath(import.meta.url)], {
     env: { ...process.env, A1_SOURCE_ROOT: negRoot },

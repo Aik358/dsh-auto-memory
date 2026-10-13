@@ -101,10 +101,28 @@ const callClaim = (subject) => claim(subject) === 'rendered' ? {} : null
 }
 
 // ── ④ 落点接线：三处，且两处 DSH 入口受 helper 控制、面板入口常驻不可关 ──
+// newline 无关的归一化副本 + 「本行起点」定位工具（用于结构判定）
+const CLI_norm = CLI.replace(/\r\n/g, '\n')
+const CLI_LF = CLI_norm
+const CLI_lastNlBefore = (idx) => CLI_norm.lastIndexOf('\n', idx) + 1
+
 ok(CLI.includes("if (settingsEntryPre('" + DS + "')) surfaceDisposers.push(slots.inject('settings.section'"), '④ DSH 设置页入口受 helper 控制（可关）')
 ok(CLI.includes("if (settingsEntryPre('" + PG + "')) surfaceDisposers.push(slots.inject('settings.plugins.tab'"), '④ DSH「插件」页入口受 helper 控制（可关）')
 ok(/name: 'settings\.plugins\.tab'[\s\S]{0,240}Iter5HostSettings/.test(CLI), '④ 插件页与设置页**共用同一组件** Iter5HostSettings ⇒ 天然同源、同一份配置')
-ok(!CLI.includes("slots.inject('settings.plugins.tab', function () {\n            return slots.register"), '④ 负路径：插件页注册**不得**绕开 helper 无条件注册')
+// ★2026-10-13 CI 修复：原断言用「文字子串」判「有没有绕开 helper」——
+//   但源码里 `if (settingsEntryPre(...)) surfaceDisposers.push(slots.inject(` 全在**同一行**，
+//   任何子串匹配都会命中 ⇒ 该负路径**必然失败**（且此前被 CRLF/\n 失配掩盖成恒绿）。
+//   改为**结构判定**：找出所有 plugins.tab 注册点，逐个回看它所在行的前缀是否含 helper。
+const tabRegs = [...CLI.replace(/\r\n/g, '\n').matchAll(/surfaceDisposers\.push\(slots\.inject\('settings\.plugins\.tab'/g)]
+ok(tabRegs.length >= 1, '④ 结构判定：至少存在一处 plugins.tab 注册点')
+const unguardedTab = tabRegs.filter((m) => {
+  const lineStart = CLI_lastNlBefore(m.index)
+  const line = CLI_norm.slice(lineStart, m.index)
+  return !/settingsEntryPre\('settingsEntryInPluginsPage'\)/.test(line)
+})
+ok(unguardedTab.length === 0, '④ 负路径：插件页注册**不得**绕开 helper 无条件注册（实查 ' + tabRegs.length + ' 处，未受保护 ' + unguardedTab.length + ' 处）')
+// ★同日加固：负路径必须**有鉴别力**（真能失败），故正路径断言必须成立 —— 否则上面那条恒真。
+ok(CLI_LF.includes("if (settingsEntryPre('" + PG + "')) surfaceDisposers.push(slots.inject('settings.plugins.tab'"), '④ 加固：受 helper 控制的写法确实存在（证明负路径有鉴别力）')
 ok(CLI.includes('controller.subscribe(function () { void refreshSettingsEntryCachePre() })'), '④ 缓存订阅既有广播总线 ⇒ 任一入口保存后其余入口即时同步')
 // ★2026-10-12 自检修复：判据跟着实现演进（新增「只在有效值变化时才重注册」+ 单飞），
 //   但守住的原事故不变 = 「关掉开关当场消失，无需刷新」。窗口放宽到 1600 是因为函数内新增了注释与判定。
