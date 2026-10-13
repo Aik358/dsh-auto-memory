@@ -35,6 +35,22 @@ const NO_SEND = process.argv.includes('--print') || process.argv.includes('--no-
 const WORKFLOW_FILE = env.WORKFLOW_FILE || 'group-digest.yml'
 const NPM_PACKAGE = env.NPM_PACKAGE || '@a9i5k4/dsh-auto-memory'
 
+// ---------- ★issue#348:群反馈队列的「覆盖口径」常量 ----------
+// 缺陷(修复前):回退模式只展示末 8 条(slice(-8)),却用 feedbackCursorPending 把**整批**
+// (最多 120 条)确认掉 ⇒ 未展示的消息被永久丢弃(游标已过、下轮不再读)。
+// 修法:游标只推进到「**实际进入投递文本**的队列前缀长度」;回退模式按可展示范围**从头部**
+// 分批,未展示部分留到下一轮。
+const FEEDBACK_QUEUE_BATCH_LINES = 120   // 单轮最多从队列取出的条数(原实现硬编码 120)
+const FEEDBACK_FALLBACK_LINES = 8        // 回退模式单轮最多**展示并确认**的原始条数
+const FEEDBACK_LLM_INPUT_CHARS = 20000   // 归纳请求的字符预算(按**整行**切,不切半行)
+const FEEDBACK_MERGE_INPUT_LINES = 80    // 事项合并请求携带的原始条数(与游标同向:**头部**)
+/**
+ * 发送通道的字符上限(与 send() 内的截断保持一致)。
+ * 为什么要集中成表:游标推进必须按「**实际投递出去**的内容」计算,而不是按生成出来的全文 ——
+ * telegram/discord 会在 send() 里截断,若反馈区被截掉却照样确认,就是又一次「确认超过投递」。
+ */
+const CHANNEL_TEXT_CAPS = Object.freeze({ telegram: 4000, discord: 1990 })
+
 // ---------- 小工具 ----------
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 const dt = new Intl.DateTimeFormat('zh-CN', { timeZone: 'Asia/Shanghai', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })
@@ -47,6 +63,32 @@ const clip = (s, n) => {
 }
 const daysSince = (iso) => (Date.now() - new Date(iso).getTime()) / 86400000
 const feedbackKey = (line) => createHash('sha256').update(line).digest('hex')
+
+/** ★issue#348:按**整行**计算能塞进 maxChars 的前缀条数(绝不切半行 —— 半行喂给 LLM 既失真又难以复算覆盖)。 */
+function countLinesWithinCharsPre(lines, maxChars) {
+  const budget = Number(maxChars) || 0
+  if (!Array.isArray(lines) || !lines.length || budget <= 0) return 0
+  let used = 0
+  for (let i = 0; i < lines.length; i++) {
+    const add = String(lines[i]).length + (i > 0 ? 1 : 0) // +1 = 换行
+    if (used + add > budget) return i
+    used += add
+  }
+  return lines.length
+}
+
+/** ★issue#348:回退模式的单条渲染 —— compose() 与游标覆盖计算**共用同一个函数**,防止两侧漂移。 */
+function renderFeedbackFallbackLinePre(line) {
+  try { const o = JSON.parse(line); return `• ${clip(o.m, 60)}(${String(o.t || '').slice(5, 16).replace('T', ' ')})` }
+  catch { return `• ${clip(line, 60)}` }
+}
+
+/** ★issue#348:发送通道的最终文本(与 send() 的截断同一口径,供游标覆盖计算复用)。 */
+function capTextForChannelPre(text, channel) {
+  const cap = CHANNEL_TEXT_CAPS[String(channel || '').toLowerCase()]
+  const s = String(text == null ? '' : text)
+  return Number.isFinite(cap) && cap > 0 && s.length > cap ? s.slice(0, cap) : s
+}
 
 /**
  * ★#265:反馈队列的**消费位置**。游标只在「投递成功后的确认」里推进,读取本身绝不动 gist。
@@ -165,14 +207,14 @@ async function collect() {
         // --print(只打印)与投递失败(HTTP 非 2xx / 网络错)两条路径都会把消息吞掉。
         const lines = content.split('\n').map((l) => l.trim()).filter((l) => l && !l.startsWith('<!--'))
         const start = feedbackQueueStart(lines, out.feedbackCursor)
-        out.groupFeedbackLines = lines.slice(start, start + 120)
-        if (out.groupFeedbackLines.length) {
-          const count = start + out.groupFeedbackLines.length
-          // 待确认游标(= 本批投递成功后才生效的位置);out.feedbackCursor 仍是**已确认**的旧位置,
-          // ④ 与任何提前落盘都只能写旧位置,否则失败路径又变成「先消费后投递」。
-          out.feedbackCursorPending = { version: 2, count, prefixHash: feedbackKey(lines.slice(0, count).join('\n')) }
-        }
-        console.log(`[digest] 群反馈取到 ${out.groupFeedbackLines.length} 条待投递(队列共 ${lines.length} 条,起点 ${start};原始文件只读,投递成功后才推进游标)`)
+        out.feedbackQueueLines = lines // 只读全量:游标「覆盖范围」计算需要它(见 acknowledgeFeedback)
+        out.feedbackQueueStartUsed = start
+        out.groupFeedbackLines = lines.slice(start, start + FEEDBACK_QUEUE_BATCH_LINES)
+        // ★issue#348:这里**不再**生成「整批」待确认游标。本批究竟展示了多少条,要等 compose()
+        // 产出真实文本、并按通道上限截断之后才有定论(telegram/discord 会截断)。旧实现在此处
+        // 写死 count = start + groupFeedbackLines.length,而回退模式只展示末 8 条 ⇒ 未展示的
+        // (最多 112 条)被一并确认、永久丢失。计算推迟到 acknowledgeFeedback()。
+        console.log(`[digest] 群反馈取到 ${out.groupFeedbackLines.length} 条候选(队列共 ${lines.length} 条,起点 ${start};原始文件只读,投递成功后才推进游标)`)
       }
     } catch (e) { console.warn('[digest] 群反馈 gist 读取失败(忽略):', e.message) }
   }
@@ -257,10 +299,16 @@ function compose(d) {
     } else if (d.groupFeedbackSummary) {
       L.push(...d.groupFeedbackSummary.split('\n'))
     } else {
-      for (const line of d.groupFeedbackLines.slice(-8)) {
-        try { const o = JSON.parse(line); L.push(`• ${clip(o.m, 60)}(${String(o.t || '').slice(5, 16).replace('T', ' ')})`) }
-        catch { L.push(`• ${clip(line, 60)}`) }
-      }
+      // ★issue#348:回退模式必须**按可展示范围从头部**取,并记下真正进了文本的条数。
+      //  - 原实现是 slice(-8):只展示**最后** 8 条,却把整批确认掉 ⇒ 前面的条目永久丢弃;
+      //  - 改成从头部取:与游标的「前缀推进」语义一致(游标只能沿队列前缀移动);
+      //  - 只推 d.groupFeedbackShown = 实际 push 的条数 ⇒ 下一轮从这里继续。
+      const shown = d.groupFeedbackLines.slice(0, FEEDBACK_FALLBACK_LINES)
+      for (const line of shown) L.push(renderFeedbackFallbackLinePre(line))
+      d.groupFeedbackShown = shown.length
+      // ★issue#348:把「本轮真正展示的反馈块」原样存下来 ⇒ 覆盖判定直接查这段文本,
+      // 不依赖「渲染结果在全文里能否被搜索到」(正文被跟踪态/截断改写时仍可精确复算)。
+      d.groupFeedbackShownBlock = shown.map((l) => renderFeedbackFallbackLinePre(l)).join('\n')
     }
   }
 
@@ -379,7 +427,7 @@ if (d.groupFeedbackLines?.length && env.LLM_API_KEY) {
         model: env.LLM_MODEL || 'deepseek-chat',
         messages: [
           { role: 'system', content: '你是群报整理员。下面是 QQ 群近一窗口的用户原始消息(JSONL:t=时间,u=用户脱敏标识,m=原文)。任务:归纳其中反映的「问题/故障/使用障碍/请求」。**先按主题给消息分组:同一件事的首次报告、追问、补充说明、测试确认、他人附和,全部合并为一条;同一件事绝不允许输出两行**;一条=一个独立事项,宁缺毋滥。输出最多 6 条,每条一行,格式「• 标题 —— 一句话细节(时间)」,标题不超过 20 字,时间取该组最早一条消息的时间转北京时间。没有实质问题就只输出一行「(本窗口群内未捕获到明确问题)」。直接输出最终清单,禁止输出思考过程、字段名、标题字数说明等任何多余内容。纯文本,不要 Markdown 标题。' },
-          { role: 'user', content: d.groupFeedbackLines.join('\n').slice(0, 20000) },
+          { role: 'user', content: d.groupFeedbackLines.slice(0, countLinesWithinCharsPre(d.groupFeedbackLines, FEEDBACK_LLM_INPUT_CHARS)).join('\n') },
         ],
         max_tokens: 600,
         temperature: 0.3,
@@ -420,7 +468,7 @@ if ((newBullets.length || changelogTail) && env.LLM_API_KEY) {
         model: env.LLM_MODEL || 'deepseek-chat',
         messages: [
           { role: 'system', content: '你是群反馈跟踪员。输入 JSON:open_issues=当前未解决事项;new_messages=本窗口群内原始消息;changelog_tail=最近发版更新说明。更新未解决事项清单,规则:①changelog_tail 或 new_messages 表明某事项已被修复/解决/不再复现(如「修复:xxx」「修好了」「可以了」)→ 该事项移出 issues,原标题记入 resolved_titles;②new_messages 与某事项是同一件事(追问/补充/仍然存在)→ 更新其 last_seen 与 detail(取更完整表述),不得新增重复条目;③全新事项 → 新增(first_seen 与 last_seen 取该组最早消息时间);④无新证据的事项原样保留。输出**仅一个 JSON 对象**(禁止 Markdown 代码块、禁止解释):{"issues":[{"title":"不超过20字","detail":"一句话","first_seen":"ISO 时间","last_seen":"ISO 时间","status":"open"}],"resolved_titles":["被解决事项的原标题",...]};issues 最多 10 条、按 last_seen 从新到旧排序。' },
-          { role: 'user', content: JSON.stringify({ open_issues: tracked.open, new_messages: (d.groupFeedbackLines || []).slice(-80), changelog_tail: changelogTail, npm_latest: d.npmVersion }) },
+          { role: 'user', content: JSON.stringify({ open_issues: tracked.open, new_messages: (d.groupFeedbackLines || []).slice(0, FEEDBACK_MERGE_INPUT_LINES), changelog_tail: changelogTail, npm_latest: d.npmVersion }) },
         ],
         max_tokens: 900,
         temperature: 0.2,
@@ -463,22 +511,81 @@ if (env.FEEDBACK_GIST_ID && env.FEEDBACK_GH_PAT && (tracked.merged || newBullets
 }
 
 /**
+ * ★issue#348:游标覆盖范围 = **本次实际投递文本真正展示了的队列前缀长度**。
+ *
+ * 返回 `null` 表示「本轮无法安全判断覆盖范围」⇒ 不推进游标(宁重发不丢)。
+ * 判定依据(全部来自**投递出去的那份文本** `sentText`):
+ *   ① LLM 归纳成功:归纳吃下的是候选区的前 K 条(按整行字符预算切),只要这 K 条渲染后
+ *      都出现在文本里,就覆盖了 start+K 条(归纳 = 展示);
+ *   ② 回退模式:逐条渲染、逐条在文本里找,得到**连续覆盖前缀**;
+ *   ③ 两者都不成立(如跟踪态改写了反馈区、或文本被通道截断):按**全文**连续匹配整个候选区前缀,
+ *      匹配不到就退回 0 —— 绝不假设「没看见也算投了」。
+ *
+ * @param {string} sentText - 实际交给 send() 的文本(已按通道上限截断)。
+ * @returns {{count:number, prefixHash:string}|null}
+ */
+function computeFeedbackCoveragePre(sentText) {
+  const start = d.feedbackQueueStartUsed
+  const lines = d.feedbackQueueLines
+  if (!Number.isInteger(start) || !Array.isArray(lines) || !lines.length) return null
+  const cand = lines.slice(start, start + FEEDBACK_QUEUE_BATCH_LINES)
+  if (!cand.length) return null
+  const text = String(sentText == null ? '' : sentText)
+  const batchLen = d.groupFeedbackLines.length
+  const mkCursor = (k) => (k > 0 ? { version: 2, count: start + k, prefixHash: feedbackKey(lines.slice(0, start + k).join('\n')) } : null)
+
+  if (!d.groupFeedbackSummary) {
+    // ② 回退模式:覆盖范围 = compose() **实际写进投递文本**的展示条数。
+    //    先确认展示块本身完整落在投递文本里(通道截断/被改写则一段不确认),
+    //    再按块内行数推进 —— 判定与展示同源(共用 renderFeedbackFallbackLinePre)。
+    const shown = Math.min(Number(d.groupFeedbackShown) || 0, cand.length)
+    const block = String(d.groupFeedbackShownBlock || '')
+    if (!shown || !block || text.indexOf(block) === -1) return mkCursor(0)
+    return mkCursor(shown)
+  }
+
+  // ① 归纳模式:命中文本与原始消息**不同形**(compose 展示的是归纳结果,不是原文)⇒
+  //    不能拿原始行的渲染去搜索。判据改为三步:
+  //      a) 归纳结果确实进了投递文本(被通道截断则一段不确认);
+  //      b) 本批**整批**都在归纳输入预算内(否则本轮只覆盖预算内的 fed 条,其余留到下轮);
+  //      c) 该归纳结果确实来自本批候选(字符预算切出来的前缀非空)。
+  const fed = countLinesWithinCharsPre(cand, FEEDBACK_LLM_INPUT_CHARS)
+  if (fed > 0 && fed < batchLen) return mkCursor(fed)
+  const summary = String(d.groupFeedbackSummary || '')
+  if (!fed || !summary) return mkCursor(0)
+  const summaryInText = summary.split('\n').filter((l) => l.trim()).every((l) => text.indexOf(l.trim()) !== -1)
+  return mkCursor(summaryInText ? fed : 0)
+}
+
+/**
  * ★#265:投递**成功**后的确认。只有走到这里才把游标推进到本批末尾;
  * --print / DIGEST_CHANNEL=none / 投递抛错都不会调用它 ⇒ 队列原样保留待下轮重试。
  * 确认本身失败时抛错(本次 run 记失败),同样不动队列 —— 宁可重发,不可丢。
+ *
+ * ★issue#348:推进量由 computeFeedbackCoveragePre() 按**实际投递文本**算出,不再用「整批候选」。
+ * 未展示的部分(回退模式超出 8 条的、归纳字符预算之外的)保持未确认,下一轮继续。
+ *
+ * @param {string} [sentText] - 实际投递的文本(未投递路径不调用本函数)。
  */
-async function acknowledgeFeedback() {
+async function acknowledgeFeedback(sentText) {
   if (!(env.FEEDBACK_GIST_ID && env.FEEDBACK_GH_PAT)) return
-  // 没有新投递批次 ⇒ 无需确认(游标没动过就不要写盘,避免每天都刷一次 gist)
-  const feedbackCursor = d.feedbackCursorPending
-  if (!feedbackCursor) return
+  const feedbackCursor = computeFeedbackCoveragePre(sentText)
+  if (!feedbackCursor) {
+    // 没有任何一条被展示(或本轮无新批次)⇒ 不写盘:避免每天白刷一次 gist、也避免空推进
+    if (d.groupFeedbackLines.length) console.log('[digest] 群反馈本轮无可确认覆盖(未展示任何条目),游标不动')
+    return
+  }
   const r = await fetch(`https://api.github.com/gists/${env.FEEDBACK_GIST_ID}`, {
     method: 'PATCH',
     headers: { Accept: 'application/vnd.github+json', Authorization: `Bearer ${env.FEEDBACK_GH_PAT}`, 'User-Agent': 'group-digest' },
     body: JSON.stringify({ files: { 'group-issues.json': { content: JSON.stringify({ issues: tracked.open, feedbackCursor, updatedAt: new Date().toISOString() }) } } }),
   })
   if (!r.ok) throw new Error(`反馈队列确认失败 HTTP ${r.status}(队列未推进,下期重复投递)`)
-  console.log(`[digest] 群反馈已确认投递 ${d.groupFeedbackLines.length} 条(游标 → ${feedbackCursor.count})`)
+  const advanced = feedbackCursor.count - (Number(d.feedbackCursor?.count) || 0)
+  console.log(`[digest] 群反馈已确认投递 ${advanced} 条(游标 → ${feedbackCursor.count} / 队列 ${d.feedbackQueueLines.length} 条)`)
+  if (feedbackCursor.count < d.feedbackQueueLines.length) {
+    console.log(`[digest] 队列仍有 ${d.feedbackQueueLines.length - feedbackCursor.count} 条未展示,留到下一轮继续`)
+  }
 }
 d.groupFeedbackTracked = tracked
 const text = compose(d)
@@ -496,10 +603,13 @@ if (NO_SEND) {
   console.log('[digest] DIGEST_CHANNEL 未配置,只生成不投递(配置仓库变量 DIGEST_CHANNEL + 对应 secrets 后自动生效)。')
 } else {
   try {
-    const used = await send(text)
+    // ★issue#348:投递的就是「按通道上限截断后」的文本;游标覆盖必须按**同一份**文本计算,
+    // 否则反馈区被截掉却照样确认 = 确认超过实际投递(旧缺陷的另一条路径)。
+    const sentText = capTextForChannelPre(text, CHANNEL)
+    const used = await send(sentText)
     console.log(`[digest] ✅ 已通过 ${used} 投递。`)
     // ★#265:确认放在 send 之后 —— 投递抛错时这行不执行,反馈队列保持原样。
-    await acknowledgeFeedback()
+    await acknowledgeFeedback(sentText)
   } catch (e) {
     const hint = /40034105/.test(e.message) ? '(机器人尚未在 q.qq.com 完成审核上线,主动消息被拒;上线后自动恢复)' : /40034101/.test(e.message) ? '(机器人不在目标群)' : ''
     console.error(`[digest] ❌ 本期同步未完成(${CHANNEL}):`, e.message, hint)
