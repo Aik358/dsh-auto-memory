@@ -13,10 +13,11 @@ import assert from 'node:assert/strict'
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
-import { pathToFileURL } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import vm from 'node:vm'
 
-const HERE = path.dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1'))
+// ★2026-10-13 #344：URL.pathname 百分号编码（中文/空格）⇒ 路径不存在。改用 fileURLToPath。
+const HERE = path.dirname(fileURLToPath(import.meta.url))
 const ROOT = path.resolve(HERE, '..', '..')
 const SRC_CLIENT = readFileSync(path.join(ROOT, 'lib', 'client.js'), 'utf8')
 let pass = 0, fail = 0

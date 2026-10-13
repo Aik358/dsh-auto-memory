@@ -171,7 +171,11 @@ console.log('[D] #287 脏数据 fail-soft：损坏/超长/非法 JSON => 不崩�
     ['非数组', '{"k":"x"}'],
     ['超长(>8192)', '[' + JSON.stringify({ k: 'a'.repeat(9000), t: Date.now() }) + ']'],
     ['条目形态不符', '[null,42,"x",{"k":123,"t":"nan"},{"t":1}]'],
-    ['未来时间戳(时钟回拨)', JSON.stringify([{ k: String(NOW) + '|sid-A', t: Date.now() + 10 * 60 * 1000 }])],
+    // ★2026-10-13 #352：原把「未来时间戳」混在本表里，夹具身份键写成 `String(NOW) + '|sid-A'`，
+    //   而生产算出的键是 `String(okAt) + '|' + sessionId`（okAt = Number(s.lastOk.at) || 0），
+    //   成功回执 at = NOW-5000 ⇒ 真键是 `<NOW-5000>|sid-A`。**键本身就不匹配** ⇒ 该例被
+    //   「未关闭」放行，与「未来时间戳」毫无关系 —— 负例空转，删掉生产的时间戳拒绝仍全绿。
+    //   已移出本表，下沉到下面的 [D2] 用「对照组 + 唯一变量」重做。
   ]
   for (const [label, raw] of cases) {
     const st = freshStorage(); st.setItem(DISMISS_KEY, raw)
@@ -183,6 +187,28 @@ console.log('[D] #287 脏数据 fail-soft：损坏/超长/非法 JSON => 不崩�
     ok(!threw, '★ ' + label + ' => 不抛错（fail-soft）' + (threw ? '：' + threw.message : ''))
     ok(isOkShown(rendered), '★ ' + label + ' => 按**未关闭**处理，提示照常显示')
   }
+
+  // ★2026-10-13 #352：未来时间戳（时钟回拨）拒绝 —— 必须让**身份键与其它前提全部匹配**，
+  //   使「t 在未来」成为**唯一**被考验的变量。做法：加一条对照组（同一身份键、t 有效）
+  //   断言提示**不显示** ⇒ 证明键真的匹配；对照组若因键不匹配而放行，此条即红，
+  //   从而钉死「负例空转」这类假绿。
+  const OK_AT = NOW - 5000
+  const runDismissCase = async (raw) => {
+    const st = freshStorage(); st.setItem(DISMISS_KEY, raw)
+    let threw = null, rendered = null
+    try {
+      const host = makeMount(AC_BODY, st)({ storage: st, apiGet: () => Promise.resolve(okState(OK_AT, 'sid-A')), sid: 'sid-A' })
+      host.show(); host.runEffects(); await host.settle(); rendered = host.lastRender()
+    } catch (e) { threw = e }
+    return { threw, rendered }
+  }
+  const entryRaw = (t) => JSON.stringify([{ k: String(OK_AT) + '|sid-A', t }])
+  const ctrl = await runDismissCase(entryRaw(Date.now() - 1000))
+  ok(!ctrl.threw, '★ [D2] 对照组(身份键匹配 + t 有效) => 不抛错' + (ctrl.threw ? '：' + ctrl.threw.message : ''))
+  ok(!isOkShown(ctrl.rendered), '★ [D2] 对照组(身份键匹配 + t 有效) => 确实按「已关闭」跳过显示 ⇒ 反证身份键真的匹配（若键不匹配此条必红，负例即空转）')
+  const fut = await runDismissCase(entryRaw(Date.now() + 10 * 60 * 1000))
+  ok(!fut.threw, '★ [D2] 未来时间戳(时钟回拨) => 不抛错（fail-soft）' + (fut.threw ? '：' + fut.threw.message : ''))
+  ok(isOkShown(fut.rendered), '★ [D2] 未来时间戳(时钟回拨) => 按**未关闭**处理，提示照常显示（唯一变量 = t 在未来）')
   const capSt = freshStorage()
   for (let i = 0; i < 70; i++) {
     const host = makeMount(AC_BODY, capSt)({ storage: capSt, apiGet: () => Promise.resolve(okState(NOW - 5000 - i, 'sid-' + i + '-' + 'x'.repeat(8))), sid: 'sid-A' })

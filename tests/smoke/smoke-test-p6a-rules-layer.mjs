@@ -7,7 +7,7 @@
  *
  * **两条独立病因**（都有代码行号，都不许混为一谈）：
  *   A. **措辞**：注入开场白把"规矩"与"资料"统一降格为「只是背景事实与规则参考」。
- *   B. **节奏**：`snapshotMinGapRounds` 默认 5 ⇒ 规矩在第 2–5 轮**不在场**（模型不是不听话，是没收到）。
+ *   B. **节奏**：`snapshotMinGapRounds` 默认 10 ⇒ 规矩在第 2–10 轮**不在场**（模型不是不听话，是没收到）。
  *
  * **v2 修正，本套件逐条锁**（`ROUND3 §3.3 Q3c`）：
  *   - 节奏部分**改默认值不够**：已保存配置会覆盖默认值（`{ ...DEFAULT_CONFIG, ...saved }`）；
@@ -157,9 +157,13 @@ console.log('[P6A-4] ★零值解析：0 必须能表达（旧 `Number(v) || 5` 
   const code = idx.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '')
   ok(!/Number\(engine\.config\.snapshotMinGapRounds\) \|\| 5/.test(code), '★旧 `Number(v) || 5` 已从注入路径移除')
   ok(/parseGapRoundsPre\(engine\.config\.snapshotMinGapRounds, 5\)/.test(code), '注入路径改用 parseGapRoundsPre')
-  // ★2026-09-15 分级注入：默认值回到 5，但它现在是「**完整版**每 5 轮一次」的间隔
+  // ★2026-09-15 分级注入；★2026-10-13 用户裁定默认 5→10 ⇒ 现在是「**完整版**每 10 轮一次」的间隔
   //（其间各轮给精简版）——不再是"5 轮不注入"。
-  ok(/snapshotMinGapRounds: 5,/.test(code), '★默认值 = 完整快照每 5 轮一次（其间给精简版，不是不注入）')
+  // ★2026-10-13 判据更新：用户裁定 gap 默认 5→10（强制覆盖所有用户）。判据语义未削弱 ——
+  //   仍断言「默认值 = 完整快照每 N 轮一次（其间给精简版，不是不注入）」，只更新被锁的常量。
+  //   ⚠️ 该断言锁的是**源码里的常量引用**，故同时接受字面量 10 与常量名（默认值已抽成
+  //   DEFAULT_SNAPSHOT_MIN_GAP_ROUNDS 以便配套强制迁移复用）。
+  ok(/snapshotMinGapRounds: (10|DEFAULT_SNAPSHOT_MIN_GAP_ROUNDS),/.test(code), '★默认值 = 完整快照每 10 轮一次（其间给精简版，不是不注入）')
   ok(/injectBudgetChars: 8000,/.test(code), '★注入预算默认 8000（旧 2000 下用户级记忆只进去约 9%）')
   ok(/snapshotTieredInject: true,/.test(code), '★分级注入开关默认开（可 false 回退旧行为）')
 }
@@ -211,7 +215,15 @@ console.log('[P6A-5b] ★新 turn 首次注入强制完整版（用户裁定 A �
   // ★2026-10-05 判据更新：去重键由 turn 号改为「本轮唯一键」（真人轮用真人消息 seq，非真人轮用 turn 号）。
   //   原因：宿主 turn/start 落地与 context() 渲染有时序差，首次渲染时 turn 号可能仍是上一个
   //   ⇒ 真人轮被误判为「同 turn 后续」而降级（实测 turn17）。seq 单调递增且与消息同批落地。
-  ok(/_humanFullKey !== turnKey/.test(code), '★每轮只强制一次（_humanFullKey 去重，长任务不会每步灌全文）')
+  // ★2026-10-13 判据重钉（判据过期非缺陷）：lib/index.js **有意演进** —— 同轮重复授予修复把
+  //   `firstOfTurn` 从直接比较 `_humanFullKey !== turnKey` 改为经 `_lastFullKey` 中转，并叠加
+  //   「键降级不重复」精判据（区分 turn 边界滞后升级 vs 真的来了新真人消息）。
+  //   **判据意图不变**（每轮只强制一次完整版、长任务不每步灌全文）⇒ 按本仓 2026-10-01 裁定
+  //   「判据过期改判据、不回滚成果」重钉为**结构判定**：去重键必须引用持久键 + 授予时必须写回该键。
+  //   行为证据另见同批探针（6 场景全绿 + 两条变异各自必红），本断言只作守卫。
+  ok(/(_lastFullKey|_humanFullKey) !== turnKey/.test(code)
+    && /stH\._humanFullKey = (tkEff|turnKey)/.test(code),
+    '★每轮只强制一次（去重键引用 _humanFullKey 且授予时写回，长任务不会每步灌全文）')
   ok(/const turnKey = \(isHuman && humanKey\) \? humanKey : tk/.test(code),
     '★★去重键对真人轮用真人消息 seq（防 turn 号时序滞后把真人轮降级）')
   ok(/humanTurnSeqPre\(agent\) \{/.test(code), '引擎侧提供 humanTurnSeqPre（真人消息 seq）')

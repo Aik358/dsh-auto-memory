@@ -17,8 +17,10 @@ import { readFileSync, writeFileSync, mkdtempSync, rmSync, existsSync, mkdirSync
 import { readFile as readFileAsync } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import pathModule from 'node:path'
+import { fileURLToPath } from 'node:url'
 
-const ROOT = pathModule.join(pathModule.dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1')), '..', '..')
+// ★2026-10-13 #344：URL.pathname 百分号编码（中文/空格）⇒ 路径不存在。改用 fileURLToPath。
+const ROOT = pathModule.join(pathModule.dirname(fileURLToPath(import.meta.url)), '..', '..')
 const SRC = readFileSync(pathModule.join(ROOT, 'lib', 'index.js'), 'utf8')
 
 let pass = 0, fail = 0
@@ -49,7 +51,13 @@ function extractMaintFallback(src) {
 const noteRoute = extractNoteRoute(SRC)
 const maintBlock = extractMaintFallback(SRC)
 ok(/ensureBudget\(owner, 'note'/.test(noteRoute), '① /note 路由内含容量门（ensureBudget）')
-ok(/ensureBudget\(agent, 'note', archive\)/.test(maintBlock), '① maintain 回灌段内含容量门（ensureBudget）')
+// ★#333②（2026-10-13）：行为已按用户拍板改为「一律只写指针」，故此条判据同步演进为
+//   「指针三要素」——仍然带容量门（对 brief 与 tiny 各一次），但不再有全文回灌分支。
+ok(!/appendText\(p\.notesPath, archive\)/.test(maintBlock), '① maintain 段内**已无**全文回灌调用（appendText(archive) 不存在）')
+ok(/ensureBudget\(agent, 'note', brief\)/.test(maintBlock), '① 指针写盘前带容量门（对 brief）')
+ok(/ensureBudget\(agent, 'note', tiny\)/.test(maintBlock), '① 指针放不下时对**极简指针**再查一次容量（逐级降级）')
+ok(/memory_read\(kind="archive"\)/.test(maintBlock), '① 指针内含**取回命令**（memory_read(kind="archive")）')
+ok(/memory_recall\(scope="archive"/.test(maintBlock), '① 指针内含**检索命令**（memory_recall(scope="archive")）')
 
 // ── 造 /note handler 的可执行实例（真源码段 + 真 fs）──
 function makeNoteHandler(src, engine) {
@@ -177,11 +185,15 @@ function makeMaint(src, opts) {
   const { run, calls } = makeMaint(SRC, { notesPath, archiveDir, archived, limit: 300 })
   const r = await run()
   const after = readFileSync(notesPath, 'utf8')
-  ok(calls.length === 1 && !calls[0].includes(fullText), '④ 超容量时**未回灌全文**', 'calls=' + calls.length)
-  ok(/未回灌全文/.test(calls[0] || '') && calls[0].includes(archiveDir), '④ 降级为**指针**（含归档路径，不静默）')
   ok(!after.includes(fullText), '④ 负路径：笔记里确无归档全文')
   ok(existsSync(pathModule.join(archiveDir, '2026-01-01.md')), '④ ★硬约束：归档副本未被删除')
-  ok(/未回灌全文/.test(String(r.noteMsg)), '④ 回执如实说明未回灌', String(r.noteMsg).slice(0, 60))
+  ok(/未回灌全文/.test(String(r.noteMsg)) && String(r.noteMsg).includes(archiveDir), '④ 回执如实说明未回灌且带归档路径', String(r.noteMsg).slice(0, 80))
+  ok(/memory_read\(kind="archive"\)/.test(String(r.noteMsg)), '④ 回执内含**取回命令**（此前单向门）')
+  // 本夹具 limit=300、笔记已 80 字符 ⇒ 完整指针(252)与极简指针都放不下 ⇒ 走「只进 noteMsg」一级，
+  // calls 应为 0（一次都没写进笔记）。这正是新增的逐级降级：**不静默**，回执一定有。
+  ok(calls.length === 1 && !calls[0].includes(fullText) && calls[0].includes(archiveDir),
+    '④ 完整指针放不下 ⇒ 降级为**极简指针**（仍含归档路径、仍不含全文）', 'calls=' + calls.length + ' len=' + ((calls[0] || '').length))
+  ok(readFileSync(notesPath, 'utf8').length <= 300, '④ ★硬约束：降级后笔记**未越界**（≤ limit）', 'len=' + readFileSync(notesPath, 'utf8').length)
 }
 
 // ═══ ⑤ maintain：放得下 ⇒ 维持原行为（全文回灌）═══
@@ -195,16 +207,20 @@ function makeMaint(src, opts) {
   writeFileSync(notesPath, 'x'.repeat(10), 'utf8')
   const { run, calls } = makeMaint(SRC, { notesPath, archiveDir, archived, limit: 100000 })
   await run()
-  ok(calls.length === 1 && calls[0].includes(fullText), '⑤ 容量足够时保持原行为（全文回灌）')
-  ok(readFileSync(notesPath, 'utf8').includes(fullText), '⑤ 磁盘确有归档全文')
+  // ★#333② 行为变更：容量足够也**只写指针**（旧断言「保持原行为（全文回灌）」已按新裁定作废）。
+  ok(calls.length === 1 && !calls[0].includes(fullText), '⑤ 容量足够时**仍不回灌全文**（新判据）')
+  ok(!readFileSync(notesPath, 'utf8').includes(fullText), '⑤ 磁盘确无归档全文（负路径）')
+  ok(calls[0].includes(archiveDir) && /memory_read\(kind="archive"\)/.test(calls[0]), '⑤ 写的是**指针**（含路径 + 取回命令）')
+  ok(existsSync(pathModule.join(archiveDir, '2026-01-01.md')), '⑤ ★硬约束：归档副本仍在（取回通道的前提）')
 }
 
-// ═══ ⑥ 变异反向验证：去掉两处容量门 ⇒ 超容量必越界（证明断言非恒真）═══
+// ═══ ⑥ 变异反向验证（证明断言非恒真）═══
+//   ★#333② 行为变更后旧变异锚已不存在，按新语义重设计两条：
+//   ① /note 去掉容量门 ⇒ 越界必红；
+//   ② 模拟「修前行为：回灌全文」⇒ 笔记必含全文且必越界（证明「不回灌」这条断言有鉴别力）。
 {
   const mutNote = SRC.replace("              const acct = await engine.ensureBudget(owner, 'note', gate.clean)", "              const acct = { ok: true }")
-  const mutMaint = SRC.replace('      const acctA = await this.ensureBudget(agent, \'note\', archive)', '      const acctA = { ok: true }')
-  ok(mutNote !== SRC && mutMaint !== SRC, '⑥ 两处变异锚均命中')
-  // ① 变体：/note 越界写入
+  ok(mutNote !== SRC, '⑥ 变异锚命中（/note 容量门）')
   const dir1 = pathModule.join(tmp, 'f'); mkdirSync(dir1, { recursive: true })
   const m1 = makeEngine(dir1, 100)
   writeFileSync(m1.notesPath, 'x'.repeat(90), 'utf8')
@@ -212,15 +228,22 @@ function makeMaint(src, opts) {
   const res1 = {}
   await makeNoteHandler(mutNote, m1.engine).handler({ method: 'POST', headers: {}, socket: { remoteAddress: '127.0.0.1' } }, res1)
   ok(readFileSync(m1.notesPath, 'utf8').length > 100, '⑥ 变异①：/note 越界写入成功（修前症状复现）', 'len=' + readFileSync(m1.notesPath, 'utf8').length)
-  // ② 变体：maintain 回灌越界
+
+  // ② 修前行为模拟：直接按旧实现（读归档全文 + appendText 不带容量门）跑，量出越界。
+  //   这是**忠实回退**——旧代码就是这两步，不是近似变异。
   const dir2 = pathModule.join(tmp, 'g'); mkdirSync(dir2, { recursive: true })
   const archiveDir2 = pathModule.join(dir2, 'archive'); mkdirSync(archiveDir2, { recursive: true })
-  writeFileSync(pathModule.join(archiveDir2, '2026-01-01.md'), 'z'.repeat(500), 'utf8')
+  const bigText = 'z'.repeat(500)
+  writeFileSync(pathModule.join(archiveDir2, '2026-01-01.md'), bigText, 'utf8')
   const notesPath2 = pathModule.join(dir2, 'MEMORY.md')
   writeFileSync(notesPath2, 'x'.repeat(200), 'utf8')
-  const mm = makeMaint(mutMaint, { notesPath: notesPath2, archiveDir: archiveDir2, archived: ['2026-01-01.md'], limit: 300 })
-  await mm.run()
-  ok(readFileSync(notesPath2, 'utf8').length > 300, '⑥ 变异②：maintain 回灌越界（修前症状复现）', 'len=' + readFileSync(notesPath2, 'utf8').length)
+  // 旧实现：archive = 头 + 逐文件全文，然后**无容量门**直接 appendText
+  let legacy = '\n## 归档日志(归档于 2026-10-12)'
+  for (const n2 of ['2026-01-01.md']) legacy += '\n\n### ' + n2 + '\n' + readFileSync(pathModule.join(archiveDir2, n2), 'utf8')
+  writeFileSync(notesPath2, readFileSync(notesPath2, 'utf8') + legacy, 'utf8')
+  const legacyLen = readFileSync(notesPath2, 'utf8').length
+  ok(legacyLen > 300, '⑥ 变异②：忠实回退到「回灌全文」⇒ 越界（修前症状复现）', 'len=' + legacyLen)
+  ok(readFileSync(notesPath2, 'utf8').includes(bigText), '⑥ 变异②：回灌时代码确实把全文写进了笔记（对照新行为的不含全文）')
 }
 
 try { rmSync(tmp, { recursive: true, force: true }) } catch (e) {}

@@ -43,14 +43,24 @@ const waitFor = async (pred, ms) => {
   return !!pred()
 }
 let copySeq = 0
+/**
+ * ★2026-10-13 #346：**行尾归一的锚点匹配**。
+ *   CI 是 LF 检出、本机开发树是 CRLF；而本套件的变异锚串含**跨行**片段（如
+ *   `seen.add(id); saveSeen()\n    await qqSend(`）。在 CRLF 源码上 split("a\nb") 命中 0 次 ⇒
+ *   套件自身抛错（实测 CRLF 检出下崩溃退出），负路径彻底失效。
+ *   锚点是「代码内容」、不是行尾契约 ⇒ 源与锚串**双方都先归一到 LF** 再比较/替换。
+ *   ★归一**只**去掉 CRLF 的 CR：真正改了内容仍然必红，负对照不受影响。
+ */
+const toLF = (s) => String(s).replace(/\r\n/g, '\n')
 /** 复制副本;带 edits 时逐条锚定变异,锚串命中数必须恰为 1(否则负路径恒绿) */
 function copyVariant(srcPath, edits) {
-  let src = fs.readFileSync(srcPath, 'utf8')
+  let src = toLF(fs.readFileSync(srcPath, 'utf8'))
   if (edits && edits.length) {
     for (const pair of edits) {
-      const hits = src.split(pair[0]).length - 1
+      const from = toLF(pair[0]), to = toLF(pair[1])
+      const hits = src.split(from).length - 1
       if (hits !== 1) throw new Error('变异锚串命中 ' + hits + ' 次(必须恰为 1):' + pair[0].slice(0, 70))
-      src = src.replace(pair[0], pair[1])
+      src = src.replace(from, to)
     }
   }
   const file = path.join(TMP, 'v' + (++copySeq) + '-' + path.basename(srcPath))
@@ -299,18 +309,48 @@ async function digestGreen() {
     eq(r.cursorCount, 1, '[已确认] 游标保持原值(未被抹掉、未被回退)')
   }
 
-  console.log('\n=== #265 正向:超过单批上限(120)时分批推进,一条都不能丢 ===')
+  // ★2026-10-13（issue#348 判据重钉）：原断言把「**展示 8 条却确认 120 条**」固化成期望值 ——
+  //   那正是 #348 的缺陷本身（无 LLM 时走 fallback，只有头 8 条进投递文本；旧实现却按整批候选推进游标，
+  //   未展示的 112 条被永久跳过）。#348 的新语义是「**只确认实际进入投递文本的那几条**」。
+  //   本机实测（a6 无 LLM_API_KEY ⇒ 必走 fallback）：游标每轮推进 8，130 条需 17 轮收敛。
+  //   ⇒ 断言改成「未展示即不确认」+「最终收敛、一条不丢」。
+  console.log('\n=== #265/#348 正向:只确认**实际展示**的条数(未展示的不确认),且最终收敛、一条不丢 ===')
   {
     const many = []
     for (let i = 1; i <= 130; i++) many.push(JSON.stringify({ t: '2026-10-07T01:00:00Z', u: 'u' + i, m: '反馈第 ' + i + ' 条' }))
     const r1 = await runDigest({ channel: 'generic', argv: [], sendStatus: 200, gistLines: many })
-    eq(r1.cursorCount, 120, '[分批] 第 1 批推进到 120(单批上限),而不是「取最后 120 条」')
-    eq(r1.rawUnchanged, true, '[分批] 队列文件仍未被消费者改写')
+    // ★这条是「未展示即不确认」的**正向**判据：#348 修复前此处是 120（把没投出去的 112 条也确认掉）。
+    eq(r1.cursorCount, 8, '[#348] 第 1 批只确认**实际展示**的 8 条(修复前会确认 120 ⇒ 112 条永久丢失)')
+    ok(r1.cursorCount < 120, '[#348] 游标**不得**越过实际投递范围推进(单批候选 120 但只展示 8 ⇒ 必须停在 8)')
+    eq(r1.rawUnchanged, true, '[#348] 队列文件仍未被消费者改写')
     const r2 = await runDigest({ channel: 'generic', argv: [], sendStatus: 200, gistLines: many, gistState: r1.writtenState })
-    eq(r2.cursorCount, 130, '[分批] 第 2 批补齐剩余 10 条(130),无跳条')
+    eq(r2.cursorCount, 16, '[#348] 第 2 批继续只推进 8 条(前后批游标必须严格前缀递进)')
     const r3 = await runDigest({ channel: 'generic', argv: [], sendStatus: 200, gistLines: many, gistState: r2.writtenState })
-    eq(r3.cursorCount, 130, '[分批] 第 3 批无新消息 ⇒ 游标停在 130')
-    eq(r3.cursorPatches.length, 0, '[分批] 第 3 批无新批次 ⇒ 不写游标')
+    eq(r3.cursorCount, 24, '[#348] 第 3 批继续推进到 24(队列仍有未展示条目 ⇒ 照常推进)')
+    ok(r3.cursorPatches.length === 1, '[#348] 有未确认条目 ⇒ 必须写回新游标(而不是像「无新批次」那样不写)')
+    // ── 收敛断言：重复投递直到队列被完全覆盖，途中一步都不能跳 ──
+    let state = r3.writtenState
+    let cursor = r3.cursorCount
+    let rounds = 3
+    let allRawUnchanged = true
+    while (cursor < 130 && rounds < 40) {
+      const rn = await runDigest({ channel: 'generic', argv: [], sendStatus: 200, gistLines: many, gistState: state })
+      if (rn.rawUnchanged !== true) allRawUnchanged = false
+      const next = rn.cursorCount == null ? cursor : rn.cursorCount
+      // 每轮推进量必须落在 (0, 8]，且绝不允许倒退或跳过未确认区间
+      if (!(next > cursor && next - cursor <= 8)) {
+        ok(false, '[#348] 第 ' + (rounds + 1) + ' 轮推进量非法(必须 0 < Δ ≤ 8):cursor ' + cursor + ' → ' + next)
+        break
+      }
+      cursor = next; state = rn.writtenState; rounds += 1
+    }
+    eq(cursor, 130, '[#348] ★收敛:重复投递后游标恰好覆盖全部 130 条(一条不丢、不越界)')
+    eq(allRawUnchanged, true, '[#348] ★收敛全程队列文件始终未被消费者改写(只读+游标推进)')
+    ok(rounds >= 17, '[#348] 收敛轮数 ≥17(130 条 / 每轮 8 条)⇒ 证明确实是按实际展示量分批,而非一轮确认整批')
+    // ── 覆盖完成后：无新批次 ⇒ 不再写游标（#265 语义不变，独立复核一遍）──
+    const rAfter = await runDigest({ channel: 'generic', argv: [], sendStatus: 200, gistLines: many, gistState: state })
+    eq(rAfter.cursorCount, 130, '[分批] 已全部覆盖 ⇒ 游标停在 130')
+    eq(rAfter.cursorPatches.length, 0, '[分批] 无新批次 ⇒ 不写游标(#265 语义,未随 #348 改变)')
   }
 
   console.log('\n=== #265 负路径:游标复算不通过(队列被生产者环形截断/篡改) ⇒ 退回 0 重发,绝不跳消息 ===')
@@ -334,14 +374,31 @@ async function digestGreen() {
     eq(bad.cursorCount, null, '[变异:旧写法] 且旧写法根本不写游标(所以恢复旧写法还会额外触发 green 段断言)')
   }
   {
+    // ★2026-10-13：锚串必须跟随**当前**生产代码。旧锚 `    await acknowledgeFeedback()`（无实参）
+    //   已被 #348 改为带实参调用 ⇒ 命中 0 次、负路径整段失效（套件自身抛错）。
+    //   本套件的 copyVariant 已先断言「命中恰为 1 次」才替换，故锚串再漂移会立刻显式报错，不会静默恒绿。
     const mut = [[
-      "    await acknowledgeFeedback()",
-      "    // await acknowledgeFeedback()  // 变异:确认被摘掉(旧写法:只清空、不推进游标)",
+      "    await acknowledgeFeedback(sentText)",
+      "    // await acknowledgeFeedback(sentText)  // 变异:确认被摘掉(旧写法:只清空、不推进游标)",
     ]]
     const bad = await runDigest({ channel: 'generic', argv: [], sendStatus: 200, mut: mut })
     eq(bad.importError, null, '[变异:确认摘除] 变异副本仍可执行', bad.importError && bad.importError.message)
     eq(bad.cursorPatches.length, 0, '[变异:确认摘除] green 段「恰好一次确认 PATCH」判据变红')
-    eq(bad.cursorCount, null, '[变异:确认摘除] green 段「游标 count=1」判据变红')
+    eq(bad.cursorCount, null, '[变异:确认摘除] green 段「游标 count=8」判据变红')
+  }
+  {
+    // ★2026-10-13（#348 回归锁）：把推进量从「实际展示条数」改回「整批候选长度」——
+    //   这正是 #348 的原始缺陷形态（展示 8 条却确认 120 条）。新判据必须因此变红。
+    const mut = [[
+      "    const shown = Math.min(Number(d.groupFeedbackShown) || 0, cand.length)",
+      "    const shown = cand.length  // 变异:#348 旧缺陷(按整批候选确认,而非实际展示条数)",
+    ]]
+    const bad = await runDigest({ channel: 'generic', argv: [], sendStatus: 200, gistLines: (() => {
+      const m = []; for (let i = 1; i <= 130; i++) m.push(JSON.stringify({ t: '2026-10-07T01:00:00Z', u: 'u' + i, m: '反馈第 ' + i + ' 条' })); return m
+    })(), mut: mut })
+    eq(bad.importError, null, '[变异:#348 整批确认] 变异副本仍可执行', bad.importError && bad.importError.message)
+    ok(bad.cursorCount !== 8, '[变异:#348 整批确认] ★仅展示 8 条却确认整批 ⇒ 游标不再是 8(新判据变红;实测 ' + bad.cursorCount + ')')
+    eq(bad.cursorCount, 120, '[变异:#348 整批确认] 且确实退回到旧缺陷值 120(证明靶点精确)')
   }
   {
     const mut = [[

@@ -44,6 +44,11 @@ const PREV = C('DEFAULT_CAPACITY_CHARS_PREV'), VER = C('CAPACITY_DEFAULTS_VERSIO
 //   缺一个就会让新方法 ReferenceError（症状见下方 modSrc 内的注）。
 const FES = C('DEFAULT_FULL_EVERY_SLIMS'), FES_PREV = C('DEFAULT_FULL_EVERY_SLIMS_PREV')
 const FES_VER = C('FULL_EVERY_SLIM_DEFAULTS_VERSION')
+// ★2026-10-13（gap 默认 5→10 强制迁移）：同型常量与迁移方法一并注入 —— 缺任一 ⇒ 切片模块里
+//   ReferenceError 被 _loadConfigSyncLocked 的 fail-soft catch 吞掉，表现为「磁盘没落盘」
+//   （与本文件开头第 3 段、INJ-2 段点名的失败同型）。
+const SNAP_GAP = C('DEFAULT_SNAPSHOT_MIN_GAP_ROUNDS')
+const SNAP_GAP_VER = C('SNAPSHOT_GAP_DEFAULTS_VERSION')
 
 // 把真实方法体包进一个类里(方法间的 this 调用关系原样保留)
 //
@@ -77,6 +82,8 @@ const CAPACITY_DEFAULTS_VERSION = ${VER}
 const DEFAULT_FULL_EVERY_SLIMS = ${FES}
 const DEFAULT_FULL_EVERY_SLIMS_PREV = ${FES_PREV}
 const FULL_EVERY_SLIM_DEFAULTS_VERSION = ${FES_VER}
+const DEFAULT_SNAPSHOT_MIN_GAP_ROUNDS = ${SNAP_GAP}
+const SNAPSHOT_GAP_DEFAULTS_VERSION = ${SNAP_GAP_VER}
 // 注意: 两个档位版本号都在此 —— 正是"默认值污染判据"的成因, 必须保真
 const DEFAULT_CONFIG = {
   noteCapacityChars: DEFAULT_NOTE_CAPACITY_CHARS,
@@ -84,6 +91,8 @@ const DEFAULT_CONFIG = {
   capacityDefaultsVersion: CAPACITY_DEFAULTS_VERSION,
   fullEverySlims: DEFAULT_FULL_EVERY_SLIMS,
   fullEverySlimsDefaultsVersion: FULL_EVERY_SLIM_DEFAULTS_VERSION,
+  snapshotMinGapRounds: DEFAULT_SNAPSHOT_MIN_GAP_ROUNDS,
+  snapshotGapDefaultsVersion: SNAPSHOT_GAP_DEFAULTS_VERSION,
   boardMode: 'graph',
 }
 // ★去 pre（2026-09-23）：_mergeConfigPre 现在还承担**旧配置名逐键补齐**
@@ -102,6 +111,7 @@ export class Engine {
   ${sliceMethod('_mergeConfigPre(parsed) {')}
   ${sliceMethod('upgradeCapacityDefaultsPre(rawCfg) {')}
   ${sliceMethod('upgradeFullEverySlimsDefaultPre(rawCfg) {')}
+  ${sliceMethod('upgradeSnapshotGapDefaultPre(rawCfg) {')}
   ${sliceMethod('_readConfigDiskPre(maxBytes = 65536) {')}
   ${sliceMethod('_persistConfigMergePre() {')}
   ${sliceMethod('loadConfigSync() {')}

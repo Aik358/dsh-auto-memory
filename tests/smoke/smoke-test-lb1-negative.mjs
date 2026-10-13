@@ -56,4 +56,8 @@ round('M-F', 'body:has([data-native-continuation]) aside.i5-native-notice[data-n
 console.log('')
 console.log('[L-B1-neg] 结果: ' + pass + ' PASS / ' + fail + ' FAIL')
 try { rmSync(root, { recursive: true, force: true }) } catch (e) {}
-process.exit(0)
+// ★2026-10-13 #350：FAIL 必须反映到**退出码**。原实现无条件 process.exit(0)，
+//   而 tools/run-smoke.mjs 只按子进程退出码判 PASS ⇒ 本套件打印 FAIL 仍被记成绿（假绿）。
+//   实测复现：把 M-A 锚串改坏（守卫锚点漂移 ⇒ 变异空转）后结果行是 17 PASS / 2 FAIL，
+//   但退出码仍是 0 ⇒ 运行器判 PASS，等于「删掉生产防护也全绿」。
+process.exit(fail > 0 ? 1 : 0)

@@ -19,8 +19,10 @@ import assert from 'node:assert/strict'
 import { readFileSync, existsSync } from 'node:fs'
 import { execFileSync } from 'node:child_process'
 import pathModule from 'node:path'
+import { fileURLToPath } from 'node:url'
 
-const ROOT = pathModule.join(pathModule.dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1')), '..', '..')
+// ★2026-10-13 #344：URL.pathname 百分号编码（中文/空格）⇒ 路径不存在。改用 fileURLToPath。
+const ROOT = pathModule.join(pathModule.dirname(fileURLToPath(import.meta.url)), '..', '..')
 const SRC = readFileSync(pathModule.join(ROOT, 'lib', 'index.js'), 'utf8')
 
 let pass = 0, fail = 0

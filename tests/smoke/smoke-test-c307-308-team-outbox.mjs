@@ -22,6 +22,11 @@ import { spawnSync } from "node:child_process"
 import { fileURLToPath, pathToFileURL } from "node:url"
 
 const ROOT = path.resolve(fileURLToPath(new URL("../..", import.meta.url)))
+// ★2026-10-13 #346：**行尾归一的锚点匹配**。
+//   CI 是 LF 检出、本机开发树是 CRLF；而多行锚串里写的是 `\n`。
+//   在 CRLF 源码上按含换行的锚串 split 会命中 0 次 ⇒ 变异定位断言假红（实测：CRLF 检出下本套件 38/4）。
+//   锚点是「代码内容」，不是行尾契约 ⇒ 比较双方都必须先归一到 LF（只归一 CRLF，不碰单独 LF）。
+const toLF = (s) => String(s).replace(/\r\n/g, "\n")
 const REAL_SRC = path.join(ROOT, "lib", "team-outbox.js")
 // OUTBOX_PATH 只给变异子进程用：指向一份「把修复退回旧写法」的副本，验证本套件真的会红。
 const OUTBOX_PATH = process.env.OUTBOX_PATH ? path.resolve(process.env.OUTBOX_PATH) : REAL_SRC
@@ -108,7 +113,11 @@ async function main() {
   // =====================================================================
   // #307：与 lib/shared-state-lock.js 的**互斥同形**验证（同一个 .lock 文件、同一套认领协议）
   //   证据链：用**真的** async 锁模块持锁 ⇒ 本模块的同步 enqueue 必须被挡住（耗时≈等待上限），
-  //   超时后 fail-soft 仍然返回结构化结果而不是抛/挂。这条同时锁住「锁协议不许各自发明一套」。
+  //   超时后返回结构化结果而不是抛/挂。这条同时锁住「锁协议不许各自发明一套」。
+  //   ★2026-10-13 #342（用户裁定方案 (a)）：**未取得互斥锁不得写盘** ——
+  //   旧语义是 fail-soft（拿不到锁也照样重读+合并+落盘，ok:true）；现语义是 fail-closed
+  //   （ok:false + **磁盘逐字节未变** + 内存队列原样保留待调用方重试）。
+  //   下面的断言按新语义重写，并保留「锁可用时照常写入」的正向对照。
   // =====================================================================
   {
     const dir = fresh("interop")
@@ -125,13 +134,21 @@ async function main() {
       let threw = null
       try { r = ob.enqueue({ kind: "handoff", key: "L", payload: { n: 1 } }) } catch (e) { threw = e }
       const elapsed = Date.now() - t0
-      ok(threw === null, "#307 锁被占用时 enqueue 仍不抛(fail-soft)", threw && threw.message)
+      ok(threw === null, "#307 锁被占用时 enqueue 仍不抛（fail-closed，不是 fail-soft）", threw && threw.message)
       ok(r !== null && typeof r === "object" && typeof r.ok === "boolean",
         "★#307 enqueue 是**同步返回**的结构化结果(不是 Promise;既有调用点直接读 .ok)", "实得 " + JSON.stringify(r))
       ok(elapsed >= 180, "★#307 同步锁真的与 shared-state-lock 互斥(被挡了≈等待上限,实得 " + elapsed + "ms)", "elapsed=" + elapsed)
-      ok(r && r.ok === true && r.persisted !== false, "★#307 超时后 fail-soft 降级仍能落盘(重读+合并兜底)", JSON.stringify(r))
+      // ★#342 方案 (a)：未取得锁 ⇒ 必须**明确失败**，且**绝不无锁写盘**。
+      ok(r && r.ok === false, "★#342 未取得互斥锁 ⇒ enqueue 返回 ok:false（旧 fail-soft 是 ok:true）", JSON.stringify(r))
+      ok(r && typeof r.reason === "string" && r.reason.indexOf("lock") >= 0,
+        "★#342 失败原因明确指向锁（可诊断、可重试）", r && r.reason)
+      ok(diskKeys(dir).join(",") === "", "★#342 未取得锁时**磁盘逐字节未写**（本断言锁死「无锁写盘」这条红线）", JSON.stringify(diskKeys(dir)))
+      ok(r && r.size === 1, "★#342 失败的那条**留在内存队列**待重试（不得静默丢弃）", "size=" + (r && r.size))
       release()
-      ok(diskKeys(dir).join(",") === "L", "#307 降级路径写下的条目确实在盘上", JSON.stringify(diskKeys(dir)))
+      // 锁释放后重试同一条 ⇒ 这次必须真的落盘（证明确实是「等锁失败」而不是「这条写不进去」）
+      const rRetry = ob.enqueue({ kind: "handoff", key: "L", payload: { n: 1 } })
+      ok(rRetry && rRetry.ok === true, "★#342 锁释放后同条重试 ⇒ ok:true（证明失败只因未取得锁）", JSON.stringify(rRetry))
+      ok(diskKeys(dir).join(",") === "L", "★#342 锁释放后重试写下的条目确实在盘上", JSON.stringify(diskKeys(dir)))
       // 释放后再入队:这次应当不必等满上限(锁已可用)
       const t1 = Date.now()
       const r2 = ob.enqueue({ kind: "handoff", key: "M", payload: { n: 2 } })
@@ -269,18 +286,21 @@ async function main() {
       "        }",
       "      }",
     ].join("\n")
-    const m1Hits = real.split(M1_BLOCK).length - 1
+    //   ★行尾归一后进行：CRLF 检出下多行锚串必须能命中，否则负路径恒绿/假红（#346）。
+    const realLF = toLF(real)
+    const m1Hits = realLF.split(toLF(M1_BLOCK)).length - 1
     ok(m1Hits === 1, "变异定位:#307 写路径合并块恰命中 1 次", "hits=" + m1Hits)
     const m1Path = path.join(TMP, "mutated-307.mjs")
     //   回退语义 = 跳过读-改-写的合并裁决，直接把候选当合并结果落盘（#307 的旧行为）
-    fs.writeFileSync(m1Path, real.replace(M1_BLOCK, "      let merged = candidate"))
+    //   ★写回时也写 LF 版本：变异产物只用于跑变异子进程，不是被保护的仓库源文件。
+    fs.writeFileSync(m1Path, realLF.replace(toLF(M1_BLOCK), "      let merged = candidate"))
 
     // 变异②#308 回退：dup 分支不再看 persisted（旧写法：一律短路）
     const DUP_ANCHOR = "if (previous.persisted === true && sameEntryPre(previous, item)) {"
-    const dupHits = real.split(DUP_ANCHOR).length - 1
+    const dupHits = realLF.split(toLF(DUP_ANCHOR)).length - 1
     ok(dupHits === 1, "变异定位:#308 dup 短路锚点恰命中 1 次", "hits=" + dupHits)
     const m2Path = path.join(TMP, "mutated-308.mjs")
-    fs.writeFileSync(m2Path, real.replace(DUP_ANCHOR, "if (sameEntryPre(previous, item)) {"))
+    fs.writeFileSync(m2Path, realLF.replace(toLF(DUP_ANCHOR), "if (sameEntryPre(previous, item)) {"))
 
     const cases = [["#307 回退(取消重读合并)", m1Path], ["#308 回退(dup 无条件短路)", m2Path]]
     for (const pair of cases) {

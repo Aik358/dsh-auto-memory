@@ -47,6 +47,14 @@ const ENTRY = process.env.QQ324_ENTRY ? path.resolve(process.env.QQ324_ENTRY) : 
 const CHILD = process.env.QQ324_CHILD === '1'
 const SRC = fs.readFileSync(ENTRY)
 const sha256 = (b) => crypto.createHash('sha256').update(b).digest('hex')
+// ★2026-10-13 #346：**行尾归一的比较口径**。
+//   本套件有两类「换个行尾就假红」的比较：
+//   ① 多行锚串（含 `\n`）—— CRLF 源码上 split 命中 0 次 ⇒ 变异②空转；
+//   ② index.zip 与源文件的**逐字节**一致 —— src 检出为 CRLF 时天然多出换行字节。
+//   判据本意是「**内容**没漂移 / 锚点还在」，不是「行尾恰好是 LF」⇒ 比较双方先归一。
+//   ★归一**只**去掉 CRLF 的 CR：真正改内容仍然必红（负对照不受影响）。
+const toLF = (s) => String(s).replace(/\r\n/g, '\n')
+const toLFBytes = (b) => Buffer.from(toLF(Buffer.isBuffer(b) ? b.toString('utf8') : b), 'utf8')
 
 const APP_ID = '10000001'
 const APP_SECRET = 'test-secret-0123456789abcdef'
@@ -210,7 +218,11 @@ function readZipEntry(zipPath, wanted) {
 async function main() {
   console.log('=== issue #324 群反馈持久失败必须可重试(真跑生产模块 + 模拟 Gist) ===' + (CHILD ? ' [变异子进程模式]' : ''))
   console.log('  source=' + ENTRY + ' bytes=' + SRC.length + ' sha256=' + sha256(SRC))
-  ok(SRC.indexOf(13) === -1, '被测源为 LF(仓库部署文本约定;CRLF 会让 index.zip 漂移锁与线上字节不一致)', 'CR 位置=' + SRC.indexOf(13))
+  //   ★#346：原断言是「**源文件**必须 LF」，但它把「本机检出风格」绑成了套件前提：
+  //   CRLF 检出下源码天然含 CR ⇒ 本机必红（实测该套件在 CRLF 干净检出下 70/9）。
+  //   而**真正**要守的契约是「部署产物不得含 CR」——**线上跑的是 index.zip**，不是检出树。
+  //   故判据从「源文件行尾」改为「**zip 内条目**行尾」（下方 ⑦ 处判定），并在此仅作信息提示。
+  console.log('  [信息] 检出源含 CR 位置=' + SRC.indexOf(13) + '（不影响判据：部署面契约由 index.zip 条目承担）')
 
   // =====================================================================
   // ⑦ 部署面漂移锁:index.zip 必须与源逐字节一致(源改了没重打包 ⇒ 这里立刻红)
@@ -224,11 +236,16 @@ async function main() {
     const bootSrc = fs.readFileSync(path.join(ROOT, '.github', 'cloud', 'qq-webhook', 'scf_bootstrap'))
     ok(!!zip, '#324 index.zip 可解析且含 index.js 条目', zipPath)
     if (zip) {
-      ok(zip.length === SRC.length && zip.equals(SRC),
-        '★#324 index.zip 里的 index.js 与源**逐字节一致**(源改了必须重新打包)',
-        'zip=' + zip.length + 'B src=' + SRC.length + 'B sha(zip)=' + sha256(zip).slice(0, 16) + ' sha(src)=' + sha256(SRC).slice(0, 16))
+      //   ★#346：两侧都归一到 LF 再比；内容真改了仍必红。
+      const zipLF = toLFBytes(zip), srcLF = toLFBytes(SRC)
+      ok(zipLF.equals(srcLF),
+        '★#324 index.zip 里的 index.js 与源**逐字节一致（按 LF 归一后）**(源改了必须重新打包)',
+        'zip=' + zipLF.length + 'B src=' + srcLF.length + 'B sha(zip/LF)=' + sha256(zipLF).slice(0, 16) + ' sha(src/LF)=' + sha256(srcLF).slice(0, 16))
+      //   ★部署面**真契约**：zip 内条目自身必须是纯 LF（原「源文件必须 LF」断言的真实意图）。
+      ok(!/\r/.test(zip.toString('utf8')), '★#324 index.zip 内 index.js 为纯 LF（部署字节契约，线上跑的是 zip 不是检出树）')
     }
-    ok(!!bootZip && bootZip.equals(bootSrc), '#324 index.zip 里的 scf_bootstrap 与源同步', bootZip ? 'zip=' + bootZip.length + 'B' : 'missing')
+    ok(!!bootZip && toLFBytes(bootZip).equals(toLFBytes(bootSrc)), '#324 index.zip 里的 scf_bootstrap 与源同步（LF 归一后）', bootZip ? 'zip=' + bootZip.length + 'B' : 'missing')
+    ok(!!bootZip && !/\r/.test(bootZip.toString('utf8')), '★#324 index.zip 内 scf_bootstrap 为纯 LF（部署字节契约）')
     console.log('  [物理量] index.zip ' + fs.statSync(zipPath).size + 'B sha256=' + sha256(fs.readFileSync(zipPath)) + ' / 源 ' + SRC.length + 'B sha256=' + sha256(SRC))
   }
 
@@ -382,8 +399,9 @@ async function main() {
     const ANCHOR_ID_GUARD = '    if (seen.has(id)) return\n'
     const ANCHOR_MENTIONS = '    const mentions = [...String(d.content || '
     const ANCHOR_503 = '      res.writeHead(e.feedbackPersistence ? 503 : 200, { ' + String.fromCharCode(39) + 'Content-Type' + String.fromCharCode(39) + ': ' + String.fromCharCode(39) + 'application/json' + String.fromCharCode(39) + ' })\n'
+    //   ★#346：多行锚串必须**行尾归一后**匹配，否则 CRLF 检出下命中 0 次（实测 3 条锚点全灭）。
     const hits = (s, a) => s.split(a).length - 1
-    const base = SRC.toString('utf8')
+    const base = toLF(SRC.toString('utf8'))
     eq(hits(base, ANCHOR_LATE), 1, '变异定位:延后发布锚点恰命中 1 次')
     eq(hits(base, ANCHOR_ID_GUARD), 1, '变异定位:id 去重判定锚点恰命中 1 次')
     eq(hits(base, ANCHOR_MENTIONS), 1, '变异定位:mentions 行锚点恰命中 1 次')

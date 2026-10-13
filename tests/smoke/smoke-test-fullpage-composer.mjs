@@ -195,8 +195,17 @@ ok('F4 卸载 ⇒ cleanup 摘除标记并断开 observer', function () {
 ok('F5 kind!=page（如 panel/dialogs）⇒ 不注册 observer、不碰 body', function () {
   for (const k of ['panel', 'dialogs', 'autocont', 'settings']) {
     const run = renderSurface(k)
+    // ★2026-10-13 #351：**必须真执行 effects**。原实现 renderSurface 后**直接断言**，
+    //   被测 useEffect 一次都没跑 ⇒ 断言的其实是「组件渲染函数本身无副作用」这一恒真事实，
+    //   与生产防护无关。实测复现：把真实 Iter5Surface 里的非 page 提前返回删掉，
+    //   F5 仍 9 PASS / 0 FAIL（负例空转 ⇒ 删掉生产防护仍全绿 = 假绿）。
+    //   加上 runAll(run) 后，该防护被删就会真注册 IntersectionObserver ⇒ 断言必红。
+    const cleanup = runAll(run)
     assert.equal(run.observers.length, 0, k + ' 不应注册 observer')
     assert.equal(run.bodyStub.hasAttribute('data-dam-fullpage'), false, k + ' 不应碰 body')
+    cleanup()
+    // cleanup 之后同样不得置位（防止「只在卸载路径上碰 body」的写法逃过上面两条）
+    assert.equal(run.bodyStub.hasAttribute('data-dam-fullpage'), false, k + ' cleanup 后不应碰 body')
   }
 })
 
