@@ -1,9 +1,21 @@
 # 模块化 Prompt 集（严谨集成版）
 
-> 写于 2026-09-09，基于 v2.2.6 实测代码。
-> **本文件替代** `PROMPT-PACK-LAYERED-RECALL.md` 的 prompt 正文部分；该文 §0 的 OpenViking 联网核实结论仍然有效，本文直接引用不再重复。
-> 全局背景见 [INTEGRATION-ANALYSIS.md](INTEGRATION-ANALYSIS.md)（本地架构解读 + 四仓库评估）。
-> **已完成**：T1（`lib/l0-extract-pre.js`）、G1/G3（接续指令文案）。
+> **状态**：已完工 · 2026-09-09（语料定稿；T1 与 G1/G3 已完成）
+> **性质**：施工记录（模块化 prompt 集） —— 本文为**完成后的技术记录**，不再作为待执行计划。
+> **落点**：`docs/PROMPT-SET-STRICT.md`；T1 落点为 `lib/l0-extract.js`；全局背景见 `docs/INTEGRATION-ANALYSIS.md`。
+> **验收**：文首「已完成」条目标注了已完成项；A 篇各 prompt 项的逐项完成度以 `CHANGELOG.md` 与 `docs/STATUS-BOARD.md` 为准（如 P2 语义臂接入、P3 rank-space 融合已落地）。
+
+## 摘要
+
+本文件是模块化 Prompt 集（严谨集成版），基于 2026-09-09 v2.2.6 实测代码编写，替代 `docs/PROMPT-PACK-LAYERED-RECALL.md` 的 prompt 正文部分。内容含通用前置约束（搜索优先原则、禁止事项、集成位置论证、自检清单模板、项目事实速查）、A 篇常规改造（P1–P7，按依赖顺序、彼此独立可单独投喂）与 B 篇 M8 记忆系统（调研前置 + 改造 prompt）。
+
+## 文档规范
+
+- 改写依据：`docs/internal/DOC-REWRITE-STYLE.md`
+- 本文件体例：**模块化 prompt 语料**。A 篇 / B 篇为派单时的编排；投喂时按文首「通用前置约束」一并附上，正文保留原样。
+- 语态纪律：主语用「本项目 / 本方案」，不使用第一人称叙述。
+
+---
 
 ---
 

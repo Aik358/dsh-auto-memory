@@ -1,6 +1,11 @@
 # M5 JS Context / Evidence Bridge 指导性契约
 
-> 状态：M5-0 指导契约冻结；尚未实现 M5 运行时代码
+> **状态**：已完工 · 2026-08-23（M5-1..M5-4 全部完成，M5-4 Live Verification 通过）
+> **性质**：设计定稿 + 施工记录 —— 本文为**完成后的技术记录**，不再作为待执行计划；§12「实施分段」为原始设计记录，实际实施状态见 §15-§18。
+> **落点**：`docs/M5-CONTRACT.md`；§15-§18 为逐段实施状态。
+> **验收**：§18 记载 M5-4 Live Verification 通过（2026-08-23），M5 整体完成。
+> **摘要**：M5 是 JS 工程的第一阶段，承担两项职责：建立 Access Evidence Graph（记录记忆是否真正被模型看到、读取、引用、复用、验证或纠正），以及把 M2/M3/M4 的实时上下文、授权记忆引用和证据摘要组装成可发送给 Python 的 ContextPushEnvelope。原为「契约冻结、尚未实现」的本文件，其 §12 实施分段（M5-0 → M5-4）已全部执行完毕。
+> **文档规范**：改写依据 `docs/internal/DOC-REWRITE-STYLE.md`；语态纪律——主语用「本项目 / 本方案」，不使用第一人称叙述。
 >
 > 权威架构：docs/proactive-associative-memory-system-map.html
 >

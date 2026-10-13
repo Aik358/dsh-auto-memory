@@ -1,8 +1,25 @@
-> **投喂方式**：本段须与 `_COMMON.md` 一并投喂。
+# P8 · RRF 接线进 recall · 替换字典序排序（已完工）
+
+> **状态**：已完工 · 2026-09-09（原文记录的最后一次核实日）
+> **性质**：派工任务书（存档）—— 本文为完成后的技术记录，不再作为待执行计划。
+> **落点**：`lib/index.js` 的 `recall()` L0 命中排序段；消费 `lib/recall-fusion.js`（原文记作 `lib/recall-fusion-pre.js`）；套件 `tests/smoke/smoke-test-p8-rrf-wiring.mjs`。
+> **验收**：`smoke-test-p8-rrf-wiring.mjs` 通过；`p4 34` / `l0-extract 18` / `handoff 51` / `continue-chain 58` / `water-step 12` / `autocont-host 29` 基线不下降；已并入全量回归。
+
+## 摘要
+
+该轮要解决的是 P3 已交付的 `rankFusionRRFPre` 零引用、`recall()` 实为字典序排序（语义分仅在词法分完全相等时才打破平局）的问题。方案是把 RRF 融合接入 `recall()` 的 L0 命中排序，k 复用 `FUSION_RRF_K_PRE_V1 = 60`、禁止 score-space 加权，并保留 `legacy` 回退开关。核心断言是「lex 相同、sem 不同则排序必须随 sem 变化」，另有排序确定性（同输入两次 id 序列全等）断言。
+
+> **存档声明**：本文为该轮派工任务书的原文存档，正文中的「你要做 / 必须 / 禁止」等祈使句**均为当时下达的要求**，不代表当前待办；实际结果以页首「落点 / 验收」为准。
+
+---
+
+> **投喂方式（存档）**：该轮要求本段与 `_COMMON.md` 一并投喂；该批次已执行完毕。
+
 > 依赖：**P3（已完成，c917bbe）**。`rankFusionRRFPre` 已交付但零引用，本段负责接线。
 > 定位：**缺陷修复**（修复 P2 语义臂实效性），非新增能力 → 默认开启，保留 `legacy` 回退开关。
 
-## 【P8】RRF 接线进 recall（替换字典序排序）
+
+## 【P8】RRF 接线进 recall（替换字典序排序）· 原任务书
 
 **背景（实读代码，2026-09-09 核实）**：
 - `lib/index.js:3301` `async recall(query, limit = 8, agent, scope = 'all', opts = null)`。

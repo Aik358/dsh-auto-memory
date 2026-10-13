@@ -1,4 +1,20 @@
+# FIX-AGENT-P9a · correction 证据「几乎不可能触发」缺陷修复（已完工）
+
+> **状态**：已完工 · 2026-09-09（原文记录的最后一次核实日）
+> **性质**：派工任务书（存档）—— 本文为完成后的技术记录，不再作为待执行计划。
+> **落点**：`lib/context-host.js`（原文记作 `lib/context-host-pre.js`，为源文件）；套件 `tests/smoke/smoke-test-p9a-correction-attribution.mjs`。
+> **验收**：`smoke-test-p9a-correction-attribution.mjs` 通过；已并入全量回归。
+
+## 摘要
+
+该段是 P9 裁决后唯一被采纳的修复段：重设计 correction 证据的触发路径，使其可达。裁决依据为 `P9-REVIEW-DECISION.md` §三（原 P9a 方案自身存在漏洞，需重设计）。改动仅限 `lib/context-host.js`，不得与其它改该文件的任务并行。
+
+> **存档声明**：本文为该轮派工任务书的原文存档，正文中的「你要做 / 必须 / 禁止」等祈使句**均为当时下达的要求**，不代表当前待办；实际结果以页首「落点 / 验收」为准。
+
+---
+
 > **给使用者的说明**：P9 裁决后唯一要投喂的修复段。复制时从 `你是一名严谨的修复 Agent` 开始到文件末尾（自包含，无需 `_COMMON.md`）。
+
 > ⚠️ 改的是 `lib\context-host-pre.js`，**别和任何其他改该文件的任务同时跑**。
 
 ---

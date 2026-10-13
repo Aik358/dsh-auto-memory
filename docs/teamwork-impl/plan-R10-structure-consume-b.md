@@ -1,4 +1,20 @@
-# plan-R10 · 结构层消费 B（block 层 10 类外观 + 作者面 imagery）
+# R10 · 结构层消费 B（block 层 10 类外观 + 作者面 imagery）· 全轮已完成
+
+> **状态**：已完工 · 2026-09-28（原文记录的最后一次执行日）
+> **性质**：派工任务书（存档）—— 该轮已完工，本文保留为任务书原文，不再作为待执行计划。
+> **落点**：`lib/layout-config.js`（新增 `blocks` 段，10,214 → 11,917 B）+ `lib/client.js`（10 个 block 节点补 `data-dam-kind`、`layoutBlockPlanPre` / `applyLayoutBlocksPre`）；验收套件 `tests/smoke/smoke-test-r10-block-consume-b.mjs`。
+> **验收**：R10 套件 **32 条判据（含负路径与守卫反证）全绿**；全量回归不降级；已并入全量回归。
+
+## 摘要
+
+该轮补上 schema 里 `imagery`/`aesthetics` 选择器「纸面可写、实际不可命中」的缺口——`data-dam-kind` 全仓 0 处。scope 因而修正为四步：R10a 扩契约（`blocks` 段）→ R10b 补属性 → R10c 前端消费 `--dam-block-style` / `--dam-block-bg` → R10d 套件与复核。作者面 5 键（reorder/resize/visibility/aesthetics/imagery）至此全落。
+
+> **存档声明**：本文为该轮派工任务书的原文存档，正文中的「本轮 / 待办 / 计划」等计划态措辞**是当时的任务描述**，不代表当前待办；**该轮已完工**，实际结果以页首「状态 / 落点 / 验收」为准，过程留痕见同目录对应轮工程记录。
+
+---
+
+> **过程留痕**：`78-R10轮工程记录（全轮）.md`（含交付物物理量、CR-10 验收与变异反向验证）。
+
 
 > 依据（全量读）：70 卷 §四 R10（「10a 10 类块渲染接配置；10b 图片槽挂载」；判据「10 类块外观可配；**作者面 5 键（reorder/resize/visibility/aesthetics/imagery）全落**」）、28 卷 §3.1（作者操作面 ④ 改块外观/图片）、28 卷 §3.4（`data-dam-block="<kind>"` 取值受控 10 类）、28 卷 §3.5 方式 C（`--dam-block-style` 消费点）、28 卷 §3.6（`authorSurface.imagery` = `[data-dam-block][data-dam-kind=media|empty] background-image`）、62 卷 §二（零视觉变化 / 计数锁 / `data-dam-` 前缀）、62 卷 §三 L2-e、68 卷（block 10/10 已闭合）、56 卷 §三（配置文件形态）。
 

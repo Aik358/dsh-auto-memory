@@ -1,5 +1,22 @@
 # M7 Activation v2 移交文档（校准 Agent → 主 Agent 实现）
 
+> **状态**：已完工 · 2026-08-30
+> **性质**：施工记录 —— 本文为**完成后的技术记录**，不再作为待执行计划。
+> **落点**：`docs/M7-ACTIVATION-V2-HANDOFF.md`；特征规范落于 `docs/M7-ACTIVATION-FEATURE-DESIGN.md`，实现入口为 `docs/M7-ACTIVATION-FEATURE-AGENT-PROMPT.md`。
+> **验收**：§3 记载：经 feature v2 拟合 + P3 完整性门（86 gold，分组 OOF），验收门在离线重放中全部通过。
+
+## 摘要
+
+本文件是校准 Agent 移交给主 Agent 的实施依据，记录资产、已批准策略与剩余条件。设计权威为 `docs/M7-ACTIVATION-FEATURE-DESIGN.md`，算法扩展参考为 `docs/M7-ACTIVATION-ALGO-REFERENCES.md`。核心结论：feature v2 经拟合与 P3 完整性门后在离线重放中全部通过验收门，工作点与资产清单均已固化，剩余条件仅剩冻结 `policyVersion` 前的若干项。
+
+## 文档规范
+
+- 改写依据：`docs/internal/DOC-REWRITE-STYLE.md`
+- 本文件体例：**移交与实施记录**。§6「剩余条件」为移交时点列出的待办，非当前遗留项。
+- 语态纪律：主语用「本项目 / 本方案」，不使用第一人称叙述。
+
+---
+
 > 日期：2026-08-24 · 作者：校准 Agent（ox-alpha）
 > 性质：**移交与实施依据**。设计权威=`docs/M7-ACTIVATION-FEATURE-DESIGN.md`；
 > 算法扩展参考=`docs/M7-ACTIVATION-ALGO-REFERENCES.md`；本文档记录资产、已批准
@@ -71,7 +88,9 @@ BGE-M3/para-512/D6 hybrid/三重过滤不动。
 | 验收映射 | acceptance-gold-map.json（按测试矩阵 §8 逐项挂 gold） |
 | 文档 | M7-ACTIVATION-CALIBRATION.md、M7-LABEL-REVIEW-REPORT.md、M7-ACTIVATION-FEATURE-DESIGN.md、M7-ACTIVATION-ALGO-REFERENCES.md |
 
-## 6. 剩余条件（冻结 policyVersion 前）
+## 6. 移交时点的剩余条件（冻结 policyVersion 前）
+
+> 以下为移交时点记录的剩余条件，作为当时的实施约束留档。
 
 1. 实现 Agent 将两 lane + 学习头移植进 worker（新 policyVersion），并校验
    **在线推理与离线 OOF 的一致性**。

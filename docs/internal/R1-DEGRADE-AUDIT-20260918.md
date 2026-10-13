@@ -1,5 +1,17 @@
 # R1 · 静默降级高危点普查报告
 
+> **状态**：已完工 · 2026-09-18
+> **性质**：验收报告 —— 本文为**完成后的技术记录**，不再作为待执行计划。
+> **落点**：只读普查（未改任何代码）；探针 `artifacts/_probe-silent-degrade.mjs`（全仓扫描）与 `artifacts/_probe-r1-degrade.mjs`（逐点验证）；上游 `BATTLE-PLAN-20260917.md` §3.6（R 系列执行顺序）
+> **验收**：本报告为只读普查结论，逐点验证由可复跑探针承担；配套深查见 `R2-EVIDENCE-DEEP-AUDIT-20260918.md`
+
+## 摘要
+
+本文是 R1 静默降级高危点的普查报告，2026-09-18 定稿，属只读普查（未改任何代码）。探针为 `artifacts/_probe-silent-degrade.mjs`（全仓扫描）与 `artifacts/_probe-r1-degrade.mjs`（逐点验证），上游为 `BATTLE-PLAN-20260917.md` §3.6（R 系列执行顺序）。文中给出普查结论与高危点清单，直接引出后续 R2 的 evidence 读写不对称深查与 R3 的降级留痕层设计。
+
+---
+
+
 > 2026-09-18 定稿 · 只读普查（未改任何代码）
 > 探针：`artifacts/_probe-silent-degrade.mjs`（全仓扫描）、`artifacts/_probe-r1-degrade.mjs`（逐点验证）
 > 上游：`BATTLE-PLAN-20260917.md` §3.6（R 系列执行顺序）

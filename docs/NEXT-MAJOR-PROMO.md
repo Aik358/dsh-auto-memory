@@ -1,5 +1,22 @@
 # dsh-auto-memory 下一大版本宣传全量稿（文案库）
 
+> **状态**：已完工 · 2026-09-06（文案库定稿）
+> **性质**：设计定稿（宣传文案库） —— 本文为**完成后的技术记录**，不再作为待执行计划。
+> **落点**：`docs/NEXT-MAJOR-PROMO.md`；组装骨架见 `docs/NEXT-MAJOR-README-DRAFT.zh.md`，文风依据 `docs/PROMO-STYLE-GUIDE.md`。
+> **验收**：功能对账以 `docs/NEXT-MAJOR-VISION.md` §2 为准；标注【发布启用】的段落随 M-CM 特性上线时替换占位。
+
+## 摘要
+
+本文件是下一大版本的全量宣传文案库：品牌句、开场、每一个功能的成稿、工程说明、场景物料与发布公告全部写透，组装 README / landing / npm 简介 / QQ 公告时从这里取材。结构分五层：A 品牌层、B 功能叙事、C 工程层、D 场景物料、E 落地映射表（组装对照）。文风遵守 `docs/PROMO-STYLE-GUIDE.md`，功能对账以 `docs/NEXT-MAJOR-VISION.md` §2 为准。
+
+## 文档规范
+
+- 改写依据：`docs/internal/DOC-REWRITE-STYLE.md`
+- 本文件体例：**宣传文案库定稿**。标注【发布启用】/【占位】的段落按设计随 M-CM 特性上线时替换。
+- 语态纪律：主语用「本项目 / 本方案」，不使用第一人称叙述。
+
+---
+
 > 定位：下一大版本的**全量文案库**——品牌句、开场、每一个功能的成稿、工程说明、场景物料、发布公告，全部写透。组装 README / landing / npm 简介 / QQ 公告时从这里取材，不再回头翻旧文档。
 > 文风遵守 [PROMO-STYLE-GUIDE.md](PROMO-STYLE-GUIDE.md)；功能对账以 [NEXT-MAJOR-VISION.md](NEXT-MAJOR-VISION.md) §2 为准；标注【发布启用】的段落随 M-CM 特性上线替换占位。**大版本完成前禁改 README。**
 > 组装骨架见 [NEXT-MAJOR-README-DRAFT.zh.md](NEXT-MAJOR-README-DRAFT.zh.md)；本文与骨架的区别：骨架管结构，本文管**每一句话**。
@@ -22,7 +39,7 @@
 
 副标（主句下方一行）：
 
-> 跨窗口 · 跨会话 · 跨工具，记忆不断线
+> 跨窗口 · 跨会话 · 跨工具，Ambient Recall · 「潜藏追忆，如影随形」
 > Context that survives windows, sessions, and tools
 
 ## A2 一句话定位（四个场景各一版）

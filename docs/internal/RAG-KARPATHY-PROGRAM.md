@@ -1,5 +1,17 @@
 # RAG + Karpathy(wiki) 攻关 · 总细则
 
+> **状态**：已完工 · 2026-09-14
+> **性质**：设计定稿 —— 本文为**完成后的技术记录**，不再作为待执行计划。
+> **落点**：上位规范 `SEMANTIC-ARCHITECTURE-SPEC.md`（条款 S1–S10、§4 阶段门等）、接口与预算见 `THREE-LAYER-CONTRACT.md`（I1–I7、C1–C7）、白板契约见 `WB-FORMAT-CONVENTION.md`、排期见 `TODO-GRAPH.html`、主线见 `ROADMAP.md`、待办总表见 `TODO-BACKLOG.md`
+> **验收**：建立于 2026-09-14；纪律为凡引用数字/行号/卡片 id 的均为本次实际读取所得，未读到的写「未找到，需查」
+
+## 摘要
+
+本文是「RAG + Karpathy(wiki) 攻关」这一最重要项目的总细则——人能读、可执行、每条都能判定。上位规范为 `SEMANTIC-ARCHITECTURE-SPEC.md`（条款 S1–S10、§4 阶段门、§4.1 不采纳项、§5 施工顺序、§7 立场、附录 A–F），接口与预算见 `THREE-LAYER-CONTRACT.md`（I1–I7、C1–C7），白板契约见 `WB-FORMAT-CONVENTION.md`，排期见 `TODO-GRAPH.html`，主线与待办见 `ROADMAP.md` / `TODO-BACKLOG.md`。边界为不新增条款、不改接口形状，本文件只做下拆与判定；条款冲突以 SPEC 为准。
+
+---
+
+
 > **效力**：本文件是「RAG + Karpathy(wiki) 攻关」这一**最重要项目**的总细则——人能读、可执行、每条都能判定。
 > **上位规范**：`docs/internal/SEMANTIC-ARCHITECTURE-SPEC.md`（条款 S1–S10、§4 阶段门、§4.1 不采纳项、§5 施工顺序、§7 立场、附录 A–F）；接口与预算见 `docs/internal/THREE-LAYER-CONTRACT.md`（I1–I7、C1–C7）；白板契约见 `docs/internal/WB-FORMAT-CONVENTION.md`；排期见图 `docs/internal/TODO-GRAPH.html`，主线见 `docs/internal/ROADMAP.md`，待办总表见 `docs/internal/TODO-BACKLOG.md`。
 > **建立**：2026-09-14。**边界**：不新增条款、不改接口形状；本文件只**下拆与判定**，条款冲突以 SPEC 为准。

@@ -1,5 +1,17 @@
 # 新用户引导（Onboarding）审计报告
 
+> **状态**：已完工 · 2026-09-22
+> **性质**：验收报告 —— 本文为**完成后的技术记录**，不再作为待执行计划。
+> **落点**：只读审计（未修改任何文件；取证脚本全部落在 `%TEMP%\dsh-onb-audit\`）；基线 `lib/index.js` = 12,563 行 / `lib/client.js` = 7,449 行 / `package.json` version = 3.1.1
+> **验收**：方法为源码为准 + `/config` GET 实测旁证（loopback）；三支取证脚本 `extract-config.cjs`（括号匹配抽 `DEFAULT_CONFIG` 后经 `new Function` 求值）、`toggle-keys.cjs`（逐键列真实引用点）与 `/config` 实测
+
+## 摘要
+
+本文是新用户引导（Onboarding）的只读审计报告，基线为 `lib/index.js` = 12,563 行、`lib/client.js` = 7,449 行、`package.json` version = 3.1.1，取证脚本全部落在 `%TEMP%\dsh-onb-audit\`。方法以源码为准、以 `/config` GET 实测旁证（loopback）：用 `extract-config.cjs` 抽 `DEFAULT_CONFIG` 字面量后包 `new Function` 求值拿到键全集与默认值真值，用 `toggle-keys.cjs` 逐键在 `lib/*.js`（排除 `*.bak-*`）列真实引用点。留下的价值是一份带代码证据与实测旁证的引导现状基线，供改版方案（`ONBOARDING-REVAMP-PLAN-20260922.md`）引用。
+
+---
+
+
 - **日期**：2026-09-22
 - **性质**：**只读审计**（未修改任何文件；取证脚本全部落在 `%TEMP%\dsh-onb-audit\`）
 - **基线**：`lib/index.js` = 12,563 行 / `lib/client.js` = 7,449 行 / `package.json` version = **3.1.1**

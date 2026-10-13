@@ -1,5 +1,17 @@
 # REPORT · WB-GRAPH 白板线一夜完工（2026-09-16 凌晨）
 
+> **状态**：已完工 · 2026-09-16
+> **性质**：施工记录 —— 本文为**完成后的技术记录**，不再作为待执行计划。
+> **落点**：权威依据 `WB-GRAPH-DECISIONS-20260914.md` §E（拍板留痕）+ `WB-GRAPH-INTEGRATION-PLAN.md` §5 + `WB-FORMAT-CONVENTION.md` v1
+> **验收**：用户裁定一口气全做完但线先别接——设置页/接续面板一键切换「旧版白板 / 新版看板」、默认旧版；本报告的后续被 `REVIEW-WB-GRAPH-SELF.md` 与 `AUDIT-WB-GRAPH-FULL-20260916.md` 复核（后者的最重要纠正为「回归全绿不构成对白板线新功能的任何保证」，即结构性假绿）
+
+## 摘要
+
+本文是 WB-GRAPH 白板线一夜完工的交付报告，权威依据为 `WB-GRAPH-DECISIONS-20260914.md` §E（拍板留痕）、`WB-GRAPH-INTEGRATION-PLAN.md` §5 与 `WB-FORMAT-CONVENTION.md` v1。用户裁定为「一口气全做完，但线先别接」——设置页/接续面板一键切换「旧版白板 / 新版看板」，默认旧版。交付总览以表格列出各项交付物与状态。该报告的后续复核见 `REVIEW-WB-GRAPH-SELF.md`（自审查出 3 个致命 bug + 6 项未按规划完成）与 `AUDIT-WB-GRAPH-FULL-20260916.md`（纠正「回归全绿即保证」为结构性假绿）。
+
+---
+
+
 > 权威依据：`WB-GRAPH-DECISIONS-20260914.md` §E（拍板留痕）+ `WB-GRAPH-INTEGRATION-PLAN.md` §5 + `WB-FORMAT-CONVENTION.md` v1
 > 用户裁定：一口气全做完，但**线先别接**——设置页/接续面板一键切换「旧版白板 / 新版看板」，默认旧版。
 

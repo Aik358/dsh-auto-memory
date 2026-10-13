@@ -1,5 +1,22 @@
 # M7 Activation v2 · Held-out Shadow 操作清单
 
+> **状态**：已完工 · 2026-08-30
+> **性质**：施工记录 —— 本文为**完成后的技术记录**，不再作为待执行计划。
+> **落点**：`docs/M7-ACTIVATION-V2-HOLDEDOUT-SHADOW.md`；接线落在 `lib/activation-*.js` 与 host 侧。
+> **验收**：前置达成：artifact gate 16/16 PASS · 55 fixture golden parity 全字段一致 · 全量回归 27/27 PASS · online-vs-OOF 报告已出（`online-oof-consistency.json`）。
+
+## 摘要
+
+本文件是 R1（Python feature v2）阶段收口的 Held-out Shadow 操作清单，生成于 2026-08-25。前置条件已达成：artifact gate 16/16 PASS、55 fixture golden parity 全字段一致、全量回归 27/27 PASS，online-vs-OOF 一致性报告已产出。清单给出接线前置、用户操作序列、采集与标注方式、验收门与达标后路径。
+
+## 文档规范
+
+- 改写依据：`docs/internal/DOC-REWRITE-STYLE.md`
+- 本文件体例：**操作清单留档**。「接线前置」为执行时的编码任务，非待办项。
+- 语态纪律：主语用「本项目 / 本方案」，不使用第一人称叙述。
+
+---
+
 > 阶段：R1（Python feature v2）已完成并停止于本清单 · 生成：2026-08-25
 > 前置达成：artifact gate 16/16 PASS · 55 fixture golden parity 全字段一致 ·
 > 全量回归 27/27 PASS · online-vs-OOF 报告已出（`online-oof-consistency.json`）

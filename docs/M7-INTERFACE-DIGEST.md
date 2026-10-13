@@ -1,5 +1,22 @@
 # M7 接口契约摘要（上下文压缩恢复用速查）
 
+> **状态**：已完工 · 2026-08-30
+> **性质**：设计定稿 —— 本文为**完成后的技术记录**，不再作为待执行计划。
+> **落点**：`docs/M7-INTERFACE-DIGEST.md`；权威定义在 `lib/*.js` 与 `python/worker_pre_v1.py`。
+> **验收**：本文为字段级契约精确摘要；权威以源码为准，本文件是摘要而非替代。
+
+## 摘要
+
+本文件把 M7 接线所需的字段级接口事实压缩成一份速查，来源是主 Agent 派发的只读研究（精读 `lib/*.js`、`docs/M5-CONTRACT.md`、`docs/M6-CONTRACT.md` 与 `python/worker_pre_v1.py`）。覆盖 ContextPushEnvelope、EvidenceAggregate、validateActivationRequest 硬校验、natural pre-step claim、SidecarClient API、PythonContextSink 映射、worker 关键事实与 Python 侧激活雷区。恢复会话时读本文件即可获得接线所需全部接口事实，不必重读全部源文件。
+
+## 文档规范
+
+- 改写依据：`docs/internal/DOC-REWRITE-STYLE.md`
+- 本文件体例：**接口契约摘要**。§I 的「M7 阶段门」为派单来源的原始记录。
+- 语态纪律：主语用「本项目 / 本方案」，不使用第一人称叙述。
+
+---
+
 > 生成:2026-08-24,来源:主 Agent 派发的只读研究(精读 lib/*.js + M5/M6-CONTRACT
 > + python/worker_pre_v1.py)。恢复会话时读本文件即可获得接线所需全部接口事实,
 > 不必重读全部源文件。权威仍以源码为准,本文件是精确摘要不是替代。

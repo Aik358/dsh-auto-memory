@@ -1,4 +1,20 @@
+# FIX-AGENT-TEMPORAL-ARM · 记忆检索「时间臂」（已完工）
+
+> **状态**：已完工 · 2026-09-09（原文记录的最后一次核实日）
+> **性质**：派工任务书（存档）—— 本文为完成后的技术记录，不再作为待执行计划。
+> **落点**：新增 `lib/temporal-parse.js`（原文记作 `lib/temporal-parse-pre.js`，纯函数、零 IO、注入 `now`）；`lib/recall-fusion.js` 的 RRF 第三臂；`lib/index.js` 的 `recall()` 接入；套件 `tests/smoke/smoke-test-temporal-parse.mjs`。
+> **验收**：`smoke-test-temporal-parse.mjs` 通过；零行为变更（无时间词的查询排序不变）；已并入全量回归。
+
+## 摘要
+
+该段给记忆检索加「时间臂」，支持「上周 / 三天前 / 上个月」一类时间查询：新增纯函数 `lib/temporal-parse.js` 解析时间词，从候选 `label` 的日志文件名抽取日期作为 `dateMs`，并让 `rankFusionRRFPre` 向后兼容地接受第三臂。Phase 1 刻意收窄范围；前提是 P12 段先完成（两者都改 `lib/index.js`，须串行投喂）。
+
+> **存档声明**：本文为该轮派工任务书的原文存档，正文中的「你要做 / 必须 / 禁止」等祈使句**均为当时下达的要求**，不代表当前待办；实际结果以页首「落点 / 验收」为准。
+
+---
+
 > **给使用者的说明**：**时间检索臂（第一优先的新功能）**。复制时从 `你是 DSH 环境里的执行 Agent` 开始到文件末尾（自包含，无需 `_COMMON.md`）。
+
 > ⚠️ Agent 不能重启 dsh web（会截断对话），改完只做静态验证；重启与 live 验证由你执行。
 > 依赖：**P12 段先完成**（两者都改 `lib/index.js`，须串行投喂、逐段验收）。
 

@@ -1,4 +1,20 @@
+# FIX-AGENT-P9d · recentEvidenceForSuccess 时间戳取值错误修复（已完工）
+
+> **状态**：已完工 · 2026-09-09（原文记录的最后一次核实日）
+> **性质**：派工任务书（存档）—— 本文为完成后的技术记录，不再作为待执行计划。
+> **落点**：`lib/context-host.js`（原文记作 `lib/context-host-pre.js`，为源文件；`lib/context-host.js` 是发布产物，禁止手改）；套件 `tests/smoke/smoke-test-p9d-recent-evidence-ts.mjs`。
+> **验收**：`smoke-test-p9d-recent-evidence-ts.mjs` 通过；已并入全量回归。
+
+## 摘要
+
+该段修 P9a 附带发现的时间戳取值错误——`recentEvidenceForSuccess` 取错字段导致 success 证据链结构性断裂，不修它 success 永远为 0。立项依据为 `P9-REVIEW-DECISION.md` §七（规划侧自我修正）。
+
+> **存档声明**：本文为该轮派工任务书的原文存档，正文中的「你要做 / 必须 / 禁止」等祈使句**均为当时下达的要求**，不代表当前待办；实际结果以页首「落点 / 验收」为准。
+
+---
+
 > **给使用者的说明**：P9a 附带发现的修复段。**优先级高于一切观察类动作**——不修它，success 永远是 0。
+
 > 复制时从 `你是一名严谨的修复 Agent` 开始到文件末尾（自包含，无需 `_COMMON.md`）。
 > ⚠️ 改 `lib\context-host-pre.js`（**源文件**）；`lib\context-host.js` 是发布产物，**禁止手改**。
 

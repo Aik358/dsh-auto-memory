@@ -1,15 +1,30 @@
 # 下一大版本 README 替换草稿（中文版）
 
-> 状态：**草案**。大版本（M-CM）发布后，本稿经用户审定替换 README.zh-CN.md；README.md（英文版）按同一骨架平移（hero copy 已在 NEXT-MAJOR-PROMO.md §九）。
+> **状态**：已完工 · 2026-09-06（草稿定稿；未作为最终替换文本）
+> **性质**：设计定稿（文案草稿） —— 本文为**完成后的技术记录**，不再作为待执行计划。
+> **落点**：`docs/NEXT-MAJOR-README-DRAFT.zh.md`；**本稿未作为 README 的最终替换文本** —— 当前 `README.md` 已另行改版（现标题为「Ambient Recall · 「潜藏追忆，如影随形」」），与本稿骨架不同。
+> **验收**：本稿为草稿，其审定与替换状态未在本文单独留档；README 的当期内容以 `README.md` 为准。
+
+## 摘要
+
+本文件是下一大版本 README 的中文替换草稿，按骨架给出人格化章节与保留区纪律。文风依据 `docs/PROMO-STYLE-GUIDE.md`，功能事实依据 `docs/NEXT-MAJOR-VISION.md` §2 对账清单；标注【保留区】的段落从当时的 README 原样迁移，【占位】段随大版本落地替换。组装骨架与逐句文案分别见本稿与 `docs/NEXT-MAJOR-PROMO.md`。本稿最终未作为 README 的替换文本使用。
+
+## 文档规范
+
+- 改写依据：`docs/internal/DOC-REWRITE-STYLE.md`
+- 本文件体例：**文案草稿留档**。【保留区】与【占位】标注为当时的口径；README 的实际改版形态以 `README.md` 为准。
+- 语态纪律：主语用「本项目 / 本方案」，不使用第一人称叙述。
+
+---
 > 文风依据：[PROMO-STYLE-GUIDE.md](PROMO-STYLE-GUIDE.md)；功能事实依据：[NEXT-MAJOR-VISION.md](NEXT-MAJOR-VISION.md) §2 对账清单。
-> 标注【保留区】的段落从现 README 原样迁移，**不许宣传腔覆盖**；【占位】段随大版本落地替换。
+> 标注【保留区】的段落从当时的 README 原样迁移，不许宣传腔覆盖；【占位】段按设计随大版本落地替换。
 
 ---
 
 # dsh-auto-memory — 她记得，不必吩咐
 
 > **现在，换窗口也不必。**
-> 跨窗口 · 跨会话 · 跨工具，记忆不断线
+> 跨窗口 · 跨会话 · 跨工具，Ambient Recall · 「潜藏追忆，如影随形」
 
 <p align="center">
   【图片：复用 promo-0-banner-v2.png 主视觉】

@@ -1,3 +1,22 @@
+# M7 任务集派发（Python Semantic Engine · 逐字副本）
+
+> **状态**：已完工 · 2026-08-30
+> **性质**：施工记录 —— 本文为**完成后的技术记录**，不再作为待执行计划。
+> **落点**：`docs/M7-TASKSET-DISPATCH.md`；执行状态与产物清单见 `docs/M7-AUTONOMOUS-STATE.md`。
+> **验收**：各阶段验收结果见 `docs/M7-AUTONOMOUS-STATE.md` 的 `testCommands` / `benchmarkResults`。
+
+## 摘要
+
+本文件是 DeepSeek Harness 总派发 Agent 在 2026-08-24 01:51 粘贴的任务集逐字副本，作为 M7 阶段的最高执行依据（与 `docs/M7-AUTONOMOUS-STATE.md` 冲突时以本文件为准）。任务集要求承接 M0-M6 已 live verified 的成果，在 `D:\dsh-auto-memory` 自主推进完整的 M7 Python Semantic Engine，先核验现状、再从未完成阶段继续，禁止重写已通过的协议与 M5/M6 语义。
+
+## 文档规范
+
+- 改写依据：`docs/internal/DOC-REWRITE-STYLE.md`
+- **正文为任务集逐字副本，保留原样**，仅在文首补充标题与完工头。
+- 语态纪律：主语用「本项目 / 本方案」，不使用第一人称叙述。
+
+---
+
 你运行在 ZCode，不在 DeepSeek Harness 内。负责在 D:\dsh-auto-memory 自主推进完整 M7 Python Semantic Engine。M0-M6 已 live verified；M7-0/M7-1 已 tested，包括 JSONL fake worker、JS SidecarClient、workerEpoch、三重门、授权分页 index_sync 和 atomic derived corpus。必须先核验现状，再从未完成阶段继续，禁止重写已通过的协议和 M5/M6 语义。
 
 一、能力审计（第一步，全部只读）

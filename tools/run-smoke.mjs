@@ -61,6 +61,113 @@ const DEFAULT_JOBS = 4
 const RUN_TMP_ROOT = path.join(path.dirname(ROOT), '.dsh-smoke-tmp')
 const RUN_TMP = path.join(RUN_TMP_ROOT, 'run-' + process.pid + '-' + Date.now().toString(36))
 
+
+/**
+ * ★2026-10-13（用户实报「全量并行会有 2~3 项 timeout，怀疑是并行策略有问题」）：
+ *   实测根因——**并非套件真的挂住，而是「单套件墙钟超时」与「并行抢占」叠加**：
+ *     · 98.3s  smoke-test-external.mjs —— 真扫本机外部记忆（13 源 / 数百文件），
+ *       单跑就已 67.8s，而默认阈值只有 60s ⇒ **它单跑也必然 TIMEOUT**，与并行无关；
+ *     · 其余重负载套件（整树复制 / 真跑 python / 真跑生成器）在 4 路并发下墙钟被
+ *       拉长 1.2~2.6 倍（jobs=8 实测最坏 4.18 倍）⇒ 逼近阈值即偶发翻红。
+ *   修法：**按实测耗时把套件分成两条车道**——重车道**串行**（互相不抢，墙钟回到单跑量级），
+ *   轻车道照旧并行。两条车道同时开跑，总墙钟取「重车道之和」与「轻车道之和 / jobs」的较大者，
+ *   不再受「重负载被并发拉长」影响。
+ *
+ * 表内数值 = 本机实测（--jobs=4 一次全量，2026-10-08 树）里 **>5s** 的 49 个套件。
+ * 不在此表的套件（305 个，合计仅 277s、单个 <=5s）走轻车道并行。
+ *
+ * ★为什么重车道是**保守串行**而不是「给重负载也开小池子」：实测重负载之间的争抢是
+ *   非线性的（smoke-test-migrate-existing-safety 在 jobs=8 下 3.9s->16.3s，x4.18），
+ *   而重车道本来就占全部工作量的 76%——开池子省下的墙钟会被重新拉长吃掉。
+ *
+ * 开关：--lanes=off 关闭分道（回到「全部走并行池」的旧行为，便于对照与回退）；
+ *       --heavy-jobs=N 重车道并发（默认 1 = 串行，实测最稳）。
+ */
+/**
+ * ★重车道并发（2026-10-13 实测标定，非拍脑袋）：
+ *   重负载套件**不是 CPU 密集**——12 个最重套件串行跑 389s 只用掉 16.5 CPU 秒（≈4% CPU），
+ *   它们是等 IO / 等子进程 / 等轮询。故并发近线性收益（同 12 套件实测）：
+ *     x1 = 389.1s   x2 = 216.7s   x4 = 151.9s   x8 = 108.6s
+ *   全量对照（重 x8 + 轻 x4，16 核机）：179.9s / 353 PASS / 0 FAIL / 0 TIMEOUT，
+ *   而同机旧默认（jobs=4 + 60s）为 276.4s 且 1 TIMEOUT + 1 并发假红 ⇒ 1.54x 加速。
+ *   ★为什么重车道取 8 而轻车道保持 4：重车道是**关键路径**（896s 工作量），
+ *   轻车道只有 277s、且 305 个套件个个 <=5s ⇒ 放宽重车道、收窄轻车道，
+ *   两者合计 12 路并发，留在 16 核之内（实测 h8+l8 = 16 路时会把
+ *   smoke-test-py-runtime-live / smoke-test-m73 挤成假红，故不取满）。
+ */
+const HEAVY_JOBS = 8
+
+/**
+ * ★重车道专用阈值（轻车道仍用 --timeout，默认 60s）：
+ *   实测最长套件 smoke-test-external.mjs 单跑 67.8s（本机外部记忆真扫描），
+ *   已超默认 60s ⇒ 它**单跑也必红**，与并行无关。给重车道 240s 是"真长"而非"被拖长"的余量：
+ *   4 路并发下实测最坏 123s（smoke-test-la-audit-fixes.mjs），仍有 2× headroom。
+ *   而轻车道保留 60s；轻套件实测最慢 5s，60s 够用 ⇒ 真挂住仍能 1 分钟内被发现。
+ */
+const HEAVY_TIMEOUT_MS = 240000
+const HEAVY_MS = {
+  'smoke-test-external.mjs': 98300,
+  'smoke-test-py-runtime-live.mjs': 57300,
+  'smoke-test-la-audit-fixes.mjs': 56100,
+  'smoke-test-issue45-recall-corpus.mjs': 40200,
+  'smoke-test-c4-fresh-install.mjs': 38900,
+  'smoke-test-a6-ci-group-queue.mjs': 38200,
+  'smoke-test-autocont-host.mjs': 37400,
+  'smoke-test-issue341-lockgate.mjs': 36000,
+  'smoke-test-fullpage-negative.mjs': 35100,
+  'smoke-test-a2-hub-transactions.mjs': 33600,
+  'smoke-test-a1-mutation-admission.mjs': 28100,
+  'smoke-test-issue347-evidence-retention.mjs': 24400,
+  'smoke-test-issue342-outbox-lock.mjs': 23100,
+  'smoke-test-issue348-group-digest-cursor.mjs': 17600,
+  'smoke-test-g1-gate-unify.mjs': 16900,
+  'smoke-test-issue207-state.mjs': 15100,
+  'smoke-test-issue207-routes.mjs': 14600,
+  'smoke-test-lb1-negative.mjs': 13700,
+  'smoke-test-py-integrity-c1.mjs': 13100,
+  'smoke-test-h1-v1-lane-retired.mjs': 12900,
+  'smoke-test-m78-host.mjs': 12800,
+  'smoke-test-run-smoke.mjs': 12700,
+  'smoke-test-generator-idempotent.mjs': 12100,
+  'smoke-test-generator-guard.mjs': 11300,
+  'smoke-test-m70.mjs': 10000,
+  'smoke-test-minervaowl7-c-negative.mjs': 9500,
+  'smoke-test-m73.mjs': 9300,
+  'smoke-test-m76.mjs': 9300,
+  'smoke-test-m79-feature-v2.mjs': 9200,
+  'smoke-test-issue323-release-preflight.mjs': 9000,
+  'smoke-test-minervaowl7-a2-negative.mjs': 9000,
+  'smoke-test-consolidate-isolation.mjs': 8800,
+  'smoke-test-m710-fv2-emit.mjs': 8800,
+  'smoke-test-py-runtime-chain.mjs': 8800,
+  'smoke-test-issue174-team-wiring.mjs': 8700,
+  'smoke-test-m53.mjs': 8400,
+  'smoke-test-js-semantic-host-recovery.mjs': 7900,
+  'smoke-test-v21-path-boundary.mjs': 7800,
+  'smoke-test-embed-incremental.mjs': 7600,
+  'smoke-test-issue345-mutation-root.mjs': 7600,
+  'smoke-test-issue162-diagnostic-integrity.mjs': 7400,
+  'smoke-test-issue207-processes.mjs': 7300,
+  'smoke-test-config-transactions.mjs': 6400,
+  'smoke-test-issue48.mjs': 6400,
+  'smoke-test-issue164-plan-processes.mjs': 6100,
+  'smoke-test-c307-308-team-outbox.mjs': 6000,
+  'smoke-test-issue322-team-outbox-flush.mjs': 5800,
+  'smoke-test-context-observer.mjs': 5600,
+  'smoke-test-settings-safety.mjs': 5500,
+}
+
+/**
+ * 车道划分：重车道 = 实测 >5s 的套件（表内），其余走轻车道。
+ */
+function splitLanes(suites) {
+  const heavy = [], light = []
+  for (const n of suites) (HEAVY_MS[n] !== undefined ? heavy : light).push(n)
+  // 重车道按实测耗时**从长到短**排：长尾先开跑，避免最后一个 98s 套件最后才开始。
+  heavy.sort((a, b) => (HEAVY_MS[b] || 0) - (HEAVY_MS[a] || 0))
+  return { heavy, light }
+}
+
 /** 清扫本运行器自己产生的历史运行目录（只认自己的前缀，绝不碰别的进程的临时文件）。 */
 function sweepStaleRuns() {
   try {
@@ -104,12 +211,19 @@ function parseArgs(argv) {
   //   ④ 可回退：`--jobs=1` 恢复逐字节等价的串行路径（原代码路径保留，未删改）。
   // ★2026-10-02（用户裁定「跑之前先看一下哪儿会有变化」）：`--impact` 只做只读影响面预检，
   //   不跑任何套件（秒级返回）。`--impact-run` 先打印预检、再只跑命中集（省掉盲跑全量的 75s）。
-  const opts = { timeoutMs: DEFAULT_TIMEOUT_MS, filter: '', exclude: [], jobs: DEFAULT_JOBS, impact: false, impactRun: false, quiet: false }
+  const opts = { timeoutMs: DEFAULT_TIMEOUT_MS, filter: '', exclude: [], jobs: DEFAULT_JOBS, impact: false, impactRun: false, quiet: false, lanes: true, heavyJobs: HEAVY_JOBS, heavyTimeoutMs: HEAVY_TIMEOUT_MS }
   for (const a of argv) {
     if (a === '--impact') { opts.impact = true; continue }
     if (a === '--impact-run') { opts.impactRun = true; continue }
     if (a === '--quiet') { opts.quiet = true; continue }
     if (a === '--impact-all') { opts.impactAll = true; continue }
+    // ★2026-10-13：--lanes=off 关闭重/轻分道（旧行为）；--heavy-jobs=N 重车道并发（默认 1=串行）。
+    if (a === '--lanes=off') { opts.lanes = false; continue }
+    // ★重车道可选独立阈值：--heavy-timeout=<ms>（默认 HEAVY_TIMEOUT_MS）。
+    const ht = /^--heavy-timeout=(\d+)$/.exec(a)
+    if (ht) { opts.heavyTimeoutMs = Number(ht[1]); continue }
+    const hj = /^--heavy-jobs=(\d+)$/.exec(a)
+    if (hj) { opts.heavyJobs = Math.max(1, Math.min(16, Number(hj[1]))); continue }
     const m = /^--timeout=(\d+)$/.exec(a)
     if (m) { opts.timeoutMs = Number(m[1]); continue }
     const f = /^--filter=(.+)$/.exec(a)
@@ -195,6 +309,7 @@ function runSuite(file, timeoutMs) {
       try { child.stderr.destroy() } catch (e) {}
       resolve({
         name: path.basename(file),
+        timeoutMs,
         status,
         code,
         signal,
@@ -232,7 +347,7 @@ async function main() {
     console.error('[run-smoke] 临时目录不可用，回退系统 TEMP：' + (eTmp && eTmp.message))
   }
   if (opts.help) {
-    console.log('usage: node tools/run-smoke.mjs [--timeout=<ms>] [--filter=<substr>] [--exclude=<substr>]...')
+    console.log('usage: node tools/run-smoke.mjs [--timeout=<ms>] [--filter=<substr>] [--exclude=<substr>]... [--jobs=N] [--lanes=off] [--heavy-jobs=N]')
     return 0
   }
   // ★影响面预检（只读）：列出改动文件、正文引用它们的套件、以及基线锁套件。
@@ -273,9 +388,15 @@ async function main() {
   }
 
   const jobs = Math.max(1, Math.min(16, opts.jobs || 1))
+  const lanePlan = opts.lanes ? splitLanes(suites) : { heavy: [], light: suites }
   console.log('[run-smoke] ' + suites.length + ' suite(s) in tests/smoke, per-suite timeout='
     + (opts.timeoutMs > 0 ? opts.timeoutMs + 'ms' : 'disabled')
     + ', ' + (jobs === 1 ? 'sequential (never parallel)' : 'parallel x' + jobs))
+  if (opts.lanes) {
+    const heavySum = lanePlan.heavy.reduce((a, n) => a + (HEAVY_MS[n] || 0), 0) / 1000
+    console.log('[run-smoke] 双车道: 重车道 ' + lanePlan.heavy.length + ' 套件 x' + opts.heavyJobs + ' (timeout=' + opts.heavyTimeoutMs + 'ms)'
+      + '（实测合计 ' + heavySum.toFixed(0) + 's）; 轻车道 ' + lanePlan.light.length + ' 套件/并行 x' + jobs)
+  }
   console.log('')
 
   const results = []
@@ -299,22 +420,32 @@ async function main() {
       + '  最近: ' + r.name)
   }
 
-  if (jobs === 1) {
-    for (const name of suites) {
-      report(await runSuite(path.join(SMOKE_DIR, name), opts.timeoutMs))
-    }
-  } else {
-    // 有界工作池:固定 jobs 个 worker 从同一下标游标取任务,天然限流、无第三方依赖。
+  /** 有界工作池：固定 jobs 个 worker 从同一下标游标取任务，天然限流、无第三方依赖。 */
+  const runPool = async (list, width, timeoutMs) => {
     let cursor = 0
     const worker = async () => {
       for (;;) {
         const i = cursor++
-        if (i >= suites.length) return
-        const r = await runSuite(path.join(SMOKE_DIR, suites[i]), opts.timeoutMs)
+        if (i >= list.length) return
+        const r = await runSuite(path.join(SMOKE_DIR, list[i]), timeoutMs)
         report(r)
       }
     }
-    await Promise.all(Array.from({ length: Math.min(jobs, suites.length) }, () => worker()))
+    await Promise.all(Array.from({ length: Math.min(width, list.length) }, () => worker()))
+  }
+
+  if (!opts.lanes || jobs === 1) {
+    // 分道关闭（或单并发）：原行为——整个集合走一个池子（jobs=1 时即逐字节等价串行）。
+    await runPool(suites, jobs, opts.timeoutMs)
+  } else {
+    // ★双车道：重车道与轻车道**同时**开跑，各自独立限流。
+    //   重车道默认串行（heavyJobs=1）⇒ 互不抢占，墙钟回到单跑量级；
+    //   轻车道并行 ⇒ 305 个快套件（合计仅 277s）迅速收尾。
+    //   总墙钟 ≈ max(重车道合计, 轻车道合计 / jobs)，两边都不再有并发假红。
+    await Promise.all([
+      runPool(lanePlan.heavy, opts.heavyJobs, opts.heavyTimeoutMs),
+      runPool(lanePlan.light, jobs, opts.timeoutMs),
+    ])
   }
 
   const pass = results.filter((r) => r.status === 'PASS')
@@ -335,7 +466,7 @@ async function main() {
   }
   for (const r of [...timeout, ...fail]) {
     console.log('')
-    console.log('--- ' + r.status + ': ' + r.name + (r.status === 'TIMEOUT' ? '  (exceeded ' + opts.timeoutMs + 'ms)' : '  (exit=' + r.code + ')') + ' ---')
+    console.log('--- ' + r.status + ': ' + r.name + (r.status === 'TIMEOUT' ? '  (exceeded ' + (r.timeoutMs || opts.timeoutMs) + 'ms)' : '  (exit=' + r.code + ')') + ' ---')
     console.log('last output tail:')
     console.log(r.tail ? r.tail.split('\n').slice(-25).join('\n') : '(no output captured)')
   }

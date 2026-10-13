@@ -1,5 +1,17 @@
 # 子代理完成报告与窗口接续 · 技术预研
 
+> **状态**：已完工 · 2026-09-10
+> **性质**：研究结论 —— 本文为**完成后的技术记录**，不再作为待执行计划。
+> **落点**：研究范围为 DSH live 版本 0.1.5-rc.1 的官方包源码，逐条带 `文件:行号`；代码基准目录 `C:\Users\JH Z\AppData\Roaming\npm\node_modules\@deepseek-ai\dsh\node_modules\@deepseek-ai\`，插件侧基准 `D:\dsh-auto-memory\lib\index.js`
+> **验收**：本次未出码（用户 2026-09-10 指示「下一版再改」）；本阶段结束时未单独留档实施结果，后续见 `OFFICIAL-DISCUSSION-DRAFT.md` 与 `DSH-DESCRIPTOR-V2-REPORT.md` 同一通道
+
+## 摘要
+
+本文是子代理完成报告与窗口接续的技术预研，状态为只做预研、不出码——用户 2026-09-10 指示「下一版再改」。研究范围为 DSH live 版本 0.1.5-rc.1 的官方包源码，逐条带 `文件:行号`，代码基准目录为 `C:\Users\JH Z\AppData\Roaming\npm\node_modules\@deepseek-ai\dsh\node_modules\@deepseek-ai\`，插件侧基准为 `D:\dsh-auto-memory\lib\index.js`。本阶段结束时未单独留档实施结果。
+
+---
+
+
 > 状态:**只做预研,不出码**(用户 2026-09-10 指示「下一版再改」)。
 > 研究范围:DSH live 版本 0.1.5-rc.1 的官方包源码,逐条带 `文件:行号`。
 > 代码基准目录:`C:\Users\JH Z\AppData\Roaming\npm\node_modules\@deepseek-ai\dsh\node_modules\@deepseek-ai\`

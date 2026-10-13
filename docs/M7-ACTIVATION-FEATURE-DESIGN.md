@@ -1,8 +1,21 @@
 # M7 Activation Feature Design
 
-> 状态：设计评审稿；本轮不修改生产代码、配置、阈值或 active 状态
-> 日期：2026-08-24
-> 前置：M0-M6 live；M7-2..M7-7.5 tested；Phase F = gold_quota_met_but_score_not_separable
+> **状态**：已完工 · 2026-08-30
+> **性质**：设计定稿 —— 本文为**完成后的技术记录**，不再作为待执行计划。
+> **落点**：`docs/M7-ACTIVATION-FEATURE-DESIGN.md`；实现落在 activation 特征层与 `lib/activation-*.js`。
+> **验收**：设计评审完成于 2026-08-24；前置为 M0-M6 live、M7-2..M7-7.5 tested，Phase F = gold_quota_met_but_score_not_separable。
+
+## 摘要
+
+本文件是 M7 activation 特征层的设计定稿。诊断结论：BGE-M3、D6 hybrid、scope/provenance 与 M7-2..M7-7 代码继续保留；当前失败不是基础 retrieval 失败，而是 activation eligibility 与 semantic relevance 被混淆 —— suppress 类生活记录 echo 的最高分高于 activate gold，denseTop 不表示用户正在请求历史资料，recency 因 occurredAt=null 休眠，live evidence 多数为空。因此单独调 tOn/tOff 无法同时取得 precision 与 recall。文中给出两条激活路径、六组特征设计、P1-P7 裁定与最小解锁路径。
+
+## 文档规范
+
+- 改写依据：`docs/internal/DOC-REWRITE-STYLE.md`
+- 本文件体例：**设计定稿**。§4「P1-P7 裁定」为已作出的裁定记录，非待批项。
+- 语态纪律：主语用「本项目 / 本方案」，不使用第一人称叙述。
+
+---
 
 ## 1. 结论
 
@@ -57,7 +70,7 @@ Proactive 要求 calibrated margin、candidate uniqueness 或多个任务信号�
 
 D6 fusedScore 已包含 dense+lexical，不得再次把 denseTop、fusedScore、lexicalScore 无校准相加。activation 使用 fusedScore、fusedMargin、lexicalExact/code/path/error-code hit、intent、echoRisk、taskNeed、evidence。raw dense 仅用于诊断/消融。
 
-## 4. P1-P7 裁定
+## 4. P1-P7 裁定（已作出）
 
 | 提案 | 裁定 | 落点 | 理由 |
 | --- | --- | --- | --- |

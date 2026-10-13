@@ -1,4 +1,21 @@
-# P9 排查报告 · 规划侧评审与裁决（2026-09-09 20:53）
+# P9 排查报告评审与裁决（规划侧 · 已生效）
+
+> **状态**：已生效 · 2026-09-09（原文记录的最后一次复核日，含当日 23:10 追加）
+> **性质**：裁决记录（存档）—— 本文为生效后的技术记录，其结论已全部执行完毕，不再作为待办。
+> **落点**：裁决结论落 `FIX-AGENT-P9a.md`（correction 重设计）与 `FIX-AGENT-P9d.md`（success 时间戳）；importance 公式诊断落 `P10-importance-calibration.md`。
+> **验收**：报告已逐条核实（依据为实读 `lib/context-host.js`、`lib/context-bridge.js`、`lib/index.js`、`lib/memory-importance.js`，非采信报告）；success 根因经追加修正。
+
+## 摘要
+
+本文是规划侧对 P9 排查报告的评审与裁决：核实报告结论、修正 success 的根因误判、指出 P9a 方案自身漏洞需重设计、给出比报告更准的 importance 公式诊断，并列出最终裁决与执行顺序。§七为当日 23:10 的追加自我修正——认定 success 是**结构性断裂**，据此产生 P9d 修复段。
+
+> **存档声明**：本文为该轮派工任务书的原文存档，正文中的「你要做 / 必须 / 禁止」等祈使句**均为当时下达的要求**，不代表当前待办；实际结果以页首「落点 / 验收」为准。
+
+---
+
+> 依据：实读 `lib/context-host-pre.js`、`lib/context-bridge-pre.js`、`lib/index.js`、`lib/memory-importance-pre.js`，非采信报告。
+
+## 原：P9 排查报告 · 规划侧评审与裁决（存档）
 
 > 依据：实读 `lib/context-host-pre.js`、`lib/context-bridge-pre.js`、`lib/index.js`、`lib/memory-importance-pre.js`，非采信报告。
 

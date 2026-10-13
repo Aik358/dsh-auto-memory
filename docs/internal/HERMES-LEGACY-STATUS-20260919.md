@@ -1,5 +1,17 @@
 # ③ Hermes 遗留修复 · 现状核查结论（2026-09-19）
 
+> **状态**：已完工 · 2026-09-19
+> **性质**：验收报告 —— 本文为**完成后的技术记录**，不再作为待执行计划。
+> **落点**：触发点为按 `PRE-FRONTEND-CHECKLIST-20260919.md` 执行序推进 ③ 时的实施前核查；方法为直读 `lib/procedure-*.js` 真实代码 + `artifacts/_probe-procedure-promotion.mjs`
+> **验收**：探针 `artifacts/_probe-procedure-promotion.mjs` 25/25（执行真实 store，不 mock）；结论会改变排期判断，故单独立档
+
+## 摘要
+
+本文是 ③ Hermes 遗留修复的现状核查结论，触发点为按 `PRE-FRONTEND-CHECKLIST-20260919.md` 执行序推进 ③ 时的实施前核查。方法为直读 `lib/procedure-*.js` 真实代码并用探针 `artifacts/_probe-procedure-promotion.mjs`（25/25，执行真实 store，不 mock）取证，因结论会改变排期判断故单独立档。文末给出处置：开关保持 `false` 不动直到 H-1 有数据（与 ⑤ R4-C 的「等观察结果」同一处置逻辑），本轮不修改任何 `procedure-*.js`——用户 2026-09-13 明确任何 procedure 记忆引擎改动必须等用户拍板整体方案，且两个小改点已并入统一重构、不单独做。
+
+---
+
+
 > **本文档的结论会改变排期判断**，故单独立档。
 > 触发：按 `PRE-FRONTEND-CHECKLIST-20260919.md` 执行序推进 ③ 时的实施前核查。
 > 方法：直读 `lib/procedure-*.js` 真实代码 + `artifacts/_probe-procedure-promotion.mjs`（**25/25**，执行真实 store，不 mock）。

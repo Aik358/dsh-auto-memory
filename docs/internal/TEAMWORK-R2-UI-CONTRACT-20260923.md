@@ -1,5 +1,17 @@
 # 新版 UI · 交付契约（两个 agent 共用 · 2026-09-23）
 
+> **状态**：已完工 · 2026-09-23
+> **性质**：设计定稿 —— 本文为**完成后的技术记录**，不再作为待执行计划。
+> **落点**：依据 `TEAMWORK-R2-B-FRONTEND-IA-20260923.md`（诊断 + 方案）与 `TEAMWORK-R2-CONCLUSION-20260923.md`（决策）；适用对象为两个 agent 共用的两份产物（UI demo、客户 proposal）
+> **验收**：本文为硬约束：两份产物必须与本文件一致，否则视为不合格；§一说明这是给谁看的
+
+## 摘要
+
+本文是新版 UI 的交付契约，由两个 agent 共用，依据为 `TEAMWORK-R2-B-FRONTEND-IA-20260923.md`（诊断 + 方案）与 `TEAMWORK-R2-CONCLUSION-20260923.md`（决策）。文件明确自身是硬约束：两份产物（UI demo、客户 proposal）必须与本文件一致，否则视为不合格。§一说明契约的适用对象。
+
+---
+
+
 > **本文件是硬约束。** 两份产物（UI demo、客户 proposal）必须与本文件一致，否则视为不合格。
 > 依据：`docs/internal/TEAMWORK-R2-B-FRONTEND-IA-20260923.md`（诊断 + 方案）+ `TEAMWORK-R2-CONCLUSION-20260923.md`（决策）。
 

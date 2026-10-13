@@ -1,5 +1,22 @@
 # M7 Activation v2 · 受控 Live Shadow 计划（18~24 条）
 
+> **状态**：已完工 · 2026-08-30
+> **性质**：施工记录 —— 本文为**完成后的技术记录**，不再作为待执行计划。
+> **落点**：`docs/M7-ACTIVATION-V2-LIVE-SHADOW-PLAN.md`；执行口径延伸至同目录 `M7-LIVE-SHADOW-SCRIPT.md`。
+> **验收**：前置 held-out 独立验收 PASS；本阶段以线上特征与离线结果逐字段一致为判据。
+
+## 摘要
+
+本文件给出 Activation v2 的受控 Live Shadow 操作计划，覆盖 18~24 条查询。前置为 held-out 独立验收 PASS 与冻结策略 τ_hi=0.45/δ_exp=0.03。查询清单按四类分组（Explicit Recall 8 条、Prefetch 4 条、Echo / Suppress 4 条、负例 4~8 条），并给出逐条验证要点、通过标准与回滚口径。
+
+## 文档规范
+
+- 改写依据：`docs/internal/DOC-REWRITE-STYLE.md`
+- 本文件体例：**操作清单留档**。「前置操作」为执行时的准备步骤，非待办项。
+- 语态纪律：主语用「本项目 / 本方案」，不使用第一人称叙述。
+
+---
+
 > 前置：held-out 独立验收 PASS · 冻结策略 τ_hi=0.45/δ_exp=0.03
 > 本阶段验证：线上特征与离线结果逐字段一致
 > 结束后：单会话 active canary（explicit lane only）

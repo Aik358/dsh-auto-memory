@@ -1,5 +1,17 @@
 # 修复任务派发方案（3 段 prompt，串行执行）—— 2026-10-02
 
+> **状态**：已完工 · 2026-10-02
+> **性质**：施工记录 —— 本文为**完成后的技术记录**，不再作为待执行计划。
+> **落点**：依据 `AUDIT-20261002-FULL-VERIFICATION-AND-FIX-PLAN.md`（后端审计线 39 issue + 4 PR）与 `FRONTEND-FIX-PLAN-20261002.md`（前端线生成器 G0 + 缺陷 G1-G3）及 issue #211 核查结论
+> **验收**：纪律为每完成一项跑守卫五件套（`--check` / `node --check lib/client.js` / iter5-skin / settings-parity / settings-sync，涉主题加 h43），哈希重钉带归因注释；交付为回执 + 全量 smoke 结果 + issue #211 已修复项清单
+
+## 摘要
+
+本文把三条修复线派发给执行 agent，含三段可直接粘贴的 prompt。派发结构裁决为 3 段 prompt、串行 A→B→C（同一 agent 依次执行或三个会话均可，顺序不可换）：A 段为生成器加固（护栏先行，R2 落地后 B/C 段所有 client.js 重建才受保护），B、C 段依次承接。文末给出 npm/仓库卫生的具体动作（`package.json` files 移除 docs、`.gitignore` 增补 `*.bak-*` 等、`git rm` 三个已入库文件）与「docs/teamwork-impl 迁出主树本段不做」的边界，并明确不 push。
+
+---
+
+
 > **用途**：把三条修复线派发给执行 agent。本文档含三段可直接粘贴的 prompt。
 > **依据文档**：`docs/internal/AUDIT-20261002-FULL-VERIFICATION-AND-FIX-PLAN.md`（后端审计线，39 issue+4 PR）、`docs/internal/FRONTEND-FIX-PLAN-20261002.md`（前端线：生成器 G0+缺陷 G1-G3）、issue #211 核查结论（见会话/记忆 issue211-injection-cadence）。
 

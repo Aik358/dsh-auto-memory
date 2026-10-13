@@ -1,5 +1,17 @@
 # teamwork R2 · A 卷：企业级身份与登录接入 + 前后端适配（架构调研报告）
 
+> **状态**：已完工 · 2026-09-23
+> **性质**：研究结论 —— 本文为**完成后的技术记录**，不再作为待执行计划。
+> **落点**：前置材料 `TEAMWORK-CONCLUSION-20260923.md`、`TEAMWORK-RESEARCH-B-SYNC-VECTOR-20260923.md`、`TEAMWORK-R2-DIAGNOSIS-20260923.md`；发布边界已实测（`tools/release.mjs:370` 的 `files` 白名单含 `!docs/internal`，注释见 `:361`）
+> **验收**：本文为架构调研报告；发布边界为实测而非推断；文中两条【未验证】项由 `TEAMWORK-R2-GUARD-PROOF-20260923.md` 补齐
+
+## 摘要
+
+本文是 teamwork 第二轮调研的 A 卷，主题为企业级身份与登录接入外加前后端适配，属架构方案而非决策记录。前置材料为 C 卷（团队共享版结论）、B 卷（实时同步与向量编排）与 R2 诊断。文中给出发布边界的实测结论（`tools/release.mjs:370` 的 `files` 白名单含 `!docs/internal`，注释见 `:361`），据此判定本卷可写内部信息。文中标记为【未验证】的两条由 `TEAMWORK-R2-GUARD-PROOF-20260923.md` 补齐。
+
+---
+
+
 > **文件定位**：本卷是**架构方案**，不是决策记录。前置材料：
 > [C 卷 · 团队共享版结论](TEAMWORK-CONCLUSION-20260923.md) ·
 > [B 卷 · 实时同步与向量编排](TEAMWORK-RESEARCH-B-SYNC-VECTOR-20260923.md) ·

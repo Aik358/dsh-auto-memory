@@ -1,5 +1,22 @@
 # M7 Autonomous State（自主推进状态文件）
 
+> **状态**：已完工 · 2026-08-30
+> **性质**：设计定稿 —— 本文为**完成后的技术记录**，不再作为待执行计划。
+> **落点**：`docs/M7-AUTONOMOUS-STATE.md`；并行状态落于 `artifacts/m7-autonomous-pre/state.json`。
+> **验收**：各阶段验收结果见本文 `testCommands` / `benchmarkResults` 两节。
+
+## 摘要
+
+本文件是 M7 自主推进阶段的唯一人类可读状态留档，记录 immutableObjective、capabilityMatrix、各阶段完成摘要与最终结果。最高执行依据为 `docs/M7-TASKSET-DISPATCH.md`（总派发 Agent 任务集逐字副本），本文件与其冲突时以任务集为准。文中 `knownRisks` / `blockedItems` / `nextExactAction` 为 M7 阶段收尾时点的状态快照，供恢复上下文与追溯决策使用。
+
+## 文档规范
+
+- 改写依据：`docs/internal/DOC-REWRITE-STYLE.md`
+- 本文件体例：**状态快照留档**。`nextExactAction` / `blockedItems` 均为 M7 收尾时点的记录，非当前待办。
+- 语态纪律：主语用「本项目 / 本方案」，不使用第一人称叙述。
+
+---
+
 > 生成：2026-08-24 01:40 (Asia/Shanghai)；最近更新 01:55
 > **最高执行依据：docs/M7-TASKSET-DISPATCH.md（DeepSeek harness 总派发 Agent
 > 任务集逐字副本，2026-08-24 01:51 粘贴）。本文件与其冲突时以任务集为准。**

@@ -1,5 +1,17 @@
 # P0 施工汇报 · 过夜托管运行结果（2026-09-15）
 
+> **状态**：已完工 · 2026-09-15
+> **性质**：施工记录 —— 本文为**完成后的技术记录**，不再作为待执行计划。
+> **落点**：施工依据 `KICKOFF-P0.md`（第一份指令）+ `MASTER-PLAN-3.0.md` v2 + `reviews/ROUND3-REVIEW-INTEGRATION-20260914.md`；逐步过程见 `RUN-P0-NIGHTLY.md`
+> **验收**：P0 五步全部完成，全量回归 PASS 84 / FAIL 0 / TIMEOUT 0（153.7s）
+
+## 摘要
+
+本文是 P0 过夜托管运行的施工汇报，用途为用户早上拿去给 GPT 验收；本文是结论汇总，逐步过程见 `RUN-P0-NIGHTLY.md`。施工依据为 `KICKOFF-P0.md`（第一份指令）、`MASTER-PLAN-3.0.md` v2 与 `reviews/ROUND3-REVIEW-INTEGRATION-20260914.md`。结论为 P0 五步全部完成、全量回归 PASS 84 / FAIL 0 / TIMEOUT 0（153.7s）；§1 给出改动清单（`文件:函数名`）。
+
+---
+
+
 > **用途**：用户早上拿去给 GPT 验收。本文是**结论汇总**；逐步过程见 `RUN-P0-NIGHTLY.md`。
 > **施工依据**：`KICKOFF-P0.md`（第一份指令）+ `MASTER-PLAN-3.0.md` v2 + `reviews/ROUND3-REVIEW-INTEGRATION-20260914.md`。
 > **结论**：**P0 五步全部完成**，全量回归 **PASS 84 / FAIL 0 / TIMEOUT 0（153.7s）**。

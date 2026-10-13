@@ -1,3 +1,16 @@
+# Workbench 模型继承 + 可复用子代理 · 规格与执行记录
+
+> **状态**：已完工 · 2026-09-26
+> **性质**：设计定稿 —— 本文为**完成后的技术记录**，不再作为待执行计划。
+> **落点**：阶段 A、B0、D、E 逐段落于 `lib/index.js`、`lib/subagent-gc.js`、`lib/session-archive.js`（**19,542 B / 494 行 / PURE LF / `node --check` 绿 / 24 项导出**）与 `tests/smoke/smoke-test-workbench-v2-shape.mjs`；`lib/` 活代码、行号会漂移，引用前先复核
+> **验收**：全量回归 **180 PASS / 0 FAIL / TIMEOUT 0**（141.3 s，比基线 +1 套）；新守卫 `smoke-test-workbench-v2-shape.mjs` **39 PASS / 0 FAIL**；E1 探针 32/0、E1-fix 27/0、E2 探针 16/0、E3 探针 29/0、迁移守卫 54/0、缺口守卫 51/0；守卫 ⑰ 变异红证明 5/5
+
+## 摘要
+
+本规格要解决两件事（用户已拍板）：一是把模型/思考强度的作用域落到「记忆中枢工作区（`aik_auto_memory_use`）下所有会话的默认」并在设置页说清楚——当前实现只在工作台会话「可见性补发」路径上尝试 `selectModel`，且要求 `subagentProvider && subagentModel` 都非空，两者实测皆空 ⇒ 从不调用；二是把可复用子代理换成 `startContinuable`，减少每次 spawn 新建持久会话。用户明确不做的事是清理历史欠账（1159 条备份残留），理由为「越管越乱」。关键结论是会颠覆直觉的两条：子代理的会话行在宿主架构上删不掉、只降级为灰色不可用行（`manager.js:593-616`），故记忆中枢工作区不能撤；插件设置里的三个全局键管不到「特定工作区的特定对话」，真正的杠杆是 `sessionController.selectModel` 按 sessionId 生效，而子代理继承的是工作台会话的路由。执行按阶段 A→B→D→E 推进并逐段落盘，末尾 E6 把 v2 相位面纳入常驻回归（此前 `tests/` 对该面零覆盖）。本文件顶部三节为按日期追加的执行记录。
+
+---
+
 ### 2026-09-25 · E6 守卫同步（新增 v2 形状守卫 · 回归升到 180 套）
 
 **★立此守卫的实证依据（`guard-scout` 独立普查，非推测）**：`epochToken` / `drainStartedAt` / `_wbStateOf` / `wbOwnerOf` / `_wbTokenOf` / `version: 2` 在 `tests/` 下**全部 0 命中** —— v2 相位面的验证原本只在 `artifacts/` 五支探针里（E1 32/0、E1-fix 27/0、E2 16/0、E3 29/0、E4 19/0），而 `tools/run-smoke.mjs` **只扫 `tests/smoke/*.mjs`** ⇒ **五支探针都不在回归内**。E3/E4 再动 workbench 形状，`tests/` 给不出任何红。

@@ -1,5 +1,17 @@
 # R2 · 静默降级深查报告（evidence 读写不对称）
 
+> **状态**：已完工 · 2026-09-18
+> **性质**：验收报告 —— 本文为**完成后的技术记录**，不再作为待执行计划。
+> **落点**：承接 `R1-DEGRADE-AUDIT-20260918.md`；探针 `artifacts/_probe-r2-evidence.mjs`；被 `tests/smoke/smoke-test-r2e1-evidence-guard.mjs` 引为背景依据，文件名与路径不得改动
+> **验收**：状态为根因已定位到代码级；用户侧触发条件未复现（本机无法重放），待确认项已列明
+
+## 摘要
+
+本文是 R2 静默降级的深查报告，承接 `R1-DEGRADE-AUDIT-20260918.md`，聚焦 evidence 读写不对称。状态为根因已定位到代码级，而用户侧触发条件未复现（本机无法重放），待确认项已单列。探针为 `artifacts/_probe-r2-evidence.mjs`。其 R2-E1 结论被 `tests/smoke/smoke-test-r2e1-evidence-guard.mjs` 引为背景依据。
+
+---
+
+
 > 2026-09-18 · 承接 `R1-DEGRADE-AUDIT-20260918.md`
 > 探针：`artifacts/_probe-r2-evidence.mjs`
 > 状态：**根因已定位到代码级**；用户侧触发条件**未复现**（本机无法重放），列明待确认项

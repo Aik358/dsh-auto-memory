@@ -1,4 +1,20 @@
+# FIX-AGENT-P12 · QueryPlan 词项截断按字典序丢弃高权重词（已完工）
+
+> **状态**：已完工 · 2026-09-09（原文记录的最后一次核实日）
+> **性质**：派工任务书（存档）—— 本文为完成后的技术记录，不再作为待执行计划。
+> **落点**：`lib/shadow-retrieval.js` 的 `buildQueryPlan` 排序段（原文记作 `lib/shadow-retrieval-pre.js`）；套件 `tests/smoke/smoke-test-m4.mjs`。
+> **验收**：`node --check lib/shadow-retrieval.js` 通过；`smoke-test-m4.mjs` 通过；已并入全量回归。
+
+## 摘要
+
+该段修的是 `buildQueryPlan` 按字典序截断词项、把高权重词丢掉的问题——截断应保留高权重词。改动仅限该排序段的最小 diff，与并行会话的 `index.js` / `python-setup.js` 无冲突。立项背景见 `docs/STATUS-BOARD.md` §5。
+
+> **存档声明**：本文为该轮派工任务书的原文存档，正文中的「你要做 / 必须 / 禁止」等祈使句**均为当时下达的要求**，不代表当前待办；实际结果以页首「落点 / 验收」为准。
+
+---
+
 > **给使用者的说明**：**可选段**（是否发版前修由你定）。复制时从 `你是一名严谨的修复 Agent` 开始到文件末尾（自包含，无需 `_COMMON.md`）。
+
 > 改 `lib\shadow-retrieval-pre.js`，与并行会话的 `index.js` / `python-setup-pre.js` 无冲突。
 
 ---

@@ -1,4 +1,16 @@
-# DSH 上游报告草稿 —— v0→v1 迁移器拒绝历史 `subagent/descriptor` v2，毒化整个 session-query 索引
+# DSH 上游报告 —— v0→v1 迁移器拒绝历史 `subagent/descriptor` v2，毒化整个 session-query 索引
+
+> **状态**：已完工 · 2026-09-29
+> **性质**：研究结论 —— 本文为**完成后的技术记录**，不再作为待执行计划。
+> **落点**：目标仓库 deepseek-ai/deepseek-harness（Discussion 或 Issue）；正文为可直接粘贴的英文；与 `GH-DISCUSSION-5732-COMMENT.md` 同一通道。插件侧缓解已落地（`lib/index.js` `lexicalSessionScanFallback` + `tests/smoke/smoke-test-session-search-fallback.mjs`）
+> **验收**：本机证据：报错样本会话 `~/.dsh/sessions/--D-dsh-auto-memory--/01740c44-f3d5-4a93-b528-049383dadd36/session.jsonl.zstd`（2026-08-19，47 帧，seq 5 = descriptor v2）；全机只读扫描 164 个 v0 会话中 39 个含 descriptor v2、9 个含 v3
+
+## 摘要
+
+本文是给 DSH 上游的报告（Discussion 或 Issue 可直接粘贴的英文正文），报告 v0→v1 会话迁移器只接受 `data.version === 3`，对早期构建写入的 `subagent/descriptor` v2 事件整份拒绝，而 `dsh-session-query-sqlite` 在持久化观察期会重新索引冷会话，导致一条此类会话就让每次 `searchSessions()` 调用失败，整个会话搜索功能失效。文末附本机证据清单供用户自查：报错样本会话路径、全机只读扫描结果（164 个 v0 会话中 39 个含 descriptor v2，全部 2026-08-19~23），以及插件侧已落地的缓解（捕获 `SESSION_QUERY_PERSISTENCE_FAILED` 后走插件内词法兜底扫描）。遗留项为待用户粘贴（PAT 无权外仓发言，需用户浏览器操作）。
+
+---
+
 
 > 状态：**草稿待用户粘贴**（与 GH-DISCUSSION-5732-COMMENT.md 同一通道：PAT 无权外仓发言，需用户浏览器操作）。
 > 目标仓库：deepseek-ai/deepseek-harness（Discussion 或 Issue）。下面是可直接粘贴的英文正文。

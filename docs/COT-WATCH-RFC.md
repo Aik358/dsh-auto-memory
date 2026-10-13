@@ -1,12 +1,21 @@
 # CoT+可见输出实时监听联通工程（M7.5 断言式单播 RFC）
 
-> 状态：**§1-§3 已实施（2026-08-25 深夜）**——`assistant/chunk(chunk.type='reasoning-delta')`
-> 经聚合缓冲接入 ContextObserver；pre-step 边界强制冲刷；purge 清零钩子。
-> 开关 `reasoningObserverEnabled` 默认仍 false（契约红线），需配置显式开启。
-> 待办：§5 弱特征在数据流通后实施。
-> **设置页待办（用户要求）**：`reasoningObserverEnabled`（思维链监听，默认关）
-> 与 `contextBridgeObserveChildSessions`（分支会话观测，默认关）必须纳入设置 UI——
-> 随 G-02/设置页窗口实现；两者已通过配置文件手动开启（2026-08-26）。
+> **状态**：已完工 · 2026-08-25（§1-§3 实施；同日深夜完成）
+> **性质**：设计定稿（RFC） —— 本文为**完成后的技术记录**，不再作为待执行计划。
+> **落点**：`docs/COT-WATCH-RFC.md`；实施落在 ContextObserver 的信号接入路径。
+> **验收**：§1-§3 已实施：`assistant/chunk(chunk.type='reasoning-delta')` 经聚合缓冲接入 ContextObserver；pre-step 边界强制冲刷；purge 清零钩子。开关 `reasoningObserverEnabled` 默认 false（契约红线），需配置显式开启。
+
+## 摘要
+
+本文件是 CoT + 可见输出实时监听的断言式单播 RFC，解决「把模型的思维链与可见输出实时联通到 Python 侧」这一问题。采用的方案是把 `reasoning-delta` 经聚合缓冲接入 ContextObserver，并在 pre-step 边界强制冲刷、配 purge 清零钩子；开关 `reasoningObserverEnabled` 默认 false 属契约红线，需显式开启。§1-§3 已实施，弱特征一节（§5）留待数据流通后处理。
+
+## 文档规范
+
+- 改写依据：`docs/internal/DOC-REWRITE-STYLE.md`
+- 清单类小节的逐项结论若未在本文留档，均以 `CHANGELOG.md` 与 `docs/STATUS-BOARD.md` 为准，本文不代填。
+- 语态纪律：主语用「本项目 / 本方案」，不使用第一人称叙述。
+
+---
 > 实测教训：用户常用会话跨天续接后会被 harness 挂 parentSession 而判为 child，
 > 全部 context push 被 child-session 门丢弃——开关即为此场景而设。
 > 前提：用户明确目标为**监听模型思维链（CoT）+ 可见输出的滑动窗口**触发语义换机；

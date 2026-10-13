@@ -1,5 +1,17 @@
 # 回复 + 礼节性 merge 预案（2026-10-08）
 
+> **状态**：已完工 · 2026-10-08
+> **性质**：施工记录 —— 本文为**完成后的技术记录**，不再作为待执行计划。
+> **落点**：基准为开发树 `HEAD a2c483b`（分支 `wip/20260926-teamwork`，未 push）、`origin/main = c3e191a`；数据源为 GitHub API 实时拉取 + 本仓 `git apply --check` 实跑；全部动作仅供 Lead 执行
+> **验收**：本轮未执行任何 GitHub 写操作（无 reply / close / merge / push）；§1 列出远端 open 全量清单
+
+## 摘要
+
+本文是回复与礼节性 merge 的预案，生成者为只读核查车道，基准为开发树 `HEAD a2c483b`（分支 `wip/20260926-teamwork`，未 push）与 `origin/main = c3e191a`。数据源为 GitHub API 实时拉取（`/issues?state=open`、`/pulls?state=open`、逐条 `/issues/N`、`/pulls/N`、`/pulls/N/files`）加本仓 `git apply --check` 实跑。本轮未执行任何 GitHub 写操作（无 reply / close / merge / push），全部动作仅供 Lead 执行。§1 给出远端 open 的全量清单，作为逐条处置的输入。
+
+---
+
+
 > 生成者：只读核查车道。基准 = 开发树 `HEAD a2c483b`（分支 `wip/20260926-teamwork`，**未 push**）；`origin/main = c3e191a`。
 > 数据源：GitHub API 实时拉取（`/issues?state=open`、`/pulls?state=open`、逐条 `/issues/N`、`/pulls/N`、`/pulls/N/files`）+ 本仓 `git apply --check` 实跑。
 > **本轮未执行任何 GitHub 写操作**（无 reply / close / merge / push），全部动作仅供 Lead 执行。

@@ -1,5 +1,22 @@
 # M7 Python Backend Agent 执行 Prompt
 
+> **状态**：已完工 · 2026-08-30
+> **性质**：施工记录 —— 本文为**完成后的技术记录**，不再作为待执行计划。
+> **落点**：`docs/M7-AGENT-HANDOFF-PROMPT.md`；执行的接线落在 `lib/m7-index-sync-host.js`、`lib/m7-wire.js` 与 Python worker。
+> **验收**：本文件为派发给后端的执行指令；执行状态与验收结果见 `docs/M7-AUTONOMOUS-STATE.md`。
+
+## 摘要
+
+本文件是派发给 M7 Python Backend Agent 的执行 Prompt，划定其唯一职责范围为 M7。要求在承接 M0-M6 已 live verified 的前提下，按顺序阅读既有契约与接口速查，实现默认关闭的 Python Semantic Engine。JS 侧经 `context_push`、`evidence_sync` 与新增分页 `index_sync` 提供实时上下文、可信 evidence 与完整授权语料。
+
+## 文档规范
+
+- 改写依据：`docs/internal/DOC-REWRITE-STYLE.md`
+- 本文件体例：**执行指令留档**（已完成），正文保留原始派单措辞。
+- 语态纪律：主语用「本项目 / 本方案」，不使用第一人称叙述。
+
+---
+
 工作区：D:/dsh-auto-memory
 
 你只负责 M7。M0-M6 已 live verified。按顺序阅读：

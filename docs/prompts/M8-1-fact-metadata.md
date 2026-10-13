@@ -1,8 +1,23 @@
+# M8-1 · Fact 层元数据补强（时间三价 + 认识论状态 + 趋势）（已完工）
+
+> **状态**：已完工 · 2026-09-09（原文记录的最后一次核实日）
+> **性质**：派工任务书（存档）—— 本文为完成后的技术记录，不再作为待执行计划。
+> **落点**：`lib/fact-store.js`（原文记作 `lib/fact-store-pre.js`）的 Fact 结构增量；套件 `tests/smoke/smoke-test-m81-fact-metadata.mjs`。
+> **验收**：`smoke-test-m81-fact-metadata.mjs` 通过；fact store 断言 ≥41；已并入全量回归。
+
+## 摘要
+
+该段为 Fact 四元组补强元数据：时间三价、认识论状态与趋势字段，使事实带时间与置信语义。前置为 `M8-R-REPORT.md` 的调研选型 A+；本段无依赖，可与 P1 / P5 / P7 并行。
+
+> **存档声明**：本文为该轮派工任务书的原文存档，正文中的「你要做 / 必须 / 禁止」等祈使句**均为当时下达的要求**，不代表当前待办；实际结果以页首「落点 / 验收」为准。
+
+---
+
 > **投喂方式**：本段须与 `_COMMON.md` 一并投喂。
 > 前置：已执行 `M8-R-REPORT.md` 调研，选型 = **A+（保留三层，叠加认识论状态字段，补时间三价）**。
 > 依赖：无。可与 P1 / P5 / P7 并行。
 
-## 【M8-1】Fact 层元数据补强（时间三价 + 认识论状态 + 趋势）
+## 【M8-1】Fact 层元数据补强（时间三价 + 认识论状态 + 趋势）· 原任务书
 
 **背景（有代码证据）**：
 - `lib/fact-store-pre.js` 的 Fact 为四元组 `{scope, subject, predicate, object?}` + provenance + confirmedAt + ttl? + revoked?，持久化落 `facts.json`（`lib/index.js:5591`）。

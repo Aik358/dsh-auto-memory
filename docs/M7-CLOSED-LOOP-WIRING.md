@@ -1,10 +1,22 @@
-# M7 闭环接线：唤起决策 → 系统默认提示词投递（2026-08-26）
+# M7 闭环接线：唤起决策 → 系统默认提示词投递
 
-> 结论先行：**M4/M5/M6 早已把投递侧接口全部预留并 live 验证过，本轮唯一缺的一环是
-> Python fv2 决策不发帧**。已补上（`activationEmitMode` 门控的发射桥），闭环现在
-> 只差一次用户重启 + 把开关拨到 canary 档即可端到端运行。
-> **时机裁定：现在就接，不等分层记忆**（理由见 §5）。
->
+> **状态**：已完工 · 2026-08-30
+> **性质**：设计定稿 —— 本文为**完成后的技术记录**，不再作为待执行计划。
+> **落点**：`docs/M7-CLOSED-LOOP-WIRING.md`；接线落在 `lib/m7-wire.js`、`lib/semantic-js-pre.js` 与宿主启动路径。
+> **验收**：§6「验收证据」；闭环经受控 shadow round-2 全链路实测通过。
+
+## 摘要
+
+本文件记录 M7 闭环接线的完成情况：把唤起的激活决策接到系统默认提示词的投递面上。结论是 M4/M5/M6 早已把投递侧接口全部预留并 live 验证过，本轮唯一缺的一环是 Python fv2 决策不发帧；已补上 `activationEmitMode` 门控的发射桥。时机裁定为「现在就接，不等分层记忆」。同日追加 C2 内置语义接线：`semanticEngineMode` 已有真实消费方 `lib/semantic-js-pre.js`（e5-small q8 懒加载 + miv 键索引缓存 + D6 融合进 envelope.refs），并配套资产下载器与设置页档位显示。
+
+## 文档规范
+
+- 改写依据：`docs/internal/DOC-REWRITE-STYLE.md`
+- 本文件体例：**施工记录**。§2「本轮改动清单」为已落地的改动枚举。
+- 语态纪律：主语用「本项目 / 本方案」，不使用第一人称叙述。
+
+---
+
 > **同日追加（C2 接线完成）**：`semanticEngineMode` 已有真实消费方——
 > `lib/semantic-js-pre.js`（js_semantic_engine_pre_v1）：e5-small q8 懒加载 +
 > miv 键索引缓存 + D6 融合进 envelope.refs（context-host 异步链内）；资产下载器
@@ -101,7 +113,7 @@ Reference Tail 是**纯尾部增量**：走 systemPrompt.context 动态面(user-
   delivered/seen 与误报率 → 满意后保持，不满意一键回 shadow**。M8/M9 接入时复用
   同一链路，届时只需扩供给侧，不需要「再接一次」。
 
-## 6. 验收证据
+## 6. 验收证据（已通过）
 
 - smoke-test-m710-fv2-emit-pre.mjs **13/13 PASS**(hash provider 确定性语料)：
   T0 无帧泄漏+shadow 行照记 emit；T1 帧数==explicit emit 数、kind/activationId/

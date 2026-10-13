@@ -1,5 +1,17 @@
 # 验收报告 · ZCode 交班对账
 
+> **状态**：已完工 · 2026-09-14
+> **性质**：验收报告 —— 本文为**完成后的技术记录**，不再作为待执行计划。
+> **落点**：验收对象为 ZCode 交付的三任务 + 10 项追加需求 + 交班材料；对账单见对话与 `TODO-BACKLOG.md`
+> **验收**：本次验收只做取证与复核、未改任何产品代码；逐项判定表（基线复核 + 10 项需求取证）见正文，另含 `smoke-test-m73-pre.mjs` 负载敏感假红的修复结论
+
+## 摘要
+
+本文对 ZCode 交班材料做独立对账，口径为「能独立复核的写实测值，不能复核的明确标注不可独立复核」。基线复核用 `npm view @a9i5k4/dsh-auto-memory version` 实测等手段判定；10 项追加需求逐项落到源码/文件取证，其中 procedure 链路审计的结论落在 `TODO-BACKLOG.md` §A 末条（数据层从未产出 active procedure、`renderChecklist` 无子代理出口、`memory_recall` 无 procedures scope）。文中记录了 `smoke-test-m73-pre.mjs` 负载敏感假红的真因与修复，并以 `dsh --profile web --dump-config` 校验 session-query-sqlite 配置（全树 `openAt` 只出现 1 次 = `first-search`，后端为 `node:sqlite`）。
+
+---
+
+
 > 验收时间：2026-09-14 02:2x–02:5x（本地）｜验收方：DSH 主对话（**只做取证与复核，未改任何产品代码**）
 > 验收对象：ZCode 交付的三任务 + 10 项追加需求 + 交班材料（对账单见对话与 `TODO-BACKLOG.md`）
 > 口径：**能独立复核的写实测值；不能复核的明确标注"不可独立复核"**，不用转述充证据。

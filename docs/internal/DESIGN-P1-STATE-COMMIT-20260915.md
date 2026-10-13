@@ -1,5 +1,17 @@
 # P1 设计稿 · 统一状态提交与快照（miv 单源）＋ 并发原子边界
 
+> **状态**：已完工 · 2026-09-15
+> **性质**：设计定稿 —— 本文为**完成后的技术记录**，不再作为待执行计划。
+> **落点**：依据 `MASTER-PLAN-3.0.md` Phase 1（§216-227）、`TODO-GRAPH.html` 卡 `V2-P1`、`reviews/ROUND3-REVIEW-INTEGRATION-20260914.md` §3.2；落点为 `lib/state-commit.js`（§2.1/§2.2/§2.3），被 `tests/smoke/smoke-test-state-commit.mjs` 与 `smoke-test-p1-concurrency.mjs` 真读，文件名与路径不得改动
+> **验收**：全部 file:line 为本机实测取值、非转述；设计已获用户批准，回归由 `smoke-test-state-commit.mjs` 与 `smoke-test-p1-concurrency.mjs` 承担
+
+## 摘要
+
+本文是 P1 的统一状态提交与快照（miv 单源）加并发原子边界设计稿，依据 `MASTER-PLAN-3.0.md` Phase 1（§216-227）、`TODO-GRAPH.html` 卡 `V2-P1` 与 `reviews/ROUND3-REVIEW-INTEGRATION-20260914.md` §3.2，日期 2026-09-15，全部 file:line 为本机实测取值而非转述。设计稿是必审点（用户裁定先审后写代码），本文已获用户批准并落地为 `lib/state-commit.js`，回归由 `smoke-test-state-commit.mjs` 与 `smoke-test-p1-concurrency.mjs` 两个套件承担。
+
+---
+
+
 > 状态：**待审**（先审后写代码 —— 用户裁定顺序：设计稿是必审点）
 > 依据：`MASTER-PLAN-3.0.md` Phase 1（§216-227）、`TODO-GRAPH.html` 卡 `V2-P1`、`ROUND3-REVIEW-INTEGRATION-20260914.md` §3.2
 > 作者：执行方 · 日期：2026-09-15 · 全部 file:line 为**本机实测**取值，非转述

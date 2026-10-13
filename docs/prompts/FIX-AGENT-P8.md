@@ -1,4 +1,20 @@
+# FIX-AGENT-P8 · RRF 融合接进 recall（已完工）
+
+> **状态**：已完工 · 2026-09-09（原文记录的最后一次核实日）
+> **性质**：派工任务书（存档）—— 本文为完成后的技术记录，不再作为待执行计划。
+> **落点**：`lib/index.js` 的 `recall()` L0 命中排序段；消费 `lib/recall-fusion.js`（原文记作 `lib/recall-fusion-pre.js`）；套件 `tests/smoke/smoke-test-p8-rrf-wiring.mjs`。
+> **验收**：`smoke-test-p8-rrf-wiring.mjs` 通过；`p4 34`、`l0-extract 18`、`handoff 51`、`continue-chain 58`、`water-step 12`、`autocont-host 29` 基线不下降；已并入全量回归。
+
+## 摘要
+
+该段要解决的是 P3 交付的 `rankFusionRRFPre` 已交付却零引用、`recall()` 实际仍按词法分字典序排序的问题。方案是把 RRF 融合接入 `recall()` 的 L0 命中排序，使词法臂与语义臂成为真实输入，k 复用 `FUSION_RRF_K_PRE_V1 = 60`、禁止 score-space 加权，并保留 `legacy` 回退开关。验收要求给出 legacy vs rrf 的排序差异实测（至少 3 条主题性查询的 top-5 id 序列 diff）。
+
+> **存档声明**：本文为该轮派工任务书的原文存档，正文中的「你要做 / 必须 / 禁止」等祈使句**均为当时下达的要求**，不代表当前待办；实际结果以页首「落点 / 验收」为准。
+
+---
+
 > **给使用者的说明**：下面是**一整段可直接复制投喂**的 prompt，已自包含（硬约束内联 + 绝对路径），Agent 无需再读 `_COMMON.md`。
+
 > 复制时从 `你是一名严谨的修复 Agent` 开始，一直复制到文件末尾。
 
 ---
