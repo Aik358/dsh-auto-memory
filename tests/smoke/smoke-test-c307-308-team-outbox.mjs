@@ -143,26 +143,49 @@ async function main() {
   // =====================================================================
   // #308：首次落盘失败 → 同条重试必须真写盘
   //   故障注入：盘上先放一份**合法空队列**（保证 load 成功、走的正是 enqueue 的写路径），
-  //   再把文件置为只读 ⇒ 原子 rename 必 EPERM（读得动、写不进），不是打桩、不是假设。
-  //   ⚠️ 该注入依赖「只读文件不可被 rename 覆盖」这一 Windows 语义；若在别的平台失效，
-  //   下面 `r1.ok === false` 那条前提断言会先红（宁可红，也不要变成"没测到还全绿"）。
+  //   再把**目录**置为只读 ⇒ 写盘落不下 tmp、rename 也做不成（EPERM/EACCES），不是打桩、不是假设。
+  //   ★2026-10-13 CI：原实现只把**文件**置只读，依赖「只读文件不可被 rename 覆盖」这一
+  //   **Windows 专有语义**；Linux 的 rename 只校验**目录**写权限 ⇒ 注入静默失效、前提断言必红。
+  //   改为**目录**只读注入：Windows/Linux 都真拦得住（若要跑 root，见下方 skip 分支）。
+  //   判据不变（仍是 r1.ok === false）；先探针一次平台语义，拦不住就**如实跳过**而不是假绿。
   // =====================================================================
   {
     const dir = fresh("fault")
     const f = queueFile(dir)
     fs.writeFileSync(f, JSON.stringify({ v: 1, items: [] }))
     const ob = createTeamOutbox({ dir })
+    // ★2026-10-13 并集注入：**两平台各有一种有效手段**，必须都做。
+    //   · Windows：文件只读 ⇒ 不可被 rename 覆盖（原实现，本机有效）。
+    //   · Linux  ：rename 只校验**目录**权限，文件只读无效 ⇒ 必须靠目录只读挡住 tmp 创建。
     fs.chmodSync(f, 0o444)
+    fs.chmodSync(dir, 0o555)
+    // 探针：任一机制生效即视为注入有效；两者都失效（如以 root 运行）则**如实跳过**而非假绿。
+    let dirReadonlyEffective = false
+    try { fs.writeFileSync(path.join(dir, ".probe"), "x"); fs.unlinkSync(path.join(dir, ".probe")) } catch (_) { dirReadonlyEffective = true }
+    if (!dirReadonlyEffective) {
+      // 目录仍可写 ⇒ 再验「文件只读是否挡得住 rename-over」（Windows 语义）
+      try {
+        const roTmp = path.join(dir, ".probe-tmp"), roDst = path.join(dir, ".probe-ro")
+        fs.writeFileSync(roTmp, "x"); fs.writeFileSync(roDst, "x"); fs.chmodSync(roDst, 0o444)
+        try { fs.renameSync(roTmp, roDst) } catch (_) { dirReadonlyEffective = true }
+        try { fs.chmodSync(roDst, 0o666) } catch (_) {}
+        try { fs.unlinkSync(roDst) } catch (_) {}
+        try { fs.unlinkSync(roTmp) } catch (_) {}
+      } catch (_) {}
+    }
     const onDiskBefore = fs.readFileSync(f, "utf8")
     let r1 = null
     let threw = null
     try { r1 = await ob.enqueue({ kind: "handoff", key: "k1", payload: { v: 1 } }) } catch (e) { threw = e }
     ok(threw === null, "#308 落盘失败时 enqueue 不抛(契约=结构化返回)", threw && threw.message)
-    ok(r1 && r1.ok === false && typeof r1.reason === "string" && r1.reason.length > 0,
-      "#308 前提:首次落盘确实失败(只读目标不可被 rename 覆盖) ⇒ ok:false + reason", JSON.stringify(r1))
-    ok(fs.readFileSync(f, "utf8") === onDiskBefore, "#308 前提:第一跳失败后磁盘逐字节未变(确实什么都没写进去)")
+    ok(dirReadonlyEffective
+      ? (r1 && r1.ok === false && typeof r1.reason === "string" && r1.reason.length > 0)
+      : true,
+      "#308 前提:首次落盘确实失败(目录只读 ⇒ 写不下) ⇒ ok:false + reason" + (dirReadonlyEffective ? "" : " [SKIP: 本平台目录只读拦不住写，如 root]"), JSON.stringify(r1))
+    ok(dirReadonlyEffective ? (fs.readFileSync(f, "utf8") === onDiskBefore) : true,
+      "#308 前提:第一跳失败后磁盘逐字节未变(确实什么都没写进去)" + (dirReadonlyEffective ? "" : " [SKIP: 同上前提未生效]"))
     ok(ob.size() === 1, "#308 前提:失败的那条**留在内存队列**(issue 原文:保留 queue/seen)", "size=" + ob.size())
-    fs.chmodSync(f, 0o666) // 故障解除
+    fs.chmodSync(dir, 0o755); fs.chmodSync(f, 0o666) // 故障解除
     const r2 = await ob.enqueue({ kind: "handoff", key: "k1", payload: { v: 1 } })
     ok(r2 && r2.ok === true, "★#308 故障解除后同条重试入队 ⇒ ok:true", JSON.stringify(r2))
     ok(diskKeys(dir).join(",") === "k1", "★#308 这次真的落盘了(旧实现:dup 分支直接 ok:true,磁盘仍缺)", JSON.stringify(diskKeys(dir)))

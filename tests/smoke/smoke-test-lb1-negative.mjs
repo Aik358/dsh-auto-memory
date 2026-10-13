@@ -8,7 +8,11 @@ import { spawnSync } from 'node:child_process'
 import { cpSync, mkdtempSync, readFileSync, writeFileSync, rmSync } from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-const ROOT = process.argv[2] || 'D:/dsh-auto-memory'
+import { fileURLToPath } from 'node:url'
+// ★2026-10-13 CI：不得把开发机绝对路径当默认值 —— CI 上不存在 D:/dsh-auto-memory，
+//   而**本机存在**，于是测试会静默读到开发树、伪装成绿（本地绿 / CI 红的假象来源）。
+//   改为从本脚本位置推导仓库根（tests/smoke/../..）。
+const ROOT = process.argv[2] || path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..')
 const NL = String.fromCharCode(10)
 let pass = 0, fail = 0
 const ok = (c, m) => { if (c) { pass++; console.log('  ok   - ' + m) } else { fail++; console.log('  FAIL - ' + m) } }
