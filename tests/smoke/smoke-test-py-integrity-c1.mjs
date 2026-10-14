@@ -115,7 +115,8 @@ try {
     globalThis.fetch = realFetch
     ok(snap.phase === 'error', '③ ★tokenizer 返回 not-json ⇒ 不得 ready ⇒ phase === error（实得 ' + snap.phase + '）')
     ok(snap.modelReady === false, '③ modelReady === false')
-    ok(!fs.existsSync(path.join(models, 'model_int8.onnx')), '③ 该镜像整体判失败：模型不留残件（切下一镜像前先清）')
+    ok(fs.existsSync(path.join(models, 'model_int8.onnx')) && fs.statSync(path.join(models, 'model_int8.onnx')).size === MODEL_BYTES, '③ tokenizer 失败保留已验证模型（#418），仍不得报 ready')
+    ok(!fs.existsSync(path.join(models, 'tokenizer.json')), '③ 非法 tokenizer 正式件必须清除，不能进入下一轮 ready')
   }
 
   // ───────── ④ 负路径·目录占位 ⇒ 不得 ready 且不崩 ─────────

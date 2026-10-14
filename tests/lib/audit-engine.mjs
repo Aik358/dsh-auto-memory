@@ -6,6 +6,7 @@ const indexUrl = new URL('../../lib/index.js', import.meta.url)
 // Keep the complete production scope; expose internals only in this test copy.
 const source = (await readFile(process.env.DAM_AUDIT_ENGINE_SOURCE || indexUrl, 'utf8')).replace(/from '(\.\/[^']+)'/g,
   (_, relative) => 'from ' + JSON.stringify(new URL(relative, indexUrl).href))
+  .replace(/import\('(\.\/[^']+)'\)/g, (_, relative) => 'import(' + JSON.stringify(new URL(relative, indexUrl).href) + ')')
 const dir = await mkdtemp(path.join(tmpdir(), 'dam-audit-module-'))
 let internals
 try {

@@ -164,9 +164,9 @@ console.log('\n[5] 源码守卫：分层只改呈现，排序调用点必须原�
   // ⑥ 行格式：★R4-A 落地（2026-09-19）后在**行尾追加可选标记**（`c.mark` / `s.mark`）。
   //    契约：无标记时 `mark === ''` ⇒ 拼接结果与旧版**逐字节相同**（向后兼容）；
   //          有标记时追加 ` ⚠已作废（已被 mem_… 取代）` / ` ⚠已撤回（…）`。
-  ok(SRC.includes("out.push('· [' + c.id + '] ×' + sc + fr + ' ' + (c.reason || '语义') + ' ' + c.label + ' — ' + c.l0 + (c.mark || ''))"),
+  ok(SRC.includes("out.push('· [' + c.id + '] ×' + sc + fr + ' ' + (c.reason || '语义') + ' ' + c.label + ' — ' + c.l0 + (c.matchedExcerpt ? ' — ' + c.matchedExcerpt : '') + (c.mark || ''))"),
     '★ L0 行格式：前缀逐字符未变 + 行尾可选标记（R4-A）')
-  ok(SRC.includes("out.push('· ' + s.label + ' [' + s.id8 + '] ×' + s.score.toFixed(2) + ' ' + s.l0 + (s.mark || ''))"),
+  ok(SRC.includes("out.push('· ' + s.label + ' [' + s.id + '] ×' + s.score.toFixed(2) + ' ' + s.l0 + (s.mark || ''))"),
     '★ 语义行格式：前缀逐字符未变 + 行尾可选标记（R4-A）')
   // 反向锁：无标记时必须为空串（否则会多出空格，破坏向后兼容）
   ok(SRC.includes("mark: markL0(it)") && SRC.includes("mark: rec.mark || ''"),
@@ -305,7 +305,7 @@ console.log('\n[7b] 行为验证：抽源码执行 _semanticRankBest（证明留
   }
   // ⑥ ★关键回归：`_jsSemanticRank` 自身抛错时也要留痕（用户痛点的最核心一处）
   {
-    const jsMarker = 'engine._jsSemanticRank = async (corpusSnap, queryText) => {'
+    const jsMarker = 'engine._jsSemanticRank = async (corpusSnap, queryText, optsRank = {}) => {'
     const jsStart = SRC.indexOf(jsMarker)
     ok(jsStart > 0, '找到 _jsSemanticRank 定义')
     // 该函数体里含 try/catch，取到第一个顶层配平即可
@@ -321,7 +321,7 @@ console.log('\n[7b] 行为验证：抽源码执行 _semanticRankBest（证明留
       resolveSemanticTier: async () => 'c2',
       _jsSemantic: { rank: async () => { throw new Error('onnx session lost') } },
     }
-    const jsRank = new Function('engine', 'return async (corpusSnap, queryText) => ' + jsBody)(e)
+    const jsRank = new Function('engine', 'return async (corpusSnap, queryText, optsRank = {}) => ' + jsBody)(e)
     const r = await jsRank({}, 'q')
     eq(r, null, 'JS 引擎抛错返回 null（fail-soft 保持）')
     eq(e._degradeSink.countOf('semantic-arm'), 1, '★ JS 引擎抛错记台账（用户痛点：静默失效已消除）')
@@ -335,7 +335,7 @@ console.log('\n[7b] 行为验证：抽源码执行 _semanticRankBest（证明留
       resolveSemanticTier: async () => 'c1',
       _jsSemantic: { rank: async () => { throw new Error('不该被调用') } },
     }
-    const r3 = await new Function('engine', 'return async (c, q) => ' + jsBody)(e3)({}, 'q')
+    const r3 = await new Function('engine', 'return async (c, q, optsRank = {}) => ' + jsBody)(e3)({}, 'q')
     eq(r3, null, 'C1 档返回 null')
     eq(e3._degradeSink.countOf('semantic-arm'), 0, '★ 资产未就绪（c1）不记台账（预期内，防刷屏）')
     eq(e3._jsRankTier, 'c1', '档位被记录（诊断可见"为什么没有语义臂"）')

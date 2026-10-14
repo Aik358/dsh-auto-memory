@@ -1,3 +1,4 @@
+// 2026-10-14: + migrate-upload (#397) and python-setup/config (#411); the exact route count lock remains.
 import { apply, name, inject, GUIDANCE } from '../../lib/index.js'
 // 2026-08-16: 适配 section→context 迁移 —— 静态纪律在 section(稳定锚), 动态记忆在 context(user-role 快照)
 
@@ -80,7 +81,7 @@ if (registeredTools.length !== 19) throw new Error('expected 19 tools (16 + T4 m
 //   teamEnabled=false 时返回 409 但**仍无条件注册**，故任何档位下都 +1）。
 // ★issue #211（2026-10-04）计数演进：70→71（新增 POST /python-setup/uninstall —— Python 引擎卸载，
 //   loopback-only，pythonBackendEnabled=false 时也**无条件注册**并可用，故任何档位下都 +1）。
-if (registeredRoutes.length !== 71) throw new Error('expected 71 routes, got ' + registeredRoutes.length)
+if (registeredRoutes.length !== 73) throw new Error('expected 73 routes, got ' + registeredRoutes.length)
 if (sections.length !== 1) throw new Error('expected 1 prompt section (static rules)')
 if (contexts.length !== 2) throw new Error('expected 2 dynamic contexts (memory snapshot + m6 reference tail surface), got ' + contexts.length)
 
