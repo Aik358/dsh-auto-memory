@@ -86,6 +86,14 @@
       function availableTop() {
         var top = 16, dialog = slot.current && slot.current.closest('[role=dialog]')
         if (dialog) top = Math.max(top, dialog.getBoundingClientRect().top)
+        if (!dialog && props && props.inPluginDetail) {
+          var area = slot.current && slot.current.parentElement
+          while (area && area !== document.body) {
+            var rect = area.getBoundingClientRect(), overflow = getComputedStyle(area).overflowY
+            if (rect.height > 160 && (overflow === 'auto' || overflow === 'scroll')) { top = Math.max(top, rect.top + 8); break }
+            area = area.parentElement
+          }
+        }
         var overlay = typeof navigator !== 'undefined' && navigator.windowControlsOverlay
         if (overlay && overlay.visible && typeof overlay.getTitlebarAreaRect === 'function') {
           var rect = overlay.getTitlebarAreaRect(); top = Math.max(top, rect.y + rect.height)
