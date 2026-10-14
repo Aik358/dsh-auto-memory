@@ -305,7 +305,7 @@ console.log('\n[7b] 行为验证：抽源码执行 _semanticRankBest（证明留
   }
   // ⑥ ★关键回归：`_jsSemanticRank` 自身抛错时也要留痕（用户痛点的最核心一处）
   {
-    const jsMarker = 'engine._jsSemanticRank = async (corpusSnap, queryText) => {'
+    const jsMarker = 'engine._jsSemanticRank = async (corpusSnap, queryText, optsRank = {}) => {'
     const jsStart = SRC.indexOf(jsMarker)
     ok(jsStart > 0, '找到 _jsSemanticRank 定义')
     // 该函数体里含 try/catch，取到第一个顶层配平即可
@@ -321,7 +321,7 @@ console.log('\n[7b] 行为验证：抽源码执行 _semanticRankBest（证明留
       resolveSemanticTier: async () => 'c2',
       _jsSemantic: { rank: async () => { throw new Error('onnx session lost') } },
     }
-    const jsRank = new Function('engine', 'return async (corpusSnap, queryText) => ' + jsBody)(e)
+    const jsRank = new Function('engine', 'return async (corpusSnap, queryText, optsRank = {}) => ' + jsBody)(e)
     const r = await jsRank({}, 'q')
     eq(r, null, 'JS 引擎抛错返回 null（fail-soft 保持）')
     eq(e._degradeSink.countOf('semantic-arm'), 1, '★ JS 引擎抛错记台账（用户痛点：静默失效已消除）')
@@ -335,7 +335,7 @@ console.log('\n[7b] 行为验证：抽源码执行 _semanticRankBest（证明留
       resolveSemanticTier: async () => 'c1',
       _jsSemantic: { rank: async () => { throw new Error('不该被调用') } },
     }
-    const r3 = await new Function('engine', 'return async (c, q) => ' + jsBody)(e3)({}, 'q')
+    const r3 = await new Function('engine', 'return async (c, q, optsRank = {}) => ' + jsBody)(e3)({}, 'q')
     eq(r3, null, 'C1 档返回 null')
     eq(e3._degradeSink.countOf('semantic-arm'), 0, '★ 资产未就绪（c1）不记台账（预期内，防刷屏）')
     eq(e3._jsRankTier, 'c1', '档位被记录（诊断可见"为什么没有语义臂"）')
