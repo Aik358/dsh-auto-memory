@@ -17,4 +17,12 @@ await withMemoryAdmissionScopePre({ engine, target }, async () => {
   assert.equal(captureMemoryMutationPre(engine, target).migrationActive, false)
 })
 assert.equal(captureMemoryMutationPre(engine, target).migrationActive, true)
+let resume, detached
+engine._settingsMigrationActive = false
+withMemoryAdmissionScopePre({ engine, target }, () => {
+  detached = new Promise((resolve) => { resume = resolve }).then(() => captureMemoryMutationPre(engine, target))
+})
+engine._settingsMigrationActive = true
+resume()
+assert.equal((await detached).migrationActive, true, 'completed request cannot leave detached admission credentials')
 console.log('PASS #363 only the request admitted before migration may finish')

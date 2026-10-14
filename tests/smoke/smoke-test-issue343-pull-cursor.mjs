@@ -126,7 +126,7 @@ async function main() {
     const puller = createTeamPuller({
       engine: { config: { teamEnabled: true }, _teamEpoch: 0 },
       fetchJson: srv.fetchJson,
-      appliers: { fact: realApplier(store) },
+      appliers: { fact: realApplier(store), handoff: () => ({ ok: false, reason: 'denied' }) },
     })
     const r = await puller.pullOnce()
     ok(r.ok === true, '★#343 负路径:纯业务拒绝 ⇒ 仍回 ok:true（拒绝已留痕，不是临时错误）', JSON.stringify(r))
@@ -251,7 +251,7 @@ async function main() {
     const puller = createTeamPuller({
       engine: { config: { teamEnabled: true }, _teamEpoch: 0 },
       fetchJson: async () => ({ ok: true, data: { changes: [], cursor: 0 } }),
-      appliers: { fact: realApplier(store) },
+      appliers: { fact: realApplier(store), handoff: () => ({ ok: false, reason: 'denied' }) },
     })
     const okOne = puller.applyOne({ kind: 'fact', key: 'Z1', payload: {} })
     ok(okOne === true, '★#343 回归:applyOne 成功仍回 boolean true（旧契约）', typeof okOne + '=' + okOne)
@@ -283,7 +283,7 @@ async function main() {
   // ★变异反向验证：把两处修复分别退回旧写法 ⇒ 子进程模式跑本套件必须**红**（断言红，非崩溃）
   // ===================================================================
   if (!CHILD) {
-    const real = fs.readFileSync(REAL_SRC, 'utf8')
+    const real = fs.readFileSync(REAL_SRC, 'utf8').replace(/\r\n/g, '\n')
     // M1：游标语义退回「有临时失败也照旧前进」（旧写法：无条件 since = cursor）
     const M1_FROM = [
       "      if (deferred > 0) {",
