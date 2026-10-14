@@ -79,7 +79,7 @@ console.log('[G3] #105 Python 档下载链路：真 API + 根因对照')
 ok(cnt(PS, "resp.body.on(") === 0, 'G3a 已无对 WHATWG 流调 .on() 的旧写法')
 ok(cnt(PS, 'Readable.fromWeb(resp.body)') === 1, 'G3b 有 Readable.fromWeb（WHATWG → Node 流）')
 ok(cnt(PS, 'await pipeline(src, createWriteStream(part') === 1, 'G3c 有 pipeline 真写入（旧实现全程无 stream.write）')
-ok(cnt(PS, 'new AbortController()') === 1, 'G3d 取消走 AbortController（同时传给 fetch，断的是连接）')
+ok(cnt(PS, 'new AbortController()') === 2 && PS.includes('modelAbort = controller') && PS.includes('cancelled, controller.signal'), 'G3d 取消走 AbortController（同时传给 fetch，断的是连接）')
 ok(cnt(PS, "import { pipeline } from 'node:stream/promises'") === 1, 'G3e 已导入 stream/promises')
 {
   // 根因断言：fetch 的 body 是 WHATWG ReadableStream，**没有 .on** ⇒ 旧实现在本 Node 版本必然抛。

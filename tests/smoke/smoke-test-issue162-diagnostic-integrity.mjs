@@ -490,6 +490,7 @@ test('analogous Python rank catch records an actual sidecar exception once, whil
   const engine = Object.assign(host, {
     config: { semanticEngineMode: 'python' }, resolveSemanticTier: async () => 'c3',
     _pythonSidecar: { request: async () => { throw secretError() } },
+    _indexSyncHost: { ensureWorkspaceIndexReady: async () => [{ ready: true }] },
   })
   const registry = class { get() { return { ok: true, snapshot: { memoryIndexVersion: 'fixture', records: [{memoryId, scope:'Workspace'}] } } } }
   new Function('engine', 'buildSourceCatalog', 'CorpusRegistry', 'canonicalize', 'memoryDir', 'path', 'recordDiagnosticErrorPre',

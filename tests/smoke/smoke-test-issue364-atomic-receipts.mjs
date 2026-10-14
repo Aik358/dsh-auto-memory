@@ -33,5 +33,11 @@ try {
   `, root], { encoding: 'utf8', timeout: 10000 })
   assert.equal(child.status, 0, child.stderr)
   assert.equal(JSON.parse(fs.readFileSync(file, 'utf8')).conflicts.length, 1)
+  const legacy = { key: 'legacy-same-fact' }
+  assert.equal(store.applyTeamChange(candidate('Go'), legacy, { ...context, cursor: 12, index: 0 }).ok, true)
+  assert.equal(store.pendingConflicts().length, 2)
+  const reordered = Object.fromEntries(Object.entries(candidate('Go')).reverse())
+  assert.equal(store.applyTeamChange(reordered, legacy, { ...context, cursor: 13, index: 1 }).outcome, 'duplicate')
+  assert.equal(store.pendingConflicts().length, 2, 'legacy replay remains idempotent when the page or property order changes')
   console.log('PASS #364 receipt+conflict atomic rollback, durable retry and independent-process duplicate replay')
 } finally { fs.rmSync(root, { recursive: true, force: true }) }

@@ -169,7 +169,7 @@ test('80 appends across 8 stores sharing one backend do not lose/duplicate recor
   const api={...fs, async rename(a,b) { if (b===target && !tried.has(a)) { tried.add(a); throw errorOf('EPERM') } return fs.rename(a,b) } }
   const stores=Array.from({length:8},()=>store(api)); assert.equal(stores[0]._locks,stores[7]._locks)
   const out=await Promise.all(Array.from({length:80},(_,i)=>stores[i%8].append(target,'record-'+i)))
-  assert.ok(out.every((r)=>r.ok)); const parsed=parseAnchors(await fs.readFile(target)); assert.equal(parsed.status,'clean')
+  assert.ok(out.every((r)=>r.ok), JSON.stringify(out.filter(r=>!r.ok))); const parsed=parseAnchors(await fs.readFile(target)); assert.equal(parsed.status,'clean')
   const anchored=parsed.records.filter((r)=>r.kind==='anchored'); assert.equal(anchored.length,80)
   assert.equal(new Set(anchored.map((r)=>r.memoryId)).size,80)
   const text=await fs.readFile(target,'utf8'); for(let i=0;i<80;i++) assert.equal(text.split('\n').filter((line)=>line==='record-'+i).length,1)

@@ -172,7 +172,7 @@ t('四个写盘原语都挂了登记（守卫，非功能证据；调用点计�
   for (const m of // ★2026-10-01 判据同步：`writeFull` 签名因 #160（整篇写改走 rawDocStore + expectedDigest CAS）
 //   增加了可选 `opts = {}` 第三参 ⇒ 原锚串过期。改为**前缀锚**（只锁函数头，不含参数表尾部），
 //   这样后续再增可选参数也不必改判据；其余三个原语签名未变，保持不变。
-['  async appendText(p, text) {', '  async writeFullRaw(p, text) {', '  async writeFullSingle(p, text) {', '  async writeFull(p, text']) {
+['  async appendText(p, text, opts = {}) {', '  async writeFullRaw(p, text) {', '  async writeFullSingle(p, text) {', '  async writeFull(p, text']) {
     const seg = fnBody(SOURCE, m)
     assert.ok(seg.includes('_noteSelfWriteAtPre(p)'), m + ' 函数体内未挂登记调用')
   }
