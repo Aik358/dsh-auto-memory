@@ -231,7 +231,9 @@ t('T8c-4 ★★ 两个 load 的 _readError 文案必须同口径（防止只修�
 t('T8c-5 ★ embedding-config.json 也必须原子写（语义引擎开关的双轨读数来源）', () => {
   const bad = IDX.split('\n').filter((l) => /writeFileSync\(cfgPath,\s*JSON\.stringify/.test(l))
   assert(bad.length === 0, '★ embedding-config 仍裸写：' + bad.join(' | '))
-  assert(/writeTextAtomicPreSync\(cfgPath/.test(IDX), '未切原子写')
+  assert(/updateEmbeddingConfigPre\(cfgPath/.test(IDX), '宿主必须走共享配置事务')
+  const embedding = readFileSync(path.join(ROOT, 'lib', 'embedding-config.js'), 'utf8')
+  assert(/writeTextAtomicPreSync\(file/.test(embedding), '共享配置事务必须原子提交')
 })
 
 t('T8c-6 ★ 模块必须零运行时依赖（只 node: 内置）', () => {

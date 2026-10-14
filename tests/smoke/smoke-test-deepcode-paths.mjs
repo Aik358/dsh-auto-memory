@@ -115,7 +115,7 @@ try {
     //   改为对**公共工具本体**做同一 vm 换平台实验（它才是平台大小写判据的唯一来源）；
     //   委托关系与调用点行为另由 ⑦ 的形态守卫 + 真路径断言覆盖。
     const modSrc = fs.readFileSync('lib/file-boundary.js', 'utf8')
-    const keyFnSrc = modSrc.slice(modSrc.indexOf('export function pathKey'), modSrc.indexOf('/** 组件级包含判定'))
+    const keyFnSrc = modSrc.slice(modSrc.indexOf('export function pathKey'), modSrc.indexOf('/** Stable source identity'))
       .replace('export function pathKey', 'function pathKey')
     for (const platform of ['linux', 'darwin', 'win32']) {
       const key = vm.runInNewContext(keyFnSrc + '\n;pathKey', { process: { platform }, path: await import('node:path').then((m) => m.default), canonPath: (v) => v })

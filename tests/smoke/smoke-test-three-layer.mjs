@@ -322,7 +322,7 @@ console.log('\n[G6] C3 接线：开关默认开（设 false 才不写索引、�
   ok('G6-宿主 import 了新接线模块', /import \{ createL0IndexSyncPre \} from '\.\/l0-index-sync\.js'/.test(SRC_INDEX))
   ok('G6-宿主开关门：config.l0IndexEnabled !== true 即短路', /engine\.config\.l0IndexEnabled !== true/.test(SRC_INDEX))
   ok('G6-触发点是「工作区语料刷新完成」（refreshAll 内调用 tick）', /engine\.l0IndexSyncTick\(agent\)/.test(SRC_INDEX))
-  ok('G6-异步不阻塞：sync 结果不 await 在刷新链上', /void engine\.syncL0IndexPre\(\{ agent \}\)\.catch\(\(\) => \{\}\)/.test(SRC_INDEX))
+  ok('G6-无消费者时禁止自动维护诊断索引', /engine\.l0IndexSyncTick = \(\) => \(\{ ok: false, reason: 'no-recall-consumer'/.test(SRC_INDEX))
   ok('G6-嵌入通道 = 端侧 JS 引擎（不是 LLM/网络）', /embedPassages: \(texts\) => engine\._jsSemantic\.embedPassages\(texts\)/.test(SRC_INDEX))
   ok('G6-引擎确实暴露 embedPassages（C3 前置能力）', /async embedPassages\(texts\) \{[\s\S]{0,200}ensureTier\(\)/.test(SRC_SEMJS))
   ok('G6-零引用的 l0-index-pre 现在被接线模块引用', /from '\.\/l0-index\.js'/.test(SRC_SYNC) && /idx\.update\(/.test(SRC_SYNC))
