@@ -19,14 +19,14 @@ Upstream: `054942b54d15f46c4421c64d77c8de921e5042ab` (v3.3.3). Fixed scope: #359
 | #371 | inherited-review | 8311ce0 | PR #394; targeted revalidation pending |
 | #372 | inherited-review | 8311ce0 | PR #394; targeted revalidation pending |
 | #373 | inherited-review | 8311ce0 | PR #394; targeted revalidation pending |
-| #374 | implemented | b4ac398 | Isolated targeted checks passed; final review and suite pending |
+| #374 | implemented | abb17ba | Isolated targeted checks passed; final review and suite pending |
 | #375 | inherited-review | 8311ce0 | PR #394; targeted revalidation pending |
 | #376 | implemented | 3684606 | Targeted isolated checks passed; final review and suite pending |
 | #377 | implemented | ef36627 | Targeted isolated checks passed; final review and suite pending |
 | #378 | implemented | a75a3e1 | Targeted isolated checks passed; final review and suite pending |
 | #379 | implemented | 4c80c38 | Isolated targeted checks passed; final review and suite pending |
 | #380 | implemented | a75a3e1 | Targeted isolated checks passed; final review and suite pending |
-| #381 | pending |  |  |
+| #381 | implemented | ae302dc | Isolated targeted checks passed; final review and suite pending |
 | #382 | implemented | 4c80c38 | Isolated targeted checks passed; final review and suite pending |
 | #383 | implemented | 49fb647 | Isolated targeted checks passed; final review and suite pending |
 | #384 | implemented | 4b62c95 | Isolated targeted checks passed; final review and suite pending |
@@ -43,24 +43,24 @@ Upstream: `054942b54d15f46c4421c64d77c8de921e5042ab` (v3.3.3). Fixed scope: #359
 | #396 | implemented | dfc7405 | Isolated targeted checks passed; final review and suite pending |
 | #397 | implemented | dfc7405 | Isolated targeted checks passed; final review and suite pending |
 | #398 | implemented | dfc7405 | Isolated targeted checks passed; final review and suite pending |
-| #399 | implemented | 4c80c38 | Isolated targeted checks passed; final review and suite pending |
+| #399 | implemented | abb17ba | Isolated targeted checks passed; final review and suite pending |
 | #400 | implemented | 4c80c38 | Isolated targeted checks passed; final review and suite pending |
 | #401 | implemented | 4c80c38 | Isolated targeted checks passed; final review and suite pending |
 | #402 | implemented | 4c80c38 | Isolated targeted checks passed; final review and suite pending |
-| #403 | implemented | 4c80c38 | Isolated targeted checks passed; final review and suite pending |
+| #403 | implemented | abb17ba | Isolated targeted checks passed; final review and suite pending |
 | #404 | implemented | 4c80c38 | Isolated targeted checks passed; final review and suite pending |
 | #405 | implemented | 4c80c38 | Isolated targeted checks passed; final review and suite pending |
 | #406 | implemented | 4c80c38 | Isolated targeted checks passed; final review and suite pending |
-| #407 | pending |  |  |
-| #408 | pending |  |  |
-| #409 | pending |  |  |
-| #410 | pending |  |  |
-| #411 | pending |  |  |
-| #412 | pending |  |  |
-| #413 | pending |  |  |
-| #414 | pending |  |  |
-| #415 | pending |  |  |
-| #416 | pending |  |  |
-| #417 | pending |  |  |
-| #418 | pending |  |  |
-| #419 | pending |  |  |
+| #407 | implemented | ae302dc | Isolated targeted checks passed; final review and suite pending |
+| #408 | implemented | 7acc693 | Isolated targeted checks passed; final review and suite pending |
+| #409 | implemented | ae302dc | Isolated targeted checks passed; final review and suite pending |
+| #410 | implemented | 7acc693 | Isolated targeted checks passed; final review and suite pending |
+| #411 | implemented | 7acc693 | Isolated targeted checks passed; final review and suite pending |
+| #412 | implemented | 4ef7906 | Isolated targeted checks passed; final review and suite pending |
+| #413 | implemented | 4ef7906 | Isolated targeted checks passed; final review and suite pending |
+| #414 | implemented | ae302dc | Isolated targeted checks passed; final review and suite pending |
+| #415 | implemented | ae302dc | Isolated targeted checks passed; final review and suite pending |
+| #416 | implemented | 684a552 | Isolated targeted checks passed; final review and suite pending |
+| #417 | implemented | ae302dc | Isolated targeted checks passed; final review and suite pending |
+| #418 | implemented | 0433189 | Isolated targeted checks passed; final review and suite pending |
+| #419 | implemented | 0433189 | Isolated targeted checks passed; final review and suite pending |
