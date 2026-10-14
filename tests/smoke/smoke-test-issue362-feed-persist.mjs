@@ -25,10 +25,10 @@ try {
   assert.equal(io('procedures.json').load().procedures.length, 1)
   const facts = createFactStorePre({ io: io('facts.json') })
   const factHub = createMemoryHubPre({ stores: { facts }, batch: io })
-  const factRows = [{ kindCandidate: 'semantic_candidate', sourceIds: ['fact-fixture'], subject: 'fixture', predicate: 'uses', object: 'Node.js' }]
+  const factRows = [{ kindCandidate: 'semantic_candidate', sourceIds: ['fact-fixture'], subject: 'project alpha', predicate: 'runtime version', object: 'Node.js version 24.15.0', confidence: 0.95 }]
   fail = true
   const factFailure = factHub.ingestJudgementRows(factRows)
-  assert.equal(factFailure.persisted, false)
+  assert.equal(factFailure.persisted, false, JSON.stringify(factFailure))
   assert.equal(factFailure.retryable, true)
   assert.match(factFailure.results[0].error, /EACCES/)
   fail = false
