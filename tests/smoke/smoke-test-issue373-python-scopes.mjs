@@ -25,6 +25,7 @@ try {
   const calls = [], readyScopes = new Set(), syncScopes = new Map()
   let epoch = null, failSync = false
   const engine = { config: { semanticEngineMode: 'python' }, resolveSemanticTier: async () => 'c3',
+    _pythonModelReady: async () => true, preparePythonRecallPre: async () => true, pythonRuntimeCached: () => ({ chosen: 'fixture-python' }),
     _pythonSidecar: { currentEpoch: () => epoch, request: async (type, p) => {
       calls.push(type)
       if (type !== 'recall_rank') {

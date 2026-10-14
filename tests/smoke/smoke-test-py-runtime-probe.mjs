@@ -75,7 +75,7 @@ const SRC_CLI = fs.readFileSync(path.join(ROOT, 'lib/client.js'), 'utf8')
   ok(/engine\.resolvedPythonCommand = \(\)/.test(SRC_IDX), 'C3 resolvedPythonCommand 存在')
   ok(/command: \(\) => engine\.resolvedPythonCommand\(\) \|\| 'python'/.test(SRC_IDX), 'C4 ★sidecar 的 command 已接入探测链（不再裸回落 python）')
   ok(/buildPythonCandidatesPre\(\{/.test(SRC_IDX), 'C5 候选链构造已接线')
-  ok(/resolvePythonInterpreterPre\(cands\)/.test(SRC_IDX), 'C6 解释器解析已接线')
+  ok(/resolvePythonInterpreterPre\(cands,/.test(SRC_IDX), 'C6 解释器解析已接线（显式召回可限制探测）')
   ok(/makeRequestFramePre\(\{ type: 'health'/.test(SRC_IDX), 'C7 health 帧经官方构帧器（协议合规）')
 }
 
@@ -91,7 +91,7 @@ const SRC_CLI = fs.readFileSync(path.join(ROOT, 'lib/client.js'), 'utf8')
   const tierSeg = SRC_IDX.slice(SRC_IDX.indexOf("if (mode === 'python') {", SRC_IDX.indexOf('engine.resolveSemanticTier')), SRC_IDX.indexOf("if (mode === 'python') {", SRC_IDX.indexOf('engine.resolveSemanticTier')) + 1200)
   ok(/engine\.pythonRuntimeCached\(\)/.test(tierSeg), 'D3a 档位解析只读缓存（热路径零阻塞）')
   ok(/rt\.worker\.healthSeen && rt\.worker\.ready\) \? 'c3' : 'c1'/.test(tierSeg), 'D3b ★档位尊重 worker 真反馈（修「面板⚠ vs 档位C3」矛盾）')
-  ok(/void engine\.probePythonRuntime\(\)\.catch/.test(tierSeg), 'D3c 无缓存时后台补探测（下次有真值）')
+  ok(!/void engine\.probePythonRuntime/.test(tierSeg) && /await engine\.preparePythonRecallPre\(\)/.test(SRC_IDX), 'D3c 档位读取不启动后台 worker；显式召回在同步前有界解析')
 }
 
 // ── E. health 判据修正 ──

@@ -66,7 +66,7 @@ const loadMigrate = async () => await import(pathToFileURL(path.join(ROOT, 'lib'
 async function realCalendarFns() {
   const mod = await loadEngineModule()
   const eng = new mod.MemoryEngine()
-  return { parse: eng.parseCalendar.bind(eng), render: eng.renderCalendar.bind(eng) }
+  return { parse: eng.parseCalendar.bind(eng), render: eng.renderCalendar.bind(eng), entries: eng.calendarEntriesPre.bind(eng) }
 }
 
 const MULTI = [
@@ -168,7 +168,7 @@ console.log('[①] 主路径 parseCalendar / renderCalendar')
 console.log('[②] ③ 孪生解析/渲染：calendarMergePre 与主路径**同口径**')
 // ══════════════════════════════════════════════════════════════
 {
-  const { parse } = await realCalendarFns()
+  const { parse, entries } = await realCalendarFns()
   const { calendarMergePre } = await loadMigrate()
 
   const local = [
@@ -186,10 +186,10 @@ console.log('[②] ③ 孪生解析/渲染：calendarMergePre 与主路径**同�
   const mergedRows = merged.text.split('\n').filter((l) => l.startsWith('- ['))
   ok(mergedRows.length === 1, '③ 合并输出仍是 1 条（续行没变成新条目，实 ' + mergedRows.length + '）')
   eq(merged.text.includes('    ' + '备注第二行（缩进续行）'), true, '③ 合并输出**保留缩进续行**（第二个出口未压平）')
-  eq(merged.text, local, '③ 合并输出与输入逐字节相同（幂等）')
+  eq(calendarMergePre(merged.text, local).text, merged.text, '③ 升级身份后的合并输出逐字节幂等')
 
   // 同口径断言：同一份含多行备注的文本，两处解析逐字段相同
-  const a = parse(local)
+  const a = entries(local)
   const bMerged = calendarMergePre(local, '').text
   const b = parse(bMerged)
   eq(b, a, '③ 迁移输出的文本再经主路径解析 ⇒ 与直接解析逐字段相同')
@@ -204,7 +204,7 @@ console.log('[②] ③ 孪生解析/渲染：calendarMergePre 与主路径**同�
     '\t续行乙',
     '',
   ].join('\n')
-  const fromIndex = parse(tricky)
+  const fromIndex = entries(tricky)
   const viaMerge = parse(calendarMergePre(tricky, tricky).text)
   eq(viaMerge, fromIndex, '③ 边界样本（--:--/Tab/空行）两边解析逐字段一致')
   eq(fromIndex.map((x) => x.note), ['首行\n续行甲', '续行乙'], '③ 边界样本 note 还原正确')

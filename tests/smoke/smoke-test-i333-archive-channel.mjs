@@ -137,11 +137,11 @@ const callArchiveBranch = async (self, query, limit) => {
   assert.equal(ARCHIVE_BRANCH.split("if (scope === 'archive') {").length - 1, 1, '执行前：分支条件恰命中 1 次')
   const body = ARCHIVE_BRANCH.replace("if (scope === 'archive') {", 'if (true) {').replace(/^    /gm, '')
   // 分支用到的自由变量（逐个列出并在调用处传入，缺一个就是 ReferenceError —— 逐个补齐）
-  const fn = new Function('self', 'path', 'readdir', 'q', 'terms', 'limit', 'agent', 'readFile', 'readFailures', 'opts',
+  const fn = new Function('self', 'path', 'readdir', 'q', 'terms', 'limit', 'agent', 'readFile', 'readFailures', 'opts', 'exposeHits',
     'return (async () => {\n' + body + '\n})()')
   const q = String(query || '').toLowerCase().trim()
   const terms = q.split(/[\s,，、;；。:：]+/).filter((x) => x.length > 0)
-  return fn.call(self, self, pathModule, (await import('node:fs/promises')).readdir, q, terms, limit, null, (await import('node:fs/promises')).readFile, [], null)
+  return fn.call(self, self, pathModule, (await import('node:fs/promises')).readdir, q, terms, limit, null, (await import('node:fs/promises')).readFile, [], null, () => {})
 }
 
 {
