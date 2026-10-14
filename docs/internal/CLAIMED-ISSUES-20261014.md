@@ -19,38 +19,38 @@ Upstream: `054942b54d15f46c4421c64d77c8de921e5042ab` (v3.3.3). Fixed scope: #359
 | #371 | inherited-review | 8311ce0 | PR #394; targeted revalidation pending |
 | #372 | inherited-review | 8311ce0 | PR #394; targeted revalidation pending |
 | #373 | inherited-review | 8311ce0 | PR #394; targeted revalidation pending |
-| #374 | follow-up | 8311ce0 | Archive and regular recall must expose source-read failures |
+| #374 | implemented | b4ac398 | Isolated targeted checks passed; final review and suite pending |
 | #375 | inherited-review | 8311ce0 | PR #394; targeted revalidation pending |
 | #376 | implemented | 3684606 | Targeted isolated checks passed; final review and suite pending |
 | #377 | implemented | ef36627 | Targeted isolated checks passed; final review and suite pending |
 | #378 | implemented | a75a3e1 | Targeted isolated checks passed; final review and suite pending |
-| #379 | pending |  |  |
+| #379 | implemented | 4c80c38 | Isolated targeted checks passed; final review and suite pending |
 | #380 | implemented | a75a3e1 | Targeted isolated checks passed; final review and suite pending |
 | #381 | pending |  |  |
-| #382 | pending |  |  |
-| #383 | pending |  |  |
-| #384 | pending |  |  |
-| #385 | pending |  |  |
+| #382 | implemented | 4c80c38 | Isolated targeted checks passed; final review and suite pending |
+| #383 | implemented | 49fb647 | Isolated targeted checks passed; final review and suite pending |
+| #384 | implemented | 4b62c95 | Isolated targeted checks passed; final review and suite pending |
+| #385 | implemented | 49fb647 | Isolated targeted checks passed; final review and suite pending |
 | #386 | implemented | ef36627 | Targeted isolated checks passed; final review and suite pending |
-| #387 | pending |  |  |
-| #388 | pending |  |  |
+| #387 | implemented | 4b62c95 | Isolated targeted checks passed; final review and suite pending |
+| #388 | implemented | 49fb647 | Isolated targeted checks passed; final review and suite pending |
 | #389 | implemented | ef36627 | Targeted isolated checks passed; final review and suite pending |
 | #390 | implemented | ef36627 | Targeted isolated checks passed; final review and suite pending |
 | #391 | implemented | ef36627 | Targeted isolated checks passed; final review and suite pending |
 | #392 | implemented | 3684606 | Targeted isolated checks passed; final review and suite pending |
 | #393 | implemented | 3684606 | Targeted isolated checks passed; final review and suite pending |
-| #395 | pending |  |  |
-| #396 | pending |  |  |
-| #397 | pending |  |  |
-| #398 | pending |  |  |
-| #399 | pending |  |  |
-| #400 | pending |  |  |
-| #401 | pending |  |  |
-| #402 | pending |  |  |
-| #403 | pending |  |  |
-| #404 | pending |  |  |
-| #405 | pending |  |  |
-| #406 | pending |  |  |
+| #395 | implemented | dfc7405 | Isolated targeted checks passed; final review and suite pending |
+| #396 | implemented | dfc7405 | Isolated targeted checks passed; final review and suite pending |
+| #397 | implemented | dfc7405 | Isolated targeted checks passed; final review and suite pending |
+| #398 | implemented | dfc7405 | Isolated targeted checks passed; final review and suite pending |
+| #399 | implemented | 4c80c38 | Isolated targeted checks passed; final review and suite pending |
+| #400 | implemented | 4c80c38 | Isolated targeted checks passed; final review and suite pending |
+| #401 | implemented | 4c80c38 | Isolated targeted checks passed; final review and suite pending |
+| #402 | implemented | 4c80c38 | Isolated targeted checks passed; final review and suite pending |
+| #403 | implemented | 4c80c38 | Isolated targeted checks passed; final review and suite pending |
+| #404 | implemented | 4c80c38 | Isolated targeted checks passed; final review and suite pending |
+| #405 | implemented | 4c80c38 | Isolated targeted checks passed; final review and suite pending |
+| #406 | implemented | 4c80c38 | Isolated targeted checks passed; final review and suite pending |
 | #407 | pending |  |  |
 | #408 | pending |  |  |
 | #409 | pending |  |  |
