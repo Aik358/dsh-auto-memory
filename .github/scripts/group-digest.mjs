@@ -550,7 +550,6 @@ function computeFeedbackCoveragePre(sentText) {
   //      b) 本批**整批**都在归纳输入预算内(否则本轮只覆盖预算内的 fed 条,其余留到下轮);
   //      c) 该归纳结果确实来自本批候选(字符预算切出来的前缀非空)。
   const fed = countLinesWithinCharsPre(cand, FEEDBACK_LLM_INPUT_CHARS)
-  if (fed > 0 && fed < batchLen) return mkCursor(fed)
   const summary = String(d.groupFeedbackSummary || '')
   if (!fed || !summary) return mkCursor(0)
   const summaryInText = summary.split('\n').filter((l) => l.trim()).every((l) => text.indexOf(l.trim()) !== -1)
