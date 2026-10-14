@@ -552,7 +552,7 @@ function computeFeedbackCoveragePre(sentText) {
   const fed = countLinesWithinCharsPre(cand, FEEDBACK_LLM_INPUT_CHARS)
   const summary = String(d.groupFeedbackSummary || '')
   if (!fed || !summary) return mkCursor(0)
-  const summaryInText = summary.split('\n').filter((l) => l.trim()).every((l) => text.indexOf(l.trim()) !== -1)
+  const summaryInText = text.includes(summary)
   return mkCursor(summaryInText ? fed : 0)
 }
 

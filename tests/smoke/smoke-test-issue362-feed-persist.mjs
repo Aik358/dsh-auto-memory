@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os'
 import { createHubIoPre } from '../../lib/hub-io.js'
 import { createProcedureStorePre } from '../../lib/procedure-store.js'
 import { createMemoryHubPre } from '../../lib/memory-hub.js'
+import { createFactStorePre } from '../../lib/fact-store.js'
 
 const dir = fs.mkdtempSync(path.join(tmpdir(), 'dam-362-'))
 let fail = true
@@ -22,5 +23,16 @@ try {
   const retry = hub.ingestJudgementRows(rows)
   assert.equal(retry.ok, true)
   assert.equal(io('procedures.json').load().procedures.length, 1)
+  const facts = createFactStorePre({ io: io('facts.json') })
+  const factHub = createMemoryHubPre({ stores: { facts }, batch: io })
+  const factRows = [{ kindCandidate: 'semantic_candidate', sourceIds: ['fact-fixture'], subject: 'fixture', predicate: 'uses', object: 'Node.js' }]
+  fail = true
+  const factFailure = factHub.ingestJudgementRows(factRows)
+  assert.equal(factFailure.persisted, false)
+  assert.equal(factFailure.retryable, true)
+  assert.match(factFailure.results[0].error, /EACCES/)
+  fail = false
+  assert.equal(factHub.ingestJudgementRows(factRows).persisted, true)
+  assert.equal(io('facts.json').load().facts.length, 1)
   console.log('PASS #362 failed feed exposes the commit error and retry persists once')
 } finally { fs.rmSync(dir, { recursive: true, force: true }) }
