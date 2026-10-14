@@ -16,8 +16,9 @@ Baseline: `Aik358/dsh-auto-memory@054942b54d15f46c4421c64d77c8de921e5042ab` (v3.
 | #365 | Feedback cursor advances only if the entire summary block is present in successfully delivered text, including partial-input batches. |
 | #366 | Cancellation aborts pending fetch/body reads; requests have header/idle deadlines and retain hash validation. |
 | #367 | All three action callbacks reject HTTP, business and JSON failures using one parser and preserve decision/reason codes. |
-| #368 | Restore the versioned write-contract gate with a failing mutation control; refresh the reviewed client fingerprint. Upstream issue48 already passes and is retained. CI/release counts are not interchangeable. |
+| #368 | Restore the versioned write-contract gate with a failing mutation control; refresh reviewed fingerprints, use writable temporary paths in issue48, and preserve frozen skin LF on Windows checkouts/archives. CI/release counts are not interchangeable. |
 | #369 / #372 | All embedding config writers use one locked reread/atomic-write transaction, preserve malformed files, and initialize JS fields from the descriptor rather than the identity hash string. |
+| #370 | A failed, truncated or invalid response body cannot acknowledge or dequeue a team send; business rejection remains a failure. |
 | #371 | JS writer/corpus/evidence and Python agree: case folds only on Windows. Old derived sidecars/vector caches remain untouched; missing current identities rebuild from Markdown. Ambiguous old evidence is not relabeled. Case-sensitive filesystem isolation requires POSIX execution. |
 | #373 | Sync and query both scopes present in the authorized snapshot; retain workspace/scope/version guards and reject foreign result IDs. |
 | #374 | An incomplete source read preserves that entire prior L0 layer and reports failure; confirmed ENOENT can remove derived entries. |

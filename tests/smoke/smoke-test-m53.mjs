@@ -5,6 +5,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, readdirSyn
 import { createHash } from 'node:crypto'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
+import { canonicalSourcePath } from '../../lib/file-boundary.js'
 process.on('uncaughtException', (e) => { console.error('[M53-TEST] FATAL:', (e && (e.stack || e.message)) || e); process.exit(1) })
 process.on('unhandledRejection', (r) => { console.error('[M53-TEST] REJ:', r); process.exit(1) })
 globalThis.fetch = async () => ({ ok: false, status: 503, json: async () => ({}) })
@@ -41,7 +42,7 @@ function makeShadow(root, relName, id, heading, body) {
     },
   }
 }
-function canonicalizePath(p) { return path.resolve(p).replace(/\\/g, '/').toLowerCase() }
+const canonicalizePath = canonicalSourcePath
 
 async function setupHarness(opts = {}) {
   const ws1 = mkdtempSync(path.join(tmpdir(), 'dam-m53-'))

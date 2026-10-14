@@ -4,6 +4,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, readdirSyn
 import { createHash } from 'node:crypto'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
+import { canonicalSourcePath } from '../../lib/file-boundary.js'
 process.on('uncaughtException', (e) => { console.error('[F1-TEST] FATAL:', (e && (e.stack || e.message)) || e); process.exit(1) })
 process.on('unhandledRejection', (r) => { console.error('[F1-TEST] REJ:', r); process.exit(1) })
 
@@ -73,7 +74,7 @@ console.log('[G1/G2/G3] anchor 开启:超预算 → 记录级压缩(整条归档
   }))
   const sideDir = path.join(h.home, 'memory', 'index', 'files')
   mkdirSync(sideDir, { recursive: true })
-  const canon = (x) => path.resolve(x).replace(/\\/g, '/').toLowerCase()
+  const canon = canonicalSourcePath
   const sidePath = path.join(sideDir, createHash('sha256').update(canon(notesFile), 'utf8').digest('hex') + '.json')
   writeFileSync(sidePath, JSON.stringify({ schemaVersion: 1, namespace: 'dsh-auto-memory-pre', sourceFile: notesFile,
     sourceEpoch: '44444444-4444-4444-8444-444444444444', sourceVersion: 1, fileDigest: sha256Hex(buf),
