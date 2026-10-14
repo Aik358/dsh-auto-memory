@@ -1115,12 +1115,12 @@
       // 下载进行中每 1.5s 轮询真实进度(服务端流式记账 bytesDone/bytesTotal/mirrorUsed)
       useEffect(function () {
         var ph = sem && sem.download && sem.download.phase
-        if (ph !== 'downloading' && ph !== 'verifying') return function () {}
+        if (ph !== 'downloading' && ph !== 'verifying' && !(sem && sem.pythonSetup && sem.pythonSetup.activeOperation)) return function () {}
         var iv = setInterval(function () {
           refreshSem(setSem)
         }, 1500)
         return function () { clearInterval(iv) }
-      }, [sem && sem.download && sem.download.phase])
+      }, [sem && sem.download && sem.download.phase, sem && sem.pythonSetup && sem.pythonSetup.activeOperation])
       if (!cfg) return err ? h('div', { 'data-dam-error': '' }, err) : h(Loading)
     // issue #52:旧实现 `var next = Object.assign({}, cfg); next[key] = value` 读的是**本次渲染的闭包快照**。
     // 同一个事件里连续调 `set('subagentModel', m); set('subagentProvider', p)` 时,React 批处理两次
@@ -1403,7 +1403,7 @@
             }
             return h('div', { 'data-dam-detect-panel': '', style: panelStyle }, kids)
           })() : null,
-          guide === 'python' ? h(PySetupWizard) : null,
+          guide === 'python' ? h(PySetupWizard, { onStateChange: function () { refreshSem(setSem) } }) : null,
           guide === 'js' || guide === 'python' ? (function () {
             // 安装引导卡(对齐 ui-assets 原型:进度条/下载源/体积/状态)——资产检测由 sem 状态机驱动
             var isJs = guide === 'js'
@@ -1411,32 +1411,36 @@
             var desc = isJs
               ? (L('下载约130MB本地量化模型（multilingual-e5-small），校验后离线运行——记忆不出电脑。下载期间词法检索照常可用，完成后自动启用。', 'Downloads a ~130MB local quantized model (multilingual-e5-small), verifies and runs fully offline — memories never leave this machine. Lexical search keeps working during setup; the engine switches on automatically when ready.'))
               : (L('高级引擎通过本地 Python sidecar 运行 BGE-M3 int8（约563MB），召回质量最高。需要引导式安装（Python 环境 + 模型），适合深度用户；不安装不影响内置引擎。', 'The advanced engine runs BGE-M3 int8 (~563MB) via a local Python sidecar for maximum recall. Guided install required (Python runtime + model); optional for power users.'))
-            var ready = isJs ? sem.ready : sem.pythonInt8Present
+            var ready = isJs ? sem.ready : !!(sem.pythonRuntime && sem.pythonRuntime.state === 'verified-ok')
             var bytes = isJs ? (sem.assetBytes || 0) : (sem.pythonInt8Bytes || 0)
-            var dl = (isJs && sem.download) ? sem.download : { phase: 'idle' }
+            var pySetup = sem.pythonSetup || {}
+            var dl = isJs ? (sem.download || { phase: 'idle' }) : Object.assign({}, pySetup.dl || {}, { phase: pySetup.phase || 'idle', error: pySetup.error || '' })
             var dlActive = dl.phase === 'downloading' || dl.phase === 'verifying'
             // 规范 G 七态之「建库中」:SHA256 过了但引擎还在后台编码全量语料(jsSemantic.embedding)
             var building = isJs && sem.jsSemantic && sem.jsSemantic.embedding === true
             var totalJs = sem.manifestBytes || Math.round(130 * 1024 * 1024)
             var stateTxt, stateBg
             if (!sem.loaded) { stateTxt = L('检测中…', 'Detecting…'); stateBg = 'var(--dam-neutral-16, rgba(128,128,128,.16))' }
+            else if (!isJs && sem.pythonRuntime && sem.pythonRuntime.error) { stateTxt = sem.pythonRuntime.error; stateBg = 'var(--dam-196-74-74-22, rgba(196,74,74,.22))' }
+            else if (!isJs && pySetup.modelReady && !pySetup.configOk) { stateTxt = L('模型已校验，配置待修复', 'Model verified; configuration needs repair'); stateBg = 'var(--dam-196-138-42-2, rgba(196,138,42,.2))' }
             else if (ready && building) { stateTxt = L('已就绪 · 建库中…', 'Ready · building index…'); stateBg = 'var(--dam-36-86-196-2, rgba(36,86,196,.2))' }
             else if (ready) { stateTxt = L('已就绪 ✓', 'Ready ✓'); stateBg = 'var(--dam-47-164-106-24, rgba(47,164,106,.24))' }
             else if (dl.phase === 'error') { stateTxt = t('dlError'); stateBg = 'var(--dam-196-74-74-22, rgba(196,74,74,.22))' }
             else if (dl.phase === 'cancelled') { stateTxt = t('dlCancelled'); stateBg = 'var(--dam-196-138-42-2, rgba(196,138,42,.2))' }
-            else if (isJs && dlActive) { stateTxt = dl.phase === 'verifying' ? t('dlVerifying') : t('dlDownloading'); stateBg = 'var(--dam-36-86-196-2, rgba(36,86,196,.2))' }
+            else if (dlActive) { stateTxt = dl.phase === 'verifying' ? t('dlVerifying') : t('dlDownloading'); stateBg = 'var(--dam-36-86-196-2, rgba(36,86,196,.2))' }
             // ★ issue #70（2026-09-19）：资产齐备但引擎**已降级** —— 必须与「未下载」区分开。
             //   旧实现只看文件存在性 ⇒ 这种状态会显示「已就绪 ✓」而实际每次检索都在词法兜底。
             else if (isJs && sem.degraded) { stateTxt = locale === 'zh' ? ('引擎降级（词法兜底）— ' + String(sem.degraded).slice(0, 60)) : ('Engine degraded (lexical fallback) — ' + String(sem.degraded).slice(0, 60)); stateBg = 'var(--dam-196-74-74-22, rgba(196,74,74,.22))' }
             else if (isJs && sem.assetPresent && !sem.peerPresent) { stateTxt = L('模型已存在,缺推理库——pnpm approve-builds 后 pnpm add @huggingface/transformers', 'Model present, runtime missing — pnpm approve-builds && pnpm add @huggingface/transformers'); stateBg = 'var(--dam-196-138-42-2, rgba(196,138,42,.2))' }
+            else if (!isJs && sem.pythonInt8Present) { stateTxt = L('文件已安装，等待运行检测', 'Files installed; runtime verification pending'); stateBg = 'var(--dam-196-138-42-2, rgba(196,138,42,.2))' }
             else { stateTxt = L('未下载', 'Not downloaded'); stateBg = 'var(--dam-196-138-42-2, rgba(196,138,42,.2))' }
             var progress = dlActive || (isJs && dl.phase === 'done')
-              ? Math.min(100, Math.round(((dl.bytesDone || 0) / Math.max(1, dl.bytesTotal || totalJs)) * 100))
-              : (bytes && !ready ? Math.min(100, Math.round(bytes / ((isJs ? 130 : 563) * 1024 * 1024) * 100)) : (ready ? 100 : 0))
+              ? Math.min(100, Math.round(((dl.bytesDone || 0) / Math.max(1, dl.bytesTotal || (isJs ? totalJs : pySetup.modelExpectedBytes) || 1)) * 100))
+              : (!isJs ? (pySetup.modelReady || ready ? 100 : 0) : (bytes && !ready ? Math.min(100, Math.round(bytes / totalJs * 100)) : (ready ? 100 : 0)))
             var fmtMB = function (b) { return b ? (b / (1024 * 1024)).toFixed(1) + ' MB' : '—' }
             var mirrorName = function (m) { return m === 'cn' ? t('mCn') : m === 'intl' ? t('mIntl') : t('mAuto') }
             var phaseLine = dlActive
-              ? ((dl.phase === 'verifying' ? t('dlVerifying') : t('dlDownloading')) + ' · ' + fmtMB(dl.bytesDone || 0) + ' / ' + fmtMB(dl.bytesTotal || totalJs) + ' · ' + mirrorName(dl.mirrorUsed))
+              ? ((dl.phase === 'verifying' ? t('dlVerifying') : t('dlDownloading')) + ' · ' + fmtMB(dl.bytesDone || 0) + ' / ' + fmtMB(dl.bytesTotal || (isJs ? totalJs : pySetup.modelExpectedBytes)) + ' · ' + mirrorName(dl.mirrorUsed))
               : (dl.phase === 'error' ? (t('dlError') + ': ' + String(dl.error || '').slice(0, 120))
                 : (dl.phase === 'cancelled' ? t('dlCancelled')
                   : (isJs && dl.phase === 'done' && !ready ? t('dlDone') + (L('（缺运行库时需安装 @huggingface/transformers）', ' (install @huggingface/transformers if runtime missing)'))

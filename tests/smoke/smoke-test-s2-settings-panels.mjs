@@ -83,7 +83,7 @@ function nextLineText(s, i) {
 /** 三对「触发点 → 渲染点」 */
 const PAIRS = [
   ['⟳ 检测 按钮 → 检测面板', "'⟳ 检测'", 'data-dam-detect-panel'],
-  ['🧩 安装向导 按钮 → Python 向导', "'🧩 安装向导'", 'h(PySetupWizard)'],
+  ['🧩 安装向导 按钮 → Python 向导', "'🧩 安装向导'", 'h(PySetupWizard, { onStateChange: function () { refreshSem(setSem) } })'],
   ['🧩 安装向导 按钮 → JS/Python 安装引导卡', "'🧩 安装向导'", "guide === 'js' || guide === 'python'"],
 ]
 /** 返回违规列表（空数组 = 全部同区） */
@@ -109,7 +109,7 @@ console.log('[G1] 触发点 ↔ 渲染点 同分区（核心不变量）')
   ok(bad.length === 0, 'G1b 三对触发↔渲染全部同区且落在 engine' + (bad.length ? ' ⇒ ' + JSON.stringify(bad) : ''))
   const detSec = sectionOf(bounds, SRC.indexOf('data-dam-detect-panel'))
   eq(detSec, 'engine', 'G1c 检测面板归属 engine')
-  eq(sectionOf(bounds, SRC.indexOf('h(PySetupWizard)')), 'engine', 'G1d Python 向导归属 engine')
+  eq(sectionOf(bounds, SRC.indexOf('h(PySetupWizard, { onStateChange: function () { refreshSem(setSem) } })')), 'engine', 'G1d Python 向导归属 engine')
   eq(sectionOf(bounds, SRC.indexOf("guide === 'js' || guide === 'python'")), 'engine', 'G1e 安装引导卡归属 engine')
 }
 
@@ -130,7 +130,7 @@ console.log('[G2] 渲染路径不被折叠/编辑器开合包裹')
   ok(!block.includes('promptEditOpen'), 'G2c 面板块不依赖「编辑 prompt 层」编辑器开合')
   ok(block.includes('detOpen ? (function () {'), 'G2d 面板开合只由 detOpen 单一状态决定')
   eq(cnt(SRC, 'data-dam-detect-panel'), 1, 'G2e 检测面板容器全仓唯一（无重复挂载）')
-  ok(cnt(block, "guide === 'python' ? h(PySetupWizard) : null") === 1, 'G2f Python 向导挂载点在块内唯一')
+  ok(cnt(block, "guide === 'python' ? h(PySetupWizard, { onStateChange: function () { refreshSem(setSem) } }) : null") === 1, 'G2f Python 向导挂载点在块内唯一')
   ok(!block.includes("section('"), 'G2g 块内不含任何 section 头（未把别的分区吞进来）')
 }
 
