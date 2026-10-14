@@ -226,7 +226,14 @@ copyDirExcluding(path.join(DEV, 'python'), path.join(REL, 'python'), /(__pycache
 //   但 GitHub 仓库侧整树移出导致 README 的 docs/screenshots 配图与约 20 处文档链接全部 404，
 //   属超范围执行。现恢复 docs 全树随 REL 仓分发（npm 侧由 package.json files 决定，维持精简）。
 // ★issue #211（2026-10-04，部分有效）：docs 不进 **npm 包**（files 口径）仍维持。
-for (const entry of ['cordis.patch.yml', 'README.md', 'README.zh-CN.md', 'LICENSE', 'notices.json', 'social-preview.html', '.github',
+// ★2026-10-14（吸收 PR#420 时实测抓到，与上方 CHANGELOG.md / tools/lib / build-iter5-skin.mjs 同型漏网）：
+//   `.gitattributes` 此前**从不在任何复制清单里**，但它自 v3.3.3 起已在 GitHub `main` 上存在
+//   （由 PR#420 带入），且是**行尾契约的唯一声明处**（m3b1 CRLF 夹具 / .github 脚本与 scf_bootstrap
+//   的 LF 钉死 / *.zip binary）。漏拷的后果是**破坏性**的而非仅断链：本脚本第 1 步会先清空 REL，
+//   漏拷 ⇒ REL 工作区里该文件消失 ⇒ 下一步 `git add -A` 会把它**从 main 删除**，
+//   于是 CI 在 Ubuntu 上因行尾而红、zip 字节契约与 group-digest 锚串一并失守。
+//   判据：`.gitattributes` 必须在复制清单内 —— 它是契约文件，不是开发残留。
+for (const entry of ['.gitattributes', 'cordis.patch.yml', 'README.md', 'README.zh-CN.md', 'LICENSE', 'notices.json', 'social-preview.html', '.github',
   // ★2026-09-21 补 CHANGELOG.md：两份 README **各有 3 处**链接到 `CHANGELOG.md`（导航条 / 文末链接区，
   //   共 6 处），但此文件此前**从不在复制清单里**，REL 仓也从未有过它 ⇒ GitHub 上点「Changelog」
   //   一直是 **404**（`git log --all -- CHANGELOG.md` 为空可证）。发版脚本漏拷，属真断链。
@@ -263,7 +270,13 @@ for (const entry of ['cordis.patch.yml', 'README.md', 'README.zh-CN.md', 'LICENS
 //   `main`/干净克隆也永远拿不到它。而下方 3.7 段**无条件调用**它 ⇒ 干净克隆跑 release 必崩。
 //   ⚠️ 本清单式循环对缺失是 `continue`（**静默跳过**）—— 故另配下方「交付核对」硬检查，
 //      否则会重演「以为交付了其实没有」。
-for (const toolFile of 'run-smoke.mjs,smoke-impact.mjs,release.mjs,reconcile-upstream.mjs'.split(',')) {
+// ★2026-10-14（吸收 PR#420）：`check-write-contract.mjs` 与 `check-write-contract-await.mjs`
+//   都必须入包 —— 发布树里有两套**都在被测试引用**的写入契约检查器：
+//     · tests/smoke/smoke-test-i332-write-contract.mjs  → tools/check-write-contract.mjs（#332 吸收）
+//     · tests/smoke/smoke-test-issue368-write-contract-negative.mjs → tools/check-write-contract-await.mjs（PR#420）
+//   而 tools/ 是**白名单**入包 ⇒ 不列即静默跳过；漏了会出现「发布树里测试引用的工具不存在」，
+//   即本文件反复记录的同一型漏网（CI 里 ERR_MODULE_NOT_FOUND / ENOENT）。
+for (const toolFile of 'run-smoke.mjs,smoke-impact.mjs,release.mjs,reconcile-upstream.mjs,check-write-contract.mjs,check-write-contract-await.mjs'.split(',')) {
   const src = path.join(DEV, 'tools', toolFile)
   if (!existsSync(src)) continue
   mkdirSync(path.join(REL, 'tools'), { recursive: true })

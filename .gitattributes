@@ -1,1 +1,38 @@
+# .gitattributes — EOL 契约（2026-09-26 新增，修 CI 在 ubuntu-latest 上的既有红）
+#
+# 背景：本仓开发机 core.autocrlf=true ⇒ 提交时全部归一为 LF（索引里 i/lf）。
+# CI 跑在 ubuntu-latest ⇒ 检出即 LF。但部分**测试夹具断言必须是 CRLF**：
+#   tests/m3b1-fixtures/crlf.md 被 smoke-test-m3b1.mjs 断言 newline === 'crlf'
+# ⇒ Linux 上必红（CI 实测报错：crlf.md newline detect failed: lf）。
+#
+# 修法：只对**必须保持 CRLF 的夹具**显式声明 eol=crlf；不写 `* text=auto`，
+# 以免一次性重规范化 984 个文件、造成大面积无意义 diff。
+#
+# 判据：`git check-attr eol tests/m3b1-fixtures/crlf.md` 应输出 eol: crlf。
+
+# CRLF 敏感夹具：内容含真实 CRLF 换行，供 newline 探测断言使用
+tests/m3b1-fixtures/*.md text eol=crlf
+
+# 其余文件维持仓库既有默认（不在此处声明，避免全局重规范化）
+
+# Frozen skin source has a strict LF contract (h43 theme-sync regression).
+# ★批次 W（2026-10-05，PR#210 拆取）：与上方 m3b1 CRLF 夹具契约**并存的并集**（PR 原版按
+#   「上游无此文件」写的 new file，整文件替换会顶掉 m3b1 契约——此处只追加，不改既有规则）。
 skins/legacy/*.frozen text eol=lf
+
+# ★批次 2026-10-13（#346）：字节敏感文件的**LF 检出钉死**。
+#   背景：本仓开发树是 CRLF（w/crlf），而 CI 检出是 LF。若允许这些文件被转成 CRLF，
+#   依赖「源文件字节」的回归锁（group-listener 锚串、qq-webhook 与 index.zip 的字节一致）必红。
+#   这些文件的 git blob 现状本就是 i/lf ⇒ 本规则**幂等**，不产生内容变更、不产生 diff。
+#   不写 * text=auto，避免触发近千文件级重规范化。
+.github/**/*.js  text eol=lf
+#   index.zip 现为 i/-text，显式声明 binary 防其未来被当文本处理（zip 字节契约）。
+*.zip            binary
+#   ★2026-10-13 补：`.github/**/*.js` 匹配不到 .mjs —— 而 a6 套件受保护的两个脚本
+#   （group-digest.mjs / group-listener.mjs）正是 .mjs，必须一并钉 LF 才能修行尾红。
+.github/**/*.mjs text eol=lf
+
+#   ★2026-10-13：`scf_bootstrap` 是**无扩展名**脚本，上面两个 glob 都盖不到。
+#   它同样被 index.zip 的逐字节漂移锁保护（issue324 套件）⇒ 单独点名钉 LF。
+#   该 blob 现为 i/lf，规则幂等。（将来若加入其它无扩展名受保护脚本，按同一口径单列。）
+scf_bootstrap    text eol=lf
