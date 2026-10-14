@@ -24,7 +24,11 @@ function harness(initial, failStatus = false) {
   const render = () => { index = 0; effects = []; const tree = env.PySetupWizard({}); effects.forEach(fn => fn()); return tree }
   const nodes = tree => [tree, ...(tree && tree.children || []).filter(c => c && typeof c === 'object').flatMap(nodes)]
   const text = tree => JSON.stringify(tree, (k, v) => typeof v === 'function' ? undefined : v)
-  return { render, nodes, text, posts, update: v => { current = v }, recover: () => { failStatus = false }, poll: async () => { if (timer) timer(); await flush() }, close: () => { disposed = true; cleanups.forEach(fn => fn && fn()) }, late: () => lateUpdates }
+  return { render, nodes, text, posts, update: v => { current = v }, recover: () => { failStatus = false }, holdStatus: () => {
+    let release, count = 0
+    env.apiGet = () => { count++; return new Promise(resolve => { release = resolve }) }
+    return { count: () => count, release: value => release(value) }
+  }, poll: async () => { if (timer) timer(); await flush() }, close: () => { disposed = true; cleanups.forEach(fn => fn && fn()) }, late: () => lateUpdates }
 }
 const idle = { phase: 'idle', activeOperation: '', venvOk: true, depsOk: true, modelReady: true, configOk: false, wantGpu: false, pythons: [], dl: {} }
 const failed = harness(idle, true)
@@ -45,13 +49,25 @@ gpu.props.onChange({ target: { checked: true } }); tree = failed.render()
 failed.nodes(tree).find(n => n.tag === 'button' && n.children.includes('应用 CPU/GPU 选择')).props.onClick(); await flush()
 assert.equal(failed.posts.at(-1).api, 'deps'); assert.equal(failed.posts.at(-1).payload.gpu, true)
 failed.close(); assert.equal(failed.late(), 0)
+const stopped = harness({ ...idle, configOk: true, engineStopped: true })
+stopped.render(); await flush(); tree = stopped.render()
+assert.ok(stopped.nodes(tree).some(n => n.tag === 'button' && n.children.includes('修复引擎配置')), 'a failed uninstall still exposes verified recovery when configuration is intact')
+assert.ok(!stopped.text(tree).includes('pyWizDone'))
+stopped.close()
 const active = harness({ ...idle, phase: 'deps', activeOperation: 'deps' })
 active.render(); await flush(); tree = active.render()
 assert.equal(active.posts.length, 0, 'reopening an active task does not start detect or install')
 assert.ok(active.nodes(tree).filter(n => n.tag === 'button').every(n => n.props.disabled === true))
-active.update(idle); await active.poll(); tree = active.render()
+const held = active.holdStatus()
+await active.poll(); await active.poll()
+assert.equal(held.count(), 1, 'slow status polls cannot overlap and publish in reverse order')
+held.release(idle); await flush(); tree = active.render()
 assert.equal(active.nodes(tree).find(n => n.children.includes('修复引擎配置')).props.disabled, false)
 active.close(); await active.poll(); assert.equal(active.late(), 0)
+const closing = harness({ ...idle, phase: 'deps', activeOperation: 'deps' })
+closing.render(); await flush(); closing.render()
+const late = closing.holdStatus(); await closing.poll(); closing.close(); late.release(idle); await flush()
+assert.equal(closing.late(), 0, 'an old response after unmount cannot update the closed wizard')
 let cards = 0, pos = 0
 while ((pos = source.indexOf("var isJs = guide === 'js'", pos)) >= 0) {
   const end = source.indexOf('var fmtMB', pos)

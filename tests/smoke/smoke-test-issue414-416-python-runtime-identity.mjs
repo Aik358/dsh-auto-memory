@@ -15,7 +15,7 @@ try {
   const start = source.indexOf('  engine.probePythonRuntime = async (optsRt = {}) => {')
   const end = source.indexOf('  /** 只读缓存版', start)
   let healthCalls = 0
-  const engine = { config: { pythonBackendExecutable: 'fixture-python' }, _pyRtCacheAt: 0, _pyRtGeneration: 0,
+  const engine = { config: { pythonBackendExecutable: 'fixture-python' }, _pyRtCacheAt: 0, _pyRtGeneration: 0, _pyHealthProbes: new Set(),
     _probeWorkerHealthOnce: async () => { healthCalls++; return { tried: true, healthSeen: true, ready: true } } }
   const env = { engine, Date, Map, JSON, String, Number, readEffectiveEmbeddingConfigPre,
     existsSync: fs.existsSync, pluginRootDir: () => '/fixture/plugin', resolveDshHomePre: () => home,
@@ -53,6 +53,13 @@ try {
   assert.equal(strong.state, 'verified-ok', 'full detection does not join a weaker in-flight probe')
   finishWeak({ chosen: 'fixture-python', probed: [] }); await weak
   assert.equal(engine._pyRtCache.state, 'verified-ok')
+  const cachedStart = source.indexOf('  engine.pythonRuntimeCached = () => {')
+  vm.runInContext(source.slice(cachedStart, source.indexOf('  /**', cachedStart)), env)
+  assert.equal(engine.pythonRuntimeCached().state, 'verified-ok')
+  engine._pyRtCacheAt = Date.now() - 60001
+  assert.equal(engine.pythonRuntimeCached(), null, 'expired runtime cache cannot certify current readiness')
+  engine._pyRtCacheAt = Date.now(); engine._pyWorkerVerdict.at = Date.now() - 600001
+  assert.equal(engine.pythonRuntimeCached(), null, 'an expired worker verdict cannot certify readiness')
   const override = path.join(home, 'override.json')
   fs.writeFileSync(override, JSON.stringify({ provider: 'bge-m3-onnx-int8-pre-v1', modelDir, onnxFile: 'custom.onnx' }))
   assert.equal(readEffectiveEmbeddingConfigPre(home, { DSH_M7_EMBEDDING_CONFIG: override }).modelPath, path.join(modelDir, 'custom.onnx'))

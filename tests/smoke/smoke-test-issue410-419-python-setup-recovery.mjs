@@ -38,6 +38,13 @@ try {
   fs.writeFileSync(cfg, saved); downloads.length = 0
   assert.equal((await setup.repairConfig()).configOk, true)
   assert.equal(downloads.length, 0, 'configuration repair does not redownload assets')
+  let stopped = false
+  const occupied = createPythonSetupPre({ dshHome: home, beforeUninstall: () => { stopped = true }, onConfigChanged: () => { stopped = false }, removeDir: () => { throw Object.assign(Error('fixture directory occupied'), { code: 'EBUSY' }) } })
+  await occupied.detect()
+  assert.throws(() => occupied.uninstall(), /occupied/)
+  assert.equal(stopped, true); assert.ok(fs.existsSync(occupied.engineRoot()))
+  assert.equal((await occupied.repairConfig()).configOk, true)
+  assert.equal(stopped, false, 'intact assets after a failed uninstall have an explicit verified repair path')
   const cancelHome = path.join(dir, 'cancel')
   let cancelSetup, tokenizerCalls = 0, modelStats = 0
   fs.statSync = (file, ...args) => {
@@ -50,6 +57,19 @@ try {
   const cancelled = await cancelSetup.downloadModel()
   assert.equal(cancelled.activeOperation, ''); assert.equal(cancelled.phase, 'idle')
   assert.equal(tokenizerCalls, 0, 'one cancellation at the verification boundary prevents the next transfer')
+  fs.statSync = originalStat; syncBuiltinESMExports()
+  const finalCancelHome = path.join(dir, 'cancel-final-verify')
+  let finalSetup, finalModelStats = 0
+  fs.statSync = (file, ...args) => {
+    const result = originalStat(file, ...args)
+    if (String(file) === path.join(finalCancelHome, 'python-engine', 'models', 'model_int8.onnx') && ++finalModelStats === 2) queueMicrotask(() => finalSetup.cancelDownload())
+    return result
+  }
+  syncBuiltinESMExports()
+  finalSetup = createPythonSetupPre({ dshHome: finalCancelHome, download: async (_, file) => writeArtifact(file) })
+  const finalCancelled = await finalSetup.downloadModel()
+  assert.equal(finalCancelled.phase, 'idle')
+  assert.ok(!fs.existsSync(path.join(finalCancelHome, 'memory', 'semantic', 'embedding-config.json')), 'cancellation during the final verification must not publish configuration')
   fs.statSync = originalStat; syncBuiltinESMExports()
   const pipHome = path.join(dir, 'pip')
   const venv = path.join(pipHome, 'python-engine', '.venv', process.platform === 'win32' ? 'Scripts/python.exe' : 'bin/python')

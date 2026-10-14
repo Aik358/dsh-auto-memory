@@ -80,15 +80,30 @@
       var root = useRef(null)
       var slot = useRef(null)
       var expanded = useState(false)
+      var settingsTop = useState(16)
+      var autoExpanded = useRef(false)
       var target = useState(function () { return createPortal ? document.createElement('div') : null })[0]
+      function availableTop() {
+        var top = 16, dialog = slot.current && slot.current.closest('[role=dialog]')
+        if (dialog) top = Math.max(top, dialog.getBoundingClientRect().top)
+        var overlay = typeof navigator !== 'undefined' && navigator.windowControlsOverlay
+        if (overlay && overlay.visible && typeof overlay.getTitlebarAreaRect === 'function') {
+          var rect = overlay.getTitlebarAreaRect(); top = Math.max(top, rect.y + rect.height)
+        }
+        return Math.ceil(top)
+      }
       useEffect(function () {
         var el = slot.current
         if (!el || !target) return
-        function measure() { if (el.clientWidth > 0 && el.clientWidth < 360) expanded[1](true) }
+        function measure() {
+          settingsTop[1](availableTop())
+          if (!autoExpanded.current && el.clientWidth > 0 && el.clientWidth < 360) { autoExpanded.current = true; expanded[1](true) }
+        }
         measure()
         var observer = typeof ResizeObserver === 'function' ? new ResizeObserver(measure) : null
         if (observer) observer.observe(el)
-        return function () { if (observer) observer.disconnect(); target.remove() }
+        window.addEventListener('resize', measure)
+        return function () { if (observer) observer.disconnect(); window.removeEventListener('resize', measure); target.remove() }
       }, [])
       useEffect(function () {
         if (!target || !slot.current) return
@@ -108,7 +123,7 @@
           if (document.querySelector('.i5-overlay-root')) return
           var el = root.current, dialog = slot.current && slot.current.closest('[role=dialog]')
           if (e.type === 'keydown' && e.key === 'Escape' && expanded[0] && !dialogState) {
-            e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation(); expanded[1](false); return
+            e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation(); autoExpanded.current = true; expanded[1](false); return
           }
           if (!el || !dialog || !el.querySelector('[data-i5-dirty=true]')) return
           if (e.type === 'click' && (!dialog.contains(e.target) || el.contains(e.target) || !e.target.closest('button'))) return
@@ -127,6 +142,7 @@
       }, [])
       var form = h(Iter5Surface, { kind: 'settings' },
         h('div', { ref: root, 'data-iter5': '', 'data-i5-embedded': '', 'data-i5-style': skinStyle, 'data-expanded': String(expanded[0]),
+          style: expanded[0] ? { top: settingsTop[0] + 'px', left: '12px', right: '12px', bottom: '12px', height: 'auto' } : undefined,
           role: expanded[0] ? 'dialog' : undefined, 'aria-modal': expanded[0] ? true : undefined,
           'aria-label': L('记忆设置', 'Memory settings'),
           onKeyDown: function (e) {
@@ -137,7 +153,7 @@
             else if (!e.shiftKey && document.activeElement === nodes[nodes.length - 1]) { e.preventDefault(); nodes[0].focus() }
           } },
           h('header', { className: 'i5-settings-frame-head' }, h('strong', null, L('记忆设置', 'Memory settings')),
-            h('button', { 'data-i5-settings-return': '', onClick: function () { expanded[1](!expanded[0]) } }, expanded[0] ? L('返回宿主设置', 'Back to host settings') : L('展开设置', 'Expand settings'))),
+            h('button', { 'data-i5-settings-return': '', onClick: function () { autoExpanded.current = true; settingsTop[1](availableTop()); expanded[1](!expanded[0]) } }, expanded[0] ? L('返回宿主设置', 'Back to host settings') : L('展开设置', 'Expand settings'))),
           h('div', { className: 'i5-main' }, h(Iter5Settings, { key: identity[0], draftScope: 'host', close: props && props.close }))))
       return h('div', { ref: slot, 'data-i5-settings-slot': '' },
         expanded[0] ? h('button', { onClick: function () { if (root.current) root.current.querySelector('button').focus() } }, L('记忆设置已展开', 'Memory settings expanded')) : null,
