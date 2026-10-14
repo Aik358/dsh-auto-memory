@@ -4,6 +4,47 @@ All notable changes to dsh-auto-memory.
 
 ---
 
+## [3.3.4] — 2026-10-14 · 吸收社区 60 项修复（#359–#419）；修「启动自检误清配置错误」
+
+> **一条主线**：把 Minervaowl7 的两个 PR（#394 / #420，共 73 个提交、处理 60 项 issue）按可机器复核的
+> **三分桶整文件法**移植进开发树，并在移植中修掉一个会让「配置错误被静默抹掉」的真实缺陷。
+> 同时把公开 `main` 的合并历史**保留**下来（不再被强推覆盖）。
+
+### ★ 社区贡献（#357 承诺的落实）
+
+- **已合并**：`main` `054942b5` → `394fdbe2`，两个 **merge commit**（`7e379262` + `394fdbe2`），他的 73 个提交成为 `main` 祖先。
+  两个 PR 的描述与 73 条 commit message 里 `fix #N`/`closes #N` 计数为 **0**，因此**没有触发任何 issue 自动关闭**（#359–#419 共 60 项全部保持 open，逐项评论已发出）。
+- **并为此开启 `main` 分支保护**（禁止强推 / 禁止删除 / 对管理员同样生效）。原因：旧推送命令带 `--force`，已把 **PR#240 / #243 / #279 / #280** 四个**已合并** PR 从 `main` 世界线抹掉（GitHub 仍显示 Merged，但 merge commit 已非 `main` 祖先）。
+- **为什么不是照搬**：开发树与 `main` 历史分叉且行尾不同（开发树 CRLF / 仓库历史 LF / `.gitattributes` 未声明 `eol`）⇒ 直接三方合并实测 **790 冲突**；`merge.renormalize` 只能降到 372 且会改变结果树 ⇒ 改用**三分桶整文件法**：
+  - A = **84**（开发树该文件 ≡ `main` ⇒ 整文件取 PR 版，等价于一次干净三方合并的结果）
+  - B = **56**（开发树中不存在 ⇒ 新增）
+  - C = **2**（需判断：`.gitattributes` 与 `tools/check-write-contract.mjs`）
+  - **守恒 A+B+C = 142 = PR 变更路径总数**（无未分类项，偏差 0）
+  - **EOL 全程不翻转**：17 个 CRLF 保持 CRLF、67 个 LF 保持 LF、53 个新增按 LF、3 个二进制逐字节。
+
+### ★ 缺陷修复
+
+- **启动自检会静默抹掉真实的配置错误**（本次移植中发现；与 #376/#421 同族症状）：`updateEmbeddingConfigPre` 命中已存在文件时（`createOnly`）**一个字节都不写**，却返回与「真写过」同形的对象 ⇒ 调用点 `engine._jsConfigurationError = ''` 凭空清掉一条真实错误。客户端启动约 16s 后跑一次该自检 ⇒ **用户重启后面板显示「正常」，而配置其实仍是坏的**。现让「未写」可区分（返回 `__unchangedByCreateOnly`），调用点据此才清空。
+- **覆盖 `#421`（`lujfsd` 报：唤起注入模式改成 canary-explicit 后重启被重写回 shadow）**：该 PR 已引入启动自检 `createOnly: true` 的修法（本版包含），叠加上述修复后，启动路径**既不覆盖用户档位、也不误清错误状态**。
+
+### 移植中的判断（可复核）
+
+- **`.gitattributes` 保留开发树版**（未取 PR 版）：开发树 6 条有效规则是他的 1 条的真超集，取 PR 版会丢 m3b1 夹具 `eol=crlf`、`.github/**/*.js|*.mjs eol=lf`、`scf_bootstrap eol=lf`、`*.zip binary` 共 5 条 ⇒ CI 在 Linux 上必红。
+- **`tools/check-write-contract.mjs` 同名异物 ⇒ 重命名共存**：他的查「写入调用是否 `await`/`return`」→ 改名 `check-write-contract-await.mjs`（并改 `smoke-test-issue368-write-contract-negative.mjs` 指向新名）；开发树既有的（#332：`ok`/`committed`/`indexStale`/`revision`/`error` 契约 + 4 条变异对照）保留原名。两套并存、实测双绿。
+- **诊断证据口径恢复**：`semantic-emit: ok ...` 补回 `created=`/`emit=`/`policy=` —— 因为 #421 报障者引用的正是这三个字段（少了它们，下一位用户看不出「文件是被改写的还是本来就那样」）。他的失败路径留痕全部保留。
+
+### 质量
+
+- **全量回归 399 PASS / 1 FAIL / 0 TIMEOUT / 208.6s**。
+- 唯一 FAIL `smoke-test-a1-mutation-admission` 为**既有间歇缺陷**（吸收后 solo 8 次 2 红 = 25%；**吸收前备份树**独立 worktree @ `c904814` solo 5 次 1 红 = 20%）⇒ 与本次吸收无关，失败率无变化。
+- `r26` 基线锁属**判据过期**（宿主 `lib/index.js` 有意演进），按本仓 2026-10-01 裁定以**套件自身表达式**复算重钉 `DE3AFB3747F0F1BC` → `3C375E3D8D9E34BD`（R110，1,019,370 字符）。
+- 生成器 `--check` = **SYNC-OK**；运行时 factory 守卫 **9/9 PASS**；`node --check` 五入口 OK；改动文件 **0 个 BOM**。
+- 本轮**未吸收项如实登记**：#390 / #400 / #405 有修复代码但在开发树回归中**找不到对应套件**（其余 57 项都有），已在各 issue 评论中回报并建议并入相邻组；未替贡献者补测试。
+
+### 流程
+
+- **发布推送不再使用 `--force`**：`main` 已开分支保护，强推会被 GitHub 拒绝。REL 树改为 `git merge --ff-only origin/main` 对齐，**保留已接收的社区 merge 历史**（这正是 §0.5 事故的机制化修法）。
+
 ## [3.3.3] — 2026-10-14 · 修复「JS 档用户开关不可用」；工作区关系图集成补全；回归提速 1.79×
 
 > **一条主线**：把升级用户与新下载用户点开关就报 `Invalid semantic configuration` 的现场修掉；
