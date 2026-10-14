@@ -50,8 +50,8 @@ function extractMethod(signature) {
 }
 const methods = [
   'readTextSafe(p) {',
-  'listDailyLogs(projectDir, limit = 40) {',
-  'listReflections(reflectDir, limit = 30) {',
+  'listDailyLogs(projectDir, limit = 40, strict = false) {',
+  'listReflections(reflectDir, limit = 30, strict = false) {',
   "recall(query, limit = 8, agent, scope = 'all', opts = null) {",
 ].map(extractMethod).join('\n')
 const relocatedMethods = methods.replace(/import\('\.\/([^']+)'\)/g, (_, name) => {
