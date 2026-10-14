@@ -1921,7 +1921,9 @@
       var setMigConflict = migConflictPair[1]
       // ok===false 时把 error / errors / warnings 一并显示,绝不静默。
       function migFail(tag, j, e) {
+        j = j || (e && e.response)
         var parts = []
+        if (j) { var receipt = migrationReceiptPre(j); if (receipt.text) parts.push(receipt.text); setMigResult(j) }
         if (e) parts.push(String(e && e.message ? e.message : e))
         if (j && j.error) parts.push(String(j.error))
         if (j && j.errors) parts.push(Array.isArray(j.errors) ? j.errors.join(' | ') : String(j.errors))
@@ -1988,7 +1990,8 @@
           setMigBusy('')
           if (!j || j.ok === false) { migFail(t('migApply'), j, null); return }
           setMigResult(j)
-          setMigNote(t('migApply') + ' ✓ ' + String(j.targetWs || ''))
+          var receipt = migrationReceiptPre(j)
+          setMigNote((receipt.partial ? L('部分导入，需处理剩余项: ', 'Partial import; remaining actions: ') : t('migApply') + ' ✓ ') + String(j.targetWs || '') + (receipt.text ? '\n' + receipt.text : ''))
         }).catch(function (e) { setMigBusy(''); migFail(t('migApply'), null, e) })
       }
       useEffect(function () {
@@ -2077,7 +2080,7 @@
       h('div', { 'data-dam-slot': 'list', 'data-dam-row': '', style: { marginTop: '6px' } },
         h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', value: migPack, placeholder: t('migPickPack'),
           onChange: function (e) { setMigPack(e.target.value) }, style: { flex: '1 1 100%' } }),
-        h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', disabled: !!migBusy, onClick: function () { migPickInto(setMigPack, setMigPackPicking) } },
+        h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', disabled: !!migBusy, onClick: function () { migPickFilePre(setMigPack, setMigPackPicking, migAlive, setMigNote, setMigErr) } },
           migPackPicking ? t('loading') : t('migPickPack')),
         h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', disabled: !!migBusy, style: { opacity: migBusy ? .5 : 1 },
           onClick: migPreview }, migBusy === 'preview' ? t('loading') : t('migPreview'))),
@@ -2104,8 +2107,8 @@
         h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', disabled: !!migBusy, style: { marginTop: '6px', opacity: migBusy ? .5 : 1 }, onClick: migApply },
           migBusy === 'apply' ? t('saving') : t('migApply'))) : null,
       migResult ? h('div', { style: { wordBreak: 'break-all', fontSize: 'calc(11.5px * var(--dam-scale))' } },
-        h('div', null, t('migWritten') + ': ' + String(migResult.written || 0) +
-          ((migResult.writtenFiles || []).length ? ' (' + migResult.writtenFiles.slice(0, 10).join(' , ') + ')' : '')),
+        h('div', null, t('migWritten') + ': ' + String(Array.isArray(migResult.written) ? migResult.written.length : migResult.written || 0) +
+          ((migResult.writtenFiles || []).length ? ' (' + migResult.writtenFiles.slice(0, 10).map(function(f){return typeof f === 'string' ? f : f.path || f.rel || f.target || JSON.stringify(f)}).join(' , ') + ')' : '')),
         h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, t('migBackup') + ': ' + String(migResult.backup || '')),
         h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, (L('冲突策略: ', 'conflict: ')) + String(migResult.onConflict || migConflict) +
           ' · ' + (L('目标工作区: ', 'target: ')) + String(migResult.targetWs || '')),
