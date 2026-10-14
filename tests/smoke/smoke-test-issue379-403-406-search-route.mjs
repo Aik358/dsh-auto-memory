@@ -28,9 +28,10 @@ const boxes = [], payloads = [], copied = []
 let cursor = 0
 const env = { React: { Fragment: 'fragment' }, L: (s) => s, h: (type, props, ...children) => ({ type, props: props || {}, children }),
   useState: (value) => { const i = cursor++; if (!boxes[i]) boxes[i] = { value }; return [boxes[i].value, (v) => { boxes[i].value = v }] },
-  useRef: (value) => ({ current: value }), useEffect: () => {}, iter5Identity: () => 'A', currentSessionIdClient: () => 'A',
-  API: { recall: '/recall', smartRecall: '/smart' }, navigator: { clipboard: { writeText: async (text) => copied.push(text) } },
-  apiPost: async (_, payload) => { payloads.push(payload); return { hits: [{ where: '/fixture/A/MEMORY.md:17 [mem_fixture]', line: 'alpha evidence', mark: '⚠已撤回' }] } },
+  useRef: (value) => { const i = cursor++; if (!boxes[i]) boxes[i] = { current: value }; return boxes[i] }, useEffect: () => {}, iter5Identity: () => 'A', currentSessionIdClient: () => 'A',
+  API: { recall: '/recall', smartRecall: '/smart', file: '/file' }, navigator: { clipboard: { writeText: async (text) => copied.push(text) } },
+  apiPost: async (_, payload) => { payloads.push(payload); return { hits: [{ sourcePath: '/fixture/A/archive/MEMORY.md', where: '/fixture/A/MEMORY.md:17 [mem_fixture]', line: 'alpha evidence', mark: '⚠已撤回' }] } },
+  apiGet: async (_, params) => { assert.equal(params.sessionId, 'A'); assert.equal(params.path, '/fixture/A/archive/MEMORY.md'); return { path: params.path, content: 'Complete original and later condition' } },
   Iter5Screws() {}, Iter5Icon() {}, Iter5Error() {}, Iter5Empty() {}, Loading() {}, requestAnimationFrame() {} }
 vm.createContext(env); vm.runInContext(source, env)
 function render() { cursor = 0; return env.Iter5Search({ intent: { query: 'alpha' } }) }
@@ -43,4 +44,7 @@ find(tree, (n) => n.type === 'form').props.onSubmit({ preventDefault() {} }); aw
 assert.equal(payloads[0].sessionId, 'A'); assert.equal(payloads[0].scope, 'archive')
 tree = render(); find(tree, (n) => n.type === 'button' && n.children.includes('复制当前内容')).props.onClick(); await setImmediate()
 assert.match(copied[0], /MEMORY.md:17/); assert.match(copied[0], /⚠已撤回/)
+find(tree, (n) => n.type === 'button' && n.children.includes('打开原文')).props.onClick(); await setImmediate(); tree = render()
+find(tree, (n) => n.type === 'button' && n.children.includes('复制当前内容')).props.onClick(); await setImmediate()
+assert.match(copied[1], /Complete original and later condition/); assert.match(copied[1], /MEMORY.md:17/)
 console.log('PASS #379/#403/#406 shipped search routes and rendered GUI preserve scope and copied provenance')

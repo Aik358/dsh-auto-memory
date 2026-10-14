@@ -13,15 +13,15 @@ const p = { ws: dir, projectDir: dir, reflectDir: path.join(dir, 'reflections'),
 const engine = Object.create(MemoryEngine.prototype)
 engine.config = { ...DEFAULT_CONFIG, handoffEnabled: false, semanticEngineMode: 'lexical' }
 engine.resolvePaths = async () => p
-engine.listDailyLogs = async () => [{ name: '2026-10-14.md' }]
-engine.listReflections = async () => []
+engine.listDailyLogs = async (_, __, strict) => { assert.equal(strict, true); return [{ name: '2026-10-14.md' }] }
+engine.listReflections = async (_, __, strict) => { assert.equal(strict, true); return [] }
 engine.searchHandoffCorpus = engine.discoverWorkspaces = engine.searchSessionHistory = async () => []
 engine.external = { search: async () => [] }
 try {
   await fs.mkdir(path.dirname(userFile))
   await fs.writeFile(notesPath, '')
   await fs.writeFile(path.join(dir, '2026-10-14.md'), Array.from({ length: 16 }, (_, i) => 'alpha weak log ' + i).join('\n'))
-  await fs.writeFile(userFile, anchor(ids[0], '## General heading\n' + 'prefix '.repeat(80) + 'alpha beta DOC-UNIQUE-001 condition-keep 🙂') + '\n' +
+  await fs.writeFile(userFile, anchor(ids[0], '## General heading\n' + 'prefix '.repeat(80) + 'alpha beta DOC-UNIQUE-001 condition-keep 🙂\n' + 'context '.repeat(100) + '\n后续限定：仅试验样品，不代表已批准部署。') + '\n' +
     anchor(ids[1], '## Old conclusion\nalpha beta evidence-one\n<!-- dsh-status: retracted -->') + '\n' +
     anchor(ids[2], '## Other conclusion\n' + 'identical-prefix '.repeat(10) + 'alpha beta evidence-two'))
   const hits = await engine.collectHits(['alpha', 'beta'], 4)
@@ -39,8 +39,10 @@ try {
   const smart = await engine._smartRecallCore('alpha beta')
   assert.ok(smart.hits.some((h) => h.status === 'retracted' && h.mark))
   assert.match(answerPrompt, /status=retracted/)
+  assert.match(answerPrompt, /仅试验样品，不代表已批准部署/)
   const full = await engine.recall('DOC-UNIQUE-001', 8, undefined, 'current', { format: 'full' })
   assert.match(full, /condition-keep 🙂/, 'full format must retain the end of a matching line')
+  assert.match(full, /仅试验样品，不代表已批准部署/, 'full format retains later lines in the same record')
   const l0 = await engine.recall('DOC-UNIQUE-001', 8, undefined, 'current', { format: 'l0', fusion: 'legacy' })
   assert.match(l0, new RegExp(ids[0]), 'L0 lexical match must search anchored bodies as well as headings')
   engine._jsSemanticRank = async () => ({ scores: new Map([[ids[0], 0.95]]) })
@@ -64,5 +66,7 @@ try {
   const oversized = await engine.recall('alpha', 8, undefined, 'current', { format: 'full' })
   assert.match(oversized, /检索不完整.*RECALL_SOURCE_TOO_LARGE/)
   await assert.rejects(engine.collectHits(['alpha'], 4), /search incomplete/)
+  engine.listDailyLogs = async () => { throw Object.assign(Error('fixture unreadable directory'), { code: 'EACCES' }) }
+  await assert.rejects(engine._smartRecallCore('alpha'), /unreadable directory/, 'directory read failures never become a successful no-match answer')
   console.log('PASS #382/#399/#401/#402/#404/#406 recall preserves strong late evidence and source coordinates')
 } finally { await fs.rm(dir, { recursive: true, force: true }) }

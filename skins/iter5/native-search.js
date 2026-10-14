@@ -10,7 +10,7 @@
       return h(React.Fragment, null, out)
     }
     function iter5SearchEntries(response, mode) {
-      var entries = Array.isArray(response.hits) ? response.hits.map(function (hit) { return { title: hit.where || L('记忆片段', 'Memory passage'), text: hit.line || '', mark: hit.mark || '' } }) : []
+      var entries = Array.isArray(response.hits) ? response.hits.map(function (hit) { return { title: hit.where || L('记忆片段', 'Memory passage'), text: hit.line || '', mark: hit.mark || '', sourcePath: hit.sourcePath || '' } }) : []
       var summary = response.result || response.answer
       // Lexical recall returns a readable source-grouped transcript, not `hits`.
       // Preserve that transcript while exposing its exact source sections for selection.
@@ -18,7 +18,7 @@
         var current = null
         response.result.split('\n').forEach(function (line) {
           var source = /^·\s+(.+):\s*$/.exec(line)
-          if (source) { current = { title: source[1], text: '' }; entries.push(current) }
+          if (source) { current = { title: source[1], text: '', sourcePath: /^(?:[A-Za-z]:[\\/]|\/)/.test(source[1]) ? source[1] : '' }; entries.push(current) }
           else if (/^==/.test(line)) current = null
           else if (current) current.text += (current.text ? '\n' : '') + line
         })
@@ -30,12 +30,14 @@
     function Iter5Search(props) {
       var query = useState(props.intent && props.intent.query || ''), mode = useState('recall'), limit = useState(8), scope = useState('current')
       var result = useState(null), busy = useState(false), error = useState(''), selected = useState(0), copied = useState('')
+      var original = useState(null), sourceBusy = useState(false), sourceError = useState(''), sourceGeneration = useRef(0)
       var identity = iter5Identity(), alive = useRef(true), detail = useRef(null)
       useEffect(function () { alive.current = true; return function () { alive.current = false } }, [])
       function valid() { return alive.current && identity === iter5Identity() }
       function search(e) {
         e.preventDefault()
         if (!query[0].trim() || busy[0]) return
+        sourceGeneration.current++; original[1](null); sourceBusy[1](false); sourceError[1]('')
         var submitted = query[0].trim(), started = Date.now(), payload = { query: submitted, sessionId: currentSessionIdClient(), scope: scope[0] }
         if (mode[0] === 'recall') payload.limit = limit[0]
         busy[1](true); error[1](''); copied[1](''); result[1](null); selected[1](0)
@@ -50,6 +52,7 @@
       var summary = response && (response.result || response.answer)
       var chosen = entries[selected[0]] || entries[0]
       function select(i) {
+        sourceGeneration.current++; original[1](null); sourceBusy[1](false); sourceError[1]('')
         selected[1](i); copied[1]('')
         requestAnimationFrame(function () {
           var node = detail.current
@@ -60,7 +63,16 @@
       }
       function copy() {
         if (!chosen || !navigator.clipboard) { copied[1](L('无法访问剪贴板，请选择正文复制。', 'Clipboard unavailable. Select and copy the text.')); return }
-        navigator.clipboard.writeText('[' + chosen.title + '] ' + (chosen.mark || '') + '\n' + chosen.text).then(function () { if (valid()) copied[1](L('已复制当前内容', 'Content copied')) }, function () { if (valid()) copied[1](L('复制失败，请选择正文复制。', 'Copy failed. Select and copy the text.')) })
+        navigator.clipboard.writeText('[' + chosen.title + '] ' + (chosen.mark || '') + '\n' + (original[0] ? original[0].content : chosen.text)).then(function () { if (valid()) copied[1](L('已复制当前内容', 'Content copied')) }, function () { if (valid()) copied[1](L('复制失败，请选择正文复制。', 'Copy failed. Select and copy the text.')) })
+      }
+      function openOriginal() {
+        if (!chosen || !chosen.sourcePath || sourceBusy[0]) return
+        var generation = ++sourceGeneration.current
+        sourceBusy[1](true); sourceError[1]('')
+        apiGet(API.file, { path: chosen.sourcePath, sessionId: currentSessionIdClient() }).then(function (file) {
+          if (!valid() || generation !== sourceGeneration.current) return
+          original[1](file); sourceBusy[1](false)
+        }).catch(function (e) { if (valid() && generation === sourceGeneration.current) { sourceError[1](String(e && e.message || e)); sourceBusy[1](false) } })
       }
       return h('div', { className: 'i5-native-search i5-panel i5-instrument' }, h(Iter5Screws),
         h('div', { className: 'i5-ph' }, h('h2', null, L('检索记忆', 'Search memories')), h('span', { className: 'i5-ph-right i5-num i5-search-count', role: 'status' }, response ? entries.filter(function (entry) { return !entry.summary }).length + L(' 组来源片段', ' source passages') + ' · ' + result[0].elapsed.toFixed(2) + L(' 秒', ' s') : '—')),
@@ -78,7 +90,8 @@
             h('div', { className: 'i5-search-results', 'aria-label': L('检索结果', 'Search results') }, entries.map(function (entry, i) { return h('button', { className: 'i5-search-result', key: i, 'aria-current': chosen === entry ? 'true' : undefined, onClick: function () { select(i) } }, h('i', { className: 'i5-type-led', 'aria-hidden': true }), h('span', null, h('strong', null, entry.title), entry.mark ? h('small', null, entry.mark) : null, h('span', { className: 'i5-search-excerpt' }, h(Iter5Highlight, { text: entry.text, term: result[0].query })))) })),
             h('section', { className: 'i5-card i5-search-detail', ref: detail, 'aria-label': L('检索详情', 'Search detail') },
               h('div', { className: 'i5-source-heading' }, h('span', { className: 'i5-badge' }, h(Iter5Icon, { name: 'note' })), h('h2', { tabIndex: -1 }, chosen.title)),
-              h('div', { className: 'i5-search-content' }, h(Iter5Highlight, { text: chosen.text, term: result[0].query })),
+              h('div', { className: 'i5-search-content' }, h(Iter5Highlight, { text: original[0] ? original[0].content : chosen.text, term: result[0].query })),
+              sourceError[0] ? h(Iter5Error, { error: sourceError[0] }) : null,
               response.keywords && response.keywords.length ? h('div', { className: 'i5-filter-chips' }, response.keywords.map(function (k, i) { return h('span', { className: 'i5-tag', key: i }, k) })) : null,
-              h('div', { className: 'i5-search-detail-actions' }, h('button', { className: 'i5-primary', onClick: copy }, L('复制当前内容', 'Copy content')), h('span', { role: 'status' }, copied[0])))) : h(Iter5Empty, { title: L('暂时没有找到相关记录', 'No matching records'), text: L('换一个关键词，或尝试更具体的描述。', 'Try another keyword or a more specific description.') })) : !busy[0] ? h('div', { className: 'i5-search-tip' }, h(Iter5Icon, { name: 'search' }), L('输入关键词，查找当前工作区中的记忆原文。', 'Enter keywords to search memory in this workspace.')) : null)
+              h('div', { className: 'i5-search-detail-actions' }, chosen.sourcePath ? h('button', { onClick: openOriginal, disabled: sourceBusy[0] }, L('打开原文', 'Open original')) : null, h('button', { className: 'i5-primary', onClick: copy }, L('复制当前内容', 'Copy content')), h('span', { role: 'status' }, copied[0])))) : h(Iter5Empty, { title: L('暂时没有找到相关记录', 'No matching records'), text: L('换一个关键词，或尝试更具体的描述。', 'Try another keyword or a more specific description.') })) : !busy[0] ? h('div', { className: 'i5-search-tip' }, h(Iter5Icon, { name: 'search' }), L('输入关键词，查找当前工作区中的记忆原文。', 'Enter keywords to search memory in this workspace.')) : null)
     }
