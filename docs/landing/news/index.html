@@ -348,8 +348,12 @@
   .phero .cta-row a { padding: 0.5rem 1.1rem; font-size: 0.85rem; }
   .phero .pmeta { margin-top: 1.1rem; font-size: 11px; }
   .tier-lead { color: var(--fg-dim); max-width: 44rem; margin: 0.9rem 0 0; font-size: 0.9375rem; line-height: 1.75; }
-  .tier-cards { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem; }
-  @media (min-width: 768px) { .tier-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  .tier-cards { display: grid; grid-auto-flow: column; grid-auto-columns: 82%; gap: 1rem; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x mandatory; padding-bottom: .85rem; scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+  .tier-cards > * { scroll-snap-align: start; }
+  .tier-cards::-webkit-scrollbar { height: 6px; }
+  .tier-cards::-webkit-scrollbar-track { background: transparent; }
+  .tier-cards::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  @media (min-width: 768px) { .tier-cards { grid-auto-columns: minmax(0, 330px); } }
   .tcard { display: block; padding: 1.35rem; }
   .tcard-top { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; margin-bottom: 0.9rem; }
   .tcard-date { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); }
@@ -435,37 +439,44 @@
 
 <main class="wrap">
 
-  <!-- ── 01 模型与范式（按内容类型分组，不按日期）── -->
-  <section id="paradigm" class="tsec" aria-labelledby="paradigm-h">
-    <div class="reveal" style="margin-bottom:1.5rem">
-      <div class="section-num" style="margin-bottom:1rem">01 / <span data-i18n="s1.kicker">模型与范式</span></div>
-      <h2 id="paradigm-h" class="sec-h" data-i18n="s1.title">综述、语义、<span class="gradient-text">引擎。</span></h2>
-      <p class="tier-lead" data-i18n="s1.lead">三篇定义「无问自忆」的范式之作：边界怎么划、证据从哪来、唤起谁决定。</p>
-    </div>
-    <div class="tier-cards">
-      <a href="2026-08-19-host-side-memory.html" class="glass-card tcard reveal block">
-        <div class="tcard-top"><span class="kind" data-i18n="r4.kind">研究综述</span><span class="tcard-date">2026-08-19</span></div>
-        <h3 data-i18n="r4.title">宿主侧主动联想记忆中间件</h3>
-        <p data-i18n="r4.sum">把「主动联想」定义成可判定的运行时边界，并排查它与「模型调用记忆工具」的根本区别。</p>
-        <span class="metric-chip" data-i18n="m.r4">运行时边界 · 可判定</span>
-        <span class="tcard-go">阅读 →</span>
-      </a>
-      <a href="2026-08-24-retrieval-selection.html" class="glass-card tcard reveal reveal-delay-1 block">
-        <div class="tcard-top"><span class="kind" data-i18n="r3.kind">基准研究</span><span class="tcard-date">2026-08-24</span></div>
-        <h3 data-i18n="r3.title">多语言嵌入式检索选型研究</h3>
-        <p data-i18n="r3.sum">3 模型 × 5 分块 × 6 通道 ≈ 90 个评测单元。BGE-M3 真实层 R@5 0.925，领先次名 12.5 个百分点。</p>
-        <span class="metric-chip" data-i18n="m.r3">R@5 0.925</span>
-        <span class="tcard-go">阅读 →</span>
-      </a>
-      <a href="2026-08-25-echo-trap.html" class="glass-card tcard reveal reveal-delay-2 block">
-        <div class="tcard-top"><span class="kind" data-i18n="r1.kind">技术报告</span><span class="tcard-date">2026-08-25</span></div>
-        <h3 data-i18n="r1.title">从语义相关到唤起必要</h3>
-        <p data-i18n="r1.sum">「像不像」与「该不该」是两个目标，在分布上甚至反向。单阈值策略在 86 条金标上精确率为 0；双通道决策链最终达到 precision 0.818 / recall 0.237。</p>
-        <span class="metric-chip" data-i18n="m.r1">precision 0.818</span>
-        <span class="tcard-go">阅读 →</span>
-      </a>
-    </div>
-  </section>
+  <!-- ── 01 模型与范式（3 篇置顶 + News 卡，可横向滚动）── -->
+<section id="paradigm" class="tsec" aria-labelledby="paradigm-h">
+  <div class="reveal" style="margin-bottom:1.5rem">
+    <div class="section-num" style="margin-bottom:1rem">01 / <span data-i18n="s1.kicker">模型与范式</span></div>
+    <h2 id="paradigm-h" class="sec-h" data-i18n="s1.title">综述、语义、<span class="gradient-text">引擎。</span></h2>
+    <p class="tier-lead" data-i18n="s1.lead">三篇定义「无问自忆」的范式之作，加上一条最新动向：边界怎么划、证据从哪来、唤起谁决定，以及下一阶段往哪里走。</p>
+  </div>
+  <div class="tier-cards">
+    <a href="2026-08-19-host-side-memory.html" class="glass-card tcard reveal block">
+      <div class="tcard-top"><span class="kind" data-i18n="r4.kind">研究综述</span><span class="tcard-date">2026-08-19</span></div>
+      <h3 data-i18n="r4.title">宿主侧主动联想记忆中间件</h3>
+      <p data-i18n="r4.sum">把「主动联想」定义成可判定的运行时边界，并排查它与「模型调用记忆工具」的根本区别。</p>
+      <span class="metric-chip" data-i18n="m.r4">运行时边界 · 可判定</span>
+      <span class="tcard-go">阅读 →</span>
+    </a>
+    <a href="2026-08-24-retrieval-selection.html" class="glass-card tcard reveal reveal-delay-1 block">
+      <div class="tcard-top"><span class="kind" data-i18n="r3.kind">基准研究</span><span class="tcard-date">2026-08-24</span></div>
+      <h3 data-i18n="r3.title">多语言嵌入式检索选型研究</h3>
+      <p data-i18n="r3.sum">3 模型 × 5 分块 × 6 通道 ≈ 90 个评测单元。BGE-M3 真实层 R@5 0.925，领先次名 12.5 个百分点。</p>
+      <span class="metric-chip" data-i18n="m.r3">R@5 0.925</span>
+      <span class="tcard-go">阅读 →</span>
+    </a>
+    <a href="2026-08-25-echo-trap.html" class="glass-card tcard reveal reveal-delay-2 block">
+      <div class="tcard-top"><span class="kind" data-i18n="r1.kind">技术报告</span><span class="tcard-date">2026-08-25</span></div>
+      <h3 data-i18n="r1.title">从语义相关到唤起必要</h3>
+      <p data-i18n="r1.sum">「像不像」与「该不该」是两个目标，在分布上甚至反向。单阈值策略在 86 条金标上精确率为 0；双通道决策链最终达到 precision 0.818 / recall 0.237。</p>
+      <span class="metric-chip" data-i18n="m.r1">precision 0.818</span>
+      <span class="tcard-go">阅读 →</span>
+    </a>
+    <a href="2026-10-15-relational-memory.html" class="glass-card tcard reveal reveal-delay-3 block">
+      <div class="tcard-top"><span class="kind" data-i18n="r8.kind">News</span><span class="tcard-date">2026-10-15</span></div>
+      <h3 data-i18n="r8.title">她记得你，也记得你们</h3>
+      <p data-i18n="r8.sum">主动召回让记忆自己出现。下一阶段继续追问：同一条记忆在工作、助理和长期交流中，应以怎样的分寸参与回应？</p>
+      <span class="metric-chip" data-i18n="m.r8">下一阶段研究议程</span>
+      <span class="tcard-go">阅读 →</span>
+    </a>
+  </div>
+</section>
 
   <!-- ── 02 生态与工程── -->
   <section id="engineering" class="tsec" aria-labelledby="engineering-h">
@@ -510,10 +521,27 @@
     </div>
   </section>
 
-  <!-- ── 研究索引 ── -->
+  <!-- ── 03 研究议程（大论文专节）── -->
+<section id="paper" class="tsec" aria-labelledby="paper-h">
+  <div class="reveal" style="margin-bottom:1.5rem">
+    <div class="section-num" style="margin-bottom:1rem">03 / <span data-i18n="p.kicker">研究议程</span></div>
+    <h2 id="paper-h" class="sec-h" data-i18n="p.title">情境化<span class="gradient-text">主动记忆。</span></h2>
+    <p class="tier-lead" data-i18n="p.lead">宿主侧记忆使用政策的概念综述与研究议程：记忆不只决定「何时想起」，还要决定「以什么分寸参与回应」。</p>
+  </div>
+  <a href="2026-10-15-relational-memory.html" class="glass-card tcard reveal block">
+    <div class="tcard-top"><span class="kind" data-i18n="p.kind">研究综述</span><span class="tcard-date">2026-10-15</span></div>
+    <h3 data-i18n="p.paper">面向持续人机交流的情境化主动记忆</h3>
+    <p data-i18n="p.sum">四类记忆对象（用户记忆、Agent 自传记忆、共同记忆、关系约定）与五个决策阶段（候选检索、投递资格、模型可见使用、用户可见披露、记忆治理）分开控制、分别评测。提出六个可证伪的研究问题、四层评测与三阶段因果实验路线。</p>
+    <span class="metric-chip" data-i18n="p.chip1">四层评测 · 可证伪</span>
+    <span class="metric-chip" data-i18n="p.chip2">25 项外部文献</span>
+    <span class="tcard-go">阅读全文 →</span>
+  </a>
+</section>
+
+<!-- ── 研究索引 ── -->
   <section class="nidx" style="margin-top:5rem" aria-labelledby="idx-h">
     <div class="reveal" style="margin-bottom:1.5rem">
-      <div class="section-num" style="margin-bottom:1rem">03 / <span data-i18n="idx.kicker">研究索引</span></div>
+      <div class="section-num" style="margin-bottom:1rem">04 / <span data-i18n="idx.kicker">研究索引</span></div>
       <h2 id="idx-h" class="sec-h" data-i18n="idx.head">研究索引</h2>
       <p class="sec-lead" data-i18n="idx.lead">十二条被冻结成决策的结论，以及它们在报告里的出处。</p>
     </div>
@@ -593,17 +621,22 @@ const i18n = {
       'nav.changelog':'更新日志',
       'nav.features':'能力',
       'nav.install':'安装',
-      'hero.badge':'7 篇报告 · 结论冻结为决策台账 · 已进入生产实现',
+      'hero.badge':'8 篇报告 · 结论冻结为决策台账 · 已进入生产实现',
       'hero.title1':'记忆不必被要求去查。',
-      'hero.title2':'七篇可复算的报告。',
+      'hero.title2':'八篇可复算的报告。',
       'hero.sub':'这里是我们把「宿主侧主动联想」做成一件可复现工程时，留下的全部量化结论。每一篇都来自可复现实验，结论冻结为决策台账，并已进入生产实现。',
       'hero.cta1':'从范式篇读起',
       'hero.cta2':'回主页 →',
-      'hero.meta1':'2026-08-19 → 2026-10-08',
+      'hero.meta1':'2026-08-19 → 2026-10-15',
       'hero.meta2':'检索选型 · 激活策略 · 前缀缓存 · 注入成本 · 架构治理',
-      's1.kicker':'模型与范式','s1.title':'综述、语义、<span class="gradient-text">引擎。</span>','s1.lead':'三篇定义「无问自忆」的范式之作：边界怎么划、证据从哪来、唤起谁决定。',
+      's1.kicker':'模型与范式','s1.title':'综述、语义、<span class="gradient-text">引擎。</span>','s1.lead':'三篇定义「无问自忆」的范式之作，加上一条最新动向：边界怎么划、证据从哪来、唤起谁决定，以及下一阶段往哪里走。',
+      'p.kicker':'研究议程','p.title':'情境化<span class="gradient-text">主动记忆。</span>','p.lead':'宿主侧记忆使用政策的概念综述与研究议程：记忆不只决定「何时想起」，还要决定「以什么分寸参与回应」。',
+      'p.kind':'研究综述','p.paper':'面向持续人机交流的情境化主动记忆','p.sum':'四类记忆对象（用户记忆、Agent 自传记忆、共同记忆、关系约定）与五个决策阶段（候选检索、投递资格、模型可见使用、用户可见披露、记忆治理）分开控制、分别评测。提出六个可证伪的研究问题、四层评测与三阶段因果实验路线。','p.chip1':'四层评测 · 可证伪','p.chip2':'25 项外部文献',
       's2.kicker':'生态与工程','s2.title':'生态观察与<span class="gradient-text">工程调查。</span>','s2.lead':'把上面的结论放进真实环境：对照别家怎么做，测量代价，治理结构。',
-      'm.r4':'运行时边界 · 可判定','m.r3':'R@5 0.925','m.r1':'precision 0.818',
+      'm.r4':'运行时边界 · 可判定','m.r3':'R@5 0.925','m.r1':'precision 0.818','m.r8':'下一阶段研究议程',
+      'r8.title':'她记得你，也记得你们',
+      'r8.sum':'主动召回让记忆自己出现。下一阶段继续追问：同一条记忆在工作、助理和长期交流中，应以怎样的分寸参与回应？',
+      'r8.kind':'News',
       'r1.title':'从语义相关到唤起必要',
       'r1.sum':'「像不像」与「该不该」是两个目标，在分布上甚至反向。单阈值策略在 86 条金标上精确率为 0；双通道决策链最终达到 precision 0.818 / recall 0.237。',
       'r1.kind':'技术报告',
@@ -655,17 +688,22 @@ const i18n = {
       'nav.changelog':'Changelog',
       'nav.features':'Features',
       'nav.install':'Install',
-      'hero.badge':'7 reports · conclusions frozen into a decision ledger · shipped in production',
+      'hero.badge':'8 reports · conclusions frozen into a decision ledger · shipped in production',
       'hero.title1':'Memory should not have to be asked for.',
-      'hero.title2':'Seven reproducible reports.',
+      'hero.title2':'Eight reproducible reports.',
       'hero.sub':'Everything we learned turning "host-side proactive recall" into reproducible engineering: quantified conclusions, each from a re-runnable experiment, frozen into a decision ledger and shipped in production.',
       'hero.cta1':'Start with the paradigms',
       'hero.cta2':'Back home →',
-      'hero.meta1':'2026-08-19 → 2026-10-08',
+      'hero.meta1':'2026-08-19 → 2026-10-15',
       'hero.meta2':'retrieval selection · activation policy · prefix cache · injection cost · architecture governance',
-      's1.kicker':'Models & paradigms','s1.title':'Surveys, semantics, <span class="gradient-text">engines.</span>','s1.lead':'Three paradigm papers on what this is: where the boundary sits, where the evidence comes from, and who decides what surfaces.',
+      's1.kicker':'Models & paradigms','s1.title':'Surveys, semantics, <span class="gradient-text">engines.</span>','s1.lead':'Three paradigm papers on what this is — plus one new direction: where the boundary sits, where the evidence comes from, who decides what surfaces, and where the next phase goes.',
+      'p.kicker':'Research agenda','p.title':'Context-conditioned <span class="gradient-text">proactive memory.</span>','p.lead':'A conceptual review and research agenda for host-side memory-use policy: memory decides not only when it surfaces, but with what restraint it takes part in a response.',
+      'p.kind':'Research review','p.paper':'Context-Conditioned Proactive Memory for Sustained Human–Agent Interaction','p.sum':'Four kinds of memory object (user memory, agent autobiographical memory, shared memory, relational commitments) and five decision stages (candidate retrieval, delivery eligibility, model-visible use, user-visible disclosure, governance) are controlled and evaluated separately, with six falsifiable questions, four evaluation levels, and a three-phase causal roadmap.','p.chip1':'Four-level evaluation','p.chip2':'25 external references',
       's2.kicker':'Ecosystem & engineering','s2.title':'Ecosystem observation & <span class="gradient-text">field investigations.</span>','s2.lead':'The conclusions above, put into real environments: comparing others, measuring costs, governing structure.',
-      'm.r4':'Decidable runtime boundary','m.r3':'R@5 0.925','m.r1':'precision 0.818',
+      'm.r4':'Decidable runtime boundary','m.r3':'R@5 0.925','m.r1':'precision 0.818','m.r8':'Next-phase research agenda',
+      'r8.title':'She Remembers You — and Remembers Us',
+      'r8.sum':'Proactive recall lets memory surface on its own. The next phase asks: in work, assistance, and long-term exchange, with what restraint should the same memory take part in a response?',
+      'r8.kind':'News',
       'r1.title':'From semantic relevance to recall necessity',
       'r1.sum':'"Looks alike" and "should be surfaced" are two different targets — in distribution, even inverted. A single-threshold policy scored 0 precision on 86 gold items; the dual-channel chain reaches precision 0.818 / recall 0.237.',
       'r1.kind':'Technical report',
