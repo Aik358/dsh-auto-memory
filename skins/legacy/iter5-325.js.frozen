@@ -899,8 +899,8 @@
       var browseDirsPair = useState(null)
       var browseDirs = browseDirsPair[0]
       var setBrowseDirs = browseDirsPair[1]
-      var browseRequest = useRef(0), pickerRequest = useRef(0), settingsAlive = useRef(true)
-      useEffect(function(){settingsAlive.current=true;return function(){settingsAlive.current=false;browseRequest.current++;pickerRequest.current++}},[])
+      var browseRequest = useRef(0), pickerRequest = useRef(0), modelsRequest = useRef(0), settingsAlive = useRef(true)
+      useEffect(function(){settingsAlive.current=true;return function(){settingsAlive.current=false;browseRequest.current++;pickerRequest.current++;modelsRequest.current++}},[])
       function closeBrowser(){browseRequest.current++;pickerRequest.current++;setBrowseOpen(false)}
       // 「总结/问候默认模型」模型抽屉状态
       var mdlOpenPair = useState(false)
@@ -918,12 +918,14 @@
       function openModels() {
         setMdlOpen(true)
         setMdlErr('')
-        if (mdlData) return // 已加载过目录,直接展示(保存后重开设置页会重新挂载)
+        var request = ++modelsRequest.current
         setMdlLoading(true)
         apiGet(API.models).then(function (d) {
+          if (!settingsAlive.current || request !== modelsRequest.current) return
           setMdlData(d || { providers: [] })
           setMdlLoading(false)
         }).catch(function (e) {
+          if (!settingsAlive.current || request !== modelsRequest.current) return
           setMdlErr(String(e && e.message ? e.message : e))
           setMdlLoading(false)
         })
@@ -1600,7 +1602,7 @@
           field(t('fEpisodicMin'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 1, max: 16, value: cfg.episodicMinSegments === undefined ? 2 : cfg.episodicMinSegments, onChange: function (e) { set('episodicMinSegments', Math.max(1, Math.min(16, Number(e.target.value) || 2))) } }), t('fEpisodicMinHint')),
           field(t('fProcSessions'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 1, max: 20, value: cfg.procedureMinSessions === undefined ? 3 : cfg.procedureMinSessions, onChange: function (e) { set('procedureMinSessions', Math.max(1, Math.min(20, Number(e.target.value) || 3))) } }), t('fProcSessionsHint')),
           field(t('fProcSuccess'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 1, max: 20, value: cfg.procedureMinSuccess === undefined ? 2 : cfg.procedureMinSuccess, onChange: function (e) { set('procedureMinSuccess', Math.max(1, Math.min(20, Number(e.target.value) || 2))) } }), t('fProcSuccessHint')),
-          field(t('fProcCorr'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 0, max: 1, step: 0.05, value: cfg.procedureCorrectionCap === undefined ? 0.3 : cfg.procedureCorrectionCap, onChange: function (e) { set('procedureCorrectionCap', Math.max(0, Math.min(1, Number(e.target.value) || 0.3))) } }), t('fProcCorrHint')),
+          field(t('fProcCorr'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 0, max: 1, step: 0.05, value: cfg.procedureCorrectionCap === undefined ? 0.3 : cfg.procedureCorrectionCap, onChange: function (e) { set('procedureCorrectionCap', Math.max(0, Math.min(1, (e.target.value !== '' && Number.isFinite(Number(e.target.value)) ? Number(e.target.value) : 0.3)))) } }), t('fProcCorrHint')),
           field(t('fProcRisk'), h('input', { type: 'checkbox', checked: cfg.procedureHighRiskApproval !== false, onChange: function (e) { set('procedureHighRiskApproval', e.target.checked) } }), t('fProcRiskHint')),
           // 2026-09-22 补接线(设置页缺口审计 P0-1):procedureInjectEnabled 才是宿主真读的总闸
           //   (procedure-switch.js 先判它);此前设置页只有旧键 ⇒ 用户改了也无效(灰控件)。
