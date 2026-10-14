@@ -13,7 +13,7 @@ const cfgPath = path.join(root, 'embedding-config.json')
 const logs = []
 let pass = 0
 const ok = (condition, label) => { assert.ok(condition, label); pass++ }
-const deps = { path, memoryDir: () => root, dshHome: () => root,
+const deps = { engine: {}, path, memoryDir: () => root, dshHome: () => root,
   createJsEmbeddingConfigPre, updateEmbeddingConfigPre,
   isLoopbackRequest: () => true, readJsonBody: async (r) => r.body,
   writeJson: (_, status, body) => ({ status, body }), diag: (s) => logs.push(s) }
@@ -58,16 +58,16 @@ try {
   assert.equal(cfg.provider, 'js-e5-small-q8-pre-v1')
   assert.equal(cfg.dimension, 384)
   console.log('PASS #369/#372 actual semantic route and actual download callback preserve corrupt files and initialize identity')
-// ── T3 启动自检：两条静默补装路径 ──
-const iBoot = cli.indexOf('启动自检补装')
-ok(iBoot > 0, 'T3a 启动自检注释在场')
-const bootSeg = cli.slice(iBoot, iBoot + 2600)
-ok(/recommendation === 'download-model'/.test(bootSeg) && /recommendation === 'setup-both'/.test(bootSeg),
-  'T3b 模型缺失 ⇒ 识别 download-model / setup-both 两种推荐态')
-ok(/apiPost\(API\.semanticDownload, \{ action: 'start', mirror: 'auto' \}\)[\s\S]{0,80}?return/.test(bootSeg),
-  'T3c 模型缺失 ⇒ **静默**发起下载后直接 return（不弹卡，用户无需点任何东西）')
-ok(/apiGet\(API\.semanticStatus\)/.test(cli) && /apiPost\(API\.semanticEmit, \{ mode: 'shadow' \}\)/.test(cli),
-  'T3d 模型已就绪但配置缺失 ⇒ 开机静默补建（写 shadow，不改任何既有行为）')
+// #377 supersedes automatic startup downloading; #376 requires atomic create-only config.
+const iBoot = cli.indexOf('Startup only offers setup; downloading requires an explicit user action.')
+ok(iBoot > 0, 'T3a 启动检查仅提供安装入口')
+const bootSeg = cli.slice(iBoot, cli.indexOf('}, 12000)', iBoot) + 11)
+ok(/Date\.now\(\) < sdUntil/.test(bootSeg) && /semanticEngineMode === 'lexical'/.test(bootSeg),
+  'T3b 免打扰和词法模式抑制启动推荐')
+ok(!/API\.semanticDownload/.test(bootSeg) && /openDialog\(\{ kind: 'semSetup'/.test(bootSeg),
+  'T3c 模型缺失只弹安装入口，不自动下载')
+ok(/apiGet\(API\.semanticStatus\)/.test(cli) && /apiPost\(API\.semanticEmit, \{ mode: 'shadow', createOnly: true \}\)/.test(cli),
+  'T3d 配置首建不覆盖既有用户选择')
 ok(/}, 12000\)/.test(bootSeg) && /}, 16000\)/.test(cli.slice(iBoot, iBoot + 3200)),
   'T3e 两条路径各有退避延时（错开开屏弹窗，不抢首屏）')
 

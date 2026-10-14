@@ -10,7 +10,7 @@ const start = source.indexOf('handler: ', route) + 9
 const end = source.indexOf('\n      },', start)
 const dir = await fs.mkdtemp(path.join(tmpdir(), 'dam-376-'))
 const file = path.join(dir, 'embedding-config.json')
-const env = { path, memoryDir: () => dir, dshHome: () => dir, createJsEmbeddingConfigPre, updateEmbeddingConfigPre,
+const env = { engine: { _jsConfigurationError: 'fixture earlier failure' }, path, memoryDir: () => dir, dshHome: () => dir, createJsEmbeddingConfigPre, updateEmbeddingConfigPre,
   isLoopbackRequest: () => true, readJsonBody: async (req) => req.body, diag() {}, writeJson: (res, status, body) => Object.assign(res, { status, body }) }
 const handler = new Function(...Object.keys(env), 'return (' + source.slice(start, end) + '\n})')(...Object.values(env))
 async function call(body) { const res = {}; await handler({ method: 'POST', body }, res); return res }
@@ -27,5 +27,6 @@ try {
   await call({ mode: 'active' })
   await call({ mode: 'shadow', createOnly: true })
   assert.equal(JSON.parse(await fs.readFile(file)).activationEmitMode, 'active')
+  assert.equal(env.engine._jsConfigurationError, '', 'a confirmed manual save clears the earlier completion error')
   console.log('PASS #376 actual startup route preserves existing modes and later manual saves')
 } finally { await fs.rm(dir, { recursive: true, force: true }) }
