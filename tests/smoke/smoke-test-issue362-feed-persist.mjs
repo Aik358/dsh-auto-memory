@@ -1,0 +1,26 @@
+import assert from 'node:assert/strict'
+import fs from 'node:fs'
+import path from 'node:path'
+import { tmpdir } from 'node:os'
+import { createHubIoPre } from '../../lib/hub-io.js'
+import { createProcedureStorePre } from '../../lib/procedure-store.js'
+import { createMemoryHubPre } from '../../lib/memory-hub.js'
+
+const dir = fs.mkdtempSync(path.join(tmpdir(), 'dam-362-'))
+let fail = true
+try {
+  const io = createHubIoPre({ dir, fsApi: { renameSync: (...args) => { if (fail) throw Object.assign(new Error('injected rename failure'), { code: 'EACCES' }); fs.renameSync(...args) } } })
+  const procedures = createProcedureStorePre({ io: io('procedures.json') })
+  const hub = createMemoryHubPre({ stores: { procedures }, batch: io })
+  const rows = [{ kindCandidate: 'procedure_candidate', sourceIds: ['test'], title: 'procedure', excerpt: 'step' }]
+  const failed = hub.ingestJudgementRows(rows)
+  assert.equal(failed.ok, false)
+  assert.equal(failed.persisted, false)
+  assert.equal(failed.retryable, true)
+  assert.match(failed.batch.errorDetails[0], /EACCES/)
+  fail = false
+  const retry = hub.ingestJudgementRows(rows)
+  assert.equal(retry.ok, true)
+  assert.equal(io('procedures.json').load().procedures.length, 1)
+  console.log('PASS #362 failed feed exposes the commit error and retry persists once')
+} finally { fs.rmSync(dir, { recursive: true, force: true }) }
