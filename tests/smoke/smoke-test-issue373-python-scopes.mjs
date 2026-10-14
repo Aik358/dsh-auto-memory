@@ -29,6 +29,7 @@ try {
   assert.deepEqual(queries.map((q) => q.scope).sort(), ['User', 'Workspace'])
   assert.equal(new Set(queries.map((q) => q.miv)).size, 1)
   queries.length = 0
+  delete engine._pyRankCorpusRegistry
   const userOnly = { ...paths, notesPath: undefined }
   const only = await engine._pySemanticRank({ pyPaths: userOnly }, 'user query')
   assert.deepEqual([...only.scores.keys()], [ids.User])

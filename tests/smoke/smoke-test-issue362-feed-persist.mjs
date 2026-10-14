@@ -30,7 +30,7 @@ try {
   const factFailure = factHub.ingestJudgementRows(factRows)
   assert.equal(factFailure.persisted, false, JSON.stringify(factFailure))
   assert.equal(factFailure.retryable, true)
-  assert.match(factFailure.results[0].error, /EACCES/)
+  assert.equal(factFailure.results[0].error, 'injected rename failure')
   fail = false
   assert.equal(factHub.ingestJudgementRows(factRows).persisted, true)
   assert.equal(io('facts.json').load().facts.length, 1)
