@@ -7,7 +7,7 @@ import { updateEmbeddingConfigPre, createJsEmbeddingConfigPre } from '../../lib/
 
 const dir = fs.mkdtempSync(path.join(tmpdir(), 'dam-js-config-feedback-'))
 try {
-  const source = fs.readFileSync(new URL('../../lib/index.js', import.meta.url), 'utf8')
+  const source = fs.readFileSync(new URL('../../lib/index.js', import.meta.url), 'utf8').replace(/\r\n/g, '\n')
   const start = source.indexOf('    try {\n      const _dlStart = engine._jsDownload.start.bind')
   const end = source.indexOf('    // ─────────── 三层检索契约', start)
   assert.ok(start > 0 && end > start)
