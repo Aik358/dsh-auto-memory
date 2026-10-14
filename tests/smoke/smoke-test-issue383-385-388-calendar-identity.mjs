@@ -14,6 +14,10 @@ engine.resolvePaths = async () => ({ calendarPath: file })
 engine._assertTeamActionPre = () => {}
 engine.writeFullRaw = async (file, body) => fs.writeFile(file, body)
 try {
+  const literal = '## 2026-10-14\n- [ ] 08:00 | 未分类 | C:\\docs\\|literal'
+  const parsedLiteral = engine.parseCalendar(literal)
+  assert.equal(parsedLiteral[0].title, 'C:\\docs\\|literal', 'old files do not opt into the new escape encoding')
+  assert.equal(engine.parseCalendar(engine.renderCalendar(parsedLiteral))[0].title, parsedLiteral[0].title)
   const legacy = '## 2026-10-14\n- [ ] 09:00 | 不重要紧急 | legacy-one\n- [ ] 10:00 | 历史自定义优先级 | keep-custom'
   await fs.writeFile(file, legacy)
   await engine.calendarAdd({ date: '2026-10-14', time: '11:00', title: 'A | B \\ 中文 🙂', note: 'N | extra \\ chars\nsecond | line', quadrant: '不重要紧急', operationId: 'fixture-operation' })
