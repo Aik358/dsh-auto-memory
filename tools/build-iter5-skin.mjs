@@ -475,7 +475,7 @@ storage = storage.slice(0, migrationStart) + `    var migRows = h(Iter5Migration
       out: migOut, setOut: setMigOut, outPicking: migOutPicking,
       pickOut: function () { migPickInto(setMigOut, setMigOutPicking) }, onExport: function () { migExport() },
       pack: migPack, setPack: function (value) { setMigPack(value); setMigPlan(null); setMigResult(null) }, packPicking: migPackPicking,
-      pickPack: function () { migPickInto(function (value) { setMigPack(value); setMigPlan(null); setMigResult(null) }, setMigPackPicking) },
+      pickPack: function () { migPickFilePre(function (value) { setMigPack(value); setMigPlan(null); setMigResult(null) }, setMigPackPicking, migAlive, setMigNote, setMigErr) },
       onPreview: function () { migPreview(migConflict) }, plan: migPlan, onCancelPreview: function () { setMigPlan(null) },
       conflict: migConflict, setConflict: function (value) { setMigConflict(value); migPreview(value) }, onApply: migApply,
       busy: migBusy, error: migErr, message: migNote, result: migResult

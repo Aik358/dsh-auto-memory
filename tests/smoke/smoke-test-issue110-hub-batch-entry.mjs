@@ -12,7 +12,7 @@
  * 运行：node tests/smoke/smoke-test-issue110-hub-batch-entry-pre.mjs
  */
 import { createMemoryHubPre } from '../../lib/memory-hub.js'
-import { createHubIoPre } from '../../lib/hub-io.js'
+import { createHubIoPre, createHubIoHealthPre } from '../../lib/hub-io.js'
 import { createFactStorePre } from '../../lib/fact-store.js'
 import { mkdtempSync, rmSync, readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -103,13 +103,13 @@ console.log('[E5] 与真 hub-io + 真 fact-store 端到端：一批四行 = 一�
 {
   const dir = mkdtempSync(path.join(tmpdir(), 'dam-batch-e5-'))
   try {
-    const health = { errors: [] }
+    const health = createHubIoHealthPre()
     const factory = createHubIoPre({ dir, health, onError: () => {} })
     const store = createFactStorePre({ config: { maxFacts: 1000 }, io: factory('facts.json') })
     const hub = createMemoryHubPre({ stores: { facts: store, episodic: null, procedures: null }, batch: factory })
     const r = hub.ingestJudgementRows(rows(4))
     ok(r.results.every((x) => x && (x.consumed || x.skipped)), '四行都被消费（夹具与真 store 契约对得上）')
-    ok(r.batch && r.batch.written === 1, `★ 批末只写 1 次（written=${r.batch && r.batch.written}）；不批时是 4 次`)
+    ok(r.batch && r.batch.written === 0 && health.saves === 4, `★ 四次 facts 事务在各自锁内提交，外批不留待写（written=${r.batch && r.batch.written}）；不批时是 4 次`)
     const onDisk = JSON.parse(readFileSync(path.join(dir, 'facts.json'), 'utf8'))
     ok(Array.isArray(onDisk.facts) && onDisk.facts.length === 4, `落盘内容含全部 4 条（实得 ${(onDisk.facts || []).length}）`)
     // 对照：不传 batch 时，同一批必然多次写盘（说明本套件测的是路由而非运气）。

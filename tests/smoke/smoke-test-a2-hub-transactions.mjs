@@ -302,11 +302,13 @@ console.log('[A2] ⑦b #274 批内多行：决策链连续、落盘一次')
   const rA = store.upsert(FACTS.a)
   // 同一 subject+predicate、不同 object ⇒ 第 2 行必须是**冲突**（说明它看见了第 1 行）。
   const rB = store.upsert({ ...FACTS.a, object: 'gamma', provenance: ['src-b'] })
+  const beforeEnd = readFacts(dir) || []
+  ok(beforeEnd.length === 1, '⑦b fact transaction already persisted before outer batch ends')
   const end = factory.endBatch()
   const disk = readFacts(dir) || []
   ok(rA.ok === true && rA.outcome === 'created', '⑦b 批内第 1 行入库', JSON.stringify({ ok: rA.ok, outcome: rA.outcome }))
   ok(rB.ok === true && rB.outcome === 'conflict-added', '⑦b 批内第 2 行看得见第 1 行（判为冲突，而非重复新建）', JSON.stringify({ ok: rB.ok, outcome: rB.outcome }))
-  ok(end && end.written === 1, '⑦b 批末只落盘一次（written=1）', JSON.stringify(end))
+  ok(end && end.written === 0 && factory.batchPending() === 0, '⑦b facts 已在锁内提交，批末无待写快照', JSON.stringify(end))
   ok(disk.length === 1 && String(disk[0].object) === 'beta', '⑦b 盘上只有已入库那一条（冲突未落成第二条事实）', JSON.stringify(disk.map((f) => f.object)))
 }
 

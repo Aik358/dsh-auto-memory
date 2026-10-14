@@ -1,3 +1,4 @@
+// 2026-10-14: + migrate-upload (#397) and python-setup/config (#411); the exact route count lock remains.
 // M3b-3 全写路径接入测试(契约 §10 清单 + §12.3):
 // 默认关闭逐字节回归 / 开启态 append+sidecar 版本 / replace §9 / reflect / calendar 排除 /
 // maintain archive 保留 ID / 关闭-开启-关闭切换 / 真实目录零污染。
@@ -49,7 +50,7 @@ if (registeredTools.length !== 19) throw new Error('expected 19 tools (16 + T4 m
 // ★2026-10-01 再演进：68→69（新增 /global-brief，全球动态简报批）。
 // ★2026-10-02 再演进：69→70（审计修复批 #174 新增 POST /team-control，loopback-only，无条件注册）。
 // ★issue #211（2026-10-04）再演进：70→71（新增 POST /python-setup/uninstall，无条件注册）。
-if (registeredRoutes.length !== 71) throw new Error('expected 71 routes, got ' + registeredRoutes.length)
+if (registeredRoutes.length !== 73) throw new Error('expected 73 routes, got ' + registeredRoutes.length)
 
 const cfgRoute = registeredRoutes.find((r2) => r2.path === '/api/dsh-auto-memory/config')
 let body

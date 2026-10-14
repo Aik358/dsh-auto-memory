@@ -53,7 +53,8 @@ SHADOW_TOP_K = 8
 def canonical_workspace_key(key):
     """Byte-twin of lib/evidence-store-pre.js canonicalWorkspaceKey:
     path.resolve + backslash->slash + lowercase."""
-    return os.path.abspath(str(key == None and '' or key)).replace('\\', '/').lower()
+    canonical = os.path.abspath(str(key == None and '' or key)).replace('\\', '/')
+    return canonical.lower() if os.name == 'nt' else canonical
 
 
 def wsref_of(workspace_key):

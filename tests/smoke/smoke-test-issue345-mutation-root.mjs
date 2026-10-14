@@ -193,13 +193,17 @@ async function main() {
       '★#345 无关 flight 不得放行 ⇒ writeFull 明确 409（旧实现:全局集合非空 ⇒ 放行写旧根）',
       threw ? (threw.code + '/' + threw.statusCode) : 'NO-THROW')
     ok(!fs.existsSync(target), '★#345 被拒的写**一个字节都没写**(不写进正在搬空的旧根)', fs.existsSync(target) ? 'WROTE' : 'absent')
-    // 反向负对照：把在途请求换成**本目标自己** ⇒ 必须放行（真受理的请求不许被误拒）
+    // 反向负对照：把在途请求换成**本目标自己** ⇒ 新请求必须拒绝；仅前窗请求作用域可放行
     engine._noteRouteQueues = new Map([[WRITER.memoryWriteLockKey(target), Promise.resolve()]])
     const admission2 = TX.captureMemoryMutationPre(engine, target)
-    ok(admission2.migrationActive === false,
-      '★#345 负对照:**本目标自己**在途 ⇒ 判为已受理并放行（不误伤真受理的请求）',
+    ok(admission2.migrationActive === true,
+      '★#345 同目标队列也不能替新请求提供受理凭据',
       JSON.stringify({ migrationActive: admission2.migrationActive, admittedBy: admission2.admittedBy }))
-    const out = await TX.withMemoryMutationPre(engine, target, jobWriting(target, 'ADMITTED\n'), admission2)
+    engine._settingsMigrationActive = false
+    const out = await TX.withMemoryAdmissionScopePre({ engine, target }, async () => {
+      engine._settingsMigrationActive = true
+      return TX.withMemoryMutationPre(engine, target, jobWriting(target, 'ADMITTED\n'))
+    })
     ok(out && out.ok === true, '★#345 负对照:已受理的写照常完成', JSON.stringify(out))
   }
 
@@ -224,8 +228,8 @@ async function main() {
     ok(mark.ok === true && typeof mark.key === 'string' && mark.key.length > 0,
       '★#345 markMemoryAdmissionPre 登记成功并回显规范键', JSON.stringify({ ok: mark.ok, key: mark.key }))
     const adm = TX.captureMemoryMutationPre(engine, target)
-    ok(adm.migrationActive === false && adm.admittedBy === 'identity',
-      '★#345 登记身份 ⇒ 本次写判为已受理（admittedBy=identity）', JSON.stringify({ m: adm.migrationActive, by: adm.admittedBy }))
+    ok(adm.migrationActive === true && adm.admittedBy === 'none',
+      '★#345 诊断标记不能替新请求提供受理凭据', JSON.stringify({ m: adm.migrationActive, by: adm.admittedBy }))
     // 登记**别的目标**的身份 ⇒ 不放行本目标
     engine._settingsMigrationActive = true
     mark.release()
@@ -237,7 +241,9 @@ async function main() {
       JSON.stringify({ m: admOther.migrationActive, by: admOther.admittedBy }))
     markOther.release()
     // ALS 作用域版本
-    const scoped = TX.withMemoryAdmissionScopePre({ target }, () => {
+    engine._settingsMigrationActive = false
+    const scoped = TX.withMemoryAdmissionScopePre({ engine, target }, () => {
+      engine._settingsMigrationActive = true
       const a = TX.captureMemoryMutationPre(engine, target)
       const b = TX.captureMemoryMutationPre(engine, other)
       return { self: a.migrationActive, other: b.migrationActive, cur: TX.currentMemoryAdmissionPre() }
@@ -271,10 +277,10 @@ async function main() {
     // (b) 仅有一条全局 note flight（未接线时它是**唯一**的受理信号）⇒ 放行（旧语义逐字不变）
     engine._settingsNoteFlights = new Set([Promise.resolve()])
     const adm = TX.captureMemoryMutationPre(engine, target)
-    ok(adm.migrationActive === false,
-      '★#345 未接线(b) 仅全局 flight ⇒ 放行（**旧语义逐字不变**，既有套件据此全绿）',
+    ok(adm.migrationActive === true,
+      '★#345 未接线(b) 仅全局 flight ⇒ 拒绝（#363 回归）',
       JSON.stringify({ m: adm.migrationActive, by: adm.admittedBy }))
-    ok(adm.admittedBy === 'global-flight', '★#345 未接线(b) 诊断字段如实标注 global-flight（可复算）', String(adm.admittedBy))
+    ok(adm.admittedBy === 'none', '★#345 未接线(b) 诊断字段如实标注 none（可复算）', String(adm.admittedBy))
     // (c) 窗口未开 ⇒ 一律放行（旧语义）
     engine._settingsMigrationActive = false
     engine._settingsNoteFlights = new Set()
@@ -331,10 +337,10 @@ async function main() {
   // ===================================================================
   if (!CHILD) {
     fs.mkdirSync(TMP, { recursive: true })
-    const real = fs.readFileSync(REAL_TX, 'utf8')
+    const real = fs.readFileSync(REAL_TX, 'utf8').replace(/\r\n/g, '\n')
     const muts = [
       // M1：放行判据退回「全局集合非空即放行」（#345 要推翻的那条）
-      ['#345 回退(授权粒度=全局)', '  const scopedSignalsAvailable = !!(identityKey', '  const scopedSignalsAvailable = false && !!(identityKey'],
+      ['#345 回退(授权粒度=全局)', '  const alreadyAdmitted = scopedAdmitted', '  const alreadyAdmitted = engine._settingsNoteFlights && engine._settingsNoteFlights.size > 0'],
       // M2：摘掉「提交前复核磁盘配置根」这道
       ['#345 回退(无磁盘根复核)', '    assertDurableDiskRootUnchangedPre(engine, admission, target)\n    return out', '    return out'],
       // M3：临时/业务无关 —— 摘掉「写前」那道复核

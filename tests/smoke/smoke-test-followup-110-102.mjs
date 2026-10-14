@@ -32,21 +32,21 @@ try {
   {
     const health = createHubIoHealthPre()
     const io = createHubIoPre({ dir, health })
-    const facts = io('facts.json')
+    const procedures = io('procedures.json')
 
     ok(typeof io.beginBatch === 'function' && typeof io.endBatch === 'function' && typeof io.batchPending === 'function',
       'io 适配器暴露批控制（beginBatch/endBatch/batchPending）')
 
     io.beginBatch()
-    facts.save({ facts: [{ n: 1 }] })
-    facts.save({ facts: [{ n: 1 }, { n: 2 }] })
-    facts.save({ facts: [{ n: 1 }, { n: 2 }, { n: 3 }] })
+    procedures.save({ procedures: [{ n: 1 }] })
+    procedures.save({ procedures: [{ n: 1 }, { n: 2 }] })
+    procedures.save({ procedures: [{ n: 1 }, { n: 2 }, { n: 3 }] })
     ok(io.batchPending() === 1, '同文件 3 次 save 在批内合并成 **1** 个待写（这就是消除写放大）')
-    ok(!existsSync(path.join(dir, 'facts.json')), '批内**尚未落盘**（写盘被推迟到批末）')
+    ok(!existsSync(path.join(dir, 'procedures.json')), '批内**尚未落盘**（写盘被推迟到批末）')
     const r = io.endBatch()
     ok(r.written === 1 && r.ok === true, '批末一次写出 1 份快照')
-    const back = facts.load()
-    ok(back && back.facts.length === 3 && back.facts[2].n === 3, '落盘内容是**最后一份**（全量快照 ⇒ 合并语义无损）')
+    const back = procedures.load()
+    ok(back && back.procedures.length === 3 && back.procedures[2].n === 3, '落盘内容是**最后一份**（全量快照 ⇒ 合并语义无损）')
     ok(!readdirSync(dir).some((n) => n.endsWith('.tmp')), '批末落盘后不残留 .tmp')
     ok(health.saves === 3, 'health.saves 仍如实记 3 次 save 调用（诊断面不被合并掩盖）')
   }

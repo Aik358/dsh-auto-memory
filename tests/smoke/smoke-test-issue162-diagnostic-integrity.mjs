@@ -489,9 +489,11 @@ test('analogous Python rank catch records an actual sidecar exception once, whil
   assert.ok(start > 0 && end > start)
   const engine = Object.assign(host, {
     config: { semanticEngineMode: 'python' }, resolveSemanticTier: async () => 'c3',
+    _pythonModelReady: async () => true, preparePythonRecallPre: async () => true, pythonRuntimeCached: () => ({ chosen: 'fixture-python' }),
     _pythonSidecar: { request: async () => { throw secretError() } },
+    _indexSyncHost: { ensureWorkspaceIndexReady: async () => [{ ready: true }] },
   })
-  const registry = class { get() { return { ok: true, snapshot: { memoryIndexVersion: 'fixture' } } } }
+  const registry = class { get() { return { ok: true, snapshot: { memoryIndexVersion: 'fixture', records: [{memoryId, scope:'Workspace'}] } } } }
   new Function('engine', 'buildSourceCatalog', 'CorpusRegistry', 'canonicalize', 'memoryDir', 'path', 'recordDiagnosticErrorPre',
     source.slice(start, end))(engine, () => ({}), registry, (s) => s, (s) => path.join(home, s), path, recordDiagnosticErrorPre)
   const snap = { pyPaths: { ws: home } }

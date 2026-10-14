@@ -57,7 +57,7 @@ const closureSrc = extractFn('const semanticArm = async (env) => {')
 const arrowSrc = closureSrc.slice(closureSrc.indexOf('= ') + 2)
 function makeSemanticArm(fake) {
   const factory = new Function('return { semanticArm: ' + arrowSrc + '};')
-  return factory.call(fake).semanticArm
+  return (env) => factory.call(fake).semanticArm({ ...env, readSource: (p) => fake.readTextSafe(p) })
 }
 
 const anchor = (c) => `<!-- memory:mem_${c.repeat(32)} -->`
@@ -97,7 +97,7 @@ await ta('语义命中:词法不重合(L0 无查询词)但高 cosine 的记录�
   const hits = await makeSemanticArm(fake)(mkEnv())
   assert.equal(hits.length, 1, '低于阈值 0.41 被过滤,仅 0.72 入选')
   assert.equal(hits[0].id8, 'a'.repeat(8))
-  assert.equal(hits[0].label, '2026-09-09.md')
+  assert.equal(hits[0].label, '/ws/2026-09-09.md')
   assert.equal(hits[0].score, 0.72)
   assert.equal(hits[0].l0, l0a, '展示文本=L0(非全文)')
   // 语料送入 rank 的是 L0,绝非全文(全文含「发布踩坑」字样与完整正文)

@@ -157,11 +157,14 @@ await check('C09 browser pins source before network and opens only returned succ
   let sid = 'A', posted, opened
   const run = compile('(' + extract(client, 'async function runContinueFlow(opts) {') + ')', {
     currentSessionIdClient: () => sid, continueFlowBusy: false, L: (zh, en) => en, API: { autoContDecide: 'decide' },
-    apiPost: async (p, body) => { posted = body; sid = 'B'; return { ok: true, sessionId: 'successor-A' } }, sessions: { open: s => { opened = s } },
+    apiPost: async (p, body) => { posted = body; sid = 'B'; return { ok: true, sessionId: 'successor-' + body.sessionId } }, sessions: { open: s => { opened = s } },
   })
   await run()
   assert.deepEqual(posted, { action: 'manual', sessionId: 'A' })
-  assert.equal(opened, 'successor-A')
+  assert.equal(opened, undefined, 'late completion cannot navigate away from the user-selected B session')
+  sid = 'B'
+  await run()
+  assert.equal(opened, 'successor-B')
 })
 await check('C10 manual uses stop, model, permission, delivery, then commit order', async () => {
   const e = engine()

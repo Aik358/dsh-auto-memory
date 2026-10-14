@@ -79,15 +79,20 @@ for (const g of gates) console.log(`        ${g.field.padEnd(20)} @L${g.line + 1
 console.log('【发现】占位（非释放形态）')
 for (const p of placeholders) console.log(`        ${p.field.padEnd(20)} @L${p.line + 1}`)
 
-const EXPECT_GATES = ['_smartRecallFlight', '_subagentInflight', '_wbRotateBusy', '_workbenchBusy']
+const EXPECT_GATES = ['_subagentInflight', '_wbRotateBusy', '_workbenchBusy']
 console.log('\n【发现完整性】形态扫描不得漏检（坑②）')
-ck({ name: '★闸门发现数 = 4', ok: gates.length === EXPECT_GATES.length, detail: `实际 ${gates.length}` })
+ck({ name: '★标量闸门发现数 = 3（smart recall 按身份 Map 单飞另验）', ok: gates.length === EXPECT_GATES.length, detail: `实际 ${gates.length}` })
 ck({
   name: '★闸门字段集合逐字匹配',
   ok: JSON.stringify([...new Set(gates.map((g) => g.field))].sort()) === JSON.stringify([...EXPECT_GATES].sort()),
   detail: [...new Set(gates.map((g) => g.field))].join(','),
 })
-ck({ name: '★占位发现数 = 6', ok: placeholders.length === 6, detail: `实际 ${placeholders.length}` })
+ck({ name: '★标量占位发现数 = 5', ok: placeholders.length === 5, detail: `实际 ${placeholders.length}` })
+const smartStart = raw.indexOf('  async smartRecall(query, agent) {')
+const smartBody = raw.slice(smartStart, raw.indexOf('  async _smartRecallCore(', smartStart))
+ck({ name: '★smart recall 键含问题、源会话与工作区', ok: /JSON\.stringify\(\[String\(query/.test(smartBody) && smartBody.includes('p.ws') && smartBody.includes('agent.session.id') })
+ck({ name: '★smart recall 检查与登记之间零 await', ok: /if \(flights\.has\(key\)\)[\s\S]*?flights\.set\(key, flight\)/.test(smartBody) && !/await/.test(smartBody.slice(smartBody.indexOf('if (flights.has(key))'), smartBody.indexOf('flights.set(key, flight)'))) })
+ck({ name: '★smart recall 仅 finally 释放自己的身份单飞', ok: smartBody.includes('finally { if (flights.get(key) === flight) flights.delete(key) }') })
 ck({ name: '★发现数量断言有效（错误正则必漏检）', ok: (() => {
   const BAD_RE = new RegExp('^\\s*if\\s*\\(\\s*this\\.' + FIELD + '[^)]*\\)\\s*\\{\\s*$')
   return lines.filter((l) => BAD_RE.test(strip(l))).length < gates.length

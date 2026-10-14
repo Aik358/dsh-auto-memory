@@ -128,7 +128,7 @@ const ARCHIVE_BRANCH = (() => {
   assert.ok(end > start, '抽取：archive 分支终点命中（4 空格缩进的闭合括号）')
   const seg = SRC.slice(start, end + '\n    }'.length)   // ★补回闭合括号（end 指向 \n，不含 }）
   assert.ok(seg.includes("[记忆检索|archive]"), '抽取：片段确为 archive 分支（含其专属标签）')
-  return seg
+  return seg.replaceAll("'./recall-passages.js'", JSON.stringify(new URL('../../lib/recall-passages.js', import.meta.url).href))
 })()
 /** 真执行该分支：把分支体包成函数，传入分支所需的最小上下文。 */
 const callArchiveBranch = async (self, query, limit) => {
@@ -137,11 +137,11 @@ const callArchiveBranch = async (self, query, limit) => {
   assert.equal(ARCHIVE_BRANCH.split("if (scope === 'archive') {").length - 1, 1, '执行前：分支条件恰命中 1 次')
   const body = ARCHIVE_BRANCH.replace("if (scope === 'archive') {", 'if (true) {').replace(/^    /gm, '')
   // 分支用到的自由变量（逐个列出并在调用处传入，缺一个就是 ReferenceError —— 逐个补齐）
-  const fn = new Function('self', 'path', 'readdir', 'q', 'terms', 'limit', 'agent',
+  const fn = new Function('self', 'path', 'readdir', 'q', 'terms', 'limit', 'agent', 'readFile', 'readFailures', 'opts', 'exposeHits',
     'return (async () => {\n' + body + '\n})()')
   const q = String(query || '').toLowerCase().trim()
   const terms = q.split(/[\s,，、;；。:：]+/).filter((x) => x.length > 0)
-  return fn.call(self, self, pathModule, (await import('node:fs/promises')).readdir, q, terms, limit, null)
+  return fn.call(self, self, pathModule, (await import('node:fs/promises')).readdir, q, terms, limit, null, (await import('node:fs/promises')).readFile, [], null, () => {})
 }
 
 {

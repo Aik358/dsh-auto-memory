@@ -47,8 +47,8 @@
             h('p', { className: 'i5-warning' }, props.conflict === 'overwrite' ? L('确认导入将覆盖冲突文件。请先导出备份，再继续。', 'Importing will replace conflicting files. Export a backup before continuing.') : L('确认导入后，宿主将按所选策略写入目标工作区。', 'The host will write to the target workspace using the selected policy.')),
             h('div', { className: 'i5-dialog-footer' }, h('button', { disabled: busy, onClick: props.onCancelPreview }, L('取消预览', 'Cancel preview')), h('button', { className: 'i5-primary', disabled: busy, onClick: props.onApply }, props.busy === 'apply' ? t('saving') : t('migApply')))) : null,
           result ? h('div', { className: 'i5-migration-result', role: 'status' },
-            h('h3', null, t('migWritten') + ': ' + (result.written || 0)),
-            h('p', null, (result.writtenFiles || []).join(' · ')),
+            h('h3', null, t('migWritten') + ': ' + (Array.isArray(result.written) ? result.written.length : result.written || 0)),
+            h('p', null, migrationReceiptPre(result).text),
             h('p', null, t('migBackup') + ': ' + (result.backup || '—')),
             h('p', null, (result.onConflict || props.conflict) + ' · ' + (result.targetWs || '')),
             h('p', null, (result.summaryAction || '') + (result.summaryError ? ' · ' + result.summaryError : ''))) : null))

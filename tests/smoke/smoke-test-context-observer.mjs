@@ -1,3 +1,4 @@
+// 2026-10-14: + migrate-upload (#397) and python-setup/config (#411); the exact route count lock remains.
 // M2 ContextObserver smoke test(系统地图 C-01/C-02/N-01 验收门 + 2026-08-22 审查修复轮回归):
 // 确定性回放 / seed+live 去重 / eventSeq 与 contextVersion 分工 / A/B 并发零串线 /
 // root-nested tool call 关联 / 无 owner 不入任何 runtime(含匿名 agent-object:*) / dispose 清理 /
@@ -114,7 +115,7 @@ const turnStartEvent = (seq, turn, time) => ({ type: 'turn/start', seq, time: ti
 // ★2026-10-01 再演进：68→69（新增 /global-brief）。
 // ★2026-10-02 再演进：69→70（审计修复批 #174 新增 POST /team-control，loopback-only，无条件注册）。
 // ★issue #211（2026-10-04）再演进：70→71（新增 POST /python-setup/uninstall，无条件注册）。
-    if (h.registeredRoutes.length !== 71) throw new Error('route count drifted (expected 71, unconditional routes): ' + h.registeredRoutes.length)
+    if (h.registeredRoutes.length !== 73) throw new Error('route count drifted (expected 73, unconditional routes): ' + h.registeredRoutes.length)
     const cfg = await h.prime()
     // 2026-08-26 裁定:reasoningObserverEnabled/contextBridgeObserveChildSessions 默认 true
     // (开源模型为主,思维链/分支是主要观测面);其余实验开关仍默认 false

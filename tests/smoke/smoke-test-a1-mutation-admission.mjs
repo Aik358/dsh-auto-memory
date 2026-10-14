@@ -219,9 +219,8 @@ console.log('[A1] ③ #249 生产文档 mutation 统一 admission')
         '★#345 被拒的那次写**没有落到旧根**（逐字节未变）', await fsp.readFile(target, 'utf8'))
       // Ⅲ 反向负对照：把在途队列换成**该目标自己**的键 ⇒ 必须照常放行（不许误伤真受理的请求）
       engine._noteRouteQueues = new Map([[mw.memoryWriteLockKey(target), Promise.resolve()]])
-      await engine.writeFull(target, 'AFTER_OWN_ROUTE\n')
-      ok(await fsp.readFile(target, 'utf8') === 'AFTER_OWN_ROUTE\n',
-        '★#345 反向对照：本目标自己确在途 ⇒ 照常放行（判据不是一刀切拒绝）')
+      await assert.rejects(engine.writeFull(target, 'AFTER_OWN_ROUTE\n'), { code: 'SETTINGS_MIGRATION_ACTIVE' })
+      ok(await fsp.readFile(target, 'utf8') === 'BEFORE\n', 'same-target queue belongs to another request and grants no admission')
       engine._settingsNoteFlights = new Set()
       engine._noteRouteQueues = new Map()
     }
@@ -229,7 +228,11 @@ console.log('[A1] ③ #249 生产文档 mutation 统一 admission')
       // Ⅱ 正路径：**本目标自己的**受理身份已登记 ⇒ 放行并照常落盘
       const mark = adm.markMemoryAdmissionPre(engine, { target: target })
       ok(mark && mark.ok === true, '③ 前提：本目标的受理身份登记成功', JSON.stringify(mark))
-      await engine.writeFull(target, 'AFTER_ADMITTED\n')
+      engine._settingsMigrationActive = false
+      await adm.withMemoryAdmissionScopePre({ engine, target }, async () => {
+        engine._settingsMigrationActive = true
+        await engine.writeFull(target, 'AFTER_ADMITTED\n')
+      })
       ok(await fsp.readFile(target, 'utf8') === 'AFTER_ADMITTED\n',
         '★#345 已受理（**本目标自己的身份**）的写不被二次拒绝')
       mark.release()

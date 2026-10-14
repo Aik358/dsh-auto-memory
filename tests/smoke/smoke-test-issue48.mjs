@@ -169,7 +169,7 @@ test('80 appends across 8 stores sharing one backend do not lose/duplicate recor
   const api={...fs, async rename(a,b) { if (b===target && !tried.has(a)) { tried.add(a); throw errorOf('EPERM') } return fs.rename(a,b) } }
   const stores=Array.from({length:8},()=>store(api)); assert.equal(stores[0]._locks,stores[7]._locks)
   const out=await Promise.all(Array.from({length:80},(_,i)=>stores[i%8].append(target,'record-'+i)))
-  assert.ok(out.every((r)=>r.ok)); const parsed=parseAnchors(await fs.readFile(target)); assert.equal(parsed.status,'clean')
+  assert.ok(out.every((r)=>r.ok), JSON.stringify(out.filter(r=>!r.ok))); const parsed=parseAnchors(await fs.readFile(target)); assert.equal(parsed.status,'clean')
   const anchored=parsed.records.filter((r)=>r.kind==='anchored'); assert.equal(anchored.length,80)
   assert.equal(new Set(anchored.map((r)=>r.memoryId)).size,80)
   const text=await fs.readFile(target,'utf8'); for(let i=0;i<80;i++) assert.equal(text.split('\n').filter((line)=>line==='record-'+i).length,1)
@@ -185,23 +185,21 @@ test('failed transaction releases queue; later success never replays stale snaps
   assert.ok(candidate.includes('failed-first')); assert.ok(!candidate.includes('success-second'))
   await Promise.resolve(); assert.equal(a._locks.size,0)
 })
-test('different files are not globally serialized and rejection does not poison queues', async () => {
+test('different files are not globally serialized and rejection does not poison queues', async (t) => {
+  const { dir } = await fixture(t)
+  const fileA = path.join(dir, 'a'), fileB = path.join(dir, 'b')
   const s=store(); let release
   const held=new Promise((r)=>{release=r}); const events=[]
-  // ★2026-10-13 CI：`assert.rejects(first, …)` 挂上后，first 的 settle 时机**不受测试控制**；
-  //   实测（探针）：await 完 b 之后 first 仍是 pending，release() 之后才在微任务里 settle。
-  //   本机负载低时能赶上，CI 高负载下该微任务排到测试结束之后 ⇒ node:test 报
-  //   「generated asynchronous activity after the test ended / Missing expected rejection」。
-  //   修法：**显式等 first settle** 再断言，把时序钉死（语义不变：仍是「拒绝不污染队列」）。
-  const first=s._queue('/issue48/a',async()=>{events.push('a'); await held; throw new Error('first failure')})
+  // Use writable physical paths so both jobs exercise the real document locks.
+  const first=s._queue(fileA,async()=>{events.push('a'); await held; throw new Error('first failure')})
   let firstErr=null
   const firstSettled=first.then(()=>{throw new Error('expected rejection but resolved')},(e)=>{firstErr=e})
-  await s._queue('/issue48/b',async()=>events.push('b'))
+  await s._queue(fileB,async()=>events.push('b'))
   assert.deepEqual(events,['a','b'])
   release()
   await firstSettled
   assert.match(String(firstErr&&firstErr.message),/first failure/)
-  await s._queue('/issue48/a',async()=>events.push('again')); assert.deepEqual(events,['a','b','again'])
+  await s._queue(fileA,async()=>events.push('again')); assert.deepEqual(events,['a','b','again'])
 })
 test('Windows case/separator aliases share keys; POSIX case distinctions survive', () => {
   assert.equal(memoryWriteLockKey('C:\\Users\\Alice\\notes\\MEMORY.md','win32'), memoryWriteLockKey('c:/users/alice/notes/memory.md','win32'))

@@ -156,7 +156,9 @@ console.log('\n[S10] 引擎红线：零依赖、零写盘（IO 全在宿主 ⇒ 
   const CALLS = /\b(?:writeFileSync|writeFile|appendFileSync|appendFile|mkdirSync|mkdir|rmSync|unlinkSync|unlink|rm)\s*\(/
   ok(!CALLS.test(code), 'S10a 无文件写/删调用')
   const imports = (code.match(/^import .*$/gm) || []).join(' ')
-  ok(imports === "import { createHash } from 'node:crypto'", 'S10b import 白名单仅 node:crypto（实得：' + imports + '）')
+  ok(imports === "import { calendarFieldEncodePre, calendarFieldDecodePre, calendarQuadrantPre } from './calendar-fields.js' import { createHash } from 'node:crypto'", 'S10b import 白名单为 node:crypto 和共享纯字段编解码（实得：' + imports + '）')
+  const fields = rd('lib/calendar-fields.js')
+  ok(!CALLS.test(fields) && !/^import /m.test(fields), 'S10c 共享字段编解码零 IO、零外部依赖')
 }
 
 console.log('\n[migrate-pack] ' + pass + ' passed, ' + fail + ' failed')

@@ -43,7 +43,7 @@ ok(SRC.includes("expand: { type: 'string', description: '按记忆 id"), '工具
 ok(SRC.includes("{ format: args.format || 'l0', expand: args.expand }"), '工具层 format 缺省 l0(模型默认拿 L0 列表)')
 ok(SRC.includes("== L0 命中(摘要,含 id/得分/匹配原因"), 'L0 输出节头存在')
 ok(SRC.includes("== 本地记忆文件命中 =="), '旧输出节头保留(旧调用行为不变)')
-ok(SRC.includes("scope === 'all' && !l0Mode && typeof this._jsSemanticRank === 'function'"), '独立语义节在 l0Mode 下跳过(防重复注入)')
+ok(SRC.includes("(scope === 'all' || scope === 'current') && !l0Mode && (typeof this._semanticRankBest === 'function' || typeof this._jsSemanticRank === 'function')"), '独立语义节在 l0Mode 下跳过(防重复注入)，full 共用引擎选择器')
 
 // ---------- 夹具 ----------
 const anchor = (h) => `<!-- memory:mem_${h} -->` // h 必须恰 32 hex
@@ -74,9 +74,9 @@ function bindRecall(fake) {
   const fnSrc = extractFn("async recall(query, limit = 8, agent, scope = 'all', opts = null) {")
   const l0Url = JSON.stringify(new URL('../../lib/l0-extract.js', import.meta.url).href)
   const rrfUrl = JSON.stringify(new URL('../../lib/recall-fusion.js', import.meta.url).href)
-  const arrow = ('async ' + fnSrc.slice(fnSrc.indexOf('('), fnSrc.indexOf(') {') + 1) + ' => ' + fnSrc.slice(fnSrc.indexOf(') {') + 2)).replaceAll("'./l0-extract.js'", l0Url).replaceAll("'./recall-fusion.js'", rrfUrl).replaceAll("'./note-status-apply.js'", JSON.stringify(new URL('../../lib/note-status-apply.js', import.meta.url).href))
-  const factory = new Function('path', 'homedir', 'return { recall: ' + arrow + ' };')
-  const obj = factory.call(fake, path, homedir)
+  const arrow = ('async ' + fnSrc.slice(fnSrc.indexOf('('), fnSrc.indexOf(') {') + 1) + ' => ' + fnSrc.slice(fnSrc.indexOf(') {') + 2)).replaceAll("'./l0-extract.js'", l0Url).replaceAll("'./recall-fusion.js'", rrfUrl).replaceAll("'./note-status-apply.js'", JSON.stringify(new URL('../../lib/note-status-apply.js', import.meta.url).href)).replaceAll("'./recall-passages.js'", JSON.stringify(new URL('../../lib/recall-passages.js', import.meta.url).href))
+  const factory = new Function('path', 'homedir', 'readFile', 'return { recall: ' + arrow + ' };')
+  const obj = factory.call(fake, path, homedir, readFile)
   return (...args) => obj.recall.apply(fake, args)
 }
 function bindExpand(fake) {

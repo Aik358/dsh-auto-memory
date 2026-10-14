@@ -25,7 +25,7 @@ const sandbox = await mkdtemp(path.join(tmpdir(), 'issue45-recall-'))
 after(async () => { await rm(sandbox, { recursive: true, force: true }) })
 const diagnosticHome = path.join(sandbox, 'diagnostic-home')
 await mkdir(path.join(diagnosticHome, 'memory/evidence/events'), { recursive: true })
-const dependencies = ['l0-extract.js', 'recall-fusion.js', 'temporal-parse.js', 'evidence-agg.js', 'memory-importance.js', 'note-status-apply.js']
+const dependencies = ['l0-extract.js', 'recall-fusion.js', 'temporal-parse.js', 'evidence-agg.js', 'memory-importance.js', 'note-status-apply.js', 'recall-passages.js']
 const loaded = new Map()
 for (const dep of dependencies) loaded.set(dep, await import(pathToFileURL(path.join(root, 'lib', dep)).href))
 // Fail during setup, rather than silently turning an absent dependency into a green fallback test.
@@ -50,8 +50,8 @@ function extractMethod(signature) {
 }
 const methods = [
   'readTextSafe(p) {',
-  'listDailyLogs(projectDir, limit = 40) {',
-  'listReflections(reflectDir, limit = 30) {',
+  'listDailyLogs(projectDir, limit = 40, strict = false) {',
+  'listReflections(reflectDir, limit = 30, strict = false) {',
   "recall(query, limit = 8, agent, scope = 'all', opts = null) {",
 ].map(extractMethod).join('\n')
 const relocatedMethods = methods.replace(/import\('\.\/([^']+)'\)/g, (_, name) => {
@@ -303,10 +303,10 @@ test('missing files are fail-soft and genuine miss wording is retained', async (
   await rm(f.p.notesPath); await rm(f.p.userFile)
   assert.match(await f.recall('query'), /未找到相关记忆/)
 })
-test('L0 summary-only and unanchored-content boundaries are unchanged', async (t) => {
+test('L0 searches anchored body text while keeping unanchored boundaries', async (t) => {
   const f = await fixture(t)
   const bodyNeedle = 'RAW_BODY_NOT_IN_L0_' + f.targets.project.id
-  assert.match(await f.recall(bodyNeedle), /未找到相关记忆/)
+  assert.match(await f.recall(bodyNeedle), new RegExp(f.targets.project.id))
   assert.ok((await f.recall(bodyNeedle, 8, null)).includes(bodyNeedle))
   await writeFile(f.p.notesPath, 'no-anchor-unique-test-content')
   assert.match(await f.recall('no-anchor-unique-test-content'), /未找到相关记忆/)

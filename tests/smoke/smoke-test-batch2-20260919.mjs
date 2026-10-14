@@ -59,8 +59,8 @@ console.log('\n[② #69] epoch 失效判据必须把 null/缺失缓存视为无�
   ok(/if \(cached && \(!cached\.epoch \|\|/.test(s),
     '★★ 判据补上「cached.epoch 为空 ⇒ 一律无效」')
   // 旧语义的另一半必须保留：epoch 非空时仍要求严格相等（worker 重启换 epoch 仍要失效重同步）
-  ok(/epoch && cached\.epoch !== epoch/.test(s),
-    '★ 保留「epoch 非空时严格相等」——否则 worker 重启不再触发重同步')
+  ok(/!cached\.epoch \|\| cached\.epoch !== epoch/.test(s),
+    '★ epoch 必须严格相等；停止后 null 也触发失效重同步')
   // 采样点**不动**（最小修复）：epoch 声明仍在函数头，M78 的 P3 契约依赖它
   ok(/const epoch = currentEpoch\(\)/.test(s),
     '★ epoch 采样点未改动（最小修复，守住 M78 P3 契约）')

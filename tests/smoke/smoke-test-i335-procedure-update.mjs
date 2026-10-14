@@ -20,8 +20,9 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import pathModule from 'node:path'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 
-const ROOT = pathModule.join(pathModule.dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1')), '..', '..')
+const ROOT = fileURLToPath(new URL('../../', import.meta.url))
 const STORE = pathModule.join(ROOT, 'lib', 'procedure-store.js')
 const IDX = readFileSync(pathModule.join(ROOT, 'lib', 'index.js'), 'utf8')
 
@@ -31,7 +32,7 @@ function ok(cond, label) {
   else { fail++; console.log('FAIL ' + label) }
 }
 
-const mod = await import('file:///' + STORE.replace(/\\/g, '/'))
+const mod = await import(pathToFileURL(STORE).href)
 const createStore = mod.createProcedureStorePre
 assert.equal(typeof createStore, 'function', '必须能从 procedure-store.js 取到 createProcedureStorePre（真 import）')
 
