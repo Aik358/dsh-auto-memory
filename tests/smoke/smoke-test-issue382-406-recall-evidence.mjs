@@ -60,5 +60,9 @@ try {
   await fs.rm(path.join(dir, 'archive'), { recursive: true })
   await fs.writeFile(path.join(dir, 'archive'), 'not a directory')
   assert.match(await engine.recall('alpha', 8, undefined, 'archive'), /检索失败/)
+  await fs.writeFile(notesPath, 'alpha ' + 'x'.repeat(6 * 1024 * 1024))
+  const oversized = await engine.recall('alpha', 8, undefined, 'current', { format: 'full' })
+  assert.match(oversized, /检索不完整.*RECALL_SOURCE_TOO_LARGE/)
+  await assert.rejects(engine.collectHits(['alpha'], 4), /search incomplete/)
   console.log('PASS #382/#399/#401/#402/#404/#406 recall preserves strong late evidence and source coordinates')
 } finally { await fs.rm(dir, { recursive: true, force: true }) }
