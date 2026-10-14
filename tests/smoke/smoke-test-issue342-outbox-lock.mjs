@@ -245,7 +245,7 @@ async function main() {
   // ===================================================================
   if (!CHILD) {
     fs.mkdirSync(TMP, { recursive: true })
-    const real = fs.readFileSync(REAL_SRC, 'utf8')
+    const real = fs.readFileSync(REAL_SRC, 'utf8').replace(/\r\n/g, '\n')
     const muts = [
       ['#342 enqueue 回退(fail-soft 继续写盘)', '    if (!release) return failPre(\'lock\', \'lock unavailable or timeout \' + lockTimeoutMs + \'ms (fail-closed: nothing published, retry)\')', '    if (!release) failPre(\'lock\', \'mutated: fail-soft\')'],
       ['#342 clear 回退(无锁也擦除)', '    if (!release) return failPre(\'lock\', \'lock unavailable or timeout \' + lockTimeoutMs + \'ms (fail-closed: nothing cleared, retry)\')', '    if (!release) failPre(\'lock\', \'mutated: fail-soft wipe\')'],

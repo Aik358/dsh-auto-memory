@@ -2149,7 +2149,7 @@
         fetch(API.memoryHub, { method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ action: action, procedureId: procedureId, v: v }) })
-          .then(function (r) { return r.json() })
+          .then(readHubActionResponsePre)
           .then(function (j) {
             // issue #30:附带 reasonCodes —— 否则"点了晋升但没晋级"只显示 keep，看不出原因
             // (如 observation-only / diversity-below-3 / no-success-criteria)。

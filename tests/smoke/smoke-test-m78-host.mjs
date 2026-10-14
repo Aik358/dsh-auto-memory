@@ -11,6 +11,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, existsSync
 import { createHash } from 'node:crypto'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
+import { canonicalSourcePath } from '../../lib/file-boundary.js'
 import { fileURLToPath } from 'node:url'
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 process.on('uncaughtException', (e) => { console.error('[M78-TEST] FATAL:', (e && (e.stack || e.message)) || e); process.exit(1) })
@@ -24,7 +25,7 @@ function ok(cond, name) { if (cond) { pass++; console.log('  ok - ' + name) } el
 function eq(a, b, name) { ok(JSON.stringify(a) === JSON.stringify(b), name) }
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
-function canonicalizePath(p) { return path.resolve(p).replace(/\\/g, '/').toLowerCase() }
+const canonicalizePath = canonicalSourcePath
 function keyOf(p) { return '--' + p.replace(/[\\/:*?"<>|]/g, '-') + '--' }
 
 async function setupHarness(opts = {}) {

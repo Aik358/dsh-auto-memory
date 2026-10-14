@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { withMemoryAdmissionScopePre } from '../../lib/memory-mutation-transaction.js'
 /**
  * smoke-test-i333-capacity.mjs —— #333 容量上限漏检（2026-10-12）
  *
@@ -63,7 +64,7 @@ ok(/memory_recall\(scope="archive"/.test(maintBlock), '① 指针内含**检索�
 function makeNoteHandler(src, engine) {
   const objSrc = extractNoteRoute(src)
   const factory = new Function('API', 'isLoopbackRequest', 'writeJson', 'readJsonBody', 'engine',
-    'sanitizeForWrite', 'tailHas', 'memoryWriteLockKey', 'readFile', 'readdirSync',
+    'sanitizeForWrite', 'tailHas', 'memoryWriteLockKey', 'readFile', 'readdirSync', 'withMemoryAdmissionScopePre',
     'return (' + objSrc + ')')
   return factory(
     { note: '/note' },
@@ -76,6 +77,7 @@ function makeNoteHandler(src, engine) {
     (p) => 'lock:' + p,
     (p) => engine._fs.readFile(p, 'utf8'),
     () => [],
+    withMemoryAdmissionScopePre,
   )
 }
 

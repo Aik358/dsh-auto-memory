@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { withMemoryAdmissionScopePre } from '../../lib/memory-mutation-transaction.js'
 import { withCalendarLock, canonicalCalendarPath } from '../../lib/calendar-lock.js'
 import { writeTextAtomicPre } from '../../lib/config-io.js'
 import { readPlanPre, planRevisionPre, anchoredPlanPre, archivePlanPre, conflictPlanPre, preparePlanPre } from '../../lib/plan-store.js'
@@ -50,8 +51,8 @@ const handoffStampFn = new Function(padSrc + '\n' + extractFn('const handoffStam
 const nowHmSrc = SRC.match(/^const nowHm = \(\) => \{ const d = new Date\(\); return `\$\{pad\(d\.getHours\(\)\)\}:\$\{pad\(d\.getMinutes\(\)\)\}` \}$/m)[0]
 const nowHmFn = new Function(padSrc + '\n' + nowHmSrc + '\nreturn nowHm;')()
 const bindMethod = (header, fake, extra) => {
-  const names = ['canonicalCalendarPath', 'withCalendarLock', 'writeTextAtomicPre', 'readPlanPre', 'planRevisionPre', 'anchoredPlanPre', 'archivePlanPre', 'conflictPlanPre', 'preparePlanPre', 'path', 'existsSync', 'mkdir', 'writeFile', 'readdir', 'stat', 'handoffStamp', 'nowHm']
-  const vals = [canonicalCalendarPath, withCalendarLock, writeTextAtomicPre, readPlanPre, planRevisionPre, anchoredPlanPre, archivePlanPre, conflictPlanPre, preparePlanPre, path, existsSync, mkdir, writeFile, readdir, stat, handoffStampFn, nowHmFn]
+  const names = ['withMemoryAdmissionScopePre', 'canonicalCalendarPath', 'withCalendarLock', 'writeTextAtomicPre', 'readPlanPre', 'planRevisionPre', 'anchoredPlanPre', 'archivePlanPre', 'conflictPlanPre', 'preparePlanPre', 'path', 'existsSync', 'mkdir', 'writeFile', 'readdir', 'stat', 'handoffStamp', 'nowHm']
+  const vals = [withMemoryAdmissionScopePre, canonicalCalendarPath, withCalendarLock, writeTextAtomicPre, readPlanPre, planRevisionPre, anchoredPlanPre, archivePlanPre, conflictPlanPre, preparePlanPre, path, existsSync, mkdir, writeFile, readdir, stat, handoffStampFn, nowHmFn]
   for (const k of Object.keys(extra || {})) { names.push(k); vals.push(extra[k]) }
   const obj = new Function(...names, 'return {' + extractFn(header) + '};')(...vals)
   return obj[Object.keys(obj)[0]].bind(fake)

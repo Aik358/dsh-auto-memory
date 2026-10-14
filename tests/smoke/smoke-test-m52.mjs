@@ -28,7 +28,7 @@ function mkEv(over = {}) {
 console.log('[B1] 隐私投影(sessionRef/workspaceRef 稳定哈希;无裸标识)')
 eq(ES.sessionRefOf('s1'), ES.sessionRefOf('s1'), 'sessionRef 确定')
 ok(ES.sessionRefOf('s1') !== ES.sessionRefOf('s2'), '不同 session 不同 ref')
-eq(ES.workspaceRefOf('D:\\X\\Y'), ES.workspaceRefOf('d:/x/y'), 'workspaceKey 大小写/斜杠规范化后同 ref')
+ok((ES.workspaceRefOf('D:\\X\\Y') === ES.workspaceRefOf('d:/x/y')) === (process.platform === 'win32'), 'workspaceKey 仅在 Windows 合并大小写别名')
 ok(!ES.workspaceRefOf('C:\\secret').includes('secret'), 'ref 不含原路径明文')
 const ev = mkEv()
 const proj = ES.projectEvidenceForDurable(ev, { now: 1700000000001 })

@@ -491,7 +491,7 @@ test('analogous Python rank catch records an actual sidecar exception once, whil
     config: { semanticEngineMode: 'python' }, resolveSemanticTier: async () => 'c3',
     _pythonSidecar: { request: async () => { throw secretError() } },
   })
-  const registry = class { get() { return { ok: true, snapshot: { memoryIndexVersion: 'fixture' } } } }
+  const registry = class { get() { return { ok: true, snapshot: { memoryIndexVersion: 'fixture', records: [{memoryId, scope:'Workspace'}] } } } }
   new Function('engine', 'buildSourceCatalog', 'CorpusRegistry', 'canonicalize', 'memoryDir', 'path', 'recordDiagnosticErrorPre',
     source.slice(start, end))(engine, () => ({}), registry, (s) => s, (s) => path.join(home, s), path, recordDiagnosticErrorPre)
   const snap = { pyPaths: { ws: home } }

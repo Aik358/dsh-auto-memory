@@ -4,6 +4,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, readdirSyn
 import { createHash } from 'node:crypto'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
+import { canonicalSourcePath } from '../../lib/file-boundary.js'
 process.on('uncaughtException', (e) => { console.error('[M63B-TEST] FATAL:', (e && (e.stack || e.message)) || e); process.exit(1) })
 process.on('unhandledRejection', (r) => { console.error('[M63B-TEST] REJ:', r); process.exit(1) })
 globalThis.fetch = async () => ({ ok: false, status: 503, json: async () => ({}) })
@@ -44,7 +45,7 @@ async function setupHarness(opts = {}) {
   }))
   const sideDir = path.join(home, 'memory', 'index', 'files')
   mkdirSync(sideDir, { recursive: true })
-  const canon = (x) => path.resolve(x).replace(/\\/g, '/').toLowerCase()
+  const canon = canonicalSourcePath
   writeFileSync(path.join(sideDir, createHash('sha256').update(canon(wsFile), 'utf8').digest('hex') + '.json'),
     JSON.stringify({ schemaVersion: 1, namespace: 'dsh-auto-memory-pre', sourceFile: wsFile,
       sourceEpoch: '33333333-3333-4333-8333-333333333333', sourceVersion: 1, fileDigest: sha256Hex(buf),
@@ -133,7 +134,7 @@ let deliveredSeenCount = 0
   const liveMiv = amNow.activationInbox.memoryIndexVersion
   ok(!!liveMiv && String(liveMiv).startsWith('idx_pre_'), 'F4 状态接口暴露当前 miv(' + String(liveMiv).slice(0, 12) + '…)')
   const fakeReq = A.makeFakeActivationRequestPre({
-    seed: 'live-1', sessionId: 's1', agentId: 'a1', workspaceKey: h.wsA.replace(/\\/g, '/').toLowerCase(),
+    seed: 'live-1', sessionId: 's1', agentId: 'a1', workspaceKey: canonicalSourcePath(h.wsA),
     contextVersion: liveCv, memoryIndexVersion: liveMiv,
     ttlSteps: 5, now: Date.now(), records: h.records, maxItems: 2,
   })
@@ -171,7 +172,7 @@ console.log('[F6] 冷却门')
   const amNow2 = await h.dbg()
   const cv2 = (amNow2.runtimes.find((r) => r.sessionId === 's1') || {}).contextVersion || 0
   const miv2 = amNow2.activationInbox.memoryIndexVersion
-  const req2 = A.makeFakeActivationRequestPre({ seed: 'live-2', sessionId: 's1', agentId: 'a1', workspaceKey: h.wsA.replace(/\\/g, '/').toLowerCase(), contextVersion: cv2, memoryIndexVersion: miv2, ttlSteps: 9, now: Date.now(), records: h.records })
+  const req2 = A.makeFakeActivationRequestPre({ seed: 'live-2', sessionId: 's1', agentId: 'a1', workspaceKey: canonicalSourcePath(h.wsA), contextVersion: cv2, memoryIndexVersion: miv2, ttlSteps: 9, now: Date.now(), records: h.records })
   await h.actPost({ action: 'inject', request: req2 })
   await h.fire('agent/pre-step', { agent: h.agent, turn: 2, step: 2 }, () => {})
   const amB = await h.dbg()
@@ -216,7 +217,7 @@ console.log('[F9] TTL 过期(live)')
   const amNow3 = await h.dbg()
   const cv3 = (amNow3.runtimes.find((r) => r.sessionId === 's1') || {}).contextVersion || 0
   const miv3 = amNow3.activationInbox.memoryIndexVersion
-  const shortReq = A.makeFakeActivationRequestPre({ seed: 'short', sessionId: 's1', agentId: 'a1', workspaceKey: h.wsA.replace(/\\/g, '/').toLowerCase(), contextVersion: cv3, memoryIndexVersion: miv3, ttlSteps: 1, now: Date.now(), records: h.records })
+  const shortReq = A.makeFakeActivationRequestPre({ seed: 'short', sessionId: 's1', agentId: 'a1', workspaceKey: canonicalSourcePath(h.wsA), contextVersion: cv3, memoryIndexVersion: miv3, ttlSteps: 1, now: Date.now(), records: h.records })
   await h.actPost({ action: 'inject', request: shortReq })
   await h.fire('agent/pre-step', { agent: h.agent, turn: 3, step: 3 }, () => {})
   await h.fire('agent/pre-step', { agent: h.agent, turn: 3, step: 4 }, () => {})

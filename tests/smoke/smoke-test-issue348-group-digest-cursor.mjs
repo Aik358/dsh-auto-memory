@@ -78,6 +78,7 @@ writeFileSync(PRELOAD, [
   '      content = "\u2022 \u7fa4\u53cd\u9988\u6c47\u603b \u2014\u2014 \u5171 " + fed.length + " \u6761(\u6a21\u62df)"',
   '    }',
   '    save(s)',
+  '    if (s.llmSummary && userMsg.indexOf("open_issues") === -1) content = s.llmSummary',
   '    return R({ choices: [{ message: { content } }] })',
   '  }',
   '  if (u.includes("registry.npmjs.org")) return R({ version: "0.0.0" })',
@@ -284,6 +285,20 @@ console.log('[348-5] 负路径:PATCH 失败 ⇒ 非零退出、游标不动')
   ok(/确认失败|HTTP 500/.test(r.stderr + r.stdout), '★错误信息指出确认失败(#265 语义:宁可重发不可丢)')
   eq(st.patches.length, 0, '★失败路径**没有**任何游标推进(队列原样保留)')
   eq(st.cursor, null, '★游标保持未推进(null),下轮会重新投递同一批')
+}
+
+// #365: partial input is not an acknowledgement when its summary is truncated.
+{
+  const sp = mkScenario('s365', { count: 120, pad: 400, llmMode: 'ok' })
+  const initial = readState(sp)
+  initial.llmSummary = '• oversized summary —— ' + 'x'.repeat(5000) + ' END365'
+  writeFileSync(sp, JSON.stringify(initial), 'utf8')
+  const r = runOnce(sp, { LLM_API_KEY: 'k', LLM_BASE_URL: 'https://api.deepseek.com' })
+  const st = readState(sp)
+  ok(r.status === 0, '#365 real digest completes with mocked network')
+  ok(st.llmFed[0] > 0 && st.llmFed[0] < 120, '#365 input budget only includes a prefix')
+  ok(st.sent.length > 0 && !st.sent[0].includes('END365'), '#365 summary was actually truncated in delivered text')
+  eq(st.cursor, null, '#365 truncated summary must not advance the cursor')
 }
 
 console.log(NL + '[i348] ' + pass + ' passed, ' + fail + ' failed')
