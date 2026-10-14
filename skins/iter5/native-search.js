@@ -28,7 +28,7 @@
       return entries
     }
     function Iter5Search(props) {
-      var query = useState(props.intent && props.intent.query || ''), mode = useState('recall'), limit = useState(8)
+      var query = useState(props.intent && props.intent.query || ''), mode = useState('recall'), limit = useState(8), scope = useState('current')
       var result = useState(null), busy = useState(false), error = useState(''), selected = useState(0), copied = useState('')
       var identity = iter5Identity(), alive = useRef(true), detail = useRef(null)
       useEffect(function () { alive.current = true; return function () { alive.current = false } }, [])
@@ -36,7 +36,7 @@
       function search(e) {
         e.preventDefault()
         if (!query[0].trim() || busy[0]) return
-        var submitted = query[0].trim(), started = Date.now(), payload = { query: submitted }
+        var submitted = query[0].trim(), started = Date.now(), payload = { query: submitted, sessionId: currentSessionIdClient(), scope: scope[0] }
         if (mode[0] === 'recall') payload.limit = limit[0]
         busy[1](true); error[1](''); copied[1](''); result[1](null); selected[1](0)
         apiPost(mode[0] === 'recall' ? API.recall : API.smartRecall, payload).then(function (r) {
@@ -60,7 +60,7 @@
       }
       function copy() {
         if (!chosen || !navigator.clipboard) { copied[1](L('无法访问剪贴板，请选择正文复制。', 'Clipboard unavailable. Select and copy the text.')); return }
-        navigator.clipboard.writeText(chosen.text).then(function () { if (valid()) copied[1](L('已复制当前内容', 'Content copied')) }, function () { if (valid()) copied[1](L('复制失败，请选择正文复制。', 'Copy failed. Select and copy the text.')) })
+        navigator.clipboard.writeText('[' + chosen.title + '] ' + (chosen.mark || '') + '\n' + chosen.text).then(function () { if (valid()) copied[1](L('已复制当前内容', 'Content copied')) }, function () { if (valid()) copied[1](L('复制失败，请选择正文复制。', 'Copy failed. Select and copy the text.')) })
       }
       return h('div', { className: 'i5-native-search i5-panel i5-instrument' }, h(Iter5Screws),
         h('div', { className: 'i5-ph' }, h('h2', null, L('检索记忆', 'Search memories')), h('span', { className: 'i5-ph-right i5-num i5-search-count', role: 'status' }, response ? entries.filter(function (entry) { return !entry.summary }).length + L(' 组来源片段', ' source passages') + ' · ' + result[0].elapsed.toFixed(2) + L(' 秒', ' s') : '—')),
@@ -68,6 +68,7 @@
           h('label', { className: 'i5-native-query' }, h(Iter5Icon, { name: 'search' }), h('input', { type: 'search', 'aria-label': L('检索记忆', 'Search memories'), value: query[0], placeholder: L('搜索项目、决定、工作方法…', 'Search projects, decisions, working methods…'), onChange: function (e) { query[1](e.target.value) } })),
           h('button', { className: 'i5-primary', type: 'submit', disabled: busy[0] || !query[0].trim() }, busy[0] ? L('检索中…', 'Searching…') : L('检索', 'Search')),
           h('select', { 'aria-label': L('检索方式', 'Search mode'), value: mode[0], disabled: busy[0], onChange: function (e) { mode[1](e.target.value) } }, h('option', { value: 'recall' }, L('记忆检索', 'Memory search')), h('option', { value: 'smart' }, L('智能检索', 'Smart recall'))),
+          mode[0] === 'recall' ? h('select', { 'aria-label': L('检索范围', 'Search scope'), value: scope[0], disabled: busy[0], onChange: function (e) { scope[1](e.target.value) } }, h('option', { value: 'current' }, L('当前工作区', 'Current workspace')), h('option', { value: 'all' }, L('全部可用来源', 'All available sources')), h('option', { value: 'archive' }, L('当前工作区归档', 'Workspace archive'))) : null,
           mode[0] === 'recall' ? h('select', { 'aria-label': L('结果条数', 'Result limit'), value: limit[0], onChange: function (e) { limit[1](Number(e.target.value)) } }, [5,8,12,20].map(function (n) { return h('option', { key: n, value: n }, n + L(' 条结果', ' results')) })) : null),
         mode[0] === 'smart' ? h('p', { className: 'i5-muted' }, L('智能检索使用宿主模型，可能产生调用费用；命中片段和综合摘要分别显示。', 'Smart recall uses the host model and may incur usage costs. Passages and the summary are shown separately.')) : null,
         error[0] ? h(Iter5Error, { error: error[0] }) : null,

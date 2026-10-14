@@ -164,9 +164,9 @@ console.log('\n[5] 源码守卫：分层只改呈现，排序调用点必须原�
   // ⑥ 行格式：★R4-A 落地（2026-09-19）后在**行尾追加可选标记**（`c.mark` / `s.mark`）。
   //    契约：无标记时 `mark === ''` ⇒ 拼接结果与旧版**逐字节相同**（向后兼容）；
   //          有标记时追加 ` ⚠已作废（已被 mem_… 取代）` / ` ⚠已撤回（…）`。
-  ok(SRC.includes("out.push('· [' + c.id + '] ×' + sc + fr + ' ' + (c.reason || '语义') + ' ' + c.label + ' — ' + c.l0 + (c.mark || ''))"),
+  ok(SRC.includes("out.push('· [' + c.id + '] ×' + sc + fr + ' ' + (c.reason || '语义') + ' ' + c.label + ' — ' + c.l0 + (c.matchedExcerpt ? ' — ' + c.matchedExcerpt : '') + (c.mark || ''))"),
     '★ L0 行格式：前缀逐字符未变 + 行尾可选标记（R4-A）')
-  ok(SRC.includes("out.push('· ' + s.label + ' [' + s.id8 + '] ×' + s.score.toFixed(2) + ' ' + s.l0 + (s.mark || ''))"),
+  ok(SRC.includes("out.push('· ' + s.label + ' [' + s.id + '] ×' + s.score.toFixed(2) + ' ' + s.l0 + (s.mark || ''))"),
     '★ 语义行格式：前缀逐字符未变 + 行尾可选标记（R4-A）')
   // 反向锁：无标记时必须为空串（否则会多出空格，破坏向后兼容）
   ok(SRC.includes("mark: markL0(it)") && SRC.includes("mark: rec.mark || ''"),
