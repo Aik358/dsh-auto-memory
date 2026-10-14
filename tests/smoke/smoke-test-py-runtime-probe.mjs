@@ -81,11 +81,11 @@ const SRC_CLI = fs.readFileSync(path.join(ROOT, 'lib/client.js'), 'utf8')
 
 // ── D. 判据升级（核心：不再只查文件）──
 {
-  const deepSeg = SRC_IDX.slice(SRC_IDX.indexOf('pythonRuntime = await engine.probePythonRuntime({ withWorker: true })'), SRC_IDX.indexOf('pythonRuntime = await engine.probePythonRuntime({ withWorker: true })') + 400)
+  const deepSeg = SRC_IDX.slice(SRC_IDX.indexOf('pythonRuntime = await engine.probePythonRuntime({ withWorker: true, refresh: true })'), SRC_IDX.indexOf('pythonRuntime = await engine.probePythonRuntime({ withWorker: true, refresh: true })') + 400)
   ok(/pythonInt8Present = pythonRuntime\.usable === true/.test(deepSeg), 'D1 ★deepDetect: pythonInt8Present = usable（真跑通判据）')
   ok(/withWorker: true/.test(deepSeg), 'D1b 检测面板走 full 探测（含 worker health）')
   // D2：pythonRuntime 必须在 return 块里下发
-  const rtIdx = SRC_IDX.indexOf('pythonRuntime = await engine.probePythonRuntime({ withWorker: true })')
+  const rtIdx = SRC_IDX.indexOf('pythonRuntime = await engine.probePythonRuntime({ withWorker: true, refresh: true })')
   const retSeg = SRC_IDX.slice(rtIdx, SRC_IDX.indexOf('recommendation,', rtIdx) + 40)
   ok(/pythonRuntime,/.test(retSeg), 'D2 deepDetect 下发 pythonRuntime 字段给前端')
   const tierSeg = SRC_IDX.slice(SRC_IDX.indexOf("if (mode === 'python') {", SRC_IDX.indexOf('engine.resolveSemanticTier')), SRC_IDX.indexOf("if (mode === 'python') {", SRC_IDX.indexOf('engine.resolveSemanticTier')) + 1200)
