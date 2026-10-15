@@ -1,0 +1,738 @@
+[
+ {
+  "n": 179,
+  "kind": "ISSUE",
+  "state": "",
+  "prio": "",
+  "title": "created=10/02/2026 05:34:24 comments=5 user=Minervaowl7\\r\\nTITLE: [Bug][P1][F03] 工作区目录键将分隔符与连字符折叠为同一值\\r\\nBODYLEN=932\\r\\n\\n[ERR]\\n\"}],\"isError\":false,\"",
+  "src": "scan:4b041943"
+ },
+ {
+  "n": 201,
+  "kind": "Bug",
+  "state": "",
+  "prio": "P2",
+  "title": "[F26] Python 文档 token 双重特殊包装与满块截断导致正文丢 token\\r\\n  #179 [Bug][P1][F03] 工作区目录键将分隔符与连字符折叠为同一值\\r\\n=== 304-312 状态 ===\\r\\n  #304 state=closed reason=complet",
+  "src": "scan:4b041943"
+ },
+ {
+  "n": 212,
+  "kind": "PR",
+  "state": "",
+  "prio": "",
+  "title": "by Minervaowl7 (CONTRIBUTOR)  comments=0  118 files +4729-445 mergeable=false\\n#210 [PR] by Minervaowl7 (CONTRIBUTOR)  comments=0  32 files +1664-283",
+  "src": "scan:c8fa5b33"
+ },
+ {
+  "n": 215,
+  "kind": "PR",
+  "state": "",
+  "prio": "",
+  "title": "by Minervaowl7 (CONTRIBUTOR)  comments=0  152 files +20611-6666 mergeable=false\\n#213 [PR] by Minervaowl7 (CONTRIBUTOR)  comments=0  75 files +7518-66",
+  "src": "scan:c8fa5b33"
+ },
+ {
+  "n": 218,
+  "kind": "ISSUE",
+  "state": "",
+  "prio": "",
+  "title": "by Minervaowl7 (CONTRIBUTOR)  comments=0\\n#217 [PR] by KouzakiUmi (FIRST_TIME_CONTRIBUTOR)  comments=0  8 files +364-2 mergeable=false\\n#216 [ISSUE] b",
+  "src": "scan:c8fa5b33"
+ },
+ {
+  "n": 221,
+  "kind": "PR",
+  "state": "",
+  "prio": "",
+  "title": "by Minervaowl7 (CONTRIBUTOR)  comments=0  22 files +882-160 mergeable=false\\n#220 [ISSUE] by Minervaowl7 (CONTRIBUTOR)  comments=0\\n#219 [ISSUE] by Mi",
+  "src": "scan:c8fa5b33"
+ },
+ {
+  "n": 222,
+  "kind": "Bug",
+  "state": "",
+  "prio": "P2",
+  "title": "V3 保存同一物理目录的别名时误判为迁移并拒绝\\n#220  [Bug][P2] V3 设置清空 headroom 输入会误存为 0\\n#219  [Bug] 开放 PR 组合后提示默认值漂移及九项 smoke 契约失配\\n#218  [Bug][P2] 多进程配置读改写丢更新，保存均返回成功\\n#",
+  "src": "scan:c8fa5b33"
+ },
+ {
+  "n": 224,
+  "kind": "PR",
+  "state": "",
+  "prio": "",
+  "title": "by Minervaowl7 (CONTRIBUTOR)  comments=0  296 files +27555-7242 mergeable=true\\n#223 [ISSUE] by msilita (NONE)  comments=0\\n#222 [ISSUE] by Minervaowl",
+  "src": "scan:c8fa5b33"
+ },
+ {
+  "n": 227,
+  "kind": "ISSUE",
+  "state": "",
+  "prio": "",
+  "title": "by Minervaowl7 (CONTRIBUTOR)  comments=0\\n#226 [ISSUE] by Minervaowl7 (CONTRIBUTOR)  comments=0\\n#225 [ISSUE] by Minervaowl7 (CONTRIBUTOR)  comments=0",
+  "src": "scan:c8fa5b33"
+ },
+ {
+  "n": 228,
+  "kind": "Bug",
+  "state": "",
+  "prio": "P2",
+  "title": "本地文件接口仅检查字面路径，junction 可越过记忆目录边界\\n#227  [Bug][P1] 技能候选写盘失败仍返回 ok，memory_procedure 回复已写入\\n#226  [Bug][P1] 插件全局异常监听吞掉宿主致命异常，卸载后仍造成 smoke 假绿\\n#225  [Bug]",
+  "src": "scan:c8fa5b33"
+ },
+ {
+  "n": 230,
+  "kind": "PR",
+  "state": "",
+  "prio": "",
+  "title": "by Minervaowl7 (CONTRIBUTOR)  comments=0  20 files +795-213 mergeable=true\\n#229 [ISSUE] by Minervaowl7 (CONTRIBUTOR)  comments=0\\n#228 [ISSUE] by Min",
+  "src": "scan:c8fa5b33"
+ },
+ {
+  "n": 233,
+  "kind": "Bug",
+  "state": "",
+  "prio": "P2",
+  "title": "设置路径校验拒绝 DSH_HOME 内有效的物理目录别名\\n#232  [Bug][P2] 团队作者索引启动解包字段错误，下一次写入覆盖历史\\n#231  [Bug][P1] 技能归属迁移回滚将损坏 procedures.json 原件覆盖为空库\\n#229  [Bug][P2] 皮肤安装名称允许点",
+  "src": "scan:c8fa5b33"
+ },
+ {
+  "n": 236,
+  "kind": "ISSUE",
+  "state": "",
+  "prio": "",
+  "title": "by Minervaowl7 (CONTRIBUTOR)  comments=0\\n#235 [ISSUE] by Minervaowl7 (CONTRIBUTOR)  comments=0\\n#234 [ISSUE] by Minervaowl7 (CONTRIBUTOR)  comments=0",
+  "src": "scan:c8fa5b33"
+ },
+ {
+  "n": 238,
+  "kind": "Bug",
+  "state": "",
+  "prio": "已复现",
+  "title": "点击「笔记」后记忆浮窗消失且无法重开：梦幻皮肤误标记并覆盖 fixed 定位\\n#236  [Bug][P2] 语料路径守卫接受相邻同前缀目录的越界符号链接\\n#235  [Bug][P2] Python 下载向导接受不完整模型和非法 tokenizer 并报告 ready\\n#234  [Bug]",
+  "src": "scan:c8fa5b33"
+ },
+ {
+  "n": 239,
+  "kind": "PR",
+  "state": "",
+  "prio": "",
+  "title": "by Minervaowl7 (CONTRIBUTOR)  comments=0  16 files +637-95 mergeable=true\\n#238 [ISSUE] by Minervaowl7 (CONTRIBUTOR)  comments=0\\n#237 [PR] by Minerva",
+  "src": "scan:c8fa5b33"
+ },
+ {
+  "n": 240,
+  "kind": "open",
+  "state": "",
+  "prio": "",
+  "title": "fix(ui): 修复展开设置透底与旧皮肤样式残留\\n  #244 [open] fix(pack): 承接 #243，去掉旧图片和皮肤生成源再减 3.98 MB\\n  #246 [open] docs: 补充架构图并修复前端指纹检查\\n  #275 [open] [P2][Test] 内置 CSS",
+  "src": "scan:c8fa5b33"
+ },
+ {
+  "n": 270,
+  "kind": "Bug",
+  "state": "",
+  "prio": "P2",
+  "title": "recall_rank 绕过信封结构校验，畸形帧使 Python sidecar 退出并丢弃后续请求\\n<!-- regression: recall-rank-envelope-shape-bypass -->\\r\\n\\r\\n`recall_rank` 类型例外绕过了整个信封形状校验。启动 sem",
+  "src": "scan:c8fa5b33"
+ },
+ {
+  "n": 271,
+  "kind": "Bug",
+  "state": "",
+  "prio": "P2",
+  "title": "插槽排序会覆盖同节点的区域隐藏\\n## 问题\\n\\n对同一节点同时设置区域隐藏和插槽排序时，排序会把隐藏样式清空。合法配置如下：\\n\\n```json\\n{\\\"regions\\\":{\\\"page\\\":{\\\"hidden\\\":true}},\\\"slots\\\":{\\\"head\\\":{\\\"order\\\":",
+  "src": "scan:c8fa5b33"
+ },
+ {
+  "n": 278,
+  "kind": "Bug",
+  "state": "",
+  "prio": "P2",
+  "title": "自动接续成功提示关闭后，被 3 秒轮询反复重新显示\\n## 问题\\n\\n**优先级：P2。** 自动接续成功后，用户关闭“已自动接续到新会话，可直接上手”提示，提示会在下一次正常的 3 秒轮询后重新显示。同一成功结果在 10 分钟有效窗口内持续满足显示条件，关闭操作无法保持生效。\\n\\n源码基线：[",
+  "src": "scan:c8fa5b33"
+ },
+ {
+  "n": 280,
+  "kind": "PR",
+  "state": "",
+  "prio": "",
+  "title": "2026-10-07  comments=0\\nTITLE: fix: 防止技能迁移、日志维护和反馈同步丢失数据\\nLABELS: （无）\\nBODY (14 非空行), 前 22 行:\\n   批量技能迁移中途失败、维护日志期间并发写入、同路径同步事件与 QQ 多实例反馈追加，都可能丢失已经确认的",
+  "src": "scan:c8fa5b33"
+ },
+ {
+  "n": 283,
+  "kind": "Bug",
+  "state": "",
+  "prio": "",
+  "title": "自动记忆引擎检测弹窗使用 content-box，新版外观下横向越界\\n- #284 [Bug] 换肤后共享 CSS 不同步\\n- #285 [Bug][P1] 硬信号在低水位启动接续倒计时，但前端普通阈值判断隐藏确认卡\\n- #286 [Bug][P1] 自动接续用30秒活动时间窗代替回合状态，长",
+  "src": "scan:c8fa5b33"
+ },
+ {
+  "n": 287,
+  "kind": "Bug",
+  "state": "",
+  "prio": "P2",
+  "title": "接续成功提示在重挂载后重播，已显示提示超过10分钟也未清除\\n- #288 [Bug][P1] 历史接续成功优先于当前armed，冷却短于10分钟时隐藏下一次确认卡\\n- #289 [Bug][P2] 接续状态轮询的迟到/乱序响应会拉走其他会话并恢复旧确认卡\\n- #290 [Bug][P2] 接续",
+  "src": "scan:c8fa5b33"
+ },
+ {
+  "n": 291,
+  "kind": "Bug",
+  "state": "",
+  "prio": "P1",
+  "title": "接续转写文件名截断来源ID，同秒生成材料会覆盖其他会话的第3层转写\\n\\nPR #292-#302 是对应的修复（11 个 PR）。\\n\\n这些是**用户自己提交的 issue + PR**（因为是同一天、且成对出现）。看起来用户从另一个 AI 会话收集了报告。\\n\\n好，现在写白板。我要先写，然后",
+  "src": "scan:c8fa5b33"
+ },
+ {
+  "n": 303,
+  "kind": "PR",
+  "state": "",
+  "prio": "",
+  "title": "fix: surface current continuation failures with confirmed \\n  #201 [iss] [Bug][P2][F26] Python 文档 token 双重特殊包装与满块截断导致正文丢 token\\n  #179 [iss] [Bug][P1]",
+  "src": "scan:c8fa5b33"
+ },
+ {
+  "n": 304,
+  "kind": "ISSUE",
+  "state": "",
+  "prio": "",
+  "title": "created=10/08/2026 12:12:18 comments=0 user=Minervaowl7\\r\\nTITLE: [Bug][P1] 维护删除与记忆追加没有互斥，会物理删除已成功追加的内容\\r\\nBODYLEN=682\\r\\n---\\r\\n#201 [ISSUE] created=",
+  "src": "scan:4b041943"
+ },
+ {
+  "n": 306,
+  "kind": "ISSUE",
+  "state": "",
+  "prio": "",
+  "title": "created=10/08/2026 12:12:25 comments=0 user=Minervaowl7\\r\\nTITLE: [Bug][P1] 锚点写入缺省无 CAS，也无跨进程文档锁\\r\\nBODYLEN=775\\r\\n---\\r\\n#305 [ISSUE] created=10/08/2",
+  "src": "scan:4b041943"
+ },
+ {
+  "n": 308,
+  "kind": "ISSUE",
+  "state": "",
+  "prio": "",
+  "title": "created=10/08/2026 12:12:33 comments=0 user=Minervaowl7\\r\\nTITLE: [Bug][P1] 入队落盘失败后重试被误报为成功，重启丢事件\\r\\nBODYLEN=695\\r\\n---\\r\\n#307 [ISSUE] created=10/08/",
+  "src": "scan:4b041943"
+ },
+ {
+  "n": 310,
+  "kind": "ISSUE",
+  "state": "",
+  "prio": "",
+  "title": "created=10/08/2026 12:12:40 comments=0 user=Minervaowl7\\r\\nTITLE: [Bug][P1] 并发 QQ 反馈用旧 Gist 快照互相覆写\\r\\nBODYLEN=751\\r\\n---\\r\\n#309 [ISSUE] created=10/08",
+  "src": "scan:4b041943"
+ },
+ {
+  "n": 312,
+  "kind": "ISSUE",
+  "state": "",
+  "prio": "",
+  "title": "created=10/08/2026 12:12:48 comments=0 user=Minervaowl7\\r\\nTITLE: [Bug][P2] 迁移失败仍缓存已处理，第二次调用改读空新目录\\r\\nBODYLEN=687\\r\\n---\\r\\n#311 [ISSUE] created=10/08",
+  "src": "scan:4b041943"
+ },
+ {
+  "n": 315,
+  "kind": "PR",
+  "state": "",
+  "prio": "",
+  "title": "created=10/08/2026 14:38:03 comments=0 by=Minervaowl7 bodyLen=1170\\r\\n    test: preserve writer guard and datadir retry regressions for v3.2.13\\r\\n#20",
+  "src": "scan:4b041943"
+ },
+ {
+  "n": 316,
+  "kind": "PR",
+  "state": "",
+  "prio": "",
+  "title": "created=10/08/2026 14:42:06 comments=0 by=Minervaowl7 bodyLen=1305\\r\\n    fix(release): preflight mandatory source inputs before clearing release tree",
+  "src": "scan:4b041943"
+ },
+ {
+  "n": 318,
+  "kind": "PR",
+  "state": "",
+  "prio": "",
+  "title": "created=10/08/2026 14:43:25 comments=0 by=Minervaowl7 bodyLen=1322\\r\\n    fix(memory): reject external edits in default anchored writes\\r\\n#317 [PR] c",
+  "src": "scan:4b041943"
+ },
+ {
+  "n": 320,
+  "kind": "ISSUE",
+  "state": "",
+  "prio": "",
+  "title": "created=10/08/2026 15:10:06 comments=0 by=Minervaowl7 bodyLen=625\\r\\n    [Bug][P1] 切换记忆根仍会遗漏跨进程写入并在 drain 超时后继续发布\\r\\n#319 [ISSUE] created=10/08/2026 1",
+  "src": "scan:4b041943"
+ },
+ {
+  "n": 322,
+  "kind": "ISSUE",
+  "state": "",
+  "prio": "",
+  "title": "created=10/08/2026 15:10:14 comments=0 by=Minervaowl7 bodyLen=558\\r\\n    [Bug][P1] 出站队列 flush 使用旧缓存并无锁确认，仍会删除其他实例的新事件\\r\\n#321 [ISSUE] created=10/08/20",
+  "src": "scan:4b041943"
+ },
+ {
+  "n": 324,
+  "kind": "ISSUE",
+  "state": "",
+  "prio": "",
+  "title": "created=10/08/2026 15:10:22 comments=0 by=Minervaowl7 bodyLen=570\\r\\n    [Bug][P1] QQ 反馈持久化失败仍回 200，去重缓存阻止同实例恢复重试\\r\\n#323 [ISSUE] created=10/08/2026 1",
+  "src": "scan:4b041943"
+ },
+ {
+  "n": 326,
+  "kind": "PR",
+  "state": "",
+  "prio": "",
+  "title": "created=10/08/2026 15:25:46 comments=0 by=Minervaowl7 bodyLen=1621\\r\\n    fix: protect newer archives from stale maintenance publication\\r\\n#325 [ISSU",
+  "src": "scan:4b041943"
+ },
+ {
+  "n": 327,
+  "kind": "PR",
+  "state": "",
+  "prio": "",
+  "title": "created=10/08/2026 15:34:34 comments=0 by=Minervaowl7 bodyLen=1661\\r\\n    fix(team): refresh outbox snapshots and acknowledge exact disk revisions\\r\\n",
+  "src": "scan:4b041943"
+ },
+ {
+  "n": 329,
+  "kind": "PR",
+  "state": "",
+  "prio": "",
+  "title": "created=10/08/2026 15:51:28 comments=0 by=Minervaowl7 bodyLen=2354\\r\\n    fix(memory): drain writes and lease durable roots during migration\\r\\n#328 [",
+  "src": "scan:4b041943"
+ },
+ {
+  "n": 330,
+  "kind": "closed",
+  "state": "",
+  "prio": "Bug",
+  "title": "[P1] 多 DSH 宿主共用 workbench.json 争抢工作台会话写锁 ⇒ 弹窗永久停在「工作台会话尚未加载」，且「同意并建立」  10-10T07:23  by HanRui56\\n★新 #329 [closed](PR) fix(memory): drain writes and le",
+  "src": "scan:6556dfe7"
+ },
+ {
+  "n": 332,
+  "kind": "closed",
+  "state": "",
+  "prio": "建议",
+  "title": "独立吸收写入结果类型检查与故障回归  10-12T03:04  by Minervaowl7\\n★新 #331 [closed]    [Bug] #173 同类残留：lib/index.js 的 lexicalSessionScanFallback 仍是 v3 固定候选表，v4 宿  10-11T",
+  "src": "scan:6556dfe7"
+ },
+ {
+  "n": 333,
+  "kind": "Bug",
+  "state": "",
+  "prio": "",
+  "title": "整理旧日志可能越整理越大，部分写入没有遵守记忆容量上限\\nstate=closed comments=2\\n\\n=== Aik358 @ 2026-10-12T08:40:36Z ===\\n两处容量漏检补门；降级路径保留归档副本（硬约束） 已修复\\n\\n\\n=== Minervaowl7 @ 202",
+  "src": "scan:6556dfe7"
+ },
+ {
+  "n": 334,
+  "kind": "PR",
+  "state": "",
+  "prio": "",
+  "title": "fix(ui): 工作区关系图改为自适应卡片树并统一周边控件 | state=open\\n===== Issue #335 =====\\nstate=open comments=0 labels=[]\\ntitle=[Feature Request] 将插件设置统一收纳到 DSH 自带的「插件」页面",
+  "src": "scan:4b041943"
+ },
+ {
+  "n": 336,
+  "kind": "closed",
+  "state": "",
+  "prio": "dsh-plugin.org | dsh-plugin-hub",
+  "title": "build scripts blocked by pnpm allowlis  by zhzhenhua  2026-10-12  评论1\\n#335 [closed] [Feature Request] 将插件设置统一收纳到 DSH 自带的「插件」页面  by Minervaowl7  2026-",
+  "src": "scan:6556dfe7"
+ },
+ {
+  "n": 337,
+  "kind": "Bug",
+  "state": "",
+  "prio": "P1",
+  "title": "技能由 low 更新为 high 后保留 approved=true，可绕过人工批准直接激活  [open] ══════\\n核验版本：v3.3.1，main 提交 `3c12c2473f6e7988459eb49f8b5ea05872d07fbf`。\\n\\n低风险技能在 observe 时默认 `",
+  "src": "scan:6556dfe7"
+ },
+ {
+  "n": 338,
+  "kind": "open",
+  "state": "",
+  "prio": "Bug",
+  "title": "[P2] 技能 update 写盘失败后，同参数重试被 no-effective-change 提前截断  by Minervaowl7  2026-10-13  评论0\\n#337 [open] [Bug][P1] 技能由 low 更新为 high 后保留 approved=true，可绕过人工批",
+  "src": "scan:6556dfe7"
+ },
+ {
+  "n": 339,
+  "kind": "Bug",
+  "state": "",
+  "prio": "P2",
+  "title": "修改 active 技能标题会新建导出目录，旧 SKILL.md 继续保留  [open] ══════\\n核验版本：v3.3.1，main 提交 `3c12c2473f6e7988459eb49f8b5ea05872d07fbf`。\\n\\n技能 update 保持 procedureId 不变，但",
+  "src": "scan:6556dfe7"
+ },
+ {
+  "n": 340,
+  "kind": "open",
+  "state": "",
+  "prio": "Bug",
+  "title": "[P2] memory_procedure 的 update 支持部分修改，但注册 schema 仍强制 title 和 steps  by Minervaowl7  2026-10-13  评论0\\n#339 [open] [Bug][P2] 修改 active 技能标题会新建导出目录，旧 SKI",
+  "src": "scan:6556dfe7"
+ },
+ {
+  "n": 341,
+  "kind": "Bug",
+  "state": "",
+  "prio": "P2",
+  "title": "进程在创建 .lock.acquire 后退出，遗留门文件无法回收，后续写入持续超时  [open] ══════\\n核验版本：v3.3.1，main 提交 `3c12c2473f6e7988459eb49f8b5ea05872d07fbf`。\\n\\n配置锁和共享状态锁都先创建 .lock.acqu",
+  "src": "scan:6556dfe7"
+ },
+ {
+  "n": 342,
+  "kind": "open",
+  "state": "",
+  "prio": "Bug",
+  "title": "[P1] 出站队列取锁失败仍降级写盘，双进程入队成功事件会被覆盖  by Minervaowl7  2026-10-13  评论0\\n#341 [open] [Bug][P2] 进程在创建 .lock.acquire 后退出，遗留门文件无法回收，后续写入持续超时  by Minervaowl7  2",
+  "src": "scan:6556dfe7"
+ },
+ {
+  "n": 343,
+  "kind": "Bug",
+  "state": "",
+  "prio": "P2",
+  "title": "团队 pull 应用失败仍推进游标，临时写盘错误后不会重试该事件  [open] ══════\\n核验版本：v3.3.1，main 提交 `3c12c2473f6e7988459eb49f8b5ea05872d07fbf`。\\n\\npullOnce 逐条应用远端 changes 后，不论 rejec",
+  "src": "scan:6556dfe7"
+ },
+ {
+  "n": 344,
+  "kind": "open",
+  "state": "",
+  "prio": "Test",
+  "title": "[P2] 七个 smoke 用 URL.pathname 拼文件路径，中文目录下无法完成回归  by Minervaowl7  2026-10-13  评论0\\n#343 [open] [Bug][P2] 团队 pull 应用失败仍推进游标，临时写盘错误后不会重试该事件  by Minervaowl",
+  "src": "scan:6556dfe7"
+ },
+ {
+  "n": 345,
+  "kind": "Bug",
+  "state": "",
+  "prio": "P1",
+  "title": "#320 残留：跨进程切根后在途追加仍报成功，记录滞留旧目录  [open] ══════\\n这是 #320 的未解决部分，原单已关闭；最新版本仍可复现。详细证据也已补在[原单评论](https://github.com/Aik358/dsh-auto-memory/issues/320#issue",
+  "src": "scan:6556dfe7"
+ },
+ {
+  "n": 346,
+  "kind": "open",
+  "state": "",
+  "prio": "Test",
+  "title": "[P2] CRLF 正常检出仍触发五个 smoke 假失败，冻结源/ZIP 与变异锚串缺行尾约束  by Minervaowl7  2026-10-13  评论0\\n#345 [open] [Bug][P1] #320 残留：跨进程切根后在途追加仍报成功，记录滞留旧目录  by Minervaowl",
+  "src": "scan:6556dfe7"
+ },
+ {
+  "n": 347,
+  "kind": "Bug",
+  "state": "",
+  "prio": "P2",
+  "title": "EvidenceEventStore 仅首次追加执行保留清理，连续写入突破 32MiB 上限  [open] ══════\\n核验：v3.3.1 / `3c12c2473f6e7988459eb49f8b5ea05872d07fbf`。\\n\\nEvidenceEventStore.sweepRete",
+  "src": "scan:6556dfe7"
+ },
+ {
+  "n": 348,
+  "kind": "open",
+  "state": "",
+  "prio": "Bug",
+  "title": "[P2] 群摘要原文回退只投递末8条，却确认整批反馈游标  by Minervaowl7  2026-10-13  评论0\\n#347 [open] [Bug][P2] EvidenceEventStore 仅首次追加执行保留清理，连续写入突破 32MiB 上限  by Minervaowl7  2",
+  "src": "scan:6556dfe7"
+ },
+ {
+  "n": 349,
+  "kind": "open",
+  "state": "",
+  "prio": "Bug",
+  "title": "[P1] 同会话切换模型后继续复用旧窗口缓存，水位与硬上限判定错误  10-13T04:07  by Minervaowl7\\n   #348 [open]    [Bug][P2] 群摘要原文回退只投递末8条，却确认整批反馈游标  10-13T04:03  by Minervaowl7\\n   #",
+  "src": "scan:6556dfe7"
+ },
+ {
+  "n": 350,
+  "kind": "Test",
+  "state": "",
+  "prio": "P2",
+  "title": "lb1-negative 有失败断言仍无条件 exit(0)，回归运行器误报通过 ══════\\n核验版本：v3.3.1 / `3c12c2473f6e7988459eb49f8b5ea05872d07fbf`。均为隔离复现，未修改产品源码。\\n\\nok() 将断言失败累计到 fail，但结尾无条件",
+  "src": "scan:6556dfe7"
+ },
+ {
+  "n": 351,
+  "kind": "open",
+  "state": "",
+  "prio": "Test",
+  "title": "[P2] fullpage-composer 的非 page 负例未执行 effects，删掉保护仍全绿  10-13T04:08  by Minervaowl7\\n★新 #350 [open]    [Test][P2] lb1-negative 有失败断言仍无条件 exit(0)，回归运行器误报",
+  "src": "scan:6556dfe7"
+ },
+ {
+  "n": 352,
+  "kind": "Test",
+  "state": "",
+  "prio": "P2",
+  "title": "未来时间戳 dismissal 夹具身份键不匹配，移除拒绝逻辑仍通过 ══════\\n核验版本：v3.3.1 / `3c12c2473f6e7988459eb49f8b5ea05872d07fbf`。均为隔离复现，未修改产品源码。\\n\\n未来时间戳场景写入的 dismissal 身份是 NOW|si",
+  "src": "scan:6556dfe7"
+ },
+ {
+  "n": 353,
+  "kind": "open",
+  "state": "",
+  "prio": "Test",
+  "title": "[P2] M6 reason 清洗负例的 threshold 参数被 helper 忽略，恶意文本未进入被测函数  10-13T04:08  by Minervaowl7\\n★新 #352 [open]    [Test][P2] 未来时间戳 dismissal 夹具身份键不匹配，移除拒绝逻辑仍通过",
+  "src": "scan:6556dfe7"
+ },
+ {
+  "n": 354,
+  "kind": "Bug",
+  "state": "",
+  "prio": "P2",
+  "title": "工作区关系图移植缺共享样式和默认入口，小窗溢出且节点点击无可见反馈  [2026-10-13] Minervaowl7\\n  #353  [Test][P2] M6 reason 清洗负例的 threshold 参数被 helper 忽略，恶意文本未进入被测函数  [2026-10-13] Mine",
+  "src": "scan:6556dfe7"
+ },
+ {
+  "n": 356,
+  "kind": "issue",
+  "state": "open@2026-10-14",
+  "prio": "",
+  "title": "【Bug】左下角浮层半透明，深色模式下身后文字透过来完全看不清",
+  "src": "snapshot:yanghanwenzuishuai-ctrl"
+ },
+ {
+  "n": 357,
+  "kind": "issue",
+  "state": "open@2026-10-14",
+  "prio": "",
+  "title": "建议：让修复和发布更容易复核，减少反复补漏",
+  "src": "snapshot:Minervaowl7"
+ },
+ {
+  "n": 358,
+  "kind": "issue",
+  "state": "open@2026-10-14",
+  "prio": "",
+  "title": "[Bug][P2] 记忆中枢点开已回收的子代理条目必报「历史加载失败：subagent is unavailable（subagent/not-found）」",
+  "src": "snapshot:qiling670-svg"
+ },
+ {
+  "n": 359,
+  "kind": "issue",
+  "state": "open@2026-10-14",
+  "prio": "",
+  "title": "[Bug][P1] 技能改名清理旧导出目录可能删除用户附加资源",
+  "src": "snapshot:Minervaowl7"
+ },
+ {
+  "n": 360,
+  "kind": "issue",
+  "state": "open@2026-10-14",
+  "prio": "",
+  "title": "[Bug][P1] active 技能升级高风险后未重新批准仍刷新导出",
+  "src": "snapshot:Minervaowl7"
+ },
+ {
+  "n": 361,
+  "kind": "issue",
+  "state": "open@2026-10-14",
+  "prio": "",
+  "title": "[Bug][P1] facts 批处理绕过跨进程锁可能覆盖其他写者",
+  "src": "snapshot:Minervaowl7"
+ },
+ {
+  "n": 362,
+  "kind": "issue",
+  "state": "open@2026-10-14",
+  "prio": "",
+  "title": "[Bug][P1] HTTP feed 掩盖最终提交失败且直接批错误分支类型不匹配",
+  "src": "snapshot:Minervaowl7"
+ },
+ {
+  "n": 363,
+  "kind": "issue",
+  "state": "open@2026-10-14",
+  "prio": "",
+  "title": "[Bug][P2] 迁移门禁保留 global-flight 回退可借无关请求放行",
+  "src": "snapshot:Minervaowl7"
+ },
+ {
+  "n": 364,
+  "kind": "issue",
+  "state": "open@2026-10-14",
+  "prio": "",
+  "title": "[Bug][P2] 团队 pull 缺 procedure/handoff 处理器却推进游标",
+  "src": "snapshot:Minervaowl7"
+ },
+ {
+  "n": 365,
+  "kind": "issue",
+  "state": "open@2026-10-14",
+  "prio": "",
+  "title": "[Bug][P2] 群摘要部分输入分支未检查实际投递便确认游标",
+  "src": "snapshot:Minervaowl7"
+ },
+ {
+  "n": 366,
+  "kind": "issue",
+  "state": "open@2026-10-14",
+  "prio": "",
+  "title": "[Bug][P2] 模型下载取消不能中断挂起的 fetch/read",
+  "src": "snapshot:Minervaowl7"
+ },
+ {
+  "n": 367,
+  "kind": "issue",
+  "state": "open@2026-10-14",
+  "prio": "",
+  "title": "[Bug][P2] hubAct 忽略 HTTP/error 字段可能把失败显示为 ok",
+  "src": "snapshot:Minervaowl7"
+ },
+ {
+  "n": 368,
+  "kind": "issue",
+  "state": "open@2026-10-14",
+  "prio": "",
+  "title": "[Test][P2] v3.3.3 Release 与同提交公开 smoke CI 结果需对齐",
+  "src": "snapshot:Minervaowl7"
+ },
+ {
+  "n": 369,
+  "kind": "issue",
+  "state": "open@2026-10-14",
+  "prio": "",
+  "title": "[Bug][P1] 安装向导和下载完成回调可能覆盖已有损坏配置",
+  "src": "snapshot:Minervaowl7"
+ },
+ {
+  "n": 370,
+  "kind": "issue",
+  "state": "open@2026-10-14",
+  "prio": "",
+  "title": "[Bug][P1] 团队响应体读取失败可能被确认成发送成功并出队",
+  "src": "snapshot:Minervaowl7"
+ },
+ {
+  "n": 371,
+  "kind": "issue",
+  "state": "open@2026-10-14",
+  "prio": "",
+  "title": "[Bug][P1] 大小写敏感文件系统中不同路径共用 sidecar 和工作区身份",
+  "src": "snapshot:Minervaowl7"
+ },
+ {
+  "n": 372,
+  "kind": "issue",
+  "state": "open@2026-10-14",
+  "prio": "",
+  "title": "[Bug][P2] JS 配置首建误把身份字符串当对象，缺失 provider 和 dimension",
+  "src": "snapshot:Minervaowl7"
+ },
+ {
+  "n": 373,
+  "kind": "issue",
+  "state": "open@2026-10-14",
+  "prio": "",
+  "title": "[Bug][P2] Python 语义检索生产同步和查询仅覆盖 Workspace，遗漏 User",
+  "src": "snapshot:Minervaowl7"
+ },
+ {
+  "n": 374,
+  "kind": "issue",
+  "state": "open@2026-10-14",
+  "prio": "",
+  "title": "[Bug][P2] L0 来源读取失败被当空内容并覆盖既有派生索引",
+  "src": "snapshot:Minervaowl7"
+ },
+ {
+  "n": 375,
+  "kind": "issue",
+  "state": "open@2026-10-14",
+  "prio": "",
+  "title": "[Bug][P2] L0 持久向量索引有写入接线，但召回未消费磁盘向量",
+  "src": "snapshot:Minervaowl7"
+ },
+ {
+  "n": 376,
+  "kind": "issue",
+  "state": "open@2026-10-14",
+  "prio": "",
+  "title": "[P1][UX] 前端启动初始化会将已有 active/canary 配置覆盖为 shadow",
+  "src": "snapshot:Minervaowl7"
+ },
+ {
+  "n": 377,
+  "kind": "issue",
+  "state": "open@2026-10-14",
+  "prio": "",
+  "title": "[P2][UX] 模型自动下载未尊重 lexical 模式与稍后提醒选择",
+  "src": "snapshot:Minervaowl7"
+ },
+ {
+  "n": 378,
+  "kind": "issue",
+  "state": "open@2026-10-14",
+  "prio": "",
+  "title": "[P1][UX] smartRecall 全局复用在途 Promise，不同问题可能收到同一答案",
+  "src": "snapshot:Minervaowl7"
+ },
+ {
+  "n": 379,
+  "kind": "issue",
+  "state": "open@2026-10-14",
+  "prio": "",
+  "title": "[P2][UX] GUI 搜索未绑定当前工作区，依赖全局最近活动上下文",
+  "src": "snapshot:Minervaowl7"
+ },
+ {
+  "n": 380,
+  "kind": "issue",
+  "state": "open@2026-10-14",
+  "prio": "",
+  "title": "[P2][UX] 带 UTF-8 BOM 的记忆文件展开时字节偏移不一致",
+  "src": "snapshot:Minervaowl7"
+ },
+ {
+  "n": 381,
+  "kind": "issue",
+  "state": "open@2026-10-14",
+  "prio": "",
+  "title": "[P2][UX] Python 设置向导首次检测失败后持续显示检测中且无法重试",
+  "src": "snapshot:Minervaowl7"
+ },
+ {
+  "n": 382,
+  "kind": "issue",
+  "state": "open@2026-10-14",
+  "prio": "",
+  "title": "[P2][UX] 智能回忆候选先截取日志，User/项目记忆可能长期无法入选",
+  "src": "snapshot:Minervaowl7"
+ },
+ {
+  "n": 383,
+  "kind": "issue",
+  "state": "open@2026-10-14",
+  "prio": "",
+  "title": "[P1][UX] 新版日历优先级枚举与解析器不一致，保存成功的日程不可见并可能被后续写入丢弃",
+  "src": "snapshot:Minervaowl7"
+ },
+ {
+  "n": 384,
+  "kind": "issue",
+  "state": "open@2026-10-14",
+  "prio": "",
+  "title": "[P1][UX] 外部来源项目接入与移除未绑定当前会话，可能操作错误工作区",
+  "src": "snapshot:Minervaowl7"
+ },
+ {
+  "n": 394,
+  "kind": "issue",
+  "state": "open@2026-10-14",
+  "prio": "",
+  "title": "branch=codex/all-open-issues-20261014 | fix: 最小处理开放 issue，保全写入与审批边界",
+  "src": "snapshot:Minervaowl7"
+ },
+ {
+  "n": 420,
+  "kind": "issue",
+  "state": "open@2026-10-14",
+  "prio": "",
+  "title": "branch=codex/claimed-60-20261014 | fix: 修复认领的 60 项 issue 与插件详情页设置展开",
+  "src": "snapshot:Minervaowl7"
+ }
+]

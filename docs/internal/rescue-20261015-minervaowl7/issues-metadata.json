@@ -1,0 +1,200 @@
+[
+ {
+  "n": 179,
+  "author": "Minervaowl7",
+  "date": "10/02/2026 05:34:24",
+  "title": "[Bug][P1][F03] [Hold] 工作区目录键将分隔符与连字符折叠为同一值"
+ },
+ {
+  "n": 201,
+  "author": "Minervaowl7",
+  "date": "10/02/2026 05:38:55",
+  "title": "[Bug][P2][F26] [Hold] Python 文档 token 双重特殊包装与满块截断导致正文丢 token"
+ },
+ {
+  "n": 356,
+  "author": "yanghanwenzuishuai-ctrl",
+  "date": "10/13/2026 12:47:05",
+  "title": "【Bug】左下角浮层半透明，深色模式下身后文字透过来完全看不清"
+ },
+ {
+  "n": 357,
+  "author": "Minervaowl7",
+  "date": "10/13/2026 13:51:22",
+  "title": "建议：让修复和发布更容易复核，减少反复补漏"
+ },
+ {
+  "n": 358,
+  "author": "qiling670-svg",
+  "date": "10/14/2026 02:43:58",
+  "title": "[Bug][P2] 记忆中枢点开已回收的子代理条目必报「历史加载失败：subagent is unavailable（subagent/not-found）」"
+ },
+ {
+  "n": 359,
+  "author": "Minervaowl7",
+  "date": "10/14/2026 03:56:14",
+  "title": "[Bug][P1] 技能改名清理旧导出目录可能删除用户附加资源"
+ },
+ {
+  "n": 360,
+  "author": "Minervaowl7",
+  "date": "10/14/2026 03:56:22",
+  "title": "[Bug][P1] active 技能升级高风险后未重新批准仍刷新导出"
+ },
+ {
+  "n": 361,
+  "author": "Minervaowl7",
+  "date": "10/14/2026 03:56:26",
+  "title": "[Bug][P1] facts 批处理绕过跨进程锁可能覆盖其他写者"
+ },
+ {
+  "n": 362,
+  "author": "Minervaowl7",
+  "date": "10/14/2026 03:56:30",
+  "title": "[Bug][P1] HTTP feed 掩盖最终提交失败且直接批错误分支类型不匹配"
+ },
+ {
+  "n": 363,
+  "author": "Minervaowl7",
+  "date": "10/14/2026 03:56:34",
+  "title": "[Bug][P2] 迁移门禁保留 global-flight 回退可借无关请求放行"
+ },
+ {
+  "n": 364,
+  "author": "Minervaowl7",
+  "date": "10/14/2026 03:56:38",
+  "title": "[Bug][P2] 团队 pull 缺 procedure/handoff 处理器却推进游标"
+ },
+ {
+  "n": 365,
+  "author": "Minervaowl7",
+  "date": "10/14/2026 03:56:42",
+  "title": "[Bug][P2] 群摘要部分输入分支未检查实际投递便确认游标"
+ },
+ {
+  "n": 366,
+  "author": "Minervaowl7",
+  "date": "10/14/2026 03:56:46",
+  "title": "[Bug][P2] 模型下载取消不能中断挂起的 fetch/read"
+ },
+ {
+  "n": 367,
+  "author": "Minervaowl7",
+  "date": "10/14/2026 03:56:50",
+  "title": "[Bug][P2] hubAct 忽略 HTTP/error 字段可能把失败显示为 ok"
+ },
+ {
+  "n": 368,
+  "author": "Minervaowl7",
+  "date": "10/14/2026 03:56:54",
+  "title": "[Test][P2] v3.3.3 Release 与同提交公开 smoke CI 结果需对齐"
+ },
+ {
+  "n": 369,
+  "author": "Minervaowl7",
+  "date": "10/14/2026 04:23:57",
+  "title": "[Bug][P1] 安装向导和下载完成回调可能覆盖已有损坏配置"
+ },
+ {
+  "n": 370,
+  "author": "Minervaowl7",
+  "date": "10/14/2026 04:24:03",
+  "title": "[Bug][P1] 团队响应体读取失败可能被确认成发送成功并出队"
+ },
+ {
+  "n": 371,
+  "author": "Minervaowl7",
+  "date": "10/14/2026 04:24:07",
+  "title": "[Bug][P1] 大小写敏感文件系统中不同路径共用 sidecar 和工作区身份"
+ },
+ {
+  "n": 372,
+  "author": "Minervaowl7",
+  "date": "10/14/2026 04:24:11",
+  "title": "[Bug][P2] JS 配置首建误把身份字符串当对象，缺失 provider 和 dimension"
+ },
+ {
+  "n": 373,
+  "author": "Minervaowl7",
+  "date": "10/14/2026 04:24:19",
+  "title": "[Bug][P2] Python 语义检索生产同步和查询仅覆盖 Workspace，遗漏 User"
+ },
+ {
+  "n": 374,
+  "author": "Minervaowl7",
+  "date": "10/14/2026 04:24:24",
+  "title": "[Bug][P2] L0 来源读取失败被当空内容并覆盖既有派生索引"
+ },
+ {
+  "n": 375,
+  "author": "Minervaowl7",
+  "date": "10/14/2026 04:24:29",
+  "title": "[Bug][P2] L0 持久向量索引有写入接线，但召回未消费磁盘向量"
+ },
+ {
+  "n": 376,
+  "author": "Minervaowl7",
+  "date": "10/14/2026 04:39:22",
+  "title": "[P1][UX] 前端启动初始化会将已有 active/canary 配置覆盖为 shadow"
+ },
+ {
+  "n": 377,
+  "author": "Minervaowl7",
+  "date": "10/14/2026 04:39:29",
+  "title": "[P2][UX] 模型自动下载未尊重 lexical 模式与稍后提醒选择"
+ },
+ {
+  "n": 378,
+  "author": "Minervaowl7",
+  "date": "10/14/2026 04:39:33",
+  "title": "[P1][UX] smartRecall 全局复用在途 Promise，不同问题可能收到同一答案"
+ },
+ {
+  "n": 379,
+  "author": "Minervaowl7",
+  "date": "10/14/2026 04:39:37",
+  "title": "[P2][UX] GUI 搜索未绑定当前工作区，依赖全局最近活动上下文"
+ },
+ {
+  "n": 380,
+  "author": "Minervaowl7",
+  "date": "10/14/2026 04:39:42",
+  "title": "[P2][UX] 带 UTF-8 BOM 的记忆文件展开时字节偏移不一致"
+ },
+ {
+  "n": 381,
+  "author": "Minervaowl7",
+  "date": "10/14/2026 04:39:46",
+  "title": "[P2][UX] Python 设置向导首次检测失败后持续显示检测中且无法重试"
+ },
+ {
+  "n": 382,
+  "author": "Minervaowl7",
+  "date": "10/14/2026 04:39:50",
+  "title": "[P2][UX] 智能回忆候选先截取日志，User/项目记忆可能长期无法入选"
+ },
+ {
+  "n": 383,
+  "author": "Minervaowl7",
+  "date": "10/14/2026 04:54:28",
+  "title": "[P1][UX] 新版日历优先级枚举与解析器不一致，保存成功的日程不可见并可能被后续写入丢弃"
+ },
+ {
+  "n": 384,
+  "author": "Minervaowl7",
+  "date": "10/14/2026 04:54:32",
+  "title": "[P1][UX] 外部来源项目接入与移除未绑定当前会话，可能操作错误工作区"
+ },
+ {
+  "n": 394,
+  "author": "Minervaowl7",
+  "date": "10/14/2026 04:57:54",
+  "title": "branch=codex/all-open-issues-20261014 | fix: 最小处理开放 issue，保全写入与审批边界"
+ },
+ {
+  "n": 420,
+  "author": "Minervaowl7",
+  "date": "10/14/2026 09:09:27",
+  "title": "branch=codex/claimed-60-20261014 | fix: 修复认领的 60 项 issue 与插件详情页设置展开"
+ }
+]
