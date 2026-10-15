@@ -151,10 +151,10 @@ try {
     ok(/engine\._hubIoFactory = hubIo/.test(INDEX), 'io 工厂挂到 engine（跨块可取到批控制）')
     ok(/ioFactory\.beginBatch\(\)/.test(INDEX) && /ioFactory\.endBatch\(\)/.test(INDEX), 'feed 循环确实开关了批')
     ok(/\} finally \{[\s\S]{0,400}endBatch\(\)/.test(INDEX), '★endBatch 放在 finally（任何一行抛错都不把改动留在内存不落盘）')
-    ok(/createFactStorePre\(\{ config: \{ maxFacts: Number\(engine\.config\.factRetentionMax\) \|\| 1000 \}/.test(INDEX),
+    ok(/createFactStorePre\(\{ config: \{ get maxFacts\(\) \{ return Number\(engine\.config\.factRetentionMax\) \|\| 1000 \}/.test(INDEX),
       'index.js 把 factRetentionMax 传给 fact store')
     ok(/factRetentionMax: 1000/.test(INDEX), 'DEFAULT_CONFIG 有 factRetentionMax（默认 1000）')
-    ok(/getLastPrune: \(\) =>/.test(FACT) && /retentionLimit: \(\) => maxFacts/.test(FACT), 'fact store 暴露淘汰痕迹与上限（可诊断）')
+    ok(/getLastPrune: \(\) =>/.test(FACT) && /const retentionLimit = \(\) =>/.test(FACT) && /retentionLimit,/.test(FACT), 'fact store 暴露淘汰痕迹与上限（可诊断）')
   }
 } finally {
   try { rmSync(tmp, { recursive: true, force: true }) } catch (_) {}

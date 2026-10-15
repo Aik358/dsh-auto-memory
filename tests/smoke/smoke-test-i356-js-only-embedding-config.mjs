@@ -4,17 +4,19 @@ import fs from 'node:fs'
 import path from 'node:path'
 import os from 'node:os'
 import vm from 'node:vm'
-import { createJsEmbeddingConfigPre, updateEmbeddingConfigPre } from '../../lib/embedding-config.js'
+import { embeddingConfigFilePre, createDefaultEmbeddingConfigPre, updateEmbeddingConfigPre } from '../../lib/embedding-config.js'
+delete process.env.DSH_M7_EMBEDDING_CONFIG // Keep this default-path fixture inside its temporary home.
 
 const idx = fs.readFileSync(new URL('../../lib/index.js', import.meta.url), 'utf8').replace(/\r\n/g, '\n')
 const cli = fs.readFileSync(new URL('../../lib/client.js', import.meta.url), 'utf8')
 const root = fs.mkdtempSync(path.join(os.tmpdir(), 'dam-i356-'))
-const cfgPath = path.join(root, 'embedding-config.json')
+const cfgPath = embeddingConfigFilePre(root)
+fs.mkdirSync(path.dirname(cfgPath), { recursive: true })
 const logs = []
 let pass = 0
 const ok = (condition, label) => { assert.ok(condition, label); pass++ }
-const deps = { engine: {}, path, memoryDir: () => root, dshHome: () => root,
-  createJsEmbeddingConfigPre, updateEmbeddingConfigPre,
+const deps = { engine: { config: {} }, path, memoryDir: () => root, dshHome: () => root, resolveDshHomePre: () => root,
+  embeddingConfigFilePre, createDefaultEmbeddingConfigPre, updateEmbeddingConfigPre,
   isLoopbackRequest: () => true, readJsonBody: async (r) => r.body,
   writeJson: (_, status, body) => ({ status, body }), diag: (s) => logs.push(s) }
 const routeAt = idx.indexOf("path: API['semantic-emit']")
@@ -46,7 +48,7 @@ try {
   const dlEnd = idx.indexOf('    // ─────────── 三层检索契约 C3', dlAt)
   assert.ok(dlAt > 0 && dlEnd > dlAt)
   let tick
-  const engine = { _jsDownload: { start: () => ({ ok: true }), state: () => ({ phase: 'done' }) } }
+  const engine = { config: {}, _jsDownload: { start: () => ({ ok: true }), state: () => ({ phase: 'done' }) } }
   vm.runInNewContext(idx.slice(dlAt, dlEnd), { ...deps, engine, userModelsRoot: root,
     setInterval: (fn) => { tick = fn; return { unref() {} } }, clearInterval() {} })
   engine._jsDownload.start('cn'); tick()
