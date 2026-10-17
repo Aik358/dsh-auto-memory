@@ -1454,11 +1454,16 @@
             var refreshSemNow = function () {
               refreshSem(setSem)
             }
+            // ★#443（2026-10-17 A01-A24 修复批 · A23）：原本两个空 catch 会吞掉宿主 4xx
+            //   （start 失败 400 / cancel 失败 409，见 lib/index.js:18065/18069），而 apiPost
+            //   对 res.ok=false 一定抛 ⇒ 点「开始下载」界面零变化。改写入本面**既有** err 槽
+            //   （下方 "err ? h('div', { 'data-dam-error': '' }, err)"），与保存失败共用一套展示。
+            //   文案经 dlFailTextPre 归一（错误码 → 人话），未知码原样透出，不再静默吞。
             var startDl = function () {
-              apiPost(API.semanticDownload, { action: 'start', mirror: mirror }).then(refreshSemNow).catch(function () {})
+              apiPost(API.semanticDownload, { action: 'start', mirror: mirror }).then(function () { setErr(''); refreshSemNow() }).catch(function (e) { setErr(dlFailTextPre(e)) })
             }
             var cancelDl = function () {
-              apiPost(API.semanticDownload, { action: 'cancel', mirror: mirror }).then(refreshSemNow).catch(function () {})
+              apiPost(API.semanticDownload, { action: 'cancel', mirror: mirror }).then(function () { setErr(''); refreshSemNow() }).catch(function (e) { setErr(dlFailTextPre(e)) })
             }
             return h('div', { style: { border: '1px solid color-mix(in srgb, var(--dam-accent, #2456c4) 40%, transparent)', borderRadius: '10px', padding: '10px 12px', marginBottom: '8px', fontSize: 'calc(11.5px * var(--dam-scale))', lineHeight: 1.6 } },
               h('div', { 'data-dam-slot': 'list', 'data-dam-row': '', style: { alignItems: 'center' } },
@@ -2314,7 +2319,14 @@
                 //   只越过 diversity/success 两道统计门，并在条目上留 `authorizedBy:'user'` 痕迹。
                 (p.promotion && p.promotion.overridable === true)
                   && h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', title: t('hubForcePromoteTitle'), style: { fontSize: 'calc(10.5px * var(--dam-scale))', padding: '3px 10px', fontWeight: 650 }, onClick: function () { hubAct('force-promote', p.procedureId) } }, t('hubForcePromote')),
-                !p.observationOnly && p.stage === 'validated' && h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', style: { fontSize: 'calc(10.5px * var(--dam-scale))', padding: '3px 10px' }, onClick: function () { hubAct('activate', p.procedureId) } }, L('直接激活', 'activate')),
+                // ★#426（2026-10-17 A01-A24 修复批 · A06 前端段）：高风险未批准条目**不给**「直接激活」。
+                //   病根：后端 activate() 已加同源门（requiresApproval && !approved ⇒ high-risk-awaiting-approval），
+                //   而前端判据只有 stage==='validated' ⇒ 「点了没反应」的假通道（A-9/A-9b 反复收掉的形态）。
+                //   判据与后端同一份；字段来自 lib/memory-hub.js 两处投影（本批已补 requiresApproval/approved）。
+                //   ★frozen 无重建通道（旧款皮肤唯一真源）⇒ 必须手工镜像；漏镜像不会有任何机制报错，
+                //   三面一致性由 tests/smoke/smoke-test-frozen-mirror.mjs 兜底。
+                //   fail-soft：字段缺失（旧宿主）⇒ 判据不成立 ⇒ 保持原可见性，不误藏按钮。
+                !p.observationOnly && p.stage === 'validated' && !(p.requiresApproval && !p.approved) && h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', style: { fontSize: 'calc(10.5px * var(--dam-scale))', padding: '3px 10px' }, onClick: function () { hubAct('activate', p.procedureId) } }, L('直接激活', 'activate')),
                 h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', style: { fontSize: 'calc(10.5px * var(--dam-scale))', padding: '3px 10px', opacity: .75 }, onClick: function () { hubAct('deprecate', p.procedureId) } }, L('弃用', 'deprecate')),
                 h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', style: { fontSize: 'calc(10.5px * var(--dam-scale))', padding: '3px 10px', opacity: .75 }, onClick: function () { hubAct('pin', p.procedureId, !p.pinned) } }, p.pinned ? (L('取消置顶', 'unpin')) : (L('置顶', 'pin')))))
           })))

@@ -34,7 +34,13 @@ try {
     if (file === 'lib/client.js') {
       const prior = stripGeneratedSkin(text).replace(/\r\n/g, '\n').split('\n').map(line => line.includes("field(t('fArchiveCheckMin')")
         ? line.replace('min: 15, max: 1440', 'min: 1, max: 1440').replace('Math.max(15,', 'Math.max(1,') : line).join('\n')
-      assert.equal(createHash('sha256').update(prior).digest('hex'), 'f5574edf4b8312fe1553429edb4419a3091b9a0db1fcb8f379447790ab2db9fb', 'the interval control is the only classic client change from pinned upstream')
+      // ★2026-10-17 判据更新（A01–A24 修复批）：本锁原语义是「间隔控件是相对 pinned upstream 的**唯一**经典区改动」。
+      //   该语义已被后续多个合法批次突破（#443 下载失败回执 / #441 reset 失败可见 / #426 激活按钮门 三处都在经典区），
+      //   「唯一改动」不再成立 ⇒ 判据必须从「唯一性」改为「**字节守恒**」：仍锁住经典区整体不被无痕漂移，
+      //   只是不再声称改动只有一处。锁的值按**本套件自身表达式**（stripGeneratedSkin → LF → 把 15/1440 还原成 1/1440）
+      //   复算，重钉 f5574edf… → 129caeec…。★归因：本批之前的 HEAD 版本复算 = f5574edf…（与旧锁相等），
+      //   说明本次变更**全部来自本批三处前端修复**，无历史漂移混入。
+      assert.equal(createHash('sha256').update(prior).digest('hex'), '129caeec7f820345bd41ce38953ed1aa8aa01d59fcaacefb32792a2f783d5b85', 'classic client region bytes are conserved (interval control normalized back to 1/1440); pinned upstream baseline superseded by reviewed batches')
     }
   }
   console.log('PASS archive interval UI/API/runtime agree on 15–1440, invalid patches preserve configuration')
