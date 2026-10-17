@@ -3,7 +3,8 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { tmpdir } from 'node:os'
 import vm from 'node:vm'
-import { updateEmbeddingConfigPre, createJsEmbeddingConfigPre } from '../../lib/embedding-config.js'
+import { embeddingConfigFilePre, updateEmbeddingConfigPre, createDefaultEmbeddingConfigPre } from '../../lib/embedding-config.js'
+delete process.env.DSH_M7_EMBEDDING_CONFIG // Keep this default-path fixture inside its temporary home.
 
 const dir = fs.mkdtempSync(path.join(tmpdir(), 'dam-js-config-feedback-'))
 try {
@@ -12,11 +13,12 @@ try {
   const end = source.indexOf('    // ─────────── 三层检索契约', start)
   assert.ok(start > 0 && end > start)
   let tick, phase = 'downloading'
-  const engine = { _jsDownload: { start: () => ({ ok: true }), state: () => ({ phase }) } }
-  vm.runInNewContext(source.slice(start, end), { engine, path, updateEmbeddingConfigPre, createJsEmbeddingConfigPre,
+  const engine = { config: {}, _jsDownload: { start: () => ({ ok: true }), state: () => ({ phase }) } }
+  vm.runInNewContext(source.slice(start, end), { engine, path, embeddingConfigFilePre, updateEmbeddingConfigPre, createDefaultEmbeddingConfigPre, resolveDshHomePre: () => dir,
     userModelsRoot: path.join(dir, 'models'), memoryDir: () => dir, diag() {},
     setInterval: fn => { tick = fn; return { unref() {} } }, clearInterval() {} })
-  const cfg = path.join(dir, 'embedding-config.json')
+  const cfg = embeddingConfigFilePre(dir)
+  fs.mkdirSync(path.dirname(cfg), { recursive: true })
   fs.writeFileSync(cfg, '{corrupt')
   engine._jsDownload.start('auto'); assert.equal(engine._jsConfigurationPending, true)
   phase = 'done'; tick()
