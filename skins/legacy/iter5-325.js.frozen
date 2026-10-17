@@ -1990,7 +1990,15 @@
           if (!j || j.ok === false) { migFail(t('migPreview'), j, null); return }
           var p = Object.assign({}, j.plan || {}, { previewToken: j.previewToken })
           setMigPlan(p)
-          setMigNote(t('migPreview') + ' ✓ ' + (p.pathChanged ? t('migPathChanged') : t('migSamePath')) +
+          // ★#425（2026-10-18）：计划层如实报「祖先不可写」时，预览**不得**再打「✓」。
+          //   后端 migrateInspect 的顶层 ok 只代表「预览这个动作没失败」，真正的不可写在 plan 上：
+          //   plan.ok=false + plan.blockedByAncestor=[{path,ancestor,kind}] + plan.errors。
+          //   旧实现只看 j.ok ⇒ 用户看到「预览 ✓」，点导入才被拒。此处改按计划层如实回执。
+          var migBlockedN = Array.isArray(p.blockedByAncestor) ? p.blockedByAncestor.length : 0
+          setMigNote(t('migPreview') + (migBlockedN
+            ? (' ⚠ ' + L('预览：', 'Preview: ') + String(migBlockedN)
+                + L(' 条路径不可写（祖先为根外链接/不可用条目），导入会被拒绝', ' path(s) are not writable (ancestor is an out-of-root link or unusable entry); import will be rejected'))
+            : (' ✓ ' + (p.pathChanged ? t('migPathChanged') : t('migSamePath')))) +
             (j.sourceMissing ? (L(' · ⚠ 源工作区已不存在', ' · warning: source workspace missing')) : ''))
         }).catch(function (e) { setMigBusy(''); migFail(t('migPreview'), null, e) })
       }
@@ -2111,6 +2119,13 @@
           (L('覆盖: ', 'overwrites: ')) + (migPlan.overwrites || []).map(function (o) { return String(o && o.path) + ' ' + String((o && o.oldBytes) || 0) + 'B→' + String((o && o.newBytes) || 0) + 'B' }).join(' , ')) : null,
         (migPlan.rewrite && (migPlan.rewrite.files || []).length) ? h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '' },
           (L('重写文件(前 10): ', 'rewrite files (top 10): ')) + (migPlan.rewrite.files || []).slice(0, 10).map(function (f) { return String(f && f.path) + '(' + String((f && f.hits) || 0) + ')' }).join(' , ')) : null,
+        // ★#425（2026-10-18）：计划层报「祖先不可写」时，把**具体路径清单**渲染出来（人话 + 可核对）。
+        //   旧实现只渲染 plan.warnings 的裸码（ancestor-blocked），plan.errors 一条都不渲染 ⇒
+        //   用户必须先点导入、再看导入期错误串，才知道「哪几条路径、为什么」。
+        (migPlan.blockedByAncestor && migPlan.blockedByAncestor.length) ? h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', 'data-dam-blocked-by-ancestor': '' },
+          (L('⚠ 不可写 ', '⚠ not writable ')) + String(migPlan.blockedByAncestor.length)
+            + (L(' 条路径（祖先为根外链接/不可用条目）：', ' path(s) — ancestor is an out-of-root link or unusable entry: '))
+            + migPlan.blockedByAncestor.map(function (b) { return String((b && b.path) || '') + '(' + String((b && b.ancestor) || '') + ':' + String((b && b.kind) || '') + ')' }).join(' , ')) : null,
         (migPlan.warnings && migPlan.warnings.length) ? h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, (L('警告: ', 'warnings: ')) + migPlan.warnings.join(' | ')) : null,
         h('div', { 'data-dam-slot': 'list', 'data-dam-row': '', style: { marginTop: '6px' } },
           h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', style: { opacity: migConflict === 'keep' ? 1 : .5 }, onClick: function () { setMigConflict('keep') } }, (migConflict === 'keep' ? '● ' : '○ ') + t('migConflictKeep')),
