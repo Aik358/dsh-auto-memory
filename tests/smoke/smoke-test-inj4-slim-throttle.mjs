@@ -11,6 +11,15 @@
  *   ② slimEveryRounds 自 2026-10-06 起是死键（全仓无判据读取）⇒ 精简版每个 step 都发一份。
  *      实测 T61 单轮 35 帧中 30+ 帧为同一份 6.2KB 精简版（约 190KB/轮）。现按 turn 边界真正门控。
  *
+ * ★2026-10-18（R113 · 用户报「所有上下文注入都没用了」的归因修复）：**节流语义已改**。
+ *   旧实现：节流帧 `return engine.renderReflectionRequest()` ⇒ 无待办反思时返回**空串** ⇒
+ *   整个 dsh:auto-memory-pre 面为空、被宿主 .filter(text.length>0) 丢弃 ⇒ 「零注入」。
+ *   实测取证：本会话 821 次渲染决策中 808 次走节流分支 ⇒ 模型连续多轮完全看不到记忆系统状态。
+ *   现实现：节流帧仍返回 slimText（状态行+检索指引+唤回通知，约 0.7k 字符），但**不计数**
+ *   （不调 markSlimEmitPre/countTieredSlim）⇒ 完整版门槛 fullEverySlims 的口径不变。
+ *   因此本套件原 T1/T3/T4 的期望值 `-`（=不注入）统一改为 `S`（=给精简版）。
+ *   节流仍然真实存在：它的可观测效果从「这一帧什么都不给」变为「这一帧不给完整版、且不计入门槛」。
+ *
  * 判据纪律（"能失败"）：真执行 lib/index.js 的门控函数体；节流做对照与负路径验证。
  * 纯 Node、零依赖、不联网、不启宿主。
  */
@@ -91,7 +100,7 @@ function renderTurn(E, turnNo, renders, opts) {
 console.log('=== T1 人说话 => 该轮注入一次完整版（用户裁定第①条）===')
 {
   const E = mk()
-  eq(renderTurn(E, 1, 3, { human: true }).join(''), 'FS-', 'T1：真人轮首帧完整版；次帧精简版（节流首放）；第 3 帧被节流 ⇒ 不注入（旧行为为 FSS 全放行）')
+  eq(renderTurn(E, 1, 3, { human: true }).join(''), 'FSS', 'T1：真人轮首帧完整版；次帧精简版（节流首放）；第 3 帧被节流 ⇒ 仍给精简版但**不计门槛**（R113 语义：节流≠零注入）')
 }
 console.log('')
 console.log('=== T2 agent 自跑 => 每 10 轮一次完整版（用户裁定第②条）===')
@@ -110,18 +119,26 @@ console.log('=== T3 精简版每 3 轮至多一次（用户裁定第 B 条）===
   const t2 = renderTurn(E, 2, 4)
   const t3 = renderTurn(E, 3, 4)
   const t4 = renderTurn(E, 4, 4)
-  eq(t1.join(''), 'FS--', 'T3-a：turn1 首帧完整版，次帧精简版（节流首放）')
-  eq(t2.join(''), '----', 'T3-b：turn2 距上次精简投递 1 轮 ⇒ 整轮不注入精简版')
-  eq(t3.join(''), '----', 'T3-c：turn3 距上次 2 轮 ⇒ 仍不注入')
-  eq(t4.join(''), 'S---', 'T3-d：turn4 距上次 3 轮 ⇒ 恢复一次精简版（粒度=3 轮）')
+  eq(t1.join(''), 'FSSS', 'T3-a：turn1 首帧完整版，其余帧精简版（节流只影响计数，不影响是否给内容）')
+  eq(t2.join(''), 'SSSS', 'T3-b：turn2 仍在节流窗内 ⇒ 给精简版但不计入 fullEverySlims 门槛')
+  eq(t3.join(''), 'SSSS', 'T3-c：turn3 距上次 2 轮 ⇒ 同上（窗内）')
+  eq(t4.join(''), 'SSSS', 'T3-d：turn4 距上次 3 轮 ⇒ 恢复正式计数（粒度=3 轮）；内容仍为精简版')
 }
 console.log('')
 console.log('=== T4 单轮 35 帧不再灌 34 份精简版（量化，T61 形态）===')
 {
   const E = mk()
   const r = renderTurn(E, 1, 35)
-  const n = r.filter((c) => c === 'S').length
-  ok(n <= 1, 'T4：单轮 35 帧精简版 <= 1 份（旧行为实测 34 份 x 6.2KB = 211KB/轮，现 ' + n + ' 份）')
+  const nFull = r.filter((c) => c === 'F').length
+  const nSlim = r.filter((c) => c === 'S').length
+  // ★R113 语义：节流不再抑制「是否给内容」（宿主 project() 对整串去重，重复的精简版不会真多投递），
+  //   它抑制的是「是否计入 fullEverySlims 门槛」。故判据改为：单轮内**完整版只出现一次**，
+  //   且精简版份数由宿主去重兜底（此处只断言「不是每帧都算一次计数」——用 _slimCount 验证）。
+  ok(nFull === 1, 'T4-a：单轮 35 帧内完整版恰 1 份（实测 ' + nFull + ' 份）——工具循环不再反复灌全文')
+  // 首帧是「正式放行」（markSlimEmitPre 被调过），其余 34 帧全部落在节流窗内 ⇒ 计数只涨 1 次。
+  //   这正是节流的可观测效果：内容仍给（宿主去重兜底），但 fullEverySlims 门槛不会被 35 帧灌爆。
+  const cnt = E.st._slimCount || 0
+  ok(cnt === 1, 'T4-b：单轮 35 帧只计 1 次精简投递（实测 ' + cnt + '）——节流语义仍生效')
 }
 console.log('')
 console.log('=== T5 负路径：节流关闭时退回旧行为（证明本节流真的在拦）===')

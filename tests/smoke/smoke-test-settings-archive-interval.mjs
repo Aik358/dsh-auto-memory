@@ -38,9 +38,13 @@ try {
       //   该语义已被后续多个合法批次突破（#443 下载失败回执 / #441 reset 失败可见 / #426 激活按钮门 三处都在经典区），
       //   「唯一改动」不再成立 ⇒ 判据必须从「唯一性」改为「**字节守恒**」：仍锁住经典区整体不被无痕漂移，
       //   只是不再声称改动只有一处。锁的值按**本套件自身表达式**（stripGeneratedSkin → LF → 把 15/1440 还原成 1/1440）
+      //   ★2026-10-18 R115 重钉（129caeec… → 7b3c3d57…）：本批设置面文案纠正 + 门控读数增「索引就绪」行，
+      //   均在经典档手写区（生成区之外）⇒ 本锁随动。改动内容：fInboxGateHint/fAssocEngineHint/
+      //   fFullEverySlimsHint 三组中英文案与后端默认值对齐 + data-dam-gate-readout 各面 +1 行。
+      //   判据意图不变（经典区字节守恒），按 2026-10-01 裁定以本套件自身表达式复算重钉。
       //   复算，重钉 f5574edf… → 129caeec…。★归因：本批之前的 HEAD 版本复算 = f5574edf…（与旧锁相等），
       //   说明本次变更**全部来自本批三处前端修复**，无历史漂移混入。
-      assert.equal(createHash('sha256').update(prior).digest('hex'), '129caeec7f820345bd41ce38953ed1aa8aa01d59fcaacefb32792a2f783d5b85', 'classic client region bytes are conserved (interval control normalized back to 1/1440); pinned upstream baseline superseded by reviewed batches')
+      assert.equal(createHash('sha256').update(prior).digest('hex'), '7b3c3d57746b89dce2a9f0aed9076826f71dfd9de242136b185bde26a29907d1', 'classic client region bytes are conserved (interval control normalized back to 1/1440); pinned upstream baseline superseded by reviewed batches')
     }
   }
   console.log('PASS archive interval UI/API/runtime agree on 15–1440, invalid patches preserve configuration')
