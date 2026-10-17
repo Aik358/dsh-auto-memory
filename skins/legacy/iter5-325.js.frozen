@@ -1304,6 +1304,10 @@
             var live = i5Base.current || {}; var gateOk = live.associativeMemoryEnabled === true && live.activationInboxEnabled === true
             rows.push(L('总闸（自动记忆 + 收件箱）', 'Master gate (associative + inbox)') + '：' + (gateOk ? L('已开', 'ON') : L('关（唤回不会投递）', 'OFF (recall will not be delivered)')))
             rows.push(L('唤起注入模式', 'Emit mode') + '：' + emitMode)
+            // ★2026-10-18（前后端对齐）：索引就绪状态必须可见 ——
+            //   实测「唤回显示已投递但模型收不到」时 indexReady=false / engineSwitch.error='sync-in-progress'，
+            //   而旧读数只显示档位与 emitMode，看不出「引擎在跑但索引没建好」。
+            rows.push(L('索引就绪', 'Index ready') + '：' + (sem && sem.indexReady === true ? L('是', 'yes') : (L('否', 'no') + (sem && sem.engineSwitch && sem.engineSwitch.error ? ' (' + String(sem.engineSwitch.error) + ')' : L('（索引未建成时唤回不会有候选）', ' (recall finds nothing until the index is built)')))))
             rows.push(L('当前档位', 'Resolved tier') + '：' + (tier === 'c3' ? 'C3 · Python' : tier === 'c2' ? 'C2 · JS' : tier ? ('C1 · ' + tier) : L('检测中', 'detecting')))
             if (sem && sem.pythonRuntime) {
               var rt = sem.pythonRuntime
