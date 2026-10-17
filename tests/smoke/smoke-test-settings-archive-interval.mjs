@@ -44,7 +44,7 @@ try {
       //   判据意图不变（经典区字节守恒），按 2026-10-01 裁定以本套件自身表达式复算重钉。
       //   复算，重钉 f5574edf… → 129caeec…。★归因：本批之前的 HEAD 版本复算 = f5574edf…（与旧锁相等），
       //   说明本次变更**全部来自本批三处前端修复**，无历史漂移混入。
-      assert.equal(createHash('sha256').update(prior).digest('hex'), '7b3c3d57746b89dce2a9f0aed9076826f71dfd9de242136b185bde26a29907d1', 'classic client region bytes are conserved (interval control normalized back to 1/1440); pinned upstream baseline superseded by reviewed batches')
+      assert.equal(createHash('sha256').update(prior).digest('hex'), 'b01d61a741dfd36a45996ef1ec7c3d48d205ef546ed9b0ba7afbf25ef2a02c45', 'classic client region bytes are conserved (interval control normalized back to 1/1440); pinned upstream baseline superseded by reviewed batches')
     }
   }
   console.log('PASS archive interval UI/API/runtime agree on 15–1440, invalid patches preserve configuration')

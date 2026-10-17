@@ -40,10 +40,6 @@ const C = (name) => {
 }
 const NOTE = C('DEFAULT_NOTE_CAPACITY_CHARS'), USER = C('DEFAULT_USER_CAPACITY_CHARS')
 const PREV = C('DEFAULT_CAPACITY_CHARS_PREV'), VER = C('CAPACITY_DEFAULTS_VERSION')
-// ★INJ-2（2026-10-06）：门槛迁移的三个常量同样从源码解析 —— 切片注入的临时模块里没有它们，
-//   缺一个就会让新方法 ReferenceError（症状见下方 modSrc 内的注）。
-const FES = C('DEFAULT_FULL_EVERY_SLIMS'), FES_PREV = C('DEFAULT_FULL_EVERY_SLIMS_PREV')
-const FES_VER = C('FULL_EVERY_SLIM_DEFAULTS_VERSION')
 // ★2026-10-13（gap 默认 5→10 强制迁移）：同型常量与迁移方法一并注入 —— 缺任一 ⇒ 切片模块里
 //   ReferenceError 被 _loadConfigSyncLocked 的 fail-soft catch 吞掉，表现为「磁盘没落盘」
 //   （与本文件开头第 3 段、INJ-2 段点名的失败同型）。
@@ -76,12 +72,6 @@ const DEFAULT_NOTE_CAPACITY_CHARS = ${NOTE}
 const DEFAULT_USER_CAPACITY_CHARS = ${USER}
 const DEFAULT_CAPACITY_CHARS_PREV = ${PREV}
 const CAPACITY_DEFAULTS_VERSION = ${VER}
-// ★INJ-2：门槛迁移同款三常量（缺任一 ⇒ 新方法在切片模块里 ReferenceError，
-//   而它被 _loadConfigSyncLocked 自己的 fail-soft catch 吞掉，表现为「磁盘没落盘」——
-//   症状离真因很远，正是本文件开头第 3 段点名的那类失败）。
-const DEFAULT_FULL_EVERY_SLIMS = ${FES}
-const DEFAULT_FULL_EVERY_SLIMS_PREV = ${FES_PREV}
-const FULL_EVERY_SLIM_DEFAULTS_VERSION = ${FES_VER}
 const DEFAULT_SNAPSHOT_MIN_GAP_ROUNDS = ${SNAP_GAP}
 const SNAPSHOT_GAP_DEFAULTS_VERSION = ${SNAP_GAP_VER}
 // 注意: 两个档位版本号都在此 —— 正是"默认值污染判据"的成因, 必须保真
@@ -89,8 +79,6 @@ const DEFAULT_CONFIG = {
   noteCapacityChars: DEFAULT_NOTE_CAPACITY_CHARS,
   userCapacityChars: DEFAULT_USER_CAPACITY_CHARS,
   capacityDefaultsVersion: CAPACITY_DEFAULTS_VERSION,
-  fullEverySlims: DEFAULT_FULL_EVERY_SLIMS,
-  fullEverySlimsDefaultsVersion: FULL_EVERY_SLIM_DEFAULTS_VERSION,
   snapshotMinGapRounds: DEFAULT_SNAPSHOT_MIN_GAP_ROUNDS,
   snapshotGapDefaultsVersion: SNAPSHOT_GAP_DEFAULTS_VERSION,
   boardMode: 'graph',
@@ -110,7 +98,6 @@ export class Engine {
   constructor(configPath) { this._configPath = configPath; this.config = { ...DEFAULT_CONFIG }; this._readError = null }
   ${sliceMethod('_mergeConfigPre(parsed) {')}
   ${sliceMethod('upgradeCapacityDefaultsPre(rawCfg) {')}
-  ${sliceMethod('upgradeFullEverySlimsDefaultPre(rawCfg) {')}
   ${sliceMethod('upgradeSnapshotGapDefaultPre(rawCfg) {')}
   ${sliceMethod('_readConfigDiskPre(maxBytes = 65536) {')}
   ${sliceMethod('_persistConfigMergePre() {')}
@@ -218,33 +205,22 @@ t('M9E-5 ★ **默认值污染判据**回归锁: 守卫读 rawCfg, 不得读 thi
   const asyncSeg = sliceMethod('async _loadConfigLocked() {')
   assert(/upgradeCapacityDefaultsPre\(parsed\)/.test(asyncSeg), '★ loadConfig 必须传 parsed')
 })
-
-t('M9E-7 ★★ 门槛迁移也在真实链路上跑（本用例专治"静默吞掉"）', () => {
-  // 为什么必须有这一条：`_loadConfigSyncLocked` 用 `[...A, ...B]` 串联两个迁移，而它整段在
-  //   fail-soft 的 try 里 ⇒ 若某个迁移在**切片注入的模块里**因缺常量/缺方法而 ReferenceError，
-  //   异常被吞、磁盘不落盘，症状表现为「容量迁移没生效」（离真因很远）。
-  //   本断言把「两个迁移都要在这条链路上跑」变成一次可观测的副作用检查。
+t('M9E-7 ★★ fullEverySlims 门槛已整体移除：老配置里的残留键不再触发任何迁移', () => {
+  // 2026-10-18 用户裁定删除该间接门槛（完整版节奏改由 snapshotMinGapRounds + 真人轮强制驱动）。
+  // 本用例改为**负向回归锁**：老盘里仍留着 fullEverySlims: 3 时，loadConfigSync 必须原样保留它
+  // （不是我们的键了 ⇒ 不读不改），且**其余迁移照常跑完**（证明删除没有破坏迁移链路）。
   const { eng, read, clean } = fresh({ noteCapacityChars: 12000, userCapacityChars: 12000, fullEverySlims: 3 })
   try {
     const cfg = eng.loadConfigSync()
-    assert(cfg.fullEverySlims === FES, '★ 内存未抬到 ' + FES + ', 实为 ' + cfg.fullEverySlims)
-    assert(cfg.noteCapacityChars === NOTE, '★ 同一次 load 里容量迁移也被影响(实为 ' + cfg.noteCapacityChars + ')')
+    assert(cfg.noteCapacityChars === NOTE, '★ 容量迁移仍须照常运行(实为 ' + cfg.noteCapacityChars + ')')
     const disk = read()
-    assert(disk.fullEverySlims === FES, '★★ 磁盘门槛未落盘, 仍为 ' + disk.fullEverySlims)
-    assert(disk.fullEverySlimsDefaultsVersion === FES_VER, '★ 磁盘未写门槛档位版本')
+    assert(disk.noteCapacityChars === NOTE, '★★ 磁盘容量值未落盘, 仍为 ' + disk.noteCapacityChars)
     assert(disk.capacityDefaultsVersion === VER, '★ 磁盘未写容量档位版本(既有迁移不得被吞)')
+    assert(disk.fullEverySlims === 3, '★ 已删键按普通未知键原样保留(实为 ' + disk.fullEverySlims + ')')
   } finally { clean() }
 })
 
-t('M9E-8 ★ 负路径：用户自设门槛 5 在真实链路上不被覆盖', () => {
-  const { eng, read, clean } = fresh({ fullEverySlims: 5, noteCapacityChars: 12000, userCapacityChars: 12000 })
-  try {
-    const cfg = eng.loadConfigSync()
-    assert(cfg.fullEverySlims === 5, '★ 用户自设值被篡改, 实为 ' + cfg.fullEverySlims)
-    assert(read().fullEverySlims === 5, '★★ 磁盘自设值被篡改')
-    assert(cfg.noteCapacityChars === NOTE, '同一次 load 里容量迁移仍须生效')
-  } finally { clean() }
-})
+
 
 t('M9E-6 ★ 注册期路径必须**同步**落盘(loadConfigSync 是唯一真正跑的那条)', () => {  // ★B-1b：同步落盘现发生在被锁体内（薄壳只负责进锁）。
   const sync = sliceMethod('_loadConfigSyncLocked() {')
