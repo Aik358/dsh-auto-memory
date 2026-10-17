@@ -119,7 +119,8 @@ console.log("=== T5 indexReady 兼容「从未切换过引擎」的安装 ===")
   ok(SRC.indexOf("engineSwitch.phase === " + String.fromCharCode(34) + "idle") >= 0, "只在 idle/ready 时清 error（不擦在飞错误）")
   ok(SRC.indexOf("ph === " + String.fromCharCode(34) + "failed") >= 0, "failed/cancelled 时不得冒充就绪")
   ok(SRC.indexOf("hasUsableIndex") >= 0, "支持宿主 hasUsableIndex 探针")
-  ok(SRC.indexOf("indexedRecords") >= 0, "兜底：jsSemantic.indexedRecords > 0 视为可用")
+  ok(SRC.indexOf("_readyCacheForTest") >= 0, "兜底：读索引宿主 readyCache（真实就绪信号）")
+  ok(SRC.indexOf("indexedRecords") >= 0, "保留 JS 档兜底：jsSemantic.indexedRecords > 0")
   ok(SRC.indexOf("staleError") >= 0, "陈旧 error 会被摘掉并记入 staleError")
 }
 
