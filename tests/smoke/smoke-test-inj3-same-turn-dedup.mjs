@@ -118,19 +118,33 @@ console.log('=== T4 ★gap 单位对齐为「轮」（无人轮不再轮内续�
   eq(r.join(''), 'FSSSSSSS', 'T4：无人轮 8 次渲染（日志逐变）内不得超过 1 次完整版【修复前 FSSSSFSS】')
 }
 console.log('')
-console.log('=== T5 跨轮恢复：进入新 turn 后 gap 才可满足 ===')
+console.log('=== T5 跨 turn 但模型请求序列连续 ⇒ 计数按模型请求推进（step 口径）===')
 {
+  // ★2026-10-18（step 口径重写）：计数单位是**模型请求**，不是 turn。
+  //   旧用例只改 turn 号 ⇒ 新代码 _stepSeq 不推进 ⇒ 永不出完整版（夹具过时，非缺陷）。
+  //   这里每帧都追加 step/start，模拟真实宿主（每帧 = 一次模型请求）。
   const E = mk()
   const r = []
-  let e = [evTurn(1, 5), evUser(100, 'runtime-context')]
-  for (let k = 0; k < 5; k++) { r.push(E.run(e.slice(), mkSnap('X' + k))); e = e.concat([evUser(110 + k, 'runtime-context')]) }
-  const before = r.join('')
-  for (let t = 2; t <= 6; t++) { e = e.concat([evTurn(900 + t, t)]); r.push(E.run(e.slice(), mkSnap('Y' + t))) }
-  const after = r.slice(5).join('')
-  eq(before, 'FSSSS', 'T5-a：turn1 内只 1 次完整版')
-  ok(after.includes('F'), 'T5-b：跨到新 turn 后 gap 可满足 ⇒ 出现完整版（单位是「轮」而非「次」）')
+  let e = [evTurn(1, 5), evUser(100, "runtime-context")]
+  let stepNo = 0
+  for (let k = 0; k < 5; k++) {
+    stepNo += 1
+    e = e.concat([{ seq: 500 + stepNo, type: "step/start", data: { turn: 1, step: stepNo } }])
+    r.push(E.run(e.slice(), mkSnap("X" + k)))
+    e = e.concat([evUser(110 + k, "runtime-context")])
+  }
+  const before = r.join("")
+  eq(before, "FSSSS", "T5-a：turn1 的前 5 个模型请求里只 1 次完整版")
+  // 继续推进模型请求：第 11 个请求应触发第 2 次完整版（距第 1 个满 10）
+  for (let t = 2; t <= 12; t++) {
+    stepNo += 1
+    e = e.concat([evTurn(900 + t, t), { seq: 900 + stepNo, type: "step/start", data: { turn: t, step: 1 } }])
+    r.push(E.run(e.slice(), mkSnap("Y" + t)))
+  }
+  const after = r.slice(5).join("")
+  ok(after.includes("F"), "T5-b：模型请求继续推进到第 11 个 ⇒ 出现下一次完整版（实测尾部=" + after + "）")
 }
-console.log('')
+
 console.log('=== T6 守卫：修复标记必须在位（防回退）===')
 {
   ok(/const firstOfTurn = !!\(turnKey && [^\n]*_lastFullKey !== turnKey/.test(SRC), 'T6-a：firstOfTurn 经持久键比较（去重键未被绕过）')

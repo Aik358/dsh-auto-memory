@@ -54,6 +54,7 @@ function mkEngine(opts) {
   opts = opts || {}
   const st = { _slimStep: 0, _lastSlimCounted: 0, _slimCount: 0, _humanFullKey: undefined,
     _snapFp: undefined, _snapLogFp: "", _snapRound: 0, _snapLastRound: 0, _tk: "" }
+  const agent = { session: { events: [] } }
   const engine = {
     stateFor: function () { return st },
     runtimeFor: function () { return { contextVersion: 0 } },
@@ -65,9 +66,16 @@ function mkEngine(opts) {
   }
   const GAP_DEF = (function () { const n = Number(engine.config.snapshotMinGapRounds); return Number.isFinite(n) && n >= 0 ? n : 5 })()
   const F = new Function("engine", "agent", "gap", "snap", "slimText", "diag", "createHash", "parseGapRoundsPre", SEG + ";")
-  const run = function (tk, snap, gap) {
+  // ★2026-10-18（step 口径）：计数单位改为**模型请求**（step），不是 turn。
+  //   旧夹具只改 st._tk（turn 键）⇒ 新代码的 _stepSeq 不推进 ⇒ T4/T7 恒红（这属夹具过时，不是缺陷）。
+  //   现在每次 run 都追加一条 step/start 事件，让 step 键真实推进（与生产事件流同形）。
+  let stepNo = 0
+  const run = function (tk, snap, gap, sameStep) {
     st._tk = tk
-    return F(engine, {}, gap === undefined ? GAP_DEF : gap, snap, "<memory_system>SLIM</memory_system>",
+    // sameStep=true ⇒ 复用同一 step（模拟宿主在**同一个 step 内**多次调用 text()）
+    if (!sameStep) { stepNo += 1 }
+    agent.session.events.push({ seq: stepNo * 10 + (sameStep ? 1 : 0), type: "step/start", data: { turn: 1, step: stepNo } })
+    return F(engine, agent, gap === undefined ? GAP_DEF : gap, snap, "<memory_system>SLIM</memory_system>",
       function () {}, createHash, function (v, d) { const n = Number(v); return Number.isFinite(n) ? n : d })
   }
   return { st: st, run: run }
@@ -144,12 +152,13 @@ const isSlim = (o) => !!o && o.includes("SLIM")
   ok(at === 10, "T7 默认每 10 轮一次完整版（实测第 " + at + " 轮）")
 }
 
-// T8 同 step 续帧保真：完整版不被次帧精简版覆盖（本轮核心修复）
+// T8 同 step 续帧保真：宿主在**同一个 step 内**多次调用 text() ⇒ 必须保持一致（不得被次帧精简版覆盖）
 {
   const E = mkEngine({ human: false, cfg: { snapshotMinGapRounds: 999 } })
   ok(isFull(E.run("turn:1", mkSnap("日志A"))), "T8-a 首次注入 ⇒ 完整版")
-  ok(isFull(E.run("turn:1", mkSnap("日志A"))), "★T8-b 同 step 续帧 ⇒ 仍完整版（保真）")
-  ok(isFull(E.run("turn:1", mkSnap("日志A"))), "★T8-c 同 step 第三帧 ⇒ 仍完整版")
+  // sameStep=true ⇒ 不推进 stepNo，模拟宿主同一 step 内重复调用
+  ok(isFull(E.run("turn:1", mkSnap("日志A"), undefined, true)), "★T8-b 同 step 续帧 ⇒ 仍完整版（保真）")
+  ok(isFull(E.run("turn:1", mkSnap("日志A"), undefined, true)), "★T8-c 同 step 第三帧 ⇒ 仍完整版")
 }
 
 // T9 精简版节奏：每 slimEveryRounds 轮一次

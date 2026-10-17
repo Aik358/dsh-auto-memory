@@ -60,23 +60,36 @@ console.log("=== 分档 2：非真人（cron/接续）⇒ 受节流 ===")
   ok(E.run([evT(11,11)], mkSnap("C")) === "精简", "新 turn 但间距未到 ⇒ 精简（节流 n/5）")
 }
 console.log("")
-console.log("=== 分档 3：距上次完整版 ≥ fullGap 轮 ⇒ 放行完整版（新节奏唯一真源）===")
+console.log("=== 分档 3：距上次完整版 ≥ fullGap 个模型请求 ⇒ 放行完整版（新节奏唯一真源）===")
 {
+  // ★2026-10-18（step 口径）：计数单位是**模型请求**（step），不是 turn。
+  //   旧写法只改 turn 号 ⇒ 新代码的 _stepSeq 恒不推进 ⇒ 本档恒红（夹具过时，非缺陷）。
+  //   现在每轮迭代都追加一条 step/start，推进一个模型请求。
   const E = mk({ snapshotMinGapRounds: 5 })
-  E.run([evT(1,1)], mkSnap("0"))
-  let hit = -1
-  for (let i = 1; i < 15; i++) { if (E.run([evT(i+1,i+1)], mkSnap(String(i))) === "完整") { hit = i; break } }
-  ok(hit === 5, "距上次完整版 5 轮 ⇒ 第 5 个新 turn 放行（实测第 " + hit + " 个）")
-  ok(E.st._lastFullTurnSeq === 6, "放行时记录 _lastFullTurnSeq = 当前 turnSeq（实测 " + E.st._lastFullTurnSeq + "）")
+  const evs = [evT(1,1)]
+  E.run(evs.slice(), mkSnap("0"))
+  let hit = -1, stepNo = 1
+  for (let i = 1; i < 15; i++) {
+    stepNo += 1
+    evs.push({ seq: 1000 + stepNo, type: "step/start", data: { turn: 1, step: stepNo } })
+    if (E.run(evs.slice(), mkSnap(String(i))) === "完整") { hit = i; break }
+  }
+  ok(hit === 5, "距上次完整版 5 个模型请求 ⇒ 第 5 个请求放行（实测第 " + hit + " 个）")
+  ok(E.st._lastFullStepSeq === 5, "放行时记录 _lastFullStepSeq = 放行当次模型请求序号（实测 " + E.st._lastFullStepSeq + "）")
 }
 console.log("")
-console.log("=== 分档 4：默认 fullGap=10 ⇒ 每 10 轮一次完整版 ===")
+console.log("=== 分档 4：默认每 10 个模型请求一次完整版 ===")
 {
   const E = mk({ snapshotMinGapRounds: 10 })
-  E.run([evT(1,1)], mkSnap("0"))
-  let hit = -1
-  for (let i = 1; i < 25; i++) { if (E.run([evT(i+1,i+1)], mkSnap(String(i))) === "完整") { hit = i; break } }
-  ok(hit === 10, "默认每 10 轮一次完整版（实测第 " + hit + " 个新 turn）")
+  const evs = [evT(1,1)]
+  E.run(evs.slice(), mkSnap("0"))
+  let hit = -1, stepNo = 1
+  for (let i = 1; i < 25; i++) {
+    stepNo += 1
+    evs.push({ seq: 2000 + stepNo, type: "step/start", data: { turn: 1, step: stepNo } })
+    if (E.run(evs.slice(), mkSnap(String(i))) === "完整") { hit = i; break }
+  }
+  ok(hit === 10, "默认每 10 个模型请求一次完整版（实测第 " + hit + " 个）")
 }
 console.log("")
 console.log("=== 分档 5：同一 step 内续帧保真 ⇒ 完整版不被次帧精简版覆盖 ===")

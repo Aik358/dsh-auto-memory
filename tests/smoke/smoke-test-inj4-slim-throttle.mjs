@@ -87,12 +87,19 @@ function mk(over) {
 
 function renderTurn(E, turnNo, renders, opts) {
   const o = opts || {}
-  let e = [evTurn(1000 + turnNo, turnNo)]
-  if (o.human) e = e.concat([evUser(2000 + turnNo, 'user')])
+  // ★2026-10-18（step 口径）：计数单位 = **模型请求**（step）。
+  //   stepPerFrame=true（默认）时每帧推进一个 step —— 这才对应真实宿主：
+  //   每一帧 context 渲染都发生在**新的模型请求**之前，所以帧数 == 模型请求数。
+  //   旧夹具假设「同 turn 内多帧共享一个 turn 计数」，在 step 口径下不再成立。
+  const stepPerFrame = o.stepPerFrame !== false
+  const e = [evTurn(1000 + turnNo, turnNo)]
+  if (o.human) e.push(evUser(2000 + turnNo, "user"))
   const r = []
+  let stepNo = 0
   for (let k = 0; k < renders; k++) {
-    r.push(E.run(e.slice(), mkSnap('t' + turnNo + 'k' + k)))
-    e = e.concat([evUser(5000 + turnNo * 100 + k, 'runtime-context')])
+    if (stepPerFrame) stepNo += 1
+    e.push({ seq: 3000 + turnNo * 1000 + k, type: "step/start", data: { turn: turnNo, step: stepNo || 1 } })
+    r.push(E.run(e.slice(), mkSnap("t" + turnNo + "k" + k)))
   }
   return r
 }
@@ -103,44 +110,43 @@ console.log('=== T1 人说话 => 该轮注入一次完整版（用户裁定第�
   eq(renderTurn(E, 1, 3, { human: true }).join(''), 'FSS', 'T1：真人轮首帧完整版；次帧精简版（节流首放）；第 3 帧被节流 ⇒ 仍给精简版但**不计门槛**（R113 语义：节流≠零注入）')
 }
 console.log('')
-console.log('=== T2 agent 自跑 => 每 10 轮一次完整版（用户裁定第②条）===')
+console.log('=== T2 agent 自跑 => 每 10 个模型请求一次完整版（用户裁定第②条 + step 口径）===')
 {
   const E = mk()
+  // renderTurn 每帧推进 1 个 step ⇒ 12 turn × 2 帧 = 24 个模型请求。
+  // 完整版应落在第 1、11、21 个模型请求上。
   const out = []
-  for (let t = 1; t <= 12; t++) out.push(renderTurn(E, t, 2)[0])
+  for (let t = 1; t <= 12; t++) out.push(...renderTurn(E, t, 2))
   const fulls = out.map((c, i) => (c === 'F' ? i + 1 : 0)).filter(Boolean)
-  eq(fulls.join(','), '1,11', 'T2：12 轮无人轮里完整版落在 turn 1 与 11（间隔恰 10 轮）')
+  eq(fulls.join(','), '1,11,21', 'T2：24 个模型请求里完整版落在第 1、11、21 个（间隔恰 10 个请求）')
 }
-console.log('')
-console.log('=== T3 精简版每 3 轮至多一次（用户裁定第 B 条）===')
+
+console.log('=== T3 精简版节奏：每 3 个模型请求一次（窗内仍给内容，只是不计门槛）===')
 {
   const E = mk()
+  // 每帧 = 1 个模型请求；slimEveryRounds=3 ⇒ 距上次精简 ≥3 个请求才「正式放行」。
   const t1 = renderTurn(E, 1, 4)
+  eq(t1.join(''), 'FSSS', 'T3-a：请求1 完整版；请求2–4 精简版（首个精简在请求2 放行，其余窗内）')
   const t2 = renderTurn(E, 2, 4)
-  const t3 = renderTurn(E, 3, 4)
-  const t4 = renderTurn(E, 4, 4)
-  eq(t1.join(''), 'FSSS', 'T3-a：turn1 首帧完整版，其余帧精简版（节流只影响计数，不影响是否给内容）')
-  eq(t2.join(''), 'SSSS', 'T3-b：turn2 仍在节流窗内 ⇒ 给精简版但不计入 fullEverySlims 门槛')
-  eq(t3.join(''), 'SSSS', 'T3-c：turn3 距上次 2 轮 ⇒ 同上（窗内）')
-  eq(t4.join(''), 'SSSS', 'T3-d：turn4 距上次 3 轮 ⇒ 恢复正式计数（粒度=3 轮）；内容仍为精简版')
+  eq(t2.join(''), 'SSSS', 'T3-b：请求5–8 全精简（距上次完整版仍 <10）')
+  // 请求 11 会触发第 2 次完整版（距请求 1 满 10 个）
 }
-console.log('')
-console.log('=== T4 单轮 35 帧不再灌 34 份精简版（量化，T61 形态）===')
+
+console.log('=== T4 单 turn 35 个模型请求：完整版按 10 的间隔出现（step 口径）===')
 {
   const E = mk()
+  // ★2026-10-18（step 口径重写）：一帧 = 一次模型请求。35 帧 = 35 个模型请求，
+  //   按「每 10 个请求一次完整版」⇒ 完整版应出现在请求 1、11、21、31，共 4 份。
+  //   旧断言「单轮 35 帧只准 1 份完整版」建立在「计数单位是 turn」的旧口径上，已作废。
   const r = renderTurn(E, 1, 35)
   const nFull = r.filter((c) => c === 'F').length
-  const nSlim = r.filter((c) => c === 'S').length
-  // ★R113 语义：节流不再抑制「是否给内容」（宿主 project() 对整串去重，重复的精简版不会真多投递），
-  //   它抑制的是「是否计入 fullEverySlims 门槛」。故判据改为：单轮内**完整版只出现一次**，
-  //   且精简版份数由宿主去重兜底（此处只断言「不是每帧都算一次计数」——用 _slimCount 验证）。
-  ok(nFull === 1, 'T4-a：单轮 35 帧内完整版恰 1 份（实测 ' + nFull + ' 份）——工具循环不再反复灌全文')
-  // 首帧是「正式放行」（markSlimEmitPre 被调过），其余 34 帧全部落在节流窗内 ⇒ 计数只涨 1 次。
-  //   这正是节流的可观测效果：内容仍给（宿主去重兜底），但 fullEverySlims 门槛不会被 35 帧灌爆。
-  const cnt = E.st._slimCount || 0
-  ok(cnt === 1, 'T4-b：单轮 35 帧只计 1 次精简投递（实测 ' + cnt + '）——节流语义仍生效')
+  const fullIdx = r.map((c, i) => (c === 'F' ? i + 1 : 0)).filter(Boolean)
+  ok(nFull === 4, 'T4-a：35 个模型请求内完整版恰 4 份（实测 ' + nFull + ' 份）')
+  ok(fullIdx.join(',') === '1,11,21,31', 'T4-b：完整版落在第 1/11/21/31 个模型请求（实测 ' + fullIdx.join(',') + '）')
+  // 精简版：其余 31 帧，其中「正式放行」的那些计入 _slimCount（仅供诊断，不再参与门控）
+  ok(E.st._slimCount >= 1, 'T4-c：精简版确实计入诊断计数（实测 ' + E.st._slimCount + '）')
 }
-console.log('')
+
 console.log('=== T5 负路径：节流关闭时退回旧行为（证明本节流真的在拦）===')
 {
   const E = mk({ slimEveryRounds: 0 })
