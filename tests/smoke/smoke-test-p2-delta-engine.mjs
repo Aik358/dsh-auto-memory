@@ -478,7 +478,15 @@ t('接线守卫：L0 索引注入真实宽身份（computeEngineIdentityPre(JS_E
 })
 t('接线守卫：semantic-status 投影 assetsReady/indexReady/engineSwitch（进度唯一所有者）', () => {
   assert.ok(/assetsReady,\s*\n\s*indexReady,\s*\n\s*engineSwitch,/.test(SRC_INDEX), '三个字段都投影')
-  assert.ok(/indexReady = engineSwitch\.indexReady === true && engine\._indexSyncHost\.requiresFullRebuild\(\) !== true/.test(SRC_INDEX), '发布前不显示整体完成')
+  // ★2026-10-18（用户报「索引就绪一直显示否」）：判据从「只认状态机」升级为「状态机为主 + 静态安装兜底」，
+  //   但 **P2 不变量必须逐条保留**：①发布前（running/publishing）恒 false；②requiresFullRebuild 仍是否决条件；
+  //   ③failed/cancelled 不得冒充就绪。下面四条把这三条全部锁住，强度不低于原判据。
+  assert.ok(new RegExp("const _switchInFlight = !").test(SRC_INDEX),
+    "在飞判据存在（running/publishing）")
+  assert.ok(/indexReady = \(_switchInFlight/.test(SRC_INDEX), "发布前恒 false（P2 核心不变量）")
+  assert.ok(/engineSwitch\.indexReady === true \|\| \(_neverSwitched && _idxUsable\)/.test(SRC_INDEX), "状态机为主出处，仅从未开代时用静态兜底")
+  assert.ok(/requiresFullRebuild\(\) !== true/.test(SRC_INDEX), "requiresFullRebuild 仍是否决条件")
+  assert.ok(/ph === "failed" \|\| ph === "cancelled"\) return false/.test(SRC_INDEX), "failed/cancelled 不得冒充就绪")
   assert.ok(/switchPersistPath: path\.join\(memoryDir\('semantic'\)/.test(SRC_INDEX), '切换状态持久化（重启恢复）')
 })
 

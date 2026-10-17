@@ -243,8 +243,12 @@ check('⑭ 同意门：建立入口显式传 consent + 无 consent 不建',
   const e = idx.indexOf('async recycleSubagentSession(')
   const fn = s > 0 && e > s ? idx.slice(s, e) : ''
   const starts = (fn.match(/await subagents\.start\(/g) || []).length
+  // ★2026-10-18（DSH 0.2.1 迁移）：两处启动改走 callSubagentStartPre 适配层，
+  //   故判据从「2 条 await subagents.start(」改为「2 条 await callSubagentStartPre(」；
+  //   被守卫的**不变量不变**：主路径与 UNKNOWN_MODEL 回退路径都会拿到 run，且都由同一变量接住 + finally 回收。
   const stray = (fn.match(/\brun\d+\b/g) || []).length
-  check('⑱ runSubagent 内含 2 条 spawn（主 + 回退）', starts === 2, 'starts=' + starts + ' len=' + fn.length)
+  const starts2 = (fn.match(/await callSubagentStartPre\(/g) || []).length
+  check('⑱ runSubagent 内含 2 条 spawn（主 + 回退，经 0.2.1 适配层）', starts2 === 2, 'viaAdapter=' + starts2 + ' legacyStarts=' + starts + ' len=' + fn.length)
   check('⑱ 无 run2 之类独立变量（否则回退路径不被回收）', stray === 0, 'stray=' + stray)
   // finally 里必须同时有 dispose 与 recycle
   const fi = fn.indexOf('} finally {')
