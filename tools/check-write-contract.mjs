@@ -34,11 +34,16 @@ function methodBody(src, sig, endMarker) {
   const a = src.indexOf(sig)
   if (a < 0) return null
   const b = endMarker ? src.indexOf(endMarker, a) : -1
-  return b > a ? src.slice(a, b) : src.slice(a, a + 8000)
+  if (b > a) return src.slice(a, b)
+    // 兜底仅用于 endMarker 未命中的极端情况，窗口给足以免把关键断言挤出窗口
+    // （2026-10-19 实证：planBody 的 endMarker 原指向「P0 写入保护」，而该注释其实在
+    //   writeHandoffLedger 之后 ⇒ 一直走 8000 兜底；函数内新增约 17 字符后 committed:true
+    //   落到 8017 被切掉 ⇒ 误报「成功返回缺少 committed」。已改成真实边界。）
+    return src.slice(a, a + 40000)
 }
 
 // ── ① 写盘口：成功返回必须可区分「已提交 / 索引过时」──
-const planBody = methodBody(SRC, '  async writePlanSnapshot(projectDir, content, opts) {', '  /** P0 写入保护统一入口')
+const planBody = methodBody(SRC, '  async writePlanSnapshot(projectDir, content, opts) {', '  /** 交接账本:每次一篇新文件')
 check(!!planBody, '① 定位到 writePlanSnapshot')
 if (planBody) {
   const okReturn = planBody.match(/return \{ ok: true[^}]*\}/)
@@ -83,7 +88,7 @@ check(/r\.conflictPath/.test(branch), '③ 冲突路径被消费（可恢复指�
   check(brokenConsumer !== SRC, '④ 变异锚命中（消费端判 ok）')
   // 逐条重跑上面的判据，确认「打坏后必然失败」
   const reChecks = (src) => {
-    const b = methodBody(src, '  async writePlanSnapshot(projectDir, content, opts) {', '  /** P0 写入保护统一入口')
+    const b = methodBody(src, '  async writePlanSnapshot(projectDir, content, opts) {', '  /** 交接账本:每次一篇新文件')
     if (!b) return false
     if (!/committed:\s*true/.test(b)) return false
     const fs = b.match(/return \{ ok: false[^}]*\}/g) || []

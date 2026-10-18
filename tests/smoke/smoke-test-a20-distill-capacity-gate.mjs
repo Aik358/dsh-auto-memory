@@ -190,7 +190,14 @@ console.log('[A20-2] 负路径①：预算恒拒 ⇒ append 0 次、磁盘不变
     const after = readFileSync(ws.notesPath, 'utf8')
     const afterStat = statSync(ws.notesPath)
     ok(r.calls.budget.length >= 1, 'A20-2a 容量门**被调用**（改前成功分支 0 次）', 'n=' + r.calls.budget.length)
-    ok(r.calls.append.length === 0, 'A20-2b ★ append 调用 0 次（改前 1 次 = 缺陷复现路径）', 'n=' + r.calls.append.length)
+    // ★2026-10-19 判据更新：**按目标文件区分**，不再用 append 调用总数。
+    //   背景：笔记满时不再丢弃蒸馏要点，而是**降级写入当日日志**（logPath，不占注入窗口、
+    //   下次蒸馏会重新纳入语料）。旧判据「append 总数必须为 0」会把这次合法降级误判为缺陷复现。
+    //   本用例真正要守的语义是：**笔记文件本身不得被追加**（容量门必须真的挡住 notesPath 写入）。
+    const noteAppends = r.calls.append.filter((a) => a.path === ws.notesPath)
+    const logAppends = r.calls.append.filter((a) => a.path !== ws.notesPath)
+    ok(noteAppends.length === 0, 'A20-2b ★ 笔记文件不得被追加（容量门真的挡住 notesPath）', 'notesAppends=' + noteAppends.length)
+    ok(logAppends.length <= 1, 'A20-2b2 至多一次降级落点写入（日志），不得重复追加', 'logAppends=' + logAppends.length + ' paths=' + JSON.stringify(logAppends.map((a) => a.path)))
     ok(after === before, 'A20-2c ★ 被拒后磁盘字节逐字节不变', 'before=' + before.length + ' after=' + after.length)
     ok(afterStat.size === beforeStat.size, 'A20-2d 文件大小不变', beforeStat.size + ' -> ' + afterStat.size)
     ok(r.msg.indexOf('未写入') >= 0, 'A20-2e ★ 回执含「未写入」', r.msg.slice(0, 160))
@@ -212,7 +219,11 @@ console.log('[A20-3] 负路径②：容量门自身抛错 ⇒ 维护不整体失
     try { out = await runNormal(ws, { distillText: '### 主题\n- 要点', budgetThrows: true }) } catch (e) { threw = e }
     ok(!threw, 'A20-3a ★ 容量门抛错不得让 maintain 整体失败（fail-soft）', threw && threw.message)
     ok(out && /未写入/.test(out.msg), 'A20-3b 回执照实说未写入', out && out.msg.slice(0, 140))
-    ok(out && out.calls.append.length === 0, 'A20-3c 抛错时不追加', 'n=' + (out && out.calls.append.length))
+    // 同 A20-2b：容量门抛错时同样**不得写笔记**（降级写日志是允许的，且不得重复）。
+    const throwNoteAppends = (out ? out.calls.append : []).filter((a) => a.path === ws.notesPath)
+    const throwLogAppends = (out ? out.calls.append : []).filter((a) => a.path !== ws.notesPath)
+    ok(throwNoteAppends.length === 0, 'A20-3c 抛错时不追加到笔记', 'notesAppends=' + throwNoteAppends.length)
+    ok(throwLogAppends.length <= 1, 'A20-3c2 抛错时降级落点至多一次', 'logAppends=' + throwLogAppends.length)
     const archivedFiles = existsSync(ws.archiveDir) ? readdirSync(ws.archiveDir) : []
     ok(archivedFiles.length === 2, 'A20-3d ★ 第 2 步的归档已完成（不因容量门异常回退）', JSON.stringify(archivedFiles))
   } finally { rmSync(ws.root, { recursive: true, force: true }) }

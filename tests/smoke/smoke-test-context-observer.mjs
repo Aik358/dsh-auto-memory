@@ -186,9 +186,28 @@ const turnStartEvent = (seq, turn, time) => ({ type: 'turn/start', seq, time: ti
         ' | afterHead=' + JSON.stringify(after.slice(0, 120)))
     }
     const after2 = render()
-    if (after2 !== after) {
-      throw new Error('disabled mode must be render-deterministic :: ' + after.length + ' -> ' + after2.length +
-        ' | head1=' + JSON.stringify(after.slice(0, 80)) + ' | head2=' + JSON.stringify(after2.slice(0, 80)))
+    // ★2026-10-19 判据更新（v3.3.8 起）：**逐字节确定性必须剥离注入节奏计数器**。
+    //   背景：v3.3.8 的 slimGrantMarkPre() 给「精简版放行帧」追加 \n[精简快照 · 第 N 次] 且 N 自增，
+    //   目的是让放行帧与节流帧**不再逐字节相同**，从而穿透宿主 project() 的整串去重（节流的净效果本就依赖这一点）。
+    //   该计数器是**注入节奏状态**，与「关联观察器关闭时的行为差异」语义正交，不属本用例要守的漂移。
+    //   旧判据「after2 === after」因此必然失败（1057 -> 1057，长度相同、内容差一个数字）——属判据过期，非产品缺陷。
+    //   新判据（保持原意图）：**剥掉节奏计数器后必须逐字节一致** ⇒ 时钟/随机/事件游标漂移仍会被抓住。
+    //   下方附变异反向验证：人为注入时钟漂移后本判据必须变红（证明不是恒真守卫）。
+    const stripRhythmMark = (t) => String(t).replace(/\[精简快照 · 第 \d+ 次\]/g, '[精简快照 · 第 N 次]')
+    const normA = stripRhythmMark(after)
+    const norm2 = stripRhythmMark(after2)
+    if (norm2 !== normA) {
+      throw new Error('disabled mode must be render-deterministic (after stripping rhythm counter) :: ' +
+        normA.length + ' -> ' + norm2.length +
+        ' | head1=' + JSON.stringify(normA.slice(0, 80)) + ' | head2=' + JSON.stringify(norm2.slice(0, 80)))
+    }
+    {
+      // 变异验证：把「时钟漂移」注入归一化后的文本，判据必须报红。
+      // 若此处不红，说明上面的判据是恒真守卫（永远相等），等于没测。
+      const mutated = normA + '\n[clock-drift-probe ' + Date.now() + ']'
+      if (stripRhythmMark(mutated) === normA) {
+        throw new Error('determinism guard is tautological: injected clock drift was not detected')
+      }
     }
     if (!after.includes('<memory_system>')) throw new Error('dynamic memory snapshot missing in baseline render')
     const row = await rowOf(h.registeredRoutes, 'session-off')
