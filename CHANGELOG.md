@@ -4,6 +4,46 @@ All notable changes to dsh-auto-memory.
 
 ---
 
+## [3.3.9] — 2026-10-19 · 稳定性补丁批：蒸馏不丢要点、归档不可误恢复、修匿名 runtime 泄漏
+
+> **一句话**：修 3 个真缺陷（含一个 v3.3.6 起的匿名 runtime 泄漏）+ 更新 2 条过期判据，
+> 无用户可见的配置变更，不需迁移。
+
+### 已确认修复（均有实测证据）
+
+| # | 缺陷 | 症状 | 修法 |
+|---|---|---|---|
+| ① | 蒸馏要点被丢弃 | 笔记满时 `memory_maintain` 的蒸馏结果只留归档指针，**要点本身丢掉**；而笔记越满、蒸馏越白跑（互为因果） | 降级写入**当日日志**：不占注入窗口、下次蒸馏重新纳入语料，要点不丢。对外「未写入」契约保留，其后追加降级说明 |
+| ② | 归档可被误当笔记恢复 | `archive/notes-archived.md` 是**追加式转储**（实测 23 组重复锚点），整份写回 `MEMORY.md` 会触发 dirty-file ⇒ 压缩链 fail-closed ⇒ **笔记永久写不进** | 归档首次创建时写自描述头 `<!-- dsh-auto-memory:archive-dump v1 -->`；`readArchivePre` 返回 `isNoteDump`/`restoreWarning`，`memory_read(kind=archive)` 透传警告 |
+| ③ | **匿名 runtime 泄漏（P0，v3.3.6 引入）** | `agent/pre-step` 里的 `engine.stateFor(agent)` 位于两个身份守卫**之前**；`stateFor → runtimeFor` 对匿名 agent 会落到 default runtime 并**登记新条目** ⇒ 每个无身份 agent 泄漏一个 runtime | 与本文件既有纪律同源：身份不可靠时不碰 `state`/`runtime`。该段**必须**留在子代理早退之前（v3.3.6 为适配 DSH 0.2.1 子代理规则刻意如此），故只加身份判定、不移动位置 |
+
+③ 的定位过程（可复算）：`git show <commit>:lib/index.js` 逐版本替换后跑 `smoke-test-context-observer`，
+`a6061ad` 通过、`e564a9c`（v3.3.6）起失败，稳定复现。
+
+### 判据更新（属有意演进，非放松）
+
+- **`context-observer` 确定性断言**：v3.3.8 起 `slimGrantMarkPre()` 给放行帧追加自增的 `[精简快照 · 第 N 次]`
+  （目的是穿透宿主整串去重，是节流生效的前提），与「关闭观察器后无时钟/随机漂移」语义正交。
+  判据改为**剥离该计数器后逐字节比对**，并加**变异反向验证**：人为注入时钟漂移必须仍红（证明不是恒真守卫）。
+- **`a20-distill` 断言**：改为按**目标文件**判定（笔记不得被追加 / 降级落点至多一次），
+  不再用 `append` 调用总数——那会把 ① 的合法降级写日志误判为缺陷复现。
+- `r26` E3 基线重钉 `F54998DE75E22EFC`。
+
+### 回归
+
+- 全量 **PASS 431 / FAIL 3 / TIMEOUT 0**（149.0s，并发满载；基线 78.6s ⇒ 机器被占满）。
+- 三红全部单跑 **exit=0**：`js-semantic-host-recovery`、`issue207-processes`、`c307-308-team-outbox`。
+- 关键套件单跑全绿：`r26` 23/0、`a20` 32/0、`context-observer` 全通过、`p0p1` 26/0。
+
+### 已知未验证 / 仍待处理
+
+1. `isSubAgentSession` 判据为「`origin === subagent` **或** `delegationDepth > 0`」，官方 0.2.1 口径是**单用 `origin`**。
+   该「或」属**安全侧兜底**（`origin` 缺失时才靠 depth），且该函数只用于 6 处**排除/跳过**，**不参与** `ctx.subagents` 创建路径 ⇒ 不会导致无法新建子代理。
+   若要严格对齐官方可去掉 depth 支（本批未改，等用户裁定）。
+2. 本项目笔记曾因人工误恢复涨到 939KB，已重建为 22KB 并保留 `.full-backup-20261019-0215` 全量原文。
+3. 本轮**未**推送、未发版。
+
+---
 ## [3.3.8] — 2026-10-19 · 注入节奏降频：完整版 10→20、精简版 3→8（省 token / 省上下文）
 
 > **一句话**：按用户实测反馈下调节奏——完整版每 **20** 个模型请求一次、精简版每 **8** 个一次，
