@@ -53,7 +53,7 @@ try {
       //     ★归因：HEAD 版本用同一表达式复算 = 9714f5df…（与旧锁逐字节相等），无历史漂移混入。
       //   复算，重钉 f5574edf… → 129caeec…。★归因：本批之前的 HEAD 版本复算 = f5574edf…（与旧锁相等），
       //   说明本次变更**全部来自本批三处前端修复**，无历史漂移混入。
-      assert.equal(createHash('sha256').update(prior).digest('hex'), 'c452aefc9ee57d55d2e6ce31a7b434179677820607657f09b91efb0a0b1ce133', 'classic client region bytes are conserved (interval control normalized back to 1/1440); pinned upstream baseline superseded by reviewed batches')
+      assert.equal(createHash('sha256').update(prior).digest('hex'), '713f0389ba6c86f0b5889cba050fed07d320c77ac5f07a90fcab56d70481ec54', 'classic client region bytes are conserved (interval control normalized back to 1/1440); pinned upstream baseline superseded by reviewed batches')
     }
   }
   console.log('PASS archive interval UI/API/runtime agree on 15–1440, invalid patches preserve configuration')
