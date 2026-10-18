@@ -4,6 +4,49 @@ All notable changes to dsh-auto-memory.
 
 ---
 
+## [3.3.7] — 2026-10-18 · 修 #449 三条回归 + #450 兜底（社区贡献者报告）
+
+> **一句话**：3.3.5 的三处安全修复各引入了一个**存量数据**层面的新回归——
+> #445 的复核方法是「原代码是否仍原样存在」，没覆盖「修完之后存量数据会怎样」。
+> 三条全部实测成立，本版修好；同时给 #450 的宿主侧缺陷补了插件侧降级。
+
+### ★ 回归修复（#449，贡献者 Xu3Zhen1 报告）
+
+- **历史迁移包被一律拒绝**。`userFiles` 自 **v3.1.3** 就在包里，而 `sha256+userFiles-v2` 算法自 **v3.3.5** 才引入 ⇒ 3.1.3–3.3.4 产出的**所有含日历的历史包**都会命中 `userfiles-unproven-by-checksum` 守卫，等于把在野历史包全判死；反向也不兼容（新包在旧版判 `checksum-mismatch`）。
+  现改为**默认仍拒**（fail-closed 的安全意图保留）+ 调用方显式传 `allowUnprovenUserFiles: true` 才放行，且放行时**仍按 v1 口径校验 files 摘要**并追加 warning 留痕。
+
+- **自指目录环挂死进程**。#425 把「根内目录链接」改成按物理路径递归，但没有 `visited` 集合、也没有深度上限。而 `mklink /J handoff\archive handoff` 一条免管理员命令就能造出该形状 ⇒ 递归永不收敛，导入/备份挂死（实测 >90s 超时）。
+  现加 **realpath 集合**防环（junction 的书写形式与物理路径不同，用字符串路径去重会漏判），回执新增 `cycleSkipped` 供观测。
+  **实测**：修复前 15s 未返回被强杀；修复后 **26ms** 返回 `{copied:1, retained:0, cycleSkipped:1}`。
+
+- **存量白板永久写不进**。#434 在落盘前加了「重复卡片 id 即拒」的闸门，但 `anchoredPlanPre` **原样保留**已有锚点、不去重不重排 ⇒ 磁盘上已经存在的重复会被每次重写原样重建 ⇒ 闸门**每次都命中**，且不再留恢复文件。
+  现改为**先自愈、失败才拒**：保留每颗 id 的首次出现、移除后续重复锚点，让下游按 `(ws, path, title, ordinal)` 重新分配新 id；自愈后仍有重复才真拒（真缺陷仍拦得住）。
+
+### ★ 另外两条同类问题（贡献者同批发现）
+
+- **精简版节流净效果为零**。上一版为治「零注入」让节流帧也返回 `slimText`，导致节流帧与放行帧**逐字节相同** ⇒ 宿主 `project()` 整串去重 ⇒ 实际投递次数不变，`slimEveryRounds` 只影响诊断计数器，节奏完全没生效。
+  现放行帧追加一段轮次标记，两帧内容真正不同 ⇒ 节流真正生效。
+
+- **`stepScopeKeyPre` 跨 turn 假命中**。turn 已切换、本 turn 的 `step/start` 尚未落地的窗口里，旧实现会借到**上一个 turn** 的 step 号。现只认**本 turn 内**的 `step/start`（按事件里的 turn 号比对），取不到即返回空串让调用方回落正常节流。
+
+### ★ 宿主侧缺陷的插件侧降级（#450，贡献者 HY-pt 报告）
+
+- 根因在宿主 `@deepseek-ai/dsh-permission-presets`：其构造器先 `super(ctx, "permissionPresets")` 注册服务，**之后**才做 `shell.sandboxMode` 检查并可能 throw ⇒ HMR recompose 级联里 effect disposer 把服务摘掉、直到实例重启才回来。插件的 `_verifyWorkbench` 因此恒返回 `no-permission-service`，记忆中枢不可用、所有记忆工具失败。
+  插件侧新增降级：**服务缺失时回退到 `workbench.json` 持久化的 `permission`**（epoch 一致性已在前面校验过，走到这里说明 epoch 是新的）⇒ 不再硬失败，且记 `ok-degraded-no-service` 便于观测。
+
+### 测试
+
+- 新增 `tests/smoke/smoke-test-issue449-regressions.mjs`：**19 断言全绿**，全部真执行（真 import → 真构造 → 真调用 → 断言返回值/副作用），每条都带负路径。
+- **变异验证**：把 copyDir 的防环判据短路 ⇒ 15s 未返回被强杀；还原 ⇒ 26ms 返回且 `cycleSkipped=1`。
+- 全量回归 **PASS 427 / FAIL 6**；6 个红**全部单独复跑通过**（机器负载导致的并发干扰，墙钟 224s ≈ 正常两倍）。
+
+### 已知未验证
+
+- `copyDir` 防环在 **Linux/macOS 的 symlink 环** 上未实测（本机只在 Windows junction 上验证过）。
+- 白板自愈在多卡大面积重复（例如 10+ 张同 id）时未做压力验证。
+- `permissionPresets` 降级路径未在真实 HMR recompose 场景下端到端复现（本机仅验证了「服务缺失时能走降级分支」）。
+
+---
 ## [3.3.6] — 2026-10-18 · 上下文注入「从不能用」到「能用」
 
 > **一句话**：3.3.5 之后，上下文注入在部分环境下**完全不出内容**——面板上开关是开的，

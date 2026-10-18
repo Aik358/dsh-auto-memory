@@ -448,6 +448,26 @@
     .nlink { font-size: 12px; }
     .badge { font-size: 11.5px; }
   }
+  /* ── 21. 「#0」点阵浮雕（第 0 期标记）──────────────────────────────
+     横排「#0」= 11×7 点阵、39 个亮点；厚度由 10 层后下偏移拷贝堆成，
+     正面逐点错峰呼吸。纯手写 SVG、零依赖。
+     定位：absolute 锚在最后一节（#faq）右侧留白里 ⇒ 随页面滚动而滚走，
+     不钉视口、不压正文；宽度由留白反推（(100vw-1100px)/2），所以只占空处。
+     pointer-events:none 不拦交互；<1400px 不显示（那时没有留白）。 */
+  .dot0 {
+    position: absolute; z-index: 0; pointer-events: none;
+    inset: 0 0 0 auto; width: calc((100vw - 1100px) / 2);
+    display: none; align-items: center; justify-content: center;
+  }
+  @media (min-width: 1400px) { .dot0 { display: flex; } }
+  .dot0-in { width: min(74%, 200px); opacity: .82;
+    color: color-mix(in srgb, var(--accent) 88%, transparent); }
+  .dot0-svg { display: block; width: 100%; height: auto; overflow: visible; }
+  .dot0-face circle { animation: dot0-breathe 4.6s var(--ease) infinite; animation-delay: var(--d, 0s); }
+  @keyframes dot0-breathe { 0%, 100% { opacity: .62; } 46% { opacity: 1; } }
+  @media (prefers-reduced-motion: reduce) {
+    .dot0-face circle { animation: none; opacity: .94; }
+  }
 </style>
 </head>
 <body>
