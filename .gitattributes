@@ -36,3 +36,59 @@ skins/legacy/*.frozen text eol=lf
 #   它同样被 index.zip 的逐字节漂移锁保护（issue324 套件）⇒ 单独点名钉 LF。
 #   该 blob 现为 i/lf，规则幂等。（将来若加入其它无扩展名受保护脚本，按同一口径单列。）
 scf_bootstrap    text eol=lf
+
+# ══════════════════════════════════════════════════════════════════════════════
+# ★2026-10-17 · 方案 A：全局 LF 默认（此前只有零散补丁，地基没有写）
+#
+# 为什么加这段：
+#   此前本文件只对少数文件做了 EOL 钉死，**没有 text=auto** ⇒ git 把 CRLF
+#   当成文件内容的一部分 ⇒ 开发树出现 461 个 CRLF blob + 17 个混合 blob，
+#   每次跨来源搬运补丁都要逐个判断行尾、git am 会因行尾冲突、diff 显示整文件改动。
+#
+#   实测判据（2026-10-17）：
+#     · 全仓 484 个文本文件 CRLF→LF 后，逐个 blob 归一化比对：相同 2,461 / 不同 0
+#       ⇒ 行尾转换零内容变化，不影响任何功能。
+#     · 全量回归：归一化树 vs 未归一化树，失败套件无新增（差额全是 worktree 缺资产）。
+#     · CI 全部跑 ubuntu-latest ⇒ 本来只看到 LF，本规则不改变 CI 结果。
+#
+# 本规则的作用：
+#   从下一次编辑起，任何被 git add 的文本文件都会被归一为 LF 存进索引。
+#   不改动任何现有文件、不产生批量 diff（渐进式还债）。
+#
+# 例外（必须排在全局规则之后，后匹配覆盖先匹配）：
+#   1. tests/m3b1-fixtures/*.md —— 测试夹具必须是 CRLF（见文件开头契约）
+#   2. *.cmd / *.bat —— Windows 批处理：cmd.exe 对「非 ASCII + LF」处理有缺陷。
+#      实测：UTF-8/GBK 含中文的 .bat 转 LF 后整行解析崩坏（多字节字符被切断）；
+#      纯 ASCII 不受影响。本仓仅 vendor/dsh-graph/scripts/win-smoke-test.cmd 一个，
+#      属第三方搬入代码，此规则确保它不会被误转。
+#   3. 二进制 —— 用 binary 宏，避免被当文本归一
+# ══════════════════════════════════════════════════════════════════════════════
+* text=auto eol=lf
+
+# —— 例外 1：CRLF 敏感夹具（重申，确保覆盖上面的全局规则）——
+tests/m3b1-fixtures/*.md text eol=crlf
+
+# —— 例外 2：Windows 批处理必须保持 CRLF（cmd.exe 非 ASCII 解析缺陷）——
+*.cmd text eol=crlf
+*.bat text eol=crlf
+
+# —— 例外 3：二进制文件（显式声明，防止被当文本归一）——
+*.zip   binary
+*.tgz   binary
+*.gz    binary
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.ico   binary
+*.webp  binary
+*.woff  binary
+*.woff2 binary
+*.ttf   binary
+*.otf   binary
+*.onnx  binary
+*.bin   binary
+*.wasm  binary
+*.pdf   binary
+*.docx  binary
+*.xlsx  binary

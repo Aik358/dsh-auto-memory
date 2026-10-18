@@ -11,6 +11,15 @@
  *   ② slimEveryRounds 自 2026-10-06 起是死键（全仓无判据读取）⇒ 精简版每个 step 都发一份。
  *      实测 T61 单轮 35 帧中 30+ 帧为同一份 6.2KB 精简版（约 190KB/轮）。现按 turn 边界真正门控。
  *
+ * ★2026-10-18（R113 · 用户报「所有上下文注入都没用了」的归因修复）：**节流语义已改**。
+ *   旧实现：节流帧 `return engine.renderReflectionRequest()` ⇒ 无待办反思时返回**空串** ⇒
+ *   整个 dsh:auto-memory-pre 面为空、被宿主 .filter(text.length>0) 丢弃 ⇒ 「零注入」。
+ *   实测取证：本会话 821 次渲染决策中 808 次走节流分支 ⇒ 模型连续多轮完全看不到记忆系统状态。
+ *   现实现：节流帧仍返回 slimText（状态行+检索指引+唤回通知，约 0.7k 字符），但**不计数**
+ *   （不调 markSlimEmitPre/countTieredSlim）⇒ 完整版门槛 fullEverySlims 的口径不变。
+ *   因此本套件原 T1/T3/T4 的期望值 `-`（=不注入）统一改为 `S`（=给精简版）。
+ *   节流仍然真实存在：它的可观测效果从「这一帧什么都不给」变为「这一帧不给完整版、且不计入门槛」。
+ *
  * 判据纪律（"能失败"）：真执行 lib/index.js 的门控函数体；节流做对照与负路径验证。
  * 纯 Node、零依赖、不联网、不启宿主。
  */
@@ -78,12 +87,19 @@ function mk(over) {
 
 function renderTurn(E, turnNo, renders, opts) {
   const o = opts || {}
-  let e = [evTurn(1000 + turnNo, turnNo)]
-  if (o.human) e = e.concat([evUser(2000 + turnNo, 'user')])
+  // ★2026-10-18（step 口径）：计数单位 = **模型请求**（step）。
+  //   stepPerFrame=true（默认）时每帧推进一个 step —— 这才对应真实宿主：
+  //   每一帧 context 渲染都发生在**新的模型请求**之前，所以帧数 == 模型请求数。
+  //   旧夹具假设「同 turn 内多帧共享一个 turn 计数」，在 step 口径下不再成立。
+  const stepPerFrame = o.stepPerFrame !== false
+  const e = [evTurn(1000 + turnNo, turnNo)]
+  if (o.human) e.push(evUser(2000 + turnNo, "user"))
   const r = []
+  let stepNo = 0
   for (let k = 0; k < renders; k++) {
-    r.push(E.run(e.slice(), mkSnap('t' + turnNo + 'k' + k)))
-    e = e.concat([evUser(5000 + turnNo * 100 + k, 'runtime-context')])
+    if (stepPerFrame) stepNo += 1
+    e.push({ seq: 3000 + turnNo * 1000 + k, type: "step/start", data: { turn: turnNo, step: stepNo || 1 } })
+    r.push(E.run(e.slice(), mkSnap("t" + turnNo + "k" + k)))
   }
   return r
 }
@@ -91,39 +107,46 @@ function renderTurn(E, turnNo, renders, opts) {
 console.log('=== T1 人说话 => 该轮注入一次完整版（用户裁定第①条）===')
 {
   const E = mk()
-  eq(renderTurn(E, 1, 3, { human: true }).join(''), 'FS-', 'T1：真人轮首帧完整版；次帧精简版（节流首放）；第 3 帧被节流 ⇒ 不注入（旧行为为 FSS 全放行）')
+  eq(renderTurn(E, 1, 3, { human: true }).join(''), 'FSS', 'T1：真人轮首帧完整版；次帧精简版（节流首放）；第 3 帧被节流 ⇒ 仍给精简版但**不计门槛**（R113 语义：节流≠零注入）')
 }
 console.log('')
-console.log('=== T2 agent 自跑 => 每 10 轮一次完整版（用户裁定第②条）===')
+console.log('=== T2 agent 自跑 => 每 10 个模型请求一次完整版（用户裁定第②条 + step 口径）===')
 {
   const E = mk()
+  // renderTurn 每帧推进 1 个 step ⇒ 12 turn × 2 帧 = 24 个模型请求。
+  // 完整版应落在第 1、11、21 个模型请求上。
   const out = []
-  for (let t = 1; t <= 12; t++) out.push(renderTurn(E, t, 2)[0])
+  for (let t = 1; t <= 12; t++) out.push(...renderTurn(E, t, 2))
   const fulls = out.map((c, i) => (c === 'F' ? i + 1 : 0)).filter(Boolean)
-  eq(fulls.join(','), '1,11', 'T2：12 轮无人轮里完整版落在 turn 1 与 11（间隔恰 10 轮）')
+  eq(fulls.join(','), '1,11,21', 'T2：24 个模型请求里完整版落在第 1、11、21 个（间隔恰 10 个请求）')
 }
-console.log('')
-console.log('=== T3 精简版每 3 轮至多一次（用户裁定第 B 条）===')
+
+console.log('=== T3 精简版节奏：每 3 个模型请求一次（窗内仍给内容，只是不计门槛）===')
 {
   const E = mk()
+  // 每帧 = 1 个模型请求；slimEveryRounds=3 ⇒ 距上次精简 ≥3 个请求才「正式放行」。
   const t1 = renderTurn(E, 1, 4)
+  eq(t1.join(''), 'FSSS', 'T3-a：请求1 完整版；请求2–4 精简版（首个精简在请求2 放行，其余窗内）')
   const t2 = renderTurn(E, 2, 4)
-  const t3 = renderTurn(E, 3, 4)
-  const t4 = renderTurn(E, 4, 4)
-  eq(t1.join(''), 'FS--', 'T3-a：turn1 首帧完整版，次帧精简版（节流首放）')
-  eq(t2.join(''), '----', 'T3-b：turn2 距上次精简投递 1 轮 ⇒ 整轮不注入精简版')
-  eq(t3.join(''), '----', 'T3-c：turn3 距上次 2 轮 ⇒ 仍不注入')
-  eq(t4.join(''), 'S---', 'T3-d：turn4 距上次 3 轮 ⇒ 恢复一次精简版（粒度=3 轮）')
+  eq(t2.join(''), 'SSSS', 'T3-b：请求5–8 全精简（距上次完整版仍 <10）')
+  // 请求 11 会触发第 2 次完整版（距请求 1 满 10 个）
 }
-console.log('')
-console.log('=== T4 单轮 35 帧不再灌 34 份精简版（量化，T61 形态）===')
+
+console.log('=== T4 单 turn 35 个模型请求：完整版按 10 的间隔出现（step 口径）===')
 {
   const E = mk()
+  // ★2026-10-18（step 口径重写）：一帧 = 一次模型请求。35 帧 = 35 个模型请求，
+  //   按「每 10 个请求一次完整版」⇒ 完整版应出现在请求 1、11、21、31，共 4 份。
+  //   旧断言「单轮 35 帧只准 1 份完整版」建立在「计数单位是 turn」的旧口径上，已作废。
   const r = renderTurn(E, 1, 35)
-  const n = r.filter((c) => c === 'S').length
-  ok(n <= 1, 'T4：单轮 35 帧精简版 <= 1 份（旧行为实测 34 份 x 6.2KB = 211KB/轮，现 ' + n + ' 份）')
+  const nFull = r.filter((c) => c === 'F').length
+  const fullIdx = r.map((c, i) => (c === 'F' ? i + 1 : 0)).filter(Boolean)
+  ok(nFull === 4, 'T4-a：35 个模型请求内完整版恰 4 份（实测 ' + nFull + ' 份）')
+  ok(fullIdx.join(',') === '1,11,21,31', 'T4-b：完整版落在第 1/11/21/31 个模型请求（实测 ' + fullIdx.join(',') + '）')
+  // 精简版：其余 31 帧，其中「正式放行」的那些计入 _slimCount（仅供诊断，不再参与门控）
+  ok(E.st._slimCount >= 1, 'T4-c：精简版确实计入诊断计数（实测 ' + E.st._slimCount + '）')
 }
-console.log('')
+
 console.log('=== T5 负路径：节流关闭时退回旧行为（证明本节流真的在拦）===')
 {
   const E = mk({ slimEveryRounds: 0 })

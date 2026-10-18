@@ -357,18 +357,29 @@ class Worker:
                 last_seen = float(prev.get('lastActivityAt') or prev.get('startedAt') or 0)
             except Exception:
                 last_seen = 0.0
-            idle = (time.time() - last_seen) if last_seen else 0.0
+            # ★2026-10-18 修「sync-in-progress 永久占槽」（用户报：唤回显示已投递但模型收不到）：
+            #   旧实现 idle = (time.time()-last_seen) if last_seen else 0.0 —— last_seen 为 0（字段缺失/为 0/非法）
+            #   时把 idle 算成 0 ⇒ idle_dead 恒 False ⇒ 这个「持有者已死」的判据在最需要它的时候恰好失效，
+            #   槽被永久占住。实测：engine-switch-state.json = failed:4263 / error:"sync-in-progress" / startedAt:0，
+            #   failed 从 2527 一路涨到 4263；重启只清进程内 active_sync，磁盘状态会重新形成。
+            #   语义修正：拿不到可信的「最后活动时间」= 无法证明持有者还活着 = 按陈旧处理
+            #   （fail-open 接管，与 SYNC_TAKEOVER_IDLE_SECONDS 的立意一致：宁可接管一次也不要永久卡死）。
+            #   仍保留「正在推进的长同步不回 sync-in-progress」的保护：last_seen 有效且新鲜时不接管。
+            has_trusted_clock = last_seen > 0
+            idle = (time.time() - last_seen) if has_trusted_clock else float('inf')
             same_key = (str(prev.get('workspaceRef', '')) == ws_ref
-                        and prev.get('scope') == scope)
+                and prev.get('scope') == scope)
             superseded = same_key and prev_id != sync_id
             idle_dead = idle > SYNC_TAKEOVER_IDLE_SECONDS
             if superseded or idle_dead:
-                # 只在「同 key 被新 syncId 取代」或「超过阈值无任何活动」时接管；
+                # 只在「同 key 被新 syncId 取代」或「超过阈值无任何活动（含时钟不可信）」时接管；
                 # 跨工作区并发、以及正在推进的长同步，仍按原样回 sync-in-progress。
                 self.counts['sync_takeovers'] = self.counts.get('sync_takeovers', 0) + 1
+                reason_txt = ('superseded' if superseded
+                    else ('no-trusted-clock' if not has_trusted_clock
+                    else 'idle:%.0fs' % idle))
                 diag('index_sync takeover: %s -> %s (%s)' % (
-                    prev_id or '(none)', sync_id,
-                    'superseded' if superseded else 'idle:%.0fs' % idle))
+                    prev_id or '(none)', sync_id, reason_txt))
                 self.active_sync = None
             else:
                 return [self.index_ack(req, p, 'begin', False, reason='sync-in-progress')]

@@ -851,17 +851,39 @@ class SemanticWorker(base.Worker):
     def handle_index_commit(self, req):
         frames = super().handle_index_commit(req)
         accepted = bool(frames and frames[-1].get('payload', {}).get('accepted'))
+        # ★#437:构建结果必须**随 commit ack 回传**,否则 JS 侧只看得见
+        #   accepted=true 就把 (wsRef,scope) 写进 ready 缓存 ⇒ 构建失败的
+        #   索引被当成就绪,同 miv 永不重建,而 dense_search 因 memoryIndexVersion
+        #   不符恒返回 [] (静默退化)。父类 index_ack 支持 extra 透传,
+        #   lib/m7-wire.js 的 validateIndexAckPayloadPre 对未知键放行(wire 只增)。
+        # 口径:每个本次涉及的 key 一条 {persisted, chunks} 或 {error};未涉及的 key
+        #   不带条目(JS 侧据此只校验「ack 里出现过的 key」)。
+        # 注意:embedding 未配置(self.embedder is None)时**不报错** —— 那是「向量不适用」
+        #   而不是「构建失败」:纯协议工作者(无 embedding)的 index ready 与向量能力无关,
+        #   既有 m71/m73/m78 语义依赖这一点。真正要暴露的是「有 embedder 且构建抛异常」。
+        vectors = {}
         if accepted and self.embedder is not None:
             for key in list(self.derived.keys()):
                 if self.vectors.get(key, {}).get('stale', True) or \
                    self.vectors.get(key, {}).get('memoryIndexVersion') != \
                    self.derived[key]['memoryIndexVersion']:
+                    label = '%s|%s' % (key[0], key[1])
                     try:
                         persisted, n = self.build_vectors(*key)
+                        vectors[label] = {'persisted': bool(persisted), 'chunks': int(n)}
                         base.diag('vectors built for %s: chunks=%d persisted=%s'
                                   % (key, n, persisted))
                     except Exception as exc:  # noqa: BLE001
+                        vectors[label] = {'error': str(exc)[:160]}
                         base.diag('vector-build-failed %s: %s' % (key, exc))
+        # 只有当**本工作者具备向量能力**（embedder 已就绪）时才带该字段：
+        #   有 embedder ⇒ 必然带（哪怕 {} 表示「无需重建」），因此「带字段」等价于
+        #   「向量能力在位」，JS 侧可据此区分「不适用（旧 worker/纯协议）」与「失败」。
+        #   无 embedder ⇒ 不带字段（向量不适用，index ready 与向量能力无关）。
+        if accepted and self.embedder is not None and frames and isinstance(frames[-1], dict):
+            pl = frames[-1].get('payload')
+            if isinstance(pl, dict):
+                pl['vectors'] = vectors
         return frames
 
     def maybe_activation(self, req, p):

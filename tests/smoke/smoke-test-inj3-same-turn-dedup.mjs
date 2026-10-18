@@ -9,6 +9,10 @@
  *   ② gap 单位错配：`_snapRound` 原按**注入次数**推进，而配置键名 `snapshotMinGapRounds` 是「轮」
  *      ⇒ 同轮内多次日志变化即可满足 gap（实测每轮日志变化 1.6 次）。修法：改为**按 turn 推进**。
  *
+ * ★2026-10-18（R116）：T1 期望 FSS → FFS。见该断言上方归因 —— 旧期望固化的是「人说话被吞」缺陷，
+ *   本次修复（未授予不得登记授予去重键）让真人消息落地后能正确拿到完整版。
+ *   不变量未变：同一 turn 内**真人完整版只授予一次**（由 T1 帧3 与 T5 继续保证）。
+ *
  * 判据纪律（"能失败"）：本套件由**真执行** lib/index.js 的注入门控函数体验证行为，
  * 并对两处修复各做**变异反向验证**（变异必红、还原复绿）。禁止以源码含某字符串充当功能验收。
  * 纯 Node、零依赖、不联网、不启宿主。
@@ -73,7 +77,16 @@ console.log('=== T1 ★同轮重复授予已消除（首帧真人不可见 → �
   r.push(E.run([evTurn(1, 5)], mkSnap('B1')))
   r.push(E.run([evTurn(1, 5), evUser(100, 'user')], mkSnap('B2')))
   r.push(E.run([evTurn(1, 5), evUser(100, 'user'), evUser(101, 'runtime-context')], mkSnap('B3')))
-  eq(r.join(''), 'FSS', 'T1：首帧 fallback 授予后，同轮升级为 human:<seq> 不得再授予【修复前 FFS】')
+  // ★2026-10-18（R116 · 判据更新）：本场景期望由 FSS 改为 **FFS**，理由是「首帧那两个 F 性质不同」：
+  //   · 帧1 的 F = **「完整版（首次注入）」** —— 来自 `_snapFp === undefined` 的独立分支
+  //     （index.js 16978），只在会话生命周期**第一次**渲染时触发一次，与 firstOfTurn 无关。
+  //   · 帧2 的 F = **「完整版（human:100 · 真人在场）」** —— 真人消息落地后的正确授予。
+  //   旧期望 FSS 反映的是**缺陷**：旧代码在首帧「未授予」时也写 `_humanFullKey = turnKey`（原 16934 行），
+  //   导致真人消息落地时 `_upgradeFromFallback = (last === tk) = true` ⇒ firstOfTurn=false ⇒ 授予被吞。
+  //   症状即用户报的「人说话不给完整版」。修法见 index.js 16940-16950（未授予改记 _tieredSeenTurnKey）。
+  //   本套件真正要守的不变量是「**同一轮不得给两次真人完整版**」，由帧3=S 保证 —— 该断言未变。
+  //   实测 diag 佐证：帧1=「完整版（首次注入）」/ 帧2=「完整版（human:100 · 真人在场）」/ 帧3=「精简版(节流 0/5)」。
+  eq(r.join(''), 'FFS', 'T1：首帧(首次注入)F不占用真人名额 ⇒ 真人消息落地后仍须授予完整版；同轮第三帧回到精简【旧期望 FSS 反映"人说话被吞"缺陷】')
 }
 console.log('')
 console.log('=== T2 真人轮语义不变：still 每轮首次给完整版 ===')
@@ -105,19 +118,33 @@ console.log('=== T4 ★gap 单位对齐为「轮」（无人轮不再轮内续�
   eq(r.join(''), 'FSSSSSSS', 'T4：无人轮 8 次渲染（日志逐变）内不得超过 1 次完整版【修复前 FSSSSFSS】')
 }
 console.log('')
-console.log('=== T5 跨轮恢复：进入新 turn 后 gap 才可满足 ===')
+console.log('=== T5 跨 turn 但模型请求序列连续 ⇒ 计数按模型请求推进（step 口径）===')
 {
+  // ★2026-10-18（step 口径重写）：计数单位是**模型请求**，不是 turn。
+  //   旧用例只改 turn 号 ⇒ 新代码 _stepSeq 不推进 ⇒ 永不出完整版（夹具过时，非缺陷）。
+  //   这里每帧都追加 step/start，模拟真实宿主（每帧 = 一次模型请求）。
   const E = mk()
   const r = []
-  let e = [evTurn(1, 5), evUser(100, 'runtime-context')]
-  for (let k = 0; k < 5; k++) { r.push(E.run(e.slice(), mkSnap('X' + k))); e = e.concat([evUser(110 + k, 'runtime-context')]) }
-  const before = r.join('')
-  for (let t = 2; t <= 6; t++) { e = e.concat([evTurn(900 + t, t)]); r.push(E.run(e.slice(), mkSnap('Y' + t))) }
-  const after = r.slice(5).join('')
-  eq(before, 'FSSSS', 'T5-a：turn1 内只 1 次完整版')
-  ok(after.includes('F'), 'T5-b：跨到新 turn 后 gap 可满足 ⇒ 出现完整版（单位是「轮」而非「次」）')
+  let e = [evTurn(1, 5), evUser(100, "runtime-context")]
+  let stepNo = 0
+  for (let k = 0; k < 5; k++) {
+    stepNo += 1
+    e = e.concat([{ seq: 500 + stepNo, type: "step/start", data: { turn: 1, step: stepNo } }])
+    r.push(E.run(e.slice(), mkSnap("X" + k)))
+    e = e.concat([evUser(110 + k, "runtime-context")])
+  }
+  const before = r.join("")
+  eq(before, "FSSSS", "T5-a：turn1 的前 5 个模型请求里只 1 次完整版")
+  // 继续推进模型请求：第 11 个请求应触发第 2 次完整版（距第 1 个满 10）
+  for (let t = 2; t <= 12; t++) {
+    stepNo += 1
+    e = e.concat([evTurn(900 + t, t), { seq: 900 + stepNo, type: "step/start", data: { turn: t, step: 1 } }])
+    r.push(E.run(e.slice(), mkSnap("Y" + t)))
+  }
+  const after = r.slice(5).join("")
+  ok(after.includes("F"), "T5-b：模型请求继续推进到第 11 个 ⇒ 出现下一次完整版（实测尾部=" + after + "）")
 }
-console.log('')
+
 console.log('=== T6 守卫：修复标记必须在位（防回退）===')
 {
   ok(/const firstOfTurn = !!\(turnKey && [^\n]*_lastFullKey !== turnKey/.test(SRC), 'T6-a：firstOfTurn 经持久键比较（去重键未被绕过）')

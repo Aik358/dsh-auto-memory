@@ -2,15 +2,17 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import { tmpdir } from 'node:os'
-import { createJsEmbeddingConfigPre, updateEmbeddingConfigPre } from '../../lib/embedding-config.js'
+import { embeddingConfigFilePre, createDefaultEmbeddingConfigPre, updateEmbeddingConfigPre } from '../../lib/embedding-config.js'
+delete process.env.DSH_M7_EMBEDDING_CONFIG // Keep this default-path fixture inside its temporary home.
 
 const source = await fs.readFile(new URL('../../lib/index.js', import.meta.url), 'utf8')
 const route = source.indexOf("      path: API['semantic-emit'],")
 const start = source.indexOf('handler: ', route) + 9
 const end = source.indexOf('\n      },', start)
 const dir = await fs.mkdtemp(path.join(tmpdir(), 'dam-376-'))
-const file = path.join(dir, 'embedding-config.json')
-const env = { engine: { _jsConfigurationError: 'fixture earlier failure' }, path, memoryDir: () => dir, dshHome: () => dir, createJsEmbeddingConfigPre, updateEmbeddingConfigPre,
+const file = embeddingConfigFilePre(dir)
+await fs.mkdir(path.dirname(file), { recursive: true })
+const env = { engine: { config: {}, _jsConfigurationError: 'fixture earlier failure' }, path, memoryDir: () => dir, dshHome: () => dir, embeddingConfigFilePre, createDefaultEmbeddingConfigPre, updateEmbeddingConfigPre,
   isLoopbackRequest: () => true, readJsonBody: async (req) => req.body, diag() {}, writeJson: (res, status, body) => Object.assign(res, { status, body }) }
 const handler = new Function(...Object.keys(env), 'return (' + source.slice(start, end) + '\n})')(...Object.values(env))
 async function call(body) { const res = {}; await handler({ method: 'POST', body }, res); return res }

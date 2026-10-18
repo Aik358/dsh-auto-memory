@@ -91,17 +91,17 @@ function setExpr(src, key, from) {
 
 // 三面 × 三键 + frozen 的对应三键
 const SURFACES = [
-  { name: 'classic', text: classicFace, keys: ['snapshotMinGapRounds', 'slimEveryRounds', 'fullEverySlims'] },
-  { name: 'legacy(生成块)', text: legacyFace, keys: ['snapshotMinGapRounds', 'slimEveryRounds', 'fullEverySlims'] },
-  { name: 'v4(生成块)', text: v4Face, keys: ['snapshotMinGapRounds', 'slimEveryRounds', 'fullEverySlims'] },
-  { name: 'frozen(源)', text: frozen, keys: ['snapshotMinGapRounds', 'slimEveryRounds', 'fullEverySlims'] },
+  { name: 'classic', text: classicFace, keys: ['snapshotMinGapRounds', 'slimEveryRounds'] },
+  { name: 'legacy(生成块)', text: legacyFace, keys: ['snapshotMinGapRounds', 'slimEveryRounds'] },
+  { name: 'v4(生成块)', text: v4Face, keys: ['snapshotMinGapRounds', 'slimEveryRounds'] },
+  { name: 'frozen(源)', text: frozen, keys: ['snapshotMinGapRounds', 'slimEveryRounds'] },
 ]
 
 // ★2026-10-06（INJ-1 · S2）：fullEverySlims 的界面回落值随服务端默认一并改为 10（三面同改）。
 //   本表必须与三面 UI 字面量同步，否则「空串/非法值回落」用例会红 —— 这正是它该有的行为。
 // ★2026-10-13：snapshotMinGapRounds 的界面回落值随服务端默认一并 5→10（用户裁定，强制覆盖）。
 //   本表必须与三面 UI 字面量同步，否则「空串/非法值回落」用例会红 —— 这正是它该有的行为。
-const FALLBACK = { snapshotMinGapRounds: 10, slimEveryRounds: 3, fullEverySlims: 10 }
+const FALLBACK = { snapshotMinGapRounds: 10, slimEveryRounds: 3 }
 // #160-7 语义：0 合法保留；正整数向下取整且 ≤1000；空串/非法/负数回落 fallback。
 const CASES = [
   { input: '0', want: 0, why: '#160-7：显式 0 必须存得进（旧 Number(v)||fallback 会顶成 fallback）' },
@@ -160,8 +160,8 @@ for (const s of SURFACES) {
   const defN = cnt(client, FN_SIG)
   ok(defN === 1, 'G1-1：定义恰 1 处（实际 ' + defN + '）')
   const callN = cnt(client, 'normalizeGapRounds(') - defN
-  ok(callN === 9, 'G1-1：client 侧调用点 9 处（classic 3 + legacy 块 3 + v4 块 3，实际 ' + callN + '）')
-  ok(cnt(frozen, 'normalizeGapRounds(') === 3, 'G1-1：frozen 源 3 处调用（实际 ' + cnt(frozen, 'normalizeGapRounds(') + '）')
+  ok(callN === 6, 'G1-1：client 侧调用点 6 处（classic 2 + legacy 块 2 + v4 块 2，实际 ' + callN + '）')
+  ok(cnt(frozen, 'normalizeGapRounds(') === 2, 'G1-1：frozen 源 2 处调用（fSnapGap + slimEvery；fullEverySlims 已废弃删除，实际 ' + cnt(frozen, 'normalizeGapRounds(') + '）')
   ok(cnt(genSrc, 'normalizeGapRounds') === 0, 'G1-1：生成器无 normalizeGapRounds 变换点（属手写区/源直改，不该出现在生成器里）')
 }
 

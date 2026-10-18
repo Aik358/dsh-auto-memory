@@ -218,8 +218,70 @@ console.log('PASS 剥离自检③：4 个生成区 marker 在剥离结果中零�
 // Python setup/runtime state, recall source actions and batch import receipts.
 // The byte lock stays enabled; issue regressions and the fixed-base review cover behavior.
 const classicLF = classic.replace(/\r\n/g, '\n')
+
+// ★2026-10-18 R113 重钉（R112 → R113，判据侧更新 · 依据 2026-10-01 用户裁定「判据有问题就更新判据，不得回滚成果」）：
+//   本次改动（用户报「所有上下文注入都没用了」的归因修复批次）在**手写区**，逐项：
+//     · 设置面文案纠正 3 组（中/英双语，共 6 处）：
+//       ① fInboxGateHint「默认关」→「默认开（2026-09-30 裁定）+ 与自动记忆引擎是 AND」
+//          —— 后端 activationInboxEnabled 默认早已是 true，文案未同步 ⇒ 用户无法判断开关真实含义；
+//       ② fAssocEngineHint 补「与唤回总闸 AND」说明；
+//       ③ fFullEverySlimsHint「默认 3」→「默认 10（2026-10-06 由 3 抬升）」
+//          —— 后端 DEFAULT_FULL_EVERY_SLIM 早已是 10、DEFAULT_FULL_EVERY_SLIMS_PREV=3，文案停留在旧值。
+//     · 门控读数区（data-dam-gate-readout）三面各 +1 行「索引就绪」：
+//       实测「唤回显示已投递但模型收不到」时 semantic-status 报 indexReady=false 且
+//       engineSwitch.error='sync-in-progress'，而旧读数只显示档位与 emitMode ⇒ 看不出
+//       「引擎在跑但索引没建好」。老读数把「资产就绪」误当「可用」。
+//     · 经典面（冻结源 skins/legacy/iter5-325.js.frozen）与 v4 面同步同一行；
+//       iter5 面由生成器从 client.js 的 SettingsPage 切片带出 ⇒ 不在本锁口径内。
+//   取证：node tools/build-iter5-skin.mjs --check → SYNC-OK（产物 == 源，生成区零手工修复）；
+//        node --check lib/client.js → OK；本值即运行本套件时它自己打印的 actual。
+// ★2026-10-18 R112 重钉（R111 → R112，判据侧更新 · 依据 2026-10-01 用户裁定「判据有问题就更新判据，不得回滚成果」）：
+//   本锁的**鉴别力与语义一字未改**，仍锁「剥掉生成区后的经典档 = 评审基线」；只更新被锁的字节值。
+//   本次增量全部落在**生成区之外的手写区**（两处前端缺陷修复，均非发版文案）：
+//     · #425（A26 同批）：经典 StorageTab 迁移预览改为消费 plan.blockedByAncestor ——
+//       migPreview 计算 migBlockedN 并在有阻塞时把「预览 ✓」换成「预览：N 条路径不可写…」；
+//       计划面板在 warnings 行之前新增一行 [data-dam-blocked-by-ancestor] 渲染 path(ancestor:kind) 清单。
+//     · task-12（#443 同族残留）：DialogHost 的 semSetup「立即下载」按钮由空 catch 改为
+//       then/catch 双分支 —— 失败时 openDialog notice 回执（dlFailTextPre 人话翻译），成功才静默。
+//   取证：node tools/build-iter5-skin.mjs --check → SYNC-OK（产物 == 源，生成区无手工修复）；
+//         v4 面与 frozen 面的同步修复见 smoke-test-frozen-mirror / settings-parity / a26 套件。
+//   ⚠️ 重钉值必须用**本套件自己的算法**复算（第 130–146 行既有教训：另写简化剥离会连错两次）；
+//      本值即运行本套件时它自己打印的 actual（classic chars = 1,045,841）。
+// ★2026-10-17 R111 重钉（R110 → R111，判据侧更新 · 依据 2026-10-01 用户裁定「判据有问题就更新判据，不得回滚成果」）：
+//   本锁的**鉴别力与语义一字未改**，仍锁「剥掉生成区后的经典档 = 评审基线」；只更新被锁的字节值。
+//   ★归因分两步（先既有漂移、再本次增量，两者必须分开说明 —— 本锁在本批开工前**已经是红的**）：
+//   ① 【既有漂移，非本批引入】开工基线 a4a3d029…，本批之前就已红。
+//      取证（用本文件 37–51 行 classic 表达式**原样**复算，非另写简化剥离）：
+//        git show HEAD:lib/client.js → 同管道复算 = a4a3d029… == 当时盘上实际值 ⇒ 该红**先于**本批存在，
+//        属 R109/PR420 之后经典区改动未重钉（与 A01-A24-BASELINE 记录的既有漂移一致）。
+//   ② 【本次增量】a4a3d029… → a647b08a…（中间值 5e577dd7… 是「向导面尚未修好」的半成状态，
+//      在补上 mount-time auto-start effect 的回执后再次上移），增量全部落在**生成区之外的手写区**：
+//      · A23/#443：新增 dlReasonTextPre + dlFailTextPre 两个模块级纯函数；经典档 SettingsPage 的
+//        startDl/cancelDl 由空 catch 改为写 err 槽；欢迎向导 startDl 改由 wizSt.dlError 承载并接进 dlPhaseTxt。
+//      · A21/#441：StatsTab.reset 改为显式检查 res.ok / body.ok（fetch 对 4xx/5xx 不 reject，这是本条关键）。
+//      · A06/#426：MemoryHubTab 的「直接激活」判据补 !(requiresApproval && !approved)（与后端同源门一致）。
+//      · 向导面（#443 第 4 个渲染面）真正生效的下载入口是 DialogHost 的 mount-time
+//        「无语义引擎自动引导」effect（实测：同作用域内那个 startDl 变量**零调用点**，是死代码）。
+//        该 effect 原为空 catch，现把回执写进 wizSt.dlError 并由 dlPhaseTxt 链首显示 ⇒ 手写区再 +1 处。
+//      · v4 变体三面（Iter5Settings/Iter5Stats/Iter5Skills）由生成器从上述手写切片带出 ⇒ 不在本锁口径内。
+//      取证：node tools/build-iter5-skin.mjs --check → SYNC-OK（产物 == 源，生成区无手工修复）。
+//   ⚠️ 重钉值必须用**本套件自己的算法**复算（第 130–146 行既有教训：另写简化剥离会连错两次）；
+//      本值即运行本套件时它自己打印的 actual。
+// ★2026-10-18 R124 重钉（c278d6ac… → 7a1caba2…）：v3.3.5 版本标识两处改动，均在手写区——
+//   ① lib/client.js 顶部指纹行 v3.3.4 → v3.3.5；
+//   ② 应用内更新说明字典顶部新增 '3.3.5' 条目（zh/en 各 5 条）。
+//   判据意图不变（经典区不得无痕漂移）。★归因：把这两处版本标识还原后用同一 8 条 replace 管道复算
+//   = c278d6ac…（与上一轮锁逐字节相等）⇒ 本次漂移 100% 来自版本标识，无其他内容混入。
+// ★2026-10-18 R118 重钉（554fb70f… → c278d6ac…）：本批在**经典档手写区**改了设置面文案——
+//   · fEmitModeHint（zh/en/ja 三语）补「JS 5 秒生效 / Python 需重启 dsh web 才生效」；
+//   · fShadowRetrievalHint / fContextBridgeHint（zh/en 双语）纠正为与 DEFAULT_CONFIG 真值一致
+//     （原写「默认关」，而 DEFAULT_CONFIG 实为 true），并说明关掉后整条通道停摆而非「只不投递」；
+//   · 新手导向导 shadowRetrievalEnabled 的 sub 同步纠正。
+//   全部在生成块之外 ⇒ 本锁随动。判据意图不变（经典区不得无痕漂移）。
+//   ★归因：HEAD 版本用本套件自身 8 条 replace 管道复算 = 554fb70f…（与旧锁逐字节相等），
+//     证明本次漂移 100% 来自本批文案修改，无历史漂移混入。
 // PR420: reviewed six-line classic SearchTab change retains result + structured hits for source actions.
-assert.equal(createHash('sha256').update(classicLF).digest('hex'), '0029494e2a3e952b2378150e91f4034660c6e3f56cc093ba19c897452b1f4cea', 'Reviewed native-reference entry (LF-normalized) baseline（R108 = R107 + 2026-10-13 #356 启动自检：经典档手写区新增两处——① 模型缺失时静默发起内置 JS 档下载（替代「弹卡等用户点」）；② 模型已就绪但引擎配置缺失时开机静默补建（写 shadow，不改既有行为）。均在生成区之外 ⇒ 本锁随动，按实测 actual 重钉 0f991681… → b8fefefa…。；R98 = R97 + 2026-10-13 注入节奏两项用户裁定（服务端 DEFAULT_CONFIG.snapshotMinGapRounds 5→10 + 强制覆盖迁移；精简版按 slimEveryRounds 真正节流）；连带 `fSnapGap` 设置项默认 5→10（冻结档源 + 三处镜像同形））← R97 = R96 + 2026-10-13 #333② 后续（尾部铭文零语义损失压缩：删冗词保全部判据，铭文 1409→1317；客户端镜像同步；archive 三处 result 注入增强）← R96 = R95 + 2026-10-13 #333②（客户端镜像 +1 层 `snapshotInscriptionArchive`：归档取回通道暴露）← R95 = R94 + 2026-10-12 #335b 修正（新增 `plugins.detail.section` 落点：插件管理页详情页，按包名认领、非本包返回 null；在手写区）；原 R94 = R93 + v3.3.0 版本身份三处（应用内更新说明字典新增「3.3.0」段 + 指纹行 → v3.3.0，均在手写区）；原 R93 = R92 + 2026-10-12 #335 第三批自检修复（设置入口开关的 /config 刷新改为**单飞 + 仅有效值变化才重注册 slot**：emit() 有 27 个调用点含拖动/缩放等高频路径，原实现每次广播都发请求并重建 slot）；原 R92 = R91 + 2026-10-12 #335 第三批（尾部铭文补「技能库分工作区库/通用库 · 写接口无 scope ⇒ 直写恒入通用库」并把上限 1200→1400）；原 R91 = R90 + 2026-10-12 #335 第二批（尾部铭文 snapshotInscription 补 action=update/activate 两条通路提示：服务端 index.js 与浏览器 client.js 镜像逐字一致、长度 1181≤1200；该段在手写区 ⇒ 经典档基线随动）；原 R90 = R89 + 2026-10-12 #335 吸收（用户裁定「都放」+ 可关）：① lib/index.js DEFAULT_CONFIG 新增 settingsEntryInDsSettings / settingsEntryInPluginsPage 两键（白名单=Object.keys(DEFAULT_CONFIG)）；② 生成区外经典档 SettingsPage 的「外观与目录」组加两个开关；③ settings.section 与新增的 settings.plugins.tab 两处注册改受 settingsEntryPre() 条件控制 + 双关纠正；④ 新增 helper/缓存刷新器并订阅唯一写出口广播；重钉值取本套件自身打印的 actual）← R88 = R87 + 2026-10-10 v3.2.15 发版三件套（client.js 指纹行 + 应用内 CHANGELOG 3.2.15 条目，均在生成块之外）← R87 = R86 + 2026-10-10 #330 多宿主工作台会话争抢（client.js 新增 host-conflict 文案/定级/相位/按钮，均在生成区外）← R86 = R85 + 2026-10-08 v3.2.13 发版三件套（client.js 指纹行 + 应用内 CHANGELOG 3.2.13 条目，均在生成块之外）；原 R85 = R84 + 2026-10-08 重钉补漏（l\u0069b/client.js 于 934bca0 有意演进未同步重钉：v3.2.12 指纹行 + 应用内 CHANGELOG 3.2.12 条目 + 会话页铺满 fullpage 标记）；原 R78 = R77 + 2026-10-05 批次 Y（PR#212 #5/#6 + PR#213 前端拆取，生成器线一次过）：①共享草稿设施 memoryNoteDrafts/memoryCalendarDrafts/memoryDraftIdentity(sessionId|ws)/memoryNoteWrites/calendarWrites/memoryOperations/useMemoryOperation/submitMemoryOperation/prepareSettingsPatch/TeamSecretInput 落手写区；②面板 close() 前置草稿脏确认 + beforeunload 保护；③refreshSem 加 WeakMap 代次（迟到的旧状态不覆盖新状态）；④经典 NotesTab/CalendarTab 草稿接入 + 按身份重挂；⑤两 I5 实例：i5Read/i5Busy/i5ConfigGeneration/i5Initialized/i5AppliedRead 五 ref + 统一 i5ApplyConfig（草稿恢复 i5Initialized 单次 + 已有草稿只提示不覆盖 + psec 水合）+ save/onEngineModeChange 推进代次并回显 migrated/warning 回执 + setBusy 包 ref 同步；⑥gateOk 改读生效基线 i5Base（草稿态不再冒充已生效）+ gate-readout 归入主闸卡；⑦生效水位读数 data-dam-effective-water（handoff-state 实测，广播重取）；⑧browseTo/openBrowser 请求代次守卫 + D2 广播重取升级为 i5Busy 感知 + 请求号；⑨migPickInto 三份统一 migAlive 幂等守卫（修 pr-213 frozen 份 request 未声明 ReferenceError 点名缺陷）；⑩ConnectTab/Iter5External 异步取数身份守卫（去 pr-213 重复行）；⑪#212 前端：三份 iter5MemorySnapshot 注入 noteSessionId + 三份 Iter5Note 发 sessionId+expectedNotesPath（X2 服务端必填）；⑫设置分组再平衡（fExclude/model 移区、slims 死键控件摘除、fJsExcerpt/fWaterThreshold disabled+说明、即时项 L3 标签、团队 http/folder 禁选+TeamSecretInput 密码框）；⑬字典修正（fAutoContinue/handoffSwitch/fHandoff/fWaterWindow zh/en/ja + fAutoMargin 0.3-1 + settings-copy fJsCooldown 分钟→轮）；⑭skins 源 views/ui/native-panel/settings-copy 同步 + frozen LF 镜像 + 生成器 replaceT/切片补丁/断言化（--check SYNC-OK）。；原 R77 = R76 + 2026-10-05 发版三件套（v3.2.9：指纹行 + 应用内 CHANGELOG 字典 3.2.9 条目；内容见 CHANGELOG.md 同版段）；原 R76 = R75 + 2026-10-04 发版三件套（v3.2.8：指纹行 + 应用内 CHANGELOG 字典 3.2.8 条目；内容见 CHANGELOG.md 同版段）；原 R75 = R74 + 2026-10-04 issue #211 前端：Python 引擎卸载按钮（二次确认）+ pyUninstall 路由键 + 三语体积披露；原 R74 = R72 + 2026-10-02 审计修复批 A+B（增量归因：手写区 DebugCenter 收敛为只读 GET + 团队层接 4 条专用路由（API 表新增 5 键）+ TeamTab 挂载补回调 + L3 段共享订阅轮询）；原 R72 = R71 + 2026-10-01 ①接续开关默认开 + 欢迎向导开关 ②经典档接入 GlobalBriefRow 简报抽屉 ③damSharedSurfaceCss classic 分支归零修复；原 R71 = R70 + 2026-10-01 全局动态简报批（client.js 三面各加 8 个 globalBrief* 控件 + frozen 面补齐上批遗漏的 slimEveryRounds/fullEverySlims 两键）；原 R70 = R69 + #160/#162 修复：python 向导轮询/取消渲染、规则草稿与内容锚定、首屏 tour hero 挂载复原；生成块之外任何**非意外**改动仍会被本锁抓住）')
+assert.equal(createHash('sha256').update(classicLF).digest('hex'), '7a1caba2a920694dc3557787284ce1787599f7dd6d382f517a9b00d9d0bf05db', 'Reviewed native-reference entry (LF-normalized) baseline（R117 = R116 + 2026-10-18 用户裁定删除 fullEverySlims 间接门槛：经典档手写区删 1 个 field 控件 + 3 个语言文案键（zh/en/ja），生成源 skins/legacy/iter5-325.js.frozen 同步删除 ⇒ 剥掉生成块后的经典侧内容变化 ⇒ 本锁按实测 actual 重钉 aa3a3360… → 94d42899…。；R108 = R107 + 2026-10-13 #356 启动自检：经典档手写区新增两处——① 模型缺失时静默发起内置 JS 档下载（替代「弹卡等用户点」）；② 模型已就绪但引擎配置缺失时开机静默补建（写 shadow，不改既有行为）。均在生成区之外 ⇒ 本锁随动，按实测 actual 重钉 0f991681… → b8fefefa…。；R98 = R97 + 2026-10-13 注入节奏两项用户裁定（服务端 DEFAULT_CONFIG.snapshotMinGapRounds 5→10 + 强制覆盖迁移；精简版按 slimEveryRounds 真正节流）；连带 `fSnapGap` 设置项默认 5→10（冻结档源 + 三处镜像同形））← R97 = R96 + 2026-10-13 #333② 后续（尾部铭文零语义损失压缩：删冗词保全部判据，铭文 1409→1317；客户端镜像同步；archive 三处 result 注入增强）← R96 = R95 + 2026-10-13 #333②（客户端镜像 +1 层 `snapshotInscriptionArchive`：归档取回通道暴露）← R95 = R94 + 2026-10-12 #335b 修正（新增 `plugins.detail.section` 落点：插件管理页详情页，按包名认领、非本包返回 null；在手写区）；原 R94 = R93 + v3.3.0 版本身份三处（应用内更新说明字典新增「3.3.0」段 + 指纹行 → v3.3.0，均在手写区）；原 R93 = R92 + 2026-10-12 #335 第三批自检修复（设置入口开关的 /config 刷新改为**单飞 + 仅有效值变化才重注册 slot**：emit() 有 27 个调用点含拖动/缩放等高频路径，原实现每次广播都发请求并重建 slot）；原 R92 = R91 + 2026-10-12 #335 第三批（尾部铭文补「技能库分工作区库/通用库 · 写接口无 scope ⇒ 直写恒入通用库」并把上限 1200→1400）；原 R91 = R90 + 2026-10-12 #335 第二批（尾部铭文 snapshotInscription 补 action=update/activate 两条通路提示：服务端 index.js 与浏览器 client.js 镜像逐字一致、长度 1181≤1200；该段在手写区 ⇒ 经典档基线随动）；原 R90 = R89 + 2026-10-12 #335 吸收（用户裁定「都放」+ 可关）：① lib/index.js DEFAULT_CONFIG 新增 settingsEntryInDsSettings / settingsEntryInPluginsPage 两键（白名单=Object.keys(DEFAULT_CONFIG)）；② 生成区外经典档 SettingsPage 的「外观与目录」组加两个开关；③ settings.section 与新增的 settings.plugins.tab 两处注册改受 settingsEntryPre() 条件控制 + 双关纠正；④ 新增 helper/缓存刷新器并订阅唯一写出口广播；重钉值取本套件自身打印的 actual）← R88 = R87 + 2026-10-10 v3.2.15 发版三件套（client.js 指纹行 + 应用内 CHANGELOG 3.2.15 条目，均在生成块之外）← R87 = R86 + 2026-10-10 #330 多宿主工作台会话争抢（client.js 新增 host-conflict 文案/定级/相位/按钮，均在生成区外）← R86 = R85 + 2026-10-08 v3.2.13 发版三件套（client.js 指纹行 + 应用内 CHANGELOG 3.2.13 条目，均在生成块之外）；原 R85 = R84 + 2026-10-08 重钉补漏（l\u0069b/client.js 于 934bca0 有意演进未同步重钉：v3.2.12 指纹行 + 应用内 CHANGELOG 3.2.12 条目 + 会话页铺满 fullpage 标记）；原 R78 = R77 + 2026-10-05 批次 Y（PR#212 #5/#6 + PR#213 前端拆取，生成器线一次过）：①共享草稿设施 memoryNoteDrafts/memoryCalendarDrafts/memoryDraftIdentity(sessionId|ws)/memoryNoteWrites/calendarWrites/memoryOperations/useMemoryOperation/submitMemoryOperation/prepareSettingsPatch/TeamSecretInput 落手写区；②面板 close() 前置草稿脏确认 + beforeunload 保护；③refreshSem 加 WeakMap 代次（迟到的旧状态不覆盖新状态）；④经典 NotesTab/CalendarTab 草稿接入 + 按身份重挂；⑤两 I5 实例：i5Read/i5Busy/i5ConfigGeneration/i5Initialized/i5AppliedRead 五 ref + 统一 i5ApplyConfig（草稿恢复 i5Initialized 单次 + 已有草稿只提示不覆盖 + psec 水合）+ save/onEngineModeChange 推进代次并回显 migrated/warning 回执 + setBusy 包 ref 同步；⑥gateOk 改读生效基线 i5Base（草稿态不再冒充已生效）+ gate-readout 归入主闸卡；⑦生效水位读数 data-dam-effective-water（handoff-state 实测，广播重取）；⑧browseTo/openBrowser 请求代次守卫 + D2 广播重取升级为 i5Busy 感知 + 请求号；⑨migPickInto 三份统一 migAlive 幂等守卫（修 pr-213 frozen 份 request 未声明 ReferenceError 点名缺陷）；⑩ConnectTab/Iter5External 异步取数身份守卫（去 pr-213 重复行）；⑪#212 前端：三份 iter5MemorySnapshot 注入 noteSessionId + 三份 Iter5Note 发 sessionId+expectedNotesPath（X2 服务端必填）；⑫设置分组再平衡（fExclude/model 移区、slims 死键控件摘除、fJsExcerpt/fWaterThreshold disabled+说明、即时项 L3 标签、团队 http/folder 禁选+TeamSecretInput 密码框）；⑬字典修正（fAutoContinue/handoffSwitch/fHandoff/fWaterWindow zh/en/ja + fAutoMargin 0.3-1 + settings-copy fJsCooldown 分钟→轮）；⑭skins 源 views/ui/native-panel/settings-copy 同步 + frozen LF 镜像 + 生成器 replaceT/切片补丁/断言化（--check SYNC-OK）。；原 R77 = R76 + 2026-10-05 发版三件套（v3.2.9：指纹行 + 应用内 CHANGELOG 字典 3.2.9 条目；内容见 CHANGELOG.md 同版段）；原 R76 = R75 + 2026-10-04 发版三件套（v3.2.8：指纹行 + 应用内 CHANGELOG 字典 3.2.8 条目；内容见 CHANGELOG.md 同版段）；原 R75 = R74 + 2026-10-04 issue #211 前端：Python 引擎卸载按钮（二次确认）+ pyUninstall 路由键 + 三语体积披露；原 R74 = R72 + 2026-10-02 审计修复批 A+B（增量归因：手写区 DebugCenter 收敛为只读 GET + 团队层接 4 条专用路由（API 表新增 5 键）+ TeamTab 挂载补回调 + L3 段共享订阅轮询）；原 R72 = R71 + 2026-10-01 ①接续开关默认开 + 欢迎向导开关 ②经典档接入 GlobalBriefRow 简报抽屉 ③damSharedSurfaceCss classic 分支归零修复；原 R71 = R70 + 2026-10-01 全局动态简报批（client.js 三面各加 8 个 globalBrief* 控件 + frozen 面补齐上批遗漏的 slimEveryRounds/fullEverySlims 两键）；原 R70 = R69 + #160/#162 修复：python 向导轮询/取消渲染、规则草稿与内容锚定、首屏 tour hero 挂载复原；生成块之外任何**非意外**改动仍会被本锁抓住）')
 console.log('PASS reviewed shared-entry source baseline preserved')
 
 const css = readFileSync(new URL('../../skins/iter5/skin.css', import.meta.url), 'utf8')

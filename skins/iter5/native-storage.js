@@ -43,6 +43,11 @@
             h('fieldset', { className: 'i5-migration-conflicts', disabled: busy }, h('legend', null, L('整包冲突处理', 'Conflict policy for this pack')),
               [['keep', t('migConflictKeep')], ['overwrite', t('migConflictOverwrite')], ['rename', t('migConflictRename')]].map(function (it) { return h('label', { key: it[0] }, h('input', { type: 'radio', checked: props.conflict === it[0], onChange: function () { props.setConflict(it[0]) } }), it[1]) })),
             h('details', { className: 'i5-secondary-details' }, h('summary', null, L('路径重写详情', 'Path rewrite details')), h('p', null, (plan.source && plan.source.slug || '—') + ' → ' + (plan.target && plan.target.slug || '—')), h('p', null, L('重写命中：', 'Rewrite hits: ') + (plan.rewrite && plan.rewrite.totalHits || 0)), (plan.rewrite && plan.rewrite.files || []).map(function (f, i) { return h('p', { key: i }, f.path + ' · ' + f.hits) })),
+            // ★#425（2026-10-18）：计划层报「祖先不可写」时，把具体路径清单渲染成人话（与经典面同一判据）。
+            (plan.blockedByAncestor && plan.blockedByAncestor.length) ? h('div', { className: 'i5-warning', role: 'status', 'data-dam-blocked-by-ancestor': '' },
+              (L('⚠ ', '⚠ ')) + String(plan.blockedByAncestor.length)
+                + (L(' 条路径不可写（祖先为根外链接/不可用条目）：', ' path(s) are not writable (ancestor is an out-of-root link or unusable entry): '))
+                + plan.blockedByAncestor.map(function (b) { return String((b && b.path) || '') + '(' + String((b && b.ancestor) || '') + ':' + String((b && b.kind) || '') + ')' }).join(' · ')) : null,
             (plan.warnings || []).filter(function (w) { return w !== 'same-path' }).length ? h('div', { className: 'i5-warning', role: 'status' }, plan.warnings.filter(function (w) { return w !== 'same-path' }).join(' · ')) : null,
             h('p', { className: 'i5-warning' }, props.conflict === 'overwrite' ? L('确认导入将覆盖冲突文件。请先导出备份，再继续。', 'Importing will replace conflicting files. Export a backup before continuing.') : L('确认导入后，宿主将按所选策略写入目标工作区。', 'The host will write to the target workspace using the selected policy.')),
             h('div', { className: 'i5-dialog-footer' }, h('button', { disabled: busy, onClick: props.onCancelPreview }, L('取消预览', 'Cancel preview')), h('button', { className: 'i5-primary', disabled: busy, onClick: props.onApply }, props.busy === 'apply' ? t('saving') : t('migApply')))) : null,

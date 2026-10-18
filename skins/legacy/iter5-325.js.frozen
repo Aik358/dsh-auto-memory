@@ -1304,6 +1304,10 @@
             var live = i5Base.current || {}; var gateOk = live.associativeMemoryEnabled === true && live.activationInboxEnabled === true
             rows.push(L('总闸（自动记忆 + 收件箱）', 'Master gate (associative + inbox)') + '：' + (gateOk ? L('已开', 'ON') : L('关（唤回不会投递）', 'OFF (recall will not be delivered)')))
             rows.push(L('唤起注入模式', 'Emit mode') + '：' + emitMode)
+            // ★2026-10-18（前后端对齐）：索引就绪状态必须可见 ——
+            //   实测「唤回显示已投递但模型收不到」时 indexReady=false / engineSwitch.error='sync-in-progress'，
+            //   而旧读数只显示档位与 emitMode，看不出「引擎在跑但索引没建好」。
+            rows.push(L('索引就绪', 'Index ready') + '：' + (sem && sem.indexReady === true ? L('是', 'yes') : (L('否', 'no') + (sem && sem.engineSwitch && sem.engineSwitch.error ? ' (' + String(sem.engineSwitch.error) + ')' : L('（索引未建成时唤回不会有候选）', ' (recall finds nothing until the index is built)')))))
             rows.push(L('当前档位', 'Resolved tier') + '：' + (tier === 'c3' ? 'C3 · Python' : tier === 'c2' ? 'C2 · JS' : tier ? ('C1 · ' + tier) : L('检测中', 'detecting')))
             if (sem && sem.pythonRuntime) {
               var rt = sem.pythonRuntime
@@ -1454,11 +1458,16 @@
             var refreshSemNow = function () {
               refreshSem(setSem)
             }
+            // ★#443（2026-10-17 A01-A24 修复批 · A23）：原本两个空 catch 会吞掉宿主 4xx
+            //   （start 失败 400 / cancel 失败 409，见 lib/index.js:18065/18069），而 apiPost
+            //   对 res.ok=false 一定抛 ⇒ 点「开始下载」界面零变化。改写入本面**既有** err 槽
+            //   （下方 "err ? h('div', { 'data-dam-error': '' }, err)"），与保存失败共用一套展示。
+            //   文案经 dlFailTextPre 归一（错误码 → 人话），未知码原样透出，不再静默吞。
             var startDl = function () {
-              apiPost(API.semanticDownload, { action: 'start', mirror: mirror }).then(refreshSemNow).catch(function () {})
+              apiPost(API.semanticDownload, { action: 'start', mirror: mirror }).then(function () { setErr(''); refreshSemNow() }).catch(function (e) { setErr(dlFailTextPre(e)) })
             }
             var cancelDl = function () {
-              apiPost(API.semanticDownload, { action: 'cancel', mirror: mirror }).then(refreshSemNow).catch(function () {})
+              apiPost(API.semanticDownload, { action: 'cancel', mirror: mirror }).then(function () { setErr(''); refreshSemNow() }).catch(function (e) { setErr(dlFailTextPre(e)) })
             }
             return h('div', { style: { border: '1px solid color-mix(in srgb, var(--dam-accent, #2456c4) 40%, transparent)', borderRadius: '10px', padding: '10px 12px', marginBottom: '8px', fontSize: 'calc(11.5px * var(--dam-scale))', lineHeight: 1.6 } },
               h('div', { 'data-dam-slot': 'list', 'data-dam-row': '', style: { alignItems: 'center' } },
@@ -1556,9 +1565,10 @@
           field(t('fDays'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 1, max: 14, value: cfg.recentDaysInjected, onChange: function (e) { set('recentDaysInjected', Number(e.target.value) || 1) } }), t('fDaysHint')),
           field(t('fExtBudget'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 200, value: cfg.externalInjectionChars === undefined ? 1400 : cfg.externalInjectionChars, onChange: function (e) { set('externalInjectionChars', Number(e.target.value) || 1400) } }), t('fExtBudgetHint')),
           field(t('fSnapGap'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 0, max: 50, value: cfg.snapshotMinGapRounds === undefined ? 10 : cfg.snapshotMinGapRounds, onChange: function (e) { set('snapshotMinGapRounds', normalizeGapRounds(e.target.value, 10)) } }), t('fSnapGapHint')),
-          // ★2026-10-01（用户裁定）：精简版节奏两键 —— 与服务端 DEFAULT_CONFIG 的 slimEveryRounds/fullEverySlims 一一对应。
+          // ★2026-10-13（用户裁定）：精简版节奏单键 —— 与服务端 DEFAULT_CONFIG 的 slimEveryRounds 对应；
+          //   fullEverySlims（「攒够 N 次精简才放行完整版」的间接门槛）已废弃删除：
+          //   完整版节奏现在由 snapshotMinGapRounds（每 N 轮一次完整版）+ 真人轮强制 决定，不再有独立门槛键。
           field(t('fSlimEvery'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 1, max: 50, value: cfg.slimEveryRounds === undefined ? 3 : cfg.slimEveryRounds, onChange: function (e) { set('slimEveryRounds', normalizeGapRounds(e.target.value, 3)) } }), t('fSlimEveryHint')),
-          field(t('fFullEverySlims'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 1, max: 20, value: cfg.fullEverySlims === undefined ? 10 : cfg.fullEverySlims, onChange: function (e) { set('fullEverySlims', normalizeGapRounds(e.target.value, 10)) } }), t('fFullEverySlimsHint')),
           field(t('fReinjectOnCompact'), h('input', { type: 'checkbox', checked: cfg.snapshotReinjectOnCompact !== false, onChange: function (e) { set('snapshotReinjectOnCompact', e.target.checked) } }), t('fReinjectOnCompactHint')),
           // ★2026-09-30（C2 · 用户裁定：设置面必须全量，不得缺项）——注入预算/白板账本/水位四组键，
           //   此前只有宿主读、无 UI 入口（实测 client.js 零引用）：
@@ -1676,7 +1686,7 @@
           //   workbenchRetryMs（工作台重试间隔）。
           field(t('fAutoContinueConfirm'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 5, max: 600, value: cfg.autoContinueConfirmSeconds === undefined ? 35 : cfg.autoContinueConfirmSeconds, onChange: function (e) { set('autoContinueConfirmSeconds', Math.max(5, Number(e.target.value) || 35)) } }), t('fAutoContinueConfirmHint')),
           field(t('fAutoContinueCooldown'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 1, max: 1440, value: cfg.autoContinueCooldownMinutes === undefined ? 30 : cfg.autoContinueCooldownMinutes, onChange: function (e) { set('autoContinueCooldownMinutes', Math.max(1, Number(e.target.value) || 30)) } }), t('fAutoContinueCooldownHint')),
-          field(t('fArchiveCheckMin'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 1, max: 1440, value: cfg.autoArchiveCheckMin === undefined ? 60 : cfg.autoArchiveCheckMin, onChange: function (e) { set('autoArchiveCheckMin', Math.max(1, Number(e.target.value) || 60)) } }), t('fArchiveCheckMinHint')),
+          field(t('fArchiveCheckMin'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 15, max: 1440, value: cfg.autoArchiveCheckMin === undefined ? 60 : cfg.autoArchiveCheckMin, onChange: function (e) { set('autoArchiveCheckMin', Math.max(15, Number(e.target.value) || 60)) } }), t('fArchiveCheckMinHint')),
           field(t('fWorkbenchLoopShort'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 2, step: 1, value: cfg.workbenchLoopShort === undefined ? 10 : cfg.workbenchLoopShort, onChange: function (e) { set('workbenchLoopShort', Number(e.target.value)) } }), t('fWorkbenchLoopShortHint')),
           field(t('fWorkbenchLoopLong'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 2, step: 1, value: cfg.workbenchLoopLong === undefined ? 24 : cfg.workbenchLoopLong, onChange: function (e) { set('workbenchLoopLong', Number(e.target.value)) } }), t('fWorkbenchLoopLongHint')),
           field(t('fWorkbenchRetryMs'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 1000, max: 600000, step: 1000, value: cfg.workbenchRetryMs === undefined ? 30000 : cfg.workbenchRetryMs, onChange: function (e) { set('workbenchRetryMs', Math.max(1000, Number(e.target.value) || 30000)) } }), t('fWorkbenchRetryMsHint')),
@@ -1985,7 +1995,15 @@
           if (!j || j.ok === false) { migFail(t('migPreview'), j, null); return }
           var p = Object.assign({}, j.plan || {}, { previewToken: j.previewToken })
           setMigPlan(p)
-          setMigNote(t('migPreview') + ' ✓ ' + (p.pathChanged ? t('migPathChanged') : t('migSamePath')) +
+          // ★#425（2026-10-18）：计划层如实报「祖先不可写」时，预览**不得**再打「✓」。
+          //   后端 migrateInspect 的顶层 ok 只代表「预览这个动作没失败」，真正的不可写在 plan 上：
+          //   plan.ok=false + plan.blockedByAncestor=[{path,ancestor,kind}] + plan.errors。
+          //   旧实现只看 j.ok ⇒ 用户看到「预览 ✓」，点导入才被拒。此处改按计划层如实回执。
+          var migBlockedN = Array.isArray(p.blockedByAncestor) ? p.blockedByAncestor.length : 0
+          setMigNote(t('migPreview') + (migBlockedN
+            ? (' ⚠ ' + L('预览：', 'Preview: ') + String(migBlockedN)
+                + L(' 条路径不可写（祖先为根外链接/不可用条目），导入会被拒绝', ' path(s) are not writable (ancestor is an out-of-root link or unusable entry); import will be rejected'))
+            : (' ✓ ' + (p.pathChanged ? t('migPathChanged') : t('migSamePath')))) +
             (j.sourceMissing ? (L(' · ⚠ 源工作区已不存在', ' · warning: source workspace missing')) : ''))
         }).catch(function (e) { setMigBusy(''); migFail(t('migPreview'), null, e) })
       }
@@ -2106,6 +2124,13 @@
           (L('覆盖: ', 'overwrites: ')) + (migPlan.overwrites || []).map(function (o) { return String(o && o.path) + ' ' + String((o && o.oldBytes) || 0) + 'B→' + String((o && o.newBytes) || 0) + 'B' }).join(' , ')) : null,
         (migPlan.rewrite && (migPlan.rewrite.files || []).length) ? h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '' },
           (L('重写文件(前 10): ', 'rewrite files (top 10): ')) + (migPlan.rewrite.files || []).slice(0, 10).map(function (f) { return String(f && f.path) + '(' + String((f && f.hits) || 0) + ')' }).join(' , ')) : null,
+        // ★#425（2026-10-18）：计划层报「祖先不可写」时，把**具体路径清单**渲染出来（人话 + 可核对）。
+        //   旧实现只渲染 plan.warnings 的裸码（ancestor-blocked），plan.errors 一条都不渲染 ⇒
+        //   用户必须先点导入、再看导入期错误串，才知道「哪几条路径、为什么」。
+        (migPlan.blockedByAncestor && migPlan.blockedByAncestor.length) ? h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', 'data-dam-blocked-by-ancestor': '' },
+          (L('⚠ 不可写 ', '⚠ not writable ')) + String(migPlan.blockedByAncestor.length)
+            + (L(' 条路径（祖先为根外链接/不可用条目）：', ' path(s) — ancestor is an out-of-root link or unusable entry: '))
+            + migPlan.blockedByAncestor.map(function (b) { return String((b && b.path) || '') + '(' + String((b && b.ancestor) || '') + ':' + String((b && b.kind) || '') + ')' }).join(' , ')) : null,
         (migPlan.warnings && migPlan.warnings.length) ? h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, (L('警告: ', 'warnings: ')) + migPlan.warnings.join(' | ')) : null,
         h('div', { 'data-dam-slot': 'list', 'data-dam-row': '', style: { marginTop: '6px' } },
           h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', style: { opacity: migConflict === 'keep' ? 1 : .5 }, onClick: function () { setMigConflict('keep') } }, (migConflict === 'keep' ? '● ' : '○ ') + t('migConflictKeep')),
@@ -2314,7 +2339,14 @@
                 //   只越过 diversity/success 两道统计门，并在条目上留 `authorizedBy:'user'` 痕迹。
                 (p.promotion && p.promotion.overridable === true)
                   && h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', title: t('hubForcePromoteTitle'), style: { fontSize: 'calc(10.5px * var(--dam-scale))', padding: '3px 10px', fontWeight: 650 }, onClick: function () { hubAct('force-promote', p.procedureId) } }, t('hubForcePromote')),
-                !p.observationOnly && p.stage === 'validated' && h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', style: { fontSize: 'calc(10.5px * var(--dam-scale))', padding: '3px 10px' }, onClick: function () { hubAct('activate', p.procedureId) } }, L('直接激活', 'activate')),
+                // ★#426（2026-10-17 A01-A24 修复批 · A06 前端段）：高风险未批准条目**不给**「直接激活」。
+                //   病根：后端 activate() 已加同源门（requiresApproval && !approved ⇒ high-risk-awaiting-approval），
+                //   而前端判据只有 stage==='validated' ⇒ 「点了没反应」的假通道（A-9/A-9b 反复收掉的形态）。
+                //   判据与后端同一份；字段来自 lib/memory-hub.js 两处投影（本批已补 requiresApproval/approved）。
+                //   ★frozen 无重建通道（旧款皮肤唯一真源）⇒ 必须手工镜像；漏镜像不会有任何机制报错，
+                //   三面一致性由 tests/smoke/smoke-test-frozen-mirror.mjs 兜底。
+                //   fail-soft：字段缺失（旧宿主）⇒ 判据不成立 ⇒ 保持原可见性，不误藏按钮。
+                !p.observationOnly && p.stage === 'validated' && !(p.requiresApproval && !p.approved) && h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', style: { fontSize: 'calc(10.5px * var(--dam-scale))', padding: '3px 10px' }, onClick: function () { hubAct('activate', p.procedureId) } }, L('直接激活', 'activate')),
                 h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', style: { fontSize: 'calc(10.5px * var(--dam-scale))', padding: '3px 10px', opacity: .75 }, onClick: function () { hubAct('deprecate', p.procedureId) } }, L('弃用', 'deprecate')),
                 h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', style: { fontSize: 'calc(10.5px * var(--dam-scale))', padding: '3px 10px', opacity: .75 }, onClick: function () { hubAct('pin', p.procedureId, !p.pinned) } }, p.pinned ? (L('取消置顶', 'unpin')) : (L('置顶', 'pin')))))
           })))

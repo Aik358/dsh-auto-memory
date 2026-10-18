@@ -54,6 +54,7 @@ function mkEngine(opts) {
   opts = opts || {}
   const st = { _slimStep: 0, _lastSlimCounted: 0, _slimCount: 0, _humanFullKey: undefined,
     _snapFp: undefined, _snapLogFp: "", _snapRound: 0, _snapLastRound: 0, _tk: "" }
+  const agent = { session: { events: [] } }
   const engine = {
     stateFor: function () { return st },
     runtimeFor: function () { return { contextVersion: 0 } },
@@ -61,12 +62,20 @@ function mkEngine(opts) {
     humanTurnObservedPre: function () { return !!opts.human },
     renderReflectionRequest: function () { return "" },
     config: Object.assign({ snapshotMinGapRounds: 5, snapshotTieredInject: true,
-      fullEverySlims: 3, slimEveryRounds: 3, snapshotReinjectOnCompact: true }, opts.cfg || {})
+      slimEveryRounds: 3, snapshotReinjectOnCompact: true }, opts.cfg || {})
   }
+  const GAP_DEF = (function () { const n = Number(engine.config.snapshotMinGapRounds); return Number.isFinite(n) && n >= 0 ? n : 5 })()
   const F = new Function("engine", "agent", "gap", "snap", "slimText", "diag", "createHash", "parseGapRoundsPre", SEG + ";")
-  const run = function (tk, snap, gap) {
+  // ★2026-10-18（step 口径）：计数单位改为**模型请求**（step），不是 turn。
+  //   旧夹具只改 st._tk（turn 键）⇒ 新代码的 _stepSeq 不推进 ⇒ T4/T7 恒红（这属夹具过时，不是缺陷）。
+  //   现在每次 run 都追加一条 step/start 事件，让 step 键真实推进（与生产事件流同形）。
+  let stepNo = 0
+  const run = function (tk, snap, gap, sameStep) {
     st._tk = tk
-    return F(engine, {}, gap === undefined ? 5 : gap, snap, "<memory_system>SLIM</memory_system>",
+    // sameStep=true ⇒ 复用同一 step（模拟宿主在**同一个 step 内**多次调用 text()）
+    if (!sameStep) { stepNo += 1 }
+    agent.session.events.push({ seq: stepNo * 10 + (sameStep ? 1 : 0), type: "step/start", data: { turn: 1, step: stepNo } })
+    return F(engine, agent, gap === undefined ? GAP_DEF : gap, snap, "<memory_system>SLIM</memory_system>",
       function () {}, createHash, function (v, d) { const n = Number(v); return Number.isFinite(n) ? n : d })
   }
   return { st: st, run: run }
@@ -106,19 +115,19 @@ const isSlim = (o) => !!o && o.includes("SLIM")
 {
   const E = mkEngine({ human: false })
   E.run("turn:1", mkSnap("日志A"))
-  ok(isSlim(E.run("turn:1", mkSnap("日志B"))), "T3 日志已变且间距未到 ⇒ 精简版")
+  ok(isSlim(E.run("turn:2", mkSnap("日志B"))), "T3 日志已变且间距未到 ⇒ 精简版")
 }
 
-// T4 间距放行：连续日志变化达 gap 轮必须出现一次完整版（旧正则必红的判别器）
+// T4 间距放行：turn 推进达 gap 轮必须出现一次完整版（旧正则必红的判别器）
 {
-  const E = mkEngine({ human: false, cfg: { fullEverySlims: 999 } })
+  const E = mkEngine({ human: false, cfg: { snapshotMinGapRounds: 5 } })
   let sawFull = false, at = -1
   for (let i = 0; i < 12; i++) {
     const out = E.run("turn:" + i, mkSnap("日志" + i))
     if (i > 0 && isFull(out)) { sawFull = true; at = i; break }
   }
-  ok(sawFull, "T4 连续日志变化达 gap 轮 ⇒ 周期性放行完整版（第 " + at + " 轮）【旧正则必红】")
-  ok(at >= 5 && at <= 8, "T4-b 放行位置符合 gap=5 语义（实测第 " + at + " 轮）")
+  ok(sawFull, "T4 连续 turn 推进达 gap 轮 ⇒ 周期性放行完整版（第 " + at + " 轮）【旧正则必红】")
+  ok(at === 5, "T4-b 放行位置符合 gap=5 语义（实测第 " + at + " 轮）")
 }
 
 // T5 真人在场 ⇒ turn 首次给完整版
@@ -134,61 +143,42 @@ const isSlim = (o) => !!o && o.includes("SLIM")
   ok(isFull(E.run("turn:1", mkSnap("日志B"), 0)), "T6-b gap=0 且日志已变 ⇒ 仍完整版")
 }
 
-// T7 攒够精简 ⇒ 门槛放行完整版（门槛可达）
+// T7 默认节奏：fullGap=10 ⇒ 每 10 轮一个完整版
+{
+  const E = mkEngine({ human: false, cfg: { snapshotMinGapRounds: 10 } })
+  E.run("turn:0", mkSnap("日志0"))                      // 首帧 ⇒ 完整版（计数起点）
+  let at = -1
+  for (let i = 1; i < 20; i++) { if (isFull(E.run("turn:" + i, mkSnap("日志" + i)))) { at = i; break } }
+  ok(at === 10, "T7 默认每 10 轮一次完整版（实测第 " + at + " 轮）")
+}
+
+// T8 同 step 续帧保真：宿主在**同一个 step 内**多次调用 text() ⇒ 必须保持一致（不得被次帧精简版覆盖）
 {
   const E = mkEngine({ human: false, cfg: { snapshotMinGapRounds: 999 } })
-  let sawFull = false
-  for (let i = 1; i < 30; i++) { if (isFull(E.run("turn:" + i, mkSnap("日志" + i)))) { sawFull = true; break } }
-  ok(sawFull, "T7 攒够 fullEverySlims 次精简 ⇒ 自动放行完整版")
+  ok(isFull(E.run("turn:1", mkSnap("日志A"))), "T8-a 首次注入 ⇒ 完整版")
+  // sameStep=true ⇒ 不推进 stepNo，模拟宿主同一 step 内重复调用
+  ok(isFull(E.run("turn:1", mkSnap("日志A"), undefined, true)), "★T8-b 同 step 续帧 ⇒ 仍完整版（保真）")
+  ok(isFull(E.run("turn:1", mkSnap("日志A"), undefined, true)), "★T8-c 同 step 第三帧 ⇒ 仍完整版")
 }
 
-// T8【INJ-1 · S1 负路径】快照逐字节未变 ⇒ 也必须给精简版（旧分支在此返回 38KB 完整版）
+// T9 精简版节奏：每 slimEveryRounds 轮一次
 {
-  const E = mkEngine({ human: false, cfg: { snapshotMinGapRounds: 999, fullEverySlims: 999 } })
-  E.run("turn:1", mkSnap("日志A"))                      // 首次注入 ⇒ 完整版
-  const o1 = E.run("turn:1", mkSnap("日志A"))           // 快照逐字节相同
-  ok(isSlim(o1), "★T8 快照未变 ⇒ 精简版（负路径：不得再走「交宿主去重」返回完整版）")
-  ok(E.st._slimCount === 1, "★T8-b 该路径也计数（旧实现跳过 countTieredSlim ⇒ 门槛永不满足；实测 " + E.st._slimCount + "）")
+  const E = mkEngine({ human: false, cfg: { snapshotMinGapRounds: 999, slimEveryRounds: 3 } })
+  E.run("turn:0", mkSnap("日志0"))
+  const tags = []
+  for (let i = 1; i <= 9; i++) tags.push(isSlim(E.run("turn:" + i, mkSnap("日志" + i))) ? "S" : "F")
+  ok(tags.join("") === "SSSSSSSSS", "T9 fullGap=999 下 9 轮全为精简版（实测 " + tags.join("") + "）")
 }
 
-// T9【INJ-1 · S2】计数单位 = 精简版实际投递次数：slimEveryRounds 不再是折算因子
+// T10 fullEverySlims 已从产线与决策段移除
 {
-  // gap 显式 999：mkEngine.run 缺省 gap=5，「间距已满足」分支会掩盖门槛语义（本轮踩过）。
-  const E = mkEngine({ human: false, cfg: { snapshotMinGapRounds: 999, fullEverySlims: 5, slimEveryRounds: 99 } })
-  ok(isFull(E.run("turn:0", mkSnap("日志0"), 999)), "T9-a 首次注入 ⇒ 完整版（计数起点不计入连投）")
-  let slims = 0
-  for (let i = 1; i <= 20; i++) {
-    if (isSlim(E.run("turn:" + i, mkSnap("日志" + i), 999))) slims++
-    else break
-  }
-  ok(slims === 5, "T9 slimEveryRounds=99 下仍「满 5 次精简」即放行（实测精简 " + slims + " 次）")
-}
-
-// T10【INJ-1 · S2】出厂默认 10：连续自主步在满 10 次精简前不得出现完整版
-{
-  // 夹具参数取自产线 DEFAULT_CONFIG，避免「只测夹具自己的字面量」。
-  // ★INJ-2（2026-10-06）：`fullEverySlims` 在 DEFAULT_CONFIG 里改为**引用常量**
-  //   （`DEFAULT_FULL_EVERY_SLIMS`，与容量键同风格、防双源漂移）⇒ 旧解析只认字面量数字，
-  //   会取到 NaN，症状是「出厂默认 = NaN」（离真因很远）。现按「先取标识符、再解析该常量」两级求值，
-  //   判据强度不变：仍然测的是**产线真实默认值**，不是夹具自己的字面量。
-  const DEF_FULL = (() => {
-    const m = SRC.match(/(?:^|\n)\s*fullEverySlims:\s*([A-Za-z_$][\w$]*|\d+)/)
-    if (!m) return NaN
-    if (/^\d+$/.test(m[1])) return Number(m[1])
-    const c = SRC.match(new RegExp('const ' + m[1] + ' = (\\d+)'))
-    return c ? Number(c[1]) : NaN
-  })()
-  ok(DEF_FULL === 10, "T10-a ★出厂默认 fullEverySlims = 10（实测 " + DEF_FULL + "）")
-  const E = mkEngine({ human: false, cfg: { snapshotMinGapRounds: 999, fullEverySlims: DEF_FULL } })
-  ok(isFull(E.run("turn:0", mkSnap("日志0"), 999)), "T10-b 首次注入 ⇒ 完整版（计数起点不计入连投）")
-  let slimRun = 0, sawEarlyFull = false
-  for (let i = 1; i <= 30; i++) {
-    const out = E.run("turn:" + i, mkSnap("日志" + i), 999)
-    if (isSlim(out)) slimRun++
-    else { if (slimRun < DEF_FULL) sawEarlyFull = true; break }
-  }
-  ok(!sawEarlyFull, "T10 满 " + DEF_FULL + " 次精简投递前不出现完整版（实测连投精简 " + slimRun + " 次）")
-  ok(slimRun === DEF_FULL, "T10-c 恰好 " + DEF_FULL + " 次后放行（实测 " + slimRun + "）")
+  const START_SEG = "let tieredFullGranted = false"
+  const a = SRC.indexOf(START_SEG)
+  const b = SRC.lastIndexOf("return snap + engine.renderReflectionRequest()") + "return snap + engine.renderReflectionRequest()".length
+  const stript = SRC.slice(a, b).replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "")
+  ok(!/fullEverySlims/.test(stript), "★T10-a 决策段（剥注释）零 fullEverySlims 引用")
+  ok(SRC.indexOf("upgradeFullEverySlimsDefaultPre(parsed)") < 0, "★T10-b 迁移调用点已移除")
+  ok(!/(?:^|\n)\s*fullEverySlims:\s*/.test(SRC), "★T10-c DEFAULT_CONFIG 不再含 fullEverySlims 键")
 }
 
 console.log("PASS " + pass + " / FAIL " + fail)

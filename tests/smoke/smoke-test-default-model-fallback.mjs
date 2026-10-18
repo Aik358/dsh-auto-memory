@@ -11,6 +11,10 @@ const optionsStart = source.indexOf('function subAgentOptions(config, lane) {')
 const optionsEnd = source.indexOf('\n}', optionsStart) + 2
 const parserStart = source.indexOf('function parseAgentDefaultModelPre(text) {')
 const parserEnd = source.indexOf('\n}', parserStart) + 2
+// ★2026-10-18（DSH 0.2.1 迁移）：_runSubagentOnce 内的两处启动改走 callSubagentStartPre 适配层，
+//   该函数定义在 vm 切片之外 ⇒ 必须一并注入上下文，否则 vm 内 ReferenceError 被 catch 吞成空结果。
+const adapterStart = source.indexOf('async function callSubagentStartPre(')
+const adapterEnd = source.indexOf('\n}', adapterStart) + 2
 let failed = 0
 
 async function check(name, fn) {
@@ -26,6 +30,7 @@ async function run(settings, registered = ['spawn'], config = { subagentProvider
     readSettingsTextPre: async () => settings,
   })
   if (parserStart >= 0) vm.runInContext(source.slice(parserStart, parserEnd), context)
+  if (adapterStart >= 0) vm.runInContext(source.slice(adapterStart, adapterEnd), context)
   const engine = vm.runInContext(source.slice(optionsStart, optionsEnd) + '\nnew (class { ' + source.slice(start, end) + ' })()', context)
   Object.assign(engine, {
     config, _workbenchReady: true, _workbenchEpoch: () => 'epoch',

@@ -197,11 +197,11 @@ ok(usedExempt.length === KNOWN_DRIFT.length, '全部豁免条目都仍在使用�
   ok(defAt > 0 && defAt < cssTextAt, 'G1-1：定义在 damSkinCssText 之前的工厂层（def@' + defAt + ' < cssText@' + cssTextAt + '）')
   const clientAll = norm(readFileSync(CLIENT, 'utf8'))
   const callN = cnt(clientAll, 'normalizeGapRounds(') - defN
-  ok(callN === 9, 'G1-1：client 侧调用点 9 处 = classic 3 + legacy 块 3 + v4 块 3（实际 ' + callN + '）')
+  ok(callN === 6, 'G1-1：client 侧调用点 6 处 = classic 2 + legacy 块 2 + v4 块 2（实际 ' + callN + '）')
   const legacyCallN = cnt(L.slice(legacyBegin, legacyEnd + 1).join('\n'), 'normalizeGapRounds(')
-  ok(legacyCallN === 3, 'G1-1：legacy 生成块 3 处调用（实际 ' + legacyCallN + '）')
+  ok(legacyCallN === 2, 'G1-1：legacy 生成块 2 处调用（实际 ' + legacyCallN + '）')
   const fCallN = cnt(frozen, 'normalizeGapRounds(')
-  ok(fCallN === 3, 'G1-1：frozen 源 3 处调用（fSnapGap + slimEvery + fullEverySlims，实际 ' + fCallN + '）')
+  ok(fCallN === 2, 'G1-1：frozen 源 2 处调用（fSnapGap + slimEvery；fullEverySlims 已废弃删除，实际 ' + fCallN + '）')
 }
 
 // (d) 组件切片锚：三处关键锚串在生成器与经典面同源
