@@ -29,12 +29,27 @@ import { createHash } from 'node:crypto'
 // 支持 DAM_INDEX_JS 指向变异副本（变异反向验证用）
 const SRC = readFileSync(process.env.DAM_INDEX_JS || new URL('../../lib/index.js', import.meta.url), 'utf8')
 const S0 = SRC.indexOf('let tieredFullGranted = false')
-const END = 'return snap + engine.renderReflectionRequest()'
+const END = 'return finalizePre(snap + engine.renderReflectionRequest())'
 if (S0 < 0 || SRC.lastIndexOf(END) < 0) {
   console.error('RED  - 门控函数体切片落空（签名变更后必须同步本套件）')
   process.exit(1)
 }
 let body = SRC.slice(S0, SRC.lastIndexOf(END) + END.length)
+
+// ★2026-10-18（交付层根治配套）：决策段现依赖 finalizePre（生产侧同源抽取）。
+//   旧夹具只注入决策段 ⇒ new Function 抛 ReferenceError ⇒ 整套假红。
+const FIN_SRC = (function (SRC) {
+  const A = "const finalizePre = (txt) => {"
+  const i0 = SRC.indexOf(A)
+  if (i0 < 0) throw new Error("finalizePre not found in source")
+  let depth = 0
+  for (let i = i0; i < SRC.length; i++) {
+    const c = SRC[i]
+    if (c === "{") depth++
+    else if (c === "}") { depth--; if (depth === 0) return SRC.slice(i0, i + 1) + ";" }
+  }
+  throw new Error("finalizePre body unbalanced")
+})(SRC)
 // 切片起点在 slimGap 声明之后 ⇒ 切片内缺该局部量，必须补回。
 // 缺了它节流会恒放行（本套件第一版就因此把"未生效"误判成"生效"，实测 34/34 全放行）。
 if (!/const slimGap =/.test(body)) {
@@ -72,9 +87,24 @@ function mk(over) {
         if (x.type !== 'user/message') continue; const kd = kindOf(x); if (!kd || kd === 'user') return x.seq }
       return null },
     renderReflectionRequest: () => '',
+
+    // ★2026-10-18（与生产同源）：请求键在两帧之间恒定、每请求翻新。
+    //   生产用「最近一次 step/end 的 seq」；本夹具每次 run 追加一条 step/start，
+    //   因此用其条数作稳定键即可（同一请求内不追加 ⇒ 键不变；新请求 ⇒ +1）。
+    requestIdPre: (a) => {
+      const evs = (a && a.session && Array.isArray(a.session.events)) ? a.session.events : []
+      let n = 0
+      for (let k = 0; k < evs.length; k++) {
+        const e = evs[k]
+        if (!e) continue
+        if (e.type === "step/end") n = Math.max(n, Number(e.seq) || 0)
+        else if (e.type === "step/start") n = Math.max(n, Number(e.seq) || 0)
+      }
+      return "k:" + n
+    },
     config: Object.assign({ snapshotMinGapRounds: 10, snapshotTieredInject: true, fullEverySlims: 10, slimEveryRounds: 3, snapshotReinjectOnCompact: true }, over || {}),
   }
-  const F = new Function('engine', 'agent', 'gap', 'snap', 'slimText', 'diag', 'createHash', 'parseGapRoundsPre', body + ';')
+  const F = new Function('engine', 'agent', 'gap', 'snap', 'slimText', 'diag', 'createHash', 'parseGapRoundsPre', FIN_SRC + String.fromCharCode(10) + body + ';')
   const agent = { session: { events: [] } }
   const run = (evs, snap) => {
     agent.session.events = evs

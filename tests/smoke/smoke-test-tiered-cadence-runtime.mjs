@@ -26,9 +26,24 @@ const NL = String.fromCharCode(10)
 const LB = String.fromCharCode(91), RB = String.fromCharCode(93)
 
 const START = "let tieredFullGranted = false"
-const END = "return snap + engine.renderReflectionRequest()"
+const END = "return finalizePre(snap + engine.renderReflectionRequest())"
 const s0 = SRC.indexOf(START)
 const s1 = SRC.lastIndexOf(END) + END.length
+
+// ★2026-10-18（交付层根治配套）：决策段现依赖 finalizePre（生产侧同源抽取）。
+//   旧夹具只注入决策段 ⇒ new Function 抛 ReferenceError ⇒ 整套假红。
+const FIN_SRC = (function (SRC) {
+  const A = "const finalizePre = (txt) => {"
+  const i0 = SRC.indexOf(A)
+  if (i0 < 0) throw new Error("finalizePre not found in source")
+  let depth = 0
+  for (let i = i0; i < SRC.length; i++) {
+    const c = SRC[i]
+    if (c === "{") depth++
+    else if (c === "}") { depth--; if (depth === 0) return SRC.slice(i0, i + 1) + ";" }
+  }
+  throw new Error("finalizePre body unbalanced")
+})(SRC)
 if (s0 < 0 || s1 <= s0) { console.log("  FAIL - 找不到决策段"); process.exit(1) }
 const SEG = SRC.slice(s0, s1)
 
@@ -61,11 +76,26 @@ function mkEngine(opts) {
     turnBoundaryKeyPre: function () { return st._tk },
     humanTurnObservedPre: function () { return !!opts.human },
     renderReflectionRequest: function () { return "" },
+
+    // ★2026-10-18（与生产同源）：请求键在两帧之间恒定、每请求翻新。
+    //   生产用「最近一次 step/end 的 seq」；本夹具每次 run 追加一条 step/start，
+    //   因此用其条数作稳定键即可（同一请求内不追加 ⇒ 键不变；新请求 ⇒ +1）。
+    requestIdPre: (a) => {
+      const evs = (a && a.session && Array.isArray(a.session.events)) ? a.session.events : []
+      let n = 0
+      for (let k = 0; k < evs.length; k++) {
+        const e = evs[k]
+        if (!e) continue
+        if (e.type === "step/end") n = Math.max(n, Number(e.seq) || 0)
+        else if (e.type === "step/start") n = Math.max(n, Number(e.seq) || 0)
+      }
+      return "k:" + n
+    },
     config: Object.assign({ snapshotMinGapRounds: 5, snapshotTieredInject: true,
       slimEveryRounds: 3, snapshotReinjectOnCompact: true }, opts.cfg || {})
   }
   const GAP_DEF = (function () { const n = Number(engine.config.snapshotMinGapRounds); return Number.isFinite(n) && n >= 0 ? n : 5 })()
-  const F = new Function("engine", "agent", "gap", "snap", "slimText", "diag", "createHash", "parseGapRoundsPre", SEG + ";")
+  const F = new Function("engine", "agent", "gap", "snap", "slimText", "diag", "createHash", "parseGapRoundsPre", FIN_SRC + String.fromCharCode(10) + SEG + ";")
   // ★2026-10-18（step 口径）：计数单位改为**模型请求**（step），不是 turn。
   //   旧夹具只改 st._tk（turn 键）⇒ 新代码的 _stepSeq 不推进 ⇒ T4/T7 恒红（这属夹具过时，不是缺陷）。
   //   现在每次 run 都追加一条 step/start 事件，让 step 键真实推进（与生产事件流同形）。
@@ -174,7 +204,7 @@ const isSlim = (o) => !!o && o.includes("SLIM")
 {
   const START_SEG = "let tieredFullGranted = false"
   const a = SRC.indexOf(START_SEG)
-  const b = SRC.lastIndexOf("return snap + engine.renderReflectionRequest()") + "return snap + engine.renderReflectionRequest()".length
+  const b = SRC.lastIndexOf("return finalizePre(snap + engine.renderReflectionRequest())") + "return finalizePre(snap + engine.renderReflectionRequest())".length
   const stript = SRC.slice(a, b).replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "")
   ok(!/fullEverySlims/.test(stript), "★T10-a 决策段（剥注释）零 fullEverySlims 引用")
   ok(SRC.indexOf("upgradeFullEverySlimsDefaultPre(parsed)") < 0, "★T10-b 迁移调用点已移除")

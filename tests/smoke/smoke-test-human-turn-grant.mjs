@@ -3,8 +3,24 @@ import { createHash } from "node:crypto"
 // 支持 DAM_INDEX_JS 指向变异副本（变异反向验证：变异必红、还原复绿）
 const SRC = readFileSync(process.env.DAM_INDEX_JS || "lib/index.js", "utf8")
 const S0 = SRC.indexOf("let tieredFullGranted = false")
-const END = "return snap + engine.renderReflectionRequest()"
+const END = "return finalizePre(snap + engine.renderReflectionRequest())"
 const body = SRC.slice(S0, SRC.lastIndexOf(END) + END.length)
+
+// ★2026-10-18（交付层根治配套）：决策段现依赖 finalizePre（生产侧同源抽取）。
+//   旧夹具只注入决策段 ⇒ new Function 抛 ReferenceError ⇒ 整套假红。
+//   下列片段从源码**真实抽取** finalizePre，保证夹具与生产同源（不复制实现）。
+const FIN_SRC = (function (SRC) {
+  const A = "const finalizePre = (txt) => {"
+  const i0 = SRC.indexOf(A)
+  if (i0 < 0) throw new Error("finalizePre not found in source")
+  let depth = 0
+  for (let i = i0; i < SRC.length; i++) {
+    const c = SRC[i]
+    if (c === "{") depth++
+    else if (c === "}") { depth--; if (depth === 0) return SRC.slice(i0, i + 1) + ";" }
+  }
+  throw new Error("finalizePre body unbalanced")
+})(SRC)
 const NL = String.fromCharCode(10), LB = String.fromCharCode(91), RB = String.fromCharCode(93)
 const mkSnap = (n) => ["<memory_system>", LB + "最近 1 天工作日志(尾部)" + RB, LB + "2026-10-05" + RB + " 日志" + n, LB + "白板 PLAN.md" + RB, "</memory_system>"].join(NL)
 const grab = (name) => {
@@ -27,7 +43,7 @@ const mk = () => {
     turnBoundaryKeyPre:(a)=>callTk(a, sessionEventsOf), humanTurnObservedPre:(a)=>callH(a, sessionEventsOf),
     humanTurnSeqPre:(a)=>callSeq(a, sessionEventsOf),
     renderReflectionRequest:()=>"", config:{snapshotMinGapRounds:5,snapshotTieredInject:true,slimEveryRounds:3,snapshotReinjectOnCompact:true} }
-  const F = new Function("engine","agent","gap","snap","slimText","diag","createHash","parseGapRoundsPre", body + ";")
+  const F = new Function("engine","agent","gap","snap","slimText","diag","createHash","parseGapRoundsPre", FIN_SRC + String.fromCharCode(10) + body + ";")
   const agent = { session: { events: [] } }
   return { st, agent, run:(evs, snap)=>{ agent.session.events = evs
     const o = F(engine, agent, 5, snap, "<memory_system>SLIM</memory_system>", ()=>{}, createHash, (v,d)=>{const n=Number(v);return Number.isFinite(n)?n:d}) || ""
@@ -55,10 +71,15 @@ console.log("")
 console.log("=== T3 同一真人轮只强放一次（不刷屏）===")
 {
   const E = mk()
-  const evs = [evTurn(3169,17), evUser(3172,"user")]
+  // ★2026-10-18 夹具修正：本档测的是「同一 turn 内**进入新 step** 后是否回到节流」，
+  //   必须真的推进 step/start 才能触发重新决策。原夹具 evs 不推进 step ⇒
+  //   在「入口总闸·同一模型请求保真」语义下必然保持完整版（正确行为），断言与语义冲突。
+  const evs = [evTurn(3169,17), evUser(3172,"user"), { seq: 3172.5, type: "step/start", data: { turn: 17, step: 1 } }]
   ok(E.run(evs, mkSnap("A")) === "完整", "T3-a 真人 turn 首次 ⇒ 完整")
-  const r2 = E.run(evs, mkSnap("B"))
-  ok(r2 === "精简", "T3-b 同 turn 后续 step ⇒ 回到节流【修复前为完整】")
+  const next = evs.concat([{ seq: 3173, type: "step/end", data: { turn: 17, step: 1 } },
+                           { seq: 3174, type: "step/start", data: { turn: 17, step: 2 } }])
+  const r2 = E.run(next, mkSnap("B"))
+  ok(r2 === "精简", "T3-b 同 turn 进入新 step ⇒ 回到节流【修复前为完整】")
 }
 console.log("=== T4 同一 step 内续帧保真：完整版不被次帧精简版覆盖（2026-10-18 用户裁定）===")
 {

@@ -173,7 +173,6 @@
     .sponsor { padding: 22px; }
   }
 
-
 /* ===== 动效层（内联；语料见本地 transitions-motion skill）===== */
 /* ============================================================
    动效层 — dsh-auto-memory 贡献者页
@@ -374,9 +373,68 @@
   .card.t-tilt-card { transform: none !important; }
   .chip.t-avatar { transform: none !important; }
 }
-</style>
-</head>
+  /* ── 站内顶栏 · 引航者计划 pill 入口（本页补建，站内统一 pilot-nav v1） ── */
+  .site-nav { position: sticky; top: 0; z-index: 60; width: 100%;
+    backdrop-filter: blur(20px) saturate(180%); -webkit-backdrop-filter: blur(20px) saturate(180%);
+    background: color-mix(in srgb, var(--bg0) 78%, transparent); border-bottom: 1px solid var(--glass-border); }
+  .site-nav-in { max-width: 1080px; margin: 0 auto; padding: 0 22px; height: 56px;
+    display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+  .site-nav-brand { display: inline-flex; align-items: center; gap: 9px; min-width: 0;
+    color: var(--txt); text-decoration: none; font-weight: 600; font-size: 14px; letter-spacing: -.01em; }
+  .site-nav-brand i { width: 9px; height: 9px; border-radius: 999px; flex: none;
+    background: var(--accent); box-shadow: 0 0 0 4px rgba(91, 140, 255, .16); }
+  .site-nav-brand span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .site-nav-brand:hover { color: var(--accent); }
+  .site-nav-right { display: flex; align-items: center; gap: 12px; flex: none; }
+  .site-current { color: var(--txt-dim); font-size: 13px; white-space: nowrap;
+    padding-bottom: 2px; border-bottom: 1px solid rgba(91, 140, 255, .55); }
+  .pilot-pill { display: inline-flex; align-items: center; gap: 7px; padding: 5px 13px 5px 11px; border-radius: 999px; flex: none;
+    border: 1px solid color-mix(in srgb, var(--accent) 34%, transparent);
+    background: color-mix(in srgb, var(--accent) 9%, transparent);
+    color: var(--accent); font-size: 13px; font-weight: 600; line-height: 1.2;
+    text-decoration: none; white-space: nowrap;
+    transition: background-color 200ms cubic-bezier(.22,1,.36,1), border-color 200ms cubic-bezier(.22,1,.36,1),
+                transform 200ms cubic-bezier(.22,1,.36,1), color 200ms cubic-bezier(.22,1,.36,1); }
+  .pilot-pill .pilot-dot { width: 6px; height: 6px; border-radius: 50%; flex: none; background: currentColor;
+    animation: pilot-breathe 3.4s ease-in-out infinite; }
+  @keyframes pilot-breathe {
+    0%, 100% { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent); }
+    50%      { box-shadow: 0 0 0 5px color-mix(in srgb, var(--accent) 7%, transparent); }
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .pilot-pill:hover { background: color-mix(in srgb, var(--accent) 16%, transparent);
+      border-color: color-mix(in srgb, var(--accent) 66%, transparent);
+      transform: translateY(-1px); filter: brightness(1.08); }
+  }
+  .pilot-pill:active { transform: scale(.97); }
+  .pilot-pill:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  @media (max-width: 820px) {
+    .pilot-pill { font-size: 12px; padding: 4px 10px 4px 9px; gap: 6px; }
+    .pilot-pill .pilot-dot { width: 5px; height: 5px; }
+  }
+  @media (max-width: 520px) {
+    .site-nav-in { padding: 0 16px; gap: 10px; }
+    .site-nav-brand { font-size: 13px; }
+    .site-current { display: none; }
+    .pilot-pill { font-size: 11.5px; padding: 4px 9px 4px 8px; gap: 5px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .pilot-pill, .pilot-pill .pilot-dot { transition: none; animation: none; }
+    .pilot-pill .pilot-dot { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent); }
+  }
+</style></head>
+
+
 <body data-lang="zh">
+<header class="site-nav" data-pilot-bar>
+  <div class="site-nav-in">
+    <a class="site-nav-brand" href="landing/index.html"><i aria-hidden="true"></i><span>dsh-auto-memory</span></a>
+    <div class="site-nav-right">
+      <a class="pilot-pill" href="landing/program/index.html" aria-label="引航者计划 · Pilot Program" data-nav-pilot><span class="pilot-dot" aria-hidden="true"></span><span class="pilot-label"><span class="zh">引航者计划</span><span class="en">Pilot Program</span></span></a>
+      <span class="site-current"><span class="zh">贡献者</span><span class="en">Contributors</span></span>
+    </div>
+  </div>
+</header>
 <div class="wrap">
 
   <!-- ══════════ Hero ══════════ -->
@@ -694,6 +752,39 @@
   </div>
 
   <!-- ══════════ 如何参与 ══════════ -->
+  <h2 class="sec" style="margin-top:56px"><span class="zh">引航者计划</span><span class="en">Pilot Credits Program</span></h2>
+  <p class="sec-sub zh">额度不按承诺发，按证据发：一条可复现的 issue、一个已合并的 PR、一篇可复核的报告。插件永远开源免费——这不是付费墙。</p>
+  <p class="sec-sub en">Quota follows evidence, not promises: a reproducible issue, a merged PR, or a report anyone can re-compute. The plugin stays free and open source — this is not a paywall.</p>
+
+  <div class="steps">
+    <div class="step">
+      <div class="k">01 / green</div>
+      <b><span class="zh">启航档 · 周额度</span><span class="en">Pilot Trial · weekly</span></b>
+      <p class="zh">一条被确认或已复现的 issue（带版本、步骤、预期 vs 实际）。够跑通环境、复现问题、验证一个假设。</p>
+      <p class="en">One confirmed or reproducibly filed issue (version, steps, actual vs expected). Enough to set up, reproduce, and test a hypothesis.</p>
+    </div>
+    <div class="step">
+      <div class="k">02 / amber</div>
+      <b><span class="zh">远航档 · 月额度</span><span class="en">Pilot Active · monthly</span></b>
+      <p class="zh">已合并的 PR、前端共创计划里被采纳的改动、文档 / 本地化 / 落点地图类贡献。够做一轮完整的对照实验。</p>
+      <p class="en">A merged PR, an accepted front-end contribution, or docs / localisation work. Enough for one full controlled experiment.</p>
+    </div>
+    <div class="step">
+      <div class="k">03 / red</div>
+      <b><span class="zh">领航档 · 季额度</span><span class="en">Pilot Sustained · quarterly</span></b>
+      <p class="zh">持续贡献：多条 PR、长期 review、维护某个模块、长期跟进某条研究线，或一篇被收录的社区报告。够支撑一条完整的实验线。</p>
+      <p class="en">Sustained contribution: multiple PRs, long-term review, module ownership, an ongoing research line, or an accepted community report.</p>
+    </div>
+    <div class="step">
+      <div class="k">04 / report</div>
+      <b><span class="zh">社区报告上站</span><span class="en">Community reports</span></b>
+      <p class="zh">独立完成的复现、反驳或工程调查，只要数字可复算、方法留痕、个人信息已脱敏，就能上站署名。</p>
+      <p class="en">Independent replications, refutations, or field measurements — publishable with attribution when numbers are re-computable and methods are on the record.</p>
+    </div>
+  </div>
+  <p class="sec-sub zh" style="margin-top:20px">完整规则、三档证据等级与当前开放的研究议题 → <a href="landing/program/index.html" style="color:var(--accent3)">引航者计划</a> · <a href="CREATOR-CREDIT-PROGRAM.md" style="color:var(--accent3)">章程原文</a></p>
+  <p class="sec-sub en" style="margin-top:6px">Full rules, evidence tiers, and the currently open research questions → <a href="landing/program/index.html" style="color:var(--accent3)">Pilot Credits Program</a> · <a href="CREATOR-CREDIT-PROGRAM.md" style="color:var(--accent3)">charter</a></p>
+
   <h2 class="sec" style="margin-top:56px"><span class="zh">如何参与</span><span class="en">How to contribute</span></h2>
   <p class="sec-sub zh">不需要先成为"核心贡献者"。一个能复现的 issue 就是有效贡献。</p>
   <p class="sec-sub en">You do not need to be a "core contributor" first. A reproducible issue is a real contribution.</p>

@@ -50,6 +50,7 @@ jobs:
           test -f docs/index.html            || { echo "::error::缺 docs/index.html（站点入口）"; exit 1; }
           test -f docs/landing/index.html    || { echo "::error::缺 docs/landing/index.html（宣传主页）"; exit 1; }
           test -f docs/landing/news/index.html || { echo "::error::缺 docs/landing/news/index.html（技术报告索引）"; exit 1; }
+          test -f docs/landing/program/index.html || { echo "::error::缺 docs/landing/program/index.html（引航者计划页）"; exit 1; }
           test -f docs/.nojekyll             || { echo "::error::缺 docs/.nojekyll"; exit 1; }
           echo "入口 / 宣传主页 / 技术报告索引 / .nojekyll 均在位"
 

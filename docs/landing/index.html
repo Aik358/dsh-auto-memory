@@ -102,6 +102,39 @@
   .lang-switch button.active { background: var(--accent); color: white; }
   .theme-toggle-btn { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 999px; border: 1px solid var(--border); background: var(--card); transition: all 0.2s; color: var(--fg-dim); }
   .theme-toggle-btn:hover { border-color: var(--accent); color: var(--accent); }
+  /* ── 引航者计划 · 右上角 pill 入口（站内统一 pilot-nav v1） ── */
+  .pilot-pill { display: inline-flex; align-items: center; gap: 7px; padding: 5px 13px 5px 11px; border-radius: 999px; flex: none;
+    border: 1px solid color-mix(in srgb, var(--accent, #2563eb) 34%, transparent);
+    background: color-mix(in srgb, var(--accent, #2563eb) 9%, transparent);
+    color: var(--accent, #2563eb); font-size: 13px; font-weight: 600; line-height: 1.2;
+    text-decoration: none; white-space: nowrap;
+    transition: background-color 200ms cubic-bezier(.22,1,.36,1), border-color 200ms cubic-bezier(.22,1,.36,1),
+                transform 200ms cubic-bezier(.22,1,.36,1), color 200ms cubic-bezier(.22,1,.36,1); }
+  .pilot-pill .pilot-dot { width: 6px; height: 6px; border-radius: 50%; flex: none; background: currentColor;
+    animation: pilot-breathe 3.4s ease-in-out infinite; }
+  @keyframes pilot-breathe {
+    0%, 100% { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent, #2563eb) 18%, transparent); }
+    50%      { box-shadow: 0 0 0 5px color-mix(in srgb, var(--accent, #2563eb) 7%, transparent); }
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .pilot-pill:hover { background: color-mix(in srgb, var(--accent, #2563eb) 15%, transparent);
+      border-color: color-mix(in srgb, var(--accent, #2563eb) 66%, transparent);
+      transform: translateY(-1px); filter: brightness(1.06); }
+  }
+  .pilot-pill:active { transform: scale(.97); }
+  .pilot-pill:focus-visible { outline: 2px solid var(--accent, #2563eb); outline-offset: 2px; }
+  .pilot-pill-menu { margin-top: 4px; align-self: flex-start; }
+  @media (max-width: 1180px) {
+    .pilot-pill { font-size: 12px; padding: 4px 10px 4px 9px; gap: 6px; }
+    .pilot-pill .pilot-dot { width: 5px; height: 5px; }
+  }
+  @media (max-width: 820px) {
+    .pilot-pill { font-size: 11.5px; padding: 4px 9px 4px 8px; gap: 5px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .pilot-pill, .pilot-pill .pilot-dot { transition: none; animation: none; }
+    .pilot-pill .pilot-dot { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent, #2563eb) 18%, transparent); }
+  }
   .section-num { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--accent); letter-spacing: 0.2em; font-weight: 500; }
   details { border: 1px solid var(--border); border-radius: 10px; padding: 1.1rem 1.35rem; background: var(--card); transition: all 0.3s; }
   [data-theme="light"] details { background: var(--bg-elev); }
@@ -332,6 +365,7 @@
       <a href="#faq" class="nav-link" data-i18n="nav.faq">问答</a>
     </nav>
     <div class="flex items-center gap-3">
+      <a class="pilot-pill" href="program/index.html" aria-label="引航者计划 · Pilot Program" data-nav-pilot><span class="pilot-dot" aria-hidden="true"></span><span class="pilot-label" data-i18n="nav.pilot">引航者计划</span></a>
       <span class="lang-switch">
         <button id="lang-zh" data-lang-btn="zh" class="active">中</button>
         <button id="lang-en" data-lang-btn="en">EN</button>
@@ -350,6 +384,7 @@
     <a href="#features" class="block nav-link" data-i18n="nav.features">能力</a>
     <a href="#demo" class="block nav-link" data-i18n="nav.demo">实机演示</a>
     <a href="news/index.html" class="block nav-link font-semibold" style="color:var(--accent)">技术报告</a>
+    <a href="program/index.html" class="pilot-pill pilot-pill-menu" data-nav-pilot data-i18n="nav.pilot">引航者计划</a>
     <a href="#architecture" class="block nav-link" data-i18n="nav.architecture">分层</a>
     <a href="#install" class="block nav-link" data-i18n="nav.install">安装</a>
     <a href="#roadmap" class="block nav-link" data-i18n="nav.roadmap">历程</a>
@@ -605,6 +640,12 @@
           <div class="font-display font-semibold text-base mb-2" style="color:var(--fg)">一个 18,525 行文件的拆分之道</div>
           <p class="text-sm leading-relaxed mb-4" style="color:var(--fg-dim)">110 个模块、158 条依赖边、68 个零出边叶子。真正的障碍是那个 10,852 行的单类。</p>
           <span class="font-mono text-[11px]" style="color:var(--accent)">阅读 →</span>
+        </a>
+        <a href="program/index.html" class="glass-card rounded-xl p-6 reveal reveal-delay-0 block">
+          <div class="font-mono text-[10px] uppercase tracking-widest mb-3" style="color:var(--accent)">引航者计划 · 领航</div>
+          <div class="font-display font-semibold text-base mb-2" style="color:var(--fg)">接通尊驾心向往之的实践</div>
+          <p class="text-sm leading-relaxed mb-4" style="color:var(--fg-dim)">前端重塑、语义引擎调参、复现与反驳 —— 三条参与轨道，按凭据硬度颁发模型推理额度。</p>
+          <span class="font-mono text-[11px]" style="color:var(--accent)">探索计划 →</span>
         </a>
       </div>
       <div class="text-center mt-8">
@@ -862,7 +903,7 @@
 /* ══════ i18n 字典 ══════ */
 const i18n = {
 zh: {
-  'nav.about':'是什么','nav.features':'能力','nav.demo':'实机演示','nav.architecture':'分层','nav.install':'安装','nav.roadmap':'历程','nav.faq':'问答',
+  'nav.pilot':'引航者计划','nav.about':'是什么','nav.features':'能力','nav.demo':'实机演示','nav.architecture':'分层','nav.install':'安装','nav.roadmap':'历程','nav.faq':'问答',
   'hero.badge':'v3.3.2 · 无问自忆 · 2026-10-13',
   'hero.name':'无问自忆','hero.en':'Ambient Recall','hero.tag1':'「潜藏追忆，','hero.tag2':'如影随形」',
   'hero.subtitle':'她不是数据库，是一个会主动想起你的同事。跨窗口、跨会话、跨工具 —— 记忆长在你自己的机器上。',
@@ -956,7 +997,7 @@ zh: {
   'footer.project':'项目','footer.resources':'资源','footer.style':'叙述风格指南','footer.rights':'BSD-3-Clause','footer.built':'记忆在你自己的机器上 · 可审计 · 可删除'
 },
 en: {
-  'nav.about':'What','nav.features':'Features','nav.demo':'Live Demos','nav.architecture':'Layers','nav.install':'Install','nav.roadmap':'History','nav.faq':'FAQ',
+  'nav.pilot':'Pilot Program','nav.about':'What','nav.features':'Features','nav.demo':'Live Demos','nav.architecture':'Layers','nav.install':'Install','nav.roadmap':'History','nav.faq':'FAQ',
   'hero.badge':'v3.3.2 · She remembers, unbidden · 2026-10-13',
   'hero.name':'She remembers','hero.en':'Ambient Recall','hero.tag1':'Memory that surfaces','hero.tag2':'unbidden.',
   'hero.subtitle':'Not a database — a colleague who thinks of you first. Across windows, sessions and tools. Your memory lives on your own disk.',

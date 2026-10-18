@@ -173,7 +173,6 @@
     .sponsor { padding: 22px; }
   }
 
-
 /* ===== 动效层（内联；语料见本地 transitions-motion skill）===== */
 /* ============================================================
    动效层 — dsh-auto-memory 贡献者页
@@ -375,7 +374,6 @@
   .chip.t-avatar { transform: none !important; }
 }
 
-
 /* ══════════ 致敬专页专用 ══════════ */
 .tribute-hero { text-align:center; margin-bottom:44px; }
 .tribute-hero .av {
@@ -450,9 +448,68 @@
 .backlink:hover { color:var(--accent); }
 .tagpr { display:inline-block; margin-right:6px; padding:1px 7px; border-radius:5px; font-family:var(--mono); font-size:10.5px; background:rgba(62,207,142,.16); border:1px solid rgba(62,207,142,.34); color:var(--ok); vertical-align:1px; }
 @media (prefers-reduced-motion: reduce) { .tribute-hero .av { animation:none; } }
-</style>
-</head>
+  /* ── 站内顶栏 · 引航者计划 pill 入口（本页补建，站内统一 pilot-nav v1） ── */
+  .site-nav { position: sticky; top: 0; z-index: 60; width: 100%;
+    backdrop-filter: blur(20px) saturate(180%); -webkit-backdrop-filter: blur(20px) saturate(180%);
+    background: color-mix(in srgb, var(--bg0) 78%, transparent); border-bottom: 1px solid var(--glass-border); }
+  .site-nav-in { max-width: 1080px; margin: 0 auto; padding: 0 22px; height: 56px;
+    display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+  .site-nav-brand { display: inline-flex; align-items: center; gap: 9px; min-width: 0;
+    color: var(--txt); text-decoration: none; font-weight: 600; font-size: 14px; letter-spacing: -.01em; }
+  .site-nav-brand i { width: 9px; height: 9px; border-radius: 999px; flex: none;
+    background: var(--accent); box-shadow: 0 0 0 4px rgba(91, 140, 255, .16); }
+  .site-nav-brand span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .site-nav-brand:hover { color: var(--accent); }
+  .site-nav-right { display: flex; align-items: center; gap: 12px; flex: none; }
+  .site-current { color: var(--txt-dim); font-size: 13px; white-space: nowrap;
+    padding-bottom: 2px; border-bottom: 1px solid rgba(91, 140, 255, .55); }
+  .pilot-pill { display: inline-flex; align-items: center; gap: 7px; padding: 5px 13px 5px 11px; border-radius: 999px; flex: none;
+    border: 1px solid color-mix(in srgb, var(--accent) 34%, transparent);
+    background: color-mix(in srgb, var(--accent) 9%, transparent);
+    color: var(--accent); font-size: 13px; font-weight: 600; line-height: 1.2;
+    text-decoration: none; white-space: nowrap;
+    transition: background-color 200ms cubic-bezier(.22,1,.36,1), border-color 200ms cubic-bezier(.22,1,.36,1),
+                transform 200ms cubic-bezier(.22,1,.36,1), color 200ms cubic-bezier(.22,1,.36,1); }
+  .pilot-pill .pilot-dot { width: 6px; height: 6px; border-radius: 50%; flex: none; background: currentColor;
+    animation: pilot-breathe 3.4s ease-in-out infinite; }
+  @keyframes pilot-breathe {
+    0%, 100% { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent); }
+    50%      { box-shadow: 0 0 0 5px color-mix(in srgb, var(--accent) 7%, transparent); }
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .pilot-pill:hover { background: color-mix(in srgb, var(--accent) 16%, transparent);
+      border-color: color-mix(in srgb, var(--accent) 66%, transparent);
+      transform: translateY(-1px); filter: brightness(1.08); }
+  }
+  .pilot-pill:active { transform: scale(.97); }
+  .pilot-pill:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  @media (max-width: 820px) {
+    .pilot-pill { font-size: 12px; padding: 4px 10px 4px 9px; gap: 6px; }
+    .pilot-pill .pilot-dot { width: 5px; height: 5px; }
+  }
+  @media (max-width: 520px) {
+    .site-nav-in { padding: 0 16px; gap: 10px; }
+    .site-nav-brand { font-size: 13px; }
+    .site-current { display: none; }
+    .pilot-pill { font-size: 11.5px; padding: 4px 9px 4px 8px; gap: 5px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .pilot-pill, .pilot-pill .pilot-dot { transition: none; animation: none; }
+    .pilot-pill .pilot-dot { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent); }
+  }
+</style></head>
+
+
 <body data-lang="zh">
+<header class="site-nav" data-pilot-bar>
+  <div class="site-nav-in">
+    <a class="site-nav-brand" href="landing/index.html"><i aria-hidden="true"></i><span>dsh-auto-memory</span></a>
+    <div class="site-nav-right">
+      <a class="pilot-pill" href="landing/program/index.html" aria-label="引航者计划 · Pilot Program" data-nav-pilot><span class="pilot-dot" aria-hidden="true"></span><span class="pilot-label"><span class="zh">引航者计划</span><span class="en">Pilot Program</span></span></a>
+      <span class="site-current"><span class="zh">致敬</span><span class="en">Tribute</span></span>
+    </div>
+  </div>
+</header>
 
 <div class="wrap">
 

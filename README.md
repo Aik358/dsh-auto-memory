@@ -7,7 +7,7 @@
 > **中文** 该想起的，自己浮现。跨窗口 · 跨会话 · 跨工具 —— Ambient Recall · 「潜藏追忆，如影随形」
 
 <p align="center">
-  <a href="https://aik358.github.io/dsh-auto-memory/landing/"><strong>🌐 Landing page (full feature tour · data flow · papers · screenshots)</strong></a> · <a href="https://aik358.github.io/dsh-auto-memory/landing/news/"><strong>📄 Technical reports</strong></a>
+  <a href="https://aik358.github.io/dsh-auto-memory/landing/"><strong>🌐 Landing page</strong></a> · <a href="https://aik358.github.io/dsh-auto-memory/landing/news/"><strong>📄 Technical reports</strong></a> · <a href="https://aik358.github.io/dsh-auto-memory/landing/program/"><strong>🧭 Pilot Credits Program</strong></a>
 </p>
 
 <table align="center">
@@ -659,6 +659,7 @@ Papers were authored by the autonomous engineering agent (ZCode / GLM); all conc
 | [**Skin guide**](docs/SKIN-GUIDE.md) | How to build a skin: the three key layers (tokens / anchors / assets), the full token table, the readings↔routes map, and the acceptance checklist. Contributors: submit skins to the [`skins/` library](skins/README.md) via PR. |
 | [**Teamwork guide**](docs/TEAMWORK-GUIDE.md) | Teamwork as it stands: every config key, the 10 team routes, the data-flow diagram (outbox → transport → merge → conflicts), standalone-mode behaviour, and the honest "not implemented" list. |
 | [**Frontend co-creation plan**](docs/FRONTEND-CO-CREATION.md) | What can outside contributors change, what is off-limits, and how to do it — complete component/route/slot map included. |
+| [**Pilot Credits Program**](docs/CREATOR-CREDIT-PROGRAM.md) | What contributors get back — three participation tracks, three evidence tiers, how community reports get published, and the research questions currently open. |
 | [Feature Inventory](docs/internal/FEATURE-INVENTORY.md) | What features exist and where each one lives (39 user capabilities / 19 tools / 73 routes / 157 config keys) |
 
 > **⚠️ Upgrading from before 3.0?** A batch of default values was **flipped** in 3.0.0 —
@@ -713,6 +714,8 @@ Development resources for this project are partly provided by:
 - **[DSH API](https://api.dshapi.icu/register?aff=HJU27P7JL39N)** — API relay station providing the model endpoints used for development, testing, and the semantic-engine research behind the M-series features. Thank you for keeping the lights on.
 
 Infrastructure and API-quota sponsors are listed on the **[Contributors & Sponsors](https://aik358.github.io/dsh-auto-memory/CONTRIBUTORS.html)** page. If you would like to support the project, open an issue or join the QQ group.
+
+Part of that quota is opened to the community through the **[Pilot Credits Program](https://aik358.github.io/dsh-auto-memory/landing/program/)**: developers who have contributed to the plugin can request model quota for front-end and back-end debugging, semantic-engine tuning, and research. Rules are in the [charter](docs/CREATOR-CREDIT-PROGRAM.md).
 
 ---
 

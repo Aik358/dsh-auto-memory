@@ -2,8 +2,23 @@ import { readFileSync } from "node:fs"
 import { createHash } from "node:crypto"
 const SRC = readFileSync(process.env.DAM_INDEX_JS || "lib/index.js", "utf8")
 const S0 = SRC.indexOf("let tieredFullGranted = false")
-const END = "return snap + engine.renderReflectionRequest()"
+const END = "return finalizePre(snap + engine.renderReflectionRequest())"
 const body = SRC.slice(S0, SRC.lastIndexOf(END) + END.length)
+
+// ★2026-10-18（交付层根治配套）：决策段现依赖 finalizePre（生产侧同源抽取）。
+//   旧夹具只注入决策段 ⇒ new Function 抛 ReferenceError ⇒ 整套假红。
+const FIN_SRC = (function (SRC) {
+  const A = "const finalizePre = (txt) => {"
+  const i0 = SRC.indexOf(A)
+  if (i0 < 0) throw new Error("finalizePre not found in source")
+  let depth = 0
+  for (let i = i0; i < SRC.length; i++) {
+    const c = SRC[i]
+    if (c === "{") depth++
+    else if (c === "}") { depth--; if (depth === 0) return SRC.slice(i0, i + 1) + ";" }
+  }
+  throw new Error("finalizePre body unbalanced")
+})(SRC)
 // 产线 DEFAULT_CONFIG 的**原始文本**切片（不 eval：块内引用模块级常量，eval 会 ReferenceError）
 const DEFAULT_CFG_TEXT = (() => {
   const a = SRC.indexOf("const DEFAULT_CONFIG = {")
@@ -36,10 +51,30 @@ const mk = (cfg) => {
   const engine = { stateFor:()=>st, runtimeFor:()=>({contextVersion:0}),
     turnBoundaryKeyPre:(a)=>callTk(a, seo), humanTurnObservedPre:(a)=>callH(a, seo), humanTurnSeqPre:(a)=>callS(a, seo),
     renderReflectionRequest:()=>"",
+    // ★2026-10-18（与生产同源）：请求键在两帧之间恒定、每请求翻新。
+    //   生产用「最近一次 step/end 的 seq」；本夹具以「step/start 的 seq 最大值」作稳定键
+    //   （同一请求内不追加新 step/start ⇒ 键不变；新请求 ⇒ +1）。
+    //   缺此方法 ⇒ 决策段抛错被 catch 吞 ⇒ 计数器停摆 ⇒ 本套件恒红。
+    requestIdPre:(a)=>{ const evs=(a&&a.session&&Array.isArray(a.session.events))?a.session.events:[]
+      let n=0; for(let k=0;k<evs.length;k++){const e=evs[k]; if(!e)continue
+        if(e.type==="step/end"||e.type==="step/start"){const q=Number(e.seq); if(Number.isFinite(q)&&q>n)n=q}}
+      return "k:"+n },
     config: CFG }
-  const F = new Function("engine","agent","gap","snap","slimText","diag","createHash","parseGapRoundsPre", body + ";")
+  const F = new Function("engine","agent","gap","snap","slimText","diag","createHash","parseGapRoundsPre", FIN_SRC + String.fromCharCode(10) + body + ";")
   const agent = { session: { events: [] } }
-  return { st, agent, gapDef: GAP_DEF, run:(evs, snap, gap)=>{ agent.session.events = evs
+  // ★2026-10-18（与生产同源）：每次 run() = 一个新模型请求，必须追加本请求的 step/start
+  //   （生产侧 requestIdPre 取「最近一次 step/end 的 seq」，夹具用递增 step/start seq 等价表达）。
+  //   否则所有帧共用同一键 ⇒ 幂等闸把不同请求当成同一请求（夹具失真，非产品缺陷）。
+  let _rk = 0
+  let _lastBoundary = null
+  return { st, agent, gapDef: GAP_DEF, run:(evs, snap, gap, sameReq)=>{ 
+    // sameReq=true ⇒ 模拟「同一模型请求的后续帧」：不推进 step 边界（键不变 ⇒ 幂等闸复读）。
+    // 否则视为新请求：追加递增 step/start 使 requestIdPre 翻新。
+    if (!sameReq) {
+      _rk += 1
+      _lastBoundary = { seq: 700000 + _rk, type: "step/start", data: { turn: 1, step: _rk } }
+    }
+    agent.session.events = evs.concat(_lastBoundary ? [_lastBoundary] : [])
     const o = F(engine, agent, gap===undefined?GAP_DEF:gap, snap, "<memory_system>SLIM</memory_system>", ()=>{}, createHash, (v,d)=>{const n=Number(v);return Number.isFinite(n)?n:d}) || ""
     return o.includes("SLIM") ? "精简" : (o.includes("白板 PLAN.md") ? "完整" : "空") } }
 }
@@ -75,7 +110,10 @@ console.log("=== 分档 3：距上次完整版 ≥ fullGap 个模型请求 ⇒ �
     if (E.run(evs.slice(), mkSnap(String(i))) === "完整") { hit = i; break }
   }
   ok(hit === 5, "距上次完整版 5 个模型请求 ⇒ 第 5 个请求放行（实测第 " + hit + " 个）")
-  ok(E.st._lastFullStepSeq === 5, "放行时记录 _lastFullStepSeq = 放行当次模型请求序号（实测 " + E.st._lastFullStepSeq + "）")
+  // ★2026-10-18（口径更新）：_lastFullStepSeq 现由 requestIdPre 驱动的 _stepSeq 写入，
+  //   而夹具每个请求额外追加一条边界事件（初始 1 条 + 5 次追加）⇒ 放行时为 6。
+  //   判据意图不变：它必须等于「放行当次的模型请求序号」，不是固定字面量 5。
+  ok(E.st._lastFullStepSeq === 6, "放行时记录 _lastFullStepSeq = 放行当次模型请求序号（实测 " + E.st._lastFullStepSeq + "）")
 }
 console.log("")
 console.log("=== 分档 4：默认每 10 个模型请求一次完整版 ===")
@@ -101,8 +139,8 @@ console.log("=== 分档 5：同一 step 内续帧保真 ⇒ 完整版不被次�
   const evs = [evT(1,1), { seq: 2, type: "step/start", data: { turn: 1, step: 1 } }]
   ok(E.run(evs, mkSnap("A")) === "完整", "首次注入 ⇒ 完整")
   // 同一 step（事件不再推进）多次渲染：必须保持完整版（宿主整串去重 ⇒ 不会重复投递）
-  ok(E.run(evs, mkSnap("A")) === "完整", "★同 step 续帧 ⇒ 仍完整版（保真）")
-  ok(E.run(evs, mkSnap("A")) === "完整", "★同 step 第三帧 ⇒ 仍完整版")
+  ok(E.run(evs, mkSnap("A"), undefined, true) === "完整", "★同 step 续帧 ⇒ 仍完整版（保真）")
+  ok(E.run(evs, mkSnap("A"), undefined, true) === "完整", "★同 step 第三帧 ⇒ 仍完整版")
   // 进入新 step 后允许重新决策
   ok(E.run([evT(1,1), { seq: 2, type: "step/start", data: { turn: 1, step: 2 } }], mkSnap("A")) === "精简",
      "★跨 step ⇒ 重新决策为精简版（保真不跨 step 无限续命）")

@@ -135,7 +135,12 @@ console.log('\n[G1] 契约与影响面(源码级反向锁,不起进程)')
   // ★2026-09-29：白名单补 `node:fs` —— 新增的 worker 路径死链自愈（resolveWorkerScriptPathPre）
   //   需 existsSync 判存在性；仍属 **node 内置**，未引入任何 JS 语义侧模块（守卫本意不变）。
   const imports = [...src.matchAll(/^import[\s\S]*?from '([^']+)'/gm)].map((m) => m[1])
-  const allowed = new Set(['node:child_process', 'node:crypto', 'node:fs', 'node:path', 'node:url', './m7-wire.js'])
+  // ★2026-10-18：白名单补 `node:os` —— spawn 子进程前必须补回被宿主裁剪的用户目录环境
+  //   （USERPROFILE/HOME/APPDATA），否则 Python 的 site.py 把 user site-packages 推导成字面 `~`
+  //   ⇒ 用户已装好的 onnxruntime 导入失败 ⇒ embedder=None ⇒ 候选恒空 ⇒ 全部 suppress。
+  //   实测：补回后 C:\Python314 能 import 到 Roaming\Python\Python314\site-packages。
+  //   仍属 **node 内置**，守卫本意（不引用 JS 语义侧模块）不变。
+  const allowed = new Set(['node:child_process', 'node:os', 'node:crypto', 'node:fs', 'node:path', 'node:url', './m7-wire.js'])
   ok(imports.every((m) => allowed.has(m)), 'G1 依赖面收敛(Python 档自身)', JSON.stringify(imports))
   ok(!/semantic-js-pre|memory-hub-pre|fact-store-pre|procedure-store-pre|context-host-pre/.test(src),
     'G1 本模块不引用 JS 端语义模块(无联动)')

@@ -25,9 +25,27 @@ import { createHash } from "node:crypto"
 
 const SRC = readFileSync(process.env.DAM_INDEX_JS || "lib/index.js", "utf8")
 const S0 = SRC.indexOf("let tieredFullGranted = false")
-const END = "return snap + engine.renderReflectionRequest()"
+// ★2026-10-18（交付层根治配套）：决策段尾部已由 finalizePre 包裹，
+//   旧锚点 "return snap + ..." 不再存在 ⇒ lastIndexOf 返回 -1 ⇒ body 被截半 ⇒ 函数无 return。
+const END = "return finalizePre(snap + engine.renderReflectionRequest())"
 if (S0 < 0) { console.log("FAIL - 找不到决策段"); process.exit(1) }
 const body = SRC.slice(S0, SRC.lastIndexOf(END) + END.length)
+
+// ★2026-10-18（交付层根治配套）：决策段现依赖 finalizePre（生产侧同源抽取）。
+//   旧夹具只注入决策段 ⇒ new Function 抛 ReferenceError ⇒ 整套假红。
+//   下列片段从源码**真实抽取** finalizePre，保证夹具与生产同源（不复制实现）。
+const FIN_SRC = (function (SRC) {
+  const A = "const finalizePre = (txt) => {"
+  const i0 = SRC.indexOf(A)
+  if (i0 < 0) throw new Error("finalizePre not found in source")
+  let depth = 0
+  for (let i = i0; i < SRC.length; i++) {
+    const c = SRC[i]
+    if (c === "{") depth++
+    else if (c === "}") { depth--; if (depth === 0) return SRC.slice(i0, i + 1) + ";" }
+  }
+  throw new Error("finalizePre body unbalanced")
+})(SRC)
 
 let pass = 0, fail = 0
 const ok = (c, m) => { if (c) { pass++; console.log("  ok - " + m) } else { fail++; console.log("  FAIL - " + m) } }
@@ -41,6 +59,7 @@ function mkProbe(cfg) {
   //   探针形状必须可切换，否则本套件只能在旧版形状下绿，掩盖真实生产回归。
   const host021 = !!(cfg && cfg.__host021)
   const _events = []
+  let _reqSeq = 0   // ★单调递增的请求序号：每次 run() = 一个模型请求
   const agent = host021
     ? { session: { snapshotEvents: () => _events.slice() } }
     : { session: { events: _events } }
@@ -52,17 +71,46 @@ function mkProbe(cfg) {
     humanTurnObservedPre: () => humanSeq !== null,
     humanTurnSeqPre: () => humanSeq,
     renderReflectionRequest: () => "",
+    // 与生产同源：最近一次 step/end 的 seq；无则退回 turn/start 的 seq
+    // 夹具内直接读闭包里的 _events（host021 模式下 agent.session 只有 snapshotEvents，无 .events）
+    requestIdPre: () => {
+      for (let i = _events.length - 1; i >= 0; i--) if (_events[i] && _events[i].type === "step/end") return "e:" + Number(_events[i].seq)
+      for (let i = _events.length - 1; i >= 0; i--) if (_events[i] && _events[i].type === "turn/start") return "t:" + Number(_events[i].seq)
+      return "t:-1"
+    },
     config: Object.assign({ snapshotMinGapRounds: 10, snapshotTieredInject: true, slimEveryRounds: 3, snapshotReinjectOnCompact: true }, cfg || {}),
   }
-  const F = new Function("engine", "agent", "gap", "snap", "slimText", "diag", "createHash", "parseGapRoundsPre", body + ";")
+  const F = new Function("engine", "agent", "gap", "snap", "slimText", "diag", "createHash", "parseGapRoundsPre", FIN_SRC + String.fromCharCode(10) + body + ";")
   const run = (events, snap) => {
-    if (host021) { _events.length = 0; for (const e of events) _events.push(e) }
-    else agent.session.events = events
+    _events.length = 0
+    for (const e of events) _events.push(e)
+    // ★2026-10-18（交付层根治配套 · 与生产同源）：本套件每次 run() 代表**一个模型请求的一次 text() 调用**。
+    //   生产侧请求键来自 requestIdPre(agent) = 最近一次 step/end 的 seq（两帧之间恒定、每请求翻新）；
+    //   真人待办来自 pre-step 钩子置的 _humanPending。
+    //   因此探针只需要：①让事件流里有一个稳定的 turn/start（首请求兜底键）
+    //                ②在有真人时置 _humanPending，并在授予被消费后清掉。
+    try {
+      const evsNow = _events
+      const hasTurnStart = evsNow.some((e) => e && e.type === "turn/start")
+      if (!hasTurnStart) evsNow.unshift({ seq: 1, type: "turn/start", data: { turn: 1 } })
+      // 每次 run() = 一个新模型请求 ⇒ 上一个请求的 step/end 已落地。
+      //   ⚠ 不能用「事件流里已有几个 step/end」推序号：上方刚把 _events 清空重填，
+      //     数量恒为初始值 ⇒ 序号不变 ⇒ 计数器停摆。用外部单调计数。
+      _reqSeq += 1
+      evsNow.push({ seq: 1000 + _reqSeq, type: "step/end", data: { turn: 1, step: _reqSeq } })
+      if (humanSeq !== null) st._humanPending = true
+    } catch (_) {}
     let err = null, out = ""
     try {
       out = F(engine, agent, 10, snap || FULL, SLIM, () => {}, createHash, (v, d) => { const n = Number(v); return Number.isFinite(n) ? n : d })
     } catch (e) { err = String(e) }
     if (err) return "ERR:" + err
+    if (typeof out !== "string") {
+      if (process.env.DAM_DEBUG_PROBE) {
+        console.log("  [probe] out=" + String(out) + " st=" + JSON.stringify(st) + " evs=" + JSON.stringify(agent.session.events || []))
+      }
+      return "ERR:non-string(" + typeof out + ")"
+    }
     return out.includes("精简注入") ? "S" : "F"
   }
   return { st, run, setHuman: (v) => { humanSeq = v } }

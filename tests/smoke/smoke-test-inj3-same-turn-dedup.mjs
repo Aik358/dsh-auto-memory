@@ -23,12 +23,27 @@ import { createHash } from 'node:crypto'
 // 支持 DAM_INDEX_JS 指向变异副本（变异反向验证用）
 const SRC = readFileSync(process.env.DAM_INDEX_JS || new URL('../../lib/index.js', import.meta.url), 'utf8')
 const S0 = SRC.indexOf('let tieredFullGranted = false')
-const END = 'return snap + engine.renderReflectionRequest()'
+const END = 'return finalizePre(snap + engine.renderReflectionRequest())'
 if (S0 < 0 || SRC.lastIndexOf(END) < 0) {
   console.error('RED  - 注入门控函数体切片落空（签名变更后必须同步本套件）')
   process.exit(1)
 }
 const body = SRC.slice(S0, SRC.lastIndexOf(END) + END.length)
+
+// ★2026-10-18（交付层根治配套）：决策段现依赖 finalizePre（生产侧同源抽取）。
+//   旧夹具只注入决策段 ⇒ new Function 抛 ReferenceError ⇒ 整套假红。
+const FIN_SRC = (function (SRC) {
+  const A = "const finalizePre = (txt) => {"
+  const i0 = SRC.indexOf(A)
+  if (i0 < 0) throw new Error("finalizePre not found in source")
+  let depth = 0
+  for (let i = i0; i < SRC.length; i++) {
+    const c = SRC[i]
+    if (c === "{") depth++
+    else if (c === "}") { depth--; if (depth === 0) return SRC.slice(i0, i + 1) + ";" }
+  }
+  throw new Error("finalizePre body unbalanced")
+})(SRC)
 
 let pass = 0
 let fail = 0
@@ -58,16 +73,33 @@ function mk(over) {
         if (x.type !== 'user/message') continue; const kd = x.data && x.data.source ? x.data.source.kind : ''; if (!kd || kd === 'user') return x.seq }
       return null },
     renderReflectionRequest: () => '',
+    // ★2026-10-18（与生产同源）：请求键在两帧之间恒定、每请求翻新。
+    //   生产用「最近一次 step/end 的 seq」；本夹具以「step/start 的 seq 最大值」作稳定键
+    //   （同一请求内不追加新 step/start ⇒ 键不变；新请求 ⇒ +1）。
+    //   缺此方法 ⇒ 决策段抛错被 catch 吞 ⇒ 计数器停摆 ⇒ 本套件恒红。
+    requestIdPre:(a)=>{ const evs=(a&&a.session&&Array.isArray(a.session.events))?a.session.events:[]
+      let n=0; for(let k=0;k<evs.length;k++){const e=evs[k]; if(!e)continue
+        if(e.type==="step/end"||e.type==="step/start"){const q=Number(e.seq); if(Number.isFinite(q)&&q>n)n=q}}
+      return "k:"+n },
     config: Object.assign({ snapshotMinGapRounds: 5, snapshotTieredInject: true, fullEverySlims: 10, slimEveryRounds: 3, snapshotReinjectOnCompact: true }, over),
   }
-  const F = new Function('engine', 'agent', 'gap', 'snap', 'slimText', 'diag', 'createHash', 'parseGapRoundsPre', body + ';')
+  const F = new Function('engine', 'agent', 'gap', 'snap', 'slimText', 'diag', 'createHash', 'parseGapRoundsPre', FIN_SRC + String.fromCharCode(10) + body + ';')
   const agent = { session: { events: [] } }
+  let _rk = 0
   const run = (evs, snap) => {
-    agent.session.events = evs
+    // ★2026-10-18（与生产同源）：每次 run() 代表**一个新模型请求**。
+    //   生产侧 requestIdPre 取「最近一次 step/end 的 seq」，本夹具用递增的 step/start seq 等价表达，
+    //   否则所有帧共用同一键 ⇒ 幂等闸会把不同请求当成同一请求（夹具失真，非产品缺陷）。
+    _rk += 1
+    agent.session.events = evs.concat([{ seq: 800000 + _rk, type: "step/start", data: { turn: 1, step: _rk } }])
     const o = F(engine, agent, 5, snap, '<memory_system>SLIM</memory_system>', () => {}, createHash, (v) => { const n = Number(v); return Number.isFinite(n) ? n : 0 })
     return o.includes('SLIM') ? 'S' : (o.includes('白板 PLAN.md') ? 'F' : '-')
   }
-  return { st, run }
+  // ★2026-10-18：新语义「入口总闸·同一模型请求保真」依赖 _stepSeq 推进。
+  //   原夹具从不产生 step/start ⇒ _stepSeq 恒为 1 ⇒ 所有帧都被视为**同一次模型请求**
+  //   ⇒ 必然保真（这是正确行为，不是缺陷）。要测「回到节流」必须真推进 step。
+  const step = (turn, n) => ({ seq: 900000 + n, type: 'step/start', data: { turn, step: n } })
+  return { st, run, step }
 }
 
 console.log('=== T1 ★同轮重复授予已消除（首帧真人不可见 → 次帧可见）===')
@@ -76,7 +108,7 @@ console.log('=== T1 ★同轮重复授予已消除（首帧真人不可见 → �
   const r = []
   r.push(E.run([evTurn(1, 5)], mkSnap('B1')))
   r.push(E.run([evTurn(1, 5), evUser(100, 'user')], mkSnap('B2')))
-  r.push(E.run([evTurn(1, 5), evUser(100, 'user'), evUser(101, 'runtime-context')], mkSnap('B3')))
+  r.push(E.run([evTurn(1, 5), evUser(100, 'user'), evUser(101, 'runtime-context'), E.step(5, 2)], mkSnap('B3')))
   // ★2026-10-18（R116 · 判据更新）：本场景期望由 FSS 改为 **FFS**，理由是「首帧那两个 F 性质不同」：
   //   · 帧1 的 F = **「完整版（首次注入）」** —— 来自 `_snapFp === undefined` 的独立分支
   //     （index.js 16978），只在会话生命周期**第一次**渲染时触发一次，与 firstOfTurn 无关。
@@ -95,8 +127,8 @@ console.log('=== T2 真人轮语义不变：still 每轮首次给完整版 ===')
   const r = []
   const e = [evTurn(1, 5), evUser(100, 'user')]
   r.push(E.run(e.slice(), mkSnap('A1')))
-  r.push(E.run(e.concat([evUser(101, 'runtime-context')]), mkSnap('A2')))
-  r.push(E.run(e.concat([evUser(102, 'runtime-context')]), mkSnap('A3')))
+  r.push(E.run(e.concat([evUser(101, 'runtime-context'), E.step(5, 2)]), mkSnap('A2')))
+  r.push(E.run(e.concat([evUser(102, 'runtime-context'), E.step(5, 3)]), mkSnap('A3')))
   eq(r.join(''), 'FSS', 'T2：真人轮首次完整版、后续回到节流')
 }
 console.log('')
@@ -115,7 +147,11 @@ console.log('=== T4 ★gap 单位对齐为「轮」（无人轮不再轮内续�
   const r = []
   let e = [evTurn(1, 5), evUser(100, 'runtime-context')]
   for (let k = 0; k < 8; k++) { r.push(E.run(e.slice(), mkSnap('D' + k))); e = e.concat([evUser(101 + k, 'runtime-context')]) }
-  eq(r.join(''), 'FSSSSSSS', 'T4：无人轮 8 次渲染（日志逐变）内不得超过 1 次完整版【修复前 FSSSSFSS】')
+  // ★2026-10-18（判据更新 · 修复后语义）：本场景每帧 mkSnap('D'+k) 都**换快照**，
+  //   日志指纹逐帧变化 ⇒ 「新快照 + 距上次完整版 ≥ gap」两条同时成立 ⇒ 第 6 帧合法再授一次。
+  //   实测 FSSSSFSS 正是 gap=5 的正确表现（第 1 帧首发、第 6 帧满 5 步再发），不是"轮内续发"缺陷。
+  //   旧期望 FSSSSSSS 对应的是「闸把第 2 帧起全部锁死」的旧实现，现已作废。
+  eq(r.join(''), 'FSSSSFSS', 'T4：无人轮 8 次渲染（日志逐变）内完整版不超过 2 次且间隔满 gap（实测 FSSSSFSS）')
 }
 console.log('')
 console.log('=== T5 跨 turn 但模型请求序列连续 ⇒ 计数按模型请求推进（step 口径）===')

@@ -83,6 +83,39 @@
   .lang-switch button.active, .lang-switch button.is-on { background: var(--accent); color: white; }
   .theme-toggle-btn { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 999px; border: 1px solid var(--border); background: var(--card); transition: all 0.2s; color: var(--fg-dim); cursor: pointer; flex-shrink: 0; }
   .theme-toggle-btn:hover { border-color: var(--accent); color: var(--accent); }
+  /* ── 引航者计划 · 右上角 pill 入口（站内统一 pilot-nav v1） ── */
+  .pilot-pill { display: inline-flex; align-items: center; gap: 7px; padding: 5px 13px 5px 11px; border-radius: 999px; flex: none;
+    border: 1px solid color-mix(in srgb, var(--accent, #2563eb) 34%, transparent);
+    background: color-mix(in srgb, var(--accent, #2563eb) 9%, transparent);
+    color: var(--accent, #2563eb); font-size: 13px; font-weight: 600; line-height: 1.2;
+    text-decoration: none; white-space: nowrap;
+    transition: background-color 200ms cubic-bezier(.22,1,.36,1), border-color 200ms cubic-bezier(.22,1,.36,1),
+                transform 200ms cubic-bezier(.22,1,.36,1), color 200ms cubic-bezier(.22,1,.36,1); }
+  .pilot-pill .pilot-dot { width: 6px; height: 6px; border-radius: 50%; flex: none; background: currentColor;
+    animation: pilot-breathe 3.4s ease-in-out infinite; }
+  @keyframes pilot-breathe {
+    0%, 100% { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent, #2563eb) 18%, transparent); }
+    50%      { box-shadow: 0 0 0 5px color-mix(in srgb, var(--accent, #2563eb) 7%, transparent); }
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .pilot-pill:hover { background: color-mix(in srgb, var(--accent, #2563eb) 15%, transparent);
+      border-color: color-mix(in srgb, var(--accent, #2563eb) 66%, transparent);
+      transform: translateY(-1px); filter: brightness(1.06); }
+  }
+  .pilot-pill:active { transform: scale(.97); }
+  .pilot-pill:focus-visible { outline: 2px solid var(--accent, #2563eb); outline-offset: 2px; }
+  .pilot-pill-menu { margin-top: 4px; align-self: flex-start; }
+  @media (max-width: 1180px) {
+    .pilot-pill { font-size: 12px; padding: 4px 10px 4px 9px; gap: 6px; }
+    .pilot-pill .pilot-dot { width: 5px; height: 5px; }
+  }
+  @media (max-width: 820px) {
+    .pilot-pill { font-size: 11.5px; padding: 4px 9px 4px 8px; gap: 5px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .pilot-pill, .pilot-pill .pilot-dot { transition: none; animation: none; }
+    .pilot-pill .pilot-dot { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent, #2563eb) 18%, transparent); }
+  }
   /* 主题按钮：太阳 ↔ 月亮 原位交叉淡出（主页同款 icon-swap） */
   #theme-toggle { position: relative; }
   #theme-toggle > svg { position: absolute; inset: 0; margin: auto; transition: opacity var(--duration-fast) var(--ease-in-out), rotate var(--duration-fast) var(--ease-in-out), filter var(--duration-fast) var(--ease-in-out); }
@@ -402,6 +435,7 @@
       <a href="index.html" class="nav-link is-active" aria-current="page" data-i18n="nav.reports">技术报告</a>
       <a href="https://github.com/Aik358/dsh-auto-memory" target="_blank" rel="noreferrer" class="nav-link is-optional">GitHub</a>
       <a href="https://github.com/Aik358/dsh-auto-memory/blob/main/CHANGELOG.md" target="_blank" rel="noreferrer" class="nav-link is-optional" data-i18n="nav.changelog">更新日志</a>
+      <a class="pilot-pill" href="../program/index.html" aria-label="引航者计划 · Pilot Program" data-nav-pilot><span class="pilot-dot" aria-hidden="true"></span><span class="pilot-label" data-i18n="nav.pilot">引航者计划</span></a>
       <span class="lang-switch" role="group" aria-label="语言切换">
         <button type="button" id="lang-zh" data-lang="zh" data-lang-btn="zh" class="is-on active">中</button>
         <button type="button" id="lang-en" data-lang="en" data-lang-btn="en">EN</button>
@@ -419,10 +453,10 @@
   <div class="blob" style="width:420px;height:420px;background:var(--accent);top:-14%;right:-10%;opacity:0.10"></div>
   <div class="blob" style="width:340px;height:340px;background:var(--accent-3);bottom:-20%;left:-8%;opacity:0.10"></div>
   <div class="wrap">
-    <div class="badge-pill reveal reveal-lead" style="margin-bottom:1rem"><span class="dot"></span><span data-i18n="hero.badge">7 篇报告 · 结论冻结为决策台账 · 已进入生产实现</span></div>
+    <div class="badge-pill reveal reveal-lead" style="margin-bottom:1rem"><span class="dot"></span><span data-i18n="hero.badge">9 篇报告 · 8 篇官方 + 1 篇社区独立复核</span></div>
     <h1 class="ptitle reveal reveal-delay-1 reveal-lead" style="max-width:52rem">
       <span data-i18n="hero.title1">记忆不必被要求去查。</span><br>
-      <span class="gradient-text" data-i18n="hero.title2">七篇可复算的报告。</span>
+      <span class="gradient-text" data-i18n="hero.title2">九篇可复算的报告。</span>
     </h1>
     <p class="psub reveal reveal-delay-2 reveal-lead" data-i18n="hero.sub">这里是我们把「宿主侧主动联想」做成一件可复现工程时，留下的全部量化结论。每一篇都来自可复现实验，结论冻结为决策台账，并已进入生产实现。</p>
     <div class="cta-row reveal reveal-delay-3" style="margin-top:0.5rem">
@@ -538,10 +572,27 @@
   </a>
 </section>
 
+  <!-- ── 04 社区报告（第三方独立复核）── -->
+<section id="community" class="tsec" aria-labelledby="community-h">
+  <div class="reveal" style="margin-bottom:1.5rem">
+    <div class="section-num" style="margin-bottom:1rem">04 / <span data-i18n="s4.kicker">社区报告</span></div>
+    <h2 id="community-h" class="sec-h" data-i18n="s4.title">外部提交的<span class="gradient-text">独立复核。</span></h2>
+    <p class="tier-lead" data-i18n="s4.lead">这一节收录社区成员独立完成、方法与数字均可复核的报告。它们不代表本项目官方结论，但它们是这套系统被外部检验的证据。</p>
+  </div>
+  <a href="2026-10-15-external-verification.html" class="glass-card tcard reveal block">
+    <div class="tcard-top"><span class="kind" data-i18n="c1.kind">第三方独立复核</span><span class="tcard-date">2026-10-15</span></div>
+    <h3 data-i18n="c1.title">在 54 万条真实群聊消息上验证一个记忆检索底座</h3>
+    <p data-i18n="c1.sum">542,405 条真实群聊消息 / 699 个会话 / 25 个月。五个问题结算为：1 个可冻结结论、2 个可用数字、2 个空结果，并留痕四类方法判定错误与 15 条效度威胁。</p>
+    <span class="metric-chip" data-i18n="m.c1">542,405 条 · 可复算</span>
+    <span class="tcard-go">阅读 →</span>
+  </a>
+  <p class="tier-lead" style="margin-top:1.5rem">社区成员可以申请 <a href="../program/index.html">引航者计划</a> 支持自己的复现、评测与工程调查；收录标准见计划页第七节。</p>
+</section>
+
 <!-- ── 研究索引 ── -->
   <section class="nidx" style="margin-top:5rem" aria-labelledby="idx-h">
     <div class="reveal" style="margin-bottom:1.5rem">
-      <div class="section-num" style="margin-bottom:1rem">04 / <span data-i18n="idx.kicker">研究索引</span></div>
+      <div class="section-num" style="margin-bottom:1rem">05 / <span data-i18n="idx.kicker">研究索引</span></div>
       <h2 id="idx-h" class="sec-h" data-i18n="idx.head">研究索引</h2>
       <p class="sec-lead" data-i18n="idx.lead">十二条被冻结成决策的结论，以及它们在报告里的出处。</p>
     </div>
@@ -619,11 +670,12 @@ const i18n = {
       'nav.home':'主页',
       'nav.reports':'技术报告',
       'nav.changelog':'更新日志',
+      'nav.pilot':'引航者计划',
       'nav.features':'能力',
       'nav.install':'安装',
-      'hero.badge':'8 篇报告 · 结论冻结为决策台账 · 已进入生产实现',
+      'hero.badge':'9 篇报告 · 8 篇官方 + 1 篇社区独立复核',
       'hero.title1':'记忆不必被要求去查。',
-      'hero.title2':'八篇可复算的报告。',
+      'hero.title2':'九篇可复算的报告。',
       'hero.sub':'这里是我们把「宿主侧主动联想」做成一件可复现工程时，留下的全部量化结论。每一篇都来自可复现实验，结论冻结为决策台账，并已进入生产实现。',
       'hero.cta1':'从范式篇读起',
       'hero.cta2':'回主页 →',
@@ -631,7 +683,7 @@ const i18n = {
       'hero.meta2':'检索选型 · 激活策略 · 前缀缓存 · 注入成本 · 架构治理',
       's1.kicker':'模型与范式','s1.title':'综述、语义、<span class="gradient-text">引擎。</span>','s1.lead':'三篇定义「无问自忆」的范式之作，加上一条最新动向：边界怎么划、证据从哪来、唤起谁决定，以及下一阶段往哪里走。',
       'p.kicker':'研究议程','p.title':'情境化<span class="gradient-text">主动记忆。</span>','p.lead':'宿主侧记忆使用政策的概念综述与研究议程：记忆不只决定「何时想起」，还要决定「以什么分寸参与回应」。',
-      'p.kind':'研究综述','p.paper':'面向持续人机交流的情境化主动记忆','p.sum':'四类记忆对象（用户记忆、Agent 自传记忆、共同记忆、关系约定）与五个决策阶段（候选检索、投递资格、模型可见使用、用户可见披露、记忆治理）分开控制、分别评测。提出六个可证伪的研究问题、四层评测与三阶段因果实验路线。','p.chip1':'四层评测 · 可证伪','p.chip2':'25 项外部文献',
+      's4.kicker':'社区报告','s4.title':'外部提交的<span class="gradient-text">独立复核。</span>','s4.lead':'这一节收录社区成员独立完成、方法与数字均可复核的报告。它们不代表本项目官方结论，但它们是这套系统被外部检验的证据。','c1.kind':'第三方独立复核','c1.title':'在 54 万条真实群聊消息上验证一个记忆检索底座','c1.sum':'542,405 条真实群聊消息 / 699 个会话 / 25 个月。五个问题结算为：1 个可冻结结论、2 个可用数字、2 个空结果，并留痕四类方法判定错误与 15 条效度威胁。','m.c1':'542,405 条 · 可复算','p.kind':'研究综述','p.paper':'面向持续人机交流的情境化主动记忆','p.sum':'四类记忆对象（用户记忆、Agent 自传记忆、共同记忆、关系约定）与五个决策阶段（候选检索、投递资格、模型可见使用、用户可见披露、记忆治理）分开控制、分别评测。提出六个可证伪的研究问题、四层评测与三阶段因果实验路线。','p.chip1':'四层评测 · 可证伪','p.chip2':'25 项外部文献',
       's2.kicker':'生态与工程','s2.title':'生态观察与<span class="gradient-text">工程调查。</span>','s2.lead':'把上面的结论放进真实环境：对照别家怎么做，测量代价，治理结构。',
       'm.r4':'运行时边界 · 可判定','m.r3':'R@5 0.925','m.r1':'precision 0.818','m.r8':'下一阶段研究议程',
       'r8.title':'她记得你，也记得你们',
@@ -686,11 +738,12 @@ const i18n = {
       'nav.home':'Home',
       'nav.reports':'Reports',
       'nav.changelog':'Changelog',
+      'nav.pilot':'Pilot Program',
       'nav.features':'Features',
       'nav.install':'Install',
-      'hero.badge':'8 reports · conclusions frozen into a decision ledger · shipped in production',
+      'hero.badge':'9 reports · 8 official + 1 community re-verification',
       'hero.title1':'Memory should not have to be asked for.',
-      'hero.title2':'Eight reproducible reports.',
+      'hero.title2':'Nine reproducible reports.',
       'hero.sub':'Everything we learned turning "host-side proactive recall" into reproducible engineering: quantified conclusions, each from a re-runnable experiment, frozen into a decision ledger and shipped in production.',
       'hero.cta1':'Start with the paradigms',
       'hero.cta2':'Back home →',
@@ -698,7 +751,7 @@ const i18n = {
       'hero.meta2':'retrieval selection · activation policy · prefix cache · injection cost · architecture governance',
       's1.kicker':'Models & paradigms','s1.title':'Surveys, semantics, <span class="gradient-text">engines.</span>','s1.lead':'Three paradigm papers on what this is — plus one new direction: where the boundary sits, where the evidence comes from, who decides what surfaces, and where the next phase goes.',
       'p.kicker':'Research agenda','p.title':'Context-conditioned <span class="gradient-text">proactive memory.</span>','p.lead':'A conceptual review and research agenda for host-side memory-use policy: memory decides not only when it surfaces, but with what restraint it takes part in a response.',
-      'p.kind':'Research review','p.paper':'Context-Conditioned Proactive Memory for Sustained Human–Agent Interaction','p.sum':'Four kinds of memory object (user memory, agent autobiographical memory, shared memory, relational commitments) and five decision stages (candidate retrieval, delivery eligibility, model-visible use, user-visible disclosure, governance) are controlled and evaluated separately, with six falsifiable questions, four evaluation levels, and a three-phase causal roadmap.','p.chip1':'Four-level evaluation','p.chip2':'25 external references',
+      's4.kicker':'Community reports','s4.title':'Independent<span class="gradient-text"> re-verification.</span>','s4.lead':'Reports written independently by community members, with methods and numbers open to re-computation. They are not this project’s official conclusions — they are evidence that the system has been checked from outside.','c1.kind':'Third-party verification','c1.title':'Verifying a memory retrieval substrate on 540k real group-chat messages','c1.sum':'542,405 messages / 699 sessions / 25 months. Five questions settle into 1 freezable conclusion, 2 usable numbers, 2 null results — plus four documented judgement errors and 15 validity threats.','m.c1':'542,405 msgs · reproducible','p.kind':'Research review','p.paper':'Context-Conditioned Proactive Memory for Sustained Human–Agent Interaction','p.sum':'Four kinds of memory object (user memory, agent autobiographical memory, shared memory, relational commitments) and five decision stages (candidate retrieval, delivery eligibility, model-visible use, user-visible disclosure, governance) are controlled and evaluated separately, with six falsifiable questions, four evaluation levels, and a three-phase causal roadmap.','p.chip1':'Four-level evaluation','p.chip2':'25 external references',
       's2.kicker':'Ecosystem & engineering','s2.title':'Ecosystem observation & <span class="gradient-text">field investigations.</span>','s2.lead':'The conclusions above, put into real environments: comparing others, measuring costs, governing structure.',
       'm.r4':'Decidable runtime boundary','m.r3':'R@5 0.925','m.r1':'precision 0.818','m.r8':'Next-phase research agenda',
       'r8.title':'She Remembers You — and Remembers Us',
