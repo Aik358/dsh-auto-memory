@@ -7,7 +7,7 @@
 > **EN** Now, across windows, too. Context that survives windows, sessions, and tools
 
 <p align="center">
-  <a href="https://aik358.github.io/dsh-auto-memory/landing/"><strong>🌐 宣传主页（功能全景 · 数据流 · 论文 · 截图）</strong></a> · <a href="https://aik358.github.io/dsh-auto-memory/landing/news/"><strong>📄 技术报告</strong></a>
+  <a href="https://aik358.github.io/dsh-auto-memory/landing/"><strong>🌐 宣传主页</strong></a> · <a href="https://aik358.github.io/dsh-auto-memory/landing/news/"><strong>📄 技术报告</strong></a> · <a href="https://aik358.github.io/dsh-auto-memory/landing/program/"><strong>🧭 引航者计划</strong></a>
 </p>
 
 <table align="center">
@@ -655,6 +655,7 @@ DeepSeek Harness (Node, 127.0.0.1:3080)
 |---|---|
 | [**白皮书**](docs/WHITEPAPER.md) | 「有哪些**不能违反**的约束、哪些已知边界」——文中每个默认值都经代码自核 |
 | [**前端共创计划**](docs/FRONTEND-CO-CREATION.md) | 外部贡献者能改什么、什么是禁区、怎么改——含完整组件/路由/插槽地图 |
+| [**引航者计划**](docs/CREATOR-CREDIT-PROGRAM.md) | 为插件做贡献能拿到什么——三条参与轨道、三档证据等级、社区报告上站规则，以及当前开放的研究议题 |
 | [功能全量清单](docs/internal/FEATURE-INVENTORY.md) | 「有哪些功能、各住在哪」（39 条用户能力 / 19 工具 / 73 路由 / 157 配置键） |
 
 > **⚠️ 从 3.0 之前升级上来的用户请注意**：3.0.0 有一批默认值**被翻转**——
@@ -709,6 +710,8 @@ DeepSeek Harness (Node, 127.0.0.1:3080)
 - **[DSH API](https://api.dshapi.icu/register?aff=HJU27P7JL39N)** — API 中转站，为本项目的开发、测试以及 M 系列语义引擎研究提供模型端点。感谢一路同行。
 
 基础设施与 API 额度赞助方列在 **[贡献者与赞助](https://aik358.github.io/dsh-auto-memory/CONTRIBUTORS.html)** 页面。如希望支持本项目，欢迎提 issue 或加入 QQ 交流群。
+
+其中一部分额度以 **[引航者计划](https://aik358.github.io/dsh-auto-memory/landing/program/)** 的形式开放给社区：为插件做过贡献的开发者可以申领模型额度，用于前后端调试、语义引擎调参与前沿研究。规则见[章程](docs/CREATOR-CREDIT-PROGRAM.md)。
 
 ---
 

@@ -97,6 +97,10 @@ const LAYERS = {
   snapshotHead: '<memory_system>', snapshotTail: '</memory_system>',
   snapshotMeta: '工作区: {ws}', snapshotSlimNote: 'n={n}',
   snapshotSlimRecallNote: 'r', snapshotSlimStatus: 's', snapshotCatalogTitle: '',
+  // ★2026-10-18（用户硬性底线）：精简版新增「记忆维护底线」段。
+  //   本沙箱按既有约定必须显式注入其引用的全部文案键，否则 L('snapshotSlimMaintain')
+  //   返回 undefined ⇒ 拼接抛错 ⇒ 被方法体 catch 吞成空串（症状=断言全红但无报错）。
+  snapshotSlimMaintain: 'maint',
   snapshotRulesTitle: '规则', snapshotRulesGuide: '必读',
   snapshotTier0Title: '目录', snapshotPlanTitle: '白板', snapshotHandoffTitle: '账本',
   snapshotCalendarTitle: '日程',

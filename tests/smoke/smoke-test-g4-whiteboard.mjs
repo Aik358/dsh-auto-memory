@@ -152,7 +152,7 @@ t('G4-6b ★ 铭文与服务端逐字一致(镜像漂移守卫)', () => {
   assert(srv === cliVal, '★ 服务端与客户端铭文必须逐字一致（服务端 ' + srv.length + ' 字符 / 客户端 ' + cliVal.length + ' 字符）')
 })
 
-t('G4-6d ★ 提示词层镜像：客户端 26 层与服务端逐键逐字一致（D3 / 2026-09-30，2026-10-01 +2 层，2026-10-13 +1 层）', () => {
+t('G4-6d ★ 提示词层镜像：客户端 27 层与服务端逐键逐字一致（D3 / 2026-09-30，2026-10-01 +2 层，2026-10-13 +1 层，2026-10-18 +1 层）', () => {
   // 用户裁定「设置页必须全量同步，不能有缺少」。此前客户端镜像只有 12 层，且 snapshotHead /
   // snapshotWelcomeBody 是截断版（46/49 字符 vs 服务端 302/149）⇒ 设置页「提示词层级」展示的
   // 内容与实际注入不符（用户以为某层没注入，实为镜像缺失）。
@@ -160,9 +160,11 @@ t('G4-6d ★ 提示词层镜像：客户端 26 层与服务端逐键逐字一致
   const cliObj = evalClientLayers()
   const srvKeys = Object.keys(DEFAULT_PROMPT_LAYERS)
   const cliKeys = Object.keys(cliObj)
+  // ★2026-10-18（注入交付根治）：26 → 27 —— 精简版新增 snapshotSlimMaintain（记忆维护底线）层，
+  //   服务端与客户端镜像**同一提交内同步补齐**（无漏钉）。
   // ★2026-10-13（#333②）：25 → 26 —— 新增 snapshotInscriptionArchive（归档取回通道）层，
   //   服务端与客户端镜像**同步新增**（本次同一提交内补齐，无漏钉）。
-  assert(srvKeys.length === 26, '服务端层数应为 26（实测 ' + srvKeys.length + '）')
+  assert(srvKeys.length === 27, '服务端层数应为 27（实测 ' + srvKeys.length + '）')
   const missing = srvKeys.filter((k) => !cliKeys.includes(k))
   const extra = cliKeys.filter((k) => !srvKeys.includes(k))
   assert(missing.length === 0, '★ 客户端缺失层: ' + missing.join(', '))

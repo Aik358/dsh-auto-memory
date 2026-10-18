@@ -176,8 +176,11 @@ console.log('[P6A-5] ★分级注入（用户裁定"不是不注入，而是精�
   // 旧病灶：节流分支里 `return engine.renderReflectionRequest()`（整份快照被跳过 ⇒ 规则与索引也不在场）
   ok(!/st\._snapPendingSnap = snap\s*\n\s*st\._snapPendingLogFp = logFp\s*\n\s*return engine\.renderReflectionRequest\(\)/.test(code),
     '★旧的"节流即跳过整份快照"已被移除')
-  ok(/return slimText \+ engine\.renderReflectionRequest\(\)/.test(code),
-    '★节流分支改为返回**精简版**（规则 + 索引 + 日程都在场）')
+  // ★2026-10-18（判据更新）：节流分支现已统一包进 finalizePre(...)（请求级幂等定稿），
+  //   字面量从 `return slimText + ...` 变为 `return finalizePre(slimText + ...)`。
+  //   判据意图不变：节流时返回的必须是**精简版全文**（规则 + 索引 + 日程都在场），不是空串。
+  ok(/return finalizePre\(slimText \+ engine\.renderReflectionRequest\(\)\)/.test(code),
+    '★节流分支改为返回**精简版**（经 finalizePre 定稿；规则 + 索引 + 日程都在场）')
   ok(/const slimText = engine\.config\.snapshotTieredInject === false \? '' : engine\.renderSlimSnapshotPre\([^)]*\)/.test(code),
     '注入调用方取精简版，且开关可一键回退')
   // ★2026-09-15：签名由 `renderSlimSnapshotPre()` 变为 `renderSlimSnapshotPre(wsHint)`（首轮工作区兜底）。

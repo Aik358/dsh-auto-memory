@@ -8,8 +8,24 @@ import { createHash } from "node:crypto"
 // 变异反向验证：去掉 snapNotReadyPre 门 ⇒ C1/C2/C5/C6 必红。
 const SRC = readFileSync(process.env.DAM_INDEX_JS || "lib/index.js", "utf8")
 const S0 = SRC.indexOf("let tieredFullGranted = false")
-const END = "return snap + engine.renderReflectionRequest()"
+const END = "return finalizePre(snap + engine.renderReflectionRequest())"
 const body = SRC.slice(S0, SRC.lastIndexOf(END) + END.length)
+
+// ★2026-10-18（交付层根治配套）：决策段现依赖 finalizePre（生产侧同源抽取）。
+//   旧夹具只注入决策段 ⇒ new Function 抛 ReferenceError ⇒ 整套假红。
+//   下列片段从源码**真实抽取** finalizePre，保证夹具与生产同源（不复制实现）。
+const FIN_SRC = (function (SRC) {
+  const A = "const finalizePre = (txt) => {"
+  const i0 = SRC.indexOf(A)
+  if (i0 < 0) throw new Error("finalizePre not found in source")
+  let depth = 0
+  for (let i = i0; i < SRC.length; i++) {
+    const c = SRC[i]
+    if (c === "{") depth++
+    else if (c === "}") { depth--; if (depth === 0) return SRC.slice(i0, i + 1) + ";" }
+  }
+  throw new Error("finalizePre body unbalanced")
+})(SRC)
 const NL = String.fromCharCode(10)
 const LB = String.fromCharCode(91), RB = String.fromCharCode(93)
 const RS = String.fromCharCode(92)
@@ -56,7 +72,7 @@ const mk = (opts) => {
     config: Object.assign({ snapshotMinGapRounds: 5, snapshotTieredInject: true, fullEverySlims: 3,
       slimEveryRounds: 3, snapshotReinjectOnCompact: true }, opts.cfg || {}),
   }
-  const F = new Function("engine", "agent", "gap", "snap", "slimText", "diag", "createHash", "parseGapRoundsPre", body + ";")
+  const F = new Function("engine", "agent", "gap", "snap", "slimText", "diag", "createHash", "parseGapRoundsPre", FIN_SRC + String.fromCharCode(10) + body + ";")
   const slimText = opts.slimText === undefined ? SLIM : opts.slimText
   const diags = []
   const run = (snap) => {
