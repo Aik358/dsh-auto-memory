@@ -42,9 +42,18 @@ try {
       //   均在经典档手写区（生成区之外）⇒ 本锁随动。改动内容：fInboxGateHint/fAssocEngineHint/
       //   fFullEverySlimsHint 三组中英文案与后端默认值对齐 + data-dam-gate-readout 各面 +1 行。
       //   判据意图不变（经典区字节守恒），按 2026-10-01 裁定以本套件自身表达式复算重钉。
+      //   ★2026-10-18 R124 重钉（455781fa… → 1c4727b8…）：v3.3.5 版本标识两处（指纹行 + 应用内
+      //     更新说明字典新增 3.3.5 条目），均在经典区手写面 ⇒ 本锁随动。行为代码零改动。
+      //     判据意图不变（经典区字节守恒）。★归因：还原这两处后复算 = 上一轮锁值，无其他内容混入。
+      //   ★2026-10-18 R122 重钉（129caeec… → 455781fa…）：本批在经典档手写区纠正设置面文案——
+      //     fEmitModeHint（zh/en/ja 三语）补「JS 5 秒生效 / Python 需重启 dsh web 才生效」；
+      //     fShadowRetrievalHint、fContextBridgeHint（zh/en）把「默认关」纠正为「默认开」（与 DEFAULT_CONFIG
+      //     真值一致），并说明关掉后整条通道停摆而非「只不投递」；向导 shadowRetrievalEnabled 的 sub 同步。
+      //     行为代码零改动 ⇒ 本锁只随文案漂移。判据意图不变（经典区字节守恒）。
+      //     ★归因：HEAD 版本用同一表达式复算 = 9714f5df…（与旧锁逐字节相等），无历史漂移混入。
       //   复算，重钉 f5574edf… → 129caeec…。★归因：本批之前的 HEAD 版本复算 = f5574edf…（与旧锁相等），
       //   说明本次变更**全部来自本批三处前端修复**，无历史漂移混入。
-      assert.equal(createHash('sha256').update(prior).digest('hex'), '9714f5dfee7dea59ae0443686c8cf3f8a76d71f361083710f45c93b4795c1b8a', 'classic client region bytes are conserved (interval control normalized back to 1/1440); pinned upstream baseline superseded by reviewed batches')
+      assert.equal(createHash('sha256').update(prior).digest('hex'), '1c4727b8d686fd093309a408aa05d9d718842552ecf5b0b4a2e50d94beec1fb6', 'classic client region bytes are conserved (interval control normalized back to 1/1440); pinned upstream baseline superseded by reviewed batches')
     }
   }
   console.log('PASS archive interval UI/API/runtime agree on 15–1440, invalid patches preserve configuration')

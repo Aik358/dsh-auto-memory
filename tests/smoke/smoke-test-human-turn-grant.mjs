@@ -67,7 +67,12 @@ console.log("=== T4 同一 step 内续帧保真：完整版不被次帧精简版
   //   宿主对**全部 context 面拼接后的整串**去重 ⇒ 同 step 返回逐字节相同的完整版不会真的重复投递。
   //   ⇒ 新判据：同 step 内必须保持一致（都给完整版）。
   const E = mk()
-  const evs = [evTurn(3169,17), evUser(3172,"user")]
+  // ★2026-10-18 夹具修正：原 evs 只有 turn/start + user/message、**没有 step/start**
+  //   ⇒ 生产代码取不到 step 号 ⇒ stepScopeKey 为空串 ⇒ 「空 scope 不参与保真」守卫会跳过保真
+  //   （T4-d 之所以原本就绿，正是因为它自己补了 step/start）。本档测的就是同 step 保真，
+  //   夹具必须给出**真实存在的 step**（与 tiered-branches 分档 5、inj5 T7 同口径）。
+  const evs = [evTurn(3169,17), evUser(3172,"user"),
+               { seq: 3172.5, type: "step/start", data: { turn: 17, step: 1 } }]
   const a = E.run(evs, mkSnap("A"))
   const b = E.run(evs, mkSnap("A"))
   ok(a === "完整", "T4-a 真人在场首次 ⇒ 完整（实得 " + a + "）")

@@ -4,10 +4,10 @@
 
 > **EN** Now, across windows, too. Context that survives windows, sessions, and tools
 >
-> **中文** 该想起的，自己浮现。跨窗口 · 跨会话 · 跨工具，记忆不断线
+> **中文** 该想起的，自己浮现。跨窗口 · 跨会话 · 跨工具 —— Ambient Recall · 「潜藏追忆，如影随形」
 
 <p align="center">
-  <a href="https://htmlpreview.github.io/?https://github.com/Aik358/dsh-auto-memory/blob/preview/docs/landing/index.html"><strong>🌐 Landing page (full feature tour · data flow · papers · screenshots)</strong></a>
+  <a href="https://aik358.github.io/dsh-auto-memory/landing/"><strong>🌐 Landing page (full feature tour · data flow · papers · screenshots)</strong></a> · <a href="https://aik358.github.io/dsh-auto-memory/landing/news/"><strong>📄 Technical reports</strong></a>
 </p>
 
 <table align="center">
@@ -82,13 +82,13 @@
   <a href="docs/SKIN-GUIDE.md"><strong>🎨 Skin guide</strong></a> ·
   <a href="docs/TEAMWORK-GUIDE.md"><strong>👥 Teamwork guide</strong></a> ·
   <a href="CHANGELOG.md">Changelog</a> ·
-  <a href="https://htmlpreview.github.io/?https://github.com/Aik358/dsh-auto-memory/blob/main/docs/CONTRIBUTORS.html">Contributors &amp; Sponsors</a> ·
+  <a href="https://aik358.github.io/dsh-auto-memory/CONTRIBUTORS.html">Contributors &amp; Sponsors</a> ·
   <a href="https://qm.qq.com/q/v7Asxn6vPa">QQ group</a>
 </p>
 
 <h3 align="center">
   <a href="docs/SKIN-GUIDE.md">New UI <code>新款</code></a> &nbsp;·&nbsp; built by
-  <a href="https://github.com/Minervaowl7"><strong>@Minervaowl7</strong></a>
+  <a href="https://aik358.github.io/dsh-auto-memory/MINERVAOWL7.html"><strong>@Minervaowl7</strong></a>
 </h3>
 
 <p align="center"><sub><strong>Key contributor</strong> — built the entire frontend, and drove the critical vulnerability scan &amp; debugging work for this release.</sub></p>
@@ -659,7 +659,7 @@ Papers were authored by the autonomous engineering agent (ZCode / GLM); all conc
 | [**Skin guide**](docs/SKIN-GUIDE.md) | How to build a skin: the three key layers (tokens / anchors / assets), the full token table, the readings↔routes map, and the acceptance checklist. Contributors: submit skins to the [`skins/` library](skins/README.md) via PR. |
 | [**Teamwork guide**](docs/TEAMWORK-GUIDE.md) | Teamwork as it stands: every config key, the 10 team routes, the data-flow diagram (outbox → transport → merge → conflicts), standalone-mode behaviour, and the honest "not implemented" list. |
 | [**Frontend co-creation plan**](docs/FRONTEND-CO-CREATION.md) | What can outside contributors change, what is off-limits, and how to do it — complete component/route/slot map included. |
-| [Feature Inventory](docs/internal/FEATURE-INVENTORY.md) | What features exist and where each one lives (39 user capabilities / 19 tools / 71 routes / 157 config keys) |
+| [Feature Inventory](docs/internal/FEATURE-INVENTORY.md) | What features exist and where each one lives (39 user capabilities / 19 tools / 73 routes / 157 config keys) |
 
 > **⚠️ Upgrading from before 3.0?** A batch of default values was **flipped** in 3.0.0 —
 > most notably whiteboard + ledger went from `off` to **`on`**. Do not trust pre-3.0
@@ -692,7 +692,7 @@ Papers were authored by the autonomous engineering agent (ZCode / GLM); all conc
 
 Community contributors:
 
-- [@Minervaowl7](https://github.com/Minervaowl7) — **responsible for the complete development of the new frontend (the dev-preview UI) and critical debugging**: a reference-style memory workbench (nine-page navigation, list & detail, four settings groups, focus view, dark mode, narrow-screen), integrated through a generator that derives new skin variants from the classic components and fails loudly on structural drift ([PR #146](https://github.com/Aik358/dsh-auto-memory/pull/146)). Also the most prolific contributor overall: 51 PRs + 57 issues covering workspace-overview log-date anchoring, auto-continuation host hardening, semantic-index self-healing, the python download chain and recovery-candidate lifecycle ([#16](https://github.com/Aik358/dsh-auto-memory/issues/16)–[#146](https://github.com/Aik358/dsh-auto-memory/pull/146))
+- [@Minervaowl7](https://aik358.github.io/dsh-auto-memory/MINERVAOWL7.html) — **responsible for the complete development of the new frontend (the dev-preview UI) and critical debugging**: a reference-style memory workbench (nine-page navigation, list & detail, four settings groups, focus view, dark mode, narrow-screen), integrated through a generator that derives new skin variants from the classic components and fails loudly on structural drift ([PR #146](https://github.com/Aik358/dsh-auto-memory/pull/146)). Also the most prolific contributor overall: 146 commits in main + 65 issues covering workspace-overview log-date anchoring, auto-continuation host hardening, semantic-index self-healing, the python download chain and recovery-candidate lifecycle ([#16](https://github.com/Aik358/dsh-auto-memory/issues/16)–[#146](https://github.com/Aik358/dsh-auto-memory/pull/146))
 - [@JIE42393](https://github.com/JIE42393) — 7 issues on panel behaviour, recall quality and configuration edge cases ([#15](https://github.com/Aik358/dsh-auto-memory/issues/15), [#26](https://github.com/Aik358/dsh-auto-memory/issues/26), [#30](https://github.com/Aik358/dsh-auto-memory/issues/30), [#41](https://github.com/Aik358/dsh-auto-memory/issues/41)–[#43](https://github.com/Aik358/dsh-auto-memory/issues/43), [#45](https://github.com/Aik358/dsh-auto-memory/issues/45))
 - [@Fishsb](https://github.com/Fishsb) — 3 issues on memory recall and injection behaviour ([#18](https://github.com/Aik358/dsh-auto-memory/issues/18)–[#20](https://github.com/Aik358/dsh-auto-memory/issues/20))
 - [@messiahyl](https://github.com/messiahyl) — 2 issues ([#8](https://github.com/Aik358/dsh-auto-memory/issues/8), [#9](https://github.com/Aik358/dsh-auto-memory/issues/9))
@@ -702,7 +702,7 @@ Community contributors:
 - [@humou44](https://github.com/humou44) — Japanese UI localisation: proposed in [PR #143](https://github.com/Aik358/dsh-auto-memory/pull/143) and landed as a dictionary-driven i18n layer covering the whole panel (602 inline strings + 583 dictionary keys); more languages will plug into the same layer
 - [@alexchenzl](https://github.com/alexchenzl) ([#6](https://github.com/Aik358/dsh-auto-memory/issues/6)) · [@ALuoXue](https://github.com/ALuoXue) ([#2](https://github.com/Aik358/dsh-auto-memory/issues/2)) · [@Architectxz](https://github.com/Architectxz) ([#1](https://github.com/Aik358/dsh-auto-memory/issues/1)) · [@cuohua](https://github.com/cuohua) ([#40](https://github.com/Aik358/dsh-auto-memory/issues/40)) · [@eclgo](https://github.com/eclgo) ([#13](https://github.com/Aik358/dsh-auto-memory/issues/13)) · [@jeffsui](https://github.com/jeffsui) ([#39](https://github.com/Aik358/dsh-auto-memory/issues/39)) · [@lhbsaa](https://github.com/lhbsaa) ([#3](https://github.com/Aik358/dsh-auto-memory/issues/3)) · [@moonltppt](https://github.com/moonltppt) ([#14](https://github.com/Aik358/dsh-auto-memory/issues/14)) · [@swtseaman](https://github.com/swtseaman) ([#21](https://github.com/Aik358/dsh-auto-memory/issues/21)) · [@xiaochaZ](https://github.com/xiaochaZ) ([#38](https://github.com/Aik358/dsh-auto-memory/issues/38)) · [@zjj871114037](https://github.com/zjj871114037) ([#7](https://github.com/Aik358/dsh-auto-memory/issues/7)) — bug reports and feature requests
 
-Full credits, including infrastructure sponsors: **[Contributors & Sponsors](https://htmlpreview.github.io/?https://github.com/Aik358/dsh-auto-memory/blob/main/docs/CONTRIBUTORS.html)**
+Full credits, including infrastructure sponsors: **[Contributors & Sponsors](https://aik358.github.io/dsh-auto-memory/CONTRIBUTORS.html)**
 
 ---
 
@@ -712,7 +712,7 @@ Development resources for this project are partly provided by:
 
 - **[DSH API](https://api.dshapi.icu/register?aff=HJU27P7JL39N)** — API relay station providing the model endpoints used for development, testing, and the semantic-engine research behind the M-series features. Thank you for keeping the lights on.
 
-Infrastructure and API-quota sponsors are listed on the **[Contributors & Sponsors](https://htmlpreview.github.io/?https://github.com/Aik358/dsh-auto-memory/blob/main/docs/CONTRIBUTORS.html)** page. If you would like to support the project, open an issue or join the QQ group.
+Infrastructure and API-quota sponsors are listed on the **[Contributors & Sponsors](https://aik358.github.io/dsh-auto-memory/CONTRIBUTORS.html)** page. If you would like to support the project, open an issue or join the QQ group.
 
 ---
 
@@ -721,7 +721,7 @@ Infrastructure and API-quota sponsors are listed on the **[Contributors & Sponso
 This project is built human-machine collaboratively. In addition to engineering and community contributions above:
 
 - **Aik358** — project owner: product direction, architecture, and engineering.
-- **[@Minervaowl7](https://github.com/Minervaowl7)** — **author of the new frontend (the skin system)**: independently built the complete new UI — a nine-page workbench, list/detail views, four settings groups, focus view, dark-mode adaptation and narrow-screen layouts. **This is the starting point and foundation of the plugin's skin system**: by integrating through a generator that derives new skin variants from the classic components, later contributors can keep re-skinning on top of it while the classic skin stays byte-for-byte unchanged. Also the project's most prolific community developer (51 PRs · 57 issues).
+- **[@Minervaowl7](https://aik358.github.io/dsh-auto-memory/MINERVAOWL7.html)** — **author of the new frontend (the skin system)**: independently built the complete new UI — a nine-page workbench, list/detail views, four settings groups, focus view, dark-mode adaptation and narrow-screen layouts. **This is the starting point and foundation of the plugin's skin system**: by integrating through a generator that derives new skin variants from the classic components, later contributors can keep re-skinning on top of it while the classic skin stays byte-for-byte unchanged. Also the project's most prolific community developer (146 commits in main · 203 days · +64,915 lines).
 - **ZCode (GLM, Z.ai)** — autonomous engineering agent: M-series semantic-engine implementation, benchmark research papers ([M7-RESEARCH-PAPER](docs/M7-RESEARCH-PAPER.md) / [Activation v2 report](docs/M7-ACTIVATION-V2-PAPER.md)), regression suites, and the landing-page design/build.
 - **Kimi K3 (Moonshot AI)** — frontend agent: contributed to the v0.1.30 welcome-tour interface assets and visual QA.
 - **DeepSeek Harness (DeepSeek V4)** — **the self-iteration environment and collaborator of this project**: most of the features contributed by the community author and the agents above were **grown inside DeepSeek Harness, self-evolving together with DeepSeek V4** — spotting a problem, locating the root cause, writing the patch, running the regression suite and opening the PR all happened within the same set of Harness sessions. This is itself an instance of a **harness iterating on, and developing, itself**: the project is used by humans and AI while it makes itself better in the very same environment. The plugin's own context-management capabilities (handoff ledgers / whiteboard / watermark sensing / auto-continuation) grew out of exactly this need — supporting long-running, cross-session self-iteration.

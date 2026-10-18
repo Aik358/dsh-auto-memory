@@ -95,7 +95,10 @@ console.log("")
 console.log("=== 分档 5：同一 step 内续帧保真 ⇒ 完整版不被次帧精简版覆盖 ===")
 {
   const E = mk({ snapshotMinGapRounds: 999 })
-  const evs = [evT(1,1)]
+  // ★2026-10-18 夹具修正：原写 [evT(1,1)] 只有 turn/start、**没有 step/start** ⇒ 生产代码取不到
+  //   step 号 ⇒ stepScopeKey 为空串 ⇒ 「空 scope 不参与保真」守卫会跳过保真判定。
+  //   本档测的正是「同 step 保真」，夹具必须给出**真实存在的 step**（与 inj5 T7 同口径）。
+  const evs = [evT(1,1), { seq: 2, type: "step/start", data: { turn: 1, step: 1 } }]
   ok(E.run(evs, mkSnap("A")) === "完整", "首次注入 ⇒ 完整")
   // 同一 step（事件不再推进）多次渲染：必须保持完整版（宿主整串去重 ⇒ 不会重复投递）
   ok(E.run(evs, mkSnap("A")) === "完整", "★同 step 续帧 ⇒ 仍完整版（保真）")

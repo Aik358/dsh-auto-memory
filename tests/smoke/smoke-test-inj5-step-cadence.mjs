@@ -18,6 +18,7 @@
  *   T4 同一 step 内多次渲染 ⇒ 保持一致（不得被次帧精简版覆盖）
  *   T5 负路径：把计数单位改回 turn ⇒ 必须红
  *   T6 守卫：决策段内不得出现 turn 口径的计数器名
+ *   T7 宿主 0.2.1 Session 形状（无 .events）下节奏不变（本轮生产根因固化）
  */
 import { readFileSync } from "node:fs"
 import { createHash } from "node:crypto"
@@ -36,7 +37,13 @@ const SLIM = "<memory_system>[记忆系统 · 精简注入]</memory_system>"
 
 function mkProbe(cfg) {
   const st = { loadedAt: 1 }
-  const agent = { session: { events: [] } }
+  // ★2026-10-18 T7：支持两种宿主 Session 形状 —— 旧版有 .events，0.2.1 只有 snapshotEvents()。
+  //   探针形状必须可切换，否则本套件只能在旧版形状下绿，掩盖真实生产回归。
+  const host021 = !!(cfg && cfg.__host021)
+  const _events = []
+  const agent = host021
+    ? { session: { snapshotEvents: () => _events.slice() } }
+    : { session: { events: _events } }
   let humanSeq = null
   const engine = {
     stateFor: () => st,
@@ -49,7 +56,8 @@ function mkProbe(cfg) {
   }
   const F = new Function("engine", "agent", "gap", "snap", "slimText", "diag", "createHash", "parseGapRoundsPre", body + ";")
   const run = (events, snap) => {
-    agent.session.events = events
+    if (host021) { _events.length = 0; for (const e of events) _events.push(e) }
+    else agent.session.events = events
     let err = null, out = ""
     try {
       out = F(engine, agent, 10, snap || FULL, SLIM, () => {}, createHash, (v, d) => { const n = Number(v); return Number.isFinite(n) ? n : d })
@@ -151,6 +159,30 @@ console.log("=== T6 守卫：决策段内不得残留 turn 口径的计数器名
      "决策段代码（剥注释）零 turn 口径计数器残留")
   ok(/_stepSeq|_lastFullStepSeq/.test(stripped), "step 口径计数器在位")
   ok(/fullGapStep/.test(stripped) && /slimGapStep/.test(stripped), "阈值按 step 命名")
+}
+
+// ── T7 宿主 0.2.1 Session 形状（无 .events）下的节奏 ────────────────
+console.log("")
+console.log("=== T7 宿主 0.2.1（Session 只有 snapshotEvents，无 .events）⇒ 节奏必须仍为 F+9S+F+9S+F ===")
+{
+  // 背景：2026-10-18 生产实测 —— 决策段两处 step 键解析写成
+  //   `Array.isArray(a.session.events) ? a.session.events : null`
+  // 而 0.2.1 的 Session 已无 .events ⇒ evs 恒 null ⇒ step 键恒空串 ⇒ _stepSeq 永不推进
+  //   ⇒ 完整版间隔判定退化（实测 _stepSeq=undefined、25 个请求全给完整版）。
+  // 本项锁「探针必须覆盖当前生产宿主形状」，防止回归只在新形状下复发而套件仍绿。
+  const P = mkProbe({ __host021: true })
+  const evs = [{ seq: 1, type: "turn/start", data: { turn: 1 } }]
+  let seq = 2
+  const row = []
+  for (let s = 1; s <= 25; s++) {
+    evs.push({ seq: seq++, type: "step/start", data: { turn: 1, step: s } })
+    row.push(P.run(evs.slice()))
+  }
+  const out = row.join("")
+  ok(out === "FSSSSSSSSSFSSSSSSSSSFSSSS", "0.2.1 形状下节奏仍为 F+9S+F+9S+F（实测 " + out + "）")
+  ok(P.st._stepSeq === 25, "step 计数器真实推进到 25（实测 " + P.st._stepSeq + "；旧实现此处为 undefined）")
+  // 负路径：计数器必须不是 undefined —— 直接断言，防止「全给完整版」被误当正常
+  ok(Number.isFinite(Number(P.st._stepSeq)), "计数器为有限数值（undefined/NaN 即判失败）")
 }
 
 console.log("")

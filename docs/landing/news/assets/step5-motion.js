@@ -3,6 +3,7 @@
    无依赖。DOM ready 后：
      1) hero 元素挂 .s5-hero-r（载入依次浮现，顺序 = DOM 顺序，自上而下）；
      2) 正文元素挂 .s5-r + IntersectionObserver，进入视口加 .s5-vis；
+        左侧索引栏 .ptoc 不参与浮现（常驻可见，避免 IO 阈值未达时永久 opacity:0）；
         同一批进入视口的元素按「页面位置自上而下」错峰 —— 永远先上后下；
      3) 嵌套元素只动画最外层（figure 里的 .figbox、afterword 里的 .sign 不再重复挂载）；
      4) 浮现结束后清除内联 transition-delay，不影响 hover 过渡；
@@ -28,7 +29,7 @@
 
     /* 2) 正文滚动浮现 */
     var raw = [].slice.call(document.querySelectorAll(
-      '.pabstract, .ptoc, .prose > h2, .prose > h3, .prose > p, .prose > ul, .prose > ol, .prose > blockquote,' +
+      '.pabstract, .prose > h2, .prose > h3, .prose > p, .prose > ul, .prose > ol, .prose > blockquote,' +
       ' .prose figure, .figbox, .tbl, .pcard, .relgrid > a, .afterword, .sign'
     ));
     /* 只保留最外层：任何祖先也在名单里的元素，交给自己祖先统一动画 */
