@@ -53,7 +53,12 @@ try {
       //     ★归因：HEAD 版本用同一表达式复算 = 9714f5df…（与旧锁逐字节相等），无历史漂移混入。
       //   复算，重钉 f5574edf… → 129caeec…。★归因：本批之前的 HEAD 版本复算 = f5574edf…（与旧锁相等），
       //   说明本次变更**全部来自本批三处前端修复**，无历史漂移混入。
-      assert.equal(createHash('sha256').update(prior).digest('hex'), 'fc58e287a87ac93b76fbabee96b6bc12601d9a71b07b97e0c5476f954f260688', 'classic client region bytes are conserved (interval control normalized back to 1/1440); pinned upstream baseline superseded by reviewed batches')
+      // ★2026-10-19 重钉（fc58e287… → f6f1c6b2…）：v3.3.10 应用内更新说明字典新增 '3.3.10' 键
+      //   + 界面指纹行 v3.3.9→v3.3.10，两者都在**经典区手写面**（生成区之外）⇒ 本锁随动，行为代码零改动。
+      //   ★归因（实测复算，非推断）：改动前 HEAD（728be93）按同一表达式复算 = fc58e287…（与旧锁逐字节相等），
+      //   改动后（8ea0c1b 起）复算 = f6f1c6b2… ⇒ 漂移全部来自 v3.3.10 版本标识，无历史内容混入。
+      //   判据意图不变（经典区字节守恒）。上批提交 8ea0c1b 时漏了重钉，本条为补钉。
+      assert.equal(createHash('sha256').update(prior).digest('hex'), 'f6f1c6b2191f40e3a469e1db04bd53868057aba001584de2e486ec2e906b8080', 'classic client region bytes are conserved (interval control normalized back to 1/1440); pinned upstream baseline superseded by reviewed batches')
     }
   }
   console.log('PASS archive interval UI/API/runtime agree on 15–1440, invalid patches preserve configuration')
