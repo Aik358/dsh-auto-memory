@@ -53,7 +53,20 @@ try {
       //     ★归因：HEAD 版本用同一表达式复算 = 9714f5df…（与旧锁逐字节相等），无历史漂移混入。
       //   复算，重钉 f5574edf… → 129caeec…。★归因：本批之前的 HEAD 版本复算 = f5574edf…（与旧锁相等），
       //   说明本次变更**全部来自本批三处前端修复**，无历史漂移混入。
-      assert.equal(createHash('sha256').update(prior).digest('hex'), 'fc58e287a87ac93b76fbabee96b6bc12601d9a71b07b97e0c5476f954f260688', 'classic client region bytes are conserved (interval control normalized back to 1/1440); pinned upstream baseline superseded by reviewed batches')
+      // ★2026-10-19 重钉（fc58e287… → f6f1c6b2…）：v3.3.10 应用内更新说明字典新增 '3.3.10' 键
+      //   + 界面指纹行 v3.3.9→v3.3.10，两者都在**经典区手写面**（生成区之外）⇒ 本锁随动，行为代码零改动。
+      //   ★归因（实测复算，非推断）：改动前 HEAD（728be93）按同一表达式复算 = fc58e287…（与旧锁逐字节相等），
+      //   改动后（8ea0c1b 起）复算 = f6f1c6b2… ⇒ 漂移全部来自 v3.3.10 版本标识，无历史内容混入。
+      //   判据意图不变（经典区字节守恒）。上批提交 8ea0c1b 时漏了重钉，本条为补钉。
+      // ★2026-10-19 重钉（f6f1c6b2… → 3d9862ae…）：issue #451 代理压缩适配批在**经典档手写区**新增——
+      //   ① 设置面 fWaterProxyCompat 一行控件（含 ★ 注释两行）；② i18n 三语各 +1 键（fWaterProxyCompat/Hint + waterMeterProxy）；
+      //   ③ 4-tuple 文案表 +1 条（L3 摘要用）；④ 水位卡 meter 渲染分支 +proxyUsage 档；
+      //   ⑤ 一次性兼容询问弹窗（DialogHost 内 proxyCompat 分支 + 优先级登记 + 启动探测 checkProxyCompatOffer）。
+      //   全部在生成区之外（生成块内容另由 iter5-skin 锁与 --check --strict 守卫）。行为代码零改动。
+      //   判据意图不变（经典区字节守恒），按 2026-10-01 裁定以本套件自身表达式复算重钉。
+      // ★2026-10-20 重钉（3d9862ae… → f4ce3086…）：v3.3.11 版本标识两处（指纹行 + 应用内更新说明字典新增 3.3.11 条目），
+      //   均在经典区手写面（生成区之外）⇒ 本锁随动，行为代码零改动。判据意图不变（经典区字节守恒）。
+      assert.equal(createHash('sha256').update(prior).digest('hex'), 'f4ce30869df00ef06c426c948f73c6c97dca1e6b85e885601fe991629ca15ef8', 'classic client region bytes are conserved (interval control normalized back to 1/1440); pinned upstream baseline superseded by reviewed batches')
     }
   }
   console.log('PASS archive interval UI/API/runtime agree on 15–1440, invalid patches preserve configuration')

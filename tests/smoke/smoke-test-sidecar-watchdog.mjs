@@ -144,8 +144,18 @@ console.log('\n[G1] 契约与影响面(源码级反向锁,不起进程)')
   ok(imports.every((m) => allowed.has(m)), 'G1 依赖面收敛(Python 档自身)', JSON.stringify(imports))
   ok(!/semantic-js-pre|memory-hub-pre|fact-store-pre|procedure-store-pre|context-host-pre/.test(src),
     'G1 本模块不引用 JS 端语义模块(无联动)')
-  // 不得硬编码 python:命令由调用方给,缺省才回落 'python'
-  ok(/resolveOpt\('command'\) \|\| 'python'/.test(src), 'G1 python 命令仅为缺省回落,可被调用方覆盖')
+  // ★2026-10-19 判据更新（原判据「缺省回落 'python'」已被证伪并撤销，不得回滚成旧写法）：
+  //   旧断言 /resolveOpt('command') \|\| 'python'/ 断言的**正是本事故的入口** ——
+  //   探测缓存未命中时静默拿系统 python 起进程 ⇒ 无 transformers ⇒ embedder=None ⇒ 恒 suppress
+  //   （真机实测 256/256 shadow 决策全 suppress_low_signal，且进程终身不自愈）。
+  //   新不变量（更强，且由 a29 套件 A 组做真执行验收）：
+  //     ① 命令不再有裸 'python' 兜底；
+  //     ② 验证模式（requireVerifiedCommand）下拿不到已验证命令 ⇒ 拒绝 spawn（fail-closed）；
+  //     ③ 命令仍可由调用方覆盖（resolveCommand / 显式 command）。
+  ok(!/resolveOpt\('command'\) \|\| 'python'/.test(src), 'G1 ★裸 python 兜底已移除（历史 bug 不得回归）')
+  ok(/requireVerifiedCommand/.test(src), 'G1 验证闸开关存在')
+  ok(/interpreter-unverified/.test(src), 'G1 拿不到已验证解释器时 fail-closed 的结构化归因码存在')
+  ok(/rawOpt\('resolveCommand'/.test(src), 'G1 resolveCommand 以函数本体取得（不得被 opt() 当场求值，见 a29 B1 踩坑）')
 }
 console.log('\n[G2] 熔断口径:段内进度帧成功不清零 / 终态成功才清零(#107)')
 {

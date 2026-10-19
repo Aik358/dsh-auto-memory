@@ -4,6 +4,44 @@ All notable changes to dsh-auto-memory.
 
 ---
 
+## [3.3.11] — 2026-10-20 · 适配 billion-context 代理压缩（水位虚高）+ Python 语义侧车静默残废根治
+
+> **一句话**：修复 issue #451 与语义侧车「进程活着但从不干活」两个问题；新增 1 个配置键，默认值保证未装相关插件的用户**行为不变**（fail-open）。
+
+### 已确认修复
+
+| # | 位置 | 修复 |
+|---|---|---|
+| ① | `lib/water-window.js` + `lib/index.js` · `checkWaterLevel` | **issue #451**：billion-context **代理型**压缩插件在服务端压缩历史、却不写会话事件流，导致官方 `dsh-token-meter` 的「估算 ≥ 实测才采纳实测」守卫恒假 ⇒ `baseline` 永久停在 `estimated`、上下文水位恒虚高约 13 倍（实测 2,177,730 vs 16 万）⇒ 每轮误判硬触发（写骨架账本 + arm 自动接续）。现改为：四道闸全部通过才用 provider 真实 `usage` 替换分子，任一不通过**逐字节走原路径** |
+| ② | `lib/index.js` · 新增键 `waterLevelProxyCompat` | 该兼容模式的开关（默认 `true`）。**未安装该插件的用户无任何行为变化**：探测不到插件身份 ⇒ 整段兜底逻辑不执行 |
+| ③ | `lib/index.js` · `handoff-state` 两条投影 | 透出 `meterViaProxy` / `estimatedTokens` / `realUsageTokens`，面板可核对「走没走兜底、两个数差多少」 |
+| ④ | `lib/python-sidecar-client.js` + `lib/index.js` + `lib/context-host.js` | **语义侧车静默残废**：活跃进程 `stats.starts=1 / exits=0 / exitKinds` 全 0（从未崩过），但从不产出结果。根因是解释器解析、健康巡检、stderr 落盘、诊断日志轮转四处缺失；现补 fail-closed 的 `interpreter-unverified`、长驻进程健康巡检（区分短命探针）、2MB 诊断日志轮转与 dispose 清理 |
+| ⑤ | 5 份文档 | 配置键计数 157 → 156 的既有漂移修正（`verify-docs` 此前长期红） |
+
+### 新增兼容模式（用户可见）
+
+| 位置 | 行为 |
+|---|---|
+| 设置页（经典档 / 变体档 / 冻结基线档三面同步） | 「兼容代理压缩插件」开关，随时可改 |
+| 检测到 billion-context 代理型插件时 | 一次性询问弹窗「是否开启兼容模式」，三个动作：开启 / 稍后（7 天后再问）/ 不再提醒；用户已手动关闭则不打扰 |
+| 水位卡 | 走兜底时 meter 显示「官方计量(代理压缩实测)」 |
+
+### 仍在问题中 / 未验证
+
+- **上游缺陷未修**：根因在 `@deepseek-ai/dsh-token-meter` 的守卫判据（用未压缩的 anchor 估算去比较压缩后的真实用量），本版只是插件侧防御。已确认 npm `0.2.1-rc.2` 与 `0.2.1-alpha.5` 两版均未修，建议上报上游。
+- **真实链路未本机验证**：本机未安装 billion-context 代理，兜底逻辑以合成事件验证（a30 套件 82 断言 + 5 组变异必红）。有该插件的用户需实测 `water level advisory` 行的 `proxyCompat=on estimated=… usage=…` 双数。
+- **`billion-context-dsh`（后端型）无需适配**：它作为 `CompactionEngine` 后端会写 `surfaceOp`/`compaction/*`，token-meter 本来就能正确跟随；本版对它无副作用。
+
+### 验证
+
+- **全量回归 `PASS 429 / FAIL 0 / TIMEOUT 0`**（`--jobs=1` 串行，506.1s，429/429 套件）。
+- 新增 `tests/smoke/smoke-test-a30-proxy-compaction-compat.mjs`（**82 断言**）：纯函数真 import 正负路径、完整 `checkWaterLevel` 真调用六场景（含「无插件零影响」）、5 组变异必红、14 条接线守卫。
+- 新增 `tests/smoke/smoke-test-a29-python-sidecar-rootfix.mjs`（37 断言）。
+- `node --check` 双入口通过、无 BOM；`build-iter5-skin --check --strict` = `SYNC-OK`；`verify-docs` 全部一致。
+- 四把基线锁按有意演进重钉：`r26` `CACF2298F6B24C75`→`55A407E3CFD09ED5`、`iter5-skin` `5bb3923d…`→`6031ed74…`、`settings-archive-interval` `f6f1c6b2…`→`3d9862ae…`、`switch-decouple` 注入表补两符号。
+- 重启后实测（宿主 50144）：`proxyCompaction = {"enabled":true,"detected":false,"reason":"absent"}`、`config.waterLevelProxyCompat=true`、水位 `ratio=0.43 / meter=official:usage` ⇒ **普通用户路径与 3.3.10 完全一致**。
+
+---
 ## [3.3.10] — 2026-10-19 · 注入提示词改为「技能库优先」
 
 > **一句话**：纯提示词（prompt）变更，无代码逻辑改动、无配置变更、无需迁移。

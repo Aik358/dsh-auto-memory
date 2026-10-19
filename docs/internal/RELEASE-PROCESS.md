@@ -21,6 +21,7 @@
 - 本地完成、已推送、已合并、已发布分别陈述；没有完成公开候选复核的修复不得标为已发布。
 
 - [ ] 全量回归：`cd D:\dsh-auto-memory; Get-ChildItem tests\smoke -File -Filter *.mjs | ForEach-Object { node $_.FullName }` → **0 失败**
+      **★ 2026-10-19 用户裁定（可跳过条件）**：若本次要发布的改动**已全部提交**、且**已在最近 10 分钟内**跑过全量回归且全绿（改动后跑的，不是改动前），本步可**跳过**，只需在发版记录里写明「复用 X 时刻的全量回归：PASS n / FAIL 0」并列出该时刻的 commit。不满足任一条件（有未提交改动、超过 10 分钟、上次全量有红且未定位）⇒ **必须重跑**。判据精神：全量回归的作用是「证明改动没打破既有行为」，改动冻结 + 刚验过即已达成目的。
 - [ ] `node --check lib/index.js` 与 `lib/client.js` 通过；改动文件无 BOM
 - [ ] **脏树范围核实**：`git status --short` 里只有本次要发布的文件（`release.mjs` 的源就是工作区，脏树会整体进包且不可回溯）
 - [ ] **上游回流对账**：`node tools\reconcile-upstream.mjs` → 结论必须是「✓ 上游产物已全部回流开发树」
@@ -71,6 +72,9 @@
 - 闸门校验：以上三项任一与新版本号不一致 → **拒绝构建**（防止检测更新一直拿旧版本号去比对）
 
 ## 4. 开发树提交
+
+> **术语（2026-10-19 再确认）**：本流程只涉及两棵树 —— **开发树** `D:\dsh-auto-memory`（唯一工作树，发布源）与 **REL 树** `D:\dsh_debug\_publish_dsh-auto-memory`（发版基座，每次由开发树重新构建）。
+> 历史上曾有过的「pre 线 / 预览版 / `-pre` 后缀」**已全部删除**：本机与远端均无 `pre` 分支，`release.mjs` 的 `libModuleRenames` 只保留空登记表用于兜底旧垫片排除，**不再做任何模块改名**。因此文档中不再出现「pre 提交」这类说法；「提交」一律指提交到开发树 `D:\dsh-auto-memory`。
 
 ```powershell
 cd D:\dsh-auto-memory
@@ -131,8 +135,7 @@ npm view @a9i5k4/dsh-auto-memory version --registry=https://registry.npmjs.org -
 
 ## 纪律
 
-- **★ 上游修复必须回流开发树**（2026-09-22 事故固化，见 §0.5）：开发树与 `main` 是两条分叉历史，
-  发布包从 pre 构建 ⇒ 在 `main` 上修等于没修。合完上游 PR 立刻 `node tools\reconcile-upstream.mjs`
+- **★ 上游修复必须回流唯一工作树**（2026-09-22 事故固化，见 §0.5）：开发树 `D:\dsh-auto-memory` 与 GitHub `main` 是两条分叉历史（REL 树 `D:\dsh_debug\_publish_dsh-auto-memory` 是每次发版由开发树**全新构建**的发布基座，不是人工维护的分支）⇒ 在 `main` 上改而不回流开发树，下次构建就会被覆盖掉，等于没修。合完上游 PR 立刻 `node tools\reconcile-upstream.mjs`
   对账，并把新产物加进该脚本的清单。`release.mjs` §3.7 会在发版时再拦一次。
 - **凭据只走行内 URL / 环境变量，严禁写进任何会上传 GitHub 或 npm 的文件**（本文件亦不写）。
 - 本机 `~/.npmrc` 指向 npmmirror → 查询与发布都必须显式 `--registry=https://registry.npmjs.org`，否则会查到旧版本、误判发布失败。

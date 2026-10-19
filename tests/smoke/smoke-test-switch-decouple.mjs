@@ -24,6 +24,8 @@ import { fileURLToPath } from 'node:url'
 import {
   parseModelWindowsPre, pickWindowPre, findOfficialContextWindowPre, findSessionModelPre,
   scanPressureSignalsPre, shouldArmAutoContinuePre, reusableWindowCachePre, sessionModelSigPre,
+  // ★issue #451：checkWaterLevel 新增两个引用符号（代理压缩兜底）。本套件 strictInjection 会拦漏注入。
+  detectProxyCompactionPre, resolveProxyUsagePre,
 } from '../../lib/water-window.js'
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
@@ -291,6 +293,10 @@ const wlBind = (fake) => {
     extractSessionMessages: (a) => a.messages, diag: () => {}, reflectionDigest: reflectionDigestFn,
     truncateHead: truncateHeadFn, sessionEventsOf: sessionEventsOfFn,
     findOfficialContextWindowPre, findSessionModelPre, scanPressureSignalsPre, reusableWindowCachePre, sessionModelSigPre,
+    // ★issue #451：checkWaterLevel 新增两个引用符号（代理压缩兜底）。本套件 strictInjection=true，
+    //   漏注入会 throw（而非静默 ReferenceError）。这里注入真实实现：本机没有该插件 ⇒ 探测恒"absent"、
+    //   兜底恒不生效 ⇒ 本套件所验证的「白板关仍测量」语义与修复前逐字节一致。
+    detectProxyCompactionPre, resolveProxyUsagePre,
   }, { strictInjection: true })
 }
 // 会话事件里带真实模型(request/header)→ 白板关时这个「模型已知」也必须有地方落下去
