@@ -35,8 +35,13 @@ try {
   const probeStart = source.indexOf('  engine.probePythonRuntime = async (optsRt = {}) => {')
   const probeEnd = source.indexOf('  /** 只读缓存版', probeStart)
   const cachedStart = source.indexOf('  engine.pythonRuntimeCached = () => {')
-  const cachedEnd = source.indexOf('  /** 解析最终要用的解释器命令', cachedStart)
-  const prepStart = source.indexOf('  engine.preparePythonRecallPre = async (timeoutMs = 8000) => {')
+  // ★2026-10-19 判据更新：原锚点是紧邻的 JSDoc 首行「解析最终要用的解释器命令」，
+  //   而该注释上方新增了 P0 归因段（裸 python 兜底的成因），首行已不再是原文。
+  //   锚点改为**定义行本身**（定义不该被搬走），并保留 prepStart 作为上界保险。
+  const cachedEnd = source.indexOf('  engine.resolvedPythonCommand = () => {', cachedStart)
+  // ★2026-10-19 判据更新（名额预算从字面量 8000 改为常量 PY_RECALL_PROBE_BUDGET_MS）：
+  //   锚点改数字面量会让「预算被有意上调」误判成锚点失效。这里匹配签名骨架，常量值另断言。
+  const prepStart = source.indexOf('  engine.preparePythonRecallPre = async (timeoutMs = ')
   const prepEnd = source.indexOf('  /**', prepStart)
   if (probeStart < 0 || probeEnd < 0 || cachedStart < 0 || cachedEnd < 0 || prepStart < 0 || prepEnd < 0) {
     console.error('FATAL: 源码锚点未命中（判据需随实现演进复核）'); process.exit(2)

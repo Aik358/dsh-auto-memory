@@ -1382,6 +1382,36 @@
               }
               kids.push(row('Python 模型(int8)', pyState))
               if (pyHint) kids.push(row('　', pyHint.length > 200 ? pyHint.slice(0, 200) + '…' : pyHint))
+              // ★2026-10-19 P0：**长驻进程健康**单独一行 —— 本事故最关键的可见性补丁。
+              //   上面那行描述的是**短命探测进程**（由面板按钮触发 health 探针），
+              //   而真正在服务的是长驻 sidecar；二者可以完全不同（实测：探测 verified-ok，
+              //   长驻进程 embedder=None ⇒ 检索恒空 ⇒ 全部 suppress，而界面一路绿灯）。
+              //   故把「在跑的那个进程」的自检结论摆在旁边，避免「面板说好、实际全空」。
+              var pbs = sem && sem.pythonBackend
+              if (pbs && pbs.enabled) {
+                var hp = pbs.health || {}
+                var hib = pbs.interpreter || {}
+                var hState, hHint = ''
+                if (!pbs.started) {
+                  hState = L('— 未启动（按需懒启动）', '— not started (lazy)')
+                } else if (!hp.checks) {
+                  hState = L('… 待巡检', '… awaiting check')
+                  hHint = L('首轮巡检在启动后约 90 秒进行', 'first check ~90s after start')
+                } else if (hp.lastEmbedderOk === true) {
+                  hState = L('✓ 在跑且健康', '✓ running & healthy')
+                } else if (hp.lastEmbedderOk === false) {
+                  hState = L('⚠ 在跑但语义不可用（检索会全空）', '⚠ running but semantic arm dead (recalls all empty)')
+                  hHint = hp.lastEmbeddingError ? (L('原因：', 'reason: ') + hp.lastEmbeddingError) : ''
+                } else {
+                  hState = L('状态未知', 'unknown')
+                }
+                if (hib.command) {
+                  hHint = (hHint ? hHint + ' · ' : '') + L('解释器：', 'interpreter: ') + String(hib.command).replace(/^.*[\\/]/, '')
+                  if (hib.source === 'configured') hHint += L('（配置值）', ' (configured)')
+                }
+                kids.push(row('长驻语义进程', hState))
+                if (hHint) kids.push(row('　', hHint.length > 200 ? hHint.slice(0, 200) + '…' : hHint))
+              }
               kids.push(row('当前生效档位', tierText))
               if (det.deep && det.deep.integrated) kids.push(row('深度扫描', locale === 'zh' ? '发现并热接入 ' + (det.deep.foundDirs || []).length + ' 处推理库(无需重启即生效)' : 'Hot-adopted ' + (det.deep.foundDirs || []).length + ' runtime dir(s) (no restart needed)'))
               if (det.recommendation && det.recommendation !== 'none') {
@@ -1652,6 +1682,9 @@
           field(t('fWaterThreshold'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 0.1, max: 1.5, step: 0.05, disabled: cfg.waterLevelThresholdMode !== 'fixed', value: cfg.waterLevelThreshold === undefined ? 0.75 : cfg.waterLevelThreshold, onChange: function (e) { set('waterLevelThreshold', Number(e.target.value) || 0.75) } }), t('fWaterThresholdHint') + ' ' + L3('仅固定模式使用；自动模式由官方压缩参数和余量校准。', 'Used in Fixed mode; Auto derives the threshold from compaction parameters and margin.', '固定モードで使用。自動モードは圧縮設定と余裕から計算します。')),
           field(t('fWaterAdvisory'), h('input', { type: 'checkbox', checked: cfg.waterLevelAdvisory !== false, onChange: function (e) { set('waterLevelAdvisory', e.target.checked) } }), t('fWaterAdvisoryHint')),
           field(t('fWaterAuto'), h('input', { type: 'checkbox', checked: cfg.waterLevelAutoHandoff !== false, onChange: function (e) { set('waterLevelAutoHandoff', e.target.checked) } }), t('fWaterAutoHint')),
+          // ★issue #451：代理压缩插件兼容开关。仅在探测到 billion-context 代理型时才有实际作用；
+          //   未安装该插件的用户看到同一行，但后端整段兜底逻辑不执行（fail-open）。
+          field(t('fWaterProxyCompat'), h('input', { type: 'checkbox', 'data-dam-key': 'waterLevelProxyCompat', checked: cfg.waterLevelProxyCompat !== false, onChange: function (e) { set('waterLevelProxyCompat', e.target.checked) } }), t('fWaterProxyCompatHint')),
           field(L('子代理痕迹回收', 'Subagent trace recycle'), h('input', { type: 'checkbox', checked: cfg.subagentGcEnabled !== false, onChange: function (e) { set('subagentGcEnabled', e.target.checked) } }),
             L('本插件的一次性子代理(自动沉淀 / 时段总结 / 问候 / 蒸馏)每跑一次都会在 ~/.dsh/sessions 留下一个持久化会话;数量上千后会话列表会明显变慢。开启后任务一结束就把这些痕迹移入 ~/.dsh/subagent-gc-backup 备份(可回滚),不影响子代理结果。默认开。', 'Every one-shot subagent this plugin spawns (auto-consolidation, scheduled summary, greeting, distillation) leaves a persisted session under ~/.dsh/sessions; hundreds of them slow the session list down. When on, each trace is moved into ~/.dsh/subagent-gc-backup right after the task ends (reversible), never affecting the subagent result. On by default.')),
           field(L('兜底回收保留天数', 'Fallback recycle keep days'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 0, value: cfg.subagentGcKeepDays === undefined ? 3 : cfg.subagentGcKeepDays, onChange: function (e) { set('subagentGcKeepDays', Number(e.target.value) || 0) } }),
