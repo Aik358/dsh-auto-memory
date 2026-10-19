@@ -1,6 +1,0 @@
-{
-  "meta": {
-    "title": "dsh-auto-memory",
-    "description": "Proactive associative memory for DSH: system-prompt recall before the model speaks, three-layer auto-consolidation, skill crystallization, and Astra-style context management - handoff ledgers, PLAN whiteboard, water-level sensing. Local-first, model-agnostic, zero deps."
-  }
-}
