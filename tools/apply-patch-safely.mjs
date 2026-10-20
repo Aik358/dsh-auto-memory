@@ -34,8 +34,21 @@ const base = {}
 for (const m of patchText.matchAll(/lib\/([\w.-]+\.js)\s+sha256\(LF\)\s*=\s*([0-9a-f]{64})/g)) {
   base[m[1]] = m[2]
 }
-const baseVer = (patchText.match(/上游版本:\s*([\d.]+)/) || [])[1]
+const baseVer = (patchText.match(/上游版本:\s*([\d.]+)/) || patchText.match(/上游 tag:\s*(\S+)/) || [])[1]
 console.log('基线声明: 版本 ' + (baseVer || '(未声明)') + '，文件 ' + Object.keys(base).length + ' 个')
+
+// ★2026-10-20 硬门（TTA 第二次复核发现的漏洞）：
+//   原实现「无声明 = base 为空 = 跳过校验」，正好把**最需要防的场景**放行了。
+//   那次 pnpm patch-commit 把基线声明头冲掉，工具解析出 0 个文件后照常往下 apply，
+//   最后只是 git apply 自己失败才退出非 0 —— 失败原因不是基线校验，等于防护空转。
+//   现在：只要解析不到基线声明，直接拒绝。
+if (Object.keys(base).length === 0) {
+  console.error('\n★patch 没有基线声明（解析到 0 个 sha256）—— 拒绝 apply')
+  console.error('  为什么：无声明就无法确认补丁与目标版本匹配；而按错版本切的 patch 可能「碰巧能打上」，')
+  console.error('  静默打进去比打不上更危险。')
+  console.error('  修法：跑 node tools/normalize-patch.mjs <patch> --upstream-tag <tag> 重新生成声明头。')
+  process.exit(1)
+}
 
 // ── ② 校验目标文件是否匹配基线 ──
 let mismatch = 0

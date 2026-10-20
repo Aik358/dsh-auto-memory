@@ -153,3 +153,63 @@ TTA 报告：在 git 仓库**内部**的子目录里跑 `git apply`，`exit=0`�
 
 直接 `pnpm add` 新版本会因「旧 patch 文件找不到」而失败。顺序：
 清 `pnpm-workspace.yaml` 的 `patchedDependencies` → 清 lock 的同名段与 `(patch_hash=…)` → 删旧 patch 文件 → `pnpm add`。
+---
+
+## 七、★最关键的一条：pnpm patch-commit 会冲掉你手工做的两件事
+
+**这是本日第三次踩同一个坑，必须当成流程固定下来。**
+
+`pnpm patch-commit` 会用**工作目录的文件行尾**重新生成 patch，并且**丢弃任何手工注释头**。
+所以「手工 LF 化 + 手工加基线声明头」**每次升级都会丢**：
+
+| 时点 | CRLF | 基线头 | 后果 |
+|---|---|---|---|
+| 3.3.9 升级后手工修 | 0 | 有 | 正常 |
+| 3.3.11 重新 patch-commit | **434** | **无** | apply 工具基线校验**空转**（解析到 0 个文件就跳过） |
+
+**必须做的两件事（顺序不能省）**：
+
+```powershell
+# ① patch-commit 之后，立刻规范化（去 CRLF + 重建基线头）
+node tools/normalize-patch.mjs <patchFile> --upstream-tag v3.3.11
+
+# ② 规范化改变了文件内容 ⇒ lock 里的 patch_hash 失效，必须重新登记
+node tools/relock-patch.mjs <profile>
+
+# ③ 复核（两个工具的 --check 都应为 0）
+node tools/normalize-patch.mjs <patchFile> --check
+```
+
+`relock-patch.mjs` 按 pnpm 的口径（**LF 归一化后的 sha256**）重算，同时写回
+`pnpm-lock.yaml` 与 `node_modules/.modules.yaml`。不做这步，`pnpm install` 会判 patch 不匹配。
+
+### 为什么必须「无基线头 = 拒绝」而不是「跳过校验」
+
+`apply-patch-safely.mjs` 早期实现是「解析不到基线就跳过校验」——
+这**正好把最需要防的场景放行了**：patch-commit 冲掉声明头 ⇒ 解析 0 个 ⇒ 跳过 ⇒ 照常 apply。
+失败要等到 `git apply` 自己报错才发生，而失败原因与基线无关。
+
+**现在加了硬门**：`Object.keys(base).length === 0` ⇒ 立即 `exit=1`。
+负控已验证：喂它一个无声明头的 patch → `★patch 没有基线声明（解析到 0 个 sha256）—— 拒绝 apply`。
+
+### 验收判据（比 `apply --check exit=0` 强）
+
+```
+① 对 pristine（`git archive <tag>` 解出）直接 apply **原始未处理的 patch** → exit=0
+② apply 后与已装 lib 三文件逐字节相同（LF 规范化口径）
+```
+
+本机实测：`pristine v3.3.11 → 原始 patch → 与运行时三文件逐字节相同 = True`。
+这证明 patch **能精确重建运行时**，而不仅是「能打上」。
+
+### patches/ 目录卫生
+
+旧的 3.3.9 patch 副本必须挪走，否则接手的人会以为是有效文件：
+
+```
+patches/
+  @a9i5k4__dsh-auto-memory@3.3.11.patch     ← 唯一有效
+  _obsolete/
+    @a9i5k4__dsh-auto-memory@3.3.9.patch.obsolete
+    @a9i5k4__dsh-auto-memory@3.3.9.patch.bak-crlf
+```
