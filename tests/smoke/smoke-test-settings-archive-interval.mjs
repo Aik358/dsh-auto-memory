@@ -64,7 +64,8 @@ try {
       //   ⑤ 一次性兼容询问弹窗（DialogHost 内 proxyCompat 分支 + 优先级登记 + 启动探测 checkProxyCompatOffer）。
       //   全部在生成区之外（生成块内容另由 iter5-skin 锁与 --check --strict 守卫）。行为代码零改动。
       //   判据意图不变（经典区字节守恒），按 2026-10-01 裁定以本套件自身表达式复算重钉。
-      // ★2026-10-21 重钉续（6a89b88a… → 24e85da4… → ec132f81…）：**v3.3.12 版本标识两处**——指纹行
+      //   判据意图不变；重钉值 = 本套件自身打印的 actual（6f21c2ad…，含 v3.3.13 版本标识两处）。
+      // ★2026-10-21 重钉（ec132f81… → 68652318… → 6f21c2ad…）：v3.3.13 补 issue #451 遗留「半修」——经典档水位卡新增：**v3.3.12 版本标识两处**——指纹行
       //   v3.3.11→v3.3.12、应用内更新说明字典新增 '3.3.12' 条目（zh 6 条 / en 6 条），均在经典区手写面
       //   （生成区之外）⇒ 本锁随动。行为代码零改动；判据意图不变（经典区字节守恒）。
       //   ★中间值 24e85da4… 是版本号一度写成 3.4.0 时的实测值，用户裁定「这是小更新，末位 +1」后作废。
@@ -77,7 +78,7 @@ try {
       //     ⇒ 本次漂移 100% 来自这 8 行，无历史内容混入。
       // ★2026-10-20 重钉（3d9862ae… → f4ce3086…）：v3.3.11 版本标识两处（指纹行 + 应用内更新说明字典新增 3.3.11 条目），
       //   均在经典区手写面（生成区之外）⇒ 本锁随动，行为代码零改动。判据意图不变（经典区字节守恒）。
-      assert.equal(createHash('sha256').update(prior).digest('hex'), 'ec132f814d45ecf6cb313a7cbb0ad4cb592a246e10445f717875835ca139c37c', 'classic client region bytes are conserved (interval control normalized back to 1/1440); pinned upstream baseline superseded by reviewed batches')
+      assert.equal(createHash('sha256').update(prior).digest('hex'), '6f21c2adf0a267434a9dcc2046db7875cfb4f825646e29755efa31f557c9e593', 'classic client region bytes are conserved (interval control normalized back to 1/1440); pinned upstream baseline superseded by reviewed batches')
     }
   }
   console.log('PASS archive interval UI/API/runtime agree on 15–1440, invalid patches preserve configuration')
