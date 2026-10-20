@@ -326,12 +326,18 @@ ok(/proxyCompaction: \(\(\) =>/.test(INDEX_SRC) && /_proxyCompatView\(\)/.test(I
 ok(/_proxyCompatProbeNow\(\)/.test(INDEX_SRC), 'D4 探测有缓存入口')
 ok(/' proxyCompat=on estimated='/.test(INDEX_SRC), 'D5 advisory 行同时打印 estimated 与真实 usage 两个数')
 ok(/meterViaProxy: !!proxyUsage/.test(INDEX_SRC), 'D6 water record 记录是否走了兜底')
-// ★半修守卫（本轮实测踩到）：记录里写了新字段，但 handoff-state 的两条投影都不读 ⇒ 写了个没人读的字段。
-//   判据不看「源码里有没有那个字符串」，而是数**读取点个数**：两条投影（rec / state）都必须透出。
+// ★半修守卫（v3.3.11 本轮实测踩到）：记录里写了新字段，但 handoff-state 的投影不读 ⇒ 写了个没人读的字段。
+//   ★2026-10-21 v3.3.13 修正判据：**「两条投影」这个前提本身就是错的** —— handoff-state 有 **3 个**
+//   水位构造点（rec 分支 / else 分支 / 全局 state 分支）。原判据把计数钉在 3（=1 记录 + 2 投影），
+//   于是 else 分支漏字段时**守卫照样绿**，缺陷被放行到线上（用户重启后实测踩到）。
+//   现改为「按构造点数计」：先数 water 构造点个数 N，再断言 meterViaProxy 出现 N+1 次（1 记录 + N 投影）。
+//   判据意图不变（写进去的字段必须每条投影都读得到），但口径从「猜几个分支」改成「跟着实际分支数走」。
+const waterCtorCount = (INDEX_SRC.match(/water\s*=\s*\{/g) || []).length
+ok(waterCtorCount === 3, 'D6b-0 水位构造点 = 3（rec / else / 全局 state），实测 ' + waterCtorCount + ' 处')
 const projReads = (INDEX_SRC.match(/meterViaProxy: /g) || []).length
-ok(projReads === 3, 'D6b 记录 1 处 + 两条投影各 1 处 = 3（实测 ' + projReads + '）')
-ok((INDEX_SRC.match(/estimatedTokens: Number/g) || []).length === 2, 'D6c 两条投影都透出 estimatedTokens')
-ok((INDEX_SRC.match(/realUsageTokens: Number/g) || []).length === 2, 'D6d 两条投影都透出 realUsageTokens')
+ok(projReads === waterCtorCount + 1, 'D6b 记录 1 处 + 每条投影各 1 处 = ' + (waterCtorCount + 1) + '（实测 ' + projReads + '）')
+ok((INDEX_SRC.match(/estimatedTokens:/g) || []).length >= waterCtorCount + 1, 'D6c 每条投影都透出 estimatedTokens（实测 ' + (INDEX_SRC.match(/estimatedTokens:/g) || []).length + '）')
+ok((INDEX_SRC.match(/realUsageTokens:/g) || []).length >= waterCtorCount + 1, 'D6d 每条投影都透出 realUsageTokens（实测 ' + (INDEX_SRC.match(/realUsageTokens:/g) || []).length + '）')
 ok((INDEX_SRC.match(/waterLevelProxyCompat/g) || []).length >= 5, 'D7 state/debug/配置多处引用（实测 ' + (INDEX_SRC.match(/waterLevelProxyCompat/g) || []).length + ' 处）')
 // 前端三面 + 文案 + 弹窗
 const rows = (s, re) => (s.match(re) || []).length
