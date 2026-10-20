@@ -4,6 +4,43 @@ All notable changes to dsh-auto-memory.
 
 ---
 
+## [3.3.12] — 2026-10-21 · 团队同步「游标卡死 / 无幂等键 / 响应无上限」根治（线上 records 12GB 事故）
+
+> **一句话**：服务端记录只增不减 + 客户端每 5 秒重取全史，最终把服务端撑到 12GB 文件 / 29GB 常驻。本版修客户端侧五处、新增 2 个配置键、附一份服务端处置手册。
+
+### 已确认修复
+
+| # | 位置 | 修复 |
+|---|---|---|
+| ① | `lib/team-sync.js` | **推送体没有幂等键**（实测顶层仅 `[kind,key,at,payload,member]`，`eventId`/`idemKey`/`op` 全无）⇒ 服务端结构上无法去重或覆盖，只能 append，这是记录单调增长的直接原因。现补 `idemKey`（取 outbox 已持久化的 `eventId`，缺失回退 `kind｜key`）并另带一份 `eventId` 兼容老服务端；重试时推送体逐字节相同 |
+| ② | `lib/team-pull.js` · 新增 `normalizeCursorPre` | **游标只认数字**：契约（04 卷 §3.3）里 cursor 是 `c_0001250` 这种不透明字符串，旧实现用 `Number.isFinite` 判定 ⇒ 恒假 ⇒ `since` 永远 0 ⇒ **每 5 秒重取全史**。现数字与安全字符短串都接受，`NaN`/`Infinity`/空串明确拒收 |
+| ③ | `lib/team-pull.js` + `lib/index.js` | **游标只在内存**：进程一重启归零，叠加 ② 就是「每次启动重拉全史」。现通过注入 `loadCursor`/`saveCursor` 落到 `~/.dsh/memory/team/pull-cursor.json`（原子写 + 隔离开读），`reset()` 同样落盘；本模块仍然**不 import fs**（结构上无法直接写盘） |
+| ④ | `lib/team-pull.js` · `applyOneEx` | **no-applier 活锁**：我方唯一生产者推的是 `kind:'handoff'`，而 appliers 只注册了 `fact`；服务端按文档忽略 `kinds` 参数回抛时，旧实现判 `transient:true` ⇒ 游标永久不前进 ⇒ 每 tick 重复 deferred。现按「是否本次 `requestKinds` 的 kind」分流：请求内缺失仍 transient（保留 #364 语义），请求外按 business 前进 |
+| ⑤ | `lib/team-auth.js` | **响应体无字节上限**（只有 `await response.text()`）⇒ 服务端一次返回整个变更史时客户端先把内存吃光。现加 32MB 硬上限：`content-length` 预检（超限**不读体**）+ 实测兜底，超限返回 `response-too-large` |
+| ⑥ | `lib/team-pull.js` + `lib/team-sync.js` | 请求带 `&limit=`（服务端可忽略，老服务端零影响）；上行端点可由 `teamPushPath` 覆盖（默认值**不变**，已按旧名实现的服务端零影响）—— 顺带解决文档写 `/v1/apply`、代码是 `api/team/sync/push` 的契约漂移 |
+| ⑦ | `lib/index.js` · 新增键 `teamPushPath` / `teamPullPageLimit` | 两个修复旋钮（`DEFAULT_CONFIG` 156 → 158）；设置页三面同步新增两行（zh/en 标签 + 键表 + 字段表，`fk === kk` 守恒断言仍成立） |
+
+### 新增
+
+- `docs/TEAM-SYNC-INCIDENT-PLAYBOOK.md`：止血顺序、客户端升级、服务端三处必改（UPSERT / 认 since / 别全量载入内存）、存量数据压缩脚本、四条验收判据、回退路径。
+- `tests/smoke/smoke-test-team-sync-livelock.mjs`（**71 断言**，5 组变异必红）。
+
+### 仍在问题中 / 未验证
+
+- **服务端代码不在本仓库**，也无法在本机找到（D:/E:/C: 全盘搜 `team-server` 目录与 `records.jsonl` 均 0 命中，git 全史 `-S records.jsonl` 0 命中）⇒ 「全量载入内存导致 29GB」只能按其行为推断（12GB × 2.4 ≈ 29GB，与 `JSON.parse` 后 JS 对象膨胀量级吻合），**未在真实服务端上验证**。
+- **真实链路未端到端验证**：本机 `teamEnabled=false`、未装该服务端；所有断言基于真构造 + 真调用 + 假服务端注入，未跑过一次真实的两机同步。
+- **存量数据不会自动缩小**：本批只止住增长。已有的 12GB 文件需按手册 §4 主动压缩或换库。
+
+### 验证
+
+- 串行全量回归 **PASS 438 / FAIL 0 / TIMEOUT 0**（`--jobs=1 --timeout=180000`，596.5s，438/438 套件）。
+- 新增套件 `smoke-test-team-sync-livelock` **PASS 71 / FAIL 0**（含 5 组变异必红：幂等键回退 / 游标只认数字 / 游标不落盘 / no-applier 一律 transient / 响应上限失效）。
+- 注：`smoke-test-external` 单跑实测 66.5s，超过 runner 默认 60s 阈值；`--jobs=1` 会绕过双车道（`run-smoke.mjs:437`）故只能拿到默认阈值 ⇒ 本次统一用 `--timeout=180000` 跑，该套件实测 PASS。
+- 既有团队套件全绿：`issue343` 46/0、`issue364` PASS、`issue370` PASS、`team-identity-seam` 17/0、`settings-parity` PASS、`iter5-skin` PASS。
+- 基线锁按实测重钉并附归因：`r26-cross-layer` E3 `55A407E3…` → `72C0DA04…`（1,108,249 字符）；`iter5-skin` `08aa7ef7…` → `d4ed8a23…`（★归因取证：删掉本批 8 行后复算 = `08aa7ef7…` 与旧锁逐字节相等）。
+- `verify-docs` 全部一致（配置键 156 → 158 已同步 6 处文档）；`build-iter5-skin --check --strict` = `SYNC-OK`。
+
+---
 ## [3.3.11] — 2026-10-20 · 适配 billion-context 代理压缩（水位虚高）+ Python 语义侧车静默残废根治
 
 > **一句话**：修复 issue #451 与语义侧车「进程活着但从不干活」两个问题；新增 1 个配置键，默认值保证未装相关插件的用户**行为不变**（fail-open）。

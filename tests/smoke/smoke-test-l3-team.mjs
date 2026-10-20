@@ -279,7 +279,9 @@ const keys9 = (KEYS_ARR.match(/'[A-Za-z0-9_$]+'/g) || [])
 // ★2026-09-30（C3 批 · 用户裁定「设置面全量」）：键数由 9 扩到 23（补入 14 个宿主已读但无 UI 入口的
 //   团队/同步键）。**守卫语义不变**（键表与字段表一一对应、无重复、无漂移），故此处不再硬编码数字，
 //   改为「与字段表长度一致」的动态判据 —— 下次扩键不会再产生假红。
-const EXPECTED_TEAM_KEYS = 23
+// ★2026-10-21：23 → 25（线上团队同步 12GB 事故的两个修复旋钮 teamPullPageLimit / teamPushPath）。
+//   判据意图不变（键表与字段表必须同步演进、且无重复）；本套件 §8.13 的 fk === kk 守恒断言仍成立。
+const EXPECTED_TEAM_KEYS = 25
 eq(keys9.length, EXPECTED_TEAM_KEYS, '§8.9 ★TEAM_SETTING_KEYS 键数（与字段表同步演进）  [' + keys9.join(',') + ']')
 eq(new Set(keys9).size, EXPECTED_TEAM_KEYS, '§8.14 ★团队键无重复')
 // 字段表 F 与 TEAM_SETTING_KEYS 必须一致（防两处漂移）— 由段内自检保证，这里静态复核一次

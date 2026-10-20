@@ -36,8 +36,18 @@ try {
   changes = [fact, { kind: 'procedure', key: 'p1', payload: { procedureId: 'remote-procedure', state: 'active' } }, { kind: 'handoff', key: 'h1', payload: { text: 'remote handoff' } }]
   for (let attempt = 0; attempt < 2; attempt++) {
     const result = await engine._teamPull.pullOnce()
-    assert.equal(result.ok, false); assert.equal(result.deferred, 2); assert.equal(result.retryable, true)
-    assert.equal(engine._teamPull.status().since, 0); assert.equal(store.query({}).length, 1)
+    // ★2026-10-21 语义修正（线上团队同步 12GB 事故）：procedure / handoff **不在本次 requestKinds(['fact']) 内**。
+    //   旧实现把「没有 applier」一律判 transient ⇒ 游标永久不前进 ⇒ 每 5s 从 since=0 重取全史（活锁，
+    //   服务端 12GB / 进程 29GB 的直接成因）。现按「是否本次请求的 kind」分流：
+    //     · 请求外缺 applier ⇒ business 拒绝（前进游标，别被别人的数据卡住）；
+    //     · 请求内缺 applier ⇒ 仍 transient（#364 原语义：能力补齐后仍可重放，见 issue364-missing-applier）。
+    //   ★判据意图不变：这两类远程事件**一条都不得被应用**（下方 procedures / PLAN.md 未变更断言仍在）。
+    assert.equal(result.ok, true, 'unsupported kinds are business-rejected; the batch itself still succeeds')
+    assert.equal(result.applied, 1, 'only the requested fact is applied')
+    assert.equal(result.rejected, 2, 'procedure + handoff are rejected (never applied)')
+    assert.equal(result.deferred, 0, 'no transient failure: they are outside requestKinds')
+    assert.equal(engine._teamPull.status().since, 12, 'cursor advances so the same batch is not replayed forever')
+    assert.equal(store.query({}).length, 1)
   }
   assert.ok(urls.every(url => new URL(url).searchParams.get('kinds') === 'fact'))
   const state = (await request('teamState')).data.pull
