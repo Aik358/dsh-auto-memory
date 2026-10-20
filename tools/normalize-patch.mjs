@@ -83,7 +83,22 @@ ${rows}
 # ★apply 纪律：
 #   用 tools/apply-patch-safely.mjs —— 它先校验上面三个 sha256（**无声明头即拒绝**），
 #   再在仓库外 apply，最后核对内容哈希真的变了（防「exit=0 但零改动」）。
-# ============================================================================
+#
+# ★幂等性与可重建性（TTA 补充判据 2026-10-20）：
+#   ① 本工具必须**幂等** —— 连跑两次产物 sha256 不变（已实测成立）。
+#   ② 从源头重建 patch 能得到**同一文件**。
+#   ★实测踩到一：git diff 默认把 index 行的 blob 哈希**缩写为 7 位**，
+#     而 pnpm patch-commit 写的是**完整 40 位** ⇒ 两种来源生成的 patch 字节不同、
+#     sha256 不同，「重建」与「现状」永远对不上（实测差异 6 行 index 行）。
+#     重建 patch 必须用 git diff --full-index。
+#   ★实测踩到二（更重要）：**即便都用 --full-index，blob 哈希仍不相同**。
+#     根因：pnpm 的 patch 基线是 **npm 包里那份文件**（可能是 CRLF 或不同行尾），
+#     而 git tag 里的文件是 LF ⇒ 同一逻辑内容的 blob 哈希不同。
+#     ⇒ 结论：**「从 git tag 重建」与「pnpm patch 产物」不可逐字节比对**，
+#       可重建性只能以「apply 后三文件内容相同」为准（内容级，不是 patch 字节级）。
+#   判据用法：patch-commit 后立刻跑本工具 + 与上次快照比 sha256，
+#     两轮前那类「手工修补被冲掉」当场就能发现（这一条是**幂等性**，成立）。
+# --- END OF GENERATED HEADER ---
 
 `
 }
@@ -115,13 +130,28 @@ if (opt.check) {
 }
 
 // ── ① 去头（若已有旧头）──
+//
+// ★幂等性 bug（2026-10-20 连踩两次，最终这样修）：
+//   版本 A：`while (lines[i].startsWith('#') || blank) i++`
+//     —— 从文件开头跳过所有 # 行；patch 正文里的上下文行也可能以 # 开头，边界不可靠。
+//   版本 B：找 `# ====` 当结束标记
+//     —— **错**：buildHeader 自己内部就有多行 `# ====`（首行与末行各一条），
+//        找到的是**头部内第一条**，于是只砍了几行 ⇒ 每跑一次头就多一份
+//        （实测 37394 → 40282 → 43170，可解析基线数 3 → 6 → 9）。
+//   版本 C（现用）：用**带唯一标识的结束标记** `# --- END OF GENERATED HEADER ---`，
+//     它是本工具自己写的、且**正文里不可能出现**（patch 正文行都以 diff/index/@@/+/-/space 开头）。
+//     去头 = 砍到该标记之后的第一个空行。若找不到该标记（说明是无头 patch），原样不动。
+const END_MARK = '# --- END OF GENERATED HEADER ---'
 let body = raw.replace(/\r\n/g, '\n')
-if (hasHeader) {
-  // 砍掉第一段连续 # 注释块（直到第一个非 # 且非空行）
+{
   const lines = body.split('\n')
-  let i = 0
-  while (i < lines.length && (lines[i].startsWith('#') || lines[i].trim() === '')) i++
-  body = lines.slice(i).join('\n')
+  const end = lines.findIndex((l) => l.trimEnd() === END_MARK)
+  if (end >= 0) {
+    let i = end + 1
+    while (i < lines.length && lines[i].trim() === '') i++
+    body = lines.slice(i).join('\n')
+  }
+  // 找不到标记 = 无头 patch（或旧格式头），原样保留交给下游
 }
 
 // ── ② 取基线 hash 并加头 ──
