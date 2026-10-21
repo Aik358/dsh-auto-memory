@@ -4,11 +4,13 @@ import { mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 
-const INST = process.argv[2] || 'C:/Users/ZHAN_ZC/.dsh/profiles/desktop/node_modules/@a9i5k4/dsh-auto-memory/lib'
+// 已装产物目录必须由调用方传入
+const INST = process.argv[2] || ''
 const cat = await import(pathToFileURL(INST + '/tier0-catalog.js').href)
 const build = cat.buildTier0CatalogFromTextPre
 
-const REAL = 'C:/Users/ZHAN_ZC/.dsh/memory/workspaces/--G--AMup--/MEMORY.md'
+// 真实笔记样本路径必须由调用方传入：node probe-tier0-squeeze.mjs <lib-dir> <notes.md>
+const REAL = process.argv[3] || ''
 const base = readFileSync(REAL, 'utf8')
 
 // 模拟：在主笔记首位插入 N 个批次块（与补丁产出同形态）

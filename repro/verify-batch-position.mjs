@@ -15,14 +15,21 @@
  */
 import { readFileSync, mkdtempSync, mkdirSync, rmSync, statSync } from 'node:fs'
 import { createHash } from 'node:crypto'
-import { pathToFileURL } from 'node:url'
+import { pathToFileURL, fileURLToPath } from 'node:url'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 
 if (process.argv[2]) {
   try { if (statSync(process.argv[2]).isDirectory()) process.argv[2] = path.join(process.argv[2], 'index.js') } catch (_) {}
 }
-const SRC_PATH = process.argv[2] || 'G:/AMup/upstream-work/v339/lib/index.js'
+// 默认指向仓库内的 lib/index.js（从本脚本位置推导，避免硬编码本机路径）；
+// 也可用第一个命令行参数覆盖：node <script> <path-to-lib-index.js>
+const __REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
+const __DEFAULT_LIB = path.join(__REPO_ROOT, 'lib', 'index.js')
+// ★2026-10-22：被测函数现在会调用 withSharedStateLock（归档追加已并入跨进程锁临界区），
+//   沙箱必须注入**真实实现**，否则会 ReferenceError 而静默走 fail-open 分支（测不到修复）。
+const { withSharedStateLock } = await import(pathToFileURL(path.join(__REPO_ROOT, 'lib', 'shared-state-lock.js')).href)
+const SRC_PATH = process.argv[2] || __DEFAULT_LIB
 const LIB = path.dirname(SRC_PATH)
 const SRC = readFileSync(SRC_PATH, 'utf8')
 
@@ -43,12 +50,12 @@ const TMP = mkdtempSync(path.join(tmpdir(), 'batch-pos-'))
 function buildEngine(fsx) {
   const FN = new Function(
     'COMPACT_PROTECT_RECENT_CHARS', 'COMPACT_FOLD_MAX_CHARS', 'parseAnchors', 'createHash', 'path',
-    'readFile', 'mkdir', 'console', 'truncateTail',
+    'readFile', 'mkdir', 'console', 'truncateTail', 'withSharedStateLock',
     'return {' + SEG + '};'
   )(2000, 1500, parseAnchors, createHash, path,
     (f) => (fsx.files.has(f) ? Promise.resolve(fsx.files.get(f))
       : Promise.reject(Object.assign(new Error('ENOENT'), { code: 'ENOENT' }))),
-    () => {}, { log() {}, error() {} }, (s, n) => String(s).slice(-n))
+    () => {}, { log() {}, error() {} }, (s, n) => String(s).slice(-n), withSharedStateLock)
   const eng = Object.create(FN)
   eng.state = { notesText: '', userText: '', loadedAt: 0 }
   eng._lastCompactAt = {}

@@ -12,14 +12,21 @@
  *   本脚本**对两条正则分别单独断言**，避免再次互相掩盖。
  */
 import { readFileSync } from 'node:fs'
-import { pathToFileURL } from 'node:url'
+import { pathToFileURL, fileURLToPath } from 'node:url'
 import { statSync } from 'node:fs'
 import path from 'node:path'
 
 if (process.argv[2]) {
   try { if (statSync(process.argv[2]).isDirectory()) process.argv[2] = path.join(process.argv[2], 'index.js') } catch (_) {}
 }
-const LIB = path.dirname(process.argv[2] || 'G:/AMup/upstream-work/v339/lib/index.js')
+// 默认指向仓库内的 lib/index.js（从本脚本位置推导，避免硬编码本机路径）；
+// 也可用第一个命令行参数覆盖：node <script> <path-to-lib-index.js>
+const __REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
+const __DEFAULT_LIB = path.join(__REPO_ROOT, 'lib', 'index.js')
+// ★2026-10-22：被测函数现在会调用 withSharedStateLock（归档追加已并入跨进程锁临界区），
+//   沙箱必须注入**真实实现**，否则会 ReferenceError 而静默走 fail-open 分支（测不到修复）。
+const { withSharedStateLock } = await import(pathToFileURL(path.join(__REPO_ROOT, 'lib', 'shared-state-lock.js')).href)
+const LIB = path.dirname(process.argv[2] || __DEFAULT_LIB)
 const cat = await import(pathToFileURL(path.join(LIB, 'tier0-catalog.js')).href)
 const rules = await import(pathToFileURL(path.join(LIB, 'rules-layer.js')).href)
 
@@ -68,7 +75,8 @@ sec('[2] ruleSummaryPre：批次行不成规则摘要（两条路径各自验证
 // ── ③ Tier-0 目录不被批次块挤占 ──
 sec('[3] Tier-0 目录：批次块不得挤占真条目配额')
 {
-  const REAL = 'C:/Users/ZHAN_ZC/.dsh/memory/workspaces/--G--AMup--/MEMORY.md'
+  // 真实笔记样本路径必须由调用方传入（可选）：node verify-tier0-not-squeezed.mjs <lib-index.js> <notes.md>
+const REAL = process.argv[3] || ''
   let base
   try { base = readFileSync(REAL, 'utf8') } catch (_) { base = null }
   if (!base) {
