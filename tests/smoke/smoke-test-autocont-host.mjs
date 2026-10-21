@@ -160,10 +160,14 @@ function makeEngine(opts) {
       //   没有模块级绑定 ⇒ 必须一并注入，否则 ReferenceError 被该方法自身的 catch 吞掉，
       //   表现为「水位达标却不 arm」（同 2026-09-14 shouldArmAutoContinuePre 的教训）。
       'isSubAgentSession',
+      // ★v3.3.14：hostRefreshRitual 的两个超时默认值由内联字面量改为模块级常量 ⇒ 按本表既有纪律
+      //   （见上方 T7-a 注释与 2026-09-14 / 2026-10-06 两次教训）必须一并注入，否则 ReferenceError
+      //   被 new Function 作用域暴露出来，表现为仪式整段不生效。
+      'DEFAULT_AUTO_CONTINUE_REFRESH_TIMEOUT_SECONDS', 'DEFAULT_AUTO_CONTINUE_PROBE_TIMEOUT_SECONDS',
       'DEFAULT_AUTO_CONTINUE_THRESHOLD', 'DEFAULT_WATER_LEVEL_THRESHOLD', 'contTitleStampPre', 'continuationProbePre', 'continuationRitualEndPre',
       'acquireSharedStateLock', 'continuedSourceFile', 'continuedSourceView', 'continuedSourceState', 'reserveContinuedSource', 'releaseContinuedSource', 'setContinuedSourceTarget', 'CONTINUE_CREATE_FALLBACK_ALLOWED_CODES',
       'return {' + extractFn(h) + '};')(
-      () => {}, { timeout: () => undefined }, shouldArmAutoContinuePre, (x) => { const h = x && x.session && x.session.header; if (!h) return false; if (String(h.origin || '') === 'subagent') return true; const d = Number(h.delegationDepth); return Number.isFinite(d) && d > 0 }, 0.75, 0.75, contTitleStampPre, continuationProbePre, continuationRitualEndPre,
+      () => {}, { timeout: () => undefined }, shouldArmAutoContinuePre, (x) => { const h = x && x.session && x.session.header; if (!h) return false; if (String(h.origin || '') === 'subagent') return true; const d = Number(h.delegationDepth); return Number.isFinite(d) && d > 0 }, 120, 60, 0.75, 0.75, contTitleStampPre, continuationProbePre, continuationRitualEndPre,
       async () => () => {}, () => '/virtual/source', () => null, (file, sid) => eng._continuedSessions.has(sid) ? {status:'done'} : null, async () => 'fixture-token', async () => {}, async () => {}, ['workspace/not-found'])
     const key = Object.keys(obj)[0]
     fns[key] = obj[key].bind(eng)

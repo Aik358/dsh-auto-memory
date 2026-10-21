@@ -106,6 +106,9 @@ const HEAVY_JOBS = 8
  */
 const HEAVY_TIMEOUT_MS = 240000
 const HEAVY_MS = {
+  // ★v3.3.14：本套件靠**真实等待**证明超时行为（B/C/D 组各 10–20 秒）+ 两轮变异子进程，
+  //   实测单跑 161.1 秒，逼近轻车道默认 180 秒上限 ⇒ 归入重车道（timeout=240000）。
+  'smoke-test-v3314-continuation-timeout.mjs': 161100,
   'smoke-test-external.mjs': 98300,
   'smoke-test-py-runtime-live.mjs': 57300,
   'smoke-test-la-audit-fixes.mjs': 56100,

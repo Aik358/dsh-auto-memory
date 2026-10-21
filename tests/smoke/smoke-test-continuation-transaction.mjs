@@ -25,7 +25,7 @@ const deps = { CONTINUE_CREATE_FALLBACK_ALLOWED_CODES: ['workspace/not-found'], 
   //   模块级绑定 ⇒ 必须一并注入，否则 ReferenceError 会被该方法自身的 catch 吞掉，
   //   表现为「明明达标却不 arm」（同 2026-09-14 shouldArmAutoContinuePre 的教训）。
   isSubAgentSession: (x) => { const h = x && x.session && x.session.header; if (!h) return false; if (String(h.origin || '') === 'subagent') return true; const d = Number(h.delegationDepth); return Number.isFinite(d) && d > 0 },
-  DEFAULT_AUTO_CONTINUE_THRESHOLD: .75, contTitleStampPre: () => '09-30 12:00', randomUUID: () => 'ritual-request-001' }
+  DEFAULT_AUTO_CONTINUE_REFRESH_TIMEOUT_SECONDS: 120, DEFAULT_AUTO_CONTINUE_PROBE_TIMEOUT_SECONDS: 60, DEFAULT_AUTO_CONTINUE_THRESHOLD: .75, contTitleStampPre: () => '09-30 12:00', randomUUID: () => 'ritual-request-001' }
 function method(header, extra = {}) {
   const obj = compile('({' + extract(host, header) + '})', { ...deps, ...extra })
   return Object.values(obj)[0]
@@ -183,7 +183,11 @@ await check('C11 unresponsive inspection is bounded and releases the execution l
   let reads = 0
   e._sessionController.inspect = async (sid, signal) => { assert(signal); return ++reads === 1 ? { events: [] } : new Promise(() => {}) }
   e.hostRefreshRitual = method('async hostRefreshRitual(oldSid) {', {
-    continuationProbePre: (probe, ms) => { assert(ms > 0 && ms <= 30000); return continuationProbePre(probe, Math.min(20, ms)) },
+    // ★v3.3.14 判据更新：probe 上限由写死 30s 改为可配置（默认 60s，允许 10–300）。
+    //   原断言 ms <= 30000 是「上限恒为 30s」时代的判据，现已过期；改为钉住**新的真实上界**：
+    //   任何 probe 的 ms 都必须 > 0 且不超过配置上界 300s（仍能证明「有界、不会无限等」）。
+    //   判据意图不变（不受理的 inspection 必须有界），只是边界值跟着代码演进上移。
+    continuationProbePre: (probe, ms) => { assert(ms > 0 && ms <= 300000); return continuationProbePre(probe, Math.min(20, ms)) },
   })
   const result = await e.decideAutoContinue('manual', null, 'source')
   assert.equal(result.ok, false)
