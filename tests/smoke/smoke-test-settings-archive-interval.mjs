@@ -65,6 +65,9 @@ try {
       //   全部在生成区之外（生成块内容另由 iter5-skin 锁与 --check --strict 守卫）。行为代码零改动。
       //   判据意图不变（经典区字节守恒），按 2026-10-01 裁定以本套件自身表达式复算重钉。
       //   判据意图不变；重钉值 = 本套件自身打印的 actual（6f21c2ad…，含 v3.3.13 版本标识两处）。
+      //   重钉值 = 本套件自身打印的 actual（461dbf8c…，含 v3.3.14 版本标识两处）。
+      // ★2026-10-21 重钉（6f21c2ad… → 02442ef9… → 461dbf8c…）：v3.3.14 设置页三面新增 2 个超时控件 + i18n zh/en 各 +4 键，
+      //   均在生成区之外 ⇒ 本锁随动；行为零变化。判据意图不变（经典区字节守恒）；重钉值 = 本套件自身打印的 actual。
       // ★2026-10-21 重钉（ec132f81… → 68652318… → 6f21c2ad…）：v3.3.13 补 issue #451 遗留「半修」——经典档水位卡新增：**v3.3.12 版本标识两处**——指纹行
       //   v3.3.11→v3.3.12、应用内更新说明字典新增 '3.3.12' 条目（zh 6 条 / en 6 条），均在经典区手写面
       //   （生成区之外）⇒ 本锁随动。行为代码零改动；判据意图不变（经典区字节守恒）。
@@ -78,7 +81,7 @@ try {
       //     ⇒ 本次漂移 100% 来自这 8 行，无历史内容混入。
       // ★2026-10-20 重钉（3d9862ae… → f4ce3086…）：v3.3.11 版本标识两处（指纹行 + 应用内更新说明字典新增 3.3.11 条目），
       //   均在经典区手写面（生成区之外）⇒ 本锁随动，行为代码零改动。判据意图不变（经典区字节守恒）。
-      assert.equal(createHash('sha256').update(prior).digest('hex'), '6f21c2adf0a267434a9dcc2046db7875cfb4f825646e29755efa31f557c9e593', 'classic client region bytes are conserved (interval control normalized back to 1/1440); pinned upstream baseline superseded by reviewed batches')
+      assert.equal(createHash('sha256').update(prior).digest('hex'), '461dbf8ca4c7df208d9f18d630077999fe11fd2fff971dc7dc229ceafa1044fe', 'classic client region bytes are conserved (interval control normalized back to 1/1440); pinned upstream baseline superseded by reviewed batches')
     }
   }
   console.log('PASS archive interval UI/API/runtime agree on 15–1440, invalid patches preserve configuration')
