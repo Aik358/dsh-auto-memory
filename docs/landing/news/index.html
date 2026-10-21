@@ -453,10 +453,10 @@
   <div class="blob" style="width:420px;height:420px;background:var(--accent);top:-14%;right:-10%;opacity:0.10"></div>
   <div class="blob" style="width:340px;height:340px;background:var(--accent-3);bottom:-20%;left:-8%;opacity:0.10"></div>
   <div class="wrap">
-    <div class="badge-pill reveal reveal-lead" style="margin-bottom:1rem"><span class="dot"></span><span data-i18n="hero.badge">9 篇报告 · 8 篇官方 + 1 篇社区独立复核</span></div>
+    <div class="badge-pill reveal reveal-lead" style="margin-bottom:1rem"><span class="dot"></span><span data-i18n="hero.badge">10 篇报告 · 8 篇官方 + 1 篇社区独立复核 + 1 篇征集</span></div>
     <h1 class="ptitle reveal reveal-delay-1 reveal-lead" style="max-width:52rem">
       <span data-i18n="hero.title1">记忆不必被要求去查。</span><br>
-      <span class="gradient-text" data-i18n="hero.title2">九篇可复算的报告。</span>
+      <span class="gradient-text" data-i18n="hero.title2">十篇可复算的报告。</span>
     </h1>
     <p class="psub reveal reveal-delay-2 reveal-lead" data-i18n="hero.sub">这里是我们把「宿主侧主动联想」做成一件可复现工程时，留下的全部量化结论。每一篇都来自可复现实验，结论冻结为决策台账，并已进入生产实现。</p>
     <div class="cta-row reveal reveal-delay-3" style="margin-top:0.5rem">
@@ -507,6 +507,13 @@
       <h3 data-i18n="r8.title">她记得你，也记得你们</h3>
       <p data-i18n="r8.sum">主动召回让记忆自己出现。下一阶段继续追问：同一条记忆在工作、助理和长期交流中，应以怎样的分寸参与回应？</p>
       <span class="metric-chip" data-i18n="m.r8">下一阶段研究议程</span>
+      <span class="tcard-go">阅读 →</span>
+    </a>
+    <a href="2026-10-21-corpus-call.html" class="glass-card tcard reveal reveal-delay-3 block">
+      <div class="tcard-top"><span class="kind" data-i18n="r9.kind">征集</span><span class="tcard-date">2026-10-21</span></div>
+      <h3 data-i18n="r9.title">求一份真实的人机长期对话记录</h3>
+      <p data-i18n="r9.sum">我们缺的不是 AI 说了什么，而是你对它的反应。为「何时该主动提起一条记忆」征集真实人机长期对话语料，可脱敏、可撤回。</p>
+      <span class="metric-chip" data-i18n="m.r9">语料征集</span>
       <span class="tcard-go">阅读 →</span>
     </a>
   </div>
@@ -673,9 +680,9 @@ const i18n = {
       'nav.pilot':'引航者计划',
       'nav.features':'能力',
       'nav.install':'安装',
-      'hero.badge':'9 篇报告 · 8 篇官方 + 1 篇社区独立复核',
+      'hero.badge':'10 篇报告 · 8 篇官方 + 1 篇社区独立复核 + 1 篇征集',
       'hero.title1':'记忆不必被要求去查。',
-      'hero.title2':'九篇可复算的报告。',
+      'hero.title2':'十篇可复算的报告。',
       'hero.sub':'这里是我们把「宿主侧主动联想」做成一件可复现工程时，留下的全部量化结论。每一篇都来自可复现实验，结论冻结为决策台账，并已进入生产实现。',
       'hero.cta1':'从范式篇读起',
       'hero.cta2':'回主页 →',
@@ -689,6 +696,10 @@ const i18n = {
       'r8.title':'她记得你，也记得你们',
       'r8.sum':'主动召回让记忆自己出现。下一阶段继续追问：同一条记忆在工作、助理和长期交流中，应以怎样的分寸参与回应？',
       'r8.kind':'News',
+ 'm.r9':'语料征集',
+ 'r9.title':'求一份真实的人机长期对话记录',
+ 'r9.sum':'我们缺的不是 AI 说了什么，而是你对它的反应。为「何时该主动提起一条记忆」征集真实人机长期对话语料，可脱敏、可撤回。',
+ 'r9.kind':'协作征集',
       'r1.title':'从语义相关到唤起必要',
       'r1.sum':'「像不像」与「该不该」是两个目标，在分布上甚至反向。单阈值策略在 86 条金标上精确率为 0；双通道决策链最终达到 precision 0.818 / recall 0.237。',
       'r1.kind':'技术报告',
@@ -741,9 +752,9 @@ const i18n = {
       'nav.pilot':'Pilot Program',
       'nav.features':'Features',
       'nav.install':'Install',
-      'hero.badge':'9 reports · 8 official + 1 community re-verification',
+      'hero.badge':'10 reports · 8 official + 1 community re-verification + 1 call for corpora',
       'hero.title1':'Memory should not have to be asked for.',
-      'hero.title2':'Nine reproducible reports.',
+      'hero.title2':'Ten reproducible reports.',
       'hero.sub':'Everything we learned turning "host-side proactive recall" into reproducible engineering: quantified conclusions, each from a re-runnable experiment, frozen into a decision ledger and shipped in production.',
       'hero.cta1':'Start with the paradigms',
       'hero.cta2':'Back home →',
@@ -757,6 +768,10 @@ const i18n = {
       'r8.title':'She Remembers You — and Remembers Us',
       'r8.sum':'Proactive recall lets memory surface on its own. The next phase asks: in work, assistance, and long-term exchange, with what restraint should the same memory take part in a response?',
       'r8.kind':'News',
+      'm.r9':'Corpus call',
+      'r9.title':'Seeking Real Long-Term Human–AI Conversations',
+      'r9.sum':'What we lack is not what the AI said, but how you responded to it. We are collecting real long-term human–AI conversation corpora for research on when a memory should be proactively raised. Redactable and revocable.',
+      'r9.kind':'Corpus call',
       'r1.title':'From semantic relevance to recall necessity',
       'r1.sum':'"Looks alike" and "should be surfaced" are two different targets — in distribution, even inverted. A single-threshold policy scored 0 precision on 86 gold items; the dual-channel chain reaches precision 0.818 / recall 0.237.',
       'r1.kind':'Technical report',
