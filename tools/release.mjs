@@ -10,7 +10,7 @@
  *           --dry-run 时强制改用临时 staging 目录,不触碰真实发布基座,不做任何发布动作。
  */
 import { cpSync, readFileSync, writeFileSync, rmSync, existsSync, readdirSync, statSync, mkdirSync } from 'node:fs'
-import { execSync } from 'node:child_process'
+import { execSync, execFileSync } from 'node:child_process'
 import path from 'node:path'
 import { tmpdir } from 'node:os'
 import { fileURLToPath } from 'node:url'
@@ -249,6 +249,45 @@ for (const entry of ['.gitattributes', 'cordis.patch.yml', 'README.md', 'README.
   const s = path.join(DEV, entry), d = path.join(REL, entry)
   if (existsSync(s)) cpSync(s, d, { recursive: true })
 }
+
+// ---------- 2.5 docs 覆盖护栏(#v3.3.15，fail-soft + 显式告警) ----------
+// ★事故形态(2026-10-21 实测踩到)：上面的清单用 `cpSync(s, d, { recursive: true })` 把 dev 的
+//   `docs/` **整树覆盖**进 REL。而 `docs/landing/` 是对外站点(GitHub Pages 发的是 docs/ 整树)，
+//   若 dev 与 main 上同一页文案不同(例如用户在 main 上直接改了措辞)，发版就会**静默把线上文案回退**。
+//   实测：有人在 main 把「征集」改成「协作征集」，dev 仍是「征集」⇒ v3.3.14 构建时该行被覆盖回
+//   「征集」，靠人工在推送前发现才没上线。这类回退**不会让任何测试变红**，只能靠机械比对兜住。
+//
+// ★为什么是「告警」而不是「直接阻断」：docs/ 覆盖本身就是发版的正向路径(dev 是唯一发布源)，
+//   dev 领先 main 属常态；粗暴 fail-closed 会让每次正常发版都崩。故只对**归一化后仍有实质差异**
+//   的文件列表做提示，让人在 push 前有据可查；真正的判据是「差异是否为人有意为之」。
+//   归一化：两侧都做 CRLF→LF，避免行尾差异淹没真实内容差异(实测 dev 是 CRLF、main 是 LF)。
+function reportDocsOverwriteRisk() {
+  try {
+    const git = (args) => execFileSync('git', args, { cwd: REL, encoding: 'buffer', maxBuffer: 64 * 1024 * 1024 })
+    let base = null
+    try { base = git(['rev-parse', '--verify', 'origin/main']).toString('utf8').trim() } catch (e) { return } // 无 origin/main(干净克隆/CI) ⇒ 跳过
+    if (!base) return
+    const changed = git(['diff', '--name-only', base, '--', 'docs']).toString('utf8').split(/\r?\n/).filter(Boolean)
+    if (!changed.length) { console.log('[release] docs 覆盖护栏: docs/ 与 origin/main 无差异 ✓'); return }
+    const real = []
+    for (const rel of changed) {
+      const abs = path.join(REL, rel)
+      let mine = ''
+      try { mine = readFileSync(abs, 'utf8') } catch (e) { real.push(rel + ' (dev 缺失 ⇒ 将从 main 删除)'); continue }
+      let theirs = ''
+      try { theirs = git(['show', base + ':' + rel.replace(/\\/g, '/')]).toString('utf8') } catch (e) { real.push(rel + ' (main 无此文件 ⇒ 新增，正常)'); continue }
+      if (mine.replace(/\r\n/g, '\n') !== theirs.replace(/\r\n/g, '\n')) real.push(rel)
+    }
+    if (!real.length) { console.log('[release] docs 覆盖护栏: 差异仅为行尾/新增文件 ✓'); return }
+    console.warn('[release] ⚠ docs 覆盖护栏: 以下文件在 dev 与 origin/main 上**内容不同**，本次发版会用 dev 版本覆盖线上：')
+    for (const rel of real) console.warn('   · ' + rel)
+    console.warn('   若其中含**在 main 上做过、dev 未同步**的改动，push 前请先把 dev 对齐，否则线上会被回退。')
+    console.warn('   (本检查不阻断构建：dev 领先 main 属正常发版路径。)')
+  } catch (e) {
+    console.warn('[release] docs 覆盖护栏跳过(无法比对 origin/main): ' + (e && e.message ? e.message : e))
+  }
+}
+reportDocsOverwriteRisk()
 // ★2026-09-22：把发版线**必需的两个工具**带进发布包 —— CI 运行器 + 转换表真源。
 //   背景：此前 tools/ 整个不在复制清单，REL 仓因此**从未有过 tools/**，main 上既没有
 //   `tools/run-smoke.mjs`（CI 无从运行）也没有 `tools/release.mjs`（t7e / issue110 /
