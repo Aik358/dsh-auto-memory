@@ -102,7 +102,7 @@ const ok = (c, name, detail) => { if (c) { pass++; console.log('  ok   - ' + nam
 const sec = (t) => console.log('\n=== ' + t + ' ===')
 
 const TITLE_RE = /^## 归档批次 #(\d+) · /m
-const PTR_RE = /^- 本批原文：archive\/notes-archived\.md §(\d{4}-\d{2}-\d{2}T\d{2}:\d{2})（约 (\d+) 字符）$/m
+const PTR_RE = /^- 本批原文：archive\/notes-archived\.md §(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?)（约 (\d+) 字符）$/m
 const ARCH_HDR_RE = /^## 归档批次 /m
 
 function scenario(deficit, opts = {}) {
@@ -128,7 +128,7 @@ sec('[1][2] full 档：标题短号 + 正文完整时间戳指针')
   ok(!!p, '①-b 正文带完整时间戳指针')
   ok(t && !/T\d{2}:\d{2}/.test(t[0]), '①-c 标题**不含**完整时间戳（目录行保持短）', t && t[0])
   ok(ARCH_HDR_RE.test(arch), '② 归档含批次头')
-  ok(/^## 归档批次 \d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/m.test(arch), '②-b 归档批次头用完整时间戳（可 grep/排序）')
+  ok(/^## 归档批次 \d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?$/m.test(arch), '②-b 归档批次头用完整时间戳（可 grep/排序）')
   ok(p && Number(p[2]) > 0, '②-c 指针标注字符数')
   const parts = arch.split('## 归档批次 ').filter((x) => x.trim())
   ok(parts.length >= 1 && parts[0].trim().length > 20, '②-d 按批次头可切出该批原文')
