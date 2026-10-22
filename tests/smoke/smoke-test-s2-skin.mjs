@@ -93,7 +93,7 @@ ok(idx.includes("path: API.skinAsset"), '§4.3 路由条目真实注册')
 ok(idx.includes('skinKeyFromRequestPre'), '§4.4 有 query key 解析（白名单）')
 ok(idx.includes('skinAbsPathOfPre'), '§4.5 有路径解析（含根目录归属校验）')
 ok(idx.includes('skinMimeOfPre'), '§4.6 有 content-type 判定')
-ok(idx.includes('isLoopbackRequest(req)'), '§4.7 loopback-only 门禁存在')
+ok(idx.includes('isLoopbackRequest(req, panelAllowedHosts)'), '§4.7 loopback-only 门禁存在')
 ok(indexOfAll(idx, 'skinAbsPathOfPre').length >= 2, '§4.8 skinAbsPathOfPre 定义 + 调用（不是死函数）')
 function indexOfAll (s, sub) { const out = []; let i = s.indexOf(sub); while (i >= 0) { out.push(i); i = s.indexOf(sub, i + 1) } return out }
 

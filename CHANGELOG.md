@@ -4,6 +4,47 @@ All notable changes to dsh-auto-memory.
 
 ---
 
+## [3.3.16] — 2026-10-22 · 面板支持局域网/远程访问 + 技能查重面扩至磁盘
+
+> **一句话**：`dsh web --host <LAN-IP>` 部署下面板所有接口 403（守卫硬要求「来源回环 + Host=localhost」）；本版把守卫扩为两档，未配置白名单时行为逐字节不变。同时把技能查重面扩到磁盘已有的 `SKILL.md`，并折叠审批面里结构上无法晋升的观察行。
+
+### 已确认修复
+
+| # | 位置 | 修复 |
+|---|---|---|
+| ① | `lib/index.js` · `isLoopbackRequest` | 由「回环且 Host=localhost」单档扩为**两档**：①回环档（旧行为，未配置也生效）②白名单档（仅当白名单非空：私有/链路本地来源 + Host 命中白名单 + 非 `sec-fetch-site: cross-site` + 有 Origin 时必须同源）。公网来源、`0.0.0.0`、解析不出的形态一律 fail closed |
+| ② | `lib/index.js` | `DEFAULT_CONFIG` 新增 `panelAllowedHosts`（**159→160**），支持环境变量 `DSH_AUTO_MEMORY_ALLOWED_HOSTS` 覆盖；**73 处**面板守卫统一改调同一份已解析白名单（在 `apply` 内解析一次，避免 73 份判据漂移） |
+| ③ | `lib/index.js` | 面板 403 响应体从只回 `loopback-only` 扩为带**判定现场**：`reason` / `remoteAddress` / `host` / `allowlistConfigured` / `hint`。只告知「有没有配、几条」，**不回显白名单条目本身**（防主机名探测） |
+| ④ | `lib/skill-export-host.js` | 新增 `listLocalSkillsPre`：**全量**列举 `~/.dsh/skills/` 下所有可解析 `SKILL.md`（含用户手写、其它工具带来、孤儿导出），`title` 取正文 `# ` 标题而非 ASCII `name`（中文技能才查得出重复） |
+| ⑤ | `lib/index.js` · `proceduresFindDuplicatePre` | 查重加**第二路**：除 procedure store 外，还比对磁盘技能目录，标题归一化相等即命中并拒写（回传 `skillDir` 与来源标注）。**只认精确相等、不做模糊匹配**（避免误伤相似但不同的流程）；磁盘列举失败不阻塞 store 那一路 |
+| ⑥ | `lib/index.js` · `memory_procedure_list` | 默认**折叠**「`observationOnly` 或 缺 `successCriteria`」的低质量观察行（结构上无法晋升），结尾**如实报出折叠条数**并给 `includeNoise=true` 查看全量。**不删、不隐藏** |
+
+### 归因说明（重要）
+
+第 ⑥ 项**不是**在阻止新的污染。核查确认：机械切片产生源已于 **2026-09-23** 结构性删除（`memory-hub.js` 的 `crossFeed()` 循环体为空，`hubMechanicalProcedureFeedEnabled` 开关连同设置项、getter 同轮移除；`procedureCandidateFromRow` 另补「无真标题即拒收」）。
+
+本机实测 103 条中 26 条低质量行：**26/26 全部为机械派生**，创建时间**全部早于 2026-09-23**；2026-10 新建的 27 条**零低质量**。⇒ 折叠处理的是**历史存量**的观感，不是防回归。
+
+### 配置键计数联动
+
+`DEFAULT_CONFIG` 159 → **160**，已同步 `README.md` / `README.zh-CN.md` / `docs/WHITEPAPER.md` / `docs/FRONTEND-CO-CREATION.md` / `docs/HOMEPAGE-CONTENT-FOR-GM53.md` 共 6 处，`tools/verify-docs.mjs` 全部一致。
+
+### 已知限制 / 未验证
+
+- **GUI 设置页暂无 `panelAllowedHosts` 输入框**：前端字段表是手写的（108 个可写键里无此键），当前启用方式只有环境变量或直接编辑 `~/.dsh/dsh-auto-memory.json` 后重启。此前 403 提示里写「在插件设置里填」是**假承诺**，已改为如实描述。设置页入口留待后续版本。
+- 未对齐宿主 `--trusted-host`：宿主未把该信任列表暴露给插件（本仓 0 处接入点），故只能自建白名单。
+- 存量 26 条低质量行**未物理删除**（按「技能库条目删除须用户批准」的规矩，待裁定）。
+- 宿主侧改动需**重启 dsh web** 生效（路由守卫在 `apply` 期解析一次）；前端半边刷新页面即可。
+
+### 验证
+
+- **全量回归 PASS 442 / FAIL 0 / TIMEOUT 0**（161.8s）。
+- 新增套件 `tests/smoke/smoke-test-issue454-panel-lan.mjs`：**61 断言**全绿，变异捕获 **6/6**（含「401 体不得回显白名单条目」的变异验证）。
+- 新增套件 `tests/smoke/smoke-test-issue453-procedure-dedupe.mjs`：**30 断言**全绿，变异捕获 **3/3**。
+- **回环档等价性差分**：修复前（HEAD）与修复后实现抽出，在 **1584 个输入组合**（16 来源地址 × 11 Host × 9 header 组合）上逐例比对 ⇒ **0 处差异**（36 例 true / 1548 例 false），证明「未配置白名单时行为不变」。
+- `tools/verify-docs.mjs` 0 红项（工具 19 · 路由 73 · 配置键 160）。
+
+---
 ## [3.3.15] — 2026-10-21 · 前端超时区间对齐后端 + 根治 docs 整树覆盖隐患
 
 > **一句话**：上一版把超时开放成配置，但**前端仍按 600 秒封顶**——用户把设置调到 900，后端等 900、前端 600 就放弃并报超时。本版把两端区间与默认值对齐，并给发布脚本加一道 docs 覆盖护栏。

@@ -13,7 +13,7 @@ const dir = await fs.mkdtemp(path.join(tmpdir(), 'dam-376-'))
 const file = embeddingConfigFilePre(dir)
 await fs.mkdir(path.dirname(file), { recursive: true })
 const env = { engine: { config: {}, _jsConfigurationError: 'fixture earlier failure' }, path, memoryDir: () => dir, dshHome: () => dir, embeddingConfigFilePre, createDefaultEmbeddingConfigPre, updateEmbeddingConfigPre,
-  isLoopbackRequest: () => true, readJsonBody: async (req) => req.body, diag() {}, writeJson: (res, status, body) => Object.assign(res, { status, body }) }
+  isLoopbackRequest: () => true, panelAllowedHosts: [], forbiddenPanelPayloadPre: (req) => ({ error: 'forbidden: panel-access' }), readJsonBody: async (req) => req.body, diag() {}, writeJson: (res, status, body) => Object.assign(res, { status, body }) }
 const handler = new Function(...Object.keys(env), 'return (' + source.slice(start, end) + '\n})')(...Object.values(env))
 async function call(body) { const res = {}; await handler({ method: 'POST', body }, res); return res }
 try {

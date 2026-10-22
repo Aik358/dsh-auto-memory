@@ -17,7 +17,7 @@ let pass = 0
 const ok = (condition, label) => { assert.ok(condition, label); pass++ }
 const deps = { engine: { config: {} }, path, memoryDir: () => root, dshHome: () => root, resolveDshHomePre: () => root,
   embeddingConfigFilePre, createDefaultEmbeddingConfigPre, updateEmbeddingConfigPre,
-  isLoopbackRequest: () => true, readJsonBody: async (r) => r.body,
+  isLoopbackRequest: () => true, panelAllowedHosts: [], forbiddenPanelPayloadPre: (req) => ({ error: 'forbidden: panel-access' }), readJsonBody: async (r) => r.body,
   writeJson: (_, status, body) => ({ status, body }), diag: (s) => logs.push(s) }
 const routeAt = idx.indexOf("path: API['semantic-emit']")
 const h = idx.indexOf('handler: ', routeAt) + 'handler: '.length

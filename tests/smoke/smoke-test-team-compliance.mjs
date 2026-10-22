@@ -63,8 +63,8 @@ async function invoke(cfg) {
   const isLoopbackRequest = () => true
   const API = { teamCompliance: '/api/dsh-auto-memory/team-compliance' }
   const engine = { config: cfg }
-  const fn = new Function('engine', 'writeJson', 'isLoopbackRequest', 'API', 'return ' + handlerSrc)
-  await fn(engine, writeJson, isLoopbackRequest, API)({}, {})
+  const fn = new Function('engine', 'writeJson', 'isLoopbackRequest', 'API', 'panelAllowedHosts', 'forbiddenPanelPayloadPre', 'return ' + handlerSrc)
+  await fn(engine, writeJson, isLoopbackRequest, API, [], (req) => ({ error: 'forbidden: panel-access' }))({}, {})
   return calls
 }
 
