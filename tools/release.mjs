@@ -315,7 +315,7 @@ reportDocsOverwriteRisk()
 //     · tests/smoke/smoke-test-issue368-write-contract-negative.mjs → tools/check-write-contract-await.mjs（PR#420）
 //   而 tools/ 是**白名单**入包 ⇒ 不列即静默跳过；漏了会出现「发布树里测试引用的工具不存在」，
 //   即本文件反复记录的同一型漏网（CI 里 ERR_MODULE_NOT_FOUND / ENOENT）。
-for (const toolFile of 'run-smoke.mjs,smoke-impact.mjs,release.mjs,reconcile-upstream.mjs,check-write-contract.mjs,check-write-contract-await.mjs'.split(',')) {
+for (const toolFile of 'run-smoke.mjs,smoke-impact.mjs,release.mjs,reconcile-upstream.mjs,check-write-contract.mjs,check-write-contract-await.mjs,chart-engine.mjs,chart-figs.mjs,chart-figs-step5.mjs,chart-audit.mjs'.split(',')) {
   const src = path.join(DEV, 'tools', toolFile)
   if (!existsSync(src)) continue
   mkdirSync(path.join(REL, 'tools'), { recursive: true })
