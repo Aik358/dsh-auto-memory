@@ -73,6 +73,10 @@ try {
       //   v3.3.11→v3.3.12、应用内更新说明字典新增 '3.3.12' 条目（zh 6 条 / en 6 条），均在经典区手写面
       //   （生成区之外）⇒ 本锁随动。行为代码零改动；判据意图不变（经典区字节守恒）。
       //   ★中间值 24e85da4… 是版本号一度写成 3.4.0 时的实测值，用户裁定「这是小更新，末位 +1」后作废。
+      // ★2026-10-22 重钉（6a89b88a… → e31fa808…）：v3.3.16 版本标识两处（指纹行 + 应用内更新说明
+      //   字典新增 3.3.16 条目），均在经典区**手写面**（生成区之外）⇒ 本锁随动，行为代码零改动。
+      //   ★归因取证（实测）：还原 lib/client.js 到 HEAD（v3.3.15）后本套件 PASS（旧锁绿）；换回本批改动 = 红。
+      //   ⇒ 漂移 100% 来自版本标识，属**判据过期**，非缺陷。判据意图不变（经典区字节守恒）。
       // ★2026-10-21 重钉（f4ce3086… → 6a89b88a…）：线上团队同步 12GB 事故批在**经典档手写区**新增——
       //   ① zh/en 标签表各 +2 行（teamPullPageLimit / teamPushPath）；
       //   ② TEAM_SETTING_KEYS +2 键；③ renderTeamSettings 字段表 F +2 行（数值 / 文本控件）。
@@ -82,7 +86,7 @@ try {
       //     ⇒ 本次漂移 100% 来自这 8 行，无历史内容混入。
       // ★2026-10-20 重钉（3d9862ae… → f4ce3086…）：v3.3.11 版本标识两处（指纹行 + 应用内更新说明字典新增 3.3.11 条目），
       //   均在经典区手写面（生成区之外）⇒ 本锁随动，行为代码零改动。判据意图不变（经典区字节守恒）。
-      assert.equal(createHash('sha256').update(prior).digest('hex'), '3ee2665159073eab36cf6beee34ac52c7dcd429e439442354d7b17e389cc81a0', 'classic client region bytes are conserved (interval control normalized back to 1/1440); pinned upstream baseline superseded by reviewed batches')
+      assert.equal(createHash('sha256').update(prior).digest('hex'), 'e31fa80876ecc841b586655eab9798fe8edeec7220eaecd7a943a8adb47efb63', 'classic client region bytes are conserved (interval control normalized back to 1/1440); pinned upstream baseline superseded by reviewed batches')
     }
   }
   console.log('PASS archive interval UI/API/runtime agree on 15–1440, invalid patches preserve configuration')

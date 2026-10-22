@@ -17,7 +17,7 @@ const engine = {
   resolvePaths: async agent => { assert.equal(agent.session.id, 'A'); return { projectDir: root } },
 }
 const handler = vm.runInNewContext('(' + source.slice(start, end) + ')', {
-  engine, path, URL, String, isLoopbackRequest: () => true,
+  engine, path, URL, String, isLoopbackRequest: () => true, panelAllowedHosts: [], forbiddenPanelPayloadPre: (req) => ({ error: 'forbidden: panel-access' }),
   memoryTreePathOf: (_, target) => { assert.equal(current.session.id, 'A'); return target.startsWith(root + path.sep) ? target : null },
   readFile: async () => { readCount++; if (unreadable) throw Object.assign(Error('fixture original unreadable'), { code: 'EACCES' }); return 'Complete original' },
   writeJson: (_, status, body) => { response = { status, body } },

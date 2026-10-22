@@ -24,7 +24,7 @@ try{
  function handler(marker,extra={}){
   const route=source.indexOf(marker),start=source.indexOf('handler: ',route)+9,end=source.indexOf('\n      },',start)
   assert(route>=0 && end>start)
-  const env={engine,DEFAULT_CONFIG,path,embeddingConfigFilePre,createDefaultEmbeddingConfigPre,updateEmbeddingConfigPre,withMemoryAdmissionScopePre,readFile:fs.readFile,sanitizeForWrite,tailHas,writeGateRefusalTextPre,memoryWriteLockKey,validateSettingsPatch,validateSettingsPaths,dshHome:()=>home,isLoopbackRequest:()=>true,readJsonBody:async req=>req.body,writeJson:(res,status,body)=>{res.status=status;res.body=body},memoryDir:name=>path.join(home,'memory',name),writeTextAtomicPreSync,
+  const env={engine,DEFAULT_CONFIG,path,embeddingConfigFilePre,createDefaultEmbeddingConfigPre,updateEmbeddingConfigPre,withMemoryAdmissionScopePre,readFile:fs.readFile,sanitizeForWrite,tailHas,writeGateRefusalTextPre,memoryWriteLockKey,validateSettingsPatch,validateSettingsPaths,dshHome:()=>home,isLoopbackRequest:()=>true,panelAllowedHosts:[],forbiddenPanelPayloadPre:(req) => ({ error: 'forbidden: panel-access' }),readJsonBody:async req=>req.body,writeJson:(res,status,body)=>{res.status=status;res.body=body},memoryDir:name=>path.join(home,'memory',name),writeTextAtomicPreSync,
    // 2026-10-13：端点新增诊断留痕（diag()）。本沙箱用 new Function 重建 handler，只注入白名单变量
    // ⇒ 模块顶层的 diag 不在作用域内，必须显式注入。此处收进 logs 数组，顺便断言「失败必留痕」。
    diag:(m)=>{envLogs.push(String(m))},...extra}

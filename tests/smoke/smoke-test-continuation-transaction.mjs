@@ -24,7 +24,7 @@ const deps = { CONTINUE_CREATE_FALLBACK_ALLOWED_CODES: ['workspace/not-found'], 
   //   isSubAgentSession（子代理会话不得 arm）。抽出的方法体在 new Function 里重建，作用域中没有
   //   模块级绑定 ⇒ 必须一并注入，否则 ReferenceError 会被该方法自身的 catch 吞掉，
   //   表现为「明明达标却不 arm」（同 2026-09-14 shouldArmAutoContinuePre 的教训）。
-  isSubAgentSession: (x) => { const h = x && x.session && x.session.header; if (!h) return false; if (String(h.origin || '') === 'subagent') return true; const d = Number(h.delegationDepth); return Number.isFinite(d) && d > 0 },
+  panelAllowedHosts: [], forbiddenPanelPayloadPre: (req) => ({ error: 'forbidden: panel-access' }), isSubAgentSession: (x) => { const h = x && x.session && x.session.header; if (!h) return false; if (String(h.origin || '') === 'subagent') return true; const d = Number(h.delegationDepth); return Number.isFinite(d) && d > 0 },
   DEFAULT_AUTO_CONTINUE_REFRESH_TIMEOUT_SECONDS: 120, DEFAULT_AUTO_CONTINUE_PROBE_TIMEOUT_SECONDS: 60, DEFAULT_AUTO_CONTINUE_THRESHOLD: .75, contTitleStampPre: () => '09-30 12:00', randomUUID: () => 'ritual-request-001' }
 function method(header, extra = {}) {
   const obj = compile('({' + extract(host, header) + '})', { ...deps, ...extra })
@@ -101,6 +101,7 @@ await check('C05 permission-only callback cannot commit continuation', async () 
   const src = extract(host.slice(routeOffset), 'handler: async (req, res) => {').replace(/^handler: /, '')
   const e = engine()
   const handler = compile('(' + src + ')', { engine: e, isLoopbackRequest: () => true,
+    panelAllowedHosts: [], forbiddenPanelPayloadPre: (req) => ({ error: 'forbidden: panel-access' }),
     readJsonBody: async () => ({ fromSessionId: 'source', toSessionId: 'empty' }), writeJson() {} })
   await handler({}, {})
   assert.equal(e.marked.size, 0)

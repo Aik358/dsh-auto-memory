@@ -103,14 +103,14 @@ async function main() {
     const src = handlerSourceOf(idx, camel)
     ok(typeof src === 'string' && src.length > 100, name + ' handler 箭头函数可抽取（长度 > 100）', src && src.length)
     let fn = null
-    try { fn = new Function('engine', 'isLoopbackRequest', 'writeJson', 'API', 'return ' + src) }
+    try { fn = new Function('engine', 'isLoopbackRequest', 'writeJson', 'API', 'panelAllowedHosts', 'forbiddenPanelPayloadPre', 'return ' + src) }
     catch (e) { ok(false, name + ' handler 源码可构造', String(e && e.message)) }
     if (!fn) continue
 
     // ③ 正向：回环 + teamEnabled=false（最保守默认态）
     let cap = null
     const writeJson = (res, code, body) => { cap = { code, body } }
-    await fn(fakeEngine(), () => true, writeJson, API)({}, {})
+    await fn(fakeEngine(), () => true, writeJson, API, [], (req) => ({ error: 'forbidden: panel-access' }))({}, {})
     ok(cap !== null, name + ' 真被调用并返回（writeJson 命中）')
     if (!cap) continue
     ok(cap.code === 200, name + ' ⇒ 200（未启用也返回 200）', cap.code)
@@ -122,20 +122,25 @@ async function main() {
     // ④ ★负路径：非回环 ⇒ 真 403，且**不落任何业务字段**
     let cap403 = null
     const wj403 = (res, code, body) => { cap403 = { code, body } }
-    await fn(fakeEngine({ config: { teamEnabled: true } }), () => false, wj403, API)({}, {})
+    await fn(fakeEngine({ config: { teamEnabled: true } }), () => false, wj403, API, [], (req) => ({ error: 'forbidden: panel-access' }))({}, {})
     ok(cap403 && cap403.code === 403, name + ' 非回环 ⇒ 403', cap403 && cap403.code)
-    ok(cap403 && Object.keys(cap403.body).length === 1 && !!cap403.body.error,
-      name + ' 403 体只含 error（不泄漏业务字段）', cap403 && Object.keys(cap403.body))
+    // ★#454（2026-10-22）判据演进：403 体从「只含 error」扩为「error + 判定现场诊断」
+    //   （remoteAddress / host / reason / allowlistConfigured / hint），便于远程部署用户
+    //   自己看出是 Host 判定没过。安全不变式改为：**不得出现任何业务字段**（如 enabled/team 等）。
+    const bodyKeys = cap403 ? Object.keys(cap403.body) : []
+    const ALLOWED_403 = ['error', 'reason', 'remoteAddress', 'host', 'allowlistConfigured', 'hint']
+    ok(cap403 && !!cap403.body.error && bodyKeys.every((k) => ALLOWED_403.indexOf(k) >= 0),
+      name + ' 403 体只含 error 与 #454 诊断字段（不泄漏业务字段）', bodyKeys)
   }
 
   // ⑤ ★值级契约锁（前端依赖这两个**值**；只比键名抓不到）——
   //   变异 M2（把产线 `reason` 改成 'disabled'）在本轮**没被键名守卫抓到**，故必须有值断言。
   for (const [name, fn2] of ROUTES.map(([n]) => [n, null])) {
     const src = handlerSourceOf(idx, camelOf(name))
-    const f = new Function('engine', 'isLoopbackRequest', 'writeJson', 'API', 'return ' + src)
+    const f = new Function('engine', 'isLoopbackRequest', 'writeJson', 'API', 'panelAllowedHosts', 'forbiddenPanelPayloadPre', 'return ' + src)
     let c1 = null, c2 = null
-    await f(fakeEngine(), () => true, (r, cd, b) => { c1 = b }, API)({}, {})
-    await f(fakeEngine(), () => true, (r, cd, b) => { c2 = b }, API)({}, {})
+    await f(fakeEngine(), () => true, (r, cd, b) => { c1 = b }, API, [], (req) => ({ error: 'forbidden: panel-access' }))({}, {})
+    await f(fakeEngine(), () => true, (r, cd, b) => { c2 = b }, API, [], (req) => ({ error: 'forbidden: panel-access' }))({}, {})
     // ★确定性：同一 handler 连调两次，**键集与值都一致**（无隐藏状态）
     const k1 = JSON.stringify(c1, Object.keys(Object.assign({}, c1)).sort())
     const k2 = JSON.stringify(c2, Object.keys(Object.assign({}, c2)).sort())
@@ -144,13 +149,13 @@ async function main() {
 
   // ⑥ ★值级契约锁：sync-now 未启用 ⇒ 恰好这两个值（把产线 reason 改掉必红）
   const snSrc = handlerSourceOf(idx, "teamSyncNow")
-  const snFn = new Function('engine', 'isLoopbackRequest', 'writeJson', 'API', 'return ' + snSrc)
+  const snFn = new Function('engine', 'isLoopbackRequest', 'writeJson', 'API', 'panelAllowedHosts', 'forbiddenPanelPayloadPre', 'return ' + snSrc)
   let sn = null
-  await snFn(fakeEngine(), () => true, (r, c, b) => { sn = b }, API)({}, {})
+  await snFn(fakeEngine(), () => true, (r, c, b) => { sn = b }, API, [], (req) => ({ error: 'forbidden: panel-access' }))({}, {})
   ok(sn && sn.ok === false, 'sync-now 未启用 ⇒ ok 恰为 false', sn && sn.ok)
   ok(sn && sn.reason === 'team-disabled', 'sync-now 未启用 ⇒ reason 恰为 "team-disabled"（值级契约锁）', sn && sn.reason)
   // ⑧ 回环守卫数 >= 路由数
-  const guardCount = (idx.match(/isLoopbackRequest\(req\)/g) || []).length
+  const guardCount = (idx.match(/isLoopbackRequest\(req, panelAllowedHosts\)/g) || []).length
   ok(guardCount >= 65, '回环守卫数 >= 65', guardCount)
 
   console.log('  team-routes 真执行: ' + pass + ' PASS / ' + fail + ' FAIL')

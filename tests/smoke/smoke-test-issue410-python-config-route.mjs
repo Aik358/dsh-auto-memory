@@ -16,7 +16,7 @@ function handler(name) {
   const start = source.indexOf('handler: async ', route) + 'handler: '.length
   const end = source.indexOf('\n      },', start) + '\n      }'.length
   return vm.runInNewContext('(' + source.slice(start, end) + ')', {
-    engine, String, isLoopbackRequest: req => req.loopback !== false,
+    engine, String, isLoopbackRequest: req => req.loopback !== false, panelAllowedHosts: [], forbiddenPanelPayloadPre: (req) => ({ error: 'forbidden: panel-access' }),
     writeJson: (_, code, body) => { response = { code, body } },
   })
 }

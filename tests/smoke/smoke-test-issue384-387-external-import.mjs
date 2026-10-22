@@ -33,7 +33,7 @@ try {
     const engine = { resolvePathsForSession: async (sid) => ({ wsBound: sid === 'A', ws: '/fixture/A' }), agentForSessionId: () => null,
       withAgent: (agent, fn) => fn(), external: { importInto: async (_, __, ___, agent) => { owner = agent; return 'imported' },
         removeImported: async (_, __, agent) => { owner = agent; return 'removed' } } }
-    const env = { engine, isLoopbackRequest: () => true, readJsonBody: async (req) => req.body, writeJson: (res, status, body) => Object.assign(res, { status, body }) }
+    const env = { engine, isLoopbackRequest: () => true, panelAllowedHosts: [], forbiddenPanelPayloadPre: (req) => ({ error: 'forbidden: panel-access' }), readJsonBody: async (req) => req.body, writeJson: (res, status, body) => Object.assign(res, { status, body }) }
     const handler = new Function(...Object.keys(env), 'return (' + source.slice(start, end) + '\n})')(...Object.values(env))
     for (const sessionId of ['', 'unknown', 'A']) { const res = {}; await handler({ method: 'POST', body: { sessionId, source: 'fixture', target: 'project' } }, res); assert.equal(res.status, sessionId === 'A' ? 200 : 400) }
     assert.equal(owner.session.id, 'A'); assert.equal(owner.session.header.cwd, '/fixture/A')

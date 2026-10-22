@@ -63,7 +63,7 @@ ok(/memory_recall\(scope="archive"/.test(maintBlock), '① 指针内含**检索�
 // ── 造 /note handler 的可执行实例（真源码段 + 真 fs）──
 function makeNoteHandler(src, engine) {
   const objSrc = extractNoteRoute(src)
-  const factory = new Function('API', 'isLoopbackRequest', 'writeJson', 'readJsonBody', 'engine',
+  const factory = new Function('API', 'isLoopbackRequest', 'writeJson', 'readJsonBody', 'engine', 'panelAllowedHosts', 'forbiddenPanelPayloadPre',
     'sanitizeForWrite', 'tailHas', 'memoryWriteLockKey', 'readFile', 'readdirSync', 'withMemoryAdmissionScopePre',
     'return (' + objSrc + ')')
   return factory(
@@ -72,6 +72,8 @@ function makeNoteHandler(src, engine) {
     (res, code, obj) => { res.code = code; res.body = obj },
     async () => engine._reqBody,
     engine,
+    [],
+    (req) => ({ error: 'forbidden: panel-access' }),
     (t) => ({ ok: true, clean: t }),
     (hay, needle) => hay.includes(needle),
     (p) => 'lock:' + p,
