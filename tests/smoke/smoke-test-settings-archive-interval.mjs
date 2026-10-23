@@ -86,7 +86,7 @@ try {
       //     ⇒ 本次漂移 100% 来自这 8 行，无历史内容混入。
       // ★2026-10-20 重钉（3d9862ae… → f4ce3086…）：v3.3.11 版本标识两处（指纹行 + 应用内更新说明字典新增 3.3.11 条目），
       //   均在经典区手写面（生成区之外）⇒ 本锁随动，行为代码零改动。判据意图不变（经典区字节守恒）。
-      assert.equal(createHash('sha256').update(prior).digest('hex'), 'e31fa80876ecc841b586655eab9798fe8edeec7220eaecd7a943a8adb47efb63', 'classic client region bytes are conserved (interval control normalized back to 1/1440); pinned upstream baseline superseded by reviewed batches')
+      assert.equal(createHash('sha256').update(prior).digest('hex'), '5226d7386b6336067e27b836138ef59c2fda71909fccf5a08a83820020cf8a66', 'classic client region bytes are conserved (interval control normalized back to 1/1440); pinned upstream baseline superseded by reviewed batches [R2026-10-23: v3.3.17 版本身份三件套（指纹行 + 应用内 CHANGELOG 3.3.17 条目，均在生成块之外）⇒ 按实测 actual 重钉 e31fa808… → 5226d738…；归因实测：还原 client.js 到 HEAD 后本套件 exit=0，判据过期非缺陷]')
     }
   }
   console.log('PASS archive interval UI/API/runtime agree on 15–1440, invalid patches preserve configuration')
