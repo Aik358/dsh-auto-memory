@@ -4,6 +4,34 @@ All notable changes to dsh-auto-memory.
 
 ---
 
+## [3.3.17] — 2026-10-23 · 自动沉淀「每日额度」落盘，跨宿主重启延续
+
+> **一句话**：`autoConsolidateDailyMax` 的计数此前只存内存、只有「日期变化」一个清零条件，宿主重启即归零 ⇒ 设成「每天 8 次」实际是「**每次启动** 8 次」。本版把计数按记忆日落盘，并对配置注释里从未实现过的单例承诺按实际行为改写。
+
+### 已确认修复
+
+| # | 位置 | 修复 |
+|---|---|---|
+| ① | `lib/index.js` · `MemoryEngine` | 新增 `autoCallStatePath()` / `_loadAutoCallState()` / `_saveAutoCallState()`：状态落盘于 `~/.dsh/memory/auto-consolidate-state.json`（`{date, count, lastAt}`），构造期加载，累加后**立即**原子写（`config-io` 的 `writeTextAtomicPreSync`，tmp+rename） |
+| ② | `lib/index.js` · `consolidateTurn` | 额度判定前把 `_autoCallDate` 对齐到 `today`，累加后落盘。日期口径用 `memToday()`（记忆日、`dayBoundaryMinutes`），**不用** `toISOString()`（UTC 日，UTC+8 凌晨会差一天） |
+| ③ | `lib/index.js` · `_loadAutoCallState` | 跨日 / 损坏 / 脏值 / 缺字段 ⇒ **显式归零**并回写 `_autoCallDate=today`，不依赖「构造期内存恰好为 0」。文件读不到一律 fail-soft，绝不阻塞插件加载 |
+| ④ | `lib/index.js` · `DEFAULT_CONFIG` | `autoConsolidateDailyMax` 注释按实际行为改写：删掉「跨插件实例应只保留一个实例」（该机制**从未实现**，全仓无实例锁/PID 文件），改为如实描述「额度不跨进程共享」，并说明若要跨进程去重是独立需求 |
+
+### 口径边界（如实说明）
+
+- **冷却（`lastConsolidateAt`）仍是内存态**（`SessionRuntimeStore`，per-session）。本次**不**持久化，理由：每日计数已落盘，冷却即便重启失效最多也只多跑 1 次（下一次就被 `dailyMax` 挡住）；而按 `sessionId` 落盘需处理「接续会话 id 会变」与「文件按会话增长」两个清理问题，收益不成比例。
+- **额度不跨进程共享**：同时开两个 DSH 会各算各的上限。本版不做跨进程去重（行为变更较大：第二个实例将完全不能自动沉淀），如需另开需求。
+
+### 归因说明（重要）
+
+这与 **2026-09-23 修过的 A-11b 是同根同因**：当时 `lib/recall-stats.js` 的 `observe()` 只置 `dirty = true`、**全仓零调用 `save()`**，导致重启后统计全清零；那次只修了那一个模块，`autoConsolidateDailyMax` 这处**漏了**。本次按「同族缺陷全仓普查」纪律一并处理。
+
+### 测试
+
+- 新增 `tests/smoke/smoke-test-issue456-consolidate-quota.mjs`：**28 断言**，真 import 生产 `MemoryEngine` → 真构造 → 真调 `_load`/`_save`，断言**磁盘文件内容**与实例字段。
+- 含 **2 条负控**：`_loadAutoCallState` 置空 ⇒ 重启延续判据必红；`_saveAutoCallState` 置空 ⇒ 落盘判据必红（还原后复绿）——证明断言有鉴别力，不是恒真守卫。
+
+---
 ## [3.3.16] — 2026-10-22 · 面板支持局域网/远程访问 + 技能查重面扩至磁盘
 
 > **一句话**：`dsh web --host <LAN-IP>` 部署下面板所有接口 403（守卫硬要求「来源回环 + Host=localhost」）；本版把守卫扩为两档，未配置白名单时行为逐字节不变。同时把技能查重面扩到磁盘已有的 `SKILL.md`，并折叠审批面里结构上无法晋升的观察行。
