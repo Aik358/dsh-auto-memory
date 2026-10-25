@@ -105,7 +105,10 @@ ok(reusableWindowCachePre(mkCache({ modelSig: SIG_BIG }), 's1', 13, t0 + 300001,
 console.log('[349-C] 完整 checkWaterLevel 真调用(真实方法体 + 真实缓存状态)')
 const waterDeps = { parseModelWindowsPre, pickWindowPre }
 const makeFake = (config) => {
-  const rt = { disposed: false }
+  // ★2026-10-26：runtime 必须带 state —— 生产侧 createSessionRuntime() 恒写 `state: createRuntimeState()`
+  //   （lib/index.js:2323）。旧桩只给 {disposed:false}，是**桩失真**（本仓「假状态桩」教训的另一面：
+  //   该有的字段没给）。加上 state 后，checkWaterLevel 写到 agent runtime 的 22 个字段才能被本套件观测。
+  const rt = { disposed: false, state: {} }
   return {
     config, state: {}, _rt: rt,
     runtimeFor: () => rt,
@@ -151,21 +154,25 @@ const agentWith = (model, cw, texts) => ({
 const MSG = 'x'.repeat(240000)
 const fake = makeFake({ handoffEnabled: false })
 const wl = wlBind(fake)
+// ★2026-10-26 判据更新（源改动：lib/index.js checkWaterLevel 22 处改写到 agent runtime）：
+//   旧断言读 fake.state（= 引擎的 default runtime），但产品真实读取点 renderMemoryDynamic
+//   在 withAgent 内读**该 agent 的** runtime ⇒ 必须读 fake._rt.state（runtimeFor() 返回的那个）。
+//   这正是「混用 this.state 与 stateFor(agent)」在本套件里的镜像：读错了对象。
 await wl(agentWith('big-model', 1000000, [MSG]))
-const ratio1 = Number(fake.state.waterLevelRatio || 0)
+const ratio1 = Number(fake._rt.state.waterLevelRatio || 0)
 const cache1 = fake._officialWindowCache
 ok(!!cache1 && cache1.sid === 'session-349', '第 1 次测量写入了会话窗口缓存')
 ok(typeof cache1.modelSig === 'string' && cache1.modelSig.length > 0, '缓存带 modelSig 字段(实测 ' + cache1.modelSig + ')')
 eq(cache1.modelSig, sessionModelSigPre({ provider: 'llm-x', model: 'big-model', contextWindow: 1000000, maxTokens: 1000 }), '缓存签名 == 当前事件算出的签名')
 ok(ratio1 > 0 && ratio1 < 0.15, '第 1 次(1M 窗口)水位很低(实测 ' + ratio1.toFixed(4) + ')')
 await wl(agentWith('small-model', 262144, [MSG]))
-const ratio2 = Number(fake.state.waterLevelRatio || 0)
+const ratio2 = Number(fake._rt.state.waterLevelRatio || 0)
 const cache2 = fake._officialWindowCache
 console.log('    同会话 ratio(1M)=' + ratio1.toFixed(4) + ' → ratio(262144)=' + ratio2.toFixed(4))
 ok(ratio2 > ratio1 * 2, '★同会话换小模型后水位显著抬升(' + ratio1.toFixed(4) + ' → ' + ratio2.toFixed(4) + ')')
 ok(cache2.modelSig !== cache1.modelSig, '★缓存已被重写为新模型签名')
 await wl(agentWith('big-model', 1000000, [MSG]))
-const ratio3 = Number(fake.state.waterLevelRatio || 0)
+const ratio3 = Number(fake._rt.state.waterLevelRatio || 0)
 ok(Math.abs(ratio3 - ratio1) < 1e-6, '★切回大模型后水位回到与首次一致(实测 ' + ratio3.toFixed(4) + ' ≈ ' + ratio1.toFixed(4) + ')')
 
 // ── [D] 接线守卫(源码字符串,仅守卫,不充当功能证据)────────────────────────

@@ -235,7 +235,7 @@ console.log('[switch-decouple] D1b 行为:接续资格只看 autoContinueEnabled
     isContinuedSession: () => false,
     waterKey: (s) => String(s || ''),
     _autoContState: {},
-    runtimeFor: () => ({}),
+    runtimeFor: () => ({ disposed: false, state: {} }),
   }
   const arm = bindMethod('armAutoContinue(agent, wl, opts = null) {', eng, {
     diag: () => {}, shouldArmAutoContinuePre,
@@ -251,7 +251,10 @@ console.log('[switch-decouple] D1b 行为:接续资格只看 autoContinueEnabled
 
 console.log('[switch-decouple] D2 行为:真实 checkWaterLevel —— 白板关仍测量,但不写 PLAN/账本产物(镜像保护)')
 function makeWaterFake(opts, ledgerCalls) {
-  const rt = {}
+  // ★2026-10-26：runtime 必须带 state —— 生产侧 createSessionRuntime() 恒写 `state: createRuntimeState()`
+  //   （lib/index.js:2323）。空对象桩是「假状态桩」的**镜像形态**（该给的字段没给），
+  //   导致 checkWaterLevel 的 22 个 agent-runtime 字段无处可写 ⇒ 断言全读 undefined。
+  const rt = { disposed: false, state: {} }
   const fake = Object.assign(makeFakeEngine(), {
     config: Object.assign({ handoffEnabled: true, waterLevelWindowTokens: 1000, waterLevelThreshold: 0.8, waterLevelAutoHandoff: true }, opts),
     runtimeFor: () => rt,
@@ -322,7 +325,7 @@ const agentModelKnown = {
   const fOff = makeWaterFake({ handoffEnabled: false }, ledgerOff)
   const wlOff = wlBind(fOff)
   await wlOff(agentModelKnown)
-  ok((fOff.state.waterLevelRatio || 0) >= 0.8, '白板关:水位照测(ratio=' + Number(fOff.state.waterLevelRatio || 0).toFixed(3) + ')')
+  ok((fOff._rt.state.waterLevelRatio || 0) >= 0.8, '白板关:水位照测(ratio=' + Number(fOff._rt.state.waterLevelRatio || 0).toFixed(3) + ')')
   ok(fOff._rt.waterLevelModelKnown === true, '白板关:rt.waterLevelModelKnown 被写入且为真实值 true(旧实现该字段永不写入)')
   ok(fOff._rt.waterLevelHard === false, '白板关:rt.waterLevelHard 同样落盘(arm 快照完整)')
   ok(shouldArmAutoContinuePre({ ratio: fOff._rt.waterLevel, modelKnown: fOff._rt.waterLevelModelKnown, hard: fOff._rt.waterLevelHard }) === true,

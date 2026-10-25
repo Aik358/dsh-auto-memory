@@ -116,7 +116,7 @@ function makeEngine(opts) {
     config: (opts && opts.config) || {},
     _autoContState: undefined,
     hasReliableSessionIdentity(agent) { return !!(agent && agent.session && agent.session.id) },
-    runtimeFor() { return {} },
+    runtimeFor() { return { disposed: false, state: {} } },
     _ctxRef: {
       get(name) {
         if (name === 'sessionController') return sc
@@ -486,12 +486,12 @@ console.log('[autocont-host] A9 接续会话标题 + 双口径(2026-09-10 实机
   // ②双口径(2026-09-13 起):水位/ring 同用一个分母(判定窗 = 官方声明窗口,provider 自报过硬限时取 min)——
   //   旧「可用额度(窗口−预留)」分母已废(reserve 退出分母,NEXT-VERSION-TODO 改点1);
   //   保留的第二个数是「距硬墙余量」(硬限 − 预留)。ring 与触发比例同分母是硬性验收项。
-  ok(/this\.state\.waterLevelRing = \(triggerWin > 0 && Number\.isFinite\(estTokens\)\) \? \(estTokens \/ triggerWin\) : 0/.test(SRC),
+  ok(/[A-Za-z_$.]+\.state\.waterLevelRing = \(triggerWin > 0 && Number\.isFinite\(estTokens\)\) \? \(estTokens \/ triggerWin\) : 0/.test(SRC),
     '水位记录同时算出 ring 读数,且与触发比例同分母(判定窗)')
   ok(/const hardWin = Number\(sig\.overflow && sig\.overflow\.windowTokens\) \|\| 0/.test(SRC) &&
-     /this\.state\.waterLevelWall = hardWin > 0 \? Math\.max\(0, hardWin - reserve\) : 0/.test(SRC),
+     /[A-Za-z_$.]+\.state\.waterLevelWall = hardWin > 0 \? Math\.max\(0, hardWin - reserve\) : 0/.test(SRC),
     '撞过墙的会话能算出「真实可写上限」(provider 自报硬限 − 预留),供显示距墙剩余')
-  ok(/ring: Number\(this\.state && this\.state\.waterLevelRing\) \|\| 0/.test(SRC) && /wall: Number\(this\.state && this\.state\.waterLevelWall\) \|\| 0/.test(SRC),
+  ok(/ring: Number\([A-Za-z_$.]+ && [A-Za-z_$.]+\.state\.waterLevelRing\) \|\| 0/.test(SRC) && /wall: Number\([A-Za-z_$.]+ && [A-Za-z_$.]+\.state\.waterLevelWall\) \|\| 0/.test(SRC),
     'arm 时把双口径带进 armed 对象(state 缺失也不得让 arm 失败)')
   ok(/ring: Number\(st\.armed\.ring\) \|\| 0/.test(SRC) && /wall: Number\(st\.armed\.wall\) \|\| 0/.test(SRC),
     'autoContinueState 透出双口径给确认卡')

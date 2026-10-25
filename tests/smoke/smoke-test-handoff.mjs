@@ -352,7 +352,9 @@ console.log('[handoff] G5.6 活设置文件定位器(#144-B 新布局兼容)')
 
 console.log('[handoff] G6 M-CM4 水位感知(官方 token 公式+compaction 事件)')
 function makeWaterFake(opts, ledgerCalls) {
-  const rt = {}
+  // ★2026-10-26：runtime 必须带 state —— 生产侧 createSessionRuntime() 恒写 `state: createRuntimeState()`
+  //   （lib/index.js:2323）。空对象桩导致 checkWaterLevel 的 22 个 agent-runtime 字段无处可写。
+  const rt = { disposed: false, state: {} }
   const fake = Object.assign(makeFakeEngine(), {
     // ⚠️ 2026-09-15（方案 1）：水位账本链路现在由 `handoffChainEnabledPre()` 统一把关
     //   （= autoContinueEnabled && handoffEnabled）。本套件测的是**接续材料**链路，
@@ -405,22 +407,22 @@ ok(estTokensFn([{ text: 'a' }, { text: 'bb' }]) === 10, '多消息逐条计价:�
 // 低于阈值
 const fLow = makeWaterFake({}, [])
 wlBind(fLow)({ messages: [{ text: 'x'.repeat(320) }] })
-ok(!fLow._rt.waterLevelAdvised && (fLow.state.waterLevelRatio || 0) < 0.8, '低于阈值不触发 advisory(ratio=' + (fLow.state.waterLevelRatio || 0).toFixed(2) + ')')
+ok(!fLow._rt.waterLevelAdvised && (fLow._rt.state.waterLevelRatio || 0) < 0.8, '低于阈值不触发 advisory(ratio=' + (fLow._rt.state.waterLevelRatio || 0).toFixed(2) + ')')
 // 越阈值(3200 字符 → ceil(3200/4)+4=804 token → ratio 0.804)
 const ledgerCalls = []
 const fHigh = makeWaterFake({}, ledgerCalls)
 const wlHigh = wlBind(fHigh)
 await wlHigh({ messages: [{ text: 'x'.repeat(3200) }] })
-ok(fHigh._rt.waterLevelAdvised && (fHigh.state.waterLevelRatio || 0) >= 0.8, '越阈值触发 advisory 标志(ratio=' + fHigh.state.waterLevelRatio.toFixed(2) + ')')
+ok(fHigh._rt.waterLevelAdvised && (fHigh._rt.state.waterLevelRatio || 0) >= 0.8, '越阈值触发 advisory 标志(ratio=' + fHigh._rt.state.waterLevelRatio.toFixed(2) + ')')
 ok(ledgerCalls.length === 1 && ledgerCalls[0].includes('系统自动快照') && ledgerCalls[0].includes('token') && ledgerCalls[0].includes('## 已试方案与失败原因'), '抽取性骨架账本写一次(' + JSON.stringify(String(ledgerCalls[0] || '').slice(0, 150)) + ')')
 await wlHigh({ messages: [{ text: 'x'.repeat(3200) }] })
 ok(ledgerCalls.length === 1, '第二次调用不重复写(每会话一次)')
 // 2.2.4 修复:水位比例不再硬截断到 1.5(旧版把 761692/131072≈5.81 显示成 150%)
 const fOver = makeWaterFake({}, [])
 await wlBind(fOver)({ messages: [{ text: 'w'.repeat(12000) }] })
-const overRatio = Number(fOver.state.waterLevelRatio) || 0
+const overRatio = Number(fOver._rt.state.waterLevelRatio) || 0
 ok(Math.abs(overRatio - 3.004) < 0.001, '超额水位如实上报 ratio=' + overRatio.toFixed(3) + '(旧版恒为 1.5)')
-ok(fOver.state.waterLevelWindow === 1000 && fOver.state.waterLevelSource === 'manual', '窗口数值/来源同步写入 state(' + fOver.state.waterLevelWindow + '/' + fOver.state.waterLevelSource + ')')
+ok(fOver._rt.state.waterLevelWindow === 1000 && fOver._rt.state.waterLevelSource === 'manual', '窗口数值/来源同步写入 state(' + fOver._rt.state.waterLevelWindow + '/' + fOver._rt.state.waterLevelSource + ')')
 // 会话级记录(2026-09-08):切会话时按 sessionId 取数,不再显示别的会话的水位
 const fSess = makeWaterFake({}, [])
 const wlSess = wlBind(fSess)
