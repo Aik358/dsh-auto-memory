@@ -1,0 +1,52 @@
+<body data-view="stream">
+<div class="topbar">
+  <button type="button" class="navbtn" id="nav-rail" aria-label="打开时间轴">☰ 轴</button>
+  <div class="brand"><b>白板 · 事件视图</b><span>wb-event-preview v4 · 倒叙 / 懒加载 / 三档响应 / 明暗主题（event 档预览，非新增页面）</span></div>
+  <div class="controls">
+    <div class="vswitch" role="tablist" aria-label="视图切换">
+      <span class="pill" aria-hidden="true"></span>
+      <button type="button" role="tab" data-view="stream" class="on" aria-selected="true">时间流</button>
+      <button type="button" role="tab" data-view="lanes" aria-selected="false" tabindex="-1">泳道 / 甘特</button>
+      <button type="button" role="tab" data-view="workflow" aria-selected="false" tabindex="-1">工作流线索</button>
+    </div>
+    <div class="fsctl" id="fsctl" role="group" aria-label="字号档位">
+      <button type="button" data-fs="0" class="a0" title="紧凑：根字号 15px" aria-pressed="false">A-</button>
+      <button type="button" data-fs="1" class="a1 on" title="标准：根字号 16px" aria-pressed="true">A</button>
+      <button type="button" data-fs="2" class="a2" title="宽松：根字号 17.5px" aria-pressed="false">A+</button>
+    </div>
+    <button type="button" class="themebtn" id="themebtn" data-mode="auto" aria-label="切换主题"><span class="tico">◐</span><span class="ttxt">跟随系统</span></button>
+    <div class="chips"><span class="chip">文档 <b>839</b></span><span class="chip">事件 <b>127</b></span><span class="chip">检查点 <b>839</b></span><span class="chip">最大事件 <b>26 点</b></span><span class="chip">单检查点 <b>24.4%</b></span></div>
+    <label class="demo-switch" id="demoSwitchWrap" title="载入 fixtures/concurrent-demo.json（合成数据，与真实事件严格分区）"><input type="checkbox" id="demoSwitch"><span>并发演示</span></label>
+    <button type="button" class="dtoggle" id="dtoggle" aria-expanded="true">收起右栏 ▸</button>
+    <button type="button" class="navbtn" id="nav-detail" aria-label="打开详情">详情</button>
+  </div>
+</div>
+<div class="topbar" id="demo-banner-top" style="display:none;height:34px;min-height:34px;background:var(--demo-soft);border-bottom:1px solid var(--demo-line)">
+  <span class="demo-tag">合成数据</span>
+  <span style="font-size:.75rem;color:var(--demo)">当前显示的是 fixtures/concurrent-demo.json 的并发演示 —— 4 个虚构事件、检查点时间真交错。真实事件列表不含任何 demo id。</span>
+</div>
+<div class="layout">
+  <aside class="col rail" id="rail">
+    <div class="rail-top">
+      <h3 class="rail-h" id="rail-h">时间轴</h3>
+      <div class="scalectl" id="scalectl" role="group" aria-label="时间轴比例">
+        <button type="button" data-scale="even" class="on" title="等距：任何间隔的纵向间距相同，最好读">等距</button>
+        <button type="button" data-scale="real" title="真实比例：间隔越久留白越大，能看出 40.9h 的洞">真实</button>
+      </div>
+      <span class="rail-hint" id="rail-hint"></span>
+    </div>
+    <div class="rail-body"><div class="axis" id="rail-axis"></div></div>
+  </aside>
+  <main class="col mid" id="mid">
+    <div class="mid-top">
+      <div class="mid-h"><h2>事件</h2><em><b id="chip-view">时间流</b> · 底部最新 · ↑ 回溯</em><div class="lm-slot" id="lm-slot"></div></div>
+      <div class="toolbar"><input id="q" type="search" placeholder="过滤事件标题 / 日期（输入即筛）" autocomplete="off"><span class="cnt" id="cnt"></span></div>
+      <div class="legend"><span class="lg"><i class="dot" style="background:var(--done)"></i>已完成</span><span class="lg"><i class="dot" style="background:var(--active)"></i>进行中</span><span class="lg"><i class="dot" style="background:var(--muted)"></i>未判定</span><span class="lg rule" title="卡片宽度 = 检查点数：窄 = 单篇 · 中 = 2–3 点 · 宽 = ≥4 点">宽窄 = 检查点数</span></div>
+    </div>
+    <div id="mid-body"></div>
+  </main>
+  <section class="col detail" id="detail"><button type="button" class="sheet-close" id="sheet-close" aria-label="关闭详情">✕ 关闭</button><div class="empty">左侧或中间选择事件</div></section>
+</div>
+<div class="scrim" id="scrim" aria-hidden="true"></div>
+<script type="application/json" id="payload">/* OMITTED */</script>
+<script type="application/json" id="demo-payload">/* OMITTED */</script>

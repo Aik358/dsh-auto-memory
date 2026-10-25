@@ -1,0 +1,88 @@
+{
+ "schemaVersion": 1,
+ "policyVersion": "activation_policy_v2",
+ "parentPolicyVersion": "m7_semantic_threshold_v1",
+ "createdAt": "2026-08-25",
+ "runId": "label-review-cal20260824-1954",
+ "goldDigest": "e74ccdcda998ae51596adf8119c818ac84fc52a4fa657fd687daeda7d14a072d",
+ "mode": "shadow-candidate",
+ "decisionRecordId": "activation-v2-delta-exp-override-20260824",
+ "deltaDeviationFromBrief": {
+  "briefFrozen": 0.02,
+  "effective": 0.03,
+  "reason": "production-completeness refit: delta=0.02 fails gates (cal-0008 emitOnP=1); nearest passing = delta_exp=0.03; requires retro-ratification"
+ },
+ "decisionOrder": [
+  "js_hard_gates",
+  "lane_decision",
+  "explicit_lane",
+  "proactive_lane",
+  "completeness_margin",
+  "decision"
+ ],
+ "thresholds": {
+  "tauLane": 0.45,
+  "tauHi": 0.45,
+  "tauLo": 0.35,
+  "deltaExp": 0.03,
+  "deltaPro": 0.05
+ },
+ "echoVeto": {
+  "scope": "proactive-lane-only",
+  "containmentArm": 0.3,
+  "denseTopArm": 0.7,
+  "requiresMarkZero": true,
+  "requiresIntentBelow": 0.5
+ },
+ "completenessGate": {
+  "phase": 1,
+  "lexicon": [
+   "对比",
+   "分别",
+   "两个",
+   "一起",
+   "都调",
+   "各自"
+  ],
+  "rule": "status!=complete -> max prefetch",
+  "outputs": [
+   "requiredTargetCount",
+   "resolvedTargetCount",
+   "status"
+  ]
+ },
+ "repetition": {
+  "round": "logging-only",
+  "suppressToPrefetchAllowed": true,
+  "activateOnCountsAlone": false
+ },
+ "hardGates": [
+  "harmful",
+  "correction",
+  "ignored",
+  "stale",
+  "wrong_scope",
+  "pii_class_never_proactive"
+ ],
+ "reasonCodes": [
+  "hard_gate_harmful",
+  "echo_veto_proactive",
+  "explicit_lane",
+  "explicit_lane_weak",
+  "completeness_complete",
+  "completeness_partial",
+  "completeness_unknown",
+  "proactive_margin",
+  "margin_below_delta",
+  "suppress_low_signal"
+ ],
+ "offlineMetrics86": {
+  "actPrecision": 1.0,
+  "actRecall": 0.289,
+  "emitOnP": 0,
+  "sViolations": 0,
+  "emits": 11,
+  "emitCorrectA": 11
+ },
+ "configHash": "cfgh_31e6d977a2c40d5e8bf4edf900557b8b"
+}

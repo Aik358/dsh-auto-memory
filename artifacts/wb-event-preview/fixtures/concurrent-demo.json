@@ -1,0 +1,93 @@
+{
+  "schema": "wb-event-preview/demo-fixture/1",
+  "synthetic": true,
+  "note": "合成数据，仅用于演示「事件可并发」这一新模型能力。所有 title 带【合成】前缀，id 以 demo- 开头，与真实账本无任何对应关系，绝不并入真实事件列表。相邻检查点间隔均为 1 小时（< 2h 空档阈值），使每条线在泳道里是一条连续横条，便于观察「多线并行」。",
+  "anchorDate": "2026-10-05",
+  "events": [
+    {
+      "id": "demo-alpha",
+      "title": "【合成】Alpha · 事件容器落地",
+      "lane": "合成A",
+      "status": "active",
+      "summary": "合成 fixture 的第一条线：每小时间隔推进一次，与 B/C/D 交替出现在时间轴上。",
+      "checkpoints": [
+        {
+          "at": "2026-10-05T10:00:00+08:00",
+          "note": "A 建立容器骨架"
+        },
+        {
+          "at": "2026-10-05T11:00:00+08:00",
+          "note": "A 接上第一条投影"
+        },
+        {
+          "at": "2026-10-05T12:00:00+08:00",
+          "note": "A 补完回归"
+        }
+      ]
+    },
+    {
+      "id": "demo-bravo",
+      "title": "【合成】Bravo · 检索三接入点",
+      "lane": "合成B",
+      "status": "active",
+      "summary": "合成 fixture 的第二条线：与 Alpha 全面重叠，证明同一时间窗内可以有两个以上事件同时 active。",
+      "checkpoints": [
+        {
+          "at": "2026-10-05T10:20:00+08:00",
+          "note": "B 排查召回入口"
+        },
+        {
+          "at": "2026-10-05T11:20:00+08:00",
+          "note": "B 改排序层"
+        },
+        {
+          "at": "2026-10-05T12:20:00+08:00",
+          "note": "B 复算命中率"
+        }
+      ]
+    },
+    {
+      "id": "demo-charlie",
+      "title": "【合成】Charlie · 前端 event 档",
+      "lane": "合成C",
+      "status": "done",
+      "summary": "合成 fixture 的第三条线：先于 B 开工，但先于 D 收工，用来验证「一条线结束后另一条还在跑」。",
+      "checkpoints": [
+        {
+          "at": "2026-10-05T10:40:00+08:00",
+          "note": "C 定版式"
+        },
+        {
+          "at": "2026-10-05T11:40:00+08:00",
+          "note": "C 接面板"
+        },
+        {
+          "at": "2026-10-05T12:40:00+08:00",
+          "note": "C 截图验收"
+        }
+      ]
+    },
+    {
+      "id": "demo-delta",
+      "title": "【合成】Delta · 归档窗格",
+      "lane": "合成D",
+      "status": "paused",
+      "summary": "合成 fixture 的第四条线：中途搁置（status=paused），示范新模型里 event.status 的 paused 态。",
+      "pausedReason": "等上游数据格式定稿",
+      "checkpoints": [
+        {
+          "at": "2026-10-05T10:50:00+08:00",
+          "note": "D 画窗格草图"
+        },
+        {
+          "at": "2026-10-05T11:50:00+08:00",
+          "note": "D 接数据"
+        },
+        {
+          "at": "2026-10-05T12:50:00+08:00",
+          "note": "D 暂停，等格式定稿"
+        }
+      ]
+    }
+  ]
+}

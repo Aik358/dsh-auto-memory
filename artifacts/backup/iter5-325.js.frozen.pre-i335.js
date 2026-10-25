@@ -1,0 +1,2357 @@
+    // ITER5-GENERATED:BEGIN
+    var ITER5_CSS = "/* Scoped white–pale-blue system. Refined against the PR review; source of generated bundle. */\n[data-dam-theme]{color:var(--i5-text);font:calc(14px * var(--dam-user-scale,1))/1.6 system-ui,\"Segoe UI\",\"Microsoft YaHei\",sans-serif;caret-color:var(--i5-blue);scrollbar-color:var(--i5-line) var(--i5-bg);}\n[data-dam-theme=page]{display:contents;}\n[data-dam-theme] :focus-visible{outline:2px solid var(--i5-blue);outline-offset:3px;}\n[data-dam-theme] ::selection{background:var(--i5-soft);color:var(--i5-text);}\n[data-dam-theme] :is([data-dam-btn],[data-dam-input],[data-dam-select],textarea){font:inherit;border:1px solid var(--i5-line);border-radius:8px;background:var(--i5-surface);color:var(--i5-text);min-height:34px;max-width:100%;}\n[data-dam-theme] button{cursor:pointer;}\n[data-dam-theme] button:disabled{cursor:not-allowed;opacity:.55;}\n[data-dam-theme] :is([data-dam-hint],[data-dam-sub]){color:var(--i5-secondary);}\n[data-dam-theme] :is([data-dam-input],textarea){caret-color:var(--i5-blue);}\n[data-dam-theme] [data-dam-status-dialog]{background:var(--i5-surface)!important;color:var(--i5-text)!important;border:1px solid var(--i5-line)!important;border-radius:16px!important;box-shadow:0 16px 48px color-mix(in srgb,var(--i5-text) 16%,transparent)!important;overflow:auto;}\n[data-dam-theme] [data-dam-tour]{width:min(736px,calc(100vw - 32px));max-height:calc(100dvh - 32px);display:flex;flex-direction:column;padding:24px 32px;position:relative;overflow:auto;transform:none;}\n[data-dam-theme] [data-dam-tour-visual]{order:1;height:168px;min-height:100px;flex-shrink:1;overflow:hidden;margin:0 0 16px;border-radius:12px;background:var(--i5-bg);}\n[data-dam-theme] [data-dam-tour-visual] .dam-skin-hero{height:100%;width:100%;min-height:0;margin:0;padding:0;border:0;background:transparent;}\n[data-dam-theme] [data-dam-tour-visual] img{width:100%;height:100%;object-fit:contain;}\n[data-dam-theme] [data-dam-tour-visual] .dam-skin-slot{height:100%;min-height:0;aspect-ratio:auto!important;background:transparent;}\n[data-dam-theme] [data-dam-tour]::before{display:none;}\n[data-dam-theme] [data-dam-tour-body]{order:2;position:relative;overflow:auto;min-height:0;flex:1 1 auto;padding:0;font-weight:400;}\n[data-dam-theme] [data-dam-tour-head]{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px;}\n[data-dam-theme] [data-dam-tour-brand]{font-size:calc(13px * var(--dam-user-scale,1));color:var(--i5-secondary);}\n[data-dam-theme] [data-dam-tour-stepchip]{color:var(--i5-secondary);font-variant-numeric:tabular-nums;font-size:calc(12px * var(--dam-user-scale,1));}\n[data-dam-theme] [data-dam-tour-title]{text-align:center;font-size:calc(28px * var(--dam-user-scale,1));font-weight:650;line-height:1.35;letter-spacing:-.02em;margin:0 0 12px;color:var(--i5-text);}\n[data-dam-theme] [data-dam-tour-text]{text-align:left;font-size:calc(14px * var(--dam-user-scale,1));line-height:1.85;max-width:65ch;margin:0 auto;color:var(--i5-secondary);}\n[data-dam-theme] [data-dam-tour-toggles]{margin-top:20px;max-height:none;}\n[data-dam-theme] [data-dam-tour-tg]{padding:12px 16px;background:var(--i5-bg);border:1px solid var(--i5-line);box-shadow:none;border-radius:12px;min-height:64px;}\n[data-dam-theme] [data-dam-tour-tg][data-on=true]{background:var(--i5-soft);border-color:var(--i5-fill);}\n[data-dam-theme] [data-dam-tour-tg-name]{color:var(--i5-text);font-size:calc(14px * var(--dam-user-scale,1));}\n[data-dam-theme] [data-dam-tour-tg-sub]{color:var(--i5-secondary);font-size:calc(12px * var(--dam-user-scale,1));}\n[data-dam-theme] [data-dam-tour-links]{order:3;}\n[data-dam-theme] [data-dam-tour-dots]{order:4;margin:16px 0 0;gap:0;flex:none;}\n[data-dam-theme] [data-dam-tour-dot]{width:28px!important;height:28px!important;min-width:28px;min-height:28px!important;padding:10px;border:0;background:transparent;box-shadow:none;position:relative;flex:none;}\n[data-dam-theme] [data-dam-tour-dot]::after{content:\"\";position:absolute;inset:11px;border-radius:50%;background:var(--i5-line);}\n[data-dam-theme] [data-dam-tour-dot][data-on=true]::after{background:var(--i5-fill);inset:10px;border-radius:50%;}\n[data-dam-theme] [data-dam-tour-foot]{order:5;display:flex;gap:8px;flex-wrap:wrap;flex:none;border-top:1px solid var(--i5-line);padding:16px 0 0;margin-top:8px;background:var(--i5-surface);z-index:3;}\n[data-dam-theme] [data-dam-tour-btn]{min-height:44px;padding:10px 20px;border:1px solid var(--i5-line);background:var(--i5-surface);color:var(--i5-text);box-shadow:none;font-size:calc(14px * var(--dam-user-scale,1));}\n[data-dam-theme] [data-dam-tour-btn][data-primary=true]{background:var(--i5-blue)!important;color:var(--i5-surface)!important;}\n[data-dam-theme] :is([data-dam-tour-text],[data-dam-tour-skip],[data-dam-tour-dot],[data-dam-tour-stepchip],[data-dam-tour-tg-sub]){opacity:1;}\n[data-dam-theme] [data-dam-tour-skip]{color:var(--i5-secondary);min-height:44px;margin-right:auto;}\n[data-dam-theme] [data-dam-tour-close]{width:36px;height:36px;z-index:5;background:var(--i5-surface);color:var(--i5-secondary);border:1px solid var(--i5-line);}\n[data-dam-theme] [data-dam-tour-visual]~[data-dam-tour-body] [data-dam-tour-head]{padding-right:16px;}\n[data-dam-theme] [data-dam-panel]{max-width:calc(100vw - 16px);max-height:calc(100dvh - 16px);font-size:calc(14px * var(--dam-user-scale,1));container-type:inline-size;container-name:dam-panel;}\n[data-dam-theme] [data-dam-panel]>header{min-height:44px;padding:8px 12px;background:var(--i5-bg);border-bottom:1px solid var(--i5-line);}\n[data-dam-theme] [data-dam-panel-actions]{display:flex;gap:8px;padding:8px 12px;border-bottom:1px solid var(--i5-line);flex-wrap:wrap;}\n[data-dam-theme] [data-dam-panel-actions] button:last-child{margin-left:auto;color:var(--i5-blue);}\n[data-dam-theme] [data-dam-panel] [data-dam-body]{padding:12px;}\n[data-dam-theme] [data-dam-panel] [data-dam-card]{padding:12px;}\n[data-dam-theme] [data-dam-page] [data-dam-card]{background:var(--i5-surface);border-color:var(--i5-line);box-shadow:none;border-radius:12px;}\n[data-iter5][data-i5-embedded]{display:block;height:auto;min-height:0;isolation:auto;}\n[data-i5-settings-slot]{min-width:0;min-height:64px;}\n[data-iter5] .i5-settings-frame-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px;background:var(--i5-surface);border-bottom:1px solid var(--i5-line);}\n[data-iter5][data-i5-embedded][data-expanded=true]{position:fixed;inset:0;z-index:2147482800;display:flex;flex-direction:column;height:100dvh;background:var(--i5-bg);}\n[data-iter5][data-i5-embedded][data-expanded=true]>.i5-settings-frame-head{flex:none;padding:12px max(16px,env(safe-area-inset-right)) 12px max(16px,env(safe-area-inset-left));}\n[data-iter5][data-i5-embedded][data-expanded=true]>.i5-main{flex:1;min-height:0;overflow:auto;padding:16px max(16px,env(safe-area-inset-right)) max(16px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left));}\n[data-iter5][data-i5-embedded][data-expanded=true] [data-dam-settings]{max-width:1100px;margin:0 auto;}\n[data-iter5][data-i5-embedded] .i5-main{padding:0;overflow:visible;background:var(--i5-bg);}\n[data-iter5][data-i5-embedded] .i5-tabs{position:sticky;top:0;z-index:2;background:var(--i5-bg);padding:0 12px;}\n[data-iter5][data-i5-embedded] [data-dam-savebar]{position:sticky;bottom:0;z-index:3;background:var(--i5-surface);padding:12px;border-top:1px solid var(--i5-line);}\n@media(max-width:600px){[data-dam-theme] [data-dam-tour]{padding:20px;width:calc(100vw - 16px);max-height:calc(100dvh - 16px);}[data-dam-theme] [data-dam-tour-visual]{height:120px;min-height:80px;}[data-dam-theme] [data-dam-tour-title]{font-size:calc(24px * var(--dam-user-scale,1));}[data-dam-theme] [data-dam-tour-foot]{bottom:-20px;}[data-dam-theme] [data-dam-tour-skip]{flex-basis:100%;text-align:left;}[data-dam-theme] [data-dam-panel-actions] button{min-height:44px;}}\n@media(prefers-reduced-motion:reduce){[data-dam-theme] *,[data-dam-theme] *::before,[data-dam-theme] *::after{animation:none!important;transition:none!important;scroll-behavior:auto!important;}}\n[data-iter5] *{box-sizing:border-box;}\n[data-iter5] button,[data-iter5] input,[data-iter5] select,[data-iter5] textarea{font:inherit;color:inherit;}\n[data-iter5] button{border:1px solid var(--i5-line);border-radius:8px;background:var(--i5-surface);padding:6px 12px;min-height:var(--i5-compact-control);cursor:pointer;line-height:1.4;transition:background-color var(--i5-dur-quick) var(--i5-ease-out),border-color var(--i5-dur-quick) var(--i5-ease-out),color var(--i5-dur-quick) var(--i5-ease-out),opacity var(--i5-dur-quick) var(--i5-ease-out),transform var(--i5-dur-press) var(--i5-ease-out);}\n/* 按下反馈：皮肤原先完全没有 :active 态，点击像是没被听见。0.97 是「按键」而非「动效」刻度。 */\n[data-iter5] button:active:not(:disabled){transform:scale(.97);}\n[data-iter5] button:hover{background:var(--i5-soft);}\n[data-iter5] button:disabled{opacity:.55;cursor:not-allowed;}\n[data-iter5] :focus-visible{outline:2px solid var(--i5-blue);outline-offset:3px;}\n[data-iter5] input:not([type=checkbox]):not([type=radio]),[data-iter5] select,[data-iter5] textarea{border:1px solid var(--i5-line);border-radius:var(--i5-control-radius);padding:7px 10px;background:var(--i5-surface);max-width:100%;min-height:36px;}\n[data-iter5] input[type=checkbox],[data-iter5] input[type=radio]{accent-color:var(--i5-blue);width:18px;height:18px;flex-shrink:0;}\n[data-iter5] h1,[data-iter5] h2,[data-iter5] h3,[data-iter5] p{margin:0;}\n[data-iter5] h2,[data-iter5] h3{font-size:calc(16px * var(--dam-user-scale,1));font-weight:600;margin-bottom:12px;}\n[data-iter5] small,[data-iter5] .i5-muted{color:var(--i5-muted);font-size:calc(12px * var(--dam-user-scale,1));}\n[data-iter5] .i5-sidebar button[aria-current=page]{background:var(--i5-soft);color:var(--i5-blue);font-weight:600;}\n[data-iter5] .i5-sidebar .i5-badge{width:25px;height:25px;border-radius:7px;}\n[data-iter5] [data-hue=indigo]{color:var(--i5-indigo);background:color-mix(in srgb,var(--i5-indigo) 9%,var(--i5-surface));}\n[data-iter5] [data-hue=purple]{color:var(--i5-purple);background:color-mix(in srgb,var(--i5-purple) 9%,var(--i5-surface));}\n[data-iter5] [data-hue=green]{color:var(--i5-green);background:color-mix(in srgb,var(--i5-green) 9%,var(--i5-surface));}\n[data-iter5] [data-hue=orange]{color:var(--i5-orange);background:color-mix(in srgb,var(--i5-orange) 9%,var(--i5-surface));}\n[data-iter5] [data-hue=pink]{color:var(--i5-pink);background:color-mix(in srgb,var(--i5-pink) 9%,var(--i5-surface));}\n[data-iter5] [data-hue=cyan]{color:var(--i5-cyan);background:color-mix(in srgb,var(--i5-cyan) 9%,var(--i5-surface));}\n[data-iter5] [data-hue=slate]{color:var(--i5-slate);background:color-mix(in srgb,var(--i5-slate) 9%,var(--i5-surface));}\n[data-iter5] .i5-card>p{margin:6px 0 14px;}\n[data-iter5] .i5-card summary{cursor:pointer;font-weight:600;min-height:36px;}\n[data-iter5] .i5-stat strong{font-size:calc(28px * var(--dam-user-scale,1));line-height:1.2;font-weight:600;font-variant-numeric:tabular-nums;}\n[data-iter5] .i5-stat small{display:block;margin-top:4px;}\n[data-iter5] .i5-water{height:5px;background:var(--i5-soft);border-radius:99px;overflow:hidden;margin:18px 0;}\n[data-iter5] .i5-water i{display:block;height:100%;background:var(--i5-fill);}\n[data-iter5] .i5-toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:12px 0;}\n[data-iter5] .i5-toolbar input{flex:1 1 200px;min-width:0;}\n[data-iter5] .i5-tabs{display:flex;gap:20px;border-bottom:1px solid var(--i5-line);margin-bottom:12px;overflow:auto;}\n[data-iter5] .i5-tabs button{flex:none;border:0;border-bottom:2px solid transparent;border-radius:0;background:transparent;color:var(--i5-secondary);padding:8px 0;min-height:36px;}\n[data-iter5] .i5-tabs button[aria-selected=true]{color:var(--i5-blue);border-bottom-color:var(--i5-fill);font-weight:600;}\n[data-iter5] .i5-file{display:flex;align-items:center;gap:12px;width:100%;text-align:left;min-height:62px;border:0;border-bottom:1px solid var(--i5-line);border-radius:8px;background:transparent;padding:12px;}\n[data-iter5] .i5-file[aria-current=true]{background:var(--i5-soft);}\n[data-iter5] .i5-file>span{min-width:0;}\n[data-iter5] .i5-file small{display:block;overflow-wrap:anywhere;}\n[data-iter5] .i5-file>small{margin-left:0;white-space:nowrap;font-size:calc(12px * var(--dam-user-scale,1));}\n[data-iter5] .i5-source{font:inherit;white-space:pre-wrap;overflow-wrap:anywhere;margin:0;max-height:65vh;overflow:auto;}\n[data-iter5] .i5-empty{padding:28px;color:var(--i5-muted);text-align:center;}\n[data-iter5] .i5-error{color:var(--i5-error);padding:12px;border:1px solid currentColor;border-radius:var(--i5-control-radius);margin:12px 0;overflow-wrap:anywhere;}\n[data-iter5] .i5-error button{margin-left:12px;}\n[data-iter5] .i5-hosted [data-dam-card]{background:var(--i5-surface);border:1px solid var(--i5-line);border-radius:var(--i5-radius);box-shadow:none;padding:16px;margin-bottom:16px;}\n[data-iter5] .i5-hosted [data-dam-hint]{font-size:calc(12px * var(--dam-user-scale,1));line-height:1.6;opacity:1;color:var(--i5-secondary);}\n[data-iter5] .i5-hosted [data-dam-row]{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0;}\n[data-iter5] .i5-hosted{overflow-wrap:anywhere;}\n[data-iter5] .i5-hosted [data-dam-content]{font-size:calc(14px * var(--dam-user-scale,1));line-height:1.7;}\n[data-iter5] .i5-hosted .dam-skin-hero{display:none;}\n[data-iter5] [data-dam-settings]{display:block;}\n[data-iter5] [data-dam-settings-nav]{display:none;}\n[data-iter5] [data-dam-settings-content]{display:grid;grid-template-columns:minmax(0,1fr);gap:20px;align-items:start;padding-bottom:0;}\n[data-iter5] [data-dam-settings-group]{background:var(--i5-surface);border:1px solid var(--i5-line);border-radius:var(--i5-radius);box-shadow:none;padding:16px;margin:0;min-width:0;}\n[data-iter5] [data-dam-settings-group][hidden]{display:none;}\n[data-iter5] [data-dam-settings-row]{padding:10px 0;border-bottom:1px solid var(--i5-line);}\n[data-iter5] [data-dam-settings-row]>[data-dam-row]{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}\n[data-iter5] [data-dam-settings-row] [data-dam-hint]{font-size:calc(12px * var(--dam-user-scale,1));opacity:1;color:var(--i5-secondary);line-height:1.65;margin-top:4px;}\n[data-iter5] [data-dam-settings-row] input[type=checkbox]{appearance:none;position:relative;width:42px;height:25px;border-radius:99px;background:var(--i5-line);border:0;cursor:pointer;}\n[data-iter5] [data-dam-settings-row] input[type=checkbox]:checked{background:var(--i5-blue);}\n[data-iter5] [data-dam-settings-row] input[type=checkbox]::after{content:\"\";position:absolute;top:3px;left:3px;width:19px;height:19px;border-radius:50%;background:var(--i5-surface);}\n[data-iter5] [data-dam-settings-row] input[type=checkbox]:checked::after{left:20px;}\n[data-iter5] .i5-engine-radios{display:grid;gap:0;width:100%;}\n[data-iter5] .i5-engine-choice{display:flex;align-items:center;gap:12px;padding:12px 10px;border-bottom:1px solid var(--i5-line);cursor:pointer;}\n[data-iter5] .i5-engine-choice:has(:checked){background:var(--i5-soft);}\n[data-iter5] .i5-engine-choice small{display:block;}\n[data-iter5] .i5-dirty-dot{display:inline-block;width:6px;height:6px;background:var(--i5-warning);border-radius:50%;margin-left:7px;}\n[data-iter5] [data-dam-savebar] button[data-dirty=true]{background:var(--i5-blue);color:var(--i5-surface);}\n[data-iter5] .i5-settings-extra{grid-column:1/-1;}\n[data-iter5] .i5-engine-grid{display:grid;gap:20px;grid-template-columns:minmax(0,1fr);grid-column:1/-1;align-items:start;}\n[data-iter5] .i5-engine-grid[hidden]{display:none;}\n[data-iter5] .i5-engine-grid .i5-card{margin:0;}\n[data-iter5] .i5-mode-card [data-dam-row]>label{display:none;}\n[data-iter5] .i5-mode-card [data-dam-row]>div{display:flex!important;flex-wrap:wrap;width:100%;}\n[data-iter5] .i5-mode-card [data-dam-settings-row]{border:0;padding:0;}\n[data-iter5] .i5-mode-card .i5-engine-radios{flex:1 0 100%;}\n[data-iter5] .i5-setup-card button{white-space:nowrap;flex-shrink:0;}\n[data-iter5] .i5-setup-card div[style*=\"display: flex\"]{flex-wrap:wrap;}\n[data-iter5] .i5-setup-card [style*=\"font-size\"]{font-size:calc(12px * var(--dam-user-scale,1))!important;}\n[data-iter5] [data-dam-settings-row] label{font-size:calc(14px * var(--dam-user-scale,1));}\n[data-iter5] [data-dam-settings-row] [data-dam-input]{width:auto;max-width:100%;}\n[data-iter5] [data-dam-settings-row]>[data-dam-row]>label{flex:1 1 150px;}\n[data-iter5] .i5-mobile-menu,[data-iter5] .i5-close-nav{display:none;}\n[data-dam-theme] :is([data-dam-panel],[data-dam-tour],[data-dam-autocont]){background:var(--i5-surface)!important;color:var(--i5-text)!important;border:1px solid var(--i5-line)!important;border-radius:16px;box-shadow:0 16px 48px color-mix(in srgb,var(--i5-text) 16%,transparent)!important;backdrop-filter:none!important;}\n[data-dam-theme] [data-dam-panel] [data-dam-card]{border-radius:var(--i5-radius);border:1px solid var(--i5-line);background:var(--i5-surface);box-shadow:var(--i5-shadow);}\n[data-dam-theme] :is([data-dam-panel],[data-dam-tour]) button{font-family:inherit;border-radius:var(--i5-control-radius);}\n[data-dam-theme] [data-dam-tour] :is([data-dam-tour-glare],[data-dam-tour-halo],[data-dam-tour-bokeh]){display:none;}\n[data-dam-theme] [data-dam-tour] [data-dam-tour-title]{color:var(--i5-text);}\n[data-dam-theme] [data-dam-tour] [data-dam-tour-sub]{color:var(--i5-secondary);}\n[data-dam-theme] [data-dam-tour] [data-dam-tour-btn][data-primary=true]{background:var(--i5-blue);color:var(--i5-surface);}\n/* Tokens are shared with host overlays; layout applies only to the page root. */\n[data-iter5],[data-dam-theme]{--i5-blue:#2563EB;--i5-fill:#3B82F6;--i5-bg:#F5FAFF;--i5-surface:#FFFFFF;--i5-side:#F0F5FF;--i5-soft:#EAF2FE;--i5-text:#15213F;--i5-secondary:#4E6080;--i5-muted:#5B6B85;--i5-line:#E3EDFB;--i5-ok:#1F7A4D;--i5-error:#B42338;--i5-warning:#8A5A0E;--i5-indigo:#4F46E5;--i5-purple:#7C3AED;--i5-green:#047857;--i5-orange:#B45309;--i5-pink:#BE123C;--i5-cyan:#0E7490;--i5-slate:#475569;--i5-shadow:none;--i5-radius:12px;--i5-sidebar:208px;--dam-accent:var(--i5-blue);--dam-scale:var(--dam-user-scale,1);--dsw-alias-label-primary:var(--i5-text);--dsw-alias-label-secondary:var(--i5-secondary);--dsw-alias-bg-layer-1:var(--i5-bg);--dsw-alias-bg-layer-2:var(--i5-surface);--dsw-alias-border-l1:var(--i5-line);--i5-compact-control:34px;--i5-compact-gap:12px;--i5-control-radius:8px;--i5-tag-radius:6px;--i5-dur-press:120ms;--i5-dur-quick:160ms;--i5-dur-fast:220ms;--i5-dur-slow:340ms;--i5-stagger:40ms;--i5-ease-out:cubic-bezier(.23,1,.32,1);--i5-ease-in-out:cubic-bezier(.77,0,.175,1);--i5-ease-drawer:cubic-bezier(.32,.72,0,1);--i5-ease-pop:cubic-bezier(.34,1.36,.64,1);}\n[data-iter5]{display:flex;flex:1;min-width:0;min-height:0;height:100%;position:relative;background:var(--i5-bg);color:var(--i5-text);font:calc(14px * var(--dam-user-scale,1))/1.6 system-ui,\"Segoe UI\",\"Microsoft YaHei\",sans-serif;isolation:isolate;font-size:calc(14px * var(--dam-user-scale,1));letter-spacing:.005em;scrollbar-color:var(--i5-line) var(--i5-bg);caret-color:var(--i5-blue);}\n[data-iter5][data-deep=true],[data-dam-theme][data-deep=true],[data-dam-theme][data-deep=true] [data-iter5]{--i5-blue:#9ABEFF;--i5-fill:#77A9FF;--i5-bg:#151D2C;--i5-surface:#1D293D;--i5-side:#172338;--i5-soft:#283F61;--i5-text:#ECF2FF;--i5-secondary:#C4D1E8;--i5-muted:#B2C3DE;--i5-line:#3B4D67;--i5-ok:#8EDAAF;--i5-error:#FFB2BC;--i5-warning:#F0CB8A;--i5-indigo:#B6B1FF;--i5-purple:#CFADFF;--i5-green:#8EDAAF;--i5-orange:#F0CB8A;--i5-pink:#FFB3C7;--i5-cyan:#8FD6E7;--i5-slate:#C4D1E8;}\n[data-iter5] .i5-main{flex:1;min-width:0;overflow:auto;padding:20px;container-type:inline-size;container-name:iter5-content;background:var(--i5-bg);}\n[data-iter5] h1{font-size:calc(22px * var(--dam-user-scale,1));line-height:1.4;font-weight:650;letter-spacing:0;}\n[data-iter5] .i5-page-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:16px;}\n[data-iter5] .i5-page-head p{color:var(--i5-secondary);margin-top:4px;font-size:calc(13px * var(--dam-user-scale,1));line-height:1.6;}\n[data-iter5] .i5-page-head>button{color:var(--i5-blue);margin-top:3px;}\n[data-iter5] .i5-sidebar{width:var(--i5-sidebar);flex:0 0 var(--i5-sidebar);display:flex;flex-direction:column;gap:4px;padding:16px 10px 10px;background:linear-gradient(165deg,var(--i5-surface) 0%,var(--i5-side) 68%,var(--i5-soft));border-right:1px solid var(--i5-line);overflow:hidden;}\n[data-iter5] .i5-brand{display:flex;gap:9px;align-items:center;padding:0 2px 22px;padding-bottom:16px;}\n[data-iter5] .i5-brand strong{font-size:calc(13px * var(--dam-user-scale,1));letter-spacing:-.035em;white-space:normal;overflow-wrap:anywhere;}\n[data-iter5] .i5-brand>div{min-width:0;}\n[data-iter5] .i5-brand small{display:block;font-size:calc(11px * var(--dam-user-scale,1));margin-top:4px;}\n[data-iter5] .i5-brand-mark{width:34px;height:34px;border:0;border-radius:10px;box-shadow:inset 0 0 0 1px var(--i5-surface);background:linear-gradient(140deg,var(--i5-soft),color-mix(in srgb,var(--i5-purple) 17%,var(--i5-surface)));flex:none;color:var(--i5-indigo);display:grid;place-items:center;}\n[data-iter5] .i5-brand-mark svg{width:24px;height:24px;stroke-width:1.7;filter:none;}\n[data-iter5] .i5-nav-label{padding:7px 10px 3px;font-size:calc(11px * var(--dam-user-scale,1));letter-spacing:.06em;color:var(--i5-muted);}\n[data-iter5] .i5-sidebar nav{display:flex;flex-direction:column;gap:2px;flex:1;min-height:0;overflow:auto;}\n[data-iter5] .i5-sidebar nav button{display:flex;align-items:center;gap:10px;text-align:left;border:0;background:transparent;padding:5px 10px;min-height:36px;border-radius:8px;font-size:calc(14px * var(--dam-user-scale,1));position:relative;color:var(--i5-secondary);}\n[data-iter5] .i5-sidebar nav button .i5-badge{background:transparent;color:inherit;width:25px;height:25px;}\n[data-iter5] .i5-sidebar nav button[aria-current=page]{background:var(--i5-soft);color:var(--i5-blue);}\n[data-iter5] .i5-sidebar nav button[aria-current=page]::before{content:\"\";position:absolute;left:0;top:10px;bottom:10px;width:3px;border-radius:3px;background:var(--i5-fill);}\n[data-iter5] .i5-sidebar-foot{flex-shrink:0;margin-top:8px;padding-top:14px;border-top:1px solid var(--i5-line);display:flex;flex-direction:column;gap:6px;border:0;padding:0;}\n[data-iter5] .i5-sidebar-art{height:40px;overflow:hidden;margin:0 -12px;mask-image:linear-gradient(transparent,var(--i5-text) 24%,var(--i5-text) 90%,transparent);}\n[data-iter5] .i5-sidebar-art img{width:100%;height:100%;object-fit:cover;object-position:50% 65%;mix-blend-mode:multiply;}\n[data-iter5] .i5-side-caption{display:none;}\n[data-iter5] .i5-side-caption strong,[data-iter5] .i5-side-caption small{display:block;}\n[data-iter5] .i5-side-caption strong{font-size:calc(12px * var(--dam-user-scale,1));}\n[data-iter5] .i5-side-caption small{font-size:calc(11px * var(--dam-user-scale,1));margin-top:2px;}\n[data-iter5] .i5-side-tools{display:flex;gap:8px;}\n[data-iter5] .i5-side-tools button{flex:1;font-size:calc(12px * var(--dam-user-scale,1));min-height:30px;background:transparent;}\n[data-iter5] .i5-sidebar-foot>[data-dam-skin-v4-exit]{font-size:calc(11px * var(--dam-user-scale,1));border:0;background:transparent;min-height:28px;margin:0;color:var(--i5-muted);}\n[data-iter5] .i5-home{max-width:none;margin:auto;}\n[data-iter5] .i5-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:16px;}\n[data-iter5] .i5-stat{background:var(--i5-surface);border:1px solid var(--i5-line);border-radius:12px;box-shadow:none;padding:12px 14px;display:block;gap:13px;min-width:0;}\n[data-iter5] .i5-stat-top{display:flex;align-items:center;gap:8px;margin-bottom:8px;font-weight:600;font-size:calc(13px * var(--dam-user-scale,1));line-height:1.4;}\n[data-iter5] .i5-stat>strong{font-size:calc(24px * var(--dam-user-scale,1));font-weight:730;letter-spacing:-.03em;display:block;}\n[data-iter5] .i5-stat>small{margin-top:4px;font-size:calc(12px * var(--dam-user-scale,1));line-height:1.5;}\n[data-iter5] .i5-badge{color:var(--i5-blue);background:var(--i5-soft);border-radius:var(--i5-control-radius);width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;flex:none;box-shadow:none;}\n[data-iter5] .i5-badge svg{width:19px;height:19px;}\n[data-iter5] .i5-badge-lg{width:32px;height:32px;border-radius:8px;}\n[data-iter5] .i5-card{border:1px solid var(--i5-line);border-radius:var(--i5-radius);background:var(--i5-surface);box-shadow:none;padding:16px;margin-bottom:16px;min-width:0;}\n[data-iter5] .i5-section-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;}\n[data-iter5] .i5-section-heading h2{display:flex;align-items:center;gap:9px;font-size:calc(15px * var(--dam-user-scale,1));margin:0;}\n[data-iter5] .i5-section-heading h2>svg{color:var(--i5-blue);flex-shrink:0;}\n[data-iter5] button.i5-link{border:0;background:none;box-shadow:none;color:var(--i5-blue);font-size:calc(12px * var(--dam-user-scale,1));padding:4px 0;min-height:32px;flex:none;}\n[data-iter5] button.i5-primary{border:1px solid var(--i5-blue);background:linear-gradient(120deg,var(--i5-fill),var(--i5-blue));color:var(--i5-surface);box-shadow:0 4px 10px color-mix(in srgb,var(--i5-blue) 15%,transparent);}\n[data-iter5] button.i5-primary-soft{color:var(--i5-blue);border:1px solid color-mix(in srgb,var(--i5-fill) 25%,var(--i5-surface));background:color-mix(in srgb,var(--i5-surface) 88%,transparent);font-weight:600;}\n[data-iter5] .i5-memory-banner{display:flex;align-items:center;gap:12px;position:relative;isolation:isolate;overflow:hidden;border-radius:12px;border:1px solid var(--i5-surface);padding:16px 18px;margin-bottom:16px;background:linear-gradient(110deg,var(--i5-soft),var(--i5-surface) 54%,color-mix(in srgb,var(--i5-blue) 13%,var(--i5-surface)));box-shadow:none;border-color:var(--i5-line);min-height:88px;}\n[data-iter5] .i5-banner-landscape{position:absolute;inset:0 0 0 auto;width:34%;height:100%;object-fit:cover;object-position:center 70%;opacity:.65;mask-image:linear-gradient(90deg,transparent,var(--i5-text));z-index:-1;}\n[data-iter5] .i5-banner-copy{flex:1;min-width:0;}\n[data-iter5] .i5-banner-copy h2{font-size:calc(16px * var(--dam-user-scale,1));line-height:1.6;margin-bottom:4px;letter-spacing:-.015em;}\n[data-iter5] .i5-banner-copy p{font-size:calc(13px * var(--dam-user-scale,1));line-height:1.7;color:var(--i5-secondary);}\n[data-iter5] .i5-banner-orb{display:grid;place-items:center;width:44px;height:44px;border-radius:var(--i5-radius);color:var(--i5-fill);background:linear-gradient(135deg,var(--i5-surface),color-mix(in srgb,var(--i5-fill) 25%,var(--i5-surface)));box-shadow:inset 0 0 0 7px color-mix(in srgb,var(--i5-fill) 10%,transparent);flex:none;transform:none;}\n[data-iter5] .i5-banner-orb svg{width:26px;height:26px;}\n[data-iter5] .i5-memory-banner>button{flex:none;white-space:nowrap;}\n[data-iter5] .i5-dashboard-columns{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:12px;align-items:start;}\n/* ★2026-09-28（本仓特有布局）：左栏 = 问候卡（含可展开抽屉/AI 总结）+ 记忆沉淀；右栏 = 会话上下文 + 日程 + 最近记录。\n   两栏各自纵向排列，卡片间距由既有 .i5-card 的 margin-bottom 统一 ⇒ 上下卡对齐线一致。\n   对齐用 stretch 让等高，但内容不足时卡片不拉伸（避免空卡塌陷）。 */\n[data-iter5] .i5-recent-column,[data-iter5] .i5-dashboard-columns>div{display:flex;flex-direction:column;min-width:0;}\n[data-iter5] .i5-recent-column>*:last-child,[data-iter5] .i5-dashboard-columns>div>*:last-child{margin-bottom:0;}\n[data-iter5] .i5-knowledge-row{display:flex;align-items:flex-start;gap:10px;padding:12px 0;width:100%;border:0;border-top:1px solid var(--i5-line);border-radius:0;text-align:left;background:transparent;}\n[data-iter5] .i5-knowledge-row>div{flex:1;min-width:0;}\n[data-iter5] .i5-knowledge-row:hover{background:transparent;}\n[data-iter5] .i5-knowledge-row:hover strong{color:var(--i5-blue);}\n[data-iter5] .i5-line-title{display:flex;justify-content:space-between;gap:8px;align-items:center;}\n[data-iter5] .i5-knowledge-row p{font-size:calc(12px * var(--dam-user-scale,1));color:var(--i5-secondary);margin:4px 0;line-height:1.7;}\n[data-iter5] blockquote{background:linear-gradient(110deg,var(--i5-bg),var(--i5-soft));border:0;border-radius:8px;padding:9px 12px;margin:10px 0 0;font-size:calc(12px * var(--dam-user-scale,1));color:var(--i5-secondary);line-height:1.7;overflow-wrap:anywhere;}\n[data-iter5] .i5-ring-row{display:flex;align-items:center;gap:18px;}\n[data-iter5] .i5-ring{width:96px;height:96px;position:relative;flex:none;}\n[data-iter5] .i5-ring svg{width:100%;height:100%;transform:rotate(-90deg);}\n[data-iter5] .i5-ring circle{fill:none;stroke-width:9;}\n[data-iter5] .i5-ring-track{stroke:var(--i5-soft);}\n[data-iter5] .i5-ring-progress{stroke:var(--i5-fill);stroke-linecap:round;}\n[data-iter5] .i5-ring>div{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}\n[data-iter5] .i5-ring strong{font-size:calc(23px * var(--dam-user-scale,1));font-weight:700;}\n[data-iter5] .i5-ring small{font-size:calc(11px * var(--dam-user-scale,1));color:var(--i5-blue);}\n[data-iter5] .i5-context-copy{min-width:0;}\n[data-iter5] .i5-context-copy>strong{font-size:calc(13px * var(--dam-user-scale,1));}\n[data-iter5] .i5-context-copy p{font-size:calc(12px * var(--dam-user-scale,1));color:var(--i5-muted);margin:7px 0 10px;}\n[data-iter5] .i5-status-line{font-size:calc(12px * var(--dam-user-scale,1));display:flex;align-items:center;gap:6px;overflow-wrap:anywhere;margin:6px 0;color:var(--i5-secondary);}\n[data-iter5] .i5-status-line i,[data-iter5] .i5-doc-bullet i{width:6px;height:6px;background:var(--i5-fill);border-radius:50%;flex:none;}\n[data-iter5] .i5-status-line i[data-tone=ok]{background:var(--i5-green);}\n[data-iter5] .i5-activity-row{display:flex;align-items:center;width:100%;gap:10px;padding:8px 0;text-align:left;background:transparent;border:0;border-radius:0;}\n[data-iter5] .i5-activity-row>div{flex:1;min-width:0;}\n[data-iter5] .i5-activity-row strong{font-size:calc(13px * var(--dam-user-scale,1));display:block;line-height:1.6;}\n[data-iter5] .i5-activity-row small{display:block;font-size:calc(11px * var(--dam-user-scale,1));}\n[data-iter5] .i5-activity-row>.i5-badge{width:31px;height:31px;border-radius:11px;}\n[data-iter5] .i5-activity-row>.i5-badge svg{width:18px;height:18px;}\n[data-iter5] .i5-activity-row>small{margin-left:auto;flex:none;}\n[data-iter5] .i5-event-dot{border:1px solid var(--i5-line);border-radius:50%;width:20px;height:20px;flex:none;}\n[data-iter5] .i5-event-dot[data-done=true]{color:var(--i5-green);background:color-mix(in srgb,var(--i5-green) 9%,var(--i5-surface));}\n[data-iter5] .i5-daily-card .i5-muted{font-size:calc(13px * var(--dam-user-scale,1));padding:8px 0;}\n[data-iter5] .i5-daily-card .i5-activity-row>small{margin-left:0;}\n[data-iter5] .i5-daily-card .i5-activity-row>strong{flex:1;min-width:0;overflow-wrap:anywhere;}\n[data-iter5] .i5-secondary-details{background:color-mix(in srgb,var(--i5-surface) 50%,transparent);box-shadow:none;}\n[data-iter5] .i5-secondary-details summary{font-size:calc(12px * var(--dam-user-scale,1));color:var(--i5-secondary);font-weight:400;}\n[data-iter5] .i5-list-detail{display:grid;grid-template-columns:minmax(260px,.68fr) minmax(0,1.32fr);gap:12px;align-items:start;}\n[data-iter5] .i5-file-list{padding:4px;background:var(--i5-surface);border:1px solid var(--i5-line);box-shadow:none;border-radius:12px;}\n[data-iter5] .i5-file-list .i5-file{margin-bottom:9px;border:0;background:transparent;border-radius:7px;padding:10px 8px;align-items:start;min-height:68px;display:grid;grid-template-columns:30px minmax(0,1fr) max-content;gap:10px;margin:0;border-bottom:1px solid var(--i5-line);}\n[data-iter5] .i5-file-list .i5-file[aria-current=true]{border-color:color-mix(in srgb,var(--i5-fill) 75%,var(--i5-surface));background:var(--i5-soft);box-shadow:inset 3px 0 var(--i5-fill);}\n[data-iter5] .i5-file-copy{flex:1;min-width:0;display:flex;align-items:baseline;flex-wrap:wrap;gap:2px 8px;}\n[data-iter5] .i5-file-copy>strong{font-size:calc(14px * var(--dam-user-scale,1));display:block;line-height:1.5;flex:1 0 100%;min-width:0;overflow-wrap:anywhere;}\n[data-iter5] .i5-file-copy>small{margin:0;font-size:calc(12px * var(--dam-user-scale,1));line-height:1.5;}\n[data-iter5] .i5-tag{display:inline-flex;padding:3px 9px;background:var(--i5-soft);color:var(--i5-blue);border-radius:6px;font-size:calc(11px * var(--dam-user-scale,1));line-height:1.4;}\n[data-iter5] .i5-source-card{position:sticky;top:0;display:flex;flex-direction:column;max-height:var(--i5-reading-height,60vh);min-height:0;}\n[data-iter5] .i5-source-heading{display:flex;gap:8px;align-items:flex-start;margin-bottom:10px;}\n[data-iter5] .i5-source-heading h2{font-size:calc(17px * var(--dam-user-scale,1));line-height:1.5;margin:0;min-width:0;overflow-wrap:anywhere;}\n[data-iter5] .i5-source-meta{display:flex;align-items:center;gap:10px;font-size:calc(12px * var(--dam-user-scale,1));color:var(--i5-muted);padding-bottom:10px;margin-bottom:12px;border-bottom:1px solid var(--i5-line);flex-wrap:wrap;}\n[data-iter5] .i5-document{font-size:calc(14px * var(--dam-user-scale,1));line-height:1.75;overflow-wrap:anywhere;max-height:52vh;overflow:auto;padding-right:4px;min-height:0;flex:1 1 auto;scrollbar-gutter:stable;}\n[data-iter5] .i5-document h3{font-size:calc(15px * var(--dam-user-scale,1));margin:12px 0 6px;}\n[data-iter5] .i5-document h4{font-size:calc(14px * var(--dam-user-scale,1));margin:10px 0 5px;}\n[data-iter5] .i5-document p{color:var(--i5-secondary);margin:0 0 6px;}\n[data-iter5] .i5-document pre{font:12px/1.6 ui-monospace,Consolas,monospace;white-space:pre-wrap;margin:0;background:var(--i5-bg);padding:1px 8px;}\n[data-iter5] .i5-doc-bullet{display:flex;gap:9px;margin:5px 0;color:var(--i5-secondary);align-items:baseline;}\n[data-iter5] .i5-doc-space{height:7px;}\n[data-iter5] .i5-source-origin{border-top:1px solid var(--i5-line);margin-top:12px;padding-top:12px;}\n[data-iter5] .i5-source-origin strong{font-size:calc(12px * var(--dam-user-scale,1));}\n[data-iter5] .i5-source-origin small{display:block;overflow-wrap:anywhere;font-size:calc(12px * var(--dam-user-scale,1));margin-top:5px;user-select:text;}\n[data-iter5] .i5-empty-state{text-align:center;padding:18px 12px;}\n[data-iter5] .i5-empty-state img{width:180px;height:130px;object-fit:contain;mix-blend-mode:multiply;}\n[data-iter5] .i5-empty-state h3{margin:14px 0 8px;font-size:calc(16px * var(--dam-user-scale,1));}\n[data-iter5] .i5-empty-state p{font-size:calc(13px * var(--dam-user-scale,1));color:var(--i5-secondary);line-height:1.8;max-width:320px;margin:0 auto 14px;}\n[data-iter5] .i5-calendar-columns{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;}\n[data-iter5] .i5-calendar-columns>.i5-card{min-height:430px;}\n[data-iter5] .i5-month .i5-section-heading h2{font-size:calc(20px * var(--dam-user-scale,1));}\n[data-iter5] .i5-button-group{display:flex;align-items:center;gap:4px;}\n[data-iter5] .i5-button-group button{min-width:34px;padding:6px 9px;}\n[data-iter5] .i5-month-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;text-align:center;}\n[data-iter5] .i5-month-grid>small{padding:10px 0;border-bottom:1px solid var(--i5-line);}\n[data-iter5] .i5-month-grid button[aria-pressed=true]{background:linear-gradient(140deg,var(--i5-fill),var(--i5-blue));color:var(--i5-surface);box-shadow:0 4px 12px color-mix(in srgb,var(--i5-blue) 20%,transparent);}\n[data-iter5] .i5-month-grid button[data-today=true]:not([aria-pressed=true]){color:var(--i5-blue);background:var(--i5-soft);}\n[data-iter5] .i5-day-dots{height:6px;display:flex;gap:3px;position:absolute;bottom:2px;}\n[data-iter5] .i5-day-dots i,[data-iter5] .i5-calendar-legend i{width:5px;height:5px;background:var(--i5-orange);border-radius:50%;display:inline-block;}\n[data-iter5] .i5-day-dots i[data-done=true],[data-iter5] .i5-calendar-legend i[data-done=true]{background:var(--i5-green);}\n[data-iter5] .i5-calendar-legend{display:flex;gap:8px;align-items:center;background:var(--i5-bg);border-radius:var(--i5-control-radius);padding:10px;margin-top:20px;font-size:calc(11px * var(--dam-user-scale,1));color:var(--i5-secondary);}\n[data-iter5] .i5-event-card{display:flex;align-items:flex-start;gap:12px;border:1px solid var(--i5-line);border-radius:12px;padding:16px 13px;margin:10px 0;background:linear-gradient(135deg,var(--i5-surface),var(--i5-bg));}\n[data-iter5] .i5-event-copy{flex:1;min-width:0;}\n[data-iter5] .i5-event-copy strong{font-size:calc(14px * var(--dam-user-scale,1));display:block;}\n[data-iter5] .i5-event-copy p{font-size:calc(12px * var(--dam-user-scale,1));color:var(--i5-secondary);margin:7px 0;overflow-wrap:anywhere;}\n[data-iter5] .i5-event-meta{display:flex;flex-wrap:wrap;gap:12px;align-items:center;font-size:calc(11px * var(--dam-user-scale,1));color:var(--i5-muted);margin-top:9px;}\n[data-iter5] .i5-event-actions{display:flex;flex-direction:column;gap:6px;}\n[data-iter5] .i5-event-actions button{font-size:calc(11px * var(--dam-user-scale,1));padding:4px 7px;min-height:28px;}\n[data-iter5] .i5-danger{color:var(--i5-error)!important;}\n[data-iter5] .i5-dialog-backdrop{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;background:color-mix(in srgb,var(--i5-text) 24%,transparent);backdrop-filter:blur(5px);padding:20px;}\n[data-iter5] .i5-dialog{width:min(540px,100%);max-height:85vh;overflow:auto;background:var(--i5-surface);border:1px solid var(--i5-line);border-radius:20px;padding:24px;box-shadow:0 24px 80px color-mix(in srgb,var(--i5-text) 20%,transparent);}\n[data-iter5] .i5-form-field{display:flex;flex-direction:column;gap:6px;margin:12px 0;font-size:calc(13px * var(--dam-user-scale,1));}\n[data-iter5] .i5-dialog-footer{display:flex;gap:10px;justify-content:flex-end;border-top:1px solid var(--i5-line);padding-top:16px;margin-top:16px;}\n/* 经典动效不进入皮肤：皮肤内嵌的经典分区（.i5-hosted 里那些 [data-dam-*] 组件）不重放 dam-* 入场。\n   原写法是一条 `[data-iter5]` 作用域下的 `.i5-card` / `.i5-stat` 通配，把动画一律置为 none ——\n   它连**皮肤自己**的卡片动效一并封死了（皮肤因此完全没有入场）。改为按**经典属性选择器**收口：\n   只封经典、不封皮肤。 */\n[data-iter5] [data-dam-card],[data-iter5] [data-dam-banner],[data-iter5] [data-dam-flow] > *,[data-iter5] [data-dam-calendar-event]{animation:none;}\n[data-iter5] .i5-page-actions{display:flex;gap:8px;flex:none;flex-wrap:wrap;}\n[data-iter5] .i5-page-actions button{font-size:calc(12px * var(--dam-user-scale,1));white-space:nowrap;}\n[data-iter5][data-focus=true]{position:fixed;inset:14px;z-index:8500;width:auto;height:auto!important;max-height:none!important;border:1px solid var(--i5-line);border-radius:18px;overflow:hidden;box-shadow:0 0 0 30px color-mix(in srgb,var(--i5-side) 90%,transparent),0 16px 70px color-mix(in srgb,var(--i5-text) 15%,transparent);}\n[data-iter5][data-focus=true] .i5-main{padding:20px;}\n[data-iter5][data-focus=true] .i5-sidebar{--i5-sidebar:208px;padding-top:16px;}\n[data-iter5][data-focus=true] .i5-sidebar nav button{min-height:36px;}\n[data-iter5][data-focus=true] .i5-sidebar-art{height:40px;}\n[data-iter5] .i5-recall-columns{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:18px;align-items:start;}\n[data-iter5] .i5-recall-columns:not(:has(.i5-review-detail)){grid-template-columns:1fr;}\n[data-iter5] .i5-recall-list{padding:14px;}\n[data-iter5] .i5-filter-chips{display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:4px 0 14px;border-bottom:1px solid var(--i5-line);}\n[data-iter5] .i5-filter-chips button{border:0;background:var(--i5-bg);border-radius:8px;font-size:calc(12px * var(--dam-user-scale,1));display:flex;gap:8px;}\n[data-iter5] .i5-filter-chips button[aria-pressed=true]{color:var(--i5-surface);background:linear-gradient(120deg,var(--i5-fill),var(--i5-blue));}\n[data-iter5] .i5-filter-chips button span{opacity:.8;}\n[data-iter5] .i5-review-row{display:flex;width:100%;align-items:center;gap:12px;border:0;border-bottom:1px solid var(--i5-line);border-radius:0;text-align:left;padding:17px 10px;background:transparent;}\n[data-iter5] .i5-review-row[aria-current=true]{background:linear-gradient(100deg,var(--i5-soft),var(--i5-surface));box-shadow:inset 3px 0 var(--i5-fill);}\n[data-iter5] .i5-review-row small{display:block;font-size:calc(11px * var(--dam-user-scale,1));margin-top:5px;overflow-wrap:anywhere;}\n[data-iter5] .i5-review-main{flex:1;min-width:0;}\n[data-iter5] .i5-review-main strong{font-size:calc(13px * var(--dam-user-scale,1));}\n[data-iter5] [data-decision=emit]{background:color-mix(in srgb,var(--i5-green) 9%,var(--i5-surface));color:var(--i5-green);}\n[data-iter5] [data-decision=prefetch]{background:color-mix(in srgb,var(--i5-orange) 9%,var(--i5-surface));color:var(--i5-orange);}\n[data-iter5] [data-decision=suppress]{background:var(--i5-bg);color:var(--i5-secondary);}\n[data-iter5] .i5-review-detail{position:sticky;top:0;}\n[data-iter5] .i5-detail-intro{display:flex;gap:12px;align-items:center;margin:20px 0;}\n[data-iter5] .i5-detail-intro small{display:block;margin-top:5px;}\n[data-iter5] .i5-evidence-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));background:var(--i5-bg);border-radius:10px;padding:13px;margin-bottom:22px;}\n[data-iter5] .i5-evidence-metrics>div{border-right:1px solid var(--i5-line);padding:0 10px;}\n[data-iter5] .i5-evidence-metrics>div:last-child{border:0;}\n[data-iter5] .i5-evidence-metrics strong{font-size:calc(18px * var(--dam-user-scale,1));display:block;margin-top:3px;}\n[data-iter5] .i5-evidence-metrics small{font-size:calc(11px * var(--dam-user-scale,1));}\n[data-iter5] .i5-review-detail h3{font-size:calc(13px * var(--dam-user-scale,1));margin:20px 0 10px;}\n[data-iter5] .i5-reason-list>div{display:flex;gap:9px;align-items:baseline;color:var(--i5-secondary);font-size:calc(12px * var(--dam-user-scale,1));margin:8px 0;overflow-wrap:anywhere;}\n[data-iter5] .i5-evidence-dot{width:6px;height:6px;border-radius:50%;background:var(--i5-fill);flex:none;}\n[data-iter5] .i5-anchor-list>div{display:flex;gap:9px;align-items:center;padding:10px;margin:7px 0;border:1px solid var(--i5-line);border-radius:var(--i5-control-radius);font-size:calc(12px * var(--dam-user-scale,1));color:var(--i5-blue);}\n[data-iter5] .i5-info-callout{display:flex;gap:10px;background:linear-gradient(120deg,var(--i5-bg),var(--i5-soft));border-radius:10px;padding:15px;margin:18px 0;color:var(--i5-blue);}\n[data-iter5] .i5-info-callout>svg{flex:none;}\n[data-iter5] .i5-info-callout strong{font-size:calc(13px * var(--dam-user-scale,1));}\n[data-iter5] .i5-info-callout p{font-size:calc(12px * var(--dam-user-scale,1));line-height:1.7;color:var(--i5-secondary);margin-top:6px;}\n[data-iter5] .i5-feedback{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;margin-top:14px;}\n[data-iter5] .i5-feedback button{padding:8px 2px;}\n[data-iter5] .i5-feedback button span{display:block;font-size:calc(10px * var(--dam-user-scale,1));margin-top:4px;}\n[data-iter5] .i5-feedback button[aria-pressed=true]{color:var(--i5-blue);border-color:var(--i5-blue);background:var(--i5-soft);}\n[data-iter5] .i5-success{color:var(--i5-green);font-size:calc(12px * var(--dam-user-scale,1));margin-top:12px;}\n[data-iter5] .i5-handoff-overview{display:flex;gap:14px;margin-bottom:20px;align-items:stretch;}\n[data-iter5] .i5-handoff-overview>.i5-info-callout{flex:1;margin:0;}\n[data-iter5] .i5-mini-metric{background:var(--i5-surface);border:1px solid var(--i5-line);border-radius:12px;padding:14px 20px;min-width:115px;display:flex;flex-direction:column;justify-content:center;}\n[data-iter5] .i5-mini-metric strong{font-size:calc(25px * var(--dam-user-scale,1));font-weight:700;}\n[data-iter5] .i5-mini-metric small{font-size:calc(11px * var(--dam-user-scale,1));margin-top:3px;}\n[data-iter5] .i5-handoff-columns{display:grid;grid-template-columns:minmax(230px,.65fr) minmax(0,1.35fr);gap:18px;align-items:start;}\n[data-iter5] .i5-handoff-index{padding:17px 12px;}\n[data-iter5] .i5-ledger-row{display:flex;width:100%;gap:13px;text-align:left;align-items:center;border:1px solid transparent;border-radius:10px;padding:15px 10px;margin-bottom:6px;background:transparent;}\n[data-iter5] .i5-ledger-row[aria-current=true]{border-color:var(--i5-line);background:linear-gradient(110deg,var(--i5-soft),var(--i5-surface));box-shadow:inset 3px 0 var(--i5-fill);}\n[data-iter5] .i5-ledger-row strong{font-size:calc(13px * var(--dam-user-scale,1));line-height:1.7;display:block;overflow-wrap:anywhere;}\n[data-iter5] .i5-ledger-row small{display:block;margin-top:5px;font-size:calc(11px * var(--dam-user-scale,1));}\n[data-iter5] .i5-handoff-document .i5-document{max-height:60vh;}\n[data-iter5] .i5-handoff-document .i5-document h3{border-left:3px solid var(--i5-fill);padding-left:10px;margin-top:22px;}\n[data-iter5] .i5-handoff-actions{display:flex;gap:14px;align-items:center;flex-wrap:wrap;border-top:1px solid var(--i5-line);margin-top:20px;padding-top:18px;}\n[data-iter5] .i5-handoff-actions small{flex:1;min-width:160px;}\n[data-iter5] .i5-source-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin:20px 0;}\n[data-iter5] .i5-source-tile{border:1px solid var(--i5-line);border-radius:var(--i5-radius);background:var(--i5-surface);box-shadow:var(--i5-shadow);overflow:hidden;}\n[data-iter5] .i5-source-tile[data-selected=true]{border-color:color-mix(in srgb,var(--i5-fill) 70%,var(--i5-surface));}\n[data-iter5] .i5-source-select{display:flex;align-items:center;gap:10px;width:100%;border:0;border-radius:0;padding:18px 14px;text-align:left;flex-wrap:wrap;}\n[data-iter5] .i5-source-select>div{flex:1;min-width:70px;}\n[data-iter5] .i5-source-select strong{display:block;font-size:calc(14px * var(--dam-user-scale,1));}\n[data-iter5] .i5-source-select small{display:block;font-size:calc(11px * var(--dam-user-scale,1));margin-top:4px;}\n[data-iter5] .i5-source-select .i5-badge{font-size:calc(22px * var(--dam-user-scale,1));font-weight:700;}\n[data-iter5] .i5-source-select .i5-tag{font-size:calc(10px * var(--dam-user-scale,1));margin-left:auto;}\n[data-iter5] .i5-source-select .i5-tag[data-connected=true]{color:var(--i5-green);background:color-mix(in srgb,var(--i5-green) 9%,var(--i5-surface));}\n[data-iter5] .i5-source-bottom{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-top:1px solid var(--i5-line);}\n[data-iter5] .i5-source-toggle{width:38px;height:22px;min-height:22px;padding:2px;border:0;border-radius:99px;background:var(--i5-line);position:relative;}\n[data-iter5] .i5-source-toggle[aria-checked=true]{background:var(--i5-fill);}\n[data-iter5] .i5-source-toggle i{display:block;width:18px;height:18px;border-radius:50%;background:var(--i5-surface);position:absolute;top:2px;left:2px;box-shadow:0 1px 4px color-mix(in srgb,var(--i5-text) 14%,transparent);}\n[data-iter5] .i5-source-toggle[aria-checked=true] i{left:18px;}\n[data-iter5] .i5-external-detail .i5-document{max-height:420px;}\n[data-iter5] .i5-note-form textarea{width:100%;resize:vertical;}\n[data-iter5] .i5-search-intro{display:flex;align-items:center;gap:15px;margin-bottom:22px;}\n[data-iter5] .i5-search-intro h2{font-size:calc(18px * var(--dam-user-scale,1));margin:0 0 8px;}\n[data-iter5] .i5-search-card .i5-toolbar input{min-height:46px;padding-left:14px;}\n[data-iter5] .i5-search-tip{display:flex;justify-content:center;align-items:center;gap:10px;color:var(--i5-muted);font-size:calc(13px * var(--dam-user-scale,1));padding:28px;line-height:1.8;}\n[data-iter5] .i5-search-hit{background:var(--i5-bg);border:1px solid var(--i5-line);padding:14px;margin-top:12px;border-radius:10px;}\n[data-iter5] .i5-search-hit p{font-size:calc(13px * var(--dam-user-scale,1));color:var(--i5-secondary);margin-top:6px;}\n[data-iter5] .i5-history>.i5-info-callout>div{flex:1;}\n[data-iter5] .i5-history>.i5-info-callout{align-items:center;flex-wrap:wrap;}\n[data-iter5] .i5-empty-art{width:140px;height:84px;max-width:100%;}\n[data-iter5] .i5-skills-grid,[data-iter5] .i5-maintenance-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;align-items:start;margin-top:16px;}\n[data-iter5] .i5-skills-grid>[data-dam-hint],[data-iter5] .i5-maintenance-grid>[data-dam-hint]{grid-column:1/-1;}\n[data-iter5] .i5-skills-grid [data-dam-card],[data-iter5] .i5-maintenance-grid [data-dam-card]{margin:0;}\n[data-iter5] .i5-skills-grid [data-dam-content],[data-iter5] .i5-maintenance-grid [data-dam-content]{font-size:calc(13px * var(--dam-user-scale,1))!important;line-height:1.8;}\n[data-iter5] .i5-skills-grid button,[data-iter5] .i5-maintenance-grid button{font-size:calc(12px * var(--dam-user-scale,1))!important;min-height:34px;padding:6px 10px!important;}\n[data-iter5] .i5-skills-view>.i5-filter-chips{border:0;margin-bottom:12px;}\n[data-iter5] .i5-maintenance-grid>[data-dam-flow]{grid-column:1/-1;}\n[data-iter5] button.i5-primary,[data-iter5] .i5-filter-chips button[aria-pressed=true],[data-iter5] .i5-month-grid button[aria-pressed=true]{background:linear-gradient(120deg,var(--i5-blue),color-mix(in srgb,var(--i5-blue) 85%,var(--i5-text)));}\n[data-iter5] [data-dam-savebar]{grid-column:1/-1;position:sticky;bottom:0;z-index:4;background:var(--i5-surface);border:1px solid var(--i5-line);border-radius:10px;padding:10px 12px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;box-shadow:var(--i5-shadow);margin:0;width:auto;max-width:100%;backdrop-filter:none;}\n[data-iter5] [data-dam-savebar] button{opacity:1;}\n[data-iter5] [data-dam-savebar] button:disabled{opacity:.5;}\n[data-iter5] .i5-month-grid button{display:flex;flex-direction:column;align-items:center;justify-content:center;height:44px;border:0;background:transparent;position:relative;padding:4px;border-radius:50%;font-size:calc(14px * var(--dam-user-scale,1));width:44px;justify-self:center;}\n[data-iter5] .i5-stats-three{grid-template-columns:repeat(3,minmax(0,1fr));}\n[data-iter5] .i5-card-title{display:flex;align-items:center;gap:11px;}\n[data-iter5] .i5-card-title .i5-badge{width:33px;height:33px;border-radius:11px;}\n[data-iter5] .i5-card-title .i5-badge svg{width:19px;height:19px;}\n[data-iter5] .i5-map-columns{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(250px,1fr);gap:18px;align-items:start;}\n[data-iter5] .i5-map-columns:not(:has(.i5-map-detail)){grid-template-columns:1fr;}\n[data-iter5] .i5-map-canvas{min-height:380px;overflow:auto;background:radial-gradient(ellipse at center,var(--i5-soft),var(--i5-surface) 75%);border:1px solid var(--i5-line);border-radius:12px;}\n[data-iter5] .i5-map-canvas [data-dam-graph]{min-height:380px;border:0;background:transparent;overflow:auto;}\n[data-iter5] .i5-map-canvas .dam-skin-backdrop{opacity:.18;}\n[data-iter5] .i5-map-detail h3{font-size:calc(14px * var(--dam-user-scale,1));margin:22px 0 12px;}\n[data-iter5] .i5-map-detail>button{margin-top:20px;width:100%;}\n[data-iter5] .i5-map-legend{display:flex;gap:18px;flex-wrap:wrap;font-size:calc(11px * var(--dam-user-scale,1));color:var(--i5-secondary);padding-top:14px;}\n[data-iter5] .i5-topic-list>div{display:flex;gap:9px;align-items:baseline;font-size:calc(13px * var(--dam-user-scale,1));line-height:1.8;color:var(--i5-secondary);margin:10px 0;}\n[data-iter5] .i5-topic-list svg{width:17px;height:17px;color:var(--i5-blue);flex:none;}\n[data-iter5][data-deep=true] .i5-sidebar-art img{mix-blend-mode:screen;opacity:.3;}\n[data-iter5][data-deep=true] .i5-banner-landscape{opacity:.12;}\n[data-iter5] input:not([type=checkbox]):not([type=radio]),\n[data-iter5] select{min-height:var(--i5-compact-control); border-radius:8px;}\n[data-iter5] .i5-file-list .i5-file:last-child{border-bottom-color:transparent;}\n[data-iter5] .i5-file-list .i5-file:hover{background:var(--i5-soft);}\n[data-iter5] .i5-file-list .i5-badge{width:30px; height:30px; border-radius:8px; color:var(--i5-secondary); background:var(--i5-bg);}\n[data-iter5] .i5-file-list .i5-file[aria-current=true] .i5-badge{color:var(--i5-blue); background:var(--i5-surface);}\n[data-iter5] .i5-file-copy>.i5-tag{padding:2px 6px; font-size:calc(11px * var(--dam-user-scale,1));}\n[data-iter5] .i5-source-heading, [data-iter5] .i5-source-meta, [data-iter5] .i5-source-origin{flex-shrink:0;}\n[data-iter5] [data-dam-settings-content],\n[data-iter5] .i5-engine-grid{gap:12px;}\n[data-iter5] .i5-source-card>.i5-document{max-height:none;}\n[data-iter5] .i5-home-stats{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,1fr);gap:12px;margin-bottom:16px;}\n[data-iter5] .i5-memory-counts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border:1px solid var(--i5-line);border-radius:var(--i5-radius);background:var(--i5-surface);}\n[data-iter5] .i5-memory-counts .i5-stat{border:0;border-radius:0;background:transparent;}\n[data-iter5] .i5-memory-counts .i5-stat+.i5-stat{border-left:1px solid var(--i5-line);}\n[data-iter5] ::selection{background:var(--i5-soft);color:var(--i5-text);}\n[data-iter5][data-narrow=true]{flex-direction:column;}\n[data-iter5][data-narrow=true] .i5-mobile-menu{display:block;align-self:flex-start;margin:8px 16px;}\n[data-iter5][data-narrow=true] .i5-sidebar{position:absolute;inset:0 auto 0 0;z-index:8;display:none;width:min(280px,90%);}\n[data-iter5][data-narrow=true] .i5-sidebar[data-open=true]{display:flex;}\n[data-iter5][data-narrow=true] .i5-close-nav{display:block;}\n[data-iter5][data-narrow=true] .i5-nav-backdrop{position:absolute;inset:0;background:color-mix(in srgb,var(--i5-text) 25%,transparent);z-index:7;}\n@container iter5-content (min-width:1000px){[data-iter5] [data-dam-settings-content]{grid-template-columns:repeat(2,minmax(0,1fr));}\n}\n@container iter5-content (max-width:600px){[data-iter5] .i5-stats,[data-iter5] .i5-list-detail{grid-template-columns:minmax(0,1fr);}\n[data-iter5] .i5-card{padding:16px;}\n[data-iter5] button,[data-iter5] input:not([type=radio]):not([type=checkbox]),[data-iter5] select,[data-iter5] summary{min-height:44px;}\n[data-iter5] .i5-tabs{gap:18px;}\n[data-iter5] [data-dam-settings-row]>[data-dam-row]>div{flex-wrap:wrap;}\n[data-iter5] [data-dam-settings-row]{overflow-wrap:anywhere;}\n}\n@media(max-width:900px){[data-iter5]{flex-direction:column;}\n[data-iter5] .i5-mobile-menu{display:block;align-self:flex-start;margin:8px 16px;}\n[data-iter5] .i5-sidebar{position:absolute;inset:0 auto 0 0;z-index:8;display:none;width:min(280px,90%);}\n[data-iter5] .i5-sidebar[data-open=true]{display:flex;}\n[data-iter5] .i5-close-nav{display:block;}\n[data-iter5] .i5-nav-backdrop{position:absolute;inset:0;background:color-mix(in srgb,var(--i5-text) 25%,transparent);z-index:7;}\n[data-iter5] .i5-sidebar button{min-height:44px;}\n[data-iter5] .i5-main{padding:16px;}\n}\n@media(prefers-reduced-motion:reduce){\n/* 减弱而非清零：去掉全部位移与缩放（前庭敏感者会致晕），**保留**换色过渡（有助理解状态变化）。\n   入场靠 keyframes 的 both 填充 ⇒ animation:none 后元素自然全显，因此不得给元素写死 opacity:0 兜底。 */\n[data-iter5] *, [data-iter5] *::before, [data-iter5] *::after{animation:none!important;scroll-behavior:auto!important;}\n/* 按下反馈的唯一残留在 :active 上；动画既然全停，缩放也要显式撤掉。 */\n[data-iter5] button:active:not(:disabled){transform:none!important;}\n[data-iter5] .i5-ring-progress,[data-iter5] [data-i5-theme] svg{transition:none!important;}\n}\n@container iter5-content (min-width:740px){[data-iter5] .i5-engine-grid{grid-template-columns:repeat(2,minmax(0,1fr));}\n[data-iter5] .i5-stats-four{grid-template-columns:repeat(4,minmax(0,1fr));}\n}\n@container iter5-content (max-width:480px){[data-iter5] .i5-stats-four{grid-template-columns:repeat(2,minmax(0,1fr));}\n[data-iter5] .i5-stat-top{gap:8px;flex-wrap:wrap;font-size:calc(12px * var(--dam-user-scale,1));}\n[data-iter5] .i5-stat-top .i5-badge{width:30px;height:30px;border-radius:10px;}\n[data-iter5] .i5-banner-orb{display:none;}\n[data-iter5] .i5-page-head p{font-size:calc(12px * var(--dam-user-scale,1));}\n[data-iter5] .i5-section-heading{flex-wrap:wrap;}\n[data-iter5] .i5-month-grid{gap:2px;}\n[data-iter5] .i5-month-grid button{height:44px;min-width:0;}\n[data-iter5] .i5-main{padding:20px 14px;}\n[data-iter5] .i5-event-card{flex-wrap:wrap;}\n[data-iter5] .i5-event-actions{flex-direction:row;margin-left:auto;}\n[data-iter5] .i5-toolbar>input{flex:1 0 100%; width:100%;}\n[data-iter5] .i5-toolbar>select{flex:1 1 0; min-width:0;}\n[data-iter5] .i5-memory-banner>button{margin-left:0;}\n[data-iter5] .i5-stat{padding:12px;}\n[data-iter5] h1{font-size:calc(22px * var(--dam-user-scale,1));}\n[data-iter5] .i5-ring{width:96px;height:96px;}\n[data-iter5] .i5-memory-banner{padding:16px;}\n[data-iter5] .i5-banner-copy{flex-basis:100%;}\n[data-iter5] .i5-stat>strong{font-size:calc(24px * var(--dam-user-scale,1));}\n}\n@media(max-height:780px){[data-iter5] .i5-sidebar-art{height:40px;}\n[data-iter5] .i5-side-caption{display:none;}\n}\n@container iter5-content (min-width:800px){[data-iter5] .i5-maintenance-grid,[data-iter5] .i5-skills-grid{grid-template-columns:repeat(2,minmax(0,1fr));}\n}\n@media(max-width:600px){[data-dam-theme] :is([data-dam-panel],[data-dam-tour]) button{min-height:44px;}\n[data-dam-theme] [data-dam-tour]{padding:28px 22px 20px;}\n[data-dam-theme] [data-dam-tour-title]{font-size:calc(23px * var(--dam-user-scale,1));}\n[data-dam-theme] [data-dam-tour-head] .dam-skin-hero{width:60%;}\n}\n@container iter5-content (max-width:739px){[data-iter5] .i5-dashboard-columns,[data-iter5] .i5-calendar-columns{grid-template-columns:minmax(0,1fr);}\n[data-iter5] .i5-memory-banner{flex-wrap:wrap;}\n[data-iter5] .i5-recall-columns{grid-template-columns:minmax(0,1fr);}\n[data-iter5] .i5-review-detail{position:static;}\n[data-iter5] .i5-handoff-columns{grid-template-columns:minmax(0,1fr);}\n[data-iter5] .i5-handoff-overview{flex-wrap:wrap;}\n[data-iter5] .i5-handoff-overview>.i5-info-callout{flex:1 0 100%;}\n[data-iter5] .i5-mini-metric{flex:1;}\n[data-iter5] .i5-map-columns{grid-template-columns:minmax(0,1fr);}\n[data-iter5] .i5-list-detail{grid-template-columns:minmax(0,1fr);}\n[data-iter5] .i5-document{max-height:60vh;}\n[data-iter5] .i5-memory-banner>button{margin-left:56px;}\n[data-iter5] .i5-dashboard-columns{grid-template-columns:minmax(0,1fr);}\n[data-iter5] .i5-source-card{position:static;display:flex;max-height:none;}\n[data-iter5] .i5-source-card>.i5-document{max-height:60vh;}\n[data-iter5] .i5-home-stats{grid-template-columns:minmax(0,1fr);}\n}\n@media(max-width:720px){[data-iter5][data-focus=true]{inset:0;border-radius:0;}\n[data-iter5][data-focus=true] .i5-main{padding:18px 14px;}\n[data-iter5] .i5-page-head{flex-wrap:wrap;}\n[data-iter5] .i5-page-actions{margin-left:auto;}\n[data-iter5][data-focus=true] .i5-sidebar{padding:18px 12px;}\n[data-iter5] .i5-sidebar nav button,[data-iter5] .i5-sidebar-foot button,[data-iter5] .i5-skills-grid button,[data-iter5] .i5-maintenance-grid button,[data-iter5] .i5-event-actions button{min-height:44px;}\n[data-iter5] .i5-month{padding:14px;}\n[data-iter5] [data-dam-settings-row] input[type=checkbox]{height:44px;width:44px;background:transparent!important;}\n[data-iter5] [data-dam-settings-row] input[type=checkbox]::before{content:\"\";position:absolute;left:1px;top:10px;width:42px;height:25px;border-radius:99px;background:var(--i5-line);}\n[data-iter5] [data-dam-settings-row] input[type=checkbox]:checked::before{background:var(--i5-blue);}\n[data-iter5] [data-dam-settings-row] input[type=checkbox]::after{top:13px;left:4px;}\n[data-iter5] [data-dam-settings-row] input[type=checkbox]:checked::after{left:21px;}\n[data-iter5] .i5-source-toggle{width:44px;height:44px;background:transparent!important;}\n[data-iter5] .i5-source-toggle::before{content:\"\";position:absolute;width:38px;height:22px;left:3px;top:11px;border-radius:99px;background:var(--i5-line);}\n[data-iter5] .i5-source-toggle[aria-checked=true]::before{background:var(--i5-blue);}\n[data-iter5] .i5-source-toggle i{top:13px;left:5px;}\n[data-iter5] .i5-source-toggle[aria-checked=true] i{left:21px;}\n}\n@media (max-width:720px), (pointer:coarse){[data-iter5][data-focus=true] .i5-sidebar nav button{min-height:44px;}\n[data-iter5] button:not(.i5-source-toggle),\n  [data-iter5] input:not([type=checkbox]):not([type=radio]),\n  [data-iter5] select,\n  [data-iter5] .i5-sidebar nav button,\n  [data-iter5] .i5-sidebar-foot button,\n  [data-iter5] .i5-tabs button,\n  [data-iter5] .i5-skills-grid button,\n  [data-iter5] .i5-maintenance-grid button,\n  [data-iter5] .i5-event-actions button { min-height:44px; }}\n\n/* ── 经典问候卡在 iter5 内的适配（2026-09-28）─────────────────────────────────\n   复用既有 GreetingCard（不重写），只做**作用域样式适配**：把它渲染成 iter5 的液态玻璃卡，\n   与同栏「记忆沉淀」卡视觉一致（同边框/同圆角/同内边距/同阴影）。\n   禁止改其内部结构——所有选择器都以 .i5-greet-host 为前缀限定，绝不影响经典面板里的同一组件。 */\n[data-iter5] .i5-greet-host{margin-bottom:20px;}\n[data-iter5] .i5-greet-host>[data-dam-card]{border:1px solid var(--i5-line);border-radius:var(--i5-radius);background:var(--i5-surface);box-shadow:var(--i5-shadow);padding:26px 24px;min-width:0;}\n/* 标题行（经典用 .dam-date 承载「时段 · 时段名」） */\n[data-iter5] .i5-greet-host .dam-date{font-size:15px;font-weight:650;color:var(--i5-text);margin-bottom:12px;line-height:1.5;}\n/* 问候正文 */\n[data-iter5] .i5-greet-host .dam-content>div[data-dam-content]{font-size:14px;line-height:1.8;color:var(--i5-text);overflow-wrap:anywhere;}\n[data-iter5] .i5-greet-host .dam-content{color:var(--i5-text);}\n[data-iter5] .i5-greet-host .dam-content p{margin:6px 0;}\n/* 抽屉按钮 / 子项按钮：改用 i5 卡内配色（经典用 --dsw-alias-*，此处映射到 --i5-*） */\n[data-iter5] .i5-greet-host .dam-content button{background:var(--i5-bg);border:1px solid var(--i5-line);border-radius:9px;color:inherit;cursor:pointer;transition:border-color var(--i5-dur-quick) var(--i5-ease-out),color var(--i5-dur-quick) var(--i5-ease-out),background-color var(--i5-dur-quick) var(--i5-ease-out);}\n[data-iter5] .i5-greet-host .dam-content button:hover{border-color:var(--i5-blue);}\n[data-iter5] .i5-greet-host .dam-content button:hover strong{color:var(--i5-blue);}\n[data-iter5] .i5-greet-host .dam-content button>div:first-child{font-size:13px;}\n[data-iter5] .i5-greet-host .dam-content button>div[data-dam-muted]{font-size:11.5px;color:var(--i5-muted);}\n[data-iter5] .i5-greet-host .dam-content [data-dam-muted]{color:var(--i5-muted);}\n[data-iter5] .i5-greet-host .dam-content [data-dam-hint]{font-size:12px;line-height:1.75;color:var(--i5-secondary);}\n[data-iter5] .i5-greet-host .dam-content [data-dam-slot=hint]{color:var(--i5-secondary);}\n/* 二级子项（works 展开里的条目）文本 */\n[data-iter5] .i5-greet-host .dam-content span{color:inherit;}\n[data-iter5] .i5-greet-host .dam-content span[data-dam-muted]{color:var(--i5-muted);}\n/* 展开区内的滚动上限：对话内容可能很长，给足空间（≈ 视口六成），超出则内部滚动 */\n[data-iter5] .i5-greet-host .dam-content>div{max-height:none;}\n[data-iter5] .i5-greet-host .dam-content>div>div[style*=\"padding\"]>div{overflow-wrap:anywhere;}\n\n/* ═══════════ 动效（2026-09-29）═══════════\n   判定（逐条按「出现频次 → 目的」定档，尺度全部取自上表 token，不写字面量）：\n     ① 换页整块入场 —— 目的「防止突变」；每天数十次 ⇒ 220ms、只动 opacity/transform、单向。\n     ② 页面内一级块错峰入场 —— 目的「空间一致性」；40ms/项、最多 5 项，纯装饰不阻断交互。\n     ③ 按钮按下 —— 目的「反馈」；最高频 ⇒ 只做 0.97 微缩放 120ms（见上，不叠加其它）。\n     ④ 悬停换色 —— 目的「状态提示」；160ms ease-out。**不给位移/缩放型悬停**，避免列表看起来在抖。\n     ⑤ 弹窗 / 移动端抽屉 —— 目的「空间一致性」；偶尔出现 ⇒ 允许 340ms 与 iOS 抽屉曲线。\n     ⑥ 水位环 / 未保存点 —— 目的「状态提示」；只在数值真正变化时过渡一次，不做循环动画。\n   一律不加循环动画：工作台是高频停留面，持续运动会持续分神。\n   深浅两档共用同一套动效（动效与配色无关）。降级见 prefers-reduced-motion 块。 */\n\n@keyframes i5-block-in{from{opacity:0;transform:translateY(8px) scale(.99);}to{opacity:1;transform:none;}}\n@keyframes i5-note-in{from{opacity:0;transform:translateY(-4px);}to{opacity:1;transform:none;}}\n@keyframes i5-dialog-in{from{opacity:0;transform:translateY(10px) scale(.97);}to{opacity:1;transform:none;}}\n@keyframes i5-drawer-in{from{opacity:0;transform:translateX(-100%);}to{opacity:1;transform:none;}}\n@keyframes i5-fade-in{from{opacity:0;}to{opacity:1;}}\n@keyframes i5-bar-in{from{opacity:0;transform:scaleY(.2);}to{opacity:1;transform:none;}}\n@keyframes i5-dot-in{from{opacity:0;transform:scale(.6);}to{opacity:1;transform:none;}}\n\n/* ① 换页：页头与内容包装本体**只淡入**。\n   为什么不让它们做位移：②会给它们的子块加位移，父层再位移就是两层叠加（起点位移≈14px），\n   观感发飘；而且页头是标题，动它反而晃眼。位移统一交给②一层来承担。\n   Component 的 key 含 page/nonce/intent ⇒ 换页即重挂载并重放。 */\n[data-iter5] .i5-main > :not(.i5-page-head){animation:i5-fade-in var(--i5-dur-quick) var(--i5-ease-out) both;}\n[data-iter5] .i5-main > .i5-page-head{animation:i5-fade-in var(--i5-dur-quick) var(--i5-ease-out) both;}\n/* ② 页面内一级内容块：错峰 rise（唯一承担位移的层）。\n   层级要数准：main > 包装div > 组件根（各页都是**单根**，如 div.i5-home）> 内容块。\n   若写成 main > 包装 > *，命中的是组件根本身 ⇒ 整页再飘一次（正是①要避免的叠加）。 */\n[data-iter5] .i5-main > :not(.i5-page-head) > * > *{animation:i5-block-in var(--i5-dur-fast) var(--i5-ease-out) both;}\n[data-iter5] .i5-main > :not(.i5-page-head) > * > :nth-child(2){animation-delay:var(--i5-stagger);}\n[data-iter5] .i5-main > :not(.i5-page-head) > * > :nth-child(3){animation-delay:calc(var(--i5-stagger) * 2);}\n[data-iter5] .i5-main > :not(.i5-page-head) > * > :nth-child(4){animation-delay:calc(var(--i5-stagger) * 3);}\n[data-iter5] .i5-main > :not(.i5-page-head) > * > :nth-child(n+5){animation-delay:calc(var(--i5-stagger) * 4);}\n\n/* ⑤ 弹窗：遮罩淡入（160ms）+ 卡片上浮（340ms）。模态不锚定触发器 ⇒ transform-origin 保持居中。 */\n[data-iter5] .i5-dialog-backdrop{animation:i5-fade-in var(--i5-dur-quick) var(--i5-ease-out) both;}\n[data-iter5] .i5-dialog{animation:i5-dialog-in var(--i5-dur-slow) var(--i5-ease-out) both;}\n/* ⑤ 移动端抽屉：从左侧滑入（iOS 抽屉曲线）；窄屏才存在，data-open 由菜单开关驱动。 */\n[data-iter5] .i5-sidebar[data-open=true]{animation:i5-drawer-in var(--i5-dur-slow) var(--i5-ease-drawer) both;}\n[data-iter5] .i5-nav-backdrop{animation:i5-fade-in var(--i5-dur-quick) var(--i5-ease-out) both;}\n/* 侧栏当前项指示条：状态切换提示（同一时刻只有一条，不会连击重放）。 */\n[data-iter5] .i5-sidebar nav button[aria-current=page]::before{animation:i5-bar-in var(--i5-dur-fast) var(--i5-ease-out) both;}\n/* ⑥ 未保存标记：出现时「弹」一下，而不是常亮闪烁（不引循环动画）。 */\n[data-iter5] .i5-dirty-dot{animation:i5-dot-in var(--i5-dur-fast) var(--i5-ease-out) both;}\n/* ⑥ 水位环：数值到位后缓和补间（ease-in-out 用于「在屏上移动/形变」）。 */\n[data-iter5] .i5-ring-progress{transition:stroke-dashoffset var(--i5-dur-slow) var(--i5-ease-in-out);}\n/* 状态提示条：操作后出现，向下轻推（不进位移动画，避免把正在读的内容顶走）。 */\n[data-iter5] :is(.i5-error,.i5-success){animation:i5-note-in var(--i5-dur-fast) var(--i5-ease-out) both;}\n/* 空状态：与卡片同刻度，柔和浮现。 */\n[data-iter5] .i5-empty-state{animation:i5-block-in var(--i5-dur-fast) var(--i5-ease-out) both;}\n/* 主题按钮：图标随档位轻转（图标切换的对称例外，允许过渡）。 */\n[data-iter5] [data-i5-theme]{display:inline-flex;align-items:center;gap:6px;}\n[data-iter5] [data-i5-theme] svg{transition:transform var(--i5-dur-fast) var(--i5-ease-pop);}\n[data-iter5] [data-i5-theme=light] svg{transform:rotate(20deg);}\n[data-iter5] [data-i5-theme=dark] svg{transform:rotate(-20deg);}\n/* 列表行内的文字在悬停时会换色（如「最近记录」标题变蓝）——不加过渡就是硬跳，与行底的柔和对不上。 */\n[data-iter5] :is(.i5-activity-row,.i5-knowledge-row,.i5-file,.i5-review-row,.i5-ledger-row,.i5-source-tile) :is(strong,small,span){transition:color var(--i5-dur-quick) var(--i5-ease-out);}"
+    // Source embedded by tools/build-iter5-skin.mjs inside the host React factory.
+    var ITER5_PAGES = [
+      ['home', '工作台', 'Workbench', 'blue', 'overview'],
+      ['library', '记忆库', 'Memory', 'indigo', 'logs'],
+      ['handoff', '接续', 'Continue', 'cyan', 'plan'],
+      ['calendar', '日程', 'Calendar', 'orange', 'calendar'],
+      ['skills', '技能', 'Skills', 'green', 'hub'],
+      ['recall', '唤起回顾', 'Recall review', 'purple', 'refine'],
+      ['mindmap', '工作区关系', 'Workspaces', 'pink', 'workspaces'],
+      ['storage', '存储与维护', 'Storage', 'slate', 'storage'],
+      ['settings', '设置', 'Settings', 'slate', 'settings'],
+    ]
+    function iter5Identity() { return String(currentSessionIdClient() || '') + '|' + String(currentWs() || '') }
+    // ── 主题三态（2026-09-29 恢复）──────────────────────────────────────────────
+    //   合并社区作者版本时，本仓原有的「跟随系统 / 亮色 / 暗色」开关被覆盖丢失，只剩被动的
+    //   `useDeepTheme()`（宿主给什么是什么）⇒ 用户看不到也改不了当前档位。此处恢复，并把它
+    //   接到**同一个** data-deep 上：
+    //     'auto'（默认）= 跟随宿主（宿主 preference=system 时即跟随系统）
+    //     'light' / 'dark' = 强制；只覆盖传给 data-deep 的布尔值，
+    //   配色仍 100% 由 skin.css 的 [data-deep=true] 驱动 —— 不新增任何配色分支。
+    //   存 localStorage['dam-skin-theme']；读写 fail-soft（无 storage ⇒ 'auto'）。
+    //   注意：宿主自己渲染的覆盖层（轻面板 / 首次向导）不在本开关范围内，它们跟随宿主主题。
+    var ITER5_THEME_KEY = 'dam-skin-theme'
+    function iter5ThemeGet() {
+      try {
+        var v = String(localStorage.getItem(ITER5_THEME_KEY) || '')
+        return v === 'light' || v === 'dark' ? v : 'auto'
+      } catch (e) { return 'auto' }
+    }
+    function iter5ThemeSet(v) {
+      try {
+        if (v === 'light' || v === 'dark') localStorage.setItem(ITER5_THEME_KEY, v)
+        else localStorage.removeItem(ITER5_THEME_KEY)
+      } catch (e) {}
+      // ★H43（2026-10-01 用户真机实测复现后修）：本函数原来**只写 dam-skin-theme、不通知任何人**，
+      //   而模块级那份实现（iter5SetMode，写 dsh-auto-memory.appearance.v1）是另一份、不读本键，
+      //   也不在本函数的调用链上 ⇒ 点本页外观按钮后**只有本页变**，浮窗/设置区/会话页纹丝不动。
+      //   实测证据：点击后 themeKey dark→light、btn dark→light、pageDeep true→false，
+      //   而 modeKey 恒为 dark、html colorScheme 恒为 dark ⇒ 两个键分叉。
+      //   修法：写完后广播给模块级。作用域校验：本 IIFE 与模块级同处 factory 内，
+      //   模块级 function 声明可沿作用域链取到；调用发生在渲染/事件期 ⇒ 必然已初始化。
+      //   取值域映射：本页 auto|light|dark ⇄ 模块级 system|light|dark。
+      try {
+        if (typeof iter5SetMode === 'function') iter5SetMode(v === 'light' || v === 'dark' ? v : 'system')
+      } catch (eB) {}
+    }
+    function iter5ThemeCycle(v) { return v === 'auto' ? 'light' : v === 'light' ? 'dark' : 'auto' }
+    function iter5ThemeLabel(v) { return v === 'light' ? L('亮色', 'Light') : v === 'dark' ? L('暗色', 'Dark') : L('跟随系统', 'Auto') }
+    function iter5ThemeIcon(v) { return v === 'light' ? 'sun' : v === 'dark' ? 'moon' : 'contrast' }
+    /** 皮肤生效深浅 = 本地档位覆盖宿主档位。皮肤内所有取深/浅的地方都走它，保证一处切换处处一致。 */
+    function useIter5Theme() {
+      var pref = useState(iter5ThemeGet)
+      var hostDeep = useDeepTheme()
+      // ★H43（2026-10-01）：补订阅。原实现只有 useState(初值)，**挂载后再不重读** ⇒
+      //   ①本页按钮改了不外传（见 iter5ThemeSet）②外部（模块级 picker / 别的标签页）改了本页不跟随。
+      //   两条订阅一起补，缺一即半修：
+      //     · iter5ModeListeners —— 同页：模块级 iter5SetMode 广播时反向采纳
+      //     · storage 事件       —— 跨文档：浏览器只在**其它文档**写入时派发
+      //   （同页 storage 不触发是规范行为，所以两个都要。）
+      useEffect(function () {
+        function sync() { pref[1](iter5ThemeGet()) }
+        window.addEventListener('storage', sync)
+        var reg = typeof iter5ModeListeners !== 'undefined' && iter5ModeListeners && typeof iter5ModeListeners.add === 'function'
+        if (reg) iter5ModeListeners.add(sync)
+        return function () {
+          window.removeEventListener('storage', sync)
+          if (reg) iter5ModeListeners.delete(sync)
+        }
+      }, [])
+      var deep = pref[0] === 'auto' ? hostDeep : pref[0] === 'dark'
+      return [pref[0], deep, function (next) { iter5ThemeSet(next); pref[1](next) }]
+    }
+    function iter5PageForTab(tab) {
+      if (['notes', 'logs', 'reflections', 'search'].indexOf(tab) >= 0) return 'library'
+      if (tab === 'connect') return 'handoff'
+      if (tab === 'team' || tab === 'stats') return tab
+      var row = ITER5_PAGES.filter(function (p) { return p[4] === tab })[0]
+      return row ? row[0] : 'home'
+    }
+    function Iter5Icon(props) {
+      var paths = {
+        spark: 'm12 2 2.6 7.4L22 12l-7.4 2.6L12 22l-2.6-7.4L2 12l7.4-2.6zM20 2v4M18 4h4',
+        heart: 'M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8z',
+        folder: 'M3 7V4h6l3 3h9v13H3zM3 9h18',
+        timeline: 'M12 3a9 9 0 1 1-6.4 2.6M3 3v6h6M12 7v5l3 2',
+        pulse: 'M2 12h5l3-8 4 16 3-8h5',
+        note: 'M6 3h8l4 4v14H6zM14 3v5h5M9 12h6M9 16h6',
+        search: 'M21 21l-5-5M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0',
+        check: 'm5 12 4 4L19 6M21 12a9 9 0 1 1-5-8',
+        home: 'M3 11 12 3l9 8M5 10v11h5v-7h4v7h5V10',
+        library: 'M4 4h16v16H4zM8 8h8M8 12h6',
+        handoff: 'M7 7h10v10H7zM3 12V3h9M21 12v9h-9M10 14l4-4',
+        calendar: 'M4 5h16v16H4zM8 3v4M16 3v4M4 11h16',
+        skills: 'm12 3 3 6 6 3-6 3-3 6-3-6-6-3 6-3z',
+        recall: 'M4 5h16v12H9l-5 4zM8 9h8M8 13h5',
+        mindmap: 'M4 4h5v5H4zM15 15h5v5h-5zM4 15h5v5H4zM6 9v6M9 6h8v9',
+        storage: 'M4 5h16v5H4zM4 14h16v5H4zM7 7h2M7 16h2',
+        settings: 'M4 6h16M4 12h16M4 18h16M8 3v6M16 9v6M10 15v6',
+        sun: 'M12 4V2M12 22v-2M4 12H2M22 12h-2M6 6 4.5 4.5M19.5 19.5 18 18M18 6l1.5-1.5M4.5 19.5 6 18M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0',
+        moon: 'M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z',
+        contrast: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 3v18a9 9 0 0 0 0-18z',
+      }
+      return h('svg', { width: 20, height: 20, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.6, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true }, h('path', { d: paths[props.name] || paths.library }))
+    }
+    function Iter5Tabs(props) {
+      return h('div', { className: 'i5-tabs', role: 'tablist', 'aria-label': props.label }, props.items.map(function (it, idx) {
+        var selected = props.value === it[0]
+        return h('button', { key: it[0], id: props.id + '-tab-' + it[0], role: 'tab', type: 'button', 'aria-selected': selected, 'aria-controls': props.id + '-panel', tabIndex: selected ? 0 : -1,
+          onClick: function () { props.onChange(it[0]) },
+          onKeyDown: function (e) {
+            var next = e.key === 'Home' ? 0 : e.key === 'End' ? props.items.length - 1 : e.key === 'ArrowRight' ? (idx + 1) % props.items.length : e.key === 'ArrowLeft' ? (idx + props.items.length - 1) % props.items.length : -1
+            if (next < 0) return
+            e.preventDefault(); props.onChange(props.items[next][0])
+            var node = e.currentTarget.parentNode.children[next]; if (node) node.focus()
+          } }, it[1], it[2] ? h('span', { className: 'i5-dirty-dot', 'aria-label': L('未保存', 'Unsaved') }) : null)
+      }))
+    }
+    function Iter5Card(props) { return h('section', { className: 'i5-card ' + (props.className || '') }, props.title ? h('h2', { className: 'i5-card-title' }, props.icon ? h('span', { className: 'i5-badge', 'data-hue': props.hue || 'blue' }, h(Iter5Icon, { name: props.icon })) : null, props.title) : null, props.children) }
+    function Iter5Error(props) { return h('div', { className: 'i5-error', role: 'alert' }, props.error, props.retry ? h('button', { type: 'button', onClick: props.retry }, L('重试', 'Retry')) : null) }
+    // Never accept a response issued for a different session/workspace or an unmounted view.
+    function useIter5Data(loader, deps) {
+      var pair = useState({ data: null, error: '', loading: true })
+      var retry = useState(0)
+      var identity = iter5Identity()
+      var requestKey = JSON.stringify([identity, retry[0]].concat(deps || []))
+      useEffect(function () {
+        var alive = true
+        pair[1]({ key: requestKey, data: null, error: '', loading: true })
+        Promise.resolve().then(loader).then(function (data) {
+          if (alive && identity === iter5Identity()) pair[1]({ key: requestKey, data: data, error: '', loading: false })
+        }, function (e) {
+          if (alive && identity === iter5Identity()) pair[1]({ key: requestKey, data: null, error: String(e && e.message || e), loading: false })
+        })
+        return function () { alive = false }
+      }, [identity, retry[0]].concat(deps || []))
+      // Do not show the previous file under a new selection before the effect runs.
+      return Object.assign({}, pair[0].key === requestKey ? pair[0] : { data: null, error: '', loading: true }, { retry: function () { retry[1](function (n) { return n + 1 }) } })
+    }
+    function iter5MemoryRows(list, state) {
+      var out = []
+      if (state.userFile && list.userSize > 0) out.push({ path: state.userFile, label: L('用户偏好', 'User memory'), kind: 'user', scope: 'user', size: list.userSize })
+      if (state.notesPath && list.notesSize > 0) out.push({ path: state.notesPath, label: L('项目笔记', 'Project notes'), kind: 'notes', scope: 'project', size: list.notesSize })
+      ;(list.logs || []).forEach(function (r) { out.push({ path: list.projectDir ? list.projectDir + '/' + r.name : r.name, label: r.date || r.name, date: r.date, kind: 'logs', scope: 'project', size: r.size }) })
+      ;(list.reflections || []).forEach(function (r) { out.push({ path: (list.projectDir ? list.projectDir + '/' : '') + 'reflections/' + r.name, label: r.date || r.name, date: r.date, kind: 'reflections', scope: 'project', size: r.size }) })
+      return out
+    }
+    async function iter5MemorySnapshot() {
+      // /list has no workspace parameter on upstream 3.2.1. Prime the current
+      // workspace through /state, then reject any list from a different root.
+      var noteSessionId = currentSessionIdClient()
+      var state = await apiGet(API.state, { ws: currentWs(), sessionId:currentSessionIdClient() })
+      state = Object.assign({}, state, { noteSessionId: noteSessionId })
+      var list = await apiGet(API.list)
+      var expected = String(state.notesPath || '').replace(/[\\/][^\\/]+$/, '').replace(/\\/g, '/')
+      var actual = String(list.projectDir || '').replace(/\\/g, '/')
+      if (expected && actual && expected !== actual) throw Error(L('工作区数据正在切换，请刷新后重试。', 'Workspace data changed. Refresh and try again.'))
+      return [list, state]
+    }
+    function Iter5Browse(props) {
+      var rowsData = useIter5Data(iter5MemorySnapshot, [props.nonce])
+      var intent = props.intent || {}
+      var filter = useState(intent.category || 'all'), scope = useState(intent.scope || 'all'), query = useState(''), selected = useState(intent.path || '')
+      var append = useState(function(){return !!memoryNoteDrafts[memoryDraftIdentity()]})
+      var reader = useRef(null)
+      var rows = rowsData.data ? iter5MemoryRows(rowsData.data[0], rowsData.data[1]).filter(function (r) {
+        return (filter[0] === 'all' || r.kind === filter[0]) && (scope[0] === 'all' || r.scope === scope[0]) && (r.label + ' ' + r.path).toLowerCase().indexOf(query[0].toLowerCase()) >= 0
+      }) : []
+      var chosen = rows.filter(function (r) { return r.path === selected[0] })[0] || rows[0]
+      var path = chosen && chosen.path || ''
+      var file = useIter5Data(function () { return path ? apiGet(API.file, { path: path, ws: currentWs() }) : Promise.resolve(null) }, [path, props.nonce])
+      useEffect(function () {
+        var el = reader.current, main = el && el.closest('.i5-main')
+        if (!main) return
+        function fit() {
+          var top = el.getBoundingClientRect().top - main.getBoundingClientRect().top + main.scrollTop
+          el.style.setProperty('--i5-reading-height', Math.max(260, main.clientHeight - top - 20) + 'px')
+        }
+        fit()
+        var observer = typeof ResizeObserver === 'function' ? new ResizeObserver(fit) : null
+        if (observer) {
+          observer.observe(main)
+          if (main.firstElementChild) observer.observe(main.firstElementChild)
+          var toolbar = el.parentElement.previousElementSibling
+          if (toolbar) observer.observe(toolbar)
+        }
+        return function () { if (observer) observer.disconnect() }
+      }, [rowsData.loading, append[0], props.nonce])
+      function selectFile(next) {
+        selected[1](next)
+        var el = reader.current, main = el && el.closest('.i5-main')
+        if (main && main.clientWidth - 40 < 740) requestAnimationFrame(function () {
+          if (!el.isConnected) return
+          el.scrollIntoView({ block: 'start', behavior: 'instant' })
+          el.querySelector('h2').focus({ preventScroll: true })
+        })
+      }
+      if (rowsData.error) return h(Iter5Error, { error: rowsData.error, retry: rowsData.retry })
+      if (rowsData.loading) return h(Loading)
+      return h('div', null,
+        h('div', { className: 'i5-toolbar' },
+          h('input', { type: 'search', placeholder: L('按标题或路径筛选', 'Filter titles or paths'), 'aria-label': L('筛选记忆文件', 'Filter memory files'), value: query[0], onChange: function (e) { query[1](e.target.value) } }),
+          h('select', { 'aria-label': L('记忆范围', 'Memory scope'), value: scope[0], onChange: function (e) { scope[1](e.target.value) } }, [['all', L('全部范围', 'All scopes')], ['user', L('用户级', 'User')], ['project', L('本项目', 'This project')]].map(function (x) { return h('option', { key: x[0], value: x[0] }, x[1]) })),
+          h('select', { 'aria-label': L('记忆分类', 'Memory category'), value: filter[0], onChange: function (e) { filter[1](e.target.value) } }, [['all', L('全部分类', 'All categories')], ['user', L('用户偏好', 'Preferences')], ['notes', L('项目笔记', 'Notes')], ['logs', L('日志', 'Logs')], ['reflections', L('反思', 'Reflections')]].map(function (x) { return h('option', { key: x[0], value: x[0] }, x[1]) })),
+          h('button', { onClick: function () { if (append[0] && !window.confirm(L('关闭笔记编辑区？未保存的内容将丢失。', 'Close the note editor and discard unsaved text?'))) return; append[1](!append[0]) }, 'aria-expanded': append[0] }, L('追加笔记', 'Append note'))),
+        append[0] ? h(Iter5Card, { title: L('追加项目笔记', 'Append project note') }, h(Iter5Note, { source: rowsData.data[1].notesPath, sessionId: rowsData.data[1].noteSessionId, onSaved: rowsData.retry })) : null,
+        h('div', { className: 'i5-list-detail' },
+          h('div', { className: 'i5-card i5-file-list', 'aria-label': L('记忆文件', 'Memory files') }, rows.length ? rows.map(function (r) {
+              return h('button', { key: r.path, className: 'i5-file', 'aria-current': r.path === path ? 'true' : undefined, onClick: function () { selectFile(r.path) } }, h('span', { className: 'i5-badge i5-badge-lg', 'data-hue': r.kind === 'user' ? 'pink' : r.kind === 'reflections' ? 'purple' : 'blue' }, h(Iter5Icon, { name: r.kind === 'user' ? 'heart' : 'note' })), h('span', { className: 'i5-file-copy' }, h('strong', null, r.label), h('small', null, r.kind === 'user' ? L('长期偏好与规则', 'Lasting preferences and rules') : r.kind === 'notes' ? L('项目笔记', 'Project notes') : r.kind === 'logs' ? L('每日日志', 'Daily log') : L('反思记录', 'Reflection')), h('span', { className: 'i5-tag' }, r.scope === 'user' ? L('用户级', 'User') : L('本项目', 'Workspace'))), h('small', null, fmtSize(r.size)))
+          }) : h('p', { className: 'i5-empty' }, L('没有符合条件的记忆文件', 'No matching memory files'))),
+          h('section', { ref: reader, className: 'i5-card i5-source-card', 'aria-label': L('记忆详情', 'Memory detail') },
+            h('div', { className: 'i5-source-heading' }, h('span', { className: 'i5-badge', 'data-hue': 'blue' }, h(Iter5Icon, { name: 'note' })), h('h2', { tabIndex: -1 }, chosen ? chosen.label : L('记忆详情', 'Memory detail'))),
+            chosen ? h('div', { className: 'i5-source-meta' }, h('span', { className: 'i5-tag' }, chosen.scope === 'user' ? L('用户偏好', 'User preferences') : L('项目记忆', 'Project memory')), h('span', null, fmtSize(chosen.size))) : null,
+            file.error ? h(Iter5Error, { error: file.error, retry: file.retry }) : file.loading && path ? h(Loading) : chosen && file.data ? h(Iter5Document, { text: file.data.content || L('文件暂无内容。', 'This file is empty.') }) : h(Iter5Empty, { title: rows.length ? L('选择一段记忆', 'Select a memory') : L('没有符合条件的记忆文件', 'No matching memory files'), text: L('调整筛选条件，或追加新的项目笔记。', 'Adjust the filters or append a project note.') }),
+            chosen ? h('div', { className: 'i5-source-origin' }, h('strong', null, L('文件来源', 'Source file')), h('small', null, file.data && file.data.path || path)) : null)))
+    }
+    function Iter5Memory(props) {
+      var initial = { reflections: 'reflections', search: 'search', notes: 'browse' }[controller.panelTab()] || 'browse'
+      var tab = useState(initial)
+      var root = useRef(null)
+      var items = [['browse', L('浏览', 'Browse')], ['logs', L('日志', 'Logs')], ['reflections', L('反思', 'Reflections')], ['search', L('检索', 'Search')]]
+      var component = tab[0] === 'browse' ? Iter5Browse : tab[0] === 'search' ? Iter5Search : Iter5History
+      return h('div', { ref: root }, h(Iter5Tabs, { id: 'i5-memory', label: L('记忆库分区', 'Memory sections'), items: items, value: tab[0], onChange: function(next) { if(root.current&&root.current.querySelector('[data-i5-dirty="true"]')&&!window.confirm(L('有未保存的笔记，确定切换？','Discard the unsaved note and switch?')))return;tab[1](next) } }),
+        h('div', { role: 'tabpanel', id: 'i5-memory-panel', 'aria-labelledby': 'i5-memory-tab-' + tab[0] }, h(component, { key: tab[0], kind: tab[0], nonce: props.nonce, intent: props.intent })))
+    }
+    function Iter5Continue(props) {
+      var tab = useState(controller.panelTab() === 'connect' ? 'external' : 'task')
+      var items = [['task', L('当前任务', 'Current task')], ['board', L('白板', 'Whiteboard')], ['external', L('外部来源', 'External sources')]]
+      return h('div', null, h(Iter5Tabs, { id: 'i5-continue', label: L('接续分区', 'Continuation sections'), items: items, value: tab[0], onChange: tab[1] }),
+        h('div', { role: 'tabpanel', id: 'i5-continue-panel', 'aria-labelledby': 'i5-continue-tab-' + tab[0], className: 'i5-hosted' },
+          tab[0] === 'external' ? h(Iter5External, { nonce: props.nonce }) : tab[0] === 'task' ? h(Iter5Handoff, { nonce: props.nonce }) : h('div', { className: 'i5-card' },
+            tab[0] === 'board' ? h('p', { className: 'i5-muted' }, L('白板原文只读；编辑和接续执行由宿主负责。', 'Whiteboard source is read-only; the host manages editing and continuation.')) : null,
+            h(PlanTab, { key: tab[0], nonce: props.nonce }))))
+    }
+    function Iter5Page(props) {
+      var page = useState(function () { return iter5PageForTab(controller.panelTab()) })
+      var refresh = useState(0), menu = useState(false), identityState = useState(iter5Identity), intent = useState(null), focus = useState(false)
+      var lastTab = useRef(controller.panelTab())
+      var root = useRef(null), menuButton = useRef(null)
+      var content = useRef(null)
+      var theme = useIter5Theme()
+      var deep = theme[1], identity = iter5Identity()
+      useEffect(function () {
+        var el = root.current
+        if (!el) return
+        function measure() { el.setAttribute('data-narrow', String(el.clientWidth < 900)) }
+        measure()
+        var observer = typeof ResizeObserver === 'function' ? new ResizeObserver(measure) : null
+        if (observer) observer.observe(el)
+        return function () { if (observer) observer.disconnect() }
+      }, [])
+      // The host conversation surface scrolls above a floating composer. Use its
+      // measured padding so our own scroller and save bar remain above that composer.
+      useEffect(function () {
+        var el = root.current, area = el && el.closest('[data-conversation-scroll]')
+        if (!el || !area) return
+        function fit() {
+          var style = getComputedStyle(area)
+          var height = area.clientHeight - (parseFloat(style.paddingBottom) || 0) - (parseFloat(style.paddingTop) || 0)
+          var composer = document.querySelector('[data-composer-card]')
+          if (composer) {
+            var boundary = composer.getBoundingClientRect().top - area.getBoundingClientRect().top
+            if (boundary > 0) height = Math.min(height, boundary)
+          }
+          el.style.height = Math.max(240, height) + 'px'
+          el.style.maxHeight = Math.max(240, height) + 'px'
+        }
+        fit()
+        var ro = typeof ResizeObserver === 'function' ? new ResizeObserver(fit) : null
+        var mo = typeof MutationObserver === 'function' ? new MutationObserver(fit) : null
+        if (ro) ro.observe(area)
+        var composer = document.querySelector('[data-composer-card]')
+        if (ro && composer) ro.observe(composer)
+        if (mo) mo.observe(area, { attributes: true, attributeFilter: ['style', 'class'] })
+        window.addEventListener('resize', fit)
+        return function () { if (ro) ro.disconnect(); if (mo) mo.disconnect(); window.removeEventListener('resize', fit) }
+      }, [])
+      useEffect(function () { return controller.subscribe(function () {
+        var next = controller.panelTab()
+        if (next !== lastTab.current) { lastTab.current = next; page[1](iter5PageForTab(next)) }
+      }) }, [])
+      useEffect(function () { var timer = setInterval(function () { identityState[1](iter5Identity()) }, 500); return function () { clearInterval(timer) } }, [])
+      useEffect(function () { if (content.current) content.current.scrollTop = 0 }, [page[0]])
+      function nav(id, options) {
+        if (root.current && root.current.querySelector('[data-i5-dirty="true"]') && !window.confirm(L('有未保存的修改，确定离开？', 'Discard unsaved changes and leave?'))) return
+        if (page[0] === 'settings') delete iter5SettingsDrafts[iter5Identity() + '|workbench']
+        intent[1](options || null); page[1](id); menu[1](false)
+        var row = ITER5_PAGES.filter(function (p) { return p[0] === id })[0]
+        if (row && id !== 'settings') controller.setPanelTab(row[4])
+        if (id === 'team' || id === 'stats') controller.setPanelTab(id)
+      }
+      var meta = ITER5_PAGES.filter(function (p) { return p[0] === page[0] })[0]
+      var title = meta ? L(meta[1], meta[2]) : page[0] === 'team' ? L('团队协作', 'Teamwork') : L('统计', 'Statistics')
+      var nonce = String(props.nonce || 0) + ':' + refresh[0]
+      var components = { home: Iter5Home, library: Iter5Memory, handoff: Iter5Continue, calendar: Iter5Calendar, skills: Iter5Skills, recall: Iter5Recall, mindmap: Iter5Workspaces, storage: Iter5Storage, settings: Iter5Settings, team: TeamTab, stats: StatsTab }
+      var Component = components[page[0]] || Iter5Home
+      function closeMenu() { menu[1](false); if (menuButton.current) menuButton.current.focus() }
+      useEffect(function () {
+        if (!menu[0] || !root.current) return
+        var close = root.current.querySelector('[data-i5-close-nav]'); if (close) close.focus()
+      }, [menu[0]])
+      return h('div', { ref: root, 'data-iter5': '', 'data-deep': deep ? 'true' : 'false', 'data-focus': String(focus[0]), role: focus[0] ? 'dialog' : undefined, 'aria-modal': focus[0] ? true : undefined, 'aria-label': focus[0] ? L('记忆工作台', 'Memory workbench') : undefined, onKeyDown: function (e) {
+        if (!focus[0]) return
+        if (e.key === 'Escape' && !menu[0] && !root.current.querySelector('.i5-dialog')) { e.stopPropagation(); focus[1](false) }
+        if (e.key === 'Tab') {
+          var nodes = Array.from(root.current.querySelectorAll('button:not(:disabled),input:not(:disabled),select:not(:disabled),textarea,[tabindex="0"]')).filter(function (n) { return n.offsetParent !== null && n.tabIndex >= 0 })
+          if (!nodes.length) return
+          if (e.shiftKey && document.activeElement === nodes[0]) { e.preventDefault(); nodes[nodes.length - 1].focus() }
+          else if (!e.shiftKey && document.activeElement === nodes[nodes.length - 1]) { e.preventDefault(); nodes[0].focus() }
+        }
+      }, style: { '--dam-user-scale': FONT_SCALE_VALUES[fontScale] || '1', '--i5-blue': accentTheme !== 'deepseek' && ACCENT_VALUES[accentTheme] ? 'color-mix(in srgb, ' + ACCENT_VALUES[accentTheme] + ' 70%, var(--i5-text))' : undefined, '--i5-fill': accentTheme !== 'deepseek' ? ACCENT_VALUES[accentTheme] : undefined } },
+        h('button', { className: 'i5-mobile-menu', ref: menuButton, 'aria-expanded': menu[0], 'aria-label': L('打开导航', 'Open navigation'), onClick: function () { menu[1](!menu[0]) } }, '☰ ', L('记忆中枢', 'Memory')),
+        menu[0] ? h('div', { className: 'i5-nav-backdrop', onClick: closeMenu }) : null,
+        h('aside', { className: 'i5-sidebar', 'data-open': menu[0] ? 'true' : 'false', onKeyDown: function (e) {
+          if (!menu[0]) return
+          if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); closeMenu() }
+          if (e.key === 'Tab') {
+            var nodes = e.currentTarget.querySelectorAll('button'), first = nodes[0], last = nodes[nodes.length - 1]
+            if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus() }
+            else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus() }
+          }
+        } },
+          h('button', { className: 'i5-close-nav', 'data-i5-close-nav': '', onClick: closeMenu }, L('关闭导航', 'Close navigation')),
+          h('div', { className: 'i5-brand' }, h('span', { className: 'i5-brand-mark', 'aria-hidden': true }, h(Iter5Icon, { name: 'spark' })), h('div', null, h('strong', null, 'dsh-auto-memory'), h('small', null, L('让重要的事持久被记住', 'Keep what matters')))),
+          h('nav', { 'aria-label': L('记忆导航', 'Memory navigation') }, ITER5_PAGES.map(function (p, i) { return h(React.Fragment, { key: p[0] }, i === 0 || i === 4 ? h('small', { className: 'i5-nav-label' }, i === 0 ? L('工作', 'Work') : L('扩展', 'More')) : null,
+            h('button', { 'data-i5-nav': p[0], 'aria-current': page[0] === p[0] ? 'page' : undefined, onClick: function () { nav(p[0]) } }, h('span', { className: 'i5-badge', 'data-hue': p[3] }, h(Iter5Icon, { name: p[0] })), L(p[1], p[2]))) })),
+          h('div', { className: 'i5-sidebar-foot' }, h('div', { className: 'i5-sidebar-art' }, h(Iter5Art, {})), h('div', { className: 'i5-side-caption' }, h('strong', null, L('记忆，在这里延续', 'Memory carries forward')), h('small', null, L('积累 · 回顾 · 接续', 'Keep · recall · continue'))), h('div', { className: 'i5-side-tools' }, h('button', { onClick: function () { nav('team') }, 'aria-current': page[0] === 'team' ? 'page' : undefined }, L('团队', 'Team')), h('button', { onClick: function () { nav('stats') }, 'aria-current': page[0] === 'stats' ? 'page' : undefined }, L('统计', 'Stats'))),
+            h('button', { 'data-dam-skin-v4-exit': '', onClick: function () {
+              if (root.current && root.current.querySelector('[data-i5-dirty="true"]') && !window.confirm(L('有未保存的修改，确定切回经典？', 'Discard unsaved changes and return to classic?'))) return
+              if (page[0] === 'settings') delete iter5SettingsDrafts[iter5Identity() + '|workbench']
+              damSkinSet('classic'); props.onExit()
+            } }, L('返回经典皮肤', 'Back to classic')))),
+        h('main', { ref: content, className: 'i5-main', key: identity, 'aria-label': title },
+          h('header', { className: 'i5-page-head' }, h('div', null, h('h1', null, title), h('p', null, locale === 'zh' ? ({ home: '查看最近记录、今日日程与当前会话，继续手头的工作。', library: '集中查看用户偏好、项目笔记、每日日志与反思记录。', handoff: '让当前的目标、进度与经验，在下一段会话中继续。', calendar: '把待办与重要时刻放在一起，让每一天更从容。', recall: '回顾每一次记忆唤起，查看判定依据并留下反馈。', skills: '让反复验证的经验，沉淀为可复用的工作方法。', mindmap: '从工作区与记忆之间，发现持续连接的脉络。', storage: '查看记忆语料、维护索引，以及迁移你的积累。', settings: '决定记忆如何记录、唤回与接续，让它更适合你。' }[page[0]] || '记忆与任务，按当前工作区呈现') : 'Memory and tasks for the current workspace')),
+            h('div', { className: 'i5-page-actions' }, h('button', { 'data-i5-theme': theme[0], 'aria-label': L('外观主题：', 'Appearance theme: ') + iter5ThemeLabel(theme[0]) + L('（点击切换 跟随 → 亮 → 暗）', ' (click to cycle auto → light → dark)'), title: L('主题：', 'Theme: ') + iter5ThemeLabel(theme[0]) + L('（点击切换）', ' (click to cycle)'), onClick: function () { theme[2](iter5ThemeCycle(theme[0])) } }, h(Iter5Icon, { name: iter5ThemeIcon(theme[0]) }), ' ', iter5ThemeLabel(theme[0])), h('button', { 'aria-label': focus[0] ? L('退出专注查看', 'Exit focused view') : L('专注查看', 'Focused view'), 'aria-pressed': focus[0], onClick: function () { focus[1](!focus[0]) } }, focus[0] ? L('返回会话', 'Back to conversation') : L('专注查看', 'Focused view')), h('button', { 'aria-label': L('刷新当前页', 'Refresh current page'), onClick: function () { if (root.current.querySelector('[data-i5-dirty="true"]') && !window.confirm(L('刷新会放弃未保存修改，继续？', 'Discard changes and refresh?'))) return; if (page[0] === 'settings') delete iter5SettingsDrafts[iter5Identity() + '|workbench']; refresh[1](refresh[0] + 1) } }, L('刷新', 'Refresh')))),
+          h('div', { className: ['team', 'stats'].indexOf(page[0]) >= 0 ? 'i5-card i5-hosted' : '' }, h(Component, { key: page[0] + ':' + nonce + ':' + JSON.stringify(intent[0]), nonce: nonce, onNav: nav, intent: intent[0] })),
+          page[0] === 'storage' ? h('details', { className: 'i5-card' }, h('summary', null, L('调试中心', 'Diagnostics')), h(DebugCenter), h('button', { onClick: function () { nav('settings', { group: 'behavior' }) } }, L('检查更新与高级设置', 'Updates and advanced settings'))) : null))
+    }
+    // Product views: reference artwork informs layout, never invents data or actions.
+    function Iter5Art(props) {
+      var deep = useIter5Theme()[1]
+      return h('img', { className: props.className || 'i5-art', src: skinAssetUrl(props.slot || 'hero.welcome', deep), alt: '', 'aria-hidden': true, loading: 'lazy' })
+    }
+    function Iter5Stat(props) {
+      return h('div', { className: 'i5-stat' }, h('div', { className: 'i5-stat-top' }, h('span', { className: 'i5-badge', 'data-hue': props.hue || 'blue' }, h(Iter5Icon, { name: props.icon || 'library' })), h('span', null, props.label)), h('strong', null, props.value === null || props.value === undefined ? '—' : props.value), h('small', null, props.hint))
+    }
+    function Iter5Empty(props) {
+      return h('div', { className: 'i5-empty-state' },
+        h('svg', { viewBox:'0 0 240 140',className:'i5-empty-art','aria-hidden':true },
+          h('ellipse',{cx:120,cy:122,rx:79,ry:9,fill:'var(--i5-soft)'}),h('circle',{cx:120,cy:67,r:55,fill:'var(--i5-bg)'}),
+          h('g',{transform:'rotate(-13 98 72)'},h('rect',{x:63,y:25,width:73,height:88,rx:12,fill:'var(--i5-soft)',stroke:'var(--i5-line)'})),
+          h('g',{transform:'rotate(9 134 74)'},h('rect',{x:92,y:23,width:76,height:96,rx:12,fill:'var(--i5-surface)',stroke:'var(--i5-line)'}),h('rect',{x:108,y:40,width:26,height:24,rx:6,fill:'var(--i5-soft)'}),h('path',{d:'M109 80h40M109 91h30M109 102h36',stroke:'var(--i5-fill)',strokeWidth:3,strokeLinecap:'round',opacity:.35})),
+          h('path',{d:'m181 27 3 9 9 3-9 3-3 9-3-9-9-3 9-3z',fill:'var(--i5-fill)',opacity:.6}),h('circle',{cx:48,cy:74,r:4,fill:'var(--i5-fill)',opacity:.3}),h('circle',{cx:190,cy:91,r:3,fill:'var(--i5-purple)',opacity:.2})),
+        h('h3', null, props.title || L('还没有记录', 'No records yet')), h('p', null, props.text || L('有了新的记录，它们会出现在这里。', 'New records will appear here.')), props.children)
+    }
+    function Iter5Document(props) {
+      var lines = String(props.text || '').split('\n'), code = false
+      return h('div', { className: 'i5-document' }, lines.map(function (line, i) {
+        if (line.trim().indexOf('```') === 0) { code = !code; return null }
+        if (code) return h('pre', { key: i }, line || ' ')
+        var heading = /^(#{1,6})\s+(.+)$/.exec(line)
+        if (heading) return h(heading[1].length < 3 ? 'h3' : 'h4', { key: i }, heading[2])
+        if (/^\s*[-*]\s+/.test(line)) return h('div', { key: i, className: 'i5-doc-bullet' }, h('i', { 'aria-hidden': true }), line.replace(/^\s*[-*]\s+/, ''))
+        if (/^>\s?/.test(line)) return h('blockquote', { key: i }, line.replace(/^>\s?/, ''))
+        return line.trim() ? h('p', { key: i }, line) : h('div', { key: i, className: 'i5-doc-space' })
+      }))
+    }
+    function Iter5Home(props) {
+      var result = useIter5Data(function () { return Promise.allSettled([iter5MemorySnapshot(), apiGet(API.handoffState, { sessionId: currentSessionIdClient() }), apiGet(API.calendar), apiGet(API.semanticStatus)]) }, [props.nonce])
+      var values = result.data || []
+      function data(i) { return values[i] && values[i].status === 'fulfilled' ? values[i].value : null }
+      var memory = data(0), state = memory && memory[1], list = memory && memory[0], handoff = data(1), calendar = data(2), sem = data(3)
+      var files = state && list ? iter5MemoryRows(list, state) : null
+      var recentFiles = files && files.filter(function(r){return r.date}).sort(function(a,b){return String(b.date).localeCompare(String(a.date))})
+      if (recentFiles && !recentFiles.length) recentFiles = files
+      var water = handoff && handoff.waterLevel
+      var known = water && water.window > 0 && Number.isFinite(water.ratio) && water.modelKnown !== false
+      var pct = known ? Math.round(water.ratio * 100) : null
+      var now = new Date(), day = iter5Date(now)
+      var events = calendar && Array.isArray(calendar.entries) ? calendar.entries.filter(function (e) { return e.date === day }) : null
+      var count = state && state.autoStats && typeof state.autoStats.count === 'number' ? state.autoStats.count : null
+      var categories = [
+        { key: 'user', title: L('用户偏好', 'Your preferences'), sub: L('值得长期记住的习惯、约定与规则', 'Lasting preferences, agreements and rules'), icon: 'heart', hue: 'pink', rows: files && files.filter(function (r) { return r.kind === 'user' }), quote: state && state.userText },
+        { key: 'notes', title: L('项目知识', 'Project knowledge'), sub: L('当前项目的笔记与关键上下文', 'Notes and context for this workspace'), icon: 'folder', hue: 'green', rows: files && files.filter(function (r) { return r.kind === 'notes' }), quote: state && state.ws ? pathName(state.ws) : '' },
+        { key: 'logs', title: L('工作轨迹', 'Work history'), sub: L('每日记录与反思，让经验有迹可循', 'Daily records and reflections, ready to revisit'), icon: 'timeline', hue: 'purple', rows: files && files.filter(function (r) { return r.kind === 'logs' || r.kind === 'reflections' }) },
+      ]
+      var tier = sem ? sem.resolvedTier === 'c3' ? 'C3 · Python' : sem.resolvedTier === 'c2' ? 'C2 · ' + L('内置语义', 'Built-in semantic') : 'C1 · BM25' : L('暂不可用', 'Unavailable')
+      var recentCard = h(Iter5Card, { className: 'i5-activity' }, h('div', { className: 'i5-section-heading' }, h('h2', null, h(Iter5Icon, { name: 'timeline' }), L('最近记录', 'Recent records')), h('button', { className: 'i5-link', onClick: function () { props.onNav('library') } }, L('查看全部', 'View all'), ' →')),
+              recentFiles && recentFiles.length ? recentFiles.slice(0,4).map(function (r) { return h('button', { className: 'i5-activity-row', key: r.path, onClick: function () { props.onNav('library', { path: r.path }) } }, h('span', { className: 'i5-badge', 'data-hue': r.kind === 'reflections' ? 'purple' : 'blue' }, h(Iter5Icon, { name: 'note' })), h('div', null, h('strong', null, r.label), h('small', null, r.kind === 'user' ? L('用户偏好', 'Preferences') : r.kind === 'reflections' ? L('反思', 'Reflection') : L('项目记忆', 'Project memory'))), h('small', null, fmtSize(r.size))) }) : h('p', { className: 'i5-muted' }, files ? L('还没有记录', 'No records yet') : L('正在读取记忆…', 'Loading memory…')))
+      return h('div', { className: 'i5-home i5-vista' },
+        result.error || values.some(function (r) { return r.status === 'rejected' }) ? h(Iter5Error, { error: result.error || L('部分数据暂不可用', 'Some data is unavailable'), retry: result.retry }) : null,
+        h('div', { className: 'i5-home-stats', 'aria-busy': result.loading },
+          h('div', { className: 'i5-memory-counts', role: 'group', 'aria-label': L('记忆文件总量及子项', 'Memory file total and subsets') }, h(Iter5Stat, { icon: 'library', hue: 'blue', label: L('记忆文件', 'Memory files'), value: files && files.length, hint: L('总量 · 含日志与反思', 'Total · includes logs and reflections') }),
+          h(Iter5Stat, { icon: 'folder', hue: 'green', label: L('项目日志', 'Project logs'), value: list && list.logs ? list.logs.length : null, hint: L('记忆文件中的日志', 'Logs within memory files') }),
+          h(Iter5Stat, { icon: 'recall', hue: 'purple', label: L('反思记录', 'Reflections'), value: list && list.reflections ? list.reflections.length : null, hint: L('记忆文件中的反思', 'Reflections within memory files') })),
+          h(Iter5Stat, { icon: 'note', hue: 'orange', label: L('自动沉淀', 'Automatic memory'), value: count, hint: state && state.autoStats && state.autoStats.lastDate ? state.autoStats.lastDate + L(' · 宿主统计', ' · host count') : L('宿主自动记忆统计', 'Automatic memory count') })),
+        h('section', { className: 'i5-memory-banner' }, h(Iter5Art, { className: 'i5-banner-landscape' }),
+          h('span', { className: 'i5-banner-orb', 'aria-hidden': true }, h(Iter5Icon, { name: 'spark' })),
+          h('div', { className: 'i5-banner-copy' }, h('h2', null, L('让过去的积累，成为下一次的起点', 'Turn what you learned into your next starting point')),
+            h('p', null, L('从最近记录继续，或打开记忆库查找原文。', 'Continue from recent records, or find the source in memory.'))),
+          h('button', { className: 'i5-primary-soft', onClick: function () { props.onNav('library') } }, L('打开记忆库', 'Explore memory'), ' →')),
+        h('div', { className: 'i5-dashboard-columns' },
+          // ★2026-09-28（本仓特有，勿被后续合并覆盖）：问候卡置于左栏**顶部** —— 复用经典 GreetingCard。
+          //   它承载「昨日 + 今日各时段」的可展开抽屉与 AI 生活化总结（POST /summarize 按需拉取并缓存），
+          //   是「今天发生了什么」的入口，理应最先看到；下方紧跟「记忆沉淀」三行。
+          //   仅加 `i5-greet-host` 容器，由 skin.css 做作用域样式适配（不改经典组件内部结构）。
+          h('div', { className: 'i5-recent-column' },
+            h('div', { className: 'i5-greet-host', 'data-i5-greet': '' },
+              h(GreetingCard, { greeting: state && state.greeting, periodSummary: state && state.periodSummary, t: t, nonce: props.nonce })),
+            h(Iter5Card, { className: 'i5-knowledge' }, h('div', { className: 'i5-section-heading' }, h('h2', null, h(Iter5Icon, { name: 'spark' }), L('你的记忆，沉淀在这里', 'What your memory holds')), h('button', { className: 'i5-link', onClick: function () { props.onNav('library') } }, L('查看全部', 'View all'), ' →')),
+            categories.map(function (c) { return h('button', { key: c.key, className: 'i5-knowledge-row', onClick: function () { props.onNav('library', { scope: c.key === 'user' ? 'user' : 'project', category: c.key === 'logs' ? 'all' : c.key }) } },
+              h('span', { className: 'i5-badge i5-badge-lg', 'data-hue': c.hue }, h(Iter5Icon, { name: c.icon })), h('div', null, h('div', { className: 'i5-line-title' }, h('strong', null, c.title), h('small', null, c.rows ? c.rows.length + L(' 个文件', ' files') : '—')), h('p', null, c.sub), c.quote ? h('blockquote', null, (String(c.quote).split('\n').find(function(line){return line.trim()&&!/^\s*#/.test(line)})||'').replace(/^\s*[-*>]\s*/,'').slice(0, 110)) : h('small', null, c.rows && c.rows.length ? c.rows.slice().sort(function(a,b){return String(b.date||'').localeCompare(String(a.date||''))}).slice(0,2).map(function (r) { return r.label }).join(' · ') : L('还没有记录，随时可以开始', 'Ready when you are')))) }))),
+          h('div', null,
+            h(Iter5Card, { className: 'i5-context-card' }, h('div', { className: 'i5-section-heading' }, h('h2', null, h(Iter5Icon, { name: 'pulse' }), L('会话上下文', 'Conversation context')), h('button', { className: 'i5-link', onClick: function () { props.onNav('handoff') } }, L('查看交接', 'Handoff'), ' →')),
+              h('div', { className: 'i5-ring-row' }, h('div', { className: 'i5-ring' },
+                h('svg', { viewBox: '0 0 100 100', 'aria-hidden': true }, h('circle', { cx: 50, cy: 50, r: 40, className: 'i5-ring-track' }), h('circle', { cx: 50, cy: 50, r: 40, className: 'i5-ring-progress', strokeDasharray: '251.33', strokeDashoffset: known ? 251.33 * (1 - Math.min(1, Math.max(0, water.ratio))) : 251.33 })),
+                h('div', null, h('strong', null, known ? pct + '%' : '—'), h('small', null, L('上下文水位', 'Context used')))),
+                h('div', { className: 'i5-context-copy' }, h('strong', null, known ? L('跟随真实会话计量', 'Live session measurement') : L('等待会话计量', 'Waiting for measurement')),
+                  h('p', null, known ? water.tokens.toLocaleString() + ' / ' + water.window.toLocaleString() + ' tokens' : L('模型窗口未知时，不估算百分比。', 'No percentage is estimated without a known window.')),
+                  h('div', { className: 'i5-status-line' }, h('i', { 'data-tone': sem ? 'ok' : 'muted' }), L('当前检索：', 'Retrieval: '), tier),
+                  h('div', { className: 'i5-status-line' }, h('i'), L('工作区：', 'Workspace: '), state && state.ws ? pathName(state.ws) : L('暂不可用', 'Unavailable'))))),
+            h(Iter5Card, { className: 'i5-daily-card' }, h('div', { className: 'i5-section-heading' }, h('h2', null, h(Iter5Icon, { name: 'calendar' }), L('今日日程', "Today's schedule")), h('button', { className: 'i5-link', onClick: function () { props.onNav('calendar') } }, L('管理日程', 'Manage'), ' →')),
+          events && events.length ? events.map(function (e, i) { return h('button', { className: 'i5-activity-row', key: i, onClick: function () { props.onNav('calendar') } }, h('span', { className: 'i5-event-dot', 'data-done': String(!!e.done) }, e.done ? '✓' : ''), h('small', null, e.time || '—'), h('strong', null, e.title)) }) : h('p', { className: 'i5-muted' }, events ? L('今天没有安排，留一点空间给新的想法。', 'No plans today. Leave some room for new ideas.') : L('日程暂不可用', 'Schedule unavailable'))),
+            // ★2026-09-28（本仓特有布局）：最近记录挪到**右栏底部**（原在左栏顶部）。
+            //   原因：左栏顶部腾给问候卡（含可展开抽屉 + AI 生活化总结，内容会长），
+            //   右栏底部原本留白，正好容纳等高的「最近记录」，两栏视觉更均衡。
+            recentCard)),
+        h('details', { className: 'i5-card i5-secondary-details' }, h('summary', null, L('工作区概览、总结与技术详情', 'Workspace overview, summaries and technical details')), h('div', { className: 'i5-hosted' }, h(OverviewTab, { nonce: props.nonce }))))
+    }
+    function iter5Date(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0') }
+    function iter5LedgerTitle(name) {
+      var value=String(name||'')
+      var match=/(\d{4})(\d{2})(\d{2})-(\d{2})(\d{2})(\d{2})/.exec(value)
+      return match?match[1]+'-'+match[2]+'-'+match[3]+' '+match[4]+':'+match[5]:value
+    }
+    function Iter5Dialog(props) {
+      var ref = useRef(null)
+      var deep = useIter5Theme()[1]
+      useEffect(function () {
+        var before = document.activeElement
+        var node = ref.current && ref.current.querySelector('input,button,textarea,select')
+        if (node) node.focus()
+        return function () { if (before && before.isConnected && before.focus) before.focus() }
+      }, [])
+      return kxPortal(h('div', { 'data-iter5': '', 'data-deep': deep ? 'true' : 'false', className: 'i5-overlay-root', style: { position: 'fixed', inset: 0, zIndex: 11000, height: 'auto', background: 'transparent', display: 'block' } }, h('div', { className: 'i5-dialog-backdrop', onMouseDown: function (e) { if (e.target === e.currentTarget) props.onClose() } },
+        h('section', { ref: ref, className: 'i5-dialog', role: 'dialog', 'aria-modal': true, 'aria-label': props.title, onKeyDown: function (e) {
+          if (e.key === 'Escape') { e.stopPropagation(); props.onClose() }
+          if (e.key !== 'Tab') return
+          var all = Array.from(e.currentTarget.querySelectorAll('button:not(:disabled),input:not(:disabled),textarea,select,[tabindex="0"]'))
+          if (!all.length) return
+          if (e.shiftKey && document.activeElement === all[0]) { e.preventDefault(); all[all.length - 1].focus() }
+          else if (!e.shiftKey && document.activeElement === all[all.length - 1]) { e.preventDefault(); all[0].focus() }
+        } }, h('div', { className: 'i5-section-heading' }, h('h2', null, props.title), h('button', { onClick: props.onClose, 'aria-label': L('关闭对话框', 'Close dialog') }, '×')), props.children))))
+    }
+    function Iter5Calendar(props) {
+      var current = new Date(), today = iter5Date(current)
+      var month = useState(new Date(current.getFullYear(), current.getMonth(), 1)), selected = useState(today)
+      var calendarKey=memoryDraftIdentity(),calendarAlive=useRef(true)
+      var draftState=useState(function(){return calendarDrafts[calendarKey] || null})
+      var calendarCurrent=useRef(draftState[0])
+      var draft=[draftState[0],function(value){var next=typeof value==='function'?value(calendarCurrent.current):value;calendarCurrent.current=next;if(next)calendarDrafts[calendarKey]=next;else delete calendarDrafts[calendarKey];draftState[1](next)}]
+      var busy = useState(false), error = useState(''), changed = useState(0)
+      useEffect(function(){calendarAlive.current=true;function protect(e){if(!memoryCalendarDirty(calendarDrafts[calendarKey]))return;e.preventDefault();e.returnValue=''}window.addEventListener('beforeunload',protect);return function(){calendarAlive.current=false;window.removeEventListener('beforeunload',protect)}},[calendarKey])
+      var response = useIter5Data(function () { return apiGet(API.calendar) }, [props.nonce, changed[0]])
+      var entries = response.data && response.data.entries || []
+      var identity = iter5Identity()
+      var days = entries.filter(function (e) { return e.date === selected[0] }).sort(function (a,b) { return String(a.time || '').localeCompare(String(b.time || '')) })
+      var monthPrefix = iter5Date(month[0]).slice(0,7), inMonth = entries.filter(function (e) { return String(e.date).indexOf(monthPrefix) === 0 })
+      var counts = response.data ? [entries.filter(function (e) { return !e.done }).length, entries.filter(function (e) { return e.date === today && !e.done }).length, entries.filter(function (e) { return e.done }).length, inMonth.length] : [null,null,null,null]
+      var calendarMessage=useState('')
+      useMemoryOperation('calendar',calendarKey,function(operation,initial){
+        busy[1](operation.status==='pending');error[1](operation.error);calendarMessage[1](operation.result)
+        if(!initial && operation.status==='saved'){
+          if(calendarCurrent.current===operation.submitted){calendarCurrent.current=null;draftState[1](null)}
+          changed[1](function(n){return n+1})
+        }
+      })
+      function act(body, close) {
+        if (busy[0] || calendarWrites[calendarKey]) return
+        if(close){submitMemoryOperation('calendar',calendarKey,calendarDrafts[calendarKey],API.calendar,body);return}
+        busy[1](true); error[1]('')
+        apiPost(API.calendar, body).then(function (d) {
+          if (d && (d.ok === false || d.error)) throw Error(d.error || d.reason || L('操作失败', 'Action failed'))
+          if(!calendarAlive.current || identity!==iter5Identity())return
+          changed[1](function(n){return n+1})
+        }).catch(function(e){if(calendarAlive.current && identity===iter5Identity())error[1](e.message)}).finally(function(){if(calendarAlive.current)busy[1](false)})
+      }
+      function newEvent() { draft[1](calendarDrafts[calendarKey] || newCalendarDraft(selected[0])) }
+      function closeDraft() { if (busy[0]) return; if (memoryCalendarDirty(draft[0]) && !window.confirm(L('放弃尚未添加的日程？', 'Discard this unsaved event?'))) return; draft[1](null) }
+      function setField(k,v) { draft[1](function (d) { return Object.assign({}, d, (function () { var o={};o[k]=v;return o })()) }) }
+      var cells = [], y = month[0].getFullYear(), m = month[0].getMonth()
+      for (var i = 0; i < new Date(y,m,1).getDay(); i++) cells.push(null)
+      for (var d = 1; d <= new Date(y,m+1,0).getDate(); d++) cells.push(iter5Date(new Date(y,m,d)))
+      return h('div', { className: 'i5-calendar-view', 'data-i5-dirty':memoryCalendarDirty(draft[0])?'true':'false' },
+        h('div', { className: 'i5-stats i5-stats-four' }, [
+          ['calendar','blue',L('待办事项','Pending'),counts[0],L('所有未完成日程','All unfinished events')], ['timeline','orange',L('今日待办','Due today'),counts[1],L('今天需要关注的事项','Items to focus on today')], ['check','green',L('已完成','Completed'),counts[2],L('已标记完成的日程','Events marked complete')], ['calendar','purple',L('本月日程','This month'),counts[3],monthPrefix],
+        ].map(function (a) { return h(Iter5Stat, { key:a[2],icon:a[0],hue:a[1],label:a[2],value:a[3],hint:a[4] }) })),
+        response.error ? h(Iter5Error, { error: response.error, retry: response.retry }) : null,
+        error[0] ? h(Iter5Error, { error: error[0] }) : null,
+        calendarMessage[0] ? h('p',{role:'status'},calendarMessage[0]) : null,
+        h('div', { className: 'i5-calendar-columns' },
+          h(Iter5Card, { className:'i5-month' }, h('div', { className:'i5-section-heading' }, h('h2',null,y+L(' 年 ',' / ')+(m+1)+L(' 月','')), h('div',{className:'i5-button-group'}, h('button',{'aria-label':L('上个月','Previous month'),onClick:function(){month[1](new Date(y,m-1,1))}},'‹'), h('button',{onClick:function(){month[1](new Date(current.getFullYear(),current.getMonth(),1));selected[1](today)}},L('今天','Today')),h('button',{'aria-label':L('下个月','Next month'),onClick:function(){month[1](new Date(y,m+1,1))}},'›'))),
+            h('div',{className:'i5-month-grid',role:'group','aria-label':L('选择日期','Choose date')}, (locale==='zh'?['日','一','二','三','四','五','六']:['Su','Mo','Tu','We','Th','Fr','Sa']).map(function(w){return h('small',{key:w},w)}),cells.map(function(date, idx){
+              if(!date)return h('span',{key:'empty'+idx})
+              var es=entries.filter(function(e){return e.date===date})
+              return h('button',{key:date,'aria-label':date+(es.length?' · '+es.length+L(' 项日程',' events'):''),'aria-pressed':date===selected[0],'data-today':String(date===today),onClick:function(){selected[1](date)}},h('span',null,Number(date.slice(-2))),h('div',{className:'i5-day-dots'},es.slice(0,3).map(function(e,j){return h('i',{key:j,'data-done':String(!!e.done)})})))
+            })),h('div',{className:'i5-calendar-legend'},h('i'),L('有日程','Scheduled'),h('i',{'data-done':'true'}),L('已完成','Completed'))),
+          h(Iter5Card,{className:'i5-day-agenda'},h('div',{className:'i5-section-heading'},h('h2',null,selected[0]),h('button',{className:'i5-primary',onClick:newEvent},'+ ',L('添加事项','Add event'))),
+            response.loading ? h(Loading) : days.length ? days.map(function(e,i){return h('article',{className:'i5-event-card',key:i},h('span',{className:'i5-badge','data-hue':e.done?'green':'orange'},h(Iter5Icon,{name:e.done?'check':'calendar'})),h('div',{className:'i5-event-copy'},h('strong',null,e.title),e.note?h('p',null,e.note):null,h('div',{className:'i5-event-meta'},h('span',null,e.time||'—'),h('span',{className:'i5-tag'},e.quadrant||L('未分类','Unclassified')))),h('div',{className:'i5-event-actions'},h('button',{'aria-label':L('标记完成：','Complete: ')+e.title,disabled:busy[0]||e.done,onClick:function(){act({action:'done',date:e.date,time:e.time,title:e.title})}},e.done?'✓':L('完成','Done')),h('button',{className:'i5-link i5-danger','aria-label':L('删除日程：','Delete event: ')+e.title,disabled:busy[0],onClick:function(){if(window.confirm(L('确认删除日程：','Delete event: ')+e.title+'？'))act({action:'remove',date:e.date,time:e.time,title:e.title})}},L('删除','Delete'))))}) : h(Iter5Empty,{slot:'empty.timeline',title:L('这一天，还留着空白','Room for something new'),text:L('添加待办、会议或提醒，让重要的事按时发生。','Add a task, meeting or reminder for this day.')},h('button',{className:'i5-primary-soft',onClick:newEvent},'+ ',L('添加第一项日程','Add your first event'))))),
+        draft[0]?h(Iter5Dialog,{title:L('添加日程','Add event'),onClose:closeDraft},h('form',{onSubmit:function(e){e.preventDefault();if(!draft[0].title.trim())return;var v=draft[0];act({date:v.date,time:v.time,quadrant:v.quadrant,title:v.title.trim(),note:[v.location?L('地点: ','Location: ')+v.location:'',v.reminder?L('提醒: ','Reminder: ')+v.reminder:'',v.note].filter(Boolean).join(' | ')},true)}},
+          [['title',L('标题','Title'),'text'],['date',L('日期','Date'),'date'],['time',L('时间','Time'),'time'],['location',L('地点','Location'),'text'],['reminder',L('提醒说明','Reminder note'),'text']].map(function(f){return h('label',{key:f[0],className:'i5-form-field'},f[1],h('input',{required:f[0]==='title'||f[0]==='date',type:f[2],value:draft[0][f[0]],onChange:function(e){setField(f[0],e.target.value)}}))}),
+          h('label',{className:'i5-form-field'},L('优先级','Priority'),h('select',{value:draft[0].quadrant,onChange:function(e){setField('quadrant',e.target.value)}},['重要紧急','重要不紧急','不重要紧急','不重要不紧急','未分类'].map(function(q){return h('option',{value:q,key:q},q)}))),
+          h('label',{className:'i5-form-field'},L('备注','Notes'),h('textarea',{rows:3,value:draft[0].note,onChange:function(e){setField('note',e.target.value)}})),error[0]?h(Iter5Error,{error:error[0]}):null,h('div',{className:'i5-dialog-footer'},h('button',{type:'button',disabled:busy[0],onClick:closeDraft},L('取消','Cancel')),h('button',{className:'i5-primary',type:'submit',disabled:busy[0]},busy[0]?L('保存中…','Saving…'):L('添加日程','Add event'))))):null)
+    }
+    function Iter5Recall(props) {
+      var response = useIter5Data(function () { return Promise.all([apiGet(API.shadowRecent), apiGet(API.reviewFeedback)]) }, [props.nonce])
+      var selected = useState(''), filter = useState('all'), sent = useState({}), busy = useState(''), error = useState('')
+      var rows = response.data ? (response.data[0].rows || []).slice().sort(function (a,b) { return (b.ts || 0) - (a.ts || 0) }) : []
+      var feedback = response.data && response.data[1] || {}
+      var visible = rows.filter(function (r) { return filter[0] === 'all' || r.decision === filter[0] })
+      var chosen = visible.find(function (r) { return r.observationId === selected[0] }) || visible[0]
+      var identity = iter5Identity()
+      var alive = useRef(true)
+      useEffect(function () { alive.current = true; return function () { alive.current = false } }, [])
+      var meanings = { emit: L('投递', 'Emit'), prefetch: L('预取', 'Prefetch'), suppress: L('抑制', 'Suppress') }
+      var choices = [['A',L('该激活','Activate')],['P',L('只预取','Prefetch')],['S',L('应抑制','Suppress')],['H',L('有害','Harmful')],['E',L('改目标','Retarget')]]
+      function send(choice) {
+        if (!chosen || busy[0]) return
+        var id = chosen.observationId
+        busy[1](id); error[1]('')
+        apiPost(API.reviewFeedback, { observationId: id, choice: choice }).then(function (d) {
+          if (!alive.current || identity !== iter5Identity()) return
+          if (!d || !d.ok) throw Error(d && (d.reason || d.error) || L('反馈未被接受','Feedback rejected'))
+          sent[1](function (old) { var n=Object.assign({},old);n[id]=choice;return n })
+        }).catch(function (e) { if(alive.current && identity===iter5Identity())error[1](e.message) }).finally(function(){if(alive.current)busy[1]('')})
+      }
+      return h('div', { className:'i5-recall-view' },
+        h('div',{className:'i5-stats i5-stats-four'},[
+          ['recall','blue',L('最近判定','Recent decisions'),'all',L('接口返回的最近记录，最多 24 条','Latest host records, up to 24')],
+          ['check','green',L('投递判定','Emit decisions'),'emit',L('决定向会话提供记忆','Decided to provide memory')],
+          ['note','orange',L('预取判定','Prefetch decisions'),'prefetch',L('准备候选，等待合适时机','Prepared for a relevant moment')],
+          ['pulse','purple',L('抑制判定','Suppressed decisions'),'suppress',L('本次未进入投递流程','Not sent for delivery')],
+        ].map(function(s){return h(Iter5Stat,{key:s[3],icon:s[0],hue:s[1],label:s[2],value:response.data?(s[3]==='all'?rows.length:rows.filter(function(r){return r.decision===s[3]}).length):null,hint:s[4]})})),
+        response.error?h(Iter5Error,{error:response.error,retry:response.retry}):null,
+        h('div',{className:'i5-recall-columns'},
+          h(Iter5Card,{className:'i5-recall-list'},h('div',{className:'i5-filter-chips',role:'group','aria-label':L('按判定筛选','Filter decisions')},['all','emit','prefetch','suppress'].map(function(k){return h('button',{key:k,'aria-pressed':filter[0]===k,onClick:function(){filter[1](k)}},k==='all'?L('全部','All'):meanings[k],h('span',null,k==='all'?rows.length:rows.filter(function(r){return r.decision===k}).length))})),
+            response.loading?h(Loading):visible.length?h('div',{className:'i5-review-table',role:'list','aria-label':L('唤起记录','Recall records')},visible.map(function(r){return h('button',{key:r.observationId,className:'i5-review-row',role:'listitem','aria-current':chosen&&r.observationId===chosen.observationId?'true':undefined,onClick:function(){selected[1](r.observationId)}},h('span',{className:'i5-badge','data-hue':r.lane==='explicit'?'blue':'purple'},h(Iter5Icon,{name:'recall'})),h('div',{className:'i5-review-main'},h('strong',null,r.lane==='explicit'?L('明确召回','Explicit recall'):L('主动观测','Proactive observation')),h('small',null,(r.reasonCodes||[]).join(' · ')||L('未提供判定原因','No reason supplied')),h('small',null,r.ts?new Date(r.ts*1000).toLocaleString():L('时间暂不可用','Time unavailable'))),h('div',null,h('span',{className:'i5-tag','data-decision':r.decision},meanings[r.decision]||r.decision||'—'),h('small',null,r.memoryRefCount===null||r.memoryRefCount===undefined?'—':r.memoryRefCount+L(' 个引用',' references'))))})):h(Iter5Empty,{slot:'empty.recall',title:L('等待下一次记忆唤起','Ready for the next recall'),text:L('当宿主产生新的判定记录，它们会带着真实依据出现在这里。','New host decisions will appear here with their actual evidence.')})),
+          chosen?h(Iter5Card,{className:'i5-review-detail'},h('div',{className:'i5-section-heading'},h('h2',null,L('唤起详情','Recall details')),h('span',{className:'i5-tag','data-decision':chosen.decision},meanings[chosen.decision]||chosen.decision)),
+            h('div',{className:'i5-detail-intro'},h('span',{className:'i5-badge','data-hue':'blue'},h(Iter5Icon,{name:'recall'})),h('div',null,h('strong',null,chosen.lane==='explicit'?L('明确召回判定','Explicit recall decision'):L('主动观测判定','Proactive decision')),h('small',null,chosen.ts?new Date(chosen.ts*1000).toLocaleString():'—'))),
+            h('div',{className:'i5-evidence-metrics'},[[L('意图概率','Intent probability'),chosen.intentProb],[L('间隔分值','Margin'),chosen.margin],[L('候选引用','Candidate references'),chosen.memoryRefCount]].map(function(k){return h('div',{key:k[0]},h('small',null,k[0]),h('strong',null,typeof k[1]==='number'?Number.isInteger(k[1])?k[1]:k[1].toFixed(3):'—'))})),
+            h('h3',null,L('判定依据','Decision reasons')),h('div',{className:'i5-reason-list'},(chosen.reasonCodes||[]).length?(chosen.reasonCodes||[]).map(function(reason,i){return h('div',{key:i},h('span',{className:'i5-evidence-dot'}),reason)}):h('p',{className:'i5-muted'},L('宿主未提供原因码','No host reason codes'))),
+            h('h3',null,L('引用锚点','Referenced anchors')),(chosen.anchors||[]).length?h('div',{className:'i5-anchor-list'},chosen.anchors.map(function(a){return h('div',{key:a},h(Iter5Icon,{name:'note'}),h('code',null,a))})):h('p',{className:'i5-muted'},L('没有返回引用锚点','No anchors returned')),
+            h('div',{className:'i5-info-callout'},h(Iter5Icon,{name:'pulse'}),h('div',null,h('strong',null,chosen.delivery?L('匹配到投递记录','Matched delivery'):L('未匹配到投递记录','No delivery matched')),h('p',null,chosen.delivery?String(chosen.delivery.count)+L(' 个记忆引用；关联来自时间窗与引用交集，不作为精确因果证明。',' memory references; matching is heuristic, not a causal guarantee.'):L('投递记录按时间窗与引用交集关联，未匹配不等同于执行失败。','Delivery matching uses time and shared references; no match does not prove failure.')))),
+            h('h3',null,L('你的反馈','Your feedback')),h('p',{className:'i5-muted'},L('反馈进入宿主审查队列，不直接改写记忆或策略。','Feedback enters the review queue without directly rewriting memory or policy.')),
+            h('div',{className:'i5-feedback'},choices.map(function(c){return h('button',{key:c[0],disabled:!!busy[0],'aria-pressed':sent[0][chosen.observationId]===c[0],onClick:function(){send(c[0])}},h('strong',null,c[0]),h('span',null,c[1]))})),sent[0][chosen.observationId]?h('p',{className:'i5-success',role:'status'},L('已提交反馈：','Feedback submitted: ')+sent[0][chosen.observationId]):null,error[0]?h(Iter5Error,{error:error[0]}):null):null),
+        feedback.queue&&feedback.queue.length||feedback.hints&&feedback.hints.length?h('details',{className:'i5-card i5-secondary-details'},h('summary',null,L('审查队列与策略提示','Review queue and policy notes')),h('div',{className:'i5-filter-chips'},choices.map(function(c){return h('span',{key:c[0],className:'i5-tag'},c[0]+' · '+((feedback.byChoice||{})[c[0]]||0))})),(feedback.hints||[]).map(function(s,i){return h('p',{key:i},s)})):null)
+    }
+    function Iter5Handoff(props) {
+      var result = useIter5Data(function(){return apiGet(API.handoffState,{sessionId:currentSessionIdClient()})},[props.nonce])
+      var chosen = useState(''), running = useState(false), status = useState(''), failure = useState('')
+      var data = result.data, water = data && data.waterLevel
+      var file = useIter5Data(function(){return chosen[0]?apiGet(API.handoffState,{sessionId:currentSessionIdClient(),file:chosen[0]}):Promise.resolve(null)},[chosen[0]])
+      var known = water && water.window>0 && Number.isFinite(water.ratio) && water.modelKnown!==false
+      var text = chosen[0] ? file.data && file.data.text : data && data.plan
+      var ledgers = data && data.ledgers || [], versions = data && data.planVersions || []
+      var identity = iter5Identity(), alive = useRef(true)
+      useEffect(function(){return function(){alive.current=false}},[])
+      function progress(message){if(alive.current && identity===iter5Identity())status[1](message)}
+      async function continueNow(){
+        if(running[0])return
+        running[1](true);failure[1]('')
+        try{var answer=await runContinueFlow({onProgress:progress});if(answer&&answer.ok===false)throw Error(answer.error||'busy');progress(L('已创建接续会话并装入交接材料','Continuation created with handoff material'))}
+        catch(e){if(alive.current && identity===iter5Identity())failure[1](e.message)}
+        finally{if(alive.current)running[1](false)}
+      }
+      var docs=[{name:'',title:L('当前 PLAN 白板','Current PLAN'),kind:'plan'}].concat(ledgers.map(function(v){return{name:v.name,title:iter5LedgerTitle(v.name),kind:'ledger'}}),versions.map(function(v){return{name:v.name,title:iter5LedgerTitle(v.name),kind:'archive'}}))
+      return h('div',{className:'i5-handoff-view'},
+        h('div',{className:'i5-handoff-overview'},h('div',{className:'i5-info-callout'},h(Iter5Icon,{name:'handoff'}),h('div',null,h('strong',null,L('上下文会流动，工作可以接着走','Context moves on. Your work can continue.')),h('p',null,L('白板记录当前状态，交接账本保留阶段经验。接续由宿主统一执行。','The whiteboard holds current state; handoff notes retain progress. The host owns continuation.')))),h('div',{className:'i5-mini-metric'},h('strong',null,known?Math.round(water.ratio*100)+'%':'—'),h('small',null,L('上下文水位','Context usage'))),h('div',{className:'i5-mini-metric'},h('strong',null,data?ledgers.length:'—'),h('small',null,L('交接账本','Handoff notes')))),
+        result.error?h(Iter5Error,{error:result.error,retry:result.retry}):null,
+        h('div',{className:'i5-handoff-columns'},
+          h(Iter5Card,{className:'i5-handoff-index'},h('div',{className:'i5-section-heading'},h('h2',null,h(Iter5Icon,{name:'handoff'}),L('交接材料','Handoff materials'))),result.loading?h(Loading):docs.map(function(d){return h('button',{key:d.kind+':'+d.name,className:'i5-ledger-row','aria-current':chosen[0]===d.name?'true':undefined,onClick:function(){chosen[1](d.name)}},h('span',{className:'i5-badge','data-hue':d.kind==='archive'?'purple':'blue'},h(Iter5Icon,{name:d.kind==='plan'?'folder':'note'})),h('div',null,h('strong',null,d.title),h('small',null,d.kind==='plan'?L('持续更新的当前任务快照','Current task snapshot'):d.kind==='archive'?L('白板历史版本','Whiteboard history'):L('阶段交接记录','Saved handoff record'))))}),
+            h('div',{className:'i5-info-callout'},h('div',null,h('strong',null,L('保留来源，按原文查看','Read it as recorded')),h('p',null,L('这里展示宿主返回的真实材料，不补写任务或虚构进度。','These are the actual host materials. No tasks or progress are invented.'))))),
+          h(Iter5Card,{className:'i5-handoff-document'},h('div',{className:'i5-source-heading'},h('span',{className:'i5-badge i5-badge-lg','data-hue':'blue'},h(Iter5Icon,{name:'folder'})),h('div',null,h('h2',null,chosen[0]?iter5LedgerTitle(chosen[0]):L('当前任务 · PLAN 白板','Current task · PLAN')),h('small',null,data&&data.ws?pathName(data.ws):L('当前工作区','Current workspace')))),h('div',{className:'i5-source-meta'},h('span',{className:'i5-tag'},L('只读原文','Read-only source')),text?h('span',null,text.length+L(' 字符',' characters')):null),
+            file.error?h(Iter5Error,{error:file.error,retry:file.retry}):result.loading||(chosen[0]&&file.loading)?h(Loading):text?h(Iter5Document,{text:text}):h(Iter5Empty,{slot:'empty.timeline',title:L('交接材料尚未生成','No handoff material yet'),text:data&&data.wsBound===false?L('当前会话尚未绑定工作区。','This session has no workspace binding.'):L('开启白板或完成一次阶段交接后，可以在这里回顾。','Enable the whiteboard or complete a handoff to review it here.')}),
+            h('div',{className:'i5-handoff-actions'},h('button',{className:'i5-primary',disabled:running[0],onClick:continueNow},running[0]?L('正在接续…','Continuing…'):L('一键接续','Continue in a new session')),h('small',null,L('沿用宿主工作区与模型，交接材料自动装入新会话。','Uses the host workspace and model, and loads handoff material.'))),status[0]?h('p',{className:'i5-muted',role:'status'},status[0]):null,failure[0]?h(Iter5Error,{error:failure[0]}):null)),
+        h('details',{className:'i5-card i5-secondary-details'},h('summary',null,L('接续开关、水位详情与完整白板看板','Continuation controls, measurement details and full whiteboard')),h('div',{className:'i5-hosted'},h(PlanTab))))
+    }
+    function Iter5External(props) {
+      var revision=useState(0), selected=useState(''), busy=useState(false), message=useState(''), error=useState(''), search=useState('')
+      var response=useIter5Data(function(){return Promise.all([apiGet(API.external),apiGet(API.config)])},[props.nonce,revision[0]])
+      var sources=response.data&&response.data[0].sources||[]
+      var source=sources.find(function(s){return s.id===selected[0]})||sources[0]
+      var id=source&&source.id||''
+      var detail=useIter5Data(function(){return id?apiGet(API.externalView,{source:id}):Promise.resolve(null)},[id,revision[0]])
+      // ★2026-10-01（用户裁定 B）：全局简报 —— 一行汇总 + 抽屉展开（展开为逐条清单）。
+      var briefData=useIter5Data(function(){return apiGet(API.globalBrief, { sessionId: currentSessionIdClient() })},[props.nonce,revision[0]])
+      var briefOpen=useState(false)
+      var brief=briefData.data||null
+      var identity=iter5Identity(), alive=useRef(true), lookup=useRef(0), activeSource=useRef(id)
+      activeSource.current=id
+      useEffect(function(){lookup.current++;search[1]('');error[1]('');busy[1](false)},[id])
+      useEffect(function(){return function(){alive.current=false}},[])
+      function ok(){return alive.current&&identity===iter5Identity()}
+      async function act(task){
+        if(busy[0])return
+        busy[1](true);message[1]('');error[1]('')
+        try{var r=await task();if(!ok())return;if(r&&(r.ok===false||r.error))throw Error(r.error||r.reason||L('操作未完成','Action incomplete'));message[1](r&&r.result||L('操作已完成','Action completed'));revision[1](function(n){return n+1})}
+        catch(e){if(ok())error[1](e.message)}finally{if(alive.current)busy[1](false)}
+      }
+      function toggle(s){act(async function(){var current=configOf(await apiGet(API.config));var values=Object.assign({},current.externalSources||{});values[s.id]=s.enabled===false;return saveConfigPatch({externalSources:values})})}
+      function importOne(target){act(function(){return apiPost(API.externalImport,{source:id,target:target})})}
+      function removeOne(target){if(!window.confirm(L('从已接入的记忆中移除该来源？原始来源文件不会被删除。','Remove this imported source from memory? Original files are preserved.')+'\n'+source.name))return;act(function(){return apiPost(API.externalRemove,{source:id,target:target})})}
+      function findSource(){
+        if(!source||busy[0])return
+        var request=++lookup.current, selectedId=id
+        busy[1](true);search[1]('');error[1]('')
+        apiPost(API.recall,{query:source.name||source.tool||''}).then(function(r){if(ok()&&request===lookup.current&&selectedId===activeSource.current)search[1](r.result||L('没有找到相关片段','No matching passages'))}).catch(function(e){if(ok()&&request===lookup.current&&selectedId===activeSource.current)error[1](e.message)}).finally(function(){if(ok()&&request===lookup.current&&selectedId===activeSource.current)busy[1](false)})
+      }
+      var briefChanged=brief&&brief.changed||[]
+      var briefCount=briefChanged.length
+      var briefWhen=brief&&brief.at?new Date(brief.at).toLocaleTimeString():''
+      var briefOn=brief&&brief.enabled===true
+      var briefRow=h('div',{className:'i5-brief-row','data-dam-brief':''},
+        h('button',{className:'i5-brief-head',type:'button','data-dam-brief-toggle':'','aria-expanded':briefOpen[0]?'true':'false',onClick:function(){briefOpen[1](!briefOpen[0])}},
+          h(Iter5Icon,{name:briefCount?'note':'check'}),
+          h('div',{className:'i5-brief-title'},
+            h('strong',null,L('接续其他 Agent 记忆文档','Inherit other agents\' memory docs')),
+            h('small',null,
+              !briefOn?L('未开启：到设置里打开后才会检测','Off: enable it in settings to start watching')
+              :briefCount?L('检测到 ','Detected ')+briefCount+L(' 处变化',' changes')+(briefWhen?' · '+L('上次检查 ','last check ')+briefWhen:'')
+              :L('暂无变化','No changes yet')+(briefWhen?' · '+L('上次检查 ','last check ')+briefWhen:''))),
+          h('i',{className:'i5-brief-caret','data-open':briefOpen[0]?'true':'false'})),
+        briefOpen[0]?h('div',{className:'i5-brief-body','data-dam-brief-body':''},
+          !briefOn?h('p',{className:'i5-muted'},L('该功能已被关闭。可在「设置 → 存储与外部记忆 → 接续其他 Agent 记忆文档」重新开启。','This feature is off by default. Enable it under Settings → Storage → Inherit other agents\' memory docs.'))
+          :briefChanged.length?h('ul',{className:'i5-brief-list'},
+            briefChanged.map(function(c,i){return h('li',{key:String(c.path||i),'data-dam-brief-item':''},
+              h('span',{className:'i5-brief-kind','data-kind':String(c.kind||'')},c.kind==='added'?L('新增','added'):c.kind==='removed'?L('移除','removed'):L('变更','changed')),
+              h('code',{className:'i5-brief-path'},String(c.path||'')),
+              c.source?h('span',{className:'i5-brief-src'},String(c.source)):null)}) )
+          :h('p',{className:'i5-muted'},L('自上次检查以来没有变化。','No changes since the last check.')),
+          h('p',{className:'i5-muted i5-brief-foot'},L('只报位置与时间，不摘录内容；模型按需读取绝对路径。','Reports locations and times only, never content.')))
+        :null)
+      return h('div',{className:'i5-external-view'},
+        briefRow,
+        h('div',{className:'i5-section-heading'},h('div',null,h('h2',null,L('外部记忆来源','External memory sources')),h('p',{className:'i5-muted'},L('将分散在工具中的积累，带回当前工作区。','Bring experience from your other tools into this workspace.'))),h('div',{className:'i5-button-group'},h('button',{onClick:response.retry,disabled:busy[0]},L('重新扫描','Rescan')),h('button',{className:'i5-primary-soft',disabled:busy[0]||!sources.length,onClick:function(){act(async function(){var rows=sources.filter(function(s){return s.kind!=='sessions'&&s.enabled!==false});for(var i=0;i<rows.length;i++){var r=await apiPost(API.externalImport,{source:rows[i].id,target:'project'});if(r&&(r.ok===false||r.error))throw Error(r.error||r.reason)}return{result:L('已接入来源数：','Imported sources: ')+rows.length}})}},L('接入全部可用来源','Import all available')))),
+        response.error?h(Iter5Error,{error:response.error,retry:response.retry}):null,
+        response.loading?h(Loading):sources.length?h('div',{className:'i5-source-grid'},sources.map(function(s,i){return h('section',{className:'i5-source-tile',key:s.id,'data-selected':String(id===s.id)},h('button',{className:'i5-source-select',onClick:function(){selected[1](s.id);search[1]('')}},h('span',{className:'i5-badge i5-badge-lg','data-hue':['blue','slate','orange','purple'][i%4]},String(s.tool||s.name||'M').slice(0,1).toUpperCase()),h('div',null,h('strong',null,s.tool||s.name),h('small',null,s.name)),h('span',{className:'i5-tag','data-connected':String(!!(s.importedUser||s.importedNotes))},s.importedUser||s.importedNotes?L('已接入','Imported'):L('已发现','Discovered'))),h('div',{className:'i5-source-bottom'},h('small',null,s.kind==='sessions'?String(s.fileCount===undefined?'—':s.fileCount)+L(' 个会话文件',' session files'):L('记忆文件','Memory file')),h('button',{className:'i5-source-toggle',role:'switch','aria-label':L('启用来源：','Enable source: ')+s.name,'aria-checked':s.enabled!==false,disabled:busy[0],onClick:function(){toggle(s)}},h('i'))))})):h(Iter5Empty,{slot:'empty.library',title:L('尚未发现外部记忆','No external memory discovered'),text:L('安装或使用支持的工具后，重新扫描即可查看可用来源。','Rescan after using a supported tool to discover its memory.')}),
+        h('div',{className:'i5-info-callout'},h(Iter5Icon,{name:'check'}),h('div',null,h('strong',null,L('你决定接入什么，也能随时移除','Choose what to bring in, and remove it whenever needed')),h('p',null,L('按用户级或项目级接入；移除操作只处理导入片段，不删除原始来源文件。','Import to user or project memory. Removal affects imported passages, never the original files.')))),
+        message[0]?h('p',{className:'i5-success',role:'status'},message[0]):null,error[0]?h(Iter5Error,{error:error[0]}):null,
+        source?h(Iter5Card,{className:'i5-external-detail'},h('div',{className:'i5-section-heading'},h('h2',null,h(Iter5Icon,{name:'note'}),source.name),h('span',{className:'i5-tag'},L('只读来源','Read-only source'))),
+          detail.error?h(Iter5Error,{error:detail.error,retry:detail.retry}):detail.loading?h(Loading):h(Iter5Document,{text:detail.data&&detail.data.content||L('该来源没有可展示的内容。','No displayable content in this source.')}),
+          h('div',{className:'i5-handoff-actions'},source.kind!=='sessions'?h(React.Fragment,null,h('button',{className:'i5-primary-soft',disabled:busy[0],onClick:function(){source.importedUser?removeOne('user'):importOne('user')}},source.importedUser?L('移除用户级接入','Remove user import'):L('接入用户级记忆','Import to user memory')),h('button',{className:'i5-primary',disabled:busy[0],onClick:function(){source.importedNotes?removeOne('project'):importOne('project')}},source.importedNotes?L('移除项目接入','Remove project import'):L('接入项目笔记','Import to project notes'))):null,h('button',{disabled:busy[0],onClick:findSource},L('在记忆中查找','Find in memory'))),search[0]?h('div',{className:'i5-info-callout'},h(Iter5Document,{text:search[0]})):null):null)
+    }
+    function Iter5Note(props) {
+      var draftKey=memoryDraftIdentity()
+      var draft=useState(function(){return memoryNoteDrafts[draftKey] || ''}),busy=useState(false),error=useState(''),message=useState('')
+      var identity=iter5Identity(),alive=useRef(true)
+      useEffect(function(){alive.current=true;function protect(e){if(!draft[0].trim())return;e.preventDefault();e.returnValue=''}window.addEventListener('beforeunload',protect);return function(){alive.current=false;window.removeEventListener('beforeunload',protect)}},[draft[0]])
+      useMemoryOperation('note',draftKey,function(operation,initial){
+        busy[1](operation.status==='pending');error[1](operation.error);message[1](operation.result)
+        if(!initial && operation.status==='saved'){
+          draft[1](function(current){return current===operation.submitted?'':current});if(props.onSaved)props.onSaved()
+        }
+      })
+      function save(e){
+        e.preventDefault();if(!draft[0].trim()||busy[0]||memoryNoteWrites[draftKey])return
+        var sid = currentSessionIdClient()
+        if(!sid || !props.source){error[1](L('会话或目标已变化，请刷新笔记表单。','Session or destination changed. Reload the note form.'));return}
+        submitMemoryOperation('note',draftKey,draft[0],API.note,{content:draft[0].trim(),sessionId:sid,expectedNotesPath:props.source})
+      }
+      return h('form',{onSubmit:save,'data-i5-dirty':draft[0].trim()?'true':'false',className:'i5-note-form'},h('label',{className:'i5-form-field'},L('值得记住的内容','Something worth remembering'),h('textarea',{'aria-label':L('追加项目笔记','Append project note'),rows:5,value:draft[0],placeholder:L('写下决定、发现，或下一次需要记住的细节…','A decision, a discovery, or a detail for next time…'),onChange:function(e){memoryNoteDrafts[draftKey]=e.target.value;draft[1](e.target.value)}})),h('div',{className:'i5-toolbar'},h('button',{type:'submit',className:'i5-primary',disabled:busy[0]||!draft[0].trim()},busy[0]?L('保存中…','Saving…'):L('追加','Append')),h('small',null,L('以追加方式保存，不覆盖已有笔记。','Appends without overwriting existing notes.'))),message[0]?h('p',{className:'i5-success',role:'status'},message[0]):null,error[0]?h(Iter5Error,{error:error[0]}):null)
+    }
+    function Iter5Search(props) {
+      var query=useState(props.intent&&props.intent.query||''),mode=useState('recall'),limit=useState(8),result=useState(null),busy=useState(false),error=useState('')
+      var identity=iter5Identity(),alive=useRef(true)
+      useEffect(function(){return function(){alive.current=false}},[])
+      function search(e){
+        e.preventDefault();if(!query[0].trim()||busy[0])return
+        busy[1](true);error[1]('');result[1](null)
+        var payload={query:query[0].trim()};if(mode[0]==='recall')payload.limit=limit[0]
+        apiPost(mode[0]==='recall'?API.recall:API.smartRecall,payload).then(function(r){if(alive.current&&identity===iter5Identity())result[1](r)}).catch(function(e){if(alive.current&&identity===iter5Identity())error[1](e.message)}).finally(function(){if(alive.current)busy[1](false)})
+      }
+      return h('div',null,h(Iter5Card,{className:'i5-search-card'},h('div',{className:'i5-search-intro'},h('span',{className:'i5-badge i5-badge-lg','data-hue':'blue'},h(Iter5Icon,{name:'search'})),h('div',null,h('h2',null,L('想起一件事，从这里开始','Find the thought you are looking for')),h('p',{className:'i5-muted'},L('用关键词查找原文，或让智能检索整理相关线索。','Search source passages, or use smart recall to organize related clues.')))),
+        h('form',{onSubmit:search},h('div',{className:'i5-toolbar'},h('input',{type:'search','aria-label':L('检索记忆','Search memories'),value:query[0],placeholder:L('搜索项目、决定、工作方法…','Search projects, decisions, working methods…'),onChange:function(e){query[1](e.target.value)}}),h('button',{className:'i5-primary',type:'submit',disabled:busy[0]||!query[0].trim()},busy[0]?L('检索中…','Searching…'):L('检索','Search'))),h('div',{className:'i5-toolbar'},h('label',null,L('检索方式 ','Mode '),h('select',{value:mode[0],disabled:busy[0],onChange:function(e){mode[1](e.target.value)}},h('option',{value:'recall'},L('记忆检索','Memory search')),h('option',{value:'smart'},L('智能检索','Smart recall')))),mode[0]==='recall'?h('label',null,L('结果条数 ','Results '),h('select',{value:limit[0],onChange:function(e){limit[1](Number(e.target.value))}},[5,8,12,20].map(function(n){return h('option',{value:n,key:n},n)}))):h('small',null,L('智能检索由宿主模型处理，可能需要更多时间。','Smart recall uses the host model and may take longer.'))))),
+        error[0]?h(Iter5Error,{error:error[0]}):null,
+        result[0]?h(Iter5Card,{title:L('检索结果','Search results')},result[0].result||result[0].answer?h(Iter5Document,{text:result[0].result||result[0].answer}):h(Iter5Empty,{slot:'empty.recall',title:L('暂时没有找到相关记录','No matching records'),text:L('换一个关键词，或尝试更具体的描述。','Try another keyword or a more specific description.')}),result[0].keywords&&result[0].keywords.length?h('div',{className:'i5-filter-chips'},result[0].keywords.map(function(k){return h('span',{className:'i5-tag',key:k},k)})):null,(result[0].hits||[]).map(function(hit,i){return h('div',{key:i,className:'i5-search-hit'},hit.mark?h('strong',{className:'i5-danger'},hit.mark):null,h('small',null,hit.where||''),h('p',null,hit.line||''))})):!busy[0]?h('div',{className:'i5-search-tip'},h(Iter5Icon,{name:'spark'}),L('记得大概意思也没关系，试着描述你想找的那件事。','A rough idea is enough. Describe what you want to find.')):null)
+    }
+    function Iter5History(props) {
+      var busy=useState(false),error=useState(''),message=useState(''),revision=useState(0)
+      function reflect(){if(busy[0])return;busy[1](true);error[1]('');message[1]('');apiPost(API.reflectAuto,{}).then(function(r){if(r&&(r.ok===false||r.error))throw Error(r.error||r.reason);message[1](r.result||L('反思已生成','Reflection generated'));revision[1](revision[0]+1)}).catch(function(e){error[1](e.message)}).finally(function(){busy[1](false)})}
+      return h('div',{className:'i5-history'},props.kind==='reflections'?h('div',{className:'i5-info-callout'},h(Iter5Icon,{name:'spark'}),h('div',null,h('strong',null,L('让经历，变成下一次的经验','Turn experience into a lesson for next time')),h('p',null,L('基于已有记录生成反思，保留原文供你回顾。','Generate a reflection from existing records, and keep the source for review.'))),h('button',{className:'i5-primary-soft',disabled:busy[0],onClick:reflect},busy[0]?L('生成中…','Generating…'):L('生成反思','Generate reflection'))):null,error[0]?h(Iter5Error,{error:error[0]}):null,message[0]?h('p',{className:'i5-success',role:'status'},message[0]):null,h(Iter5Browse,{key:props.kind+revision[0],nonce:props.nonce,intent:{category:props.kind,scope:'project'}}),props.kind==='logs'?h('details',{className:'i5-card i5-secondary-details'},h('summary',null,L('长期规则与原始日志工具','Long-term rules and original log tools')),h('div',{className:'i5-hosted'},h(LogsTab))):null)
+    }
+    function Iter5Workspaces(props) {
+      var revision=useState(0),scale=useState(1),selected=useState(null),fitKey=useState(0)
+      var result=useIter5Data(function(){return apiPost(API.workspaces,{force:revision[0]>0})},[props.nonce,revision[0]])
+      var data=result.data,workspaces=data&&data.workspaces||[]
+      var current=selected[0]&&workspaces.find(function(w){return w.path===selected[0].path})||workspaces[0]
+      var logs=workspaces.every(function(w){return typeof w.logCount==='number'})?workspaces.reduce(function(n,w){return n+w.logCount},0):null
+      function resize(n){scale[1](Math.max(.55,Math.min(1.75,n)))}
+      return h('div',{className:'i5-workspaces-view'},h('div',{className:'i5-stats i5-stats-three'},
+        h(Iter5Stat,{icon:'folder',hue:'green',label:L('已发现工作区','Discovered workspaces'),value:data?workspaces.length:null,hint:L('有记忆记录的工作空间','Workspaces with memory records')}),
+        h(Iter5Stat,{icon:'timeline',hue:'purple',label:L('日志文件','Log files'),value:data?logs:null,hint:L('这些工作区中的记录累计','Records in these workspaces')}),
+        h(Iter5Stat,{icon:'mindmap',hue:'blue',label:L('主题关联','Topic connections'),value:data&&data.graph&&Array.isArray(data.graph.links)?data.graph.links.length:null,hint:L('宿主返回的工作区关联','Workspace connections returned by the host')})),
+        result.error?h(Iter5Error,{error:result.error,retry:result.retry}):null,
+        h('div',{className:'i5-map-columns'},h(Iter5Card,{className:'i5-map-card'},h('div',{className:'i5-section-heading'},h('h2',null,L('记忆之间的连接','Connections between memories')),h('div',{className:'i5-button-group'},h('button',{'aria-label':L('缩小关系图','Zoom out'),onClick:function(){resize(scale[0]-.1)}},'−'),h('span',{className:'i5-muted'},Math.round(scale[0]*100)+'%'),h('button',{'aria-label':L('放大关系图','Zoom in'),onClick:function(){resize(scale[0]+.1)}},'+'),h('button',{onClick:function(){scale[1](1);fitKey[1](fitKey[0]+1)}},L('适应','Fit')))),
+          result.loading?h(Loading):workspaces.length?h('div',{className:'i5-map-canvas'},h(WorkspaceGraph,{current:current,workspaces:workspaces,graph:data.graph,scale:scale[0],fitKey:fitKey[0],onSelect:selected[1]})):h(Iter5Empty,{title:L('连接，从第一份记忆开始','Connections start with your first memory'),text:L('工作区积累了日志与主题后，关系会在这里逐渐展开。','As workspaces collect records and topics, their connections appear here.')}),
+          h('div',{className:'i5-map-legend'},h('span',null,L('中心：工作区','Centers: workspaces')),h('span',null,L('分支：记忆主题','Branches: topics')),h('span',null,L('虚线：共享主题','Dashed links: shared topics')))),
+          current?h(Iter5Card,{className:'i5-map-detail'},h('div',{className:'i5-source-heading'},h('span',{className:'i5-badge i5-badge-lg','data-hue':'green'},h(Iter5Icon,{name:'folder'})),h('div',null,h('h2',null,current.name||pathName(current.path)),h('small',null,L('工作区记忆节点','Workspace memory node')))),
+            current.summary?h(Iter5Document,{text:current.summary}):h('p',{className:'i5-muted'},L('这个工作区暂未生成摘要。','No summary has been generated for this workspace.')),
+            h('h3',null,L('记忆主题','Memory topics')),(current.items||[]).length?h('div',{className:'i5-topic-list'},current.items.map(function(item,i){return h('div',{key:i},h(Iter5Icon,{name:'note'}),typeof item==='string'?item:JSON.stringify(item))})):h('p',{className:'i5-muted'},L('暂无主题','No topics yet')),
+            h('div',{className:'i5-source-origin'},h('strong',null,L('工作区来源','Workspace source')),h('small',null,current.path),current.dateRange?h('small',null,current.dateRange):null),
+            current.path===currentWs()?h('button',{className:'i5-primary-soft',onClick:function(){props.onNav('library')}},L('查看本工作区记忆','Open workspace memory'),' →'):h('p',{className:'i5-muted'},L('可在宿主侧栏切换到该工作区，继续查看记忆。','Switch to this workspace in the host sidebar to explore its memory.'))):null),
+        h('div',{className:'i5-toolbar'},h('button',{disabled:result.loading,onClick:function(){revision[1](revision[0]+1)}},result.loading?L('更新中…','Refreshing…'):L('重新整理工作区','Refresh workspace map')),h('small',null,data&&data.generatedAt?L('生成于 ','Generated at ')+new Date(data.generatedAt).toLocaleString():L('摘要与关系来自宿主工作区汇总。','Summaries and links come from the host workspace index.'))))
+    }
+    // Each registered surface owns a theme boundary, including sibling overlays.
+    function Iter5Surface(props) {
+      var deep = useIter5Theme()[1]
+      var tick = useTick()
+      useEffect(function () { return controller.subscribe(tick[1]) }, [])
+      useEffect(function () {
+        var style = document.getElementById('dam-shared-ui-style')
+        if (!style) {
+          style = document.createElement('style')
+          style.id = 'dam-shared-ui-style'
+          style.dataset.plugin = '@a9i5k4/dsh-auto-memory'
+          style.textContent = ITER5_CSS
+          document.head.appendChild(style)
+        }
+        style.dataset.users = String(Number(style.dataset.users || 0) + 1)
+        return function () {
+          var count = Number(style.dataset.users || 1) - 1
+          style.dataset.users = String(count)
+          if (!count) style.remove()
+        }
+      }, [])
+      var node = h('div', { 'data-dam-theme': props.kind || 'overlay', 'data-deep': String(deep),
+        style: { '--dam-user-scale': FONT_SCALE_VALUES[fontScale] || '1' } }, props.children)
+      // shell.overlay lives in a z-index:20 host stacking context, below settings.
+      // Portal the boundary too, so sibling dialogs retain their theme tokens.
+      return createPortal && ['panel', 'dialogs', 'autocont'].indexOf(props.kind) >= 0
+        ? createPortal(node, document.body) : node
+    }
+    function Iter5HostSettings(props) {
+      var identity = useState(iter5Identity)
+      var root = useRef(null)
+      var slot = useRef(null)
+      var expanded = useState(false)
+      var target = useState(function () { return createPortal ? document.createElement('div') : null })[0]
+      useEffect(function () {
+        var el = slot.current
+        if (!el || !target) return
+        function measure() { if (el.clientWidth > 0 && el.clientWidth < 360) expanded[1](true) }
+        measure()
+        var observer = typeof ResizeObserver === 'function' ? new ResizeObserver(measure) : null
+        if (observer) observer.observe(el)
+        return function () { if (observer) observer.disconnect(); target.remove() }
+      }, [])
+      useEffect(function () {
+        if (!target || !slot.current) return
+        // Move a stable portal container, not the React form. Drafts and focus survive.
+        ;(expanded[0] ? document.body : slot.current).appendChild(target)
+        var el = root.current
+        if (expanded[0] && el) {
+          var previous = document.activeElement
+          var close = el.querySelector('[data-i5-settings-return]')
+          if (close) close.focus()
+          return function () { if (previous && previous.isConnected) previous.focus() }
+        }
+      }, [expanded[0]])
+      useEffect(function () {
+        function guard(e) {
+          var el = root.current, dialog = slot.current && slot.current.closest('[role=dialog]')
+          if (e.type === 'keydown' && e.key === 'Escape' && expanded[0] && !dialogState) {
+            e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation(); expanded[1](false); return
+          }
+          if (!el || !dialog || !el.querySelector('[data-i5-dirty=true]')) return
+          if (e.type === 'click' && (!dialog.contains(e.target) || el.contains(e.target) || !e.target.closest('button'))) return
+          if (e.type === 'keydown' && (e.key !== 'Escape' || dialogState)) return
+          if (!window.confirm(L('有未保存的修改，确定离开？', 'Discard unsaved changes and leave?'))) {
+            e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation()
+          } else delete iter5SettingsDrafts[iter5Identity() + '|host']
+        }
+        window.addEventListener('click', guard, true)
+        window.addEventListener('keydown', guard, true)
+        return function () { window.removeEventListener('click', guard, true); window.removeEventListener('keydown', guard, true) }
+      }, [expanded[0]])
+      useEffect(function () {
+        var timer = setInterval(function () { identity[1](iter5Identity()) }, 500)
+        return function () { clearInterval(timer) }
+      }, [])
+      var form = h(Iter5Surface, { kind: 'settings' },
+        h('div', { ref: root, 'data-iter5': '', 'data-i5-embedded': '', 'data-expanded': String(expanded[0]),
+          role: expanded[0] ? 'dialog' : undefined, 'aria-modal': expanded[0] ? true : undefined,
+          'aria-label': L('记忆设置', 'Memory settings'),
+          onKeyDown: function (e) {
+            if (!expanded[0] || e.key !== 'Tab') return
+            var nodes = Array.from(e.currentTarget.querySelectorAll('button:not(:disabled),input:not(:disabled),select:not(:disabled),textarea:not(:disabled),[tabindex="0"]')).filter(function (n) { return n.offsetParent !== null && n.tabIndex >= 0 })
+            if (!nodes.length) return
+            if (e.shiftKey && document.activeElement === nodes[0]) { e.preventDefault(); nodes[nodes.length - 1].focus() }
+            else if (!e.shiftKey && document.activeElement === nodes[nodes.length - 1]) { e.preventDefault(); nodes[0].focus() }
+          } },
+          h('header', { className: 'i5-settings-frame-head' }, h('strong', null, L('记忆设置', 'Memory settings')),
+            h('button', { 'data-i5-settings-return': '', onClick: function () { expanded[1](!expanded[0]) } }, expanded[0] ? L('返回宿主设置', 'Back to host settings') : L('展开设置', 'Expand settings'))),
+          h('div', { className: 'i5-main' }, h(Iter5Settings, { key: identity[0], draftScope: 'host', close: props && props.close }))))
+      return h('div', { ref: slot, 'data-i5-settings-slot': '' },
+        expanded[0] ? h('button', { onClick: function () { if (root.current) root.current.querySelector('button').focus() } }, L('记忆设置已展开', 'Memory settings expanded')) : null,
+        target ? createPortal(form, target) : form)
+    }
+    // Keep unsaved edits across host-driven unmounts, scoped to session/workspace.
+    // Never persist configuration (which may include credentials) to browser storage.
+    var iter5SettingsDrafts = Object.create(null)
+    var iter5SettingsSequence = 0
+    function Iter5Settings(props) {
+      var tickPair = useTick()
+      var i5SettingsId = useRef('i5-settings-' + (++iter5SettingsSequence)).current
+      var i5Group = useState(props && props.intent && ['engine', 'memory', 'appearance', 'behavior'].indexOf(props.intent.group) >= 0 ? props.intent.group : 'engine')
+      var i5Base = useRef(null)
+      var i5Draft = useRef({})
+      var i5Groups = useRef({})
+      var i5Alive = useRef(true), i5Read = useRef(0), i5Busy = useRef(false), i5ConfigGeneration = useRef(0)
+      var i5Initialized = useRef(false), i5AppliedRead = useRef(0)
+      var i5Identity = iter5Identity()
+      var i5DraftKey = i5Identity + '|' + (props && props.draftScope || 'workbench')
+      var i5GroupsDef = { engine: ['engine'], memory: ['window', 'capacity', 'skills'], appearance: ['store', 'look', 'skin'], behavior: ['handoff', 'auto', 'team', 'about'] }
+      useEffect(function () {
+        i5Alive.current = true
+        function before(e) { if (!Object.keys(i5Draft.current).length) return; e.preventDefault(); e.returnValue = '' }
+        window.addEventListener('beforeunload', before)
+        return function () { i5Alive.current = false; window.removeEventListener('beforeunload', before) }
+      }, [])
+      function i5Ok() { return i5Alive.current && i5Identity === iter5Identity() }
+      function i5ApplyConfig(d, request) {
+        i5AppliedRead.current = request
+        var remote = configOf(d)
+        var recovered = !i5Initialized.current && iter5SettingsDrafts[i5DraftKey]
+        i5Initialized.current = true
+        i5Base.current = remote
+        if (recovered) {
+          i5Draft.current = Object.assign({}, recovered.patch); i5Groups.current = Object.assign({}, recovered.groups)
+          setMsg(L('已恢复此会话未保存的修改，请核对后保存或取消。', 'Unsaved edits for this session were restored. Review before saving or discarding.'))
+          var conflict = Object.keys(recovered.patch).some(function (key) { return JSON.stringify(remote[key]) !== JSON.stringify(recovered.base[key]) })
+          setErr(conflict ? L('部分设置已在其他入口变更；恢复的草稿尚未覆盖服务器，请核对。', 'Some settings changed elsewhere. Restored edits have not overwritten the server; review them.') : '')
+        } else if (Object.keys(i5Draft.current).length) {
+          var changed = Object.keys(i5Draft.current).filter(function (key) { return JSON.stringify(remote[key]) !== JSON.stringify(i5Draft.current[key]) })
+          if (changed.length) setMsg(L('检测到其他入口的修改：', 'Changes detected from another entry: ') + changed.join(', ') + L('。你的未保存输入未被覆盖。', ' Your unsaved edits were not overwritten.'))
+        }
+        setCfg(Object.assign({}, remote, i5Draft.current))
+        setDirty(Object.keys(i5Draft.current).length > 0)
+        setPsecKeys(Array.isArray(d.promptSections) ? d.promptSections : [])
+        setPsecMust(Array.isArray(d.promptSectionMust) ? d.promptSectionMust : [])
+      }
+      function i5Record(key, value) {
+        if (JSON.stringify(value) === JSON.stringify((i5Base.current || {})[key])) { delete i5Draft.current[key]; delete i5Groups.current[key] }
+        else { i5Draft.current[key] = value; i5Groups.current[key] = i5Group[0] }
+        setDirty(Object.keys(i5Draft.current).length > 0)
+        if (Object.keys(i5Draft.current).length) iter5SettingsDrafts[i5DraftKey] = { patch: Object.assign({}, i5Draft.current), groups: Object.assign({}, i5Groups.current), base: Object.assign({}, i5Base.current) }
+        else delete iter5SettingsDrafts[i5DraftKey]
+      }
+      function i5Cancel() { delete iter5SettingsDrafts[i5DraftKey]; i5Draft.current = {}; i5Groups.current = {}; setCfg(Object.assign({}, i5Base.current)); setDirty(false); setErr(''); setMsg('') }
+      var cfgPair = useState(null)
+      var cfg = cfgPair[0]
+      var setCfg = cfgPair[1]
+      var busyPair = useState(false)
+      var busy = busyPair[0]
+      function setBusy(value) {
+        i5Busy.current = value
+        i5ConfigGeneration.current += 1
+        busyPair[1](value)
+      }
+      var msgPair = useState('')
+      var msg = msgPair[0]
+      var setMsg = msgPair[1]
+      var errPair = useState('')
+      var err = errPair[0]
+      var setErr = errPair[1]
+      var dirtyPair = useState(false)
+      var dirty = dirtyPair[0]
+      var setDirty = dirtyPair[1]
+      var dbgOpenPair = useState(false)
+      var dbgOpen = dbgOpenPair[0]
+      var setDbgOpen = dbgOpenPair[1]
+      var settingsSectionPair = useState('engine')
+      var settingsSection = settingsSectionPair[0]
+      var setSettingsSection = settingsSectionPair[1]
+      var browseOpenPair = useState(false)
+      var browseOpen = browseOpenPair[0]
+      var setBrowseOpen = function(value){if(!value){browseRequest.current++;pickerRequest.current++}browseOpenPair[1](value)}
+      var browsePathPair = useState('')
+      var browsePath = browsePathPair[0]
+      var setBrowsePath = browsePathPair[1]
+      // ★S1 解耦：内嵌浏览器回填到哪个键（'memoryRoot' | 'workbenchRoot'）
+      var browseKeyPair = useState('memoryRoot')
+      var browseKey = browseKeyPair[0]
+      var setBrowseKey = browseKeyPair[1]
+      var browseParentPair = useState('')
+      var browseParent = browseParentPair[0]
+      var setBrowseParent = browseParentPair[1]
+      var browseDirsPair = useState(null)
+      var browseDirs = browseDirsPair[0]
+      var setBrowseDirs = browseDirsPair[1]
+      var browseRequest = useRef(0), pickerRequest = useRef(0), settingsAlive = useRef(true)
+      useEffect(function(){settingsAlive.current=true;return function(){settingsAlive.current=false;browseRequest.current++;pickerRequest.current++}},[])
+      function closeBrowser(){browseRequest.current++;pickerRequest.current++;setBrowseOpen(false)}
+      // 「总结/问候默认模型」模型抽屉状态
+      var mdlOpenPair = useState(false)
+      var mdlOpen = mdlOpenPair[0]
+      var setMdlOpen = mdlOpenPair[1]
+      var mdlLoadPair = useState(false)
+      var mdlLoading = mdlLoadPair[0]
+      var setMdlLoading = mdlLoadPair[1]
+      var mdlDataPair = useState(null)
+      var mdlData = mdlDataPair[0]
+      var setMdlData = mdlDataPair[1]
+      var mdlErrPair = useState('')
+      var mdlErr = mdlErrPair[0]
+      var setMdlErr = mdlErrPair[1]
+      function openModels() {
+        setMdlOpen(true)
+        setMdlErr('')
+        if (mdlData) return // 已加载过目录,直接展示(保存后重开设置页会重新挂载)
+        setMdlLoading(true)
+        apiGet(API.models).then(function (d) {
+          setMdlData(d || { providers: [] })
+          setMdlLoading(false)
+        }).catch(function (e) {
+          setMdlErr(String(e && e.message ? e.message : e))
+          setMdlLoading(false)
+        })
+      }
+      function browseTo(p) {
+        var request = ++browseRequest.current
+        setBrowseDirs(null)
+        setBrowsePath(p)
+        apiPost(API.browseDir, { path: p }).then(function (d) {
+          if (settingsAlive.current && request === browseRequest.current && d) { setBrowsePath(d.path); setBrowseParent(d.parent); setBrowseDirs(d.dirs || []) }
+        }).catch(function(e){if(settingsAlive.current && request===browseRequest.current){setErr(e.message);setBrowseDirs([])}})
+      }
+      // openBrowser(targetKey)：targetKey = 回填到哪个配置键（默认 memoryRoot）。
+      // ★S1 解耦（2026-09-24，用户纪律「单一开关不得顺带改变其他功能的行为」）：
+      //   选择器被两行复用（记忆根目录 / 工作台工作区）时，**必须只写调用方指定那一个键**——
+      //   早先版本同时 set('memoryRoot') 与 set('workbenchRoot')，会让「选工作台目录」顺带改掉记忆根目录。
+      function openBrowser(targetKey) {
+        var request = ++pickerRequest.current
+        browseRequest.current++
+        var _targetKey = targetKey || 'memoryRoot'
+        // 优先弹系统原生文件夹选择器(native 后端);不可用(远程/无显示)回退内嵌浏览
+        apiPost(API.pickDir, {}).then(function (d) {
+          if(!settingsAlive.current || request!==pickerRequest.current)return
+          if (d && d.native && d.dir) {
+            set(_targetKey, d.dir)
+            setMsg(t('pickedDir') + ' ' + d.dir + ' ' + t('rememberSave'))
+          } else if (d && d.native) {
+            // 用户在系统对话框点了取消:保持原值,不动作
+          } else {
+            setMsg(t('pickerUnavailable'))
+            setBrowseOpen(true)
+            setBrowseKey(_targetKey)
+            browseTo((_targetKey === 'memoryRoot' ? cfg.memoryRoot : cfg.workbenchRoot) || '')
+          }
+        }).catch(function () {
+          if(!settingsAlive.current || request!==pickerRequest.current)return
+          setMsg(t('pickerUnavailable'))
+          setBrowseOpen(true)
+          setBrowseKey(_targetKey)
+          browseTo((_targetKey === 'memoryRoot' ? cfg.memoryRoot : cfg.workbenchRoot) || '')
+        })
+      }
+      // 「总结/问候默认模型」抽屉(复审轮2新增功能的选型 UI):自动检测 llm 目录,分组展示,点选即设
+      function buildModelDrawer() {
+        var panelStyle = { border: '1px solid color-mix(in srgb, var(--dsw-alias-border-l1, rgba(128,128,128,.25)) 60%, transparent)', borderRadius: '8px', padding: '8px', marginBottom: '8px', maxHeight: '260px', overflow: 'auto', background: 'color-mix(in srgb, var(--dsw-alias-bg-layer-1, rgba(128,128,128,.06)) 40%, transparent)' }
+        var kids = []
+        kids.push(h('div', { 'data-dam-slot': 'list', 'data-dam-row': '', style: { marginBottom: '4px' } },
+          h('b', { style: { flex: 1, fontSize: 'calc(12px * var(--dam-scale))' } }, L('选择模型（自动检测）', 'Pick a model (auto-detected)')),
+          h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: function () { setMdlOpen(false) } }, t('close'))))
+        if (mdlLoading) kids.push(h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, L('正在检测可用模型…', 'Detecting models…')))
+        if (mdlErr) kids.push(h('div', { 'data-dam-error': '' }, mdlErr))
+        if (!mdlLoading && !mdlErr && mdlData) {
+          kids.push(h('button', { key: '__default__', 'data-dam-slot': 'actions', 'data-dam-btn': '', style: { display: 'block', width: '100%', textAlign: 'left', padding: '4px 6px', opacity: cfg.subagentModel ? 1 : 0.75 }, onClick: function () { setMany({ subagentModel: '', subagentProvider: '' }); setMdlOpen(false) } },
+            L('跟随路由默认（留空）', 'Follow routing default (empty)')))
+          ;(mdlData.providers || []).forEach(function (p) {
+            var modelBtns = (p.models || []).length
+              ? p.models.map(function (m) {
+                  return h('button', { key: p.id + '/' + m.id, 'data-dam-slot': 'actions', 'data-dam-btn': '', style: { display: 'block', width: '100%', textAlign: 'left', padding: '3px 6px', fontWeight: (cfg.subagentModel === m.id && cfg.subagentProvider === p.id) ? 700 : 400 }, onClick: function () { setMany({ subagentModel: m.id, subagentProvider: p.id }); setMdlOpen(false) } },
+                    m.id + (m.name && m.name !== m.id ? ' · ' + m.name : '') + ((cfg.subagentModel === m.id && cfg.subagentProvider === p.id) ? ' ✓' : ''))
+                })
+              : [h('div', { key: 'none', 'data-dam-slot': 'hint', 'data-dam-hint': '' }, L('（该 provider 未列出模型）', '(no models advertised)'))]
+            kids.push(h('div', { key: 'g-' + p.id, style: { marginTop: '6px' } },
+              h('div', { style: { fontSize: 'calc(11px * var(--dam-scale))', fontWeight: 700, opacity: 0.75, margin: '2px 0' } }, p.name || p.id),
+              modelBtns))
+          })
+          ;(mdlData.failures || []).forEach(function (f) {
+            kids.push(h('div', { key: 'f-' + f.id, 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { opacity: 0.65 } }, '⚠ ' + (f.name || f.id) + ': ' + f.message))
+          })
+          if (!(mdlData.providers || []).length && !(mdlData.failures || []).length) {
+            kids.push(h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, L('未检测到 provider;可直接在下方手动输入。', 'No providers detected; use manual input below.')))
+          }
+          kids.push(h('input', { key: '__manual__', 'data-dam-slot': 'form', 'data-dam-input': '', style: { marginTop: '6px', width: '100%' }, value: cfg.subagentModel || '', placeholder: L('手动输入(可选,provider 跟随路由默认)', 'manual entry (optional, provider follows routing default)'), onChange: function (e) { setMany({ subagentModel: String(e.target.value || '').trim(), subagentProvider: '' }) } }))
+        }
+        // 思考强度(DSH 0.1.5 agentOptions.reasoningEffort):与模型成对下发给子代理;留空=跟随模型默认。
+        // 合法值按 DeepSeek 适配器口径 off|low|high|max(默认 high)——服务端同样做白名单过滤。
+        var effortOpts = [
+          ['', L('跟随默认', 'default')],
+          ['off', 'off'],
+          ['low', 'low'],
+          ['high', 'high'],
+          ['max', 'max'],
+        ]
+        var effortKeys = [
+          ['subagentReasoningEffort', L('全部子代理（兜底）', 'All subagents (fallback)'),
+            L('两条轴都没单独设置时用它。留空 = 跟随模型默认。', 'Used when neither lane is set. Empty follows the model default.')],
+          ['subagentReasoningEffortLong', L('长期轴 · 写长期记忆', 'Long lane · writes long-term memory'),
+            L('consolidate / consolidate-logs / distill / fold —— 它们产出项目笔记与用户级记忆，值得多花思考。', 'consolidate / consolidate-logs / distill / fold — these write project notes and user-level memory, so they are worth more thinking.')],
+          ['subagentReasoningEffortShort', L('短期轴 · 用完即弃', 'Short lane · throwaway'),
+            L('greet / summarize / smart-kw / smart-ans / ws-map —— 展示与检索类，调低更快更省。', 'greet / summarize / smart-kw / smart-ans / ws-map — display and recall jobs; a lower setting is faster and cheaper.')],
+        ]
+        kids.push(h('div', { key: '__effort__', style: { marginTop: '10px', paddingTop: '8px', borderTop: '1px solid color-mix(in srgb, var(--dsw-alias-border-l1, rgba(128,128,128,.25)) 45%, transparent)' } },
+          h('b', { style: { display: 'block', fontSize: 'calc(12px * var(--dam-scale))' } }, L('思考强度（按记忆寿命分两轴）', 'Reasoning effort (by memory lifespan)')),
+          effortKeys.map(function (row) {
+            var cur = String(cfg[row[0]] || '').toLowerCase()
+            return h('div', { key: 'effrow-' + row[0], style: { marginTop: '6px' } },
+              h('div', { style: { fontSize: 'calc(11px * var(--dam-scale))', opacity: 0.85 } }, row[1]),
+              h('div', { 'data-dam-slot': 'list', 'data-dam-row': '', style: { flexWrap: 'wrap', marginTop: '3px' } },
+                effortOpts.map(function (o) {
+                  return h('button', {
+                    key: 'eff-' + row[0] + '-' + (o[0] || 'def'), 'data-dam-slot': 'actions', 'data-dam-btn': '',
+                    style: { padding: '3px 9px', fontWeight: cur === o[0] ? 700 : 400, opacity: cur === o[0] ? 1 : 0.72 },
+                    onClick: function () { set(row[0], o[0]) },
+                  }, o[1] + (cur === o[0] ? ' ✓' : ''))
+                })),
+              h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, row[2]))
+          }),
+          h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, L('off=关闭思维链，low/high/max 递增思考深度（DeepSeek 默认 high）；两轴留空 = 回落到「全部子代理」那一档。只作用于本插件的子代理，不影响主对话。', 'off disables thinking; low/high/max increase depth (DeepSeek default: high). An empty lane falls back to the “All subagents” row. Applies only to this plugin`s subagents, never the main conversation.'))))
+        return h('div', { style: panelStyle }, kids)
+      }
+      var verPair = useState(null)
+      var verInfo = verPair[0]
+      var setVerInfo = verPair[1]
+      var checkingPair = useState(false)
+      var checkingUpdate = checkingPair[0]
+      var setCheckingUpdate = checkingPair[1]
+      var upBusyPair = useState(false)
+      var upBusy = upBusyPair[0]
+      var setUpBusy = upBusyPair[1]
+      var upMsgPair = useState('')
+      var upMsg = upMsgPair[0]
+      var setUpMsg = upMsgPair[1]
+      useEffect(function () { return controller.subscribe(tickPair[1]) }, [])
+      useEffect(function () {
+        var alive = true, request=++i5Read.current
+        apiGet(API.config).then(function (d) {
+          if (!alive || request<i5AppliedRead.current) return
+          if (!i5Ok()) return
+          i5ApplyConfig(d, request)
+          // ★P10-T1：分区清单随 config 应答体下发（宿主唯一真源；取不到就留空 ⇒ 面板给 fail-soft 提示）
+          setPsecKeys(Array.isArray(d.promptSections) ? d.promptSections : [])
+          setPsecMust(Array.isArray(d.promptSectionMust) ? d.promptSectionMust : [])
+        }).catch(function (e) { if (alive && i5Ok() && request>=i5AppliedRead.current && !i5Base.current) setErr(e.message) })
+        // 打开设置页自动检查更新(host 有 12h 缓存,不重复查网)
+        apiGet(API.updateCheck).then(function (d) { if (alive) setVerInfo(d) }).catch(function () {})
+        return function () { alive = false }
+      }, [])
+      // M7.5 语义引擎资产状态与安装引导(Hooks 必须位于任何条件 return 之前——React 规则,
+      // 否则 cfg 未加载时提前 return 会跳过这些 useState,二次渲染 hooks 数量不一致 → error #310)
+      var semPair = useState({ loaded: false, ready: false, assetPresent: false, peerPresent: false, pythonInt8Present: false })
+      var sem = semPair[0]
+      var setSem = semPair[1]
+      var effectiveWater=useState(null)
+      var guidePair = useState('js')
+      var promptEditPair = useState(false)
+      var promptEditOpen = promptEditPair[0]
+      var setPromptEditOpen = promptEditPair[1]
+      var guide = guidePair[0]
+      var setGuide = guidePair[1]
+      var mirrorPair = useState('auto')
+      var mirror = mirrorPair[0]
+      var setMirror = mirrorPair[1]
+      // M-CM6-B v3·环境检测面板状态(2026-09-08)——必须挂在下方 if (!cfg) 早退之前:
+      // hooks 挂在早退后会在 cfg 加载完成的首帧多执行,React 报 hooks 数量不一致,整棵设置树崩溃(设置页整体消失)。
+      var detOpenPair = useState(false)
+      var detOpen = detOpenPair[0]
+      var setDetOpen = detOpenPair[1]
+      var detPair = useState(null)
+      var det = detPair[0]
+      var setDet = detPair[1]
+      var detBusyPair = useState(false)
+      var detBusy = detBusyPair[0]
+      var setDetBusy = detBusyPair[1]
+      // ★P10-T1（2026-09-22）：注入分区开关的**二级页**状态 + 清单。
+      //   清单来自宿主常量（经 /config 应答体 promptSections 下发），前端不硬编码成员。
+      //   同 det* 的理由：必须挂在下方 if (!cfg) 早退之前，否则 hooks 数量不一致 → error #310。
+      var psecOpenPair = useState(false)
+      var psecOpen = psecOpenPair[0]
+      var setPsecOpen = psecOpenPair[1]
+      var psecKeysPair = useState([])
+      var psecKeys = psecKeysPair[0]
+      var setPsecKeys = psecKeysPair[1]
+      var psecMustPair = useState([])
+      var psecMust = psecMustPair[0]
+      var setPsecMust = psecMustPair[1]
+      useEffect(function () {
+        var alive=true,waterGeneration=0,waterSession=''
+        function apply(value){if(alive)setSem(value)}
+        function load(){
+          refreshSem(apply,function(){if(alive)setSem({loaded:true,ready:false})},setSem)
+          var request=++waterGeneration,sid=currentSessionIdClient()
+          if(sid!==waterSession){waterSession=sid;effectiveWater[1](null)}
+          apiGet(API.handoffState,{sessionId:sid}).then(function(d){if(alive && request===waterGeneration && sid===currentSessionIdClient())effectiveWater[1](d.waterLevel || null)}).catch(function(){if(alive && request===waterGeneration && sid===currentSessionIdClient())effectiveWater[1](null)})
+        }
+        load();var unsub=controller.subscribe(load)
+        return function(){alive=false;waterGeneration++;unsub()}
+      }, [])
+      // 下载进行中每 1.5s 轮询真实进度(服务端流式记账 bytesDone/bytesTotal/mirrorUsed)
+      useEffect(function () {
+        var ph = sem && sem.download && sem.download.phase
+        if (ph !== 'downloading' && ph !== 'verifying') return function () {}
+        var iv = setInterval(function () {
+          refreshSem(setSem)
+        }, 1500)
+        return function () { clearInterval(iv) }
+      }, [sem && sem.download && sem.download.phase])
+      if (!cfg) return err ? h('div', { 'data-dam-error': '' }, err) : h(Loading)
+    // issue #52:旧实现 `var next = Object.assign({}, cfg); next[key] = value` 读的是**本次渲染的闭包快照**。
+    // 同一个事件里连续调 `set('subagentModel', m); set('subagentProvider', p)` 时,React 批处理两次
+    // 更新,而第二次仍基于同一个旧 cfg ⇒ 把第一次写进去的值**覆盖回旧值**。
+    // 典型症状:subagentModel 存过一个后来被删除的模型后,无论换模型/清空/手输都无法覆盖,
+    // 插件持续按已删除模型派子代理(issue #52)。
+    // 修法:改用函数式更新,基于**最新** prev 派生 next,成对字段不再互相覆盖。
+    function set(key, value) {
+        if (i5Busy.current) return
+        if (key === 'associativeMemoryEnabled' && value === false && cfg.associativeMemoryEnabled && !window.confirm(L('关闭自动记忆引擎并保存后，将清零全部观察数据。记忆正文保留。确定关闭？', 'Saving with the engine disabled clears all observation data. Memory files are preserved. Disable?'))) return
+        i5Record(key, value)
+        setCfg(function (prev) { var next = Object.assign({}, prev); next[key] = value; return next })
+      }
+    /** 原子更新多个字段(issue #52 建议口径):一次函数式更新写入成对字段,避免先后覆盖。 */
+    function setMany(patch) { if (i5Busy.current) return; Object.keys(patch).forEach(function (k) { i5Record(k, patch[k]) }); setCfg(function (prev) { return Object.assign({}, prev, patch) }) }
+      function checkUpdate() {
+        if (checkingUpdate) return
+        setCheckingUpdate(true)
+        apiGet(API.updateCheck + '?force=1').then(function (d) { setVerInfo(d); setCheckingUpdate(false) })
+          .catch(function (e) { setVerInfo({ error: e.message }); setCheckingUpdate(false) })
+      }
+      function doUpdate() {
+        if (upBusy) return
+        setUpBusy(true); setUpMsg('')
+        apiPost(API.update, {}).then(function (d) {
+          setUpBusy(false)
+          if (d && d.ok) { setUpMsg(t('updateDone')); setVerInfo(null); checkUpdate() }
+          else setUpMsg(t('updateFailed') + (d && d.message ? d.message : t('unknown')))
+        }).catch(function (e) { setUpBusy(false); setUpMsg(t('updateFailed') + e.message) })
+      }
+      function save() {
+        if (i5Busy.current || !Object.keys(i5Draft.current).length) return
+        i5AppliedRead.current=++i5Read.current;i5Busy.current=true
+        setBusy(true); setMsg(''); setErr('')
+        var patch = Object.assign({}, i5Draft.current)
+        saveConfigPatch(patch, {
+          onSaved: function (d) {
+            var stored=iter5SettingsDrafts[i5DraftKey]
+            if(stored && JSON.stringify(stored.patch)===JSON.stringify(patch))delete iter5SettingsDrafts[i5DraftKey]
+            if (!i5Ok()) return
+            i5Base.current = configOf(d)
+            i5Draft.current = {}; i5Groups.current = {}
+            setCfg(configOf(d)); setDirty(false); setBusy(false);i5Busy.current=false; setMsg(t('saved') + (d.migrated ? ' · ' + d.migrated : '') + (d.warning ? ' · ' + d.warning : ''))
+            if (configOf(d).locale) applyLocalePref(configOf(d).locale)
+            refreshSem(setSem)
+          },
+          onError: function (e) { if (i5Ok()) { setErr(e.message); setBusy(false);i5Busy.current=false } }
+        })
+      }
+      function field(label, control, hint) {
+        if (control && (control.type === 'input' || control.type === 'select' || control.type === 'textarea')) control = React.cloneElement(control, { 'aria-label': label, disabled: busy || control.props.disabled, role: control.type === 'input' && control.props.type === 'checkbox' ? 'switch' : undefined })
+        return h('div', { 'data-dam-settings-row': '', 'data-i5-field': label },
+          h('div', { 'data-dam-slot': 'list', 'data-dam-row': '' }, h('label', null, label), control),
+          hint ? h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, hint) : null)
+      }
+      function setAccent(value) {
+        accentTheme = ACCENT_VALUES[value] ? value : 'deepseek'
+        try { localStorage.setItem('dsh-auto-memory.accentTheme.v1', accentTheme) } catch (e) {}
+        emit()
+      }
+      function setDensity(value) {
+        graphDensity = value === 'compact' ? 'compact' : 'relaxed'
+        try { localStorage.setItem('dsh-auto-memory.graphDensity.v1', graphDensity) } catch (e) {}
+        emit()
+      }
+      // M-CM6-B v3·环境检测面板(2026-09-08):semMode 下拉旁 ⟳ 按钮 → 自动检索环境 → 联动安装助手(美学对齐安装向导卡)
+      // (det* hooks 已上移到 if (!cfg) 早退之前,见 mirrorPair 后——此处只放事件函数)
+      function runDetect() {
+        if (detBusy) return
+        setDetOpen(true)
+        setDetBusy(true)
+        apiGet(API.semanticDeepDetect).then(function (d) {
+          setDet(d || {}); setDetBusy(false)
+          // 2026-09-08:检测发现缺失时按当前模式自动打开对应安装引导卡(兑现「缺失时自动弹安装引导」)
+          var rec = d && d.recommendation
+          var mode = (cfg && cfg.semanticEngineMode) || 'auto'
+          if (rec === 'setup-python' && mode === 'python') setGuide('python')
+          else if ((rec === 'download-model' || rec === 'install-peer' || rec === 'setup-both') && mode !== 'python') setGuide('js')
+          else if (rec === 'setup-both' && mode === 'python') setGuide('python')
+        }).catch(function () { setDet({ failed: true }); setDetBusy(false) })
+        refreshSem(setSem)
+      }
+      function onEngineModeChange(e) {
+        var v = e.target.value
+        if (i5Busy.current) return
+        i5AppliedRead.current=++i5Read.current;i5Busy.current=true
+        setBusy(true); setErr(''); setMsg('')
+        saveConfigPatch({ semanticEngineMode: v }, {
+          onSaved: function (d) {
+            if (!i5Ok()) return
+            i5Base.current = configOf(d)
+            setCfg(Object.assign({}, configOf(d), i5Draft.current)); setBusy(false);i5Busy.current=false
+            setMsg(L('检索模式已即时生效', 'Retrieval mode saved immediately'))
+            refreshSem(function (s) {
+              if (!i5Ok()) return
+              setSem(s)
+              setGuide(v === 'js' && !s.ready ? 'js' : v === 'python' && !s.pythonInt8Present ? 'python' : '')
+            },null,setSem)
+          }, onError: function (e) { if (i5Ok()) { setErr(e.message); setBusy(false);i5Busy.current=false } }
+        })
+      }
+      var sectionLabels = {
+        engine: L('语义记忆总开关', 'Memory engine'),
+        window: L('记忆窗口（注入什么）', 'Memory window'),
+        capacity: L('记忆容量与归档', 'Capacity & retention'),
+        skills: L('自动沉淀成技能', 'Skills & promotion'),
+        handoff: L('长会话接续', 'Handoff & continuation'),
+        auto: L('自动化与免打扰', 'Automation'),
+        store: L('存储与外部记忆', 'Storage'),
+        look: L('外观与交互', 'Appearance'),
+        team: L('团队协作', 'Teamwork'),
+        team: L('团队协作', 'Teamwork'),
+        skin: L('皮肤素材', 'Skin assets'),
+        about: L3('关于与维护', 'About & maintenance', '情報とメンテナンス'),
+      }
+      var i5WelcomeControl = null
+      function section(key, title, content) {
+        if (key === 'auto') content = content.filter(function (node) { if (node && node.props && node.props['data-i5-field'] === t('fWelcomeTour')) { i5WelcomeControl = node; return false } return true })
+        if (key === 'look' && i5WelcomeControl) content = [i5WelcomeControl].concat(content)
+        var hidden = i5GroupsDef[i5Group[0]].indexOf(key) < 0
+        if (key === 'engine') {
+          var mode = [], primary = [], advanced = [], support = []
+          content.forEach(function (node) {
+            if (!node) return
+            var label = node.props && node.props['data-i5-field']
+            if (label === t('semMode')) mode.push(node)
+            else if (label === t('fAssocEngine') || label === t('fAnchorIndex')) primary.push(node)
+            else if (node.props && node.props['data-dam-gate-readout'] !== undefined) primary.push(node)
+            else if (label) advanced.push(node)
+            else support.push(node)
+          })
+          return h('div', { id: i5SettingsId + '-section-' + key, className: 'i5-engine-grid', hidden: hidden },
+            h(Iter5Card, { className: 'i5-mode-card', title: L('检索模式', 'Retrieval mode'), icon: 'search', hue: 'blue' }, mode),
+            h(Iter5Card, { className: 'i5-setup-card', title: L('引擎状态与安装', 'Engine status & setup'), icon: 'spark', hue: 'purple' }, support),
+            h(Iter5Card, { title: title, icon: 'pulse', hue: 'green' }, primary, h('details', null, h('summary', null, L('高级：发射模式、判定参数与观测', 'Advanced: emission, thresholds & observation')), advanced)))
+        }
+        var icons = { window: 'library', capacity: 'storage', skills: 'skills', handoff: 'handoff', auto: 'timeline', store: 'folder', look: 'settings', team: 'mindmap', skin: 'spark', about: 'note' }
+        return h('section', { id: i5SettingsId + '-section-' + key, 'data-dam-settings-group': '', hidden: hidden }, h('h3', { className: 'i5-card-title' }, h('span', { className: 'i5-badge', 'data-hue': key === 'skills' ? 'green' : key === 'handoff' ? 'cyan' : key === 'auto' ? 'orange' : 'blue' }, h(Iter5Icon, { name: icons[key] || 'settings' })), title), content)
+      }
+      function jumpToSection(key) {
+        setSettingsSection(key)
+        try { var el = document.getElementById('dam-settings-' + key); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }) } catch (e) {}
+      }
+      return h('div', { 'data-dam-settings': '', 'data-i5-dirty': dirty ? 'true' : 'false' },
+        h(Iter5Tabs, { id: i5SettingsId, label: L('设置分组', 'Settings groups'), value: i5Group[0], onChange: i5Group[1], items: [['engine', L('引擎', 'Engine')], ['memory', L('记忆', 'Memory')], ['appearance', L('外观与目录', 'Appearance & paths')], ['behavior', L('行为与维护', 'Behavior & maintenance')]].map(function (r) { return [r[0], r[1], Object.keys(i5Groups.current).some(function (k) { return i5Groups.current[k] === r[0] })] }) }),
+        h('nav', { 'data-dam-region': 'settings', 'data-dam-settings-nav': '', 'aria-label': L('设置分组', 'Settings sections') }, Object.keys(sectionLabels).map(function (key) {
+          return h('button', { key: key, 'data-dam-slot': 'actions', 'data-dam-btn': '', 'data-active': settingsSection === key ? 'true' : undefined, onClick: function () { jumpToSection(key) } }, sectionLabels[key])
+        })),
+        h('div', { 'data-dam-settings-content': '', role: 'tabpanel', id: i5SettingsId + '-panel', 'aria-labelledby': i5SettingsId + '-tab-' + i5Group[0] },
+        section('engine', sectionLabels.engine, [
+          field(t('fAssocEngine'), h('input', { type: 'checkbox', checked: !!cfg.associativeMemoryEnabled, onChange: function (e) { set('associativeMemoryEnabled', e.target.checked) } }), t('fAssocEngineHint')),
+          field(t('fAnchorIndex'), h('input', { type: 'checkbox', checked: !!cfg.memoryAnchorEnabled, onChange: function (e) { set('memoryAnchorEnabled', e.target.checked) } }), t('fAnchorIndexHint')),
+          field(t('fJsCooldown'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 0, max: 60, value: cfg.jsDecideCooldownRounds === undefined ? 1 : cfg.jsDecideCooldownRounds, onChange: function (e) { set('jsDecideCooldownRounds', (function () { var v = Number(e.target.value); return (Number.isFinite(v) && v >= 0) ? v : 1 })())  /* #19: 0=不冷却 是合法值,|| 1 会吃掉 0 */ } }), t('fJsCooldownHint')),
+          field(t('fJsDelta'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 0, max: 1, step: 0.005, value: cfg.jsDecideDeltaExp === undefined ? 0.01 : cfg.jsDecideDeltaExp, onChange: function (e) { var v = Number(e.target.value); set('jsDecideDeltaExp', Number.isFinite(v) && v >= 0 ? v : 0.01) } }), t('fJsDeltaHint')),
+          field(t('fJsExcerpt'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 20, max: 480, disabled: cfg.jsDecideCandidateScheme !== 'custom', value: cfg.jsDecideExcerptChars === undefined ? 40 : cfg.jsDecideExcerptChars, onChange: function (e) { set('jsDecideExcerptChars', Math.max(20, Math.min(480, Number(e.target.value) || 40))) } }), t('fJsExcerptHint') + ' ' + L3('仅自定义方案使用。当前方案：', 'Used by Custom only. Current preset: ', 'カスタムのみ使用。現在のプリセット：') + (cfg.jsDecideCandidateScheme === 'dense' ? '6 × 20' : cfg.jsDecideCandidateScheme === 'custom' ? String(cfg.jsDecideCandidatesN || 4) + ' × ' + String(cfg.jsDecideExcerptChars || 40) : '3 × 40')),
+          field(t('fEmitMode'), h('select', { 'data-dam-select': '', value: (sem && sem.activationEmitMode) || 'shadow', onChange: function (e) { var m = e.target.value; apiPost(API.semanticEmit, { mode: m }).then(function () { if (i5Ok()) refreshSem(setSem) }).catch(function (e) { if (i5Ok()) setErr(e.message) }) } },
+            h('option', { value: 'shadow' }, L('shadow 只记录', 'shadow (record only)')),
+            h('option', { value: 'canary-explicit' }, L('canary 显式回忆注入', 'canary (explicit recall)')),
+            h('option', { value: 'active' }, L('active 全部注入', 'active (all)'))), t('fEmitModeHint')),
+          // ★2026-09-30（C1 · 用户裁定：设置面必须全量、不得缺项）——
+          //   唤起链路的**四道真闸门**此前只有宿主读、没有任何 UI 入口（实测 client.js 零引用）：
+          //   ① activationInboxEnabled = 「记忆唤回」总闸（activation-host effectiveEnabled 的第二个条件，
+          //      关着则 pre-step claim / reference-tail 渲染 / 状态三处全早退 ⇒ 设置显示正常但唤回永不投递）；
+          //   ② shadowRetrievalEnabled = 主动唤起的影子检索（shadow-host）；
+          //   ③ contextBridgeEnabled = 上下文桥（context-host）；
+          //   ④ l0IndexEnabled = L0 向量索引接线（l0-index-sync）。
+          //   ⚠️ 不给 pythonBackendEnabled / activationSource / contextSinkMode 独立控件：
+          //   它们是 semanticEngineMode 的**联动派生值**（index.js 自动对齐），单独可改会互相打架。
+          field(t('fInboxGate'), h('input', { type: 'checkbox', 'data-dam-gate': 'activationInboxEnabled', checked: cfg.activationInboxEnabled === true, onChange: function (e) { set('activationInboxEnabled', e.target.checked) } }), t('fInboxGateHint')),
+          field(t('fShadowRetrieval'), h('input', { type: 'checkbox', 'data-dam-gate': 'shadowRetrievalEnabled', checked: cfg.shadowRetrievalEnabled === true, onChange: function (e) { set('shadowRetrievalEnabled', e.target.checked) } }), t('fShadowRetrievalHint')),
+          field(t('fContextBridge'), h('input', { type: 'checkbox', 'data-dam-gate': 'contextBridgeEnabled', checked: cfg.contextBridgeEnabled === true, onChange: function (e) { set('contextBridgeEnabled', e.target.checked) } }), t('fContextBridgeHint')),
+          field(t('fL0Index'), h('input', { type: 'checkbox', 'data-dam-gate': 'l0IndexEnabled', checked: cfg.l0IndexEnabled !== false, onChange: function (e) { set('l0IndexEnabled', e.target.checked) } }), t('fL0IndexHint')),
+          // 只读诊断：把「三道门 + 当前档位」如实显示，消除「设置显示正常但不生效」的盲区。
+          // ★2026-09-30 真机教训：settings 面板曾显示「一切就绪」而 Python sidecar 根本没进程 ——
+          //   故此处**以宿主探测结果为准**（pythonInt8Present / resolvedTier / activationEmitMode），不猜。
+          (function () {
+            var rows = []
+            var emitMode = (sem && sem.activationEmitMode) || 'shadow'
+            var tier = (sem && sem.resolvedTier) || ''
+            var live = i5Base.current || {}; var gateOk = live.associativeMemoryEnabled === true && live.activationInboxEnabled === true
+            rows.push(L('总闸（自动记忆 + 收件箱）', 'Master gate (associative + inbox)') + '：' + (gateOk ? L('已开', 'ON') : L('关（唤回不会投递）', 'OFF (recall will not be delivered)')))
+            rows.push(L('唤起注入模式', 'Emit mode') + '：' + emitMode)
+            rows.push(L('当前档位', 'Resolved tier') + '：' + (tier === 'c3' ? 'C3 · Python' : tier === 'c2' ? 'C2 · JS' : tier ? ('C1 · ' + tier) : L('检测中', 'detecting')))
+            if (sem && sem.pythonRuntime) {
+              var rt = sem.pythonRuntime
+              var pyOk = (rt.state === 'verified-ok' || rt.state === 'ready') && rt.depsOk !== false
+              rows.push(L('Python 运行时', 'Python runtime') + '：' + (pyOk ? L('可用', 'available') : (L('不可用', 'unavailable') + (rt.state ? ' (' + rt.state + ')' : ''))))
+            }
+            return h('div', { 'data-dam-gate-readout': '', 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { fontSize: 'calc(11.5px * var(--dam-scale))', lineHeight: 1.8, opacity: .82, marginTop: '4px' } },
+              rows.map(function (line, i) { return h('div', { key: 'r' + i }, line) }))
+          })(),
+          field(t('fCandScheme'), h('select', { 'data-dam-select': '', value: cfg.jsDecideCandidateScheme || 'balanced', onChange: function (e) { set('jsDecideCandidateScheme', e.target.value) } },
+            h('option', { value: 'balanced' }, L('balanced 3×40', 'balanced 3×40')),
+            h('option', { value: 'dense' }, L('dense 6×20', 'dense 6×20')),
+            h('option', { value: 'custom' }, L('custom 自定义', 'custom'))), t('fCandSchemeHint')),
+          (cfg.jsDecideCandidateScheme === 'custom') ? field(t('fCandN'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 1, max: 8, value: cfg.jsDecideCandidatesN === undefined ? 4 : cfg.jsDecideCandidatesN, onChange: function (e) { set('jsDecideCandidatesN', Math.max(1, Math.min(8, Number(e.target.value) || 4))) } }), t('fCandNHint')) : null,
+          field(t('semMode'), h('div', { style: { display: 'flex', gap: '6px', alignItems: 'center' } }, [
+            h('div', { className: 'i5-engine-radios', role: 'radiogroup', 'aria-label': L('检索模式（即时生效）', 'Retrieval mode (immediate)') },
+              [['auto', t('semAuto')], ['lexical', t('semLexOnly')], ['js', t('semJs')], ['python', t('semPy')]].map(function (r) { return h('label', { className: 'i5-engine-choice', key: r[0] }, h('input', { type: 'radio', name: 'i5-engine', value: r[0], checked: (cfg.semanticEngineMode || 'auto') === r[0], disabled: busy, onChange: onEngineModeChange }), h('span', null, r[1])) })),
+            h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', title: L('自动检测本机语义引擎环境(JS/Python 资产+推理库),并联动安装助手', 'Auto-detect local semantic engine assets & runtime, with setup assistant'), disabled: detBusy, onClick: function () { void runDetect() } }, detBusy ? '⏳' : '⟳ 检测'),
+            // 2026-09-10:向导入口原先只在"资产未就绪"时自动弹出,已装好的用户反而进不去(想重装/换布局无处可点)。
+            // 现在常驻一个显式开关,永远可达;已就绪时打开也只是复用同一套下载/校验步骤。
+            h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', title: L('打开/收起安装向导(按当前引擎选择:JS 模型 或 Python 引擎)', 'Open/collapse setup wizard (follows the selected engine)'), onClick: function () { setGuide(guide ? '' : ((cfg.semanticEngineMode === 'python') ? 'python' : 'js')) } },
+              guide ? (L('收起向导', 'Hide wizard')) : (L('🧩 安装向导', '🧩 Setup'))),
+          ]), t('semModeHint')),
+          field(t('fIncEmbed'), h('input', { type: 'checkbox', checked: cfg.semanticEmbedIncremental !== false, onChange: function (e) { set('semanticEmbedIncremental', e.target.checked) } }), t('fIncEmbedHint')),
+          // M-CM6-B v3·环境检测面板:⟳ 按钮触发,自动检索环境(快检+深扫+热接入),联动安装助手;美学对齐安装向导卡
+          detOpen ? (function () {
+            var panelStyle = { border: '1px solid color-mix(in srgb, var(--dsw-alias-border-l1, rgba(128,128,128,.25)) 60%, transparent)', borderRadius: '10px', padding: '12px', marginBottom: '10px', background: 'color-mix(in srgb, var(--dsw-alias-bg-layer-1, rgba(128,128,128,.06)) 55%, transparent)', backdropFilter: 'blur(14px) saturate(1.3)', WebkitBackdropFilter: 'blur(14px) saturate(1.3)' }
+            var row = function (label, val) { return h('div', { style: { display: 'flex', gap: '8px', fontSize: 'calc(12px * var(--dam-scale))', lineHeight: 1.7 } }, [h('span', { style: { opacity: .7, minWidth: '120px', flexShrink: 0 } }, label), h('span', { style: { wordBreak: 'break-all' } }, val)]) }
+            var tierText = det && det.resolvedTier === 'c2' ? 'C2 · JS 语义' : det && det.resolvedTier === 'c3' ? 'C3 · Python' : 'C1 · 词法兜底'
+            var kids = [h('div', { style: { display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '6px' } }, [
+              h('b', { style: { flex: 1, fontSize: 'calc(12px * var(--dam-scale))' } }, L('语义引擎环境检测', 'Semantic engine environment check')),
+              h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', disabled: detBusy, onClick: function () { void runDetect() } }, detBusy ? (L('检测中…', 'Scanning…')) : (L('重新检测', 'Rescan'))),
+              h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: function () { setDetOpen(false) } }, t('close')),
+            ])]
+            if (detBusy && !det) {
+              kids.push(h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, L('正在检测本地资产与推理库(快检 + 失败自动深度扫描 ~/.dsh/profiles 与 pnpm 虚拟存储)…', 'Scanning local assets and inference runtime (quick scan + deep scan of ~/.dsh/profiles and pnpm store)…')))
+            } else if (det && det.failed) {
+              kids.push(h('div', { 'data-dam-error': '' }, L('✗ 检测失败,请稍后重试。', '✗ Detection failed, please retry.')))
+            } else if (det) {
+              kids.push(row('JS 引擎模型', det.ready ? '✓ 就绪' : '✗ 未就绪'))
+              if (det.assetPath) kids.push(row('模型路径', String(det.assetPath).slice(-72) + (det.assetBytes ? ' (' + Math.round(det.assetBytes / 1048576) + 'MB)' : '')))
+              // ★2026-09-30（用户原则①「真跑通才算通过」+ 原则②「失败把报错摆出来」）：
+              //   Python 行的**三态显示** —— 不再拿"文件在不在"冒充就绪。判据来自后端
+              //   probePythonRuntime（解释器链 deps 探测 + worker health 真反馈）。
+              var pr = det && det.pythonRuntime
+              var pyState, pyHint = ''
+              if (pr) {
+                // ★2026-09-30 三态以**后端权威 state** 为准（verified-ok/ready-unverified/
+                //   start-failed/deps-failed/no-files），前端不再自行拼接判据 —— 面板与档位同源，不再矛盾。
+                if (pr.state === 'verified-ok') {
+                  pyState = L('✓ 就绪（已实测启动）', '✓ Ready (verified)')
+                  pyHint = (pr.chosenLabel || '') + (pr.chosenIsDev ? L(' · 检测到开发值，欢迎开发者', ' · dev tree detected') : '')
+                  if (pr.worker && pr.worker.vectorReady === false) pyHint += L(' · 向量待索引重建（正常）', ' · vectors pending rebuild')
+                } else if (pr.state === 'ready-unverified') {
+                  pyState = L('✓ 就绪（依赖通过，尚未实测启动）', '✓ Ready (deps ok, not yet verified)')
+                  pyHint = (pr.chosenLabel || '') + (pr.chosenIsDev ? L(' · 检测到开发值，欢迎开发者', ' · dev tree detected') : '')
+                } else if (pr.state === 'start-failed') {
+                  pyState = L('⚠ 有文件但未能启动', '⚠ Files present, failed to start')
+                  pyHint = (pr.worker && pr.worker.reason) ? pr.worker.reason : (pr.error || L('启动探测未通过', 'startup probe failed'))
+                } else if (pr.state === 'deps-failed') {
+                  pyState = L('⚠ 有文件但未能启动', '⚠ Files present, failed to start')
+                  var noDep = (pr.probed || []).filter(function (x) { return x.deps !== true }).length
+                  pyHint = pr.error || L('无可用解释器（' + noDep + ' 个候选缺依赖 transformers/onnxruntime/numpy）', noDep + ' interpreter candidate(s) lack deps')
+                  if (pr.chosenIsDev) pyHint += L(' · 检测到开发值，欢迎开发者', ' · dev tree detected')
+                } else {
+                  pyState = L('✗ 未安装', '✗ Not installed')
+                  pyHint = pr.error || L('模型文件缺失', 'model file missing')
+                }
+              } else {
+                var pyReady2 = (det && det.pythonInt8Present !== undefined) ? det.pythonInt8Present : sem.pythonInt8Present
+                pyState = (pyReady2 === undefined || pyReady2 === null) ? L('状态未知', 'unknown') : (pyReady2 ? '✓ 就绪' : '✗ 未就绪')
+              }
+              kids.push(row('Python 模型(int8)', pyState))
+              if (pyHint) kids.push(row('　', pyHint.length > 200 ? pyHint.slice(0, 200) + '…' : pyHint))
+              kids.push(row('当前生效档位', tierText))
+              if (det.deep && det.deep.integrated) kids.push(row('深度扫描', locale === 'zh' ? '发现并热接入 ' + (det.deep.foundDirs || []).length + ' 处推理库(无需重启即生效)' : 'Hot-adopted ' + (det.deep.foundDirs || []).length + ' runtime dir(s) (no restart needed)'))
+              if (det.recommendation && det.recommendation !== 'none') {
+                kids.push(h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { margin: '8px 0 6px' } }, L('检测到缺失项,联动安装助手:', 'Missing assets detected — open the setup assistant:')))
+                var btns = []
+                if (det.recommendation === 'download-model' || det.recommendation === 'setup-both') btns.push(h('button', { key: 'js', 'data-dam-slot': 'actions', 'data-dam-btn': '', style: { marginRight: '6px' }, onClick: function () { setGuide('js'); setDetOpen(false) } }, L('打开 JS 安装引导', 'Open JS setup')))
+                if (det.recommendation === 'setup-both' || det.recommendation === 'setup-python') btns.push(h('button', { key: 'py', 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: function () { setGuide('python'); setDetOpen(false) } }, L('打开 Python 向导', 'Open Python wizard')))
+                if (det.recommendation === 'install-peer') kids.push(h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginTop: '4px' } }, L('模型已就绪但推理库(@huggingface/transformers)缺失:请在其它设备安装后重试检测,或按 JS 引导重装。', 'Model ready but runtime (@huggingface/transformers) missing: install it and re-scan, or reinstall via JS setup.')))
+                if (btns.length) kids.push(h('div', { style: { display: 'flex', gap: '6px' } }, btns))
+              } else if (det.ready && det.pythonInt8Present !== false && !(det.pythonRuntime && (det.pythonRuntime.state === 'start-failed' || det.pythonRuntime.state === 'deps-failed'))) {
+                kids.push(h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginTop: '8px' } }, L('✓ 一切就绪,无需安装。', '✓ Everything is ready.')))
+              } else if (det.ready) {
+                // 2026-09-08 修复:JS 就绪但 Python 缺失不再显示「一切就绪」(此前 recommendation=none 导致矛盾+无引导)
+                // ★2026-09-30 文案按**运行时状态**区分（修真机矛盾：状态明明是"有文件未能启动"，却提示"未安装、当前模式不受影响"）
+                var pyBad = det.pythonRuntime && (det.pythonRuntime.state === 'start-failed' || det.pythonRuntime.state === 'deps-failed')
+                var pyModeNow = cfg.semanticEngineMode === 'python'
+                kids.push(h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { margin: '8px 0 6px' } }, pyBad
+                  ? (pyModeNow
+                    ? L('JS 引擎就绪;Python 档有文件但未能启动（原因见上）——当前选的就是 Python 档,语义检索将回退到内置引擎/词法档。', 'JS engine ready; Python has files but failed to start (see reason above) — Python mode is selected, so retrieval falls back to the built-in engine / lexical.')
+                    : L('JS 引擎就绪;Python 档有文件但未能启动（原因见上）——仅影响 Python 引擎模式,当前模式不受影响。', 'JS engine ready; Python has files but failed to start (see reason above) — only the Python engine mode is affected.'))
+                  : L('JS 引擎就绪;Python 模型未安装——仅影响 Python 引擎模式,当前模式不受影响。', 'JS engine ready; the Python model is not installed — only the Python engine mode is affected.')))
+                kids.push(h('div', { style: { display: 'flex', gap: '6px' } }, [h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: function () { setGuide('python'); setDetOpen(false) } }, L('打开 Python 向导', 'Open Python wizard'))]))
+              }
+            }
+            return h('div', { 'data-dam-detect-panel': '', style: panelStyle }, kids)
+          })() : null,
+          guide === 'python' ? h(PySetupWizard) : null,
+          guide === 'js' || guide === 'python' ? (function () {
+            // 安装引导卡(对齐 ui-assets 原型:进度条/下载源/体积/状态)——资产检测由 sem 状态机驱动
+            var isJs = guide === 'js'
+            var title = isJs ? (L('内置语义引擎 · 安装引导', 'Built-in semantic engine · setup')) : (L('高级 Python 引擎 · 安装引导', 'Advanced Python engine · setup'))
+            var desc = isJs
+              ? (L('下载约130MB本地量化模型（multilingual-e5-small），校验后离线运行——记忆不出电脑。下载期间词法检索照常可用，完成后自动启用。', 'Downloads a ~130MB local quantized model (multilingual-e5-small), verifies and runs fully offline — memories never leave this machine. Lexical search keeps working during setup; the engine switches on automatically when ready.'))
+              : (L('高级引擎通过本地 Python sidecar 运行 BGE-M3 int8（约563MB），召回质量最高。需要引导式安装（Python 环境 + 模型），适合深度用户；不安装不影响内置引擎。', 'The advanced engine runs BGE-M3 int8 (~563MB) via a local Python sidecar for maximum recall. Guided install required (Python runtime + model); optional for power users.'))
+            var ready = isJs ? sem.ready : sem.pythonInt8Present
+            var bytes = isJs ? (sem.assetBytes || 0) : (sem.pythonInt8Bytes || 0)
+            var dl = (isJs && sem.download) ? sem.download : { phase: 'idle' }
+            var dlActive = dl.phase === 'downloading' || dl.phase === 'verifying'
+            // 规范 G 七态之「建库中」:SHA256 过了但引擎还在后台编码全量语料(jsSemantic.embedding)
+            var building = isJs && sem.jsSemantic && sem.jsSemantic.embedding === true
+            var totalJs = sem.manifestBytes || Math.round(130 * 1024 * 1024)
+            var stateTxt, stateBg
+            if (!sem.loaded) { stateTxt = L('检测中…', 'Detecting…'); stateBg = 'var(--dam-neutral-16, rgba(128,128,128,.16))' }
+            else if (ready && building) { stateTxt = L('已就绪 · 建库中…', 'Ready · building index…'); stateBg = 'var(--dam-36-86-196-2, rgba(36,86,196,.2))' }
+            else if (ready) { stateTxt = L('已就绪 ✓', 'Ready ✓'); stateBg = 'var(--dam-47-164-106-24, rgba(47,164,106,.24))' }
+            else if (dl.phase === 'error') { stateTxt = t('dlError'); stateBg = 'var(--dam-196-74-74-22, rgba(196,74,74,.22))' }
+            else if (dl.phase === 'cancelled') { stateTxt = t('dlCancelled'); stateBg = 'var(--dam-196-138-42-2, rgba(196,138,42,.2))' }
+            else if (isJs && dlActive) { stateTxt = dl.phase === 'verifying' ? t('dlVerifying') : t('dlDownloading'); stateBg = 'var(--dam-36-86-196-2, rgba(36,86,196,.2))' }
+            // ★ issue #70（2026-09-19）：资产齐备但引擎**已降级** —— 必须与「未下载」区分开。
+            //   旧实现只看文件存在性 ⇒ 这种状态会显示「已就绪 ✓」而实际每次检索都在词法兜底。
+            else if (isJs && sem.degraded) { stateTxt = locale === 'zh' ? ('引擎降级（词法兜底）— ' + String(sem.degraded).slice(0, 60)) : ('Engine degraded (lexical fallback) — ' + String(sem.degraded).slice(0, 60)); stateBg = 'var(--dam-196-74-74-22, rgba(196,74,74,.22))' }
+            else if (isJs && sem.assetPresent && !sem.peerPresent) { stateTxt = L('模型已存在,缺推理库——pnpm approve-builds 后 pnpm add @huggingface/transformers', 'Model present, runtime missing — pnpm approve-builds && pnpm add @huggingface/transformers'); stateBg = 'var(--dam-196-138-42-2, rgba(196,138,42,.2))' }
+            else { stateTxt = L('未下载', 'Not downloaded'); stateBg = 'var(--dam-196-138-42-2, rgba(196,138,42,.2))' }
+            var progress = dlActive || (isJs && dl.phase === 'done')
+              ? Math.min(100, Math.round(((dl.bytesDone || 0) / Math.max(1, dl.bytesTotal || totalJs)) * 100))
+              : (bytes && !ready ? Math.min(100, Math.round(bytes / ((isJs ? 130 : 563) * 1024 * 1024) * 100)) : (ready ? 100 : 0))
+            var fmtMB = function (b) { return b ? (b / (1024 * 1024)).toFixed(1) + ' MB' : '—' }
+            var mirrorName = function (m) { return m === 'cn' ? t('mCn') : m === 'intl' ? t('mIntl') : t('mAuto') }
+            var phaseLine = dlActive
+              ? ((dl.phase === 'verifying' ? t('dlVerifying') : t('dlDownloading')) + ' · ' + fmtMB(dl.bytesDone || 0) + ' / ' + fmtMB(dl.bytesTotal || totalJs) + ' · ' + mirrorName(dl.mirrorUsed))
+              : (dl.phase === 'error' ? (t('dlError') + ': ' + String(dl.error || '').slice(0, 120))
+                : (dl.phase === 'cancelled' ? t('dlCancelled')
+                  : (isJs && dl.phase === 'done' && !ready ? t('dlDone') + (L('（缺运行库时需安装 @huggingface/transformers）', ' (install @huggingface/transformers if runtime missing)'))
+                    : (L('下载进度', 'Download progress')))))
+            // ★2026-09-20 移植（issue #89 / PR #95）：局部 var refreshSem 遮蔽模块级
+            //   refreshSem(apply, onError) ⇒ 自递归爆栈被 .catch 吞 ⇒ 点「开始下载/取消」后
+            //   sem 永不刷新、轮询闸也永不启动。改名引用模块级函数。
+            var refreshSemNow = function () {
+              refreshSem(setSem)
+            }
+            var startDl = function () {
+              apiPost(API.semanticDownload, { action: 'start', mirror: mirror }).then(refreshSemNow).catch(function () {})
+            }
+            var cancelDl = function () {
+              apiPost(API.semanticDownload, { action: 'cancel', mirror: mirror }).then(refreshSemNow).catch(function () {})
+            }
+            return h('div', { style: { border: '1px solid color-mix(in srgb, var(--dam-accent, #2456c4) 40%, transparent)', borderRadius: '10px', padding: '10px 12px', marginBottom: '8px', fontSize: 'calc(11.5px * var(--dam-scale))', lineHeight: 1.6 } },
+              h('div', { 'data-dam-slot': 'list', 'data-dam-row': '', style: { alignItems: 'center' } },
+                h('b', null, title),
+                h('span', { style: { marginLeft: 'auto', fontSize: 'calc(10.5px * var(--dam-scale))', padding: '2px 8px', borderRadius: '6px', background: stateBg, fontWeight: 700 } }, stateTxt)),
+              h('div', { style: { opacity: .85, marginTop: '4px' } }, desc),
+              ready ? null : h('div', { style: { marginTop: '8px' } },
+                h('div', { style: { display: 'flex', justifyContent: 'space-between', fontSize: 'calc(10px * var(--dam-scale))', opacity: .7, marginBottom: '3px', gap: '8px' } },
+                  h('span', null, phaseLine),
+                  h('span', null, progress + '%')),
+                h('div', { style: { height: '7px', borderRadius: '99px', background: 'var(--dam-rgba-14, rgba(128,128,128,.14))', overflow: 'hidden' } },
+                  h('div', { style: { height: '100%', width: progress + '%', borderRadius: '99px', background: dl.phase === 'error' ? 'linear-gradient(90deg,var(--dam-tone-error, #c44a4a),var(--dam-tone-error-soft, #e08a8a))' : 'linear-gradient(90deg, var(--dam-accent, #2456c4), var(--dam-progress-bar, #6f9bff))', transition: 'width .4s ease' } })),
+                h('div', { style: { display: 'flex', justifyContent: 'space-between', fontSize: 'calc(10px * var(--dam-scale))', opacity: .6, marginTop: '3px' } },
+                  h('span', null, L('体积', 'Size'), ': ', isJs ? fmtMB(totalJs) + '（5 个文件，SHA256 校验后离线运行）' : '~563MB'),
+                  h('span', null, L('下载源', 'Source'), ': ', isJs ? mirrorName(mirror) + (L(' · 失败自动切备用源', ' · auto-failover')) : (L('GitHub Releases 多通道', 'GitHub Releases multi-mirror'))))),
+              h('div', { style: { display: 'flex', justifyContent: 'flex-end', gap: '6px', alignItems: 'center', marginTop: '8px' } },
+                !ready && isJs && !dlActive ? h('select', { 'data-dam-select': '', value: mirror, onChange: function (e) { setMirror(e.target.value) }, style: { marginRight: 'auto' } },
+                  h('option', { value: 'auto' }, t('mAuto')),
+                  h('option', { value: 'cn' }, t('mCn')),
+                  h('option', { value: 'intl' }, t('mIntl'))) : null,
+                // ★2026-09-22 删死键(设置页缺口审计 P0-7):pythonGpu 不在 DEFAULT_CONFIG 白名单,
+                //   /config 会静默丢弃、宿主 lib/ 零读取 ⇒ 写入无任何效果,故移除该段(行为零变化)。
+                ready ? h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: function () { onEngineModeChange({ target: { value: guide } }) } }, L('启用并继续', 'Enable & continue')) : null,
+                !ready && isJs && !dlActive ? h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: startDl }, (dl.phase === 'error' || dl.phase === 'cancelled') ? t('semDlRetry') : t('semDlStart')) : null,
+                !ready && isJs && dlActive ? h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: cancelDl }, t('semDlCancel')) : null,
+                h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: function () { setGuide('') } }, t('gotIt'))))
+          })()
+            : null,
+          sem.loaded ? h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginTop: '-4px', marginBottom: '8px' } },
+            t('semResolved') + ': ' + (sem.resolvedTier === 'c2' ? t('tierC2') + ' ✓' : sem.resolvedTier === 'c3' ? t('tierC3') + ' ✓' : t('tierC1')))
+            : null,
+          // 2026-09-08 检测联动:所选模式与资产就绪状态不符时显式标注(不再静默掉回词法兜底)
+          (sem.loaded && cfg.semanticEngineMode === 'js' && sem.ready === false) ? h('div', { 'data-dam-error': '', style: { marginTop: '-4px', marginBottom: '8px' } },
+            L('⚠ 已选 JS 引擎,但本地模型未就绪——当前实际生效:词法兜底。下方安装引导卡可下载模型(约130MB),完成后自动启用。', '⚠ JS engine selected but the local model is not ready — lexical fallback is active. Use the setup card below to download the model (~130MB); it engages automatically when done.')) : null,
+          (sem.loaded && cfg.semanticEngineMode === 'python' && sem.pythonInt8Present === false) ? h('div', { 'data-dam-error': '', style: { marginTop: '-4px', marginBottom: '8px' } },
+            L('⚠ 已选 Python 引擎,但 BGE-M3 int8 模型未就绪——当前实际生效:词法兜底。下方安装向导可引导安装;若本机无法安装(如架构不支持),请改用 JS 引擎或 auto。', '⚠ Python engine selected but the BGE-M3 int8 model is not ready — lexical fallback is active. Use the wizard below; if this machine cannot install it, switch to the JS engine or auto.')) : null,
+          field(t('fReasoning'), h('input', { type: 'checkbox', checked: !!cfg.reasoningObserverEnabled, onChange: function (e) { set('reasoningObserverEnabled', e.target.checked) } }), t('fReasoningHint')),
+          field(L('唤起阈值（校准策略）', 'Activation thresholds (calibrated)'), h('div', null,
+            h('span', null, L('阈值由宿主校准策略管理；当前接口未提供有效数值', 'Thresholds are managed by the host policy; current values are unavailable') + (sem.loaded ? ((L(' · 发射模式:', ' · emit: ')) + (sem.activationEmitMode || 'shadow')) : ''))),
+            t('fTuningHint')),
+        ]),
+        section('window', sectionLabels.window, [
+          // ★P10-T1/T2/T3（2026-09-22）注入分区开关：**一级只放入口**（中性文案，不推荐用户改），
+          //   13 个开关全在二级页；成员/顺序取自宿主下发的 psecKeys（前端不硬编码）。
+          field(t('fPromptSections'), h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: function () { setPsecOpen(!psecOpen) } }, psecOpen ? (L('收起', 'Collapse')) : (L('高级：逐段注入控制…', 'Advanced: per-section injection…'))), t('fPromptSectionsHint')),
+          psecOpen ? (function () {
+            var toggles = (cfg.promptSectionToggles && typeof cfg.promptSectionToggles === 'object') ? cfg.promptSectionToggles : {}
+            var pText = function (k) { var m = PROMPT_SECTION_TEXT[k]; return m ? (locale === 'zh' ? m.zh : m.en) : k }
+            var pOff = function (k) {
+              var m = PROMPT_SECTION_TEXT[k]
+              var z = m ? (locale === 'zh' ? m.offZh : m.offEn) : ''
+              if (z) return z
+              return L('关掉后本轮不再注入该段落。', 'When off, this section is not injected this round.')
+            }
+            return h('div', { 'data-dam-prompt-sections': '', style: { border: '1px solid color-mix(in srgb, var(--dsw-alias-border-l1, rgba(128,128,128,.25)) 60%, transparent)', borderRadius: '10px', padding: '12px', marginBottom: '10px', background: 'color-mix(in srgb, var(--dsw-alias-bg-layer-1, rgba(128,128,128,.06)) 55%, transparent)' } }, [
+              h('div', { style: { display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '6px' } }, [
+                h('b', { style: { flex: 1, fontSize: 'calc(12px * var(--dam-scale))' } }, L('逐段注入控制（高级）', 'Per-section injection (advanced)')),
+                h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: function () { set('promptSectionToggles', {}) } }, L('全部恢复全开', 'Restore all')),
+                h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: function () { setPsecOpen(false) } }, t('close')),
+              ]),
+              h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginBottom: '8px' } }, L('控制每一轮注入里包含哪些段落。默认全部开启；不推荐修改 —— 关掉某段会让模型少掉对应的上下文或纪律。', 'Which sections each round injects. All on by default; not recommended to change — turning one off drops the matching context or discipline.')),
+              psecKeys.length ? psecKeys.map(function (k) {
+                return h('div', { key: k, 'data-dam-slot': 'list', 'data-dam-row': '', style: { alignItems: 'flex-start' } }, [
+                  h('label', { style: { display: 'flex', gap: '6px', alignItems: 'center', flex: 1, cursor: 'pointer' } }, [
+                    h('input', { type: 'checkbox', 'data-dam-pswitch': k, checked: toggles[k] !== false, onChange: function (e) {
+                      var t2 = Object.assign({}, toggles)
+                      if (e.target.checked) delete t2[k]; else t2[k] = false
+                      set('promptSectionToggles', t2)
+                    } }),
+                    h('span', { style: { fontSize: 'calc(12px * var(--dam-scale))' } }, pText(k) + (psecMust.indexOf(k) >= 0 ? (L(' · 硬性要求', ' · mandatory')) : '')),
+                  ]),
+                  h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { flex: 1, opacity: .8 } }, pOff(k)),
+                ])
+              }) : h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, L('未能从宿主取到分区清单（请重启宿主后重试）。', 'Section list unavailable (restart the host and retry).')),
+            ])
+          })() : null,
+  field(t('fInject'), h('input', { type: 'checkbox', checked: !!cfg.injectEnabled, onChange: function (e) { set('injectEnabled', e.target.checked) } }), t('fInjectHint')),
+          field(t('fBudget'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 400, value: cfg.injectBudgetChars, onChange: function (e) { set('injectBudgetChars', Number(e.target.value) || 8000) } }), t('fBudgetHint')),
+          // 2026-09-22 补接线(设置页缺口审计 P0-3/P0-4/P0-6):目录层与规则分层此前只有后端实现。
+          field(t('fTier0Catalog'), h('input', { type: 'checkbox', 'data-dam-key': 'tier0CatalogEnabled', checked: cfg.tier0CatalogEnabled !== false, onChange: function (e) { set('tier0CatalogEnabled', e.target.checked) } }), t('fTier0CatalogHint')),
+          field(t('fTier0Max'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 100, value: cfg.tier0MaxTokens === undefined ? 400 : cfg.tier0MaxTokens, onChange: function (e) { set('tier0MaxTokens', Math.max(100, Number(e.target.value) || 400)) } }), t('fTier0MaxHint')),
+          field(t('fRulesLayering'), h('input', { type: 'checkbox', 'data-dam-key': 'rulesLayeringMode', checked: String(cfg.rulesLayeringMode || 'self').toLowerCase() !== 'off', onChange: function (e) { set('rulesLayeringMode', e.target.checked ? 'self' : 'off') } }), t('fRulesLayeringHint')),
+          // 群反馈第 4 条:排除来源(每行一条)。textarea 便于粘贴多行路径;
+          // 空行/纯空白在写回时被过滤,避免"看起来配了其实没配"。
+          field(t('fExclude'), h('textarea', {
+            'data-dam-slot': 'form', 'data-dam-input': '', rows: 3,
+            style: { width: '100%', resize: 'vertical', fontFamily: 'inherit' },
+            value: typeof cfg.injectExcludeSources === 'string' ? cfg.injectExcludeSources : (Array.isArray(cfg.injectExcludeSources) ? cfg.injectExcludeSources : []).join('\n'),
+            placeholder: 'mem_0123456789abcdef0123456789abcdef\nD:\\ws\\.dsh-memory\\archive\\\nlog',
+            onChange: function (e) {
+              var lines = e.target.value
+              set('injectExcludeSources', lines)
+            },
+          }), t('fExcludeHint')),
+          field(t('fDays'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 1, max: 14, value: cfg.recentDaysInjected, onChange: function (e) { set('recentDaysInjected', Number(e.target.value) || 1) } }), t('fDaysHint')),
+          field(t('fExtBudget'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 200, value: cfg.externalInjectionChars === undefined ? 1400 : cfg.externalInjectionChars, onChange: function (e) { set('externalInjectionChars', Number(e.target.value) || 1400) } }), t('fExtBudgetHint')),
+          field(t('fSnapGap'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 0, max: 50, value: cfg.snapshotMinGapRounds === undefined ? 5 : cfg.snapshotMinGapRounds, onChange: function (e) { set('snapshotMinGapRounds', normalizeGapRounds(e.target.value, 5)) } }), t('fSnapGapHint')),
+          // ★2026-10-01（用户裁定）：精简版节奏两键 —— 与服务端 DEFAULT_CONFIG 的 slimEveryRounds/fullEverySlims 一一对应。
+          field(t('fSlimEvery'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 1, max: 50, value: cfg.slimEveryRounds === undefined ? 3 : cfg.slimEveryRounds, onChange: function (e) { set('slimEveryRounds', normalizeGapRounds(e.target.value, 3)) } }), t('fSlimEveryHint')),
+          field(t('fFullEverySlims'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 1, max: 20, value: cfg.fullEverySlims === undefined ? 10 : cfg.fullEverySlims, onChange: function (e) { set('fullEverySlims', normalizeGapRounds(e.target.value, 10)) } }), t('fFullEverySlimsHint')),
+          field(t('fReinjectOnCompact'), h('input', { type: 'checkbox', checked: cfg.snapshotReinjectOnCompact !== false, onChange: function (e) { set('snapshotReinjectOnCompact', e.target.checked) } }), t('fReinjectOnCompactHint')),
+          // ★2026-09-30（C2 · 用户裁定：设置面必须全量，不得缺项）——注入预算/白板账本/水位四组键，
+          //   此前只有宿主读、无 UI 入口（实测 client.js 零引用）：
+          //   ① tier0BudgetShare = Tier-0 目录占注入预算的比例（与 tier0MaxTokens 取小生效）；
+          //   ② slimPlanChars / slimLedgerChars = 精简版注入里白板/账本的字符上限；
+          //   ③ snapshotTieredInject = 分级注入总开关（关掉=每轮全量快照，token 成本显著上升）；
+          //   ④ waterLevelThresholdMode / officialCompactionRatio / officialHeadroomTokens / waterLevelAutoMargin
+          //      = 上下文水位与压缩的四个人为旋钮（auto 档校准用）。
+          //   全部写 DEFAULT_CONFIG 内既有键（宿主白名单通过）。
+          field(t('fTier0Share'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 0, max: 1, step: 0.05, value: cfg.tier0BudgetShare === undefined ? 0.25 : cfg.tier0BudgetShare, onChange: function (e) { set('tier0BudgetShare', Math.max(0, Number(e.target.value) || 0.25)) } }), t('fTier0ShareHint')),
+          field(t('fTieredInject'), h('input', { type: 'checkbox', 'data-dam-key': 'snapshotTieredInject', checked: cfg.snapshotTieredInject !== false, onChange: function (e) { set('snapshotTieredInject', e.target.checked) } }), t('fTieredInjectHint')),
+          field(t('fWaterMode'), h('select', { 'data-dam-select': '', value: String(cfg.waterLevelThresholdMode || 'auto'), onChange: function (e) { set('waterLevelThresholdMode', e.target.value) } },
+            h('option', { value: 'auto' }, L('auto 自动校准（推荐）', 'auto (calibrated)')),
+            h('option', { value: 'fixed' }, L('fixed 固定阈值（旧行为）', 'fixed threshold (legacy)'))), t('fWaterModeHint')),
+          field(t('fCompactionRatio'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 0.1, max: 1, step: 0.05, value: cfg.officialCompactionRatio === undefined ? 0.8 : cfg.officialCompactionRatio, onChange: function (e) { set('officialCompactionRatio', Math.max(0.1, Number(e.target.value) || 0.8)) } }), t('fCompactionRatioHint')),
+          field(t('fOfficialHeadroom'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 0, max: 1000000, step: 1024, value: cfg.officialHeadroomTokens === undefined ? 65536 : cfg.officialHeadroomTokens, onChange: function (e) { set('officialHeadroomTokens', (String(e.target.value).trim() !== '' && Number.isFinite(Number(e.target.value)) ? Math.max(0, Number(e.target.value)) : 65536)) } }), t('fOfficialHeadroomHint')),
+          field(t('fAutoMargin'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 0.3, max: 1, step: 0.05, value: cfg.waterLevelAutoMargin === undefined ? 0.9 : cfg.waterLevelAutoMargin, onChange: function (e) { set('waterLevelAutoMargin', Math.min(1, Math.max(0.3, Number(e.target.value) || 0.9))) } }), t('fAutoMarginHint')),
+          field(t('fPromptCustom'), h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: function () { setPromptEditOpen(!promptEditOpen) } }, (promptEditOpen ? (L('收起', 'Collapse')) : (L('编辑 prompt 层', 'Edit prompt layers')))), t('fPromptCustomHint')),
+          promptEditOpen ? [
+            h('div', { key: '__layers', style: { padding: '6px 0 2px', width: '100%' } },
+            (Object.keys(DEFAULT_PROMPT_LAYERS_CLIENT)).map(function (k) {
+              return h('div', { key: k, style: { marginBottom: '6px' } },
+                h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { fontWeight: 700, marginBottom: '2px' } }, k),
+                h('textarea', { 'data-dam-slot': 'form', 'data-dam-input': '', rows: 2, style: { width: '100%', fontFamily: 'monospace', fontSize: 'calc(11px * var(--dam-scale))' }, value: (cfg.promptLayerOverrides || {})[k] || '', placeholder: DEFAULT_PROMPT_LAYERS_CLIENT[k] || '(默认文案)', onChange: function (e) { var ov = Object.assign({}, cfg.promptLayerOverrides || {}); if (e.target.value.trim() === '') delete ov[k]; else ov[k] = e.target.value; set('promptLayerOverrides', ov) } }))
+            })),
+            h('div', { key: '__reset', 'data-dam-slot': 'list', 'data-dam-row': '', style: { marginTop: '6px' } },
+              h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: function () { set('promptLayerOverrides', {}) } }, L('一键恢复默认', 'Reset to defaults')))
+          ] : null,
+        ]),
+        section('capacity', sectionLabels.capacity, [
+          field(t('fChildObs'), h('input', { type: 'checkbox', checked: !!cfg.contextBridgeObserveChildSessions, onChange: function (e) { set('contextBridgeObserveChildSessions', e.target.checked) } }), t('fChildObsHint')),
+          field(t('fEpisodicRet'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 16, max: 4096, value: cfg.episodicRetention === undefined ? 256 : cfg.episodicRetention, onChange: function (e) { set('episodicRetention', Math.max(16, Math.min(4096, Number(e.target.value) || 256))) } }), t('fEpisodicRetHint')),
+          // 2026-09-22 补接线(P0-4):facts 淘汰上限(fact-store.js pruneIfNeeded)。
+          field(t('fFactRetention'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 10, value: cfg.factRetentionMax === undefined ? 1000 : cfg.factRetentionMax, onChange: function (e) { set('factRetentionMax', Math.max(10, Number(e.target.value) || 1000)) } }), t('fFactRetentionHint')),
+          field(t('fNoteCap'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 500, value: cfg.noteCapacityChars === undefined ? 24000 : cfg.noteCapacityChars, onChange: function (e) { set('noteCapacityChars', Number(e.target.value) || 24000) } }), t('fNoteCapHint')),
+          field(t('fUserCap'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 500, value: cfg.userCapacityChars === undefined ? 24000 : cfg.userCapacityChars, onChange: function (e) { set('userCapacityChars', Number(e.target.value) || 24000) } }), t('fUserCapHint')),
+  field(t('fConsolidateMin'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 80, value: cfg.autoConsolidateMinChars === undefined ? 240 : cfg.autoConsolidateMinChars, onChange: function (e) { set('autoConsolidateMinChars', Number(e.target.value) || 240) } }), t('fConsolidateMinHint')),
+          field(t('fAutoConsolidate'), h('input', { type: 'checkbox', checked: cfg.autoConsolidate !== false, onChange: function (e) { set('autoConsolidate', e.target.checked) } }), t('fAutoConsolidateHint')),
+          field(t('fConsolidate'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 5, value: cfg.autoConsolidateCooldownMinutes === undefined ? 30 : cfg.autoConsolidateCooldownMinutes, onChange: function (e) { set('autoConsolidateCooldownMinutes', Number(e.target.value) || 30) } }), t('fConsolidateHint')),
+          field(t('fConsolidateMax'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 1, max: 50, value: cfg.autoConsolidateDailyMax === undefined ? 8 : cfg.autoConsolidateDailyMax, onChange: function (e) { set('autoConsolidateDailyMax', Number(e.target.value) || 8) } }), t('fConsolidateMaxHint')),
+          field(t('fMemFileIndex'), h('input', { type: 'checkbox', 'data-dam-key': 'memoryFileIndexEnabled', checked: cfg.memoryFileIndexEnabled === true, onChange: function (e) { set('memoryFileIndexEnabled', e.target.checked) } }), t('fMemFileIndexHint')),
+          // 2026-09-14 解耦:交接白板与自动接续各自独立成项(旧实现只在白板页有接续按钮,且 enabled 还被
+          // handoffEnabled 二次与运算)。两者出厂默认均为 false(功能仍在测试期),这里与白板页读写完全相同的配置键。
+        ]),
+        section('skills', sectionLabels.skills, [
+          h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, t('secMemoryHubHint')),
+          field(t('fMemoryHub'), h('input', { type: 'checkbox', checked: !!cfg.memoryHubEnabled, onChange: function (e) { set('memoryHubEnabled', e.target.checked) } }), t('fMemoryHubHint')),
+          field(t('fEpisodicMin'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 1, max: 16, value: cfg.episodicMinSegments === undefined ? 2 : cfg.episodicMinSegments, onChange: function (e) { set('episodicMinSegments', Math.max(1, Math.min(16, Number(e.target.value) || 2))) } }), t('fEpisodicMinHint')),
+          field(t('fProcSessions'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 1, max: 20, value: cfg.procedureMinSessions === undefined ? 3 : cfg.procedureMinSessions, onChange: function (e) { set('procedureMinSessions', Math.max(1, Math.min(20, Number(e.target.value) || 3))) } }), t('fProcSessionsHint')),
+          field(t('fProcSuccess'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 1, max: 20, value: cfg.procedureMinSuccess === undefined ? 2 : cfg.procedureMinSuccess, onChange: function (e) { set('procedureMinSuccess', Math.max(1, Math.min(20, Number(e.target.value) || 2))) } }), t('fProcSuccessHint')),
+          field(t('fProcCorr'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 0, max: 1, step: 0.05, value: cfg.procedureCorrectionCap === undefined ? 0.3 : cfg.procedureCorrectionCap, onChange: function (e) { set('procedureCorrectionCap', Math.max(0, Math.min(1, Number(e.target.value) || 0.3))) } }), t('fProcCorrHint')),
+          field(t('fProcRisk'), h('input', { type: 'checkbox', checked: cfg.procedureHighRiskApproval !== false, onChange: function (e) { set('procedureHighRiskApproval', e.target.checked) } }), t('fProcRiskHint')),
+          // 2026-09-22 补接线(设置页缺口审计 P0-1):procedureInjectEnabled 才是宿主真读的总闸
+          //   (procedure-switch.js 先判它);此前设置页只有旧键 ⇒ 用户改了也无效(灰控件)。
+          field(t('fProcInject'), h('input', { type: 'checkbox', 'data-dam-key': 'procedureInjectEnabled', checked: cfg.procedureInjectEnabled !== false, onChange: function (e) { set('procedureInjectEnabled', e.target.checked) } }), t('fProcInjectHint')),
+          // ★A-1（2026-09-23）：此处原有「机械流程切片」复选框 —— 该功能已整条删除
+          //   （用户裁定「机械通路已被我弃用」，memory-hub.js 分支 + index.js getter 同步移除）。
+          //   控件一并删掉：留着它会「写盘成功但界面无变化」（读到的键已无消费者）——
+          //   正是用户明确列为「功能坏了」的那种表现。
+          field(t('fProcLevel'), h('select', { 'data-dam-select': '', value: cfg.procedureActiveLevel || 'checklist', onChange: function (e) { set('procedureActiveLevel', e.target.value) } },
+            h('option', { value: 'checklist' }, L('checklist 完整步骤', 'checklist (full steps)')),
+            h('option', { value: 'excerpt' }, L('excerpt 摘要', 'excerpt (summary)')),
+            h('option', { value: 'hint' }, L('hint 仅提示', 'hint (hint only)'))), t('fProcLevelHint')),
+          h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginTop: '4px' } }, t('memoryHubViewHint')),
+        ]),
+        section('handoff', sectionLabels.handoff, [
+          h('div', {'data-dam-effective-water':'',role:'status'}, effectiveWater[0] && effectiveWater[0].live ? L3('实际水位阈值：','Effective threshold: ','実際のしきい値：') + Math.round(effectiveWater[0].threshold*100) + '% · ' + effectiveWater[0].window + ' token · ' + effectiveWater[0].thresholdMode : L3('当前会话尚未测量；生效值将在测量后显示。','This session has not been measured; effective values appear after measurement.','この会話は未計測です。計測後に実際の値を表示します。')),
+          field(t('fWaterMode'), h('select', { 'data-dam-select': '', value: String(cfg.waterLevelThresholdMode || 'auto'), onChange: function (e) { set('waterLevelThresholdMode', e.target.value) } },
+            h('option', { value: 'auto' }, L('auto 自动校准（推荐）', 'auto (calibrated)')),
+            h('option', { value: 'fixed' }, L('fixed 固定阈值（旧行为）', 'fixed threshold (legacy)'))), t('fWaterModeHint')),
+          field(t('fCompactionRatio'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 0.1, max: 1, step: 0.05, value: cfg.officialCompactionRatio === undefined ? 0.8 : cfg.officialCompactionRatio, onChange: function (e) { set('officialCompactionRatio', Math.max(0.1, Number(e.target.value) || 0.8)) } }), t('fCompactionRatioHint')),
+          field(t('fOfficialHeadroom'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 0, max: 1000000, step: 1024, value: cfg.officialHeadroomTokens === undefined ? 65536 : cfg.officialHeadroomTokens, onChange: function (e) { set('officialHeadroomTokens', (String(e.target.value).trim() !== '' && Number.isFinite(Number(e.target.value)) ? Math.max(0, Number(e.target.value)) : 65536)) } }), t('fOfficialHeadroomHint')),
+          field(t('fAutoMargin'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 0.3, max: 1, step: 0.05, value: cfg.waterLevelAutoMargin === undefined ? 0.9 : cfg.waterLevelAutoMargin, onChange: function (e) { set('waterLevelAutoMargin', Math.min(1, Math.max(0.3, Number(e.target.value) || 0.9))) } }), t('fAutoMarginHint')),
+  field(t('fHandoff'), h('input', { type: 'checkbox', 'data-dam-key': 'handoffEnabled', checked: cfg.handoffEnabled !== false, onChange: function (e) { set('handoffEnabled', e.target.checked) } }), t('fHandoffHint')),
+          field(t('fAutoContinue'), h('input', { type: 'checkbox', 'data-dam-key': 'autoContinueEnabled', checked: cfg.autoContinueEnabled !== false, onChange: function (e) { set('autoContinueEnabled', e.target.checked) } }), t('fAutoContinueHint')),
+          field(t('fHandoffPlan'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 200, value: cfg.handoffPlanChars === undefined ? 1200 : cfg.handoffPlanChars, onChange: function (e) { set('handoffPlanChars', Number(e.target.value) || 1200) } }), t('fHandoffPlanHint')),
+          // 2026-09-22 补接线(设置页缺口审计 P0-5):criteriaGate 此前只能改文件才能退。
+          field(t('fCriteriaGate'), h('input', { type: 'checkbox', 'data-dam-key': 'criteriaGate', checked: cfg.criteriaGate !== false, onChange: function (e) { set('criteriaGate', e.target.checked) } }), t('fCriteriaGateHint')),
+          field(t('fHandoffLedger'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 100, value: cfg.handoffLedgerChars === undefined ? 800 : cfg.handoffLedgerChars, onChange: function (e) { set('handoffLedgerChars', Number(e.target.value) || 800) } }), t('fHandoffLedgerHint')),
+          field(t('fWaterWindow'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 0, value: cfg.waterLevelWindowTokens === undefined ? 65536 : cfg.waterLevelWindowTokens, onChange: function (e) { set('waterLevelWindowTokens', Number(e.target.value) || 0) } }), t('fWaterWindowHint')),
+          field(t('fWaterThreshold'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 0.1, max: 1.5, step: 0.05, disabled: cfg.waterLevelThresholdMode !== 'fixed', value: cfg.waterLevelThreshold === undefined ? 0.75 : cfg.waterLevelThreshold, onChange: function (e) { set('waterLevelThreshold', Number(e.target.value) || 0.75) } }), t('fWaterThresholdHint') + ' ' + L3('仅固定模式使用；自动模式由官方压缩参数和余量校准。', 'Used in Fixed mode; Auto derives the threshold from compaction parameters and margin.', '固定モードで使用。自動モードは圧縮設定と余裕から計算します。')),
+          field(t('fWaterAdvisory'), h('input', { type: 'checkbox', checked: cfg.waterLevelAdvisory !== false, onChange: function (e) { set('waterLevelAdvisory', e.target.checked) } }), t('fWaterAdvisoryHint')),
+          field(t('fWaterAuto'), h('input', { type: 'checkbox', checked: cfg.waterLevelAutoHandoff !== false, onChange: function (e) { set('waterLevelAutoHandoff', e.target.checked) } }), t('fWaterAutoHint')),
+          field(L('子代理痕迹回收', 'Subagent trace recycle'), h('input', { type: 'checkbox', checked: cfg.subagentGcEnabled !== false, onChange: function (e) { set('subagentGcEnabled', e.target.checked) } }),
+            L('本插件的一次性子代理(自动沉淀 / 时段总结 / 问候 / 蒸馏)每跑一次都会在 ~/.dsh/sessions 留下一个持久化会话;数量上千后会话列表会明显变慢。开启后任务一结束就把这些痕迹移入 ~/.dsh/subagent-gc-backup 备份(可回滚),不影响子代理结果。默认开。', 'Every one-shot subagent this plugin spawns (auto-consolidation, scheduled summary, greeting, distillation) leaves a persisted session under ~/.dsh/sessions; hundreds of them slow the session list down. When on, each trace is moved into ~/.dsh/subagent-gc-backup right after the task ends (reversible), never affecting the subagent result. On by default.')),
+          field(L('兜底回收保留天数', 'Fallback recycle keep days'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 0, value: cfg.subagentGcKeepDays === undefined ? 3 : cfg.subagentGcKeepDays, onChange: function (e) { set('subagentGcKeepDays', Number(e.target.value) || 0) } }),
+            L('每天巡检一次,回收超过该天数仍残留的痕迹(比如任务异常中断没删掉的);0 = 不按时间,只靠任务结束即删。', 'A daily sweep recycles traces older than this many days (e.g. leftovers from interrupted tasks); 0 = rely on the end-of-task recycle only.')),
+        ]),
+        section('auto', sectionLabels.auto, [
+          field(L('子代理模型 / 思考强度', 'Subagent model & reasoning effort'), h('div', { 'data-dam-slot': 'list', 'data-dam-row': '', style: { flex: 1 } },
+            h('span', { style: { flex: 1, fontSize: 'calc(12px * var(--dam-scale))', wordBreak: 'break-all', opacity: cfg.subagentModel ? 1 : 0.6 } }, (cfg.subagentModel || (L('跟随路由默认', 'routing default'))) + (String(cfg.subagentReasoningEffort || '') ? ' · ' + String(cfg.subagentReasoningEffort) : '')),
+            h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: openModels }, L('选择模型 / 强度', 'Pick model / effort'))),
+            L('★作用域=「记忆中枢」工作区(aik_auto_memory_use)下所有会话的默认模型与思考强度;后台子代理(问候/总结/沉淀/蒸馏)挂在该工作区下运行,因此也跟随这里。思考强度 off/low/high/max 只作用于本插件的子代理,不改你的主对话。留空=跟随宿主部署默认(agent-default-model)。保存后生效。', 'Scope: the DEFAULT model & reasoning effort for every session in the "Memory Hub" workspace (aik_auto_memory_use). Background subagents (greeting / summary / consolidation / distillation) run under that workspace, so they follow this too. Effort (off/low/high/max) applies only to this plugin`s subagents, never your main conversation. Empty = follow the deployment default (agent-default-model). Applies after saving.')),
+          mdlOpen ? buildModelDrawer() : null,
+          // 欢迎向导:开关(首启自动播放)+ 立即重看按钮(闭包内直调 openDialog——同一作用域,点击立即弹;
+          // 不走 window 全局入口,避免多实例时序导致"点了没反应要刷新")+ 查看更新日志(走 update 弹窗,
+          // 带 Logo 开场动画;versions 取 CHANGELOG 最新一条)
+          field(t('fWelcomeTour'), h('div', { 'data-dam-slot': 'list', 'data-dam-row': '' },
+            h('input', { type: 'checkbox', checked: cfg.welcomeTourEnabled !== false, onChange: function (e) { set('welcomeTourEnabled', e.target.checked) } }),
+            h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: function () { try { openManualWelcomeTourPre() } catch (eTour) {} } }, t('tourReplay')),
+            h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: function () {
+              try {
+                var keys = Object.keys(CHANGELOG)
+                if (!keys.length) return
+                var latest = keys.sort(cmpVersion)[keys.length - 1]
+                openDialog({ kind: 'update', versions: [{ version: latest, items: CHANGELOG[latest] }], currentVersion: latest })
+              } catch (eLog) {}
+            } }, L('查看更新日志', 'View changelog'))), t('fWelcomeTourHint')),
+          field(t('fAutoPopup'), h('input', { type: 'checkbox', checked: cfg.autoPopupEnabled !== false, onChange: function (e) { set('autoPopupEnabled', e.target.checked) } }), t('fAutoPopupHint')),
+          field(t('fUnattended'), h('input', { type: 'checkbox', checked: !!cfg.unattendedMode, onChange: function (e) { set('unattendedMode', e.target.checked) } }), t('fUnattendedHint')),
+          field(t('fUnattendedAuto'), h('input', { type: 'checkbox', checked: !!cfg.unattendedAuto, onChange: function (e) { set('unattendedAuto', e.target.checked) } }), t('fUnattendedAutoHint')),
+          // ★2026-09-30（C2 续）接续/归档/工作台六键（宿主均已读、此前无 UI 入口）：
+          //   autoContinueConfirmSeconds / autoContinueCooldownMinutes（接续确认与冷却）、
+          //   autoArchiveCheckMin（归档巡检周期）、workbenchLoopShort/Long（工作台轮询节奏）、
+          //   workbenchRetryMs（工作台重试间隔）。
+          field(t('fAutoContinueConfirm'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 5, max: 600, value: cfg.autoContinueConfirmSeconds === undefined ? 35 : cfg.autoContinueConfirmSeconds, onChange: function (e) { set('autoContinueConfirmSeconds', Math.max(5, Number(e.target.value) || 35)) } }), t('fAutoContinueConfirmHint')),
+          field(t('fAutoContinueCooldown'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 1, max: 1440, value: cfg.autoContinueCooldownMinutes === undefined ? 30 : cfg.autoContinueCooldownMinutes, onChange: function (e) { set('autoContinueCooldownMinutes', Math.max(1, Number(e.target.value) || 30)) } }), t('fAutoContinueCooldownHint')),
+          field(t('fArchiveCheckMin'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 1, max: 1440, value: cfg.autoArchiveCheckMin === undefined ? 60 : cfg.autoArchiveCheckMin, onChange: function (e) { set('autoArchiveCheckMin', Math.max(1, Number(e.target.value) || 60)) } }), t('fArchiveCheckMinHint')),
+          field(t('fWorkbenchLoopShort'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 2, step: 1, value: cfg.workbenchLoopShort === undefined ? 10 : cfg.workbenchLoopShort, onChange: function (e) { set('workbenchLoopShort', Number(e.target.value)) } }), t('fWorkbenchLoopShortHint')),
+          field(t('fWorkbenchLoopLong'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 2, step: 1, value: cfg.workbenchLoopLong === undefined ? 24 : cfg.workbenchLoopLong, onChange: function (e) { set('workbenchLoopLong', Number(e.target.value)) } }), t('fWorkbenchLoopLongHint')),
+          field(t('fWorkbenchRetryMs'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 1000, max: 600000, step: 1000, value: cfg.workbenchRetryMs === undefined ? 30000 : cfg.workbenchRetryMs, onChange: function (e) { set('workbenchRetryMs', Math.max(1000, Number(e.target.value) || 30000)) } }), t('fWorkbenchRetryMsHint')),
+          // ★E5（2026-09-25 用户口径）：轮换周期 = **天**，默认 2。用系统墙钟切期（不用自建计时器）；
+          //   到期后旧工作台整份弃掉、下一期新建 —— 母会话条目数因此有上界。
+          //   为什么默认 2 天：旧工作台会话要「先静默才可能被归档」，而静默的前提是不再有子代理挂上去，
+          //   也就是必须等本期轮换掉。周期越长，归档/删除链条被拖得越久（轮换 → 静默 → 归档 → 删除）。
+          //   ★E3-FIX-3（2026-09-26 二合一）：本项**不再可独立设置**，改为**跟随「归档阈值」**的只读显示。
+          //   为什么合并（用户原话「这两个 2 是不是得二合一，不然还会耦合」）：两者本就是同一段生命周期的
+          //   两个阶段，各配一个数必然失配——轮换慢于归档 ⇒ 旧工作台永不静默、归档链断裂；快于归档 ⇒ 白建会话。
+          //   ⇒ 设置页只剩「归档阈值」一个旋钮，本项恒等于它（相等即最优），不再写回 workbenchPeriodDays。
+          field(
+            L('工作台轮换周期（天）', 'Workbench rotation period (days)'),
+            h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 1, max: 3650, value: (cfg.workbenchPeriodDays === undefined ? 2 : cfg.workbenchPeriodDays), readOnly: true, disabled: true, style: { opacity: 0.6, cursor: 'not-allowed' } }),
+            L('**跟随上一项「归档阈值」**，不再单独设置（默认 **2** 天）。★两者本是同一段生命周期的两个阶段：轮换慢了，旧工作台会话永远等不到「静默」，也就永远进不了「归档 → 删除」；轮换快了则白建会话。⇒ 只留一个旋钮，这里恒等于归档阈值。范围 1–3650。', '**Follows "Archive after (days)" above** — no longer set separately (default **2** days). ★The two are phases of one lifecycle: a slower rotation means old workbench sessions never go idle and thus never reach the archive → delete chain; a faster one just creates sessions needlessly. So there is a single knob, and this value always equals the archive threshold. Range 1–3650.')),
+          // ★S1（2026-09-24，对齐 WORKBENCH-SPEC）：工作台**工作区路径**可配（用户原话「只不过是在插件设置的工作区里面」）。
+          //   变更后下一期在新路径建工作区；旧会话就地保留（守卫⑰：不删）。
+          field(
+            L('工作台工作区', 'Workbench workspace'),
+            h('div', { 'data-dam-slot': 'list', 'data-dam-row': '', style: { flex: 1 } },
+              h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', style: { flex: 1 }, placeholder: 'aik_auto_memory_use', value: (cfg.workbenchRoot || ''), onChange: function (e) { set('workbenchRoot', e.target.value) } }),
+              h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: function () { openBrowser('workbenchRoot') } }, t('fBrowse'))),
+            L('留空 = 自动使用 **DSH 本体目录**下的 aik_auto_memory_use（Windows / macOS / Linux 都能匹配到，与 DSH 自己的数据同根，无需改盘符或家目录）。也可指定别的路径，但必须位于 DSH 本体目录之内。后台的记忆整理任务都在这里跑，不会出现在你的会话列表里。', 'Leave empty to use aik_auto_memory_use inside the **DSH home directory** (works on Windows / macOS / Linux, same root as the data DSH itself owns — no drive or home-path edits needed). You may point it elsewhere as long as it stays inside the DSH home directory. Background memory jobs run there and never show up in your session list.')),
+          field(t('fAway'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 0, value: (Number(cfg.awayMinutes) === 0 ? 0 : (cfg.awayMinutes || 60)), onChange: function (e) { var v = Number(e.target.value); set('awayMinutes', Number.isFinite(v) && v >= 0 ? v : 60) } }), t('fAwayHint')),
+          field(t('fAutoSum'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', value: typeof cfg.autoSummaryTimes === 'string' ? cfg.autoSummaryTimes : (cfg.autoSummaryTimes || []).join(','), onChange: function (e) { set('autoSummaryTimes', e.target.value) } }), t('fAutoSumHint')),
+          field(t('fConsSchedule'), h('input', { type: 'checkbox', checked: cfg.consolidateScheduleEnabled !== false, onChange: function (e) { set('consolidateScheduleEnabled', e.target.checked) } }), t('fConsScheduleHint')),
+          field(t('fConsScheduleTime'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', placeholder: '09:30', value: cfg.consolidateScheduleTime === undefined ? '09:30' : cfg.consolidateScheduleTime, onChange: function (e) { set('consolidateScheduleTime', String(e.target.value || '').trim()) } }), t('fConsScheduleTimeHint')),
+          field(t('fConsScheduleDays'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 1, max: 60, value: cfg.consolidateScheduleDays === undefined ? 7 : cfg.consolidateScheduleDays, onChange: function (e) { set('consolidateScheduleDays', Number(e.target.value) || 7) } }), t('fConsScheduleDaysHint')),
+          field(t('fMaintSchedule'), h('input', { type: 'checkbox', checked: cfg.maintainScheduleEnabled !== false, onChange: function (e) { set('maintainScheduleEnabled', e.target.checked) } }), t('fMaintScheduleHint')),
+          field(t('fMaintScheduleTime'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', placeholder: '10:00', value: cfg.maintainScheduleTime === undefined ? '10:00' : cfg.maintainScheduleTime, onChange: function (e) { set('maintainScheduleTime', String(e.target.value || '').trim()) } }), t('fMaintScheduleTimeHint')),
+          // ★F3（2026-09-25 用户拍板）：归档 / 删除**自持**开关与天数。
+          //   用户原话「这个归档和删除需要走我自己的插件里的设置页面」「客户的机器不一定装了这个插件」
+          //   ⇒ 控件落本插件设置页，不依赖 @linxin666/dsh-session-archive。
+          //   生命周期 = 子代理跑完**保留** → N 天自动归档 → 归档后 M 天自动删除。
+          //   ★保护面（守卫 ⑰）：工作台会话、运行中会话、归档时间未知的历史归档**永不自动删除**。
+          //   纯追加：不改任何既有 field / 不加分区 key / 不动分区顺序（smoke-test-s2-settings-panels.mjs:102 锁）。
+          field(
+            L('会话归档与删除（自持）', 'Session archive & delete (self-held)'),
+            h('input', { type: 'checkbox', checked: cfg.sessionArchiveEnabled !== false, onChange: function (e) { set('sessionArchiveEnabled', e.target.checked) } }),
+            L('总开关。开启后本插件自己按下面的天数归档并清理会话，**不依赖任何外部会话管理插件**；关掉则两条策略都不跑。', 'Master switch. When on, this plugin itself archives and cleans sessions by the day counts below — no external session-manager plugin required. Off disables both policies.'),
+          ),
+          field(
+            L('自动归档', 'Auto-archive'),
+            h('input', { type: 'checkbox', checked: cfg.autoArchiveEnabled !== false, onChange: function (e) { set('autoArchiveEnabled', e.target.checked) } }),
+            L('子代理跑完后先**保留**；超过右边的天数未再活动即自动归档（归档 = 移出默认视野、可恢复，不是删除）。', 'Finished subagent sessions are kept first; once idle longer than the days on the right they are archived (hidden from the default view, reversible — not deleted).'),
+          ),
+          field(
+            L('归档阈值（天）', 'Archive after (days)'),
+            h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 1, max: 3650, value: cfg.autoArchiveDays === undefined ? 2 : cfg.autoArchiveDays, onChange: function (e) { var v = Number(e.target.value); set('autoArchiveDays', Number.isFinite(v) && v >= 1 && v <= 3650 ? Math.round(v) : 2) } }),
+            L('默认 **2** 天（用户口径）。范围 1–3650。', 'Default **2** days. Range 1–3650.'),
+          ),
+          field(
+            L('自动删除', 'Auto-delete'),
+            h('input', { type: 'checkbox', checked: cfg.autoDeleteEnabled !== false, onChange: function (e) { set('autoDeleteEnabled', e.target.checked) } }),
+            L('归档后超过右边天数才**物理删除**（不可恢复）。★只删「由本插件归档且记录了归档时刻」的会话；启用本功能之前的历史归档**永不**自动删除。', 'Deletes a session for good once it has been archived longer than the days on the right. Only sessions archived by this plugin (with a recorded archive time) qualify; archives from before this feature are never auto-deleted.'),
+          ),
+          field(
+            L('归档后保留（天）', 'Delete after archiving (days)'),
+            h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 1, max: 3650, value: cfg.autoDeleteDays === undefined ? 7 : cfg.autoDeleteDays, onChange: function (e) { var v = Number(e.target.value); set('autoDeleteDays', Number.isFinite(v) && v >= 1 && v <= 3650 ? Math.round(v) : 7) } }),
+            L('默认 **7** 天（用户口径）。范围 1–3650。工作台会话与运行中的会话始终受保护。', 'Default **7** days. Range 1–3650. Workbench and running sessions are always protected.'),
+          ),
+        ]),
+        section('store', sectionLabels.store, [
+  field(t('fUserDir'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', value: cfg.userMemoryDir, onChange: function (e) { set('userMemoryDir', e.target.value) } }), t('fUserDirHint')),
+          field(t('fProjectDir'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', value: cfg.projectMemoryDir, onChange: function (e) { set('projectMemoryDir', e.target.value) } }), t('fProjectDirHint')),
+          field(t('fMemoryRoot'), h('div', { 'data-dam-slot': 'list', 'data-dam-row': '', style: { flex: 1 } },
+            h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', style: { flex: 1 }, value: cfg.memoryRoot || '', onChange: function (e) { set('memoryRoot', e.target.value) } }),
+            h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: function () { openBrowser() } }, t('fBrowse'))), t('fMemoryRootHint')),
+          browseOpen ? h('div', { style: { border: '1px solid color-mix(in srgb, var(--dsw-alias-border-l1, rgba(128,128,128,.25)) 60%, transparent)', borderRadius: '8px', padding: '8px', marginBottom: '8px', background: 'color-mix(in srgb, var(--dsw-alias-bg-layer-1, rgba(128,128,128,.06)) 40%, transparent)' } },
+            h('div', { 'data-dam-slot': 'list', 'data-dam-row': '' },
+              h('b', { style: { fontSize: 'calc(12px * var(--dam-scale))', wordBreak: 'break-all', flex: 1 } }, browsePath || '…'),
+              h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: function () { browseTo(browseParent) }, disabled: browseParent === browsePath }, t('fUp'))),
+            h('div', { style: { maxHeight: '160px', overflow: 'auto', marginTop: '4px' } },
+              (browseDirs || []).map(function (d) {
+                return h('button', { key: d.path, 'data-dam-slot': 'actions', 'data-dam-btn': '', style: { display: 'block', width: '100%', textAlign: 'left', padding: '3px 6px' }, onClick: function () { browseTo(d.path) } }, '📁 ' + d.name)
+              }).concat(browseDirs && !browseDirs.length ? [h('div', { key: 'e', 'data-dam-slot': 'hint', 'data-dam-hint': '' }, t('empty'))] : [])),
+            h('div', { 'data-dam-slot': 'list', 'data-dam-row': '', style: { marginTop: '6px' } },
+              // ★S1 解耦：内嵌浏览器的「选择」按 browseKey 回填（哪一行开的就写哪一行）
+              h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: function () { set(browseKey || 'memoryRoot', browsePath); setBrowseOpen(false) } }, t('fSelectDir')),
+              h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: function () { setBrowseOpen(false) } }, t('close'))))
+            : null,
+          field(t('fDayBoundary'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 0, max: 1439, value: (cfg.dayBoundaryMinutes === undefined ? 450 : cfg.dayBoundaryMinutes), onChange: function (e) { set('dayBoundaryMinutes', parseInt(e.target.value || '0', 10)) } }), t('fDayBoundaryHint')),
+          field(t('fReflect'), h('input', { type: 'checkbox', checked: !!cfg.reflectEnabled, onChange: function (e) { set('reflectEnabled', e.target.checked) } }), t('fReflectHint')),
+          field(t('fStyle'), h('select', { 'data-dam-select': '', value: cfg.reflectStyle, onChange: function (e) { set('reflectStyle', e.target.value) } },
+            STYLE_IDS.map(function (id) { return h('option', { key: id, value: id }, t('style' + id.charAt(0).toUpperCase() + id.slice(1))) })), t('fStyleHint')),
+          // 2026-09-22 补接线(设置页缺口审计 P1/P2):扫描上限与索引快照前端零命中。
+          field(t('fWsDiscover'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 5, max: 2000, value: cfg.workspaceDiscoverMax === undefined ? 200 : cfg.workspaceDiscoverMax, onChange: function (e) { set('workspaceDiscoverMax', Math.max(5, Math.min(2000, Number(e.target.value) || 200))) } }), t('fWsDiscoverHint')),
+          field(t('fGlobalBrief'), h('input', { type: 'checkbox', 'data-dam-key': 'globalBriefEnabled', checked: cfg.globalBriefEnabled === true, onChange: function (e) { set('globalBriefEnabled', !!e.target.checked) } }), t('fGlobalBriefHint')),
+          // ★全局动态简报：四类细分开关（互相解耦——关掉哪一类只影响该类，不影响其余）
+          field(t('fGlobalBriefWatchMemory'), h('input', { type: 'checkbox', checked: cfg.globalBriefWatchMemory !== false, onChange: function (e) { set('globalBriefWatchMemory', !!e.target.checked) } }), t('fGlobalBriefWatchMemoryHint')),
+          field(t('fGlobalBriefWatchDocs'), h('input', { type: 'checkbox', checked: cfg.globalBriefWatchDocs !== false, onChange: function (e) { set('globalBriefWatchDocs', !!e.target.checked) } }), t('fGlobalBriefWatchDocsHint')),
+          field(t('fGlobalBriefWatchExternal'), h('input', { type: 'checkbox', checked: cfg.globalBriefWatchExternal !== false, onChange: function (e) { set('globalBriefWatchExternal', !!e.target.checked) } }), t('fGlobalBriefWatchExternalHint')),
+          field(t('fGlobalBriefWatchTeam'), h('input', { type: 'checkbox', checked: cfg.globalBriefWatchTeam !== false, onChange: function (e) { set('globalBriefWatchTeam', !!e.target.checked) } }), t('fGlobalBriefWatchTeamHint')),
+          field(t('fGlobalBriefChars'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 0, value: cfg.globalBriefChars === undefined ? 1200 : cfg.globalBriefChars, onChange: function (e) { set('globalBriefChars', Number(e.target.value) || 0) } }), t('fGlobalBriefCharsHint')),
+          field(t('fGlobalBriefInstruction'), h('select', { 'data-dam-slot': 'form', 'data-dam-input': '', value: cfg.globalBriefInstruction === 'none' ? 'none' : 'soft', onChange: function (e) { set('globalBriefInstruction', e.target.value === 'none' ? 'none' : 'soft') } }, [h('option', { value: 'soft' }, L('软指示（推荐）', 'Soft advisory')), h('option', { value: 'none' }, L('仅通知', 'Notify only'))]), t('fGlobalBriefInstructionHint')),
+          field(t('fGlobalBriefUnattended'), h('input', { type: 'checkbox', checked: cfg.globalBriefUnattended !== false, onChange: function (e) { set('globalBriefUnattended', !!e.target.checked) } }), t('fGlobalBriefUnattendedHint')),
+          // 读数行：把「最近一次检测」的状态/条数/时间做成即时可读的一行（展开详情在记忆面板「外部来源」页）。
+          h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, t('fGlobalBriefNow'), ' · ', t('fGlobalBriefNowHint')),
+        ]),
+        section('look', sectionLabels.look, [
+          h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, t('settingsHeader')),
+          field(t('fLocale'), h('select', { 'data-dam-select': '', value: cfg.locale || 'system', onChange: function (e) { set('locale', e.target.value) } },
+            LOCALE_IDS_LIST.map(function (id) { return h('option', { key: id, value: id }, id === 'system' ? t('followSystem') : t(id)) })), t('fLocaleHint')),
+          field(t('fFontSize'), h('select', { 'data-dam-select': '', value: fontScale, onChange: function (e) { fontScale = e.target.value; try { localStorage.setItem('dsh-auto-memory.fontScale.v2', fontScale) } catch (ee) {}; try { var pp = document.querySelector('[data-dam-panel]'); if (pp) pp.style.setProperty('--dam-scale', FONT_SCALE_VALUES[fontScale] || '1') } catch (ee2) {}; emit() } },
+            Object.keys(FONT_SCALES).map(function (k) { return h('option', { key: k, value: k }, t('fs' + k.charAt(0).toUpperCase() + k.slice(1))) })), t('fFontSizeHint')),
+          // 面板位置(2026-09-21):左下角 / 顶部 / 两者共存。改动立即生效并同步两处形态(用户硬规则:即时回显)。
+          field(t('fPanelPos'), h('select', { 'data-dam-select': '', value: controller.panelPos(), onChange: function (e) { controller.setPanelPos(e.target.value) } },
+            h('option', { value: 'bottom-left' }, t('posBottomLeft')), h('option', { value: 'page' }, t('posPage')), h('option', { value: 'both' }, t('posBoth'))), t('fPanelPosHint')),
+          field(L3('强调色（立即生效）','Accent color (immediate)','アクセント色（即時適用）'), h('select', { 'data-dam-select': '', value: accentTheme, onChange: function (e) { setAccent(e.target.value) } },
+            h('option', { value: 'deepseek' }, L('DeepSeek 蓝', 'DeepSeek blue')), h('option', { value: 'graphite' }, L('石墨灰', 'Graphite')), h('option', { value: 'violet' }, L('雾紫', 'Violet'))), L('默认使用 DeepSeek 蓝；日历与状态颜色保持语义色。', 'DeepSeek blue by default; calendar and status colors stay semantic.')),
+          field(L3('关系图密度（立即生效）','Graph density (immediate)','グラフ密度（即時適用）'), h('select', { 'data-dam-select': '', value: graphDensity, onChange: function (e) { setDensity(e.target.value) } },
+            h('option', { value: 'relaxed' }, L('舒展', 'Relaxed')), h('option', { value: 'compact' }, L('紧凑', 'Compact'))), L('影响工作区关系图的节点间距和显示数量。', 'Controls node spacing and detail in the workspace graph.')),
+          // 群反馈第 4 条:排除来源(每行一条)。textarea 便于粘贴多行路径;
+          // 空行/纯空白在写回时被过滤,避免"看起来配了其实没配"。
+          // ★批次 Y：onChange 持原始串（中间态可编辑），提交时由 prepareSettingsPatch 归一化。
+          field(t('fExclude'), h('textarea', {
+            'data-dam-slot': 'form', 'data-dam-input': '', rows: 3,
+            style: { width: '100%', resize: 'vertical', fontFamily: 'inherit' },
+            value: typeof cfg.injectExcludeSources === 'string' ? cfg.injectExcludeSources : (Array.isArray(cfg.injectExcludeSources) ? cfg.injectExcludeSources : []).join('\n'),
+            placeholder: 'mem_0123456789abcdef0123456789abcdef\nD:\\ws\\.dsh-memory\\archive\\\nlog',
+            onChange: function (e) {
+              var lines = e.target.value
+              set('injectExcludeSources', lines)
+            },
+          }), t('fExcludeHint')),
+        ]),
+        section('team', sectionLabels.team, [
+          renderTeamSettings({ cfg: cfg, set: set, field: field }),
+        ]),
+        section('skin', sectionLabels.skin, [
+          // ★2026-09-28（用户第 1 大点）：本分区升格为「皮肤选择（皮肤中心）」——选择器置顶。
+          // ★2026-10-03（G1-4/#196）：原回调引用组件局部不存在的 setNonce ⇒ ReferenceError 被 catch 吞。
+          //   家族切换的通知改由 dam-skin-changed 广播 + 挂载根订阅承担，此处不再需要非空回调。
+          h(SkinPicker, { onSwitch: function () {} }),
+          h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { fontSize: 'calc(11.5px * var(--dam-scale))', opacity: .72, margin: '10px 0 4px' } },
+            L('素材槽位（换图子功能，与皮肤选择正交）', 'Asset slots (image swapping; orthogonal to skin choice)')),
+          // ★S2 皮肤(2026-09-27):6 槽位**真实渲染为 <img>**,取图走宿主只读路由
+          // /api/dsh-auto-memory/skin-asset?key=<槽位>(loopback-only + 白名单)。
+          h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { fontSize: 'calc(11.5px * var(--dam-scale))', opacity: .72, marginBottom: '6px' } },
+            L('下面 6 张图来自插件的 lib/assets/skin/。换图只需改 lib/skin-assets.js 里对应槽位的 file 一行，本页与所有结构代码零改动。图未就绪时显示确定性占位（不塌、不留白）。', 'These six images come from the plugin lib/assets/skin/. To swap one, edit the file field for that slot in lib/skin-assets.js — no other code changes. Unready slots show a deterministic placeholder.')),
+          h(SkinCenterPanel, null),
+          h(SkinSlotRows, null),
+          h(SkinSection, null),
+        ]),
+        section('about', sectionLabels.about, [
+          // WB-GRAPH 白板线一键切换(2026-09-16, board_mode_pre_v1): 旧版白板(默认) / 新版看板(dsh-graph vendor
+          // + sidecar + 遍历工具, 工具数 14→16)。开关解耦: 只管白板线; 切换需重启 dsh web 生效(工具注册在启动期)。
+          field(L3('白板模式（立即保存，需重启）','Board mode (immediate save; restart required)','ボードモード（即時保存・再起動が必要）'), (function () {
+            var cur = cfg.boardMode === 'graph' ? 'graph' : 'legacy'
+            // ★2026-09-16 修 BUG-3(设置页切换不落盘): 旧实现 `set('boardMode', m)` 只改**本地 React 态**
+            // 然后 reload —— 配置从未写到服务端, 刷新后仍是旧值(界面回跳原档), 用户会判定"开关坏了"。
+            // 正解: 走与接续面板同一个写入路径 `saveConfigPatch(API.config, patch)`(见 :999 定义),
+            // 写盘成功后再 reload; 失败则在界面提示, 不静默假装成功。
+            // 同时满足用户硬性偏好: 开关类改动必须**即时回显**(写盘后立即 reload 呈现新档)。
+            function pick(m) {
+              set('boardMode', m) // 先本地回显(即时反馈)
+              saveConfigPatch({ boardMode: m }, {
+                onSaved: function () { window.setTimeout(function () { window.location.reload() }, 350) },
+                onError: function (e) { setErr(String((e && e.message) || e || 'save failed')) },
+              })
+            }
+            return h('div', { 'data-dam-slot': 'list', 'data-dam-row': '' },
+              h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', 'data-dam-key': 'boardMode', style: { fontWeight: cur === 'legacy' ? 700 : 400, opacity: cur === 'legacy' ? 1 : 0.65 }, onClick: function () { if (cur !== 'legacy') pick('legacy') } }, L('旧版白板', 'Legacy board')),
+              h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', 'data-dam-key': 'boardModeGraph', style: { marginLeft: '6px', fontWeight: cur === 'graph' ? 700 : 400, opacity: cur === 'graph' ? 1 : 0.65 }, onClick: function () { if (cur !== 'graph') pick('graph') } }, L('新版看板（dsh-graph）', 'Graph board (dsh-graph)')))
+          })(),
+            L('一键切换白板形态。默认「旧版白板」=一切行为不变；切到「新版看板」后启用 dsh-graph 看板、白板结构化索引（handoff/index.json）与两个遍历工具（memory_expand / memory_trace，工具数 14→16）。切换后需重启 dsh web 生效；再点回旧版即完全回滚。', 'One-click switch for the board form. Default "Legacy board" keeps everything unchanged; "Graph board" enables the dsh-graph kanban, the structured handoff index (handoff/index.json) and two traversal tools (memory_expand / memory_trace, tool count 14→16). Restart dsh web after switching; switch back to fully roll back.')),
+  field(t('fVersion'), h('div', { 'data-dam-slot': 'list', 'data-dam-row': '' },
+            h('span', { style: { flex: 1 } }, verInfo ? (verInfo.current || '?') + (verInfo.latest ? ' → ' + verInfo.latest + (verInfo.upToDate ? ' ' + t('upToDate') : ' ' + t('hasUpdate')) : '') : (checkingUpdate ? t('checking') : '—')),
+            h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: checkUpdate, disabled: checkingUpdate }, checkingUpdate ? t('checking') : t('checkUpdate')),
+            (verInfo && verInfo.latest && !verInfo.upToDate && verInfo.installKind === 'registry') ? h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: doUpdate, disabled: upBusy, style: { marginLeft: '4px' } }, upBusy ? t('updating') : t('updateNow')) : null,
+            // ★v3.1.2：dev-link（开发树挂载）无法「一键更新」，但也必须让用户看见线上是否有新版 ——
+            //   此前此处恒为 null，用户既看不到按钮也看不到「有新版」，反馈「按钮消失且不知道为什么」。
+            (verInfo && verInfo.installKind === 'dev-link' && verInfo.latest && verInfo.devVersion && verInfo.latest !== verInfo.devVersion)
+              ? h('span', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginLeft: '6px' } }, (L('开发树 v', 'dev tree v')) + verInfo.devVersion + ' → ' + (L('线上 v', 'registry v')) + verInfo.latest + (L('，请同步开发源码后重新构建', ' — sync source and rebuild')))
+              : null,
+            upMsg ? h('span', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, upMsg) : null),
+            t('versionCmdHint') + (verInfo && verInfo.error ? ' ' + t('versionError') + verInfo.error : '') + (verInfo && verInfo.installKind === 'dev-link' ? ' ' + t('devLinkHint') : '') + (verInfo && !verInfo.installKind ? ' ' + t('noProfileHint') : '')),
+          field(L('交流群', 'Community'), h('div', { 'data-dam-slot': 'list', 'data-dam-row': '' },
+            h('span', { style: { flex: 1 } }, L('反馈问题、交流使用技巧——加群响应比 issue 更快。', 'Share feedback and tips with other users — the group responds faster than GitHub issues.')),
+            h('a', { href: 'https://qm.qq.com/q/v7Asxn6vPa', target: '_blank', rel: 'noreferrer', style: { textDecoration: 'none', color: 'var(--dam-accent, #4f7cff)' } }, L('点击加入 QQ 交流群', 'Join the QQ community group'))),
+            L('点击链接一键加群。', 'One-click join via the QQ invite link.')),
+        ]),
+        h('div', { 'data-dam-savebar': '', role: 'status' },
+          h('button', { onClick: i5Cancel, disabled: busy || !dirty }, L('取消修改', 'Discard changes')),
+          h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', 'data-dirty': dirty ? 'true' : undefined, onClick: save, disabled: busy || !dirty }, busy ? t('saving') : (dirty ? (L('保存更改', 'Save changes')) : t('saveSettings'))),
+          dirty ? h('span', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, String(new Set(Object.keys(i5Groups.current).map(function (k) { return i5Groups.current[k] })).size) + L(' 个分区有未保存修改', ' sections with unsaved changes')) : null,
+          msg ? h('span', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, msg) : null),
+        // 调试中心(折叠):模块状态一览,方便排查问题/提 issue
+        h('div', { style: { marginTop: '14px', borderTop: '1px solid color-mix(in srgb, var(--dsw-alias-border-l1, rgba(128,128,128,.2)) 55%, transparent)', paddingTop: '10px' } },
+          h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: function () { setDbgOpen(!dbgOpen) } }, (dbgOpen ? '▴ ' : '▾ ') + t('debugCenter')),
+          dbgOpen ? h('div', { style: { marginTop: '8px' } }, h(DebugCenter)) : null),
+        err ? h('div', { 'data-dam-error': '' }, err) : null))
+    }
+
+    function Iter5Storage(props) {
+      var nonce = props && props.nonce ? props.nonce : 0
+      var dataPair = useState(null)
+      var data = dataPair[0]
+      var setData = dataPair[1]
+      var errPair = useState('')
+      var err = errPair[0]
+      var setErr = errPair[1]
+      var msgPair = useState('')
+      var msg = msgPair[0]
+      var setMsg = msgPair[1]
+      var delPair = useState('')
+      var delId = delPair[0]
+      var setDelId = delPair[1]
+      var filePair = useState('')
+      var delFile = filePair[0]
+      var setDelFile = filePair[1]
+      // 迁移搬包(P4 前端接线):导出/三步向导的全部状态。只用 useState,不引新依赖。
+      var migOutPair = useState('')
+      var migOut = migOutPair[0]
+      var setMigOut = migOutPair[1]
+      var migPackPair = useState('')
+      var migPack = migPackPair[0]
+      var setMigPack = migPackPair[1]
+      var migOutPickingPair = useState(false)
+      var migOutPicking = migOutPickingPair[0]
+      var setMigOutPicking = migOutPickingPair[1]
+      var migPackPickingPair = useState(false)
+      var migPackPicking = migPackPickingPair[0]
+      var setMigPackPicking = migPackPickingPair[1]
+      var migBusyPair = useState('')
+      var migBusy = migBusyPair[0]
+      var setMigBusy = migBusyPair[1]
+      var migErrStatePair = useState('')
+      var migErr = migErrStatePair[0]
+      var setMigErr = migErrStatePair[1]
+      var migNotePair = useState('')
+      var migNote = migNotePair[0]
+      var setMigNote = migNotePair[1]
+      var migPlanPair = useState(null)
+      var migPlan = migPlanPair[0]
+      var setMigPlan = migPlanPair[1]
+      var migResultPair = useState(null)
+      var migResult = migResultPair[0]
+      var setMigResult = migResultPair[1]
+      var migConflictPair = useState('keep')
+      var migConflict = migConflictPair[0]
+      var setMigConflict = migConflictPair[1]
+      // ok===false 时把 error / errors / warnings 一并显示,绝不静默。
+      function migFail(tag, j, e) {
+        var parts = []
+        if (e) parts.push(String(e && e.message ? e.message : e))
+        if (j && j.error) parts.push(String(j.error))
+        if (j && j.errors) parts.push(Array.isArray(j.errors) ? j.errors.join(' | ') : String(j.errors))
+        if (j && j.warnings && j.warnings.length) parts.push((L('警告: ', 'warnings: ')) + j.warnings.join(' | '))
+        if (j && j.skipped && j.skipped.length) parts.push((L('跳过: ', 'skipped: ')) + j.skipped.join(' | '))
+        setMigErr(tag + ' ✗ ' + (parts.length ? parts.join(' · ') : (L('未知错误', 'unknown error'))))
+      }
+      // 选择目录:沿用本文件的 pickDir 原生选择器形态;拿不到目录就提示手填输入框(不阻塞)。
+      // ★批次 Y（PR#213 自带缺陷修复）：pr-213 在此处加的 `if(!settingsAlive.current || request!==pickerRequest.current)return`
+      //   守卫引用了未声明的 `request`（点「选择目录」必抛 ReferenceError ⇒ 按钮永久卡死），且
+      //   settingsAlive/pickerRequest 属 sibling 组件。三份统一为：本组件自持 migAlive ref 的幂等守卫。
+      var migAlive = useRef(true)
+      useEffect(function(){migAlive.current=true;return function(){migAlive.current=false}},[])
+      function migPickInto(setVal, setPicking) {
+        setPicking(true); setMigErr('')
+        apiPost(API.pickDir, {}).then(function (d) {
+          if(!migAlive.current)return
+          setPicking(false)
+          if (d && d.dir) { setVal(d.dir); setMigNote((L('已选择目录: ', 'folder picked: ')) + d.dir) }
+          else { setMigNote(L('系统文件夹选择器不可用,请手动填写路径。', 'Native folder picker unavailable — type the path manually.')) }
+        }).catch(function () {
+          if(!migAlive.current)return
+          setPicking(false)
+          setMigNote(L('系统文件夹选择器不可用,请手动填写路径。', 'Native folder picker unavailable — type the path manually.'))
+        })
+      }
+      function migExport(opts) {
+        if (migBusy) return
+        opts = opts || {}
+        setMigBusy('export'); setMigErr(''); setMigNote('')
+        // ★v3.1.2 修：此前只发 outPath，宿主拿不到工作区 ⇒ 恒返回 missing-ws（用户实测）。
+        //   本文件既有 currentWs()（跟随 GUI 切换工作区），导出必须显式带上。
+        apiPost(API.migrateExport, { ws: currentWs() || undefined, outPath: migOut || undefined }).then(function (j) {
+          setMigBusy('')
+          if (!j || j.ok === false) { migFail(t('migExport'), j, null); return }
+          var s = j.stats || {}
+          setMigNote(t('migExport') + ' ✓ ' + String(j.path || '') +
+            ' · ' + (L('文件 ', 'files ')) + String(s.fileCount || 0) +
+            ' · ' + (L('原始 ', 'raw ')) + String(s.bytes || 0) + ' B' +
+            ' · ' + (L('压缩后 ', 'packed ')) + String(s.packedBytes || 0) + ' B' +
+            (j.checksum ? ' · sha256 ' + String(j.checksum).slice(0, 12) : '') +
+            (j.skipped && j.skipped.length ? ' · ' + (L('跳过 ', 'skipped ')) + j.skipped.length : '') +
+            (j.warnings && j.warnings.length ? ' · ' + (L('警告 ', 'warnings ')) + j.warnings.length : ''))
+        }).catch(function (e) { setMigBusy(''); migFail(t('migExport'), null, e) })
+      }
+      function migPreview() {
+        if (migBusy) return
+        if (!migPack) { setMigErr(t('migPickPack')); return }
+        setMigBusy('preview'); setMigErr(''); setMigNote(''); setMigPlan(null); setMigResult(null)
+        apiPost(API.migrateInspect, { packPath: migPack, targetWs: currentWs() || undefined, onConflict: migConflict }).then(function (j) {
+          setMigBusy('')
+          if (!j || j.ok === false) { migFail(t('migPreview'), j, null); return }
+          var p = Object.assign({}, j.plan || {}, { previewToken: j.previewToken })
+          setMigPlan(p)
+          setMigNote(t('migPreview') + ' ✓ ' + (p.pathChanged ? t('migPathChanged') : t('migSamePath')) +
+            (j.sourceMissing ? (L(' · ⚠ 源工作区已不存在', ' · warning: source workspace missing')) : ''))
+        }).catch(function (e) { setMigBusy(''); migFail(t('migPreview'), null, e) })
+      }
+      function migApply() {
+        if (migBusy) return
+        if (!migPack) { setMigErr(t('migPickPack')); return }
+        setMigBusy('apply'); setMigErr(''); setMigNote('')
+        apiPost(API.migrateImport, { packPath: migPack, targetWs: currentWs() || undefined, onConflict: migConflict, previewToken: migPlan && migPlan.previewToken }).then(function (j) {
+          setMigBusy('')
+          if (!j || j.ok === false) { migFail(t('migApply'), j, null); return }
+          setMigResult(j)
+          setMigNote(t('migApply') + ' ✓ ' + String(j.targetWs || ''))
+        }).catch(function (e) { setMigBusy(''); migFail(t('migApply'), null, e) })
+      }
+      useEffect(function () {
+        var alive = true
+        fetch(API.storageManage).then(function (r) { return r.json().then(function (j) { if (!r.ok || (j && j.error)) throw Error(j && (j.error || j.reason) || 'Request failed'); return j }) }).then(function (j) {
+          if (alive) setData(j || null)
+        }).catch(function (e) { if (alive) setErr(String(e && e.message)) })
+        return function () { alive = false }
+      }, [nonce])
+      function act(action, payload, onDone) {
+        if (action === 'delete' && !window.confirm(L('确认删除记忆？正文将删除，在途唤起包将清理，派生事实将撤销；已产生的 seen 证据不改写。此操作不能撤销。', 'Delete this memory and revoke derived facts and pending packets? Existing seen evidence is preserved. This cannot be undone.') + '\n' + payload.filePath + '\n' + payload.memoryId)) return
+        if (action === 'repair' && !window.confirm(L('确认仅重建以下文件的索引副本（正文不变）？', 'Rebuild index copies for these files? Source text is unchanged.') + '\n' + (payload.items || []).map(function (s) { return s.file || s.sourceRef }).join('\n'))) return
+        setMsg('')
+        var body = Object.assign({ action: action }, payload || {})
+        fetch(API.storageManage, { method: 'POST',
+          headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+          .then(function (r) { return r.json().then(function (j) { if (!r.ok || (j && j.error)) throw Error(j && (j.error || j.reason) || 'Request failed'); return j }) })
+          .then(function (j) {
+            var reason = (j && (j.reason || (j.ok === false ? 'rejected' : 'ok'))) || 'done'
+            if (j && j.ok === false && j.reason === 'no-doc-store') {
+              reason = L('记忆锚定索引未启用:请在 设置 → 语义记忆总开关 开启「记忆锚定索引」后重试;或忽略此提示(不影响记忆读写与检索)', 'anchor index disabled: enable "Memory anchor index" under Settings → Semantic engine, or ignore (read/write/recall unaffected)')
+            }
+            setMsg(action + ': ' + reason + (j && j.cascade ? ' · cascade: ' + JSON.stringify(j.cascade) : ''))
+            if (j && j.ok !== false && onDone) onDone(j)
+            var again = fetch(API.storageManage).then(function (r2) { return r2.json() })
+            again.then(function (j2) { setData(j2 || null) })
+          })
+          .catch(function (e) { setMsg(action + ' failed: ' + String(e && e.message)) })
+      }
+      if (err) return h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, t('searchFailed') + err)
+      if (!data) return h(Loading, { label: t('loading') })
+      if (data.error) return h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, String(data.error))
+      var counts = data.counts || { total: 0, ok: 0, stale: 0, unrepairable: 0 }
+      var rows = []
+      if (data.indexEnabled === false) {
+        rows.push(h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginTop: '6px', color: 'var(--dsw-alias-state-warn-primary, var(--dam-dec-prefetch, #e8c584))' } },
+          L('⚠ 记忆锚定索引未启用:语料健康不做 sidecar 比对(无 stale 可修)。如需「修复 stale / 删除记忆」,请到 设置 → 语义记忆总开关 开启「记忆锚定索引」。此提示不影响记忆读写与检索。', '⚠ Memory anchor index disabled: corpus health performs no sidecar comparison (nothing stale). To use repair/delete, enable "Memory anchor index" under Settings → Semantic engine. Read/write/recall are unaffected.')))
+      }
+      rows.push(h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginTop: '8px' } }, t('storageScanHint')))
+      rows.push(h(Card, { title: (L('语料健康', 'Corpus health')) + ' (' + counts.ok + '/' + counts.total + ' ok)' },
+        h('div', null,
+          (data.sources || []).map(function (s) {
+            var mark = s.status === 'ok' ? '✓' : (s.status === 'stale' ? '⚠' : '✕')
+            return h('div', { 'data-dam-content': '', key: s.sourceRef, style: { padding: '3px 0' } },
+              mark + ' ' + s.sourceRef + ' [' + s.status + ']' + (s.reasons && s.reasons.length ? ' · ' + s.reasons.join(', ') : ''))
+          }),
+          h('div', { style: { display: 'flex', gap: '6px', marginTop: '8px' } },
+            h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', style: { fontSize: 'calc(10.5px * var(--dam-scale))', padding: '3px 10px' }, onClick: function () { act('scan') } }, L('重新扫描', 'rescan')),
+            h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', style: { fontSize: 'calc(10.5px * var(--dam-scale))', padding: '3px 10px', opacity: counts.stale ? 1 : .5 }, onClick: function () { if (counts.stale) act('repair', { items: (data.stale || []).map(function (s) { return { file: s.file, sourceRef: s.sourceRef } }) }) } },
+              (L('修复 stale', 'repair stale')) + (counts.stale ? ' (' + counts.stale + ')' : ''))))))
+      // 删除(三联动):文件路径 + memoryId。后端校验路径必须属于当前语料三源之一。
+      rows.push(h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginTop: '12px' } }, t('storageDeleteHint')))
+      rows.push(h(Card, { title: L('删除记忆(三联动)', 'Delete memory (cascading)') },
+        h('div', null,
+          h('select', { 'data-dam-select': '', value: delFile, onChange: function (e) { setDelFile(e.target.value) }, style: { width: '100%' } },
+            h('option', { value: '' }, L('选择语料文件…', 'select corpus file…')),
+            (data.sources || []).map(function (s) { return h('option', { key: s.sourceRef, value: s.file }, s.sourceRef + ' — ' + s.file) })),
+          h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', placeholder: 'mem_…', value: delId, onChange: function (e) { setDelId(e.target.value) }, style: { width: '100%', marginTop: '6px' } }),
+          h('div', { style: { display: 'flex', gap: '6px', marginTop: '6px' } },
+            h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', style: { fontSize: 'calc(10.5px * var(--dam-scale))', padding: '3px 10px', opacity: (delFile && delId) ? 1 : .5 },
+              onClick: function () {
+                if (!(delFile && delId)) return
+                act('delete', { filePath: delFile, memoryId: delId }, function () { setDelId('') })
+              } }, L('删除', 'delete'))))))
+      if (msg) rows.push(h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginTop: '6px', color: 'var(--dsw-alias-state-warn-primary, var(--dam-dec-prefetch, #e8c584))' } }, msg))
+      var audit = (data.audit || []).slice(-4)
+      if (audit.length) {
+        rows.push(h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginTop: '12px', opacity: .7 } },
+          (L('最近动作: ', 'recent: ')) + audit.map(function (a) { return a.action }).join(', ')))
+      }
+    // 迁移搬包(P4):StorageTab 的「迁移搬包」卡片 —— 导出 + 导入三步向导(选包 → 预览差异 → 确认导入)。
+    // 版式:只用 flexWrap / 百分比 / calc 字号,长路径 wordBreak:break-all ⇒ 窄浮层与宽页签都不横向溢出。
+    var migOutPlaceholder = L('输出目录(留空 = 默认导出目录)', 'output dir (blank = default export dir)')
+    var migRows = []
+    if (migErr) migRows.push(h('div', { 'data-dam-error': '', key: 'merr', style: { wordBreak: 'break-all' } }, migErr))
+    if (migNote) migRows.push(h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', key: 'mnote', style: { wordBreak: 'break-all' } }, migNote))
+    migRows.push(h(Card, { title: t('migTitle') },
+      h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginBottom: '6px', wordBreak: 'break-all' } }, t('migHint')),
+      h('div', { 'data-dam-slot': 'list', 'data-dam-row': '' },
+        h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', value: migOut, placeholder: migOutPlaceholder,
+          onChange: function (e) { setMigOut(e.target.value) }, style: { flex: '1 1 100%' } }),
+        h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', disabled: !!migBusy, onClick: function () { migPickInto(setMigOut, setMigOutPicking) } },
+          migOutPicking ? t('loading') : (L('选择目录', 'pick folder'))),
+        h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', disabled: !!migBusy, style: { opacity: migBusy ? .5 : 1 },
+          onClick: function () { migExport() } }, migBusy === 'export' ? t('saving') : t('migExport'))),
+      h('div', { 'data-dam-slot': 'list', 'data-dam-row': '', style: { marginTop: '6px' } },
+        h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', value: migPack, placeholder: t('migPickPack'),
+          onChange: function (e) { setMigPack(e.target.value) }, style: { flex: '1 1 100%' } }),
+        h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', disabled: !!migBusy, onClick: function () { migPickInto(setMigPack, setMigPackPicking) } },
+          migPackPicking ? t('loading') : t('migPickPack')),
+        h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', disabled: !!migBusy, style: { opacity: migBusy ? .5 : 1 },
+          onClick: migPreview }, migBusy === 'preview' ? t('loading') : t('migPreview'))),
+      migPlan ? h('div', { style: { wordBreak: 'break-all', fontSize: 'calc(11.5px * var(--dam-scale))' } },
+        h('div', null, migPlan.pathChanged ? t('migPathChanged') : t('migSamePath')),
+        h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, (L('路径: ', 'path: ')) + String(migPlan.fromPath || '') + ' → ' + String(migPlan.toPath || '')),
+        h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, (L('工作区标识: ', 'slug: ')) + String(migPlan.fromSlug || '') + ' → ' + String(migPlan.toSlug || '')),
+        h('div', null, (L('新增 ', 'additions ')) + String((migPlan.additions || []).length) +
+          ' · ' + (L('覆盖 ', 'overwrites ')) + String((migPlan.overwrites || []).length) +
+          ' · ' + (L('将写入 ', 'will write ')) + String((migPlan.stats && migPlan.stats.willWrite) || 0) +
+          ' · ' + (L('重写命中 ', 'rewrite hits ')) + String((migPlan.rewrite && migPlan.rewrite.totalHits) || 0) +
+          (L(' 处 / 涉及文件 ', ' across files ')) + String((migPlan.rewrite && migPlan.rewrite.fileCount) || 0)),
+        (migPlan.additions || []).length ? h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '' },
+          (L('新增(前 10): ', 'additions (top 10): ')) + (migPlan.additions || []).slice(0, 10).map(function (a) { return String(a && a.path) + '(' + String((a && a.bytes) || 0) + 'B)' }).join(' , ')) : null,
+        (migPlan.overwrites || []).length ? h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '' },
+          (L('覆盖: ', 'overwrites: ')) + (migPlan.overwrites || []).map(function (o) { return String(o && o.path) + ' ' + String((o && o.oldBytes) || 0) + 'B→' + String((o && o.newBytes) || 0) + 'B' }).join(' , ')) : null,
+        (migPlan.rewrite && (migPlan.rewrite.files || []).length) ? h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '' },
+          (L('重写文件(前 10): ', 'rewrite files (top 10): ')) + (migPlan.rewrite.files || []).slice(0, 10).map(function (f) { return String(f && f.path) + '(' + String((f && f.hits) || 0) + ')' }).join(' , ')) : null,
+        (migPlan.warnings && migPlan.warnings.length) ? h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, (L('警告: ', 'warnings: ')) + migPlan.warnings.join(' | ')) : null,
+        h('div', { 'data-dam-slot': 'list', 'data-dam-row': '', style: { marginTop: '6px' } },
+          h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', style: { opacity: migConflict === 'keep' ? 1 : .5 }, onClick: function () { setMigConflict('keep') } }, (migConflict === 'keep' ? '● ' : '○ ') + t('migConflictKeep')),
+          h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', style: { opacity: migConflict === 'overwrite' ? 1 : .5 }, onClick: function () { setMigConflict('overwrite') } }, (migConflict === 'overwrite' ? '● ' : '○ ') + t('migConflictOverwrite')),
+          h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', style: { opacity: migConflict === 'rename' ? 1 : .5 }, onClick: function () { setMigConflict('rename') } }, (migConflict === 'rename' ? '● ' : '○ ') + t('migConflictRename'))),
+        h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', disabled: !!migBusy, style: { marginTop: '6px', opacity: migBusy ? .5 : 1 }, onClick: migApply },
+          migBusy === 'apply' ? t('saving') : t('migApply'))) : null,
+      migResult ? h('div', { style: { wordBreak: 'break-all', fontSize: 'calc(11.5px * var(--dam-scale))' } },
+        h('div', null, t('migWritten') + ': ' + String(migResult.written || 0) +
+          ((migResult.writtenFiles || []).length ? ' (' + migResult.writtenFiles.slice(0, 10).join(' , ') + ')' : '')),
+        h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, t('migBackup') + ': ' + String(migResult.backup || '')),
+        h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, (L('冲突策略: ', 'conflict: ')) + String(migResult.onConflict || migConflict) +
+          ' · ' + (L('目标工作区: ', 'target: ')) + String(migResult.targetWs || '')),
+        h('div', null, String(migResult.summaryAction || '') + (migResult.summaryError ? ' ✗ ' + String(migResult.summaryError) : ''))) : null))
+    rows.push(h('div', { 'data-dam-slot': 'timeline', 'data-dam-flow': '' }, migRows))
+      // 大屏分列:卡片流页签(见 CSS [data-dam-flow]);非卡片子元素仍整行。
+      return h('div', { className: 'i5-storage-view' },
+        h('div', { className: 'i5-stats i5-stats-four' },
+          h(Iter5Stat, { icon: 'storage', hue: 'blue', label: L('扫描来源', 'Scanned sources'), value: data.counts ? counts.total : null, hint: L('当前语料来源数', 'Current corpus sources') }),
+          h(Iter5Stat, { icon: 'check', hue: 'green', label: L('索引一致', 'Consistent'), value: data.indexEnabled === false ? null : data.counts ? counts.ok : null, hint: data.indexEnabled === false ? L('索引尚未启用', 'Index disabled') : L('正文与索引校验一致', 'Source and index agree') }),
+          h(Iter5Stat, { icon: 'pulse', hue: 'orange', label: L('等待修复', 'Needs repair'), value: data.indexEnabled === false ? null : data.counts ? counts.stale : null, hint: L('可以重建的索引副本', 'Rebuildable index copies') }),
+          h(Iter5Stat, { icon: 'note', hue: 'purple', label: L('需人工检查', 'Needs inspection'), value: data.indexEnabled === false ? null : data.counts ? counts.unrepairable : null, hint: L('无法自动修复的来源', 'Sources needing manual review') })),
+        h('div', { className: 'i5-hosted i5-maintenance-grid', 'data-dam-slot': 'timeline', 'data-dam-flow': '' }, rows))
+    }
+
+    function Iter5Skills(props) {
+      var nonce = props && props.nonce ? props.nonce : 0
+      var i5Filter = useState('all')
+      var dataPair = useState(null)
+      var data = dataPair[0]
+      var setData = dataPair[1]
+      var errPair = useState('')
+      var err = errPair[0]
+      var setErr = errPair[1]
+      var refreshPair = useState(0)
+      var refreshTick = refreshPair[0]
+      var setRefresh = refreshPair[1]
+      var actMsgPair = useState('')
+      var actMsg = actMsgPair[0]
+      var setActMsg = actMsgPair[1]
+      useEffect(function () {
+        var alive = true
+        fetch(API.memoryHub).then(function (r) { return r.json() }).then(function (j) {
+          if (alive) setData(j || null)
+        }).catch(function (e) { if (alive) setErr(String(e && e.message)) })
+        return function () { alive = false }
+      }, [nonce, refreshTick])
+      // M9 审批动作(G-02 同款 append-only 精神):晋升/激活/弃用走 /memory-hub POST,
+      // 后端走 store 门槛判定,不绕过任何 gate;动作后刷新 overview。
+      function hubAct(action, procedureId, v) {
+        var names = { promote: L('晋升技能', 'Promote skill'), approve: L('人工批准技能', 'Approve skill'), 'force-promote': L('强制晋升技能', 'Force promotion'), activate: L('激活技能', 'Activate skill'), deprecate: L('弃用技能', 'Deprecate skill') }
+        if (names[action] && !window.confirm(names[action] + '？' + L('此操作将改变技能的可用状态。', 'This changes the skill availability.'))) return
+        fetch(API.memoryHub, { method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: action, procedureId: procedureId, v: v }) })
+          .then(function (r) { return r.json() })
+          .then(function (j) {
+            // issue #30:附带 reasonCodes —— 否则"点了晋升但没晋级"只显示 keep，看不出原因
+            // (如 observation-only / diversity-below-3 / no-success-criteria)。
+            setActMsg(action + ': ' + (j && (j.decision || j.reason || (j.ok === false ? (j.reason || 'rejected') : 'ok')) || 'done') + (j && Array.isArray(j.reasonCodes) && j.reasonCodes.length ? ' (' + j.reasonCodes.join(', ') + ')' : ''))
+            setRefresh(function (x) { return x + 1 })
+          })
+          .catch(function (e) { setActMsg(action + ' failed: ' + String(e && e.message)) })
+      }
+      // ★M8-B 第6步（2026-09-23）：归属转移（提升为全局 / 收纳到工作区）。
+      //   与 hubAct 分开：动作名与参数不同（scope 而非 v），且必须把 `migrate()` 的逐条结果
+      //   （含 rolledBack / reason）显示出来 —— 两阶段提交的失败是要让人看见的，
+      //   静默成 "done" 等于把回滚藏起来，正是用户列为「功能坏了」的那种表现。
+      function hubScopeTransfer(procedureId, toScope) {
+        setActMsg(t('hubScopeBusy'))
+        fetch(API.memoryHub, { method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'transfer-scope', procedureId: procedureId, scope: toScope }) })
+          .then(function (r) { return r.json() })
+          .then(function (j) {
+            var one = (j && Array.isArray(j.results) && j.results[0]) || {}
+            if (j && j.ok && one.ok) {
+              setActMsg(t('hubScopeMoved') + (toScope === 'workspace' ? t('hubScopeWorkspace') : t('hubScopeGlobal')) + (one.noop ? '（' + t('hubScopeNoop') + '）' : ''))
+            } else {
+              // 失败必须带原因 + 是否已回滚；两者都不许省略。
+              setActMsg(t('hubScopeReasons')(one.reason || (j && j.reason) || (j && j.error))
+                + (j && j.rolledBack ? ' ⚠ ' + t('hubScopeReasons')('phase-failed') : ''))
+            }
+            setRefresh(function (x) { return x + 1 })
+          })
+          .catch(function (e) { setActMsg(t('hubScopeReasons')(String(e && e.message))) })
+      }
+      if (err) return h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, t('searchFailed') + err)
+      if (!data) return h(Loading, { label: t('loading') })
+      var rows = []
+      var procs = data.procedures
+      var facts = data.facts
+      var epis = data.episodic
+      // ★M8-B 第6步（2026-09-23）：**双库视图** —— 回答用户三问：
+      //   ① 这条技能属于哪个库？（归属徽标，逐条）
+      //   ② 当前是哪个库、各库几条、工作区库现在能不能写？（本区块头部）
+      //   ③ 怎么改判归属？（提升为全局 / 收纳到本工作区，逐条按钮）
+      //   数据源 = 宿主 /memory-hub 的 `scopeView`（只读、无真实路径）+ 每行的 scope 字段。
+      //   工作区未知时按钮仍显示但**点击会明确报错**（宿主 migrate 返回 ws-unknown），
+      //   比灰掉按钮更能说明「为什么不行」—— 与 hubScopeUnknownWs 文案配套。
+      var sv = data.scopeView
+      if (sv) {
+        var svHint = (sv.workspaceReady ? t('hubScopeWorkspaceHint') : t('hubScopeUnknownWs'))
+          + ' ' + (sv.globalDirCorrupt || sv.workspaceDirCorrupt ? '⚠ ' + t('hubScopeCorrupt') : '')
+        rows.push(h(Card, { title: t('hubScopeTitle') },
+          h('div', { 'data-dam-content': '' },
+            h('div', null, h('b', null, t('hubScopeDefault')), h('span', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginLeft: '6px' } }, t('hubScopeCounts')(sv.globalCount, sv.workspaceCount))),
+            h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginTop: '3px', opacity: .8 } }, svHint))))
+      }
+      // 归属徽标：通用库 / 本工作区库。缺省 global 由宿主投影补齐，这里不再兜判。
+      function scopeBadge(p) {
+        var isWs = p && p.scope === 'workspace'
+        return h('span', {
+          'data-dam-scope': isWs ? 'workspace' : 'global',
+          'data-dam-slot': 'hint', 'data-dam-hint': '',
+          title: isWs ? t('hubScopeWorkspaceHint') : t('hubScopeGlobalHint'),
+          style: { marginLeft: '6px', opacity: .85 },
+        }, '[' + (isWs ? t('hubScopeWorkspace') : t('hubScopeGlobal')) + (p && p.addedBy ? ' · ' + p.addedBy : '') + ']')
+      }
+      // 转移按钮：目标库 = 与当前归属相反的那个。已在目标库时宿主会回 noop（幂等）。
+      function scopeButtons(p) {
+        var isWs = p && p.scope === 'workspace'
+        return h('button', {
+          'data-dam-slot': 'actions', 'data-dam-btn': '', 'data-dam-scope-to': isWs ? 'global' : 'workspace',
+          style: { fontSize: 'calc(10.5px * var(--dam-scale))', padding: '3px 10px' },
+          onClick: function () { hubScopeTransfer(p.procedureId, isWs ? 'global' : 'workspace') },
+        }, isWs ? t('hubToGlobal') : t('hubToWorkspace'))
+      }
+      // 技能层(最精彩: 反复成功的流程固化为 skill)
+      rows.push(h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginTop: '8px' } }, t('hubSkills')))
+      var activeList = (procs && procs.active) || []
+      if (!activeList.length) {
+        rows.push(h(Card, { title: t('hubSkills') + ' (' + (L('暂无', 'none')) + ')' }, h('div', { 'data-dam-content': '' }, h(Iter5Empty, { title: L('经验，会慢慢长成技能', 'Experience grows into skills'), text: t('hubSkillsEmpty') }))))
+      } else {
+        rows.push(h(Card, { title: t('hubSkills') + ' (' + activeList.length + ')' },
+          activeList.map(function (p) {
+            var risk = p.riskLevel === 'high' ? (L('· 高风险需确认', '· high-risk')) : ''
+            return h('div', { 'data-dam-content': '', key: p.procedureId, style: { padding: '4px 0', borderBottom: '1px solid color-mix(in srgb, var(--dsw-alias-border-l1, rgba(255,255,255,.16)) 40%, transparent)' } },
+              h('div', null, h('b', null, p.title), h('span', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginLeft: '6px' } }, (L('成功 ', 'success ')) + (p.evidence ? p.evidence.success : 0) + ' · ' + (L('会话 ', 'sessions ')) + (p.evidence ? p.evidence.sessions : 0) + ' ' + risk),
+              // ★M8-B 第6步：已激活技能也要显示归属库（用户要「在当前库时，显示激活了哪些 skill」）
+              scopeBadge(p),
+              h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', style: { marginLeft: '8px', fontSize: 'calc(10px * var(--dam-scale))', padding: '2px 8px' }, onClick: function () { hubAct('deprecate', p.procedureId) } }, L('弃用', 'deprecate')),
+              h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', style: { marginLeft: '4px', fontSize: 'calc(10px * var(--dam-scale))', padding: '2px 8px' }, onClick: function () { hubAct('pin', p.procedureId, !(procs && procs.pipeline && procs.pipeline.concat(activeList).find(function (x) { return x.procedureId === p.procedureId && x.pinned }))) } }, L('置顶', 'pin'))))
+          })))
+      }
+      // M9 审批队列(observed/candidate/validated):用户确认晋升/激活/弃用
+      var pipeline = (procs && procs.pipeline) || []
+      if (pipeline.length) {
+        rows.push(h(Card, { title: (L('技能审批队列', 'Skill approval queue')) + ' (' + pipeline.length + ')' },
+          pipeline.map(function (p) {
+            var ev = p.evidence || {}
+            return h('div', { 'data-dam-content': '', key: p.procedureId, style: { padding: '5px 0', borderBottom: '1px solid color-mix(in srgb, var(--dsw-alias-border-l1, rgba(255,255,255,.16)) 40%, transparent)' } },
+              // ★R1：技能名 + 可读标注；★R3：stage 给中文
+              h('div', null, h('b', null, p.title), h('span', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginLeft: '6px' } },
+                '[' + stageLabel(p.stage) + ']'
+                + (p.observationOnly ? (L(' · 观察（不参与自动晋升）', ' · observation-only')) : '')
+                + (p.pinned ? ' 📌' : '') + (p.riskLevel === 'high' ? ' ⚠' : '')),
+                // ★M8-B 第6步：归属库徽标（这条技能住在哪个库）
+                scopeBadge(p),
+                // ★R5：evidence 给人话（不是裸数字）
+                h('span', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginLeft: '6px' } }, t('hubEvLine')(ev))),
+              // ★R2：**为什么不能晋升** —— 必须在界面上说清楚
+              (function () {
+                var why = whyNotPromotable(p.promotion)
+                if (!why) return null
+                var ok = p.promotion && p.promotion.decision === 'promote'
+                return h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginTop: '4px', color: ok ? 'inherit' : 'var(--dsw-alias-text-warning, #d90)', opacity: .95 } },
+                  h('b', null, t('hubWhyTitle')), why)
+              })(),
+              // ★R4：预览「晋升后会注入什么」（真实 steps / successCriteria）
+              ((p.steps && p.steps.length) || (p.successCriteria && p.successCriteria.length))
+                ? h('details', { style: { marginTop: '4px' } },
+                    h('summary', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { cursor: 'pointer' } }, t('hubInjectPreview')),
+                    h('div', { 'data-dam-content': '', style: { marginTop: '4px', paddingLeft: '10px' } },
+                      (p.steps || []).map(function (s, si) { return h('div', { key: 's' + si }, (si + 1) + '. ' + s) }),
+                      (p.successCriteria && p.successCriteria.length)
+                        ? h('div', { style: { marginTop: '4px' } }, h('b', null, t('hubInjectCriteria')), (p.successCriteria || []).join(' / '))
+                        : null))
+                : h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginTop: '4px', opacity: .7 } }, t('hubNoSteps')),
+              h('div', { style: { display: 'flex', gap: '6px', marginTop: '5px' } },
+                // ★M8-B 第6步：归属转移（提升为全局 / 收纳到本工作区）——与晋升是同级的**库归属**操作，
+                //   不是晋升门限，因此不受 p.promotion/observationOnly 影响（只读线索也能改判归属）。
+                scopeButtons(p),
+                // issue #30:纯 episode 观察行**结构上**不可能晋升(无 successCriteria),
+                // 继续显示"晋升"按钮只会让人反复点击却看不到变化 ⇒ 直接隐藏并打观察标。
+                // ★ 2026-09-21 bugfix(A-9):原条件只挡 observationOnly,与 store 真实门限**不一致** ——
+                //   缺 successCriteria / 有 correction / correctionRate 超限的条目照样显示按钮,
+                //   用户点下去只得到一行 keep 灰字,感受即「批准不了」。
+                //   现改为**直接依赖只读投影** `p.promotion`(宿主 memory-hub-pre 用 evaluatePromotion 生成,
+                //   纯只读、不写盘):decision==='promote' 才给按钮,否则界面已由 R2 区块说明原因。
+                //   fail-soft:投影缺失(旧宿主/异常)时退回原 observationOnly 判据,不做过度拦截。
+                (!p.observationOnly && (!p.promotion || p.promotion.decision === 'promote'))
+                  && h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', style: { fontSize: 'calc(10.5px * var(--dam-scale))', padding: '3px 10px' }, onClick: function () { hubAct('promote', p.procedureId) } }, L('晋升', 'promote')),
+                // ★2026-09-22 补接线(前端接线审计 P0-1):宿主已提供 approve 原语
+                //   (index.js 白名单含 action:'approve' + procedure-store-pre approve('user')),
+                //   而上面「晋升」按钮门控在 decision==='promote' ⇒ 高风险条目(decision==='ask')
+                //   在界面上是死路:用户看得到「待人工批准」却没有任何按钮可点。
+                (p.promotion && p.promotion.decision === 'ask')
+                  && h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', style: { fontSize: 'calc(10.5px * var(--dam-scale))', padding: '3px 10px', fontWeight: 650 }, onClick: function () { hubAct('approve', p.procedureId) } }, L('批准(人工)', 'approve (manual)')),
+                // ★B/C（2026-09-22）：人工**强制晋升** —— 只在「拦它的门**全是统计门**」时给出。
+                //   判据来自宿主只读投影 p.promotion.overridable（memory-hub-pre 用 promotionOverrideView 生成，
+                //   只读、零副作用、且**不重复实现门限** ⇒ 结构上不可能与 promote() 漂移）。
+                //   结构门拦（已弃用 / 观察型 / 无 successCriteria / 有纠正记录）时**不给按钮** ——
+                //   否则就是再造一个「点了没反应」的假通道（A-9 收掉旧按钮的正是这个原因）。
+                //   动作走 index.js 白名单 `force-promote` → promote(pid, {}, { authorizedBy:'user' })，
+                //   只越过 diversity/success 两道统计门，并在条目上留 `authorizedBy:'user'` 痕迹。
+                (p.promotion && p.promotion.overridable === true)
+                  && h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', title: t('hubForcePromoteTitle'), style: { fontSize: 'calc(10.5px * var(--dam-scale))', padding: '3px 10px', fontWeight: 650 }, onClick: function () { hubAct('force-promote', p.procedureId) } }, t('hubForcePromote')),
+                !p.observationOnly && p.stage === 'validated' && h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', style: { fontSize: 'calc(10.5px * var(--dam-scale))', padding: '3px 10px' }, onClick: function () { hubAct('activate', p.procedureId) } }, L('直接激活', 'activate')),
+                h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', style: { fontSize: 'calc(10.5px * var(--dam-scale))', padding: '3px 10px', opacity: .75 }, onClick: function () { hubAct('deprecate', p.procedureId) } }, L('弃用', 'deprecate')),
+                h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', style: { fontSize: 'calc(10.5px * var(--dam-scale))', padding: '3px 10px', opacity: .75 }, onClick: function () { hubAct('pin', p.procedureId, !p.pinned) } }, p.pinned ? (L('取消置顶', 'unpin')) : (L('置顶', 'pin')))))
+          })))
+      }
+      if (actMsg) rows.push(h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginTop: '6px', color: 'var(--dsw-alias-state-warn-primary, var(--dam-dec-prefetch, #e8c584))' } }, actMsg))
+      // 事实层
+      rows.push(h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginTop: '12px' } }, t('hubFacts')))
+      var factList = (facts && facts.recent) || []
+      rows.push(h(Card, { title: t('hubFacts') + ' (' + (facts ? facts.size : 0) + ')' },
+        factList.length ? factList.slice(0, 6).map(function (f) {
+          return h('div', { 'data-dam-content': '', key: f.factId, style: { padding: '3px 0' } }, f.subject + ' · ' + f.predicate + (f.object ? ' · ' + f.object : ''))
+        }) : h('div', { 'data-dam-content': '' }, t('hubFactsEmpty'))))
+      // ★P0-3a 补接线(2026-09-22):事实保留上限淘汰台账。宿主早已把它放进 /memory-hub 应答
+      //   (memory-hub.js:245 → stores.facts.getStats()),前端此前零渲染
+      //   ⇒「事实被悄悄淘汰了」在界面上无处可查。pruneProtected>0 表示已轮到删「重要项」⇒ 上限偏低。
+      var factStats = (facts && facts.stats) || null
+      if (factStats && (Number(factStats.pruned) > 0 || Number(factStats.pruneProtected) > 0)) {
+        var fpPruned = Number(factStats.pruned) || 0
+        var fpProtected = Number(factStats.pruneProtected) || 0
+        rows.push(h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginTop: '6px', color: fpProtected > 0 ? 'var(--dsw-alias-state-warn-primary, var(--dam-dec-prefetch, #e8c584))' : undefined } },
+          locale === 'zh'
+            ? '已按保留上限淘汰 ' + fpPruned + ' 条事实' + (fpProtected > 0 ? '，其中 ' + fpProtected + ' 条属重要/未撤销条目 —— 上限偏低，建议到 设置 → 自动记忆引擎 调高「事实保留上限」' : '')
+            : fpPruned + ' fact(s) evicted by the retention cap' + (fpProtected > 0 ? ', incl. ' + fpProtected + ' important/unrevoked — cap too low; raise "Fact retention limit" under Settings → Semantic engine' : '')))
+      }
+      if (facts && facts.pendingConflicts && facts.pendingConflicts.length) {
+        rows.push(h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { color: 'var(--dsw-alias-state-warn-primary, var(--dam-dec-prefetch, #e8c584))' } }, t('hubConflicts') + ': ' + facts.pendingConflicts.length))
+      }
+      // 经历层
+      rows.push(h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginTop: '12px' } }, t('hubEpisodic')))
+      var epiList = (epis && epis.recent) || []
+      rows.push(h(Card, { title: t('hubEpisodic') + ' (' + (epis ? epis.size : 0) + ')' },
+        epiList.length ? epiList.slice(0, 6).map(function (e) {
+          return h('div', { 'data-dam-content': '', key: e.episodeId, style: { padding: '3px 0' } },
+            (e.intent || '').slice(0, 40) + ' · ' + (e.outcome || 'unknown') + (e.success ? ' ✓' : ''))
+        }) : h('div', { 'data-dam-content': '' }, t('hubEpisodicEmpty'))))
+      // 统计
+      rows.push(h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginTop: '12px', opacity: .7 } },
+        (L('中枢统计: ', 'Hub stats: ')) + (data.stats ? JSON.stringify(data.stats) : '')))
+      // 大屏分列:卡片流页签(见 CSS [data-dam-flow]);非卡片子元素仍整行。
+      return h('div', { className: 'i5-skills-view' },
+        h('div', { className: 'i5-stats i5-stats-four' },
+          h(Iter5Stat, { icon: 'skills', hue: 'green', label: L('已生效技能', 'Active skills'), value: procs ? activeList.length : null, hint: L('可复用的工作方法', 'Reusable working methods') }),
+          h(Iter5Stat, { icon: 'pulse', hue: 'orange', label: L('观察与审批', 'Under review'), value: procs ? pipeline.length : null, hint: L('等待积累或人工确认', 'Awaiting evidence or approval') }),
+          h(Iter5Stat, { icon: 'library', hue: 'blue', label: L('事实记忆', 'Facts'), value: facts ? facts.size : null, hint: L('宿主提取的事实记录', 'Facts extracted by the host') }),
+          h(Iter5Stat, { icon: 'timeline', hue: 'purple', label: L('经历记录', 'Episodes'), value: epis ? epis.size : null, hint: L('已有的执行与反馈经验', 'Recorded actions and outcomes') })),
+        h('div', { className: 'i5-filter-chips', role: 'group', 'aria-label': L('技能筛选', 'Skill filter') }, [['all', L('全部', 'All')], ['pending', L('观察与审批', 'Under review')], ['active', L('已生效', 'Active')]].map(function (r) { return h('button', { key: r[0], 'aria-pressed': i5Filter[0] === r[0], onClick: function () { i5Filter[1](r[0]) } }, r[1]) })),
+        h('div', { className: 'i5-hosted i5-skills-grid', 'data-dam-slot': 'timeline', 'data-dam-flow': '' }, rows.filter(function (node) {
+          var title = node && node.props && node.props.title
+          if (typeof title !== 'string') return true
+          if (i5Filter[0] === 'pending' && title.indexOf(t('hubSkills')) === 0) return false
+          if (i5Filter[0] === 'active' && title.indexOf(L('技能审批队列', 'Skill approval queue')) === 0) return false
+          return true
+        })))
+    }
+
+    // M10 存储管理页签(2026-08-30 P3):数据源=/storage-manage(loopback 只读投影 + 三类动作)。
+    // ①健康扫描:逐源 sidecar↔正文 digest 比对;②stale 一键自愈(只重建 sidecar,正文不动);
+    // ③按 memoryId 删除(正文原子删 + 在途激活包清理 + 派生事实撤销三联动,后端做路径白名单)。
+    // ITER5-GENERATED:END

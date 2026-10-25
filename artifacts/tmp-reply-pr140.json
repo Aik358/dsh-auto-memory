@@ -1,0 +1,3 @@
+{
+  "body": "核实：K2/K3 在 main 上仍存在（K1 已由其它提交修复），**本 PR 方向正确且语义与既有 `wsFallback` 兼容**，建议合并。\n\n## 核实（基于 main / 3.1.7）\n\n- `buildPrevSessionPack` / `buildContinueCarry` 仍为裸 `resolvePaths(undefined)`；`resolvePathsForSession` 在接续链上零调用点；\n- `handoffMaterialStamp()` 仍为无参签名，`TODO(separate)` 未收；\n- `smoke-test-switch-decouple.mjs` 的 `resolvePathsForSession` 计数守卫仍为 0（被回退后未恢复）。\n\n## 本 PR 做对的地方\n\n- 尊重 v3.1.7 的\"回退当前工作区 + 提示\"裁定，未采用 issue 建议的 `ws:''`（那会让接续材料静默丢工作区）；\n- 新增 `smoke-test-continue-ws-attribution.mjs` 作为正向回归。\n\n## 合并前建议\n\n1. **rebase 到最新 main**；\n2. 恢复 `switch-decouple` 守卫的 `resolvePathsForSession` 计数断言（本 PR 已含新守卫，旧的这条建议一并恢复）；\n3. 复跑全量 smoke。\n\nowner 正在走合并流程，感谢这份重建（issue #134 的三个链环里 K1 已修，本 PR 补齐 K2/K3，可在合并后收窄 issue 范围）。\n"
+}

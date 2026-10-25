@@ -1,0 +1,54 @@
+/* C35/C36/C61/C64: independently themed utility window — light-instrument language (L2-1). */
+[data-dam-theme] [data-dam-panel]{display:flex;flex-direction:column;background:linear-gradient(180deg,var(--i5-face) 0%,color-mix(in srgb,var(--i5-face) 96%,var(--i5-bg)) 60%)!important;color:var(--i5-text);border:1px solid var(--i5-line);border-radius:16px;box-shadow:0 2px 6px color-mix(in srgb,var(--i5-text) 6%,transparent),0 24px 64px color-mix(in srgb,var(--i5-text) 18%,transparent),inset 0 1px 0 color-mix(in srgb,var(--i5-on-accent) 60%,transparent);backdrop-filter:none;}
+/* 铭牌头:face + hairline + 刻字小标题 */
+[data-dam-theme] [data-dam-panel]>header{min-height:48px;padding:10px 16px;flex:none;gap:8px;background:linear-gradient(180deg,var(--i5-face) 0%,var(--i5-side) 100%);border-bottom:1px solid var(--i5-line);box-shadow:inset 0 1px 0 color-mix(in srgb,var(--i5-face) 90%,transparent);}
+[data-dam-theme] [data-dam-panel]>header>strong{font-size:calc(12px * var(--dam-user-scale,1));font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--i5-muted);}
+[data-dam-theme] [data-dam-panel]>header button{min-height:30px;padding:3px 8px;border:1px solid var(--i5-line);border-radius:7px;background:linear-gradient(180deg,var(--i5-face),var(--i5-side));color:var(--i5-secondary);box-shadow:inset 0 1px 0 color-mix(in srgb,var(--i5-on-accent) 50%,transparent);transition:background .18s ease,color .18s ease,border-color .18s ease;}
+[data-dam-theme] [data-dam-panel]>header button:hover{background:var(--i5-soft);color:var(--i5-text);border-color:color-mix(in srgb,var(--i5-fill) 30%,var(--i5-line));}
+[data-dam-theme] [data-dam-panel][data-compact=true]>[data-dam-body]{padding:0;overflow:hidden;display:flex;flex:1;min-height:0;}
+[data-dam-theme] .i5-native-quick{display:flex;flex-direction:column;width:100%;min-width:0;min-height:0;}
+[data-dam-theme] .i5-quick-scroll{flex:1;min-height:0;overflow:auto;padding:18px;}
+[data-dam-theme] .i5-quick-workspace{display:flex;align-items:center;gap:10px;margin:0 0 14px;padding-bottom:12px;border-bottom:1px solid var(--i5-hair);min-width:0;}
+[data-dam-theme] .i5-quick-workspace>svg{color:var(--i5-blue);flex:none;}
+[data-dam-theme] .i5-quick-workspace>strong{font-size:calc(12px * var(--dam-user-scale,1));font-weight:600;letter-spacing:.14em;color:var(--i5-muted);flex:none;}
+[data-dam-theme] .i5-quick-workspace>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--i5-secondary);}
+/* 凹井搜索槽 */
+[data-dam-theme] .i5-quick-search{display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--i5-recess);border:1px solid var(--i5-line);border-radius:10px;box-shadow:inset 0 2px 6px color-mix(in srgb,var(--i5-blue) 5%,transparent);color:var(--i5-secondary);margin-bottom:14px;transition:border-color .18s ease,box-shadow .18s ease;}
+[data-dam-theme] .i5-quick-search:focus-within{border-color:var(--i5-fill);box-shadow:inset 0 2px 6px color-mix(in srgb,var(--i5-blue) 5%,transparent),0 0 0 3px color-mix(in srgb,var(--i5-blue) 13%,transparent);}
+[data-dam-theme] .i5-quick-search input{border:0;outline-offset:4px;min-width:0;width:100%;background:transparent;color:var(--i5-text);font:inherit;}
+/* 记录列表 = 凹井里的日志纸带:hairline 分隔,hover 只给 soft 底色,无浮起投影 */
+[data-dam-theme] .i5-quick-records{background:var(--i5-recess);border:1px solid var(--i5-line);border-radius:10px;box-shadow:inset 0 2px 6px color-mix(in srgb,var(--i5-blue) 5%,transparent);}
+[data-dam-theme] .i5-quick-records>:first-child{border-radius:9px 9px 0 0;}
+[data-dam-theme] .i5-quick-records>:last-child{border-radius:0 0 9px 9px;}
+[data-dam-theme] .i5-quick-record{display:flex;align-items:flex-start;gap:12px;width:100%;padding:12px 14px;border:0;border-radius:0;background:transparent;color:var(--i5-text);text-align:left;font:inherit;box-shadow:none;transition:background .18s ease;}
+[data-dam-theme] .i5-quick-record+.i5-quick-record{border-top:1px solid var(--i5-hair);}
+[data-dam-theme] .i5-quick-record:hover{background:color-mix(in srgb,var(--i5-soft) 55%,transparent);}
+[data-dam-theme] .i5-quick-record[aria-expanded=true]{background:var(--i5-soft);box-shadow:inset 2px 0 0 var(--i5-fill);}
+[data-dam-theme] .i5-quick-icon{display:grid;place-items:center;flex:none;width:34px;height:38px;border-radius:8px;background:linear-gradient(180deg,var(--i5-face),var(--i5-side));border:1px solid var(--i5-bezel);box-shadow:inset 0 1px 0 color-mix(in srgb,var(--i5-on-accent) 55%,transparent);color:var(--i5-blue);}
+[data-dam-theme] .i5-quick-icon[data-kind=notes]{color:var(--i5-green);}
+[data-dam-theme] .i5-quick-icon[data-kind=reflections]{color:var(--i5-purple);}
+[data-dam-theme] .i5-quick-icon[data-kind=user]{color:var(--i5-orange);}
+[data-dam-theme] .i5-quick-copy{display:grid;gap:3px;min-width:0;}
+[data-dam-theme] .i5-quick-copy>strong{font-size:calc(14px * var(--dam-user-scale,1));font-weight:650;}
+[data-dam-theme] .i5-quick-copy>span,[data-dam-theme] .i5-quick-copy>small{color:var(--i5-secondary);overflow-wrap:anywhere;}
+[data-dam-theme] .i5-quick-copy>span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:calc(13px * var(--dam-user-scale,1));line-height:1.55;}
+[data-dam-theme] .i5-quick-copy>small{display:flex;align-items:center;gap:6px;font-size:calc(12px * var(--dam-user-scale,1));color:var(--i5-muted);}
+[data-dam-theme] .i5-quick-copy>small svg{width:14px;height:14px;flex:none;}
+/* 机箱底梁:face + 顶 hairline;副键机加工,主键实心蓝(禁渐变) */
+[data-dam-theme] .i5-quick-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:14px 18px;border-top:1px solid var(--i5-line);flex:none;background:linear-gradient(180deg,var(--i5-face),var(--i5-side));}
+[data-dam-theme] .i5-quick-actions button{display:flex;justify-content:center;align-items:center;gap:8px;min-height:40px;background:linear-gradient(180deg,var(--i5-face),var(--i5-side));color:var(--i5-secondary);font:inherit;font-weight:600;border:1px solid var(--i5-bezel);border-radius:8px;box-shadow:inset 0 1px 0 color-mix(in srgb,var(--i5-on-accent) 55%,transparent),inset 0 -1px 0 var(--i5-bezel-dark);transition:background .18s ease,color .18s ease,border-color .18s ease,box-shadow .18s ease,transform .18s ease;}
+[data-dam-theme] .i5-quick-actions button:not(:disabled):hover{background:color-mix(in srgb,var(--i5-soft) 60%,var(--i5-face));color:var(--i5-blue);border-color:color-mix(in srgb,var(--i5-fill) 30%,var(--i5-bezel));}
+[data-dam-theme] .i5-quick-actions button:not(:disabled):active{transform:translateY(1px);box-shadow:inset 0 1px 0 color-mix(in srgb,var(--i5-on-accent) 55%,transparent);}
+[data-dam-theme] .i5-quick-actions .i5-quick-open{grid-column:1/-1;background:var(--i5-primary);color:var(--i5-on-accent);border-color:var(--i5-primary);box-shadow:inset 0 1px 0 color-mix(in srgb,var(--i5-on-accent) 35%,transparent);}
+[data-dam-theme] .i5-quick-actions .i5-quick-open:not(:disabled):hover{background:color-mix(in srgb,var(--i5-primary) 88%,var(--i5-chan-deep));color:var(--i5-on-accent);border-color:var(--i5-primary);}
+[data-dam-theme] .i5-quick-detail,[data-dam-theme] .i5-quick-editor{padding:16px 2px 4px;border-top:1px solid var(--i5-hair);margin-top:14px;overflow-wrap:anywhere;}
+[data-dam-theme] .i5-quick-detail h3,[data-dam-theme] .i5-quick-editor h3{font-size:calc(12px * var(--dam-user-scale,1));font-weight:600;letter-spacing:.14em;color:var(--i5-muted);margin:0 0 10px;}
+[data-dam-theme] .i5-quick-detail .i5-document{white-space:pre-wrap;}
+[data-dam-theme] .i5-quick-editor textarea{display:block;width:100%;min-height:120px;padding:12px;background:var(--i5-recess);border:1px solid var(--i5-line);border-radius:10px;box-shadow:inset 0 2px 6px color-mix(in srgb,var(--i5-blue) 5%,transparent);}
+[data-dam-theme] .i5-native-quick .i5-empty-state{text-align:center;padding:24px 12px;}
+[data-dam-theme] .i5-native-quick .i5-empty-art{width:100px;max-height:70px;}
+@media(max-width:600px){[data-dam-theme] .i5-quick-actions button{min-height:44px;}[data-dam-theme] .i5-quick-scroll{padding:14px;}[data-dam-theme] .i5-quick-actions{padding:12px 14px;}}
+/* C36: 展开态是承载列表+详情的宽工作区,内边距与字级按桌面页处理。 */
+[data-dam-theme] [data-dam-panel][data-compact=false]>[data-dam-body]{padding:16px 20px;overflow:auto;flex:1;min-height:0;}
+[data-dam-theme] [data-dam-panel][data-compact=false] [data-dam-tabs-wrap]{flex:none;}
+@container dam-panel (min-width:720px){[data-dam-theme] [data-dam-panel][data-compact=false]>[data-dam-body]{padding:18px 24px;}}

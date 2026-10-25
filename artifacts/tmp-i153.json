@@ -1,0 +1,78 @@
+{
+  "url": "https://api.github.com/repos/Aik358/dsh-auto-memory/issues/153",
+  "repository_url": "https://api.github.com/repos/Aik358/dsh-auto-memory",
+  "labels_url": "https://api.github.com/repos/Aik358/dsh-auto-memory/issues/153/labels{/name}",
+  "comments_url": "https://api.github.com/repos/Aik358/dsh-auto-memory/issues/153/comments",
+  "events_url": "https://api.github.com/repos/Aik358/dsh-auto-memory/issues/153/events",
+  "html_url": "https://github.com/Aik358/dsh-auto-memory/issues/153",
+  "id": 5641282097,
+  "node_id": "I_kwDOT4IjKM8AAAABUD8iMQ",
+  "number": 153,
+  "title": "[Bug] #144 回退残留：新版 profile 解析失败，provider 与子代理实现名混用",
+  "user": {
+    "login": "Minervaowl7",
+    "id": 127482476,
+    "node_id": "U_kgDOB5k6bA",
+    "avatar_url": "https://avatars.githubusercontent.com/u/127482476?v=4",
+    "gravatar_id": "",
+    "url": "https://api.github.com/users/Minervaowl7",
+    "html_url": "https://github.com/Minervaowl7",
+    "followers_url": "https://api.github.com/users/Minervaowl7/followers",
+    "following_url": "https://api.github.com/users/Minervaowl7/following{/other_user}",
+    "gists_url": "https://api.github.com/users/Minervaowl7/gists{/gist_id}",
+    "starred_url": "https://api.github.com/users/Minervaowl7/starred{/owner}{/repo}",
+    "subscriptions_url": "https://api.github.com/users/Minervaowl7/subscriptions",
+    "organizations_url": "https://api.github.com/users/Minervaowl7/orgs",
+    "repos_url": "https://api.github.com/users/Minervaowl7/repos",
+    "events_url": "https://api.github.com/users/Minervaowl7/events{/privacy}",
+    "received_events_url": "https://api.github.com/users/Minervaowl7/received_events",
+    "type": "User",
+    "user_view_type": "public",
+    "site_admin": false
+  },
+  "labels": [
+
+  ],
+  "state": "open",
+  "locked": false,
+  "assignees": [
+
+  ],
+  "milestone": null,
+  "comments": 0,
+  "created_at": "2026-09-30T05:08:23Z",
+  "updated_at": "2026-09-30T05:08:23Z",
+  "closed_at": null,
+  "assignee": null,
+  "author_association": "CONTRIBUTOR",
+  "active_lock_reason": null,
+  "sub_issues_summary": {
+    "total": 0,
+    "completed": 0,
+    "percent_completed": 0
+  },
+  "issue_dependencies_summary": {
+    "blocked_by": 0,
+    "total_blocked_by": 0,
+    "blocking": 0,
+    "total_blocking": 0
+  },
+  "body": "## 问题\n\n基线：上游 `main@e64271f`（3.2.5），Windows / Node 24。属于已关闭 #144 的回退分支残留；无需 PR #150。\n\n首轮子代理遇到 `UNKNOWN_MODEL` 后，默认模型回退有两个独立断点：\n\n1. `readSettingsTextPre()` 已读取新版 profile 的 `cordis.patch.yml`，但 `_runSubagentOnce` 的正则仍要求 `agent-default-model:`，不识别 `- id: agent-default-model`。解析不到模型后重新抛错，开启 30 分钟熔断。\n2. 即使旧 block 布局能解析，回退也把 LLM provider 放进 `subagents.start()` 的“子代理实现名”参数，并在 `agentOptions` 里保留原来的错误 provider，仅换 model。主路径已经区分两个命名空间，回退分支尚未同步。\n\n## 最小复现\n\n执行生产 `_runSubagentOnce`，用内存中的宿主替身模拟首次 UNKNOWN_MODEL；无网络、无真实模型调用。\n\n新版设置：\n\n```yaml\n- id: agent-default-model\n  name: agent-default-model\n  config:\n    provider: valid-provider\n    model: valid-model\n```\n\n实际只有一次 start、返回空文本，熔断原因为 UNKNOWN_MODEL。旧布局能解析时，第二次实际参数为：\n\n```text\nstart('valid-provider', {\n  agentOptions: { provider: 'broken-provider', model: 'valid-model' }\n})\n```\n\n预期保留原注册实现（如 spawn），成对使用默认 provider/model，并保留该任务的思考强度。\n\n## 建议与验收\n\n共用支持新版列表项和旧版 block 的默认路由解析器；在条目边界停止，不从下一个插件借 model。回退的 start 实现名保持不变，同时替换 agentOptions 的 provider/model。\n\n新增行为测试覆盖两种布局、非 spawn 实现、思考强度保留、默认路由缺失及不完整条目。修复前：新版回退、旧版回退、非 spawn 回退及旧条目跨边界取值共 4 项失败。\n",
+  "closed_by": null,
+  "reactions": {
+    "url": "https://api.github.com/repos/Aik358/dsh-auto-memory/issues/153/reactions",
+    "total_count": 0,
+    "+1": 0,
+    "-1": 0,
+    "laugh": 0,
+    "hooray": 0,
+    "confused": 0,
+    "heart": 0,
+    "rocket": 0,
+    "eyes": 0
+  },
+  "timeline_url": "https://api.github.com/repos/Aik358/dsh-auto-memory/issues/153/timeline",
+  "performed_via_github_app": null,
+  "state_reason": null,
+  "pinned_comment": null
+}

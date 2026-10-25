@@ -1,0 +1,203 @@
+/* The same field layout serves host settings and workbench settings. */
+[data-iter5] [data-dam-settings-content]{gap:16px;}
+/* 分组卡与引擎卡 = 仪器面板：face 微渐变 + line 边 + 顶部高光 + 14px 圆角 */
+[data-iter5] [data-dam-settings-group]{padding:0 20px 6px;border-radius:14px;overflow:hidden;background:linear-gradient(180deg,var(--i5-face) 0%,color-mix(in srgb,var(--i5-face) 96%,var(--i5-bg)) 60%);border:1px solid var(--i5-line);box-shadow:var(--i5-shadow),inset 0 1px 0 color-mix(in srgb,var(--i5-face) 90%,transparent);}
+[data-iter5] [data-dam-settings] .i5-card{border-radius:14px;background:linear-gradient(180deg,var(--i5-face) 0%,color-mix(in srgb,var(--i5-face) 96%,var(--i5-bg)) 60%);box-shadow:var(--i5-shadow),inset 0 1px 0 color-mix(in srgb,var(--i5-face) 90%,transparent);}
+/* 面板铭牌头：发丝线分隔 + 展示字体小标题 */
+[data-iter5] [data-dam-settings-group]>.i5-card-title{padding:15px 22px 12px;margin:0 -20px 2px;background:transparent;border-bottom:1px solid var(--i5-line);font-size:calc(14px * var(--dam-user-scale,1));font-family:var(--i5-font-display);font-weight:650;letter-spacing:.03em;}
+[data-iter5] [data-dam-settings-content] :is(input,select,textarea){transition:border-color .15s cubic-bezier(.22,1,.36,1),box-shadow .15s cubic-bezier(.22,1,.36,1);}
+[data-iter5] [data-dam-settings-content] :is(input,select,textarea):focus{border-color:var(--i5-fill);box-shadow:0 0 0 3px color-mix(in srgb,var(--i5-blue) 14%,transparent);outline:none;}
+[data-iter5] .i5-card-title-txt{display:inline-flex;align-items:baseline;gap:10px;min-width:0;flex-wrap:wrap;}
+[data-iter5] .i5-card-sub{font-size:calc(13px * var(--dam-user-scale,1));font-weight:400;color:var(--i5-secondary);}
+[data-iter5] [data-dam-settings-row]{padding:10px 0;border-bottom:1px solid var(--i5-hair);}
+[data-iter5] .i5-mode-card [data-dam-settings-row]{border:0;padding:0;}
+[data-iter5] [data-dam-settings-row]:last-child{border-bottom:0;}
+[data-iter5] [data-dam-settings-row]>.i5-setting-field{display:grid;grid-template-columns:minmax(0,1fr) max-content;gap:20px;align-items:center;}
+[data-iter5] .i5-setting-copy{min-width:0;}
+[data-iter5] .i5-setting-copy>label{font-size:calc(14px * var(--dam-user-scale,1));font-weight:500;}
+[data-iter5] .i5-setting-copy>[data-dam-hint]{font-size:calc(13px * var(--dam-user-scale,1));line-height:1.55;margin-top:3px;color:var(--i5-secondary);}
+[data-iter5] .i5-hint-lead{display:inline;}
+[data-iter5] details.i5-hint-more{display:inline;}
+[data-iter5] .i5-hint-more>summary{display:inline-block;list-style:none;cursor:pointer;color:var(--i5-blue);font-size:calc(12px * var(--dam-user-scale,1));user-select:none;white-space:nowrap;margin-left:6px;}
+[data-iter5] .i5-hint-more>summary::-webkit-details-marker{display:none;}
+[data-iter5] .i5-hint-more[open]{display:block;margin-top:2px;}
+[data-iter5] .i5-hint-more[open]>summary{margin-left:0;}
+[data-iter5] .i5-hint-more[open]>span{display:block;margin-top:4px;}
+[data-iter5] .i5-setting-control{min-width:0;display:flex;justify-content:flex-end;align-items:center;gap:8px;}
+[data-iter5] .i5-setting-control>input:not([type=checkbox]):not([type=radio]):not([type=number]){width:100%;}
+[data-iter5] .i5-setting-control>input[type=number]{width:124px;flex:none;text-align:right;}
+[data-iter5] .i5-setting-control>select{max-width:100%;}
+[data-iter5] .i5-setting-field[data-wide=true]{grid-template-columns:minmax(0,1fr);gap:10px;}
+[data-iter5] .i5-setting-field[data-wide=true]>.i5-setting-control{justify-content:flex-start;}
+[data-iter5] .i5-setting-field[data-wide=true]>.i5-setting-control>div{width:100%;min-width:0;}
+/* 输入/下拉 = 凹井：recess 底 + 蓝调内阴影（限本组五个页面） */
+[data-iter5] :is([data-dam-settings],.i5-storage-view,.i5-skills-view,.i5-native-team) :is(input:not([type=checkbox]):not([type=radio]),select,textarea){background:var(--i5-recess);border-color:var(--i5-line);box-shadow:inset 0 2px 5px color-mix(in srgb,var(--i5-blue) 5%,transparent);}
+[data-iter5] .i5-mode-card .i5-setting-copy{display:none;}
+[data-iter5] .i5-mode-card .i5-setting-control{width:100%;display:block;}
+[data-iter5] .i5-mode-card .i5-setting-control>div{display:flex;flex-wrap:wrap;gap:8px;}
+[data-iter5] .i5-mode-card .i5-setting-control>div>.i5-engine-radios{flex:1 0 100%;}
+[data-iter5] .i5-mode-card .i5-setting-control button{white-space:nowrap;}
+/* 检索模式 radio = 机加工选择钮：bezel 边 + 键程线；选中 = soft 底 + 2px fill 刻度脊 */
+[data-iter5] .i5-engine-radios{width:100%;display:grid;gap:8px;}
+[data-iter5] .i5-engine-choice{min-height:44px;padding:11px 14px;border:1px solid var(--i5-bezel);border-radius:8px;background:var(--i5-face);box-shadow:inset 0 1px 0 color-mix(in srgb,var(--i5-face) 90%,transparent),0 1px 0 var(--i5-bezel-dark);transition:background .18s ease,border-color .18s ease,box-shadow .18s ease;}
+[data-iter5] .i5-engine-choice:hover{background:color-mix(in srgb,var(--i5-soft) 55%,var(--i5-face));}
+[data-iter5] .i5-engine-choice:has(:checked){background:var(--i5-soft);border-color:color-mix(in srgb,var(--i5-blue) 30%,var(--i5-bezel));box-shadow:inset 2px 0 0 var(--i5-fill),inset 0 1px 0 color-mix(in srgb,var(--i5-face) 85%,transparent);}
+[data-iter5] .i5-engine-choice:has(:checked)>span{color:var(--i5-blue);font-weight:650;}
+[data-iter5] .i5-engine-grid{gap:14px;}
+[data-iter5] .i5-settings-frame-head{padding:10px 20px;background:var(--i5-surface);}
+[data-iter5] .i5-settings-frame-head strong{font-family:var(--i5-font-display);font-size:calc(16px * var(--dam-user-scale,1));font-weight:650;letter-spacing:-.01em;}
+[data-iter5][data-i5-embedded] .i5-main{padding:0 20px;background:var(--i5-surface);}
+[data-iter5][data-i5-embedded] .i5-tabs{padding:0;background:var(--i5-surface);margin:0 0 12px;gap:24px;}
+[data-iter5] .i5-tabs button{padding:8px 4px;min-height:38px;}
+/* 保存条 = 机箱底梁：face→side 梁面 + 顶部发丝线 + 实心主键 */
+[data-iter5] [data-dam-savebar]{display:flex;align-items:center;gap:10px;flex-wrap:wrap;position:sticky;bottom:0;padding:12px 0;background:linear-gradient(180deg,var(--i5-face),var(--i5-side));border:0;border-top:1px solid var(--i5-line);border-radius:0;box-shadow:inset 0 1px 0 color-mix(in srgb,var(--i5-face) 90%,transparent),0 -8px 20px color-mix(in srgb,var(--i5-blue) 6%,transparent);z-index:3;}
+[data-iter5] [data-dam-savebar] button[data-dirty]{margin-left:auto;min-width:120px;}
+[data-iter5] [data-dam-savebar] button[data-dirty=true]{background:var(--i5-primary);color:var(--i5-on-accent);border-color:var(--i5-primary);box-shadow:inset 0 1px 0 color-mix(in srgb,var(--i5-on-accent) 35%,transparent);}
+[data-iter5] [data-i5-advanced-entry] .i5-setting-copy>label{display:none;}
+/* 拨杆开关：凹井轨道 + 机加工圆钮；ON 时轨道 chan-mid tint */
+[data-iter5] [data-dam-settings-row] input[type=checkbox]{background:var(--i5-recess);border:1px solid var(--i5-line);box-shadow:inset 0 2px 5px color-mix(in srgb,var(--i5-blue) 8%,transparent);transition:background .18s cubic-bezier(.22,1,.36,1),border-color .18s ease;}
+[data-iter5] [data-dam-settings-row] input[type=checkbox]:checked{background:color-mix(in srgb,var(--i5-chan-mid) 32%,var(--i5-recess));border-color:color-mix(in srgb,var(--i5-chan-mid) 45%,var(--i5-line));}
+[data-iter5] [data-dam-settings-row] input[type=checkbox]::after{background:radial-gradient(circle at 35% 30%,var(--i5-face),var(--i5-bezel) 78%);box-shadow:0 1px 3px color-mix(in srgb,var(--i5-text) 18%,transparent),inset 0 1px 0 color-mix(in srgb,var(--i5-face) 90%,transparent);transition:left .18s cubic-bezier(.22,1,.36,1);}
+[data-iter5][data-i5-embedded]>.i5-main{height:min(660px,calc(100dvh - 240px));overflow:hidden;}
+[data-iter5][data-i5-embedded] [data-dam-settings]{display:flex;flex-direction:column;height:100%;min-height:0;}
+[data-iter5][data-i5-embedded] [data-dam-settings-content]{flex:1;min-height:0;overflow:auto;padding-bottom:12px;grid-auto-rows:max-content;align-content:start;}
+[data-iter5][data-i5-embedded] [data-dam-settings]>.i5-tabs{flex:none;margin-bottom:12px;}
+[data-iter5][data-i5-embedded] [data-dam-savebar]{position:static;flex:none;box-shadow:none;border-radius:0;border-width:1px 0 0;padding:10px 0;}
+[data-iter5][data-i5-embedded][data-expanded=true]>.i5-main{height:auto;flex:1;min-height:0;padding-bottom:0;}
+/* ========== 读数窗条：存储/技能/团队 统计卡 → 一条凹井 + N 读数窗（沿用导轨 .i5-rs 语言） ========== */
+[data-iter5] :is(.i5-storage-view,.i5-skills-view,.i5-native-team)>.i5-stats{gap:0;background:var(--i5-recess);border:1px solid var(--i5-line);border-radius:10px;box-shadow:inset 0 2px 6px color-mix(in srgb,var(--i5-blue) 5%,transparent);overflow:hidden;}
+[data-iter5] :is(.i5-storage-view,.i5-skills-view,.i5-native-team)>.i5-stats>.i5-stat{background:transparent;border:0;border-radius:0;box-shadow:none;padding:14px 18px;min-width:0;}
+[data-iter5] :is(.i5-storage-view,.i5-skills-view,.i5-native-team)>.i5-stats>.i5-stat+.i5-stat{border-left:1px solid var(--i5-hair);}
+[data-iter5] :is(.i5-storage-view,.i5-skills-view,.i5-native-team)>.i5-stats .i5-stat-top{margin-bottom:8px;gap:8px;font-size:calc(12px * var(--dam-user-scale,1));font-weight:600;letter-spacing:.14em;color:var(--i5-muted);}
+[data-iter5] :is(.i5-storage-view,.i5-skills-view,.i5-native-team)>.i5-stats .i5-stat-top .i5-badge{width:6px;height:6px;border-radius:50%;background:currentColor;box-shadow:none;flex:none;}
+[data-iter5] :is(.i5-storage-view,.i5-skills-view,.i5-native-team)>.i5-stats .i5-stat-top .i5-badge svg{display:none;}
+[data-iter5] :is(.i5-storage-view,.i5-skills-view,.i5-native-team)>.i5-stats .i5-stat>strong{overflow-wrap:anywhere;}
+[data-iter5] .i5-native-team>.i5-stats .i5-stat>strong{font-size:calc(18px * var(--dam-user-scale,1));}
+@container iter5-content (max-width:600px){
+ [data-iter5] :is(.i5-storage-view,.i5-skills-view,.i5-native-team)>.i5-stats>.i5-stat+.i5-stat{border-left:0;border-top:1px solid var(--i5-hair);}
+}
+@container iter5-content (max-width:480px){
+ [data-iter5] :is(.i5-storage-view,.i5-skills-view)>.i5-stats-four>.i5-stat+.i5-stat{border-top:0;}
+ [data-iter5] :is(.i5-storage-view,.i5-skills-view)>.i5-stats-four>.i5-stat:nth-child(even){border-left:1px solid var(--i5-hair);}
+ [data-iter5] :is(.i5-storage-view,.i5-skills-view)>.i5-stats-four>.i5-stat:nth-child(n+3){border-top:1px solid var(--i5-hair);}
+}
+/* ========== 账册纸表格：凹井容器 + 发丝行线 + 刻字表头 + 斑马纹 ========== */
+[data-iter5] .i5-storage-view .i5-storage-table-wrap{margin:14px 0;background:var(--i5-recess);border:1px solid var(--i5-line);border-radius:10px;box-shadow:inset 0 2px 6px color-mix(in srgb,var(--i5-blue) 5%,transparent);}
+[data-iter5] .i5-native-team .i5-native-team-table{background:var(--i5-recess);border:1px solid var(--i5-line);border-radius:10px;box-shadow:inset 0 2px 6px color-mix(in srgb,var(--i5-blue) 5%,transparent);}
+[data-iter5] :is(.i5-storage-view,.i5-native-team) .i5-storage-table{font-size:calc(14px * var(--dam-user-scale,1));}
+[data-iter5] :is(.i5-storage-view,.i5-native-team) .i5-storage-table th{background:transparent;font-size:calc(12px * var(--dam-user-scale,1));font-weight:600;letter-spacing:.14em;color:var(--i5-muted);border-bottom:1px solid var(--i5-line);}
+[data-iter5] :is(.i5-storage-view,.i5-native-team) .i5-storage-table td{border-bottom:1px solid var(--i5-hair);font-variant-numeric:tabular-nums;}
+[data-iter5] :is(.i5-storage-view,.i5-native-team) .i5-storage-table tbody tr:nth-child(even){background:color-mix(in srgb,var(--i5-face) 55%,transparent);}
+[data-iter5] :is(.i5-storage-view,.i5-native-team) .i5-storage-table tbody tr:last-child td{border-bottom:0;}
+[data-iter5] .i5-migration .i5-storage-table th:last-child,[data-iter5] .i5-migration .i5-storage-table td:last-child{text-align:right;}
+/* 迁移属于同一机箱，以分隔线组织导入导出。 */
+[data-iter5] .i5-storage-view .i5-migration>section{border:0;border-top:1px solid var(--i5-line);border-radius:0;background:transparent;box-shadow:none;padding:20px 0;}
+[data-iter5] .i5-storage-view :is(.i5-migration-path,.i5-migration-message,.i5-migration-result){background:var(--i5-recess);border:1px solid var(--i5-line);border-radius:10px;box-shadow:inset 0 2px 6px color-mix(in srgb,var(--i5-blue) 5%,transparent);}
+/* 删除确认的目标信息保留凹井；危险操作键由 shared secondary styles 管理。 */
+[data-iter5] .i5-dialog .i5-delete-target{background:var(--i5-recess);border:1px solid var(--i5-line);border-radius:10px;box-shadow:inset 0 2px 6px color-mix(in srgb,var(--i5-blue) 5%,transparent);}
+[data-iter5] .i5-dialog .i5-delete-target dt{font-size:calc(12px * var(--dam-user-scale,1));letter-spacing:.1em;color:var(--i5-muted);}
+/* 团队横幅 = 面板铭牌头；本组页面主操作键 = 实心 primary（去蓝渐变） */
+[data-iter5] .i5-native-team>.i5-native-team-banner{background:linear-gradient(180deg,var(--i5-face) 0%,color-mix(in srgb,var(--i5-face) 96%,var(--i5-bg)) 60%);border:1px solid var(--i5-line);border-radius:14px;box-shadow:var(--i5-shadow),inset 0 1px 0 color-mix(in srgb,var(--i5-face) 90%,transparent);padding:18px 22px;}
+[data-iter5] .i5-native-team-banner h2{font-family:var(--i5-font-display);letter-spacing:.01em;}
+[data-iter5] :is(.i5-native-team,.i5-storage-view) button.i5-primary{background:var(--i5-primary);color:var(--i5-on-accent);border-color:var(--i5-primary);box-shadow:inset 0 1px 0 color-mix(in srgb,var(--i5-on-accent) 35%,transparent);}
+[data-iter5] :is(.i5-native-team,.i5-storage-view) button.i5-primary:not(:disabled):hover{background:color-mix(in srgb,var(--i5-primary) 90%,var(--i5-chan-deep));transform:none;box-shadow:inset 0 1px 0 color-mix(in srgb,var(--i5-on-accent) 35%,transparent),0 4px 12px color-mix(in srgb,var(--i5-blue) 20%,transparent);}
+/* 技能筛选 chips = 实心选择钮（去渐变）；选中 = 实心 primary 白字 */
+[data-iter5] .i5-native-skills .i5-filter-chips button{border:1px solid var(--i5-bezel);border-radius:7px;background:var(--i5-face);color:var(--i5-secondary);padding:6px 12px;box-shadow:inset 0 1px 0 color-mix(in srgb,var(--i5-face) 90%,transparent),0 1px 0 var(--i5-bezel-dark);}
+[data-iter5] .i5-native-skills .i5-filter-chips button:hover{background:color-mix(in srgb,var(--i5-soft) 55%,var(--i5-face));color:var(--i5-text);}
+[data-iter5] .i5-native-skills .i5-filter-chips button[aria-pressed=true]{background:var(--i5-primary);border-color:var(--i5-primary);color:var(--i5-on-accent);font-weight:600;box-shadow:inset 0 1px 0 color-mix(in srgb,var(--i5-on-accent) 35%,transparent);}
+[data-iter5] .i5-native-skills .i5-native-skill-list{border-radius:10px;background:var(--i5-recess);border:1px solid var(--i5-line);box-shadow:inset 0 2px 6px color-mix(in srgb,var(--i5-blue) 6%,transparent);}
+[data-iter5] .i5-native-skill-list .i5-native-skill-row{border-bottom:1px solid var(--i5-hair);}
+[data-iter5] .i5-native-skill-list .i5-native-skill-row[aria-current=true]{background:var(--i5-soft);box-shadow:inset 2px 0 0 var(--i5-fill);}
+[data-iter5] .i5-native-skill-list .i5-native-skill-row[aria-current=true] strong{color:var(--i5-blue);font-weight:650;}
+/* 经典注入区 = 凹井仓；!important 字号压制保留在 native-operations.css，不动 */
+[data-iter5] .i5-native-skill-detail .i5-native-skill-actions{background:var(--i5-recess);border:1px solid var(--i5-line);border-radius:10px;box-shadow:inset 0 2px 6px color-mix(in srgb,var(--i5-blue) 5%,transparent);padding:12px 14px;}
+[data-iter5] .i5-native-skill-detail .i5-native-skill-actions [data-dam-card]{background:var(--i5-face);border:1px solid var(--i5-line);border-radius:8px;box-shadow:none;margin-bottom:12px;}
+/* ========== 统计页：三通道卡 = 迷你 LED 通道条（首页 i5-chan 语言缩小版）；工作页零入场动画 ========== */
+[data-iter5] .i5-native-stats *{animation:none!important;}
+[data-iter5] .i5-native-stats>.i5-native-stat-card{border-radius:14px;background:linear-gradient(180deg,var(--i5-face) 0%,color-mix(in srgb,var(--i5-face) 96%,var(--i5-bg)) 60%);box-shadow:var(--i5-shadow),inset 0 1px 0 color-mix(in srgb,var(--i5-face) 90%,transparent);}
+[data-iter5] .i5-native-stats>.i5-native-stat-card[data-chan=model]{--i5-chan:var(--i5-blue);}
+[data-iter5] .i5-native-stats>.i5-native-stat-card[data-chan=inject]{--i5-chan:var(--i5-chan-mid);}
+[data-iter5] .i5-native-stats>.i5-native-stat-card[data-chan=shadow]{--i5-chan:var(--i5-chan-deep);}
+[data-iter5] .i5-native-stat-card .i5-card-title{padding-bottom:10px;border-bottom:1px solid var(--i5-hair);}
+[data-iter5] .i5-native-stat-card .i5-card-title .i5-badge{color:var(--i5-chan,var(--i5-blue));background:color-mix(in srgb,var(--i5-chan,var(--i5-blue)) 10%,var(--i5-face));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--i5-chan,var(--i5-blue)) 20%,transparent);}
+[data-iter5] .i5-native-stat-hint{font-size:calc(12px * var(--dam-user-scale,1));color:var(--i5-muted);letter-spacing:.06em;margin-bottom:2px;}
+[data-iter5] .i5-native-stat-empty{font-size:calc(12px * var(--dam-user-scale,1));color:var(--i5-muted);}
+[data-iter5] .i5-native-stat-card .i5-native-stat-metrics{background:var(--i5-recess);border:1px solid var(--i5-line);border-radius:9px;box-shadow:inset 0 2px 6px color-mix(in srgb,var(--i5-blue) 5%,transparent);margin:10px 0 0;}
+[data-iter5] .i5-native-stat-card .i5-native-stat-metrics>div{border-right:1px solid var(--i5-hair);padding:10px 14px;}
+[data-iter5] .i5-native-stat-card .i5-native-stat-metrics>div:first-child{padding-left:14px;}
+[data-iter5] .i5-native-stat-metrics [data-dam-stat]>div:last-child{font-size:12px!important;color:var(--i5-muted);opacity:1;letter-spacing:.1em;}
+@container iter5-content (max-width:600px){
+ [data-iter5] .i5-native-stat-card .i5-native-stat-metrics>div{padding:8px 10px;}
+}
+@container iter5-content (max-width:520px){
+ [data-iter5] [data-dam-settings-row]>.i5-setting-field{grid-template-columns:minmax(0,1fr);gap:10px;}
+ [data-iter5] .i5-setting-control{justify-content:flex-start;}
+ [data-iter5] [data-dam-settings-row]:has(input[type=checkbox])>.i5-setting-field{grid-template-columns:minmax(0,1fr) 44px;gap:12px;}
+}
+@media(max-width:600px){
+ [data-iter5] [data-dam-settings-row]>.i5-setting-field{grid-template-columns:minmax(0,1fr);gap:10px;}
+ [data-iter5] .i5-setting-control{justify-content:flex-start;}
+ [data-iter5] [data-dam-settings-row]:has(input[type=checkbox])>.i5-setting-field{grid-template-columns:minmax(0,1fr) 44px;gap:12px;}
+ [data-iter5] .i5-settings-frame-head{padding:12px 14px;}
+ [data-iter5] .i5-settings-frame-head strong{font-size:calc(16px * var(--dam-user-scale,1));}
+ [data-iter5] [data-dam-settings-group]>.i5-card-title{flex-wrap:wrap;}
+ [data-iter5] .i5-card-title-txt{flex:1;min-width:0;}
+ [data-iter5] .i5-card-sub{flex-basis:100%;margin-top:2px;}
+}
+@media(max-width:720px){
+ [data-iter5] [data-dam-settings-row] input[type=checkbox]{border-color:transparent;}
+}
+/* Host settings follow DSH typography directly, including when portalled to body. */
+[data-dam-theme=settings], [data-iter5][data-i5-embedded]{font-family:var(--dsw-font-family,system-ui);font-size:var(--dsh-content-font-size,14px);}
+[data-iter5][data-i5-embedded]{--dam-user-scale:1;--dam-scale:1;--i5-font-display:var(--dsw-font-family,system-ui);}
+/* Classic form fragments contain inline pixel sizes. Normalize only this host entry. */
+[data-dam-theme=settings] [data-iter5][data-i5-embedded] *{font-size:inherit!important;}
+[data-iter5][data-i5-embedded] :not(code,pre,kbd,samp){font-family:inherit!important;}
+[data-iter5][data-i5-embedded] :is(h1,h2,h3,.i5-settings-frame-head>strong){font-size:calc(var(--dsh-content-font-size,14px) * 8 / 7)!important;}
+[data-iter5][data-i5-embedded] :is([data-dam-hint],.i5-card-sub){font-size:calc(var(--dsh-content-font-size,14px) * 13 / 14)!important;}
+[data-iter5][data-i5-embedded] :is(small,.i5-muted,.i5-style-picker,.i5-mode-picker,.i5-hint-more>summary){font-size:calc(var(--dsh-content-font-size,14px) * 6 / 7)!important;}
+
+/* Host settings are a neutral native form, independent of workbench materials. */
+/* Workbench aliases point DSH tokens back to i5 tokens. Restore inheritance at
+   both settings roots before consuming host tokens, avoiding circular aliases. */
+[data-dam-theme=settings],[data-dam-theme=settings] [data-iter5][data-i5-embedded]{--dsw-alias-bg-layer-1:inherit;--dsw-alias-bg-layer-2:inherit;--dsw-alias-label-primary:inherit;--dsw-alias-label-secondary:inherit;--dsw-alias-border-l1:inherit;}
+[data-dam-theme=settings] [data-iter5][data-i5-embedded]{--i5-host-face-fallback:#fff;--i5-host-text-fallback:#25262a;--i5-host-secondary-fallback:#585b63;--i5-host-line-fallback:#e4e5e9;--i5-bg:var(--dsw-alias-bg-layer-2,var(--i5-host-face-fallback));--i5-face:var(--i5-bg);--i5-surface:var(--i5-bg);--i5-side:var(--i5-bg);--i5-recess:var(--i5-bg);--i5-soft:var(--dsw-alias-interactive-bg-hover,#80808014);--i5-text:var(--dsw-alias-label-primary,var(--i5-host-text-fallback));--i5-secondary:var(--dsw-alias-label-secondary,var(--i5-host-secondary-fallback));--i5-muted:var(--i5-secondary);--i5-line:var(--dsw-alias-border-l2,var(--i5-host-line-fallback));--i5-hair:var(--i5-line);--i5-bezel:var(--dsw-alias-border-l1,var(--i5-host-line-fallback));--i5-blue:var(--dsw-alias-state-business-primary,#4166e8);--i5-shadow:none;background:var(--i5-face);color:var(--i5-text);}
+[data-dam-theme=settings][data-deep=true] [data-i5-embedded]{--i5-host-face-fallback:#292a2c;--i5-host-text-fallback:#ededf0;--i5-host-secondary-fallback:#c5c6cc;--i5-host-line-fallback:#3d3f46;}
+[data-dam-theme=settings] [data-iter5][data-i5-embedded]>.i5-settings-frame-head{padding:4px 0 16px;border:0;background:var(--i5-face);gap:8px;}
+[data-dam-theme=settings] [data-iter5][data-i5-embedded]>.i5-main{background:var(--i5-face);padding:0;}
+[data-dam-theme=settings] [data-iter5][data-i5-embedded] [data-dam-settings-content]{padding:0 8px 20px 0;gap:24px;background:var(--i5-face);}
+[data-dam-theme=settings] [data-iter5][data-i5-embedded] [data-dam-settings]>.i5-tabs{padding:0;gap:22px;margin:0 0 20px;background:var(--i5-face);}
+[data-dam-theme=settings] [data-iter5][data-i5-embedded] :is(.i5-card,[data-dam-settings-group]){padding:0;border:0;border-radius:0;background:none;box-shadow:none;}
+[data-dam-theme=settings] [data-iter5][data-i5-embedded] .i5-engine-grid{grid-template-columns:minmax(0,1fr);gap:24px;}
+[data-dam-theme=settings] [data-iter5][data-i5-embedded] :is(.i5-card,[data-dam-settings-group])+.i5-card{border-top:1px solid var(--i5-line);padding-top:24px;}
+[data-dam-theme=settings] [data-iter5][data-i5-embedded] .i5-card-title{padding:0;margin:0 0 12px;border:0;background:none;letter-spacing:0;}
+[data-dam-theme=settings] [data-iter5][data-i5-embedded] .i5-card-title>.i5-badge{background:none;border:0;box-shadow:none;color:var(--i5-secondary);width:20px;height:20px;border-radius:0;}
+[data-dam-theme=settings] [data-iter5][data-i5-embedded] .i5-engine-radios{gap:2px;}
+[data-dam-theme=settings] [data-iter5][data-i5-embedded] .i5-engine-choice{min-height:38px;padding:8px 10px;border:0;border-radius:6px;background:none;box-shadow:none;}
+[data-dam-theme=settings] [data-iter5][data-i5-embedded] .i5-engine-choice:has(:checked){background:var(--i5-soft);box-shadow:none;}
+[data-dam-theme=settings] [data-iter5][data-i5-embedded] button:not([role=tab]){background:var(--i5-face);box-shadow:none;border-radius:6px;}
+[data-dam-theme=settings] [data-iter5][data-i5-embedded] button:not(:disabled):hover{background:var(--i5-soft);}
+[data-dam-theme=settings] [data-iter5][data-i5-embedded] :is(input:not([type=checkbox]):not([type=radio]),select,textarea){background:var(--i5-face);border-color:var(--i5-bezel);box-shadow:none;border-radius:6px;}
+[data-dam-theme=settings] [data-iter5][data-i5-embedded] .i5-setup-card>div{background:var(--i5-face)!important;border-color:var(--i5-line)!important;box-shadow:none!important;}
+[data-dam-theme=settings] [data-iter5][data-i5-embedded] [data-dam-settings-row]{padding:14px 0;}
+[data-dam-theme=settings] [data-iter5][data-i5-embedded] [data-dam-savebar]{background:var(--i5-face);padding:12px 0 0;border-top:1px solid var(--i5-line);gap:8px;}
+[data-dam-theme=settings] [data-iter5][data-i5-embedded] [data-dam-savebar] button[data-dirty=true]{background:var(--i5-blue);color:var(--i5-face);}
+[data-dam-theme=settings] [data-iter5][data-i5-embedded][data-expanded=true]{padding:20px max(20px,env(safe-area-inset-right)) 16px max(20px,env(safe-area-inset-left));}
+
+[data-dam-theme=settings] .i5-workbench-appearance{display:flex;align-items:center;flex-wrap:wrap;gap:10px;flex:none;padding:0 0 16px;}
+[data-dam-theme=settings] [data-iter5][data-i5-embedded]>.i5-settings-frame-head>button{margin-left:auto;}
+
+/* Keep guidance inside the scroll area; controls and their explanations stay together. */
+[data-iter5] .i5-settings-intro{margin:0 0 4px;color:var(--i5-secondary);line-height:1.65;max-width:72ch;}
+[data-iter5] .i5-settings-advanced{border-top:1px solid var(--i5-line);padding-top:14px;margin-top:12px;}
+[data-iter5] .i5-settings-advanced>summary{cursor:pointer;color:var(--i5-secondary);padding:8px 0;font-weight:600;line-height:1.5;}
+[data-iter5] .i5-settings-advanced>summary:focus-visible{outline:2px solid var(--i5-blue);outline-offset:3px;}
+[data-iter5] .i5-settings-advanced[open]>summary{margin-bottom:12px;}
+[data-iter5] .i5-setting-copy [data-dam-hint]{line-height:1.6;max-width:68ch;}
+[data-dam-theme=settings] [data-iter5][data-i5-embedded] [data-dam-settings]>.i5-tabs{gap:16px;}
+[data-iter5] .i5-mode-card .i5-setting-field{display:block;}
+[data-iter5] .i5-mode-card .i5-setting-copy{display:block;margin-bottom:12px;}
+[data-iter5] .i5-mode-card .i5-setting-copy>label{display:none;}
+[data-dam-theme=settings] [data-iter5][data-i5-embedded] [data-dam-settings-row] input[type=checkbox]{background:var(--dsw-alias-bg-module-platform,var(--i5-soft));border-color:var(--i5-line);box-shadow:none;}
+[data-dam-theme=settings] [data-iter5][data-i5-embedded] [data-dam-settings-row] input[type=checkbox]:checked{background:var(--i5-blue);border-color:var(--i5-blue);}
+[data-dam-theme=settings] [data-iter5][data-i5-embedded] [data-dam-settings-row] input[type=checkbox]::after{background:var(--dsw-static-neutral-bluish-00,#fff);box-shadow:none;}

@@ -1,0 +1,4 @@
+[dsh-auto-memory-pre] uncaughtException: Error: probe-boom
+    at Timeout._onTimeout (file:///D:/dsh-auto-memory/artifacts/probe-epipe-selfignite.mjs:186:9)
+    at listOnTimeout (node:internal/timers:605:17)
+    at process.processTimers (node:internal/timers:541:7)

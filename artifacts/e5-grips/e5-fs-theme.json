@@ -1,0 +1,29 @@
+{
+  "fs0": "12.1875px",
+  "fs1": "13px",
+  "fs2": "14.2188px",
+  "fake": "13px",
+  "dark": {
+    "bg": "rgb(10, 13, 20)",
+    "color": "rgb(230, 235, 245)"
+  },
+  "light": {
+    "bg": "rgb(244, 246, 249)",
+    "color": "rgb(20, 24, 30)"
+  },
+  "cycle": [
+    {
+      "theme": "light",
+      "mode": "light"
+    },
+    {
+      "theme": "dark",
+      "mode": "dark"
+    },
+    {
+      "theme": "dark",
+      "mode": "auto"
+    }
+  ],
+  "expect14": 14.21875
+}

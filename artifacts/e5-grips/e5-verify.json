@@ -1,0 +1,28 @@
+{
+  "w0rail": 336,
+  "w0detail": 392,
+  "w1rail": 436,
+  "w1detail": 292,
+  "ls": {
+    "rail": "436",
+    "detail": "292"
+  },
+  "w2rail": 336,
+  "w2detail": 392,
+  "kRight": 360,
+  "kLeft": 336,
+  "clampLow": 180,
+  "clampHigh": 560,
+  "mutNoClamp": {
+    "clamped": 180,
+    "raw": -164
+  },
+  "mutHard": {
+    "before": 560,
+    "after": 336
+  },
+  "narrow": {
+    "display": "none",
+    "w": 900
+  }
+}

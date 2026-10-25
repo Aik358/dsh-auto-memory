@@ -1,0 +1,78 @@
+{
+  "url": "https://api.github.com/repos/Aik358/dsh-auto-memory/issues/152",
+  "repository_url": "https://api.github.com/repos/Aik358/dsh-auto-memory",
+  "labels_url": "https://api.github.com/repos/Aik358/dsh-auto-memory/issues/152/labels{/name}",
+  "comments_url": "https://api.github.com/repos/Aik358/dsh-auto-memory/issues/152/comments",
+  "events_url": "https://api.github.com/repos/Aik358/dsh-auto-memory/issues/152/events",
+  "html_url": "https://github.com/Aik358/dsh-auto-memory/issues/152",
+  "id": 5641281317,
+  "node_id": "I_kwDOT4IjKM8AAAABUD8fJQ",
+  "number": 152,
+  "title": "[Bug] 增量嵌入开关保存后不生效：动态 getter 被构造时常量化",
+  "user": {
+    "login": "Minervaowl7",
+    "id": 127482476,
+    "node_id": "U_kgDOB5k6bA",
+    "avatar_url": "https://avatars.githubusercontent.com/u/127482476?v=4",
+    "gravatar_id": "",
+    "url": "https://api.github.com/users/Minervaowl7",
+    "html_url": "https://github.com/Minervaowl7",
+    "followers_url": "https://api.github.com/users/Minervaowl7/followers",
+    "following_url": "https://api.github.com/users/Minervaowl7/following{/other_user}",
+    "gists_url": "https://api.github.com/users/Minervaowl7/gists{/gist_id}",
+    "starred_url": "https://api.github.com/users/Minervaowl7/starred{/owner}{/repo}",
+    "subscriptions_url": "https://api.github.com/users/Minervaowl7/subscriptions",
+    "organizations_url": "https://api.github.com/users/Minervaowl7/orgs",
+    "repos_url": "https://api.github.com/users/Minervaowl7/repos",
+    "events_url": "https://api.github.com/users/Minervaowl7/events{/privacy}",
+    "received_events_url": "https://api.github.com/users/Minervaowl7/received_events",
+    "type": "User",
+    "user_view_type": "public",
+    "site_admin": false
+  },
+  "labels": [
+
+  ],
+  "state": "open",
+  "locked": false,
+  "assignees": [
+
+  ],
+  "milestone": null,
+  "comments": 0,
+  "created_at": "2026-09-30T05:08:17Z",
+  "updated_at": "2026-09-30T05:08:17Z",
+  "closed_at": null,
+  "assignee": null,
+  "author_association": "CONTRIBUTOR",
+  "active_lock_reason": null,
+  "sub_issues_summary": {
+    "total": 0,
+    "completed": 0,
+    "percent_completed": 0
+  },
+  "issue_dependencies_summary": {
+    "blocked_by": 0,
+    "total_blocked_by": 0,
+    "blocking": 0,
+    "total_blocking": 0
+  },
+  "body": "## 问题\n\n基线：上游 `main@e64271f`（3.2.5），Windows / Node 24；本问题无需 PR #150。\n\n关闭设置 `semanticEmbedIncremental` 并保存后，引擎仍沿用增量嵌入。宿主在 `lib/index.js` 用 getter 提供动态配置，但 `lib/semantic-js.js` 在构造时执行 `const incremental = opts.incremental !== false`，以后重建一直读这个常量。\n\n## 最小复现\n\n给 `createJsSemanticEnginePre` 传入可切换的 getter 和计数 embedder：\n\n1. getter=true，构建 2 条记录。\n2. getter=false，追加第 3 条并更新 `memoryIndexVersion`。\n3. 预期：关闭增量后全量嵌入 3 条；实际：只嵌入新增的 1 条。\n\n新增行为回归的修复前输出：\n\n```text\nFAIL E2 saved true-to-false getter change re-embeds all 3 records\n结果: 27 PASS / 1 FAIL\n```\n\n复现使用确定性的注入 embedder，无网络、无真实模型调用。现有测试只检查 getter 接线的源码字符串以及构造时直接传 false，没有覆盖构造后修改配置。\n\n## 建议与验收\n\n在每次索引重建开始时读取 getter，将该轮值固定在重建事务内，避免异步嵌入期间改变配置使同一轮混用策略。新增 true→false→true 行为回归，确认关闭后全量嵌入、重新开启后只嵌新输入。\n",
+  "closed_by": null,
+  "reactions": {
+    "url": "https://api.github.com/repos/Aik358/dsh-auto-memory/issues/152/reactions",
+    "total_count": 0,
+    "+1": 0,
+    "-1": 0,
+    "laugh": 0,
+    "hooray": 0,
+    "confused": 0,
+    "heart": 0,
+    "rocket": 0,
+    "eyes": 0
+  },
+  "timeline_url": "https://api.github.com/repos/Aik358/dsh-auto-memory/issues/152/timeline",
+  "performed_via_github_app": null,
+  "state_reason": null,
+  "pinned_comment": null
+}

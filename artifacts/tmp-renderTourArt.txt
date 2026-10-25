@@ -1,0 +1,19 @@
+        var isLast = tourStep >= TOUR_STEPS.length - 1
+        // 每步只生成当前图形所需 DOM；避免旧实现一次创建 22 个 span、非当前零件塌成 0/2px。
+        var renderTourArt = function (type) {
+          var piece = function (cls) { return h('span', { className: 'ap ' + cls }) }
+          var children
+          if (type === 'store') children = [piece('plate p1'), piece('plate p2'), piece('plate p3')]
+          else if (type === 'inject') children = [piece('inject-capsule'), piece('inject-drop'), piece('inject-pulse')]
+          else if (type === 'bell') children = [piece('bell-shell'), piece('bell-base'), piece('bell-clapper')]
+          else if (type === 'calendar') children = [piece('calendar-card'), piece('calendar-bind b1'), piece('calendar-bind b2'), piece('calendar-page')]
+          else if (type === 'link') children = [piece('link-ring l1'), piece('link-ring l2'), piece('link-glint')]
+          else if (type === 'engine') children = [piece('engine-prism'), piece('engine-core'), piece('engine-orbit')]
+          else if (type === 'radar') children = [piece('radar-outer'), piece('radar-inner'), piece('radar-sweep'), piece('radar-ping')]
+          else if (type === 'rocket') children = [piece('rocket-tier t1'), piece('rocket-tier t2'), piece('rocket-tier t3'), piece('rocket-spark')]
+          else children = [piece('bubble-orb'), piece('bubble-seed s1'), piece('bubble-seed s2')]
+          return h('div', { 'data-dam-tour-art': type || 'bubble', key: 'art' + tourStep }, children)
+        }
+        return h('div', { 'data-dam-tour-backdrop': '',
+            onMouseMove: function (e) {
+              // Liquid Glass 动态响应:高光/图标 3D 倾斜跟随鼠标(卡内坐标百分比)

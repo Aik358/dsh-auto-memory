@@ -1,0 +1,1 @@
+{"label":"trig-stream-write-cb","mode":"old","pipeState":"Broken","extraArgs":"","boomDelayMs":800,"probePid":27880,"cmdPid":25488,"exitedOnOwn":false,"ownExitCode":null,"wallSec":6.56,"cpuMs":5125.0,"cpuPctOfWall":78.1,"killedByRunner":true,"probeAliveAfter":false,"cmdAliveAfter":false,"verdictWritten":false,"verdict":null,"streamsBroken":null,"traceEvents":["start"]}

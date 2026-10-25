@@ -1,0 +1,17 @@
+{
+  "shasum": "0403dcb99ef9d6631f4c6f0ee06ae7d880c308fe",
+  "tarball": "https://registry.npmjs.org/@a9i5k4/dsh-auto-memory/-/dsh-auto-memory-3.2.5.tgz",
+  "fileCount": 646,
+  "integrity": "sha512-OjsDi2iA3AXEdvCZ4MOS4AEH4PdJmEtp+7j/wY1L8blraAFP0kWGLomeGMNqhuIXI14iT1kDGg3Poq9ceZbMsg==",
+  "signatures": [
+    {
+      "sig": "MEUCIEu1vBaKwZCIiHXzD2o/Ae+qMJCHTZF9+vvBITWu7b+NAiEA5kQ4nhhQRPzq4bPgn0lScKdhAACgSpHhYAuEZcnlKoI=",
+      "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+    },
+    {
+      "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+      "sig": "MEUCIBd6HW2QNRKtMy5xxNRl224IWW/WF2FXxu0l6ZG7sLcXAiEA3WehnOHhrsKxxweE9JXOTyBAiw+fHM0zwrB+D9SSv9E="
+    }
+  ],
+  "unpackedSize": 49714651
+}

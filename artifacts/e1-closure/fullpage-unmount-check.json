@@ -1,0 +1,24 @@
+{
+  "base": {
+    "tag": false,
+    "seat": "block"
+  },
+  "mounted": {
+    "tag": true,
+    "seat": "none"
+  },
+  "unmounted": {
+    "tag": false,
+    "seat": "block",
+    "card": "block"
+  },
+  "mutMounted": true,
+  "mutAfter": {
+    "tag": true,
+    "seat": "none"
+  },
+  "restored": {
+    "tag": false,
+    "seat": "block"
+  }
+}

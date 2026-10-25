@@ -1,0 +1,23 @@
+{
+  "id": "evt_00000001",
+  "name": "最小合法事件",
+  "summary": "所有集合为空的最小形态。",
+  "outcome": null,
+  "skillRef": null,
+  "status": "active",
+  "pausedReason": null,
+  "sections": {
+    "goal": "目标",
+    "doing": "进行中",
+    "deadend": "无",
+    "next": "下一步"
+  },
+  "checkpoints": [],
+  "userPercept": [],
+  "agentTrace": [],
+  "sharedGround": [],
+  "commitments": [],
+  "constraints": [],
+  "createdAt": 1793000000000,
+  "updatedAt": 1793000000000
+}

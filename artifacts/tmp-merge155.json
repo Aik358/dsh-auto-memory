@@ -1,0 +1,1 @@
+{"commit_title": "merge: PR #155 运行时修复三件套（#152 增量开关 / #153 默认模型回退 / #154 接续工作区保护）", "commit_message": "Merge Minervaowl7 的运行时修复 PR。三 issue 均已核实为真：#152 增量开关构造时常量化导致设置不生效；#153 UNKNOWN_MODEL 回退的两处断点（新版 profile 解析 + provider 与实现名混用）；#154 接续创建第三级回退丢失工作区约束（复现 A 区接续到 B 区）。\n\n贡献者：@Minervaowl7", "merge_method": "merge"}

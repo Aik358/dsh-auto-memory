@@ -1,0 +1,6 @@
+[dsh-auto-memory-pre] uncaughtException: Error [ERR_STREAM_WRITE_AFTER_END]: write after end
+    at _write (node:internal/streams/writable:487:11)
+    at Writable.write (node:internal/streams/writable:508:10)
+    at process.<anonymous> (file:///D:/dsh-auto-memory/artifacts/probe-epipe-selfignite.mjs:100:61)
+    at process.emit (node:events:509:28)
+    at process._fatalException (node:internal/process/execution:159:25)

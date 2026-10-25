@@ -1,0 +1,6 @@
+{"t":2,"ev":"start","pid":60884,"mode":"old","node":"v24.18.0","platform":"win32","argv":["old","--boom-delay=200","--verdict-delay=900","--keep-streams"],"keepStreams":true,"stdoutIsTTY":false,"stderrIsTTY":false}
+{"t":3,"ev":"handler-installed","pid":60884,"mode":"old"}
+{"t":4,"ev":"streams-destroyed","pid":60884,"stdoutDestroyed":false,"stderrDestroyed":false,"stdoutWritable":true,"stderrWritable":true}
+{"t":208,"ev":"boom-thrown","pid":60884,"delayMs":200}
+{"t":910,"ev":"verdict-written","pid":60884,"cpuMs":16,"wallMs":909}
+{"t":911,"ev":"exit","pid":60884,"code":0}

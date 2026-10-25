@@ -1,0 +1,1 @@
+{"label":"trig-console-error","mode":"old","pipeState":"Broken","extraArgs":"","boomDelayMs":800,"probePid":17916,"cmdPid":35852,"exitedOnOwn":true,"ownExitCode":null,"wallSec":1.23,"cpuMs":46.9,"cpuPctOfWall":3.8,"killedByRunner":false,"probeAliveAfter":false,"cmdAliveAfter":false,"verdictWritten":false,"verdict":null,"streamsBroken":null,"traceEvents":["start"]}

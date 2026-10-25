@@ -1,0 +1,14 @@
+.i5-setting-control
+.i5-setting-field
+.i5-setting-copy
+.i5-hint-more
+data-native-model-picker
+data-native-path-browser
+.i5-settings-advanced
+.i5-card-sub
+data-native-engine-guide
+data-wide
+.i5-card-title-txt
+.i5-hint-lead
+.i5-workbench-appearance
+data-i5-advanced-entry

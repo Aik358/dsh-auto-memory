@@ -1,0 +1,5 @@
+{
+  "merge_method": "squash",
+  "commit_title": "fix(water): 水位卡按会话如实取数，不再把旧数据当无数据 (#136)",
+  "commit_message": "三条根因修复：①水位记录过期判定 ②无记录分支不再硬写零值（新增 waterTokensForLiveSession）③明文 session.jsonl 补 zstd 判定分支。\n\nCloses #135\n\nCo-authored-by: Minervaowl7"
+}

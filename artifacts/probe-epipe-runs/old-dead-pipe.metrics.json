@@ -1,0 +1,1 @@
+{"label":"old-dead-pipe","mode":"old","extraArgs":"","boomDelayMs":800,"childPid":60676,"pipesClosed":true,"exitedWithin":true,"exitCode":0,"wallSec":1.62,"cpuMs":109.4,"cpuPctOfWall":6.8,"killedByRunner":false,"stillAliveAfter":false,"verdictWritten":true,"verdict":{"mode":"old","reachedAfterBoom":true,"cpuMs":16,"wallMs":1518},"stdoutCaptured":null,"stderrCaptured":null}

@@ -1,0 +1,3 @@
+{
+  "body": "已修复（本仓库当前线），且采用了比原建议更彻底的隔离方式。\n\n## 现状\n\n本地实跑：`node tests/smoke/smoke-test-m70.mjs` ⇒ **91 passed / 0 failed**（含 G2 全部断言）。\n\n## 采用的方案（与 PR #141 路线的差异）\n\nPR #141 的做法是\"静默 worker + 保留真 worker 覆盖 + partial 前断言熔断器未开\"；本仓库当前线改用了**零 worker 纯内存分帧**：\n\n```js\nconst cF = mkClient({ command: 'definitely-not-python-xyz' })   // 永不 start ⇒ 纯内存分帧\n```\n\n即：让 client 指向一个不存在的命令（`spawn` 必失败）⇒ **根本不存在子进程**，partial 行的解析行为与真 worker 的响应竞争在物理上被排除，不需要\"隔离竞争\"也不需要断言熔断器状态。\n\n断言口径随之强化：\n- 半行（无行尾）⇒ **不结算**：`dropped` 三个计数器全为 0；\n- 补上行尾后 ⇒ `badEnvelope` 恰为 1。\n\n## 处置建议\n\n- 本 issue 可**关闭**（缺陷已在本仓库工作线修复并实跑验证）。\n- PR #141：其\"保留真 worker 覆盖\"的意图在本地已由其它断言覆盖（G3/G6 等走真 worker 路径）；若希望把 PR 里的**熔断诊断**（G2 失败时展开诊断信息）单独摘进来也可以，这条与隔离方案正交、有独立价值。\n- 修复随下一个正式版本带出。\n"
+}

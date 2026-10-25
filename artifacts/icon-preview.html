@@ -1,0 +1,51 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+body{margin:0;font:13px -apple-system,"Segoe UI","Microsoft YaHei",sans-serif}
+.row{display:flex;gap:0;min-height:300px}
+.pane{flex:1;padding:28px 24px;display:flex;flex-direction:column;gap:20px;align-items:flex-start}
+.dark{background:#151a26;color:#e7ebf4}
+.light{background:#f4f6fb;color:#18213a}
+h3{margin:0;font-size:12px;letter-spacing:.08em;opacity:.6;text-transform:uppercase;font-weight:600}
+/* 宿主真实规格：48x48 圆角框 + .5px 边框 + object-fit:contain */
+.cardIcon{border:.5px solid;border-radius:10px;width:48px;height:48px;display:inline-flex;justify-content:center;align-items:center}
+.dark .cardIcon{border-color:rgba(148,163,184,.24);color:#9aa4ba}
+.light .cardIcon{border-color:rgba(15,23,42,.16);color:#5a6579}
+.cardIcon img{object-fit:contain;width:36px;height:36px}
+.big img{width:96px;height:96px;border-radius:8px}
+.small img{width:20px;height:20px;border-radius:4px}
+.label{font-size:11px;opacity:.55;line-height:1.6}
+.stack{display:flex;align-items:center;gap:14px;margin-top:6px;padding:10px 14px;border-radius:12px;width:100%;box-sizing:border-box}
+.dark .stack{background:#1c2130}
+.light .stack{background:#fff;box-shadow:0 2px 8px rgba(23,32,64,.06)}
+.stack b{font-size:13.5px}
+.stack .since{margin-left:auto;font-size:11px;opacity:.5}
+</style></head><body>
+<div class="row">
+  <div class="pane dark"><h3>Dark theme（宿主 48×48 真实规格）</h3>
+    <div style="display:flex;gap:16px;align-items:center">
+      <span class="cardIcon"><img src="../icon.svg"></span>
+      <span class="cardIcon big"><img src="../icon.svg"></span>
+      <span class="cardIcon" style="width:20px;height:20px;border-radius:6px"><img class="small" src="../icon.svg"></span>
+    </div>
+    <div class="label">48px（列表行）· 96px（Retina 放大）· 20px（极小）</div>
+    <div class="stack"><span class="cardIcon" style="width:40px;height:40px;border-radius:8px"><img src="../icon.svg" style="width:28px;height:28px"></span>
+      <div><b>dsh-auto-memory</b><div class="label">主动联想记忆 · 未问先答，跨窗口续命</div></div><span class="since">v3.2.4</span></div>
+  </div>
+  <div class="pane light"><h3>Light theme（同一张图，不改）</h3>
+    <div style="display:flex;gap:16px;align-items:center">
+      <span class="cardIcon"><img src="../icon.svg"></span>
+      <span class="cardIcon big"><img src="../icon.svg"></span>
+      <span class="cardIcon" style="width:20px;height:20px;border-radius:6px"><img class="small" src="../icon.svg"></span>
+    </div>
+    <div class="label">48px（列表行）· 96px（Retina 放大）· 20px（极小）</div>
+    <div class="stack"><span class="cardIcon" style="width:40px;height:40px;border-radius:8px"><img src="../icon.svg" style="width:28px;height:28px"></span>
+      <div><b>dsh-auto-memory</b><div class="label">主动联想记忆 · 未问先答，跨窗口续命</div></div><span class="since">v3.2.4</span></div>
+  </div>
+</div>
+<div class="pane light" style="border-top:1px solid rgba(15,23,42,.1)">
+  <h3>与其他官方插件图标并排（同规格对照）</h3>
+  <div style="display:flex;gap:22px;align-items:center">
+    <span class="cardIcon"><img src="../icon.svg"></span>
+    <span class="label">← 本插件（新）</span>
+  </div>
+</div>
+</body></html>

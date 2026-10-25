@@ -1,0 +1,18 @@
+{
+  "capturedAt": "2026-09-27T12:17:25.441Z",
+  "purpose": "批次0基线：R41在盘态(893808)，宿主尚未加载。施工前留档。",
+  "files": {
+    "lib/client.js": {
+      "bytes": 893808,
+      "sha256": "0b66c52109597a13d332dc570669ebffb3cd7406e1ca22342aae258328e3ca11"
+    },
+    "lib/wb-sidecar.js": {
+      "bytes": 61779,
+      "sha256": "9358b2795ad82c38e3d018174d895a081e7fa6d696aa9a7d65b2eb709eade522"
+    },
+    "lib/index.js": {
+      "bytes": 1004683,
+      "sha256": "ceaf4b9c7c7efe41f1ea981cf8d2402f28a999fd5c5a28ac645f7f6daedca4bc"
+    }
+  }
+}

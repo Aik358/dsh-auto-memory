@@ -1,0 +1,1 @@
+{"label":"count-new-broken","mode":"old","pipeState":"Broken","extraArgs":"","boomDelayMs":800,"probePid":57940,"cmdPid":41220,"exitedOnOwn":true,"ownExitCode":null,"wallSec":1.12,"cpuMs":46.9,"cpuPctOfWall":4.2,"killedByRunner":false,"probeAliveAfter":false,"cmdAliveAfter":false,"verdictWritten":false,"verdict":null,"streamsBroken":null,"traceEvents":["start"]}

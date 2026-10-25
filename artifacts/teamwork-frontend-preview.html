@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>团队协作中心 · 升级预览（dsh-auto-memory）</title>
+<style>
+/* ═══════════ 设计令牌：双主题（对应插件 Dark / Light 皮肤） ═══════════ */
+:root{
+  --r-lg:14px; --r-md:10px; --r-sm:8px;
+  --font:-apple-system,"Segoe UI","Microsoft YaHei",Roboto,"PingFang SC",sans-serif;
+  --mono:ui-monospace,Consolas,"Cascadia Code",monospace;
+  --primary:#4d6bfe; --primary-soft:rgba(77,107,254,.14);
+  --ok:#34d399; --ok-soft:rgba(52,211,153,.13);
+  --warn:#fbbf24; --warn-soft:rgba(251,191,36,.13);
+  --bad:#f87171; --bad-soft:rgba(248,113,113,.13);
+  --cyan:#38bdf8; --cyan-soft:rgba(56,189,248,.13);
+  --vio:#a78bfa; --vio-soft:rgba(167,139,250,.14);
+  --sp:.18s cubic-bezier(.4,0,.2,1);
+}
+[data-theme="dark"]{
+  --bg:#12151f; --bg2:#171b28; --panel:#1c2130; --panel2:#222839; --raise:#272e42;
+  --line:rgba(148,163,184,.14); --line2:rgba(148,163,184,.24);
+  --tx:#e7ebf4; --tx2:#9aa4ba; --tx3:#67718a;
+  --shadow:0 8px 28px rgba(0,0,0,.35); --shadow-sm:0 2px 10px rgba(0,0,0,.25);
+  --glass:rgba(28,33,48,.86);
+}
+[data-theme="light"]{
+  --bg:#eef1f7; --bg2:#f4f6fb; --panel:#ffffff; --panel2:#f6f8fc; --raise:#eef1f8;
+  --line:rgba(15,23,42,.09); --line2:rgba(15,23,42,.16);
+  --tx:#18213a; --tx2:#5a6579; --tx3:#8b94a7;
+  --shadow:0 10px 30px rgba(23,32,64,.10); --shadow-sm:0 2px 8px rgba(23,32,64,.06);
+  --glass:rgba(255,255,255,.88);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font:13px/1.6 var(--font);background:var(--bg);color:var(--tx);transition:background .3s,color .3s}
+::selection{background:var(--primary-soft)}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+input,select{font:inherit;color:var(--tx)}
+a{color:var(--primary);text-decoration:none}
+
+/* ═══════════ 全局骨架 ═══════════ */
+.app{display:grid;grid-template-rows:56px 1fr;height:100vh}
+.topbar{display:flex;align-items:center;gap:14px;padding:0 20px;background:var(--glass);
+  backdrop-filter:blur(14px);border-bottom:1px solid var(--line);z-index:30}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:14.5px}
+.brand .logo{width:26px;height:26px;border-radius:8px;background:linear-gradient(135deg,#4d6bfe,#8b5cf6);
+  display:grid;place-items:center;color:#fff;font-size:13px}
+.brand small{color:var(--tx3);font-weight:500;font-size:11px;margin-left:2px}
+.teamchip{display:flex;align-items:center;gap:7px;padding:4px 11px 4px 6px;border:1px solid var(--line);
+  border-radius:999px;background:var(--panel);font-size:12px;color:var(--tx2);cursor:pointer;transition:var(--sp)}
+.teamchip:hover{border-color:var(--line2);color:var(--tx)}
+.teamchip .dot{width:7px;height:7px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 3px var(--ok-soft)}
+.topbar .grow{flex:1}
+.avstack{display:flex;align-items:center}
+.avstack .av{margin-left:-7px;border:2px solid var(--panel)}
+.avstack .more{margin-left:6px;font-size:11px;color:var(--tx3)}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:6px 13px;border-radius:var(--r-sm);
+  border:1px solid var(--line2);background:var(--panel);color:var(--tx);font-size:12.5px;transition:var(--sp);white-space:nowrap}
+.btn:hover{border-color:var(--primary);color:var(--primary);transform:translateY(-1px)}
+.btn:active{transform:translateY(0)}
+.btn.primary{background:var(--primary);border-color:var(--primary);color:#fff}
+.btn.primary:hover{filter:brightness(1.1);color:#fff}
+.btn.danger{color:var(--bad);border-color:rgba(248,113,113,.4)}
+.btn.danger:hover{background:var(--bad-soft);border-color:var(--bad)}
+.btn.ghost{border-color:transparent;background:transparent;color:var(--tx2)}
+.btn.ghost:hover{background:var(--panel2);color:var(--tx)}
+.btn.sm{padding:4px 10px;font-size:12px}
+.btn:disabled{opacity:.45;pointer-events:none}
+.iconbtn{width:32px;height:32px;border-radius:var(--r-sm);display:grid;place-items:center;color:var(--tx2);
+  border:1px solid transparent;transition:var(--sp);font-size:15px}
+.iconbtn:hover{background:var(--panel2);color:var(--tx)}
+
+.main{display:grid;grid-template-columns:196px 1fr;min-height:0}
+.sidenav{background:var(--bg2);border-right:1px solid var(--line);padding:14px 10px;overflow-y:auto}
+.navgroup{font-size:10.5px;color:var(--tx3);letter-spacing:.08em;padding:8px 10px 4px;text-transform:uppercase}
+.navitem{display:flex;align-items:center;gap:10px;width:100%;padding:8px 10px;border-radius:var(--r-sm);
+  color:var(--tx2);font-size:13px;margin-bottom:2px;transition:var(--sp);text-align:left;position:relative}
+.navitem .ic{width:17px;text-align:center;font-size:14px}
+.navitem:hover{background:var(--panel2);color:var(--tx)}
+.navitem.on{background:var(--primary-soft);color:var(--primary);font-weight:600}
+.navitem.on::before{content:"";position:absolute;left:-10px;top:8px;bottom:8px;width:3px;border-radius:0 3px 3px 0;background:var(--primary)}
+.navitem .cnt{margin-left:auto;font-size:10.5px;padding:1px 7px;border-radius:999px;background:var(--bad-soft);color:var(--bad);font-weight:600}
+.navitem .cnt.zero{background:var(--panel2);color:var(--tx3)}
+
+.content{overflow-y:auto;padding:22px 26px 60px;min-width:0}
+.page{max-width:1020px;margin:0 auto;animation:pin .28s cubic-bezier(.3,0,.2,1)}
+@keyframes pin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.pagehead{display:flex;align-items:baseline;gap:12px;margin-bottom:18px}
+.pagehead h1{font-size:19px;font-weight:700}
+.pagehead .sub{color:var(--tx3);font-size:12px}
+.pagehead .grow{flex:1}
+
+/* ═══════════ 通用元件 ═══════════ */
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:var(--shadow-sm)}
+.card.pad{padding:16px 18px}
+.card h3{font-size:13.5px;font-weight:650;display:flex;align-items:center;gap:8px}
+.card h3 .ic{color:var(--tx3)}
+.grid{display:grid;gap:14px}
+.grid.g4{grid-template-columns:repeat(4,1fr)}
+.grid.g2{grid-template-columns:1fr 1fr}
+.grid.g32{grid-template-columns:3fr 2fr}
+@media(max-width:960px){.grid.g4{grid-template-columns:1fr 1fr}.grid.g32,.grid.g2{grid-template-columns:1fr}}
+.stat{padding:15px 17px;position:relative;overflow:hidden;transition:var(--sp)}
+.stat:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
+.stat .lbl{font-size:11.5px;color:var(--tx3);display:flex;gap:6px;align-items:center}
+.stat .val{font-size:26px;font-weight:750;margin-top:5px;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.stat .trend{font-size:11px;color:var(--tx3);margin-top:2px}
+.stat.accent-warn .val{color:var(--warn)} .stat.accent-bad .val{color:var(--bad)}
+.stat.accent-ok .val{color:var(--ok)} .stat.accent-vio .val{color:var(--vio)}
+.stat .halo{position:absolute;right:-22px;top:-22px;width:86px;height:86px;border-radius:50%;opacity:.10}
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:2px 9px;border-radius:999px;font-weight:600}
+.pill .d{width:6px;height:6px;border-radius:50%}
+.pill.ok{background:var(--ok-soft);color:var(--ok)} .pill.ok .d{background:var(--ok)}
+.pill.warn{background:var(--warn-soft);color:var(--warn)} .pill.warn .d{background:var(--warn)}
+.pill.bad{background:var(--bad-soft);color:var(--bad)} .pill.bad .d{background:var(--bad)}
+.pill.cyan{background:var(--cyan-soft);color:var(--cyan)} .pill.cyan .d{background:var(--cyan)}
+.pill.vio{background:var(--vio-soft);color:var(--vio)} .pill.vio .d{background:var(--vio)}
+.pill.mute{background:var(--panel2);color:var(--tx3)} .pill.mute .d{background:var(--tx3)}
+.kbd{font:11px var(--mono);background:var(--panel2);border:1px solid var(--line2);border-bottom-width:2px;
+  border-radius:5px;padding:0 5px;color:var(--tx2)}
+.av{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;color:#fff;font-size:11.5px;
+  font-weight:700;background:var(--hsl);flex-shrink:0;position:relative}
+.av.lg{width:34px;height:34px;font-size:14px}
+.av .pd{position:absolute;right:-1px;bottom:-1px;width:9px;height:9px;border-radius:50%;border:2px solid var(--panel)}
+.av .pd.on{background:var(--ok)} .av .pd.sync{background:var(--warn)} .av .pd.off{background:var(--tx3)}
+.empty{display:flex;flex-direction:column;align-items:center;gap:8px;padding:34px 10px;color:var(--tx3);text-align:center}
+.empty .art{width:52px;height:52px;border-radius:16px;background:var(--panel2);display:grid;place-items:center;font-size:23px}
+.empty b{color:var(--tx2);font-size:13px}
+.toastwrap{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;gap:8px;z-index:99}
+.toast{display:flex;align-items:center;gap:9px;background:var(--raise);border:1px solid var(--line2);
+  border-radius:var(--r-md);padding:9px 16px;font-size:12.5px;box-shadow:var(--shadow);animation:tin .25s cubic-bezier(.3,1.3,.5,1)}
+@keyframes tin{from{opacity:0;transform:translateY(14px) scale(.96)}to{opacity:1;transform:none}}
+.toast.out{opacity:0;transform:translateY(8px);transition:.3s}
+.spark{display:flex;align-items:flex-end;gap:2px;height:30px}
+.spark i{flex:1;background:var(--primary);border-radius:2px 2px 0 0;opacity:.75;min-width:3px;transition:height .4s}
+.spark i.bad{background:var(--bad)}
+.sect{margin-top:22px}
+.hint{font-size:11.5px;color:var(--tx3);line-height:1.55}
+.divv{height:1px;background:var(--line);margin:14px 0}
+
+/* ═══════════ 概览 ═══════════ */
+.pulse{display:flex;align-items:center;gap:16px;padding:16px 18px}
+.pulse .ring{width:46px;height:46px;border-radius:50%;display:grid;place-items:center;position:relative;flex-shrink:0}
+.pulse .ring::before{content:"";position:absolute;inset:-5px;border-radius:50%;border:2px solid var(--ok-soft);animation:br 2.6s ease-out infinite}
+@keyframes br{0%{transform:scale(.82);opacity:1}100%{transform:scale(1.25);opacity:0}}
+.pulse .ring .in{width:30px;height:30px;border-radius:50%;background:var(--ok-soft);display:grid;place-items:center;color:var(--ok);font-size:14px}
+.pulse .t b{font-size:14px}
+.pulse .t .meta{font-size:11.5px;color:var(--tx3);display:flex;gap:12px;flex-wrap:wrap;margin-top:2px}
+.feed{display:flex;flex-direction:column}
+.frow{display:flex;gap:11px;padding:10px 4px;border-bottom:1px solid var(--line);align-items:flex-start;transition:var(--sp)}
+.frow:last-child{border-bottom:none}
+.frow:hover{background:var(--panel2);border-radius:var(--r-sm)}
+.frow .opic{width:26px;height:26px;border-radius:8px;display:grid;place-items:center;font-size:12px;flex-shrink:0;margin-top:2px}
+.op-create{background:var(--ok-soft);color:var(--ok)} .op-edit{background:var(--cyan-soft);color:var(--cyan)}
+.op-merge{background:var(--vio-soft);color:var(--vio)} .op-delete{background:var(--bad-soft);color:var(--bad)}
+.op-resolve{background:var(--warn-soft);color:var(--warn)}
+.frow .ft{min-width:0;flex:1}
+.frow .ft .l1{font-size:12.5px}
+.frow .ft .l1 b{font-weight:650}
+.frow .ft .key{font:11.5px var(--mono);color:var(--tx3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.frow time{font-size:11px;color:var(--tx3);flex-shrink:0;margin-top:3px}
+.opchip{font-size:10px;padding:1px 7px;border-radius:5px;font-weight:700;letter-spacing:.04em}
+.todo-row{display:flex;align-items:center;gap:12px;padding:11px 6px;border-bottom:1px solid var(--line)}
+.todo-row:last-child{border-bottom:none}
+.todo-row .t{flex:1;min-width:0}
+.todo-row .t b{font-size:12.5px;display:block}
+.todo-row .t span{font-size:11px;color:var(--tx3)}
+
+/* ═══════════ 成员 ═══════════ */
+.mgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px}
+.mcard{padding:17px;text-align:center;position:relative;transition:var(--sp)}
+.mcard:hover{transform:translateY(-3px);box-shadow:var(--shadow)}
+.mcard.self{border-color:rgba(77,107,254,.5);box-shadow:0 0 0 1px rgba(77,107,254,.25),var(--shadow-sm)}
+.mcard .av{margin:0 auto 10px}
+.mcard .nm{font-weight:650;font-size:13.5px}
+.mcard .id{font:10.5px var(--mono);color:var(--tx3);margin:1px 0 8px}
+.mcard .caps{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;margin-top:10px}
+.mcard .sum{font-size:11px;color:var(--tx3);margin-top:9px;border-top:1px dashed var(--line);padding-top:9px}
+.mcard .you{position:absolute;top:10px;right:10px}
+.invite{border:1.5px dashed var(--line2);border-radius:var(--r-lg);display:grid;place-items:center;
+  color:var(--tx3);cursor:pointer;transition:var(--sp);min-height:150px;gap:6px;padding:14px}
+.invite:hover{border-color:var(--primary);color:var(--primary);background:var(--primary-soft)}
+.capsel{font-size:10px;padding:2px 7px;border-radius:5px;background:var(--panel2);color:var(--tx2)}
+
+/* ═══════════ 活动 ═══════════ */
+.chips{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:13px}
+.fchip{font-size:11.5px;padding:4px 12px;border-radius:999px;border:1px solid var(--line2);color:var(--tx2);transition:var(--sp)}
+.fchip:hover{border-color:var(--primary);color:var(--primary)}
+.fchip.on{background:var(--primary);border-color:var(--primary);color:#fff;font-weight:600}
+
+/* ═══════════ 冲突评审台 ═══════════ */
+.rev{display:grid;grid-template-columns:288px 1fr;gap:14px;min-height:420px}
+@media(max-width:900px){.rev{grid-template-columns:1fr}}
+.qlist{display:flex;flex-direction:column;gap:8px;overflow-y:auto;max-height:560px}
+.qitem{text-align:left;padding:12px 13px;border-radius:var(--r-md);border:1px solid var(--line);background:var(--panel);
+  transition:var(--sp);position:relative;width:100%}
+.qitem:hover{border-color:var(--line2)}
+.qitem.on{border-color:var(--primary);background:var(--primary-soft);box-shadow:0 0 0 1px rgba(77,107,254,.3)}
+.qitem.gone{opacity:0;transform:translateX(26px);position:absolute;pointer-events:none}
+.qitem .qk{font-size:12.5px;font-weight:650;display:flex;gap:7px;align-items:center}
+.qitem .qm{font-size:11px;color:var(--tx3);margin-top:4px;display:flex;gap:8px;align-items:center}
+.diffhead{display:flex;align-items:center;gap:10px;padding:13px 16px;border-bottom:1px solid var(--line)}
+.diffcols{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line);flex:1;min-height:0}
+@media(max-width:760px){.diffcols{grid-template-columns:1fr}}
+.diffcol{background:var(--bg2);padding:12px 14px;overflow:auto;max-height:300px}
+.diffcol h5{font-size:11px;letter-spacing:.06em;color:var(--tx3);margin-bottom:8px;display:flex;gap:7px;align-items:center}
+.dline{font:11.5px/1.75 var(--mono);padding:0 8px;border-radius:4px;white-space:pre-wrap;word-break:break-all}
+.dline.add{background:var(--ok-soft);color:var(--ok)}
+.dline.del{background:var(--bad-soft);color:var(--bad);text-decoration:line-through;text-decoration-color:rgba(248,113,113,.5)}
+.dline.base{color:var(--tx3)}
+.dline.ctx{color:var(--tx2)}
+.verdict{display:flex;gap:9px;padding:13px 16px;border-top:1px solid var(--line);flex-wrap:wrap;align-items:center}
+.vbtn{flex:1;min-width:110px;padding:8px 10px;border-radius:var(--r-sm);border:1px solid var(--line2);
+  background:var(--panel);font-size:12.5px;font-weight:600;transition:var(--sp);display:flex;justify-content:center;gap:7px;align-items:center}
+.vbtn:hover{transform:translateY(-1px)}
+.vbtn.local:hover{border-color:var(--ok);color:var(--ok);background:var(--ok-soft)}
+.vbtn.remote:hover{border-color:var(--cyan);color:var(--cyan);background:var(--cyan-soft)}
+.vbtn.merge:hover{border-color:var(--vio);color:var(--vio);background:var(--vio-soft)}
+.vbtn.dlgt:hover{border-color:var(--warn);color:var(--warn);background:var(--warn-soft)}
+.vbtn.armed{animation:shake .35s;border-color:var(--warn);color:var(--warn);background:var(--warn-soft)}
+@keyframes shake{25%{transform:translateX(-3px)}75%{transform:translateX(3px)}}
+.rejrow{display:flex;gap:10px;align-items:center;padding:9px 4px;border-bottom:1px solid var(--line);font-size:12px}
+.rejrow:last-child{border-bottom:none}
+
+/* ═══════════ 审批 ═══════════ */
+.skcard{padding:16px 18px;transition:var(--sp)}
+.skcard:hover{box-shadow:var(--shadow)}
+.skhead{display:flex;align-items:flex-start;gap:11px}
+.skhead .si{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;font-size:17px;flex-shrink:0;background:var(--vio-soft);color:var(--vio)}
+.skhead .t{flex:1;min-width:0}
+.skhead .t b{font-size:13.5px}
+.skhead .t .meta{font-size:11px;color:var(--tx3);margin-top:2px}
+.evbar{display:flex;gap:14px;margin:13px 0 4px}
+.ev{flex:1}
+.ev .n{font-size:17px;font-weight:700;font-variant-numeric:tabular-nums}
+.ev .l{font-size:10.5px;color:var(--tx3)}
+.ev .bar{height:4px;border-radius:2px;background:var(--panel2);margin-top:5px;overflow:hidden}
+.ev .bar i{display:block;height:100%;border-radius:2px;background:var(--ok);transition:width .6s cubic-bezier(.3,0,.2,1)}
+.steps{margin-top:10px;border-left:2px solid var(--line2);padding-left:13px;display:flex;flex-direction:column;gap:5px}
+.steps .st{font-size:11.5px;color:var(--tx2);display:flex;gap:8px}
+.steps .st i{font:10px var(--mono);color:var(--tx3);font-style:normal;margin-top:2px}
+
+/* ═══════════ 交接 ═══════════ */
+.chain{display:flex;flex-direction:column;gap:0}
+.cnode{display:flex;gap:14px;position:relative;padding-bottom:22px}
+.cnode::before{content:"";position:absolute;left:17px;top:36px;bottom:0;width:2px;background:var(--line2)}
+.cnode:last-child::before{display:none}
+.cnode .av{z-index:1}
+.cnode .cb{flex:1;padding:12px 15px}
+.cnode .cb .l1{display:flex;gap:9px;align-items:center;flex-wrap:wrap}
+.cnode .cb .l1 b{font-size:13px}
+.cnode .cb .meta{font-size:11px;color:var(--tx3);margin-top:3px}
+
+/* ═══════════ 同步 ═══════════ */
+.transport{display:flex;gap:12px;flex-wrap:wrap}
+.tcard{flex:1;min-width:200px;padding:14px 16px;border:1px solid var(--line2);border-radius:var(--r-md);transition:var(--sp);cursor:pointer;position:relative}
+.tcard:hover{border-color:var(--primary)}
+.tcard.on{border-color:var(--primary);background:var(--primary-soft)}
+.tcard b{font-size:13px;display:flex;gap:8px;align-items:center}
+.tcard .d{font-size:11px;color:var(--tx3);margin-top:5px;line-height:1.55}
+.tcard .tick{position:absolute;top:10px;right:10px;color:var(--primary);font-weight:700}
+table.tb{width:100%;border-collapse:collapse;font-size:12px}
+.tb th{font-size:10.5px;text-align:left;color:var(--tx3);letter-spacing:.06em;padding:7px 10px;border-bottom:1px solid var(--line);font-weight:600}
+.tb td{padding:8px 10px;border-bottom:1px solid var(--line)}
+.tb tr:hover td{background:var(--panel2)}
+.tb .mono{font:11.5px var(--mono);color:var(--tx2)}
+.lagmeter{height:7px;border-radius:4px;background:var(--panel2);overflow:hidden;display:flex;margin-top:7px}
+.lagmeter i{display:block;height:100%}
+.danger-zone{border-color:rgba(248,113,113,.35)}
+.danger-zone h3{color:var(--bad)}
+
+/* ═══════════ 设置 ═══════════ */
+.setcard{margin-bottom:16px}
+.setrow{display:flex;align-items:center;gap:14px;padding:13px 2px;border-bottom:1px solid var(--line)}
+.setrow:last-child{border-bottom:none}
+.setrow .info{flex:1;min-width:0}
+.setrow .info b{font-size:12.5px;display:block}
+.setrow .info .d{font-size:11px;color:var(--tx3);margin-top:2px;line-height:1.5}
+.switch{position:relative;width:38px;height:22px;flex-shrink:0;cursor:pointer}
+.switch input{opacity:0;width:100%;height:100%;position:absolute;cursor:pointer;margin:0}
+.switch .tr{position:absolute;inset:0;border-radius:999px;background:var(--panel2);border:1px solid var(--line2);transition:var(--sp)}
+.switch .tr::after{content:"";position:absolute;width:16px;height:16px;border-radius:50%;background:#fff;top:2px;left:2px;
+  box-shadow:0 1px 4px rgba(0,0,0,.3);transition:var(--sp)}
+.switch input:checked+.tr{background:var(--primary);border-color:var(--primary)}
+.switch input:checked+.tr::after{left:18px}
+.tin{background:var(--panel2);border:1px solid var(--line2);border-radius:var(--r-sm);padding:7px 11px;font-size:12.5px;min-width:210px;outline:none;transition:var(--sp)}
+.tin:focus{border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-soft)}
+.compliance{background:var(--warn-soft);border:1px solid rgba(251,191,36,.35);border-radius:var(--r-md);padding:12px 15px;
+  display:flex;gap:11px;font-size:12px;color:var(--tx2);line-height:1.6}
+.polcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:9px;margin-top:10px}
+.polcard{padding:11px 13px;border:1px solid var(--line2);border-radius:var(--r-md);cursor:pointer;transition:var(--sp)}
+.polcard:hover{border-color:var(--primary)}
+.polcard.on{border-color:var(--primary);background:var(--primary-soft);box-shadow:0 0 0 1px rgba(77,107,254,.3)}
+.polcard b{font-size:12.5px;display:flex;gap:7px;align-items:center}
+.polcard .d{font-size:10.5px;color:var(--tx3);margin-top:4px;line-height:1.5}
+.capline{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+input[type=range]{accent-color:var(--primary)}
+.footer-note{margin-top:34px;padding:13px 16px;border:1px dashed var(--line2);border-radius:var(--r-md);
+  font-size:11px;color:var(--tx3);line-height:1.7}
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-thumb{background:var(--line2);border-radius:5px;border:2px solid transparent;background-clip:content-box}
+::-webkit-scrollbar-track{background:transparent}
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- ═══════ 顶栏 ═══════ -->
+  <header class="topbar">
+    <div class="brand"><span class="logo">记</span>团队协作中心<small>preview · 升级提案</small></div>
+    <button class="teamchip" onclick="go('sync')"><span class="dot"></span>a9i5k4-memory-team · 已同步</button>
+    <div class="grow"></div>
+    <div class="avstack" id="topAvs" title="成员在场（由归属账本推断，无需服务端）"></div>
+    <span class="more" style="font-size:11px;color:var(--tx3)">4 名成员</span>
+    <button class="btn primary" onclick="syncNow(this)"><span id="syncIc">⟳</span><span id="syncTx">立即同步</span></button>
+    <button class="iconbtn" onclick="toggleTheme()" id="themeBtn" title="深浅主题（对应插件双皮肤）">◐</button>
+  </header>
+
+  <div class="main">
+    <!-- ═══════ 副导航 ═══════ -->
+    <nav class="sidenav">
+      <div class="navgroup">协作</div>
+      <button class="navitem on" data-p="home" onclick="go('home')"><span class="ic">◉</span>概览</button>
+      <button class="navitem" data-p="members" onclick="go('members')"><span class="ic">◝</span>成员与在场</button>
+      <button class="navitem" data-p="activity" onclick="go('activity')"><span class="ic">≡</span>活动流</button>
+      <button class="navitem" data-p="conflicts" onclick="go('conflicts')"><span class="ic">⇄</span>冲突裁决<span class="cnt" id="navConfCnt">3</span></button>
+      <button class="navitem" data-p="skills" onclick="go('skills')"><span class="ic">✦</span>技能审批<span class="cnt" id="navSkCnt">2</span></button>
+      <button class="navitem" data-p="handoff" onclick="go('handoff')"><span class="ic">⇉</span>交接账本</button>
+      <div class="navgroup">运维</div>
+      <button class="navitem" data-p="sync" onclick="go('sync')"><span class="ic">❋</span>同步与通道</button>
+      <button class="navitem" data-p="settings" onclick="go('settings')"><span class="ic">⚙</span>团队设置</button>
+    </nav>
+
+    <!-- ═══════ 内容区 ═══════ -->
+    <main class="content" id="content"></main>
+  </div>
+</div>
+<div class="toastwrap" id="toasts"></div>
+
+<script>
+/* ═══════════════ 模拟数据（形状 = 真实路由返回形状）═══════════════
+   home  ← GET /team-state + /team-attribution + /team-conflicts + /team-skills + /team-handoffs
+   成员  ← GET /team-members + /team-presence（others 恒空 = 在场由账本推断，不造假）
+   冲突  ← GET /team-conflicts（裁决 POST 路由 = 唯一待补的后端缝）
+   同步  ← GET /team-sync-debug + /team-sync-now（全部已存在）
+   设置  ← GET/POST /config（存在）；合规 ← GET /team-compliance（存在）            */
+const MEMBERS=[
+  {id:'aik358',name:'阿凯',role:'administrator',self:true,lastOp:2, lastKey:'规则 · 发布前必跑回归',state:'sync'},
+  {id:'minervaowl7',name:'Minervaowl7',role:'editor',lastOp:26,lastKey:'皮肤 · New UI 设置页',state:'on'},
+  {id:'linxin',name:'林工',role:'editor',lastOp:190,lastKey:'笔记 · GM53 首页重构',state:'on'},
+  {id:'wang-viewer',name:'王顾问',role:'viewer',lastOp:1400,lastKey:'—',state:'off'},
+];
+const CAPS={administrator:['读','写记忆','改白板','审批高风险','改团队配置','裁决冲突'],editor:['读','写记忆','改白板'],viewer:['读']};
+const ROLEZH={administrator:'管理员',editor:'编辑者',viewer:'观察者'};
+let CONFLICTS=[
+  {id:'c1',kind:'plan',klabel:'PLAN 白板',icon:'❋',key:'PLAN.md · 「本周目标」段',
+   mine:'## 本周目标\n- 完成 v3.2.3 回归\n- 修 #145 回复草稿\n- 冻结主题对比动画',
+   theirs:'## 本周目标\n- 完成 v3.2.3 回归\n- 修 #145 回复草稿\n- 团队线前端 8 屏重做\n- 冻结主题对比动画',
+   by:'Minervaowl7',at:26},
+  {id:'c2',kind:'rules',klabel:'用户规则',icon:'§',key:'规则 · 发布前三检查',
+   mine:'1. 回归全绿\n2. npm 三端点 200\n3. changelog 双语刷新\n4. tag 与 main 一致',
+   theirs:'1. 回归全绿\n2. npm 三端点 200（含 version 端点）\n3. changelog 双语刷新',
+   by:'林工',at:95},
+  {id:'c3',kind:'note',klabel:'项目笔记',icon:'✎',key:'笔记 · 客户沟通偏好',
+   mine:'技术向 + 谦虚 + 连贯段落',
+   theirs:'技术向 + 谦虚 + 连贯段落\n附：避免营销腔，先给结论',
+   by:'阿凯',at:400},
+];
+const SKILLS=[
+  {id:'s1',title:'发版三连（REL + tag + npm 验证）',owner:'阿凯',risk:'high',seen:14,ok:12,sessions:6,
+   steps:['清空工作树 → 构建前基线','REL 提交 + 回写 package.json','打 tag + push','npm version 端点 200 复核']},
+  {id:'s2',title:'会话损坏修复 SOP（zstd 去重）',owner:'Minervaowl7',risk:'low',seen:9,ok:9,sessions:3,
+   steps:['备份 .zstd 会话文件','按解析字段语义去重','一帧一行重压','重启宿主验证']},
+];
+const HANDOFF={chain:[
+  {from:'阿凯',to:'Minervaowl7',title:'New UI 十屏验收 → 皮肤视觉重构',when:'2 天前',done:true},
+  {from:'Minervaowl7',to:'林工',title:'皮肤中心升级 → 看板 v2 排布',when:'昨天 21:40',done:true},
+  {from:'林工',to:'—',title:'发布 v3.2.3 前的回归清单确认',when:'37 分钟前',done:false,mine:false},
+]};
+let ACTIVITY=[
+  {op:'resolve',who:'阿凯',key:'冲突 · 规则「发布前三检查」',at:2,  src:'本机'},
+  {op:'edit',   who:'Minervaowl7',key:'皮肤 · 设置页三列卡',at:26, src:'团队'},
+  {op:'create', who:'Minervaowl7',key:'技能 · 会话损坏修复 SOP',at:120,src:'团队'},
+  {op:'merge',  who:'林工',key:'日历 · 9/30 发版评审（团队轨）',at:190,src:'团队'},
+  {op:'edit',   who:'阿凯',key:'规则 · 发布前必跑回归',at:240,src:'本机'},
+  {op:'delete', who:'林工',key:'笔记 · 过期的 pnpm 提示',at:520,src:'团队'},
+  {op:'create', who:'王顾问',key:'备忘 · 客户演示脚本',at:1400,src:'团队'},
+];
+const SYNC={phase:'已同步',transport:'S3 兼容',verbs:['get','list','put'],interval:5000,backoff:0,
+  ticks:412,sent:398,failed:3,lastOk:2,queue:[
+  {kind:'fact',key:'memory:水位线感知阈值',state:'pending',at:'12 秒前'},
+  {kind:'procedure',key:'技能:发版三连',state:'sent',at:'5 分钟前'},
+  {kind:'handoff',key:'session:#26 接续包',state:'failed',at:'22 分钟前',err:'push-failed: http-503'},
+  {kind:'fact',key:'memory:GM53 首页验收',state:'sent',at:'1 小时前'},
+],localSeq:128,serverSeq:124,rejected:{total:6,recent:[
+  {at:'1 小时前',reason:'unknown-kind',detail:'kind=skin-config'},
+  {at:'昨天',reason:'schema-mismatch',detail:'procedure v2 payload'},
+]}};
+const SPARK=[3,5,4,0,2,6,8,4,2,0,1,3,7,9,5,3,1,2,4,6,3,0,1,2];
+
+/* ═══════════════ 基础工具 ═══════════════ */
+function hue(id){let a=0;const s=String(id);for(let i=0;i<s.length;i++)a=(a*31+s.charCodeAt(i))%360;return a}
+function av(m,cls){const h=hue(m.id);return `<span class="av ${cls||''}" style="--hsl:hsl(${h},62%,52%)" title="${m.name} · ${ROLEZH[m.role]}">${m.name[0]}</span>`}
+function avById(id,cls){const m=MEMBERS.find(x=>x.id===id)||{id:id,name:String(id)[0],role:'viewer'};return av(m,cls)}
+function ago(m){if(m<60)return m+' 分钟前';if(m<1440)return Math.floor(m/60)+' 小时前';return Math.floor(m/1440)+' 天前'}
+function toast(msg,ic){const t=document.createElement('div');t.className='toast';
+  t.innerHTML=`<span style="color:var(--ok)">${ic||'✓'}</span>${msg}`;
+  document.getElementById('toasts').appendChild(t);
+  setTimeout(()=>{t.classList.add('out');setTimeout(()=>t.remove(),320)},2600)}
+function toggleTheme(){const b=document.documentElement;b.dataset.theme=b.dataset.theme==='dark'?'light':'dark';
+  document.getElementById('themeBtn').textContent=b.dataset.theme==='dark'?'◐':'◑'}
+function syncNow(btn){const ic=document.getElementById('syncIc'),tx=document.getElementById('syncTx');
+  ic.style.display='inline-block';ic.style.animation='spin .8s linear infinite';
+  tx.textContent='同步中…';btn.disabled=true;
+  setTimeout(()=>{ic.style.animation='';tx.textContent='立即同步';btn.disabled=false;
+    toast('已同步 · 2 条变更上行 · 游标 128 → 128','⟳')},900)}
+const st=document.createElement('style');st.textContent='@keyframes spin{to{transform:rotate(360deg)}}';document.head.appendChild(st);
+
+/* 顶栏头像堆叠 */
+document.getElementById('topAvs').innerHTML=MEMBERS.map(m=>{
+  const pd=m.state==='sync'?'sync':m.state==='on'?'on':'off';
+  return av(m).replace('class="av','class="av').replace('</span>',`<span class="pd ${pd}"></span></span>`)}).join('');
+
+/* ═══════════════ 页面渲染 ═══════════════ */
+const P={};
+P.home=()=>{
+  const pend=SYNC.queue.filter(q=>q.state==='pending').length;
+  return `<div class="page">
+  <div class="pagehead"><h1>概览</h1><span class="sub">数据源：/team-state · /team-attribution · /team-conflicts · /team-skills（今日全部已存在）</span>
+    <div class="grow"></div><span class="pill ok"><span class="d"></span>${SYNC.phase}</span></div>
+
+  <div class="card pulse" style="margin-bottom:14px">
+    <div class="ring"><div class="in">⟳</div></div>
+    <div class="t"><b>同步心跳运行中 · 每 5 秒一拍</b>
+      <div class="meta"><span>上次成功 <b style="color:var(--tx2)">${ago(SYNC.lastOk)}</b></span>
+      <span>412 拍 · 发出 398 · 失败 3</span><span>通道 ${SYNC.transport}（put/get/list 全就绪）</span>
+      <span>出站队列 <b style="color:var(--tx2)">${pend} 条待发</b></span></div></div>
+    <div class="grow" style="flex:1"></div>
+    <div class="spark" title="近 24h 每小时上行变更数">${SPARK.map((v,i)=>`<i style="height:${Math.max(v*3.4,4)}px" class="${i===19?'bad':''}"></i>`).join('')}</div>
+  </div>
+
+  <div class="grid g4" style="margin-bottom:14px">
+    <div class="card stat"><div class="halo" style="background:var(--warn)"></div>
+      <div class="lbl">待同步变更</div><div class="val">${pend}</div><div class="trend">出站队列 · 5s 心跳自动上行</div></div>
+    <div class="card stat accent-bad" style="cursor:pointer" onclick="go('conflicts')"><div class="halo" style="background:var(--bad)"></div>
+      <div class="lbl">待裁决冲突</div><div class="val">${CONFLICTS.length}</div><div class="trend">三方合并 · 保留本机值待人工</div></div>
+    <div class="card stat accent-vio" style="cursor:pointer" onclick="go('skills')"><div class="halo" style="background:var(--vio)"></div>
+      <div class="lbl">待审批技能</div><div class="val">${SKILLS.length}</div><div class="trend">证据充分即可一键晋升</div></div>
+    <div class="card stat accent-ok"><div class="halo" style="background:var(--ok)"></div>
+      <div class="lbl">归属条目 · 近 7 天</div><div class="val">38</div><div class="trend">谁改了什么 · 旁挂索引全留痕</div></div>
+  </div>
+
+  <div class="grid g32">
+    <div class="card pad">
+      <h3><span class="ic">≡</span>最近活动<button class="btn ghost sm" style="margin-left:auto" onclick="go('activity')">全部 →</button></h3>
+      <div class="feed" style="margin-top:6px">${ACTIVITY.slice(0,6).map(a=>`
+        <div class="frow">${avById(a.who==='阿凯'?'aik358':a.who==='Minervaowl7'?'minervaowl7':a.who==='林工'?'linxin':'wang-viewer')}
+          <div class="ft"><div class="l1"><b>${a.who}</b><span class="opchip op-${a.op}">${{create:'新建',edit:'编辑',merge:'合并',delete:'删除',resolve:'裁决'}[a.op]}</span>${a.key}</div>
+          <div class="key">${a.src}轨</div></div><time>${ago(a.at)}</time></div>`).join('')}</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div class="card pad">
+        <h3><span class="ic">⇄</span>需要你处理<button class="btn ghost sm" style="margin-left:auto" onclick="go('conflicts')">去裁决 →</button></h3>
+        <div style="margin-top:6px">${CONFLICTS.slice(0,2).map(c=>`
+          <div class="todo-row"><span class="opic ${'op-'+(c.kind==='plan'?'merge':c.kind==='rules'?'edit':'create')}" style="width:24px;height:24px;font-size:11px">${c.icon}</span>
+            <div class="t"><b>${c.klabel} · ${c.key.split('·')[1]||''}</b><span>本机 vs ${c.by} · ${ago(c.at)}</span></div>
+            <button class="btn sm" onclick="go('conflicts')">处理</button></div>`).join('')}
+          <div class="todo-row"><span class="op-resolve opic" style="width:24px;height:24px;font-size:11px">⇉</span>
+            <div class="t"><b>交接 · 回归清单确认</b><span>林工 37 分钟前交出 · 等待接管</span></div>
+            <button class="btn sm" onclick="go('handoff')">我来接</button></div>
+        </div>
+      </div>
+      <div class="card pad">
+        <h3><span class="ic">🛡</span>合规明示</h3>
+        <p class="hint" style="margin-top:8px">当前档位：<b style="color:var(--warn)">明文上行（按设计）</b>，端到端加密本版本不支持，已如实标注不静默降级。用量上报 = 关，除你配置的存储桶外<b style="color:var(--tx2)">零出网</b>。</p>
+        <button class="btn sm" style="margin-top:10px" onclick="go('settings')">查看合规详情</button>
+      </div>
+    </div>
+  </div></div>`};
+
+P.members=()=>`<div class="page">
+  <div class="pagehead"><h1>成员与在场</h1><span class="sub">/team-members + /team-presence · 在场点 = 按归属账本最后活跃推断（诚实口径，无服务端不造假）</span></div>
+  <div class="mgrid">
+    ${MEMBERS.map(m=>{const caps=CAPS[m.role]||[];
+      const pd=m.state==='sync'?'sync':m.state==='on'?'on':'off';
+      const pdTl={sync:'同步中',on:'在线',off:'离线'}[pd];
+      return `<div class="card mcard ${m.self?'self':''}">
+      ${m.self?'<span class="pill primary you" style="background:var(--primary-soft);color:var(--primary)">你</span>':''}
+      <span class="av lg" style="--hsl:hsl(${hue(m.id)},62%,52%)">${m.name[0]}<span class="pd ${pd}" title="${pdTl}"></span></span>
+      <div class="nm">${m.name}</div><div class="id">@${m.id}</div>
+      <span class="pill ${m.role==='administrator'?'warn':m.role==='editor'?'cyan':'mute'}"><span class="d"></span>${ROLEZH[m.role]}</span>
+      <div class="caps">${caps.map(c=>`<span class="capsel">${c}</span>`).join('')}</div>
+      <div class="sum">${m.state==='off'?'近 14 天无活动':`最近改动 · ${ago(m.lastOp)}<br><span style="font-size:10.5px">${m.lastKey}</span>`}</div>
+    </div>`}).join('')}
+    <div class="invite" onclick="go('settings')"><div style="font-size:22px">＋</div><b style="font-size:12.5px">接入新成员</b>
+      <span class="hint" style="max-width:180px">成员 = 配置登记 teamMemberId + 角色<br>（不自建账号体系）</span></div>
+  </div>
+  <div class="card pad sect"><h3><span class="ic">◫</span>项目绑定</h3>
+    <p class="hint" style="margin-top:8px">团队项目 <span class="mono" style="font:11px var(--mono)">gp_1479a649e7c7725f</span> · 由 git remote 规范化哈希自动派生，跨盘符/跨目录汇合到同一项目库 —— 三种写法（https / ssh / 带凭据）实测同 id。</p></div>
+</div>`;
+
+let actFilter='';
+P.activity=()=>{const list=ACTIVITY.filter(a=>!actFilter||a.op===actFilter);
+  const cnt=op=>ACTIVITY.filter(a=>a.op===op).length;
+  return `<div class="page">
+  <div class="pagehead"><h1>活动流</h1><span class="sub">/team-attribution 条目级旁挂索引 · 每一条「谁在何时新建/编辑/合并/删除/裁决了什么」</span></div>
+  <div class="chips">${['','create','edit','merge','delete','resolve'].map(op=>
+    `<button class="fchip ${actFilter===op?'on':''}" onclick="actFilter='${op}';render()">${op?({create:'新建',edit:'编辑',merge:'合并',delete:'删除',resolve:'裁决'}[op])+' · '+cnt(op):'全部 · '+ACTIVITY.length}</button>`).join('')}</div>
+  <div class="card pad"><div class="feed">${list.length?list.map(a=>`
+    <div class="frow">${avById(a.who==='阿凯'?'aik358':a.who==='Minervaowl7'?'minervaowl7':a.who==='林工'?'linxin':'wang-viewer')}
+      <div class="ft"><div class="l1"><b>${a.who}</b><span class="opchip op-${a.op}">${{create:'新建',edit:'编辑',merge:'合并',delete:'删除',resolve:'裁决'}[a.op]}</span>${a.key}</div>
+      <div class="key">${a.src}轨 · dam-track 标记</div></div><time>${ago(a.at)}</time></div>`).join('')
+    :'<div class="empty"><div class="art">🍃</div><b>该类型暂无活动</b></div>'}</div></div>
+  <p class="hint sect" style="text-align:center">归属索引随下行合并自动写入 · 缺 member 的条目按纪律不落账（不留空占位）· 上限 2000 条自动淘汰最旧</p>
+</div>`};
+
+let curC=null,armed=null;
+P.conflicts=()=>{
+  const c=CONFLICTS.find(x=>x.id===curC)||CONFLICTS[0];
+  const lines=(txt,other)=>{
+    const a=txt.split('\n'),b=other.split('\n');const out=[];
+    a.forEach(l=>{ if(!b.includes(l)) out.push({t:l,c:'del'}); else out.push({t:l,c:'ctx'}) });
+    b.forEach(l=>{ if(!a.includes(l)) out.push({t:l,c:'add',side:1}) });
+    return out};
+  return `<div class="page">
+  <div class="pagehead"><h1>冲突裁决</h1><span class="sub">三方合并（base / 本机 / 团队）· 键级判定 · 未裁决前恒保留本机值，绝不静默选边</span>
+    <div class="grow"></div><span class="kbd">1</span><span class="kbd">2</span><span class="kbd">3</span><span class="kbd">4</span><span class="sub">快捷裁决</span></div>
+  ${CONFLICTS.length? `<div class="rev">
+    <div class="qlist">${CONFLICTS.map(x=>`
+      <button class="qitem ${c&&x.id===c.id?'on':''}" data-q="${x.id}" onclick="curC='${x.id}';render()">
+        <div class="qk"><span class="opchip op-${x.kind==='plan'?'merge':x.kind==='rules'?'edit':'create'}">${x.icon} ${x.klabel}</span></div>
+        <div class="qm"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${x.key}</span></div>
+        <div class="qm">${avById(x.by==='阿凯'?'aik358':x.by==='Minervaowl7'?'minervaowl7':'linxin')} <span>本机 vs ${x.by}</span><span style="margin-left:auto">${ago(x.at)}</span></div>
+      </button>`).join('')}
+      <div class="card pad" style="margin-top:4px"><button class="btn sm" style="width:100%;justify-content:center" onclick="resolveAllDemo()">全部采用本机（${CONFLICTS.length}）</button>
+      <p class="hint" style="margin-top:7px;text-align:center">批量裁决 = resolveAll(choice) · 后端已就绪</p></div>
+    </div>
+    <div class="card" style="display:flex;flex-direction:column;min-height:0">
+      ${c?`
+      <div class="diffhead">${avById(c.by==='阿凯'?'aik358':c.by==='Minervaowl7'?'minervaowl7':'linxin')}
+        <div><b style="font-size:13px">${c.klabel}</b><div class="key" style="font:11px var(--mono);color:var(--tx3)">${c.key}</div></div>
+        <div class="grow" style="flex:1"></div><span class="pill warn"><span class="d"></span>待裁决</span></div>
+      <div class="diffcols">
+        <div class="diffcol"><h5><span class="pill bad" style="font-size:10px">本机</span>keep local <span class="kbd" style="margin-left:auto">1</span></h5>
+          ${c.mine.split('\n').map(l=>`<div class="dline ${c.theirs.split('\n').includes(l)?'ctx':'del'}">${esc(l)||'&nbsp;'}</div>`).join('')}</div>
+        <div class="diffcol"><h5><span class="pill cyan" style="font-size:10px">团队</span>take remote · ${c.by} <span class="kbd" style="margin-left:auto">2</span></h5>
+          ${c.theirs.split('\n').map(l=>`<div class="dline ${c.mine.split('\n').includes(l)?'ctx':'add'}">${esc(l)||'&nbsp;'}</div>`).join('')}</div>
+      </div>
+      <div class="verdict">
+        <button class="vbtn local" id="v-local" onclick="resolve('${c.id}','local')">✓ 采用本机 <span class="kbd">1</span></button>
+        <button class="vbtn remote" id="v-remote" onclick="resolve('${c.id}','remote')">⇩ 采用团队 <span class="kbd">2</span></button>
+        <button class="vbtn merge ${armed===c.id+'m'?'armed':''}" id="v-merge" onclick="armMerge('${c.id}')">✎ 手工合并 <span class="kbd">3</span></button>
+        <button class="vbtn dlgt" onclick="delegate('${c.id}')">@(a) 指派他人 <span class="kbd">4</span></button>
+      </div>`:`<div class="empty" style="flex:1;justify-content:center"><div class="art">🎉</div><b>全部裁决完毕</b><span class="hint">下行游标继续前进 · 归属账本已记你一笔 resolve</span></div>`}
+    </div>
+  </div>`
+  :`<div class="card"><div class="empty" style="padding:70px"><div class="art">🎉</div><b>全部裁决完毕</b>
+      <span class="hint">团队线当前没有需要人工裁决的键。新冲突会在下行合并时出现在这里，并推顶栏红点提醒。</span></div></div>`}
+
+  <div class="card pad sect"><h3><span class="ic">⚖</span>被拒绝的下行（拒绝留痕 · B6 判据 4）<span class="pill mute" style="margin-left:auto">累计 ${SYNC.rejected.total} 条</span></h3>
+    <p class="hint" style="margin:6px 0 4px">被既有校验拒掉的数据在此可见——「拒绝」绝不等于「静默丢数据」。</p>
+    ${SYNC.rejected.recent.map(r=>`<div class="rejrow"><span class="pill bad">${r.reason}</span>
+      <span class="mono" style="font:11.5px var(--mono);color:var(--tx2)">${r.detail}</span><span style="margin-left:auto;font-size:11px;color:var(--tx3)">${r.at}</span></div>`).join('')}</div>
+</div>`};
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;')}
+function resolve(id,choice){const c=CONFLICTS.find(x=>x.id===id);if(!c)return;
+  CONFLICTS=CONFLICTS.filter(x=>x.id!==id);curC=null;armed=null;
+  ACTIVITY.unshift({op:'resolve',who:'阿凯',key:'冲突 · '+(c.klabel)+'「'+(c.key.split('·')[1]||'').trim()+'」',at:0,src:'本机'});
+  const choiceZh=choice==='local'?'采用本机':'采用团队';
+  toast(`已裁决 · ${choiceZh} · 剩 ${CONFLICTS.length} 条待裁决`,'⇄');render()}
+function resolveAllDemo(){const n=CONFLICTS.length;CONFLICTS=[];curC=null;
+  toast(`批量裁决完成 · ${n} 条全部保留本机`,'⇄');render()}
+function armMerge(id){if(armed!==id+'m'){armed=id+'m';render();
+  toast('手工合并将在编辑器打开 base → 本机 → 团队 三栏草稿（白板 manual 语义）','✎');return}}
+function delegate(id){const c=CONFLICTS.find(x=>x.id===id);toast(`已指派给 ${c.by} · 对方面板将出现待办红点`,'@')}
+
+P.skills=()=>`<div class="page">
+  <div class="pagehead"><h1>技能审批</h1><span class="sub">/team-skills · 团队共享技能晋升队列 · 高风险操作两步确认</span></div>
+  ${SKILLS.map(s=>{const rate=Math.round(s.ok/s.seen*100);const high=s.risk==='high';
+    return `<div class="card skcard" style="margin-bottom:14px">
+    <div class="skhead"><div class="si">✦</div>
+      <div class="t"><b>${s.title}</b><div class="meta">由 ${s.owner} 提交晋升 · 内容寻址 id 稳定（同内容跨机同 id）</div></div>
+      <span class="pill ${high?'bad':'ok'}"><span class="d"></span>${high?'高风险':'低风险'}</span></div>
+    <div class="evbar">
+      <div class="ev"><div class="n">${s.seen}</div><div class="l">被观察到</div><div class="bar"><i style="width:100%"></i></div></div>
+      <div class="ev"><div class="n">${s.ok}</div><div class="l">成功执行</div><div class="bar"><i style="width:${rate}%"></i></div></div>
+      <div class="ev"><div class="n">${rate}%</div><div class="l">成功率</div><div class="bar"><i style="width:${rate}%;background:var(--warn)"></i></div></div>
+      <div class="ev"><div class="n">${s.sessions}</div><div class="l">覆盖会话</div><div class="bar"><i style="width:${s.sessions*16}%"></i></div></div>
+    </div>
+    <div class="steps">${s.steps.map((st,i)=>`<div class="st"><i>${String(i+1).padStart(2,'0')}</i>${st}</div>`).join('')}</div>
+    <div class="verdict" style="border-top:1px dashed var(--line);padding:13px 0 0;margin-top:13px">
+      <button class="vbtn local" onclick="approve('${s.id}',this)">✓ 批准晋升</button>
+      <button class="vbtn merge" onclick="toast('进入编辑器：修改步骤后以你的署名重新提交','✎')">✎ 修改后批准</button>
+      <button class="vbtn merge" style="min-width:90px" onclick="rejectSkill('${s.id}',this)">✕ 拒绝</button>
+      ${high?'<span class="hint" style="flex-basis:100%">高风险技能需二次确认（armed 确认模式），且仅 administrator 角色可批（能力门 approve-high-risk）。</span>':''}
+    </div></div>`}).join('')}
+  <div class="card"><div class="empty"><div class="art">✦</div><b>队列之外：注入预算仲裁</b>
+    <span class="hint">已批准的团队技能以 priority=low 进入注入候选 —— 永不挤掉用户自己的规则与笔记，超出预算先裁团队段（team-inject 仲裁）。</span></div></div>
+</div>`;
+function approve(id,btn){const s=SKILLS.find(x=>x.id===id);
+  if(s.risk==='high'&&!btn.dataset.armed){btn.dataset.armed='1';btn.classList.add('armed');btn.innerHTML='⚠ 高风险 · 再点确认';return}
+  SKILLS.splice(SKILLS.findIndex(x=>x.id===id),1);toast(`已批准「${s.title}」晋升为团队共享技能`,'✦');render()}
+function rejectSkill(id,btn){const s=SKILLS.find(x=>x.id===id);
+  if(!btn.dataset.armed){btn.dataset.armed='1';btn.classList.add('armed');btn.textContent='再点确认拒绝';return}
+  SKILLS.splice(SKILLS.findIndex(x=>x.id===id),1);toast(`已拒绝「${s.title}」· 拒绝理由已计入留痕`,'✕');render()}
+
+P.handoff=()=>`<div class="page">
+  <div class="pagehead"><h1>交接账本</h1><span class="sub">白板两阶段提交（stage → commit）+ 会话接续链 · /team-handoffs</span></div>
+  <div class="grid g32">
+    <div class="card pad"><h3><span class="ic">⇉</span>接续链</h3>
+      <div class="chain" style="margin-top:14px">${HANDOFF.chain.map((n,i)=>{
+        const from=MEMBERS.find(m=>m.name===n.from)||{id:'x',name:n.from||'?',role:'viewer'};
+        return `<div class="cnode">${av(from)}
+        <div class="cb card"><div class="l1"><b>${n.title}</b>
+          ${n.done?'<span class="pill ok"><span class="d"></span>已接管</span>':(n.mine?'<span class="pill cyan"><span class="d"></span>你已接管</span>':'<span class="pill warn"><span class="d"></span>待接管</span>')}</div>
+        <div class="meta">${n.from} → ${n.to} · ${n.when}</div>
+        ${!n.done&&!n.mine?`<div style="margin-top:9px;display:flex;gap:8px">
+          <button class="btn primary sm" id="take-btn" onclick="takeover(this)">我来接</button>
+          <button class="btn sm" onclick="toast('已展开交接材料包：任务书 + 最近轨迹 + 记忆摘录','📦')">查看材料包</button></div>`:''}
+        </div></div>`}).join('')}</div></div>
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div class="card pad"><h3><span class="ic">✎</span>看板草稿（两阶段）</h3>
+        <p class="hint" style="margin:8px 0">stage 只进本地草稿不产生同步事件；commit 把成组改动压成一次批次 —— 对端永远看不到「任务搬了一半」的中间态。</p>
+        <div class="todo-row"><div class="t"><b>草稿区 · 3 个操作</b><span>add ×1 · move ×2</span></div>
+          <button class="btn primary sm" onclick="toast('已提交批次 · 3 个操作打包上行','⟳')">commit</button>
+          <button class="btn sm" onclick="toast('草稿已丢弃','🗑')">discard</button></div></div>
+      <div class="card pad"><h3><span class="ic">📦</span>交接材料包含什么</h3>
+        <div class="steps" style="margin-top:10px">
+          <div class="st"><i>01</i>任务书（PLAN 快照 + 验收判据）</div>
+          <div class="st"><i>02</i>最近会话轨迹摘要（记忆面板直接可读）</div>
+          <div class="st"><i>03</i>相关记忆条目 + 冲突裁决史</div>
+          <div class="st"><i>04</i>一键接续：新会话首条消息自动带上</div></div></div>
+    </div>
+  </div></div>`;
+function takeover(btn){btn.outerHTML='<span class="pill cyan"><span class="d"></span>你已接管 · 材料包已注入新会话</span>';
+  toast('接续材料包已备好 · 新会话将以此开场','⇉')}
+
+P.sync=()=>{const pend=SYNC.queue.filter(q=>q.state==='pending').length,
+  fails=SYNC.queue.filter(q=>q.state==='failed').length;
+  return `<div class="page">
+  <div class="pagehead"><h1>同步与通道</h1><span class="sub">/team-sync-debug + /team-sync-now · 心跳 / 退避 / 出站队列 / 游标全部可观测</span></div>
+  <div class="grid g2">
+    <div class="card pad"><h3><span class="ic">❋</span>传输通道（CR-8 双通道 · 绝不静默降级）</h3>
+      <div class="transport" style="margin-top:12px">
+        <div class="tcard on"><span class="tick">●</span><b>☁ S3 兼容（默认）</b>
+          <div class="d">阿里 OSS / 腾讯 COS / 华为 OBS / AWS S3 / GCS 互通<br>自实装 SigV4 · 零厂商 SDK</div></div>
+        <div class="tcard"><b>🖥 自建 HTTP（T2 涉密内网）</b>
+          <div class="d">缺 endpoint 构造即报错，<b style="color:var(--bad)">绝不回落公网 S3</b> —— 「以为走内网实际走公网」是安全事故级缺陷</div></div>
+      </div>
+      <div class="divv"></div>
+      <div class="setrow"><div class="info"><b>端点</b><div class="d mono" style="font:11.5px var(--mono)">s3.cn-north-1.***.com / bucket: dam-team-prod / ap-east-1</div></div>
+        <span class="pill ok"><span class="d"></span>put · get · list 全就绪</span></div>
+    </div>
+    <div class="card pad"><h3><span class="ic">♡</span>心跳健康（5s 间隔 · 指数退避封顶 30s）</h3>
+      <div class="grid g4" style="margin-top:12px;gap:10px">
+        <div class="stat" style="padding:11px 13px"><div class="lbl">总拍数</div><div class="val" style="font-size:20px">${SYNC.ticks}</div></div>
+        <div class="stat" style="padding:11px 13px"><div class="lbl">已发出</div><div class="val" style="font-size:20px;color:var(--ok)">${SYNC.sent}</div></div>
+        <div class="stat" style="padding:11px 13px"><div class="lbl">失败</div><div class="val" style="font-size:20px;color:${fails?'var(--bad)':'var(--tx3)'}">${SYNC.failed}</div></div>
+        <div class="stat" style="padding:11px 13px"><div class="lbl">下次退避</div><div class="val" style="font-size:20px">5.0s</div></div>
+      </div>
+      <div class="spark" style="height:38px;margin-top:12px" title="近 24h 心跳上行量">${SPARK.map((v,i)=>`<i style="height:${Math.max(v*3.6,4)}px" class="${i===19?'bad':''}"></i>`).join('')}</div>
+      <p class="hint" style="margin-top:8px">连续失败 ⇒ 退避按 2ⁿ 增长（5s → 10s → 20s → 封顶 30s），成功即重置 —— 每条都被拒时绝不固定间隔死打网络。</p></div>
+  </div>
+
+  <div class="card sect" style="overflow:hidden">
+    <div style="display:flex;align-items:center;gap:10px;padding:13px 16px;border-bottom:1px solid var(--line)">
+      <h3><span class="ic">📤</span>出站队列（at-least-once · 幂等 kind+key）</h3>
+      <div class="grow" style="flex:1"></div>
+      <span class="pill warn">待发 ${pend}</span><span class="pill ok">已发 ${SYNC.queue.length-pend-fails}</span>
+      <span class="pill ${fails?'bad':'mute'}">失败 ${fails}</span>
+      <button class="btn sm" onclick="syncNow(this)">立即同步</button></div>
+    <table class="tb"><tr><th>类型</th><th>键</th><th>状态</th><th>时间</th><th>备注</th></tr>
+      ${SYNC.queue.map(q=>`<tr><td><span class="opchip op-${q.kind==='handoff'?'merge':q.kind==='procedure'?'resolve':'edit'}">${q.kind}</span></td>
+      <td class="mono">${q.key}</td>
+      <td><span class="pill ${q.state==='sent'?'ok':q.state==='failed'?'bad':'warn'}"><span class="d"></span>${{sent:'已发出',pending:'待发送',failed:'失败 · 将重试'}[q.state]}</span></td>
+      <td style="color:var(--tx3)">${q.at}</td>
+      <td class="mono" style="color:${q.err?'var(--bad)':'var(--tx3)'}">${q.err||'—'}</td></tr>`).join('')}</table>
+    <p class="hint" style="padding:9px 16px;border-top:1px dashed var(--line)">队列落盘 ~/.dsh/memory/team/outbox.json · 上限 500 条丢最旧 · 同 kind+key 幂等去重 · 崩溃重启后重发（服务端幂等兜底）</p>
+  </div>
+
+  <div class="grid g2 sect">
+    <div class="card pad"><h3><span class="ic">◑</span>同步游标</h3>
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin:12px 0 6px">
+        <span>本机 local <b>${SYNC.localSeq}</b></span><span>服务端 server <b>${SYNC.serverSeq}</b></span></div>
+      <div class="lagmeter"><i style="width:${SYNC.serverSeq/SYNC.localSeq*100}%;background:var(--ok)"></i>
+        <i style="flex:1;background:var(--warn-soft)"></i></div>
+      <p class="hint" style="margin-top:8px">落后 ${SYNC.localSeq-SYNC.serverSeq} 个序号 · 下行游标只在整批成功后前进，失败不推进、可重试。</p>
+      <div style="display:flex;gap:9px;margin-top:13px">
+        <button class="btn sm" onclick="toast('诊断 JSON 已复制（identity/sync/outbox/board/derived/inject + transportError）','📋')">复制诊断 JSON</button>
+        <button class="btn danger sm" onclick="this.textContent=this.textContent.includes('输')?resetCursor():'输入 yes 确认重置 →'">重置同步游标</button></div></div>
+    <div class="card pad"><h3><span class="ic">⚙</span>派生重算调度</h3>
+      <div class="setrow"><div class="info"><b>去抖 2s · 最长等待 10s</b><div class="d">改一个键 ⇒ 目录索引 / 工作区地图 / 看板汇总合并成一次重算，绝不逐次空转</div></div>
+        <span class="pill ok"><span class="d"></span>运行中</span></div>
+      <div class="setrow"><div class="info"><b>定时器 unref 双保险</b><div class="d">心跳与重算绝不拖住宿主进程退出</div></div><span class="pill mute">纪律</span></div>
+    </div>
+  </div>
+</div>`};
+function resetCursor(){toast('游标已重置 · 下行将全量对账一次','◑');return '已重置 ✓'}
+
+P.settings=()=>`<div class="page">
+  <div class="pagehead"><h1>团队设置</h1><span class="sub">从「裸键名表格」升级为分组卡 · 每个开关有人话解释 · 即时回显</span></div>
+
+  <div class="card pad setcard">
+    <h3><span class="ic">◉</span>启用与身份</h3>
+    <div class="setrow"><div class="info"><b>团队协作</b><div class="d">关闭时插件与单人版逐字节一致：不建定时器、不联网、不读盘 —— 这不是"内部判断"，是根本不启动。</div></div>
+      <label class="switch"><input type="checkbox" checked onchange="toast('团队已' + (this.checked?'开启':'关闭 · 既有功能零影响'),'◉')"><span class="tr"></span></label></div>
+    <div class="setrow"><div class="info"><b>本机成员</b><div class="d">身份唯一真源 = 显式登记（不自建账号、不存凭据）。宿主没有用户 seam，绝不从机器级 AK 编造"人"。</div></div>
+      <input class="tin" value="aik358" style="max-width:130px">
+      <select class="tin" style="max-width:120px" onchange="render()"><option selected>administrator</option><option>editor</option><option>viewer</option></select></div>
+    <div class="capline">${CAPS.administrator.map(c=>`<span class="capsel" style="background:var(--warn-soft);color:var(--warn)">${c}</span>`).join('')}
+      <span class="hint" style="align-self:center">← 当前角色能力集 · 未登记 = 默认 administrator（个人用户零感知）</span></div>
+  </div>
+
+  <div class="card pad setcard">
+    <h3><span class="ic">❋</span>同步与通道</h3>
+    <div class="setrow"><div class="info"><b>传输通道</b><div class="d">S3 兼容（默认，T0 公有云 / T1 内网 MinIO）· 自建 HTTP（T2 涉密内网兜底，缺配置直接报错不降级）</div></div>
+      <span class="pill cyan">S3 兼容</span></div>
+    <div class="setrow"><div class="info"><b>对象存储四件套</b><div class="d">endpoint / bucket / region / AK·SK —— SK 走宿主凭据 seam，插件不落明文</div></div>
+      <button class="btn sm" onclick="toast('四项已配置 ●●●●（SK 已脱敏）','☑')">已配置 ●●●●</button></div>
+    <div class="setrow"><div class="info"><b>心跳间隔 · 5 秒</b><div class="d">失败自动指数退避（2ⁿ 封顶 30s），成功重置</div></div>
+      <input type="range" min="2" max="60" value="5" style="width:150px" oninput="this.closest('.setrow').querySelector('.info b').textContent='心跳间隔 · '+this.value+' 秒'"></div>
+    <div class="setrow"><div class="info"><b>下行注入到模型上下文</b><div class="d">团队段 priority=low 参与同一本预算账 —— 宁可裁团队信息，不挤掉你的个人规则</div></div>
+      <label class="switch"><input type="checkbox" checked onchange="toast('团队注入已'+(this.checked?'开启':'关闭'),'◉')"><span class="tr"></span></label></div>
+  </div>
+
+  <div class="card pad setcard">
+    <h3><span class="ic">⇄</span>冲突默认策略</h3>
+    <p class="hint" style="margin-top:4px">条目级三方合并判定为 conflict 时（两边都改且不同）的兜底动作 · 可随时在裁决台逐条人工覆盖</p>
+    <div class="polcards">
+      <div class="polcard" onclick="pol(this)"><b>⚖ 每次询问（推荐）</b><div class="d">冲突进裁决台红点提醒，绝不静默选边</div></div>
+      <div class="polcard on" onclick="pol(this)"><b>◉ 保留本机</b><div class="d">本机值优先，团队值进冲突账本备查</div></div>
+      <div class="polcard" onclick="pol(this)"><b>⇩ 采用团队</b><div class="d">团队值优先，本机改动记入活动流</div></div>
+      <div class="polcard" onclick="pol(this)"><b>⧉ 都保留</b><div class="d">keep-both：两条并存，事后手动整理</div></div>
+    </div>
+  </div>
+
+  <div class="card pad setcard">
+    <h3><span class="ic">🛡</span>合规与隐私（只读明示 · 严禁静默降级）</h3>
+    <div class="compliance" style="margin-top:11px"><span style="font-size:16px">⚠</span>
+      <div><b style="color:var(--warn)">当前档位：明文上行（按设计）</b><br>
+      端到端加密本版本 <b>unsupported</b> —— 如实标注"做不到"，绝不显示"已加密"假象。数据只进你配置的私有桶；用量上报 = 关；除存储桶外<b style="color:var(--tx2)">零出网</b>（team-compliance 可随时审计）。</div></div>
+    <div class="setrow"><div class="info"><b>成员徽标与「谁改动」</b><div class="d">记忆卡与列表显示作者徽标 · 归属旁挂索引不碰 Markdown 正文（磁盘仍是人类可读的）</div></div>
+      <label class="switch"><input type="checkbox" checked onchange="toast('成员徽标已'+(this.checked?'开启':'关闭'),'◉')"><span class="tr"></span></label></div>
+    <div class="setrow"><div class="info"><b>审计行</b><div class="d">条目详情显示完整操作史（create/edit/merge/delete/resolve）</div></div>
+      <label class="switch"><input type="checkbox" onchange="toast('审计行已'+(this.checked?'开启':'关闭'),'◉')"><span class="tr"></span></label></div>
+  </div>
+
+  <div class="card pad setcard danger-zone">
+    <h3><span class="ic">⚠</span>危险区</h3>
+    <div class="setrow"><div class="info"><b>退出团队</b><div class="d">清空本机团队身份与游标；本地记忆、白板、技能原样保留 —— 团队数据只是"多了一层"，退出即回到单人版</div></div>
+      <button class="btn danger sm" onclick="toast('（预览）实际执行前会要求输入团队 ID 确认','⚠')">退出团队</button></div>
+  </div>
+
+  <div class="footer-note">
+    <b>预览说明</b> · 本页为团队协作前端的升级提案稿，全部数据为演示用假数据，但<b>每个视图的数据形状 = 现有后端路由的真实返回</b>。
+    今日即可接线：概览 / 成员 / 活动流 / 同步 / 设置（9 条路由全在）。唯一后端缺口 = 冲突裁决与技能审批的 <span style="font:11px var(--mono)">POST resolve / approve</span> 两条动作路由（后端逻辑 resolve()/approve 语义已就绪，只差路由壳）。
+    在场点采用"账本推断"诚实口径：不做假在线，服务端协议（T2）落地后自动升级为真·实时在场。
+  </div>
+</div>`;
+function pol(el){el.parentElement.querySelectorAll('.polcard').forEach(x=>x.classList.remove('on'));el.classList.add('on');
+  toast('冲突默认策略 → '+el.querySelector('b').textContent.slice(2),'⇄')}
+
+/* ═══════════════ 导航与渲染 ═══════════════ */
+function go(p){document.querySelectorAll('.navitem').forEach(b=>b.classList.toggle('on',b.dataset.p===p));render(p)}
+function render(p){p=p||document.querySelector('.navitem.on').dataset.p;
+  document.getElementById('content').innerHTML=P[p]?P[p]():'';
+  const cc=document.getElementById('navConfCnt'),sc=document.getElementById('navSkCnt');
+  if(cc){cc.textContent=CONFLICTS.length;cc.classList.toggle('zero',!CONFLICTS.length)}
+  if(sc){sc.textContent=SKILLS.length;sc.classList.toggle('zero',!SKILLS.length)}
+  content.scrollTop=0}
+/* 键盘快捷裁决（冲突页 1/2/3/4） */
+document.addEventListener('keydown',e=>{
+  if(document.querySelector('.navitem.on').dataset.p!=='conflicts')return;
+  const c=CONFLICTS.find(x=>x.id===curC)||CONFLICTS[0];if(!c)return;
+  if(e.key==='1')resolve(c.id,'local');
+  if(e.key==='2')resolve(c.id,'remote');
+  if(e.key==='3')armMerge(c.id);
+  if(e.key==='4')delegate(c.id)});
+render('home');
+</script>
+</body>
+</html>

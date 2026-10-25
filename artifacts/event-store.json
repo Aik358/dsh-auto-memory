@@ -1,0 +1,38 @@
+{
+  "schema": "v4_event_store_v1",
+  "events": [
+    {
+      "id": "evt_81a7ea2e",
+      "name": "n",
+      "summary": "",
+      "outcome": null,
+      "skillRef": null,
+      "status": "active",
+      "pausedReason": null,
+      "sections": {
+        "goal": "",
+        "doing": "",
+        "deadend": "",
+        "next": ""
+      },
+      "checkpoints": [
+        {
+          "at": 1792904689447,
+          "kind": "log",
+          "text": "（存量账本归档）x.md",
+          "sourceRef": "handoff/x.md",
+          "panels": [],
+          "idemKey": "curate:c1:x.md"
+        }
+      ],
+      "userPercept": [],
+      "agentTrace": [],
+      "sharedGround": [],
+      "commitments": [],
+      "constraints": [],
+      "createdAt": 1792904689442,
+      "updatedAt": 1792904689448
+    }
+  ],
+  "updatedAt": 1792904689449
+}

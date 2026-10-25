@@ -1,0 +1,78 @@
+{
+  "url": "https://api.github.com/repos/Aik358/dsh-auto-memory/issues/154",
+  "repository_url": "https://api.github.com/repos/Aik358/dsh-auto-memory",
+  "labels_url": "https://api.github.com/repos/Aik358/dsh-auto-memory/issues/154/labels{/name}",
+  "comments_url": "https://api.github.com/repos/Aik358/dsh-auto-memory/issues/154/comments",
+  "events_url": "https://api.github.com/repos/Aik358/dsh-auto-memory/issues/154/events",
+  "html_url": "https://github.com/Aik358/dsh-auto-memory/issues/154",
+  "id": 5641282931,
+  "node_id": "I_kwDOT4IjKM8AAAABUD8lcw",
+  "number": 154,
+  "title": "[Bug] 自动接续双重创建失败后无工作区创建，将源材料投递到默认工作区",
+  "user": {
+    "login": "Minervaowl7",
+    "id": 127482476,
+    "node_id": "U_kgDOB5k6bA",
+    "avatar_url": "https://avatars.githubusercontent.com/u/127482476?v=4",
+    "gravatar_id": "",
+    "url": "https://api.github.com/users/Minervaowl7",
+    "html_url": "https://github.com/Minervaowl7",
+    "followers_url": "https://api.github.com/users/Minervaowl7/followers",
+    "following_url": "https://api.github.com/users/Minervaowl7/following{/other_user}",
+    "gists_url": "https://api.github.com/users/Minervaowl7/gists{/gist_id}",
+    "starred_url": "https://api.github.com/users/Minervaowl7/starred{/owner}{/repo}",
+    "subscriptions_url": "https://api.github.com/users/Minervaowl7/subscriptions",
+    "organizations_url": "https://api.github.com/users/Minervaowl7/orgs",
+    "repos_url": "https://api.github.com/users/Minervaowl7/repos",
+    "events_url": "https://api.github.com/users/Minervaowl7/events{/privacy}",
+    "received_events_url": "https://api.github.com/users/Minervaowl7/received_events",
+    "type": "User",
+    "user_view_type": "public",
+    "site_admin": false
+  },
+  "labels": [
+
+  ],
+  "state": "open",
+  "locked": false,
+  "assignees": [
+
+  ],
+  "milestone": null,
+  "comments": 0,
+  "created_at": "2026-09-30T05:08:28Z",
+  "updated_at": "2026-09-30T05:08:28Z",
+  "closed_at": null,
+  "assignee": null,
+  "author_association": "CONTRIBUTOR",
+  "active_lock_reason": null,
+  "sub_issues_summary": {
+    "total": 0,
+    "completed": 0,
+    "percent_completed": 0
+  },
+  "issue_dependencies_summary": {
+    "blocked_by": 0,
+    "total_blocked_by": 0,
+    "blocking": 0,
+    "total_blocking": 0
+  },
+  "body": "## 问题\n\n基线：上游 `main@e64271f`（3.2.5），Windows / Node 24；无需 PR #150。\n\n`hostAutoContinue()` 中，按源 `workspaceId` 创建失败后改用源 `cwd`。如果再次失败，第三次仅传 `agentPreset`，丢失工作区约束。宿主可能在默认工作区建立会话，随后插件仍投递源工作区材料、标记源会话已接续并通知成功。\n\n这会重新出现“A 区接续到 B 区”，触发点位于创建失败的回退路径；与 #134 的旧材料归属问题不同。\n\n## 最小复现\n\n调用生产 `hostAutoContinue`，将 sessionController.create 替换为：携带 workspaceId/cwd 时抛错，无工作区参数时返回默认 B 的会话。三次实际参数：\n\n```text\n{ workspaceId: 'workspace-A', agentPreset: 'code' }\n{ cwd: 'C:/fixture-A', agentPreset: 'code' }\n{ agentPreset: 'code' }\n```\n\n实际：返回 `ok:true`，A 的 carryText 被投递到默认 B，源会话被标记为已接续。\n\n新增行为守卫在修复前 4 项失败：应明确失败、不得第三次无工作区创建、不得投递材料或成功通知、不得给源会话落成功闩锁。原有 `workspaceId` 失败而源 cwd 成功的回归继续保留。\n\n## 建议与验收\n\n保留 `workspaceId → 源 cwd` 的兼容回退；两者都失败时返回真实错误，禁止无工作区创建并继续交接。失败后不落“已接续”标记，允许之后重试。\n\n复现只使用内存中的宿主服务替身；没有创建真实 DSH 会话或读取个人记忆。\n",
+  "closed_by": null,
+  "reactions": {
+    "url": "https://api.github.com/repos/Aik358/dsh-auto-memory/issues/154/reactions",
+    "total_count": 0,
+    "+1": 0,
+    "-1": 0,
+    "laugh": 0,
+    "hooray": 0,
+    "confused": 0,
+    "heart": 0,
+    "rocket": 0,
+    "eyes": 0
+  },
+  "timeline_url": "https://api.github.com/repos/Aik358/dsh-auto-memory/issues/154/timeline",
+  "performed_via_github_app": null,
+  "state_reason": null,
+  "pinned_comment": null
+}

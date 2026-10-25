@@ -1,0 +1,106 @@
+/* ★经典档（legacy / classic）兜底规矩（2026-10-08 用户裁定，本条为强制约定）：
+ *   1. 经典档**禁止任何自定义属性的「定义」**（--i5-* / --dam-* 等 `--x:` 形式）——
+ *      变量外泄会让**所有页面**被染上底色（用户实测：加定义即出现蓝底怪状）。
+ *      只允许「读取」：var(--token, 兜底值)。
+ *   2. 遇到经典档**未定义**的令牌时，兜底一律取**经典档自己的**取值形态：
+ *      蓝底实心 + 白字 ⇒ background: var(--i5-blue, #2563EB); color: var(--i5-surface, #FFFFFF);
+ *   3. 任何新浮层样式都必须同时满足 1 与 2（下方守卫断言会拦）。
+ *
+ *   守卫（跑在回归套件里，无需手工执行）：tests/smoke/smoke-test-lb1-classic-fallback.mjs
+ *     A 定义数 == 0；B 兜底链内不得出现非白名单令牌（白名单＝冻结 legacy 表的 43 个，运行时解析）；
+ *     C primary 形态锁死；D 新增规则只落 welcomeBack。
+ *   负路径：tests/smoke/smoke-test-lb1-negative.mjs（三条真变异必红、还原必绿）。
+ *   成文文档：docs/internal/FRONTEND-REDLINE-CLASSIC-FALLBACK.md（含根因/判据/违反案例/检查清单）。
+ *
+ * 本文件只进 **LEGACY_ITER5_CSS**（由 tools/build-iter5-skin.mjs 以 LEGACY_OVERLAY_EXTRA 追加），
+ * 变体表（ITER5_CSS）一字节不变 ⇒ iter5 档行为逐字节守恒。作用域一律 `[data-dam-theme]`。
+ *
+ * ★#282（2026-10-08）：经典/默认档原生浮层最小样式 —— 冻结 3.2.5 表对
+ *   [data-native-continuation]/[data-native-dialog]/.i5-native-notice/.i5-continuation-heading 命中 0/0/0/0
+ *   （现行变体表 1/12/8/6）⇒「新组件 × 旧表」= 浮层裸 DOM。
+ * ★#283（2026-10-08）：box-sizing 一并覆盖弹窗族（全局 reset 只写成 [data-iter5] *，浮层挂载节点不带该属性）。
+ * ★L-B1（2026-10-08）：只修**「欢迎回来」**这一个卡片，其余四个（更新说明 / 安装引导 / 通知中心 / 定时总结）
+ *   **零改动** —— 见文件末的 [data-native-dialog=welcomeBack] 专属段。
+ */
+[data-dam-theme] [data-native-dialog-overlay]{position:fixed;inset:auto;left:50%;bottom:50%;transform:translate(-50%,50%);z-index:2147483000;width:min(640px,calc(100vw - 32px));max-height:calc(100dvh - 32px);display:flex;flex-direction:column;box-sizing:border-box;}
+[data-dam-theme] :is([data-native-dialog-overlay=notice],[data-native-dialog-overlay=welcomeBack]){left:auto;right:16px;bottom:16px;transform:none;width:min(400px,calc(100vw - 32px));}
+[data-dam-theme] [data-dam-status-dialog],[data-dam-theme] [data-native-dialog]{box-sizing:border-box;width:min(640px,calc(100vw - 32px));max-width:calc(100vw - 32px);max-height:calc(100dvh - 32px);overflow:auto;padding:20px;border:1px solid var(--i5-line,rgba(128,128,128,.35));border-radius:14px;background:var(--i5-surface,rgba(255,255,255,.96));color:var(--i5-text,inherit);box-shadow:0 16px 48px color-mix(in srgb,var(--i5-text,#000) 18%,transparent);font-size:calc(13px * var(--dam-scale,1));line-height:1.7;}
+[data-dam-theme] [data-native-dialog] :is(div,section,header,footer,p,ul,ol,li,h1,h2,h3,h4,button,input,select,textarea,a,span){box-sizing:border-box;}
+[data-dam-theme] :is([data-native-dialog=notice],[data-native-dialog=welcomeBack]){width:100%;}
+/* ★L-B1 修正兜底链：原写法把**非经典档令牌**放进兜底链
+ *   （--dsw-alias-border-l1 / --dsw-alias-brand-primary / --dsw-alias-fg-on-accent 在冻结 legacy 表里定义数 = 0）
+ *   ⇒ 经典档落空后再逐层回退，语义上不可靠（守卫 B 会拦）。
+ *   现改为：链内只留**经典档自有的** --i5-* 令牌 + 字面量兜底。 */
+[data-dam-theme] [data-native-dialog] [data-dam-btn]{box-sizing:border-box;padding:8px 16px;min-height:36px;border-radius:8px;border:1px solid var(--i5-line,rgba(128,128,128,.35));background:color-mix(in srgb,var(--i5-blue,#2563EB) 10%,transparent);color:inherit;cursor:pointer;}
+/* ★L-B1：原写法 color:var(--i5-on-accent, var(--dsw-alias-fg-on-accent,#fff)) —— 两个令牌在经典档
+ *   **定义数均为 0**（实测），兜底链落空后才拿到 #fff；守卫 B 判其为「兜底链内含非白名单令牌」而拦。
+ *   现直接用经典档自有令牌：白字取 --i5-surface（浅档 #FFFFFF / 深档 #1D293D）。
+ *   ★本行与文末 welcomeBack 专属段**同形**（后者更具体，实际生效），此处保持一致以免语义漂移。 */
+[data-dam-theme] [data-native-dialog] [data-dam-btn][data-primary=true]{background:var(--i5-blue,#2563EB);color:var(--i5-surface,#FFFFFF);border-color:transparent;}
+[data-dam-theme] aside.i5-native-notice{box-sizing:border-box;position:fixed;right:20px;bottom:20px;z-index:2147483200;width:min(420px,calc(100vw - 32px));max-height:calc(100dvh - 32px);overflow:auto;padding:18px;border:1px solid var(--i5-line,rgba(128,128,128,.35));border-radius:14px;background:var(--i5-surface,rgba(255,255,255,.96));color:var(--i5-text,inherit);box-shadow:0 16px 48px color-mix(in srgb,var(--i5-text,#000) 18%,transparent);font-size:calc(13px * var(--dam-scale,1));line-height:1.7;}
+[data-dam-theme] aside.i5-native-notice *{box-sizing:border-box;}
+[data-dam-theme] .i5-native-notice>header{display:flex;gap:10px;align-items:center;padding-bottom:10px;border-bottom:1px solid var(--i5-line,rgba(128,128,128,.25));}
+[data-dam-theme] .i5-native-notice h2{font-size:calc(16px * var(--dam-scale,1));font-weight:650;margin:0;flex:1;}
+[data-dam-theme] .i5-native-notice>footer{display:flex;gap:10px;justify-content:flex-end;align-items:center;margin-top:12px;}
+[data-dam-theme] [data-native-continuation]{box-sizing:border-box;position:fixed;right:16px;bottom:16px;z-index:2147483200;width:min(500px,calc(100vw - 32px));max-height:calc(100dvh - 32px);overflow:auto;padding:18px;border:1px solid var(--i5-line,rgba(128,128,128,.35));border-radius:14px;background:var(--i5-surface,rgba(255,255,255,.96));color:var(--i5-text,inherit);box-shadow:0 16px 48px color-mix(in srgb,var(--i5-text,#000) 18%,transparent);font-size:calc(13px * var(--dam-scale,1));line-height:1.7;}
+[data-dam-theme] [data-native-continuation] *{box-sizing:border-box;}
+[data-dam-theme] [data-native-continuation=confirm]{width:min(680px,calc(100vw - 32px));}
+[data-dam-theme] .i5-continuation-heading{display:flex;gap:12px;align-items:center;padding-bottom:12px;border-bottom:1px solid var(--i5-line,rgba(128,128,128,.25));}
+[data-dam-theme] .i5-continuation-heading h2{font-size:calc(17px * var(--dam-scale,1));font-weight:650;margin:0;flex:1;}
+[data-dam-theme] .i5-continuation-heading button{display:grid;place-items:center;min-width:30px;min-height:30px;padding:0;border:1px solid var(--i5-line,rgba(128,128,128,.35));border-radius:7px;background:transparent;color:inherit;cursor:pointer;}
+[data-dam-theme] .i5-continuation-warning{padding:12px 14px;margin:16px 0;border-radius:10px;background:color-mix(in srgb,var(--i5-orange,#f59e0b) 12%,transparent);font-weight:600;}
+[data-dam-theme] .i5-continuation-facts{display:grid;grid-template-columns:120px minmax(0,1fr);gap:12px;margin:16px 0;}
+@media(max-width:600px){[data-dam-theme] [data-native-dialog]{padding:16px;}[data-dam-theme] [data-native-continuation]{padding:14px;}}
+
+/* ══════════ ★L-B1（2026-10-08）：以下三条**只作用于「欢迎回来」welcomeBack** ══════════
+ * 其余四个弹窗（更新说明 / 安装引导 / 通知中心 / 定时总结）**零改动** —— 段内选择器一律带
+ * [data-native-dialog=welcomeBack] / [data-native-dialog-overlay=welcomeBack]，不碰任何共享形状。
+ *
+ * 根因（实测，仅此一条）：primary 的兜底链落到**非经典档令牌** ——
+ *   var(--dsw-alias-brand-primary,#4f7cff) 与 var(--i5-on-accent, var(--dsw-alias-fg-on-accent,#fff))，
+ *   这三个令牌在冻结 legacy 表里**定义数 = 0**，故落兜底 #4f7cff / #fff = **3.71:1**，低于 WCAG AA 4.5:1。
+ *   ⇒ 修法：形态改用经典档**自己有定义**的 --i5-blue / --i5-surface（浅 #2563EB/#FFFFFF = 5.17:1；
+ *      深 #9ABEFF/#1D293D = 7.78:1，两档均过 AA）。**零新增属性定义、零非白名单令牌。**
+ *
+ * ★撤回记录（2026-10-08，Lead 复核裁定）：曾把「AutoContinueHost 无条件渲染 [data-native-continuation]
+ *   ⇒ 右下角常驻不透明空胶囊压住按钮」列为放大因素，并据此把本卡改成**上锚 + 抬高 z-index**。
+ *   该前提**不成立**：调用点有外层守卫 —— lib/client.js:17372 处为 if (acConfirm || acCd > 0 || acSt) {
+ *   …而在 :17392 处 return null ⇒ 三者为空时**组件根本不挂载**。原取证是「直接调用组件函数」的结果，
+ *   不等于产线渲染。故**几何与 z-index 改动已全部撤回**，本卡保持原位的右下角。
+ *   两者**同时出现时**的理论重叠属**独立项**（需 acConfirm/acCd/acSt 非空才可能共现），本道不修，已记入待复核项。
+ *
+ * 本节只改**形态**，不碰几何 —— 位置仍由上方共享的
+ * [data-native-dialog-overlay=welcomeBack] 与 aside.i5-native-notice 两条规则决定。
+ */
+[data-dam-theme] aside.i5-native-notice[data-native-dialog=welcomeBack]>footer{display:flex;flex-wrap:wrap;gap:10px;justify-content:flex-end;align-items:center;margin-top:14px;}
+[data-dam-theme] aside.i5-native-notice[data-native-dialog=welcomeBack] [data-dam-btn]{box-sizing:border-box;flex:0 0 auto;width:auto;height:auto;aspect-ratio:auto;min-width:0;min-height:34px;padding:8px 16px;border-radius:8px;font:inherit;line-height:1.4;white-space:nowrap;cursor:pointer;}
+[data-dam-theme] aside.i5-native-notice[data-native-dialog=welcomeBack] [data-dam-btn][data-primary=true]{background:var(--i5-blue,#2563EB);color:var(--i5-surface,#FFFFFF);border-color:transparent;}
+[data-dam-theme] aside.i5-native-notice[data-native-dialog=welcomeBack] [data-dam-btn]:not([data-primary=true]){background:transparent;color:var(--i5-text,inherit);border:1px solid var(--i5-line,rgba(128,128,128,.35));}
+
+/* ══════════ ★L-B2（2026-10-08）：接续卡 与 欢迎回来卡 的「上下错开 + 自动避让」 ══════════
+ * 用户要求：接续卡要在欢迎回来卡**上面**（或平行上方），并且**检测到两者同时存在时自动适配**。
+ * 方向：**接续卡在上、欢迎回来卡在下**（用户明确要求）。
+ *
+ * ★为何条件挂在 body 上，而不是 `[data-dam-theme]:has(...)`：
+ *   两张卡**不在同一个 [data-dam-theme] 根里**。它们各由一个 slot 挂一个 Iter5Surface ——
+ *   lib/client.js 里 `auto-memory-pre-dialogs`(kind=dialogs) 与 `auto-memory-pre-autocont`(kind=autocont)
+ *   是两次独立注册；surfaces.js:45 每个 Surface 自渲一个 `[data-dam-theme]`（值＝kind），
+ *   surfaces.js:49-50 又把这两种 kind 分别 createPortal 到 document.body。
+ *   ⇒ 两者是 body 下的**兄弟**，没有任何 `[data-dam-theme]` 元素同时包含它们，
+ *   故 `[data-dam-theme]:has([data-native-continuation]) [data-native-dialog=welcomeBack]` **恒不命中**（结构性失配）。
+ *   避让条件只能挂在共同祖先 body 上；被着色的元素仍是卡本身（令牌照常从各自的 [data-dam-theme] 根继承）。
+ *
+ * ★:has() 可用性（实证，非猜测）：本档**自己的产线表**已在用它 —— 冻结经典表 3 处、变体表 9 处
+ *   （如 `[data-iter5] .i5-engine-choice:has(:checked)`），同表另有 color-mix 32 处、100dvh 4 处 ⇒ 渲染器足以解析。
+ *
+ * ★「不相交」是**证明**而非估计：给欢迎回来卡一个 max-height 上界，避让位按「上界 + 间隙」取值，
+ *   于是对**任意**内容高度 h 都成立（与视口高度/文案长度/语言无关）：
+ *       欢迎回来卡 top 边距视口底 = 16 + h ，且 h ≤ 上界        ⇒ top ∈ [16, 16+上界]
+ *       接续卡     bottom 边距视口底 = 上界 + 16 + 12           ⇒ 恒 ≥ 上方 top 的最大值 + 12
+ *   ⇒ 两矩形在纵轴上永不重叠，最小间隙恒 12px。
+ *   上界用 calc(... * var(--dam-scale,1)) 跟随用户字号缩放；即使 --dam-scale 未解析（回退 1）
+ *   而上界取小、内容更高，也只会让卡片出现滚动条，**上界仍然成立** ⇒ 不相交性质不被破坏。
+ * 两者不同时存在时，各自位置与原先完全一致（各回 bottom:16px）。
+ */
+body:has([data-native-dialog-overlay=welcomeBack]) [data-native-continuation]{bottom:calc(28px + 224px * var(--dam-scale,1));}
+body:has([data-native-continuation]) aside.i5-native-notice[data-native-dialog=welcomeBack]{max-height:calc(224px * var(--dam-scale,1));overflow:auto;}

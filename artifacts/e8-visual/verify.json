@@ -1,0 +1,47 @@
+{
+  "p": {
+    "pageAttr": 1,
+    "card": 3,
+    "ttl": 3,
+    "meta": 2,
+    "badge": 2,
+    "dtl": 0,
+    "srcs": 0,
+    "summary": 1,
+    "sec": 1,
+    "why": 1,
+    "narrowPad": "9px 12px",
+    "narrowBg": "rgb(251, 252, 254)",
+    "mediumPad": "11px 13px",
+    "widePad": "13px 15px",
+    "wNarrow": {
+      "w": 1311,
+      "h": 66
+    },
+    "wMedium": {
+      "w": 1503,
+      "h": 72
+    },
+    "wWide": {
+      "w": 1599,
+      "h": 179
+    },
+    "hostH": 1000,
+    "vh": 1000,
+    "surfaceH": 1000,
+    "ttlSize": "13px",
+    "ttlColor": "rgb(63, 72, 85)",
+    "railBg": "rgba(0, 0, 0, 0)",
+    "midW": 1600,
+    "detailW": 1600
+  },
+  "mutRes": {
+    "before": "9px 12px",
+    "after": "0px",
+    "removed": 4
+  },
+  "back": "9px 12px",
+  "orphanProbe": {
+    "declared": false
+  }
+}

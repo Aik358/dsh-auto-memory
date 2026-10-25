@@ -148,7 +148,13 @@ import { renderCelebrationArtPre, word3dPre, CELEBRATION_OTHER_LANG_GUIDE } from
 ```js
 {
   id, ordinal, kind: 'event', title, summary, rationale, confidence: 'high'|'medium'|'low',
-  status: 'done'|'active'|'paused',  date, start: 'HH:mm', end: 'HH:mm',
+  status: 'done'|'active'|'paused',  date: 'YYYY-MM-DD',
+  start: 'YYYY-MM-DD HH:mm', end: 'YYYY-MM-DD HH:mm',   // ★★2026-10-26 更正：
+  //  此处原写 `start: 'HH:mm'` 是**错的**，直接导致白板看板时间显示 `08:0 年 0 月`。
+  //  证据（双证）：① 原型 EV4_PROTO_RUNTIME 里 `ev.start` 一律按**完整时间戳**消费，共 18 处 ——
+  //     monthLabel `slice(0,7)` 取年月 / 日期分组 `slice(0,10)` / 时刻 `slice(11,16)` / relLabel 亦然；
+  //  ② 原型自己的 demo 生成器（runtime L89）写的就是 `start: cps[0].at`（at = 'YYYY-MM-DD HH:mm'）。
+  //  ⇒ 权威实现 = 不许改的原型 runtime，文档以它为准。适配器 adaptEventPre 已同步改为输出 st.at。
   startMs, endMs, members: [],
   checkpoints: [ Checkpoint ],
   outcomes: [{ text }], skills: [],

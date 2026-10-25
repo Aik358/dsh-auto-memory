@@ -1,0 +1,6 @@
+{"t":1,"ev":"start","pid":60780,"mode":"new-noswallow","node":"v24.18.0","platform":"win32","argv":["new-noswallow","--boom-delay=800","--verdict-delay=1500","--breaker=both"],"keepStreams":false,"breaker":"both","stdoutIsTTY":false,"stderrIsTTY":false}
+{"t":2,"ev":"handler-installed","pid":60780,"mode":"new-noswallow"}
+{"t":3,"ev":"streams-broken","pid":60780,"stdout":{"requested":"both","afterDestroy":{"destroyed":false,"writable":true,"writableEnded":false},"afterEnd":{"destroyed":false,"writable":false,"writableEnded":true}},"stderr":{"requested":"both","afterDestroy":{"destroyed":false,"writable":true,"writableEnded":false},"afterEnd":{"destroyed":false,"writable":false,"writableEnded":true}}}
+{"t":814,"ev":"boom-thrown","pid":60780,"delayMs":800}
+{"t":1517,"ev":"verdict-written","pid":60780,"cpuMs":0,"wallMs":1514}
+{"t":1518,"ev":"exit","pid":60780,"code":0}

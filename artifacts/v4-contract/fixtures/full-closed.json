@@ -1,0 +1,102 @@
+{
+  "id": "evt_00000002",
+  "name": "完整事件（全部字段填充）",
+  "summary": "覆盖 closed 状态、outcome、3 个检查点（含六类 panels 中的四类）、userPercept/agentTrace/sharedGround/commitments 各至少一条。",
+  "outcome": "完成并通过验收。",
+  "skillRef": null,
+  "status": "closed",
+  "pausedReason": null,
+  "sections": {
+    "goal": "验证契约完整性",
+    "doing": "逐字段填充",
+    "deadend": "无",
+    "next": "无（已 closed）"
+  },
+  "checkpoints": [
+    {
+      "at": 1793000001000,
+      "kind": "progress",
+      "text": "第一条检查点",
+      "sourceRef": "handoff/handoff-20261024-120000.md#L1-L20",
+      "panels": [
+        {
+          "kind": "state",
+          "text": "进行中"
+        },
+        {
+          "kind": "next",
+          "text": "继续"
+        }
+      ],
+      "idemKey": "chk-1"
+    },
+    {
+      "at": 1793000002000,
+      "kind": "deadend",
+      "text": "第二条检查点",
+      "sourceRef": "handoff/handoff-20261024-130000.md#L5-L9",
+      "panels": [
+        {
+          "kind": "deadend",
+          "text": "方案 A 失败"
+        }
+      ],
+      "idemKey": "chk-2"
+    },
+    {
+      "at": 1793000003000,
+      "kind": "log",
+      "text": "第三条检查点",
+      "sourceRef": null,
+      "panels": [
+        {
+          "kind": "log",
+          "text": "记录"
+        }
+      ],
+      "idemKey": null
+    }
+  ],
+  "userPercept": [
+    {
+      "at": 1793000004000,
+      "kind": "preference",
+      "stage": "accepted",
+      "text": "用户偏好简洁",
+      "sourceRef": "MEMORY.md#L10"
+    }
+  ],
+  "agentTrace": [
+    {
+      "at": 1793000005000,
+      "action": "修改方案",
+      "result": "通过",
+      "wasRefuted": false,
+      "sourceRef": null
+    }
+  ],
+  "sharedGround": [
+    {
+      "at": 1793000006000,
+      "claim": "用户要求先修 recall",
+      "confirmedBy": "用户原话",
+      "correction": null,
+      "sourceRef": null
+    }
+  ],
+  "commitments": [
+    {
+      "at": 1793000007000,
+      "promise": "先修可用性再谈效果",
+      "boundary": "不含评测集",
+      "state": "fulfilled",
+      "sourceRef": null
+    }
+  ],
+  "constraints": [
+    "rule:R12",
+    "spec:v4-3.1"
+  ],
+  "createdAt": 1793000000000,
+  "updatedAt": 1793000000000
+}

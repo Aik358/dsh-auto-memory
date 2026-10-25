@@ -1,0 +1,9991 @@
+/* dsh-auto-memory — browser half (hand-written __ModuleLoader__ bundle).
+ * Registers three additive surfaces:
+ *   1. sidebar.footer.action — 「记忆」入口按钮(开关左下角浮层面板)
+ *   2. shell.overlay         — 记忆面板:概览 / 日志 / 笔记 / 反思 / 检索
+ *                              液态玻璃视觉(backdrop-filter + --dsw-alias-* 主题令牌),
+ *                              可拖动 / 右下角缩放 / 开关缩放动画 / 位置大小持久化。
+ *   3. settings.section      — 自动记忆设置页(存储位置、注入、反思风格)
+ * Data flows over /api/dsh-auto-memory/* (loopback-only host routes).
+ */
+console.log('[dsh-auto-memory] client v3.1.7 fingerprint: three-reported-bugs-fix')
+window.__ModuleLoader__.load({
+  id: '@a9i5k4/dsh-auto-memory',
+  factory: (require) => {
+    var module = { exports: {} }
+    var exports = module.exports
+    var React = require('react')
+    var h = React.createElement
+    // react-dom 的 createPortal(2026-09-16): 抽屉要浮在整页之上, 必须挂到 body ——
+    // 挂在看板容器内的话, 页面往下滚它就被推出视口, 用户「点开的页签看不见」。
+    // 这是 dsh-context 的同类做法(它也用 createPortal 渲染居中弹窗)。
+    // require 失败时降级为 null ⇒ 抽屉退回容器内渲染(功能不丢, 只是不能浮)。
+    var createPortal = null
+    try { createPortal = require('react-dom').createPortal } catch (e) { createPortal = null }
+    /** 把节点送进 body —— 浮窗必须挂在 body 才能浮在整页之上且不随页面滚动跑出视口。
+     *  createPortal 不可用时原样返回(退回常规渲染, 功能不丢)。 */
+    function kxPortal(node) {
+      if (!createPortal || typeof document === 'undefined' || !document.body) return node
+      return createPortal(node, document.body)
+    }
+    var useState = React.useState
+    var useEffect = React.useEffect
+    var useReducer = React.useReducer
+    var useRef = React.useRef
+
+    // ───────────────────────── 控制器 ─────────────────────────
+    var listeners = new Set()
+    var panelOpen = false
+    var panelClosing = false
+    var closeTimer = null
+    // 悬浮钉(2026-09-08):钉住后点击面板外不再自动收起,适合边看记忆边操作桌面
+    var PIN_KEY = 'dsh-auto-memory.panel.pinned'
+    var pinned = false
+    try { pinned = localStorage.getItem(PIN_KEY) === '1' } catch (ePin) {}
+    // 几何状态:left/top/width/height,持久化到 localStorage(用户可拖动/缩放)
+    var GEOM_KEY = 'dsh-auto-memory.panel.geom'
+    // 承载面(2026-09-21 用户拍板 · 二次修正):'bottom-left'(默认,左下角浮层) | 'page'(会话页) | 'both'(两者共存)。
+    // ★修正原因(用户实测反馈原话):「它现在是浮在整个页面上方的,而不是和对话轨迹、上下文、白板看板在一起,作为一个单独的一页」。
+    //   根因:首版把「顶部」做成 shell.overlay 覆盖条 —— 宿主只给插件 4 个槽位(sidebar/main/rightbar/shell.overlay),
+    //   浮层永远只能"盖"在界面上,做不出"并列的一页";要成为并列页必须走 conversation.view
+    //   (官方「对话轨迹」dsh-client-ui-trajectory 与本插件「白板看板」都用它注册)。
+    // 两种承载面共享同一份内容/页签/数据(见下面的 panelTab 共享状态);本机偏好,仅 localStorage。
+    var POS_KEY = 'dsh-auto-memory.panel.pos'
+    var PANEL_POS_VALUES = { 'bottom-left': 1, page: 1, both: 1 }
+    var panelPos = 'both'
+    try {
+      var savedPos = localStorage.getItem(POS_KEY)
+      // 兼容上一版:旧值 'top'(覆盖条形态)已废弃 ⇒ 自动迁移为 'page'(会话页形态),用户不必手动重选
+      if (savedPos === 'top') savedPos = 'page'
+      if (PANEL_POS_VALUES[savedPos]) panelPos = savedPos
+    } catch (ePos) {}
+    var DEFAULT_W = 440
+    var DEFAULT_H = 560
+    var DEFAULT_GAP = 16
+    // 侧边栏「记忆」入口按钮位置(DSH Desktop 增强模式下面板贴左下角会盖住它)——@ProperSAMA PR#12
+    function entryButtonRect() {
+      try {
+        var btn = document.querySelector('[data-dam-sidebar-btn]')
+        if (btn) { var r = btn.getBoundingClientRect(); if (r && r.width > 0) return r }
+      } catch (e) {}
+      return null
+    }
+    function defaultGeom() {
+      var vh = window.innerHeight || 800
+      var top = Math.max(DEFAULT_GAP, vh - DEFAULT_H - DEFAULT_GAP)
+      // 默认锚定在「记忆」按钮正上方,保证开关入口始终可见可点
+      var r = entryButtonRect()
+      if (r) {
+        var anchored = r.top - DEFAULT_H - 12
+        if (anchored >= DEFAULT_GAP) top = Math.min(top, anchored)
+      }
+      return {
+        left: DEFAULT_GAP,
+        top: top,
+        width: DEFAULT_W,
+        height: DEFAULT_H,
+      }
+    }
+    // 面板与「记忆」入口按钮重叠时自动上移让出入口(含旧版本持久化的贴底几何)
+    function avoidCoveringEntry() {
+      var r = entryButtonRect()
+      if (!r) return
+      var g = controller.geom()
+      var overlapX = g.left < r.right + 4 && g.left + g.width > r.left - 4
+      var overlapY = g.top < r.bottom + 4 && g.top + g.height > r.top - 4
+      if (!overlapX || !overlapY) return
+      var top = r.top - g.height - 12
+      if (top < DEFAULT_GAP) top = DEFAULT_GAP
+      geom = clampGeom({ left: g.left, top: top, width: g.width, height: g.height })
+      persistGeom()
+    }
+    var geom = null
+    function clampGeom(g) {
+      var vw = window.innerWidth || 1280
+      var vh = window.innerHeight || 800
+      var w = Math.max(300, Math.min(g.width || DEFAULT_W, vw - DEFAULT_GAP * 2))
+      var h = Math.max(240, Math.min(g.height || DEFAULT_H, vh - DEFAULT_GAP * 2))
+      return {
+        left: Math.max(DEFAULT_GAP, Math.min(g.left !== undefined ? g.left : DEFAULT_GAP, vw - w - DEFAULT_GAP)),
+        top: Math.max(DEFAULT_GAP, Math.min(g.top !== undefined ? g.top : DEFAULT_GAP, vh - h - DEFAULT_GAP)),
+        width: w,
+        height: h,
+      }
+    }
+    function loadGeom() {
+      try {
+        var raw = localStorage.getItem(GEOM_KEY)
+        if (raw) return clampGeom(JSON.parse(raw))
+      } catch (e) {}
+      return clampGeom(defaultGeom())
+    }
+    function persistGeom() { if (geom) { try { localStorage.setItem(GEOM_KEY, JSON.stringify(geom)) } catch (e) {} } }
+    // 解析 computed color(rgba() / color(srgb) / #RRGGBBAA)的通道与 alpha,用于可读性兜底——@ProperSAMA PR#12(适配:补 hex8)
+    function parseCssColor(str) {
+      if (!str) return null
+      function alphaOf(v) { return v === undefined ? 1 : (v.charAt(v.length - 1) === '%' ? parseFloat(v) / 100 : parseFloat(v)) }
+      var m = /^rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)(?:[,\s/]+([\d.]+%?))?\s*\)$/i.exec(str)
+      if (m) return { r: Math.round(+m[1]), g: Math.round(+m[2]), b: Math.round(+m[3]), a: alphaOf(m[4]) }
+      var c = /^color\(\s*srgb\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)(?:\s*\/\s*([\d.]+%?))?\s*\)$/i.exec(str)
+      if (c) return { r: Math.round(+c[1] * 255), g: Math.round(+c[2] * 255), b: Math.round(+c[3] * 255), a: alphaOf(c[4]) }
+      var h8 = /^#([0-9a-f]{8})$/i.exec(str)
+      if (h8) return { r: parseInt(h8[1].slice(0, 2), 16), g: parseInt(h8[1].slice(2, 4), 16), b: parseInt(h8[1].slice(4, 6), 16), a: parseInt(h8[1].slice(6, 8), 16) / 255 }
+      return null
+    }
+    function emit() { listeners.forEach(function (fn) { try { fn() } catch (e) {} }) }
+    // 共享页签状态(2026-09-21):浮层与「记忆」会话页读同一个模块级变量 ⇒ 两处切页互相同步
+    // (用户诉求原话:「两者共存…要保证同步」)。不用两份 useState,从根上杜绝状态漂移。
+    // 两个承载面都订阅 emit()(走 useTick),所以 setPanelTab 只要 emit 就能让两处同时重渲染。
+    var panelTab = 'overview'
+    function setPanelTab(v) { if (panelTab !== v) { panelTab = v; emit() } }
+    // 承载面切换钩子(2026-09-21):conversation.view 的注册/注销在 apply 作用域内(refreshSurfaces),
+    // 而 setPanelPos 在本模块作用域 ⇒ 用一个模块级钩子搭桥:切到「会话页/两者」时当场把页签加上,
+    // 切回「左下角浮层」时把它摘掉(不必等重启或重进会话)。
+    var surfacesRefreshHook = null
+    function setSurfacesRefreshHook(fn) { surfacesRefreshHook = fn }
+    var controller = {
+      isOpen: function () { return panelOpen },
+      isClosing: function () { return panelClosing },
+      geom: function () { if (!geom) geom = loadGeom(); return geom },
+      setGeom: function (partial) {
+        var cur = controller.geom()
+        geom = clampGeom({
+          left: partial.left !== undefined ? partial.left : cur.left,
+          top: partial.top !== undefined ? partial.top : cur.top,
+          width: partial.width !== undefined ? partial.width : cur.width,
+          height: partial.height !== undefined ? partial.height : cur.height,
+        })
+        emit()
+      },
+      flushGeom: function () { persistGeom() },
+      resetGeom: function () { geom = clampGeom(defaultGeom()); persistGeom(); emit() },
+      toggle: function () { if (panelOpen) controller.close(); else controller.open() },
+      open: function () {
+        if (closeTimer) { clearTimeout(closeTimer); closeTimer = null }
+        avoidCoveringEntry()
+        panelOpen = true; panelClosing = false; emit()
+      },
+      close: function () {
+        if (!panelOpen || panelClosing) return
+        panelClosing = true; emit()
+        closeTimer = setTimeout(function () {
+          panelOpen = false; panelClosing = false; closeTimer = null; emit()
+          // 面板关闭时记录本次活动时间:离开>1小时再回来时自动弹开+欢迎语
+          try { localStorage.setItem('dsh-auto-memory.lastActive', String(Date.now())) } catch (e) {}
+        }, 170)
+      },
+      subscribe: function (fn) { listeners.add(fn); return function () { listeners.delete(fn) } },
+      isPinned: function () { return pinned },
+      togglePin: function () {
+        pinned = !pinned
+        try { localStorage.setItem(PIN_KEY, pinned ? '1' : '0') } catch (e) {}
+        emit()
+      },
+      // 承载面(2026-09-21):左下角浮层 / 会话页 / 两者共存。设置页改动立即生效(即时回显)。
+      panelPos: function () { return panelPos },
+      setPanelPos: function (v) {
+        panelPos = PANEL_POS_VALUES[v] ? v : 'both'
+        try { localStorage.setItem(POS_KEY, panelPos) } catch (e) {}
+        // 承载面切换要即时增删「记忆」会话页签(见 setSurfacesRefreshHook 的说明)
+        try { if (surfacesRefreshHook) surfacesRefreshHook() } catch (eRf) {}
+        // 即时回显(2026-09-21 用户实测:「切到两者共存后上面什么都没出现」):
+        // 位置改在设置页里,而面板若关着,整个 MemoryPanel 渲染 null ⇒ 用户看不到任何变化。
+        // 故切档时面板若关着就自动打开,让新位置当场可见(切回旧档同样打开,保证每次切换都可感知)。
+        if (!panelOpen) controller.open()
+        else emit()
+      },
+      // 共享页签(浮层 ↔ 会话页)
+      panelTab: function () { return panelTab },
+      setPanelTab: setPanelTab,
+    }
+
+    // ───────────────────────── 国际化 ─────────────────────────
+    var I18N = {
+      zh: {
+        loading: '加载中…',
+        memoryPanel: '记忆面板',
+        memory: '记忆',
+        autoMemory: '自动记忆',
+        overview: '概览', teamTab: '团队', fTeamEnable: '团队协作总开关', fTeamServer: '团队服务地址', fTeamId: '团队标识', fTeamMemberName: '本机成员署名', fTeamSyncMode: '同步模式', fTeamSyncInterval: '自动同步间隔(秒)', fTeamScopeDefault: '新记忆默认范围', fTeamShareExternal: '外部导入结果同步给团队', fTeamConflictPolicy: '冲突默认策略', fTeamAttribution: '记忆卡显示作者徽标', fTeamSkin: '团队皮肤标识', fTeamAudit: '记忆卡显示审计行', fTeamTest: '连通性自检', fTeamLeave: '退出团队',
+  statsTab: '统计',
+  statsTitle: '召回统计（谁在被想起来）',
+  statsSubtitle: '只统计、不改排序——数据攒够后再决定要不要加权。',
+  statsQueries: '检索次数',
+  statsZeroHit: '零命中',
+  statsDistinct: '被召回条目',
+  statsTotalHits: '命中总次数',
+  statsWarm: '只被召回一次',
+  statsByLayer: '按记忆层分布',
+  statsByDay: '按天走势',
+  statsSources: '按通路分布',
+  statsTop: '召回最多的条目',
+  statsEmpty: '(还没有统计数据——用 memory_recall 检索几次后再回来看)',
+  statsReset: '清零统计',
+  statsResetDone: '已清零',
+  statsChannels: '三条通路（分开统计，含义不同）',
+  statsChOverview: '各通路占多少',
+  statsChModel: '① 模型主动检索',
+  statsChModelHint: '模型明确想找 → 高信号：哪些内容真的被需要',
+  statsChInject: '② 每轮自动注入',
+  statsChInjectHint: '系统一直在塞 → 成本视角：注入预算花在哪一段',
+  statsChShadow: '③ 主动唤起',
+  statsChShadowHint: '系统判断该唤起 → 质量视角：唤起了但没命中的比例',
+  statsEvents: '发生次数',
+  statsNoInject: '还没有注入记录（宿主重启后开始累积）',
+  statsSegChars: '按字符数（谁最占预算）',
+  statsSegCount: '按出现次数',
+  statsSince: '开始记录于',
+  statsNever: '从未', logs: '日志', refineTab: '唤起回顾', notes: '笔记', reflections: '反思', connect: '接续', calendar: '日历', search: '检索', workspaces: '工作区', hubTab: '记忆中枢', storageTab: '存储管理', planTab: '白板', planTitle: '白板 · PLAN.md(项目全貌)', planEmpty: '(白板尚未建立——宿主会在该工作区第一次会话结束时自动落一版骨架,模型理解项目全貌后把它重写成真内容;也可在对话中让它用 memory_note(kind=plan) 写)', planVersions: '白板历史版本', planLedgers: '交接账本时间线', planDisabled: '交接白板未启用(设置 → 长会话接续)。', planWsUnbound: '当前会话未绑定工作区——白板与交接账本暂不可用(会话的工作区身份解析不出来;把会话开进项目文件夹或绑定工作区后自动恢复)。', planFileTitle: '查看',
+        hubSkills: '技能 (Procedural)', hubSkillsEmpty: '暂无已固化的技能。反复成功的流程会自动固化为技能并在相似场景召回。', hubFacts: '事实 (Semantic)', hubFactsEmpty: '暂无固化的事实。', hubConflicts: '待决冲突', hubEpisodic: '经历 (Episodic)', hubEpisodicEmpty: '暂无已巩固的经历。',
+        storageScanHint: '语料健康 = 逐源比对索引(sidecar)与正文的 digest。手动改动记忆文件后索引会失配,该记忆会退出检索直到重建索引。',
+        storageDeleteHint: '删除记忆 = 正文原子删除 + 在途唤起包清理 + 派生事实撤销(三联动)。已产生的 seen 证据不改写。',
+        migTitle: '迁移搬包', migHint: '把某个工作区的记忆打包带走,到另一台机器导入即可(路径变了会自动重写内部引用)。', migExport: '导出本工作区', migImport: '导入包', migPickPack: '选择 .dam-pack 文件', migPreview: '预览差异(不改任何文件)', migApply: '确认导入',
+        migPathChanged: '路径变化:将重写内部引用', migSamePath: '路径相同:不做任何重写', migConflictKeep: '冲突时保留本机', migConflictOverwrite: '冲突时用包内版本覆盖', migConflictRename: '冲突时改名为 .from-pack', migBackup: '已备份到', migWritten: '已写入文件数',
+        secSemantic: '自动记忆引擎', semMode: '检索模式', semAuto: '自动（推荐）', semLexOnly: '仅词法', semJs: '内置语义', semPy: '高级 Python',
+        pyWizTitle: 'Python 引擎一键安装', pyWizStep1: '① 检测 Python 环境', pyWizStep2: '② 创建独立虚拟环境(~/.dsh/python-engine/.venv,不污染系统)', pyWizStep3: '③ 安装引擎依赖(transformers + onnxruntime + torch)', pyWizStep4: '④ 下载 BGE-M3 int8 模型(~539MB,断点续传,失败自动换源)',
+        pyWizDetect: '开始检测', pyWizRedetect: '重新检测', pyWizCreate: '创建虚拟环境', pyWizInstall: '安装依赖', pyWizDownload: '开始下载', pyWizCancel: '取消下载', pyWizDone: '全部就绪 ✓ — 回上方启用即可', pyWizOk: 'ok', pyWizMissing: '未找到', pyWizTooOld: '版本不兼容(需 3.9-3.12)', pyWizVenvRec: '推荐', pyWizEta: '剩余', pyWizSec: '秒', pyWizModelHint: '模型与虚拟环境安装在 ~/.dsh/python-engine/(用户目录),升级/重装插件不受影响。',
+        semModeHint: '自动=内置语义就绪即用，否则词法保底；高级 Python 需另行安装。',
+        fAssocEngine: '启用自动记忆引擎', fAssocEngineHint: '总开关。开启后自动观测上下文、语义检索并适时唤起记忆注入(消费少量 token)。关闭则整个引擎不运行——不检索、不判定、不注入、不生成唤起记录。介意 token 消耗或担心动作跑偏的用户可关闭。默认关。',
+        fAnchorIndex: '记忆锚定索引(语料健康/存储管理)', fAnchorIndexHint: '开启后为记忆正文建立 sidecar 索引副本:存储管理页可做语料健康比对、「修复 stale」与「删除记忆」(三联动)。关闭时这些动作不可用(修复会提示 no-doc-store),但不影响记忆读写与检索。默认关。',
+        secMemoryHubHint: '记忆中枢 = 三层记忆(经历/事实/技能)的编排器。开启后自动从对话沉淀经历、固化事实、把反复成功的流程固化为技能(skill),并在相似场景自动召回注入。',
+        fMemoryHub: '启用记忆中枢', fMemoryHubHint: '总开关。开启后三层记忆(episodic 经历 / semantic 事实 / procedural 技能)开始运行;关闭则只保留已有记忆,不再沉淀新内容。默认关。',
+        fEpisodicMin: '经历最少对话段数', fEpisodicMinHint: '一次经历(episode)至少积累多少段对话才巩固为记忆。太少=噪声多,太多=小对话被丢弃。默认 2。',
+        fEpisodicRet: '经历保留上限(条)', fEpisodicRetHint: '保留的最近经历条数,超出按时间淘汰最旧的。默认 256。',
+        fProcSessions: '技能晋升跨会话数', fProcSessionsHint: '一个流程至少出现在 N 个独立会话中才考虑晋升为技能。默认 3(M-04 元代码)。',
+        fProcSuccess: '技能晋升成功次数', fProcSuccessHint: '流程至少成功 N 次才可晋升。一次成功不足以证明可靠。默认 2。',
+        fProcCorr: '技能纠正容忍度', fProcCorrHint: '纠正/错误占该流程总证据的比例上限。超过则保持候选,不晋升。默认 0.3(30%)。',
+        fProcRisk: '高风险流程需批准', fProcRiskHint: '高风险流程(SSH/部署/删除等)晋升需用户明确批准,且永不因相似度自动执行。默认开。',
+        fProcLevel: '技能注入形式', fProcLevelHint: 'active 技能注入时给模型的提示形态:checklist=完整步骤+完成标准;excerpt=摘要;hint=仅提示可参考。高风险自动降级为 hint。',
+        memoryHubViewHint: '查看记忆中枢内容请打开「记忆」面板的「记忆中枢」页签。',
+        fJsCooldown: '唤起冷却(分钟)', fJsCooldownHint: '自动唤起注入后,N 分钟内不再判定,防止连续唤起浪费 token。默认 1;0=不冷却。',
+        fJsDelta: '唤起margin阈值(e5档)', fJsDeltaHint: '候选第1/2名分差须超过此值才注入(e5 余弦分布紧,默认 0.01;bge-m3 校准值为 0.03)。调小=更容易唤起,调大=更保守。0=不过滤。',
+        fEmitMode: '唤起注入模式', fEmitModeHint: 'shadow=只记录决策不注入(校准用);canary-explicit=仅明确回忆时注入(推荐);active=所有判定注入。JS/Python 双轨同源。',
+        fCandScheme: '唤起候选方案', fCandSchemeHint: 'balanced=3条×40字符(默认,信息量/token 平衡);dense=6条×20字符(更多候选更广联想);custom=自定义条数与长度。',
+        fCandN: '自定义候选条数', fCandNHint: 'custom 档的候选条数(1-8)。',
+        fJsExcerpt: '唤起注入内容长度(字符)', fJsExcerptHint: 'Reference Tail 的 Reference 行内容上限。默认 40=几个字/关键词级(省 token,需要细节时模型用 memory_read 取全文);调大可注入更多记忆正文。范围 20-480。',
+        fReasoning: '思维链监听', fReasoningHint: '把模型思维链纳入实时观测（重启后生效）。默认开——闭源模型的概括式思维链同样纳入。',
+        fChildObs: '分支会话观测', fChildObsHint: '跨天续接的会话会被标记为分支;开启后同样纳入记忆观测。默认开。',
+        fTauHi: '唤起门槛 tauHi', fDeltaExp: '明确召回余量 deltaExp', fDeltaPro: '主动预取余量 deltaPro',
+        fTuningHint: '阈值由校准策略 JSON 权威控制;此处为高级调参入口,修改保存后随下轮生效(预览版)。',
+        refineTitle: '唤起记录与语料精修', refineSub: '对每次唤起判断给出你的裁定(A 该激活/P 只预取/S 应抑制/H 有害/E 改目标),审批队列将用于离线重放与策略演进。',
+        refineEmpty: '(暂无唤起记录——需要 shadow 观测产生数据)', refineLoadErr: '加载失败: ',
+        sent1: '已入审批队列', semReady: '内置语义已就绪', semMissing: '语义包未下载(约130MB)', semStatusErr: '状态未知',
+        semResolved: '当前生效检索', tierC1: 'C1 词法保底(BM25)', tierC2: 'C2 内置语义 e5-small q8', tierC3: 'C3 高级 Python bge-m3',
+        semDlStart: '开始下载', semDlRetry: '重试', semDlCancel: '取消',
+        mAuto: '自动（国内优先）', mCn: '国内源 · hf-mirror', mIntl: '国际源 · huggingface',
+        dlDownloading: '下载中', dlVerifying: '校验中(SHA256)', dlDone: '下载完成', dlCancelled: '已取消', dlError: '下载失败',
+        fWelcomeTour: '欢迎向导', fWelcomeTourHint: '首次启动后自动播放分步功能引导（含语义引擎检测/下载）；关闭后仅可从此处手动打开。', tourReplay: '▶ 重看引导',
+        wsGenerating: '正在生成各工作区总结(每个工作区一次 AI 调用,可能稍慢)…', wsNone: '未发现带记忆的工作区', wsNoSummary: '(无总结)', wsOverview: '工作区总结(跨工作区)',
+        debugCenter: '调试中心', dbgLoading: '加载诊断信息…', dbgRefresh: '刷新', dbgRefreshing: '刷新中…',
+        fMemoryRoot: '记忆根目录', fMemoryRootHint: '集中式存储:所有工作区记忆统一放在此目录下(每工作区一个子目录),旧版分散的记忆会自动迁移。',
+        fBrowse: '浏览…', browseTitle: '选择记忆根目录', fUp: '上级', fSelectDir: '选择此目录',
+        pickedDir: '已选择目录:', rememberSave: '(点击「保存设置」后生效)', pickerUnavailable: '系统文件夹选择器不可用,改用内嵌浏览。',
+        fDayBoundary: '日界(分钟)', fDayBoundaryHint: '从 0 点起算:凌晨在此之前的活儿归前一天。默认 450=早上 7:30 进入新一天;改 480=8:00;0=按午夜切日。',
+        fVersion: '插件版本', checkUpdate: '检查更新', checking: '检查中…', upToDate: '(已是最新)', hasUpdate: '(有新版本)', versionError: '版本检查失败: ', versionCmdHint: '更新命令: cd ~/.dsh/profiles/web && pnpm up @a9i5k4/dsh-auto-memory,然后重启 dsh web 生效。',
+        updateNow: '一键更新', updating: '更新中…', updateDone: '更新完成,请重启 dsh web 生效。', updateFailed: '更新失败: ', devLinkHint: '(当前为本地开发链接 link:,一键更新不适用。若上方显示「开发树 vX → 线上 vY」,说明 npm 上已有更新版,请同步开发源码后重新构建发布。)', noProfileHint: '(未找到 dsh profile,无法自动更新)',
+        kvVersion: '插件版本', kvUnreadable: '(读不到)', kvPid: 'PID / 启动', kvRestart: 'Host 需重启?', kvRestartYes: '是(代码比进程新)', kvRestartNo: '否',
+        kvHeartbeat: '轮询心跳', hbAliveAgo: '存活(上次 ', hbSecAgo: ' 秒前)', hbAlive: '存活', hbNone: '无心跳文件',
+        kvQueue: '沉淀重试队列', kvCountSuffix: ' 条', kvToday: '今日沉淀', kvRecentPrefix: ' 条 / 最近 ', kvBusy: '正在沉淀中', kvYes: '是', kvNo: '否',
+        kvAvail: '可用', kvUnavail: '不可用', kvDup: '项目笔记重复标题', kvDupCount: ' 个',
+        kvMem: '记忆文件', kvMemUser: '用户', kvMemNotes: '笔记', kvMemLog: '日志', kvMemMissing: '缺失',
+        kvWs: '当前工作区', kvWsUnknown: '(未取到)', kvApi: 'API 连通', unknown: '(未知)',
+        // ★P0-2/P0-3（2026-09-22）：把后端早已算好、前端零消费者的两组可观测性接到界面上。
+        dbgHubIo: '三层记忆落盘', dbgPrune: '事实淘汰(保留上限)',
+        dbgLogs: '诊断日志',
+        dbgLogsNone: '尚未生成（本次运行还没有诊断输出）',
+        dbgLogsHint: '崩溃/异常时请把下面路径的文件附给维护者（只读展示，不含日志正文）',
+        kvPyTitle: 'Python 语义侧车', kvPyOff: '未启用（JS 端语义不受影响）', kvPyAlive: '运行中',
+        kvPyWatchdog: '看门狗击杀 / 重生', kvPyStderr: '最近 stderr 尾部', kvPyStderrTrunc: '（已截断）',
+        updateTitle: 'dsh-auto-memory 已更新', updateSub: '本次更新内容:', gotIt: '知道了', noticeOpen: '了解更多',
+        refresh: '刷新', refreshing: '刷新中…', close: '关闭', dragMove: '拖动移动', dragResize: '拖动调整大小', resetPos: '恢复默认位置', pinPanel: '钉住面板(点桌面其他地方不收起)', unpinPanel: '取消钉住(点面板外自动收起)',
+        generated: '已生成', failed: '失败: ',
+        generatedAt: '生成于 ',
+        pointsCount: ' 项', summarizing: 'AI 总结生成中…', summaryFailed: 'AI 总结生成失败,点 ⟳ 重试',
+        pendingReflection: '待生成反思: ',
+        pendingReflectionHint: ' —— 可点下方「一键反思」立即生成。',
+        todayWork: '今日工作', logEntries: ' 条日志',
+        autoSettledToday: '今日已自动沉淀 ', autoSettledSuffix: ' 条要点',
+        autoSettledRecent: '最近: ', autoSettledNone: '本轮对话暂无自动沉淀',
+        dailyReflection: '每日反思', notYet: '(还没有)',
+        workspace: '工作区',
+        reflecting: '反思生成中…', oneClickReflect: '一键反思',
+        reflectHint: '用最近日志自动生成反思',
+        quickLinks: '快捷入口:日志页签看每日记录 · 笔记页签追加项目笔记 · 接续页签接入其他 AI 记忆 · 检索页签全文搜索。',
+        collapseTech: '收起技术信息 ▴', expandTech: '技术信息 ▾',
+        userMemory: '用户级记忆', projectNotes: '项目笔记', todayLog: '今日日志', configFile: '配置文件',
+        readFailed: '读取失败: ', ok: '正常', refreshTime: '刷新时间', notYetShort: '尚未',
+        empty: '(空)', back: '← 返回', view: '查看',
+        clickDateViewLog: '点击日期查看当日日志(append-only):',
+        userMemoryBlock: '用户记忆(用户画像 · 跨项目):', userMemoryEmpty: '(空)', userMemoryTruncated: '(内容过长,已截断显示)',
+    // ★R7：硬性约束编辑面板文案
+    // ★R1–R6：审批界面可读性文案
+    hubStageObserved: '刚观察到',
+    hubStageCandidate: '够格待审',
+    hubStageValidated: '已通过验证',
+    hubStageActive: '已启用',
+    hubStageDeprecated: '已弃用',
+    hubWhyTitle: '为什么还不能晋升：',
+    hubWhyCanPromote: '条件已满足，可以晋升。',
+    // ★M8-B 第6步（2026-09-23）：双库视图（工作区库 / 通用库）。
+    hubScopeTitle: '技能库归属',
+    hubScopeGlobal: '通用库',
+    hubScopeWorkspace: '本工作区库',
+    hubScopeGlobalHint: '所有项目都能用（跨工作区共享）。',
+    hubScopeWorkspaceHint: '只有当前工作区能用。',
+    hubScopeDefault: '缺省落库：通用库',
+    hubScopeUnknownWs: '当前工作区未知 —— 暂不能收纳到工作区库（转移会明确报错，不会猜目录写入）。',
+    hubScopeCounts: function (g, w) {
+      var gs = (g < 0) ? '不可读' : (g + ' 条')
+      var ws = (w < 0) ? '不可归属' : (w + ' 条')
+      return '通用库 ' + gs + ' · 本工作区库 ' + ws
+    },
+    hubScopeCorrupt: '有库文件解析失败 —— 已拒写该库（避免静默清空），请先修复或备份。',
+    hubToGlobal: '提升为全局',
+    hubToWorkspace: '收纳到本工作区',
+    hubScopeBusy: '转移中…',
+    hubScopeMoved: '已转移：',
+    hubScopeNoop: '已在目标库（无需搬运）。',
+    hubScopeReasons: function (r) {
+      if (r === 'ws-unknown') return '当前工作区未知，无法写入工作区库。'
+      if (r === 'foreign-workspace') return '该条目属于别的工作区，不能直接搬到本工作区。'
+      if (r === 'not-found') return '两库中都没找到这条技能。'
+      if (r === 'phase-failed') return '两阶段提交失败，已回滚两库到转移前状态。'
+      if (r === 'scoped-io-unavailable') return '宿主未提供双库 IO，本次无法转移。'
+      return String(r || '未知原因')
+    },
+    hubWhyDiversity: function (d, need) { return '需要 ' + need + ' 个不同会话都用过它，目前只有 ' + d + ' 个 —— 换个场景再用一次它就能推进。' },
+    hubWhySuccess: function (n, need) { return '需要成功 ' + need + ' 次，目前 ' + n + ' 次 —— 再成功用一次它会自动变好。' },
+    hubWhyCorrectionRate: function (r, cap) { return '它的纠正率是 ' + r + '，超过了上限 ' + cap + ' —— 说明这套流程本身有问题，需要先改掉。' },
+    hubWhyHasCorrection: function (n) { return '它被纠正过 ' + n + ' 次 —— 有纠正记录说明这流程是错的，不能固化。' },
+    hubWhyNoCriteria: '它没写「怎么算成功」—— 没有验收标准的流程不算技能。',
+    hubWhyHighRisk: '它是高风险操作，需要你人工确认才会固化 —— 点下面这个「批准(人工)」即可。',
+    hubWhyObservationOnly: '它只是「看到过一件事」的线索，不是真正的流程 —— 不会自动晋升。',
+    // ★C（2026-09-22）：三态说清 —— 「没有按钮」必须自己解释清楚，而不是让用户猜。
+    hubWhyStructural: '这道门是结构性的（内容本身不构成一条技能），人工也不能越过；补齐内容才会重新判定。',
+    hubWhyOverridable: '以上只是「证据还没攒够」的统计门，不是内容不合格 —— 你可以点右侧按钮人工越过。',
+    hubForcePromote: '强制晋升（人工）',
+    hubForcePromoteTitle: '人工越过跨会话数/成功次数两道统计门。结构门不会越过，且会在条目上留下「人工授权」痕迹。',
+    hubEvSeen: '见过', hubEvSuccess: '成功', hubEvSessions: '跨会话', hubEvReuse: '被复用', hubEvCorrection: '被纠正',
+    hubEvLine: function (ev) { return '见过 ' + (ev.seen || 0) + ' 次 · 成功 ' + (ev.success || 0) + ' 次 · 在 ' + (ev.sessions || 0) + ' 个会话里用过' + ((ev.correction || 0) ? ' · 被纠正过 ' + ev.correction + ' 次' : '') },
+    hubInjectPreview: '晋升后会注入这些（点开看）',
+    hubInjectCriteria: '验收标准：',
+    hubNoSteps: '(这条没有可用步骤——源头是机械截断，不是真流程)',
+    rulesTitle: '硬性约束（每轮必注入）',
+    rulesIntro: '这些条目每一轮都会原封不动发给我，优先级高于其它内容。它不走检索、不会自动淘汰，所以过时的、或 AI 自己加错的，都要你手动改。',
+    rulesPath: '来源文件：',
+    rulesEmpty: '(暂无条目)',
+    rulesSourceUser: '你写的',
+    rulesSourceAi: 'AI 加的',
+    rulesEdit: '编辑', rulesSave: '保存', rulesCancel: '取消', rulesDelete: '删除',
+    rulesConfirmDelete: '确认删除这条约束？\n\n删除后无法撤销——它下一轮就不再注入了。',
+    rulesAddHint: '新增一条约束：',
+    rulesAddPlaceholder: '例：未经我确认，不要自动修改生产环境的文件。',
+    rulesAdd: '添加',
+    rulesPreviewHint: '预览：下一轮注入时会变成这样',
+        appended: '已追加', notesPathLabel: '项目笔记: ',
+        notesPlaceholder: '想追加到项目笔记的内容…(保存时自动带日期标题)',
+        saving: '保存中…', append: '追加',
+        notesHint: '建议直接用对话让 agent 调 memory_note;此处为手动追加。',
+        reflectionTitle: '反思 ', generating: '生成中…',
+        reflectAutoHint: '自动用最近日志生成反思草稿(便于测试)',
+        noReflection: '还没有反思。每天第一次会话时,agent 会主动呈现前一天的工作反思。',
+        searchFailed: '检索失败: ', searchPlaceholder: '搜记忆:关键词或自包含描述…', searchBtn: '检索', resultTitle: '结果',
+        smartSearch: '智能检索', smartAnswer: '智能回答', keywordsLabel: '关键词: ',
+        projectFiles: '项目文件', aiAssistant: 'AI 助手',
+        imported: '接入完成', importing: '正在接入 ', importingSuffix: ' 个源…', allImported: '全部接入完成',
+        noExternal: '未检测到其他 AI 工具的记忆文件(CodeBuddy/Claude Code/Codex 等)。',
+        sessionSource: '会话源:共 ', sessionSourceSuffix: ' 个会话文件,用 memory_recall 按需检索',
+        importingOne: '接入中…', importToNotes: '接入项目笔记', importToUser: '接入用户记忆',
+        disabled: ' · 已停用', filesCount: ' 个文件 · ',
+        connectHint: '把其他 AI 工具(CodeBuddy / Claude Code / Codex / 项目约定文件等)积累的记忆接入当前 DSH 工作。接入后内容写入本地记忆并自动标注来源,后续会随会话自动注入。',
+        importAll: '一键接入全部', rescan: '重新扫描',
+        styleAuto: '由内容决定', styleLife: '生活化', styleProfessional: '专业性',
+        todayGreetingTitle: '问候',
+        yesterdayTimeline: '昨天(', pendingReflectionShort: '昨天的工作还没复盘(',
+        saved: '已保存',
+        settingsHeader: '记忆存储与行为设置(保存到 DSH 主目录 dsh-auto-memory.json):',
+        fFontSize: '界面字号', fFontSizeHint: '记忆面板文字大小(立即生效,仅本机)', fsSm: '小', fsMd: '标准', fsLg: '大', fsXl: '特大',
+        fPanelPos: '记忆承载面', fPanelPosHint: '记忆内容的呈现方式:左下角浮层(可拖动缩放)/ 会话页(与「对话轨迹」「上下文」并列的一页,在会话页顶栏切换)/ 两者共存。两种承载面共享同一份内容与页签,实时同步;仅本机生效。',
+        posBottomLeft: '左下角(浮层)', posPage: '会话页(与对话轨迹并列)', posBoth: '两者共存',
+        fUserDir: '用户记忆目录', fUserDirHint: '跨项目规则存放处,支持 ~ 开头;需有文件写权限。',
+        fProjectDir: '项目记忆目录', fProjectDirHint: '相对各工作区的目录名(默认 .dsh-memory)。',
+        fInject: '注入记忆上下文', fInjectHint: '每次组装提示词时自动注入 <memory_system> 块。',
+        fBudget: '注入预算(字符)', fBudgetHint: '记忆块总预算,超出部分截断。默认 1600(≈400-600 token/轮);活跃会话每轮都注入这段背景,调低更省 token,调高保留更多记忆。',
+        fExclude: '排除来源(每行一条)', fExcludeHint: '这些来源不再进注入,避免坏记忆反复灌入把结果一路带偏。四种写法:记忆 id(mem_xxx)、整层(log/whiteboard/project/user/reflection)、目录前缀(以 / 或 \\ 结尾)、精确文件路径。与 supersede 互补:supersede 管"被新版替代",这里管"整条来源不可信"。被挡下的条数会在注入里以 [降级] 如实标注。',
+        fNoteCap: '项目笔记容量上限(字符)', fNoteCapHint: '项目笔记 MEMORY.md 的容量上限,默认 24000。超出时自动整理:先把较早内容交给模型折叠成要点,失败则退回整条归档(原文进 archive,不丢)——新记忆不会被堵在外面。注意与上面的「注入预算」不是一回事:这个管文件本体大小,注入预算管每轮往上下文塞多少摘要。',
+        fUserCap: '用户级记忆容量上限(字符)', fUserCapHint: '用户级 MEMORY.md(跨项目规则)的容量上限,默认 24000。整理方式与项目笔记相同(先折叠成要点,必要时整条归档)。',
+        fSnapGap: '快照最小间隔(轮)', fSnapGapHint: '动态记忆快照内容变化后,至少隔 N 轮才重新注入,避免每轮日志微变都追加快照导致历史膨胀。默认 5;0=每轮都尝试(仍受内容变化约束)。',
+        fReinjectOnCompact: '压缩后立即重注入快照', fReinjectOnCompactHint: '上下文被压缩/截断(通常伴随 contextVersion 重置)后,快照会被清掉;开启后强制立即重注入一次,确保记忆背景重建。默认开。',
+        fPromptCustom: '自定义记忆注入 prompt', fPromptCustomHint: '可覆盖各层提示文案(小众功能)。支持占位符 {date} {ws} {budget} {n}。改坏了可一键恢复默认。',
+        fPromptSections: '高级：逐段注入控制…', fPromptSectionsHint: '控制每一轮注入里包含哪些段落。默认全部开启；不推荐修改 —— 关掉某段会让模型少掉对应的上下文或纪律。',
+        fDays: '注入最近日志天数', fDaysHint: '会话开始时注入最近 N 天的工作日志尾部。默认 1。',
+        fExtBudget: '外部记忆注入预算(字符)', fExtBudgetHint: '外部记忆来源在上下文中的注入预算。默认 1400(路径模式下影响有限)。',
+        fConsolidateMin: '自动沉淀内容门槛(字符)', fConsolidateMinHint: '本轮 user+assistant 总字符低于此值视为寒暄跳过。默认 240。',
+        fAway: '暂离阈值(分钟)', fAwayHint: '距上次活动超过该值视为暂离,回归时自动弹出记忆窗口。默认 60,设 0 关闭暂离检测与欢迎问候(动态快照同步不再注入欢迎语)。',
+        fAutoPopup: '自动弹出记忆窗口', fAutoPopupHint: '暂离/回归时自动弹出记忆窗口(corner)并欢迎;关闭后只能手动打开。默认开。',
+        fUnattended: '无人值守模式', fUnattendedHint: '面向无人值守批量任务(托管/夜间)。开启后不注入欢迎回来指令、行为指令、暂离/回归提示、日历提醒——只注入纯事实记忆,避免无人值守时模型在寒暄上浪费 token。与模型侧的"托管模式"判断联动。默认关。',
+        fUnattendedAuto: '夜间/非工作时间自动托管', fUnattendedAutoHint: '开启后,本地时间处于非工作时间窗(默认 22:00-08:00,可在配置中调 unattendedAutoHours)或检测到自动托管任务时,自动进入无人值守模式,不弹欢迎窗、不注入寒暄。手动开关优先;默认关。',
+        fAutoConsolidate: '自动沉淀(每轮对话结束AI评估)', fAutoConsolidateHint: '关闭后每轮对话结束不再自动调用 AI 评估与写入今日日志。',
+        fConsolidate: '自动沉淀间隔(分钟)', fConsolidateHint: '两轮自动沉淀之间的最短间隔。默认 30;非工作时间(22:00-08:00)自动翻倍,避免短时间耗尽每日额度。',
+        fConsolidateMax: '自动沉淀每日额度(次)', fConsolidateMaxHint: '每天最多触发自动沉淀的次数,到点后当天不再调用。默认 8。',
+        fAutoSum: '自动总结时间点(HH:MM,逗号分隔)', fAutoSumHint: '到点自动生成本时段总结并弹窗展示,如 12:00,18:00,22:00。空=关闭。',
+        awayTitle: '欢迎回来', awayMsg: '你离开的这段时间,我已经帮你把日志整理好了。记忆窗口已打开,可以看看这段时间的状况。',
+        sumTitle: '时段总结',
+        fReflect: '每日反思', fReflectHint: '昨天有工作日志时,会话首轮主动呈现昨日反思。',
+        fAutoContinue: '自动接续', fAutoContinueHint: '水位达到阈值时弹出确认卡,同意即接续到新会话(沿用工作区/模型/思考档位)。出厂默认关闭(功能仍在测试期);本开关独立于交接白板——关白板不影响水位测量与接续资格。',
+        handoffSwitchTitle: '白板与自动接续开关', handoffSwitchHint: '两个开关出厂默认均为关闭(功能仍在测试期);此处与「设置 → 上下文」读写同一对配置键,任一处改动即全局生效。', handoffOn: '交接白板:开', handoffOff: '交接白板:关',
+        fHandoff: '交接白板', fHandoffHint: 'PLAN.md 全貌快照 + 四段式交接账本:模型在理解全貌/阶段完成时写入,注入动态快照首位,面板「白板」页签可实时查看,跨上下文窗口续命。',
+        fWaterWindow: '水位估计窗口(token)', fWaterWindowHint: '会话消息按官方公式(4 字符≈1 token)估算达到该值即视为上下文将满;0=关闭。默认 65536(128K 窗口的保守半量),按所用模型调整。',
+        fWaterAdvisory: '水位交接建议', fWaterAdvisoryHint: '水位越阈时在动态快照注入交接建议(写账本/刷新白板/建议开新窗);无人值守时静默。',
+        fWaterAuto: '水位自动骨架账本', fWaterAutoHint: '越阈时自动写一篇系统骨架账本(每会话一次),防止模型忽视建议时交接材料缺失。',
+        fWaterThreshold: '水位建议阈值', fWaterThresholdHint: '水位比例 = 上下文实占 ÷ 官方声明窗口(不再扣预留输出);超过该值(0.1-1.5)即触发交接建议/骨架账本;默认 0.75——官方自动压缩阈值是 80%,必须留出余量才来得及走完交接。',
+        fHandoffPlan: '白板注入预算(字符)', fHandoffPlanHint: 'PLAN.md 全貌注入动态快照的硬截断预算;全文可经 memory_read 或面板白板页查看。默认 1200。',
+        fProcInject: '流程记忆注入(总闸)', fProcInjectHint: '★流程记忆(技能固化)的总闸:关闭后既不写入流程记忆,也不把它注入提示词。默认开。注意:设置页此前的旧键「技能固化与晋升」宿主已不再读取,要改请改这一项。',
+        fFactRetention: '事实条数上限', fFactRetentionHint: '事实层最多保留多少条,超出时自动淘汰:先淘汰已撤销的,再按写入时间从旧到新,重要项(置顶 / 用户级 / 显式写入 / 高置信度)最后淘汰。默认 1000。',
+        fTier0Catalog: '目录层(Tier-0 摘要)', fTier0CatalogHint: '开启时每轮注入一段「记忆目录」摘要(条目名 + 一句话结论),让模型先看到全局再按需下探;关闭则完全不注入目录层,省 token。默认开。',
+        fTier0Max: '目录层 token 上限', fTier0MaxHint: '目录层单次注入的 token 硬上限(与「注入预算 × 目录层占比」取小生效)。默认 400。需要装下更多语料时提高这里,而不是把注入预算整体推高。',
+        fRulesLayering: '规则段分层', fRulesLayeringHint: '开启后规则类记忆单独成段、每轮在场且不参与裁剪(旧行为是把规则混进记忆流一起裁)。关闭 = 完全回到旧行为。默认开。',
+        fCriteriaGate: '账本判据门', fCriteriaGateHint: '开启时白板/账本小节必须满足判据(H1-H4 / S1-S4)才被采纳,防止把思考过程当结论固化。关闭只退掉这道质量门,骨架 fail-soft 仍无条件生效。默认开。',
+        fWsDiscover: '工作区发现上限', fWsDiscoverHint: '扫描本机会话时最多识别多少个工作区(按最近会话时间降序取前 N 个)。默认 200;机器上历史工作区很多时可调小以缩短扫描时间。',
+        fMemFileIndex: '记忆文件索引快照', fMemFileIndexHint: '开启后额外维护一份只读的记忆文件索引快照(供外部查询),有少量 IO 开销;默认关,关时零额外开销。',
+        fHandoffLedger: '账本注入预算(字符)', fHandoffLedgerHint: '最新一篇交接账本注入动态快照的硬截断预算。默认 800。',
+        fConsSchedule: '定时做梦式固化', fConsScheduleHint: '每天到点自动读最近日志发散提炼长期要点,写入项目笔记/用户级记忆(等价 memory_consolidate)。',
+        fConsScheduleTime: '固化触发时间', fConsScheduleTimeHint: 'HH:MM,插件日界内每天一次;默认 09:30。命中时刻需宿主在线。',
+        fConsScheduleDays: '固化回看天数', fConsScheduleDaysHint: '定时固化读取最近 N 天日志;默认 7。',
+        fMaintSchedule: '定时 30 天蒸馏', fMaintScheduleHint: '每天到点自动把超过 30 天的旧日志蒸馏归档(等价 memory_maintain);无旧日志时零成本跳过。',
+        fMaintScheduleTime: '蒸馏触发时间', fMaintScheduleTimeHint: 'HH:MM,默认 10:00(与固化时间错开)。',
+        waterCardTitle: '上下文水位', waterAutoSrc: '自动检测', waterManualSrc: '手动设定', waterOfficialSrc: '官方路由容量', waterFallbackSrc: '回退默认值', waterNotMeasured: '本会话尚未测量(发送一轮后自动更新)', waterWindowUnknown: '未测出上下文窗口大小', waterWindowUnknownHint: '未能从本会话读取模型窗口(旧会话记录可能已归档/回收)。发送一轮消息后可自动测出;或在下方手动填写「水位窗口」后即恢复。', waterMeterOfficial: '官方计量', waterMeterHeuristic: '启发式降级', waterThresholdHint: '水位达到 {t} 时注入交接建议并自动补写账本;计量优先用官方 token-meter(与聊天框 context ring 同源),不可用时降级启发式估算;窗口优先取官方路由容量(request/context 的 contextWindow),其次按当前模型查 settings.yaml contextWindow,也可在下方手动覆盖;触发分母=官方声明窗口(provider 自报过硬限时取较小值),预留输出不参与扣减。',
+        waterOfficialTitle: '官方压缩对照', waterOfficialLine: '官方自动压缩阈值 = 窗口的 {op}%(={ot} token),本插件在该点前 {m}× 处提示:即 {t}%', waterGapLine: '当前 {cp}% · 距官方压缩还有 {gp} 个百分点({gt} token)', waterGapPassed: '当前 {cp}% · 已越过官方压缩阈值 {op}%(官方会在下一步压缩)', waterModeAuto: '动态推算', waterModeFixed: '固定值', waterParamSrc: '参数来源',
+        autoContTitle: '自动接续', autoContHint: '开启后:水位达到阈值即弹出确认卡——同意=立即接续,拒绝=本轮跳过(同一边界不再提示),30-40 秒无操作视为挂机自动接续;接续流程为先终止旧会话当前回合(未完成的回答会被打断)→ 让旧 Agent 刷新白板 PLAN 与交接账本并等它真正执行完 → 再建新会话(沿用工作区/模型/思考档位)并注入分层交接材料;触发后默认 30 分钟内不重复。', autoContOn: '自动接续:开', autoContOff: '自动接续:关', autoContThreshold: '阈值', autoContCountdown: '⏳ {s} 秒后自动接续…', autoContCancel: '取消', autoContConfirm: '本会话上下文已用 {p}%(按官方声明窗口计,官方约 80% 才压缩)。现在接续到新会话?点「同意接续」会先终止旧会话当前回合(未完成的回答会被打断),再让旧会话刷新白板与账本,然后建新会话。', autoContAgree: '同意接续', autoContReject: '拒绝', autoContTimeout: '{s} 秒后自动接续(视为挂机)', autoContRejected: '已跳过本次接续(下一个轮次边界再提醒)',
+        continueCardTitle: '一键接续', continueCardHint: '写好交接账本→创建新会话→把交接材料作为首条消息预载,并自动切换到新会话继续任务(接续材料含白板节选+最新账本;当前工作区无账本时自动取全局最近一篇)。', continueBtn: '一键接续到新会话', continueBusy: '处理中…',
+        fStyle: '反思风格', fStyleHint: '生活化 / 专业性 / 由内容决定。',
+        fLocale: '界面语言', fLocaleHint: '默认跟随 DSH 系统语言;也可手动指定中文 / English。', followSystem: '跟随系统语言',
+        saveSettings: '保存设置',
+        zh: '中文', en: 'English',
+        calendar: '日历', addItem: '添加', save: '保存', cancel: '取消', needTitle: '请填写事项标题', itemTitle: '事项标题…',
+        segMorning: '早晨', segForenoon: '上午', segNoon: '中午', segAfternoon: '下午', segEvening: '晚上',
+        segPrefix: '今日', segMorningHint: '(昨日摘要)',
+        welcomeBack: '欢迎回来!这段时间你完成了这些工作:',
+        yesterdayDrawer: '昨天',
+        greetMorning: '新的一天开始啦,先看看昨天做了什么。', greetForenoon: '上午好,今天也在稳步推进。', greetNoon: '中午好,歇口气再继续。', greetAfternoon: '下午好,下午也要元气满满。', greetEvening: '晚上好,辛苦一天了。',
+        greetSummary: '今天已经完成了 ', greetThings: ' 件工作,点开看看:',
+        qUrgentImportant: '重要紧急', qImportant: '重要不紧急', qUrgent: '紧急不重要', qNone: '不重要不紧急', qUncategorized: '未分类',
+      },
+      en: {
+        loading: 'Loading…',
+        memoryPanel: 'Memory Panel',
+        memory: 'Memory',
+        autoMemory: 'Auto Memory',
+        overview: 'Overview', teamTab: 'Team', fTeamEnable: 'Teamwork master switch', fTeamServer: 'Team server URL', fTeamId: 'Team ID', fTeamMemberName: 'Local member name', fTeamSyncMode: 'Sync mode', fTeamSyncInterval: 'Auto sync interval (sec)', fTeamScopeDefault: 'Default scope for new memories', fTeamShareExternal: 'Share imported external memories', fTeamConflictPolicy: 'Default conflict policy', fTeamAttribution: 'Show author badge on cards', fTeamSkin: 'Team skin ID', fTeamAudit: 'Show audit line on cards', fTeamTest: 'Test connection', fTeamLeave: 'Leave team',
+  statsTab: 'Stats',
+  statsTitle: 'Recall statistics (what gets remembered)',
+  statsSubtitle: 'Recording only — ranking untouched. Weighting comes after the data proves the metric.',
+  statsQueries: 'Queries',
+  statsZeroHit: 'Zero-hit',
+  statsDistinct: 'Distinct recalled',
+  statsTotalHits: 'Total hits',
+  statsWarm: 'Recalled once',
+  statsByLayer: 'By layer',
+  statsByDay: 'Per day',
+  statsSources: 'By channel',
+  statsTop: 'Most recalled',
+  statsEmpty: '(no data yet — run memory_recall a few times and come back)',
+  statsReset: 'Reset stats',
+  statsResetDone: 'Cleared',
+  statsChannels: 'Three channels (counted separately — they mean different things)',
+  statsChOverview: 'Share per channel',
+  statsChModel: '1) Model-initiated recall',
+  statsChModelHint: 'The model explicitly looked for it -> high signal: what is actually needed',
+  statsChInject: '2) Auto-injected every turn',
+  statsChInjectHint: 'The system keeps feeding it -> cost view: which section eats the budget',
+  statsChShadow: '3) Proactive shadow recall',
+  statsChShadowHint: 'System judged it worth surfacing -> quality view: how often it came up empty',
+  statsEvents: 'Events',
+  statsNoInject: 'No injection recorded yet (accumulates after host restart)',
+  statsSegChars: 'By characters (who eats the budget)',
+  statsSegCount: 'By occurrences',
+  statsSince: 'Recording since',
+  statsNever: 'never', logs: 'Logs', refineTab: 'Recall review', notes: 'Notes', reflections: 'Reflections', connect: 'Connect', calendar: 'Calendar', search: 'Search', workspaces: 'Workspaces', hubTab: 'Memory Hub', storageTab: 'Storage', planTab: 'Whiteboard', planTitle: 'Whiteboard · PLAN.md (project plan)', planEmpty: '(not created yet — the host seeds a skeleton board when a turn first ends in this workspace; the model rewrites it with real content once it grasps the picture, or ask it to write memory_note kind=plan)', planVersions: 'Plan versions', planLedgers: 'Handoff ledger timeline', planDisabled: 'Handoff whiteboard is disabled (Settings → Handoff).', planWsUnbound: 'This session has no bound workspace — whiteboard and handoff ledgers are unavailable (the session workspace could not be resolved; open the session inside a project folder or bind a workspace to restore).', planFileTitle: 'View',
+        hubSkills: 'Skills (Procedural)', hubSkillsEmpty: 'No solidified skills yet. Repeatedly-successful workflows become skills and are recalled in similar contexts.', hubFacts: 'Facts (Semantic)', hubFactsEmpty: 'No solidified facts yet.', hubConflicts: 'Pending conflicts', hubEpisodic: 'Episodes (Episodic)', hubEpisodicEmpty: 'No consolidated episodes yet.',
+        storageScanHint: 'Corpus health = compare each source\'s index (sidecar) against its body digest. After you hand-edit a memory file the index no longer matches, and that memory drops out of retrieval until the index is rebuilt.',
+        storageDeleteHint: 'Delete = atomic body removal + in-flight activation purge + derived-fact revocation (cascading). Evidence already recorded (seen) is never rewritten.',
+        migTitle: 'Migrate pack', migHint: 'Pack one workspace memory and carry it to another machine; when the path changes, internal references are rewritten automatically.', migExport: 'Export this workspace', migImport: 'Import pack', migPickPack: 'Pick a .dam-pack file', migPreview: 'Preview diff (writes nothing)', migApply: 'Confirm import',
+        migPathChanged: 'Path changed: internal references will be rewritten', migSamePath: 'Same path: no rewrite at all', migConflictKeep: 'On conflict: keep this machine', migConflictOverwrite: 'On conflict: overwrite with pack', migConflictRename: 'On conflict: rename to .from-pack', migBackup: 'Backed up to', migWritten: 'Files written',
+        secSemantic: 'Semantic engine', semMode: 'Retrieval mode', semAuto: 'Auto (recommended)', semLexOnly: 'Lexical only', semJs: 'Built-in semantic', semPy: 'Advanced Python',
+        pyWizTitle: 'One-click Python engine setup', pyWizStep1: '1. Detect Python environment', pyWizStep2: '2. Create isolated venv (~/.dsh/python-engine/.venv, system untouched)', pyWizStep3: '3. Install engine deps (transformers + onnxruntime + torch)', pyWizStep4: '4. Download BGE-M3 int8 model (~539MB, resumable, auto mirror failover)',
+        pyWizDetect: 'Detect', pyWizRedetect: 'Re-detect', pyWizCreate: 'Create venv', pyWizInstall: 'Install deps', pyWizDownload: 'Start download', pyWizCancel: 'Cancel download', pyWizDone: 'All ready - enable it above', pyWizOk: 'ok', pyWizMissing: 'not found', pyWizTooOld: 'incompatible (need 3.9-3.12)', pyWizVenvRec: 'recommended', pyWizEta: 'eta', pyWizSec: 's', pyWizModelHint: 'Model and venv live in ~/.dsh/python-engine/ (user dir) - plugin upgrades never touch them.',
+        fAssocEngine: 'Enable automatic memory engine', fAssocEngineHint: 'Master switch. On = auto-observe context, semantic retrieval, and timely memory-activation injection (costs a little token). Off = the whole engine stops — no retrieval, no decide, no injection, no activation records. For users concerned about token cost or off-course actions. Default off.',
+        fAnchorIndex: 'Memory anchor index (corpus health / storage mgmt)', fAnchorIndexHint: 'When on, each memory file gets a sidecar index copy: the Storage tab can run corpus-health comparisons, "repair stale", and delete memories (cascading). When off those actions are unavailable (repair reports no-doc-store) but memory read/write/recall are unaffected. Default off.',
+        secMemoryHubHint: 'Memory Hub = the orchestrator for three memory layers (episodic / semantic / procedural). When on, it distills episodes from dialogue, solidifies facts, and turns repeatedly-successful workflows into skills that are auto-recalled in similar contexts.',
+        fMemoryHub: 'Enable Memory Hub', fMemoryHubHint: 'Master switch. On = the three memory layers (episodic / semantic / procedural) start running; Off = keep existing memories but stop distilling new ones. Default off.',
+        fEpisodicMin: 'Min segments per episode', fEpisodicMinHint: 'How many dialogue segments an episode needs before it is consolidated. Too low = noise; too high = small talks discarded. Default 2.',
+        fEpisodicRet: 'Episode retention (count)', fEpisodicRetHint: 'Max recent episodes kept; oldest are evicted beyond this. Default 256.',
+        fProcSessions: 'Skill promotion sessions', fProcSessionsHint: 'A workflow must appear in N distinct sessions before it can be promoted to a skill. Default 3 (M-04 meta-code).',
+        fProcSuccess: 'Skill promotion successes', fProcSuccessHint: 'A workflow must succeed N times before promotion. One success is not enough proof. Default 2.',
+        fProcCorr: 'Skill correction tolerance', fProcCorrHint: 'Max ratio of corrections/errors to total evidence for a workflow. Above this it stays a candidate. Default 0.3 (30%).',
+        fProcRisk: 'High-risk needs approval', fProcRiskHint: 'High-risk workflows (SSH/deploy/delete) require explicit user approval to promote, and are never auto-executed on similarity alone. Default on.',
+        fProcLevel: 'Skill injection form', fProcLevelHint: 'What form an active skill takes when injected: checklist = full steps + success criteria; excerpt = summary; hint = just "refer to this skill". High-risk auto-downgrades to hint.',
+        memoryHubViewHint: 'View Memory Hub content in the "Memory Hub" tab of the Memory panel.',
+        fJsCooldown: 'Activation cooldown (min)', fJsCooldownHint: 'After an auto-activation injection, do not decide again for N minutes, preventing consecutive activations from wasting tokens. Default 1; 0 = no cooldown.',
+        fJsDelta: 'Activation margin threshold (e5)', fJsDeltaHint: 'Inject only when the gap between top-1/top-2 candidates exceeds this (e5 cosine is tight, default 0.01; the bge-m3 calibrated value is 0.03). Lower = easier recall, higher = conservative. 0 = no filter.',
+        fEmitMode: 'Activation emit mode', fEmitModeHint: 'shadow = record decisions only, no injection (calibration); canary-explicit = inject only on explicit recall (recommended); active = inject on every decide. Shared by JS/Python tracks.',
+        fCandScheme: 'Activation candidate scheme', fCandSchemeHint: 'balanced = 3×40 chars (default, info/token balance); dense = 6×20 chars (more candidates, wider recall); custom = your own count & length.',
+        fCandN: 'Custom candidate count', fCandNHint: 'Candidate count for custom scheme (1-8).',
+        fJsExcerpt: 'Activation excerpt length (chars)', fJsExcerptHint: 'Max length of the Reference line in the Reference Tail. Default 40 = a few words/keyword level (saves tokens; model uses memory_read for details). Raise to inject more memory body. Range 20-480.',
+        semModeHint: 'Auto = built-in semantics when ready, lexical fallback otherwise; Advanced Python requires separate installation.',
+        fReasoning: 'Chain-of-thought listening', fReasoningHint: 'Include model reasoning in live observation (applies after restart). On by default — summary-style CoT from closed models is captured too.',
+        fChildObs: 'Branched-session observation', fChildObsHint: 'Sessions resumed across days are flagged as branched; enable to include them too. On by default.',
+        fTauHi: 'Activation thresholds (calibrated)', fTuningHint: 'Thresholds are owned by the calibrated policy JSON; these inputs are a preview tuning entry and apply on next round.',
+        refineTitle: 'Recall review & corpus refinement', refineSub: 'Give your ruling on each activation decision (A activate / P prefetch / S suppress / H harmful / E edit target). Rulings feed an append-only review queue for offline replay and policy evolution.',
+        refineEmpty: '(no activation records yet — they appear as shadow observation produces data)', refineLoadErr: 'Failed to load: ',
+        sent1: 'queued', semReady: 'Built-in semantic engine ready', semMissing: 'Semantic pack not downloaded (~130MB)', semStatusErr: 'status unknown', semGuide: 'Setup guide', semGuideJs: 'The built-in semantic engine downloads a ~130MB local model (multilingual-e5-small, quantized). It runs entirely on your machine — memories never leave it. After download it verifies checksums, builds the index, then switches on automatically. You can keep using lexical search meanwhile.', semGuidePy: 'The advanced Python engine runs BGE-M3 int8 (~563MB) via a local sidecar for the highest recall. It requires a guided install (Python runtime + model). Not required for normal use.', semLater: 'Later', semInstall: 'Install', semPending: 'will be available in an upcoming release; this guide will walk through it once shipped.',
+        semResolved: 'Active retrieval', tierC1: 'C1 lexical floor (BM25)', tierC2: 'C2 built-in semantic e5-small q8', tierC3: 'C3 advanced Python bge-m3',
+        semDlStart: 'Download', semDlRetry: 'Retry', semDlCancel: 'Cancel',
+        mAuto: 'Auto (CN mirror first)', mCn: 'CN · hf-mirror', mIntl: 'Intl · huggingface',
+        dlDownloading: 'Downloading', dlVerifying: 'Verifying (SHA256)', dlDone: 'Download complete', dlCancelled: 'Cancelled', dlError: 'Download failed',
+        fWelcomeTour: 'Welcome tour', fWelcomeTourHint: 'Auto-plays the step-by-step feature tour (with engine detection/download) on first launch; turn off to keep it manual. Replay anytime.', tourReplay: '▶ Replay tour',
+        wsGenerating: 'Generating per-workspace summaries (one AI call each, may take a while)…', wsNone: 'No workspace with memory found', wsNoSummary: '(no summary)', wsOverview: 'Workspace summaries (all workspaces)',
+        debugCenter: 'Debug Center', dbgLoading: 'Loading diagnostics…', dbgRefresh: 'Refresh', dbgRefreshing: 'Refreshing…',
+        fMemoryRoot: 'Memory root', fMemoryRootHint: 'Centralized storage: all workspace memories live here (one subdir per workspace); legacy memories are auto-migrated.',
+        fBrowse: 'Browse…', browseTitle: 'Choose memory root', fUp: 'Up', fSelectDir: 'Select this folder',
+      pickedDir: 'Selected folder:', rememberSave: '(click Save to apply)', pickerUnavailable: 'Native folder picker unavailable, falling back to in-app browser.',
+      fDayBoundary: 'Day boundary (minutes)', fDayBoundaryHint: 'Minutes from midnight: work before it counts as the previous day. Default 450 = 7:30 AM starts the new day; 480 = 8:00; 0 = midnight cut.',
+      fVersion: 'Plugin version', checkUpdate: 'Check for updates', checking: 'Checking…', upToDate: '(up to date)', hasUpdate: '(update available)', versionError: 'Version check failed: ', versionCmdHint: 'Update: cd ~/.dsh/profiles/web && pnpm up @a9i5k4/dsh-auto-memory, then restart dsh web.',
+      updateNow: 'Update now', updating: 'Updating…', updateDone: 'Update finished, restart dsh web to apply.', updateFailed: 'Update failed: ', devLinkHint: '(local dev link — one-click update does not apply. If "dev tree vX to registry vY" shows above, a newer version is on npm; sync the source and rebuild.)', noProfileHint: '(no dsh profile found, cannot auto-update)',
+      kvVersion: 'Plugin version', kvUnreadable: '(unreadable)', kvPid: 'PID / Started', kvRestart: 'Host restart needed?', kvRestartYes: 'yes (code newer than process)', kvRestartNo: 'no',
+      kvHeartbeat: 'Heartbeat', hbAliveAgo: 'alive (last ', hbSecAgo: ' s ago)', hbAlive: 'alive', hbNone: 'no heartbeat file',
+      kvQueue: 'Consolidation retry queue', kvCountSuffix: ' item(s)', kvToday: 'Consolidated today', kvRecentPrefix: ' item(s) / latest ', kvBusy: 'Consolidating now', kvYes: 'yes', kvNo: 'no',
+      kvAvail: 'available', kvUnavail: 'unavailable', kvDup: 'Duplicate note headings', kvDupCount: '',
+      kvMem: 'Memory files', kvMemUser: 'user', kvMemNotes: 'notes', kvMemLog: 'log', kvMemMissing: 'missing',
+      kvWs: 'Current workspace', kvWsUnknown: '(unknown)', kvApi: 'API probes', unknown: '(unknown)',
+      dbgHubIo: 'Layer-3 memory persistence', dbgPrune: 'Fact eviction (retention cap)',
+      dbgLogs: 'Diagnostic log',
+      dbgLogsNone: 'not created yet (no diagnostic output this run)',
+      dbgLogsHint: 'On a crash/exception, attach the file at the path below (read-only; log body not shown)',
+      kvPyTitle: 'Python sidecar', kvPyOff: 'disabled (JS-side semantics unaffected)', kvPyAlive: 'running',
+      kvPyWatchdog: 'Watchdog kills / respawns', kvPyStderr: 'Last stderr tail', kvPyStderrTrunc: ' (truncated)',
+      updateTitle: 'dsh-auto-memory Updated', updateSub: 'What\'s new in this update:', gotIt: 'Got it', noticeOpen: 'Learn more',
+        refresh: 'Refresh', refreshing: 'Refreshing…', close: 'Close', dragMove: 'Drag to move', dragResize: 'Drag to resize', resetPos: 'Reset position', pinPanel: 'Pin panel (stays open when clicking elsewhere)', unpinPanel: 'Unpin (auto-hide on outside click)',
+        generated: 'Generated', failed: 'Failed: ',
+        generatedAt: 'Generated ',
+        pointsCount: ' items', summarizing: 'AI summary generating…', summaryFailed: 'Summary failed, press refresh to retry',
+        pendingReflection: 'Pending reflection: ',
+        pendingReflectionHint: ' — click "One-click Reflect" below to generate now.',
+        todayWork: 'Today', logEntries: ' log entries',
+        autoSettledToday: 'Auto-consolidated ', autoSettledSuffix: ' points today',
+        autoSettledRecent: 'Latest: ', autoSettledNone: 'Nothing auto-consolidated this turn',
+        dailyReflection: 'Daily reflection', notYet: '(none yet)',
+        workspace: 'Workspace',
+        reflecting: 'Generating…', oneClickReflect: 'One-click Reflect',
+        reflectHint: 'Auto-generate reflection from recent logs',
+        quickLinks: 'Quick access: Logs tab for daily records · Notes tab to append project notes · Connect tab to import AI memories · Search tab for full-text search.',
+        collapseTech: 'Collapse details ▴', expandTech: 'Details ▾',
+        userMemory: 'User memory', projectNotes: 'Project notes', todayLog: 'Today log', configFile: 'Config file',
+        readFailed: 'Read failed: ', ok: 'OK', refreshTime: 'Refreshed', notYetShort: 'never',
+        empty: '(empty)', back: '← Back', view: 'View',
+        clickDateViewLog: 'Click a date to view the daily log (append-only):',
+        userMemoryBlock: 'User memory (profile · cross-project):', userMemoryEmpty: '(empty)', userMemoryTruncated: '(content truncated for display)',
+    hubStageObserved: 'observed',
+    hubStageCandidate: 'candidate',
+    hubStageValidated: 'validated',
+    hubStageActive: 'active',
+    hubStageDeprecated: 'deprecated',
+    hubWhyTitle: 'Why it cannot be promoted yet: ',
+    hubWhyCanPromote: 'All conditions met — ready to promote.',
+    // ★M8-B step 6 (2026-09-23): dual-library view (workspace / global).
+    hubScopeTitle: 'Skill library ownership',
+    hubScopeGlobal: 'Global library',
+    hubScopeWorkspace: 'This workspace',
+    hubScopeGlobalHint: 'Usable from every project (shared across workspaces).',
+    hubScopeWorkspaceHint: 'Only usable in the current workspace.',
+    hubScopeDefault: 'Default library: global',
+    hubScopeUnknownWs: 'Current workspace unknown — cannot move into the workspace library yet (a transfer fails explicitly instead of guessing a directory).',
+    hubScopeCounts: function (g, w) {
+      var gs = (g < 0) ? 'unreadable' : (g + '')
+      var ws = (w < 0) ? 'n/a' : (w + '')
+      return 'global ' + gs + ' · this workspace ' + ws
+    },
+    hubScopeCorrupt: 'A library file failed to parse — writes to it are refused (to avoid silently wiping it). Repair or back it up first.',
+    hubToGlobal: 'Promote to global',
+    hubToWorkspace: 'Move into workspace',
+    hubScopeBusy: 'Moving…',
+    hubScopeMoved: 'Moved: ',
+    hubScopeNoop: 'Already in the target library (nothing to move).',
+    hubScopeReasons: function (r) {
+      if (r === 'ws-unknown') return 'Current workspace is unknown, so the workspace library cannot be written.'
+      if (r === 'foreign-workspace') return 'This entry belongs to another workspace and cannot be moved into this one.'
+      if (r === 'not-found') return 'Not found in either library.'
+      if (r === 'phase-failed') return 'Two-phase commit failed; both libraries were rolled back to their pre-move state.'
+      if (r === 'scoped-io-unavailable') return 'Host provides no dual-library IO, so the move is unavailable.'
+      return String(r || 'unknown reason')
+    },
+    hubWhyDiversity: function (d, need) { return 'Needs ' + need + ' distinct sessions, currently ' + d + '.' },
+    hubWhySuccess: function (n, need) { return 'Needs ' + need + ' successes, currently ' + n + '.' },
+    hubWhyCorrectionRate: function (r, cap) { return 'Correction rate ' + r + ' exceeds cap ' + cap + '.' },
+    hubWhyHasCorrection: function (n) { return 'Has ' + n + ' correction(s) — a corrected flow must not be crystallized.' },
+    hubWhyNoCriteria: 'No success criteria — a flow without acceptance criteria is not a skill.',
+    hubWhyHighRisk: 'High risk — it needs your manual approval. Click "approve (manual)" below to crystallize it.',
+    hubWhyObservationOnly: 'This is an observation, not a real flow — it never auto-promotes.',
+    hubWhyStructural: 'This gate is structural (the entry is not a skill yet) — a human cannot override it either. Fill in the content and it gets re-evaluated.',
+    hubWhyOverridable: 'The above is only a statistical gate (not enough evidence yet), not a content failure — you can override it with the button on the right.',
+    hubForcePromote: 'Force promote (manual)',
+    hubForcePromoteTitle: 'Manually bypass the cross-session / success-count statistical gates. Structural gates are NOT bypassed, and a "manual authorization" trace is left on the entry.',
+    hubEvSeen: 'seen', hubEvSuccess: 'success', hubEvSessions: 'sessions', hubEvReuse: 'reused', hubEvCorrection: 'corrected',
+    hubEvLine: function (ev) { return 'seen ' + (ev.seen || 0) + ' · success ' + (ev.success || 0) + ' · used in ' + (ev.sessions || 0) + ' session(s)' + ((ev.correction || 0) ? ' · corrected ' + ev.correction + 'x' : '') },
+    hubInjectPreview: 'This is what gets injected once promoted',
+    hubInjectCriteria: 'Acceptance criteria: ',
+    hubNoSteps: '(no usable steps — mechanically truncated, not a real flow)',
+    rulesTitle: 'Hard constraints (injected every turn)',
+    rulesIntro: 'These entries are sent to the model verbatim on every turn and outrank other content. They bypass retrieval and are never auto-retired, so outdated or AI-added ones must be edited by hand.',
+    rulesPath: 'Source file: ',
+    rulesEmpty: '(none)',
+    rulesSourceUser: 'yours',
+    rulesSourceAi: 'added by AI',
+    rulesEdit: 'Edit', rulesSave: 'Save', rulesCancel: 'Cancel', rulesDelete: 'Delete',
+    rulesConfirmDelete: 'Delete this constraint?\n\nThis cannot be undone — it will stop being injected next turn.',
+    rulesAddHint: 'Add a constraint:',
+    rulesAddPlaceholder: 'e.g. Do not modify production files without my confirmation.',
+    rulesAdd: 'Add',
+    rulesPreviewHint: 'Preview: how it will be injected next turn',
+        appended: 'Appended', notesPathLabel: 'Project notes: ',
+        notesPlaceholder: 'Content to append to project notes…(date heading added on save)',
+        saving: 'Saving…', append: 'Append',
+        notesHint: 'Tip: ask the agent to call memory_note in chat; this is a manual fallback.',
+        reflectionTitle: 'Reflection ', generating: 'Generating…',
+        reflectAutoHint: 'Auto-generate a reflection draft from recent logs (for testing)',
+        noReflection: "No reflections yet. On the first session each day, the agent presents the previous day's reflection.",
+        searchFailed: 'Search failed: ', searchPlaceholder: 'Search memory: keyword or self-contained description…', searchBtn: 'Search', resultTitle: 'Results',
+        smartSearch: 'Smart search', smartAnswer: 'AI Answer', keywordsLabel: 'Keywords: ',
+        projectFiles: 'Project files', aiAssistant: 'AI Assistant',
+        imported: 'Imported', importing: 'Importing ', importingSuffix: ' sources…', allImported: 'All imported',
+        noExternal: 'No memory files found from other AI tools (CodeBuddy/Claude Code/Codex etc.).',
+        sessionSource: 'Session source: ', sessionSourceSuffix: ' session files, search on demand with memory_recall',
+        importingOne: 'Importing…', importToNotes: 'Import to notes', importToUser: 'Import to user memory',
+        disabled: ' · disabled', filesCount: ' files · ',
+        connectHint: 'Import memories accumulated by other AI tools (CodeBuddy / Claude Code / Codex / project convention files) into the current DSH workspace. Imported content is written to local memory with its source noted, and is auto-injected in future sessions.',
+        importAll: 'Import all', rescan: 'Rescan',
+        styleAuto: 'Auto', styleLife: 'Life-style', styleProfessional: 'Professional',
+        todayGreetingTitle: 'Greeting',
+        yesterdayTimeline: 'Yesterday (', pendingReflectionShort: 'Yesterday\'s work not reviewed (',
+        saved: 'Saved',
+        settingsHeader: 'Memory storage & behavior (saved to ~/.dsh/dsh-auto-memory.json):',
+        fFontSize: 'Panel font size', fFontSizeHint: 'Memory panel text size (applies immediately, this device only)', fsSm: 'Small', fsMd: 'Normal', fsLg: 'Large', fsXl: 'Extra large',
+        fPanelPos: 'Memory surface', fPanelPosHint: 'How memory content is presented: bottom-left floating card (draggable/resizable), a session page (a tab alongside "Trajectory"/"Context" in the conversation header), or both. Both surfaces share the same content and tabs, live-synced; this device only.',
+        posBottomLeft: 'Bottom-left (floating)', posPage: 'Session page (alongside Trajectory)', posBoth: 'Both, side by side',
+        fUserDir: 'User memory dir', fUserDirHint: 'Cross-project rules; supports ~ prefix; needs write permission.',
+        fProjectDir: 'Project memory dir', fProjectDirHint: 'Directory name relative to each workspace (default .dsh-memory).',
+        fInject: 'Inject memory context', fInjectHint: 'Auto-inject <memory_system> block into every prompt.',
+        fBudget: 'Injection budget (chars)', fBudgetHint: 'Total budget for the memory block; excess is truncated. Default 1600 (~400-600 tokens/turn); this background is injected every turn, so lower = fewer tokens, higher = more memory retained.',
+        fExclude: 'Excluded sources (one per line)', fExcludeHint: 'These sources never enter injection again, so a bad memory cannot keep steering the result. Four forms: memory id (mem_xxx), whole layer (log/whiteboard/project/user/reflection), directory prefix (ending in / or \\), exact file path. Complements supersede: supersede covers "replaced by a newer version", this covers "this source is untrustworthy". Blocked counts are reported as a [降级] line, never silently.',
+        fNoteCap: 'Project note capacity (chars)', fNoteCapHint: 'Capacity cap for the project MEMORY.md, default 24000. When exceeded the framework auto-consolidates: older content is first folded into bullet points by the model, falling back to whole-record archiving (originals go to archive, never lost) — new memories are never blocked. This is NOT the injection budget above: this caps the file itself, the injection budget caps the digest added to each turn.',
+        fUserCap: 'User memory capacity (chars)', fUserCapHint: 'Capacity cap for the user-level MEMORY.md (cross-project rules), default 24000. Same consolidation behaviour (fold into points first, whole-record archive as fallback).',
+        fSnapGap: 'Snapshot min gap (turns)', fSnapGapHint: 'After the dynamic memory snapshot changes, re-inject at least N turns later, so small per-turn log changes do not append a new snapshot every turn (history bloat). Default 5; 0 = try every turn (still change-gated).',
+        fReinjectOnCompact: 'Re-inject snapshot immediately after compaction', fReinjectOnCompactHint: 'When the context is compacted/truncated (usually a contextVersion reset), the snapshot is cleared; on = force re-inject once so the memory background rebuilds. Default on.',
+        fPromptCustom: 'Customize memory-injection prompt', fPromptCustomHint: 'Override any prompt layer (power feature). Placeholders: {date} {ws} {budget} {n}. One-click reset restores defaults.',
+        fPromptSections: 'Advanced: per-section injection…', fPromptSectionsHint: 'Controls which sections each round injects. All on by default; not recommended to change — turning one off drops the matching context or discipline.',
+        fDays: 'Recent days injected', fDaysHint: 'Inject tails of the last N days of work logs at session start. Default 1.',
+        fExtBudget: 'External memory injection budget (chars)', fExtBudgetHint: 'Budget for external memory sources in context. Default 1400 (limited effect with path mode).',
+        fConsolidateMin: 'Auto-consolidation content threshold (chars)', fConsolidateMinHint: 'Turns with fewer combined user+assistant chars are treated as chit-chat and skipped. Default 240.',
+      fAway: 'Away threshold (minutes)', fAwayHint: 'Marked away when inactive longer than this; the memory panel auto-opens on return. Default 60; set 0 to disable away detection and the welcome-back greeting (the dynamic snapshot stops injecting the welcome too).',
+      fAutoPopup: 'Auto-open memory panel', fAutoPopupHint: 'Auto-open the memory panel (corner) with a welcome when returning from away; disabled = open manually only. Default on.',
+      fUnattended: 'Unattended / headless mode', fUnattendedHint: 'For unattended batch tasks (hosted/nightly). On = no welcome-back directives, no behavioral instructions, no away/return prompts, no calendar reminders — only factual memory is injected, so the model wastes no tokens on niceties. Pairs with the model-side hosted-mode detection. Default off.',
+      fUnattendedAuto: 'Auto-unattended at night / off-hours', fUnattendedAutoHint: 'When on, auto-enters unattended mode during off-hours (default 22:00-08:00, tunable via unattendedAutoHours) or when a hosted task is detected — no welcome popup, no niceties. Manual toggle takes precedence; default off.',
+      fAutoConsolidate: 'Auto-consolidation (AI review each turn end)', fAutoConsolidateHint: 'When off, no automatic AI review or daily-log writes at turn end.',
+      fConsolidate: 'Auto-consolidate interval (minutes)', fConsolidateHint: 'Minimum gap between auto-consolidations. Default 30; doubled automatically outside work hours (22:00-08:00).',
+      fConsolidateMax: 'Daily auto-consolidate quota', fConsolidateMaxHint: 'Max auto-consolidation runs per day; no more runs after the quota is reached. Default 8.',
+      fAutoSum: 'Auto summary times (HH:MM, comma-separated)', fAutoSumHint: 'Auto-generate and show a period summary at these times, e.g. 12:00,18:00,22:00. Empty = off.',
+      awayTitle: 'Welcome back', awayMsg: 'While you were away, I tidied up your logs. The memory panel is open — take a look at what happened.',
+      sumTitle: 'Period summary',
+        fReflect: 'Daily reflection', fReflectHint: 'When yesterday has logs, the agent presents the reflection at session start.',
+        fAutoContinue: 'Auto continue', fAutoContinueHint: 'Shows a confirm card once the water level passes the threshold; agreeing continues into a new session (workspace/model/reasoning effort are carried over). Off by default (still in testing); independent of the handoff whiteboard — turning the whiteboard off never disables water-level measurement or continue eligibility.',
+        handoffSwitchTitle: 'Whiteboard & auto continue switches', handoffSwitchHint: 'Both default to off (still in testing). These are the same config keys as Settings → Context — changing either applies globally.', handoffOn: 'Handoff whiteboard: on', handoffOff: 'Handoff whiteboard: off',
+        fHandoff: 'Handoff whiteboard', fHandoffHint: 'PLAN.md snapshot + four-part handoff ledger: written by the model at milestones, injected first in the dynamic snapshot, live in the Whiteboard tab — context that survives windows.',
+        fWaterWindow: 'Water-level window (tokens)', fWaterWindowHint: 'Session messages priced with the official meter (4 chars ≈ 1 token); past this, context is considered nearly full; 0 disables. Default 65536 — a conservative half of a 128K window.',
+        fWaterAdvisory: 'Water-level handoff advisory', fWaterAdvisoryHint: 'Injects a handoff advisory past the threshold (write ledger / refresh plan / suggest a new window); silent in unattended mode.',
+        fWaterAuto: 'Auto skeleton ledger', fWaterAutoHint: 'Past the threshold, auto-writes one system skeleton ledger per session as a safety net if the model ignores the advisory.',
+        fWaterThreshold: 'Water-level threshold', fWaterThresholdHint: 'The ratio counts session tokens against the official declared window (the reserved output budget is no longer deducted); past this value (0.1-1.5) the handoff advisory / skeleton ledger fires; default 0.75 — the official auto-compaction threshold is 80%, so a 5% margin is needed to finish the handoff first.',
+        fHandoffPlan: 'Plan injection budget (chars)', fHandoffPlanHint: 'Hard truncation budget for injecting the PLAN.md snapshot into the dynamic memory; full text via memory_read or the Whiteboard tab. Default 1200.',
+        fProcInject: 'Procedure memory injection (master switch)', fProcInjectHint: 'Master switch for procedure memory (skill crystallization): when off, none is written and none is injected. On by default. The older "Skill crystallization" key is no longer read by the host, so change this one instead.',
+        fFactRetention: 'Fact retention limit', fFactRetentionHint: 'Maximum facts kept; when exceeded, revoked facts are pruned first, then oldest-first by write order, and important ones (pinned / user-level / explicit / high-confidence) last. Default 1000.',
+        fTier0Catalog: 'Tier-0 catalog layer', fTier0CatalogHint: 'When on, a short memory catalog (entry titles plus a one-line takeaway) is injected every round so the model sees the whole picture before drilling down. Off injects no catalog layer at all, saving tokens. On by default.',
+        fTier0Max: 'Tier-0 token cap', fTier0MaxHint: 'Hard per-injection token cap for the catalog layer, taking the minimum with (injection budget x catalog share). Default 400. Raise this rather than the whole injection budget when more corpus must fit.',
+        fRulesLayering: 'Layered rules section', fRulesLayeringHint: 'When on, rule-type memories form their own section that is always present and never trimmed (the legacy behavior mixed rules into the trimmable memory stream). Off is exactly the legacy behavior. On by default.',
+        fCriteriaGate: 'Ledger criteria gate', fCriteriaGateHint: 'When on, whiteboard/ledger sections must satisfy the criteria (H1-H4 / S1-S4) before being accepted, which prevents storing reasoning as conclusions. Off drops only this quality gate; the skeleton fail-soft path always applies. On by default.',
+        fWsDiscover: 'Workspace discovery cap', fWsDiscoverHint: 'Maximum workspaces identified when scanning local sessions (newest session time first). Default 200; lower it to speed up scanning when many historical workspaces exist.',
+        fMemFileIndex: 'Memory file index snapshot', fMemFileIndexHint: 'When on, an extra read-only index snapshot of memory files is maintained for external queries, at a small IO cost. Off by default, and off means zero overhead.',
+        fHandoffLedger: 'Ledger injection budget (chars)', fHandoffLedgerHint: 'Hard truncation budget for injecting the latest handoff ledger. Default 800.',
+        fConsSchedule: 'Scheduled deep consolidation', fConsScheduleHint: 'Once a day at the set time, read recent logs and distill long-term value into project notes / user memory (same flow as memory_consolidate).',
+        fConsScheduleTime: 'Consolidation time', fConsScheduleTimeHint: 'HH:MM, once per plugin day; default 09:30. The host must be online at that moment.',
+        fConsScheduleDays: 'Consolidation lookback (days)', fConsScheduleDaysHint: 'How many recent days of logs the scheduled consolidation reads; default 7.',
+        fMaintSchedule: 'Scheduled 30-day distill', fMaintScheduleHint: 'Once a day at the set time, distill & archive logs older than 30 days (same flow as memory_maintain); zero cost when nothing to archive.',
+        fMaintScheduleTime: 'Distill time', fMaintScheduleTimeHint: 'HH:MM, default 10:00 (staggered from the consolidation time).',
+        waterCardTitle: 'Context water level', waterAutoSrc: 'auto-detected', waterManualSrc: 'manual', waterOfficialSrc: 'route capacity', waterFallbackSrc: 'fallback default', waterNotMeasured: 'Not measured for this session yet (updates after the next turn)', waterWindowUnknown: 'Context window size unknown', waterWindowUnknownHint: 'Could not read the model window from this session (its record may have been archived or recycled). Send a turn to detect it, or set the water-level window manually below.', waterMeterOfficial: 'official meter', waterMeterHeuristic: 'heuristic fallback', waterThresholdHint: 'Past {t} of the window, the handoff advisory is injected and the skeleton ledger is backfilled; metering prefers the official token-meter (same source as the chat context ring), falling back to the heuristic when unavailable; the window prefers the official route capacity (request/context contextWindow), then the active model in settings.yaml, or your manual override below; the trigger denominator is the official declared window (min with any provider-reported hard limit) — the reserved output budget is not deducted.',
+        waterOfficialTitle: 'Official compaction reference', waterOfficialLine: 'Official auto-compaction fires at {op}% of the window (={ot} tokens); this plugin advises {m}× earlier, i.e. at {t}%', waterGapLine: 'Now at {cp}% · {gp} points ({gt} tokens) left before official compaction', waterGapPassed: 'Now at {cp}% · already past the official compaction threshold of {op}% (the host will compact on the next step)', waterModeAuto: 'dynamic', waterModeFixed: 'fixed', waterParamSrc: 'param source',
+        autoContTitle: 'Auto continue', autoContHint: 'When on: a confirm card appears once the water level passes the threshold — Agree = continue now, Decline = skip this boundary (no re-prompt for it), no answer for 30-40s = unattended, continue automatically. The handoff sequence is: stop the old turn first (an unfinished answer will be interrupted) → have the old agent refresh PLAN + ledger and wait until it has really run → then create the new session, which keeps workspace/model/reasoning effort and receives layered handoff material; suppressed for 30 minutes after each run.', autoContOn: 'Auto continue: on', autoContOff: 'Auto continue: off', autoContThreshold: 'Threshold', autoContCountdown: '⏳ Auto-continue in {s}s…', autoContCancel: 'Cancel', autoContConfirm: 'Context at {p}% of the official declared window (official compaction starts ~80%). Continue into a new session now? Agreeing stops the old turn first (an unfinished answer will be interrupted), then the old agent refreshes PLAN + ledger before the new session is created.', autoContAgree: 'Continue', autoContReject: 'Decline', autoContTimeout: 'auto-continue in {s}s (unattended)', autoContRejected: 'Skipped this handoff (will ask again at the next turn boundary)',
+        continueCardTitle: 'One-click continue', continueCardHint: 'Writes the handoff ledger → creates a new session → injects the handoff material as the first message → switches to the new session automatically (material = PLAN excerpt + latest ledger; falls back to the most recent global ledger when this workspace has none).', continueBtn: 'Continue in a new session', continueBusy: 'Working…',
+        fStyle: 'Reflection style', fStyleHint: 'Life-style / Professional / Auto.',
+        fLocale: 'UI language', fLocaleHint: 'Follows the DSH system language by default; you can also pin Chinese / English.', followSystem: 'Follow system language',
+        saveSettings: 'Save settings',
+        zh: '中文', en: 'English',
+        calendar: 'Calendar', addItem: 'Add', save: 'Save', cancel: 'Cancel', needTitle: 'Title is required', itemTitle: 'Item title…',
+        segMorning: 'Morning', segForenoon: 'Forenoon', segNoon: 'Noon', segAfternoon: 'Afternoon', segEvening: 'Evening',
+        segPrefix: 'Today ', segMorningHint: ' (yesterday summary)',
+        welcomeBack: 'Welcome back! While you were away, you finished:',
+        yesterdayDrawer: 'Yesterday',
+        greetMorning: 'A fresh day! Let us look back at yesterday first.', greetForenoon: 'Good morning, steady progress today.', greetNoon: 'Good noon, take a break and keep going.', greetAfternoon: 'Good afternoon, keep up the good energy.', greetEvening: 'Good evening, well done today.',
+        greetSummary: 'You have completed ', greetThings: ' things today. Tap to expand:',
+        qUrgentImportant: 'Urgent & Important', qImportant: 'Important', qUrgent: 'Urgent', qNone: 'Neither', qUncategorized: 'Uncategorized',
+      }
+    }
+    var locale = 'zh'
+    var localeMode = 'system' // 'system'=跟随 DSH 系统语言 | 'zh' | 'en'
+    var sysLocale = 'zh' // DSH 系统语言(跟随模式使用)
+    function applyLocalePref(m) {
+      if (m !== 'zh' && m !== 'en' && m !== 'system') m = 'system'
+      localeMode = m
+      var target = m === 'system' ? sysLocale : m
+      if (locale !== target) { locale = target; localeListeners.forEach(function (fn) { try { fn() } catch (e) {} }) }
+    }
+    var sessions = null
+    var remoteFace = null
+    // 官方 session.create 返回形态多样(裸字符串 / {sessionId} / {id} / {value} / {ok,value:{sessionId}}),统一提取会话 id
+    function extractSessionId(created) {
+      if (created == null) return null
+      if (typeof created === 'string') return created
+      if (typeof created !== 'object') return null
+      if (typeof created.sessionId === 'string') return created.sessionId
+      if (typeof created.id === 'string') return created.id
+      var v = created.ok && created.value !== undefined ? created.value : (created.value !== undefined ? created.value : null)
+      if (v && typeof v === 'string') return v
+      if (v && typeof v === 'object') {
+        if (typeof v.sessionId === 'string') return v.sessionId
+        if (typeof v.id === 'string') return v.id
+      }
+      return null
+    }
+    // 当前会话工作区(跟随 GUI 切换工作区):从 sessions 服务拿,供 state/summarize/greet 请求使用
+    // ★2026-09-24 同步修:snap.current 恒 undefined ⇒ 工作区永远取不到。改走 mainViewSessionIdClient。
+    function currentWs() {
+      try {
+        var id = mainViewSessionIdClient()
+        if (!id) return ''
+        var snap = sessions && sessions.list && sessions.list.getSnapshot()
+        var s = snap && snap.byId && snap.byId[id]
+        return (s && typeof s.cwd === 'string') ? s.cwd : ''
+      } catch (e) { return '' }
+    }
+    // 轮次边界探测(①,2026-09-08 2.2.4):读 harness 权威 running 位(sessions.list 快照,官方 buildListSnapshot 投影),
+    // 取代旧「连续两轮水位不增长=空闲」——长工具调用会被误判空闲、真挂机又永不触发。
+    // ★2026-09-24 同步修:同 currentSessionIdClient 的根因(snap.current 恒 undefined)。
+    //   此处**自带两级解析、不外调辅助函数** —— 守卫 G13 会把本函数体单独抽出来真跑
+    //   (tests/smoke/smoke-test-continue-chain.mjs:187 的 extractFn),外调即 ReferenceError。
+    function currentRunningInfo() {
+      try {
+        var snap = sessions && sessions.list && sessions.list.getSnapshot()
+        if (!snap) return null
+        var id = snap.current
+        if (id === undefined || id === null || String(id) === '') {
+          var cur = ''
+          var bestAt = -1
+          var ids = (snap.ids && snap.ids.length) ? snap.ids : Object.keys(snap.byId || {})
+          for (var i = 0; i < ids.length; i++) {
+            var row = snap.byId && snap.byId[ids[i]]
+            if (!row || !row.retainedBy || !(row.retainedBy.mainView > 0)) continue
+            var at = Number(row.updatedAt) || 0
+            if (at > bestAt) { bestAt = at; cur = String(ids[i]) }
+          }
+          id = cur
+        }
+        if (id === undefined || id === null || String(id) === '') return null
+        var s = snap.byId && snap.byId[id]
+        if (!s) return null
+        return { sessionId: id, running: !!s.running }
+      } catch (e) { return null }
+    }
+    function runningOfSession(sessionId) {
+      try {
+        var snap = sessions && sessions.list && sessions.list.getSnapshot()
+        var s = snap && snap.byId ? snap.byId[sessionId] : null
+        return s ? !!s.running : null
+      } catch (e) { return null }
+    }
+    // 当前会话 id(跟随 GUI 切换会话):水位卡按会话取数,切换即刷新(2026-09-08)
+    // ★2026-09-24 修:旧实现**只**读 snap.current —— 官方 SessionListState 只有
+    //   { ids, byId, phase, projectionsBySession },没有 current 字段 ⇒ 恒返回 ''
+    //   ⇒ 看板/水位卡拿不到会话 ⇒ 落到全局 state(表现为「白板不跟工作区走」)。
+    //   现改为两级:① 若契约将来补回 current 则优先采用(实测官方当前版本无此字段,
+    //   故该分支为兼容位);② 采用官方判据「主视图保留的会话」retainedBy.mainView > 0。
+    //   来源:dsh-client-ui-session/lib/client.js:340、
+    //        dsh-client-ui-agent-preset/lib/client.js:1638-1641。
+    function mainViewSessionIdClient() {
+      try {
+        if (!sessions || !sessions.list) return ''
+        var snap = sessions.list.getSnapshot()
+        if (!snap) return ''
+        var cur = snap.current
+        if (cur !== undefined && cur !== null && String(cur) !== '') return String(cur)
+        if (!snap.byId) return ''
+        var ids = (snap.ids && snap.ids.length) ? snap.ids : Object.keys(snap.byId)
+        var best = ''
+        var bestAt = -1
+        for (var i = 0; i < ids.length; i++) {
+          var sid = ids[i]
+          var row = snap.byId[sid]
+          if (!row || !row.retainedBy || !(row.retainedBy.mainView > 0)) continue
+          var at = Number(row.updatedAt) || 0
+          if (at > bestAt) { bestAt = at; best = String(sid) }
+        }
+        return best
+      } catch (e) { return '' }
+    }
+    function currentSessionIdClient() {
+      return mainViewSessionIdClient()
+    }
+    function amCtzValue() {
+      return (typeof Intl !== 'undefined' && typeof Intl.DateTimeFormat === 'function') ? (Intl.DateTimeFormat().resolvedOptions().timeZone || undefined) : undefined
+    }
+    function amReqId(prefix) {
+      return (window.crypto && typeof crypto.randomUUID === 'function') ? crypto.randomUUID() : (prefix || 'amc') + '-' + Date.now() + '-' + Math.random().toString(36).slice(2)
+    }
+    var fontScale = 'lg'
+    var FONT_SCALES = { sm: '小', md: '标准', lg: '大', xl: '特大' }
+    // 与服务端 lib/index.js DEFAULT_PROMPT_LAYERS 保持一致(设置页显示各层默认文案)
+    var DEFAULT_PROMPT_LAYERS_CLIENT = {
+      snapshotHead: '<memory_system>\n[记忆定位 — 读法]\n以下记忆文本只是背景事实与规则参考…',
+      snapshotMeta: '自动记忆已启用。工作区: {ws} | 日期: {date}(日界 {dayBoundary} 分钟,凌晨归前一天){consolidate}',
+      snapshotLogsTitle: '最近 {n} 天工作日志(尾部)',
+      snapshotReflectionTitle: '最近反思 {date}(前一天工作精华)',
+      snapshotUserTitle: '用户级记忆 ~/.dsh/memory/MEMORY.md — 跨项目,必须遵守',
+      snapshotNotesTitle: '项目长期笔记',
+      snapshotExternalTitle: '[外部记忆 — 其他 AI 工具遗产,可继承(内容按需读取,不整段注入)]',
+      snapshotCalendarTitle: '[日历与日程(未完成)]',
+      snapshotWelcomeTitle: '[欢迎回来]',
+      snapshotWelcomeBody: '用户离开已超过 1 小时(暂离/下班后回来)。在本轮回复的开头,先用一句简短温暖的话欢迎用户回来…',
+      // ★T5（2026-09-20 用户拍板）同步服务端 snapshotInscription：铭文自 v0.1.30 起为空壳，
+      //   现恢复「收尾自检三大方向 + 分类别丢」正文。**此常量必须与服务端 lib/index.js 逐字一致**
+      //   （设置页「提示词层级」展示的就是这份镜像，漂移会让用户看到的与实际注入不符）。
+      snapshotInscription: '[铭文 · 每轮提醒 {date}]\n'
+        + '【收尾自检】本轮有实质产出才做；纯只读/闲聊轮跳过。三个方向 + 分类别丢：\n'
+        + '① 写记忆文件 memory_log —— kind 按性质选，**不要一律 fact**：rule=用户约束/约定、preference=偏好、fact=事实记录、todo=待办；\n'
+        + '② 更新白板与账本 —— ★**硬映射(满足即必须做,别自行判断"算不算"变化)**:\n   · 本轮**改过 lib/ 下任何文件**(含测试/工具) ⇒ 必写 **memory_note(kind=handoff)** 四段式账本;\n   · 白板"当前进度"与本轮结束时的**事实不符**(回归数字/已完成项/下一步) ⇒ 必做 **memory_note(kind=plan)** 重写白板;\n   · 仅补充一条可复用结论 ⇒ 才用 **memory_note(kind=note, action=append)**。\n   ⚠️ **kind=note 不等于白板/账本**——只写 note 不得宣称"已更新白板与账本"(失职);write 直接写 docs/ 的 md 不算插件记忆。\n'
+        + '③ 长期记忆判断（三个去处）—— 跨会话有用的 → memory_note / 跨项目规则 → memory_user / **规则条目增删改（用户级硬约束，含过时条目真删）→ memory_rules** / **跑通且可复用的多步流程 → memory_procedure**（技能库入口；建议填 successCriteria；**写前先用 `memory_procedure_list` 查重**：只读，能看它属哪个库、为何未晋升）；\n'
+        + '④ 结论失效/被取代 —— 传 `supersedes=` 旧条目 mem_id 标 **superseded（被更新结论取代）**；**当时就做错了要撤回**则传 `retract=` 标 **retracted（撤回）**并附 `retractReason=` 说明错在哪（前者有后继；后者即教训）；标错了用 `restore=` 撤回；\n'
+        + '⑤ 看板落列 —— 白板/账本内容要进面板看板泳道，须在标题或正文写 tag：`type:goal` / `type:state` / `type:dead-end` / `type:progress`（含「版本归档」泳道）；不写则系统按标题猜，常落空；\n'
+        + '⑥ 语体 —— 客观陈述、第三人称，只留可复用的事实/决策/规则/路径（不写"我考虑/我排查/我想"）。',
+      snapshotTail: '</memory_system>',
+    }
+    var FONT_SCALE_VALUES = { sm: '0.9', md: '1', lg: '1.15', xl: '1.3' }
+    var accentTheme = 'deepseek'
+    var graphDensity = 'relaxed'
+    var ACCENT_VALUES = { deepseek: 'var(--dam-accent-deepseek, #1d4ed8)', graphite: 'var(--dam-accent-graphite, #8b949e)', violet: 'var(--dam-accent-violet, #9b8cff)' }
+    try {
+      var savedAccent = localStorage.getItem('dsh-auto-memory.accentTheme.v1')
+      var savedDensity = localStorage.getItem('dsh-auto-memory.graphDensity.v1')
+      if (ACCENT_VALUES[savedAccent]) accentTheme = savedAccent
+      if (savedDensity === 'relaxed' || savedDensity === 'compact') graphDensity = savedDensity
+    } catch (e) {}
+    var localeListeners = new Set()
+    function t(key) { return (I18N[locale] && I18N[locale][key]) || I18N.zh[key] || key }
+    function setLocale(l) { if (l !== 'zh' && l !== 'en') return; if (l === locale) return; locale = l; localeListeners.forEach(function (fn) { try { fn(l) } catch (e) {} }) }
+    function onLocale(fn) { localeListeners.add(fn); return function () { localeListeners.delete(fn) } }
+    // 暂离检测:优先用 host 定时检测的 away 状态(阈值可配 awayMinutes),回退本地 lastActive 旧逻辑
+    var hostAway = false
+    var hostAwayReady = false
+    var autoPopupEnabled = true
+    function isAway() {
+      if (hostAwayReady) return hostAway
+      var lastSeen = 0
+      try { lastSeen = Number(localStorage.getItem('dsh-auto-memory.lastActive') || 0) } catch (e) {}
+      return lastSeen > 0 && (Date.now() - lastSeen) > 3600000
+    }
+
+    // ───────────────────────── 更新弹窗 / 首次指导 ─────────────────────────
+    var CHANGELOG = {
+'3.1.7': { zh: [
+        '★ 修复:一键接续有时会把「最近活跃会话」认成一个后台子代理,导致新会话建到错误的工作区,而且不报错。现在会正确识别源会话;真的定位不到时会明确告诉你,不再静默。',
+        '★ 修复:写白板时锚点标记的空格被吃掉,导致卡片识别失败。现在锚点行会被原样保留。',
+        '★ 修复:面板里不显示水位。以前读不到窗口大小时整张卡会直接消失(连「尚未测量」提示也被一起藏住);现在会照常显示,并说明原因与恢复方法。',
+        '本版三处修复都在宿主加载期代码里,需重启 dsh web 后生效。',
+      ], en: [
+        '★ Fix: the continue handoff could mistake a background subagent for your most recent session and create the new session in the wrong workspace — silently. It now resolves the correct source session, and tells you when it genuinely cannot.',
+        '★ Fix: the anchor marker lost its space when writing the board, breaking card recognition. Anchor lines are now preserved verbatim.',
+        '★ Fix: the context water level was not shown. When the window size was unknown the whole card disappeared (hiding the "not measured yet" note with it); it now renders and explains the cause and the fix.',
+        'All three fixes live in host-side code — restart dsh web for them to take effect.',
+      ] },
+'3.1.6': { zh: [
+        '★★ 紧急修复:配置迁移自 3.1.0 起从未真正执行——宿主每次加载都因内部变量作用域错误抛异常,而异常被兜底逻辑静默吞掉。结果是"你保存过的设置会变回默认值"(注入预算/记忆根目录/看板模式/容量上限等),且日志里没有任何报错,极易被误判成"自己没配"。',
+        '现在配置改名与补齐已改到唯一的加载汇聚点,并强制走损坏隔离读。升级后你此前的设置会从旧配置文件自动补回来,无需手动重配。',
+        '重要:本版修的是宿主加载期代码,**必须重启 dsh web 才生效**。',
+        '同时修复:记忆中枢的数据目录(hub)曾因一个预先存在的空壳目录被判为"已存在"而跳过迁移,导致 56 条技能与 9.3 MB 事实在重启后不可见;现改为逐文件语义补齐,绝不覆盖真实数据。',
+        '内部重构:全仓"删净 pre"——源码名即发布名,发布构建退化为纯复制;配置文件名与前端本地存储键一并改名,均带旧名兼容读与首次迁移,你的主题/字体/面板几何不丢。',
+        '构建线修复三处(回归测不到、只有真跑构建才暴露):过渡垫片会被覆盖到真实模块上(整包报废)、上游回流清单写旧名导致闸门拒构建、残留闸门引用了已删除的变量导致构建崩溃。',
+      ], en: [
+        '★★ Emergency fix: config migration has never actually run since 3.1.0 — the host threw an internal scope error on every load and the fail-soft handler silently swallowed it. Result: "settings you saved silently revert to defaults" (inject budget, memory root, board mode, capacity caps), with no error in the logs, easily misread as "I never configured it".',
+        'Migration now lives at the single load choke point and goes through the corruption-quarantine reader. On upgrade, your previous settings are merged back from the legacy config file automatically.',
+        'Important: this fixes host load-time code, so **dsh web must be restarted** to take effect.',
+        'Also fixed: the memory-hub data directory was skipped because a pre-existing empty shell dir looked like a valid target, hiding 56 skills and 9.3 MB of facts after restart; now files are filled in semantically and real data is never overwritten.',
+        'Internal refactor: full "de-pre" — source names are now the published names and the release build is a plain copy; config filename and frontend localStorage keys were renamed with legacy fallback reads and first-read migration, so your theme/fonts/panel geometry are preserved.',
+        'Three build-line fixes that the test suite cannot catch (only a real build exposes them): shim files overwriting real modules (would ship a broken package), an upstream-reconcile manifest still listing old names (gate refused to build), and a residual gate referencing a deleted variable (build crashed).',
+      ] },
+      '3.1.5': { zh: [
+        '★ 修复:记忆正文里出现半角双花括号(例如记下「Vue 模板用 {{ count }} 做插值」),会让该会话之后**每一次模型请求全部失败**。现在渲染尾注前会先把它们换成同形全角字符,不再触发宿主插值抛错。',
+        '说明:代价是这类括号在注入文本里会显示成全角形(｛｛ count ｝｝),内容不丢、含义不变。',
+        '本次只动尾注渲染器,宿主入口一行未改 ⇒ 不需要重启 dsh web。',
+        '站点:落地页按模板整体重写(浅色为基准、中文默认),动效按统一 token 刻度重排;贡献者页补动效层。',
+        '修复:落地页首屏「安装」按钮点一次会丢图标与两段文字(复制反馈误用 textContent 整体替换),已改为保留原有结构。',
+      ], en: [
+        '★ Fix: a memory entry containing double curly braces (e.g. recording "the Vue template interpolates {{ count }}") used to make **every subsequent model request in that session fail**. The tail renderer now folds them into full-width look-alikes before injection, so the host interpolator no longer throws.',
+        'Note: the trade-off is that such braces render as full-width characters in the injected text (｛｛ count ｝｝) — nothing is dropped, the meaning is unchanged.',
+        'Only the tail renderer changed; the host entry point is untouched, so dsh web does NOT need a restart.',
+        'Site: the landing page was rebuilt from the template (light first, Chinese default) and its motion realigned to one token scale; the contributors page gained a motion layer.',
+        'Fix: the hero "install" button lost its icon and both text spans after one click (copy feedback replaced textContent wholesale); it now preserves the original structure.',
+      ] },
+      '3.1.4': { zh: [
+        '★ 修复:白板重写不再「每次都重试」。此前模型不知道锚点契约、注入快照又被截断,首轮必被拦一次;现在工具描述写明「先读磁盘原文抄回锚点」,被拦时还会把缺失卡片的原文块一并回吐,一轮即可补齐。',
+        '★ 变更:白板丢卡从「拒绝写入」改为「照写 + 显式警示」——放行但绝不静默,警示会说明丢了哪几张、从哪找回。用户手写备注区被覆盖、以及卡片 id 重复,仍然硬拒(这两类是真丢数据/结构错误)。',
+        '修复:补上白板重写时的「显式归档」入口(archivedIds)——此前报错里承诺的这条路根本没接通。',
+        '修复:引导末页的三个入口按钮此前是裸链接(只有属性没有样式),现在与页面风格统一:hover 有反馈、跟随主题色。',
+        '新增:引导末页新增「QQ 交流群」入口。',
+      ], en: [
+        '★ Fix: rewriting the whiteboard no longer fails on the first try. The model was never told about the anchor contract, and the injected snapshot is truncated — so the first attempt was always rejected. The tool description now says "read the on-disk file first and copy every anchor back", and a rejection now returns the missing cards\' verbatim text so one retry suffices.',
+        '★ Change: a dropped whiteboard card is now written with an explicit warning instead of being rejected — never silent, and the warning names the cards lost and where to recover them. Overwriting your own notes region, and duplicate card ids, are still hard-rejected (real data loss / structural errors).',
+        'Fix: added the missing "explicit archive" entry (archivedIds) for whiteboard rewrites — the path promised by the error message was never actually wired.',
+        'Fix: the three entry buttons on the tour\'s last page were bare links (attribute without styles); they now match the page style, with hover feedback and theme colours.',
+        'New: a QQ community group entry on the tour\'s last page.',
+      ] },
+      '3.1.3': { zh: [
+      '★ 修复:宿主下次改会话文件名时,五条功能链会集体静默降级 —— 已从根上拆掉;会话日志路径不再用固定候选表,改按结构识别(兼容未来 v4 命名)。',
+      '★ 修复:迁移搬包的范围扩到日历(CALENDAR.md);日历跨工作区共享,导入按合并不覆盖,本机已完成的条目不被打回,同包重导不重复。',
+      '★ 修复:「周期记忆快照」开关此前是死开关 —— 界面能翻面、能落盘,但记忆照旧每轮注入。现在关掉它真的会停注入(只关这一条通路,记忆写入与检索不受影响)。',
+      '修复:引导里「思维链监听」原写「默认关」,真值是开 —— 方向反了,会误导隐私判断;已改正。',
+      '修复:引导里「技能固化」原说晋升审批在记忆中枢页(实际在唤起回顾页),且该开关并不控晋升;两处指引已纠正。',
+      '修复:白板空态与索引提示指向的分区名已废弃(自动化/自动记忆引擎);改为实际分区名(长会话接续/语义记忆总开关)。',
+      '修复:设置页补上「机械流程切片」控件 —— 该键功能本来是通的,但此前只有向导里能改。',
+      '新增:引导末页新增「贡献者与赞助」「DSH API 中转站」两个入口。',
+      '新增:关闭新手引导后弹出的更新说明,从此跟随当前版本(此前恒为 2.1.0)。',
+      '新增:云盘/远端同步目录探测(判断目录是否可用并给出人话诊断;只当普通目录,不依赖任何网盘专有接口)。',
+    ], en: [
+      '★ Fix: five feature chains would silently degrade the next time the host renamed its session-log file — root cause removed. Session paths are no longer a fixed candidate list; they are matched structurally, so future v4 names work.',
+      '★ Fix: pack-and-carry now includes your calendar (CALENDAR.md). The calendar is shared across workspaces, so import merges instead of overwriting: locally completed items are never reverted, and re-importing the same pack adds nothing.',
+      '★ Fix: the "periodic memory snapshot" switch used to be dead — it flipped and saved, but memories were injected every turn regardless. Turning it off now really stops injection (only that one path; memory writes and search are untouched).',
+      'Fix: the tour said the reasoning observer defaults OFF — it defaults ON. That reversal could mislead privacy decisions; corrected.',
+      'Fix: the tour said promotion review lives in the Memory Hub tab (it is the Recall review tab), and that switch does not control promotion at all; both pointers corrected.',
+      'Fix: the whiteboard empty state and index hints pointed at renamed/removed settings sections; now they name the real ones.',
+      'Fix: Settings now exposes the "mechanical flow slicing" control — the key worked, but previously only the tour could change it.',
+      'New: two entry points on the tour’s last page — Contributors & Sponsors, and the DSH API relay.',
+      'New: the release-notes card after the tour now follows the current version (it used to be pinned to 2.1.0).',
+      'New: cloud/remote sync-directory probe (reports whether a directory is usable, with a plain-language hint; treats it as an ordinary folder and depends on no vendor API).',
+    ] },
+    '3.1.1': { zh: [
+        '新增:记忆搬包 —— 把某个工作区的记忆整体搬到另一台机器。「存储管理」页签新增入口:导出本工作区得到 .dam-pack,到新机器导入。',
+        '导入是三步向导:选包 → 预览差异(只读,不动任何文件) → 确认导入。预览会列出路径是否变化、新增/覆盖几个文件、内部引用要重写多少处。',
+        '换机器会自动重写内部路径:包内指向旧路径/旧 slug 的引用(含正文里的路径字样)按 4 种写法逐一替换成新机器真实路径;路径相同则一个字都不改。',
+        '冲突默认保留本机(不覆盖);也可选覆盖或改名为 .from-pack 另存。四道底线:导入前整体备份(失败即中止)、sha256 校验不过即拒、拒绝路径穿越、workspaces-summary.json 走合并(不冲掉你其它工作区)。',
+        '修复:PowerShell/控制台不再被自动记忆的日志刷屏 —— 根因是诊断输出在落盘后又打了一遍控制台,而它是唯一每轮都会调用的日志出口。现在只落盘、不上控制台。',
+        '修复:诊断日志不再无限增长 —— 此前无任何轮转,实测单文件已达 11 MB / 11.2 万行;现在超过 2 MB 自动轮转,只保留当前 + 1 份历史。',
+        '新增:诊断日志现在可以在「设置 → 诊断」页签里查 —— 显示完整路径(可复制)、大小、行数,并提示崩溃时把该文件附给维护者。',
+        '说明:两台机器同步本轮只做一次性搬包。后续不发明私有协议 —— 把导出目录指到你的云盘(OneDrive/Dropbox/坚果云等),靠包内校验和 + 显式导入来对齐。',
+        '修复(上游回流 PR #124):记忆中枢的「批内合并落盘」此前只挂在宿主喂数循环上 ⇒ 其它的批量入口(HTTP action=feed,面板/外部重放器一次喂一整批)仍是每行一次整份写盘(写放大)。现已把批语义下沉到「拥有这批行」的那一层,任何批量入口都自动只落一次。',
+      ], en: [
+        'New: memory pack — move one workspace\'s memory to another machine. A migrate card in the Storage tab exports this workspace to a .dam-pack; import it on the new machine.',
+        'Import is a 3-step wizard: pick pack -> preview diff (read-only, writes nothing) -> confirm. The preview lists whether paths changed, how many files are added or overwritten, and how many internal references will be rewritten.',
+        'Paths are rewritten automatically on a new machine: references to the old path and slug (including path text inside bodies) are replaced with the real new path in 4 spellings; if the path is identical, nothing is changed at all.',
+        'Conflicts default to keeping yours (no overwrite); you may instead overwrite or save alongside as .from-pack. Four safeguards: full backup before import (abort on failure), sha256 check rejects tampered packs, path traversal rejected, and workspaces-summary.json is MERGED so your other workspaces are preserved.',
+        'Fixed: PowerShell and the console are no longer flooded by auto-memory logs — the diagnostic writer logged to the console again after writing the file, and it is the only log outlet invoked every turn. It now writes to file only.',
+        'Fixed: the diagnostic log no longer grows without bound — there was no rotation at all and the file had reached 11 MB and 112k lines. It now rotates at 2 MB, keeping the current file plus one history file.',
+        'New: the diagnostic log is now viewable under Settings -> Diagnostics, showing the full path (copyable), size and line count, plus a note to attach that file when reporting a crash.',
+        'Note: two-machine sync in this release is one-shot packing only. No private sync protocol is invented — point the export folder at your cloud drive and reconcile via the pack checksum plus explicit import.',
+        'Fixed (upstream backport PR #124): batch-merged persistence in the memory hub used to hang off the host feed loop only, so other batch entries (HTTP action=feed, panel or external replay feeding a whole batch) still wrote the entire snapshot once per row. Batch semantics now live in the layer that owns the rows, so every batch entry persists once.',
+      ] },
+      '3.1.0': { zh: [
+        '新增:记忆中枢「**人工越权晋升**」——给「证据还没攒够」被挡住的自沉淀条目一个真正可用的人工通道。两类门现在分得很清:**统计门**(跨会话数/成功次数没攒够)=内容没问题、只是证据不足 ⇒ 给按钮,你可以人工越过;**结构门**(已弃用/只是观察线索/有纠正记录/没写「怎么算成功」/高风险未批准)=内容本身还不构成技能 ⇒ 不给按钮,并直接写明为什么。所以不会再出现「点了没反应」的假按钮。越权过的条目会留下「人工授权」痕迹,可审计。',
+        '新增:设置页按用途重排为 9 个分区(语义记忆总开关 / 记忆窗口(注入什么) / 记忆容量与归档 / 自动沉淀成技能 / 长会话接续 / 自动化与免打扰 / 存储与外部记忆 / 外观与交互 / 关于与诊断)。**控件一字未改**,只是搬进对应分区并改了分组标题——此前「记忆中枢的判定参数」和「注入配置」混在一个分区里,找东西全靠翻。',
+        '修复:「手动晋升的通道被关掉了」的真相——判定函数对线上 30 条自沉淀条目**全部**返回「不晋升」(跨会话数不足 13 / 已弃用 8 / 只是观察线索 8 / 成功次数不足 1),而按钮此前只在「判定=可晋升」时出现,所以一条也点不亮。现已按上面的语义重做。',
+        '说明:更深一层的源头**本轮只缓解、未根治**——证据里的「跨会话数」恒为 0(唯一写入方依赖一个默认关闭的桥接开关),所以证据永远攒不够;人工通道解决的是「攒不够时能不能人工放行」,不是「证据永不累积」本身。',
+        '优化:宽屏下卡片流转为多列,记忆页改成左侧分区导航 + 右侧内容区(窄屏自动回到顶部横排);顶栏与浮层两种承载面**出厂即共存**——更新后直接在会话页顶栏就能看到记忆入口。',
+        '优化:日志列顺序调整——「硬性约束(每轮必注入)」与「用户笔记」提到最上面,每日日志折进可展开的折叠区。',
+        '说明:宿主侧(记忆中枢判定链)有改动,**建议重启 dsh web** 让其生效;界面半边刷新页面即可。',
+      ], en: [
+        'New: manual promotion override in the memory hub — a genuinely working human channel for self-consolidated entries blocked by "not enough evidence yet". The two kinds of gates are now distinct: **statistical** (cross-session count / success count not yet reached) = the content is fine, only the evidence is thin ⇒ a button is shown and you may override; **structural** (deprecated / mere observation / has corrections / no success criteria / high-risk not approved) = the content is not a skill yet ⇒ no button, with a plain-language reason instead. So the UI no longer offers a fake button that does nothing. Overridden entries keep an auditable "manual authorization" trace.',
+        'New: the settings page is regrouped into 9 purpose-named sections (memory engine / memory window / capacity & retention / skills & promotion / handoff & continuation / automation / storage / appearance / about). **No control was changed** — they were only moved into the matching section with clearer group titles; previously promotion parameters and injection settings shared one section, so finding anything meant scrolling.',
+        'Fix: the real reason the manual promotion channel appeared "off" — the decision function returned "do not promote" for **all 30** self-consolidated entries (13 not enough cross-session usage / 8 deprecated / 8 observation-only / 1 not enough successes), and the button only appeared for "promotable" rows, so not one row could light up. Rebuilt around the semantics above.',
+        'Note: the deeper cause is **mitigated, not cured** in this release — the cross-session count in the evidence record is permanently 0 (its only writer depends on a bridge switch that defaults to off), so evidence never accumulates. The manual channel answers "can a human override when evidence is thin", not "why evidence never accumulates".',
+        'Improved: card flows are multi-column on wide screens, and the memory page uses a left section nav with content on the right (narrow screens fall back to a top strip). The titlebar and overlay surfaces now **coexist out of the box** — the memory entry is right there in the session titlebar after updating.',
+        'Improved: log column order — hard constraints (injected every turn) and user notes moved to the top, with the daily log folded into an expandable section.',
+        'Note: the host side (promotion decision chain) changed — **a dsh web restart is recommended**; the UI half only needs a page refresh.',
+      ] },
+      '3.0.1': { zh: [
+        '修复:宿主控制台被 `restoreLastAgent: candidate rejected` **无限刷屏**(每 15 秒一条,打开就停不下来),同时「最近会话」恢复失效——刷新仪式与自动接续的兜底路径都受影响。根因是归属判据过宽:代码把「有父会话」等同于「是子代理」并一律排除,但**你点过一次接续后产生的新会话其实也有父会话**,它是你的正常会话,却被当成子代理拒掉了;列表里只剩它一个时,每个心跳周期都白试一次。现在改为按 `origin`/`delegationDepth` 精确识别子代理,接续会话正常放行;另给诊断信息加了 5 分钟节流兜底。',
+        '顺带修好两处同样的误判:接续会话里的对话此前**不会自动沉淀**、工作区状态也**不刷新**——都因为同一条过宽判据。',
+        '修复:日历「当天」视图里 **23:59 截止的事项永远不显示**。时段轴原先写死 7:00–22:00,凡落在该区间外(或时间格式解析不出)的事项都被静默丢掉——你自己的课表里就有 7 条这样的截止项。现改为按当天真实事项推算时段范围,并新增「未定时」段落兜住解析不出时间的条目。',
+        '新增:日历当天视图支持前后翻天,并显示 ISO 周序号。',
+        '优化:白板卡片的标题不再是小节名。原先「目标」这一节名重复出现上百次,读起来没有信息量;现在标题取正文首行、小节名降为小标签,并自动剥掉 `<!-- ... -->` 注释与 `- type:xxx ｜ ` 这类前缀。**后端与数据文件零改动**,只在展示层清洗。',
+        '说明:白板「节点图画布」本轮**暂不开放**(默认隐藏)。它的数据源依赖工作区解析,当前在你的机器上解析不稳定时会显示「暂无内容」;代码保留在插件内,待解析路径稳定后再放出。原「白板看板」泳道视图完全不受影响。',
+      ], en: [
+        'Fix: the host console was flooded by `restoreLastAgent: candidate rejected` — one line every 15 seconds, nonstop — and recent-session recovery stopped working (refresh ceremony and the auto-continue fallback both depend on it). Root cause was an over-broad ownership test: "has a parent session" was treated as "is a sub-agent" and excluded. But a session created by **continuing** an older one also has a parent — it is your normal session, and it was being rejected as if it were a sub-agent. When it was the only session in the list, every heartbeat retried in vain. Ownership is now decided by `origin`/`delegationDepth`, so continuation sessions pass; diagnostics are also throttled to one line per 5 minutes as a backstop.',
+        'Two more instances of the same misjudgement fixed along the way: conversations inside a continuation session were **never auto-consolidated**, and its workspace state **never refreshed** — both from the same over-broad test.',
+        'Fix: items due at **23:59 never appeared in the calendar day view**. The hour axis was hardcoded to 07:00–22:00, so anything outside it (or with an unparseable time) was silently dropped — 7 of your own deadlines were affected. The range is now derived from the actual events of the day, with a new "untimed" section for entries whose time cannot be parsed.',
+        'New: prev/next day navigation in the calendar day view, plus the ISO week number.',
+        'Improved: whiteboard card titles are no longer section names. The heading "目标" used to repeat over a hundred times — now the title is the first line of the body, the section name becomes a small kicker, and `<!-- ... -->` comments and `- type:xxx | ` prefixes are stripped. Backend and data files are untouched; cleaning happens in the render layer only.',
+        'Note: the whiteboard node-graph canvas is **not shipped in this release** (hidden by default). It depends on workspace resolution, which is unstable on your machine and shows an empty canvas; the code stays in the plugin and will be enabled once resolution is reliable. The existing swimlane whiteboard is unaffected.',
+      ] },
+      '3.0.0': { zh: [
+        '★ 大版本：底层重建收官。检索、注入、容量、并发四条底层全部重做；白板与看板从「实验特性」变成出厂形态。',
+        '★ 白板默认开启（原来默认关）。交接白板 + 四段式交接账本是这一版的招牌能力，出厂关着等于新用户看不到它。想彻底关掉：设置 → 自动化 → 交接白板。',
+        '★ 白板默认「新版看板」：结构化索引（条目/标签/线索/版本链）+ 列式泳道视图 + 两个遍历工具（按标签展开 memory_expand / 按 id 回溯 memory_trace）。旧的文字白板完整保留，设置页一键切回（「旧版白板」）。',
+        '说明：自动接续**仍然默认关闭**——水位判据还没在你的机器上实测到位，这一版特意不动它，等验证满意再考虑。',
+        '修复:语义唤回长期「查不到东西」的真因。语义索引因一次没收尾的同步被永久占住（重启也只能暂时缓解），此后每轮都退化成「关键词 + 常驻目录」。现已修好：索引能建起来，唤回恢复语义检索。',
+        '修复:升级弹窗原先只弹 2.1.0 的旧说明（版本号写死），所以你一直看不到新版更新日志。现在会自动展示当前版本的说明。',
+        '修复:同时开两个会话时「谁也没法注入」、点进不同工作区时语义模型跟着走——4 处状态被两会话互相覆盖，现已按会话/工作区分开。',
+        '新增:自动接续的续航材料更完整；上下文将满时给出的白板/账本提示更稳。',
+        '老用户不受影响：你自己设过的开关与阈值一律沿用，只有从没设过的那几项会吃新默认。',
+      ], en: [
+        '★ Major release: the ground-up rebuild is complete. Retrieval, injection, capacity and concurrency were all rebuilt; the whiteboard and kanban are now shipping defaults rather than experiments.',
+        '★ Whiteboard is now ON by default (it used to be off). The handoff whiteboard plus four-part ledgers are this release\'s headline feature — off by default meant new users never saw them. To disable entirely: Settings → Automation → Handoff whiteboard.',
+        '★ Whiteboard now defaults to the new kanban: a structured index (entries/tags/cues/version chain), a column-swimlane view, and two traversal tools (expand by tag, trace by id). The old text whiteboard is fully retained — switch back with one click in Settings.',
+        'Note: auto-continue remains OFF by default — the water-level criteria have not yet been validated on your machine, so this release deliberately leaves it alone.',
+        'Fix: the real cause of semantic recall coming up empty for weeks. A sync that never finished had permanently occupied the index slot (restarting only helped temporarily), so every turn degraded to keyword + resident catalog. Fixed: the index now builds, and recall is semantic again.',
+        'Fix: the upgrade dialog only ever showed the old 2.1.0 notes (the version was hardcoded), so you never saw the current release notes. It now shows the version you actually upgraded to.',
+        'Fix: with two sessions open, neither could inject, and the semantic model followed you between workspaces — four pieces of state were overwriting each other. Now scoped per session/workspace.',
+        'New: more complete carry-over material for auto-continue; steadier whiteboard/ledger prompting as context fills up.',
+        'Existing users are unaffected: any switch or threshold you set yourself is kept — only never-set keys pick up the new defaults.',
+      ] },
+      '2.5.2': { zh: [
+        '修复:开启「无人值守模式」的用户切换工作区失灵(面板恒显示启动目录、日志 0)——防漂移锁此前全局钉死首个工作区,现改为按会话锁定,只防本会话内的目录漂移;未开启该模式的用户行为不变。',
+        '修复:面板白板/账本恒显示「最近活跃会话」的内容——现在按你正在查看的会话取数;会话经工作区绑定创建(无 cwd)时也能正确解析;解析不出身份时如实提示「当前会话未绑定工作区」,不再展示错误路径。',
+        '修复:宿主刚重启就打开面板会误报「白板未启用」的问题。',
+      ], en: [
+        'Fix: users with Unattended Mode enabled could not switch workspaces (the panel stayed pinned to the startup directory, logs showed 0) — the anti-drift lock used to pin the first workspace globally; it now locks per session, only guarding drift within that session. Users without the mode are unaffected.',
+        'Fix: the panel whiteboard/ledgers always showed the most-recently-active session\'s workspace — they now resolve per the session you are viewing; sessions created via workspace binding (no cwd) resolve correctly, and unresolvable ones honestly show "unbound" instead of a wrong path.',
+        'Fix: opening the panel right after a host restart no longer falsely reports "whiteboard disabled".',
+      ] },
+      '2.5.1': { zh: [
+        '修复:DSH Desktop(Node 22/Electron)下装上本插件后 dsh web 启动 1-2 分钟必崩——每日巡检对巨型会话文件全量解压,Node 22 的 zstd 会直接崩掉宿主进程。现改用头帧解码,只解会话开头几帧即可完成判定(社区贡献者 fei009009 的 PR #29,感谢!)。',
+        '同类的「切会话时从磁盘推导模型/窗口」路径一并加固(前 32 帧/8MB 上限),不再有全量解压风险点。',
+      ], en: [
+        'Fix: on DSH Desktop (Node 22/Electron), dsh web used to crash 1-2 minutes after startup with this plugin installed — the daily patrol fully decompressed giant session files, and Node 22\'s experimental zstd crashes the host process. Scanning now decodes only the first few frames (PR #29 by fei009009, thank you!).',
+        'The same full-decompression path when deriving model/window from disk on session switch is hardened too (first 32 frames / 8MB cap).',
+      ] },
+      '2.5.0': { zh: [
+        '★ 水位口径修正:触发分母改用**官方声明窗口**(不再扣预留输出)——阈值 0.75 的触发点从约 46 万 token 后移到约 78.6 万,与官方「约 80% 才压缩」同一条线,不再"刚过半就接续"。',
+        '★ 新增预测性硬墙:上下文实占 + 预留输出 > 窗口(下一次请求必被拒,即 400 事故边界)时立即硬触发;压缩/溢出硬触发不变。本机这类大预留路由会由硬墙率先兜底,属"最后一格"而非浪费。',
+        '★ 接续序号改持久计数器(~/.dsh/memory/cont-seq.json):全局单调、换工作区不重号、转写包落盘失败自动回滚不跳号;计数器缺失时从历史「接续 #N」标题解析兜底。新窗口的接续标题不再错乱/丢失。',
+        '修复:接续序号为空时新会话标题退回自动生成的问题(宿主与浏览器两条路径现在都保证有序号);浏览器路径 rename 失败不再静默。',
+        '流程:发版/回归/双语对账/痕迹巡检四份子代理任务书固化(docs/prompts),主对话只做决策——对你无感,只是发版更稳。',
+        '注:自动接续出厂默认仍为关;新口径验证满意后你可以在设置里打开,或等下一版评估翻回默认。',
+      ], en: [
+        '★ Water-level caliber fixed: the trigger denominator is now the officially declared window (the reserved output budget is no longer deducted) — at threshold 0.75 the trigger point moves from ~460K to ~786K tokens on a 1M window, aligning with the official ~80% compaction point.',
+        '★ Predictive hard wall added: when session tokens + reserved output exceed the window (the next request would be rejected — the exact 400-incident boundary), continue immediately; compaction / overflow hard triggers unchanged.',
+        '★ Continue sequence numbers now use a persistent counter (~/.dsh/memory/cont-seq.json): globally monotonic, no duplicates across workspaces, automatic rollback when the transcript pack fails to write (no skipped numbers), and a title-scan fallback for pre-existing data.',
+        'Fix: empty sequence numbers no longer skip the session rename (both host and browser paths guarantee one); browser-side rename failures are no longer silent.',
+        'Process: four self-contained subagent task books (release / regression / docs audit / trace patrol) — invisible to you, just steadier releases.',
+        'Note: auto-continue factory default stays off; after verifying the new caliber, turn it on in settings (or wait for the next release to re-evaluate the default).',
+      ] },
+      '2.4.2': { zh: [
+        '变更:自动接续改为**出厂默认关闭**(老用户已落盘的显式设置不受影响)。原因:现有水位判据把「预留输出」从分母里扣掉,实测在上下文刚过半时就触发接续,与官方「约 80% 才压缩」相差约 45%,对不熟悉的人就是白烧 token —— 先默认关,等判据改成与官方压缩同一坐标系后再评估翻回。',
+        '想用的人可以在「白板 / 接续」页签里手动打开(开关一直没动,只是默认值变了)。',
+      ], en: [
+        'Change: auto-continue is now OFF by default (explicit values already saved by existing users are unaffected). Reason: the current water-level ratio subtracts the route\'s reserved output from the denominator, so it fired when the context was barely half full — about 45% earlier than the official compaction point (~80%). Defaulting off stops burning tokens until the ratio is aligned with the official coordinate system.',
+        'You can still turn it on yourself from the Whiteboard / Handoff tab; only the default changed.',
+      ] },
+      '2.4.1': { zh: [
+        '修复:已接续过的会话会被再次触发接续(重复建窗口)。新增「已接续闩锁」并落盘(session id 为键、重启有效):宿主路径在交接材料投料成功后落闩,浏览器路径在新会话真建成后落闩,失败不落闩以便重试。',
+        '修复:宿主已完成接续后,确认卡仍停在「同意接续/拒绝」并与「已自动接续到新会话」并存;arm 状态改为按会话过滤,不再在其他窗口弹「本会话水位已达」。',
+        '修复:水位双口径那一行(本会话水位 / 官方小圈读数 / 距硬墙余量)此前因漏拷贝 ring/wall 永不渲染。',
+        '内部:界面路径表引入唯一前缀常量与一致性锁(客户端路径必须都在宿主表内、表外零裸字面量);写配置 4 条路径收敛为一个出口;10 处重复的语义状态刷新收敛为一处。',
+        '流程:自本版起,发版必须同步 CHANGELOG、应用内更新说明与版本标识(release.mjs 已加校验,缺一即拒绝构建)。',
+      ], en: [
+        'Fix: a session that had already been continued could be armed again, creating duplicate windows. A persisted continuation latch (keyed by session id, survives restarts) is now written only after the handoff material is actually delivered (host path) or the new session really exists (browser path); failures do not latch, so retries still work.',
+        'Fix: after the host finished continuing, the confirm card still sat on Agree/Decline next to "continued into a new session"; arming is now filtered per session, so other windows no longer show "this session reached the water level".',
+        'Fix: the dual-scale water line (session level / official ring reading / distance to the hard wall) never rendered because ring/wall were not copied through.',
+        'Internal: one prefix constant plus a consistency lock for the panel route table, a single config-write exit, and one shared semantic-status refresh replacing ten copies.',
+        'Process: from this version on, releases must update CHANGELOG, in-app release notes and version identifiers together (release.mjs now refuses to build otherwise).',
+      ] },
+      '2.4.0': { zh: [
+        '★ 水位判据按「该会话当前模型」的预留额度自适应:消息可用上限 = 窗口 − 该路由的 maxTokens(实测 384,000 预留 → 可用 616,000),阈值随之落在健康区间;压缩与 CONTEXT_WINDOW_EXCEEDED 升为硬触发。',
+        '★ 修复自动接续静默失效:DSH 0.1.5 起 requestId 必填,宿主兜底接续漏传该字段时官方抛错被包装成误导性的 "prompt rejected" —— 现象是新会话建出来了、交接材料却从未送达。',
+        '★ 记忆容量口径重做:改为「文件容量上限」(noteCapacityChars / userCapacityChars,默认各 12000 字符),先 AI 折叠成要点、失败退回整条归档,写入不再被堵死。',
+        '★ Python 语义引擎贯通:安装向导写入正确的工作目录、模型落位与 onnxFile 契约对齐、向导常驻设置页,装了就能用。',
+      ], en: [
+        '★ Water-level judgement now adapts to the reserve of the session\'s current route: usable budget = window − that route\'s maxTokens (measured 384,000 reserve → 616,000 usable), so thresholds land in a healthy range; compaction and CONTEXT_WINDOW_EXCEEDED became hard triggers.',
+        '★ Fixed silent auto-continue failure: since DSH 0.1.5 requestId is required, and the host fallback omitted it, so the official error surfaced as a misleading "prompt rejected" — the new session existed but the handoff material never arrived.',
+        '★ Memory capacity reworked around per-file character caps (noteCapacityChars / userCapacityChars, 12000 each): fold into key points first, fall back to whole-entry archiving, so writes are never blocked.',
+        '★ Python semantic engine works end to end: the wizard writes the right working directory, model placement and onnxFile contracts line up, and the wizard is always reachable from Settings.',
+      ] },
+      '2.3.0': { zh: [
+        '★ 检索改为分层语义唤回:memory_recall 先返回 L0 摘要列表(每条记忆约 90 字,含 id/得分/匹配原因),需要原文再按 id 展开——此前全文直接进 embedding,超过模型 512 token 上限的条目尾部全部丢失(实测最长一条 9,822 字符);现在摘要永远在限制内,长记忆不再有损。',
+        '★ 检索融合改为三臂 rank-space:词法 + 语义 + 时间 三路各自排名后按 RRF(k=60)融合,取代旧的 minmax 归一化加权——旧方案分数只反映「这一批里排第几」,候选集一换分数就漂移、候选只剩 1 条时退化为常数,而「要不要注入」的决策恰恰依赖分数与阈值比较。现在排序与决策解耦,分数不再说谎。',
+        '★ 新增时间检索臂:查询里出现「上周」「三天前」「上个月」「最近 N 天」等中文时间表达时,命中时间范围的记忆会在排序中上升(软提升,不做硬过滤);查询不含时间词时行为与旧版逐字节一致。',
+        '★ 修复主动联想的词项截断:QueryPlan 构建时按 term 字典序排序后截断前 32 个,导致权重 1.0 的 trigger 词可能被丢、权重 0.2 的 assistant 词反而留下;现改为按来源权重降序保留(trigger 1.0 > user 0.8 > tool-result 0.6…),同权重按字典序稳定。',
+        '★ C3/Python 档也有语义召回了:此前 Python(BGE-M3)只服务主动联想,recall 在该档只有词法;现把 worker 已有的 dense_search 暴露为 recall 的语义臂,设置 → 自动记忆引擎 切到「高级 Python」后召回同样带语义分;auto 档自动择优(Python 可用则 C3,否则 C2),Python 不可用时静默回退 C2/词法。',
+        '★ M8 三层记忆默认开启:fact(事实)/episodic(经历)/procedure(技能)三层记忆店与「记忆中枢」页签随装即用;fact 带时间三价(事件发生/陈述/入库)与认识论状态(证据/推断/指令),冲突不再互相覆盖。',
+        '★ 记忆有了重要性权重:六类使用证据(曝光/读取/引用/复用/成功/纠正)聚合为重要性分,接入检索排序——常被引用、跨会话复现的记忆排得更靠前,被频繁纠正的下沉;它不随查询变化,是绝对量。',
+        '★ 交接默认开启并分层:水位阈值 0.75(官方压缩 0.80,留余量),四层交接材料(白板/账本/近期线程/完整转写按需 read)改为「按需取用而非通读」;账本按段赋权截断(失败原因 > 下一步 > 目标 > 状态),预算不足先截低价值段。',
+        '★ 证据链修复两条:①用户纠正此前要求消息里含完整 32 位记忆 id(几乎不可能触发),现归因到最近被引用/读取的记忆;②success 事件时间戳取错字段(在 event.ts 而非顶层)导致成功证据恒为 0,已修正。',
+        '修复:设置页「自动记忆引擎」分区标题空白(sectionLabels 键名错误);bge-m3 模型仓库名错误导致 HF 401(#27)与 tokenizer 离线缺件(#28);DSH 0.1.2 in-process 子代理回收失效(localAgent 字段更名)与 result 卡死泄漏(withTimeout 兜底);importance 管道因未导入 readdirSync 静默失效(补导入+降级日志)。',
+      ], en: [
+        '★ Layered semantic recall: memory_recall now returns an L0 digest list first (~90 characters per memory, with id/score/match reason); expand any id for the full text. Previously the full text went straight into embedding and anything past the model\'s 512-token limit was silently dropped (longest observed: 9,822 characters); digests always fit.',
+        '★ Three-arm rank-space fusion: lexical + semantic + time arms are ranked separately and fused with RRF (k=60), replacing minmax normalization — the old scores only reflected "rank within this batch", drifted whenever the candidate set changed, and collapsed to a constant with a single candidate, while the inject-or-not decision depends on comparing scores to thresholds. Ranking and decision are now decoupled.',
+        '★ Time-aware retrieval: queries containing Chinese time expressions ("last week", "three days ago", "last month", "the last N days") now boost memories from the matching window (soft boost, no hard filtering); queries without a time expression behave byte-for-byte as before.',
+        '★ Fixed proactive-recall term truncation: the QueryPlan sorted terms by dictionary order and kept the first 32, so a weight-1.0 trigger term could be dropped while a weight-0.2 assistant term survived; terms are now kept by source weight descending (trigger 1.0 > user 0.8 > tool-result 0.6 …), with dictionary order as a stable tiebreak.',
+        '★ The C3/Python tier now has semantic recall too: Python (BGE-M3) used to serve only proactive association, leaving recall lexical-only on that tier; the worker\'s existing dense_search is now exposed as recall\'s semantic arm. Settings → Semantic engine → Advanced Python gets semantic scores in recall; auto picks the best available (C3 when Python is ready, else C2), with silent fallback to C2/lexical when Python is unavailable.',
+        '★ M8 three-tier memory on by default: fact / episodic / procedure stores and the Memory Hub tab work out of the box; facts carry three-valued time (occurred / mentioned / ingested) and an epistemic status (evidence / inference / directive), so conflicts no longer overwrite each other.',
+        '★ Memories now carry importance: six usage signals (seen / read / cited / reused / succeeded / corrected) aggregate into an importance score that feeds retrieval ranking — frequently cited, cross-session memories rank higher, heavily corrected ones sink; it does not vary with the query, making it an absolute quantity.',
+        '★ Handoff on by default and layered: the water-level threshold sits at 0.75 (official compaction at 0.80, headroom kept), the four-layer handoff material (whiteboard / ledger / recent thread / full transcript on demand) is consumed "on demand, not read-through", and the ledger is truncated by section weight (dead ends > next steps > goals > status) so budget cuts hit low-value sections first.',
+        '★ Two evidence-chain fixes: (1) user corrections used to require the full 32-character memory id inside the message (practically never fired) — they now attribute to the most recently cited/read memory; (2) success events read the timestamp from the wrong field (event.ts, not top-level), so success evidence was structurally always zero — fixed.',
+        'Fixes: the "Semantic engine" settings section title rendered blank (wrong sectionLabels key); the bge-m3 model repo name pointed to a non-existent repo causing HF 401 (#27) plus missing tokenizer files offline (#28); DSH 0.1.2 in-process subagent recycling never fired (field renamed to localAgent) with result hangs leaking (withTimeout fallback); the importance pipeline silently died on a missing readdirSync import (import added + downgrade logging).',
+      ] },
+      '2.2.6': { zh: [
+        '★ 修复:交接测量终于站到官方压缩的同一条边界上——官方自动压缩挂在每个 step 边界(pre-step,阈值 80%),而插件此前只在「一轮结束」测量;某一轮把水位从阈值下推到 80% 以上时,官方会在该轮就压缩完,交接白板/账本来不及写。现在 pre-step 也做同一测量(同一会话 5 秒节流),水位一到阈值就先写交接材料,不再被官方抢跑。',
+        '★ 自动接续改为宿主兜底:建新会话不再依赖浏览器页面——水位达标后在宿主侧开倒计时,确认卡照常弹出(同意/拒绝都直接发给宿主);页面被后台节流、标签页关闭或人不在时,倒计时一到宿主自己完成「刷新白板/账本 → 建新会话 → 沿用模型与工作区 → 注入交接材料」,不再因浏览器休眠而断档。',
+      ], en: [
+        '★ Fix: handoff measurement now runs on the same boundary as official compaction — the official auto-compaction hook fires at every step boundary (pre-step, 80% threshold) while the plugin only measured at turn end; a single turn that pushes the level past 80% let the official compaction finish before the handoff ledger was written. The same measurement now also runs on pre-step (throttled to once per 5s per session), so the handoff material is written as soon as the threshold is crossed.',
+        '★ Auto-continue is now host-side: creating the new session no longer depends on the browser tab. Once the water level crosses the threshold the host starts a countdown; the confirm card still appears (Agree/Decline are sent straight to the host), and if the tab is throttled, closed, or nobody is at the keyboard, the host itself completes "refresh PLAN/ledger → create session → restore model & workspace → inject handoff material" when the countdown ends. No more missed handoffs from a sleeping browser.',
+      ] },
+      '2.2.5': { zh: [
+        '★ 修复:上下文水位百分比不再被硬截断到 150%——旧版 `Math.min(tokens / window, 1.5)` 让任何超额都显示成同一个数(例如 761,692 / 131,072 真实为 581%)。现在如实上报,进度条仍按 100% 封顶。',
+        '★ 修复:水位卡标出的模型现在是「当前会话真实使用的模型」——此前一律读 settings.yaml 的 agent-default-model(新会话默认模型),你在界面切过模型后,卡片会张冠李戴地标成另一个模型(实测会话跑 deepseek-official/deepseek-v4.1-flash,却标成 opencode-go/deepseek-v4-flash)。现改为优先取会话日志 request/header 的 provider/model,默认模型只作兜底。',
+        '★ 修复:水位卡改成按会话显示——此前是全机单值、只在有对话轮次时更新,切到别的会话仍显示上一个会话的数(或重启后的 0),模型名也只能拿默认模型凑。现在按 sessionId 取该会话的实测值;没有实测就现场从该会话日志推导窗口与模型,并明确标注「本会话尚未测量」。',
+        '★ 版本号同步:面板徽标与「检测更新」读的是开发树的 package.json,长期停在 0.1.30(而 npm 已是 2.2.x),于是界面显示旧版本、更新检查永远报「有新版本」。现在发布脚本会把版本号回写开发树,两条线永远一致。',
+        '★ 新增悬浮钉:记忆面板标题栏加了一个图钉按钮(线描图标,与 ⟳ ⤾ ✕ 同画风),点一下钉住——之后再点桌面或其他地方,面板不会自动收起(再点一下取消)。钉住状态会记住。',
+        '★ 交接阈值下调到 75%:官方自动压缩阈值是 80%,阈值贴着 80% 常常还没走完交接就被官方压缩掉;水位建议阈值与自动接续阈值默认都改为 0.75,留 5% 余量(1M 窗口约 50K token)。已存在的 0.8 配置不会被自动改写,可在设置页手动改。',
+      ], en: [
+        '★ Fix: the context water-level percentage is no longer clamped to 150% — the old `Math.min(tokens / window, 1.5)` made every over-window reading look identical (761,692 / 131,072 is really 581%). It now reports the true value; the progress bar still caps at 100%.',
+        '★ Fix: the model shown on the water-level card is now the model the session is actually using — it used to always read agent-default-model from settings.yaml, so after switching models in the UI the card named a different model (observed: session running deepseek-official/deepseek-v4.1-flash but the card said opencode-go/deepseek-v4-flash). It now prefers provider/model from the session log\'s request/header, with the default model only as a fallback.',
+        '★ Fix: the water-level card is now per-session — it used to be a single global value updated only on turns, so switching conversations kept showing another session\'s numbers (or 0 after a restart) with the default model name. It now reads the measured value for the session id, and when there is none it derives the window/model from that session log and says "not measured for this session yet".',
+        '★ Version sync: the panel badge and "Check for updates" read the dev tree package.json, which sat at 0.1.30 while npm was already 2.2.x — the UI showed an old version and the update check always reported "update available". The release script now writes the version back to the dev tree so both lines stay in lockstep.',
+        '★ New pin button: the panel header now has a line-art pin toggle matching the ⟳ ⤾ ✕ icons — pin it and clicking elsewhere on the desktop no longer auto-hides the panel (click again to unpin). The pinned state is remembered.',
+        '★ Handoff threshold lowered to 75%: the official auto-compaction threshold is 80%, so a threshold sitting at 80% often gets compacted before the handoff finishes. Both the water-level advisory and the auto-continue threshold now default to 0.75, leaving 5% headroom (~50K tokens on a 1M window). An existing 0.8 in your config is not rewritten automatically — change it in Settings if you want the new default.',
+      ] },
+      '2.2.4': { zh: [
+        '★ 修复:一键接续的新会话终于落进旧会话所属工作区——官方 session.create 只有传 workspaceId 才会绑定工作区,只传 cwd 仅设工作目录(故此前恒落「未分组」);现 host 先解析旧会话的 workspaceId 再建会话,解析不到才回退 cwd。',
+        '★ 修复:新会话沿用旧会话的模型与思考档位——模型信息在会话日志的 request/header.header.config(旧版查错了事件类型,恒取空 → 回落默认模型)。',
+        '★ 自动接续 v3:触发条件改为「水位≥阈值 且 harness 权威 running==false(轮次边界)」,弃用「两轮水位持平」——长工具调用不再误触发,真挂机一定触发;达阈值先弹确认卡:同意=立即接续 / 拒绝=本轮跳过(同一边界不再提示)/ 30-40 秒无操作=视为挂机自动接续。',
+        '★ 接续前刷新仪式:确认后先让旧 Agent 把白板 PLAN 与交接账本刷到最新,再用最新材料组装交接(可在配置里关掉);新窗口不再拿到过时白板。',
+        '★ 修复:上下文水位虚高(显示「500,998 / 131,072 token · 150%」)——模型窗口解析两条路同时失效:① settings.yaml 的 llm-deepseek 段是 flow 风格 YAML,旧解析器只认 block 风格;② 官方 request/context 的 contextWindow 只在会话开头出现(实测 2999 条事件里仅 2 条),旧代码只扫最近 256 条 → 1M 窗口被当成 128K。现在优先取官方路由容量、全量扫描并按会话缓存,设置页如实标出「官方路由容量 / 回退默认值」,百分比也不再截断到 150%。',
+        '★ 接续材料分层压缩:第0层指令+白板 / 第1层交接账本 / 第2层近期线程(最近 20 条 × 700 字,保留角色与工具标记)/ 第3层完整转写按需 read;材料带时间戳与「白板比账本旧」过期提示。',
+        '★ 新增子代理痕迹回收:自动沉淀 / 时段总结 / 问候 / 蒸馏等一次性子代理每跑一次都会在 ~/.dsh/sessions 下留下一个持久化会话(实测全机 686 个子代理会话里 638 个来自本插件),积累上千后会拖慢会话列表;现在子代理一结束就把痕迹移入 ~/.dsh/subagent-gc-backup(只移动不删除,可回滚),另有每日兜底巡检,设置页可开关并调整保留天数。',
+      ], en: [
+        '★ Fix: one-click continue now lands the new session in the old session\'s workspace — the official session.create only binds a workspace when workspaceId is passed (cwd alone just sets the working directory, which is why it always landed in "Ungrouped"); the host now resolves the old session\'s workspaceId first and only falls back to cwd.',
+        '★ Fix: the new session now inherits the old session\'s model and reasoning effort — that info lives in request/header.header.config (the old code read the wrong event type and always got nothing, falling back to the default model).',
+        '★ Auto-continue v3: triggers on "water level ≥ threshold AND the authoritative harness running bit flipped to false (turn boundary)" instead of "level unchanged across two polls" — long tool calls no longer misfire and genuinely unattended sessions always fire; a confirm card appears first: Agree = continue now, Decline = skip this boundary (no re-prompt), 30-40s of silence = unattended, continue automatically.',
+        '★ Refresh ritual before continuing: the old agent refreshes PLAN + ledger first so the new session never starts from a stale whiteboard (configurable).',
+        '★ Layered handoff material: layer 0 instructions + PLAN / layer 1 ledger / layer 2 recent thread (last 20 entries × 700 chars, roles and tool markers kept) / layer 3 full transcript read on demand; timestamps and a "PLAN older than ledger" staleness hint included.',
+        '★ New subagent trace recycle: every one-shot subagent this plugin spawns (auto-consolidation, scheduled summary, greeting, distillation) left a persisted session under ~/.dsh/sessions (638 of the 686 subagent sessions on this machine came from this plugin), and enough of them slow the session list down. Each trace is now moved into ~/.dsh/subagent-gc-backup right after the task ends (moved, never deleted — fully reversible), plus a daily fallback sweep; toggle and retention days live in Settings.',
+      ] },
+      '2.2.3': { zh: [
+        '打包修复:npm 包 files 现包含 docs/,用户文档随包发布——README 的「📖 用户文档」链接在 GitHub 与 npm 包页均可打开。',
+      ], en: [
+        'Packaging: the npm package now ships docs/ via the files field, so the README user-guide link works on both GitHub and the npm package page.',
+      ] },
+      '2.2.2': { zh: [
+        '修复:一键接续在部分环境报「harness 未提供 remote.session」——补上官方 remote 注入面(@deepseek-ai/dsh-api-remotes),重启后自动建会话/切换/注入恢复可用。',
+        '修复:语义引擎检测面板「未就绪」与「一切就绪」同屏矛盾、缺失时不弹安装引导——检测面补 Python int8 探测(无装=未就绪),按当前引擎模式自动弹出对应安装引导卡。',
+        '★ 新增自动接续:水位达阈值(默认 0.8,可调)且会话空闲时,右下角 30 秒可取消倒计时后自动完成「写交接账本→建新会话→注入接续材料」并切换,无需任何按钮或打开面板(常驻监听,默认开;触发后 30 分钟冷却)。',
+        '📖 新增用户文档(README 下载区旁「📖 用户文档」):逐组说明每个设置项怎么调,含语义引擎/自动接续/交接白板/常见问题排查。',
+      ], en: [
+        'Fix: one-click continue reported "remote.session unavailable" in some environments — the official remote inject surface (@deepseek-ai/dsh-api-remotes) is now declared; session create/switch/inject works again after a restart.',
+        'Fix: semantic detect panel showed "not ready" and "everything ready" at once, and no setup guide appeared when assets were missing — the probe now checks Python int8 too, and the matching setup guide auto-opens per engine mode.',
+        '★ New: auto-continue — when the water level passes the threshold (default 0.8, adjustable) and the session is idle, a cancelable 30s countdown auto-runs "write ledger → create session → inject handoff material" and switches; no button or open panel needed (resident watcher, on by default, 30min cooldown).',
+        '📖 New user guide (link next to the install command in the README): every settings group explained, incl. semantic engines / auto-continue / whiteboard / troubleshooting.',
+      ] },
+      '2.2.1': { zh: [
+        '★ 一键接续:白板页签新增「一键接续」——自动写交接账本 → 创建新会话(沿用工作区/权限/模型)→ 接续材料作为首条消息预载并自动切换;材料附旧会话完整对话转写文件,新窗口的 AI 可随时回读旧会话全部内容。',
+        '★ 水位 v2:计量优先官方 token-meter(与聊天框 context ring 同源,免疫重启/压缩/流式干扰),启发式仅作降级;水位卡标注当前计量来源,窗口自动取官方路由容量。',
+        '修复:动态快照中白板/账本/水位注入块重复 3 份(2.2.0 起引入,多耗约 2/3 注入预算)。',
+        '修复:「总结/问候默认模型」抽屉只保存模型不保存 provider,导致子代理 UNKNOWN_MODEL——现成对写入并优先使用。',
+        '新增:语义引擎模式下拉旁「⟳ 检测」——自动检测 JS/Python 资产与推理库(含深度扫描热接入),缺失时自动弹安装引导;资产未就绪时明确提示「实际生效:词法兜底」,不再静默降级。',
+        '改进:暂离阈值支持 0=关闭(暂离检测与欢迎语全关);修复设置页可能整体消失的 hooks 崩溃。',
+        '修复:会话转写提取被流式 chunk 事件洪泛挤占——新版 harness 重型回合每秒数十条 chunk 事件,真人消息被挤出窗口导致固化恒报空文本(issue #22);现先过滤承载消息的事件再截尾,零损失。致谢 @Minervaowl7(PR #23)。',
+        '修复:工作区概览按字母序取样,空目录把有记忆的活跃工作区挤出样本,概览恒显示「今日工作 0 条日志」(issue #24)——现按记忆活跃度排序取样。致谢 PR #25。',
+      ], en: [
+        '★ One-click continue: a "Continue" card in the Whiteboard tab — writes the handoff ledger, creates a new session (same workspace/permissions/model), injects the handoff material as the first message and switches automatically; the material links a full transcript file of the old session so the new AI can re-read everything anytime.',
+        '★ Water level v2: metering prefers the official token-meter (same source as the chat context ring; immune to restart/compaction/streaming noise), heuristic is fallback only; the water card shows the active meter source and the window follows the official route capacity.',
+        'Fix: whiteboard/ledger/water-level blocks injected 3x in the dynamic snapshot (introduced in 2.2.0; wasted ~2/3 of the injection budget).',
+        'Fix: the summary/greeting model drawer saved only the model, not its provider, causing subagent UNKNOWN_MODEL — both are now saved and preferred.',
+        'New: a "Detect" button next to the semantic engine mode — auto-checks JS/Python assets & runtime (with deep scan + hot adopt), opens the setup assistant when something is missing, and clearly flags "lexical fallback active" instead of failing silently.',
+        'Improved: away threshold supports 0 = disable (away detection and welcome greeting off); fixed a hooks crash that could blank the whole settings page.',
+        'Fix: transcript extraction flooded by streaming chunk events — heavy turns on new harnesses emit tens of chunk events per second, crowding real messages out of the window so consolidation always reported empty text (issue #22); message-bearing events are now filtered before the cap, zero loss. Thanks @Minervaowl7 (PR #23).',
+        'Fix: workspace overview sampled alphabetically, letting empty dirs crowd memory-rich active workspaces out of the sample so it always showed 0 logs for today (issue #24) — the sample is now ranked by memory recency. Thanks PR #25.',
+      ] },
+      '2.1.0': { zh: [
+        '★ 新增「交接白板」:模型理解项目全貌后自动写 PLAN.md 白板(旧版自动归档),阶段产出写四段式交接账本——任务状态/目标/已试方案与失败原因/进度与下一步;面板新增「白板」页签实时查看。上下文窗口换页不丢线索,对标 GPT-6 Astra 的上下文管理。',
+        '★ 新增「水位感知与交接助产」:按官方公式估算会话 token,窗口自动取自当前模型(如 1M);水位越阈自动注入交接建议并补写账本;memory_recall 新增 handoff/sessions 直达;无人值守静默。',
+        '提示:交接白板为实验特性,本版本默认关闭——设置 → 自动化 → 交接白板 开启体验;有问题欢迎提 issue/PR,或加 QQ 群反馈。',
+        '1.3 回顾 · 主动联想记忆:情境自动唤回(零指令)+自动沉淀+技能固化+外部记忆继承+欢迎向导+无人值守——2.1 已包含其全部能力,历次稳定性修复一并并入本版。',
+      ], en: [
+        '★ New "Handoff Whiteboard": the model writes a PLAN.md board once it grasps the full picture (old versions auto-archived) and files four-part handoff ledgers at milestones — task state / goals / attempts & why they failed / progress & next step; a new Whiteboard tab shows it live. Context survives window switches — benchmarked against GPT-6 Astra.',
+        '★ New "Water level & handoff assist": session tokens priced with the official meter, the window auto-follows the active model (e.g. 1M); past the threshold the handoff advisory is injected and the ledger backfilled; memory_recall gains handoff/sessions scopes; silent in unattended mode.',
+        'Note: the handoff whiteboard is experimental and OFF by default in this release — enable it in Settings → Automation; issues/PRs welcome, or join the QQ group.',
+        '1.3 recap · Proactive associative memory: zero-prompt contextual recall + auto-consolidation + skill crystallization + external memory inheritance + welcome tour + unattended mode — all included in 2.1, with every stability fix folded in.',
+      ] },
+      '0.1.27': { zh: [
+        '记忆卫生闸门(写端):memory_log/note/user 三个写入工具先过 sanitizeForWrite——疑似乱码(GBK 错误编码往返)/复读退化(词/字符循环,含跨标点)/连续重复行(≥3)拒绝并中文回执;append 单条上限 8000 字、replace 整篇 20 万字;追加前 tailHas 与文件尾部近 60 行做包含式复读去重。',
+        '全写入口审计:唯一漏网=API.note(概览页手动追加)已补同套闸门,回归 42 用例全过。',
+        '外部记忆接入只存路径指针,不再复制内容;注入端清洗乱码行/代码块/复读行;注入块加"记忆定位/读法"与语体纪律(条目一律第三人称客观陈述)。',
+      ], en: [
+        'Memory hygiene write gate: the three write tools (log/note/user) run through sanitizeForWrite — suspected mojibake (GBK round-trip), stutter degeneration (including punctuation-separated) and consecutive duplicate lines (≥3) are rejected with a reason; appends cap at 8,000 chars, rewrites at 200,000; appends are deduped against the last ~60 lines (tailHas).',
+        'Full write-entry audit: the only leak (API.note manual append) now goes through the same gate; 42 regression cases all pass.',
+        'External memory import records only path pointers; injection scrubs mojibake/code-block/stutter lines; the injected block adds "how to read memory" and the voice discipline (entries must be third-person objective statements).',
+      ] },
+      '0.1.20': { zh: [
+        '修复:正式发布流程 cordis.patch.yml(loader 入口 id + 包名)转换事故——发布包与预览版 identity 完全隔离,不再互相撞车。',
+      ], en: [
+        'Fix: cordis.patch.yml conversion mishap in the release pipeline (loader entry id + package name) — published package identity is now fully isolated from the dev build.',
+      ] },
+      '0.1.26': { zh: [
+        '文档:README 定位改为「技术先行 + 人性化」——intro 强调缓存友好三层记忆引擎,新增「底层工程」章节(前缀缓存友好/注入精简/AI限频/凭据过滤/跨工具),与「主动懂你的伙伴」章节互补。',
+      ], en: [
+        'Docs: README repositioned as tech-first with human touch — intro highlights the cache-friendly three-layer memory engine; a new "Under the hood" section (prefix-cache friendly / lean injection / rate-limited AI / credential filtering / cross-tool) complements the "companion that takes initiative" section.',
+      ] },
+      '0.1.25': { zh: [
+        '文档:README 界面截图更新为最新实机截图(记忆面板概览/接续/日历/工作区导图/设置),中英双语说明。',
+      ], en: [
+        'Docs: README screenshots refreshed with the latest real captures (panel overview / connect / calendar / workspace mind map / settings) with bilingual captions.',
+      ] },
+      '0.1.24': { zh: [
+        '记忆面板:全新液态玻璃 UI——模块箭头滚动、抽屉丝滑展开/收起、工作区 AI 思维导图(拖动画布+缩放)、日历当天时间轴(07:00-22:00)+地点/提醒字段。',
+        '注入精简:只注入最近 1 天日志与反思精华,外部记忆改为绝对路径按需读取,新增 memory_read 工具;敏感段落(令牌/密钥)不再注入 prompt。',
+        '接续页:按来源查看内容/接入/移除(笔记与用户级独立),已接入来源显示 ✓;不再整段注入外部记忆。',
+        '设置页:全部参数可调(注入预算/天数/外部预算、自动沉淀开关/门槛/间隔/额度),浮动保存栏未保存时高亮。',
+        '稳定性:修复对话结束时 host 卡死/崩溃(惰性投影移除、超时兜底、延迟启动),自动沉淀恢复正常并每日限频。',
+      ], en: [
+        'Memory panel: brand-new liquid-glass UI — arrow tab scrolling, smooth drawer transitions, AI workspace mind map (pan + zoom), day timeline (07:00-22:00) with location/reminder fields.',
+        'Lean injection: only the last day of logs and a reflection digest; external memory is read by absolute path on demand via the new memory_read tool; credentials/tokens are filtered out of the prompt.',
+        'Connect tab: per-source view/import/remove (notes vs user-level independently), imported sources show ✓; external memory is no longer injected in bulk.',
+        'Settings: every parameter is now adjustable (injection budget/days/external budget, auto-consolidation toggle/threshold/interval/quota) with a floating save bar that highlights unsaved changes.',
+        'Stability: fixed host freezes/crashes at turn end (lazy projection removed, timeout fallbacks, delayed start); auto-consolidation recovered with daily rate limiting.',
+      ] },
+      '0.1.23': { zh: [
+        '修复:正式发布包首次欢迎文案仍显示“预览版”；发布转换与残留校验已加强，确保预览版和正式版身份完全隔离。',
+      ], en: [
+        'Fix: the published first-run guide still showed a dev label; release conversion and residual checks now enforce complete dev/release identity isolation.',
+      ] },
+      '0.1.22': { zh: [
+        '修复:更新说明可能被公告、欢迎或自动总结弹窗覆盖，导致升级后没有看到 changelog。',
+        '优化:更新说明现在优先展示并排队其他弹窗，只有点击“知道了”后才标记为已读；未确认时重启仍会再次显示。',
+      ], en: [
+        'Fix: the update changelog could be replaced by notice, welcome, or summary dialogs during startup.',
+        'Polish: update notes now take priority and queue other dialogs; the version is marked seen only after acknowledgement, so it appears again after restart when unconfirmed.',
+      ] },
+      '0.1.21': { zh: [
+        '上下文与缓存:动态记忆改为运行时快照，静态规则保持稳定；切换模型、跨天和记忆刷新不再反复击穿前缀缓存。',
+        '记忆系统:三层记忆、普通检索与多关键词 recall、自动沉淀已完成运行时验证，写入、读取和检索链路稳定。',
+        '可靠性与成本:修复重启后与会话消息提取问题；自动沉淀增加最小内容门槛、冷却时间、每日上限和反递归保护，减少无效子代理调用。',
+      ], en: [
+        'Context and cache: dynamic memory now uses runtime snapshots while static rules stay stable; model switches, day changes, and refreshes no longer repeatedly break prefix caching.',
+        'Memory system: three-layer memory, standard search, multi-keyword recall, and auto-consolidation have passed runtime verification for writing, reading, and retrieval.',
+        'Reliability and cost: fixed restart and session-message extraction issues; auto-consolidation now has a content threshold, cooldown, daily cap, and recursion guard to reduce unnecessary subagent calls.',
+      ] },
+      '0.1.19': { zh: [
+        '稳定版:整合 0.1.16~0.1.19 全部修复与优化',
+        '核心:上下文缓存策略重写——记忆注入迁至运行时上下文快照,系统提示词保持稳定,DeepSeek 前缀缓存全程命中,不再白白消耗 token(命中率恢复 95%+)',
+        '新增:时间检测——暂离阈值可配置(回归自动弹出记忆窗口并欢迎),自动总结时间点(到点自动生成时段总结并弹窗展示),自动沉淀定时兜底恢复',
+        '新增:动态通知中心——发布者重要提醒(重大 bug/升级建议)自动推送,无需等待发版',
+        '修复:自动沉淀在重启恢复会话后失效(agent 引用定时恢复,双保险)',
+        '提示:pnpm v11 默认限制安装发布不足 1 天的版本,想立即获取新版请在 pnpm-workspace.yaml 设 minimumReleaseAge: 0 或使用显式版本号',
+      ], en: [
+        'Stable release: consolidates 0.1.16~0.1.19 fixes and polish',
+        'Core: context-cache strategy rewrite — memory injection moved to runtime-context snapshot, system prompt stays byte-stable, DeepSeek prefix cache hits throughout, no more wasted tokens (hit rate back to 95%+)',
+        'New: time detection — configurable away threshold (auto-open memory panel with welcome on return), auto summary times (auto-generate period summary popup), timed fallback recovery for auto-consolidation',
+        'New: dynamic notice center — publisher alerts (major bugs / upgrade advice) pushed automatically, no need to wait for a release',
+        'Fix: auto-consolidation failing after restart-resumed sessions (agent reference restored by timer, double insurance)',
+        'Note: pnpm v11 blocks packages published <1 day ago by default; set minimumReleaseAge: 0 in pnpm-workspace.yaml or use an explicit version for the latest immediately',
+      ] },
+      '0.1.18': { zh: [
+        '稳定版:整合 0.1.13~0.1.17 全部修复与优化',
+        '核心:上下文缓存策略重写——记忆注入迁至运行时上下文快照,系统提示词保持稳定,DeepSeek 前缀缓存全程命中,不再白白消耗 token(命中率恢复 95%+)',
+        '修复:秒级时间戳击穿前缀缓存(改日期级)',
+        '修复:npm 安装后客户端面板无法加载(bundle 注册名)',
+        '新增:更新说明弹窗/首次安装指导/暂离回归自动打开记忆窗口/动态通知中心',
+        '提示:pnpm v11 默认限制安装发布不足 1 天的版本,想立即获取新版请在 pnpm-workspace.yaml 设 minimumReleaseAge: 0 或使用显式版本号',
+      ], en: [
+        'Stable release: consolidates 0.1.13~0.1.17 fixes and polish',
+        'Core: context-cache strategy rewrite — memory injection moved to runtime-context snapshot, system prompt stays byte-stable, DeepSeek prefix cache hits throughout, no more wasted tokens (hit rate back to 95%+)',
+        'Fix: second-level timestamp breaking prefix cache (now date-level)',
+        'Fix: client panel not loading after npm install (bundle registration id)',
+        'New: update dialog / first-run guide / memory panel auto-opens after >1h away / dynamic notice center',
+        'Note: pnpm v11 blocks packages published <1 day ago by default; set minimumReleaseAge: 0 in pnpm-workspace.yaml or use an explicit version for the latest immediately',
+      ] },
+      '0.1.17': { zh: [
+        '新增:动态通知中心——插件自动拉取发布者的重要提醒(重大 bug/升级建议),特定时间窗口内显示,无需等待发版即可收到推送',
+        '优化:0.1.14 及以下旧版本已全部弃用(缓存击穿浪费 token),升级到 0.1.16+ 彻底解决',
+      ], en: [
+        'New: dynamic notice center — the plugin auto-fetches publisher alerts (major bugs / upgrade advice), shown within the configured time window, no need to wait for a release',
+        'Polish: all versions below 0.1.14 are deprecated (cache-breaking token waste); upgrade to 0.1.16+ fixes it',
+      ] },
+      '0.1.16': { zh: [
+        '稳定版:整合今日 0.1.13~0.1.15 全部修复与优化',
+        '核心:上下文缓存策略重写——记忆注入迁至运行时上下文快照,系统提示词保持稳定,DeepSeek 前缀缓存全程命中,不再白白消耗 token(命中率恢复 95%+)',
+        '修复:秒级时间戳击穿前缀缓存(改日期级)',
+        '修复:npm 安装后客户端面板无法加载(bundle 注册名)',
+        '新增:更新说明弹窗/首次安装指导/暂离回归自动打开记忆窗口',
+        '提示:pnpm v11 默认限制安装发布不足 1 天的版本,想立即获取新版请在 pnpm-workspace.yaml 设 minimumReleaseAge: 0 或使用显式版本号',
+      ], en: [
+        'Stable release: consolidates today\'s 0.1.13~0.1.15 fixes and polish',
+        'Core: context-cache strategy rewrite — memory injection moved to runtime-context snapshot, system prompt stays byte-stable, DeepSeek prefix cache hits throughout, no more wasted tokens (hit rate back to 95%+)',
+        'Fix: second-level timestamp breaking prefix cache (now date-level)',
+        'Fix: client panel not loading after npm install (bundle registration id)',
+        'New: update dialog / first-run guide / memory panel auto-opens after >1h away',
+        'Note: pnpm v11 blocks packages published <1 day ago by default; set minimumReleaseAge: 0 in pnpm-workspace.yaml or use an explicit version for the latest immediately',
+      ] },
+      '0.1.15': { zh: ['优化:记忆注入迁至运行时上下文快照(systemPrompt.context),system prompt 保持字节级稳定 → DeepSeek 前缀缓存全程命中,自动沉淀/跨天/切换模型都不再击穿缓存,进一步降低 token 消耗', '优化:动态记忆内容不变时不重复注入,会话上下文更精简'], en: ['Optimize: memory injection moved to runtime-context snapshot (systemPrompt.context), system prompt stays byte-stable → DeepSeek prefix cache hits throughout, auto-consolidation/day-crossing/model-switch no longer break the cache, lower token usage', 'Optimize: unchanged dynamic memory is not re-injected, leaner session context'] },
+      '0.1.14': { zh: ['新增:更新后自动弹出更新说明窗口,首次安装有功能指导窗口', '新增:暂离超过 1 小时回来,记忆窗口自动打开并显示 AI 总结', '优化:弹窗改为左下角毛玻璃小卡片,更透明更轻量'], en: ['New: update dialog shows what changed after an upgrade; first-run guide dialog for new installs', 'New: the memory panel auto-opens with an AI summary after returning from >1h away', 'Polish: dialogs are now compact frosted-glass cards in the bottom-left corner'] },
+      '0.1.13': { zh: ['修复 npm 安装后客户端面板无法加载(bundle 注册名拼写)', '修复秒级时间戳击穿 DeepSeek 前缀缓存(改日期级,大幅节省 token)', '修复记忆接续导入报错'], en: ['Fix client panel not loading after npm install (bundle registration id)', 'Fix second-level timestamp breaking DeepSeek prefix cache (date-level now, big token savings)', 'Fix memory import error (inherit external memory)'] },
+      '0.1.12': { zh: ['声明 @deepseek-ai/cordis 为 peerDependency(插件市场收录规范)'], en: ['Declare @deepseek-ai/cordis as peerDependency (plugin market checklist)'] },
+      '0.1.11': { zh: ['界面语言跟随 DSH 系统语言,实时切换', 'README 重构:宣传图/真实截图/快速安装', '修复设置页加载崩溃'], en: ['UI language follows the DSH system language', 'README overhaul: banner, real screenshots, quick install', 'Fix settings page crash'] },
+      '0.1.10': { zh: ['自动检查更新 + 设置页一键更新', '日界:凌晨的活儿归前一天(默认 7:30)', '记忆根目录系统文件夹选择器,换位置自动迁移', '每日写入预算,超限自动压缩旧内容', '30 天 AI 蒸馏'], en: ['Auto update check + one-click update in settings', 'Day boundary: late-night work logs to yesterday (default 07:30)', 'Native OS folder picker for memory root, auto-migration', 'Daily write budget with auto-compaction', '30-day AI distillation'] },
+      '2.2.0': { zh: [
+        '★ 外部记忆继承扩展:新增 ZCode / Kimi Code / TRAE 三个来源——自动扫描常见数据目录(~/.zcode、~/.kimi(.kimi-code)、~/.trae 及工作区 .trae/rules),目录存在即出现在「接续」页签,一键链接导入;沿用链接模式,只注入绝对路径,不灌内容。',
+        '★ 定时记忆固化:新增「定时做梦式固化」(默认每天 09:30,读最近 7 天日志提炼长期要点)与「定时 30 天蒸馏」(默认 10:00,无旧日志时零成本跳过)——设置 → 自动化 可调。',
+        '设置页新增「上下文管理」分区:交接白板/水位感知全套设置归拢一处,并新暴露白板注入预算、账本注入预算、水位阈值三个字段。',
+        'README 中英双语主副标题;动态快照的外部记忆源展示上限 3 → 6。',
+      ], en: [
+        '★ External memory expanded: three new sources — ZCode / Kimi Code / TRAE. Common data directories (~/.zcode, ~/.kimi(.kimi-code), ~/.trae and workspace .trae/rules) are auto-scanned; sources appear in the Connect tab when present and import as pure path links — link mode, no content dumping.',
+        '★ Scheduled consolidation: "deep consolidation" (daily at 09:30 by default, distills long-term value from the last 7 days of logs) and "30-day distill" (10:00, zero cost when nothing to archive) — Settings → Automation.',
+        'Settings gains a "Context management" section: handoff whiteboard + water-level settings in one place, with plan/ledger injection budgets and the water threshold newly exposed.',
+        'Bilingual (EN/中文) main title & subtitle in the READMEs; dynamic snapshot now lists up to 6 external memory sources (was 3).',
+      ] },
+    }
+    var dialogListeners = new Set()
+    var dialogState = null // 当前展示的弹窗
+    var dialogQueue = [] // 启动期多个异步弹窗按优先级排队,不相互覆盖
+    function dialogPriority(d) {
+      if (!d) return 0
+      if (d.kind === 'update') return 100
+      if (d.kind === 'workbenchSetup') return 90
+  if (d.kind === 'welcomeTour') return 85
+      if (d.kind === 'modelDownload') return 85
+      if (d.kind === 'notice') return d.notice && d.notice.level === 'urgent' ? 80 : 70
+      if (d.kind === 'summary') return 60
+      if (d.kind === 'welcomeBack') return 50
+      if (d.kind === 'semSetup') return 45
+      return 10
+    }
+    function dialogKey(d) {
+      if (!d) return ''
+      if (d.kind === 'update') return 'update:' + (d.currentVersion || '')
+      if (d.kind === 'notice') return 'notice:' + ((d.notice && d.notice.id) || '')
+      if (d.kind === 'summary') return 'summary:' + ((d.summary && d.summary.date) || '') + ':' + ((d.summary && d.summary.time) || '')
+      // ★S9（2026-09-24）：设置窗去重键带状态 —— 打开时按 kind 去重（不重叠），
+      //   但**不在队列里时可再次弹出**（否则自动配置失败后再复查也弹不出来 = 用户永远配不上）。
+      if (d.kind === 'workbenchSetup') return 'workbenchSetup:' + (((d.status || {}).reason) || 'unknown')
+      return d.kind
+    }
+    function notifyDialog() { dialogListeners.forEach(function (fn) { try { fn() } catch (e) {} }) }
+    function openDialog(d) {
+      if (!d) return
+      var key = dialogKey(d)
+      if ((dialogState && dialogKey(dialogState) === key) || dialogQueue.some(function (x) { return dialogKey(x) === key })) return
+      if (!dialogState) dialogState = d
+      else if (dialogPriority(d) > dialogPriority(dialogState)) { dialogQueue.unshift(dialogState); dialogState = d }
+      else dialogQueue.push(d)
+      notifyDialog()
+    }
+    // issue#40:宿主配置控制自动播放;localStorage 只记录**用户动作**,不得反过来当开关。
+    var tourNavigationEpoch = 0
+    var welcomeTourConfig = null
+    function decodeWelcomeConfigPre(response) {
+      if (!response || typeof response !== 'object' || Array.isArray(response)) return null
+      var cfg = response.config
+      if (!cfg && Object.prototype.hasOwnProperty.call(response, 'welcomeTourEnabled')) cfg = response
+      if (!cfg || typeof cfg !== 'object' || Array.isArray(cfg)) return null
+      if (cfg.welcomeTourEnabled !== undefined && typeof cfg.welcomeTourEnabled !== 'boolean') return null
+      return cfg
+    }
+    function welcomeAutoAllowedPre(cfg) {
+      if (!cfg || cfg.welcomeTourEnabled === false) return false
+      try { if (localStorage.getItem('dsh-auto-memory.tourDismissed') === '1') return false } catch (_) { return false }
+      return true
+    }
+    function dismissWelcomeTourPre(reason) {
+      tourNavigationEpoch++
+      if (reason === 'user') {
+        try { localStorage.setItem('dsh-auto-memory.tourDismissed', '1') } catch (_) {}
+      }
+      function target(d) { return d && d.kind === 'welcomeTour' && (reason !== 'config' || !d.manual) }
+      dialogQueue = dialogQueue.filter(function (d) { return !target(d) })
+      if (target(dialogState)) dialogState = dialogQueue.shift() || null
+      notifyDialog()
+    }
+    function rememberWelcomeConfigPre(response) {
+      welcomeTourConfig = decodeWelcomeConfigPre(response)
+      if (welcomeTourConfig && welcomeTourConfig.welcomeTourEnabled === false) dismissWelcomeTourPre('config')
+      return welcomeTourConfig
+    }
+    // 焦点陷阱:向导内的 Tab 不得逃到背景页面;Esc 关闭;关闭后焦点归还触发元素。
+    function installTourFocusPre(root, close, doc) {
+      if (!root || !doc) return function () {}
+      var previous = doc.activeElement
+      var selector = 'button:not([disabled]),a[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])'
+      function focusables() {
+        return Array.prototype.filter.call(root.querySelectorAll(selector), function (el) { return el.getClientRects().length > 0 && el.getAttribute('aria-hidden') !== 'true' })
+      }
+      function onKey(e) {
+        if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); close(); return }
+        if (e.key !== 'Tab') return
+        var items = focusables(), first = items[0], last = items[items.length - 1]
+        if (!items.length) { e.preventDefault(); root.focus(); return }
+        if (e.shiftKey && (doc.activeElement === first || !root.contains(doc.activeElement))) { e.preventDefault(); last.focus() }
+        else if (!e.shiftKey && (doc.activeElement === last || !root.contains(doc.activeElement))) { e.preventDefault(); first.focus() }
+      }
+      var keyTarget = typeof doc.addEventListener === 'function' ? doc : root
+      keyTarget.addEventListener('keydown', onKey, true)
+      var initial = focusables()[0] || root
+      initial.focus()
+      return function () {
+        keyTarget.removeEventListener('keydown', onKey, true)
+        if (previous && previous.isConnected && typeof previous.focus === 'function' &&
+            (root.contains(doc.activeElement) || doc.activeElement === doc.body)) previous.focus()
+      }
+    }
+    function openManualWelcomeTourPre() {
+      tourNavigationEpoch++
+      openDialog({ kind: 'welcomeTour', manual: true })
+    }
+    /**
+   * 记忆工作台启动检测（2026-09-24）。
+   * 语义（对齐用户要求「自动新建，建不起来了才引导」）：先请求 action:'setup' 让宿主**自动建立**
+   * （ensureWorkbench 幂等：先三重校验，通过即复用、不通过才新建），只有自动建立/校验**失败**时
+   * 才弹居中向导。整个会话只跑一次（无 setInterval）⇒ 不会瞎弹；openDialog 按 kind 去重 ⇒ 不重叠。
+   */
+  /**
+   * ★S8（2026-09-24）：撤下「记忆工作台」居中设置窗。
+   *   触发：① 后端自动配置成功（用户原话「或者等它自动配置完再消失」）② 用户点「稍后」。
+   *   只动 kind==='workbenchSetup' 的项，不碰其它弹窗（与 dismissWelcomeTourPre 同款语义）。
+   */
+  function dismissWorkbenchSetupPre() {
+    function target(d) { return d && d.kind === 'workbenchSetup' }
+    dialogQueue = dialogQueue.filter(function (d) { return !target(d) })
+    if (target(dialogState)) dialogState = dialogQueue.shift() || null
+    notifyDialog()
+  }
+  /**
+   * ★D8（2026-09-25）：**唯一**「工作台是否已存在」判据 —— 纪律：同一语义不得在两处各写一份。
+   *   旧实现两处不一致：**开窗门**用 `st.ready`（宿主进程内内存态，重启后恒 false ⇒ 判「没建」
+   *   就无条件 openDialog offer），**渲染相位**用 `verify.ok`（只读真值，为 true）。
+   *   且开窗时 `phase` 是**显式传入**的 ⇒ `dialogState.phase || (...)` 右侧永不求值，
+   *   渲染层的兜底判据成了死代码。表现为：四项校验全 ✓、状态 ok 仍弹「建立「记忆中枢」」，
+   *   且 focus / visibilitychange 监听每次触发都重弹一次。
+   * @param {object} st `/workbench` 的返回体
+   */
+  function wbExistsPre(st) {
+    if (!st) return false
+    var v = st.verify || {}
+    return !!(st.ready || v.ok)
+  }
+  /**
+   * ★v3.1.8 引导初始化（2026-09-24 用户裁定）：检测改为**纯只读**。
+   *   原实现启动即 `action:'setup'` ⇒ 静默建立，用户从来看不到「要建什么、什么权限」。
+   *   现在不带 action ⇒ 宿主路由走只读诊断分支（`if (body.action==='setup')` 为假），零副作用；
+   *   建立动作**只**发生在弹窗里用户点「同意并建立」之后。
+   * @param {boolean} fromTour 来自向导末页 ⇒ 就绪时也回一屏「已就绪」；启动检测则静默撤窗。
+   */
+  function checkWorkbenchPre(fromTour) {
+    return apiPost(API.workbench, {}).then(function (st) {
+      //   重复调用安全：去重靠 dialogKey('workbenchSetup:'+reason)，已关掉时能再次弹出。
+      // ★D8：开窗门与渲染相位**必须同源** —— 旧写法只看 st.ready，重启后恒 false ⇒ 误弹。
+      if (wbExistsPre(st)) {
+        // 已有：向导路径回一屏「已就绪」；启动路径静默撤窗（不瞎弹）。
+        if (fromTour) openDialog({ kind: 'workbenchSetup', phase: 'exists', fromTour: true, status: st || {} })
+        else dismissWorkbenchSetupPre()
+        return st
+      }
+      openDialog({ kind: 'workbenchSetup', phase: 'offer', fromTour: !!fromTour, status: st || {} })
+      return st
+    }, function () {
+      // 检测本身失败（宿主未就绪/网络异常）：向导路径给一屏可重试说明，启动路径静默。
+      if (fromTour) openDialog({ kind: 'workbenchSetup', phase: 'offer', fromTour: true, status: {} })
+      return null
+    })
+  }
+  /** 弹窗关闭后要接的后续动作（更新说明）——只由向导路径置位，避免启动路径误弹。 */
+  var pendingChangelogAfterInit = false
+  /** 收尾：初始化流程走完（成功 / 已有 / 稍后）⇒ 接力到更新说明。 */
+  function finishWorkbenchFlow() {
+    var wantChangelog = pendingChangelogAfterInit
+    pendingChangelogAfterInit = false
+    closeDialog()
+    if (wantChangelog) showChangelogAfterTour()
+  }
+  /**
+   * ★v3.1.8（2026-09-24）：从 finishTour 里抽出来的更新说明逻辑。
+   *   抽出的原因：用户要求「初始化流程必须在 change log 之前」，而初始化窗在**另一个渲染分支**，
+   *   必须在公共作用域里串接，否则 finishTour 关掉向导后直接弹更新卡 = 与初始化抢弹窗槽。
+   *   逻辑逐字保留原实现（含 v3.1.3 的 latestKey 动态取版本）。
+   */
+  function showChangelogAfterTour() {
+        // v2.1 大更新链:向导结束 → 直接接 2.1.0 大更新卡(老用户历史版本不逐个弹,
+        // 大更新内容才是要传达的)。apiGet 异步拉当前版本,失败静默(向导本身已完成使命)。
+        try {
+          apiGet(API.updateCheck).then(function (d) {
+            var cur = (d && d.current) || '2.1.0'
+            // ★v3.1.3：**动态取最新版本**（此前硬编码 '2.1.0' ⇒ 关掉向导永远弹 2.1.0 的老卡）。
+            //   与 :~7280 那处已正确的写法同源；兜底仍是 '2.1.0'（CHANGELOG 为空也不崩）。
+            var latestKey = Object.keys(CHANGELOG).reduce(function (a, b) { return cmpVersion(b, a) > 0 ? b : a }, '2.1.0')
+            openDialog({ kind: 'update', versions: [{ version: latestKey, items: CHANGELOG[latestKey] || CHANGELOG['2.1.0'] }], currentVersion: cur })
+            try { localStorage.setItem('dsh-auto-memory.seenVersion', cur) } catch (e5) {}
+          }).catch(function () {
+            openDialog({ kind: 'update', versions: [{ version: '2.1.0', items: CHANGELOG['2.1.0'] }], currentVersion: '2.1.0' })
+          })
+        } catch (eChain) {}
+  }
+  function loadWelcomeConfigPre(timeoutMs) {
+      return new Promise(function (resolve) {
+        var finished = false
+        var timer = setTimeout(function () { if (!finished) { finished = true; resolve(null) } }, timeoutMs || 5000)
+        apiGet(API.config).then(function (d) {
+          if (finished) return
+          finished = true; clearTimeout(timer); resolve(rememberWelcomeConfigPre(d))
+        }, function () { if (!finished) { finished = true; clearTimeout(timer); resolve(null) } })
+      })
+    }
+    function closeDialog() { dialogState = dialogQueue.shift() || null; notifyDialog() }
+    function onDialog(fn) { dialogListeners.add(fn); return function () { dialogListeners.delete(fn) } }
+    // 调试/重看入口:控制台 window['dsh-auto-memory.openWelcomeTour']() 随时重开首启向导
+    try {
+      window['dsh-auto-memory.openWelcomeTour'] = function () { openManualWelcomeTourPre() }
+    } catch (eOpenTour) {}
+    function cmpVersion(a, b) {
+      var pa = String(a).split('.').map(Number), pb = String(b).split('.').map(Number)
+      for (var i = 0; i < 3; i++) {
+        var x = pa[i] || 0, y = pb[i] || 0
+        if (x > y) return 1
+        if (x < y) return -1
+      }
+      return 0
+    }
+    function changelogBetween(fromVer, toVer) {
+      var keys = Object.keys(CHANGELOG).filter(function (v) { return cmpVersion(v, fromVer) > 0 && cmpVersion(v, toVer) <= 0 })
+      keys.sort(function (a, b) { return cmpVersion(a, b) })
+      return keys.map(function (v) { return { version: v, items: CHANGELOG[v] } })
+    }
+
+    // ───────────────────────── API ─────────────────────────
+    // 路由前缀唯一常量(2026-09-10 第 0 步止血):表中每条路径由它拼出,不再逐个重复全串。
+    // ★去 pre（2026-09-23）：localStorage 键 dsh-auto-memory-pre.* → dsh-auto-memory.*。
+//   一次性迁移：首次载入把旧前缀键搬到新前缀（字体/主题/面板几何/引导进度等不丢）。
+//   幂等（搬完删旧键）+ fail-soft（任何异常都不得阻断前端启动）。
+;(function migrateLegacyLsKeys() {
+  try {
+    var OLD_LS = 'dsh-auto-memory-pre.', NEW_LS = 'dsh-auto-memory.'
+    var doomed = []
+    for (var li = 0; li < localStorage.length; li++) {
+      var lk = localStorage.key(li)
+      if (lk && lk.indexOf(OLD_LS) === 0) doomed.push(lk)
+    }
+    for (var lj = 0; lj < doomed.length; lj++) {
+      var nk = NEW_LS + doomed[lj].slice(OLD_LS.length)
+      if (localStorage.getItem(nk) === null) localStorage.setItem(nk, localStorage.getItem(doomed[lj]))
+      localStorage.removeItem(doomed[lj])
+    }
+    if (doomed.length) console.info('[dsh-auto-memory] migrated ' + doomed.length + ' legacy localStorage keys')
+  } catch (e) { /* fail-soft */ }
+})();
+var ROUTE_PREFIX = '/api/dsh-auto-memory'
+    // 宿主半边(lib/index.js 的 API)声明的是同一批路径 —— 两个半边是独立 bundle(本文件经 __ModuleLoader__ 手写加载,
+    // 无法 import 宿主模块),所以"只有一份"这件事由 tests/smoke/ 下的路径表一致性锁保证:
+    // 客户端路径 ⊆ 宿主路径、宿主独有路径只允许显式白名单、本文件表外不得再出现裸路径字面量。
+    var API = {
+      state: ROUTE_PREFIX + '/state',
+      list: ROUTE_PREFIX + '/list',
+      file: ROUTE_PREFIX + '/file',
+      recall: ROUTE_PREFIX + '/recall',
+      smartRecall: ROUTE_PREFIX + '/smart-recall',
+      workspaces: ROUTE_PREFIX + '/workspaces',
+      debug: ROUTE_PREFIX + '/debug',
+      scanDirty: ROUTE_PREFIX + '/scan-dirty',
+      browseDir: ROUTE_PREFIX + '/browse-dir',
+      pickDir: ROUTE_PREFIX + '/pick-dir',
+      updateCheck: ROUTE_PREFIX + '/update-check',
+      skinAsset: ROUTE_PREFIX + '/skin-asset',
+      update: ROUTE_PREFIX + '/update',
+      config: ROUTE_PREFIX + '/config',
+      reflect: ROUTE_PREFIX + '/reflect',
+  recallStats: ROUTE_PREFIX + '/recall-stats',
+      reflectAuto: ROUTE_PREFIX + '/reflect-auto',
+      note: ROUTE_PREFIX + '/note',
+      // ★R7：用户级硬性约束的条目级读写
+      rulesList: ROUTE_PREFIX + '/rules',
+      rulesApply: ROUTE_PREFIX + '/rules/apply',
+      external: ROUTE_PREFIX + '/external',
+      externalView: ROUTE_PREFIX + '/external-view',
+      externalRemove: ROUTE_PREFIX + '/external-remove',
+      externalImport: ROUTE_PREFIX + '/external-import',
+      calendar: ROUTE_PREFIX + '/calendar',
+      summarize: ROUTE_PREFIX + '/summarize',
+      greet: ROUTE_PREFIX + '/greet',
+  // ★2026-09-24：记忆工作台诊断/修复（居中弹窗向导的数据源）
+  workbench: ROUTE_PREFIX + '/workbench',
+      notices: ROUTE_PREFIX + '/notices',
+      models: ROUTE_PREFIX + '/models',
+      semanticDeepDetect: ROUTE_PREFIX + '/semantic-deep-detect',
+      semanticStatus: ROUTE_PREFIX + '/semantic-status',
+      semanticEmit: ROUTE_PREFIX + '/semantic-emit',
+      pyDetect: ROUTE_PREFIX + '/python-setup/detect',
+      pyVenv: ROUTE_PREFIX + '/python-setup/venv',
+      pyDeps: ROUTE_PREFIX + '/python-setup/deps',
+      pyModel: ROUTE_PREFIX + '/python-setup/model',
+      pyCancel: ROUTE_PREFIX + '/python-setup/cancel',
+      pyStatus: ROUTE_PREFIX + '/python-setup/status',
+      handoffState: ROUTE_PREFIX + '/handoff-state',
+      kanbanBoard: ROUTE_PREFIX + '/kanban-board',
+  // ★v3.1.2：卡片全文按需取（看板载荷不再内联 full）
+  kanbanCard: ROUTE_PREFIX + '/kanban-card',
+      handoffContinue: ROUTE_PREFIX + '/handoff-continue',
+      handoffPermission: ROUTE_PREFIX + '/handoff-permission',
+      autoContState: ROUTE_PREFIX + '/auto-continue-state',
+      autoContDecide: ROUTE_PREFIX + '/auto-continue-decide',
+      semanticDownload: ROUTE_PREFIX + '/semantic-download',
+      shadowRecent: ROUTE_PREFIX + '/shadow-recent',
+      reviewFeedback: ROUTE_PREFIX + '/review-feedback',
+      memoryHub: ROUTE_PREFIX + '/memory-hub',
+      storageManage: ROUTE_PREFIX + '/storage-manage',
+      migrateExport: ROUTE_PREFIX + '/migrate-export',
+      migrateInspect: ROUTE_PREFIX + '/migrate-inspect',
+      migrateImport: ROUTE_PREFIX + '/migrate-import',
+    }
+    function query(params) {
+      var search = new URLSearchParams()
+      for (var key in params) if (params[key] !== undefined && params[key] !== '') search.set(key, String(params[key]))
+      var text = search.toString()
+      return text ? '?' + text : ''
+    }
+    async function apiGet(path, params) {
+      var res = await fetch(path + query(params))
+      var body = await res.json().catch(function () { return {} })
+      if (!res.ok) throw new Error(body.error || ('GET ' + path + ' → HTTP ' + res.status))
+      return body
+    }
+    async function apiPost(path, payload) {
+      var res = await fetch(path, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload) })
+      var body = await res.json().catch(function () { return {} })
+      if (!res.ok) throw new Error(body.error || ('POST ' + path + ' → HTTP ' + res.status))
+      return body
+    }
+    /**
+     * 写配置的唯一出口(2026-09-10 第 0 步止血):此前有 4 条互不相同的写配置路径
+     * (设置页整对象 POST / 接续页 patch / 向导两处 patch),端点、后置刷新、错误处理各写一遍。
+     * 现在全部经这里,以后加配置项或改保存行为只改这一处。
+     * hooks = { onSaved, onError } 可省;省略时静默失败(与原先的 fire-and-forget 行为一致)。
+     */
+    function saveConfigPatch(patch, hooks) {
+      var h = hooks || {}
+      // issue#40:保存后立刻用**回传的真实配置**刷新向导闸,而不是等下次启动重新拉取。
+      // 关掉开关时顺手撤下正在显示的向导(否则"点了关闭但窗口还开着"——界面无即时回显)。
+      var p = apiPost(API.config, patch).then(function (d) {
+        rememberWelcomeConfigPre(d)
+        if (patch && typeof patch.welcomeTourEnabled === 'boolean') {
+          welcomeTourConfig = Object.assign({}, welcomeTourConfig || {}, { welcomeTourEnabled: patch.welcomeTourEnabled })
+          if (patch.welcomeTourEnabled === false) dismissWelcomeTourPre('config')
+        }
+        return d
+      })
+      if (h.onSaved || h.onError) p.then(function (d) { if (h.onSaved) h.onSaved(d) }, function (e) { if (h.onError) h.onError(e) })
+      else p.catch(function () {})
+      return p
+    }
+    /**
+     * 读配置的唯一解包出口(2026-09-14 实测止血):宿主 GET /config **恒返回外壳** `{ config, path }`
+     * (见 lib/index.js:8461),配置键在 `d.config` 上。
+     * 直读外壳的旧写法(`c.autoContinueEnabled`)恒得 undefined ⇒ `undefined === false` 恒假 ⇒ `!(…)` 恒真
+     * ⇒ 开关显示**恒为「开」**,与真实配置无关;更糟的是点击算的是 `!autoCfg.enabled` = `!true` = **false**
+     * ⇒ 该按钮**只能关、永远开不起来**(用户报障原话「我点开关,它并没有真正开关」)。
+     * 纪律:任何 `apiGet(API.config)` 的返回值都必须经这层解包,禁止直读外壳上的配置键。
+     * 回归守卫:tests/smoke/smoke-test-switch-decouple-pre.mjs D5。
+     */
+    function configOf(d) { return (d && d.config) || {} }
+    /**
+     * 语义引擎状态的统一刷新(2026-09-10 第 0 步止血):此前同一段 fetch + 状态写回在界面里逐字重复 10 处,
+     * 响应形状或失败兜底要改时得挨个改。apply 收合并后的状态对象(已带 loaded:true),onError 可省。
+     */
+    function refreshSem(apply, onError) {
+      try {
+        fetch(API.semanticStatus).then(function (r) { return r.json() }).then(function (j) { if (typeof apply === 'function') apply(Object.assign({ loaded: true }, j)) }, function (e) { if (typeof onError === 'function') onError(e) }).catch(function () {})
+      } catch (_) {}
+    }
+
+    // ───────────────────────── 样式 ─────────────────────────
+    // 视觉:液态玻璃(毛玻璃)—— backdrop-filter + DSH 主题令牌(--dsw-alias-*),
+    // 跟随亮/暗主题与页面背景自适应;位置/尺寸由 JS 几何状态驱动(可拖动、可缩放)。
+    var CSS = [
+      // ★2026-09-22 动效刻度作用域(MOTION-SPEC-20260922 §0.2):刻度此前只定义在 [data-dam-page] 内,
+      //   而浮层 [data-dam-panel] 不是它的后代 ⇒ 浮层那组取不到变量,只能写字面量、无法与页面统一。
+      //   本条把同一套刻度同时挂到两个承载面;page 侧原有的那份定义原样保留(不删不搬,避免层叠行为变化)。
+      '[data-dam-panel], [data-dam-page] { --dam-dur-quick: 150ms; --dam-dur-fast: 250ms; --dam-dur-slow: 400ms; --dam-dur-stagger: 40ms;',
+      '  --dam-ease-out: cubic-bezier(.22, 1, .36, 1); --dam-ease-inout: cubic-bezier(.65, 0, .35, 1); --dam-ease-pop: cubic-bezier(.34, 1.36, .64, 1); --dam-ease-linear: linear; }',
+      '[data-dam-panel] { position: fixed; left: 16px; width: 440px; height: 560px; --dam-scale: 1;',
+      '  max-width: calc(100vw - 32px); max-height: calc(100vh - 32px);',
+      '  display: flex; flex-direction: column; overflow: hidden; z-index: 3000; pointer-events: auto;',
+      '  border-radius: var(--dam-radius-xxl, 16px); font: 13px/1.55 system-ui, "Segoe UI", sans-serif;',
+      '  background: color-mix(in srgb, var(--dsw-alias-bg-layer-2, rgba(255,255,255,.86)) 58%, transparent);',
+      '  -webkit-backdrop-filter: blur(28px) saturate(1.55); backdrop-filter: var(--dam-backdrop-x1, blur(28px) saturate(1.55));',
+      '  border: 1px solid color-mix(in srgb, var(--dsw-alias-border-l1, rgba(128,128,128,.35)) 65%, transparent);',
+      '  box-shadow: var(--dam-shadow-x1, 0 24px 64px rgba(0,0,0,.22), 0 4px 16px rgba(0,0,0,.10), inset 0 1px 0 rgba(255,255,255,.22));',
+      '  color: var(--dsw-alias-label-primary, #1f2328);',
+      '  animation: dam-in var(--dam-dur-fast) cubic-bezier(.2,.9,.3,1.15) both; transform-origin: left bottom; }',
+      '@keyframes dam-in { from { opacity: 0; transform: scale(.92) translateY(10px); } to { opacity: 1; transform: none; } }',
+      '@keyframes dam-out { from { opacity: 1; transform: none; } to { opacity: 0; transform: scale(.95) translateY(6px); } }',
+      '[data-dam-panel][data-closing="true"] { animation: dam-out var(--dam-dur-quick) var(--dam-ease-out) both; }',
+      '[data-dam-panel][data-scale="sm"] { --dam-scale: .9; }',
+      '[data-dam-panel][data-scale="lg"] { --dam-scale: 1.15; }',
+      '[data-dam-panel][data-scale="xl"] { --dam-scale: 1.3; }',
+      '[data-dam-panel]::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 64%; pointer-events: none;',
+      '  background: linear-gradient(180deg, var(--dam-white-13, rgba(255,255,255,.13)), var(--dam-white-0, rgba(255,255,255,0)) 70%); border-radius: var(--dam-radius-top, 16px 16px 0 0); }',
+      '[data-dam-panel][data-solid="true"]::before { background: linear-gradient(180deg, var(--dam-white-5, rgba(255,255,255,.05)), var(--dam-white-0, rgba(255,255,255,0)) 70%); }',
+      '[data-dam-panel][data-dragging="true"] { user-select: none; }',
+      '[data-dam-panel] header { display: flex; align-items: center; gap: var(--dam-space-s3, 8px); padding: var(--dam-space-s4, 10px) var(--dam-space-s7, 14px); cursor: grab;',
+      '  border-bottom: 1px solid color-mix(in srgb, var(--dsw-alias-border-l1, rgba(128,128,128,.25)) 55%, transparent); }',
+      '[data-dam-panel][data-dragging="true"] header { cursor: grabbing; }',
+      '[data-dam-panel] header strong { font-size: calc(14px * var(--dam-scale)); }',
+      '[data-dam-panel] header .dam-spacer { flex: 1; }',
+      '[data-dam-resize] { position: absolute; right: 0; bottom: 0; width: 22px; height: 22px; cursor: nwse-resize;',
+      '  opacity: .55; z-index: 2; border-radius: var(--dam-radius-br, 0 0 16px 0);',
+      '  background: linear-gradient(135deg, transparent 50%, color-mix(in srgb, var(--dsw-alias-label-secondary, #666) 45%, transparent) 50%); }',
+      '[data-dam-resize]:hover { opacity: 1; }',
+      // ★2026-09-21 二次修正:原「顶部通栏停靠条」CSS 已随该形态废弃而删除 —— 它曾把面板做成 shell.overlay 里的
+      // 覆盖条(用户实测:「浮在整个页面上方,而不是和对话轨迹…并列的一页」)。现在第二承载面是 conversation.view 会话页,
+      // 窄容器/宽容器两套样式见下面 [data-dam-page] 一组。
+      // ── 会话页大屏适配(2026-09-22「大屏批」) ───────────────────────────────
+      // 设计刻度:间距 4/8/12/16/24/32、圆角 8/12/16、字号 = 用户档位 × 视口台阶。
+      // 动效刻度(transitions-motion token 表):150 / 250 / 400ms + smooth-out 曲线、错开 40ms。
+      // 作用域只有 [data-dam-page](会话页) —— 浮层 [data-dam-panel] 保持逐字节不变。
+      '[data-dam-page] { display: flex; flex-direction: column; width: 100%; height: 100%; min-height: 0;',
+      '  --dam-scale: var(--dam-user-scale, 1);',
+      '  --dam-measure: 1440px;',
+      '  --dam-pad-x: clamp(16px, 1.6vw + 6px, 44px);',
+      '  --dam-pad-y: clamp(14px, .8vw + 6px, 26px);',
+      '  --dam-gap: clamp(10px, .5vw + 6px, 18px);',
+      '  --dam-dur-quick: 150ms; --dam-dur-fast: 250ms; --dam-dur-slow: 400ms;',
+      '  --dam-ease-out: cubic-bezier(.22, 1, .36, 1);',
+      '  --dam-ease-inout: cubic-bezier(.65, 0, .35, 1);',
+      '  --dam-ease-pop: cubic-bezier(.34, 1.36, .64, 1);',
+      '  --dam-ease-linear: linear;',
+      '  color: var(--dsw-alias-label-primary, #1f2328); font: 13px/1.55 system-ui, "Segoe UI", sans-serif; }',
+      '[data-dam-page-head] { display: flex; align-items: center; gap: var(--dam-space-s3, 8px); padding: var(--dam-space-s4, 10px) var(--dam-space-s1, 4px);',
+      '  border-bottom: 1px solid color-mix(in srgb, var(--dsw-alias-border-l1, rgba(128,128,128,.25)) 55%, transparent); }',
+      '[data-dam-page-head] strong { font-size: calc(15px * var(--dam-scale)); }',
+      '[data-dam-page-head] .dam-spacer { flex: 1; }',
+      // ★2026-09-22 左侧侧栏(方向文档 PANEL-PAGE-MIGRATION-DIRECTION §2/§3):顶部横向滚动页签 → 左侧固定侧栏;
+      //   内容区独立成列独立滚动。窄窗(<900px)自动降级为顶部横条(只换方向,不注销任何分区)。
+      '[data-dam-page-main] { display: flex; flex: 1; min-height: 0; }',
+      '[data-dam-page-nav] { flex: 0 0 auto; width: 170px; overflow: auto; padding: var(--dam-space-s4, 10px) var(--dam-space-s3, 8px); display: flex; flex-direction: column; gap: var(--dam-space-s0-5, 2px);',
+      '  border-right: 1px solid color-mix(in srgb, var(--dsw-alias-border-l1, rgba(128,128,128,.25)) 55%, transparent); }',
+      '[data-dam-page-nav] button { flex: 0 0 auto; border: 0; background: transparent; color: inherit; text-align: left; cursor: pointer;',
+      '  padding: var(--dam-space-s2-5, 7px) var(--dam-space-s4, 10px); border-radius: var(--dam-radius-md, 8px); font: inherit; font-size: calc(12.5px * var(--dam-scale)); opacity: .68; white-space: nowrap;',
+      '  transition: var(--dam-transition-x1, background-color var(--dam-dur-quick) var(--dam-ease-out), color var(--dam-dur-quick) var(--dam-ease-out), opacity var(--dam-dur-quick) var(--dam-ease-out)); }',
+      '[data-dam-page-nav] button[data-active="true"] { opacity: 1; font-weight: 650; color: var(--dam-accent, var(--dsw-alias-brand-primary, #4f7cff));',
+      '  background: color-mix(in srgb, var(--dam-accent, #4f7cff) 12%, transparent); }',
+      '[data-dam-page-content] { flex: 1; min-width: 0; display: flex; flex-direction: column; min-height: 0; }',
+      '[data-dam-page-nav], [data-dam-page-content], [data-dam-page-main] { flex-shrink: 1; }',
+      '[data-dam-page] [data-dam-section] { min-width: 0; }',
+      // 折叠标题(日志列表用):整行可点, 箭头用 transform 旋转(不换字符,避免宽度跳动)。
+      '[data-dam-page] [data-dam-fold] { display: flex; align-items: center; gap: var(--dam-space-s3, 8px); width: 100%; text-align: left; border: 0; cursor: pointer;',
+      '  background: color-mix(in srgb, var(--dsw-alias-label-secondary, #666) 8%, transparent); color: inherit; font: inherit;',
+      '  font-size: calc(12.5px * var(--dam-scale)); font-weight: 650; padding: var(--dam-space-s3-5, 9px) var(--dam-space-s6, 12px); border-radius: var(--dam-radius-md2, 9px);',
+      '  transition: var(--dam-transition-x2, background-color var(--dam-dur-quick) var(--dam-ease-out)); }',
+      '[data-dam-page] [data-dam-fold]:hover { background: color-mix(in srgb, var(--dsw-alias-label-secondary, #666) 14%, transparent); }',
+      '[data-dam-page] [data-dam-fold] .dam-fold-caret { display: inline-block; transition: var(--dam-transition-x3, transform var(--dam-dur-fast) var(--dam-ease-inout)); }',
+      '[data-dam-page] [data-dam-fold][data-open="true"] .dam-fold-caret { transform: rotate(90deg); }',
+      '[data-dam-page] [data-dam-fold] .dam-fold-count { margin-left: auto; opacity: .55; font-weight: 400; }',
+      '@media (max-width: 900px) {',
+      '  [data-dam-page-main] { flex-direction: column; }',
+      '  [data-dam-page-nav] { width: auto; flex-direction: row; gap: var(--dam-space-s1, 4px); overflow-x: auto; overflow-y: hidden; padding: var(--dam-space-s2, 6px) var(--dam-space-s3, 8px);',
+      '    border-right: 0; border-bottom: 1px solid color-mix(in srgb, var(--dsw-alias-border-l1, rgba(128,128,128,.25)) 55%, transparent); } }',
+      '[data-dam-page] [data-dam-body] { flex: 1; min-height: 0; overflow: auto;',
+      '  padding: var(--dam-pad-y) var(--dam-pad-x) 28px;',
+      '  padding-inline: max(var(--dam-pad-x), calc((100% - var(--dam-measure)) / 2));',
+      '  scrollbar-width: thin;',
+      '  scrollbar-color: color-mix(in srgb, var(--dsw-alias-label-secondary, #666) 34%, transparent) transparent; }',
+      '[data-dam-page] [data-dam-body]::-webkit-scrollbar { width: 10px; height: 10px; }',
+      '[data-dam-page] [data-dam-body]::-webkit-scrollbar-track { background: transparent; }',
+      '[data-dam-page] [data-dam-body]::-webkit-scrollbar-thumb { border: 3px solid transparent; background-clip: content-box;',
+      '  border-radius: var(--dam-radius-md, 8px); background-color: color-mix(in srgb, var(--dsw-alias-label-secondary, #666) 28%, transparent); }',
+      '[data-dam-page] [data-dam-body]::-webkit-scrollbar-thumb:hover {',
+      '  background-color: color-mix(in srgb, var(--dsw-alias-label-secondary, #666) 48%, transparent); }',
+      // 大屏台阶:字号随视口抬两档, 与用户档位相乘, 不覆盖用户选择。
+      '@media (min-width: 1400px) { [data-dam-page] { --dam-scale: calc(var(--dam-user-scale, 1) * 1.06); } }',
+      '@media (min-width: 1800px) { [data-dam-page] { --dam-scale: calc(var(--dam-user-scale, 1) * 1.12); } }',
+      // 首帧/页签切换:主体淡入 + 6px 上浮(只动 opacity/transform, 不触发布局与重绘)。
+      '[data-dam-page] [data-dam-body] > :not([data-dam-flow]) { animation: dam-page-in var(--dam-dur-fast) var(--dam-ease-out) both; }',
+      '@keyframes dam-page-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }',
+      // ★卡片流分列(大屏核心收益):只对打了 [data-dam-flow] 标记的页签生效;
+      //   非卡片子元素一律整行占据 ⇒ 不打标记的页签 = 逐字节旧行为, 打了标记也只有卡片进列。
+      '[data-dam-page] [data-dam-flow] { display: grid; gap: var(--dam-gap); align-items: start; align-content: start;',
+      '  grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr)); }',
+      '[data-dam-page] [data-dam-flow] > * { grid-column: 1 / -1; min-width: 0; animation: dam-card-in var(--dam-dur-fast) var(--dam-ease-out) both; }',
+      // ★2026-09-22 动效统一(MOTION-SPEC-20260922 §1.2/§2.2/§2.3):
+      //   ① 时长 400ms → var(--dam-dur-fast) 250ms —— 用途是「页面前进」,400ms 是「面板打开」刻度,用在切页签会拖。
+      //   ② 补 both —— 原缺 animation-fill-mode,而下面 nth-child 带 40~200ms 延迟;fill-mode 默认 none 时
+      //      延迟期内动画不生效 ⇒ 卡片按终态(opacity:1)渲染 ⇒ 第 2~6 张「先闪一下 → 跳空 → 再淡入」。
+      //      同文件的 dam-rise 写了 both(:1466/:1472),属漏写不是设计。
+      //   ③ 错开值改走 --dam-dur-stagger(数值不变,只刻度化)。
+      '[data-dam-page] [data-dam-flow] > [data-dam-card] { grid-column: auto; margin-bottom: 0;',
+      '  animation: dam-card-in var(--dam-dur-fast) var(--dam-ease-out) both; }',
+      '@keyframes dam-stat-num { from { opacity: 0; transform: translateY(4px); filter: blur(2px); } to { opacity: 1; transform: none; filter: none; } }',
+      '@keyframes dam-stat-reveal { from { opacity: 0; filter: blur(2px); } to { opacity: 1; filter: none; } }',
+      '@keyframes dam-stat-grow { from { transform: scaleX(.02); transform-origin: left center; } to { transform: none; } }',
+      '@keyframes dam-stat-pop { from { opacity: 0; transform: scale(.92); } to { opacity: 1; transform: none; } }',
+      '@keyframes dam-stat-pulse { 0%, 100% { opacity: .45; } 50% { opacity: .85; } }',
+      '@keyframes dam-stat-arc { from { opacity: 0; } to { opacity: 1; } }',
+        '@keyframes dam-card-in { from { opacity: 0; transform: translateY(8px) scale(.988); } to { opacity: 1; transform: none; } }',
+      '[data-dam-page] [data-dam-flow] > [data-dam-card]:nth-child(2) { animation-delay: calc(var(--dam-dur-stagger) * 1); }',
+      '[data-dam-page] [data-dam-flow] > [data-dam-card]:nth-child(3) { animation-delay: calc(var(--dam-dur-stagger) * 2); }',
+      '[data-dam-page] [data-dam-flow] > [data-dam-card]:nth-child(4) { animation-delay: calc(var(--dam-dur-stagger) * 3); }',
+      '[data-dam-page] [data-dam-flow] > [data-dam-card]:nth-child(5) { animation-delay: calc(var(--dam-dur-stagger) * 4); }',
+      '[data-dam-page] [data-dam-flow] > [data-dam-card]:nth-child(n+6) { animation-delay: calc(var(--dam-dur-stagger) * 5); }',
+      // 交互反馈:按压即时(150ms 刻度);悬停只在精确指针设备上生效, 避免触屏误触发。
+      '[data-dam-page] [data-dam-btn], [data-dam-page] [data-dam-tab] {',
+      '  transition: var(--dam-transition-x4, background-color var(--dam-dur-quick) var(--dam-ease-out), color var(--dam-dur-quick) var(--dam-ease-out),)',
+      '    opacity var(--dam-dur-quick) var(--dam-ease-out), transform var(--dam-dur-quick) var(--dam-ease-out); }',
+      '[data-dam-page] [data-dam-btn]:active, [data-dam-page] [data-dam-tab]:active { transform: scale(.97); }',
+      '[data-dam-page] [data-dam-tab] { padding: var(--dam-space-s3, 8px) var(--dam-space-s5, 11px); }',
+      '[data-dam-page] :focus-visible { outline: 2px solid color-mix(in srgb, var(--dam-accent, #2456c4) 72%, transparent); outline-offset: 2px; }',
+      '@media (hover: hover) and (pointer: fine) { [data-dam-page] [data-dam-tab]:hover { opacity: .92; } }',
+      // 减动效闸门:新增动效逐条归零(与文件既有那段同源, 此处只覆盖本批新增的选择器)。
+      '@media (prefers-reduced-motion: reduce) {',
+      '  [data-dam-page] [data-dam-body] > *, [data-dam-page] [data-dam-flow] > [data-dam-card] { animation: none !important; }',
+      '  [data-dam-page] [data-dam-btn], [data-dam-page] [data-dam-tab] { transition: var(--dam-transition-x5, none !important); }',
+      '  [data-dam-page] [data-dam-btn]:active, [data-dam-page] [data-dam-tab]:active { transform: none; } }',
+      '[data-dam-btn] { border: none; background: transparent; cursor: pointer; color: inherit; opacity: .75; font-size: calc(13px * var(--dam-scale)); padding: var(--dam-space-s1, 4px) var(--dam-space-s3, 8px); border-radius: var(--dam-radius-sm, 6px); }',
+      '[data-dam-btn]:hover { opacity: 1; background: color-mix(in srgb, var(--dsw-alias-label-secondary, #666) 16%, transparent); }',
+      '[data-dam-btn][data-pin="on"] { opacity: 1; background: color-mix(in srgb, var(--dam-accent, #4f7cff) 24%, transparent); }',
+      '[data-dam-tabs-wrap] { display: flex; align-items: center; min-width: 0; border-bottom: 1px solid color-mix(in srgb, var(--dsw-alias-border-l1, rgba(128,128,128,.2)) 55%, transparent); }',
+      '[data-dam-tabs] { flex: 1; min-width: 0; overflow: hidden; padding: var(--dam-space-s1-5, 5px) var(--dam-space-s1, 4px); scrollbar-width: none; -ms-overflow-style: none; }',
+      '[data-dam-tabs]::-webkit-scrollbar { display: none; }',
+      // ★2026-09-22 取证记录(MOTION-SPEC-20260922 §3.3,本批**不改值**):下面这条 transition: var(--dam-transition-x6, transform 目前是)
+      //   **死声明** —— 全文件只有 3 处提到 data-dam-tab-strip(CSS 定义 / 减动效闸门 / :4714 创建该 div),
+      //   滚动由父容器原生 scrollTo/scrollBy 驱动(:4704-4705/:4710),没有任何代码写过它的 transform。
+      //   保留原样:删它对本轮问题零贡献,却可能挡住「将来把滚动改回 transform 驱动」。要动它请单开一批。
+      '[data-dam-tab-strip] { display: flex; width: max-content; transition: var(--dam-transition-x7, transform .42s cubic-bezier(.22,.8,.2,1)); will-change: transform; }',
+      '[data-dam-tab] { flex: 0 0 auto; min-width: max-content; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border: none; background: transparent; cursor: pointer; color: inherit; opacity: .68; padding: var(--dam-space-s2, 6px) var(--dam-space-s3-5, 9px); border-radius: var(--dam-radius-sm2, 7px); font-size: calc(12.5px * var(--dam-scale)); transition: var(--dam-transition-x8, color var(--dam-dur-quick) var(--dam-ease-out), background var(--dam-dur-quick) var(--dam-ease-out), opacity var(--dam-dur-quick) var(--dam-ease-out), transform var(--dam-dur-quick) var(--dam-ease-out)); }',
+      '[data-dam-tabs-arrow] { flex: 0 0 26px; height: 30px; border: 0; background: transparent; color: inherit; cursor: pointer; opacity: .55; font-size: var(--dam-fontsize-xl2, 18px); }',
+      '[data-dam-tabs-arrow]:hover:not(:disabled) { opacity: 1; background: color-mix(in srgb, var(--dam-accent, #2456c4) 16%, transparent); transform: scale(1.12); }',
+      '[data-dam-tabs-arrow]:active:not(:disabled) { transform: scale(.92); }',
+      '[data-dam-tab][data-active="true"] { position: relative; opacity: 1; background: var(--dam-accent, #2456c4); color: var(--dam-fg-on-accent, #fff); font-weight: 700; box-shadow: var(--dam-shadow-x2, 0 3px 10px color-mix(in srgb, var(--dam-accent, #2456c4) 30%, transparent)); transform: translateY(-1px); }',
+      '[data-dam-tab][data-active="true"]::before { content: ""; position: absolute; left: 3px; top: 7px; bottom: 7px; width: 3px; border-radius: var(--dam-radius-xs, 3px); background: var(--dam-white-90, rgba(255,255,255,.9)); }',
+      '[data-dam-body] { flex: 1 1 auto; min-width: 0; min-height: 0; overflow: auto; padding: var(--dam-space-s8, 16px); }',
+      '[data-dam-settings] { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: var(--dam-space-s9, 18px); min-height: 100%; }',
+      '[data-dam-settings-nav] { position: sticky; top: 0; align-self: start; display: flex; flex-direction: column; gap: var(--dam-space-s1, 4px); padding-top: var(--dam-space-s0-5, 2px); }',
+      '[data-dam-settings-nav] button { border: 0; background: transparent; color: inherit; text-align: left; padding: var(--dam-space-s3, 8px) var(--dam-space-s3-5, 9px); border-radius: var(--dam-radius-md, 8px); cursor: pointer; opacity: .58; font: inherit; font-size: calc(11.5px * var(--dam-scale)); }',
+      '[data-dam-settings-nav] button[data-active="true"] { opacity: 1; color: var(--dam-accent, var(--dsw-alias-brand-primary, #4f7cff)); background: color-mix(in srgb, var(--dam-accent, #4f7cff) 11%, transparent); font-weight: 650; }',
+      '[data-dam-settings-content] { min-width: 0; padding-bottom: var(--dam-space-s12, 24px); }',
+      '[data-dam-settings-group] { scroll-margin-top: 12px; padding-bottom: var(--dam-space-s11, 22px); margin-bottom: 24px; border-bottom: 1px solid color-mix(in srgb, var(--dsw-alias-border-l1, #c5cbd3) 38%, transparent); }',
+      '[data-dam-settings-group] h3 { margin: 0; color: var(--dsw-alias-label-primary, #1f2328); font-size: calc(14px * var(--dam-scale)); }',
+      '[data-dam-settings-group] p { margin: 4px 0 14px; color: var(--dsw-alias-label-secondary, #68717d); font-size: calc(11.5px * var(--dam-scale)); line-height: 1.5; }',
+      '[data-dam-settings-row] { padding: var(--dam-space-s4, 10px) var(--dam-space-none, 0); }',
+      '[data-dam-savebar] { position: sticky; bottom: 0; z-index: 3; display: flex; align-items: center; gap: var(--dam-space-s4, 10px); flex-wrap: wrap; padding: var(--dam-space-s4, 10px) var(--dam-space-s7, 14px); margin: 6px -16px -16px; background: color-mix(in srgb, var(--dsw-alias-bg-layer-2, rgba(255,255,255,.92)) 74%, transparent); backdrop-filter: var(--dam-backdrop-x2, blur(16px) saturate(1.4)); -webkit-backdrop-filter: blur(16px) saturate(1.4); border-top: 1px solid color-mix(in srgb, var(--dsw-alias-border-l1, #c5cbd3) 38%, transparent); border-radius: var(--dam-radius-bottom, 0 0 14px 14px); transition: var(--dam-transition-x9, background .25s ease); }',
+      '[data-dam-savebar] button { opacity: .5; transition: var(--dam-transition-x10, opacity .2s ease, background .2s ease, color .2s ease); }',
+      '[data-dam-savebar] button[data-dirty="true"] { opacity: 1; background: var(--dam-accent, var(--dam-accent-deepseek, #1d4ed8)); color: var(--dam-fg-on-accent, #fff); font-weight: 650; box-shadow: var(--dam-shadow-x3, 0 3px 12px color-mix(in srgb, var(--dam-accent, var(--dam-accent-deepseek, #1d4ed8)) 35%, transparent)); }',
+      '[data-dam-settings-row] > [data-dam-row] { margin-bottom: 3px; }',
+      '[data-dam-graph-toolbar] { display: flex; align-items: center; gap: var(--dam-space-s4, 10px); padding: var(--dam-space-s3, 8px) var(--dam-space-s4, 10px); border-bottom: 1px solid color-mix(in srgb, var(--dsw-alias-border-l1, #c5cbd3) 38%, transparent); }',
+      '[data-dam-graph-toolbar] input[type="range"] { flex: 1; min-width: 90px; accent-color: var(--dam-accent, #6b98ff); }',
+      '[data-dam-graph] { position: relative; min-height: 420px; overflow: hidden; border: 1px solid color-mix(in srgb, var(--dsw-alias-border-l1, #c5cbd3) 42%, transparent); border-radius: var(--dam-radius-xl, 12px); background: color-mix(in srgb, var(--dsw-alias-bg-layer-1, #f5f6f7) 42%, transparent); }',
+      '[data-dam-graph] { cursor: grab; }',
+      '[data-dam-graph][data-panning="true"] { cursor: grabbing; user-select: none; }',
+      '[data-dam-graph] svg { display: block; width: auto; max-width: none; height: auto; min-height: 520px; transform-origin: 0 0; }',
+      '[data-dam-graph-node] { cursor: pointer; }',
+      '[data-dam-graph-legend] { display: flex; gap: var(--dam-space-s6, 12px); flex-wrap: wrap; margin: 10px 0 14px; color: var(--dsw-alias-label-secondary, #68717d); font-size: calc(11px * var(--dam-scale)); }',
+      '[data-dam-legend-dot] { display: inline-block; width: 7px; height: 7px; border-radius: var(--dam-radius-circle, 50%); margin-right: 4px; background: var(--dam-accent, #4f7cff); }',
+      '[data-dam-legend-dot="branch"] { background: var(--dam-legend-branch, var(--dam-graph-node, #7d8793)); }',
+      '[data-dam-legend-dot="leaf"] { background: var(--dam-legend-leaf, #b0b7c0); }',
+      '[data-dam-kv] { display: grid; grid-template-columns: auto 1fr; gap: var(--dam-space-pair-1-3, 4px 12px); font-size: calc(12.5px * var(--dam-scale)); }',
+      '[data-dam-kv] b { opacity: .55; font-weight: 500; }',
+      '[data-dam-card] { border: 1px solid color-mix(in srgb, var(--dsw-alias-border-l1, rgba(128,128,128,.22)) 60%, transparent); border-radius: var(--dam-radius-md2, 9px); padding: var(--dam-space-s3, 8px) var(--dam-space-s4, 10px); margin-bottom: 8px; font-size: calc(12.5px * var(--dam-scale));',
+      '  background: color-mix(in srgb, var(--dsw-alias-bg-layer-1, rgba(128,128,128,.06)) 40%, transparent); }',
+      '[data-dam-card] .dam-date { font-weight: 600; margin-bottom: 4px; }',
+      '[data-dam-card] .dam-content { white-space: pre-wrap; word-break: break-word; max-height: 220px; overflow: auto; }',
+      '[data-dam-disclosure] { overflow: hidden; opacity: 0; max-height: 0; transform: translateY(-5px) scale(.985); transition: var(--dam-transition-x11, max-height var(--dam-dur-fast) var(--dam-ease-out), opacity var(--dam-dur-fast) var(--dam-ease-out), transform var(--dam-dur-fast) var(--dam-ease-out)); }',
+      '[data-dam-disclosure][data-phase="open"] { opacity: 1; max-height: 1800px; transform: translateY(0) scale(1); }',
+      '[data-dam-disclosure][data-phase="closing"] { opacity: 0; max-height: 0; transform: translateY(-5px) scale(.985); }',
+      '[data-dam-card], [data-dam-banner] { animation: dam-rise var(--dam-dur-fast) var(--dam-ease-out) both; }',
+      '@keyframes dam-rise { from { opacity: 0; transform: translateY(7px) scale(.988); } to { opacity: 1; transform: translateY(0) scale(1); } }',
+      '@media (prefers-reduced-motion: reduce) { [data-dam-tab-strip], [data-dam-tab], [data-dam-disclosure], [data-dam-card], [data-dam-banner], [data-dam-tour-orb-wrap] *, [data-dam-update-box] * { transition: none !important; animation: none !important; }',
+      '  [data-dam-tour-bokeh], [data-dam-tour-slab], [data-dam-tour-orb-core] { opacity: 1 !important; transform: none !important; filter: none !important; }',
+      '  [data-dam-update-stage] { display: none !important; }',
+      '  [data-dam-update-content] { opacity: 1 !important; transform: none !important; animation: none !important; } }',
+      // ★2026-09-22 减动效闸门(第二道) —— MOTION-SPEC-20260922 §1.6:上面那道只覆盖 8 个选择器,
+      //   漏了浮层/日历三件/页签交互/折叠头/侧栏/保存条。本批新增与改动的每一条动效都必须在两道里被归零。
+      '@media (prefers-reduced-motion: reduce) {',
+      '  [data-dam-panel], [data-dam-calendar], [data-dam-calendar-event], [data-dam-calendar-modal],',
+      '  [data-dam-calendar] [data-dam-calendar-day], [data-dam-tabs-arrow], [data-dam-btn],',
+      '  [data-dam-page-nav] button, [data-dam-page] [data-dam-fold], [data-dam-page] [data-dam-fold] .dam-fold-caret,',
+      '  [data-dam-savebar], [data-dam-savebar] button { transition: var(--dam-transition-x5, none !important); animation: none !important; }',
+      '  [data-dam-tab][data-active="true"], [data-dam-calendar] [data-dam-calendar-day]:hover,',
+      '  [data-dam-page] [data-dam-flow] > * { animation: none !important; }',
+      '  [data-dam-tab]:active, [data-dam-btn]:active, [data-dam-tabs-arrow]:active:not(:disabled) { transform: none !important; } }',
+      '[data-dam-calendar] { animation: dam-rise var(--dam-dur-fast) var(--dam-ease-out) both; }',
+      '[data-dam-calendar] [data-dam-calendar-day] { transition: var(--dam-transition-x12, transform var(--dam-dur-quick) var(--dam-ease-out), border-color .2s ease, background .2s ease, box-shadow .2s ease); }',
+      '[data-dam-calendar] [data-dam-calendar-day]:hover { transform: translateY(-1px); border-color: var(--dam-accent, var(--dam-accent-deepseek, #1d4ed8)) !important; box-shadow: var(--dam-shadow-x4, 0 4px 12px rgba(0,0,0,.08)); }',
+      '[data-dam-calendar-event] { animation: dam-event-in var(--dam-dur-fast) var(--dam-ease-out) both; transition: var(--dam-transition-x13, transform var(--dam-dur-quick) var(--dam-ease-out), filter var(--dam-dur-quick) var(--dam-ease-out)); }',
+      '[data-dam-calendar-event]:hover { transform: translateX(2px); filter: brightness(1.06); }',
+      '[data-dam-calendar-modal] { animation: dam-modal-in var(--dam-dur-fast) var(--dam-ease-out) both; }',
+      '@keyframes dam-event-in { from { opacity: 0; transform: translateX(-5px); } to { opacity: 1; transform: none; } }',
+      '@keyframes dam-modal-in { from { opacity: 0; transform: translateY(10px) scale(.98); } to { opacity: 1; transform: none; } }',
+      '[data-dam-banner] { border: 1px solid color-mix(in srgb, var(--dsw-alias-state-warn-primary, #e6a23c) 55%, transparent);',
+      '  background: color-mix(in srgb, var(--dsw-alias-state-warn-primary, #e6a23c) 13%, transparent); border-radius: var(--dam-radius-md2, 9px); padding: var(--dam-space-s3, 8px) var(--dam-space-s4, 10px); margin-bottom: 10px; font-size: calc(12.5px * var(--dam-scale)); }',
+      '[data-dam-input], [data-dam-select] { width: 100%; box-sizing: border-box; background: color-mix(in srgb, var(--dsw-alias-bg-layer-1, rgba(128,128,128,.08)) 45%, transparent); color: inherit; border: 1px solid color-mix(in srgb, var(--dsw-alias-border-l1, rgba(128,128,128,.3)) 60%, transparent); border-radius: var(--dam-radius-sm2, 7px); padding: var(--dam-space-s2, 6px) var(--dam-space-s3, 8px); font: inherit; }',
+      '[data-dam-row] { display: flex; align-items: center; gap: var(--dam-space-s3, 8px); margin-bottom: 10px; flex-wrap: wrap; }',
+      '[data-dam-row] label { flex: 0 0 110px; opacity: .8; font-size: calc(12.5px * var(--dam-scale)); }',
+      '[data-dam-hint] { opacity: .5; font-size: calc(11.5px * var(--dam-scale)); margin-top: 2px; }',
+      '[data-dam-sidebar-btn] { display: flex; align-items: center; gap: var(--dam-space-s2, 6px); width: 100%; border: none; background: transparent; color: inherit; cursor: pointer; padding: var(--dam-space-s2, 6px) var(--dam-space-s4, 10px); border-radius: var(--dam-radius-md, 8px); font: inherit; font-size: var(--dam-fontsize-md, 13px); opacity: .8; }',
+      '[data-dam-sidebar-btn]:hover { background: color-mix(in srgb, var(--dsw-alias-label-secondary, #666) 14%, transparent); opacity: 1; }',
+      '[data-dam-sidebar-btn][data-active="true"] { opacity: 1; background: color-mix(in srgb, var(--dsw-alias-brand-primary, #4f7cff) 16%, transparent); color: var(--dsw-alias-brand-primary, #4f7cff); }',
+      '[data-dam-error] { color: var(--dsw-alias-state-error-primary, #d64545); font-size: var(--dam-fontsize-base, 12px); margin-top: 6px; white-space: pre-wrap; }',
+      '[data-dam-muted] { opacity: .55; }',
+      '[data-dam-loading] { display: flex; align-items: center; justify-content: center; gap: var(--dam-space-s3-5, 9px); min-height: 96px; color: var(--dsw-alias-label-secondary, var(--dam-graph-node, #7d8793)); font-size: calc(12px * var(--dam-scale)); }',
+      '[data-dam-spinner] { width: 18px; height: 18px; border: 2px solid color-mix(in srgb, var(--dam-accent, #4f7cff) 22%, transparent); border-top-color: var(--dam-accent, #4f7cff); border-radius: var(--dam-radius-circle, 50%); animation: dam-spin .8s linear infinite; }',
+      '@keyframes dam-spin { to { transform: rotate(360deg); } }',
+      '@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {',
+      '  [data-dam-panel] { background: var(--dsw-alias-bg-layer-2, #ffffff); } }',
+      // ── 首启引导向导(Win11 OOBE × macOS 欢迎 × Liquid Glass) ──
+      '[data-dam-tour-backdrop] { position: fixed; inset: 0; z-index: 2147482900; display: flex; align-items: center; justify-content: center;',
+      '  background: radial-gradient(ellipse at 50% 42%, var(--dam-rgba-1, rgba(20,30,60,.30)), var(--dam-rgba-2, rgba(6,10,22,.44))); backdrop-filter: var(--dam-blur-sm, blur(5px)); -webkit-backdrop-filter: var(--dam-blur-sm, blur(5px)); animation: dam-tour-fade .28s ease both; }',
+      '@keyframes dam-tour-fade { from { opacity: 0 } to { opacity: 1 } }',
+      '[data-dam-tour] { position: relative; width: min(620px, calc(100vw - 48px)); border-radius: var(--dam-radius-xxxl2, 22px); max-height: calc(100vh - 32px); max-height: calc(100dvh - 32px); overflow-y: auto; overflow-x: hidden; touch-action: pan-y; box-sizing: border-box; padding-bottom: var(--dam-space-s1, 4px);',
+      '  background: color-mix(in srgb, var(--dsw-alias-bg-layer-2, rgba(30,34,46,.9)) 60%, transparent);',
+      '  backdrop-filter: var(--dam-backdrop-x3, blur(30px) saturate(1.6)); -webkit-backdrop-filter: blur(30px) saturate(1.6);',
+      '  border: 1px solid var(--dam-white-50, rgba(255,255,255,.5));',
+      '  box-shadow: var(--dam-shadow-x5, 0 32px 90px rgba(8,14,38,.5), 0 6px 24px rgba(8,14,38,.28), inset 0 1px 0 rgba(255,255,255,.5), inset 0 -1px 0 rgba(255,255,255,.14));',
+      '  color: var(--dsw-alias-label-primary, #1f2328); font: 13.5px/1.6 system-ui, "Segoe UI", sans-serif; --dam-mx: 50%; --dam-my: 18%;',
+      '  animation: dam-tour-pop .38s cubic-bezier(.2,.9,.3,1.16) both; }',
+      '@keyframes dam-tour-pop { from { opacity: 0; transform: scale(.9) translateY(22px); } to { opacity: 1; transform: none; } }',
+      '[data-dam-tour]::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 55%; pointer-events: none;',
+      '  background: linear-gradient(168deg, var(--dam-white-20, rgba(255,255,255,.20)), var(--dam-white-0, rgba(255,255,255,0)) 58%); }',
+      '[data-dam-tour-glare] { position: absolute; inset: 0; pointer-events: none; z-index: 1;',
+      '  background: radial-gradient(300px circle at var(--dam-mx) var(--dam-my), var(--dam-white-16, rgba(255,255,255,.16)), transparent 62%); mix-blend-mode: screen; }',
+      '[data-dam-tour-close] { position: absolute; top: 12px; right: 12px; z-index: 3; width: 30px; height: 30px; border-radius: var(--dam-radius-circle, 50%);',
+      '  border: 1px solid var(--dam-white-35, rgba(255,255,255,.35)); background: var(--dam-white-10, rgba(255,255,255,.10)); cursor: pointer; opacity: .7; font-size: var(--dam-fontsize-md, 13px); color: inherit; line-height: 1; }',
+      '[data-dam-tour-close]:hover { opacity: 1; background: var(--dam-white-22, rgba(255,255,255,.22)); }',
+      // ── 记忆中枢建立弹窗（2026-09-25 视觉重做）──────────────────────────────
+      //   ★边界：全部选择器以 [data-dam-wb-setup] / [data-dam-wb-card] 开头，
+      //   只作用于本弹窗；新手引导共用的那套外壳（下称「引导外壳」）一行未动。
+      //   卡片级规则用双限定（特异性 0,2,0 > [data-dam-tour] 的 0,1,0），
+      //   与插入位置无关地稳压共用外壳，且不会反向影响引导页。
+      '[data-dam-wb-setup] [data-dam-wb-card] {',
+      '  --wb-fg: var(--dsw-alias-label-primary, #1f2328);',
+      '  --wb-muted: color-mix(in srgb, var(--dsw-alias-label-primary, #1f2328) 62%, transparent);',
+      '  --wb-line: color-mix(in srgb, var(--dsw-alias-label-primary, #1f2328) 13%, transparent);',
+      '  --wb-soft: color-mix(in srgb, var(--dsw-alias-label-primary, #1f2328) 5%, transparent);',
+      '  --wb-ok: var(--dam-state-ok, #17a673); --wb-bad: var(--dam-state-bad, #e5484d); --wb-warn: var(--dam-warn, #d97706);',
+      '  width: min(560px, calc(100vw - 40px)); padding: var(--dam-space-s13, 26px) var(--dam-space-s13, 26px) var(--dam-space-s10, 20px); border-radius: var(--dam-radius-xxl2, 18px);',
+      '  background: color-mix(in srgb, var(--dsw-alias-bg-layer-2, #ffffff) 94%, transparent);',
+      '  -webkit-backdrop-filter: blur(26px) saturate(1.5); backdrop-filter: var(--dam-backdrop-x4, blur(26px) saturate(1.5));',
+      '  border: 1px solid var(--wb-line); color: var(--wb-fg);',
+      '  font: 13.5px/1.62 system-ui, "Segoe UI", sans-serif;',
+      '  box-shadow: var(--dam-shadow-x6, 0 26px 70px rgba(8,14,38,.34), 0 3px 12px rgba(8,14,38,.16));',
+      '  animation: dam-wb-pop .26s cubic-bezier(.2,.9,.3,1.1) both; }',
+      '@keyframes dam-wb-pop { from { opacity: 0; transform: scale(.965) translateY(10px); } to { opacity: 1; transform: none; } }',
+      '@media (prefers-reduced-motion: reduce) { [data-dam-wb-setup] [data-dam-wb-card] { animation: none; } }',
+      // 引导外壳在本弹窗顶部压了一层白色高光渐变，会洗淡正文 ⇒ 仅本弹窗关掉它
+      '[data-dam-wb-setup] [data-dam-wb-card]::before { content: none; }',
+      // 标题：左侧状态色条 + 按相位配色
+      '[data-dam-wb-card] [data-dam-wb-head] { position: relative; padding-left: var(--dam-space-s5, 11px); font-size: var(--dam-fontsize-xl, 17px);',
+      '  font-weight: 700; letter-spacing: .2px; line-height: 1.35; }',
+      '[data-dam-wb-card] [data-dam-wb-head]::before { content: ""; position: absolute; left: 0; top: .34em;',
+      '  width: 4px; height: 1.05em; border-radius: var(--dam-radius-xs, 3px); background: var(--wb-accent, #4a76f0); }',
+      '[data-dam-wb-card] [data-dam-wb-phase="exists"] { --wb-accent: var(--wb-ok); }',
+      '[data-dam-wb-card] [data-dam-wb-phase="done"] { --wb-accent: var(--wb-ok); }',
+      '[data-dam-wb-card] [data-dam-wb-phase="building"] { --wb-accent: var(--wb-warn); }',
+      '[data-dam-wb-card] [data-dam-wb-sub] { margin: 10px 0 15px; color: var(--wb-muted); font-size: var(--dam-fontsize-base2, 12.5px); line-height: 1.68; }',
+      // 四行校验：改成「一行一张小卡」的清单，dot 走语义色
+      '[data-dam-wb-card] [data-dam-wb-row] { display: grid; grid-template-columns: 20px minmax(0,1fr) auto; gap: var(--dam-space-s4, 10px);',
+      '  align-items: baseline; padding: var(--dam-space-s3-5, 9px) var(--dam-space-s6, 12px); margin-bottom: 6px; border-radius: var(--dam-radius-lg, 10px); background: var(--wb-soft); }',
+      '[data-dam-wb-card] [data-dam-wb-dot] { font-size: var(--dam-fontsize-base, 12px); font-weight: 700; text-align: center; }',
+      '[data-dam-wb-card] [data-dam-wb-state="ok"] { color: var(--wb-ok); }',
+      '[data-dam-wb-card] [data-dam-wb-state="bad"] { color: var(--wb-bad); }',
+      '[data-dam-wb-card] [data-dam-wb-state="na"] { color: var(--wb-muted); }',
+      '[data-dam-wb-card] [data-dam-wb-label] { font-size: var(--dam-fontsize-base2, 12.5px); font-weight: 600; }',
+      '[data-dam-wb-card] [data-dam-wb-detail] { max-width: 250px; text-align: right; font-size: var(--dam-fontsize-sm2, 11.5px);',
+      '  font-family: ui-monospace, Consolas, monospace; color: var(--wb-muted); overflow-wrap: anywhere; }',
+      // 状态行 / 目录行 / 风险行：三档视觉权重（信息 → 次要 → 警示）
+      '[data-dam-wb-card] [data-dam-wb-reason] { margin: 13px 0; padding: var(--dam-space-s3, 8px) var(--dam-space-s6, 12px); border-radius: var(--dam-radius-md2, 9px); font-size: var(--dam-fontsize-base2, 12.5px);',
+      '  border-left: 3px solid var(--dam-accent-2, #4a76f0); background: color-mix(in srgb, var(--dam-accent-2, #4a76f0) 10%, transparent); }',
+      '[data-dam-wb-card] [data-dam-wb-dir] { margin-bottom: 12px; padding: var(--dam-space-s3-5, 9px) var(--dam-space-s6, 12px); border-radius: var(--dam-radius-md2, 9px); background: var(--wb-soft);',
+      '  font-size: var(--dam-fontsize-sm2, 11.5px); line-height: 1.7; color: var(--wb-muted); overflow-wrap: anywhere; }',
+      '[data-dam-wb-card] [data-dam-wb-dir] strong, [data-dam-wb-card] [data-dam-wb-risk] strong { color: var(--wb-fg); }',
+      '[data-dam-wb-card] [data-dam-wb-risk] { margin-bottom: 18px; padding: var(--dam-space-s4, 10px) var(--dam-space-s6, 12px) var(--dam-space-s4, 10px) var(--dam-space-s6-5, 13px); border-radius: var(--dam-radius-md2, 9px);',
+      '  border-left: 3px solid var(--wb-warn); background: color-mix(in srgb, var(--wb-warn) 9%, transparent);',
+      '  font-size: var(--dam-fontsize-sm2, 11.5px); line-height: 1.72; color: var(--wb-muted); }',
+      // 按钮：主按钮改确定性高对比（白字压深蓝渐变），次按钮改「看得见的」描边幽灵；补 hover / focus / disabled
+      '[data-dam-wb-card] [data-dam-wb-actions] { display: flex; align-items: center; gap: var(--dam-space-s4, 10px); }',
+      '[data-dam-wb-card] button { padding: var(--dam-space-s4, 10px) var(--dam-space-s10, 20px); border-radius: var(--dam-radius-lg, 10px); font: inherit; font-size: var(--dam-fontsize-base2, 12.5px);',
+      '  font-weight: 600; line-height: 1; cursor: pointer;',
+      '  transition: var(--dam-transition-x14, filter .16s ease, background .16s ease, border-color .16s ease); }',
+      '[data-dam-wb-card] button[data-dam-wb-cta] { border: 1px solid transparent; color: var(--dam-fg-on-accent, #fff);',
+      '  background: linear-gradient(180deg, var(--dam-cta-from, #527cf6), var(--dam-cta-to, #2b56d4)); box-shadow: var(--dam-shadow-x7, 0 2px 8px rgba(35,74,190,.34)); }',
+      '[data-dam-wb-card] button[data-dam-wb-cta]:hover { filter: brightness(1.08); }',
+      '[data-dam-wb-card] button[data-dam-wb-cta2] { color: var(--wb-fg); background: var(--wb-soft);',
+      '  border: 1px solid color-mix(in srgb, var(--dsw-alias-label-primary, #1f2328) 24%, transparent); }',
+      '[data-dam-wb-card] button[data-dam-wb-cta2]:hover { background: color-mix(in srgb, var(--dsw-alias-label-primary, #1f2328) 12%, transparent); }',
+      '[data-dam-wb-card] button:focus-visible { outline: 2px solid var(--dam-accent-2, #4a76f0); outline-offset: 2px; }',
+      '[data-dam-wb-card] button[disabled] { opacity: .58; cursor: default; filter: none; }',
+      '[data-dam-wb-card] [data-dam-wb-foot] { margin-top: 15px; padding-top: var(--dam-space-s6-5, 13px); border-top: 1px solid var(--wb-line);',
+      '  font-size: var(--dam-fontsize-sm2, 11.5px); line-height: 1.7; color: var(--wb-muted); }',
+      '@media (max-width: 480px) { [data-dam-wb-setup] [data-dam-wb-card] { padding: 20px 16px 16px; }',
+      '  [data-dam-wb-card] [data-dam-wb-row] { grid-template-columns: 20px minmax(0,1fr); }',
+      '  [data-dam-wb-card] [data-dam-wb-detail] { grid-column: 2; max-width: none; text-align: left; }',
+      '  [data-dam-wb-card] [data-dam-wb-actions] { flex-direction: column-reverse; align-items: stretch; } }',
+      // ── 首启向导 Logo:三层磨砂玻璃板堆叠 ──
+      '[data-dam-tour-orb-wrap] { position: relative; width: 150px; height: 150px; margin: 34px auto 4px; perspective: 680px; z-index: 2;',
+      '  transform-style: preserve-3d; --dam-slab-z: 22px; }',
+      '[data-dam-tour-orb-wrap]::before { content: ""; position: absolute; inset: 0; border-radius: var(--dam-radius-circle, 50%);',
+      '  background: radial-gradient(ellipse at 50% 45%, var(--dam-rgba-3, rgba(36,86,196,.14)), transparent 62%); pointer-events: none; }',
+      '[data-dam-tour-bokeh] { position: absolute; border-radius: var(--dam-radius-circle, 50%); filter: blur(16px); opacity: 0; pointer-events: none;',
+      '  animation: dam-bokeh-in .55s ease both, dam-bokeh-drift 9s ease-in-out infinite; }',
+      '[data-dam-tour-bokeh="a"] { width: 72px; height: 72px; left: 10px; top: 18px;',
+      '  background: radial-gradient(circle at 35% 35%, var(--dam-rgba-4, rgba(77,107,254,.80)), var(--dam-rgba-5, rgba(77,107,254,.18)) 55%, transparent 72%); animation-delay: .38s, 0s; }',
+      '[data-dam-tour-bokeh="b"] { width: 86px; height: 86px; right: 4px; top: 26px;',
+      '  background: radial-gradient(circle at 40% 40%, var(--dam-rgba-6, rgba(155,126,255,.72)), var(--dam-rgba-7, rgba(155,126,255,.16)) 58%, transparent 76%); animation-delay: .50s, -2.4s; }',
+      '[data-dam-tour-bokeh="c"] { width: 64px; height: 64px; left: 32px; bottom: 8px;',
+      '  background: radial-gradient(circle at 45% 45%, var(--dam-rgba-8, rgba(77,107,254,.68)), var(--dam-rgba-9, rgba(100,80,230,.14)) 56%, transparent 74%); animation-delay: .62s, -5.1s; }',
+      '@keyframes dam-bokeh-in { from { opacity: 0; transform: scale(.7); } to { opacity: .92; transform: scale(1); } }',
+      '@keyframes dam-bokeh-drift { 0%, 100% { transform: translate(0, 0) scale(1); } 33% { transform: translate(6px, -5px) scale(1.04); } 66% { transform: translate(-4px, 5px) scale(.97); } }',
+      '[data-dam-tour-stage] { position: absolute; left: 50%; top: 54%; width: 88px; height: 88px; transform-style: preserve-3d;',
+      '  transform: translate(-50%, -50%) rotateX(55deg) rotateZ(45deg);',
+      '  filter: drop-shadow(0 22px 34px var(--dam-rgba-10, rgba(4,8,20,.42))); animation: dam-stage-float 4.6s ease-in-out infinite; }',
+      '@keyframes dam-stage-float { 0%, 100% { transform: translate(-50%, -50%) rotateX(55deg) rotateZ(45deg) translateZ(0); } 50% { transform: translate(-50%, calc(-50% - 5px)) rotateX(55deg) rotateZ(45deg) translateZ(4px); } }',
+      '[data-dam-tour-slab] { position: absolute; left: 0; top: 0; width: 88px; height: 88px; border-radius: var(--dam-radius-xxxl3, 23px); transform-style: preserve-3d;',
+      '  background: linear-gradient(135deg, var(--dam-white-17, rgba(255,255,255,.17)), var(--dam-white-6, rgba(255,255,255,.06)));',
+      '  border: 1.5px solid var(--dam-white-52, rgba(255,255,255,.52));',
+      '  box-shadow: var(--dam-shadow-x8, inset 0 1px 0 rgba(255,255,255,.62), inset 0 0 26px rgba(255,255,255,.13));',
+      '  backdrop-filter: var(--dam-backdrop-x5, blur(6px) saturate(1.35)); -webkit-backdrop-filter: blur(6px) saturate(1.35);',
+      '  animation: dam-slab-drop .62s cubic-bezier(.2,.9,.3,1.15) both; }',
+      '[data-dam-tour-slab]::before { content: ""; position: absolute; inset: -1px; border-radius: var(--dam-radius-xxxl3, 23px); transform: translateZ(-7px); transform-style: preserve-3d;',
+      '  background: linear-gradient(135deg, var(--dam-white-9, rgba(255,255,255,.09)), var(--dam-white-3, rgba(255,255,255,.03)));',
+      '  border: 1px solid var(--dam-white-18, rgba(255,255,255,.18)); box-shadow: var(--dam-shadow-x9, 0 0 0 1px rgba(255,255,255,.04)); }',
+      '[data-dam-tour-slab]::after { content: ""; position: absolute; inset: 6px; border-radius: var(--dam-radius-xxl2, 18px); opacity: 0;',
+      '  background: conic-gradient(from var(--dam-orb-a, 0deg), transparent 0deg, var(--dam-white-42, rgba(255,255,255,.42)) 24deg, transparent 72deg, transparent 252deg, var(--dam-white-22, rgba(255,255,255,.22)) 288deg, transparent 336deg);',
+      '  filter: blur(2px); mix-blend-mode: screen; animation: dam-orb-shine 6.5s linear infinite; }',
+      '[data-dam-tour-slab="top"] { transform: translateZ(calc(var(--dam-slab-z) * 1)); animation-delay: 0s; z-index: 3; }',
+      '[data-dam-tour-slab="top"]::after { opacity: 1; }',
+      '[data-dam-tour-slab="mid"] { transform: translateZ(0); animation-delay: .16s; z-index: 2; }',
+      '[data-dam-tour-slab="bot"] { transform: translateZ(calc(var(--dam-slab-z) * -1)); animation-delay: .32s; z-index: 1; }',
+      '@keyframes dam-slab-drop { from { opacity: 0; transform: translateY(-28px) scale(.85) translateZ(var(--dam-slab-from-z, 0)); } to { opacity: 1; transform: translateY(0) scale(1) translateZ(var(--dam-slab-to-z, 0)); } }',
+      '[data-dam-tour-slab="top"] { --dam-slab-from-z: calc(var(--dam-slab-z) * 1.5); --dam-slab-to-z: calc(var(--dam-slab-z) * 1); }',
+      '[data-dam-tour-slab="mid"] { --dam-slab-from-z: 0; --dam-slab-to-z: 0; }',
+      '[data-dam-tour-slab="bot"] { --dam-slab-from-z: calc(var(--dam-slab-z) * -1.5); --dam-slab-to-z: calc(var(--dam-slab-z) * -1); }',
+      '@property --dam-orb-a { syntax: "<angle>"; initial-value: 0deg; inherits: false; }',
+      '@keyframes dam-orb-shine { to { --dam-orb-a: 360deg; } }',
+      '[data-dam-tour-orb-core] { position: absolute; right: -10px; top: -6px; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; font-size: var(--dam-fontsize-xxl, 20px);',
+      '  border-radius: var(--dam-radius-xl, 12px); transform: translateZ(48px) rotateX(-55deg) rotateZ(-45deg); transform-style: preserve-3d;',
+      '  background: linear-gradient(135deg, var(--dam-white-22, rgba(255,255,255,.22)), var(--dam-white-8, rgba(255,255,255,.08)));',
+      '  border: 1px solid var(--dam-white-50, rgba(255,255,255,.50)); box-shadow: var(--dam-shadow-x10, inset 0 1px 0 rgba(255,255,255,.55), 0 8px 18px rgba(18,34,90,.28));',
+      '  backdrop-filter: var(--dam-blur-sm, blur(5px)); -webkit-backdrop-filter: var(--dam-blur-sm, blur(5px));',
+      '  filter: drop-shadow(0 4px 8px var(--dam-rgba-11, rgba(18,38,120,.28))); animation: dam-core-pop .40s cubic-bezier(.2,.9,.3,1.25) both; }',
+      '@keyframes dam-core-pop { from { opacity: 0; transform: translateZ(62px) rotateX(-55deg) rotateZ(-45deg) scale(.6); } to { opacity: 1; transform: translateZ(48px) rotateX(-55deg) rotateZ(-45deg) scale(1); } }',
+      // ── 每步 Office/Fluent 式彩色玻璃图形：每步只渲染自身 DOM，并拥有专属循环动画 ──
+      // 非 store 步采用 Microsoft Office/Fluent 式彩色玻璃 Squircle 底牌；物件作为正面主符号，不再叠在菱形托盘上。
+      '[data-dam-tour-app-tile] { --tile-rgb: 83,122,255; --tile-rgb-2: 151,111,255; position:absolute; left:50%; top:50%; width:92px; height:92px; margin:-46px 0 0 -46px; z-index:3; border-radius:var(--dam-radius-r27, 27px);',
+      '  background:linear-gradient(145deg,var(--dam-white-35, rgba(255,255,255,.35)) 0%,rgba(var(--tile-rgb),.52) 42%,rgba(var(--tile-rgb-2),.34) 100%); border:1.5px solid var(--dam-white-65, rgba(255,255,255,.65)); box-shadow:var(--dam-shadow-x11, inset 0 2px 0 rgba(255,255,255,.68),inset 0 -14px 26px rgba(17,32,88,.18),0 20px 38px rgba(var(--tile-rgb),.25)); backdrop-filter:var(--dam-backdrop-x6, blur(12px) saturate(1.5)); -webkit-backdrop-filter:blur(12px) saturate(1.5); animation:dam-tile-enter .55s cubic-bezier(.2,.9,.3,1.18) both,dam-tile-breathe 5s .6s ease-in-out infinite; overflow:hidden; }',
+      '[data-dam-tour-app-tile]::before { content:""; position:absolute; left:9%; top:6%; width:68%; height:34%; border-radius:var(--dam-radius-circle, 50%); background:linear-gradient(105deg,var(--dam-white-48, rgba(255,255,255,.48)),var(--dam-white-0, rgba(255,255,255,0))); filter:blur(4px); }',
+      '[data-dam-tour-orb-wrap][data-art="inject"] [data-dam-tour-app-tile] { --tile-rgb:76,201,240; --tile-rgb-2:85,120,255; }',
+      '[data-dam-tour-orb-wrap][data-art="bell"] [data-dam-tour-app-tile] { --tile-rgb:255,177,69; --tile-rgb-2:255,103,111; }',
+      '[data-dam-tour-orb-wrap][data-art="calendar"] [data-dam-tour-app-tile] { --tile-rgb:80,201,143; --tile-rgb-2:50,148,255; }',
+      '[data-dam-tour-orb-wrap][data-art="link"] [data-dam-tour-app-tile] { --tile-rgb:74,208,203; --tile-rgb-2:118,107,255; }',
+      '[data-dam-tour-orb-wrap][data-art="engine"] [data-dam-tour-app-tile] { --tile-rgb:142,104,255; --tile-rgb-2:48,154,255; }',
+      '[data-dam-tour-orb-wrap][data-art="radar"] [data-dam-tour-app-tile] { --tile-rgb:52,202,231; --tile-rgb-2:88,117,255; }',
+      '[data-dam-tour-orb-wrap][data-art="rocket"] [data-dam-tour-app-tile] { --tile-rgb:255,115,105; --tile-rgb-2:255,192,71; }',
+      '@keyframes dam-tile-enter { from{opacity:0;transform:scale(.72) rotate(-6deg) translateY(12px)} to{opacity:1;transform:scale(1) rotate(0) translateY(0)} }',
+      '@keyframes dam-tile-breathe { 0%,100%{transform:translateY(0) rotate(0)} 50%{transform:translateY(-5px) rotate(.8deg)} }',
+      '[data-dam-tour-art] { --art-rgb: 83,122,255; --art-rgb-2: 151,111,255; position: absolute; left: 50%; top: 50%; width: 64px; height: 64px; margin: -32px 0 0 -32px; z-index: 5; transform: translateZ(0); transform-style: preserve-3d; animation: dam-art-enter .46s cubic-bezier(.2,.9,.3,1.22) both, dam-art-float 4.2s .5s ease-in-out infinite; filter: drop-shadow(0 8px 16px var(--dam-rgba-12, rgba(15,28,75,.34))); }',
+      '[data-dam-tour-art="inject"] { --art-rgb: 76,201,240; --art-rgb-2: 85,120,255; }',
+      '[data-dam-tour-art="bell"] { --art-rgb: 255,177,69; --art-rgb-2: 255,103,111; }',
+      '[data-dam-tour-art="calendar"] { --art-rgb: 80,201,143; --art-rgb-2: 50,148,255; }',
+      '[data-dam-tour-art="link"] { --art-rgb: 74,208,203; --art-rgb-2: 118,107,255; }',
+      '[data-dam-tour-art="engine"] { --art-rgb: 142,104,255; --art-rgb-2: 48,154,255; }',
+      '[data-dam-tour-art="radar"] { --art-rgb: 52,202,231; --art-rgb-2: 88,117,255; }',
+      '[data-dam-tour-art="rocket"] { --art-rgb: 255,115,105; --art-rgb-2: 255,192,71; }',
+      '[data-dam-tour-art] .ap { position: absolute; box-sizing: border-box; background: linear-gradient(145deg, var(--dam-white-56, rgba(255,255,255,.56)) 0%, rgba(var(--art-rgb),.38) 38%, rgba(var(--art-rgb-2),.22) 100%); border: 1.4px solid var(--dam-white-72, rgba(255,255,255,.72)); box-shadow: var(--dam-shadow-x12, inset 0 2px 0 rgba(255,255,255,.72), inset 0 -7px 13px rgba(var(--art-rgb-2),.18), 0 7px 17px rgba(var(--art-rgb),.24)); backdrop-filter: var(--dam-backdrop-x7, blur(5px) saturate(1.4)); -webkit-backdrop-filter: blur(5px) saturate(1.4); }',
+      '[data-dam-tour-art] .ap::after { content:""; position:absolute; left:18%; top:12%; width:48%; height:24%; border-radius:var(--dam-radius-circle, 50%); background:linear-gradient(100deg,var(--dam-white-65, rgba(255,255,255,.65)),var(--dam-white-0, rgba(255,255,255,0))); filter:blur(1.5px); pointer-events:none; }',
+      '@keyframes dam-art-enter { from { opacity:0; transform:translateY(-12px) scale(.72) rotate(-8deg); } to { opacity:1; transform:translateY(0) scale(1) rotate(0); } }',
+      '@keyframes dam-art-float { 0%,100% { transform:translateY(0) rotate(0); } 50% { transform:translateY(-5px) rotate(2deg); } }',
+      // welcome:主泡+两颗品牌色种子，持续呼吸
+      '[data-dam-tour-art="bubble"] .bubble-orb { left:10px; top:9px; width:44px; height:44px; border-radius:var(--dam-radius-blob-a, 46% 54% 52% 48% / 50% 44% 56% 50%); animation:dam-bubble-breathe 3.4s ease-in-out infinite; }',
+      '[data-dam-tour-art="bubble"] .bubble-seed { border-radius:var(--dam-radius-circle, 50%); background:radial-gradient(circle at 35% 30%,var(--dam-highlight, #fff) 0%,rgba(var(--art-rgb),.9) 34%,rgba(var(--art-rgb-2),.42) 100%); border-color:var(--dam-white-80, rgba(255,255,255,.8)); }',
+      '[data-dam-tour-art="bubble"] .s1 { left:19px; top:24px; width:12px; height:12px; } [data-dam-tour-art="bubble"] .s2 { left:34px; top:18px; width:9px; height:9px; animation:dam-seed-orbit 3s ease-in-out infinite; }',
+      '@keyframes dam-bubble-breathe { 0%,100%{border-radius:var(--dam-radius-blob-a, 46% 54% 52% 48% / 50% 44% 56% 50%);transform:scale(1)} 50%{border-radius:var(--dam-radius-blob-b, 54% 46% 47% 53% / 44% 56% 45% 55%);transform:scale(1.05)} }',
+      '@keyframes dam-seed-orbit { 0%,100%{transform:translate(0,0)} 50%{transform:translate(4px,-5px)} }',
+      // store:同视角彩色微缩板，各自错相浮动
+      '[data-dam-tour-art="store"] .plate { left:12px; width:40px; height:14px; border-radius:var(--dam-radius-sm, 6px); transform:skewX(-18deg); }',
+      '[data-dam-tour-art="store"] .p1 { top:7px; animation:dam-plate-hover 3.2s 0s ease-in-out infinite; } [data-dam-tour-art="store"] .p2 { top:25px; animation:dam-plate-hover 3.2s .38s ease-in-out infinite; } [data-dam-tour-art="store"] .p3 { top:43px; animation:dam-plate-hover 3.2s .76s ease-in-out infinite; }',
+      '@keyframes dam-plate-hover { 0%,100%{transform:skewX(-18deg) translateY(0)} 50%{transform:skewX(-18deg) translateY(-4px)} }',
+      // inject:青蓝光滴沿胶囊下落并触发脉冲
+      '[data-dam-tour-art="inject"] .inject-capsule { left:27px; top:5px; width:11px; height:38px; border-radius:var(--dam-radius-foot, 8px 8px 12px 12px); }',
+      '[data-dam-tour-art="inject"] .inject-drop { left:25px; top:42px; width:15px; height:15px; border-radius:var(--dam-radius-blob-c, 70% 30% 58% 42% / 66% 40% 60% 34%); transform:rotate(45deg); animation:dam-drop 1.7s ease-in-out infinite; }',
+      '[data-dam-tour-art="inject"] .inject-pulse { left:14px; top:52px; width:36px; height:8px; border-radius:var(--dam-radius-circle, 50%); border:1.5px solid rgba(var(--art-rgb),.65); background:transparent; animation:dam-pulse 1.7s ease-out infinite; }',
+      '@keyframes dam-drop { 0%{transform:translateY(-9px) rotate(45deg);opacity:.35} 55%{transform:translateY(1px) rotate(45deg);opacity:1} 100%{transform:translateY(1px) rotate(45deg);opacity:.5} } @keyframes dam-pulse { 0%,45%{transform:scale(.35);opacity:0} 65%{opacity:.8} 100%{transform:scale(1.2);opacity:0} }',
+      // bell:暖金玻璃罩+摆动球舌
+      '[data-dam-tour-art="bell"] .bell-shell { left:14px; top:8px; width:36px; height:34px; border-radius:var(--dam-radius-foot2, 20px 20px 9px 9px); transform-origin:50% 8%; animation:dam-bell-sway 2.8s ease-in-out infinite; }',
+      '[data-dam-tour-art="bell"] .bell-base { left:9px; top:42px; width:46px; height:9px; border-radius:var(--dam-radius-md, 8px); } [data-dam-tour-art="bell"] .bell-clapper { left:28px; top:48px; width:9px; height:9px; border-radius:var(--dam-radius-circle, 50%); animation:dam-clapper 2.8s ease-in-out infinite; }',
+      '@keyframes dam-bell-sway { 0%,100%{transform:rotate(-4deg)} 50%{transform:rotate(4deg)} } @keyframes dam-clapper { 0%,100%{transform:translateX(-3px)} 50%{transform:translateX(3px)} }',
+      // calendar:青绿玻璃页+周期翻页
+      '[data-dam-tour-art="calendar"] .calendar-card { left:9px; top:13px; width:46px; height:40px; border-radius:var(--dam-radius-lg2, 11px); } [data-dam-tour-art="calendar"] .calendar-bind { top:5px; width:7px; height:17px; border-radius:var(--dam-radius-xs2, 5px); } [data-dam-tour-art="calendar"] .b1 { left:20px; } [data-dam-tour-art="calendar"] .b2 { left:38px; }',
+      '[data-dam-tour-art="calendar"] .calendar-page { left:13px; top:26px; width:38px; height:21px; border-radius:var(--dam-radius-sm, 6px); transform-origin:50% 0; animation:dam-page-flip 4s ease-in-out infinite; } @keyframes dam-page-flip { 0%,68%,100%{transform:rotateX(0)} 78%{transform:rotateX(72deg)} 88%{transform:rotateX(0)} }',
+      // link:青紫双环反向摆动
+      '[data-dam-tour-art="link"] .link-ring { top:20px; width:31px; height:25px; border-radius:var(--dam-radius-circle, 50%); background:rgba(var(--art-rgb),.16); border-width:6px; } [data-dam-tour-art="link"] .l1 { left:2px; transform:rotate(-28deg); animation:dam-link-a 3.2s ease-in-out infinite; } [data-dam-tour-art="link"] .l2 { left:30px; transform:rotate(28deg); animation:dam-link-b 3.2s ease-in-out infinite; }',
+      '[data-dam-tour-art="link"] .link-glint { left:29px; top:27px; width:7px; height:7px; border-radius:var(--dam-radius-circle, 50%); background:var(--dam-white-90, rgba(255,255,255,.9)); animation:dam-glint 1.6s ease-in-out infinite; } @keyframes dam-link-a{50%{transform:rotate(-18deg) translateX(2px)}} @keyframes dam-link-b{50%{transform:rotate(18deg) translateX(-2px)}} @keyframes dam-glint{50%{transform:scale(1.5);opacity:.55}}',
+      // engine:紫蓝棱镜+呼吸核心+旋转轨道
+      '[data-dam-tour-art="engine"] .engine-prism { left:13px; top:13px; width:38px; height:38px; border-radius:var(--dam-radius-xl, 12px); transform:rotate(45deg); animation:dam-prism 6s linear infinite; } [data-dam-tour-art="engine"] .engine-core { left:25px; top:25px; width:14px; height:14px; border-radius:var(--dam-radius-circle, 50%); background:radial-gradient(circle at 35% 28%,var(--dam-highlight, #fff),rgba(var(--art-rgb),.78)); animation:dam-core-breathe 1.8s ease-in-out infinite; }',
+      '[data-dam-tour-art="engine"] .engine-orbit { left:6px; top:27px; width:52px; height:14px; border-radius:var(--dam-radius-circle, 50%); background:transparent;border:1.5px solid rgba(var(--art-rgb),.62);animation:dam-orbit 4s linear infinite}@keyframes dam-prism{to{transform:rotate(405deg)}}@keyframes dam-core-breathe{50%{transform:scale(1.3);box-shadow:var(--dam-shadow-x13, 0 0 18px rgba(var(--art-rgb),.7))}}@keyframes dam-orbit{to{transform:rotate(360deg)}}',
+      // radar:同心环+真正旋转扫描扇面
+      '[data-dam-tour-art="radar"] .radar-outer { left:7px; top:7px; width:50px; height:50px; border-radius:var(--dam-radius-circle, 50%); background:rgba(var(--art-rgb),.10); } [data-dam-tour-art="radar"] .radar-inner { left:19px; top:19px; width:26px; height:26px; border-radius:var(--dam-radius-circle, 50%); background:rgba(var(--art-rgb-2),.14); }',
+      '[data-dam-tour-art="radar"] .radar-sweep { left:8px; top:8px; width:48px; height:48px; border-radius:var(--dam-radius-circle, 50%); border:0;background:conic-gradient(from 0deg,rgba(var(--art-rgb),.75),transparent 72deg,transparent);animation:dam-radar-spin 2.2s linear infinite; } [data-dam-tour-art="radar"] .radar-ping { left:27px; top:27px; width:10px; height:10px; border-radius:var(--dam-radius-circle, 50%); background:var(--dam-surface, #fff); box-shadow:var(--dam-shadow-x14, 0 0 15px rgba(var(--art-rgb),.8)); animation:dam-core-breathe 1.4s ease-in-out infinite;}@keyframes dam-radar-spin{to{transform:rotate(360deg)}}',
+      // rocket:珊瑚金阶梯+循环上升火花
+      '[data-dam-tour-art="rocket"] .rocket-tier { height:11px; border-radius:var(--dam-radius-sm2, 7px); } [data-dam-tour-art="rocket"] .t1 { left:20px; top:42px; width:24px; } [data-dam-tour-art="rocket"] .t2 { left:14px; top:27px; width:36px; } [data-dam-tour-art="rocket"] .t3 { left:8px; top:12px; width:48px; }',
+      '[data-dam-tour-art="rocket"] .rocket-spark { left:28px; top:47px; width:9px; height:9px; border-radius:var(--dam-radius-circle, 50%); background:radial-gradient(circle,var(--dam-highlight, #fff),rgba(var(--art-rgb-2),.85));box-shadow:var(--dam-shadow-x15, 0 0 14px rgba(var(--art-rgb-2),.7));animation:dam-spark-rise 1.8s ease-in infinite;}@keyframes dam-spark-rise{0%{transform:translateY(8px) scale(.6);opacity:0}25%{opacity:1}100%{transform:translateY(-50px) scale(1.15);opacity:0}}',
+      '[data-dam-tour-body] { position: relative; padding: var(--dam-space-none, 0) var(--dam-space-s16, 52px); text-align: center; z-index: 2; }',
+      '[data-dam-tour-kicker] { font-size: var(--dam-fontsize-xs, 10px); letter-spacing: .22em; text-transform: uppercase; opacity: .48; font-weight: 700; }',
+      '[data-dam-tour-title] { font-size: var(--dam-fontsize-xxl2, 23px); font-weight: 750; margin: 6px 0 10px; letter-spacing: -.015em; line-height: 1.22; }',
+      '[data-dam-tour-text] { font-size: var(--dam-fontsize-md2, 13.5px); opacity: .82; line-height: 1.72; min-height: 64px; }',
+      '[data-dam-tour-swap] { animation: dam-tour-swap .34s cubic-bezier(.2,.8,.3,1) both; }',
+      '@keyframes dam-tour-swap { from { opacity: 0; transform: translateX(22px); } to { opacity: 1; transform: none; } }',
+      '[data-dam-tour-dl] { margin: 8px auto 0; max-width: 420px; text-align: left; font-size: var(--dam-fontsize-base, 12px); }',
+      '[data-dam-tour-dl-row] { display: flex; justify-content: space-between; gap: var(--dam-space-s4, 10px); opacity: .75; font-size: var(--dam-fontsize-xs2, 10.5px); margin-bottom: 3px; }',
+      '[data-dam-tour-dl-tier] { margin-top: 8px; border: 1px solid var(--dam-rgba-13, rgba(128,128,128,.22)); border-radius: var(--dam-radius-md2, 9px); overflow: hidden; }',
+      '[data-dam-tour-dl-tier-row] { display: flex; justify-content: space-between; align-items: baseline; gap: var(--dam-space-s4, 10px); padding: var(--dam-space-s2-5, 7px) var(--dam-space-s4, 10px); font-size: var(--dam-fontsize-sm, 11px); }',
+      '[data-dam-tour-dl-tier-row:first-child] { border-bottom: 1px solid var(--dam-rgba-14, rgba(128,128,128,.14)); background: var(--dam-rgba-15, rgba(47,164,106,.08)); }',
+      '[data-dam-tour-dl-tier-row] b { font-weight: 700; white-space: nowrap; }',
+      '[data-dam-tour-dl-tier-row] span { opacity: .7; font-size: var(--dam-fontsize-xs2, 10.5px); text-align: right; }',
+      '[data-dam-tour-bar] { height: 7px; border-radius: var(--dam-radius-pill, 99px); background: var(--dam-rgba-16, rgba(128,128,128,.18)); overflow: hidden; }',
+      '[data-dam-tour-bar-i] { height: 100%; border-radius: var(--dam-radius-pill, 99px); background: linear-gradient(90deg, var(--dam-accent, #2456c4), var(--dam-accent-3, #7ea4ff)); transition: var(--dam-transition-x15, width .4s ease); }',
+      '[data-dam-tour-dots] { display: flex; gap: var(--dam-space-s2-5, 7px); justify-content: center; margin: 18px 0 4px; z-index: 2; position: relative; }',
+      '[data-dam-tour-dot] { width: 7px; height: 7px; border-radius: var(--dam-radius-pill, 99px); background: currentColor; opacity: .22; transition: var(--dam-transition-x16, all .35s cubic-bezier(.4,0,.2,1)); border: none; cursor: pointer; padding: var(--dam-space-none, 0); }',
+      '[data-dam-tour-dot]:hover { opacity: .5; }',
+      '[data-dam-tour-dot][data-on="true"] { width: 22px; opacity: .85; }',
+      '[data-dam-tour-foot] { display: flex; align-items: center; gap: var(--dam-space-s5, 11px); padding: var(--dam-space-s4, 10px) var(--dam-space-s14, 28px) var(--dam-space-s11, 22px); z-index: 2; position: relative; }',
+      '[data-dam-tour-skip] { border: none; background: transparent; color: inherit; opacity: .45; cursor: pointer; font-size: var(--dam-fontsize-base, 12px); margin-right: auto; padding: var(--dam-space-s2-5, 7px) var(--dam-space-s5, 11px); border-radius: var(--dam-radius-md, 8px); transition: var(--dam-transition-x17, opacity .2s ease, background .2s ease); }',
+      '[data-dam-tour-skip]:hover { opacity: .85; background: var(--dam-rgba-17, rgba(128,128,128,.12)); }',
+      '[data-dam-tour-btn] { min-width: 100px; padding: var(--dam-space-s4, 10px) var(--dam-space-s12, 24px); border-radius: var(--dam-radius-pill, 99px); font-size: var(--dam-fontsize-md, 13px); font-weight: 650; cursor: pointer; transition: var(--dam-transition-x18, all .22s ease); border: 1px solid var(--dam-white-40, rgba(255,255,255,.4)); color: inherit; }',
+      '[data-dam-tour-btn][data-primary="true"] { background: linear-gradient(180deg, var(--dam-accent, #3a6df0), color-mix(in srgb, var(--dam-accent, #3a6df0) 82%, var(--dam-shadow-tint, #000))); color: var(--dam-fg-on-accent, #fff); border-color: transparent; box-shadow: var(--dam-shadow-x16, 0 6px 18px color-mix(in srgb, var(--dam-accent, #3a6df0) 45%, transparent), inset 0 1px 0 rgba(255,255,255,.35)); }',
+      '[data-dam-tour-btn][data-primary="true"]:hover { transform: translateY(-1px); box-shadow: var(--dam-shadow-x17, 0 10px 24px color-mix(in srgb, var(--dam-accent, #3a6df0) 55%, transparent), inset 0 1px 0 rgba(255,255,255,.35)); }',
+      '[data-dam-tour-btn][data-primary="false"] { background: var(--dam-white-10, rgba(255,255,255,.10)); }',
+      '[data-dam-tour-btn][data-primary="false"]:hover { background: var(--dam-white-22, rgba(255,255,255,.22)); }',
+      '[data-dam-tour-btn]:disabled { opacity: .35; cursor: default; transform: none; }',
+      '[data-dam-tour-badge] { display: inline-block; font-size: var(--dam-fontsize-sm, 11px); font-weight: 700; padding: var(--dam-space-s0-75, 3px) var(--dam-space-s6, 12px); border-radius: var(--dam-radius-pill, 99px); margin-top: 2px; }',
+      '[data-dam-tour-rec] { display: inline-block; font-size: var(--dam-fontsize-xxs, 9.5px); font-weight: 700; padding: var(--dam-space-1, 1px) var(--dam-space-s2-5, 7px); border-radius: var(--dam-radius-pill, 99px); margin-left: 7px; vertical-align: 1px; letter-spacing: .04em; background: color-mix(in srgb, var(--dam-accent, #3a6df0) 20%, transparent); color: var(--dam-accent, #3a6df0); }',
+      // 向导内功能开关(即时写配置)
+      '[data-dam-tour-toggles] { display: flex; flex-direction: column; gap: var(--dam-space-s3-5, 9px); margin: 14px auto 0; max-width: 448px; text-align: left; }',
+      '[data-dam-tour-toggles][data-scroll="true"] { max-height: min(240px, 42vh); overflow-y: auto; padding-right: var(--dam-space-s1, 4px); }',
+      '[data-dam-tour-toggles][data-scroll="true"]::-webkit-scrollbar { width: 5px; }',
+      '[data-dam-tour-toggles][data-scroll="true"]::-webkit-scrollbar-thumb { background: var(--dam-white-18, rgba(255,255,255,.18)); border-radius: var(--dam-radius-pill, 99px); }',
+      '[data-dam-tour-tg] { display: flex; align-items: center; gap: var(--dam-space-s6-5, 13px); padding: var(--dam-space-s5, 11px) var(--dam-space-s8, 16px); border-radius: var(--dam-radius-xl2, 14px); background: var(--dam-white-7, rgba(255,255,255,.07)); border: 1px solid var(--dam-white-14, rgba(255,255,255,.14)); cursor: pointer; transition: var(--dam-transition-x19, background .2s ease, border-color .2s ease, transform .16s ease); text-align: left; color: inherit; font: inherit; }',
+      '[data-dam-tour-tg]:hover { background: var(--dam-white-13, rgba(255,255,255,.13)); }',
+      '[data-dam-tour-tg]:active { transform: scale(.992); }',
+      '[data-dam-tour-tg][data-on="true"] { border-color: color-mix(in srgb, var(--dam-accent, #3a6df0) 55%, transparent); background: color-mix(in srgb, var(--dam-accent, #3a6df0) 11%, var(--dam-white-6, rgba(255,255,255,.06))); }',
+      '[data-dam-tour-tg-txt] { flex: 1; min-width: 0; }',
+      '[data-dam-tour-tg-name] { font-size: var(--dam-fontsize-md, 13px); font-weight: 700; line-height: 1.35; }',
+      '[data-dam-tour-tg-sub] { font-size: var(--dam-fontsize-sm, 11px); opacity: .60; margin-top: 2px; line-height: 1.45; }',
+      '[data-dam-tour-sw] { flex: none; width: 40px; height: 23px; border-radius: var(--dam-radius-pill, 99px); position: relative; background: var(--dam-rgba-18, rgba(128,128,128,.35)); transition: var(--dam-transition-x9, background .25s ease); }',
+      '[data-dam-tour-sw]::after { content: ""; position: absolute; top: 2.5px; left: 2.5px; width: 18px; height: 18px; border-radius: var(--dam-radius-circle, 50%); background: var(--dam-surface, #fff); transition: var(--dam-transition-x20, left .25s cubic-bezier(.4,0,.2,1)); box-shadow: var(--dam-shadow-x18, 0 1px 4px rgba(0,0,0,.3)); }',
+      '[data-dam-tour-sw][data-on="true"] { background: var(--dam-accent, #3a6df0); }',
+      '[data-dam-tour-sw][data-on="true"]::after { left: 19.5px; }',
+      '[data-dam-tour-chips] { display: flex; flex-wrap: wrap; gap: var(--dam-space-s2-5, 7px); justify-content: center; margin-top: 12px; }',
+      // ★v3.1.4 批 J（用户报「这个按钮实在是有点太难看了」）：v3.1.3 只加了 data-dam-tour-links
+      //   属性却没写 CSS ⇒ 浏览器按默认 a 渲染成蓝色下划线裸链接，与页面完全脱节。
+      //   现补齐：与既有 chip 体系同源（--dam-accent 主题色 + 圆角胶囊 + hover + 深色底）。
+      '[data-dam-tour-links] { display: flex; flex-wrap: wrap; gap: var(--dam-space-s3, 8px); justify-content: center; margin-top: 14px; }',
+      '[data-dam-tour-link] { display: inline-flex; align-items: center; gap: var(--dam-space-s1-5, 5px); padding: var(--dam-space-s2, 6px) var(--dam-space-s6-5, 13px); border-radius: var(--dam-radius-pill, 99px);',
+      '  font-size: var(--dam-fontsize-base, 12px); font-weight: 600; line-height: 1.4; text-decoration: none; cursor: pointer; white-space: nowrap;',
+      '  color: color-mix(in srgb, var(--dam-accent, #3a6df0) 78%, var(--dam-fg-on-accent, #fff));',
+      '  background: color-mix(in srgb, var(--dam-accent, #3a6df0) 12%, var(--dam-white-5, rgba(255,255,255,.05)));',
+      '  border: 1px solid color-mix(in srgb, var(--dam-accent, #3a6df0) 34%, transparent);',
+      '  transition: var(--dam-transition-x21, background .18s ease, border-color .18s ease, transform .12s ease); }',
+      '[data-dam-tour-link]:hover { background: color-mix(in srgb, var(--dam-accent, #3a6df0) 21%, var(--dam-white-7, rgba(255,255,255,.07)));',
+      '  border-color: color-mix(in srgb, var(--dam-accent, #3a6df0) 52%, transparent); }',
+      '[data-dam-tour-link]:active { transform: scale(.98); }',
+      '[data-dam-tour-links-note] { flex-basis: 100%; text-align: center; font-size: var(--dam-fontsize-sm, 11px); opacity: .55; margin-top: 2px; line-height: 1.6; }',
+      '[data-dam-tour-where] { font-size: var(--dam-fontsize-sm2, 11.5px); opacity: .72; line-height: 1.75; margin-top: 12px; text-align: left; max-width: 460px; margin-left: auto; margin-right: auto; }',
+      '[data-dam-tour-where] b { opacity: .96; font-weight: 650; }',
+      '/* ── 引导向导视觉升级 v2（2026-09-24，追加式覆盖，不改既有规则）── */',
+      '/* 氛围：顶部长弧主光 + 底部反光 + 深色隧道，取代原先的单层淡雾 */',
+      '[data-dam-tour-backdrop] { background: radial-gradient(ellipse 132% 92% at 50% -12%, var(--dam-rgba-19, rgba(78,112,232,.30)), transparent 62%), radial-gradient(ellipse 104% 72% at 50% 110%, var(--dam-rgba-20, rgba(126,92,226,.20)), transparent 60%), radial-gradient(ellipse at 50% 44%, var(--dam-rgba-21, rgba(18,26,54,.44)), var(--dam-rgba-22, rgba(3,6,14,.74))); backdrop-filter: var(--dam-backdrop-x8, blur(14px) saturate(1.25)); -webkit-backdrop-filter: blur(14px) saturate(1.25); }',
+      '[data-dam-tour] { width: min(684px, calc(100vw - 40px)); border-radius: var(--dam-radius-r28, 28px); padding-bottom: var(--dam-space-none, 0);',
+      '  background: linear-gradient(180deg, color-mix(in srgb, var(--dsw-alias-bg-layer-2, rgba(30,34,46,.94)) 80%, transparent), color-mix(in srgb, var(--dsw-alias-bg-layer-2, rgba(22,25,36,.96)) 90%, transparent));',
+      '  border: 1px solid var(--dam-white-15, rgba(255,255,255,.15));',
+      '  box-shadow: var(--dam-shadow-x19, inset 0 1px 0 rgba(255,255,255,.34), inset 0 -1px 0 rgba(255,255,255,.07), 0 0 0 1px rgba(8,12,28,.34), 0 52px 130px -26px rgba(4,8,24,.82), 0 18px 46px rgba(4,8,24,.44), 0 0 96px -32px color-mix(in srgb, var(--dam-accent, #3a6df0) 62%, transparent)); }',
+      '[data-dam-tour]::before { height: 62%; background: linear-gradient(176deg, var(--dam-white-15, rgba(255,255,255,.15)), var(--dam-white-0, rgba(255,255,255,0)) 54%); }',
+      '[data-dam-tour-orb-wrap] { width: 100%; height: 182px; margin: 26px auto 2px; perspective: none; transform-style: flat; --dam-hero-rgb: 83,122,255; }',
+      '[data-dam-tour-orb-wrap][data-art="inject"] { --dam-hero-rgb: 76,201,240; }',
+      '[data-dam-tour-orb-wrap][data-art="bell"] { --dam-hero-rgb: 255,177,69; }',
+      '[data-dam-tour-orb-wrap][data-art="calendar"] { --dam-hero-rgb: 80,201,143; }',
+      '[data-dam-tour-orb-wrap][data-art="link"] { --dam-hero-rgb: 74,208,203; }',
+      '[data-dam-tour-orb-wrap][data-art="engine"] { --dam-hero-rgb: 142,104,255; }',
+      '[data-dam-tour-orb-wrap][data-art="radar"] { --dam-hero-rgb: 52,202,231; }',
+      '[data-dam-tour-orb-wrap][data-art="rocket"] { --dam-hero-rgb: 255,115,105; }',
+      '[data-dam-tour-orb-wrap]::before { border-radius: var(--dam-radius-none, 0); background: radial-gradient(ellipse 46% 62% at 50% 52%, rgba(var(--dam-hero-rgb), .13), transparent 70%); }',
+      '[data-dam-tour-halo] { position: absolute; left: 50%; top: 52%; width: 236px; height: 236px; margin: -118px 0 0 -118px; border-radius: var(--dam-radius-circle, 50%); pointer-events: none; z-index: 1;',
+      '  background: radial-gradient(circle, rgba(var(--dam-hero-rgb), .34), rgba(var(--dam-hero-rgb), .12) 42%, transparent 68%);',
+      '  filter: blur(15px); animation: dam-halo-pulse 5.6s ease-in-out infinite; }',
+      '@keyframes dam-halo-pulse { 0%,100% { transform: scale(1); opacity: .92; } 50% { transform: scale(1.08); opacity: 1; } }',
+      '[data-dam-tour-pedestal] { position: absolute; left: 50%; bottom: 4px; width: 176px; height: 26px; margin-left: -88px; border-radius: var(--dam-radius-circle, 50%); pointer-events: none; z-index: 1;',
+      '  background: radial-gradient(ellipse, var(--dam-black-46, rgba(0,0,0,.46)), var(--dam-black-0, rgba(0,0,0,0)) 72%); filter: blur(8px); animation: dam-pedestal 5.6s ease-in-out infinite; }',
+      '@keyframes dam-pedestal { 0%,100% { transform: scaleX(1); opacity: .78; } 50% { transform: scaleX(.9); opacity: .58; } }',
+      '[data-dam-tour-app-tile] { width: 104px; height: 104px; margin: -52px 0 0 -52px; border-radius: var(--dam-radius-r31, 31px); z-index: 3;',
+      '  background: linear-gradient(150deg, var(--dam-white-44, rgba(255,255,255,.44)) 0%, rgba(var(--tile-rgb), .64) 40%, rgba(var(--tile-rgb-2), .42) 100%);',
+      '  border: 1.5px solid var(--dam-white-74, rgba(255,255,255,.74));',
+      '  box-shadow: var(--dam-shadow-x20, inset 0 3px 0 rgba(255,255,255,.74), inset 0 -18px 34px rgba(10,20,60,.26), 0 26px 54px -10px rgba(var(--tile-rgb), .56), 0 10px 24px rgba(8,16,44,.36)); }',
+      '[data-dam-tour-app-tile]::before { left: 8%; top: 5%; width: 74%; height: 36%; background: linear-gradient(105deg, var(--dam-white-58, rgba(255,255,255,.58)), var(--dam-white-0, rgba(255,255,255,0))); filter: blur(5px); }',
+      '[data-dam-tour-body] { padding: var(--dam-space-none, 0) var(--dam-space-s17, 56px); }',
+      '[data-dam-tour-head] { display: flex; align-items: center; justify-content: center; gap: var(--dam-space-s4, 10px); margin-bottom: 13px; }',
+      '[data-dam-tour-kicker] { font-size: var(--dam-fontsize-xs, 10px); letter-spacing: .20em; opacity: 1; font-weight: 700; padding: var(--dam-space-s1-5, 5px) var(--dam-space-s6, 12px) var(--dam-space-s1, 4px); border-radius: var(--dam-radius-pill, 99px);',
+      '  color: color-mix(in srgb, var(--dam-accent, #3a6df0) 78%, var(--dam-fg-on-accent, #fff));',
+      '  background: color-mix(in srgb, var(--dam-accent, #3a6df0) 15%, var(--dam-white-5, rgba(255,255,255,.05)));',
+      '  border: 1px solid color-mix(in srgb, var(--dam-accent, #3a6df0) 33%, transparent); }',
+      '[data-dam-tour-stepchip] { font-size: var(--dam-fontsize-xs2, 10.5px); font-weight: 700; letter-spacing: .08em; opacity: .40; font-variant-numeric: tabular-nums; }',
+      '[data-dam-tour-title] { font-size: var(--dam-fontsize-xxl3, 26px); font-weight: 780; margin: 0 0 13px; letter-spacing: -.022em; line-height: 1.2; }',
+      '[data-dam-tour-text] { font-size: var(--dam-fontsize-lg, 14px); opacity: .80; line-height: 1.78; min-height: 0; max-width: 48ch; margin: 0 auto; text-wrap: pretty; }',
+      '[data-dam-tour-dots] { gap: var(--dam-space-s2, 6px); margin: 20px 0 6px; align-items: center; }',
+      '[data-dam-tour-dot] { width: 18px; height: 5px; border-radius: var(--dam-radius-pill, 99px); opacity: .20; }',
+      '[data-dam-tour-dot]:hover { opacity: .44; }',
+      '[data-dam-tour-dot][data-on="true"] { width: 34px; opacity: 1; background: linear-gradient(90deg, var(--dam-accent, #3a6df0), color-mix(in srgb, var(--dam-accent, #3a6df0) 52%, var(--dam-accent-4, #9db8ff))); box-shadow: var(--dam-shadow-x21, 0 0 13px color-mix(in srgb, var(--dam-accent, #3a6df0) 58%, transparent)); }',
+      '[data-dam-tour-foot] { padding: var(--dam-space-s7-5, 15px) var(--dam-space-s15-5, 30px) var(--dam-space-s13, 26px); gap: var(--dam-space-s4, 10px); }',
+      '[data-dam-tour-skip] { font-size: var(--dam-fontsize-base, 12px); opacity: .40; }',
+      '[data-dam-tour-btn] { min-width: 108px; padding: var(--dam-space-s5, 11px) var(--dam-space-s13, 26px); border-radius: var(--dam-radius-pill, 99px); font-size: var(--dam-fontsize-md2, 13.5px); font-weight: 680; border: 1px solid var(--dam-white-14, rgba(255,255,255,.14)); }',
+      '[data-dam-tour-btn][data-primary="true"] { background: linear-gradient(180deg, color-mix(in srgb, var(--dam-accent, #3a6df0) 92%, var(--dam-highlight, #fff)), var(--dam-accent, #3a6df0) 56%, color-mix(in srgb, var(--dam-accent, #3a6df0) 78%, var(--dam-shadow-tint, #000))); box-shadow: var(--dam-shadow-x22, 0 10px 28px -6px color-mix(in srgb, var(--dam-accent, #3a6df0) 62%, transparent), inset 0 1px 0 rgba(255,255,255,.42), inset 0 -1px 0 rgba(0,0,0,.18)); }',
+      '[data-dam-tour-btn][data-primary="true"]:hover { transform: translateY(-1px); box-shadow: var(--dam-shadow-x23, 0 14px 32px -6px color-mix(in srgb, var(--dam-accent, #3a6df0) 70%, transparent), inset 0 1px 0 rgba(255,255,255,.42)); }',
+      '[data-dam-tour-btn][data-primary="false"] { background: var(--dam-white-7, rgba(255,255,255,.07)); }',
+      '[data-dam-tour-toggles] { gap: var(--dam-space-s4, 10px); margin-top: 17px; max-width: 470px; }',
+      '[data-dam-tour-tg] { padding: var(--dam-space-s6, 12px) var(--dam-space-s10-5, 17px); border-radius: var(--dam-radius-xxl, 16px); background: var(--dam-white-6, rgba(255,255,255,.055)); border-color: var(--dam-white-10, rgba(255,255,255,.10)); }',
+      '[data-dam-tour-tg]:hover { background: var(--dam-white-10, rgba(255,255,255,.10)); }',
+      '[data-dam-tour-where] { max-width: 470px; margin-top: 13px; }',
+      '[data-dam-tour-chips] { gap: var(--dam-space-s3, 8px); margin-top: 13px; }',
+      '',
+      // ── CHANGELOG 开场序列:Logo 组装→展开→消散→内容浮现 ──
+      '[data-dam-update-box] { position: relative; overflow: hidden; min-height: 150px; }',
+      '[data-dam-update-stage] { position: absolute; inset: 0; z-index: 2; display: flex; align-items: center; justify-content: center; background: inherit;',
+      '  animation: dam-update-intro 1.7s cubic-bezier(.2,.8,.2,1) both; will-change: opacity, filter, transform; }',
+      '[data-dam-update-click] { position: absolute; inset: 0; z-index: 3; cursor: pointer; }',
+      '[data-dam-update-box][data-skip="true"] [data-dam-update-stage], [data-dam-update-box][data-skip="true"] [data-dam-update-click] { display: none; }',
+      '[data-dam-update-content] { animation: dam-update-content-in 1.7s ease both; }',
+      // 内容可滚动:update-content 自管滚动(update-box 是 overflow:hidden 的舞台层,内容长会被裁)
+      '[data-dam-update-content] { max-height: min(46vh, 430px); overflow-y: auto; overscroll-behavior: contain; padding-right: var(--dam-space-s1, 4px); scrollbar-width: thin; scrollbar-color: var(--dam-white-25, rgba(255,255,255,.25)) transparent; }',
+      '[data-dam-update-content]::-webkit-scrollbar { width: 6px; }',
+      '[data-dam-update-content]::-webkit-scrollbar-thumb { background: var(--dam-white-22, rgba(255,255,255,.22)); border-radius: var(--dam-radius-pill, 99px); }',
+      '[data-dam-update-content]::-webkit-scrollbar-track { background: transparent; }',
+      '[data-dam-update-box][data-skip="true"] [data-dam-update-content] { animation: none; opacity: 1; transform: none; }',
+      '@keyframes dam-update-intro { 0%, 41% { opacity: 1; filter: blur(0); transform: scale(1); } 59% { opacity: 1; filter: blur(0); transform: scale(1); } 88% { opacity: 0; filter: blur(6px); transform: scale(1.06); height: 100%; } 100% { opacity: 0; height: 0; } }',
+      '@keyframes dam-update-content-in { 0%, 82% { opacity: 0; transform: translateY(12px); } 100% { opacity: 1; transform: none; } }',
+      '[data-dam-update-logo] { position: relative; width: 120px; height: 120px; perspective: 680px; transform: scale(.78); --dam-slab-z: 22px; }',
+      '[data-dam-update-logo] [data-dam-tour-stage] { animation: dam-stage-float 4.6s ease-in-out infinite, dam-update-logo-expand 1.7s cubic-bezier(.2,.8,.2,1) both; }',
+      '@keyframes dam-update-logo-expand { 0%, 41% { transform: translate(-50%, -50%) rotateX(55deg) rotateZ(45deg) translateZ(0) scale(1); } 59% { transform: translate(-50%, -50%) rotateX(48deg) rotateZ(38deg) translateZ(16px) scale(1.16); } 100% { transform: translate(-50%, -50%) rotateX(55deg) rotateZ(45deg) translateZ(0) scale(1); } }',
+      '[data-dam-update-logo] [data-dam-tour-bokeh] { animation-delay: 0s; opacity: .92; }',
+      '[data-dam-update-logo] [data-dam-tour-slab="top"] { animation-delay: 0s; }',
+      '[data-dam-update-logo] [data-dam-tour-slab="mid"] { animation-delay: .13s; }',
+      '[data-dam-update-logo] [data-dam-tour-slab="bot"] { animation-delay: .26s; }',
+      '[data-dam-update-logo] [data-dam-tour-orb-core] { animation-delay: .42s; }',
+      '[data-dam-update-hint] { position: absolute; bottom: 14px; font-size: var(--dam-fontsize-sm, 11px); opacity: .42; letter-spacing: .04em; pointer-events: none; }',
+      // B12 L1 token (2026-09-27): literal scales extracted to --dam-* tokens.
+      // Proof of zero visual change: expanding var(--dam-x, V) back to V yields
+      '  --dam-fg: currentColor;',
+      // B12 R1 (2026-09-27): 补 8 个「有消费无定义」的内置 token —— 此前 var() 无兜底且变量不存在,
+      //   按 CSS 规范属 invalid at computed-value time ⇒ 整条声明被丢弃（团队条/皮肤卡无边框无底色）。
+      //   取值依 08 卷 §3.6 / §3.1 权威表（#fff / #1f2937 / #e5e7eb / #eef2ff / #f8fafc / #d97706）。
+      '  --dam-surface: #fff; --dam-card-bg: #fff; --dam-text: #1f2937; --dam-fg-weak: #6b7280;',
+      '  --dam-border: #e5e7eb; --dam-accent-weak: #eef2ff; --dam-code-bg: #f8fafc; --dam-warn: #d97706;',
+      // byte-identical CSS. Customers override these to re-skin (L2 base).
+      '[data-dam-panel], [data-dam-page] {',        '--dam-radius-none: 0; --dam-radius-circle: 50%; --dam-radius-pill: 99px; --dam-radius-xs: 3px;',
+      // ★R41（114 卷 R4）：五泳道色 token —— 定义在**本插件自己的祖先链**上（48 卷 L186-187 / 49 卷 L93 逐色原文），
+      //   客户可整体覆写；不再依赖宿主 `--dsw-alias-*` 命名空间。
+      '  --dam-lane-goal: #4A90D9; --dam-lane-state: #48B784; --dam-lane-deadend: #E05C5C;',
+      '  --dam-lane-progress: #8B7FE8; --dam-lane-archive: #7A8290; --dam-lane-misc: #6b7280;',
+        '--dam-radius-xs2: 5px; --dam-radius-sm: 6px; --dam-radius-sm2: 7px; --dam-radius-md: 8px;',
+        '--dam-radius-md2: 9px; --dam-radius-lg: 10px; --dam-radius-lg2: 11px; --dam-radius-xl: 12px;',
+        '--dam-radius-xl2: 14px; --dam-radius-xxl: 16px; --dam-radius-xxl2: 18px; --dam-radius-xxxl: 20px;',
+        '--dam-radius-xxxl2: 22px; --dam-radius-xxxl3: 23px; --dam-radius-r27: 27px; --dam-radius-r28: 28px;',
+        '--dam-radius-r31: 31px; --dam-radius-top: 16px 16px 0 0; --dam-radius-br: 0 0 16px 0; --dam-radius-bottom: 0 0 14px 14px;',
+        '--dam-radius-foot: 8px 8px 12px 12px; --dam-radius-foot2: 20px 20px 9px 9px; --dam-radius-blob-a: 46% 54% 52% 48% / 50% 44% 56% 50%; --dam-radius-blob-b: 54% 46% 47% 53% / 44% 56% 45% 55%;',
+        '--dam-radius-blob-c: 70% 30% 58% 42% / 66% 40% 60% 34%;',
+        '--dam-fontsize-xxs: 9.5px; --dam-fontsize-xs: 10px; --dam-fontsize-xs2: 10.5px; --dam-fontsize-sm: 11px;',
+        '--dam-fontsize-sm2: 11.5px; --dam-fontsize-base: 12px; --dam-fontsize-base2: 12.5px; --dam-fontsize-md: 13px;',
+        '--dam-fontsize-md2: 13.5px; --dam-fontsize-lg: 14px; --dam-fontsize-xl: 17px; --dam-fontsize-xl2: 18px;',
+        '--dam-fontsize-xxl: 20px; --dam-fontsize-xxl2: 23px; --dam-fontsize-xxl3: 26px;',
+        '--dam-space-none: 0; --dam-space-s0-5: 2px; --dam-space-s1: 4px; --dam-space-s1-5: 5px; --dam-space-s2: 6px;',
+        '--dam-space-s2-5: 7px; --dam-space-s3: 8px; --dam-space-s3-5: 9px; --dam-space-s4: 10px; --dam-space-s5: 11px;',
+        '--dam-space-s6: 12px; --dam-space-s6-5: 13px; --dam-space-s7: 14px; --dam-space-s8: 16px; --dam-space-s9: 18px;',
+        '--dam-space-s10: 20px; --dam-space-s11: 22px; --dam-space-s12: 24px; --dam-space-s13: 26px; --dam-space-s14: 28px;',
+        '--dam-space-s15: 31px; --dam-space-pair-1-3: 4px 12px;',
+      // B12 R5 (2026-09-27): 裸 rgba/rgb -> token（白/黑=透明度层；rgba-N=渐变/阴影专用色，客户可覆写）。
+      '--dam-white-13: rgba(255,255,255,.13); --dam-white-0: rgba(255,255,255,0); --dam-white-5: rgba(255,255,255,.05); --dam-white-90: rgba(255,255,255,.9);',
+      '--dam-rgba-1: rgba(20,30,60,.30); --dam-rgba-2: rgba(6,10,22,.44); --dam-white-50: rgba(255,255,255,.5); --dam-white-20: rgba(255,255,255,.20);',
+      '--dam-white-16: rgba(255,255,255,.16); --dam-white-35: rgba(255,255,255,.35); --dam-white-10: rgba(255,255,255,.10); --dam-white-22: rgba(255,255,255,.22);',
+      '--dam-rgba-3: rgba(36,86,196,.14); --dam-rgba-4: rgba(77,107,254,.80); --dam-rgba-5: rgba(77,107,254,.18); --dam-rgba-6: rgba(155,126,255,.72);',
+      '--dam-rgba-7: rgba(155,126,255,.16); --dam-rgba-8: rgba(77,107,254,.68); --dam-rgba-9: rgba(100,80,230,.14); --dam-rgba-10: rgba(4,8,20,.42);',
+      '--dam-white-17: rgba(255,255,255,.17); --dam-white-6: rgba(255,255,255,.06); --dam-white-52: rgba(255,255,255,.52); --dam-white-9: rgba(255,255,255,.09);',
+      '--dam-white-3: rgba(255,255,255,.03); --dam-white-18: rgba(255,255,255,.18); --dam-white-42: rgba(255,255,255,.42); --dam-white-8: rgba(255,255,255,.08);',
+      '--dam-rgba-11: rgba(18,38,120,.28); --dam-white-65: rgba(255,255,255,.65); --dam-white-48: rgba(255,255,255,.48); --dam-rgba-12: rgba(15,28,75,.34);',
+      '--dam-white-56: rgba(255,255,255,.56); --dam-white-72: rgba(255,255,255,.72); --dam-white-80: rgba(255,255,255,.8); --dam-rgba-13: rgba(128,128,128,.22);',
+      '--dam-rgba-14: rgba(128,128,128,.14); --dam-rgba-15: rgba(47,164,106,.08); --dam-rgba-16: rgba(128,128,128,.18); --dam-rgba-17: rgba(128,128,128,.12);',
+      '--dam-white-40: rgba(255,255,255,.4); --dam-white-7: rgba(255,255,255,.07); --dam-white-14: rgba(255,255,255,.14); --dam-rgba-18: rgba(128,128,128,.35);',
+      '--dam-rgba-19: rgba(78,112,232,.30); --dam-rgba-20: rgba(126,92,226,.20); --dam-rgba-21: rgba(18,26,54,.44); --dam-rgba-22: rgba(3,6,14,.74);',
+      '--dam-white-15: rgba(255,255,255,.15); --dam-black-46: rgba(0,0,0,.46); --dam-black-0: rgba(0,0,0,0); --dam-white-44: rgba(255,255,255,.44);',
+      '--dam-white-74: rgba(255,255,255,.74); --dam-white-58: rgba(255,255,255,.58); --dam-white-25: rgba(255,255,255,.25);',
+      // B12 R4 (2026-09-27): 裸 hex -> 语义 token（按角色命名，客户可整体覆写配色）。
+      '--dam-fg-on-accent: #fff; --dam-legend-branch: var(--dam-graph-node, #7d8793); --dam-legend-leaf: #b0b7c0; --dam-state-ok: #17a673;',
+      '--dam-state-bad: #e5484d; --dam-accent-2: #4a76f0; --dam-cta-from: #527cf6; --dam-cta-to: #2b56d4;',
+      '--dam-highlight: #fff; --dam-accent-3: #7ea4ff; --dam-shadow-tint: #000; --dam-accent-4: #9db8ff;',
+      // B12 R3 (2026-09-27): 复合/缺失刻度 token 化（客户可覆写）。族名=属性语义，值即原字面量。
+      '--dam-backdrop-x1: blur(28px) saturate(1.55); --dam-backdrop-x2: blur(16px) saturate(1.4); --dam-backdrop-x3: blur(30px) saturate(1.6); --dam-backdrop-x4: blur(26px) saturate(1.5); --dam-backdrop-x5: blur(6px) saturate(1.35); --dam-backdrop-x6: blur(12px) saturate(1.5); --dam-backdrop-x7: blur(5px) saturate(1.4); --dam-backdrop-x8: blur(14px) saturate(1.25);',
+      '--dam-shadow-x1: 0 24px 64px rgba(0,0,0,.22), 0 4px 16px rgba(0,0,0,.10), inset 0 1px 0 rgba(255,255,255,.22); --dam-shadow-x2: 0 3px 10px color-mix(in srgb, var(--dam-accent, #2456c4) 30%, transparent); --dam-shadow-x3: 0 3px 12px color-mix(in srgb, var(--dam-accent, var(--dam-accent-deepseek, #1d4ed8)) 35%, transparent); --dam-shadow-x4: 0 4px 12px rgba(0,0,0,.08); --dam-shadow-x5: 0 32px 90px rgba(8,14,38,.5), 0 6px 24px rgba(8,14,38,.28), inset 0 1px 0 rgba(255,255,255,.5), inset 0 -1px 0 rgba(255,255,255,.14); --dam-shadow-x6: 0 26px 70px rgba(8,14,38,.34), 0 3px 12px rgba(8,14,38,.16); --dam-shadow-x7: 0 2px 8px rgba(35,74,190,.34); --dam-shadow-x8: inset 0 1px 0 rgba(255,255,255,.62), inset 0 0 26px rgba(255,255,255,.13); --dam-shadow-x9: 0 0 0 1px rgba(255,255,255,.04); --dam-shadow-x10: inset 0 1px 0 rgba(255,255,255,.55), 0 8px 18px rgba(18,34,90,.28); --dam-shadow-x11: inset 0 2px 0 rgba(255,255,255,.68),inset 0 -14px 26px rgba(17,32,88,.18),0 20px 38px rgba(var(--tile-rgb),.25); --dam-shadow-x12: inset 0 2px 0 rgba(255,255,255,.72), inset 0 -7px 13px rgba(var(--art-rgb-2),.18), 0 7px 17px rgba(var(--art-rgb),.24); --dam-shadow-x13: 0 0 18px rgba(var(--art-rgb),.7); --dam-shadow-x14: 0 0 15px rgba(var(--art-rgb),.8); --dam-shadow-x15: 0 0 14px rgba(var(--art-rgb-2),.7); --dam-shadow-x16: 0 6px 18px color-mix(in srgb, var(--dam-accent, #3a6df0) 45%, transparent), inset 0 1px 0 rgba(255,255,255,.35); --dam-shadow-x17: 0 10px 24px color-mix(in srgb, var(--dam-accent, #3a6df0) 55%, transparent), inset 0 1px 0 rgba(255,255,255,.35); --dam-shadow-x18: 0 1px 4px rgba(0,0,0,.3); --dam-shadow-x19: inset 0 1px 0 rgba(255,255,255,.34), inset 0 -1px 0 rgba(255,255,255,.07), 0 0 0 1px rgba(8,12,28,.34), 0 52px 130px -26px rgba(4,8,24,.82), 0 18px 46px rgba(4,8,24,.44), 0 0 96px -32px color-mix(in srgb, var(--dam-accent, #3a6df0) 62%, transparent); --dam-shadow-x20: inset 0 3px 0 rgba(255,255,255,.74), inset 0 -18px 34px rgba(10,20,60,.26), 0 26px 54px -10px rgba(var(--tile-rgb), .56), 0 10px 24px rgba(8,16,44,.36); --dam-shadow-x21: 0 0 13px color-mix(in srgb, var(--dam-accent, #3a6df0) 58%, transparent); --dam-shadow-x22: 0 10px 28px -6px color-mix(in srgb, var(--dam-accent, #3a6df0) 62%, transparent), inset 0 1px 0 rgba(255,255,255,.42), inset 0 -1px 0 rgba(0,0,0,.18); --dam-shadow-x23: 0 14px 32px -6px color-mix(in srgb, var(--dam-accent, #3a6df0) 70%, transparent), inset 0 1px 0 rgba(255,255,255,.42);',
+      '--dam-transition-x1: background-color var(--dam-dur-quick) var(--dam-ease-out), color var(--dam-dur-quick) var(--dam-ease-out), opacity var(--dam-dur-quick) var(--dam-ease-out); --dam-transition-x2: background-color var(--dam-dur-quick) var(--dam-ease-out); --dam-transition-x3: transform var(--dam-dur-fast) var(--dam-ease-inout); --dam-transition-x4: background-color var(--dam-dur-quick) var(--dam-ease-out), color var(--dam-dur-quick) var(--dam-ease-out),; --dam-transition-x5: none !important; --dam-transition-x6: transform 目前是; --dam-transition-x7: transform .42s cubic-bezier(.22,.8,.2,1); --dam-transition-x8: color var(--dam-dur-quick) var(--dam-ease-out), background var(--dam-dur-quick) var(--dam-ease-out), opacity var(--dam-dur-quick) var(--dam-ease-out), transform var(--dam-dur-quick) var(--dam-ease-out); --dam-transition-x9: background .25s ease; --dam-transition-x10: opacity .2s ease, background .2s ease, color .2s ease; --dam-transition-x11: max-height var(--dam-dur-fast) var(--dam-ease-out), opacity var(--dam-dur-fast) var(--dam-ease-out), transform var(--dam-dur-fast) var(--dam-ease-out); --dam-transition-x12: transform var(--dam-dur-quick) var(--dam-ease-out), border-color .2s ease, background .2s ease, box-shadow .2s ease; --dam-transition-x13: transform var(--dam-dur-quick) var(--dam-ease-out), filter var(--dam-dur-quick) var(--dam-ease-out); --dam-transition-x14: filter .16s ease, background .16s ease, border-color .16s ease; --dam-transition-x15: width .4s ease; --dam-transition-x16: all .35s cubic-bezier(.4,0,.2,1); --dam-transition-x17: opacity .2s ease, background .2s ease; --dam-transition-x18: all .22s ease; --dam-transition-x19: background .2s ease, border-color .2s ease, transform .16s ease; --dam-transition-x20: left .25s cubic-bezier(.4,0,.2,1); --dam-transition-x21: background .18s ease, border-color .18s ease, transform .12s ease;',
+      '--dam-radius-x1: 999px;',
+'--dam-skin-ratio: 4 / 3;',
+      '  --dam-space-1: 1px; --dam-space-s0-75: 3px; --dam-space-s7-5: 15px; --dam-space-s10-5: 17px;',
+'  --dam-space-s15-5: 30px; --dam-space-s16: 52px; --dam-space-s17: 56px;',
+        '--dam-blur-sm: blur(5px); --dam-blur-sm2: blur(6px); --dam-blur-md: blur(12px);',
+        '--dam-blur-md2: blur(14px); --dam-blur-lg: blur(16px); --dam-blur-lg2: blur(26px);',
+        '--dam-accent-deepseek: #1d4ed8;',
+        '--dam-badge-ok-fg: #2f7d4f;',
+        '--dam-tone-ready: #2fa46a;',
+        '--dam-lane-state: #3fa96a;',
+        '--dam-accent-ai2: #4aa8b8;',
+        '--dam-accent-ai: #5b8def;',
+        '--dam-progress-bar: #6f9bff;',
+        '--dam-graph-node: #7d8793;',
+        '--dam-dec-emit: #7fdcb0;',
+        '--dam-badge-warn-fg: #8a6a1f;',
+        '--dam-accent-graphite: #8b949e;',
+        '--dam-accent-violet: #9b8cff;',
+        '--dam-dec-explicit: #b9ceff;',
+        '--dam-tone-error: #c44a4a;',
+        '--dam-tone-high: #d4744f;',
+        '--dam-lane-progress: #d4a94f;',
+        '--dam-dec-proactive: #d4c2ff;',
+        '--dam-dec-nodeliver: #e8a1a1;',
+        '--dam-dec-prefetch: #e8c584;',
+        '--dam-dec-heavy: #ff9c9c;',
+        '--dam-raw-ffd9a1: #ffd9a1;',
+        '--dam-neutral-75: rgba(128,128,128,.75);',
+        '--dam-214-102-102-20: rgba(214,102,102,.20);',
+        '--dam-neutral-18: rgba(128,128,128,.18);',
+        '--dam-neutral-16: rgba(128,128,128,.16);',
+        '--dam-neutral-14: rgba(255,255,255,.14);',
+        '--dam-neutral-65: rgba(255,255,255,.65);',
+        '--dam-111-155-255-24: rgba(111,155,255,.24);',
+        '--dam-160-120-255-22: rgba(160,120,255,.22);',
+        '--dam-neutral-12: rgba(255,255,255,.12);',
+        '--dam-160-120-255-24: rgba(160,120,255,.24);',
+        '--dam-neutral-25: rgba(128,128,128,.25);',
+        '--dam-neutral-10: rgba(127,127,127,.10);',
+        '--dam-neutral-35: rgba(128,128,128,.35);',
+        '--dam-232-234-237-45: rgba(232,234,237,.45);',
+        '--dam-58-166-117-20: rgba(58,166,117,.20);',
+        '--dam-224-165-58-20: rgba(224,165,58,.20);',
+        '--dam-76-141-255-18: rgba(76,141,255,.18);',
+        '--dam-47-164-106-24: rgba(47,164,106,.24);',
+        '--dam-255-214-150-1: rgba(255,214,150,.1);',
+        '--dam-neutral-1: rgba(255,255,255,.1);',
+        '--dam-90-140-255-16: rgba(90,140,255,.16);',
+        '--dam-47-164-106-20: rgba(47,164,106,.20);',
+        '--dam-196-138-42-2: rgba(196,138,42,.2);',
+        '--dam-36-86-196-35: rgba(36,86,196,.35);',
+        '--dam-47-164-106-2: rgba(47,164,106,.2);',
+        '--dam-196-80-80-14: rgba(196,80,80,.14);',
+        '--dam-196-74-74-22: rgba(196,74,74,.22);',
+        '--dam-36-86-196-2: rgba(36,86,196,.2);',
+        '--dam-220-80-80-2: rgba(220,80,80,.2);',
+        '--dam-18-22-30-93: rgba(18,22,30,.93);',
+        '--dam-black-18: rgba(0,0,0,.18);',
+        '--dam-black-12: rgba(0,0,0,.12);',
+        '--dam-black-35: rgba(0,0,0,.35);',
+        '--dam-lane-goal: #4d6bfe;',
+        '--dam-lane-dead: #c2603f;',
+        '--dam-lane-archive: #8a7fbf;',
+        '--dam-accent: #4f7cff;',
+        '--dam-tone-ok: #3aa675;',
+        '--dam-tone-warn: #e0a53a;',
+        '--dam-tone-bad: #d66666;',
+        '--dam-accent-purple: #c061c0;',
+        '--dam-neutral-mid: #8a8f98;',
+        '--dam-tone-error-soft: #e08a8a;',
+        '--dam-fg-strong: #e8eaed;',
+        '--dam-blur-xl: blur(28px); --dam-blur-xl2: blur(30px);',
+      '}',
+      // ================= dam-team:begin =================
+      // L3 3.6 团队 UI 视觉令牌：全部走 CSS 变量、零硬编码色（与既有皮肤契约一致）。
+      //   刻意不给 var() 兜底色 —— 37/08 卷判据要求「追加段内硬编码颜色数 = 0」；
+      //   且这些类只在 teamEnabled 为真时渲染，无历史视觉需要保全。
+      '.dam-team-bar { display: flex; align-items: center; gap: var(--dam-space-s3, 8px); padding: var(--dam-space-s2, 6px) var(--dam-space-s4, 10px); font-size: var(--dam-fontsize-base, 12px); border: 1px solid var(--dam-border); border-radius: var(--dam-radius, 8px); background: var(--dam-surface); color: var(--dam-text); }',
+      '.dam-team-badge { border-radius: var(--dam-radius-x1, 999px); padding: var(--dam-space-1, 1px) var(--dam-space-s2, 6px); font-size: var(--dam-fontsize-sm, 11px); margin-left: 6px; background: var(--dam-accent-weak); color: var(--dam-accent); }',
+      '.dam-team-conflicts { cursor: pointer; color: var(--dam-warn); }',
+      '.dam-team-conflict-center { display: flex; flex-direction: column; gap: var(--dam-space-s4, 10px); }',
+      '.dam-conflict-diff { display: grid; grid-template-columns: 1fr 1fr; gap: var(--dam-space-s3, 8px); }',
+      '.dam-conflict-diff pre { margin: 0; padding: var(--dam-space-s3, 8px); overflow: auto; border-radius: var(--dam-radius-sm, 6px); background: var(--dam-code-bg); }',
+      '.dam-conflict-actions { display: flex; gap: var(--dam-space-s2, 6px); margin-top: 8px; }',
+      // ================= dam-skin:begin =================
+      '.dam-skin-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: var(--dam-space-s6, 12px); margin-top: 8px; }',
+      '.dam-skin-card { display: flex; flex-direction: column; gap: var(--dam-space-s2, 6px); padding: var(--dam-space-s3, 8px); border-radius: var(--dam-radius-md, 8px); border: 1px solid var(--dam-border); background: var(--dam-card-bg); }',
+      '.dam-skin-shot { position: relative; width: 100%; aspect-ratio: var(--dam-skin-ratio, 4 / 3); overflow: hidden; border-radius: var(--dam-radius-sm, 6px); background: var(--dam-card-bg); }',
+      '.dam-skin-shot img { width: 100%; height: 100%; object-fit: cover; display: block; }',
+      /* 纪律二(12 卷):占位必须「像成品」—— 同尺寸、同构图、同色调,不是灰方块。 */
+      '.dam-skin-ph { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; font-size: var(--dam-fontsize-sm, 11px); line-height: 1.5; text-align: center; padding: var(--dam-space-s3, 8px); color: var(--dam-fg-weak); background: linear-gradient(135deg, var(--dam-card-bg), var(--dam-code-bg)); border: 1px dashed var(--dam-border); }',
+      '.dam-skin-meta { display: flex; align-items: baseline; justify-content: space-between; gap: var(--dam-space-s3, 8px); font-size: var(--dam-fontsize-sm, 11px); }',
+      '.dam-skin-key { font-weight: 600; word-break: break-all; }',
+      '.dam-skin-dim { opacity: .62; flex: 0 0 auto; }',
+      // —— R21 皮肤挂载点样式（12 卷纪律二：占位亦须「像成品」；零字面色值）——
+      '.dam-skin-slot { display: block; width: 100%; border-radius: var(--dam-radius, 12px); overflow: hidden; }',
+      '.dam-skin-slot img { display: block; width: 100%; height: 100%; object-fit: cover; }',
+      '.dam-skin-slot-hero { max-width: 720px; }',
+      '.dam-skin-slot-empty { max-width: 320px; margin: 0 auto; opacity: .92; }',
+      '.dam-skin-empty { display: flex; flex-direction: column; align-items: center; gap: var(--dam-space-s3, 8px); padding: var(--dam-space-s4, 12px) 0; }',
+      '.dam-skin-empty-text { text-align: center; opacity: .72; font-size: var(--dam-fontsize-sm, 11.5px); }',
+      '.dam-skin-hero { margin-bottom: var(--dam-space-s4, 12px); }',
+
+      // —— R22 皮肤挂载点 B（53 卷：深色素材是「白→透明」的 WebP，必须贴深色底才可读）——
+      '.dam-skin-backdrop { overflow: hidden; border-radius: inherit; opacity: var(--dam-skin-backdrop-opacity, .5); }',
+      '.dam-skin-backdrop img { width: 100%; height: 100%; object-fit: cover; }',
+      // ★深色底：透明图贴在深色底上才有对比（浅色模式下透明图贴浅底 = 不可读）
+      '.dam-skin-backdrop[data-dam-skin-deep="dark"] { background: var(--dam-bg-deep, #0f1115); }',
+      '.dam-skin-illust { display: inline-flex; align-items: center; margin-right: var(--dam-space-s3, 8px); }',
+      '.dam-skin-illust img { width: 76px; height: 51px; object-fit: contain; }',
+      '.dam-skin-illust[data-dam-skin-deep="dark"] { background: var(--dam-bg-deep, #0f1115); border-radius: var(--dam-radius-sm, 8px); }',
+
+      // —— R23 皮肤中心（12 卷 §四令牌：全走 var(--dam-*)，零新增裸值）——
+      '.dam-skin-summary { display: flex; flex-wrap: wrap; gap: var(--dam-space-s3, 8px); font-size: calc(11.5px * var(--dam-scale)); opacity: .78; margin-bottom: var(--dam-space-s2, 6px); }',
+      '.dam-skin-layer, .dam-skin-row { display: flex; align-items: center; gap: var(--dam-space-s3, 8px); font-size: calc(11.5px * var(--dam-scale)); padding: 2px 0; }',
+      '.dam-skin-alert { display: flex; align-items: center; justify-content: space-between; gap: var(--dam-space-s3, 8px); border: 1px solid var(--dam-warn); border-radius: var(--dam-radius-sm, 8px); padding: var(--dam-space-s2, 6px) var(--dam-space-s3, 8px); margin: var(--dam-space-s2, 6px) 0; font-size: calc(11.5px * var(--dam-scale)); }',
+      '.dam-skin-center [data-dam-skin-slot-status] { opacity: .7; }',
+
+      // ================= dam-skin:end =================
+      // —— fe02 屏①–④ 样式（R18）：全部 token 化、零字面色值（契约 §8.3 断言 3）——
+      '.dam-team-statusbar { display: flex; align-items: center; gap: var(--dam-space-s3, 8px); padding: var(--dam-space-s2, 6px) var(--dam-space-s4, 10px); border-bottom: 1px solid var(--dam-border); }',
+      '.dam-team-members { display: flex; flex-wrap: wrap; align-items: center; gap: var(--dam-space-s2, 6px); padding: var(--dam-space-s2, 6px) 0; }',
+      '.dam-team-member { display: inline-flex; align-items: center; gap: var(--dam-space-s1, 4px); font-size: var(--dam-fontsize-base, 12px); }',
+      '.dam-team-presence-dot { width: 7px; height: 7px; border-radius: var(--dam-radius-circle, 50%); background: var(--dam-text); opacity: .55; }',
+      '.dam-team-filterbar { display: flex; flex-wrap: wrap; gap: var(--dam-space-s3, 8px); padding: var(--dam-space-s2, 6px) 0; }',
+      '.dam-team-diff { display: grid; grid-template-columns: 1fr 1fr; gap: var(--dam-space-s3, 8px); }',
+      '.dam-team-diff-local, .dam-team-diff-remote { margin: 0; overflow: auto; font-size: var(--dam-fontsize-base, 12px); }',
+      '.dam-team-verdict { display: flex; flex-wrap: wrap; gap: var(--dam-space-s2, 6px); padding-top: var(--dam-space-s2, 6px); }',
+
+      // —— fe02 屏⑤–⑧ 样式（R19）：全部 token 化、零字面色值 ——
+      '.dam-team-skills, .dam-team-ledger, .dam-team-debug { display: flex; flex-direction: column; gap: var(--dam-space-s2, 6px); padding: var(--dam-space-s2, 6px) 0; }',
+      '.dam-team-skill { display: flex; flex-direction: column; gap: var(--dam-space-s1, 4px); padding: var(--dam-space-s2, 6px); border: 1px solid var(--dam-border); border-radius: var(--dam-radius-sm, 8px); }',
+      '.dam-team-skill-head { display: flex; align-items: center; justify-content: space-between; }',
+      '.dam-team-skill-acts, .dam-team-chain-row { display: flex; align-items: center; gap: var(--dam-space-s2, 6px); }',
+      // ★按人分色（契约 §5.3）：色相来自行内 --dam-team-actor-hue，禁写死色值
+      '[data-dam-team-ledger-seg][data-actor] { border-left: 3px solid hsl(var(--dam-team-actor-hue, 0) 62% 52%); padding-left: var(--dam-space-s3, 8px); }',
+      '.dam-team-chain-link { opacity: .55; }',
+      '.dam-team-field { display: flex; align-items: center; gap: var(--dam-space-s3, 8px); padding: var(--dam-space-s1, 4px) 0; }',
+      '.dam-team-field-label { flex: 0 0 auto; min-width: 168px; font-size: var(--dam-fontsize-base, 12px); opacity: .86; }',
+
+      // ================= dam-team:end =================
+    ].join('\n')
+    var STYLE_ID = 'dsh-auto-memory-css'
+    function ensureStyle() {
+      if (document.getElementById(STYLE_ID)) return
+      var tag = document.createElement('style')
+      tag.id = STYLE_ID
+      tag.dataset.plugin = '@a9i5k4/dsh-auto-memory'
+      tag.textContent = CSS
+      document.head.appendChild(tag)
+    }
+
+    // ───────────────────────── 通用小组件 ─────────────────────────
+    // ───────────────── R7:配置层对外消费 A（region order + hidden）─────────────────
+    // 依据 56 卷 §二（客户能做的第 1 件事「改区域排版顺序」、第 3 件事「隐藏/显示区域」）
+    //  与 68 卷 §八（前端把 normalize 结果消费成 CSS 变量 / order / display:none）、70 卷 R7。
+    // ★零视觉变化纪律（62 卷 §二 纪律 1）：只在**客户显式配置**时写 inline style；
+    //  默认配置（regions 全为 {}）⇒ plan 为空 ⇒ 一个属性都不写 ⇒ 视觉逐字节不变。
+    var LAYOUT_REGION_SEL = '[data-dam-region]'
+    /** 纯函数：把 normalize 结果映射成区域执行计划（无 DOM 依赖，可直接单测）。
+     *  负路径：入参非对象 / ok!==true / 结构异常 ⇒ 返回空数组，绝不抛（56 卷 §三「客户改错了不能崩」）。 */
+    function layoutRegionPlanPre(cfg) {
+      var out = []
+      try {
+        if (!cfg || cfg.ok !== true) return out
+        var c = cfg.config
+        if (!c || !c.regions || typeof c.regions !== 'object') return out
+        var names = Object.keys(c.regions)
+        for (var i = 0; i < names.length; i++) {
+          var name = names[i]
+          if (typeof name !== 'string' || !name) continue
+          var spec = c.regions[name]
+          if (!spec || typeof spec !== 'object') continue
+          var item = { name: name, order: null, hidden: false }
+          if (typeof spec.order === 'number' && isFinite(spec.order)) item.order = spec.order
+          if (spec.hidden === true) item.hidden = true
+          // ★只有显式配置过的项才进 plan（normalize 只对显式键写值，未配置的 region 恒为 {}）
+          if (item.order === null && item.hidden !== true) continue
+          out.push(item)
+        }
+      } catch (e) { return [] }
+      // 固定顺序，保证同输入同输出（可复算）
+      out.sort(function (a, b) { return a.name < b.name ? -1 : (a.name > b.name ? 1 : 0) })
+      return out
+    }
+    /** 把 plan 应用到 DOM：按 data-dam-region 批量写 inline order / display:none。
+     *  幂等（每次整批重算，重复调用结果一致）；任何异常静默返回，绝不让面板崩。 */
+    function applyLayoutRegionsPre(cfg) {
+      var plan = layoutRegionPlanPre(cfg)
+      var nodes
+      try { nodes = document.querySelectorAll(LAYOUT_REGION_SEL) } catch (e) { return 0 }
+      if (!nodes || !nodes.length) return 0
+      var want = {}
+      for (var i = 0; i < plan.length; i++) want[plan[i].name] = plan[i]
+      var applied = 0
+      for (var j = 0; j < nodes.length; j++) {
+        var el = nodes[j]
+        if (!el || !el.style) continue
+        var nm = null
+        try { nm = el.getAttribute('data-dam-region') } catch (e) { nm = null }
+        var it = nm ? want[nm] : null
+        if (it && it.order !== null) { el.style.order = String(it.order); applied++ }
+        else { el.style.order = '' }
+        if (it && it.hidden === true) el.style.display = 'none'
+        else { el.style.display = '' }
+      }
+      return applied
+    }
+
+    // ───────────────── R8:配置层对外消费 B（区域尺寸 + 外观 token）─────────────────
+    // 依据 28 卷 §3.1（皮肤作者操作面 ② 改区域尺寸 = 覆写 --dam-region-w/h/min；
+    //  ④ 改块外观/图片 = 覆写 --dam-* token）、§3.6 authorSurface.resize/.aesthetics；70 卷 R8。
+    // ★零视觉变化纪律（62 卷 §二 纪律 1）：只在客户**显式配置**时写 inline；默认 ⇒ 一个变量都不写。
+    var LAYOUT_TOKEN_PREFIXES = ['--dam-', '--skin-']
+    /** 上一次写过的 token 集合（用于「删配置 ⇒ 清空」的撤销，见 applyLayoutTokensPre）。 */
+    var lastAppliedTokens = {}
+    /** 尺寸三元组白名单（28 卷 §3.6 resize 逐字）。 */
+    var LAYOUT_SIZE_KEYS = ['w', 'h', 'min']
+    /** 纯函数：region 尺寸计划（无 DOM 依赖）。负路径 ⇒ 空数组，绝不抛。 */
+    function layoutRegionSizePlanPre(cfg) {
+      var out = []
+      try {
+        if (!cfg || cfg.ok !== true) return out
+        var c = cfg.config
+        if (!c || !c.regions || typeof c.regions !== 'object') return out
+        var names = Object.keys(c.regions)
+        for (var i = 0; i < names.length; i++) {
+          var name = names[i]
+          if (typeof name !== 'string' || !name) continue
+          var spec = c.regions[name]
+          if (!spec || typeof spec !== 'object') continue
+          var item = { name: name, sizes: {} }
+          for (var k = 0; k < LAYOUT_SIZE_KEYS.length; k++) {
+            var dim = LAYOUT_SIZE_KEYS[k]
+            var val = spec[dim]
+            // 只接受非空字符串（normalize 的 safeText 已保证形态，此处再兜一层）
+            if (typeof val === 'string' && val) item.sizes[dim] = val
+          }
+          if (!Object.keys(item.sizes).length) continue
+          out.push(item)
+        }
+      } catch (e) { return [] }
+      out.sort(function (a, b) { return a.name < b.name ? -1 : (a.name > b.name ? 1 : 0) })
+      return out
+    }
+    /** 把尺寸计划写到对应 region 节点的 inline CSS 变量上。幂等；异常静默返回。 */
+    function applyLayoutRegionSizesPre(cfg) {
+      var plan = layoutRegionSizePlanPre(cfg)
+      var nodes
+      try { nodes = document.querySelectorAll(LAYOUT_REGION_SEL) } catch (e) { return 0 }
+      if (!nodes || !nodes.length) return 0
+      var want = {}
+      for (var i = 0; i < plan.length; i++) want[plan[i].name] = plan[i].sizes
+      var applied = 0
+      for (var j = 0; j < nodes.length; j++) {
+        var el = nodes[j]
+        if (!el || !el.style) continue
+        var nm = null
+        try { nm = el.getAttribute('data-dam-region') } catch (e) { nm = null }
+        var sizes = nm ? want[nm] : null
+        for (var k2 = 0; k2 < LAYOUT_SIZE_KEYS.length; k2++) {
+          var dim2 = LAYOUT_SIZE_KEYS[k2]
+          var prop = '--dam-region-' + dim2
+          var v = sizes && sizes[dim2] ? sizes[dim2] : ''
+          try {
+            if (el.style.setProperty) el.style.setProperty(prop, v)
+            else el.style[prop] = v
+          } catch (e) { /* 单点失败不影响其余 */ }
+        }
+        if (sizes) applied++
+      }
+      return applied
+    }
+    /** 纯函数：外观 token 计划（只放行 --dam- / --skin- 前缀）。负路径 ⇒ 空数组。 */
+    function layoutTokenPlanPre(cfg) {
+      var out = []
+      try {
+        if (!cfg || cfg.ok !== true) return out
+        var c = cfg.config
+        if (!c || !c.tokens || typeof c.tokens !== 'object') return out
+        var keys = Object.keys(c.tokens)
+        for (var i = 0; i < keys.length; i++) {
+          var k = keys[i]
+          if (typeof k !== 'string' || !k) continue
+          var okPrefix = false
+          for (var p = 0; p < LAYOUT_TOKEN_PREFIXES.length; p++) {
+            if (k.indexOf(LAYOUT_TOKEN_PREFIXES[p]) === 0) { okPrefix = true; break }
+          }
+          if (!okPrefix) continue
+          var v = c.tokens[k]
+          if (typeof v !== 'string' || !v) continue
+          out.push({ key: k, value: v })
+        }
+      } catch (e) { return [] }
+      out.sort(function (a, b) { return a.key < b.key ? -1 : (a.key > b.key ? 1 : 0) })
+      return out
+    }
+    /** 把 token 计划写到根元素（客户换配色 / 圆角 / 背景色走这条）。幂等；异常静默。 */
+    function applyLayoutTokensPre(cfg) {
+      var plan = layoutTokenPlanPre(cfg)
+      var root = null
+      try { root = document.documentElement } catch (e) { root = null }
+      if (!root || !root.style) return 0
+      var applied = 0
+      var wanted = {}
+      for (var i = 0; i < plan.length; i++) {
+        wanted[plan[i].key] = true
+        try {
+          if (root.style.setProperty) root.style.setProperty(plan[i].key, plan[i].value)
+          else root.style[plan[i].key] = plan[i].value
+          applied++
+        } catch (e) { /* 单点失败不影响其余 */ }
+      }
+      // 撤销：上次写过、这次不在计划里的 ⇒ 清空（保证「删配置 = 回默认」）
+      try {
+        for (var k in lastAppliedTokens) {
+          if (lastAppliedTokens[k] && !wanted[k]) {
+            if (root.style.setProperty) root.style.setProperty(k, '')
+            else root.style[k] = ''
+          }
+        }
+      } catch (e) { /* ignore */ }
+      lastAppliedTokens = wanted
+      return applied
+    }
+    // ───────────────── R9:结构层消费 A（slot 层 order + 显隐）─────────────────
+    // 依据 70 卷 R9（锚点从「死标记」变「活接口」）、authorSurface.reorder/visibility 的 slot 半边
+    //  （schema 逐字：「slot 级用 [data-dam-slot="Y"] { order: N }」/「[data-dam-slot="Y"] { display:none }」）。
+    // ★零视觉变化纪律（62 卷 §二 纪律 1）：只在客户**显式配置**时写 inline；默认 ⇒ 一个属性都不写。
+    var LAYOUT_SLOT_SEL = '[data-dam-slot]'
+    /** ★R9 边界（实测 6 个节点同时带 data-dam-region 与 data-dam-slot，见 75/76 卷）：
+     *  为不让本层把 R7 写下的 region 显隐/顺序覆盖掉，本层**只处理**「在计划内」或
+     *  「上一次本层写过」的 slot 节点；其余节点一律不碰（跨层互不越权）。 */
+    var lastAppliedSlots = {}
+    /** 纯函数：slot 执行计划（无 DOM 依赖）。负路径 ⇒ 空数组，绝不抛。
+     *  只对**显式配置**过的 slot 产行（normalize 只给显式键写值，未配置的 slot 恒为 {}）。 */
+    function layoutSlotPlanPre(cfg) {
+      var out = []
+      try {
+        if (!cfg || cfg.ok !== true) return out
+        var c = cfg.config
+        if (!c || !c.slots || typeof c.slots !== 'object') return out
+        var names = Object.keys(c.slots)
+        for (var i = 0; i < names.length; i++) {
+          var name = names[i]
+          if (typeof name !== 'string' || !name) continue
+          var spec = c.slots[name]
+          if (!spec || typeof spec !== 'object') continue
+          var item = { name: name, order: null, hidden: false }
+          if (typeof spec.order === 'number' && isFinite(spec.order)) item.order = spec.order
+          if (spec.hidden === true) item.hidden = true
+          if (item.order === null && item.hidden !== true) continue
+          out.push(item)
+        }
+      } catch (e) { return [] }
+      out.sort(function (a, b) { return a.name < b.name ? -1 : (a.name > b.name ? 1 : 0) })
+      return out
+    }
+    /** 把 slot 计划应用到 DOM：按 data-dam-slot 批量写 inline order / display:none。
+     *  幂等（整批重算）；任何异常静默返回，绝不让面板崩。 */
+    function applyLayoutSlotsPre(cfg) {
+      var plan = layoutSlotPlanPre(cfg)
+      var nodes
+      try { nodes = document.querySelectorAll(LAYOUT_SLOT_SEL) } catch (e) { return 0 }
+      if (!nodes || !nodes.length) return 0
+      var want = {}
+      for (var i = 0; i < plan.length; i++) want[plan[i].name] = plan[i]
+      var applied = 0
+      for (var j = 0; j < nodes.length; j++) {
+        var el = nodes[j]
+        if (!el || !el.style) continue
+        var nm = null
+        try { nm = el.getAttribute('data-dam-slot') } catch (e) { nm = null }
+        var it = nm ? want[nm] : null
+        // ★只处理「本次计划内」或「上次本层写过」的节点 —— 避免覆盖 R7 在双锚点节点上写的 region 样式
+        var mine = !!(nm && (it || lastAppliedSlots[nm]))
+        if (!mine) continue
+        if (it && it.order !== null) { el.style.order = String(it.order); applied++ }
+        else { el.style.order = '' }
+        if (it && it.hidden === true) el.style.display = 'none'
+        else { el.style.display = '' }
+      }
+      var next = {}
+      for (var q = 0; q < plan.length; q++) next[plan[q].name] = true
+      lastAppliedSlots = next
+      return applied
+    }
+    /** ★R10 边界（实测：10 个 block 节点中 9 个同时带 region 或 slot，见 78 卷）：
+     *  本层只写自己两个属性（--dam-block-style / --dam-block-bg），
+     *  不触碰既有三层写过的 inline order、display 与区域尺寸变量。 */
+    var LAYOUT_BLOCK_SEL = '[data-dam-block]'
+    var lastAppliedBlocks = {}
+    /** 纯函数：block 执行计划（无 DOM 依赖）。负路径 ⇒ 空数组，绝不抛。
+     *  只对**显式配置**过的 blockKind 产行（normalize 只给显式键写值，未配置的 kind 恒为 {}）。 */
+    function layoutBlockPlanPre(cfg) {
+      var out = []
+      try {
+        if (!cfg || cfg.ok !== true) return out
+        var c = cfg.config
+        if (!c || !c.blocks || typeof c.blocks !== 'object') return out
+        var kinds = Object.keys(c.blocks)
+        for (var i = 0; i < kinds.length; i++) {
+          var kind = kinds[i]
+          if (typeof kind !== 'string' || !kind) continue
+          var spec = c.blocks[kind]
+          if (!spec || typeof spec !== 'object') continue
+          var item = { kind: kind, style: '', bg: '' }
+          if (typeof spec.style === 'string' && spec.style) item.style = spec.style
+          if (typeof spec.bg === 'string' && spec.bg) item.bg = spec.bg
+          if (!item.style && !item.bg) continue
+          out.push(item)
+        }
+      } catch (e) { return [] }
+      out.sort(function (a, b) { return a.kind < b.kind ? -1 : (a.kind > b.kind ? 1 : 0) })
+      return out
+    }
+    /** 把 block 计划应用到 DOM：按 [data-dam-block] 批量写 inline 两个自定义属性。
+     *  只写这两个自有属性；幂等（整批重算）；异常静默返回，绝不让面板崩。 */
+    function applyLayoutBlocksPre(cfg) {
+      var plan = layoutBlockPlanPre(cfg)
+      var nodes
+      try { nodes = document.querySelectorAll(LAYOUT_BLOCK_SEL) } catch (e) { return 0 }
+      if (!nodes || !nodes.length) return 0
+      var want = {}
+      for (var i = 0; i < plan.length; i++) want[plan[i].kind] = plan[i]
+      var applied = 0
+      for (var j = 0; j < nodes.length; j++) {
+        var el = nodes[j]
+        if (!el || !el.style) continue
+        var kd = null
+        try { kd = el.getAttribute('data-dam-kind') } catch (e) { kd = null }
+        if (!kd) { try { kd = el.getAttribute('data-dam-block') } catch (e) { kd = null } }
+        var it = kd ? want[kd] : null
+        var mine = !!(kd && (it || lastAppliedBlocks[kd]))
+        if (!mine) continue
+        var wrote = false
+        if (it && it.style) { el.style.setProperty('--dam-block-style', it.style); wrote = true }
+        else { el.style.removeProperty('--dam-block-style') }
+        if (it && it.bg) { el.style.setProperty('--dam-block-bg', it.bg); wrote = true }
+        else { el.style.removeProperty('--dam-block-bg') }
+        if (wrote) applied++
+      }
+      var next = {}
+      for (var q = 0; q < plan.length; q++) next[plan[q].kind] = true
+      lastAppliedBlocks = next
+      return applied
+    }
+
+
+    function useTick() { return useReducer(function (x) { return x + 1 }, 0) }
+
+    function Banner(props) {
+      return h('div', { 'data-dam-banner': '' }, props.children)
+    }
+
+    function Card(props) {
+      return h('div', { 'data-dam-card': '' },
+        h('div', { className: 'dam-date' }, props.title),
+        h('div', { className: 'dam-content' }, props.children))
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 白板看板(2026-09-16「兼并 dsh-graph」) —— 列式泳道可视化。
+    //
+    // 立场: 不挂 dsh-graph 插件(那会往 profile 里加第二个 bundle、第二份存储、第二套工具命名空间),
+    //   而是把它的**可视化形态**长在 auto-memory 自己身上: 数据源是自家的 handoff/index.json,
+    //   渲染在自家的面板里, 由 boardMode 一档切换(legacy 文字白板 / graph 列式看板)。
+    //   ⇒ 一份数据、一个插件、一个开关。
+    //
+    // 视觉: 与面板既有液态玻璃令牌一致(--dam-* / --dsw-alias-*), 不引第三方 CSS。
+    // 纯展示组件: 只读 data, 不发起任何写操作(看板改卡留待后续; 先保证「看得见」)。
+    // ─────────────────────────────────────────────────────────────────────────
+    var KANBAN_TONES = {
+      ok: { bg: 'color-mix(in srgb, var(--dam-lane-state, #3fa96a) 18%, transparent)', fg: 'var(--dam-badge-ok-fg, #2f7d4f)' },
+      warn: { bg: 'color-mix(in srgb, var(--dam-lane-progress, #d4a94f) 20%, transparent)', fg: 'var(--dam-badge-warn-fg, #8a6a1f)' },
+      unknown: { bg: 'color-mix(in srgb, currentColor 10%, transparent)', fg: 'inherit' },
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 看板 v2(2026-09-16 「大刀阔斧」批) —— 缩放 / 布局 / 交互全部补齐。
+    //
+    // v1 的三个致命体验问题(用户实测反馈):
+    //   ① 大小不可调: 只有面板全局 4 档 --dam-scale, 列宽 210px 写死不随字号变;
+    //   ② 看不见: 6 列 × 210px = 1260px 塞进 440px 面板, 只能看到 2 列且无滚动提示;
+    //   ③ 看不全: 预览 maxHeight 3.6em 硬截断, 无法展开。
+    // ⇒ v2: 看板自带字号 ×N 与列宽 ×N(独立于 --dam-scale, localStorage 记忆) + 纵向堆叠默认 +
+    //   泳道可折叠 + 卡片可展开看全文 + 泳道内搜索 + 「最近更新」聚合视图 + 空泳道收起。
+    // ─────────────────────────────────────────────────────────────────────────
+    var KANBAN_ZOOM_KEY = 'dam-kanban-zoom'
+    var KANBAN_COL_KEY = 'dam-kanban-cols'
+    var KANBAN_LAYOUT_KEY = 'dam-kanban-layout'
+
+    function readLsNum(key, def) {
+      try { var v = parseFloat(localStorage.getItem(key)); return isFinite(v) && v > 0 ? v : def } catch (e) { return def }
+    }
+    function writeLs(key, val) { try { localStorage.setItem(key, String(val)) } catch (e) {} }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 白板内容清洗层(2026-09-20 重构批)
+    //
+    // 为什么需要: 卡片数据来自 Markdown 的 `## ` 小节直通(wb-sidecar.js:252→:666),
+    //   全链路无摘要/清洗/标题正文分离 ⇒ 实测 868 张卡只有 195 个不同标题
+    //   (「目标」重复 109 次), 且正文首行常是未剥离的 `<!-- type:goal -->`。
+    //   title 与 body 因此互为镜像 —— 两个字段的信息量只有 1 个。
+    //
+    // 立场: 纯前端派生, 不改后端契约(wb-contract.js 的写入门与 sidecar 结构零改动)。
+    //   清洗是**渲染层**职责: 磁盘上的字节保持原样, 只在显示时剥掉元数据。
+    // ─────────────────────────────────────────────────────────────────────────
+    /** 剥 HTML 注释(锚点行 `<!-- memory:mem_xxx -->` 与 tag 行 `<!-- type:goal -->`)。 */
+    function wbStripComment(s) { return String(s || '').replace(/<!--[\s\S]*?-->/g, '') }
+    /** 剥行首的 tag 前缀(`- type:state ｜ ` / `type:goal` 等)与列表符。 */
+    function wbStripPrefix(s) {
+      return String(s || '')
+        .replace(/^\s*[-*+]\s+/, '')
+        .replace(/^\s*(?:tag|type|topic)\s*[:：]\s*[\w\u4e00-\u9fff-]+\s*[｜|]?\s*/i, '')
+        .replace(/^\s*[｜|]\s*/, '')
+    }
+    /** 剥 Markdown 行内标记(粗体/斜体/行内代码/链接), 只留可读文字。 */
+    function wbStripMarkup(s) {
+      return String(s || '')
+        .replace(/\*\*([^*]+)\*\*/g, '$1')
+        .replace(/(^|[^*])\*([^*]+)\*/g, '$1$2')
+        .replace(/`([^`]+)`/g, '$1')
+        .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+        .replace(/\s+/g, ' ')
+        .trim()
+    }
+    /** 一条原文 → 可读文本(剥注释 → 逐行剥前缀 → 剥标记), 丢弃空行。 */
+    function wbCleanLines(s) {
+      var lines = wbStripComment(s).split(/\r?\n/)
+      var out = []
+      for (var i = 0; i < lines.length; i++) {
+        var t = wbStripMarkup(wbStripPrefix(lines[i]))
+        if (t) out.push(t)
+      }
+      return out
+    }
+    /** 标题清洗: 剥注释与前缀后取首行, 过长截断。空则回落到小节名。 */
+    function wbCleanTitle(raw) {
+      var ls = wbCleanLines(raw)
+      var t = ls.length ? ls[0] : ''
+      if (!t) return ''
+      return t.length > 60 ? t.slice(0, 57) + '…' : t
+    }
+    /**
+     * 卡片 → { title, body, meta }
+     * 标题优先级: 清洗后的正文首行 > card.title(小节名) > 来源文件名
+     * 正文 = 剩余行拼接(已清洗), 与标题不重复 —— 这正是「标题+正文分离」。
+     */
+    function wbShape(c) {
+      // ★v3.1.2 性能：列表渲染（节点画布）用 preview 即可 —— 载荷已不内联 full，
+      //   此处若仍读 c.full 会恒为空 ⇒ 标题/正文全丢。preview 是稳定来源。
+      var rawFull = c.preview || c.full || ''
+      var ls = wbCleanLines(rawFull)
+      var head = ls.length ? ls[0] : ''
+      var title = head ? (head.length > 60 ? head.slice(0, 57) + '…' : head) : (c.title || c.short || '')
+      // 副标题: 小节名(短小、可当分类标签), 若与标题相同则省略
+      var kicker = c.title && c.title !== title ? c.title : ''
+      var rest = ls.slice(1)
+      // 小节名常重复出现在正文首行(如「任务状态」), 再剥一次
+      if (kicker && rest.length && rest[0] === kicker) rest = rest.slice(1)
+      var body = rest.join(' ')
+      var isDup = body.indexOf(title) === 0 && body.length <= title.length + 2
+      if (isDup) body = ''
+      return {
+        title: title,
+        kicker: kicker,
+        body: body,
+        docTitle: c.docTitle || '',
+        source: c.source || '',
+        section: c.section || '',
+        tags: c.tags || [],
+        sectionTags: c.sectionTags || [],
+        anchored: !!c.anchored,
+        id: c.id,
+        ts: c.ts,
+        lineStart: c.lineStart,
+        kind: c.kind || '',
+        mtime: c.mtime,
+      }
+    }
+    /** 泳道 key → 色调(图上按类别着色, 与面板泳道语义一致)。 */
+    function wbLaneTone(key) {
+      var k = String(key || '')
+      if (k === 'goal') return 'var(--dam-lane-goal, #4d6bfe)'
+      if (k === 'state' || k === 'doing') return 'var(--dam-lane-state, #3fa96a)'
+      if (k === 'dead' || k === 'deadend') return 'var(--dam-lane-dead, #c2603f)'
+      if (k === 'progress' || k === 'next') return 'var(--dam-lane-progress, #d4a94f)'
+      if (k === 'archive') return 'var(--dam-lane-archive, #8a7fbf)'
+      return 'var(--dam-neutral-75, rgba(128,128,128,.75))'
+    }
+
+    /**
+     * ★v3.1.2 性能：卡片全文**按需取**。
+     * 看板载荷不再内联 full（1178 卡 × ≤6000 字符、且 lanes+matrix 双份 ⇒ 约 1.7 MB 纯冗余），
+     * 取而代之的是 fullLen；点「展开全文」/打开抽屉时才按 id 向 /kanban-card 单取一次并缓存。
+     * 失败/未取到时**回退 preview**（绝不显示空白）。
+     */
+    var wbFullCache = {}      // id -> string（进程内缓存，避免反复取同一张）
+    function useCardFull(card) {
+      var p = useState(function () { return (card && wbFullCache[card.id]) || '' })
+      var text = p[0], setText = p[1]
+      useEffect(function () {
+        var c = card || {}
+        if (!c.id) return
+        if (wbFullCache[c.id] !== undefined) { setText(wbFullCache[c.id]); return }
+        // 载荷里若仍带 full（老版本/其它来源）直接用，不打请求
+        if (typeof c.full === 'string') { wbFullCache[c.id] = c.full; setText(c.full); return }
+        var alive = true
+        apiGet(API.kanbanCard, { id: c.id, sessionId: currentSessionIdClient() }).then(function (r) {
+          if (!alive) return
+          var t = (r && r.ok && typeof r.full === 'string') ? r.full : ''
+          wbFullCache[c.id] = t
+          setText(t)
+        }).catch(function () { if (alive) { wbFullCache[c.id] = ''; setText('') } })
+        return function () { alive = false }
+      }, [card && card.id])
+      return text
+    }
+
+    /**
+     * ★v3.1.4 修复（用户报障「白板看板点进去就白屏」）：抽屉正文**单独组件**。
+     *
+     * 根因（栈追踪直指）: 此前正文写成 `h('pre', …, (useCardFull(drawer) || …))`，
+     *   而该处位于 `drawer ? kxPortal(...) : null` 的**条件分支内部** ⇒
+     *   **未开抽屉时不调这个 hook、打开抽屉才调** ⇒ 同一组件两次渲染 hook 数量不同
+     *   ⇒ React error #310（Rendered more hooks than during the previous render）
+     *   ⇒ slot 'conversation.view' 整块崩溃 ⇒ 白屏。**「点击」这个动作本身**改变了 hook 数。
+     *   （同一 hook 在 KanbanCard 里写法是对的：`useCardFull(expanded ? c : null)` —— 无条件调用、参数可空。）
+     *
+     * 修法: 把 hook 收进本组件；它**只在 drawer 存在时才被挂载**，
+     *   挂载期间 hook 数量恒定 ⇒ #310 消除。原 L2545 的兜底链
+     *   `|| drawer.full || drawer.preview || ''` 一并保留（绝不显示空白）。
+     */
+    function KanbanDrawerBody(props) {
+      var d = props.drawer || {}
+      var text = useCardFull(d) || d.full || d.preview || ''
+      return h('pre', { 'data-dam-kx-full': d.id, style: { whiteSpace: 'pre-wrap', wordBreak: 'break-word', fontFamily: 'inherit', margin: 0, fontSize: '12px' } }, text)
+    }
+
+    /** 单张卡片: 标题 + 判据徽章 + 预览/全文 + 小节徽章 + 标签 + 来源。可点击展开。 */
+    function KanbanCard(props) {
+      var c = props.card || {}
+      var zoom = Number(props.zoom) || 1
+      var expanded = !!props.expanded
+      var onToggle = props.onToggle
+      var tone = KANBAN_TONES[(c.badge && c.badge.tone) || 'unknown'] || KANBAN_TONES.unknown
+      // ★v3.1.2：全文按需取（展开时才请求；未取到回退 preview）
+      var fullText = useCardFull(expanded ? c : null)
+      var body = expanded ? (fullText || c.full || c.preview || '') : (c.preview || '')
+      var canExpand = (typeof c.fullLen === 'number' ? c.fullLen : (c.full || '').length) > (c.preview || '').length
+      return h('div', {
+        'data-dam-kcard': '',
+        title: c.source + (c.section ? ' §' + c.section : '') + (c.anchored ? ' · 有锚点' : ''),
+        style: {
+          border: '1px solid color-mix(in srgb, var(--dsw-alias-border-l1, rgba(128,128,128,.22)) 70%, transparent)',
+          borderRadius: '8px', padding: '7px 9px', marginBottom: '7px',
+          background: 'color-mix(in srgb, currentColor 3%, transparent)',
+        },
+      }, [
+        h('div', { style: { display: 'flex', alignItems: 'flex-start', gap: '6px' } }, [
+          h('div', { style: { flex: '1 1 auto', fontWeight: 600, fontSize: (12.5 * zoom) + 'px', lineHeight: '1.35', wordBreak: 'break-word' } }, c.title || c.short),
+          h('span', {
+            style: { flex: '0 0 auto', fontSize: (10 * zoom) + 'px', padding: '1px 5px', borderRadius: '4px', background: tone.bg, color: tone.fg, whiteSpace: 'nowrap' },
+          }, (c.badge && c.badge.text) || ''),
+        ]),
+        // 文档来源(小节卡的关键上下文: 同名的「目标」小节来自哪篇账本)
+        c.docTitle ? h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginTop: '2px', fontSize: (10 * zoom) + 'px', opacity: .62, wordBreak: 'break-word' } }, c.docTitle) : null,
+        body ? h('div', {
+          'data-dam-slot': 'hint', 'data-dam-hint': '',
+          style: {
+            marginTop: '4px', lineHeight: '1.45', fontSize: (11.5 * zoom) + 'px', whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+            maxHeight: expanded ? 'none' : (7.2 * zoom) + 'em', overflow: 'hidden',
+          },
+        }, body) : null,
+        (canExpand || (typeof c.fullLen === 'number' ? c.fullLen : (c.full || '').length) > 300) ? h('button', {
+          'data-dam-slot': 'actions', 'data-dam-block': 'actions', 'data-dam-kind': 'actions', 'data-dam-btn': '', onClick: function (e) { e.stopPropagation(); if (onToggle) onToggle(c.id) },
+          style: { marginTop: '3px', padding: '1px 6px', fontSize: (10 * zoom) + 'px', opacity: .7 },
+        }, expanded ? (locale === 'zh' ? '收起' : 'collapse') : (locale === 'zh' ? '展开全文' : 'expand')) : null,
+        (c.tags && c.tags.length) || (c.sectionTags && c.sectionTags.length) ? h('div', { style: { marginTop: '4px', display: 'flex', flexWrap: 'wrap', gap: '4px' } },
+          (c.tags || []).map(function (tg) {
+            return h('span', { key: 't' + tg, 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { fontSize: (10 * zoom) + 'px', padding: '0 4px', borderRadius: '3px', background: 'color-mix(in srgb, currentColor 8%, transparent)' } }, tg)
+          }).concat((c.sectionTags || []).map(function (tg) {
+            return h('span', { key: 's' + tg, 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { fontSize: (10 * zoom) + 'px', padding: '0 4px', borderRadius: '3px', background: 'color-mix(in srgb, var(--dam-accent, #4f7cff) 14%, transparent)', opacity: .85 } }, '§' + tg)
+          }))) : null,
+        h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginTop: '4px', fontSize: (10 * zoom) + 'px' } },
+          '#' + (c.short || '') + (c.bullets ? ' · ' + c.bullets + (locale === 'zh' ? ' 条' : ' items') : '') + (c.versionCount ? ' · v' + c.versionCount : '')),
+      ])
+    }
+
+    /** 看板主体: 布局可切(纵向堆叠/横向泳道) + 缩放 + 折叠 + 搜索 + 聚合视图。 */
+    // ── R15 左栏 8 项（48 卷 L44–L59 · 42 卷 Q2「它肯定是页签内自带」）──────────────────────
+    // 权威：48 卷 L46 宽 220 ／ L50 侧栏底色 ／ L54-L57 8 项（每项高 40 宽 188 圆角 8、
+    //       左图标 18×18 + 文字 14px、选中态整行高亮 + 左侧 3×24 圆角蓝条）／ L58-L59 底部卡片。
+    // ★零裸 hex：色值一律走既有 --dam-* token（R4/R5 外观层纪律）；本注释亦不含 hex 字面量。
+    // ★跨层一致性：本表 key/label 必须与 lib/wb-sidecar.js 的 WB_RAIL_ITEMS_PRE_V1 逐项一致
+    //   （client.js 是浏览器 bundle，无法 import sidecar ⇒ 两次内联 + 套件锁一致）。
+    var DAM_RAIL_ITEMS = [
+      { key: 'home', label: '首页' },
+      { key: 'timeline', label: '时间轴' },
+      { key: 'ledger', label: '交接账本' },
+      { key: 'library', label: '记忆库' },
+      { key: 'recall', label: '召回审查' },
+      { key: 'team', label: '团队' },
+      { key: 'calendar', label: '日历' },
+      { key: 'settings', label: '设置' },
+    ]
+
+    // ── R15c 主区共享层（48 卷 L62–L89 工具栏 + 统计条 · 46 卷 L122–L124 折叠条）──────
+    // 权威：48 卷 L64-L75（标题 26px / 副标题 13px / 搜索框 300×36 圆角 999 / 两个下拉胶囊
+    //       96×36 / 视图切换组 132×36 三按钮）；48 卷 L78-L89 与 46 卷 L80-L85（4 张卡等宽横排
+    //       间距 16 / 每张 281×88 圆角 12 / 图标块 40×40 圆角 12 半透明底 / 上行标签 12px
+    //       下行大数字 28px bold + 单位 12px）；46 卷 L122-L124（左右各 60px 细线 + 中间胶囊 999px）。
+    // ★零裸 hex / 零裸 rgba：色值全部走既有 --dam-* token（R4/R5 外观层纪律）。
+    // ★48 卷的绝对 x 坐标是 1440 画布坐标 ⇒ 本处映射为流体布局（左组 + 右组 flex）。
+    var DAM_TOOLBAR_VIEWS = [
+      { key: 'list', label: '列表视图' },
+      { key: 'timeline', label: '时间轴' },
+      { key: 'lane', label: '泳道' },
+    ]
+    var DAM_STAT_META = [
+      { key: 'today', tint: 'var(--dam-accent-2, currentColor)' },
+      { key: 'week', tint: 'var(--dam-state-ok, currentColor)' },
+      { key: 'members', tint: 'var(--dam-accent-3, currentColor)' },
+      { key: 'archived', tint: 'var(--dam-fg-weak, currentColor)' },
+    ]
+
+    /** 主区顶部工具栏（48 卷 L62–L75）。搜索框为本地态，暂不接过滤（不改 KanbanBoard）。 */
+    function DamRailToolbar(props) {
+      var zh = props.zh !== false
+      var qp = useState(function () { return '' })
+      var q = qp[0], setQ = qp[1]
+      var vp = useState(function () { return 'timeline' })
+      // ★R15d：视图态上提到外层容器（props 优先），工具栏自身 state 仅作兜底。
+      var view = props.view || vp[0], setView = props.onView || vp[1]
+      var capsule = { height: '36px', borderRadius: 'var(--dam-radius-pill, 999px)', background: 'var(--dam-card-bg, transparent)', border: '1px solid var(--dam-border, rgba(128,128,128,.22))', color: 'var(--dam-fg-weak, inherit)', fontSize: 'var(--dam-fontsize-xs, 12px)', padding: '0 var(--dam-space-s3, 12px)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--dam-space-s1, 4px)', whiteSpace: 'nowrap', cursor: 'pointer' }
+      var btn = function (it) {
+        var on = it.key === view
+        return h('div', {
+          key: it.key,
+          'data-dam-view-btn': it.key,
+          'data-dam-view-active': on ? '1' : '0',
+          title: it.label,
+          onClick: function () { setView(it.key) },
+          style: { width: '44px', height: '36px', borderRadius: 'var(--dam-radius-pill, 999px)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 'var(--dam-fontsize-xs, 12px)', background: on ? 'var(--dam-accent-2, currentColor)' : 'transparent', color: on ? 'var(--dam-fg-on-accent, inherit)' : 'var(--dam-fg-weak, inherit)' },
+        }, it.label.slice(0, 2))
+      }
+      return h('div', { 'data-dam-toolbar': '', style: { display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 'var(--dam-space-s3, 12px)', paddingBottom: 'var(--dam-space-s4, 16px)' } }, [
+        h('div', { style: { minWidth: '0', flex: '1 1 200px' } }, [
+          h('div', { style: { fontSize: 'var(--dam-fontsize-xxl, 26px)', fontWeight: 600, lineHeight: 1.2 } }, zh ? '工作流时间轴' : 'Workflow timeline'),
+          h('div', { style: { fontSize: 'var(--dam-fontsize-sm, 13px)', color: 'var(--dam-fg-weak, inherit)' } }, zh ? '谁 · 在什么时候 · 做了什么' : 'who · when · did what'),
+        ]),
+        h('div', { style: { display: 'flex', alignItems: 'center', gap: 'var(--dam-space-s2, 8px)', flexWrap: 'wrap' } }, [
+          h('input', {
+            'data-dam-search': '',
+            type: 'search',
+            value: q,
+            placeholder: zh ? '搜索谁在什么时候做了什么…' : 'search…',
+            onChange: function (e) { setQ(e && e.target ? e.target.value : '') },
+            style: { width: '300px', maxWidth: '100%', height: '36px', boxSizing: 'border-box', borderRadius: 'var(--dam-radius-pill, 999px)', background: 'var(--dam-card-bg, transparent)', border: '1px solid var(--dam-border, rgba(128,128,128,.22))', color: 'var(--dam-fg, inherit)', fontSize: 'var(--dam-fontsize-sm, 13px)', padding: '0 var(--dam-space-s3, 12px)' },
+          }),
+          h('div', { 'data-dam-filter': 'actor', style: capsule }, (zh ? '全部成员' : 'All members') + ' ▾'),
+          h('div', { 'data-dam-filter': 'lane', style: capsule }, (zh ? '全部泳道' : 'All lanes') + ' ▾'),
+          h('div', { 'data-dam-viewgroup': '', style: { display: 'flex', height: '36px', borderRadius: 'var(--dam-radius-pill, 999px)', background: 'var(--dam-surface, transparent)', border: '1px solid var(--dam-border, rgba(128,128,128,.22))', overflow: 'hidden' } }, DAM_TOOLBAR_VIEWS.map(btn)),
+        ]),
+      ])
+    }
+
+    /** 统计条 4 张卡（48 卷 L78–L89 / 46 卷 L80–L85）。数据取自宿主 stats.cards4。 */
+    function DamStatBar(props) {
+      var st = props.stats || {}
+      var list = Array.isArray(st.cards4) ? st.cards4 : []
+      if (!list.length) return null
+      var byKey = {}
+      for (var i = 0; i < list.length; i++) byKey[list[i].key] = list[i]
+      var card = function (m) {
+        var c = byKey[m.key]
+        if (!c) return null
+        return h('div', {
+          key: m.key,
+          'data-dam-stat': m.key,
+          style: { flex: '1 1 200px', maxWidth: '281px', minWidth: '180px', height: '88px', boxSizing: 'border-box', borderRadius: 'var(--dam-radius-lg, 12px)', background: 'var(--dam-card-bg, transparent)', border: '1px solid var(--dam-border, rgba(128,128,128,.22))', padding: 'var(--dam-space-s3, 12px)', display: 'flex', alignItems: 'center', gap: 'var(--dam-space-s3, 12px)' },
+        }, [
+          // ★R41（114 卷 R4 · 48 卷 L81「40×40 圆角 12 图标块，底 #4A90D9 的 18% 透明」）：
+          //   旧实现 `background + opacity: 0.18` 会让**整块半透明**，在深底上色相被双向中和 ⇒ 实测灰块、四色不可辨。
+          //   改 `color-mix` **只稀释背景色本身**：色相保留、18% 语义等价、四色可辨；加锚点供判据直接取样。
+          h('span', { 'aria-hidden': 'true', 'data-dam-stat-icon': m.key, style: { width: '40px', height: '40px', flex: '0 0 auto', display: 'inline-block', borderRadius: 'var(--dam-radius-lg, 12px)', background: 'color-mix(in srgb, ' + m.tint + ' 18%, transparent)' } }),
+          h('div', { style: { minWidth: '0' } }, [
+            h('div', { style: { fontSize: 'var(--dam-fontsize-xs, 12px)', color: 'var(--dam-fg-weak, inherit)', whiteSpace: 'nowrap' } }, c.label),
+            h('div', { style: { display: 'flex', alignItems: 'baseline', gap: 'var(--dam-space-s1, 4px)' } }, [
+              h('span', { style: { fontSize: 'var(--dam-fontsize-xxl, 28px)', fontWeight: 700, lineHeight: 1.1 } }, String(c.value)),
+              h('span', { style: { fontSize: 'var(--dam-fontsize-xs, 12px)', color: 'var(--dam-fg-weak, inherit)' } }, c.unit),
+            ]),
+          ]),
+        ])
+      }
+      return h('div', { 'data-dam-statbar': '', style: { display: 'flex', flexWrap: 'wrap', gap: 'var(--dam-space-s4, 16px)', paddingBottom: 'var(--dam-space-s4, 16px)' } }, DAM_STAT_META.map(card))
+    }
+
+    // ★R24 修 R13 缺口：宿主 /kanban-board 已支持 foldDays 查询参数（index.js `searchParams.get('foldDays')`），
+    //   但 R13 只做了宿主侧 + 纯函数，**前端传参与点击缺位** ⇒ 折叠条点了没反应。本轮补齐两端。
+    //   语义逐字取自 wb-sidecar.js：foldDays=0 ⇒ 不折叠（全量，等价「点击后显示」）；缺省 7 天。
+    var DAM_FOLD_DAYS_DEFAULT = 7
+    /** 底部折叠条（46 卷 L122–L124）：左右各 60px 细线 + 中间胶囊 999px。 */
+    function DamFoldBar(props) {
+      var zh = props.zh !== false
+      var f = props.fold
+      if (!f || typeof f !== 'object') return null
+      var count = Number(f.count) || 0
+      var days = Number(f.days) || 0
+      var hasMore = !!f.hasMore
+      if (!count && !hasMore) return null
+      var line = { flex: '1 1 60px', minWidth: '60px', height: '1px', background: 'var(--dam-border, rgba(128,128,128,.22))' }
+      // ★R40（114 卷 R5-1 配套）：days=0 表示「更早的条目**没有可用时间**（mtime 缺失/为 0）」，
+      //   此时不能显示「0 天」——那读起来像缺陷。降级为「更早的条目」，语义与按钮行为完全不变。
+      //   有有效 mtime 时 days 仍为真实天数 ⇒ 与 44/48 卷既有口径（如「21 天」）逐字一致。
+      var text = (days > 0)
+        ? (zh
+          ? ('展开更早的 ' + days + ' 天（' + count.toLocaleString('en-US') + ' 条活动）')
+          : ('expand ' + days + ' more days (' + count + ' entries)'))
+        : (zh
+          ? ('展开更早的条目（' + count.toLocaleString('en-US') + ' 条活动）')
+          : ('expand earlier entries (' + count + ' entries)'))
+      return h('div', { 'data-dam-foldbar': '', style: { display: 'flex', alignItems: 'center', gap: 'var(--dam-space-s3, 12px)', padding: 'var(--dam-space-s4, 16px) 0' } }, [
+        h('span', { 'aria-hidden': 'true', style: line }),
+        h('div', {
+          'data-dam-fold-pill': '',
+          'data-dam-fold-days': String(days),
+          'data-dam-fold-count': String(count),
+          style: { flex: '0 0 auto', height: '36px', borderRadius: 'var(--dam-radius-pill, 999px)', background: 'var(--dam-card-bg, transparent)', border: '1px solid var(--dam-border, rgba(128,128,128,.22))', color: 'var(--dam-fg-weak, inherit)', fontSize: 'var(--dam-fontsize-xs, 12px)', padding: '0 var(--dam-space-s4, 16px)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--dam-space-s2, 8px)', whiteSpace: 'nowrap' },
+          onClick: (typeof props.onExpand === 'function' ? props.onExpand : undefined),
+        }, text + ' ▾'),
+        h('span', { 'aria-hidden': 'true', style: line }),
+      ])
+    }
+    // ══════════ ★R40 · 114 卷 R3：rail 8 项的**主区消费者** ══════════
+    // 缺陷（114 卷实锤②）：client.js 的 onClick 只有 setRailKey，而 railKey 全函数仅用于画选中高亮 ⇒
+    //   点「首页/记忆库/召回审查/团队/日历/设置」主区**纹丝不动**（判定人截图 -11/12/13 三连）。
+    // 判据：每一项都渲染出**可断言的视图标识** data-dam-rail-view=<key>，且内容随 key 变。
+    // 纪律：零新路由 / 零新依赖 / 零裸 hex（色值全走既有 --dam-* token）。
+    function DamRailPanel(props) {
+      var key = String(props.item || 'home')
+      var label = String(props.label || key)
+      var kb = props.kb || {}
+      var zh = props.zh !== false
+      var st = kb.stats || {}
+      var lanes = kb.lanes || []
+      var body
+      if (key === 'home') {
+        var KPI = [['today', '今日活动'], ['week', '本周交接'], ['members', '协作成员'], ['archived', '历史归档']]
+        var laneRows = lanes.map(function (l) {
+          return h('div', { key: 'ln' + String(l.key), 'data-dam-rail-lane': String(l.key), style: { display: 'flex', justifyContent: 'space-between', gap: 'var(--dam-space-s2, 8px)', padding: '6px 0', borderBottom: '1px solid var(--dam-border, rgba(128,128,128,.14))' } }, [
+            h('span', null, String(l.label || l.key)),
+            h('span', { style: { color: 'var(--dam-fg-weak, inherit)' } }, String((l.cards || []).length) + (zh ? ' 条' : '')),
+          ])
+        })
+        body = h('div', null, [
+          h('div', { 'data-dam-rail-kpis': '', style: { display: 'flex', flexWrap: 'wrap', gap: 'var(--dam-space-s3, 12px)', marginBottom: 'var(--dam-space-s3, 12px)' } },
+            KPI.map(function (p) {
+              return h('div', { key: p[0], 'data-dam-rail-kpi': p[0], style: { flex: '1 1 120px', padding: '10px 12px', borderRadius: 'var(--dam-radius-md, 8px)', background: 'var(--dam-card-bg, transparent)', border: '1px solid var(--dam-border, rgba(128,128,128,.22))' } }, [
+                h('div', { style: { fontSize: 'var(--dam-fontsize-xs, 12px)', color: 'var(--dam-fg-weak, inherit)' } }, zh ? p[1] : p[0]),
+                h('div', { style: { fontSize: '24px', fontWeight: 600 } }, String(st[p[0]] || 0)),
+              ])
+            })),
+          laneRows.length ? h('div', null, laneRows) : h('div', { 'data-dam-muted': '' }, zh ? '暂无泳道数据' : 'No lanes yet'),
+        ])
+      } else if (key === 'ledger') {
+        var led = []
+        lanes.forEach(function (l) { (l.cards || []).forEach(function (c) { led.push(c) }) })
+        body = led.length
+          ? h('div', null, led.slice(0, 50).map(function (c, i) {
+              return h('div', { key: 'ld' + i, 'data-dam-rail-ledger-row': String((c && c.id) || i), style: { padding: '6px 0', borderBottom: '1px solid var(--dam-border, rgba(128,128,128,.14))', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, String((c && (c.title || c.id)) || ''))
+            }))
+          : h('div', { 'data-dam-muted': '' }, zh ? '交接账本为空' : 'Ledger is empty')
+      } else {
+        body = h('div', { 'data-dam-rail-stub': key }, h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '' },
+          zh ? ('「' + label + '」已接入左栏；完整视图在其对应页签。') : ('"' + label + '" is wired to the rail; its full view lives in its own tab.')))
+      }
+      return h('div', { 'data-dam-rail-view': key }, body)
+    }
+
+    // ── R15d 时间轴列表（48 卷 L91–L125 · 46 卷 L87–L120 · 49 卷 §四数据映射）────────────
+
+    // 权威：48 卷 L94-L97（日期分组行高 40：「YYYY-MM-DD · 星期日」15px semibold，右侧
+    //       「N 条活动」12px + 箭头，行下 1px 横线）；48 卷 L99-L100（卡高 152 圆角 12 间距 12）；
+    //       48 卷 L104-L112（左列宽 88：头像 44×44 + 徽标 16×16 + 2px 竖线 + 8×8 节点圆点）；
+    //       48 卷 L114-L124（右列四行：身份行高 26 / 标题 16px / 摘要 13px 单行 / 元信息 12px）。
+    // ★口径：头像与角色徽标**不渲染**（49 卷数据映射「个人版不渲染」，member 属团队层 R16+）；
+    //   竖线与节点圆点保留（纯几何，圆点色跟随泳道色）。
+    // ★零裸 hex / 零裸 rgba：色值全部走既有 --dam-* token。
+    var DAM_WEEKDAY_ZH = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六']
+    var DAM_WEEKDAY_EN = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+
+    /** 把 kb.lanes 展开成一维卡片流（保留 laneKey 以便取泳道色）。纯函数，不改入参。 */
+    function damFlattenCards(kb) {
+      var lanes = (kb && kb.lanes) || []
+      var out = []
+      for (var i = 0; i < lanes.length; i++) {
+        var l = lanes[i] || {}
+        var cs = l.cards || []
+        for (var j = 0; j < cs.length; j++) {
+          var c = cs[j]
+          if (!c || typeof c !== 'object') continue
+          out.push({ card: c, laneKey: l.key, laneLabel: l.label })
+        }
+      }
+      return out
+    }
+
+    /** 按**本地日期**分组（与 sidecar 的 groupByDayPre 同口径）。组按日降序、组内 mtime 降序 → id 升序。 */
+    function damGroupByDay(rows) {
+      var pad = function (n) { return n < 10 ? '0' + n : String(n) }
+      var map = {}, order = [], total = 0
+      for (var i = 0; i < rows.length; i++) {
+        var r = rows[i]
+        var m = Number(r.card && r.card.mtime) || 0
+        var d = new Date(m)
+        var key = d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate())
+        if (!map[key]) { map[key] = { day: key, weekday: new Date(d.getFullYear(), d.getMonth(), d.getDate()).getDay(), count: 0, rows: [] }; order.push(key) }
+        map[key].rows.push(r)
+        map[key].count += 1
+        total += 1
+      }
+      var groups = []
+      for (var k = 0; k < order.length; k++) groups.push(map[order[k]])
+      for (var g = 0; g < groups.length; g++) {
+        groups[g].rows.sort(function (a, b) {
+          var am = Number(a.card && a.card.mtime) || 0
+          var bm = Number(b.card && b.card.mtime) || 0
+          if (am !== bm) return bm - am
+          var aid = String((a.card && a.card.id) || '')
+          var bid = String((b.card && b.card.id) || '')
+          return aid < bid ? -1 : aid > bid ? 1 : 0
+        })
+      }
+      groups.sort(function (a, b) { return a.day < b.day ? 1 : a.day > b.day ? -1 : 0 })
+      return { groups: groups, total: total }
+    }
+
+    /** 单张活动卡（48 卷 L99–L124 四行结构）。 */
+    function DamTimelineCard(props) {
+      var c = props.card || {}
+      var zh = props.zh !== false
+      var laneKey = props.laneKey
+      var dot = typeof kxLaneColor === 'function' ? kxLaneColor(laneKey) : 'currentColor'
+      var t = Number(c.mtime) || 0
+      var dt = new Date(t)
+      var pad = function (n) { return n < 10 ? '0' + n : String(n) }
+      var hhmm = pad(dt.getHours()) + ':' + pad(dt.getMinutes())
+      var tags = (Array.isArray(c.tags) ? c.tags : []).filter(function (x) { return String(x || '').indexOf('sec:') !== 0 }).slice(0, 3)
+      var meta = []
+      if (c.docTitle || c.source) meta.push(String(c.docTitle || c.source))
+      if (Number(c.bullets) > 0) meta.push(c.bullets + (zh ? ' 条' : ' items'))
+      if (Number(c.chars) > 0) meta.push(c.chars + (zh ? ' 字' : ' chars'))
+      if (c.anchored) meta.push(zh ? '可跳原文' : 'source link')
+      var sep = { color: 'var(--dam-fg-weak, inherit)', opacity: 0.6 }
+      // ★R27：展开态由卡片**自持**（每卡独立），复用既有 useState —— 零新钩子、零定时器、零全局状态。
+      var expPair = useState(false), expanded = expPair[0], setExpanded = expPair[1]
+      return h('div', {
+        'data-dam-tl-card': c.id || '',
+        'data-dam-tl-expanded': expanded ? '1' : '0',
+        style: { display: 'grid', gridTemplateColumns: '88px 1fr', minHeight: '152px', boxSizing: 'border-box', borderRadius: 'var(--dam-radius-lg, 12px)', background: 'var(--dam-card-bg, transparent)', border: '1px solid var(--dam-border, rgba(128,128,128,.22))', marginBottom: 'var(--dam-space-s3, 12px)', overflow: 'hidden' },
+      }, [
+        h('div', { 'data-dam-tl-rail': '', style: { position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' } }, [
+          h('span', { 'aria-hidden': 'true', style: { position: 'absolute', top: 0, bottom: 0, left: '50%', width: '2px', marginLeft: '-1px', background: 'var(--dam-border, rgba(128,128,128,.22))' } }),
+          h('span', { 'data-dam-tl-dot': laneKey || '', 'aria-hidden': 'true', style: { position: 'relative', width: '8px', height: '8px', borderRadius: 'var(--dam-radius-circle, 50%)', background: dot } }),
+        ]),
+        h('div', { 'data-dam-tl-body': '', style: { minWidth: '0', padding: 'var(--dam-space-s3, 12px)' } }, [
+          h('div', { style: { display: 'flex', alignItems: 'center', gap: 'var(--dam-space-s2, 8px)', minHeight: '26px', flexWrap: 'wrap' } }, [
+            h('span', { style: { fontSize: 'var(--dam-fontsize-sm, 15px)', fontWeight: 600 } }, String(props.laneLabel || c.section || '')),
+            h('span', { 'data-dam-tl-time': hhmm, style: { fontSize: 'var(--dam-fontsize-sm, 13px)', color: 'var(--dam-fg-weak, inherit)' } }, hhmm),
+            h('span', { style: { height: '22px', display: 'inline-flex', alignItems: 'center', padding: '0 var(--dam-space-s2, 10px)', borderRadius: 'var(--dam-radius-pill, 999px)', background: 'color-mix(in srgb, ' + dot + ' 18%, transparent)', fontSize: 'var(--dam-fontsize-xs, 12px)', color: 'inherit' } }, String(c.laneLabel || '')),
+          // ★R41（114 卷 R4 · 48 卷 L123「13px，颜色 #4A90D9，无背景，标签间距 8」）：
+          //   标签**只取 tags 字段**（第 10 行已滤掉 sec: 前缀），纯文字无背景、蓝色；不再混入 kind。
+          //   加 `data-dam-tag` 锚点供判据直接取样，不必再靠源码字符串推断。
+          ].concat(tags.map(function (tg, i) { return h('span', { key: 'tg' + i, 'data-dam-tag': String(tg), style: { fontSize: 'var(--dam-fontsize-sm, 13px)', color: 'var(--dam-lane-goal, #4A90D9)' } }, '#' + tg) }))),
+          h('div', { 'aria-hidden': 'true', style: { height: '1px', background: 'var(--dam-border, rgba(128,128,128,.22))', margin: 'var(--dam-space-s2, 8px) 0' } }),
+          h('div', { 'data-dam-tl-title': '', style: { fontSize: 'var(--dam-fontsize-md, 16px)', fontWeight: 600, lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, String(c.title || '')),
+          // 48 卷 §一 第 2 条「摘要压到 1 行」为**默认态**；R27 的展开按钮放开它（两者是一对，不冲突）。
+          h('div', { 'data-dam-tl-summary': '', style: { fontSize: 'var(--dam-fontsize-sm, 13px)', color: 'var(--dam-fg-weak, inherit)', lineHeight: 1.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: expanded ? 'normal' : 'nowrap' } }, String(c.preview || '')),
+          h('div', { 'aria-hidden': 'true', style: { height: '1px', background: 'var(--dam-border, rgba(128,128,128,.22))', margin: 'var(--dam-space-s2, 8px) 0' } }),
+          h('div', { 'data-dam-tl-meta': '', style: { fontSize: 'var(--dam-fontsize-xs, 12px)', color: 'var(--dam-fg-weak, inherit)', display: 'flex', gap: 'var(--dam-space-s1, 4px)', flexWrap: 'wrap', alignItems: 'center' } },
+            meta.reduce(function (acc, x, i) { if (i > 0) acc.push(h('span', { key: 's' + i, style: sep }, '·')); acc.push(h('span', { key: 'm' + i }, x)); return acc }, []).concat([
+              // ★R27 补 48 卷 §四 第 4 条：两个操作按钮必须收进**第 4 行右端**（原文逐字「两按钮是否在第 4 行右端（不是悬在卡片右中）」）。
+              //   按钮A=展开 ˅（把摘要从 1 行放开为多行，与 48 卷 §一「摘要压到 1 行」互为一对：默认 1 行、需要时展开）
+              h('span', { key: 'grow', 'aria-hidden': 'true', style: { flex: '1 1 auto' } }),
+              h('span', {
+                key: 'actA', 'data-dam-tl-act': 'expand', 'aria-hidden': 'true',
+                onClick: function () { setExpanded(!expanded) },
+                style: { flex: '0 0 auto', width: '28px', height: '28px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 'var(--dam-radius-md, 6px)', background: 'var(--dam-card-bg, transparent)', border: '1px solid var(--dam-border, rgba(128,128,128,.22))', cursor: 'pointer' },
+              }, expanded ? '\u02c4' : '\u02c5'),
+              h('span', {
+                key: 'actB', 'data-dam-tl-act': 'jump', 'aria-hidden': 'true',
+                // ★R27：跳转到该卡的**详情抽屉**（复用既有 KanbanDrawerBody 通道；L3727 的 KanbanMatrixCard 已是同款先例）。
+                onClick: (typeof props.onJump === 'function' ? function () { props.onJump(c) } : undefined),
+                style: { flex: '0 0 auto', width: '28px', height: '28px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 'var(--dam-radius-md, 6px)', background: 'var(--dam-card-bg, transparent)', border: '1px solid var(--dam-border, rgba(128,128,128,.22))', cursor: 'pointer' },
+              }, '\u2197'),
+            ])),
+        ]),
+      ])
+    }
+
+    /** 时间轴列表（日期分组 + 可折叠 + 活动卡流）。 */
+    function DamTimelineList(props) {
+      var zh = props.zh !== false
+      // ★R27：卡片「跳转」按钮的落点 = 看板详情抽屉（宿主既有 /kanban-card 单取全文链路）。
+      //   48 卷 §四 第 4 条要求按钮**收进第 4 行右端**；这里补上它点下去确实有去处。
+      var onJump = (typeof props.onOpen === 'function') ? props.onOpen : undefined
+      var fp = useState({})
+      var folded = fp[0], setFolded = fp[1]
+      var g = damGroupByDay(damFlattenCards(props.data))
+      if (!g.total) return h('div', { 'data-dam-tl-empty': '', style: { fontSize: 'var(--dam-fontsize-sm, 13px)', color: 'var(--dam-fg-weak, inherit)', padding: 'var(--dam-space-s4, 16px) 0' } }, zh ? '无命中' : 'no match')
+      var wk = zh ? DAM_WEEKDAY_ZH : DAM_WEEKDAY_EN
+      return h('div', { 'data-dam-tl': '', 'data-dam-tl-days': String(g.groups.length), 'data-dam-tl-total': String(g.total) }, g.groups.map(function (grp) {
+        var isFolded = !!folded[grp.day]
+        return h('div', { key: grp.day, 'data-dam-tl-group': grp.day }, [
+          h('div', {
+            'data-dam-tl-head': grp.day,
+            onClick: function () { setFolded(function (prev) { var nx = {}; for (var k in prev) nx[k] = prev[k]; nx[grp.day] = !prev[grp.day]; return nx }) },
+            style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--dam-space-s2, 8px)', height: '40px', cursor: 'pointer', borderBottom: '1px solid var(--dam-border, rgba(128,128,128,.22))' },
+          }, [
+            h('span', { style: { fontSize: 'var(--dam-fontsize-sm, 15px)', fontWeight: 600 } }, grp.day + ' · ' + (wk[grp.weekday] || '')),
+            h('span', { style: { fontSize: 'var(--dam-fontsize-xs, 12px)', color: 'var(--dam-fg-weak, inherit)' } }, grp.count + (zh ? ' 条活动' : ' entries') + ' ' + (isFolded ? '▸' : '▾')),
+          ]),
+          isFolded ? null : h('div', { 'data-dam-tl-body-list': '', style: { paddingTop: 'var(--dam-space-s3, 12px)' } }, grp.rows.map(function (r) { return h(DamTimelineCard, { key: r.card.id, card: r.card, laneKey: r.laneKey, laneLabel: r.laneLabel, zh: zh, onJump: props.onJump }) })),
+        ])
+      }))
+    }
+    /** 左栏（48 卷形态）：包一层 rail + 主区，不侵入 KanbanBoard 本体。 */
+    function KanbanBoardRail(props) {
+      var zh = props.zh !== false
+      // ★2026-09-27 修白屏(ReferenceError: foldOpen is not defined @L3357):
+      //   折叠态必须由**本组件自己**持有。旧实现把 onExpand 接到了兄弟函数 KanbanView 内部的
+      //   `var foldOpen`(L3584) —— 本函数作用域里根本没有该标识符 ⇒ 每次渲染 KanbanBoardRail 必抛，
+      //   被宿主槽位错误边界接住 ⇒ shell.overlay 与 conversation.view 两个承载面**整页白屏**。
+      //   ★静态守卫看不见这类错误(语法合法、字符串在文件里存在)，只有真渲染才抓得到。
+      var rfold = useState({ days: 7 })
+      var fold = rfold[0], setFold = rfold[1]
+      var rfoldData = useState(null)
+      var foldData = rfoldData[0], setFoldData = rfoldData[1]
+      var rp = useState(function () { return 'timeline' })
+      var railKey = rp[0], setRailKey = rp[1]
+      // 展开更早(46 卷 §四 B2 + R25/R26 口径): foldDays 控折叠、includeArchive 控读盘范围，
+      // 两条必须**同时**传。默认态**不发新请求**(直接用父级数据) ⇒ 默认路径请求与视觉逐字节不变。
+      var kb = foldData || props.data || {}
+      var onExpand = function () {
+        if (fold.days === 0) return
+        setFold({ days: 0 })
+        apiGet(API.kanbanBoard, { sessionId: currentSessionIdClient(), foldDays: 0, includeArchive: '1' })
+          .then(function (k) { setFoldData(k && k.enabled ? k : null) })
+          .catch(function () { setFoldData(null) })
+      }
+      var rail = h('div', {
+        'data-dam-rail': '',
+        style: {
+          flex: '0 0 220px',
+          width: '220px',
+          boxSizing: 'border-box',
+          alignSelf: 'stretch',
+          padding: 'var(--dam-space-s3, 12px) var(--dam-space-s2, 8px)',
+          background: 'var(--dam-surface, transparent)',
+          borderRight: '1px solid var(--dam-border, rgba(128,128,128,.22))',
+        },
+      }, [
+        h('div', { 'data-dam-rail-brand': '', style: { display: 'flex', alignItems: 'center', gap: 'var(--dam-space-s2, 8px)', marginBottom: 'var(--dam-space-s4, 16px)' } }, [
+          h('span', { 'aria-hidden': 'true', style: { width: '24px', height: '24px', flex: '0 0 auto', display: 'inline-block', borderRadius: 'var(--dam-radius-md, 8px)', background: 'var(--dam-accent-weak, rgba(74,144,217,.18))' } }),
+          h('span', { style: { fontSize: 'var(--dam-fontsize-sm, 14px)', fontWeight: 600, whiteSpace: 'nowrap' } }, 'dsh-auto-memory'),
+        ]),
+        h('div', { 'data-dam-rail-nav': '', style: { display: 'block' } }, DAM_RAIL_ITEMS.map(function (it) {
+          var on = it.key === railKey
+          return h('div', {
+            key: it.key,
+            'data-dam-rail-item': it.key,
+            'data-dam-rail-active': on ? '1' : '0',
+            onClick: function () { setRailKey(it.key) },
+            style: {
+              display: 'flex',
+              alignItems: 'center',
+              gap: 'var(--dam-space-s2, 8px)',
+              height: '40px',
+              width: '188px',
+              maxWidth: '100%',
+              padding: '0 var(--dam-space-s2, 8px)',
+              boxSizing: 'border-box',
+              cursor: 'pointer',
+              borderRadius: 'var(--dam-radius-md, 8px)',
+              background: on ? 'var(--dam-accent-weak, rgba(74,144,217,.18))' : 'transparent',
+              color: on ? 'inherit' : 'var(--dam-fg-weak, inherit)',
+              fontSize: 'var(--dam-fontsize-sm, 14px)',
+              boxShadow: on ? 'inset 3px 0 0 0 var(--dam-accent-2, currentColor)' : 'none',
+            },
+          }, [
+            h('span', { 'aria-hidden': 'true', style: { width: '18px', height: '18px', flex: '0 0 auto', display: 'inline-block', borderRadius: 'var(--dam-radius-xs, 4px)', background: on ? 'var(--dam-accent-2, currentColor)' : 'var(--dam-border, currentColor)', opacity: on ? 1 : 0.5 } }),
+            h('span', { style: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, it.label),
+          ])
+        })),
+        h('div', { 'data-dam-rail-foot': '', style: { marginTop: 'var(--dam-space-s4, 16px)', display: 'flex', alignItems: 'center', gap: 'var(--dam-space-s2, 8px)', width: '188px', maxWidth: '100%', height: '44px', boxSizing: 'border-box', padding: '0 var(--dam-space-s2, 8px)', borderRadius: 'var(--dam-radius-lg, 10px)', background: 'var(--dam-card-bg, transparent)', border: '1px solid var(--dam-border, rgba(128,128,128,.22))' } }, [
+          h('span', { style: { width: '8px', height: '8px', flex: '0 0 auto', borderRadius: 'var(--dam-radius-circle, 50%)', background: 'var(--dam-state-ok, currentColor)' } }),
+          h('span', { style: { fontSize: 'var(--dam-fontsize-xs, 12px)', color: 'var(--dam-fg-weak, inherit)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, zh ? '本地优先 · 数据不出本机' : 'Local-first · data stays here'),
+        ]),
+      ])
+      var tvp = useState(function () { return 'timeline' })
+      var tview = tvp[0], setTview = tvp[1]
+      // ★R40（114 卷 R3）：主区**必须**依赖 railKey —— 旧实现主区压根不读 railKey，故 8 项点了没反应。
+      //   时间轴档保持原三视图切换（工具栏仍有意义）；其余 7 项走 DamRailPanel。
+      var railItem = DAM_RAIL_ITEMS.filter(function (x) { return x.key === railKey })[0] || DAM_RAIL_ITEMS[0]
+      var isTimeline = railKey === 'timeline'
+      var mainBody = isTimeline
+        ? [
+            h(DamRailToolbar, { zh: zh, view: tview, onView: setTview }),
+            h(DamStatBar, { stats: (kb.stats) || {} }),
+            tview === 'timeline'
+              ? h(DamTimelineList, { data: kb, zh: zh, onOpen: props.onOpen })
+              : h(KanbanBoard, { data: kb }),
+            h(DamFoldBar, { zh: zh, fold: (kb.stats && kb.stats.fold) || null, onExpand: onExpand }),
+          ]
+        : [h(DamRailPanel, { item: railKey, label: railItem.label, kb: kb, zh: zh })]
+      var main = h('div', { 'data-dam-rail-main': '', style: { flex: '1 1 320px', minWidth: '0' } },
+        h('div', null, mainBody))
+      return h('div', { 'data-dam-rail-wrap': '', style: { display: 'flex', flexWrap: 'wrap', gap: 'var(--dam-space-s3, 12px)', alignItems: 'flex-start' } }, [rail, main])
+    }
+    function KanbanBoard(props) {
+      var kb = props.data || {}
+      var lanes = kb.lanes || []
+      var stats = kb.stats || {}
+      var total = stats.total || 0
+      var zoomPair = useState(function () { return readLsNum(KANBAN_ZOOM_KEY, 1) })
+      var zoom = zoomPair[0], setZoom = zoomPair[1]
+      var colPair = useState(function () { return readLsNum(KANBAN_COL_KEY, 280) })
+      var colW = colPair[0], setColW = colPair[1]
+      var layoutPair = useState(function () {
+        try { return localStorage.getItem(KANBAN_LAYOUT_KEY) || 'stack' } catch (e) { return 'stack' }
+      })
+      var layout = layoutPair[0], setLayout = layoutPair[1]
+      var foldedPair = useState({})
+      var folded = foldedPair[0], setFolded = foldedPair[1]
+      var expPair = useState({})
+      var expanded = expPair[0], setExpanded = expPair[1]
+      var viewPair = useState('lanes')     // lanes | recent
+      var view = viewPair[0], setView = viewPair[1]
+      var qPair = useState('')
+      var q = qPair[0], setQ = qPair[1]
+
+      if (!lanes.length || !total) {
+        return h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, locale === 'zh'
+          ? '新版看板已启用,但索引里还没有条目——写一次白板或账本(memory_note)后这里会出现泳道卡片。'
+          : 'Graph board is on, but the index has no entries yet — write a plan or ledger (memory_note) and cards will appear.')
+      }
+      var zh = locale === 'zh'
+      var setZoomBoth = function (d) { var v = Math.min(2.2, Math.max(0.7, Math.round((zoom + d) * 100) / 100)); setZoom(v); writeLs(KANBAN_ZOOM_KEY, v) }
+      var setColBoth = function (d) { var v = Math.min(720, Math.max(180, colW + d)); setColW(v); writeLs(KANBAN_COL_KEY, v) }
+      var toggleLayout = function () { var v = layout === 'stack' ? 'lane' : 'stack'; setLayout(v); writeLs(KANBAN_LAYOUT_KEY, v) }
+      var toggleFold = function (k) { setFolded(Object.assign({}, folded, { [k]: !folded[k] })) }
+      var toggleCard = function (id) { setExpanded(Object.assign({}, expanded, { [id]: !expanded[id] })) }
+      var matchQ = function (c) {
+        if (!q.trim()) return true
+        var s = q.trim().toLowerCase()
+        return (c.title + ' ' + (c.docTitle || '') + ' ' + (c.preview || '') + ' ' + (c.tags || []).join(' ') + ' ' + (c.sectionTags || []).join(' ')).toLowerCase().indexOf(s) >= 0
+      }
+      var isStack = layout === 'stack'
+      var sum = zh
+        ? ('共 ' + total + ' 张小节卡' + (stats.omitted ? '(另有 ' + stats.omitted + ' 张已省略)' : '') + ' · 有锚点 ' + (stats.anchored || 0) + ' · 来源 ' + (stats.cardSource === 'section' ? '按小节切分' : '按文件'))
+        : (total + ' section cards' + (stats.omitted ? ' (' + stats.omitted + ' omitted)' : '') + ' · anchored ' + (stats.anchored || 0))
+
+      var btn = function (label, onClick, title) {
+        return h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: onClick, title: title || '', style: { padding: '1px 7px', fontSize: '11px' } }, label)
+      }
+
+      // 工具条: 缩放 / 布局 / 视图 / 搜索
+      var bar = h('div', { 'data-dam-kbar': '', style: { display: 'flex', flexWrap: 'wrap', gap: '5px', alignItems: 'center', marginBottom: '8px' } }, [
+        btn('A-', function () { setZoomBoth(-0.1) }, zh ? '缩小字号' : 'smaller'),
+        h('span', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { fontSize: '10.5px', minWidth: '36px', textAlign: 'center' } }, Math.round(zoom * 100) + '%'),
+        btn('A+', function () { setZoomBoth(0.1) }, zh ? '放大字号' : 'bigger'),
+        h('span', { style: { width: '6px' } }),
+        btn('W-', function () { setColBoth(-40) }, zh ? '收窄列宽' : 'narrower'),
+        h('span', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { fontSize: '10.5px', minWidth: '44px', textAlign: 'center' } }, isStack ? '' : colW + 'px'),
+        btn('W+', function () { setColBoth(40) }, zh ? '加宽列宽' : 'wider'),
+        h('span', { style: { width: '6px' } }),
+        btn(isStack ? (zh ? '纵向' : 'stack') : (zh ? '横向' : 'lane'), toggleLayout, zh ? '切换泳道排布' : 'toggle layout'),
+        btn(view === 'lanes' ? (zh ? '泳道' : 'lanes') : (zh ? '最近' : 'recent'), function () { setView(view === 'lanes' ? 'recent' : 'lanes') }, zh ? '切换视图' : 'toggle view'),
+        h('input', {
+          'data-dam-slot': 'form', 'data-dam-block': 'form', 'data-dam-kind': 'form', 'data-dam-input': '', value: q, placeholder: zh ? '搜索…' : 'search…',
+          onChange: function (e) { setQ(e.target.value) },
+          style: { flex: '1 1 90px', minWidth: '80px', fontSize: '11px', padding: '2px 6px' },
+        }),
+      ])
+
+      var renderCard = function (c, i) {
+        return h(KanbanCard, { key: c.id + '#' + i, card: c, zoom: zoom, expanded: !!expanded[c.id], onToggle: toggleCard })
+      }
+
+      // 最近视图(P9): 跨泳道按 mtime 倒序
+      if (view === 'recent') {
+        var rec = (kb.recent || []).filter(matchQ)
+        return h('div', null, [
+          h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginBottom: '6px' } }, sum),
+          bar,
+          rec.length
+            ? h('div', { style: { columnWidth: isStack ? 'auto' : colW + 'px' } }, rec.map(function (c, i) {
+              return h('div', { key: c.id + '#' + i }, [
+                h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { fontSize: '10px', marginTop: '4px' } }, (c.laneLabel || '') + ' · ' + (c.source || '')),
+                renderCard(c, i),
+              ])
+            }))
+            : h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, zh ? '无命中' : 'no match'),
+        ])
+      }
+
+      // 泳道视图: 纵向堆叠(默认, 适配 440px 面板) 或 横向泳道
+      var wrapStyle = isStack
+        ? { display: 'block' }
+        : { display: 'flex', gap: '10px', overflowX: 'auto', alignItems: 'flex-start', paddingBottom: '6px' }
+      var laneStyle = isStack
+        ? { border: '1px solid color-mix(in srgb, var(--dsw-alias-border-l1, rgba(128,128,128,.22)) 55%, transparent)', borderRadius: '10px', padding: '8px', background: 'color-mix(in srgb, currentColor 2.5%, transparent)', marginBottom: '9px' }
+        : { flex: '0 0 auto', width: colW + 'px', minWidth: '160px', border: '1px solid color-mix(in srgb, var(--dsw-alias-border-l1, rgba(128,128,128,.22)) 55%, transparent)', borderRadius: '10px', padding: '8px', background: 'color-mix(in srgb, currentColor 2.5%, transparent)' }
+
+      return h('div', null, [
+        h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginBottom: '6px', wordBreak: 'break-word' } }, sum),
+        bar,
+        h('div', { 'data-dam-kanban': '', 'data-dam-layout': layout, style: wrapStyle },
+          lanes.map(function (lane) {
+            var cards = (lane.cards || []).filter(matchQ)
+            var isFolded = !!folded[lane.key]
+            var empty = !lane.count
+            // P14: 空泳道默认收起(不占位), 但仍给出可点开的标题
+            return h('div', { key: lane.key, 'data-dam-lane': lane.key, style: Object.assign({}, laneStyle, empty ? { opacity: .55 } : {}) }, [
+              h('div', {
+                style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: isFolded ? '0' : '7px', cursor: 'pointer', gap: '6px' },
+                onClick: function () { toggleFold(lane.key) },
+              }, [
+                h('div', { style: { fontWeight: 700, fontSize: (12 * zoom) + 'px' } },
+                  (isFolded ? '▸ ' : '▾ ') + lane.label),
+                h('span', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { fontSize: (10.5 * zoom) + 'px', whiteSpace: 'nowrap' } },
+                  String(lane.count || 0) + (q.trim() && cards.length !== lane.count ? ' (' + cards.length + ')' : '') + (lane.omitted ? ' +' + lane.omitted : '')),
+              ]),
+              isFolded ? null : (cards.length
+                ? h('div', isStack ? { style: { columnWidth: colW + 'px', columnGap: '10px' } } : null,
+                  cards.map(function (c, i) { return renderCard(c, i) }))
+                : h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { padding: '4px 0', fontSize: '11px' } },
+                  empty ? (zh ? '(本泳道暂无内容)' : '(empty)') : (zh ? '无命中' : 'no match'))),
+            ])
+          })),
+      ])
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // 整页白板看板(2026-09-16「双承载面」批) —— 注册在 conversation.view 槽位。
+    //
+    // 为什么需要它: 侧边面板固定 440px, 而矩阵式布局(首列行标签 + N 列)需要 ~1000px+。
+    //   把矩阵塞进 440px 就是「大小不可调 / 看着挤」的结构性根因 ⇒ 宽容器另开一个承载面。
+    //
+    // 与面板的关系(两者共存, 非替换):
+    //   · 侧边面板 = 常驻入口, 窄, 用**列表视图**(KanbanBoard, 泳道堆叠);
+    //   · 整页看板 = 会话页顶栏 Tab, 宽, 用**矩阵视图**(行=日期分组, 列=小节类型)。
+    //   同一份数据(/kanban-board 一个路由同时回 lanes 与 matrix), 按容器宽度选形态。
+    //
+    // 交互: 行折叠 + 卡片点开右侧抽屉(宽屏才放得下全文, 这才是有别于面板的价值)。
+    // ══════════════════════════════════════════════════════════════════════════
+
+    // 泳道配色(2026-09-16): 每条泳道一个色相, 让「一眼看出哪列是什么」。
+    // 取值优先走官方令牌(跟随宿主明暗主题), 令牌缺失时回落到可读色值。
+    // ★R41（114 卷 R4 · 48 卷 L186-187 / 49 卷 L93 逐色核对）：原实现用宿主 `--dsw-alias-*` 别名，
+    //   与权威刻度**逐色不符**（实测 #4c8dff/#3aa675/#d66666/#e0a53a/#8b93a7）；
+    //   且该命名空间由**宿主**定义，不在本插件祖先链上 ⇒ 宿主主题改名/未注入时彩点与图标 tint 整体退化。
+    //   现改用自己的语义 token（客户可整体覆写），兜底值 = 48/49 卷权威刻度原文。
+    var KX_LANE_COLOR = {
+      goal: 'var(--dam-lane-goal, #4A90D9)',           // 目标 · 蓝（48 卷 L186-187）
+      state: 'var(--dam-lane-state, #48B784)',         // 进行中 · 绿
+      deadend: 'var(--dam-lane-deadend, #E05C5C)',     // 失败与弯路 · 红
+      progress: 'var(--dam-lane-progress, #8B7FE8)',   // 进度与下一步 · 紫（49 卷 L93）
+      archive: 'var(--dam-lane-archive, #7A8290)',     // 版本归档 · 灰
+      misc: 'var(--dam-lane-misc, #6b7280)',           // 其它 · 暗灰
+    }
+    function kxLaneColor(key) { return KX_LANE_COLOR[key] || KX_LANE_COLOR.misc }
+
+    /** 判据徽章(与面板同口径, 抽出来避免两处漂移)。 */
+    function kxBadge(crit, zh) {
+      var m = {
+        passed: ['✓', zh ? '通过' : 'passed', 'var(--dam-58-166-117-20, rgba(58,166,117,.20))', 'var(--dam-tone-ok, #3aa675)'],
+        warned: ['!', zh ? '有警告' : 'warned', 'var(--dam-224-165-58-20, rgba(224,165,58,.20))', 'var(--dam-tone-warn, #e0a53a)'],
+        failed: ['✕', zh ? '未通过' : 'failed', 'var(--dam-214-102-102-20, rgba(214,102,102,.20))', 'var(--dam-tone-bad, #d66666)'],
+        unknown: ['·', zh ? '未校验' : 'unchecked', 'var(--dam-neutral-18, rgba(128,128,128,.18))', 'inherit'],
+      }
+      var v = m[crit] || m.unknown
+      return h('span', {
+        'data-dam-kx-badge': crit, 'data-dam-slot': 'badge', 'data-dam-block': 'badge', 'data-dam-kind': 'badge',
+        title: v[1],
+        style: { flexShrink: 0, fontSize: '10px', padding: '0 4px', borderRadius: '3px', background: v[2], color: v[3] },
+      }, v[0])
+    }
+
+    /** 矩阵里的紧凑卡(只给全貌, 全文进抽屉)。 */
+    function KanbanMatrixCard(props) {
+      var c = props.card
+      var zh = props.zh
+      // 左侧色条按**泳道**取色(不是按有无 tag): 这样同一列内颜色一致, 跨列一眼可辨。
+      var accent = kxLaneColor(props.laneKey)
+      return h('div', {
+        'data-dam-kx-card': c.id,
+        'data-dam-kx-lane': props.laneKey || '',
+        title: c.title + '  ·  ' + c.docTitle,
+        onClick: props.onOpen,
+        style: {
+          border: '1px solid var(--dsw-alias-border-l1, rgba(128,128,128,.28))',
+          borderLeft: '3px solid ' + accent,
+          borderRadius: '5px', padding: '6px 8px', marginBottom: '5px', cursor: 'pointer',
+          background: 'var(--dsw-alias-bg-layer-3, rgba(128,128,128,.07))',
+          transition: 'transform .12s ease, box-shadow .12s ease, border-color .12s ease',
+        },
+        onMouseEnter: function (e) {
+          e.currentTarget.style.transform = 'translateY(-1px)'
+          e.currentTarget.style.boxShadow = '0 2px 10px var(--dsw-alias-bg-mask-1, rgba(0,0,0,.18))'
+          e.currentTarget.style.borderColor = accent
+        },
+        onMouseLeave: function (e) {
+          e.currentTarget.style.transform = ''
+          e.currentTarget.style.boxShadow = ''
+          e.currentTarget.style.borderColor = 'var(--dsw-alias-border-l1, rgba(128,128,128,.28))'
+        },
+      }, [
+        h('div', { key: 't', style: { display: 'flex', alignItems: 'center', gap: '5px' } }, [
+          kxBadge(c.criteria, zh),
+          h('span', { key: 'n', style: {
+            flex: 1, minWidth: 0, fontSize: '12.5px', fontWeight: 600,
+            color: 'var(--dsw-alias-label-primary)',
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          } }, c.title),
+          c.bullets ? h('span', { key: 'b', 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { fontSize: '10.5px', flexShrink: 0 } }, '·' + c.bullets) : null,
+          c.anchored ? h('span', { key: 'a', title: '已有锚点', style: { fontSize: '10.5px', flexShrink: 0, color: 'var(--dsw-alias-state-success-primary, #3aa675)' } }, '⚓') : null,
+        ]),
+        c.preview ? h('div', { key: 'p', 'data-dam-slot': 'hint', 'data-dam-hint': '', style: {
+          fontSize: '11px', lineHeight: 1.45, marginTop: '4px',
+          color: 'var(--dsw-alias-label-secondary)',
+          overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+        } }, c.preview) : null,
+      ])
+    }
+
+    /** 整页矩阵看板: 行=日期分组, 列=小节类型。 */
+    function KanbanView(props) {
+      var st = useState(null), data = st[0], setData = st[1]
+      // ★2026-09-17(L2 修 bug①): 额外保留**原始载荷** —— 旧实现 `setData(k && k.enabled ? k : null)`
+      // 直接把宿主返回的 reason/error 丢掉了, 于是下面只能硬编码一句猜测式提示。
+      var stPay = useState(null), pay = stPay[0], setPay = stPay[1]
+      var st2 = useState(null), drawer = st2[0], setDrawer = st2[1]
+      var st3 = useState({}), folded = st3[0], setFolded = st3[1]
+      var st4 = useState(''), q = st4[0], setQ = st4[1]
+      // ★R24 补 R13 缺口：折叠条展开态（days=0 ⇒ 不折叠）。复用既有 useState，零新钩子、零定时器。
+      var stFold = useState({ days: 7 }), foldOpen = stFold[0], setFoldOpen = stFold[1]
+      foldOpen.expand = function () { setFoldOpen({ days: 0 }) }
+      var st5 = useState(1), zoom = st5[0], setZoom = st5[1]
+      var st6 = useState(0), tick = st6[0], bump = st6[1]
+      var zh = (locale || 'zh').indexOf('zh') === 0
+      useEffect(function () {
+        var alive = true
+        // ★R26 补 46 卷 §四 B2 缺口：宿主 includeArchive 参数此前**从未被前端传过** ⇒「版本归档」泳道恒空
+        //   （46 卷逐字定性「结构性死泳道」）。两条语义必须**同时**传：
+        //   · foldDays 控制**折叠**（0 ⇒ 全量）
+        //   · includeArchive 控制**读盘范围**（是否读 handoff/archive/）—— 少了它，折叠也只折到非归档的那批。
+        //   ⇒ 展开态两个都放开，折叠态都不传 ⇒ 默认路径读盘量与耗时**逐字节不变**（宿主 L3335 承诺）。
+        apiGet(API.kanbanBoard, { sessionId: currentSessionIdClient(), foldDays: foldOpen.days, includeArchive: foldOpen.days === 0 ? '1' : '0' })
+          .then(function (k) { if (alive) { setPay(k || null); setData(k && k.enabled ? k : null) } })
+          .catch(function (e) { if (alive) { setPay({ reason: 'error', error: String((e && e.message) || e) }); setData(null) } })
+        return function () { alive = false }
+      }, [tick])
+
+      var mx = data && data.matrix
+      var cols = (mx && mx.columns) || []
+      var rows = (mx && mx.rows) || []
+      var kw = q.trim().toLowerCase()
+      var hit = function (c) { return !kw || String(c.title + ' ' + c.preview + ' ' + c.docTitle).toLowerCase().indexOf(kw) >= 0 }
+
+      var total = (mx && mx.stats && mx.stats.totalCards) || 0
+      var missing = (mx && mx.stats && mx.stats.missingDeadend) || []
+
+      // ★2026-09-17(L2 修 bug①): **按宿主返回的真实 reason 分支**, 不再硬编码猜测式提示。
+      // 旧文案把「看板未启用」归因于 **handoff 未开启**, 把用户指向错误方向 —— 用户报告:
+      // 「明明已经启用了, 却显示未启用或加载失败」。现消费 payload 里的 reason/error。
+      var emptyMsg = (function () {
+        var r = pay && pay.reason
+        if (r === 'legacy-mode') {
+          return zh ? '当前是旧版白板(legacy)档。切到新版看板: 设置 → 自动记忆引擎 → 看板模式 → 「新版看板（dsh-graph）」，重启 dsh web 后生效。'
+            : 'Legacy board mode. Switch to graph board: Settings → Auto Memory Engine → Board mode → "Graph board (dsh-graph)", then restart dsh web.'
+        }
+        if (r === 'error') {
+          var m = String((pay && pay.error) || '')
+          return (zh ? '看板加载出错: ' : 'Board load error: ') + (m || (zh ? '(无错误详情)' : '(no detail)'))
+        }
+        if (r === 'handoff-disabled') {
+          // 兼容极旧宿主(本版后端已不再返回该 reason), 如实说明而非误导
+          return zh ? '看板数据源已关闭。请在设置里启用白板/账本(handoff)。' : 'Board data source is off. Enable whiteboard/ledger (handoff) in settings.'
+        }
+        return zh ? '看板尚未就绪或加载失败。请点上方「刷新」重试; 若持续如此, 检查是否已切到新版看板(dsh-graph)档。'
+          : 'Board not ready or failed to load. Click "reload" above; if it persists, check the graph board mode.'
+      })()
+
+      return h('div', { 'data-dam-kanban-view': '', 'data-dam-slot': 'board', 'data-dam-region': 'page', style: {
+        // position:relative 是**必需**的: 抽屉用 absolute 定位, 它的参照系就是这里 ⇒ 抽屉被裁剪在
+        // 看板承载面内, 不会像 fixed 那样越界盖住底部输入框。overflow:hidden 同时兜底裁剪。
+        position: 'relative', height: '100%', overflow: 'hidden', boxSizing: 'border-box',
+        color: 'var(--dsw-alias-label-primary)', fontSize: '12px',
+      } }, [
+      // 内滚动层(与抽屉分离: 抽屉不该跟着内容一起滚)
+      h('div', { 'data-dam-kx-scroll': '', style: { height: '100%', overflow: 'auto', padding: '12px 16px', boxSizing: 'border-box' } }, [
+        // ── 概览条 ──
+        h('div', { key: 'hdr', style: { display: 'flex', alignItems: 'baseline', gap: '10px', flexWrap: 'wrap', marginBottom: '8px' } }, [
+          h('strong', { key: 't', style: { fontSize: '14px' } }, zh ? '白板看板 · 时间矩阵' : 'Whiteboard · time matrix'),
+          h('span', { key: 's', 'data-dam-slot': 'hint', 'data-dam-hint': '' },
+            zh
+              ? (String(total) + ' 张小节卡 / ' + String(rows.length) + ' 天 / ' + (mx && mx.stats ? mx.stats.dateFrom + ' → ' + mx.stats.dateTo : ''))
+              : (String(total) + ' cards / ' + String(rows.length) + ' days')),
+          missing.length
+            ? h('span', { key: 'm', 'data-dam-kx-warn': '', title: missing.join(', '), style: { color: 'var(--dam-tone-warn, #e0a53a)' } },
+              zh ? ('⚠ ' + missing.length + ' 天缺「失败与弯路」') : ('⚠ ' + missing.length + ' days missing dead-ends'))
+            : null,
+        ]),
+        // ── 工具条 ──
+        h('div', { key: 'bar', style: { display: 'flex', gap: '6px', alignItems: 'center', marginBottom: '8px', flexWrap: 'wrap' } }, [
+          h('input', { key: 'q', 'data-dam-slot': 'form', 'data-dam-input': '', placeholder: zh ? '搜索标题/正文/来源…' : 'search…', value: q, onChange: function (e) { setQ(e.target.value) }, style: { minWidth: '200px' } }),
+          h('button', { key: 'zo', 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: function () { setZoom(Math.max(0.8, zoom - 0.1)) } }, 'A-'),
+          h('span', { key: 'zv', 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { minWidth: '38px', textAlign: 'center' } }, Math.round(zoom * 100) + '%'),
+          h('button', { key: 'zi', 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: function () { setZoom(Math.min(1.6, zoom + 0.1)) } }, 'A+'),
+          h('button', { key: 'rf', 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: function () { setData(null); bump(function (n) { return n + 1 }) } }, zh ? '刷新' : 'reload'),
+        ]),
+        // ── 空态 / 错误态(不静默; ★2026-09-17 按真实 reason 分支, 见上方 emptyMsg) ──
+        !data ? h('div', { key: 'ph', 'data-dam-slot': 'empty', 'data-dam-block': 'empty', 'data-dam-kind': 'empty', 'data-dam-kx-empty': 'nodata', 'data-dam-slot': 'hint', 'data-dam-hint': '' }, emptyMsg) : null,
+        data && !mx ? h('div', { key: 'nm', 'data-dam-slot': 'empty', 'data-dam-kx-empty': 'nomatrix', 'data-dam-slot': 'hint', 'data-dam-hint': '' },
+          zh ? '本次载荷缺矩阵视图。' : 'No matrix in payload.') : null,
+        data && mx && !rows.length ? h('div', { key: 'nr', 'data-dam-slot': 'empty', 'data-dam-kx-empty': 'norows', 'data-dam-slot': 'hint', 'data-dam-hint': '' },
+          zh ? '白板里还没有账本文档。' : 'No ledger docs yet.') : null,
+        // ── 矩阵本体 ──
+        data && mx && rows.length ? h('div', {
+          key: 'grid',
+          style: {
+            display: 'grid',
+            // 首列 170px 行标签(日期要放得下) + N 列自适应
+            gridTemplateColumns: '170px repeat(' + cols.length + ', minmax(190px, 1fr))',
+            gap: '6px',
+            fontSize: (12 * zoom) + 'px',
+          },
+        }, [].concat(
+          // 表头: 与内容区用底色 + 下边框拉开层次, sticky 吸顶
+          [h('div', { key: 'hc0', 'data-dam-kx-head': 'row', style: {
+            fontWeight: 700, padding: '8px 6px', position: 'sticky', top: 0, zIndex: 3,
+            fontSize: '11.5px', letterSpacing: '.03em', textTransform: 'uppercase',
+            color: 'var(--dsw-alias-label-tertiary)',
+            background: 'var(--dsw-alias-bg-layer-1)',
+            borderBottom: '2px solid var(--dsw-alias-border-l2, rgba(128,128,128,.45))',
+          } }, zh ? '日期' : 'Date')],
+          cols.map(function (c) {
+            return h('div', { key: 'hc-' + c.key, 'data-dam-kx-head': c.key, style: {
+              fontWeight: 700, padding: '8px 6px', display: 'flex', gap: '6px', alignItems: 'center',
+              position: 'sticky', top: 0, zIndex: 3,
+              color: 'var(--dsw-alias-label-primary)',
+              background: 'var(--dsw-alias-bg-layer-1)',
+              borderBottom: '2px solid ' + kxLaneColor(c.key),
+            } }, [
+              // 顶部色点 = 该列身份, 与卡片左条同色 ⇒ 列↔卡片的归属一眼可辨
+              h('span', { key: 'dot', 'data-dam-kx-dot': c.key, style: {
+                width: '8px', height: '8px', borderRadius: '50%', flexShrink: 0,
+                background: kxLaneColor(c.key), boxShadow: '0 0 0 2px ' + kxLaneColor(c.key) + '33',
+              } }),
+              h('span', { key: 'l', style: { flex: 1, minWidth: 0 } }, c.label),
+              h('span', { key: 'n', 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { fontSize: '11px', color: 'var(--dsw-alias-label-tertiary)' } }, String(c.count || 0)),
+            ])
+          }),
+          // 数据行
+          rows.reduce(function (acc, r) {
+            var isFolded = !!folded[r.key]
+            acc.push(h('div', {
+              key: 'rl-' + r.key,
+              'data-dam-kx-row': r.key,
+              onClick: function () { setFolded(function (f) { var n = Object.assign({}, f); n[r.key] = !n[r.key]; return n }) },
+              style: {
+                padding: '8px 6px', cursor: 'pointer', userSelect: 'none',
+                fontWeight: 700, fontSize: '12.5px',
+                color: 'var(--dsw-alias-label-primary)',
+                background: 'var(--dsw-alias-bg-layer-2)',
+                borderRadius: '5px',
+                borderTop: '1px solid var(--dsw-alias-border-l1, rgba(128,128,128,.28))',
+              },
+              title: zh ? '点击折叠/展开该日' : 'toggle',
+            }, (isFolded ? '▸ ' : '▾ ') + r.label + '  (' + String(r.docs) + ')'))
+            cols.forEach(function (c) {
+              var cells = ((r.cells || {})[c.key] || []).filter(hit)
+              acc.push(h('div', {
+                key: 'rc-' + r.key + '-' + c.key,
+                'data-dam-kx-cell': c.key,
+                style: {
+                  padding: '3px 2px', minWidth: 0,
+                  borderTop: '1px solid var(--dsw-alias-border-l1, rgba(128,128,128,.18))',
+                  // 极淡的泳道底色(color-mix 把主色压到 ~5%): 让整列连成一片而不抢内容
+                  background: 'color-mix(in srgb, ' + kxLaneColor(c.key) + ' 5%, transparent)',
+                },
+              }, isFolded ? null : (cells.length
+                ? cells.map(function (c2) { return h(KanbanMatrixCard, { key: c2.id, card: c2, zh: zh, laneKey: c.key, onOpen: function () { setDrawer(c2) } }) })
+                : h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { fontSize: '10px', padding: '2px 4px', opacity: .5 } }, kw ? '—' : ''))))
+            })
+            return acc
+          }, [])
+        )) : null,
+        ]),   // ← 闭合内滚动层(data-dam-kx-scroll)
+        // ── 右侧浮窗(portal 到 body) ──
+        // ★ 2026-09-16 二次修正: 上一版改成容器内 absolute 后, **页面往下滚它就被推出视口**
+        //   (用户实测「在页面下部分没办法看到点开的页签」)。absolute 的参照系是容器, 容器会滚。
+        //   正解 = createPortal 挂到 document.body + position:fixed ⇒ 参照系是视口, 永远可见,
+        //   且因为脱离容器, 不会被容器的 overflow 裁剪。底部留 96px 安全边距避开输入区。
+        drawer ? kxPortal(h('div', {
+          key: 'dr',
+          'data-dam-kx-drawer': drawer.id, 'data-dam-slot': 'detail', 'data-dam-region': 'page',
+          style: {
+            position: 'fixed', top: '52px', right: '16px', bottom: '96px',
+            width: 'min(560px, 42vw)', zIndex: 2147483000,
+            display: 'flex', flexDirection: 'column',
+            background: 'var(--dsw-alias-bg-layer-2, rgba(24,24,28,.97))', backdropFilter: 'blur(16px)',
+            border: '1px solid var(--dsw-alias-border-l1, rgba(128,128,128,.35))',
+            borderRadius: '10px',
+            boxShadow: '0 12px 40px var(--dsw-alias-bg-mask-1, rgba(0,0,0,.35))',
+            color: 'var(--dsw-alias-label-primary)', fontSize: '12.5px', lineHeight: 1.6,
+            overflow: 'hidden',
+          },
+        }, [
+          h('div', { key: 'h', style: { display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' } }, [
+            kxBadge(drawer.criteria, zh),
+            h('strong', { key: 't', style: { flex: 1, fontSize: '14px' } }, drawer.title),
+            h('button', { key: 'x', 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: function () { setDrawer(null) } }, '✕'),
+          ]),
+          h('div', { key: 'meta', 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginBottom: '8px', display: 'flex', gap: '8px', flexWrap: 'wrap' } }, [
+            h('span', { key: 'd' }, drawer.docTitle),
+            h('span', { key: 's' }, drawer.source),
+            h('span', { key: 'i' }, '#' + drawer.short),
+            drawer.anchored ? h('span', { key: 'a', title: drawer.anchorId }, '⚓ ' + String(drawer.anchorId).slice(0, 14)) : null,
+          ]),
+          (drawer.sectionTags && drawer.sectionTags.length)
+            ? h('div', { key: 'sg', style: { display: 'flex', gap: '4px', flexWrap: 'wrap', marginBottom: '8px' } },
+              drawer.sectionTags.map(function (tg, i) { return h('span', { key: i, 'data-dam-chip': '', style: { fontSize: '10px', padding: '1px 5px', borderRadius: '3px', background: 'var(--dam-76-141-255-18, rgba(76,141,255,.18))' } }, tg) }))
+            : null,
+          // ★v3.1.4：改为挂载子组件（hook 收进去）——原写法在条件分支里调 hook ⇒ React #310 白屏
+          h(KanbanDrawerBody, { key: 'body', drawer: drawer }),
+        ].map(function (node, i) {
+          // 头部固定、正文滚动: 把内容各自包一层; 正文那层给 flex:1 + overflow:auto
+          if (i === 0) return h('div', { key: 'headwrap', style: { padding: '12px 14px 8px', flexShrink: 0 } }, node)
+          if (i === 1) return h('div', { key: 'metawrap', style: { padding: '0 14px', flexShrink: 0 } }, node)
+          if (i === 2) return node ? h('div', { key: 'tagwrap', style: { padding: '0 14px', flexShrink: 0 } }, node) : null
+          return h('div', { key: 'bodywrap', style: { padding: '8px 14px 14px', flex: 1, overflow: 'auto', minHeight: 0 } }, node)
+        }))) : null,
+      ])
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // 白板节点图画布(2026-09-20 重构批 · 风格参考 kanghelyu/dsh-deepseek-flow)
+    //
+    // 立场: **只改渲染层**。数据源仍是同一个 /kanban-board 载荷, 后端与 sidecar 零改动。
+    //   参考项目用 esbuild 打包 8 个模块, 本插件受「单文件 / 无构建链」约束
+    //   (package.json exports["./client"]='./lib/client.js' 直送浏览器) ⇒
+    //   不引第三方图库, 布局算法手写。
+    //
+    // 与泳道看板的关系(共存, 非替换):
+    //   · 会话页整页宽(≥700px) = 本画布(节点 + 连线, 平移缩放);
+    //   · 侧边面板 440px = 原泳道看板(装不下画布, 保持不动)。
+    //
+    // 图要素(全部来自现有数据, §6 侦察报告结论):
+    //   · 节点 = 小节卡(WbShape 清洗后: title 为正文首行, kicker 为小节名)
+    //   · 结构边 = 同泳道内的时间/顺序链
+    //   · 分层 = 按**泳道**分列(有限 6 类), 列内按时间倒序排列
+    //   ⚠ 语义边(tag 关联/版本链)数据当前不可用(by_tag 全 sec: / versionCount 恒 0),
+    //     故本版**不画**这类边 —— 宁可少画, 不画假的。
+    // ──────────────────────────────────────────────────────────────────────────
+    var WBG_NODE_W = 232
+    var WBG_NODE_H = 104
+    var WBG_GAP_X = 74
+    var WBG_GAP_Y = 22
+    var WBG_PAD = 40
+    var WBG_ZOOM_KEY = 'dam-wbg-zoom'
+    var WBG_PAN_KEY = 'dam-wbg-pan'
+    // 每列最多排多少个节点, 其余折叠为「+N」汇总节点。
+    //
+    // ★2026-09-21 布局重做(实测驱动): 原实现「一篇文档 = 一列」在真实数据下**数学上不可用** ——
+    //   本仓库实测 876 节点 / 189 篇文档 ⇒ 画布 57,840 × 1,318 px, 宽高比 **43.9:1**
+    //   (容器仅 1.72:1), 理想 fit 需缩到 **1.9%**, 而缩放下限 35% ⇒ **永远看不到全貌,
+    //   要横向拖 52 屏**。按泳道分列同样不行(1,842 × 23,494 ⇒ 纵向 37 屏)。
+    //   结论: 病根不是「按什么分组」, 而是**一屏塞不下 876 个节点**。
+    //   人的看图逻辑是「先全局分类 → 再逐层下钻」⇒ 默认视图必须是**概览**而非全量平铺。
+    var WBG_COL_CAP = 14
+    var WBG_MIN_ZOOM = 0.08
+    var WBG_HDR_H = 34
+
+    /**
+     * 分层布局: 列 = 泳道(类型), 行 = 时间倒序。
+     *
+     * 为什么按泳道而非文档: 泳道是**有限的 6 类**(goal/state/deadend/progress/archive/misc),
+     *   语义稳定、用户已知; 文档是 189 个且会持续增长 —— 用它当轴等于把画布宽度绑死在数据量上。
+     * 每列内按时间倒序(最近的在最上面), 超出 WBG_COL_CAP 的折叠为汇总节点,
+     *   既保证一屏可读, 又不隐藏数据(可搜索或切「白板看板」看全部)。
+     */
+    function wbLayout(cards) {
+      var byLane = {}
+      for (var i = 0; i < cards.length; i++) {
+        var k = cards[i].laneKey || cards[i].lane || 'misc'
+        if (!byLane[k]) byLane[k] = []
+        byLane[k].push(cards[i])
+      }
+      // 固定列序(与面板泳道语义一致), 未在表中出现的追加在后
+      var ORDER = ['goal', 'state', 'deadend', 'progress', 'archive', 'misc']
+      var keys = []
+      for (var oi = 0; oi < ORDER.length; oi++) if (byLane[ORDER[oi]]) keys.push(ORDER[oi])
+      for (var kk in byLane) if (keys.indexOf(kk) < 0) keys.push(kk)
+
+      var nodes = []
+      var edges = []
+      var groups = []
+      var maxRows = 0
+      for (var ci = 0; ci < keys.length; ci++) {
+        var key = keys[ci]
+        var list = byLane[key].slice().sort(function (a, b) {
+          // 时间新的在上; 无 ts 时按 lineStart 兜底
+          var ta = Number(a.ts) || 0
+          var tb = Number(b.ts) || 0
+          if (ta !== tb) return tb - ta
+          return (Number(a.lineStart) || 0) - (Number(b.lineStart) || 0)
+        })
+        var shown = list.slice(0, WBG_COL_CAP)
+        var hidden = list.length - shown.length
+        var colX = WBG_PAD + ci * (WBG_NODE_W + WBG_GAP_X)
+        groups.push({ key: key, x: colX, total: list.length, shownN: shown.length, hidden: hidden })
+        var rows = shown.length + (hidden > 0 ? 1 : 0)
+        if (rows > maxRows) maxRows = rows
+        for (var ri = 0; ri < shown.length; ri++) {
+          var nd = wbShape(shown[ri])
+          nd.x = colX
+          nd.y = WBG_PAD + WBG_HDR_H + ri * (WBG_NODE_H + WBG_GAP_Y)
+          nd.laneKey = key
+          nd.col = ci
+          nd.row = ri
+          nodes.push(nd)
+          // 结构边: 同泳道内相邻节点相连(时间链)
+          if (ri > 0) edges.push({ from: shown[ri - 1].id, to: shown[ri].id, key: key })
+        }
+        if (hidden > 0) {
+          nodes.push({
+            id: '__more__' + key, x: colX,
+            y: WBG_PAD + WBG_HDR_H + shown.length * (WBG_NODE_H + WBG_GAP_Y),
+            title: (zh ? '还有 ' + hidden + ' 条' : '+' + hidden + ' more'),
+            body: zh ? '已折叠以免画布过长 —— 用上方搜索, 或切到「白板看板」看全部' : 'collapsed for readability',
+            kicker: '', docTitle: '', laneKey: key, col: ci, row: shown.length, isMore: true,
+          })
+        }
+      }
+      return {
+        nodes: nodes,
+        edges: edges,
+        groups: groups,
+        width: WBG_PAD * 2 + keys.length * WBG_NODE_W + Math.max(0, keys.length - 1) * WBG_GAP_X,
+        height: WBG_PAD * 2 + WBG_HDR_H + maxRows * WBG_NODE_H + Math.max(0, maxRows - 1) * WBG_GAP_Y,
+        keys: keys,
+        totalCards: cards.length,
+      }
+    }
+
+    /** 节点卡: 标题(正文首行) + 小节名 kicker + 正文摘要。四段式。 */
+    function WbgNode(props) {
+      var n = props.node
+      var zoom = Number(props.zoom) || 1
+      var sel = !!props.selected
+      var tone = wbLaneTone(n.laneKey || n.section || '')
+      var body = n.body || ''
+      if (body.length > 220) body = body.slice(0, 217) + '…'
+      var anchor = props.anchor
+      return h('div', {
+        'data-dam-wbg-node': '',
+        'data-selected': sel ? 'true' : 'false',
+        onClick: function (e) { e.stopPropagation(); props.onPick(n.id) },
+        style: {
+          position: 'absolute',
+          left: n.x + 'px', top: n.y + 'px',
+          width: WBG_NODE_W + 'px', minHeight: WBG_NODE_H + 'px',
+          boxSizing: 'border-box',
+          padding: '9px 11px 10px',
+          borderRadius: '10px',
+          cursor: 'pointer',
+          background: sel
+            ? 'color-mix(in srgb, ' + tone + ' 16%, var(--dsw-alias-bg-layer-2, rgba(22,22,26,.96)))'
+            : 'var(--dsw-alias-bg-layer-2, rgba(22,22,26,.92))',
+          border: '1px solid ' + (sel ? tone : 'color-mix(in srgb, ' + tone + ' 34%, transparent)'),
+          boxShadow: sel ? ('0 0 0 1px ' + tone + ', 0 6px 22px color-mix(in srgb, ' + tone + ' 26%, transparent)') : '0 2px 10px var(--dam-black-18, rgba(0,0,0,.18))',
+          transition: 'background .14s ease, border-color .14s ease',
+        },
+      }, [
+        // ① 分类条(kicker): 小节名 —— 短、可扫读
+        n.kicker ? h('div', {
+          key: 'k', 'data-dam-slot': 'hint', 'data-dam-hint': '',
+          style: {
+            fontSize: (9.5 * zoom) + 'px', letterSpacing: '.06em', textTransform: 'uppercase',
+            color: tone, opacity: .95, marginBottom: '4px',
+            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+          },
+        }, n.kicker + (n.anchored ? ' ⚓' : '')) : null,
+        // ② 标题: 清洗后的正文首行(不再是重复的小节名)
+        h('div', {
+          key: 't',
+          style: {
+            fontSize: (12.5 * zoom) + 'px', fontWeight: 700, lineHeight: '1.34',
+            color: 'var(--dsw-alias-label-primary)',
+            display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+          },
+        }, n.title),
+        // ③ 正文: 与标题不重复的剩余内容
+        body ? h('div', {
+          key: 'b', 'data-dam-slot': 'hint', 'data-dam-hint': '',
+          style: {
+            marginTop: '5px', fontSize: (10.5 * zoom) + 'px', lineHeight: '1.42',
+            color: 'var(--dsw-alias-label-secondary)',
+            display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+          },
+        }, body) : null,
+        // ④ 来源: 文档名(定位"这条来自哪篇")
+        h('div', {
+          key: 's', 'data-dam-slot': 'hint', 'data-dam-hint': '',
+          style: {
+            marginTop: '6px', fontSize: (9.5 * zoom) + 'px', opacity: .55,
+            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+          },
+        }, String(n.docTitle || n.source || '').replace(/^.*[\\/]/, '')),
+      ])
+    }
+
+    /** 画布: 平移(拖拽) + 缩放(滚轮/按钮) + fit + 点选侧栏。零依赖、纯 SVG 连线。 */
+    function WhiteboardGraphView(props) {
+      var st = useState(null), data = st[0], setData = st[1]
+      var stPay = useState(null), pay = stPay[0], setPay = stPay[1]
+      var stTick = useState(0), tick = stTick[0], bump = stTick[1]
+      var stZoom = useState(function () { return readLsNum(WBG_ZOOM_KEY, 1) }), zoom = stZoom[0], setZoom = stZoom[1]
+      var stPan = useState(function () {
+        try { var v = JSON.parse(localStorage.getItem(WBG_PAN_KEY) || 'null'); return v && typeof v.x === 'number' ? v : { x: 0, y: 0 } } catch (e) { return { x: 0, y: 0 } }
+      }), pan = stPan[0], setPan = stPan[1]
+      var stSel = useState(null), sel = stSel[0], setSel = stSel[1]
+      var stQ = useState(''), q = stQ[0], setQ = stQ[1]
+      var dragRef = useRef(null)
+      var wrapRef = useRef(null)
+      var zh = (locale || 'zh').indexOf('zh') === 0
+
+      useEffect(function () {
+        var alive = true
+        apiGet(API.kanbanBoard, { sessionId: currentSessionIdClient() })
+          .then(function (k) { if (alive) { setPay(k || null); setData(k && k.enabled ? k : null) } })
+          .catch(function (e) { if (alive) { setPay({ reason: 'error', error: String((e && e.message) || e) }); setData(null) } })
+        return function () { alive = false }
+      }, [tick])
+
+      // 把 lanes[].cards[] 摊平成一张卡列表(画布不按泳道分组, 泳道只当节点色调)
+      var cards = []
+      var laneOf = {}
+      var lanes = (data && data.lanes) || []
+      for (var li = 0; li < lanes.length; li++) {
+        var lc = lanes[li].cards || []
+        for (var ci = 0; ci < lc.length; ci++) {
+          cards.push(lc[ci])
+          laneOf[lc[ci].id] = lanes[li].key
+        }
+      }
+      var kg = wbLayout(cards.map(function (c) { return Object.assign({}, c, { laneKey: laneOf[c.id] }) }))
+
+      var kw = q.trim().toLowerCase()
+      var matches = function (n) {
+        if (!kw) return true
+        return (n.title + ' ' + n.body + ' ' + n.docTitle + ' ' + n.kicker).toLowerCase().indexOf(kw) >= 0
+      }
+      var visibleNodes = kg.nodes.filter(matches)
+      var visIds = {}
+      for (var vi = 0; vi < visibleNodes.length; vi++) visIds[visibleNodes[vi].id] = 1
+
+      var nodeById = {}
+      for (var ni = 0; ni < kg.nodes.length; ni++) nodeById[kg.nodes[ni].id] = kg.nodes[ni]
+
+      var selNode = sel ? nodeById[sel] : null
+
+      var setZoomBoth = function (v) {
+        var nv = Math.min(2.0, Math.max(WBG_MIN_ZOOM, Math.round(v * 100) / 100))
+        setZoom(nv); writeLs(WBG_ZOOM_KEY, nv)
+      }
+      var fit = function () {
+        var el = wrapRef.current
+        if (!el || !kg.width) return
+        var w = el.clientWidth - 24
+        var hgt = el.clientHeight - 24
+        // 下限用 WBG_MIN_ZOOM(0.08)而非 0.35 —— 876 节点的概览视图本就是「缩小看结构」,
+        // 用 0.35 当底会永远 fit 不到全貌(实测需 1.9%)。
+        var z = Math.min(1.6, Math.max(WBG_MIN_ZOOM, Math.min(w / kg.width, hgt / kg.height)))
+        setZoomBoth(z)
+        setPanBoth({ x: 0, y: 0 })
+      }
+      var setPanBoth = function (p) { setPan(p); try { localStorage.setItem(WBG_PAN_KEY, JSON.stringify(p)) } catch (e) {} }
+
+      var onDown = function (e) {
+        if (e.button !== 0) return
+        dragRef.current = { sx: e.clientX, sy: e.clientY, px: pan.x, py: pan.y, moved: false }
+        e.currentTarget.setPointerCapture && e.currentTarget.setPointerCapture(e.pointerId)
+      }
+      var onMove = function (e) {
+        var d = dragRef.current
+        if (!d) return
+        var dx = e.clientX - d.sx, dy = e.clientY - d.sy
+        if (Math.abs(dx) + Math.abs(dy) > 3) d.moved = true
+        setPan({ x: d.px + dx, y: d.py + dy })
+      }
+      var onUp = function (e) {
+        var d = dragRef.current
+        dragRef.current = null
+        if (d) { try { localStorage.setItem(WBG_PAN_KEY, JSON.stringify(pan)) } catch (e2) {} }
+        e.currentTarget.releasePointerCapture && e.currentTarget.releasePointerCapture(e.pointerId)
+      }
+      var onWheel = function (e) {
+        if (!e.ctrlKey && !e.metaKey && Math.abs(e.deltaY) < 2) return
+        e.preventDefault()
+        setZoomBoth(zoom + (e.deltaY < 0 ? 0.08 : -0.08))
+      }
+
+      // 空态/错误态: 与 KanbanView 同一套 reason 消费
+      if (!data || !cards.length) {
+        var reason = pay && pay.reason
+        var msg = reason === 'legacy-mode'
+          ? (zh ? '当前是旧版白板(legacy)档。切到新版看板: 设置 → 自动记忆引擎 → 看板模式 → 「新版看板（dsh-graph）」。'
+            : 'Legacy board mode. Switch to graph board in Settings.')
+          : reason === 'error'
+            ? ((zh ? '加载出错: ' : 'Load error: ') + String((pay && pay.error) || ''))
+            : (zh ? '画布暂无内容 —— 写一次白板或账本(memory_note)后这里会出现节点。'
+              : 'No nodes yet — write a plan or ledger (memory_note) and nodes will appear.')
+        return h('div', { 'data-dam-wbg-wrap': '', style: { padding: '18px' } }, [
+          h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', key: 'm', style: { lineHeight: 1.7 } }, msg),
+          h('button', { key: 'r', 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: function () { bump(tick + 1) }, style: { marginTop: '10px' } }, zh ? '刷新' : 'reload'),
+        ])
+      }
+
+      var btn = function (label, onClick, title) {
+        return h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: onClick, title: title || '', style: { padding: '1px 8px', fontSize: '11px' } }, label)
+      }
+      var bar = h('div', {
+        'data-dam-wbg-bar': '',
+        style: { display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center', padding: '8px 10px', borderBottom: '1px solid color-mix(in srgb, currentColor 12%, transparent)' },
+      }, [
+        btn('A-', function () { setZoomBoth(zoom - 0.1) }),
+        h('span', { key: 'z', 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { fontSize: '10.5px', minWidth: '38px', textAlign: 'center' } }, Math.round(zoom * 100) + '%'),
+        btn('A+', function () { setZoomBoth(zoom + 0.1) }),
+        h('span', { key: 'g1', style: { width: '6px' } }),
+        btn(zh ? '适应' : 'fit', fit, zh ? '缩放到刚好装下' : 'fit to view'),
+        h('span', { key: 'g2', style: { width: '6px' } }),
+        h('input', {
+          key: 'q', 'data-dam-slot': 'form', 'data-dam-input': '', value: q, placeholder: zh ? '搜索节点…' : 'search nodes…',
+          onChange: function (e) { setQ(e.target.value) },
+          style: { flex: '1 1 120px', minWidth: '100px', fontSize: '11px', padding: '2px 7px' },
+        }),
+        h('span', { key: 'st', 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { fontSize: '10.5px', opacity: .7 } },
+          (zh ? '节点 ' : 'nodes ') + visibleNodes.length + '/' + kg.nodes.length + (zh ? ' · 列 ' : ' · cols ') + (kg.keys || []).length + (zh ? ' · 共 ' : ' · total ') + kg.totalCards),
+      ])
+
+      // SVG 连线(在 transform 容器内, 与节点同一坐标系)
+      var edgeEls = []
+      for (var ei = 0; ei < kg.edges.length; ei++) {
+        var ed = kg.edges[ei]
+        var a = nodeById[ed.from], b = nodeById[ed.to]
+        if (!a || !b || !visIds[a.id] || !visIds[b.id]) continue
+        var x1 = a.x + WBG_NODE_W / 2, y1 = a.y + WBG_NODE_H
+        var x2 = b.x + WBG_NODE_W / 2, y2 = b.y
+        var my = (y1 + y2) / 2
+        edgeEls.push(h('path', {
+          key: 'e' + ei,
+          d: 'M' + x1 + ' ' + y1 + ' C' + x1 + ' ' + my + ', ' + x2 + ' ' + my + ', ' + x2 + ' ' + y2,
+          fill: 'none',
+          stroke: 'color-mix(in srgb, ' + wbLaneTone(nodeById[ed.to].laneKey || '') + ' 46%, transparent)',
+          'stroke-width': 1.4,
+        }))
+      }
+
+      var nodeEls = []
+      for (var nk = 0; nk < kg.nodes.length; nk++) {
+        var nn = kg.nodes[nk]
+        if (!visIds[nn.id]) continue
+        nodeEls.push(h(WbgNode, { key: nn.id, node: nn, zoom: zoom, selected: sel === nn.id, onPick: function (id) { setSel(function (p) { return p === id ? null : id }) } }))
+      }
+
+      // 列标题: 泳道名 + 「已显示/总数」+ 色条。
+      // 为什么必须有: 默认缩放到 fit 时节点字会小到读不清, **列标题是唯一还能读的锚点**;
+      //   人的看图顺序是「先认这 6 列是什么 → 再看某一列里有什么」, 没有列标题就只剩一堆色块。
+      var LANE_LABEL_ZH = { goal: '目标', state: '进行中', deadend: '失败与弯路', progress: '进度与下一步', archive: '版本归档', misc: '其它' }
+      var groupEls = []
+      for (var gi = 0; gi < (kg.groups || []).length; gi++) {
+        var g = kg.groups[gi]
+        var tone = wbLaneTone(g.key)
+        var laneName = zh ? (LANE_LABEL_ZH[g.key] || g.key) : g.key
+        groupEls.push(h('div', {
+          key: 'gh' + g.key, 'data-dam-wbg-colhead': '',
+          style: {
+            position: 'absolute', left: g.x + 'px', top: WBG_PAD + 'px', width: WBG_NODE_W + 'px',
+            boxSizing: 'border-box', paddingBottom: '6px',
+            borderBottom: '2px solid color-mix(in srgb, ' + tone + ' 62%, transparent)',
+          },
+        }, [
+          h('div', {
+            key: 'n', style: {
+              fontSize: (13.5 / Math.max(zoom, 0.4)) + 'px', fontWeight: 700, color: tone,
+              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+            },
+          }, laneName),
+          h('div', { key: 'c', 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { fontSize: (10.5 / Math.max(zoom, 0.4)) + 'px', opacity: .7, marginTop: '1px' } },
+            (g.shownN + '/' + g.total) + '  ' + (zh ? '条' : '')),
+        ]))
+      }
+
+      return h('div', { 'data-dam-wbg-wrap': '', style: { display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 } }, [
+        bar,
+        h('div', { key: 'body', style: { display: 'flex', flex: '1 1 auto', minHeight: 0 } }, [
+          h('div', {
+            key: 'canvas', ref: wrapRef,
+            'data-dam-wbg-canvas': '', 'data-dam-slot': 'graph', 'data-dam-region': 'page',
+            onPointerDown: onDown, onPointerMove: onMove, onPointerUp: onUp, onPointerCancel: onUp,
+            onWheel: onWheel,
+            onClick: function () { setSel(null) },
+            style: {
+              position: 'relative', flex: '1 1 auto', minWidth: 0, overflow: 'hidden',
+              cursor: dragRef.current ? 'grabbing' : 'grab',
+              backgroundImage: 'radial-gradient(color-mix(in srgb, currentColor 9%, transparent) 1px, transparent 1px)',
+              backgroundSize: '22px 22px',
+            },
+          }, h('div', {
+            'data-dam-wbg-stage': '',
+            style: {
+              position: 'absolute', left: 0, top: 0,
+              width: kg.width + 'px', height: kg.height + 'px',
+              transform: 'translate(' + pan.x + 'px,' + pan.y + 'px) scale(' + zoom + ')',
+              transformOrigin: '0 0',
+              willChange: 'transform',
+            },
+          }, [
+            h('svg', { key: 'svg', width: kg.width, height: kg.height, style: { position: 'absolute', left: 0, top: 0, pointerEvents: 'none' } }, edgeEls),
+          ].concat(groupEls).concat(nodeEls))),
+          // 侧栏: 选中节点的完整信息(宽屏才放得下全文 —— 这才是画布相对泳道的增量价值)
+          selNode ? h('div', {
+            key: 'side', 'data-dam-wbg-side': '',
+            style: {
+              flex: '0 0 320px', maxWidth: '44%', overflow: 'auto', padding: '12px 14px',
+              borderLeft: '1px solid color-mix(in srgb, currentColor 12%, transparent)',
+            },
+          }, [
+            h('div', { key: 'x', style: { display: 'flex', alignItems: 'flex-start', gap: '8px' } }, [
+              h('div', { key: 'h', style: { flex: 1, fontWeight: 700, fontSize: '14px', lineHeight: 1.4 } }, selNode.title),
+              h('button', { key: 'c', 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: function () { setSel(null) } }, '✕'),
+            ]),
+            selNode.kicker ? h('div', { key: 'k', 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginTop: '4px', fontSize: '11px', opacity: .75 } }, selNode.kicker + (selNode.anchored ? ' · ⚓ ' + (zh ? '有锚点' : 'anchored') : '')) : null,
+            selNode.docTitle ? h('div', { key: 'd', 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginTop: '2px', fontSize: '11px', opacity: .6, wordBreak: 'break-all' } }, selNode.docTitle) : null,
+            selNode.body ? h('div', { key: 'b', style: { marginTop: '12px', fontSize: '12px', lineHeight: 1.72, whiteSpace: 'pre-wrap', wordBreak: 'break-word' } }, selNode.body) : h('div', { key: 'b2', 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginTop: '12px', fontSize: '11.5px', opacity: .6 } }, zh ? '(这一节没有更多正文)' : '(no further body)'),
+          ]) : null,
+        ]),
+      ])
+    }
+
+    function Loading(props) {
+      var label = props && props.label ? props.label : t('loading')
+      return h('div', { 'data-dam-loading': '' }, h('span', { 'data-dam-spinner': '', 'aria-hidden': 'true' }), h('span', null, label))
+    }
+    /** 线描图钉图标(2026-09-08):与标题栏 ⤾ ⟳ ✕ 同一画风——单色 currentColor 描边、无彩色 emoji;
+     *  未钉住=描边空心,已钉住=填充(内孔用 evenodd 挖空)。 */
+    function PinIcon(props) {
+      var filled = !!(props && props.filled)
+      return h('svg', {
+        width: 13, height: 13, viewBox: '0 0 16 16', 'aria-hidden': 'true',
+        style: { display: 'block', margin: '0 auto', pointerEvents: 'none' },
+      }, h('path', {
+        d: 'M8 1.7c2.2 0 4 1.8 4 4 0 2.9-4 8.6-4 8.6S4 8.6 4 5.7c0-2.2 1.8-4 4-4zM8 4.2a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3z',
+        fill: filled ? 'currentColor' : 'none',
+        fillRule: 'evenodd',
+        stroke: 'currentColor',
+        strokeWidth: '1.1',
+        strokeLinejoin: 'round',
+      }))
+    }
+    function AnimatedDisclosure(props) {
+      var open = !!props.open
+      var shownPair = useState(open)
+      var shown = shownPair[0]
+      var setShown = shownPair[1]
+      var phasePair = useState(open ? 'open' : 'closed')
+      var phase = phasePair[0]
+      var setPhase = phasePair[1]
+      useEffect(function () {
+        var timer
+        if (open) {
+          setShown(true)
+          timer = setTimeout(function () { setPhase('open') }, 16)
+        } else if (shown) {
+          setPhase('closing')
+          timer = setTimeout(function () { setShown(false); setPhase('closed') }, 260)
+        }
+        return function () { if (timer) clearTimeout(timer) }
+      }, [open])
+      if (!shown) return null
+      return h('div', { 'data-dam-disclosure': '', 'data-phase': phase }, props.children)
+    }
+
+    // ───────────────────────── 侧边栏入口 ─────────────────────────
+    function SidebarButton() {
+      var tick = useTick()
+      useEffect(function () { return controller.subscribe(tick[1]) }, [])
+      return h('button', {
+        'data-dam-region': 'sidebar-entry', 'data-dam-sidebar-btn': '',
+        title: t('memoryPanel'),
+        'data-active': (panelOpen || panelClosing) ? 'true' : undefined,
+        onClick: function () { controller.toggle() },
+      }, h('span', null, t('memory')))
+    }
+
+    // ───────────────────────── 记忆面板 ─────────────────────────
+    function fmtSize(n) {
+      if (n >= 1024 * 1024) return (n / 1024 / 1024).toFixed(1) + ' MB'
+      if (n >= 1024) return (n / 1024).toFixed(1) + ' KB'
+      return n + ' B'
+    }
+
+    function GreetingCard(props) {
+      var g = props.greeting
+      var ps = props.periodSummary
+      if (!g) return null
+      var openPair = useState({})
+      var openMap = openPair[0]
+      var setOpenMap = openPair[1]
+      var subOpenPair = useState({})
+      var subOpenMap = subOpenPair[0]
+      var setSubOpenMap = subOpenPair[1]
+      // 智能时段判定
+      var hour = new Date().getHours()
+      var seg = hour < 9 ? 'morning' : hour < 12 ? 'forenoon' : hour < 14 ? 'noon' : hour < 18 ? 'afternoon' : 'evening'
+      var segLabel = { morning: t('segMorning'), forenoon: t('segForenoon'), noon: t('segNoon'), afternoon: t('segAfternoon'), evening: t('segEvening') }[seg]
+      // 收集抽屉: {key, label, hint, items, withTime}
+      var drawers = []
+      var curSegName = { morning: '早晨', forenoon: '上午', noon: '中午', afternoon: '下午', evening: '晚上' }[seg]
+      // 昨天抽屉(早晨显示)
+      if (seg === 'morning' && g.entries.length) {
+        drawers.push({ key: 'yesterday', label: t('yesterdayDrawer') + (g.yesterdayDate || ''), hint: '', items: g.entries, withTime: true, defaultOpen: true, period: '昨天' })
+      }
+      // 今天各时段抽屉(已过的时段)
+      var seenSeg = { '早晨': seg !== 'morning', '上午': (seg === 'forenoon' || seg === 'noon' || seg === 'afternoon' || seg === 'evening'), '中午': (seg === 'noon' || seg === 'afternoon' || seg === 'evening'), '下午': (seg === 'afternoon' || seg === 'evening'), '晚上': seg === 'evening' }
+      var segOrder = ['早晨', '上午', '中午', '下午', '晚上']
+      for (var si = 0; si < segOrder.length; si++) {
+        var sname = segOrder[si]
+        if (!seenSeg[sname]) continue
+        var items = (ps && ps.groups && ps.groups[sname]) || []
+        if (!items.length) continue
+        var segEn = { '早晨': 'morning', '上午': 'forenoon', '中午': 'noon', '下午': 'afternoon', '晚上': 'evening' }[sname] || sname
+        drawers.push({ key: 'seg-' + sname, label: t('segPrefix') + t('seg' + segEn.charAt(0).toUpperCase() + segEn.slice(1)), hint: '', items: items.map(function (x) { return { time: '', text: x } }), withTime: false, defaultOpen: sname === curSegName, period: sname })
+      }
+      // 外层:生活化问候
+      var totalCount = 0
+      for (var d0 = 0; d0 < drawers.length; d0++) totalCount += drawers[d0].items.length
+      var greetLine = g.greeting && String(g.greeting).trim()
+        ? String(g.greeting).trim()
+        : (function () {
+          if (away()) return t('welcomeBack')
+          var base = { morning: t('greetMorning'), forenoon: t('greetForenoon'), noon: t('greetNoon'), afternoon: t('greetAfternoon'), evening: t('greetEvening') }[seg]
+          if (totalCount > 0) base += t('greetSummary') + totalCount + t('greetThings')
+          return base
+        })()
+      // 离开>1小时后回来
+      function away() { return isAway() }
+      var rows = []
+      rows.push(h('div', { 'data-dam-content': '' }, greetLine))
+      // 抽屉列表(AI 生活化总结缓存)
+      var sumCachePair = useState({})
+      var sumCache = sumCachePair[0]
+      var setSumCache = sumCachePair[1]
+      function requestSummary(key, period, force) {
+        if (!force && sumCache[key] !== undefined) return
+        apiPost(API.summarize, { period: period, force: !!force, ws: currentWs() }).then(function (d) {
+          if (d && (d.summary || (d.works && d.works.length))) {
+            var n = Object.assign({}, sumCache)
+            n[key] = { summary: d.summary || d.result || '', works: d.works || [], at: d.generatedAt || Date.now(), failed: false }
+            setSumCache(n)
+          }
+        }).catch(function () {
+          var n = Object.assign({}, sumCache)
+          n[key] = { summary: '', works: [], at: 0, failed: true }
+          setSumCache(n)
+        })
+      }
+      // 面板刷新键(nonce 变化):已缓存的展开抽屉 force 重新生成
+      useEffect(function () {
+        if (!props.nonce) return
+        for (var d = 0; d < drawers.length; d++) {
+          var dr = drawers[d]
+          var isOpen = openMap[dr.key] !== undefined ? openMap[dr.key] : dr.defaultOpen
+          if (isOpen && sumCache[dr.key] !== undefined) requestSummary(dr.key, dr.period, true)
+        }
+      }, [props.nonce])
+      for (var d = 0; d < drawers.length; d++) {
+        (function (dr) {
+          var isOpen = openMap[dr.key] !== undefined ? openMap[dr.key] : dr.defaultOpen
+          if (isOpen && sumCache[dr.key] === undefined) requestSummary(dr.key, dr.period, false)
+          var cached = sumCache[dr.key]
+          // 大抽屉标题:有 AI 总结时用总结内容(用户要求),否则用时段名
+          var bigTitle = cached && cached.summary ? cached.summary : dr.label
+          rows.push(h('div', { key: dr.key, style: { marginTop: '8px' } },
+            h('button', {
+              'data-dam-slot': 'actions', 'data-dam-btn': '',
+              onClick: function () { var n = Object.assign({}, openMap); n[dr.key] = !isOpen; setOpenMap(n) },
+              style: { width: '100%', textAlign: 'left', padding: '7px 9px', borderRadius: '8px', background: 'color-mix(in srgb, var(--dsw-alias-bg-layer-1, rgba(128,128,128,.08)) 45%, transparent)', border: '1px solid color-mix(in srgb, var(--dsw-alias-border-l1, rgba(128,128,128,.3)) 50%, transparent)' },
+            },
+              h('div', { style: { fontWeight: 600, fontSize: 'calc(12.5px * var(--dam-scale))', lineHeight: 1.5 } }, (isOpen ? '▼ ' : '▶ ') + bigTitle),
+              h('div', { 'data-dam-muted': '', style: { fontSize: 'calc(11px * var(--dam-scale))', marginTop: '2px' } },
+                dr.label + ' · ' + dr.items.length + t('logEntries') + (cached && cached.at ? ' · ' + t('generatedAt') + new Date(cached.at).toLocaleTimeString() : ''))),
+            h(AnimatedDisclosure, { open: isOpen }, h('div', { style: { padding: '4px 2px 2px 8px' } },
+              cached && cached.works && cached.works.length ? cached.works.map(function (w, wi) {
+                var sk = dr.key + ':w' + wi
+                var sOpen = subOpenMap[sk] !== undefined ? subOpenMap[sk] : false
+                return h('div', { key: sk, style: { marginTop: '5px' } },
+                  h('button', {
+                    'data-dam-slot': 'actions', 'data-dam-btn': '',
+                    onClick: function () { var n = Object.assign({}, subOpenMap); n[sk] = !sOpen; setSubOpenMap(n) },
+                    style: { width: '100%', textAlign: 'left', padding: '4px 8px', borderRadius: '6px', background: 'color-mix(in srgb, var(--dsw-alias-bg-layer-1, rgba(128,128,128,.06)) 40%, transparent)', border: '1px solid color-mix(in srgb, var(--dsw-alias-border-l1, rgba(128,128,128,.22)) 45%, transparent)' },
+                  },
+                    h('span', { style: { fontWeight: 600, fontSize: 'calc(12px * var(--dam-scale))' } }, (sOpen ? '▾ ' : '▸ ') + w.title),
+                    h('span', { 'data-dam-muted': '', style: { fontSize: 'calc(11px * var(--dam-scale))', marginLeft: '6px' } }, w.points.length + t('pointsCount'))),
+                  sOpen ? h('div', { style: { padding: '4px 4px 2px 14px' } },
+                    w.points.map(function (pt, pi) {
+                      return h('div', { key: pi, style: { fontSize: 'calc(12px * var(--dam-scale))', lineHeight: 1.5, marginBottom: '2px' } }, '· ' + pt)
+                    })) : null)
+              }) : cached && cached.failed ? h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { padding: '4px 6px' } }, t('summaryFailed'))
+                : cached && cached.summary ? h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { padding: '4px 6px' } }, cached.summary)
+                : h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { padding: '4px 6px' } }, t('summarizing'))))))
+        })(drawers[d])
+      }
+      // 待反思提醒
+      if (g.pendingReflectionDate) {
+        rows.push(h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginTop: '8px' } }, t('pendingReflectionShort') + g.pendingReflectionDate))
+      }
+      return h(Card, { title: (g.period || '') + ' · ' + segLabel }, rows)
+    }
+
+    function PySetupWizard() {
+      var dataPair = useState(null)
+      var data = dataPair[0]
+      var setData = dataPair[1]
+      var busyPair = useState(false)
+      var busy = busyPair[0]
+      var setBusy = busyPair[1]
+      var pollPair = useState(null)
+      var poll = pollPair[0]
+      var setPoll = pollPair[1]
+      var gpuPair = useState(function () { try { return localStorage.getItem('dsh-auto-memory.pyGpu') === '1' } catch (eG) { return false } })
+      var gpuPref = gpuPair[0]
+      var setGpuPref = function (v) {
+        gpuPair[1](v)
+        try { localStorage.setItem('dsh-auto-memory.pyGpu', v ? '1' : '0') } catch (eG) {}
+      }
+      var actGpu = function () {
+        if (busy) return
+        setBusy(true)
+        apiPost(API.pyDeps, { gpu: gpuPref }).then(function (d) { setData(d); setBusy(false); setPoll(true); var ph = d && d.phase; if (ph === 'ready' || ph === 'error' || ph === 'idle') setPoll(false) }).catch(function () { setBusy(false); setPoll(false) })
+      }
+      var refresh = function () { apiGet(API.pyStatus).then(function (d) { if (d) setData(d) }).catch(function () {}) }
+      useEffect(function () {
+        var alive = true
+        apiGet(API.pyDetect).then(function (d) { if (alive && d) setData(d) }).catch(function () {})
+        return function () { alive = false }
+      }, [])
+      useEffect(function () {
+        if (!poll) return
+        var t = setInterval(refresh, 1200)
+        return function () { clearInterval(t) }
+      }, [poll])
+      var act = function (api, poll2) {
+        if (busy) return
+        setBusy(true)
+        var done = function (d) { setData(d); setBusy(false); if (poll2) setPoll(true); var ph = d && d.phase; if (!poll2 || ph === 'ready' || ph === 'error' || ph === 'idle') setPoll(false) }
+        apiPost(api, {}).then(done).catch(function () { setBusy(false); setPoll(false) })
+      }
+      if (!data) return h('div', { style: { border: '1px solid color-mix(in srgb, var(--dam-accent, #2456c4) 40%, transparent)', borderRadius: '10px', padding: '10px 12px', marginBottom: '8px', fontSize: 'calc(11.5px * var(--dam-scale))' } }, t('pyWizTitle'), ' — ', t('detecting'))
+      var dl = data.dl || {}
+      var dlActive = data.phase === 'downloading' || data.phase === 'verifying'
+      var progress = dlActive ? Math.min(100, Math.round(((dl.bytesDone || 0) / Math.max(1, dl.bytesTotal || 1)) * 100)) : (data.modelReady ? 100 : 0)
+      var fmtMB = function (b) { return b ? (b / 1048576).toFixed(1) + ' MB' : '—' }
+      var stepRow = function (label, status, btn) {
+        var badge = status === true ? { txt: t('pyWizOk'), bg: 'var(--dam-47-164-106-24, rgba(47,164,106,.24))' } : status === 'run' ? { txt: '…', bg: 'var(--dam-36-86-196-2, rgba(36,86,196,.2))' } : { txt: '○', bg: 'var(--dam-neutral-16, rgba(128,128,128,.16))' }
+        return h('div', { style: { display: 'flex', alignItems: 'center', gap: '8px', margin: '6px 0' } },
+          h('span', { style: { fontSize: 'calc(10px * var(--dam-scale))', padding: '2px 8px', borderRadius: '6px', background: badge.bg, fontWeight: 700, minWidth: '28px', textAlign: 'center' } }, badge.txt),
+          h('span', { style: { flex: 1 } }, label),
+          btn || null)
+      }
+      var btnCls = { 'data-dam-slot': 'actions', 'data-dam-btn': '', disabled: busy }
+      var pythonRows = (data.pythons || []).map(function (p2, idx) {
+        var st = p2.status === 'ok' ? t('pyWizOk') + (p2.isVenv ? ' · ' + t('pyWizVenvRec') : '') + (p2.version ? ' (' + p2.version + ')' : '') : p2.status === 'too-old' ? t('pyWizTooOld') + (p2.version ? ' (' + p2.version + ')' : '') : t('pyWizMissing')
+        return h('div', { key: idx, style: { fontSize: 'calc(10.5px * var(--dam-scale))', opacity: p2.status === 'ok' ? 1 : 0.55, margin: '2px 0' } }, '· ' + p2.label + ' — ' + st)
+      })
+      var allReady = data.venvOk && data.depsOk && data.modelReady && data.configOk
+      return h('div', { style: { border: '1px solid color-mix(in srgb, var(--dam-accent, #2456c4) 40%, transparent)', borderRadius: '10px', padding: '10px 12px', marginBottom: '8px', fontSize: 'calc(11.5px * var(--dam-scale))', lineHeight: 1.6 } },
+        h('div', { style: { fontWeight: 700, marginBottom: '4px' } }, t('pyWizTitle')),
+        h('div', { style: { opacity: .6, fontSize: 'calc(10.5px * var(--dam-scale))', marginBottom: '6px' } }, t('pyWizModelHint')),
+        stepRow(t('pyWizStep1'), data.pythons && data.pythons.some(function (p2) { return p2.status === 'ok' }) ? true : 'run',
+          h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: function () { act(API.pyDetect) } }, t('pyWizRedetect'))),
+        h('div', { style: { margin: '0 0 6px 36px' } }, pythonRows),
+        stepRow(t('pyWizStep2'), data.venvOk ? true : 'run',
+          (!data.venvOk && (data.pythons || []).some(function (p2) { return p2.status === 'ok' && !p2.isVenv })) ? h('button', Object.assign({}, btnCls, { onClick: function () { act(API.pyVenv, true) } }), t('pyWizCreate')) : null),
+        stepRow(t('pyWizStep3'), data.depsOk ? true : 'run',
+          (data.venvOk && !data.depsOk) ? h('span', { style: { display: 'flex', gap: '8px', alignItems: 'center' } },
+            h('label', { style: { display: 'flex', gap: '4px', alignItems: 'center', fontSize: 'calc(10.5px * var(--dam-scale))' } },
+              h('input', { type: 'checkbox', checked: gpuPref, onChange: function (e) { setGpuPref(e.target.checked) } }),
+              locale === 'zh' ? 'GPU 推理(NVIDIA,需已装 CUDA;否则自动回退 CPU)' : 'GPU inference (NVIDIA + CUDA; auto-falls back to CPU)'),
+            h('button', Object.assign({}, btnCls, { onClick: function () { actGpu() } }), t('pyWizInstall'))) : null),
+        stepRow(t('pyWizStep4'), data.modelReady ? true : 'run',
+          (!data.modelReady && !dlActive) ? h('button', Object.assign({}, btnCls, { onClick: function () { act(API.pyModel, true) } }), t('pyWizDownload')) : null,
+          dlActive ? h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: function () { apiPost(API.pyCancel, {}).then(refresh).catch(function () {}) } }, t('pyWizCancel')) : null),
+        dlActive || data.modelReady ? h('div', { style: { margin: '4px 0 6px 36px' } },
+          h('div', { style: { display: 'flex', justifyContent: 'space-between', fontSize: 'calc(10px * var(--dam-scale))', opacity: .7, marginBottom: '2px' } },
+            h('span', null, dlActive ? (data.phase === 'verifying' ? t('dlVerifying') : t('dlDownloading')) + ' · ' + fmtMB(dl.bytesDone) + ' / ' + fmtMB(dl.bytesTotal) : t('pyWizDone')),
+            h('span', null, progress + '%')),
+          h('div', { style: { height: '7px', borderRadius: '99px', background: 'var(--dam-rgba-14, rgba(128,128,128,.14))', overflow: 'hidden' } },
+            h('div', { style: { height: '100%', width: progress + '%', borderRadius: '99px', background: 'linear-gradient(90deg, var(--dam-accent, #2456c4), var(--dam-progress-bar, #6f9bff))', transition: 'width .4s ease' } }))) : null,
+        data.error ? h('div', { style: { color: 'var(--dam-tone-error, #c44a4a)', fontSize: 'calc(10.5px * var(--dam-scale))', marginTop: '4px' } }, data.error) : null,
+        allReady ? h('div', { style: { color: 'var(--dam-tone-ready, #2fa46a)', fontWeight: 700, marginTop: '4px' } }, t('pyWizDone')) : null)
+    }
+    function OverviewTab(props) {
+      var statePair = useState(null)
+      var state = statePair[0]
+      var setState = statePair[1]
+      var detailPair = useState(false)
+      var showDetail = detailPair[0]
+      var setShowDetail = detailPair[1]
+      var reflectBusyPair = useState(false)
+      var reflectBusy = reflectBusyPair[0]
+      var setReflectBusy = reflectBusyPair[1]
+      var actMsgPair = useState('')
+      var actMsg = actMsgPair[0]
+      var setActMsg = actMsgPair[1]
+      var wsPair = useState(null)
+      var wsData = wsPair[0]
+      var setWsData = wsPair[1]
+      var wsOpenPair = useState(false)
+      var wsOpen = wsOpenPair[0]
+      var setWsOpen = wsOpenPair[1]
+      // 每次进入面板 / 点刷新(nonce 变化)/ 面板打开期间每 30s 自动重拉,保证自动沉淀等数据新鲜
+      useEffect(function () {
+        var alive = true
+        // 跨工作区总结(概览页集成:所有工作区的小总结+细分;读缓存)
+        apiPost(API.workspaces, { force: false }).then(function (d) { if (d && alive) setWsData(d) }).catch(function () {})
+        apiGet(API.state, { ws: currentWs() }).then(function (s) {
+          if (alive) setState(s)
+          // 无 AI 问候 → 自动生成一次(host 按时段缓存,不会重复生成)
+          if (s && s.greeting && !s.greeting.greeting) {
+            apiPost(API.greet, { ws: currentWs() }).then(function (d) {
+              if (d && d.greeting && alive) {
+                setState(function (prev) {
+                  var g0 = (prev && prev.greeting) || {}
+                  return Object.assign({}, prev, { greeting: Object.assign({}, g0, { greeting: d.greeting, hasGreeting: true }) })
+                })
+              }
+            }).catch(function () {})
+          }
+        }).catch(function () {})
+        return function () { alive = false }
+      }, [props && props.nonce])
+      useEffect(function () {
+        var timer = setInterval(function () {
+          apiGet(API.state, { ws: currentWs() }).then(function (s) { setState(s) }).catch(function () {})
+        }, 30000)
+        return function () { clearInterval(timer) }
+      }, [])
+
+      // ★R7 配置层消费 A：state 每次更新（首拉到 / 30s 轮询 / nonce 刷新）后重算并应用区域 order/显隐。
+      // 无 layoutConfig（老宿主）或未配置 ⇒ plan 为空 ⇒ 不动任何 DOM，天然向后兼容。
+      useEffect(function () {
+        try {
+          applyLayoutRegionsPre(state && state.layoutConfig)      // R7：order + 显隐
+          applyLayoutRegionSizesPre(state && state.layoutConfig)  // R8a：--dam-region-w/h/min
+          applyLayoutTokensPre(state && state.layoutConfig)       // R8b：--dam-* / --skin-* token
+          applyLayoutSlotsPre(state && state.layoutConfig)        // R9：slot order + 显隐
+      applyLayoutBlocksPre(state && state.layoutConfig)       // R10：block 外观 + 背景图
+        } catch (e) {}
+      }, [state])
+
+      if (!state) return h(Loading)
+      function oneClickReflect() {
+        if (reflectBusy) return
+        setReflectBusy(true); setActMsg('')
+        apiPost(API.reflectAuto, {}).then(function (d) {
+          setActMsg(d.result || t('generated')); setReflectBusy(false)
+          apiGet(API.state, { ws: currentWs() }).then(function (s) { if (s) setState(s) }).catch(function () {})
+        }).catch(function (e) { setActMsg(t('failed') + e.message); setReflectBusy(false) })
+      }
+      return h('div', null,
+        // 今日问候卡:问候语 + 昨天时间轴 + 提醒(纯 GUI 渲染,不干扰对话流)
+        h(GreetingCard, { greeting: state.greeting, periodSummary: state.periodSummary, t: t, nonce: props && props.nonce }),
+        // 跨工作区总结默认折叠，首页把空间留给问候与今日状态
+        h('div', { 'data-dam-collapsible': '', style: { marginTop: '16px' } },
+          h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: function () { setWsOpen(!wsOpen) }, style: { width: '100%', textAlign: 'left', padding: '11px 12px', fontWeight: 650, borderBottom: '1px solid color-mix(in srgb, var(--dsw-alias-border-l1, #c5cbd3) 38%, transparent)' } }, (wsOpen ? '▾ ' : '▸ ') + t('wsOverview')),
+          h(AnimatedDisclosure, { open: wsOpen }, wsData && wsData.workspaces && wsData.workspaces.length
+            ? h('div', { style: { paddingTop: '10px' } }, h(WorkspaceGraph, { workspaces: wsData.workspaces, graph: wsData.graph, onSelect: function () {} }))
+            : h(Loading, { label: locale === 'zh' ? '正在生成跨工作区总结…' : 'Generating workspace overview…' }))),
+        state.pendingReflection
+          ? h(Banner, null, t('pendingReflection') + state.pendingReflection + t('pendingReflectionHint'))
+          : null,
+        // 状态行:今日工作 / 反思 / 笔记
+        h('div', { 'data-dam-slot': 'summary', 'data-dam-block': 'prose', 'data-dam-kind': 'prose', 'data-dam-kv': '' },
+          h('b', null, t('todayWork')), h('span', null, state.todayEntries + t('logEntries')),
+          h('b', null, t('dailyReflection')), h('span', null, state.latestReflectionDate || t('notYet')),
+          h('b', null, t('workspace')), h('span', null, state.ws)),
+        // 自动沉淀即时反馈(本轮/今日沉淀了多少条、最近一次时间)
+        state.autoStats && state.autoStats.count > 0
+          ? h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginTop: '2px' } },
+              t('autoSettledToday') + state.autoStats.count + t('autoSettledSuffix') +
+              (state.autoStats.lastAt ? ' (' + t('autoSettledRecent') + new Date(state.autoStats.lastAt).toLocaleTimeString() + ')' : ''))
+          : h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginTop: '2px' } }, t('autoSettledNone')),
+        // 快捷操作
+        h('div', { 'data-dam-slot': 'list', 'data-dam-block': 'list', 'data-dam-kind': 'list', 'data-dam-row': '' },
+          h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: oneClickReflect, disabled: reflectBusy }, reflectBusy ? t('reflecting') : t('oneClickReflect')),
+          h('span', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, t('reflectHint'))),
+        actMsg ? h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, actMsg) : null,
+        h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, t('quickLinks')),
+        // 技术细节(折叠)
+        h('div', null,
+          h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: function () { setShowDetail(!showDetail) } }, showDetail ? t('collapseTech') : t('expandTech'))),
+        showDetail ? h('div', { 'data-dam-slot': 'summary', 'data-dam-kv': '' },
+          h('b', null, t('userMemory')), h('span', null, state.userFile + ' (' + fmtSize(state.sizes.user) + ')'),
+          h('b', null, t('projectNotes')), h('span', null, state.notesPath + ' (' + fmtSize(state.sizes.notes) + ')'),
+          h('b', null, t('todayLog')), h('span', null, state.logPath + ' (' + fmtSize(state.sizes.log) + ')'),
+          h('b', null, t('configFile')), h('span', null, state.configReadError ? (t('readFailed') + state.configReadError) : t('ok')),
+          h('b', null, t('refreshTime')), h('span', null, state.refreshedAt ? new Date(state.refreshedAt).toLocaleString() : t('notYetShort'))) : null)
+    }
+
+    // M7.5/G-02 前置:唤起记录与语料精修(A/P/S/H/E)——数据源=shadow-recent 只读投影,
+    // 用户判定写入 append-only review-queue.jsonl(不直接改任何策略/参数)。
+    function RefineTab() {
+      var dataPair = useState(null)
+      var data = dataPair[0]
+      var setData = dataPair[1]
+      var errPair = useState('')
+      var err = errPair[0]
+      var setErr = errPair[1]
+      var sentPair = useState({})
+      var sent = sentPair[0]
+      var setSent = sentPair[1]
+      var fbPair = useState(null)
+      var fb = fbPair[0]
+      var setFb = fbPair[1]
+      useEffect(function () {
+        var alive = true
+        fetch(API.shadowRecent).then(function (r) { return r.json() }).then(function (j) {
+          if (alive) setData((j && j.rows) || [])
+        }).catch(function (e) { if (alive) setErr(String(e && e.message)) })
+        fetch(API.reviewFeedback).then(function (r) { return r.json() }).then(function (j) {
+          if (alive) setFb(j || {})
+        }).catch(function () {})
+        return function () { alive = false }
+      }, [])
+      function send(obsId, choice) {
+        fetch(API.reviewFeedback, { method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ observationId: obsId, choice: choice }) })
+          .then(function (r) { return r.json() })
+          .then(function (j) { if (j && j.ok) { var n = Object.assign({}, sent); n[obsId] = choice; setSent(n) } })
+          .catch(function () {})
+      }
+      // 美术规格对齐 artifacts/m7-live-pre/ui-assets/semantic-tier-ui.html 组件③
+      var card = { border: '1px solid color-mix(in srgb, var(--dsw-alias-border-l1, rgba(255,255,255,.16)) 55%, transparent)', borderRadius: '12px', padding: '10px 12px', marginBottom: '9px', background: 'color-mix(in srgb, var(--dsw-alias-bg-layer-1, rgba(128,128,128,.08)) 45%, transparent)', boxShadow: '0 4px 14px var(--dam-black-12, rgba(0,0,0,.12)), inset 0 1px 0 var(--dam-neutral-14, rgba(255,255,255,.14))' }
+      var badge = function (txt, bg, fg) { return h('span', { style: { fontSize: 'calc(10.5px * var(--dam-scale))', fontWeight: 700, padding: '2px 8px', borderRadius: '6px', background: bg, color: fg || 'var(--dsw-alias-label-primary, inherit)', letterSpacing: '.02em' } }, txt) }
+      var decBg = { emit: ['var(--dam-47-164-106-24, rgba(47,164,106,.24))', 'var(--dam-dec-emit, #7fdcb0)'], prefetch: ['var(--dam-196-138-42-2, rgba(196,138,42,.2))', 'var(--dam-dec-prefetch, #e8c584)'], suppress: ['var(--dam-neutral-16, rgba(128,128,128,.16))', 'var(--dam-neutral-65, rgba(255,255,255,.65))'] }
+      var laneBg = { explicit: ['var(--dam-111-155-255-24, rgba(111,155,255,.24))', 'var(--dam-dec-explicit, #b9ceff)'], proactive: ['var(--dam-160-120-255-22, rgba(160,120,255,.22))', 'var(--dam-dec-proactive, #d4c2ff)'] }
+      var reasonChip = function (txt) { return h('span', { style: { fontFamily: 'ui-monospace, Consolas, monospace', fontSize: 'calc(10px * var(--dam-scale))', padding: '2px 7px', borderRadius: '5px', background: 'var(--dam-255-214-150-1, rgba(255,214,150,.1))', color: 'var(--dam-raw-ffd9a1, #ffd9a1)' } }, txt) }
+      var apeRow = function (obsId) {
+        var choices = [['A', locale === 'zh' ? '该激活' : 'activate'], ['P', locale === 'zh' ? '只预取' : 'prefetch'], ['S', locale === 'zh' ? '应抑制' : 'suppress'], ['H', locale === 'zh' ? '有害' : 'harmful'], ['E', locale === 'zh' ? '改目标' : 'edit']]
+        return h('div', { style: { display: 'flex', gap: '6px', marginTop: '8px' } }, choices.map(function (c) {
+          var picked = sent[obsId] === c[0]
+          return h('button', { key: c[0], 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: function () { send(obsId, c[0]) },
+            style: Object.assign({ flex: '1', fontSize: 'calc(11px * var(--dam-scale))', padding: '6px 2px', borderRadius: '9px', cursor: 'pointer', border: '1px solid var(--dam-neutral-12, rgba(255,255,255,.12))', transition: 'all .2s' },
+              picked ? { borderColor: 'var(--dam-accent, #2456c4)', background: 'color-mix(in srgb, var(--dam-accent, #2456c4) 26%, transparent)', boxShadow: '0 2px 10px var(--dam-36-86-196-35, rgba(36,86,196,.35))' } : {}),
+            onmouseover: function (e) { e.currentTarget.style.background = picked ? e.currentTarget.style.background : 'var(--dam-neutral-1, rgba(255,255,255,.1))' },
+            onmouseout: function (e) { if (!picked) e.currentTarget.style.background = '' } },
+            c[0], h('small', { style: { display: 'block', opacity: .6 } }, c[1]))
+        }))
+      }
+      if (err) return h('div', null, t('refineLoadErr'), err)
+      if (!data) return h('div', null, t('loading'))
+      if (!data.length) return h('div', { style: { opacity: .65 } }, h(SkinEmpty, { slot: 'empty.recall', size: skinSlotSize('empty.recall') }, t('refineEmpty')))
+      // 按天分组(行带 ts;无 ts 的旧行归入「更早」),组内倒序
+      var sorted = data.slice().sort(function (a, b) { return (b.ts || 0) - (a.ts || 0) })
+      var dayKey = function (ts) {
+        if (!ts) return locale === 'zh' ? '更早' : 'Earlier'
+        var d = new Date(ts * 1000)
+        var today = new Date(); var yest = new Date(today.getTime() - 86400000)
+        var same = function (a, b) { return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate() }
+        if (same(d, today)) return locale === 'zh' ? '今天' : 'Today'
+        if (same(d, yest)) return locale === 'zh' ? '昨天' : 'Yesterday'
+        return (d.getMonth() + 1) + '-' + d.getDate()
+      }
+      var groups = []
+      var index = {}
+      sorted.forEach(function (row) {
+        var k = dayKey(row.ts)
+        if (!index[k]) { index[k] = []; groups.push({ day: k, rows: index[k] }) }
+        index[k].push(row)
+      })
+      var card = { border: '1px solid color-mix(in srgb, var(--dsw-alias-border-l1, rgba(255,255,255,.16)) 55%, transparent)', borderRadius: '12px', padding: '10px 12px', marginBottom: '9px', background: 'color-mix(in srgb, var(--dsw-alias-bg-layer-1, rgba(128,128,128,.08)) 45%, transparent)', boxShadow: '0 4px 14px var(--dam-black-12, rgba(0,0,0,.12)), inset 0 1px 0 var(--dam-neutral-14, rgba(255,255,255,.14))' }
+      var badge = function (txt, bg, fg) { return h('span', { style: { fontSize: 'calc(10.5px * var(--dam-scale))', fontWeight: 700, padding: '2px 8px', borderRadius: '6px', background: bg, color: fg || 'var(--dsw-alias-label-primary, inherit)', letterSpacing: '.02em' } }, txt) }
+      var decBg = { emit: ['var(--dam-47-164-106-24, rgba(47,164,106,.24))', 'var(--dam-dec-emit, #7fdcb0)'], prefetch: ['var(--dam-196-138-42-2, rgba(196,138,42,.2))', 'var(--dam-dec-prefetch, #e8c584)'], suppress: ['var(--dam-neutral-16, rgba(128,128,128,.16))', 'var(--dam-neutral-65, rgba(255,255,255,.65))'] }
+      var laneBg = { explicit: ['var(--dam-111-155-255-24, rgba(111,155,255,.24))', 'var(--dam-dec-explicit, #b9ceff)'], proactive: ['var(--dam-160-120-255-22, rgba(160,120,255,.22))', 'var(--dam-dec-proactive, #d4c2ff)'] }
+      var reasonChip = function (txt) { return h('span', { style: { fontFamily: 'ui-monospace, Consolas, monospace', fontSize: 'calc(10px * var(--dam-scale))', padding: '2px 7px', borderRadius: '5px', background: 'var(--dam-255-214-150-1, rgba(255,214,150,.1))', color: 'var(--dam-raw-ffd9a1, #ffd9a1)' } }, txt) }
+      var apeRow = function (obsId) {
+        var choices = [['A', locale === 'zh' ? '该激活' : 'activate'], ['P', locale === 'zh' ? '只预取' : 'prefetch'], ['S', locale === 'zh' ? '应抑制' : 'suppress'], ['H', locale === 'zh' ? '有害' : 'harmful'], ['E', locale === 'zh' ? '改目标' : 'edit']]
+        return h('div', { style: { display: 'flex', gap: '6px', marginTop: '8px' } }, choices.map(function (c) {
+          var picked = sent[obsId] === c[0]
+          return h('button', { key: c[0], 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: function () { send(obsId, c[0]) },
+            style: Object.assign({ flex: '1', fontSize: 'calc(11px * var(--dam-scale))', padding: '6px 2px', borderRadius: '9px', cursor: 'pointer', border: '1px solid var(--dam-neutral-12, rgba(255,255,255,.12))', transition: 'all .2s' },
+              picked ? { borderColor: 'var(--dam-accent, #2456c4)', background: 'color-mix(in srgb, var(--dam-accent, #2456c4) 26%, transparent)', boxShadow: '0 2px 10px var(--dam-36-86-196-35, rgba(36,86,196,.35))' } : {}),
+            onmouseover: function (e) { e.currentTarget.style.background = picked ? e.currentTarget.style.background : 'var(--dam-neutral-1, rgba(255,255,255,.1))' },
+            onmouseout: function (e) { if (!picked) e.currentTarget.style.background = '' } },
+            c[0], h('small', { style: { display: 'block', opacity: .6 } }, c[1]))
+        }))
+      }
+      return h('div', null,
+        h('div', { style: { fontSize: 'calc(11.5px * var(--dam-scale))', opacity: .75, marginBottom: '10px', lineHeight: 1.55 } }, t('refineSub')),
+        // G-02 v2:判定队列汇总 + 政策提示(纯描述,不改参数)
+        fb && (fb.queue && fb.queue.length || (fb.hints && fb.hints.length)) ? h('div', { style: Object.assign({}, card, { borderLeft: '3px solid var(--dam-accent, #2456c4)' }) },
+          h('div', { style: { display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: (fb.hints && fb.hints.length) ? '7px' : '0' } },
+            ['A', 'P', 'S', 'H', 'E'].map(function (ch) {
+              var n = (fb.byChoice || {})[ch] || 0
+              if (!n) return null
+              return badge(ch + '×' + n, ch === 'H' ? 'var(--dam-220-80-80-2, rgba(220,80,80,.2))' : 'var(--dam-90-140-255-16, rgba(90,140,255,.16))', ch === 'H' ? 'var(--dam-dec-heavy, #ff9c9c)' : null)
+            }),
+            h('span', { style: { marginLeft: 'auto', opacity: .55, fontSize: 'calc(10px * var(--dam-scale))' } }, locale === 'zh' ? '判定队列(近 100 条)' : 'review queue (last 100)')),
+          (fb.hints || []).map(function (hint, hi) {
+            return h('div', { key: hi, style: { fontSize: 'calc(10.5px * var(--dam-scale))', opacity: .8, lineHeight: 1.5, margin: '3px 0' } }, '· ' + hint)
+          })
+        ) : null,
+        groups.map(function (grp) {
+          // ★大屏分列(2026-09-22):判定队列每天一组的卡片在宽屏排成多列。
+          //   CSS 规则是 `[data-dam-flow] > [data-dam-card]`(直接子元素) ⇒ 标记必须打在**分组容器**上,
+          //   打在页签根上卡片不是直接子元素,只会退化成整行占位(无效接线)。
+          return h('div', { key: grp.day, 'data-dam-slot': 'timeline', 'data-dam-block': 'timeline', 'data-dam-kind': 'timeline', 'data-dam-flow': '', style: { marginBottom: '16px' } },
+            h('div', { style: { fontSize: 'calc(11.5px * var(--dam-scale))', fontWeight: 700, opacity: .7, margin: '2px 2px 8px' } }, grp.day),
+            grp.rows.map(function (row, i) {
+              var rc = row.reasonCodes || []
+              var del = row.delivery
+              return h('div', { key: row.observationId || i, 'data-dam-card': '', style: card },
+                h('div', { style: { display: 'flex', alignItems: 'center', gap: '7px', marginBottom: '5px' } },
+                  (function () { var lk = row.lane === 'explicit' ? 'explicit' : 'proactive'; var c = laneBg[lk] || ['var(--dam-neutral-16, rgba(128,128,128,.16))', null]; return badge(locale === 'zh' ? (lk === 'explicit' ? '明确召回' : '主动观测') : lk, c[0], c[1]) })(),
+                  (function () { var dk = String(row.decision); var c = decBg[dk] || ['var(--dam-rgba-14, rgba(128,128,128,.14))', null]; return badge(dk.toUpperCase(), c[0], c[1]) })(),
+                  // G-02 v2:投递结果徽标(emit/prefetch 行显示;关联是时间窗+记忆交集的启发式)
+                  del ? badge(locale === 'zh' ? '✓投递×' + del.count : '✓delivered×' + del.count, 'var(--dam-47-164-106-2, rgba(47,164,106,.2))', 'var(--dam-dec-emit, #7fdcb0)') : null,
+                  del && del.skill ? badge(locale === 'zh' ? '技能✓' : 'skill✓', 'var(--dam-160-120-255-24, rgba(160,120,255,.24))', 'var(--dam-dec-proactive, #d4c2ff)') : null,
+                  !del && String(row.decision) === 'emit' ? badge(locale === 'zh' ? '未投递' : 'not delivered', 'var(--dam-196-80-80-14, rgba(196,80,80,.14))', 'var(--dam-dec-nodeliver, #e8a1a1)') : null,
+                  row.ts ? h('span', { style: { marginLeft: 'auto', opacity: .5, fontSize: 'calc(10.5px * var(--dam-scale))' } }, new Date(row.ts * 1000).toTimeString().slice(0, 5)) : null),
+                h('div', { style: { display: 'flex', flexWrap: 'wrap', gap: '5px', margin: '7px 0' } },
+                  rc.length ? rc.map(function (code, ci) { return reasonChip(code) }) : [h('span', { key: 'none', style: { opacity: .4, fontSize: 'calc(10px * var(--dam-scale))' } }, '-')]),
+                apeRow(row.observationId))
+            }))
+        }))
+    }
+
+    function LogsTab() {
+      var dataPair = useState(null)
+      var data = dataPair[0]
+      var setData = dataPair[1]
+      var openPair = useState(null)
+      var open = openPair[0]
+      var setOpen = openPair[1]
+      var contentPair = useState('')
+      var content = contentPair[0]
+      var setContent = contentPair[1]
+      var userPair = useState('')
+      var userText = userPair[0]
+      var setUserText = userPair[1]
+      var userTruncPair = useState(false)
+      var userTruncated = userTruncPair[0]
+      var setUserTruncated = userTruncPair[1]
+      // ★2026-09-22:日志列表改折叠(用户要求「日志可以做成折叠的形式,可以展开」)。默认收起 ——
+      //   首屏留给「硬性约束 + 用户笔记」这两块每轮无条件注入的稳定内容,日志属于翻查型内容。
+      var logsOpenPair = useState(false)
+      var logsOpen = logsOpenPair[0]
+      var setLogsOpen = logsOpenPair[1]
+      useEffect(function () {
+        var alive = true
+        apiGet(API.list).then(function (d) { if (alive) setData(d) }).catch(function () {})
+        apiGet(API.state).then(function (s) { if (alive && s) { if (typeof s.userText === 'string') setUserText(s.userText); setUserTruncated(!!s.userTextTruncated) } }).catch(function () {})
+        return function () { alive = false }
+      }, [])
+      useEffect(function () {
+        if (!open) return
+        var alive = true
+        apiGet(API.file, { path: open }).then(function (d) { if (alive) setContent(d.content) }).catch(function () {})
+        return function () { alive = false }
+      }, [open])
+      if (!data) return h(Loading)
+      var rows = []
+      if (open) {
+        rows.push(h(Card, { title: pathName(open) },
+          h('div', { 'data-dam-content': '' }, content || t('empty')),
+          h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: function () { setOpen(null); setContent('') } }, t('back'))))
+      } else {
+        // ★2026-09-22 版式调整(用户要求「把上面的那一堆东西和下面的对调」):
+        //   ① 硬性约束 与 用户笔记 提到最上面 —— 两者都是**每轮无条件注入**的稳定内容,使用者最该先看到;
+        //   ② 日志列表下移并改折叠 —— 日志是翻查型内容,不该占据首屏。
+        //   两块都用 [data-dam-section] 包裹:它在 [data-dam-flow] 栅格里整行占位,不会被分列。
+        rows.push(h('div', { 'data-dam-section': '' }, h(RulesEditPanel, {})))
+        rows.push(h('div', { 'data-dam-section': '', style: { marginTop: '14px' } },
+          h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginBottom: '6px' } }, t('userMemoryBlock')),
+          h(Card, { title: 'MEMORY.md (' + (locale === 'zh' ? '用户级' : 'user-level') + ')' },
+            h('div', { 'data-dam-content': '' }, userText || t('userMemoryEmpty')),
+            userTruncated ? h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, t('userMemoryTruncated')) : null)))
+        rows.push(h('div', { 'data-dam-section': '', style: { marginTop: '14px' } }, h(FoldableLogs, {
+          logs: data.logs || [], open: logsOpen, setOpen: setLogsOpen, onOpenFile: setOpen,
+        })))
+      }
+      // 大屏分列:卡片流页签(见 CSS [data-dam-flow]);非卡片子元素仍整行。
+      return h('div', { 'data-dam-slot': 'timeline', 'data-dam-flow': '' }, rows)
+    }
+    // ★2026-09-22 日志折叠块(从 LogsTab 抽出, 便于独立校验括号):标题可点, 内容用既有 AnimatedDisclosure。
+    function FoldableLogs(props) {
+      var open = !!props.open
+      var list = props.logs || []
+      return h('div', null,
+        h('button', {
+          'data-dam-fold': '', 'data-open': open ? 'true' : 'false', 'aria-expanded': open ? 'true' : 'false',
+          onClick: function () { props.setOpen(!open) },
+        },
+          h('span', { className: 'dam-fold-caret' }, '▸'),
+          h('span', null, t('logs')),
+          h('span', { className: 'dam-fold-count' }, list.length + (locale === 'zh' ? ' 篇' : ' files'))),
+        h(AnimatedDisclosure, { open: open },
+          h('div', { style: { paddingTop: '8px' } },
+            h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, t('clickDateViewLog')),
+            list.map(function (log) {
+              return h(Card, { key: log.date, title: log.date + ' · ' + fmtSize(log.size) },
+                h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: function () { props.onOpenFile(log.date + '.md') } }, t('view')))
+            }))))
+    }
+
+    function pathName(p) { var parts = String(p).split(/[\\/]/); return parts[parts.length - 1] }
+
+    // ── ★R1–R6（2026-09-20 用户「看不懂只能盲确认」）审批面人话化辅助 ────────
+    //   R3：stage 枚举 → 中文。
+    function stageLabel(stage) {
+      var m = { observed: 'hubStageObserved', candidate: 'hubStageCandidate', validated: 'hubStageValidated', active: 'hubStageActive', deprecated: 'hubStageDeprecated' }
+      return m[stage] ? t(m[stage]) : String(stage || '')
+    }
+    //   R2：reasonCodes → 人话。**为什么不能晋升**必须看得见。
+    //   后端只回传机器码（如 diversity-below-3），这里翻成具体数字与下一步动作。
+    function whyNotPromotable(promotion) {
+      if (!promotion) return ''
+      var d = promotion.detail || {}
+      var codes = promotion.reasonCodes || []
+      for (var i = 0; i < codes.length; i++) {
+        var c = codes[i]
+        if (c === 'observation-only') return t('hubWhyObservationOnly')
+        if (c === 'deprecated') return t('hubStageDeprecated')
+        if (c === 'no-success-criteria') return t('hubWhyNoCriteria')
+        if (c === 'has-correction') return t('hubWhyHasCorrection')(d.corrections || 0)
+        if (c.indexOf('high-risk-awaiting-approval') === 0) return t('hubWhyHighRisk')
+        if (c.indexOf('diversity-below-') === 0) return t('hubWhyDiversity')(d.diversity != null ? d.diversity : 0, d.need != null ? d.need : 0)
+        if (c.indexOf('success-below-') === 0) return t('hubWhySuccess')(d.successCount != null ? d.successCount : 0, d.need != null ? d.need : 0)
+        if (c.indexOf('correction-rate-') === 0) return t('hubWhyCorrectionRate')(String(c).replace('correction-rate-', ''), d.cap != null ? d.cap : '')
+        if (c === 'model-authorized') continue
+      }
+      if (promotion.decision === 'promote') return t('hubWhyCanPromote')
+      // ★C（2026-09-22）：把「关在哪一类门」说透 —— 统计门可人工越过，结构门不可。
+      //   没有这一段时，界面上"一个按钮都没有"，用户只能猜（这正是"手动通道被关掉"的观感来源）。
+      if (promotion.decision === 'keep') {
+        var head = codes.length ? codes.join(' · ') : ''
+        if (promotion.overridable === true) return head + ' ｜ ' + t('hubWhyOverridable')
+        if (promotion.gateKind === 'structural') return head + ' ｜ ' + t('hubWhyStructural')
+        return head
+      }
+      return codes.length ? codes.join(' · ') : ''
+    }
+
+    // ── ★R7（2026-09-20 用户要求「用户级硬性约束须能自行增删改」）─────────────
+    //   这一段规则**每轮无条件注入、不走语义层** ⇒ 过时条目不会被自动淘汰、
+    //   AI（memory_user）也可能写错 ⇒ 必须让用户能自己改。
+    //   接口与将来换风格无关：本面板只用 data-dam-* 语义属性，样式由外层决定。
+    function RulesEditPanel(props) {
+      var nonce = props && props.nonce ? props.nonce : 0
+      var dataPair = useState(null); var data = dataPair[0]; var setData = dataPair[1]
+      var errPair = useState(''); var err = errPair[0]; var setErr = errPair[1]
+      var busyPair = useState(false); var busy = busyPair[0]; var setBusy = busyPair[1]
+      var msgPair = useState(''); var msg = msgPair[0]; var setMsg = msgPair[1]
+      var draftPair = useState({}); var draft = draftPair[0]; var setDraft = draftPair[1]
+      var newPair = useState(''); var newText = newPair[0]; var setNewText = newPair[1]
+      var tickPair = useState(0); var tick = tickPair[0]; var setTick = tickPair[1]
+      useEffect(function () {
+        var alive = true
+        apiGet(API.rulesList, {}).then(function (r) {
+          if (!alive) return
+          if (r && r.error) { setErr(r.error) } else { setData(r); setErr('') }
+        }).catch(function (e) { if (alive) setErr(String(e && e.message ? e.message : e)) })
+        return function () { alive = false }
+      }, [nonce, tick])
+      function apply(op, payload) {
+        setBusy(true); setMsg('')
+        apiPost(API.rulesApply, Object.assign({ op: op }, payload || {})).then(function (r) {
+          setBusy(false)
+          if (r && r.error) { setMsg('❌ ' + r.error); return }
+          // ★即时回显（用户既有硬性偏好）：直接用餐后端返回的新列表，不等重新拉整页
+          setData({ path: data && data.path, items: r.items, preview: r.preview })
+          setMsg('✅ ' + (r.result || 'ok'))
+          setDraft({})
+        }).catch(function (e) { setBusy(false); setMsg('❌ ' + String(e && e.message ? e.message : e)) })
+      }
+      if (err) return h(Card, { title: t('rulesTitle') }, h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, err))
+      if (!data) return h(Card, { title: t('rulesTitle') }, h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, '…'))
+      var items = data.items || []
+      var rows = []
+      rows.push(h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, t('rulesIntro')))
+      rows.push(h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginTop: '4px' } }, t('rulesPath') + (data.path || '')))
+      if (msg) rows.push(h('div', { key: 'msg', 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginTop: '6px' } }, msg))
+      if (!items.length) rows.push(h('div', { key: 'empty', 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginTop: '8px' } }, t('rulesEmpty')))
+      for (var i = 0; i < items.length; i++) {
+        (function (it, idx) {
+          var editing = draft[idx] != null
+          var srcTag = it.source === 'ai' ? t('rulesSourceAi') : t('rulesSourceUser')
+          var head = h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { fontSize: '12px', opacity: .75 } },
+            '#' + (idx + 1) + ' · ' + srcTag + (it.dateSection ? ' · ' + it.dateSection : ''))
+          var bodyEl
+          if (editing) {
+            bodyEl = h('div', null,
+              h('textarea', {
+                'data-dam-slot': 'form', 'data-dam-input': '',
+                value: draft[idx],
+                rows: 3,
+                style: { width: '100%', boxSizing: 'border-box' },
+                onInput: function (e) { var d = Object.assign({}, draft); d[idx] = e.target.value; setDraft(d) },
+              }),
+              h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', disabled: busy, onClick: function () { apply('update', { index: idx, text: draft[idx] }) } }, t('rulesSave')),
+              ' ',
+              h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: function () { var d = Object.assign({}, draft); delete d[idx]; setDraft(d) } }, t('rulesCancel')))
+          } else {
+            bodyEl = h('div', null,
+              h('div', { 'data-dam-content': '' }, it.text),
+              h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: function () { var d = Object.assign({}, draft); d[idx] = it.text; setDraft(d) } }, t('rulesEdit')),
+              ' ',
+              h('button', {
+                'data-dam-slot': 'actions', 'data-dam-btn': '',
+                disabled: busy,
+                onClick: function () {
+                  // ★R7-4：该层渲染器（renderRulesSectionPre）**不认任何状态标记** ⇒
+                  //   软删标记会被当正文注入模型。故删除**真删**且不可撤销 ⇒ 二次确认。
+                  if (typeof window !== 'undefined' && !window.confirm(t('rulesConfirmDelete'))) return
+                  apply('remove', { index: idx })
+                },
+              }, t('rulesDelete')))
+          }
+          rows.push(h('div', { key: 'r' + idx, 'data-dam-rule': '', style: { marginTop: '8px', paddingTop: '8px', borderTop: '1px solid var(--dam-neutral-25, rgba(128,128,128,.25))' } }, head, bodyEl))
+        })(items[i], i)
+      }
+      rows.push(h('div', { key: 'add', style: { marginTop: '12px' } },
+        h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, t('rulesAddHint')),
+        h('textarea', {
+          'data-dam-slot': 'form', 'data-dam-input': '',
+          value: newText,
+          rows: 2,
+          placeholder: t('rulesAddPlaceholder'),
+          style: { width: '100%', boxSizing: 'border-box' },
+          onInput: function (e) { setNewText(e.target.value) },
+        }),
+        h('button', {
+          'data-dam-slot': 'actions', 'data-dam-btn': '',
+          disabled: busy || !String(newText || '').trim(),
+          onClick: function () { apply('add', { text: newText }); setNewText('') },
+        }, t('rulesAdd'))))
+      // ★R7-6：预览「下一轮注入会变成什么样」
+      rows.push(h('div', { key: 'pvh', 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginTop: '12px' } }, t('rulesPreviewHint')))
+      rows.push(h('pre', { key: 'pv', 'data-dam-content': '', style: { whiteSpace: 'pre-wrap' } }, data.preview || ''))
+      return h(Card, { title: t('rulesTitle') }, h('div', null, rows))
+    }
+
+    // M8 记忆中枢页签:展示三层记忆(经历/事实/技能)概览。数据源=/memory-hub 只读投影。
+    function MemoryHubTab(props) {
+      var nonce = props && props.nonce ? props.nonce : 0
+      var dataPair = useState(null)
+      var data = dataPair[0]
+      var setData = dataPair[1]
+      var errPair = useState('')
+      var err = errPair[0]
+      var setErr = errPair[1]
+      var refreshPair = useState(0)
+      var refreshTick = refreshPair[0]
+      var setRefresh = refreshPair[1]
+      var actMsgPair = useState('')
+      var actMsg = actMsgPair[0]
+      var setActMsg = actMsgPair[1]
+      useEffect(function () {
+        var alive = true
+        fetch(API.memoryHub).then(function (r) { return r.json() }).then(function (j) {
+          if (alive) setData(j || null)
+        }).catch(function (e) { if (alive) setErr(String(e && e.message)) })
+        return function () { alive = false }
+      }, [nonce, refreshTick])
+      // M9 审批动作(G-02 同款 append-only 精神):晋升/激活/弃用走 /memory-hub POST,
+      // 后端走 store 门槛判定,不绕过任何 gate;动作后刷新 overview。
+      function hubAct(action, procedureId, v) {
+        fetch(API.memoryHub, { method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: action, procedureId: procedureId, v: v }) })
+          .then(function (r) { return r.json() })
+          .then(function (j) {
+            // issue #30:附带 reasonCodes —— 否则"点了晋升但没晋级"只显示 keep，看不出原因
+            // (如 observation-only / diversity-below-3 / no-success-criteria)。
+            setActMsg(action + ': ' + (j && (j.decision || j.reason || (j.ok === false ? (j.reason || 'rejected') : 'ok')) || 'done') + (j && Array.isArray(j.reasonCodes) && j.reasonCodes.length ? ' (' + j.reasonCodes.join(', ') + ')' : ''))
+            setRefresh(function (x) { return x + 1 })
+          })
+          .catch(function (e) { setActMsg(action + ' failed: ' + String(e && e.message)) })
+      }
+      // ★M8-B 第6步（2026-09-23）：归属转移（提升为全局 / 收纳到工作区）。
+      //   与 hubAct 分开：动作名与参数不同（scope 而非 v），且必须把 `migrate()` 的逐条结果
+      //   （含 rolledBack / reason）显示出来 —— 两阶段提交的失败是要让人看见的，
+      //   静默成 "done" 等于把回滚藏起来，正是用户列为「功能坏了」的那种表现。
+      function hubScopeTransfer(procedureId, toScope) {
+        setActMsg(t('hubScopeBusy'))
+        fetch(API.memoryHub, { method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'transfer-scope', procedureId: procedureId, scope: toScope }) })
+          .then(function (r) { return r.json() })
+          .then(function (j) {
+            var one = (j && Array.isArray(j.results) && j.results[0]) || {}
+            if (j && j.ok && one.ok) {
+              setActMsg(t('hubScopeMoved') + (toScope === 'workspace' ? t('hubScopeWorkspace') : t('hubScopeGlobal')) + (one.noop ? '（' + t('hubScopeNoop') + '）' : ''))
+            } else {
+              // 失败必须带原因 + 是否已回滚；两者都不许省略。
+              setActMsg(t('hubScopeReasons')(one.reason || (j && j.reason) || (j && j.error))
+                + (j && j.rolledBack ? ' ⚠ ' + t('hubScopeReasons')('phase-failed') : ''))
+            }
+            setRefresh(function (x) { return x + 1 })
+          })
+          .catch(function (e) { setActMsg(t('hubScopeReasons')(String(e && e.message))) })
+      }
+      if (err) return h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, t('searchFailed') + err)
+      if (!data) return h(Loading, { label: t('loading') })
+      var rows = []
+      var procs = data.procedures
+      var facts = data.facts
+      var epis = data.episodic
+      // ★M8-B 第6步（2026-09-23）：**双库视图** —— 回答用户三问：
+      //   ① 这条技能属于哪个库？（归属徽标，逐条）
+      //   ② 当前是哪个库、各库几条、工作区库现在能不能写？（本区块头部）
+      //   ③ 怎么改判归属？（提升为全局 / 收纳到本工作区，逐条按钮）
+      //   数据源 = 宿主 /memory-hub 的 `scopeView`（只读、无真实路径）+ 每行的 scope 字段。
+      //   工作区未知时按钮仍显示但**点击会明确报错**（宿主 migrate 返回 ws-unknown），
+      //   比灰掉按钮更能说明「为什么不行」—— 与 hubScopeUnknownWs 文案配套。
+      var sv = data.scopeView
+      if (sv) {
+        var svHint = (sv.workspaceReady ? t('hubScopeWorkspaceHint') : t('hubScopeUnknownWs'))
+          + ' ' + (sv.globalDirCorrupt || sv.workspaceDirCorrupt ? '⚠ ' + t('hubScopeCorrupt') : '')
+        rows.push(h(Card, { title: t('hubScopeTitle') },
+          h('div', { 'data-dam-content': '' },
+            h('div', null, h('b', null, t('hubScopeDefault')), h('span', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginLeft: '6px' } }, t('hubScopeCounts')(sv.globalCount, sv.workspaceCount))),
+            h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginTop: '3px', opacity: .8 } }, svHint))))
+      }
+      // 归属徽标：通用库 / 本工作区库。缺省 global 由宿主投影补齐，这里不再兜判。
+      function scopeBadge(p) {
+        var isWs = p && p.scope === 'workspace'
+        return h('span', {
+          'data-dam-scope': isWs ? 'workspace' : 'global',
+          'data-dam-slot': 'hint', 'data-dam-hint': '',
+          title: isWs ? t('hubScopeWorkspaceHint') : t('hubScopeGlobalHint'),
+          style: { marginLeft: '6px', opacity: .85 },
+        }, '[' + (isWs ? t('hubScopeWorkspace') : t('hubScopeGlobal')) + (p && p.addedBy ? ' · ' + p.addedBy : '') + ']')
+      }
+      // 转移按钮：目标库 = 与当前归属相反的那个。已在目标库时宿主会回 noop（幂等）。
+      function scopeButtons(p) {
+        var isWs = p && p.scope === 'workspace'
+        return h('button', {
+          'data-dam-slot': 'actions', 'data-dam-btn': '', 'data-dam-scope-to': isWs ? 'global' : 'workspace',
+          style: { fontSize: 'calc(10.5px * var(--dam-scale))', padding: '3px 10px' },
+          onClick: function () { hubScopeTransfer(p.procedureId, isWs ? 'global' : 'workspace') },
+        }, isWs ? t('hubToGlobal') : t('hubToWorkspace'))
+      }
+      // 技能层(最精彩: 反复成功的流程固化为 skill)
+      rows.push(h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginTop: '8px' } }, t('hubSkills')))
+      var activeList = (procs && procs.active) || []
+      if (!activeList.length) {
+        rows.push(h(Card, { title: t('hubSkills') + ' (' + (locale === 'zh' ? '暂无' : 'none') + ')' }, h('div', { 'data-dam-content': '' }, h(SkinEmpty, { slot: 'empty.library', size: skinSlotSize('empty.library') }, t('hubSkillsEmpty')))))
+      } else {
+        rows.push(h(Card, { title: t('hubSkills') + ' (' + activeList.length + ')' },
+          activeList.map(function (p) {
+            var risk = p.riskLevel === 'high' ? (locale === 'zh' ? '· 高风险需确认' : '· high-risk') : ''
+            return h('div', { 'data-dam-content': '', key: p.procedureId, style: { padding: '4px 0', borderBottom: '1px solid color-mix(in srgb, var(--dsw-alias-border-l1, rgba(255,255,255,.16)) 40%, transparent)' } },
+              h('div', null, h('b', null, p.title), h('span', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginLeft: '6px' } }, (locale === 'zh' ? '成功 ' : 'success ') + (p.evidence ? p.evidence.success : 0) + ' · ' + (locale === 'zh' ? '会话 ' : 'sessions ') + (p.evidence ? p.evidence.sessions : 0) + ' ' + risk),
+              // ★M8-B 第6步：已激活技能也要显示归属库（用户要「在当前库时，显示激活了哪些 skill」）
+              scopeBadge(p),
+              h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', style: { marginLeft: '8px', fontSize: 'calc(10px * var(--dam-scale))', padding: '2px 8px' }, onClick: function () { hubAct('deprecate', p.procedureId) } }, locale === 'zh' ? '弃用' : 'deprecate'),
+              h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', style: { marginLeft: '4px', fontSize: 'calc(10px * var(--dam-scale))', padding: '2px 8px' }, onClick: function () { hubAct('pin', p.procedureId, !(procs && procs.pipeline && procs.pipeline.concat(activeList).find(function (x) { return x.procedureId === p.procedureId && x.pinned }))) } }, locale === 'zh' ? '置顶' : 'pin')))
+          })))
+      }
+      // M9 审批队列(observed/candidate/validated):用户确认晋升/激活/弃用
+      var pipeline = (procs && procs.pipeline) || []
+      if (pipeline.length) {
+        rows.push(h(Card, { title: (locale === 'zh' ? '技能审批队列' : 'Skill approval queue') + ' (' + pipeline.length + ')' },
+          pipeline.map(function (p) {
+            var ev = p.evidence || {}
+            return h('div', { 'data-dam-content': '', key: p.procedureId, style: { padding: '5px 0', borderBottom: '1px solid color-mix(in srgb, var(--dsw-alias-border-l1, rgba(255,255,255,.16)) 40%, transparent)' } },
+              // ★R1：技能名 + 可读标注；★R3：stage 给中文
+              h('div', null, h('b', null, p.title), h('span', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginLeft: '6px' } },
+                '[' + stageLabel(p.stage) + ']'
+                + (p.observationOnly ? (locale === 'zh' ? ' · 观察（不参与自动晋升）' : ' · observation-only') : '')
+                + (p.pinned ? ' 📌' : '') + (p.riskLevel === 'high' ? ' ⚠' : '')),
+                // ★M8-B 第6步：归属库徽标（这条技能住在哪个库）
+                scopeBadge(p),
+                // ★R5：evidence 给人话（不是裸数字）
+                h('span', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginLeft: '6px' } }, t('hubEvLine')(ev))),
+              // ★R2：**为什么不能晋升** —— 必须在界面上说清楚
+              (function () {
+                var why = whyNotPromotable(p.promotion)
+                if (!why) return null
+                var ok = p.promotion && p.promotion.decision === 'promote'
+                return h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginTop: '4px', color: ok ? 'inherit' : 'var(--dsw-alias-text-warning, #d90)', opacity: .95 } },
+                  h('b', null, t('hubWhyTitle')), why)
+              })(),
+              // ★R4：预览「晋升后会注入什么」（真实 steps / successCriteria）
+              ((p.steps && p.steps.length) || (p.successCriteria && p.successCriteria.length))
+                ? h('details', { style: { marginTop: '4px' } },
+                    h('summary', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { cursor: 'pointer' } }, t('hubInjectPreview')),
+                    h('div', { 'data-dam-content': '', style: { marginTop: '4px', paddingLeft: '10px' } },
+                      (p.steps || []).map(function (s, si) { return h('div', { key: 's' + si }, (si + 1) + '. ' + s) }),
+                      (p.successCriteria && p.successCriteria.length)
+                        ? h('div', { style: { marginTop: '4px' } }, h('b', null, t('hubInjectCriteria')), (p.successCriteria || []).join(' / '))
+                        : null))
+                : h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginTop: '4px', opacity: .7 } }, t('hubNoSteps')),
+              h('div', { style: { display: 'flex', gap: '6px', marginTop: '5px' } },
+                // ★M8-B 第6步：归属转移（提升为全局 / 收纳到本工作区）——与晋升是同级的**库归属**操作，
+                //   不是晋升门限，因此不受 p.promotion/observationOnly 影响（只读线索也能改判归属）。
+                scopeButtons(p),
+                // issue #30:纯 episode 观察行**结构上**不可能晋升(无 successCriteria),
+                // 继续显示"晋升"按钮只会让人反复点击却看不到变化 ⇒ 直接隐藏并打观察标。
+                // ★ 2026-09-21 bugfix(A-9):原条件只挡 observationOnly,与 store 真实门限**不一致** ——
+                //   缺 successCriteria / 有 correction / correctionRate 超限的条目照样显示按钮,
+                //   用户点下去只得到一行 keep 灰字,感受即「批准不了」。
+                //   现改为**直接依赖只读投影** `p.promotion`(宿主 memory-hub-pre 用 evaluatePromotion 生成,
+                //   纯只读、不写盘):decision==='promote' 才给按钮,否则界面已由 R2 区块说明原因。
+                //   fail-soft:投影缺失(旧宿主/异常)时退回原 observationOnly 判据,不做过度拦截。
+                (!p.observationOnly && (!p.promotion || p.promotion.decision === 'promote'))
+                  && h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', style: { fontSize: 'calc(10.5px * var(--dam-scale))', padding: '3px 10px' }, onClick: function () { hubAct('promote', p.procedureId) } }, locale === 'zh' ? '晋升' : 'promote'),
+                // ★2026-09-22 补接线(前端接线审计 P0-1):宿主已提供 approve 原语
+                //   (index.js 白名单含 action:'approve' + procedure-store-pre approve('user')),
+                //   而上面「晋升」按钮门控在 decision==='promote' ⇒ 高风险条目(decision==='ask')
+                //   在界面上是死路:用户看得到「待人工批准」却没有任何按钮可点。
+                (p.promotion && p.promotion.decision === 'ask')
+                  && h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', style: { fontSize: 'calc(10.5px * var(--dam-scale))', padding: '3px 10px', fontWeight: 650 }, onClick: function () { hubAct('approve', p.procedureId) } }, locale === 'zh' ? '批准(人工)' : 'approve (manual)'),
+                // ★B/C（2026-09-22）：人工**强制晋升** —— 只在「拦它的门**全是统计门**」时给出。
+                //   判据来自宿主只读投影 p.promotion.overridable（memory-hub-pre 用 promotionOverrideView 生成，
+                //   只读、零副作用、且**不重复实现门限** ⇒ 结构上不可能与 promote() 漂移）。
+                //   结构门拦（已弃用 / 观察型 / 无 successCriteria / 有纠正记录）时**不给按钮** ——
+                //   否则就是再造一个「点了没反应」的假通道（A-9 收掉旧按钮的正是这个原因）。
+                //   动作走 index.js 白名单 `force-promote` → promote(pid, {}, { authorizedBy:'user' })，
+                //   只越过 diversity/success 两道统计门，并在条目上留 `authorizedBy:'user'` 痕迹。
+                (p.promotion && p.promotion.overridable === true)
+                  && h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', title: t('hubForcePromoteTitle'), style: { fontSize: 'calc(10.5px * var(--dam-scale))', padding: '3px 10px', fontWeight: 650 }, onClick: function () { hubAct('force-promote', p.procedureId) } }, t('hubForcePromote')),
+                !p.observationOnly && p.stage === 'validated' && h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', style: { fontSize: 'calc(10.5px * var(--dam-scale))', padding: '3px 10px' }, onClick: function () { hubAct('activate', p.procedureId) } }, locale === 'zh' ? '直接激活' : 'activate'),
+                h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', style: { fontSize: 'calc(10.5px * var(--dam-scale))', padding: '3px 10px', opacity: .75 }, onClick: function () { hubAct('deprecate', p.procedureId) } }, locale === 'zh' ? '弃用' : 'deprecate'),
+                h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', style: { fontSize: 'calc(10.5px * var(--dam-scale))', padding: '3px 10px', opacity: .75 }, onClick: function () { hubAct('pin', p.procedureId, !p.pinned) } }, p.pinned ? (locale === 'zh' ? '取消置顶' : 'unpin') : (locale === 'zh' ? '置顶' : 'pin'))))
+          })))
+      }
+      if (actMsg) rows.push(h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginTop: '6px', color: 'var(--dsw-alias-state-warn-primary, var(--dam-dec-prefetch, #e8c584))' } }, actMsg))
+      // 事实层
+      rows.push(h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginTop: '12px' } }, t('hubFacts')))
+      var factList = (facts && facts.recent) || []
+      rows.push(h(Card, { title: t('hubFacts') + ' (' + (facts ? facts.size : 0) + ')' },
+        factList.length ? factList.slice(0, 6).map(function (f) {
+          return h('div', { 'data-dam-content': '', key: f.factId, style: { padding: '3px 0' } }, f.subject + ' · ' + f.predicate + (f.object ? ' · ' + f.object : ''))
+        }) : h('div', { 'data-dam-content': '' }, t('hubFactsEmpty'))))
+      // ★P0-3a 补接线(2026-09-22):事实保留上限淘汰台账。宿主早已把它放进 /memory-hub 应答
+      //   (memory-hub.js:245 → stores.facts.getStats()),前端此前零渲染
+      //   ⇒「事实被悄悄淘汰了」在界面上无处可查。pruneProtected>0 表示已轮到删「重要项」⇒ 上限偏低。
+      var factStats = (facts && facts.stats) || null
+      if (factStats && (Number(factStats.pruned) > 0 || Number(factStats.pruneProtected) > 0)) {
+        var fpPruned = Number(factStats.pruned) || 0
+        var fpProtected = Number(factStats.pruneProtected) || 0
+        rows.push(h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginTop: '6px', color: fpProtected > 0 ? 'var(--dsw-alias-state-warn-primary, var(--dam-dec-prefetch, #e8c584))' : undefined } },
+          locale === 'zh'
+            ? '已按保留上限淘汰 ' + fpPruned + ' 条事实' + (fpProtected > 0 ? '，其中 ' + fpProtected + ' 条属重要/未撤销条目 —— 上限偏低，建议到 设置 → 自动记忆引擎 调高「事实保留上限」' : '')
+            : fpPruned + ' fact(s) evicted by the retention cap' + (fpProtected > 0 ? ', incl. ' + fpProtected + ' important/unrevoked — cap too low; raise "Fact retention limit" under Settings → Semantic engine' : '')))
+      }
+      if (facts && facts.pendingConflicts && facts.pendingConflicts.length) {
+        rows.push(h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { color: 'var(--dsw-alias-state-warn-primary, var(--dam-dec-prefetch, #e8c584))' } }, t('hubConflicts') + ': ' + facts.pendingConflicts.length))
+      }
+      // 经历层
+      rows.push(h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginTop: '12px' } }, t('hubEpisodic')))
+      var epiList = (epis && epis.recent) || []
+      rows.push(h(Card, { title: t('hubEpisodic') + ' (' + (epis ? epis.size : 0) + ')' },
+        epiList.length ? epiList.slice(0, 6).map(function (e) {
+          return h('div', { 'data-dam-content': '', key: e.episodeId, style: { padding: '3px 0' } },
+            (e.intent || '').slice(0, 40) + ' · ' + (e.outcome || 'unknown') + (e.success ? ' ✓' : ''))
+        }) : h('div', { 'data-dam-content': '' }, t('hubEpisodicEmpty'))))
+      // 统计
+      rows.push(h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginTop: '12px', opacity: .7 } },
+        (locale === 'zh' ? '中枢统计: ' : 'Hub stats: ') + (data.stats ? JSON.stringify(data.stats) : '')))
+      // 大屏分列:卡片流页签(见 CSS [data-dam-flow]);非卡片子元素仍整行。
+      return h('div', { 'data-dam-slot': 'timeline', 'data-dam-flow': '' }, rows)
+    }
+
+    // M10 存储管理页签(2026-08-30 P3):数据源=/storage-manage(loopback 只读投影 + 三类动作)。
+    // ①健康扫描:逐源 sidecar↔正文 digest 比对;②stale 一键自愈(只重建 sidecar,正文不动);
+    // ③按 memoryId 删除(正文原子删 + 在途激活包清理 + 派生事实撤销三联动,后端做路径白名单)。
+    function StorageTab(props) {
+      var nonce = props && props.nonce ? props.nonce : 0
+      var dataPair = useState(null)
+      var data = dataPair[0]
+      var setData = dataPair[1]
+      var errPair = useState('')
+      var err = errPair[0]
+      var setErr = errPair[1]
+      var msgPair = useState('')
+      var msg = msgPair[0]
+      var setMsg = msgPair[1]
+      var delPair = useState('')
+      var delId = delPair[0]
+      var setDelId = delPair[1]
+      var filePair = useState('')
+      var delFile = filePair[0]
+      var setDelFile = filePair[1]
+      // 迁移搬包(P4 前端接线):导出/三步向导的全部状态。只用 useState,不引新依赖。
+      var migOutPair = useState('')
+      var migOut = migOutPair[0]
+      var setMigOut = migOutPair[1]
+      var migPackPair = useState('')
+      var migPack = migPackPair[0]
+      var setMigPack = migPackPair[1]
+      var migOutPickingPair = useState(false)
+      var migOutPicking = migOutPickingPair[0]
+      var setMigOutPicking = migOutPickingPair[1]
+      var migPackPickingPair = useState(false)
+      var migPackPicking = migPackPickingPair[0]
+      var setMigPackPicking = migPackPickingPair[1]
+      var migBusyPair = useState('')
+      var migBusy = migBusyPair[0]
+      var setMigBusy = migBusyPair[1]
+      var migErrStatePair = useState('')
+      var migErr = migErrStatePair[0]
+      var setMigErr = migErrStatePair[1]
+      var migNotePair = useState('')
+      var migNote = migNotePair[0]
+      var setMigNote = migNotePair[1]
+      var migPlanPair = useState(null)
+      var migPlan = migPlanPair[0]
+      var setMigPlan = migPlanPair[1]
+      var migResultPair = useState(null)
+      var migResult = migResultPair[0]
+      var setMigResult = migResultPair[1]
+      var migConflictPair = useState('keep')
+      var migConflict = migConflictPair[0]
+      var setMigConflict = migConflictPair[1]
+      // ok===false 时把 error / errors / warnings 一并显示,绝不静默。
+      function migFail(tag, j, e) {
+        var parts = []
+        if (e) parts.push(String(e && e.message ? e.message : e))
+        if (j && j.error) parts.push(String(j.error))
+        if (j && j.errors) parts.push(Array.isArray(j.errors) ? j.errors.join(' | ') : String(j.errors))
+        if (j && j.warnings && j.warnings.length) parts.push((locale === 'zh' ? '警告: ' : 'warnings: ') + j.warnings.join(' | '))
+        if (j && j.skipped && j.skipped.length) parts.push((locale === 'zh' ? '跳过: ' : 'skipped: ') + j.skipped.join(' | '))
+        setMigErr(tag + ' ✗ ' + (parts.length ? parts.join(' · ') : (locale === 'zh' ? '未知错误' : 'unknown error')))
+      }
+      // 选择目录:沿用本文件的 pickDir 原生选择器形态;拿不到目录就提示手填输入框(不阻塞)。
+      function migPickInto(setVal, setPicking) {
+        setPicking(true); setMigErr('')
+        apiPost(API.pickDir, {}).then(function (d) {
+          setPicking(false)
+          if (d && d.dir) { setVal(d.dir); setMigNote((locale === 'zh' ? '已选择目录: ' : 'folder picked: ') + d.dir) }
+          else { setMigNote(locale === 'zh' ? '系统文件夹选择器不可用,请手动填写路径。' : 'Native folder picker unavailable — type the path manually.') }
+        }).catch(function () {
+          setPicking(false)
+          setMigNote(locale === 'zh' ? '系统文件夹选择器不可用,请手动填写路径。' : 'Native folder picker unavailable — type the path manually.')
+        })
+      }
+      function migExport(opts) {
+        if (migBusy) return
+        opts = opts || {}
+        setMigBusy('export'); setMigErr(''); setMigNote('')
+        // ★v3.1.2 修：此前只发 outPath，宿主拿不到工作区 ⇒ 恒返回 missing-ws（用户实测）。
+        //   本文件既有 currentWs()（跟随 GUI 切换工作区），导出必须显式带上。
+        apiPost(API.migrateExport, { ws: currentWs() || undefined, outPath: migOut || undefined }).then(function (j) {
+          setMigBusy('')
+          if (!j || j.ok === false) { migFail(t('migExport'), j, null); return }
+          var s = j.stats || {}
+          setMigNote(t('migExport') + ' ✓ ' + String(j.path || '') +
+            ' · ' + (locale === 'zh' ? '文件 ' : 'files ') + String(s.fileCount || 0) +
+            ' · ' + (locale === 'zh' ? '原始 ' : 'raw ') + String(s.bytes || 0) + ' B' +
+            ' · ' + (locale === 'zh' ? '压缩后 ' : 'packed ') + String(s.packedBytes || 0) + ' B' +
+            (j.checksum ? ' · sha256 ' + String(j.checksum).slice(0, 12) : '') +
+            (j.skipped && j.skipped.length ? ' · ' + (locale === 'zh' ? '跳过 ' : 'skipped ') + j.skipped.length : '') +
+            (j.warnings && j.warnings.length ? ' · ' + (locale === 'zh' ? '警告 ' : 'warnings ') + j.warnings.length : ''))
+        }).catch(function (e) { setMigBusy(''); migFail(t('migExport'), null, e) })
+      }
+      function migPreview() {
+        if (migBusy) return
+        if (!migPack) { setMigErr(t('migPickPack')); return }
+        setMigBusy('preview'); setMigErr(''); setMigNote(''); setMigPlan(null); setMigResult(null)
+        apiPost(API.migrateInspect, { packPath: migPack, targetWs: currentWs() || undefined }).then(function (j) {
+          setMigBusy('')
+          if (!j || j.ok === false) { migFail(t('migPreview'), j, null); return }
+          var p = j.plan || {}
+          setMigPlan(p)
+          setMigNote(t('migPreview') + ' ✓ ' + (p.pathChanged ? t('migPathChanged') : t('migSamePath')) +
+            (j.sourceMissing ? (locale === 'zh' ? ' · ⚠ 源工作区已不存在' : ' · warning: source workspace missing') : ''))
+        }).catch(function (e) { setMigBusy(''); migFail(t('migPreview'), null, e) })
+      }
+      function migApply() {
+        if (migBusy) return
+        if (!migPack) { setMigErr(t('migPickPack')); return }
+        setMigBusy('apply'); setMigErr(''); setMigNote('')
+        apiPost(API.migrateImport, { packPath: migPack, targetWs: currentWs() || undefined, onConflict: migConflict }).then(function (j) {
+          setMigBusy('')
+          if (!j || j.ok === false) { migFail(t('migApply'), j, null); return }
+          setMigResult(j)
+          setMigNote(t('migApply') + ' ✓ ' + String(j.targetWs || ''))
+        }).catch(function (e) { setMigBusy(''); migFail(t('migApply'), null, e) })
+      }
+      useEffect(function () {
+        var alive = true
+        fetch(API.storageManage).then(function (r) { return r.json() }).then(function (j) {
+          if (alive) setData(j || null)
+        }).catch(function (e) { if (alive) setErr(String(e && e.message)) })
+        return function () { alive = false }
+      }, [nonce])
+      function act(action, payload, onDone) {
+        setMsg('')
+        var body = Object.assign({ action: action }, payload || {})
+        fetch(API.storageManage, { method: 'POST',
+          headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+          .then(function (r) { return r.json() })
+          .then(function (j) {
+            var reason = (j && (j.reason || (j.ok === false ? 'rejected' : 'ok'))) || 'done'
+            if (j && j.ok === false && j.reason === 'no-doc-store') {
+              reason = locale === 'zh' ? '记忆锚定索引未启用:请在 设置 → 语义记忆总开关 开启「记忆锚定索引」后重试;或忽略此提示(不影响记忆读写与检索)' : 'anchor index disabled: enable "Memory anchor index" under Settings → Semantic engine, or ignore (read/write/recall unaffected)'
+            }
+            setMsg(action + ': ' + reason)
+            if (onDone) onDone(j)
+            var again = fetch(API.storageManage).then(function (r2) { return r2.json() })
+            again.then(function (j2) { setData(j2 || null) })
+          })
+          .catch(function (e) { setMsg(action + ' failed: ' + String(e && e.message)) })
+      }
+      if (err) return h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, t('searchFailed') + err)
+      if (!data) return h(Loading, { label: t('loading') })
+      if (data.error) return h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, String(data.error))
+      var counts = data.counts || { total: 0, ok: 0, stale: 0, unrepairable: 0 }
+      var rows = []
+      if (data.indexEnabled === false) {
+        rows.push(h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginTop: '6px', color: 'var(--dsw-alias-state-warn-primary, var(--dam-dec-prefetch, #e8c584))' } },
+          locale === 'zh' ? '⚠ 记忆锚定索引未启用:语料健康不做 sidecar 比对(无 stale 可修)。如需「修复 stale / 删除记忆」,请到 设置 → 语义记忆总开关 开启「记忆锚定索引」。此提示不影响记忆读写与检索。' : '⚠ Memory anchor index disabled: corpus health performs no sidecar comparison (nothing stale). To use repair/delete, enable "Memory anchor index" under Settings → Semantic engine. Read/write/recall are unaffected.'))
+      }
+      rows.push(h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginTop: '8px' } }, t('storageScanHint')))
+      rows.push(h(Card, { title: (locale === 'zh' ? '语料健康' : 'Corpus health') + ' (' + counts.ok + '/' + counts.total + ' ok)' },
+        h('div', null,
+          (data.sources || []).map(function (s) {
+            var mark = s.status === 'ok' ? '✓' : (s.status === 'stale' ? '⚠' : '✕')
+            return h('div', { 'data-dam-content': '', key: s.sourceRef, style: { padding: '3px 0' } },
+              mark + ' ' + s.sourceRef + ' [' + s.status + ']' + (s.reasons && s.reasons.length ? ' · ' + s.reasons.join(', ') : ''))
+          }),
+          h('div', { style: { display: 'flex', gap: '6px', marginTop: '8px' } },
+            h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', style: { fontSize: 'calc(10.5px * var(--dam-scale))', padding: '3px 10px' }, onClick: function () { act('scan') } }, locale === 'zh' ? '重新扫描' : 'rescan'),
+            h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', style: { fontSize: 'calc(10.5px * var(--dam-scale))', padding: '3px 10px', opacity: counts.stale ? 1 : .5 }, onClick: function () { if (counts.stale) act('repair', { items: (data.stale || []).map(function (s) { return { file: s.file, sourceRef: s.sourceRef } }) }) } },
+              (locale === 'zh' ? '修复 stale' : 'repair stale') + (counts.stale ? ' (' + counts.stale + ')' : ''))))))
+      // 删除(三联动):文件路径 + memoryId。后端校验路径必须属于当前语料三源之一。
+      rows.push(h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginTop: '12px' } }, t('storageDeleteHint')))
+      rows.push(h(Card, { title: locale === 'zh' ? '删除记忆(三联动)' : 'Delete memory (cascading)' },
+        h('div', null,
+          h('select', { 'data-dam-select': '', value: delFile, onChange: function (e) { setDelFile(e.target.value) }, style: { width: '100%' } },
+            h('option', { value: '' }, locale === 'zh' ? '选择语料文件…' : 'select corpus file…'),
+            (data.sources || []).map(function (s) { return h('option', { key: s.sourceRef, value: s.file }, s.sourceRef + ' — ' + s.file) })),
+          h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', placeholder: 'mem_…', value: delId, onChange: function (e) { setDelId(e.target.value) }, style: { width: '100%', marginTop: '6px' } }),
+          h('div', { style: { display: 'flex', gap: '6px', marginTop: '6px' } },
+            h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', style: { fontSize: 'calc(10.5px * var(--dam-scale))', padding: '3px 10px', opacity: (delFile && delId) ? 1 : .5 },
+              onClick: function () {
+                if (!(delFile && delId)) return
+                act('delete', { filePath: delFile, memoryId: delId }, function () { setDelId('') })
+              } }, locale === 'zh' ? '删除' : 'delete')))))
+      if (msg) rows.push(h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginTop: '6px', color: 'var(--dsw-alias-state-warn-primary, var(--dam-dec-prefetch, #e8c584))' } }, msg))
+      var audit = (data.audit || []).slice(-4)
+      if (audit.length) {
+        rows.push(h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginTop: '12px', opacity: .7 } },
+          (locale === 'zh' ? '最近动作: ' : 'recent: ') + audit.map(function (a) { return a.action }).join(', ')))
+      }
+    // 迁移搬包(P4):StorageTab 的「迁移搬包」卡片 —— 导出 + 导入三步向导(选包 → 预览差异 → 确认导入)。
+    // 版式:只用 flexWrap / 百分比 / calc 字号,长路径 wordBreak:break-all ⇒ 窄浮层与宽页签都不横向溢出。
+    var migOutPlaceholder = locale === 'zh' ? '输出目录(留空 = 默认导出目录)' : 'output dir (blank = default export dir)'
+    var migRows = []
+    if (migErr) migRows.push(h('div', { 'data-dam-error': '', key: 'merr', style: { wordBreak: 'break-all' } }, migErr))
+    if (migNote) migRows.push(h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', key: 'mnote', style: { wordBreak: 'break-all' } }, migNote))
+    migRows.push(h(Card, { title: t('migTitle') },
+      h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginBottom: '6px', wordBreak: 'break-all' } }, t('migHint')),
+      h('div', { 'data-dam-slot': 'list', 'data-dam-row': '' },
+        h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', value: migOut, placeholder: migOutPlaceholder,
+          onChange: function (e) { setMigOut(e.target.value) }, style: { flex: '1 1 100%' } }),
+        h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', disabled: !!migBusy, onClick: function () { migPickInto(setMigOut, setMigOutPicking) } },
+          migOutPicking ? t('loading') : (locale === 'zh' ? '选择目录' : 'pick folder')),
+        h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', disabled: !!migBusy, style: { opacity: migBusy ? .5 : 1 },
+          onClick: function () { migExport() } }, migBusy === 'export' ? t('saving') : t('migExport'))),
+      h('div', { 'data-dam-slot': 'list', 'data-dam-row': '', style: { marginTop: '6px' } },
+        h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', value: migPack, placeholder: t('migPickPack'),
+          onChange: function (e) { setMigPack(e.target.value) }, style: { flex: '1 1 100%' } }),
+        h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', disabled: !!migBusy, onClick: function () { migPickInto(setMigPack, setMigPackPicking) } },
+          migPackPicking ? t('loading') : t('migPickPack')),
+        h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', disabled: !!migBusy, style: { opacity: migBusy ? .5 : 1 },
+          onClick: migPreview }, migBusy === 'preview' ? t('loading') : t('migPreview'))),
+      migPlan ? h('div', { style: { wordBreak: 'break-all', fontSize: 'calc(11.5px * var(--dam-scale))' } },
+        h('div', null, migPlan.pathChanged ? t('migPathChanged') : t('migSamePath')),
+        h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, (locale === 'zh' ? '路径: ' : 'path: ') + String(migPlan.fromPath || '') + ' → ' + String(migPlan.toPath || '')),
+        h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, (locale === 'zh' ? '工作区标识: ' : 'slug: ') + String(migPlan.fromSlug || '') + ' → ' + String(migPlan.toSlug || '')),
+        h('div', null, (locale === 'zh' ? '新增 ' : 'additions ') + String((migPlan.additions || []).length) +
+          ' · ' + (locale === 'zh' ? '覆盖 ' : 'overwrites ') + String((migPlan.overwrites || []).length) +
+          ' · ' + (locale === 'zh' ? '将写入 ' : 'will write ') + String((migPlan.stats && migPlan.stats.willWrite) || 0) +
+          ' · ' + (locale === 'zh' ? '重写命中 ' : 'rewrite hits ') + String((migPlan.rewrite && migPlan.rewrite.totalHits) || 0) +
+          (locale === 'zh' ? ' 处 / 涉及文件 ' : ' across files ') + String((migPlan.rewrite && migPlan.rewrite.fileCount) || 0)),
+        (migPlan.additions || []).length ? h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '' },
+          (locale === 'zh' ? '新增(前 10): ' : 'additions (top 10): ') + (migPlan.additions || []).slice(0, 10).map(function (a) { return String(a && a.path) + '(' + String((a && a.bytes) || 0) + 'B)' }).join(' , ')) : null,
+        (migPlan.overwrites || []).length ? h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '' },
+          (locale === 'zh' ? '覆盖: ' : 'overwrites: ') + (migPlan.overwrites || []).map(function (o) { return String(o && o.path) + ' ' + String((o && o.oldBytes) || 0) + 'B→' + String((o && o.newBytes) || 0) + 'B' }).join(' , ')) : null,
+        (migPlan.rewrite && (migPlan.rewrite.files || []).length) ? h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '' },
+          (locale === 'zh' ? '重写文件(前 10): ' : 'rewrite files (top 10): ') + (migPlan.rewrite.files || []).slice(0, 10).map(function (f) { return String(f && f.path) + '(' + String((f && f.hits) || 0) + ')' }).join(' , ')) : null,
+        (migPlan.warnings && migPlan.warnings.length) ? h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, (locale === 'zh' ? '警告: ' : 'warnings: ') + migPlan.warnings.join(' | ')) : null,
+        h('div', { 'data-dam-slot': 'list', 'data-dam-row': '', style: { marginTop: '6px' } },
+          h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', style: { opacity: migConflict === 'keep' ? 1 : .5 }, onClick: function () { setMigConflict('keep') } }, (migConflict === 'keep' ? '● ' : '○ ') + t('migConflictKeep')),
+          h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', style: { opacity: migConflict === 'overwrite' ? 1 : .5 }, onClick: function () { setMigConflict('overwrite') } }, (migConflict === 'overwrite' ? '● ' : '○ ') + t('migConflictOverwrite')),
+          h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', style: { opacity: migConflict === 'rename' ? 1 : .5 }, onClick: function () { setMigConflict('rename') } }, (migConflict === 'rename' ? '● ' : '○ ') + t('migConflictRename'))),
+        h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', disabled: !!migBusy, style: { marginTop: '6px', opacity: migBusy ? .5 : 1 }, onClick: migApply },
+          migBusy === 'apply' ? t('saving') : t('migApply'))) : null,
+      migResult ? h('div', { style: { wordBreak: 'break-all', fontSize: 'calc(11.5px * var(--dam-scale))' } },
+        h('div', null, t('migWritten') + ': ' + String(migResult.written || 0) +
+          ((migResult.writtenFiles || []).length ? ' (' + migResult.writtenFiles.slice(0, 10).join(' , ') + ')' : '')),
+        h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, t('migBackup') + ': ' + String(migResult.backup || '')),
+        h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, (locale === 'zh' ? '冲突策略: ' : 'conflict: ') + String(migResult.onConflict || migConflict) +
+          ' · ' + (locale === 'zh' ? '目标工作区: ' : 'target: ') + String(migResult.targetWs || '')),
+        h('div', null, String(migResult.summaryAction || '') + (migResult.summaryError ? ' ✗ ' + String(migResult.summaryError) : ''))) : null))
+    rows.push(h('div', { 'data-dam-slot': 'timeline', 'data-dam-flow': '' }, migRows))
+      // 大屏分列:卡片流页签(见 CSS [data-dam-flow]);非卡片子元素仍整行。
+      return h('div', { 'data-dam-slot': 'timeline', 'data-dam-flow': '' }, rows)
+    }
+
+    function NotesTab() {
+      var dataPair = useState(null)
+      var data = dataPair[0]
+      var setData = dataPair[1]
+      var draftPair = useState('')
+      var draft = draftPair[0]
+      var setDraft = draftPair[1]
+      var savingPair = useState(false)
+      var saving = savingPair[0]
+      var setSaving = savingPair[1]
+      var msgPair = useState('')
+      var msg = msgPair[0]
+      var setMsg = msgPair[1]
+      var errPair = useState('')
+      var err = errPair[0]
+      var setErr = errPair[1]
+      useEffect(function () {
+        var alive = true
+        apiGet(API.state).then(function (s) { if (alive) setData(s) }).catch(function () {})
+        return function () { alive = false }
+      }, [])
+      if (!data) return h(Loading)
+      function save() {
+        if (!draft.trim() || saving) return
+        setSaving(true); setMsg(''); setErr('')
+        apiPost(API.note, { content: draft.trim() }).then(function (d) {
+          setMsg(d.result || t('appended')); setDraft(''); setSaving(false)
+        }).catch(function (e) { setErr(e.message); setSaving(false) })
+      }
+      return h('div', null,
+        h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, t('notesPathLabel') + data.notesPath),
+        h('textarea', { 'data-dam-slot': 'form', 'data-dam-input': '', rows: 6, placeholder: t('notesPlaceholder'), value: draft, onChange: function (e) { setDraft(e.target.value) } }),
+        h('div', { 'data-dam-slot': 'list', 'data-dam-row': '' },
+          h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: save, disabled: saving }, saving ? t('saving') : t('append')),
+          h('span', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, t('notesHint'))),
+        msg ? h('div', null, msg) : null,
+        err ? h('div', { 'data-dam-error': '' }, err) : null)
+    }
+
+    // M-CM6-C 自动接续跨渲染状态(apply 作用域,插件生命周期存活;组件重挂不重置)
+    // v3(2.2.4):lastRunning/edgeAt=轮次边界;rejectedEdgeAt=拒绝后同一边界不重复提示;suppressUntil=接续进行中不重复触发
+    var autoState = { cdIv: null, lastTokens: null, lastRunning: null, edgeAt: 0, edgeSession: '', rejectedEdgeAt: 0, promptVisible: false, suppressUntil: 0 }
+
+    // ───────── 接续执行器(一键接续 + 自动接续共用,2026-09-08 2.2.4)─────────
+    // 流程:③刷新仪式(旧 Agent 先刷 PLAN+账本)→ 取材料 → 修A(workspaceId 建会话)→ 序号标题
+    //      → 修B(沿用模型+思考档位)→ 打开 → 注入材料。
+    var continueFlowBusy = false
+    // 刷新仪式认到的旧会话 id(2026-09-10):权限继承要用它反查旧会话预设。
+    // 材料里的 prevSessionId 依赖宿主 _lastAgent,重启后可能为空;这份来自 handoff-state.refresh,
+    // 宿主侧带磁盘回退,更可靠。
+    var lastRefreshSessionId = ''
+    function continueCreateArgs(d) {
+      // 修A(2026-09-08):官方 session.create 只接受 workspaceId 或 cwd 之一(同传报 bad-request),
+      // 且只有 workspaceId 分支会 workspace.attachSession()(api-session-controller/lib/index.js:566-588);
+      // 只传 cwd 仅设工作目录 → 新会话永远落「未分组工作区」。故优先 workspaceId,解析不到才回退 cwd。
+      if (d && d.workspaceId) return { workspaceId: d.workspaceId, agentPreset: d.agentPreset || undefined }
+      return d && d.ws ? { cwd: d.ws, agentPreset: d.agentPreset || undefined } : { agentPreset: (d && d.agentPreset) || undefined }
+    }
+    async function refreshOldSession(onMsg) {
+      // ③接续前刷新仪式:让旧 Agent 把 PLAN.md 与交接账本刷到最新,host 再用最新材料组装交接。
+      // 2026-09-10:原先任何失败/超时都静默(fail-soft),用户看到的现象是"点了接续却什么也没发生、旧会话毫无动静"。
+      // 现改为 fail-soft 但**可见** —— 跳过/失败/超时都回报一句原因,接续本身照常继续。
+      try {
+        var st = await apiGet(API.handoffState)
+        var rf = st && st.refresh
+        if (!rf || !rf.sessionId || !rf.prompt) {
+          if (onMsg) onMsg(locale === 'zh' ? '⚠ 刷新仪式已跳过:宿主未给出旧会话 id(刚重启、旧会话未活跃时会发生)——本次直接用现有材料接续。' : '⚠ Refresh ritual skipped: host supplied no old-session id (happens right after a restart) — continuing with current material.')
+          return { ok: false, skipped: true }
+        }
+        if (!remoteFace || !remoteFace.session || typeof remoteFace.session.prompt !== 'function') {
+          if (onMsg) onMsg(locale === 'zh' ? '⚠ 刷新仪式已跳过:harness 未提供 remote.session。' : '⚠ Refresh ritual skipped: remote.session unavailable.')
+          return { ok: false, skipped: true }
+        }
+        var before = String((st.planMtime || 0)) + '|' + String((st.ledgers && st.ledgers[0] && st.ledgers[0].name) || '')
+        lastRefreshSessionId = String(rf.sessionId || '')
+        if (onMsg) onMsg(locale === 'zh' ? '刷新仪式:请旧 Agent 更新白板 PLAN 与交接账本…' : 'Refresh ritual: asking the old agent to update PLAN + ledger…')
+        await remoteFace.session.prompt({ requestId: amReqId('amr'), sessionId: rf.sessionId, mode: 'queue', content: [{ type: 'text', text: rf.prompt }], clientTimeZone: amCtzValue() })
+        var waited = await waitForRefresh(rf.sessionId, before)
+        if (onMsg && waited !== 'updated') onMsg(locale === 'zh' ? '刷新仪式:旧会话未在超时内产出新白板/账本(' + waited + '),用现有材料继续。' : 'Refresh ritual: old session produced no new PLAN/ledger within timeout (' + waited + '); continuing with current material.')
+        return { ok: true, waited: waited }
+      } catch (eRf) {
+        var msg = String(eRf && eRf.message ? eRf.message : eRf)
+        if (onMsg) onMsg(locale === 'zh' ? '⚠ 刷新仪式失败:' + msg + '(用现有材料继续)' : '⚠ Refresh ritual failed: ' + msg + ' (continuing with current material)')
+        return { ok: false, error: msg }
+      }
+    }
+    async function waitForRefresh(oldId, before) {
+      // 结束条件(任一):材料变了 / 旧会话跑完这一轮(true→false) / 超时(默认 90s,配置可调)。
+      var t0 = Date.now()
+      var timeoutMs = 90000
+      try {
+        var cfg = configOf(await apiGet(API.config))
+        var sec = cfg && Number(cfg.autoContinueRefreshTimeoutSeconds)
+        if (sec >= 15 && sec <= 600) timeoutMs = sec * 1000
+      } catch (eC) {}
+      var sawRunning = false
+      while (Date.now() - t0 < timeoutMs) {
+        await new Promise(function (r) { setTimeout(r, 2500) })
+        var run = runningOfSession(oldId)
+        if (run === true) sawRunning = true
+        var st2 = null
+        try { st2 = await apiGet(API.handoffState) } catch (eG) {}
+        var now = String((st2 && st2.planMtime) || 0) + '|' + String((st2 && st2.ledgers && st2.ledgers[0] && st2.ledgers[0].name) || '')
+        if (now !== before) return 'updated'
+        if (sawRunning && run === false) return 'turn-ended'
+      }
+      return 'timeout'
+    }
+    async function executeContinue(d, onMsg) {
+      var rf = remoteFace
+      if (!rf || !rf.session || typeof rf.session.create !== 'function') throw new Error(locale === 'zh' ? 'harness 未提供 remote.session(版本过旧?)' : 'remote.session unavailable (harness too old?)')
+      if (onMsg) onMsg(locale === 'zh' ? '正在创建新会话(沿用旧工作区与模型)…' : 'Creating session (same workspace & model)…')
+      var created
+      try { created = await rf.session.create(continueCreateArgs(d)) } catch (eCreate) {
+        // workspaceId 已失效(工作区被删)或旧 harness 不认 → 回退 cwd,再退纯 agentPreset
+        created = await rf.session.create(d && d.ws ? { cwd: d.ws, agentPreset: d.agentPreset || undefined } : { agentPreset: (d && d.agentPreset) || undefined })
+      }
+      // 官方 create 返回裸 SessionId 字符串(而非对象),兼容字符串/{sessionId}/{id}/{value}/{ok,value}
+      var newId = extractSessionId(created)
+      if (!newId) throw new Error('create: no sessionId')
+      // 接续序号标题:让用户一眼区分新会话 vs 延续会话
+      if (d.contSeq && rf.session.rename && typeof rf.session.rename === 'function') {
+        var contTitle = (locale === 'zh' ? '接续 #' : 'Cont.#') + String(d.contSeq) + (d.wsBase ? ' · ' + d.wsBase : '')
+        try { await rf.session.rename({ sessionId: newId, title: contTitle }) } catch (eRen) { try { console.warn('[dsh-auto-memory] rename failed: ' + ((eRen && eRen.message) || eRen)) } catch (eRen2) {} }
+      }
+      // 沿用旧会话模型(provider/model/reasoningEffort 由 host 从旧会话 request/header 折叠而来;不可用则静默回退路由默认)
+      if (d.provider && d.model && typeof rf.session.selectModel === 'function') {
+        if (onMsg) onMsg(locale === 'zh' ? '正在沿用旧模型 ' + d.model + (d.reasoningEffort ? '(' + d.reasoningEffort + ')' : '') + '…' : 'Restoring model ' + d.model + '…')
+        try { await rf.session.selectModel({ sessionId: newId, provider: d.provider, model: d.model, reasoningEffort: d.reasoningEffort || undefined }) } catch (eMdl) {}
+      }
+      try { if (sessions && typeof sessions.open === 'function') sessions.open(newId) } catch (eOpen) {}
+      // 权限继承(2026-09-10):官方 session.create 不收权限字段,新会话一律落 settings 的
+      // permission.defaultPreset(本机默认曾=workspace-write+ask)→ 接续后每一步都要用户批准,静默运行被打断。
+      // 两段式:投料前先试(命中则**首轮就已继承**),投料后再试(新会话的 agent 往往是投料时才建出来)。
+      var fromSid = String((d && d.prevSessionId) || lastRefreshSessionId || '')
+      var permPreset = ''
+      if (fromSid) {
+        try {
+          var pp1 = await apiPost(API.handoffPermission, { fromSessionId: fromSid, toSessionId: newId, attempts: [0, 400] })
+          if (pp1 && pp1.ok) permPreset = String(pp1.preset || '')
+        } catch (ePp1) {}
+      }
+      await rf.session.prompt({ requestId: amReqId('amc'), sessionId: newId, mode: 'queue', content: [{ type: 'text', text: d.carryText }], clientTimeZone: amCtzValue() })
+      if (!permPreset && fromSid) {
+        try {
+          var pp2 = await apiPost(API.handoffPermission, { fromSessionId: fromSid, toSessionId: newId, attempts: [0, 700, 1600] })
+          if (pp2 && pp2.ok) permPreset = String(pp2.preset || '')
+          else if (onMsg && pp2 && pp2.reason && pp2.reason !== 'no-permission-service') {
+            onMsg(locale === 'zh' ? '⚠ 权限未继承(' + pp2.reason + '),新会话按设置里的默认权限运行。' : '⚠ Permission not inherited (' + pp2.reason + '); new session runs with the default permission.')
+          }
+        } catch (ePp2) {}
+      }
+      if (onMsg && permPreset) onMsg(locale === 'zh' ? '已继承旧会话权限:' + permPreset : 'Permission inherited: ' + permPreset)
+      return newId
+    }
+    async function runContinueFlow(opts) {
+      var onMsg = (opts && opts.onProgress) || function () {}
+      if (continueFlowBusy) return { ok: false, error: 'busy' }
+      continueFlowBusy = true
+      autoState.suppressUntil = Date.now() + 5 * 60 * 1000
+      try {
+        var cfg = null
+        try { cfg = configOf(await apiGet(API.config)) } catch (eCfg) {}
+        var ritual = !(cfg && cfg.autoContinueRefreshRitual === false) && !(opts && opts.skipRefresh)
+        if (ritual) { try { await refreshOldSession(onMsg) } catch (eRf) {} }
+        onMsg(locale === 'zh' ? '正在构造交接材料(含旧会话转写)…' : 'Preparing handoff material (incl. prev-session transcript)…')
+        var fromSidForCarry = String(lastRefreshSessionId || currentSessionIdClient() || '')
+        var d = await apiPost(API.handoffContinue, fromSidForCarry ? { fromSessionId: fromSidForCarry } : {})
+        if (!d || !d.ok) throw new Error((d && d.error) || 'no handoff material')
+        // ★2026-09-23:源会话工作区无法定位时,宿主会回退到「当前工作区」并把 wsFallback 置真。
+        //   这正是「接续落到错误工作区」的现场(旧会话文件被 GC 搬走时)。不再静默:明确告知用户
+        //   新会话建在哪个工作区、以及为什么 —— 用户据此可判断要不要手动切回正确工作区。
+        if (d.wsFallback) {
+          onMsg(locale === 'zh'
+            ? '⚠ 无法定位源会话的工作区(旧会话记录可能已被子代理回收搬走),新会话将建在当前工作区:' + (d.ws || '(未知)')
+            : '⚠ Could not locate the source session\'s workspace (its record may have been GC\'d). The new session will use the current workspace: ' + (d.ws || '(unknown)'))
+        }
+        var newId = await executeContinue(d, onMsg)
+        try { localStorage.setItem('dsh-auto-memory.autoCont.last', String(Date.now())) } catch (eL) {}
+        return { ok: true, sessionId: newId, workspaceId: d.workspaceId || '', model: d.model || '', reasoningEffort: d.reasoningEffort || '' }
+      } finally { continueFlowBusy = false }
+    }
+
+    function PlanTab() {
+      var dataPair = useState(null)
+      var data = dataPair[0]
+      var setData = dataPair[1]
+      // 当前会话 id:水位卡按会话取数(切换会话即刷新,2026-09-08)
+      var sidPair = useState(function () { return currentSessionIdClient() })
+      var sid = sidPair[0]
+      var setSid = sidPair[1]
+      var openPair = useState(null)
+      var open = openPair[0]
+      var setOpen = openPair[1]
+      // 白板看板数据(2026-09-16 兼并 dsh-graph): graph 档有值 → 渲染列式泳道; legacy 档恒 null。
+      var kbDataPair = useState(null)
+      var kbData = kbDataPair[0]
+      var setKbData = kbDataPair[1]
+      var contentPair = useState('')
+      var content = contentPair[0]
+      var setContent = contentPair[1]
+      // M-CM6-B 一键接续
+      var contBusyPair = useState(false)
+      var contBusy = contBusyPair[0]
+      var setContBusy = contBusyPair[1]
+      var contMsgPair = useState('')
+      var contMsg = contMsgPair[0]
+      var setContMsg = contMsgPair[1]
+      // M-CM6-C 自动接续(①轮次边界触发 + ②确认卡由全局 AutoContinueHost 执行;这里只读/写开关与阈值)
+      // 2026-09-14 解耦:白板页也读写这两个开关,且与设置页共用**同一对配置键**
+      // (autoContinueEnabled / handoffEnabled)——两处不可能各说各话。
+      // 注:两个键出厂默认均为 false(功能仍在测试期),默认关、界面可开。
+      var autoPair = useState(null)
+      var autoCfg = autoPair[0]
+      var setAutoCfg = autoPair[1]
+      var hbPair = useState(false)
+      var handoffOn = hbPair[0]
+      var setHandoffOn = hbPair[1]
+      // WB-GRAPH boardMode 本地镜像(2026-09-16): 接续面板按钮即时翻面用; 初值从配置取, 保存成功后本地翻面。
+      var boardModePair = useState('legacy')
+      var boardModeLocal = boardModePair[0]
+      var setBoardModeLocal = boardModePair[1]
+      // 白板开关改动后必须重取白板数据(host 的 handoffPanelData 按 handoffEnabled 决定 enabled),
+      // 否则「刚打开白板」页面上仍是旧的 enabled:false。
+      var reloadPair = useState(0)
+      var reloadKey = reloadPair[0]
+      var setReload = reloadPair[1]
+      useEffect(function () {
+        apiGet(API.config).then(function (d) {
+          // 解包外壳(见 configOf):旧实现直读 `c.autoContinueEnabled`,d 其实是 `{ config, path }`
+          // ⇒ 两个开关**显示恒为「开」**,且点击只会写 false(唯一可写方向是「关」)。
+          var c = configOf(d)
+          setAutoCfg({ enabled: !(c.autoContinueEnabled === false), threshold: Number(c.autoContinueThreshold) || 0.75 })
+          setHandoffOn(!(c.handoffEnabled === false))
+          setBoardModeLocal(c.boardMode === 'graph' ? 'graph' : 'legacy')
+        }).catch(function () { setAutoCfg({ enabled: false, threshold: 0.7 }) })
+      }, [])
+      // 2026-09-14 修复:patch 里是**配置键**(autoContinueEnabled / autoContinueThreshold),而本地状态用的是
+      // enabled / threshold。旧实现直接把 patch 并进本地状态 ⇒ 写的是 autoCfg.autoContinueEnabled,而按钮读的是
+      // autoCfg.enabled ⇒ **按钮永远不回弹**:点了看似没反应,再点还是按同一个旧值计算(用户观感「自动接续无法开关」)。
+      // 阈值输入同病:输入框读 autoCfg.threshold,旧实现写 autoCfg.autoContinueThreshold ⇒ 显示也不更新。
+      // 注意:写入配置本身一直是成功的(宿主端单键合并),坏的只是本地回显 —— 所以"看起来没开关"与"其实已写盘"并存。
+      var autoSave = function (patch) {
+        setAutoCfg(function (p) {
+          var next = Object.assign({}, p)
+          if (patch.autoContinueEnabled !== undefined) next.enabled = patch.autoContinueEnabled
+          if (patch.autoContinueThreshold !== undefined) next.threshold = patch.autoContinueThreshold
+          return next
+        })
+        saveConfigPatch(patch)
+      }
+      async function oneClickContinue() {
+        // 一键接续 = 共用执行器(刷新仪式 → 材料 → workspaceId 建会话 → 沿用模型 → 注入),与自动接续同一路径
+        if (contBusy) return
+        setContBusy(true)
+        try {
+          var r = await runContinueFlow({ onProgress: setContMsg })
+          setContMsg((locale === 'zh' ? '✓ 已创建新会话(工作区/模型已沿用)并预载交接材料' : '✓ Session created (workspace/model restored) with ledger injected') + (r && r.model ? ' · ' + r.model + (r.reasoningEffort ? '/' + r.reasoningEffort : '') : ''))
+        } catch (e) {
+          setContMsg('✗ ' + String(e && e.message ? e.message : e))
+        } finally { setContBusy(false) }
+      }
+      useEffect(function () {
+        var alive = true
+        setData(null)
+        apiGet(API.handoffState, { sessionId: sid }).then(function (d) { if (alive) setData(d) }).catch(function () {})
+        // 白板看板(2026-09-16 兼并 dsh-graph): 与白板数据同源同批拉取。
+        // legacy 档宿主返回 { enabled:false } ⇒ 保持 kbData=null, 看板块不渲染(逐字节不变)。
+        apiGet(API.kanbanBoard, { sessionId: sid }).then(function (k) {
+          if (!alive) return
+          setKbData(k && k.enabled ? k : null)
+        }).catch(function () { if (alive) setKbData(null) })
+        return function () { alive = false }
+      }, [sid, reloadKey])
+      // 切换会话即刷新水位卡:订阅官方会话列表快照,current 变化时重取(2026-09-08)
+      useEffect(function () {
+        var unsub = null
+        try {
+          if (sessions && sessions.list && typeof sessions.list.subscribe === 'function') {
+            unsub = sessions.list.subscribe(function () {
+              var now = currentSessionIdClient()
+              setSid(function (prev) { return prev === now ? prev : now })
+            })
+          }
+        } catch (eSub) {}
+        return function () { if (typeof unsub === 'function') unsub() }
+      }, [])
+      useEffect(function () {
+        if (!open) return
+        var alive = true
+        apiGet(API.handoffState, { file: open }).then(function (d) { if (alive) setContent(d.text || '') }).catch(function () {})
+        return function () { alive = false }
+      }, [open])
+      // 自动触发已移交全局 AutoContinueHost(①轮次边界 + ②确认卡);面板这里只保留手动一键接续与开关/阈值。
+      useEffect(function () {
+        return function () { if (autoState.cdIv) { clearInterval(autoState.cdIv); autoState.cdIv = null } }
+      }, [])
+      // 账本/计划版本按钮：窄面板下长文件名会被折成竖排，只显示短标签(时间)，完整名放悬浮提示
+      function shortLedgerName(name) {
+        var m = /^(handoff|PLAN)-(\d{4})(\d{2})(\d{2})-(\d{2})(\d{2})(\d{2})\.md$/.exec(name || '')
+        if (m) { var t = m[5] + ':' + m[6] + (m[1] === 'handoff' ? ':' + m[7] : ''); return (m[1] === 'PLAN' ? 'PLAN ' : '') + m[3] + '-' + m[4] + ' ' + t }
+        var p = /^prev-session-.+-(\d{2})(\d{2})(\d{2})\.md$/.exec(name || '')
+        if (p) return '↻ ' + p[1] + ':' + p[2] + ':' + p[3]
+        return name
+      }
+      if (!data) return h(Loading)
+      // 开关卡(2026-09-14 解耦):**先渲染开关,再谈白板内容** —— 旧实现在 !data.enabled 处直接 return,
+      // 而白板开关默认关 ⇒ 白板页连开关都看不到(默认关 + 无处可开 = 死锁)。
+      // 两个按钮与设置页共用同一对配置键,写盘路径也是既有机制(saveConfigPatch / autoSave)。
+      var switchCard = h(Card, { title: t('handoffSwitchTitle') }, h('div', { 'data-dam-content': '' }, [
+        h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginBottom: '6px' } }, t('handoffSwitchHint')),
+        h('div', { 'data-dam-slot': 'list', 'data-dam-row': '' }, [
+          h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', 'data-dam-key': 'handoffEnabled', onClick: function () { var v = !handoffOn; setHandoffOn(v); saveConfigPatch({ handoffEnabled: v }, { onSaved: function () { setReload(function (n) { return n + 1 }) } }) } }, handoffOn ? t('handoffOn') : t('handoffOff')),
+          // WB-GRAPH 白板模式快捷切换(接续面板, 2026-09-16): 与设置页同一配置键 boardMode, 点击翻面+提示需重启。
+          // 用 reloadKey 作重渲染源(切换成功后 force reload), 避免引入新的状态耦合。
+          h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', 'data-dam-key': 'boardMode', key: 'bm-' + reloadKey, style: { marginLeft: '8px' }, onClick: function () {
+            var next = boardModeLocal === 'graph' ? 'legacy' : 'graph'
+            setBoardModeLocal(next)
+            saveConfigPatch({ boardMode: next }, { onSaved: function () { setReload(function (n) { return n + 1 }); window.alert(locale === 'zh' ? (next === 'graph' ? '已切到新版看板（dsh-graph）。重启 dsh web 后生效。' : '已切回旧版白板。重启 dsh web 后生效。') : (next === 'graph' ? 'Switched to graph board. Restart dsh web to take effect.' : 'Switched back to legacy board. Restart dsh web to take effect.')) } })
+          } }, locale === 'zh' ? ('界面版本：' + (boardModeLocal === 'graph' ? '看板工作流 v4（点击切回经典）' : '经典（点击切换到看板工作流 v4）')) : ('UI skin: ' + (boardModeLocal === 'graph' ? 'Kanban workflow v4 (click for Classic)' : 'Classic (click for Kanban workflow v4)'))),
+          autoCfg ? h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', 'data-dam-key': 'autoContinueEnabled', style: { marginLeft: '8px' }, onClick: function () { autoSave({ autoContinueEnabled: !autoCfg.enabled }) } }, autoCfg.enabled ? t('autoContOn') : t('autoContOff')) : null,
+          autoCfg ? h('label', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginLeft: '8px' } }, t('autoContThreshold') + ' ', h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 0.5, max: 0.95, step: 0.05, value: String(autoCfg.threshold), onChange: function (e) { var v = Number(e.target.value); if (v >= 0.5 && v <= 0.95) autoSave({ autoContinueThreshold: v }) } })) : null,
+        ]),
+      ]))
+      // ★2026-09-17(L2 修 bug①): 面板侧同样**按真实 reason 分支** —— 旧实现一律显示 t('planDisabled')
+      // (「白板未启用」), 与看板那句同源的误导。后端现在会带 reason: 'legacy-mode' / 'error'。
+      if (!data.enabled) {
+        var disMsg = (function () {
+          var r = data && data.reason
+          if (r === 'legacy-mode') {
+            return locale === 'zh'
+              ? '当前是旧版白板(legacy)档。看板需要切到「新版看板（dsh-graph）」——用上方开关切换, 重启 dsh web 后生效。'
+              : 'Legacy board mode. The kanban needs the graph board — toggle it above, then restart dsh web.'
+          }
+          if (r === 'error') return (locale === 'zh' ? '白板加载出错: ' : 'Whiteboard load error: ') + String((data && data.error) || '')
+          return t('planDisabled')
+        })()
+        return h('div', null, [switchCard, h(Card, { title: t('planTitle') }, h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, disMsg))])
+      }
+      var wl = data.waterLevel || {}
+      // 2026-09-13(工作区切换修复):宿主对当前会话解析不出工作区身份时(wsBound:false),如实提示
+      // 而不是渲染另一个会话/启动目录下的白板内容(旧全局单值行为的残余观感)。
+      var rows = []
+      if (data.wsBound === false) {
+        rows.push(h(Card, { title: t('planTitle') }, h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, t('planWsUnbound'))))
+      } else {
+        rows.push(h(Card, { title: t('planTitle') }, h('div', { 'data-dam-content': '' }, data.plan || t('planEmpty'))))
+      }
+      // ── 白板看板(2026-09-16 兼并 dsh-graph): graph 档在白板页顶部渲染列式泳道 ──
+      // 数据来自 /kanban-board(自家 sidecar 投影); legacy 档 kb 为 null ⇒ 整块不渲染,
+      // 页面与旧版逐字节相同。看板置顶: 它才是「一眼看全貌」的那一层, 文字白板退居其次。
+      // ★R41：本挂载块仅在**非 graph 档**才可能走到（graph 档已在上方 return 短路）。
+      //   保留它以兜底「kbData 有值但 boardModeLocal 还没同步」的瞬态，避免白屏。
+      if (kbData && boardModeLocal !== 'graph') {
+        // ★R40（114 卷 R1 核心）：看板**必须整页/全宽承载**，禁止再塞进 Card 卡片。
+        //   旧实现套 `Card > div[data-dam-content]` ⇒ 命中 L1896 `[data-dam-card] .dam-content { max-height: 220px }`，
+        //   整套 v4 视图（rail + 工具栏 + 统计卡 + 时间轴 + 折叠条）被压进 220px 滚动盒，
+        //   这就是「改了半天看不见」的直接原因（判定人截图 15b/17–24）。
+        //   现改为 [data-dam-flow] 的**直接子元素**且不套 data-dam-card ⇒ 依 L1815 规则 `grid-column: 1 / -1` 整行占满。
+        //   数据层零改动：仍用 kbData（同 /kanban-board 同参）。
+        rows.unshift(h('div', { 'data-dam-kanban-surface': '', 'data-dam-content': '' },
+          h(KanbanBoardRail, { data: kbData, zh: locale === 'zh' })))
+      }
+      // ── P2-5 前端(2026-09-16): 新版看板的结构化视图(tag 导航 + 段视图)──────────
+      // 后端 handoffPanelData 已在 graph 档返回 structured(by_tag 倒排 + 按 kind 分组的条目摘要)。
+      // legacy 档 structured 为 null ⇒ 本卡**完全不渲染**, 页面与旧版逐字节相同(开关解耦纪律)。
+      //
+      // v2(2026-09-16 晚): **看板可视化在场时隐藏这两张文字卡** —— 用户实测反馈「就是没有图」:
+      // 它们与真看板内容重复(tag 导航的 0 个标签、段视图的条目流水), 同屏出现会让人以为
+      // 这就是「新版看板」的全部。真看板(kbData)在场时, 文字卡退位; 其缺失时仍作兜底显示,
+      // 保证「结构化数据始终可达」(不删功能, 只是不再与图争位)。
+      if (data.structured && !kbData) {
+        var st = data.structured
+        var tagKids = []
+        tagKids.push(h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginBottom: '6px' } },
+          (locale === 'zh' ? '结构化索引: ' : 'Structured index: ') + st.total + (locale === 'zh' ? ' 个条目 · ' : ' entries · ') + (st.tags || []).length + (locale === 'zh' ? ' 个标签' : ' tags') + (st.rebuiltAt ? ' · ' + String(st.rebuiltAt).slice(0, 19).replace('T', ' ') : '')))
+        if ((st.tags || []).length) {
+          tagKids.push(h('div', { 'data-dam-slot': 'list', 'data-dam-row': '', style: { flexWrap: 'wrap' } }, st.tags.map(function (tg) {
+            return h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', key: 'tg-' + tg.tag, title: tg.tag, style: { marginRight: '6px', marginBottom: '6px' } },
+              tg.tag + ' ×' + tg.count)
+          })))
+          tagKids.push(h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginTop: '4px' } },
+            locale === 'zh' ? '标签来自账本/白板行内标记(tag:xxx / type:xxx / topic:xxx)。模型侧可用 memory_expand(tag) 按标签展开条目、memory_trace(id) 回溯来源与版本链。' : 'Tags come from inline markers (tag:xxx / type:xxx / topic:xxx). The model can use memory_expand(tag) to expand by tag and memory_trace(id) to trace origin and version chain.'))
+        } else {
+          tagKids.push(h('div', { 'data-dam-muted': '' }, locale === 'zh' ? '尚无标签——在账本/白板里写 tag:xxx 后重新写入即出现。' : 'No tags yet — write tag:xxx in a ledger/plan and re-save.'))
+        }
+        rows.push(h(Card, { title: locale === 'zh' ? '新版看板 · 标签导航' : 'Graph board · tag navigation' }, h('div', { 'data-dam-content': '' }, tagKids)))
+        var secKids = []
+        ;(st.sections || []).forEach(function (sc) {
+          if (!sc.count) return
+          secKids.push(h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginTop: '6px', fontWeight: 600 } }, sc.kind + ' · ' + sc.count))
+          ;(sc.items || []).forEach(function (it) {
+            secKids.push(h('div', { style: { fontSize: 'calc(12px * var(--dam-scale))', marginLeft: '8px' } },
+              h('span', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, String(it.id || '').slice(4, 12) + ' '),
+              h('span', { title: it.source || '' }, (it.section ? '§' + it.section + ' ' : '') + String(it.preview || '').slice(0, 90))))
+          })
+        })
+        if (secKids.length) rows.push(h(Card, { title: locale === 'zh' ? '新版看板 · 段视图' : 'Graph board · sections' }, h('div', { 'data-dam-content': '' }, secKids)))
+      }
+      // ★2026-09-23 修复「目录里不显示水位」：旧条件 `wl.window > 0` 使**未测出窗口时整张卡消失**，
+      // 连本节下方那句「本会话尚未测量」提示都不可达（它原本就在同一门内）⇒ 用户只看到"没有水位"
+      // 而得不到任何解释。现改为：只要有 waterLevel 对象就渲染，未测出窗口时如实说明原因与下一步。
+      if (wl && (wl.window > 0 || wl.at || Object.keys(wl).length)) {
+        // 2.2.4:百分比显示真实水位(旧版截断到 150% 会把「窗口算错」伪装成「刚好超一点」);进度条宽度仍按 100% 截断。
+        var rawPct = Math.round((wl.ratio || 0) * 100)
+        var pct = Math.min(rawPct, 999)
+        var hasWin = (wl.window || 0) > 0
+        var barColor = rawPct >= 80 ? 'var(--dam-tone-high, #d4744f)' : rawPct >= 50 ? 'var(--dam-lane-progress, #d4a94f)' : 'var(--dam-accent, #4f7cff)'
+        var srcLabel = !wl.source ? '' : wl.source.indexOf('auto') === 0 ? t('waterAutoSrc') + ': ' + wl.source.slice(5) : (wl.source === 'official-context' ? t('waterOfficialSrc') : (wl.source === 'fallback' ? t('waterFallbackSrc') : t('waterManualSrc')))
+        // ★水位 v4（2026-09-26）:官方压缩对照 —— 把抽象阈值画成进度条上的一条**实带**（照抄 dsh-context 的
+        //   reserve band 形态，但用**官方新公式** min(W×ratio,(W−O)−B)，而非它那个过时的 floor(W×ratio)）。
+        //   两端都是占比：officialRatio = 官方触发点，thr = 本插件生效阈值（= 官方 × margin，故必然更早）。
+        var offRatio = Number(wl.officialRatio) || 0
+        var thrRatio = Number(wl.threshold) || 0
+        var hasOff = hasWin && offRatio > 0
+        var cp = Math.round((wl.ratio || 0) * 100)
+        var op = Math.round(offRatio * 100)
+        var tp = Math.round(thrRatio * 100)
+        var gp = Math.max(0, Math.round((offRatio - (wl.ratio || 0)) * 100))
+        var gt = Math.max(0, Math.floor(offRatio * wl.window) - (wl.tokens || 0))
+        var passed = hasOff && (wl.ratio || 0) >= offRatio
+        // 进度条：已用(实色) + 插件阈值刻度 + 官方阈值实带(半透明斜纹感,用低透明度叠加)
+        var barKids = hasWin ? [
+          h('div', { style: { position: 'absolute', left: 0, top: 0, height: '100%', width: Math.min(pct, 100) + '%', background: barColor, borderRadius: '3px' } }),
+          thrRatio > 0 && thrRatio < 1 ? h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', title: t('waterCardTitle') + ' ' + tp + '%', style: { position: 'absolute', left: Math.min(tp, 100) + '%', top: '-1px', height: 'calc(100% + 2px)', width: '2px', background: 'var(--dam-fg, currentColor)', opacity: 0.75 } }) : null,
+          hasOff ? h('div', { 'data-dam-official-band': '', title: t('waterOfficialTitle') + ' ' + op + '%', style: { position: 'absolute', left: Math.min(op, 100) + '%', top: 0, height: '100%', width: Math.max(0, 100 - Math.min(op, 100)) + '%', background: 'repeating-linear-gradient(45deg, color-mix(in srgb, currentColor 22%, transparent) 0 3px, transparent 3px 6px)' } }) : null,
+        ] : []
+        rows.unshift(h(Card, { title: t('waterCardTitle') }, h('div', { 'data-dam-content': '' }, [
+          h('div', { style: { fontSize: 'calc(12px * var(--dam-scale))', marginBottom: '6px' } },
+            hasWin ? ((wl.tokens || 0).toLocaleString() + ' / ' + wl.window.toLocaleString() + ' token · ' + pct + '%') : t('waterWindowUnknown'),
+            ' ', h('span', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, srcLabel),
+            ' ', h('span', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, wl.meter ? (wl.meter.indexOf('official') === 0 ? '· ' + t('waterMeterOfficial') + '(' + String(wl.meter).slice(9) + ')' : '· ' + t('waterMeterHeuristic')) : '')),
+          // 本会话尚未测量(刚重启/刚切过来还没发消息):明说,而不是显示成 0 让人以为上下文是空的
+          wl.at ? null : h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginBottom: '4px' } }, t('waterNotMeasured')),
+          hasWin ? h('div', { 'data-dam-water-bar': '', style: { position: 'relative', height: '6px', borderRadius: '3px', background: 'color-mix(in srgb, currentColor 12%, transparent)', overflow: 'hidden' } }, barKids) : null,
+          // ★官方对照行(用户点名要的「官方阈值是百分之多少 + 离它还差多少」)
+          hasOff ? h('div', { 'data-dam-official-line': '', style: { marginTop: '6px', paddingTop: '6px', borderTop: '1px dashed color-mix(in srgb, currentColor 18%, transparent)' } },
+            t('waterOfficialLine').replace('{op}', String(op)).replace('{ot}', Math.floor(offRatio * wl.window).toLocaleString()).replace('{m}', String(Math.round((offRatio > 0 ? thrRatio / offRatio : 0) * 100) / 100)).replace('{t}', String(tp)),
+            h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginTop: '2px' } },
+              passed ? t('waterGapPassed').replace('{cp}', String(cp)).replace('{op}', String(op))
+                     : t('waterGapLine').replace('{cp}', String(cp)).replace('{gp}', String(gp)).replace('{gt}', gt.toLocaleString()))) : null,
+          h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginTop: '4px' } }, hasWin
+            ? t('waterThresholdHint').replace('{t}', String(wl.threshold || 0.75))
+            : t('waterWindowUnknownHint')),
+        ])))
+      }
+      if (autoCfg && wl.window > 0) {
+        // 2026-09-14:开关与阈值统一收进顶部常显的开关卡(同一配置键只应有一个入口),此处只留说明。
+        rows.unshift(h(Card, { title: t('autoContTitle') }, h('div', { 'data-dam-content': '' }, h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, t('autoContHint')))))
+      }
+      if (open) {
+        rows.unshift(h(Card, { title: t('planFileTitle') + ' · ' + open }, h('div', { 'data-dam-content': '' }, content || t('empty'))))
+        rows.push(h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: function () { setOpen(null); setContent('') } }, t('back')))
+      } else {
+        if (data.planVersions && data.planVersions.length) {
+          rows.push(h(Card, { title: t('planVersions') }, h('div', { 'data-dam-slot': 'list', 'data-dam-row': '' }, data.planVersions.map(function (v) {
+            return h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', key: v.name, title: v.name, onClick: function () { setOpen(v.name) } }, shortLedgerName(v.name))
+          }))))
+        }
+        rows.push(h(Card, { title: t('planLedgers') }, h('div', { 'data-dam-slot': 'list', 'data-dam-row': '' }, (data.ledgers || []).length ? data.ledgers.map(function (v) {
+          return h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', key: v.name, title: v.name, onClick: function () { setOpen(v.name) } }, shortLedgerName(v.name))
+        }) : h('div', { 'data-dam-muted': '' }, t('empty')))))
+        // M-CM6-B 一键接续:写账本→建新会话→预载交接材料→自动切换
+        rows.push(h(Card, { title: t('continueCardTitle') }, h('div', { 'data-dam-content': '' }, [
+          h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginBottom: '6px' } }, t('continueCardHint')),
+          h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', disabled: contBusy, onClick: function () { void oneClickContinue() } }, contBusy ? t('continueBusy') : t('continueBtn')),
+          contMsg ? h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginTop: '4px' } }, contMsg) : null,
+        ])))
+      }
+      // 2026-09-14 修复:开关卡此前只在「未启用」分支被返回 ⇒ 白板一旦开启,白板页就再也看不到开关(开得了、关不掉)。
+      // 开关卡必须在**两种**状态下都渲染 —— 它是这个页面上唯一的开关入口。
+      // 大屏分列:卡片流页签(见 CSS [data-dam-flow]);非卡片子元素仍整行。
+      // ★R41（114 卷 §四修正 · 「或」替换语义）：graph 档 ⇒ 白板页**整页只有 v4 看板**，
+      //   旧内容卡（开关卡/自动接续/水位卡/PLAN.md/历史版本/账本/一键接续）**全部不渲染**。
+      //   判据来源：用户原话「旧 UI 和新 UI 是 or 的关系。你选了新 UI，旧 UI 就应该被替换」。
+      //   legacy 档 ⇒ 走下面原 return，与修复前逐字节一致（老用户零感知）。
+      //   切回入口：设置页 boardMode 按钮（两档都可达，不依赖本页的开关卡）。
+      if (boardModeLocal === 'graph' && kbData) {
+        return h('div', { 'data-dam-slot': 'timeline', 'data-dam-surface-v4': '1' },
+          h('div', { 'data-dam-kanban-surface': '', 'data-dam-content': '' },
+            h(KanbanBoardRail, { data: kbData, zh: locale === 'zh', onOpen: props && props.onOpen })))
+      }
+      return h('div', { 'data-dam-slot': 'timeline', 'data-dam-flow': '' }, [switchCard].concat(rows))
+    }
+
+    function ReflectionsTab() {
+      var dataPair = useState(null)
+      var data = dataPair[0]
+      var setData = dataPair[1]
+      var openPair = useState(null)
+      var open = openPair[0]
+      var setOpen = openPair[1]
+      var contentPair = useState('')
+      var content = contentPair[0]
+      var setContent = contentPair[1]
+      var busyPair = useState(false)
+      var busy = busyPair[0]
+      var setBusy = busyPair[1]
+      var msgPair = useState('')
+      var msg = msgPair[0]
+      var setMsg = msgPair[1]
+      useEffect(function () {
+        var alive = true
+        apiGet(API.list).then(function (d) { if (alive) setData(d) }).catch(function () {})
+        return function () { alive = false }
+      }, [])
+      useEffect(function () {
+        if (!open) return
+        var alive = true
+        apiGet(API.file, { path: open }).then(function (d) { if (alive) setContent(d.content) }).catch(function () {})
+        return function () { alive = false }
+      }, [open])
+      if (!data) return h(Loading)
+      function oneClickReflect() {
+        if (busy) return
+        setBusy(true); setMsg('')
+        apiPost(API.reflectAuto, {}).then(function (d) {
+          setMsg(d.result || t('generated')); setBusy(false)
+          apiGet(API.list).then(function (dd) { if (dd) setData(dd) }).catch(function () {})
+        }).catch(function (e) { setMsg(t('failed') + e.message); setBusy(false) })
+      }
+      var rows = []
+      if (open) {
+        rows.push(h(Card, { title: t('reflectionTitle') + pathName(open) }, h('div', { 'data-dam-content': '' }, content || t('empty'))))
+        rows.push(h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: function () { setOpen(null); setContent('') } }, t('back')))
+      } else {
+        rows.push(h('div', { 'data-dam-slot': 'list', 'data-dam-row': '' },
+          h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: oneClickReflect, disabled: busy }, busy ? t('generating') : t('oneClickReflect')),
+          h('span', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, t('reflectAutoHint'))))
+        if (msg) rows.push(h('div', null, msg))
+        if (!data.reflections.length) rows.push(h('div', { 'data-dam-muted': '' }, t('noReflection')))
+        for (var i = 0; i < data.reflections.length; i++) {
+          (function (r) {
+            rows.push(h(Card, { title: r.date + ' · ' + fmtSize(r.size) },
+              h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: function () { setOpen('reflections/' + r.name) } }, t('view'))))
+          })(data.reflections[i])
+        }
+      }
+      // 大屏分列:卡片流页签(见 CSS [data-dam-flow]);非卡片子元素仍整行。
+      return h('div', { 'data-dam-slot': 'timeline', 'data-dam-flow': '' }, rows)
+    }
+
+    function SearchTab() {
+      var qPair = useState('')
+      var q = qPair[0]
+      var setQ = qPair[1]
+      var resultPair = useState(null)
+      var result = resultPair[0]
+      var setResult = resultPair[1]
+      var smartPair = useState(null)
+      var smart = smartPair[0]
+      var setSmart = smartPair[1]
+      var busyPair = useState(false)
+      var busy = busyPair[0]
+      var setBusy = busyPair[1]
+      function search() {
+        if (!q.trim() || busy) return
+        setBusy(true); setResult(null); setSmart(null)
+        apiPost(API.recall, { query: q.trim() }).then(function (d) { setResult(d.result); setBusy(false) })
+          .catch(function (e) { setResult(t('searchFailed') + e.message); setBusy(false) })
+      }
+      function smartSearch() {
+        if (!q.trim() || busy) return
+        setBusy(true); setResult(null); setSmart(null)
+        apiPost(API.smartRecall, { query: q.trim() }).then(function (d) { setSmart(d); setBusy(false) })
+          .catch(function (e) { setSmart({ answer: t('searchFailed') + e.message, keywords: [], hits: [] }); setBusy(false) })
+      }
+      // 大屏分列:卡片流页签(见 CSS [data-dam-flow]);非卡片子元素仍整行。
+      return h('div', { 'data-dam-slot': 'timeline', 'data-dam-flow': '' },
+        h('div', { 'data-dam-slot': 'list', 'data-dam-row': '' },
+          h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', placeholder: t('searchPlaceholder'), value: q, onChange: function (e) { setQ(e.target.value) }, onKeyDown: function (e) { if (e.key === 'Enter') search() } }),
+          h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: search, disabled: busy }, t('searchBtn')),
+          h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: smartSearch, disabled: busy }, t('smartSearch'))),
+        busy ? h(Loading, { label: locale === 'zh' ? 'AI 正在分析记忆…' : 'AI is analyzing memory…' }) : null,
+        smart ? h(Card, { title: t('smartAnswer') },
+          h('div', { 'data-dam-content': '' }, smart.answer || t('empty')),
+          smart.keywords && smart.keywords.length ? h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginTop: '6px' } }, t('keywordsLabel') + smart.keywords.join(' / ')) : null,
+          Array.isArray(smart.hits) && smart.hits.length ? h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginTop: '6px' } },
+            // ★P1-2 补接线(2026-09-22):宿主**早已**把结论层标记放进 smartRecall 的 hits 投影
+            //   (index.js:6469 → l0-extract.js:295+,文案形如「⚠已撤回」),前端此前零渲染
+            //   ⇒「这条结论已失效」在界面上完全看不出来,用户会把它当有效结论读。mark 自带文案 ⇒ 零 i18n。
+            smart.hits.map(function (hit, i) {
+              if (!hit || typeof hit !== 'object') return null
+              var mark = hit.mark === undefined || hit.mark === null ? '' : String(hit.mark).trim()
+              return h('div', { key: i, style: { marginTop: '3px', overflowWrap: 'anywhere' } },
+                mark ? h('span', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginRight: '5px', fontWeight: 600, color: 'var(--dsw-alias-state-warn-primary, var(--dam-dec-prefetch, #e8c584))' } }, mark) : null,
+                '· [' + String(hit.where || '') + '] ' + String(hit.line || ''))
+            })) : null)
+          : null,
+        result ? h(Card, { title: t('resultTitle') }, h('div', { 'data-dam-content': '' }, result)) : null)
+    }
+
+    // ───────────────────────── 工作区总览页签(跨工作区全局总结) ─────────────────────────
+    function graphKeywords(text) {
+      return String(text || '').toLowerCase().split(/[\s,，。:：;；/|()[\]{}]+/).filter(function (x) { return x.length >= 3 }).slice(0, 18)
+    }
+    function WorkspaceGraph(props) {
+      var workspaces = props.workspaces || []
+      var panPair = useState({ x: 0, y: 0 })
+      var pan = panPair[0]
+      var setPan = panPair[1]
+      var dragPair = useState(false)
+      var panning = dragPair[0]
+      var setPanning = dragPair[1]
+      var startPair = useState(null)
+      var dragStart = startPair[0]
+      var setDragStart = startPair[1]
+      function pointerDown(ev) {
+        if (ev.button !== 0 || (ev.target && ev.target.closest && ev.target.closest('[data-dam-graph-node]'))) return
+        ev.preventDefault()
+        try { if (ev.currentTarget.setPointerCapture) ev.currentTarget.setPointerCapture(ev.pointerId) } catch (e) {}
+        setPanning(true)
+        setDragStart({ x: ev.clientX, y: ev.clientY, px: pan.x, py: pan.y, moved: false, pointerId: ev.pointerId })
+      }
+      function pointerMove(ev) {
+        if (!panning || !dragStart || ev.pointerId !== dragStart.pointerId) return
+        var dx = ev.clientX - dragStart.x, dy = ev.clientY - dragStart.y
+        if (!dragStart.moved && Math.abs(dx) + Math.abs(dy) < 3) return
+        if (!dragStart.moved) { dragStart = Object.assign({}, dragStart, { moved: true }); setDragStart(dragStart) }
+        setPan({ x: dragStart.px + dx, y: dragStart.py + dy })
+      }
+      function pointerUp(ev) {
+        if (!panning || !dragStart || (ev && ev.pointerId !== dragStart.pointerId)) return
+        try { if (ev.currentTarget.releasePointerCapture) ev.currentTarget.releasePointerCapture(dragStart.pointerId) } catch (e) {}
+        setPanning(false); setDragStart(null)
+      }
+      var onSelect = props.onSelect || function () {}
+      var graph = props.graph || {}
+      var scale = Number(props.scale) || 1.2
+      var compact = graphDensity === 'compact'
+      var columns = Math.min(2, Math.max(1, workspaces.length))
+      var rows = Math.ceil(workspaces.length / columns)
+      var width = 920
+      var colGap = 420
+      var rowGap = compact ? 220 : 270
+      var height = Math.max(420, rows * rowGap + 80)
+      var centers = workspaces.map(function (ws, i) {
+        var col = i % columns, row = Math.floor(i / columns)
+        return { ws: ws, x: 160 + col * colGap, y: 72 + row * rowGap, i: i }
+      })
+      var edges = []
+      ;(graph.links || []).forEach(function (link) {
+        var from = centers.find(function (c) { return c.ws.name === link.from })
+        var to = centers.find(function (c) { return c.ws.name === link.to })
+        if (from && to) edges.push([from, to, link.label || ''])
+      })
+      var children = []
+      centers.forEach(function (c) {
+        var topics = c.ws.graphTopics && c.ws.graphTopics.length ? c.ws.graphTopics : (c.ws.items || []).map(function (x) { return { label: x, detail: '' } })
+        topics.slice(0, compact ? 3 : 4).forEach(function (topic, j) {
+          var col = j % 2, row = Math.floor(j / 2)
+          children.push({ center: c, item: topic, x: c.x - 105 + col * 210, y: c.y + 82 + row * 56, j: j })
+        })
+      })
+      return h('div', { 'data-dam-graph': '', 'data-panning': panning ? 'true' : undefined, onPointerDown: pointerDown, onPointerMove: pointerMove, onPointerUp: pointerUp, onPointerCancel: pointerUp, onLostPointerCapture: pointerUp },
+        h(SkinBackdrop, { slot: 'bg.mindmap' }),
+        h('svg', { viewBox: '0 0 ' + width + ' ' + height, width: Math.round(width * scale), height: Math.round(height * scale), role: 'img', 'aria-label': t('wsOverview'), style: { touchAction: 'none', userSelect: 'none' } },
+          h('g', { transform: 'translate(' + (pan.x / scale) + ' ' + (pan.y / scale) + ')' },
+          h('g', null, edges.map(function (e, i) {
+            return h('g', { key: 'cross-' + i }, h('line', { x1: e[0].x, y1: e[0].y, x2: e[1].x, y2: e[1].y, stroke: 'var(--dam-accent, #4f7cff)', strokeOpacity: .35, strokeWidth: 1.5, strokeDasharray: '5 6' }), e[2] ? h('text', { x: (e[0].x + e[1].x) / 2, y: (e[0].y + e[1].y) / 2 - 4, textAnchor: 'middle', fontSize: 8, fill: 'var(--dam-accent, #4f7cff)' }, e[2].slice(0, 16)) : null)
+          })),
+          h('g', null, children.map(function (n, i) {
+            return h('g', { key: 'branch-' + i },
+              h('line', { x1: n.center.x, y1: n.center.y + 38, x2: n.x, y2: n.y - 22, stroke: 'var(--dam-accent-graphite, #8b949e)', strokeOpacity: .48, strokeWidth: 1.2 }),
+              h('rect', { x: n.x - (compact ? 82 : 92), y: n.y - 22, width: compact ? 164 : 184, height: 44, rx: 10, fill: 'color-mix(in srgb, var(--dsw-alias-bg-layer-2, #fff) 92%, transparent)', stroke: 'color-mix(in srgb, var(--dam-accent, var(--dam-accent-deepseek, #1d4ed8)) 42%, var(--dam-accent-graphite, #8b949e))', strokeOpacity: .8 }),
+              h('text', { x: n.x, y: n.y - 5, textAnchor: 'middle', fontSize: compact ? 9.5 : 10.5, fontWeight: 650, fill: 'currentColor' }, String(n.item && n.item.label || n.item || '').slice(0, 22)),
+              h('text', { x: n.x, y: n.y + 10, textAnchor: 'middle', fontSize: 8, fill: 'var(--dam-graph-node, #7d8793)' }, String(n.item && n.item.detail || '').slice(0, 26)))
+          })),
+          h('g', null, centers.map(function (c) {
+            return h('g', { key: c.ws.path, 'data-dam-graph-node': '', onPointerDown: function (ev) { ev.stopPropagation() }, onClick: function () { onSelect(c.ws) } },
+              h('rect', { x: c.x - 100, y: c.y - 38, width: 200, height: 76, rx: 16, fill: 'color-mix(in srgb, var(--dam-accent, var(--dam-accent-deepseek, #1d4ed8)) 22%, var(--dsw-alias-bg-layer-2, #fff))', stroke: 'var(--dam-accent, var(--dam-accent-deepseek, #1d4ed8))', strokeWidth: 2 }),
+              h('text', { x: c.x, y: c.y - 5, textAnchor: 'middle', fontSize: compact ? 10.5 : 12, fontWeight: 650, fill: 'currentColor' }, h('tspan', { x: c.x, dy: 0 }, String(c.ws.name || '').slice(0, 12)), h('tspan', { x: c.x, dy: 13 }, String(c.ws.name || '').slice(12, 24))),
+              h('text', { x: c.x, y: c.y + 15, textAnchor: 'middle', fontSize: 8, fill: 'var(--dam-graph-node, #7d8793)' }, (c.ws.logCount || 0) + ' ' + t('logEntries')))
+          }))))
+          )
+    }
+    // ─────────────────────────────────────────────────────────────────────────
+// 统计页签（2026-09-22）—— 召回统计的可视化。
+//
+// 为什么单独一页：用户要「看哪个召回得更多、哪个更重要」，这是一眼看的活，
+//   不适合塞进已有 12 个页签的任意一个里（会把那一页的语义冲淡）。
+//
+// 立场：纯只读展示 + 一个清零按钮。**不改召回排序**（加权是后续独立批次，
+//   等这份数据证明口径可信之后再做）——故本页不做任何排序相关的写操作。
+//
+// 视觉：复用面板既有 --dam-* 令牌与 [data-dam-card] 入场，不引第三方图表库
+//   （零构建环境下引库=多一个包+多一套主题；四种图手绘 SVG 足够表达）。
+// ─────────────────────────────────────────────────────────────────────────
+
+/** 环形图：按层占比。用 stroke-dasharray 画弧，避免 path 三角计算。 */
+function DamDonut(props) {
+  var items = props.items || []
+  var total = items.reduce(function (n, it) { return n + (it.count || 0) }, 0)
+  var R = 34, C = 2 * Math.PI * R
+  var PALETTE = ['var(--dam-accent-ai, #5b8def)', 'var(--dam-lane-state, #3fa96a)', 'var(--dam-lane-progress, #d4a94f)', 'var(--dam-accent-purple, #c061c0)', 'var(--dam-accent-ai2, #4aa8b8)', 'var(--dam-neutral-mid, #8a8f98)']
+  var acc = 0
+  var arcs = items.slice(0, 6).map(function (it, i) {
+    var frac = total ? (it.count || 0) / total : 0
+    var seg = h('circle', {
+      key: 'a' + i, cx: 44, cy: 44, r: R, fill: 'none',
+      stroke: PALETTE[i % PALETTE.length], strokeWidth: 12,
+      strokeDasharray: (frac * C) + ' ' + C,
+      strokeDashoffset: -acc * C,
+      transform: 'rotate(-90 44 44)',
+      style: { animation: 'dam-stat-arc var(--dam-dur-slow) var(--dam-ease-out) both' },
+    })
+    acc += frac
+    return seg
+  })
+  return h('div', { 'data-dam-stat-donut': '', 'data-dam-slot': 'chart', 'data-dam-block': 'chart', 'data-dam-kind': 'chart', 'data-dam-region': 'page', style: { display: 'flex', gap: '14px', alignItems: 'center', flexWrap: 'wrap' } },
+    h('svg', { width: 88, height: 88, viewBox: '0 0 88 88', role: 'img', 'aria-label': props.label }, arcs),
+    h('div', { style: { display: 'flex', flexDirection: 'column', gap: '4px', minWidth: 0 } },
+      items.slice(0, 6).map(function (it, i) {
+        var pct = total ? Math.round(((it.count || 0) / total) * 100) : 0
+        return h('div', { key: 'l' + i, style: { display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px' } },
+          h('span', { style: { width: 8, height: 8, borderRadius: 8, background: PALETTE[i % PALETTE.length], flex: '0 0 auto' } }),
+          h('span', null, it.key + ' · ' + it.count + ' (' + pct + '%)'))
+      })))
+}
+
+/** 横向柱状：召回最多的条目。条宽用百分比，随容器自适应。 */
+function DamBars(props) {
+  var items = props.items || []
+  var max = items.reduce(function (n, it) { return Math.max(n, it.count || 0) }, 0) || 1
+  return h('div', { 'data-dam-stat-bars': '', style: { display: 'flex', flexDirection: 'column', gap: '6px' } },
+    items.map(function (it, i) {
+      var pct = Math.max(2, Math.round(((it.count || 0) / max) * 100))
+      return h('div', { key: 'b' + i, style: { display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px' } },
+        h('code', { style: { flex: '0 0 auto', opacity: .75, fontSize: '11px' } }, String(it.id || '').slice(0, 12)),
+        h('div', { style: { flex: '1 1 auto', height: 8, borderRadius: 6, background: 'color-mix(in srgb, currentColor 10%, transparent)', overflow: 'hidden' } },
+          h('div', {
+            style: {
+              height: '100%', width: pct + '%', borderRadius: 6,
+              background: 'linear-gradient(90deg, var(--dam-accent-ai, #5b8def), var(--dam-accent-ai2, #4aa8b8))',
+              animation: 'dam-stat-grow var(--dam-dur-slow) var(--dam-ease-out) both',
+            },
+          })),
+        h('span', { style: { flex: '0 0 auto', fontVariantNumeric: 'tabular-nums' } }, '×' + it.count),
+        it.layer ? h('span', { style: { flex: '0 0 auto', opacity: .6, fontSize: '11px' } }, it.layer) : null)
+    }))
+}
+
+/** 折线 + 面积：按天走势。 */
+function DamSpark(props) {
+  var days = props.items || []
+  var W = 320, H = 68, P = 4
+  if (!days.length) return h('div', { style: { opacity: .6, fontSize: '12px' } }, props.empty)
+  var max = days.reduce(function (n, d) { return Math.max(n, d.count || 0) }, 0) || 1
+  var step = days.length > 1 ? (W - P * 2) / (days.length - 1) : 0
+  var pts = days.map(function (d, i) {
+    var x = P + i * step
+    var y = H - P - ((d.count || 0) / max) * (H - P * 2)
+    return [x, y]
+  })
+  var line = pts.map(function (p, i) { return (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1) }).join(' ')
+  var area = line + ' L' + (P + (days.length - 1) * step).toFixed(1) + ' ' + (H - P) + ' L' + P + ' ' + (H - P) + ' Z'
+  return h('svg', {
+    'data-dam-stat-spark': '', width: '100%', height: H, viewBox: '0 0 ' + W + ' ' + H,
+    preserveAspectRatio: 'none', role: 'img', 'aria-label': props.label,
+    style: { animation: 'dam-stat-reveal var(--dam-dur-slow) var(--dam-ease-inout) both' },
+  },
+    h('path', { d: area, fill: 'color-mix(in srgb, var(--dam-accent-ai, #5b8def) 22%, transparent)', stroke: 'none' }),
+    h('path', { d: line, fill: 'none', stroke: 'var(--dam-accent-ai, #5b8def)', strokeWidth: 2, strokeLinejoin: 'round', vectorEffect: 'non-scaling-stroke' }))
+}
+
+/** 热力格：天 × 次数。一眼看出「哪天被想起来的次数多」。 */
+function DamHeat(props) {
+  var days = (props.items || []).slice(-42)
+  if (!days.length) return h('div', { style: { opacity: .6, fontSize: '12px' } }, props.empty)
+  var max = days.reduce(function (n, d) { return Math.max(n, d.count || 0) }, 0) || 1
+  return h('div', { 'data-dam-stat-heat': '', style: { display: 'flex', flexWrap: 'wrap', gap: 3 } },
+    days.map(function (d, i) {
+      var t = (d.count || 0) / max
+      return h('div', {
+        key: 'h' + i, title: d.day + ' · ' + d.count,
+        style: {
+          width: 12, height: 12, borderRadius: 3,
+          background: 'color-mix(in srgb, var(--dam-accent-ai, #5b8def) ' + Math.round(18 + t * 82) + '%, transparent)',
+          animation: 'dam-stat-pop var(--dam-dur-fast) var(--dam-ease-out) both',
+          animationDelay: Math.min(i * 12, 240) + 'ms',
+        },
+      })
+    }))
+}
+
+/** 数字卡：用途=「数字弹入」⇒ --dam-dur-slow + --dam-ease-out + 2px 模糊（skill number-pop-in 判据）。 */
+function DamStat(props) {
+  return h('div', { 'data-dam-slot': 'stats-row', 'data-dam-block': 'stat', 'data-dam-kind': 'stat', 'data-dam-stat': '', style: { display: 'flex', flexDirection: 'column', gap: 2, minWidth: 92 } },
+    h('div', {
+      style: {
+        fontSize: '22px', fontWeight: 600, fontVariantNumeric: 'tabular-nums',
+        animation: 'dam-stat-num var(--dam-dur-slow) var(--dam-ease-out) both',
+      },
+    }, String(props.value)),
+    h('div', { style: { fontSize: '11px', opacity: .7 } }, props.label))
+}
+
+function StatsTab() {
+  var s = useState(null)
+  var data = s[0], setData = s[1]
+  var e = useState('')
+  var err = e[0], setErr = e[1]
+  var r = useState(0)
+  var tick = r[0], setTick = r[1]
+
+  useEffect(function () {
+    var alive = true
+    function load() {
+      fetch(API.recallStats)
+        .then(function (res) { return res.json() })
+        .then(function (j) { if (alive) { setErr(''); setData(j) } })
+        .catch(function (ex) { if (alive) setErr(String((ex && ex.message) || ex)) })
+    }
+    load()
+    // ★A-11b（2026-09-23）：面板开着时**自己刷新** —— 此前只在挂载/点「复位」时拉一次，
+    //   用户盯着统计页数字也永远不动（实测「召回统计不更新」的第二个真因，另一个是
+    //   宿主侧从不落盘，见 recall-stats.js 的 maybeSave）。
+    //   15s 轮询是纯 GET 只读查询；卸载时清掉，不留悬挂定时器。
+    var iv = setInterval(load, 15000)
+    return function () { alive = false; clearInterval(iv) }
+  }, [tick])
+
+  function reset() {
+    fetch(API.recallStats + '?reset=1', { method: 'POST' })
+      .then(function () { setTick(function (n) { return n + 1 }) })
+      .catch(function (ex) { setErr(String((ex && ex.message) || ex)) })
+  }
+
+  if (err) return h(Card, { title: t('statsTitle') }, h('div', { style: { opacity: .8 } }, err))
+  // 骨架态：用途 =「骨架屏内容揭示」⇒ 脉冲用 --dam-dur-slow（与 skill 同用途判据一致）
+  if (!data) return h(Card, { title: t('statsTitle') },
+    h('div', { 'data-dam-stat-skeleton': '', style: { display: 'flex', flexDirection: 'column', gap: 8 } },
+      [0, 1, 2].map(function (i) {
+        return h('div', {
+          key: 'sk' + i,
+          style: {
+            height: 14, borderRadius: 7, width: (70 - i * 12) + '%',
+            background: 'color-mix(in srgb, currentColor 11%, transparent)',
+            animation: 'dam-stat-pulse var(--dam-dur-slow) var(--dam-ease-linear) infinite',
+          },
+        })
+      })))
+  if (!data.enabled) return h(Card, { title: t('statsTitle') }, h('div', { style: { opacity: .75 } }, h(SkinEmpty, { slot: 'empty.timeline', size: skinSlotSize('empty.timeline') }, t('statsEmpty'))))
+
+  var chs = data.channels || {}
+  var chIds = data.channelIds || []
+  // 三条通路各自一格；标签用中文/英文 i18n 键，绝不硬编码文案
+  var META = {
+    model: { name: t('statsChModel'), hint: t('statsChModelHint') },
+    inject: { name: t('statsChInject'), hint: t('statsChInjectHint') },
+    shadow: { name: t('statsChShadow'), hint: t('statsChShadowHint') },
+  }
+  var pick = function (id) { return chs[id] || {} }
+  var model = pick('model'), inject = pick('inject'), shadow = pick('shadow')
+  var totalEvents = chIds.reduce(function (n, id) { return n + (pick(id).events || 0) }, 0)
+  var emptyAll = !totalEvents
+  var since = data.since ? new Date(data.since).toLocaleString() : t('statsNever')
+
+  // 单条通路卡片：数字行 + 可选图表。**图表都走既有 Dam* 组件**（零新依赖）。
+  function chCard(ch, id, extra) {
+    var m = META[id] || {}
+    var body = [
+      h('div', { style: { opacity: .72, fontSize: '12px', marginBottom: 2 } }, m.hint),
+      h('div', { style: { display: 'flex', gap: 18, flexWrap: 'wrap', marginTop: 4 } },
+        h(DamStat, { value: ch.events || 0, label: t('statsEvents') }),
+        h(DamStat, { value: ch.hits || 0, label: t('statsTotalHits') }),
+        h(DamStat, { value: ch.distinct || 0, label: t('statsDistinct') }),
+        h(DamStat, { value: ch.zeroHit || 0, label: t('statsZeroHit') })),
+    ]
+    return h(Card, { title: m.name }, h('div', { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
+      extra ? extra(ch) : null,
+      body,
+      (ch.top && ch.top.length) ? h('div', { style: { marginTop: 4 } }, h(DamBars, { items: ch.top.slice(0, 12) }))
+        : h('div', { style: { opacity: .5, fontSize: '12px' } }, t('statsNoInject'))))
+  }
+
+  return h('div', null,
+    h(Card, { title: t('statsTitle') },
+      h('div', { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
+        h('div', { style: { opacity: .75, fontSize: '12px' } }, t('statsSubtitle')),
+        emptyAll ? h('div', { style: { opacity: .7 } }, t('statsEmpty')) : null,
+        // 总览：三条通路各占多少（饼图）—— 一眼看出"哪一条在动"
+        emptyAll ? null : h(DamDonut, {
+          items: chIds.map(function (id) { return { id: (META[id] || {}).name || id, count: pick(id).events || 0 } }),
+          label: t('statsChOverview'),
+        }),
+        h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 } },
+          h('div', { style: { fontSize: '11px', opacity: .6 } }, t('statsSince') + ': ' + since),
+          h('button', {
+            type: 'button', onClick: reset,
+            style: { fontSize: '12px', padding: '4px 10px', borderRadius: 8, cursor: 'pointer' },
+          }, t('statsReset'))))),
+    // ① 模型主动检索：高信号。附按层分布 + 按天走势
+    chCard(model, 'model', function (ch) {
+      return h('div', { style: { display: 'flex', flexDirection: 'column', gap: 10 } },
+        (ch.byLayer && ch.byLayer.length) ? h(DamDonut, { items: ch.byLayer, label: t('statsByLayer') }) : null,
+        (ch.byDay && ch.byDay.length) ? h(DamSpark, { items: ch.byDay, label: t('statsByDay'), empty: t('statsEmpty') }) : null,
+        (ch.byDay && ch.byDay.length) ? h(DamHeat, { items: ch.byDay, empty: t('statsEmpty') }) : null)
+    }),
+    // ② 每轮注入：成本视角。**条长按字符数**（回答"哪一段最占预算"）
+    chCard(inject, 'inject', function (ch) {
+      var segs = (ch.top || []).map(function (it) { return { id: it.id, count: it.score || 0, n: it.count || 0 } })
+      segs.sort(function (a, b) { return b.count - a.count })
+      if (!segs.length) return null
+      return h('div', { style: { display: 'flex', flexDirection: 'column', gap: 6 } },
+        h('div', { style: { opacity: .7, fontSize: '12px' } }, t('statsSegChars')),
+        h(DamBars, { items: segs.slice(0, 14) }))
+    }),
+    // ③ 主动唤起：系统判断质量。没开 shadow 时该卡自然为 0，不谎报
+    chCard(shadow, 'shadow', null))
+}
+
+function WorkspaceTab() {
+      var dataPair = useState(null)
+      var data = dataPair[0]
+      var setData = dataPair[1]
+      var busyPair = useState(false)
+      var busy = busyPair[0]
+      var setBusy = busyPair[1]
+      function load(force) {
+        if (busy) return
+        setBusy(true)
+        apiPost(API.workspaces, { force: !!force }).then(function (d) { if (d) setData(d); setBusy(false) })
+          .catch(function () { setBusy(false) })
+      }
+      useEffect(function () { load(false) }, [])
+      var selectedPair = useState(null)
+      var selected = selectedPair[0]
+      var setSelected = selectedPair[1]
+      var collapsedPair = useState({})
+      var collapsedByPath = collapsedPair[0]
+      var setCollapsedByPath = collapsedPair[1]
+      var graphScalePair = useState(1.0)
+      var graphScale = graphScalePair[0]
+      var setGraphScale = graphScalePair[1]
+      if (!data) return h('div', null, busy ? h(Loading, { label: locale === 'zh' ? 'AI 正在整理工作区…' : 'AI is mapping workspaces…' }) : h(Loading))
+      var workspaces = data.workspaces || []
+      return h('div', null,
+        h('div', { 'data-dam-slot': 'list', 'data-dam-row': '' },
+          h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: function () { load(true) }, disabled: busy }, busy ? t('refreshing') : t('refresh')),
+          h('span', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, data.cached ? (t('generatedAt') + new Date(data.generatedAt).toLocaleTimeString()) : '')),
+        workspaces.length ? h('div', null,
+          h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { margin: '5px 0 8px' } }, locale === 'zh' ? '中心节点代表工作区；分支为记忆主题；虚线表示共享主题。' : 'Centers are workspaces, branches are topics, and dashed links show shared themes.'),
+          h('div', { 'data-dam-graph-toolbar': '' }, h('span', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, locale === 'zh' ? '思维导图大小' : 'Map size'), h('input', { type: 'range', min: '0.55', max: '1.75', step: '0.05', value: graphScale, 'aria-label': locale === 'zh' ? '调整思维导图大小' : 'Adjust map size', onChange: function (e) { setGraphScale(Number(e.target.value) || 1.0) } }), h('span', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, Math.round(graphScale * 100) + '%'), h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', title: locale === 'zh' ? '重置视图' : 'Reset view', onClick: function () { setGraphScale(1.0) } }, '⌂')),
+          h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, locale === 'zh' ? '点击工作区卡片查看摘要；拖动滑块调整图的大小。' : 'Select a workspace card for details; use the slider to resize the map.'),
+          h(WorkspaceGraph, { workspaces: workspaces, graph: data.graph, scale: graphScale, onSelect: function (ws) { setSelected(ws); var n = Object.assign({}, collapsedByPath); n[ws.path] = false; setCollapsedByPath(n) } }),
+          // ★大屏分列(2026-09-22):工作区卡片(已带 [data-dam-card])在宽屏排成多列。
+        h('div', { 'data-dam-slot': 'timeline', 'data-dam-flow': '', style: { marginTop: '12px' } }, workspaces.map(function (ws) {
+            var open = collapsedByPath[ws.path] === false
+            return h('div', { key: ws.path, 'data-dam-card': '', style: { marginBottom: '8px', padding: '0' } },
+              h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', 'aria-expanded': open ? 'true' : 'false', onClick: function () { var n = Object.assign({}, collapsedByPath); n[ws.path] = !open; setCollapsedByPath(n); setSelected(ws) }, style: { width: '100%', textAlign: 'left', padding: '10px 12px', fontWeight: 650 } }, (open ? '▾ ' : '▸ ') + ws.name + (ws.dateRange ? ' · ' + ws.dateRange : '')),
+              h(AnimatedDisclosure, { open: open }, h('div', { style: { padding: '4px 12px 12px' } }, ws.summary ? h('div', { 'data-dam-content': '' }, ws.summary) : null, (ws.items || []).map(function (it, i) { return h('div', { key: i, style: { fontSize: 'calc(12px * var(--dam-scale))', marginTop: '4px', lineHeight: 1.55 } }, '· ' + it) }), h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, ws.path + ' · ' + (ws.logCount || 0) + t('logEntries')))))
+          })) ) : h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, t('wsNone')))
+    }
+
+    // ───────────────────────── 日历页签 ─────────────────────────
+    var QUADRANT_I18N = { '重要紧急': 'qUrgentImportant', '重要不紧急': 'qImportant', '紧急不重要': 'qUrgent', '不重要不紧急': 'qNone', '未分类': 'qUncategorized' }
+    var QUADRANT_STYLE = {
+      '重要紧急': { color: 'var(--dsw-alias-state-error-primary, #d64545)' },
+      '重要不紧急': { color: 'var(--dsw-alias-brand-primary, #4f7cff)' },
+      '紧急不重要': { color: 'var(--dsw-alias-state-warn-primary, #e6a23c)' },
+      '不重要不紧急': { color: 'var(--dsw-alias-label-secondary, #8a94a6)' },
+      '未分类': { color: 'var(--dsw-alias-label-secondary, #8a94a6)' },
+    }
+    function CalendarTab() {
+      var zh = (locale || 'zh').indexOf('zh') === 0
+      var dataPair = useState(null)
+      var data = dataPair[0]
+      var setData = dataPair[1]
+      var monthPair = useState(null)
+      var month = monthPair[0]  // {year, mon} 1-12
+      var setMonth = monthPair[1]
+      var draftPair = useState(null)
+      var draft = draftPair[0]  // {date, time, quadrant, title}
+      var setDraft = draftPair[1]
+      var dayViewPair = useState(null)
+      var dayView = dayViewPair[0]
+      var setDayView = dayViewPair[1]
+      var msgPair = useState('')
+      var msg = msgPair[0]
+      var setMsg = msgPair[1]
+      var savingPair = useState(false)
+      var saving = savingPair[0]
+      var setSaving = savingPair[1]
+      var calErrorPair = useState('')
+      var calError = calErrorPair[0]
+      var setCalError = calErrorPair[1]
+      function load() {
+        apiGet(API.calendar).then(function (d) { if (d) { setData(d); setCalError('') } }).catch(function (e) { setCalError(t('failed') + e.message) })
+      }
+      useEffect(function () {
+        load()
+        var now = new Date()
+        setMonth({ year: now.getFullYear(), mon: now.getMonth() + 1 })
+      }, [])
+      if (!data || !month) return h(Loading)
+      function dayEntries(date) {
+        return (data.entries || []).filter(function (en) { return en.date === date })
+      }
+      function moveMonth(delta) {
+        var y = month.year, m = month.mon + delta
+        if (m < 1) { m = 12; y-- }
+        if (m > 12) { m = 1; y++ }
+        setMonth({ year: y, mon: m })
+      }
+      function fmtDate(y, m, d) { return y + '-' + String(m).padStart(2, '0') + '-' + String(d).padStart(2, '0') }
+      // 月网格
+      var firstDay = new Date(month.year, month.mon - 1, 1)
+      var startDow = firstDay.getDay()
+      var daysInMonth = new Date(month.year, month.mon, 0).getDate()
+      var cells = []
+      var today = fmtDate(new Date().getFullYear(), new Date().getMonth() + 1, new Date().getDate())
+      for (var i = 0; i < startDow; i++) cells.push(null)
+      for (var d = 1; d <= daysInMonth; d++) cells.push(fmtDate(month.year, month.mon, d))
+      var dowLabels = locale === 'zh' ? ['日', '一', '二', '三', '四', '五', '六'] : ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']
+      var rows = []
+      // 顶部:月份切换 + 添加按钮
+      rows.push(h('div', { 'data-dam-slot': 'list', 'data-dam-row': '' },
+        h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: function () { moveMonth(-1) } }, '◀'),
+        h('span', { style: { fontWeight: 700, flex: 1, textAlign: 'center' } }, month.year + ' / ' + String(month.mon).padStart(2, '0')),
+        h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: function () { moveMonth(1) } }, '▶'),
+        h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: function () { setDraft({ date: today, time: '09:00', quadrant: '重要不紧急', title: '', location: '', reminder: '', note: '' }) } }, '+ ' + t('addItem'))))
+      // 图例
+      rows.push(h('div', { 'data-dam-slot': 'list', 'data-dam-row': '', style: { flexWrap: 'wrap' } },
+        Object.keys(QUADRANT_STYLE).map(function (q) {
+          return h('span', { key: q, style: { fontSize: 'calc(11px * var(--dam-scale))', opacity: 0.8, marginRight: '10px' } },
+            h('span', { style: { display: 'inline-block', width: 8, height: 8, borderRadius: 2, background: QUADRANT_STYLE[q].color, marginRight: 4 } }), t(QUADRANT_I18N[q]))
+        })))
+      // 星期表头
+      rows.push(h('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '3px', marginBottom: '4px' } },
+        dowLabels.map(function (dl) { return h('div', { key: dl, style: { textAlign: 'center', fontSize: 'calc(11px * var(--dam-scale))', opacity: 0.55 } }, dl) })))
+      // 日历格子
+      var gridRows = []
+      for (var ci = 0; ci < cells.length; ci += 7) {
+        var week = []
+        for (var cj = 0; cj < 7; cj++) {
+          (function (cell) {
+            if (!cell) { week.push(h('div', { key: 'empty' + cj })); return }
+            var es = dayEntries(cell)
+            var isToday = cell === today
+            var dayNum = Number(cell.slice(8))
+            week.push(h('div', {
+              key: cell,
+              'data-dam-calendar-day': '',
+              onClick: function () { setDayView(cell) },
+              style: {
+                minHeight: '64px', padding: '4px', cursor: 'pointer', borderRadius: '8px',
+                border: '1px solid ' + (isToday ? 'var(--dsw-alias-brand-primary, #4f7cff)' : 'color-mix(in srgb, var(--dsw-alias-border-l1, rgba(128,128,128,.3)) 55%, transparent)'),
+                background: isToday ? 'color-mix(in srgb, var(--dsw-alias-brand-primary, #4f7cff) 10%, transparent)' : 'color-mix(in srgb, var(--dsw-alias-bg-layer-1, rgba(128,128,128,.06)) 40%, transparent)',
+                overflow: 'hidden',
+              },
+            },
+              h('div', { style: { fontSize: 'calc(11.5px * var(--dam-scale))', fontWeight: isToday ? 700 : 500, opacity: isToday ? 1 : 0.7, marginBottom: '3px' } }, dayNum),
+              es.slice(0, 3).map(function (en) {
+                var qs = QUADRANT_STYLE[en.quadrant] || QUADRANT_STYLE['未分类']
+                return h('div', {
+                  key: en.time + en.title,
+                  'data-dam-calendar-event': '',
+                  title: en.time + ' ' + en.title,
+                  onClick: function (ev) { ev.stopPropagation(); toggleDone(en) },
+                  style: {
+                    fontSize: 'calc(10.5px * var(--dam-scale))', lineHeight: 1.35, padding: '1px 4px', borderRadius: 4, marginBottom: 2,
+                    background: 'color-mix(in srgb, ' + qs.color + ' 18%, transparent)',
+                    color: qs.color, textDecoration: en.done ? 'line-through' : 'none',
+                    opacity: en.done ? 0.5 : 1, cursor: 'pointer', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                  },
+                }, (en.time && en.time !== '--:--' ? en.time + ' ' : '') + en.title)
+              }),
+              es.length > 3 ? h('div', { style: { fontSize: 'calc(10px * var(--dam-scale))', opacity: 0.5 } }, '+' + (es.length - 3)) : null))
+          })(cells[ci + cj])
+        }
+        gridRows.push(h('div', { key: 'w' + ci, style: { display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '3px' } }, week))
+      }
+      rows.push(h('div', null, gridRows))
+      function toggleDone(en) {
+        if (saving) return
+        setSaving(true); setCalError('')
+        apiPost(API.calendar, { action: en.done ? 'remove' : 'done', date: en.date, time: en.time, title: en.title }).then(function (d) {
+          setMsg(d.result || ''); setSaving(false); load()
+        }).catch(function (e) { setSaving(false); setCalError(t('failed') + e.message) })
+      }
+      function saveDraft() {
+        if (!draft || !draft.title.trim()) { setCalError(t('needTitle')); return }
+        if (saving) return
+        setSaving(true); setCalError('')
+        apiPost(API.calendar, { date: draft.date, time: draft.time, quadrant: draft.quadrant, title: draft.title.trim(), note: [draft.location ? (locale === 'zh' ? '地点: ' : 'Location: ') + draft.location : '', draft.reminder ? (locale === 'zh' ? '提醒: ' : 'Reminder: ') + draft.reminder : '', draft.note || ''].filter(Boolean).join(' | ') }).then(function (d) {
+          setMsg(d.result || t('saved')); setSaving(false); setDraft(null); load()
+        }).catch(function (e) { setSaving(false); setCalError(t('failed') + e.message) })
+      }
+      // 日期格先打开当天时间轴；点击某个时间槽才创建事件。
+      if (dayView) {
+        var timeline = []
+        var dayAll = dayEntries(dayView)
+        // ★2026-09-20 修 bug: 旧实现把时间轴写死为 `for (hourSlot = 7; hourSlot <= 22; ...)`。
+        //   后果: 任何 23:00–06:59 或 time='--:--' 的事件**在当天视图里永不显示**——
+        //   而用户的真实数据里就有 7 条 23:59 截止的作业(AMA1751 / BME1D02)。
+        //   现改为**由数据驱动**: 先扫当天事件的真实小时, 用其 min/max 决定时间轴范围
+        //   (无事件时才回落到 07:00–22:00), 且任何落在范围外的事件单独成"时间轴外"一段。
+        var hourNums = []
+        var untimed = []
+        for (var di = 0; di < dayAll.length; di++) {
+          var tm = String(dayAll[di].time || '')
+          var hh = parseInt(tm.slice(0, 2), 10)
+          if (isNaN(hh)) { untimed.push(dayAll[di]); continue }
+          hourNums.push(hh)
+        }
+        var hFrom = hourNums.length ? Math.min.apply(null, hourNums) : 7
+        var hTo = hourNums.length ? Math.max.apply(null, hourNums) : 22
+        if (hFrom > 7) hFrom = 7
+        if (hTo < 22) hTo = 22
+        // 每个小时槽: 支持同名 key 去重(同小时多事件)
+        for (var hourSlot = hFrom; hourSlot <= hTo; hourSlot++) {
+          (function (hourValue) {
+            var hourText = String(hourValue).padStart(2, '0') + ':00'
+            var pad = String(hourValue).padStart(2, '0')
+            var hourEvents = dayAll.filter(function (en) { return String(en.time || '').slice(0, 2) === pad })
+            timeline.push(h('div', { key: hourText, 'data-dam-calendar-slot': '', onClick: function () { setDayView(null); setDraft({ date: dayView, time: hourText, quadrant: '重要不紧急', title: '', location: '', reminder: '', note: '' }) } },
+              h('div', { style: { flex: '0 0 50px', fontSize: 'calc(11px * var(--dam-scale))', opacity: .65 } }, hourText),
+              h('div', { style: { minHeight: '34px', flex: 1, borderLeft: '2px solid color-mix(in srgb, var(--dam-accent, var(--dam-accent-deepseek, #1d4ed8)) 24%, transparent)', paddingLeft: '9px' } }, hourEvents.length ? hourEvents.map(function (en, k) { var qs = QUADRANT_STYLE[en.quadrant] || QUADRANT_STYLE['未分类']; return h('div', { key: String(en.time) + '#' + k, 'data-dam-calendar-event': '', onClick: function (ev) { ev.stopPropagation(); toggleDone(en) }, style: { marginBottom: '4px', padding: '4px 7px', borderRadius: 6, background: 'color-mix(in srgb, ' + qs.color + ' 18%, transparent)', color: qs.color, textDecoration: en.done ? 'line-through' : 'none', opacity: en.done ? .55 : 1, cursor: 'pointer' } }, (en.time || '') + '  ' + en.title + (en.note ? ' · ' + en.note : '')) }) : h('span', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, locale === 'zh' ? '点击添加事件' : 'Click to add event'))))
+          })(hourSlot)
+        }
+        // 时间轴外(无 time 或 time 无法解析)的事件单独列出 —— 不再静默丢失
+        if (untimed.length) {
+          timeline.push(h('div', { key: '__untimed', 'data-dam-calendar-slot': '', onClick: function () { setDayView(null); setDraft({ date: dayView, time: '23:59', quadrant: '重要不紧急', title: '', location: '', reminder: '', note: '' }) } },
+            h('div', { style: { flex: '0 0 50px', fontSize: 'calc(11px * var(--dam-scale))', opacity: .65 } }, zh ? '未定时' : 'n/a'),
+            h('div', { style: { minHeight: '34px', flex: 1, borderLeft: '2px solid color-mix(in srgb, var(--dsw-alias-state-warn-primary, var(--dam-lane-progress, #d4a94f)) 55%, transparent)', paddingLeft: '9px' } }, untimed.map(function (en, k) { var qs = QUADRANT_STYLE[en.quadrant] || QUADRANT_STYLE['未分类']; return h('div', { key: 'u' + k, 'data-dam-calendar-event': '', onClick: function (ev) { ev.stopPropagation(); toggleDone(en) }, style: { marginBottom: '4px', padding: '4px 7px', borderRadius: 6, background: 'color-mix(in srgb, ' + qs.color + ' 18%, transparent)', color: qs.color, textDecoration: en.done ? 'line-through' : 'none', opacity: en.done ? .55 : 1, cursor: 'pointer' } }, en.title + (en.note ? ' · ' + en.note : '')) }))))
+        }
+        // 当天前后翻页(原实现只能靠「先关掉浮层 → 再点另一个日期」, 多一次无效操作)
+        var dPrev = new Date(dayView + 'T00:00:00'); dPrev.setDate(dPrev.getDate() - 1)
+        var dNext = new Date(dayView + 'T00:00:00'); dNext.setDate(dNext.getDate() + 1)
+        var fmtD = function (dt) { return dt.getFullYear() + '-' + String(dt.getMonth() + 1).padStart(2, '0') + '-' + String(dt.getDate()).padStart(2, '0') }
+        var wk = (function (ds) {
+          // ISO-8601 周序号(周一为一周之始, 第 1 周含当年首个周四)
+          var dt = new Date(ds + 'T00:00:00')
+          var t = new Date(dt.getFullYear(), dt.getMonth(), dt.getDate())
+          t.setDate(t.getDate() + 3 - ((t.getDay() + 6) % 7))
+          var ws = new Date(t.getFullYear(), 0, 4)
+          ws.setDate(ws.getDate() + 3 - ((ws.getDay() + 6) % 7))
+          return 1 + Math.round((t - ws) / 604800000)
+        })(dayView)
+        rows.push(h('div', { 'data-dam-calendar-modal': '', style: { position: 'absolute', inset: 0, zIndex: 10, overflow: 'auto', borderRadius: '16px', background: 'color-mix(in srgb, var(--dsw-alias-bg-layer-2, rgba(255,255,255,.9)) 78%, transparent)', backdropFilter: 'blur(20px) saturate(1.4)', WebkitBackdropFilter: 'blur(20px) saturate(1.4)', padding: '16px' } },
+          h('div', { 'data-dam-slot': 'list', 'data-dam-row': '' },
+            h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', title: zh ? '前一天' : 'previous day', onClick: function () { setDayView(fmtD(dPrev)) } }, '‹'),
+            h('div', { style: { fontWeight: 700, flex: 1, textAlign: 'center' } }, dayView + ' · ' + (zh ? '第 ' + wk + ' 周' : 'W' + wk) + ' · ' + dayAll.length + (zh ? ' 项' : ' items')),
+            h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', title: zh ? '后一天' : 'next day', onClick: function () { setDayView(fmtD(dNext)) } }, '›'),
+            h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: function () { setDayView(null) } }, '✕')),
+          timeline))
+      }
+      // 添加/编辑浮层(液态玻璃)
+      if (draft) {
+        rows.push(h('div', {
+          'data-dam-calendar-modal': '',
+          style: {
+            position: 'absolute', inset: 0, zIndex: 10, borderRadius: '16px',
+            background: 'color-mix(in srgb, var(--dsw-alias-bg-layer-2, rgba(255,255,255,.9)) 70%, transparent)',
+            backdropFilter: 'blur(20px) saturate(1.4)', WebkitBackdropFilter: 'blur(20px) saturate(1.4)',
+            display: 'flex', flexDirection: 'column', padding: '18px', gap: '10px',
+            border: '1px solid color-mix(in srgb, var(--dsw-alias-border-l1, rgba(128,128,128,.35)) 60%, transparent)',
+          },
+        },
+          h('div', { style: { fontWeight: 700 } }, t('addItem') + ' · ' + draft.date),
+          h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', placeholder: t('itemTitle'), value: draft.title, autoFocus: true, onChange: function (e) { var n = Object.assign({}, draft); n.title = e.target.value; setDraft(n) } }),
+          h('div', { 'data-dam-slot': 'list', 'data-dam-row': '' },
+            h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'time', value: draft.time, onChange: function (e) { var n = Object.assign({}, draft); n.time = e.target.value || '09:00'; setDraft(n) } }),
+            h('select', { 'data-dam-select': '', value: draft.quadrant, onChange: function (e) { var n = Object.assign({}, draft); n.quadrant = e.target.value; setDraft(n) } },
+              ['重要紧急', '重要不紧急', '紧急不重要', '不重要不紧急'].map(function (q) { return h('option', { key: q, value: q }, t(QUADRANT_I18N[q])) }))),
+          h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', placeholder: locale === 'zh' ? '地点（可选）' : 'Location (optional)', value: draft.location || '', onChange: function (e) { var n = Object.assign({}, draft); n.location = e.target.value; setDraft(n) } }),
+          h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', placeholder: locale === 'zh' ? '提醒内容（可选）' : 'Reminder note (optional)', value: draft.reminder || '', onChange: function (e) { var n = Object.assign({}, draft); n.reminder = e.target.value; setDraft(n) } }),
+          h('textarea', { 'data-dam-slot': 'form', 'data-dam-input': '', rows: 2, placeholder: locale === 'zh' ? '补充说明（可选）' : 'Details (optional)', value: draft.note || '', onChange: function (e) { var n = Object.assign({}, draft); n.note = e.target.value; setDraft(n) } }),
+          h('div', { 'data-dam-slot': 'list', 'data-dam-row': '' },
+            h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: saveDraft, disabled: saving }, saving ? (locale === 'zh' ? '保存中…' : 'Saving…') : t('save')),
+            h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: function () { if (!saving) setDraft(null) }, disabled: saving }, t('cancel')),
+            calError ? h('div', { 'data-dam-error': '' }, calError) : null)))
+      }
+      if (msg) rows.push(h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginTop: '8px' } }, msg))
+      if (calError && !draft) rows.push(h('div', { 'data-dam-error': '' }, calError))
+      return h('div', { 'data-dam-slot': 'calendar', 'data-dam-calendar': '', style: { position: 'relative' } }, rows)
+    }
+
+    var TOOL_LABEL = { workbuddy: t('aiAssistant'), codebuddy: 'CodeBuddy', claude: 'Claude Code', codex: 'Codex', 'project-files': t('projectFiles') }
+    function ConnectTab() {
+      var sourcesPair = useState(null)
+      var sources = sourcesPair[0]
+      var setSources = sourcesPair[1]
+      var busyPair = useState({})
+      var busy = busyPair[0]
+      var setBusy = busyPair[1]
+      var msgPair = useState('')
+      var msg = msgPair[0]
+      var setMsg = msgPair[1]
+      var errPair = useState('')
+      var err = errPair[0]
+      var setErr = errPair[1]
+      var expandedPair = useState(null)
+      var expanded = expandedPair[0]
+      var setExpanded = expandedPair[1]
+      var viewCachePair = useState({})
+      var viewCache = viewCachePair[0]
+      var setViewCache = viewCachePair[1]
+      var removeArmPair = useState('')
+      var removeArm = removeArmPair[0]
+      var setRemoveArm = removeArmPair[1]
+      var hitsCachePair = useState({})
+      var hitsCache = hitsCachePair[0]
+      var setHitsCache = hitsCachePair[1]
+      var hitsBusyForPair = useState(null)
+      var hitsBusyFor = hitsBusyForPair[0]
+      var setHitsBusyFor = hitsBusyForPair[1]
+      function load() {
+        apiGet(API.external).then(function (d) { setSources(d.sources || []) }).catch(function (e) { setErr(e.message) })
+      }
+      useEffect(function () { load() }, [])
+      if (!sources) return err ? h('div', { 'data-dam-error': '' }, err) : h(Loading)
+      function doImport(source, target) {
+        var next = Object.assign({}, busy); next[source] = true
+        setBusy(next); setMsg(''); setErr('')
+        apiPost(API.externalImport, { source: source, target: target }).then(function (d) {
+          var done = Object.assign({}, busy); done[source] = false
+          setBusy(done); setMsg(d.result || t('imported'))
+          setSources(function (prev) { return (prev || []).map(function (x) { return x.id === source ? Object.assign({}, x, target === 'user' ? { importedUser: true } : { importedNotes: true }) : x }) })
+          load()
+        }).catch(function (e) { var done = Object.assign({}, busy); done[source] = false; setBusy(done); setErr(e.message) })
+      }
+      function toggleView(source) {
+        if (expanded === source.id) { setExpanded(null); return }
+        setExpanded(source.id); setRemoveArm('')
+        if (viewCache[source.id] !== undefined) return
+        var n = Object.assign({}, viewCache); n[source.id] = { source: source, loading: true }
+        setViewCache(n)
+        apiGet(API.externalView, { source: source.id }).then(function (d) {
+          var m = Object.assign({}, viewCache); m[source.id] = Object.assign({ source: source }, d, { loading: false })
+          setViewCache(m)
+        }).catch(function (e) {
+          var m = Object.assign({}, viewCache); m[source.id] = { source: source, loading: false, error: e.message }
+          setViewCache(m)
+        })
+      }
+      function removeImported(source, target) {
+        var key = source.id + ':' + (target || '')
+        if (removeArm !== key) { setRemoveArm(key); setMsg(''); return }
+        setRemoveArm('')
+        apiPost(API.externalRemove, { source: source.id, target: target }).then(function (d) {
+          setMsg(d.result || ''); setExpanded(null); load()
+          setSources(function (prev) { return (prev || []).map(function (x) { return x.id === source.id ? Object.assign({}, x, target === 'user' ? { importedUser: false } : target === 'project' ? { importedNotes: false } : { importedUser: false, importedNotes: false }) : x }) })
+        }).catch(function (e) { setErr(t('failed') + e.message) })
+      }
+      function findImported(source) {
+        if (!source) return
+        setHitsBusyFor(source.id)
+        apiPost(API.recall, { query: source.name || source.tool || '' }).then(function (d) {
+          var n = Object.assign({}, hitsCache); n[source.id] = d && d.result ? d.result : (locale === 'zh' ? '未找到相关片段' : 'No matches')
+          setHitsCache(n); setHitsBusyFor(null)
+        }).catch(function (e) {
+          var n = Object.assign({}, hitsCache); n[source.id] = t('failed') + e.message
+          setHitsCache(n); setHitsBusyFor(null)
+        })
+      }
+      function importAll() {
+        var md = sources.filter(function (s) { return s.kind !== 'sessions' && s.enabled !== false })
+        setMsg(t('importing') + md.length + t('importingSuffix')); setErr('')
+        var chain = Promise.resolve()
+        md.forEach(function (s) { chain = chain.then(function () { return apiPost(API.externalImport, { source: s.id, target: 'project' }) }) })
+        chain.then(function () { setMsg(t('allImported')) }).catch(function (e) { setErr(e.message) })
+      }
+      var cards = []
+      if (!sources.length) {
+        cards.push(h('div', { 'data-dam-muted': '' }, t('noExternal')))
+      }
+      for (var i = 0; i < sources.length; i++) {
+        (function (s) {
+          var isOpen = expanded === s.id
+          var v = viewCache[s.id]
+          var actions = []
+          actions.push(h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', title: locale === 'zh' ? '只读查看该来源的内容' : 'Read-only view of this source', onClick: function () { toggleView(s) } }, isOpen ? (locale === 'zh' ? '收起' : 'Collapse') : (locale === 'zh' ? '查看内容' : 'View content')))
+          if (s.kind === 'sessions') {
+            actions.push(h('span', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, t('sessionSource') + s.fileCount + t('sessionSourceSuffix')))
+          } else {
+            actions.push(s.importedUser ? h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', title: locale === 'zh' ? '从用户级记忆删除已导入段落' : 'Delete the imported section from user-level memory', onClick: function () { removeImported(s, 'user') }, style: removeArm === s.id + ':user' ? { background: 'color-mix(in srgb, var(--dsw-alias-state-error-primary, #d64545) 22%, transparent)', color: 'var(--dsw-alias-state-error-primary, #d64545)' } : undefined }, removeArm === s.id + ':user' ? (locale === 'zh' ? '确认删除？' : 'Confirm?') : (locale === 'zh' ? '从 prompt 删除' : 'Delete')) : h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', disabled: !!busy[s.id], onClick: function () { doImport(s.id, 'user') } }, t('importToUser')))
+            actions.push(s.importedNotes ? h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', title: locale === 'zh' ? '从项目笔记删除已导入段落' : 'Delete the imported section from project notes', onClick: function () { removeImported(s, 'project') }, style: removeArm === s.id + ':project' ? { background: 'color-mix(in srgb, var(--dsw-alias-state-error-primary, #d64545) 22%, transparent)', color: 'var(--dsw-alias-state-error-primary, #d64545)' } : undefined }, removeArm === s.id + ':project' ? (locale === 'zh' ? '确认删除？' : 'Confirm?') : (locale === 'zh' ? '从 prompt 删除' : 'Delete')) : h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', disabled: !!busy[s.id], onClick: function () { doImport(s.id, 'project') } }, busy[s.id] ? t('importingOne') : t('importToNotes')))
+
+          }
+          cards.push(h(Card, { key: s.id, title: s.name + ' · ' + s.tool + (s.enabled === false ? t('disabled') : '') },
+            h('div', { 'data-dam-slot': 'list', 'data-dam-row': '', style: { marginBottom: '2px' } }, actions),
+            h(AnimatedDisclosure, { open: isOpen },
+              v && v.loading ? h(Loading, { label: locale === 'zh' ? '正在读取来源…' : 'Reading source…' })
+              : v && v.error ? h('div', { 'data-dam-error': '' }, v.error)
+              : v ? h('div', null,
+                h('div', { 'data-dam-content': '' }, v.content || t('empty')),
+                v.imported !== undefined ? h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginTop: '6px' } },
+                  (locale === 'zh' ? '已接入位置：' : 'Imported at: ') + (v.imported ? (v.locations || []).join(' ; ') : (locale === 'zh' ? '尚未接入' : 'Not imported'))) : null,
+                h('div', { 'data-dam-slot': 'list', 'data-dam-row': '', style: { marginTop: '8px' } },
+                  h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: function () { findImported(s) } }, hitsBusyFor === s.id ? (locale === 'zh' ? '检索中…' : 'Searching…') : (locale === 'zh' ? '在记忆中查找' : 'Find in memory'))),
+                hitsCache[s.id] ? h('div', { 'data-dam-content': '', style: { marginTop: '6px' } }, String(hitsCache[s.id])) : null,
+                h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginTop: '8px' } }, locale === 'zh' ? '提示：接入后按钮会变成「从 prompt 删除」，可单独删除用户级或项目笔记里的已导入段落；不会删除来源文件。' : 'Note: after import the button becomes "Delete" for that target; source files are never touched.'))
+              : null)))
+        })(sources[i])
+      }
+      // ★大屏分列(2026-09-22):本组件的 Card 由 `cards)` 直接铺进根节点 ⇒ 是根的**直接子元素**,
+      //   在根上打 [data-dam-flow] 即可生效(与日志/中枢页签同款)。非卡片子元素(hint/按钮行/msg/err)仍整行。
+      return h('div', { 'data-dam-slot': 'timeline', 'data-dam-flow': '' },
+        h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, t('connectHint')),
+        h('div', { 'data-dam-slot': 'list', 'data-dam-row': '' },
+          h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: importAll }, t('importAll')),
+          h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: load }, t('rescan'))),
+        msg ? h('div', null, msg) : null,
+        err ? h('div', { 'data-dam-error': '' }, err) : null,
+        cards)
+    }
+
+    // ───────────────────────── 拖动/缩放辅助 ─────────────────────────
+    var dragActive = false
+    function startPointerDrag(onMove, interactiveSel) {
+      return function (e) {
+        // 命中交互控件(按钮/输入框等)时不启动拖动
+        if (interactiveSel && e.target && e.target.closest && e.target.closest(interactiveSel)) return
+        e.preventDefault()
+        e.stopPropagation()
+        var startX = e.clientX
+        var startY = e.clientY
+        var moved = false
+        function move(ev) {
+          var dx = ev.clientX - startX
+          var dy = ev.clientY - startY
+          if (!moved && Math.abs(dx) < 2 && Math.abs(dy) < 2) return
+          moved = true
+          if (!dragActive) { dragActive = true; emit() }
+          onMove(dx, dy)
+        }
+        function up() {
+          window.removeEventListener('pointermove', move)
+          window.removeEventListener('pointerup', up)
+          if (dragActive) { dragActive = false; emit() }
+          controller.flushGeom()
+        }
+        window.addEventListener('pointermove', move)
+        window.addEventListener('pointerup', up)
+      }
+    }
+
+    function TabScroller(props) {
+      var tabs = props.tabs || []
+      var tab = props.tab
+      var setTab = props.setTab
+      var viewportRef = useRef(null)
+      var canLeftPair = useState(false)
+      var canLeft = canLeftPair[0]
+      var setCanLeft = canLeftPair[1]
+      var canRightPair = useState(false)
+      var canRight = canRightPair[0]
+      var setCanRight = canRightPair[1]
+      function refreshArrows() {
+        var vp = viewportRef.current
+        if (!vp) return
+        setCanLeft(vp.scrollLeft > 2)
+        setCanRight(vp.scrollLeft + vp.clientWidth < vp.scrollWidth - 2)
+      }
+      useEffect(function () {
+        var vp = viewportRef.current
+        if (!vp) return
+        refreshArrows()
+        vp.addEventListener('scroll', refreshArrows)
+        var ro = null
+        if (typeof ResizeObserver !== 'undefined') { try { ro = new ResizeObserver(refreshArrows); ro.observe(vp) } catch (e) {} }
+        return function () { vp.removeEventListener('scroll', refreshArrows); if (ro) ro.disconnect() }
+      }, [tabs.length])
+      useEffect(function () {
+        var vp = viewportRef.current
+        if (!vp) return
+        var activeEl = vp.querySelector('[data-active="true"]')
+        if (!activeEl) return
+        var l = activeEl.offsetLeft, w = activeEl.offsetWidth
+        if (l < vp.scrollLeft) vp.scrollTo({ left: Math.max(0, l - 8), behavior: 'smooth' })
+        else if (l + w > vp.scrollLeft + vp.clientWidth) vp.scrollTo({ left: l + w - vp.clientWidth + 8, behavior: 'smooth' })
+      }, [tab])
+      function step(dir) {
+        var vp = viewportRef.current
+        if (!vp) return
+        try { vp.scrollBy({ left: dir * Math.max(90, vp.clientWidth * 0.6), behavior: 'smooth' }) } catch (e) { vp.scrollLeft += dir * 90 }
+      }
+      return h('div', { 'data-dam-tabs-wrap': '' },
+        h('button', { 'data-dam-tabs-arrow': '', title: locale === 'zh' ? '向左滚动模块' : 'Scroll modules left', 'aria-label': locale === 'zh' ? '向左滚动模块' : 'Scroll modules left', disabled: !canLeft, onClick: function () { step(-1) } }, '‹'),
+        h('div', { 'data-dam-tabs': '', ref: viewportRef }, h('div', { 'data-dam-tab-strip': '' }, tabs.map(function (item) { return h('button', { key: item[0], 'data-dam-tab': '', 'data-active': tab === item[0] ? 'true' : undefined, onClick: function () { setTab(item[0]) } }, item[1]) }))),
+        h('button', { 'data-dam-tabs-arrow': '', title: locale === 'zh' ? '向右滚动模块' : 'Scroll modules right', 'aria-label': locale === 'zh' ? '向右滚动模块' : 'Scroll modules right', disabled: !canRight, onClick: function () { step(1) } }, '›'))
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // 共享渲染件(2026-09-21)：浮层与「记忆」会话页复用同一份页签表与内容体。
+    // 抽出来的动机：两种承载面必须"同内容、同页签、同数据"（用户要求同步），
+    //   若各写一份 body 分支，页签一多必然漂移 ⇒ 只留一处事实。
+    // ══════════════════════════════════════════════════════════════════════════
+    function MemoryTabBody(tab, nonce) {
+      if (tab === 'overview') return h(OverviewTab, { nonce: nonce })
+      if (tab === 'logs') return h(LogsTab)
+      if (tab === 'refine') return h(RefineTab)
+      if (tab === 'hub') return h(MemoryHubTab, { nonce: nonce })
+      if (tab === 'storage') return h(StorageTab, { nonce: nonce })
+      if (tab === 'notes') return h(NotesTab)
+      if (tab === 'plan') return h(PlanTab)
+      if (tab === 'reflections') return h(ReflectionsTab)
+      if (tab === 'team') return h(TeamTab)
+      if (tab === 'connect') return h(ConnectTab)
+      if (tab === 'calendar') return h(CalendarTab)
+      if (tab === 'workspaces') return h(WorkspaceTab)
+  if (tab === 'stats') return h(StatsTab)
+      return h(SearchTab)
+    }
+    // ===================== L3-team:begin =====================
+
+    // ===================== S2-skin:begin =====================
+    // S2 皮肤（58 卷阶段 4）。客户端持**key 列表**（不持路径）——与宿主 lib/skin-assets.js
+    // 的 6 槽位表由 tests/smoke 的单源锁对齐；图片经宿主只读路由取，前端只拼 URL。
+    // 纪律一（12 卷 §4）：代码只认 key，不认文件 ⇒ 换图只改宿主数据表一行，本文件零改动。
+    var SKIN_SLOT_KEYS = ['hero.welcome', 'empty.library', 'empty.timeline', 'empty.recall', 'bg.mindmap', 'illust.sync']
+    /** 槽位 ⇒ 只读路由 URL；非法 key 返回 ''（调用方据此走占位，不产生坏请求）。 */
+    function skinAssetUrl(key, deep) {
+      var k = String(key || '')
+      var hit = false
+      for (var i = 0; i < SKIN_SLOT_KEYS.length; i++) { if (SKIN_SLOT_KEYS[i] === k) { hit = true; break } }
+      if (!hit) return ''
+      return API.skinAsset + '?key=' + encodeURIComponent(k) + (deep === true ? '&deep=1' : '')
+    }
+    /**
+     * SkinImg —— 真 <img>；加载失败/无 URL 一律渲染**确定性占位**（永不抛、不留白）。
+     * 占位文案用槽位 key + 尺寸提示，保证「像成品」而不是灰块（12 卷纪律二）。
+     */
+    function SkinImg(props) {
+      var key = props && props.slot
+      var sz = (props && props.size) || []
+      var url = skinAssetUrl(key, props && props.deep)
+      var failed = useState(false)
+      if (!url || failed[0]) {
+        return h('div', { 'data-dam-skin-ph': String(key || ''), className: 'dam-skin-ph' },
+          (props && props.label) || '图未就绪——此处为确定性占位（尺寸 ' + (sz[0] || '?') + '×' + (sz[1] || '?') + '，换成真图后自动替换）')
+      }
+      return h('img', {
+        'data-dam-skin': String(key), 'data-dam-block': 'media', 'data-dam-kind': 'media',
+        src: url,
+        alt: (props && props.label) || String(key),
+        loading: 'lazy',
+        onError: function () { failed[1](true) },
+      })
+    }
+    /** 皮肤分区：6 槽位逐个真实渲染（这是「图上屏」的可见证据面）。 */
+    function SkinSection(props) {
+      var deep = useState(false)
+      var deepOn = deep[0]
+      var cards = SKIN_SLOT_KEYS.map(function (k) {
+        return h('div', { key: k, className: 'dam-skin-card', 'data-dam-skin-card': k },[
+          h('div', { className: 'dam-skin-shot' }, h(SkinImg, { slot: k, deep: deepOn, label: k })),
+          h('div', { className: 'dam-skin-meta' },[
+            h('span', { className: 'dam-skin-key' }, k),
+            h('span', { className: 'dam-skin-dim' }, deepOn ? '深色' : '浅色'),
+          ]),
+        ])
+      })
+      return h('div', { 'data-dam-skin-grid': '1' },[
+        h('div', { style: { display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' } },[
+          h('button', {
+            'data-dam-skin-toggle': deepOn ? 'dark' : 'light',
+            onClick: function () { deep[1](!deepOn) },
+          }, deepOn ? '切回浅色素材' : '切到深色素材'),
+        ]),
+        h('div', { className: 'dam-skin-grid' }, cards),
+        h('div', { className: 'dam-skin-dim', style: { fontSize: '11px', marginTop: '6px' } },
+          '换图 = 改 lib/skin-assets.js 的 file 一行；本文件与结构代码零改动（12 卷纪律一）。'),
+      ])
+    }
+    // ═══════════ R21 皮肤视觉重构 A：6 槽位**真实页面挂载**（12 卷 §二）═══════════
+    // 纪律一（12 卷 §四）：代码只认 key，不认文件 —— 本段**零路径字面量**；
+    //   取图一律经 skinAssetUrl(key) ⇒ 宿主只读路由；换图只改 skin-assets.js 的 file 一行。
+    // 纪律二：图未就绪 / 加载失败 ⇒ 复用 SkinImg 的确定性占位（同尺寸、不塌、不留白）。
+    // 纪律三：尺寸只在宿主数据表声明，本段不重复写尺寸字面量。
+    // ★结构层边界（R10 计数锁）：`data-dam-block`/`data-dam-kind` 是**结构层 block 锚点**，
+    //   只标在共享层那 10 个 block 节点上；皮肤**挂载点**不得引入 block 锚（语义扩张）。
+
+    /**
+     * SkinSlot —— 通用**挂载点**组件（区别于设置页的预览卡）。
+     * 与 SkinImg 的差别：SkinSlot 带版位与语义锚点（data-dam-skin-slot），供真实页面消费；
+     * 两者共用同一条取数通道 skinAssetUrl ⇒ **单一数据源**（宿主只读路由）。
+     */
+    function SkinSlot(props) {
+      var key = props && props.slot
+      var kind = (props && props.kind) || 'hero'
+      var size = (props && props.size) || []
+      var wrap = {
+        'data-dam-skin-slot': String(key || ''),
+        'data-dam-skin-kind': kind,
+        className: 'dam-skin-slot dam-skin-slot-' + kind,
+      }
+      if (size.length === 2) { wrap.style = { aspectRatio: String(size[0]) + ' / ' + String(size[1]) } }
+      return h('div', wrap, h(SkinImg, { slot: key, deep: props && props.deep, label: (props && props.label) || key }))
+    }
+
+    /**
+     * SkinEmpty —— 空状态插画挂载件：**保留原文案**再追加图（不得用图替换文案）。
+     * 12 卷 §二：空状态是「用户第一次打开产品的第一印象」。
+     */
+    function SkinEmpty(props) {
+      return h('div', { 'data-dam-skin-empty': String((props && props.slot) || ''), className: 'dam-skin-empty' },[
+        h(SkinSlot, { slot: props && props.slot, kind: 'empty', size: (props && props.size) || [], deep: props && props.deep }),
+        h('div', { className: 'dam-skin-empty-text' }, (props && props.children) || null),
+      ])
+    }
+
+    /** 宿主数据表的尺寸（纪律三：客户端只做展示，尺寸真源仍在 skin-assets.js）。 */
+    var SKIN_SLOT_SIZE = {
+      'hero.welcome': [1600, 1000],
+      'empty.library': [800, 600],
+      'empty.timeline': [800, 600],
+      'empty.recall': [800, 600],
+    };
+    function skinSlotSize(key) { return SKIN_SLOT_SIZE[String(key || '')] || [] }
+
+    /** 首屏主视觉（hero.welcome）：左 40% 留白由图片构图承担，版位按 16:10 预留。 */
+    function SkinHero(props) {
+      return h('div', { 'data-dam-skin-hero': String((props && props.slot) || 'hero.welcome'), className: 'dam-skin-hero' },
+        h(SkinSlot, { slot: (props && props.slot) || 'hero.welcome', kind: 'hero', size: skinSlotSize('hero.welcome'), deep: props && props.deep }))
+    }
+    /**
+     * useDeepTheme —— 真实页面**自动跟随宿主主题**（不要求用户去设置页手点）。
+     * 判据来源：64 卷 `assetOf(key, deep)` 第二参；53 卷「深色版是白→透明的 WebP，必须贴深色底」。
+     * fail-safe：拿不到主题标记时一律回**浅色**（浅色是安全默认，不会把透明图贴到白底上）。
+     */
+    function readHostDeep() {
+      try {
+        var de = typeof document !== 'undefined' ? document.documentElement : null
+        if (!de) return false
+        if (de.getAttribute && de.getAttribute('data-dsh-theme') === 'dark') return true
+        if (de.classList && de.classList.contains && de.classList.contains('dark')) return true
+        if (de.getAttribute && de.getAttribute('data-theme') === 'dark') return true
+      } catch (_) {}
+      return false
+    }
+    function useDeepTheme() {
+      var pair = useState(readHostDeep)
+      useEffect(function () {
+        var sync = function () { pair[1](readHostDeep()) }
+        sync()
+        try {
+          if (typeof MutationObserver !== 'undefined' && typeof document !== 'undefined') {
+            var ob = new MutationObserver(sync)
+            ob.observe(document.documentElement, { attributes: true, attributeFilter: ['class', 'data-theme', 'data-dsh-theme'] })
+            return function () { try { ob.disconnect() } catch (_) {} }
+          }
+        } catch (_) {}
+      }, [])
+      return pair[0] === true
+    }
+
+    /** 背景层：`bg.mindmap` 挂到导图画布；★必须可交互穿透（不拦截既有拖拽/缩放）。 */
+    function SkinBackdrop(props) {
+      var deepOn = useDeepTheme()
+      var wrap = {
+        'data-dam-skin-backdrop': String((props && props.slot) || 'bg.mindmap'),
+        'data-dam-skin-deep': deepOn ? 'dark' : 'light',
+        className: 'dam-skin-backdrop',
+        style: { position: 'absolute', inset: '0', pointerEvents: 'none', zIndex: 0 },
+      }
+      return h('div', wrap, h(SkinImg, { slot: (props && props.slot) || 'bg.mindmap', deep: deepOn, label: (props && props.label) || 'bg.mindmap' }))
+    }
+
+    /** 同步示意：`illust.sync` 挂在同步状态条（横向构图，与卡片同向）。 */
+    function SkinSyncIllust() {
+      var deepOn = useDeepTheme()
+      return h('span', { 'data-dam-skin-illust': 'illust.sync', 'data-dam-skin-deep': deepOn ? 'dark' : 'light', className: 'dam-skin-illust' },
+        h(SkinImg, { slot: 'illust.sync', deep: deepOn, label: 'illust.sync' }))
+    }
+
+    // ═══════════ R23 皮肤中心：槽位回显 + 客户覆写回显（12 卷 §3 / §二）═══════════
+    // 纪律：① 取数复用**既有** state 取数通道（宿主已把 skinCenter 并入该响应，★不新增路由）；
+    //       ② 单飞 + 复用既有 useTick（零新增定时器），与 fetchTeamState 同范式；
+    //       ③ 槽位**不重复声明**任何路径/尺寸 —— 全部来自宿主 skinCenter.slots（单源）。
+    var _skinCache = null
+    var _skinInflight = null
+    function fetchSkinCenter() {
+      if (_skinInflight) return _skinInflight
+      _skinInflight = apiGet(API.state).then(function (d) {
+        var sc = (d && d.skinCenter) || null
+        _skinCache = sc; _skinInflight = null; return _skinCache
+      }, function () { _skinCache = null; _skinInflight = null; return null })
+      return _skinInflight
+    }
+    function skinCacheReset() { _skinCache = null; _skinInflight = null }
+    function skinCacheRead() { return _skinCache }
+    function useSkinCenter() {
+      var tick = useTick()
+      var pair = useState(_skinCache)
+      useEffect(function () {
+        var alive = true
+        fetchSkinCenter().then(function (d) { if (alive) pair[1](d) })
+        return function () { alive = false }
+      }, [tick[0]])
+      return pair[0]
+    }
+
+    /** 皮肤中心状态卡：来源层 / 槽位就绪数 / 告警与错误（**可关闭提示**，12 卷 §3.3-1）。 */
+    function SkinCenterPanel() {
+      var sc = useSkinCenter()
+      var dismissed = useState(false)
+      var st = (sc && sc.status) || {}
+      var layers = (sc && sc.layers) || []
+      var tokens = (sc && sc.tokens) || {}
+      var warn = (sc && sc.warnings) || []
+      var errs = (sc && sc.errors) || []
+      var rows = layers.map(function (l) {
+        return h('div', { key: String(l.layer) + '/' + String(l.name), 'data-dam-skin-layer': String(l.layer), className: 'dam-skin-layer' },[
+          h('span', { className: 'dam-skin-key' }, String(l.layer) + ' · ' + String(l.name)),
+          h('span', { className: 'dam-skin-dim' }, String(l.tokenCount || 0) + ' token'),
+        ])
+      })
+      var banner = (!dismissed[0] && errs.length) ? h('div', { 'data-dam-skin-alert': '1', className: 'dam-skin-alert' },[
+        h('span', null, (locale === 'zh' ? '皮肤加载有 ' : 'Skin load has ') + errs.length + (locale === 'zh' ? ' 条错误（已回落默认，插件可用）' : ' error(s) — fell back to default, plugin usable')),
+        h('button', { 'data-dam-skin-alert-close': '1', onClick: function () { dismissed[1](true) } }, locale === 'zh' ? '关闭' : 'Dismiss'),
+      ]) : null
+      return h('div', { 'data-dam-skin-center': '1' },[
+        h('div', { 'data-dam-skin-summary': '1', className: 'dam-skin-summary' },[
+          h('span', null, (locale === 'zh' ? '槽位就绪 ' : 'slots ready ') + String(st.ready || 0) + '/' + String(st.total || 0)),
+          h('span', null, (locale === 'zh' ? '已生效 token ' : 'active tokens ') + String(Object.keys(tokens).length)),
+          h('span', null, (st.usable ? (locale === 'zh' ? '状态：可用' : 'state: usable') : (locale === 'zh' ? '状态：待补齐' : 'state: pending'))),
+        ]),
+        banner,
+        rows.length ? h('div', { 'data-dam-skin-layers': '1' }, rows) : null,
+        (sc && sc.conflict) ? h('div', { 'data-dam-skin-conflict': '1', className: 'dam-skin-dim' },
+          locale === 'zh' ? '团队主题覆盖了你的用户主题（不禁止，仅提示）。' : 'Team theme overrides your user theme (notice only).') : null,
+        warn.length ? h('div', { 'data-dam-skin-warn': '1', className: 'dam-skin-dim' }, warn.slice(0, 4).map(function (w, i) { return h('div', { key: 'w' + i }, String(w)) })) : null,
+      ])
+    }
+
+    /** 槽位明细行（23a）：key / 文件名 / 深色 / 尺寸 / 状态 —— 全部来自宿主，本段零路径零尺寸字面量。 */
+    function SkinSlotRows() {
+      var sc = useSkinCenter()
+      var rows = (sc && sc.slots) || []
+      if (!rows.length) return null
+      return h('div', { 'data-dam-skin-slots': '1' }, rows.map(function (r) {
+        var size = Array.isArray(r.size) && r.size.length === 2 ? String(r.size[0]) + 'x' + String(r.size[1]) : '—'
+        return h('div', { key: String(r.key), 'data-dam-skin-slot-row': String(r.key), className: 'dam-skin-row' },[
+          h('span', { className: 'dam-skin-key' }, String(r.key)),
+          h('span', { className: 'dam-skin-dim' }, size),
+          h('span', { className: 'dam-skin-dim' }, r.hasDark ? (locale === 'zh' ? '深+浅' : 'dark+light') : (locale === 'zh' ? '仅浅色' : 'light only')),
+          h('span', { 'data-dam-skin-slot-status': r.status }, r.status),
+        ])
+      }))
+    }
+
+    // ===================== S2-skin:end =====================
+
+    // L3 团队层（58 卷阶段 3）。全部逻辑集中在这一段，既有渲染函数零改动。
+    // 门控铁律（08 卷）：teamEnabled!==true ⇒ 本段所有组件 return null ⇒ DOM 零变化。
+    // 数据同源铁律（37 卷 §2）：两个承载面共用 teamFromState()，不许各写一份。
+
+    // —— 3.7 轮询钩子：复用既有 useTick，绝不新增定时器 ——
+    function teamFromState(st) {
+      if (!st || !st.config || st.config.teamEnabled !== true) return null
+      var t = st.team
+      if (!t || typeof t !== 'object') return { member: null, queue: 0, conflicts: 0, syncAt: 0, attribution: {} }
+      return {
+        member: t.member || null,
+        queue: typeof t.queue === 'number' ? t.queue : 0,
+        conflicts: typeof t.conflicts === 'number' ? t.conflicts : 0,
+        syncAt: typeof t.syncAt === 'number' ? t.syncAt : 0,
+        attribution: t.attribution && typeof t.attribution === 'object' ? t.attribution : {},
+      }
+    }
+    // ★37 卷 §2 硬判据：会话页与左下角浮层**必须共用同一个数据获取函数**（不许各写一份）。
+    //   实现 = 模块级单例缓存 + 单飞去重：同一 tick 内多处调用只发一次 apiGet。
+    var _teamCache = null
+    var _teamInflight = null
+    function fetchTeamState() {
+      if (_teamInflight) return _teamInflight      // ★并发调用复用同一 Promise（不重复请求）
+      _teamInflight = apiGet(API.state).then(function (d) {
+        _teamCache = d || null; _teamInflight = null; return _teamCache
+      }, function () {
+        _teamCache = null; _teamInflight = null; return null
+      })
+      return _teamInflight
+    }
+    function teamCacheReset() { _teamCache = null; _teamInflight = null }
+    function teamCacheRead() { return _teamCache }
+    function useTeamTick() {
+      var tick = useTick()            // 既有钩子,零改动;不 setInterval
+      var stPair = useState(_teamCache)
+      var st = stPair[0], setSt = stPair[1]
+      useEffect(function () {
+        var alive = true
+        fetchTeamState().then(function (d) { if (alive) setSt(d) })
+        return function () { alive = false }
+      }, [tick[0]])
+      return { team: teamFromState(st), tick: tick }
+    }
+
+    // —— 3.1 归属徽标（读同一份 team.attribution）——
+    function TeamBadge(props) {
+      var name = props && props.name
+      if (!name) return null
+      return h('span', { className: 'dam-team-badge', 'data-dam-team-badge': String(name), 'data-dam-team': 'badge' }, String(name))
+    }
+
+    // —— 3.1 同步状态条：关闭时零渲染 ——
+    function TeamStatusBar(props) {
+      var t = props && props.team
+      if (!t) return null                       // ★ teamEnabled=false ⇒ null ⇒ DOM 零变化
+      var pending = t.queue || 0
+      var conflicts = t.conflicts || 0
+      var who = t.member && t.member.name ? t.member.name : (locale === 'zh' ? '未登录' : 'Not signed in')
+      return h('div', { className: 'dam-team-bar', 'data-dam-team': 'bar', 'data-dam-slot': 'hint' },
+        h(SkinSyncIllust, {}),
+        h('span', { 'data-dam-team': 'member' }, who),
+        h('span', { 'data-dam-team': 'synced' }, fmtAgoShort(t.syncAt)),
+        pending > 0 ? h('span', { 'data-dam-team': 'queue' }, pending + (locale === 'zh' ? ' 待同步' : ' pending')) : null,
+        conflicts > 0 ? h('span', { className: 'dam-team-conflicts', 'data-dam-team': 'conflicts',
+          onClick: function () { if (props.onOpenConflicts) props.onOpenConflicts() } },
+          conflicts + (locale === 'zh' ? ' 待裁决' : ' to resolve')) : null)
+    }
+    function fmtAgoShort(ts) {
+      if (!ts) return ''
+      var d = Date.now() - ts
+      if (d < 60000) return locale === 'zh' ? '刚刚同步' : 'synced just now'
+      var m = Math.floor(d / 60000)
+      if (m < 60) return (locale === 'zh' ? m + ' 分钟前同步' : 'synced ' + m + 'm ago')
+      return (locale === 'zh' ? Math.floor(m / 60) + ' 小时前同步' : 'synced ' + Math.floor(m / 60) + 'h ago')
+    }
+
+    // —— 3.3 冲突中心（4 类人工裁决）——
+    var TEAM_CONFLICT_KINDS = { rules: '用户规则', note: '项目笔记', plan: 'PLAN 白板', procedure: '技能晋升' }
+    function ConflictCenter(props) {
+      var items = (props && props.items) || []
+      if (!items.length) return h('div', { 'data-dam-team': 'conflict-empty' }, locale === 'zh' ? '暂无待裁决冲突' : 'No conflicts to resolve')
+      return h('div', { className: 'dam-team-conflict-center', 'data-dam-team': 'conflict-center' },
+        items.map(function (it) {
+          var kind = TEAM_CONFLICT_KINDS[it.kind] || it.kind
+          return h('div', { key: it.id, 'data-dam-team': 'conflict-item', 'data-kind': it.kind, 'data-dam-card': '' },
+            h('h4', null, kind),
+            h('div', { className: 'dam-conflict-diff' },
+              h('pre', { 'data-dam-team': 'mine' }, it.mine || ''),
+              h('pre', { 'data-dam-team': 'theirs' }, it.theirs || '')),
+            h('div', { className: 'dam-conflict-actions' },
+              h('button', { 'data-dam-team': 'keep-mine', 'data-dam-btn': '', onClick: function () { if (props.onResolve) props.onResolve(it.id, 'keep-mine') } }, locale === 'zh' ? '保留我的' : 'Keep mine'),
+              h('button', { 'data-dam-team': 'keep-theirs', 'data-dam-btn': '', onClick: function () { if (props.onResolve) props.onResolve(it.id, 'keep-theirs') } }, locale === 'zh' ? '采用对方' : 'Take theirs'),
+              h('button', { 'data-dam-team': 'keep-both', 'data-dam-btn': '', onClick: function () { if (props.onResolve) props.onResolve(it.id, 'keep-both') } }, locale === 'zh' ? '都保留' : 'Keep both')))
+        }))
+    }
+
+    // —— 3.1+3.5 团队分区内容体：状态条 + 归属 + 冲突 + 成员在场（降级只显示“我”）——
+    function TeamTab(props) {
+      var tt = useTeamTick()
+      var team = tt.team
+      if (!team) return h('div', { 'data-dam-team': 'off', 'data-dam-slot': 'empty', 'data-dam-kx-empty': '' },
+        locale === 'zh' ? '团队协作未启用（设置 → 团队协作）' : 'Teamwork is off (Settings → Teamwork)')
+      var attr = team.attribution || {}
+      var keys = Object.keys(attr)
+      var rows = keys.slice(0, 200)
+      return h('div', { 'data-dam-team': 'tab' },
+        h(TeamStatusBar, { team: team }),
+        h('div', { 'data-dam-slot': 'list' },
+          rows.length
+            ? rows.map(function (k) {
+                var v = attr[k] || {}
+                return h('div', { key: k, 'data-dam-row': '', 'data-dam-team': 'attr-row' },
+                  h('span', { style: { flex: 1 } }, k),
+                  h(TeamBadge, { name: v.memberName || v.memberId || '' }))
+              })
+            : h('div', { 'data-dam-team': 'attr-empty', 'data-dam-slot': 'empty', 'data-dam-kx-empty': '' },
+                locale === 'zh' ? '暂无团队归属记录' : 'No attribution yet')),
+        h(ConflictCenter, { items: [] }),
+        h(TeamScreensR18, { team: team }),
+        h(TeamScreensR19, { team: team }))
+    }
+
+    // —— 3.4 团队设置键（追加进既有分区，不重建数组）——
+    var TEAM_SETTING_KEYS = ['teamEnabled', 'teamServerUrl', 'teamId', 'teamProjectId', 'teamMemberName',
+      'teamInjectEnabled', 'teamConflictPolicy', 'teamAuditEnabled', 'teamShowMemberBadges']
+    // 设置页第 10 分区内容体。依赖以 context 注入（不引用 SettingsPage 内部作用域）。
+    // ★即时回显（用户既有偏好）：checkbox/输入 onChange 立刻 setCfg 本地翻面，不等写盘。
+    function renderTeamSettings(ctx) {
+      var cfg = (ctx && ctx.cfg) || {}
+      var set = (ctx && ctx.set) || function () {}
+      var field = (ctx && ctx.field) || function (l, c) { return c }
+      var zh = locale === 'zh'
+      var F = [
+        ['teamEnabled', 'switch'],
+        ['teamServerUrl', 'text'],
+        ['teamId', 'text'],
+        ['teamProjectId', 'text'],
+        ['teamMemberName', 'text'],
+        ['teamInjectEnabled', 'switch'],
+        ['teamConflictPolicy', 'select'],
+        ['teamAuditEnabled', 'switch'],
+        ['teamShowMemberBadges', 'switch'],
+      ]
+      // ★守恒：字段表键集合必须与 TEAM_SETTING_KEYS 完全一致（防两处漂移）
+      var fk = F.map(function (x) { return x[0] }).sort().join(',')
+      var kk = TEAM_SETTING_KEYS.slice().sort().join(',')
+      if (fk !== kk) return [h('div', { 'data-dam-team': 'settings-keys-mismatch', 'data-dam-slot': 'hint', 'data-dam-hint': '' }, 'team settings keys mismatch')]
+      var on = cfg.teamEnabled === true
+      var rows = F.map(function (pair) {
+        var key = pair[0]
+        var kind = pair[1]
+        var label = t(key)
+        if (kind === 'switch') {
+          return field(label, h('input', { type: 'checkbox', 'data-dam-team': 'settings-switch', 'data-dam-key': key,
+            checked: cfg[key] === true, onChange: function (e) { set(key, !!e.target.checked) } }))
+        }
+        if (kind === 'select') {
+          var pol = cfg.teamConflictPolicy || 'ask'
+          return field(label, h('select', { 'data-dam-team': 'settings-select', 'data-dam-key': key, value: pol,
+            onChange: function (e) { set(key, e.target.value) } },
+            h('option', { value: 'ask' }, zh ? 'ask 每次询问' : 'ask'),
+            h('option', { value: 'mine' }, zh ? 'mine 总用本地' : 'mine'),
+            h('option', { value: 'theirs' }, zh ? 'theirs 总用云端' : 'theirs'),
+            h('option', { value: 'both' }, zh ? 'both 都保留' : 'both')))
+        }
+        return field(label, h('input', { type: 'text', 'data-dam-team': 'settings-text', 'data-dam-key': key,
+          value: typeof cfg[key] === 'string' ? cfg[key] : '',
+          onChange: function (e) { set(key, e.target.value) } }))
+      })
+      return [h('div', { 'data-dam-team': 'settings-section' },
+          h('div', { 'data-dam-team': 'settings-state', 'data-dam-slot': 'hint', 'data-dam-hint': '' },
+            on ? (zh ? '团队协作已开启' : 'Teamwork is on') : (zh ? '团队协作已关闭（既有功能零影响）' : 'Teamwork is off')),
+          rows)]
+    }
+    // ═══════════════ fe02 八屏契约 · 屏①–④（R18）═══════════════
+    // 形态裁定：新增锚点一律用契约逐字的独立属性名 data-dam-team-<name>；
+    // 既有 24 个值枚举锚点（data-dam-team="xxx"）保留不动（追加式，零删除）。
+
+    var TEAM_PHASE_ZH = { synced: '已同步', syncing: '同步中', offline: '离线', conflict: '有冲突', paused: '已暂停' }
+    var TEAM_PHASE_EN = { synced: 'Synced', syncing: 'Syncing', offline: 'Offline', conflict: 'Conflict', paused: 'Paused' }
+    function teamPhaseOf(team) {
+      if (!team) return 'offline'
+      // fe02 §2：phase 由后端 state.phase 给（五值）；派生仅作兜底，不做本地判定
+      if (team.phase && TEAM_PHASE_ZH[team.phase]) return team.phase
+      if (team.paused === true) return 'paused'
+      if ((team.conflicts || 0) > 0) return 'conflict'
+      if ((team.queue || 0) > 0) return 'syncing'
+      return 'synced'
+    }
+
+    // —— 屏① 同步状态总览（契约 §2：statusbar / state / queue / lastsync / conflict-badge / pause）——
+    function TeamSyncStatusBar(props) {
+      var team = props && props.team
+      if (!team) return null
+      var zh = locale === 'zh'
+      var phase = teamPhaseOf(team)
+      var q = team.queue || 0
+      var c = team.conflicts || 0
+      var stateTxt = (zh ? TEAM_PHASE_ZH : TEAM_PHASE_EN)[phase] || phase
+      return h('div', { className: 'dam-team-statusbar', 'data-dam-team-statusbar': '' },
+        h('button', { 'data-dam-team-state': phase, 'data-dam-btn': '', className: 'dam-team-state' }, stateTxt),
+        h('span', { 'data-dam-team-queue': String(q) }, q + (zh ? ' 待同步' : ' pending')),
+        h('span', { 'data-dam-team-lastsync': String(team.syncAt || 0) }, fmtAgoShort(team.syncAt)),
+        c > 0 ? h('button', { 'data-dam-team-conflict-badge': String(c), 'data-dam-btn': '' }, c + (zh ? ' 待裁决' : ' open')) : null,
+        h('label', { className: 'dam-team-pause' },
+          h('input', { type: 'checkbox', 'data-dam-team-pause': 'x', checked: team.paused === true,
+            onChange: function (e) { if (props && props.onPause) props.onPause(e.target.checked) } }),
+          zh ? '暂停同步' : 'Pause'))
+    }
+
+    // —— 屏② 成员与在场（契约 §3：members / member / member-self / presence / presence-dot / member-filter）——
+    function TeamMembersScreen(props) {
+      var team = props && props.team
+      var zh = locale === 'zh'
+      var list = (team && team.members) || []
+      var pres = (team && team.presence) || {}
+      var me = (team && team.me) || null
+      if (!list.length) {
+        return h('div', { 'data-dam-team-members': 'empty', className: 'dam-team-members' },
+          h('span', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, zh ? '未加入团队' : 'Not joined yet'))
+      }
+      return h('div', { 'data-dam-team-members': 'ready', className: 'dam-team-members' },
+        list.map(function (m) {
+          var st = (pres[m.id] && pres[m.id].state) || 'offline'
+          var isSelf = !!(me && me.id === m.id) || m.isSelf === true
+          var attrs = { key: m.id, 'data-dam-team-member': String(m.id), 'data-dam-team-presence': st, className: 'dam-team-member' }
+          if (isSelf) attrs['data-dam-team-member-self'] = 'true'
+          return h('div', attrs,
+            h('span', { 'data-dam-team-presence-dot': st, className: 'dam-team-presence-dot' }),
+            h('span', null, m.name || m.id))
+        }),
+        h('select', { 'data-dam-team-member-filter': String((props && props.filterActor) || ''), className: 'dam-team-member-filter',
+          onChange: function (e) { if (props && props.onFilter) props.onFilter(e.target.value) } },
+          [h('option', { key: '', value: '' }, zh ? '全部成员' : 'All members')].concat(
+            list.map(function (m) { return h('option', { key: m.id, value: m.id }, m.name || m.id) }))))
+    }
+
+    // —— 屏③ 记忆库筛选条（契约 §4：filterbar / filter-author / filter-source / filter-sync / badge / badge-scope）——
+    function TeamFilterBar(props) {
+      var zh = locale === 'zh'
+      var f = (props && props.filter) || {}
+      var mk = function (attr, label, opts, cur, onPick) {
+        var o = { key: attr, className: 'dam-team-filter' }
+        o[attr] = String(cur || '')
+        if (onPick) o.onChange = function (e) { onPick(e.target.value) }
+        return h('label', { key: attr, className: 'dam-team-filter-wrap' },
+          h('span', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, label),
+          h('select', o, opts.map(function (v) { return h('option', { key: v.v, value: v.v }, v.t) })))
+      }
+      return h('div', { 'data-dam-team-filterbar': 'ready', className: 'dam-team-filterbar' },
+        mk('data-dam-team-filter-author', zh ? '按作者' : 'By author', (props && props.authorOptions) || [], f.author, props && props.onAuthor),
+        mk('data-dam-team-filter-source', zh ? '按来源' : 'By source', [
+          { v: '', t: zh ? '全部来源' : 'All sources' }, { v: 'local', t: zh ? '本机' : 'Local' },
+          { v: 'team', t: zh ? '团队' : 'Team' }, { v: 'imported', t: zh ? '外部导入' : 'Imported' }], f.source, props && props.onSource),
+        mk('data-dam-team-filter-sync', zh ? '按同步状态' : 'By sync state', [
+          { v: '', t: zh ? '全部状态' : 'All states' }, { v: 'synced', t: zh ? '已同步' : 'Synced' },
+          { v: 'pending', t: zh ? '待同步' : 'Pending' }, { v: 'conflicted', t: zh ? '有冲突' : 'Conflicted' }], f.sync, props && props.onSync))
+    }
+    function TeamBadgeScoped(props) {
+      var scope = (props && props.scope) || 'local'
+      var nm = (props && props.name) || ''
+      return h('span', { 'data-dam-team-badge-scope': scope, 'data-dam-team-badge': String(nm), className: 'dam-team-badge-scope' },
+        h(TeamBadge, { name: nm }))
+    }
+
+    // —— 屏④ 冲突中心（契约 §5.1：conflicts / conflict / conflict-head / diff×4 / verdict×5）——
+    function TeamConflictScreen(props) {
+      var items = (props && props.items) || []
+      var zh = locale === 'zh'
+      var armPair = useState(null)
+      var armed = armPair[0]
+      var setArmed = armPair[1]
+      if (!items.length) {
+        return h('div', { 'data-dam-team-conflicts': 'empty', className: 'dam-team-conflicts' },
+          h('span', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, zh ? '暂无待裁决冲突' : 'No conflicts to resolve'))
+      }
+      var fire = function (id, choice) {
+        if (choice === 'local' || choice === 'remote') {
+          if (armed !== id + ':' + choice) { setArmed(id + ':' + choice); return }
+        }
+        if (props && props.onResolve) props.onResolve(id, choice)
+        setArmed(null)
+      };
+      return h('div', { 'data-dam-team-conflicts': 'ready', className: 'dam-team-conflicts' },
+        items.map(function (it) {
+          var lines = it.diff || []
+          return h('div', { key: it.id, 'data-dam-team-conflict': String(it.id), className: 'dam-team-conflict' },
+            h('div', { 'data-dam-team-conflict-head': String(it.kind || ''), className: 'dam-team-conflict-head' },
+              h('span', null, it.title || it.id)),
+            h('div', { 'data-dam-team-diff': 'x', className: 'dam-team-diff' },
+              h('pre', { 'data-dam-team-diff-local': 'x', className: 'dam-team-diff-local' }, it.local || ''),
+              h('pre', { 'data-dam-team-diff-remote': 'x', className: 'dam-team-diff-remote' }, it.remote || ''),
+              lines.length ? h('div', { className: 'dam-team-diff-lines' },
+                lines.map(function (ln, i2) { return h('div', { key: i2, 'data-dam-team-diff-line': String(ln.op || 'same') }, ln.text || '') })) : null),
+            h('div', { 'data-dam-team-verdict': 'x', className: 'dam-team-verdict' },
+              h('button', { 'data-dam-team-verdict-keep-local': armed === it.id + ':local' ? 'armed' : 'idle', 'data-dam-btn': '',
+                onClick: function () { fire(it.id, 'local') } }, zh ? '采用本机' : 'Keep local'),
+              h('button', { 'data-dam-team-verdict-keep-remote': armed === it.id + ':remote' ? 'armed' : 'idle', 'data-dam-btn': '',
+                onClick: function () { fire(it.id, 'remote') } }, zh ? '采用团队' : 'Keep team'),
+              h('button', { 'data-dam-team-verdict-merge': 'idle', 'data-dam-btn': '',
+                onClick: function () { fire(it.id, 'merge') } }, zh ? '手工合并' : 'Merge'),
+              h('button', { 'data-dam-team-verdict-ask': 'idle', 'data-dam-btn': '',
+                onClick: function () { fire(it.id, 'delegate') } }, zh ? '指派他人' : 'Delegate')))
+        }))
+    }
+
+    // —— R18 屏组装配（单一接线点：TeamTab 内只追加一次）——
+    function TeamScreensR18(props) {
+      var team = props && props.team
+      if (!team) return null
+      var flt = (props && props.filter) || {}
+      return h('div', { className: 'dam-team-screens', 'data-dam-team-screens': 'r18' },
+        h(TeamSyncStatusBar, { team: team, onPause: props && props.onPause }),
+        h(TeamMembersScreen, { team: team, filterActor: flt.actor, onFilter: props && props.onFilterActor }),
+        h(TeamFilterBar, { filter: flt, authorOptions: (props && props.authorOptions) || [],
+          onAuthor: props && props.onFilterAuthor, onSource: props && props.onFilterSource, onSync: props && props.onFilterSync }),
+        h(TeamConflictScreen, { items: (props && props.conflicts) || [], onResolve: props && props.onResolve }))
+    }
+
+    // ═══════════════ fe02 八屏契约 · 屏⑤–⑧（R19）═══════════════
+    // 分色：actorId 稳定哈希 ⇒ --dam-team-actor-hue（0–360），杜绝写死色值（fe02 §5.3）。
+    function teamActorHue(id) {
+      var s = String(id || '')
+      var acc = 0
+      for (var i = 0; i < s.length; i++) { acc = (acc * 31 + s.charCodeAt(i)) % 360 }
+      return acc
+    }
+
+    // —— 屏⑤ 团队技能审批（§5.2：8 锚点）——
+    function TeamSkillsScreen(props) {
+      var items = (props && props.items) || []
+      var zh = locale === 'zh'
+      var armPair = useState(null)
+      var armed = armPair[0], setArmed = armPair[1]
+      if (!items.length) {
+        return h('div', { 'data-dam-team-skills': 'empty', className: 'dam-team-skills' },
+          h('span', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, zh ? '暂无待审批技能' : 'No skills to approve'))
+      }
+      var act = function (it, action) {
+        if (action === 'reject' || it.riskLevel === 'high') {
+          if (armed !== it.id + ':' + action) { setArmed(it.id + ':' + action); return }
+        }
+        if (props && props.onAct) props.onAct(it.id, action)
+        setArmed(null)
+      };
+      return h('div', { 'data-dam-team-skills': 'ready', className: 'dam-team-skills' },
+        items.map(function (it) {
+          var ev = it.evidence || {}
+          var can = it.canApprove !== false
+          return h('div', { key: it.id, 'data-dam-team-skill': String(it.id), className: 'dam-team-skill' },
+            h('div', { className: 'dam-team-skill-head' },
+              h('span', null, it.title || it.id),
+              it.riskLevel ? h('span', { 'data-dam-team-skill-risk': it.riskLevel }, it.riskLevel) : null),
+            h('div', { 'data-dam-team-skill-owner': String(it.ownerId || '') }, it.ownerId || '-'),
+            h('div', { 'data-dam-team-skill-evidence': 'x', className: 'dam-team-skill-evidence' },
+              (zh ? '见到' : 'seen') + ' ' + (ev.seen || 0) + ' · ' + (zh ? '成功' : 'ok') + ' ' + (ev.success || 0) +
+              ' · ' + (zh ? '会话' : 'sessions') + ' ' + (ev.sessions || 0)),
+            h('div', { 'data-dam-team-skill-steps': String((it.steps || []).length), className: 'dam-team-skill-steps' },
+              (it.steps || []).map(function (s, i2) { return h('div', { key: i2 }, s) })),
+            can ? null : h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, String(it.approveBlockedReason || '')),
+            h('div', { className: 'dam-team-skill-acts' },
+              h('button', { 'data-dam-team-skill-approve': can ? 'ready' : 'blocked', 'data-dam-btn': '', disabled: !can,
+                onClick: function () { if (can) act(it, 'approve') } }, zh ? '批准' : 'Approve'),
+              h('button', { 'data-dam-team-skill-edit': armed === it.id + ':edit' ? 'armed' : 'idle', 'data-dam-btn': '',
+                onClick: function () { act(it, 'edit') } }, zh ? '修改后批准' : 'Edit & approve'),
+              h('button', { 'data-dam-team-skill-reject': armed === it.id + ':reject' ? 'armed' : 'idle', 'data-dam-btn': '',
+                onClick: function () { act(it, 'reject') } }, zh ? '拒绝' : 'Reject')))
+        }))
+    }
+
+    // —— 屏⑥ 交接账本（§5.3：6 锚点，按人分色 + 接续链）——
+    function TeamLedgerScreen(props) {
+      var segs = (props && props.segments) || []
+      var chain = (props && props.chain) || []
+      var zh = locale === 'zh'
+      return h('div', { 'data-dam-team-ledger': 'ready', className: 'dam-team-ledger' },
+        segs.length ? segs.map(function (sg) {
+          var hue = teamActorHue(sg.actorId)
+          return h('div', { key: sg.id, 'data-dam-team-ledger-seg': 'x', 'data-actor': String(sg.actorId || ''),
+            style: { '--dam-team-actor-hue': String(hue) }, className: 'dam-team-ledger-seg' },
+            h('span', { className: 'dam-team-ledger-actor' }, sg.actorId || '-'),
+            h('span', null, sg.title || ''))
+        }) : h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, zh ? '暂无账本' : 'No ledger yet'),
+        h('div', { 'data-dam-team-ledger-chain': String(chain.length), className: 'dam-team-ledger-chain' },
+          chain.length ? chain.map(function (n, i2) {
+            return h('div', { key: i2, className: 'dam-team-chain-row' },
+              h('span', { 'data-dam-team-chain-node': String(n.from || '') + '>' + String(n.to || '') },
+                (n.from || '?') + ' → ' + (n.to || '?')),
+              i2 < chain.length - 1 ? h('span', { 'data-dam-team-chain-link': 'x', className: 'dam-team-chain-link' }, '↓') : null)
+          }) : h('span', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, zh ? '暂无接续链' : 'No chain')),
+        h('button', { 'data-dam-team-takeover': 'idle', 'data-dam-btn': '',
+          onClick: function () { if (props && props.onTakeover) props.onTakeover() } }, zh ? '我来接' : 'Take over'))
+    }
+
+    // —— 屏⑧ 同步调试（§6.2：7 锚点）——
+    function TeamDebugPanel(props) {
+      var d = (props && props.debug) || {}
+      var q = d.queue || {}
+      var zh = locale === 'zh'
+      var armPair = useState(false)
+      var arm = armPair[0], setArm = armPair[1]
+      return h('div', { 'data-dam-team-debug': 'ready', className: 'dam-team-debug' },
+        h('div', { 'data-dam-team-debug-queue': String((q.pending || []).length) + '/' + String((q.failed || []).length) },
+          (zh ? '队列 待' : 'queue pending ') + (q.pending || []).length + ' / ' + (zh ? '失败 ' : 'failed ') + (q.failed || []).length),
+        h('div', { 'data-dam-team-debug-last': String((d.last && d.last.at) || '') },
+          d.last ? ((d.last.ms || 0) + 'ms · ' + (d.last.bytes || 0) + 'B') : (zh ? '尚无同步记录' : 'no sync yet')),
+        h('div', { 'data-dam-team-debug-errors': String((d.errors || []).length) },
+          (d.errors || []).map(function (e, i2) { return h('div', { key: i2 }, String(e.code || '') + ' ' + String(e.message || '')) })),
+        h('div', { 'data-dam-team-debug-cursor': String(d.localSeq || 0) + '/' + String(d.serverSeq || 0) },
+          'local ' + (d.localSeq || 0) + ' · server ' + (d.serverSeq || 0)),
+        h('button', { 'data-dam-team-debug-copy': 'idle', 'data-dam-btn': '',
+          onClick: function () { if (props && props.onCopy) props.onCopy() } }, zh ? '复制诊断 JSON' : 'Copy diag JSON'),
+        h('button', { 'data-dam-team-debug-reset': arm ? 'armed' : 'idle', 'data-dam-btn': '',
+          onClick: function () { if (!arm) { setArm(true); return } if (props && props.onReset) props.onReset(); setArm(false) } },
+          arm ? (zh ? '确认重置游标？' : 'Confirm reset?') : (zh ? '重置同步游标' : 'Reset cursor')))
+    }
+
+    // —— 屏⑤⑥⑧ 组装配（单一接线点）——
+    function TeamScreensR19(props) {
+      var team = props && props.team
+      if (!team) return null
+      return h('div', { className: 'dam-team-screens2', 'data-dam-team-screens': 'r19' },
+        h(TeamSkillsScreen, { items: (props && props.skills) || [], onAct: props && props.onSkillAct }),
+        h(TeamLedgerScreen, { segments: (props && props.segments) || [], chain: (props && props.chain) || [], onTakeover: props && props.onTakeover }),
+        h(TeamDebugPanel, { debug: (props && props.debug) || {}, onCopy: props && props.onDebugCopy, onReset: props && props.onDebugReset }))
+    }
+
+    // —— 屏⑦ 团队设置 15 控件（§6.1）——
+    // ★三档互斥：teamSyncMode 只改自己，绝不动 teamEnabled（开关解耦硬约束）。
+    var TEAM_FIELD_KEYS = ['teamEnabled', 'teamServer', 'teamId', 'teamMemberName', 'teamSyncMode',
+      'teamSyncIntervalSec', 'teamScopeDefault', 'teamShareExternal', 'teamConflictPolicy',
+      'teamShowAttribution', 'teamSkinId', 'teamShowAudit']
+    var TEAM_FIELD_DEFS = [
+      ['data-dam-team-enable', 'fTeamEnable', 'teamEnabled', 'checkbox'],
+      ['data-dam-team-server', 'fTeamServer', 'teamServer', 'text'],
+      ['data-dam-team-id', 'fTeamId', 'teamId', 'text'],
+      ['data-dam-team-member-name', 'fTeamMemberName', 'teamMemberName', 'text'],
+      ['data-dam-team-sync-mode', 'fTeamSyncMode', 'teamSyncMode', 'select'],
+      ['data-dam-team-sync-interval', 'fTeamSyncInterval', 'teamSyncIntervalSec', 'number'],
+      ['data-dam-team-scope-default', 'fTeamScopeDefault', 'teamScopeDefault', 'select'],
+      ['data-dam-team-share-external', 'fTeamShareExternal', 'teamShareExternal', 'checkbox'],
+      ['data-dam-team-conflict-policy', 'fTeamConflictPolicy', 'teamConflictPolicy', 'select'],
+      ['data-dam-team-attribution-show', 'fTeamAttribution', 'teamShowAttribution', 'checkbox'],
+      ['data-dam-team-skin-url', 'fTeamSkin', 'teamSkinId', 'text'],
+      ['data-dam-team-audit-show', 'fTeamAudit', 'teamShowAudit', 'checkbox']
+    ];
+    var TEAM_SEL_OPTS = {
+      teamSyncMode: ['off', 'manual', 'auto'],
+      teamScopeDefault: ['local', 'team'],
+      teamConflictPolicy: ['ask', 'prefer-team', 'prefer-local']
+    };
+    function renderTeamSettings15(ctx) {
+      var cfg = (ctx && ctx.cfg) || {}
+      var set = (ctx && ctx.set) || function () {}
+      var zh = locale === 'zh'
+      var armPair = useState(false)
+      var arm = armPair[0], setArm = armPair[1]
+      var resPair = useState(null)
+      var res = resPair[0], setRes = resPair[1]
+      var rows = TEAM_FIELD_DEFS.map(function (d) {
+        var attr = d[0], labelKey = d[1], key = d[2], kind = d[3]
+        var val = cfg[key]
+        var label = h('span', { className: 'dam-team-field-label' }, t(labelKey))
+        var box = { 'data-dam-key': key }
+        box[attr] = kind === 'checkbox' ? (val === true ? 'on' : 'off') : String(val === undefined || val === null ? '' : val)
+        if (kind === 'checkbox') {
+          box.type = 'checkbox'; box.checked = val === true;
+          box.onChange = function (e) { set(key, e.target.checked) }
+          return h('label', { key: key, className: 'dam-team-field' }, h('input', box), label)
+        }
+        if (kind === 'select') {
+          box.value = String(val || '');
+          box.onChange = function (e) { set(key, e.target.value) }
+          return h('label', { key: key, className: 'dam-team-field' }, label,
+            h('select', box, (TEAM_SEL_OPTS[key] || []).map(function (v) { return h('option', { key: v, value: v }, v) })))
+        }
+        box.type = kind === 'number' ? 'number' : 'text';
+        box.value = String(val === undefined || val === null ? '' : val);
+        box.onChange = function (e) { set(key, kind === 'number' ? Number(e.target.value) : e.target.value) }
+        return h('label', { key: key, className: 'dam-team-field' }, label, h('input', box))
+      });
+      var testBtn = h('button', { 'data-dam-team-test': 'idle', 'data-dam-btn': '',
+        onClick: function () {
+          setRes(zh ? '自检中…' : 'testing…');
+          // ★复用共享取数层（37 卷 §2：团队面只允许一条取数通道；不新增 apiGet 调用点）
+          fetchTeamState().then(function (d2) { setRes(d2 ? (zh ? '连通正常' : 'OK') : (zh ? '无响应' : 'no response')) },
+            function () { setRes(zh ? '失败' : 'failed') });
+        } }, zh ? '连通性自检' : 'Test connection');
+      var testRes = h('div', { 'data-dam-team-test-result': res ? 'done' : 'idle', 'data-dam-slot': 'hint', 'data-dam-hint': '' },
+        res || (zh ? '未自检' : 'not tested'));
+      var leave = h('button', { 'data-dam-team-leave': arm ? 'armed' : 'idle', 'data-dam-btn': '',
+        onClick: function () { if (!arm) { setArm(true); return } if (ctx && ctx.onLeave) ctx.onLeave(); setArm(false) } },
+        arm ? (zh ? '确认退出团队？' : 'Confirm leave?') : (zh ? '退出团队' : 'Leave team'));
+      return h('section', { id: 'dam-settings-team', 'data-dam-settings-group': '', 'data-dam-team-settings': 'x' },
+        rows, h('div', { className: 'dam-team-field' }, testBtn, testRes),
+        h('div', { className: 'dam-team-field' }, leave))
+    }
+
+    // ===================== L3-team:end =====================
+    function MEMORY_TABS() {
+      return [['overview', t('overview')], ['logs', t('logs')], ['refine', t('refineTab')], ['hub', t('hubTab')], ['storage', t('storageTab')], ['notes', t('notes')], ['plan', t('planTab')], ['reflections', t('reflections')], ['team', t('teamTab')], ['connect', t('connect')], ['calendar', t('calendar')], ['search', t('search')], ['workspaces', t('workspaces')], ['stats', t('statsTab')]]
+    }
+
+    // 「记忆」会话页(2026-09-21 二次修正) —— 注册在 conversation.view 槽位,与「对话轨迹」「上下文」「白板看板」并列。
+    // 用户诉求原话:「它现在是浮在整个页面上方的,而不是和对话轨迹、上下文、白板看板在一起,作为一个单独的一页」。
+    // 宿主只给 shell.overlay 这类"盖在界面上"的槽位,做不出并列页 ⇒ 必须走 conversation.view。
+    // 与浮层的关系:同一份 panelTab/数据/刷新 nonce,切页签两边同步;只在承载面上不同(页更宽)。
+    function MemoryPageView(props) {
+      var tick = useTick()
+      var tab = controller.panelTab()
+      var noncePair = useState(0)
+      var nonce = noncePair[0]
+      var setNonce = noncePair[1]
+      var verPair = useState(null)
+      var ver = verPair[0]
+      var setVer = verPair[1]
+      useEffect(function () { return controller.subscribe(tick[1]) }, [])
+      useEffect(function () {
+        var alive = true
+        apiGet(API.updateCheck).then(function (d) { if (alive && d && d.current) setVer(d.current) }).catch(function () {})
+        return function () { alive = false }
+      }, [])
+      var zh = locale === 'zh'
+      var verBadge = ver ? 'v' + ver + '-ui' : ''
+      var body = MemoryTabBody(tab, nonce)
+      // 浮层开关(page ↔ both 互切):两个方向都不注销本页签(修自毁按钮)。
+      var floatOn = controller.panelPos() === 'both'
+      var floatLabel = floatOn ? (zh ? '收起浮层' : 'Hide card') : (zh ? '打开浮层' : 'Open card')
+      var floatTitle = floatOn ? (zh ? '收起左下角浮层(保留本页)' : 'Hide bottom-left card (keep this page)') : (zh ? '同时打开左下角浮层(保留本页)' : 'Also open bottom-left card (keep this page)')
+      var onFloatToggle = function () { controller.setPanelPos(floatOn ? 'page' : 'both') }
+      var scaleAttr = fontScale in FONT_SCALES ? fontScale : 'md'
+      return h('div', {
+        'data-dam-page': '',
+        'data-scale': scaleAttr,
+        style: {
+          '--dam-user-scale': FONT_SCALE_VALUES[fontScale] || '1',
+          '--dam-accent': ACCENT_VALUES[accentTheme] || ACCENT_VALUES.deepseek,
+        },
+      },
+        h('header', { 'data-dam-page-head': '', 'data-dam-slot': 'head', 'data-dam-region': 'page' },
+          h('strong', null, t('autoMemory')),
+          h('span', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { fontSize: '10px', opacity: .55 } }, verBadge),
+          h('span', { className: 'dam-spacer' }),
+          h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', title: t('refresh'), onClick: function () { setNonce(nonce + 1) } }, '⟳'),
+          // ★2026-09-22 修「自毁按钮」(方向文档 §3.1 硬性要求 1):原实现在 page 档点一下即把本页签注销
+          //   (conversation.view 仅在 page/both 档注册)⇒ 用户实测「上面的东西连按钮一起消失」。
+          //   现改为 page ↔ both 互切:both 档页签始终保留,两个方向都不注销当前页。
+          h('button', {
+            'data-dam-slot': 'actions', 'data-dam-btn': '', 'data-dam-float-toggle': floatOn ? 'on' : 'off',
+            title: floatTitle,
+            onClick: onFloatToggle,
+          }, floatLabel)),
+        // ★2026-09-22 版式:顶部横向滚动页签 → 左侧固定侧栏(用户原话「把原本放在上面的那个切换横条
+        //   放到左侧,这样排版会更科学一点」)。浮层仍用 TabScroller(窄容器保持原版式),
+        //   两者共享同一份 panelTab 状态 ⇒ 切分区两边同步(既有契约不变)。
+        h('div', { 'data-dam-page-main': '' },
+          h('nav', { 'data-dam-region': 'page-nav', 'data-dam-page-nav': '', 'aria-label': zh ? '记忆分区' : 'Memory sections' },
+            MEMORY_TABS().map(function (item) {
+              return h('button', { key: item[0], 'data-dam-nav-item': '', 'data-dam-slot': 'nav', 'data-dam-region': 'page-nav', 'data-active': tab === item[0] ? 'true' : undefined, onClick: function () { controller.setPanelTab(item[0]) } }, item[1])
+            })),
+          h('div', { 'data-dam-page-content': '' },
+            h('div', { 'data-dam-body': '' }, body))))
+    }
+
+    function MemoryPanel() {
+      var tick = useTick()
+      var panelRef = useRef(null)
+      // 页签状态走模块级共享(2026-09-21):浮层与「记忆」会话页读同一个 panelTab ⇒ 两处切页互相同步。
+      // (用户诉求原话:「两者共存…要保证同步」。不用两份 useState,从根上杜绝状态漂移。)
+      var tab = controller.panelTab()
+      var setTab = controller.setPanelTab
+      // 刷新 nonce:每次打开面板 / 点 ⟳ 时递增,驱动各页签重拉数据
+      var noncePair = useState(0)
+      var nonce = noncePair[0]
+      var setNonce = noncePair[1]
+      var verPair = useState(null)
+      var ver = verPair[0]
+      var setVer = verPair[1]
+      var g = controller.geom()
+      var pos = controller.panelPos()
+      useEffect(function () { return controller.subscribe(tick[1]) }, [])
+      // 真实版本号(#15):面板头徽标不再硬编码,从 update-check 的 current(读包 version)取,失败留空
+      useEffect(function () {
+        var alive = true
+        apiGet(API.updateCheck).then(function (d) { if (alive && d && d.current) setVer(d.current) }).catch(function () {})
+        return function () { alive = false }
+      }, [])
+      // 可读性兜底(@ProperSAMA PR#12,适配版):DSH Desktop 增强模式 + 透明/Mica 窗口材质下,
+      // 主题令牌 --dsw-alias-bg-layer-2 本身就是半透明的,面板文字几乎不可读。判别信号用
+      // 「令牌自身的 alpha」(增强模式显著低于普通模式的 0.86-0.9):< 0.65 时把面板背景提升到
+      // 0.96(保留色相)并弱化顶部高光。普通模式令牌不透明 → 不触发,液态玻璃观感零变化。
+      // 2026-09-21:两种形态(浮层/顶部停靠条)各查一次 —— panelRef 只绑浮层,停靠条用选择器兜底,
+      // 否则增强模式下顶栏模式会保持半透明、可读性退化。
+      useEffect(function () {
+        if (!panelOpen) return
+        // 2026-09-21 二次修正:原「顶部停靠条」第二形态已废弃(改走 conversation.view 会话页),
+        // 故此处只剩浮层一个元素需要兜底 —— 会话页在正常文档流里,背景由宿主给,无需提升不透明度。
+        var els = panelRef.current ? [panelRef.current] : []
+        for (var j = 0; j < els.length; j++) {
+          var el = els[j]
+          if (!el) continue
+          try {
+            var cs = getComputedStyle(el)
+            var token = cs.getPropertyValue('--dsw-alias-bg-layer-2')
+            var col = parseCssColor((token || '').trim() || cs.backgroundColor)
+            if (col && col.a < 0.65) {
+              el.style.background = 'rgba(' + col.r + ', ' + col.g + ', ' + col.b + ', 0.96)'
+              el.setAttribute('data-solid', 'true')
+            } else {
+              el.style.background = ''
+              el.removeAttribute('data-solid')
+            }
+          } catch (eEl) {}
+        }
+      }, [panelOpen])
+      if (!panelOpen && !panelClosing) return null
+      var body = MemoryTabBody(tab, nonce)
+      var tabs = MEMORY_TABS()
+      // 承载面(2026-09-21):①左下角浮层(可拖拽/缩放) ②「记忆」会话页(conversation.view,与「对话轨迹」并列)。
+      // 两者共用同一份 tab(模块级 panelTab)/数据/刷新 nonce ⇒ 天然同步(用户要求);本函数只负责浮层节点。
+      var dragMove = startPointerDrag(function (dx, dy) {
+        controller.setGeom({ left: g.left + dx, top: g.top + dy })
+      }, '[data-dam-btn], [data-dam-tab], [data-dam-input], [data-dam-select], textarea')
+      var resizeMove = startPointerDrag(function (dx, dy) {
+        controller.setGeom({ width: g.width + dx, height: g.height + dy })
+      })
+      var scaleAttr = fontScale in FONT_SCALES ? fontScale : 'md'
+      var verBadge = ver ? 'v' + ver + '-ui' : ''
+      var nodes = []
+      if (pos === 'bottom-left' || pos === 'both') {
+        var floatStyle = {
+          left: g.left + 'px',
+          top: g.top + 'px',
+          width: g.width + 'px',
+          height: g.height + 'px',
+          '--dam-scale': FONT_SCALE_VALUES[fontScale] || '1',
+          '--dam-accent': ACCENT_VALUES[accentTheme] || ACCENT_VALUES.deepseek,
+        }
+        nodes.push(h('div', {
+          key: 'float',
+          'data-dam-region': 'float', 'data-dam-panel': '',
+          'data-pos': 'float',
+          'data-scale': scaleAttr,
+          ref: panelRef,
+          style: floatStyle,
+          'data-closing': panelClosing ? 'true' : undefined,
+          'data-dragging': dragActive ? 'true' : undefined,
+        },
+          h('header', {
+            title: t('dragMove'),
+            onPointerDown: dragMove,
+          },
+            h('strong', null, t('autoMemory')),
+            h('span', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { fontSize: '10px', opacity: .55 } }, verBadge),
+            h('span', { className: 'dam-spacer' }),
+            // 悬浮钉(2026-09-08):钉住后点面板外不再自动收起;图标为线描 SVG,与 ⤾ ⟳ ✕ 同画风
+            h('button', {
+              'data-dam-slot': 'actions', 'data-dam-btn': '', 'data-pin': pinned ? 'on' : 'off',
+              title: pinned ? t('unpinPanel') : t('pinPanel'),
+              'aria-pressed': pinned ? 'true' : 'false',
+              style: { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '4px 6px' },
+              onClick: function () { controller.togglePin() },
+            }, h(PinIcon, { filled: pinned })),
+            h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', title: t('resetPos'), onClick: function () { controller.resetGeom() } }, '⤾'),
+            h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', title: t('refresh'), onClick: function () { setNonce(nonce + 1) } }, '⟳'),
+            h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', title: t('close'), onClick: function () { controller.close() } }, '✕')),
+          h(TabScroller, { key: 'ftabs', tabs: tabs, tab: tab, setTab: setTab }),
+          h('div', { key: 'fbody', 'data-dam-body': '' }, body),
+          h('div', { 'data-dam-resize': '', title: t('dragResize'), onPointerDown: resizeMove })))
+      }
+      // ★2026-09-21 二次修正:「顶部通栏覆盖条」形态已**废弃**。
+      //   用户实测反馈原话:「它现在是浮在整个页面上方的,而不是和对话轨迹、上下文、白板看板在一起,作为一个单独的一页」。
+      //   根因:宿主只给插件 4 个槽位(sidebar/main/rightbar/shell.overlay),放在 overlay 里的东西**只能盖在界面上**,
+      //   做不出「并列的一页」;要成为并列页必须注册到 conversation.view(见下面 MemoryPageView + registerSurfaces)。
+      //   故此处只剩浮层一个节点;'page' / 'both' 档的「会话页」由 conversation.view 槽位承载。
+      return nodes.length === 1 ? nodes[0] : h('div', { 'data-dam-panel-host': '' }, nodes)
+    }
+
+    // ───────────────────────── 调试中心(为提 issue 提供诊断) ─────────────────────────
+    function DebugCenter() {
+      var dataPair = useState(null)
+      var data = dataPair[0]
+      var setData = dataPair[1]
+      var probesPair = useState(null)
+      var probes = probesPair[0]
+      var setProbes = probesPair[1]
+      var busyPair = useState(false)
+      var busy = busyPair[0]
+      var setBusy = busyPair[1]
+      var scanPair = useState(null)
+      var scan = scanPair[0]
+      var setScan = scanPair[1]
+      var scanBusyPair = useState(false)
+      var scanBusy = scanBusyPair[0]
+      var setScanBusy = scanBusyPair[1]
+      var scanFiles = scan && scan.files ? scan.files : null
+      var filesTotal = scan && scan.files ? scan.files.length : 0
+      var totalFindings = scan ? (scan.totalFindings || 0) : 0
+      var scanError = scan && scan.error ? scan.error : ''
+      function runScan() {
+        if (scanBusy) return
+        setScanBusy(true)
+        setScan(null)
+        fetch(API.scanDirty).then(function (r) { return r.json() }).then(function (d) {
+          setScan(d || {})
+          setScanBusy(false)
+        }).catch(function (e) { setScan({ error: String(e && e.message || e) }); setScanBusy(false) })
+      }
+      function refresh() {
+        if (busy) return
+        setBusy(true)
+        var probesDone = {}
+        var probeList = [
+          ['state', API.state, 'GET'], ['config', API.config, 'GET'], ['list', API.list, 'GET'],
+          ['file', API.file, 'GET'], ['calendar', API.calendar, 'GET'], ['debug', API.debug, 'GET'],
+          ['recall', API.recall, 'POST'], ['summarize', API.summarize, 'POST'], ['greet', API.greet, 'POST'],
+          ['workspaces', API.workspaces, 'POST'], ['reflectAuto', API.reflectAuto, 'POST'],
+        ]
+        Promise.all(probeList.map(function (pr) {
+          var t0 = Date.now()
+          return fetch(pr[1], pr[2] === 'POST' ? { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' } : undefined)
+            .then(function (r) { probesDone[pr[0]] = { status: r.status, ms: Date.now() - t0 } })
+            .catch(function (e) { probesDone[pr[0]] = { error: e.message } })
+        })).then(function () {
+          setProbes(probesDone)
+          return apiGet(API.debug)
+        }).then(function (d) { setData(d); setBusy(false) }).catch(function () { setBusy(false) })
+      }
+      useEffect(function () { refresh() }, [])
+      if (!data) return h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, t('dbgLoading'))
+      function kv(label, value, warn) {
+        return h('div', { 'data-dam-slot': 'list', 'data-dam-row': '', style: { marginBottom: '3px' } },
+          h('span', { style: { flex: '0 0 140px', opacity: .7, fontSize: 'calc(11.5px * var(--dam-scale))' } }, label),
+          h('span', { style: { fontSize: 'calc(11.5px * var(--dam-scale))', wordBreak: 'break-all', color: warn ? 'var(--dsw-alias-state-warn-primary, #e6a23c)' : undefined } }, String(value)))
+      }
+      var hb = data.heartbeat || {}
+      var hbAge = hb.exists && hb.heartbeatAt ? Math.round((Date.now() - hb.heartbeatAt) / 1000) : -1
+      var apiBad = probes && Object.keys(probes).some(function (k) { return probes[k].status === 404 || probes[k].error })
+      // ★P0-2（2026-09-22）：hub 三层记忆（episodes/facts/procedures）落盘 IO 健康度。
+      //   宿主 debugInfo().associativeMemory.hubIo 早已产出（lib/index.js:6959 → _hubIoViewSnapshot），
+      //   但前端零消费者 ⇒ save 失败被静默吞掉时，面板/日志/返回值三处都看不出「记忆到底写进磁盘了没有」。
+      //   防御式取值：宿主未升级 / 字段缺失时整行不渲染，绝不因此报错。
+      var am = data.associativeMemory && typeof data.associativeMemory === 'object' ? data.associativeMemory : {}
+      var hubIo = am.hubIo && typeof am.hubIo === 'object' ? am.hubIo : null
+      var hubIoWarn = false
+      var hubIoText = ''
+      if (hubIo) {
+        var hubErrs = Number(hubIo.errors) || 0
+        var hubLoads = Number(hubIo.loads) || 0
+        var hubSaves = Number(hubIo.saves) || 0
+        var hubClears = Number(hubIo.clears) || 0
+        hubIoWarn = hubErrs > 0 || hubIo.verdict === 'io-error'
+        if (hubErrs > 0) {
+          hubIoText = (locale === 'zh' ? '⚠ 累计失败 ' + hubErrs + ' 次 · 最近: ' : '⚠ ' + hubErrs + ' failure(s) · latest: ') +
+            (hubIo.lastError || t('unknown')) +
+            (hubIo.lastErrorAt ? ' (' + new Date(hubIo.lastErrorAt).toLocaleTimeString() + ')' : '')
+        } else if (hubLoads + hubSaves + hubClears > 0) {
+          hubIoText = locale === 'zh'
+            ? '✓ 正常（读 ' + hubLoads + ' · 写 ' + hubSaves + ' · 清 ' + hubClears + '，共 ' + (hubLoads + hubSaves + hubClears) + ' 次落盘操作无失败）'
+            : '✓ healthy (load ' + hubLoads + ' · save ' + hubSaves + ' · clear ' + hubClears + ', ' + (hubLoads + hubSaves + hubClears) + ' ops, 0 failures)'
+        } else {
+          hubIoText = locale === 'zh' ? '尚无落盘动作（本次运行还没有写入/读取）' : 'no disk activity yet this run'
+        }
+        // 无失败时优先采用宿主给出的中文整句 summary（如「三层记忆已正常落盘（本轮无写入失败）」）——
+        // 不在前端重拼一遍人话,避免两侧口径分叉。有失败时保留上面的详细行（含条数与人话原因 + 时间）。
+        if (hubErrs === 0 && hubIo.summary) hubIoText = String(hubIo.summary)
+      }
+      var hubIoByFile = hubIo && hubIoWarn && hubIo.byFile && typeof hubIo.byFile === 'object'
+        ? Object.keys(hubIo.byFile).map(function (k) {
+            var rec = hubIo.byFile[k] || {}
+            return k + ' × ' + (Number(rec.count) || 0)
+          }).join('   ')
+        : ''
+      // ★P0-3（2026-09-22）：事实保留上限淘汰台账。
+      //   getLastPrune()/retentionLimit()（fact-store.js:830/834）此前在宿主与前端**双侧**零调用方，
+      //   「事实被淘汰了」无处可查。只展示聚合数（条数/上限/超额/最旧时间），不展示任何事实正文。
+      var fp = am.factsPrune && typeof am.factsPrune === 'object' ? am.factsPrune : null
+      var fpWarn = false
+      var fpText = ''
+      if (fp) {
+        var fpPruned = Number(fp.pruned) || 0
+        var fpLimit = fp.limit === undefined || fp.limit === null ? '—' : fp.limit
+        fpWarn = fpPruned > 0
+        if (fpPruned > 0) {
+          fpText = locale === 'zh'
+            ? '上次淘汰 ' + fpPruned + ' 条（上限 ' + fpLimit + (fp.over ? '，超出 ' + fp.over : '') + '）' +
+              (fp.protected ? ' · 另有 ' + fp.protected + ' 条重要/未撤销条目受保护未删' : '') +
+              (fp.at ? ' · ' + new Date(fp.at).toLocaleTimeString() : '')
+            : 'last prune removed ' + fpPruned + ' (cap ' + fpLimit + (fp.over ? ', over ' + fp.over : '') + ')' +
+              (fp.protected ? ' · ' + fp.protected + ' protected (important/unrevoked) kept' : '') +
+              (fp.at ? ' · ' + new Date(fp.at).toLocaleTimeString() : '')
+        } else {
+          fpText = locale === 'zh'
+            ? '✓ 本次运行未发生淘汰（上限 ' + fpLimit + '）'
+            : '✓ no eviction yet this run (cap ' + fpLimit + ')'
+        }
+      }
+      // ★P1-1 补接线(2026-09-22)：Python 语义侧车看门狗 + stderr 尾部。
+      //   宿主 debugInfo().associativeMemory.pythonBackend 早已产出（lib/index.js:6944 →
+      //   Object.assign({ enabled }, client.debugView())），前端此前零渲染 ⇒ 侧车被看门狗
+      //   击杀/重生、以及 Python traceback 原文，用户一概看不到；现象只剩「语义唤回突然不好使了」，
+      //   无法归因。★铁律：Python 档是可选进阶项，未启用**不影响** JS 端语义 —— 文案必须写明，
+      //   否则用户会误判成「记忆坏了」。防御式取值：宿主未升级/字段缺失时整块不渲染，绝不报错。
+      var pySide = am.pythonBackend && typeof am.pythonBackend === 'object' ? am.pythonBackend : null
+      var pySideWarn = false
+      var pySideState = ''
+      var pySideWd = ''
+      var pySideTail = ''
+      var pySideHasTail = false
+      var pySideTrunc = false
+      if (pySide) {
+        var pyKills = Number(pySide.watchdog && pySide.watchdog.kills) || 0
+        var pyRespawns = Number(pySide.watchdog && pySide.watchdog.respawns) || 0
+        var pyGen = Number(pySide.generation) || 0
+        var pyReason = pySide.watchdog && pySide.watchdog.lastReason ? String(pySide.watchdog.lastReason) : ''
+        var pyBytes = Number(pySide.stderrTailBytes) || 0
+        pySideWarn = pyKills > 0
+        pySideState = pySide.enabled !== true
+          ? t('kvPyOff')
+          : (pySide.started === true
+            ? t('kvPyAlive') + (pyGen > 0 ? (locale === 'zh' ? '（第 ' + pyGen + ' 代）' : ' (gen ' + pyGen + ')') : '')
+            : (locale === 'zh' ? '未运行（惰性启动：首次请求才拉起进程）' : 'not running (lazy: spawned on first request)'))
+        pySideWd = pyKills === 0
+          ? (locale === 'zh' ? '无（未触发）' : 'none')
+          : (locale === 'zh'
+            ? '击杀 ' + pyKills + ' 次 · 重生 ' + pyRespawns + ' 次' + (pyReason ? '（最近：' + pyReason + '）' : '')
+            : 'kills ' + pyKills + ' · respawns ' + pyRespawns + (pyReason ? ' (latest: ' + pyReason + ')' : ''))
+        if (pySide.lastStderrTail) { pySideTail = String(pySide.lastStderrTail); pySideHasTail = true }
+        else if (pyBytes === 0) pySideTail = locale === 'zh' ? '确实没有输出（不是被截断）' : 'no output at all (not truncated)'
+        else pySideTail = locale === 'zh' ? '有 stderr 输出但无可显示行（全为空白行）' : 'stderr output present but no printable line (blank only)'
+        pySideTrunc = pySide.lastStderrTailTruncated === true
+      }
+      return h('div', null,
+        h('div', { 'data-dam-slot': 'list', 'data-dam-row': '' },
+          h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: refresh, disabled: busy }, busy ? t('dbgRefreshing') : t('dbgRefresh')),
+          h('span', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, data.host.indexPath || '')),
+        kv(t('kvVersion'), data.host.version || t('kvUnreadable'), false),
+        kv(t('kvPid'), data.host.pid + ' / ' + (data.host.startTime ? new Date(data.host.startTime).toLocaleTimeString() : ''), false),
+        kv(t('kvRestart'), data.host.needsRestart ? t('kvRestartYes') : t('kvRestartNo'), data.host.needsRestart),
+        kv(t('kvHeartbeat'), hb.exists ? (hbAge >= 0 ? t('hbAliveAgo') + hbAge + t('hbSecAgo') : t('hbAlive')) : t('hbNone'), !hb.exists || hbAge > 360),
+        kv(t('kvQueue'), data.autoConsolidate.pendingQueue + t('kvCountSuffix'), data.autoConsolidate.pendingQueue > 0),
+        kv(t('kvToday'), data.autoConsolidate.stats.count + t('kvRecentPrefix') + (data.autoConsolidate.stats.lastAt ? new Date(data.autoConsolidate.stats.lastAt).toLocaleTimeString() : '—'), false),
+        kv(t('kvBusy'), data.autoConsolidate.consolidating ? t('kvYes') : t('kvNo'), data.autoConsolidate.consolidating),
+        kv('subagents', data.subagents.available ? (data.subagents.providers.join(', ') || t('kvAvail')) : t('kvUnavail'), !data.subagents.available),
+        kv(t('kvDup'), data.duplicateHeadings + t('kvDupCount'), data.duplicateHeadings > 0),
+        kv(t('kvMem'), t('kvMemUser') + ' ' + (data.memoryFiles.user.exists ? fmtSize(data.memoryFiles.user.size) : t('kvMemMissing')) + ' · ' + t('kvMemNotes') + ' ' + (data.memoryFiles.notes.exists ? fmtSize(data.memoryFiles.notes.size) : t('kvMemMissing')) + ' · ' + t('kvMemLog') + ' ' + (data.memoryFiles.log.exists ? fmtSize(data.memoryFiles.log.size) : t('kvMemMissing')), !data.memoryFiles.log.exists),
+        kv(t('kvWs'), currentWs() || t('kvWsUnknown'), false),
+        kv(t('kvApi'), probes ? Object.keys(probes).map(function (k) { return k + '=' + (probes[k].status !== undefined ? probes[k].status : probes[k].error) }).join('  ') : '…', apiBad),
+        hubIo ? kv(t('dbgHubIo'), hubIoText, hubIoWarn) : null,
+        // ★2026-09-22（用户拍板）：诊断日志只在**这里**看，不再往控制台刷。
+        //   路径可选中复制；含「崩溃时附这个文件」的人话提示。只读投影，不含日志正文。
+        (function () {
+          var lg = data.logs && typeof data.logs === 'object' ? data.logs : null
+          if (!lg) return null
+          if (!lg.exists) return kv(t('dbgLogs'), t('dbgLogsNone'), false)
+          var lgText = []
+          if (lg.sizeText) lgText.push(lg.sizeText)
+          if (lg.lines !== null && lg.lines !== undefined) lgText.push(lg.lines + ' ' + (locale === 'zh' ? '行' : 'lines'))
+          if (lg.historyBytes > 0) lgText.push((locale === 'zh' ? '历史 ' : 'prev ') + fmtSize(lg.historyBytes))
+          return [
+            kv(t('dbgLogs'), lgText.join(' · '), false),
+            h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginLeft: '140px', wordBreak: 'break-all' } },
+              (locale === 'zh' ? '路径：' : 'Path: ') + (lg.path || '—')),
+            h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginLeft: '140px', wordBreak: 'break-all' } }, t('dbgLogsHint')),
+          ]
+        })(),
+        hubIoByFile ? h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginLeft: '140px', wordBreak: 'break-all' } },
+          (locale === 'zh' ? '按层拆分（失败次数）：' : 'per-store failures: ') + hubIoByFile) : null,
+        fp ? kv(t('dbgPrune'), fpText, fpWarn) : null,
+        pySide ? h('div', { 'data-dam-slot': 'list', 'data-dam-row': '', style: { marginTop: '3px', flexDirection: 'column', alignItems: 'stretch' } },
+          kv(t('kvPyTitle'), pySideState, false),
+          kv(t('kvPyWatchdog'), pySideWd, pySideWarn),
+          h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginTop: '3px' } },
+            t('kvPyStderr') + (pySideTrunc ? t('kvPyStderrTrunc') : '') + '：' + pySideTail,
+            pySideHasTail
+              ? h('pre', { style: { margin: '3px 0 0 0', padding: '6px 8px', maxHeight: '200px', overflow: 'auto', whiteSpace: 'pre-wrap', wordBreak: 'break-all', background: 'var(--dam-neutral-10, rgba(127,127,127,.10))', borderRadius: '6px', fontSize: 'calc(11px * var(--dam-scale))' } }, pySideTail)
+              : null)) : null,
+        h('div', { 'data-dam-slot': 'list', 'data-dam-row': '', style: { marginTop: '6px', alignItems: 'flex-start', flexDirection: 'column' } },
+          h('div', { 'data-dam-slot': 'list', 'data-dam-row': '' },
+            h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', title: 'prion-scan 式四类启发式,只报位置不含正文', onClick: runScan, disabled: scanBusy }, scanBusy ? (locale === 'zh' ? '扫描中…' : 'Scanning…') : (locale === 'zh' ? '扫描脏 token' : 'Scan dirty tokens')),
+            h('span', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginLeft: '8px' } }, scanError ? scanError : (scan === null ? (locale === 'zh' ? '检查用户级/笔记/日志/反思的 mojibake / raw JSON / 超长行 / base64 / 重复块' : 'Check user/notes/log/reflections: mojibake, raw JSON, long lines, base64, duplicates') : (scanFiles && scanFiles.length ? (locale === 'zh' ? '共 ' + filesTotal + ' 个文件,命中 ' + totalFindings + ' 处' : filesTotal + ' files, ' + totalFindings + ' findings') : (locale === 'zh' ? '✓ 未发现脏 token' : '✓ no dirty tokens'))))),
+          scanFiles && scanFiles.length ? scanFiles.map(function (sf) {
+            return h('div', { 'data-dam-slot': 'list', 'data-dam-row': '', style: { alignItems: 'flex-start', flexDirection: 'column', gap: '2px', marginTop: '4px' } },
+              h('span', { style: { fontWeight: 600, fontSize: 'calc(11px * var(--dam-scale))' } }, sf.name + ' [' + sf.sizeKB + 'KB, ' + sf.lines + ' 行]'),
+              sf.findings.map(function (fd) { return h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { whiteSpace: 'pre-wrap' } }, '行 ' + fd.range + ' ｜ ' + fd.type) }))
+          }) : null))
+    }
+
+    // ───────────────────────── 更新弹窗 / 首次指导(毛玻璃) ─────────────────────────
+    function DialogHost() {
+      var tickPair = useTick()
+      var dlgTick = tickPair[1] // DialogHost 自身的重渲染通道(emit 只刷主面板,刷不到弹窗——开关点击即时反映全靠它)
+      useEffect(function () { return onDialog(tickPair[1]) }, [])
+      // 欢迎向导状态(hooks 必须无条件调用——置于 dialogState 早退之前,满足 hooks 顺序)
+      var tourStepPair = useState(0)
+      var tourStep = tourStepPair[0]
+      var setTourStep = tourStepPair[1]
+      var updateSkipPair = useState(false)
+      var updateSkip = updateSkipPair[0]
+      var setUpdateSkip = updateSkipPair[1]
+      useEffect(function () { setUpdateSkip(false) }, [dialogState ? dialogState.kind : null])
+      var wizSt = window['dsh-auto-memory.wizStatus']
+      if (!wizSt) {
+        wizSt = { loaded: false }
+        window['dsh-auto-memory.wizStatus'] = wizSt
+        refreshSem(function (s) {
+          Object.assign(wizSt, s)
+          try { dlgTick() } catch (e9) {}
+        }, function () { Object.assign(wizSt, { loaded: true, ready: false }) })
+      }
+      var tourDlPhase = wizSt && wizSt.download && wizSt.download.phase
+      var tourShowing = !!dialogState && (dialogState.kind === 'welcomeTour' || dialogState.kind === 'modelDownload')
+      useEffect(function () {
+        // 每次向导变为可见时回到第一步,并拉一份当前配置快照(开关步读写用)
+        if (tourShowing) {
+          setTourStep(0)
+          wizSt.tourCfg = null
+          wizSt.cfgLoaded = false
+          fetch(API.config).then(function (r) { return r.json() }).then(function (j) {
+            wizSt.tourCfg = (j && (j.config || j)) || {}
+            // mode 型开关(唤起注入模式)实际存储在 embedding-config.json(semantic-emit 接口维护),
+            // 需从 semantic-status 合并进来,导览开关才能显示真实当前值并与设置页联动。
+            try {
+              refreshSem(function (j2) {
+                if (j2 && j2.activationEmitMode !== undefined) { wizSt.tourCfg.activationEmitMode = j2.activationEmitMode; try { dlgTick() } catch (e13) {} }
+              })
+            } catch (_) {}
+            wizSt.cfgLoaded = true
+            try { dlgTick() } catch (e11) {}
+          }).catch(function () { wizSt.tourCfg = wizSt.tourCfg || {}; wizSt.cfgLoaded = true })
+          fetch(API.external).then(function (r) { return r.json() }).then(function (j) {
+            wizSt.extScan = j
+            try { dlgTick() } catch (e12) {}
+          }).catch(function () {})
+        }
+      }, [tourShowing])
+      useEffect(function () {
+        if (!tourShowing) return undefined
+        if (wizSt.ready) return undefined // 已就绪无需轮询
+        var iv = setInterval(function () {
+          refreshSem(function (j) {
+            Object.assign(wizSt, j); try { dlgTick() } catch (e10) {}
+          })
+        }, 1500)
+        return function () { clearInterval(iv) }
+      }, [tourShowing, tourDlPhase, wizSt.ready])
+      // 无语义引擎自动引导:进入引擎下载步且引擎未就绪/未下载/未出错时,自动开始下载内置 JS 档(C2 默认)。
+      // 用户可稍后在设置页手动装 Python 进阶档;词法检索 0GB 永远兜底,不阻塞。
+      useEffect(function () {
+        if (!tourShowing) return undefined
+        var curStep = TOUR_STEPS[tourStep]
+        if (!curStep || !curStep.dl) return undefined
+        if (wizSt.ready || wizSt.loaded === false) return undefined
+        var ph = wizSt.download && wizSt.download.phase
+        if (ph === 'downloading' || ph === 'verifying' || ph === 'done' || ph === 'error') return undefined
+        apiPost(API.semanticDownload, { action: 'start', mirror: 'auto' }).catch(function () {})
+      }, [tourShowing, tourStep, wizSt.ready])
+      // issue#40:向导展示期间装焦点陷阱(移动端浮层吞点击/Esc 关不掉的关键一环)。
+      useEffect(function () {
+        if (!dialogState || dialogState.kind !== 'welcomeTour') return undefined
+        var root = document.querySelector('[data-dam-tour]')
+        return installTourFocusPre(root, function () { dismissWelcomeTourPre('user') }, document)
+      }, [dialogState ? dialogState.kind : null])
+      if (!dialogState) return null
+      // 左下角小卡片(记忆按钮上方),高透明毛玻璃,不遮全屏
+      var overlay = { position: 'fixed', left: '10px', bottom: '64px', zIndex: 2147483000, width: 'min(360px, calc(100vw - 20px))', maxHeight: 'min(46vh, 430px)', display: 'flex', flexDirection: 'column' }
+      var box = {
+        overflow: 'auto', borderRadius: '14px', padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: '6px',
+        background: 'color-mix(in srgb, var(--dsw-alias-bg-layer-2, rgba(24,26,32,.9)) 58%, transparent)',
+        backdropFilter: 'blur(14px) saturate(1.3)', WebkitBackdropFilter: 'blur(14px) saturate(1.3)',
+        border: '1px solid color-mix(in srgb, var(--dsw-alias-border-l1, rgba(128,128,128,.35)) 45%, transparent)',
+        boxShadow: '0 8px 28px var(--dam-black-18, rgba(0,0,0,.18))',
+      }
+      var head = { fontSize: 'calc(13px * var(--dam-scale))', fontWeight: 700, color: 'var(--dsw-alias-label-primary, inherit)' }
+      var sub = { fontSize: 'calc(11px * var(--dam-scale))', opacity: .7 }
+      var item = { fontSize: 'calc(11px * var(--dam-scale))', lineHeight: 1.55, padding: '1px 0 1px 16px', position: 'relative' }
+      var close = { alignSelf: 'flex-end', padding: '4px 16px', borderRadius: '8px', border: '1px solid color-mix(in srgb, var(--dsw-alias-border-l1, rgba(128,128,128,.35)) 45%, transparent)', background: 'color-mix(in srgb, var(--dsw-alias-brand-primary, #4f7cff) 12%, transparent)', color: 'var(--dsw-alias-label-primary, inherit)', cursor: 'pointer', fontSize: 'calc(11.5px * var(--dam-scale))' }
+      var dot = { position: 'absolute', left: '0', top: '10px', width: '7px', height: '7px', borderRadius: '50%', background: 'var(--dsw-alias-brand-primary, #4f7cff)' }
+      // 通用开场舞台必须在 first/notice/update 三个分支之前完成赋值；var 只提升声明、不提升赋值。
+      var skipUpdateIntro = function () { setUpdateSkip(true) }
+      var introEligible = dialogState.kind === 'update' ||
+        (dialogState.kind === 'notice' && !((dialogState.notice || {}).level === 'urgent'))
+      var DamIntroBox = function (children) {
+        if (!introEligible) return children
+        return h('div', { 'data-dam-update-box': '', 'data-skip': String(updateSkip) },
+          h('div', { 'data-dam-update-stage': '' },
+            h('div', { 'data-dam-update-logo': '' },
+              h('div', { 'data-dam-tour-bokeh': 'a' }),
+              h('div', { 'data-dam-tour-bokeh': 'b' }),
+              h('div', { 'data-dam-tour-bokeh': 'c' }),
+              h('div', { 'data-dam-tour-stage': '' },
+                h('div', { 'data-dam-tour-slab': 'bot' }),
+                h('div', { 'data-dam-tour-slab': 'mid' }),
+                h('div', { 'data-dam-tour-slab': 'top' }))),
+            h('div', { 'data-dam-update-hint': '' }, locale === 'zh' ? '点击任意处跳过' : 'Click anywhere to skip')),
+          !updateSkip ? h('div', { 'data-dam-update-click': '', onClick: skipUpdateIntro }) : null,
+          h('div', { 'data-dam-update-content': '' }, children))
+      }
+          // ═══ 记忆工作台向导（2026-09-24）══════════════════════════════════════
+      // 居中弹窗，复用新手引导的 [data-dam-tour-*] 外壳（位置/毛玻璃/入场动画全部继承）。
+      // 触发：启动检测 ready===false（含三重校验任一失败）。用户硬要求「不能像语义模型检测那样
+      // 在左下角显示得不明显」⇒ 必须居中；「不能瞎弹或重叠」⇒ 走 openDialog 单例队列。
+      if (dialogState.kind === 'workbenchSetup') {
+        var wbSt = dialogState.status || {}
+        var wbV = wbSt.verify || {}
+        var wbReason = String(wbSt.reason || wbV.reason || 'unknown')
+        // ★v3.1.8 相位机（用户裁定四条流程）：
+        //   exists 已有 ⇒「已经有，直接可以使用」；offer 没有 ⇒ (a) 说明要建什么+什么权限，(b) 同意后建立；
+        //   building (b)→(c) 之间的可见过程；done (c) 建立成功。
+        // ★D4（2026-09-24）：暂时态（尚未加载）**不得**进入 offer 相位 —— 那会给出「同意并建立」按钮，
+        //   点一下就多建一个会话（用户报障的重复会话就是这么来的）。此时按「已存在」收口，
+        //   不提供任何建立入口；状态行照实说明「尚未加载、自动恢复、不会新建」。
+        // ★D7（2026-09-25 真机取证）：相位判据必须以 **verify.ok 为先** —— `ready` 是宿主进程内的
+        //   内存态，重启后可能尚未置位；而 `verify` 是**只读真值**。实测 `verify.ok=true` 时
+        //   `ready` 仍为 false ⇒ 弹窗照旧弹「建立记忆中枢」（用户报障的就是这个）。
+        //   verify 通过即代表工作台可用 ⇒ 一律收口为 exists，不提供任何建立入口。
+        // ★D8：改用与开窗门**同源**的唯一判据（旧写法在此重复了一份，两处易漂移）。
+        var wbPhase = dialogState.phase || ((wbExistsPre(wbSt) || wbReason === 'session-not-loaded') ? 'exists' : 'offer')
+        var wbDirTxt = String(wbSt.cwd || wbSt.rootDefault || '—')
+        var wbPermTxt = String(wbV.preset || (wbSt.state && wbSt.state.permission) || 'danger-full-access')
+        // ★S6（2026-09-24）：原因码 → 人话（新增「工作区未登记」这一档）
+        var WB_REASON_TXT = (locale === 'zh')
+          ? { 'workspace-unregistered': '工作区尚未登记（点下面按钮会就地建立）', 'cwd-mismatch': '工作台会话的工作目录与设置不符', 'permission-mismatch': '工作台会话权限不是「完全访问」', 'epoch-mismatch': '期号已轮换（需建立本期工作台）', 'session-missing': '工作台会话不存在', 'session-gone': '工作台会话已不存在（需要重建）', 'session-not-loaded': '工作台会话尚未加载（宿主刚重启的暂时状态，插件会自动恢复，不会新建会话）', 'no-state': '尚未建立工作台' }
+          : { 'workspace-unregistered': 'Workspace not registered yet (the button below creates it in place)', 'cwd-mismatch': 'Workbench session cwd differs from settings', 'permission-mismatch': 'Workbench permission is not full access', 'epoch-mismatch': 'Epoch rotated (a new workbench is needed)', 'session-missing': 'Workbench session is missing', 'session-gone': 'Workbench session is gone (rebuild needed)', 'session-not-loaded': 'Workbench session not loaded yet (transient right after a host restart; it recovers automatically and no new session is created)', 'no-state': 'Workbench not created yet' }
+        var wbPass = !!wbV.ok
+        // ★D3（2026-09-24）：行状态必须回答「这一项到底过没过」，而不是「它是不是本次失败原因」。
+        //   旧写法 wbPass || wbReason !== '<本行原因>' 会让**尚未校验到的行也显示 ✓** ——
+        //   用户截图即为「四行全 ✓，状态却说工作台会话不存在」，自相矛盾且看不出坏在哪。
+        //   现在按真实校验顺序定级：过 ✓ / 本行即失败原因 ✗ / 尚未校验到 ·（中性）。
+        var WB_RANK = { 'no-state': 0, 'epoch-mismatch': 1, 'session-missing': 2, 'session-gone': 2, 'session-not-loaded': 2, 'cwd-mismatch': 3, 'workspace-unregistered': 4, 'no-permission-service': 5, 'permission-mismatch': 6 }
+        var wbFailRank = (typeof WB_RANK[wbReason] === 'number') ? WB_RANK[wbReason] : 9
+        var wbRow = function (label, rank, detail) {
+          var st = wbPass ? 'ok' : (rank < wbFailRank ? 'ok' : (rank === wbFailRank ? 'bad' : 'na'))
+          return h('div', { 'data-dam-wb-row': '' },
+            h('span', { 'data-dam-wb-dot': st, 'data-dam-wb-state': st }, st === 'ok' ? '✓' : (st === 'bad' ? '✗' : '·')),
+            h('span', { 'data-dam-wb-label': '' }, label),
+            h('span', { 'data-dam-wb-detail': '' }, detail || ''))
+        }
+        var wbBusy = !!dialogState.busy
+        // 建立动作**只**发在这里（用户点「同意并建立」之后）—— 检测路径已改只读。
+        var wbRun = function () {
+          dialogState = Object.assign({}, dialogState, { phase: 'building', busy: true })
+          notifyDialog()
+          apiPost(API.workbench, { action: 'setup' }).then(function (r) {
+            var ok = !!(r && r.ready)
+            dialogState = Object.assign({}, dialogState, {
+              phase: ok ? 'done' : 'offer', busy: false, status: r || wbSt,
+            })
+            notifyDialog()
+          }, function () {
+            dialogState = Object.assign({}, dialogState, { phase: 'offer', busy: false })
+            notifyDialog()
+          })
+        }
+        // ★2026-09-25 视觉重做：按钮样式改由 CSS 承担。原内联写法是「按钮看不清」的根源——
+        //   主按钮 color:#fff 压在主题品牌色上（浅色主题下对比不足）；次按钮 background:transparent
+        //   且 color:inherit 压在磨砂玻璃上 ⇒ 几乎看不见。现由 [data-dam-wb-card] 规则给出确定性对比。
+        return h('div', { 'data-dam-tour-backdrop': '', 'data-dam-wb-setup': '' },
+          h('div', { 'data-dam-region': 'dialog', 'data-dam-tour': '', 'data-dam-wb-card': '', role: 'dialog', 'aria-modal': true, tabIndex: -1, 'aria-label': locale === 'zh' ? '记忆工作台' : 'Memory workbench' },
+            h('div', { 'data-dam-wb-head': '', 'data-dam-wb-phase': wbPhase }, locale === 'zh'
+              ? ({ exists: '记忆中枢已就绪', offer: '建立「记忆中枢」', building: '正在建立记忆中枢…', done: '记忆中枢建立成功' }[wbPhase] || '记忆中枢')
+              : ({ exists: 'Memory hub is ready', offer: 'Create the memory hub', building: 'Creating the memory hub…', done: 'Memory hub created' }[wbPhase] || 'Memory hub')),
+            h('div', { 'data-dam-wb-sub': '' }, locale === 'zh'
+              ? ({
+                exists: '已经有「记忆中枢」了，直接可以使用。后台的记忆整理（问候 / 总结 / 沉淀 / 蒸馏）都挂在它下面运行。',
+                offer: '接下来会新建一个属于插件的工作区（目录「记忆中枢」）和一个工作台会话，并把初始化对话放进去；后台的记忆整理（问候 / 总结 / 沉淀 / 蒸馏）都挂在它下面运行，这样不会再往你的会话列表里塞子对话。',
+                building: '正在创建工作区与工作台会话，并把初始化对话放进去。请稍候，不要关闭本窗口。',
+                done: '工作区与会话已建立，初始化对话已放入。后台记忆任务现在开始运行。',
+              }[wbPhase] || '')
+              : ({
+                exists: 'The memory hub already exists — you can use it right away.',
+                offer: 'A plugin-owned workspace (“memory hub”) and a workbench session will be created, with the init conversation seeded into it.',
+                building: 'Creating the workspace and workbench session, and seeding the init conversation. Please wait.',
+                done: 'Workspace and session created; the init conversation has been seeded.',
+              }[wbPhase] || '')),
+            wbRow(locale === 'zh' ? '① 工作区位置' : '① Location', 3, wbDirTxt),
+            wbRow(locale === 'zh' ? '② 权限（完全访问）' : '② Permission', 6, wbPermTxt),
+            wbRow(locale === 'zh' ? '③ 期号（编号）' : '③ Epoch', 1, String((wbSt.state && wbSt.state.epoch) || '—') + ' → ' + String(wbSt.epochNow || '—')),
+            // ★S6（2026-09-24）：第 ④ 行 = **工作区是否真的登记**（用户原话「必须检测到底有没有这个工作区**和**对话出现」）。
+            wbRow(locale === 'zh' ? '④ 工作区登记' : '④ Workspace', 4, String(wbV.cwd || wbSt.cwd || '—')),
+            h('div', { 'data-dam-wb-reason': '' }, (locale === 'zh' ? '当前状态：' : 'Status: ') + (WB_REASON_TXT[wbReason] || wbReason)),
+            h('div', { 'data-dam-wb-dir': '' },
+              h('strong', null, locale === 'zh' ? '记忆目录：' : 'Memory directory: '),
+              String(wbSt.cwd || wbSt.rootDefault || '—') + (locale === 'zh'
+                ? '（DSH 本体目录下，跨平台一致；设置留空即自动）'
+                : ' (inside the DSH home directory; empty setting = automatic)')),
+            h('div', { 'data-dam-wb-risk': '' },
+              h('strong', null, locale === 'zh' ? '必须「完全访问」：' : 'Full access required: '),
+              // ★2026-09-25 视觉重做：原文里的 **…** 在 DOM 里被当字面量显示（显示成星号），
+              //   现改为真正的 <strong>，既可读、又保住了强调意图。
+              locale === 'zh' ? '这个工作台会话必须使用「完全访问」权限——若用受限权限，后台任务会被沙箱拦住、'
+                : 'This workbench session must use full file access. With restricted permissions background jobs are sandbox-blocked and ',
+              h('strong', null, locale === 'zh' ? '读不到记忆条目' : 'cannot read memory entries'),
+              locale === 'zh'
+                ? '，相关功能会静默失效（界面上看不到任何报错）。若上方第 ② 行未通过，请点「一键添加并修复」重建为该权限。该会话下的后台任务只做记忆整理，不会改动你的项目代码。'
+                : ' — the features then fail silently with no error shown. If row ② above is not passing, click “Set up now” to rebuild it with that permission. Jobs in it only curate memory; they do not modify your project code.'),
+            h('div', { 'data-dam-wb-actions': '' },
+              h('button', { type: 'button', 'data-dam-wb-cta': wbPhase, disabled: wbBusy,
+                onClick: (wbPhase === 'exists' || wbPhase === 'done') ? finishWorkbenchFlow : wbRun },
+                wbPhase === 'offer' ? (locale === 'zh' ? '同意并建立' : 'Agree & create')
+                  : (wbPhase === 'building' ? (locale === 'zh' ? '正在建立…' : 'Setting up…')
+                    : (locale === 'zh' ? '好，开始使用' : 'OK, start using'))),
+              (wbPhase === 'offer')
+                ? h('button', { type: 'button', 'data-dam-wb-cta2': '', disabled: wbBusy, onClick: finishWorkbenchFlow }, locale === 'zh' ? '稍后' : 'Later')
+                : null),
+            h('div', { 'data-dam-wb-foot': '' }, locale === 'zh'
+              ? (wbPhase === 'exists' || wbPhase === 'done'
+                ? '后台记忆任务已在运行。之后可在 设置 → 自动化 里改工作台目录或轮换周期。'
+                : '在建立完成前，所有后台记忆任务都会暂停（不会发送任何请求）；只有你点了「同意并建立」才会写入。')
+              : (wbPhase === 'exists' || wbPhase === 'done'
+                ? 'Background memory jobs are running. Change the workbench directory or rotation later in Settings → Automation.'
+                : 'Until you click “Agree & create”, nothing is written and all background memory jobs stay paused.'))))
+      }
+  if (dialogState.kind === 'welcomeTour' || dialogState.kind === 'modelDownload') {
+        // 首启引导向导 v2(2026-08-31):分步功能全覆盖 + 步内功能开关(点击即时写配置)
+        // + 完成步提醒「随时可在设置的哪个分区重新打开」。跳过/✕ 也先落到完成步(提醒)。
+        var TOUR_STEPS = [
+          { art: 'bubble', core: '', kicker: 'WELCOME',
+            title: locale === 'zh' ? '欢迎使用 dsh-auto-memory' : 'Welcome to dsh-auto-memory',
+            text: locale === 'zh' ? '这是 DeepSeek Harness 的个人联想记忆插件。接下来把所有功能向你解释清楚——每个功能都有开关，当场决定开不开；最后会告诉你在哪里随时改。'
+              : 'A personal associative-memory plugin for DeepSeek Harness. This tour explains every feature — each has a switch you flip right here; the last page tells you where to change them later.' },
+          { art: 'store', core: '', kicker: locale === 'zh' ? '核心能力' : 'CORE',
+            title: locale === 'zh' ? '记忆是怎么被想起的' : 'How memories are recalled',
+            text: locale === 'zh' ? '先说清楚两条互不依赖的路：①自动联想（下面的开关）——插件持续观察对话与工具事件，锚定记忆；需要回忆时经固定边界注入下一轮，不破坏前缀缓存。②就算关掉它，AI 仍会在每轮结尾默认写项目 memory（memory_log），也能用 memory_recall 主动读取；日历、问候等面板功能也独立运行。'
+              : 'Two independent paths: (1) automatic association (switch below) — the plugin anchors memories from conversations and injects relevant ones into the next turn via a fixed boundary. (2) Even with it off, the AI still writes project memory each turn (memory_log) and can read via memory_recall; calendar, greeting and other panel features run independently.' },
+          { art: 'inject', core: '', kicker: locale === 'zh' ? '记忆快照' : 'SNAPSHOT',
+            title: locale === 'zh' ? '周期性记忆注入' : 'Periodic memory snapshot',
+            text: locale === 'zh' ? '另一个独立机制：首次启用时会向上下文注入一段记忆提示（项目长期笔记的摘要），之后每隔一定轮次、或上下文被压缩后自动重新注入，保证模型始终带着记忆背景工作。'
+              : 'A separate mechanism: on first enable a memory prompt (long-term notes digest) is injected into context; afterwards it re-injects every N rounds or whenever the context is compacted, so the model always works with memory background.',
+            toggles: [
+              { key: 'associativeMemoryEnabled', name: locale === 'zh' ? '自动联想注入' : 'Automatic association', sub: locale === 'zh' ? '上面①的开关——按相关性自动注入记忆（推荐开）' : 'Path (1) — inject memories by relevance (recommended)', rec: true, where: locale === 'zh' ? '自动记忆引擎' : 'Semantic engine' },
+              { key: 'injectEnabled', name: locale === 'zh' ? '周期记忆快照' : 'Periodic snapshot', sub: locale === 'zh' ? '上面②的开关——定期/压缩后重注入记忆提示（推荐开）' : 'Path (2) — re-inject memory digest periodically / on compaction (recommended)', rec: true, where: locale === 'zh' ? '记忆窗口' : 'Memory window' },
+            ] },
+          { art: 'bell', core: '', kicker: locale === 'zh' ? '日常体验' : 'EXPERIENCE',
+            title: locale === 'zh' ? '暂离问候与无人值守' : 'Greeting & unattended',
+            text: locale === 'zh' ? '离开超过一小时回来，自动打开记忆面板并送上问候。跑批处理/无人值守任务？开启托管后：不弹问候、不注入寒暄与行为指令、日历提醒静默——模型专注干活，上下文稳定。夜间（22:00-08:00）可自动进入托管。'
+              : 'After >1h away the memory panel auto-opens with a greeting. Running batch/unattended jobs? Turn on unattended mode: no greetings, no niceties or behavioural directives, calendar silent — the model stays focused and context stays stable. Auto-engage overnight (22:00-08:00) if you like.',
+            toggles: [
+              // ★2026-09-25：此处原为 workbenchPeriod 开关 —— 它是**字符串型**配置（周期天数），而向导开关形态走 tourToggleOn 的 !!c[key] ⇒ 非空值恒判「开」、点击还会把布尔写进配置。该键改由**设置页**承载（「工作台轮换周期（天）」输入框）。
+        { key: 'workbenchRoot', name: locale === 'zh' ? '工作台工作区' : 'Workbench workspace', sub: locale === 'zh' ? '「记忆中枢」工作台会话建在哪个目录下（留空 = DSH 本体目录下的 aik_auto_memory_use）' : 'Directory the workbench session is created under (empty = aik_auto_memory_use under the DSH home)', where: locale === 'zh' ? '自动化' : 'Automation' },
+              { key: 'autoPopupEnabled', name: locale === 'zh' ? '暂离问候' : 'Welcome-back greeting', sub: locale === 'zh' ? '暂离超 1 小时回归时自动弹出面板并问候（推荐开）' : 'Auto-open the panel with a greeting after >1h away (recommended)', rec: true, where: locale === 'zh' ? '自动化' : 'Automation' },
+              { key: 'unattendedAuto', name: locale === 'zh' ? '夜间/批量自动托管' : 'Auto-unattended', sub: locale === 'zh' ? '22:00-08:00 或检测到托管任务时自动进入：零寒暄、上下文冻结、仅保留记忆存取' : 'Auto-engage 22:00-08:00 or when a hosted task is detected: zero niceties, frozen context, memory only', def: false, where: locale === 'zh' ? '自动化' : 'Automation' },
+            ] },
+          { art: 'calendar', core: '', kicker: locale === 'zh' ? '每日助理' : 'DAILY ASSISTANT',
+            title: locale === 'zh' ? '反思与总结' : 'Reflections & summaries',
+            text: locale === 'zh' ? '让记忆按天组织、按时汇报：'
+              : 'Keep memories organized by day:',
+            toggles: [
+              { key: 'reflectEnabled', name: locale === 'zh' ? '每日反思' : 'Daily reflection', sub: locale === 'zh' ? '每天第一次会话时，主动呈现前一天的工作反思' : 'Present the reflection of the previous day at the first session of each day', where: locale === 'zh' ? '自动化' : 'Automation' },
+              { key: 'autoSummaryTimes', name: locale === 'zh' ? '定时总结' : 'Scheduled summaries', sub: locale === 'zh' ? '到点（12:00 / 18:00 / 22:00）自动总结本时段工作并弹窗' : 'Summarize the current period at 12:00 / 18:00 / 22:00', boolOn: ['12:00', '18:00', '22:00'], boolOff: [], where: locale === 'zh' ? '自动化' : 'Automation' },
+            ] },
+          { art: 'link', core: '', kicker: locale === 'zh' ? '外部记忆' : 'EXTERNAL',
+            title: locale === 'zh' ? '接入别的 AI（扫描结果）' : 'Other AIs (scanned)',
+            text: locale === 'zh' ? '已扫描本机可读的外部来源——勾选你想让插件读取的（只存路径指针，不复制内容）：'
+              : 'Scanned sources found on this machine — tick the ones the plugin may read (path pointers only, no copying):',
+            externalScan: true },
+          { art: 'engine', core: '', kicker: locale === 'zh' ? '检索引擎' : 'RETRIEVAL', dl: true,
+            title: locale === 'zh' ? '三级语义引擎' : 'Three-tier semantic engine',
+            text: locale === 'zh' ? '词法检索（0GB）永远可用作保底；内置语义引擎（约 130MB 量化模型）显著提升召回；进阶 Python 引擎（BGE-M3，约 563MB）面向深度用户。以下为自动检测结果，可在此直接安装。另有一个与隐私相关的检索信号开关：'
+              : 'Lexical search (0GB) is the always-on floor; the built-in engine (~130MB quantized model) boosts recall; the advanced Python engine (BGE-M3, ~563MB) is optional. Live detection below — install right here. One privacy-related retrieval switch:',
+            toggles: [
+              { key: 'reasoningObserverEnabled', name: locale === 'zh' ? '思维链监听' : 'Reasoning observer', sub: locale === 'zh' ? '监听模型思维链分段作为检索信号（默认开；内容比可见输出更敏感，不需要可在此关掉）' : 'Watch model CoT segments as a retrieval signal (default ON; more sensitive than visible output — turn off here if unwanted)', def: false, where: locale === 'zh' ? '自动记忆引擎' : 'Semantic engine' },
+            ] },
+          { art: 'radar', core: '', kicker: locale === 'zh' ? '唤起与固化' : 'ACTIVATION',
+            title: locale === 'zh' ? '该出手时才出手' : 'Interrupt only when it matters',
+            text: locale === 'zh' ? '记忆唤起=在对话链（CoT/上下文）中直接检测回忆需求，命中即插入下一个环节；记忆固化=每轮结束把结论沉淀进记忆店，供下次唤起。每次决策都能在「唤起回顾」页复核打分。'
+              : 'Recall = detect memory needs directly in the conversation chain (CoT/context) and insert at the next boundary. Consolidation = settle conclusions into the stores each turn for later recall. Grade every decision in the Recall review tab.',
+            toggles: [
+              { key: 'activationEmitMode', name: locale === 'zh' ? '记忆唤起（链中检测→插入）' : 'Memory recall (detect → inject)', sub: locale === 'zh' ? '开=canary 档（显式回忆注入，推荐）/ 关=shadow 档（只记录不注入）' : 'On = canary (inject on explicit recall, recommended) / Off = shadow (record only)', mode: true, rec: true, where: locale === 'zh' ? '自动记忆引擎' : 'Semantic engine' },
+              { key: 'autoConsolidate', name: locale === 'zh' ? '记忆固化（自动沉淀）' : 'Memory consolidation', sub: locale === 'zh' ? '每轮对话结束自动把结论沉淀进每日日志与记忆店（推荐开）' : 'Consolidate conclusions into the log & stores each turn (recommended)', rec: true, where: locale === 'zh' ? '自动化' : 'Automation' },
+              // ★2026-09-22 改键(设置页缺口审计 P0-2):旧键 procedurePromotionEnabled 因 DEFAULT_CONFIG
+              //   恒供给布尔 procedureInjectEnabled 而**结构性不可达** ⇒ 该开关此前是摆设(会翻面、写盘成功、宿主读不到)。
+              { key: 'procedureInjectEnabled', name: locale === 'zh' ? '技能固化与注入' : 'Skill crystallization', sub: locale === 'zh' ? '重复流程固化为 checklist 自动附上（本开关只管「附不附」；晋升审批在「唤起回顾」页，与本开关无关）' : 'Turn repeated flows into auto-attached checklists (this switch only controls attaching; promotion review lives in the Recall review tab and is unrelated)', where: locale === 'zh' ? '记忆中枢' : 'Memory Hub' },
+              // ★T10（2026-09-20）：机械 procedure 切片开关。
+              //   ★A-1（2026-09-23）：机械切片已整条删除（用户裁定弃用）⇒ 向导清单同步去掉该项，
+              //   避免向导承诺一个已不存在的功能（点开找不到控件）。
+            ] },
+          { art: 'rocket', core: '', kicker: locale === 'zh' ? '完成' : 'READY', final: true,
+            title: locale === 'zh' ? '一切就绪' : 'All set',
+            text: locale === 'zh' ? '你刚才的选择都已即时保存。改主意了？随时在这几个地方重新打开：'
+              : 'Every choice above was saved instantly. Changed your mind? Revisit them here anytime:' },
+        ]
+        // 语义引擎状态(wizSt 已在 DialogHost 顶部初始化;下载轮询 useEffect 同样在顶部)
+        var dl = wizSt.download || { phase: 'idle' }
+        var dlActive = dl.phase === 'downloading' || dl.phase === 'verifying'
+        var wizReady = wizSt.ready
+        var totalBytes = wizSt.manifestBytes || Math.round(130 * 1024 * 1024)
+        var prog = dlActive || dl.phase === 'done'
+          ? Math.min(100, Math.round(((dl.bytesDone || 0) / Math.max(1, dl.bytesTotal || totalBytes)) * 100))
+          : (wizReady ? 100 : 0)
+        var fmtMB = function (b) { return b ? (b / (1024 * 1024)).toFixed(1) + ' MB' : '—' }
+        var dlPhaseTxt = !wizSt.loaded ? (locale === 'zh' ? '检测中…' : 'Detecting…')
+          : wizReady ? (locale === 'zh' ? '✓ 就绪（SHA256 校验 + 推理自检已通过）' : '✓ Ready (SHA256 verify + inference self-test passed)')
+          : dl.phase === 'verifying' ? t('dlVerifying')
+          : dl.phase === 'downloading' ? (t('dlDownloading') + ' · ' + fmtMB(dl.bytesDone || 0) + ' / ' + fmtMB(dl.bytesTotal || totalBytes))
+          : dl.phase === 'error' ? (t('dlError') + ': ' + String(dl.error || '').slice(0, 90))
+          : dl.phase === 'done' ? (wizSt.assetPresent && !wizSt.peerPresent
+              ? (locale === 'zh' ? '模型已下载,推理库缺失——先 pnpm approve-builds(批准原生脚本),再 pnpm add @huggingface/transformers,重启生效' : 'Model downloaded, inference lib missing — run pnpm approve-builds, then pnpm add @huggingface/transformers, restart')
+              : t('dlDone'))
+          : (locale === 'zh' ? '未下载 · 词法检索照常可用' : 'Not downloaded · lexical search keeps working')
+        var startDl = function () {
+          apiPost(API.semanticDownload, { action: 'start', mirror: 'auto' }).catch(function () {})
+        }
+        // 功能开关:读当前值(带每项默认)/点击即时写配置(乐观更新+POST,失败不回滚——下次重看向导会以真实配置为准)
+        var EXT_SOURCE_KEYS = ['workbuddy-user', 'workbuddy-profile', 'codebuddy-memory', 'claude-global', 'project-conventions', 'workbuddy-sessions', 'claude-sessions', 'codex-sessions']
+        var tourToggleOn = function (tg) {
+          var c = wizSt.tourCfg || {}
+          if (!wizSt.cfgLoaded) return false // 配置未加载完,一律视为关且禁用,避免误触默认值
+          if (tg.key === 'autoSummaryTimes') return (c[tg.key] || []).length > 0
+          if (tg.groupAll) { var v = c[tg.key] || {}; return !!v['workbuddy-user'] }
+          if (tg.mode) { var m = c[tg.key]; if (m === undefined) return tg.def === true; return m === 'canary-explicit' || m === 'active' }
+          return c[tg.key] === undefined ? tg.def !== false : !!c[tg.key]
+        }
+        var tourToggleClick = function (tg) {
+          if (!wizSt.cfgLoaded) return // 配置未加载完,禁止写入,防止覆盖用户设置
+          var c = wizSt.tourCfg = wizSt.tourCfg || {}
+          var on = tourToggleOn(tg)
+          var patch = {}
+          if (tg.key === 'autoSummaryTimes') patch[tg.key] = on ? (tg.boolOff || []) : (tg.boolOn || [])
+          else if (tg.groupAll) { var o = {}; for (var i = 0; i < EXT_SOURCE_KEYS.length; i++) o[EXT_SOURCE_KEYS[i]] = !on; patch[tg.key] = o }
+          else if (tg.mode) patch[tg.key] = on ? 'shadow' : 'canary-explicit'
+          else patch[tg.key] = !on
+          Object.assign(c, patch)
+          dlgTick()
+          // mode 型开关(唤起注入模式)走 semantic-emit 接口——与设置页同源(embedding-config.json),
+          // 保证导览切换与设置页双向联动;其余开关写常规 config。
+          if (tg.mode) {
+            apiPost(API.semanticEmit, { mode: patch[tg.key] }).catch(function () {})
+          } else {
+            saveConfigPatch(patch)
+          }
+        }
+        // 外部来源单源勾选(扫描行;勾选即写 externalSources 对象)
+        var tourExtToggle = function (id) {
+          if (!wizSt.cfgLoaded) return // 配置未加载完,禁止写入
+          var c = wizSt.tourCfg = wizSt.tourCfg || {}
+          var cur = Object.assign({}, c.externalSources || {})
+          cur[id] = (cur[id] !== false) ? false : true
+          c.externalSources = cur
+          dlgTick()
+          saveConfigPatch({ externalSources: cur })
+        }
+        var tourExtOn = function (id) {
+          var c = wizSt.tourCfg || {}
+          return (c.externalSources || {})[id] !== false
+        }
+        var allToggles = []
+        TOUR_STEPS.forEach(function (s) { if (s.toggles) allToggles = allToggles.concat(s.toggles) })
+        var whereGroups = {}
+        allToggles.forEach(function (tg) { var k = tg.where || '设置'; (whereGroups[k] = whereGroups[k] || []).push(tg.name) })
+        var finishTour = function () {
+          try { localStorage.setItem('dsh-auto-memory.semWizardDone', '1') } catch (e4) {}
+          closeDialog()
+          // ★v3.1.8 顺序裁定（用户原话「你的这个流程应该在 change log 之前。我怕你和那个在抢」）：
+          //   向导结束 → **先**走记忆中枢初始化（说明 / 同意 / 建立）→ 收尾时才接力到更新说明。
+          //   原实现在此处直接 openDialog(kind:'update')，会与初始化窗抢同一个弹窗槽。
+          pendingChangelogAfterInit = true
+          try { checkWorkbenchPre(true); return } catch (eWb2) {}
+
+        }
+        // issue#40:"关闭"就是关闭 —— 旧实现把 ✕ 变成"先跳到最后一步再点"，手机端体感即"关不掉"。
+        // 现在 ✕ 直接撤下向导并记录**用户动作**(tourDismissed)，此后不再自动播放。
+        var closeOrRemind = function () { dismissWelcomeTourPre('user') }
+        var step = TOUR_STEPS[Math.min(tourStep, TOUR_STEPS.length - 1)]
+        // ★R28 补 12 卷 §二 缺口：`hero.welcome`（首屏主视觉，优先级 P1）此前**定义了但 0 处调用**
+        //   ⇒ 6 槽位里只有 5 个真上了页面。按 12 卷表「用在 page-welcome（欢迎引导）」挂到**首屏步**。
+        //   渲染纪律（12 卷 §四 纪律二）：图未就绪时 SkinSlot 自身回**确定性占位**（不塌、不留白）。
+        //   ★只挂首屏步（tourStep===0）—— 其余步零新增 DOM，既有观感逐字不变。
+        var isLast = tourStep >= TOUR_STEPS.length - 1
+        // 每步只生成当前图形所需 DOM；避免旧实现一次创建 22 个 span、非当前零件塌成 0/2px。
+        var renderTourArt = function (type) {
+          var piece = function (cls) { return h('span', { className: 'ap ' + cls }) }
+          var children
+          if (type === 'store') children = [piece('plate p1'), piece('plate p2'), piece('plate p3')]
+          else if (type === 'inject') children = [piece('inject-capsule'), piece('inject-drop'), piece('inject-pulse')]
+          else if (type === 'bell') children = [piece('bell-shell'), piece('bell-base'), piece('bell-clapper')]
+          else if (type === 'calendar') children = [piece('calendar-card'), piece('calendar-bind b1'), piece('calendar-bind b2'), piece('calendar-page')]
+          else if (type === 'link') children = [piece('link-ring l1'), piece('link-ring l2'), piece('link-glint')]
+          else if (type === 'engine') children = [piece('engine-prism'), piece('engine-core'), piece('engine-orbit')]
+          else if (type === 'radar') children = [piece('radar-outer'), piece('radar-inner'), piece('radar-sweep'), piece('radar-ping')]
+          else if (type === 'rocket') children = [piece('rocket-tier t1'), piece('rocket-tier t2'), piece('rocket-tier t3'), piece('rocket-spark')]
+          else children = [piece('bubble-orb'), piece('bubble-seed s1'), piece('bubble-seed s2')]
+          return h('div', { 'data-dam-tour-art': type || 'bubble', key: 'art' + tourStep }, children)
+        }
+        return h('div', { 'data-dam-tour-backdrop': '',
+            onMouseMove: function (e) {
+              // Liquid Glass 动态响应:高光/图标 3D 倾斜跟随鼠标(卡内坐标百分比)
+              var el = e.currentTarget.querySelector('[data-dam-tour]')
+              if (!el) return
+              var r = el.getBoundingClientRect()
+              el.style.setProperty('--dam-mx', (((e.clientX - r.left) / r.width) * 100).toFixed(1) + '%')
+              el.style.setProperty('--dam-my', (((e.clientY - r.top) / r.height) * 100).toFixed(1) + '%')
+            } },
+          h('div', { 'data-dam-region': 'dialog', 'data-dam-tour': '', role: 'dialog', 'aria-modal': true, tabIndex: -1, 'aria-label': locale === 'zh' ? '欢迎向导' : 'Welcome tour' },
+            h('div', { 'data-dam-tour-glare': '' }),
+            h('button', { 'data-dam-tour-close': '', title: t('close'), onClick: closeOrRemind }, '✕'),
+            h('div', { 'data-dam-tour-orb-wrap': '', key: 'orb' + tourStep, 'data-step': String(tourStep), 'data-art': step.art || 'bubble' },
+              h('div', { 'data-dam-tour-halo': '' }),
+              h('div', { 'data-dam-tour-bokeh': 'a' }),
+              h('div', { 'data-dam-tour-bokeh': 'b' }),
+              h('div', { 'data-dam-tour-bokeh': 'c' }),
+              step.art === 'store' ? h('div', { 'data-dam-tour-stage': '', key: 'stage' + tourStep },
+                h('div', { 'data-dam-tour-slab': 'bot' }),
+                h('div', { 'data-dam-tour-slab': 'mid' }),
+                h('div', { 'data-dam-tour-slab': 'top' })) : h('div', { 'data-dam-tour-app-tile': '', key: 'tile' + tourStep }),
+              step.art === 'store' ? null : renderTourArt(step.art || 'bubble'),
+              h('div', { 'data-dam-tour-pedestal': '' })),
+            h('div', { 'data-dam-tour-body': '', key: 'body' + tourStep, 'data-dam-tour-swap': '' },
+              h('div', { 'data-dam-tour-head': '' },
+                // ★R28：仅**首屏步**渲染 hero 主视觉（12 卷 §二 表 1「用在 page-welcome」）。
+        //   其它步返回 null ⇒ 零新增 DOM（既有观感逐字不变）。
+        tourStep === 0 ? h(SkinHero, { slot: 'hero.welcome', deep: useDeepTheme() }) : null,
+        h('div', { 'data-dam-tour-kicker': '' }, step.kicker),
+                h('div', { 'data-dam-tour-stepchip': '' }, (tourStep + 1 < 10 ? '0' : '') + (tourStep + 1) + ' / ' + (TOUR_STEPS.length < 10 ? '0' : '') + TOUR_STEPS.length)),
+              h('div', { 'data-dam-tour-title': '' }, step.title),
+              h('div', { 'data-dam-tour-text': '' }, step.text),
+              step.toggles ? h('div', { 'data-dam-tour-toggles': '' },
+                step.toggles.map(function (tg, ti) {
+                  var on = tourToggleOn(tg)
+                  return h('button', { key: ti, 'data-dam-tour-tg': '', 'data-on': String(on), onClick: function () { tourToggleClick(tg) } },
+                    h('div', { 'data-dam-tour-tg-txt': '' },
+                      h('div', { 'data-dam-tour-tg-name': '' }, tg.name, tg.rec ? h('span', { 'data-dam-tour-rec': '' }, locale === 'zh' ? '推荐' : 'REC') : null),
+                      h('div', { 'data-dam-tour-tg-sub': '' }, tg.sub)),
+                    h('div', { 'data-dam-tour-sw': '', 'data-on': String(on) }))
+                })) : null,
+              step.externalScan ? h('div', { 'data-dam-tour-toggles': '', 'data-scroll': 'true' },
+                !(wizSt.extScan && wizSt.extScan.sources) ? h('div', { style: { opacity: .55, fontSize: '12px', padding: '8px 4px' } }, locale === 'zh' ? '正在扫描本机来源…' : 'Scanning local sources…')
+                  : (wizSt.extScan.sources || []).map(function (src) {
+                    var on = tourExtOn(src.id)
+                    return h('button', { key: src.id, 'data-dam-tour-tg': '', 'data-on': String(on), onClick: function () { tourExtToggle(src.id) } },
+                      h('div', { 'data-dam-tour-tg-txt': '' },
+                        h('div', { 'data-dam-tour-tg-name': '' }, src.name, h('span', { style: { opacity: .5, fontWeight: 400, fontSize: '10.5px', marginLeft: '6px' } }, src.tool + ' · ' + src.kind)),
+                        h('div', { 'data-dam-tour-tg-sub': '' }, (locale === 'zh' ? '已检测到 · ' : 'found · ') + (src.size > 1048576 ? (src.size / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(src.size / 1024)) + ' KB'))),
+                      h('div', { 'data-dam-tour-sw': '', 'data-on': String(on) }))
+                  })) : null,
+              step.dl ? h('div', { 'data-dam-tour-dl': '' },
+                h('div', { 'data-dam-tour-dl-row': '' },
+                  h('span', null, dlPhaseTxt),
+                  h('span', null, wizReady ? 'C2 · 129MB' : (prog + '%'))),
+                wizReady ? null : h('div', { 'data-dam-tour-bar': '' },
+                  h('div', { 'data-dam-tour-bar-i': '', style: { width: prog + '%', background: dl.phase === 'error' ? 'linear-gradient(90deg,var(--dam-tone-error, #c44a4a),var(--dam-tone-error-soft, #e08a8a))' : undefined } })),
+                !wizReady && wizSt.loaded && !dlActive ? h('div', { 'data-dam-tour-dl-row': '', style: { marginTop: '4px' } },
+                  h('span', null, (locale === 'zh' ? '下载源: ' : 'Source: ') + (dl.mirrorUsed === 'cn' ? t('mCn') : dl.mirrorUsed === 'intl' ? t('mIntl') : t('mAuto')) + (locale === 'zh' ? ' · 失败自动切备用源' : ' · auto-failover'))) : null,
+                h('div', { 'data-dam-tour-dl-tier': '' },
+                  h('div', { 'data-dam-tour-dl-tier-row': '' },
+                    h('b', null, locale === 'zh' ? '内置 JS 档（自动）' : 'Built-in JS tier (auto)'),
+                    h('span', null, locale === 'zh' ? 'e5-small · ~129MB · 默认,正在为你安装' : 'e5-small · ~129MB · default, installing for you')),
+                  h('div', { 'data-dam-tour-dl-tier-row': '' },
+                    h('b', null, locale === 'zh' ? 'Python 进阶档（可选）' : 'Python tier (optional)'),
+                    h('span', null, locale === 'zh' ? 'BGE-M3 int8 · 563MB · 追求更高精度的发烧友可在设置页安装' : 'BGE-M3 int8 · 563MB · for enthusiasts chasing higher precision — installable in Settings')))) : null,
+              step.final ? h('div', null,
+                h('div', { 'data-dam-tour-chips': '' },
+                  allToggles.filter(function (tg) { return tourToggleOn(tg) }).map(function (tg) {
+                    return h('span', { key: tg.key, 'data-dam-tour-badge': '', style: { background: 'var(--dam-47-164-106-20, rgba(47,164,106,.20))', color: 'var(--dam-dec-emit, #7fdcb0)' } }, '✓ ' + tg.name)
+                  }),
+                  allToggles.filter(function (tg) { return !tourToggleOn(tg) }).map(function (tg) {
+                    return h('span', { key: 'off' + tg.key, 'data-dam-tour-badge': '', style: { background: 'var(--dam-neutral-16, rgba(128,128,128,.16))', opacity: .7 } }, tg.name + (locale === 'zh' ? ' 关' : ' off'))
+                  })),
+                h('div', { 'data-dam-tour-where': '' },
+                  Object.keys(whereGroups).map(function (k) {
+                    return h('div', { key: k }, '· ', h('b', null, k), ' —— ' + whereGroups[k].join(locale === 'zh' ? ' / ' : ' / '))
+                  }),
+                  h('div', null, '· ', h('b', null, locale === 'zh' ? '面板页签' : 'Panel tabs'), locale === 'zh' ? ' —— 唤起回顾（决策打分）/ 存储管理（扫描修复）' : ' — Recall review / Storage tools'))) : null),
+            // ★v3.1.3：末页赞助/贡献入口（用户要求「两个小按钮 + 简短注释，不破坏原有结构」）。
+            //   作为 where 的**兄弟节点追加**；文案走 inline locale（与 TOUR_STEPS 全体现有写法一致），
+            //   不新增 i18n 键 ⇒ 零 i18n 表改动。
+            step.final ? h('div', { 'data-dam-tour-links': '' },
+              h('a', { href: 'https://htmlpreview.github.io/?https://github.com/Aik358/dsh-auto-memory/blob/main/docs/CONTRIBUTORS.html', target: '_blank', rel: 'noopener noreferrer', 'data-dam-tour-link': '' },
+                locale === 'zh' ? '贡献者与赞助' : 'Contributors & Sponsors'),
+              h('a', { href: 'https://api.dshapi.icu/register?aff=HJU27P7JL39N', target: '_blank', rel: 'noopener noreferrer', 'data-dam-tour-link': '' },
+                locale === 'zh' ? 'DSH API 中转站' : 'DSH API relay'),
+              // ★v3.1.4 批 J：第三个按钮 = QQ 交流群（链接与 README / CONTRIBUTORS 同源，不新造）
+              h('a', { href: 'https://qm.qq.com/q/v7Asxn6vPa', target: '_blank', rel: 'noopener noreferrer', 'data-dam-tour-link': '' },
+                locale === 'zh' ? 'QQ 交流群' : 'QQ group'),
+              h('div', { 'data-dam-tour-links-note': '' },
+                locale === 'zh' ? '感谢为本项目出力的贡献者与基础设施赞助方。' : 'Thanks to our contributors and infrastructure sponsors.')) : null,
+            h('div', { 'data-dam-tour-dots': '' },
+              TOUR_STEPS.map(function (s, si) {
+                return h('button', { key: si, 'data-dam-tour-dot': '', 'data-on': String(si === tourStep),
+                  onClick: function () { setTourStep(si) }, title: s.kicker })
+              })),
+            h('div', { 'data-dam-slot': 'footer', 'data-dam-tour-foot': '' },
+              h('button', { 'data-dam-tour-skip': '', onClick: closeOrRemind }, locale === 'zh' ? '跳过向导' : 'Skip tour'),
+              h('button', { 'data-dam-tour-btn': '', 'data-primary': 'false', disabled: tourStep === 0,
+                onClick: function () { setTourStep(Math.max(0, tourStep - 1)) } },
+                locale === 'zh' ? '‹ 上一步' : '‹ Back'),
+              h('button', { 'data-dam-tour-btn': '', 'data-primary': 'true',
+                onClick: function () { isLast ? finishTour() : setTourStep(tourStep + 1) } },
+                isLast ? (locale === 'zh' ? '开始使用' : 'Get started')
+                  : (locale === 'zh' ? '下一步 ›' : 'Next ›')))))
+      }
+      if (dialogState.kind === 'notice') {
+        var n = dialogState.notice || {}
+        var zh = locale === 'zh' || !n.titleEn
+        var nTitle = zh ? (n.title || '') : (n.titleEn || n.title || '')
+        var nMsg = zh ? (n.message || '') : (n.messageEn || n.message || '')
+        var isUrgent = n.level === 'urgent'
+        var accent = isUrgent ? 'var(--dsw-alias-state-error-primary, #e5534b)' : 'var(--dsw-alias-brand-primary, #4f7cff)'
+        var noticeButton = h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', style: close, onClick: function () {
+          try {
+            var arr = []
+            try { arr = JSON.parse(localStorage.getItem('dsh-auto-memory.seenNotices') || '[]') } catch (e3) {}
+            if (n.id && arr.indexOf(n.id) < 0) arr.push(n.id)
+            localStorage.setItem('dsh-auto-memory.seenNotices', JSON.stringify(arr))
+          } catch (e3) {}
+          closeDialog()
+        } }, t('gotIt'))
+        var noticeChildren = [
+          h('div', { style: Object.assign({}, head, isUrgent ? { color: accent } : {}) }, nTitle),
+          h('div', { style: { fontSize: 'calc(12px * var(--dam-scale))', lineHeight: 1.6, opacity: .92, whiteSpace: 'pre-wrap', marginTop: '4px' } }, nMsg),
+          h('div', { style: { display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: '6px' } },
+            n.link ? h('a', { href: n.link, target: '_blank', rel: 'noreferrer', style: Object.assign({}, close, { textDecoration: 'none' }) }, t('noticeOpen')) : null,
+            noticeButton),
+        ]
+        return h('div', { style: overlay },
+          h('div', { style: box },
+            DamIntroBox(noticeChildren)))
+      }
+      if (dialogState.kind === 'welcomeBack') {
+        return h('div', { style: overlay },
+          h('div', { style: box },
+            h('div', { style: head }, t('awayTitle')),
+            h('div', { style: { fontSize: 'calc(12px * var(--dam-scale))', lineHeight: 1.6, opacity: .92, marginTop: '4px' } }, t('awayMsg')),
+            h('div', { style: { display: 'flex', justifyContent: 'flex-end', marginTop: '6px' } },
+              h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', style: close, onClick: closeDialog }, t('gotIt')))))
+      }
+      if (dialogState.kind === 'summary') {
+        var sum = dialogState.summary || {}
+        return h('div', { style: overlay },
+          h('div', { style: box },
+            h('div', { style: head }, t('sumTitle') + ' ' + (sum.time || '')),
+            h('div', { style: { fontSize: 'calc(12px * var(--dam-scale))', lineHeight: 1.6, opacity: .92, whiteSpace: 'pre-wrap', marginTop: '4px' } }, sum.summary || ''),
+            (sum.works || []).slice(0, 6).map(function (w) {
+              return h('div', { style: item }, h('span', { style: dot }), w.title || '')
+            }),
+            h('div', { style: { display: 'flex', justifyContent: 'flex-end', marginTop: '6px' } },
+              h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', style: close, onClick: closeDialog }, t('gotIt')))))
+      }
+      if (dialogState.kind === 'semSetup') {
+        // 打开即自动检测引导卡(0.1.37,#14 后续):快检+深扫仍未就绪时推荐补装/一键下载;
+        // 深扫命中已热接入则报喜(即时生效)。关闭 = 24h 免打扰,不反复打扰。
+        var sd = dialogState.result || {}
+        var sdZh = locale === 'zh'
+        var sdBody = { fontSize: 'calc(12px * var(--dam-scale))', lineHeight: 1.6, opacity: .92, whiteSpace: 'pre-wrap', marginTop: '4px' }
+        var sdRows = []
+        var sdActions = []
+        var sdCmd = 'pnpm approve-builds\npnpm add @huggingface/transformers\n# 然后重启 dsh web'
+        var sdSnooze = function () {
+          try { localStorage.setItem('dsh-auto-memory.semDetectSnoozeUntil', String(Date.now() + 24 * 3600 * 1000)) } catch (eSn) {}
+          closeDialog()
+        }
+        if (sd.deep && sd.deep.integrated) {
+          sdRows.push(h('div', { style: sdBody }, sdZh
+            ? '检测到你已安装推理库 @huggingface/transformers（常规路径此前未识别，深度扫描已命中并自动接入）。语义检索 C2 现在即可用，无需重启。'
+            : 'Your installed @huggingface/transformers was found by the deep scan and hot-wired automatically. The C2 semantic tier is ready now — no restart needed.'))
+        } else {
+          if (sd.recommendation === 'install-peer' || sd.recommendation === 'setup-both') {
+            sdRows.push(h('div', { style: sdBody }, sdZh
+              ? (sd.recommendation === 'setup-both' ? '语义模型与推理库都未检测到。推理库请在安装 dsh-auto-memory 的同一目录（dsh profile）执行：' : '语义模型已下载，但推理库缺失（已含深度扫描）。请在安装 dsh-auto-memory 的同一目录（dsh profile）执行：')
+              : (sd.recommendation === 'setup-both' ? 'Neither the model assets nor the inference runtime were found. For the runtime, run in the directory where dsh-auto-memory is installed (the dsh profile):' : 'Model assets found, but the inference runtime is missing (deep scan included). Run in the directory where dsh-auto-memory is installed (the dsh profile):')))
+            sdActions.push(h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', style: close, onClick: function () {
+              try { if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(sdCmd) } catch (eCp) {}
+            } }, sdZh ? '复制命令' : 'Copy commands'))
+          }
+          if (sd.recommendation === 'download-model' || sd.recommendation === 'setup-both') {
+            sdRows.push(h('div', { style: sdBody }, sdZh
+              ? '语义模型（内置 JS 档，约 135MB，一次即可）可一键后台下载，下载完成后语义检索自动启用：'
+              : 'The built-in JS semantic model (~135MB, one-time) can be downloaded in the background; the semantic tier enables itself once done:'))
+            sdActions.push(h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', 'data-primary': 'true', style: close, onClick: function () {
+              apiPost(API.semanticDownload, { action: 'start', mirror: 'auto' }).catch(function () {})
+              try { localStorage.setItem('dsh-auto-memory.semDetectSnoozeUntil', String(Date.now() + 24 * 3600 * 1000)) } catch (eSn2) {}
+              closeDialog()
+            } }, sdZh ? '立即下载' : 'Download now'))
+          }
+        }
+        return h('div', { style: overlay },
+          h('div', { style: box },
+            h('div', { style: head }, sdZh ? '自动记忆引擎检测' : 'Memory engine check'),
+            sdRows,
+            h('div', { style: { display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: '6px' } },
+              sdActions,
+              h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', style: close, onClick: (sd.deep && sd.deep.integrated) ? closeDialog : sdSnooze }, t('gotIt')))))
+      }
+      var versions = dialogState.versions || []
+      var lastV = versions.length ? versions[versions.length - 1].version : ''
+      return h('div', { style: overlay },
+        h('div', { style: box },
+          // 右上 ✕ 关闭(与小卡 46vh 裁剪下的底部按钮互为兜底——否则内容溢出时按钮不可达,弹窗关不掉)
+          h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', title: t('close'), onClick: function () {
+            // 0.1.39:关闭时把 seenVersion 记为 currentVersion(分发时传的当前安装版本),
+            // 而非卡片 lastV——0.1.30 大更新单卡的 lastV 恒 '0.1.30',会把 seen 钉回旧版本,
+            // 导致「每次打开都弹更新日志」(seen≠current 无限重弹)。
+            try { var seenV = (dialogState && dialogState.currentVersion) || lastV; if (seenV) localStorage.setItem('dsh-auto-memory.seenVersion', seenV) } catch (eX) {}
+            closeDialog()
+          }, style: { position: 'absolute', top: '8px', right: '10px', zIndex: 5, fontSize: 'calc(13px * var(--dam-scale))', opacity: .6 } }, '✕'),
+          DamIntroBox([
+            h('div', { style: head }, t('updateTitle') + ' v' + lastV),
+            h('div', { style: sub }, t('updateSub')),
+            versions.map(function (v) {
+              var items = (v.items && (v.items[locale] || v.items.zh)) || []
+              return h('div', null,
+                h('div', { style: { fontSize: 'calc(13px * var(--dam-scale))', fontWeight: 700, margin: '6px 0 2px', opacity: .9 } }, 'v' + v.version),
+                items.map(function (it) { return h('div', { style: item }, h('span', { style: dot }), it) }))
+            }),
+            h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', style: close, onClick: function () {
+              // 同 ✕:写 currentVersion 而非 lastV(见上方 0.1.39 说明)
+              try { var seenV2 = (dialogState && dialogState.currentVersion) || lastV; if (seenV2) localStorage.setItem('dsh-auto-memory.seenVersion', seenV2) } catch (e3) {}
+              closeDialog()
+            } }, t('gotIt'))])))
+    }
+
+    // ───────────────────────── 设置页 ─────────────────────────
+    var STYLE_IDS = ['auto', 'life', 'professional']
+    var LOCALE_IDS_LIST = ['system', 'zh', 'en']
+    // M-CM6-C v3·常驻自动接续 watcher(2026-09-08 2.2.4):全局生效,与面板/页签是否打开无关。
+    // ①触发 = autoContinueEnabled !== false && 水位≥阈值 && harness 权威 running==false(轮次边界,取代旧"两轮水位持平")
+    //   + 3s 短确认(防刚结束又起新一轮)→ ②确认卡(同意 / 拒绝 / 超时 N 秒自动接续;拒绝记录在案,同一边界不再提示)
+    //   → ③刷新仪式(旧 Agent 刷 PLAN+账本)→ 一键接续(workspaceId 建会话 → 沿用模型 → 注入材料)。
+    function AutoContinueHost() {
+      var cfgP = useState(null)
+      var acCfg = cfgP[0]
+      var setAcCfg = cfgP[1]
+      var cdP = useState(0)
+      var acCd = cdP[0]
+      var setAcCd = cdP[1]
+      var stP = useState(null)
+      var acSt = stP[0]
+      var setAcSt = stP[1]
+      var bsP = useState(false)
+      var acBusy = bsP[0]
+      var setAcBusy = bsP[1]
+      var cfP = useState(null)
+      var acConfirm = cfP[0]
+      var setAcConfirm = cfP[1]
+      // 2.2.6:宿主兜底状态(倒计时/执行中/结果全部由宿主权威判定;浏览器只展示与传达决定)
+      var asP = useState(null)
+      var acState = asP[0]
+      var setAcState = asP[1]
+      useEffect(function () {
+        var alive = true
+        var load = function () {
+          // 带上当前会话 id:宿主据此只在「属于本窗口的」armed 上弹确认卡(2026-09-10)
+          var sidQ = ''
+          try { sidQ = String(currentSessionIdClient() || '') } catch (eS) {}
+          apiGet(API.config).then(function (d) { if (alive) setAcCfg(configOf(d)) }).catch(function () {})
+          apiGet(API.autoContState, sidQ ? { sessionId: sidQ } : {}).then(function (s) { if (alive && s) setAcState(s) }).catch(function () {})
+        }
+        load()
+        var iv = setInterval(load, 3000)
+        return function () { alive = false; clearInterval(iv) }
+      }, [])
+      useEffect(function () {
+        var alive = true
+        var on = !(acCfg && acCfg.autoContinueEnabled === false)
+        if (!on) return
+        var thr = (acCfg && Number(acCfg.autoContinueThreshold)) || 0.75
+        // 渲染:armed 倒计时 → 确认卡;executing → 执行中;lastOk → 成功;error → 失败提示。
+        // 触发/倒计时/超时执行全部由宿主侧驱动(2.2.6),浏览器即使被节流也不影响接续。
+        var poll = function () {
+          if (!alive) return
+          var sidQ = ''
+          try { sidQ = String(currentSessionIdClient() || '') } catch (eS) {}
+          apiGet(API.autoContState, sidQ ? { sessionId: sidQ } : {}).then(function (s) {
+            if (!alive || !s) return
+            setAcState(s)
+            if (s.executing) {
+              // 2026-09-10:执行中/已完成时必须**收起确认卡** —— 旧实现在这两个分支直接 return,
+              // acConfirm 保持旧值,于是宿主已接续完成后,卡片仍停在「同意接续/拒绝」上
+              // (实测:旧窗口一直显示确认卡 + 「✓ 已自动接续到新会话」并存,像是「它还想接续」)。
+              setAcConfirm(null)
+              setAcCd(0)
+              setAcSt(locale === 'zh' ? '宿主正在自动接续:刷新白板/账本 → 建新会话 → 注入材料…' : 'Host auto-continuing: refresh PLAN/ledger → new session → inject…')
+              return
+            }
+            var okAt = Number(s.lastOk && s.lastOk.at) || 0
+            // 10 分钟有效期(2026-09-10):宿主状态是全局单值,提示不设期限会一直挂在每个窗口上
+            if (s.lastOk && (okAt === 0 || Date.now() - okAt < 10 * 60 * 1000)) {
+              setAcConfirm(null)
+              setAcCd(0)
+              setAcSt((locale === 'zh' ? '✓ 已自动接续到新会话,可直接上手' : '✓ Auto-continued into a new session') + (s.lastOk.model ? ' · ' + s.lastOk.model + (s.lastOk.reasoningEffort ? '/' + s.lastOk.reasoningEffort : '') : ''))
+              return
+            }
+            if (s.error) { setAcSt('✗ ' + s.error); return }
+            var arm = s.armed
+            if (arm && arm.ratio >= thr) {
+              // ring/wall 必须一起带进来:卡片读的是 acConfirm.ring / acConfirm.wall,
+              // 宿主透出了但这里不拷 → 双口径那行永远不渲染(2026-09-10 自查发现)
+              setAcConfirm({ ratio: Number(arm.ratio) || 0, tokens: Number(arm.tokens) || 0, window: Number(arm.window) || 0, ring: Number(arm.ring) || 0, wall: Number(arm.wall) || 0, edgeAt: Number(arm.edgeAt) || 0 })
+              // ★2026-09-20 移植（issue #94⑦ / PR #100）：ceil 作用于**毫秒**再除 1000 ⇒ 显示小数秒。
+              setAcCd(Math.max(0, Math.ceil(((Number(arm.expiresAt) || 0) - Date.now()) / 1000)))
+            } else {
+              setAcConfirm(null)
+              setAcCd(0)
+              if (acSt && /^✗/.test(acSt)) setAcSt('')
+            }
+          }).catch(function () {})
+        }
+        poll()
+        var iv = setInterval(poll, 3000)
+        return function () { alive = false; clearInterval(iv) }
+      }, [acCfg && acCfg.autoContinueEnabled === false, acCfg && (Number(acCfg.autoContinueThreshold) || 0.75)])
+      var cancelAc = function () {
+        setAcCd(0)
+      }
+      // 2.2.6:执行权在宿主。同意/拒绝都 POST 给宿主(浏览器只传达决定);执行/超时全部宿主侧完成。
+      var runAuto = function () {
+        var edgeAt = (acConfirm && acConfirm.edgeAt) || 0
+        apiPost(API.autoContDecide, { action: 'agree', edgeAt: edgeAt }).then(function (r) {
+          if (r && r.ok) {
+            setAcConfirm(null)
+            setAcCd(0)
+            setAcSt(locale === 'zh' ? '宿主正在自动接续:刷新白板/账本 → 建新会话 → 注入材料…' : 'Host auto-continuing: refresh PLAN/ledger → new session → inject…')
+          } else {
+            setAcSt('✗ ' + String((r && r.error) || 'auto-continue agree failed'))
+          }
+        }).catch(function (e) { setAcSt('✗ ' + String(e && e.message ? e.message : e)) })
+      }
+      var onAgree = function () { runAuto() }
+      var onReject = function () {
+        var edgeAt = (acConfirm && acConfirm.edgeAt) || 0
+        cancelAc()
+        setAcConfirm(null)
+        apiPost(API.autoContDecide, { action: 'reject', edgeAt: edgeAt }).then(function () {}).catch(function () {})
+        setAcSt(t('autoContRejected'))
+      }
+      if (acConfirm || acCd > 0 || acSt) {
+        return h('div', { 'data-dam-region': 'overlay', 'data-dam-autocont': '', style: { position: 'fixed', right: '16px', bottom: '16px', zIndex: 9000, maxWidth: 'min(440px, calc(100vw - 32px))', boxSizing: 'border-box', padding: '10px 12px', borderRadius: '12px', border: '1px solid var(--dam-neutral-35, rgba(128,128,128,.35))', background: 'var(--dam-18-22-30-93, rgba(18,22,30,.93))', color: 'var(--dam-fg-strong, #e8eaed)', fontSize: '12px', lineHeight: '1.55', fontFamily: 'system-ui', boxShadow: '0 10px 30px var(--dam-black-35, rgba(0,0,0,.35))', backdropFilter: 'blur(10px)' } },
+          acConfirm ? h('div', { 'data-dam-autocont-confirm': '' }, [
+            h('div', { style: { marginBottom: '4px' } }, t('autoContConfirm').replace('{p}', String(Math.round((acConfirm.ratio || 0) * 100)))),
+            h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, (acConfirm.tokens || 0).toLocaleString() + ' / ' + (acConfirm.window || 0).toLocaleString() + ' token'
+              + (acConfirm.ring > 0 ? '  ·  ' + (locale === 'zh' ? '官方小圈读数 ' : 'ring ') + String(Math.round((acConfirm.ring || 0) * 100)) + '%' : '')
+              + (acConfirm.wall > 0 ? '  ·  ' + (locale === 'zh' ? '距硬墙还剩 ' : 'to the wall ') + Math.max(0, (acConfirm.wall || 0) - (acConfirm.tokens || 0)).toLocaleString() + ' token' : '')),
+            h('div', { style: { marginTop: '8px' } },
+              h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: onAgree }, t('autoContAgree')),
+              h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', style: { marginLeft: '6px' }, onClick: onReject }, t('autoContReject')),
+              acCd > 0 ? h('span', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginLeft: '8px' } }, t('autoContTimeout').replace('{s}', String(acCd))) : null),
+          ]) : null,
+          !acConfirm && acCd > 0 ? h('div', null, t('autoContCountdown').replace('{s}', String(acCd)), ' ', h('button', { style: { marginLeft: '6px', border: '1px solid var(--dam-232-234-237-45, rgba(232,234,237,.45))', borderRadius: '8px', background: 'transparent', color: 'var(--dam-fg-strong, #e8eaed)', cursor: 'pointer', padding: '2px 10px' }, onClick: onReject }, t('autoContCancel'))) : null,
+          acSt ? h('div', { style: (acConfirm || acCd > 0) ? { marginTop: '4px' } : {} }, acSt) : null)
+      }
+      return null
+    }
+    // ★P10-T1/T2（2026-09-22）：13 个注入分区的**显示文案**。成员与顺序以宿主下发的
+    //   `promptSections` 为准（宿主常量 PROMPT_SECTION_KEYS_PRE_V1 是唯一真源），本表只提供文案；
+    //   键集合必须与宿主常量相等 —— 由守卫 smoke-test-t1-prompt-sections-pre.mjs 断言。
+    //   offZh/offEn 只给 must 段（宿主 PROMPT_SECTION_MUST_PRE_V1），其余用通用提示。
+    var PROMPT_SECTION_TEXT = {
+      'rules-section': { zh: '规则段（用户级硬约束）', en: 'Rules section (hard constraints)' },
+      'tier0-catalog': { zh: 'Tier-0 常驻目录（指引层）', en: 'Tier-0 catalog (index layer)' },
+      'whiteboard-plan': { zh: '白板 PLAN 快照', en: 'Whiteboard (PLAN) snapshot' },
+      'handoff-ledger': { zh: '交接账本', en: 'Handoff ledger' },
+      'calendar': { zh: '日历与日程', en: 'Calendar & schedule' },
+      'external-memory': { zh: '其他 AI 工具记忆', en: 'Other AI tools’ memory' },
+      'external-sessions': { zh: '历史会话索引', en: 'Past session index' },
+      'workspace-map': { zh: '其他工作区记忆索引', en: 'Other workspace index' },
+      'welcome-title': { zh: '新工作区欢迎语（标题）', en: 'New-workspace greeting (title)' },
+      'welcome-body': { zh: '新工作区欢迎语（正文）', en: 'New-workspace greeting (body)' },
+      'plan-update-request': {
+        zh: '白板更新请求（硬性要求）', en: 'Whiteboard update request (mandatory)',
+        offZh: '关掉后：模型不再被要求更新白板 ⇒ 白板会逐渐与项目现实脱节。',
+        offEn: 'When off: the model is no longer asked to update the whiteboard — it will drift from reality.',
+      },
+      'water-advisory': {
+        zh: '上下文水位提醒（硬性要求）', en: 'Context water-level advisory (mandatory)',
+        offZh: '关掉后：不再提醒收尾写账本/反思 ⇒ 长任务跨窗口续命会变差。',
+        offEn: 'When off: no reminder to write the ledger/reflection at wrap-up — cross-window continuity suffers.',
+      },
+      'handoff-pointer': { zh: '未绑定工作区时的账本指针', en: 'Ledger pointer (unbound workspace)' },
+    }
+    function SettingsPage() {
+      var tickPair = useTick()
+      var cfgPair = useState(null)
+      var cfg = cfgPair[0]
+      var setCfg = cfgPair[1]
+      var busyPair = useState(false)
+      var busy = busyPair[0]
+      var setBusy = busyPair[1]
+      var msgPair = useState('')
+      var msg = msgPair[0]
+      var setMsg = msgPair[1]
+      var errPair = useState('')
+      var err = errPair[0]
+      var setErr = errPair[1]
+      var dirtyPair = useState(false)
+      var dirty = dirtyPair[0]
+      var setDirty = dirtyPair[1]
+      var dbgOpenPair = useState(false)
+      var dbgOpen = dbgOpenPair[0]
+      var setDbgOpen = dbgOpenPair[1]
+      var settingsSectionPair = useState('engine')
+      var settingsSection = settingsSectionPair[0]
+      var setSettingsSection = settingsSectionPair[1]
+      var browseOpenPair = useState(false)
+      var browseOpen = browseOpenPair[0]
+      var setBrowseOpen = browseOpenPair[1]
+      var browsePathPair = useState('')
+      var browsePath = browsePathPair[0]
+      var setBrowsePath = browsePathPair[1]
+      // ★S1 解耦：内嵌浏览器回填到哪个键（'memoryRoot' | 'workbenchRoot'）
+      var browseKeyPair = useState('memoryRoot')
+      var browseKey = browseKeyPair[0]
+      var setBrowseKey = browseKeyPair[1]
+      var browseParentPair = useState('')
+      var browseParent = browseParentPair[0]
+      var setBrowseParent = browseParentPair[1]
+      var browseDirsPair = useState(null)
+      var browseDirs = browseDirsPair[0]
+      var setBrowseDirs = browseDirsPair[1]
+      // 「总结/问候默认模型」模型抽屉状态
+      var mdlOpenPair = useState(false)
+      var mdlOpen = mdlOpenPair[0]
+      var setMdlOpen = mdlOpenPair[1]
+      var mdlLoadPair = useState(false)
+      var mdlLoading = mdlLoadPair[0]
+      var setMdlLoading = mdlLoadPair[1]
+      var mdlDataPair = useState(null)
+      var mdlData = mdlDataPair[0]
+      var setMdlData = mdlDataPair[1]
+      var mdlErrPair = useState('')
+      var mdlErr = mdlErrPair[0]
+      var setMdlErr = mdlErrPair[1]
+      function openModels() {
+        setMdlOpen(true)
+        setMdlErr('')
+        if (mdlData) return // 已加载过目录,直接展示(保存后重开设置页会重新挂载)
+        setMdlLoading(true)
+        apiGet(API.models).then(function (d) {
+          setMdlData(d || { providers: [] })
+          setMdlLoading(false)
+        }).catch(function (e) {
+          setMdlErr(String(e && e.message ? e.message : e))
+          setMdlLoading(false)
+        })
+      }
+      function browseTo(p) {
+        setBrowsePath(p)
+        apiPost(API.browseDir, { path: p }).then(function (d) {
+          if (d) { setBrowsePath(d.path); setBrowseParent(d.parent); setBrowseDirs(d.dirs || []) }
+        }).catch(function () { setBrowseDirs([]) })
+      }
+      // openBrowser(targetKey)：targetKey = 回填到哪个配置键（默认 memoryRoot）。
+      // ★S1 解耦（2026-09-24，用户纪律「单一开关不得顺带改变其他功能的行为」）：
+      //   选择器被两行复用（记忆根目录 / 工作台工作区）时，**必须只写调用方指定那一个键**——
+      //   早先版本同时 set('memoryRoot') 与 set('workbenchRoot')，会让「选工作台目录」顺带改掉记忆根目录。
+      function openBrowser(targetKey) {
+        var _targetKey = targetKey || 'memoryRoot'
+        // 优先弹系统原生文件夹选择器(native 后端);不可用(远程/无显示)回退内嵌浏览
+        apiPost(API.pickDir, {}).then(function (d) {
+          if (d && d.native && d.dir) {
+            set(_targetKey, d.dir)
+            setMsg(t('pickedDir') + ' ' + d.dir + ' ' + t('rememberSave'))
+          } else if (d && d.native) {
+            // 用户在系统对话框点了取消:保持原值,不动作
+          } else {
+            setMsg(t('pickerUnavailable'))
+            setBrowseOpen(true)
+            setBrowseKey(_targetKey)
+            browseTo((_targetKey === 'memoryRoot' ? cfg.memoryRoot : cfg.workbenchRoot) || '')
+          }
+        }).catch(function () {
+          setMsg(t('pickerUnavailable'))
+          setBrowseOpen(true)
+          setBrowseKey(_targetKey)
+          browseTo((_targetKey === 'memoryRoot' ? cfg.memoryRoot : cfg.workbenchRoot) || '')
+        })
+      }
+      // 「总结/问候默认模型」抽屉(复审轮2新增功能的选型 UI):自动检测 llm 目录,分组展示,点选即设
+      function buildModelDrawer() {
+        var panelStyle = { border: '1px solid color-mix(in srgb, var(--dsw-alias-border-l1, rgba(128,128,128,.25)) 60%, transparent)', borderRadius: '8px', padding: '8px', marginBottom: '8px', maxHeight: '260px', overflow: 'auto', background: 'color-mix(in srgb, var(--dsw-alias-bg-layer-1, rgba(128,128,128,.06)) 40%, transparent)' }
+        var kids = []
+        kids.push(h('div', { 'data-dam-slot': 'list', 'data-dam-row': '', style: { marginBottom: '4px' } },
+          h('b', { style: { flex: 1, fontSize: 'calc(12px * var(--dam-scale))' } }, locale === 'zh' ? '选择模型（自动检测）' : 'Pick a model (auto-detected)'),
+          h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: function () { setMdlOpen(false) } }, t('close'))))
+        if (mdlLoading) kids.push(h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, locale === 'zh' ? '正在检测可用模型…' : 'Detecting models…'))
+        if (mdlErr) kids.push(h('div', { 'data-dam-error': '' }, mdlErr))
+        if (!mdlLoading && !mdlErr && mdlData) {
+          kids.push(h('button', { key: '__default__', 'data-dam-slot': 'actions', 'data-dam-btn': '', style: { display: 'block', width: '100%', textAlign: 'left', padding: '4px 6px', opacity: cfg.subagentModel ? 1 : 0.75 }, onClick: function () { setMany({ subagentModel: '', subagentProvider: '' }); setMdlOpen(false) } },
+            locale === 'zh' ? '跟随路由默认（留空）' : 'Follow routing default (empty)'))
+          ;(mdlData.providers || []).forEach(function (p) {
+            var modelBtns = (p.models || []).length
+              ? p.models.map(function (m) {
+                  return h('button', { key: p.id + '/' + m.id, 'data-dam-slot': 'actions', 'data-dam-btn': '', style: { display: 'block', width: '100%', textAlign: 'left', padding: '3px 6px', fontWeight: cfg.subagentModel === m.id ? 700 : 400 }, onClick: function () { setMany({ subagentModel: m.id, subagentProvider: p.id }); setMdlOpen(false) } },
+                    m.id + (m.name && m.name !== m.id ? ' · ' + m.name : '') + (cfg.subagentModel === m.id ? ' ✓' : ''))
+                })
+              : [h('div', { key: 'none', 'data-dam-slot': 'hint', 'data-dam-hint': '' }, locale === 'zh' ? '（该 provider 未列出模型）' : '(no models advertised)')]
+            kids.push(h('div', { key: 'g-' + p.id, style: { marginTop: '6px' } },
+              h('div', { style: { fontSize: 'calc(11px * var(--dam-scale))', fontWeight: 700, opacity: 0.75, margin: '2px 0' } }, p.name || p.id),
+              modelBtns))
+          })
+          ;(mdlData.failures || []).forEach(function (f) {
+            kids.push(h('div', { key: 'f-' + f.id, 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { opacity: 0.65 } }, '⚠ ' + (f.name || f.id) + ': ' + f.message))
+          })
+          if (!(mdlData.providers || []).length && !(mdlData.failures || []).length) {
+            kids.push(h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, locale === 'zh' ? '未检测到 provider;可直接在下方手动输入。' : 'No providers detected; use manual input below.'))
+          }
+          kids.push(h('input', { key: '__manual__', 'data-dam-slot': 'form', 'data-dam-input': '', style: { marginTop: '6px', width: '100%' }, value: cfg.subagentModel || '', placeholder: locale === 'zh' ? '手动输入(可选,provider 跟随路由默认)' : 'manual entry (optional, provider follows routing default)', onChange: function (e) { setMany({ subagentModel: String(e.target.value || '').trim(), subagentProvider: '' }) } }))
+        }
+        // 思考强度(DSH 0.1.5 agentOptions.reasoningEffort):与模型成对下发给子代理;留空=跟随模型默认。
+        // 合法值按 DeepSeek 适配器口径 off|low|high|max(默认 high)——服务端同样做白名单过滤。
+        var effortOpts = [
+          ['', locale === 'zh' ? '跟随默认' : 'default'],
+          ['off', 'off'],
+          ['low', 'low'],
+          ['high', 'high'],
+          ['max', 'max'],
+        ]
+        var effortKeys = [
+          ['subagentReasoningEffort', locale === 'zh' ? '全部子代理（兜底）' : 'All subagents (fallback)',
+            locale === 'zh' ? '两条轴都没单独设置时用它。留空 = 跟随模型默认。' : 'Used when neither lane is set. Empty follows the model default.'],
+          ['subagentReasoningEffortLong', locale === 'zh' ? '长期轴 · 写长期记忆' : 'Long lane · writes long-term memory',
+            locale === 'zh' ? 'consolidate / consolidate-logs / distill / fold —— 它们产出项目笔记与用户级记忆，值得多花思考。' : 'consolidate / consolidate-logs / distill / fold — these write project notes and user-level memory, so they are worth more thinking.'],
+          ['subagentReasoningEffortShort', locale === 'zh' ? '短期轴 · 用完即弃' : 'Short lane · throwaway',
+            locale === 'zh' ? 'greet / summarize / smart-kw / smart-ans / ws-map —— 展示与检索类，调低更快更省。' : 'greet / summarize / smart-kw / smart-ans / ws-map — display and recall jobs; a lower setting is faster and cheaper.'],
+        ]
+        kids.push(h('div', { key: '__effort__', style: { marginTop: '10px', paddingTop: '8px', borderTop: '1px solid color-mix(in srgb, var(--dsw-alias-border-l1, rgba(128,128,128,.25)) 45%, transparent)' } },
+          h('b', { style: { display: 'block', fontSize: 'calc(12px * var(--dam-scale))' } }, locale === 'zh' ? '思考强度（按记忆寿命分两轴）' : 'Reasoning effort (by memory lifespan)'),
+          effortKeys.map(function (row) {
+            var cur = String(cfg[row[0]] || '').toLowerCase()
+            return h('div', { key: 'effrow-' + row[0], style: { marginTop: '6px' } },
+              h('div', { style: { fontSize: 'calc(11px * var(--dam-scale))', opacity: 0.85 } }, row[1]),
+              h('div', { 'data-dam-slot': 'list', 'data-dam-row': '', style: { flexWrap: 'wrap', marginTop: '3px' } },
+                effortOpts.map(function (o) {
+                  return h('button', {
+                    key: 'eff-' + row[0] + '-' + (o[0] || 'def'), 'data-dam-slot': 'actions', 'data-dam-btn': '',
+                    style: { padding: '3px 9px', fontWeight: cur === o[0] ? 700 : 400, opacity: cur === o[0] ? 1 : 0.72 },
+                    onClick: function () { set(row[0], o[0]) },
+                  }, o[1] + (cur === o[0] ? ' ✓' : ''))
+                })),
+              h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, row[2]))
+          }),
+          h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, locale === 'zh'
+            ? 'off=关闭思维链，low/high/max 递增思考深度（DeepSeek 默认 high）；两轴留空 = 回落到「全部子代理」那一档。只作用于本插件的子代理，不影响主对话。'
+            : 'off disables thinking; low/high/max increase depth (DeepSeek default: high). An empty lane falls back to the “All subagents” row. Applies only to this plugin`s subagents, never the main conversation.')))
+        return h('div', { style: panelStyle }, kids)
+      }
+      var verPair = useState(null)
+      var verInfo = verPair[0]
+      var setVerInfo = verPair[1]
+      var checkingPair = useState(false)
+      var checkingUpdate = checkingPair[0]
+      var setCheckingUpdate = checkingPair[1]
+      var upBusyPair = useState(false)
+      var upBusy = upBusyPair[0]
+      var setUpBusy = upBusyPair[1]
+      var upMsgPair = useState('')
+      var upMsg = upMsgPair[0]
+      var setUpMsg = upMsgPair[1]
+      useEffect(function () { return controller.subscribe(tickPair[1]) }, [])
+      useEffect(function () {
+        var alive = true
+        apiGet(API.config).then(function (d) {
+          if (!alive) return
+          setCfg(d.config)
+          // ★P10-T1：分区清单随 config 应答体下发（宿主唯一真源；取不到就留空 ⇒ 面板给 fail-soft 提示）
+          setPsecKeys(Array.isArray(d.promptSections) ? d.promptSections : [])
+          setPsecMust(Array.isArray(d.promptSectionMust) ? d.promptSectionMust : [])
+        }).catch(function (e) { setErr(e.message) })
+        // 打开设置页自动检查更新(host 有 12h 缓存,不重复查网)
+        apiGet(API.updateCheck).then(function (d) { if (alive) setVerInfo(d) }).catch(function () {})
+        return function () { alive = false }
+      }, [])
+      // M7.5 语义引擎资产状态与安装引导(Hooks 必须位于任何条件 return 之前——React 规则,
+      // 否则 cfg 未加载时提前 return 会跳过这些 useState,二次渲染 hooks 数量不一致 → error #310)
+      var semPair = useState({ loaded: false, ready: false, assetPresent: false, peerPresent: false, pythonInt8Present: false })
+      var sem = semPair[0]
+      var setSem = semPair[1]
+      var guidePair = useState('')
+      var promptEditPair = useState(false)
+      var promptEditOpen = promptEditPair[0]
+      var setPromptEditOpen = promptEditPair[1]
+      var guide = guidePair[0]
+      var setGuide = guidePair[1]
+      var mirrorPair = useState('auto')
+      var mirror = mirrorPair[0]
+      var setMirror = mirrorPair[1]
+      // M-CM6-B v3·环境检测面板状态(2026-09-08)——必须挂在下方 if (!cfg) 早退之前:
+      // hooks 挂在早退后会在 cfg 加载完成的首帧多执行,React 报 hooks 数量不一致,整棵设置树崩溃(设置页整体消失)。
+      var detOpenPair = useState(false)
+      var detOpen = detOpenPair[0]
+      var setDetOpen = detOpenPair[1]
+      var detPair = useState(null)
+      var det = detPair[0]
+      var setDet = detPair[1]
+      var detBusyPair = useState(false)
+      var detBusy = detBusyPair[0]
+      var setDetBusy = detBusyPair[1]
+      // ★P10-T1（2026-09-22）：注入分区开关的**二级页**状态 + 清单。
+      //   清单来自宿主常量（经 /config 应答体 promptSections 下发），前端不硬编码成员。
+      //   同 det* 的理由：必须挂在下方 if (!cfg) 早退之前，否则 hooks 数量不一致 → error #310。
+      var psecOpenPair = useState(false)
+      var psecOpen = psecOpenPair[0]
+      var setPsecOpen = psecOpenPair[1]
+      var psecKeysPair = useState([])
+      var psecKeys = psecKeysPair[0]
+      var setPsecKeys = psecKeysPair[1]
+      var psecMustPair = useState([])
+      var psecMust = psecMustPair[0]
+      var setPsecMust = psecMustPair[1]
+      useEffect(function () {
+        refreshSem(setSem, function () { setSem({ loaded: true, ready: false }) })
+        return function () {}
+      }, [])
+      // 下载进行中每 1.5s 轮询真实进度(服务端流式记账 bytesDone/bytesTotal/mirrorUsed)
+      useEffect(function () {
+        var ph = sem && sem.download && sem.download.phase
+        if (ph !== 'downloading' && ph !== 'verifying') return function () {}
+        var iv = setInterval(function () {
+          refreshSem(setSem)
+        }, 1500)
+        return function () { clearInterval(iv) }
+      }, [sem && sem.download && sem.download.phase])
+      if (!cfg) return err ? h('div', { 'data-dam-error': '' }, err) : h(Loading)
+    // issue #52:旧实现 `var next = Object.assign({}, cfg); next[key] = value` 读的是**本次渲染的闭包快照**。
+    // 同一个事件里连续调 `set('subagentModel', m); set('subagentProvider', p)` 时,React 批处理两次
+    // 更新,而第二次仍基于同一个旧 cfg ⇒ 把第一次写进去的值**覆盖回旧值**。
+    // 典型症状:subagentModel 存过一个后来被删除的模型后,无论换模型/清空/手输都无法覆盖,
+    // 插件持续按已删除模型派子代理(issue #52)。
+    // 修法:改用函数式更新,基于**最新** prev 派生 next,成对字段不再互相覆盖。
+    function set(key, value) { setCfg(function (prev) { var next = Object.assign({}, prev); next[key] = value; return next }); setDirty(true) }
+    /** 原子更新多个字段(issue #52 建议口径):一次函数式更新写入成对字段,避免先后覆盖。 */
+    function setMany(patch) { setCfg(function (prev) { return Object.assign({}, prev, patch) }); setDirty(true) }
+      function checkUpdate() {
+        if (checkingUpdate) return
+        setCheckingUpdate(true)
+        apiGet(API.updateCheck + '?force=1').then(function (d) { setVerInfo(d); setCheckingUpdate(false) })
+          .catch(function (e) { setVerInfo({ error: e.message }); setCheckingUpdate(false) })
+      }
+      function doUpdate() {
+        if (upBusy) return
+        setUpBusy(true); setUpMsg('')
+        apiPost(API.update, {}).then(function (d) {
+          setUpBusy(false)
+          if (d && d.ok) { setUpMsg(t('updateDone')); setVerInfo(null); checkUpdate() }
+          else setUpMsg(t('updateFailed') + (d && d.message ? d.message : t('unknown')))
+        }).catch(function (e) { setUpBusy(false); setUpMsg(t('updateFailed') + e.message) })
+      }
+      function save() {
+        if (busy) return
+        setBusy(true); setMsg(''); setErr('')
+        // 2026-09-14 修「跨入口互相覆盖」:旧实现把整份 cfg 快照 POST,而宿主端语义是 { ...this.config, ...patch } 合并
+        // ⇒ 只要本页加载之后又从别的入口(白板页开关 / 向导 / 接续页)改过任何键,这里一保存就会把它们**回滚**成
+        // 加载时的旧值(用户观感:「打开白板,原有设置被覆盖」)。改为先取回宿主当前配置,只提交与远端不同的键。
+        apiGet(API.config).then(function (d0) {
+          var remote = (d0 && d0.config) || {}
+          var patch = {}
+          Object.keys(cfg).forEach(function (k) {
+            if (JSON.stringify(cfg[k]) !== JSON.stringify(remote[k])) patch[k] = cfg[k]
+          })
+          saveConfigPatch(patch, {
+            onSaved: function (d) { setCfg(d.config); setDirty(false); setMsg(t('saved') + (d.migrated ? ' ' + d.migrated : '')); setBusy(false); if (d && d.config && d.config.locale) applyLocalePref(d.config.locale); refreshSem(setSem) },
+            onError: function (e) { setErr(e.message); setBusy(false) }
+          })
+        }).catch(function (e) { setErr(e.message); setBusy(false) })
+      }
+      function field(label, control, hint) {
+        return h('div', { 'data-dam-settings-row': '' },
+          h('div', { 'data-dam-slot': 'list', 'data-dam-row': '' }, h('label', null, label), control),
+          hint ? h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, hint) : null)
+      }
+      function setAccent(value) {
+        accentTheme = ACCENT_VALUES[value] ? value : 'deepseek'
+        try { localStorage.setItem('dsh-auto-memory.accentTheme.v1', accentTheme) } catch (e) {}
+        emit()
+      }
+      function setDensity(value) {
+        graphDensity = value === 'compact' ? 'compact' : 'relaxed'
+        try { localStorage.setItem('dsh-auto-memory.graphDensity.v1', graphDensity) } catch (e) {}
+        emit()
+      }
+      // M-CM6-B v3·环境检测面板(2026-09-08):semMode 下拉旁 ⟳ 按钮 → 自动检索环境 → 联动安装助手(美学对齐安装向导卡)
+      // (det* hooks 已上移到 if (!cfg) 早退之前,见 mirrorPair 后——此处只放事件函数)
+      function runDetect() {
+        if (detBusy) return
+        setDetOpen(true)
+        setDetBusy(true)
+        apiGet(API.semanticDeepDetect).then(function (d) {
+          setDet(d || {}); setDetBusy(false)
+          // 2026-09-08:检测发现缺失时按当前模式自动打开对应安装引导卡(兑现「缺失时自动弹安装引导」)
+          var rec = d && d.recommendation
+          var mode = (cfg && cfg.semanticEngineMode) || 'auto'
+          if (rec === 'setup-python' && mode === 'python') setGuide('python')
+          else if ((rec === 'download-model' || rec === 'install-peer' || rec === 'setup-both') && mode !== 'python') setGuide('js')
+          else if (rec === 'setup-both' && mode === 'python') setGuide('python')
+        }).catch(function () { setDet({ failed: true }); setDetBusy(false) })
+        refreshSem(setSem)
+      }
+      function onEngineModeChange(e) {
+        var v = e.target.value
+        // 2026-08-27 修复:切换永远执行,资产检测不 gate/不回滚配置(资产缺失自动降级词法)。
+        // 之前 sem 异步未加载时拦截导致「怎么切都没变化」。
+        // 2026-09-08 补回被砍过头的另一半:切换后按 semantic-status 检测结果自动联动——
+        // js/python 资产未就绪 → 自动弹安装引导卡(用户不再只看到"打勾+档位掉回 C1"却无解释);
+        // 资产就绪 → 不打扰。配置仍不回滚,保持"切换永远执行"。
+        var next = Object.assign({}, cfg)
+        next.semanticEngineMode = v
+        if (v === 'js') { next.activationSource = 'js'; next.contextSinkMode = 'null' }
+        else if (v === 'python') { next.activationSource = 'python'; next.contextSinkMode = 'python' }
+        else { next.activationSource = 'js'; next.contextSinkMode = 'null' }
+        try { console.log('[dam] engine mode change →', v, JSON.stringify({ semanticEngineMode: next.semanticEngineMode, activationSource: next.activationSource, contextSinkMode: next.contextSinkMode })) } catch (_) {}
+        setCfg(next); setDirty(true)
+        setGuide('')
+        // 2026-08-27 修复显示不跟随:切换后重新 fetch semantic-status,刷新「当前生效检索」
+        // (sem.resolvedTier 原只在挂载/下载时更新,切换后不刷新导致一直显示旧档位)。
+        try {
+          refreshSem(function (s2) {
+            setSem(s2)
+            if (v === 'js' && s2.ready === false) setGuide('js')
+            else if (v === 'python' && s2.pythonInt8Present === false) setGuide('python')
+          })
+        } catch (_) {}
+      }
+      var sectionLabels = {
+        engine: locale === 'zh' ? '语义记忆总开关' : 'Memory engine',
+        window: locale === 'zh' ? '记忆窗口（注入什么）' : 'Memory window',
+        capacity: locale === 'zh' ? '记忆容量与归档' : 'Capacity & retention',
+        skills: locale === 'zh' ? '自动沉淀成技能' : 'Skills & promotion',
+        handoff: locale === 'zh' ? '长会话接续' : 'Handoff & continuation',
+        auto: locale === 'zh' ? '自动化与免打扰' : 'Automation',
+        store: locale === 'zh' ? '存储与外部记忆' : 'Storage',
+        look: locale === 'zh' ? '外观与交互' : 'Appearance',
+        team: locale === 'zh' ? '团队协作' : 'Teamwork',
+        team: locale === 'zh' ? '团队协作' : 'Teamwork',
+        skin: locale === 'zh' ? '皮肤素材' : 'Skin assets',
+      }
+      function section(key, title, content) { return h('section', { id: 'dam-settings-' + key, 'data-dam-settings-group': '' }, h('h3', null, title), content) }
+      function jumpToSection(key) {
+        setSettingsSection(key)
+        try { var el = document.getElementById('dam-settings-' + key); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }) } catch (e) {}
+      }
+      return h('div', { 'data-dam-settings': '' },
+        h('nav', { 'data-dam-region': 'settings', 'data-dam-settings-nav': '', 'aria-label': locale === 'zh' ? '设置分组' : 'Settings sections' }, Object.keys(sectionLabels).map(function (key) {
+          return h('button', { key: key, 'data-dam-slot': 'actions', 'data-dam-btn': '', 'data-active': settingsSection === key ? 'true' : undefined, onClick: function () { jumpToSection(key) } }, sectionLabels[key])
+        })),
+        h('div', { 'data-dam-settings-content': '' },
+        section('engine', sectionLabels.engine, [
+          field(t('fAssocEngine'), h('input', { type: 'checkbox', checked: !!cfg.associativeMemoryEnabled, onChange: function (e) { set('associativeMemoryEnabled', e.target.checked) } }), t('fAssocEngineHint')),
+          field(t('fAnchorIndex'), h('input', { type: 'checkbox', checked: !!cfg.memoryAnchorEnabled, onChange: function (e) { set('memoryAnchorEnabled', e.target.checked) } }), t('fAnchorIndexHint')),
+          field(t('fJsCooldown'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 0, max: 60, value: cfg.jsDecideCooldownRounds === undefined ? 1 : cfg.jsDecideCooldownRounds, onChange: function (e) { set('jsDecideCooldownRounds', (function () { var v = Number(e.target.value); return (Number.isFinite(v) && v >= 0) ? v : 1 })())  /* #19: 0=不冷却 是合法值,|| 1 会吃掉 0 */ } }), t('fJsCooldownHint')),
+          field(t('fJsDelta'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 0, max: 1, step: 0.005, value: cfg.jsDecideDeltaExp === undefined ? 0.01 : cfg.jsDecideDeltaExp, onChange: function (e) { var v = Number(e.target.value); set('jsDecideDeltaExp', Number.isFinite(v) && v >= 0 ? v : 0.01) } }), t('fJsDeltaHint')),
+          field(t('fJsExcerpt'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 20, max: 480, value: cfg.jsDecideExcerptChars === undefined ? 40 : cfg.jsDecideExcerptChars, onChange: function (e) { set('jsDecideExcerptChars', Math.max(20, Math.min(480, Number(e.target.value) || 40))) } }), t('fJsExcerptHint')),
+          field(t('fEmitMode'), h('select', { 'data-dam-select': '', value: (sem && sem.activationEmitMode) || 'shadow', onChange: function (e) { var m = e.target.value; apiPost(API.semanticEmit, { mode: m }).then(function () { refreshSem(setSem) }).catch(function () {}) } },
+            h('option', { value: 'shadow' }, locale === 'zh' ? 'shadow 只记录' : 'shadow (record only)'),
+            h('option', { value: 'canary-explicit' }, locale === 'zh' ? 'canary 显式回忆注入' : 'canary (explicit recall)'),
+            h('option', { value: 'active' }, locale === 'zh' ? 'active 全部注入' : 'active (all)')), t('fEmitModeHint')),
+          field(t('fCandScheme'), h('select', { 'data-dam-select': '', value: cfg.jsDecideCandidateScheme || 'balanced', onChange: function (e) { set('jsDecideCandidateScheme', e.target.value) } },
+            h('option', { value: 'balanced' }, locale === 'zh' ? 'balanced 3×40' : 'balanced 3×40'),
+            h('option', { value: 'dense' }, locale === 'zh' ? 'dense 6×20' : 'dense 6×20'),
+            h('option', { value: 'custom' }, locale === 'zh' ? 'custom 自定义' : 'custom')), t('fCandSchemeHint')),
+          (cfg.jsDecideCandidateScheme === 'custom') ? field(t('fCandN'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 1, max: 8, value: cfg.jsDecideCandidatesN === undefined ? 4 : cfg.jsDecideCandidatesN, onChange: function (e) { set('jsDecideCandidatesN', Math.max(1, Math.min(8, Number(e.target.value) || 4))) } }), t('fCandNHint')) : null,
+          field(t('semMode'), h('div', { style: { display: 'flex', gap: '6px', alignItems: 'center' } }, [
+            h('select', { 'data-dam-select': '', style: { flex: 1 }, value: cfg.semanticEngineMode || 'auto', onChange: onEngineModeChange },
+              h('option', { value: 'auto' }, t('semAuto')),
+              h('option', { value: 'lexical' }, t('semLexOnly')),
+              h('option', { value: 'js' }, t('semJs')),
+              h('option', { value: 'python' }, t('semPy'))),
+            h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', title: locale === 'zh' ? '自动检测本机语义引擎环境(JS/Python 资产+推理库),并联动安装助手' : 'Auto-detect local semantic engine assets & runtime, with setup assistant', disabled: detBusy, onClick: function () { void runDetect() } }, detBusy ? '⏳' : '⟳ 检测'),
+            // 2026-09-10:向导入口原先只在"资产未就绪"时自动弹出,已装好的用户反而进不去(想重装/换布局无处可点)。
+            // 现在常驻一个显式开关,永远可达;已就绪时打开也只是复用同一套下载/校验步骤。
+            h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', title: locale === 'zh' ? '打开/收起安装向导(按当前引擎选择:JS 模型 或 Python 引擎)' : 'Open/collapse setup wizard (follows the selected engine)', onClick: function () { setGuide(guide ? '' : ((cfg.semanticEngineMode === 'python') ? 'python' : 'js')) } },
+              guide ? (locale === 'zh' ? '收起向导' : 'Hide wizard') : (locale === 'zh' ? '🧩 安装向导' : '🧩 Setup')),
+          ]), t('semModeHint')),
+          // M-CM6-B v3·环境检测面板:⟳ 按钮触发,自动检索环境(快检+深扫+热接入),联动安装助手;美学对齐安装向导卡
+          detOpen ? (function () {
+            var panelStyle = { border: '1px solid color-mix(in srgb, var(--dsw-alias-border-l1, rgba(128,128,128,.25)) 60%, transparent)', borderRadius: '10px', padding: '12px', marginBottom: '10px', background: 'color-mix(in srgb, var(--dsw-alias-bg-layer-1, rgba(128,128,128,.06)) 55%, transparent)', backdropFilter: 'blur(14px) saturate(1.3)', WebkitBackdropFilter: 'blur(14px) saturate(1.3)' }
+            var row = function (label, val) { return h('div', { style: { display: 'flex', gap: '8px', fontSize: 'calc(12px * var(--dam-scale))', lineHeight: 1.7 } }, [h('span', { style: { opacity: .7, minWidth: '120px', flexShrink: 0 } }, label), h('span', { style: { wordBreak: 'break-all' } }, val)]) }
+            var tierText = det && det.resolvedTier === 'c2' ? 'C2 · JS 语义' : det && det.resolvedTier === 'c3' ? 'C3 · Python' : 'C1 · 词法兜底'
+            var kids = [h('div', { style: { display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '6px' } }, [
+              h('b', { style: { flex: 1, fontSize: 'calc(12px * var(--dam-scale))' } }, locale === 'zh' ? '语义引擎环境检测' : 'Semantic engine environment check'),
+              h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', disabled: detBusy, onClick: function () { void runDetect() } }, detBusy ? (locale === 'zh' ? '检测中…' : 'Scanning…') : (locale === 'zh' ? '重新检测' : 'Rescan')),
+              h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: function () { setDetOpen(false) } }, t('close')),
+            ])]
+            if (detBusy && !det) {
+              kids.push(h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, locale === 'zh' ? '正在检测本地资产与推理库(快检 + 失败自动深度扫描 ~/.dsh/profiles 与 pnpm 虚拟存储)…' : 'Scanning local assets and inference runtime (quick scan + deep scan of ~/.dsh/profiles and pnpm store)…'))
+            } else if (det && det.failed) {
+              kids.push(h('div', { 'data-dam-error': '' }, locale === 'zh' ? '✗ 检测失败,请稍后重试。' : '✗ Detection failed, please retry.'))
+            } else if (det) {
+              kids.push(row('JS 引擎模型', det.ready ? '✓ 就绪' : '✗ 未就绪'))
+              if (det.assetPath) kids.push(row('模型路径', String(det.assetPath).slice(-72) + (det.assetBytes ? ' (' + Math.round(det.assetBytes / 1048576) + 'MB)' : '')))
+              var pyReady = (det && det.pythonInt8Present !== undefined) ? det.pythonInt8Present : sem.pythonInt8Present
+              kids.push(row('Python 模型(int8)', (pyReady === undefined || pyReady === null) ? (locale === 'zh' ? '状态未知' : 'unknown') : (pyReady ? '✓ 就绪' : '✗ 未就绪')))
+              kids.push(row('当前生效档位', tierText))
+              if (det.deep && det.deep.integrated) kids.push(row('深度扫描', locale === 'zh' ? '发现并热接入 ' + (det.deep.foundDirs || []).length + ' 处推理库(无需重启即生效)' : 'Hot-adopted ' + (det.deep.foundDirs || []).length + ' runtime dir(s) (no restart needed)'))
+              if (det.recommendation && det.recommendation !== 'none') {
+                kids.push(h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { margin: '8px 0 6px' } }, locale === 'zh' ? '检测到缺失项,联动安装助手:' : 'Missing assets detected — open the setup assistant:'))
+                var btns = []
+                if (det.recommendation === 'download-model' || det.recommendation === 'setup-both') btns.push(h('button', { key: 'js', 'data-dam-slot': 'actions', 'data-dam-btn': '', style: { marginRight: '6px' }, onClick: function () { setGuide('js'); setDetOpen(false) } }, locale === 'zh' ? '打开 JS 安装引导' : 'Open JS setup'))
+                if (det.recommendation === 'setup-both' || det.recommendation === 'setup-python') btns.push(h('button', { key: 'py', 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: function () { setGuide('python'); setDetOpen(false) } }, locale === 'zh' ? '打开 Python 向导' : 'Open Python wizard'))
+                if (det.recommendation === 'install-peer') kids.push(h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginTop: '4px' } }, locale === 'zh' ? '模型已就绪但推理库(@huggingface/transformers)缺失:请在其它设备安装后重试检测,或按 JS 引导重装。' : 'Model ready but runtime (@huggingface/transformers) missing: install it and re-scan, or reinstall via JS setup.'))
+                if (btns.length) kids.push(h('div', { style: { display: 'flex', gap: '6px' } }, btns))
+              } else if (det.ready && det.pythonInt8Present !== false) {
+                kids.push(h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginTop: '8px' } }, locale === 'zh' ? '✓ 一切就绪,无需安装。' : '✓ Everything is ready.'))
+              } else if (det.ready) {
+                // 2026-09-08 修复:JS 就绪但 Python 缺失不再显示「一切就绪」(此前 recommendation=none 导致矛盾+无引导)
+                kids.push(h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { margin: '8px 0 6px' } }, locale === 'zh' ? 'JS 引擎就绪;Python 模型未安装——仅影响 Python 引擎模式,当前模式不受影响。' : 'JS engine ready; the Python model is not installed — only the Python engine mode is affected.'))
+                kids.push(h('div', { style: { display: 'flex', gap: '6px' } }, [h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: function () { setGuide('python'); setDetOpen(false) } }, locale === 'zh' ? '打开 Python 向导' : 'Open Python wizard')]))
+              }
+            }
+            return h('div', { 'data-dam-detect-panel': '', style: panelStyle }, kids)
+          })() : null,
+          guide === 'python' ? h(PySetupWizard) : null,
+          guide === 'js' || guide === 'python' ? (function () {
+            // 安装引导卡(对齐 ui-assets 原型:进度条/下载源/体积/状态)——资产检测由 sem 状态机驱动
+            var isJs = guide === 'js'
+            var title = isJs ? (locale === 'zh' ? '内置语义引擎 · 安装引导' : 'Built-in semantic engine · setup') : (locale === 'zh' ? '高级 Python 引擎 · 安装引导' : 'Advanced Python engine · setup')
+            var desc = isJs
+              ? (locale === 'zh' ? '下载约130MB本地量化模型（multilingual-e5-small），校验后离线运行——记忆不出电脑。下载期间词法检索照常可用，完成后自动启用。' : 'Downloads a ~130MB local quantized model (multilingual-e5-small), verifies and runs fully offline — memories never leave this machine. Lexical search keeps working during setup; the engine switches on automatically when ready.')
+              : (locale === 'zh' ? '高级引擎通过本地 Python sidecar 运行 BGE-M3 int8（约563MB），召回质量最高。需要引导式安装（Python 环境 + 模型），适合深度用户；不安装不影响内置引擎。' : 'The advanced engine runs BGE-M3 int8 (~563MB) via a local Python sidecar for maximum recall. Guided install required (Python runtime + model); optional for power users.')
+            var ready = isJs ? sem.ready : sem.pythonInt8Present
+            var bytes = isJs ? (sem.assetBytes || 0) : (sem.pythonInt8Bytes || 0)
+            var dl = (isJs && sem.download) ? sem.download : { phase: 'idle' }
+            var dlActive = dl.phase === 'downloading' || dl.phase === 'verifying'
+            // 规范 G 七态之「建库中」:SHA256 过了但引擎还在后台编码全量语料(jsSemantic.embedding)
+            var building = isJs && sem.jsSemantic && sem.jsSemantic.embedding === true
+            var totalJs = sem.manifestBytes || Math.round(130 * 1024 * 1024)
+            var stateTxt, stateBg
+            if (!sem.loaded) { stateTxt = locale === 'zh' ? '检测中…' : 'Detecting…'; stateBg = 'var(--dam-neutral-16, rgba(128,128,128,.16))' }
+            else if (ready && building) { stateTxt = locale === 'zh' ? '已就绪 · 建库中…' : 'Ready · building index…'; stateBg = 'var(--dam-36-86-196-2, rgba(36,86,196,.2))' }
+            else if (ready) { stateTxt = locale === 'zh' ? '已就绪 ✓' : 'Ready ✓'; stateBg = 'var(--dam-47-164-106-24, rgba(47,164,106,.24))' }
+            else if (dl.phase === 'error') { stateTxt = t('dlError'); stateBg = 'var(--dam-196-74-74-22, rgba(196,74,74,.22))' }
+            else if (dl.phase === 'cancelled') { stateTxt = t('dlCancelled'); stateBg = 'var(--dam-196-138-42-2, rgba(196,138,42,.2))' }
+            else if (isJs && dlActive) { stateTxt = dl.phase === 'verifying' ? t('dlVerifying') : t('dlDownloading'); stateBg = 'var(--dam-36-86-196-2, rgba(36,86,196,.2))' }
+            // ★ issue #70（2026-09-19）：资产齐备但引擎**已降级** —— 必须与「未下载」区分开。
+            //   旧实现只看文件存在性 ⇒ 这种状态会显示「已就绪 ✓」而实际每次检索都在词法兜底。
+            else if (isJs && sem.degraded) { stateTxt = locale === 'zh' ? ('引擎降级（词法兜底）— ' + String(sem.degraded).slice(0, 60)) : ('Engine degraded (lexical fallback) — ' + String(sem.degraded).slice(0, 60)); stateBg = 'var(--dam-196-74-74-22, rgba(196,74,74,.22))' }
+            else if (isJs && sem.assetPresent && !sem.peerPresent) { stateTxt = locale === 'zh' ? '模型已存在,缺推理库——pnpm approve-builds 后 pnpm add @huggingface/transformers' : 'Model present, runtime missing — pnpm approve-builds && pnpm add @huggingface/transformers'; stateBg = 'var(--dam-196-138-42-2, rgba(196,138,42,.2))' }
+            else { stateTxt = locale === 'zh' ? '未下载' : 'Not downloaded'; stateBg = 'var(--dam-196-138-42-2, rgba(196,138,42,.2))' }
+            var progress = dlActive || (isJs && dl.phase === 'done')
+              ? Math.min(100, Math.round(((dl.bytesDone || 0) / Math.max(1, dl.bytesTotal || totalJs)) * 100))
+              : (bytes && !ready ? Math.min(100, Math.round(bytes / ((isJs ? 130 : 563) * 1024 * 1024) * 100)) : (ready ? 100 : 0))
+            var fmtMB = function (b) { return b ? (b / (1024 * 1024)).toFixed(1) + ' MB' : '—' }
+            var mirrorName = function (m) { return m === 'cn' ? t('mCn') : m === 'intl' ? t('mIntl') : t('mAuto') }
+            var phaseLine = dlActive
+              ? ((dl.phase === 'verifying' ? t('dlVerifying') : t('dlDownloading')) + ' · ' + fmtMB(dl.bytesDone || 0) + ' / ' + fmtMB(dl.bytesTotal || totalJs) + ' · ' + mirrorName(dl.mirrorUsed))
+              : (dl.phase === 'error' ? (t('dlError') + ': ' + String(dl.error || '').slice(0, 120))
+                : (dl.phase === 'cancelled' ? t('dlCancelled')
+                  : (isJs && dl.phase === 'done' && !ready ? t('dlDone') + (locale === 'zh' ? '（缺运行库时需安装 @huggingface/transformers）' : ' (install @huggingface/transformers if runtime missing)')
+                    : (locale === 'zh' ? '下载进度' : 'Download progress'))))
+            // ★2026-09-20 移植（issue #89 / PR #95）：局部 var refreshSem 遮蔽模块级
+            //   refreshSem(apply, onError) ⇒ 自递归爆栈被 .catch 吞 ⇒ 点「开始下载/取消」后
+            //   sem 永不刷新、轮询闸也永不启动。改名引用模块级函数。
+            var refreshSemNow = function () {
+              refreshSem(setSem)
+            }
+            var startDl = function () {
+              apiPost(API.semanticDownload, { action: 'start', mirror: mirror }).then(refreshSemNow).catch(function () {})
+            }
+            var cancelDl = function () {
+              apiPost(API.semanticDownload, { action: 'cancel', mirror: mirror }).then(refreshSemNow).catch(function () {})
+            }
+            return h('div', { style: { border: '1px solid color-mix(in srgb, var(--dam-accent, #2456c4) 40%, transparent)', borderRadius: '10px', padding: '10px 12px', marginBottom: '8px', fontSize: 'calc(11.5px * var(--dam-scale))', lineHeight: 1.6 } },
+              h('div', { 'data-dam-slot': 'list', 'data-dam-row': '', style: { alignItems: 'center' } },
+                h('b', null, title),
+                h('span', { style: { marginLeft: 'auto', fontSize: 'calc(10.5px * var(--dam-scale))', padding: '2px 8px', borderRadius: '6px', background: stateBg, fontWeight: 700 } }, stateTxt)),
+              h('div', { style: { opacity: .85, marginTop: '4px' } }, desc),
+              ready ? null : h('div', { style: { marginTop: '8px' } },
+                h('div', { style: { display: 'flex', justifyContent: 'space-between', fontSize: 'calc(10px * var(--dam-scale))', opacity: .7, marginBottom: '3px', gap: '8px' } },
+                  h('span', null, phaseLine),
+                  h('span', null, progress + '%')),
+                h('div', { style: { height: '7px', borderRadius: '99px', background: 'var(--dam-rgba-14, rgba(128,128,128,.14))', overflow: 'hidden' } },
+                  h('div', { style: { height: '100%', width: progress + '%', borderRadius: '99px', background: dl.phase === 'error' ? 'linear-gradient(90deg,var(--dam-tone-error, #c44a4a),var(--dam-tone-error-soft, #e08a8a))' : 'linear-gradient(90deg, var(--dam-accent, #2456c4), var(--dam-progress-bar, #6f9bff))', transition: 'width .4s ease' } })),
+                h('div', { style: { display: 'flex', justifyContent: 'space-between', fontSize: 'calc(10px * var(--dam-scale))', opacity: .6, marginTop: '3px' } },
+                  h('span', null, locale === 'zh' ? '体积' : 'Size', ': ', isJs ? fmtMB(totalJs) + '（5 个文件，SHA256 校验后离线运行）' : '~563MB'),
+                  h('span', null, locale === 'zh' ? '下载源' : 'Source', ': ', isJs ? mirrorName(mirror) + (locale === 'zh' ? ' · 失败自动切备用源' : ' · auto-failover') : (locale === 'zh' ? 'GitHub Releases 多通道' : 'GitHub Releases multi-mirror')))),
+              h('div', { style: { display: 'flex', justifyContent: 'flex-end', gap: '6px', alignItems: 'center', marginTop: '8px' } },
+                !ready && isJs && !dlActive ? h('select', { 'data-dam-select': '', value: mirror, onChange: function (e) { setMirror(e.target.value) }, style: { marginRight: 'auto' } },
+                  h('option', { value: 'auto' }, t('mAuto')),
+                  h('option', { value: 'cn' }, t('mCn')),
+                  h('option', { value: 'intl' }, t('mIntl'))) : null,
+                // ★2026-09-22 删死键(设置页缺口审计 P0-7):pythonGpu 不在 DEFAULT_CONFIG 白名单,
+                //   /config 会静默丢弃、宿主 lib/ 零读取 ⇒ 写入无任何效果,故移除该段(行为零变化)。
+                ready ? h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: function () { setGuide(''); var n2 = Object.assign({}, cfg); n2.semanticEngineMode = guide; if (guide === 'js') { n2.activationSource = 'js'; n2.contextSinkMode = 'null' } else if (guide === 'python') { n2.activationSource = 'python'; n2.contextSinkMode = 'python' } setCfg(n2); setDirty(true) } }, locale === 'zh' ? '启用并继续' : 'Enable & continue') : null,
+                !ready && isJs && !dlActive ? h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: startDl }, (dl.phase === 'error' || dl.phase === 'cancelled') ? t('semDlRetry') : t('semDlStart')) : null,
+                !ready && isJs && dlActive ? h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: cancelDl }, t('semDlCancel')) : null,
+                h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: function () { setGuide('') } }, t('gotIt'))))
+          })()
+            : null,
+          sem.loaded ? h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginTop: '-4px', marginBottom: '8px' } },
+            t('semResolved') + ': ' + (sem.resolvedTier === 'c2' ? t('tierC2') + ' ✓' : sem.resolvedTier === 'c3' ? t('tierC3') + ' ✓' : t('tierC1')))
+            : null,
+          // 2026-09-08 检测联动:所选模式与资产就绪状态不符时显式标注(不再静默掉回词法兜底)
+          (sem.loaded && cfg.semanticEngineMode === 'js' && sem.ready === false) ? h('div', { 'data-dam-error': '', style: { marginTop: '-4px', marginBottom: '8px' } },
+            locale === 'zh' ? '⚠ 已选 JS 引擎,但本地模型未就绪——当前实际生效:词法兜底。下方安装引导卡可下载模型(约130MB),完成后自动启用。' : '⚠ JS engine selected but the local model is not ready — lexical fallback is active. Use the setup card below to download the model (~130MB); it engages automatically when done.') : null,
+          (sem.loaded && cfg.semanticEngineMode === 'python' && sem.pythonInt8Present === false) ? h('div', { 'data-dam-error': '', style: { marginTop: '-4px', marginBottom: '8px' } },
+            locale === 'zh' ? '⚠ 已选 Python 引擎,但 BGE-M3 int8 模型未就绪——当前实际生效:词法兜底。下方安装向导可引导安装;若本机无法安装(如架构不支持),请改用 JS 引擎或 auto。' : '⚠ Python engine selected but the BGE-M3 int8 model is not ready — lexical fallback is active. Use the wizard below; if this machine cannot install it, switch to the JS engine or auto.') : null,
+          field(t('fReasoning'), h('input', { type: 'checkbox', checked: !!cfg.reasoningObserverEnabled, onChange: function (e) { set('reasoningObserverEnabled', e.target.checked) } }), t('fReasoningHint')),
+          field(locale === 'zh' ? '唤起阈值（校准策略）' : 'Activation thresholds (calibrated)', h('div', null,
+            h('span', null, 'tauHi 0.45 · tauLo 0.35 · deltaExp 0.03 · deltaPro 0.05' + (sem.loaded ? ((locale === 'zh' ? ' · 发射模式:' : ' · emit: ') + (sem.activationEmitMode || 'shadow')) : ''))),
+            t('fTuningHint')),
+        ]),
+        section('window', sectionLabels.window, [
+          // ★P10-T1/T2/T3（2026-09-22）注入分区开关：**一级只放入口**（中性文案，不推荐用户改），
+          //   13 个开关全在二级页；成员/顺序取自宿主下发的 psecKeys（前端不硬编码）。
+          field(t('fPromptSections'), h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: function () { setPsecOpen(!psecOpen) } }, psecOpen ? (locale === 'zh' ? '收起' : 'Collapse') : (locale === 'zh' ? '高级：逐段注入控制…' : 'Advanced: per-section injection…')), t('fPromptSectionsHint')),
+          psecOpen ? (function () {
+            var toggles = (cfg.promptSectionToggles && typeof cfg.promptSectionToggles === 'object') ? cfg.promptSectionToggles : {}
+            var pText = function (k) { var m = PROMPT_SECTION_TEXT[k]; return m ? (locale === 'zh' ? m.zh : m.en) : k }
+            var pOff = function (k) {
+              var m = PROMPT_SECTION_TEXT[k]
+              var z = m ? (locale === 'zh' ? m.offZh : m.offEn) : ''
+              if (z) return z
+              return locale === 'zh' ? '关掉后本轮不再注入该段落。' : 'When off, this section is not injected this round.'
+            }
+            return h('div', { 'data-dam-prompt-sections': '', style: { border: '1px solid color-mix(in srgb, var(--dsw-alias-border-l1, rgba(128,128,128,.25)) 60%, transparent)', borderRadius: '10px', padding: '12px', marginBottom: '10px', background: 'color-mix(in srgb, var(--dsw-alias-bg-layer-1, rgba(128,128,128,.06)) 55%, transparent)' } }, [
+              h('div', { style: { display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '6px' } }, [
+                h('b', { style: { flex: 1, fontSize: 'calc(12px * var(--dam-scale))' } }, locale === 'zh' ? '逐段注入控制（高级）' : 'Per-section injection (advanced)'),
+                h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: function () { set('promptSectionToggles', {}) } }, locale === 'zh' ? '全部恢复全开' : 'Restore all'),
+                h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: function () { setPsecOpen(false) } }, t('close')),
+              ]),
+              h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginBottom: '8px' } }, locale === 'zh'
+                ? '控制每一轮注入里包含哪些段落。默认全部开启；不推荐修改 —— 关掉某段会让模型少掉对应的上下文或纪律。'
+                : 'Which sections each round injects. All on by default; not recommended to change — turning one off drops the matching context or discipline.'),
+              psecKeys.length ? psecKeys.map(function (k) {
+                return h('div', { key: k, 'data-dam-slot': 'list', 'data-dam-row': '', style: { alignItems: 'flex-start' } }, [
+                  h('label', { style: { display: 'flex', gap: '6px', alignItems: 'center', flex: 1, cursor: 'pointer' } }, [
+                    h('input', { type: 'checkbox', 'data-dam-pswitch': k, checked: toggles[k] !== false, onChange: function (e) {
+                      var t2 = Object.assign({}, toggles)
+                      if (e.target.checked) delete t2[k]; else t2[k] = false
+                      set('promptSectionToggles', t2)
+                    } }),
+                    h('span', { style: { fontSize: 'calc(12px * var(--dam-scale))' } }, pText(k) + (psecMust.indexOf(k) >= 0 ? (locale === 'zh' ? ' · 硬性要求' : ' · mandatory') : '')),
+                  ]),
+                  h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { flex: 1, opacity: .8 } }, pOff(k)),
+                ])
+              }) : h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, locale === 'zh' ? '未能从宿主取到分区清单（请重启宿主后重试）。' : 'Section list unavailable (restart the host and retry).'),
+            ])
+          })() : null,
+  field(t('fInject'), h('input', { type: 'checkbox', checked: !!cfg.injectEnabled, onChange: function (e) { set('injectEnabled', e.target.checked) } }), t('fInjectHint')),
+          field(t('fBudget'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 400, value: cfg.injectBudgetChars, onChange: function (e) { set('injectBudgetChars', Number(e.target.value) || 2400) } }), t('fBudgetHint')),
+          // 2026-09-22 补接线(设置页缺口审计 P0-3/P0-4/P0-6):目录层与规则分层此前只有后端实现。
+          field(t('fTier0Catalog'), h('input', { type: 'checkbox', 'data-dam-key': 'tier0CatalogEnabled', checked: cfg.tier0CatalogEnabled !== false, onChange: function (e) { set('tier0CatalogEnabled', e.target.checked) } }), t('fTier0CatalogHint')),
+          field(t('fTier0Max'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 100, value: cfg.tier0MaxTokens === undefined ? 400 : cfg.tier0MaxTokens, onChange: function (e) { set('tier0MaxTokens', Math.max(100, Number(e.target.value) || 400)) } }), t('fTier0MaxHint')),
+          field(t('fRulesLayering'), h('input', { type: 'checkbox', 'data-dam-key': 'rulesLayeringMode', checked: String(cfg.rulesLayeringMode || 'self').toLowerCase() !== 'off', onChange: function (e) { set('rulesLayeringMode', e.target.checked ? 'self' : 'off') } }), t('fRulesLayeringHint')),
+          field(t('fDays'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 1, max: 14, value: cfg.recentDaysInjected, onChange: function (e) { set('recentDaysInjected', Number(e.target.value) || 1) } }), t('fDaysHint')),
+          field(t('fExtBudget'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 200, value: cfg.externalInjectionChars === undefined ? 1400 : cfg.externalInjectionChars, onChange: function (e) { set('externalInjectionChars', Number(e.target.value) || 1400) } }), t('fExtBudgetHint')),
+          field(t('fSnapGap'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 0, max: 50, value: cfg.snapshotMinGapRounds === undefined ? 5 : cfg.snapshotMinGapRounds, onChange: function (e) { set('snapshotMinGapRounds', Number(e.target.value) || 5) } }), t('fSnapGapHint')),
+          field(t('fReinjectOnCompact'), h('input', { type: 'checkbox', checked: cfg.snapshotReinjectOnCompact !== false, onChange: function (e) { set('snapshotReinjectOnCompact', e.target.checked) } }), t('fReinjectOnCompactHint')),
+          field(t('fPromptCustom'), h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: function () { setPromptEditOpen(!promptEditOpen) } }, (promptEditOpen ? (locale === 'zh' ? '收起' : 'Collapse') : (locale === 'zh' ? '编辑 prompt 层' : 'Edit prompt layers'))), t('fPromptCustomHint')),
+          promptEditOpen ? [
+            h('div', { key: '__layers', style: { padding: '6px 0 2px', width: '100%' } },
+            (Object.keys(DEFAULT_PROMPT_LAYERS_CLIENT)).map(function (k) {
+              return h('div', { key: k, style: { marginBottom: '6px' } },
+                h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { fontWeight: 700, marginBottom: '2px' } }, k),
+                h('textarea', { 'data-dam-slot': 'form', 'data-dam-input': '', rows: 2, style: { width: '100%', fontFamily: 'monospace', fontSize: 'calc(11px * var(--dam-scale))' }, value: (cfg.promptLayerOverrides || {})[k] || '', placeholder: DEFAULT_PROMPT_LAYERS_CLIENT[k] || '(默认文案)', onChange: function (e) { var ov = Object.assign({}, cfg.promptLayerOverrides || {}); if (e.target.value.trim() === '') delete ov[k]; else ov[k] = e.target.value; set('promptLayerOverrides', ov) } }))
+            })),
+            h('div', { key: '__reset', 'data-dam-slot': 'list', 'data-dam-row': '', style: { marginTop: '6px' } },
+              h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: function () { set('promptLayerOverrides', {}) } }, locale === 'zh' ? '一键恢复默认' : 'Reset to defaults'))
+          ] : null,
+        ]),
+        section('capacity', sectionLabels.capacity, [
+          field(t('fChildObs'), h('input', { type: 'checkbox', checked: !!cfg.contextBridgeObserveChildSessions, onChange: function (e) { set('contextBridgeObserveChildSessions', e.target.checked) } }), t('fChildObsHint')),
+          field(t('fEpisodicRet'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 16, max: 4096, value: cfg.episodicRetention === undefined ? 256 : cfg.episodicRetention, onChange: function (e) { set('episodicRetention', Math.max(16, Math.min(4096, Number(e.target.value) || 256))) } }), t('fEpisodicRetHint')),
+          // 2026-09-22 补接线(P0-4):facts 淘汰上限(fact-store.js pruneIfNeeded)。
+          field(t('fFactRetention'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 10, value: cfg.factRetentionMax === undefined ? 1000 : cfg.factRetentionMax, onChange: function (e) { set('factRetentionMax', Math.max(10, Number(e.target.value) || 1000)) } }), t('fFactRetentionHint')),
+          field(t('fNoteCap'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 500, value: cfg.noteCapacityChars === undefined ? 24000 : cfg.noteCapacityChars, onChange: function (e) { set('noteCapacityChars', Number(e.target.value) || 24000) } }), t('fNoteCapHint')),
+          field(t('fUserCap'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 500, value: cfg.userCapacityChars === undefined ? 24000 : cfg.userCapacityChars, onChange: function (e) { set('userCapacityChars', Number(e.target.value) || 24000) } }), t('fUserCapHint')),
+  field(t('fConsolidateMin'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 80, value: cfg.autoConsolidateMinChars === undefined ? 240 : cfg.autoConsolidateMinChars, onChange: function (e) { set('autoConsolidateMinChars', Number(e.target.value) || 240) } }), t('fConsolidateMinHint')),
+          field(t('fAutoConsolidate'), h('input', { type: 'checkbox', checked: cfg.autoConsolidate !== false, onChange: function (e) { set('autoConsolidate', e.target.checked) } }), t('fAutoConsolidateHint')),
+          field(t('fConsolidate'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 5, value: cfg.autoConsolidateCooldownMinutes === undefined ? 30 : cfg.autoConsolidateCooldownMinutes, onChange: function (e) { set('autoConsolidateCooldownMinutes', Number(e.target.value) || 30) } }), t('fConsolidateHint')),
+          field(t('fConsolidateMax'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 1, max: 50, value: cfg.autoConsolidateDailyMax === undefined ? 8 : cfg.autoConsolidateDailyMax, onChange: function (e) { set('autoConsolidateDailyMax', Number(e.target.value) || 8) } }), t('fConsolidateMaxHint')),
+          field(t('fMemFileIndex'), h('input', { type: 'checkbox', 'data-dam-key': 'memoryFileIndexEnabled', checked: cfg.memoryFileIndexEnabled === true, onChange: function (e) { set('memoryFileIndexEnabled', e.target.checked) } }), t('fMemFileIndexHint')),
+          // 2026-09-14 解耦:交接白板与自动接续各自独立成项(旧实现只在白板页有接续按钮,且 enabled 还被
+          // handoffEnabled 二次与运算)。两者出厂默认均为 false(功能仍在测试期),这里与白板页读写完全相同的配置键。
+        ]),
+        section('skills', sectionLabels.skills, [
+          h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, t('secMemoryHubHint')),
+          field(t('fMemoryHub'), h('input', { type: 'checkbox', checked: !!cfg.memoryHubEnabled, onChange: function (e) { set('memoryHubEnabled', e.target.checked) } }), t('fMemoryHubHint')),
+          field(t('fEpisodicMin'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 1, max: 16, value: cfg.episodicMinSegments === undefined ? 2 : cfg.episodicMinSegments, onChange: function (e) { set('episodicMinSegments', Math.max(1, Math.min(16, Number(e.target.value) || 2))) } }), t('fEpisodicMinHint')),
+          field(t('fProcSessions'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 1, max: 20, value: cfg.procedureMinSessions === undefined ? 3 : cfg.procedureMinSessions, onChange: function (e) { set('procedureMinSessions', Math.max(1, Math.min(20, Number(e.target.value) || 3))) } }), t('fProcSessionsHint')),
+          field(t('fProcSuccess'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 1, max: 20, value: cfg.procedureMinSuccess === undefined ? 2 : cfg.procedureMinSuccess, onChange: function (e) { set('procedureMinSuccess', Math.max(1, Math.min(20, Number(e.target.value) || 2))) } }), t('fProcSuccessHint')),
+          field(t('fProcCorr'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 0, max: 1, step: 0.05, value: cfg.procedureCorrectionCap === undefined ? 0.3 : cfg.procedureCorrectionCap, onChange: function (e) { set('procedureCorrectionCap', Math.max(0, Math.min(1, Number(e.target.value) || 0.3))) } }), t('fProcCorrHint')),
+          field(t('fProcRisk'), h('input', { type: 'checkbox', checked: cfg.procedureHighRiskApproval !== false, onChange: function (e) { set('procedureHighRiskApproval', e.target.checked) } }), t('fProcRiskHint')),
+          // 2026-09-22 补接线(设置页缺口审计 P0-1):procedureInjectEnabled 才是宿主真读的总闸
+          //   (procedure-switch.js 先判它);此前设置页只有旧键 ⇒ 用户改了也无效(灰控件)。
+          field(t('fProcInject'), h('input', { type: 'checkbox', 'data-dam-key': 'procedureInjectEnabled', checked: cfg.procedureInjectEnabled !== false, onChange: function (e) { set('procedureInjectEnabled', e.target.checked) } }), t('fProcInjectHint')),
+          // ★A-1（2026-09-23）：此处原有「机械流程切片」复选框 —— 该功能已整条删除
+          //   （用户裁定「机械通路已被我弃用」，memory-hub.js 分支 + index.js getter 同步移除）。
+          //   控件一并删掉：留着它会「写盘成功但界面无变化」（读到的键已无消费者）——
+          //   正是用户明确列为「功能坏了」的那种表现。
+          field(t('fProcLevel'), h('select', { 'data-dam-select': '', value: cfg.procedureActiveLevel || 'checklist', onChange: function (e) { set('procedureActiveLevel', e.target.value) } },
+            h('option', { value: 'checklist' }, locale === 'zh' ? 'checklist 完整步骤' : 'checklist (full steps)'),
+            h('option', { value: 'excerpt' }, locale === 'zh' ? 'excerpt 摘要' : 'excerpt (summary)'),
+            h('option', { value: 'hint' }, locale === 'zh' ? 'hint 仅提示' : 'hint (hint only)')), t('fProcLevelHint')),
+          h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginTop: '4px' } }, t('memoryHubViewHint')),
+        ]),
+        section('handoff', sectionLabels.handoff, [
+  field(t('fHandoff'), h('input', { type: 'checkbox', 'data-dam-key': 'handoffEnabled', checked: cfg.handoffEnabled !== false, onChange: function (e) { set('handoffEnabled', e.target.checked) } }), t('fHandoffHint')),
+          field(t('fAutoContinue'), h('input', { type: 'checkbox', 'data-dam-key': 'autoContinueEnabled', checked: cfg.autoContinueEnabled !== false, onChange: function (e) { set('autoContinueEnabled', e.target.checked) } }), t('fAutoContinueHint')),
+          field(t('fHandoffPlan'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 200, value: cfg.handoffPlanChars === undefined ? 1200 : cfg.handoffPlanChars, onChange: function (e) { set('handoffPlanChars', Number(e.target.value) || 1200) } }), t('fHandoffPlanHint')),
+          // 2026-09-22 补接线(设置页缺口审计 P0-5):criteriaGate 此前只能改文件才能退。
+          field(t('fCriteriaGate'), h('input', { type: 'checkbox', 'data-dam-key': 'criteriaGate', checked: cfg.criteriaGate !== false, onChange: function (e) { set('criteriaGate', e.target.checked) } }), t('fCriteriaGateHint')),
+          field(t('fHandoffLedger'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 100, value: cfg.handoffLedgerChars === undefined ? 800 : cfg.handoffLedgerChars, onChange: function (e) { set('handoffLedgerChars', Number(e.target.value) || 800) } }), t('fHandoffLedgerHint')),
+          field(t('fWaterWindow'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 0, value: cfg.waterLevelWindowTokens === undefined ? 65536 : cfg.waterLevelWindowTokens, onChange: function (e) { set('waterLevelWindowTokens', Number(e.target.value) || 0) } }), t('fWaterWindowHint')),
+          field(t('fWaterThreshold'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 0.1, max: 1.5, step: 0.05, value: cfg.waterLevelThreshold === undefined ? 0.75 : cfg.waterLevelThreshold, onChange: function (e) { set('waterLevelThreshold', Number(e.target.value) || 0.75) } }), t('fWaterThresholdHint')),
+          field(t('fWaterAdvisory'), h('input', { type: 'checkbox', checked: cfg.waterLevelAdvisory !== false, onChange: function (e) { set('waterLevelAdvisory', e.target.checked) } }), t('fWaterAdvisoryHint')),
+          field(t('fWaterAuto'), h('input', { type: 'checkbox', checked: cfg.waterLevelAutoHandoff !== false, onChange: function (e) { set('waterLevelAutoHandoff', e.target.checked) } }), t('fWaterAutoHint')),
+          field(locale === 'zh' ? '子代理痕迹回收' : 'Subagent trace recycle', h('input', { type: 'checkbox', checked: cfg.subagentGcEnabled !== false, onChange: function (e) { set('subagentGcEnabled', e.target.checked) } }),
+            locale === 'zh' ? '本插件的一次性子代理(自动沉淀 / 时段总结 / 问候 / 蒸馏)每跑一次都会在 ~/.dsh/sessions 留下一个持久化会话;数量上千后会话列表会明显变慢。开启后任务一结束就把这些痕迹移入 ~/.dsh/subagent-gc-backup 备份(可回滚),不影响子代理结果。默认开。' : 'Every one-shot subagent this plugin spawns (auto-consolidation, scheduled summary, greeting, distillation) leaves a persisted session under ~/.dsh/sessions; hundreds of them slow the session list down. When on, each trace is moved into ~/.dsh/subagent-gc-backup right after the task ends (reversible), never affecting the subagent result. On by default.'),
+          field(locale === 'zh' ? '兜底回收保留天数' : 'Fallback recycle keep days', h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 0, value: cfg.subagentGcKeepDays === undefined ? 3 : cfg.subagentGcKeepDays, onChange: function (e) { set('subagentGcKeepDays', Number(e.target.value) || 0) } }),
+            locale === 'zh' ? '每天巡检一次,回收超过该天数仍残留的痕迹(比如任务异常中断没删掉的);0 = 不按时间,只靠任务结束即删。' : 'A daily sweep recycles traces older than this many days (e.g. leftovers from interrupted tasks); 0 = rely on the end-of-task recycle only.'),
+        ]),
+        section('auto', sectionLabels.auto, [
+          // 欢迎向导:开关(首启自动播放)+ 立即重看按钮(闭包内直调 openDialog——同一作用域,点击立即弹;
+          // 不走 window 全局入口,避免多实例时序导致"点了没反应要刷新")+ 查看更新日志(走 update 弹窗,
+          // 带 Logo 开场动画;versions 取 CHANGELOG 最新一条)
+          field(t('fWelcomeTour'), h('div', { 'data-dam-slot': 'list', 'data-dam-row': '' },
+            h('input', { type: 'checkbox', checked: cfg.welcomeTourEnabled !== false, onChange: function (e) { set('welcomeTourEnabled', e.target.checked) } }),
+            h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: function () { try { openDialog({ kind: 'welcomeTour' }) } catch (eTour) {} } }, t('tourReplay')),
+            h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: function () {
+              try {
+                var keys = Object.keys(CHANGELOG)
+                if (!keys.length) return
+                var latest = keys.sort(cmpVersion)[keys.length - 1]
+                openDialog({ kind: 'update', versions: [{ version: latest, items: CHANGELOG[latest] }], currentVersion: latest })
+              } catch (eLog) {}
+            } }, locale === 'zh' ? '查看更新日志' : 'View changelog')), t('fWelcomeTourHint')),
+          field(t('fAutoPopup'), h('input', { type: 'checkbox', checked: cfg.autoPopupEnabled !== false, onChange: function (e) { set('autoPopupEnabled', e.target.checked) } }), t('fAutoPopupHint')),
+          field(t('fUnattended'), h('input', { type: 'checkbox', checked: !!cfg.unattendedMode, onChange: function (e) { set('unattendedMode', e.target.checked) } }), t('fUnattendedHint')),
+          field(t('fUnattendedAuto'), h('input', { type: 'checkbox', checked: !!cfg.unattendedAuto, onChange: function (e) { set('unattendedAuto', e.target.checked) } }), t('fUnattendedAutoHint')),
+          // ★E5（2026-09-25 用户口径）：轮换周期 = **天**，默认 2。用系统墙钟切期（不用自建计时器）；
+          //   到期后旧工作台整份弃掉、下一期新建 —— 母会话条目数因此有上界。
+          //   为什么默认 2 天：旧工作台会话要「先静默才可能被归档」，而静默的前提是不再有子代理挂上去，
+          //   也就是必须等本期轮换掉。周期越长，归档/删除链条被拖得越久（轮换 → 静默 → 归档 → 删除）。
+          //   ★E3-FIX-3（2026-09-26 二合一）：本项**不再可独立设置**，改为**跟随「归档阈值」**的只读显示。
+          //   为什么合并（用户原话「这两个 2 是不是得二合一，不然还会耦合」）：两者本就是同一段生命周期的
+          //   两个阶段，各配一个数必然失配——轮换慢于归档 ⇒ 旧工作台永不静默、归档链断裂；快于归档 ⇒ 白建会话。
+          //   ⇒ 设置页只剩「归档阈值」一个旋钮，本项恒等于它（相等即最优），不再写回 workbenchPeriodDays。
+          field(
+            locale === 'zh' ? '工作台轮换周期（天）' : 'Workbench rotation period (days)',
+            h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 1, max: 3650, value: (cfg.workbenchPeriodDays === undefined ? 2 : cfg.workbenchPeriodDays), readOnly: true, disabled: true, style: { opacity: 0.6, cursor: 'not-allowed' } }),
+            locale === 'zh'
+              ? '**跟随上一项「归档阈值」**，不再单独设置（默认 **2** 天）。★两者本是同一段生命周期的两个阶段：轮换慢了，旧工作台会话永远等不到「静默」，也就永远进不了「归档 → 删除」；轮换快了则白建会话。⇒ 只留一个旋钮，这里恒等于归档阈值。范围 1–3650。'
+              : '**Follows "Archive after (days)" above** — no longer set separately (default **2** days). ★The two are phases of one lifecycle: a slower rotation means old workbench sessions never go idle and thus never reach the archive → delete chain; a faster one just creates sessions needlessly. So there is a single knob, and this value always equals the archive threshold. Range 1–3650.'),
+          // ★S1（2026-09-24，对齐 WORKBENCH-SPEC）：工作台**工作区路径**可配（用户原话「只不过是在插件设置的工作区里面」）。
+          //   变更后下一期在新路径建工作区；旧会话就地保留（守卫⑰：不删）。
+          field(
+            locale === 'zh' ? '工作台工作区' : 'Workbench workspace',
+            h('div', { 'data-dam-slot': 'list', 'data-dam-row': '', style: { flex: 1 } },
+              h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', style: { flex: 1 }, placeholder: 'aik_auto_memory_use', value: (cfg.workbenchRoot || ''), onChange: function (e) { set('workbenchRoot', e.target.value) } }),
+              h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: function () { openBrowser('workbenchRoot') } }, t('fBrowse'))),
+            locale === 'zh'
+              ? '留空 = 自动使用 **DSH 本体目录**下的 aik_auto_memory_use（Windows / macOS / Linux 都能匹配到，与 DSH 自己的数据同根，无需改盘符或家目录）。也可指定别的路径，但必须位于 DSH 本体目录之内。后台的记忆整理任务都在这里跑，不会出现在你的会话列表里。'
+              : 'Leave empty to use aik_auto_memory_use inside the **DSH home directory** (works on Windows / macOS / Linux, same root as the data DSH itself owns — no drive or home-path edits needed). You may point it elsewhere as long as it stays inside the DSH home directory. Background memory jobs run there and never show up in your session list.'),
+          field(t('fAway'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 0, value: (Number(cfg.awayMinutes) === 0 ? 0 : (cfg.awayMinutes || 60)), onChange: function (e) { var v = Number(e.target.value); set('awayMinutes', Number.isFinite(v) && v >= 0 ? v : 60) } }), t('fAwayHint')),
+          field(t('fAutoSum'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', value: (cfg.autoSummaryTimes || []).join(','), onChange: function (e) { set('autoSummaryTimes', String(e.target.value || '').split(',').map(function (s) { return s.trim() }).filter(Boolean)) } }), t('fAutoSumHint')),
+          field(t('fConsSchedule'), h('input', { type: 'checkbox', checked: cfg.consolidateScheduleEnabled !== false, onChange: function (e) { set('consolidateScheduleEnabled', e.target.checked) } }), t('fConsScheduleHint')),
+          field(t('fConsScheduleTime'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', placeholder: '09:30', value: cfg.consolidateScheduleTime === undefined ? '09:30' : cfg.consolidateScheduleTime, onChange: function (e) { set('consolidateScheduleTime', String(e.target.value || '').trim()) } }), t('fConsScheduleTimeHint')),
+          field(t('fConsScheduleDays'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 1, max: 60, value: cfg.consolidateScheduleDays === undefined ? 7 : cfg.consolidateScheduleDays, onChange: function (e) { set('consolidateScheduleDays', Number(e.target.value) || 7) } }), t('fConsScheduleDaysHint')),
+          field(t('fMaintSchedule'), h('input', { type: 'checkbox', checked: cfg.maintainScheduleEnabled !== false, onChange: function (e) { set('maintainScheduleEnabled', e.target.checked) } }), t('fMaintScheduleHint')),
+          field(t('fMaintScheduleTime'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', placeholder: '10:00', value: cfg.maintainScheduleTime === undefined ? '10:00' : cfg.maintainScheduleTime, onChange: function (e) { set('maintainScheduleTime', String(e.target.value || '').trim()) } }), t('fMaintScheduleTimeHint')),
+          // ★F3（2026-09-25 用户拍板）：归档 / 删除**自持**开关与天数。
+          //   用户原话「这个归档和删除需要走我自己的插件里的设置页面」「客户的机器不一定装了这个插件」
+          //   ⇒ 控件落本插件设置页，不依赖 @linxin666/dsh-session-archive。
+          //   生命周期 = 子代理跑完**保留** → N 天自动归档 → 归档后 M 天自动删除。
+          //   ★保护面（守卫 ⑰）：工作台会话、运行中会话、归档时间未知的历史归档**永不自动删除**。
+          //   纯追加：不改任何既有 field / 不加分区 key / 不动分区顺序（smoke-test-s2-settings-panels.mjs:102 锁）。
+          field(
+            locale === 'zh' ? '会话归档与删除（自持）' : 'Session archive & delete (self-held)',
+            h('input', { type: 'checkbox', checked: cfg.sessionArchiveEnabled !== false, onChange: function (e) { set('sessionArchiveEnabled', e.target.checked) } }),
+            locale === 'zh'
+              ? '总开关。开启后本插件自己按下面的天数归档并清理会话，**不依赖任何外部会话管理插件**；关掉则两条策略都不跑。'
+              : 'Master switch. When on, this plugin itself archives and cleans sessions by the day counts below — no external session-manager plugin required. Off disables both policies.',
+          ),
+          field(
+            locale === 'zh' ? '自动归档' : 'Auto-archive',
+            h('input', { type: 'checkbox', checked: cfg.autoArchiveEnabled !== false, onChange: function (e) { set('autoArchiveEnabled', e.target.checked) } }),
+            locale === 'zh'
+              ? '子代理跑完后先**保留**；超过右边的天数未再活动即自动归档（归档 = 移出默认视野、可恢复，不是删除）。'
+              : 'Finished subagent sessions are kept first; once idle longer than the days on the right they are archived (hidden from the default view, reversible — not deleted).',
+          ),
+          field(
+            locale === 'zh' ? '归档阈值（天）' : 'Archive after (days)',
+            h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 1, max: 3650, value: cfg.autoArchiveDays === undefined ? 2 : cfg.autoArchiveDays, onChange: function (e) { var v = Number(e.target.value); set('autoArchiveDays', Number.isFinite(v) && v >= 1 && v <= 3650 ? Math.round(v) : 2) } }),
+            locale === 'zh' ? '默认 **2** 天（用户口径）。范围 1–3650。' : 'Default **2** days. Range 1–3650.',
+          ),
+          field(
+            locale === 'zh' ? '自动删除' : 'Auto-delete',
+            h('input', { type: 'checkbox', checked: cfg.autoDeleteEnabled !== false, onChange: function (e) { set('autoDeleteEnabled', e.target.checked) } }),
+            locale === 'zh'
+              ? '归档后超过右边天数才**物理删除**（不可恢复）。★只删「由本插件归档且记录了归档时刻」的会话；启用本功能之前的历史归档**永不**自动删除。'
+              : 'Deletes a session for good once it has been archived longer than the days on the right. Only sessions archived by this plugin (with a recorded archive time) qualify; archives from before this feature are never auto-deleted.',
+          ),
+          field(
+            locale === 'zh' ? '归档后保留（天）' : 'Delete after archiving (days)',
+            h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 1, max: 3650, value: cfg.autoDeleteDays === undefined ? 7 : cfg.autoDeleteDays, onChange: function (e) { var v = Number(e.target.value); set('autoDeleteDays', Number.isFinite(v) && v >= 1 && v <= 3650 ? Math.round(v) : 7) } }),
+            locale === 'zh' ? '默认 **7** 天（用户口径）。范围 1–3650。工作台会话与运行中的会话始终受保护。' : 'Default **7** days. Range 1–3650. Workbench and running sessions are always protected.',
+          ),
+        ]),
+        section('store', sectionLabels.store, [
+  field(t('fUserDir'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', value: cfg.userMemoryDir, onChange: function (e) { set('userMemoryDir', e.target.value) } }), t('fUserDirHint')),
+          field(t('fProjectDir'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', value: cfg.projectMemoryDir, onChange: function (e) { set('projectMemoryDir', e.target.value) } }), t('fProjectDirHint')),
+          field(t('fMemoryRoot'), h('div', { 'data-dam-slot': 'list', 'data-dam-row': '', style: { flex: 1 } },
+            h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', style: { flex: 1 }, value: cfg.memoryRoot || '', onChange: function (e) { set('memoryRoot', e.target.value) } }),
+            h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: function () { openBrowser() } }, t('fBrowse'))), t('fMemoryRootHint')),
+          browseOpen ? h('div', { style: { border: '1px solid color-mix(in srgb, var(--dsw-alias-border-l1, rgba(128,128,128,.25)) 60%, transparent)', borderRadius: '8px', padding: '8px', marginBottom: '8px', background: 'color-mix(in srgb, var(--dsw-alias-bg-layer-1, rgba(128,128,128,.06)) 40%, transparent)' } },
+            h('div', { 'data-dam-slot': 'list', 'data-dam-row': '' },
+              h('b', { style: { fontSize: 'calc(12px * var(--dam-scale))', wordBreak: 'break-all', flex: 1 } }, browsePath || '…'),
+              h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: function () { browseTo(browseParent) }, disabled: browseParent === browsePath }, t('fUp'))),
+            h('div', { style: { maxHeight: '160px', overflow: 'auto', marginTop: '4px' } },
+              (browseDirs || []).map(function (d) {
+                return h('button', { key: d.path, 'data-dam-slot': 'actions', 'data-dam-btn': '', style: { display: 'block', width: '100%', textAlign: 'left', padding: '3px 6px' }, onClick: function () { browseTo(d.path) } }, '📁 ' + d.name)
+              }).concat(browseDirs && !browseDirs.length ? [h('div', { key: 'e', 'data-dam-slot': 'hint', 'data-dam-hint': '' }, t('empty'))] : [])),
+            h('div', { 'data-dam-slot': 'list', 'data-dam-row': '', style: { marginTop: '6px' } },
+              // ★S1 解耦：内嵌浏览器的「选择」按 browseKey 回填（哪一行开的就写哪一行）
+              h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: function () { set(browseKey || 'memoryRoot', browsePath); setBrowseOpen(false) } }, t('fSelectDir')),
+              h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: function () { setBrowseOpen(false) } }, t('close'))))
+            : null,
+          field(t('fDayBoundary'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 0, max: 1439, value: (cfg.dayBoundaryMinutes === undefined ? 450 : cfg.dayBoundaryMinutes), onChange: function (e) { set('dayBoundaryMinutes', parseInt(e.target.value || '0', 10)) } }), t('fDayBoundaryHint')),
+          field(t('fReflect'), h('input', { type: 'checkbox', checked: !!cfg.reflectEnabled, onChange: function (e) { set('reflectEnabled', e.target.checked) } }), t('fReflectHint')),
+          field(t('fStyle'), h('select', { 'data-dam-select': '', value: cfg.reflectStyle, onChange: function (e) { set('reflectStyle', e.target.value) } },
+            STYLE_IDS.map(function (id) { return h('option', { key: id, value: id }, t('style' + id.charAt(0).toUpperCase() + id.slice(1))) })), t('fStyleHint')),
+          // 2026-09-22 补接线(设置页缺口审计 P1/P2):扫描上限与索引快照前端零命中。
+          field(t('fWsDiscover'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 5, max: 2000, value: cfg.workspaceDiscoverMax === undefined ? 200 : cfg.workspaceDiscoverMax, onChange: function (e) { set('workspaceDiscoverMax', Math.max(5, Math.min(2000, Number(e.target.value) || 200))) } }), t('fWsDiscoverHint')),
+        ]),
+        section('look', sectionLabels.look, [
+          h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, t('settingsHeader')),
+          field(t('fLocale'), h('select', { 'data-dam-select': '', value: cfg.locale || 'system', onChange: function (e) { set('locale', e.target.value) } },
+            LOCALE_IDS_LIST.map(function (id) { return h('option', { key: id, value: id }, id === 'system' ? t('followSystem') : t(id)) })), t('fLocaleHint')),
+          field(t('fFontSize'), h('select', { 'data-dam-select': '', value: fontScale, onChange: function (e) { fontScale = e.target.value; try { localStorage.setItem('dsh-auto-memory.fontScale.v2', fontScale) } catch (ee) {}; try { var pp = document.querySelector('[data-dam-panel]'); if (pp) pp.style.setProperty('--dam-scale', FONT_SCALE_VALUES[fontScale] || '1') } catch (ee2) {}; emit() } },
+            Object.keys(FONT_SCALES).map(function (k) { return h('option', { key: k, value: k }, t('fs' + k.charAt(0).toUpperCase() + k.slice(1))) })), t('fFontSizeHint')),
+          // 面板位置(2026-09-21):左下角 / 顶部 / 两者共存。改动立即生效并同步两处形态(用户硬规则:即时回显)。
+          field(t('fPanelPos'), h('select', { 'data-dam-select': '', value: controller.panelPos(), onChange: function (e) { controller.setPanelPos(e.target.value) } },
+            h('option', { value: 'bottom-left' }, t('posBottomLeft')), h('option', { value: 'page' }, t('posPage')), h('option', { value: 'both' }, t('posBoth'))), t('fPanelPosHint')),
+          field(locale === 'zh' ? '强调色' : 'Accent color', h('select', { 'data-dam-select': '', value: accentTheme, onChange: function (e) { setAccent(e.target.value) } },
+            h('option', { value: 'deepseek' }, locale === 'zh' ? 'DeepSeek 蓝' : 'DeepSeek blue'), h('option', { value: 'graphite' }, locale === 'zh' ? '石墨灰' : 'Graphite'), h('option', { value: 'violet' }, locale === 'zh' ? '雾紫' : 'Violet')), locale === 'zh' ? '默认使用 DeepSeek 蓝；日历与状态颜色保持语义色。' : 'DeepSeek blue by default; calendar and status colors stay semantic.'),
+          field(locale === 'zh' ? '关系图密度' : 'Graph density', h('select', { 'data-dam-select': '', value: graphDensity, onChange: function (e) { setDensity(e.target.value) } },
+            h('option', { value: 'relaxed' }, locale === 'zh' ? '舒展' : 'Relaxed'), h('option', { value: 'compact' }, locale === 'zh' ? '紧凑' : 'Compact')), locale === 'zh' ? '影响工作区关系图的节点间距和显示数量。' : 'Controls node spacing and detail in the workspace graph.'),
+          // 群反馈第 4 条:排除来源(每行一条)。textarea 便于粘贴多行路径;
+          // 空行/纯空白在写回时被过滤,避免"看起来配了其实没配"。
+          field(t('fExclude'), h('textarea', {
+            'data-dam-slot': 'form', 'data-dam-input': '', rows: 3,
+            style: { width: '100%', resize: 'vertical', fontFamily: 'inherit' },
+            value: (Array.isArray(cfg.injectExcludeSources) ? cfg.injectExcludeSources : []).join('\n'),
+            placeholder: 'mem_0123456789abcdef0123456789abcdef\nD:\\ws\\.dsh-memory\\archive\\\nlog',
+            onChange: function (e) {
+              var lines = String(e.target.value || '').split('\n').map(function (x) { return x.trim() }).filter(Boolean)
+              set('injectExcludeSources', lines)
+            },
+          }), t('fExcludeHint')),
+          field(locale === 'zh' ? '子代理模型 / 思考强度' : 'Subagent model & reasoning effort', h('div', { 'data-dam-slot': 'list', 'data-dam-row': '', style: { flex: 1 } },
+            h('span', { style: { flex: 1, fontSize: 'calc(12px * var(--dam-scale))', wordBreak: 'break-all', opacity: cfg.subagentModel ? 1 : 0.6 } }, (cfg.subagentModel || (locale === 'zh' ? '跟随路由默认' : 'routing default')) + (String(cfg.subagentReasoningEffort || '') ? ' · ' + String(cfg.subagentReasoningEffort) : '')),
+            h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: openModels }, locale === 'zh' ? '选择模型 / 强度' : 'Pick model / effort')),
+            locale === 'zh' ? '★作用域=「记忆中枢」工作区(aik_auto_memory_use)下所有会话的默认模型与思考强度;后台子代理(问候/总结/沉淀/蒸馏)挂在该工作区下运行,因此也跟随这里。思考强度 off/low/high/max 只作用于本插件的子代理,不改你的主对话。留空=跟随宿主部署默认(agent-default-model)。保存后生效。' : 'Scope: the DEFAULT model & reasoning effort for every session in the "Memory Hub" workspace (aik_auto_memory_use). Background subagents (greeting / summary / consolidation / distillation) run under that workspace, so they follow this too. Effort (off/low/high/max) applies only to this plugin`s subagents, never your main conversation. Empty = follow the deployment default (agent-default-model). Applies after saving.'),
+          mdlOpen ? buildModelDrawer() : null,
+        ]),
+        section('team', sectionLabels.team, [
+          renderTeamSettings({ cfg: cfg, set: set, field: field }),
+        ]),
+        section('skin', sectionLabels.skin, [
+          // ★S2 皮肤(2026-09-27):6 槽位**真实渲染为 <img>**,取图走宿主只读路由
+          // /api/dsh-auto-memory/skin-asset?key=<槽位>(loopback-only + 白名单)。
+          h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { fontSize: 'calc(11.5px * var(--dam-scale))', opacity: .72, marginBottom: '6px' } },
+            locale === 'zh'
+              ? '下面 6 张图来自插件的 lib/assets/skin/。换图只需改 lib/skin-assets.js 里对应槽位的 file 一行，本页与所有结构代码零改动。图未就绪时显示确定性占位（不塌、不留白）。'
+              : 'These six images come from the plugin lib/assets/skin/. To swap one, edit the file field for that slot in lib/skin-assets.js — no other code changes. Unready slots show a deterministic placeholder.'),
+          h(SkinCenterPanel, null),
+          h(SkinSlotRows, null),
+          h(SkinSection, null),
+        ]),
+        section('about', sectionLabels.about, [
+          // WB-GRAPH 白板线一键切换(2026-09-16, board_mode_pre_v1): 旧版白板(默认) / 新版看板(dsh-graph vendor
+          // + sidecar + 遍历工具, 工具数 14→16)。开关解耦: 只管白板线; 切换需重启 dsh web 生效(工具注册在启动期)。
+          field(locale === 'zh' ? '白板模式（旧版白板 / 新版看板）' : 'Board mode (legacy / graph)', (function () {
+            var cur = cfg.boardMode === 'graph' ? 'graph' : 'legacy'
+            // ★2026-09-16 修 BUG-3(设置页切换不落盘): 旧实现 `set('boardMode', m)` 只改**本地 React 态**
+            // 然后 reload —— 配置从未写到服务端, 刷新后仍是旧值(界面回跳原档), 用户会判定"开关坏了"。
+            // 正解: 走与接续面板同一个写入路径 `saveConfigPatch(API.config, patch)`(见 :999 定义),
+            // 写盘成功后再 reload; 失败则在界面提示, 不静默假装成功。
+            // 同时满足用户硬性偏好: 开关类改动必须**即时回显**(写盘后立即 reload 呈现新档)。
+            function pick(m) {
+              set('boardMode', m) // 先本地回显(即时反馈)
+              saveConfigPatch({ boardMode: m }, {
+                onSaved: function () { window.setTimeout(function () { window.location.reload() }, 350) },
+                onError: function (e) { setErr(String((e && e.message) || e || 'save failed')) },
+              })
+            }
+            return h('div', { 'data-dam-slot': 'list', 'data-dam-row': '' },
+              h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', 'data-dam-key': 'boardMode', style: { fontWeight: cur === 'legacy' ? 700 : 400, opacity: cur === 'legacy' ? 1 : 0.65 }, onClick: function () { if (cur !== 'legacy') pick('legacy') } }, locale === 'zh' ? '旧版白板' : 'Legacy board'),
+              h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', 'data-dam-key': 'boardModeGraph', style: { marginLeft: '6px', fontWeight: cur === 'graph' ? 700 : 400, opacity: cur === 'graph' ? 1 : 0.65 }, onClick: function () { if (cur !== 'graph') pick('graph') } }, locale === 'zh' ? '新版看板（dsh-graph）' : 'Graph board (dsh-graph)'))
+          })(),
+            locale === 'zh' ? '一键切换白板形态。默认「旧版白板」=一切行为不变；切到「新版看板」后启用 dsh-graph 看板、白板结构化索引（handoff/index.json）与两个遍历工具（memory_expand / memory_trace，工具数 14→16）。切换后需重启 dsh web 生效；再点回旧版即完全回滚。' : 'One-click switch for the board form. Default "Legacy board" keeps everything unchanged; "Graph board" enables the dsh-graph kanban, the structured handoff index (handoff/index.json) and two traversal tools (memory_expand / memory_trace, tool count 14→16). Restart dsh web after switching; switch back to fully roll back.'),
+  field(t('fVersion'), h('div', { 'data-dam-slot': 'list', 'data-dam-row': '' },
+            h('span', { style: { flex: 1 } }, verInfo ? (verInfo.current || '?') + (verInfo.latest ? ' → ' + verInfo.latest + (verInfo.upToDate ? ' ' + t('upToDate') : ' ' + t('hasUpdate')) : '') : (checkingUpdate ? t('checking') : '—')),
+            h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: checkUpdate, disabled: checkingUpdate }, checkingUpdate ? t('checking') : t('checkUpdate')),
+            (verInfo && verInfo.latest && !verInfo.upToDate && verInfo.installKind === 'registry') ? h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: doUpdate, disabled: upBusy, style: { marginLeft: '4px' } }, upBusy ? t('updating') : t('updateNow')) : null,
+            // ★v3.1.2：dev-link（开发树挂载）无法「一键更新」，但也必须让用户看见线上是否有新版 ——
+            //   此前此处恒为 null，用户既看不到按钮也看不到「有新版」，反馈「按钮消失且不知道为什么」。
+            (verInfo && verInfo.installKind === 'dev-link' && verInfo.latest && verInfo.devVersion && verInfo.latest !== verInfo.devVersion)
+              ? h('span', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginLeft: '6px' } }, (locale === 'zh' ? '开发树 v' : 'dev tree v') + verInfo.devVersion + ' → ' + (locale === 'zh' ? '线上 v' : 'registry v') + verInfo.latest + (locale === 'zh' ? '，请同步开发源码后重新构建' : ' — sync source and rebuild'))
+              : null,
+            upMsg ? h('span', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, upMsg) : null),
+            t('versionCmdHint') + (verInfo && verInfo.error ? ' ' + t('versionError') + verInfo.error : '') + (verInfo && verInfo.installKind === 'dev-link' ? ' ' + t('devLinkHint') : '') + (verInfo && !verInfo.installKind ? ' ' + t('noProfileHint') : '')),
+          field(locale === 'zh' ? '交流群' : 'Community', h('div', { 'data-dam-slot': 'list', 'data-dam-row': '' },
+            h('span', { style: { flex: 1 } }, locale === 'zh' ? '反馈问题、交流使用技巧——加群响应比 issue 更快。' : 'Share feedback and tips with other users — the group responds faster than GitHub issues.'),
+            h('a', { href: 'https://qm.qq.com/q/v7Asxn6vPa', target: '_blank', rel: 'noreferrer', style: { textDecoration: 'none', color: 'var(--dam-accent, #4f7cff)' } }, locale === 'zh' ? '点击加入 QQ 交流群' : 'Join the QQ community group')),
+            locale === 'zh' ? '点击链接一键加群。' : 'One-click join via the QQ invite link.'),
+        ]),
+        h('div', { 'data-dam-savebar': '' },
+          h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', 'data-dirty': dirty ? 'true' : undefined, onClick: save, disabled: busy }, busy ? t('saving') : (dirty ? (locale === 'zh' ? '保存更改' : 'Save changes') : t('saveSettings'))),
+          dirty ? h('span', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, locale === 'zh' ? '有未保存的更改' : 'Unsaved changes') : null,
+          msg ? h('span', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, msg) : null),
+        // 调试中心(折叠):模块状态一览,方便排查问题/提 issue
+        h('div', { style: { marginTop: '14px', borderTop: '1px solid color-mix(in srgb, var(--dsw-alias-border-l1, rgba(128,128,128,.2)) 55%, transparent)', paddingTop: '10px' } },
+          h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', onClick: function () { setDbgOpen(!dbgOpen) } }, (dbgOpen ? '▴ ' : '▾ ') + t('debugCenter')),
+          dbgOpen ? h('div', { style: { marginTop: '8px' } }, h(DebugCenter)) : null),
+        err ? h('div', { 'data-dam-error': '' }, err) : null))
+    }
+
+    // ───────────────────────── 插件挂载 ─────────────────────────
+    function apply(ctx) {
+      try { ensureStyle() } catch (e) { console.warn('[dsh-auto-memory] style inject failed', e) }
+      ctx.effect(function () {
+        return function () {
+          var tag = document.getElementById(STYLE_ID)
+          if (tag) tag.remove()
+          if (closeTimer) { clearTimeout(closeTimer); closeTimer = null }
+        }
+      }, 'dsh-auto-memory: styles')
+
+      // 面板外交互关闭(@ProperSAMA PR#12):点击面板外任意处 / 按 Esc 关闭。
+      // 增强模式下面板可能盖住侧边栏入口按钮,这里提供不依赖按钮的兜底关闭手段;
+      // 点击入口按钮本身排除在外(保留按钮 toggle 语义)。
+      try {
+        var onDocPointerDown = function (e) {
+          if (!panelOpen || panelClosing) return
+          if (controller.isPinned()) return   // 悬浮钉:钉住后点面板外不收起(2026-09-08)
+          var el = e.target
+          if (el && el.closest && (el.closest('[data-dam-panel]') || el.closest('[data-dam-sidebar-btn]'))) return
+          controller.close()
+        }
+        var onDocKeyDown = function (e) {
+          if (e.key === 'Escape' && panelOpen && !panelClosing) controller.close()
+        }
+        document.addEventListener('pointerdown', onDocPointerDown, true)
+        document.addEventListener('keydown', onDocKeyDown, true)
+        ctx.effect(function () {
+          return function () {
+            document.removeEventListener('pointerdown', onDocPointerDown, true)
+            document.removeEventListener('keydown', onDocKeyDown, true)
+          }
+        }, 'dsh-auto-memory: panel-outside-close')
+      } catch (e) {}
+
+      var slots = ctx.slots
+      if (!slots) { console.warn('[dsh-auto-memory] slots service unavailable'); return }
+      sessions = ctx.sessions
+      // M-CM6-B:官方 remote 面(remote.session.create/prompt,api-session-controller 提供);旧 harness 无此服务时置 null,一键接续按钮会提示不可用
+      try { remoteFace = ctx.remote || null } catch (eR) { remoteFace = null }
+
+      // 初始化界面字号(本地偏好,localStorage 持久化)
+      try {
+        var savedScale = localStorage.getItem('dsh-auto-memory.fontScale.v2')
+        if (savedScale in FONT_SCALES) fontScale = savedScale
+      } catch (e3) {}
+      // 界面语言:默认跟随 DSH 系统语言(config.locale 可手动指定 zh / en / system)
+      try {
+        var sl0 = ctx.locale && ctx.locale.getLocale ? ctx.locale.getLocale() : null
+        if (sl0 && sl0.active) sysLocale = sl0.active
+      } catch (e) {}
+      applyLocalePref('system')
+      apiGet(API.config).then(function (d) {
+        if (d && d.config && d.config.locale) applyLocalePref(d.config.locale)
+        if (d && d.config && typeof d.config.autoPopupEnabled === 'boolean') autoPopupEnabled = d.config.autoPopupEnabled
+      }).catch(function () {})
+      // DSH 系统语言变化:跟随更新 + 重渲染 + 重注册入口 label
+      ctx.on('locale/change', function (snap) {
+        try {
+          if (snap && snap.active && snap.active !== sysLocale) {
+            sysLocale = snap.active
+            if (localeMode !== 'zh' && localeMode !== 'en') { locale = sysLocale; emit() }
+            refreshSurfaces()
+          }
+        } catch (e) {}
+      })
+      // 语言切换时通知所有订阅者重渲染
+      onLocale(function () { emit() })
+      // 暂离回来自动弹开记忆窗口:host 判定暂离(阈值可配 awayMinutes),轮询发现回归(true→false)时自动打开。
+      // v0.1.37 修复(#13):本函数不得做「away 且面板关着就再弹开」——≤0.1.35 host 侧 away 无写入点恒 false
+      // 掩盖了旧行,0.1.36 全局 away 激活后它变成 30s 重开死循环:用户回到机器但还没发消息时 host 恒判 away,
+      // 关掉即被重弹(=「弹窗关不掉」)。契约以设置页文案为准:回归(away true→false)才弹,away 挂着绝不强弹。
+      var prevAwayState = null
+      function autoOpenOnReturn() {
+        try {
+          if (autoPopupEnabled === false) { prevAwayState = hostAwayReady ? hostAway : prevAwayState; return }
+          if (hostAwayReady && prevAwayState === true && hostAway === false) {
+            // 暂离回归:打开窗口 + 欢迎弹窗(若有待展示总结一并显示)
+            if (!controller.isOpen()) controller.open()
+            var pend = lastPendingSummary
+            if (pend) { openDialog({ kind: 'summary', summary: pend }); lastPendingSummary = null }
+            else if (!document.hidden) openDialog({ kind: 'welcomeBack' })
+          }
+          prevAwayState = hostAwayReady ? hostAway : prevAwayState
+        } catch (e) {}
+      }
+      autoOpenOnReturn()
+      try {
+        document.addEventListener('visibilitychange', function () {
+          if (!document.hidden) autoOpenOnReturn()
+        })
+      } catch (e) {}
+      // 更新弹窗 / 启动分发:对比本地记录的已见版本,有更新或首次安装时弹窗(host 12h 缓存,不重复查网)
+      // v0.1.38:旧 first 卡已删除 → 全新安装直接完整欢迎向导;老用户按 seen/向导完成态补大更新。
+      // 抽成具名函数便于状态机单测(startup-dispatch)。
+      var MAJOR_TOUR_KEY = 'dsh-auto-memory.majorTourV130'
+      function dispatchStartupDialog(d, cfg, wbReady) {
+        var allowTour = welcomeAutoAllowedPre(cfg)
+        // ★S9（2026-09-24）：工作台未就绪 ⇒ **更新说明延后交付**（存进 dialogQueue，等配置完成或用户关掉设置窗后自动弹）。
+        //   用户原话「每个新手下载完、过完新手引导之后，必须弹出这个设置窗口，设置好才能让它正常使用…或者它配置完以后再弹 change log」。
+        var wbPending = (wbReady === false)
+        if (d && d.current) {
+          try {
+            var seen = localStorage.getItem('dsh-auto-memory.seenVersion')
+            var majorPending = !localStorage.getItem(MAJOR_TOUR_KEY)
+            var wizDone = localStorage.getItem('dsh-auto-memory.semWizardDone')
+            var firstDone = localStorage.getItem('dsh-auto-memory.firstRunDone')
+            // 0.1.38:旧的 first 欢迎卡已删除(内容被 welcomeTour 完整覆盖,且小卡形态无 ✕ 关闭)。
+            // 全新安装直接完整欢迎向导(分步功能开关+引擎检测/下载引导)。
+            // issue#40:三个自动弹出分支都必须过 allowTour 配置闸 —— 否则 welcomeTourEnabled=false 形同虚设。
+            var freshInstall = !seen && !firstDone && !wizDone
+            var isExisting = !!seen || !!firstDone || !!wizDone
+            if (allowTour && freshInstall) {
+              openDialog({ kind: 'welcomeTour' })
+              try { localStorage.setItem(MAJOR_TOUR_KEY, '1') } catch (eF) {}
+              return
+            }
+            // 老用户(有使用痕迹)seen < 0.1.30(大更新前版本)或从未看过向导 → 补一次完整欢迎向导
+            // (含引擎下载引导;0.1.29→0.1.34 直升即使曾看过旧版也重放,确保引导不漏)
+            if (allowTour && isExisting && !wizDone && (!seen || cmpVersion(seen, '0.1.30') < 0)) {
+              openDialog({ kind: 'welcomeTour' })
+              try { localStorage.setItem(MAJOR_TOUR_KEY, '1') } catch (eM) {}
+              return
+            }
+            if (allowTour && majorPending && isExisting && !wizDone) {
+              openDialog({ kind: 'welcomeTour' })
+              try { localStorage.setItem(MAJOR_TOUR_KEY, '1') } catch (eM) {}
+              return
+            }
+            if (seen && seen !== d.current) {
+              // ★2026-09-17 修复:bigKey 原是硬编码 '2.1.0' ⇒ 老用户升级到 3.0.0 时弹的仍是 2.1.0 的
+              // 说明卡,本版 changelog 根本送达不了(违反「用户读得到的弹窗 changelog」要求)。
+              // 改为**动态取当前版本**:只要 CHANGELOG 里有本版条目就弹本版,以后每个大版本自动正确。
+              var bigKey = (CHANGELOG[d.current] ? d.current : '2.1.0')
+              if (CHANGELOG[bigKey]) {
+                var _upd1 = { kind: 'update', versions: [{ version: bigKey, items: CHANGELOG[bigKey] }], currentVersion: d.current }
+                if (!wbPending) { openDialog(_upd1) } else { dialogQueue.push(_upd1) }
+                try { localStorage.setItem('dsh-auto-memory.seenVersion', d.current) } catch (e3b) {}
+              } else {
+                var versions = changelogBetween(seen, d.current)
+                if (versions.length) { var _upd2 = { kind: 'update', versions: versions, currentVersion: d.current }; if (!wbPending) openDialog(_upd2); else dialogQueue.push(_upd2) }
+                else try { localStorage.setItem('dsh-auto-memory.seenVersion', d.current) } catch (e3) {}
+              }
+            } else if (!seen && firstDone) {
+              // 老用户但 seen 缺失(旧版升级/缓存清理):只看当前版本一条,不补历史链,避免把旧 log 塞给用户
+              try { localStorage.setItem('dsh-auto-memory.seenVersion', d.current) } catch (e3) {}
+              if (CHANGELOG[d.current]) { var _upd3 = { kind: 'update', versions: [{ version: d.current, items: CHANGELOG[d.current] }], currentVersion: d.current }; if (!wbPending) openDialog(_upd3); else dialogQueue.push(_upd3) }
+            }
+          } catch (e) {}
+        }
+      }
+      // issue#40:不得与 update-check 抢跑 —— 配置未知时(Null)一律**不自动播放**,等配置到达再分发。
+      var startupEpoch = tourNavigationEpoch
+      // ★S8/S9（2026-09-24）：**先定工作台就绪状态，再分发启动弹窗**。
+      //   S9：未就绪 ⇒ changelog/向导延后（dialogQueue），配置完成或用户关掉设置窗后自动弹；
+      //   S8：就绪 ⇒ 撤下居中设置窗（用户原话「或者等它自动配置完再消失」）。
+      //   探针只在这里触发**一次**，5s 是**一次性上限**（不是轮询、不新增周期计时器）；
+      //   超时/失败一律按「未知」处理 ⇒ 不阻塞更新通知（与今日行为一致）。
+      var workbenchReadyState = null   // null=未知（不阻塞）/ true=就绪 / false=未就绪
+      var workbenchResolved = false
+      function resolveWorkbenchReady(v) {
+        if (workbenchResolved) return
+        workbenchResolved = true
+        workbenchReadyState = (v === true) ? true : ((v === false) ? false : null)
+        if (workbenchReadyState === true) dismissWorkbenchSetupPre()
+        notifyDialog()
+      }
+      Promise.all([
+        apiGet(API.updateCheck).catch(function () { return null }),
+        loadWelcomeConfigPre(5000),
+        Promise.race([
+          checkWorkbenchPre().catch(function () { return null }),
+          new Promise(function (r) { setTimeout(function () { r(null) }, 5000) }),
+        ]).then(function (st) {
+          resolveWorkbenchReady(st ? !!(st.ready) : null)
+          return st
+        }).catch(function () { resolveWorkbenchReady(null); return null }),
+      ]).then(function (pair) {
+        // 配置闸的清理动作会推进 epoch;此时仍要送达版本通知,但向导必须保持关闭。
+        var cfg = pair[1]
+        if (tourNavigationEpoch !== startupEpoch) cfg = { welcomeTourEnabled: false }
+        dispatchStartupDialog(pair[0], cfg, workbenchReadyState)
+      }).catch(function () {})
+      // 工作台启动检测：与 update-check / 向导同批触发，但独立成句（不能塞进 Promise.all 数组里）。
+      // ★v3.1.8：无参 = 只读检测 + 未就绪时弹「说明并征求同意」窗（不再静默自动建立）。
+      //   这正是「非新用户更新后自动检测：没检测到记忆中枢就弹窗」的落地路径。
+      try { checkWorkbenchPre() } catch (eWb) {}
+      // 用户原话「打开查一下就行」⇒ 打开/切回页面时再查一次（事件驱动，**不轮询、不新增计时器**）
+      try {
+        document.addEventListener('visibilitychange', function () {
+          if (document.visibilityState === 'visible') { try { checkWorkbenchPre() } catch (eWv) {} }
+        })
+        window.addEventListener('focus', function () { try { checkWorkbenchPre() } catch (eWf) {} })
+      } catch (eWl) {}
+      // 会话切换 / 浏览器前进后退 都视为"用户已离开向导"⇒ 撤下,避免浮层跨页面残留(移动端体感:关不掉)。
+      if (typeof window['dsh-auto-memory.disposeTourNavigation'] === 'function') window['dsh-auto-memory.disposeTourNavigation']()
+      var lastTourSession = currentSessionIdClient()
+      var tourSessionDispose = null
+      function tourNavigated() { dismissWelcomeTourPre('navigation') }
+      try {
+        if (sessions && sessions.list && typeof sessions.list.subscribe === 'function') {
+          tourSessionDispose = sessions.list.subscribe(function () {
+            var sid = currentSessionIdClient()
+            if (sid !== lastTourSession) { lastTourSession = sid; dismissWelcomeTourPre('navigation') }
+          })
+        }
+        window.addEventListener('popstate', tourNavigated)
+        window.addEventListener('hashchange', tourNavigated)
+      } catch (_) {}
+      window['dsh-auto-memory.disposeTourNavigation'] = function () {
+        if (typeof tourSessionDispose === 'function') tourSessionDispose()
+        window.removeEventListener('popstate', tourNavigated)
+        window.removeEventListener('hashchange', tourNavigated)
+        tourSessionDispose = null
+      }
+      if (typeof ctx !== 'undefined' && ctx && typeof ctx.effect === 'function') ctx.effect(function () { return window['dsh-auto-memory.disposeTourNavigation'] }, 'auto-memory:tour-navigation')
+
+      // 动态通知(发布者→用户:重大 bug 提醒,不依赖发版):启动检查 + 每小时刷新;按 id 去重,urgent 优先
+      function checkNotices() {
+        apiGet(API.notices).then(function (d) {
+          try {
+            if (!d || !Array.isArray(d.notices) || !d.notices.length) return
+            var seen = []
+            try { seen = JSON.parse(localStorage.getItem('dsh-auto-memory.seenNotices') || '[]') } catch (e2) {}
+            var fresh = d.notices.filter(function (n) { return n && n.id && seen.indexOf(n.id) < 0 })
+            if (!fresh.length) return
+            var target = null
+            for (var i = 0; i < fresh.length; i++) { if (fresh[i].level === 'urgent') { target = fresh[i]; break } }
+            if (!target) target = fresh[0]
+            openDialog({ kind: 'notice', notice: target })
+          } catch (e) {}
+        }).catch(function () {})
+      }
+      checkNotices()
+      var noticesTimer = setInterval(checkNotices, 3600 * 1000)
+
+      // 打开即自动检测语义引擎(0.1.37,#14 后续):每次打开页面一次「快检 → 失败自动深扫
+      // (~/.dsh/profiles 全家 + pnpm 虚拟存储) → 仍缺才推荐」。深扫命中即热接入(即时生效);
+      // 推荐卡关闭 = 24h 免打扰。延迟 12s 错开开屏的向导/changelog 弹窗(优先级本身也压它一头)。
+      setTimeout(function () {
+        apiGet(API.semanticDeepDetect).then(function (d) {
+          try {
+            if (!d || d.ready) return
+            if (!(d.deep && d.deep.integrated)) {
+              var sdUntil = 0
+              try { sdUntil = Number(localStorage.getItem('dsh-auto-memory.semDetectSnoozeUntil') || 0) } catch (eSn) {}
+              if (Date.now() < sdUntil) return
+            }
+            openDialog({ kind: 'semSetup', result: d })
+          } catch (eSD) {}
+        }).catch(function () {})
+      }, 12000)
+
+      // 时间检测轮询(30s):拉 host 的暂离状态/待展示总结,检测暂离回归并自动弹窗
+      var lastPendingSummary = null
+      var awayPollTimer = null
+      function pollTimeState() {
+        apiGet(API.state).then(function (d) {
+          try {
+            if (d && typeof d.away === 'boolean') {
+              hostAway = d.away
+              hostAwayReady = true
+            }
+            if (d && typeof d.autoPopupEnabled === 'boolean') autoPopupEnabled = d.autoPopupEnabled
+            if (d && d.pendingSummary && d.pendingSummary.summary) {
+              var seenKey = 'dsh-auto-memory.seenSummary.' + (d.pendingSummary.date || '') + '.' + (d.pendingSummary.time || '')
+              try {
+                if (!localStorage.getItem(seenKey)) {
+                  localStorage.setItem(seenKey, '1')
+                  lastPendingSummary = d.pendingSummary
+                }
+              } catch (e2) {}
+            }
+            autoOpenOnReturn()
+          } catch (e) {}
+        }).catch(function () {})
+      }
+      pollTimeState()
+      awayPollTimer = setInterval(pollTimeState, 30000)
+
+      var surfaceDisposers = []
+      function registerSurfaces() {
+        try {
+          surfaceDisposers.push(slots.inject('sidebar.footer.action', function () {
+            return slots.register({ name: 'sidebar.footer.action', id: 'auto-memory-pre', order: 5, label: t('memory') + ' (pre)' }, function () { return h(SidebarButton) })
+          }))
+          surfaceDisposers.push(slots.inject('shell.overlay', function () {
+            return slots.register({ name: 'shell.overlay', id: 'auto-memory-pre', order: 5 }, function () { return h(MemoryPanel) })
+          }))
+          surfaceDisposers.push(slots.inject('shell.overlay', function () {
+            return slots.register({ name: 'shell.overlay', id: 'auto-memory-pre-dialogs', order: 6 }, function () { return h(DialogHost) })
+          }))
+          surfaceDisposers.push(slots.inject('shell.overlay', function () {
+            return slots.register({ name: 'shell.overlay', id: 'auto-memory-pre-autocont', order: 7 }, function () { return h(AutoContinueHost) })
+          }))
+          surfaceDisposers.push(slots.inject('settings.section', function () {
+            return slots.register({ name: 'settings.section', id: 'auto-memory-pre', order: 25, label: t('autoMemory') + ' (pre)' }, function (props) { return h(SettingsPage, { close: props && props.close }) })
+          }))
+          // ★2026-09-21 二次修正:「记忆」会话页 —— 与「对话轨迹」「上下文」「白板看板」并列的一页。
+          // 用户实测反馈:「它现在是浮在整个页面上方的,而不是和对话轨迹、上下文、白板看板在一起,作为一个单独的一页」。
+          // 根因:宿主只给 4 个槽位(sidebar/main/rightbar/shell.overlay),overlay 里的东西只能"盖"在界面上;
+          //   要成为并列页必须走 conversation.view(官方对话轨迹与本插件白板看板都注册在这里)。
+          // 出现条件:承载面 = 会话页 / 两者共存;切回「左下角浮层」时移除该页签(由 refreshSurfaces 重注册)。
+          if (controller.panelPos() === 'page' || controller.panelPos() === 'both') {
+            surfaceDisposers.push(slots.inject('conversation.view', function () {
+              return slots.register(
+                { name: 'conversation.view', id: 'auto-memory-pre-panel', order: 78, label: function () { return locale === 'zh' ? '记忆' : 'Memory' } },
+                function (props) { return h(MemoryPageView, props || {}) },
+              )
+            }))
+          }
+          // 2026-09-16「双承载面」: 会话页顶栏再挂一个**整页白板看板**(与侧边面板共存)。
+          // 面板 440px 装不下矩阵, 整页 ~1000px+ 可以 ⇒ 两者按容器宽度各用其形态。
+          // 与 boardMode 闸门解耦: 组件内部自己取数, 非 graph 档拿到 enabled:false 就显示提示,
+          // 不改变 legacy 档下顶栏是否出现该 Tab 的行为(那由宿主/开关层决定, 本处不加判断)。
+          surfaceDisposers.push(slots.inject('conversation.view', function () {
+            return slots.register(
+              { name: 'conversation.view', id: 'auto-memory-pre-kanban', order: 80, label: function () { return locale === 'zh' ? '白板看板' : 'Whiteboard' } },
+              function (props) { return h(KanbanView, props || {}) },
+            )
+          }))
+          // 2026-09-21「白板画布」**暂时隐藏**（用户拍板：功能未达可用标准，先发版收尾）。
+          //
+          // 为什么不删代码: 画布本身是完整实现(清洗层 + 分列布局 + 平移缩放 + 侧栏),
+          //   只是**数据源受限** —— 实测 D:\dsh-auto-memory 下 880 张卡、189 篇文档,
+          //   当前布局是「泳道分列 + 每列上限 14 + 折叠」, 但它依赖 kanban-board 在当前
+          //   会话下能解析出**正确的工作区**; 实测 sessionId 解析失败时 API 返回
+          //   enabled:true 但 **ws 为空 + 0 张卡** ⇒ 画布显示"暂无内容"。
+          //   ⇒ 保留代码 + 默认关闭, 待工作区解析路径稳定后一行开启。
+          //
+          // 开启方式: 把下面的 false 改成 true(或设为 localStorage['dam-wbg-enabled']='1')。
+          var WBG_ENABLED = (function () {
+            try { return localStorage.getItem('dam-wbg-enabled') === '1' } catch (e) { return false }
+          })()
+          if (WBG_ENABLED) {
+            surfaceDisposers.push(slots.inject('conversation.view', function () {
+              return slots.register(
+                { name: 'conversation.view', id: 'auto-memory-pre-graph', order: 81, label: function () { return locale === 'zh' ? '白板画布' : 'Graph' } },
+                function (props) { return h(WhiteboardGraphView, props || {}) },
+              )
+            }))
+          }
+        } catch (e) {
+          console.warn('[dsh-auto-memory] slot registration failed', e)
+        }
+      }
+      function refreshSurfaces() {
+        for (var i = 0; i < surfaceDisposers.length; i++) { try { surfaceDisposers[i]() } catch (e) {} }
+        surfaceDisposers = []
+        registerSurfaces()
+      }
+      // 把「重注册承载面」暴露给模块作用域:设置页切换承载面时,「记忆」会话页签要当场增/删(见 setSurfacesRefreshHook)
+      setSurfacesRefreshHook(refreshSurfaces)
+      // ★2026-09-21 二次修正:syncTitlebarVar() 及其调用点已一并删除 —— 它只为「顶部通栏覆盖条」让位 Windows
+      // 自绘标题栏而存在,该形态废弃后无消费者(会话页在正常文档流里,由宿主布局负责)。
+      registerSurfaces()
+      console.log('[dsh-auto-memory] client ready: sidebar entry + floating card / memory session page (switchable) + settings page')
+    }
+
+    exports.inject = ['slots', 'sessions', 'remote', 'remote.session']
+    // R9 测试出口（同类于 R7/R8，仅测试可用）
+    exports._layoutSlotPlanPre = layoutSlotPlanPre
+    exports._layoutBlockPlanPre = layoutBlockPlanPre
+    exports._applyLayoutBlocksPre = applyLayoutBlocksPre
+    exports._applyLayoutSlotsPre = applyLayoutSlotsPre
+    // R8 测试出口（同类于 R7，仅测试可用）
+    exports._layoutRegionSizePlanPre = layoutRegionSizePlanPre
+    exports._applyLayoutRegionSizesPre = applyLayoutRegionSizesPre
+    exports._layoutTokenPlanPre = layoutTokenPlanPre
+    exports._applyLayoutTokensPre = applyLayoutTokensPre
+    // R7 测试出口（与既有 exports._* 同类，仅供 tests 真调用，不改变运行时行为）
+    exports._layoutRegionPlanPre = layoutRegionPlanPre
+    exports._applyLayoutRegionsPre = applyLayoutRegionsPre
+    exports.apply = apply
+    return module.exports
+  },
+})
+

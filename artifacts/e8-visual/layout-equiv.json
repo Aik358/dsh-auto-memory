@@ -1,0 +1,50 @@
+{
+  "proto": {
+    "gtc": "336px 680px 484px",
+    "gap": "0px",
+    "display": "grid",
+    "flex": "1 1 0%",
+    "ov": [
+      "auto",
+      "auto",
+      "auto"
+    ],
+    "ovx": [
+      "contain",
+      "contain",
+      "contain"
+    ],
+    "widths": [
+      336,
+      680,
+      484
+    ]
+  },
+  "mine": {
+    "gtc": "336px 680px 484px",
+    "gap": "0px",
+    "display": "grid",
+    "flex": "0 1 auto",
+    "ov": [
+      "auto",
+      "auto",
+      "auto"
+    ],
+    "ovx": [
+      "auto",
+      "auto",
+      "auto"
+    ],
+    "widths": [
+      336,
+      680,
+      484
+    ]
+  },
+  "colOk": true,
+  "gapA": 0,
+  "gapB": 0,
+  "ovB": true,
+  "allEquiv": true,
+  "at": "2026-10-25T09:02:09.449Z"
+}

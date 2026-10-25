@@ -1,0 +1,3 @@
+{
+  "body": "核实：三条根因在本仓库 `main`（PR 的 base）上仍存在，**本 PR 方向与内容正确**，建议合并。\n\n## 核实（基于 main / 3.1.7）\n\n- `waterRecordFor` 的过期即弃（`< 600000 ? rec : null`）在 main 上仍在；\n- 无记录分支硬写 `ratio: 0 …`、全仓无 `waterTokensForLiveSession`；\n- `decodeZstdFramesHead` 调用处缺 `endsWith('.zstd')` 明文分支——同仓库 `sessionWorkspaceFallback` 已有正确写法可对照。\n\n## 合并前建议\n\n1. **rebase 到最新 main**（当前 `mergeable: true`，但 main 近期有 v3.1.7 相关改动，rebase 后复跑更稳）；\n2. 复跑 `node tools/run-smoke.mjs` 全量 + 真机验证水位卡读数（含\"窗口未知\"分支的渲染）；\n3. 注意本 PR 同时改了 `client.js` 水位卡渲染区——本仓库另一条工作线（`wip/20260926-teamwork`）对该文件有大量前端改动，**合并到 main 不受影响**，但将来工作线合回时需要留意这段 UI 的合并冲突。\n\nowner 正在走合并流程，感谢这份修复。\n"
+}

@@ -1,0 +1,280 @@
+{
+  "$schema": "v4-event-contract/1",
+  "frozenAt": "2026-10-24",
+  "source": "artifacts/V4-MASTER-PLAN-2026-10-24.md §3.1 / §3.2 / §3.3 / §3.4",
+  "decisions": {
+    "D1": "event-store.json",
+    "D2": "evt_ (no pre)",
+    "D3": "boardMode=event only",
+    "D4": "no skin pack",
+    "D5": "/api/dsh-auto-memory/event-*",
+    "D6": "event-catalog separate segment <=400",
+    "D7": "inscription into rules bucket",
+    "D9": "unarchived = four-section ledgers only",
+    "D10": "curation batch 40"
+  },
+  "topLevelFieldCount": 16,
+  "topLevelFields": [
+    "id",
+    "name",
+    "summary",
+    "outcome",
+    "skillRef",
+    "status",
+    "pausedReason",
+    "sections",
+    "checkpoints",
+    "userPercept",
+    "agentTrace",
+    "sharedGround",
+    "commitments",
+    "constraints",
+    "createdAt",
+    "updatedAt"
+  ],
+  "fieldCountReconciliation": {
+    "planDocumentSays": 21,
+    "planDocumentRef": "artifacts/V4-MASTER-PLAN-2026-10-24.md §3.1 标题",
+    "strictTopLevelCount": 16,
+    "measuredAt": "2026-10-24 batch 0",
+    "explanation": "21 只在「16 顶层 + 4 个 sections 子键 + 1 个 PANEL_KINDS 注册表」的混口径下成立；契约一律以 16 为严格可断言值（§0.1 取实测值纪律）。",
+    "ruling": "strict = 16; 21 仅作文档口径，不作断言"
+  },
+  "event": {
+    "type": "object",
+    "required": [
+      "id",
+      "name",
+      "summary",
+      "outcome",
+      "skillRef",
+      "status",
+      "pausedReason",
+      "sections",
+      "checkpoints",
+      "userPercept",
+      "agentTrace",
+      "sharedGround",
+      "commitments",
+      "constraints",
+      "createdAt",
+      "updatedAt"
+    ],
+    "properties": {
+      "id": {
+        "type": "string",
+        "pattern": "^evt_[0-9a-f]{8}$",
+        "note": "D2 最终值：不带 pre"
+      },
+      "name": {
+        "type": "string",
+        "maxChars": 80
+      },
+      "summary": {
+        "type": "string",
+        "maxChars": 400
+      },
+      "outcome": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "note": "closed 时必填（跨字段约束）"
+      },
+      "skillRef": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "note": "null / proc_pre_xxx"
+      },
+      "status": {
+        "type": "string",
+        "enum": [
+          "active",
+          "paused",
+          "closed"
+        ]
+      },
+      "pausedReason": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "note": "status=paused 时必填"
+      },
+      "sections": {
+        "type": "object",
+        "shape": {
+          "goal": "string",
+          "doing": "string",
+          "deadend": "string",
+          "next": "string"
+        }
+      },
+      "checkpoints": {
+        "type": "array",
+        "item": {
+          "at": "number",
+          "kind": "string",
+          "text": "string",
+          "sourceRef": [
+            "string",
+            "null"
+          ],
+          "panels": "array",
+          "idemKey": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "userPercept": {
+        "type": "array",
+        "item": {
+          "at": "number",
+          "kind": "string",
+          "stage": "string",
+          "text": "string",
+          "sourceRef": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "agentTrace": {
+        "type": "array",
+        "item": {
+          "at": "number",
+          "action": "string",
+          "result": [
+            "string",
+            "null"
+          ],
+          "wasRefuted": "boolean",
+          "sourceRef": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "sharedGround": {
+        "type": "array",
+        "item": {
+          "at": "number",
+          "claim": "string",
+          "confirmedBy": [
+            "string",
+            "null"
+          ],
+          "correction": [
+            "string",
+            "null"
+          ],
+          "sourceRef": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "commitments": {
+        "type": "array",
+        "item": {
+          "at": "number",
+          "promise": "string",
+          "boundary": [
+            "string",
+            "null"
+          ],
+          "state": "string",
+          "sourceRef": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "constraints": {
+        "type": "array",
+        "item": "string",
+        "note": "rule:<id> / spec:<id>"
+      },
+      "createdAt": {
+        "type": "number"
+      },
+      "updatedAt": {
+        "type": "number"
+      }
+    }
+  },
+  "crossFieldRules": [
+    "status=closed ⇒ outcome 必须是非空字符串",
+    "status=paused ⇒ pausedReason 必须是非空字符串",
+    "status=active ⇒ pausedReason 必须为 null",
+    "checkpoints[].panels[].kind ∈ PANEL_KINDS",
+    "userPercept[].stage ∈ STAGE",
+    "checkpoints[].idemKey 非空时全局唯一（append-only 不可撤销，靠它防重试重复追加）"
+  ],
+  "renderTiers": {
+    "T0": {
+      "maxChars": 80,
+      "content": "name + status",
+      "target": "event-catalog segment (<=400 chars total)"
+    },
+    "T1": {
+      "maxChars": 140,
+      "content": "summary first sentence",
+      "target": "Tier-1 hit summary"
+    },
+    "T2": {
+      "maxChars": 2400,
+      "content": "full sections + latest 3 checkpoints",
+      "target": "event-cards segment (active 1-2 only)"
+    }
+  },
+  "routes": [
+    {
+      "path": "/api/dsh-auto-memory/event-list",
+      "method": "GET",
+      "query": "?all=1 ⇒ return all events with lean fields (no checkpoints body, only count); default 50/page",
+      "returns": "{ ok, total, events: [{id,name,summary,status,sections,updatedAt,checkpointCount}], nextCursor }"
+    },
+    {
+      "path": "/api/dsh-auto-memory/event-detail",
+      "method": "GET",
+      "query": "?id=evt_xxx",
+      "returns": "{ ok, event }"
+    },
+    {
+      "path": "/api/dsh-auto-memory/event-unarchived",
+      "method": "GET",
+      "returns": "{ ok, total, items, estimatedInputTokens, estimatedOutputTokens }"
+    },
+    {
+      "path": "/api/dsh-auto-memory/event-curate",
+      "method": "POST",
+      "body": "{ batchSize<=40, confirmToken }",
+      "returns": "{ ok, drafts } | 409 when confirmToken missing/invalid"
+    }
+  ],
+  "storage": {
+    "dir": "<projectDir>/handoff/",
+    "eventStore": "event-store.json",
+    "curationLog": "event-curation-log.jsonl",
+    "atomicWrite": "tmp -> rename (same as facts.json, index.js:3280)"
+  },
+  "panelKinds": [
+    "state",
+    "log",
+    "deadend",
+    "next",
+    "userPercept",
+    "commitment"
+  ],
+  "stageEnum": [
+    "retrieved",
+    "delivered",
+    "used",
+    "mentioned",
+    "accepted"
+  ]
+}

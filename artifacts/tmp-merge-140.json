@@ -1,0 +1,5 @@
+{
+  "merge_method": "squash",
+  "commit_title": "fix(index): 接续取材/转写归档/仪式指纹按源会话工作区解析 (#140)",
+  "commit_message": "重建被 53d20e7 回退的 #90 修复：buildPrevSessionPack / buildContinueCarry 改走 resolvePathsForSession；handoffMaterialStamp(sid) 接源会话；恢复 switch-decouple 守卫 + 新增 continue-ws-attribution 回归。\n\nCloses #134\n\nCo-authored-by: Minervaowl7"
+}

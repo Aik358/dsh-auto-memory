@@ -1,0 +1,124 @@
+{
+  "ev4Count": 0,
+  "before": {
+    ".detail": {
+      "color": "rgb(230, 234, 241)",
+      "bg": "rgb(26, 33, 46)",
+      "font": "15px",
+      "dur": "0.15s",
+      "radius": "0px"
+    },
+    ".topbar": {
+      "color": "rgb(230, 234, 241)",
+      "bg": "color(srgb 0.0823529 0.105882 0.14902 / 0.82)",
+      "font": "15px",
+      "dur": "0s",
+      "radius": "0px"
+    },
+    ".badge": {
+      "color": "rgb(94, 224, 160)",
+      "bg": "rgba(94, 224, 160, 0.13)",
+      "font": "11px",
+      "dur": "0s",
+      "radius": "5px"
+    },
+    ".card": {
+      "color": "rgb(230, 234, 241)",
+      "bg": "rgb(26, 33, 46)",
+      "font": "15px",
+      "dur": "0.15s, 0.25s, 0.25s",
+      "radius": "10px"
+    },
+    ".panel": {
+      "color": "rgb(230, 234, 241)",
+      "bg": "rgb(21, 27, 38)",
+      "font": "15px",
+      "dur": "0.15s",
+      "radius": "7px"
+    },
+    ".chip": {
+      "color": "rgb(146, 157, 174)",
+      "bg": "rgb(21, 27, 38)",
+      "font": "11px",
+      "dur": "0s",
+      "radius": "999px"
+    },
+    ".legend": {
+      "color": "rgb(135, 148, 166)",
+      "bg": "rgba(0, 0, 0, 0)",
+      "font": "11px",
+      "dur": "0s",
+      "radius": "0px"
+    },
+    ".rail": {
+      "color": "rgb(230, 234, 241)",
+      "bg": "rgba(0, 0, 0, 0)",
+      "font": "15px",
+      "dur": "0s",
+      "radius": "0px"
+    }
+  },
+  "after": {
+    ".detail": {
+      "color": "rgb(230, 234, 241)",
+      "bg": "rgb(26, 33, 46)",
+      "font": "15px",
+      "dur": "0.15s",
+      "radius": "0px"
+    },
+    ".topbar": {
+      "color": "rgb(230, 234, 241)",
+      "bg": "color(srgb 0.0823529 0.105882 0.14902 / 0.82)",
+      "font": "15px",
+      "dur": "0s",
+      "radius": "0px"
+    },
+    ".badge": {
+      "color": "rgb(94, 224, 160)",
+      "bg": "rgba(94, 224, 160, 0.13)",
+      "font": "11px",
+      "dur": "0s",
+      "radius": "5px"
+    },
+    ".card": {
+      "color": "rgb(230, 234, 241)",
+      "bg": "rgb(26, 33, 46)",
+      "font": "15px",
+      "dur": "0.15s, 0.25s, 0.25s",
+      "radius": "10px"
+    },
+    ".panel": {
+      "color": "rgb(230, 234, 241)",
+      "bg": "rgb(21, 27, 38)",
+      "font": "15px",
+      "dur": "0.15s",
+      "radius": "7px"
+    },
+    ".chip": {
+      "color": "rgb(146, 157, 174)",
+      "bg": "rgb(21, 27, 38)",
+      "font": "11px",
+      "dur": "0s",
+      "radius": "999px"
+    },
+    ".legend": {
+      "color": "rgb(135, 148, 166)",
+      "bg": "rgba(0, 0, 0, 0)",
+      "font": "11px",
+      "dur": "0s",
+      "radius": "0px"
+    },
+    ".rail": {
+      "color": "rgb(230, 234, 241)",
+      "bg": "rgba(0, 0, 0, 0)",
+      "font": "15px",
+      "dur": "0s",
+      "radius": "0px"
+    }
+  },
+  "diffs": 0,
+  "withContainer": {
+    "bg": "rgb(255, 255, 255)",
+    "radius": "10px"
+  }
+}

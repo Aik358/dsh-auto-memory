@@ -1,0 +1,36 @@
+{
+  "before": {
+    "hostH": 24,
+    "vh": 900,
+    "ratio": 0.02666666666666667,
+    "seat": "block"
+  },
+  "afterFit": {
+    "hostH": 800,
+    "vh": 900,
+    "ratio": 0.8888888888888888,
+    "inlineH": "800px",
+    "splitH": 800
+  },
+  "full": {
+    "seat": "none",
+    "card": "none",
+    "hostH": 800,
+    "vh": 900,
+    "ratio": 0.8888888888888888
+  },
+  "restored": {
+    "tag": false,
+    "seat": "block",
+    "card": "block"
+  },
+  "mutFitResult": {
+    "h": 24,
+    "ratio": 0.02666666666666667,
+    "inlineH": ""
+  },
+  "mutMarkResult": {
+    "tag": true,
+    "seat": "none"
+  }
+}

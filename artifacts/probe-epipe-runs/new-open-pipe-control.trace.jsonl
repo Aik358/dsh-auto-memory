@@ -1,0 +1,6 @@
+{"t":0,"ev":"start","pid":45112,"mode":"new","node":"v24.18.0","platform":"win32","argv":["new","--boom-delay=800","--verdict-delay=1500","--keep-streams","--breaker=none"],"keepStreams":true,"breaker":"none","stdoutIsTTY":false,"stderrIsTTY":false}
+{"t":2,"ev":"handler-installed","pid":45112,"mode":"new"}
+{"t":4,"ev":"streams-broken","pid":45112,"skipped":"keep-streams","note":"only an external pipe closure can break writes"}
+{"t":814,"ev":"boom-thrown","pid":45112,"delayMs":800}
+{"t":1516,"ev":"verdict-written","pid":45112,"cpuMs":0,"wallMs":1515}
+{"t":1517,"ev":"exit","pid":45112,"code":0}

@@ -1,0 +1,78 @@
+{
+  "url": "https://api.github.com/repos/Aik358/dsh-auto-memory/issues/156",
+  "repository_url": "https://api.github.com/repos/Aik358/dsh-auto-memory",
+  "labels_url": "https://api.github.com/repos/Aik358/dsh-auto-memory/issues/156/labels{/name}",
+  "comments_url": "https://api.github.com/repos/Aik358/dsh-auto-memory/issues/156/comments",
+  "events_url": "https://api.github.com/repos/Aik358/dsh-auto-memory/issues/156/events",
+  "html_url": "https://github.com/Aik358/dsh-auto-memory/issues/156",
+  "id": 5641696245,
+  "node_id": "I_kwDOT4IjKM8AAAABUEVz9Q",
+  "number": 156,
+  "title": "[Bug][Windows] 插件侧 sharp 与宿主 libvips-42.dll 同名冲突 → 发送图片 prompt 失败并被误报为 session/agent-busy",
+  "user": {
+    "login": "ShukebtAb",
+    "id": 88775155,
+    "node_id": "MDQ6VXNlcjg4Nzc1MTU1",
+    "avatar_url": "https://avatars.githubusercontent.com/u/88775155?v=4",
+    "gravatar_id": "",
+    "url": "https://api.github.com/users/ShukebtAb",
+    "html_url": "https://github.com/ShukebtAb",
+    "followers_url": "https://api.github.com/users/ShukebtAb/followers",
+    "following_url": "https://api.github.com/users/ShukebtAb/following{/other_user}",
+    "gists_url": "https://api.github.com/users/ShukebtAb/gists{/gist_id}",
+    "starred_url": "https://api.github.com/users/ShukebtAb/starred{/owner}{/repo}",
+    "subscriptions_url": "https://api.github.com/users/ShukebtAb/subscriptions",
+    "organizations_url": "https://api.github.com/users/ShukebtAb/orgs",
+    "repos_url": "https://api.github.com/users/ShukebtAb/repos",
+    "events_url": "https://api.github.com/users/ShukebtAb/events{/privacy}",
+    "received_events_url": "https://api.github.com/users/ShukebtAb/received_events",
+    "type": "User",
+    "user_view_type": "public",
+    "site_admin": false
+  },
+  "labels": [
+
+  ],
+  "state": "open",
+  "locked": false,
+  "assignees": [
+
+  ],
+  "milestone": null,
+  "comments": 0,
+  "created_at": "2026-09-30T05:53:54Z",
+  "updated_at": "2026-09-30T05:53:54Z",
+  "closed_at": null,
+  "assignee": null,
+  "author_association": "NONE",
+  "active_lock_reason": null,
+  "sub_issues_summary": {
+    "total": 0,
+    "completed": 0,
+    "percent_completed": 0
+  },
+  "issue_dependencies_summary": {
+    "blocked_by": 0,
+    "total_blocked_by": 0,
+    "blocking": 0,
+    "total_blocking": 0
+  },
+  "body": "\n### 环境\n\n| 项 | 值 |\n|---|---|\n| 插件版本 | `@a9i5k4/dsh-auto-memory` **3.2.5**（`package.json` 实读） |\n| DSH runtime | **0.1.7-rc.2** |\n| Node | 22.20.0 |\n| OS | Windows x64 |\n| 依赖落点 | **宿主**：`<runtime>\\dsh\\node_modules\\.pnpm\\`（提升区）<br>**插件**：`<profile>\\node_modules\\@a9i5k4\\dsh-auto-memory\\node_modules\\`（嵌套区，与宿主是两份不同物理副本） |\n\n### TL;DR\n\n`@huggingface/transformers`（JS 语义档的运行时）把 `sharp` 作为**硬依赖**带进插件自己的 `node_modules`；而 sharp 的平台包在 **0.34.x 与 0.35.x 里带的是同名文件 `libvips-42.dll`（文件名不含小版本）**。Windows 加载器按 **basename** 去重：同一进程内先加载的那份胜出，后加载的一方在 `dlopen` 阶段报 `ERR_DLOPEN_FAILED: The specified procedure could not be found.`。\n\n**受害者是宿主自己**：宿主 sharp（0.35.4 / libvips 8.18.6）加载失败 ⇒ **发送图片 prompt 被拒**，而外层只暴露 `session/agent-busy` / `prompt rejected`，真因埋在 `details.reason` 里，排查成本极高。**纯文本 prompt 完全不受影响。**\n\n### 症状\n\n向 DSH 发送**图片** prompt 时接口返回：\n\n```json\n{ \"ok\": false, \"error\": {\n  \"code\": \"session/agent-busy\",\n  \"message\": \"prompt rejected\",\n  \"details\": { \"reason\": \"Error: Could not load the \\\"sharp\\\" module using the win32-x64 runtime\\nERR_DLOPEN_FAILED: The specified procedure could not be found.\\n…@img\\\\sharp-win32-x64\\\\lib\\\\sharp-win32-x64-0.35.4.node\" }\n}}\n```\n\n`session/agent-busy` / `prompt rejected` 是兜底包装，**与会话忙碌无关**；把真因写进 `details.reason` 是对的，但字段名让绝大多数使用者第一眼就查错方向。\n\n### 根因链\n\n1. 插件 `lib/semantic-js.js` 在启用 JS 语义档时执行 `await import('@huggingface/transformers')`（`:222`；`:235` 有\"未安装则 tier 保持 disabled\"的降级）。\n2. **`@huggingface/transformers` 把 `sharp` 列为硬 `dependencies`**（本机 transformers 3.8.1：`sharp = ^0.34.1`）。\n3. 宿主 DSH 自己用 **sharp 0.35.4**（libvips 8.18.6）。\n4. 两个平台包各带一份 **`libvips-42.dll`，文件名逐字相同、内容完全不同**（见证据表）。\n5. Windows loader 按 basename 比较已加载模块：进程里已有 8.17.3 那份后，宿主请求 `libvips-cpp-8.18.6.dll` 的依赖时会**复用旧模块** ⇒ 找不到它需要的导出过程 ⇒ `ERR_DLOPEN_FAILED`。\n\n关键性质：**冲突在插件加载语义档的那一刻就已注定，与用户是否真的用到语义检索无关**；且**进程生命周期内不可逆**（无法卸载已驻留 DLL）。\n\n### 证据（本机实测，只读可复现）\n\n两份同名 DLL 并列（现役那份为临时处置后状态，出厂原件在 `.disabled` / `.bak` 备份里）：\n\n| 来源 | `libvips-42.dll` | 配套 wrapper |\n|---|---|---|\n| sharp **0.35.4**（宿主 `.pnpm` **与** 插件现役） | **18,614,784 B** · sha256 `E6CC51BBC763E7DEDA536C6F56CE96B4C51EA769690CE4F4ED07607527B81DAE` | `libvips-cpp-8.18.6.dll` 333,312 B |\n| sharp **0.34.5**（插件出厂原件，现禁用） | **19,112,960 B** · sha256 前缀 `F8D356DEF7394166` | `libvips-cpp-8.17.3.dll` 327,168 B |\n\n- 插件出厂件实证：`node_modules\\sharp.0.34.5.bak`、`node_modules\\@img\\sharp-win32-x64.disabled\\package.json` → `version: \"0.34.5\"`。\n- 宿主件实证：`<runtime>\\dsh\\node_modules\\.pnpm\\sharp@0.35.4_@types+node@26.6.3`、`.pnpm\\@img+sharp-win32-x64@0.35.4`。\n\n复现命令（全部只读）：\n\n```powershell\n# 1) 看谁抢占了 libvips-42.dll（Windows，需实例 PID）\nGet-Process -Id <实例PID> -Module | Where-Object { $_.ModuleName -match 'vips|sharp' } |\n    Select-Object ModuleName, FileName\n\n# 2) 比两侧 sharp 版本\n$j = Get-Content '<runtime>\\dsh\\node_modules\\.pnpm\\sharp@*\\node_modules\\sharp\\package.json' -Raw -Encoding UTF8 | ConvertFrom-Json; $j.version\n$k = Get-Content '<profile>\\node_modules\\@a9i5k4\\dsh-auto-memory\\node_modules\\sharp\\package.json' -Raw -Encoding UTF8 | ConvertFrom-Json; $k.version\n\n# 3) 比两侧同名 DLL（内容不同、文件名相同）\nGet-FileHash '<profile>\\node_modules\\@a9i5k4\\dsh-auto-memory\\node_modules\\@img\\sharp-win32-x64\\lib\\libvips-42.dll' -Algorithm SHA256\nGet-FileHash '<runtime>\\dsh\\node_modules\\.pnpm\\@img+sharp-win32-x64@0.35.4\\node_modules\\@img\\sharp-win32-x64\\lib\\libvips-42.dll' -Algorithm SHA256\n```\n\n### 为什么\"已经是 optionalDependencies\"没能挡住（重要）\n\n`package.json:65-67` 里 `@huggingface/transformers` **确实已经是 `optionalDependencies`**（`^3.7.6`），`lib/semantic-js.js:235` 也有\"未安装 ⇒ tier 保持 disabled\"的降级路径 —— 所以\"把它从硬依赖改成可选依赖 + 懒加载降级\"**这一半已经做完了，它不是本 issue 的解法**。\n\noptional 只保证\"**装不上**时不报错\"，不保证\"**装上之后**不炸\"。而插件 UI 自己就在引导用户安装它：`lib/client.js:13000` 起给出的复制命令即\n\n```\npnpm approve-builds\npnpm add @huggingface/transformers\n# 然后重启 dsh web\n```\n\n按这条路径装出来的实例**必然落在插件自己的 `node_modules`**（嵌套区），于是宿主 `.pnpm` 里那份 sharp 与插件这份 sharp 在同一进程内共存 ⇒ 冲突必现。\n\n### 为什么建议由插件侧处置\n\n用户侧的权宜做法（把插件内 `sharp` + `@img/sharp-win32-x64` 整套替换成宿主同版本 0.35.4，并把原件改名备份）**在每次插件升级/重装后立即失效**，本机已实测复发，属\"掩盖\"而非\"修复\"。结构性解法只能在插件侧。\n\n### 建议修法（按推荐度）\n\n| 方案 | 做法 | 代价 |\n|---|---|---|\n| **A（推荐）进程隔离** | JS 语义档的 `transformers` 推理放进独立子进程（`child_process.fork` / worker）执行，主进程**永不加载**插件版 sharp。DLL 冲突变成跨进程问题，天然消失；顺带解决 JS 推理阻塞主线程与 OOM 牵连。 | 需要一层 IPC 封装（embedding 请求/响应） |\n| **B 与宿主同源** | 让 JS 档不引入第二份 libvips：装插件时把 `sharp` 提升/对齐到宿主版本（`pnpm.overrides` 或 `resolutions` 钉 `sharp` 版本，并在安装脚本里强制与宿主 `.pnpm` 中那份同版本），或直接不再安装 JS 档、只用插件自带的 Python 语义引擎（`.venv` + onnxruntime，node 侧彻底不加载 sharp）。 | 版本漂移需跟随宿主；Python 档环境部署量（BGE-M3 int8 ≈539 MB） |\n| **C 加载前探测（仅缓解）** | `import` 前探测宿主进程是否**已加载** `libvips-42.dll`（`process.report.getReport().sharedObjects` 或等价平台 API），已加载则跳过 JS 语义档。 | **只挡住一个方向**：若插件先加载，宿主后续加载仍会炸 ⇒ 不能单独作为修复 |\n| **D 低成本即时收益** | 插件 `activate` 时做一次自检：若自身 `node_modules` 下存在 `libvips-42.dll` **且**宿主侧 sharp 版本与之不同，就在面板与日志里打一条**明确告警**（写明\"发送图片会失败、真因是 DLL 同名冲突、临时处置办法\"）。 | 一行自检 + 一条文案，但能把\"误导性报错\"变成\"可自解释\" |\n\nA 与 D 不冲突，建议同批。\n\n### 不推荐的做法（已试过或成本过高）\n\n- 只换 `@img` 平台包、不换主包 ⇒ 版本错配；\n- 给宿主 DLL 改名 ⇒ 要改 PE 导入表；\n- 调整加载顺序 ⇒ 由宿主启动流程决定，插件不可控；\n- 给 transformers 的 bundle 打 stub ⇒ 多入口（`node.cjs` / `node.min.cjs` / `node.mjs`）都要改，且升级即失效。\n\n### 附：一条请求\n\n若短期不修，**建议至少在 README / 语义档安装引导处加一句**：\n> Windows 上启用 JS 语义档会引入第二份 `libvips-42.dll`，可能与 DSH 自身图片能力冲突（症状：发送图片失败并报 `session/agent-busy`）。如遇此症状，改走 Python 语义档或暂不启用 JS 档。\n\n这一条能省掉其他使用者同等的排查时间。",
+  "closed_by": null,
+  "reactions": {
+    "url": "https://api.github.com/repos/Aik358/dsh-auto-memory/issues/156/reactions",
+    "total_count": 0,
+    "+1": 0,
+    "-1": 0,
+    "laugh": 0,
+    "hooray": 0,
+    "confused": 0,
+    "heart": 0,
+    "rocket": 0,
+    "eyes": 0
+  },
+  "timeline_url": "https://api.github.com/repos/Aik358/dsh-auto-memory/issues/156/timeline",
+  "performed_via_github_app": null,
+  "state_reason": null,
+  "pinned_comment": null
+}

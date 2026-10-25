@@ -1,0 +1,39 @@
+{
+  "scopedClassCount": 172,
+  "domClassCount": 173,
+  "missingInDom": [],
+  "noRule": [],
+  "whitelist": {
+    "lane-today": {
+      "kind": "feature-todo",
+      "ticket": "E8-T1",
+      "why": "lanes 视图缺「今日」竖线 —— 真功能缺失，renderLanesViewPre 里 0 处 today 逻辑",
+      "record": "artifacts/e8-visual/FEATURE-TODO.md"
+    },
+    "navbtn": {
+      "kind": "feature-todo",
+      "ticket": "E8-T2",
+      "why": "窄屏导航按钮缺失 —— E5 只做了隐藏 grip，没做抽屉入口",
+      "record": "artifacts/e8-visual/FEATURE-TODO.md"
+    },
+    "layout": {
+      "kind": "struct-equiv",
+      "proof": "artifacts/e8-visual/layout-equiv.md",
+      "why": "原型三栏容器；我用 .dam-evt-split 实现同结构（真 Chrome 控制变量实测列宽/gap/overflow 三项差 0px）",
+      "record": "artifacts/e8-visual/layout-equiv.md"
+    },
+    "col": {
+      "kind": "struct-equiv",
+      "proof": "artifacts/e8-visual/layout-equiv.md",
+      "why": "原型两列滚动容器；我用带 overflow:auto+min-width:0 的 div 实现（同上三项实测等价）",
+      "record": "artifacts/e8-visual/layout-equiv.md"
+    }
+  },
+  "wlActuallyMissing": [
+    "lane-today",
+    "navbtn",
+    "layout",
+    "col"
+  ],
+  "at": "2026-10-25T17:27:23.146Z"
+}
