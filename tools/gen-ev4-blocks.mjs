@@ -175,6 +175,39 @@ ADAPTER_FNS.forEach((nm) => {
   out.push(fnSrc(fn, nm))
 })
 
+// ★★2026-10-26（用户裁定：白板看板不该在小窗口时默认按移动端走，
+//   「收紧它的判断原则，让它在窗口真正很小的时候，再切换成移动端的适配形式」）
+//   —— 移动端断点收紧样式（生成区正式一环，不是往 client.js 手插）。
+//
+//   病灶：EV4 原型 CSS 在 @media(max-width:1023px) 就把三栏降级成手机形态：
+//     .layout{display:block} · .rail{position:fixed;transform:translateX(-102%)}
+//     · .detail{position:fixed;inset:0;translate:0 101%}
+//   ⇒ 桌面小窗（≤1023px，很常见）一进白板页右栏就变「覆盖式抽屉」、盖住左侧全屏。
+//   原型源码不改（用户铁律），在其后追加覆盖把「桌面档」的降级撤销。
+//
+//   判据用**容器查询**而不是 @media —— 实测：白板页在 iframe 里，@media 的宽度/方向
+//   取的是 iframe 视口（≈外层窗口 − 左侧栏），且 orientation 在窄 iframe 里会判成
+//   portrait ⇒ 1100px 桌面窗口被误判成竖屏。容器查询按 iframe 自身宽度判定，
+//   不受视口方向干扰。新阈值：内容宽 ≥660px 即保持桌面形态，更窄才进移动端。
+const EV4_OVERRIDE_CSS_LINES = [
+  '<style id="dam-ev4-responsive-override">',
+  'html{container-type:inline-size;container-name:dam-ev4}',
+  '@container dam-ev4 (min-width:660px){',
+  '  .layout{display:grid !important;position:relative !important;flex:1 !important;min-height:0 !important}',
+  '  .rail{position:relative !important;inset:auto !important;transform:none !important;width:var(--rail-w) !important;z-index:auto !important;box-shadow:none !important;background:transparent !important;border-right:0 !important}',
+  '  .detail{position:relative !important;inset:auto !important;translate:none !important;width:auto !important;transform:none !important;z-index:auto !important;padding:0 !important;background:var(--card) !important;box-shadow:none !important}',
+  '  .mid{height:auto !important;border-right:0 !important;padding:0 var(--pad,14px) !important}',
+  '  .navbtn{display:none !important}',
+  '  .brand span{display:inline !important}',
+  '  .topbar{flex-wrap:nowrap !important;min-height:0 !important;padding:0 12px !important}',
+  '  .controls{order:0 !important;width:auto !important;flex-wrap:wrap !important;overflow:visible !important}',
+  '}',
+  '</style>',
+].join('\\n')
+out.push('')
+out.push('// ── 白板看板：移动端断点收紧（2026-10-26 用户裁定，详见上方注释）──')
+out.push('var EV4_RESPONSIVE_OVERRIDE = ' + JSON.stringify(EV4_OVERRIDE_CSS_LINES))
+out.push('')
 out.push('')
 out.push('// ── 以下符号直接以 var/function 声明在本闭包内，client.js 的代码可直接引用 ──')
 out.push('// buildEv4IframeHtmlSafePre / adaptStoreToPrototypePayload / ev4PayloadSigPre')
