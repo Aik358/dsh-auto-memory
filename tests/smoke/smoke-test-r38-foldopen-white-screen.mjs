@@ -72,7 +72,7 @@ if (perceptHelperStart < 0 || perceptHelperEnd <= perceptHelperStart) { console.
 const perceptHelper = src.slice(perceptHelperStart, perceptHelperEnd)
 const segWithDeps = perceptHelper + seg
 const helperLines = perceptHelper.split('\n').length
-console.log('percept+checkpoint+views helper 段行数 =', helperLines, '（区间锁 250~700，2026-10-25 P3 后实测 625）')
+console.log('percept+checkpoint+views helper 段行数 =', helperLines, '（区间锁 250~900，2026-10-26 P2b 弹窗后实测 740）')
 // ★区间锁随功能演进上调：H4 四 percept（95 行）→ +P0 检查点折叠与六类 panel 注册表（共 187 行）。
 //   锁的作用是「防止段边界切歪吞掉半个文件」，不是钉死行数 ⇒ 按实测上调但保留上下界。
 // ★区间锁随功能演进上调（P0 后 187 → P1 后 313）：H4 四 percept + P0 检查点折叠/六类 panel
@@ -111,7 +111,7 @@ console.log('percept+checkpoint+views helper 段行数 =', helperLines, '（区�
 // 【③ 负路径：上界真的在守（见套件末尾的区间锁负路径断言）】
 //   把 5 行代码塞进该区间（模拟「另一个改动混进来」）⇒ 断言必红，见文件末尾 R38-RANGE-MUT。
 // ═══════════════════════════════════════════════════════════════════════════
-if (!(helperLines >= 250 && helperLines <= 700)) { console.log('✗ helper 段行数异常'); process.exit(1) }
+if (!(helperLines >= 250 && helperLines <= 900)) { console.log('✗ helper 段行数异常'); process.exit(1) }
 const segLines = seg.split('\n').length
 console.log('事件卡段行数 =', segLines, '（区间锁 20~80）')
 if (!(segLines >= 20 && segLines <= 80)) { console.log('✗ 段边界异常（终点锚可能吞掉了半个文件）'); process.exit(1) }
@@ -164,7 +164,7 @@ console.log('=== 守卫通过：真渲染不抛 + 负路径精确报红 ===')
 //   目的：证明 700 这个上界真的在守（不是形同虚设），且不影响正常增行。
 // ═══════════════════════════════════════════════════════════════════════════
 {
-  const LOCK_MIN = 250, LOCK_MAX = 700
+  const LOCK_MIN = 250, LOCK_MAX = 900
   function wouldPass (n) { return n >= LOCK_MIN && n <= LOCK_MAX }
   // 基线：实测值必须通过
   if (!wouldPass(helperLines)) { console.log('✗ R38-RANGE-MUT 基线未通过（' + helperLines + '）'); process.exit(1) }

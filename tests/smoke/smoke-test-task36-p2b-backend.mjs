@@ -66,9 +66,9 @@ try {
   const statePath = path.join(p.userDir, 'upgrade-state.json');
 
   console.log('[T36-1] 路由已注册（结构守卫，非功能证据）');
-  ok(routes.length === 79, '★★★T36-1a 路由总数 = 79（77 + 2）', String(routes.length));
+  ok(routes.length === 80, '★★★T36-1a 路由总数 = 80（77 + 2 + memory-upgrade）', String(routes.length));
   ok(!!stR && !!snR, '★★★T36-1b 两个路由都已注册');
-  ok(Object.keys(API_KEYS()).length === 79, '★★T36-1c API 常量表 = 79 条', String(Object.keys(API_KEYS()).length));
+  ok(Object.keys(API_KEYS()).length === 80, '★★T36-1c API 常量表 = 80 条', String(Object.keys(API_KEYS()).length));
   function API_KEYS() { const m = IX.match(/const API = \{([\s\S]*?)\n\}/); return m ? [...m[1].matchAll(/([\w'-]+):\s*'\/api/g)].reduce((a, x) => (a[x[1]] = 1, a), {}) : {} }
 
   console.log('');
@@ -162,6 +162,26 @@ try {
   ok(!stAfterGate || stAfterGate.phase !== 'running', '★★★T36-8b **没有先写 phase=running**（先判门再写状态）', stAfterGate ? 'phase=' + stAfterGate.phase : '未创建');
   engine._workbenchReady = realReady;
   ok(IX.indexOf('subagent-gated: returned empty') >= 0, '★★★T36-8c .then 空串 ⇒ 记 failed 的分支存在（守卫，非功能证据）');
+
+  console.log('');
+  console.log('[T36-10] ★★★ 追加要求：_resolved.source 有鉴别力（可观测性）');
+  // 造两个不同工作区：wsA（默认）+ wsB（由 sessionWorkspaceFallback 映射）
+  const wsB = path.join(root, 'wsB'); fs.mkdirSync(wsB, { recursive: true });
+  engine.sessionWorkspaceFallback = (id) => (String(id) === 'sidB' ? wsB : String(id) === 'sid-good' ? ws : null);
+  const listR = routes.filter((r) => r.path === '/api/dsh-auto-memory/event-list')[0];
+  const detailR = routes.filter((r) => r.path === '/api/dsh-auto-memory/event-detail')[0];
+  const withSid = await call(listR, '/api/dsh-auto-memory/event-list?sessionId=sidB', 'GET');
+  const noSid = await call(listR, '/api/dsh-auto-memory/event-list', 'GET');
+  ok(withSid.body._resolved && withSid.body._resolved.source === 'sessionId', '★★★T36-10a 带 sessionId ⇒ source="sessionId"', JSON.stringify(withSid.body._resolved && withSid.body._resolved.source));
+  ok(noSid.body._resolved && noSid.body._resolved.source === 'compat-fallback', '★★★T36-10b 不带 sessionId ⇒ source="compat-fallback"', JSON.stringify(noSid.body._resolved && noSid.body._resolved.source));
+  ok(withSid.body._resolved.source !== noSid.body._resolved.source, '★★★T36-10c 两次 source **不同**（字段有区分能力）');
+  ok(String(withSid.body._resolved.ws) !== String(noSid.body._resolved.ws), '★★★T36-10d **两次 ws 也不同**（证明诊断信息有鉴别力）', withSid.body._resolved.ws + ' vs ' + noSid.body._resolved.ws);
+  const d404 = await call(detailR, '/api/dsh-auto-memory/event-detail?id=evt_00000000', 'GET');
+  ok(d404.code === 404 && d404.body._resolved && d404.body._resolved.source === 'compat-fallback', '★★★T36-10e event-detail **404 时也带 _resolved.source**', JSON.stringify(d404.body._resolved && d404.body._resolved.source));
+  ok(d404.body._resolved && String(d404.body._resolved.ws).length > 0, '★★T36-10f 404 时也带 ws');
+  for (const r of [withSid, noSid, d404]) {
+    ok(['sessionId', 'compat-fallback'].includes(r.body._resolved.source), '★★T36-10g source 只能是两个枚举值之一: ' + r.body._resolved.source);
+  }
 
   console.log('');
   console.log('[T36-9] ★★ memory_upgrade 真能 fork（能力核实，判据 3）');

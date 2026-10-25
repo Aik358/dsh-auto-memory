@@ -50,7 +50,7 @@ if (registeredTools.length !== 21) throw new Error('expected 21 tools (17 + T4 m
 // ★2026-10-01 再演进：68→69（新增 /global-brief，全球动态简报批）。
 // ★2026-10-02 再演进：69→70（审计修复批 #174 新增 POST /team-control，loopback-only，无条件注册）。
 // ★issue #211（2026-10-04）再演进：70→71（新增 POST /python-setup/uninstall，无条件注册）。
-if (registeredRoutes.length !== 79) throw new Error('expected 79 routes, got ' + registeredRoutes.length)
+if (registeredRoutes.length !== 80) throw new Error('expected 80 routes, got ' + registeredRoutes.length)
 
 const cfgRoute = registeredRoutes.find((r2) => r2.path === '/api/dsh-auto-memory/config')
 let body

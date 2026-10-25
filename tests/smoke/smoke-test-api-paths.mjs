@@ -48,11 +48,12 @@ const HOST_ONLY_WHITELIST = [
   //   「合规」区块（B12 消费；在 B12 落地前暂无界面消费者，故暂列白名单）。
   //   它**不是死端点**：客户环境要求「声明 E2E / 关闭上报」时，这是唯一可被读取的明示出口。
   '/api/dsh-auto-memory/team-compliance',
-  // ★task-36（2026-10-25 用户裁定「P2B 自动检测也必须要做」）：P2b 弹窗的两个后端通路。
-  //   消费者：前端弹窗组件（检测到 legacy 且未 declined ⇒ GET status 说该弹；点『稍后』⇒ POST snooze）。
-  //   两者都是「宿主有、前端必须调」⇒ 按本白名单语义（A2 判据 = 宿主独有 == 白名单）应列入。
-  '/api/dsh-auto-memory/upgrade-status',
-  '/api/dsh-auto-memory/upgrade-snooze',
+  // ★★2026-10-26 修正（白名单语义是「**宿主独有** == 白名单」，不是「宿主新增」）：
+  //   P2b 的三条通路（upgrade-status / upgrade-snooze / memory-upgrade）**前端 API 表里也有**
+  //   ⇒ 它们不属于「宿主独有」⇒ **不应列入本白名单**。
+  //   历史：task-36 曾把 upgrade-status/upgrade-snooze 加进来 —— 那是**误判**，
+  //   它当时能绿是因为前端 API 表还没加这两个键；本轮前端接上后 A2 立刻暴露出方向反了。
+  //   判据：加白名单前先问「前端到底调不调它」；调 ⇒ 不列白名单（A1 会自动覆盖）。
 ]
 
 function parseHostTable(src) {

@@ -756,7 +756,7 @@ ok(damNoMixedEol(SRC), 'E2 纯 CRLF')
 //     改后 = 1,154,836 字符 / 734908559343F61E，累计 +30,173（R139 增量 +3,965）。
 //   判据意图不变（宿主 index.js 不得无痕漂移），按 2026-10-01 裁定复算重钉。
 //   配套：新增 tests/smoke/smoke-test-v4-d-events-recall.mjs（22 PASS；3 条变异必红）。
-eq(createHash('sha256').update(IX).digest('hex').slice(0, 16).toUpperCase(), '5DDADFDAB822A79B', 'R138 = R137 + 2026-10-25 **v4-C2 真缺陷修复 + i332/batchA 判据更新**。★归因（实测复算）：本批开工基线 = R137 锁定值 1,209,133 字符 / sha16 `94E1F6A8A1C42A5B`；本批改后 = **1,210,508 字符 / `E04A79739D70EF91`**（Δ **+1,375 字符**）。逐项溯源：① **C2 真缺陷修复**（Lead 真引擎复查抓出）：`refreshEventStatePre` 预计算 `state.slimEventT1`（[{id,line}] 投影，不挂整 events 对象）+ `state.slimEventTotal`，降级分支同步清空；`renderSlimSnapshotPre` 的 C2 段改读 `s.slimEventT1` 而**不再读 `s.events`**（该字段产品从不写 ⇒ 原来恒空 ⇒ 「[当前事件]」永不出现，而套件手工塞 state.events 造了假绿）；② **i332 产品侧简化**：memory_note 分支删 3 处冗余 `engine.resolvePaths(exec.agent)`（Phase1/Phase3/事件侧刷新块），复用分支开头的 `const p` —— 少 3 次异步 IO，且抽取式测试的分支不再引用 `exec`（契约更干净）。⇒ 判据意图不变（宿主 index.js 不得无痕漂移），按 2026-10-01 裁定复算重钉。★本批不改公共契约（纯缺陷修复 + 冗余消除）。★同批判据更新（改测试不改产品）：`v4-c2-slim-events` 重写为真引擎端到端（37 条，含 C2-0 元断言禁止再读 s.events）· `i332-write-contract` 23→29 条（补桩 + ⑨WAL 顺序 + ⑩Phase1 失败中止）· `tools/check-write-contract.mjs` 变异③改全局替换 · `v4-batchA-wiring` 25→31 条（catalog 双向断言 + W-1b 三 active 核心判据）。')
+eq(createHash('sha256').update(IX).digest('hex').slice(0, 16).toUpperCase(), 'EFEC2DF4C21053C6', 'R138 = R137 + 2026-10-25 **v4-C2 真缺陷修复 + i332/batchA 判据更新**。★归因（实测复算）：本批开工基线 = R137 锁定值 1,209,133 字符 / sha16 `94E1F6A8A1C42A5B`；本批改后 = **1,210,508 字符 / `E04A79739D70EF91`**（Δ **+1,375 字符**）。逐项溯源：① **C2 真缺陷修复**（Lead 真引擎复查抓出）：`refreshEventStatePre` 预计算 `state.slimEventT1`（[{id,line}] 投影，不挂整 events 对象）+ `state.slimEventTotal`，降级分支同步清空；`renderSlimSnapshotPre` 的 C2 段改读 `s.slimEventT1` 而**不再读 `s.events`**（该字段产品从不写 ⇒ 原来恒空 ⇒ 「[当前事件]」永不出现，而套件手工塞 state.events 造了假绿）；② **i332 产品侧简化**：memory_note 分支删 3 处冗余 `engine.resolvePaths(exec.agent)`（Phase1/Phase3/事件侧刷新块），复用分支开头的 `const p` —— 少 3 次异步 IO，且抽取式测试的分支不再引用 `exec`（契约更干净）。⇒ 判据意图不变（宿主 index.js 不得无痕漂移），按 2026-10-01 裁定复算重钉。★本批不改公共契约（纯缺陷修复 + 冗余消除）。★同批判据更新（改测试不改产品）：`v4-c2-slim-events` 重写为真引擎端到端（37 条，含 C2-0 元断言禁止再读 s.events）· `i332-write-contract` 23→29 条（补桩 + ⑨WAL 顺序 + ⑩Phase1 失败中止）· `tools/check-write-contract.mjs` 变异③改全局替换 · `v4-batchA-wiring` 25→31 条（catalog 双向断言 + W-1b 三 active 核心判据）。')
 // ★★2026-10-25 E3c（Lead 二次裁决：**删掉 E3b**）：
 //
 //   【为什么删 E3b】原 E3b 是 `eq(R132_CHARS - R131_CHARS, R132_DELTA)` ——
@@ -790,9 +790,9 @@ eq(createHash('sha256').update(IX).digest('hex').slice(0, 16).toUpperCase(), '5D
 //   ⇒ 判据意图不变（宿主 index.js 不得无痕漂移），按 2026-10-01 裁定复算重钉。
 //   ★受影响的公共契约：`/event-curate` 出草案**不再需要令牌**（只读预览），写盘必须带服务端签发的真令牌；
 //     响应体 409 固定带 `code: "confirm-required"`。
-const R148_CHARS = 1247578   // R138（本版）lib/index.js **归一化 LF 长度**（登记值，= readFileSync().replace(/\r\n/g,'\n') 之后的字符数，NOT 文件字节数）；R138 = v4-C2 真缺陷修复（slimEventT1）+ i332 产品侧删 3 处冗余 resolvePaths
-eq(IX.length, R148_CHARS,
-  'E3c ★实际长度必须等于登记长度（防「锁定了一个陈旧读数」）：实际 ' + IX.length + ' 应 = ' + R148_CHARS)
+const R150_CHARS = 1250600   // R138（本版）lib/index.js **归一化 LF 长度**（登记值，= readFileSync().replace(/\r\n/g,'\n') 之后的字符数，NOT 文件字节数）；R138 = v4-C2 真缺陷修复（slimEventT1）+ i332 产品侧删 3 处冗余 resolvePaths
+eq(IX.length, R150_CHARS,
+  'E3c ★实际长度必须等于登记长度（防「锁定了一个陈旧读数」）：实际 ' + IX.length + ' 应 = ' + R150_CHARS)
 // ★2026-10-08 R1 重钉（R87 → R88）：lib/index.js **有意演进** —— R1 收口修 issue #174：
 //   #258 的发送出口包装（`engine._teamFetch = async (...) => ...`）是个**裸箭头函数**，
 //   把原 teamFetch 的属性面 `dispose/describe/readToken` 全部丢掉 ⇒ 卸载路径的
@@ -802,7 +802,7 @@ eq(IX.length, R148_CHARS,
 //   守卫语义不变：仍锁「宿主 lib/index.js 归一化 LF 后的 sha256 前 16 位大写」这一基线常量，只更新被锁的字节值。
 //   （重钉值 70C221D02149DF15 由**本套件自身的剥离表达式**复算得出：本文件第 23 行 IX 的 sha256 前 16 位大写。）
 // ★2026-09-28 计数演进：67→68（新增 skin-library-fetch，见 E3 同批）。语义保留：仍锁路由数不漂移。
-eq(cnt(IX, "path: API[") + cnt(IX, 'path: API.'), 79, 'E4 ★路由数守恒 = 79（2026-10-24 v4 批次 D2 事件四路由 /event-unarchived·/event-curate·/event-list·/event-detail +4；2026-10-04 issue #211 /python-setup/uninstall +1；2026-09-28 皮肤库 +1；2026-10-01 /global-brief +1；2026-10-02 审计修复批 #174 /team-control +1；其余零新增）')
+eq(cnt(IX, "path: API[") + cnt(IX, 'path: API.'), 80, 'E4 ★路由数守恒 = 80（2026-10-26 P2b 弹窗补 POST /memory-upgrade +1；原 79 v4 批次 D2 事件四路由 /event-unarchived·/event-curate·/event-list·/event-detail +4；2026-10-04 issue #211 /python-setup/uninstall +1；2026-09-28 皮肤库 +1；2026-10-01 /global-brief +1；2026-10-02 审计修复批 #174 /team-control +1；其余零新增）')
 console.log('lib/client.js ' + Buffer.byteLength(SRC, 'utf8') + 'B / CRLF ' + (SRC.match(/\r\n/g) || []).length + ' / sha16 ' + createHash('sha256').update(SRC).digest('hex').slice(0, 16).toUpperCase())
 console.log('PASS ' + p + ' / FAIL ' + f)
 fails.forEach((x) => console.log('  FAIL: ' + x))
