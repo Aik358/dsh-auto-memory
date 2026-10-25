@@ -152,16 +152,30 @@ try {
 
   console.log('');
   console.log('[T36-8] ★★★ 裁决 1：start 先判门（不先写 running）');
-  // 真调 memory_upgrade start：把 _workbenchReady 置 false
+  // ★★2026-10-26 判据更新（用户裁定推翻旧决策 —— 见 STARTUP 注释与 commit 507d0a1）：
+  //   旧判据「工作台未就绪 ⇒ 立刻拒绝 workbench-not-ready」锁的是**一条已被推翻的决策**：
+  //   用户裁定「派子代理的逻辑要和 consolidate、greet 用一套逻辑」，而 `_workbenchReady` 的
+  //   **本地预判门**正是「同一语义两处各写一份判据」的半修 —— runSubagent 内部本就有
+  //   门控→ensureWorkbench 惰性重建→退避重试→期牌自愈 全套。预判门在进入前返回 ⇒ 自愈链没机会跑。
+  //   ⇒ 已删除该预判门。本组断言改为守**新契约**：
+  //     ① 未就绪**不再**当场拒绝（交给 runSubagent 统一裁决）；
+  //     ② 真·不可恢复判据仍要拒绝（disposed / subagents 缺失）；
+  //     ③ 空串仍必须记 failed（不允许「静默成功」假完成）。
   const up = tools.find((t) => String(t.name) === 'memory_upgrade');
   const realReady = engine._workbenchReady;
+  const realSubs = engine._subagents;
   engine._workbenchReady = false;
   const startRes = JSON.parse(await up.execute({ action: 'start' }, { agent: { session: { id: 's1', header: { cwd: ws } } } }));
-  ok(startRes.ok === false && startRes.error === 'workbench-not-ready', '★★★T36-8a 工作台未就绪 ⇒ **立刻拒绝** {ok:false, error:workbench-not-ready}', JSON.stringify(startRes));
-  const stAfterGate = fs.existsSync(statePath) ? JSON.parse(fs.readFileSync(statePath, 'utf8')) : null;
-  ok(!stAfterGate || stAfterGate.phase !== 'running', '★★★T36-8b **没有先写 phase=running**（先判门再写状态）', stAfterGate ? 'phase=' + stAfterGate.phase : '未创建');
+  ok(startRes.ok !== false || startRes.error !== 'workbench-not-ready', '★★★T36-8a **未就绪不再当场拒绝**（旧预判门已删，交 runSubagent 自愈）', JSON.stringify(startRes));
+  // ② 真·不可恢复判据仍必须拒绝（负路径：证明新契约没有把门全部拆掉）
+  engine._subagents = undefined;
+  const startRes2 = JSON.parse(await up.execute({ action: 'start' }, { agent: { session: { id: 's1', header: { cwd: ws } } } }));
+  ok(startRes2.ok === false && startRes2.error === 'subagents-unavailable', '★★★T36-8a2 subagents 缺失 ⇒ 仍立刻拒绝（真·不可恢复）', JSON.stringify(startRes2));
+  engine._subagents = realSubs;
   engine._workbenchReady = realReady;
-  ok(IX.indexOf('subagent-gated: returned empty') >= 0, '★★★T36-8c .then 空串 ⇒ 记 failed 的分支存在（守卫，非功能证据）');
+  // ③ 空串必须记 failed（新文案带诊断快照，不再是笼统的 subagent-gated）
+  ok(IX.indexOf('upgrade subagent returned empty') >= 0 && IX.indexOf("phase: 'failed'") >= 0, '★★★T36-8c 空串 ⇒ 记 failed（含诊断快照，守卫）');
+  ok(IX.indexOf('subagent-gated: returned empty') < 0, '★★★T36-8c2 **旧笼统文案已删**（不可定位，已被诊断快照取代）');
 
   console.log('');
   console.log('[T36-10] ★★★ 追加要求：_resolved.source 有鉴别力（可观测性）');

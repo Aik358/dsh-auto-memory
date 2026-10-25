@@ -117,8 +117,11 @@ ck('门异常 fail-open（宁可漏拦不停摆）', /ownership gate error \(fai
 console.log('\n══ ⑥ E4 父缓存绑定期牌 ══')
 ck('_workbenchParent 赋值点仍为 3（未散落）', (idx.match(/this\._workbenchParent = /g) || []).length === 3,
   'got=' + (idx.match(/this\._workbenchParent = /g) || []).length)
-ck('三处赋值点都打标签（标签出现 6 次 = 3 赋值 + 2 比较 + 1 诊断）',
-  (idx.match(/_workbenchParentEpoch/g) || []).length === 6,
+// ★2026-10-26 归因（判据过期，非缺陷）：7 = 6（3 赋值 + 2 比较 + 1 诊断）+ 1（新增的
+//   upgrade 失败诊断快照读取 parentEpoch，用于定位「是否挂到上一期工作台」）。
+//   判据意图不变（守「赋值点不散落 + 每处都打标签」），按实测上调。
+ck('三处赋值点都打标签（标签出现 7 次 = 3 赋值 + 2 比较 + 2 诊断）',
+  (idx.match(/_workbenchParentEpoch/g) || []).length === 7,
   'got=' + (idx.match(/_workbenchParentEpoch/g) || []).length)
 ck('★空标签 = 迁移态放行（判据以 !! 开头）',
   /const _wbParentStale = !!this\._workbenchParentEpoch && String\(this\._workbenchParentEpoch\) !== _wbEpochNow/.test(idx))
