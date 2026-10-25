@@ -82,6 +82,48 @@ const adapterMod = await import(pathToFileURL(ADAPTER).href)
 ok(adapterMod.patchShellStatsPre === undefined, '★★[负] adapter 也不再 export 它')
 ok(typeof adapterMod.buildEv4IframeHtmlSafePre === 'function', '★[正] adapter 仍有 buildEv4IframeHtmlSafePre')
 
+// ══════════════════════════════════════════════════════════════════════
+// == 2b. ★新增（2026-10-26 审计 task-37 建议）：adaptEventPre 时间字段形状回归护栏
+//   背景：白板看板时间显示 `08:0 年 0 月` 的 bug 经历过「修一次 → 被生成器回退一次」，
+//        而 tests/smoke 里**零断言**覆盖 start 形状 ⇒ 没有回归护栏。
+//   判据（来自审计报告 §1.2 + 原型双证）：
+//     · 原型 EV4_PROTO_RUNTIME 把 ev.start 当**完整时间戳**消费（18 处：
+//       monthLabel slice(0,7) / 日期分组 slice(0,10) / 时刻 slice(11,16) / relLabel）；
+//     · 原型自己的 demo 生成器亦为 `start: cps[0].at`（at = 'YYYY-MM-DD HH:mm'）。
+//   ⇒ start/end 必须是 'YYYY-MM-DD HH:mm'，**不是** 'HH:mm'。
+//   ★这是**真执行** adapter（真 import + 真调用 + 断言返回值），不是源码字符串断言。
+// ══════════════════════════════════════════════════════════════════════
+console.log('')
+console.log('== 2b. adaptEventPre 时间字段形状（回归护栏，防被生成器回退）==')
+if (typeof adapterMod.adaptEventPre !== 'function') {
+  ok(false, '★★★[时间] adapter 导出 adaptEventPre', '未导出 ⇒ 后续断言无法执行')
+} else {
+  const RE_FULL = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/
+  // ★桩纪律（本仓「假状态桩」教训，2026-10-25 C2 案例）：
+  //   `cp.at` 在**真实 event-store.json 里是毫秒数**（实测 1792851795071 / typeof number），
+  //   不是 ISO 字符串。第一版护栏传了 '2026-10-25 14:30' ⇒ Number() = NaN ⇒ 1970 ⇒ 假红 3 条。
+  //   ⇒ 桩必须复刻**产品真实产出的状态**，否则测的是幻觉。
+  const CP_MS = new Date(2026, 9, 25, 14, 30).getTime()  // 与真实格式一致：毫秒
+  const mkEv = (cpMs) => ({
+    id: 'evt_test01', name: '时间形状测试', status: 'active', sections: {},
+    createdAt: new Date(2026, 9, 25, 14, 30).getTime(),
+    updatedAt: new Date(2026, 9, 26, 9, 5).getTime(),
+    checkpoints: cpMs ? [{ at: cpMs, kind: 'progress', text: 'x' }] : [],
+  })
+  // ① 有检查点（走 cps 分支）—— at 传毫秒，与真实数据同形
+  const rA = adapterMod.adaptEventPre(mkEv(CP_MS), 0)
+  ok(RE_FULL.test(String(rA.start)), '★★★[时间] start 是完整 "YYYY-MM-DD HH:mm"（有检查点）', 'start=' + rA.start)
+  ok(RE_FULL.test(String(rA.end)), '★★★[时间] end 是完整 "YYYY-MM-DD HH:mm"', 'end=' + rA.end)
+  ok(String(rA.start).slice(0, 7) === '2026-10', '★★★[时间] 原型 monthLabel(slice(0,7)) 得到 "2026-10"', 'got=' + String(rA.start).slice(0, 7))
+  ok(String(rA.start).slice(11, 16) === '14:30', '★★★[时间] 原型 slice(11,16) 得到 "14:30"', 'got=' + String(rA.start).slice(11, 16))
+  ok(String(rA.date) === '2026-10-25', '★★[时间] date 字段仍是 "YYYY-MM-DD"（本来就对，别改坏）', 'date=' + rA.date)
+  // ② 无检查点（走 createdAt/updatedAt 分支）
+  const rB = adapterMod.adaptEventPre(mkEv(null), 1)
+  ok(RE_FULL.test(String(rB.start)), '★★★[时间] start 是完整时间戳（无检查点分支）', 'start=' + rB.start)
+  // ③ 负路径：绝不能是裸 'HH:mm'（那正是旧 bug）
+  ok(!/^\d{2}:\d{2}$/.test(String(rA.start)), '★★★[负] start 不得是裸 "HH:mm"（旧 bug 形状）', 'start=' + rA.start)
+}
+
 console.log('')
 console.log('== 3. 功能等价：6 组输入两份实现输出逐字符相等 ==')
 const ctxProto = vm.createContext({})
