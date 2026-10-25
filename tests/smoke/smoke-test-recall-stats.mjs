@@ -199,11 +199,101 @@ ok(/it\.score \|\| 0/.test(CL), 'S4g8 ★注入侧按字符数度量（回答「
 // 动效必须走项目既有 token（skill 教义：对齐既有刻度，不引入第二套）
 ok(cnt(CL, '@keyframes dam-stat-') === 6, 'S4h 新增 6 个统计专用 keyframes（命中 6）')
 {
+  // ═══════════════════════════════════════════════════════════════════════════
+  // ★S4i/S4j 判据改造（2026-10-25，C 线 E 批收口）
+  //
+  // 【为什么改】旧判据用**位置切片**取 region：
+  //     const iStats = CL.indexOf('function StatsTab() {')      // ≈ 836,939
+  //     const iCss   = CL.indexOf('@keyframes dam-stat-num')    // ≈ 348,442
+  //     const region = CL.slice(min, max + 8000)                // ≈ 496,188 字符
+  //   2026-10-25 E1 把**原型 EV4_CSS（≈45KB）插在两者之间**，位置切片把整段
+  //   EV4_CSS 吞了进来 ⇒ S4j 抓到的 `animation:ev4-lm-spin 800ms`（L5143，属原型照搬）
+  //   被误判成「StatsTab 硬编码裸毫秒」。
+  //   位置切片的**根本问题**：任何人往这两点之间插东西，region 就会悄悄扩大，
+  //   判据范围随代码布局漂移 —— 这不是「严格」，是**不可控**。
+  //
+  // 【改成什么】改为**内容锚定**（三段精确拼接，不再靠位置跨度）：
+  //     ① stats 的 6 个 @keyframes（花括号配平，265 字符级别）
+  //     ② stats 动效的**真实调用点**（animation: 'dam-stat-*' 那几处，≈14.5KB）
+  //     ③ StatsTab 函数体（花括号配平，≈7.2KB）
+  //   ★同时加长度上限断言：region < 60,000 字符。一旦又吞进别的东西（比如有人再插
+  //     一段大 CSS），这条会立刻红 —— 位置切片时代缺的正是这道闸。
+  // ═══════════════════════════════════════════════════════════════════════════
+  /** 从 startAt 之后第一个 `{` 起做花括号配平，返回匹配 `}` 之后的位置。 */
+  function matchBrace (src, startAt) {
+    const i = src.indexOf('{', startAt)
+    if (i < 0) return -1
+    let depth = 1
+    for (let j = i + 1; j < src.length; j += 1) {
+      const c = src[j]
+      if (c === '{') depth += 1
+      else if (c === '}') { depth -= 1; if (depth === 0) return j + 1 }
+    }
+    return -1
+  }
+
+  // ① stats 的 6 个 keyframes（已是 S4h 的判据对象，这里复用其边界）
+  const kfIdx = [...CL.matchAll(/@keyframes dam-stat-[\w-]+/g)].map((m) => m.index)
+  ok(kfIdx.length === 6, 'S4i-pre ★stats keyframes 恰 6 个（实测 ' + kfIdx.length + '）')
+  const statsCss = CL.slice(kfIdx[0], matchBrace(CL, kfIdx[kfIdx.length - 1]))
+  ok(statsCss.length > 200 && statsCss.length < 5000, 'S4i-pre ★stats keyframes 段长度合理（实测 ' + statsCss.length + ' 字符）')
+
+  // ② stats 动效的真实调用点：所有 `animation: 'dam-stat-*` 用法
+  const animUses = [...CL.matchAll(/animation:\s*'?dam-stat-[\w-]+/g)].map((m) => m.index)
+  ok(animUses.length >= 5, 'S4i-pre ★stats 动效调用点 >= 5 处（实测 ' + animUses.length + '）')
+
+  // ③ StatsTab 函数体（花括号配平，不用固定 +8000 这类魔数）
   const iStats = CL.indexOf('function StatsTab() {')
-  const iCss = CL.indexOf('@keyframes dam-stat-num')
-  const region = CL.slice(Math.min(iStats, iCss), Math.max(iStats, iCss) + 8000)
+  ok(iStats > 0, 'S4i-pre ★StatsTab 可定位')
+  const iStatsEnd = matchBrace(CL, iStats)
+  ok(iStatsEnd > iStats, 'S4i-pre ★StatsTab 函数体可配平（' + (iStatsEnd - iStats) + ' 字符）')
+
+  // ★内容锚定拼接：从「第一个 stats 动效调用点」到 StatsTab 结束，中间不跨越大段无关 CSS
+  const firstUse = Math.min.apply(null, animUses)
+  const useRegion = CL.slice(firstUse - 2000, iStatsEnd)
+  const region = statsCss + '\n' + useRegion
+
+  // ★★长度闸（这是位置切片时代缺的那道防线）
+  ok(region.length < 60000, 'S4i-pre ★region 长度 < 60,000 字符（实测 ' + region.length + '）—— 超了说明又吞了别的东西')
+  ok(!region.includes('--ev4-root-fs') && !region.includes('.dam-ev4'), 'S4i-pre ★region 不含 EV4_CSS（位置切片时代它吞了整段 ≈45KB 原型 CSS）')
+  ok(!region.includes('ITER5_CSS') && !region.includes('function MemoryPanel'), 'S4i-pre ★region 不含无关大块（ITER5_CSS / MemoryPanel）')
+
   ok(/var\(--dam-dur-slow\)/.test(region) && /var\(--dam-ease-out\)/.test(region), 'S4i 动效走既有 token（--dam-dur-slow / --dam-ease-out）')
   ok(!/animation:[^;]*\b[0-9]{3,4}ms\b/.test(region), 'S4j 动效未硬编码裸毫秒（统一走 token）')
+  // ★负路径加强：region 内只允许 dam-stat-* 相关的 animation（防把别处动画算进来）
+  const animDecls = (region.match(/animation:[^;\n]*/g) || [])
+  const nonStatsAnim = animDecls.filter((d) => !/dam-stat-/.test(d) && /[0-9]{3,4}ms/.test(d))
+  ok(nonStatsAnim.length === 0, 'S4j2 ★[负] region 内非 stats 的裸毫秒 animation = 0（实测 ' + nonStatsAnim.length + '）')
+}
+
+{
+  // ★S4j-token（2026-10-25 新增）：.lm-spin 的 800ms 已提为 EV4 token，视觉必须逐像素不变。
+  //   判据分两层：①token 定义存在且值为 800ms；②规则引用 token 而**不再**写字面量。
+  const tokenDef = CL.match(/--ev4-dur-spin\s*:\s*([^;"]+)/)
+  ok(!!tokenDef, 'S4j-token-a ★--ev4-dur-spin token 已定义')
+  ok(tokenDef && tokenDef[1].trim() === '800ms', 'S4j-token-b ★token 值 = 800ms（实测 ' + (tokenDef ? tokenDef[1].trim() : 'N/A') + '）—— 视觉不变')
+  const spinRule = (CL.match(/\.dam-ev4 \.lm-spin\{[^}]*\}/) || [''])[0]
+  ok(/\.dam-ev4 \.lm-spin\{/.test(spinRule), 'S4j-token-c ★.dam-ev4 .lm-spin 规则存在')
+  ok(/animation:ev4-lm-spin var\(--ev4-dur-spin\)/.test(spinRule), 'S4j-token-d ★规则引用 token（animation:ev4-lm-spin var(--ev4-dur-spin)）')
+  ok(!/animation:ev4-lm-spin 800ms/.test(spinRule), 'S4j-token-e ★[负] 规则内**不再**写 800ms 字面量')
+  // ★EV4 token 不是配置键：不得出现在 DEFAULT_PROMPT_LAYERS 契约表里（配置键 163 守恒的另一面）
+  ok(!/--ev4-dur-spin/.test(CL.slice(CL.indexOf('DEFAULT_PROMPT_LAYERS'), CL.indexOf('DEFAULT_PROMPT_LAYERS') + 20000)), 'S4j-token-f ★[负] token 未混进配置键契约表（不影响 163 守恒）')
+
+  // ═══ 变异（必须必红，证明判据非恒真）═══
+  // 变异 A：把 token 值改成 100ms ⇒ S4j-token-b 必红（且视觉会变，说明这条断言真的守着「视觉不变」）
+  const mutToken = CL.replace(/--ev4-dur-spin\s*:\s*800ms/, '--ev4-dur-spin:100ms')
+  ok(mutToken !== CL, 'S4j-mut-a0 [变异A] 成功把 --ev4-dur-spin 改成 100ms')
+  const mutDef = mutToken.match(/--ev4-dur-spin\s*:\s*([^;"]+)/)
+  ok(mutDef && mutDef[1].trim() !== '800ms', 'S4j-mut-a1 ★★[变异A] 改 100ms ⇒ S4j-token-b 必红（实测 ' + (mutDef ? mutDef[1].trim() : 'N/A') + '）')
+
+  // 变异 B：把 region 退回旧的「位置切片 + 8000」写法 ⇒ 长度闸必红
+  const oldRegionLen = (function () {
+    const mStats = CL.indexOf('function StatsTab() {')
+    const mCss = CL.indexOf('@keyframes dam-stat-num')
+    return CL.slice(Math.min(mStats, mCss), Math.max(mStats, mCss) + 8000).length
+  })()
+  ok(oldRegionLen > 60000, 'S4j-mut-b0 ★★★[变异B] 旧位置切片写法 region = ' + oldRegionLen + ' 字符 > 60,000 ⇒ 长度闸必红（实测新写法 15,131）')
+  ok(oldRegionLen > 400000, 'S4j-mut-b1 ★[变异B] 旧写法实际吞了约 ' + Math.round(oldRegionLen / 1000) + 'KB（含整段 EV4_CSS）')
 }
 // 只读姿势：统计页不得出现写配置/写召回的调用
 {

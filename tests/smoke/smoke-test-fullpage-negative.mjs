@@ -82,8 +82,22 @@ function mutate(tag, from, to, expectMarker) {
 const Q = String.fromCharCode(39)
 const CSS_RULE = Q + 'body[data-dam-fullpage] [data-composer-seat],body[data-dam-fullpage] [data-composer-card]{display:none!important;}' + Q + ','
 const IO_GUARD = 'if (typeof IntersectionObserver !== ' + Q + 'function' + Q + ') {'
-const CLEANUP = 'return function () { try { io.disconnect() } catch (e) {} mark(false) }'
-const DEGRADE = IO_GUARD + LF + '          mark(true)' + LF + '          return function () { mark(false) }' + LF + '        }' + LF
+// 2026-10-25 E8-6 变异锚点更新：cleanup 从**单行**变成**多行块**（引用计数改造后
+// 里面要加注释说明「必须删自己」）。旧锚点是单行字面量 ⇒ 命中 0 次 ⇒ 变异恒不生效。
+// ★新锚点取多行块的**真实文本**（从源码里抄回，含缩进与注释）。
+const CLEANUP = [
+  '        return function () {',
+  '          try { io.disconnect() } catch (e) {}',
+  '          // ★E8-6：卸载时**必须把自己从 Set 删掉**（mark(false) 内部就是 delete(el)）——',
+  '          //   不是无脑 removeAttribute，否则另一个 page 还可见时也会被误摘标记。',
+  '          mark(false)',
+  '        }',
+].join('\n')
+// ★2026-10-25 P3（task-32）变异锚点更新：`mark(true)` 已从 IO 降级分支**内**移到分支**之前**。
+//   旧锚点 `IO_GUARD + mark(true) + return...` 命中 0 次 ⇒ 变异恒不生效（本轮实测 N4 报「命中 0 次」）。
+//   新锚点 = 降级分支**自身**的完整文本（IO_GUARD + return 语句 + 闭合括号）。
+//   变异语义不变：把这个分支整段删掉，F6（无 IO 时降级）必红。
+const DEGRADE = IO_GUARD + LF + '          return function () { mark(false) }' + LF + '        }' + LF
 
 ok('N1 删掉 CSS composer 隐藏规则 ⇒ G1 必红', function () {
   mutate('N1', CSS_RULE + LF, '', 'G1')
@@ -94,7 +108,7 @@ ok('N2 标记改为无条件置位 ⇒ F1 必红', function () {
 })
 
 ok('N3 删掉 cleanup 的 mark(false) ⇒ F4 必红', function () {
-  mutate('N3', CLEANUP, 'return function () { try { io.disconnect() } catch (e) {} }', 'F4')
+  mutate('N3', CLEANUP, CLEANUP.split('\n').filter(function (x) { return x.indexOf('mark(false)') < 0 }).join('\n'), 'F4')
 })
 
 ok('N4 删掉无 IntersectionObserver 降级分支 ⇒ F6 必红', function () {

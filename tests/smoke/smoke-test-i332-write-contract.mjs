@@ -41,14 +41,33 @@ ok(/indexStale/.test(BRANCH), '① 抽取段含 indexStale 判定（正文/索�
 ok(/gateH\.truncated/.test(BRANCH), '① 抽取段含账本截断告警（A-2）')
 
 // ── 可执行壳：注入替身（真源片段 + 受控写入器）──
-function makeRunner(branch) {
-  const factory = new Function('sanitizeForWrite', 'writeGateRefusalTextPre', 'nowHm',
+// ★2026-10-25 C1 判据更新（Lead 复查指出）：C1 在该分支里新增了三个模块级符号
+//   （appendHandoffCheckpointPre / eventStorePathOfPre / diagThrottled）⇒ 抽取壳必须同步注入，
+//   否则「xxx is not defined」会让 ⑥⑧ 连带红（那是**测试壳问题**，不是产品缺陷）。
+//
+//   ★桩**必须返回真实形状** —— `()=>{}`（返回 undefined）会让断言永远绿，
+//     这正是 wb-ui-v4 刚踩过的「vm 抽取加新依赖必须同步补桩」。
+//   ★产品侧已同步简化：Phase1/Phase3 不再各自 resolvePaths，直接复用分支开头的 `p`
+//     ⇒ 抽取分支不再引用 `exec` ⇒ 壳里不必注入 agent 对象（契约更干净）。
+const WAL_LOG = { calls: [] }
+function makeRunner(branch, over = {}) {
+  const appendHandoffCheckpointPre = (over && over.appendHandoffCheckpointPre)
+    || (async (storePath, opts) => {
+      WAL_LOG.calls.push({ fn: 'append', storePath: storePath, kind: (opts && opts.kind) || 'handoff' })
+      return { ok: true, eventId: 'evt_test0001', deduped: false }
+    })
+  const eventStorePathOfPre = (handoffDir) => String(handoffDir || '') + '\\event-store.json'
+  const diagThrottled = () => {}
+  const factory = new Function(
+    'sanitizeForWrite', 'writeGateRefusalTextPre', 'nowHm',
+    'appendHandoffCheckpointPre', 'eventStorePathOfPre', 'diagThrottled',
     'return async function (args, engine, p) {' + branch + '\n}')
   const sanitizeForWrite = (t, o) => ({ ok: true, clean: t, truncated: false })
   const writeGateRefusalTextPre = (n, g) => (n + ': ' + ((g && g.reason) || 'gate'))
   const nowHm = () => '16:00'
-  const fn = factory(sanitizeForWrite, writeGateRefusalTextPre, nowHm)
-  return (args, engine) => fn(args, engine, { projectDir: 'D:\\proj' })
+  const fn = factory(sanitizeForWrite, writeGateRefusalTextPre, nowHm,
+    appendHandoffCheckpointPre, eventStorePathOfPre, diagThrottled)
+  return (args, engine) => fn(args, engine, { projectDir: 'D:\\proj', handoffDir: 'D:\\proj\\handoff' })
 }
 
 const P_ = { projectDir: 'D:\\proj' }
@@ -130,14 +149,60 @@ function baseEngine(over = {}) {
   const rb = await runB({ kind: 'plan', content: '# 白板\n\n## 段\n内容足够长足够长' },
     baseEngine({ async writePlanSnapshot() { return { ok: true, committed: true, revision: 'R9', indexStale: true, path: 'p', final: '# x' } } }))
   ok(!/派生索引更新失败/.test(rb), '⑦ 变异后①的索引告警消失 ⇒ ①确有鉴别力（非恒真）')
-  const broken2 = BRANCH.replace("if (!r || !r.ok) {", "if (false) {")
-  ok(broken2 !== BRANCH, '⑦ 变异锚命中（失败早退）')
+  // ★★C1 后 ③ 的失败路径变成**两条**（真语义变化，不是测试问题）：
+  //   ①早退分支 `if (!r || !r.ok) { … return 'memory_note: 白板写入失败(' + detail + ')。' }`
+  //   ②Phase3 补偿块（同一 `if (!r || !r.ok)` 里 append plan-write-failed），不 return，
+  //     但紧随其后的共用 return **仍会产出**「白板写入失败」。
+  //   ⇒ 只改 ① 的话 ②仍存在、文案照样含「白板写入失败」⇒ 变异**无鉴别力**（实测连红 3 次才定位）。
+  //   要验 ③ 的鉴别力，必须把**两条**都打掉：①条件恒假 + ②失败文案改名。
+  const broken2 = BRANCH
+    .replace('if (!r || !r.ok) {', 'if (false) {')
+    .replace("return 'memory_note: 白板写入失败('", "return 'memory_note: XX('")
+  ok(broken2 !== BRANCH, '⑦ 变异锚命中（失败早退 + 失败文案）', '差异 ' + (BRANCH.length - broken2.length) + ' 字符')
   const runB2 = makeRunner(broken2)
   const rb2 = await runB2({ kind: 'plan', content: '# 白板\n\n## 段\n内容足够长足够长' },
     baseEngine({ async writePlanSnapshot() { return { ok: false, error: 'plan-write-failed' } } }))
-  ok(!/失败/.test(rb2), '⑦ 变异后③的失败回执消失 ⇒ ③确有鉴别力（非恒真）')
+  ok(!/白板写入失败/.test(rb2), '⑦ 变异后③的失败回执消失 ⇒ ③确有鉴别力（非恒真）', JSON.stringify(String(rb2).slice(0, 60)))
 }
 
+// ═══ ⑨ ★C1 WAL 顺序：append 必须早于 writePlanSnapshot（真从被测代码记录）═══
+{
+  // ★数据源：patch **产品分支实际调用到的** engine.writePlanSnapshot，在入口里记「append 是否已发生」。
+  //   WAL_LOG.calls 由注入桩 appendHandoffCheckpointPre 写入（桩被产品代码调用才记）
+  WAL_LOG.calls.length = 0
+  let appendSeenAtWrite = null
+  let writeCalled = 0
+  const engine = baseEngine({
+    async writePlanSnapshot() {
+      writeCalled += 1
+      appendSeenAtWrite = WAL_LOG.calls.filter((x) => x.fn === 'append').length
+      return { ok: true, committed: true, revision: 'R1', indexStale: false, path: 'p', final: '# x' }
+    },
+  })
+  const run = makeRunner(BRANCH)
+  await run({ kind: 'plan', content: '# 白板\n\n## 段\n内容足够长足够长' }, engine)
+  ok(writeCalled === 1, '⑨a 探针真的进入了 writePlanSnapshot（防「探针没命中 ⇒ 断言无意义」）', 'writeCalled=' + writeCalled)
+  ok(appendSeenAtWrite >= 1, '★★★⑨b WAL 顺序：进入 writePlanSnapshot 时 append **已发生**（事件优先）', 'append 数=' + appendSeenAtWrite)
+  // 对照：kind 必须是 plan（不是把账本通道误用）
+  const kinds = WAL_LOG.calls.filter((x) => x.fn === 'append').map((x) => x.kind)
+  ok(kinds.every((k) => k === 'plan'), '★★⑨c append 的 kind 是 \'plan\'（不是 handoff）', JSON.stringify(kinds))
+}
+
+// ═══ ⑩ ★C1 Phase1 失败即中止：append 抛错 ⇒ writePlanSnapshot 一次都不能被调用 ═══
+{
+  WAL_LOG.calls.length = 0
+  let writeCalled = 0
+  const runFail = makeRunner(BRANCH, {
+    appendHandoffCheckpointPre: async () => { throw new Error('store 不可写（模拟）') },
+  })
+  const engine = baseEngine({
+    async writePlanSnapshot() { writeCalled += 1; return { ok: true, committed: true, revision: 'R1', path: 'p', final: '# x' } },
+  })
+  const r = await runFail({ kind: 'plan', content: '# 白板\n\n## 段\n内容足够长足够长' }, engine)
+  ok(writeCalled === 0, '★★★⑩a Phase1 失败 ⇒ writePlanSnapshot **一次都没被调用**（事件优先，失败即中止）', 'writeCalled=' + writeCalled)
+  ok(/失败/.test(String(r)), '★★⑩b 且如实报错（不静默）', JSON.stringify(String(r).slice(0, 70)))
+  ok(!/已更新|已写入/.test(String(r)), '★★⑩c 负路径：不得声称成功', JSON.stringify(String(r).slice(0, 60)))
+}
 // ═══ ⑧ 开发期契约检查器必须通过（#332 第一项；真执行，非静态断言）═══
 {
   const checker = pathModule.join(ROOT, 'tools', 'check-write-contract.mjs')

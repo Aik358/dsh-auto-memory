@@ -147,8 +147,23 @@ console.log('[D] 负路径（变异必红 -> 还原必绿）')
     const e1 = new m1.MemoryEngine()
     writeSession(iso.home, WS, SID_A, 'AAA')
     writeSession(iso.home, WS, SID_B, 'BBB')
-    const qA = await e1.buildPrevSessionPack(SID_A)
-    const qB = await e1.buildPrevSessionPack(SID_B)
+    // ★2026-10-24 v4 批次 B 归因（判据过期，非产线缺陷）：变异把 stamp 退回**秒级** HHMMSS，
+    //   而本段要断言的正是「同秒内两个来源撞同一路径」。满负载并行时两次调用可能跨过秒边界
+    //   ⇒ 路径不同 ⇒ 三条断言假红（实测：两轮全量各红一次、单跑始终绿、本套件未被本批改动）。
+    //   修法：把**时钟冻结**在同一毫秒内再跑这两次调用 —— 变异本身不动（仍是秒级 stamp），
+    //   只是消除了「跨秒」这个与被测语义无关的随机性。真缺陷（旧实现）在冻结时钟下必然撞车。
+    const FIXED_MS = new Date('2026-01-01T00:00:00.000Z').getTime()
+    const RealDate = globalThis.Date
+    class FrozenDate extends RealDate {
+      constructor (...a) { if (!a.length) super(FIXED_MS); else super(...a) }
+      static now () { return FIXED_MS }
+    }
+    globalThis.Date = FrozenDate
+    let qA, qB
+    try {
+      qA = await e1.buildPrevSessionPack(SID_A)
+      qB = await e1.buildPrevSessionPack(SID_B)
+    } finally { globalThis.Date = RealDate }
     ok(qA.transcriptPath === qB.transcriptPath, '★ D1 变异（退回 sid.slice(0,8) + 秒级 stamp + 无 wx）=> 两个来源落到**同一路径**：缺陷复现')
     const only = readdirSync(path.dirname(qA.transcriptPath)).filter(n => /^prev-session-/.test(n))
     eq(only.length, 1, '★ D1 变异后只剩 1 份（后写覆盖前一份）')

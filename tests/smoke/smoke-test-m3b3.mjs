@@ -42,7 +42,7 @@ apply(ctx, {})
 
 const tool = (name) => registeredTools.find((t) => t.name === name)
 // ★ T4（2026-09-19）：16 → 17 —— 新增 memory_procedure（procedure memory 的模型直写通路，无条件注册）。
-if (registeredTools.length !== 19) throw new Error('expected 19 tools (16 + T4 memory_procedure + P9 memory_rules + M8-B memory_procedure_list), got ' + registeredTools.length)
+if (registeredTools.length !== 21) throw new Error('expected 21 tools (17 + T4 memory_procedure + P9 memory_rules + M8-B memory_procedure_list + v4 memory_event + v4-U6 memory_upgrade), got ' + registeredTools.length)
 // ★ 记忆工作台（2026-09-24）：54 → 55 —— 新增 POST /workbench（工作台三重校验诊断/修复，无条件注册）。
 // 49 → 50：新增只读路由 GET /recall-stats（2026-09-22）。
 // ★2026-09-27：65 → 66（/team-compliance 落线）
@@ -50,7 +50,7 @@ if (registeredTools.length !== 19) throw new Error('expected 19 tools (16 + T4 m
 // ★2026-10-01 再演进：68→69（新增 /global-brief，全球动态简报批）。
 // ★2026-10-02 再演进：69→70（审计修复批 #174 新增 POST /team-control，loopback-only，无条件注册）。
 // ★issue #211（2026-10-04）再演进：70→71（新增 POST /python-setup/uninstall，无条件注册）。
-if (registeredRoutes.length !== 73) throw new Error('expected 73 routes, got ' + registeredRoutes.length)
+if (registeredRoutes.length !== 79) throw new Error('expected 79 routes, got ' + registeredRoutes.length)
 
 const cfgRoute = registeredRoutes.find((r2) => r2.path === '/api/dsh-auto-memory/config')
 let body

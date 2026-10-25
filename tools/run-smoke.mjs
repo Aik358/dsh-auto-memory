@@ -395,7 +395,11 @@ async function main() {
   console.log('[run-smoke] ' + suites.length + ' suite(s) in tests/smoke, per-suite timeout='
     + (opts.timeoutMs > 0 ? opts.timeoutMs + 'ms' : 'disabled')
     + ', ' + (jobs === 1 ? 'sequential (never parallel)' : 'parallel x' + jobs))
-  if (opts.lanes) {
+  // ★2026-10-25 修「日志说谎」：本行原为 if (opts.lanes)，但执行分支 L440 是
+  //   `if (!opts.lanes || jobs === 1)` ⇒ jobs===1 时双车道根本不会走，日志却照样打印
+  //   「重车道 50 套件 x8」，让人误以为重车道在并行（本轮实测已误导过一次归因）。
+  //   判据：日志只能描述**实际会走的路径**，不能描述「若走另一分支会怎样」。
+  if (opts.lanes && jobs !== 1) {
     const heavySum = lanePlan.heavy.reduce((a, n) => a + (HEAVY_MS[n] || 0), 0) / 1000
     console.log('[run-smoke] 双车道: 重车道 ' + lanePlan.heavy.length + ' 套件 x' + opts.heavyJobs + ' (timeout=' + opts.heavyTimeoutMs + 'ms)'
       + '（实测合计 ' + heavySum.toFixed(0) + 's）; 轻车道 ' + lanePlan.light.length + ' 套件/并行 x' + jobs)
@@ -439,7 +443,26 @@ async function main() {
 
   if (!opts.lanes || jobs === 1) {
     // 分道关闭（或单并发）：原行为——整个集合走一个池子（jobs=1 时即逐字节等价串行）。
-    await runPool(suites, jobs, opts.timeoutMs)
+    // ★2026-10-25 修「--jobs=1 时重套件被判 TIMEOUT」的真缺陷：
+    //   原实现整个集合统一用 opts.timeoutMs（默认 60s），而 HEAVY_MS 里登记的套件
+    //   单跑就要 161s（smoke-test-v3314-continuation-timeout 实测 161.1s）⇒ 串行模式下
+    //   必然 TIMEOUT。这条只在「走双车道」时被规避（重车道 240s），一旦 --jobs=1 就暴露。
+    //   判据：**超时阈值是「套件属性」，不是「车道属性」** —— 换执行路径不得改变判定标准。
+    //   修法：单池分支按套件名查 HEAVY_MS，命中就给 heavyTimeoutMs。
+    const pickTimeout = (n) => (HEAVY_MS[n] !== undefined ? opts.heavyTimeoutMs : opts.timeoutMs)
+    const runPoolPerSuite = async (list) => {
+      let cursor = 0
+      const worker = async () => {
+        for (;;) {
+          const i = cursor++
+          if (i >= list.length) return
+          const r = await runSuite(path.join(SMOKE_DIR, list[i]), pickTimeout(list[i]))
+          report(r)
+        }
+      }
+      await Promise.all(Array.from({ length: Math.min(jobs, list.length) }, () => worker()))
+    }
+    await runPoolPerSuite(suites)
   } else {
     // ★双车道：重车道与轻车道**同时**开跑，各自独立限流。
     //   重车道默认串行（heavyJobs=1）⇒ 互不抢占，墙钟回到单跑量级；

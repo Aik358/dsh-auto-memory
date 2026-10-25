@@ -282,8 +282,11 @@ console.log('[T0-3-11] 接线守卫：index.js 的限额是推导的、优先级
   ok(/const injectedDegradations = envelope\.degradations\.filter\(\(x\) => x\.inject !== false\)/.test(code),
     '注入文本只带内容类降级（诊断类留 meta）')
   // 分派：最该保的两段必须是 must，日志必须是 low
-  ok(/'user-memory'[\s\S]{0,120}'must'\)/.test(code), '★user-memory 标为 must（用户级跨项目规则）')
-  ok(/'project-notes'[\s\S]{0,160}'must'\)/.test(code), '★project-notes 标为 must')
+  // ★2026-10-24 批次 0.5 归因（判据过期，非真缺陷）：两段 must 标记仍然存在，只是调用点新增了第 7 个参数
+  //   `direction`（'tail'），于是 `'must')` 变成 `'must', 'tail')`，旧的 `'must'\)` 正则不再命中。
+  //   判据意图不变（「这两段必须是 must，任何额度不足都不得先牺牲它们」），改为容忍 must 之后还有参数。
+  ok(/'user-memory'[\s\S]{0,120}'must'\s*[,)]/.test(code), '★user-memory 标为 must（用户级跨项目规则）')
+  ok(/'project-notes'[\s\S]{0,160}'must'\s*[,)]/.test(code), '★project-notes 标为 must')
   ok(/'recent-logs'[\s\S]{0,120}'low'\)/.test(code), 'recent-logs 标为 low（先丢）')
   ok(/'frame-head'[\s\S]{0,80}'must'\)/.test(code) && /'frame-tail'[\s\S]{0,80}'must'\)/.test(code),
     '块首/块尾框架行标为 must（不可丢）')

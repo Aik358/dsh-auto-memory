@@ -67,7 +67,7 @@ console.log('routes:', registeredRoutes.map((r) => r.path).join(', '))
 
 // ★ T4（2026-09-19）：16 → 17 —— 新增 memory_procedure（procedure memory 的模型直写通路）。
 //   该工具**无条件注册**（不像 expand/trace 受 boardMode=graph 闸门），故任何档位下都 +1。
-if (registeredTools.length !== 19) throw new Error('expected 19 tools (16 + T4 memory_procedure + P9 memory_rules + M8-B memory_procedure_list), got ' + registeredTools.length)
+if (registeredTools.length !== 21) throw new Error('expected 21 tools (… + v4-U6 memory_upgrade), got ' + registeredTools.length)
 // ★ 召回统计（2026-09-22）：49 → 50 —— 新增只读路由 GET /recall-stats（面板「统计」页签的数据源）。
 //   该路由**无条件注册**（不受任何开关闸门约束），故任何档位下都 +1。
 // ★ 记忆工作台（2026-09-24）：54 → 55 —— 新增 POST /workbench（工作台三重校验诊断/修复；
@@ -81,7 +81,7 @@ if (registeredTools.length !== 19) throw new Error('expected 19 tools (16 + T4 m
 //   teamEnabled=false 时返回 409 但**仍无条件注册**，故任何档位下都 +1）。
 // ★issue #211（2026-10-04）计数演进：70→71（新增 POST /python-setup/uninstall —— Python 引擎卸载，
 //   loopback-only，pythonBackendEnabled=false 时也**无条件注册**并可用，故任何档位下都 +1）。
-if (registeredRoutes.length !== 73) throw new Error('expected 73 routes, got ' + registeredRoutes.length)
+if (registeredRoutes.length !== 79) throw new Error('expected 79 routes, got ' + registeredRoutes.length)
 if (sections.length !== 1) throw new Error('expected 1 prompt section (static rules)')
 if (contexts.length !== 2) throw new Error('expected 2 dynamic contexts (memory snapshot + m6 reference tail surface), got ' + contexts.length)
 

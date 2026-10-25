@@ -157,7 +157,12 @@ test('thrown host query uses truthful fallback and the real counters/recent, onc
   const { home, host } = await harness()
   session(home, 'only-v3-data', 'needle', { name: 'session.v3.jsonl.zstd' })
   host._sessionQuery = brokenQuery()
+  // ★2026-10-24 R0 归因（判据过期，非真缺陷）：本用例要验证「每调用一次就留一条真实失败痕迹」。
+  //   R0 加了 60s 半开熔断后，第 2 次调用会被熔断短路、不再产生新留痕 ⇒ counts 恒 1。
+  //   修法：每次迭代前清掉熔断标记，让「两次真实失败」这个前提成立。
+  //   熔断/半开的真行为由 smoke-test-r0-recall-availability §2/§9 专门验收。
   for (let i = 1; i <= 2; i++) {
+    host._sessionQueryFailAt = 0
     const result = await host.recall('needle', 8, undefined, 'sessions')
     assert.match(result, /only-v3-data/)
     assert.match(result, /宿主会话检索抛错/)
@@ -180,11 +185,15 @@ test('empty fallback reports bounded scan, and recovery carries no stale request
   assert.equal(lines.length, 0)
   assert.match(lines.diagnostic, /扫描范围内未命中/)
   assert.match(await host.recall('needle', 8, undefined, 'sessions'), /非全量/)
+  // ★2026-10-24 R0 归因（判据过期）：熔断期内**不应**放行宿主调用 —— 这正是修复的目的。
+  //   先断言熔断期内的行为（可预期），再模拟「半开窗口已到」验证自愈后不带陈旧诊断。
+  assert.equal(host._degradeSink.countOf('session-search'), 1, '熔断期内不再产生新的失败留痕')
+  host._sessionQueryFailAt = Date.now() - 61 * 1000   // 模拟半开窗口已到
   host._sessionQuery = { searchSessions: async () => ({ items: [] }) }
   const success = await host.searchSessionHistory('needle')
   assert.equal(success.diagnostic, undefined)
   assert.doesNotMatch(await host.recall('needle', 8, undefined, 'sessions'), /兜底|抛错|EACCES/)
-  assert.equal(host._degradeSink.countOf('session-search'), 2) // retained failure history
+  assert.equal(host._degradeSink.countOf('session-search'), 1) // 熔断期外成功不再留痕，历史保留
 })
 
 test('concurrent requests share history but never explanations or hits', async () => {
@@ -402,7 +411,12 @@ test('unchanged retention bounds apply to newly wired diagnostic events', async 
   const { host } = await harness()
   host._degradeSink = createDegradeSinkPre({ cap: 2 })
   host._sessionQuery = brokenQuery()
-  for (let i = 0; i < 5; i++) await host.searchSessionHistory('needle')
+  // ★2026-10-24 R0 归因（判据过期，非真缺陷）：本用例的目的是**环形缓冲的保留边界**（cap=2 / evicted=3），
+  //   只是借用 session-search 作为载体。R0 给 session-search 加了失败熔断后，连续 5 次调用只有第 1 次
+  //   真正碰到宿主并留痕，其余 4 次被熔断短路 ⇒ counts 恒为 1。
+  //   修法：每轮清掉熔断标记，让「5 次真实失败」这一前提重新成立 —— 测的仍是保留边界本身。
+  //   熔断本身由 smoke-test-r0-recall-availability 专门验收（含「第二次不再碰宿主」的真行为断言）。
+  for (let i = 0; i < 5; i++) { host._sessionQueryFailAt = 0; await host.searchSessionHistory('needle') }
   const snapshot = host._degradeSink.snapshot()
   assert.equal(snapshot.counts['session-search'], 5)
   assert.equal(snapshot.recent.length, 2)

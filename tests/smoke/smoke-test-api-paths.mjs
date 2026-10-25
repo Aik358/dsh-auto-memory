@@ -28,6 +28,10 @@ const HOST_ONLY_WHITELIST = [
   '/api/dsh-auto-memory/subagent-gc',
   // ★B0（2026-09-25）：子代理契约探针 —— 消费者是本仓只读取证脚本（artifacts/_b0-probe-call.mjs），
   //   界面侧零引用。**它不是死端点**：可复用子代理（B1）的架构决策依赖它产出的真实契约数据。
+  // ★v4 批次 D2/F（2026-10-24）：4 条事件路由**不进本白名单** ——
+  //   本轮已在 `lib/client.js` 的 `API` 表里补了它们的键（eventUnarchived/eventCurate/eventList/eventDetail），
+  //   A2 的判据是「宿主独有 == 白名单」，既然前端已有键 ⇒ 它们**不再是宿主独有**，列进来反而必红。
+  //   （首版列进来是对的——那时前端还没补键；补完键之后就必须移出。这是 A2 判据的正常联动。）
   '/api/dsh-auto-memory/subagent-probe',
   // ★2026-10-02 审计修复批 #174：/team-state、/team-attribution、/team-conflicts、/team-sync-debug
   //   四条**已移出本白名单** —— client.js 团队层已改为真实消费这 4 条专用路由
@@ -44,6 +48,11 @@ const HOST_ONLY_WHITELIST = [
   //   「合规」区块（B12 消费；在 B12 落地前暂无界面消费者，故暂列白名单）。
   //   它**不是死端点**：客户环境要求「声明 E2E / 关闭上报」时，这是唯一可被读取的明示出口。
   '/api/dsh-auto-memory/team-compliance',
+  // ★task-36（2026-10-25 用户裁定「P2B 自动检测也必须要做」）：P2b 弹窗的两个后端通路。
+  //   消费者：前端弹窗组件（检测到 legacy 且未 declined ⇒ GET status 说该弹；点『稍后』⇒ POST snooze）。
+  //   两者都是「宿主有、前端必须调」⇒ 按本白名单语义（A2 判据 = 宿主独有 == 白名单）应列入。
+  '/api/dsh-auto-memory/upgrade-status',
+  '/api/dsh-auto-memory/upgrade-snooze',
 ]
 
 function parseHostTable(src) {

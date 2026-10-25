@@ -1877,22 +1877,12 @@
           // WB-GRAPH 白板线一键切换(2026-09-16, board_mode_pre_v1): 旧版白板(默认) / 新版看板(dsh-graph vendor
           // + sidecar + 遍历工具, 工具数 14→16)。开关解耦: 只管白板线; 切换需重启 dsh web 生效(工具注册在启动期)。
           field(L3('白板模式（立即保存，需重启）','Board mode (immediate save; restart required)','ボードモード（即時保存・再起動が必要）'), (function () {
-            var cur = cfg.boardMode === 'graph' ? 'graph' : 'legacy'
-            // ★2026-09-16 修 BUG-3(设置页切换不落盘): 旧实现 `set('boardMode', m)` 只改**本地 React 态**
-            // 然后 reload —— 配置从未写到服务端, 刷新后仍是旧值(界面回跳原档), 用户会判定"开关坏了"。
-            // 正解: 走与接续面板同一个写入路径 `saveConfigPatch(API.config, patch)`(见 :999 定义),
-            // 写盘成功后再 reload; 失败则在界面提示, 不静默假装成功。
-            // 同时满足用户硬性偏好: 开关类改动必须**即时回显**(写盘后立即 reload 呈现新档)。
-            function pick(m) {
-              set('boardMode', m) // 先本地回显(即时反馈)
-              saveConfigPatch({ boardMode: m }, {
-                onSaved: function () { window.setTimeout(function () { window.location.reload() }, 350) },
-                onError: function (e) { setErr(String((e && e.message) || e || 'save failed')) },
-              })
-            }
+            // ★★D14 + G 批（2026-10-24）：**设置页只展示单档，不再提供切换**。
+            //   D14 的实现落在**前端渲染层**（白板页签 = EventView），与 boardMode 开关解耦：
+            //   该开关决定 P3 遍历工具是否注册（改成 event 会让工具数 20→18，违反 20 工具硬约束）。
             return h('div', { 'data-dam-slot': 'list', 'data-dam-row': '' },
-              h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', 'data-dam-key': 'boardMode', style: { fontWeight: cur === 'legacy' ? 700 : 400, opacity: cur === 'legacy' ? 1 : 0.65 }, onClick: function () { if (cur !== 'legacy') pick('legacy') } }, L('旧版白板', 'Legacy board')),
-              h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', 'data-dam-key': 'boardModeGraph', style: { marginLeft: '6px', fontWeight: cur === 'graph' ? 700 : 400, opacity: cur === 'graph' ? 1 : 0.65 }, onClick: function () { if (cur !== 'graph') pick('graph') } }, L('新版看板（dsh-graph）', 'Graph board (dsh-graph)')))
+              h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', 'data-dam-key': 'boardMode', disabled: true, style: { fontWeight: 700, opacity: 1 } },
+                L3('事件视图（白板页签固定为此形态）', 'Event view (the whiteboard tab is fixed to this)', 'イベントビュー（白板タブはこの形態に固定）')))
           })(),
             L('一键切换白板形态。默认「旧版白板」=一切行为不变；切到「新版看板」后启用 dsh-graph 看板、白板结构化索引（handoff/index.json）与两个遍历工具（memory_expand / memory_trace，工具数 14→16）。切换后需重启 dsh web 生效；再点回旧版即完全回滚。', 'One-click switch for the board form. Default "Legacy board" keeps everything unchanged; "Graph board" enables the dsh-graph kanban, the structured handoff index (handoff/index.json) and two traversal tools (memory_expand / memory_trace, tool count 14→16). Restart dsh web after switching; switch back to fully roll back.')),
   field(t('fVersion'), h('div', { 'data-dam-slot': 'list', 'data-dam-row': '' },

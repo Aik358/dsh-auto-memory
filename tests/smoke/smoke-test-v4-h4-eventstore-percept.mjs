@@ -185,7 +185,17 @@ async function main() {
       from = i
     }
   }
-  eq(calls.length, 6, 'index.js 里 eventStorePre.list 调用点恰好 6 处（与 Lead 实测一致）')
+  // ★2026-10-25 判据更新（v4-H10-b，属**判据过期**不是缺陷）：A 线新增 `writeCuratedEventsPre` 时
+  //   为做「幂等前置（先算已归档集合）」新增了 **1 处** `eventStorePre.list(storePath, { all: true })`，
+  //   位置在 L7251。本锁的**意图**是「既有内部调用点不得被 withPercept 污染」，不是钉死总数；
+  //   新增一个**不带宽字段**的内部调用点不违反该意图 ⇒ 计数随功能演进上调（6 → 7）。
+  //   下面的「只有 1 处带 withPercept」断言**保持不变**，那才是真正的不变量。
+  // ★2026-10-25 判据更新（第二次，v4-H3-C3，同属**判据过期**不是缺陷）：
+  //   H3-C3 的 `memory_status({op:"upgrade-plan"})` 需要读「当前有几个事件」来填检测详情，
+  //   在工具分支里新增了 **1 处** `eventStorePre.list(_st, { all: true })`。
+  //   ★该调用点**不带宽字段**（不带 withPercept）⇒ 不违反本锁的意图（既有内部调用点不得被污染）。
+  //   ⇒ 计数 7 → 8。「只有 1 处带 withPercept」这条不变量**保持不变**。
+  eq(calls.length, 8, 'index.js 里 eventStorePre.list 调用点恰好 8 处（H10-b 幂等前置 1 + H3-C3 检测详情 1）')
   const withP = calls.filter((c) => c.includes('withPercept'))
   eq(withP.length, 1, '其中只有 1 处带 withPercept')
   ok(withP[0] && withP[0].includes("q.get('cursor')"), '带 withPercept 的那处是 event-list 路由（按 q.get(cursor) 识别）')
@@ -196,7 +206,9 @@ async function main() {
     'eventStorePre.list(evStorePath, { all: true })',
   ]
   for (const lit of INTERNAL) ok(idxSrc.includes(lit), '内部调用点保持旧写法逐字未变：' + lit)
-  eq(idxSrc.split('eventStorePre.list(storePath, { all: true })').length - 1, 2, '另 2 处 list(storePath,{all:true}) 也逐字未变（共 2 处）')
+  // ★2026-10-25 同源上调（2 → 3）：新增的 L7251 那处也是 `list(storePath, { all: true })` 逐字写法，
+  //   与既有 2 处同口径（证明新代码复用了既有读法，而不是另造一个读法）。
+  eq(idxSrc.split('eventStorePre.list(storePath, { all: true })').length - 1, 3, 'list(storePath,{all:true}) 共 3 处且逐字一致（含 H10-b 新增的 1 处）')
 
   // ══════════ 变异验证（子进程实跑，双向） ══════════
   console.log('[M-1] 变异：把 withPercept 默认改成 true ⇒ 负路径**必红**')

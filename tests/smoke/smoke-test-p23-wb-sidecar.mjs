@@ -21,7 +21,14 @@ const t = (name, fn) => {
 function fin() { if (++done === TOTAL) { console.log('[p23-wb-sidecar] ' + pass + ' passed, ' + fail + ' failed'); if (fail) process.exit(1) } }
 
 t('M1 boardMode 解析: legacy/缺省=false, graph=true, 非法值 fail closed 回 legacy(fallback)', () => {
-  assert.deepEqual([...BOARD_MODES_PRE_V1], ['legacy', 'graph'])
+  // ★v4（2026-10-24）判据过期修正：`board-mode.js` 新增第三档 `event`（事件记忆视图）。
+  //   本条原意 = 「档位集合是显式声明且 graph 不是唯一选项」，不是「恰好两个值」。
+  //   改为：断言三档都在 + 顺序稳定（legacy 在前 = 用户拍板的默认回退档），
+  //   并新增一条「event 档 graphEnabled 必须为 false」——这是与看板线解耦的**实质判据**。
+  assert.deepEqual([...BOARD_MODES_PRE_V1], ['legacy', 'graph', 'event'])
+  // ★2026-10-25（v4 H0）：graphEnabled 语义**收窄**为「只关 dsh-graph 看板线」——遍历工具与 sidecar 写盘已与档位解耦。
+  assert.equal(resolveBoardModePre('event').graphEnabled, false, '★event 档不得启用 graph 线（只关看板线；遍历工具/sidecar 自 H0 起已解耦）')
+  assert.equal(resolveBoardModePre('event').mode, 'event', 'event 档要能正确解析出来')
   assert.equal(resolveBoardModePre(undefined).graphEnabled, false, '缺省=legacy(用户拍板: 默认旧行为)')
   assert.equal(resolveBoardModePre('legacy').graphEnabled, false)
   assert.equal(resolveBoardModePre('graph').graphEnabled, true)
@@ -102,7 +109,7 @@ t('M7 端到端(真 fs): 两咽喉写盘 → index.json 生成 → expand 命中
   } finally { await rm(dir, { recursive: true, force: true }).catch(() => {}) }
 })
 
-t('M8 legacy 默认零行为: 两咽喉与 sidecar 的档位闸门(graphEnabled=false 直接 return)', async () => {
+t('M8 legacy 默认零行为: 两咽喉的档位闸门仍在内；★sidecar 与 P3 注册自 v4 H0 起已解耦', async () => {
   const src = await readFile('lib/index.js', 'utf8')
   // ★2026-09-16 语式变更(两处, 均因本批修复): 
   //   ① 咽喉内的档位判定改为**零外部引用的内联表达式** —— 抽取式沙箱(bindMethod)里的 `this` 是裸 fake 对象,
@@ -110,14 +117,36 @@ t('M8 legacy 默认零行为: 两咽喉与 sidecar 的档位闸门(graphEnabled=
   //   ② 判定语义仍是「非 graph 即 legacy」, 与 DEFAULT_CONFIG.boardMode='legacy' 一致。
   // 断言改绑**语义**(内联三连 + 首行早退), 不再绑死具体函数调用形态, 避免下次重构又假红。
   assert.ok(/String\(\(this\.config \|\| \{\}\)\.boardMode \|\| ''\)\.trim\(\)\.toLowerCase\(\) === 'graph'/.test(src), '咽喉内联档位判定在场(零外部引用, 沙箱安全)')
-  // sidecar 首行闸门同样已内联化(2026-09-16): 判「非 graph 立即 return」, 语义等价于 graphEnabled=false。
-  assert.ok(/if \(!\(String\(\(this\.config \|\| \{\}\)\.boardMode \|\| ''\)\.trim\(\)\.toLowerCase\(\) === 'graph'\)\) return/.test(src), 'sidecar 首行闸门(非 graph 直接 return)')
-  assert.ok(src.includes("resolveBoardModePre(engine.config.boardMode).graphEnabled"), 'P3 工具注册闸门(读 engine.config)')
+  // ★★ 2026-10-25 判据更新（v4 H0 工具闸门解耦；属**判据过期**不是缺陷）：
+  //   旧断言 = 「sidecar 首行有非-graph 早退」+「P3 工具注册闸门存在」，其**意图**是证明
+  //   「legacy/event 档零副作用」。H0 的意图**恰恰是取消这两道闸门**（用户裁定：遍历工具要能在
+  //   任何档位用；只摘注册闸门而不摘 sidecar 写盘会造出「工具能注册但读不到新账本」的半修）
+  //   ⇒ 旧意图已被推翻，断言必然过期。
+  //   新断言的意图改为：**证明两道闸门确已解耦** —— sidecar 写盘不再有档位早退、注册不再有条件。
+  //   注意：这不是「放宽」。若有人把任一闸门加回来，下面两条立刻 FAIL。
+  //   ⚠ 探针必须**只扫两个写盘函数体**：`whiteboardTagMapPre`（读侧 tag 地图）仍保留 `return ''`，
+  //     那是读侧行为、不属本次解耦范围。若探针扫全文件，会把读侧误判成「闸门未摘」（本会话实测踩过）。
+  const sideWriteBodies = (() => {
+    const pick = (startAnchor, endAnchor) => {
+      const a = src.indexOf(startAnchor)
+      const b = src.indexOf(endAnchor, a + startAnchor.length)
+      return (a > 0 && b > a) ? src.slice(a, b) : ''
+    }
+    return [
+      pick('async writeSidecarEntryPre(', 'async _writeSidecarIndexPre('),
+      pick('async appendSidecarEventPre(', 'async rebuildSidecarIndexPre('),
+    ].join('\n')
+  })()
+  assert.ok(sideWriteBodies.length > 400, '两个写盘函数体可定位（防探针失效变恒真）', String(sideWriteBodies.length))
+  assert.ok(!/boardMode \|\| ''\)\.trim\(\)\.toLowerCase\(\) === 'graph'/.test(sideWriteBodies), '★H0 后两个 sidecar **写盘**函数体内不得再有档位判断（旧判据「必须在场」已过期）')
+  assert.ok(!src.includes("resolveBoardModePre(engine.config.boardMode).graphEnabled"), '★H0 后 P3 工具注册**不得**再受档位闸门管辖（旧判据「必须在场」已过期）')
+  // 反向保证：两工具仍在（解耦 ≠ 删除）
+  assert.ok(/\btools\.push\(defineTool\('memory_expand'/.test(src) && /\btools\.push\(defineTool\('memory_trace'/.test(src), '★H0 是解耦不是删工具：两个遍历工具仍注册')
   // ★2026-09-17（3.0.0）：默认已由 legacy 翻为 graph（用户裁定「白板默认新版，旧版兼容保留」）。
   assert.ok(src.includes("boardMode: 'graph'"), 'DEFAULT_CONFIG 默认 graph(3.0.0 起)')
 })
 
-t('M9 P3 两工具条件注册 + 工具数闸门(legacy 17 / graph 19)', async () => {
+t('M9 P3 两工具条件注册 + 工具数闸门(legacy 18 / graph 21 · v4-U6 起 +memory_upgrade)', async () => {
   const src = await readFile('lib/index.js', 'utf8')
   // ★2026-09-16 修 BUG-15 后语式变更: 两个 defineTool 现在被 `tools.push(...)` 包裹
   // (此前漏了 push, 返回值被丢弃 ⇒ 闸门打开也不会注册)。断言必须写「真实调用形态」:
@@ -132,11 +161,12 @@ t('M9 P3 两工具条件注册 + 工具数闸门(legacy 17 / graph 19)', async (
   // ★ T4(2026-09-19): 16 → 17(新增 memory_procedure, 无条件注册)。
   for (const f of ['tests/smoke/smoke-test.mjs', 'tests/smoke/smoke-test-m3b3.mjs', 'tests/smoke/smoke-test-context-observer.mjs']) {
     const s = await readFile(f, 'utf8')
-    assert.ok(/!==\s*19/.test(s), f + ' 默认档已翻 graph ⇒ 工具数硬锁应为 19(含 T4 memory_procedure + P9 memory_rules + M8-B memory_procedure_list)')
+    // ★v4-U6（2026-10-25 用户批准 20→21）：三条硬锁同步上移
+    assert.ok(/!==\s*21/.test(s), f + ' 默认档已翻 graph ⇒ 工具数硬锁应为 21(含 … + v4-U6 memory_upgrade)')
   }
   // graph 档 17 的断言在 smoke-test-graph-mode-pre.mjs
   const g = await readFile('tests/smoke/smoke-test-graph-mode.mjs', 'utf8')
-  assert.ok(/!==\s*19/.test(g) || /=== *19/.test(g), 'graph 档工具数 19 有独立断言')
+  assert.ok(/!==\s*21/.test(g) || /=== *21/.test(g), 'graph 档工具数 21 有独立断言')
 })
 
 t('M10 GUI 一键切换: 设置页与接续面板双入口, 同一配置键 boardMode, 默认档旧行为', async () => {

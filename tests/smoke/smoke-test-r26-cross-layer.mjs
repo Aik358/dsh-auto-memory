@@ -31,8 +31,13 @@ const PARAMS = [...new Set([...IX.matchAll(/searchParams\.get\('([A-Za-z0-9_-]+)
 ok(PARAMS.length >= 10, 'A1 宿主接参 ≥10 种（实测 ' + PARAMS.length + '）')
 // ★★前端消费判定必须容忍**带后缀写法**（如 API.recallStats + '?reset=1'）—— 首轮审计用整串匹配漏检了 reset。
 const consumed = (name) => SRC.indexOf("'" + name + "'") >= 0 || SRC.indexOf('"' + name + '"') >= 0 || SRC.indexOf(name + '=') >= 0 || new RegExp('\\b' + name + '\\s*[:\)]').test(SRC)
-const missing = PARAMS.filter((x) => !consumed(x))
-eq(missing.length, 0, 'A2 ★★零「宿主有参数、前端无消费者」（缺：' + (missing.join(',') || '无') + '）')
+// ★D14（2026-10-24 用户裁定）：看板退出白板页签 ⇒ 看板专属的折叠参数（foldDays / includeArchive）
+//   前端已无消费者，属**预期**（宿主侧能力保留，事件视图不用它）。
+//   原意 = 「宿主暴露的参数不得被前端悄悄遗忘」——保留，但把看板专属参数列入**合法的无消费者名单**。
+const BOARD_ONLY_PARAMS = ['foldDays', 'includeArchive']
+const missing = PARAMS.filter((x) => !consumed(x) && BOARD_ONLY_PARAMS.indexOf(x) < 0)
+eq(missing.length, 0, 'A2 ★★零「宿主有参数、前端无消费者」（看板专属两参已按 D14 豁免；缺：' + (missing.join(',') || '无') + '）')
+ok(PARAMS.filter((x) => BOARD_ONLY_PARAMS.indexOf(x) >= 0).length === 2, 'A2b ★看板专属两参仍在宿主参数表内（能力保留，只是前端不用）')
 ok(PARAMS.includes('includeArchive'), 'A3 includeArchive 确在宿主参数表内')
 ok(PARAMS.includes('foldDays'), 'A4 foldDays 确在宿主参数表内')
 
@@ -49,19 +54,33 @@ ok(IX.includes("String((this.config || {}).boardArchive || '') === 'on'"), 'B5 �
 ok(IX.includes('includeArchive: true })') || IX.includes('{ includeArchive: true }'), 'B6 宿主内部展开全文路径仍恒传 true（不受本改动影响）')
 
 /* ── C. 前端接线（R26 补的两参数同传） ── */
-eq(cnt(SRC, 'foldDays: foldOpen.days'), 1, 'C1 ★foldDays 真传恰 1 处（R25 成果不降级）')
-// ★R38：KanbanBoardRail 展开时**另发一次** foldDays:0 的取数（折叠态上提到本组件）——语义仍为「真带 foldDays」，故 C1 保持不变。
-eq(cnt(SRC, 'foldDays: 0'), 1, 'C1b ★折叠条展开态真传 foldDays:0（days=0 ⇒ 不折叠）')
-eq(cnt(SRC, 'includeArchive: foldOpen.days === 0 ?'), 1, 'C2 ★★includeArchive 真传恰 1 处（R26 新接线）')
-eq(cnt(SRC, "includeArchive: '1'"), 1, 'C2b ★R38 展开态 includeArchive 真传（两条语义同时放开）')
-ok(/includeArchive: foldOpen\.days === 0 \? '1' : '0'/.test(SRC), 'C3 ★条件正确：展开态传 1、折叠态传 0')
+// ★D14：看板前端消费点已随组件删除 ⇒ 原来「真传恰 1 处」的正向断言不再成立。
+//   原意 = 「折叠参数不得只接不用」—— 看板退场后该语义自然消失；改为守**负路径**：
+//   前端**不得**再出现 foldDays 的传参（残留即死代码，说明有人删组件漏了取数）。
+eq(cnt(SRC, 'foldDays: foldOpen.days'), 0, 'C1 ★负：foldDays 前端传参已随看板退场（D14）')
+eq(cnt(SRC, 'foldDays: 0'), 0, 'C1b ★负：折叠条展开态的 foldDays:0 传参已退场（D14）')
+// ★D14：看板前端消费点已随组件删除 ⇒ 三条「真传」正向断言不再成立。
+//   原意 = 「两参数必须被**同时**传（只传一个是 R26 修的半修）」——看板退场后该语义消失；
+//   改为守**负路径**：前端不得再出现 includeArchive 的传参（残留即删组件漏了取数）。
+eq(cnt(SRC, 'includeArchive: foldOpen.days === 0 ?'), 0, 'C2 ★负：includeArchive 前端传参已随看板退场（D14）')
+eq(cnt(SRC, "includeArchive: '1'"), 0, 'C2b ★负：展开态 includeArchive 传参已退场（D14）')
+ok(!/includeArchive: foldOpen\.days === 0 \? '1' : '0'/.test(SRC), 'C3 ★负：条件式两参同传写法已不存在（D14）')
 // ★修正（本轮自查）：原写死 `=== 2` 是「凭直觉写死期望值」第 7 次 —— 实测 3 处（rail / 画布 / L5613）。
 //   改为**由源码派生**：断言「恰好 1 处带 foldDays」，其余不带（画布与另一处不受扩散）。
 // ★R38 口径同步：3 → 4。新增的第 4 处是 KanbanBoardRail 展开时带 foldDays:0 + includeArchive:'1' 的取数
 //   （R26 定的两条语义此前只在 KanbanView 里传过；rail 这条是 R25/R26 缺口在**面板承载面**上的补齐）。
 //   计数锁是**守卫**不是功能证据；被守语义「取数点集合已知且不变为意外」未变，故同步新值。
-eq(cnt(SRC, 'apiGet(API.kanbanBoard'), 4, 'C4a（守卫）kanbanBoard 取数点 4 处（R38 新增 rail 展开取数）')
-eq(SRC.split('apiGet(API.kanbanBoard').length - 1, 4, 'C4b 同源复核')
+// ★D14（2026-10-24 用户裁定）：白板页签改为事件视图，看板取数点全部退场。
+//   本条原意 = 「跨层调用点数量守恒（防有人悄悄删掉某处取数/新增未登记的取数）」——
+//   不变量本体保留，对象换成事件视图的取数点：现在**必须恰好 1 处**，且看板取数必须为 0。
+eq(cnt(SRC, 'apiGet(API.eventList'), 1, 'C4a（守卫）eventList 取数点恰 1 处（D14 后事件视图是白板页签唯一数据源）')
+eq(SRC.split('apiGet(API.eventList').length - 1, 1, 'C4b 同源复核')
+// C4c 的准确判据：**PlanTab 内**不得有看板取数（Kanban 组件自身内部的取数随组件一起被删除）。
+//   首版写成「全文件 0 处」⇒ 误判：3 处都在尚未删除的 kanban 组件内部，属预期。
+const planTabStart = SRC.indexOf('function PlanTab()')
+const planTabEnd = planTabStart < 0 ? -1 : SRC.indexOf('function ', SRC.indexOf('return h(\'div\', { \'data-dam-slot\': \'timeline\'', planTabStart))
+const planTabBody = (planTabStart >= 0 && planTabEnd > planTabStart) ? SRC.slice(planTabStart, planTabEnd) : ''
+eq(planTabBody.length > 1000 ? cnt(planTabBody, 'apiGet(API.kanbanBoard') : -1, 0, 'C4c ★负：PlanTab 内看板取数必须为 0（D14 后不得残留双事实源）')
 ok(!/includeArchive/.test(SRC.slice(SRC.indexOf('function WhiteboardGraphView'), SRC.indexOf('function WhiteboardGraphView') + 3000)), 'C5 ★画布视图不传 includeArchive（口径不被扩散）')
 
 /* ── D. 与 46 卷 §四 B2 的判据对拍 ── */
@@ -591,7 +610,189 @@ ok(damNoMixedEol(SRC), 'E2 纯 CRLF')
 //   ★归因（实测复算）：本批开工基线 HEAD 865a1af 的 lib/index.js 按本套件自身归一（CRLF→LF）= 1,099,940 字符 / CACF2298F6B24C75（与旧锁逐字节相等）；
 //   本批改后 = 1,106,459 字符 / 55A407E3CFD09ED5（含上述投影补线 + debugInfo fail-soft）⇒ 漂移全部来自本批新代码，无历史内容混入。
 //   判据意图不变（宿主 index.js 不得无痕漂移），按 2026-10-01 裁定复算重钉。
-eq(createHash('sha256').update(IX).digest('hex').slice(0, 16).toUpperCase(), 'FAA74739CB711060', 'R129 = R128 + 2026-10-23 #456 自动沉淀每日额度落盘（① 新增 autoCallStatePath / _loadAutoCallState / _saveAutoCallState 三个方法，状态落 ~/.dsh/memory/auto-consolidate-state.json，构造期加载、累加后原子写；② 额度判定前 _autoCallDate 对齐 today；③ 跨日/损坏/脏值/缺字段一律**显式归零**（不依赖调用方内存恰为 0）；④ DEFAULT_CONFIG 的 autoConsolidateDailyMax 注释按实际行为改写，删掉从未实现的「跨插件实例应只保留一个实例」承诺）。★归因（实测复算）：本批开工基线 HEAD=ef581df 的 lib/index.js 按本套件自身归一（CRLF→LF）= 1,121,051 字符 / A2BEE30B66EC2E8A（与旧锁逐字节相等）；本批改后 = 1,124,663 字符 / FAA74739CB711060（Δ +3,612 字符，全部为本批新增方法与注释）⇒ 漂移全部来自本批新代码，无历史内容混入。判据意图不变（宿主 index.js 不得无痕漂移），按 2026-10-01 裁定复算重钉。前序 R128 = R127 + 2026-10-22 复核修正（① 403 hint 原写「或在插件设置里填 panelAllowedHosts」是**假承诺**——前端设置页 108 个可写键里没有该键、源码 0 处引用，改用「环境变量 或 改 ~/.dsh/dsh-auto-memory.json 后重启」；② 配置键注释同步标注「GUI 暂未提供该输入框」；③ #454 套件 A7 原有一条 `... || true` **恒真断言**（等于没测），改为真判据「403 体不得回显白名单条目 + 只告知条数」，并已变异验证（让 payload 泄漏白名单 ⇒ 该断言必红）。判据意图不变（宿主 index.js 不得无痕漂移），按 2026-10-01 裁定复算重钉 589C40418B618452 → A2BEE30B66EC2E8A（1,121,051 字符，IX = lib/index.js 归一化 LF）。前序 R127 = R126 + 2026-10-22 #454 面板 LAN/远程部署放行 + #453 技能查重面扩展（① isLoopbackRequest 由「回环且 Host=localhost」两条硬判据扩为两档，回环档行为逐字节不变；② 新增 isLoopbackAddressPre / isPrivateAddressPre / parseAllowedHostsPre / hostAllowedPre 四个纯函数与 forbiddenPanelPayloadPre 诊断体；③ 73 处守卫统一改调 (req, panelAllowedHosts)，在 apply 内解析一次；④ DEFAULT_CONFIG 新增 panelAllowedHosts（159→160）；⑤ #453 查重面扩至磁盘技能目录 listLocalSkillsPre + memory_procedure_list 折叠低质量观察行）。判据意图不变（宿主 index.js 不得无痕漂移），按 2026-10-01 裁定复算重钉 D5FCCE5AD0F8F783 → 589C40418B618452（1,120,902 字符，IX = lib/index.js 归一化 LF）。前序 E3 ★宿主 lib/index.js 基线守恒（R126 = R125 + 2026-10-21 v3.3.14 接续刷新仪式超时可配：①两个默认值抽成模块级常量（DEFAULT_AUTO_CONTINUE_REFRESH_TIMEOUT_SECONDS=120、DEFAULT_AUTO_CONTINUE_PROBE_TIMEOUT_SECONDS=60）并全站引用；②总超时默认 90→120 秒、允许区间 15–600→15–900，越界回落常量；③单次 probe 上限由写死 Math.min(30000,…) 改为读 autoContinueProbeTimeoutSeconds（默认 60、允许 10–300），仍与剩余预算取 min。判据意图不变（宿主 index.js 不得无痕漂移），按 2026-10-01 裁定复算重钉 F84BC89E250F4CF6 → D5FCCE5AD0F8F783（1,109,579 字符，IX = lib/index.js 归一化 LF）。旧：R125 = R124 + 2026-10-21 v3.3.13 补 issue #451 遗留「半修」：handoff-state 的 else 分支（有 sessionId 但该会话尚无水位记录）补 meterViaProxy / estimatedTokens / realUsageTokens 三字段——三个 water 构造点里它是唯一漏掉的那个，调用方走到该分支即拿到 undefined。判据意图不变（宿主 index.js 不得无痕漂移），按 2026-10-01 裁定复算重钉 72C0DA04FD52F988 → F84BC89E250F4CF6（1,108,534 字符，IX = lib/index.js 归一化 LF）。旧：R124 = R123 + 2026-10-21 团队同步活锁/幂等根治（①team-sync 推送体补 idemKey，复用 outbox 已持久化的 eventId，缺失回退 kind|key；②team-pull 游标接受字符串/数字双形状（normalizeCursorPre），游标落盘（注入 loadCursor/saveCursor 到 ~/.dsh/memory/team/pull-cursor.json），no-applier 按「是否本次请求的 kind」分流以解活锁（#364 语义保留），请求带 limit 分页；③team-auth 响应体 32MB 硬上限（content-length 预检 + 实测兜底，超限回 response-too-large）；④新增配置键 teamPushPath / teamPullPageLimit（DEFAULT_CONFIG 156→158）；⑤teamPushPath 可覆盖上行端点，默认值不变保证已按旧名实现的服务端零影响）。判据意图不变（宿主 index.js 不得无痕漂移），按 2026-10-01 裁定复算重钉 55A407E3CFD09ED5 → 72C0DA04FD52F988（1,108,249 字符，IX = lib/index.js 归一化 LF）。旧：R123 = R122 + 2026-10-19 Python 语义侧车静默残废根治（含②b：配置为路径型且文件不存在时回落**已验证**解释器，不回裸 python）（①删除裸 python 兜底：resolveCommand 验证闸 + fail-closed interpreter-unverified；②配置值权威、无 embedding 配置时不做 fail-closed；③探测预算 8000→20000 且命中即停、单候选 3000→8000；④长驻进程 health 巡检（区分短命探针）+ stderr 增量落盘 + debug.interpreter/health；⑤ctx-host 诊断日志 2MB 轮转；⑥dispose 清 health 定时器）。判据意图不变（宿主 index.js 不得无痕漂移），按 2026-10-01 裁定复算重钉 2EE473FBE6C9C926 → CACF2298F6B24C75（1,099,940 字符，IX = lib/index.js 归一化 LF）；原 R122 = R121 + 2026-10-18 注入交付层根治：①补 _humanDone 定义（原为未定义变量，每帧抛 ReferenceError 被空 catch 吞掉，致幂等闸与真人旁路整段失效）；②请求键改用 requestIdPre（最近一次 step/end 的 seq，两帧恒定）；③精简版补「记忆维护底线」段；④完整版节奏按 step 计数；⑤授予时推进精简基线。判据意图不变（宿主 index.js 不得无痕漂移），按 2026-10-01 裁定复算重钉。旧：R121 = R120 + 2026-10-18 重启后实测修正 indexReady 兜底判据：原兜底读 `jsSemantic.indexedRecords`，但本机语义引擎是 **Python 档** ⇒ JS 侧恒 0、兜底永不命中（实测 indexReady 仍 false）。改为优先读索引宿主的 `_readyCacheForTest` / `debugView().ready`（`ensureIndexReady` 成功后才写入的真实就绪信号），JS 记录数降为最后兜底。P2 三条不变量不变。判据意图不变，按本套件自身表达式复算重钉 C1FF012BED2583D9 → 08D649F6FD37BF78。；R120 = R119 + 2026-10-18 DSH 0.2.1 宿主 API 换代适配：①`subagents.start()`→`startActivation()`（实测 SubagentRuntime 公开方法仅 startActivation/waitForChildren/sendMessage/interrupt/drainDescendants，旧 start 已不存在），新增 `callSubagentStartPre` 适配层统一新旧两代并把返回值归一成旧 run 形状，两处调用点改走它；②`indexReady` 此前唯一依赖引擎切换状态机 phase/published ⇒ 从未切换过引擎的安装恒为 false（实测 phase=idle/startedAt=0 但 fv2 ncand=8 索引可用），改为「状态机为主 + 仅在从未开代时用静态可用性兜底」，并保留 P2 不变量（发布前恒 false / requiresFullRebuild 否决 / failed·cancelled 不冒充就绪）；③陈旧 error 在 idle/ready 时摘入 staleError。判据意图不变，按本套件自身表达式复算重钉 E2BADAC386196CEB → C1FF012BED2583D9。；R119 = R118 + 2026-10-18 注入节奏口径改为「模型请求」（step）：`_turnSeq`→`_stepSeq`、`_lastFullTurnSeq`→`_lastFullStepSeq`、`_lastSlimTurnSeq`→`_lastSlimStepSeq`，阈值 `fullGapTurn`→`fullGapStep`/`slimGapTurn`→`slimGapStep`，授予条件去掉 `firstOfTurn` 改为按 step 间隔（修复「单 turn 内只在首帧给一次完整版」）。判据意图不变，按本套件自身表达式复算重钉 B0BE97D0C0ED065A → C1FF012BED2583D9。；R110 = R109 + 2026-10-14 吸收 PR#420（逐块移植）+ createOnly 假清错误标记修复 + ok 诊断行恢复 created=/emit=/policy=：判据意图不变，以本套件自身表达式复算重钉 DE3AFB3747F0F1BC → 3C375E3D8D9E34BD（1,019,370 字符）；R108 = R107 + 2026-10-13 #356 补诊断留痕（用户现场：开关报「保存失败」但盘上**零痕迹**，支持端无从判定引擎档/文件在否/失败在何步）：semantic-emit 端点此前失败路径**只回 HTTP 500、不落任何日志**，现将四个分支各补一条 diag()（cfg present/MISSING、CORRUPT kept-as-is、SHAPE-INVALID、WRITE-FAILED、ok、catch 兜底），且**不改变控制流**（fail-soft）；损坏分支回退为 `throw cfgReadErr` 与批次 Z 逐字等价。判据意图不变，以本套件自身表达式复算重钉 B23ADD5DC7A794A1 → AF5D50DF769E78FE（1,001,900 字符）。；R107 = R106 + 2026-10-13 #356 下载完成即补建引擎配置（治「模型刚下好、尚未重开面板」窗口内开关仍失败）：createSemanticDownloaderPre 全文件 0 处 embedding-config ⇒ 只装 JS 档的新用户在下完那一刻配置仍缺；现将 downloader.start 包一层完成轮询，phase 落 done 且配置不存在时按与端点同源的身份四键原子补建（已存在则绝不覆盖）。判据意图不变，本批属**有意演进**，按 2026-10-01 裁定以本套件自身表达式复算重钉 2C73196B2946E71F → B23ADD5DC7A794A1（1,000,537 字符）。；R106 = R105 + 2026-10-13 #356 只装 JS 引擎的开关不可用修复：semantic-emit 端点区分 ENOENT 与「损坏」——缺失时按引擎身份常量首建配置（provider/dimension 取自 JS_E5_IDENTITY_DESC_PRE_V1，模型路径由 dshHome 推导），仅真解析失败才原样保留并失败。判据意图不变（宿主哈希不得无痕漂移），本批为**有意演进**，按本仓 2026-10-01 裁定以本套件自身表达式复算后重钉 98B94865DECB516A → 2C73196B2946E71F（1,017,080 字符）；R105 = R103 + 2026-10-13 注入节奏两处修复：① 同轮重复授予完整版（turnKey 在 tk↔human:<seq> 间翻转致 firstOfTurn 二次为真）改为「键降级不重复」精判据；② gap 计数器 _snapRound 由「按注入次数」改为「按 turn 推进」以对齐 snapshotMinGapRounds 的轮语义）← R103 = R102 + 2026-10-13 17 条 issue 修复批（#337-#353）← R101 = R100 + 2026-10-13 #333②（归档取回通道：maintain 不再回灌全文、只写指针；新增 memory_read(kind="archive") 与 memory_recall(scope="archive")；尾部铭文 +⑦ 层，客户端镜像同步 +1 层）← R100 = R99 + 2026-10-12 #335 第三批（尾部铭文 snapshotInscription 双端镜像补「技能库分工作区库/通用库 + 写接口无 scope 恒入通用库 + list 可看属哪个库/为何未晋升」，长度 1244，守卫上限 1200→1400）← R99 = R98 + 2026-10-12 #335 第二批（memory_procedure 新增 action=update：procedure-store 加 update() 原语 + 宿主工具接线与两个 id 解析助手 + 尾部铭文补 update/activate 提示）← R98 = R97 + 2026-10-12 #335（DEFAULT_CONFIG 新增 settingsEntryInDsSettings / settingsEntryInPluginsPage 两键：设置入口暴露开关；白名单=Object.keys(DEFAULT_CONFIG) 自动放行）← R97 = R96 + 2026-10-12 #331（会话扫描改结构识别，兼容 vN 命名）/ #333（主记忆写入容量门：维持档回灌、面板追加）/ 基线红灯修复（心跳实例身份耐 1ms 抖动）← R96 = R95 + 2026-10-10 #330 多宿主工作台会话争抢（resolveError 带出 + 同意门覆盖 host-conflict + 状态/心跳记宿主身份）← R95 = R94 + 2026-10-09 round-2 #319/#320 残留修复（归档发布进文档锁 + 迁移 drain fail-closed）← R94 = R93 + 2026-10-08 #304/#305 并发一致性（maintain 删除进跨进程文档锁 + mutation flight 登记/有界 drain + 提交边界复核持久根） 2026-10-08 L-E #261（OBS-02）定时固化/维护/时段总结失败可观测性（成功才写 Done + 有界重试 + 诊断回执 + schedule 只读投影；含 autoSummary 第三实例）；原 R92 = R91 + 2026-10-08 L-A2 #259 SEC-03 迁移导出物理边界；原 R91 = R90 + #280 A4/B 维护归档（源/归档双摘要 + 校验通过才删源 + 归档发布进 mutation 事务）） ；原 R90 = R89 + 2026-10-08 P1 #281 孤立代理修复（三个截断函数加代理对安全切点）；原 R89 = R88 + 2026-10-08 C 类 #254（方案 B\' 缩进续行：parseCalendar 续行识别 + renderCalendar 续行输出 + migrate-pack 孪生同口径））；原 R80 = R79 + 2026-10-06 #226 改法A（异常监听具名化 + 卸载 removeListener + 复位两个 guard 标志）＝ R79 = R78 + 2026-10-05 批次 Z（PR#213「Fix seven residual data-safety and ownership issues」后端拆取）：X1 删除 CAS（deleteMemory 对实际 buf 无条件 sha256 CAS，冲突 conflict-external-edit）；X2 note 绑定服务端（/note 路由 sessionId+expectedNotesPath 必填 + resolvePathsForSession + 409 漂移 + 读盘去重 + 缓存按归属更新）；X3 JSON 路径重写（rewriteJsonPathsPre token 级重写，.json/.jsonl 分派）；X4 procedure 证据五子项（owner 双归属限定 + 先持久化后统计 + success-exclusion + procedureWorkspaceRef=canonicalize 不引入 workspace-key.js（#179 领地）+ normalizeSessions 统一哈希身份 + loadEvents strict（30s 指纹缓存，读失败不缓存，display 保持容忍））；X5 导入安全（全量占用名清单 + target-inspection-failed fail closed + token 全覆盖 + commit 前 lstat/digest 复核 + additions 不用 link() 改 lstat 空闲确认+原子写 + 逐文件 withCalendarLock + backup randomUUID 防同秒撞名）。；原 R77 = R76 + 2026-10-05 批次 W（PR#210「Make continuation and archive state durable (#207)」拆取采纳）：①W1 cont-seq：allocContSeq 改跨进程共享锁内「重读→(仅 last≤0 时)冷扫→推进→原子提交→成功才发布」，写失败抛错不发号；冷扫放开 120 上限（leaf 读取失败跳过、目录级错误拒绝并指路、SQLite 维持拒绝+seed 指引）；rollbackContSeq 变 no-op（「不跳号」翻转为「允许空洞、永不回收」，2026-10-05 用户裁定）；锁模块与 calendar-lock 物理合一（calendar-lock.js 变薄壳 re-export）。②W2 接续闩分片：auto-continue-done.d/<SHA256>.json + token + 旧格式只读兼容 + (mtime,size) 读取缓存，删 200 条 slice 上限。③W3 pending/恢复：reserve→setTarget(rawId)→finish 三段持久化、autoContinueState 加 pending/completed、decideAutoContinue manual 与 hostAutoContinue(armed) 两入口 pending 拦截、恢复 CLI lib/continuation-maintenance.js（三重校验+.active 锁）。④W4 归档账本 delta：saveArchiveLedger(updates,removed) 锁内新鲜读→合并→原子写；sweep 删 _saLedger 缓存每轮新鲜读；归档分支账本提交失败 rep.ok=false+errors 外显+提前 return 跳过本轮删除。⑤W5 创建门：createSuccessor 包装 —— details.sessionId 存在即持久化原始 ID 不二建；仅类型化放行单（CONTINUE_CREATE_FALLBACK_ALLOWED_CODES）且 workspaceId 规范化精确匹配才放行源 cwd 回退，其余保留 pending。；原 R76 = R75 + 2026-10-05 工作台路径符号链接归一 + 新建熔断（见上方注释）；原 R75 = R74 + 2026-10-04 issue #211：新增 /python-setup/uninstall 路由 + python-setup 模块 uninstall()（删 <userDir>/python-engine 整目录）；原 R74 = R73 + 2026-10-03 批次 G：①#167/P0 [USER] 不直写全局（自动沉淀 + 做梦式固化两处同改，落 PENDING-USER-MEMORY.md）；②#167/P1 解析层确定性过滤（filterPointsPre，三档各一次）；③#207 三处裸写改按路径串行 + 原子写（cont-seq / 接续闩 / 归档账本），删自建第二套按文件链统一走 path-write-queue，归档账本读取改损坏隔离；④#207-4 新增 localWasmPaths 键 + worker wasm 路径本地化。前序 R73 = R72 + 2026-10-02 审计修复批 A+B 批：#182/#178/#205/#184 + #174/#185 团队接线（含 /team-control 路由、装配段 pull 定时器移位、_teamOutbox.load、真实卸载路径接团队 dispose）：①日历三写入口改锁内读盘+原子写，正则补 --:--；②compactLegacyLayer 归档提到护栏前且归档全部被移除段；③saveConfig 迁移补 mkdir+失败回滚+原子写。前序 R72 = R71 + 2026-10-01 接续开关默认开：DEFAULT_CONFIG.globalBriefEnabled false→true（用户裁定「把读取外部记忆的开关默认打开」）；前序 R71 = R70 + 2026-10-01 自写豁免接线 + 团队注入候选生产者：①_noteSelfWritePre 原为零调用点 ⇒ 挂到 4 个写盘原语（appendText/writeFullRaw/writeFullSingle/writeFull）⇒ 豁免真正生效；②_teamInjectCandidates 原只有 = [] 两次赋值、无生产者 ⇒ 把 pullOnce 的 appliedEntries 经 normalizeTeamSegmentsPre 喂入。前序 R70 = 记忆注入优化；原 R70 说明：（R70 + 2026-10-01 全局动态简报批：新增 lib/global-brief.js 纯模块 + 8 个 globalBrief* 配置键 + 精简版注入路径补 diag（用户要求可计量）+ 简报段并入注入主路径；前序 R70 = R69 + 记忆注入优化：精简版瘦身 + 完整版两档门槛 + 2 个配置键 + 2 层提示词；原 R69 说明：①规则编辑 GUI 路由按 expect 内容锚定防索引漂移 ②两处 _degradePre 死代码改接真实 _degradeSink ③sessions 兜底说明不再写死「39 个旧会话/descriptor v2」改为如实输出；归一化 LF 后计。前序 R68 = R67 + G 批发射闸单钥匙化；R63→R65 放行 = skinAssetRelOfPre/skinAbsPathOfPre 加 deep 参数（素材路由 ?deep=1 选暗色资源）+ #152 增量开关每轮取值 + #153 默认模型回退共用解析器（provider/实现名不再混用）+ #154 接续创建失败显式报错不丢源工作区 + 上述 3.2.5 全部修复保留，理由见上）')
+// ★2026-10-24 R130 重钉（FAA74739CB711060 → 1C0ABE415ADB8467）：R0 唤回可用性修复，属行为代码新增——
+//   ① 新增模块级常量 R0_SESSION_QUERY_FAIL_TTL_MS（10min 熔断 TTL）与 R0_SESSION_QUERY_RETRY_MS（60s 半开探活）；
+//   ② searchSessionHistory 加「失败熔断 + 半开重试 + 超时哨兵（withTimeout 6000ms，超时≠未命中）」；
+//   ③ recall 的跨工作区扫描改为复用 refresh() 的 _wsCache（5min TTL），不再每次全盘重扫；
+//   ④ recall 尾部新增 [通道状态] 说明段（熔断期内告诉模型「不含会话转录」）。
+//   ★归因（实测复算，本套件自身归一 CRLF→LF）：本批开工基线 HEAD a53560e 的 lib/index.js = 1,124,663 字符 / FAA74739CB711060
+//     （与旧锁逐字节相等，证明改前无历史漂移）；改后 = 1,129,700 字符 / 1C0ABE415ADB8467，净 +5,037 字符
+//     ⇒ 漂移 100% 来自本批新代码，无历史内容混入。
+//   判据意图不变（宿主 index.js 不得无痕漂移），按 2026-10-01 裁定复算重钉。
+//   配套：新增 tests/smoke/smoke-test-r0-recall-availability.mjs（27 PASS，含熔断/半开/超时/缓存四组真行为 + 变异负路径）。
+// ★2026-10-24 R131 重钉（1C0ABE415ADB8467 → 2A63E9EAC2396163）：P0-2/P0-3 输出体积与条数治理，属行为代码新增——
+//   ① 新增常量 R0_RECALL_MAX_LIMIT = 50（条数硬上限）、R0_RECALL_MAX_OUTPUT_CHARS = 60000（输出字符硬上限）；
+//   ② recall() 入口统一夹紧 limit（收敛为唯一一处，下游三处 slice 拿到的已是合法值）+ 夹紧时如实写 [参数] 说明；
+//   ③ 输出超 60k 时截断并附 [输出已截断] + 拿全指引（不静默）；
+//   ④ HTTP /recall 路由不再硬编码 format=full，改为尊重 body.format（默认仍 full，因 result+hits 双通道契约依赖它）。
+//   ★归因（实测复算，本套件自身归一 CRLF→LF）：本批开工基线 HEAD a53560e 的 lib/index.js = 1,124,663 字符 / FAA74739CB711060
+//     （与原始锁逐字节相等，证明改前无历史漂移）；本轮累计改后 = 1,132,369 字符 / 2A63E9EAC2396163，净 +7,706 字符
+//     （其中 R131 增量 = +3,706，前次 R130 已锁 +5,037）⇒ 漂移 100% 来自本批新代码，无历史内容混入。
+//   判据意图不变（宿主 index.js 不得无痕漂移），按 2026-10-01 裁定复算重钉。
+// ★2026-10-24 R132 重钉（2A63E9EAC2396163 → 60271F140669C859）：**v4 批次 0.5 截断方向修正**，属行为代码新增——
+//   ① 新增模块级 helper `truncatePlanByPriority`（按节优先级截白板）+ 正则 `PLAN_SECTION_PRIORITY_RE`；
+//   ② 新增静态 import `weightedTrimHandoffLedgerPre` from handoff-anchor.js（原仅 buildContinueCarry 动态 import）；
+//   ③ `part()` 新增第 7 参 `direction`（默认 head = 旧行为逐字节不变），user-memory / project-notes 传 tail；
+//   ④ PLAN / 账本两段从位置截断改为按节优先级 / 按段权重截断；两处调用点均带 fail-closed 回落。
+//   ★归因（实测复算，本套件自身归一 CRLF→LF）：本批开工基线 HEAD a53560e 的 lib/index.js = 1,124,663 字符 / FAA74739CB711060
+//     （与原始锁逐字节相等）；本轮累计改后 = 1,136,455 字符 / 60271F140669C859，净 +11,792
+//     （R132 增量 +4,086；前次 R131 +3,706、R130 +5,037 已分别锁定）⇒ 漂移 100% 来自本批新代码。
+//   判据意图不变（宿主 index.js 不得无痕漂移），按 2026-10-01 裁定复算重钉。
+//   配套：新增 tests/smoke/smoke-test-b05-truncation-direction.mjs（26 PASS，4 组真执行 + 3 条变异负路径）；
+//   smoke-test-handoff / a13-inject-seg-chars 的抽取沙箱同步注入 truncateTail / truncatePlanByPriority / handoff-anchor。
+// ★2026-10-24 R133 重钉（60271F140669C859 → DDB8C4B8D4075A92）：**v4 批次 A 数据层**，属行为代码新增——
+//   ① 新增三个独立模块 lib/event-store.js（五动作+原子写+idemKey 去重）、lib/event-render.js（T0/T1/T2 三档）、
+//      lib/event-plan.js（未归档四段账本扫描+分页+候选分组）；
+//   ② index.js 新增静态 import 三项 + 模块级 helper readStoreForInjectPre；
+//   ③ 新增方法 refreshEventStatePre()（事件层**唯一** IO 点，产出 eventCardsText/eventCatalogText/eventUnarchivedCount/eventActiveCount）；
+//   ④ refresh() 尾部接线 await this.refreshEventStatePre(agent)（renderMemoryDynamic 体内保持零 IO，仍可被 47 套件抽取执行）；
+//   ⑤ DEFAULT_CONFIG 新增 3 个事件面配置键（160 → 163），5 处文档同步。
+//   ★归因（实测复算，本套件自身归一 CRLF→LF）：本批开工基线 HEAD a53560e 的 lib/index.js = 1,124,663 字符 / FAA74739CB711060
+//     （与原始锁逐字节相等）；本轮累计改后 = 1,140,831 字符 / DDB8C4B8D4075A92，净 +16,168
+//     （R133 增量 +4,376；R132 +4,086 / R131 +3,706 / R130 +5,037 已分别锁定）⇒ 漂移 100% 来自本批新代码。
+//   判据意图不变（宿主 index.js 不得无痕漂移），按 2026-10-01 裁定复算重钉。
+//   配套：新增 3 个套件（event-store 59 PASS / event-render-plan 56 PASS / batchA-wiring 26 PASS，全部真 import→真调用）。
+// ★2026-10-24 R134 重钉（DDB8C4B8D4075A92 → 2FB5F3E505D32EBD）：**v4 批次 B 工具层**，属行为代码新增——
+//   ① 注册 `memory_event` 工具（19→20），action 五值枚举；checkpoint 只声明 type: object
+//      （defineTool 只透传 type/description/enum/items/required，嵌套 properties 会被静默丢弃）；
+//   ② 把 eventStorePre / V4_EVENT_STORE_FILENAME / path / engine 作为闭包依赖使用；
+//   ③ 每次写成功后调 refreshEventStatePre 立刻刷新注入面缓存（不等 15s TTL）。
+//   ★归因（实测复算，本套件自身归一 CRLF→LF）：本批开工基线 HEAD a53560e 的 lib/index.js = 1,124,663 字符 / FAA74739CB711060
+//     （与原始锁逐字节相等）；本轮累计改后 = 1,147,291 字符 / 2FB5F3E505D32EBD，净 +22,628
+//     （R134 增量 +6,460；R133 +4,376 / R132 +4,086 / R131 +3,706 / R130 +5,037 已分别锁定）⇒ 漂移 100% 来自本批新代码。
+//   判据意图不变（宿主 index.js 不得无痕漂移），按 2026-10-01 裁定复算重钉。
+//   配套：新增 tests/smoke/smoke-test-v4-memory-event-tool.mjs（37 PASS，五动作真调用 + 负路径）。
+//   工具计数锁 4 处已同步（smoke-test / m3b3 / context-observer / graph-mode / p23-wb-sidecar），5 处文档已同步。
+// ★2026-10-24 R135 重钉（2FB5F3E505D32EBD → B0EA819709A3B861）：**v4 批次 C-3 注入面（两个新段）**，属行为代码新增——
+//   ① 新增 `event-cards` 段（T2，priority=normal）：紧跟 handoff-ledger **之后、且独立于 handoff 分支**
+//      —— 首版误放进 `handoffEnabled && (planText||latestHandoffText)` 块内，变异测试发现「无白板/账本时事件卡
+//      不注入」的真缺陷，已移出并加结构性负路径断言；
+//   ② 新增 `event-unarchived` 段（≤200，priority=low）：计数>0 才出现，无存量整段零字节；
+//   ③ 两个新 locale 标题 `snapshotEventCardsTitle` / `snapshotEventUnarchivedTitle`；
+//   ④ 两段**不进 PROMPT_SECTION_KEYS_PRE_V1**（前端文案表未同步，按用户裁定「前端到时重新测绘再动工」，留 F 批）。
+//   ★归因（实测复算，本套件自身归一 CRLF→LF）：本批开工基线 HEAD a53560e 的 lib/index.js = 1,124,663 字符 / FAA74739CB711060
+//     （与原始锁逐字节相等）；本轮累计改后 = 1,149,244 字符 / B0EA819709A3B861，净 +24,581
+//     （R135 增量 +1,953；R134 +6,460 / R133 +4,376 / R132 +4,086 / R131 +3,706 / R130 +5,037 已分别锁定）⇒ 漂移 100% 来自本批新代码。
+//   判据意图不变（宿主 index.js 不得无痕漂移），按 2026-10-01 裁定复算重钉。
+//   配套：新增 tests/smoke/smoke-test-v4-c3-inject-segments.mjs（22 PASS，真抽取 renderMemoryDynamic 真执行；5 条变异必红）。
+// ★2026-10-24 R135b 重钉（B0EA819709A3B861 → 09C941DFE7AFF8D0）：**批次 C-3 收尾修正**——
+//   首版把两个新段标题放进 DEFAULT_PROMPT_LAYERS ⇒ 服务端 29 层 / 客户端 27 层，
+//   smoke-test-g4-whiteboard 的 G4-6d（客户端逐键镜像硬锁）立刻红。
+//   修正：两个标题改为**内联字面量**（不进镜像表），层数回到 27；并补一条回归守卫。
+//   ★归因：本批开工基线 HEAD a53560e = 1,124,663 字符 / FAA74739CB711060（逐字节相等）；
+//     改后 = 1,149,049 字符 / 09C941DFE7AFF8D0，累计 +24,386（R135b −195，因去掉两个 layer 键）。
+//   判据意图不变（宿主 index.js 不得无痕漂移），按 2026-10-01 裁定复算重钉。
+// ★2026-10-24 R136 重钉（09C941DFE7AFF8D0 → A885B7348A3351CE）：**批次 C-1 一框三区**，属行为代码新增——
+//   ① 新增 lib/injection-zones.js（纯函数：三区映射 + 通道区≤300 限额 + 合规区稳定性判据 + 分区账本）；
+//   ② index.js 静态 import + 在**中和之后、envelope 之前**插入通道区限额（先中和再分区 —— 否则两本账差 6 字符）；
+//   ③ `zoneReport` 挂进 state.envelopeMeta.zones（可审计，不进注入文本）；
+//   ④ 两处 typeof fail-soft 兜底：renderMemoryDynamic 被 9 个 smoke 用 new Function 抽取执行，模块级 import 不可见。
+//   ★归因（实测复算，本套件自身归一 CRLF→LF）：本批开工基线 HEAD a53560e = 1,124,663 字符 / FAA74739CB711060（逐字节相等）；
+//     改后 = 1,150,759 字符 / A885B7348A3351CE，累计 +26,096（R136 增量 +1,710）。
+//   判据意图不变（宿主 index.js 不得无痕漂移），按 2026-10-01 裁定复算重钉。
+//   配套：新增 tests/smoke/smoke-test-v4-c1-zones.mjs（57 PASS，真 import + 真抽取渲染；3 条变异必红）。
+// ★2026-10-24 R137 重钉（A885B7348A3351CE → EF063FB840943700）：**批次 C-2 P2/P3 铭文改造**——
+//   ① snapshotSlimMaintain：新增第 7 项 memory_event（建事件/加检查点），「六项」→「七项」；
+//   ② snapshotSlimGuide：加「当前在做什么 → 先看事件卡片」入口，白板/账本语义改为四段式；
+//   ③ **服务端 index.js 与客户端 client.js 同步改**（G4-6b/G4-6d 硬锁逐键逐字一致）。
+//   ④ P1（snapshotInscription 整段重写）**未做**：文档未给新版正文，且会改变模型每轮行为 ⇒ 待用户裁定。
+//   ★归因：本批开工基线 HEAD a53560e = 1,124,663 字符 / FAA74739CB711060（逐字节相等）；
+//     改后 = 1,150,871 字符 / EF063FB840943700，累计 +26,208（R137 增量 +112）。
+//   判据意图不变（宿主 index.js 不得无痕漂移），按 2026-10-01 裁定复算重钉。
+//   配套：新增 tests/smoke/smoke-test-v4-c2-inscription.mjs（23 PASS；回退 P2/P3 ⇒ 7 FAIL）。
+// ★2026-10-24 R144 重钉（A87F85BE… → 0A8FA7CC…）：**F 批 event 档假承诺防线**——
+//   ① 后端 kanbanBoardData 档位闸门由「是不是 graph」改为读 `_bm`，event 档回**专属**
+//      `reason:'event-mode'`（此前复用 'legacy-mode' ⇒ 前端显示「白板未启用」，假承诺）；
+//   ② 前端 3 处 reason 消费点加 event-mode 分支；三语新增 planEventMode 文案。
+//   改后 = 1,171,104 字符 / 734908559343F61E（R144 增量 +328）。
+//   判据意图不变（宿主 index.js 不得无痕漂移），按 2026-10-01 裁定复算重钉。
+// ★2026-10-24 R143 重钉（2A8EF8B0… → A87F85BE…）：**批次 G 配置收尾 + F 批前置**——
+//   ① F 批前置：`lib/client.js` 的 API 表补 4 个事件键（eventUnarchived/eventCurate/eventList/eventDetail），
+//      D2 的 4 条路由前端此前 **0 处引用**（不补就没法取事件数据，任何 F 方案都要做）；
+//      ⇒ 连带 `api-paths` 的 HOST_ONLY_WHITELIST **移除**这 4 条（前端已有键则不再是「宿主独有」）。
+//   ② G 批：`slimPlanChars`/`slimLedgerChars` 标注废弃（实测全仓 0 处读取；键保留不删，
+//      避免老配置的键被当未知键剔除）。配置键仍 163。
+//   ③ 事件配置键审计：3 个 event* 键「已定义且被读取」全部对齐（0 个读了没定义、0 个定义了没人读）。
+//   改后 = 1,170,776 字符 / 734908559343F61E（R143 增量 +162）。
+//   判据意图不变（宿主 index.js 不得无痕漂移），按 2026-10-01 裁定复算重钉。
+// ★2026-10-24 R142 重钉（992118DA… → 2A8EF8B0…）：**批次 D2 存量未归档三件套**——
+//   ① API 表 +4 键：event-unarchived / event-curate / event-list / event-detail；
+//   ② 新增 4 条路由（全部 loopback-only；curate 缺 confirmToken ⇒ 409 后端门）；
+//   ③ 引擎新增 listUnarchivedPre / curateUnarchivedPre（口径 A 只算四段账本，只产草案不写盘）。
+//   ④ 路由计数 73 → 77（连带同步 4 处计数锁 + 5 份文档 + HANDBOOK §5.1）。
+//   ★归因（含两处**我自己引入的真缺陷**，均已修）：
+//     a) 往 API 对象尾部插键时用 lastIndexOf('\n') 截断再拼，**覆盖掉了 migrate-upload** ⇒
+//        API['migrate-upload'] 变 undefined 而 handler 仍在引用（run-time 才炸）。已补回 + 注明教训。
+//     b) 插入的那 7 行用了裸 \n ⇒ CRLF 22003/bareLF 7 行尾混用（la-audit-fixes 红）。已归一化。
+//   改后 = 1,170,614 字符 / 734908559343F61E（R142 增量 +8,337）。
+//   判据意图不变（宿主 index.js 不得无痕漂移），按 2026-10-01 裁定复算重钉。
+//   配套：新增 smoke-test-v4-d2-unarchived.mjs（35 PASS / 4 条变异必红）。
+// ★2026-10-24 R141 重钉（7AF0AA8B… → 992118DA…）：**批次 E 接续链**——
+//   ① refreshRitualPrompt 加第 0 步（读回 eventId）+ 账本必须带 eventId；
+//   ② handoffMaterialStamp 加事件维度（updatedAt + checkpointCount）+ 修掉读错工作区的 TODO；
+//   ③ buildContinueCarry 加事件绑定块（进 head 区）+ 返回 eventId/eventName + 事件存在性硬门；
+//   ④ 水位骨架优先写进事件 checkpoints（kind=water/sourceRef=auto:water/idemKey 幂等），账本降兜底；
+//   ⑤ planUpdatePending 两处置位改写到目标 runtime（实跑确认的既有 bug：无 ALS 时落 default runtime）。
+//   ★归因：本批开工基线 HEAD a53560e = 1,124,663 字符 / FAA74739CB711060（逐字节相等）；
+//     改后 = 1,162,277 字符 / 734908559343F61E，累计 +37,614（R141 增量 +6,841）。
+//   判据意图不变（宿主 index.js 不得无痕漂移），按 2026-10-01 裁定复算重钉。
+//   配套：新增 lib/event-carry.js + smoke-test-v4-e-continuation.mjs（61 PASS）。
+// ★2026-10-24 R140 重钉（C64A91FB… → 7AF0AA8B…）：**批次 C-2 的 P1 铭文定稿**——
+//   ① 铭文 ② 追加事件归属与四动作（memory_event create/append/set/close + 宁建勿挂）；
+//   ② 新增 ⑧ 存量未归档指引（不写死段标题，避开 C-3 负路径）；
+//   ③ ⑦ archive 层压缩 221→159（两条命令与「不在 all 里」全保留）；
+//   ④ memory_search 假承诺从精简版删除（该工具从未注册）；
+//   ⑤ GUIDANCE 补入事件记忆 + 日历四工具（补齐三条通路的暴露缺口）。
+//   ★归因：本批开工基线 HEAD a53560e = 1,124,663 字符 / FAA74739CB711060（逐字节相等）；
+//     改后 = 1,155,436 字符 / 734908559343F61E，累计 +30,773（R140 增量 +600）。
+//   判据意图不变（宿主 index.js 不得无痕漂移），按 2026-10-01 裁定复算重钉。
+//   配套：新增 smoke-test-v4-p1-exposure（45 PASS）；C-2 套件升至 27 PASS。
+// ★2026-10-24 R139 重钉（EF063FB840943700 → 734908559343F61E）：**批次 D 检索**——
+//   ① memory_recall 新增 scope='events' 分支（读 event-store，按 name/summary/sections/checkpoints 词法匹配，
+//      复用既有 recallPassagesPre 打分，按命中词总分 + updatedAt 降序排序）；
+//   ② memory_recall 的 scope 枚举 4→5 值（加 events）；
+//   ③ P3 铭文把 scope="events" 写回（C-2 时是假承诺、D 批补上后端条款后才合法）。
+//   ★归因：本批开工基线 HEAD a53560e = 1,124,663 字符 / FAA74739CB711060（逐字节相等）；
+//     改后 = 1,154,836 字符 / 734908559343F61E，累计 +30,173（R139 增量 +3,965）。
+//   判据意图不变（宿主 index.js 不得无痕漂移），按 2026-10-01 裁定复算重钉。
+//   配套：新增 tests/smoke/smoke-test-v4-d-events-recall.mjs（22 PASS；3 条变异必红）。
+eq(createHash('sha256').update(IX).digest('hex').slice(0, 16).toUpperCase(), '5DDADFDAB822A79B', 'R138 = R137 + 2026-10-25 **v4-C2 真缺陷修复 + i332/batchA 判据更新**。★归因（实测复算）：本批开工基线 = R137 锁定值 1,209,133 字符 / sha16 `94E1F6A8A1C42A5B`；本批改后 = **1,210,508 字符 / `E04A79739D70EF91`**（Δ **+1,375 字符**）。逐项溯源：① **C2 真缺陷修复**（Lead 真引擎复查抓出）：`refreshEventStatePre` 预计算 `state.slimEventT1`（[{id,line}] 投影，不挂整 events 对象）+ `state.slimEventTotal`，降级分支同步清空；`renderSlimSnapshotPre` 的 C2 段改读 `s.slimEventT1` 而**不再读 `s.events`**（该字段产品从不写 ⇒ 原来恒空 ⇒ 「[当前事件]」永不出现，而套件手工塞 state.events 造了假绿）；② **i332 产品侧简化**：memory_note 分支删 3 处冗余 `engine.resolvePaths(exec.agent)`（Phase1/Phase3/事件侧刷新块），复用分支开头的 `const p` —— 少 3 次异步 IO，且抽取式测试的分支不再引用 `exec`（契约更干净）。⇒ 判据意图不变（宿主 index.js 不得无痕漂移），按 2026-10-01 裁定复算重钉。★本批不改公共契约（纯缺陷修复 + 冗余消除）。★同批判据更新（改测试不改产品）：`v4-c2-slim-events` 重写为真引擎端到端（37 条，含 C2-0 元断言禁止再读 s.events）· `i332-write-contract` 23→29 条（补桩 + ⑨WAL 顺序 + ⑩Phase1 失败中止）· `tools/check-write-contract.mjs` 变异③改全局替换 · `v4-batchA-wiring` 25→31 条（catalog 双向断言 + W-1b 三 active 核心判据）。')
+// ★★2026-10-25 E3c（Lead 二次裁决：**删掉 E3b**）：
+//
+//   【为什么删 E3b】原 E3b 是 `eq(R132_CHARS - R131_CHARS, R132_DELTA)` ——
+//   **三个常量都是人手填的**，`1183841 - 1181477 === 2364` 永远不会错 ⇒ **恒真断言**。
+//   它只能抓「填错了算术」，抓不到任何真实问题。而「强制注意力」的价值靠注释里的归因就够了，
+//   不需要一条恒真断言来假装守（Lead 原话）。
+//
+//   【保留 E3c，它有效】`eq(IX.length, R132_CHARS)` **真的读了文件** ——
+//   能抓「锁定了一个陈旧读数」（改完代码但读旧文件算哈希/长度）这类真错误。
+//
+//   【考虑过但否掉的方案 Y】从 `git show HEAD:` 解析上一版长度来算增量 ——
+//   引入 git 依赖，套件在非 git 环境会挂；而 E3c 已覆盖「长度被悄悄改」的主要风险。
+//
+//   诚实边界（Lead）：「没有任何锁能区分合理演进与随手重钉」。E3 系列不是正确性检查，
+//   只是把「重钉」动作强制多花 30 秒核对。
+// ★2026-10-25 R135 重钉（R134 → R135）：lib/index.js **有意演进** —— v4-H10-b（/event-curate 二次确认真写盘）。
+//   归因（实测复算）：本批开工基线 = R134 锁定值 1,187,050 字符 / sha16 `C440233482FAE153`；
+//   本批改后 = **1,195,853 字符 / `2D958C33AAF469FF`**（Δ **+8,803 字符**）。逐项溯源：
+//     ① `curateUnarchivedPre` 签发服务端确认令牌（+1,025）：token = sha1(候选集+日期+进程随机盐)，
+//        存 `this._curateToken = {token, ids, at, drafts}`；返回体加 `confirmToken`。
+//     ② 新增模块级常量 `CURATE_TOKEN_SALT`（进程级随机盐）+ `CURATE_TOKEN_TTL_MS`（10 分钟）+ 注释（+371）。
+//     ③ 新增 `writeCuratedEventsPre`（+4,302）：令牌校验/候选集子集校验/TTL、逐条建事件+追加检查点、
+//        **sourceRef 必须是 `handoff/<文件名>`**（写成 `auto:` 会被 listUnarchivedPre 跳过 ⇒ 永远归档不完）、
+//        fail-closed 不吞错、幂等（先算 archivedNames 再判候选是否已全部归档，避免重放又建事件）。
+//     ④ event-curate 路由 handler 重写（+1,151）：删「客户端 confirmToken===expectToken」自证式守卫，
+//        改为按 body 分发（带 candidateIds ⇒ 写盘分支；否则 ⇒ 出草案），409 响应体带 `code` 字段。
+//     ⑤ 幂等修复（+1,252）：`await import('./event-store.js')` → **顶层静态导入 eventStorePre** ——
+//        本文件在测试里被「源码抽取 + new Function」执行，动态 import 相对路径会解析到临时目录 ⇒
+//        ERR_MODULE_NOT_FOUND ⇒ 被 catch 吞掉 ⇒ archivedNames 恒空 ⇒ 幂等静默失效（实测抓出）。
+//     ⑥ 其余为注释与空白。
+//   ⇒ 判据意图不变（宿主 index.js 不得无痕漂移），按 2026-10-01 裁定复算重钉。
+//   ★受影响的公共契约：`/event-curate` 出草案**不再需要令牌**（只读预览），写盘必须带服务端签发的真令牌；
+//     响应体 409 固定带 `code: "confirm-required"`。
+const R148_CHARS = 1247578   // R138（本版）lib/index.js **归一化 LF 长度**（登记值，= readFileSync().replace(/\r\n/g,'\n') 之后的字符数，NOT 文件字节数）；R138 = v4-C2 真缺陷修复（slimEventT1）+ i332 产品侧删 3 处冗余 resolvePaths
+eq(IX.length, R148_CHARS,
+  'E3c ★实际长度必须等于登记长度（防「锁定了一个陈旧读数」）：实际 ' + IX.length + ' 应 = ' + R148_CHARS)
 // ★2026-10-08 R1 重钉（R87 → R88）：lib/index.js **有意演进** —— R1 收口修 issue #174：
 //   #258 的发送出口包装（`engine._teamFetch = async (...) => ...`）是个**裸箭头函数**，
 //   把原 teamFetch 的属性面 `dispose/describe/readToken` 全部丢掉 ⇒ 卸载路径的
@@ -601,7 +802,7 @@ eq(createHash('sha256').update(IX).digest('hex').slice(0, 16).toUpperCase(), 'FA
 //   守卫语义不变：仍锁「宿主 lib/index.js 归一化 LF 后的 sha256 前 16 位大写」这一基线常量，只更新被锁的字节值。
 //   （重钉值 70C221D02149DF15 由**本套件自身的剥离表达式**复算得出：本文件第 23 行 IX 的 sha256 前 16 位大写。）
 // ★2026-09-28 计数演进：67→68（新增 skin-library-fetch，见 E3 同批）。语义保留：仍锁路由数不漂移。
-eq(cnt(IX, "path: API[") + cnt(IX, 'path: API.'), 73, 'E4 ★路由数守恒 = 73（2026-10-04 issue #211 /python-setup/uninstall +1；2026-09-28 皮肤库 +1；2026-10-01 /global-brief +1；2026-10-02 审计修复批 #174 /team-control +1；其余零新增）')
+eq(cnt(IX, "path: API[") + cnt(IX, 'path: API.'), 79, 'E4 ★路由数守恒 = 79（2026-10-24 v4 批次 D2 事件四路由 /event-unarchived·/event-curate·/event-list·/event-detail +4；2026-10-04 issue #211 /python-setup/uninstall +1；2026-09-28 皮肤库 +1；2026-10-01 /global-brief +1；2026-10-02 审计修复批 #174 /team-control +1；其余零新增）')
 console.log('lib/client.js ' + Buffer.byteLength(SRC, 'utf8') + 'B / CRLF ' + (SRC.match(/\r\n/g) || []).length + ' / sha16 ' + createHash('sha256').update(SRC).digest('hex').slice(0, 16).toUpperCase())
 console.log('PASS ' + p + ' / FAIL ' + f)
 fails.forEach((x) => console.log('  FAIL: ' + x))

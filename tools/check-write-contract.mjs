@@ -82,10 +82,21 @@ check(/r\.conflictPath/.test(branch), '③ 冲突路径被消费（可恢复指�
   const brokenOk = SRC.replace(/committed: true/, 'committed: false');
   // 变异②：把所有「失败返回」的 error 字段改名 ⇒ 调用方再也拿不到失败原因（契约被打破）。
   const brokenFail = SRC.replace(/return \{ ok: false, error:/g, 'return { ok: false, _error:');
-  const brokenConsumer = SRC.replace(/if \(!r \|\| !r\.ok\) \{/, 'if (false) {');
+  // ★★2026-10-25 C1 判据同步（Lead 复查指出）：C1 把 memory_note 改成 WAL 后，
+  //   `if (!r || !r.ok)` **出现了两次** —— ①Phase3 补偿块 ②正式的失败早退/回执。
+  //   只替换第一处的话，第二处仍保留 `!r || !r.ok` + `r.indexStale` ⇒ reChecks 仍为 true
+  //   ⇒ 「变异③必须红」这条**恒绿**（实测：本检查器报 1 项失败，正是它）。
+  //   ⇒ 用**全局替换**把所有该判据打掉，才是真的「消费端不判 ok」。
+  const brokenConsumer = SRC.replace(/if \(!r \|\| !r\.ok\) \{/g, 'if (false) {');
   check(brokenOk !== SRC, '④ 变异锚命中（committed）')
   check(brokenFail !== SRC, '④ 变异锚命中（失败 error）')
   check(brokenConsumer !== SRC, '④ 变异锚命中（消费端判 ok）')
+  // ★再加一条：变异必须打掉**全部**该判据（C1 后有两处；将来若变三处也会被这条抓到）
+  {
+    const before = (SRC.match(/if \(!r \|\| !r\.ok\) \{/g) || []).length
+    const after = (brokenConsumer.match(/if \(!r \|\| !r\.ok\) \{/g) || []).length
+    check(before >= 1 && after === 0, '④ 变异③覆盖**全部**「消费端判 ok」判据（防只打掉一处 ⇒ 断言恒绿）', 'before=' + before + ' after=' + after)
+  }
   // 逐条重跑上面的判据，确认「打坏后必然失败」
   const reChecks = (src) => {
     const b = methodBody(src, '  async writePlanSnapshot(projectDir, content, opts) {', '  /** 交接账本:每次一篇新文件')

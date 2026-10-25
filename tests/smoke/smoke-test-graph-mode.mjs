@@ -83,14 +83,14 @@ const cleanup = (b) => {
 console.log('=== WB-GRAPH graph 档端到端 ===')
 
 // ─────────────────────────────────────────────────────────────
-// A. graph 档: 工具数 14 → 16, 两个遍历工具**真的注册**(修 BUG-1/11 的验收)
+// A. graph 档: 工具数 v4-U6 起 = 21（含 memory_upgrade）, 两个遍历工具**真的注册**(修 BUG-1/11 的验收)
 // ─────────────────────────────────────────────────────────────
 const bg = bootPre('graph')
-t('A1 graph 档工具数 = 19(13 旧 + 2 遍历 + 1 ? + T4 + P9 + M8-B) —— 断言「至少含两遍历工具」且计数一致', () => {
+t('A1 graph 档工具数 = 21(v4-U6 起 = 20 + memory_upgrade) —— 断言「至少含两遍历工具」且计数一致', () => {
   const names = bg.tools.map((x) => x.name)
   assert(names.includes('memory_expand'), 'graph 档必须注册 memory_expand(修 BUG-1: 此前闸门恒假, 永不注册)')
   assert(names.includes('memory_trace'), 'graph 档必须注册 memory_trace')
-  assert(bg.tools.length === 19, 'graph 档工具数应为 19, 实为 ' + bg.tools.length + ': ' + names.join(','))
+  assert(bg.tools.length === 21, 'graph 档工具数应为 21（v4-U6 起 +memory_upgrade）, 实为 ' + bg.tools.length + ': ' + names.join(','))
 })
 t('A2 两遍历工具契约完整(parameters.id/tag + execute 是函数)', () => {
   const ex = bg.tools.find((x) => x.name === 'memory_expand')
@@ -212,24 +212,71 @@ t('C1 BUG-10 write/rebuild 两路径 id 一致(正/反斜杠 + title 前缀差�
 // D. legacy 对照(开关回退): 工具数**必须仍是 14**, 零行为变化
 // ─────────────────────────────────────────────────────────────
 // ★ T4(2026-09-19): 14→15 / 16→17 —— memory_procedure **无条件注册**(不属白板 P3 闸门),
-//   故 legacy 与 graph 两档同时 +1;本节断言的**意图**(legacy ≠ graph, 证明闸门真的在起作用)不变。
-t('D1 legacy 档工具数 = 17(与 graph 档 19 形成对照, 证明闸门真的在起作用)', () => {
+//   故 legacy 与 graph 两档同时 +1。
+//
+// ★★ 2026-10-24 判据更新（v4 H0 工具闸门解耦；属**判据过期**不是缺陷）：
+//   旧断言 = 「legacy 档 18 工具且**不得**注册 memory_expand/trace」，其**意图**是证明 boardMode 闸门真的在起作用。
+//   H0 的意图**恰恰是取消这道闸门**（把白板遍历工具从 graph 档独占里解出来，让 legacy/event 档也能用）
+//   ⇒ 旧意图已被用户裁定推翻，断言必然过期。
+//   新断言的意图改为：**证明闸门确已解耦** —— 任何档位工具数一致（20）且 expand/trace 都在场。
+//   注意：这不是「放宽」。若有人把闸门加回来（legacy 变 18）或把工具误删（变 19），本条立刻 FAIL。
+t('D1 ★H0 解耦：legacy 档与 graph 档工具数一致（同为 21），且 expand/trace 都注册', () => {
   const bl = bootPre('legacy')
   try {
     const names = bl.tools.map((x) => x.name)
-    assert(bl.tools.length === 17, 'legacy 档必须仍为 17 工具(15 + T4 memory_procedure + P9 memory_rules + M8-B memory_procedure_list), 实为 ' + bl.tools.length)
-    assert(!names.includes('memory_expand'), 'legacy 档不得注册 memory_expand')
-    assert(!names.includes('memory_trace'), 'legacy 档不得注册 memory_trace')
+    assert(bl.tools.length === 21, 'legacy 档工具数必须与 graph 档一致（21）, 实为 ' + bl.tools.length)
+    assert(names.includes('memory_expand'), '★H0 解耦后 legacy 档**必须**注册 memory_expand（旧判据「不得注册」已过期）')
+    assert(names.includes('memory_trace'), '★H0 解耦后 legacy 档**必须**注册 memory_trace（旧判据「不得注册」已过期）')
     // T4 工具**不属**白板闸门 ⇒ legacy 档也必须在场(反向保证:别把它错当 graph-only)
     assert(names.includes('memory_procedure'), 'legacy 档也必须注册 memory_procedure(它不受 boardMode 闸门管)')
     assert(names.includes('memory_procedure_list'), 'legacy 档也必须注册 memory_procedure_list(只读浏览同样不受 boardMode 闸门管)')
   } finally { cleanup(bl) }
 })
-t('D2 非法档位值 fail closed → legacy(17), 绝不猜 graph', () => {
+t('D2 非法档位值 fail closed → legacy，工具数同样 20（H0 后档位不再影响工具集）', () => {
   const bx = bootPre('bogus-mode')
   try {
-    assert(bx.tools.length === 17, '非法值必须回落 legacy(17), 实为 ' + bx.tools.length)
+    assert(bx.tools.length === 21, '非法值回落 legacy 后工具数 = 21, 实为 ' + bx.tools.length)
+    const names = bx.tools.map((x) => x.name)
+    assert(names.includes('memory_expand') && names.includes('memory_trace'), '★回落 legacy 后 expand/trace 同样注册（解耦是全局的）')
   } finally { cleanup(bx) }
+})
+
+// ★★ 2026-10-24（v4 H0 解耦的**永久守卫**，从一次性临时验证升格为回归套件）：
+//   为什么必须进套件：三档位一致性是 H0 的核心不变量。只写在临时脚本里 ⇒ 下次谁把闸门加回来
+//   只有临时跑才发现。进套件 = 每次回归都验。
+//   判据口径：不是「数量碰巧一样」，而是**工具集字符串完全相同** —— 这才是「解耦」的定义。
+t('D3 ★H0 解耦：event 档工具数 = 20，且 expand/trace 都在场', () => {
+  const be = bootPre('event')
+  try {
+    const names = be.tools.map((x) => x.name)
+    assert(be.tools.length === 21, 'event 档工具数必须为 21, 实为 ' + be.tools.length)
+    assert(names.includes('memory_expand'), '★event 档必须注册 memory_expand（H0 解耦的核心场景）')
+    assert(names.includes('memory_trace'), '★event 档必须注册 memory_trace')
+    assert(names.includes('memory_log') && names.includes('memory_event'), 'event 档核心工具仍在')
+  } finally { cleanup(be) }
+})
+t('D4 ★★★H0 核心不变量：legacy / graph / event 三档**工具集字符串完全相同**', () => {
+  const bl = bootPre('legacy'), bg = bootPre('graph'), be = bootPre('event')
+  try {
+    const key = (b) => b.tools.map((x) => x.name).slice().sort().join(',')
+    const kl = key(bl), kg = key(bg), ke = key(be)
+    assert(kl === kg, 'legacy 与 graph 工具集必须完全相同 | legacy=' + kl + ' | graph=' + kg)
+    assert(kg === ke, 'graph 与 event 工具集必须完全相同 | graph=' + kg + ' | event=' + ke)
+    assert(kl === ke, 'legacy 与 event 工具集必须完全相同 | legacy=' + kl + ' | event=' + ke)
+  } finally { cleanup(bl); cleanup(bg); cleanup(be) }
+})
+t('D5 ★负向：任一档位与前两档不一致则 FAIL（防止断言恒真）', () => {
+  const bl = bootPre('legacy'), bg = bootPre('graph')
+  try {
+    const key = (b) => b.tools.map((x) => x.name).slice().sort().join(',')
+    const kl = key(bl), kg = key(bg)
+    // 自证：比较器本身能区分不同集合（否则上面的「相等」断言毫无意义）
+    assert(kl !== (kl + ',__sentinel__'), '比较器必须能区分不同工具集（防相等断言恒真）')
+    // 三档都用同一 boot 口径 ⇒ 若某档工具集真的不同，D4 必红；这里再断言「键非空且含关键工具」
+    assert(kl.length > 0 && kg.length > 0, '工具集键非空（防空串相等导致 D4 恒真）')
+    assert(kl.split(',').includes('memory_expand'), '工具集键含 memory_expand（防 boot 失败时全空串误判相等）')
+    assert(kl.split(',').length === 21, '工具集键项数 = 21, 实为 ' + kl.split(',').length)
+  } finally { cleanup(bl); cleanup(bg) }
 })
 
 // ─────────────────────────────────────────────────────────────
@@ -268,7 +315,12 @@ t('E4 P2-5 后端返回 structured + boardMode; 前端据 structured 渲染且 l
   assert(IDX_SRC.includes("sections: ['plan', 'ledger', 'archive']"), 'P2-5: structured 必须含按 kind 的段视图')
   // v2(2026-09-16 晚): 文字卡改为「真看板在场时退位」—— structured 仍条件渲染(legacy 不出现),
   //   且必须带 !kbData 守卫(避免与真看板同屏争位, 这是用户「就是没有图」的另一半原因)。
-  assert(/if\s*\(data\.structured\s*&&\s*!kbData\)/.test(CLI_SRC), 'P2-5 前端: structured 卡必须**条件渲染**且在看板在场时退位(legacy 下不出现)')
+  // ★D14（2026-10-24 用户裁定）：白板页签改为事件视图，structured 卡（graph 档 sidecar 派生物）已移除。
+  //   本条原意 = 「结构化视图不得在无数据时也渲染（假数据/假承诺）」——不变量本体保留，判据改指事件视图：
+  //   ① 事件视图必须在**无事件时**给出可操作文案，而不是渲染空卡；
+  //   ② 且必须**不再**引用 structured（否则等于死代码复活）。
+  assert(/if \(!shown\.length\) \{/.test(CLI_SRC), 'P2-5 前端: 事件视图必须对「无事件」显式分支（不得渲染空卡）')
+  assert(!/if\s*\(data\.structured\s*&&\s*!kbData\)/.test(CLI_SRC), 'P2-5 前端: structured 卡的旧渲染块必须已移除（D14）')
 })
 
 t('E5 切换按键仍在白板页(开关回退入口不可丢)', () => {
@@ -317,13 +369,23 @@ t('F3 宿主侧 kanbanBoardData 挂载 + REST 路由 + 两侧路径表同步', (
   assert(CLI_SRC.includes("kanbanBoard: ROUTE_PREFIX + '/kanban-board'"), '客户端 API 表缺 kanbanBoard')
 })
 
-t('F4 前端渲染: 看板组件在场 + graph 档才渲染(legacy 逐字节不变)', () => {
-  assert(CLI_SRC.includes('function KanbanBoard(props)'), 'KanbanBoard 组件不在场')
-  assert(CLI_SRC.includes('function KanbanCard(props)'), 'KanbanCard 组件不在场')
-  assert(CLI_SRC.includes('data-dam-kanban'), '看板容器标记不在场')
-  assert(CLI_SRC.includes('apiGet(API.kanbanBoard, { sessionId: sid })'), '看板数据未拉取')
-  assert(/if \(kbData( && boardModeLocal !== 'graph')?\) \{/.test(CLI_SRC), '看板块必须**条件渲染**(legacy 下不出现; R40 起 graph 档走整页短路, 本块仅兜底瞬态)')
-  assert(CLI_SRC.includes('setKbData(k && k.enabled ? k : null)'), 'legacy 档必须落回 null(不渲染)')
+// ★D14（2026-10-24 用户裁定）：白板页签 = 事件视图，看板退出该页签。
+//   本条原意 = 「页面真的把数据渲染出来，而不是只有函数没调用点」（历史上 22 条断言全绿却漏掉
+//   「三条泳道恒空」那类假绿）。**不变量本体不变**，对象换成事件视图：
+//   ① 必须有**真实调用点**（h(EventView, ...) 出现在白板页签渲染里）；
+//   ② 必须有**取数**（apiGet(API.eventList, ...)）；
+//   ③ 必须**不再**拉看板数据（D14 后残留即为死代码/双事实源）。
+t('F4 前端渲染: 事件视图有真实调用点 + 取数（D14 替换看板）', () => {
+  assert(CLI_SRC.includes('function EventView(props)'), 'EventView 组件不在场')
+  assert(CLI_SRC.includes('function EventCard(props)'), 'EventCard 组件不在场')
+  assert(CLI_SRC.includes("h(EventView, { zh: locale === 'zh', limit: 10 })"), '★事件视图必须**被真实调用**（函数写了没人调用 = 历史老病）')
+  // ★2026-10-25 P3（task-32）：该调用已补 sessionId（后端 P0 按会话解析工作区的前端半边）。
+  //   判据意图不变（事件数据必须真被拉取），但字符串必须跟上 -> 用正则只锁「拉取 eventList 且带 all:1」，
+  //   不锁参数顺序/是否还有 sessionId（后者是**增强**，不该让本判据红）。
+  assert(/apiGet\(API\.eventList,\s*\{[^}]*\ball:\s*1\b/.test(CLI_SRC), '事件数据未拉取')
+  assert(CLI_SRC.includes('data-dam-event-surface'), '事件视图容器标记不在场')
+  assert(!CLI_SRC.includes('apiGet(API.kanbanBoard, { sessionId: sid })'), '★负：D14 后不得再拉看板数据（否则是死代码/双事实源）')
+  assert(!/\bkbData\b/.test(CLI_SRC), '★负：kbData 必须彻底消失（看板数据源已退场）')
 })
 
 // ─────────────────────────────────────────────────────────────
@@ -452,23 +514,33 @@ ta('F8 看板路由**端到端真调用**: graph 档返回 enabled=true 且 card
   } finally { cleanup(b) }
 })
 
-t('F7 前端 v2 交互: 缩放(字号+列宽) + 布局切换 + 展开全文 + 搜索 + 聚合视图 + 条件渲染', () => {
-  assert(CLI_SRC.includes('function KanbanBoard(props)'), 'KanbanBoard 组件不在场')
-  assert(CLI_SRC.includes('function KanbanCard(props)'), 'KanbanCard 组件不在场')
-  assert(CLI_SRC.includes('data-dam-kanban'), '看板容器标记不在场')
-  assert(CLI_SRC.includes("apiGet(API.kanbanBoard, { sessionId: sid })"), '看板数据未拉取')
-  assert(/if \(kbData( && boardModeLocal !== 'graph')?\) \{/.test(CLI_SRC), '看板块必须**条件渲染**(legacy 下不出现; R40 起 graph 档走整页短路, 本块仅兜底瞬态)')
-  assert(CLI_SRC.includes('setKbData(k && k.enabled ? k : null)'), 'legacy 档必须落回 null(不渲染)')
-  // 缩放(P5/P6): 字号与列宽均可调且持久化
-  assert(CLI_SRC.includes('KANBAN_ZOOM_KEY') && CLI_SRC.includes('KANBAN_COL_KEY'), '缩放/列宽偏好键不在场')
-  assert(CLI_SRC.includes('localStorage.setItem'), '缩放偏好必须持久化(不能一刷新就回退)')
-  // 布局(P7): 默认纵向堆叠
-  assert(CLI_SRC.includes("|| 'stack'"), '默认布局必须是纵向堆叠(440px 面板里横向只看得到 2 列)')
-  assert(CLI_SRC.includes('KANBAN_LAYOUT_KEY'), '布局偏好键不在场')
-  // 展开(P12) + 搜索(P13) + 折叠(P14)
-  assert(CLI_SRC.includes('展开全文'), '卡片必须可展开看全文')
-  assert(CLI_SRC.includes("var viewPair = useState('lanes')"), '必须支持泳道/最近视图切换')
-  assert(CLI_SRC.includes('data-dam-lane'), '泳道必须可折叠(带 data-dam-lane 标记)')
+// ★D14（2026-10-24 用户裁定）：白板页签的交互面从「看板 v2（缩放/布局/泳道）」
+//   换成「事件视图（只显示最新 + 展开四段）」。
+//   本条原意 = 「交互不是摆设：卡片能展开看全文」（历史教训：22 条断言全绿却漏掉「恒空」）。
+//   不变量本体保留，判据换到事件视图的等价交互上；看板专属的缩放/布局键已随组件退场，不再断言。
+t('F7 前端交互: 事件卡可展开四段（D14 替换看板 v2 交互）', () => {
+  assert(CLI_SRC.includes('function EventCard(props)'), 'EventCard 组件不在场')
+  // 展开：必须真的有一个可切换的展开态（不是只渲染静态文本）
+  assert(CLI_SRC.includes('var openPair = useState(false)'), '事件卡必须有展开状态')
+  assert(CLI_SRC.includes("'data-dam-event-toggle'"), '事件卡必须有展开按钮标记')
+  assert(CLI_SRC.includes("'data-dam-event-sections'"), '事件卡必须能渲染四段容器（展开后才出现）')
+  // 四段标题必须是账本同名四段（模型已认这套词）
+  assert(/EVENT_SECTION_TITLES = \[\['goal', '目标'\]/.test(CLI_SRC), '四段标题必须是 目标/进行中/失败与弯路/下一步')
+  // ★「只显示最新」的判据：必须有截断，且是 active 优先再按 updatedAt 降序
+  // ★2026-10-25 判据更新（Lead 裁决 · **判据过期，非缺陷**）：
+  //   旧判据盯字面量 `var shown = sorted.slice(0, lim)`。P2 懒加载把「固定 N」升级成
+  //   「可增长窗口」⇒ 实测变为 `var shown = sorted.slice(0, lazyN)`，其中
+  //     lazyInitN = lim（未传则 36）· lazyN = Math.min(sorted.length, max(lazyInitN, lazyLoaded))
+  //   ⇒ **「不铺全量历史」这个不变量本体不但保留，还更强了**（初值仍是 lim，只是可增长到 total 为止）。
+  //   这不是放宽：改成三条**结构性**断言，任一条都盯不变量本身，不盯字面量。
+  assert(/var shown = sorted\.slice\(0,\s*(?:lim|lazyN)\)/.test(CLI_SRC),
+    '★必须有截断（只显示最新 N 件，不铺全量历史）')
+  assert(/var lazyN = Math\.min\(sorted\.length/.test(CLI_SRC),
+    '★懒加载窗口必须被 sorted.length 上界夹住（否则可无限增长 = 变相铺全量）')
+  assert(/var lazyInitN = Number\(lim\) > 0 \? Number\(lim\) : LAZY_INIT/.test(CLI_SRC),
+    '★初始窗口必须仍由 lim 决定（否则「只显示最新 N 件」失效）')
+  assert(/a\.status === 'active' \? 0 : 1/.test(CLI_SRC), '★排序必须 active 优先')
+  assert(/Number\(b\.updatedAt\) \|\| 0\) - \(Number\(a\.updatedAt\) \|\| 0\)/.test(CLI_SRC), '★同状态内必须按 updatedAt 降序')
 })
 
 // ─────────────────────────────────────────────────────────────
@@ -487,16 +559,24 @@ t('G1 前端注册 conversation.view 槽位(整页看板唯一落点)', () => {
   assert(/label:\s*function\s*\(\)\s*\{\s*return\s+(?:locale\s*===\s*'zh'|L\()/.test(CLI_SRC), 'label 必须是 locale 跟随函数（形态无关；否则显示 undefined/切语言不重算）')
 })
 
-t('G2 整页组件与矩阵元素在场(看得见的口径)', () => {
-  assert(CLI_SRC.includes('function KanbanView(props)'), 'KanbanView 组件不在场')
-  assert(CLI_SRC.includes('function KanbanMatrixCard(props)'), '紧凑卡组件不在场')
-  assert(CLI_SRC.includes('data-dam-kanban-view'), '整页容器标记不在场')
-  assert(CLI_SRC.includes('data-dam-kx-head'), '矩阵表头标记不在场')
-  assert(CLI_SRC.includes('data-dam-kx-row'), '矩阵行标记不在场(行折叠依赖)')
-  assert(CLI_SRC.includes('data-dam-kx-cell'), '矩阵单元格标记不在场')
-  assert(CLI_SRC.includes('data-dam-kx-card'), '矩阵紧凑卡标记不在场')
-  assert(CLI_SRC.includes('data-dam-kx-drawer'), '抽屉标记不在场(宽屏看全文的核心增量)')
-  assert(CLI_SRC.includes('gridTemplateColumns'), '必须是 CSS Grid 矩阵布局(原版同款范式)')
+// ★★D14（2026-10-24 用户裁定）：白板页签 = 事件视图，看板整页/矩阵按 D13 删除。
+//   本条原意 = **「看得见」口径**：整页承载面真的被渲染出来（历史上 22 条断言全绿却漏掉
+//   「三条泳道恒空」那类假绿）—— 不变量本体保留，对象换成事件视图的整页承载面。
+t('G2 整页承载面: 事件视图真实挂在 conversation.view(看得见的口径)', () => {
+  assert(CLI_SRC.includes('function EventView(props)'), 'EventView 组件不在场')
+  assert(CLI_SRC.includes('function EventCard(props)'), 'EventCard 组件不在场')
+  assert(CLI_SRC.includes("slots.inject('conversation.view'"), '★整页槽位必须仍被注入（否则顶栏页签永不出现）')
+  assert(/h\(Iter5Surface, \{ kind: 'page' \}, h\(EventView,/.test(CLI_SRC), '★整页承载面必须渲染 EventView（不是 KanbanView）')
+  assert(CLI_SRC.includes('data-dam-event-surface'), '事件视图容器标记不在场')
+  assert(CLI_SRC.includes('data-dam-event-card'), '事件卡标记不在场')
+  // ★负路径：看板的整页/矩阵标记必须已随**组件**退场。
+  //   口径修正：这些串在 **CSS 层**仍有残留（`ITER5_CSS` 里的样式规则 + 一处 querySelector 兜底），
+  //   那是样式表不是渲染代码 ⇒ 不能拿「全文件 0 次」当判据（首版这么写必红，实测 2 处）。
+  //   正确判据：**组件定义**必须已删除（渲染代码没了，样式留着无害且将来可复用）。
+  for (const gone of ['function KanbanView(props)', 'function KanbanMatrixCard(props)', 'function KanbanBoard(props)', 'function KanbanBoardRail(props)']) {
+    assert(!CLI_SRC.includes(gone), '★负：' + gone + ' 必须已删除（D13/D14）')
+  }
+  assert(CLI_SRC.includes('data-dam-event-view'), '★正：事件视图替位标记在场')
 })
 
 t('G3 矩阵投影: 数据层 export + **被调符号已 import** + host 载荷回传', () => {

@@ -43,58 +43,20 @@ ok(IX.includes("searchParams.get('foldDays')"), 'B1 ★宿主 kanban-board 读�
 ok(/foldDays: *\(opts && opts\.foldDays !== undefined/.test(IX), 'B2 ★宿主把 foldDays 透传给 foldCardsPre')
 ok(IX.includes('kb.stats.fold = {'), 'B3 ★宿主回填 stats.fold 供前端渲染折叠条')
 
-/* ── C. 前端接线（R24 补的五处） ── */
-eq(cnt(SRC, 'foldDays: foldOpen.days'), 1, 'C1 ★前端取数**真带** foldDays（R13 缺口①）')
-// ★★CR-10 纠正（本轮反向验证抓到）：下面 C2 原为**源码字符串计数** —— 变异 `foldOpen.expand` 的**函数体**
-//   后该串仍在 ⇒ 断言恒真、变异不变红（实测 PASS 27/0 假绿）。改为**真执行语义断言**，并保留计数为守卫。
-eq(cnt(SRC, 'foldOpen.expand = function'), 1, 'C2a（守卫，非功能证据）展开函数定义恰 1 处')
-const _iF = SRC.indexOf("      var stFold = useState({ days: 7 })")
-const _iG = SRC.indexOf('foldOpen.expand = function')
-const _iGend = SRC.indexOf('\n', _iG)
-ok(_iF > 0 && _iG > _iF && _iGend > _iG, 'C2b ★折叠态两行可真抽取')
-const _foldSeg = SRC.slice(_iF, _iGend)
-let _lastSet = null
-const _sb2 = { console, useState: function (v) { return [v, function (n) { _lastSet = n }] } }
-_sb2.globalThis = _sb2
-vm.runInContext(_foldSeg + ';globalThis.__EX = foldOpen.expand;globalThis.__D = foldOpen.days;', vm.createContext(_sb2), { filename: 'client.js#foldstate' })
-eq(_sb2.__D, 7, 'C2c ★初始态 days=7（与宿主默认折叠天数一致）')
-_sb2.__EX()
-ok(_lastSet && _lastSet.days === 0, 'C2d ★★真调用 expand() ⇒ setFoldOpen({days:0})（变异则必红）')
-// ★R38 口径同步（守的语义未变，只是字面串变了）：原断言写死 `onExpand: foldOpen.expand` ——
-//   那正是**白屏 bug 本身**（foldOpen 在 KanbanBoardRail 作用域内不存在）。R38 把折叠态上提到本组件
-//   （`var onExpand = function () {...}`）后，恰字面串失配，但「折叠条**真透传**一个可调用函数」这一被守语义
-//   完全未变。判据：守**语义**（透传 + 真函数），不是旧 bug 形状的字面串。
-eq(cnt(SRC, 'onExpand: onExpand'), 1, 'C3 ★折叠条透传 onExpand（R13 缺口② · R38 口径同步）')
-eq(cnt(SRC, 'var onExpand = function ()'), 1, 'C3b ★onExpand 是**本作用域内真实定义**的函数（不再引用兄弟函数的 foldOpen）')
-eq(cnt(SRC, 'onClick: (typeof props.onExpand'), 1, 'C4 ★★折叠条**真可点**（有 onClick）')
-eq(cnt(SRC, 'DAM_FOLD_DAYS_DEFAULT = 7'), 1, 'C5 默认天数常量 1 处')
-
-/* ── D. ★真执行：折叠条组件真渲染 + 点击真回调 ── */
-const h = function (type, props) { const rest = Array.prototype.slice.call(arguments, 2), kids = []
-  const push = (k) => { if (k === null || k === undefined || k === false) return; if (Array.isArray(k)) k.forEach(push); else kids.push(k) }
-  rest.forEach(push); return { __el: true, type, props: props || {}, kids } }
-const i0 = SRC.indexOf('    var DAM_FOLD_DAYS_DEFAULT = 7')
-const i1 = SRC.indexOf('\n    }', SRC.indexOf('function DamFoldBar'))
-ok(i0 > 0 && i1 > i0, 'D0 折叠段可抽取');
-const SEG = SRC.slice(i0, i1 + 6)
-const sb = { console, h, String, Object, Array, JSON, Number }
-sb.globalThis = sb
-vm.runInContext(SEG + ';globalThis.__F = DamFoldBar;', vm.createContext(sb), { filename: 'client.js#fold' })
-ok(typeof sb.__F === 'function', 'D1 ★DamFoldBar 在 vm 中真执行');
-let clicked = 0
-const el = sb.__F({ zh: true, fold: { days: 21, count: 1341, hasMore: true }, onExpand: function () { clicked++ } })
-ok(!!el, 'D2 ★真调用返回元素');
-const pill = el.kids.filter((k) => k && k.props && k.props['data-dam-fold-pill'] === '')[0]
-ok(!!pill, 'D3 ★真返回含胶囊');
-ok(typeof pill.props.onClick === 'function', 'D4 ★★胶囊真带 onClick（可点）');
-pill.props.onClick();
-eq(clicked, 1, 'D5 ★★点击真触发回调（端到端可复算）');
-ok(String(pill.kids.join ? pill.kids.join('') : pill.kids).indexOf('1,341') >= 0, 'D6 文案含千分位计数');
-const elNo = sb.__F({ zh: true, fold: { days: 7, count: 0, hasMore: false } })
-ok(elNo === null, 'D7 ★负路径：无折叠 ⇒ return null（零 DOM）');
-const elNonFn = sb.__F({ zh: true, fold: { days: 7, count: 2, hasMore: true }, onExpand: 'not-a-fn' })
-const pill2 = elNonFn.kids.filter((k) => k && k.props && k.props['data-dam-fold-pill'] === '')[0]
-eq(pill2.props.onClick, undefined, 'D8 ★负路径：onExpand 非函数 ⇒ onClick=undefined（不崩）');
+/* ── C. 前端接线（★D14：看板退场后的口径） ──
+   ★2026-10-24 用户裁定：白板页签改为事件视图，看板前端消费点全部删除。
+   本段原意 = 「折叠参数不得只接不用（R13 缺口①）」—— 看板退场后该语义自然消失。
+   改为守**负路径**：前端不得再出现折叠参数的传参（残留即删组件漏了取数）。
+   数据层（A/B 段）原样保留 —— foldCardsPre 仍被宿主 kanban-board 路由使用，能力没删。 */
+eq(cnt(SRC, 'foldDays: foldOpen.days'), 0, 'C1 ★负：前端 foldDays 取数已随看板退场（D14）')
+eq(cnt(SRC, 'foldOpen.expand = function'), 0, 'C2 ★负：折叠展开函数已随看板退场（D14）')
+// ★折叠条组件**按用户指示保留**（可继承资产），只是当前无调用者 ⇒ 判据是「定义仍在 + 0 个调用点」。
+ok(cnt(SRC, 'data-dam-fold-pill') >= 1 && cnt(SRC, 'data-dam-foldbar') >= 1, 'C3 ★正：折叠条组件定义保留（用户要求不误删可继承资产）')
+eq(cnt(SRC, 'h(DamFoldBar,'), 0, 'C4 ★负：折叠条当前无调用点（保留未接线，D14）')
+eq(cnt(SRC, 'h(DamStatBar,'), 1, 'C4b ★正：统计条已被事件视图复用（1 个调用点）')
+// 正路径：事件视图接位（证明不是「删了没替」）
+ok(SRC.includes('data-dam-event-view'), 'C5 ★正：事件视图接位标记在场')
+ok(SRC.includes('data-dam-event-card'), 'C6 ★正：事件卡标记在场')
 
 /* ── E. 守恒 ── */
 ok(cnt(SRC, 'setInterval') === 0 || true, 'E1 零新增定时器（人工核对：本轮未加）');

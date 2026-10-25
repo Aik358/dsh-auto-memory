@@ -33,4 +33,20 @@ try {
  const afterAlias=await run('after-alias',home);assert.equal(afterAlias.values[0],136)
  } else console.log('SKIP leaf file-alias checks: Windows file-symlink permission unavailable; directory-junction/concurrency/restart checks executed')
  console.log('PASS real four-process allocation, alias locking, one-source latch, archive delta merge, restart and dead-lock-owner recovery')
-}finally{fs.rmSync(root,{recursive:true,force:true})}
+}finally{
+  // ★★2026-10-25 修（并行干扰根治 · 全量回归实测抓到）：**rmSync 与子进程退出存在竞态**。
+  //   实测报错：`ENOTEMPTY: Directory not empty: ...dam-207-process-j4nqR2`。
+  //   根因：本套件在 finally 里删 root，而最后一批 `spawn` 的子进程**可能还在退出过程中**
+  //   （Windows 上进程句柄释放滞后于 `exit` 事件），它们持有的临时文件/目录尚未释放 ⇒ 目录非空。
+  //   单跑 5 次全绿、全量并行时概率红 ⇒ 典型的**清理竞态**，不是被测功能缺陷。
+  //
+  //   ★修法：`maxRetries` + `retryDelay`（Node 官方为此提供的内置重试，专治 Windows EPERM/ENOTEMPTY）；
+  //     再不行则**降级为「尽力清理、不 fail」** —— 清理失败不该让一个功能全绿的套件变红。
+  //   ★为什么不上 `force:true` 之外的更强手段：`force` 只忽略「不存在」，不忽略「非空」。
+  try {
+    fs.rmSync(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
+  } catch (eClean) {
+    // 尽力清理；不因清理竞态判失败（临时目录在 .dsh-smoke-tmp/ 下，runner 会统一回收）
+    console.log('[warn] 临时目录清理未完成（' + String((eClean && eClean.code) || eClean) + '），已跳过：' + root)
+  }
+}

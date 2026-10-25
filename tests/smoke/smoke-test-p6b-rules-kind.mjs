@@ -76,8 +76,21 @@ section('S2 T7-5：打标零额外 LLM 调用（crit[1]）')
   const hits = LLM_ENTRIES.filter((k) => toolSrc.includes(k))
   ok(hits.length === 0, 'memory_log 工具体内零 LLM 入口（命中：' + (hits.join(',') || '无') + '）')
   // kind 路径是纯同步字符串运算：includes + 三元 + 拼接，不含 await
-  ok(!/await[^;]*kind/i.test(toolSrc.replace(/await engine\.(resolvePaths|appendText|readTextSafe)[^.]*\./g, '')),
-    'kind 判定为纯同步运算（不在任何 await 链上 ⇒ 无异步调用面）')
+  //
+  // ★2026-10-24 判据修正（v4 H1 写入层统一，属「判据过期」不是缺陷）：
+  //   旧判据 /await[^;]*kind/ 断言「整个 memory_log 体内 await 与 kind 不同段」。H1 之后 memory_log
+  //   新增了事件写入（appendCheckpointPre 的 payload 字段名叫 kind），于是该正则跨语句误匹配 ——
+  //   但**不变量本身仍成立**：kind 判定（kindRaw → kind → kindTag）依然是纯同步运算。
+  //   修法：把探针收窄到「kind 判定块」本身（从 const kindRaw 到 const entry），这才是该断言的真实语义；
+  //   不是放宽（旧写法能误报，新写法对真实缺陷仍必红：往 kind 判定块里塞一个 await 立刻 FAIL）。
+  const kindBlockSrc = (() => {
+    const s = toolSrc.indexOf('const kindRaw')
+    const e = toolSrc.indexOf('const entry =')
+    return (s >= 0 && e > s) ? toolSrc.slice(s, e) : ''
+  })()
+  ok(kindBlockSrc.length > 40, 'kind 判定块可定位（防探针失效变恒真）')
+  ok(!/await/i.test(kindBlockSrc),
+    'kind 判定为纯同步运算（判定块内无 await ⇒ 无异步调用面）')
   // 零新增依赖：rules-layer-pre 仍是零依赖模块（S9 合规不回退）
   const rlSrc = readFileSync(path.join(ROOT, 'lib', 'rules-layer.js'), 'utf8')
   ok(!/^import /m.test(rlSrc), 'rules-layer.js 仍零 import（打标未引入新依赖）')

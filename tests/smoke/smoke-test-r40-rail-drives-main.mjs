@@ -51,23 +51,25 @@ function ctx() {
     currentSessionIdClient: function () { return 's1'; },
   };
 }
-// 段边界用**各自的下一个函数定义**作终点（块自身锚点）
-const railSeg = src.slice(src.indexOf('    function KanbanBoardRail(props) {'), src.indexOf('\n    function KanbanBoard(props) {'));
+// ★★D14（2026-10-24 用户裁定）：KanbanBoardRail 已删除 ⇒ 「rail 驱动主区」的**宿主**不存在。
+//   但 `DamRailPanel` **按用户指示保留**（可继承资产），而本套件真正守护的价值是：
+//   「8 个 rail key 逐项真渲染、且 data-dam-rail-view 随 key 变化」——
+//   这条对**任何**消费 rail 数据的视图都成立 ⇒ 保留，只去掉 rail 宿主那半段。
 const panelSeg = src.slice(src.indexOf('    function DamRailPanel(props) {'), src.indexOf('\n    // ── R15d 时间轴列表'));
-console.log('KanbanBoardRail 段行数 =', railSeg.split('\n').length, '| DamRailPanel 段行数 =', panelSeg.split('\n').length);
+console.log('DamRailPanel 段行数 =', panelSeg.split('\n').length, '（区间锁 20~80）');
+const panelLines = panelSeg.split('\n').length
+if (!(panelLines >= 20 && panelLines <= 80)) { console.log('✗ 段边界异常（终点锚可能吞掉了半个文件）'); process.exit(1) }
 const c = ctx(); __mkI18nStub(c)
 vm.createContext(c);
-vm.runInContext(railSeg + '\n;globalThis.__R = KanbanBoardRail;', c);
 vm.runInContext(panelSeg + '\n;globalThis.__P = DamRailPanel;', c);
 const kb = { stats: { today: 51, week: 61, members: 0, archived: 156, fold: { days: 21, count: 9, hasMore: true } }, lanes: [{ key: 'goal', label: '目标', cards: [{ id: 'a', title: 'A' }, { id: 'b', title: 'B' }] }, { key: 'state', label: '进行中', cards: [{ id: 'c', title: 'C' }] }] };
-let err = null, tree = null;
-try { tree = c.__R({ data: kb, zh: true, onOpen: function () {} }); } catch (e) { err = e; }
-console.log('① KanbanBoardRail 真渲染:', err ? ('✗ ' + err.message) : '✓ 未抛错');
-if (err) process.exit(1);
-function types(n, acc) { if (!n || typeof n !== 'object') return acc; if (n.type) acc.push(n.type); (n.kids||[]).forEach(function (k) { if (Array.isArray(k)) k.forEach(function (x) { types(x, acc); }); else types(k, acc); }); return acc; }
-const t0 = types(tree, []);
-console.log('② 默认(时间轴档)渲染树含:', t0.filter(function (x) { return /^Dam/.test(x) || x === 'KanbanBoard'; }).join(', '));
-if (!t0.includes('DamTimelineList')) { console.log('✗ 时间轴档未渲染时间轴列表'); process.exit(1); }
+// ★正路径：DamRailPanel 可被真抽取 + 真调用（不是「函数写了没人调用」）
+if (typeof c.__P !== 'function') { console.log('✗ DamRailPanel 抽取失败'); process.exit(1) }
+console.log('① DamRailPanel 真抽取:', typeof c.__P === 'function' ? '✓' : '✗');
+// ★负路径：KanbanBoardRail 必须已删除（D14）
+if (src.indexOf('function KanbanBoardRail(props)') >= 0) { console.log('✗ KanbanBoardRail 未被删除（D14 要求删除）'); process.exit(1) }
+console.log('② 负路径: KanbanBoardRail 已删除 ✓');
+function types(n, acc) { if (!n || typeof n !== 'object') return acc; if (n.type) acc.push(n.type); (n.kids || []).forEach(function (k) { if (Array.isArray(k)) k.forEach(function (x) { types(x, acc) }); else types(k, acc) }); return acc }
 // ★R3 真验证：8 项逐项渲染 DamRailPanel，且 data-dam-rail-view 随 key 变
 const views = [];
 for (const it of c.DAM_RAIL_ITEMS) {

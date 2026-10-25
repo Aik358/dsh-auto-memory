@@ -167,7 +167,12 @@ const grab = (name) => { // 逐行扫描+(){} 混合配平(兼容 Object.freeze 
 //   ⇒ 本套件的 grab() 只在本文件里找定义，找不到即抛 helper not found。
 //   修法与下面对 `memory-envelope.js` 的既有做法**完全同款**：把那个模块整体注入沙箱
 //   （injection-policy.js 零 import，可直接内联）。守卫语义不变，仍是抽取真代码执行。
-const helpers = ['DEFAULT_PROMPT_LAYERS', 'neutralizePromptTemplateVars', 'truncateHead', 'truncateLinesBounded', 'sanitizeForInjection', 'scrubJunkLines', 'reflectionDigest', 'mojibakeDensity', 'MOJIBAKE_RE', 'detectStutter', 'hasStutter', 'BASE64_LINE', 'todayStr'] // ★2026-09-29 hasStutter 改调 detectStutter(P0-2 语种盲区修复),抽取清单同步补符号,否则 eval 沙箱 ReferenceError
+// ★批次 0.5（2026-10-24）：`renderMemoryDynamic` 新增两处模块级依赖 ——
+//   ① user-memory / project-notes 改 tail 截断 ⇒ 需要 `truncateTail`；
+//   ② PLAN 改按节优先级截断 ⇒ 需要 `truncatePlanByPriority`；账本改加权截断 ⇒ 需要 handoff-anchor 模块。
+//   本套件是「源码抽取 + new Function」范式，抽取依赖的**全部**模块级符号都必须显式提供，
+//   否则测的就不是真代码（与本文件 165-189 行已有的两条同类注释同因）。**不是放宽断言**。
+const helpers = ['DEFAULT_PROMPT_LAYERS', 'neutralizePromptTemplateVars', 'truncateHead', 'truncateTail', 'truncateLinesBounded', 'truncatePlanByPriority', 'sanitizeForInjection', 'scrubJunkLines', 'reflectionDigest', 'mojibakeDensity', 'MOJIBAKE_RE', 'detectStutter', 'hasStutter', 'BASE64_LINE', 'todayStr'] // ★2026-09-29 hasStutter 改调 detectStutter(P0-2 语种盲区修复),抽取清单同步补符号,否则 eval 沙箱 ReferenceError
 // ★T7-a（2026-09-20 · 上游 #86-4）：水位/接续默认值已抽为**模块级常量**，本套件同样是
 //   "源码抽取 + new Function"执行 `renderMemoryDynamic`，故必须显式注入这两个自由变量，
 //   否则抛 `ReferenceError: DEFAULT_WATER_LEVEL_THRESHOLD is not defined`（实测已发生）。
@@ -186,7 +191,10 @@ const helperCode = helpers.map((h) => grab(h)).join('\n')
 // 都必须显式提供，否则测的就不是真代码。
 const envelopeCode = readFileSync(path.resolve(HERE, '..', '..', 'lib', 'memory-envelope.js'), 'utf8')
   .replace(/^export /gm, '')
-const renderFn = new Function(helperCode + '\n' + envelopeCode + '\nreturn {' + dynSrc + '};')()['renderMemoryDynamic']
+// ★批次 0.5：账本加权截断（`weightedTrimHandoffLedgerPre`）来自 lib/handoff-anchor.js —— 零 import 纯模块，可直接内联。
+const ledgerWeightCode = readFileSync(path.resolve(HERE, '..', '..', 'lib', 'handoff-anchor.js'), 'utf8')
+  .replace(/^export /gm, '')
+const renderFn = new Function(helperCode + '\n' + envelopeCode + '\n' + ledgerWeightCode + '\nreturn {' + dynSrc + '};')()['renderMemoryDynamic']
 const run = (fake) => renderFn.call(fake, {})
 const out1 = run(makeFakeThis(PLAN_LONG, '# 交接账本 · 2026-09-06 12:00\n## 任务状态\n第二阶段', true))
 const iPlan = out1.indexOf('白板 PLAN.md')
@@ -216,7 +224,17 @@ ok(SRC.includes("async recall(query, limit = 8, agent, scope = 'all', opts = nul
 ok(SRC.includes("if (scope === 'handoff') {") && SRC.includes("if (scope === 'sessions') {"), 'handoff/sessions 早返分支存在')
 // ★2026-10-13（#333②）：scope 枚举新增 'archive'（检索已归档旧日志的显式通道，不并入 all）。
 //   判据演进为「枚举包含四个值」= 仍守住「声明完整且透传」的原意。
-ok(SRC.includes("scope: { type: 'string', enum: ['all', 'handoff', 'sessions', 'archive']") && SRC.includes("engine.recall(args.query, args.limit, exec.agent, args.scope || 'all', { format: args.format || 'l0', expand: args.expand })"), 'memory_recall 工具声明 scope 枚举（含 archive）并透传(P4 可选 format/expand 随 opts 透传)')
+// ★2026-10-24（v4 批次 D 归因，判据过期非缺陷）：枚举由四值扩为五值（加 'events'）。
+//   判据守的是「声明完整且透传」，不是「恰好四个值」⇒ 改为**逐个断言五个值都在**，
+//   比字符串全等更贴合原意（将来再加 scope 也不会假红）。
+{
+  const enumLine = "scope: { type: 'string', enum: ['all', 'handoff', 'sessions', 'archive', 'events']"
+  ok(SRC.includes(enumLine) && SRC.includes("engine.recall(args.query, args.limit, exec.agent, args.scope || 'all', { format: args.format || 'l0', expand: args.expand })"), 'memory_recall 工具声明 scope 枚举（含 archive/events）并透传(P4 可选 format/expand 随 opts 透传)')
+  for (const sc of ['all', 'handoff', 'sessions', 'archive', 'events']) {
+    ok(SRC.includes("'" + sc + "'") && enumLine.includes("'" + sc + "'"), 'scope 枚举含 ' + sc)
+  }
+}
+ok(SRC.includes("if (scope === 'events') {") && SRC.includes('[记忆检索|events]'), 'memory_recall 的 events 分支确实接线（含其专属标签，非仅枚举）')
 // 新增：archive 分支确实存在（负路径 —— 只声明枚举而无分支等于没接线）
 ok(SRC.includes("if (scope === 'archive') {") && SRC.includes('[记忆检索|archive]'), 'memory_recall 的 archive 分支确实接线（含其专属标签，非仅枚举）')
 ok(CSRC.includes("set('handoffEnabled', e.target.checked)") && CSRC.includes("fHandoff: '交接白板'"), '设置页交接白板开关接线(client)')

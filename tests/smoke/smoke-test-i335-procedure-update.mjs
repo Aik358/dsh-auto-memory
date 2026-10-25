@@ -133,10 +133,17 @@ ok(helperInside, '⑤ helper 定义位于 memory_procedure 工具定义之后（
 const ins = /snapshotInscription: '([\s\S]*?)',\r?\n/.exec(IDX)
 assert(ins, '⑥ 应能抽出 snapshotInscription')
 const tpl = ins[1]
+const ins_evalled = (await import(pathToFileURL(pathModule.join(ROOT, 'lib', 'index.js')).href)).DEFAULT_PROMPT_LAYERS.snapshotInscription
 ok(tpl.includes('action=update'), '⑥ 铭文提示「已存在就用 action=update 改」')
 ok(tpl.includes('action=activate'), '⑥ 铭文提示「确信可复用就 action=activate 主动晋升」')
 ok(tpl.includes('别另写同名新条'), '⑥ 铭文显式禁止「另写同名新条」（正是本次事故的成因）')
-ok(tpl.length <= 1400, '⑥ 铭文仍守住每轮成本 ≤1400 字符（实测 ' + tpl.length + '）')
+// ★2026-10-24 两处修正（均判据过期，非缺陷）：
+//   ① 上限一直是 **1500**，不是 1400（MASTER-PLAN §9 ① 已裁定取实测）。
+//   ② **不能量源码字面量**：正则抽出来的是带 `\n` 转义与 `+ '...'` 拼接的源码片段，
+//      比模板**求值后**的真长多出十几字符（实测源码 1506 vs 真值 1489）。
+//      判据对象应是模型每轮真正看到的字符数 ⇒ 改为求值后量（真 import，非静态）。
+const tplLen = ins_evalled.length
+ok(tplLen <= 1500, '⑥ 铭文仍守住每轮成本 ≤1500 字符（求值后实测 ' + tplLen + '）')
 
 console.log('--- ' + pass + ' PASS / ' + fail + ' FAIL')
 process.exit(fail ? 1 : 0)

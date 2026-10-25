@@ -107,7 +107,7 @@ const turnStartEvent = (seq, turn, time) => ({ type: 'turn/start', seq, time: ti
   try {
     // ★ T4（2026-09-19）：16 → 17 —— 新增 memory_procedure（procedure memory 的模型直写通路，无条件注册）。
     // ★ M8-B（2026-09-23）：18 → 19 —— 新增 memory_procedure_list（技能库只读浏览；用户裁定「不注入候选目录，只给浏览函数」）。
-    if (h.registeredTools.length !== 19) throw new Error('tool count drifted (M8-B 起默认 19): ' + h.registeredTools.length)
+    if (h.registeredTools.length !== 21) throw new Error('tool count drifted (v4-U6 memory_upgrade 后 = 21): ' + h.registeredTools.length)
     // 2026-09-08:41→42(ws-overview-rank 路由落线);42→43(subagent-gc 路由落线);43→45(2.2.6 auto-continue-state/decide 路由落线);46→47(白板看板 kanban-board 路由落线)
 // ★ 记忆工作台（2026-09-24）：54 → 55 —— 新增 POST /workbench（工作台三重校验诊断/修复，无条件注册）。
     // ★G-F3/G-F5（2026-09-27）：65 → 66 —— 新增 /team-compliance（合规档位只读明示，无条件注册）。
@@ -115,7 +115,7 @@ const turnStartEvent = (seq, turn, time) => ({ type: 'turn/start', seq, time: ti
 // ★2026-10-01 再演进：68→69（新增 /global-brief）。
 // ★2026-10-02 再演进：69→70（审计修复批 #174 新增 POST /team-control，loopback-only，无条件注册）。
 // ★issue #211（2026-10-04）再演进：70→71（新增 POST /python-setup/uninstall，无条件注册）。
-    if (h.registeredRoutes.length !== 73) throw new Error('route count drifted (expected 73, unconditional routes): ' + h.registeredRoutes.length)
+    if (h.registeredRoutes.length !== 79) throw new Error('route count drifted (expected 79, unconditional routes): ' + h.registeredRoutes.length)
     const cfg = await h.prime()
     // 2026-08-26 裁定:reasoningObserverEnabled/contextBridgeObserveChildSessions 默认 true
     // (开源模型为主,思维链/分支是主要观测面);其余实验开关仍默认 false

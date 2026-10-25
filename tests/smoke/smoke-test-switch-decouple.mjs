@@ -27,6 +27,12 @@ import {
   // ★issue #451：checkWaterLevel 新增两个引用符号（代理压缩兜底）。本套件 strictInjection 会拦漏注入。
   detectProxyCompactionPre, resolveProxyUsagePre,
 } from '../../lib/water-window.js'
+// ★v4 批次 E-4（2026-10-24）：checkWaterLevel 新增引用事件模块的两个符号（水位检查点写事件）。
+//   本套件用「源码抽取 + new Function」执行生产方法体 ⇒ 自由变量必须显式注入；
+//   这里注入**真实实现**（不是桩）：事件库缺失时 pickCarryEventPre 返回 null ⇒ fail-soft，
+//   与本批修复前的「白板关仍测量」语义逐字节一致。
+import { EVENT_STORE_FILENAME as V4_EVENT_STORE_FILENAME } from '../../lib/event-store.js'
+import { pickCarryEventPre } from '../../lib/event-carry.js'
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 const SRC = readFileSync(path.resolve(HERE, '..', '..', 'lib', 'index.js'), 'utf8')
@@ -297,6 +303,11 @@ const wlBind = (fake) => {
     //   漏注入会 throw（而非静默 ReferenceError）。这里注入真实实现：本机没有该插件 ⇒ 探测恒"absent"、
     //   兜底恒不生效 ⇒ 本套件所验证的「白板关仍测量」语义与修复前逐字节一致。
     detectProxyCompactionPre, resolveProxyUsagePre,
+    // ★v4 批次 E-4（2026-10-24）：水位检查点改写入事件（event-first）后新增两个引用符号。
+    //   strictInjection 守卫立刻抓到了漏注入 —— 这正是它存在的意义（漏了会被 catch 静默吞掉，
+    //   表现为「白板关不测量」这种看不出真因的假红）。注入真实实现而非桩：事件库缺失时 fail-soft，
+    //   与修复前语义逐字节一致。
+    V4_EVENT_STORE_FILENAME, pickCarryEventPre,
   }, { strictInjection: true })
 }
 // 会话事件里带真实模型(request/header)→ 白板关时这个「模型已知」也必须有地方落下去
@@ -482,8 +493,30 @@ console.log('[switch-decouple] D6 ★接续开关 × 水位账本：产物从属
     '接线:水位账本写入点已改用统一判定')
   ok(/if \(!this\.handoffChainEnabledPre\(\)\) return ''/.test(idx),
     '接线:renderPlanUpdateRequest 已改用统一判定（否则"不接续却每轮催模型重写白板"）')
-  ok(/this\.state\.planUpdatePending = \{ reason: 'continue'/.test(idx) && /if \(this\.handoffChainEnabledPre\(\)\) \{\s*\n\s*this\.state\.planUpdatePending = \{ reason: 'continue'/.test(idx),
-    '★接线:接续置位点（markContinuedSession）也已改用统一判定')
+  // ★v4 批次 E-5（2026-10-24）：置位目标从裸 `this.state` 改为「该 agent 的 runtime」
+  //   （实跑确认的既有 bug：无 ALS 上下文下 this.state 是 default runtime，读取方在 withAgent 内 ⇒
+  //   写入的待办永远读不到）。本条的**原意是「统一走 handoffChainEnabledPre 判定」**，
+  //   不随赋值形态变化 ⇒ 判据改为：该判定条件仍在 markContinuedSession 里守着置位点，
+  //   且置位确实写进了 `planUpdatePending`（不再要求字面量是 `this.state`）。
+  // ★v4 批次 E-5（2026-10-24）：置位目标改为「该 agent 的 runtime」（实跑确认的既有 bug：
+  //   无 ALS 上下文下 this.state 是 default runtime，读取方在 withAgent 内 ⇒ 待办永远读不到）。
+  //   本条**原意是「统一走 handoffChainEnabledPre 判定」**，不随赋值形态变化 ⇒ 改为结构性判据：
+  //   ① markContinuedSession 里存在 `if (this.handoffChainEnabledPre()) {` 开块；
+  //   ② 该块**内部**（花括号配平范围内）确实出现 `planUpdatePending = { reason: 'continue'`。
+  //   ⚠️ 不用「两词相距 N 字符」——E-5 加注释后距离 955 字符，首版 600 上限直接假红。
+  const mcsStart = idx.indexOf('async markContinuedSession')
+  const mcsBody = mcsStart < 0 ? '' : idx.slice(mcsStart, mcsStart + 6000)
+  const guardAt = mcsBody.indexOf('if (this.handoffChainEnabledPre()) {')
+  let insideBlock = false
+  if (guardAt >= 0) {
+    let depth = 0
+    for (let i = mcsBody.indexOf('{', guardAt); i < mcsBody.length; i++) {
+      if (mcsBody[i] === '{') depth++
+      else if (mcsBody[i] === '}') { depth--; if (depth === 0) break }
+      if (depth > 0 && mcsBody.slice(i, i + 40).includes("planUpdatePending = { reason: 'continue'")) { insideBlock = true; break }
+    }
+  }
+  ok(guardAt >= 0 && insideBlock, '★接线:接续置位点（markContinuedSession）仍由统一判定把关，且确实在该块内置位')
   ok(!/if \(this\.config\.handoffEnabled !== false\) \{\s*\n\s*this\.state\.planUpdatePending/.test(idx),
     '两个置位点都不再只看 handoffEnabled（旧写法在接续关闭时照样置位）')
 }

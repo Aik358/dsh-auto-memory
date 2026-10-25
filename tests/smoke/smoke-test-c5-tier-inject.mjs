@@ -249,7 +249,8 @@ console.log('[C5] 层账行 / IO 路径接线 / S9 零 LLM 与源码级可达性
   ok(dyn.includes('s.tier0LayerText'), 'Tier-0 段在动态快照内(每轮常驻,不依赖命中)')
   ok(!dyn.includes('composeTieredInjectionPre') && !dyn.includes('buildTierLayerInjection('), 'renderMemoryDynamic 保持自包含(不直接调装配器 → 源码抽取测试可独立执行)')
   ok(/this\.buildTierLayerInjection\(agent\)/.test(idx), 'refresh 路径调用装配器(每轮刷新时重建目录)')
-  ok(/tier0CatalogEnabled: true/.test(idx) && /tier0MaxTokens: 400/.test(idx) && /tier0BudgetShare:/.test(idx), '配置键齐全(开关/预算/占比；tier0MaxTokens 默认 400（B0=800 为上限）)')
+  // ★v4-H7（2026-10-25）：tier0MaxTokens 默认 400 → 600（依据 perLayer.user 78 候选只 picked=1 实测）。
+  ok(/tier0CatalogEnabled: true/.test(idx) && /tier0MaxTokens: 600/.test(idx) && /tier0BudgetShare:/.test(idx), '配置键齐全(开关/预算/占比；tier0MaxTokens 默认 600（B0=800 为上限）)')
 
   // I7 接线:ctx-host 的静默 drop 已改成"降级但仍注入"
   const ctx = readFileSync(new URL('../../lib/context-host.js', import.meta.url), 'utf8')
