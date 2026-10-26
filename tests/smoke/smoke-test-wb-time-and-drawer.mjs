@@ -195,9 +195,92 @@ console.log('== E. 审计 §2.1：HTML 注释锚点不得进入渲染/注入文�
   // E-10 元断言：adapter 里 rationale 必须经过 cleanSectionTextPre（防止改回去）
   ok(/rationale: cleanSectionTextPre\(sec\.deadend\)/.test(ADAPTER_SRC),
     '★★★E-10 [元断言] rationale 必须过 cleanSectionTextPre（防回退）')
+
+  // ═══════════════════════════════════════════════════════════════════
+  // ★★★E-11~E-14（2026-10-26 真机白屏事故后的核心判据）
+  //
+  //   事故：用户实报「白板写崩了」。F12 报
+  //     ReferenceError: titlePre is not defined  at adaptEventPre (client.js:5716)
+  //   ⇒ EventView 整棵树崩 ⇒ 白板空白。
+  //   根因：清洗层 4 个函数**没有 export**、也没进 gen 工具的 ADAPTER_FNS 白名单
+  //        ⇒ 只内联了 adaptEventPre，它调用的 4 个帮手在 client.js 里根本不存在。
+  //   ★为什么 E-1~E-10 全绿却没抓到：它们都 import **ESM 源**（4 个函数都在），
+  //     **没有一条在 client.js 的真实内联环境里执行** ⇒「绿但假的」第 7 类「未真渲染」。
+  //   ⇒ 本组用 vm 真跑生成区再真调，是唯一能抓到这个事故的口径。
+  // ═══════════════════════════════════════════════════════════════════
+  const VM_B = '// ===== EV4-BLOCKS-GENERATED:BEGIN ====='
+  const VM_E = '// ===== EV4-BLOCKS-GENERATED:END ====='
+  const cSrc = fs.readFileSync(path.join(ROOT, 'lib', 'client.js'), 'utf8')
+  const bi = cSrc.indexOf(VM_B), ei = cSrc.indexOf(VM_E)
+  ok(bi > 0 && ei > bi, '★★★E-11 生成区标记存在（BEGIN/END）')
+  const genSeg = (bi > 0 && ei > bi) ? cSrc.slice(bi + VM_B.length, ei) : ''
+
+  {
+    const need = ['stripHtmlCommentsPre', 'stripMetaPrefixPre', 'cleanSectionTextPre', 'titlePre']
+    const missing = need.filter((f) => genSeg.indexOf('function ' + f) < 0)
+    ok(missing.length === 0, '★★★E-12 [生成区] 清洗层 4 函数全部已内联',
+      missing.length ? '缺失: ' + missing.join(',') : 'n=4')
+  }
+
+  {
+    const vmMod = await import('node:vm')
+    const vctx = { console, JSON, Math, Number, String, Object, Array, RegExp, Date,
+      isFinite, isNaN, parseInt, parseFloat, encodeURIComponent, decodeURIComponent }
+    vmMod.createContext(vctx)
+    let execErr = null
+    try { vmMod.runInContext(genSeg, vctx, { filename: 'ev4-blocks-generated.js' }) }
+    catch (e) { execErr = e }
+    ok(execErr === null,
+      '★★★E-13 [真执行] 生成区在 vm 里整体执行无 ReferenceError（白屏核心判据）',
+      execErr ? String(execErr.message) : 'ok')
+
+    // ★★★E-14 必须喂**至少 1 条事件**，否则 adaptEventPre 根本不会被调用 ⇒ 抓不到原事故。
+    //   原事故就是 adaptEventPre 内部调用 titlePre/cleanSectionTextPre 时炸的。
+    //   这里用「带 sections 的合成事件」——**能进入 adaptEventPre 的每条分支**，不依赖真实 store 是否存在。
+    if (execErr === null && typeof vctx.adaptStoreToPrototypePayload === 'function') {
+      const fixture = {
+        version: 1, docs: 0,
+        events: [{
+          id: 'e1', name: '<!-- type=goal --> 事件标题',
+          summary: '<!-- memory:m1 --> 摘要正文',
+          status: 'active', pausedReason: '', confidence: 0.8,
+          sections: {
+            goal: '<!-- type=goal -->\n目标正文',
+            doing: '<!-- type:progress -->\n进行正文',
+            deadend: '<!-- type=dead-end -->\n失败正文',
+            next: '<!-- type:progress -->\n下一步正文',
+          },
+          checkpoints: [{ id: 'c1', ms: 1730000000000, kind: 'log', text: '<!-- type:state --> 检查点正文' }],
+          userPercept: [], agentTrace: [], sharedGround: [], commitments: [],
+        }],
+      }
+      let payload = null, callErr = null
+      try { payload = vctx.adaptStoreToPrototypePayload(fixture, { docs: 0 }) }
+      catch (e) { callErr = e }
+      ok(callErr === null && payload && Array.isArray(payload.events) && payload.events.length === 1,
+        '★★★E-14 [真调用·带事件] 生成区版 adaptStoreToPrototypePayload 走通 adaptEventPre',
+        callErr ? String(callErr.message) : 'events=' + (payload ? payload.events.length : 'null'))
+
+      // E-15 输出里不得有锚点残留（真数据路径的清洗验收）
+      if (callErr === null && payload && payload.events[0]) {
+        const out = payload.events[0]
+        const bad = []
+        for (const k of ['title', 'summary', 'rationale']) {
+          if (String(out[k] || '').indexOf('<!--') >= 0) bad.push(k)
+        }
+        if (out.sections && JSON.stringify(out.sections).indexOf('<!--') >= 0) bad.push('sections')
+        ok(bad.length === 0, '★★★E-15 [真调用·带事件] 输出字段无 HTML 锚点残留',
+          bad.length ? '残留: ' + bad.join(',') : 'title/summary/rationale/sections 全净')
+      } else {
+        ok(false, '★★★E-15 [真调用·带事件] 输出字段无 HTML 锚点残留', 'E-14 已失败')
+      }
+    } else {
+      ok(false, '★★★E-14 [真调用·带事件] 生成区版 adapter 可真调用', 'E-13 已失败')
+      ok(false, '★★★E-15 [真调用·带事件] 输出字段无 HTML 锚点残留', 'E-13 已失败')
+    }
+  }
 }
 
 console.log('')
-console.log('SUMMARY  PASS ' + pass + ' / FAIL ' + fail)
 console.log('SUMMARY  PASS ' + pass + ' / FAIL ' + fail)
 process.exit(fail === 0 ? 0 : 1)

@@ -54,6 +54,11 @@ const adapterMod = await import(pathToFileURL(ADAPTER).href)
 const PROTO_CONSTS = ['EV4_PROTO_HEAD', 'EV4_PROTO_THEME_SCRIPT', 'EV4_PROTO_CSS', 'EV4_PROTO_BODY_SHELL', 'EV4_PROTO_RUNTIME', 'EV4_PROTO_SIZES', 'EV4_PROTO_PART_ORDER']
 // ★注意：patchShellStatsPre **不在**这里 —— 它由 PROTO_EXTRACT_FNS 从原型源码抽取（A 方案）
 const ADAPTER_FNS = ['escapeScriptJsonPre', 'adaptCheckpointPre', 'adaptEventPre', 'computeStatsPre', 'adaptStoreToPrototypePayload', 'ev4PayloadSigPre', 'buildEv4IframeHtmlSafePre']
+// ★★2026-10-26（真机白屏事故修复）：清洗层这 4 个**必须内联**，否则 adaptEventPre 在 client.js 里
+//   调用未定义函数 ⇒ ReferenceError: titlePre is not defined ⇒ EventView 整棵树崩 ⇒ 白板空白。
+//   事故复盘：所有套件都 import ESM 源（那里 4 个函数都在），**没有一个真在 client.js 环境执行**
+//   ⇒ 这正是本项目「绿但假的」第 7 类「未真渲染」。修法：加进白名单 + 补一条生成区真执行断言。
+const ADAPTER_CLEAN_FNS = ['stripHtmlCommentsPre', 'stripMetaPrefixPre', 'cleanSectionTextPre', 'titlePre']
 const ADAPTER_CONSTS = ['PANEL_KIND_MAP', 'PANEL_SOURCE_MAP', 'PERCEPT_FIELDS']
 const ADAPTER_INTERNALS = ['p2', 'fmtAtPre', 'sPre', 'arrPre', 'sigVal', 'normStatusPre', 'normConfPre']
 
@@ -172,6 +177,17 @@ out.push('// ── adapter 导出函数（toString 原样）──')
 ADAPTER_FNS.forEach((nm) => {
   const fn = adapterMod[nm]
   if (typeof fn !== 'function') die('[gen-ev4-blocks] adapter 缺导出函数 ' + nm)
+  out.push(fnSrc(fn, nm))
+})
+
+// ★★2026-10-26 真机白屏事故：清洗层 4 个函数必须一起内联。
+//   事故链：用户实报「白板写崩了」→ F12 显示 ReferenceError: titlePre is not defined
+//   → adaptEventPre 在 client.js 里调用未定义函数 → EventView 整棵树崩 → 白板空白。
+//   为什么所有套件全绿：套件都 import **ESM 源**（4 个函数都在），没有一条在 client.js 环境里真执行。
+//   判据修正：本文件生成的 client.js 必须能**真跑一遍 adaptStoreToPrototypePayload**（见 smoke E-11）。
+ADAPTER_CLEAN_FNS.forEach((nm) => {
+  const fn = adapterMod[nm]
+  if (typeof fn !== 'function') die('[gen-ev4-blocks] adapter 缺清洗函数 ' + nm)
   out.push(fnSrc(fn, nm))
 })
 
