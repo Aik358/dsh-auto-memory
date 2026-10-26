@@ -39,8 +39,13 @@ function kindsOf(re) {
   while ((m = re.exec(IX))) out.add(m[2])
   return out
 }
-const pushKinds = kindsOf(/pushPart\(\s*'([^']+)'\s*,\s*'([^']+)'/g)
-const partKinds = kindsOf(/[^a-zA-Z]part\(\s*'([^']+)'\s*,\s*'([^']+)'/g)
+// ★★2026-10-27 修（判据过期 · 抽取正则漏了双引号写法，**不是**僵尸键）：
+//   实测：`pushPart("rules", "rules-section", _rulesOut)` 在 L10176 用的是**双引号**，
+//   而原正则只匹配单引号 ⇒ rules-section 被误判为「登记表里没有对应注入段的僵尸键」。
+//   ⇒ 正则改为同时接受单/双引号（`['"]`），这不是放宽判据 ——
+//   判据本意是「登记表不得有僵尸键」，而 rules-section **确实是真实注入段**。
+const pushKinds = kindsOf(/pushPart\(\s*['"]([^'"]+)['"]\s*,\s*['"]([^'"]+)['"]/g)
+const partKinds = kindsOf(/[^a-zA-Z]part\(\s*['"]([^'"]+)['"]\s*,\s*['"]([^'"]+)['"]/g)
 const allKinds = new Set([...pushKinds, ...partKinds])
 
 // ── 工具：从登记表源码里抽键（用真 import 的值交叉校验，不用猜正则）──

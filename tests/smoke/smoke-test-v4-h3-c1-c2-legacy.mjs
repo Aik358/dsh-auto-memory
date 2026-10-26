@@ -122,7 +122,12 @@ try {
   const tail = outOld.slice(i1);
   const segEnd = tail.indexOf('\n\n');
   const seg = segEnd > 0 ? tail.slice(0, segEnd) : tail.slice(0, 400);
-  ok(seg.length <= 200, '★★★C2-11 提醒段 ≤200 字符（含标题）', '实测 ' + seg.length);
+  // ★★2026-10-27（判据更新，**归因：用户新裁定**，非放宽）：
+  //   原上限 200 的前提是「文案只讲局限/优势/迁移」约 154 字符。
+  //   10-27 用户明确要求补充「白板仍是旧版流水账 + 两条迁移路径 + 强制汇报原话」，
+  //   其中汇报原话本身就 ~90 字符 ⇒ 200 在数学上不可能。
+  //   故上限上调到 400（实测 322），并新增「不得超 400」的硬上限防再膨胀。
+  ok(seg.length <= 400, '★★★C2-11 提醒段 ≤400 字符（含标题；10-27 用户裁定后上调，实测上限 322）', '实测 ' + seg.length);
   ok(/memory_status\(\{\s*op:\s*"upgrade-plan"/.test(seg), '★★★C2-12 提醒里给出工具入口 memory_status({op:"upgrade-plan"})');
   ok(/征得用户同意|同意/.test(seg), '★★C2-13 提醒里含「须用户同意」');
 
@@ -145,7 +150,7 @@ try {
   console.log('[C2-降频] declined 联动');
   const ST_FILE = path.join(p.userDir, 'upgrade-state.json');
   // ① 未 declined ⇒ 完整提醒（已由 C2-10 覆盖，这里确认长度）
-  ok(seg.length <= 200, '★★C2-18 未 declined ⇒ 完整提醒 ≤200 字符', '实测 ' + seg.length);
+  ok(seg.length <= 400, '★★C2-18 未 declined ⇒ 完整提醒 ≤400 字符（同 C2-11 口径，10-27 上调）', '实测 ' + seg.length);
   // ② declined（7 天内）⇒ 降级为一行 ≤40
   fs.writeFileSync(ST_FILE, JSON.stringify({ declined: true, at: Date.now() }), 'utf8');
   await engine.refresh(agent);

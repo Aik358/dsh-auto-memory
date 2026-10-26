@@ -59,7 +59,14 @@ console.log('[U7-1] 结构与 zone 登记');
   // ② zone 登记
   ok(ZONES.zoneOfKindPre('mem-upgrade-done') === 'memory', '★★★U7-1c mem-upgrade-done 登记为 **memory**（不是 channel）', String(ZONES.zoneOfKindPre('mem-upgrade-done')));
   ok(ZONES.zoneOfKindPre('mem-upgrade-failed') === 'memory', '★★★U7-1d mem-upgrade-failed 登记为 memory', String(ZONES.zoneOfKindPre('mem-upgrade-failed')));
-  ok(ZONES.zoneOfKindPre('mem-legacy-upgrade') === 'channel', '★U7-1e 对照：mem-legacy-upgrade 仍是 channel（同族不同区是有意的）');
+  // ★★2026-10-27（判据更新，**归因：真缺陷修复**）：
+  //   原判据守「mem-legacy-upgrade 是 channel」，理由是「段长 154 ≤ 200，不会挤 water-advisory」。
+  //   实测真相：channel 上限 300，water-advisory 是 must 占 274 ⇒ **余量仅 26 字符**
+  //   ⇒ 该段（10-27 后 322 字符）**每轮必被淘汰**，注入文本末尾恒定出现
+  //     「通道区超出上限 300 字符 → 丢弃本区最低优先级的一段（mem-legacy-upgrade）」。
+  //   ⇒ 用户永远看不到迁移提醒。已迁到 memory 区（无限额、按 priority 淘汰）。
+  //   ★这不是放宽判据，是**原判据基于的前提（154 字符）已不成立**。
+  ok(ZONES.zoneOfKindPre('mem-legacy-upgrade') === 'memory', '★U7-1e mem-legacy-upgrade 已迁到 memory 区（channel 只剩 26 字符余量，必被淘汰）', String(ZONES.zoneOfKindPre('mem-legacy-upgrade')));
   // ③ 段长常量
   ok(/UPGRADE_DONE_MAX_CHARS = 520/.test(src) && /UPGRADE_FAILED_MAX_CHARS = 320/.test(src), '★U7-1f 段长上限 520/320');
   ok(/UPGRADE_SUMMARY_MAX_CHARS = 400/.test(src) && /UPGRADE_ERROR_MAX_CHARS = 200/.test(src), '★U7-1g summary 400 / error 200 截断上限');
