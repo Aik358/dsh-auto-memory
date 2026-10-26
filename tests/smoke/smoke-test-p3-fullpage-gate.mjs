@@ -197,5 +197,123 @@ ok('★[变异必红] 变异版在对话页(0 尺寸)也会打标 ⇒ N1 判据�
 })
 
 console.log('')
+console.log('== N7 ★新增（审计 §1.3 M3 · 复刻环境缺真实初始条件 · 变异实证双全绿）==')
+// 背景：把两处全屏修复的 CSS 全删，本套件与 e8-double-check 原本 17/0 + 15/0 双全绿。
+//   根因：本套件用**手写的假 getComputedStyle**（直接 return {display:'block'}），
+//   根本没解析真实 CSS 文件 ⇒ 删掉真 CSS 也测不出来。这是「绿但假的」第 9 类。
+// 本组改为：**真读 skins/iter5/skin.css 原文**，对它做真实的「规则匹配 + 特异性比较 + 源码序」层叠判定，
+//   断言 [data-dam-theme=page][data-dam-page] 的最终 display 必须是 flex（不是 contents/none）。
+const SKIN_CSS_PATH = path.join(ROOT, 'skins', 'iter5', 'skin.css')
+
+/** 极简 CSS 规则解析：只提取「单层、无 @media 包裹」的普通规则（够本判据用）。 */
+function parseFlatRules (css) {
+  const out = []
+  const src = String(css).replace(/\/\*[\s\S]*?\*\//g, '')
+  let i = 0
+  while (i < src.length) {
+    const lb = src.indexOf('{', i)
+    if (lb < 0) break
+    const rb = src.indexOf('}', lb)
+    if (rb < 0) break
+    const selText = src.slice(i, lb).trim()
+    const body = src.slice(lb + 1, rb)
+    i = rb + 1
+    if (!selText || selText.charAt(0) === '@') continue
+    for (const sel of selText.split(',')) {
+      const s = sel.trim()
+      if (!s) continue
+      out.push({ selector: s, body, order: out.length })
+    }
+  }
+  return out
+}
+
+/** 特异性：id(100) / class+attr+pseudo-class(10) / element+pseudo-element(1)。够用。 */
+function specificityOf (sel) {
+  const ids = (sel.match(/#[\w-]+/g) || []).length
+  const cls = (sel.match(/\.[\w-]+/g) || []).length
+  const attrs = (sel.match(/\[[^\]]+\]/g) || []).length
+  const pseudos = (sel.match(/:(?!:)[\w-]+/g) || []).length
+  const elems = (sel.replace(/#[\w-]+|\.[\w-]+|\[[^\]]+\]|::?[\w-]+(\([^)]*\))?/g, ' ')
+    .trim().split(/\s+/).filter(Boolean)).length
+  return ids * 100 + (cls + attrs + pseudos) * 10 + elems
+}
+
+/** 该选择器是否命中给定元素（只支持 [attr=val] / [attr] / 单元素名 / 后代组合的简化判定）。 */
+function selectorMatches (sel, el) {
+  // 只处理「复合选择器（无空格）」或「含后代的」取最后一段判定，够用且不会误判成本条
+  const last = sel.trim().split(/\s+/).pop()
+  if (!last) return false
+  const attrRe = /\[([\w-]+)(?:\s*=\s*["']?([^"'\)\]]+)["']?)?\]/g
+  let m
+  let matchedAny = false
+  while ((m = attrRe.exec(last)) !== null) {
+    matchedAny = true
+    const name = m[1]
+    const want = m[2]
+    const have = el.attrs[name]
+    if (have === undefined) return false
+    if (want !== undefined && String(have) !== String(want)) return false
+  }
+  const tagMatch = last.match(/^([a-zA-Z][\w-]*)/)
+  if (tagMatch) { matchedAny = true; if (tagMatch[1].toLowerCase() !== el.tag.toLowerCase()) return false }
+  return matchedAny
+}
+
+/** 计算某元素某属性的最终值（按 特异性 > 源码序 的层叠规则）。 */
+function computeProp (rules, el, prop) {
+  let best = null
+  for (const r of rules) {
+    if (!selectorMatches(r.selector, el)) continue
+    const re = new RegExp('(?:^|;)\\s*' + prop + '\\s*:\\s*([^;]+)', 'i')
+    const mm = r.body.match(re)
+    if (!mm) continue
+    const spec = specificityOf(r.selector)
+    if (!best || spec > best.spec || (spec === best.spec && r.order > best.order)) {
+      best = { val: mm[1].trim(), spec, order: r.order, selector: r.selector }
+    }
+  }
+  return best
+}
+
+{
+  const css = fs.readFileSync(SKIN_CSS_PATH, 'utf8')
+  const rules = parseFlatRules(css)
+  ok('skin.css 可读且解析出规则', () => assert.ok(rules.length > 100, 'rules=' + rules.length))
+
+  // 真实生产形态的元素：page 型外壳同时带 data-dam-theme=page 与 data-dam-page
+  const pageEl = { tag: 'div', attrs: { 'data-dam-theme': 'page', 'data-dam-page': '' } }
+  const disp = computeProp(rules, pageEl, 'display')
+
+  ok('★★★[全屏] [data-dam-theme=page][data-dam-page] 的最终 display 必须是 flex', () => {
+    assert.ok(disp, '没有任何规则命中该元素的 display')
+    assert.equal(disp.val, 'flex',
+      '实际胜出的是 ' + JSON.stringify(disp.val) + '（来自 ' + disp.selector + '）')
+  })
+  ok('★★★[全屏] 最终 display 不得是 contents（这是 10-25 全屏失效的根因）', () => {
+    assert.ok(disp && disp.val !== 'contents',
+      'display=contents ⇒ 根节点不生成盒子 ⇒ height:100% 全失效')
+  })
+  ok('★★[全屏] 胜出规则必须同时命中 theme 与 page 两个属性（证明是那条专用修复规则赢的）', () => {
+    assert.ok(disp && disp.selector.indexOf('[data-dam-theme=page]') >= 0 && disp.selector.indexOf('[data-dam-page]') >= 0,
+      '胜出选择器 = ' + (disp && disp.selector))
+  })
+  ok('★★[全屏] box-sizing 之后 height 计算依赖 flex 列方向', () => {
+    const fd = computeProp(rules, pageEl, 'flex-direction')
+    assert.ok(fd && fd.val === 'column', 'flex-direction=' + (fd && fd.val))
+  })
+
+  // ★负路径：把那条修复规则从 CSS 里删掉 ⇒ display 判据必须变红（证明不是恒真）
+  const cssNoFix = css.split('[data-dam-theme=page][data-dam-page]{display:flex').join('[data-dam-theme=page][data-dam-page]{display:contents')
+  const rulesMUT = parseFlatRules(cssNoFix)
+  const dispMUT = computeProp(rulesMUT, pageEl, 'display')
+  ok('★★★[负路径] 把修复改回 display:contents ⇒ 判定结果随之变红（判据有鉴别力）', () => {
+    assert.ok(dispMUT)
+    assert.equal(dispMUT.val, 'contents')
+    assert.notEqual(dispMUT.val, 'flex')
+  })
+}
+
+console.log('')
 console.log('SUMMARY  PASS ' + pass + ' / FAIL ' + fail)
 if (fail > 0) process.exit(1)

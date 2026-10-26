@@ -145,6 +145,32 @@ console.log('[B-5] 可增删改（真数据流：编辑 → 渲染）');
   ok(RE.listRuleItemsPre(add.text).length === 4, '★★B-5k 追加后 4 条');
 }
 
+// ══════════════════════════════════════════════════════════════════════
+// ★★2026-10-26 补（审计 §1.3 M1 · 「两段式只测后段」缺口 —— 变异实证不红）：
+//   此前本套件只测「renderRulesSectionPre 传了 groupByLayer:true 时的行为」，
+//   但**从未验证 lib/index.js 的调用点真的传了 true**。把接线改回 false，
+//   原有断言依然全绿 ⇒ 「绿但假的」第 5 类。
+//   下面把「接线」也锁住，并带负路径证明非恒真。
+// ══════════════════════════════════════════════════════════════════════
+console.log('');
+console.log('== B-6 接线守卫（防「调用点忘了传 groupByLayer」）==');
+{
+  const INDEX_SRC = fs.readFileSync(path.join(ROOT, 'lib', 'index.js'), 'utf8');
+  ok(/groupByLayer:\s*true/.test(INDEX_SRC), '★★★B-6a lib/index.js 里存在 groupByLayer: true（接线未丢）');
+
+  const sample = { rules: [
+    { text: '用户偏好要中文回答', layer: 'user' },
+    { text: '本项目必须用 pnpm', layer: 'project' },
+  ] };
+  const one = RL.renderRulesSectionPre(sample);
+  ok(one.text.indexOf('[用户规约') < 0 && one.text.indexOf('[项目规约') < 0,
+    '★★★B-6b [负路径] 不传 groupByLayer ⇒ 两节标题都不出现（证明 B-6a 非恒真）');
+
+  const two = RL.renderRulesSectionPre(sample, { groupByLayer: true });
+  ok(two.text.indexOf('[用户规约') >= 0 && two.text.indexOf('[项目规约') >= 0,
+    '★★★B-6c [正路径] 传 true ⇒ 两节标题同时出现');
+}
+
 console.log('');
 console.log('[v4-h3-b-rules-groups] ' + pass + ' PASS / ' + fail + ' FAIL');
 process.exit(fail ? 1 : 0)

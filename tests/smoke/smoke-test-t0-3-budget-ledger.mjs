@@ -279,8 +279,41 @@ console.log('[T0-3-11] 接线守卫：index.js 的限额是推导的、优先级
   ok(/otherLimitN > 0 \? Math\.max\(200, Math\.floor\(otherLimitN\)\) : null/.test(code),
     'otherDynamic 未配置时**不设限**（不再拿无依据的默认值当上限）')
   ok(/priority: sg\.priority/.test(code), '段落优先级透传给账本')
-  ok(/const injectedDegradations = envelope\.degradations\.filter\(\(x\) => x\.inject !== false\)/.test(code),
-    '注入文本只带内容类降级（诊断类留 meta）')
+  // ★★2026-10-26 升级（审计 §1.2 施工的连带）：原文是**源码字符串断言**（「绿但假的」第 2 类），
+  //   写法一变就假红。§1.2 把 zones.degradations 也并入了注入降级源头（修通道区静默击杀），
+  //   原来的单链正则不再命中 —— 但 `.filter(x => x.inject !== false)` 语义没变。
+  //   ⇒ 不把正则改宽了事，改为**结构性 + 真行为**双断言（真执行产品那段表达式）。
+  ok(/\.filter\(\(x\) => x\.inject !== false\)/.test(code),
+    '★注入降级源头必须经 inject !== false 过滤（诊断类不进注入文本）')
+  ok(/injectedDegradations/.test(code) && /envelope\.degradations/.test(code),
+    '★注入降级来自 envelope.degradations（未被整段短路掉）')
+  {
+    const src = readFileSync(new URL('../../lib/index.js', import.meta.url), 'utf8')
+    const line = (src.match(/const injectedDegradations = envelope\.degradations[\s\S]{0,300}?\.filter\(\(x\) => x\.inject !== false\)/) || [''])[0]
+    ok(line.length > 0, '★能从产品源码取到 injectedDegradations 的真实表达式')
+    if (line.length > 0) {
+      const expr = line.replace('const injectedDegradations = ', '').replace(/;\s*$/, '')
+      const fakeEnvelope = { degradations: [
+        { code: 'content-drop', inject: true, text: '[降级] 内容类-应出现' },
+        { code: 'diag-only', inject: false, text: '[降级] 诊断类-不该出现' },
+        { code: 'content-trunc', inject: true, text: '[降级] 截断类-应出现' },
+      ] }
+      const fakeZones = {
+        degradations: [{ code: 'channel-over-cap-dropped', inject: true, text: '[降级] 通道区击杀-应出现' }],
+        dropped: [{ kind: 'event-unarchived', chars: 117 }],
+      }
+      const fn = new Function('envelope', 'zones', '_zonesDegr', 'return (' + expr + ')')
+      const out = fn(fakeEnvelope, fakeZones, fakeZones.degradations)
+      const joined = (out || []).map((x) => x.text).join(String.fromCharCode(10))
+      ok((out || []).length === 3, '★★★[真行为] 三条 inject:true 全保留（含 zones 通道区击杀）', 'got=' + (out || []).length)
+      ok(joined.indexOf('内容类-应出现') >= 0 && joined.indexOf('截断类-应出现') >= 0,
+        '★★★[真行为] envelope 的内容类降级进入输出')
+      ok(joined.indexOf('通道区击杀-应出现') >= 0,
+        '★★★[真行为] **zones 通道区击杀降级进入输出**（§1.2 修复的正是这个）')
+      ok(joined.indexOf('诊断类-不该出现') < 0,
+        '★★★[真行为·负路径] inject:false 的诊断类降级**不出现**')
+    }
+  }
   // 分派：最该保的两段必须是 must，日志必须是 low
   // ★2026-10-24 批次 0.5 归因（判据过期，非真缺陷）：两段 must 标记仍然存在，只是调用点新增了第 7 个参数
   //   `direction`（'tail'），于是 `'must')` 变成 `'must', 'tail')`，旧的 `'must'\)` 正则不再命中。

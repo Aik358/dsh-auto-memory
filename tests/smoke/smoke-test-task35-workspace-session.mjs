@@ -150,5 +150,58 @@ ok('★[变异必红] 变异版不再按工作区匹配 ⇒ 会回落 sid-aik（
 })
 
 console.log('')
+console.log('== T35-5 ★新增（审计 §1.3 M2 · 探针未命中真函数 · 变异实证不红）==')
+// 背景：把 hostSessionIdClient() 掏空为 return ''，本套件原本 17/0 全绿 ——
+//   因为它测的是 sessionIdForWorkspaceClient / pageSessionIdClient，
+//   **从未真跑 hostSessionIdClient 本身**（第 2 类源码字符串 + 第 4 类探针未命中）。
+// 下面用假 document 真跑该函数，锁住「宿主 DOM 权威属性」这条链路。
+const hostFnSrc = extractFnByLine(LINES, 'hostSessionIdClient')
+ok('hostSessionIdClient 可抽取', () => assert.ok(hostFnSrc && hostFnSrc.length > 80))
+
+ok('★★★[正路径] 有 [data-conversation-session] 元素 ⇒ 返回其值（不回落）', () => {
+  const ctx = vm.createContext({
+    document: { querySelector: (sel) => (sel === '[data-conversation-session]'
+      ? { getAttribute: () => 'session-TEST-123' } : null) },
+    String,
+  })
+  vm.runInContext(hostFnSrc + ';globalThis.__H = hostSessionIdClient;', ctx)
+  assert.equal(ctx.__H(), 'session-TEST-123')
+})
+
+ok('★★★[负路径] 元素不存在 ⇒ 返回空串（由 currentSessionIdPre 决定回落，不在本函数内造值）', () => {
+  const ctx = vm.createContext({
+    document: { querySelector: () => null }, String,
+  })
+  vm.runInContext(hostFnSrc + ';globalThis.__H = hostSessionIdClient;', ctx)
+  assert.equal(ctx.__H(), '')
+})
+
+ok('★★[边界] 属性值为空白 ⇒ 返回空串（trim 后判空，不算有效 sid）', () => {
+  const ctx = vm.createContext({
+    document: { querySelector: () => ({ getAttribute: () => '   ' }) }, String,
+  })
+  vm.runInContext(hostFnSrc + ';globalThis.__H = hostSessionIdClient;', ctx)
+  assert.equal(ctx.__H(), '')
+})
+
+ok('★★[降级] 无 document（服务端/测试环境）⇒ 返回空串，不抛', () => {
+  const ctx = vm.createContext({ String })
+  vm.runInContext(hostFnSrc + ';globalThis.__H = hostSessionIdClient;', ctx)
+  assert.equal(ctx.__H(), '')
+})
+
+ok('★★★[接线] currentSessionIdPre 优先用 hostSessionIdClient（DOM 权威 > mainView 推断）', () => {
+  const preSrc = extractFnByLine(LINES, 'currentSessionIdPre')
+  assert.ok(preSrc && preSrc.length > 50, 'currentSessionIdPre 可抽取')
+  const ctx = vm.createContext({
+    document: { querySelector: () => ({ getAttribute: () => 'session-FROM-DOM' }) },
+    String,
+    mainViewSessionIdClient: () => 'session-FROM-MAINVIEW',
+  })
+  vm.runInContext(hostFnSrc + NL + preSrc + ';globalThis.__P = currentSessionIdPre;', ctx)
+  assert.equal(ctx.__P(), 'session-FROM-DOM', 'DOM 有值时不得回落 mainView')
+})
+
+console.log('')
 console.log('SUMMARY  PASS ' + pass + ' / FAIL ' + fail)
 if (fail > 0) process.exit(1)
