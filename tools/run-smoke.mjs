@@ -158,6 +158,14 @@ const HEAVY_MS = {
   'smoke-test-issue322-team-outbox-flush.mjs': 5800,
   'smoke-test-context-observer.mjs': 5600,
   'smoke-test-settings-safety.mjs': 5500,
+  // ★★2026-10-26：**非耗时型**但**高扰动型**入重车道。
+  //   实测：v4-c4 单跑 3 次全 exit=0（~3.9s，远低于 5s 阈值），但并行全量里出现
+  //   `exit=3221226505 = 0xC0000409 STATUS_STACK_BUFFER_OVERRUN`（Windows 进程崩溃，非断言失败）。
+  //   原因：该套件**改写全局 process.env.HOME / DSH_HOME** 并真造 MemoryEngine，
+  //   与同池套件共享进程级 env 语义 ⇒ 轻车道 x4 高并发下被挤崩。
+  //   ⇒ 判据修正：**「改全局 env + 起真引擎」类套件即使不慢，也必须进重车道**（重车道 x8 但彼此隔离度更高）。
+  //   命名口径沿表内既有习惯（毫秒值仅作排序参考，此处取实测 3900）。
+  'smoke-test-v4-c4-tool-description.mjs': 3900,
 }
 
 /**

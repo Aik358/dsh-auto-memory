@@ -756,7 +756,7 @@ ok(damNoMixedEol(SRC), 'E2 纯 CRLF')
 //     改后 = 1,154,836 字符 / 734908559343F61E，累计 +30,173（R139 增量 +3,965）。
 //   判据意图不变（宿主 index.js 不得无痕漂移），按 2026-10-01 裁定复算重钉。
 //   配套：新增 tests/smoke/smoke-test-v4-d-events-recall.mjs（22 PASS；3 条变异必红）。
-eq(createHash('sha256').update(IX).digest('hex').slice(0, 16).toUpperCase(), '820C3698E4956C1B', 'R138 = R137 + 2026-10-25 **v4-C2 真缺陷修复 + i332/batchA 判据更新**。★归因（实测复算）：本批开工基线 = R137 锁定值 1,209,133 字符 / sha16 `94E1F6A8A1C42A5B`；本批改后 = **1,210,508 字符 / `E04A79739D70EF91`**（Δ **+1,375 字符**）。逐项溯源：① **C2 真缺陷修复**（Lead 真引擎复查抓出）：`refreshEventStatePre` 预计算 `state.slimEventT1`（[{id,line}] 投影，不挂整 events 对象）+ `state.slimEventTotal`，降级分支同步清空；`renderSlimSnapshotPre` 的 C2 段改读 `s.slimEventT1` 而**不再读 `s.events`**（该字段产品从不写 ⇒ 原来恒空 ⇒ 「[当前事件]」永不出现，而套件手工塞 state.events 造了假绿）；② **i332 产品侧简化**：memory_note 分支删 3 处冗余 `engine.resolvePaths(exec.agent)`（Phase1/Phase3/事件侧刷新块），复用分支开头的 `const p` —— 少 3 次异步 IO，且抽取式测试的分支不再引用 `exec`（契约更干净）。⇒ 判据意图不变（宿主 index.js 不得无痕漂移），按 2026-10-01 裁定复算重钉。★本批不改公共契约（纯缺陷修复 + 冗余消除）。★同批判据更新（改测试不改产品）：`v4-c2-slim-events` 重写为真引擎端到端（37 条，含 C2-0 元断言禁止再读 s.events）· `i332-write-contract` 23→29 条（补桩 + ⑨WAL 顺序 + ⑩Phase1 失败中止）· `tools/check-write-contract.mjs` 变异③改全局替换 · `v4-batchA-wiring` 25→31 条（catalog 双向断言 + W-1b 三 active 核心判据）。')
+eq(createHash('sha256').update(IX).digest('hex').slice(0, 16).toUpperCase(), '08908A977C1906B5', 'R138 = R137 + 2026-10-25 **v4-C2 真缺陷修复 + i332/batchA 判据更新**。★归因（实测复算）：本批开工基线 = R137 锁定值 1,209,133 字符 / sha16 `94E1F6A8A1C42A5B`；本批改后 = **1,210,508 字符 / `E04A79739D70EF91`**（Δ **+1,375 字符**）。逐项溯源：① **C2 真缺陷修复**（Lead 真引擎复查抓出）：`refreshEventStatePre` 预计算 `state.slimEventT1`（[{id,line}] 投影，不挂整 events 对象）+ `state.slimEventTotal`，降级分支同步清空；`renderSlimSnapshotPre` 的 C2 段改读 `s.slimEventT1` 而**不再读 `s.events`**（该字段产品从不写 ⇒ 原来恒空 ⇒ 「[当前事件]」永不出现，而套件手工塞 state.events 造了假绿）；② **i332 产品侧简化**：memory_note 分支删 3 处冗余 `engine.resolvePaths(exec.agent)`（Phase1/Phase3/事件侧刷新块），复用分支开头的 `const p` —— 少 3 次异步 IO，且抽取式测试的分支不再引用 `exec`（契约更干净）。⇒ 判据意图不变（宿主 index.js 不得无痕漂移），按 2026-10-01 裁定复算重钉。★本批不改公共契约（纯缺陷修复 + 冗余消除）。★同批判据更新（改测试不改产品）：`v4-c2-slim-events` 重写为真引擎端到端（37 条，含 C2-0 元断言禁止再读 s.events）· `i332-write-contract` 23→29 条（补桩 + ⑨WAL 顺序 + ⑩Phase1 失败中止）· `tools/check-write-contract.mjs` 变异③改全局替换 · `v4-batchA-wiring` 25→31 条（catalog 双向断言 + W-1b 三 active 核心判据）。')
 // ★★2026-10-25 E3c（Lead 二次裁决：**删掉 E3b**）：
 //
 //   【为什么删 E3b】原 E3b 是 `eq(R132_CHARS - R131_CHARS, R132_DELTA)` ——
@@ -790,7 +790,15 @@ eq(createHash('sha256').update(IX).digest('hex').slice(0, 16).toUpperCase(), '82
 //   ⇒ 判据意图不变（宿主 index.js 不得无痕漂移），按 2026-10-01 裁定复算重钉。
 //   ★受影响的公共契约：`/event-curate` 出草案**不再需要令牌**（只读预览），写盘必须带服务端签发的真令牌；
 //     响应体 409 固定带 `code: "confirm-required"`。
-const R150_CHARS = 1261753   // R138（本版）lib/index.js **归一化 LF 长度**（登记值，= readFileSync().replace(/\r\n/g,'\n') 之后的字符数，NOT 文件字节数）；R138 = v4-C2 真缺陷修复（slimEventT1）+ i332 产品侧删 3 处冗余 resolvePaths
+// ★R151 = R150 + 2026-10-26 审计施工 §2.2（用户裁定「保留在用户规约 / 预算线放大且可审计可压缩可灵活调整 /
+//   画像=emotional 需在 prompt 说清楚」）：
+//   ① index.js DEFAULT_CONFIG 新增 userRulesWarnChars(4000) / projectRulesWarnChars(6000) 两键 ⇒ 配置键 163→165；
+//   ② rulesSection 调用点透传两键；rules-layer 预算改为 opts 驱动 + 超限提示含「当前/预算/占比/超出量」四项可审计数；
+//   ③ 画像侧新增 excludeIfInRules 去重（已在规约层的偏好不再进画像）+ excludedByRules 计数挂 state；
+//   ④ 新增 THREE_LAYER_SEMANTICS_GUIDE_PRE_V1（rules-layer）并拼进**注入文本**，讲清规约=rational / 画像=emotional。
+//   ★归因可复算：本轮改动全部落在 lib/index.js 手写区（+1,405 字符），无生成区改动 ⇒ gen-ev4-blocks OK / skin SYNC-OK。
+//   判据意图不变（宿主 index.js 不得无痕漂移）。重钉值 = 实测。
+const R150_CHARS = 1263158   // R138（本版）lib/index.js **归一化 LF 长度**（登记值，= readFileSync().replace(/\r\n/g,'\n') 之后的字符数，NOT 文件字节数）；R138 = v4-C2 真缺陷修复（slimEventT1）+ i332 产品侧删 3 处冗余 resolvePaths
 eq(IX.length, R150_CHARS,
   'E3c ★实际长度必须等于登记长度（防「锁定了一个陈旧读数」）：实际 ' + IX.length + ' 应 = ' + R150_CHARS)
 // ★2026-10-08 R1 重钉（R87 → R88）：lib/index.js **有意演进** —— R1 收口修 issue #174：

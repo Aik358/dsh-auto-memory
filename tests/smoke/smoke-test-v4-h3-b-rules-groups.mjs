@@ -76,20 +76,25 @@ console.log('[B-3] 警戒线（超限不截断）');
   // 用户规约超 1500
   const bigU = { rules: Array.from({ length: 40 }, (_, i) => ({ text: '用户规则第' + i + '条：' + '甲'.repeat(35), layer: 'user' })) };
   const rU = RL.renderRulesSectionPre(bigU, { groupByLayer: true });
-  ok(rU.groups.user > 1500, '★★B-3a 构造的用户规约确实超 1500', String(rU.groups.user));
-  ok(!!rU.warn && rU.warn.indexOf('[用户规约超警戒线]') >= 0, '★★★B-3b 超限 ⇒ 有「用户规约超警戒线」提示');
-  ok(rU.warn.indexOf(String(rU.groups.user)) >= 0 && rU.warn.indexOf('1500') >= 0, '★★B-3c 提示里给出「当前 X > 上限 Y」两个数');
+  // ★判据改为「真的超了**当前出厂预算**」（预算已可配，写死 1500 会随配置漂移而假红）
+  const userBudget = RL.USER_RULES_WARN_CHARS_PRE_V1
+  ok(rU.groups.user > userBudget, '★★B-3a 构造的用户规约确实超预算线', rU.groups.user + ' > ' + userBudget);
+  ok(!!rU.warn && rU.warn.indexOf('[用户规约超预算线]') >= 0, '★★★B-3b 超限 ⇒ 有「用户规约超预算线」提示（2026-10-26 用户裁定：警戒线即预算线）');
+  ok(rU.warn.indexOf(String(rU.groups.user)) >= 0 && rU.warn.indexOf(String(userBudget)) >= 0, '★★B-3c 提示里给出「当前 X / 预算 Y」两个数');
+  // ★2026-10-26 新增（用户裁定「可审计」）：提示还必须给出占比与超出量
+  ok(/占\s*[\d.]+%/.test(rU.warn) && /超\s*\d+/.test(rU.warn), '★★★B-3c2 提示含占比与超出量（可审计）', String(rU.warn).slice(0, 70));
   // ★★核心：全量注入，一条都不少
   const allU = Array.from({ length: 40 }, (_, i) => rU.text.indexOf('用户规则第' + i + '条') >= 0).every(Boolean);
   ok(allU, '★★★B-3d **40 条全部在注入文本里（不截断）**');
   // 警告在最前面
-  ok(rU.text.trimStart().indexOf('[用户规约超警戒线]') === 0, '★★B-3e 警告放在**最前面**（模型先看到异常再读内容）');
+  ok(rU.text.trimStart().indexOf('[用户规约超预算线]') === 0, '★★B-3e 警告放在**最前面**（模型先看到异常再读内容）');
 
   // 项目规约超 4000
   const bigP = { rules: Array.from({ length: 90 }, (_, i) => ({ text: '项目规则第' + i + '条：' + '乙'.repeat(48), layer: 'project' })) };
   const rP = RL.renderRulesSectionPre(bigP, { groupByLayer: true });
-  ok(rP.groups.project > 4000, '★★B-3f 构造的项目规约确实超 4000', String(rP.groups.project));
-  ok(!!rP.warn && rP.warn.indexOf('[项目规约超警戒线]') >= 0, '★★★B-3g 超限 ⇒ 有「项目规约超警戒线」提示');
+  const projBudget = RL.PROJECT_RULES_WARN_CHARS_PRE_V1
+  ok(rP.groups.project > projBudget, '★★B-3f 构造的项目规约确实超预算线', rP.groups.project + ' > ' + projBudget);
+  ok(!!rP.warn && rP.warn.indexOf('[项目规约超预算线]') >= 0, '★★★B-3g 超限 ⇒ 有「项目规约超预算线」提示');
   const allP = Array.from({ length: 90 }, (_, i) => rP.text.indexOf('项目规则第' + i + '条') >= 0).every(Boolean);
   ok(allP, '★★★B-3h **90 条全部在注入文本里（不截断）**');
   ok(rP.text.indexOf('…') < 0 && rP.text.indexOf('...') < 0, '★★★B-3i 没有省略号/截断标记（证明不是截断）');
