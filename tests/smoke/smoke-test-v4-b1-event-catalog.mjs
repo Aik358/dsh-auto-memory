@@ -137,7 +137,24 @@ try {
   // ★场景 2：1 active + 1 closed ⇒ 只列 closed（验收 ②）
   writeStore([mkEv('evt_00000001', '事件甲', 'active', 300), mkEv('evt_00000002', '事件乙', 'closed', 200)]);
   await refresh();
-  ok(engine.state.eventCatalogText.includes('事件乙'), '★★C2 验收②：有非活跃事件 ⇒ 目录列它', JSON.stringify(engine.state.eventCatalogText));
+  // ★★2026-10-27 判据更新（**归因：用户新裁定 Q8 覆盖旧口径**）：
+  //   旧口径：目录**无条件**列出非 active 事件。
+  //   用户 2026-10-27 裁定：「事件目录只列 active + **最近** closed；archived 不列（仍可检索）」。
+  //   ⇒ 本夹具的 `closed` 事件 updatedAt=200（1970 年）属「很久以前关闭」⇒ 新口径下**应当被隐藏**。
+  //   ⇒ 判据改为：验证「最近关闭的会被列出，久远关闭的不会」——这才是新裁定要保证的东西。
+  //     具体：把事件乙的 updatedAt 设为「现在」，它就该出现；设为 1970 则不该出现（下方 C2b）。
+  {
+    const now1 = Date.now()
+    writeStore([mkEv('evt_00000001', '事件甲', 'active', now1 - 1000), mkEv('evt_00000002', '事件乙', 'closed', now1 - 2000)])
+    await refresh()
+    ok(engine.state.eventCatalogText.includes('事件乙'), '★★C2 验收②：**最近关闭**的事件仍被目录列出（用户裁定 Q8 新口径）', JSON.stringify(engine.state.eventCatalogText).slice(0, 60))
+  }
+  // C2b：久远关闭的必须被隐藏（新裁定的另一半）
+  {
+    writeStore([mkEv('evt_00000001', '事件甲', 'active', 300), mkEv('evt_00000002', '很久前关闭的', 'closed', 200)])
+    await refresh()
+    ok(!engine.state.eventCatalogText.includes('很久前关闭的'), '★★★C2b 很久以前关闭的事件**不**进注入面（用户裁定 Q8）', JSON.stringify(engine.state.eventCatalogText).slice(0, 60))
+  }
   ok(!engine.state.eventCatalogText.includes('事件甲'), '★★C2b 且**不列**已展开的 active 那个（不重复）');
 
   // ★场景 3：3 active ⇒ 目录只列第 3 个（验收 ③）
@@ -152,8 +169,11 @@ try {
   ok(String(engine.state.eventCardsText).includes('事件甲'), 'C3c 对照：卡片里确实有事件甲（证明排除不是靠它不存在）');
 
   // ★场景 4：截断要显式告知（验收：dropped > 0 时标题补「共 N 个，下列 M 个」）
-  const many = [mkEv('evt_00000001', '主事件', 'active', 9000)];
-  for (let i = 0; i < 30; i += 1) many.push(mkEv('evt_' + String(i + 10).padStart(8, '0'), '批量事件' + i, 'closed', 1000 - i));
+  // ★★2026-10-27 判据更新（归因同上）：截断测试的事件必须落在**可见窗口内**，
+  //   否则会被 Q8 的可见性筛选先行隐藏，测不到「目录自身截断」这个能力。
+  const nowC4 = Date.now()
+  const many = [mkEv('evt_00000001', '主事件', 'active', nowC4 - 9000)];
+  for (let i = 0; i < 30; i += 1) many.push(mkEv('evt_' + String(i + 10).padStart(8, '0'), '批量事件' + i, 'closed', nowC4 - 1000 - i));
   writeStore(many);
   await refresh();
   ok(Number(engine.state.eventCatalogDropped) > 0, '★C4 30+ closed ⇒ 发生截断（dropped > 0）', 'included=' + engine.state.eventCatalogIncluded + ' dropped=' + engine.state.eventCatalogDropped);
