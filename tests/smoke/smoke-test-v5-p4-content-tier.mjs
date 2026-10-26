@@ -64,10 +64,36 @@ ok(slimLong.text.indexOf("甲".repeat(61)) < 0, "A-10 超长规则被夹到 maxP
 ok(T.isRulesFullTierPre(I.RUN_SLIM) === false, "A-11 F4 规则不全给")
 ok(T.isRulesFullTierPre(I.RUN_FULL) === true, "A-12 F3 规则给全文")
 ok(T.isRulesFullTierPre(I.LEGACY) === true, "A-13 LEGACY 给全文（= 改前行为）")
-// ★A-14（变异 m1 抓出的判据缺口）：**接线**必须真的按档位分叉 —— 只测纯函数测不到接线。
-//   变异「把 if (_tier === _T.RUN_SLIM && ...) 改成 if (false && ...)」时，若只测纯函数则恒绿。
-const wireAnchor = "if (_tier === _T.RUN_SLIM && rulesSection.text && typeof renderRulesSlimPre === \"function\")"
-ok(idxSrc.indexOf(wireAnchor) >= 0, "A-14 规则段接线按档位分叉（F4 才走精简）")
+// ★★A-14（2026-10-27 **判据升级**，原为静态锚点断言）：
+//   原判据：源码必须含 `if (_tier === _T.RUN_SLIM && ... typeof renderRulesSlimPre === "function")`。
+//   问题：那个 typeof 守卫**本身就是缺陷**（模块级 const 在抽取执行时恒 undefined ⇒ 条件恒假
+//         ⇒ 规则摘要从未生效）。10-27 已改为内联实现 ⇒ 旧锚点必然消失。
+//   ⇒ 判据从「源码含某字符串」（恒真守卫）升级为「**真跑渲染、比字节**」：
+//        F4(run_slim) 的 rules 段必须 < 完整档的 rules 段。
+//   这才是 A-14 原本想表达的东西（「接线必须真的分叉」）—— 静态锚点只能证明"写了 if"，
+//   证明不了"if 真的进了"。
+{
+  // 真引擎：动态 import（本套件主体是静态断言，此处单独引入真引擎做功能验收）
+  const { MemoryEngine: _ME } = await import('../../tests/lib/audit-engine.mjs')
+  const _probeEng = new _ME()
+  await _probeEng.refresh(undefined)
+  const _st = _probeEng.stateFor ? _probeEng.stateFor(undefined) : _probeEng.state
+  const _rulesCharsOf = (tier) => {
+    _st._injectTierPre = tier
+    _st.memLegacy = { legacy: false, reasons: [], counts: {} }
+    _st.envelopeMeta = null
+    _probeEng.renderMemoryDynamic({ agent: undefined })
+    const mm = _st.envelopeMeta || {}
+    let n = 0
+    for (const sg of (mm.segments || [])) if (sg.kind === "rules-section") n = sg.chars
+    return n
+  }
+  const _full = _rulesCharsOf("human_full")
+  const _slim = _rulesCharsOf("run_slim")
+  ok(_full > 0, "A-14a 完整档规则段有内容（真跑渲染）", _full + "B")
+  ok(_slim > 0, "A-14b ★F4 规则段有内容（真跑渲染；修前是 0 或全文）", _slim + "B")
+  ok(_slim < _full, "A-14c ★★接线真的分叉：F4 规则摘要 < 全文（修前 8397 == 8397）", _slim + " < " + _full)
+}
 ok(idxSrc.indexOf("pushPart(\"rules\", \"rules-section\", _rulesOut)") >= 0, "A-15 统一出口 pushPart(_rulesOut)")
 
 console.log("")

@@ -101,6 +101,31 @@ console.log('== D. legacy 迁移提示投递（含用户指定文案要素）=='
 }
 
 console.log('')
+console.log('== F. 规则段档位化真实生效（F4 摘要，2026-10-27 修）==')
+{
+  function rulesChars(tier) {
+    st._injectTierPre = tier
+    st.memLegacy = { legacy: false, reasons: [], counts: {} }
+    st.envelopeMeta = null
+    engine.renderMemoryDynamic({ agent: undefined })
+    const m = st.envelopeMeta || {}
+    let n = 0
+    for (const sg of (m.segments || [])) if (sg.kind === 'rules-section') n = sg.chars
+    return n
+  }
+  const full = rulesChars('human_full')
+  const slim = rulesChars('run_slim')
+  ok(full > 0, 'F-1 完整档规则段有内容', full + 'B')
+  ok(slim > 0, 'F-2 ★F4(run_slim) 规则段有内容（修前因 typeof 守卫恒假，此处是从未生效的摘要路径）', slim + 'B')
+  ok(slim < full, 'F-3 ★F4 规则摘要必须比全文少（修前 8,397 == 8,397，摘要从未生效）', slim + ' < ' + full)
+  ok(slim < full * 0.7, 'F-4 ★F4 至少比全文省 30%（实测省 ' + (full > 0 ? ((1 - slim/full)*100).toFixed(1) : '?') + '%）')
+  // 其他档位必须是全文（不得误伤）
+  for (const t of ['human_full', 'run_full', 'post_compact', 'handoff_carry']) {
+    ok(rulesChars(t) === full, 'F-5 ' + t + ' 规则段仍是全文（不误伤）', rulesChars(t) + 'B')
+  }
+}
+
+console.log('')
 console.log('== E. 成对断言：内联实现 vs 模块级实现**行为等价** ==')
 {
   // ★判据选型（重要）：不能做「逐字符结构相同」断言 ——
