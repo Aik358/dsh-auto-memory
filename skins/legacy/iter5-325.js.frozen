@@ -1599,6 +1599,13 @@
           //   fullEverySlims（「攒够 N 次精简才放行完整版」的间接门槛）已废弃删除：
           //   完整版节奏现在由 snapshotMinGapRounds（每 N 轮一次完整版）+ 真人轮强制 决定，不再有独立门槛键。
           field(t('fSlimEvery'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 1, max: 50, value: cfg.slimEveryRounds === undefined ? 8 : cfg.slimEveryRounds, onChange: function (e) { set('slimEveryRounds', normalizeGapRounds(e.target.value, 8)) } }), t('fSlimEveryHint')),
+          // ★2026-10-26（P2 · 用户裁定）：**上下文窗口占用水位阈值**（百分比列表）。
+          //   语义：水位跨过阈值（默认 25%、50%）后，用户下一次说话时投递一次「用户发声的完整版」；
+          //         投完标记，同阈值内不再重复，跨过下一阈值才再投。
+          //   为什么是列表而非「每 N% 一次」：压缩阈值 70-80%，实际到不了 75% ⇒ 间隔写法会
+          //   在 70% 附近产生「刚触发就压缩」的无用注入。列表天然只有 25/50 两档。
+          //   填 '0' / 'off' = 禁用（F1 只由首轮/接话/压缩触发）。
+          field(t('fInjectWaterPct'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'text', placeholder: '25,50', value: cfg.fullInjectWaterPct === undefined ? '25,50' : String(cfg.fullInjectWaterPct), onChange: function (e) { set('fullInjectWaterPct', String(e.target.value || '').trim() || '25,50') } }), t('fInjectWaterPctHint')),
           field(t('fReinjectOnCompact'), h('input', { type: 'checkbox', checked: cfg.snapshotReinjectOnCompact !== false, onChange: function (e) { set('snapshotReinjectOnCompact', e.target.checked) } }), t('fReinjectOnCompactHint')),
           // ★2026-09-30（C2 · 用户裁定：设置面必须全量，不得缺项）——注入预算/白板账本/水位四组键，
           //   此前只有宿主读、无 UI 入口（实测 client.js 零引用）：

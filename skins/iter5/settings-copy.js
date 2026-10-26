@@ -67,6 +67,7 @@
         fDayBoundary: ['每天从几点开始计日志（分钟）', 'Start of the log day (minutes after midnight)', '450 表示 07:30，480 表示 08:00，0 表示午夜。此前的凌晨记录归到前一天。', '450 means 07:30, 480 means 08:00, and 0 means midnight. Earlier records belong to the previous day.'],
         fFontSize: ['记忆面板字号（立即生效）', 'Memory panel text size (immediate)', '只调整记忆面板的本机字号；当前 DSH 设置页的字体和字号跟随 DSH 全局设置。', 'Changes memory panel text on this device. This DSH settings page follows the global DSH font and text size.'],
         fPanelPos: ['在哪里打开记忆', 'Where to show memory', '选择浮动窗口、会话页或两者；内容相同。立即生效，仅影响本机。', 'Choose the floating panel, session page or both. They share content. Applies immediately on this device.'],
+        fInjectWaterPct: ['水位到多少百分比时补发完整记忆（可填多个）', 'Context-usage thresholds for a full memory refresh', '填百分比，多个用逗号分隔，默认 25,50。上下文用到 25% 后，你下一次发言时会补发一次完整记忆；用到 50% 时再补一次。同一档位内不会重复补发。填 0 或 off 表示关闭此功能（仍保留首轮、接话与压缩后的补发）。', 'Percentages separated by commas, default 25,50. After context usage passes 25%, your next message triggers one full memory refresh; passing 50% triggers another. Each threshold fires once. Enter 0 or off to disable (first turn, new human messages and post-compaction refreshes still apply).'],
         fExclude: ['不让 AI 使用的记忆来源', 'Memory sources AI should not use', '每行填写一个来源，可用记忆 ID、分类或文件路径；适合屏蔽错误或不适用的内容，不会因此删除原文件。', 'One source per line: a memory ID, category or path. Excludes unsuitable content without deleting its files.']
       }
       var key = Object.keys(rows).find(function (key) { return t(key) === label })
