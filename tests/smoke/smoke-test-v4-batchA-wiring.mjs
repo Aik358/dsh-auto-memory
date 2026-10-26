@@ -52,7 +52,12 @@ const ev = (id, name, status, updatedAt, extra = {}) => Object.assign({
 }, extra)
 writeFileSync(storePath, JSON.stringify({ schema: 'v4_event_store_v1', events: [
   ev('evt_00000001', '活动事件', 'active', 200),
-  ev('evt_00000002', '已完成事件', 'closed', 100),
+  // ★★2026-10-27 判据更新（**归因：用户裁定 Q8 覆盖旧口径**）：
+  //   旧夹具把 closed 事件的 updatedAt 设为 100（1970 年）。
+  //   用户 2026-10-27 裁定「注入面只列 active + **最近** closed」⇒ 1970 年的会被时间窗隐藏。
+  //   这不是放宽判据，是**新裁定要求的行为**：夹具必须用「最近关闭」才符合该判据的语境。
+  //   （同款修正已在 v4-b1-event-catalog 做过，并新增 C2b 验证「久远关闭的不列出」。）
+  ev('evt_00000002', '已完成事件', 'closed', Date.now() - 3600 * 1000),
 ], updatedAt: 200 }, null, 2), 'utf8')
 
 // 写两篇四段账本 + 一篇非四段（验证 D9 口径 A）

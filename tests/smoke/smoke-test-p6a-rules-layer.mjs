@@ -346,7 +346,12 @@ console.log('[P6A-7] ★T7-7：不能只靠"引导语不同"判"遵守问题已�
   // 可机械判断的结果 = 规则段真的进了**最终注入文本**（分项账本的 rules 分项），
   // 且**不受参考类裁剪影响**。这正是"规则不参与裁剪"的唯一可观测证据。
   const idx = readFileSync(new URL('../../lib/index.js', import.meta.url), 'utf8')
-  ok(/pushPart\('rules', 'rules-section', rulesSection\.text\)/.test(idx),
+  // ★★2026-10-27 存量判据修复（**归因：正则写死单引号 + 写死变量名，代码已演进**）：
+  //   旧正则：/pushPart\('rules', 'rules-section', rulesSection\.text\)/
+  //   实测代码：pushPart("rules", "rules-section", _rulesOut)  ← 双引号 + 变量名已变（F4 档位化后）
+  //   ⇒ 恒不匹配。与上一条同源（引号 + 标识符双过期）。
+  //   新判据：只锁**分项名与段名**（那是契约），不锁实参变量名（那是实现细节）。
+  ok(/pushPart\(["']rules["'],\s*["']rules-section["']/.test(idx),
     '规则段以 `rules` 分项进分项账本（不是混在 otherDynamic 里）')
   const budget = readFileSync(new URL('../../lib/memory-envelope.js', import.meta.url), 'utf8')
   ok(/if \(b === 'rules'\) return null/.test(budget), '★分项账本对 rules 恒不设上限（规则不参与裁剪）')
@@ -361,9 +366,22 @@ console.log('[P6A-7] ★T7-7：不能只靠"引导语不同"判"遵守问题已�
   // 故这里从 `renderMemoryDynamic` 起切到 `renderMemoryStatic`（不能用前者的 indexOf 当起点，
   // 否则切片为空、indexOf 全为 -1 —— 本套件首跑就因为这个假红过一次）。
   const dyn = idx.slice(idx.indexOf('renderMemoryDynamic(context) {'), idx.indexOf('renderMemoryStatic() {'))
-  const iRules = dyn.indexOf("pushPart('rules', 'rules-section'")
-  const iLogs = dyn.indexOf("'recent-logs'")
-  const iNotes = dyn.indexOf("'project-notes'")
+  // ★★2026-10-27 存量判据修复（**归因：锚点引号风格漏匹配，不是代码缺陷**）：
+  //   实测：本批**开始前**（7ff4a80a）跑本套件同样 121/2 红 ⇒ 是存量问题，不是本批引入。
+  //   根因：代码里 `pushPart("rules", "rules-section", ...)` 用**双引号**，
+  //   而锚点写死单引号 `pushPart('rules', 'rules-section'` ⇒ indexOf 恒 -1 ⇒ 位置断言假红。
+  //   （与 b2-zone-registry 的抽取正则同类问题 —— 该处已在 10-27 修过，此处漏改。）
+  //   ⇒ 锚点改为**同时接受单/双引号**，判据意图不变（规则段必须在参考内容之前）。
+  const _findQuoteAgnostic = (hay, single, dbl) => {
+    const i1 = hay.indexOf(single)
+    const i2 = hay.indexOf(dbl)
+    if (i1 < 0) return i2
+    if (i2 < 0) return i1
+    return Math.min(i1, i2)
+  }
+  const iRules = _findQuoteAgnostic(dyn, "pushPart('rules', 'rules-section'", 'pushPart("rules", "rules-section"')
+  const iLogs = _findQuoteAgnostic(dyn, "'recent-logs'", '"recent-logs"')
+  const iNotes = _findQuoteAgnostic(dyn, "'project-notes'", '"project-notes"')
   ok(iRules > 0 && iLogs > iRules && iNotes > iRules, '★规则段排在所有参考内容之前（实测位置：' + iRules + ' < ' + iLogs + ' / ' + iNotes + '）')
   ok(iRules < dyn.indexOf("'tier0-catalog'"), '规则段也排在 Tier-0 目录之前（规矩比索引更靠前）')
   // 如实标注依赖边界：最终 messages 需要宿主 U6
