@@ -1606,6 +1606,7 @@
           //   在 70% 附近产生「刚触发就压缩」的无用注入。列表天然只有 25/50 两档。
           //   填 '0' / 'off' = 禁用（F1 只由首轮/接话/压缩触发）。
           field(t('fInjectWaterPct'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'text', placeholder: '25,50', value: cfg.fullInjectWaterPct === undefined ? '25,50' : String(cfg.fullInjectWaterPct), onChange: function (e) { set('fullInjectWaterPct', String(e.target.value || '').trim() || '25,50') } }), t('fInjectWaterPctHint')),
+          field(t('fInjectSemanticChars'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 200, max: 4000, value: cfg.fullInjectSemanticChars === undefined ? 800 : cfg.fullInjectSemanticChars, onChange: function (e) { set('fullInjectSemanticChars', Number(e.target.value) || 800) } }), t('fInjectSemanticCharsHint')),
           field(t('fReinjectOnCompact'), h('input', { type: 'checkbox', checked: cfg.snapshotReinjectOnCompact !== false, onChange: function (e) { set('snapshotReinjectOnCompact', e.target.checked) } }), t('fReinjectOnCompactHint')),
           // ★2026-09-30（C2 · 用户裁定：设置面必须全量，不得缺项）——注入预算/白板账本/水位四组键，
           //   此前只有宿主读、无 UI 入口（实测 client.js 零引用）：
