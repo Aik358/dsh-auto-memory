@@ -304,6 +304,15 @@ const viewStubs = [
   //   本节用 viewStubs 数组注入（与 makeRuntime 的常量白名单是两套）⇒ 必须单独补。
   'var pageSessionIdClient = function () { return "sid-test"; };',
   'var readViewModePre = function () { return \'stream\'; };',
+  // ★★2026-10-27 补桩（v5-P6-R4 给 EventView 新增了范围筛选依赖）：
+  //   EventView 现在在渲染前调用 readEventScopePre()/filterEventsByScopePre()/writeEventScopePre()。
+  //   本套件用**沙箱抽取**跑 EventView，沙箱里没有这些模块级函数 ⇒ 不补桩会
+  //   `ReferenceError: readEventScopePre is not defined`（实测 244/1 抓到）。
+  //   ★这是本仓既有纪律「抽取式测试加新依赖必须补桩」的第 N 次应用，不是判据过期。
+  'var EVENT_SCOPE_KEY = \'wbEvt.scope\';',
+  'var readEventScopePre = function () { return \'active\'; };',
+  'var writeEventScopePre = function (s) { return s === \'all\' ? \'all\' : \'active\'; };',
+  'var filterEventsByScopePre = function (list) { return Array.isArray(list) ? list.slice() : []; };',
   'var writeViewModePre = function (m) { return m; };',
   'var scrollToBottomPre = function () { return false; };',
   'var renderStreamViewPre = function () { return null; };',
