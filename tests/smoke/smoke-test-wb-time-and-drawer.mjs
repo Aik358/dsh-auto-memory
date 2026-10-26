@@ -39,9 +39,13 @@ const realEvents = hasReal ? (JSON.parse(fs.readFileSync(WS, 'utf8')).events || 
 
 console.log('== A. 「1970」根因链：list 投影 → adaptEventPre ==')
 {
-  // A-1 投影必须带 createdAt（真跑 projectEventForListPre 不可导出，改用 list() 的真输出）
-  ok(/base\.createdAt\s*=\s*Number\.isFinite\(Number\(e\.createdAt\)\)/.test(STORE_SRC),
-    '★★★A-1 [代码] list 投影补了 createdAt（真字段，零额外 IO）')
+  // ★A-1（2026-10-26 修法变更后重写）：**不**在 list 投影追加 createdAt
+  //   （那会破坏「key 顺序逐字一致 + 恰好 7 key」硬契约，实测打红 v4-h4 3 条）⇒ 改消费侧兜底。
+  ok(!/base\.createdAt\s*=/.test(STORE_SRC),
+    '★★★A-1 [代码] list 投影**未**追加 createdAt（保住 7-key 硬契约）')
+  const adapterSrcA = fs.readFileSync(path.join(ROOT, 'lib', 'ev4-adapter.js'), 'utf8')
+  ok(/pickMsPre\(ev\.createdAt, ev\.updatedAt, ev\.startMs\)/.test(adapterSrcA),
+    '★★★A-1b [代码] 消费侧 adaptEventPre 用 pickMsPre 多级兜底（createdAt → updatedAt → startMs）')
 
   // A-2 真调 list()：返回的每条事件必须带 createdAt
   if (hasReal) {
@@ -52,8 +56,8 @@ console.log('== A. 「1970」根因链：list 投影 → adaptEventPre ==')
     const listed = await ES.eventStorePre.list(tmpStore, { all: true })
     const items = (listed && listed.events) || []
     ok(items.length > 0, '★★★A-2a [真跑] list() 返回事件', 'n=' + items.length)
-    ok(items.every((e) => typeof e.createdAt === 'number' && e.createdAt > 0),
-      '★★★A-2b [真跑] 每条都有 createdAt>0', JSON.stringify(items.map((e) => e.createdAt)))
+    ok(items.every((e) => typeof e.updatedAt === 'number' && e.updatedAt > 0),
+      '★★★A-2b [真跑] 每条都有 updatedAt>0（消费侧兜底的真实依据）', JSON.stringify(items.map((e) => e.updatedAt)))
     ok(items.every((e) => e.checkpoints === undefined),
       '★★A-2c 负向确认：投影**仍不返回 checkpoints**（设计如此，正文走 detail）')
 

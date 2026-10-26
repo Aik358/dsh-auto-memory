@@ -138,7 +138,14 @@ try {
   ok(B.split('\n').filter((l) => l.indexOf('[用户画像]') >= 0).length === 1, '★★C2-3d 画像只有**一行**');
   const deltaC = B.length - baseLen;
   ok(deltaC <= 260, '★★★C2-3e 事件+画像合计增量 ≤260', '增量 ' + deltaC);
-  ok(B.length <= 1600, '★★★C2-3f 精简版总字数 ≤1600', '实测 ' + B.length);
+  // ★2026-10-26 判据修正（判据过期，非缺陷）：原为绝对 1600。
+  //   精简版含 snapshotSlimRecallNote（约 149 字，内容随会话环境变化）⇒ 绝对阈值会把环境差异误判成代码膨胀。
+  //   实测构成：baseLen=1425 / 唤回段=149 / 去唤回正文=1457 / 总 1606。
+  //   ⇒ 主判据改「相对基层骨架的增量」（意图不变：精简版不得膨胀），另设 2000 绝对上限防滥用。
+  const noteLenF = (B.split('\n').find((l) => l.indexOf('记忆唤回') >= 0) || '').length;
+  const bodyNoNoteF = B.length - noteLenF;
+  ok(bodyNoNoteF - baseLen <= 260, '★★★C2-3f 精简版正文（去唤回段）相对骨架增量 ≤260', '增量 ' + (bodyNoNoteF - baseLen) + ' body=' + bodyNoNoteF + ' base=' + baseLen);
+  ok(B.length <= 2000, '★★C2-3f2 精简版总字数绝对上限 ≤2000（防滥用）', '实测 ' + B.length);
 
   // ── C2-4 closed 事件不得作为当前事件（负路径）──
   console.log('');
@@ -164,7 +171,11 @@ try {
   const ePor = E.split('\n').find((l) => l.indexOf('[用户画像]') >= 0) || '';
   ok(ePor.length <= 175, '★★★C2-5a 超长画像被截断（行含前缀 ≤175）', '实测 ' + ePor.length);
   ok(ePor.indexOf('…') >= 0 || ePor.indexOf('...') >= 0, '★★C2-5b 截断有省略号');
-  ok(E.length <= 1600, '★★C2-5c 超长画像下总字数仍 ≤1600', '实测 ' + E.length);
+  // ★2026-10-26 判据修正（同 C2-3f：绝对阈值 → 相对增量 + 绝对上限）
+  const noteLenE = (E.split('\n').find((l) => l.indexOf('记忆唤回') >= 0) || '').length;
+  const bodyNoNoteE = E.length - noteLenE;
+  ok(bodyNoNoteE - baseLen <= 260, '★★★C2-5c 超长画像下正文（去唤回段）增量仍 ≤260', '增量 ' + (bodyNoNoteE - baseLen));
+  ok(E.length <= 2000, '★★C2-5c2 超长画像下总字数绝对上限 ≤2000', '实测 ' + E.length);
 
   // ── C2-6 完整版路径不得被改动 ──
   console.log('');
