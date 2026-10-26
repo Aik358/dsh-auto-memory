@@ -11,6 +11,19 @@
       ['settings', '设置', 'Settings', 'slate', 'settings'],
     ]
     function iter5Identity() { return String(currentSessionIdClient() || '') + '|' + String(currentWs() || '') }
+    /* ★★2026-10-26 修「点上下文页卡死 / 渲染进程崩溃」：500ms 轮询无条件 setState。
+     *   每 500ms 构造新字符串（值同引用不同）⇒ React 认不等 ⇒ 必然重渲染
+     *   ⇒ 每秒 2 次全量重渲染 ⇒ CPU 打满 + 内存堆积 ⇒ 切页时渲染进程被系统杀掉。
+     *   崩溃日志无 JS 异常、只有 ResizeObserver loop ⇒ 正是渲染循环持续触发的典型症状。
+     *   修法：值不变则不 setState（唯一封装，所有 500ms 调用点共用）。
+     */
+    function iter5SyncIdentityIfChanged(setter, readState) {
+      try {
+        var next = iter5Identity()
+        if (next === String((readState && readState()) || '')) return
+        setter(next)
+      } catch (e) { /* fail-soft */ }
+    }
     function iter5PageForTab(tab) {
       if (['notes', 'logs', 'reflections', 'search'].indexOf(tab) >= 0) return 'library'
       if (tab === 'connect') return 'handoff'
@@ -228,7 +241,7 @@
         var next = controller.panelTab()
         if (next !== lastTab.current) { lastTab.current = next; page[1](iter5PageForTab(next)) }
       }) }, [])
-      useEffect(function () { var timer = setInterval(function () { identityState[1](iter5Identity()) }, 500); return function () { clearInterval(timer) } }, [])
+      useEffect(function () { var timer = setInterval(function () { iter5SyncIdentityIfChanged(identityState[1], identityState[0]) }, 500); return function () { clearInterval(timer) } }, [])
       useEffect(function () { if (content.current) content.current.scrollTop = 0 }, [page[0]])
       function nav(id, options) {
         if (root.current && root.current.querySelector('[data-i5-dirty="true"]') && !window.confirm(L('有未保存的修改，确定离开？', 'Discard unsaved changes and leave?'))) return

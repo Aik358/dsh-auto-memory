@@ -271,6 +271,20 @@
       return createPortal && ['panel', 'dialogs', 'autocont'].indexOf(props.kind) >= 0
         ? createPortal(node, document.body) : node
     }
+    /* ★★2026-10-26 修「点上下文页卡死 / 渲染进程崩溃」：500ms 轮询无条件 setState。
+     *   每 500ms 构造新字符串（值同引用不同）⇒ React 认不等 ⇒ 必然重渲染
+     *   ⇒ 每秒 2 次全量重渲染 ⇒ CPU 打满 + 内存堆积 ⇒ 切页时渲染进程被系统杀掉。
+     *   崩溃日志无 JS 异常、只有 ResizeObserver loop ⇒ 正是渲染循环持续触发的典型症状。
+     *   修法：值不变则不 setState。
+     */
+    function iter5SyncIdentityIfChanged(setter, readState) {
+      try {
+        var next = iter5Identity()
+        if (next === String((readState && readState()) || '')) return
+        setter(next)
+      } catch (e) { /* fail-soft */ }
+    }
+
     function Iter5HostSettings(props) {
       var skinStyle = useIter5Style()
       var identity = useState(iter5Identity)
@@ -342,7 +356,7 @@
         return function () { window.removeEventListener('click', guard, true); window.removeEventListener('keydown', guard, true) }
       }, [expanded[0]])
       useEffect(function () {
-        var timer = setInterval(function () { identity[1](iter5Identity()) }, 500)
+        var timer = setInterval(function () { iter5SyncIdentityIfChanged(identity[1], identity[0]) }, 500)
         return function () { clearInterval(timer) }
       }, [])
       var form = h(Iter5Surface, { kind: 'settings' },
