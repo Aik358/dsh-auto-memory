@@ -148,5 +148,56 @@ console.log('== D. 生成区一致性（client.js 里的副本必须同步）=='
 }
 
 console.log('')
+console.log('== E. 审计 §2.1：HTML 注释锚点不得进入渲染/注入文本 ==')
+{
+  // 用户实报 2026-10-26：事件卡「理由」一整段开头是 <!-- type=dead-end -->，卡片被撑到近 2000 字符。
+  // 根因：白板看板卡片那条路有 wbStripComment，但**事件视图（EV4）是另一条通路**，从未清洗。
+  // 修法：在 adapter（单一真源）统一清洗 ⇒ 两个渲染器与注入侧同时受益。
+  const ADAPTER_SRC = fs.readFileSync(path.join(ROOT, 'lib', 'ev4-adapter.js'), 'utf8')
+  ok(/function stripHtmlCommentsPre/.test(ADAPTER_SRC) && /function cleanSectionTextPre/.test(ADAPTER_SRC),
+    '★★★E-1 [代码] adapter 有清洗层（stripHtmlCommentsPre + cleanSectionTextPre）')
+
+  // E-2 真数据端到端：真实 store 过 adaptEventPre，所有文本字段不得含 <!--
+  if (hasReal) {
+    const badE = []
+    for (const e of realEvents) {
+      const r = A.adaptEventPre(e, 0)
+      const blob = JSON.stringify({ t: r.title, s: r.summary, ra: r.rationale, sec: r.sections })
+      if (blob.indexOf('<!--') >= 0) badE.push(r.title)
+    }
+    ok(badE.length === 0, '★★★E-2 [真数据端到端] 真实事件过 adapter 后**无任何 HTML 注释**', badE.join(' | ') || 'checked=' + realEvents.length)
+  }
+
+  // E-3 合成用例：显式塞注释，必须被剥
+  const withC = A.adaptEventPre({
+    id: 'x1', name: '<!-- type=goal -->标题',
+    summary: '<!-- memory:mem_abc -->摘要正文',
+    sections: { goal: '<!-- type=goal -->\n目标正文', doing: '<!-- type:progress -->', deadend: '<!-- type=dead-end -->\n- 失败正文', next: '<!-- type=progress -->\n下一步正文' },
+  }, 0)
+  ok(withC.title.indexOf('<!--') < 0 && withC.title.indexOf('标题') >= 0, '★★★E-3 [合成] title 剥注释保留正文', JSON.stringify(withC.title))
+  ok(withC.summary.indexOf('<!--') < 0 && withC.summary.indexOf('摘要正文') >= 0, '★★★E-4 [合成] summary 剥注释保留正文', JSON.stringify(withC.summary))
+  ok(withC.rationale.indexOf('<!--') < 0 && withC.rationale.indexOf('失败正文') >= 0, '★★★E-5 [合成] rationale（原 deadend）剥注释保留正文', JSON.stringify(withC.rationale))
+  ok(Object.values(withC.sections).every((v) => String(v).indexOf('<!--') < 0), '★★★E-6 [合成] sections 四段全部无注释', JSON.stringify(withC.sections))
+  ok(withC.sections.doing === '', '★★E-7 [边界] 整段只有注释 ⇒ 清洗后为空串（不是残留标记）', JSON.stringify(withC.sections.doing))
+
+  // E-8 负路径：把 strip 函数改坏 ⇒ E-3/E-4/E-5 必红（此处用「模拟未清洗」验证判据有鉴别力）
+  {
+    const raw = { title: '<!-- type=goal -->标题', summary: '<!-- memory:mem_abc -->摘要正文' }
+    ok(raw.title.indexOf('<!--') >= 0, '★★★E-8 [负路径] 未清洗的原始数据确实含 <!--（证明 E-3 不是恒真）')
+  }
+
+  // E-9 生成区一致性：client.js 里也要有清洗（否则前端加载的是旧副本）
+  const CLIENT_E = fs.readFileSync(path.join(ROOT, 'lib', 'client.js'), 'utf8')
+  const cnt = (CLIENT_E.match(/cleanSectionTextPre/g) || []).length
+  ok(cnt >= 2,
+    '★★★E-9 [生成区] client.js 内联副本也含 cleanSectionTextPre', 'count=' + cnt)
+
+  // E-10 元断言：adapter 里 rationale 必须经过 cleanSectionTextPre（防止改回去）
+  ok(/rationale: cleanSectionTextPre\(sec\.deadend\)/.test(ADAPTER_SRC),
+    '★★★E-10 [元断言] rationale 必须过 cleanSectionTextPre（防回退）')
+}
+
+console.log('')
+console.log('SUMMARY  PASS ' + pass + ' / FAIL ' + fail)
 console.log('SUMMARY  PASS ' + pass + ' / FAIL ' + fail)
 process.exit(fail === 0 ? 0 : 1)

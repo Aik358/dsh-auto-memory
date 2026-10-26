@@ -154,6 +154,11 @@ const HEAVY_MS = {
   'smoke-test-config-transactions.mjs': 6400,
   'smoke-test-issue48.mjs': 6400,
   'smoke-test-issue164-plan-processes.mjs': 6100,
+  // ★2026-10-26 归因（实测，非猜测）：本套件 spawn **4 个变异子进程**（每个跑完整套件做「变异必红」验证）,
+  //   单跑实测 3.0s；**单独开 8 个并发**实测总 5.5s、全部 exit=0 ⇒ **不是自身并发缺陷**。
+  //   但在全量重车道（50 套件 x8，含 v3314-continuation-timeout 单跑 161s）里被拖到 **33.9s** 并失败。
+  //   ⇒ 分类：**资源竞争型**（既有判据：单跑 PASS + 并发模拟 PASS + 失败可定位到调度饥饿 ⇒ 接受）。
+  //   为什么不提高它的登记值：登记值只决定排序权重，不改变 x8 并发；抬它反而会挤掉别的重套件。
   'smoke-test-c307-308-team-outbox.mjs': 6000,
   'smoke-test-issue322-team-outbox-flush.mjs': 5800,
   'smoke-test-context-observer.mjs': 5600,
