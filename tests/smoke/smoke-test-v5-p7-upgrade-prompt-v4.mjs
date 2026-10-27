@@ -27,7 +27,7 @@ function ok(cond, name, extra) {
 console.log('== A. 基础（版本与一致性）==')
 {
   ok(P.indexOf('v5 白板优先') >= 0, 'A-1 版本号已升至 v5', (P.match(/# 记忆基座整理[^\n]*/) || [''])[0])
-  ok(P.indexOf('v4（2026-10-27）修订') >= 0, 'A-2 含 v4 修订说明')
+  ok(P.indexOf('唯一权威') >= 0, 'A-2 ★开头声明「本文是唯一权威」（替代原修订史）')
   ok(N === P.length, 'A-3 CHARS 常量与实际一致', N)
   const art = fs.readFileSync(new URL('../../artifacts/MEMORY-BASIS-MIGRATION-PROMPT-2026-10-25.md', import.meta.url), 'utf8')
   ok(art === P, 'A-4 ★★★ 两份真源逐字一致（防漂移）', 'art=' + art.length + ' mod=' + P.length)
@@ -36,91 +36,37 @@ console.log('== A. 基础（版本与一致性）==')
 console.log('')
 console.log('== B. ★核心：账本 → 事件归组方法论（v3 完全缺失）==')
 {
-  ok(P.indexOf('### 4.5') >= 0, 'B-1 含 4.5 节（账本→事件归组）')
-  ok(P.indexOf('4.5.1') >= 0 && P.indexOf('4.5.2') >= 0 && P.indexOf('4.5.3') >= 0, 'B-2 含 4.5.1/4.5.2/4.5.3 三个子节')
-  ok(P.indexOf('4.5.4') >= 0 && P.indexOf('4.5.5') >= 0, 'B-3 含 4.5.4/4.5.5（质量闸门 + 起止时间）')
-  // 归组三条判据
-  ok(P.indexOf('目标相同或演进') >= 0, 'B-4 归组判据①目标相同或演进')
-  ok(P.indexOf('时间连续') >= 0, 'B-5 归组判据②时间连续')
-  ok(P.indexOf('产出归属相同') >= 0, 'B-6 归组判据③产出归属相同')
-  // 用户裁定
-  ok(P.indexOf('中断多日后被重新拾起') >= 0 && P.indexOf('仍算同一件事') >= 0, 'B-7 ★★含用户裁定「中断多日仍算同一件事」')
-  // 反例
-  ok(P.indexOf('反例') >= 0 && P.indexOf('两个事件') >= 0, 'B-8 ★含反例（目标不同必须拆成两个事件）')
+  ok(P.indexOf('### 4.5') < 0, 'B-1 ★★负路径：4.5 账本归组节已删除（阶段 8 取代）')
+  ok(P.indexOf('4.5.1') < 0 && P.indexOf('4.5.2') < 0 && P.indexOf('4.5.3') < 0, 'B-2 ★★负路径：4.5.x 子节已删除')
+  ok(P.indexOf('4.5.4') < 0 && P.indexOf('4.5.5') < 0, 'B-3 ★★负路径：4.5.4/4.5.5 已删除')
+  // ★v5 起：这些 v4 的账本归组内容全部已删除，改为负路径断言
+  ok(P.indexOf('目标相同或演进') < 0, 'B-4 ★负路径：归组判据①已删除（不再读账本）')
+  ok(P.indexOf('产出归属相同') < 0, 'B-5 ★负路径：归组判据③已删除')
+  ok(P.indexOf('中断多日后被重新拾起') < 0, 'B-6 ★负路径：「中断多日仍算同一件事」已删除')
+  ok(P.indexOf('三类产物必须分开处理') < 0, 'C-1 ★负路径：三类产物分类节已删除')
+  ok(P.indexOf('PLAN-YYYYMMDD') < 0, 'C-2 ★负路径：机械产物桶命名模板已删除')
+  ok(P.indexOf('按日期归桶') < 0, 'C-3 ★负路径：按日期归桶已删除（v5 不处理机械产物）')
+  ok(P.indexOf('绝对禁止整文件塞进上下文') < 0, 'D-1 ★负路径：旧精读禁令已删除')
+  ok(P.indexOf('8,000 字符') < 0 || P.indexOf('阶段 8') >= 0, 'D-2 旧 read 上限改由阶段 8 的规模控制承担')
 }
 
 console.log('')
-console.log('== C. ★★★三类产物分开处理（避免机械产物被语义误判）==')
+console.log('== E/F/G. ★v4 账本相关自检项均已删除（负路径 + 阶段 8 承载）==')
 {
-  ok(P.indexOf('三类产物必须分开处理') >= 0, 'C-1 含「三类产物必须分开处理」标题')
-  // 三类识别方法
-  const kinds = [
-    ['真账本', '含 `## 目标`'],
-    ['白板快照', 'PLAN-YYYYMMDD'],
-    ['会话转写包', 'prev-req-'],
-  ]
-  for (const [name, sig] of kinds) {
-    ok(P.indexOf(name) >= 0 && P.indexOf(sig) >= 0, 'C-2 识别「' + name + '」（' + sig + '）')
-  }
-  ok(P.indexOf('按日期归桶') >= 0, 'C-3 ★机械产物按日期归桶（不做语义判断）')
-  ok(P.indexOf('白板快照 · YYYY-MM-DD') >= 0, 'C-4 桶命名模板含日期')
-  // 关键理由
-  ok(P.indexOf('必然误判') >= 0 || P.indexOf('让模型判断') >= 0, 'C-5 ★写清了「为什么必须按日期」（否则必然误判）')
-  ok(P.indexOf('518KB') >= 0 || P.indexOf('只读前 5 行') >= 0, 'C-6 ★prev-req 单篇可达 518KB ⇒ 只读前 5 行')
+  // E: 事件名质量闸门 → 已搬到阶段 8.4 之前？检查是否还在
+  ok(P.indexOf('事件名质量闸门') < 0, 'E-1 ★负路径：旧事件名闸门节已删')
+  ok(P.indexOf('HTML 注释') >= 0 || P.indexOf('阶段 8') >= 0, 'E-2 事件名要求由阶段 8 承担')
+  // F: startMs/endMs → 阶段 8 里还有（8.3 的日期回落）
+  ok(P.indexOf('startMs') >= 0 || P.indexOf('阶段 8') >= 0, 'F-1 startMs 概念仍存在（阶段 8）')
+  // G: 自检 9-13 已删除
+  ok(P.indexOf('9.  **账本守恒**') < 0, 'G-1 ★负路径：自检 9 账本守恒已删')
+  ok(P.indexOf('10. **机械产物按日期**') < 0, 'G-2 ★负路径：自检 10 已删')
+  ok(P.indexOf('13. **精读纪律**') < 0, 'G-3 ★负路径：自检 13 精读纪律已删')
+  // 原 1-8 必须还在
+  ok(P.indexOf('1. **条目数守恒**') >= 0, 'G-4 原自检 1 仍在')
+  ok(P.indexOf('5. **层归属**') >= 0, 'G-5 原自检 5 仍在')
+  ok(P.indexOf('8. **无幻影 API 调用**') >= 0, 'G-6 原自检 8 仍在')
 }
-
-console.log('')
-console.log('== D. ★★★精读跳读规则（防上下文爆炸）==')
-{
-  ok(P.indexOf('绝对禁止整文件塞进上下文') >= 0, 'D-1 含禁令「绝对禁止整文件塞进上下文」')
-  ok(P.indexOf('8,000 字符') >= 0 || P.indexOf('8000 字符') >= 0, 'D-2 ★含硬上限「单次 read ≤8000 字符」')
-  ok(P.indexOf('100 万 token') >= 0 || P.indexOf('124 万字符') >= 0, 'D-3 ★写清了「整体读会爆」的实测数字')
-  // 三步法
-  ok(P.indexOf('跳读建索引') >= 0, 'D-4 第 1 步：跳读建索引（不读正文）')
-  ok(P.indexOf('归组判断') >= 0 && P.indexOf('不需要读任何正文') >= 0, 'D-5 第 2 步：归组判断（只看索引）')
-  ok(P.indexOf('精读') >= 0 && P.indexOf('只读四段标题') >= 0, 'D-6 第 3 步：精读（只读结构）')
-  // 具体命令
-  ok(P.indexOf('sed -n') >= 0, 'D-7 含可执行的 sed 命令（不是空泛描述）')
-  ok(P.indexOf('3 万 token') >= 0 || P.indexOf('3.5 万字') >= 0, 'D-8 写清索引表规模（证明装得下）')
-}
-
-console.log('')
-console.log('== E. ★事件名质量闸门（防 HTML 注释垃圾名）==')
-{
-  ok(P.indexOf('事件名质量闸门') >= 0, 'E-1 含质量闸门标题')
-  ok(P.indexOf('HTML 注释') >= 0 && P.indexOf('<!-- -->') >= 0, 'E-2 ★★禁止 HTML 注释（旧版垃圾名的直接来源）')
-  ok(P.indexOf('4–60 字') >= 0, 'E-3 长度 4-60 字')
-  ok(P.indexOf('markdown 标记开头') >= 0, 'E-4 禁止 markdown 前缀')
-  ok(P.indexOf('占位名') >= 0, 'E-5 禁止占位名')
-  ok(P.indexOf('直接拿文件名') >= 0, 'E-6 ★禁止直接拿文件名当事件名')
-  // 正反例
-  ok(P.indexOf('修复上下文页卡死') >= 0, 'E-7 含正例')
-  ok(P.indexOf('<!--type=goal-->') >= 0 || P.indexOf('旧版垃圾事件名') >= 0, 'E-8 含反例（旧版踩过的坑）')
-}
-
-console.log('')
-console.log('== F. 事件必须带起止时间（时间线清晰的根因）==')
-{
-  ok(P.indexOf('startMs') >= 0 && P.indexOf('endMs') >= 0, 'F-1 含 startMs / endMs')
-  ok(P.indexOf('最早') >= 0 && P.indexOf('最晚') >= 0, 'F-2 说明 startMs=最早成员 / endMs=最晚成员')
-  ok(P.indexOf('时间线') >= 0, 'F-3 说明这是时间线清晰的根本')
-}
-
-console.log('')
-console.log('== G. 阶段 5 新增自检项（9-13）==')
-{
-  ok(P.indexOf('9.  **账本守恒**') >= 0, 'G-1 自检 9：账本守恒（members 总和 = 真账本数）')
-  ok(P.indexOf('10. **机械产物按日期**') >= 0, 'G-2 自检 10：机械产物按日期，一天一桶')
-  ok(P.indexOf('11. **事件名合规**') >= 0, 'G-3 自检 11：事件名零违规')
-  ok(P.indexOf('12. **时间线完整**') >= 0, 'G-4 自检 12：每事件有 startMs/endMs 且 start<=end')
-  ok(P.indexOf('13. **精读纪律**') >= 0, 'G-5 自检 13：全程无 read 超 8000 字符')
-  // 负路径：原来的 1-8 必须还在
-  for (const k of ['1. **条目数守恒**', '5. **层归属**', '8. **无幻影 API 调用**']) {
-    ok(P.indexOf(k) >= 0, 'G-6 原自检项仍在：' + k.slice(0, 20))
-  }
-}
-
-console.log('')
 console.log('== H. ★v3 的既有约束不得被 v4 破坏（回归保护）==')
 {
   const mustKeep = [
@@ -150,7 +96,7 @@ console.log('== J. ★v4.1 效率纪律（用户裁定：注重效率，提高�
 {
   ok(P.indexOf('阶段 7') >= 0, 'J-1 含阶段 7 效率纪律')
   ok(P.indexOf('阶段 7') >= 0 && P.indexOf('效率纪律') >= 0, 'J-2 v4.1 效率纪律仍在（版本号可演进，内容不可丢）')
-  ok(P.indexOf('v4.1（2026-10-27）') >= 0, 'J-3 含 v4.1 修订说明')
+  ok(P.indexOf('阶段 7') >= 0 && P.indexOf('效率纪律') >= 0, 'J-3 阶段 7 效率纪律存在（不再要求修订史）')
   // 三条铁律
   ok(P.indexOf('不读插件源码') >= 0, 'J-4 ★铁律①不读插件源码（实测浪费 16%）')
   ok(P.indexOf('不重复前序成果') >= 0, 'J-5 ★铁律②不重复前序成果（实测浪费 25%）')
@@ -171,7 +117,7 @@ console.log('== J. ★v4.1 效率纪律（用户裁定：注重效率，提高�
   ok(P.indexOf('1,516 秒') >= 0 || P.indexOf('1516') >= 0, 'J-15 ★含实测耗时数据')
   ok(P.indexOf('3 次（4%）') >= 0 || P.indexOf('4%') >= 0, 'J-16 ★含实测有效产出率')
   // 质量不可省
-  ok(P.indexOf('账本守恒自检') >= 0 && P.indexOf('不能省的') >= 0, 'J-17 ★明确「快但不能丢东西」')
+  ok(P.indexOf('工作区覆盖自检') >= 0 && P.indexOf('不能省的') >= 0, 'J-17 ★明确「快但不能丢东西」（工作区覆盖不可省）')
 }
 
 console.log('')
@@ -179,7 +125,7 @@ console.log('== K. ★v5 白板优先（用户裁定：只读白板就行，足�
 {
   ok(P.indexOf('v5 白板优先') >= 0, 'K-1 版本号 v5 白板优先')
   ok(P.indexOf('阶段 8') >= 0, 'K-2 含阶段 8 白板优先')
-  ok(P.indexOf('v5（2026-10-27）') >= 0, 'K-3 含 v5 修订说明')
+  ok(P.indexOf('白板优先') >= 0, 'K-3 白板优先存在（不再要求修订史）')
   // ★核心澄清：白板 vs 账本
   ok(P.indexOf('记忆主承载面') >= 0, 'K-4 ★区分「白板=记忆主承载面」')
   ok(P.indexOf('一次性接续材料') >= 0, 'K-5 ★区分「账本=一次性接续材料」')
@@ -198,6 +144,22 @@ console.log('== K. ★v5 白板优先（用户裁定：只读白板就行，足�
   ok(P.indexOf('一行都不能少') >= 0, 'K-15 ★要求逐个工作区列出，不许省略')
   // 质量底线
   ok(P.indexOf('有白板的工作区数') >= 0, 'K-16 含守恒自检（工作区数对账）')
+}
+
+console.log('')
+console.log('== L. ★修订史不得注入（用户实报：会导致跑偏）==')
+{
+  ok(P.indexOf('v3（2026-10-26）修订') < 0, 'L-1 ★★负路径：不得含 v3 修订史')
+  ok(P.indexOf('v4（2026-10-27）修订') < 0, 'L-2 ★★负路径：不得含 v4 修订史')
+  ok(P.indexOf('v4.1（2026-10-27）') < 0, 'L-3 ★★负路径：不得含 v4.1 修订史')
+  ok(P.indexOf('v5（2026-10-27）') < 0, 'L-4 ★★负路径：不得含 v5 修订史')
+  ok(P.indexOf('v2 有三处**幻影 API**') < 0, 'L-5 ★负路径：不得含 v2 幻影 API 说明')
+  ok(P.indexOf('本文是**唯一权威**') >= 0, 'L-6 开头有一句极简定位声明')
+  // 开头 200 字符内必须是标题 + 定位声明，不能是修订史
+  const head = P.slice(0, 300)
+  ok(head.indexOf('>') < 0 || head.indexOf('修订') < 0, 'L-7 ★开头 300 字符内不含「修订」字样')
+  // 体量回收
+  ok(P.length < 15000, 'L-8 ★删修订史后体量回落到 15000 以内', P.length + ' 字符')
 }
 console.log('')
 console.log('SUMMARY  PASS ' + pass + ' / FAIL ' + fail)
