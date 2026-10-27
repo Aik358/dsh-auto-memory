@@ -193,8 +193,21 @@ console.log('== E. 审计 §2.1：HTML 注释锚点不得进入渲染/注入文�
     '★★★E-9 [生成区] client.js 内联副本也含 cleanSectionTextPre', 'count=' + cnt)
 
   // E-10 元断言：adapter 里 rationale 必须经过 cleanSectionTextPre（防止改回去）
-  ok(/rationale: cleanSectionTextPre\(sec\.deadend\)/.test(ADAPTER_SRC),
-    '★★★E-10 [元断言] rationale 必须过 cleanSectionTextPre（防回退）')
+  // ★2026-10-27 v6：rationale 现在优先用产品的 ev.rationale（归组理由），
+  //   旧判据锁死了 'rationale: cleanSectionTextPre(sec.deadend)' 字面量 ⇒ 判据过期。
+  //   语义意图不变：**rationale 的每个来源都必须过 cleanSectionTextPre**（防 HTML 注释回退）。
+  const _ratLine = (ADAPTER_SRC.match(/rationale:[^\n]*/) || [''])[0]
+  const _ratClean = (_ratLine.split('cleanSectionTextPre').length - 1)
+  let _ratBare = _ratLine
+  for (;;) {
+    const _a = _ratBare.indexOf('cleanSectionTextPre(')
+    if (_a < 0) break
+    const _b = _ratBare.indexOf(')', _a)
+    if (_b < 0) break
+    _ratBare = _ratBare.slice(0, _a) + _ratBare.slice(_b + 1)
+  }
+  ok(_ratClean >= 1 && _ratBare.indexOf('sec.deadend') < 0 && _ratBare.indexOf('ev.rationale') < 0 && _ratBare.indexOf('ev.pausedReason') < 0,
+    '★★★E-10 [元断言] rationale 的每个来源都必须过 cleanSectionTextPre（防回退）', _ratLine.slice(0, 80))
 
   // ═══════════════════════════════════════════════════════════════════
   // ★★★E-11~E-14（2026-10-26 真机白屏事故后的核心判据）

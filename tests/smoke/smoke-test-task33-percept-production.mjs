@@ -135,11 +135,11 @@ try {
   ok(portrait.text.includes(UNIQ), '★★T33-5e 该条文本真出现在画像段');
 
   console.log('');
-  console.log('[T33-6] ★★★ 硬禁区：16 字段锁');
+  console.log('[T33-6] ★★★ 硬禁区：26 字段锁（2026-10-27 v2 对齐 prototype）');
   const fresh = await STORE.eventStorePre.create(path.join(root, 'fresh.json'), { name: 'n', summary: 's' });
-  ok(Object.keys(fresh).length === 16, '★★★T33-6a 新建事件顶层键 = 16', String(Object.keys(fresh).length));
-  ok(STORE.EVENT_TOP_FIELDS.length === 16, '★★★T33-6b EVENT_TOP_FIELDS = 16');
-  ok(STORE.EVENT_STORE_SCHEMA === 'v4_event_store_v1', '★★T33-6c schema 未变');
+  ok(Object.keys(fresh).length === 26, '★★★T33-6a 新建事件顶层键 = 26', String(Object.keys(fresh).length));
+  ok(STORE.EVENT_TOP_FIELDS.length === 26, '★★★T33-6b EVENT_TOP_FIELDS = 26');
+  ok(STORE.EVENT_STORE_SCHEMA === 'v4_event_store_v2', '★★T33-6c schema 升至 v2（2026-10-27 事件模型对齐 prototype）');
 
   console.log('');
   console.log('[T33-7] ★★★ counts 契约：旧三键值不变（H5 依赖）');

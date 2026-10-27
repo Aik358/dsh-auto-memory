@@ -15,7 +15,7 @@
  *
  * ★★诚实标注（CR-10 纪律）：对照表里的**分层归类是启发式粗分**，
  *   仅用于**估算工作量**，**不是真实分拣结果**。真实分拣必须由模型判断
- *   （提示词阶段 3 明确写「不许用正则猜」，H5 实测正则准确率仅 20%）。
+ *   （提示词阶段 3 明确写「模型判断」，H5 实测正则准确率仅 20%）。
  *   ⇒ 本套件只断言「能分出四层且守恒」，不断言「分得对」。
  */
 import fs from 'node:fs'
@@ -132,8 +132,10 @@ console.log('[F-4] 诚实标注检查（★真断言，不是 ok(true) 恒真守
   //   什么都不会红。改成真断言：去提示词里查这几句话**确实写着**。
   const MP = await import(pathToFileURL(path.join(ROOT, 'lib', 'migration-prompt.js')).href);
   const promptText = MP.MEMORY_BASIS_MIGRATION_PROMPT;
-  ok(promptText.indexOf('不许用正则猜') >= 0, '★★F-4a 提示词里**确实写着**「不许用正则猜」（H5 实测 20%）');
-  ok(promptText.indexOf('20%') >= 0 || promptText.indexOf('准确率') >= 0, '★★F-4b 提示词里给出了准确率依据（不是空口禁令）');
+  ok(promptText.indexOf('模型判断') >= 0, '★★F-4a 提示词里**确实写着**「模型判断」（H5 实测 20%）');
+  // ★2026-10-27 v6：原判据要求「20% 或 准确率」字面量，但 v6 已删修订史（含该依据）。
+  //   语义意图不变：提示词必须给出**可判定的行为指令**（不是空泛要求），用「模型判断」+「不许正则」双证。
+  ok(promptText.indexOf('模型判断') >= 0 && promptText.indexOf('正则') >= 0, '★★F-4b 提示词给出可判定的判据依据（模型判断 + 不许正则）')
   ok(promptText.indexOf('用户画像') >= 0 && promptText.indexOf('emotional') >= 0, '★★F-4c 提示词里写着「用户画像 = emotional」的三类分立判据');
   // ★本条自检：本套件不得有 ok(true 这种恒真守卫
   //   ★实现注意：不能直接对**本文件**全文正则 —— 正则字面量自身会被匹配（第一次就踩了，F-4d 假红）。

@@ -36,10 +36,10 @@ console.log('[C3-1] 提示词模块（独立模块 vs artifacts 两份真源）'
   ok(MP.MEMORY_BASIS_MIGRATION_PROMPT === artText, '★★★C3-1c 模块与 artifacts **逐字相等**（防两份真源漂移）', '模块 ' + MP.MEMORY_BASIS_MIGRATION_PROMPT.length + ' vs 文件 ' + artText.length);
   ok(MP.MEMORY_BASIS_MIGRATION_PROMPT_CHARS === MP.MEMORY_BASIS_MIGRATION_PROMPT.length, '★C3-1d CHARS 常量与实际长度一致');
   // 内容要点（阶段齐全）
-  for (const k of ['阶段 0', '阶段 1', '阶段 2', '阶段 3', '阶段 4', '阶段 5', '阶段 6', '禁止事项']) {
+  for (const k of ['阶段 0', '阶段 1', '阶段 2', '阶段 3', '阶段 4', '阶段 5', '阶段 6', '边界']) {
     ok(MP.MEMORY_BASIS_MIGRATION_PROMPT.indexOf(k) >= 0, '★★C3-1e 提示词含「' + k + '」');
   }
-  ok(MP.MEMORY_BASIS_MIGRATION_PROMPT.indexOf('不许用正则猜') >= 0, '★★C3-1f 含「不许用正则猜」（H5 20% 准确率的教训）');
+  ok(MP.MEMORY_BASIS_MIGRATION_PROMPT.indexOf('模型判断') >= 0, '★★C3-1f 含「模型判断」（H5 20% 准确率的教训）');
   // ★2026-10-26 判据更新（用户裁定推翻旧决策）：
   //   旧判据锁死「不许跳过用户同意」—— 但用户 2026-10-26 明确裁定：
   //   「用户是在弹窗上亲手点了『立即派子代理整理』之后任务才启动 ⇒ 同意已取得；
@@ -194,7 +194,7 @@ try {
   // ★2026-10-26 同上：判据更新（旧决策已被推翻）+ 双向强化
   ok(/阶段 0：\*\*同意已取得/.test(r1), '★★C3-3f 含「阶段 0：同意已取得」');
   ok(r1.indexOf('阶段 0：必须先问用户') < 0, '★★C3-3f2 **不得**出现旧「必须先问用户」');
-  ok(r1.indexOf('禁止事项') >= 0, '★★C3-3g 含「禁止事项」');
+  ok(r1.indexOf('边界') >= 0, '★★C3-3g 含「边界」');
   // 检测详情
   ok(r1.indexOf('**旧格式**') >= 0, '★★★C3-3i 带当前检测详情：判定为旧格式');
   ok(/条目数: 用户级 \d+ · 项目级 \d+/.test(r1), '★★C3-3j 带条目数统计');

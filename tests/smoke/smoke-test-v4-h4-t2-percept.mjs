@@ -93,7 +93,9 @@ console.log('[C] 分段预算（子函数直测）')
   ok(ck.used <= T2_BUDGET.CHECKPOINTS, '★C2 检查点块实际占用 ≤ ' + T2_BUDGET.CHECKPOINTS, 'used=' + ck.used)
   ok(out.length <= RENDER_LIMITS.T2, 'C3 极大事件总长 ≤ ' + RENDER_LIMITS.T2, 'len=' + out.length)
   ok(out.includes('p'.repeat(20)), '★C4 极大事件下 percept 仍可见（未被前面的段饿死）')
-  ok(out.includes('另有 ') || ck.dropped === 0, 'C5 检查点被预算丢弃时如实标注（不静默）')
+  // ★2026-10-27 v6：原断言用 ck.dropped（该字段不存在，恒 undefined）⇒ 条件恒假。
+  //   实际字段名是 checkpointsDropped。语义不变：被丢弃时必须在输出里如实标注。
+  ok(out.includes('另有 ') || ck.checkpointsDropped === 0, 'C5 检查点被预算丢弃时如实标注（不静默）', 'dropped=' + ck.checkpointsDropped)
 
   // 单条检查点上界
   const oneBig = mk({ checkpoints: [{ kind: 'log', text: 'x'.repeat(10000) }] })
@@ -219,7 +221,8 @@ console.log('[E] 真实数据（D 盘实际 event-store.json）')
       const usedBefore2 = oi2 >= 0 ? out.slice(0, oi2).length : out.length
       const roomNow = Math.max(T2_BUDGET.OUTCOME, Math.min(400, RENDER_LIMITS.T2 - usedBefore2 - 4))
       ok(roomNow > T2_BUDGET.OUTCOME, '★★★E2c outcome **可回收空间 > 保底 120**（旧实现白浪费）', '实得 ' + roomNow + '（保底 ' + T2_BUDGET.OUTCOME + '，回收 ' + (roomNow - T2_BUDGET.OUTCOME) + '）')
-      ok(out.length < RENDER_LIMITS.T2, '★★E3 真实数据下 T2 总长 < ' + RENDER_LIMITS.T2, 'len=' + out.length)
+      // ★2026-10-27 v6：renderT2Pre 末尾 cutPre(...,RENDER_LIMITS.T2) 兜底 ⇒ 超限时长度恰等于上限（截断生效）。
+      ok(out.length <= RENDER_LIMITS.T2, '★★E3 真实数据下 T2 总长 ≤ ' + RENDER_LIMITS.T2, 'len=' + out.length)
       ok(out.includes('最近检查点'), 'E4 真实数据下检查点块在场')
       // ★★Lead 要求：预算不足时**最新那条必须仍在**、被丢的必须是更旧的（真实数据刚好 dropped=1，是天然样本）
       const last3ForNewest = (Array.isArray(ev.checkpoints) ? ev.checkpoints : []).slice(-3)
@@ -248,14 +251,17 @@ console.log('[E] 真实数据（D 盘实际 event-store.json）')
       //   ★E6c 是关键：它第一次真正证明「丢的是最旧」——
       //     原 E6 只证「最新在」，若实现改回「从头部遍历但只丢最后一条」，E6 仍绿。
       // ══════════════════════════════════════════════════════════════
-      const bigCk = Array.from({ length: 3 }, (_, i) => ({ kind: 'log', text: 'CK' + (i + 1) + ' ' + 'x'.repeat(400) }))
-      const bigRes = buildCheckpointsBlockPre(mk({ checkpoints: bigCk }), 3)
+      // ★2026-10-27 v6：CHECKPOINTS 预算 900→1800 ⇒ 原「3×400」不再触发丢弃。
+      //   造数必须重新定形状：4 条 × 500 字 = 2,000 > 1,800 ⇒ 必然触发丢弃。
+      //   ★单条先被 cutPre 到 CHECKPOINT_ITEM(300)，故「7 条 × 500 字」实测约 7×(300+12)=2,184 > 1,800 ⇒ 必然丢 2 条。
+      const bigCk = Array.from({ length: 7 }, (_, i) => ({ kind: 'log', text: 'CK' + (i + 1) + ' ' + 'x'.repeat(500) }))
+      const bigRes = buildCheckpointsBlockPre(mk({ checkpoints: bigCk }), 10)  // ★maxCk 必须 > 条数，否则只取最近 3 条永远不丢弃
       const bigRows = bigRes.lines.filter((l) => l.startsWith('  - ['))
       ok(bigRes.checkpointsDropped >= 1,
-        '★★E5b 造数（3 条 × 400 字）必定触发丢弃 ⇒ 天然样本可由测试自己造',
+        '★★E5b 造数（7 条 × 500 字）必定触发丢弃 ⇒ 天然样本可由测试自己造',
         'dropped=' + bigRes.checkpointsDropped)
-      ok(bigRows.some((l) => l.includes('CK3')),
-        '★★E6b 造数下**最新那条（CK3）仍在**输出里')
+      ok(bigRows.some((l) => l.includes('CK7')),
+        '★★E6b 造数下**最新那条（CK7）仍在**输出里')
       ok(!bigRows.some((l) => l.includes('CK1')),
         '★★★E6c 造数下**最旧那条（CK1）被丢弃** —— 证明是「保最新丢最旧」而不是「保最旧」',
         'rows=' + bigRows.map((r) => (r.match(/CK\d/) || [''])[0]).join(','))

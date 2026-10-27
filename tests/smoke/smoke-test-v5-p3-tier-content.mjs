@@ -5,7 +5,7 @@
  *
  * 覆盖两件事：
  *   A 档位判定 decideInjectTierPre（七档，优先级）
- *   B 白板投递规格 planSpecForTierPre（全文 / 核心3节 / 不投）
+ *   B 白板投递规格 planSpecForTierPre（全文 / 核心3+4节 / 不投）
  *   C 档位谓词（isHumanTierPre / isPlanFullTierPre / shouldInjectPlanPre / isRulesFullTierPre）
  *   D 端到端：真跑 truncatePlanBySections + 真实白板，验证 F1 全文 vs 瘦档 3 节
  *   E semantic-recall：配置键 / 引导语字面量 / 投递范围 / 零字节纪律
@@ -74,13 +74,13 @@ ok(sp.inject === true && sp.sections === null, "B-1 F1 用户发声完整 -> 投
 sp = P(I.HANDOFF_CARRY, cfg)
 ok(sp.inject === true && sp.sections === null, "B-2 F6 交接 -> 投全文")
 sp = P(I.HUMAN_SLIM, cfg)
-ok(sp.inject === true && Array.isArray(sp.sections) && sp.sections.length === 3, "B-3 F2 人声精简 -> 核心3节")
+ok(sp.inject === true && Array.isArray(sp.sections) && sp.sections.length === 7, "B-3 F2 人声精简 -> 核心3+4节")
 sp = P(I.RUN_FULL, cfg)
-ok(sp.inject === true && Array.isArray(sp.sections) && sp.sections.length === 3, "B-4 F3 运行完整 -> 核心3节")
+ok(sp.inject === true && Array.isArray(sp.sections) && sp.sections.length === 7, "B-4 F3 运行完整 -> 核心3+4节")
 sp = P(I.POST_COMPACT, cfg)
-ok(sp.inject === true && Array.isArray(sp.sections), "B-5 F5 压缩后 -> 核心3节")
+ok(sp.inject === true && Array.isArray(sp.sections), "B-5 F5 压缩后 -> 核心3+4节")
 sp = P(I.HANG_COMPENSATE, cfg)
-ok(sp.inject === true && Array.isArray(sp.sections), "B-6 F7 挂机 -> 核心3节")
+ok(sp.inject === true && Array.isArray(sp.sections), "B-6 F7 挂机 -> 核心3+4节")
 sp = P(I.RUN_SLIM, cfg)
 ok(sp.inject === false, "B-7 F4 运行精简 -> **不投白板**")
 sp = P(I.RUN_FULL, {})
@@ -98,7 +98,7 @@ ok(T.isPlanFullTierPre(I.RUN_FULL) === false, "C-5 运行完整版**不给**全�
 ok(T.shouldInjectPlanPre(I.RUN_SLIM) === false, "C-6 只有 F4 不投白板")
 ok(T.isRulesFullTierPre(I.RUN_SLIM) === false, "C-7 只有 F4 规则不全给")
 ok(T.isRulesFullTierPre(I.RUN_FULL) === true, "C-8 运行完整版给规则全文")
-ok(Array.isArray(T.PLAN_CORE_SECTIONS) && T.PLAN_CORE_SECTIONS.length === 3, "C-9 核心 3 节")
+ok(Array.isArray(T.PLAN_CORE_SECTIONS) && T.PLAN_CORE_SECTIONS.length === 7, "C-9 核心 7 节（3 旧 + 4 新）")
 
 console.log("")
 console.log("== D. 端到端：真跑 truncatePlanBySections + 真实白板 ==")

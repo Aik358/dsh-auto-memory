@@ -60,7 +60,12 @@ const ADAPTER_FNS = ['escapeScriptJsonPre', 'adaptCheckpointPre', 'adaptEventPre
 //   ⇒ 这正是本项目「绿但假的」第 7 类「未真渲染」。修法：加进白名单 + 补一条生成区真执行断言。
 const ADAPTER_CLEAN_FNS = ['stripHtmlCommentsPre', 'stripMetaPrefixPre', 'cleanSectionTextPre', 'titlePre']
 const ADAPTER_CONSTS = ['PANEL_KIND_MAP', 'PANEL_SOURCE_MAP', 'PERCEPT_FIELDS']
-const ADAPTER_INTERNALS = ['p2', 'fmtAtPre', 'sPre', 'arrPre', 'sigVal', 'normStatusPre', 'normConfPre']
+// ★v6（2026-10-27）：quadLinesPre 必须加入白名单。
+//   真机事故：adaptCheckpointPre 调 quadLinesPre，但生成器白名单没有它
+//   ⇒ client.js 生成区里 ReferenceError: quadLinesPre is not defined
+//   ⇒ EventView 整棵树崩（与 2026-10-26 的 titlePre 事故同族，第 5 次复现）。
+//   ★判据修正：凡 adaptEventPre/adaptCheckpointPre 引用的辅助函数，必须进本白名单。
+const ADAPTER_INTERNALS = ['p2', 'fmtAtPre', 'sPre', 'arrPre', 'sigVal', 'normStatusPre', 'normConfPre', 'quadLinesPre']
 
 // ★原型模块里「不 export 但需要内联」的内部函数（Lead 裁决 A 方案：从**原型源码文本**抽取）
 //   patchShellStatsPre 是纯函数、纯文本可抽 ⇒ 单一真源在原型文件里，adapter 不再重写。

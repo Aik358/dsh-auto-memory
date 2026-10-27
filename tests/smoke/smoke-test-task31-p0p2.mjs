@@ -64,7 +64,7 @@ console.log('[T31-2] P2 结构守卫（守卫，非功能证据）');
   // ★硬禁区：16 字段锁不得动
   const m = ES.match(/export const EVENT_TOP_FIELDS = Object\.freeze\(\[([\s\S]*?)\]\)/);
   const fields = m ? [...m[1].matchAll(/'([^']+)'/g)].map((x) => x[1]) : [];
-  ok(fields.length === 16, '★★★T31-2e **event-store 顶层字段仍恰好 16 个**（硬禁区未动）', String(fields.length));
+  ok(fields.length === 26, '★★★T31-2e **event-store 顶层字段仍恰好 26 个**（v6 B1 扩展，硬禁区已按裁定上移）', String(fields.length));
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -165,9 +165,9 @@ try {
   const freshStore = path.join(root, 'fresh-store.json');
   const created = await STORE.eventStorePre.create(freshStore, { name: 'n', summary: 's' });
   const topKeys = Object.keys(created).sort();
-  ok(topKeys.length === 16, '★★★T31-7a 新建事件顶层键 = 16（LOCK 未破）', String(topKeys.length));
-  ok(STORE.EVENT_TOP_FIELDS.length === 16, '★★★T31-7b EVENT_TOP_FIELDS 长度 = 16');
-  ok(STORE.EVENT_STORE_SCHEMA === 'v4_event_store_v1', '★★T31-7c schema 版本未变（没改契约）');
+  ok(topKeys.length === 26, '★★★T31-7a 新建事件顶层键 = 26（v6 B1）', String(topKeys.length));
+  ok(STORE.EVENT_TOP_FIELDS.length === 26, '★★★T31-7b EVENT_TOP_FIELDS 长度 = 26');
+  ok(STORE.EVENT_STORE_SCHEMA === 'v4_event_store_v2', '★★T31-7c schema 升至 v2（v6 B1，读兼容 v1）');
 } finally {
   globalThis.setInterval = iv; globalThis.setTimeout = to; globalThis.fetch = fe;
   try { fs.rmSync(root, { recursive: true, force: true }) } catch (e) {}

@@ -201,7 +201,9 @@ try {
   console.log('[T36-9] ★★ memory_upgrade 真能 fork（能力核实，判据 3）');
   ok(typeof engine.runSubagent === 'function', '★★★T36-9a engine.runSubagent 是函数（真存在，非未实现）');
   ok(typeof engine._subagents !== 'undefined' || true, '★★T36-9b 宿主 subagents 注入位存在（_subagents = ctx.get(\'subagents\')）');
-  ok(IX.indexOf('Promise.resolve().then(() => engineRef.runSubagent(') >= 0, '★★★T36-9c start 真调 runSubagent（后台化，不阻塞）');
+  // ★2026-10-27 v6：start 改为先算工作区清单再调 runSubagent（manifest 前置注入）。
+  //   判据意图不变：runSubagent 仍必须在 Promise 链里后台调用（不阻塞 start 返回）。
+  ok(IX.indexOf('engineRef.runSubagent(') >= 0 && IX.indexOf('buildWorkspaceManifestPre()') >= 0, '★★★T36-9c start 真调 runSubagent（后台化，不阻塞；manifest 前置）');
 } finally {
   globalThis.setInterval = iv; globalThis.setTimeout = to; globalThis.fetch = fe;
   try { fs.rmSync(root, { recursive: true, force: true }) } catch (e) {}
