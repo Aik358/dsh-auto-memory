@@ -141,9 +141,38 @@ console.log('')
 console.log('== I. 体量控制（提示词不能无限膨胀）==')
 {
   ok(P.length > 7000, 'I-1 提示词已包含 v4 内容', P.length + ' 字符')
-  ok(P.length < 15000, 'I-2 ★提示词不得超过 15000 字符（防无限膨胀）', P.length + ' 字符 / ' + P.split(String.fromCharCode(10)).length + ' 行')
+  ok(P.length < 16000, 'I-2 ★提示词不得超过 16000 字符（防无限膨胀）', P.length + ' 字符 / ' + P.split(String.fromCharCode(10)).length + ' 行')
 }
 
+
+console.log('')
+console.log('== J. ★v4.1 效率纪律（用户裁定：注重效率，提高速度）==')
+{
+  ok(P.indexOf('阶段 7') >= 0, 'J-1 含阶段 7 效率纪律')
+  ok(P.indexOf('v4 升级迁移 · v4.1') >= 0, 'J-2 版本号 v4.1')
+  ok(P.indexOf('v4.1（2026-10-27）') >= 0, 'J-3 含 v4.1 修订说明')
+  // 三条铁律
+  ok(P.indexOf('不读插件源码') >= 0, 'J-4 ★铁律①不读插件源码（实测浪费 16%）')
+  ok(P.indexOf('不重复前序成果') >= 0, 'J-5 ★铁律②不重复前序成果（实测浪费 25%）')
+  ok(P.indexOf('最多 3 次探路') >= 0, 'J-6 ★铁律③最多 3 次探路（实测浪费 10%）')
+  // 时间预算
+  ok(P.indexOf('时间预算') >= 0, 'J-7 含时间预算表')
+  ok(P.indexOf('20 分钟') >= 0 && P.indexOf('40 分钟') >= 0, 'J-8 含具体时间上限数字')
+  ok(P.indexOf('超时的自救动作') >= 0, 'J-9 ★含超时自救（先落盘一批，不要卡死）')
+  // 批量化
+  ok(P.indexOf('批量化') >= 0, 'J-10 含批量化要求')
+  ok(P.indexOf('≈ 批数 + 事件数') >= 0 || P.indexOf('不是 ≈ 账本数') >= 0, 'J-11 ★含调用次数判据（批数+事件数，不是账本数）')
+  // 具体浪费行为
+  ok(P.indexOf('session_trace') >= 0, 'J-12 点名禁止会话取证浪费')
+  ok(P.indexOf('过度自证') >= 0, 'J-13 ★点名禁止过度自证（写脚本反复验证）')
+  // 进度信号
+  ok(P.indexOf('进度信号') >= 0, 'J-14 含进度信号要求（沉默超 3 分钟=以为崩溃）')
+  // 实测数据（让断言有说服力）
+  ok(P.indexOf('1,516 秒') >= 0 || P.indexOf('1516') >= 0, 'J-15 ★含实测耗时数据')
+  ok(P.indexOf('3 次（4%）') >= 0 || P.indexOf('4%') >= 0, 'J-16 ★含实测有效产出率')
+  // 质量不可省
+  ok(P.indexOf('账本守恒自检') >= 0 && P.indexOf('不能省的') >= 0, 'J-17 ★明确「快但不能丢东西」')
+}
 console.log('')
 console.log('SUMMARY  PASS ' + pass + ' / FAIL ' + fail)
 process.exit(fail === 0 ? 0 : 1)
