@@ -27,8 +27,9 @@ const storePath = path.join(root, 'handoff', EVENT_STORE_FILENAME)
 async function main() {
   console.log('[A-1] create：返回严格 16 字段 + 落盘 + 原子写（无 .tmp 残留）')
   const ev = await eventStorePre.create(storePath, { name: '演示事件', summary: '一段总览' })
-  eq(Object.keys(ev).length, 16, '返回事件恰好 16 个顶层字段')
-  eq(EVENT_TOP_FIELDS.length, 16, '契约常量也声明 16 个')
+  // ★2026-10-27 v2：字段数 16 → 26（对齐 prototype：+startMs/endMs/members/rationale/kind/confidence/outcomes/ordinal/skills/idemTag）
+  eq(Object.keys(ev).length, 26, '返回事件恰好 26 个顶层字段')
+  eq(EVENT_TOP_FIELDS.length, 26, '契约常量也声明 26 个')
   ok(/^evt_[0-9a-f]{8}$/.test(ev.id), 'id 形如 evt_<8hex>（不带 pre）id=' + ev.id)
   eq(ev.status, 'active', 'create 默认 active')
   const store1 = JSON.parse(readFileSync(storePath, 'utf8'))
