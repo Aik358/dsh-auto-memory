@@ -18,6 +18,9 @@ const previous=process.env.DSH_HOME;process.env.DSH_HOME=home
 try{
  const {MemoryEngine,DEFAULT_CONFIG,sanitizeForWrite,tailHas,writeGateRefusalTextPre}=await loadPrivateEngine()
  const engine=new MemoryEngine();engine.refresh=async()=>{}
+ // apply() installs this runtime hook; this fixture constructs only MemoryEngine.
+ const invalidations=[]
+ engine.invalidatePythonRuntime=reason=>invalidations.push(reason)
  await fs.writeFile(engine._configPath,JSON.stringify({...DEFAULT_CONFIG,memoryRoot:path.join(home,'memory','workspaces'),userMemoryDir:path.join(home,'memory')}))
  const source=await fs.readFile(new URL('../../lib/index.js',import.meta.url),'utf8')
  const envLogs=[]
@@ -50,6 +53,7 @@ try{
   syncBuiltinESMExports()
   failure=await call(failed,{mode:'active'})
  } finally { fsSync.renameSync=originalRename;syncBuiltinESMExports() }
+ assert.deepEqual(invalidations,[])
  assert.equal(failure.status,500);assert.match(failure.body.error,/atomic writer failure/)
  assert.equal(JSON.parse(await fs.readFile(semanticPath,'utf8')).activationEmitMode,'shadow')
  // 2026-10-13：失败必须留痕 —— 用户现场是「界面报保存失败、盘上零日志」，支持端无从归因。
@@ -66,6 +70,7 @@ try{
  assert.equal(await fs.readFile(semanticPath,'utf8'),'broken semantic config')
  assert(envLogs.some(m=>m.includes('semantic-emit: cfg CORRUPT kept-as-is')), 'corrupt config must leave a CORRUPT trace')
  assert(!envLogs.some(m=>m.includes('MISSING(ENOENT)')), 'corrupt must NOT be reported as missing')
+ assert.deepEqual(invalidations,['activation-mode-saved'])
  console.log('PASS actual /semantic-emit handler: atomic failure never acknowledges success; gates align after commit; invalid existing JSON preserved')
  // Scoped notes use the selected session and strict disk reads, not another session's cache.
  const notesPath=path.join(home,'project-notes.md'),otherPath=path.join(home,'other-notes.md')

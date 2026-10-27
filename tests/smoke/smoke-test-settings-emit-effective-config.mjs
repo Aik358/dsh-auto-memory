@@ -57,6 +57,58 @@ for (const mode of ['python', 'js']) await test('first emit save initializes the
   })
 })
 
+await test('emit save reloads the worker mode without a runtime cache', async () => {
+  await fixture(false, 'python', async ({ engine, request }, file, home) => {
+    await fs.mkdir(path.dirname(file), { recursive: true })
+    await fs.writeFile(file, JSON.stringify({ provider: 'hash-pre-v1', activationEmitMode: 'shadow' }))
+    const worker = path.join(home, 'waiting-worker.mjs')
+    await fs.writeFile(worker, `
+import fs from 'node:fs'
+import { createInterface } from 'node:readline'
+const mode = JSON.parse(fs.readFileSync(${JSON.stringify(file)}, 'utf8')).activationEmitMode
+createInterface({ input: process.stdin }).on('line', line => {
+  const req = JSON.parse(line)
+  if (req.type !== 'health') return
+  process.stdout.write(JSON.stringify({
+    protocolVersion: 'm7_wire_pre_v1', frameId: 'f-' + req.requestId,
+    requestId: req.requestId, workerEpoch: req.workerEpoch,
+    type: 'health_result', payload: { mode }, sentAt: Date.now(),
+  }) + '\\n')
+})
+`)
+
+    engine.config.pythonBackendWorkerPath = worker
+    engine.resolvePythonCommandForSpawn = async () => ({ command: process.execPath })
+    const client = engine._pythonSidecar
+    const initial = await client.request('health', {}, { timeoutMs: 5000 })
+    assert.equal(initial.ok, true)
+    assert.equal(initial.frame.payload.mode, 'shadow')
+    const initialEpoch = client.currentEpoch()
+    await fs.writeFile(file, '{broken')
+    assert.equal((await request('semantic-emit', { mode: 'active' })).status, 500)
+    assert.equal(client.currentEpoch(), initialEpoch, 'a failed save must preserve the worker')
+    await fs.writeFile(file, JSON.stringify({ provider: 'hash-pre-v1', activationEmitMode: 'shadow' }))
+    for (const mode of ['active', 'shadow', 'canary-explicit', 'active', 'canary-explicit', 'shadow']) {
+      const pending = client.request('context_push', {}, { timeoutMs: 10000 })
+      const epoch = client.currentEpoch()
+      const generation = engine._pyRtGeneration
+      assert.equal((await request('semantic-emit', { mode: 'shadow', createOnly: true })).status, 200)
+      assert.equal(client.currentEpoch(), epoch, 'createOnly must leave the running worker alone when no file is written')
+      assert.equal((await request('semantic-emit', { mode })).status, 200)
+      assert.equal(client.isStarted(), false, 'saving a mode must stop the worker that loaded the old mode')
+      assert.equal(client.currentEpoch(), null)
+      assert.equal((await pending).code, 'restarted')
+      assert.equal(engine._pyRtGeneration, generation + 1)
+      assert.equal(engine._pyRtCache, null)
+      assert.equal(readEffectiveEmbeddingConfigPre(home).config.activationEmitMode, mode)
+      const health = await client.request('health', {}, { timeoutMs: 5000 })
+      assert.equal(health.ok, true)
+      assert.equal(health.frame.payload.mode, mode, 'the replacement worker must load the saved mode')
+      assert.notEqual(client.currentEpoch(), epoch)
+    }
+  })
+})
+
 await test('download completion uses the same effective path and selected Python identity', async () => {
   await fixture(true, 'python', async (_, file, home) => {
     const source = (await fs.readFile(new URL('../../lib/index.js', import.meta.url), 'utf8')).replace(/\r\n/g, '\n')
