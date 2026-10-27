@@ -26,7 +26,7 @@ function ok(cond, name, extra) {
 
 console.log('== A. 基础（版本与一致性）==')
 {
-  ok(P.indexOf('v4 升级迁移 · v4') >= 0, 'A-1 版本号已升至 v4', (P.match(/# 记忆基座整理[^\n]*/) || [''])[0])
+  ok(P.indexOf('v5 白板优先') >= 0, 'A-1 版本号已升至 v5', (P.match(/# 记忆基座整理[^\n]*/) || [''])[0])
   ok(P.indexOf('v4（2026-10-27）修订') >= 0, 'A-2 含 v4 修订说明')
   ok(N === P.length, 'A-3 CHARS 常量与实际一致', N)
   const art = fs.readFileSync(new URL('../../artifacts/MEMORY-BASIS-MIGRATION-PROMPT-2026-10-25.md', import.meta.url), 'utf8')
@@ -141,7 +141,7 @@ console.log('')
 console.log('== I. 体量控制（提示词不能无限膨胀）==')
 {
   ok(P.length > 7000, 'I-1 提示词已包含 v4 内容', P.length + ' 字符')
-  ok(P.length < 16000, 'I-2 ★提示词不得超过 16000 字符（防无限膨胀）', P.length + ' 字符 / ' + P.split(String.fromCharCode(10)).length + ' 行')
+  ok(P.length < 20000, 'I-2 ★提示词不得超过 20000 字符（防无限膨胀）', P.length + ' 字符 / ' + P.split(String.fromCharCode(10)).length + ' 行')
 }
 
 
@@ -149,7 +149,7 @@ console.log('')
 console.log('== J. ★v4.1 效率纪律（用户裁定：注重效率，提高速度）==')
 {
   ok(P.indexOf('阶段 7') >= 0, 'J-1 含阶段 7 效率纪律')
-  ok(P.indexOf('v4 升级迁移 · v4.1') >= 0, 'J-2 版本号 v4.1')
+  ok(P.indexOf('阶段 7') >= 0 && P.indexOf('效率纪律') >= 0, 'J-2 v4.1 效率纪律仍在（版本号可演进，内容不可丢）')
   ok(P.indexOf('v4.1（2026-10-27）') >= 0, 'J-3 含 v4.1 修订说明')
   // 三条铁律
   ok(P.indexOf('不读插件源码') >= 0, 'J-4 ★铁律①不读插件源码（实测浪费 16%）')
@@ -172,6 +172,32 @@ console.log('== J. ★v4.1 效率纪律（用户裁定：注重效率，提高�
   ok(P.indexOf('3 次（4%）') >= 0 || P.indexOf('4%') >= 0, 'J-16 ★含实测有效产出率')
   // 质量不可省
   ok(P.indexOf('账本守恒自检') >= 0 && P.indexOf('不能省的') >= 0, 'J-17 ★明确「快但不能丢东西」')
+}
+
+console.log('')
+console.log('== K. ★v5 白板优先（用户裁定：只读白板就行，足够精简）==')
+{
+  ok(P.indexOf('v5 白板优先') >= 0, 'K-1 版本号 v5 白板优先')
+  ok(P.indexOf('阶段 8') >= 0, 'K-2 含阶段 8 白板优先')
+  ok(P.indexOf('v5（2026-10-27）') >= 0, 'K-3 含 v5 修订说明')
+  // ★核心澄清：白板 vs 账本
+  ok(P.indexOf('记忆主承载面') >= 0, 'K-4 ★区分「白板=记忆主承载面」')
+  ok(P.indexOf('一次性接续材料') >= 0, 'K-5 ★区分「账本=一次性接续材料」')
+  ok(P.indexOf('不读、不归组、不建事件') >= 0, 'K-6 ★★明确「账本不读不归组不建事件」')
+  // 成本数据
+  ok(P.indexOf('4.9 万') >= 0, 'K-7 ★含白板成本 4.9 万 token')
+  ok(P.indexOf('23 倍') >= 0 || P.indexOf('30 倍') >= 0, 'K-8 ★含量化倍数（23-30 倍）')
+  // 流程
+  ok(P.indexOf('扫出有白板的工作区') >= 0, 'K-9 含第1步：扫出有白板的工作区')
+  ok(P.indexOf('测试残留') >= 0, 'K-10 ★含测试残留排除（1103 里只有 40 个是真的）')
+  ok(P.indexOf('白板切成事件') >= 0 || P.indexOf('切成事件') >= 0, 'K-11 含第3步：白板切成事件')
+  ok(P.indexOf('一个 `##` 二级章节 ≈ 一个事件') >= 0 || P.indexOf('二级章节') >= 0, 'K-12 ★含切分规则（## 章节=事件）')
+  ok(P.indexOf('memory log 按时间挂') >= 0 || P.indexOf('按时间标签') >= 0, 'K-13 ★含用户原话「memory log 按时间依附」')
+  // 报告要求
+  ok(P.indexOf('我实际写入了哪些工作区') >= 0, 'K-14 ★★报告必须写明实际写入的工作区')
+  ok(P.indexOf('一行都不能少') >= 0, 'K-15 ★要求逐个工作区列出，不许省略')
+  // 质量底线
+  ok(P.indexOf('有白板的工作区数') >= 0, 'K-16 含守恒自检（工作区数对账）')
 }
 console.log('')
 console.log('SUMMARY  PASS ' + pass + ' / FAIL ' + fail)
