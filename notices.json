@@ -11,6 +11,17 @@
       "startAt": "2026-08-16T00:00:00+08:00",
       "endAt": "2026-09-15T23:59:59+08:00",
       "link": "https://github.com/Aik358/dsh-auto-memory"
+    },
+    {
+      "id": "2026-10-27-v4-event-memory-preview",
+      "level": "urgent",
+      "title": "提前预警：下周有一次记忆架构大改版",
+      "message": "这不是小更新。约 7 天后，记忆会从「按时间堆的流水账」改成以「事件」为单位——一件事一个容器，跨天能接着做，还能记住你们的共识和共同经历。\n\n升级后如果你已有旧记忆，会提示你派一个子代理整理一次（约 10 分钟）。整理不会删除任何东西，原始记忆会先备份。",
+      "titleEn": "Heads-up: a major memory architecture change is coming next week",
+      "messageEn": "This is not a minor update. In about a week, memory moves from a time-ordered stream to events — one container per piece of work, resumable across days, with your shared decisions and history remembered.\n\nIf you already have old memories, you will be offered a one-time cleanup by a subagent (about 10 minutes). Nothing is deleted — your originals are backed up first.",
+      "startAt": "2026-10-27T00:00:00+08:00",
+      "endAt": "2026-12-31T23:59:59+08:00",
+      "link": "https://github.com/Aik358/dsh-auto-memory"
     }
   ]
 }
