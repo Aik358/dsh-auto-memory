@@ -61,8 +61,10 @@ const longTxt = "甲".repeat(200)
 const slimLong = R({ rules: [{ text: longTxt }] }, { maxPerRule: 60 })
 ok(slimLong.text.indexOf("甲".repeat(61)) < 0, "A-10 超长规则被夹到 maxPerRule")
 // A-11 谓词一致性
-ok(T.isRulesFullTierPre(I.RUN_SLIM) === false, "A-11 F4 规则不全给")
-ok(T.isRulesFullTierPre(I.RUN_FULL) === true, "A-12 F3 规则给全文")
+// ★2026-10-28 判据更新（设计纲要 2026-10-27）：run_full 不投规则全文。
+ok(T.isRulesFullTierPre(I.RUN_SLIM) === false, "A-11 运行精简档规则不全给（负路径）")
+ok(T.isRulesFullTierPre(I.RUN_FULL) === false, "A-12 ★运行完整档规则也不全给（纲要 2026-10-27）")
+ok(T.isRulesFullTierPre(I.HUMAN_FULL) === true, "A-12b 人声全量档给规则全文（正路径）")
 ok(T.isRulesFullTierPre(I.LEGACY) === true, "A-13 LEGACY 给全文（= 改前行为）")
 // ★★A-14（2026-10-27 **判据升级**，原为静态锚点断言）：
 //   原判据：源码必须含 `if (_tier === _T.RUN_SLIM && ... typeof renderRulesSlimPre === "function")`。
@@ -107,8 +109,15 @@ const portraitLine = (idxSrc.split(/\r?\n/).find((l) => l.indexOf("if (s.userPor
 ok(portraitLine.length > 0, "B-1 画像守卫行存在（字面量形式）")
 const indentLen = (portraitLine.match(/^[ \t]*/) || [""])[0].length
 ok(indentLen === 4, "B-2 缩进恰 4 空格且在顶层（H5 E3）", "缩进=" + indentLen)
-ok(idxSrc.indexOf("const _portraitOk = !(") >= 0, "B-3 有档位判断变量（在守卫行前一行）")
-ok(idxSrc.indexOf("_tier === _T.LEGACY || _tier === _T.RUN_FULL || _tier === _T.RUN_SLIM") >= 0, "B-4 LEGACY/运行两档都跳过（= 改前行为不投画像）")
+// ★★2026-10-28 判据更新（P2-5 修复）：画像档位判据从**负向列举**改为**正向列举**。
+//   旧：!(LEGACY || RUN_FULL || RUN_SLIM)  ⇒ 漏了 HANG_COMPENSATE（实测多投 480 字符画像）
+//   新：(HUMAN_FULL || HUMAN_SLIM || POST_COMPACT || HANDOFF_CARRY)
+//       —— 与同函数 semantic-recall 段**同一张名单**（一次改全，杜绝再漏）。
+//   判据意图不变：运行档/legacy 不投画像；只是把「哪些档投」写成正向，避免新增档位再漏。
+ok(idxSrc.indexOf("const _portraitOk = (") >= 0, "B-3 有档位判断变量（正向名单）")
+ok(idxSrc.indexOf("_tier === _T.HUMAN_FULL || _tier === _T.HUMAN_SLIM") >= 0, "B-4 人声档/压缩后/交接档才投画像（正向列举）")
+ok(idxSrc.indexOf("|| _tier === _T.POST_COMPACT || _tier === _T.HANDOFF_CARRY)") >= 0, "B-4b 名单含 POST_COMPACT + HANDOFF_CARRY")
+ok(idxSrc.indexOf("const _portraitOk = !(") < 0, "B-4c ★负向列举已消失（防回退，P2-5）")
 // B-5：不该投时传空串（三元第二个分支为空串字面量）
 const pCtx = portraitLine
 // B-5：不该投时传空串（三元第二个分支为空串字面量）—— 直接从**真实代码行**取上下文，

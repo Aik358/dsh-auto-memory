@@ -148,6 +148,143 @@
 
 ---
 
+---
+
+## 3.1b 两张图看懂架构（2026-10-27）
+
+> 白皮书正文按「不变量 → 事故 → 边界」组织，适合**判断**，不适合**建立全貌**。
+> 这一节补两张图：**图 A 数据流**（东西从哪来、到哪去）、**图 B 注入面分层**（模型每轮看到什么）。
+
+### 图 A · 数据流全景（写入 → 存储 → 注入 → 展示）
+
+```mermaid
+flowchart LR
+    subgraph SRC["① 输入源"]
+        U["用户对话"]
+        L["每日日志<br/>.dsh-memory/YYYY-MM-DD.md"]
+        A["AI 工具外部记忆<br/>WorkBuddy/CodeBuddy/Codex…"]
+        S["DSH 历史会话"]
+    end
+
+    subgraph WRITE["② 写入层（18 个 memory_* 工具）"]
+        EV["memory_event<br/>事件 = 长期记忆单元<br/>append-only 检查点"]
+        NO["memory_note<br/>plan=白板 / handoff=账本 / note=笔记"]
+        US["memory_user / memory_rules<br/>跨项目规约（条目级增删改）"]
+        LG["memory_log<br/>日记类，不事件化"]
+        RF["memory_reflect / consolidate<br/>反思与蒸馏，不事件化"]
+    end
+
+    subgraph STORE["③ 存储层（明文文件，零运行时依赖）"]
+        ES[("event-store.json<br/>事件 + 检查点<br/>schema v2")]
+        PL[("handoff/PLAN.md<br/>白板 = 记忆主承载面")]
+        HB[("handoff/handoff-*.md<br/>账本 = 一次性接续")]
+        UM[("~/.dsh/memory/MEMORY.md<br/>用户规约")]
+    end
+
+    subgraph INJECT["④ 注入面（每轮渲染，见 图 B）"]
+        RD["renderMemoryDynamic<br/>4 档位 × 9 段"]
+    end
+
+    subgraph VIEW["⑤ 展示层"]
+        EV4["EV4 三栏视图<br/>时间轴 / 事件流 / 详情"]
+        BD["白板看板<br/>12 页签"]
+    end
+
+    U --> WRITE
+    A -->|memory_external 接入| WRITE
+    S -->|session_search| WRITE
+    L -->|append 检查点| EV
+    WRITE --> STORE
+    STORE --> RD
+    STORE --> EV4
+    STORE --> BD
+    RD -->|"system prompt"| U
+
+    classDef store fill:#e8f4f8,stroke:#4a90a4
+    classDef write fill:#f0f8e8,stroke:#7cb342
+    classDef view fill:#fff4e0,stroke:#e0a030
+    class ES,PL,HB,UM store
+    class EV,NO,US,LG,RF write
+    class EV4,BD view
+```
+
+**读图要点（三句话）**
+
+| # | 要点 | 为什么重要 |
+|---|---|---|
+| 1 | **事件是唯一长期单元**：日志/反思/日记都**不**事件化，只事件化「一件事」 | 混了就会退化成流水账（v4 之前的形态） |
+| 2 | **白板是产出物，账本是接续材料** | 白板由事件渲染；账本读完即弃、不进注入主面 |
+| 3 | **注入面是唯一出口**：写进去的东西如果渲染不出来 = 没写 | 本仓「只存不用」家族已复现 5 次 |
+
+---
+
+### 图 B · 注入面分层（4 档位 × 9 段）
+
+```mermaid
+flowchart TB
+    subgraph TIER["① 档位判定（谁在说话）"]
+        T1["human_full<br/>F1 用户发声完整版"]
+        T2["human_slim<br/>F2 用户发声精简版"]
+        T3["run_full<br/>F3 运行完整版"]
+        T4["run_slim<br/>F4 运行精简版"]
+        T5["handoff_carry<br/>F6 接续首帧"]
+        T6["legacy<br/>档位缺失兜底"]
+    end
+
+    subgraph SEG["② 九段内容（按档位取舍）"]
+        direction TB
+        G1["① 头部区<br/>身份 + 当前日期 + 工作区"]
+        G2["② 用户规约<br/>每轮在场，不参与裁剪"]
+        G3["③ 用户画像<br/>emotional，可裁剪"]
+        G4["④ 当前事件卡片<br/>事件名/目标/四段/最近检查点"]
+        G5["⑤ 白板 PLAN<br/>★完整档 3000 / 瘦档核心 N 节"]
+        G6["⑥ 交接账本<br/>四段式"]
+        G7["⑦ 工作日志<br/>近期 N 天"]
+        G8["⑧ 语义唤回<br/>独立通道，跨会话命中"]
+        G9["⑨ 维护纪律<br/>★四档共用同一份<br/>含事件工具速查"]
+    end
+
+    subgraph BUDGET["③ 预算闸门"]
+        B1["分段预算<br/>envelopeMeta.segments<br/>逐段记 chars"]
+        B2["总闸门<br/>injectBudgetChars"]
+        B3["降级如实标注<br/>dropped / degradations"]
+    end
+
+    T1 --> SEG
+    T2 --> SEG
+    T3 --> SEG
+    T4 --> SEG
+    T5 --> SEG
+    T6 --> SEG
+    SEG --> BUDGET
+    BUDGET -->|"低于预算"| OK["原样注入"]
+    BUDGET -->|"超预算"| CUT["按优先级击杀<br/>★绝不静默"]
+
+    classDef tier fill:#e8f0f8,stroke:#4a7ca4
+    classDef seg fill:#f8f0e8,stroke:#a47c4a
+    classDef bud fill:#f0e8f8,stroke:#7c4aa4
+    class T1,T2,T3,T4,T5,T6 tier
+    class G1,G2,G3,G4,G5,G6,G7,G8,G9 seg
+    class B1,B2,B3 bud
+```
+
+**档位 × 段的实际取舍（2026-10-27 实测）**
+
+| 档位 | 白板 | 规则 | 画像 | 语义唤回 | 实测注入量 |
+|---|---|---|---|---|---|
+| `human_full` | **全文**（预算 3000，实测 2,149） | 全文 | 完整 | 有 | 最大 |
+| `human_slim` | 核心 7 节 | 全文 | 精简 | 有 | 中 |
+| `run_full` | 核心 7 节（实测 2,079） | 全文 | 精简 | 有 | 中 |
+| `run_slim` | **不投**（0） | 摘要 | 精简 | 无 | 最小 |
+| `handoff_carry` | 全文 | 全文 | 完整 | 有 | 首帧专用 |
+| `legacy` | 强制截流（单节 800 / 总 2400） | 全文 | — | — | 兜底 |
+
+> **★ 2026-10-27 修的真缺陷**：`handoffPlanChars` 默认 1,200 而 `fullInjectSlimBudgetChars` 默认 3,000
+> ⇒ **完整档（human_full 1,251）投得比精简档（run_full 2,079）还少**，档位语义倒挂。
+> 已修为 `完整档预算 = max(两者)`，实测 human_full 升至 2,149。
+
+---
+
 ## 4. 已知边界（诚实清单）
 
 ### 4.1 特性默认值（★ 3.0.0 起有翻转，旧文档口径已失效）

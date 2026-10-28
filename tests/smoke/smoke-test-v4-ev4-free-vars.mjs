@@ -136,7 +136,13 @@ for (const hk of HOOKS) {
 console.log('== 4. [负路径] 判据必须能捕到注入的未定义调用 ==')
 const injected = bodies.EventView
 if (injected) {
-  const mutated = injected.replace('var ev4Sig = ev4PayloadSigPre(data)', 'var ev4Sig = ev4PayloadSigPre(data); __deliberatelyUndefinedFn__(ev4Sig)')
+  // ★★2026-10-27 判据更新（锚点漂移 · 判据过期非产品缺陷）：
+//   原锚点 `var ev4Sig = ev4PayloadSigPre(data)` 已随「evScope 作用到 iframe」修复改为
+//   `var ev4Sig = ev4PayloadSigPre(ev4ScopedData) + '|scope=' + String(evScope)`。
+//   本断言守的**不变量**没变（注入未定义调用后自由标识符扫描必须抓到），只是注入位置要跟着走。
+//   ★负路径自检保留：mutated !== injected 仍断言「注入确实发生」，防止锚点再次漂移导致恒绿。
+const INJECT_ANCHOR = "var ev4Sig = ev4PayloadSigPre(ev4ScopedData) + '|scope=' + String(evScope)"
+const mutated = injected.replace(INJECT_ANCHOR, INJECT_ANCHOR + '; __deliberatelyUndefinedFn__(ev4Sig)')
   ok(mutated !== injected, '[负路径] 成功往 EventView 注入 __deliberatelyUndefinedFn__')
   const freeM = freeNames(mutated, DECL)
   ok(freeM.indexOf('__deliberatelyUndefinedFn__') >= 0, '★★★[负路径] 注入后必须被抓出（判据非恒真）—— 实测抓出：' + freeM.join(', '))

@@ -69,7 +69,16 @@ try { ev3 = adaptEventPre(legacy, 1) } catch (e) { threw = e.message }
 ok(!threw, 'C-1 ★旧事件不抛错', threw || '')
 ok(ev3 && Array.isArray(ev3.members) && ev3.members.length === 0, 'C-2 members 缺省为空数组')
 ok(ev3 && ev3.kind === 'event', 'C-3 kind 缺省回落 event')
-ok(ev3 && ev3.rationale.indexOf('d') >= 0, 'C-4 rationale 回落 sections.deadend')
+// ★★2026-10-27 判据更新（语义变更 · 不是放宽断言）：rationale 不再回落 sections.deadend。
+//   原因见 lib/ev4-adapter.js 的 A3 注释：deadend=「失败与弯路」正文（上千字），
+//   rationale=「为什么这些检查点属于一件事」的一句话理由 ⇒ 拿前者冒充后者是**语义错位**，
+//   实测导致右栏「理由」显示成一段失败记录。
+//   新契约：rationale 缺失 ⇒ 回落 pausedReason（同义：为什么搁置也是理由）⇒ 都没有就是空串。
+//   ★负路径仍在：下面同时断言「不得把 deadend 第 4 段冒充 rationale」。
+ok(ev3 && ev3.rationale === '', 'C-4 rationale 缺省为空串（不再拿 sections.deadend 冒充）')
+ok(!(ev3 && ev3.rationale.indexOf('d') >= 0), 'C-4b ★负路径：不得把 sections.deadend 冒充成 rationale')
+const withPaused = adaptEventPre({ id: 'evt_22222222', name: 'n', summary: 's', status: 'paused', pausedReason: '等外部依赖', sections: { goal: '', doing: '', deadend: '失败正文', next: '' }, checkpoints: [] }, 2)
+ok(withPaused.rationale === '等外部依赖', 'C-4c rationale 回落 pausedReason（同义兜底保留）')
 
 console.log('')
 console.log('=== D. ★client.js 内联块与源一致（守卫）===')

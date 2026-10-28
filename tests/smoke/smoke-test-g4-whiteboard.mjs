@@ -20,14 +20,17 @@ console.log('=== G4 白板纪律 + 写记忆时维护白板 ===')
 // G4-1..3 ★ 根因修复: GUIDANCE 的七个关键词全覆盖(实测前全 False)
 // ─────────────────────────────────────────────────────────────
 t('G4-1 ★ GUIDANCE 覆盖白板七个关键词(实测修复前全部 False —— 这就是白板腐烂的真因)', () => {
-  const keys = ['白板', 'PLAN.md', 'kind=plan', 'kind=handoff', '账本', 'handoff-', '维护']
+  // 2026-10-27 判据更新（用户裁定 Q3「白板 = 事件的投影视图」落地）：旧判据守「白板=稳定事实+手写」
+// 是已被推翻的旧决策 ⇒ 关键词 kind=plan 换成 fromEvents（新契约），其余六个不变。
+const keys = ['白板', 'PLAN.md', 'fromEvents', 'kind=handoff', '账本', 'handoff-', '维护']
   const missing = keys.filter((k) => !GUIDANCE.includes(k))
   assert(missing.length === 0, '★ 缺失关键词: ' + missing.join(', '))
 })
 
-t('G4-2 ★ GUIDANCE 声明三层分工(白板=稳定事实 / 账本=动态状态唯一权威 / 笔记=可复用结论)', () => {
+t('G4-2 ★ GUIDANCE 声明三层分工(白板=事件投影 / 账本=动态状态唯一权威 / 笔记=可复用结论)', () => {
   assert(/白板纪律/.test(GUIDANCE), '须有「白板纪律」小节')
-  assert(/稳定的/.test(GUIDANCE) || /稳定/.test(GUIDANCE), '须说明白板装"稳定"事实')
+  // 2026-10-27：白板语义由「稳定事实」改为「事件的投影视图」（用户裁定 Q3）
+  assert(/投影视图|事件渲染/.test(GUIDANCE), '须说明白板是事件的投影视图（用户裁定 Q3），不是手写稳定事实')
   assert(/动态状态的唯一权威/.test(GUIDANCE), '★ 须点明账本是动态状态的**唯一权威**(否则两者都会写"下一步"而漂移)')
   assert(/append-only/.test(GUIDANCE), '须说明账本 append-only(不追改旧账本)')
 })

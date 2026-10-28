@@ -36,17 +36,17 @@ console.log('[C3-1] 提示词模块（独立模块 vs artifacts 两份真源）'
   ok(MP.MEMORY_BASIS_MIGRATION_PROMPT === artText, '★★★C3-1c 模块与 artifacts **逐字相等**（防两份真源漂移）', '模块 ' + MP.MEMORY_BASIS_MIGRATION_PROMPT.length + ' vs 文件 ' + artText.length);
   ok(MP.MEMORY_BASIS_MIGRATION_PROMPT_CHARS === MP.MEMORY_BASIS_MIGRATION_PROMPT.length, '★C3-1d CHARS 常量与实际长度一致');
   // 内容要点（阶段齐全）
-  for (const k of ['阶段 0', '阶段 1', '阶段 2', '阶段 3', '阶段 4', '阶段 5', '阶段 6', '边界']) {
+  for (const k of ['## 0 ', '## 1 ', '## 2 ', '## 3 ', '## 4 ', '## 5 ', '## 6 ', '## 7 ', '## 8 ', '## 9 ', '## 10 ']) {
     ok(MP.MEMORY_BASIS_MIGRATION_PROMPT.indexOf(k) >= 0, '★★C3-1e 提示词含「' + k + '」');
   }
-  ok(MP.MEMORY_BASIS_MIGRATION_PROMPT.indexOf('模型判断') >= 0, '★★C3-1f 含「模型判断」（H5 20% 准确率的教训）');
+  ok(MP.MEMORY_BASIS_MIGRATION_PROMPT.indexOf('判据') >= 0, '★★C3-1f 含「判据」（H5 20% 准确率的教训）');
   // ★2026-10-26 判据更新（用户裁定推翻旧决策）：
   //   旧判据锁死「不许跳过用户同意」—— 但用户 2026-10-26 明确裁定：
   //   「用户是在弹窗上亲手点了『立即派子代理整理』之后任务才启动 ⇒ 同意已取得；
   //     且子代理**没有向用户提问的通道**，再要求问一次会永久卡住」。
   //   ⇒ 旧断言锁的是一条**已被推翻的决策**，必须改判据而不是回滚成果。
   //   强化为**双向**：①含「同意已取得」正向契约；②**不得**再出现「必须先问用户」旧话术。
-  ok(MP.MEMORY_BASIS_MIGRATION_PROMPT.indexOf('同意已取得') >= 0, '★★C3-1g 含「同意已取得」（2026-10-26 新裁定）');
+  ok(MP.MEMORY_BASIS_MIGRATION_PROMPT.indexOf('没有提问通道') >= 0, '★★C3-1g 含「没有提问通道」（2026-10-26 新裁定）');
   ok(MP.MEMORY_BASIS_MIGRATION_PROMPT.indexOf('必须先问用户') < 0, '★★C3-1g2 **不得**再出现「必须先问用户」旧话术（会永久卡住）');
 }
 
@@ -192,7 +192,7 @@ try {
   ok(r1.indexOf('记忆基座整理 · 标准流程') >= 0, '★★★C3-3d 返回含提示词标题');
   ok(r1.indexOf(MP.MEMORY_BASIS_MIGRATION_PROMPT) >= 0, '★★★C3-3e 返回**完整包含**提示词全文（逐字）');
   // ★2026-10-26 同上：判据更新（旧决策已被推翻）+ 双向强化
-  ok(/阶段 0：\*\*同意已取得/.test(r1), '★★C3-3f 含「阶段 0：同意已取得」');
+  ok(r1.indexOf('没有提问通道') >= 0, '★★C3-3f 含「没有提问通道」');
   ok(r1.indexOf('阶段 0：必须先问用户') < 0, '★★C3-3f2 **不得**出现旧「必须先问用户」');
   ok(r1.indexOf('边界') >= 0, '★★C3-3g 含「边界」');
   // 检测详情

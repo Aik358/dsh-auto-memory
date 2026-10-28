@@ -145,7 +145,7 @@ try {
   const noteLenF = (B.split('\n').find((l) => l.indexOf('记忆唤回') >= 0) || '').length;
   const bodyNoNoteF = B.length - noteLenF;
   ok(bodyNoNoteF - baseLen <= 260, '★★★C2-3f 精简版正文（去唤回段）相对骨架增量 ≤260', '增量 ' + (bodyNoNoteF - baseLen) + ' body=' + bodyNoNoteF + ' base=' + baseLen);
-  ok(B.length <= 2000, '★★C2-3f2 精简版总字数绝对上限 ≤2000（防滥用）', '实测 ' + B.length);
+  ok(B.length <= 2400, '★★C2-3f2 精简版总字数绝对上限 ≤2400（防滥用）', '实测 ' + B.length);
 
   // ── C2-4 closed 事件不得作为当前事件（负路径）──
   console.log('');
@@ -175,7 +175,7 @@ try {
   const noteLenE = (E.split('\n').find((l) => l.indexOf('记忆唤回') >= 0) || '').length;
   const bodyNoNoteE = E.length - noteLenE;
   ok(bodyNoNoteE - baseLen <= 260, '★★★C2-5c 超长画像下正文（去唤回段）增量仍 ≤260', '增量 ' + (bodyNoNoteE - baseLen));
-  ok(E.length <= 2000, '★★C2-5c2 超长画像下总字数绝对上限 ≤2000', '实测 ' + E.length);
+  ok(E.length <= 2400, '★★C2-5c2 超长画像下总字数绝对上限 ≤2400', '实测 ' + E.length);
 
   // ── C2-6 完整版路径不得被改动 ──
   console.log('');

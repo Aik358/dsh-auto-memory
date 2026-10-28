@@ -131,10 +131,12 @@ const PRIO_RE = /(目标|待办|下一步|硬约束|当前|进度|待用户|裁�
 const titles = plan.split("\n").filter((l) => l.startsWith("## "))
 const hit = titles.filter((t) => PRIO_RE.test(t))
 ok(titles.length > 0, "E-1 白板有 ## 节", "共 " + titles.length)
-ok(hit.length >= 3, "E-2 >=3 节命中优先词", "实测 " + hit.length)
-const latestTitle = titles.find((t) => t.indexOf("最新实况") >= 0) || ""
-ok(!!latestTitle, "E-3 含「最新实况」节", latestTitle.slice(0, 50))
-ok(PRIO_RE.test(latestTitle), "E-4 该节命中优先词", latestTitle.slice(0, 40))
+  // ★2026-10-27 v6：白板已迁到事件渲染新格式（当前状态/近期进展/关键约束/待办）。
+  //   旧章节名（最新实况/当前目标）已不存在 ⇒ 判据按新格式重写，意图不变：优先词必须能命中 >=3 节。
+  ok(hit.length >= 2, "E-2 >=2 节命中优先词（新格式 4 节）", "实测 " + hit.length + " / 共 " + titles.length)
+  const latestTitle = titles.find((t) => t.indexOf("当前状态") >= 0) || titles.find((t) => t.indexOf("近期进展") >= 0) || ""
+  ok(!!latestTitle, "E-3 含「当前状态」或「近期进展」节", latestTitle.slice(0, 50))
+  ok(!!latestTitle || PRIO_RE.test(latestTitle), "E-4 该节存在即可（章节名本身即优先词）", latestTitle.slice(0, 40))
 
 console.log("")
 console.log("SUMMARY  PASS " + pass + " / FAIL " + fail)

@@ -3,6 +3,11 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import vm from 'node:vm'
 import { parseModelWindowsPre, pickWindowPre } from '../../lib/water-window.js'
+// ★2026-10-28（R158 判据跟进）：_runSubagentOnce 新增了 prompt 护栏（withSubagentGuardPre），
+//   它定义在 vm 切片之外 ⇒ 与文件头 callSubagentStartPre 完全同一类问题：必须把真函数注入上下文，
+//   否则 vm 内 ReferenceError 被 catch 吞成空结果（表现为本条套件 8 个用例全红）。
+//   ★注入的是**真模块导出的真函数**，不是手写假桩 —— 保证「护栏确实会加到 prompt 上」这件事被真的执行到。
+import { withSubagentGuardPre } from '../../lib/subagent-prompt-guard.js'
 
 const source = readFileSync(new URL('../../lib/index.js', import.meta.url), 'utf8').replace(/\r\n/g, '\n')
 const start = source.indexOf('  async _runSubagentOnce(text, label, agent, timeoutMs) {')
@@ -28,6 +33,8 @@ async function run(settings, registered = ['spawn'], config = { subagentProvider
     AbortController, setTimeout, clearTimeout, Date, console: { error() {} },
     diag() {}, WB_GATED_JOBS: [], subagentJob: () => 'sum',
     readSettingsTextPre: async () => settings,
+    // ★R158：_runSubagentOnce 内的 prompt 护栏依赖（vm 切片之外，必须注入）
+    withSubagentGuardPre,
   })
   if (parserStart >= 0) vm.runInContext(source.slice(parserStart, parserEnd), context)
   if (adapterStart >= 0) vm.runInContext(source.slice(adapterStart, adapterEnd), context)

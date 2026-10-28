@@ -195,7 +195,8 @@ async function main() {
   //   在工具分支里新增了 **1 处** `eventStorePre.list(_st, { all: true })`。
   //   ★该调用点**不带宽字段**（不带 withPercept）⇒ 不违反本锁的意图（既有内部调用点不得被污染）。
   //   ⇒ 计数 7 → 8。「只有 1 处带 withPercept」这条不变量**保持不变**。
-  eq(calls.length, 8, 'index.js 里 eventStorePre.list 调用点恰好 8 处（H10-b 幂等前置 1 + H3-C3 检测详情 1）')
+  // 2026-10-27：+1 = memory_note(kind=plan, fromEvents=true) 的事件渲染读取（白板=事件投影）
+  eq(calls.length, 9, 'index.js 里 eventStorePre.list 调用点恰好 9 处（H10-b 幂等前置 1 + H3-C3 检测详情 1 + fromEvents 渲染 1）')
   const withP = calls.filter((c) => c.includes('withPercept'))
   eq(withP.length, 1, '其中只有 1 处带 withPercept')
   ok(withP[0] && withP[0].includes("q.get('cursor')"), '带 withPercept 的那处是 event-list 路由（按 q.get(cursor) 识别）')
@@ -214,7 +215,18 @@ async function main() {
   console.log('[M-1] 变异：把 withPercept 默认改成 true ⇒ 负路径**必红**')
   const original = readFileSync(STORE_SRC, 'utf8')
   const origSha = createHash('sha256').update(original).digest('hex')
-  const mutant = original.replace('status = null, withPercept = false }', 'status = null, withPercept = true }')
+  // ★2026-10-27 判据更新（签名新增可选开关 withTime，见「泳道甘特 1970」修复）：
+  //   变异锚点必须跟着新签名走，否则 replace 不命中 ⇒ 变异体 == 原文件 ⇒ 负路径恒绿（假绿）。
+  //   ★注意：这条变异守的是**不变量**——「默认调用不得带出 userPercept」，
+  //   与 withTime 无关；所以锚点仍取 withPercept 段，只是把尾部的 ` }` 换成
+  //   新签名里它后面的 `, withTime = false, withKind = false }`，保持「原样命中 1 次」。
+  //   ★2026-10-27 第二次：签名又新增可选开关 withKind（见「泳道/工作流 0 事件」修复），锚点同步。
+  //   ★2026-10-27 第三次：签名又新增 withMeta / withCheckpointQuad（见「置信度/检查点空壳」修复），锚点同步。
+  //     ★这是**判据过期**（签名演进、锚点没跟着走），不是产品缺陷 ——
+  //       变异守的不变量「默认调用不得带出 userPercept」没变，只是尾部字面量变了。
+  const MUT_FROM = 'status = null, withPercept = false, withTime = false, withKind = false, withMembers = false, withMeta = false, withCheckpointQuad = false }'
+  const MUT_TO = 'status = null, withPercept = true, withTime = false, withKind = false, withMembers = false, withMeta = false, withCheckpointQuad = false }'
+  const mutant = original.replace(MUT_FROM, MUT_TO)
   ok(mutant !== original, '变异点命中（默认值被改写）')
   ok(original.split('withPercept = false').length - 1 === 1, '默认值字面在源码里恰好 1 处（变异可定位）')
 

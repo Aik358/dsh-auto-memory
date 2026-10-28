@@ -176,7 +176,16 @@ console.log('== E. 审计 §2.1：HTML 注释锚点不得进入渲染/注入文�
   }, 0)
   ok(withC.title.indexOf('<!--') < 0 && withC.title.indexOf('标题') >= 0, '★★★E-3 [合成] title 剥注释保留正文', JSON.stringify(withC.title))
   ok(withC.summary.indexOf('<!--') < 0 && withC.summary.indexOf('摘要正文') >= 0, '★★★E-4 [合成] summary 剥注释保留正文', JSON.stringify(withC.summary))
-  ok(withC.rationale.indexOf('<!--') < 0 && withC.rationale.indexOf('失败正文') >= 0, '★★★E-5 [合成] rationale（原 deadend）剥注释保留正文', JSON.stringify(withC.rationale))
+  // ★★2026-10-27 判据更新（语义变更 · 非放宽）：rationale **不再**回落 sections.deadend（见 A3 注释），
+  //   因此本用例的 rationale 现在是空串。断言改为守**真正的不变量**：
+  //   「凡出现在 rationale 里的文本都必须已剥注释」——空串天然满足；下面再用 pausedReason 做正例。
+  ok(withC.rationale.indexOf('<!--') < 0, '★★★E-5 [合成] rationale 无 HTML 注释残留', JSON.stringify(withC.rationale))
+  const withC2 = A.adaptEventPre({
+    id: 'x2', name: 'n', summary: 's', pausedReason: '<!-- type=dead-end -->\n- 搁置原因正文',
+    sections: { goal: '', doing: '', deadend: '<!-- type=dead-end -->\n- 失败正文', next: '' },
+  }, 0)
+  ok(withC2.rationale.indexOf('<!--') < 0 && withC2.rationale.indexOf('搁置原因正文') >= 0,
+    '★★★E-5b [合成] rationale 回落 pausedReason 时同样要剥注释', JSON.stringify(withC2.rationale))
   ok(Object.values(withC.sections).every((v) => String(v).indexOf('<!--') < 0), '★★★E-6 [合成] sections 四段全部无注释', JSON.stringify(withC.sections))
   ok(withC.sections.doing === '', '★★E-7 [边界] 整段只有注释 ⇒ 清洗后为空串（不是残留标记）', JSON.stringify(withC.sections.doing))
 

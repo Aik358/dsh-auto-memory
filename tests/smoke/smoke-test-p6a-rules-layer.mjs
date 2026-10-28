@@ -156,7 +156,9 @@ console.log('[P6A-4] ★零值解析：0 必须能表达（旧 `Number(v) || 5` 
   // 旧写法必须已从注入路径消失
   const code = idx.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '')
   ok(!/Number\(engine\.config\.snapshotMinGapRounds\) \|\| 5/.test(code), '★旧 `Number(v) || 5` 已从注入路径移除')
-  ok(/parseGapRoundsPre\(engine\.config\.snapshotMinGapRounds, 5\)/.test(code), '注入路径改用 parseGapRoundsPre')
+  // ★2026-10-28 判据更新（D10/P2-3）：三处 fallback 已统一为真源默认 20（原为 5/10 各自写死）。
+  //   判据从「必须恰好是 5」改为「用 parseGapRoundsPre 且 fallback 与真源一致（20）」。
+  ok(/parseGapRoundsPre\(engine\.config\.snapshotMinGapRounds, (20|DEFAULT_SNAPSHOT_MIN_GAP_ROUNDS)\)/.test(code), '注入路径改用 parseGapRoundsPre 且 fallback 与真源一致')
   // ★2026-09-15 分级注入；★2026-10-13 用户裁定默认 5→10 ⇒ 现在是「**完整版**每 10 轮一次」的间隔
   //（其间各轮给精简版）——不再是"5 轮不注入"。
   // ★2026-10-13 判据更新：用户裁定 gap 默认 5→10（强制覆盖所有用户）。判据语义未削弱 ——
@@ -198,8 +200,10 @@ console.log('[P6A-5] ★分级注入（用户裁定"不是不注入，而是精�
   ok(/snapshotSlimRecallHit/.test(fn), '★精简版含唤回动态行（用户裁定：通知模型本轮自动想起了什么）')
   ok(/snapshotSlimRecallNote/.test(fn), '★精简版保留唤回声明（用户 2026-10-01 重申必须出现）')
   ok(/'snapshotSlimNote'/.test(fn), '精简版显式说明"这是精简版、完整版每 N 轮一次、怎么取全文"')
-  ok(/L\('snapshotSlimNote', \{ n: parseGapRoundsPre\(cfg\.snapshotMinGapRounds, 5\) \}\)/.test(fn.replace(/\s+/g, ' '))
-    || /parseGapRoundsPre\(cfg\.snapshotMinGapRounds, 5\)/.test(fn), '精简说明里的 N 与 gap 同源（不写死）')
+  // ★2026-10-28 判据更新（D10/P2-3）：fallback 已统一为真源默认 20（原为 5）。
+  //   判据语义不变（N 与 gap 同源、不写死），只把被锁常量从 5 更新为 20/常量名。
+  ok(/L\('snapshotSlimNote', \{ n: parseGapRoundsPre\(cfg\.snapshotMinGapRounds, (20|DEFAULT_SNAPSHOT_MIN_GAP_ROUNDS)\) \}\)/.test(fn.replace(/\s+/g, ' '))
+    || /parseGapRoundsPre\(cfg\.snapshotMinGapRounds, (20|DEFAULT_SNAPSHOT_MIN_GAP_ROUNDS)\)/.test(fn), '精简说明里的 N 与 gap 同源（与真源一致，不写死）')
   // ★2026-09-15（用户裁定）：精简版**必须显式声明记忆唤回**——
   // 唤回是独立 context 面（M6 Reference Tail，在 `lib/index.js` 另一处单独注册），
   // 不随本函数渲染，不声明的话模型会以为"精简轮没有唤回"。

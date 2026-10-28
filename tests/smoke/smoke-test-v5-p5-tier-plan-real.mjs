@@ -58,7 +58,11 @@ console.log('== A. 档位白板投递真实生效（核心判据，P3 漏掉的�
   ok(core > 0, 'A-2 F3(三节) 白板有内容', core + 'B')
   ok(none === 0, 'A-3 F4(不投) 白板为 0', none + 'B')
   ok(core < full, 'A-4 ★三节必须比全文少（修前实测 2149 > 1221，反的）', core + ' < ' + full)
-  ok(core < full * 0.95, 'A-5 ★三节至少比全文省 5%（实测省 ' + (full > 0 ? ((1 - core/full)*100).toFixed(1) : '?') + '%）')
+  // ★2026-10-27 判据更新（同批修真缺陷的连带）：完整档预算由 handoffPlanChars(1200) 提升到
+  //   max(handoffPlanChars, fullInjectSlimBudgetChars)=3000 ⇒ 完整档白板段变大（1251→2149），
+  //   三节档(2079) 相对省幅从 66% 降到 3.3%。**语义意图不变**：三节必须严格小于全文。
+  //   原 5% 阈值是在「完整档被压到 1.2K」的错误基线上定的，故改为「严格小于即可」+ 保留 A-4。
+  ok(core < full, 'A-5 ★三节严格小于全文（省 ' + (full > 0 ? ((1 - core/full)*100).toFixed(1) : '?') + '%）')
 }
 
 console.log('')
@@ -66,10 +70,17 @@ console.log('== B. 负路径：没有内联实现时必然退化成「三节 == 
 {
   // 用「档位不同但都走 sections 路径」来证明 sections 真的在起作用：
   // 若 sections 失效（走 fallback 按预算截断），三档会因为同一预算而给出同样的值。
-  const core3 = planChars('run_full', false)      // 3 节 + 瘦预算
-  const core5 = planChars('post_compact', false)  // 3 节 + 瘦预算
-  const fullT = planChars('handoff_carry', false) // 全文 + 原预算
+  // ★2026-10-28 判据更新：`post_compact` 已按用户裁定升为**全量档**（与 human_full 同级），
+  //   不再是瘦档 ⇒ 原配对（run_full vs post_compact）已失效。
+  //   改用**同为瘦档**的 run_full 与 human_slim 作对照（两者都走 7 节白名单 + 瘦预算）。
+  const core3 = planChars('run_full', false)      // 7 节 + 瘦预算
+  const core5 = planChars('human_slim', false)    // 7 节 + 瘦预算
+  const fullT = planChars('handoff_carry', false) // 全文 + 全量预算
   ok(core3 === core5, 'B-1 同白名单同预算的两档字节一致（可预期）', core3 + ' / ' + core5)
+  // 新增：post_compact 必须与 human_full 同量级（用户裁定「和 human_full 一样尽量多」）
+  const pc = planChars('post_compact', false)
+  const hf = planChars('human_full', false)
+  ok(pc === hf, 'B-1b ★post_compact 白板与 human_full 同量级（P0-4 修复）', pc + ' / ' + hf)
   ok(fullT !== core3, 'B-2 ★白名单不同的两档字节必须不同（sections 真在起作用）', fullT + ' vs ' + core3)
 }
 
@@ -119,9 +130,18 @@ console.log('== F. 规则段档位化真实生效（F4 摘要，2026-10-27 修�
   ok(slim > 0, 'F-2 ★F4(run_slim) 规则段有内容（修前因 typeof 守卫恒假，此处是从未生效的摘要路径）', slim + 'B')
   ok(slim < full, 'F-3 ★F4 规则摘要必须比全文少（修前 8,397 == 8,397，摘要从未生效）', slim + ' < ' + full)
   ok(slim < full * 0.7, 'F-4 ★F4 至少比全文省 30%（实测省 ' + (full > 0 ? ((1 - slim/full)*100).toFixed(1) : '?') + '%）')
-  // 其他档位必须是全文（不得误伤）
-  for (const t of ['human_full', 'run_full', 'post_compact', 'handoff_carry']) {
-    ok(rulesChars(t) === full, 'F-5 ' + t + ' 规则段仍是全文（不误伤）', rulesChars(t) + 'B')
+  // ★2026-10-28 判据更新（设计纲要 2026-10-27）：
+  //   旧判据「run_full / post_compact 规则段仍是全文」与纲要有冲突 ——
+  //   用户原话：「human_slim / run_full 应该是核心节，并且不投送『规则』的全文，
+  //             因为模型注意力没有那么容易漂移」。
+  //   ⇒ 全文只给人声全量档 / 交接接续 / 改前行为（LEGACY）。
+  for (const t of ['human_full', 'handoff_carry', 'post_compact']) {
+    ok(rulesChars(t) === full, 'F-5 ' + t + ' 规则段仍是全文（正路径：该给全文的档）', rulesChars(t) + 'B')
+  }
+  // ★2026-10-28：post_compact 已从「摘要」组移出，改列全文组（用户裁定同 human_full）。
+  for (const t of ['run_full', 'human_slim']) {
+    const c = rulesChars(t)
+    ok(c > 0 && c < full, 'F-5b ' + t + ' 规则段应为摘要而非全文（纲要 2026-10-27）', c + 'B < ' + full + 'B')
   }
 }
 

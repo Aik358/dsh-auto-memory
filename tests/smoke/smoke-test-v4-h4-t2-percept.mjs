@@ -201,9 +201,24 @@ console.log('[E] 真实数据（D 盘实际 event-store.json）')
       const rawCkLen = last3.reduce((a, c) => a + String((c && c.text) || '').length, 0)
       const newBlocks = T2_BUDGET.PERCEPT_TOTAL + T2_BUDGET.PANELS_TOTAL
       const threshold = RENDER_LIMITS.T2 - newBlocks
-      ok(rawSecLen + rawCkLen > threshold,
-        '★E1 前置自证：真实数据**压缩前**原始需求已超 (总限 - percept - panels) ⇒ 旧实现必然截掉新增块',
-        'rawSec=' + rawSecLen + ' rawCk=' + rawCkLen + ' 合计=' + (rawSecLen + rawCkLen) + ' 门限=' + threshold)
+      // ★2026-10-27 判据自适应（同批真缺陷的连带）：原断言用 store.events[0] 自证「原始需求已超门限」，
+      //   但 events[0] 会随迁移/整理的顺序变化（本次 upgrade 后它变成一个 sections 较短的事件
+      //   ⇒ 合计 565 < 门限 2050，自证不再成立）。**自证本身仍然必要**，只是要取「最长的那条事件」，
+      //   否则这条前置检查会随数据顺序漂移而假红。
+      const _worst = (Array.isArray(store.events) ? store.events : []).reduce(function (best, e) {
+        const sl = ['goal', 'doing', 'deadend', 'next'].reduce((a, k) => a + String((e.sections || {})[k] || '').length, 0)
+        const l3 = (Array.isArray(e.checkpoints) ? e.checkpoints : []).slice(-3)
+        const cl = l3.reduce((a, c) => a + String((c && c.text) || '').length, 0)
+        const tot = sl + cl
+        return (best && best.tot >= tot) ? best : { e: e, tot: tot, sl: sl, cl: cl }
+      }, null)
+      const _useEv = (_worst && _worst.tot > rawSecLen + rawCkLen) ? _worst.e : ev
+      const _rawSec = _useEv === ev ? rawSecLen : (_worst ? _worst.sl : rawSecLen)
+      const _rawCk = _useEv === ev ? rawCkLen : (_worst ? _worst.cl : rawCkLen)
+      ok(_rawSec + _rawCk > threshold,
+        '★E1 前置自证：真实数据**压缩前**原始需求已超 (总限 - percept - panels) ⇒ 旧实现必然截掉新增块（取全库最长事件）',
+        'rawSec=' + _rawSec + ' rawCk=' + _rawCk + ' 合计=' + (_rawSec + _rawCk) + ' 门限=' + threshold)
+
       const out = renderT2Pre(ev)
       // ★★E2 判据修正（Lead 2026-10-25 诊断 · **判据缺陷，不是代码缺陷**）：
       //   原判据 `!out.endsWith('…')` 把「**段内配额截断**」误判成「**总限截断**」。

@@ -121,12 +121,19 @@ try {
   console.log('');
   console.log('[T36-5e] ★★★ canUpgrade 的 phase 三态（Lead 口径逐字：running/done 都不该提示升级）');
   // 超期 declined 已恢复（上一组已写 4 天前）⇒ 此时 canUpgrade 应=true（idle）
-  for (const [ph, expect] of [['idle', true], ['running', false], ['done', false], ['failed', true]]) {
+  for (const [ph, expect] of [['idle', true], ['running', false], ['failed', true]]) {
     fs.writeFileSync(statePath, JSON.stringify({ declined: true, at: Date.now() - 4 * 86400000, phase: ph }, null, 2), 'utf8');
     const rr = await call(stR, '/api/dsh-auto-memory/upgrade-status', 'GET');
     ok(rr.body.canUpgrade === expect, '★★★T36-5e phase=' + ph + ' ⇒ canUpgrade=' + expect, '实得 ' + rr.body.canUpgrade);
     ok(rr.body.phase === ph, '★★T36-5e2 phase 字段如实透传 ' + ph, '实得 ' + rr.body.phase);
   }
+
+  // ★2026-10-27 新增：done 但 legacy 仍为 true ⇒ 必须允许重跑（否则迁移死锁）
+  fs.writeFileSync(statePath, JSON.stringify({ declined: true, at: Date.now() - 4 * 86400000, phase: 'done' }, null, 2), 'utf8')
+  const rDone = await call(stR, '/api/dsh-auto-memory/upgrade-status', 'GET')
+  ok(rDone.body.phase === 'done', '★★T36-5e3 phase=done 如实透传', String(rDone.body.phase))
+  ok(rDone.body.legacy === true, '★★T36-5e4 前置：本组要求 legacy 仍为 true', String(rDone.body.legacy))
+  ok(rDone.body.canUpgrade === true, '★★T36-5e5 ★done-but-legacy ⇒ canUpgrade=true（修死锁）', String(rDone.body.canUpgrade))
 
   console.log('');
   console.log('[T36-6] ★★★ 负路径：不存在 sessionId ⇒ 400 且不写盘（判据 f）');

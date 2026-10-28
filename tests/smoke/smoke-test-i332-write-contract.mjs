@@ -30,7 +30,9 @@ const ok = (c, n, d) => { if (c) { pass++; console.log('  ok - ' + n) } else { f
 
 // ── 真抽取：memory_note 的 plan/handoff 分支（从 `const content =` 到该分支闭合）──
 function extractBranch(src) {
-  const a = src.indexOf("      const content = args.kind === 'plan' ? String(args.content || '') : String(args.content || '').trim()")
+  // 2026-10-27 判据更新（fromEvents 白板渲染接入后锚点前移）：
+  // 旧锚 `const content = ...` 已改为 `let content = ...` + 渲染块；改锚到分支入口，覆盖面更完整。
+  const a = src.indexOf("      let content = args.kind === 'plan' ? String(args.content || '') : String(args.content || '').trim()")
   const marker = "      const replace = args.action === 'replace'";
   const b = src.indexOf(marker, a)
   assert.ok(a > 0 && b > a, '抽取 plan/handoff 分支命中')
@@ -74,6 +76,8 @@ const P_ = { projectDir: 'D:\\proj' }
 function baseEngine(over = {}) {
   return Object.assign({
     memToday: () => '2026-10-12',
+    // 2026-10-27 补桩：分支入口的 settings-root-changed 前置判定需要它
+    projectDirOf: (ws) => String(ws || '\\proj').replace(/\\handoff$/, ''),
     state: {},
     async writePlanSnapshot() { return { ok: true, committed: true, revision: 'R1', indexStale: false, path: 'D:\\proj\\handoff\\PLAN.md', final: '# x' } },
     async writeHandoffLedger() { return { ok: true, path: 'D:\\proj\\handoff\\h.md', clean: 'body' } },

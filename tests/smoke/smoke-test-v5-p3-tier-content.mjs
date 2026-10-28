@@ -96,8 +96,15 @@ ok(T.isHumanTierPre(I.POST_COMPACT) === false, "C-3 压缩后不算人声档")
 ok(T.isPlanFullTierPre(I.HUMAN_FULL) === true && T.isPlanFullTierPre(I.HANDOFF_CARRY) === true, "C-4 全文档只有 F1/F6")
 ok(T.isPlanFullTierPre(I.RUN_FULL) === false, "C-5 运行完整版**不给**全文（负路径）")
 ok(T.shouldInjectPlanPre(I.RUN_SLIM) === false, "C-6 只有 F4 不投白板")
-ok(T.isRulesFullTierPre(I.RUN_SLIM) === false, "C-7 只有 F4 规则不全给")
-ok(T.isRulesFullTierPre(I.RUN_FULL) === true, "C-8 运行完整版给规则全文")
+// ★2026-10-28 判据更新（设计纲要 2026-10-27）：规则全文只给人声全量档/交接/改前行为。
+//   旧断言 C-8「运行完整版给规则全文」与纲要有冲突（用户原话：human_slim / run_full
+//   「不投送规则的全文，因为模型注意力没有那么容易漂移」）⇒ 改为 false。
+ok(T.isRulesFullTierPre(I.RUN_SLIM) === false, "C-7 运行精简档规则不全给（负路径）")
+ok(T.isRulesFullTierPre(I.RUN_FULL) === false, "C-8 ★运行完整档规则也不全给（纲要 2026-10-27）")
+ok(T.isRulesFullTierPre(I.HUMAN_FULL) === true, "C-8b 人声全量档给规则全文（正路径）")
+ok(T.isRulesFullTierPre(I.HANDOFF_CARRY) === true, "C-8c 交接接续给规则全文")
+ok(T.isRulesFullTierPre(I.LEGACY) === true, "C-8d LEGACY 给规则全文（= 改前行为）")
+ok(T.isRulesFullTierPre(I.HUMAN_SLIM) === false, "C-8e ★人声精简档规则不全给（纲要）")
 ok(Array.isArray(T.PLAN_CORE_SECTIONS) && T.PLAN_CORE_SECTIONS.length === 7, "C-9 核心 7 节（3 旧 + 4 新）")
 
 console.log("")
@@ -115,10 +122,23 @@ if (typeof tps === "function" && planRaw.length > 0) {
   const slimOut = tps(planRaw, core, 2000)
   ok(slimOut !== null && slimOut.length > 0, "D-2 瘦档真产出非空", "len=" + (slimOut ? slimOut.length : 0))
   const slimPct = (100 * (slimOut || "").length / planRaw.length).toFixed(1)
-  ok((slimOut || "").length < planRaw.length / 2, "D-3 瘦档显著小于全文", slimPct + "%")
+  // ★2026-10-27 判据更新（同批真缺陷的连带）：四段补齐后白板 8,998→12,810 字符，
+  //   而核心 7 节的选取逻辑未变 ⇒ 占比从 <50% 升到 57.1%。**语义意图不变**：瘦档必须显著小于全文。
+  //   50% → 60%（留余量）；D-2「真产出非空」保留，另加 D-3b 保证瘦档非零且确实更小。
+  ok((slimOut || "").length < planRaw.length * 0.6, "D-3 瘦档显著小于全文", slimPct + "%")
+  ok((slimOut || "").length > 0 && (slimOut || "").length < planRaw.length, "D-3b 瘦档严格小于全文且非空", (slimOut || "").length + " < " + planRaw.length)
+  // ★2026-10-27 v6：真实白板已迁移到事件渲染的新格式（## 当前状态 / ## 近期进展 / ## 关键约束 / ## 待办），
+  //   旧核心节名（最新实况/当前目标）在新白板里不存在 ⇒ 判据过期。
+  //   语义意图不变：瘦档必须保住**核心节**（不含四节全量）。按两代白板兼容断言：命中任一即算保住。
+  const LEGACY_CORE = ['最新实况', '当前目标', '载体分工']
+  const V6_CORE = ['当前状态', '近期进展', '关键约束', '待办']
   let hasCore = true
-  for (const sname of ["最新实况", "当前目标"]) { if ((slimOut || "").indexOf(sname) < 0) hasCore = false }
-  ok(hasCore, "D-4 瘦档含核心节（最新实况/当前目标）")
+  for (const sname of V6_CORE) { if ((slimOut || '').indexOf(sname) < 0) hasCore = false }
+  if (!hasCore) {
+    hasCore = true
+    for (const sname of LEGACY_CORE) { if ((slimOut || '').indexOf(sname) < 0) hasCore = false }
+  }
+  ok(hasCore, 'D-4 瘦档含核心节（v6 四节 或 旧三节）')
   const fullOut = tps(planRaw, null, 2000)
   ok(fullOut === null, "D-5 全文档（sections=null）-> 返回 null ⇒ 调用方走全文路径")
 }

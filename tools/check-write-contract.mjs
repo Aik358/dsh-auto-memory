@@ -67,7 +67,7 @@ if (hbBody) {
 }
 
 // ── ③ 消费端必须真的读取这些字段（否则契约是摆设）──
-const branchA = SRC.indexOf("      const content = args.kind === 'plan' ? String(args.content || '')")
+const branchA = SRC.indexOf("      let content = args.kind === 'plan' ? String(args.content || '')")
 const branchB = SRC.indexOf("      const replace = args.action === 'replace'", branchA)
 const branch = branchA > 0 && branchB > branchA ? SRC.slice(branchA, branchB) : ''
 check(!!branch, '③ 定位到 memory_note 的 plan/handoff 分支')
@@ -104,7 +104,7 @@ check(/r\.conflictPath/.test(branch), '③ 冲突路径被消费（可恢复指�
     if (!/committed:\s*true/.test(b)) return false
     const fs = b.match(/return \{ ok: false[^}]*\}/g) || []
     if (!fs.length || !fs.every((s) => /(?<![_$\w])error:/.test(s))) return false
-    const a = src.indexOf("      const content = args.kind === 'plan' ? String(args.content || '')")
+    const a = src.indexOf("      let content = args.kind === 'plan' ? String(args.content || '')")
     const z = src.indexOf("      const replace = args.action === 'replace'", a)
     const br = z > a ? src.slice(a, z) : ''
     return /!r \|\| !r\.ok/.test(br) && /r\.indexStale/.test(br)

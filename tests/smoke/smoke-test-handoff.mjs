@@ -203,7 +203,10 @@ const iLogs = out1.indexOf('工作日志')
 ok(iPlan > 0 && iLedger > iPlan && iLogs > iLedger, '注入顺序:白板 → 交接账本 → 工作日志(动态快照首位)')
 ok(iPlan > out1.indexOf('workspaceMap') >= 0 || iPlan > 0, '白板位于记忆地图之后(头部区)')
 const planSeg = out1.slice(iPlan, iLedger)
-ok(planSeg.length <= 500 + 220 && !out1.includes('条目 199'), 'PLAN 段硬预算截断(段长 ' + planSeg.length + ',尾部未注入)')
+  // ★2026-10-27 判据更新（同批修真缺陷的连带）：完整档白板预算由 handoffPlanChars(1200)
+  //   提升到 max(handoffPlanChars, fullInjectSlimBudgetChars)=3000 ⇒ 段长由 ~720 变为 2149。
+  //   语义意图不变：**白板段必须被硬预算截断、不注入尾部哨兵**（防无限膨胀），只是上限变了。
+  ok(planSeg.length <= 3000 + 220 && !out1.includes('条目 199'), 'PLAN 段硬预算截断(段长 ' + planSeg.length + ',尾部未注入)')
 const out2 = run(makeFakeThis(PLAN_LONG, '', true))
 ok(out2.includes('白板 PLAN.md') && !out2.includes('最近交接'), '无账本时只注入白板')
 const out3 = run(makeFakeThis(PLAN_LONG, '# 交接账本', false))

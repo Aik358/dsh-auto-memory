@@ -124,7 +124,11 @@ try {
   // ★精简版实测 1,337 字符（上限 1,600），加 344 会到 1,681 > 1,600
   //   ⇒ 本段只挂完整版；精简版靠 snapshotSlimGuide 的「随时可用工具取全文」
   const slim = String(engine.renderSlimSnapshotPre(ws) || '');
-  ok(slim.length <= 1600, '★★★D-3a 精简版仍 ≤1,600 字符（未被本段撑爆）', '实测 ' + slim.length);
+  // ★2026-10-27 判据更新（用户裁定：事件工具指导必须投递到全部档位 —— human_full/human_slim/run_full/run_slim）。
+  //   原判据 ≤1,600 的意图是「防止本段（usage 说明）把精简版撑爆」，不是「禁止任何新增」。
+  //   新增的「事件工具速查」是**有意进精简版**（四档共用同一份维护纪律文案，见 snapshotSlimMaintain），
+  //   故上限按「原 1,600 + 该段增量 361 + 余量」重设；意图不变：精简版仍必须是**紧凑**的（不得超 2,200）。
+  ok(slim.length <= 2200, '★★★D-3a 精简版仍 ≤2,200 字符（未被本段撑爆）', '实测 ' + slim.length)
   ok(slim.indexOf(MARK) < 0, '★★D-3b 精简版不含本段（设计如此：预算不够，且有 guide 兜底）');
 } finally {
   // ★★2026-10-25 修（全量回归实测抓到 · 进程退出崩溃）：**必须在 finally 恢复被 patch 的全局定时器/fetch**。
