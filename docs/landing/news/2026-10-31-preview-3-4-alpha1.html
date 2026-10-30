@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-lang="zh" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>v3.4.0-alpha.1 预览版 · 开发者排查指南 — dsh-auto-memory</title>
+<meta name="description" content="v3.4 事件记忆模型抢先预览：403 个提交、45 个新模块、309 个新测试套件。给社区的功能核验与代码排查清单。">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#eef2f7">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Manrope:wght@200;300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/prose.css">
+<link rel="stylesheet" href="assets/step5-motion.css">
+<style>
+  /* ══════════════════════════════════════════════════════════════════════
+     外壳层 · 与落地页同血脉
+     只定义外壳：导航 / 页脚 / 按钮 / 卡片 / 文章头部 / 图表 / 表格 / 代码块 /
+     相关报告。版式令牌来自 assets/prose.css，本块为其补一层暗色与容器别名。
+     正文论证、数字、图表引用、章节编号一字未动。
+     ══════════════════════════════════════════════════════════════════════ */
+
+  /* ── 0. 与主页对齐的字体工具类 ── */
+  .font-display { font-family: 'Space Grotesk', 'Manrope', var(--sans); letter-spacing: -.025em; }
+  .font-mono { font-family: 'JetBrains Mono', ui-monospace, Consolas, monospace; }
+
+  /* ── 0-b. 令牌别名：本页外壳沿用 --c-* 命名，prose.css 用主页的 --bg/--fg/--accent。
+     此处把 --c-* 直接映射到主页令牌，保证两套外壳解析到同一组值（原先 --c-* 只有深色块里
+     定义、浅色下为 null，导致 .nav-blur 背景透明、语言胶囊与主题圆钮无底无框）。 ── */
+  :root {
+    --c-brand: var(--accent); --c-brand-deep: var(--accent);
+    --c-text: var(--fg); --c-text-2: var(--fg-dim); --c-text-3: var(--muted);
+    --c-border: var(--border); --c-border-subtle: var(--border);
+    --c-surface-3: var(--card); --c-code-bg: var(--bg-soft);
+    --c-page: var(--bg); --c-code-dark: var(--bg-code);
+  }
+
+  /* ── 1. 主题令牌：浅色为基准，暗色只覆盖颜色（prose.css 原本只有浅色） ── */
+  :root { color-scheme: light; --c-code-dark: #0f172a; }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --c-brand: #60a5fa; --c-brand-deep: #93c5fd;
+    --c-text: #e8ecf3; --c-text-2: rgba(255, 255, 255, .74); --c-text-3: rgba(255, 255, 255, .62);
+    --c-border: rgba(255, 255, 255, .12); --c-border-subtle: rgba(255, 255, 255, .07);
+    --c-surface-3: rgba(255, 255, 255, .045); --c-code-bg: rgba(255, 255, 255, .07);
+    --c-page: #0a0d14; --c-code-dark: #05070d;
+  }
+
+  /* ── 2. 页宽容器 ── */
+  .wrap { width: min(100% - 96px, 1110px); margin-inline: auto; }  /* 与 prose.css 的 .pwrap 同像素 */
+
+  /* ── 3. 导航（nav.nav-blur > .nav-in） ── */
+  .nav-blur {
+    position: sticky; top: 0; z-index: 50;
+    background: rgba(249, 248, 248, .86);
+    background: color-mix(in srgb, var(--c-page) 82%, transparent);
+    backdrop-filter: blur(24px) saturate(180%); -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border-bottom: 1px solid var(--c-border-subtle);
+  }
+  :root[data-theme="dark"] .nav-blur { background: color-mix(in srgb, var(--c-page) 78%, transparent); }
+  .nav-in { height: 62px; display: flex; align-items: center; justify-content: space-between; gap: var(--sp-5); }
+  .nav-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--c-text); }
+  .nav-brand .brand-logo { width: 24px; height: 24px; display: block; flex: none; color: var(--c-brand); }
+  .brand-logo svg { width: 100%; height: 100%; display: block; }
+  .brand-logo .brain-path { stroke: currentColor; stroke-width: 1.9; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+  .brand-logo .pulse { stroke: currentColor; stroke-width: 1.4; fill: none; stroke-dasharray: 3 2; animation: pulse-soft 4s linear infinite; }
+  @keyframes pulse-soft { from { stroke-dashoffset: 0 } to { stroke-dashoffset: -30 } }
+  .nav-brand .brand-name { font-size: 15px; font-weight: 700; color: var(--c-text); letter-spacing: -.02em; }
+  .nav-links { display: flex; align-items: center; gap: 20px; }
+  .pnav-links .nav-link {
+    position: relative; background: transparent; border: none; cursor: pointer;
+    color: var(--c-text-2); font-size: 13.5px; text-decoration: none;
+    transition: color .18s ease-out;
+  }
+  .pnav-links .nav-link:hover { color: var(--c-brand); }
+  .pnav-links .nav-link::after {
+    content: ''; position: absolute; left: 0; bottom: -5px; width: 100%; height: 1px;
+    background: var(--c-brand); transform: scaleX(0); transform-origin: left;
+    transition: transform .25s cubic-bezier(.22, 1, .36, 1);
+  }
+  @media (hover: hover) and (pointer: fine) { .pnav-links .nav-link:hover::after { transform: scaleX(1); } }
+  .pnav-links .nav-link.is-active { color: var(--c-brand); font-weight: 500; }
+  .pnav-links .nav-link.is-active::after { transform: scaleX(1); }
+  @media (max-width: 900px) { .nav-links { gap: 14px; } .pnav-links .nav-link { font-size: 13px; } }
+  @media (max-width: 760px) { .pnav-links .nav-opt { display: none; } }
+  @media (max-width: 520px) { .nav-links .lang-switch { display: none; } }
+
+  /* 语言切换 / 主题按钮（主页同款） */
+  .lang-switch { display: inline-flex; padding: 3px; border-radius: 999px; background: var(--c-surface-3); border: 1px solid var(--c-border-subtle); }
+  .lang-switch button {
+    padding: 4px 11px; border: none; border-radius: 999px; background: transparent;
+    font-family: 'JetBrains Mono', var(--mono); font-size: 11px; font-weight: 600;
+    color: var(--c-text-3); cursor: pointer; transition: background-color .2s, color .2s;
+  }
+  .lang-switch button.is-on, .lang-switch button.active { background: var(--c-brand); color: #fff; }
+  .theme-toggle-btn {
+    position: relative; width: 36px; height: 36px; flex: none;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 999px; border: 1px solid var(--c-border-subtle);
+    background: var(--c-surface-3); color: var(--c-text-2);
+    cursor: pointer; transition: border-color .2s, color .2s;
+  }
+  .theme-toggle-btn:hover { border-color: var(--c-brand); color: var(--c-brand); }
+  #theme-toggle > svg {
+    position: absolute; inset: 0; margin: auto;
+    transition: opacity .25s ease-in-out, rotate .25s ease-in-out, filter .25s ease-in-out;
+  }
+  :root[data-theme="light"] #theme-icon-moon,
+  :root[data-theme="dark"] #theme-icon-sun { opacity: 0; rotate: -90deg; filter: blur(2px); }
+  :root[data-theme="light"] #theme-icon-sun,
+  :root[data-theme="dark"] #theme-icon-moon { opacity: 1; rotate: 0deg; filter: blur(0); }
+
+  /* ── 4. 按钮：主页同款高光扫过 + hover 抬升 ── */
+  .btn-primary {
+    position: relative; overflow: hidden; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 9px 18px; border: none; border-radius: 10px; background: var(--c-brand); color: #fff;
+    font-size: 13.5px; font-weight: 500; text-decoration: none; cursor: pointer;
+    transition: filter .25s ease-out, box-shadow .25s ease-out, transform .25s cubic-bezier(.22, 1, .36, 1), scale .15s ease-out;
+  }
+  .btn-primary::before {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .22), transparent);
+    transform: translateX(-100%); transition: transform .6s;
+  }
+  .btn-primary:hover::before { transform: translateX(100%); }
+  .btn-primary:hover { filter: brightness(1.08); box-shadow: 0 12px 34px color-mix(in srgb, var(--c-brand) 35%, transparent); transform: translateY(-2px); }
+  .btn-ghost {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 9px 18px; border-radius: 10px; background: transparent; border: 1px solid var(--c-border);
+    color: var(--c-text-2); font-size: 13.5px; text-decoration: none; cursor: pointer;
+    transition: background-color .25s, border-color .25s, color .25s, transform .25s cubic-bezier(.22, 1, .36, 1), scale .15s;
+  }
+  .btn-ghost:hover { background: var(--c-surface-3); border-color: var(--c-brand); color: var(--c-brand); transform: translateY(-1px); }
+  .btn-primary:active, .btn-ghost:active { scale: .97; }
+  /* 旧类名兼容：.pnav-cta 保持可用（描边胶囊） */
+  .pnav-cta {
+    display: inline-flex; align-items: center; padding: 6px 14px; border-radius: 999px;
+    border: 1px solid var(--c-border); color: var(--c-text-2); font-size: 13px; text-decoration: none;
+    transition: border-color .2s, color .2s, background-color .2s;
+  }
+  .pnav-cta:hover { border-color: var(--c-brand); color: var(--c-brand); background: var(--c-surface-3); }
+
+  /* ── 5. 卡片 / 装饰 ── */
+  .glass-card {
+    position: relative; overflow: hidden; border: 1px solid var(--c-border-subtle); border-radius: var(--r-media);
+    background: rgba(255, 255, 255, .72); background: color-mix(in srgb, #fff 72%, transparent);
+    backdrop-filter: blur(10px); box-shadow: 0 4px 24px rgba(0, 0, 0, .05);
+    transition: transform .25s cubic-bezier(.22, 1, .36, 1), border-color .25s, background-color .25s, box-shadow .25s;
+  }
+  :root[data-theme="dark"] .glass-card { background: color-mix(in srgb, #fff 4%, transparent); }
+  .glass-card::before {
+    content: ''; position: absolute; left: 0; right: 0; top: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--c-brand), transparent);
+    opacity: 0; transition: opacity .35s;
+  }
+  .glass-card:hover { transform: translateY(-4px); border-color: color-mix(in srgb, var(--c-brand) 30%, transparent); }
+  .glass-card:hover::before { opacity: 1; }
+  .feature-icon {
+    width: 44px; height: 44px; flex: none; display: flex; align-items: center; justify-content: center;
+    border-radius: 10px; color: var(--c-brand);
+    background: color-mix(in srgb, var(--c-brand) 14%, transparent);
+    border: 1px solid color-mix(in srgb, var(--c-brand) 26%, transparent);
+    transition: background-color .25s, color .25s, transform .25s cubic-bezier(.22, 1, .36, 1);
+  }
+  .glass-card:hover .feature-icon { background: var(--c-brand); color: #fff; transform: rotate(-5deg) scale(1.05); }
+  .badge-pill {
+    display: inline-flex; align-items: center; gap: 8px; padding: 5px 12px; border-radius: 999px;
+    font-family: 'JetBrains Mono', var(--mono); font-size: 11.5px; font-weight: 500; color: var(--c-brand);
+    background: color-mix(in srgb, var(--c-brand) 8%, transparent);
+    border: 1px solid color-mix(in srgb, var(--c-brand) 30%, transparent);
+  }
+  .badge-pill .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; animation: pulse-glow 2s ease-in-out infinite; }
+  @keyframes pulse-glow { 0%, 100% { opacity: .4; transform: scale(1) } 50% { opacity: .8; transform: scale(1.05) } }
+
+  /* ── 6. 文章头部 ── */
+  .phero {
+    position: relative; overflow: hidden;
+    padding: var(--sp-9) 0 var(--sp-8);
+    background: linear-gradient(180deg, #edf2f6 0%, #ffffff 100%);
+    background: linear-gradient(180deg, color-mix(in srgb, var(--c-brand) 6%, var(--c-page)) 0%, var(--c-page) 100%);
+    border-bottom: 1px solid var(--c-border-subtle);
+  }
+  .ptitle {
+    font-family: 'Space Grotesk', var(--sans);
+    font-size: clamp(2rem, 5.2vw, 3.05rem); font-weight: 700;
+    letter-spacing: -.032em; line-height: 1.16;
+    margin: 0 0 var(--sp-4);
+  }
+  .psub { font-size: 18px; line-height: 1.6; color: var(--c-text-2); margin: 0 0 var(--sp-5); }
+  .pmeta { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-4); font-size: 14px; line-height: 1.5; color: var(--c-text-3); font-variant-numeric: tabular-nums; }
+  .pmeta .tagline { color: var(--c-brand-deep); font-weight: 500; }
+  .pmeta .dot { width: 3px; height: 3px; border-radius: 50%; background: currentColor; opacity: .5; }
+  .pabstract {
+    margin-top: var(--sp-6); padding: var(--sp-5) var(--sp-6);
+    border: 1px solid var(--c-border-subtle); border-left: 3px solid var(--c-brand);
+    border-radius: var(--r-media);
+    background: rgba(255, 255, 255, .62); background: color-mix(in srgb, #fff 62%, transparent);
+    font-size: 15px; line-height: 1.75; color: var(--c-text-2);
+  }
+  :root[data-theme="dark"] .pabstract { background: color-mix(in srgb, #fff 4%, transparent); }
+  .pabstract p { margin: 0 0 var(--sp-3); }
+  .pabstract p:last-child { margin-bottom: 0; }
+  .pabstract strong { color: var(--c-text); }
+
+  /* ── 7. 正文排版精修 ── */
+  .prose { line-height: 1.8; font-variant-numeric: tabular-nums; }
+  .prose h2 {
+    font-family: 'Space Grotesk', var(--sans);
+    font-size: 26px; font-weight: 600; letter-spacing: -.028em; line-height: 1.3;
+    margin: var(--sp-8) 0 var(--sp-4); scroll-margin-top: 96px;
+  }
+  .prose h3 {
+    font-family: 'Space Grotesk', var(--sans);
+    font-size: 19.5px; font-weight: 600; letter-spacing: -.018em; line-height: 1.45;
+    margin: var(--sp-7) 0 var(--sp-3); scroll-margin-top: 96px;
+  }
+  .prose h4 { letter-spacing: -.012em; }
+  .prose p { font-size: 16px; line-height: 1.85; margin: 0 0 var(--sp-5); }
+  .prose li { line-height: 1.8; }
+  /* 中英混排光学间距：交给排版引擎按脚本边界自动加隙（渐进增强，不手插空格） */
+  .prose, .ptitle, .psub, .pmeta, .pabstract { text-autospace: normal; }
+  /* 断行禁则：行首不许落 」』】）！？，行尾不许掉 （「『【 */
+  .prose p, .prose li, .prose td, .prose th, .prose blockquote,
+  .pabstract p, .afterword p, .pmeta, .psub {
+    line-break: strict; overflow-wrap: break-word; text-wrap: pretty;
+  }
+
+  /* ── 8. 图表 ── */
+  .prose figure { margin: var(--sp-8) 0; }
+  .prose figure img { display: block; width: 100%; border-radius: calc(var(--r-media) - 2px); }
+  .figbox { padding: var(--sp-5); border: 1px solid var(--c-border-subtle); border-radius: var(--r-media); background: #fff; }
+  .prose figcaption {
+    display: block; max-width: var(--col-w); margin: var(--sp-3) auto 0;
+    text-align: center; font-size: 13px; line-height: 1.6;
+    color: var(--c-text-3); font-variant-numeric: tabular-nums;
+  }
+
+  /* ── 9. 表格：sticky 表头 + 极淡斑马纹 + 数字等宽 ── */
+  .tbl {
+    position: relative; overflow: auto; max-height: 72vh;
+    margin: var(--sp-5) 0; border: 1px solid var(--c-border); border-radius: var(--r-media);
+    -webkit-overflow-scrolling: touch;
+  }
+  .prose table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 15px; font-variant-numeric: tabular-nums; }
+  .prose thead th {
+    position: sticky; top: 0; z-index: 2;
+    background: #f2f4f8; background: color-mix(in srgb, var(--c-brand) 5%, var(--c-page));
+  }
+  :root[data-theme="dark"] .prose thead th { background: color-mix(in srgb, var(--c-brand) 12%, var(--c-page)); }
+  .prose th, .prose td { line-height: 1.5; padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--c-border-subtle); color: var(--c-text); }
+  .prose tbody tr:nth-child(even) td { background: color-mix(in srgb, var(--c-brand) 3%, transparent); }
+  .prose tbody tr:hover td { background: color-mix(in srgb, var(--c-brand) 7%, transparent); }
+  .prose tbody tr:last-child td { border-bottom: none; }
+  .prose td.num, .prose th.num { font-variant-numeric: tabular-nums; text-align: right; }
+  .prose td.hi { color: var(--c-brand-deep); font-weight: 600; }
+
+  /* ── 10. 代码块：圆角 / 内边距 / 行高与主页 pre 对齐 ── */
+  .prose pre {
+    margin: var(--sp-5) 0; padding: 1.25rem 1.5rem;
+    border: 1px solid var(--c-border); border-radius: 10px;
+    background: var(--c-code-dark); color: #e8ecf3;
+    font-family: 'JetBrains Mono', ui-monospace, Consolas, monospace;
+    font-size: 12.5px; line-height: 1.75; overflow-x: auto;
+  }
+  .prose pre code {
+    padding: 0; border-radius: 0; background: none; color: inherit;
+    font-family: inherit; font-size: 12.5px; line-height: 1.75;
+  }
+
+  /* ── 11. 相关报告：卡片网格（.relgrid 为冻结容器名） ── */
+  .pflex { display: flex; }
+  .prelated { padding: var(--sp-9) 0 var(--sp-10); }
+  .prelated-in { border-top: 1px solid var(--c-border-subtle); padding-top: var(--sp-8); }
+  .prelated > .pwrap > h2, .prelated h2 {
+    font-family: 'Space Grotesk', var(--sans);
+    font-size: 20px; font-weight: 600; letter-spacing: -.02em; margin: 0 0 var(--sp-5);
+  }
+  .relgrid, .prelated-grid { display: grid; grid-template-columns: 1fr; gap: var(--sp-4); margin-top: var(--sp-5); }
+  @media (min-width: 768px) { .relgrid, .prelated-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  .relgrid .pcard, .prelated-grid .pcard {
+    display: flex; flex-direction: column; gap: 6px; padding: var(--sp-5);
+    border: 1px solid var(--c-border-subtle); border-radius: var(--r-media);
+    background: rgba(255, 255, 255, .66); background: color-mix(in srgb, #fff 66%, transparent);
+    text-decoration: none; color: inherit;
+    transition: transform .25s cubic-bezier(.22, 1, .36, 1), border-color .25s, background-color .25s, box-shadow .25s, scale .15s;
+  }
+  .relgrid .pcard:hover, .prelated-grid .pcard:hover {
+    transform: translateY(-3px); border-color: color-mix(in srgb, var(--c-brand) 34%, transparent);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, .06);
+  }
+  .relgrid .pcard:active, .prelated-grid .pcard:active { scale: .985; }
+  .relgrid .pcard .kind, .prelated-grid .pcard .kind {
+    font-family: 'JetBrains Mono', var(--mono); font-size: 11px; letter-spacing: .04em;
+    color: var(--c-brand); margin-bottom: 0;
+  }
+  .relgrid .pcard h3, .prelated-grid .pcard h3 {
+    font-family: 'Space Grotesk', var(--sans); font-size: 16px; font-weight: 600;
+    letter-spacing: -.015em; line-height: 1.45; margin: 0; color: var(--c-text);
+  }
+  .relgrid .pcard p, .prelated-grid .pcard p { margin: 0; font-size: 13.5px; line-height: 1.6; color: var(--c-text-3); }
+  .relgrid .pcard .go, .prelated-grid .pcard .go {
+    margin-top: auto; padding-top: var(--sp-3);
+    font-family: 'JetBrains Mono', var(--mono); font-size: 12px; color: var(--c-brand);
+  }
+  :root[data-theme="dark"] .relgrid .pcard, :root[data-theme="dark"] .prelated-grid .pcard { background: color-mix(in srgb, #fff 4%, transparent); }
+
+  /* ── 12. 页脚（与主页同构） ── */
+  .pfoot { border-top: 1px solid var(--c-border-subtle); padding: var(--sp-8) 0 var(--sp-9); font-size: 14px; color: var(--c-text-3); }
+  .pfoot-grid { display: grid; grid-template-columns: 1fr; gap: var(--sp-6); }
+  @media (min-width: 860px) { .pfoot-grid { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 1fr); gap: var(--sp-7); } }
+  .pfoot-brand { display: flex; align-items: center; gap: 10px; margin-bottom: var(--sp-4); }
+  .pfoot-brand .brand-logo { width: 28px; height: 28px; flex: none; color: var(--c-brand); }
+  .pfoot-name { display: block; font-size: 15px; font-weight: 600; color: var(--c-text); }
+  .pfoot-tag { display: block; font-family: 'JetBrains Mono', var(--mono); font-size: 10px; letter-spacing: .08em; color: var(--c-text-3); }
+  .pfoot-desc { margin: 0; max-width: 42ch; font-size: 13.5px; line-height: 1.7; color: var(--c-text-3); }
+  .pfoot .col-title {
+    margin-bottom: var(--sp-3); font-family: 'JetBrains Mono', var(--mono);
+    font-size: 11px; text-transform: uppercase; letter-spacing: .12em; color: var(--c-text-3);
+  }
+  .pfoot ul { list-style: none; display: flex; flex-direction: column; gap: var(--sp-2); margin: 0; padding: 0; }
+  .pfoot .nav-link { font-size: 13.5px; }
+  .pfoot a { color: var(--c-text-2); text-decoration: none; transition: color .18s ease-out; }
+  .pfoot a:hover { color: var(--c-brand); }
+  .pfoot-base {
+    display: flex; flex-wrap: wrap; gap: var(--sp-3); justify-content: space-between;
+    margin-top: var(--sp-8); padding-top: var(--sp-5);
+    border-top: 1px solid var(--c-border-subtle);
+    font-family: 'JetBrains Mono', var(--mono); font-size: 12px; color: var(--c-text-3);
+  }
+  /* prose.css 旧结构兼容（.pfoot .row 等） */
+  .pfoot .row { display: flex; flex-wrap: wrap; gap: var(--sp-5); align-items: center; justify-content: space-between; }
+
+  /* ── 13. 旧导航类名兼容：老文件残留标记仍需显示正常 ── */
+  .pnav { position: sticky; top: 0; z-index: 50; }
+  .pnav-in { width: min(100% - 48px, 1110px); margin-inline: auto; height: 62px; display: flex; align-items: center; justify-content: space-between; gap: var(--sp-5); }
+  .pnav-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--c-text); font-weight: 600; letter-spacing: -.01em; }
+  .pnav-brand i { display: block; width: 22px; height: 22px; border-radius: 6px; background: var(--c-brand); }
+  .pnav-links { display: flex; align-items: center; gap: 20px; }
+
+  /* ── 14. 动效与可访问性 ── */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+    html { scroll-behavior: auto; }
+  }
+  @media (hover: none) {
+    .glass-card:hover, .btn-primary:hover, .btn-ghost:hover,
+    .relgrid .pcard:hover, .prelated-grid .pcard:hover { transform: none; }
+  }
+
+  /* ── 引航者计划 · 右上角入口（站内统一） ── */
+  .pilot-pill {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 5px 13px 5px 11px; border-radius: 999px;
+    border: 1px solid color-mix(in srgb, var(--accent, #2563eb) 34%, transparent);
+    background: color-mix(in srgb, var(--accent, #2563eb) 9%, transparent);
+    color: var(--accent, #2563eb);
+    font-size: 13px; font-weight: 600; line-height: 1.2;
+    text-decoration: none; white-space: nowrap;
+    transition: background-color .2s cubic-bezier(.22,1,.36,1),
+                border-color .2s cubic-bezier(.22,1,.36,1),
+                transform .2s cubic-bezier(.22,1,.36,1),
+                color .2s cubic-bezier(.22,1,.36,1);
+  }
+  .pilot-pill .pilot-dot {
+    width: 6px; height: 6px; border-radius: 50%; flex: none;
+    background: currentColor;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent, #2563eb) 16%, transparent);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .pilot-pill:hover {
+      background: color-mix(in srgb, var(--accent, #2563eb) 16%, transparent);
+      border-color: color-mix(in srgb, var(--accent, #2563eb) 62%, transparent);
+      transform: translateY(-1px);
+    }
+  }
+  .pilot-pill:active { transform: scale(.97); }
+  .pilot-pill:focus-visible {
+    outline: 2px solid var(--accent, #2563eb);
+    outline-offset: 2px;
+  }
+  @media (max-width: 820px) {
+    .pilot-pill { font-size: 12px; padding: 4px 10px 4px 9px; }
+    .pilot-pill .pilot-dot { width: 5px; height: 5px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .pilot-pill { transition: none; }
+  }
+
+  /* 窄屏守卫：站内既有规则 .pnav-links a:not(.pnav-cta){display:none} 会把入口一起藏掉。
+     用同特异度选择器（0,2,1）并在源序上后置覆盖，使入口在窄屏仍然可见。 */
+  @media (max-width: 900px) {
+    .pnav-links a.pilot-pill,
+    .nav-links a.pilot-pill { display: inline-flex; }
+  }
+  @media (max-width: 520px) {
+    .pnav-links a.pilot-pill,
+    .nav-links a.pilot-pill { display: inline-flex; font-size: 11.5px; padding: 4px 9px 4px 8px; gap: 5px; }
+  }
+
+
+</style>
+
+<style>
+  /* 3.4 预览报告 · 仅本页需要的少量补充 */
+  .pabstract p { margin: .5em 0; }
+  .stat-row { display: flex; flex-wrap: wrap; gap: 14px; margin: 20px 0 26px; }
+  .stat { flex: 1 1 140px; min-width: 140px; padding: 14px 16px; border: 1px solid var(--c-border); border-radius: 12px; background: var(--c-surface-3); text-align: center; }
+  .stat b { display: block; font-size: 1.7rem; line-height: 1.15; font-family: 'Space Grotesk', var(--sans); letter-spacing: -.02em; }
+  .stat span { display: block; margin-top: 4px; font-size: .82rem; color: var(--c-text-2); }
+  .note { padding: 10px 14px; border-left: 3px solid var(--c-brand); background: var(--c-code-bg); border-radius: 0 8px 8px 0; font-size: .9rem; color: var(--c-text-2); }
+</style>
+
+</head>
+
+<body>
+
+<nav class="pnav nav-blur" aria-label="站内导航">
+  <div class="pnav-in nav-in">
+    <a class="pnav-brand nav-brand" href="../index.html" aria-label="dsh-auto-memory 首页">
+      <span class="brand-logo" aria-hidden="true">
+        <svg viewBox="0 0 40 40" fill="none">
+            <g class="brain-path">
+              <path d="M20 6c-4 0-7 2.5-7 6 0 1 .2 2 .6 2.8C11 15.6 9.5 17.4 9.5 19.6c0 1.6.9 3 2.3 3.8-.2.6-.3 1.2-.3 1.9 0 3.2 2.6 5.7 6 5.7 1 0 1.9-.2 2.5-.7"/>
+              <path d="M20 6c4 0 7 2.5 7 6 0 1-.2 2-.6 2.8 2.6.8 4.1 2.6 4.1 4.8 0 1.6-.9 3-2.3 3.8.2.6.3 1.2.3 1.9 0 3.2-2.6 5.7-6 5.7-1 0-1.9-.2-2.5-.7"/>
+              <path d="M20 6v25"/>
+            </g>
+        <g class="pulse"><circle cx="20" cy="20" r="14" opacity=".5"/></g>
+        </svg>
+      </span>
+      <span class="brand-name font-display">dsh-auto-memory</span>
+    </a>
+    <div class="pnav-links nav-links">
+      <a class="nav-link" href="../index.html">主页</a>
+      <a class="nav-link is-active" href="index.html" aria-current="page">技术报告</a>
+      <a class="nav-link nav-opt" href="https://github.com/Aik358/dsh-auto-memory" target="_blank" rel="noreferrer">GitHub</a>
+      <a class="nav-link nav-opt" href="https://github.com/Aik358/dsh-auto-memory/blob/main/CHANGELOG.md" target="_blank" rel="noreferrer">更新日志</a>
+      <a class="pilot-pill" href="../program/index.html" aria-label="引航者计划 · Pilot Credits Program"><span class="pilot-dot" aria-hidden="true"></span><span class="pilot-label">引航者计划</span></a>
+      <span class="lang-switch" role="group" aria-label="语言" hidden>
+        <button type="button" data-lang="zh" class="is-on" aria-pressed="true">中</button>
+        <button type="button" data-lang="en" aria-pressed="false">EN</button>
+      </span>
+      <button id="theme-toggle" class="theme-toggle-btn" type="button" aria-label="切换主题" aria-pressed="false">
+        <svg id="theme-icon-sun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+        <svg id="theme-icon-moon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+      </button>
+    </div>
+  </div>
+
+</nav>
+
+<header class="phero">
+  <div class="pwrap">
+    <div class="phero-in">
+      <h1 class="ptitle font-display">v3.4.0-alpha.1<br>抢先预览版</h1>
+      <p class="psub">记忆单元从「流水账」迁到「事件」——一次换地基的重构，请社区帮忙核验</p>
+      <div class="pmeta">
+        <span class="tagline">预览版 · 非正式版</span><span class="dot"></span>
+        <span>2026-10-31</span><span class="dot"></span>
+        <span>403 个提交 · 45 个新模块 · 309 个新测试套件</span>
+      </div>
+      <div class="pabstract">
+        <p><strong>这不是正式版。</strong>不上 npm，只发 GitHub。目的不是让普通用户升级，而是让社区先跑起来做核验与研究。</p>
+        <p>v3.3.x 的记忆是一条流水账；v3.4 把它换成了事件。改动量大、牵涉面广，<strong>必然存在遗漏与缺陷</strong>——这也正是先发预览版的原因。</p>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="particle prose">
+
+<h2>1　排查分两条线</h2>
+<p>对应两个 GitHub Label：</p>
+<div class="table-wrap"><table>
+<thead><tr><th>Label</th><th>管什么</th><th>典型问题</th></tr></thead>
+<tbody>
+<tr><td><code>preview function</code></td><td><strong>功能正确性</strong></td><td>按钮点了该生效却没生效；白板该更新却没更新</td></tr>
+<tr><td><code>preview bug report</code></td><td><strong>代码运行正确性</strong></td><td>异常没被捕获、竞态、断言写错、边界条件漏判</td></tr>
+</tbody></table></div>
+
+<h2>2　改动规模</h2>
+<p>相对 v3.3.17 的分叉点 <code>e951d9eb</code>：</p>
+<div class="stat-row">
+  <div class="stat"><b>403</b><span>本支线提交</span></div>
+  <div class="stat"><b>917</b><span>新增文件</span></div>
+  <div class="stat"><b>474</b><span>修改文件</span></div>
+  <div class="stat"><b>45</b><span>新增 lib 模块</span></div>
+  <div class="stat"><b>309</b><span>新增测试</span></div>
+</div>
+
+<h3>新增的核心模块</h3>
+<div class="table-wrap"><table>
+<thead><tr><th>模块</th><th>行数</th><th>作用</th></tr></thead>
+<tbody>
+<tr><td><code>lib/event-store.js</code></td><td>677</td><td>事件本体存储（schema v2），唯一真源</td></tr>
+<tr><td><code>lib/event-write.js</code></td><td>537</td><td>事件写入 + 四段规范化</td></tr>
+<tr><td><code>lib/ev4-adapter.js</code></td><td>521</td><td>前端事件视图适配</td></tr>
+<tr><td><code>lib/event-render.js</code></td><td>503</td><td>事件渲染</td></tr>
+<tr><td><code>lib/memory-mutation-transaction.js</code></td><td>336</td><td>记忆变更事务</td></tr>
+<tr><td><code>lib/event-regroup.js</code></td><td>291</td><td>事件归组</td></tr>
+<tr><td><code>lib/plan-render.js</code></td><td>282</td><td>白板渲染（事件投影）</td></tr>
+<tr><td><code>lib/shared-state-lock.js</code></td><td>247</td><td>共享状态锁</td></tr>
+<tr><td><code>lib/user-portrait.js</code></td><td>244</td><td>用户画像（四类感知）</td></tr>
+</tbody></table></div>
+
+<h2>3　设计意图（先读懂，再判断对错）</h2>
+
+<h3>3.1　三层结构，各管一件事</h3>
+<div class="table-wrap"><table>
+<thead><tr><th>层</th><th>单位</th><th>是否事件化</th><th>职责</th></tr></thead>
+<tbody>
+<tr><td><strong>长期记忆</strong></td><td>事件 <code>evt_xxxxxxxx</code></td><td>✅ <strong>是</strong></td><td>一件事一个容器，跨天可中断再捡起</td></tr>
+<tr><td>每日日志</td><td>日期</td><td>❌ 否</td><td>日记类，按天追加</td></tr>
+<tr><td>每日反思</td><td>日期</td><td>❌ 否</td><td>日志的<strong>蒸馏产物</strong>，独立于事件</td></tr>
+</tbody></table></div>
+<p><strong>这是刻意的，不是遗漏。</strong>日志与反思的语义单位是「一天」，硬塞进事件会逼模型在写日记时反推「这属于哪件事」——纯噪声。</p>
+
+<h3>3.2　事件里装什么</h3>
+<pre><code>事件 evt_a1b2c3d4
+├── name / summary        ← L0 总览，可随时重写
+├── sections{goal, doing, dead, next}   ← 反映【当前】状态，非历史累积
+├── checkpoints[]         ← append-only，只增不改
+├── userPercept[]         ← 人类侧观察
+├── agentTrace[]          ← Agent 动作
+├── sharedGround[]        ← 已达成的共识
+└── commitment[]          ← 对用户的承诺</code></pre>
+
+<h3>3.3　两条硬约束</h3>
+<ol>
+<li><strong>检查点 append-only</strong> —— 历史不重写。要更正就追加新检查点 + <code>supersedes</code>/<code>retract</code> 标记。</li>
+<li><strong>每次 append 后必须重写 <code>sections</code></strong> —— 只追加不刷四段，四段会静默变成陈旧快照，注入的 <code>next</code> 开始指向早就做完的事。</li>
+</ol>
+
+<h3>3.4　白板是投影</h3>
+<p><code>handoff/PLAN.md</code> <strong>由事件渲染</strong>，不是手写文档。手写会丢 <code>&lt;!-- memory:mem_* --&gt;</code> 锚点，卡片体系断裂。</p>
+
+<h2>4　已知问题（请优先验这些）</h2>
+
+<h3>4.1　团队同步的服务端完全未验证 ⚠️</h3>
+<p>本机 <code>teamEnabled=false</code>、<code>teamServerUrl</code> 为空。<strong>未证伪</strong>：服务端是否接受未知 <code>kind</code>、能否承载 322 KB 请求体。</p>
+<pre><code>node tools/probe-team-baseline.mjs --url &lt;你的服务端&gt; --token &lt;token&gt;</code></pre>
+<p>零副作用（用 <code>__probe__</code> 前缀的包，不碰真实记忆）。三种结果：</p>
+<div class="table-wrap"><table>
+<thead><tr><th>结果</th><th>含义</th></tr></thead>
+<tbody>
+<tr><td><code>A_OK</code></td><td>现实现直接可用</td></tr>
+<tr><td><code>A_NEEDS_SPLIT</code></td><td>基线需分片（约 220 行工作量）</td></tr>
+<tr><td><code>A_BLOCKED_BY_SERVER</code></td><td>需服务端放行，或改走对象存储</td></tr>
+</tbody></table></div>
+
+<h3>4.2　B3 升级驱动器故意未实现</h3>
+<p><code>lib/team-upgrade-driver.js</code> 的 <code>upgradeLocal</code> / <code>verify</code> 是 <strong>fail-closed</strong> 的：会明确失败，而不是假装成功。这不是 bug，是设计——但需要有人把它实现完。</p>
+
+<h3>4.3　目录体积</h3>
+<p><code>artifacts/</code> 被 git 追踪约 <strong>1.16 GB</strong>（工作区实体 6.7 GB）。建议浅克隆：</p>
+<pre><code>git clone --depth=1 https://github.com/Aik358/dsh-auto-memory.git</code></pre>
+
+<h2>5　排查清单</h2>
+
+<h3>5.1　环境准备</h3>
+<pre><code>git clone --depth=1 https://github.com/Aik358/dsh-auto-memory.git
+cd dsh-auto-memory
+node --version        # 需要 Node 20+
+node tools/run-smoke.mjs --jobs=8 --timeout=180000</code></pre>
+<p><strong>预期</strong>：535 套件全绿。若有一条红，请先单独复跑 <code>node tests/smoke/smoke-test-&lt;name&gt;.mjs</code>。</p>
+<p class="note">已知：<code>issue207-processes</code>、<code>sidecar-watchdog</code>、<code>issue384-387-external-import</code>、<code>fullpage-negative</code>、<code>v4-h3-d-memory-usage</code> 在高并发下有资源竞争型假红，单跑会绿。</p>
+
+<h3>5.2　功能正确性（label: <code>preview function</code>）</h3>
+<div class="table-wrap"><table>
+<thead><tr><th>#</th><th>验什么</th><th>怎么看对不对</th></tr></thead>
+<tbody>
+<tr><td>F1</td><td>事件是否真的被创建</td><td>调 <code>memory_event(action=create)</code>，看 <code>handoff/event-store.json</code> 里有没有 <code>evt_</code></td></tr>
+<tr><td>F2</td><td>检查点是否 append-only</td><td>连 append 两次，第二次不应覆盖第一次</td></tr>
+<tr><td>F3</td><td>四段是否跟随更新</td><td>append 后看事件头 <code>sections</code> 有没有变</td></tr>
+<tr><td>F4</td><td>白板是否由事件渲染</td><td>改事件后 <code>PLAN.md</code> 应自己变（而不是你手写）</td></tr>
+<tr><td>F5</td><td>日志/反思是否<strong>不</strong>进事件</td><td>写 <code>memory_log</code> 后事件库里<strong>不该</strong>多出对应事件</td></tr>
+<tr><td>F6</td><td>欢迎向导 10 步是否都可达</td><td>设置里重开向导，逐步点</td></tr>
+<tr><td>F7</td><td>设置页 v4 分区</td><td>应有「白板形态（事件投影）」条目</td></tr>
+</tbody></table></div>
+
+<h3>5.3　代码运行正确性（label: <code>preview bug report</code>）</h3>
+<div class="table-wrap"><table>
+<thead><tr><th>#</th><th>查什么</th><th>怎么查</th></tr></thead>
+<tbody>
+<tr><td>C1</td><td>未捕获异常</td><td>开 DevTools，看 Console 有无 <code>ReferenceError</code> / <code>TypeError</code></td></tr>
+<tr><td>C2</td><td>前端能否加载</td><td><code>node tests/smoke/smoke-test-client-loadable.mjs</code>（真执行 factory）</td></tr>
+<tr><td>C3</td><td>竞态</td><td>两个会话同时写同一事件，看有没有丢更新</td></tr>
+<tr><td>C4</td><td>事务回滚</td><td>记忆变更中途失败，旧数据是否完整</td></tr>
+<tr><td>C5</td><td>断言质量</td><td>抽查 <code>tests/smoke/</code>，找「只断言源码含某字符串」的假测试</td></tr>
+</tbody></table></div>
+
+<h2>6　最可能出问题的地方（作者自评）</h2>
+<p>按风险排序，<strong>不是</strong>按代码量：</p>
+<ol>
+<li><strong><code>lib/index.js</code>（+25,336 / −21,232）</strong> —— 单文件 1.37 MB，改动最大。任何跨模块口径不一致都藏在这里。</li>
+<li><strong>事件与日志的边界</strong> —— 「什么该进事件、什么不该」全靠模型判断，模型判错就会污染事件库。</li>
+<li><strong>白板渲染回写环</strong> —— 曾出现过「白板全文被写成检查点 → 渲染器又读回 → 闭环膨胀」。</li>
+<li><strong>同步的 kind 白名单</strong> —— 曾出现「applier 已注册但被 <code>requestKinds</code> 过滤掉」的半修。</li>
+<li><strong>前端样式变量</strong> —— 曾出现「编造了不存在的 <code>upBtnStyle</code> → ReferenceError → React 整棵树崩 → 插件闪退」。</li>
+</ol>
+
+<h2>7　怎么反馈</h2>
+<ul>
+<li><strong>功能问题</strong> → issue 打 <code>preview function</code></li>
+<li><strong>代码问题</strong> → issue 打 <code>preview bug report</code></li>
+<li>附上：版本 <code>3.4.0-alpha.1</code>、复现步骤、<code>.dsh-memory/</code> 相关片段、Console 报错原文</li>
+<li>也可以 QQ 群直接 @ 作者</li>
+</ul>
+
+</main>
+
+<footer class="pfoot">
+  <div class="pwrap">
+    <div class="pfoot-grid">
+      <div>
+        <div class="pfoot-brand">
+          <span class="brand-logo" aria-hidden="true">
+            <svg viewBox="0 0 40 40" fill="none">
+            <g class="brain-path">
+              <path d="M20 6c-4 0-7 2.5-7 6 0 1 .2 2 .6 2.8C11 15.6 9.5 17.4 9.5 19.6c0 1.6.9 3 2.3 3.8-.2.6-.3 1.2-.3 1.9 0 3.2 2.6 5.7 6 5.7 1 0 1.9-.2 2.5-.7"/>
+              <path d="M20 6c4 0 7 2.5 7 6 0 1-.2 2-.6 2.8 2.6.8 4.1 2.6 4.1 4.8 0 1.6-.9 3-2.3 3.8.2.6.3 1.2.3 1.9 0 3.2-2.6 5.7-6 5.7-1 0-1.9-.2-2.5-.7"/>
+              <path d="M20 6v25"/>
+            </g>
+          </span>
+          <span>
+            <span class="pfoot-name font-display">dsh-auto-memory</span>
+            <span class="pfoot-tag">Ambient Recall · 「潜藏追忆，如影随形」</span>
+          </span>
+        </div>
+        <p class="pfoot-desc">DSH 插件：宿主侧主动联想记忆中间件。她记得，不必吩咐 —— 记忆长在你自己的机器上。BSD-3-Clause。</p>
+      </div>
+      <div>
+        <div class="col-title">项目</div>
+        <ul>
+          <li><a class="nav-link" href="../index.html">主页</a></li>
+          <li><a class="nav-link" href="index.html">全部报告</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="col-title">资源</div>
+        <ul>
+          <li><a class="nav-link" href="https://github.com/Aik358/dsh-auto-memory" target="_blank" rel="noreferrer">GitHub</a></li>
+          <li><a class="nav-link" href="https://www.npmjs.com/package/@a9i5k4/dsh-auto-memory" target="_blank" rel="noreferrer">npm</a></li>
+          <li><a class="nav-link" href="https://github.com/Aik358/dsh-auto-memory/blob/main/CHANGELOG.md" target="_blank" rel="noreferrer">CHANGELOG</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="pfoot-base">
+      <div>© 2026 dsh-auto-memory · Aik358 · BSD-3-Clause</div>
+      <div>记忆在你自己的机器上 · 可审计 · 可删除</div>
+    </div>
+  </div>
+</footer>
+<script>
+(function () {
+  var links = [].slice.call(document.querySelectorAll('.ptoc-list a'));
+  var heads = links.map(function (a) { return document.getElementById(a.getAttribute('href').slice(1)); });
+  if (!('IntersectionObserver' in window)) return;
+  var io = new IntersectionObserver(function (es) {
+    es.forEach(function (e) {
+      var i = heads.indexOf(e.target);
+      if (i < 0) return;
+      if (e.isIntersecting) { links.forEach(function (l) { l.classList.remove('on'); }); links[i].classList.add('on'); }
+    });
+  }, { rootMargin: '-96px 0px -70% 0px', threshold: 0 });
+  heads.forEach(function (h) { if (h) io.observe(h); });
+})();
+</script>
+<script type="application/json" id="i18n-en">{"47347508":"8.2　Phase two: longitudinal trials with real users","72710219":"7.1　Mechanism: were the right candidates found?","48723fbf":"Context-Conditioned Proactive Memory<br>for Sustained Human–Agent Interaction","53a526b1":"A Conceptual Review and Research Agenda for Host-Side Memory-Use Policies","d250ff63":"Research review","6ccf9e6e":"Next-phase research agenda","7e03d82b":"<strong>Abstract</strong>　The value of a long-term agent's memory depends on relevance, but also on the purpose of the current interaction, user authorisation, and the history shared by both parties. What helps a coding task may be an interruption in small talk; a shared experience may not answer the question directly yet still help make sense of what is being said. Accurate memory can also be disclosed at the wrong moment.","41a8b128":"Synthesising long-term dialogue memory, affective proactive retrieval, strategic memory use, relational agents, persona consistency, and memory governance, this paper proposes a framework for <strong>context-conditioned proactive memory use</strong>. Direct prior work and benchmarks already exist in this direction; our contribution is <strong>conceptual organisation and a validation agenda</strong> for host-side middleware, and we make no priority claim.","ad5d0991":"The core proposition: <strong>memory should be evaluated by its fitting use in the current interaction; finding, delivering, using, mentioning, and being accepted by the user each require their own evidence.</strong>","8afd4c9b":"1　From \"recalling\" to \"how a shared history shapes a response\"","01ff0aa9":"2　Scope, review method, and conceptual boundaries","fdc7b09c":"2.1　Review scope","279ab2d3":"2.2　Search and selection","cf5c0b3a":"2.3　Terminology: four memory kinds, five decision stages","824779a3":"3　From August 19 to M7: technical baseline and evidence boundaries","c344e798":"3.1　August 19: making runtime proactivity decidable","dfadb507":"3.2　M7: retrieval relevance and recall necessity are not one measure","5f75e5e2":"3.3　What the existing numbers do and do not show","6bcbdbab":"4　Related work: existing blocks, overlaps, boundaries","b6533043":"4.1　Language-agent architectures and long-term memory benchmarks","bb863018":"4.2　Natural memory use, reference, and forgetting","30baa43d":"4.3　Relational agents, real long-term relationships, and RECALLbot","6051a04f":"4.4　Persona consistency and embodied memory","d11db193":"4.5　Synthesis: the gap is integration, not absence of prior work","b1507646":"5　A framework for context-conditioned proactive memory use","b9a6c4e2":"5.1　Interaction purpose is not two fixed personas","2ae138e5":"5.2　Splitting \"helpful\" into task and relational value","962ef8d3":"5.3　Intervention strength is several composable policy axes","0e0ff92e":"5.4　Shared memory must keep provenance and multiple perspectives","0fcc295c":"6　Research propositions and falsifiable questions","bd6c13d4":"7　Evaluation: four levels answering four different questions","79fbf7e1":"7.2　Decision: should it affect this turn?","762e0afb":"7.3　Output: was use and disclosure accurate and appropriate?","29cd0498":"7.4　Human outcome: did the user's experience change?","453581c9":"8　Causal experiments and the research roadmap","fb82dede":"8.1　Phase one: offline, paired, reproducible response evaluation","5fc8cd58":"8.3　Phase three: model migration and embodied extension","c9474e36":"9　Architecture: the host side as an auditable memory-scheduling layer","4c6dda51":"The smallest viable research sequence","7b94ec49":"10　Risks, governance, and failure criteria","34f5e4f3":"11　Conclusion: from proactive recall to memory use within a relationship","e1ae4ff6":"References","930314d1":"First-hand project materials","8757f89e":"Research statement","b4150dcc":"Afterword","33120c77":"\"Do not listen with the ear, but with the mind.\" — Zhuangzi, \"In the World of Men\"","a7d858e2":"This review did not start from \"what else can we change about memory\", but from a plainer question: why is the same memory right at work and an interruption in small talk? On August 19 we made \"when should it come to mind\" a decidable mechanism; this time the question is the step after it — once it has surfaced, how should it be used?","63b66695":"The hard part was not gathering literature, but resisting the claim that we had proved something. After finding Project Sue, RECALLbot, and the ACL 2026 batch, two claims of priority came out of this draft: the concept already has occupants — which is precisely why the direction is right. What remains open is a reproducible evaluation for relational memory: finding, delivering, using, mentioning, and being accepted each need their own numbers.","dbb59311":"So we wrote a research agenda rather than a results report. Whether relational experience actually improves is a question this paper never answers; it only puts the question clearly and offers a falsifiable route. Once the first controlled comparison runs, there will be somewhere to put the answer.","5f475b84":"Related reports","2658b070":"Host-side proactive associative memory middleware","e35b877e":"Defining the runtime boundary for memory that surfaces unbidden: the host observes context and delivers memory before the model speaks.","7b0695c3":"From semantic relevance to recall necessity","014d8ec0":"\"Looks alike\" and \"should be surfaced\" are two different targets. Section 3.2 of this paper builds on that separation.","5a4b56d0":"All technical reports","99169dce":"The complete index of eight reports with a quick-reference table of key conclusions.","25cf9921":"From semantic relevance to recall necessity: finding, measuring and fixing the echo trap","b5133e9a":"The retrieval layer concludes what material enters the candidate set; that report answers whether to interrupt right now.","ad1c329b":"Host-side proactive recall memory middleware for heterogeneous LLM Agents","f8ab9db9":"Placing these capabilities on one runtime boundary: why the memory layer belongs outside the model.","1dc46d65":"Full index of the seven reports with a quick-reference of key conclusions.","__title__":"Context-Conditioned Proactive Memory for Sustained Human–Agent Interaction — dsh-auto-memory"}</script>
+<script src="assets/i18n.js" defer></script>
+<script src="assets/theme.js" defer></script>
+<script src="assets/step5-motion.js" defer></script>
+</body>
+</html>

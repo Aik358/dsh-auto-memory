@@ -4,6 +4,63 @@ All notable changes to dsh-auto-memory.
 
 ---
 
+## [3.4.0-alpha.1] — 2026-10-31 · 抢先预览版（Preview / Research Build）
+
+> **这不是正式版。** 不上 npm，只发 GitHub。目的是**让社区先跑起来做核验与研究**，
+> 而不是让普通用户升级。请按 `docs/PREVIEW-3.4.md` 的清单逐项验证。
+
+### 这一版是什么
+
+v3.3.x 是「流水账式记忆 + 注入档位」的成熟形态；v3.4 是**记忆单元从流水账迁到「事件」**
+的一次底层重构。改动量大、牵涉面广，**必然存在遗漏与缺陷**，这也是先发预览版的原因。
+
+### 新增（Added）
+
+- **事件记忆模型（v4）**：长期记忆以「事件」为单位，一件事一个容器，可跨天中断再捡起。
+  事件内含四段状态（目标/做到哪/卡在哪/下一步）+ 五类只增不改的感知
+  （检查点 / 用户感知 / Agent 轨迹 / 共识 / 承诺）。
+- **白板改为事件的投影**：`PLAN.md` 由事件渲染（`memory_note(kind=plan, fromEvents=true)`），
+  不再手写正文，避免手写丢卡片锚点。
+- **团队基线同步（方案 A）**：一台机器整理并上传基线，其他机器直接下载该基线，
+  不必各自重跑整理。载荷 brotli+base64 压缩到约 322 KB。下载侧七步安全闸门，
+  **绝不静默替换记忆库**，必须用户点「下载并应用」。
+- **注入档位体系收口**：8 档枚举真正可达（含 post_compact），档位名单四处口径统一。
+- **三形态头像**：图片 / 首字母圆形 / 用户名，显式 `avatarStyle` 优先，未指定时降级。
+
+### 修复（Fixed）
+
+- 修复白板 sections 被整张状态表污染（节标题「当前状态」撞账本 doing 别名表）。
+- 修复 `requestKinds` 装配层硬编码导致新增同步 kind 被静默过滤（applier 注册了却拉不到）。
+- 修复计划预算（planCap）与白板预算脱节，完整档白板曾被裁成 0 字节。
+- 修复欢迎向导步骤索引硬编码 —— 新增步骤后「下载卡」定位失效（改为动态定位）。
+- 修复 `fullInjectOnCompact` 死键（配置项存在但无消费者）。
+
+### 已知问题 / 未验证（Known issues — 请重点排查）
+
+- **团队同步的服务端未被真机验证**：本机 `teamEnabled=false`、`teamServerUrl` 为空，
+  「服务端是否接受未知 kind」「能否承载 322 KB 请求体」均**未证伪**。
+  需用 `node tools/probe-team-baseline.mjs` 探测。
+- **B3 升级驱动器的 `upgradeLocal` / `verify` 仍故意未实现**（fail-closed），
+  即「本地整理并上传」路径在部分分支下会明确失败而不是假装成功。
+- **`artifacts/` 目录体积偏大**（仓库内约 1.16 GB 被追踪）：建议浅克隆 `--depth=1`。
+- 注入档位续修的 T1（legacy 漂移）仍需确认。
+
+### 反馈方式
+
+- **功能正确性** → 用 label `preview function`
+- **代码运行正确性 / 逻辑缺陷** → 用 label `preview bug report`
+- 也可在 QQ 群直接 @ 作者
+
+### 安装 / 试跑
+
+```bash
+git clone --depth=1 --branch main https://github.com/Aik358/dsh-auto-memory.git
+cd dsh-auto-memory
+node tools/run-smoke.mjs --jobs=8 --timeout=180000   # 全量回归
+```
+
+---
+
 ## [3.3.17] — 2026-10-23 · 自动沉淀「每日额度」落盘，跨宿主重启延续
 
 > **一句话**：`autoConsolidateDailyMax` 的计数此前只存内存、只有「日期变化」一个清零条件，宿主重启即归零 ⇒ 设成「每天 8 次」实际是「**每次启动** 8 次」。本版把计数按记忆日落盘，并对配置注释里从未实现过的单例承诺按实际行为改写。

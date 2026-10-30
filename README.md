@@ -217,6 +217,31 @@ Memory comes in four layers, each minding its own shelf:
 | Daily logs | `~/.dsh/memory/workspaces/{workspace}/YYYY-MM-DD.md` | Append-only work log |
 | Daily reflections | `…/reflections/YYYY-MM-DD.md` | Structured review (results / lessons / next) |
 
+### v4: the event is the first-class unit
+
+As of v4, long-term memory is no longer a flat stream — **everything durable lives in an *event*.**
+One event = one thing, and it can be interrupted and picked up again across days.
+
+| Layer | Unit | Eventized? | Job |
+|---|---|---|---|
+| **Long-term memory** | event (`evt_xxxxxxxx`) | ✅ **yes** | One container per thing; resumable across days |
+| Daily log | date (`YYYY-MM-DD.md`) | ❌ no | Diary-style, append per day |
+| Daily reflection | date (`reflections/`) | ❌ no | Distilled product *of the log*, independent from events |
+
+**Why logs and reflections are deliberately *not* eventized:** their semantic unit is "a day", not "a thing".
+Forcing them into events makes the model reverse-engineer "which thing does this diary entry belong to" — pure noise.
+
+An event carries: `name` / `summary` (L0 overview, rewritable), `sections{goal, doing, dead, next}`,
+and five append-only perception arrays — `checkpoints[]`, `userPercept[]` (how *you* reacted),
+`agentTrace[]` (what *she* did), `sharedGround[]` (what you both actually agreed), `commitment[]` (what she promised).
+
+Two rules matter more than the rest:
+
+- **Checkpoints are append-only.** History is never rewritten; corrections are new checkpoints with `supersedes` / `retract` marks. Auditability depends on this.
+- **`sections` must be rewritten after every checkpoint.** Append without refreshing the four sections and they silently rot into a stale snapshot — the injected `next` starts pointing at work you already finished.
+
+The whiteboard (`handoff/PLAN.md`) is a **projection of events**, not a hand-written document: change the events and it re-renders itself.
+
 Static discipline lives in the system prompt — byte-stable, keeps the prefix cache hot, never re-encodes history; dynamic memory rides a runtime snapshot — only the last day of logs plus a reflection digest are injected, everything else fetched on demand via `memory_read` / `memory_recall`. **Credential/secret sections are always filtered out of prompts.**
 
 **Memory writes itself.** After every turn a small subagent quietly makes one judgment — what's worth keeping: long-term-valuable topics are grouped into today's log (`## Topic (HH:MM)` + bullets), durable decisions are promoted to project notes, cross-project rules to user-level memory, small talk skipped. Failures don't panic — they queue and retry every 5 minutes, with a 15-second heartbeat file proving the loop is alive. Daily writes have a budget; over budget, the AI merges and dedupes before writing — she remembers restraint, and she remembers not to lose things.
@@ -660,7 +685,7 @@ Papers were authored by the autonomous engineering agent (ZCode / GLM); all conc
 | [**Teamwork guide**](docs/TEAMWORK-GUIDE.md) | Teamwork as it stands: every config key, the 10 team routes, the data-flow diagram (outbox → transport → merge → conflicts), standalone-mode behaviour, and the honest "not implemented" list. |
 | [**Frontend co-creation plan**](docs/FRONTEND-CO-CREATION.md) | What can outside contributors change, what is off-limits, and how to do it — complete component/route/slot map included. |
 | [**Pilot Credits Program**](docs/CREATOR-CREDIT-PROGRAM.md) | What contributors get back — three participation tracks, three evidence tiers, how community reports get published, and the research questions currently open. |
-| [Feature Inventory](docs/internal/FEATURE-INVENTORY.md) | What features exist and where each one lives (39 user capabilities / 21 tools / 80 routes / 175 config keys) |
+| [Feature Inventory](docs/internal/FEATURE-INVENTORY.md) | What features exist and where each one lives (39 user capabilities / 21 tools / 83 routes / 177 config keys) |
 
 > **⚠️ Upgrading from before 3.0?** A batch of default values was **flipped** in 3.0.0 —
 > most notably whiteboard + ledger went from `off` to **`on`**. Do not trust pre-3.0
