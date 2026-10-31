@@ -1,4 +1,4 @@
-# v3.4.0-alpha.1 预览版 · 开发者排查指南
+# v3.4.0-alpha.2 预览版 · 开发者排查指南
 
 > **这是抢先预览版（Preview / Research Build），不是正式版。**
 > 只发 GitHub、不上 npm。目的不是让普通用户升级，而是**请社区帮忙核验**。
@@ -179,9 +179,9 @@ node tests/smoke/smoke-test-<name>.mjs
 
 - **功能问题** → issue 打 `preview function report`
 - **代码问题** → issue 打 `preview bug report`
-- 附上：版本 `3.4.0-alpha.1`、复现步骤、`.dsh-memory/` 相关片段、Console 报错原文
+- 附上：版本 `3.4.0-alpha.2`、复现步骤、`.dsh-memory/` 相关片段、Console 报错原文
 - 也可以 QQ 群直接 @ 作者
 
 ---
 
-*本报告对应提交：见 tag `v3.4.0-alpha.1`*
+*本报告对应提交：见 tag `v3.4.0-alpha.2`*

@@ -1,7 +1,7 @@
-# v3.4.0-alpha.1 核对文档
+# v3.4.0-alpha.2 核对文档
 
 > **通知（一句话）**
-> v3.4.0-alpha.1 预览版已上线，改动很大，请开发者核对功能逻辑与代码实现。
+> v3.4.0-alpha.2 预览版已上线，改动很大，请开发者核对功能逻辑与代码实现。
 
 ---
 
@@ -138,9 +138,9 @@ v4 对注入提示词做了较大调整（事件四段渲染、档位分层、�
 
 - 功能问题 → issue 打 `preview function report`
 - 代码问题 → issue 打 `preview bug report`
-- 附：版本 `3.4.0-alpha.1`、复现步骤、`.dsh-memory/` 片段、Console 报错原文
+- 附：版本 `3.4.0-alpha.2`、复现步骤、`.dsh-memory/` 片段、Console 报错原文
 - 或 QQ 群直接 @ 作者
 
 ---
 
-*对应 tag：`v3.4.0-alpha.1` · 分支：`preview`*
+*对应 tag：`v3.4.0-alpha.2` · 分支：`preview`*

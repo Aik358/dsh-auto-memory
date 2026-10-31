@@ -1,4 +1,4 @@
-# v3.4.0-alpha.1 · 抢先预览版（Preview / Research Build）
+# v3.4.0-alpha.2 · 抢先预览版（Preview / Research Build）
 
 > **这不是正式版。** 不上 npm，只发 GitHub。目的是让社区先跑起来做核验与研究。
 
