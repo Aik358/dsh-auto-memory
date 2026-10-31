@@ -1,35 +1,38 @@
 # v3.4.0-alpha.1 核对文档
 
-> **一句话通知**
+> **通知（一句话）**
 > v3.4.0-alpha.1 预览版已上线，改动很大，请开发者核对功能逻辑与代码实现。
 
 ---
 
-## 0. 怎么拿
+## 1. 下载与测试
 
 ```bash
 git clone --depth=1 --branch preview https://github.com/Aik358/dsh-auto-memory.git
 cd dsh-auto-memory
+node --version    # 需要 Node 20+
 node tools/run-smoke.mjs --jobs=8 --timeout=180000
 ```
 
 **预期**：535 套件全绿，约 160 秒。
-必须加 `--depth=1` —— `artifacts/` 被追踪约 1.16 GB。
 
-单条失败先单独复跑：`node tests/smoke/smoke-test-<名字>.mjs`
-（高并发下有资源竞争型假红：`issue207-processes`、`sidecar-watchdog`、`issue384-387-external-import`、`fullpage-negative`、`v4-h3-d-memory-usage`）
+- 必须加 `--depth=1`：`artifacts/` 被追踪约 1.16 GB
+- 单条失败先单独复跑：`node tests/smoke/smoke-test-<名字>.mjs`
+- 高并发下有资源竞争型假红（单跑会绿）：`issue207-processes`、`sidecar-watchdog`、`issue384-387-external-import`、`fullpage-negative`、`v4-h3-d-memory-usage`
 
 ---
 
-## 1. 改了什么
+## 2. 修改说明与注意事项
 
-**核心：记忆单位从「流水账」换成「事件」。这不是加功能，是换地基。**
+### 2.1 核心改动：记忆单位从「流水账」换成「事件」
 
-| 层 | 单位 | 是否事件化 |
-|---|---|---|
-| 长期记忆 | 事件 `evt_xxxxxxxx` | ✅ 是（一件事一个容器，跨天可续） |
-| 每日日志 | 日期 | ❌ 否（日记类） |
-| 每日反思 | 日期 | ❌ 否（日志的蒸馏产物） |
+**这不是加功能，是换地基。**
+
+| 层 | 单位 | 是否事件化 | 说明 |
+|---|---|---|---|
+| 长期记忆 | 事件 `evt_xxxxxxxx` | ✅ **是** | 一件事一个容器，跨天可中断再捡起 |
+| 每日日志 | 日期 | ❌ 否 | 日记类，按天追加 |
+| 每日反思 | 日期 | ❌ 否 | 日志的**蒸馏产物**，独立于事件 |
 
 > 日志与反思**刻意不事件化**——语义单位是「一天」，不是「一件事」。这是设计，不是遗漏。
 
@@ -40,13 +43,13 @@ node tools/run-smoke.mjs --jobs=8 --timeout=180000
 ├── name / summary        ← L0 总览，可重写
 ├── sections{goal, doing, dead, next}   ← 反映【当前】状态，非历史累积
 ├── checkpoints[]         ← append-only，只增不改
-├── userPercept[]         ← 人类侧观察
+├── userPercept[]         ← 人类侧观察（偏好/状态/未完成目标）
 ├── agentTrace[]          ← Agent 动作
 ├── sharedGround[]        ← 已达成的共识
 └── commitment[]          ← 对用户的承诺
 ```
 
-**改动规模（相对 v3.3.17 分叉点 `e951d9eb`）**
+### 2.2 改动规模（相对 v3.3.17 分叉点 `e951d9eb`）
 
 | 项 | 数量 |
 |---|---|
@@ -56,15 +59,15 @@ node tools/run-smoke.mjs --jobs=8 --timeout=180000
 | 新增 `lib/` 模块 | 45 |
 | 新增测试套件 | 309 |
 
-**三块新东西**
+**核心新模块**：`event-store.js`(677) · `event-write.js`(537) · `ev4-adapter.js`(521) · `event-render.js`(503) · `memory-mutation-transaction.js`(336) · `plan-render.js`(282) · `user-portrait.js`(244)
+
+### 2.3 另外三块新东西
 
 1. **白板改为事件投影** —— `handoff/PLAN.md` 由事件渲染，不手写（手写会丢 `<!-- memory:mem_* -->` 锚点）
 2. **团队基线同步** —— 一台机器整理上传，其他机器下载；brotli+base64 约 322 KB；下载侧七步安全闸门，**绝不静默替换记忆库**
 3. **注入档位收口** —— 8 档枚举真正可达（含 post_compact）
 
----
-
-## 2. 必须注意
+### 2.4 ⚠️ 必须注意
 
 | # | 事项 | 说明 |
 |---|---|---|
@@ -75,7 +78,7 @@ node tools/run-smoke.mjs --jobs=8 --timeout=180000
 
 ---
 
-## 3. 核对清单
+## 3. 核对与优化清单
 
 ### 3.1 功能正确性（Label: `preview function`）
 
@@ -111,12 +114,13 @@ node tools/run-smoke.mjs --jobs=8 --timeout=180000
 
 ---
 
-## 4. 提示词
+## 4. 提示词修改
 
-v4 对注入提示词做了较大调整。相关调查已成 HTML 报告，**已配 GitHub Pages 上线**：
+v4 对注入提示词做了较大调整（事件四段渲染、档位分层、技能库优先等）。相关调查已成 HTML 报告并上线：
 
-- **在线**：https://aik358.github.io/dsh-auto-memory/landing/news/2026-10-29-memory-compliance.html
-- **本地**：`docs/landing/news/2026-10-29-memory-compliance.html`
+- **线上（GitHub Pages）**：https://aik358.github.io/dsh-auto-memory/landing/news/2026-10-29-memory-compliance.html
+- **仓库内**：`docs/landing/news/2026-10-29-memory-compliance.html`
+- **索引页**：https://aik358.github.io/dsh-auto-memory/landing/news/
 
 提示词源文件（供直接核对）：
 
@@ -130,10 +134,10 @@ v4 对注入提示词做了较大调整。相关调查已成 HTML 报告，**已
 
 ---
 
-## 5. 反馈
+## 5. 反馈方式
 
-- 功能问题 → `preview function`
-- 代码问题 → `preview bug report`
+- 功能问题 → issue 打 `preview function`
+- 代码问题 → issue 打 `preview bug report`
 - 附：版本 `3.4.0-alpha.1`、复现步骤、`.dsh-memory/` 片段、Console 报错原文
 - 或 QQ 群直接 @ 作者
 
