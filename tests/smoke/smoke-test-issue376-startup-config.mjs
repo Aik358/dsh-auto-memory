@@ -12,7 +12,8 @@ const end = source.indexOf('\n      },', start)
 const dir = await fs.mkdtemp(path.join(tmpdir(), 'dam-376-'))
 const file = embeddingConfigFilePre(dir)
 await fs.mkdir(path.dirname(file), { recursive: true })
-const env = { engine: { config: {}, _jsConfigurationError: 'fixture earlier failure' }, path, memoryDir: () => dir, dshHome: () => dir, embeddingConfigFilePre, createDefaultEmbeddingConfigPre, updateEmbeddingConfigPre,
+const invalidations = []
+const env = { engine: { invalidatePythonRuntime: reason => invalidations.push(reason), config: {}, _jsConfigurationError: 'fixture earlier failure' }, path, memoryDir: () => dir, dshHome: () => dir, embeddingConfigFilePre, createDefaultEmbeddingConfigPre, updateEmbeddingConfigPre,
   isLoopbackRequest: () => true, panelAllowedHosts: [], forbiddenPanelPayloadPre: (req) => ({ error: 'forbidden: panel-access' }), readJsonBody: async (req) => req.body, diag() {}, writeJson: (res, status, body) => Object.assign(res, { status, body }) }
 const handler = new Function(...Object.keys(env), 'return (' + source.slice(start, end) + '\n})')(...Object.values(env))
 async function call(body) { const res = {}; await handler({ method: 'POST', body }, res); return res }
@@ -23,6 +24,7 @@ try {
     assert.equal((await call({ mode: 'shadow', createOnly: true })).status, 200)
     assert.equal(await fs.readFile(file, 'utf8'), original, 'startup must preserve existing config byte for byte')
   }
+  assert.deepEqual(invalidations, [], 'createOnly must not invalidate an existing config')
   await fs.rm(file)
   assert.equal((await call({ mode: 'shadow', createOnly: true })).status, 200)
   assert.equal(JSON.parse(await fs.readFile(file)).provider, 'js-e5-small-q8-pre-v1')
@@ -30,5 +32,6 @@ try {
   await call({ mode: 'shadow', createOnly: true })
   assert.equal(JSON.parse(await fs.readFile(file)).activationEmitMode, 'active')
   assert.equal(env.engine._jsConfigurationError, '', 'a confirmed manual save clears the earlier completion error')
+  assert.deepEqual(invalidations, ['activation-mode-saved', 'activation-mode-saved'])
   console.log('PASS #376 actual startup route preserves existing modes and later manual saves')
 } finally { await fs.rm(dir, { recursive: true, force: true }) }

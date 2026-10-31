@@ -15,7 +15,8 @@ fs.mkdirSync(path.dirname(cfgPath), { recursive: true })
 const logs = []
 let pass = 0
 const ok = (condition, label) => { assert.ok(condition, label); pass++ }
-const deps = { engine: { config: {} }, path, memoryDir: () => root, dshHome: () => root, resolveDshHomePre: () => root,
+const invalidations = []
+const deps = { engine: { config: {}, invalidatePythonRuntime: reason => invalidations.push(reason) }, path, memoryDir: () => root, dshHome: () => root, resolveDshHomePre: () => root,
   embeddingConfigFilePre, createDefaultEmbeddingConfigPre, updateEmbeddingConfigPre,
   isLoopbackRequest: () => true, panelAllowedHosts: [], forbiddenPanelPayloadPre: (req) => ({ error: 'forbidden: panel-access' }), readJsonBody: async (r) => r.body,
   writeJson: (_, status, body) => ({ status, body }), diag: (s) => logs.push(s) }
@@ -44,6 +45,7 @@ try {
     assert.equal(fs.readFileSync(cfgPath, 'utf8'), corrupt)
     assert.ok(logs.some((s) => s.includes('semantic-emit: FAILED')))
   }
+  assert.deepEqual(invalidations, ['activation-mode-saved', 'activation-mode-saved'])
   const dlAt = idx.indexOf('    try {\n      const _dlStart =')
   const dlEnd = idx.indexOf('    // ─────────── 三层检索契约 C3', dlAt)
   assert.ok(dlAt > 0 && dlEnd > dlAt)
