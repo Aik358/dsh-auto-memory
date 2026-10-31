@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 480" width="880" height="480" preserveAspectRatio="xMidYMid meet" role="img" style="font-variant-numeric:tabular-nums" font-family="Manrope,'Space Grotesk','PingFang SC','Microsoft YaHei',system-ui,sans-serif">
+<title>提示词从 1149 字符压缩到 45 字符，合规率保持 100% 不变；实测 token 也从 2651 到 2774，变化落在采样噪声内</title>
+<rect width="880" height="480" fill="#ffffff"/>
+<!--region canvas 0 0 880 480-->
+<!--region p 56 84 750 340-->
+<text x="56" y="32" font-size="17.5" font-weight="700" fill="#1e232c">删掉 96% 的提示词，合规率不动、token 也不动</text>
+<text x="56" y="54" font-size="12.5" fill="#454545">交接账本 8 个版本 × 5 任务 = 40 次；token 为同口径 3 次均值</text>
+<rect x="56" y="66" width="22" height="13" fill="#2563eb"/><text x="87" y="76" font-size="12.5" font-weight="700" fill="#1e232c">合规率（左轴）</text><rect x="200.5" y="66" width="22" height="13" fill="#94a3b8"/><text x="231.5" y="76" font-size="12.5" font-weight="700" fill="#1e232c">inputTokens（右轴，仅三点实测）</text>
+<text x="56" y="442" font-size="13.5" font-weight="700" fill="#2563eb">合规率恒为 100%：删提示词没有代价，也没有收益</text>
+<text x="56" y="460" font-size="13.5" font-weight="700" fill="#c0504d">token 2,651→2,774：同配置三次就分布在 2,439–2,958，变化淹没在噪声里</text>
+<line x1="99" y1="303.52" x2="806" y2="303.52" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4 5"/><text x="87" y="307.84" text-anchor="end" font-size="12" font-weight="700" fill="#1e232c">25%</text><line x1="99" y1="243.05" x2="806" y2="243.05" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4 5"/><text x="87" y="247.37" text-anchor="end" font-size="12" font-weight="700" fill="#1e232c">50%</text><line x1="99" y1="182.57" x2="806" y2="182.57" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4 5"/><text x="87" y="186.89" text-anchor="end" font-size="12" font-weight="700" fill="#1e232c">75%</text><line x1="99" y1="122.1" x2="806" y2="122.1" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4 5"/><text x="87" y="126.42" text-anchor="end" font-size="12" font-weight="700" fill="#1e232c">100%</text><line x1="99" y1="364" x2="806" y2="364" stroke="#94a3b8" stroke-width="1.4" data-role="axis" data-orient="h" data-panel="p" data-base="364"/><text x="168.9" y="384" text-anchor="middle" font-size="13" font-weight="700" fill="#1e232c">45</text><text x="168.9" y="401" text-anchor="middle" font-size="10.5" font-weight="700" fill="#1e232c">V3 极简</text><text x="308.7" y="384" text-anchor="middle" font-size="13" font-weight="700" fill="#1e232c">127</text><text x="308.7" y="401" text-anchor="middle" font-size="10.5" font-weight="700" fill="#1e232c">V1 最小集</text><text x="448.5" y="384" text-anchor="middle" font-size="13" font-weight="700" fill="#1e232c">177</text><text x="448.5" y="401" text-anchor="middle" font-size="10.5" font-weight="700" fill="#1e232c">V4 +回执</text><text x="588.3" y="384" text-anchor="middle" font-size="13" font-weight="700" fill="#1e232c">198</text><text x="588.3" y="401" text-anchor="middle" font-size="10.5" font-weight="700" fill="#1e232c">V2 禁后缀</text><text x="728.1" y="384" text-anchor="middle" font-size="13" font-weight="700" fill="#1e232c">1149</text><text x="728.1" y="401" text-anchor="middle" font-size="10.5" font-weight="700" fill="#1e232c">默认/V0</text>
+<rect x="141.9" y="122.1" width="54" height="241.9" fill="#2563eb" data-role="bar" data-panel="p" data-base="364" data-value="1"/>
+<text x="168.9" y="112.1" text-anchor="middle" font-size="12.5" font-weight="700" fill="#2563eb">100%</text>
+<rect x="281.7" y="122.1" width="54" height="241.9" fill="#2563eb" data-role="bar" data-panel="p" data-base="364" data-value="1"/>
+<text x="308.7" y="112.1" text-anchor="middle" font-size="12.5" font-weight="700" fill="#2563eb">100%</text>
+<rect x="421.5" y="122.1" width="54" height="241.9" fill="#2563eb" data-role="bar" data-panel="p" data-base="364" data-value="1"/>
+<text x="448.5" y="112.1" text-anchor="middle" font-size="12.5" font-weight="700" fill="#2563eb">100%</text>
+<rect x="561.3" y="122.1" width="54" height="241.9" fill="#2563eb" data-role="bar" data-panel="p" data-base="364" data-value="1"/>
+<text x="588.3" y="112.1" text-anchor="middle" font-size="12.5" font-weight="700" fill="#2563eb">100%</text>
+<rect x="701.1" y="122.1" width="54" height="241.9" fill="#2563eb" data-role="bar" data-panel="p" data-base="364" data-value="1"/>
+<text x="728.1" y="112.1" text-anchor="middle" font-size="12.5" font-weight="700" fill="#2563eb">100%</text>
+<text x="99" y="420" font-size="11.5" fill="#454545">提示词层字符数 →（越往右越长）</text>
+</svg>
