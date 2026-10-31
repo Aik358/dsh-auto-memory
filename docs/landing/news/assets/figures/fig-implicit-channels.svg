@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 500" width="880" height="500" preserveAspectRatio="xMidYMid meet" role="img" style="font-variant-numeric:tabular-nums" font-family="Manrope,'Space Grotesk','PingFang SC','Microsoft YaHei',system-ui,sans-serif">
+<title>隐性触发实验：8 个应写场景全部记住了，但只有 4 个走结构化通道，另 4 个写进日志、硬性规则或用户级记忆</title>
+<rect width="880" height="500" fill="#ffffff"/>
+<!--region canvas 0 0 880 500-->
+<!--region h 44 84 792 360-->
+<!--region h-col0.5 479.65 96 337.93 288-->
+<!--region h-col1 663.31 96 154.27 288-->
+<text x="44" y="32" font-size="17.5" font-weight="700" fill="#1e232c">模型都记住了，只是没走结构化通道</text>
+<text x="44" y="54" font-size="12.5" fill="#454545">场景不提任何记忆工具名 · 10/10 全部通过</text>
+<rect x="44" y="66" width="22" height="13" fill="#2563eb"/><text x="75" y="76" font-size="12.5" font-weight="700" fill="#1e232c">走结构化感知通道</text><rect x="201" y="66" width="22" height="13" fill="#94a3b8"/><text x="232" y="76" font-size="12.5" font-weight="700" fill="#1e232c">走其他通道（日志/规则/用户级记忆）</text>
+<text x="44" y="480" font-size="13.5" font-weight="700" fill="#2563eb">8 个应写场景全部记住了 —— 但 4 个写进了日志/规则/用户级记忆，只有 4 个用了结构化字段</text>
+<line x1="296" y1="96" x2="296" y2="396" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4 5"/><text x="296" y="415" text-anchor="middle" font-size="12" font-weight="700" fill="#454545">0%</text><line x1="479.65" y1="96" x2="479.65" y2="396" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4 5"/><text x="479.65" y="415" text-anchor="middle" font-size="12" font-weight="700" fill="#454545">50%</text><line x1="663.31" y1="96" x2="663.31" y2="396" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4 5"/><text x="663.31" y="415" text-anchor="middle" font-size="12" font-weight="700" fill="#454545">100%</text><line x1="296" y1="396" x2="817.58" y2="396" stroke="#94a3b8" stroke-width="1.4" data-role="axis" data-orient="h" data-panel="h" data-base="396" data-origin="296"/><text x="556.79" y="436" text-anchor="middle" font-size="13" fill="#454545">是否记住</text>
+<rect x="296" y="100" width="367.31" height="22.75" fill="#2563eb" data-role="hrow"/>
+<text x="284" y="115.88" text-anchor="end" font-size="12.5" fill="#1e232c">强共识「定了，不用再讨论」</text>
+<text x="673.31" y="115.88" font-size="12" font-weight="600" fill="#2563eb">sharedGround</text>
+<rect x="296" y="136.75" width="367.31" height="22.75" fill="#2563eb" data-role="hrow"/>
+<text x="284" y="152.63" text-anchor="end" font-size="12.5" fill="#1e232c">明确承诺「我答应你」</text>
+<text x="673.31" y="152.63" font-size="12" font-weight="600" fill="#2563eb">commitment</text>
+<rect x="296" y="173.5" width="367.31" height="22.75" fill="#2563eb" data-role="hrow"/>
+<text x="284" y="189.38" text-anchor="end" font-size="12.5" fill="#1e232c">明确 deadline</text>
+<text x="673.31" y="189.38" font-size="12" font-weight="600" fill="#2563eb">calendar</text>
+<rect x="296" y="210.25" width="367.31" height="22.75" fill="#2563eb" data-role="hrow"/>
+<text x="284" y="226.13" text-anchor="end" font-size="12.5" fill="#1e232c">相对时间「明天十点」</text>
+<text x="673.31" y="226.13" font-size="12" font-weight="600" fill="#2563eb">calendar</text>
+<rect x="296" y="247" width="227.73" height="22.75" fill="#94a3b8" data-role="hrow"/>
+<text x="284" y="262.88" text-anchor="end" font-size="12.5" fill="#1e232c">弱共识「行，就这么办」</text>
+<text x="533.73" y="262.88" font-size="12" font-weight="600" fill="#94a3b8">日志</text>
+<rect x="296" y="283.75" width="227.73" height="22.75" fill="#94a3b8" data-role="hrow"/>
+<text x="284" y="299.63" text-anchor="end" font-size="12.5" fill="#1e232c">软承诺「我下次注意」</text>
+<text x="533.73" y="299.63" font-size="12" font-weight="600" fill="#94a3b8">硬性规则</text>
+<rect x="296" y="320.5" width="227.73" height="22.75" fill="#94a3b8" data-role="hrow"/>
+<text x="284" y="336.38" text-anchor="end" font-size="12.5" fill="#1e232c">用户偏好「以后别用…」</text>
+<text x="533.73" y="336.38" font-size="12" font-weight="600" fill="#94a3b8">用户级 MEMORY</text>
+<rect x="296" y="357.25" width="227.73" height="22.75" fill="#94a3b8" data-role="hrow"/>
+<text x="284" y="373.13" text-anchor="end" font-size="12.5" fill="#1e232c">用户纠正错误结论</text>
+<text x="533.73" y="373.13" font-size="12" font-weight="600" fill="#94a3b8">日志+已推翻标记</text>
+</svg>
