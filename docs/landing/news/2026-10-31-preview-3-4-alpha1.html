@@ -467,9 +467,22 @@
   </div>
 </header>
 
-<main class="particle prose">
+<div class="pwrap">
+  <div class="pgrid">
+    <aside class="ptoc">
+      <ul class="ptoc-list">
+        <li><a href="#s1">1　排查分两条线</a></li>
+        <li><a href="#s2">2　改动规模</a></li>
+        <li><a href="#s3">3　设计意图（先读懂，再判断对错）</a></li>
+        <li><a href="#s4">4　已知问题（请优先验这些）</a></li>
+        <li><a href="#s5">5　排查清单</a></li>
+        <li><a href="#s6">6　最可能出问题的地方（作者自评）</a></li>
+        <li><a href="#s7">7　怎么反馈</a></li>
+      </ul>
+    </aside>
+    <main class="particle prose">
 
-<h2>1　排查分两条线</h2>
+<h2 id="s1">1　排查分两条线</h2>
 <p>对应两个 GitHub Label：</p>
 <div class="table-wrap"><table>
 <thead><tr><th>Label</th><th>管什么</th><th>典型问题</th></tr></thead>
@@ -478,7 +491,7 @@
 <tr><td><code>preview bug report</code></td><td><strong>代码运行正确性</strong></td><td>异常没被捕获、竞态、断言写错、边界条件漏判</td></tr>
 </tbody></table></div>
 
-<h2>2　改动规模</h2>
+<h2 id="s2">2　改动规模</h2>
 <p>相对 v3.3.17 的分叉点 <code>e951d9eb</code>：</p>
 <div class="stat-row">
   <div class="stat"><b>403</b><span>本支线提交</span></div>
@@ -503,7 +516,7 @@
 <tr><td><code>lib/user-portrait.js</code></td><td>244</td><td>用户画像（四类感知）</td></tr>
 </tbody></table></div>
 
-<h2>3　设计意图（先读懂，再判断对错）</h2>
+<h2 id="s3">3　设计意图（先读懂，再判断对错）</h2>
 
 <h3>3.1　三层结构，各管一件事</h3>
 <div class="table-wrap"><table>
@@ -534,7 +547,7 @@
 <h3>3.4　白板是投影</h3>
 <p><code>handoff/PLAN.md</code> <strong>由事件渲染</strong>，不是手写文档。手写会丢 <code>&lt;!-- memory:mem_* --&gt;</code> 锚点，卡片体系断裂。</p>
 
-<h2>4　已知问题（请优先验这些）</h2>
+<h2 id="s4">4　已知问题（请优先验这些）</h2>
 
 <h3>4.1　团队同步的服务端完全未验证 ⚠️</h3>
 <p>本机 <code>teamEnabled=false</code>、<code>teamServerUrl</code> 为空。<strong>未证伪</strong>：服务端是否接受未知 <code>kind</code>、能否承载 322 KB 请求体。</p>
@@ -555,7 +568,7 @@
 <p><code>artifacts/</code> 被 git 追踪约 <strong>1.16 GB</strong>（工作区实体 6.7 GB）。建议浅克隆：</p>
 <pre><code>git clone --depth=1 https://github.com/Aik358/dsh-auto-memory.git</code></pre>
 
-<h2>5　排查清单</h2>
+<h2 id="s5">5　排查清单</h2>
 
 <h3>5.1　环境准备</h3>
 <pre><code>git clone --depth=1 https://github.com/Aik358/dsh-auto-memory.git
@@ -589,7 +602,7 @@ node tools/run-smoke.mjs --jobs=8 --timeout=180000</code></pre>
 <tr><td>C5</td><td>断言质量</td><td>抽查 <code>tests/smoke/</code>，找「只断言源码含某字符串」的假测试</td></tr>
 </tbody></table></div>
 
-<h2>6　最可能出问题的地方（作者自评）</h2>
+<h2 id="s6">6　最可能出问题的地方（作者自评）</h2>
 <p>按风险排序，<strong>不是</strong>按代码量：</p>
 <ol>
 <li><strong><code>lib/index.js</code>（+25,336 / −21,232）</strong> —— 单文件 1.37 MB，改动最大。任何跨模块口径不一致都藏在这里。</li>
@@ -599,7 +612,7 @@ node tools/run-smoke.mjs --jobs=8 --timeout=180000</code></pre>
 <li><strong>前端样式变量</strong> —— 曾出现「编造了不存在的 <code>upBtnStyle</code> → ReferenceError → React 整棵树崩 → 插件闪退」。</li>
 </ol>
 
-<h2>7　怎么反馈</h2>
+<h2 id="s7">7　怎么反馈</h2>
 <ul>
 <li><strong>功能问题</strong> → issue 打 <code>preview function</code></li>
 <li><strong>代码问题</strong> → issue 打 <code>preview bug report</code></li>
@@ -608,6 +621,8 @@ node tools/run-smoke.mjs --jobs=8 --timeout=180000</code></pre>
 </ul>
 
 </main>
+  </div>
+</div>
 
 <footer class="pfoot">
   <div class="pwrap">
