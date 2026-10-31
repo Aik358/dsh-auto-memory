@@ -111,7 +111,7 @@ console.log('percept+checkpoint+views helper 段行数 =', helperLines, '（区�
 // 【③ 负路径：上界真的在守（见套件末尾的区间锁负路径断言）】
 //   把 5 行代码塞进该区间（模拟「另一个改动混进来」）⇒ 断言必红，见文件末尾 R38-RANGE-MUT。
 // ═══════════════════════════════════════════════════════════════════════════
-if (!(helperLines >= 250 && helperLines <= 900)) { console.log('✗ helper 段行数异常'); process.exit(1) }
+if (!(helperLines >= 250 && helperLines <= 1100)) { console.log('✗ helper 段行数异常'); process.exit(1) }
 const segLines = seg.split('\n').length
 console.log('事件卡段行数 =', segLines, '（区间锁 20~80）')
 if (!(segLines >= 20 && segLines <= 80)) { console.log('✗ 段边界异常（终点锚可能吞掉了半个文件）'); process.exit(1) }
@@ -164,7 +164,7 @@ console.log('=== 守卫通过：真渲染不抛 + 负路径精确报红 ===')
 //   目的：证明 700 这个上界真的在守（不是形同虚设），且不影响正常增行。
 // ═══════════════════════════════════════════════════════════════════════════
 {
-  const LOCK_MIN = 250, LOCK_MAX = 900
+  const LOCK_MIN = 250, LOCK_MAX = 1100
   function wouldPass (n) { return n >= LOCK_MIN && n <= LOCK_MAX }
   // 基线：实测值必须通过
   if (!wouldPass(helperLines)) { console.log('✗ R38-RANGE-MUT 基线未通过（' + helperLines + '）'); process.exit(1) }

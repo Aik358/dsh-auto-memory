@@ -41,7 +41,10 @@ console.log('[D-1] 结构守卫');
   {
     const { DEFAULT_PROMPT_LAYERS } = await import(pathToFileURL(path.join(ROOT, 'lib', 'index.js')).href);
     ok(!Object.prototype.hasOwnProperty.call(DEFAULT_PROMPT_LAYERS, 'snapshotMemoryUsage'), '★★★D-1c **不进 DEFAULT_PROMPT_LAYERS**（客户端镜像契约表，加了会红 G4-6d）');
-    ok(Object.keys(DEFAULT_PROMPT_LAYERS).length === 27, '★★★D-1d 服务端层数仍 = 27（与客户端镜像一致）', String(Object.keys(DEFAULT_PROMPT_LAYERS).length));
+    // ★2026-10-29：27 → 29（**有意演进**）。归因：研究报告 D5 把静态纪律两节拆成可配置层
+    //   （staticPerceptDiscipline / staticCalendarDiscipline，默认空串 ⇒ 用内置文本，字节不变）。
+    //   客户端 lib/client.js 镜像同提交补齐（两键同为空串）⇒「与客户端镜像一致」这一语义不变。
+    ok(Object.keys(DEFAULT_PROMPT_LAYERS).length === 29, '★★★D-1d 服务端层数仍 = 29（与客户端镜像一致）', String(Object.keys(DEFAULT_PROMPT_LAYERS).length));
   }
   const USAGE_LINE = (IX.match(/pushPart\('memoryReferences',\s*'memory-usage'[\s\S]{0,1200}?'normal'\)/) || [''])[0];
   ok(USAGE_LINE.indexOf("'normal'") >= 0, '★★★D-1e priority=normal（预算紧时先丢它，不挤压 must 的规则段）');

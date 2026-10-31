@@ -80,7 +80,7 @@ node tools/run-smoke.mjs --jobs=8 --timeout=180000
 
 ## 3. 核对与优化清单
 
-### 3.1 功能正确性（Label: `preview function`）
+### 3.1 功能正确性（Label: `preview function report`）
 
 | # | 验什么 | 判据 |
 |---|---|---|
@@ -136,7 +136,7 @@ v4 对注入提示词做了较大调整（事件四段渲染、档位分层、�
 
 ## 5. 反馈方式
 
-- 功能问题 → issue 打 `preview function`
+- 功能问题 → issue 打 `preview function report`
 - 代码问题 → issue 打 `preview bug report`
 - 附：版本 `3.4.0-alpha.1`、复现步骤、`.dsh-memory/` 片段、Console 报错原文
 - 或 QQ 群直接 @ 作者

@@ -13,7 +13,7 @@ v3.3.x 的记忆是**流水账**；v3.4 把它换成了**事件**。这不是加
 
 | Label | 管什么 | 典型问题 |
 |---|---|---|
-| `preview function` | **功能正确性** | 这个按钮点了该生效却没生效；白板该更新却没更新 |
+| `preview function report` | **功能正确性** | 这个按钮点了该生效却没生效；白板该更新却没更新 |
 | `preview bug report` | **代码运行正确性** | 异常没被捕获、竞态、断言写错、边界条件漏判 |
 
 ---
@@ -139,7 +139,7 @@ node tests/smoke/smoke-test-<name>.mjs
 > 已知：`issue207-processes`、`sidecar-watchdog`、`issue384-387-external-import`、
 > `fullpage-negative`、`v4-h3-d-memory-usage` 在高并发下有**资源竞争型假红**，单跑会绿。
 
-### B. 功能正确性（label: `preview function`）
+### B. 功能正确性（label: `preview function report`）
 
 | # | 验什么 | 怎么看对不对 |
 |---|---|---|
@@ -177,7 +177,7 @@ node tests/smoke/smoke-test-<name>.mjs
 
 ## 6. 怎么反馈
 
-- **功能问题** → issue 打 `preview function`
+- **功能问题** → issue 打 `preview function report`
 - **代码问题** → issue 打 `preview bug report`
 - 附上：版本 `3.4.0-alpha.1`、复现步骤、`.dsh-memory/` 相关片段、Console 报错原文
 - 也可以 QQ 群直接 @ 作者

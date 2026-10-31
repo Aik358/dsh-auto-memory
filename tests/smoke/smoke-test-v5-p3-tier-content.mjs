@@ -78,7 +78,12 @@ ok(sp.inject === true && Array.isArray(sp.sections) && sp.sections.length === 7,
 sp = P(I.RUN_FULL, cfg)
 ok(sp.inject === true && Array.isArray(sp.sections) && sp.sections.length === 7, "B-4 F3 运行完整 -> 核心3+4节")
 sp = P(I.POST_COMPACT, cfg)
-ok(sp.inject === true && Array.isArray(sp.sections), "B-5 F5 压缩后 -> 核心3+4节")
+// ★2026-10-28 判据更新（真语义变更）：`post_compact` 已按用户裁定升为**全文档档**
+//   （「压缩后应该和 human_full 一样尽量多地提供内容」）⇒ sections 必须是 null（全文），
+//   不再是「核心 3+4 节」。原判据 `Array.isArray(sp.sections)` 已过期。
+ok(sp.inject === true && sp.sections === null, "B-5 F5 压缩后 -> 投全文（sections=null）")
+// 防回退：显式断言它不是「7 节数组」，防止有人把档位名单改回去而这条静默通过
+ok(!Array.isArray(sp.sections), "B-5b ★防回退：post_compact 不得退回按节白名单")
 sp = P(I.HANG_COMPENSATE, cfg)
 ok(sp.inject === true && Array.isArray(sp.sections), "B-6 F7 挂机 -> 核心3+4节")
 sp = P(I.RUN_SLIM, cfg)
@@ -125,15 +130,35 @@ if (typeof tps === "function" && planRaw.length > 0) {
   // ★2026-10-27 判据更新（同批真缺陷的连带）：四段补齐后白板 8,998→12,810 字符，
   //   而核心 7 节的选取逻辑未变 ⇒ 占比从 <50% 升到 57.1%。**语义意图不变**：瘦档必须显著小于全文。
   //   50% → 60%（留余量）；D-2「真产出非空」保留，另加 D-3b 保证瘦档非零且确实更小。
-  ok((slimOut || "").length < planRaw.length * 0.6, "D-3 瘦档显著小于全文", slimPct + "%")
+  // ★★2026-10-29 判据修正（判据过期，非产品缺陷）：原阈值「< 60% 全文」隐含假设白板有
+  //   **大量非核心节**可裁。实测真实白板只有 4 节且三节都是核心节 ⇒ 瘦档只能裁掉「下一步」
+  //   ⇒ 占比 76.9%，无论实现多正确都不可能 < 60% ⇒ **恒红**。
+  //   语义意图不变：瘦档必须比全文小、且裁剪机制真生效。拆成两条可判定断言：
+  ok((slimOut || "").length < planRaw.length, "D-3 瘦档严格小于全文", slimPct + "%")
+  //   D-3c：用构造片（每节 1500 字 + 一个非核心节）真跑，必须显著变小 ⇒ 证明裁剪真生效。
+  const BIG = ['## 当前状态', 'a'.repeat(1500), '', '## 近期进展', 'b'.repeat(1500), '', '## 非核心噪声节', 'c'.repeat(1500)].join('\n')
+  const slimBig = tps(BIG, core, 2000)
+  ok(slimBig !== null && slimBig.length < BIG.length * 0.8, "D-3c ★瘦档对超长白板真裁剪（构造片）", (slimBig ? slimBig.length : 0) + " < " + BIG.length)
   ok((slimOut || "").length > 0 && (slimOut || "").length < planRaw.length, "D-3b 瘦档严格小于全文且非空", (slimOut || "").length + " < " + planRaw.length)
   // ★2026-10-27 v6：真实白板已迁移到事件渲染的新格式（## 当前状态 / ## 近期进展 / ## 关键约束 / ## 待办），
   //   旧核心节名（最新实况/当前目标）在新白板里不存在 ⇒ 判据过期。
   //   语义意图不变：瘦档必须保住**核心节**（不含四节全量）。按两代白板兼容断言：命中任一即算保住。
   const LEGACY_CORE = ['最新实况', '当前目标', '载体分工']
-  const V6_CORE = ['当前状态', '近期进展', '关键约束', '待办']
+  // ★★2026-10-29 判据修正（判据过期，非产品缺陷）：白板节名有两代写法 ——
+  //   plan-render.js 的骨架用「待办」，而本机真实白板（事件渲染后人工维护）用「下一步」。
+  //   原判据只认「待办」⇒ 对「下一步」写法的白板**恒红**（实测 4 节里缺 1 节即整条 FAIL）。
+  //   语义意图不变：瘦档必须保住**核心节**。改为「同义节名任一命中即可」。
+  // ★★★2026-10-29 判据修正（判据过期，非产品缺陷）：
+  //   原判据要求**四节全在**（当前状态/近期进展/关键约束/待办）。但瘦档的语义是「保住核心节、
+  //   丢掉非核心节」—— 实测真实白板被保留的恰是【当前状态/近期进展/关键约束】三节，
+  //   第 4 节（下一步）被**有意裁掉**，属正常裁剪而非缺陷。要求四节全在 = 要求「瘦档 == 全文」，
+  //   与 D-3「瘦档必须更小」直接矛盾 ⇒ 两条判据互斥，必有一红。
+  //   语义意图不变：瘦档必须保住**核心节**。改为「核心三节必须在，且白板非核心节不得全量残留」。
+  const V6_CORE = ['当前状态', '近期进展', '关键约束']
   let hasCore = true
   for (const sname of V6_CORE) { if ((slimOut || '').indexOf(sname) < 0) hasCore = false }
+  // 负向：被裁掉的节不该还在（证明真的裁剪了，不是原样返回）
+  const wasTrimmed = (slimOut || '').length < planRaw.length
   if (!hasCore) {
     hasCore = true
     for (const sname of LEGACY_CORE) { if ((slimOut || '').indexOf(sname) < 0) hasCore = false }

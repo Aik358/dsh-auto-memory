@@ -487,7 +487,7 @@
 <div class="table-wrap"><table>
 <thead><tr><th>Label</th><th>管什么</th><th>典型问题</th></tr></thead>
 <tbody>
-<tr><td><code>preview function</code></td><td><strong>功能正确性</strong></td><td>按钮点了该生效却没生效；白板该更新却没更新</td></tr>
+<tr><td><code>preview function report</code></td><td><strong>功能正确性</strong></td><td>按钮点了该生效却没生效；白板该更新却没更新</td></tr>
 <tr><td><code>preview bug report</code></td><td><strong>代码运行正确性</strong></td><td>异常没被捕获、竞态、断言写错、边界条件漏判</td></tr>
 </tbody></table></div>
 
@@ -578,7 +578,7 @@ node tools/run-smoke.mjs --jobs=8 --timeout=180000</code></pre>
 <p><strong>预期</strong>：535 套件全绿。若有一条红，请先单独复跑 <code>node tests/smoke/smoke-test-&lt;name&gt;.mjs</code>。</p>
 <p class="note">已知：<code>issue207-processes</code>、<code>sidecar-watchdog</code>、<code>issue384-387-external-import</code>、<code>fullpage-negative</code>、<code>v4-h3-d-memory-usage</code> 在高并发下有资源竞争型假红，单跑会绿。</p>
 
-<h3>5.2　功能正确性（label: <code>preview function</code>）</h3>
+<h3>5.2　功能正确性（label: <code>preview function report</code>）</h3>
 <div class="table-wrap"><table>
 <thead><tr><th>#</th><th>验什么</th><th>怎么看对不对</th></tr></thead>
 <tbody>
@@ -614,7 +614,7 @@ node tools/run-smoke.mjs --jobs=8 --timeout=180000</code></pre>
 
 <h2 id="s7">7　怎么反馈</h2>
 <ul>
-<li><strong>功能问题</strong> → issue 打 <code>preview function</code></li>
+<li><strong>功能问题</strong> → issue 打 <code>preview function report</code></li>
 <li><strong>代码问题</strong> → issue 打 <code>preview bug report</code></li>
 <li>附上：版本 <code>3.4.0-alpha.1</code>、复现步骤、<code>.dsh-memory/</code> 相关片段、Console 报错原文</li>
 <li>也可以 QQ 群直接 @ 作者</li>

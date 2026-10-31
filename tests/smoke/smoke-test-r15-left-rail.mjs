@@ -82,15 +82,19 @@ const CL = readFileSync(path.join(ROOT, 'lib', 'client.js'), 'utf8')
 //   本条原本防的事故是「左栏被挂到宿主 view 而不是页签内自带」——看板退场后该不变量自然消失。
 //   改为守**替换后的等价不变量**：① 白板页签渲染事件视图；② 看板 rail 不得再被调用；
 //   ③ 左栏的那组 UI 组件**必须仍在源码里**（用户明确要求「不要误删不该删的东西」）。
-ok(CL.indexOf('data-dam-event-surface') >= 0, '⑲ ★client.js 已挂事件视图面（data-dam-event-surface）')
-ok(CL.indexOf('h(EventView, { zh: locale') >= 0, '⑳ ★白板页签调用 EventView（D14 替换看板）')
+// ★2026-10-31：该容器标记已从「白板页签内」移到「白板看板整页承载面」（用户裁定白板页签只留 PLAN.md）。
+//   判据加强：不再只查字符串存在，而是查它**包在 Iter5Surface kind=page 之内**（防标记被挪到无关位置）。
+ok(/h\(Iter5Surface, \{ kind: 'page' \}, h\('div', \{ 'data-dam-event-surface'/.test(CL), '⑲ ★client.js 已挂事件视图面（data-dam-event-surface，位于整页承载面内）')
+// ★2026-10-31（用户裁定 · 白板页签瘦身）：判据对象从「白板页签」换成「顶栏白板看板整页承载面」。
+//   不变量本体不变 = 事件视图必须有真实调用点（不是写了组件没人调）。
+ok(/h\(Iter5Surface, \{ kind: 'page' \}, h\('div', \{ 'data-dam-event-surface'[\s\S]{0,200}?h\(EventView,/.test(CL), '⑳ ★整页承载面调用 EventView（D14 替换看板；2026-10-31 白板页签瘦身后唯一入口）')
 ok(CL.indexOf("h(KanbanBoardRail, { data: kbData") < 0, '⑳b ★负：不再调用看板 rail（D14 退场）')
 ok(CL.indexOf('function DamRailToolbar(props) {') >= 0 && CL.indexOf('function DamStatBar(props) {') >= 0 && CL.indexOf('function DamFoldBar(props) {') >= 0, '⑳c ★左栏 UI 资产**保留在源码**（用户要求：不误删可继承的东西）')
 // ★D14（2026-10-24 用户裁定）：白板页签改为事件视图，看板组件按 D13 退出白板页签。
 //   本条原本防的事故是「左栏换 Rail 时把 KanbanBoard 本体吞掉/替换」——
 //   现在 KanbanBoardRail 已不在白板页签渲染，该不变量**自然消失**；
 //   改为守**替换后的等价不变量**：白板页签必须渲染事件视图，且不得再渲染看板。
-ok(CL.indexOf('h(EventView, { zh: locale') >= 0, '㉑ ★白板页签调用点已换用 EventView（D14）')
+ok(/h\(Iter5Surface, \{ kind: 'page' \}, h\('div', \{ 'data-dam-event-surface'[\s\S]{0,200}?h\(EventView,/.test(CL), '㉑ ★整页承载面调用点已换用 EventView（D14；2026-10-31 同口径调整）')
 ok(CL.indexOf("h(KanbanBoardRail, { data: kbData") < 0, '㉑b ★负：白板页签已不再渲染 KanbanBoardRail（D14 删看板）')
 ok(CL.indexOf('function KanbanBoard(props) {') < 0, '㉒ ★负：KanbanBoard 已按 D13/D14 删除（不再占体量）')
 /* ★跨层锁：client.js 内联 8 项必须与 sidecar 常量逐项一致（顺序 + key + label）*/

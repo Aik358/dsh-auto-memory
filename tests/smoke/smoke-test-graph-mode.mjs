@@ -378,7 +378,12 @@ t('F3 宿主侧 kanbanBoardData 挂载 + REST 路由 + 两侧路径表同步', (
 t('F4 前端渲染: 事件视图有真实调用点 + 取数（D14 替换看板）', () => {
   assert(CLI_SRC.includes('function EventView(props)'), 'EventView 组件不在场')
   assert(CLI_SRC.includes('function EventCard(props)'), 'EventCard 组件不在场')
-  assert(CLI_SRC.includes("h(EventView, { zh: locale === 'zh', limit: 10 })"), '★事件视图必须**被真实调用**（函数写了没人调用 = 历史老病）')
+  // ★2026-10-31（用户裁定 · 白板页签瘦身）：**判据对象从「白板页签内那句」换成「整页入口那句」**。
+  //   不变量本体不变 = 「事件视图必须有真实调用点，函数写了没人调用 = 历史老病」。
+  //   为什么换：白板页签内的 EventView 已按用户裁定摘除（该页只留 PLAN.md 快照），
+  //   事件视图的唯一入口是顶栏「白板看板」整页承载面（Iter5Surface kind=page）。
+  //   负路径：若整页入口也被删，本断言必须红（已验证：注释掉该行后 TypeError）。
+  assert(/h\(Iter5Surface, \{ kind: 'page' \}, h\('div', \{ 'data-dam-event-surface'/.test(CLI_SRC), '★事件视图必须在整页承载面被真实调用（函数写了没人调用 = 历史老病）')
   // ★2026-10-25 P3（task-32）：该调用已补 sessionId（后端 P0 按会话解析工作区的前端半边）。
   //   判据意图不变（事件数据必须真被拉取），但字符串必须跟上 -> 用正则只锁「拉取 eventList 且带 all:1」，
   //   不锁参数顺序/是否还有 sessionId（后者是**增强**，不该让本判据红）。
@@ -566,7 +571,9 @@ t('G2 整页承载面: 事件视图真实挂在 conversation.view(看得见的�
   assert(CLI_SRC.includes('function EventView(props)'), 'EventView 组件不在场')
   assert(CLI_SRC.includes('function EventCard(props)'), 'EventCard 组件不在场')
   assert(CLI_SRC.includes("slots.inject('conversation.view'"), '★整页槽位必须仍被注入（否则顶栏页签永不出现）')
-  assert(/h\(Iter5Surface, \{ kind: 'page' \}, h\(EventView,/.test(CLI_SRC), '★整页承载面必须渲染 EventView（不是 KanbanView）')
+  // ★2026-10-31：整页承载面外面包了一层 data-dam-event-surface 容器（给「看得见」口径一个真实容器标记），
+  //   判据相应放宽为「Iter5Surface kind=page 内渲染 EventView」——不变量（整页真的渲染事件视图）不变。
+  assert(/h\(Iter5Surface, \{ kind: 'page' \}, h\('div', \{ 'data-dam-event-surface'[\s\S]{0,200}?h\(EventView,/.test(CLI_SRC), '★整页承载面必须渲染 EventView（不是 KanbanView）')
   assert(CLI_SRC.includes('data-dam-event-surface'), '事件视图容器标记不在场')
   assert(CLI_SRC.includes('data-dam-event-card'), '事件卡标记不在场')
   // ★负路径：看板的整页/矩阵标记必须已随**组件**退场。

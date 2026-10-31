@@ -4,6 +4,34 @@ All notable changes to dsh-auto-memory.
 
 ---
 
+## [3.4.0-alpha.2] — 2026-10-31 · 抢先预览版 · 第 2 次（Preview / Research Build）
+
+> **这不是正式版。** 不上 npm，只发 GitHub。alpha.1 之后的**两项用户实报缺陷**修复版。
+
+### 已确认修复（Fixed）
+
+| # | 症状（用户实报） | 根因 | 修复 |
+|---|---|---|---|
+| ① | 白板看板内容被压成约 150px，下方大片空白 | 高度链在 `div[data-dam-event-surface]` 这层断开（该层无任何高度规则）⇒ `[data-dam-fullpage-host]{height:100%}` 相对 `auto` 父解析为 `auto` ⇒ `iframe` 回落 HTML 规范默认 150px。旧路径靠 `surfaces.js` 的 `fit()` 写 inline 高度兜住，但 `fit()` 的三道闸门（`closest` 到 `[data-conversation-scroll]` 非空 / `area.clientHeight > 0` / `elLooksVisible()`）在白板改挂 `conversation.view` 后全部不满足且均为静默 return ⇒ 从未写入 | **C 方案：解除循环依赖**。在 `[data-dam-page]` 作用域内给中间层补 `flex:1` / `min-height:0` / `display:flex`，使高度只依赖祖先 `[data-dam-page]`、不再依赖 `fit()` 的 inline 高度。有 `fit()` 也无害，没有也撑满 |
+| ② | 升级弹窗「稍后 / 关闭 / 立即派子代理整理」按钮点击无反应 | `pointer-events` 是**可继承属性**。遮罩 `[data-dam-upgrade-mask]` 设 `pointerEvents:none` 后，其后代（整张卡片 + 三个按钮）**全部继承 `none`** ⇒ 点击穿透、`onClick` 永不触发。该写法源于 2026-10-26 修「点了白板就切不走」，意图正确但把「遮罩本身不挡」与「卡片不挡」混成一条 | 遮罩保持 `none`，卡片显式 `pointerEvents:auto` 掰回继承值（子节点显式值优先）⇒ 背景可穿透、卡片可点两者兼得 |
+
+### 验证（可复算）
+
+- 全量回归 **PASS 535 / FAIL 0 / TIMEOUT 0**（161.5s）
+- `node --check lib/client.js` 通过；行数 23,658 / CRLF 23,657 / 裸 LF **0**
+- `tools/build-iter5-skin.mjs --check --strict` = **SYNC-OK**（生成区未被触碰）
+- `smoke-test-client-loadable` = **PASS 34 / FAIL 0**（真执行 factory）
+- `smoke-test-iter5-skin` 基线锁按实测 actual 重钉至 **R155**（两处均为有意演进，归因已写入锁说明）
+- 高度链守卫 3/3 + 内存变异负路径判据有鉴别力；弹窗可点判据 3/3 + 负路径有鉴别力
+
+### 仍在问题中 / 未验证（与 alpha.1 相同，未变）
+
+- 团队同步服务端仍未真机验证（`teamEnabled=false`），需 `node tools/probe-team-baseline.mjs` 探测
+- B3 升级驱动器 `upgradeLocal` / `verify` 仍故意 fail-closed
+- 注入档位续修 T1（legacy 漂移）待确认
+
+---
+
 ## [3.4.0-alpha.1] — 2026-10-31 · 抢先预览版（Preview / Research Build）
 
 > **这不是正式版。** 不上 npm，只发 GitHub。目的是**让社区先跑起来做核验与研究**，

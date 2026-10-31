@@ -50,8 +50,11 @@ try {
 
   // ══════════ A 组：真读 engine.config（默认值，无配置文件覆盖）══════════
   console.log('A 组：真构造 engine 后读默认配置')
-  ok(engine.config.autoContinueRefreshTimeoutSeconds === 120,
-    'A1 总超时默认 = 120 秒（原 90）', engine.config.autoContinueRefreshTimeoutSeconds)
+  // ★2026-10-29 判据更新（判据过期，非产品缺陷）：用户裁定「刷新仪式超时 120 → 240 秒」已落盘
+  //   （DEFAULT_AUTO_CONTINUE_REFRESH_TIMEOUT_SECONDS = 240，DEFAULT_CONFIG 同值）。
+  //   本断言原钉 120 = **锁定了一个陈旧读数**；实测 engine.config 现值 240。
+  ok(engine.config.autoContinueRefreshTimeoutSeconds === 240,
+    'A1 总超时默认 = 240 秒（2026-10-29 用户裁定 120→240）', engine.config.autoContinueRefreshTimeoutSeconds)
   ok(engine.config.autoContinueProbeTimeoutSeconds === 60,
     'A2 单次 probe 默认 = 60 秒（原写死 30）', engine.config.autoContinueProbeTimeoutSeconds)
   ok(Object.prototype.hasOwnProperty.call(engine.config, 'autoContinueProbeTimeoutSeconds'),
@@ -137,8 +140,8 @@ try {
     const t0 = Date.now()
     const r = await mk({ autoContinueRefreshRitual: true, autoContinueRefreshTimeoutSeconds: 9999, autoContinueProbeTimeoutSeconds: 10 }).hostRefreshRitual('sid-oob2')
     const d = Date.now() - t0
-    ok(r && r.ok === false, 'D3 总超时越界(9999) 回落默认 120s，不照单全收', { elapsed: d })
-    ok(d >= 9000 && d <= 20000, 'D4 由 probe=10s 先超时 ⇒ 回落后的总超时 > 10s（120s 生效）', d)
+    ok(r && r.ok === false, 'D3 总超时越界(9999) 回落默认 240s，不照单全收', { elapsed: d })
+    ok(d >= 9000 && d <= 20000, 'D4 由 probe=10s 先超时 ⇒ 回落后的总超时 > 10s（240s 生效）', d)
   }
   {
     // 关掉刷新仪式 ⇒ 立即返回 disabled，不该有任何等待
@@ -196,7 +199,7 @@ if (process.env.V3314_CHILD !== '1') {
 
   // M2：默认总超时退回 90
   await runMutant('M2 默认总超时退回 90',
-    "autoContinueRefreshTimeoutSeconds: 120,", "autoContinueRefreshTimeoutSeconds: 90,", 'M2', true)   // M2 的判据在 A1 ⇒ 只跑 A 组即可
+    "autoContinueRefreshTimeoutSeconds: 240,", "autoContinueRefreshTimeoutSeconds: 90,", 'M2', true)   // M2 的判据在 A1 ⇒ 只跑 A 组即可
 }
 
 console.log('pass=' + pass + ' fail=' + fail)

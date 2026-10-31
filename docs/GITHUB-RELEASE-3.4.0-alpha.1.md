@@ -41,7 +41,7 @@ v3.3.x 的记忆是**流水账**；v3.4 把它换成了**事件**。这不是加
 
 | Label | 管什么 |
 |---|---|
-| `preview function` | 功能正确性（该生效却没生效） |
+| `preview function report` | 功能正确性（该生效却没生效） |
 | `preview bug report` | 代码运行正确性（异常/竞态/断言/边界） |
 
 也可以 QQ 群直接 @ 作者。

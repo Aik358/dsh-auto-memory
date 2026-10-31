@@ -217,18 +217,30 @@ async function openGuide() {
   let tree = renderDialog()
   await tick(6)
   tree = renderDialog()
-  // 真点第 7 个圆点（dl:true 的步，索引 6）——不读源码常量，直接逐步点
+  // 真点含下载卡的那一步（动态定位，不假定索引）
   const dots = nodes(tree, n => n.props && n.props['data-dam-tour-dot'] === '')
-  ok(dots.length === 9, '夹具自检：向导渲染出 9 个步骤圆点（实际 ' + dots.length + '）')
-  if (dots[6] && typeof dots[6].props.onClick === 'function') {
-    dots[6].props.onClick()
+  ok(dots.length === 10, '夹具自检：向导渲染出 10 个步骤圆点（★D3 2026-10-31：+v4 事件单元步骤 9→10）（实际 ' + dots.length + '）')
+  // ★D3（2026-10-31）修正：原来硬编码 dots[6] 假定「下载卡在第 7 步」。
+  //   D3 在向导第 3 位插入了「v4 事件单元」步骤 ⇒ dl 步骤索引后移到 7，硬编码必红。
+  //   ★判据纪律：断言不该依赖「第几步」，而应依赖「能点到那一步」——
+  //     改为逐步试点击，找到**真渲染出 [data-dam-tour-dl]** 的那一步。
+  let dlIndex = -1
+  for (let i = 0; i < dots.length; i++) {
+    if (typeof dots[i].props.onClick !== 'function') continue
+    dots[i].props.onClick()
+    const probe = renderDialog()
+    if (nodes(probe, n => n.props && n.props['data-dam-tour-dl'] !== undefined).length > 0) { dlIndex = i; tree = probe; break }
+  }
+  ok(dlIndex >= 0, '夹具自检：能定位到含下载卡的那一步（实际索引 ' + dlIndex + '）')
+  if (dlIndex >= 0 && typeof dots[dlIndex].props.onClick === 'function') {
+    dots[dlIndex].props.onClick()
     // 注意：点击只改 state（tourStep），必须再渲染一帧才反映到树上——这是本 harness 的
     // 「无 React 调度器」特性（effects 手动冲刷、render 手动重入），与真实 React 的批处理语义等价。
     tree = renderDialog()
     await tick(6)
     tree = renderDialog()
     const dlCards = nodes(tree, n => n.props && n.props['data-dam-tour-dl'] !== undefined)
-    ok(dlCards.length > 0, '夹具自检：第 7 步真渲染出下载卡（[data-dam-tour-dl]）')
+    ok(dlCards.length > 0, '夹具自检：该步真渲染出下载卡（[data-dam-tour-dl]）')
     if (dlCards.length) {
       // 冲刷 mount-time effect（含自动下载 effect），触发真实的 apiPost 失败路径
       const pending = effects; effects = []

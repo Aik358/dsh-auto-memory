@@ -74,7 +74,8 @@ const want = [
   ["fullInjectWaterPct", "'25,50'"],
   ["slimCheckpointCount", "3"],
   ["hangCompensateTokens", "300000"],
-  ["fullInjectOnCompact", "true"],
+  // ★2026-10-30 T3：删除该行 —— 「压缩后是否注入完整版」配置键已**彻底删除**（死键，全仓 0 读取点）。
+  //   它的断言改到下方 B-2：该键必须**不存在**（否则说明死键又长回来了）。
   ["fullInjectSlimBudgetChars", "3000"],
   ["hangCompensateEnabled", "false"],
   ["handoffPlanSections", "null"],
@@ -87,6 +88,9 @@ for (const pair of want) {
   const re = new RegExp("^\\s{2}" + key + "\\s*:\\s*" + esc + "\\s*,", "m")
   ok(re.test(dc), "B-1 " + key + " = " + val)
 }
+// ★2026-10-30 T3（死键清理的正向守卫）：该键必须**不存在**。
+//   为什么加这条：只删断言会让「死键又长回来」静默通过（本仓已有「删守卫=没测」教训）。
+ok(!/^\s{2}fullInjectOnCompact\s*:/m.test(dc), "B-2 死键 fullInjectOnCompact 不得存在（已由 post-compact-notice 接管）")
 
 console.log("")
 console.log("== C. T3 计数锁 ==")

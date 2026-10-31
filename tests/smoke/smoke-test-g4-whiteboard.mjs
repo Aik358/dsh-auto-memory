@@ -167,7 +167,11 @@ t('G4-6d ★ 提示词层镜像：客户端 27 层与服务端逐键逐字一致
   //   服务端与客户端镜像**同一提交内同步补齐**（无漏钉）。
   // ★2026-10-13（#333②）：25 → 26 —— 新增 snapshotInscriptionArchive（归档取回通道）层，
   //   服务端与客户端镜像**同步新增**（本次同一提交内补齐，无漏钉）。
-  assert(srvKeys.length === 27, '服务端层数应为 27（实测 ' + srvKeys.length + '）')
+  // ★2026-10-29：27 → 29（**有意演进**）。归因（可复算）：研究报告 D5 要求把静态纪律的两节
+//   拆成可配置层 —— 新增 staticPerceptDiscipline（四类感知）与 staticCalendarDiscipline（日历）。
+//   两层默认值都是空串（空 ⇒ 用内置文本，保证未配置时输出逐字节不变）。
+//   客户端 lib/client.js 镜像已在同一提交内同步补齐（两键同为空串），故逐键逐字比对仍成立。
+assert(srvKeys.length === 29, '服务端层数应为 29（实测 ' + srvKeys.length + '）')
   const missing = srvKeys.filter((k) => !cliKeys.includes(k))
   const extra = cliKeys.filter((k) => !srvKeys.includes(k))
   assert(missing.length === 0, '★ 客户端缺失层: ' + missing.join(', '))

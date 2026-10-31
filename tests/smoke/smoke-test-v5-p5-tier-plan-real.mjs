@@ -90,7 +90,34 @@ console.log('== C. legacy 临时截流（用户裁定 B）==')
   const normal = planChars('run_full', false)
   const legacy = planChars('run_full', true)
   ok(legacy > 0, 'C-1 legacy 时白板仍有内容（不是一刀切没）', legacy + 'B')
-  ok(legacy < normal, 'C-2 ★legacy 时白板更少（截流生效）', legacy + ' < ' + normal)
+  // ★★2026-10-29 判据修正（判据过期，非产品缺陷）：原 C-2 断言「legacy < normal」，
+  //   但截流只在**某节超单节上限**时才生效（legacy: 800/节 + 总预算 2400）。
+  //   实测当前真实白板 2,186 字符、4 节全部命中 legacy 白名单且无一节超 800
+  //   ⇒ legacy 与 normal **必然等长**（1535 == 1535）⇒ 原判据在现有白板形状下**恒红**。
+  //   语义意图不变（legacy 必须真能截流、且绝不放大），改成两条可判定断言：
+  ok(legacy <= normal, 'C-2 ★legacy 绝不放大（≤ 全文）', legacy + ' <= ' + normal)
+  //   C-2b：截流机制**真生效**——用构造片（每节 2000 字）真跑，必须被压到 800/节。
+  //   这一条与真实白板大小解耦，所以无论白板怎么写都会验到真行为。
+  const bigSec = (t) => '## ' + t + '\n' + 'x'.repeat(2000)
+  const bigPlan = [bigSec('当前状态'), '', bigSec('近期进展'), '', bigSec('关键约束')].join('\n')
+  const proxied = engine.renderMemoryDynamic
+  let capOut = null
+  try {
+    // 直接用被测的白名单/上限口径复算（与 legacy 分支同参数：800/节）
+    st._injectTierPre = 'run_full'
+    st.memLegacy = { legacy: true, reasons: ['no-anchors'], counts: { userEntries: 1, projectEntries: 0 } }
+    st.envelopeMeta = null
+    const savedPlan = st.planText
+    st.planText = bigPlan
+    engine.renderMemoryDynamic({ agent: undefined })
+    const m2 = st.envelopeMeta || {}
+    capOut = 0
+    for (const sg of (m2.segments || [])) if (sg.kind === 'whiteboard-plan') capOut = sg.chars
+    st.planText = savedPlan
+  } catch (e) { st.planText = st.planText }
+  ok(capOut !== null && capOut > 0 && capOut < bigPlan.length * 0.9,
+    'C-2b ★legacy 对超长白板真截流（构造片 2000/节 ⇒ 必须显著变小）',
+    (capOut === null ? 'null' : capOut + ' < ' + bigPlan.length))
   ok(legacy <= 2400, 'C-3 legacy 总预算 ≤2400', legacy + 'B')
 }
 
