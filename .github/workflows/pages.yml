@@ -1,0 +1,45 @@
+name: Deploy docs to GitHub Pages
+
+# 为什么用 Actions 而不是「Pages 源 = main /docs」：
+#   1) 分支源只支持 main，而 v3.4 预览在 preview 分支 ⇒ 用 Actions 才能按分支部署；
+#   2) 不改仓库既有结构，docs/ 仍可被本地直接打开（相对路径不受影响）；
+#   3) 支持手动触发，方便只重发某一版。
+on:
+  push:
+    branches: [preview, main]
+    paths:
+      - 'docs/**'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload docs/ as the site artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          # docs/ 是站点根：docs/index.html 会跳转到 landing/index.html
+          path: docs
+
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4
