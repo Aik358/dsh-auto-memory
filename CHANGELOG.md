@@ -4,6 +4,36 @@ All notable changes to dsh-auto-memory.
 
 ---
 
+## [3.4.0-alpha.5] — 2026-11-02 · 抢先预览版 · 第 5 次（Preview / Research Build）
+
+### alpha.5（2026-11-02）· 只修 1 条高危缺陷
+
+**#503 写入目标被会话绑定钉死，静默污染其他工作区**
+
+- **现象**：在中枢工作区派出的整理子代理，按迁移清单去处理别的 12 个工作区。它能**读**任意路径，但 `memory_event` / `memory_note` / `memory_log` 的落点全部由 `resolvePaths(agent.session.header.cwd)` 决定 ⇒ 写入**永远**落在会话绑定的那个工作区，`working_directory` 切 cwd 不改变它。
+- **后果**：13 个工作区只有中枢 1 个能写，其余 12 个的「渲染新白板」全部到不了；更糟的是执行者以为已写到目标目录，**实际静默落进中枢事件库**（用户实测已产生一条同源重复事件，只能事后人工 rename + close 留痕）。
+- **修法**：三个写工具各加一道**完全自包含**的守卫 —— 目标与会话绑定不一致 ⇒ 明确拒绝，并在返回里写清「会话绑定是哪个」「你这次要写的是哪个」「切 cwd 为什么无效」「正确做法是什么」。
+- **为什么是拒绝而不是自动改写到目标**：记忆的物理边界就是工作区（`wsKey` / `projectDirOf` 都按 ws 算），自动改写等于让一次调用隐式创建任意工作区目录 —— 那不是修 bug，是加一个新的污染面。
+- **三条不误伤**：① 调用方显式传 `workspace` ⇒ 有意为之，放行；② `wsBound !== true`（冷会话/宿主重启）⇒ 拿全局 `state.ws` 兜底是既有契约，不拦；③ 取不到 `session.header.cwd` ⇒ 不拦。路径比较走 `realpathSync.native`，避免 junction/symlink 别名误判。
+- **提示词层**：迁移清单新增「★写入口径」小节 —— 明确本子代理运行在中枢、表中其他路径只作**读取来源**；第 5 步只对中枢做，其余工作区**跳过并在报告里标注「未渲染（受会话写入边界限制）」**，不反复重试。
+
+**一个必须记住的实现约束（本批踩了两次）**：这段守卫**不能**写成 `MemoryEngine` 的实例方法，也**不能**写成模块级函数 —— `tests/smoke/smoke-test-v4-h1b-memory-log` 与 `smoke-test-v4-memory-event-tool` 用 `new Function` 抽取工具代码体求值，它们的注入作用域里既没有实例方法也没有模块级符号，两种形态都会当场 `ReferenceError`（两种都实测踩中过）。它必须是一段**不引用任何外部符号的内联块**。
+
+### alpha.5 · 仍在问题中 / 未验证
+
+- `memory_event` / `memory_note` 的显式 `workspace` 参数**尚未开放**（用户建议档 2）—— 它会把「记忆只能落在会话工作区」这一边界改成可跨越，需要连同白名单与边界校验一起设计，单列跟进
+- 守卫只覆盖三个**写**工具；只读工具（`memory_recall` / `memory_read` 等）的跨工作区读取本就允许，不在本条范围
+
+### alpha.5 · 验证
+
+- 全量回归 **PASS 550 / FAIL 0 / TIMEOUT 0**（162.0s）
+- 验收探针 **37 项全过**，含两条变异负路径：① 删掉比对分支 ⇒ 不一致也放行（回归到修复前「静默写错库」）；② 去掉 `realpath` 归一 ⇒ 别名场景复发
+- 判据重钉 2 处：`r26` `1,428,461 → 1,433,565` / sha16 `341D90E6 → 1EDBA6D1`（净 +5,104 字符，全落手写区）；`iter5-skin` classicLF `1,429,664 → 1,432,538` / sha256 `2218102e93 → 95d87784bc`（Δ +2,874，全部来自应用内 CHANGELOG 字典条目）
+- `build-iter5-skin --check --strict` = **SYNC-OK**；`gen-ev4-blocks --check` = **OK**（137,085 字符）；`verify-docs` 全部一致；`client-loadable` PASS 34 / FAIL 0
+- CRLF/LF 纪律：`lib/index.js` 26,818 行纯 CRLF / 裸 LF 0；`lib/client.js` 23,913 处 CRLF / 裸 LF 0
+
+---
+
 ## [3.4.0-alpha.4] — 2026-11-02 · 抢先预览版 · 第 4 次（Preview / Research Build）
 
 > 只发 GitHub，不上 npm。本版修 alpha.3 发布后外部开发者新报的 **12 条**缺陷，并对其中属于「上批半修」的部分补齐另一半。
