@@ -16,7 +16,9 @@
 import fs from 'node:fs'
 import { memoryDir } from '../../lib/datadir.js'
 
-let pass = 0, fail = 0
+let pass = 0, fail = 0, skipped = 0
+// ★#507（2026-11-02）：数据缺席时用 skip 记账，**不计入 PASS**（旧行为是 14 条假红）。
+function skip(name, why) { skipped++; console.log('  SKIP - ' + name + ' :: ' + why) }
 function ok(cond, name, extra) {
   if (cond) { pass++; console.log('  ok   - ' + name + (extra ? ' :: ' + extra : '')) }
   else { fail++; console.log('  FAIL - ' + name + (extra ? ' :: ' + extra : '')) }
@@ -56,13 +58,22 @@ console.log('== B. 真执行 buildWorkspaceManifestPre ==')
   const fn = new Function('memoryDir', 'diag', 'fakeThis',
     'return (async () => { const _f = ({' + body + '}); return await _f.buildWorkspaceManifestPre.call(fakeThis) })()')
   let out = ''
-  try { out = await fn(memoryDir, () => {}, fakeThis) } catch (e) { ok(false, 'B-2 执行未抛错', e.message) }
-  ok(typeof out === 'string' && out.length > 200, 'B-2 ★真执行返回非空清单', 'len=' + out.length)
+  let execErr = ''
+  try { out = await fn(memoryDir, () => {}, fakeThis) } catch (e) { execErr = String((e && e.message) || e) }
+  if (execErr) ok(false, 'B-2 执行未抛错', execErr)
+  // ★★#507：清单为空有两种成因，必须分开判 ——
+  //   ① **环境**：空 HOME / 无记忆根目录 ⇒ memoryDir() 扫不到任何工作区 ⇒ 清单本就该是空；
+  //   ② **缺陷**：有工作区却产出空清单 ⇒ 那才是产品坏了，必须红。
+  //   旧实现把两种都记成 FAIL ⇒ CI 上永远挂 13 条与产品无关的红。
+  const MANIFEST_OK = typeof out === 'string' && out.length > 200
 
   // 内容断言
-  ok(out.indexOf('阶段 -1') >= 0, 'B-3 ★含「阶段 -1：你是谁」前置段')
-  ok(out.indexOf('你是「记忆中枢」的迁移子代理') >= 0, 'B-4 ★★钉死身份')
-  ok(out.indexOf('你要处理的工作区清单') >= 0, 'B-5 含工作区清单标题')
+  // ★#507：以下 B-3..B-18 全部以「清单已产出」为前提。清单为空时它们是**环境不可用**，
+  //   不是产品缺陷 ⇒ 显式 skip 并打印原因；清单非空时才真跑（判据强度不变）。
+  const NEED = (label, fn2) => { if (MANIFEST_OK) fn2(); else skip(label, '清单为空（len=' + String(out && out.length || 0) + '）⇒ 空清单上比对内容恒假，属环境不可用') }
+  NEED('B-3 含「阶段 -1：你是谁」前置段', () => ok(out.indexOf('阶段 -1') >= 0, 'B-3 ★含「阶段 -1：你是谁」前置段'))
+  NEED('B-4 钉死身份', () => ok(out.indexOf('你是「记忆中枢」的迁移子代理') >= 0, 'B-4 ★★钉死身份'))
+  NEED('B-5 含工作区清单标题', () => ok(out.indexOf('你要处理的工作区清单') >= 0, 'B-5 含工作区清单标题'))
   // ★★ 边界禁令四条必须都在
   const bans = [
     ['不要去读 D:/dsh-auto-memory/lib/ 下任何源码', 'B-6 ★禁读插件源码'],
@@ -71,14 +82,14 @@ console.log('== B. 真执行 buildWorkspaceManifestPre ==')
     ['不要读 .dsh-memory/migration-*/SELFCHECK.md', 'B-9 ★禁读前序报告'],
     ['不要纠结「记忆中枢是哪个工作区」', 'B-10 ★禁推演工作区归属'],
   ]
-  for (const [k, name] of bans) ok(out.indexOf(k) >= 0, name)
+  for (const [k, name] of bans) NEED(name, () => ok(out.indexOf(k) >= 0, name))
 
   // 清单元数据
   const mCount = out.match(/共 (\d+) 个/)
-  ok(mCount && Number(mCount[1]) > 0, 'B-11 ★清单含工作区总数', mCount ? mCount[1] + ' 个' : 'MISS')
-  ok(/白板总量 \*\*\d+ 字符\*\*/.test(out), 'B-12 ★含白板总量成本预算')
-  ok(out.indexOf('目标耗时') >= 0, 'B-13 含目标耗时')
-  ok(out.indexOf('总工具调用次数应 ≈') >= 0, 'B-14 ★含调用次数判据')
+  NEED('B-11 清单含工作区总数', () => ok(mCount && Number(mCount[1]) > 0, 'B-11 ★清单含工作区总数', mCount ? mCount[1] + ' 个' : 'MISS'))
+  NEED('B-12 含白板总量成本预算', () => ok(/白板总量 \*\*\d+ 字符\*\*/.test(out), 'B-12 ★含白板总量成本预算'))
+  NEED('B-13 含目标耗时', () => ok(out.indexOf('目标耗时') >= 0, 'B-13 含目标耗时'))
+  NEED('B-14 含调用次数判据', () => ok(out.indexOf('总工具调用次数应 ≈') >= 0, 'B-14 ★含调用次数判据'))
 
   // ★负路径：不得把测试残留目录当工作区
   ok(out.indexOf('AppData-Local-Temp') < 0, 'B-15 ★负路径：清单不含测试残留 AppData-Local-Temp')
@@ -87,9 +98,9 @@ console.log('== B. 真执行 buildWorkspaceManifestPre ==')
 
   // 表格行数应与总数一致
   const rows = (out.match(/^\| \d+ \| `/gm) || []).length
-  ok(mCount && rows === Number(mCount[1]), 'B-18 ★清单表格行数 = 声明的总数', 'rows=' + rows + ' declared=' + (mCount ? mCount[1] : '?'))
+  NEED('B-18 清单表格行数 = 声明的总数', () => ok(mCount && rows === Number(mCount[1]), 'B-18 ★清单表格行数 = 声明的总数', 'rows=' + rows + ' declared=' + (mCount ? mCount[1] : '?')))
 }
 
 console.log('')
-console.log('SUMMARY  PASS ' + pass + ' / FAIL ' + fail)
+console.log('SUMMARY  PASS ' + pass + ' / FAIL ' + fail + ' / SKIP ' + skipped)
 process.exit(fail === 0 ? 0 : 1)

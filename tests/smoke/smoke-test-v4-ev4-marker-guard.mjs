@@ -12,8 +12,13 @@
  */
 import fs from 'node:fs'
 import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 
-const ROOT = 'D:/dsh-auto-memory'
+// ★#507（2026-11-02）：ROOT 由**本文件位置**派生，而不是写死维护者本机路径。
+//   旧写法把 ROOT 写成维护者本机的绝对路径，在 CI（ubuntu）与任何非本机检出下都读不到文件，
+//   套件因此必红 —— 而那不是产品缺陷，是测试不可移植。**不要改回 process.cwd()**：
+//   run-smoke 的工作目录、开发者 shell 的 cwd 都不保证是仓库根。
+const ROOT = fileURLToPath(new URL('../..', import.meta.url))
 const CLIENT = path.join(ROOT, 'lib/client.js')
 const GEN = path.join(ROOT, 'tools/gen-ev4-blocks.mjs')
 

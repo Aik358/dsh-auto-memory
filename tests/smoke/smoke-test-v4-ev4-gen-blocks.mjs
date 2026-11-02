@@ -13,9 +13,13 @@ import fs from 'node:fs'
 import path from 'node:path'
 import vm from 'node:vm'
 import { spawnSync } from 'node:child_process'
-import { pathToFileURL } from 'node:url'
+import { pathToFileURL, fileURLToPath } from 'node:url'
 
-const ROOT = 'D:/dsh-auto-memory'
+// ★#507（2026-11-02）：ROOT 由**本文件位置**派生，而不是写死维护者本机绝对路径。
+//   旧写法在 CI（ubuntu）与任何非本机检出下都读不到文件，套件因此必红 ——
+//   那不是产品缺陷，是测试不可移植。**不要改回 process.cwd()**：run-smoke 的
+//   工作目录与开发者 shell 的 cwd 都不保证是仓库根。
+const ROOT = fileURLToPath(new URL('../..', import.meta.url))
 const CLIENT = path.join(ROOT, 'lib/client.js')
 const PROTO = path.join(ROOT, 'lib/ev4-prototype-blocks.js')
 const ADAPTER = path.join(ROOT, 'lib/ev4-adapter.js')
@@ -23,7 +27,9 @@ const GEN = path.join(ROOT, 'tools/gen-ev4-blocks.mjs')
 const BS = String.fromCharCode(92)
 const BT = String.fromCharCode(96)
 
-let pass = 0, fail = 0
+let pass = 0, fail = 0, skipped = 0
+// ★#507：环境缺席时用 skip 记账，**不计入 PASS**
+function skip(name, why) { skipped++; console.log('  SKIP - ' + name + ' :: ' + why) }
 const ok = (cond, msg, extra) => {
   if (cond) { pass += 1; console.log('  ok   - ' + msg + (extra ? ' :: ' + extra : '')) }
   else { fail += 1; console.log('  FAIL - ' + msg + (extra ? ' :: ' + extra : '')) }
@@ -170,7 +176,19 @@ ok(lastLine.indexOf('join(') >= 0 && lastLine.trim().slice(-1) !== ';', '★★�
 console.log('')
 console.log('== 5. 生成器 --check（幂等/一致性）==')
 const r1 = spawnSync(process.execPath, [GEN, '--check'], { cwd: ROOT, encoding: 'utf8', timeout: 180000 })
-ok(r1.status === 0, '★★★[幂等] --check 返回 0', 'status=' + r1.status)
+// ★★#507（2026-11-02）：`--check` 同时校验**两处**产物，其中 lib/ev4-blocks.generated.js 是生成物，
+//   被 .gitignore:55（lib/*.*.*）排除 ⇒ **CI / 干净检出里根本没有这个文件** ⇒ gen 脚本走
+//   「generated.js 无」分支直接 STALE（status=2）。这与产品无关，是「测试依赖一个未跟踪的本地生成物」。
+//   判据分层（关键：不能一 skip 了之）：
+//     · 生成物不存在 ⇒ skip（环境无该产物，无法断言一致性）；
+//     · 生成物存在但 --check 失败 ⇒ **仍然 FAIL**（那才是真不同步，正是本条要抓的）。
+const GENERATED = path.join(ROOT, 'lib/ev4-blocks.generated.js')
+const hasGenerated = fs.existsSync(GENERATED)
+if (hasGenerated) {
+  ok(r1.status === 0, '★★★[幂等] --check 返回 0', 'status=' + r1.status)
+} else {
+  skip('★★★[幂等] --check 返回 0', 'lib/ev4-blocks.generated.js 不存在（被 .gitignore:55 排除的生成物，CI 无此文件）⇒ status=' + r1.status + ' 属环境原因；产物存在时会真判')
+}
 
 console.log('')
 console.log('== 6. 内建 client-loadable 回归 ==')
@@ -179,5 +197,5 @@ const okLine = String(rcl.stdout || '').match(/PASS (\d+) \/ FAIL (\d+)/)
 ok(rcl.status === 0 && okLine && Number(okLine[2]) === 0, '★★★[回归] client-loadable 全绿', okLine ? okLine[0] : '(未匹配)')
 
 console.log('')
-console.log('SUMMARY  PASS ' + pass + ' / FAIL ' + fail)
+console.log('SUMMARY  PASS ' + pass + ' / FAIL ' + fail + ' / SKIP ' + skipped)
 if (fail > 0) process.exit(1)

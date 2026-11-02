@@ -319,7 +319,12 @@ console.log('[T0-3-11] 接线守卫：index.js 的限额是推导的、优先级
   //   `direction`（'tail'），于是 `'must')` 变成 `'must', 'tail')`，旧的 `'must'\)` 正则不再命中。
   //   判据意图不变（「这两段必须是 must，任何额度不足都不得先牺牲它们」），改为容忍 must 之后还有参数。
   ok(/'user-memory'[\s\S]{0,120}'must'\s*[,)]/.test(code), '★user-memory 标为 must（用户级跨项目规则）')
-  ok(/'project-notes'[\s\S]{0,160}'must'\s*[,)]/.test(code), '★project-notes 标为 must')
+  // ★2026-11-02 #506 归因（判据过期，非真缺陷）：段名到 'must' 的距离从 170 增到 186，
+  //   原因是本次给 sanitizeForInjection 补了第二个实参 `SANITIZE_NO_CAP`（+16 字符），
+  //   纯属同行变长，**must 标记仍在原位**（实测 dist=186，标记未动）。
+  //   判据意图不变（「这一段必须是 must，任何额度不足都不得先牺牲它」），只把窗口放宽到 260；
+  //   仍远小于「跨到下一行去误命中」的量级（用其它段的 must 冒充不了）。
+  ok(/'project-notes'[\s\S]{0,260}'must'\s*[,)]/.test(code), '★project-notes 标为 must')
   ok(/'recent-logs'[\s\S]{0,120}'low'\)/.test(code), 'recent-logs 标为 low（先丢）')
   ok(/'frame-head'[\s\S]{0,80}'must'\)/.test(code) && /'frame-tail'[\s\S]{0,80}'must'\)/.test(code),
     '块首/块尾框架行标为 must（不可丢）')

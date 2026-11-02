@@ -294,9 +294,24 @@ async function main() {
     ok(real.split(M2_FROM).length - 1 === 1, '变异定位:#341 陈旧空门宽限分支恰命中 1 次')
     cases.push(['#341 陈旧空门不回收', path.join(TMP, 'mut-341-stale.mjs'), real.replace(M2_FROM, '    if (true) return false')])
     // M3：config-lock 的 tryAcquire 退回「门占着就直接返回 null」
-    // ★必须写在 **lib/ 里**（不能放 TMP）：config-lock.js 有相对导入 './shared-state-lock.js'，
-    //   放到别处会因解析不到兄弟模块而变成「模块加载崩溃」，那是假红（本套件已实测踩到一次）。
-    const m3Path = path.join(ROOT, 'lib', '__mut-341-config-lock.mjs')
+    // ★★2026-11-02 根治（并行干扰）：**变异文件绝不能再写进真实 lib/**。
+    //   旧做法写在 lib/ 是因为 config-lock.js 有相对导入 './shared-state-lock.js'；但代价是：
+    //     ① `smoke-test-a2-hub-transactions` 在并行时会撞上它被 finally 删掉的瞬间 ⇒
+    //        `ENOENT: lstat lib/__mut-341-config-lock.mjs` ⇒ 随机 FAIL（a2 里已写注释记录过此坑，但只做了规避）；
+    //     ② `generator-guard` / `generator-idempotent` / `c4-fresh-install` 会 `cpSync(lib/)` ⇒
+    //        把临时变异文件一起带进副本，污染它们的产物断言；
+    //     ③ `depre-residue` 会遍历 lib/*.js 做残留检查 ⇒ 读到临时文件即误判。
+    //   正解：建一个**专属临时 lib 目录**，把 config-lock.js 与它依赖的 shared-state-lock.js
+    //   一起复制进去（相对导入因此仍能解析），变异体写在那里 ⇒ 真实 lib/ 全程零污染。
+    const mutLibDir = fs.mkdtempSync(path.join(TMP, 'mut-lib-341-'))
+    for (const dep of ['shared-state-lock.js', 'diagnostic-error.js']) {
+      const srcDep = path.join(ROOT, 'lib', dep)
+      if (fs.existsSync(srcDep)) fs.copyFileSync(srcDep, path.join(mutLibDir, dep))
+    }
+    const m3Path = path.join(mutLibDir, '__mut-341-config-lock.mjs')
+    // 自证：变异目录里必须真有 config-lock 的兄弟依赖，否则下面会退化成「模块加载崩溃」假红。
+    ok(fs.existsSync(path.join(mutLibDir, 'shared-state-lock.js')), '变异隔离目录含 shared-state-lock.js（相对导入可解析）')
+    ok(m3Path.indexOf(path.join(ROOT, 'lib')) < 0, '变异文件不在真实 lib/ 下（并行零污染）')
     const m3 = realCfg.replace('      if (attempt === 0 && reclaimDeadGate(gate)) continue', '      /* mutated: no reclaim */')
     ok(m3 !== realCfg, '变异定位:#341 config-lock 门回收分支已命中')
     for (const [label, mp, src] of cases) {
@@ -323,7 +338,7 @@ async function main() {
       ok(/FAIL - /.test(o3), '★变异必红(#341 config-lock):是断言红不是崩溃', o3.slice(-300))
       ok(!!m3m && Number(m3m[2]) > 0, '★变异必红(#341 config-lock):fail>0', m3m ? m3m[0] : '(未取到计数)')
       console.log('  [变异取证] #341 config-lock 门不回收 -> ' + (m3m ? m3m[0] : '?') + ' exit=' + r3.status)
-    } finally { try { fs.rmSync(m3Path, { force: true }) } catch (_) {} }
+    } finally { try { fs.rmSync(mutLibDir, { recursive: true, force: true }) } catch (_) {} }
   }
 
   process.exit(fail ? 1 : 0)

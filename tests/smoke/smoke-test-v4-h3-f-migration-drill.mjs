@@ -21,28 +21,51 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import crypto from 'node:crypto'
+import os from 'node:os'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..')
 const RE = await import(pathToFileURL(path.join(ROOT, 'lib', 'rules-edit.js')).href)
 
 let pass = 0, fail = 0
+let skipped = 0
+// ★#507：数据缺席时用 skip 记账，**不计入 PASS**（旧行为是崩或假绿）
+const skip = (n, why) => { skipped++; console.log('  SKIP ' + n + ' :: ' + (why || '数据缺席')) };
 const ok = (c, n, d) => { if (c) { pass++; console.log('  PASS ' + n + (d ? '  =>  ' + d : '')) } else { fail++; console.log('  FAIL ' + n + (d ? '  =>  ' + d : '')) } };
 
 // ══════════════════════════════════════════════════════════════════════
 // 真实数据路径（只读）
 // ══════════════════════════════════════════════════════════════════════
-const HOME = process.env.USERPROFILE || 'C:\\Users\\JH Z';
+// ★#507（2026-11-02）：HOME 安全回退，不再写死维护者本机用户名。
+//   实测坑：os.homedir() 在「HOME/USERPROFILE 都被显式置空」时会抛
+//     SystemError [ERR_SYSTEM_ERROR]: uv_os_homedir returned ENOENT ——
+//     也就是说它**不能**当作无条件兜底。故这里包 try，取不到就返回空串，
+//     由下面的数据存在性守卫走显式 skip（而不是让整个进程崩掉）。
+const HOME = (() => {
+  const env = process.env.USERPROFILE || process.env.HOME || ''
+  if (env) return env
+  try { return os.homedir() || '' } catch (_) { return '' }
+})()
 const USER_MD = path.join(HOME, '.dsh', 'memory', 'MEMORY.md');
 const WSID = '--D--dsh-auto-memory--';
 const PROJ_MD = path.join(HOME, '.dsh', 'memory', 'workspaces', WSID, 'MEMORY.md');
 const HANDOFF = path.join(HOME, '.dsh', 'memory', 'workspaces', WSID, 'handoff');
+// ★#507：数据存在性守卫（F-1 与 F-2/F-3 共用同一份判据 —— 只写一处，避免半修）
+const HAS_REAL_DATA = !!HOME && fs.existsSync(USER_MD) && fs.existsSync(PROJ_MD) && fs.existsSync(HANDOFF);
 
 console.log('[F-1] 真实数据可读（只读）');
+// ★#507：F-1 是**数据前置条件**，不是产品判据。数据本来就不存在时把它记成 FAIL，
+//   会让 CI 上永远挂着 3 条与产品无关的红 —— 所以改成「有数据就真断言，没数据就 skip 并打印路径」。
 {
-  ok(fs.existsSync(USER_MD), '★F-1a 用户级 MEMORY.md 存在', USER_MD);
-  ok(fs.existsSync(PROJ_MD), '★F-1b 项目 MEMORY.md 存在', PROJ_MD);
-  ok(fs.existsSync(HANDOFF), '★F-1c handoff/ 存在');
+  if (HAS_REAL_DATA) {
+    ok(fs.existsSync(USER_MD), '★F-1a 用户级 MEMORY.md 存在', USER_MD);
+    ok(fs.existsSync(PROJ_MD), '★F-1b 项目 MEMORY.md 存在', PROJ_MD);
+    ok(fs.existsSync(HANDOFF), '★F-1c handoff/ 存在');
+  } else {
+    skip('F-1a 用户级 MEMORY.md 存在', '数据缺席 HOME=' + HOME + ' path=' + USER_MD);
+    skip('F-1b 项目 MEMORY.md 存在', '数据缺席 path=' + PROJ_MD);
+    skip('F-1c handoff/ 存在', '数据缺席 path=' + HANDOFF);
+  }
 }
 
 // ══════════════════════════════════════════════════════════════════════
@@ -56,11 +79,24 @@ const shaBefore = { user: fs.existsSync(USER_MD) ? sha(USER_MD) : '', proj: fs.e
 // ══════════════════════════════════════════════════════════════════════
 console.log('');
 console.log('[F-2] 四层对照表（L0 必须显式可见）');
-const uTxt = fs.readFileSync(USER_MD, 'utf8');
-const pTxt = fs.readFileSync(PROJ_MD, 'utf8');
-const uItems = RE.listRuleItemsPre(uTxt);
-const pItems = RE.listRuleItemsPre(pTxt);
-const hFiles = fs.readdirSync(HANDOFF).filter((f) => f.endsWith('.md'));
+// ★★#507（2026-11-02）真崩点修复：旧实现这里直接 readFileSync，**未捕获 ENOENT**。
+//   在没有真实记忆目录的机器（CI / 新贡献者 / 换了用户名）上 ⇒ 进程直接抛错退出，
+//   后续 13 条断言**从未执行** —— 覆盖率静默缩水，比「红」更糟（绿/红都看不到它们）。
+//   ⇒ 数据缺席时**显式 skip 并打印原因**，绝不静默通过、也绝不崩。
+if (!HAS_REAL_DATA) {
+  const why = 'USER_MD=' + (fs.existsSync(USER_MD) ? 'ok' : '缺失') +
+              ' PROJ_MD=' + (fs.existsSync(PROJ_MD) ? 'ok' : '缺失') +
+              ' HANDOFF=' + (fs.existsSync(HANDOFF) ? 'ok' : '缺失');
+  console.log('  SKIP F-2/F-3 全部数据驱动断言：本机没有真实记忆目录（HOME=' + HOME + ' ; ' + why + '）');
+  console.log('  SKIP 原因：本套件验证的是「在真实数据上能否产出四层对照表且不改动文件」，');
+  console.log('  SKIP       没有真实数据时**无法给出任何有意义的判定** ⇒ 显式 skip，不当成 PASS。');
+  console.log('  SKIP 这是 CI 上的预期行为，不是产品缺陷。');
+}
+const uTxt = HAS_REAL_DATA ? fs.readFileSync(USER_MD, "utf8") : "";
+const pTxt = HAS_REAL_DATA ? fs.readFileSync(PROJ_MD, "utf8") : "";
+const uItems = HAS_REAL_DATA ? RE.listRuleItemsPre(uTxt) : [];
+const pItems = HAS_REAL_DATA ? RE.listRuleItemsPre(pTxt) : [];
+const hFiles = HAS_REAL_DATA ? fs.readdirSync(HANDOFF).filter((f) => f.endsWith(".md")) : [];
 
 // ★启发式粗分（仅估算，非真实分拣 —— 见文件头诚实标注）
 const NORM_KW = ['必须', '严禁', '绝不', '不得', '禁止', '务必', '一律', '永远不', '不要再', '不准', '硬性规则', '规则】', '合规', '强制'];
@@ -96,29 +132,29 @@ console.log('|---|---|---|---|---:|---|');
 for (const r of table) console.log('| **' + r.layer + '** | ' + r.name + ' | ' + r.dest + ' | ' + r.src + ' | ' + r.n + ' | ' + r.note + ' |');
 console.log('');
 
-ok(table.length === 5, '★★F-2a 对照表含 5 行（四层 + 流水）');
-ok(table[0].layer === 'L0', '★★★F-2b **第一行就是 L0**（用户最关心的一条）');
-ok(table[0].n > 0, '★★★F-2c **L0 有条目**（不是 0 ⇒ 用户画像/共同经历被独立识别出来了）', String(table[0].n));
-ok(L0.length > 0 && L0.every((x) => typeof x === 'string' && x.length > 0), '★★★F-2d L0 有**样例内容**（不只一个数字）', '样例 ' + L0.length + ' 条');
+if (!HAS_REAL_DATA) skip('F-2a 对照表含 5 行'); else ok(table.length === 5, '★★F-2a 对照表含 5 行（四层 + 流水）');
+if (!HAS_REAL_DATA) skip('F-2b 第一行是 L0'); else ok(table[0].layer === 'L0', '★★★F-2b **第一行就是 L0**（用户最关心的一条）');
+if (!HAS_REAL_DATA) skip('F-2c L0 有条目'); else ok(table[0].n > 0, '★★★F-2c **L0 有条目**（不是 0 ⇒ 用户画像/共同经历被独立识别出来了）', String(table[0].n));
+if (!HAS_REAL_DATA) skip('F-2d L0 有样例'); else ok(L0.length > 0 && L0.every((x) => typeof x === 'string' && x.length > 0), '★★★F-2d L0 有**样例内容**（不只一个数字）', '样例 ' + L0.length + ' 条');
 console.log('');
 console.log('  ★L0 样例（前 3 条）:');
 L0.slice(0, 3).forEach((x, i) => console.log('    ' + (i + 1) + '. ' + x.slice(0, 70)));
 
 // ★守恒：用户级 = L0 + L1 + 流水（用户侧）；项目级 = L2 + 流水（项目侧）
 const userSide = L0.length + L1.length + uItems.filter((it) => { const t = it.text; return !(isRule(t) && !isPref(t)) && !isPref(t); }).length;
-ok(userSide === uItems.length, '★★★F-2e 用户级条目守恒（L0+L1+流水 = 旧条目数）', userSide + ' = ' + uItems.length);
+if (!HAS_REAL_DATA) skip('F-2e 用户级守恒'); else ok(userSide === uItems.length, '★★★F-2e 用户级条目守恒（L0+L1+流水 = 旧条目数）', userSide + ' = ' + uItems.length);
 const projSide = L2.length + pItems.filter((it) => !isRule(it.text)).length;
-ok(projSide === pItems.length, '★★★F-2f 项目级条目守恒（L2+流水 = 旧条目数）', projSide + ' = ' + pItems.length);
-ok(L0.length + L1.length + L2.length + flow === uItems.length + pItems.length, '★★★F-2g 总守恒（四层之和 = 两份旧文件条目总数）', (L0.length + L1.length + L2.length + flow) + ' = ' + (uItems.length + pItems.length));
+if (!HAS_REAL_DATA) skip('F-2f 项目级守恒'); else ok(projSide === pItems.length, '★★★F-2f 项目级条目守恒（L2+流水 = 旧条目数）', projSide + ' = ' + pItems.length);
+if (!HAS_REAL_DATA) skip('F-2g 总守恒'); else ok(L0.length + L1.length + L2.length + flow === uItems.length + pItems.length, '★★★F-2g 总守恒（四层之和 = 两份旧文件条目总数）', (L0.length + L1.length + L2.length + flow) + ' = ' + (uItems.length + pItems.length));
 
 // ══════════════════════════════════════════════════════════════════════
 // 不真改证明
 // ══════════════════════════════════════════════════════════════════════
 console.log('');
 console.log('[F-3] ★不真改证明（sha256 前后一致）');
-const shaAfter = { user: sha(USER_MD), proj: sha(PROJ_MD) };
-ok(shaBefore.user === shaAfter.user, '★★★F-3a 用户级 MEMORY.md **未被改动**（sha256 前后一致）');
-ok(shaBefore.proj === shaAfter.proj, '★★★F-3b 项目 MEMORY.md **未被改动**（sha256 前后一致）');
+const shaAfter = HAS_REAL_DATA ? { user: sha(USER_MD), proj: sha(PROJ_MD) } : { user: '', proj: '' };
+if (!HAS_REAL_DATA) skip('F-3a 用户级未改动'); else ok(shaBefore.user === shaAfter.user, '★★★F-3a 用户级 MEMORY.md **未被改动**（sha256 前后一致）');
+if (!HAS_REAL_DATA) skip('F-3b 项目未改动'); else ok(shaBefore.proj === shaAfter.proj, '★★★F-3b 项目 MEMORY.md **未被改动**（sha256 前后一致）');
 console.log('    用户级 sha16 = ' + shaAfter.user.slice(0, 16).toUpperCase());
 console.log('    项目   sha16 = ' + shaAfter.proj.slice(0, 16).toUpperCase());
 
@@ -155,5 +191,5 @@ console.log('[F-4] 诚实标注检查（★真断言，不是 ok(true) 恒真守
 }
 
 console.log('');
-console.log('[v4-h3-f-migration-drill] ' + pass + ' PASS / ' + fail + ' FAIL');
+console.log('[v4-h3-f-migration-drill] ' + pass + ' PASS / ' + fail + ' FAIL / ' + skipped + ' SKIP');
 process.exit(fail ? 1 : 0)

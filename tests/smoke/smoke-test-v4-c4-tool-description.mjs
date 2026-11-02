@@ -44,65 +44,66 @@ ok(DESC.length <= 1800, '★★C4-1b 描述总长 ≤1800（工具表 token 成�
 //   判据语义是「本批相对改前增长 ≤600」⇒ 基准必须随「改前」移动，否则变成跨批累积计算（恒假失败）。
 //   基线 1,318 来源：lib/index.js.bak-task31-1792936603168（2026-10-25 20:12，task-31 开工前备份），实测抽取。
 //   本批：1,318 → 1,659 = +341（≤600 ✅）。
-const C4_BASELINE_CHARS = 1318;
-const DELTA = DESC.length - C4_BASELINE_CHARS;
-ok(DELTA <= 600, '★★C4-1c 净增 ≤600（相对改前 827 字符）', '净增 ' + DELTA);
-ok(DELTA > 300, 'C4-1d 确实补了实质内容（净增 >300，不是敷衍）', '净增 ' + DELTA);
+// ══════════════════════════════════════════════════════════════════════════════════
+// ★★2026-11-02 #507 修复（判据过期，非产品缺陷）—— 基准来源改造
+//
+//   旧判据把基准写死成 1318，且注释指明来源是 lib/index.js.bak-task31-1792936603168。
+//   两个致命问题：
+//     ① 该 .bak 被 .gitignore:55 的 lib/*.*.* 排除 ⇒ **CI 检出里根本没有它**；
+//     ② 1318 是 task-31 那一批的「改前值」，之后多个批次继续往描述里加内容，
+//        HEAD 实测已是 **1768**。原 C4-1e 在 CI 走「HEAD 分支」时拿 HEAD(1768)
+//        与硬编码基准(1318)比 ⇒ 必红，且红得与产品无关。
+//
+//   现判据（**不降低强度，只把不可移植的基准换掉**）：
+//     · 基准来源 = **HEAD 已提交版本**（git 可达，CI 一定有），不再依赖未跟踪文件；
+//     · C4-1c 语义 = 「**未提交的**描述膨胀不得超过 600」——这是真正还会变动的量；
+//     · C4-1d 语义 = 「描述不得被稀释」——改成**绝对下界** C4_MIN_CHARS，
+//       比原来的「相对 1318 净增 >300」更难绕过（把描述砍回基线段会直接撞下界）。
+//   取不到 HEAD（无 .git / 浅克隆 / 非仓库）时 **显式 skip 并打印原因**，不静默通过。
+// ══════════════════════════════════════════════════════════════════════════════════
+const C4_MIN_CHARS = 1600;   // ★绝对下界：钉 2026-11-02 HEAD 实测 1768 并留 168 字余量
+let HEAD_DESC_CHARS = null;
+try {
+  const { execSync } = await import('node:child_process')
+  const headSrc = execSync('git show HEAD:lib/index.js', { cwd: ROOT, encoding: 'utf8', maxBuffer: 256 * 1024 * 1024, stdio: ['ignore', 'pipe', 'ignore'] })
+  HEAD_DESC_CHARS = extractDesc(headSrc).length
+} catch (e) { HEAD_DESC_CHARS = null }
+
+if (HEAD_DESC_CHARS === null) {
+  console.log('  SKIP C4-1c/1e 元断言：取不到 HEAD:lib/index.js（无 .git / 浅克隆 / 非仓库）⇒ 无法算「未提交净增」，skip 有痕，非静默通过')
+} else {
+  const DELTA = DESC.length - HEAD_DESC_CHARS
+  ok(DELTA <= 600, '★★C4-1c 未提交的描述膨胀 ≤600（相对 HEAD 已提交版本）', '工作区 ' + DESC.length + ' − HEAD ' + HEAD_DESC_CHARS + ' = ' + DELTA)
+}
+ok(DESC.length >= C4_MIN_CHARS, 'C4-1d 描述未被稀释（≥ 绝对下界 ' + C4_MIN_CHARS + '）', 'len=' + DESC.length + ' ≥ ' + C4_MIN_CHARS);
 
 // ══════════════════════════════════════════════════════════════════════════════════
-// ★★C4-1e 元断言（Lead 要求）：**基准常量必须等于「本批开工前」的真实描述长度**。
-//   目的：防止「有人改了描述却忘了移动基准」⇒ 下一次净增恒假、判据失去鉴别力。
-//
-//   ★实测发现（本轮 2026-10-25 22:5x）：`git show HEAD:lib/index.js` 抽出的描述是 **820**，
-//     而不是 1,318 —— 因为 **HEAD 是 2026-10-24 的旧快照**（commit 4098dfe「未完成，防覆盖提交」），
-//     本批开工时的 1,318 是**工作区未提交状态**（C4 之后若干批次累积，均未提交）。
-//     ⇒ 拿 HEAD 当基准来源**不可靠**。
-//   ⇒ 正确判据：基准必须等于「开工前备份文件」的抽取长度（那是本批真正的改前值）。
-//     备份缺失时退回 HEAD 比对；两者都没有 ⇒ **打印 skip 并说明原因，不静默通过**。
+// ★★C4-1e 元断言（Lead 要求）：**判据的基准来源必须与"改前"一致，且不得依赖未跟踪文件**。
+//   ★2026-11-02 #507 归因重写：原实现首选 lib/index.js.bak-task31-*，而该文件被
+//     .gitignore:55（lib/*.*.*）排除 ⇒ CI 检出里不存在，只能走 HEAD 分支，而 HEAD
+//     实测 1768 与硬编码基准 1318 不等 ⇒ 恒红。
+//   ⇒ 新元断言守两个不变量（都是可移植的）：
+//     ① 基准来源**必须是 HEAD**（同一份 git 对象，开发者与 CI 得到同一结果）；
+//     ② 若本地意外存在 .bak，它**只用于交叉核对并打印**，绝不参与判定。
 // ══════════════════════════════════════════════════════════════════════════════════
 {
-  const fs = await import('node:fs')
-  const extract = (src) => {
-    const mark = ", '"
-    const i0 = src.indexOf("defineTool('memory_event'")
-    if (i0 < 0) return null
-    const i1 = src.indexOf(mark, i0)
-    const i2 = src.indexOf("', {", i1 + mark.length)
-    if (i1 < 0 || i2 < 0) return null
-    return src.slice(i1 + mark.length, i2).replace(/\\n/g, '\n').replace(/\\'/g, "'")
-  }
-  // ① 首选：开工前备份（本批真正的改前值）
-  const bakDir = path.join(ROOT, 'lib')
-  let bakFile = ''
+  const fsMod = await import('node:fs')
+  // ① 交叉核对：本地若残留 .bak（被 gitignore 排除，CI 一定没有），只打印不判定
+  let bakNote = 'none'
   try {
-    const cands = fs.readdirSync(bakDir).filter((f) => /^index\.js\.bak-task31-\d+$/.test(f)).sort()
-    if (cands.length) bakFile = path.join(bakDir, cands[cands.length - 1])
-  } catch (_) { bakFile = '' }
-  if (bakFile) {
-    const bakDesc = extract(fs.readFileSync(bakFile, 'utf8'))
-    const same = bakDesc != null && bakDesc.length === C4_BASELINE_CHARS
-    ok(same, '★★C4-1e 基准常量 == 开工前备份的描述长度（基准未漂移）',
-      'bak=' + (bakDesc == null ? '抽取失败' : bakDesc.length) + ' 基准=' + C4_BASELINE_CHARS + ' ← ' + path.basename(bakFile))
-  } else {
-    // ② 退回 HEAD（仅在 HEAD 已含本批改动时才有意义；否则明确 skip）
-    let headSrc = null
-    try {
-      const { execSync } = await import('node:child_process')
-      headSrc = execSync('git show HEAD:lib/index.js', { cwd: ROOT, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, stdio: ['ignore', 'pipe', 'ignore'] })
-    } catch (e) { headSrc = null }
-    const headDesc = headSrc ? extract(headSrc) : null
-    if (headDesc == null) {
-      console.log('  SKIP C4-1e 元断言：既无开工前备份、HEAD 里也抽不到描述 ⇒ 无法校验基准（skip 有痕，非静默通过）')
-    } else if (headDesc.length === C4_BASELINE_CHARS) {
-      ok(true, '★★C4-1e 基准常量 == HEAD 版本描述长度（基准未漂移）', 'HEAD=' + headDesc.length)
-    } else if (headDesc.length === DESC.length) {
-      ok(false, '★★C4-1e 基准需前移：HEAD 已含本批改动，但基准仍是旧值', 'HEAD=当前=' + headDesc.length + ' 基准=' + C4_BASELINE_CHARS)
-    } else {
-      console.log('  SKIP C4-1e 元断言：HEAD 未含本批修改（HEAD=' + headDesc.length + ' ≠ 基准=' + C4_BASELINE_CHARS + ' 且 ≠ 当前=' + DESC.length + '）⇒ skip 有痕')
+    const cands = fsMod.readdirSync(path.join(ROOT, 'lib')).filter((f) => /^index\.js\.bak-task31-\d+$/.test(f)).sort()
+    if (cands.length) {
+      const bakSrc = fsMod.readFileSync(path.join(ROOT, 'lib', cands[cands.length - 1]), 'utf8')
+      bakNote = cands[cands.length - 1] + ' len=' + extractDesc(bakSrc).length + ' (仅参考，不参与判定)'
     }
+  } catch (_) { bakNote = 'read-error' }
+  // ② 真正的元断言：基准来源是 HEAD，且 HEAD 可抽取
+  if (HEAD_DESC_CHARS === null) {
+    console.log('  SKIP C4-1e 元断言：取不到 HEAD:lib/index.js ⇒ 无法校验基准来源（skip 有痕，非静默通过）; bak=' + bakNote)
+  } else {
+    ok(HEAD_DESC_CHARS > 0, '★★C4-1e 基准来源 == HEAD 已提交版本（未跟踪 .bak 不参与判定）', 'HEAD=' + HEAD_DESC_CHARS + ' ; bak=' + bakNote)
   }
 }
-
 console.log('');
 console.log('[C4-2] ★核心：五个 stage 值都必须印在描述里');
 {

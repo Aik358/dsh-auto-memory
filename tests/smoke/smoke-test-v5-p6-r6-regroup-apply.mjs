@@ -14,6 +14,7 @@
  */
 import fs from 'node:fs'
 import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import {
   BACKUP_DIRNAME,
   MAX_BACKUPS,
@@ -31,7 +32,12 @@ function ok(cond, name, extra) {
   else { fail++; console.log('  FAIL - ' + name + (extra ? ' :: ' + extra : '')) }
 }
 
-const TMP = 'D:/dsh-auto-memory/artifacts/_r6-tmp'
+// ★#507（2026-11-02）：ROOT 由**本文件位置**派生，而不是写死维护者本机绝对路径。
+//   旧写法在 CI（ubuntu）与任何非本机检出下都读不到文件，套件因此必红 ——
+//   那不是产品缺陷，是测试不可移植。**不要改回 process.cwd()**：run-smoke 的
+//   工作目录与开发者 shell 的 cwd 都不保证是仓库根。
+const ROOT = fileURLToPath(new URL('../..', import.meta.url))
+const TMP = path.join(ROOT, 'artifacts', '_r6-tmp')
 try { fs.rmSync(TMP, { recursive: true, force: true }) } catch (e) {}
 fs.mkdirSync(TMP, { recursive: true })
 const STORE = path.join(TMP, 'event-store.json')

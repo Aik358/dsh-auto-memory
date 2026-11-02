@@ -277,7 +277,13 @@ ok('#489 落盘后新实例 load ⇒ 3 条仍在且磁盘无新增字段', () =>
   assert.equal(disk.items.length, 3, '磁盘上必须是 3 条，实得 ' + disk.items.length)
   for (const it of disk.items) {
     for (const k of Object.keys(it)) {
-      assert.ok(['kind', 'key', 'at', 'payloadRaw', 'eventId'].indexOf(k) >= 0, '磁盘出现未登记字段: ' + k)
+      // ★#511/#512（2026-11-02）：判据过期重钉 —— 磁盘合法字段集**有意**扩了一个 `opKey`。
+      //   原因：操作身份必须是「操作实例」而不是「内容指纹」。若 opKey 不落盘，重启后只能由
+      //   payload 重算 = 又回到内容哈希 ⇒ set X→Y→X 的第三次仍会被当成第一次的重试而丢弃
+      //   （#512 当场复发）。所以 opKey 必须持久化，这是**修 #512 的必要条件**，不是顺手加的字段。
+      //   判据意图不变：磁盘仍必须是**闭合字段集**（不允许出现未登记字段），只是集合本身扩容。
+      //   向前兼容：旧队列文件没有 opKey ⇒ sanitizeLoadedPre 回退按 payload 重算（行为与今天逐字一致）。
+      assert.ok(['kind', 'key', 'at', 'payloadRaw', 'eventId', 'opKey'].indexOf(k) >= 0, '磁盘出现未登记字段: ' + k)
     }
   }
   // 新实例 load：操作身份必须由 payload 重算出来 ⇒ 三条各自成条

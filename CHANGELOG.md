@@ -4,6 +4,63 @@ All notable changes to dsh-auto-memory.
 
 ---
 
+## [3.4.0-alpha.4] — 2026-11-02 · 抢先预览版 · 第 4 次（Preview / Research Build）
+
+> 只发 GitHub，不上 npm。本版修 alpha.3 发布后外部开发者新报的 **12 条**缺陷，并对其中属于「上批半修」的部分补齐另一半。
+
+### 已确认修复（Verified fixed）
+
+**会导致数据永久丢失 / 功能完全不可用的（4 条）**
+
+- **#510 上传播链 100% 不可用（alpha.3 引入的回归）**：`uploadBaselinePre` 的方法体读 `o.ws`，但签名是无参、模块作用域里没有 `o` ⇒ 首句即 `ReferenceError`，被最外层 `catch` 吞成 `upload-threw`。「自己整理并上传」整条链**当前完全打不出包**。已统一参数契约（对象与裸字符串两种形态都接受）。**变异回退能精确复现原报错**。
+- **#511 + #512 上行丢变更（与 #489 同族半修）**：`makeSender` 的 `idemKey` 回退成 `kind|key`，而 `entry.eventId` 恒为空 ⇒ 同一事件的 create / append A / append B 共用同一键，服务端按 idemKey UPSERT 会互相覆盖；且「操作身份」用的是 `hash(payload)`，`set X→Y→X` 的第三次会被当成第一次的重试直接丢弃。实测 3 条不同操作 idemKey 全等、`set X→Y→X` 只剩 2 条。现改为**操作实例 ID**并持久化到磁盘（不落盘的话重启后退回内容哈希，#512 当场复发），旧队列文件缺失该字段时逐字回退、向前兼容。
+- **#513 下行 create 重放积累副本**：`create()` 注释写「同 id 已存在 ⇒ 报错」，实现却是**静默换随机 ID 并照样新增** ⇒ 1 次 create + 5 次重放得到 **7 个事件、7 个不同 ID**，而远端后续 append 打的是原 ID ⇒ 原事件永远收不到检查点。现改为幂等返回既有事件 + `deduped:true`；下游 applier 的 `created` 判据同步改为看 `deduped`。
+- **#519 基线换库绕过事件写锁**：`event-store.js` 的注释早已写明「两条路径必须抢同一把锁」，但基线用的是 `writeTextAtomicPreSync`（只有 tmp+rename，不取锁）。实测持锁期间正常事件写**等满 5016ms 超时被挡**，而基线**立即成功**并把原事件整条冲掉（`eventLost=true`）。现把**整批**写入（备份/写入/回滚三集合）纳入 `withEventStoreLockPre`——不是逐文件取锁，逐文件仍会让在途写插进两个文件之间。
+
+**团队基线按钮链（3 条，必须同批）**
+
+- **#516 应用未绑定 checksum**：引擎判据是 `if (_expSum && ...)` —— 空串直接短路成「通过」，前端又从来不传 ⇒ **「不传」这条路把整道校验跳过去了**（实测：造真 offer + 不传 expected，一路走到 unpack-failed）。现引擎层缺参即拒、路由层缺参 400、前端新增 `offerSum` state 并在缺失时自拦。**三层同批**——只上后端会把按钮从「静默应用错库」变成「完全不可用」。
+- **#517 把「没问过」说成「远端没有」**：`else if (reason === "no-offer")` 是**死分支**（`readBaselineOfferPre` 无文件时返回 `{ok:true, offer:null}`，从不返回 `no-offer`），于是「本地没缓存」被判成「搜索失败」；且 `_attempted` 是无条件置 true 的。现按真实情况分流 `not-attempted` / `search-failed` / `no-offer` 三态，并显式回传 `source` 与 `remoteDiscoveryAvailable`。**不改 `readBaselineOfferPre` 的返回形状**（那是 GET 分支的既定契约），改的是调用方的解释。
+- **#518 等整理完成后无人续传**：门判据本身是对的（只有 `done` 放行），但 `wait:true` 之后**没有任何东西承接** —— 弹窗全生命周期只调 1 次 `upgrade-status`，`setInterval` 命中 0。现 `onStart` 返回 Promise + 回传 `jobId`，新增 `pollUpgradeThen`（3s×60、**校验 sameJob**、世代号防旧回调、卸载清理），上传绑定点击瞬间的工作区快照。**历史那次 done 不会被当成本次成功。**
+
+**记忆层 / 注入 / 检索（3 条）**
+
+- **#506 两处 must 段被缺省 2000 硬顶钉死**：`sanitizeForInjection` 的缺省不是「不截断」而是「截到 2000」，两处调用都没传第二参数 ⇒ 先把整段砍到文件**开头** 2000 字，再对这段取尾 ⇒ 实际注入的是「文件最开端 2000 字的尾巴」，与 `tail` 方向**相反**。实测把预算从 12000 调到 80000，两段恒 **2080** 字符。现显式传足够大的上限，让 `part()` 成为唯一截断点。⚠ 只放开上限、不加方向参数会得到 **19,955 字符的前段窗口，比修前更糟** —— 这条已作为独立负路径固定下来。
+- **#508 智能检索与 `memory_recall` 不同源**：`collectHits` 不读事件库、也不读 PLAN ⇒ 同一份内容 `memory_recall` 命中而智能检索 0 命中。现纳入 PLAN / 最近账本 / **事件库正文**（带 `evt_` id 供下钻），并保持 fail-soft（事件库损坏不拖垮检索）。
+- **#509 `evt_` ID 读取链断裂**：L0 默认返回 `evt_` id，提示语却统一写「传 `expand="mem_xxx"`」⇒ 按提示传回必被 `mem_` 正则拒绝。且 Tier-0 标题写「要原文用 memory_read」，而 `memory_read` 的 kind 枚举里没有 event。现新增事件下钻分支 `expandEventRecordPre`，两处提示语分流。
+
+**可移植性 / 平台（2 条）**
+
+- **#507 CI 21 条红全部来自测试自身**：17 条写死维护者本机路径（**不是 16 条**，作者漏了 `v5-p6-r6-regroup-apply`）、3 条依赖本机真实记忆数据、1 条基线锁依赖被 `.gitignore:55` 排除的未跟踪 `.bak`。已在非仓库位置 `git worktree` 实测 **17/17 exit=0**，变异用**不可达路径**验证鉴别力（改回真实本机路径不会红，那是无效判据）。假绿 8 条集中在 1 个套件（`F-5×3` 最危险：产品规则段真坏它们照样绿）。
+- **Windows `rename` 平台缺陷**：状态文件落盘用 `renameSync`，而 Windows 在目标被占用时返回 **EPERM/EBUSY**（POSIX 是原子可覆盖）⇒ `cont-seq.json` 随机写入失败。现加有界重试（仅这三个 code，2s 上限）。**这是产品侧缺陷，Windows 用户同样会撞。**
+- **测试并行污染**：`issue341-lockgate` 把变异文件写进**真实 `lib/`** 再 finally 删 ⇒ 与 `a2-hub-transactions` / `generator-guard` / `generator-idempotent` / `c4-fresh-install` / `depre-residue` 并行时随机 ENOENT、或被 `cpSync(lib)` 带进副本。已改为专属临时 lib 目录，实测运行期间 `lib/__mut-*` = **0**。
+
+### 仍在问题中 / 未验证（Known issues / Not verified）
+
+- **#514** 端到端下行需真实团队服务 ⇒ 本次只做到「applier 解析落点 + 映射函数」的协议层验证：**协议层已验证，真实团队服务未验证**
+- **#508** 完整 `smartRecall`（含模型扩词）需 `runSubagent`/真模型 ⇒ **协议层已验证，真实模型未验证**
+- **#519** 双进程 `append + apply` 的端到端交错**未联调**，只做到锁互斥 + 整批入锁的接线与单边取证
+- **#507** 用 `git worktree` 跨目录 + 空 `HOME`/`USERPROFILE` 模拟 CI，**未在真 Ubuntu 上跑**
+- **#516** 前端请求体按 `apiPost` 字面参数 + `client-loadable` 真执行验证，**未跑宿主 UI 抓包**
+- **#516 附带竞态**：`applyBaselineOfferPre` 对同一份 `baseline-offer.json` **读了两次**，中间可被替换 ⇒ 「比对用的 A」与「解包用的 B」仍可不同。**刻意未与主修混在一个 patch**（否则验收无法区分），单列待办
+- **#487** 驱动器判据已修，但装配层未接线 ⇒ 产线 fail-closed 停在 `pulling`
+- **#457** 相似度函数已交付，查重接线未做
+- **#460** 只加了覆盖比标注，按源补排需改库结构
+- **#503** 写入目标 guard 未实现
+- **#458 / #463 / #501** 部分验收只到协议层，真实 int8 模型与真实网络未验证
+- **`sidecar-watchdog`** 是既有不稳定用例（单跑 5 次有 1 次失败），本批未修
+- 架构 #465–#469、建议 #474 #477 #500、PR #475 #471、Hold #179 #201 均不在本版
+
+### 验证（Verification）
+
+- 全量回归 **连续多次 PASS 550 / FAIL 0 / TIMEOUT 0**（161.9s），与动手前基线逐项一致
+- `build-iter5-skin --check --strict` = **SYNC-OK**；`gen-ev4-blocks --check` = **OK**（137,085 字符）
+- `verify-docs` = **全部一致**；`client-loadable`（真执行 factory）= **PASS 34 / FAIL 0**
+- `node --check` × 8 个改动文件全绿；CRLF/LF 无双字节混用
+- 新增 5 份验收探针，全部带**变异负路径**：#510（正 5 + 变异 1）· #506（5 组，含方向负路径）· #511/#512（21/0，两条变异分别红在不同层）· #513（18/0）· #514（39/0 + 变异 1）
+- 判据重钉 7 处，每处写明「为什么红、为什么这样钉」；其中 r38 抬上界时**额外加了一条「上界+1 必红」的鉴别力断言**——否则抬上界等于把检出能力悄悄调没
+
+---
 ## [3.4.0-alpha.3] — 2026-11-02 · 抢先预览版 · 第 3 次（Preview / Research Build）
 
 > **这不是正式版。** 不上 npm，只发 GitHub。

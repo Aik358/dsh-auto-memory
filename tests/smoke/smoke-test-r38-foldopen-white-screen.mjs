@@ -111,7 +111,14 @@ console.log('percept+checkpoint+views helper 段行数 =', helperLines, '（区�
 // 【③ 负路径：上界真的在守（见套件末尾的区间锁负路径断言）】
 //   把 5 行代码塞进该区间（模拟「另一个改动混进来」）⇒ 断言必红，见文件末尾 R38-RANGE-MUT。
 // ═══════════════════════════════════════════════════════════════════════════
-if (!(helperLines >= 250 && helperLines <= 1100)) { console.log('✗ helper 段行数异常'); process.exit(1) }
+// ★★2026-11-02 R162 重钉（判据过期，非产品缺陷）：上界 1100 → 1300，下界 250 不动。
+//   ★为什么红：本批 #516/#517/#518 把 UpgradePopup 的三个动作整体重写并新增 pollUpgradeThen，
+//     而该段区间（percept helper 起点 → EventCard 起点）**结构上包含** UpgradePopup 与 onStart/onSelfUpgrade，
+//     段内 grep 实测：offerSum / expectedChecksum / pollUpgradeThen **三者全部命中** ⇒ 增长确实来自本批。
+//   ★为什么只抬上界不抬下界：下界 250 守的是「段被切短/锚点切歪」，本批只增不减，抬它等于放宽检出。
+//   ★为什么不删这个断言：它的意图是「别把无关改动混进这一段」，抬到 1300 后仍能从 1156 往上抓 12% 的异常增长。
+//   实测本批后 helperLines = 1156（上批 2026-10-26 P2b 弹窗后为 740）。
+if (!(helperLines >= 250 && helperLines <= 1300)) { console.log('✗ helper 段行数异常'); process.exit(1) }
 const segLines = seg.split('\n').length
 console.log('事件卡段行数 =', segLines, '（区间锁 20~80）')
 if (!(segLines >= 20 && segLines <= 80)) { console.log('✗ 段边界异常（终点锚可能吞掉了半个文件）'); process.exit(1) }
@@ -164,7 +171,8 @@ console.log('=== 守卫通过：真渲染不抛 + 负路径精确报红 ===')
 //   目的：证明 700 这个上界真的在守（不是形同虚设），且不影响正常增行。
 // ═══════════════════════════════════════════════════════════════════════════
 {
-  const LOCK_MIN = 250, LOCK_MAX = 1100
+  // ★2026-11-02 R162：与上方区间锁同一判据同步（1100 → 1300），否则负路径会拿旧上界骗自己
+  const LOCK_MIN = 250, LOCK_MAX = 1300
   function wouldPass (n) { return n >= LOCK_MIN && n <= LOCK_MAX }
   // 基线：实测值必须通过
   if (!wouldPass(helperLines)) { console.log('✗ R38-RANGE-MUT 基线未通过（' + helperLines + '）'); process.exit(1) }
@@ -174,5 +182,8 @@ console.log('=== 守卫通过：真渲染不抛 + 负路径精确报红 ===')
   if (wouldPass(helperLines + 5394)) { console.log('✗ R38-RANGE-MUT 吞掉半个文件仍放行（上界失效）'); process.exit(1) }
   // 负路径 C：段被切短（625 → 200）⇒ 必须红
   if (wouldPass(200)) { console.log('✗ R38-RANGE-MUT 段被切短仍放行（下界失效）'); process.exit(1) }
+  // ★2026-11-02 R162 新增：新上界必须**仍在守**——把段撑到 LOCK_MAX+1 必须红，
+  //   否则「抬上界」等于把检出能力悄悄调没（本仓禁止「为了变绿而放宽判据」）。
+  if (wouldPass(LOCK_MAX + 1)) { console.log('✗ R38-RANGE-MUT 上界被抬成恒真（LOCK_MAX+1 仍放行）'); process.exit(1) }
   console.log('R38-RANGE-MUT ✓ 上界守切歪（+5394 红）· 下界守切短（200 红）· 正常增行不误杀（+5 绿）')
 }

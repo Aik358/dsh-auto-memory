@@ -259,7 +259,10 @@ async function main() {
     const authSrc = fs.readFileSync(REAL_AUTH, 'utf8').replace(/\r\n/g, '\n')
 
     const muts = [
-      ['M1 幂等键退回旧写法', syncSrc, "        idemKey: eventId || (kindText + '|' + keyText),", ''],
+      // ★#511（2026-11-02）：判据过期重钉 —— idemKey 已改为三形态（eventId → kind|key|opKey → kind|key），
+      //   原锚串逐字失配（hits:0）。变异目标改为「去掉 opKey 片段」，判据意图不变：
+      //   幂等键不再携带操作身份 ⇒ 同事件不同操作的 idemKey 全部退化成 event|evt_X ⇒ 必红。
+      ['M1 幂等键缺失', syncSrc, "        idemKey: eventId || (kindText + '|' + keyText + (opKey ? '|' + opKey : '')),\n", ''],
       ['M2 游标退回只认数字', pullSrc, "  if (typeof raw === 'string') {", "  if (false) {"],
       ['M3 游标不落盘', pullSrc, "        persistCursorPre()\n", "\n"],
       ['M4 no-applier 一律 transient', pullSrc, "      const wantedPre = !requestedKinds || requestedKinds.indexOf(kind) >= 0\n      return { ok: false, transient: wantedPre, code: 'no-applier' }", "      return { ok: false, transient: true, code: 'no-applier' }"],

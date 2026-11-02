@@ -63,17 +63,22 @@ try {
   assert.equal(candidates[0].kind, 'configured')
   assert.equal(new Set(candidates.map(c => c.path)).size, candidates.length)
   assert.ok(candidates.some(c => c.kind === 'system'))
-  const result = await resolvePythonInterpreterPre(candidates.filter(c => c.kind !== 'system'), {timeoutMs:5000})
+  // ★2026-11-02 归因（判据阈值在满载下不稳，非产品缺陷）：这里探测的是**真实 venv**，
+  //   首次 import torch 在 8 路并行满载时实测 19,484ms，而原阈值 5000ms ⇒ 必然把 ready 判成 no-deps，
+  //   断言 `['missing','no-deps','ready']` 随机失败。判据意图不变（仍是「按序探测、如实分级」），
+  //   只给探测留出与小 spec 无关的工程余量：30s 远低于会掩盖「真卡死」的量级（真卡死由 ③ 的 700ms 用例守）。
+  const PROBE_MS = 30000
+  const result = await resolvePythonInterpreterPre(candidates.filter(c => c.kind !== 'system'), {timeoutMs:PROBE_MS})
   assert.equal(result.chosen, ready)
   assert.equal(result.chosenIsDev, true)
   assert.deepEqual(result.probed.map(c => c.status), ['missing', 'no-deps', 'ready'])
   assert.equal(result.probed[1].path, bare)
   assert.ok(result.probed.every(c => c.deps || c.reason.length > 0))
-  const priority = await resolvePythonInterpreterPre([{path:ready, kind:'configured', isDev:false}, {path:bare, kind:'system', isDev:false}], {timeoutMs:5000})
+  const priority = await resolvePythonInterpreterPre([{path:ready, kind:'configured', isDev:false}, {path:bare, kind:'system', isDev:false}], {timeoutMs:PROBE_MS})
   assert.equal(priority.chosen, ready)
   assert.equal(priority.chosenIsDev, false)
   assert.equal(priority.probed.length, 2, 'later failure must remain visible after selecting a ready interpreter')
-  const allFailed = await resolvePythonInterpreterPre([{path:bare, kind:'system', isDev:false}], {timeoutMs:5000})
+  const allFailed = await resolvePythonInterpreterPre([{path:bare, kind:'system', isDev:false}], {timeoutMs:PROBE_MS})
   assert.equal(allFailed.chosen, '')
   assert.equal(allFailed.probed[0].status, 'no-deps')
   assert.ok(allFailed.probed[0].reason.length > 0)
