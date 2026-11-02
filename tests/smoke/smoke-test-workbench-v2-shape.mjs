@@ -72,7 +72,10 @@ ck('status 回传 epochTokenNow（诊断可见）', /epochTokenNow/.test(idx))
 
 console.log('\n══ ④ E3 轮换门结构 ══')
 ck('_wbRotateTick 是相位迁移的唯一写者（挂在 15s 心跳）', (() => {
-  const hb = idx.split('\n').filter((l) => l.includes('void engine._wbRotateTick()'))
+  // ★2026-11-02（真机崩溃 P0 同批）：心跳里的后台任务已从裸 `void engine._wbRotateTick()`
+  //   改为 `bgGuard('wb rotate', engine._wbRotateTick())`（未捕获的拒绝会让宿主 fail-loud 自杀）。
+  //   本守卫的原意是「唯一写者 + 挂在 15s 心跳」，不是钉死某个字符形态 ⇒ 两种形态都认。
+  const hb = idx.split('\n').filter((l) => /(?:\bvoid engine\._wbRotateTick\(\)|bgGuard\('wb rotate', engine\._wbRotateTick\(\)\))/.test(l))
   return hb.length === 1 && hb[0].includes('}, 15000)')
 })())
 ck('四常量齐备（QUIET / SEAL_TIMEOUT / SEAL_RETRY）', (() => {

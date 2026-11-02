@@ -374,7 +374,12 @@ test('real debugInfo/persistence/dashboard path exposes failures and persistence
   assert.equal(host._degradeViewSnapshot().persisted, true)
   const data = await host.debugInfo()
   const degrade = data.associativeMemory.degrade
-  assert.equal(degrade.persisted, false) // Diagnostic GET is read-only.
+  // ★2026-11-02 判据更新（非产品缺陷 · 归因可复算）：原断言写 `persisted === false`，注释「Diagnostic GET is read-only」——
+  //   那是 readOnly:true 引入后**记录当时行为**的判据，而那个行为本身就是 #478 的真缺陷：
+  //   readOnly 让 `_persistObservabilityPre` 生产永不执行，降级台账停更 30 天。
+  //   本源设计是「读驱动写」（见 degrade.js 注释：形态选择 = 读驱动写，由 debugInfo() 调用），
+  //   ⇒ 去掉 readOnly 后 debugInfo 重新落盘，persisted 应为 true。下面紧跟的磁盘断言正是它的证据。
+  assert.equal(degrade.persisted, true) // Diagnostic GET 读驱动写：debugInfo 一次即刷新降级台账
   assert.equal(degrade.counts['session-search'], 1)
   assert.equal(degrade.schemaVersion, 'degrade_pre_v1')
   const disk = JSON.parse(fs.readFileSync(path.join(home, 'memory/degrade/latest.json'), 'utf8'))

@@ -40,6 +40,17 @@ def sha_hex(data):
     return hashlib.sha256(data).hexdigest()
 
 
+def normalize_model_dir(config):
+    """modelDir 的**唯一**规范化入口（★#464，2026-11-02）。
+
+    与 lib/embedding-config.js 的 normalizeConfigPathPre 同口径：
+      · 只剥首尾空白，路径**内部**空格原样保留（如 'C:/Program Files/m.json'）；
+      · 缺失/None/纯空白 ⇒ 返回 ''（调用方据此 fail closed，而不是拿空白去 open）。
+    两个 embedder（fp32 / int8）共用本函数 —— 同一语义只写一份判据。
+    """
+    return str((config or {}).get('modelDir') or '').strip()
+
+
 def canonical(v):
     if v is None:
         return 'null'
@@ -145,7 +156,10 @@ class BgeM3Embedder:
         from transformers import AutoModel, AutoTokenizer
         torch.set_num_threads(int(config.get('torchThreads') or 16))
         self._torch = torch
-        path = config['modelDir']
+        # ★#464（2026-11-02）：modelDir 首尾空白必须剥掉（与 lib/embedding-config.js
+        #   的 normalizeConfigPathPre 同口径：只剥首尾、保留路径内部空格）。
+        #   旧实现原样使用 ⇒ JS 侧 modelPath 干净、Python 侧带着空白去 from_pretrained。
+        path = normalize_model_dir(config)
         revision = str(config.get('modelRevision') or '')
         self.tokenizer = AutoTokenizer.from_pretrained(path, revision=revision)
         self.model = AutoModel.from_pretrained(path, revision=revision,
@@ -255,8 +269,9 @@ class BgeM3OnnxInt8Embedder:
         import onnxruntime as ort
         from transformers import AutoTokenizer
         self._np = np
-        base = config['modelDir']
-        onnx_rel = str(config.get('onnxFile') or 'onnx/model_int8.onnx')
+        # ★#464：同 fp32 分支，modelDir 走同**一份**规范化（不各写一份判据）。
+        base = normalize_model_dir(config)
+        onnx_rel = str(config.get('onnxFile') or 'onnx/model_int8.onnx').strip()
         self.session = ort.InferenceSession(
             os.path.join(base, *onnx_rel.split('/')),
             providers=(['CUDAExecutionProvider', 'CPUExecutionProvider']

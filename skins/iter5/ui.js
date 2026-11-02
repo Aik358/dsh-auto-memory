@@ -112,7 +112,8 @@
       var noteSessionId = currentSessionIdClient()
       var state = await apiGet(API.state, { ws: currentWs(), sessionId: currentSessionIdClient() })
       state = Object.assign({}, state, { noteSessionId: noteSessionId })
-      var list = await apiGet(API.list)
+      // #473（2026-11-02）：/list 也要带身份，否则读引擎全局「当前工作区」槽位 ⇒ 并发下比对必失败
+      var list = await apiGet(API.list, { ws: currentWs(), sessionId: currentSessionIdClient() })
       var expected = String(state.notesPath || '').replace(/[\\/][^\\/]+$/, '').replace(/\\/g, '/')
       var actual = String(list.projectDir || '').replace(/\\/g, '/')
       if (expected && actual && expected !== actual) throw Error(L('工作区数据正在切换，请刷新后重试。', 'Workspace data changed. Refresh and try again.'))

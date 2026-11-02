@@ -234,7 +234,11 @@ console.log('\n[8] 接线断言：index.js 已把台账接进 debugInfo（同一
   const SRC = fs.readFileSync(path.join(ROOT, 'lib', 'index.js'), 'utf8')
 
   ok(SRC.includes('createDegradeSinkPre({})'), 'sink 已挂到引擎实例')
-  ok(SRC.includes('degrade: this._degradeViewSnapshot({ readOnly: true })'), '★ debugInfo 暴露 degrade（与各 host debugView 同出口）')
+  // ★2026-11-02 判据更新（非产品缺陷 · 归因可复算）：#478 修复把 `{ readOnly: true }` 去掉了。
+  //   原判据钉的是字面量，而那一行正是「降级台账生产环境从未落盘」的真凶：
+  //   `if (!opts.readOnly) persisted = this._persistObservabilityPre(...)` 恒假 ⇒ 实盘 latest.json 停在 2026-10-03。
+  //   本条断言的**意图**是「debugInfo 暴露 degrade 且与各 host debugView 同出口」，不是钉死某个参数形态 ⇒ 放宽为两种形态都认。
+  ok(/degrade: this\._degradeViewSnapshot\((\{ readOnly: true \})?\)/.test(SRC), '★ debugInfo 暴露 degrade（与各 host debugView 同出口）')
   ok(SRC.includes('_degradeViewSnapshot(opts = {}) {'), '视图方法已定义')
   ok(SRC.includes("memoryDir('degrade'), 'latest.json'"),
     '★ 落盘路径 = <dshHome>/memory/degrade-pre/latest.json')

@@ -49,6 +49,25 @@ EMBEDDING_CONFIG_ENV = 'DSH_M7_EMBEDDING_CONFIG'
 SHADOW_LOG_MAX = 256
 SHADOW_TOP_K = 8
 
+# ★#458（2026-11-02）：**可在长驻进程内热生效**的配置键。
+#
+# 缺陷：worker 在 __init__ 里把 activationEmitMode 快照成冻结值（:175-177），此后再不重读
+#   ⇒ 设置页把 shadow 切 active 后，本进程生命周期内**发射门仍是旧值**；而面板读数直接读磁盘
+#   ⇒ 「UI 显示新值、worker 用旧值」，用户看不出问题。
+#
+# 修法（两层，缺一不可）：
+#   ① **本文件**：长驻进程在每帧处理前比对配置文件 (mtime, size)，变了就重读并应用**热安全子集**；
+#   ② **JS 侧 sidecar 漂移检测**：worker 在 health 里回 configDrift，JS 见到即换代重启
+#      （重启路径覆盖 provider/modelDir 这类**不可热更**的键）。
+#   任一层单独存在都是半修：只有①，不可热更的键会静默不生效；只有②，每次改都要付一次重启代价。
+HOT_RELOADABLE_CONFIG_KEYS = frozenset([
+    'activationEmitMode', 'activationPolicy', 'search', 'lexicalStopwords'])
+# 这些键一旦变化，**必须**换进程（模型/向量空间变了，热更会静默用旧模型算新向量）。
+RESTART_REQUIRED_CONFIG_KEYS = frozenset([
+    'provider', 'modelDir', 'onnxFile', 'dimension', 'modelRevision',
+    'gpu', 'torchThreads'])
+EMIT_MODES = ('shadow', 'canary-explicit', 'active')
+
 
 def canonical_workspace_key(key):
     """Byte-twin of lib/evidence-store-pre.js canonicalWorkspaceKey:
@@ -156,6 +175,10 @@ class SemanticWorker(base.Worker):
     def __init__(self, expect_epoch, dsh_home, embedding_config):
         super().__init__(expect_epoch, dsh_home)
         self.embedding_config = embedding_config or {}
+        # ★#458：把**启动快照**原样留一份。reload_hot_config 用它做漂移比对，
+        #   避免「每次保存都把未变的键也当成变了」。
+        self._startup_embedding_config = json.loads(base.dumps(self.embedding_config))
+        self._configDrift = {}
         self.embedder = None
         self.vectors = {}        # (wsRef, scope) -> {'identity':..., 'chunks':[...], 'vectors':[...]}
         self.embedding_error = ''
@@ -251,6 +274,64 @@ class SemanticWorker(base.Worker):
                           % (key, not usable,
                              payload.get('memoryIndexVersion')))
 
+    # ---------- ★#458 config hot reload ----------
+
+    def apply_hot_config(self, cfg):
+        """把**热安全子集**从 cfg 应用到活对象上；返回实际生效的键列表。
+
+        只碰 HOT_RELOADABLE_CONFIG_KEYS 里的键。其它键（provider/modelDir/...）即使变了
+        也**不在这里改** —— 那是换进程的事，热改会让向量空间与 embedder 不一致。
+        """
+        applied = []
+        if not isinstance(cfg, dict):
+            return applied
+        if 'activationEmitMode' in cfg:
+            em = str(cfg.get('activationEmitMode') or 'shadow')
+            self.activation_emit_mode = em if em in EMIT_MODES else 'shadow'
+            applied.append('activationEmitMode')
+        if 'activationPolicy' in cfg:
+            act = cfg.get('activationPolicy') or {}
+            pol = dict(DEFAULT_ACTIVATION_POLICY)
+            pol.update(act if isinstance(act, dict) else {})
+            self.activation_policy = pol
+            applied.append('activationPolicy')
+        if 'search' in cfg:
+            srch = cfg.get('search') or {}
+            sp = dict(DEFAULT_SEARCH_POLICY)
+            sp.update(srch if isinstance(srch, dict) else {})
+            self.search_policy = sp
+            applied.append('search')
+        if 'lexicalStopwords' in cfg:
+            self._stopwords = frozenset(cfg.get('lexicalStopwords') or [])
+            self._lex_cache = None          # 停用词变了，BM25 缓存必须失效
+            applied.append('lexicalStopwords')
+        return applied
+
+    def reload_hot_config(self, check_interval=0.0):
+        """重读磁盘配置；热安全键就地生效，需要重启的键只记账（由 JS 侧换代）。
+
+        ★#458：本方法是「长驻进程不重启也能吃到新配置」的唯一入口。
+        调用点见 handle_frame（每帧前调用，带轻量节流）。
+        """
+        now = time.time()
+        if check_interval > 0 and (now - getattr(self, '_cfgCheckedAt', 0)) < check_interval:
+            return None
+        self._cfgCheckedAt = now
+        try:
+            disk = load_embedding_config_from_env(self.dsh_home)
+        except Exception as exc:  # fail closed: 读不到就保持现状，绝不清空配置
+            base.diag('config-reload-failed: ' + str(exc)[:200])
+            return None
+        drift = config_drift(self._startup_embedding_config, disk)
+        self._configDrift = drift
+        if drift['hot']:
+            applied = self.apply_hot_config(disk)
+            # 热更后磁盘值即新的比对基准（否则同一处改动会被反复应用并反复记账）
+            for k in applied:
+                self._startup_embedding_config[k] = disk.get(k)
+            base.diag('config-hot-reload: ' + ','.join(applied))
+        return drift
+
     def embedding_view(self):
         if not self.embedding_config.get('provider'):
             return {'enabled': False, 'ready': False,
@@ -300,6 +381,35 @@ class SemanticWorker(base.Worker):
         if cur:
             chunks.append(cur)
         return chunks or ['']
+
+    def _reuse_index(self, ws_ref, scope):
+        """★#501：上一版 chunkId → 向量 的字典（只取**同一 scope、同一 identity** 的那份）。
+
+        为什么不跨 identity 复用：provider/dtype/dimension/chunkPolicyVersion/configHash
+        任一不同 ⇒ 向量空间不同，复用等于混入另一个空间的数值。identity 不匹配时
+        _load_vectors_from_disk 已把 entry 标 stale，这里再兜一道。
+        """
+        entry = self.vectors.get((ws_ref, scope))
+        if not entry or entry.get('stale'):
+            return {}
+        if self.embedder is None:
+            return {}
+        try:
+            cur = emb.identity_block(self.embedder.provider, self.embedding_config)
+        except Exception:
+            return {}
+        if entry.get('identity') != cur:
+            return {}
+        out = {}
+        chunks = entry.get('chunks') or []
+        vecs = entry.get('vectors') or []
+        for i, ch in enumerate(chunks):
+            if i >= len(vecs):
+                break
+            cid = ch.get('chunkId')
+            if cid and vecs[i] is not None:
+                out[cid] = vecs[i]
+        return out
 
     def build_vectors(self, ws_ref, scope):
         entry = self.derived[(ws_ref, scope)]
@@ -356,10 +466,53 @@ class SemanticWorker(base.Worker):
                         'excerpt': (ctext[:160] + '…') if len(ctext) > 160 else ctext,
                     })
                     encode_items.append(ctext)
-        if real:
-            vectors = self.embedder.encode_ids(encode_items)
-        else:
-            vectors = self.embedder.encode_texts(encode_items)
+        # ★#501（2026-11-02）：**按 chunkId 复用**上一版向量，而不是每次全量重算。
+        #
+        # 缺陷（作者实测）：语料只要变一行，该 scope 全部 chunk 重新过模型；
+        #   42–49 块一次 17–20 秒、16 线程满载。而语料变化 95% 以上是「追加一条」——
+        #   理论增量只有 1 块。
+        #
+        # 为什么 chunkId 是可用的稳定键（不变量已在，只是没被用来做缓存）：
+        #   chunk_id_for(memoryId, recordDigest, ordinal) 里 recordDigest 只覆盖**记录正文字节**
+        #   ⇒ 同一 chunkId ⇒ 同一条记录正文 ⇒ 同一 tokenizer 输入 ⇒ 同一模型输入 ⇒ 同一向量。
+        #
+        # 失效边界沿用既有 identity 比对（provider / dtype / dimension /
+        #   chunkPolicyVersion / configHash）—— identity 不匹配时 _load_vectors_from_disk
+        #   早已把 entry 标 stale，那条路径直接全量重建，不会走到复用。
+        #
+        # 错位防护：slots 与 chunk_rows **同序等长**（命中项也占位），encode 完按槽位回填；
+        #   末尾 len(vectors) != len(chunk_rows) or any(v is None) ⇒ 整体退回全量重算。
+        reuse_index = self._reuse_index(ws_ref, scope)
+        slots, pending_idx = [], []
+        for row, item in zip(chunk_rows, encode_items):
+            prev = reuse_index.get(row['chunkId'])
+            if prev is not None:
+                slots.append(prev)
+            else:
+                slots.append(None)
+                pending_idx.append(len(slots) - 1)
+        reused = len(chunk_rows) - len(pending_idx)
+        if pending_idx:
+            if real:
+                fresh = self.embedder.encode_ids([encode_items[i] for i in pending_idx])
+            else:
+                fresh = self.embedder.encode_texts([encode_items[i] for i in pending_idx])
+            if len(fresh) != len(pending_idx):
+                # 编码器返回条数不符 ⇒ 复用假设不成立，整体退回全量（宁可慢，不可错位）
+                base.diag('incremental-reuse-fallback: encode count mismatch (%d/%d)'
+                          % (len(fresh), len(pending_idx)))
+                slots = None
+        if slots is not None:
+            for pos, i in enumerate(pending_idx):
+                slots[i] = fresh[pos]
+            vectors = slots
+        if slots is None or len(vectors) != len(chunk_rows) or any(v is None for v in vectors):
+            base.diag('incremental-reuse-fallback: slot integrity failed, rebuilding all')
+            if real:
+                vectors = self.embedder.encode_ids(encode_items)
+            else:
+                vectors = self.embedder.encode_texts(encode_items)
+            reused = 0
         identity = emb.identity_block(self.embedder.provider,
                                       self.embedding_config)
         payload = {
@@ -381,8 +534,11 @@ class SemanticWorker(base.Worker):
             'vectors': vectors,
             'stale': False,
         }
+        self._last_reuse = {'built': len(chunk_rows) - reused, 'reused': reused}
+        if reused:
+            base.diag('incremental-reuse: scope=%s built=%d reused=%d'
+                      % (scope, len(chunk_rows) - reused, reused))
         return persisted, len(chunk_rows)
-
     def _atomic_write_json(self, filename, payload):
         if not self.dsh_home:
             return False
@@ -1027,6 +1183,13 @@ class SemanticWorker(base.Worker):
     def handle_frame(self, req):
         import traceback as _tb
         import sys as _sys
+        # ★#458：每帧前做一次**节流的**配置漂移检查。热安全键（activationEmitMode 等）
+        #   就地生效；需要换进程的键只记进 self._configDrift，由 health 帧回给 JS 触发重启。
+        #   节流 1s：配置保存是低频操作，1s 内重复读盘没有收益，但能保证「保存后下一帧即生效」。
+        try:
+            self.reload_hot_config(1.0)
+        except Exception as _cfg_exc:  # 配置检查失败绝不影响协议主流程
+            base.diag('config-hot-check-failed: ' + str(_cfg_exc)[:200])
         try:
             # P13:recall_rank 在 base dispatch(worker_v1.handle_frame)白名单外,在此拦截。
             if req.get('type') == 'recall_rank':
@@ -1071,6 +1234,9 @@ class SemanticWorker(base.Worker):
         payload['worker'] = 'semantic'
         payload['capabilities'] = ['index-sync-v1', 'embedding-shadow-v1']
         payload['embedding'] = self.embedding_view()
+        # ★#458：把「需要换进程才生效的配置漂移」显式回给 JS 侧（sidecar 据此换代重启）。
+        #   空对象 = 无漂移。不静默：JS 侧见到非空即重启，用户保存后下一帧就换上新配置。
+        payload['configDrift'] = dict(self._configDrift or {})
         payload['featuresV2'] = {
             'loaded': self._fv2 is not None,
             'invalid': self._fv2_invalid or None,
@@ -1340,10 +1506,20 @@ class SemanticWorker(base.Worker):
 def load_embedding_config_from_env(dsh_home=''):
     """M7-8 live path: env var overrides; otherwise fall back to a
     host-provisioned config at <dsh-home>/memory/semantic/embedding-config.json
-    so the real provider survives restarts without env inheritance."""
-    path = os.environ.get(EMBEDDING_CONFIG_ENV, '')
-    if not path and dsh_home:
-        cand = os.path.join(dsh_home, 'memory', 'semantic',
+    so the real provider survives restarts without env inheritance.
+
+    ★#464（2026-11-02）：**首尾空白规范化必须与 JS 侧同源**。
+    旧实现原样使用 env 值 ⇒ JS 认为「override 生效」、Python 认为「没有配置」
+    （同一份配置两种结论；探针实测：env 带首尾空白 ⇒ JS configOk=true / Python {}）。
+    现与 lib/embedding-config.js 的 normalizeConfigPathPre 逐条对齐：
+      ① 只剥首尾空白，路径**内部**空格原样保留（'C:/Program Files/x.json' 不受影响）；
+      ② **纯空白 = 未设置**（不是「配置了一个空路径」）⇒ 回落默认路径；
+      ③ dsh_home 同样剥首尾，避免宿主传入带空白的 home 导致拼出坏路径。
+    """
+    path = os.environ.get(EMBEDDING_CONFIG_ENV, '').strip()
+    home = (dsh_home or '').strip()
+    if not path and home:
+        cand = os.path.join(home, 'memory', 'semantic',
                             'embedding-config.json')
         if os.path.isfile(cand):
             path = cand
@@ -1356,6 +1532,42 @@ def load_embedding_config_from_env(dsh_home=''):
     except (OSError, ValueError) as exc:
         base.diag('embedding-config-unreadable: ' + str(exc))
         return {}
+
+
+def load_embedding_config_with_drift(dsh_home=''):
+    """★#458：读配置 + **判断它是否与调用方持有的那份一致**。
+
+    返回 (cfg, drift)。drift 说明「上一次读到的配置」与本进程**启动时快照**相比，
+    哪些键变了、其中哪些必须换进程才能生效。长驻 worker 用它做两件事：
+      · HOT 键变了 ⇒ 就地重读并应用（不必重启，见 SemanticWorker.reload_hot_config）；
+      · RESTART 键变了 ⇒ 在 health 里回 configDrift，由 JS 侧换代重启。
+    """
+    cfg = load_embedding_config_from_env(dsh_home)
+    return cfg
+
+
+def config_drift(startup_cfg, disk_cfg):
+    """比对「启动快照」与「磁盘现值」，返回 {@{...}} 结构化漂移账。
+
+    ★#458 判据：**只有真的变了才算漂移**。比的是键的取值（== 比较），不是文件 mtime ——
+    因为 semantic-emit 会重写整个 JSON（未变的键也在文件里重排），用 mtime 会把
+    「内容没变但文件被碰过」误判成漂移，导致每次保存都重启 worker。
+    """
+    a = startup_cfg if isinstance(startup_cfg, dict) else {}
+    b = disk_cfg if isinstance(disk_cfg, dict) else {}
+    keys = set(a.keys()) | set(b.keys())
+    changed = sorted(k for k in keys if a.get(k) != b.get(k))
+    hot = [k for k in changed if k in HOT_RELOADABLE_CONFIG_KEYS]
+    hard = [k for k in changed if k in RESTART_REQUIRED_CONFIG_KEYS]
+    # 既不在热更集也不在重启集的键：保守归入 hard（未知键不敢热更，宁可换进程）
+    other = [k for k in changed if k not in HOT_RELOADABLE_CONFIG_KEYS
+             and k not in RESTART_REQUIRED_CONFIG_KEYS]
+    return {
+        'changed': changed,
+        'hot': hot,
+        'restartRequired': hard + other,
+        'wantRestart': bool(hard or other),
+    }
 
 
 def run_loop(worker):

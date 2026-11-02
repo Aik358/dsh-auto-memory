@@ -60,7 +60,9 @@ ok(SRC.includes('autoContinueState(selfSid) {'), 'autoContinueState 定义存在
 ok(SRC.includes('async decideAutoContinue(action, edgeAt, sessionId) {'), 'decideAutoContinue 定义存在')
 ok(/engine\.checkWaterLevel\(agent\)\.then\(function \(\) \{/.test(SRC) && /engine\.armAutoContinue\(agent, \{ ratio: rt2\.waterLevel/.test(SRC),
   'turn-stopping 在 checkWaterLevel 完成后 arm(宿主兜底接线)')
-ok(/void engine\.tickAutoContinue\(\)/.test(SRC), '心跳定时器调用 tickAutoContinue')
+// ★2026-11-02：心跳里的 tickAutoContinue 已从裸 void 改为 bgGuard 收口（宿主 fail-loud 防自杀）。
+//   断言原意是「心跳驱动接续」⇒ 两种形态都认。
+ok(/void engine\.tickAutoContinue\(\)|bgGuard\('auto continue', engine\.tickAutoContinue\(\)\)/.test(SRC), '心跳定时器调用 tickAutoContinue')
 ok(SRC.includes("'auto-continue-state': '/api/dsh-auto-memory/auto-continue-state'") && SRC.includes("'auto-continue-decide': '/api/dsh-auto-memory/auto-continue-decide'"),
   'API 常量定义存在')
 ok(SRC.includes("path: API['auto-continue-state']") && SRC.includes("path: API['auto-continue-decide']"), '路由注册存在')
