@@ -8,12 +8,19 @@
  *   · 「没有替换」= 线上推送体没有 eventId/idemKey/op 任何幂等键 ⇒ 服务端结构上只能 append；
  *   · 「直接炸了」= team-auth 读响应体没有字节上限 + 服务端全量载入内存。
  *
- * ## 本套件钉住的五条判据（全部**真 import → 真构造 → 真调用 → 断言返回值**）
+ * ## 本套件钉住的判据（①–⑥ 五条行为判据 + ⑦ 同批同类点；全部**真 import → 真构造 → 真调用 → 断言返回值**）
  *   ① 推送体**必须**带 idemKey（有 eventId 用 eventId；没有则回退 kind|key），且同一事件重试时**逐字节相同**；
  *   ② 游标接受**字符串形状**（契约 `c_0001250`）与数字形状；畸形值不写进游标；
  *   ③ 游标**跨进程持久化**（注入 loadCursor/saveCursor；重启后不归零）；
  *   ④ 服务端回抛「本次没请求的 kind」不得永久卡死游标（旧实现每 tick 都 deferred ⇒ 活锁）；
- *   ⑤ 响应体超过上限 ⇒ 明确 `response-too-large` 失败，且**不把响应读进内存**。
+ *   ⑤ 响应体超过上限 ⇒ 明确 `response-too-large` 失败，且**在读取阶段**就停：只拉到
+ *     首个越限块、`reader.cancel('response-too-large')` 真的调到、预检命中时释放 body。
+ *     ★#534：旧套件用 `'x'.repeat(33MiB)` 字符串桩，替身自己先把 33 MiB 造完，
+ *     被测算的 `response.text()` 只能走「整读回退」分支 ⇒ **流式路径根本不可观测**，
+ *     「读完才判」的缺陷因此被钉成绿（假绿）。现改用真 `Response(ReadableStream)` 替身，
+ *     统计 pull 次数与 cancel 调用。
+ *   ⑦ 同批同类点：S3 的 `doRequest` 与 http 后端的 fetch 适配器也必须同上限
+ *     （只修 team-auth 一条入口，另两条仍可 OOM）。
  *
  * 每条判据都带**负路径**（把修复退回旧写法 ⇒ 断言必须红），由文件末尾的变异子进程验证。
  *
@@ -34,6 +41,11 @@ const REAL_AUTH = path.join(ROOT, 'lib', 'team-auth.js')
 const CHILD = process.env.LIVELOCK_CHILD === '1'
 const SYNC_PATH = process.env.SYNC_PATH ? path.resolve(process.env.SYNC_PATH) : REAL_SYNC
 const PULL_PATH = process.env.PULL_PATH ? path.resolve(process.env.PULL_PATH) : REAL_PULL
+// ★#534：⑦ 的两条读体入口同样要能被变异副本替换（否则只能断言、无法反向验证）。
+const REAL_S3_TRANSPORT = path.join(ROOT, 'lib', 'team-transport.js')
+const REAL_HTTP_TRANSPORT = path.join(ROOT, 'lib', 'team-transport-http.js')
+const S3_TRANSPORT_PATH = process.env.S3_PATH ? path.resolve(process.env.S3_PATH) : REAL_S3_TRANSPORT
+const HTTP_TRANSPORT_PATH = process.env.HTTP_PATH ? path.resolve(process.env.HTTP_PATH) : REAL_HTTP_TRANSPORT
 
 let pass = 0
 let fail = 0
@@ -55,6 +67,94 @@ function tmpDir(tag) {
 
 function makeEngine(extra) {
   return Object.assign({ config: Object.assign({ teamEnabled: true, teamId: 'acme' }, extra || {}), _teamPaused: false, _teamDisposed: false, _teamEpoch: 0 }, {})
+}
+
+const MB = 1024 * 1024
+/** 团队出站/传输三处的响应体上限（与各 lib 模块的常量逐字一致，可复算）。 */
+const AUTH_MAX_RESPONSE_BYTES = 32 * MB   // lib/team-auth.js  MAX_RESPONSE_BYTES
+const TRANSPORT_MAX_RESPONSE_BYTES = 32 * MB   // lib/team-transport.js MAX_RESPONSE_BYTES
+const HTTP_MAX_RESPONSE_BYTES = 64 * MB   // lib/team-transport-http.js MAX_RESPONSE_BYTES
+
+/**
+ * ★#534 测试装置：**真 ReadableStream** 响应体替身（不是字符串桩）。
+ *
+ * 为什么必须换掉旧装置：旧用例用 `'x'.repeat(33MiB)` 配 `text()` 桩 —— 替身自己先把
+ * 33 MiB 造完，被测算的 `response.text()` 只能走「无流回退」分支，**流式路径不可观测**
+ * （拉了几块、有没有 cancel 全看不到），于是「读完才判」的缺陷被钉成绿。
+ *
+ * 本装置暴露三个可观测物理量：pulls（底层被拉几次）/ cancelled+cancelReason（cancel 是否
+ * 真调到）/ produced（实际吐了多少字节）。用真 Response 包装，与线上 fetch 同一形状。
+ */
+function makeStreamBody(totalBytes, chunkSize, fill) {
+  const stats = { pulls: 0, cancelled: false, produced: 0, cancelReason: null }
+  const stream = new ReadableStream({
+    pull(controller) {
+      stats.pulls += 1
+      if (stats.produced >= totalBytes) { controller.close(); return }
+      const n = Math.min(chunkSize, totalBytes - stats.produced)
+      stats.produced += n
+      controller.enqueue(new Uint8Array(n).fill(fill === undefined ? 0x78 : fill))
+    },
+    cancel(reason) { stats.cancelled = true; stats.cancelReason = String(reason) },
+  })
+  return { stream: stream, stats: stats }
+}
+
+/**
+ * 变异探针源码（team-auth 专用）：变异的 team-auth 副本**不在 import 路径上**
+ * （loadAuth 永远指向真文件），所以必须另起子进程真 import 变异体，把三形态响应体的
+ * 可观测物理量（pulls / cancel / 解出的 JSON 值）打回父进程，由父进程断言「必须翻转」。
+ * __MODULE__ 由父进程替换成变异体的 file:// URL。
+ */
+const AUTH_MUT_PROBE_SOURCE = [
+  "import { createTeamFetch } from __MODULE__",
+  "const MB = 1024 * 1024",
+  "function stream(total, chunk) {",
+  "  const stats = { pulls: 0, cancelled: false, produced: 0, reasons: [] }",
+  "  const s = new ReadableStream({",
+  "    pull(controller) {",
+  "      stats.pulls += 1",
+  "      if (stats.produced >= total) { controller.close(); return }",
+  "      const n = Math.min(chunk, total - stats.produced)",
+  "      stats.produced += n",
+  "      controller.enqueue(new Uint8Array(n).fill(0x78))",
+  "    },",
+  "    cancel(reason) { stats.cancelled = true; stats.reasons.push(String(reason)) },",
+  "  })",
+  "  return { stream: s, stats: stats }",
+  "}",
+  "const tf = createTeamFetch({ config: { teamEnabled: true, serverUrl: 'https://t.invalid/', teamId: 'x', teamToken: 'x' } })",
+  "const out = {}",
+  "{",
+  "  const b = stream(64 * MB, MB)",
+  "  const r = await tf('p', { fetchImpl: async () => new Response(b.stream, { status: 200, headers: { 'content-length': String(64 * MB) } }) })",
+  "  out.declared = { ok: r.ok, reason: r.reason, bytes: r.bytes, pulls: b.stats.pulls, cancelled: b.stats.cancelled }",
+  "}",
+  "{",
+  "  const b = stream(64 * MB, MB)",
+  "  const r = await tf('p', { fetchImpl: async () => new Response(b.stream, { status: 200 }) })",
+  "  out.stream = { ok: r.ok, reason: r.reason, bytes: r.bytes, pulls: b.stats.pulls, cancelled: b.stats.cancelled }",
+  "}",
+  "{",
+  "  const bytes = Buffer.from(JSON.stringify({ v: '中文✓😀' }), 'utf8')",
+  "  let i = 0",
+  "  const body = new ReadableStream({ pull(controller) { if (i >= bytes.length) { controller.close(); return } controller.enqueue(new Uint8Array([bytes[i]])); i += 1 } })",
+  "  const r = await tf('p', { fetchImpl: async () => new Response(body, { status: 200 }) })",
+  "  out.multiByte = { ok: r.ok, value: r.data ? r.data.v : null, textLen: typeof r.text === 'string' ? r.text.length : 0 }",
+  "}",
+  "console.log(JSON.stringify(out))",
+].join('\n')
+
+/** 逐字节吐出的流：用于验证「跨块多字节字符不得被逐块 decode 拆坏」。 */
+function makeBytewiseBody(buffer) {
+  let i = 0
+  return new ReadableStream({
+    pull(controller) {
+      if (i >= buffer.length) { controller.close(); return }
+      controller.enqueue(new Uint8Array([buffer[i]]))
+      i += 1
+    },
+  })
 }
 
 async function main() {
@@ -212,21 +312,55 @@ async function main() {
     ok(p364.status().since === 0, '④ ★#364 语义：此时游标不前进（能力补齐后可重放）', p364.status().since)
   }
 
-  // ══════════════ ⑤ 响应体上限 ══════════════
+  // ══════════════ ⑤ 响应体上限（★#534：上限**必须在读取阶段**生效） ══════════════
   {
     const { createTeamFetch } = await loadAuth()
     const tf = createTeamFetch({ config: { teamEnabled: true, serverUrl: 'https://t.invalid/', teamId: 'x', teamToken: 'x' } })
 
-    let readCalled = false
-    const rDeclared = await tf('p', { fetchImpl: async () => ({ status: 200, headers: { get: () => String(64 * 1024 * 1024) }, text: async () => { readCalled = true; return 'x' } }) })
+    // ⑤a content-length 预检：连第一块都不拉，并且**必须释放 body**
+    const decl = makeStreamBody(64 * MB, MB)
+    const rDeclared = await tf('p', { fetchImpl: async () => new Response(decl.stream, { status: 200, headers: { 'content-length': String(64 * MB) } }) })
     ok(rDeclared.ok === false && rDeclared.reason === 'response-too-large', '⑤ ★★content-length 超限 ⇒ 明确失败 response-too-large', { ok: rDeclared.ok, reason: rDeclared.reason })
-    ok(readCalled === false, '⑤ ★★超限时**根本不读响应体**（旧实现无条件 text() 把整份读进内存）', readCalled)
-    ok(rDeclared.maxBytes === 32 * 1024 * 1024, '⑤ 上限取值 = 32MB（可复算）', rDeclared.maxBytes)
+    ok(decl.stats.pulls <= 1, '⑤ ★★超限时**根本不读响应体**（旧实现无条件 text() 把整份读进内存）', decl.stats.pulls)
+    ok(decl.stats.cancelled === true, '⑤ ★★预检命中后**释放 body**（旧实现 return 前不 cancel，12GB 响应体继续被拉）', { cancelled: decl.stats.cancelled, reason: decl.stats.cancelReason })
+    ok(rDeclared.maxBytes === AUTH_MAX_RESPONSE_BYTES, '⑤ 上限取值 = 32MB（可复算）', rDeclared.maxBytes)
 
-    const big = 'x'.repeat(33 * 1024 * 1024)
-    const rActual = await tf('p', { fetchImpl: async () => ({ status: 200, text: async () => big }) })
-    ok(rActual.ok === false && rActual.reason === 'response-too-large' && rActual.bytes > 32 * 1024 * 1024,
-      '⑤ ★无 content-length 时按实测字节兜底拒绝', { ok: rActual.ok, bytes: rActual.bytes })
+    // ⑤b ★核心：**没有** content-length 的 64 MiB 流式响应 —— 上限必须在 read() 循环里生效。
+    //    旧实现先 `await response.text()` 再比字节数 ⇒ 64 MiB 全部驻留、pulls=65、cancel 未触发。
+    const live = makeStreamBody(64 * MB, MB)
+    const rActual = await tf('p', { fetchImpl: async () => new Response(live.stream, { status: 200 }) })
+    ok(rActual.ok === false && rActual.reason === 'response-too-large', '⑤ ★★无 content-length 时同样明确失败', { ok: rActual.ok, reason: rActual.reason })
+    ok(typeof rActual.bytes === 'number' && rActual.bytes > AUTH_MAX_RESPONSE_BYTES && rActual.bytes <= AUTH_MAX_RESPONSE_BYTES + MB,
+      '⑤ ★★bytes 是**首个越限块**的已读字节（32MiB+1 块），不是全量 64MiB', rActual.bytes)
+    //  32 块判限 + 1 判定块 + ≤1 块流内预取 = 34（实测）；旧实现满读需 65 次 pull。
+    ok(live.stats.pulls <= 34, '⑤ ★★只拉了 ≤34 块就停（旧实现满读 65 次 pull）', live.stats.pulls)
+    ok(live.stats.cancelled === true && live.stats.cancelReason === 'response-too-large',
+      '⑤ ★★reader.cancel("response-too-large") 真的调到了底层流（旧实现 cancelled=false）', { cancelled: live.stats.cancelled, reason: live.stats.cancelReason })
+
+    // ⑤c 无流回退（只有 text() 的桩 / 204 / HEAD）：结论一致，只是拦不住峰值
+    const big = 'x'.repeat(33 * MB)
+    const rNoStream = await tf('p', { fetchImpl: async () => ({ status: 200, text: async () => big }) })
+    ok(rNoStream.ok === false && rNoStream.reason === 'response-too-large' && rNoStream.bytes > AUTH_MAX_RESPONSE_BYTES,
+      '⑤ 无流可读的桩：回退整读但仍按实测字节拒绝', { ok: rNoStream.ok, bytes: rNoStream.bytes })
+
+    // ⑤d ★跨块多字节字符：1 字节一块地喂 JSON —— 逐块 decode 会得到 U+FFFD
+    const jsonBytes = Buffer.from(JSON.stringify({ v: '中文✓😀' }), 'utf8')
+    const rMulti = await tf('p', { fetchImpl: async () => new Response(makeBytewiseBody(jsonBytes), { status: 200 }) })
+    ok(rMulti.ok === true && rMulti.data && rMulti.data.v === '中文✓😀',
+      '⑤ ★★跨块多字节字符不被拆坏（合并后一次性 decode，不是逐块 decode）', { ok: rMulti.ok, v: rMulti.data && rMulti.data.v })
+
+    // ⑤e ★读体改成流式后，#370 的超时/中止语义必须原样保留：
+    //    流永不吐数据时，只能靠本模块计时器中止 —— reader.read() 必须能被 abort 打断。
+    const slowStart = Date.now()
+    const rTimeout = await tf('p', {
+      timeoutMs: 50,
+      fetchImpl: async (u, o) => new Response(new ReadableStream({
+        start(c) { o.signal.addEventListener('abort', () => { try { c.error(new Error('aborted')) } catch (_) {} }) },
+        pull() { /* 永不吐数据 */ },
+      }), { status: 200 }),
+    })
+    ok(rTimeout.ok === false && rTimeout.reason === 'timeout',
+      '⑤ ★★流式读体期间的超时仍判 timeout（#370 错误传播不回退）', { ok: rTimeout.ok, reason: rTimeout.reason, ms: Date.now() - slowStart })
 
     // 负路径：正常小体 / 头畸形 / 204 空体都不得被误判
     const rSmall = await tf('p', { fetchImpl: async () => ({ status: 200, headers: { get: () => '2' }, text: async () => '{}' }) })
@@ -252,11 +386,52 @@ async function main() {
     ok(reqs[1].indexOf('limit=') < 0, '⑥ pageLimit=0 ⇒ 不带 limit 参数（显式关闭）', reqs[1])
   }
 
+  // ══════════════ ⑦ 同批同类点（★#534 家族）：另外两条「读体入口」也必须同上限 ══════════════
+  //   只修 team-auth 一条入口，另两条仍可 OOM（同一缺陷三处实例，必须一次改全）。
+  {
+    // ⑦a lib/team-transport.js 的 S3 doRequest：旧实现 `const text = await res.text()` 全程无上限
+    {
+      const { createS3Backend } = await import(pathToFileURL(S3_TRANSPORT_PATH).href)
+      const live = makeStreamBody(64 * MB, MB)
+      const be = createS3Backend({
+        endpoint: 'https://oss-cn-hangzhou.aliyuncs.com', bucket: 'b', region: 'cn-hangzhou',
+        accessKeyId: 'AKIDEXAMPLE', secretAccessKey: 'SECRETEXAMPLE',
+        fetchImpl: async () => new Response(live.stream, { status: 200 }),
+      })
+      const r = await be.get('team/k.json')
+      ok(r.ok === false && /s3-response-too-large/.test(String(r.error)),
+        '⑦ ★★S3 get：超大响应明确失败（旧实现整份读入内存并返回 ok:true）', { ok: r.ok, error: r.error })
+      ok(typeof r.bytes === 'number' && r.bytes > TRANSPORT_MAX_RESPONSE_BYTES && r.bytes <= TRANSPORT_MAX_RESPONSE_BYTES + MB,
+        '⑦ S3 失败带**首个越限块**的已读字节（可复算）', r.bytes)
+      ok(live.stats.pulls <= 34 && live.stats.cancelled === true,
+        '⑦ ★★S3 在读取阶段截断并 cancel（旧实现满读 65 次 pull、cancel 未触发）', { pulls: live.stats.pulls, cancelled: live.stats.cancelled })
+    }
+
+    // ⑦b lib/team-transport-http.js 的 fetch 适配器：旧实现裸用 res.arrayBuffer()（无界），
+    //    而同文件 baseRequest 早有上限 ⇒ 一旦注入 fetchImpl，同一条上限立刻失守。
+    {
+      const { createHttpBackend } = await import(pathToFileURL(HTTP_TRANSPORT_PATH).href)
+      //  96 MiB / 12 MiB 一块：第 6 块（72 MiB）越 64 MiB 上限 ⇒ 余下 24 MiB 必须不被拉。
+      //  （若总量刚好等于上限+1 块，越限块就是最后一块，cancel 已无内容可取消 ⇒ 观察不到早停。）
+      const live = makeStreamBody(96 * MB, 12 * MB)
+      const be = createHttpBackend({ endpoint: 'http://10.0.0.7:8080', fetchImpl: async () => new Response(live.stream, { status: 200 }) })
+      const r = await be.get('team/k.json')
+      ok(r.ok === false && /http-response-too-large/.test(String(r.error)),
+        '⑦ ★★http(get, 注入 fetchImpl)：超大响应明确失败（旧实现裸用 arrayBuffer() 无界）', { ok: r.ok, error: r.error })
+      ok(live.stats.pulls <= 7, '⑦ ★★只拉了 ≤7 块（12MiB/块）就停', live.stats.pulls)
+      ok(live.stats.cancelled === true, '⑦ ★★fetch 适配器也 cancel 了底层流（旧实现 cancel 未触发）', live.stats.cancelled)
+      ok(live.stats.produced < 96 * MB, '⑦ 余下响应体确实没被读（produced < 96MiB）', live.stats.produced)
+      ok(HTTP_MAX_RESPONSE_BYTES === 64 * MB, '⑦ http 后端上限常量 = 64MiB（与 baseRequest 同一常量，可复算）', HTTP_MAX_RESPONSE_BYTES)
+    }
+  }
+
   // ══════════════ 变异反向验证（父进程） ══════════════
   if (!CHILD) {
     const syncSrc = fs.readFileSync(REAL_SYNC, 'utf8').replace(/\r\n/g, '\n')
     const pullSrc = fs.readFileSync(REAL_PULL, 'utf8').replace(/\r\n/g, '\n')
     const authSrc = fs.readFileSync(REAL_AUTH, 'utf8').replace(/\r\n/g, '\n')
+    const s3Src = fs.readFileSync(REAL_S3_TRANSPORT, 'utf8').replace(/\r\n/g, '\n')
+    const httpSrc = fs.readFileSync(REAL_HTTP_TRANSPORT, 'utf8').replace(/\r\n/g, '\n')
 
     const muts = [
       // ★#511（2026-11-02）：判据过期重钉 —— idemKey 已改为三形态（eventId → kind|key|opKey → kind|key），
@@ -266,37 +441,58 @@ async function main() {
       ['M2 游标退回只认数字', pullSrc, "  if (typeof raw === 'string') {", "  if (false) {"],
       ['M3 游标不落盘', pullSrc, "        persistCursorPre()\n", "\n"],
       ['M4 no-applier 一律 transient', pullSrc, "      const wantedPre = !requestedKinds || requestedKinds.indexOf(kind) >= 0\n      return { ok: false, transient: wantedPre, code: 'no-applier' }", "      return { ok: false, transient: true, code: 'no-applier' }"],
-      ['M5 响应体上限失效', authSrc, "      if (declaredBytes !== null && declaredBytes > MAX_RESPONSE_BYTES) {", "      if (false) {"],
+      ['M5 预检上限失效', authSrc, "      if (declaredBytes !== null && declaredBytes > MAX_RESPONSE_BYTES) {", "      if (false) {"],
+      // ★#534：M5 只覆盖 content-length 预检；真正拦住 64 MiB 的是 readBodyText 里的**流式判限**，
+      //   以及「合并后一次性 decode」。两条都必须有各自的反向验证，否则「预检在」就能掩盖流式缺陷。
+      ['M6 流式判限失效', authSrc, "      if (total > limit) {", "      if (false) {"],
+      ['M7 逐块 decode', authSrc, "  return { tooLarge: false, bytes: total, text: toText(decodeUtf8(merged)) }",
+        "  return { tooLarge: false, bytes: total, text: toText(chunks.map(function (c) { return decodeUtf8(c) }).join('')) }"],
+      // ★#534 同批同类点：S3 与 http-fetch 两条读体入口各有自己的判限行，必须各自反向验证 ——
+      //   否则「改回无界」只会让 ⑦ 红而 ⑤ 仍绿，无法定位是哪条入口失守。
+      ['M8 S3 读体上限失效', s3Src, "        if (total > limit) {", "        if (false) {"],
+      ['M9 http fetch 读体上限失效', httpSrc, "      if (total > limit) {", "      if (false) {"],
     ]
     for (const [label, base, from, to] of muts) {
       const hits = base.split(from).length - 1
       ok(hits === 1, '变异定位:' + label + ' 锚点恰命中 1 次', { hits })
       if (hits !== 1) continue
-      const isAuth = label.indexOf('M5') === 0
-      const target = isAuth ? REAL_AUTH : (label.indexOf('M1') === 0 ? REAL_SYNC : REAL_PULL)
+      const isAuth = /^M[567] /.test(label)
+      const isS3Mut = label.indexOf('M8') === 0
+      const isHttpMut = label.indexOf('M9') === 0
+      const target = isAuth ? REAL_AUTH : isS3Mut ? REAL_S3_TRANSPORT : isHttpMut ? REAL_HTTP_TRANSPORT
+        : (label.indexOf('M1') === 0 ? REAL_SYNC : REAL_PULL)
       const mp = path.join(os.tmpdir(), 'mut-livelock-' + label.replace(/[^a-z0-9]/gi, '') + path.extname(target))
       fs.writeFileSync(mp, base.replace(from, to))
       const syn = spawnSync(process.execPath, ['--check', mp], { encoding: 'utf8' })
       ok(syn.status === 0, '变异文件语法可用(' + label + ')', String(syn.stderr || '').slice(0, 160))
       const env = Object.assign({}, process.env, { LIVELOCK_CHILD: '1' })
       if (label.indexOf('M1') === 0) env.SYNC_PATH = mp
-      else if (label.indexOf('M5') === 0) env.AUTH_MUT = mp   // M5 走真实 team-auth 副本不会被 import，改为源码断言
-      else env.PULL_PATH = mp
+      else if (isS3Mut) env.S3_PATH = mp
+      else if (isHttpMut) env.HTTP_PATH = mp
+      else if (!isAuth) env.PULL_PATH = mp
 
       if (isAuth) {
-        // team-auth 副本不在 import 路径上 ⇒ 用「同源行为探针」证明变异必红：
-        // 变异体里预检被关掉，此时超大响应会**真的被读取**（readCalled 变 true）。用子进程真跑一遍。
-        const probe = path.join(os.tmpdir(), 'mut-livelock-m5-probe.mjs')
-        fs.writeFileSync(probe, [
-          "import { createTeamFetch } from " + JSON.stringify(pathToFileURL(mp).href),
-          "let readCalled = false",
-          "const tf = createTeamFetch({ config: { teamEnabled: true, serverUrl: 'https://t.invalid/', teamId: 'x', teamToken: 'x' } })",
-          "const r = await tf('p', { fetchImpl: async () => ({ status: 200, headers: { get: () => String(64*1024*1024) }, text: async () => { readCalled = true; return 'x' } }) })",
-          "console.log(JSON.stringify({ ok: r.ok, reason: r.reason, readCalled }))",
-        ].join('\n'))
-        const r = spawnSync(process.execPath, [probe], { encoding: 'utf8', maxBuffer: 1 << 24 })
-        const out = String(r.stdout || '') + String(r.stderr || '')
-        ok(out.indexOf('"readCalled":true') >= 0, '★变异必红(' + label + '):关掉上限后确实把 64MB 响应读了进来', out.trim().slice(0, 200))
+        // team-auth 的变异副本**不在 import 路径上**（loadAuth 永远指向真文件）⇒ 用子进程真跑探针：
+        //   探针真 import 变异体，跑三形态响应体（预检 / 流式 / 跨块多字节），把 pulls、cancel、
+        //   解出的 JSON 值打回父进程；父进程断言「对应的可观测物理量必须翻转」。
+        const probe = path.join(os.tmpdir(), 'mut-livelock-auth-probe.mjs')
+        fs.writeFileSync(probe, AUTH_MUT_PROBE_SOURCE.replace('__MODULE__', JSON.stringify(pathToFileURL(mp).href)))
+        const r = spawnSync(process.execPath, [probe], { encoding: 'utf8', maxBuffer: 1 << 27 })
+        const out = String(r.stdout || '')
+        let obs = null
+        try { obs = JSON.parse(out.trim().split('\n').pop()) } catch (_) { obs = null }
+        ok(!!obs, '★变异探针可解析(' + label + ')', out.trim().slice(0, 200))
+        if (label.indexOf('M5') === 0) {
+          ok(!!obs && obs.declared && obs.declared.pulls > 2,
+            '★变异必红(' + label + '):关掉预检后确实开始拉流（修后此处 pulls<=1）', obs && obs.declared)
+        } else if (label.indexOf('M6') === 0) {
+          ok(!!obs && obs.stream && obs.stream.pulls > 40 && obs.stream.cancelled === false,
+            '★变异必红(' + label + '):关掉流式判限 ⇒ 64MiB 全读入且 cancel 未触发', obs && obs.stream)
+        } else {
+          ok(!!obs && obs.multiByte && obs.multiByte.value !== '中文✓😀',
+            '★变异必红(' + label + '):逐块 decode 把跨块多字节字符拆成 U+FFFD', obs && obs.multiByte)
+        }
+        console.log('  [变异取证] ' + label + ' -> ' + JSON.stringify(obs))
         try { fs.rmSync(probe, { force: true }) } catch (_) {}
         try { fs.rmSync(mp, { force: true }) } catch (_) {}
         continue

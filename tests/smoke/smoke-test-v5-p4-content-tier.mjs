@@ -192,7 +192,21 @@ ok(idxSrc.indexOf("typeof renderRulesSlimPre") >= 0, "E-5 renderRulesSlimPre 有
 ok(idxSrc.indexOf("const _T = {") >= 0, "E-6 渲染层仍内联 _T（P3 教训保持）")
 // E-7 F7 与 F1 条件互斥
 ok(idxSrc.indexOf("_hangOn && _hangUnattended && !isHuman") >= 0, "E-7 F7 要求挂机且非真人（与 F1 互斥）")
-ok(idxSrc.indexOf("_waterFire.fire && isHuman") >= 0, "E-8 F1 要求真人（互斥的另一半）")
+// ★2026-11-03 判据升级（注入档位 L2 修复配套）：原断言「源码里有 _waterFire.fire && isHuman」是恒真守卫，
+//   且把「只认 isHuman」这个真实缺陷固化成了预期 —— 修好之后它必红，看起来像回归、实际是判据过期。
+//   语义要点没变：水位授予必须带「本请求有真人」的信号（与 F7 的 !isHuman 互斥）。
+//   变的是「真人信号」的取法：isHuman 在真人自己那条请求里恒 false（宿主先 append user/message 后渲染），
+//   所以必须把 pre-step 钩子置的 _humanPending 也算进来。
+const _wGateM = idxSrc.match(/if \(_waterFire\.fire && \(([^)]*)\)\)/)
+ok(!!_wGateM, "E-8a 水位授予闸存在且带显式括号条件")
+if (_wGateM) {
+  const gate = _wGateM[1]
+  ok(gate.indexOf("isHuman") >= 0, "E-8b 水位闸含 isHuman（真人在场信号保留）")
+  ok(gate.indexOf("_humanPendingNow") >= 0, "E-8c 水位闸含 _humanPendingNow（真人自己那条请求也能命中）")
+  ok(gate.replace(/isHuman/g, "").replace(/_humanPendingNow/g, "").replace(/[\s|&()]/g, "").length === 0,
+     "E-8d 负路径：闸里除真人信号外无其它分支（去掉两者即为空条件）")
+}
+ok(idxSrc.indexOf("_waterPctFired = _waterFire.fireAt") >= 0, "E-8e 水位授予后推进已投档位（同档不重复投）")
 
 console.log("")
 console.log("SUMMARY  PASS " + pass + " / FAIL " + fail)

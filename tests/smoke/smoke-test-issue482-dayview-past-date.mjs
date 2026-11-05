@@ -32,13 +32,24 @@ const ok = (c, name, extra) => { if (c) { pass++; console.log('  ok   - ' + name
 const B = 450
 const pad2 = (n) => (n < 10 ? '0' : '') + n
 const ymd = (d) => d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate())
-const NOW = Date.now()
+// ★2026-11-03 修复（时钟隔离）：原用 Date.now()。本套件同时用两种日期口径 ——
+//   「记忆日」memDateOfPre(NOW, 450)（日界 7.5h，凌晨归前一天）与「日历日」（new Date 加减一天）。
+//   当本地时刻落在 [00:00, 07:30) 时两者**指向同一天**（实测 2026-11-03 01:05：
+//   TODAY === YESTERDAY === '2026-11-02'）⇒ A/C/D/F 四段判据自相矛盾，每天合计 7.5 小时必红 ——
+//   灯常红会掩盖真缺陷。⇒ 固定为**本地 12:00**（远离任何日界），判据不再随时钟漂移。
+const NOW = new Date(2026, 2, 15, 12, 0, 0, 0).getTime()
 const TODAY = memDateOfPre(NOW, B)
 const dY = new Date(NOW); dY.setDate(dY.getDate() - 1)
 const YESTERDAY = ymd(dY)
 const dT = new Date(NOW); dT.setDate(dT.getDate() + 1)
 const TOMORROW = ymd(dT)
 console.log('日界 ' + B + ' 分钟 · TODAY=' + TODAY + ' · YESTERDAY=' + YESTERDAY)
+// ★时钟隔离守卫（2026-11-03）：本套件全部判据都建立在「今天/昨天/明天互不相同」之上。
+//   若有人把 NOW 改回 Date.now() 且恰逢日界窗口，这一条会**先**红并直说原因，
+//   而不是让 A/C/D/F 四段各红一遍（那样看起来像产品缺陷）。
+ok(TODAY !== YESTERDAY && TODAY !== TOMORROW && YESTERDAY !== TOMORROW,
+  'A0 ★时钟隔离守卫：今天/昨天/明天三者互不相同（改回真实时钟且落在本地 00:00–07:30 ⇒ 此条先红）',
+  'TODAY=' + TODAY + ' YESTERDAY=' + YESTERDAY + ' TOMORROW=' + TOMORROW)
 
 const DIR = mkdtempSync(path.join(tmpdir(), 'dam-482-'))
 const cpOf = (at, text) => ({ at, kind: 'log', text, panels: [] })

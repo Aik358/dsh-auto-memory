@@ -29,13 +29,18 @@ const IX = fs.readFileSync(new URL('../../lib/index.js', import.meta.url), 'utf8
 // ---------- A. 静态：函数存在且已接入 ----------
 console.log('== A. 函数存在与接入 ==')
 {
-  ok(IX.indexOf('async buildWorkspaceManifestPre()') >= 0, 'A-1 定义了 buildWorkspaceManifestPre')
-  ok(IX.indexOf('engineRef.buildWorkspaceManifestPre()') >= 0, 'A-2 ★已接入 startUpgradeJobPre')
+  // ★批0（2026-11-05）升级：原为 IX.indexOf('async buildWorkspaceManifestPre()') / '(engineRef.buildWorkspaceManifestPre())'
+  //   两条**纯源码字符串**断言（CR-10 禁止充当功能证据），且签名改三参后会假红。
+  //   改为「真执行」：从源码抽函数体建实例，断言签名长度 + 真调不抛 + 不传参时行为与旧版一致（向后兼容）。
+  ok(/async buildWorkspaceManifestPre\(scope, workspaceKeys, currentWs\)/.test(IX), 'A-1 定义为三参（scope/keys/当前区）——签名守卫，非功能证据')
+  ok(IX.indexOf('buildWorkspaceManifestPre(_scopeOpt, _scopeKeys, _scopeWs)') >= 0, 'A-2 ★startUpgradeJobPre 已把范围传下去（调用点守卫）')
   ok(IX.indexOf('WORKSPACE-MANIFEST:BEGIN') >= 0, 'A-3 含清单起止标记')
   ok(IX.indexOf('WORKSPACE-MANIFEST:END') >= 0, 'A-4 含清单结束标记')
   // 必须在 runSubagent 之前算好并前置
-  const iBuild = IX.indexOf('buildWorkspaceManifestPre()')
-  const iRun = IX.indexOf('engineRef.runSubagent(', iBuild - 500)
+  // ★批0（2026-11-05）：签名改三参后 `buildWorkspaceManifestPre()` 这个无参串不再存在。
+  //   改为按方法名定位（不带参数列表），判据意图不变：「清单计算在 runSubagent 之前」。
+  const iBuild = IX.indexOf('.buildWorkspaceManifestPre(')
+  const iRun = IX.indexOf('engineRef.runSubagent(', Math.max(0, iBuild - 500))
   ok(iBuild > 0 && iRun > iBuild, 'A-5 ★清单计算在 runSubagent 之前（前置注入）', 'build@' + iBuild + ' run@' + iRun)
   // 拼接顺序：manifest 在前，提示词在后
   ok(IX.indexOf("(manifest ? manifest + '\\n\\n---\\n\\n' : '') + MEMORY_BASIS_MIGRATION_PROMPT") >= 0,
@@ -46,15 +51,30 @@ console.log('== A. 函数存在与接入 ==')
 console.log('')
 console.log('== B. 真执行 buildWorkspaceManifestPre ==')
 {
-  const start = IX.indexOf('async buildWorkspaceManifestPre() {')
+  // ★批0（2026-11-05）：签名已改为三参 —— 抽取锚点必须同步（否则 start=-1 ⇒ B 段全废）。
+  const start = IX.indexOf('async buildWorkspaceManifestPre(scope, workspaceKeys, currentWs) {')
   let i = IX.indexOf('{', start), depth = 0, end = -1
   for (; i < IX.length; i++) { const c = IX[i]; if (c === '{') depth++; else if (c === '}') { depth--; if (depth === 0) { end = i + 1; break } } }
   ok(end > start, 'B-1 函数体括号配平成功', 'len=' + (end - start))
   const body = IX.slice(start, end)
+  // ★批0（2026-11-05）：buildWorkspaceManifestPre 内部会调 this.resolveUpgradeScopeRowsPre(...)，
+  //   所以 fakeThis 必须带上**真的那个方法**（从源码同步抽出），否则 this.xxx is not a function
+  //   ⇒ catch 吞掉 ⇒ 清单恒空 ⇒ B 段 13 条全部退化成 SKIP（守卫强度被悄悄清零）。
+  //   这正是本仓「抽取式真执行必须注入模块级依赖」那条纪律在**方法依赖**上的同族形态。
+  const scopeStart = IX.indexOf('resolveUpgradeScopeRowsPre(scope, workspaceKeys, currentWs, rows) {')
+  let scopeEnd = -1
+  if (scopeStart > 0) {
+    let j = IX.indexOf('{', scopeStart), dep = 0
+    for (; j < IX.length; j++) { const c = IX[j]; if (c === '{') dep++; else if (c === '}') { dep--; if (dep === 0) { scopeEnd = j + 1; break } } }
+  }
+  ok(scopeStart > 0 && scopeEnd > scopeStart, 'B-1b 能抽出被依赖的 resolveUpgradeScopeRowsPre', 'len=' + (scopeEnd - scopeStart))
+  const scopeBody = scopeEnd > scopeStart ? IX.slice(scopeStart, scopeEnd) : ''
   const fakeThis = {
     config: { memoryRoot: '' },
     expandUserPath: (p) => (p ? String(p).replace(/^~/, (process.env.HOME || 'C:/Users/JH Z')) : ''),
+    wsKey: (ws) => '--' + String(ws).replace(/[\\/:*?"<>|]/g, '-') + '--',
   }
+  if (scopeBody) { try { new Function('return ({' + scopeBody + '})')().resolveUpgradeScopeRowsPre && (fakeThis.resolveUpgradeScopeRowsPre = new Function('return ({' + scopeBody + '})')().resolveUpgradeScopeRowsPre) } catch (e) { fakeThis.__scopeExtractErr = String(e && e.message) } }
   const fn = new Function('memoryDir', 'diag', 'fakeThis',
     'return (async () => { const _f = ({' + body + '}); return await _f.buildWorkspaceManifestPre.call(fakeThis) })()')
   let out = ''

@@ -116,6 +116,7 @@ function makeHarness(kind, opts) {
 function renderSurface(kind, opts) {
   const o = opts || {}
   const observers = []
+  const timers = []
   const attrs = {}
   const bodyStub = {
     setAttribute: function (k, v) { attrs[k] = v },
@@ -164,6 +165,17 @@ function renderSurface(kind, opts) {
     ev4SyncFullpageAttr: __syncFullpage,
     createPortal: null,
     h: function (tag, props, children) { return { tag: tag, props: props || {}, children: children } },
+    // ★#533（2026-11-04）：撤销判据改为「单次不可见 + 250ms 有上界复核」⇒ 组件体用 setTimeout/clearTimeout。
+    //   桩必须**同语义可控**：不传真定时器（同步断言会必红，且测到的只是延时），
+    //   而是登记回调由测试显式 flush ⇒ 同步、精确、可断言「250ms 到点才复核」。
+    setTimeout: function (fn, ms) {
+      const id = timers.length + 1
+      timers.push({ id: id, fn: fn, ms: ms, cancelled: false, fired: false })
+      return id
+    },
+    clearTimeout: function (id) {
+      for (let i = 0; i < timers.length; i++) if (timers[i].id === id) timers[i].cancelled = true
+    },
     IntersectionObserver: function (cb) {
       const inst = { cb: cb, targets: [], disconnected: false, observe: function (t) { inst.targets.push(t) }, disconnect: function () { inst.disconnected = true } }
       observers.push(inst)
@@ -175,7 +187,17 @@ function renderSurface(kind, opts) {
   Comp({ kind: kind, children: null })
   // 只把 boundary ref（组件内第一个 useRef）指向受控元素，避免污染其它 ref
   if (refs[0]) refs[0].current = el
-  return { observers, attrs, bodyStub, effects, el, sandbox }
+  // 执行所有未取消的定时器回调（模拟「250ms 到点」），返回执行条数
+  const flushTimers = function () {
+    let n = 0
+    for (let i = 0; i < timers.length; i++) {
+      const t = timers[i]
+      if (t.cancelled || t.fired) continue
+      t.fired = true; n += 1; t.fn()
+    }
+    return n
+  }
+  return { observers, attrs, bodyStub, effects, el, sandbox, timers, flushTimers }
 }
 
 function runAll(run) {
@@ -208,7 +230,9 @@ ok('F2 可见（isIntersecting=true）⇒ body 打上 data-dam-fullpage', functi
 //   ⇒ 原判据「单次不可见即摘」是**旧行为**的正确描述，现已过期。
 //   不变量本体不变：**不可见的 page 最终必须摘标记**（否则切回对话页打不了字）。
 //   改为三段：①单次不可见**不**摘（抗抖动）②连续 2 次**必**摘 ③重新可见能恢复。
-ok('F3a 单次不可见（过渡帧）⇒ 标记**不**摘（抗抖动）', function () {
+// ★#533（2026-11-04）：判据由「连续 2 次不可见才摘」改为「单次不可见 + 250ms 有上界复核」。
+//   ⇒ F3a 验的是「未到 250ms 时不得摘」（抗过渡帧抖动），F3b 验「到点仍不可见必摘」。
+ok('F3a 单次不可见（未到 250ms 复核窗口）⇒ 标记**不**摘（抗抖动）', function () {
   const run = renderSurface('page')
   runAll(run)
   run.observers[0].cb([{ isIntersecting: true }])
@@ -217,22 +241,32 @@ ok('F3a 单次不可见（过渡帧）⇒ 标记**不**摘（抗抖动）', func
   assert.equal(run.bodyStub.hasAttribute('data-dam-fullpage'), true, '单次不可见就摘了标记（会把刚打的全屏闪掉）')
 })
 
-ok('F3b 连续 2 次不可见 ⇒ 标记必须被摘除', function () {
+ok('F3b 单次不可见 + 250ms 复核（元素确已切走）⇒ 标记必须被摘除', function () {
   const run = renderSurface('page')
   runAll(run)
   run.observers[0].cb([{ isIntersecting: true }])
   assert.equal(run.bodyStub.hasAttribute('data-dam-fullpage'), true)
   run.observers[0].cb([{ isIntersecting: false }])
-  run.observers[0].cb([{ isIntersecting: false }])
-  assert.equal(run.bodyStub.hasAttribute('data-dam-fullpage'), false, '连续 2 次不可见后标记仍未摘除')
+  // ★#533：IO 隐藏后不会再发第二次回调 ⇒ 旧判据「等第 2 次」结构上等不到（这正是缺陷本体）。
+  //   新判据 =「单次不可见 + 250ms 有上界复核」，复核读 elLooksVisible()（尺寸/显隐）。
+  run.el.offsetWidth = 0          // 模拟页面真切走（display:none / 尺寸归零）
+  assert.equal(run.flushTimers(), 1, '应恰好登记 1 个 250ms 复核定时器')
+  assert.equal(run.bodyStub.hasAttribute('data-dam-fullpage'), false, '250ms 复核后仍未摘标记')
 })
 
 ok('F3c 摘除后重新可见 ⇒ 标记恢复', function () {
   const run = renderSurface('page')
   runAll(run)
+  run.observers[0].cb([{ isIntersecting: true }])
+  assert.equal(run.bodyStub.hasAttribute('data-dam-fullpage'), true)
   run.observers[0].cb([{ isIntersecting: false }])
-  run.observers[0].cb([{ isIntersecting: false }])
-  assert.equal(run.bodyStub.hasAttribute('data-dam-fullpage'), false)
+  // ★#533：复核判据是 elLooksVisible()（尺寸/显隐），不是「是否在视口内」。
+  //   页面真切走 = display:none / 尺寸归零 / 卸载，故此处把桩改成尺寸归零来模拟。
+  run.el.offsetWidth = 0
+  assert.equal(run.flushTimers(), 1, '应恰好登记 1 个 250ms 复核定时器')
+  assert.equal(run.bodyStub.hasAttribute('data-dam-fullpage'), false, '250ms 复核后仍未摘标记')
+  // 再回来：尺寸恢复 + IO 报可见 ⇒ 打标
+  run.el.offsetWidth = 400
   run.observers[0].cb([{ isIntersecting: true }])
   assert.equal(run.bodyStub.hasAttribute('data-dam-fullpage'), true, '重新可见未恢复标记')
 })

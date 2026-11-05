@@ -267,6 +267,12 @@ function listSuites(filter, exclude) {
   }
   return names
     .filter((n) => n.endsWith('.mjs'))
+    // ★下划线前缀 = 辅助模块，不是套件入口（2026-11-03）：
+    //   tests/smoke/_harness.mjs 是共享脚手架，顶层只有定义与 exit 钩子注册。
+    //   被当套件跑会得到一个**恒绿假套件** —— 永远 PASS、永远不产出断言，
+    //   既虚增套件计数，又会在有人给脚手架顶层加副作用时静默变成"真执行"。
+    //   约定：`_` 开头的文件是库（可被 import），`smoke-test-*` 才是套件。
+    .filter((n) => !n.startsWith('_'))
     .filter((n) => !filter || n.includes(filter))
     .filter((n) => !(exclude || []).some((x) => n.includes(x)))
     .filter((n) => { try { return statSync(path.join(SMOKE_DIR, n)).isFile() } catch (e) { return false } })
@@ -286,6 +292,87 @@ function hardKill(child) {
     try { process.kill(-pid, 'SIGKILL') } catch (e) {}
   }
   try { child.kill('SIGKILL') } catch (e) {}
+}
+
+/**
+ * ★#536：**运行器边界的假绿防线**。
+ *
+ * 【缺陷】lib/index.js 的 apply() 会挂 process.on('uncaughtException')（生产容错，不该动）。
+ *   结果：**任何** smoke 套件在收尾阶段抛的异常都被它吞掉 ⇒ 子进程仍 exit 0
+ *   ⇒ 本运行器把「炸过的套件」判成 PASS。实证：v4-h10-curate-apply 每跑都在 :231 抛
+ *   ReferenceError，而回归一直绿着 —— 只修那三个变量名治不了根，因为**任何一个**套件
+ *   下次再犯同类错误，仍然会被判绿。
+ *
+ * 【判据】不看套件自报，看**进程实际发生了什么**：
+ *   子进程 exit code === 0，但它的输出里出现「未捕获异常」的痕迹 ⇒ 判 FAIL。
+ *   痕迹有两个来源，任一命中即算：
+ *     ① 插件生产处理器打的 '[dsh-auto-memory] uncaughtException:'（全仓所有套件都有，无需改造）
+ *     ② 测试侧护栏 _exit-guard.mjs 打的 '[smoke-fatal]'（opt-in 的新套件，带更细的信息）
+ *
+ * 【为什么不是「有 stderr 就红」】stderr 里合法噪音很多（诊断行、已预期的降级日志），
+ *   只有这两种**明确的致命标记**才算。
+ *
+ * 【为什么 exit 非零时不覆盖】exit 已经是非零 ⇒ 本来就是 FAIL，保留原始 code 作为证据。
+ */
+// 插件生产处理器打的（全仓所有套件都有，无需改造）
+const PLUGIN_FATAL = '[dsh-auto-memory] uncaughtException:'
+// 测试侧护栏 _exit-guard.mjs 打的（opt-in 的新套件，带更细的信息）
+const GUARD_FATAL = '[smoke-fatal]'
+const FATAL_MARKERS = [PLUGIN_FATAL, GUARD_FATAL]
+
+/**
+ * ★★2026-11-05（用户裁定）· **显式标记前缀豁免**，取代原「按套件名白名单」。
+ *
+ * 【用户否决白名单的理由（原话摘要）】按套件名豁免 = 让该套件**永久脱离防线保护**，是后门。
+ *   白名单一旦写进运行器，那个套件此后**任何**未捕获异常都被放过，防线对它形同不存在。
+ *
+ * 【新机制】套件在**自己知道要制造异常**的那一刻，往 stderr 主动打一行
+ *   `[smoke-expected-fatal] <理由>` —— 这是**一次性的信用额度**，不是永久身份。
+ *   判据改为：逐行扫 stderr，遇到致命标记行时消费一个信用；**信用不足即 FAIL**。
+ *   ⇒ ① 没打标记的套件零豁免（行为与 #536 原版完全一致）；
+ *     ② 打了标记的套件也只能豁免**它声明过的那几条**，多抛一条照旧 FAIL；
+ *     ③ 豁免粒度从「套件」降到「具体那一次异常」，没有任何套件被整体放行。
+ *
+ * 【为什么按行配对而不是「有标记就整段放过」】后者同样是后门：套件只要在任何地方打一次标记，
+ *   整份 stderr 都被洗净 ⇒ 之后所有真异常一并漏网。按行消费信用可证伪（见测试里的两条变异）。
+ *
+ * 【约定】标记行必须出现在对应致命行**之前**（同一行序扫描，信用先行）。
+ */
+const EXPECTED_FATAL_MARK = '[smoke-expected-fatal]'
+
+/**
+ * 扫 stderr，返回 {violations, exempted}：
+ *   violations = 未被信用覆盖的致命行（每条一句，供 FAIL 理由）
+ *   exempted   = 被信用覆盖的致命行数
+ * 规则：按行序，`[smoke-expected-fatal]` 行 +1 信用；致命标记行若信用>0 则消费一个、否则计违规。
+ */
+function scanFatalLines(text) {
+  const lines = String(text || '').split(/\r?\n/)
+  let credit = 0
+  const violations = []
+  let exempted = 0
+  for (const line of lines) {
+    if (line.indexOf(EXPECTED_FATAL_MARK) >= 0) { credit += 1; continue }
+    let hit = ''
+    for (const m of FATAL_MARKERS) if (line.indexOf(m) >= 0) { hit = m; break }
+    if (!hit) continue
+    if (credit > 0) { credit -= 1; exempted += 1; continue }
+    violations.push(hit + ' :: ' + line.trim().slice(0, 160))
+  }
+  return { violations, exempted }
+}
+
+/**
+ * ★只在 **stderr** 上找插件标记 —— 这一条是首版踩坑后的修正：
+ *   - 插件处理器写的是 **stderr**（lib/index.js: damSafeDiag(process.stderr, …)）；
+ *   - 而「套件把捕获到的子进程输出 echo 出来」走的是 **console.log ⇒ stdout**。
+ *   首版两者都扫 ⇒ 本套件自己（把运行器输出当证据打印）被判成假绿 = 误报。
+ *   [smoke-fatal] 由护栏直写 stderr，同样只在 stderr 找。
+ */
+function fatalMarkerIn(text) {
+  const s = String(text || '')
+  for (const m of FATAL_MARKERS) if (s.indexOf(m) >= 0) return m
+  return ''
 }
 
 function runSuite(file, timeoutMs) {
@@ -314,7 +401,7 @@ function runSuite(file, timeoutMs) {
     let timer = null
     let reapTimer = null
 
-    const finish = (status, code, signal) => {
+    const finish = (status, code, signal, why) => {
       if (settled) return
       settled = true
       if (timer) clearTimeout(timer)
@@ -329,6 +416,7 @@ function runSuite(file, timeoutMs) {
         status,
         code,
         signal,
+        why: why || '',
         seconds: (Date.now() - started) / 1000,
         tail: (out + (err ? '\n--- stderr ---\n' + err : '')).trimEnd(),
       })
@@ -346,7 +434,16 @@ function runSuite(file, timeoutMs) {
     child.on('error', () => finish('FAIL', null, null))
     child.on('close', (code, signal) => {
       if (timedOut) return finish('TIMEOUT', code, signal)
-      finish(code === 0 ? 'PASS' : 'FAIL', code, signal)
+      if (code !== 0) return finish('FAIL', code, signal)
+      // ★#536：exit 0 但输出里有致命标记 ⇒ 假绿，判 FAIL（保留 code=0 作为证据 + 写明命中哪个标记）
+      // ★只查 stderr：stdout 里的同名文本是套件在 echo 证据，不是真的未捕获异常
+      // ★★2026-11-05（用户裁定）：按**行**扫，用 `[smoke-expected-fatal]` 信用抵扣。
+      //   没有任何套件被整体放行；只有「主动声明过的那几次异常」被抵扣。
+      const { violations, exempted } = scanFatalLines(err)
+      if (violations.length) {
+        return finish('FAIL', code, signal, violations[0] + (violations.length > 1 ? ' (+' + (violations.length - 1) + ' more)' : ''))
+      }
+      finish('PASS', code, signal, exempted ? 'exempted-expected-fatal:' + exempted : undefined)
     })
   })
 }
@@ -433,7 +530,8 @@ async function main() {
     done++
     const mark = r.status === 'PASS' ? 'PASS   ' : (r.status === 'TIMEOUT' ? 'TIMEOUT' : 'FAIL   ')
     console.log('[' + mark + '] ' + r.name + '  (' + r.seconds.toFixed(1) + 's)'
-      + (r.status === 'PASS' ? '' : '  exit=' + r.code + ' sig=' + r.signal))
+      + (r.status === 'PASS' ? '' : '  exit=' + r.code + ' sig=' + r.signal
+        + (r.why ? '  ★假绿防线命中: ' + r.why + '（进程 exit 0 但有未捕获异常）' : '')))
     // 进度行:已跑完 X/N,已耗时,最近完成者。末行会被汇总覆盖,不留垃圾。
     const pct = String(Math.round((done / suites.length) * 100)).padStart(3)
     console.log('   └─ ' + pct + '% [' + done + '/' + suites.length + ']  已耗时 ' + fmtDur(Date.now() - runStart)

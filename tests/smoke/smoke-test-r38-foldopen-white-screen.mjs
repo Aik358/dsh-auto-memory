@@ -118,7 +118,19 @@ console.log('percept+checkpoint+views helper 段行数 =', helperLines, '（区�
 //   ★为什么只抬上界不抬下界：下界 250 守的是「段被切短/锚点切歪」，本批只增不减，抬它等于放宽检出。
 //   ★为什么不删这个断言：它的意图是「别把无关改动混进这一段」，抬到 1300 后仍能从 1156 往上抓 12% 的异常增长。
 //   实测本批后 helperLines = 1156（上批 2026-10-26 P2b 弹窗后为 740）。
-if (!(helperLines >= 250 && helperLines <= 1300)) { console.log('✗ helper 段行数异常'); process.exit(1) }
+// ★★2026-11-04 R163 重钉（判据过期，非产品缺陷）：上界 1300 → 1500，下界 250 不动。
+//   ★为什么红：本批 W1-FE 四条（#544/#530/#524/#525）全部落在**手写区**，而其中三条的落点在
+//     本区间内（区间 = percept helper 起点 → EventCard 起点，结构上包含 EventView / UpgradePopup）：
+//       ① #544 新增 renderEventScopeBarPre 并把降级分支那段按钮块换成一次调用（净 +约 40 行）；
+//       ② #524/#525 在 UpgradePopup 内新增 uploadedJobsRef/sticky/意图三函数/续传按钮/提升后的
+//          runUploadAfterUpgrade（净 +约 145 行）。
+//   ★段内 grep 实测（本批后）：renderEventScopeBarPre / stickyPair / UPGRADE_INTENT_KEY /
+//     uploadedJobsRef / runUploadAfterUpgrade **全部命中**；repairReceiptTextPre（#530，落在 StorageTab）
+//     **0 命中** ⇒ 增长来源可逐项对上，不是「别处改动混进来」。
+//   实测：HEAD 版同管道 helperLines = 1156，本批后 = 1341（Δ +185），与上述两项估算一致。
+//   ★为什么只抬上界不抬下界：下界 250 守「段被切短/锚点切歪」，本批只增不减，抬它等于放宽检出。
+//   ★为什么不删这个断言：抬到 1500 后仍能从 1341 往上抓 12% 的异常增长（1500/1341 = 1.12）。
+if (!(helperLines >= 250 && helperLines <= 1500)) { console.log('✗ helper 段行数异常'); process.exit(1) }
 const segLines = seg.split('\n').length
 console.log('事件卡段行数 =', segLines, '（区间锁 20~80）')
 if (!(segLines >= 20 && segLines <= 80)) { console.log('✗ 段边界异常（终点锚可能吞掉了半个文件）'); process.exit(1) }
@@ -172,7 +184,7 @@ console.log('=== 守卫通过：真渲染不抛 + 负路径精确报红 ===')
 // ═══════════════════════════════════════════════════════════════════════════
 {
   // ★2026-11-02 R162：与上方区间锁同一判据同步（1100 → 1300），否则负路径会拿旧上界骗自己
-  const LOCK_MIN = 250, LOCK_MAX = 1300
+  const LOCK_MIN = 250, LOCK_MAX = 1500   // ★R163（2026-11-04）：与上方区间锁同步（1300 → 1500）
   function wouldPass (n) { return n >= LOCK_MIN && n <= LOCK_MAX }
   // 基线：实测值必须通过
   if (!wouldPass(helperLines)) { console.log('✗ R38-RANGE-MUT 基线未通过（' + helperLines + '）'); process.exit(1) }

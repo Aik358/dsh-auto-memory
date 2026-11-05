@@ -18,8 +18,8 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, copyFi
 import path from 'node:path'
 import { homedir } from 'node:os'
 import { createHash, randomUUID } from 'node:crypto'
-import { parseAnchors, planMigration, buildSidecar } from '../lib/memory-anchor-pre.js'
-import { applyMigrationPlan } from '../lib/memory-writer-pre.js'
+import { parseAnchors, planMigration, buildSidecar } from '../lib/memory-anchor.js'
+import { applyMigrationPlan } from '../lib/memory-writer.js'
 
 function dshHome() {
   const env = process.env.DSH_HOME

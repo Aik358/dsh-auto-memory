@@ -66,9 +66,9 @@ try {
   const statePath = path.join(p.userDir, 'upgrade-state.json');
 
   console.log('[T36-1] 路由已注册（结构守卫，非功能证据）');
-  ok(routes.length === 83, '★★★T36-1a 路由总数 = 83（77 + 2 + memory-upgrade + team-pause + team-upgrade + team-baseline）', String(routes.length));
+  ok(routes.length === 84, '★★★T36-1a 路由总数 = 84（77 + 2 + memory-upgrade + team-pause + team-upgrade + team-baseline）', String(routes.length));
   ok(!!stR && !!snR, '★★★T36-1b 两个路由都已注册');
-  ok(Object.keys(API_KEYS()).length === 83, '★★T36-1c API 常量表 = 83 条（★方案A：+team-baseline；R158 已 +team-pause +team-upgrade）', String(Object.keys(API_KEYS()).length));
+  ok(Object.keys(API_KEYS()).length === 84, '★★T36-1c API 常量表 = 84 条（★方案A：+team-baseline；R158 已 +team-pause +team-upgrade）', String(Object.keys(API_KEYS()).length));
   function API_KEYS() { const m = IX.match(/const API = \{([\s\S]*?)\n\}/); return m ? [...m[1].matchAll(/([\w'-]+):\s*'\/api/g)].reduce((a, x) => (a[x[1]] = 1, a), {}) : {} }
 
   console.log('');
@@ -210,7 +210,13 @@ try {
   ok(typeof engine._subagents !== 'undefined' || true, '★★T36-9b 宿主 subagents 注入位存在（_subagents = ctx.get(\'subagents\')）');
   // ★2026-10-27 v6：start 改为先算工作区清单再调 runSubagent（manifest 前置注入）。
   //   判据意图不变：runSubagent 仍必须在 Promise 链里后台调用（不阻塞 start 返回）。
-  ok(IX.indexOf('engineRef.runSubagent(') >= 0 && IX.indexOf('buildWorkspaceManifestPre()') >= 0, '★★★T36-9c start 真调 runSubagent（后台化，不阻塞；manifest 前置）');
+  // ★批0（2026-11-05）升级：原来 grep 'buildWorkspaceManifestPre()'（无参签名）。
+  //   签名改三参后该断言会假红，且它本就是「源码含某字符串」的恒真守卫（CR-10 明令禁止）。
+  //   改为：真拿到引擎方法 + 断言它是函数 + 调用点确实把范围传下去了。
+  ok(typeof engine.buildWorkspaceManifestPre === 'function', '★★★T36-9c-1 buildWorkspaceManifestPre 是真方法（不是占位）');
+  ok(engine.buildWorkspaceManifestPre.length >= 1, '★★★T36-9c-2 方法签名接受范围参数（length=' + engine.buildWorkspaceManifestPre.length + '）');
+  ok(IX.indexOf('engineRef.runSubagent(') >= 0 && IX.indexOf('buildWorkspaceManifestPre(_scopeOpt, _scopeKeys, _scopeWs)') >= 0,
+    '★★★T36-9c-3 start 真调 runSubagent（后台化，不阻塞）且 manifest 带范围调用');
 } finally {
   globalThis.setInterval = iv; globalThis.setTimeout = to; globalThis.fetch = fe;
   try { fs.rmSync(root, { recursive: true, force: true }) } catch (e) {}

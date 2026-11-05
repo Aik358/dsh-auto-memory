@@ -153,17 +153,38 @@ try {
   const ml = tools.find((t) => String(t.name) === 'memory_log');
   const NOTE = 'T33-8 幂等测试内容 xyzzy-abc-123';
   const n0 = (await STORE.eventStorePre.detail(storePath, ev.id)).event.checkpoints.length;
-  await ml.execute({ note: NOTE, kind: 'fact' }, { agent });
+  // ★★2026-11-05（FAKE-GREEN-AUDIT）· 判据修正（C 类），非放宽：
+  //   【旧判据】不传 eventId 直接调 memory_log，期望检查点挂到 `ev` 上（+1 / 再去重 +0）。
+  //   【为什么过期】产品在 #543 之后加了**话题归属**（lib/index.js 的 resolveActiveEventPre /
+  //     pickActiveEventByTopicPre，token 重合率阈值 0.34）：未传 eventId 时先按主题匹配 active 事件，
+  //     **匹配不到就新建一个事件**，并回执告知「已自动新建事件 evt_xxx，如需挂到已有事件请带 eventId」。
+  //     实测：本用例的 NOTE 与 `ev`（名「T33 测试事件」/summary「测试」）词重合率 < 0.34
+  //     ⇒ 新建事件 ⇒ `ev` 的 checkpoints 恒 0 ⇒ 取 `cps1[cps1.length-1].idemKey` 读到 undefined 抛 TypeError。
+  //   【修法】判据意图是「memory_log 写入事件检查点，且同分钟重复内容被 idemKey 去重」。
+  //     该意图与「事件归属」正交，故**显式传 eventId** 锁定目标事件（这也是工具回执给出的正确用法）。
+  //     同时补一条**新语义的负路径/正路径**：不传 eventId 时必须明确回执归属决策（新建 or 挂载）。
+  // 注意顺序：先做「显式 eventId」的幂等验证，再验「不传 eventId」的回执——
+  //   否则自动新建那条已写入同样的 NOTE，后续显式调用会被**复读防护**拦掉（实测：
+  //   "该条目与日志尾部已有内容重复,拒绝写入(复读防护)"），把幂等用例污染成假红。
+  await ml.execute({ note: NOTE, kind: 'fact', eventId: ev.id }, { agent });
   const cps1 = (await STORE.eventStorePre.detail(storePath, ev.id)).event.checkpoints;
   const n1 = cps1.length;
-  const k1 = cps1[cps1.length-1].idemKey;
-  await ml.execute({ note: NOTE, kind: 'fact' }, { agent });
+  const k1 = cps1[cps1.length-1] && cps1[cps1.length-1].idemKey;
+  await ml.execute({ note: NOTE, kind: 'fact', eventId: ev.id }, { agent });
   const n2 = (await STORE.eventStorePre.detail(storePath, ev.id)).event.checkpoints.length;
   ok(n1 === n0 + 1, '★★T33-8a 第 1 次确实写入 +1', n0 + ' → ' + n1);
   ok(n2 === n1, '★★★T33-8b 第 2 次（相同内容、同一分钟）⇒ **+0**（去重生效）', n1 + ' → ' + n2);
   ok(/^log:\d{4}-\d{2}-\d{2}:\d{2}:\d{2}:[0-9a-f]{12}$/.test(String(k1)), '★★★T33-8c idemKey 格式含 **分钟粒度**（同分钟前提可检验）', String(k1));
   const parts = String(k1).split(':');
   ok(parts.length === 5 && parts[0] === 'log', '★★★T33-8d 分解 log:日期:HH:MM:hash ⇒ **跨分钟会变**（机制边界如实可验）', parts.slice(0,4).join(':'));
+  // ★2026-11-05（FAKE-GREEN-AUDIT）· #543 新语义的正路径：未传 eventId 时必须**回执归属决策**。
+  //   用一条**与其他用例不同**的内容（避免复读防护拦截）。
+  {
+    const rAuto = String(await ml.execute({ note: 'T33-8 归属回执专用 内容 qwerty-own-777', kind: 'fact' }, { agent }))
+    ok(/归属:\s*未传 eventId/.test(rAuto),
+      '★★★T33-8e 不传 eventId 时**必须回执归属决策**（#543：自动新建/挂载二选一并告知）',
+      (rAuto.split('\n').find((l) => l.indexOf('归属') >= 0) || '(无归属行)').slice(0, 80))
+  }
 
   console.log('');
   console.log('[T33-9] ★★★ 元断言（遍历式）：CATEGORY_TITLES 每个 key 都有 buckets + counts + total');

@@ -155,7 +155,7 @@ console.log('[#454] B. 接线守卫（源码结构；功能证据在 A 段）')
 const guards = SRC.match(/if \(!isLoopbackRequest\(req, panelAllowedHosts\)\) return writeJson\(res, 403, forbiddenPanelPayloadPre\(req, panelAllowedHosts\)\)/g) || []
 const oldForm = SRC.match(/if \(!isLoopbackRequest\(req\)\) return writeJson\(res, 403, \{ error: 'forbidden: loopback-only' \}\)/g) || []
 // ★R158（2026-10-31）：80 → 82。新增 team-pause / team-upgrade 两条路由，同样带 (req, panelAllowedHosts) 守卫。
-  ok(guards.length === 83, 'B1 83 处守卫全部改用 (req, panelAllowedHosts) + 诊断体（实测 ' + guards.length + ' 处）')
+  ok(guards.length === 84, 'B1 84 处守卫全部改用 (req, panelAllowedHosts) + 诊断体（实测 ' + guards.length + ' 处）')
 ok(oldForm.length === 0, 'B2 旧形态零残留（不留半修：有的路径接了白名单、有的没接）')
 ok(SRC.includes('const panelAllowedHosts = parseAllowedHostsPre('), 'B3 apply 内解析一次并复用（不是每个 handler 各读一份 config）')
 const declAt = SRC.indexOf('const panelAllowedHosts = parseAllowedHostsPre(')

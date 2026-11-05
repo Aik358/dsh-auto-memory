@@ -33,6 +33,9 @@ const HOST_ONLY_WHITELIST = [
   //   A2 的判据是「宿主独有 == 白名单」，既然前端已有键 ⇒ 它们**不再是宿主独有**，列进来反而必红。
   //   （首版列进来是对的——那时前端还没补键；补完键之后就必须移出。这是 A2 判据的正常联动。）
   '/api/dsh-auto-memory/subagent-probe',
+  // ★R171（2026-11-03 向导 P3）：/upgrade-workspaces 是**新增的只读清单路由**；
+  //   ★P4（2026-11-03）前端已接上（client.js：API.upgradeWorkspaces + 向导第 2/3 页真实消费）
+  //   ⇒ 按 A2 判据的正常联动**移出本白名单**（与上面 4 条事件路由同理：不再是「宿主独有」）。
   // ★2026-10-02 审计修复批 #174：/team-state、/team-attribution、/team-conflicts、/team-sync-debug
   //   四条**已移出本白名单** —— client.js 团队层已改为真实消费这 4 条专用路由
   //   （fetchTeamState 的 Promise.all），不再是「宿主独有」。这正是 B10 注释预告的收口。

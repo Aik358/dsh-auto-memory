@@ -71,7 +71,10 @@ console.log('[C2-纯] detectLegacyFormatPre');
   ok(c.legacy === false, '★★★C2-6 空内容 ⇒ legacy=false（新工作区不误报）');
   ok(typeof a.counts === 'object' && typeof a.counts.userEntries === 'number' && typeof a.counts.anchors === 'number', '★★C2-7 counts 形状正确', JSON.stringify(a.counts));
   const onlyAnchor = '<!-- memory:mem_' + 'a'.repeat(32) + ' -->\n- 有锚点但无状态行\n';
-  ok(RL.detectLegacyFormatPre({ userText: onlyAnchor, notesText: '' }).legacy === true, '★★C2-8 有锚点但无 status ⇒ 仍 legacy（结构缺失任一即真）');
+  // ★#520 P0（2026-11-03）：判据已改为 legacy = !anchors —— status 缺失不再是结构缺陷（advisory）。
+//   旧断言「有锚点无 status ⇒ 仍 legacy」正是本次有意推翻的语义；期望值随之改 false。
+//   依据：docs/internal/VERIFY-520-CONCLUSIONS-20261103.md §1.5（status 无存量回填路径，用它当结构判据会让迁移后弹窗永不消失）。
+ok(RL.detectLegacyFormatPre({ userText: onlyAnchor, notesText: '' }).legacy === false, '★★C2-8 有锚点但无 status ⇒ **不判 legacy**（#520 P0 新判据：锚点是唯一结构判据）');
   const onlyStatus = '<!-- dsh-status: current -->\n- 有状态行但无锚点\n';
   ok(RL.detectLegacyFormatPre({ userText: onlyStatus, notesText: '' }).legacy === true, '★★C2-9 有 status 但无锚点 ⇒ 仍 legacy');
 }

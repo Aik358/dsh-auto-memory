@@ -443,7 +443,15 @@ await wlCmp({ messages: [{ text: 'y'.repeat(2400) }], session: { events: [{ type
 ok(ledgerCalls2.length === 0, '首次观测遇历史 compaction 只建基线,不触发(重启不再误接续)')
 await wlCmp({ messages: [{ text: 'y'.repeat(2400) }], session: { events: [{ type: 'compaction/summary', seq: 3 }] } })
 ok(ledgerCalls2.length === 0, '同一历史 compaction 持续不触发(seq 未前进)')
-const twoCmp = [{ type: 'compaction/summary', seq: 3 }, { type: 'compaction/start', seq: 9 }]
+// ★2026-11-03 判据升级（K2 双触发修复配套）：
+//   旧 fixture 写成 [summary seq=3, start seq=9] —— **summary 在前、start 在后**，
+//   与真宿主相反：dsh-compaction-basic 是 `:469 compaction/start` → `:634 compaction/summary`
+//   （start 先落、summary 后落，seq 递增）。旧 fixture 因此隐含了「start 也算水位」的旧语义。
+//   K2 修复后水位**只认 summary**（真宿主一次压缩 start+summary 两条，两条都认会让消费方
+//   `cseq > seen` 触发两次 ⇒ 同一轮压缩强制重建全貌两次）。
+//   ⇒ 本 fixture 改为真宿主形状：先 start(8) 再 summary(9)；判据意图不变（新压缩触发一次、
+//     重复不触发、首次观测只建基线）。
+const twoCmp = [{ type: 'compaction/start', seq: 8 }, { type: 'compaction/summary', seq: 9 }]
 await wlCmp({ messages: [{ text: 'y'.repeat(2400) }], session: { events: twoCmp } })
 ok(ledgerCalls2.length === 1, '基线之后出现**新的** compaction → 硬触发补写(水位仅 0.6)')
 await wlCmp({ messages: [{ text: 'y'.repeat(2400) }], session: { events: twoCmp } })

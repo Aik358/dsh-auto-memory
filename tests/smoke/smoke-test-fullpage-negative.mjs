@@ -85,8 +85,15 @@ const IO_GUARD = 'if (typeof IntersectionObserver !== ' + Q + 'function' + Q + '
 // 2026-10-25 E8-6 变异锚点更新：cleanup 从**单行**变成**多行块**（引用计数改造后
 // 里面要加注释说明「必须删自己」）。旧锚点是单行字面量 ⇒ 命中 0 次 ⇒ 变异恒不生效。
 // ★新锚点取多行块的**真实文本**（从源码里抄回，含缩进与注释）。
+// 2026-10-25 E8-6 变异锚点更新：cleanup 从**单行**变成**多行块**（引用计数改造后
+// 里面要加注释说明「必须删自己」）。旧锚点是单行字面量 ⇒ 命中 0 次 ⇒ 变异恒不生效。
+// ★2026-11-04 #533 再更新：cleanup 头部又多了 clearRecheck() 与两行说明注释
+//   （卸载必须清掉待复核定时器）⇒ 旧锚点再次失配。此处按 client.js 当前真实文本抄回。
 const CLEANUP = [
   '        return function () {',
+  '          // ★#533：卸载必须清掉待复核定时器 —— 否则卸载后它仍会跑，',
+  '          //   在已脱离文档的 el 上读可见性并做一次无意义的 mark(false)。',
+  '          clearRecheck()',
   '          try { io.disconnect() } catch (e) {}',
   '          // ★E8-6：卸载时**必须把自己从 Set 删掉**（mark(false) 内部就是 delete(el)）——',
   '          //   不是无脑 removeAttribute，否则另一个 page 还可见时也会被误摘标记。',

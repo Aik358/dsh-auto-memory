@@ -24,8 +24,12 @@ import os from 'node:os'
 import path from 'node:path'
 import { Readable } from 'node:stream'
 import { apply, API, MemoryEngine } from '../lib/state-engine.mjs'
+// ★#536：测试侧的退出码护栏（与插件的生产容错**分层**，见 _exit-guard.mjs 头注）
+import { installExitGuard, guardCleanup, FATAL_MARKER } from './_exit-guard.mjs'
 
 let pass = 0, fail = 0
+// ★#536：先装护栏 —— 之后任何未捕获异常都会记账并在 exit 阶段把退出码改非零
+const G = installExitGuard({ suite: 'v4-h10-curate-apply' })
 const ok = (c, m) => { if (c) { pass++; console.log('  PASS ' + m) } else { fail++; console.log('  FAIL ' + m) } }
 
 const root = fs.mkdtempSync(path.join(os.tmpdir(), 'dam-v4-h10-'))
@@ -228,12 +232,18 @@ try {
   //   根因：本套件在 try **中间**恢复（`globalThis.setInterval = iv` 等），一旦 try 中途抛异常
   //   就**恢复不到** ⇒ 后续/libuv 内部拿到假的定时器 ⇒ 退出时句柄状态不一致 ⇒ 崩溃。
   //   ★这是全仓同类套件的**通病**，已一次性修 8 个（其余 6 个本来就把恢复写在 finally 里）。
-  globalThis.setInterval = iv;
-  globalThis.setTimeout = to;
-  globalThis.fetch = fe;
-  try { fs.rmSync(root, { recursive: true, force: true }) } catch (e) {}
+  // ★#536 根因①：这里原写 `iv / to / fe` —— 三个名字**从未定义**（保存的引用叫 interval/timeout/fetch，见上方常量声明），
+  //   每次跑都抛 ReferenceError；而插件 apply() 挂的 uncaughtException 只记日志不改退出码 ⇒ 套件长期「绿」着。
+  //   修法：改用实际保存的引用，并包进 guardCleanup（清理阶段抛错也记账 ⇒ 退出码非零）。
+  guardCleanup(G, 'restore-setInterval', () => { globalThis.setInterval = interval })
+  guardCleanup(G, 'restore-setTimeout', () => { globalThis.setTimeout = timeout })
+  guardCleanup(G, 'restore-fetch', () => { globalThis.fetch = fetch })
+  guardCleanup(G, 'rm-temp-root', () => { fs.rmSync(root, { recursive: true, force: true }) })
 }
 
 console.log('')
-console.log('[H10-curate-apply] ' + pass + ' PASS / ' + fail + ' FAIL')
-process.exit(fail ? 1 : 0)
+console.log('[H10-curate-apply] ' + pass + ' PASS / ' + fail + ' FAIL / 0 SKIP')
+// ★#536：把护栏记账也带进汇总（否则「断言全绿但收尾炸了」在汇总里看不出来）
+console.log('[H10-curate-apply] exit-guard: ' + G.summary())
+if (G.failed()) { try { process.stderr.write(FATAL_MARKER + ' summary: ' + G.summary() + '\n') } catch (e) {} }
+process.exit(fail || G.failed() ? 1 : 0)

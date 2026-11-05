@@ -43,9 +43,27 @@ console.log('[U6-1] 结构守卫');
   ok(/UPGRADE_DONE_MAX_CHARS = 520/.test(IX) && /UPGRADE_FAILED_MAX_CHARS = 320/.test(IX), '★U6-1e 段长上限常量 520/320');
   // ★负路径：不得有 await runSubagent(...) 在 start 分支里（会阻塞）
   const startIdx = IX.indexOf("if (action !== 'start') return");
-  const region = IX.slice(startIdx, startIdx + 4000);
-  ok(startIdx >= 0 && !/await\s+engineRef\.runSubagent|await\s+this\.runSubagent/.test(region), '★★★U6-1f start 分支内**无 await runSubagent**（不阻塞）');
-  ok(/Promise\.resolve\(\)\.then\(\(\) => engineRef\.runSubagent\(/.test(region), '★★★U6-1g 用 Promise.resolve().then 后台起跑');
+  // ★2026-11-05（FAKE-GREEN-AUDIT）· 判据修正（C 类）：后台链**已不在** start 分支内。
+  //   实测：#520 批把 start 的实现抽到 engine.startUpgradeJobPre（lib/index.js:10891），
+  //   而 memory_upgrade 的 start 分支只剩一行 `await engine.startUpgradeJobPre(exec.agent)`
+  //   （工具定义在 :23925，文件总长 ~2,006,000 字符，从 startIdx 往后 4000/12000 都到不了后台链）。
+  //   后台链的真实位置 = engine 方法体内（:10979 的 Promise.resolve()）。
+  //   ⇒ 判据改为：①工具 start 分支内**不得有 await runSubagent**（不阻塞，仍就在工具段内判）；
+  //              ②后台链**在引擎方法内**以 Promise.resolve().then 链起跑并最终调 runSubagent。
+  const startRegion = IX.slice(startIdx, startIdx + 4000);
+  const engineStart = IX.indexOf('async startUpgradeJobPre(');
+  const region = engineStart >= 0 ? IX.slice(engineStart, engineStart + 9000) : '';
+  ok(startIdx >= 0 && !/await\s+engineRef\.runSubagent|await\s+this\.runSubagent/.test(startRegion), '★★★U6-1f start 分支内**无 await runSubagent**（不阻塞）');
+  // ★2026-11-05（FAKE-GREEN-AUDIT）· 判据修正（C 类）：后台链形态已演进。
+  //   旧链：Promise.resolve().then(() => runSubagent(...))  —— 直接起跑
+  //   新链（#520 批后）：Promise.resolve()
+  //       .then(() => buildWorkspaceManifestPre(...))    ← 先把工作区清单算好并前置进提示词
+  //       .then(m => m.trim()).then(m => runSubagent(m + PROMPT, LABEL, agent, TIMEOUT))
+  //   加这两步是因为 v5 首跑实测：子代理 55 次调用 0 写盘，全在推演「我该在哪个工作区干活」。
+  //   ⇒ 判据意图（**后台起跑、不阻塞**）不变，只把「直接 then(runSubagent)」放宽到
+  //     「Promise.resolve() 起始的 then 链，且链上最终调用 runSubagent」。
+  ok(/Promise\.resolve\(\)[\s\S]{0,400}?\.then\([\s\S]{0,400}?runSubagent\(/.test(region),
+    '★★★U6-1g 用 Promise.resolve().then 链后台起跑（链上最终调 runSubagent；中间夹 manifest 前置）');
 }
 
 const root = fs.mkdtempSync(path.join(os.tmpdir(), 'dam-u6-'));
@@ -65,8 +83,17 @@ try {
   globalThis.setInterval = globalThis.setTimeout = () => ({ unref() {} });
   globalThis.fetch = async () => ({ ok: false, status: 503, json: async () => ({}) });
   MemoryEngine.prototype.loadConfigSync = function () { engine = this; return load.call(this) };
+  // ★★2026-11-05（FAKE-GREEN-AUDIT）· 夹具补依赖（B 类），**不是产品缺陷**。
+  //   旧 ctx 的 `get: () => undefined` 让宿主服务表恒空 ⇒ startUpgradeJobPre 的头两道门
+  //   （`if (this._disposed)` / `if (!this._subagents)`）直接返回
+  //   `{ok:false, error:'subagents-unavailable'}` ⇒ 后台链**根本不会启动** ⇒ calls=0、
+  //   状态永远写不出 phase ⇒ U6-3 之后 13 条断言连锁红。
+  //   实测探针：started={"ok":false,"error":"subagents-unavailable"}。
+  //   本套件测的是 memory_upgrade 的状态机与后台化，不测宿主服务发现，故补一个最小 subagents 桩
+  //   （runSubagent 会被下面的用例覆盖成可控桩，这里只需让它「存在」）。
   apply({
-    get: () => undefined, on: () => () => {},
+    get: (svc) => (svc === 'subagents' ? { list: () => [], start: async () => ({ result: Promise.resolve({ output: [] }) }) } : undefined),
+    on: () => () => {},
     systemPrompt: { context: () => () => {}, section: () => () => {} },
     tools: { register: (t) => { tools.push(t); return () => {} } },
     webServer: { register: () => () => {} },
@@ -113,16 +140,49 @@ try {
   //   在 execute 的 Promise resolve **之前**就跑到 runSubagent ⇒ calls 天然 = 1。
   //   这不代表阻塞 —— 真正的不阻塞判据是**耗时**（U6-3b：3.90ms << 子代理 600s）。
   ok(elapsed < 50, '★★★U6-3c 子代理桩要跑 30ms，而 start 仍 <50ms ⇒ 确实没等它（真后台）', elapsed.toFixed(2) + ' ms vs 桩 30ms');
-  // 等后台跑完（模拟 30ms + 余量）
-  await new Promise((r) => to(r, 200));
+  // ★2026-11-05（FAKE-GREEN-AUDIT）· 判据修正（C 类），非放宽：
+  //   #520 批之后 startUpgradeJobPre 的后台链变成
+  //     Promise.resolve().then(buildWorkspaceManifestPre).then(...).then(runSubagent)
+  //   中间夹了 **buildWorkspaceInventoryPre（扫全部工作区）+ buildWorkspaceManifestPre** 两个
+  //   真实异步前置，实测耗时远超 200ms（本机 3 个工作区即 >1s）。
+  //   旧断言「等 200ms 后 calls===1」是对**旧链形态**的时序假设，已过期。
+  //   这里改为**轮询到条件满足**（有界，仍是「后台确实起跑了」的意思，不是无限放宽）。
+  const _waitCalls = async (n, ms) => {
+    const dl = Date.now() + ms
+    while (Date.now() < dl && calls.length < n) await new Promise((r) => to(r, 25))
+    return calls.length >= n
+  }
+  await _waitCalls(1, 15000);
   ok(calls.length === 1, '★★U6-3d 后台确实起跑了子代理', 'calls=' + calls.length);
   ok(calls[0] && calls[0].label === 'auto-memory-upgrade', '★★★U6-3e label = auto-memory-upgrade（含 auto-memory- 前缀）', JSON.stringify(calls[0] && calls[0].label));
-  ok(calls[0] && calls[0].agentArg === null, '★★★U6-3f agent 传 null ⇒ runSubagent 内部取 _workbenchParent（天然在记忆中枢）', JSON.stringify(calls[0] && calls[0].agentArg));
-  ok(calls[0] && calls[0].timeoutMs === 600000, '★★U6-3g 超时 10 分钟', String(calls[0] && calls[0].timeoutMs));
+  // ★2026-11-05（FAKE-GREEN-AUDIT）· 判据修正（C 类）：产品已把 agentArg 由 null 改为**透传 agent**。
+  //   源码原文（lib/index.js:10987 附近）：「★与 consolidate / greet 同构：把调用方 agent 透传下去（原为 null）。
+  //   runSubagent 内部 parent = this._workbenchParent || agent || this._lastAgent —— 传 agent 才有兜底，
+  //   否则 _workbenchParent 为空时直接判 incomplete parent 而返回空。」
+  //   ⇒ 断言应改为「透传的是调用方 agent 本身」，这比原来的 null 更强（多了兜底路径）。
+  ok(calls[0] && calls[0].agentArg === agent, '★★★U6-3f agent 透传给 runSubagent（原为 null，现与 consolidate/greet 同构，多一条兜底）', String(calls[0] && (calls[0].agentArg && calls[0].agentArg.session && calls[0].agentArg.session.id)));
+  // ★2026-11-05（FAKE-GREEN-AUDIT）· 判据修正（C 类）：超时由 600000 改为 Number.POSITIVE_INFINITY。
+  //   源码 lib/index.js:697 `const UPGRADE_SUBAGENT_TIMEOUT_MS = Number.POSITIVE_INFINITY`，
+  //   同文件 :16808 注释自述「我为了『不设上限』改的」⇒ **有意演进**，不是缺陷。
+  //   判据意图（子代理有明确超时设定、且不是随手写的小值）改为「必须是显式常量值且 >= 10 分钟」。
+  ok(calls[0] && (calls[0].timeoutMs === Number.POSITIVE_INFINITY || calls[0].timeoutMs >= 600000),
+    '★★U6-3g 超时设定为常量（现为 POSITIVE_INFINITY = 不设上限；旧值 600000）', String(calls[0] && calls[0].timeoutMs));
   ok(calls[0] && calls[0].textLen > 3000, '★★U6-3h 传给子代理的是迁移提示词全文', 'len=' + (calls[0] && calls[0].textLen));
 
   console.log('');
   console.log('[U6-4] 完成后写状态');
+  // ★2026-11-05（FAKE-GREEN-AUDIT）：manifest/inventory 前置使后台链明显变长 ⇒ 轮询到终态。
+  const _waitPhase = async (want, ms) => {
+    const dl = Date.now() + ms
+    let cur = ''
+    while (Date.now() < dl) {
+      cur = String((await engine.readUpgradeStatePre(agent)).phase || '')
+      if (cur === want) return cur
+      await new Promise((r) => to(r, 25))
+    }
+    return cur
+  }
+  await _waitPhase('done', 20000)
   const stDone = await engine.readUpgradeStatePre(agent);
   ok(stDone.phase === 'done', '★★★U6-4a 完成后 phase=done', String(stDone.phase));
   ok(String(stDone.summary || '').indexOf('197') >= 0, '★★U6-4b summary 已写入', JSON.stringify(String(stDone.summary || '').slice(0, 40)));
@@ -188,6 +248,16 @@ try {
   const b = JSON.parse(String(await up.execute({ action: 'start' }, { agent })));
   ok(a.jobId === b.jobId, '★★★U6-9a 第二次 start 返回**同一个** jobId', a.jobId + ' / ' + b.jobId);
   ok(b.reused === true, '★★★U6-9b 标记 reused=true');
+  // ★2026-11-05（FAKE-GREEN-AUDIT）：manifest 前置使首次 start 的后台链变长，
+  //   直接断言 callCount===1 会读到 0（还没起跑）。轮询到「至少起跑过一次」再断言总次数，
+  //   判据意图（**只起跑 1 次**，不因第二次 start 而重复）不变。
+  {
+    const dl = Date.now() + 20000
+    while (Date.now() < dl && callCount < 1) await new Promise((r) => to(r, 25))
+    // 再多给一点时间，确保若真有「第二次起跑」能在窗口内显现（否则会漏报重复）
+    const settle = Date.now() + 1500
+    while (Date.now() < settle) await new Promise((r) => to(r, 25))
+  }
   ok(callCount === 1, '★★★U6-9c 子代理只被起跑 **1 次**（真的防住重复）', 'calls=' + callCount);
 } finally {
   globalThis.setInterval = iv;
