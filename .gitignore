@@ -97,6 +97,7 @@ artifacts/issue-repair-20261102/
 !/.*.json.example
 !/.gitignore
 !/.gitattributes
+!/.github/
 !/.editorconfig
 
 # 下划线开头的一次性脚本/截图（根目录）
