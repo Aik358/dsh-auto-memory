@@ -38,6 +38,9 @@
 - ❌ 问用户 / `ask_user_question`（没有通道，问了永久卡住）
 - ❌ **先扫所有工作区再干活**
 - ❌ 调 `memory_status({op:'upgrade-done'})` —— **该 op 不存在**，是幻影 API，会报错浪费轮次
+- ❌ **用 `win_bash`（python/node/shell）直接写记忆库** —— `event-store.json`、`MEMORY.md`、`handoff/PLAN.md` 一律**只准经 `memory_event` / `memory_note` 写**。
+  ★#520 实证：2026-10-27 那批「11 事件 46ms 写 2 个库」正是**自建 python 脚本绕过工具**做的 —— 结果 `origin`/`createdBy` 全丢、审计追不回来。
+  ★**唯一例外**：允许把**草案 JSON** 写到 `upgrade-runs/<runId>/draft/` 下（引擎校验后由引擎落盘）。写别的路径即失败。
 
 > **同意已取得**：用户是在前端弹窗上亲手点了「立即派子代理整理」之后这个任务才启动的。
 > 不需要再问用户任何事。原文件会完整备份、永不删除。
@@ -56,7 +59,7 @@
 ### 第 1 步 · 读（1 次 win_bash）
 
 ```bash
-W="<清单里的目录名>"; D="$HOME/.dsh/memory/workspaces/$W"
+W="<清单里的目录名>"; D="${DSH_HOME:-$HOME/.dsh}/memory/workspaces/$W"
 echo "=== PLAN ==="; cat "$D/handoff/PLAN.md" 2>/dev/null
 echo "=== LOGS ==="; for f in "$D"/[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9].md; do [ -f "$f" ] && { echo "--- $(basename "$f") ---"; sed -n '1,120p' "$f"; }; done
 echo "=== EXISTING ==="; grep -o '"name": *"[^"]*"' "$D/handoff/event-store.json" 2>/dev/null | head -30
@@ -360,7 +363,7 @@ memory_user(action='append', content='...') → 用户规约（跨项目）
 
 | 类 | 判据 | 去向 |
 |---|---|---|
-| 人之上的层 | 「这个人是谁」「我们一起经历过什么」 | L0：直接写 `~/.dsh/memory/person/event-store.json` |
+| 人之上的层 | 「这个人是谁」「我们一起经历过什么」 | L0：直接写 `${DSH_HOME:-$HOME/.dsh}/memory/person/event-store.json` |
 | 用户规约 | 跨项目通用的要求 | L1：`memory_user(action='append')` |
 | 项目规约 | 这个项目必须怎么做 | L2：`memory_note(kind='note', action='append')` |
 | 项目事件 | 这个项目在做什么 | L3：`memory_event`（主战场） |
