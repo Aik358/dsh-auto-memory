@@ -131,11 +131,18 @@ function scopeReport(src) {
 const cur = scopeReport(idxSrc)
 ok(cur.total >= 10, 'C-1 现状统计到 _rqK 全部出现点', String(cur.total) + ' 处')
 ok(cur.outOfScope.length === 0, 'C-2 【功能】_rqK 全部引用都在声明块作用域内（作用域修复生效）', cur.outOfScope.length ? ('越界行: ' + cur.outOfScope.join(',')) : '0 处越界')
-// 负路径：用 git HEAD 的未修版本做同法判定，必须检出越界
+// 负路径：用**固定的历史 commit**（alpha.5 基线 b989a5f9）的未修版本做同法判定，必须检出越界。
+// ★2026-11-05 判据修正：原写法用 `git show HEAD:lib/index.js`，把「当前提交」当未修对照。
+//   一旦修复被提交，HEAD 就是已修版本 ⇒ 本判据在「修复成功」时反而变红，属判据设计缺陷
+//   （同一根因家族：r26 的 R153_CHARS 基线锁过期）。修法是把对照物**固化到已知旧 commit**，
+//   与当前 HEAD 解耦：该 commit 是 alpha.5 发布点，此后 index.js 的修复不会改变它。
+//   验证：固定 commit 取到的源码里 _tierOf/_slimDrop 等修复后符号不存在（实测 false），
+//   即确实是「未修版本」，判据仍有区分力。
+const NEG_BASE_REV = 'b989a5f9'
 let headOut = null
 let headSrcForNeg = ''
 try {
-  const headSrc = execSync('git show HEAD:lib/index.js', { cwd: ROOT, maxBuffer: 64 * 1024 * 1024, encoding: 'utf8' })
+  const headSrc = execSync('git show ' + NEG_BASE_REV + ':lib/index.js', { cwd: ROOT, maxBuffer: 64 * 1024 * 1024, encoding: 'utf8' })
   headSrcForNeg = headSrc
   headOut = scopeReport(headSrc).outOfScope
 } catch (e) { headOut = null }
@@ -232,6 +239,7 @@ ok(trapped.length === 0, 'G-2 【P0-1】档位辅助函数全部在模块顶层�
 if (headOut === null) {
   console.log('  SKIP - G-3 负路径：git 不可用')
 } else {
+  // 用 C 段同一份「固定旧 commit」源码（NEG_BASE_REV），不再随 HEAD 漂移
   const scHead = declScope(headSrcForNeg, TIER_HELPERS)
   const trappedHead = TIER_HELPERS.filter((n) => scHead.get(n) === 'FUNCTION')
   ok(trappedHead.length === TIER_HELPERS.length, 'G-3 负路径：未修版本里这七个**全部**被吞进函数体（判据不是恒真）', trappedHead.length + '/' + TIER_HELPERS.length)
