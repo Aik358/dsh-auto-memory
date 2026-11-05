@@ -23,7 +23,9 @@
           h('p', { className: 'i5-muted' }, t('updateSub')),
           versions.map(function (version, i) { return h('details', { key: version.version || i, open: i === 0 },
             h('summary', null, 'v' + version.version), h('ul', null, ((version.items && (version.items[locale] || version.items.zh)) || []).map(function (item, n) { return h('li', { key: n }, item) }))) }),
-          h('div', { className: 'i5-dialog-footer' }, h('button', { className: 'i5-primary', onClick: props.onClose }, t('gotIt')))))
+          h('div', { className: 'i5-dialog-footer' },
+            h(UpgradeDetectEntryPre, { key: 'i5-upd-detect', style: { marginRight: 'auto', padding: '7px 12px', borderRadius: '9px', border: '1px solid var(--i5-line, rgba(128,128,128,.35))', background: 'transparent', color: 'inherit', cursor: 'pointer', fontSize: '12.5px' } }),
+            h('button', { className: 'i5-primary', onClick: props.onClose }, t('gotIt')))))
     }
     function Iter5AutoContinue(props) {
       var confirmation = props.confirmation

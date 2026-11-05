@@ -146,7 +146,8 @@
         // 【新策略：以「挂载即可见」为默认，IO 只负责**撤销**】
         //   1. 挂载后立即 mark(true)（默认全屏）—— 满足「不需要点任何东西即全屏」。
         //   2. IO 仍保留，但只在**明确的不可见**时才 mark(false)；
-        //      且用「连续 2 次不可见」确认，避免过渡帧的假阴性把标记闪掉。
+        //      判据是「单次不可见 + 250ms 有上界复核」（★#533：IO 在隐藏后不会再来第二次，
+        //      旧「连续 2 次不可见」等于等一个**不保证发生**的事件，实测标记摘不掉）。
         //   3. 卸载 cleanup 必然 mark(false) —— 这是「切回对话页 composer 必须恢复」的保证。
         //
         // 【★为什么这个顺序是安全的（防「标记摘不掉导致打不了字」）】
@@ -166,8 +167,8 @@
         //   ⇒ composer display:none ⇒ **用户在对话页永远打不了字**。
         //   （这正是本文件下方 cleanup 注释里写过的原话：「比不隐藏严重得多」。）
         //
-        // 【为什么必须加闸门而不能只靠 IO 的迟滞】
-        //   IO 的「连续 2 次不可见才摘」是**防抖**（防过渡帧闪掉标记），是**事后**的；
+        // 【为什么必须加闸门而不能只靠 IO 的复核窗口】
+        //   IO 的「单次不可见 + 250ms 复核」是**防抖**（防过渡帧闪掉标记），是**事后**的；
         //   闸门是**防错**（从一开始就不该打），是**事前**的。两者职责不同，都要有。
         //
         // 【闸门判据】**不得引用 el 自身高度**（否则与 fit() 构成死循环，见下方实现处详注）：
@@ -210,27 +211,55 @@
         }
         // ① 挂载时：只有**确认可见**才打标（默认全屏，但绝不误伤对话页）
         if (elLooksVisible()) mark(true)
-        // ② IO 只负责撤销：连续 2 次不可见才摘（抗过渡帧假阴性）
+        // ② IO 只负责撤销：单次不可见即起一个 250ms **有上界**复核（抗过渡帧假阴性）
         if (typeof IntersectionObserver !== 'function') {
           return function () { mark(false) }
         }
-        var missStreak = 0
+        // ★★#533（2026-11-04）：撤销判据从「连续 2 次不可见」改成「单次不可见 + 250ms 上界复核」。
+        //
+        // 【旧判据为什么是缺陷（真渲染实测）】
+        //   IntersectionObserver **只在状态/阈值变化时回调**：el 一旦离开视口并稳定下来，
+        //   IO 不会再发第二次。旧代码 `if (missStreak >= 2) mark(false)` 等于在等一个
+        //   **不保证发生**的事件 ⇒ 实测 1 次 isIntersecting=false 之后
+        //   body[data-dam-fullpage] 仍然是 "true"（引用计数 Set 里那个 page 也还在），
+        //   必须再切一次页 / 再滚一次才会摘 ⇒ 用户看到「已经回对话页了，输入栏还是不见」。
+        //
+        // 【新判据】单次不可见就起一个**有上界**的复核：
+        //   · 隐藏：clearRecheck() 后记 250ms 定时器（重复回调只重置同一个，不堆积）
+        //   · 到时：再读一次 elLooksVisible()，仍为假才 mark(false)
+        //   · isIntersecting=true / cleanup：clearTimeout（过渡帧内恢复可见时不得闪掉标记）
+        //   ⇒ 过渡帧（<250ms 内回来）不闪；真离开也一定在 250ms 内摘掉，不再依赖第二次回调。
+        var recheckTimer = null
+        function clearRecheck() {
+          if (recheckTimer === null) return
+          try { clearTimeout(recheckTimer) } catch (e) {}
+          recheckTimer = null
+        }
         var io = new IntersectionObserver(function (entries) {
           for (var k = 0; k < entries.length; k += 1) {
             if (entries[k].isIntersecting) {
-              missStreak = 0
+              // 恢复可见：取消待复核，并重新过闸门打标
+              clearRecheck()
               // ★闸门同样作用于 IO 正路径：isIntersecting 只说明「进了视口」，
               //   不说明「有布局尺寸」。以闸门为准，避免 0 尺寸时误打标。
               if (elLooksVisible()) mark(true)
             } else {
-              missStreak += 1
-              // 连续 2 次不可见才认定「真的切走了」（首帧 0 尺寸只算 1 次）
-              if (missStreak >= 2) mark(false)
+              // 单次不可见：起 250ms 复核（不等待第二次回调 —— 它可能永不发生）
+              clearRecheck()
+              recheckTimer = setTimeout(function () {
+                recheckTimer = null
+                // 复核：期间若已恢复可见（IO 的 true 分支会 clearRecheck 并 mark(true)），
+                //   这里读到的 elLooksVisible() 为真 ⇒ 不摘标。
+                if (!elLooksVisible()) mark(false)
+              }, 250)
             }
           }
         })
         io.observe(el)
         return function () {
+          // ★#533：卸载必须清掉待复核定时器 —— 否则卸载后它仍会跑，
+          //   在已脱离文档的 el 上读可见性并做一次无意义的 mark(false)。
+          clearRecheck()
           try { io.disconnect() } catch (e) {}
           // ★E8-6：卸载时**必须把自己从 Set 删掉**（mark(false) 内部就是 delete(el)）——
           //   不是无脑 removeAttribute，否则另一个 page 还可见时也会被误摘标记。
@@ -277,11 +306,25 @@
      *   崩溃日志无 JS 异常、只有 ResizeObserver loop ⇒ 正是渲染循环持续触发的典型症状。
      *   修法：值不变则不 setState。
      */
-    function iter5SyncIdentityIfChanged(setter, readState) {
+    /* ★★#532（2026-11-04）：第二个形参 `readState` 是**状态值**、不是读取函数 —— 删掉它，统一函数式更新。
+     *
+     * 【真缺陷（真调用实测）】两个调用点传的都是 useState 的**值**（字符串，形如 "sid|ws"），
+     *   旧实现却按函数调用 `readState()` ⇒ 抛 TypeError: "sid|ws" is not a function
+     *   ⇒ 被本函数的 try/catch **静默吞掉** ⇒ setter **0 次**被调用
+     *   ⇒ 切会话 / 切工作区后身份永不更新（页面一直停在旧工作区的数据上）。
+     *   ★空字符串（首帧尚未取到会话时）`'' && ...` 恰好短路 ⇒ 看起来正常，
+     *     这正是它长期没被发现的原因：只有拿到非空身份的机器才 100% 失效。
+     *
+     * 【修法】删掉该形参、只留 (setter)，统一用**函数式更新**：
+     *   值相同 ⇒ 返回同一引用 ⇒ React bail out（不重渲染 ⇒ 500ms 轮询不产生渲染风暴）；
+     *   值不同 ⇒ 正常提交。**不再保留「字符串或函数」的双契约**。
+     *   ★改这个函数必须同批改两个调用点（ui.js 的 Iter5Page / surfaces.js 的 Iter5HostSettings）：
+     *     本函数在生成区里被**定义两份**（ui.js / surfaces.js），只改一份 = 半修。
+     */
+    function iter5SyncIdentityIfChanged(setter) {
       try {
         var next = iter5Identity()
-        if (next === String((readState && readState()) || '')) return
-        setter(next)
+        setter(function (prev) { return prev === next ? prev : next })
       } catch (e) { /* fail-soft */ }
     }
 
@@ -356,7 +399,8 @@
         return function () { window.removeEventListener('click', guard, true); window.removeEventListener('keydown', guard, true) }
       }, [expanded[0]])
       useEffect(function () {
-        var timer = setInterval(function () { iter5SyncIdentityIfChanged(identity[1], identity[0]) }, 500)
+        // ★#532：只传 setter —— 身份值由函数式更新里的 prev 提供（旧第二实参 identity[0] 是字符串，被当函数调用 ⇒ 静默 0 次）。
+        var timer = setInterval(function () { iter5SyncIdentityIfChanged(identity[1]) }, 500)
         return function () { clearInterval(timer) }
       }, [])
       var form = h(Iter5Surface, { kind: 'settings' },

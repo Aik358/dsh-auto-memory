@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>dsh-auto-memory — Hero 探针 v1</title>
+<!--
+  Hero 探针 · 2026-09-20
+  目的：把最难的三件事一次验证掉 —— ① 60fps 背景 ② 24fps 线描角色 ③ 两层帧率对比
+  约束：单文件、零依赖、零构建、可离线打开（GitHub Pages 直接托管）
+  技法来源（借鉴，非抄袭素材）：
+    · 24fps 时间量化 + 缓存  ← arknights-motion-library  map/renderer.mjs:325-327  Math.floor(time*24)
+    · 帧率无关指数收敛        ← RhineLabUI  src/scene.ts:1205  lerp(v,target,1-exp(-dt*14))
+    · SVG 全局屏幕滤镜        ← RhineLabUI  src/screen-finish.ts（色差/颗粒/暗角，覆盖 WebGL+DOM）
+    · 排版字距规则            ← RhineLabUI  src/style.css:106-129
+  配色：DeepSeek 官网体系（实测 CSS）—— 品牌蓝 #4d6bfe / 暗底 #0a0a0a
+  角色：鲸鱼娘（溟月 · 上善无形 · CC BY-NC-SA 4.0）线描抽象版
+-->
+<style>
+/* ══ 设计令牌 ══ 数值取自 DeepSeek 官网生产 CSS 实测 ══ */
+:root{
+  /* 底 */
+  --bg:#0a0a0a;                      /* --ds-color-bg-page 暗色 */
+  --surface-1:hsla(0,0%,100%,.06);   /* --ds-color-bg-surface-1 */
+  --surface-2:hsla(0,0%,100%,.04);
+  --surface-3:hsla(0,0%,100%,.02);
+  /* 品牌 */
+  --brand:#4d6bfe;
+  --brand-light:#6799fe;             /* 暗色下的品牌提亮 */
+  --brand-deep:#3a65c2;
+  /* 文字 */
+  --text:#fff;
+  --text-2:hsla(0,0%,100%,.8);
+  --text-3:hsla(0,0%,100%,.56);
+  /* 边框 */
+  --border:hsla(0,0%,100%,.1);
+  --border-subtle:hsla(0,0%,100%,.08);
+  /* 圆角 */
+  --r-sm:8px; --r-media:12px; --r-panel:16px; --r-card:24px; --r-pill:100px;
+  /* 角色描边 —— 关键：白主线 + 浅蓝高光（深蓝在 #0a0a0a 上对比度仅 1.5:1，不可用） */
+  --ink:#ffffff;                     /* 角色主轮廓 */
+  --ink-2:var(--brand-light);        /* 角色次级线 */
+  --ink-3:hsla(0,0%,100%,.35);       /* 角色细节线 */
+}
+
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  overflow-x:hidden;
+  /* 屏幕滤镜挂载点（由 JS 注入 <svg> 后生效） */
+}
+
+/* ══ 舞台 ══ */
+.stage{
+  position:relative;
+  min-height:100vh;
+  display:grid;
+  place-items:center;
+  isolation:isolate;   /* 让 mix-blend-mode 只在本层内生效 */
+}
+
+/* ══ 第 1 层：背景（60fps）══ 只用合成器属性 */
+.bg{position:absolute;inset:0;overflow:hidden;z-index:0}
+
+/* 1a 辉光 —— 品牌蓝径向 */
+.bg-glow{
+  position:absolute;inset:-20%;
+  background:
+    radial-gradient(48% 42% at 50% 34%, hsla(228,99%,65%,.16), transparent 68%),
+    radial-gradient(38% 34% at 22% 72%, hsla(228,99%,60%,.09), transparent 70%),
+    radial-gradient(34% 30% at 80% 62%, hsla(200,90%,62%,.07), transparent 70%);
+  will-change:transform,opacity;
+  animation:drift 26s ease-in-out infinite alternate;
+}
+@keyframes drift{
+  from{transform:translate3d(-1.2%,-0.8%,0) scale(1.02)}
+  to  {transform:translate3d( 1.2%, 0.8%,0) scale(1.06)}
+}
+
+/* 1b 网格 —— 极淡，给"工程感"但不抢戏 */
+.bg-grid{
+  position:absolute;inset:0;
+  background-image:
+    linear-gradient(to right, hsla(0,0%,100%,.045) 1px, transparent 1px),
+    linear-gradient(to bottom, hsla(0,0%,100%,.045) 1px, transparent 1px);
+  background-size:64px 64px;
+  mask-image:radial-gradient(72% 62% at 50% 44%, #000 20%, transparent 82%);
+  -webkit-mask-image:radial-gradient(72% 62% at 50% 44%, #000 20%, transparent 82%);
+  animation:gridPan 40s linear infinite;
+}
+@keyframes gridPan{to{background-position:64px 64px, 64px 64px}}
+
+/* 1c 粒子画布 —— 60fps，逐帧绘 */
+#flow{position:absolute;inset:0;width:100%;height:100%;display:block}
+
+/* 1d 顶部扫描线 —— 一次性，给人"被读取"的感觉 */
+.bg-scan{
+  position:absolute;left:0;right:0;height:34vh;top:-34vh;
+  background:linear-gradient(to bottom, transparent, hsla(228,99%,70%,.055) 60%, transparent);
+  animation:scan 9s cubic-bezier(.4,0,.6,1) infinite;
+}
+@keyframes scan{
+  0%  {transform:translate3d(0,0,0);opacity:0}
+  8%  {opacity:1}
+  70% {opacity:1}
+  100%{transform:translate3d(0,150vh,0);opacity:0}
+}
+
+/* ══ 第 2 层：角色（24fps）══ 独立时钟，与背景刻意不同步 */
+.hero{
+  position:relative;z-index:1;
+  display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(320px,520px);
+  align-items:center;
+  gap:clamp(24px,4vw,72px);
+  width:min(1280px,92vw);
+  padding:clamp(32px,6vh,80px) 0;
+}
+@media (max-width:900px){ .hero{grid-template-columns:1fr;gap:32px} }
+
+/* 角色容器 —— 位图为 1024×1536（2:3 竖版），容器同比避免留白 */
+.char-wrap{position:relative;aspect-ratio:2/3;max-height:82vh;justify-self:center;width:100%}
+.char-wrap svg,.char-wrap canvas{position:absolute;inset:0;width:100%;height:100%}
+
+/* 角色呼吸 —— 24fps 量化由 JS 驱动 transform，这里只做兜底缓慢浮动 */
+.char-breathe{transform-origin:50% 88%}
+
+/* ══ 首屏文案进场 —— transitions-motion skill 的 texts-reveal，CSS 逐字照贴 ══
+   :root 变量与 .t-stagger-line 规则一字未改，仅把类名挂到本页 .copy 上。
+   触发：载入后给 .copy 加 .is-shown（见主循环）。 */
+.copy.t-stagger .kicker.t-stagger-line{display:inline-flex}
+.copy.t-stagger h1.t-stagger-line{display:block}
+.copy.t-stagger .lede.t-stagger-line{display:block}
+.copy.t-stagger .quote.t-stagger-line{display:block}
+.copy.t-stagger .meta.t-stagger-line{display:flex}
+.copy.t-stagger .cta.t-stagger-line{display:flex}
+.copy.t-stagger .honest.t-stagger-line{display:block}
+/* 每行单独声明延迟（skill 规定的写法：calc(var(--stagger-stagger) * (N - 1))） */
+.t-stagger-line--3{transition-delay:calc(var(--stagger-stagger) * 2)}
+.t-stagger-line--4{transition-delay:calc(var(--stagger-stagger) * 3)}
+.t-stagger-line--5{transition-delay:calc(var(--stagger-stagger) * 4)}
+.t-stagger-line--6{transition-delay:calc(var(--stagger-stagger) * 5)}
+.t-stagger-line--7{transition-delay:calc(var(--stagger-stagger) * 6)}
+
+/* ══ 以下 CSS 逐字取自 transitions-motion skill 的 items/texts-reveal.json ══ */
+:root {
+  --stagger-dur: 500ms;
+  --stagger-distance: 12px;
+  --stagger-stagger: 40ms;
+  --stagger-blur: 3px;
+  --stagger-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+.t-stagger-line {
+  opacity: 0;
+  transform: translateY(var(--stagger-distance));
+  filter: blur(var(--stagger-blur));
+  transition:
+    opacity   var(--stagger-dur) var(--stagger-ease),
+    transform var(--stagger-dur) var(--stagger-ease),
+    filter    var(--stagger-dur) var(--stagger-ease);
+  will-change: transform, opacity, filter;
+}
+.t-stagger-line--2 { transition-delay: var(--stagger-stagger); }
+.t-stagger.is-shown .t-stagger-line {
+  opacity: 1;
+  transform: translateY(0);
+  filter: blur(0);
+}
+.t-stagger.is-hiding .t-stagger-line {
+  opacity: 0;
+  transform: translateY(0);
+  filter: blur(0);
+  transition:
+    opacity 200ms ease,
+    transform 0s linear,
+    filter 0s linear;
+  transition-delay: 0s;
+}
+@media (prefers-reduced-motion: reduce) {
+  .t-stagger-line { transition: none !important; }
+}
+
+/* ══ 第 3 层：文案面板（玻璃）══ */
+.copy{position:relative}
+.copy .kicker{
+  display:inline-flex;align-items:center;gap:8px;
+  font-size:12px;font-weight:600;letter-spacing:.14em;
+  text-transform:uppercase;
+  color:var(--brand-light);
+  padding:6px 12px;
+  border:1px solid hsla(228,99%,65%,.3);
+  border-radius:var(--r-pill);
+  background:hsla(228,99%,65%,.08);
+  backdrop-filter:blur(12px);
+  -webkit-backdrop-filter:blur(12px);
+}
+.copy h1{
+  margin:20px 0 0;
+  font-size:clamp(34px,4.6vw,62px);
+  font-weight:750;            /* RhineLab 字重档：750 比 700 更硬 */
+  line-height:1.06;
+  letter-spacing:-.022em;     /* 大字号紧字距 */
+}
+.copy h1 em{
+  font-style:normal;
+  color:var(--brand-light);
+}
+.copy .lede{
+  margin:20px 0 0;
+  font-size:clamp(15px,1.35vw,18px);
+  font-weight:300;
+  line-height:1.72;
+  letter-spacing:.012em;      /* 小字号松字距 */
+  color:var(--text-3);
+  max-width:46ch;
+}
+/* 金句（守则 §3）—— 独立成行加粗，全页 ≤3 句 */
+.copy .quote{
+  margin:22px 0 0;
+  font-size:clamp(15px,1.3vw,17px);
+  font-weight:600;
+  line-height:1.6;
+  letter-spacing:-.006em;
+  color:var(--text);
+  padding-left:14px;
+  border-left:2px solid var(--brand);
+  max-width:42ch;
+}
+/* 诚实守则 §7.5 ——「不做」与「做」同栏，克制写成性格 */
+.copy .honest{
+  margin-top:22px;
+  font-size:13px;
+  font-weight:400;
+  color:var(--text-3);
+  letter-spacing:.01em;
+}
+.copy .honest b{color:var(--text-2);font-weight:600}
+.copy .meta{
+  margin-top:28px;
+  display:flex;flex-wrap:wrap;gap:10px;
+}
+.copy .meta span{
+  font-size:12.5px;font-weight:400;
+  color:var(--text-2);
+  padding:7px 13px;
+  border-radius:var(--r-sm);
+  border:1px solid var(--border-subtle);
+  background:var(--surface-2);
+  backdrop-filter:blur(12px);
+  -webkit-backdrop-filter:blur(12px);
+}
+.copy .cta{
+  margin-top:32px;display:flex;gap:12px;flex-wrap:wrap;
+}
+.copy .cta a{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:13px 24px;border-radius:var(--r-pill);
+  font-size:14.5px;font-weight:600;
+  text-decoration:none;
+  transition:background .22s,border-color .22s,transform .22s;
+}
+.copy .cta .primary{background:var(--brand);color:#fff}
+.copy .cta .primary:hover{background:var(--brand-light);transform:translateY(-1px)}
+.copy .cta .ghost{
+  color:var(--text-2);
+  border:1px solid var(--border);
+  background:var(--surface-3);
+  backdrop-filter:blur(12px);
+  -webkit-backdrop-filter:blur(12px);
+}
+.copy .cta .ghost:hover{background:var(--surface-1);border-color:hsla(0,0%,100%,.2)}
+
+/* ══ 角标状态栏 —— 档案终端气质 ══ */
+.rail{
+  position:fixed;z-index:5;
+  font-size:11px;font-weight:600;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--text-3);
+  display:flex;gap:18px;align-items:center;
+  pointer-events:none;
+}
+.rail.tr{top:22px;right:26px}
+.rail.bl{bottom:22px;left:26px}
+.rail .dot{
+  width:6px;height:6px;border-radius:50%;
+  background:var(--brand-light);
+  box-shadow:0 0 0 0 hsla(228,99%,65%,.6);
+  animation:pulse 2.4s ease-out infinite;
+}
+@keyframes pulse{
+  0%{box-shadow:0 0 0 0 hsla(228,99%,65%,.5)}
+  70%{box-shadow:0 0 0 8px hsla(228,99%,65%,0)}
+  100%{box-shadow:0 0 0 0 hsla(228,99%,65%,0)}
+}
+.rail .sep{color:hsla(0,0%,100%,.14)}
+
+/* ══ 无障碍降级：静态首帧 ══ */
+@media (prefers-reduced-motion:reduce){
+  .bg-glow,.bg-grid,.bg-scan{animation:none !important}
+  .rail .dot{animation:none}
+  #flow{display:none}
+}
+</style>
+</head>
+<body>
+<!-- 屏幕后处理滤镜挂载点：JS 注入 <svg><filter id="ds-finish">…</filter></svg> -->
+<div class="stage" id="stage">
+  <!-- 第 1 层 背景 -->
+  <div class="bg" aria-hidden="true">
+    <div class="bg-glow"></div>
+    <div class="bg-grid"></div>
+    <canvas id="flow"></canvas>
+    <div class="bg-scan"></div>
+  </div>
+
+  <!-- 第 2 + 3 层 -->
+  <div class="hero">
+    <!-- 角色（24fps 线描）—— SVG 路径由 JS 逐帧量化驱动 -->
+    <div class="char-wrap" id="charWrap">
+      <canvas id="charCanvas" aria-hidden="true"></canvas>
+    </div>
+
+    <!-- 文案 —— 遵守 docs/PROMO-STYLE-GUIDE.md 热叙述体文风守则
+         进场动效 = transitions-motion skill 的 texts-reveal（CSS 逐字照贴） -->
+    <div class="copy t-stagger" id="copy">
+      <span class="kicker t-stagger-line t-stagger-line--1"><span class="dot" style="width:5px;height:5px;border-radius:50%;background:currentColor"></span>DSH · Memory</span>
+
+      <!-- ① 场景钩子 + ③ 转折 —— 主语是「她」，不是「本插件」 -->
+      <h1 class="t-stagger-line t-stagger-line--2">窗口会满，<br><em>她不会忘</em></h1>
+
+      <!-- ② 扎疼 ④ 机制一句话 ⑤ 余韵（母比喻：一本书） -->
+      <p class="lede t-stagger-line t-stagger-line--3">聊到一半，窗口满了。为什么修错了、哪条路走不通，全在火里。<br>
+        她不这么办——三层记忆写进笔记，合上一页，翻开新的一页；笔记还在手边，随时翻回去。</p>
+
+      <!-- 金句 ①（判断句） -->
+      <p class="quote t-stagger-line t-stagger-line--4">压缩是旧范式的续命，记忆是新范式的本金。</p>
+
+      <!-- 冷静体：表格区，零形容词 -->
+      <div class="meta t-stagger-line t-stagger-line--5">
+        <span>用户级规则</span>
+        <span>项目级笔记</span>
+        <span>每日日志</span>
+        <span>17 个模型工具</span>
+        <span>零运行时依赖</span>
+      </div>
+
+      <div class="cta t-stagger-line t-stagger-line--6">
+        <a class="primary" href="#">安装到 DSH</a>
+        <a class="ghost" href="#">看功能清单</a>
+      </div>
+
+      <!-- 诚实守则 §7.5：「不做」与「做」同栏展示 -->
+      <p class="honest t-stagger-line t-stagger-line--7"><b>她不做：</b>不联网、不上传、不带走你的记忆。</p>
+    </div>
+  </div>
+
+  <!-- 角标 -->
+  <div class="rail tr"><span class="dot"></span><span>LOCAL ONLY</span><span class="sep">/</span><span>v3.0.0</span></div>
+  <div class="rail bl"><span id="railFps">60 FPS BG</span><span class="sep">/</span><span id="railChar">24 FPS CHAR</span></div>
+</div>
+
+<script>
+(function () {
+'use strict';
+
+/* ═══════════════════════════════════════════════════════════
+   0. 工具 · 帧率无关收敛
+   借鉴 RhineLabUI src/scene.ts:1205 —— lerp(v,target,1-exp(-dt*14))
+   比 CSS transition 可控：天然支持打断/接续（快速返回时从当前值续上）
+   ═══════════════════════════════════════════════════════════ */
+var RATE = 14;
+function converge(cur, target, dt) {
+  return cur + (target - cur) * (1 - Math.exp(-dt * RATE));
+}
+
+/* ═══════════════════════════════════════════════════════════
+   1. 屏幕后处理 · SVG 滤镜
+   借鉴 RhineLabUI src/screen-finish.ts —— 用 SVG filter 而非 ShaderPass，
+   理由（原作者的）：一次挂载即可覆盖 WebGL + DOM + 弹窗三层。
+   这里把三个效果合成成一个 filter，挂到 .stage 上：
+     · 色差  feDisplacementMap  R/B 反向偏移 + feBlend screen
+     · 颗粒  feTurbulence + saturate 0（去色）+ soft-light 叠回
+     · 暗角  径向渐变 + feComposite arithmetic
+   ═══════════════════════════════════════════════════════════ */
+function mountScreenFinish() {
+  var NS = 'http://www.w3.org/2000/svg';
+  var svg = document.createElementNS(NS, 'svg');
+  svg.setAttribute('width', '0');
+  svg.setAttribute('height', '0');
+  svg.setAttribute('aria-hidden', 'true');
+  svg.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden';
+
+  // 颗粒噪声源（seed 固定 → 每帧稳定，不会闪）
+  var turb = document.createElementNS(NS, 'filter');
+  turb.setAttribute('id', 'ds-grain');
+  turb.setAttribute('x', '0'); turb.setAttribute('y', '0');
+  turb.setAttribute('width', '100%'); turb.setAttribute('height', '100%');
+  turb.innerHTML =
+    '<feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="3" seed="7" result="n"/>' +
+    '<feColorMatrix in="n" type="saturate" values="0" result="ng"/>' +
+    '<feComponentTransfer in="ng" result="nc">' +
+      '<feFuncA type="linear" slope="0.34" intercept="-0.05"/>' +
+    '</feComponentTransfer>' +
+    '<feBlend in="SourceGraphic" in2="nc" mode="soft-light"/>';
+  svg.appendChild(turb);
+
+  // 主滤镜：色差 + 暗角
+  var f = document.createElementNS(NS, 'filter');
+  f.setAttribute('id', 'ds-finish');
+  f.setAttribute('x', '-2%'); f.setAttribute('y', '-2%');
+  f.setAttribute('width', '104%'); f.setAttribute('height', '104%');
+  f.setAttribute('color-interpolation-filters', 'sRGB');
+
+  var amt = 1.1; // 色差半径（px）—— 克制，仅边缘可见
+  f.innerHTML =
+    // 抽三通道
+    '<feOffset in="SourceGraphic" dx="' + amt + '" dy="0" result="rOff"/>' +
+    '<feOffset in="SourceGraphic" dx="-' + amt + '" dy="0" result="bOff"/>' +
+    '<feComponentTransfer in="rOff" result="rCh">' +
+      '<feFuncR type="linear" slope="1"/><feFuncG type="linear" slope="0"/><feFuncB type="linear" slope="0"/>' +
+    '</feComponentTransfer>' +
+    '<feComponentTransfer in="bOff" result="bCh">' +
+      '<feFuncR type="linear" slope="0"/><feFuncG type="linear" slope="0"/><feFuncB type="linear" slope="1"/>' +
+    '</feComponentTransfer>' +
+    '<feComponentTransfer in="SourceGraphic" result="gCh">' +
+      '<feFuncR type="linear" slope="0"/><feFuncG type="linear" slope="1"/><feFuncB type="linear" slope="0"/>' +
+    '</feComponentTransfer>' +
+    // 三通道相加回正
+    '<feBlend in="rCh" in2="gCh" mode="screen" result="rg"/>' +
+    '<feBlend in="rg"  in2="bCh" mode="screen" result="rgb"/>' +
+    // 暗角
+    '<feImage result="vig" href="data:image/svg+xml;charset=utf-8,' +
+      encodeURIComponent(
+        '<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100">' +
+        '<defs><radialGradient id="v" cx="50%" cy="46%" r="72%">' +
+        '<stop offset="55%" stop-color="#fff"/><stop offset="100%" stop-color="#3a3a3a"/>' +
+        '</radialGradient></defs>' +
+        '<rect width="100" height="100" fill="url(#v)"/></svg>'
+      ) + '"/>' +
+    '<feComposite in="rgb" in2="vig" operator="arithmetic" k1="1" k2="0" k3="0" k4="0"/>';
+
+  svg.appendChild(f);
+  document.body.appendChild(svg);
+  return f;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   2. 背景层 · 60fps 数据流粒子
+   只用合成器友好操作；粒子走"注入→检索→证据"的意象
+   ═══════════════════════════════════════════════════════════ */
+function Flow(canvas) {
+  var ctx = canvas.getContext('2d', { alpha: true });
+  var dpr = Math.min(window.devicePixelRatio || 1, 1.75); // 上限，防 4K 屏掉帧
+  var W = 0, H = 0, parts = [];
+  var COUNT = 78;
+
+  function resize() {
+    var r = canvas.getBoundingClientRect();
+    W = r.width; H = r.height;
+    canvas.width = Math.round(W * dpr);
+    canvas.height = Math.round(H * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  function spawn(p) {
+    p.x = Math.random() * W;
+    p.y = Math.random() * H;
+    p.vx = (Math.random() - 0.35) * 14;
+    p.vy = -(4 + Math.random() * 16);
+    p.r = 0.6 + Math.random() * 1.5;
+    p.a = 0.12 + Math.random() * 0.5;
+    p.life = 0;
+    p.max = 4 + Math.random() * 7;
+    p.hue = Math.random() < 0.22 ? 200 : 228; // 少量青色，多数品牌蓝
+  }
+
+  for (var i = 0; i < COUNT; i++) { var p = {}; spawn(p); p.life = Math.random() * p.max; parts.push(p); }
+
+  resize();
+  window.addEventListener('resize', resize);
+
+  return function draw(dt) {
+    ctx.clearRect(0, 0, W, H);
+    ctx.globalCompositeOperation = 'lighter';
+    for (var i = 0; i < parts.length; i++) {
+      var p = parts[i];
+      p.life += dt;
+      if (p.life > p.max) spawn(p);
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      var t = p.life / p.max;
+      var alpha = p.a * Math.sin(Math.PI * t); // 首尾淡入淡出
+      if (alpha <= 0) continue;
+      // 尾迹 = 速度向量反向的一小节线
+      ctx.strokeStyle = 'hsla(' + p.hue + ',99%,72%,' + (alpha * 0.55) + ')';
+      ctx.lineWidth = p.r;
+      ctx.beginPath();
+      ctx.moveTo(p.x, p.y);
+      ctx.lineTo(p.x - p.vx * 0.11, p.y - p.vy * 0.11);
+      ctx.stroke();
+      // 头部亮点
+      ctx.fillStyle = 'hsla(' + p.hue + ',99%,82%,' + alpha + ')';
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r * 0.85, 0, 6.2832);
+      ctx.fill();
+    }
+    ctx.globalCompositeOperation = 'source-over';
+  };
+}
+
+/* ═══════════════════════════════════════════════════════════
+   3. 角色层 · 24fps 线描（抽象）
+   ── 时间量化取 arknights-motion-library map/renderer.mjs:325-327
+      的 Math.floor(time*24)：外层 60fps rAF 跑，角色只在自己的 tick 上换帧
+   ── 识别预算压到 4 个剪影特征（子代理 B 结论 #1）：
+      ① 呆毛 ② 鲸鳍耳 ③ 大鲸尾 ④ 长发轮廓外扩
+   ── 结构线硬配额 3 条（结论 #3）：前发分缝 / 躯干中线 / 裙摆主折线
+   ── 线宽三级（结论 #2）：外轮廓 2.5 / 结构 1.2 / 细节 0.8（单位按 1000 视图盒）
+   ═══════════════════════════════════════════════════════════ */
+function Character(canvas) {
+  var ctx = canvas.getContext('2d');
+  var dpr = Math.min(window.devicePixelRatio || 1, 2);
+  var S = 1000;      // 逻辑视图盒（正方形）
+  var W = 0, H = 0, scale = 1, ox = 0, oy = 0;
+
+  var COL_INK   = '#ffffff';
+  var COL_INK2  = '#6799fe';
+  var COL_INK3  = 'rgba(255,255,255,.35)';
+
+  var W_CONTOUR = 2.5, W_STRUCT = 1.2, W_DETAIL = 0.8;
+
+  function resize() {
+    var r = canvas.getBoundingClientRect();
+    W = r.width; H = r.height;
+    canvas.width = Math.round(W * dpr);
+    canvas.height = Math.round(H * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    scale = Math.min(W, H) / S;
+    ox = (W - S * scale) / 2;
+    oy = (H - S * scale) / 2;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  /* 路径定义：以 1000×1000 为坐标系，脚底锚点 (500, 900) */
+  function stroke(pts, w, color, close) {
+    ctx.beginPath();
+    for (var i = 0; i < pts.length; i++) {
+      var x = ox + pts[i][0] * scale, y = oy + pts[i][1] * scale;
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    if (close) ctx.closePath();
+    ctx.lineWidth = w * scale;
+    ctx.strokeStyle = color;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    ctx.stroke();
+  }
+  // 二次贝塞尔：用于有机曲线（头发/尾巴）
+  function curve(a, c, b, w, color) {
+    ctx.beginPath();
+    ctx.moveTo(ox + a[0] * scale, oy + a[1] * scale);
+    ctx.quadraticCurveTo(ox + c[0] * scale, oy + c[1] * scale, ox + b[0] * scale, oy + b[1] * scale);
+    ctx.lineWidth = w * scale;
+    ctx.strokeStyle = color;
+    ctx.lineCap = 'round';
+    ctx.stroke();
+  }
+
+  var TAU = 6.2831853;
+
+  /* ═══ 真实角色位图 ═══
+     由 tools/make-character.mjs 产出：Ark9 生图 → 亮度键控（白底深线 → 透明底白/蓝线）
+     → 裁切居中到 1024×1536。材质即"线描"本身，不再由 JS 描路径。
+     这里保留 24fps 量化 + 呼吸/摆动变换 —— 图是静的，动作是算出来的。 */
+  var IMG = new Image();
+  var imgReady = false;
+  IMG.onload = function () { imgReady = true; };
+  IMG.src = 'assets/whale-girl.png';
+
+  /* 位图画到逻辑盒：以"角色高占盒高 88%"为基准等比缩放后居中 */
+  function drawCharacter() {
+    if (!imgReady) return;
+    var boxW = S * scale, boxH = S * scale;
+    var targetH = boxH * 0.88;
+    var targetW = targetH * (IMG.naturalWidth / IMG.naturalHeight);
+    if (targetW > boxW * 0.96) {                  // 太宽则以宽为准
+      targetW = boxW * 0.96;
+      targetH = targetW * (IMG.naturalHeight / IMG.naturalWidth);
+    }
+    var dx = ox + (boxW - targetW) / 2;
+    var dy = oy + (boxH - targetH) / 2;
+    ctx.drawImage(IMG, dx, dy, targetW, targetH);
+  }
+
+  /* 每帧绘制。phase 为 0..1 的呼吸循环相位；tick 为 24fps 量化后的整数帧号 */
+  function paint(tick, phase, gaze) {
+    ctx.clearRect(0, 0, W, H);
+    var bob = Math.sin(phase * TAU) * 6;          // 呼吸上下 6px
+    ctx.save();
+    ctx.translate(0, bob * scale);
+    drawCharacter();
+    ctx.restore();
+  }
+
+  /* 旧版程序化剪影（保留为参考，不再调用） */
+  function paintProcedural(tick, phase, gaze) {
+    ctx.clearRect(0, 0, W, H);
+    var bob = Math.sin(phase * TAU) * 7;          // 呼吸上下 7px
+    var sway = Math.sin(phase * TAU) * 5;         // 呆毛/鳍耳摆动
+    ctx.save();
+    ctx.translate(0, bob * scale);
+
+    /* ── ④ 大鲸尾（在身后，最粗轮廓）── */
+    var tail = Math.sin(phase * TAU + 0.9) * 9;
+    curve([556, 700], [700, 690 + tail], [742, 590 + tail], W_CONTOUR, COL_INK);
+    curve([742, 590 + tail], [786, 512 + tail], [878, 528 + tail], W_CONTOUR, COL_INK);
+    curve([742, 590 + tail], [806, 578 + tail], [846, 640 + tail], W_CONTOUR, COL_INK);
+    // 尾鳍分叉（结构线）
+    curve([806, 560 + tail], [846, 556 + tail], [852, 598 + tail], W_STRUCT, COL_INK2);
+
+    /* ── ③ 长发轮廓外扩（背后一层）── */
+    curve([452, 316], [352, 396], [364, 596], W_CONTOUR, COL_INK);
+    curve([364, 596], [372, 700], [430, 742], W_CONTOUR, COL_INK);
+    curve([548, 316], [648, 396], [636, 596], W_CONTOUR, COL_INK);
+    curve([636, 596], [628, 700], [570, 742], W_CONTOUR, COL_INK);
+
+    /* ── 裙摆（结构线配额 ③）── */
+    stroke([[452, 690], [500, 706], [548, 690]], W_STRUCT, COL_INK2);
+    curve([452, 690], [428, 780], [452, 872], W_CONTOUR, COL_INK);
+    curve([548, 690], [572, 780], [548, 872], W_CONTOUR, COL_INK);
+    stroke([[452, 872], [500, 884], [548, 872]], W_STRUCT, COL_INK2);
+
+    /* ── 躯干（结构线配额 ②：中线）── */
+    stroke([[500, 452], [500, 706]], W_DETAIL, COL_INK3);
+    stroke([[472, 462], [500, 452], [528, 462]], W_STRUCT, COL_INK2); // 衣领
+
+    /* ── 手臂 ── */
+    curve([470, 476], [438, 546], [456, 604], W_STRUCT, COL_INK);
+    curve([530, 476], [562, 546], [544, 604], W_STRUCT, COL_INK);
+    // 双手间的小碗（道具：白米饭 = signature）
+    stroke([[458, 618], [500, 646], [542, 618]], W_STRUCT, COL_INK);
+    curve([458, 618], [500, 634], [542, 618], W_DETAIL, COL_INK3);
+    stroke([[478, 606], [486, 592], [494, 606]], W_DETAIL, COL_INK3); // 饭尖
+    stroke([[488, 600], [496, 588], [504, 600]], W_DETAIL, COL_INK3);
+
+    /* ── 头部外轮廓 ── */
+    ctx.beginPath();
+    var cx = ox + 500 * scale, cy = oy + 402 * scale, rr = 62 * scale;
+    ctx.ellipse(cx, cy, rr * 0.92, rr, 0, 0, TAU);
+    ctx.lineWidth = W_CONTOUR * scale;
+    ctx.strokeStyle = COL_INK;
+    ctx.stroke();
+
+    /* ── ② 鲸鳍耳（左右各一，剪影特征）── */
+    // 左
+    curve([444, 386 + sway * 0.4], [408, 360 + sway], [418, 414 + sway * 0.5], W_CONTOUR, COL_INK);
+    // 右
+    curve([556, 386 - sway * 0.4], [592, 360 - sway], [582, 414 - sway * 0.5], W_CONTOUR, COL_INK);
+
+    /* ── ① 呆毛（剪影特征，相位滞后 2 帧）── */
+    var sway2 = Math.sin((phase - 2 / 24) * TAU) * 7;
+    curve([500, 340], [498 + sway2, 292 + sway2], [536 + sway2 * 1.4, 268 + sway2 * 1.2], W_CONTOUR, COL_INK);
+
+    /* ── 前发分缝（结构线配额 ①）── */
+    curve([448, 372], [500, 344], [552, 372], W_STRUCT, COL_INK2);
+    curve([500, 344], [494, 388], [498, 430], W_DETAIL, COL_INK3);
+
+    /* ── 眼睛（极简：两条弧 + 一点蓝）── */
+    var ex = gaze * 3;
+    curve([466, 404 + ex], [476, 396 + ex], [486, 404 + ex], W_STRUCT, COL_INK);
+    curve([514, 404 - ex], [524, 396 - ex], [534, 404 - ex], W_STRUCT, COL_INK);
+    // 瞳孔一点蓝（唯一着色处之二）
+    ctx.fillStyle = COL_INK2;
+    ctx.beginPath();
+    ctx.arc(ox + (476 + ex) * scale, oy + (402 + ex) * scale, 2.6 * scale, 0, TAU);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(ox + (524 - ex) * scale, oy + (402 - ex) * scale, 2.6 * scale, 0, TAU);
+    ctx.fill();
+
+    /* ── 发丝高光（唯一着色处之一）── */
+    curve([430, 430], [404, 500], [416, 570], W_DETAIL, COL_INK2);
+    curve([570, 430], [596, 500], [584, 570], W_DETAIL, COL_INK2);
+
+    /* ── 腿 ── */
+    stroke([[480, 884], [478, 942]], W_STRUCT, COL_INK);
+    stroke([[520, 884], [522, 942]], W_STRUCT, COL_INK);
+    stroke([[462, 946], [486, 946]], W_DETAIL, COL_INK2);
+    stroke([[514, 946], [538, 946]], W_DETAIL, COL_INK2);
+
+    ctx.restore();
+  }
+
+  return { paint: paint, resize: resize };
+}
+
+/* ═══════════════════════════════════════════════════════════
+   4. 主循环 —— 两层独立时钟
+   背景：每帧（60fps）绘
+   角色：只在 Math.floor(t*24) 变化时重绘（24fps）
+   两者刻意不同步 → 这是"机器 register vs 人的 register"的视觉对比
+   ═══════════════════════════════════════════════════════════ */
+function main() {
+  mountScreenFinish();
+
+  /* ═─ 首屏文案进场：texts-reveal 触发（skill 规定的唯一动作 = 加 .is-shown）─═ */
+  var copyEl = document.getElementById('copy');
+  if (copyEl) {
+    var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduced) {
+      copyEl.classList.add('is-shown');           // 无障碍：直接就位，不播动画
+    } else if ('IntersectionObserver' in window) {
+      var io = new IntersectionObserver(function (es) {
+        es.forEach(function (e) { if (e.isIntersecting) { copyEl.classList.add('is-shown'); io.disconnect(); } });
+      }, { threshold: 0.15 });
+      io.observe(copyEl);
+    } else {
+      setTimeout(function () { copyEl.classList.add('is-shown'); }, 80);
+    }
+  }
+
+  var flowCanvas = document.getElementById('flow');
+  var charCanvas = document.getElementById('charCanvas');
+  if (!flowCanvas || !charCanvas) return;
+
+  var drawFlow = Flow(flowCanvas);
+  var chr = Character(charCanvas);
+
+  // 把滤镜挂到舞台上（覆盖背景 + 角色 + DOM）
+  var stage = document.getElementById('stage');
+  if (stage) stage.style.filter = 'url(#ds-finish)';
+
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  var last = performance.now() / 1000;
+  var t = 0;
+  var lastTick = -1;
+  var phase = 0;
+  var gaze = 0;
+  var fpsAcc = 0, fpsN = 0, fpsT = 0;
+  var railChar = document.getElementById('railChar');
+
+  // 眨眼：每 4~8s 随机
+  var nextBlink = 4 + Math.random() * 4, blinkLeft = 0;
+
+  function frame(nowMs) {
+    var now = nowMs / 1000;
+    var dt = Math.min(now - last, 0.1);   // 钳制 100ms（切回标签页时防跳帧）
+    last = now;
+    if (reduce) { drawFlow(0); return; }
+
+    t += dt;
+    phase = (t / 3) % 1;                   // 呼吸 3s 一循环
+    gaze = converge(gaze, Math.sin(t * 0.42), dt);
+
+    // —— 背景：每帧绘（60fps）
+    drawFlow(dt);
+
+    // —— 角色：24fps 时间量化 + 同 tick 复用（借鉴 arknights 的写法）
+    var tick = Math.floor(t * 24);
+    if (tick !== lastTick) {
+      lastTick = tick;
+      // 眨眼倒计时只在换帧时推进
+      nextBlink -= 1 / 24;
+      if (nextBlink <= 0) { blinkLeft = 6 / 24; nextBlink = 4 + Math.random() * 4; }
+      if (blinkLeft > 0) blinkLeft -= 1 / 24;
+      chr.paint(tick, phase, blinkLeft > 0 ? 0 : gaze);
+    }
+
+    // —— FPS 遥测（1s 窗口）
+    fpsAcc++; fpsT += dt;
+    if (fpsT >= 1) {
+      if (railChar) railChar.textContent = '24 FPS CHAR';
+      fpsAcc = 0; fpsN++; fpsT = 0;
+    }
+
+    requestAnimationFrame(frame);
+  }
+
+  requestAnimationFrame(frame);
+
+  // 切到后台时暂停，回来时重置时钟（防累积跳帧）
+  document.addEventListener('visibilitychange', function () {
+    if (!document.hidden) { last = performance.now() / 1000; lastTick = -1; }
+  });
+}
+
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', main);
+else main();
+
+})();
+</script>
+</body>
+</html>

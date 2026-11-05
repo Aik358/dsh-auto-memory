@@ -1,0 +1,1258 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Transitions · 真实动画库（本地语料直出）</title>
+<style>
+:root{--bg:#0a0a0a;--fg:#fff;--muted:hsla(0,0%,100%,.56);--brand:#6799fe;--line:hsla(0,0%,100%,.08)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);
+  font:15px/1.6 system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  padding:clamp(20px,4vw,56px)}
+h1{font-size:clamp(24px,3.4vw,40px);font-weight:300;letter-spacing:-.02em;margin:0 0 8px}
+.sub{color:var(--muted);margin:0 0 36px;font-size:14px}
+.grid{display:grid;gap:20px;grid-template-columns:repeat(auto-fill,minmax(320px,1fr))}
+.demo-card{border:1px solid var(--line);border-radius:16px;padding:18px;
+  background:hsla(0,0%,100%,.03);cursor:pointer;transition:border-color 250ms cubic-bezier(.22,1,.36,1)}
+.demo-card:hover{border-color:hsla(228,99%,65%,.4)}
+.demo-card header{display:flex;gap:10px;align-items:baseline;margin-bottom:6px}
+.demo-card code{color:var(--brand);font-size:13px;font-weight:600}
+.trig{color:var(--muted);font-size:11px;letter-spacing:.06em;text-transform:uppercase}
+.when{color:var(--muted);font-size:12px;margin:0 0 16px;line-height:1.5}
+.demo-stage{min-height:96px;display:flex;align-items:center;justify-content:center;
+  padding:16px;border-radius:10px;background:hsla(0,0%,100%,.02);overflow:hidden;position:relative}
+.note{margin-top:36px;padding:14px 16px;border-left:2px solid var(--brand);
+  background:hsla(228,99%,65%,.06);color:var(--muted);font-size:13px;border-radius:0 8px 8px 0}
+/* 让 skill 的 t-* 组件在本页可见（它们自带颜色/尺寸） */
+.demo-stage .t-success-check,.demo-stage [class*="t-badge"]{color:var(--fg)}
+</style>
+</head>
+<body>
+<h1>真实动画库</h1>
+<p class="sub">CSS 逐字取自 <code>.dsh/skills/transitions-motion/references/items/*.json</code> —— 零改写。点击任意卡片重放。</p>
+<div class="grid">
+  <section class="demo-card" data-slug="texts-reveal">
+    <header><code>texts-reveal</code> <span class="trig">toggle .is-shown</span></header>
+    <p class="when">A headline + supporting line that rise into view with staggered blur — hero copy, empty states, onboarding steps. Exit is decoupled: a single quiet fa</p>
+    <div class="demo-stage"><div class="stage-inner p18-stage-inner">
+            <div class="p18-text" data-proto-stagger>
+              <strong class="p18-line p18-line--primary">Pull request opened</strong>
+              <span class="p18-line p18-line--secondary">Review requested from 3 teammates</span>
+            </div>
+          </div>
+          <button type="button" class="btn-animate" data-proto="18">Animate</button></div>
+  </section>
+  <section class="demo-card" data-slug="skeleton-loader-and-reveal">
+    <header><code>skeleton-loader-and-reveal</code> <span class="trig">toggle .is-revealed</span></header>
+    <p class="when">A placeholder that loads then reveals real content — list rows, cards, profile headers. The skeleton pulses, then both layers cross-fade with a matchi</p>
+    <div class="demo-stage"><div class="stage-inner p14-stage-inner">
+            <div class="p14-card" data-proto-skeleton>
+              <div class="p14-skeleton" aria-hidden="true">
+                <div class="p14-sk-avatar"></div>
+                <div class="p14-sk-lines">
+                  <div class="p14-sk-name"></div>
+                  <div class="p14-sk-email"></div>
+                </div>
+              </div>
+              <div class="p14-content">
+                <img class="p14-avatar"
+                     src="assets/avatars/avatar-1.webp"
+                     alt="" width="32" height="32"
+                     loading="lazy" decoding="async">
+                <div class="p14-text">
+                  <span class="p14-name">Jane Cooper</span>
+                  <span class="p14-email"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="bdd7dcd3d893ded2d2cdd8cffdd8c5dcd0cdd1d893ded2d0">[email&#160;protected]</a></span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <button type="button" class="btn-animate" data-proto="14">Animate</button></div>
+  </section>
+  <section class="demo-card" data-slug="notification-badge">
+    <header><code>notification-badge</code> <span class="trig">toggle .is-shown</span></header>
+    <p class="when">A small badge appearing on top of a trigger (bell, inbox, button). Slides in diagonally and pops the dot independently of the trigger so the trigger i</p>
+    <div class="demo-stage"><div class="stage-inner p1-stage-inner">
+            <div class="p1-bell" data-proto-bell data-badge-open="false" aria-label="Notifications">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M6.23612 14C6.70621 14.4149 7.3237 14.6667 8 14.6667C8.6763 14.6667 9.29379 14.4149 9.76388 14M12 5.33333C12 4.27247 11.5786 3.25505 10.8284 2.50491C10.0783 1.75476 9.06087 1.33333 8 1.33333C6.93913 1.33333 5.92172 1.75476 5.17157 2.50491C4.42143 3.25505 4 4.27247 4 5.33333C4 7.39346 3.48031 8.80397 2.89978 9.73694C2.41008 10.5239 2.16524 10.9174 2.17422 11.0272C2.18416 11.1487 2.20991 11.1951 2.30785 11.2677C2.39631 11.3333 2.79506 11.3333 3.59257 11.3333H12.4074C13.2049 11.3333 13.6037 11.3333 13.6921 11.2677C13.7901 11.1951 13.8158 11.1487 13.8258 11.0272C13.8348 10.9174 13.5899 10.5239 13.1002 9.73694C12.5197 8.80397 12 7.39346 12 5.33333Z"/>
+              </svg>
+              <span class="bell-badge" aria-hidden="true"><span class="bell-badge-inner">1</span></span>
+            </div>
+          </div>
+          <button type="button" class="btn-animate" data-proto="1">Animate</button></div>
+  </section>
+  <section class="demo-card" data-slug="tabs-sliding">
+    <header><code>tabs-sliding</code> <span class="trig">click 药丸</span></header>
+    <p class="when">A segmented control / tab bar where the active pill slides between options — view switchers, filter segments, small mutually-exclusive button sets. JS</p>
+    <div class="demo-stage"><div class="stage-inner p16-stage-inner">
+            <div class="p16-tabs" data-proto-tabs role="tablist" aria-label="Mode">
+              <span class="p16-indicator" aria-hidden="true"></span>
+              <button type="button" class="p16-tab" role="tab" aria-selected="true">Plan</button>
+              <button type="button" class="p16-tab" role="tab" aria-selected="false">Debug</button>
+              <button type="button" class="p16-tab" role="tab" aria-selected="false">Ask</button>
+            </div>
+          </div></div>
+  </section>
+  <section class="demo-card" data-slug="accordion">
+    <header><code>accordion</code> <span class="trig">toggle [data-open]</span></header>
+    <p class="when">A disclosure / accordion / collapsible section whose panel grows and shrinks in height when toggled, with the header chevron flipping between a downwa</p>
+    <div class="demo-stage"><div class="stage-inner p21-stage-inner">
+            <div class="p21-accordion" id="p21-accordion">
+              <div class="p21-item" data-open="false">
+                <button type="button" class="p21-head" aria-expanded="false">
+                  <span class="p21-title">Appearance</span>
+                  <span class="p21-chevron" aria-hidden="true">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M4 6.5L8 10.5L12 6.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </span>
+                </button>
+                <div class="p21-panel">
+                  <div class="p21-panel-inner">
+                    <div class="p21-rows">
+                      <div class="p21-row"><span class="p21-bar"></span><span class="p21-bar"></span></div>
+                      <div class="p21-row"><span class="p21-bar"></span><span class="p21-bar"></span></div>
+                      <div class="p21-row"><span class="p21-bar"></span><span class="p21-bar"></span></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div></div>
+  </section>
+  <section class="demo-card" data-slug="icon-swap">
+    <header><code>icon-swap</code> <span class="trig">toggle .is-shown</span></header>
+    <p class="when">Cross-fading two icons in the same slot — hamburger ↔ close, sun ↔ moon, play ↔ pause, expand ↔ collapse. Both icons stay in the DOM stacked in the sa</p>
+    <div class="demo-stage"><div class="stage-inner p5-stage-inner">
+            <div class="p5-icon-wrap" data-proto-icon data-animated="false">
+              <div class="icon icon-menu">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                  <path d="M4 7H20"  stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
+                  <path d="M4 12H20" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
+                  <path d="M4 17H20" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
+                </svg>
+              </div>
+              <div class="icon icon-close">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                  <path d="M6 6L18 18" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
+                  <path d="M18 6L6 18" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
+                </svg>
+              </div>
+            </div>
+          </div>
+          <button type="button" class="btn-animate" data-proto="5">Animate</button></div>
+  </section>
+  <section class="demo-card" data-slug="success-check">
+    <header><code>success-check</code> <span class="trig">data-state="in"</span></header>
+    <p class="when">Confirming a completed action — payment processed, file uploaded, message sent, form saved. The icon fades in, rotates upright, settles with a Y-bob, </p>
+    <div class="demo-stage"><div class="stage-inner p10-stage-inner">
+            <div class="p10-check" data-proto-check data-state="out" aria-hidden="true">
+              <!-- White check only — the disc itself is rendered by
+                   `.p10-check` (background + box-shadow). The path is
+                   stroked over it via stroke-dashoffset (see CSS). -->
+              <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <path d="M17.2803 24.9602L21.7603 29.7602L30.7203 20.1602"
+                      stroke="#ffffff"
+                      stroke-width="3"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"/>
+              </svg>
+            </div>
+          </div>
+          <button type="button" class="btn-animate" data-proto="10">Animate</button></div>
+  </section>
+  <section class="demo-card" data-slug="error-state-shake">
+    <header><code>error-state-shake</code> <span class="trig">移除→reflow→重加 .is-shaking</span></header>
+    <p class="when">Form validation feedback — invalid email, wrong password, missing required field, mismatched confirmation. The input shakes left/right with overshoot,</p>
+    <div class="demo-stage"><div class="stage-inner p12-stage-inner">
+            <div class="p12-input-wrap" data-proto-shake>
+              <div class="p12-input">
+                <input class="p12-input-el"
+                       type="text" value="John"
+                       spellcheck="false" autocomplete="off"
+                       aria-label="Name">
+              </div>
+              <p class="p12-error-msg">Please enter a valid email.</p>
+            </div>
+          </div>
+          <button type="button" class="btn-animate" data-proto="12">Animate</button></div>
+  </section>
+  <section class="demo-card" data-slug="toast-open-close">
+    <header><code>toast-open-close</code> <span class="trig">toggle .is-shown</span></header>
+    <p class="when">Toasts, snackbars, and transient confirmations that rise into view from the bottom edge — "Saved", "Copied", "Message sent". The toast translates up w</p>
+    <div class="demo-stage"><div class="stage-inner">
+            <div class="p22-toast" data-proto-toast role="status" aria-hidden="true">
+              <span class="p22-avatar" aria-hidden="true"></span>
+              <span class="p22-bar" aria-hidden="true"></span>
+            </div>
+          </div>
+          <button type="button" class="btn-animate" data-proto="22">Toggle</button></div>
+  </section>
+  <section class="demo-card" data-slug="thinking-states">
+    <header><code>thinking-states</code> <span class="trig">轮播</span></header>
+    <p class="when">An AI status line that narrates what the agent is doing — "Setting up a workplace", "Running a command", "Browsing files". The line shimmers while a s</p>
+    <div class="demo-stage"><div class="stage-inner">
+            <span class="p28-swap" data-proto-think role="status"><span class="p28-sizer" aria-hidden="true">Setting up a workplace</span><span class="p28-text" data-text="Setting up a workplace">Setting up a workplace</span></span>
+          </div>
+          <button type="button" class="btn-animate" data-proto="28">Play</button></div>
+  </section>
+  <section class="demo-card" data-slug="streaming-text">
+    <header><code>streaming-text</code> <span class="trig">逐词 .is-in</span></header>
+    <p class="when">Model output arriving word by word — chat responses, AI completions, any streamed paragraph. JS wraps each word in a span; words rest visible, and a r</p>
+    <div class="demo-stage"><div class="stage-inner">
+            <div class="p30-block" data-proto-stream aria-hidden="true">Animating mask-position never composites — it repaints the element. And the element being repainted sits inside a displacement chain, so the whole filter re-executes on the CPU each frame. That compounds: it isn't one cost, it's the repaint feeding the filter.</div>
+          </div>
+          <button type="button" class="btn-animate" data-proto="30">Animate</button></div>
+  </section>
+  <section class="demo-card" data-slug="matrix-dot-loader">
+    <header><code>matrix-dot-loader</code> <span class="trig">自动</span></header>
+    <p class="when">Tiny inline loaders built from a 4×4 matrix of 2px dots. All four variants share one colour-pulse keyframe; a per-dot delay table gives each its motio</p>
+    <div class="demo-stage"><div class="stage-inner stage-inner--no-btn">
+            <div class="p33-row" aria-hidden="true">
+              <div class="p33-loader" data-variant="scan"></div>
+              <div class="p33-loader" data-variant="twinkle"></div>
+              <div class="p33-loader" data-variant="orbit" data-rounded="true"></div>
+              <div class="p33-loader" data-variant="pulse" data-rounded="true"></div>
+            </div>
+          </div></div>
+  </section>
+  <section class="demo-card" data-slug="spinner-check-morph">
+    <header><code>spinner-check-morph</code> <span class="trig">自动</span></header>
+    <p class="when">Spinner pops into a drawn check</p>
+    <div class="demo-stage"><div class="stage-inner stage-inner--no-btn">
+            <div class="pv5j">
+              <span class="pv3p" id="pv3p">
+              <span class="pv4t" id="pv4t" data-state="spinning">
+                <span class="pv5d" aria-hidden="true"></span>
+                <span class="pv5g" aria-hidden="true"></span>
+                <span class="pv5b" aria-hidden="true"></span>
+                <span class="pv5a" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <!-- Exact Figma check (2459:1918), disc-local coords. -->
+                    <path class="pv4u" d="M8 12.5L10.8 15.5L16.4 9.5" />
+                  </svg>
+                </span>
+              </span>
+              </span>
+              <span class="pv4w">
+                <span class="pv4x">Build demo page</span>
+                <span class="pv5k">8 subtasks</span>
+              </span>
+            </div>
+          </div>
+          <button type="button" class="btn-animate" id="pv5h" data-proto="pro9">Animate</button></div>
+  </section></div>
+<div class="note">
+  本页由 <code>tools/build-motion.mjs</code> 生成：读 skill 语料 → 注入 verbatim CSS → 出静态页。<br>
+  token 刻度来自 <code>references/tokens.css</code>，未改动一个数值。
+</div>
+<style>/* ============================================================
+   Transitions.dev motion tokens
+   用法：整块复制进项目全局样式表一次。之后所有动效引用 var(--duration-*) / var(--ease-*)。
+   判据：按「用途」选 token，不按「数值就近」。
+   ============================================================ */
+:root {
+  /* ── 时长 ────────────────────────────────────────────── */
+  --duration-stagger:    40ms;   /* 逐项错开偏移 */
+  --duration-micro:      80ms;   /* tooltip 意图延迟、抖动小段、大错开 */
+  --duration-quick:     150ms;   /* 弹窗/下拉关闭、文字切换、tooltip 出现 */
+  --duration-fast:      250ms;   /* 图标切换、下拉/弹窗打开、标签滑动、页面前进 */
+  --duration-medium:    350ms;   /* 面板关闭、Toast 关闭 */
+  --duration-slow:      400ms;   /* 面板打开、骨架屏内容揭示、输入框清空 */
+  --duration-very-slow: 500ms;   /* 强调时刻、徽标出现、文字揭示、成功打勾 */
+
+  /* ── 缓动 ────────────────────────────────────────────── */
+  --ease-smooth-out:     cubic-bezier(0.22, 1, 0.36, 1);    /* 默认：开/关、滑动、尺寸、位移 */
+  --ease-in-out:         ease-in-out;                        /* 图标切换、文字切换/揭示、骨架揭示 */
+  --ease-out:            ease-out;                           /* tooltip 开与关 */
+  --ease-linear:         linear;                             /* 微光、骨架脉冲、加载旋转 */
+  --ease-bounce:         cubic-bezier(0.34, 1.36, 0.64, 1);  /* 徽标弹出 */
+  --ease-bounce-strong:  cubic-bezier(0.34, 3.85, 0.64, 1);  /* 弹性悬停退出（头像归位） */
+
+  /* ── 位移（非静止态，终态为 0）────────────────────────── */
+  --distance-micro:   4px;   /* 文字切换 */
+  --distance-small:   6px;   /* 抖动小段 */
+  --distance-base:    8px;   /* 徽标斜向揭示、页面前进、抖动大段 */
+  --distance-medium: 12px;   /* 文字揭示 */
+  --distance-large:  30px;   /* 打勾徽标出现 */
+
+  /* ── 缩放（非静止态，终态为 1）────────────────────────── */
+  --scale-large:  0.96;  /* 弹窗开/关 */
+  --scale-medium: 0.97;  /* 下拉打开 */
+  --scale-small:  0.98;  /* tooltip 打开 */
+  --scale-tiny:   0.99;  /* 下拉关闭 */
+
+  /* ── 模糊（非静止态，终态为 0）────────────────────────── */
+  --blur-small:  2px;  /* 面板揭示、图标切换、文字切换、骨架揭示、数字弹入 */
+  --blur-medium: 3px;  /* 页面前进、文字揭示 */
+  --blur-large:  8px;  /* 成功打勾 */
+}
+
+/* 全局 reduced-motion 闸门 —— 新增动效时项目里必须有这一条 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+
+
+/* ══ texts-reveal（verbatim from references/items/texts-reveal.json）══ */
+/* Transitions.dev — Texts reveal */
+
+/*
+  Usage:
+    <div class="t-stagger">
+      <strong class="t-stagger-line t-stagger-line--1">…</strong>
+      <span class="t-stagger-line t-stagger-line--2">…</span>
+    </div>
+
+  State:
+    - Add `.is-shown` to play the staggered entrance.
+    - Add `.is-hiding` (and remove `.is-shown`) to fade
+      out in place over a short 200ms — independent of the
+      entrance timing so the exit doesn't replay the stagger.
+
+  Add more lines by adding `.t-stagger-line--N` with
+  `transition-delay: calc(var(--stagger-stagger) * (N - 1))`.
+*/
+
+:root {
+  --stagger-dur: 500ms;
+  --stagger-distance: 12px;
+  --stagger-stagger: 40ms;
+  --stagger-blur: 3px;
+  --stagger-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Lines start translated down + blurred + invisible; .is-shown
+   on the parent flips them to their resting state. The second
+   line's transition-delay holds it back by --stagger-stagger
+   so the eye lands on the headline first. */
+.t-stagger-line {
+  display: block;
+  opacity: 0;
+  transform: translateY(var(--stagger-distance));
+  filter: blur(var(--stagger-blur));
+  transition:
+    opacity   var(--stagger-dur) var(--stagger-ease),
+    transform var(--stagger-dur) var(--stagger-ease),
+    filter    var(--stagger-dur) var(--stagger-ease);
+  will-change: transform, opacity, filter;
+}
+.t-stagger-line--2 { transition-delay: var(--stagger-stagger); }
+
+.t-stagger.is-shown .t-stagger-line {
+  opacity: 1;
+  transform: translateY(0);
+  filter: blur(0);
+}
+/* Exit decouples from the stagger: same fade for every line,
+   no Y return, no blur — so the disappearance reads as a
+   single quiet fade instead of a reverse reveal. */
+.t-stagger.is-hiding .t-stagger-line {
+  opacity: 0;
+  transform: translateY(0);
+  filter: blur(0);
+  transition:
+    opacity 200ms ease,
+    transform 0s linear,
+    filter 0s linear;
+  transition-delay: 0s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .t-stagger-line { transition: none !important; }
+}
+
+/* ══ skeleton-loader-and-reveal（verbatim from references/items/skeleton-loader-and-reveal.json）══ */
+/* Transitions.dev — Skeleton loader and reveal */
+
+/*
+  Usage:
+    <div class="t-skel" data-state="loading">
+      <div class="t-skel-skeleton is-pulsing">…</div>
+      <div class="t-skel-content">…</div>
+    </div>
+
+  State:
+    - Mount with `.is-pulsing` on the skeleton so it pulses
+      --pulse-count times.
+    - When data arrives, add `.is-revealed` to .t-skel — the
+      skeleton fades out + blurs and the content fades in +
+      un-blurs over --reveal-dur.
+    - To replay the loading state without animating the
+      reverse: add `.is-resetting` to .t-skel, remove
+      `.is-revealed`, force a reflow, then drop `.is-resetting`.
+
+  Bring your own avatar / text / wrapping. The skeleton stays
+  in the same flex slot as the content so the swap is
+  layout-free.
+*/
+
+:root {
+  --pulse-dur: 1000ms;
+  --pulse-count: 1;
+  --pulse-min: 0.5;
+  --reveal-dur: 400ms;
+  --reveal-blur: 2px;
+  --reveal-ease: ease-in-out;
+}
+
+/* The wrap stacks two layers on the same coordinates. The
+   skeleton owns the cold pulse + the fade-out side of the
+   reveal; the content owns the fade-in side. They share the
+   same duration / ease so the swap reads as one motion. */
+.t-skel { position: relative; }
+.t-skel-skeleton,
+.t-skel-content {
+  position: absolute;
+  inset: 0;
+}
+
+.t-skel-skeleton {
+  z-index: 1;
+  opacity: 1;
+  filter: blur(0);
+  transition:
+    opacity var(--reveal-dur) var(--reveal-ease),
+    filter  var(--reveal-dur) var(--reveal-ease);
+}
+.t-skel-content {
+  z-index: 2;
+  opacity: 0;
+  filter: blur(var(--reveal-blur));
+  transition:
+    opacity var(--reveal-dur) var(--reveal-ease),
+    filter  var(--reveal-dur) var(--reveal-ease);
+}
+.t-skel.is-revealed .t-skel-skeleton {
+  opacity: 0;
+  filter: blur(var(--reveal-blur));
+}
+.t-skel.is-revealed .t-skel-content {
+  opacity: 1;
+  filter: blur(0);
+}
+/* Snap-back when replaying: kill transitions so the reverse
+   (revealed → skeleton) is instant. Drop `.is-resetting`
+   after a forced reflow and the next reveal animates again. */
+.t-skel.is-resetting .t-skel-skeleton,
+.t-skel.is-resetting .t-skel-content {
+  transition: none !important;
+}
+
+/* Pulse: place the animation on the bar/avatar children, not
+   on the skeleton itself, so the skeleton's opacity / filter
+   stay free for the cross-fade transition above. */
+.t-skel-skeleton.is-pulsing > * {
+  animation: t-skel-pulse var(--pulse-dur) ease-in-out var(--pulse-count);
+}
+@keyframes t-skel-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: var(--pulse-min); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .t-skel-skeleton, .t-skel-content {
+    transition: none !important;
+  }
+  .t-skel-skeleton.is-pulsing > * { animation: none !important; }
+}
+
+/* ══ notification-badge（verbatim from references/items/notification-badge.json）══ */
+/* Transitions.dev — Notification badge */
+
+/*
+  Usage:
+    <!-- Place .t-badge inside your trigger (bell icon, button, etc.). -->
+    <!-- The trigger must be position: relative so .t-badge can anchor to it. -->
+    <button class="your-trigger" style="position: relative">
+      <!-- your icon / trigger contents -->
+      <span class="t-badge" data-open="false">
+        <span class="t-badge-dot">1</span>
+      </span>
+    </button>
+
+  State: toggle data-open="true" / "false" on .t-badge.
+  Only the badge slides + pops — the trigger itself stays put.
+*/
+
+:root {
+  --badge-slide-dur: 260ms;
+  --badge-pop-dur: 500ms;
+  --badge-pop-close-dur: 180ms;
+  --badge-fade-dur: 400ms;
+  --badge-fade-close-dur: 180ms;
+  --badge-blur: 2px;
+  --badge-offset-x: -8.2px;
+  --badge-offset-y: 12.4px;
+  --badge-slide-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --badge-pop-ease: cubic-bezier(0.34, 1.36, 0.64, 1);
+  --badge-close-ease: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes t-badge-slide-in {
+  from { transform: translate(var(--badge-offset-x), var(--badge-offset-y)); }
+  to   { transform: translate(0, 0); }
+}
+
+/* .t-badge is the absolutely-positioned wrapper for the dot.
+   Adjust top/right (or left/bottom) to anchor it on your trigger. */
+.t-badge {
+  position: absolute;
+  top: -6px;
+  right: -8px;
+  pointer-events: none;
+  will-change: transform;
+}
+.t-badge[data-open="true"] {
+  animation: t-badge-slide-in var(--badge-slide-dur) var(--badge-slide-ease);
+}
+
+.t-badge-dot {
+  display: block;
+  transform-origin: center;
+  transform: scale(1);
+  opacity: 1;
+  filter: blur(0);
+  transition:
+    transform var(--badge-pop-dur)  var(--badge-pop-ease),
+    opacity   var(--badge-fade-dur) var(--badge-pop-ease),
+    filter    var(--badge-pop-dur)  var(--badge-pop-ease);
+  will-change: transform, opacity, filter;
+}
+.t-badge[data-open="false"] .t-badge-dot {
+  transform: scale(0);
+  opacity: 0;
+  filter: blur(var(--badge-blur));
+  transition:
+    transform var(--badge-pop-close-dur)  var(--badge-close-ease),
+    opacity   var(--badge-fade-close-dur) var(--badge-close-ease),
+    filter    var(--badge-pop-close-dur)  var(--badge-close-ease);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .t-badge, .t-badge-dot { animation: none !important; transition: none !important; }
+}
+
+/* ══ tabs-sliding（verbatim from references/items/tabs-sliding.json）══ */
+/* Transitions.dev — Tabs sliding */
+
+/*
+  Usage:
+    <div class="t-tabs" role="tablist">
+      <span class="t-tabs-pill" aria-hidden="true"></span>
+      <button class="t-tab" role="tab" aria-selected="true">Plan</button>
+      <button class="t-tab" role="tab" aria-selected="false">Debug</button>
+      <button class="t-tab" role="tab" aria-selected="false">Ask</button>
+    </div>
+
+  Wire-up:
+    On click, flip aria-selected on each tab and write the
+    active tab's offsetLeft / offsetWidth onto the pill:
+      pill.style.transform = `translateX(${tab.offsetLeft}px)`;
+      pill.style.width     = `${tab.offsetWidth}px`;
+    On first paint and resize, write the same values WITHOUT
+    a transition (suspend with `transition: none`, force a
+    reflow, restore) so the pill snaps to position before any
+    animation can run.
+*/
+
+:root {
+  --tabs-dur: 250ms;
+  --tabs-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --tabs-text-muted: rgba(15, 15, 15, 0.8);
+  --tabs-text-active: #0f0f0f;
+  --tabs-bar-bg: #f1f1f1;
+  --tabs-pill-bg: #ffffff;
+}
+
+/* The bar is just a flex container with padding for the pill
+   to sit inside. Tabs sit on z-index: 1, the pill on z-index: 0,
+   so labels read above the pill background. */
+.t-tabs {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px;
+  border-radius: 48px;
+  background: var(--tabs-bar-bg);
+}
+.t-tab {
+  position: relative;
+  appearance: none;
+  border: 0;
+  background: transparent;
+  height: 30px;
+  padding: 4px 12px;
+  color: var(--tabs-text-muted);
+  cursor: pointer;
+  border-radius: 48px;
+  z-index: 1;
+  transition: color var(--tabs-dur) var(--tabs-ease);
+}
+.t-tab:not([aria-selected="true"]):hover,
+.t-tab[aria-selected="true"] {
+  color: var(--tabs-text-active);
+}
+
+/* The pill: width + transform are written inline by JS so
+   the transition tweens between the previous and next
+   measured positions. */
+.t-tabs-pill {
+  position: absolute;
+  top: 3px;
+  left: 0;
+  height: 30px;
+  width: 0;
+  background: var(--tabs-pill-bg);
+  border-radius: 48px;
+  transform: translateX(0);
+  transition:
+    transform var(--tabs-dur) var(--tabs-ease),
+    width     var(--tabs-dur) var(--tabs-ease);
+  will-change: transform, width;
+  z-index: 0;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .t-tabs-pill, .t-tab { transition: none !important; }
+}
+
+/* ══ accordion（verbatim from references/items/accordion.json）══ */
+/* Transitions.dev — Accordion expand */
+
+/*
+  Usage:
+    <div class="t-acc" data-open="false">
+      <button class="t-acc-head" aria-expanded="false">
+        Title
+        <span class="t-acc-chevron">
+          <svg viewBox="0 0 16 16"><path d="M4 6.5L8 10.5L12 6.5"/></svg>
+        </span>
+      </button>
+      <div class="t-acc-panel"><div class="t-acc-panel-inner"> … </div></div>
+    </div>
+
+  Toggle `data-open` on the item. The panel animates via
+  grid-template-rows 0fr ↔ 1fr (no JS height measuring) and
+  the chevron flips vertically (scaleY) from a "v" to a "^".
+*/
+
+:root {
+  --acc-expand: 250ms;
+  --acc-collapse: 250ms;
+  --acc-chevron: 250ms;
+  --acc-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* grid-template-rows 0fr → 1fr gives a clean height animation
+   with no JS measurement; the inner element clips overflow. */
+.t-acc-panel {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--acc-collapse) var(--acc-ease);
+}
+.t-acc[data-open="true"] .t-acc-panel {
+  grid-template-rows: 1fr;
+  transition: grid-template-rows var(--acc-expand) var(--acc-ease);
+}
+.t-acc-panel-inner {
+  overflow: hidden;
+  opacity: 0;
+  filter: blur(2px);
+  transition:
+    opacity var(--acc-collapse) var(--acc-ease),
+    filter var(--acc-collapse) var(--acc-ease);
+}
+.t-acc[data-open="true"] .t-acc-panel-inner {
+  opacity: 1;
+  filter: blur(0);
+  transition:
+    opacity var(--acc-expand) var(--acc-ease),
+    filter var(--acc-expand) var(--acc-ease);
+}
+/* Flip the chevron vertically to turn the "v" into a "^".
+   scaleY(-1) about the centre passes through a flat line at
+   the midpoint (same look as a `d:` path morph) but animates
+   in every browser, unlike CSS `d:` morphing (Chromium only).
+   The chevron path is symmetric about the 16x16 viewBox
+   centre, so the flip lands exactly on the "^"; non-scaling
+   -stroke keeps the stroke width constant through the flip. */
+.t-acc-chevron {
+  display: inline-flex;
+  transform: scaleY(1);
+  transform-origin: center;
+  transition: transform var(--acc-chevron) var(--acc-ease);
+}
+.t-acc-chevron path { vector-effect: non-scaling-stroke; }
+.t-acc[data-open="true"] .t-acc-chevron {
+  transform: scaleY(-1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .t-acc-panel, .t-acc-panel-inner, .t-acc-chevron {
+    transition: none !important;
+  }
+}
+
+/* ══ icon-swap（verbatim from references/items/icon-swap.json）══ */
+/* Transitions.dev — Icon swap */
+
+/*
+  Usage:
+    <div class="t-icon-swap" data-state="a">
+      <span class="t-icon" data-icon="a">…</span>
+      <span class="t-icon" data-icon="b">…</span>
+    </div>
+
+  State: set data-state="a" or "b" on .t-icon-swap.
+  The matching .t-icon fades in; the other fades out with blur
+  and scale.
+*/
+
+:root {
+  --icon-swap-dur: 250ms;
+  --icon-swap-blur: 2px;
+  --icon-swap-start-scale: 0.25;
+  --icon-swap-ease: ease-in-out;
+}
+
+.t-icon-swap {
+  position: relative;
+  display: inline-grid;
+}
+.t-icon-swap .t-icon {
+  grid-area: 1 / 1;
+  transition:
+    opacity   var(--icon-swap-dur) var(--icon-swap-ease),
+    filter    var(--icon-swap-dur) var(--icon-swap-ease),
+    transform var(--icon-swap-dur) var(--icon-swap-ease);
+  will-change: opacity, filter, transform;
+}
+.t-icon-swap[data-state="a"] .t-icon[data-icon="a"],
+.t-icon-swap[data-state="b"] .t-icon[data-icon="b"] {
+  opacity: 1;
+  filter: blur(0);
+  transform: scale(1);
+}
+.t-icon-swap[data-state="a"] .t-icon[data-icon="b"],
+.t-icon-swap[data-state="b"] .t-icon[data-icon="a"] {
+  opacity: 0;
+  filter: blur(var(--icon-swap-blur));
+  transform: scale(var(--icon-swap-start-scale));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .t-icon-swap .t-icon { transition: none !important; }
+}
+
+/* ══ success-check（verbatim from references/items/success-check.json）══ */
+/* Transitions.dev — Success check */
+
+/*
+  Usage:
+    <!-- Wrap your icon (SVG, image, anything) in .t-success-check.
+         The wrapper drives fade + rotate + blur + Y-bob; if your
+         icon is an SVG <path>, it gets the stroke-draw animation.
+         Bring your own icon size / colors. -->
+    <span class="t-success-check" data-state="out" aria-hidden="true">
+      <svg viewBox="0 0 48 48" fill="none">
+        <!-- your icon path(s) here -->
+      </svg>
+    </span>
+
+  Trigger:
+    - Cold load is data-state="out" (opacity 0; no animation).
+    - Show: set data-state="in" (fade + rotate + blur + Y-bob
+      + path draw run in parallel).
+
+  Snippet covers the appear transition only — bring your own
+  hide behavior (e.g. unmount, opacity:0, or a custom exit).
+*/
+
+:root {
+  --check-opacity-dur: 500ms;
+  --check-rotate-dur: 500ms;
+  --check-rotate-from: 80deg;
+  --check-bob-dur: 500ms;
+  --check-y-amount: 40px;
+  --check-blur-dur: 500ms;
+  --check-blur-from: 10px;
+  --check-path-dur: 500ms;
+  --check-path-delay: 80ms;
+  --check-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --check-ease-opacity: cubic-bezier(0.22, 1, 0.36, 1);
+  --check-ease-rotate: cubic-bezier(0.22, 1, 0.36, 1);
+  --check-ease-bob: cubic-bezier(0.34, 1.35, 0.64, 1);
+  --check-ease-path: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Wrapper drives the appear animation; it doesn't own any
+   sizing or color so you can drop in any icon. */
+.t-success-check {
+  display: inline-block;
+  transform-origin: center;
+  opacity: 0;
+  will-change: transform, opacity, filter;
+}
+/* overflow: visible keeps the stroke from clipping while it
+   draws; display: block kills the inline whitespace under SVGs. */
+.t-success-check svg { display: block; overflow: visible; }
+/* Stroke-draw setup. Replace 20 with the result of
+   path.getTotalLength() for your path; round caps mean any
+   sub-pixel overshoot is invisible. */
+.t-success-check svg path {
+  stroke-dasharray: 20;
+  stroke-dashoffset: 20;
+}
+
+.t-success-check[data-state="in"] {
+  animation:
+    t-check-fade   var(--check-opacity-dur) var(--check-ease-opacity) forwards,
+    t-check-rotate var(--check-rotate-dur)  var(--check-ease-rotate)  forwards,
+    t-check-blur   var(--check-blur-dur)    var(--check-ease-out)     forwards,
+    t-check-bob    var(--check-bob-dur)     var(--check-ease-bob)     forwards;
+}
+.t-success-check[data-state="in"] svg path {
+  animation: t-check-draw var(--check-path-dur) var(--check-ease-path) var(--check-path-delay, 0ms) forwards;
+}
+
+@keyframes t-check-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes t-check-rotate {
+  from { transform: rotate(var(--check-rotate-from)); }
+  to   { transform: rotate(0deg); }
+}
+@keyframes t-check-blur {
+  from { filter: blur(var(--check-blur-from)); }
+  to   { filter: blur(0); }
+}
+@keyframes t-check-bob {
+  from { translate: 0 var(--check-y-amount); }
+  to   { translate: 0 0; }
+}
+@keyframes t-check-draw { to { stroke-dashoffset: 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .t-success-check { animation: none !important; opacity: 1; }
+  .t-success-check svg path { animation: none !important; stroke-dashoffset: 0 !important; }
+}
+
+/* ══ error-state-shake（verbatim from references/items/error-state-shake.json）══ */
+/* Transitions.dev — Error state shake */
+
+/*
+  Usage:
+    <!-- Apply .t-input-wrap to your wrapper, .t-input to the
+         element that should shake (your input field, its
+         bordered wrapper — whatever owns the visible border),
+         and .t-error-msg to the message you want to reveal.
+         Bring your own sizing, padding, border colors, and
+         typography. -->
+    <div class="t-input-wrap">
+      <div class="t-input">
+        <input type="text">
+      </div>
+      <p class="t-error-msg">Please enter a valid email.</p>
+    </div>
+
+  Trigger:
+    - Add `.is-error` to .t-input-wrap and .t-input. Your
+      own border-color rules drive the visible color; this
+      stylesheet only owns the tween.
+    - Restart the shake by removing `.is-shaking` from
+      .t-input, forcing a reflow, then re-adding it.
+    - Optional: after --revert-hold ms, drop both
+      `.is-error` classes so border + message fade back
+      to neutral over --revert-dur.
+
+  Per-segment ease: each keyframe stop carries its own
+  animation-timing-function so each leg follows the Figma
+  cubic-bezier curve independently.
+*/
+
+:root {
+  --shake-distance: 6px;
+  --shake-overshoot: 4px;
+  --shake-dur-a: 80ms;
+  --shake-dur-b: 60ms;
+  --shake-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --revert-hold: 3000ms;
+  --revert-dur: 280ms;
+}
+
+/* Border-color tween. Define your input's default / focused
+   / error border-color in your own component CSS — this rule
+   only owns the interpolation. Use a constant border-width
+   across states so the tween never shifts inner content. */
+.t-input {
+  transition: border-color 150ms ease-out;
+  will-change: transform;
+}
+.t-input.is-error {
+  /* Error border auto-reverts on the hold timer, so the
+     fade-out uses the slower revert duration (matches the
+     message fade). */
+  transition: border-color var(--revert-dur, 280ms) ease-out;
+}
+
+/* Error message reveal. Visibility is delayed by --revert-dur
+   on hide so the message stays painted for the full opacity
+   fade-out. Entering .is-error drops the delay to 0 so the
+   message becomes visible immediately. */
+.t-error-msg {
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity    var(--revert-dur, 280ms) ease-out,
+    visibility 0s linear var(--revert-dur, 280ms);
+}
+.t-input-wrap.is-error .t-error-msg {
+  opacity: 1;
+  visibility: visible;
+  transition:
+    opacity    var(--revert-dur, 280ms) ease-out,
+    visibility 0s linear 0s;
+}
+
+/* Multi-segment keyframe with per-stop easing so each leg
+   of the shake follows its own cubic-bezier independently.
+   %-stops are cumulative durations as a fraction of the
+   total (80, 60, 80, 60 = 280ms): 28.57%, 57.14%, 78.57%,
+   100%. Recompute if any segment duration changes. */
+.t-input.is-shaking {
+  animation: t-input-shake calc(
+      var(--shake-dur-a) * 2 + var(--shake-dur-b) * 2
+    ) linear;
+}
+@keyframes t-input-shake {
+  0%      { transform: translateX(0);                                 animation-timing-function: var(--shake-ease); }
+  28.57%  { transform: translateX(var(--shake-distance));             animation-timing-function: var(--shake-ease); }
+  57.14%  { transform: translateX(calc(var(--shake-distance) * -1)); animation-timing-function: var(--shake-ease); }
+  78.57%  { transform: translateX(var(--shake-overshoot));            animation-timing-function: var(--shake-ease); }
+  100%    { transform: translateX(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .t-input { animation: none !important; transform: none !important; }
+}
+
+/* ══ toast-open-close（verbatim from references/items/toast-open-close.json）══ */
+/* Transitions.dev — Toast open / close */
+
+/*
+  Usage:
+    <div class="t-toast" data-open="false"> … </div>
+
+  Toggle `.is-open` on the toast. It rises from below with a
+  fade + cross-blur + slight scale; opening uses the slower
+  open clock, the resting (closed) transition uses the faster
+  close clock, so a single class gives the open/close asymmetry.
+*/
+
+:root {
+  --toast-open: 350ms;
+  --toast-close: 250ms;
+  --toast-distance: 16px;
+  --toast-blur: 2px;
+  --toast-scale: 0.97;
+  --toast-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.t-toast {
+  opacity: 0;
+  transform: translateY(var(--toast-distance)) scale(var(--toast-scale));
+  filter: blur(var(--toast-blur));
+  will-change: transform, opacity, filter;
+  transition:
+    opacity var(--toast-close) var(--toast-ease),
+    transform var(--toast-close) var(--toast-ease),
+    filter var(--toast-close) var(--toast-ease);
+}
+.t-toast.is-open {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  filter: blur(0);
+  transition:
+    opacity var(--toast-open) var(--toast-ease),
+    transform var(--toast-open) var(--toast-ease),
+    filter var(--toast-open) var(--toast-ease);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .t-toast { transition: none !important; }
+}
+
+/* ══ thinking-states（verbatim from references/items/thinking-states.json）══ */
+/* Transitions.dev — Thinking states */
+
+/*
+  Usage:
+    <span class="t-think" role="status">
+      <span class="t-think-sizer" aria-hidden="true">Longest state here</span>
+      <span class="t-think-text" data-text="Thinking…">Thinking…</span>
+    </span>
+
+  The shimmer runs on ::before (content: attr(data-text),
+  background-clip: text) while a state holds. JS swaps the line
+  every --think-hold: exit the outgoing copy (.is-exit) while
+  the incoming copy enters from below (.is-enter-start →
+  reflow → release), held back by --think-gap. Keep textContent
+  and data-text in sync so the shimmer copy always matches the
+  visible line.
+
+  The hidden sizer holds your longest state and is what gives
+  the box its width: lines are absolutely positioned across
+  that width, so every state centres in a box that never
+  resizes mid-swap. Drop the sizer if the line should hug
+  whatever state is showing, and set text-align: left on
+  .t-think if the states should share a left edge instead.
+*/
+
+:root {
+  --think-hold: 2000ms;
+  --think-swap: 150ms;
+  --think-gap: 50ms;
+  --think-distance: 8px;
+  --think-blur: 2px;
+  --think-shimmer: 2000ms;
+  --think-base: #7c7c7c;
+  --think-highlight: #0d0d0d;
+  --think-ease: ease-in-out;
+}
+
+/* Set your type on .t-think: the sizer only reports the right
+   width if it is set in the same font as the line. */
+.t-think { position: relative; display: inline-block; text-align: center; }
+.t-think-sizer { display: block; visibility: hidden; white-space: nowrap; }
+.t-think-text {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: block;
+  color: var(--think-base);
+  white-space: nowrap;
+  transform: translateY(0);
+  filter: blur(0);
+  opacity: 1;
+  transition:
+    transform var(--think-swap) var(--think-ease),
+    filter var(--think-swap) var(--think-ease),
+    opacity var(--think-swap) var(--think-ease);
+  will-change: transform, filter, opacity;
+}
+/* Shimmer sweeps the glyphs only (background-clip: text). */
+.t-think-text::before {
+  content: attr(data-text);
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: linear-gradient(90deg,
+    transparent 0%, transparent 40%,
+    var(--think-highlight) 50%,
+    transparent 60%, transparent 100%);
+  background-size: 400% 100%;
+  background-repeat: no-repeat;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  animation: t-think-shimmer var(--think-shimmer) linear infinite;
+}
+@keyframes t-think-shimmer {
+  0%   { background-position: 100% 0; }
+  100% { background-position: 0% 0; }
+}
+/* The outgoing line floats over the box so both halves animate. */
+.t-think-text.is-exit {
+  transform: translateY(calc(var(--think-distance) * -1));
+  filter: blur(var(--think-blur));
+  opacity: 0;
+}
+.t-think-text.is-enter-start {
+  transition: none;
+  transform: translateY(var(--think-distance));
+  filter: blur(var(--think-blur));
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .t-think-text { transition: none !important; transform: none !important; filter: none !important; }
+  .t-think-text::before { display: none !important; }
+}
+
+/* ══ streaming-text（verbatim from references/items/streaming-text.json）══ */
+/* Transitions.dev — Streaming text */
+
+/*
+  Usage:
+    <div class="t-stream">Your streamed paragraph…</div>
+
+  JS wraps each word in a .t-stream-w span; spans rest visible.
+  To replay the stream: wipe every span with transition: none,
+  force one reflow, restore the transition, then add .is-in word
+  by word every --stream-gap — each word resolves through
+  opacity + a small blur over --stream-fade.
+*/
+
+:root {
+  --stream-gap: 60ms;
+  --stream-fade: 350ms;
+  --stream-blur: 1px;
+  --stream-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.t-stream-w {
+  opacity: 0;
+  filter: blur(var(--stream-blur));
+  transition:
+    opacity var(--stream-fade) var(--stream-ease),
+    filter var(--stream-fade) var(--stream-ease);
+}
+.t-stream-w.is-in {
+  opacity: 1;
+  filter: blur(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .t-stream-w { transition: none !important; filter: none !important; opacity: 1 !important; }
+}
+
+/* ══ matrix-dot-loader（verbatim from references/items/matrix-dot-loader.json）══ */
+/* Transitions.dev — Matrix dot loader */
+
+/*
+  Usage:
+    <div class="t-matrix" data-variant="scan"></div>
+
+  JS builds sixteen <i> dots per loader and hands each a --d
+  delay (ms) into the shared colour-pulse cycle — the variant is
+  just a delay table. scan: col * cycle/10. twinkle: the order
+  [7,2,11,5,14,9,0,12,3,15,6,10,13,1,8,4] * cycle/16. orbit: the
+  ring [1,2,7,11,14,13,8,4] * cycle/8, centre holds steady.
+  pulse: inner [5,6,9,10] first, the rest cycle*0.16 behind.
+  Rounded variants mark the corners [0,3,12,15] .is-gap so they
+  render nothing.
+*/
+
+:root {
+  --matrix-cycle: 1200ms;
+  --matrix-base: #d9d9d9;
+  --matrix-active: #85858f;
+  --matrix-ease: ease-in-out;
+}
+
+.t-matrix {
+  display: grid;
+  grid-template-columns: repeat(4, 2px);
+  grid-auto-rows: 2px;
+  gap: 2px;
+}
+.t-matrix i {
+  display: block;
+  background: var(--matrix-base);
+  animation: t-matrix-pulse var(--matrix-cycle) var(--matrix-ease) infinite;
+  animation-delay: calc(var(--d, 0) * 1ms);
+}
+/* Hole positions (rounded variants) render nothing. */
+.t-matrix i.is-gap { visibility: hidden; animation: none; }
+@keyframes t-matrix-pulse {
+  0%, 45%, 100% { background-color: var(--matrix-base); }
+  15%           { background-color: var(--matrix-active); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .t-matrix i { animation: none !important; }
+}
+
+/* ══ spinner-check-morph（verbatim from references/items/spinner-check-morph.json）══ */
+.pv5j{display:flex;align-items:center;gap:16px;}
+
+.pv3p{display:inline-flex;filter:blur(0);transition:filter var(--pv3e) var(--pv32);will-change:filter;}
+
+.pv3p.is-crossing{filter:blur(var(--pv59));transition:filter calc(var(--pv45) * 0.45) var(--pv3t);}
+
+.pv4t{position:relative;width:22px;height:22px;flex:0 0 22px;scale:1;transition:scale var(--pv3e) var(--pv32);will-change:scale,transform;}
+
+.pv4t[data-state="done"]{scale:var(--pv3u);transition:scale var(--pv4i) var(--pv47);animation-name:pv4o,pv46;animation-duration:var(--pv4q),var(--pv43);animation-timing-function:var(--pv4j),var(--pv3r);animation-delay:0ms,var(--pv4q);animation-fill-mode:forwards,forwards;}
+
+.pv5d{position:absolute;inset:0;border-radius:50%;border:var(--pv4p) solid rgba(0,0,0,0.1);transition:opacity var(--pv3e) ease,filter var(--pv3e) ease;}
+
+.pv4t[data-state="done"] .pv5d{opacity:0;transition:opacity calc(var(--pv45) * 0.7) ease;}
+
+.pv5b{position:absolute;inset:-1px;border-radius:50%;background:var(--pv4v);box-shadow:0 0 0 0.504px rgba(0,0,0,0.05) inset,0 0.504px 0.504px 0 rgba(0,0,0,0.10),0 0.504px 2.016px 0 rgba(0,0,0,0.08),0 -0.504px 0.504px 0 rgba(0,0,0,0.09) inset;box-shadow:0 0 0 0.504px color(display-p3 0 0 0 / 0.05) inset,0 0.504px 0.504px 0 color(display-p3 0 0 0 / 0.10),0 0.504px 2.016px 0 color(display-p3 0 0 0 / 0.08),0 -0.504px 0.504px 0 color(display-p3 0 0 0 / 0.09) inset;opacity:0;transition:opacity var(--pv3e) var(--pv32);will-change:opacity;}
+
+.pv4t[data-state="done"] .pv5b{opacity:1;transition:opacity var(--pv45) var(--pv3t);}
+
+.pv5g{position:absolute;inset:0;border-radius:50%;border:var(--pv4p) solid transparent;border-top-color:#7a7a7a;animation-name:pv5e;animation-duration:var(--pv48);animation-timing-function:linear;animation-iteration-count:infinite;transition:opacity var(--pv3e) var(--pv32);will-change:transform;}
+
+.pv4t[data-state="done"] .pv5g{opacity:0;animation-play-state:paused;transition:opacity calc(var(--pv45) * 0.5) ease;}
+
+.pv5a{position:absolute;inset:0;display:grid;place-items:center;}
+
+.pv5a svg{display:block;width:100%;height:100%;}
+
+.pv4u{fill:none;stroke:#ffffff;stroke-width:var(--pv4h);stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:var(--pv3q,20);stroke-dashoffset:var(--pv3q,20);transition:stroke-dashoffset var(--pv3e) var(--pv32);}
+
+.pv4t[data-state="done"] .pv4u{stroke-dashoffset:0;transition:stroke-dashoffset var(--pv44) var(--pv3s) calc(var(--pv45) + var(--pv3d) - 200ms);}
+
+.pv4w{display:flex;flex-direction:column;gap:3px;}
+
+.pv4x{font-size:13px;font-weight:500;line-height:13px;color:var(--text);}
+
+.pv5k{font-size:13px;font-weight:400;line-height:13px;color:var(--text);opacity:0.5;}
+
+html[data-theme="dark"] .pv5d{border-color:rgba(255,255,255,0.16);}
+</style>
+<script>
+/* 按 skill 的触发纪律驱动：只做类切换 + reflow，不动 CSS */
+document.querySelectorAll('.demo-card').forEach(function (card) {
+  var slug = card.dataset.slug;
+  card.addEventListener('click', function () {
+    var r = card.querySelector('.demo-stage');
+    if (slug === 'error-state-shake') {
+      var el = r.querySelector('.is-error, [data-proto]') || r.firstElementChild;
+      if (el) { el.classList.remove('is-shaking'); void el.offsetWidth; el.classList.add('is-shaking'); }
+      return;
+    }
+    if (slug === 'success-check') {
+      var sc = r.querySelector('[data-state]');
+      if (sc) { sc.setAttribute('data-state', 'out'); void sc.offsetWidth; sc.setAttribute('data-state', 'in'); }
+      return;
+    }
+    if (slug === 'accordion') {
+      var acc = r.querySelector('[data-open]');
+      if (acc) acc.setAttribute('data-open', acc.getAttribute('data-open') === 'true' ? 'false' : 'true');
+      return;
+    }
+    if (slug === 'streaming-text') {
+      var w = r.querySelectorAll('.t-stream-w, [data-proto] span');
+      w.forEach(function (s, i) { s.classList.remove('is-in'); });
+      void r.offsetWidth;
+      w.forEach(function (s, i) { setTimeout(function () { s.classList.add('is-in'); }, i * 60); });
+      return;
+    }
+    r.querySelectorAll('.is-shown').forEach(function (e) { e.classList.remove('is-shown'); });
+    void r.offsetWidth;
+    r.querySelectorAll('[class*="t-"]').forEach(function (e) { e.classList.add('is-shown'); });
+  });
+});
+/* thinking-states 轮播 */
+var think = document.querySelector('[data-slug="thinking-states"] .demo-stage');
+if (think) {
+  var lines = think.querySelectorAll('[class*="line"], [data-proto] > *');
+  if (lines.length > 1) { var i = 0; setInterval(function () { lines.forEach(function (l, k) { l.classList.toggle('is-shown', k === i); }); i = (i + 1) % lines.length; }, 2000); }
+}
+</script>
+</body>
+</html>

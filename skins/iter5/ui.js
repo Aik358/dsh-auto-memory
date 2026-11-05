@@ -17,11 +17,25 @@
      *   崩溃日志无 JS 异常、只有 ResizeObserver loop ⇒ 正是渲染循环持续触发的典型症状。
      *   修法：值不变则不 setState（唯一封装，所有 500ms 调用点共用）。
      */
-    function iter5SyncIdentityIfChanged(setter, readState) {
+    /* ★★#532（2026-11-04）：第二个形参 `readState` 是**状态值**、不是读取函数 —— 删掉它，统一函数式更新。
+     *
+     * 【真缺陷（真调用实测）】两个调用点传的都是 useState 的**值**（字符串，形如 "sid|ws"），
+     *   旧实现却按函数调用 `readState()` ⇒ 抛 TypeError: "sid|ws" is not a function
+     *   ⇒ 被本函数的 try/catch **静默吞掉** ⇒ setter **0 次**被调用
+     *   ⇒ 切会话 / 切工作区后身份永不更新（页面一直停在旧工作区的数据上）。
+     *   ★空字符串（首帧尚未取到会话时）`'' && ...` 恰好短路 ⇒ 看起来正常，
+     *     这正是它长期没被发现的原因：只有拿到非空身份的机器才 100% 失效。
+     *
+     * 【修法】删掉该形参、只留 (setter)，统一用**函数式更新**：
+     *   值相同 ⇒ 返回同一引用 ⇒ React bail out（不重渲染 ⇒ 500ms 轮询不产生渲染风暴）；
+     *   值不同 ⇒ 正常提交。**不再保留「字符串或函数」的双契约**。
+     *   ★改这个函数必须同批改两个调用点（ui.js 的 Iter5Page / surfaces.js 的 Iter5HostSettings）：
+     *     本函数在生成区里被**定义两份**（ui.js / surfaces.js），只改一份 = 半修。
+     */
+    function iter5SyncIdentityIfChanged(setter) {
       try {
         var next = iter5Identity()
-        if (next === String((readState && readState()) || '')) return
-        setter(next)
+        setter(function (prev) { return prev === next ? prev : next })
       } catch (e) { /* fail-soft */ }
     }
     function iter5PageForTab(tab) {
@@ -242,7 +256,8 @@
         var next = controller.panelTab()
         if (next !== lastTab.current) { lastTab.current = next; page[1](iter5PageForTab(next)) }
       }) }, [])
-      useEffect(function () { var timer = setInterval(function () { iter5SyncIdentityIfChanged(identityState[1], identityState[0]) }, 500); return function () { clearInterval(timer) } }, [])
+      // ★#532：只传 setter —— 身份值由函数式更新里的 prev 提供（旧第二实参 identityState[0] 是字符串，被当函数调用 ⇒ 静默 0 次）。
+      useEffect(function () { var timer = setInterval(function () { iter5SyncIdentityIfChanged(identityState[1]) }, 500); return function () { clearInterval(timer) } }, [])
       useEffect(function () { if (content.current) content.current.scrollTop = 0 }, [page[0]])
       function nav(id, options) {
         if (root.current && root.current.querySelector('[data-i5-dirty="true"]') && !window.confirm(L('有未保存的修改，确定离开？', 'Discard unsaved changes and leave?'))) return
