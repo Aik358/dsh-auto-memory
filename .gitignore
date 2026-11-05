@@ -60,3 +60,51 @@ lib/*.*.*
 #   skins/legacy/iter5-325.js.frozen 是生成源，必须入库。
 *.bakchk
 *.stage1
+
+# --- 2026-11-05 alpha.6 发版前补漏（Lead 复核）---
+# 根目录误建垃圾（命令重定向 / os.tmpdir() 相对路径产物）
+/nul
+/undefined/
+/event-store.json
+/conflicts
+/canvas-local/
+
+# 第三方包 tarball（不该进本仓）
+
+# artifacts 下一次性调试产物（均为未跟踪；已跟踪的 e8-visual/e1-closure 等基线目录不动）
+artifacts/fakegreen/
+artifacts/preview-bugs/
+artifacts/audit-shots/
+artifacts/verify-shots/
+artifacts/doublecheck-tiers-20261103/
+artifacts/issue-alpha3-20261102/
+artifacts/issue-triage-20261102/
+artifacts/issue-repair-20261102/
+
+# 根目录调试日志与误建路径（2026-11-05 复核时发现）
+/.ci-log-*.txt
+/%SystemDrive%/
+/GPT-6-*.md
+/gpt-6-*.md
+
+# 根目录一次性调试产物（2026-11-05 全量复核，均为未跟踪）
+/.dsh/
+/.dsh-vision-router/
+
+# --- 2026-11-05 根目录未跟踪项统一收口（白名单思路）---
+# 根目录只跟踪：源码目录 / 显式文档 / 配置。其余未跟踪项一律视为一次性产物。
+/.*
+!/.*.json.example
+!/.gitignore
+!/.gitattributes
+!/.editorconfig
+
+# 下划线开头的一次性脚本/截图（根目录）
+/_*
+
+# 无扩展名的杂项产物
+/0
+
+# 根目录残留 3 项（2026-11-05 收口）
+/*.tgz
+/[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9].md
