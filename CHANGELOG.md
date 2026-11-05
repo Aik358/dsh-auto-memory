@@ -4,6 +4,63 @@ All notable changes to dsh-auto-memory.
 
 ---
 
+## [3.4.0-alpha.6] — 2026-11-05
+
+> 本版为 **preview 修 bug 版**，主线为「跨工作区升级向导补齐 + 回归防线加固」。
+> 下面把「已确认修复」与「未验证 / 已知限制」**分开列**，不混写。
+
+### 已确认修复
+
+**1. 测试收尾抛异常却 exit 0（#536）—— 回归防线现在能抓假绿了**
+
+- **现象**：套件主测试体全绿，但收尾阶段抛异常被插件的 `uncaughtException` 处理器吞掉，进程仍 `exit 0` ⇒ 回归显示通过，实际每次都在抛。
+- **根因**：① 变量名不匹配（`const interval/timeout/fetch` 存了引用，清理时却写 `globalThis.setInterval = iv`，`iv` 从未定义）；② 插件级 `uncaughtException` 处理器吞掉异常，进程正常退出。
+- **修法（两层职责分离）**：
+  - **测试侧护栏** `tests/smoke/_exit-guard.mjs`：**再挂一个** `uncaughtException` 监听器（**不摘插件那个**，实测两层可共存），记账 + stderr 打 `[smoke-fatal]`，并在 `process.on('exit')` 里置 `process.exitCode = 1` —— 实测**能压过套件末尾显式的 `process.exit(0)`**。
+  - **运行器边界** `tools/run-smoke.mjs`：子进程 `code === 0` 但 **stderr** 出现致命标记 ⇒ 判 **FAIL**，对全部套件生效，无需改造历史套件。只看 stderr（插件与护栏都写 stderr；连 stdout 一起扫会把「套件 echo 证据」误判，实测踩过）。
+  - **豁免机制**：不用「按套件名白名单」（那等于让该套件永久脱离防线），改为**显式标记 + 按行信用抵扣** —— 标记行 +1 信用、致命行 -1，信用不足即违规。豁免粒度是「那一次异常」，无法整段洗白。白名单代码已彻底移除。
+- **验收**：主测试体抛错 ⇒ 非零；finally/清理抛错 ⇒ 非零且后续清理仍执行；新增套件 37 PASS / 0 FAIL / 0 SKIP。
+- **★这条修复的连锁价值**：防线一上线，全量回归立刻暴露出 **6 个「一直绿着、实际每次都在抛」的既有套件**。
+
+**2. 上述防线揭穿的 6 个既有假绿套件 —— 逐个定性后全部修好，0 个真产品缺陷**
+
+| 套件 | 定性 | 真实原因 |
+|---|---|---|
+| `isolation` | 判据过期 | 注入面按设计分档（首帧完整 / 次帧精简），断言「两帧逐字节相等」恒假 |
+| `reflect` | 判据过期 | 同上（精简版不含反思段）；另有泄漏断言扫到七周前的历史残留目录 |
+| `task33-percept-production` | 判据过期 | #543 给 `memory_log` 加了话题归属，不传 `eventId` 且主题不匹配就会新建事件 |
+| `v4-u6-memory-upgrade` | 夹具缺依赖 | `ctx.get:()=>undefined` ⇒ `subagents-unavailable` 短路，后台链不启动 |
+| `consolidate-isolation` | 夹具缺依赖 | mock 了旧 `start()` 而产线先走 `startActivation`；且缺工作台归属致 E2 门判 `owner=orphan` |
+| `la-audit-fixes` | 防线假阳性 | stderr 来自它**自己设计的负路径**（故意摘掉监听器验证「异常无人接管」），`spawn python ENOENT` 是夹具自造字符串，**未实际执行 spawn** |
+
+全部已修，6 个套件单跑均 EXIT=0、SKIP=0；关键判据做了变异验证（改坏⇒红、还原⇒绿）。
+
+**3. `shadow-host.replayFromFile` 调用未定义函数（#539）**
+
+`lib/shadow-host.js:399` 调用 `replay(fixture)`，但该文件只 import 了 `replay as replayCore` ⇒ `ReferenceError`。改为 `replayCore(fixture)`。
+
+**4. `inflightJobIds` 参数名不一致致在跑任务被判孤儿重启（#523）**
+
+`lib/index.js` 写侧用 `inflightJobIds:`，读侧（`lib/team-baseline.js:490`）读 `inflightIds` ⇒ 在跑任务永远读不到 ⇒ 被判孤儿并**重启**。改写侧为 `inflightIds`，与 JSDoc 及读侧对齐。
+
+**5. 摘入社区贡献的真执行测试（PR #471）**
+
+该 PR 的 lib 修复已在主线且更完整（`typeof` 守卫 + `try/catch` + `diag`，reason `'semantic-emit'`），但其测试有独立价值：新增 52 行真执行测试（真起 worker 子进程，1381ms），**6 tests / 6 pass / 0 fail / 0 skip**。
+
+**6. 其余后端修复**：#528 团队同步字段双向对称、#529 append 重放检测顺序、#531 握手验签收窄、#534 响应体流式读取、#535 v1 事件写侧兼容、#538 report/diag 鉴权收窄、#543 memory_log 话题归属、#544 白板范围条抽出。
+
+**7. 前端映射修复**：身份轮询签名修正（旧版把字符串当函数调用 ⇒ TypeError 被 try/catch 静默吞掉，setter 实际 0 次、页面停在旧工作区数据）。
+
+### 未验证 / 已知限制
+
+- **本版全部修复未随任何已发布版本经过真实用户实机反馈**：只有自动化套件与本机手工验证。按发版纪律一并归入本组。
+- **`--jobs=8` 并行回归存在并发假红**：本机实测同一提交下，`--jobs=8` 会不稳定地出现 1 条失败（两次分别命中 `issue207-processes` 与 `v4-u6-memory-upgrade`，两者单跑各 3 次均 EXIT=0）。**`--jobs=4` 稳定全绿（568 PASS / 0 FAIL / 0 TIMEOUT，161.9s）**。这是运行器层面的既有问题，非本版引入；重负载套件的降并行分组尚未做。
+- **`v3314-continuation-timeout` 单跑 161s**，直接决定全量回归墙钟下限（161.9s）。它是在测超时，慢属设计使然，本版未优化。
+- **`artifacts/e8-visual/` 有约 5 万个未跟踪文件**（含 Chromium profile 缓存 `.cdp-*/`），本版未清理，留待后续单独处理。
+- **PR #522（接续仪式有界重试）与 PR #475（tier0 观测）未进本版**，已裁定延至 alpha.7。
+
+---
+
 ## [未发布] — 团队线迁移引导能力补齐（草稿，未发版）
 
 > 本文是**草稿**，尚未随任何版本发布，也未经用户实机验证。发布时请并入对应版本号段落。
