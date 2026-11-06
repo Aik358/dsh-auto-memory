@@ -82,7 +82,7 @@ if (registeredTools.length !== 21) throw new Error('expected 21 tools (… + v4-
 // ★issue #211（2026-10-04）计数演进：70→71（新增 POST /python-setup/uninstall —— Python 引擎卸载，
 //   loopback-only，pythonBackendEnabled=false 时也**无条件注册**并可用，故任何档位下都 +1）。
 // ★R158（2026-10-31）：80 → 82（新增 team-pause / team-upgrade）。
-if (registeredRoutes.length !== 84) throw new Error('expected 84 routes, got ' + registeredRoutes.length)
+if (registeredRoutes.length !== 85) throw new Error('expected 85 routes, got ' + registeredRoutes.length)
 if (sections.length !== 1) throw new Error('expected 1 prompt section (static rules)')
 if (contexts.length !== 2) throw new Error('expected 2 dynamic contexts (memory snapshot + m6 reference tail surface), got ' + contexts.length)
 

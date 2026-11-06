@@ -427,6 +427,109 @@ console.log("== 10. 挂载点 / 旧入口（守卫，非功能证据） ==")
   ok(SRC.includes("if (!isTeamMode) return null"), "M5 旧单卡降为团队模式专用（个人模式交给向导）")
 }
 
+
+// ═══ 11. 零额度归档按钮（S4 · R48–R52） ═══════════════════════════════════════
+console.log("== 11. 零额度归档按钮（S4） ==")
+{
+  const tree = render(BASE)
+  eq(findAll(tree, (n) => hasAttr(n, "data-dam-wizard-archive-plan")).length, 1, "R48 第 1 页有「只归档白板」按钮（且仅一个）")
+  const text = collectText(tree, []).join("\n")
+  ok(text.includes("不花额度"), "R49 按钮文案含「不花额度」（零额度承诺必须显式）")
+  ok(text.includes("handoff/archive"), "R49b 状态行写明归档落点 handoff/archive/")
+  ok(text.includes('memory_recall(scope="handoff")'), "R49c 状态行写明找回方式 memory_recall(scope=\"handoff\")")
+  // idle 文案：「面板「历史版本」只列最近 30 条」在 done 态；idle 态只承诺落点与找回方式。
+  //   ⇒ 30 条的说明属**done 态**文案，改到 R53 用 done 态渲染断言（本处只锁 idle 态承诺）。
+  ok(text.includes("原文进 handoff/archive/"), "R49d idle 态写明归档落点与找回方式")
+  // R50 负路径：绝不出现 memory_read(kind=archive) —— 它指向 projectDir/archive，是另一个目录
+  ok(!text.includes("memory_read"), "R50 [负路径] 文案不出现 memory_read（该通道指向 projectDir/archive，是另一个目录）")
+  ok(!text.includes("kind=archive") && !text.includes("kind='archive'"), "R50b [负路径] 文案不出现 kind=archive")
+  // ⚠ 整页文本里本来就有「本次不再提示」按钮（R2 断言的是它）⇒ 负路径必须**限定到归档状态行**，
+  //   否则判据恒红。这里直接取 data-dam-wizard-archive-plan-state 节点自己的文本。
+  const archStateNode = findAll(tree, (n) => hasAttr(n, "data-dam-wizard-archive-plan-state"))[0]
+  const archStateText = collectText(archStateNode, []).join("\n")
+  ok(archStateText.length > 0 && !archStateText.includes("不再提示"), "R50c [负路径] 归档状态行不含「不再提示」（归档不写 declined，向导照常出现）")
+  // 状态行属性在场（idle 时）
+  eq(findAll(tree, (n) => hasAttr(n, "data-dam-wizard-archive-plan-state")).length, 1, "R48b 归档状态行在场（data-dam-wizard-archive-plan-state）")
+}
+
+// R51：phase=running ⇒ 归档按钮必须 disabled（与「开始整理 →」同口径）
+{
+  const stRunning = Object.assign({}, ST_FIX, { phase: "running" })
+  // ⚠ render(BASE.concat(...)) 才是正确用法：BASE 已把 stPair 的锚串换掉，单独再传同一锚串会抛「锚串缺失」。
+  const tree = render(BASE.map(function (p) {
+    return p[0] === "      var stPair = useState(null)"
+      ? ["      var stPair = useState(null)", "      var stPair = useState(" + JSON.stringify(stRunning) + ")"]
+      : p
+  }))
+  const btn = findAll(tree, (n) => hasAttr(n, "data-dam-wizard-archive-plan"))[0]
+  ok(!!btn && btn.props && btn.props.disabled === true, "R51 phase=running ⇒ 归档按钮 disabled（避免两条线同时动白板）")
+}
+{
+  const tree = render(BASE)
+  const btn = findAll(tree, (n) => hasAttr(n, "data-dam-wizard-archive-plan"))[0]
+  ok(!!btn && btn.props && btn.props.disabled === false, "R51b phase 非 running ⇒ 归档按钮可用（正路径对照，防判据恒真）")
+}
+
+// ── 12. 负路径：归档处理函数的错误必须被**显式记录**（S4 · R52） ─────────────────
+//   ⚠ 三条实测教训（都踩过，写在这里防回归）：
+//     ① 必须先应用 BASE（open=true），否则组件返回 null ⇒ 拿到「找不到按钮」的**假红**；
+//     ② 变异必须制造**裸标识符** ReferenceError —— 写 API.missingX 只是属性访问，得 undefined、不抛；
+//     ③ onArchivePlan 体内有 try/catch ⇒ 异常不会冒泡出 onClick，而是写进 setErr。那是**正确的 fail-soft**，
+//        所以判据是「错误被显式记录」，不是「必须抛错」。
+{
+  let bugSeg = SEG
+  for (const [from, to] of BASE) bugSeg = bugSeg.split(from).join(to)
+  const beforeMut = bugSeg
+  const MUT_FROM = "          apiPost(API.upgradeArchivePlan, { ws: wsNow }).then(function (r) {"
+  const MUT_TO = "          apiPost(missingArchiveEndpointVar, { ws: wsNow }).then(function (r) {"
+  if (bugSeg.split(MUT_FROM).length - 1 !== 1) throw new Error("R52 变异锚串不在场")
+  bugSeg = bugSeg.split(MUT_FROM).join(MUT_TO)
+  ok(bugSeg !== beforeMut, "R52 变异命中（锚串在场）")
+
+  // setter 记录器：把每次 useState setter 的调用都留痕（含空串），用于观测「错误是否被写进某个状态」
+  const mkRecorder = () => {
+    const log = []
+    return { log, ctx: (function () { return null })() }
+  }
+  const seen = []
+  const bugCtx = mkCtx({
+    useState: function (v) {
+      const init = typeof v === "function" ? v() : v
+      return [init, function (nv) { seen.push(String(nv)) }]
+    },
+  })
+  execSeg(bugSeg, bugCtx, ["UpgradeWizard"])
+  ok(typeof bugCtx.__X_UpgradeWizard === "function", "R52b 变异段仍可加载（只坏在点击路径上）")
+
+  const t2 = bugCtx.__X_UpgradeWizard({ zh: true, ws: "D:\\proj-a" })
+  const b = findAll(t2, (n) => hasAttr(n, "data-dam-wizard-archive-plan"))[0]
+  ok(!!b && typeof b.props.onClick === "function", "R52c 归档按钮带可执行 onClick")
+  seen.length = 0
+  b.props.onClick()
+
+  // 正路径对照（同一套观测器、未变异）：点击不应产生 ReferenceError 文案
+  const cleanSeen = []
+  const okCtx = mkCtx({
+    useState: function (v) {
+      const init = typeof v === "function" ? v() : v
+      return [init, function (nv) { cleanSeen.push(String(nv)) }]
+    },
+  })
+  let cleanSeg = SEG
+  for (const [from, to] of BASE) cleanSeg = cleanSeg.split(from).join(to)
+  execSeg(cleanSeg, okCtx, ["UpgradeWizard"])
+  const t3 = okCtx.__X_UpgradeWizard({ zh: true, ws: "D:\\proj-a" })
+  const b3 = findAll(t3, (n) => hasAttr(n, "data-dam-wizard-archive-plan"))[0]
+  cleanSeen.length = 0
+  b3.props.onClick()
+
+  const bugHit = seen.filter((s) => /missingArchiveEndpointVar/.test(s))
+  const cleanHit = cleanSeen.filter((s) => /missingArchiveEndpointVar/.test(s))
+  ok(cleanHit.length === 0, "R52d [对照] 未变异时点击不产生该错误（防判据恒真）")
+  ok(bugHit.length >= 1,
+    "R52e [负路径] 变异后点击把 ReferenceError 显式记进 err（实测 " + JSON.stringify(seen) + "）")
+}
+
 console.log("")
 console.log("[upgrade-wizard-client] PASS " + pass + " / FAIL " + fail)
 process.exit(fail ? 1 : 0)
