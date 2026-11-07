@@ -1764,6 +1764,10 @@
           // ★2026-10-29（用户裁定：刷新仪式超时 120 → 240 秒）：本行是设置页的**唯一真源**，
           //   改这里再跑 node tools/build-iter5-skin.mjs；直接改 lib/client.js 会被 R2 拒写（见生成器头注释）。
           field(t('fAutoContinueRefreshTimeout'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 15, max: 900, value: cfg.autoContinueRefreshTimeoutSeconds === undefined ? 240 : cfg.autoContinueRefreshTimeoutSeconds, onChange: function (e) { set('autoContinueRefreshTimeoutSeconds', Math.max(15, Math.min(900, Number(e.target.value) || 240))) } }), t('fAutoContinueRefreshTimeoutHint')),
+          // ★#560（2026-11-07）：子代理等待上限上设置页。
+          //   本行是设置页的**唯一真源**，改这里再跑 node tools/build-iter5-skin.mjs。
+          //   与上面「刷新仪式超时」是**两条独立链路**（15–900/240 那条一个字都没动）。
+          field(t('fSubagentTimeout'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 30, max: 900, value: cfg.subagentTimeoutSeconds === undefined ? 240 : cfg.subagentTimeoutSeconds, onChange: function (e) { set('subagentTimeoutSeconds', Math.max(30, Math.min(900, Number(e.target.value) || 240))) } }), t('fSubagentTimeoutHint')),
           field(t('fAutoContinueProbeTimeout'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 10, max: 300, value: cfg.autoContinueProbeTimeoutSeconds === undefined ? 60 : cfg.autoContinueProbeTimeoutSeconds, onChange: function (e) { set('autoContinueProbeTimeoutSeconds', Math.max(10, Math.min(300, Number(e.target.value) || 60))) } }), t('fAutoContinueProbeTimeoutHint')),
           // ★#522（2026-11-07 上游 PR，作者 HY-pt）：接续仪式改为**有界重试**后新增的配置项。
           //   默认 2 = 「一次失败再试一次」；设 1 回到旧行为（一次定生死）；上限 3 防无界重试。
