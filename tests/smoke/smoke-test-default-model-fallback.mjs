@@ -35,6 +35,9 @@ async function run(settings, registered = ['spawn'], config = { subagentProvider
     readSettingsTextPre: async () => settings,
     // ★R158：_runSubagentOnce 内的 prompt 护栏依赖（vm 切片之外，必须注入）
     withSubagentGuardPre,
+    // ★#560：_runSubagentOnce 现引用这三个模块级常量（切片之外），
+    //   与 withSubagentGuardPre / callSubagentStartPre 对待方式相同：直接注入真值，不在 vm 里手写假桩。
+    SUBAGENT_TIMEOUT_MIN_SECONDS: 30, SUBAGENT_TIMEOUT_MAX_SECONDS: 900, DEFAULT_SUBAGENT_TIMEOUT_SECONDS: 240,
   })
   if (parserStart >= 0) vm.runInContext(source.slice(parserStart, parserEnd), context)
   if (adapterStart >= 0) vm.runInContext(source.slice(adapterStart, adapterEnd), context)
