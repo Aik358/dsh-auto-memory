@@ -104,8 +104,12 @@ console.log('== T1 项目层 update 一次 ⇒ 读回 revision 必须变化 ==')
   const before = await apply(fakeEngine, 'list', { layer: 'project' })
   const target = before.items?.[0]?.text
   ok(!!target, 'T1-a 取到项目层第 0 条原文')
+  // ★修正（2026-11-07）：本行原先漏传 revision，而 requireRevision:true 要求
+  //   `payload.revision !== 当前revision` ⇒ undefined !== "str" **恒真** ⇒ 必然被拒。
+  //   这不是实现的问题，是**断言自身写漏了参数**（T1-b 红、T1-c0 红都是这个原因）。
+  //   ⇒ 必须把 list 拿到的 revision 一起提交，才是「持正确票据写」的正常路径。
   const upd = await apply(fakeEngine, 'update',
-    { layer: 'project', index: 0, expect: target, text: target + '（已改）' },
+    { layer: 'project', index: 0, expect: target, text: target + '（已改）', revision: before.revision },
     { requireExpect: true, requireRevision: true }
   )
   ok(upd && upd.ok === true, 'T1-b 项目层 update 成功')
@@ -241,9 +245,19 @@ console.log('== T3 变异：revision 恒用用户层 ⇒ 两层 revision 相同 
       try {
         fs.writeFileSync(mutPath, SRC.split(MUT_A).join(MUT_B), 'utf8')
         const mut = await import('file:///' + mutPath.replace(/\\/g, '/'))
-        const mu = await mut.applyRuleEditPre(fakeEngine, 'list', { layer: 'user' })
-        const mp = await mut.applyRuleEditPre(fakeEngine, 'list', { layer: 'project' })
-        ok(mu.revision === mp.revision, 'T3-d ★变异体上两层 revision **真的变成相同**（证明变异有效、T0-e 有区分力）')
+        // ★T3-d 必须用**自己的等内容夹具**（2026-11-07 实测踩中）：
+        //   原先复用 fakeEngine，而它指向的 projFile 已被 T1/T2 写改过、userFile 没有 ⇒
+        //   两边内容不同 ⇒ digest 不同 ⇒ 即使变异体把锁键恒取 userFile，两层 revision 仍不等 ⇒
+        //   T3-d 必红而**与变异有效性无关**（这是「夹具没隔离变量」的第 4 次同型坑）。
+        const mutA = path.join(tmp, 'MUT-A.md'), mutB = path.join(tmp, 'MUT-B.md')
+        const mutBody = '## 2026-11-07\n- 同一条内容。\n'
+        fs.writeFileSync(mutA, mutBody, 'utf8')
+        fs.writeFileSync(mutB, mutBody, 'utf8')
+        const mutEngine = { resolvePaths: async () => ({ userFile: mutA, notesPath: mutB }), readTextSafe: fakeEngine.readTextSafe, writeFull: fakeEngine.writeFull, config: {} }
+        ok(crypto.createHash('sha256').update(fs.readFileSync(mutA)).digest('hex') === crypto.createHash('sha256').update(fs.readFileSync(mutB)).digest('hex'), 'T3-d0 变异夹具自证：两份内容字节完全相同')
+        const mu = await mut.applyRuleEditPre(mutEngine, 'list', { layer: 'user' })
+        const mp = await mut.applyRuleEditPre(mutEngine, 'list', { layer: 'project' })
+        ok(mu.revision === mp.revision, 'T3-d ★变异体上（等内容夹具）两层 revision **真的变成相同**（证明变异有效、T0-e 有区分力）')
       } finally {
         try { fs.unlinkSync(mutPath) } catch (_) {}
         try { fs.unlinkSync(mutPath + '.bak') } catch (_) {}
