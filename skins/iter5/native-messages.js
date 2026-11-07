@@ -42,8 +42,15 @@
           h('p', { className: 'i5-continuation-info' }, L('接续由宿主执行：刷新白板与账本、创建新会话，再注入交接材料。', 'The host refreshes the PLAN and ledger, creates a new session, and injects the handoff material.')),
           h('footer', null, props.countdown > 0 ? h('span', { role: 'timer' }, t('autoContTimeout').replace('{s}', String(props.countdown))) : null,
             h('button', { 'data-dam-btn': '', onClick: props.onReject }, t('autoContReject')),
+            // ★#522 用户裁定（2026-11-07）：「终止进程」——**整个接续终止**，不是「跳过重试」。
+            //   与左侧「拒绝」的区别（用户特意区分过，别混）：拒绝 = 只否掉这一次边界，水位再超标会重新 arm；
+            //   终止 = 停掉整条接续（后端 action:'cancel'：清 armed + 中止正在跑的仪式 + 记 lastCancel）。
+            //   文案用「终止进程」四个字，不写「跳过」——避免用户以为是「再试一次」的同义词。
+            h('button', { 'data-dam-btn': '', 'data-dam-autocont-cancel': '', onClick: props.onCancel }, t('autoContCancel')),
             h('button', { 'data-dam-btn': '', 'data-primary': 'true', onClick: props.onAgree }, t('autoContAgree')))) : null,
-        !confirmation && props.countdown > 0 ? h('p', null, t('autoContCountdown').replace('{s}', String(props.countdown)), ' ', h('button', { 'data-dam-btn': '', onClick: props.onReject }, t('autoContCancel'))) : null,
+        // ★#522：倒计时态也要能终止（用户裁定「终止进程」= 整个接续终止）。
+        //   注意与拒绝按钮并存：拒绝=只否这一次边界；终止=停掉整条接续。
+        !confirmation && props.countdown > 0 ? h('p', null, t('autoContCountdown').replace('{s}', String(props.countdown)), ' ', h('button', { 'data-dam-btn': '', onClick: props.onReject }, t('autoContReject')), ' ', h('button', { 'data-dam-btn': '', 'data-dam-autocont-cancel': '', onClick: props.onCancel }, t('autoContCancel'))) : null,
         props.executing ? h('div', { className: 'i5-continuation-progress', role: 'progressbar', 'aria-label': L('接续正在执行', 'Continuation in progress'), 'aria-busy': true }, h('span')) : null,
         props.status ? h('p', { className: 'i5-continuation-status', role: 'status' }, props.status) : null)
     }
