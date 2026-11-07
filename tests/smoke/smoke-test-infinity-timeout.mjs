@@ -65,7 +65,11 @@ ok(fired === true, '★★★[事实] setTimeout(fn, Infinity) 会立即触发�
 
 console.log('')
 console.log('== 3. 两处代码都必须有显式 noTimeout 分支 ==')
-const hasAbortGuard = /_noTimeout\s*=\s*!Number\.isFinite\(_tRaw\)/.test(SRC)
+// 判据迁移（2026-11-07 · #560，**判据意图不变**）：_runSubagentOnce 的等待上限量从 _tRaw 改为 _effMs
+//   （显式给值 ⇒ _tRaw；未给 ⇒ 读 subagentTimeoutSeconds）。旧正则锁在一个**已不存在的变量名**上
+//   ⇒ 属「判据过期」而非功能回归：核心语义仍由本套件的真执行用例守着，且 #560 另加了两条真执行判据
+//   （未给值 ⇒ 按配置注册；Infinity ⇒ 不注册）。
+const hasAbortGuard = /_noTimeout\s*=\s*!Number\.isFinite\(_effMs\)/.test(SRC)
 const hasWtGuard = /_noTimeout\s*=\s*!Number\.isFinite\(_msRaw\)/.test(SRC)
 ok(hasAbortGuard, '★★_runSubagentOnce 的 abort 定时器有 noTimeout 分支')
 ok(hasWtGuard, '★★withTimeout 有 noTimeout 分支')
