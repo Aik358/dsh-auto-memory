@@ -57,8 +57,10 @@ console.log('\n[H2] 宿主不得有裸 `os.` 引用（未导入即 ReferenceErro
 console.log('\n[H3] 前端三处调用必须携带工作区（否则宿主只能回退/失败）')
 {
   ok(/API\.migrateExport,\s*\{\s*ws:/.test(cl), 'H3a 导出传 ws')
-  ok(/API\.migrateInspect,\s*\{\s*packPath: migPack,\s*targetWs:/.test(cl), 'H3b 预览传 targetWs')
-  ok(/API\.migrateImport,\s*\{\s*packPath: migPack,\s*targetWs:/.test(cl), 'H3c 导入传 targetWs')
+  // 请求体可能是裸对象，也可能是契约层的 Object.assign({...}, body()) 形态；
+  // 这里只钉「targetWs 有没有传」，不钉容器写法（容器写法由 H6 单独守）。
+  ok(/API\.migrateInspect,\s*(?:Object\.assign\(\{\s*)?packPath: migPack,\s*targetWs:/.test(cl), 'H3b 预览传 targetWs')
+  ok(/API\.migrateImport,\s*(?:Object\.assign\(\{\s*)?packPath: migPack,\s*targetWs:/.test(cl), 'H3c 导入传 targetWs')
   ok(cnt(cl, 'function currentWs()') === 1, 'H3d 工作区来源是既有的 currentWs()（同文件可达）')
   // 三处都不得再出现「裸调用」形态
   ok(cnt(cl, 'apiPost(API.migrateExport, { outPath:') === 0, 'H3e 导出旧形态（无 ws）已不存在')
@@ -120,6 +122,62 @@ console.log('\n[H5] 一键更新：必须关 pnpm 供应链闸门 + 装后复核
   // 不得再出现「execP 成功即无条件 ok:true」
   ok(!/const out = await execP\(cmd[\s\S]{0,260}?writeJson\(res, 200, \{\r?\n\s+ok: true,/.test(seg),
     'H5g 无「execP 成功即无条件 ok:true」的旧形态')
+}
+
+// ─────────────────────────────────────────────────────────────
+// [H6] ★#449-1：历史迁移包的「显式确认」通道必须贯通到 UI
+//
+// 事故：3.3.7 修了 #449，后端 validatePackPre / _readPack / migrateInspect /
+//   migrateImport / HTTP 路由**全部**支持 allowUnprovenUserFiles，但 client.js
+//   6 处 apiPost 一个都没带、界面也没有确认入口 ⇒ 3.1.3–3.3.4 产出的含日历
+//   历史包在**预览阶段**就被 userfiles-unproven-by-checksum 拒掉，用户连
+//   「确认导入」按钮都到不了。既有 #449 套件只测纯函数、H3 只断言 targetWs，
+//   所以 CI 全绿仍漏。
+// 纪律：这里既有接线断言，也有**真执行**（把请求体表达式抽出来实跑），
+//   并带负路径：不得无条件传 true（会打掉 fail-closed）。
+// ─────────────────────────────────────────────────────────────
+console.log('\n[H6] ★#449-1 历史包显式确认：UI 接线 + 版本契约（单一真源）')
+{
+  const bodies = cl.match(/apiPost\(API\.migrate(?:Inspect|Import),\s*Object\.assign\(\{[^}]*\},\s*globalThis\.__damMigrationOptIn\.body\([^)]*\)\)\)/g) || []
+  ok(bodies.length === 6, 'H6a 三组向导共 6 处预览/导入请求在场（实得 ' + bodies.length + '）')
+  const withOptIn = bodies.filter(function (b) { return /globalThis\.__damMigrationOptIn\.body\(/.test(b) })
+  ok(withOptIn.length === 6, 'H6b ★6 处请求全部走契约层 body()（实得 ' + withOptIn.length + '）')
+  ok(!/allowUnprovenUserFiles:\s*true\b/.test(cl),
+    'H6c 负路径：不得无条件传 true（否则 #449 的 fail-closed 被架空）')
+  ok(cnt(cl, "'data-dam-migration': 'legacy-opt-in'") === 3,
+    'H6d 三组界面各有 1 个显式确认勾选框（实得 ' + cnt(cl, "'data-dam-migration': 'legacy-opt-in'") + '）')
+  ok(cnt(cl, "var migConfirmedLegacyPackPair = useState('')") === 3,
+    'H6e 三组各有独立确认状态（实得 ' + cnt(cl, "var migConfirmedLegacyPackPair = useState('')") + '）')
+  ok(/旧版包/.test(cl) && /not covered by the checksum/.test(cl),
+    'H6f 中英说明文案同时在场（不静默导入未受摘要保护的用户级文件）')
+  ok(/e\.target\.checked \? migPack : ''/.test(cl) && /e\.target\.checked \? props\.pack : ''/.test(cl),
+    'H6g 勾选写入的是「当前包路径」而非布尔（换包自动失效，无需逐处重置）')
+  ok(/allowUnprovenUserFiles:\s*!!\(body && body\.allowUnprovenUserFiles === true\)/.test(ix),
+    'H6h 后端 HTTP 路由确实透传（防「只改前端、后端没接」的反向失配）')
+
+  // 真执行：装载与 client.js 内联同源的契约层，实跑四种状态（不是 eval 抽取的表达式）
+  const helperMod = await import(pathToFileURL(path.join(ROOT, 'lib', 'migration-optin-contract.js')).href)
+  const h = helperMod.installHelper({})
+  ok(!!h && typeof h.body === 'function', 'H6i 契约层可真装载（默认字段 ' + helperMod.OPTIN_DEFAULT_FIELD + '）')
+  const calls = withOptIn.map(function (b) { return (b.match(/__damMigrationOptIn\.body\([^)]*\)/) || [''])[0] })
+  ok(calls.length === 6 && Array.from(new Set(calls)).length === 1,
+    'H6j 6 处共用同一判据调用（实得 ' + Array.from(new Set(calls)).length + ' 种）')
+  ok(h.body('C:/a/legacy.dam-pack', '').allowUnprovenUserFiles === false,
+    'H6k 未勾选 ⇒ false（默认 fail-closed）')
+  ok(h.body('C:/a/legacy.dam-pack', 'C:/a/legacy.dam-pack').allowUnprovenUserFiles === true,
+    'H6l 已勾选且仍是同一个包 ⇒ true（历史包可进入预览）')
+  ok(h.body('C:/b/other.dam-pack', 'C:/a/legacy.dam-pack').allowUnprovenUserFiles === false,
+    'H6m ★换包 ⇒ 自动 false（确认不会误延续到下一个包）')
+  ok(h.body('', '').allowUnprovenUserFiles === false,
+    'H6n 空包路径 ⇒ false（不会因空串相等而误放行）')
+
+  // 未来版本：字段名改了 / 限制取消了，都不需要再改这 6 个请求点
+  const h7 = helperMod.installHelper({ __DAM_MIGRATION_OPTIN__: { field: 'acceptLegacyUserFiles' } })
+  ok(h7.body('C:/a/legacy.dam-pack', 'C:/a/legacy.dam-pack').acceptLegacyUserFiles === true,
+    'H6o alpha.7 改确认字段名 ⇒ 请求自动改用新键')
+  const h8 = helperMod.installHelper({ __DAM_MIGRATION_OPTIN__: { required: false } })
+  ok(h8.required() === false && Object.keys(h8.body('p', 'p')).length === 0,
+    'H6p alpha.7 取消历史包限制 ⇒ 不发确认键、勾选框不渲染')
 }
 
 console.log('\n--- v3.1.2 迁移宿主可达性 ---')
