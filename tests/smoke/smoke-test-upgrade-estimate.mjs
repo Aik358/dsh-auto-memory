@@ -3,14 +3,22 @@ import { createHarness } from './_harness.mjs'
 import {
   estimateUpgradeCostPre, estimateUpgradeTotalsPre, estimateUpgradeSecondsPre,
   normalizeEffortPre, normalizeCharsPre, opencodeUsableCharsPre,
-  CHARS_PER_TOKEN, EFFORT_OUT_RATIO, UPGRADE_PRICES, OPENCODE_CONTEXT_TOKENS,
+  CHARS_PER_TOKEN, EFFORT_OUT_RATIO, UPGRADE_PRICES, OPENCODE_CONTEXT_TOKENS, UPGRADE_EFFORT_CHOICES,
 } from '../../lib/upgrade-estimate.js'
 
 const T = createHarness('upgrade-estimate')
 
 // ── 标定与常量自洽 ──
 T.eq(CHARS_PER_TOKEN, 1.19, 'C1 字符/token 标定为 1.19')
-T.eq(Object.keys(EFFORT_OUT_RATIO).join(','), 'low,medium,high', 'C2 三档强度齐全')
+// ★#558①（2026-11-08）判据更新：档位表已改为**与宿主白名单同源**（off|low|high|max），
+// 并保留历史值 medium（旧配置/存量 run 记录仍是合法输入）。
+// 旧断言锁的是「恰好三档」，那是**旧决策**；不变量是「向导可选项 ⊆ 宿主白名单」。
+// ⇒ 改为两层断言：①表里必须有宿主四档；②向导可选项必须全部在表内（同源）。
+T.eq(Object.keys(EFFORT_OUT_RATIO).slice().sort().join(','), 'high,low,max,medium,off', 'C2 表含宿主四档 + 历史 medium')
+T.eq(UPGRADE_EFFORT_CHOICES.slice().sort().join(','), 'high,low,max,off', 'C2b ★向导可选项 = 宿主白名单四档（不含 medium）')
+T.eq(UPGRADE_EFFORT_CHOICES.filter((x) => !Object.prototype.hasOwnProperty.call(EFFORT_OUT_RATIO, x)).length, 0, 'C2c ★★可选项必须全部有估算比例（同源，不许两处各写一份）')
+T.eq(EFFORT_OUT_RATIO.off, 0, 'C2d off 比例 = 0（不产生推理 token，有依据）')
+T.eq(EFFORT_OUT_RATIO.max, EFFORT_OUT_RATIO.high, 'C2e max 按 high 上界估算（无实测锚点，报高不报低）')
 T.eq(UPGRADE_PRICES.relay.in, +(UPGRADE_PRICES.offPeak.in * 0.09).toFixed(4), 'C3 中转 = 谷价 × 0.09（in）')
 T.eq(UPGRADE_PRICES.relay.out, +(UPGRADE_PRICES.offPeak.out * 0.09).toFixed(4), 'C4 中转 = 谷价 × 0.09（out）')
 T.eq(opencodeUsableCharsPre(), Math.floor(OPENCODE_CONTEXT_TOKENS * CHARS_PER_TOKEN * 0.7), 'C5 免费渠道可用字符 = 256K×1.19×0.7 = 213,248')

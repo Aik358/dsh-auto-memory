@@ -356,9 +356,22 @@ const PAGE = (p) => ["      var pagePair = useState('p1')", "      var pagePair 
 {
   const tree = render(BASE.concat([PAGE("p3")]))
   eq(findAll(tree, (n) => hasAttr(n, "data-dam-wizard-model")).length, 1, "R24 第 3 页模型下拉")
-  eq(findAll(tree, (n) => hasAttr(n, "data-dam-wizard-effort")).length, 3, "R25 第 3 页三个思考强度（低/中/高，默认中）")
+  // ★#558①（2026-11-08）判据更新：旧断言锁的是「恰好三档 低/中/高、默认中」——那是**旧决策**。
+//   不变量是「向导提供的档位 ⊆ 宿主白名单 off|low|high|max，且默认值必须在白名单内」。
+//   medium 宿主不认（见 index.js subAgentOptions 注释），继续提供它就是「显示 != 生效」。
+eq(findAll(tree, (n) => hasAttr(n, "data-dam-wizard-effort")).length, 4, "R25 第 3 页四个思考强度（off/低/高/最高，默认高=宿主缺省）")
   const effortLabels = findAll(tree, (n) => hasAttr(n, "data-dam-wizard-effort")).map((n) => n.props["data-dam-wizard-effort"])
-  eq(effortLabels.join(","), "low,medium,high", "R26 思考强度键 = low,medium,high（与 estimate 档位同源）")
+  eq(effortLabels.join(","), "off,low,high,max", "R26 ★思考强度键 = off,low,high,max（= 宿主白名单，与 estimate 档位同源）")
+// ★新增：默认档位必须在白名单内（否则「用户不动就点开始」必然发出非法值）
+// 注意：data-dam-wizard-effort 挂在 <label> 上，checked 在内层 <input> 上（两个不同节点）。
+// 按渲染顺序一一对应（label 顺序 == input 顺序），用序号把 input 的 checked 映射回档位键。
+const _effortInputs = findAll(tree, (n) => n && n.props && n.props.name === "dam-wizard-effort")
+eq(_effortInputs.length, effortLabels.length, "R26b 每个档位恰有一个 radio input（顺序可映射）")
+const _checkedIdx = _effortInputs.map((n, i) => (n.props.checked === true ? i : -1)).filter((i) => i >= 0)
+eq(_checkedIdx.length, 1, "R26c ★有且仅有一个默认选中的档位（实测 " + _checkedIdx.length + "）")
+const _defKey = _checkedIdx.length === 1 ? String(effortLabels[_checkedIdx[0]]) : ""
+eq(_defKey, "high", "R26d ★★默认档位 = high（宿主缺省档，实测 " + _defKey + "）")
+eq(["off", "low", "high", "max"].indexOf(_defKey) >= 0, true, "R26e ★默认档位必在宿主白名单内（防「用户不动就点开始」发出非法值）")
   const text = collectText(tree, []).join("\n")
   ok(text.includes("不推荐"), "R27 低档标「不推荐」")
   eq(findAll(tree, (n) => hasAttr(n, "data-dam-wizard-cost")).length, 4, "R28 费用四行（谷/峰/中转/免费）")
