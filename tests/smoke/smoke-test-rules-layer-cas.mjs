@@ -27,6 +27,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import os from 'node:os'
+import crypto from 'node:crypto'
 
 let pass = 0, fail = 0
 const ok = (c, m) => { if (c) { pass++; console.log('  ok   - ' + m) } else { fail++; console.log('  FAIL - ' + m) } }
@@ -76,10 +77,18 @@ console.log('== T0 前置：layer 参数被真正接受，两层 revision 必须
     const isoBody = '## 2026-11-07\n- 同一条内容。\n'
     fs.writeFileSync(isoA, isoBody, 'utf8')
     fs.writeFileSync(isoB, isoBody, 'utf8')
+    // ★夹具自证（Lead 2026-11-07 要求）：『等内容』必须是**字节级完全相同**，
+    //   否则差一个换行就退化成『测输入是否不同』—— 那正是这条判据最初的失效原因。
+    //   用 sha256 断言，不靠肉眼；同时断言两者确实是**两个不同路径**。
+    const shaOf = (f) => crypto.createHash('sha256').update(fs.readFileSync(f)).digest('hex')
+    ok(shaOf(isoA) === shaOf(isoB), 'T0-e0 夹具自证：ISO-A 与 ISO-B **字节完全相同**（sha256 相等，非肉眼近似）')
+    ok(isoA !== isoB && path.basename(isoA) !== path.basename(isoB), 'T0-e1 夹具自证：两者确实是两个**不同路径**的文件')
+    ok(isoA !== userFile && isoA !== projFile, 'T0-e2 夹具自证：隔离夹具与 T1/T2 用的夹具是不同文件（互不污染）')
     const isoEngine = { resolvePaths: async () => ({ userFile: isoA, notesPath: isoB }), readTextSafe: fakeEngine.readTextSafe, writeFull: fakeEngine.writeFull, config: {} }
     const iu = await apply(isoEngine, 'list', { layer: 'user' })
     const ip = await apply(isoEngine, 'list', { layer: 'project' })
-    ok(iu.revision !== ip.revision, 'T0-e ★两级 revision 必须不同（用**等内容双文件**隔离锁键变量；相等 ⇒ 锁键没跟层走）')
+    ok(typeof iu.revision === 'string' && iu.revision.length > 0 && typeof ip.revision === 'string' && ip.revision.length > 0, 'T0-e3 两侧 revision 都是非空字符串（否则下面的比较无意义）')
+    ok(iu.revision !== ip.revision, 'T0-e ★★【功能验收】两级 revision 必须不同（等内容双文件隔离锁键变量；相等 ⇒ 锁键没跟层走）')
   }
   const bogus = await apply(fakeEngine, 'list', { layer: 'bogus' })
   ok(bogus && bogus.ok === false && /layer/.test(String(bogus.error)), 'T0-f layer 非法值被明确拒绝')
@@ -104,7 +113,11 @@ console.log('== T1 项目层 update 一次 ⇒ 读回 revision 必须变化 ==')
   //   而写失败时 upd.revision 是 undefined ⇒ `undefined !== "str"` 恒真 ⇒ **本行假绿**。
   //   判据必须先证明「写成功 + 两边都是非空字符串」，再比不等。
   ok(typeof upd.revision === 'string' && upd.revision.length > 0, 'T1-c0 upd.revision 是非空字符串（否则下面的比较无意义）')
-  ok(upd.revision !== before.revision, 'T1-c ★★revision 在项目层写后必须变化（恒等 ⇒ revision 没绑定项目层文件）')
+  // ★★注意：T1-c 与 T1-c0 **必须合成一条复合判据**。拆成两条时，T1-c0 红、
+  //   T1-c 单看 `undefined !== "str"` 仍是绿 ⇒ 同为假绿，只是挪了个位置。
+  //   （这正是「守卫依赖链」的典型坑：前置守卫红了，后置断言必须一并失效，不能各自独立报绿。）
+  ok(typeof upd.revision === 'string' && upd.revision.length > 0 && upd.revision !== before.revision,
+    'T1-c ★★【功能验收】revision 在项目层写后必须变化（要求：非空字符串 且 不等于写前值；恒等 ⇒ revision 没绑定项目层文件）')
   ok(fs.readFileSync(projFile, 'utf8').includes('（已改）'), 'T1-d 磁盘上项目层文件真的被改了')
   ok(!fs.readFileSync(userFile, 'utf8').includes('（已改）'), 'T1-e ★用户层文件**未被误写**（换层没串味）')
 }
@@ -136,6 +149,65 @@ console.log('== T2 用旧 revision 再 update ⇒ 必须被拒 ==')
   ok(!fs.readFileSync(projFile, 'utf8').includes('（应被拒）'), 'T2-d 被拒时磁盘未被写入')
 }
 
+// ── T2B（Lead 2026-11-07 要求③）：**跨层 CAS 隔离** ────────────────────────
+//    Lead 原话：「对用户层 update 一次 ⇒ 记 revision_A；对项目层 update 一次 ⇒ 记 revision_B；
+//                用 revision_B 去改用户层 ⇒ 必须被拒（证明 CAS 真的按层隔离）。」
+//    为什么这条比 T3-b/T3-c 好：它**不读源码**，直指用户可感的后果 ——
+//    若两层的 revision 落在同一个命名空间，拿项目层票据去改用户层就会**改成功**，
+//    那是静默数据损坏，不是「编辑被拒」。
+//
+//    ★★但这个夹具**必须用等内容双文件**，否则本判据和 T0-e 是同一个陷阱（2026-11-07 实测）：
+//      · 夹具内容不同时，revA ≠ revB 天然成立；半修变异体（锁键恒用 userFile）上，
+//        项目层票据算出来的是**用户层的摘要**，而用户层文件内容恰好也没变 ⇒ 票据**匹配** ⇒
+//        跨层写入被**放行**。此时「必须被拒」这一断言在变异体上 **FAIL（抓到）**。
+//      · 等等 —— 上面的推理要实测，不能推。实测结果（见本区块末尾注释）是：
+//        内容不同夹具上跨层**被拒**（抓不到），内容相同夹具上跨层**被放行**（抓到）。
+//      ⇒ 本条判据同样必须用**等内容双文件**，理由与 T0-e 完全一致。
+console.log('')
+console.log('== T2B 跨层 CAS 隔离：项目层的 revision 不得能改用户层 ==')
+{
+  // ★等内容双文件：把「两份文件内容是否相同」这个变量钉死，只留「锁键用哪个路径」
+  const xUser = path.join(tmp, 'X-USER.md'), xProj = path.join(tmp, 'X-PROJ.md')
+  const xBody = '## 2026-11-07\n- 同一条内容。\n'
+  fs.writeFileSync(xUser, xBody, 'utf8')
+  fs.writeFileSync(xProj, xBody, 'utf8')
+  const shaX = (f) => crypto.createHash('sha256').update(fs.readFileSync(f)).digest('hex')
+  ok(shaX(xUser) === shaX(xProj), 'T2B-0 夹具自证：X-USER 与 X-PROJ **字节完全相同**（sha256 相等，非肉眼近似）')
+  ok(xUser !== xProj, 'T2B-0b 夹具自证：两者确实是两个**不同路径**的文件')
+  const xEngine = { resolvePaths: async () => ({ userFile: xUser, notesPath: xProj }), readTextSafe: fakeEngine.readTextSafe, writeFull: fakeEngine.writeFull, config: {} }
+
+  const listU = await apply(xEngine, 'list', { layer: 'user' })
+  const revA = listU.revision
+  ok(typeof revA === 'string' && revA.length > 0, 'T2B-a 拿到用户层 revision_A')
+
+  const listP = await apply(xEngine, 'list', { layer: 'project' })
+  const revB = listP.revision
+  ok(typeof revB === 'string' && revB.length > 0, 'T2B-b 拿到项目层 revision_B')
+  ok(revA !== revB, 'T2B-c revision_A ≠ revision_B（两层票据不同；等内容夹具下相等 ⇒ 锁键没跟层走）')
+
+  // ★核心：拿项目层的票据去改用户层 ⇒ 必须被拒
+  const xUserBefore = fs.readFileSync(xUser, 'utf8')
+  const cross = await apply(xEngine, 'update',
+    { layer: 'user', index: 0, expect: '同一条内容。', text: '被跨层票据改掉了。', revision: revB },
+    { requireExpect: true, requireRevision: true }
+  )
+  ok(cross && cross.ok === false, 'T2B-d ★★【功能验收】用项目层 revision_B 改用户层 **必须被拒**（落到同一命名空间就会静默改成功）')
+  ok(/版本已变化/.test(String(cross.error)), 'T2B-e 拒绝原因是版本已变化（不是别的偶然错误）')
+  ok(fs.readFileSync(xUser, 'utf8') === xUserBefore, 'T2B-f 用户层文件**逐字节未被改动**（不是「报了错但写了半截」）')
+
+  // 反向对照：用正确的 revision_A 必须能改成功 —— 否则「一律拒绝」也能让 T2B-d 通过
+  const right = await apply(xEngine, 'update',
+    { layer: 'user', index: 0, expect: '同一条内容。', text: '用正确票据改。', revision: revA },
+    { requireExpect: true, requireRevision: true }
+  )
+  ok(right && right.ok === true, 'T2B-g ★对照：持正确 revision_A 改用户层**成功**（区分「按层隔离」与「一律拒绝」）')
+  ok(fs.readFileSync(xUser, 'utf8').includes('用正确票据改'), 'T2B-h 对照路径确实写盘了')
+  ok(!fs.readFileSync(xProj, 'utf8').includes('用正确票据改'), 'T2B-i ★对照未串味：项目层文件没被这次用户层写动到')
+}
+//   实测记录（2026-11-07，半修变异体 lib/.b1-halfmut.mjs 上）：
+//     内容不同夹具 ⇒ 跨层被拒 ⇒ T2B-d PASS（**抓不到，判据失效**）
+//     内容相同夹具 ⇒ 跨层被放行 ⇒ T2B-d FAIL（**抓到，判据有效**）
+//   ⇒ 与 T0-e 同一根因：派生标识的相等性只有在「其它输入全等」时才有区分力。
 // ── T3（Lead 判据③）：变异 —— revision 恒用用户层 ⇒ T1 必红 ───────────────
 //    做法：真改 lib/index.js？不行（共享工作区，且 >500 行禁整文件写）。
 //    改为**在同一份源码上构造等价变异体**：把 view() 里的锁键实参换回 p.userFile，
@@ -155,8 +227,14 @@ console.log('== T3 变异：revision 恒用用户层 ⇒ 两层 revision 相同 
     const hitA = SRC.split(MUT_A).length - 1
     const hitB = SRC.split(MUT_B).length - 1
     // 实现落地前 MUT_A 必然是 0 命中 —— 这正是「红着」的一部分，如实报出而不是 skip
-    ok(hitA === 1, 'T3-b ★实现里恰有 1 处 memoryWriteLockKey(targetFile)（未落地时为 0 ⇒ 本行红，符合红→绿纪律；实测 ' + hitA + '）')
-    ok(hitB === 0, 'T3-c ★实现里不再有 memoryWriteLockKey(p.userFile)（残留 ⇒ 换层没换锁键；实测 ' + hitB + '）')
+    // ★★降级标注（Lead 2026-11-07 裁定）：下面两条是**纯源码字符串计数断言**，
+    //   按本仓规约「凡断言对象是源码里是否存在某字符串/计数，即恒真守卫，**不构成功能验收**」。
+    //   保留理由：它们守的是「换层没换锁键」这个**具体半修形态**，作为**辅助守卫**有价值
+    //   （我正是靠它构造并验证了半修变异体）。
+    //   ★**功能证据不在这里**，而在 T0-e（等内容双文件隔离锁键）与 T2B-d（跨层票据必须被拒）——
+    //   这两条都不读源码。已实测：把 T3 整段删掉，T0-e 仍能在半修变异体上 FAIL（独立成立）。
+    ok(hitA === 1, '[守卫·非功能验收] 实现里恰有 1 处 memoryWriteLockKey(targetFile)（防「换层没换锁键」半修形态；**功能证据见 T0-e / T2B-d**；实测 ' + hitA + '）')
+    ok(hitB === 0, '[守卫·非功能验收] 实现里不再有 memoryWriteLockKey(p.userFile)（残留 ⇒ 换层没换锁键；**功能证据见 T0-e / T2B-d**；实测 ' + hitB + '）')
     if (hitA === 1) {
       // 真做变异：写到 lib/ 同目录副本，跑完删除
       const mutPath = path.join(path.dirname(srcPath), '.rules-cas-mut-' + process.pid + '.mjs')
