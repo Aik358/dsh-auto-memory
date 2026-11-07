@@ -57,7 +57,7 @@ eq(MAX, 900, 'A3 MAX = 900')
 
 console.log('')
 console.log('== B. clamp 语义（真跑源码里的判定段） ==')
-const onceBody = block(IDX, 'async _runSubagentOnce(text, label, agent, timeoutMs) {')
+const onceBody = block(IDX, 'async _runSubagentOnce(text, label, agent, timeoutMs, override) {')
 ok(!!onceBody, 'B0 能抽出真实 _runSubagentOnce 函数体')
 const HEAD = 'const _givenTimeout = timeoutMs !== undefined && timeoutMs !== null'
 const TAIL = 'const timer = _noTimeout ? null : setTimeout('
