@@ -51,6 +51,23 @@
         // ★#522：倒计时态也要能终止（用户裁定「终止进程」= 整个接续终止）。
         //   注意与拒绝按钮并存：拒绝=只否这一次边界；终止=停掉整条接续。
         !confirmation && props.countdown > 0 ? h('p', null, t('autoContCountdown').replace('{s}', String(props.countdown)), ' ', h('button', { 'data-dam-btn': '', onClick: props.onReject }, t('autoContReject')), ' ', h('button', { 'data-dam-btn': '', 'data-dam-autocont-cancel': '', onClick: props.onCancel }, t('autoContCancel'))) : null,
-        props.executing ? h('div', { className: 'i5-continuation-progress', role: 'progressbar', 'aria-label': L('接续正在执行', 'Continuation in progress'), 'aria-busy': true }, h('span')) : null,
+        props.executing ? h('div', { className: 'i5-continuation-progress', role: 'progressbar', 'aria-label': L('接续正在执行', 'Continuation in progress'), 'aria-busy': true },
+          // ★#522 第三子项（2026-11-07）：显示「正在尝试 N/M」，而不是只有一个无信息的进度条。
+          //   ★只信任后端给的数字：n 必须是 >=1 的整数才渲染；m 缺失或 <=0 时**不显示分母**，
+          //     退化成不带总数的文案 —— 绝不编造「/2」或显示「正在尝试 0/2」。
+          (function () {
+            var n0 = Number(props.ritualTry)
+            if (!(isFinite(n0) && n0 >= 1)) return null   // 没有可信的次数 ⇒ 只留空进度条
+            var nn = Math.floor(n0)
+            var m0 = Number(props.ritualMax)
+            var hasMax = isFinite(m0) && m0 >= 1 && m0 >= nn
+            return h('span', {
+              'data-dam-autocont-try': '',
+              'data-dam-autocont-try-n': String(nn),
+              'data-dam-autocont-try-m': hasMax ? String(Math.floor(m0)) : '',
+            }, hasMax
+              ? t('autoContRitualTry').replace('{n}', String(nn)).replace('{m}', String(Math.floor(m0)))
+              : t('autoContRitualTryNoMax').replace('{n}', String(nn)))
+          })()) : null,
         props.status ? h('p', { className: 'i5-continuation-status', role: 'status' }, props.status) : null)
     }
