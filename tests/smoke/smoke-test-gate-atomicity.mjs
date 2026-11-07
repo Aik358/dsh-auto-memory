@@ -79,15 +79,18 @@ for (const g of gates) console.log(`        ${g.field.padEnd(20)} @L${g.line + 1
 console.log('【发现】占位（非释放形态）')
 for (const p of placeholders) console.log(`        ${p.field.padEnd(20)} @L${p.line + 1}`)
 
-const EXPECT_GATES = ['_subagentInflight', '_wbRotateBusy', '_workbenchBusy']
+// ★R192（2026-11-07 · P0-2 / #549 补写回放单飞）：新增 _pendingReplayInflight —— 它是**真互斥闸门**
+//   （同名字段闸门 + 占位 + finally 释放齐备，判据 A/B/C/D 全过），不是 _scheduleBusy 那种一次性旗标。
+//   故登记进 EXPECT_GATES 并同步下方两条计数锁（3→4 闸门、5→6 占位）。
+const EXPECT_GATES = ['_subagentInflight', '_wbRotateBusy', '_workbenchBusy', '_pendingReplayInflight']
 console.log('\n【发现完整性】形态扫描不得漏检（坑②）')
-ck({ name: '★标量闸门发现数 = 3（smart recall 按身份 Map 单飞另验）', ok: gates.length === EXPECT_GATES.length, detail: `实际 ${gates.length}` })
+ck({ name: '★标量闸门发现数 = 4（smart recall 按身份 Map 单飞另验）', ok: gates.length === EXPECT_GATES.length, detail: `实际 ${gates.length}` })
 ck({
   name: '★闸门字段集合逐字匹配',
   ok: JSON.stringify([...new Set(gates.map((g) => g.field))].sort()) === JSON.stringify([...EXPECT_GATES].sort()),
   detail: [...new Set(gates.map((g) => g.field))].join(','),
 })
-ck({ name: '★标量占位发现数 = 5', ok: placeholders.length === 5, detail: `实际 ${placeholders.length}` })
+ck({ name: '★标量占位发现数 = 6', ok: placeholders.length === 6, detail: `实际 ${placeholders.length}` })
 const smartStart = raw.indexOf('  async smartRecall(query, agent) {')
 const smartBody = raw.slice(smartStart, raw.indexOf('  async _smartRecallCore(', smartStart))
 ck({ name: '★smart recall 键含问题、源会话与工作区', ok: /JSON\.stringify\(\[String\(query/.test(smartBody) && smartBody.includes('p.ws') && smartBody.includes('agent.session.id') })

@@ -143,7 +143,11 @@ console.log('== D. replay 失败路径（★负路径：失败文件必须留在
   })
   T.eq([r.replayed, r.failed, r.remaining], [3, 1, 1], 'D-1 ★apply 抛错 ⇒ replayed=3 failed=1 remaining=1')
   T.ok(fs.existsSync(badFile), 'D-2 ★★失败的队列文件仍在盘上（不得静默丢弃）')
-  T.eq(await readSha(badFile), badSha, 'D-3 失败文件内容逐字节未变（可原样重试）')
+  // ★#549 判据变更：旧断言「逐字节未变」守的是旧实现细节（旧版不写回 attempts）；新判据守不变量 = 文件仍在 + entry 主体未篡改。
+  T.ok(fs.existsSync(badFile) && (await readSha(badFile)) !== badSha, 'D-3 ★失败文件仍在盘上且写入可见状态（attempts/lastError）')
+  const badRec = await readJson(badFile)
+  T.eq(badRec.entry.seq, 1, 'D-3b ★entry 主体未被篡改（仍可原样重试）')
+  T.eq(badRec.attempts, 1, 'D-3c attempts 已累加为 1')
   T.eq(await queueFiles(root, RUN), [path.basename(badFile)], 'D-4 其余成功条目已删除，只剩失败那条')
   const failResult = r.results.find((x) => !x.ok)
   T.eq(failResult && failResult.code, 'apply-threw', 'D-5 失败回执带 code=apply-threw')
@@ -162,15 +166,17 @@ console.log('== D. replay 失败路径（★负路径：失败文件必须留在
   const broken = path.join(pendingRunDirPre(root, RUN), (T0 + 99) + '-broken.json')
   await writeFile(broken, '{ 这不是 JSON', 'utf8')
   const r4 = await replayPendingWritesPre({ root, runId: RUN, apply: async () => ({ ok: true }) })
-  T.eq([r4.replayed, r4.failed, r4.remaining], [1, 1, 1], 'D-10 ★损坏 JSON ⇒ 该条 failed 且保留；同批可成功的条目照常补写')
+  // ★#549：badFile 已失败 3 次（D-1/D-6/D-9）达上限 ⇒ 本轮不再自动重试但仍留盘（issue 要求的「失败重试+不丢文件」）。
+  T.eq([r4.replayed, r4.failed, r4.remaining, r4.skipped], [0, 1, 2, 1], 'D-10 ★达上限条目本轮跳过但仍保留；损坏条目 failed 且保留')
   T.ok(fs.existsSync(broken), 'D-11 损坏文件仍在盘上（供人工排查）')
   T.ok(r4.results.some((x) => x.code === 'unreadable'), 'D-12 损坏回执 code=unreadable')
-  T.ok(!fs.existsSync(badFile), 'D-12b 同一轮里重试成功的旧失败条目已删除（坏文件不影响好文件）')
+  T.ok(fs.existsSync(badFile), 'D-12b ★★达上限的条目仍在盘上（不静默丢弃，供人工处置）')
+  T.ok(r4.results.some((x) => x.code === 'retry-exhausted'), 'D-12c 回执明写 retry-exhausted（不静默跳过）')
 
   // 缺 apply ⇒ 明确拒绝，不动任何文件
   const r5 = await replayPendingWritesPre({ root, runId: RUN })
   T.ok(r5.ok === false && r5.code === 'no-apply', 'D-13 ★缺 apply 回调 ⇒ no-apply（不静默成功）')
-  T.eq((await queueFiles(root, RUN)).length, 1, 'D-14 缺 apply 时队列文件一个都没动（只剩损坏那条）')
+  T.eq((await queueFiles(root, RUN)).length, 2, 'D-14 缺 apply 时队列文件一个都没动（达上限那条 + 损坏那条）')
 
   // 不存在的 run ⇒ 全 0，不建目录
   const r6 = await replayPendingWritesPre({ root, runId: 'run-nope', apply: async () => ({ ok: true }) })
