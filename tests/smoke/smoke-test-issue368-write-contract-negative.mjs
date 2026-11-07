@@ -12,7 +12,7 @@ const root = fs.mkdtempSync(path.join(os.tmpdir(), 'dam-368-'))
 const checker = fileURLToPath(new URL('../../tools/check-write-contract-await.mjs', import.meta.url))
 try {
   const source = fs.readFileSync(new URL('../../lib/index.js', import.meta.url), 'utf8')
-  const mutant = source.replace('await engine.writeFull(p.userFile, r.text', 'engine.writeFull(p.userFile, r.text')
+  const mutant = source.replace('await engine.writeFull(targetFile, r.text', 'engine.writeFull(p.userFile, r.text')
   assert.notEqual(mutant, source)
   const file = path.join(root, 'index.js')
   fs.writeFileSync(file, mutant)
