@@ -86,6 +86,7 @@ echo "=== EXISTING ==="; grep -o '"name": *"[^"]*"' "$D/handoff/event-store.json
 
 ```
 memory_event(action='create',
+  workspace='<本区目录名，照抄清单表格「工作区目录名」列>',   ★#556 必填：不传会写回会话绑定区（中枢），不是本区
   name='<4-60 字，去掉 ★ 和括号注解>',
   summary='<≤400 字>',
   kind='ledger',
@@ -105,7 +106,9 @@ memory_event(action='create',
 > **用户原话**：「memory log 按时间依附」在相应事件下（不是独立建事件）—— 日志不是独立事件，是挂到事件下的检查点。
 
 ```
-memory_event(action='append', eventId='<create 返回的 id>',
+memory_event(action='append',
+  workspace='<与本事件 create 时逐字相同的目录名>',   ★#556 必填：append 必须落到 create 的那个区，否则检查点挂进别的库
+  eventId='<create 返回的 id>',
   checkpoint={
     at=<该日志日期时间戳>,
     kind='log',
@@ -129,6 +132,10 @@ memory_event(action='append', eventId='<create 返回的 id>',
 
 ### 第 5 步 · 渲染新白板（1 次 memory_note · **不要手写正文**）
 
+> **★★#556 必填 workspace**：调用形态是 memory_note(workspace=清单目录名, kind=plan, fromEvents=true)。
+> 不传 workspace 就写回会话绑定区（= 中枢）—— 这正是 #556 的原始症状：子代理报「渲染成功」，实际写进另一个区的白板。
+> 同一个区全程用同一串值（照抄清单表格「工作区目录名」列，不要自己拼路径）。
+
 ```
 memory_note(kind='plan', fromEvents=true)
 ```
@@ -144,6 +151,8 @@ memory_note(kind='plan', fromEvents=true)
 
 **写盘注意**（渲染路径已自动处理，你只需确认）：
 - 旧白板的 `<!--memory:mem_*` 锚点由写盘口保护（M1 门），**不需要你抄**
+- ★#556：**每一次** create / append / set / plan 都必须显式传 workspace，值只从清单表格「工作区目录名」列照抄，
+  同一个区全程**逐字相同**（目录名或绝对路径都行，但不要混用）。不传 ⇒ 回落会话绑定区（中枢）⇒ 写错库。
 - **不新增** HTML 注释
 - 旧白板自动归档，不丢
 - 备份纪律：**只读原样复制**，不修改原件
@@ -323,7 +332,7 @@ memory_note(kind='plan', fromEvents=true)
 ## 9 · 工具参数速查
 
 ```
-memory_event(action, eventId?, name?, summary?, kind?, confidence?,
+memory_event(workspace, action, eventId?, name?, summary?, kind?, confidence?,
              startMs?, endMs?, members?, rationale?, sections?, outcomes?,
              constraints?, checkpoint?, constraint?,
              userPercept?, agentTrace?, sharedGround?, commitment?)
@@ -334,9 +343,9 @@ memory_event(action, eventId?, name?, summary?, kind?, confidence?,
   close   → 收尾（需 outcome）
   rename  → 改名（需 name）
 
-memory_note(kind='plan', fromEvents=true)  → 从事件渲染新白板（**首选，不要手写 content**）
+memory_note(workspace, kind='plan', fromEvents=true)  → 从事件库渲染新白板（**首选，不要手写 content**）
 memory_note(kind='plan', content='...')  → 仅渲染器故障时的兜底手写
-memory_note(kind='note', action='append', content='...') → 项目规约
+memory_note(workspace, kind='note', action='append', content='...') → 项目规约
 memory_user(action='append', content='...') → 用户规约（跨项目）
 ```
 
