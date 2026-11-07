@@ -5,9 +5,12 @@ import { UPGRADE_LINKS, usableUpgradeLinksPre, UPGRADE_LINK_LABELS } from '../..
 
 const T = createHarness('hub-access')
 
-// ── 归一化：目录名与绝对路径都能比 ──
-T.eq(normalizeWsKeyPre('C:\\Users\\X\\.dsh\\memory\\workspaces\\--D--proj--'), 'c:/users/x/.dsh/memory/workspaces/--d--proj--', 'N1 反斜杠归一为正斜杠并小写')
-T.eq(normalizeWsKeyPre('  "--D--proj--"  '), '--d--proj--', 'N2 去引号/空白，保留目录名')
+// ── 归一化：目录名与绝对路径都能比；★#552 大小写按平台/文件系统语义 ──
+// 旧判据（无条件 toLowerCase）已过期：它把 Linux 上两个不同 inode 的目录归一成同一 key。
+T.eq(normalizeWsKeyPre('C:\\Users\\X\\.dsh\\memory\\workspaces\\--D--proj--', { caseSensitive: true }), 'C:/Users/X/.dsh/memory/workspaces/--D--proj--', 'N1 大小写敏感语义：斜杠归一但保留原大小写（新判据；旧=恒小写）')
+T.eq(normalizeWsKeyPre('C:\\Users\\X\\.dsh\\memory\\workspaces\\--D--proj--', { caseSensitive: false }), 'c:/users/x/.dsh/memory/workspaces/--d--proj--', 'N1b 大小写不敏感语义（Windows）：折叠小写')
+T.eq(normalizeWsKeyPre('/srv/ws/ProjectA', { caseSensitive: true }) === normalizeWsKeyPre('/srv/ws/projecta', { caseSensitive: true }), false, 'N1c ★大小写敏感语义：ProjectA 与 projecta 不得归一为同一 key（负路径）')
+T.eq(normalizeWsKeyPre('  "--D--proj--"  ', { caseSensitive: false }), '--d--proj--', 'N2 去引号/空白，保留目录名')
 T.eq(normalizeWsKeyPre(''), '', 'N3 空值⇒空串（不猜）')
 
 // ── 身份门 ──
@@ -33,11 +36,14 @@ T.eq(r3.ok, false, 'D6 非中枢跨区⇒拒'); T.eq(r3.code, WRITE_DENY.NOT_HUB
 
 // ── 正路径：中枢 + 白名单内（目录名形式）──
 const r4 = decideWriteTargetPre({ sessionId: 'session-hub-1', hubSessionIds: HUB, boundWs: 'C:/mem/workspaces/--C--Users-X-.dsh-hub--', requestedWs: '--D--proj-b--', allowedWs: ALLOWED })
-T.eq(r4.ok, true, 'D9 中枢+清单内⇒放行'); T.eq(r4.target, '--D--proj-b--', 'D10 落点=请求目标'); T.eq(r4.redirected, true, 'D11 确实重定向')
+T.eq(r4.ok, true, 'D9 中枢+清单内⇒放行'); T.eq(r4.target, '--D--proj-b--', 'D10 落点=匹配到的授权项'); T.eq(r4.redirected, true, 'D11 确实重定向')
 
 // ── 正路径：目录名经 resolveWs 解析成绝对路径 ──
 const r5 = decideWriteTargetPre({ sessionId: 'session-hub-1', hubSessionIds: HUB, boundWs: 'C:/mem/workspaces/--C--Users-X-.dsh-hub--', requestedWs: '--D--proj-b--', allowedWs: ALLOWED, resolveWs: (w) => 'C:/mem/workspaces/' + w })
-T.eq(r5.ok, true, 'D12 解析后仍在清单内⇒放行'); T.eq(r5.target, 'C:/mem/workspaces/--D--proj-b--', 'D13 落点为解析后的绝对路径')
+T.eq(r5.ok, true, 'D12 解析后仍在清单内⇒放行'); T.eq(r5.target, '--D--proj-b--', 'D13 ★落点=匹配到的授权项（目录名授权原值，不是解析后的请求值）')
+const RESOLVED_ONLY = ['C:/mem/workspaces/--D--proj-c--']
+const r5b = decideWriteTargetPre({ sessionId: 'session-hub-1', hubSessionIds: HUB, boundWs: 'C:/mem/workspaces/--C--Users-X-.dsh-hub--', requestedWs: '--D--proj-c--', allowedWs: RESOLVED_ONLY, resolveWs: (w) => 'C:/mem/workspaces/' + w })
+T.eq(r5b.ok, true, 'D13a 仅解析值命中授权项⇒放行'); T.eq(r5b.target, 'C:/mem/workspaces/--D--proj-c--', 'D13b ★落点=匹配到的授权项（解析后的白名单原值）')
 
 // ── 负路径：中枢但目标不在清单 ──
 const r6 = decideWriteTargetPre({ sessionId: 'session-hub-1', hubSessionIds: HUB, boundWs: 'C:/mem/workspaces/--C--Users-X-.dsh-hub--', requestedWs: '--D--proj-zzz--', allowedWs: ALLOWED })
@@ -51,9 +57,20 @@ T.eq(r7.ok, false, 'D17 空清单⇒拒'); T.eq(r7.code, WRITE_DENY.NOT_IN_SCOPE
 const r8 = decideWriteTargetPre({ sessionId: 'session-user', hubSessionIds: HUB, boundWs: 'C:/mem/workspaces/--D--proj-a--', requestedWs: '   ', allowedWs: ALLOWED })
 T.eq(r8.ok, true, 'D19 空白目标视作未传⇒按绑定放行'); T.eq(r8.redirected, false, 'D20 且不算重定向')
 
-// ── 大小写/斜杠等价：Windows 路径不同写法视为同一工作区 ──
-const r9 = decideWriteTargetPre({ sessionId: 'session-hub-1', hubSessionIds: HUB, boundWs: 'C:/mem/workspaces/--C--Users-X-.dsh-hub--', requestedWs: 'c:\\MEM\\workspaces\\--d--proj-a--', allowedWs: ALLOWED })
-T.eq(r9.ok, true, 'D21 大小写/斜杠差异仍命中白名单')
+// ── ★#552：大小写语义按平台/文件系统判定，落点取授权项 ──
+// 旧 D21 无条件小写钉成绿；现在改成显式「Windows 大小写不敏感」语境（生产形状）= 仍放行。
+const r9 = decideWriteTargetPre({ sessionId: 'session-hub-1', hubSessionIds: HUB, boundWs: 'C:/mem/workspaces/--C--Users-X-.dsh-hub--', requestedWs: 'c:\\MEM\\workspaces\\--d--proj-a--', allowedWs: ALLOWED, caseSensitive: false })
+T.eq(r9.ok, true, 'D21 大小写不敏感语义（Windows）⇒大小写/斜杠差异仍命中白名单')
+T.eq(r9.target, 'C:/mem/workspaces/--D--proj-a--', 'D22 ★落点=匹配到的授权项原值，不是小写请求值')
+// 负路径：同一请求放到大小写敏感语义（Linux/macOS 大小写敏感卷）下必须拒。
+const r10 = decideWriteTargetPre({ sessionId: 'session-hub-1', hubSessionIds: HUB, boundWs: 'C:/mem/workspaces/--C--Users-X-.dsh-hub--', requestedWs: 'c:\\MEM\\workspaces\\--d--proj-a--', allowedWs: ALLOWED, caseSensitive: true })
+T.eq(r10.ok, false, 'D23 ★★大小写敏感语义⇒大小写不同的请求必须拒（#552 越权）')
+T.eq(r10.code, WRITE_DENY.NOT_IN_SCOPE, 'D24 码=not-in-manifest')
+const r11 = decideWriteTargetPre({ sessionId: 'session-hub-1', hubSessionIds: HUB, boundWs: '/srv/ws/hub', requestedWs: '/srv/ws/projecta', allowedWs: ['/srv/ws/ProjectA'], caseSensitive: true })
+T.eq(r11.ok, false, 'D25 ★★/srv/ws/projecta 冒用 /srv/ws/ProjectA ⇒ 必须拒')
+const r12 = decideWriteTargetPre({ sessionId: 'session-hub-1', hubSessionIds: HUB, boundWs: '/srv/ws/hub', requestedWs: '/srv/ws/ProjectA', allowedWs: ['/srv/ws/ProjectA'], caseSensitive: true })
+T.eq(r12.ok, true, 'D26 大小写完全一致 ⇒ 放行（正对照）')
+T.eq(r12.target, '/srv/ws/ProjectA', 'D27 ★落点=匹配到的授权项')
 
 // ── 链接常量：只存 https，且文案与链接同源 ──
 T.eq(/^https:\/\//.test(UPGRADE_LINKS.relay), true, 'L1 中转站为 https')

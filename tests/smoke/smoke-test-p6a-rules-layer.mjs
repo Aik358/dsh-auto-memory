@@ -190,7 +190,17 @@ console.log('[P6A-5] ★分级注入（用户裁定"不是不注入，而是精�
   ok(/renderSlimSnapshotPre\([^)]*\) \{/.test(code), '引擎侧提供 renderSlimSnapshotPre')
   // 精简版必须**含三样**：规则段 / Tier-0 目录 / 日程（并显式说明这是精简版）
   const slimAt = code.search(/renderSlimSnapshotPre\([^)]*\) \{/)
-  const fn = slimAt < 0 ? '' : code.slice(slimAt, slimAt + 4200)
+  // ★P2b（2026-11-07）判据修正（**判据过期，非产品缺陷**）：原切片是固定长度 `slimAt + 4200`。
+  //   renderSlimSnapshotPre 里新增 S3 的「[硬约束] 一行指针」及其归因注释后，方法体 4,200 字符
+  //   已装不下函数末尾的 snapshotSlimNote / snapshotSlimRecallNote ⇒ 四条断言因**切片截断**报红，
+  //   与「精简版是否真的声明唤回」无关。
+  //   ⇒ 改为「切到下一个方法边界」（与同文件 P6A-6 早已采用的 nextMethod 口径一致），判据语义不变：
+  //     仍然只测 renderSlimSnapshotPre 一个方法体，不跨方法、不放松任何一条断言。
+  const slimEnd = (() => {
+    const nx = code.indexOf('turnBoundaryKeyPre(agent) {', slimAt)
+    return nx > slimAt ? nx : slimAt + 8000
+  })()
+  const fn = slimAt < 0 ? '' : code.slice(slimAt, slimEnd)
   ok(fn.length > 0, '精简版函数体切片非空（签名变更后切片不得落空）')
   ok(!/renderRulesSectionPre\(layer/.test(fn), '★精简版**不含**规则段（★2026-10-01 用户裁定：规则只在完整版给）')
   ok(!/s\.tier0LayerText/.test(fn), '★精简版**不含** Tier-0 常驻目录（用户裁定砍掉；改为指引模型按需 memory_recall）')

@@ -54,7 +54,15 @@ console.log('[C1] 兼容层：旧格式能读、不崩、不丢内容');
   // 真实文件守卫：两个真实 MEMORY.md 的锚点前都是空行 ⇒ 现状无损失
   ok(typeof RL.splitMemoryEntriesPre === 'function', 'C1-7c splitMemoryEntriesPre 存在（守卫）');
   const ex = RL.extractRulesLayerPre({ userText: OLD_TXT, notesText: '', rulesLayeringMode: 'self' });
-  ok(ex.counts.entries === 1 && ex.counts.rules === 1, '★★C1-8 旧格式 ⇒ 规则抽取正常', JSON.stringify(ex.counts));
+  // ★★P2b-S1 判据重钉（2026-11-07 · task-29）：**判据过期，非产品缺陷**。
+  //   OLD_TXT 本来就是「一条 entry 里塞两条约束」（必须用 CRLF / 严禁裸 hex 色值）。
+  //   S1 之前只渲染首条 bullet ⇒ rules=1；S1 的目的正是把这两条都投出去 ⇒ rules=2。
+  //   判据意图不变（**旧格式仍能被正常抽取**），改为被重钉的确切数并把两条正文都断言在场
+  //   （比原判据更强：原判据在「第二条被吞」时也绿）。
+  ok(ex.counts.entries === 1 && ex.counts.rules === 2, '★★C1-8 旧格式 ⇒ 规则抽取正常（S1 后一条 entry 的两条 bullet 都抽出）', JSON.stringify(ex.counts));
+  const _sec = RL.renderRulesSectionPre(ex);
+  ok(_sec.text.indexOf('必须用 CRLF 换行') >= 0 && _sec.text.indexOf('严禁裸 hex 色值') >= 0,
+    '★★★C1-8b 两条 bullet **都进了渲染结果**（S1 前第二条从未渲染过）');
 }
 
 console.log('');

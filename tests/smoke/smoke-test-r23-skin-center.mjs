@@ -119,8 +119,19 @@ ok(resolveSkinTheme('{{', {}).accepted === false, 'D5 ★★负路径 坏 JSON �
 const rbad = resolveSkinTheme(JSON.stringify({ schemaVersion: 1, name: 'a1', displayName: 'b', tokens: { 'color.brand': '#fff', 'color.text': 'zzz' } }), {})
 ok(rbad.accepted && rbad.tokens['color.brand'] === '#fff' && rbad.tokens['color.text'] === undefined, 'D6 ★★单 token 非法只忽略该项，其余生效')
 ok(isCssSafe('@import "a.css";').ok === false && isCssSafe('a{background:url(http://e/x)}').ok === false && isCssSafe('a{color:#fff}').ok === true, 'D7 ★★CSS 三路：@import 拒 / 外链拒 / 白名单放行')
-const c = composeSkinTheme([{ layer: 'team', name: 't', tokens: { 'color.brand': '#111' } }, { layer: 'user', name: 'u', tokens: { 'color.brand': '#222', 'brand.name': 'me' } }])
-ok(c.tokens['color.brand'] === '#111' && c.tokens['brand.name'] === 'me' && c.conflict === true, 'D8 ★★三层优先级 团队>用户 + 覆盖可检出')
+// ★#553：D8 旧夹具多带了一个不重叠 key `brand.name`，靠「user/team 两层都用过」判 conflict ⇒ 判据过期。
+// 新判据 = 逐键实际覆盖：真覆盖 / 真不重叠两例分开钉，不再让第三个 key 充当假绿支点。
+const cOverlap = composeSkinTheme([{ layer: 'team', name: 't', tokens: { 'color.brand': '#111' } }, { layer: 'user', name: 'u', tokens: { 'color.brand': '#222' } }])
+ok(cOverlap.tokens['color.brand'] === '#111' && cOverlap.conflict === true, 'D8 ★★真覆盖（同 key）：团队>用户 + conflict=true（旧判据此处 false）')
+ok(Array.isArray(cOverlap.conflictKeys) && cOverlap.conflictKeys.join(',') === 'color.brand', 'D8b ★★逐键列表=color.brand')
+ok(cOverlap.warnings.some((w) => /团队主题覆盖用户主题/.test(w) && /color\.brand/.test(w)), 'D8c ★覆盖提示方向=团队覆盖用户，且带逐键列表')
+ok(!cOverlap.warnings.some((w) => /用户主题覆盖团队主题/.test(w)), 'D8d ★方向写反的总提示不再出现')
+const cDisjoint = composeSkinTheme([{ layer: 'team', name: 't', tokens: { 'color.brand': '#111' } }, { layer: 'user', name: 'u', tokens: { 'color.bg': '#fff', 'brand.name': 'me' } }])
+ok(cDisjoint.tokens['color.bg'] === '#fff' && cDisjoint.tokens['brand.name'] === 'me', 'D8e 无重叠时用户 token 照常生效')
+ok(cDisjoint.conflict === false && cDisjoint.conflictKeys.length === 0, 'D8f ★★混两层但无键重叠 ⇒ conflict=false、逐键列表为空（旧判据此处 true）')
+ok(!cDisjoint.warnings.some((w) => /团队主题覆盖用户主题/.test(w)), 'D8g ★无键重叠不得出现覆盖提示')
+const cUserOnly = composeSkinTheme([{ layer: 'user', name: 'u1', tokens: { 'color.bg': '#111' } }, { layer: 'user', name: 'u2', tokens: { 'color.bg': '#222' } }])
+ok(cUserOnly.tokens['color.bg'] === '#222' && cUserOnly.conflict === false, 'D8h 同层后者胜且无 team ⇒ conflict=false（正对照）')
 eq(SKIN_TOKEN_KEYS.length, 42, 'D9 公开 token 清单 = 42（12 卷 §四）')
 
 /* ── E. 守恒 ── */

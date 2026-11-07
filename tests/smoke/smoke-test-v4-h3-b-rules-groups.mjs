@@ -32,8 +32,14 @@ const ok = (c, n, d) => { if (c) { pass++; console.log('  PASS ' + n + (d ? '  =
 // ══════════════════════════════════════════════════════════════════════
 console.log('[B-1] 警戒线常量');
 {
-  ok(RL.USER_RULES_WARN_CHARS_PRE_V1 === 1500, '★★B-1a 用户规约警戒线 = 1,500', String(RL.USER_RULES_WARN_CHARS_PRE_V1));
-  ok(RL.PROJECT_RULES_WARN_CHARS_PRE_V1 === 4000, '★★B-1b 项目规约警戒线 = 4,000', String(RL.PROJECT_RULES_WARN_CHARS_PRE_V1));
+  // ★★P2b-S6（2026-11-07）：预算**单真源** —— 两个导出常量已删（生产不可达的 1500/4000 与 config 的
+  //   4000/6000 是两本账），改为一张兜底表 RULES_BUDGET_FALLBACK_PRE_V1，数值与 DEFAULT_CONFIG 对齐。
+  //   判据意图不变（仍是「有一个明确的出厂兜底值 + 不新增配置键」），只更新被锁的载体与被锁的值。
+  ok(RL.USER_RULES_WARN_CHARS_PRE_V1 === undefined && RL.PROJECT_RULES_WARN_CHARS_PRE_V1 === undefined,
+    '★★B-1a [负路径] 旧的两个预算常量已删除（预算不再有两本账）',
+    'user=' + String(RL.USER_RULES_WARN_CHARS_PRE_V1) + ' project=' + String(RL.PROJECT_RULES_WARN_CHARS_PRE_V1));
+  const FB = RL.RULES_BUDGET_FALLBACK_PRE_V1 || {};
+  ok(FB.user === 4000 && FB.project === 6000, '★★B-1b 兜底表与 DEFAULT_CONFIG 对齐（user 4,000 / project 6,000）', JSON.stringify(FB));
   const IX = fs.readFileSync(path.join(ROOT, 'lib', 'index.js'), 'utf8');
   ok(IX.indexOf('USER_RULES_WARN_CHARS') < 0 || !/USER_RULES_WARN_CHARS[^_A-Z]/.test(IX), '★B-1c 未把警戒线做成配置键（模块级常量即可）');
 }
@@ -74,29 +80,33 @@ console.log('');
 console.log('[B-3] 警戒线（超限不截断）');
 {
   // 用户规约超 1500
-  const bigU = { rules: Array.from({ length: 40 }, (_, i) => ({ text: '用户规则第' + i + '条：' + '甲'.repeat(35), layer: 'user' })) };
+  // ★P2b-S6（2026-11-07）判据修正（**判据过期，非产品缺陷**）：出厂兜底值已按 2026-10-26 裁定放大
+  //   到 user 4,000（原 1500 ⇒ 40×~35 字构造还能超线；现在 1,869 < 4,000 不超了）。
+  //   判据意图不变（**超限 ⇒ 全量注入 + 提示**），只把构造规模跟着预算放大（120 条 ≈ 5.6k 字）。
+  const bigU = { rules: Array.from({ length: 120 }, (_, i) => ({ text: '用户规则第' + i + '条：' + '甲'.repeat(35), layer: 'user' })) };
   const rU = RL.renderRulesSectionPre(bigU, { groupByLayer: true });
   // ★判据改为「真的超了**当前出厂预算**」（预算已可配，写死 1500 会随配置漂移而假红）
-  const userBudget = RL.USER_RULES_WARN_CHARS_PRE_V1
+  const userBudget = RL.RULES_BUDGET_FALLBACK_PRE_V1.user
   ok(rU.groups.user > userBudget, '★★B-3a 构造的用户规约确实超预算线', rU.groups.user + ' > ' + userBudget);
   ok(!!rU.warn && rU.warn.indexOf('[用户规约超预算线]') >= 0, '★★★B-3b 超限 ⇒ 有「用户规约超预算线」提示（2026-10-26 用户裁定：警戒线即预算线）');
   ok(rU.warn.indexOf(String(rU.groups.user)) >= 0 && rU.warn.indexOf(String(userBudget)) >= 0, '★★B-3c 提示里给出「当前 X / 预算 Y」两个数');
   // ★2026-10-26 新增（用户裁定「可审计」）：提示还必须给出占比与超出量
   ok(/占\s*[\d.]+%/.test(rU.warn) && /超\s*\d+/.test(rU.warn), '★★★B-3c2 提示含占比与超出量（可审计）', String(rU.warn).slice(0, 70));
   // ★★核心：全量注入，一条都不少
-  const allU = Array.from({ length: 40 }, (_, i) => rU.text.indexOf('用户规则第' + i + '条') >= 0).every(Boolean);
-  ok(allU, '★★★B-3d **40 条全部在注入文本里（不截断）**');
+  const allU = Array.from({ length: 120 }, (_, i) => rU.text.indexOf('用户规则第' + i + '条') >= 0).every(Boolean);
+  ok(allU, '★★★B-3d **120 条全部在注入文本里（不截断）**');
   // 警告在最前面
   ok(rU.text.trimStart().indexOf('[用户规约超预算线]') === 0, '★★B-3e 警告放在**最前面**（模型先看到异常再读内容）');
 
   // 项目规约超 4000
-  const bigP = { rules: Array.from({ length: 90 }, (_, i) => ({ text: '项目规则第' + i + '条：' + '乙'.repeat(48), layer: 'project' })) };
+  // ★P2b-S6（2026-11-07）：同上 —— 出厂兜底 project 6,000（原 4000），构造规模同步放大到 130 条（≈7.8k 字）。
+  const bigP = { rules: Array.from({ length: 130 }, (_, i) => ({ text: '项目规则第' + i + '条：' + '乙'.repeat(48), layer: 'project' })) };
   const rP = RL.renderRulesSectionPre(bigP, { groupByLayer: true });
-  const projBudget = RL.PROJECT_RULES_WARN_CHARS_PRE_V1
+  const projBudget = RL.RULES_BUDGET_FALLBACK_PRE_V1.project
   ok(rP.groups.project > projBudget, '★★B-3f 构造的项目规约确实超预算线', rP.groups.project + ' > ' + projBudget);
   ok(!!rP.warn && rP.warn.indexOf('[项目规约超预算线]') >= 0, '★★★B-3g 超限 ⇒ 有「项目规约超预算线」提示');
-  const allP = Array.from({ length: 90 }, (_, i) => rP.text.indexOf('项目规则第' + i + '条') >= 0).every(Boolean);
-  ok(allP, '★★★B-3h **90 条全部在注入文本里（不截断）**');
+  const allP = Array.from({ length: 130 }, (_, i) => rP.text.indexOf('项目规则第' + i + '条') >= 0).every(Boolean);
+  ok(allP, '★★★B-3h **130 条全部在注入文本里（不截断）**');
   ok(rP.text.indexOf('…') < 0 && rP.text.indexOf('...') < 0, '★★★B-3i 没有省略号/截断标记（证明不是截断）');
   // ★负：未超限时**不得**有提示
   const small = { rules: [{ text: '小规约', layer: 'project' }] };
