@@ -137,9 +137,14 @@ eq(X.UPGRADE_REPROMPT_MS, 24 * 3600 * 1000, "G2 闸③阈值 = 24h")
 
 // ═══ 3. 费用分摊：不写公式，只按字符占比分摊宿主 totals ══════════════════════
 console.log("== 3. 费用分摊 upgradeWizardCostSharePre（对拍宿主 estimateUpgradeTotalsPre） ==")
+// ⚠️ **wsPath 是记忆存储目录，不是会话 cwd**（#557 第 1 层根因）。
+//   真实形态：会话 cwd = D:/proj-a，清单 wsPath = /memory/workspaces/--D--proj-a--，**两者不是同一个字符串**。
+//   旧夹具把 wsPath 直接写成 cwd，等于人为制造「cwd 与 wsPath 可比」的假象 —— 那正是这个 bug
+//   能"看起来工作"的原因。**不要把它"简化"回 D:\\proj-a**，否则夹具又会变成 bug 的复现装置。
+//   （C 组费用分摊只读 chars，不读 wsPath，故本次修夹具不影响 C1–C7。）
 const FIX_ROWS = [
-  { wsKey: "--A--", wsPath: "D:\\proj-a", planChars: 40000, logCount: 10, logChars: 60000, chars: 100000 },
-  { wsKey: "--B--", wsPath: "D:\\proj-b", planChars: 20000, logCount: 3, logChars: 30000, chars: 50000 },
+  { wsKey: "--A--", wsPath: "D:\\mem\\--A--", matchedWsKey: null, planChars: 40000, logCount: 10, logChars: 60000, chars: 100000 },
+  { wsKey: "--B--", wsPath: "D:\\mem\\--B--", matchedWsKey: "--B--", planChars: 20000, logCount: 3, logChars: 30000, chars: 50000 },
 ]
 const TOTALS = estimateUpgradeTotalsPre(FIX_ROWS.map((r) => ({ wsKey: r.wsKey, chars: r.chars })), "medium")
 ok(TOTALS.ok === true && TOTALS.count === 2, "C0 宿主 totals 夹具可用（count=" + TOTALS.count + "）")
@@ -216,12 +221,24 @@ console.log("== 5. 进度卡模型 upgradeWizardProgressModelPre（真调用） 
 // ═══ 6. 范围选择（未知 scope 明确拒绝） ══════════════════════════════════════
 console.log("== 6. 范围选择 upgradeWizardScopeRowsPre / 当前区定位 ==")
 {
-  const cur = X.upgradeWizardCurrentRowPre(FIX_ROWS, "D:\\proj-b")
-  ok(cur && cur.wsKey === "--B--", "S1 当前区按路径归一化精确命中（--B--）")
-  eq(X.upgradeWizardCurrentRowPre(FIX_ROWS, "D:\\nope"), null, "S2 [负路径] 匹配不到返回 null（不猜第一条）")
-  eq(X.upgradeWizardCurrentRowPre(FIX_ROWS, ""), null, "S3 [负路径] ws 为空 ⇒ null")
-  const c = X.upgradeWizardCurrentRowPre(FIX_ROWS, "d:/PROJ-A/")
-  ok(c && c.wsKey === "--A--", "S4 路径归一化：大小写/斜杠/尾斜杠不影响匹配")
+  // S1'：按**服务端算好的 matchedWsKey** 命中，前端不再拿 cwd 比 wsPath
+  const cur = X.upgradeWizardCurrentRowPre(FIX_ROWS)
+  ok(cur && cur.wsKey === "--B--", "S1' 当前区按 matchedWsKey 命中（--B--），不依赖 wsPath")
+  eq(X.upgradeWizardCurrentRowPre([{ wsKey: "--A--", wsPath: "D:\\mem\\--A--", matchedWsKey: null }]), null, "S2 [负路径] 全 null ⇒ 返回 null（不猜第一条）")
+  eq(X.upgradeWizardCurrentRowPre([]), null, "S3 [负路径] 空清单 ⇒ null")
+  // S4'：cwd 大小写/斜杠差异**由服务端归一**，前端只看 matchedWsKey ⇒ 仍命中同一行
+  const c = X.upgradeWizardCurrentRowPre([
+    { wsKey: "--A--", wsPath: "D:\\mem\\--A--", matchedWsKey: "--A--" },
+    { wsKey: "--B--", wsPath: "D:\\mem\\--B--", matchedWsKey: null },
+  ])
+  ok(c && c.wsKey === "--A--", "S4' cwd 归一由服务端完成，前端只认 matchedWsKey ⇒ 仍命中该行")
+  // ★★负路径 a（关键·有区分力）：wsPath **恰好等于**某个 cwd，但 matchedWsKey 全 null ⇒ 必须 null。
+  //   旧实现（比 cwd 与 wsPath）在这个夹具下会返回非 null；新实现返回 null ⇒ 证明前端不再自己比。
+  eq(X.upgradeWizardCurrentRowPre([
+    { wsKey: "--X--", wsPath: "D:\\proj-x", matchedWsKey: null },
+  ]), null, "★★S4'a [关键负路径] wsPath 恰等于 cwd 但 matchedWsKey=null ⇒ 返回 null（证明前端不再比 wsPath）")
+  // 负路径 b：matchedWsKey 字段**完全缺失**（undefined，不是 null）⇒ 同样不认
+  eq(X.upgradeWizardCurrentRowPre([{ wsKey: "--Y--", wsPath: "D:\\mem\\--Y--" }]), null, "S4'b [负路径] matchedWsKey 缺失（undefined）⇒ 也返回 null")
   eq(X.upgradeWizardScopeRowsPre("current", FIX_ROWS, [], FIX_ROWS[0]).rows.length, 1, "S5 scope=current ⇒ 1 区")
   eq(X.upgradeWizardScopeRowsPre("all", FIX_ROWS, [], FIX_ROWS[0]).rows.length, 2, "S6 scope=all ⇒ 全部")
   eq(X.upgradeWizardScopeRowsPre("subset", FIX_ROWS, ["--B--"], FIX_ROWS[0]).rows[0].wsKey, "--B--", "S7 scope=subset ⇒ 只留选中的区")
