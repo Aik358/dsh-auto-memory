@@ -30,7 +30,7 @@
  * 退出码:有任何 FAIL 或 TIMEOUT → 非 0;全绿 → 0。
  */
 
-import { readdirSync, statSync, mkdirSync, rmSync, existsSync } from 'node:fs'
+import { readdirSync, statSync, mkdirSync, rmSync, existsSync, readFileSync, writeFileSync, renameSync } from 'node:fs'
 import { spawn, spawnSync } from 'node:child_process'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -106,8 +106,13 @@ const HEAVY_JOBS = 8
  */
 const HEAVY_TIMEOUT_MS = 240000
 const HEAVY_MS = {
-  // ★v3.3.14：本套件靠**真实等待**证明超时行为（B/C/D 组各 10–20 秒）+ 两轮变异子进程，
-  //   实测单跑 161.1 秒，逼近轻车道默认 180 秒上限 ⇒ 归入重车道（timeout=240000）。
+  // ★v3.3.14 登记值（**本批保留未改**）：本套件原先靠**真实等待**证明超时行为
+  //   （B/C/D 组各 10–20 秒）+ 两轮变异子进程，实测单跑 161.1 秒 ⇒ 归入重车道（timeout=240000）。
+  // ★2026-11-07（alpha.7 P4 · task-21）：改用可控时钟 + 修 M2 的模式参数后**实测 3.8–4.4 秒**
+  //   （161,333ms → 4,394 / 3,844 / 4,265ms）。登记值 161100 暂**不动** —— 它只决定排序权重与
+  //   车道归属，改成多少要等 Lead 实测一次全量后统一决定。
+  //   ★口径订正：轻车道默认阈值是 **60000ms**（DEFAULT_TIMEOUT_MS），不是旧注释里的「180 秒」；
+  //     180 秒是 2026-09 的过期读数（当时 DEFAULT_TIMEOUT_MS=180000，后调到 60000）。
   'smoke-test-v3314-continuation-timeout.mjs': 161100,
   'smoke-test-external.mjs': 98300,
   'smoke-test-py-runtime-live.mjs': 57300,
@@ -208,8 +213,18 @@ function cleanupRunTmp() {
   try { rmSync(RUN_TMP, { recursive: true, force: true }) } catch (e) {}
 }
 
-/** 每个套件保留的输出尾部字符数(用于定位卡点,不需要全量)。 */
+/** 每个套件保留的**展示**尾部字符数(用于定位卡点;判据扫描已改为全量,不再用它)。 */
 const TAIL_CHARS = 2000
+/**
+ * ★#536（2026-11-07 alpha.7 P4）：**判据扫描**的 stderr 缓冲上界。
+ *
+ * 【旧缺陷】子进程 stderr 先截到**末 2000 字符**再扫描 ⇒ 前段出现的未捕获异常标记扫不到。
+ *   只要套件在异常之后还输出 >2000 字符，假绿防线就瞎了（尾截断盲区）。
+ * 【现判据】扫描用**全量 stderr**；只有**展示/落盘**才用 TAIL_CHARS 截断。
+ *   上界存在的唯一目的是防止失控输出（GB 级 stderr）撑爆运行器内存：8MB 是旧窗口的 4,194 倍，
+ *   本仓最吵套件的 stderr 实测 <100KB。超界时**打印告警**并记丢弃字节数，不静默。
+ */
+const SCAN_CAP_CHARS = 8 * 1024 * 1024
 /** 收到退出信号后,最多再等多久收尸(毫秒),防止运行器自己挂住。 */
 const REAP_GRACE_MS = 5000
 
@@ -227,7 +242,9 @@ function parseArgs(argv) {
   //   ④ 可回退：`--jobs=1` 恢复逐字节等价的串行路径（原代码路径保留，未删改）。
   // ★2026-10-02（用户裁定「跑之前先看一下哪儿会有变化」）：`--impact` 只做只读影响面预检，
   //   不跑任何套件（秒级返回）。`--impact-run` 先打印预检、再只跑命中集（省掉盲跑全量的 75s）。
-  const opts = { timeoutMs: DEFAULT_TIMEOUT_MS, filter: '', exclude: [], jobs: DEFAULT_JOBS, impact: false, impactRun: false, quiet: false, lanes: true, heavyJobs: HEAVY_JOBS, heavyTimeoutMs: HEAVY_TIMEOUT_MS }
+  // ★task-20（alpha.7 P4）：retry = **疑似并发抢占假红**的一次性串行重试次数（只允许 0/1）。
+  //   默认 1；`--retry=0` 整批关闭（用于「要一次干净读数」或验证重试是否在洗绿）。
+  const opts = { timeoutMs: DEFAULT_TIMEOUT_MS, filter: '', exclude: [], jobs: DEFAULT_JOBS, impact: false, impactRun: false, quiet: false, lanes: true, heavyJobs: HEAVY_JOBS, heavyTimeoutMs: HEAVY_TIMEOUT_MS, retry: 1 }
   for (const a of argv) {
     if (a === '--impact') { opts.impact = true; continue }
     if (a === '--impact-run') { opts.impactRun = true; continue }
@@ -247,6 +264,9 @@ function parseArgs(argv) {
     // `--jobs=N` 显式覆盖；`--jobs=1` 回到串行。
     const j = /^--jobs=(\d+)$/.exec(a)
     if (j) { opts.jobs = Math.max(1, Math.min(16, Number(j[1]))); continue }
+    // ★task-20：`--retry=N`（钳到 0..1 —— 设计上只允许「重试一次」，N>1 会被钳成 1）。
+    const rt = /^--retry=(\d+)$/.exec(a)
+    if (rt) { opts.retry = Math.max(0, Math.min(1, Number(rt[1]))); continue }
     // ★ test CI 支持（issue #73）：`--exclude=<子串>` 可多次传入，排除依赖**本地产物**
     //   （如 python/bench/.venv、artifacts/release-c2-asset-pack/*.tgz 均在 .gitignore 里，
     //   CI 全新克隆必然缺失）或需要**真实网络**的套件。本地全量回归不受影响（不传即不排除）。
@@ -386,13 +406,21 @@ function runSuite(file, timeoutMs) {
       env: Object.assign({}, process.env, { TEMP: RUN_TMP, TMP: RUN_TMP, DSH_SMOKE_TMP: RUN_TMP }),
     })
     let out = ''
-    let err = ''
+    /**
+     * ★#536：**全量** stderr 的分片缓冲（判据扫描用）。展示仍只取末 TAIL_CHARS（见 finish）。
+     *   用分片数组而不是 `err += s`：8MB 上界下的连续字符串追加是 O(n²)，分片 join 只拷一遍。
+     */
+    const errChunks = []
+    let errLen = 0
+    let errDropped = 0
     const capture = (chunk, sink) => {
       const s = String(chunk)
-      const next = (sink === 'out' ? out : err) + s
-      if (sink === 'out') out = next.length > TAIL_CHARS ? next.slice(-TAIL_CHARS) : next
-      else err = next.length > TAIL_CHARS ? next.slice(-TAIL_CHARS) : next
+      // stdout 只用于展示尾部，不需要全量
+      if (sink === 'out') { out = (out + s).slice(-TAIL_CHARS); return }
+      if (errLen >= SCAN_CAP_CHARS) { errDropped += s.length; return }
+      errChunks.push(s); errLen += s.length
     }
+    const errAll = () => errChunks.join('')
     child.stdout.on('data', (c) => capture(c, 'out'))
     child.stderr.on('data', (c) => capture(c, 'err'))
 
@@ -410,6 +438,11 @@ function runSuite(file, timeoutMs) {
       if (status === 'TIMEOUT') hardKill(child)
       try { child.stdout.destroy() } catch (e) {}
       try { child.stderr.destroy() } catch (e) {}
+      const errText = errAll()
+      if (errDropped > 0) {
+        console.error('[run-smoke] ⚠ ' + path.basename(file) + ' 的 stderr 超过扫描上界 '
+          + SCAN_CAP_CHARS + ' 字符，已丢弃 ' + errDropped + ' 字符（判据只看前 8MB，不是只看尾部）')
+      }
       resolve({
         name: path.basename(file),
         timeoutMs,
@@ -418,7 +451,8 @@ function runSuite(file, timeoutMs) {
         signal,
         why: why || '',
         seconds: (Date.now() - started) / 1000,
-        tail: (out + (err ? '\n--- stderr ---\n' + err : '')).trimEnd(),
+        // ★展示/落盘仍截断（末 TAIL_CHARS）；判据用的是上面的全量 errText（见 close 分支）
+        tail: (out + (errText ? '\n--- stderr ---\n' + errText.slice(-TAIL_CHARS) : '')).trimEnd(),
       })
     }
 
@@ -437,6 +471,9 @@ function runSuite(file, timeoutMs) {
       if (code !== 0) return finish('FAIL', code, signal)
       // ★#536：exit 0 但输出里有致命标记 ⇒ 假绿，判 FAIL（保留 code=0 作为证据 + 写明命中哪个标记）
       // ★只查 stderr：stdout 里的同名文本是套件在 echo 证据，不是真的未捕获异常
+      // ★★2026-11-07（alpha.7 P4）：判据扫**全量** stderr（旧实现只扫末 2000 字符 ⇒ 前段抛的
+      //   未捕获异常漏报）。展示仍截末 TAIL_CHARS —— 扫描窗口与展示窗口从此是两个独立概念。
+      const err = errAll()
       // ★★2026-11-05（用户裁定）：按**行**扫，用 `[smoke-expected-fatal]` 信用抵扣。
       //   没有任何套件被整体放行；只有「主动声明过的那几次异常」被抵扣。
       const { violations, exempted } = scanFatalLines(err)
@@ -446,6 +483,59 @@ function runSuite(file, timeoutMs) {
       finish('PASS', code, signal, exempted ? 'exempted-expected-fatal:' + exempted : undefined)
     })
   })
+}
+
+/**
+ * ★task-20（alpha.7 P4）· **并发抢占假红的一次性重试**。
+ *
+ * 【机制（实测，不是推断）】双车道：重车道 51 套件 x8（HEAVY_JOBS）、轻车道 517 套件 x4
+ *   （DEFAULT_JOBS）；`--jobs` **只改轻车道** ⇒ `--jobs=8` 实际 16 路并发（本机 8C/16T 占满）。
+ *   这就是「降 jobs 就稳」的全部机制 —— 不是产品缺陷，是调度饥饿。
+ *   实证：8 个重套件 + 8 个 CPU 燃烧进程下 v4-u6-memory-upgrade 单次 exit=1 / 14,781ms
+ *   （基线 2,284ms），33 PASS / 4 FAIL，失败的是纯时序断言（U6-3b「start<50ms」实测 312.16ms）。
+ *
+ * 【修法】**只对「疑似并发抢占」重试一次**：串行 width=1，沿用首次 timeoutMs（**不放宽阈值** ——
+ *   放大阈值就是洗绿）。判定条件（缺一不可）：
+ *     ① status === 'FAIL' —— TIMEOUT 不重试（那是阈值问题，重试等于换判据）
+ *     ② why === ''        —— #536 假绿命中永不重试（那是真异常被吞，重试只会把它洗成 PASS）
+ *     ③ code !== null     —— 必须有真实退出码（被信号杀掉/启动失败没有可复现的判据）
+ *
+ * 【四条防洗绿】
+ *   ① why 非空永不重试；
+ *   ② 台账 key = `name@HEAD`：同一提交下**二次** flake 直接判红（不重复记 FLAKY）；
+ *   ③ 汇总新增 FLAKY **单列**，不计入 PASS；
+ *   ④ `--retry=0` 可整批关闭。
+ */
+const FLAKE_LEDGER_PATH = path.join(RUN_TMP_ROOT, 'flake-ledger.json')
+
+/** 取当前提交短哈希；拿不到（发布包无 .git / CI 浅克隆失败）时回落 `no-git`。 */
+function resolveHead() {
+  try {
+    const r = spawnSync('git', ['rev-parse', 'HEAD'], { cwd: ROOT, encoding: 'utf8', timeout: 10000, windowsHide: true })
+    const s = String(r.stdout || '').trim()
+    if (r.status === 0 && /^[0-9a-f]{7,40}$/.test(s)) return s.slice(0, 12)
+  } catch (e) {}
+  return 'no-git'
+}
+
+/** 读 flake 台账（{ <head>: [name, ...] }）。坏文件一律当空表 —— 台账绝不能让回归跑挂。 */
+function readFlakeLedger() {
+  try {
+    const o = JSON.parse(readFileSync(FLAKE_LEDGER_PATH, 'utf8'))
+    return o && typeof o === 'object' && !Array.isArray(o) ? o : {}
+  } catch (e) { return {} }
+}
+
+/** 原子写台账（同目录 tmp + rename），只保留最近 5 个提交，防无界增长。 */
+function writeFlakeLedger(o) {
+  try {
+    const keys = Object.keys(o).sort()
+    const trimmed = {}
+    for (const k of keys.slice(-5)) trimmed[k] = o[k]
+    const tmp = FLAKE_LEDGER_PATH + '.tmp-' + process.pid
+    writeFileSync(tmp, JSON.stringify(trimmed) + '\n', 'utf8')
+    renameSync(tmp, FLAKE_LEDGER_PATH)
+  } catch (e) { /* fail-soft：台账不可写不影响回归结果 */ }
 }
 
 async function main() {
@@ -460,7 +550,7 @@ async function main() {
     console.error('[run-smoke] 临时目录不可用，回退系统 TEMP：' + (eTmp && eTmp.message))
   }
   if (opts.help) {
-    console.log('usage: node tools/run-smoke.mjs [--timeout=<ms>] [--filter=<substr>] [--exclude=<substr>]... [--jobs=N] [--lanes=off] [--heavy-jobs=N]')
+    console.log('usage: node tools/run-smoke.mjs [--timeout=<ms>] [--filter=<substr>] [--exclude=<substr>]... [--jobs=N] [--lanes=off] [--heavy-jobs=N] [--retry=0|1]')
     return 0
   }
   // ★影响面预检（只读）：列出改动文件、正文引用它们的套件、以及基线锁套件。
@@ -585,15 +675,61 @@ async function main() {
     ])
   }
 
+  // ★task-20（alpha.7 P4）：疑似并发抢占的**一次性**串行重试（完整判据见 FLAKE_LEDGER_PATH 上方注释）。
+  //   位置：两车道 Promise.all 之后、汇总之前 —— 只重跑确实红掉的，不重跑整批。
+  //   四条防洗绿在这里逐条落地：①why 非空不在 suspects 里；②台账 name@HEAD 二次即判红；
+  //   ③FLAKY 单列；④--retry=0 关闭。
+  if (opts.retry > 0) {
+    const suspects = results.filter((r) => r.status === 'FAIL' && !r.why && r.code !== null)
+    if (suspects.length) {
+      const head = resolveHead()
+      const ledger = readFlakeLedger()
+      const seen = new Set(Array.isArray(ledger[head]) ? ledger[head] : [])
+      console.log('')
+      console.log('[run-smoke] 疑似并发抢占 ' + suspects.length + ' 个套件（FAIL + 非假绿命中 + 有真实退出码）'
+        + ' ⇒ 串行 width=1 重跑一次（沿用首次 timeoutMs，**不放宽阈值**；--retry=0 可关闭）')
+      for (const r of suspects) {
+        const rr = await runSuite(path.join(SMOKE_DIR, r.name), r.timeoutMs)
+        r.retried = true
+        r.retryStatus = rr.status
+        r.retrySeconds = rr.seconds
+        const key = r.name + '@' + head
+        if (rr.status === 'PASS') {
+          if (seen.has(key)) {
+            r.repeatFlake = key
+            console.log('[RETRY  ] ' + r.name + ' 重跑通过，但台账已有 ' + key
+              + ' ⇒ 同一提交二次 flake，**维持 FAIL**（不再记 FLAKY）  (' + rr.seconds.toFixed(1) + 's)')
+          } else {
+            seen.add(key)
+            ledger[head] = [...seen]
+            writeFlakeLedger(ledger)
+            r.status = 'FLAKY'
+            console.log('[FLAKY  ] ' + r.name + ' 首次 ' + r.seconds.toFixed(1) + 's exit=' + r.code
+              + ' ⇒ 串行重跑 ' + rr.seconds.toFixed(1) + 's PASS（记 FLAKY，**不计入 PASS**）')
+          }
+        } else {
+          console.log('[RETRY  ] ' + r.name + ' 重跑仍 ' + rr.status + ' exit=' + rr.code
+            + ' ⇒ 判为真缺陷，**不重试第二次**，维持 FAIL')
+        }
+      }
+    }
+  }
+
   const pass = results.filter((r) => r.status === 'PASS')
   const fail = results.filter((r) => r.status === 'FAIL')
   const timeout = results.filter((r) => r.status === 'TIMEOUT')
+  // ★task-20：FLAKY **单列**，绝不并入 PASS —— 否则重试就成了洗绿通道。
+  const flaky = results.filter((r) => r.status === 'FLAKY')
   const totalSeconds = (Date.now() - runStart) / 1000
 
   console.log('')
   console.log('================ SUMMARY ================')
   console.log('PASS ' + pass.length + ' / FAIL ' + fail.length + ' / TIMEOUT ' + timeout.length
-    + '   (total ' + totalSeconds.toFixed(1) + 's)')
+    + ' / FLAKY ' + flaky.length + '   (total ' + totalSeconds.toFixed(1) + 's)')
+  // ★task-20：FLAKY 紧贴计数行输出（与 FAILED 同一约定：1 行内可见），并显式标注「未计入 PASS」。
+  if (flaky.length) {
+    console.log('FLAKY (串行重试后通过，未计入 PASS): ' + flaky.map((r) => r.name).join(', '))
+  }
   // ★2026-10-02（用户反馈「跑完没有打印出 fail 的地方，还得重跑一遍」）：
   //   把失败套件名**紧贴计数行**输出。此前明细在文件末尾，任何 `| Select-Object -Last N`
   //   或只看尾部的取用方式都会把明细截掉，只剩计数 ⇒ 被迫重跑一次 80s 的回归才能定位。
@@ -604,6 +740,8 @@ async function main() {
   for (const r of [...timeout, ...fail]) {
     console.log('')
     console.log('--- ' + r.status + ': ' + r.name + (r.status === 'TIMEOUT' ? '  (exceeded ' + (r.timeoutMs || opts.timeoutMs) + 'ms)' : '  (exit=' + r.code + ')') + ' ---')
+    // ★task-20：同一提交的二次 flake 在这里点名（它保持 FAIL，必须让人看得出「不是首次红」）
+    if (r.repeatFlake) console.log('★同一提交二次 flake（台账 ' + r.repeatFlake + '）：首次 ' + r.seconds.toFixed(1) + 's exit=' + r.code + '，串行重跑 ' + (r.retryStatus || '?') + ' ⇒ 直接判红')
     console.log('last output tail:')
     console.log(r.tail ? r.tail.split('\n').slice(-25).join('\n') : '(no output captured)')
   }
