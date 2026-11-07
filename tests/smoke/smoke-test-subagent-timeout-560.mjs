@@ -257,7 +257,15 @@ if (!process.env.DAM560_MUTATION) {
   const SELF = fileURLToPath(import.meta.url)
 
   const runMutation = (label, mutate, tag) => {
-    const mutated = mutate(prodSrc)
+    let mutated
+    try {
+      mutated = mutate(prodSrc)
+    } catch (e) {
+      // ★变异装置自身失败 ⇒ 记为一条 FAIL 并返回「红」，不抛未捕获异常
+      //   （抛出去会让本套件 exit 0 却带 uncaughtException，撞假绿防线，属噪声）
+      ok(false, '[' + label + '] 变异装置定位失败：' + (e && e.message))
+      return { status: 1, out: '' }
+    }
     assert.notEqual(mutated, prodSrc, '[变异装置] ' + label + ' 必须真的改到源码（否则假红/假绿）')
     const mutIdx = path.join(ROOT, 'lib', '_index_mut560_' + tag + '.mjs')
     try {
@@ -271,7 +279,7 @@ if (!process.env.DAM560_MUTATION) {
   }
 
   // ── 变异 ①：去掉 clamp（直接取值，不再夹到 30–900）──
-  const CLAMP_ANCHOR = '      ? Math.min(900, Math.max(30, _cfgSecRaw))'
+  const CLAMP_ANCHOR = '      ? Math.min(SUBAGENT_TIMEOUT_MAX_SECONDS, Math.max(SUBAGENT_TIMEOUT_MIN_SECONDS, _cfgSecRaw))'
   const m1 = runMutation('去掉 clamp', (src) => {
     const i = src.indexOf(CLAMP_ANCHOR)
     assert.ok(i >= 0, '[变异装置] clamp 锚点必须存在（命中 ' + i + '）——否则是定位失败，不是有效变异')
