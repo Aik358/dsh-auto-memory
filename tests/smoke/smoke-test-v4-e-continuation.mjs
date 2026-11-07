@@ -98,7 +98,9 @@ const asmAt = carryBody.indexOf('assembleCarryPre({')
 ok(pushAt > 0 && asmAt > pushAt, '★正：绑定块在 assembleCarryPre **之前**入队（之后 push 等于没进材料）')
 
 console.log('[E-7] 刷新仪式：第 0 步读回 eventId + 账本必须带 eventId')
-const ritStart = idxSrc.indexOf('refreshRitualPrompt()')
+// ★R186（2026-11-07 · 合入上游 #522）：签名由 `refreshRitualPrompt()` → `refreshRitualPrompt(retryHint)`；
+//   旧锚现在只命中调用点（在定义之后）⇒ 切不到函数体。改用定义处唯一锚。
+const ritStart = idxSrc.indexOf('refreshRitualPrompt(retryHint) {')
 const ritBody = idxSrc.slice(ritStart, ritStart + 2500)
 ok(ritBody.includes('0. ★'), '★正：仪式有第 0 步（先确认事件归属）')
 ok(ritBody.includes('scope=') && ritBody.includes('events'), '★正：第 0 步用 memory_recall(scope=events) 查回事件')

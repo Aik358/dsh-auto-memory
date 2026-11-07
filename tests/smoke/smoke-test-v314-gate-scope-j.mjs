@@ -43,7 +43,10 @@ console.log('=== J1 调用层降级（折中档 A）===')
   // 警示必须能一路带到工具回执（否则"放行"变静默）
   ok(inWindow(IX, 'async writePlanSnapshot', 'const m1Warn = (gate && gate.m1Downgraded)', 4000) > 0,
     'J1d 警示在 writePlanSnapshot 内取出')
-  ok(IX.includes('final: written, warn: m1Warn'), 'J1e 警示挂在成功 return 上')
+  // ★R186（2026-11-07 · alpha.7 S3）：S3 在同一 return 里插了 `committedBytes`（`final: written,` 与 `warn: m1Warn` 之间），
+  //   原整串精确匹配失配。判据意图不变（**警示必须挂在成功 return 上**，不许只在失败分支给）——
+  //   改为「同一 return 对象内同时出现 final: written 与 warn: m1Warn」，不再钉死中间字段的先后。
+  ok(/return \{[^}]*final: written[^}]*warn: m1Warn[^}]*\}/.test(IX), 'J1e 警示挂在成功 return 上')
   ok(inWindow(IX, "defineTool('memory_note'", 'const warnLine = (r && r.warn)', 30000) > 0,
     'J1f ★警示在 memory_note 里被拼进回执')
 }

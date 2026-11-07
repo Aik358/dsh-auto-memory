@@ -28,7 +28,11 @@ const PS = await import(pathToFileURL(path.join(REPO, 'lib/plan-store.js')).href
 const IX_SRC = fs.readFileSync(path.join(REPO, 'lib/index.js'), 'utf8')
 
 // ═══════════ 一、仪式文案：必须不再要求「重写完整全貌」 ═══════════
-const a = IX_SRC.indexOf('refreshRitualPrompt()')
+// ★R186（2026-11-07 · 合入上游 #522）：函数签名由 `refreshRitualPrompt()` 改为 `refreshRitualPrompt(retryHint)`，
+//   原锚 `'refreshRitualPrompt()'` 现在只会命中**调用点**（`this.refreshRitualPrompt()`），
+//   而调用点位置在函数定义之**后** ⇒ `z - a` 变负、函数体切不出来（实测 len=-58196）。
+//   改为「定义签名 + 左花括号」这个**只可能出现在定义处**的锚，判据意图不变（仍锁仪式文案内容）。
+const a = IX_SRC.indexOf('refreshRitualPrompt(retryHint) {')
 const z = IX_SRC.indexOf('/** 按会话 id 取活动 agent')
 ok(a > 0 && z > a, '能切出 refreshRitualPrompt 函数体', 'len=' + (z - a))
 const BODY = IX_SRC.slice(a, z)
