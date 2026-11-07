@@ -52,7 +52,14 @@ console.log('[U6-1] 结构守卫');
   //              ②后台链**在引擎方法内**以 Promise.resolve().then 链起跑并最终调 runSubagent。
   const startRegion = IX.slice(startIdx, startIdx + 4000);
   const engineStart = IX.indexOf('async startUpgradeJobPre(');
-  const region = engineStart >= 0 ? IX.slice(engineStart, engineStart + 9000) : '';
+  // ★2026-11-08 判据修正（C 类，非放宽）：窗口由**写死的 9000** 改为**方法体真实边界**。
+  //   根因（可复算）：startUpgradeJobPre 的方法体已长到 20,058 字符（#520/#557/#558/#554 累计），
+  //   而 `runSubagent(` 落在偏移 10,131 ⇒ 9000 窗口**够不到后台链**，判据必然红。
+  //   旧写法锁的是「方法体不超过 9000 字符」这个**从未被声明的隐含假设**，那是旧决策；
+  //   不变量是「该方法体内存在 Promise.resolve().then 链且链上最终调 runSubagent」。
+  //   ⇒ 用下一个方法定义（finishUpgradeJobPre）作为右边界，窗口随方法体自适应，不再随代码增长失配。
+  const engineEnd = engineStart >= 0 ? IX.indexOf('async finishUpgradeJobPre(', engineStart) : -1
+  const region = (engineStart >= 0 && engineEnd > engineStart) ? IX.slice(engineStart, engineEnd) : (engineStart >= 0 ? IX.slice(engineStart, engineStart + 9000) : '');
   ok(startIdx >= 0 && !/await\s+engineRef\.runSubagent|await\s+this\.runSubagent/.test(startRegion), '★★★U6-1f start 分支内**无 await runSubagent**（不阻塞）');
   // ★2026-11-05（FAKE-GREEN-AUDIT）· 判据修正（C 类）：后台链形态已演进。
   //   旧链：Promise.resolve().then(() => runSubagent(...))  —— 直接起跑

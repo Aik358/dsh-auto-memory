@@ -18,6 +18,7 @@ import path from 'node:path'
 import crypto from 'node:crypto'
 import { fileURLToPath } from 'node:url'
 import { createHarness } from './_harness.mjs'
+import { normalizeEffortPre, estimateUpgradeCostPre } from '../../lib/upgrade-estimate.js'
 
 const T = createHarness('issue558-554')
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..')
@@ -57,6 +58,8 @@ if (!whitelistSrc) throw new Error('未找到 SUBAGENT_EFFORT_WHITELIST')
 const factoryBody = ['"use strict";', whitelistSrc, subOptSrc, resolveSrc, judgeSrc,
   'return { resolveSubAgentOptionsPre, judgeUpgradeEvidencePre, subAgentOptions, SUBAGENT_EFFORT_WHITELIST };'].join('\n')
 const M = new Function(factoryBody)()
+M.normalizeEffortPre = normalizeEffortPre
+M.estimateUpgradeCostPre = estimateUpgradeCostPre
 console.log('')
 console.log('== A. #558②  agentOptions 覆盖通道（真调用）==')
 const CFG = { subagentProvider: 'glob-prov', subagentModel: 'glob-model', subagentReasoningEffort: 'low' }
@@ -228,5 +231,28 @@ T.ok(IX.indexOf('_aoCommit.override') >= 0, 'F-4 startUpgradeJobPre 把 override
 T.ok(IX.indexOf('evidenceBaseline') >= 0, 'F-5 start 落写前证据快照')
 T.ok(IX.indexOf('judgeUpgradeEvidencePre(_base, _after)') >= 0, 'F-6 finish 用证据判定终态')
 T.ok(IX.indexOf('evidence-insufficient') >= 0, 'F-7 证据不足时写入可判读的 error')
+
+console.log('')
+console.log('== G. ★Lead 裁决三条（2026-11-08）==')
+// ① 存量 effort=medium 必须能续跑
+T.eq(M.normalizeEffortPre('medium'), { ok: true, effort: 'medium' }, 'G-1 ★★存量 effort=medium 归一不报错（老 run 记录可续跑）')
+T.eq(M.estimateUpgradeCostPre({ chars: 1000, effort: 'medium' }).ok, true, 'G-1b 存量 medium 仍能估算（表里有比例，不报 no-ratio）')
+T.ok(/LEGACY_EFFORT_ALIAS_PRE\s*=\s*Object\.freeze\(\{\s*medium:\s*'high'\s*\}\)/.test(IX), 'G-1c ★start 入口有 legacy 别名表（medium→high，不拒绝老任务）')
+T.ok(/_aoRaw0[\s\S]{0,500}LEGACY_EFFORT_ALIAS_PRE/.test(IX), 'G-1d ★该别名在 resolveSubAgentOptionsPre **之前**生效（不是事后补救）')
+T.ok(IX.indexOf('legacy effort mapped') >= 0, 'G-1e 映射时记 diag 留痕（不静默）')
+
+// ② evidenceNote / evidenceVerdict 必须能被前端读到
+T.ok(/evidenceNote:\s*String\(\(st && st\.evidenceNote\)/.test(IX), 'G-2 ★★status 路由回显 evidenceNote（不只在 state 里躺着）')
+T.ok(/evidenceVerdict:\s*\(st && st\.evidenceVerdict\)/.test(IX), 'G-2b ★status 路由回显 evidenceVerdict（逐区明细）')
+T.ok(CLI.indexOf('data-dam-progress-count') >= 0 && CLI.indexOf("'unverified'") >= 0, 'G-2c ★前端有 unverified 计数槽（data-dam-progress-count=unverified）')
+T.ok(CLI.indexOf('data-dam-wizard-evidence-note') >= 0, 'G-2d ★前端渲染 evidenceNote 原文（data-dam-wizard-evidence-note）')
+T.ok(/其中未核实|unverified /.test(CLI), 'G-2e ★文案写明「其中未核实 N」而不是只给一个干净数字')
+T.ok(/不代表未写入|does not mean nothing was written/.test(CLI), 'G-2f ★文案说明「不代表未写入」（不误导用户）')
+
+// ③ perWorkspace 不存 dir 的决策必须写在注释里
+T.ok(/故意不在 perWorkspace 里存 dir/.test(IX), 'G-3 ★注释写明「故意不在 perWorkspace 存 dir」')
+T.ok(/evidenceBaseline\[wsKey\]\.dir|evidenceBaseline 的 dir/.test(IX), 'G-3b ★注释写明反查通道（evidenceBaseline.dir）')
+T.ok(/memoryRoot\/wsKey/.test(IX), 'G-3c ★注释写明第二反查通道（memoryRoot/wsKey）')
+T.ok(/schema 变更/.test(IX), 'G-3d ★注释写明动机（避免 schema 变更）')
 
 T.done()
