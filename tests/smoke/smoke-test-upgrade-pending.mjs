@@ -146,7 +146,10 @@ console.log('== D. replay 失败路径（★负路径：失败文件必须留在
   // ★#549 判据变更：旧断言「逐字节未变」守的是旧实现细节（旧版不写回 attempts）；新判据守不变量 = 文件仍在 + entry 主体未篡改。
   T.ok(fs.existsSync(badFile) && (await readSha(badFile)) !== badSha, 'D-3 ★失败文件仍在盘上且写入可见状态（attempts/lastError）')
   const badRec = await readJson(badFile)
-  T.eq(badRec.entry.seq, 1, 'D-3b ★entry 主体未被篡改（仍可原样重试）')
+  // ★③（Lead 复核要求）：必须能区分「正确写回 attempts」与「把 entry 主体也改了」——
+  //   所以断言 **entry 全字段 JSON 逐字节相等**（不是只看 seq，更不是只看文件存在）。
+  const entryBefore = JSON.parse(await readFile(before[1], 'utf8')).entry
+  T.eq(badRec.entry, entryBefore, 'D-3b ★★entry 主体全字段逐字节未篡改（区分「只写回 attempts」与「连 entry 一起改」）')
   T.eq(badRec.attempts, 1, 'D-3c attempts 已累加为 1')
   T.eq(await queueFiles(root, RUN), [path.basename(badFile)], 'D-4 其余成功条目已删除，只剩失败那条')
   const failResult = r.results.find((x) => !x.ok)

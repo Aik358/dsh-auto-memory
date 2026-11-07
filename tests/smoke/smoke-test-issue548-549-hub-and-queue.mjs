@@ -273,6 +273,46 @@ console.log('== F. #549 真实 replay：终态路径 / 启动路径 / 失败保�
 
 // ══════════════════════════════════════════════════════════════════════════════
 console.log('')
+console.log('== I. ★决策层与工具白名单正交（Lead 复核要求）==')
+{
+  // 判据：换任何工具，决策结果只能由「身份×状态」决定 —— 一旦有人把工具白名单塞进决策层，这条必红。
+  const runStates = [
+    { phase: 'running', runId: 'r', subagentSessionIds: ['s1'] },
+    { phase: 'running', runId: 'r', subagentSessionIds: [] },
+    { phase: 'running' },
+    { phase: 'done' },
+  ]
+  const sids = ['s1', 'stranger', '']
+  const tools = ['memory_log', 'memory_note', 'memory_event', 'memory_recall', 'memory_search', 'some_future_tool']
+  let orthogonal = true
+  let probes = 0
+  for (const st of runStates) {
+    for (const sid of sids) {
+      const baseline = upgradeGateVerdictPre({ state: st, sessionId: sid, tool: tools[0] })
+      for (const t2 of tools.slice(1)) {
+        const got = upgradeGateVerdictPre({ state: st, sessionId: sid, tool: t2 })
+        probes++
+        if (JSON.stringify(got) !== JSON.stringify(baseline)) orthogonal = false
+      }
+    }
+  }
+  T.ok(orthogonal, 'I-1 ★★决策结果与工具名正交（换工具不改变判定 ⇒ 白名单不在决策层）', 'probes=' + probes)
+  T.ok(probes === 60, 'I-2 探针数量符合预期（4 状态 × 3 身份 × 5 对照工具）', String(probes))
+  // 反向：身份真的会影响结果（证明上一条不是「恒真」）
+  const asExec = upgradeGateVerdictPre({ state: { phase: 'running', runId: 'r', subagentSessionIds: ['s1'] }, sessionId: 's1', tool: 'memory_log' })
+  const asOther = upgradeGateVerdictPre({ state: { phase: 'running', runId: 'r', subagentSessionIds: ['s1'] }, sessionId: 'stranger', tool: 'memory_log' })
+  T.ok(asExec.blocked !== asOther.blocked, 'I-3 ★对照：身份确实改变判定（I-1 不是恒真）')
+  // ★②（Lead 复核要求）：壳 agent 路径失败必须**点名缺什么**，不能只报 handler-threw。
+  //   判据取自源码（守卫，非功能证据）—— 因为壳路径需要真 engine 才能跑；但它是可证伪的：
+  //   把 code 改回 handler-threw，本条立刻红。
+  const IX2 = (await readFile(path.join(ROOT, 'lib', 'index.js'), 'utf8'))
+  T.ok(IX2.indexOf("'shell-agent-missing-ctx'") >= 0, 'I-4 ★壳 agent 失败有点名错误码 shell-agent-missing-ctx')
+  T.ok(/if \(shelled\)[\s\S]{0,240}shell-agent-missing-ctx/.test(IX2), 'I-5 ★该错误码只在 shelled 分支返回（真 agent 路径仍报 handler-threw）')
+  T.ok(IX2.indexOf('壳 agent 缺少完整会话上下文') >= 0, 'I-6 错误文案点名缺的是完整会话上下文（无 ctx/parent）')
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+console.log('')
 console.log('== H. ★label 匹配（字符串枚举写错不报错，必须真跑一遍）==')
 {
   const IX = (await readFile(path.join(ROOT, 'lib', 'index.js'), 'utf8')).split('\r\n').join('\n')
