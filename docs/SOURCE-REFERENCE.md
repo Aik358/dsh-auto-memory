@@ -20,13 +20,13 @@
 
 水位建议默认按官方压缩参数动态计算，与自动接续阈值独立。白板开启不等于自动接续开启；用户保存配置覆盖默认值。
 
-完整 **155** 键直接查 [DEFAULT_CONFIG](../lib/index.js)，运行值取 `GET /api/dsh-auto-memory/config`，避免重复维护整张配置表。
+完整 **177** 键直接查 [DEFAULT_CONFIG](../lib/index.js)，运行值取 `GET /api/dsh-auto-memory/config`，避免重复维护整张配置表。
 
 ## 工具与接口
 
-源码声明 **19** 个工具；`memory_expand` / `memory_trace` 仅在 `boardMode=graph` 时注册。完整参数查 [defineTool 声明](../lib/index.js)。
+源码声明 **21** 个工具；`memory_expand` / `memory_trace` 仅在 `boardMode=graph` 时注册。完整参数查 [defineTool 声明](../lib/index.js)。
 
-普通插件注册 **71** 个唯一路径，前缀 `/api/dsh-auto-memory/`。完整路径查 [API](../lib/index.js)，方法、参数与写入门查 [路由 handler](../lib/index.js)。
+普通插件注册 **85** 个唯一路径，前缀 `/api/dsh-auto-memory/`。完整路径查 [API](../lib/index.js)，方法、参数与写入门查 [路由 handler](../lib/index.js)。
 
 | 常用接口 | 用途 |
 |---|---|
