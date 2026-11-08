@@ -109,3 +109,28 @@ artifacts/issue-repair-20261102/
 # 根目录残留 3 项（2026-11-05 收口）
 /*.tgz
 /[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9].md
+
+# ★2026-11-08：artifacts/ 下未跟踪的临时产物（只忽略未跟踪的，已跟踪的 e8-visual/e1-closure 等基线不受影响 ——
+#   git 对已跟踪文件恒生效于 .gitignore，故此处不会让既有基线"消失"）
+artifacts/e8-visual/.cdp-e87-*/
+artifacts/probe560*.mjs
+artifacts/probe_*.cjs
+artifacts/probe-*.mjs
+artifacts/probe_barelf.cjs
+artifacts/patch560_*.cjs
+artifacts/lib_tier0-usage.js.pr475
+artifacts/lib_tier-layer-inject.js.pr475
+artifacts/lib_tier0-catalog.js.pr475
+artifacts/MARKETPLACE-SUBMISSION-20261105.md
+artifacts/benchmark-20261103/
+artifacts/superagent-iteration-20261031/
+artifacts/wave1-prompts/
+artifacts/doc-update-proposal-2026-10-26/
+artifacts/inject-tiers-20261103/
+artifacts/inject-tiers-full-20261103/
+artifacts/audit-2026-10-26/
+
+# ★安全（2026-11-08）：浏览器凭据库 / 数据库文件一律不入库
+artifacts/*.db
+artifacts/**/*.db
+*.cookies-backup.db
