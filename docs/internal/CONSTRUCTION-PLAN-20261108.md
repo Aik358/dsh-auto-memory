@@ -513,6 +513,7 @@ D	[MEMORY-LOGIC-GAPS-20261108.md](file:///D:/dsh-auto-memory/docs/internal/MEMOR
 | [PR-MERGE-PIPELINE-20261108.md](file:///D:/dsh-auto-memory/docs/internal/PR-MERGE-PIPELINE-20261108.md) | 4 个 PR 合并流水线方案（contributor 目标） | 独立线 |
 | [CONFLICT-DISPOSAL-AB-20261109.md](./CONFLICT-DISPOSAL-AB-20261109.md) | 1.2 冲突处置 A+B 方案定稿（已按实现校正） | 1.2 |
 | [DETAIL-BATCH1B-20261109.md](./DETAIL-BATCH1B-20261109.md) | 1.4 / 1.5 / 1.6 施工细则（本轮产出） | 1B |
+| [EXPERIMENT-TASK-SEMANTIC-ATTRIBUTION-20261109.md](./EXPERIMENT-TASK-SEMANTIC-ATTRIBUTION-20261109.md) | 语义归属实验任务书（1.4 的 L2+L3 验证，数据包已生成） | 1B / §15 |
 | [CONSTRUCTION-GUIDELINE-INJECT-20261108.md](./CONSTRUCTION-GUIDELINE-INJECT-20261108.md) | 注入专项v1；已确认缺陷用于溯源，旧估算/验收须按本表3.0校正 | 3.0 |
 | [AUDIT-CROSS-ROUND1-CODEX-20261108.md](./AUDIT-CROSS-ROUND1-CODEX-20261108.md) | 第一轮交叉审计回执；生产路径、全文预截断、通知与计量证据 | 3.0 |
 
@@ -720,7 +721,7 @@ git check-ignore 命中 .gitignore 第 16 行 python/bench/models-xenova-bge-m3-
 
 | 步骤 | 谁 | 状态 |
 |---|---|---|
-| 1. 打包数据（cases.jsonl / events.json / README / evaluate.mjs） | Lead | **待做**（等指令） |
+| 1. 打包数据（cases.jsonl / events.json / README / evaluate.mjs） | Lead | **✅ 已完成**：211 条真实日志 + 47 事件池 + 盲态 README + 评分器（含负路径自测），见 [实验任务书](./EXPERIMENT-TASK-SEMANTIC-ATTRIBUTION-20261109.md) §2；金标单独存放、两目录均被 .gitignore 覆盖 |
 | 2. 跑模型出 results.jsonl | **用户另派的 Agent** | 等数据包 |
 | 3. 评分并回填结论 | Lead | 等结果 |
 | 4. 若成立 → 接入写路径（作为候选排序器，不接管判定） | Lead | 依赖 3 |
