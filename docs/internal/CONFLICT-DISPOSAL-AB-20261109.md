@@ -115,7 +115,24 @@
 | 两侧都是日期/版本号 | `low`（后者较新） | 更像**更新** |
 | 双方均为长度 ≥ 4 的实质文本且互不包含 | **`high`** | 真矛盾可能性高 |
 
-**只有 `high` 才记录冲突并触发提醒**；`low` 只累加 `stats.conflictLowLikelihood`（可观测，不静默）；`none` 直接走 merge。
+**落地时的订正（比本方案原写法更保守，理由见下）**：
+
+| 档 | 记录冲突？ | 允许提醒？ | 计数 |
+|---|---|---|---|
+| `high` | 是 | **是** | `stats.conflictAdded` |
+| `low` | **仍然记录**（带 `likelihood:"low"`） | **否** | `stats.conflictLowLikelihood` |
+| `none` | 否（走 merge） | 否 | — |
+
+**为什么 `low` 不能只计数、然后丢给 merge**：
+
+> 实测读 `lib/fact-store.js` 的 `mergeInto()`：它只合并 `sourceKind` / `provenance` /
+> `confidence` / 时间元数据，**不更新 `object`**。
+>
+> 因此若把「版本号 3.3.6 → 3.4.0」这类 `low` 差异交给合并，**新值会被静默丢弃** ——
+> 这比「多记一条冲突」严重得多。
+
+⇒ 保留记录（用户仍可在面板裁定），但**不触发提醒**（用户裁定「在 conflict 的可能性
+比较高的时候再提醒」）。面板可用 `likelihood` 字段区分/过滤。
 
 > 这条同时缓解「提醒太多」和「面板太吵」。上限 `maxConflicts` 仍然保留（防回归）。
 
