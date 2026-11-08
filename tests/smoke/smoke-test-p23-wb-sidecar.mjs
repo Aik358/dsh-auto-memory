@@ -146,7 +146,7 @@ t('M8 legacy 默认零行为: 两咽喉的档位闸门仍在内；★sidecar 与
   assert.ok(src.includes("boardMode: 'graph'"), 'DEFAULT_CONFIG 默认 graph(3.0.0 起)')
 })
 
-t('M9 P3 两工具条件注册 + 工具数闸门(legacy 18 / graph 21 · v4-U6 起 +memory_upgrade)', async () => {
+t('M9 P3 两工具条件注册 + 工具数闸门(legacy 19 / graph 22 · v4-U6 起 +memory_upgrade)', async () => {
   const src = await readFile('lib/index.js', 'utf8')
   // ★2026-09-16 修 BUG-15 后语式变更: 两个 defineTool 现在被 `tools.push(...)` 包裹
   // (此前漏了 push, 返回值被丢弃 ⇒ 闸门打开也不会注册)。断言必须写「真实调用形态」:
@@ -162,11 +162,11 @@ t('M9 P3 两工具条件注册 + 工具数闸门(legacy 18 / graph 21 · v4-U6 �
   for (const f of ['tests/smoke/smoke-test.mjs', 'tests/smoke/smoke-test-m3b3.mjs', 'tests/smoke/smoke-test-context-observer.mjs']) {
     const s = await readFile(f, 'utf8')
     // ★v4-U6（2026-10-25 用户批准 20→21）：三条硬锁同步上移
-    assert.ok(/!==\s*21/.test(s), f + ' 默认档已翻 graph ⇒ 工具数硬锁应为 21(含 … + v4-U6 memory_upgrade)')
+    assert.ok(/!==\s*22/.test(s), f + ' 默认档已翻 graph ⇒ 工具数硬锁应为 22(含 … + v4-U6 memory_upgrade)')
   }
   // graph 档 17 的断言在 smoke-test-graph-mode-pre.mjs
   const g = await readFile('tests/smoke/smoke-test-graph-mode.mjs', 'utf8')
-  assert.ok(/!==\s*21/.test(g) || /=== *21/.test(g), 'graph 档工具数 21 有独立断言')
+  assert.ok(/!==\s*22/.test(g) || /=== *22/.test(g), 'graph 档工具数 22 有独立断言')
 })
 
 t('M10 GUI 一键切换: 设置页与接续面板双入口, 同一配置键 boardMode, 默认档旧行为', async () => {

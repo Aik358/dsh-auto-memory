@@ -57,10 +57,13 @@ function loadTool(store, overrideCode) {
   const captured = []
   const fakeTools = { push: (x) => { captured.push(x); return x } }
   const fakeDefineTool = (name, desc, schema, fn) => ({ name, description: desc, parameters: { properties: schema }, execute: fn })
-  const fakeEngine = { _factStore: store }
+  const fakeEngine = { _factStore: store, currentSessionId: () => 's-test' }
+  // ★2026-11-09（1.2 第6步接线后）：handler 会调 conflictReminders —— 桩必须提供，否则抽取式执行会 ReferenceError
+  const reminders = { calls: [], shouldRemind: () => true, markReminded: (id, sid) => { reminders.calls.push({ id, sid }); return 1 }, dropConflict: () => 0 }
+  const fakeEngineRefs = { store, reminders }
   const diag = () => {}
   // eslint-disable-next-line no-new-func
-  new Function('tools', 'defineTool', 'engine', 'diag', overrideCode || code)(fakeTools, fakeDefineTool, fakeEngine, diag)
+  new Function('tools', 'defineTool', 'engine', 'diag', 'conflictReminders', overrideCode || code)(fakeTools, fakeDefineTool, fakeEngine, diag, reminders)
   assert.equal(captured.length, 1, '应恰好注册 1 个工具')
   return captured[0]
 }
@@ -76,6 +79,9 @@ t('★ list 返回待裁定冲突与档位计数，且 dryRun=true', () => {
     assert.equal(r.highLikelihoodCount, 1)
     assert.equal(r.conflictCount, 1)
     assert.equal(store.calls.length, 0, 'list 绝不得写盘')
+    // ★2026-11-09（第6步接线）：high 会被投递提醒并记账，且只记一次
+    assert.ok(r.reminder && r.reminder.items.length === 1, 'high 应附一条提醒')
+    assert.equal(r.reminder.items[0].conflictId, 'c1')
   })
 })
 

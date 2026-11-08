@@ -107,7 +107,7 @@ const turnStartEvent = (seq, turn, time) => ({ type: 'turn/start', seq, time: ti
   try {
     // ★ T4（2026-09-19）：16 → 17 —— 新增 memory_procedure（procedure memory 的模型直写通路，无条件注册）。
     // ★ M8-B（2026-09-23）：18 → 19 —— 新增 memory_procedure_list（技能库只读浏览；用户裁定「不注入候选目录，只给浏览函数」）。
-    if (h.registeredTools.length !== 21) throw new Error('tool count drifted (v4-U6 memory_upgrade 后 = 21): ' + h.registeredTools.length)
+    if (h.registeredTools.length !== 22) throw new Error('tool count drifted (v4-U6 memory_upgrade 后 = 22): ' + h.registeredTools.length)
     // 2026-09-08:41→42(ws-overview-rank 路由落线);42→43(subagent-gc 路由落线);43→45(2.2.6 auto-continue-state/decide 路由落线);46→47(白板看板 kanban-board 路由落线)
 // ★ 记忆工作台（2026-09-24）：54 → 55 —— 新增 POST /workbench（工作台三重校验诊断/修复，无条件注册）。
     // ★G-F3/G-F5（2026-09-27）：65 → 66 —— 新增 /team-compliance（合规档位只读明示，无条件注册）。
