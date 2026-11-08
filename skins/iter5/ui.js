@@ -195,11 +195,32 @@
             chosen ? h('div', { className: 'i5-source-origin' }, h('strong', null, L('文件来源', 'Source file')), h('small', null, file.data && file.data.path || path)) : null)))
     }
     function Iter5Memory(props) {
-      var initial = { reflections: 'reflections', search: 'search', notes: 'browse' }[controller.panelTab()] || 'browse'
+      var initial = { reflections: 'reflections', search: 'search', notes: 'browse', conflicts: 'conflicts' }[controller.panelTab()] || 'browse'
       var tab = useState(initial)
       var root = useRef(null)
-      var items = [['browse', L('浏览', 'Browse')], ['logs', L('日志', 'Logs')], ['reflections', L('反思', 'Reflections')], ['search', L('检索', 'Search')]]
-      var component = tab[0] === 'browse' ? Iter5Browse : tab[0] === 'search' ? Iter5Search : Iter5History
+      // ★2026-11-09（1.2 第4步·返工，用户裁定）：待决冲突数 → 页签酒红点。
+      //   用组件内 state 驱动（不用全局变量）：fetch 回来 setState ⇒ 页签文案自然重画。
+      var conflictBadge = useState(0)
+      useEffect(function () {
+        var alive = true
+        apiGet(API.factsConflicts).then(function (j) {
+          if (alive) conflictBadge[1](Number((j && j.pendingCount) || 0))
+        }).catch(function () {})
+        return function () { alive = false }
+      }, [props.nonce])
+      // 酒红点美术：径向渐变（#A9304C→#7B2135）+ 1px 亮边 + 外发光；
+      // 内联 style 而非新 class —— 深浅主题都可见，也不新增 CSS（避免与社区皮肤打架）。
+      var conflictLabel = h('span', { 'data-i5-tab': 'conflicts' }, L('冲突处置', 'Conflicts'),
+        conflictBadge[0] > 0 ? h('span', {
+          'data-i5-conflict-dot': '',
+          'aria-hidden': 'true',
+          title: L('有待裁定的冲突', 'Pending conflicts'),
+          style: { display: 'inline-block', width: '6px', height: '6px', borderRadius: '50%', marginLeft: '5px', verticalAlign: 'top', marginTop: '1px', background: 'radial-gradient(circle at 35% 30%, #A9304C 0%, #7B2135 72%)', boxShadow: '0 0 0 1px rgba(255,255,255,.20), 0 0 5px rgba(123,33,53,.55)' },
+        }) : null)
+      // ★2026-11-09（1.2 第4步·返工，用户裁定）：「冲突处置」页签插在「浏览」之后、「日志」之前。
+      //   有待裁定冲突时，页签带酒红色圆点（数据来自本组件的 badge 状态，非全局变量）。
+      var items = [['browse', L('浏览', 'Browse')], ['conflicts', conflictLabel], ['logs', L('日志', 'Logs')], ['reflections', L('反思', 'Reflections')], ['search', L('检索', 'Search')]]
+      var component = tab[0] === 'browse' ? Iter5Browse : tab[0] === 'conflicts' ? Iter5Conflicts : tab[0] === 'search' ? Iter5Search : Iter5History
       return h('div', { ref: root }, h(Iter5Tabs, { id: 'i5-memory', label: L('记忆库分区', 'Memory sections'), items: items, value: tab[0], onChange: function(next) { if(root.current&&root.current.querySelector('[data-i5-dirty="true"]')&&!window.confirm(L('有未保存的笔记，确定切换？','Discard the unsaved note and switch?')))return;tab[1](next) } }),
         h('div', { role: 'tabpanel', id: 'i5-memory-panel', 'aria-labelledby': 'i5-memory-tab-' + tab[0] }, h(component, { key: tab[0], kind: tab[0], nonce: props.nonce, intent: props.intent })))
     }
