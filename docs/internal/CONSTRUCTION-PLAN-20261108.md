@@ -721,7 +721,7 @@ git check-ignore 命中 .gitignore 第 16 行 python/bench/models-xenova-bge-m3-
 
 | 步骤 | 谁 | 状态 |
 |---|---|---|
-| 1. 打包数据（cases.jsonl / events.json / README / evaluate.mjs） | Lead | **✅ 已完成**：211 条真实日志 + 47 事件池 + 盲态 README + 评分器（含负路径自测），见 [实验任务书](./EXPERIMENT-TASK-SEMANTIC-ATTRIBUTION-20261109.md) §2；金标单独存放、两目录均被 .gitignore 覆盖 |
+| 1. 打包数据（cases.jsonl / events.json / README / evaluate.mjs） | Lead | **✅ v3 已完成**：92 条（11-04 后）+ 金标=检查点溯源 + 遮蔽泄漏 + 评分器正负自测；v1(211)/v2(211) 因「日志原文泄漏 + 旧时代归属不可信」作废，原因见 [实验任务书](./EXPERIMENT-TASK-SEMANTIC-ATTRIBUTION-20261109.md) §10；金标单独存放、两目录均被 .gitignore 覆盖 |
 | 2. 跑模型出 results.jsonl | **用户另派的 Agent** | 等数据包 |
 | 3. 评分并回填结论 | Lead | 等结果 |
 | 4. 若成立 → 接入写路径（作为候选排序器，不接管判定） | Lead | 依赖 3 |
