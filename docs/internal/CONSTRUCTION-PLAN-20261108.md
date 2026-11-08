@@ -16,55 +16,59 @@
 
 > ⚠️ **这是初步计划，不是定版方案。** 每项只写清了"做什么 / 落点 / 验收判据"，
 > **具体的施工流程与程序设计仍待细化**（见 §九）。在细则出来之前，不要按本表直接开工写代码。
-批次 0 有一项**未解决的合并冲突**必须先处理（见下）。
+批次 0 的**备份与三元组基线已实测完成**；剩 0.4（工作树未提交改动处置）待用户裁定。
 
-### 环境快照（2026-11-08 09:40 实测）
+### 环境快照（2026-11-08 09:51 实测，**取代 09:40 版**）
 
 | 项 | 值 |
 |---|---|
 | 分支 | `preview` |
-| HEAD | `20f754b7`（完整 `20f754b755c6c5844e0d8de15862ab6c9c2cecc3`） |
-| 领先 origin/preview | **22 提交**（全部未推） |
-| 工作树变更 | **31 条**，其中 1 条是冲突态 |
+| HEAD | `4132510b` |
+| 领先 origin/preview | **24 提交**（全部未推） |
+| 工作树 | 5 个已跟踪改动 + 12 个未跟踪 |
+| **合并冲突** | **无** —— `git status` 无 `UU`/`AA`/`DU` 任何未合并状态 |
 
-**必须知道的 6 个脏文件**：
+**已跟踪、有改动的 5 个文件**：
 
 | 状态 | 文件 | 说明 |
 |---|---|---|
-| `UU` | [`lib/tier-layer-inject.js`](file:///D:/dsh-auto-memory/lib/tier-layer-inject.js) | **未解决的合并冲突** —— 不处理开工必撞 |
-| `M` | [`lib/index.js`](file:///D:/dsh-auto-memory/lib/index.js) | #475 半成品（+10 行） |
-| `M` | [`lib/tier0-catalog.js`](file:///D:/dsh-auto-memory/lib/tier0-catalog.js) | #475 半成品 |
-| `M` | [`tests/smoke/smoke-test-tier0-catalog.mjs`](file:///D:/dsh-auto-memory/tests/smoke/smoke-test-tier0-catalog.mjs) | #475 半成品 |
+| `M` | [lib/index.js](file:///D:/dsh-auto-memory/lib/index.js) | #475 半成品 |
+| `M` | [lib/tier-layer-inject.js](file:///D:/dsh-auto-memory/lib/tier-layer-inject.js) | #475 半成品；**实测冲突标记 0 个、`node --check` 退出码 0**，仅未 git add |
+| `M` | [lib/tier0-catalog.js](file:///D:/dsh-auto-memory/lib/tier0-catalog.js) | #475 半成品 |
+| `M` | [tests/smoke/smoke-test-tier0-catalog.mjs](file:///D:/dsh-auto-memory/tests/smoke/smoke-test-tier0-catalog.mjs) | #475 半成品 |
 | `M` | `.gitignore` | 审计期追加 924 B（可保留） |
-| `??` | [`lib/tier0-usage.js`](file:///D:/dsh-auto-memory/lib/tier0-usage.js) | 未跟踪新文件 |
 
-另有 **13 份** [`docs/internal/*.md`](file:///D:/dsh-auto-memory/docs/internal/) 未跟踪（本次审计产出，**建议先 commit 再开工**）
-和 **9 个垃圾文件**（0 B，shell 引号 bug 残留，可直接删）。
+**未跟踪**：真新增源码 `lib/tier0-usage.js`、`artifacts/probe_classiclf.mjs`；另有 **11 个垃圾文件**
+（0 B 级，shell 引号 bug 残留，可直接删，删除前须按项目规约两步核验）。
+
+> ⚠️ **订正（2026-11-08 09:51）**：本节早前版本（09:40）写「31 条变更，其中 1 条是冲突态」，并称
+> `lib/tier-layer-inject.js` 为 `UU` **未解决的合并冲突**。实测**推翻**该判断：无任何未合并状态、
+> 冲突标记 0 个、`node --check` 退出码 0。三条红线中「不要带着 UU 冲突开工」因此**降级为
+> 「开工前确认冲突标记数 = 0」**。
+
+批次 0 的备份与三元组基线已实测完成，实测值见
+[BATCH0-BASELINE-20261108.md](file:///D:/dsh-auto-memory/docs/internal/BATCH0-BASELINE-20261108.md)。
 
 ### 立即行动（**第一步不是开工，是先问用户**）
 
-**接续后的第一个动作：向用户请示是否派子代理绘制施工细则。**
-
-理由：本表 31 项每项只有一句话任务描述 + 落点 + 判据，
-**没有可执行的施工流程与程序设计**。直接照表写代码 = 边写边设计 = 大概率返工。
+**用户已于 2026-11-08 09:50 裁定：派 2 个子代理绘制批次 1 与批次 2 的施工细则。**
 
 ```
-第 1 步（必做）：问用户
-  「31 项都只有粗略计划，没有细则。要不要现在派子代理逐批绘制
-   施工流程 + 程序设计？建议先派批次 1（止血，最急）和批次 2（碎片链条）。」
-
-第 2 步（用户同意后）：派细则子代理 → 产出「可直接执行」的细则文档
-第 3 步（细则经用户确认后）：解决 UU 冲突 + #475 收尾
-第 4 步：开工批次 0（备份 + 基线），按细则执行
+已做 ①：批次 0 的 0.1 / 0.2 / 0.3（备份 facts.json + event-store.json + 三元组基线）实测完成
+已做 ②：派 detail-batch1 / detail-batch2 两个细则代理，产出
+         docs/internal/DETAIL-BATCH1-20261108.md
+         docs/internal/DETAIL-BATCH2-20261108.md
+未做 ③：批次 0 的 0.4（#475 三文件处置：A 完成并提交 / B stash 后恢复）—— 待用户裁定
+未做 ④：任何 lib/ 代码改动 —— 细则经用户确认后才开工
 ```
 
-**若用户说"先别细化，直接干"**：只对批次 0（纯准备，无设计风险）开工，
-其余批次仍应先出细则。
+**接续后的第一个动作**：检查上面两份细则文档是否已产出且完整（每项 7 个块）；
+若已产出，交用户确认；确认后才动批次 0.4 与批次 1 的代码。
 
 ### 三条红线（越过就会返工）
 
 1. **不要先改代码再想判据** —— 每项都有一组「真执行 + 负路径 + 变异必红」的验收，没有这套判据的改动不算完成
-2. **不要带着 UU 冲突开工** —— 任何回归都分不清是谁弄坏的
+2. **不要在未确认冲突标记数 = 0 时开工** —— 冲突标记残留会让任何回归都无法归因（实测当前为 0，本条是常态检查而非当前阻塞）
 3. **不要一次派 6 个批次** —— 并行过多会互相干扰（本项目已踩过：孤儿总量虚高 18 倍）
 
 ### 本文件怎么读
