@@ -11,27 +11,29 @@ const dir = fs.mkdtempSync(path.join(tmpdir(), 'dam-361-'))
 const candidate = (subject) => ({ scope: 'Workspace', subject, predicate: 'uses', object: 'Node.js', sourceKind: 'explicit', provenance: ['test'], confidence: 1 })
 try {
   const io = createHubIoPre({ dir })
-  const store = createFactStorePre({ io: io('facts.json') })
+  // ★2026-11-09（1.2 第1步）冲突集已独立存储，需同时注入 conflictsIo。
+  const store = createFactStorePre({ io: io('facts.json'), conflictsIo: io('facts-conflicts.json') })
   io.beginBatch()
   assert.equal(store.upsert(candidate('alpha')).ok, true)
   const source = `import {createHubIoPre} from ${JSON.stringify(new URL('../../lib/hub-io.js', import.meta.url).href)};
     import {createFactStorePre} from ${JSON.stringify(new URL('../../lib/fact-store.js', import.meta.url).href)};
     const io=createHubIoPre({dir:process.argv[1]});
-    const r=createFactStorePre({io:io('facts.json')}).upsert(${JSON.stringify(candidate('beta'))});
+    const r=createFactStorePre({io:io('facts.json'),conflictsIo:io('facts-conflicts.json')}).upsert(${JSON.stringify(candidate('beta'))});
     if(!r.ok) throw new Error(JSON.stringify(r));`
   const other = spawnSync(process.execPath, ['--input-type=module', '-e', source, dir], { encoding: 'utf8', timeout: 10000 })
   assert.equal(other.status, 0, other.stderr)
   assert.equal(io.endBatch().ok, true)
-  const reloaded = createFactStorePre({ io: io('facts.json') })
+  const reloaded = createFactStorePre({ io: io('facts.json'), conflictsIo: io('facts-conflicts.json') })
   reloaded.restore(io('facts.json').load())
   assert.deepEqual(reloaded.query({}).map((f) => f.subject).sort(), ['alpha', 'beta'])
   const factFile = path.join(dir, 'facts.json')
-  const reload = () => { const fresh = createFactStorePre({ io: io('facts.json') }); fresh.restore(io('facts.json').load()); return fresh }
+  // ★冲突集坡妙处：reload 只恢复 facts；冲突由 conflictsIo 懒装载（首次读它时才读盘）。
+  const reload = () => { const fresh = createFactStorePre({ io: io('facts.json'), conflictsIo: io('facts-conflicts.json') }); fresh.restore(io('facts.json').load()); return fresh }
   const run = (job, expectFailure = false) => {
     const code = `import assert from 'node:assert/strict';
       import {createHubIoPre} from ${JSON.stringify(new URL('../../lib/hub-io.js', import.meta.url).href)};
       import {createFactStorePre} from ${JSON.stringify(new URL('../../lib/fact-store.js', import.meta.url).href)};
-      const io=createHubIoPre({dir:process.argv[1]}),store=createFactStorePre({io:io('facts.json')});io.beginBatch();
+      const io=createHubIoPre({dir:process.argv[1]}),store=createFactStorePre({io:io('facts.json'),conflictsIo:io('facts-conflicts.json')});io.beginBatch();
       const result=${job}; assert.equal(result.ok,${!expectFailure},JSON.stringify(result));
       ${expectFailure ? "assert.equal(result.reason,'transaction-failed');assert.match(result.error,/CONFIG_LOCK_BUSY|config-lock-busy/);" : ''}
       assert.equal(io.endBatch().ok,true);`

@@ -43,7 +43,14 @@ console.log('[F1] 基础 upsert')
   ok(r3b.ok && r3b.outcome === 'conflict-added', '不同 object 推断也先入冲突集(待用户裁决)')
   // 显式不同 object → 冲突
   const r4 = s.upsert({ scope: 'Workspace', subject: '项目', predicate: '构建工具', object: 'webpack', sourceKind: 'explicit', provenance: ['user-2'] })
-  ok(r4.ok && r4.outcome === 'conflict-added' && s.conflictCount === 2, '不同 object 显式声明 → conflict-added')
+  // ★2026-11-08（1.3a 去重键）此处前后两次冲突的 5 元组（scope/subject/predicate/left.object/right.object）
+  //   完全相同（都是 esbuild vs webpack），只有 right.sourceKind 不同（inference / explicit）。
+  //   1.3a 的设计意图：同一对值的待裁定只需要**一条**（用户要裁定的是「哪个值对」，不是「谁说的」）
+  //   ⇒ 数量断言从 2 改为 1（守的是「显式不同 object 仍进冲突集」这个不变量，不是旧的数量）。
+  //   另配一条反向对照：不同的 5 元组仍必须各自建冲突（防「一律合并」）。
+  ok(r4.ok && r4.outcome === 'conflict-deduped' && s.conflictCount === 1, '不同 object 显式声明 → conflict-added（同 5 元组被 1.3a 去重）')
+  const r4b = s.upsert({ scope: 'Workspace', subject: '项目', predicate: '构建工具', object: 'vite', sourceKind: 'explicit', provenance: ['user-3'] })
+  ok(r4b.outcome === 'conflict-added' && s.conflictCount === 2, '★不同的 5 元组仍各自建冲突（去重不误伤）')
   // validator 反例
   ok(!validateFactCandidatePre({ scope: 'Bad', subject: 'x', predicate: 'y', sourceKind: 'explicit' }).ok, '坏 scope 拒绝')
   ok(!validateFactCandidatePre({ scope: 'Workspace', subject: '', predicate: 'y', sourceKind: 'explicit' }).ok, '空 subject 拒绝')
@@ -105,13 +112,30 @@ console.log('[F5] 持久化 + 恢复')
   const s1 = createFactStorePre({ io: io.io, now })
   s1.upsert({ scope: 'Workspace', subject: 'A', predicate: 'B', object: 'c', sourceKind: 'explicit', provenance: ['x'] })
   s1.upsert({ scope: 'Workspace', subject: 'A', predicate: 'B', object: 'd', sourceKind: 'explicit', provenance: ['y'] }) // 冲突
-  ok(io.saved && io.saved.facts.length === 1 && io.saved.conflicts.length === 1, 'save 落盘(1 fact + 1 conflict)')
+  // ★2026-11-09（1.2 第1步）意图性契约变更：冲突集不再进 facts 快照，改存独立文件。
+  ok(io.saved && io.saved.facts.length === 1 && io.saved.conflicts === undefined,
+    'save 落盘（1 fact，且 facts 快照不再夹带 conflicts）')
+  ok(s1.conflictsSnapshot().conflicts.length === 1 && s1.conflictsSnapshot().namespace === 'dsh-auto-memory-pre-conflicts',
+    '★冲突走 conflictsSnapshot() 独立快照（1 conflict）')
   // 新实例 restore
   const s2 = createFactStorePre({ io: io.io, now })
   const r = s2.restore(io.saved)
   ok(r.ok && r.restored === 1, 'restore 恢复 1 fact')
   ok(s2.get('Workspace', 'A', 'B').object === 'c', 'restore 后查询正常')
-  ok(s2.conflictCount === 1, 'restore 后冲突保留')
+  // ★2026-11-09（1.2 第1步）意图性契约变更：restore() 不再携带 conflicts，
+  //   冲突改由 conflictsIo 懒装载（见下一条）。这里断言「不再从 facts 快照带回冲突」。
+  ok(s2.conflictCount === 0, 'restore 不再从 facts 快照恢复冲突（已独立存储）')
+  // ★冲突真正的重启保存靠 conflictsIo：真构造两个 store，后者从前者落盘的冲突文件装载。
+  {
+    let cSaved = null
+    const cIo = { save: (d) => { cSaved = d }, load: () => cSaved, clear: () => { cSaved = null } }
+    const cx = createFactStorePre({ io: io.io, conflictsIo: cIo, now })
+    cx.upsert({ scope: 'Workspace', subject: 'X', predicate: 'Y', object: '1', sourceKind: 'explicit' })
+    cx.upsert({ scope: 'Workspace', subject: 'X', predicate: 'Y', object: '2', sourceKind: 'explicit' })
+    ok(cSaved && cSaved.conflicts.length === 1, '冲突落到独立通道')
+    const cy = createFactStorePre({ io: io.io, conflictsIo: cIo, now })
+    ok(cy.conflictCount === 1 && cy.pendingConflicts()[0].subject === 'X', '新实例从 conflictsIo 懒装载回冲突')
+  }
   // 坏记录跳过
   const bad = { schemaVersion: 1, facts: [{ factId: 'bad', scope: 'Workspace', subject: 'x', predicate: 'y' }], conflicts: [] }
   const r2 = s2.restore(bad)
