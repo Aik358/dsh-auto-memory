@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
-import { continuationProbePre, continuationRitualEndPre } from '../../lib/continuation.js'
+import { continuationProbePre, continuationRitualEndPre, sessionTailPre } from '../../lib/continuation.js'
 import { shouldArmAutoContinuePre } from '../../lib/water-window.js'
 
 // ★本仓 CRLF：归一化后再按 LF 边界提取
@@ -19,7 +19,11 @@ function extract(src, header) {
   throw Error('unbalanced ' + header)
 }
 function compile(src, deps) { return new Function(...Object.keys(deps), 'return ' + src)(...Object.values(deps)) }
-const deps = { CONTINUE_CREATE_FALLBACK_ALLOWED_CODES: ['workspace/not-found'], acquireSharedStateLock:async()=>()=>{},continuedSourceFile:()=>'/virtual/source', continuedSourceState: () => ({status:'done'}), reserveContinuedSource: async () => 'fixture-token', setContinuedSourceTarget: async () => {}, releaseContinuedSource: async () => {}, diag() {}, AbortSignal, continuationProbePre, continuationRitualEndPre, shouldArmAutoContinuePre,
+const deps = { CONTINUE_CREATE_FALLBACK_ALLOWED_CODES: ['workspace/not-found'], acquireSharedStateLock:async()=>()=>{},continuedSourceFile:()=>'/virtual/source', continuedSourceState: () => ({status:'done'}), reserveContinuedSource: async () => 'fixture-token', setContinuedSourceTarget: async () => {}, releaseContinuedSource: async () => {}, diag() {}, AbortSignal, continuationProbePre, continuationRitualEndPre,
+  // ★2026-11-08（DSH 0.2.2-rc.1 移除 inspect）：事件尾统一走 sessionTailPre。抽出的函数体在
+  //   new Function 作用域里没有模块级绑定 —— 不注入就是 ReferenceError 被 catch 吞掉，
+  //   表现为仪式恒 timeout（同 2026-09-14 / 2026-10-06 的注入表纪律）。
+  sessionTailPre, shouldArmAutoContinuePre,
   // ★2026-10-06 批次 A-1f② 配套（逐 hunk 移植自 PR#217）：armAutoContinue 新增外部依赖
   //   isSubAgentSession（子代理会话不得 arm）。抽出的方法体在 new Function 里重建，作用域中没有
   //   模块级绑定 ⇒ 必须一并注入，否则 ReferenceError 会被该方法自身的 catch 吞掉，
@@ -183,18 +187,25 @@ await check('C11 unresponsive inspection is bounded and releases the execution l
   e.handoffMaterialStamp = async () => 'unchanged'; e.refreshRitualPrompt = () => 'ritual'
   let reads = 0
   e._sessionController.inspect = async (sid, signal) => { assert(signal); return ++reads === 1 ? { events: [] } : new Promise(() => {}) }
+  let maxProbeMs = 0
   e.hostRefreshRitual = method('async hostRefreshRitual(oldSid) {', {
     // ★v3.3.14 判据更新：probe 上限由写死 30s 改为可配置（默认 60s，允许 10–300）。
     //   原断言 ms <= 30000 是「上限恒为 30s」时代的判据，现已过期；改为钉住**新的真实上界**：
     //   任何 probe 的 ms 都必须 > 0 且不超过配置上界 300s（仍能证明「有界、不会无限等」）。
     //   判据意图不变（不受理的 inspection 必须有界），只是边界值跟着代码演进上移。
-    continuationProbePre: (probe, ms) => { assert(ms > 0 && ms <= 300000); return continuationProbePre(probe, Math.min(20, ms)) },
+    continuationProbePre: (probe, ms) => { maxProbeMs = Math.max(maxProbeMs, ms); assert(ms > 0 && ms <= 300000); return continuationProbePre(probe, Math.min(20, ms)) },
   })
+  const t0 = Date.now()
   const result = await e.decideAutoContinue('manual', null, 'source')
-  assert.equal(result.ok, false)
-  assert(result.error.includes('timed out'))
+  // ★2026-11-08 用户裁定：仪式失败（这里=事件尾读取恒不响应 → probe 超时）**不阻断接续**。
+  //   本用例保留的原意是「不受理的 inspection 必须有界、且必须释放执行锁」，这两条原样成立；
+  //   被推翻的只是「因此拒绝建后继」——那会让旧回合已被 cancel 的会话彻底卡死。
+  assert.equal(result.ok, true)
+  assert.equal(result.refreshRitual, 'timeout')
+  assert(Date.now() - t0 < 5000, 'unresponsive inspection stays bounded (no infinite wait)')
+  assert(maxProbeMs > 0, 'probe was actually consulted for bounds')
   assert.equal(e._autoContState.executing, false)
-  assert(!e.calls.some(c => c[0] === 'create'))
+  assert(e.calls.some(c => c[0] === 'create'), 'bounded timeout degrades to prepared material instead of dead-ending')
 })
 await check('scope fallback cannot create a target in the host default workspace', async () => {
   const e = engine()

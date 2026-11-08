@@ -43,6 +43,10 @@ const makeHost = new Function(
   'DEFAULT_AUTO_CONTINUE_PROBE_TIMEOUT_SECONDS',
   'continuationProbePre',
   'continuationRitualEndPre',
+  // ★2026-11-08（DSH 0.2.2-rc.1 移除 inspect）：事件尾统一走 sessionTailPre，
+  //   抽出的函数体在 new Function 作用域里没有模块级绑定 ⇒ 必须按本表纪律一并注入，
+  //   否则 ReferenceError 会让仪式整段失效（表现为恒 timeout）。
+  'sessionTailPre',
   'randomUUID',
   'diag',
   'Date',
@@ -124,6 +128,7 @@ function buildEnv(script, opts = {}) {
     240, 60,
     (fn) => Promise.resolve().then(() => fn(undefined)),
     continuation.continuationRitualEndPre,
+    continuation.sessionTailPre,
     () => 'req-' + (++n) + '-' + Math.random().toString(36).slice(2, 7),
     (m) => logs.push(m),
     FakeDate,

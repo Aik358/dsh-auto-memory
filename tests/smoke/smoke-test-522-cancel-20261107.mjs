@@ -39,12 +39,16 @@ ok(abortIdx - forIdx < 900, 'B4 检查点紧跟循环开头（不是循环末尾
 
 console.log('\n=== C. 调用方：cancelled 不抛错（关键语义）===')
 ok(IX.includes("if (ritual && ritual.reason === 'cancelled') {"), 'C1 有 cancelled 专属分支')
-const cancelBranch = IX.slice(IX.indexOf("if (ritual && ritual.reason === 'cancelled') {"), IX.indexOf("if (ritual && !ritual.ok"))
+const cancelBranch = IX.slice(IX.indexOf("if (ritual && ritual.reason === 'cancelled') {"), IX.indexOf("return { ok: false, cancelled: true, reason: 'cancelled', attempts: ritual.attempts || 0 }") + 120)
 ok(!/throw/.test(cancelBranch), 'C2 cancelled 分支内**不得** throw', 'len=' + cancelBranch.length)
 ok(/return \{ ok: false, cancelled: true, reason: 'cancelled'/.test(cancelBranch), 'C3 cancelled 分支返回结构化结果')
-// 对照：其它失败仍必须 throw（不能把这条放宽成「什么都不抛」）
-const failBranch = IX.slice(IX.indexOf("if (ritual && !ritual.ok"), IX.indexOf("if (ritual && !ritual.ok") + 220)
-ok(/throw new Error\('refresh ritual failed: '/.test(failBranch), 'C4 负路径：真失败（非 cancelled）仍然 throw，判据未被放宽')
+// ★2026-11-08 语义修正（用户裁定，`ritual-inspection-unavailable` 事故）：非 cancelled 的仪式失败
+//   **不再 throw**，只记 diag 并把 reason 落进 refreshRitual。原 C4 把「仍然 throw」钉成期望，
+//   那正是把事故焊死的守卫：throw 发生在旧回合**已被 cancel**之后 ⇒ 旧会话被打断、新会话没建出来。
+//   新判据保留相反的承重含义：cancelled 之外不得再有该 throw，且失败原因必须仍然可见。
+const failBranch = IX.slice(IX.indexOf("if (ritual && !ritual.ok"), IX.indexOf("if (ritual && !ritual.ok") + 420)
+ok(!/throw new Error\('refresh ritual failed: '/.test(failBranch), 'C4 非 cancelled 的仪式失败不再 throw（不阻断接续）')
+ok(/diag\('auto-continue: refresh ritual not completed/.test(failBranch), 'C4b 失败只记 diag（原因仍落 refreshRitual，不静默）')
 
 console.log('\n=== D. 变异反向验证（在内存副本里做）===')
 // D1: 把 cancelled 分支改成 throw ⇒ C2 应红

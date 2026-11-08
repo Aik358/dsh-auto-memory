@@ -21,7 +21,7 @@ import { shouldArmAutoContinuePre } from '../../lib/water-window.js'
 // 会引用它,必须按注入表纪律一并注入(见 makeEngine 内注释),否则 ReferenceError 被 catch 吞掉,
 // 表现为"接续静默不生效"。
 import { contTitleStampPre } from '../../lib/index.js'
-import { continuationProbePre, continuationRitualEndPre } from '../../lib/continuation.js'
+import { continuationProbePre, continuationRitualEndPre, sessionTailPre } from '../../lib/continuation.js'
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 const SRC = readFileSync(path.resolve(HERE, '..', '..', 'lib', 'index.js'), 'utf8')
@@ -97,20 +97,32 @@ function makeEngine(opts) {
       if (opts && opts.cancelFail) throw new Error('cancel failed')
     }
   }
-  // inspect 只在用例显式给替身时才挂上:「没有 inspect」正是旧 host 的形态,于是默认夹具
-  // 跑的始终是「降级到材料指纹」那条保底路径(与真机旧 host 同形,不是在测一条假路径)。
+  // ★2026-11-08（DSH 0.2.2-rc.1 移除 inspect）：读事件尾改走 sessionTailPre（inspect/events/page 三选一）。
+  //   夹具形态三档，缺一档就测不到真机那种宿主：
+  //     · opts.inspect      → 显式替身（A11 因果判据用例）
+  //     · opts.noInspect    → **三条读法全无**（0.2.2-rc.1 之前的旧 host 形态）
+  //     · 默认              → 只有 inspect（0.2.0/0.2.1 线，向后兼容）
+  //   另 opts.readVia='events' 模拟 0.2.2-rc.1 真机：**没有 inspect，有 events**。
   if (opts && opts.inspect) {
     sc.inspect = (sid, sig) => { calls.inspect.push(sid); return opts.inspect(sid, sig, calls.prompt.find((r) => r.content?.[0]?.text === 'ritual-prompt')?.requestId) }
   }
-  if (!sc.inspect && !(opts && opts.noInspect)) {
-    sc.inspect = async () => {
-      const request = calls.prompt.find((r) => r.content?.[0]?.text === 'ritual-prompt')
-      return { events: request ? [
-        { seq: 1, type: 'turn/start', data: { turn: 1 } },
-        { seq: 2, type: 'user/message', data: { source: { rpcId: request.requestId } } },
-        { seq: 3, type: 'turn/end', data: { turn: 1, reason: { kind: 'completed' } } },
-      ] : [] }
+  const ritualEvents = () => {
+    const request = calls.prompt.find((r) => r.content?.[0]?.text === 'ritual-prompt')
+    return request ? [
+      { seq: 1, type: 'turn/start', data: { turn: 1 } },
+      { seq: 2, type: 'user/message', data: { source: { rpcId: request.requestId } } },
+      { seq: 3, type: 'turn/end', data: { turn: 1, reason: { kind: 'completed' } } },
+    ] : []
+  }
+  if (opts && opts.readVia === 'events') {
+    // 0.2.2-rc.1 真机形态：无 inspect，events 返回 records[].event。
+    sc.events = async (req) => {
+      if (!calls.events) calls.events = []
+      calls.events.push(req)
+      return { records: ritualEvents().map((event) => ({ type: 'event', event })), hasMore: false, cursor: 3 }
     }
+  } else if (!sc.inspect && !(opts && opts.noInspect)) {
+    sc.inspect = async () => ({ meta: { id: 'session-a' }, inheritedEventCount: 0, events: ritualEvents() })
   }
   const eng = {
     continuedSessionsFile: () => '/virtual/state',
@@ -166,10 +178,10 @@ function makeEngine(opts) {
       //   （见上方 T7-a 注释与 2026-09-14 / 2026-10-06 两次教训）必须一并注入，否则 ReferenceError
       //   被 new Function 作用域暴露出来，表现为仪式整段不生效。
       'DEFAULT_AUTO_CONTINUE_REFRESH_TIMEOUT_SECONDS', 'DEFAULT_AUTO_CONTINUE_PROBE_TIMEOUT_SECONDS',
-      'DEFAULT_AUTO_CONTINUE_THRESHOLD', 'DEFAULT_WATER_LEVEL_THRESHOLD', 'contTitleStampPre', 'continuationProbePre', 'continuationRitualEndPre',
+      'DEFAULT_AUTO_CONTINUE_THRESHOLD', 'DEFAULT_WATER_LEVEL_THRESHOLD', 'contTitleStampPre', 'continuationProbePre', 'continuationRitualEndPre', 'sessionTailPre',
       'acquireSharedStateLock', 'continuedSourceFile', 'continuedSourceView', 'continuedSourceState', 'reserveContinuedSource', 'releaseContinuedSource', 'setContinuedSourceTarget', 'CONTINUE_CREATE_FALLBACK_ALLOWED_CODES',
       'return {' + extractFn(h) + '};')(
-      () => {}, { timeout: () => undefined }, shouldArmAutoContinuePre, (x) => { const h = x && x.session && x.session.header; if (!h) return false; if (String(h.origin || '') === 'subagent') return true; const d = Number(h.delegationDepth); return Number.isFinite(d) && d > 0 }, 120, 60, 0.75, 0.75, contTitleStampPre, continuationProbePre, continuationRitualEndPre,
+      () => {}, { timeout: () => undefined }, shouldArmAutoContinuePre, (x) => { const h = x && x.session && x.session.header; if (!h) return false; if (String(h.origin || '') === 'subagent') return true; const d = Number(h.delegationDepth); return Number.isFinite(d) && d > 0 }, 120, 60, 0.75, 0.75, contTitleStampPre, continuationProbePre, continuationRitualEndPre, sessionTailPre,
       async () => () => {}, () => '/virtual/source', () => null, (file, sid) => eng._continuedSessions.has(sid) ? {status:'done'} : null, async () => 'fixture-token', async () => {}, async () => {}, ['workspace/not-found'])
     const key = Object.keys(obj)[0]
     fns[key] = obj[key].bind(eng)
@@ -405,23 +417,27 @@ console.log('[autocont-host] A11 终止旧回合 → 仪式真结束 → 新窗�
   ok(eFlow.calls.prompt[1] && eFlow.calls.prompt[1].sessionId === 'session-new-1' && eFlow.calls.prompt[1].content[0].text === 'carry',
     '④仪式结束后才把交接材料投给新会话')
 
-  // ③ 反向一:事件尾根本不增长 → 绝不允许报成功。旧判据在这里会把自动增长的指纹当成「仪式完成」,
-  // 故本用例是「判据必须与原因绑定」的承重断言(把实现退回纯指纹比较,它立刻转红)。
+  // ③ 反向一:事件尾根本不增长 → 仪式**绝不允许声称完成**。
+  //   ★2026-11-08 语义修正（用户裁定）：仪式失败不再阻断接续，故判据从「拒绝建后继」
+  //     改为「refreshRitual 不得是 updated/stamp-fallback」。后者比原断言更严：
+  //     夹具的 stamp 每次调用都变，若实现退回指纹比较，这里会立刻拿到 stamp-fallback ⇒ 转红。
   const eNo = makeEngine({ config: { autoContinueEnabled: true, handoffEnabled: true, autoContinueRefreshTimeoutSeconds: 15 }, stamp: mkStamp(), inspect: mkInspect(tail0, tail0) })
   eNo.fns.armAutoContinue(agent, wl)
   const tNo = Date.now()
   const rNo = await eNo.fns.hostAutoContinue()
-  ok(rNo && !rNo.ok && rNo.error.includes('timeout') && eNo.calls.create.length === 0,
-    '③事件尾不增长：超时拒绝创建后继')
+  ok(rNo && rNo.ok && rNo.refreshRitual === 'timeout' && eNo.eng._autoContState.lastOk.refreshRitual === 'timeout',
+    '③事件尾不增长：仪式判 timeout（不是 updated，也不是 stamp-fallback）——判据绑定因果，不退回指纹')
+  ok(eNo.calls.create.length === 1,
+    '③（用户裁定 2026-11-08）仪式超时**不阻断**接续：后继照建，弱点留在 refreshRitual=timeout')
   ok(Date.now() - tNo >= 15000, '反向用例确实等满 autoContinueRefreshTimeoutSeconds(证明不是提前返回的假绿)')
 
-  // ③ 反向二:长度增长了但只有 user/message(模型没产出任何 assistant/tool 事件)→ 同样不算仪式结束。
+  // ③ 反向二:长度增长了但只有 user/message(模型没产出 assistant/tool 事件)→ 同样不算仪式结束。
   // 这条把判据从「长度变了」钉到「因果事件出现了」,只看长度的实现会在这里转红。
   const tailUser = { meta: { id: 'session-a' }, inheritedEventCount: 0, events: [...tail0.events, { type: 'user/message', seq: 3 }] }
   const eU = makeEngine({ config: { autoContinueEnabled: true, handoffEnabled: true, autoContinueRefreshTimeoutSeconds: 15 }, stamp: mkStamp(), inspect: mkInspect(tail0, tailUser) })
   eU.fns.armAutoContinue(agent, wl)
   const rU = await eU.fns.hostAutoContinue()
-  ok(rU && !rU.ok && rU.error.includes('timeout') && eU.calls.create.length === 0, '③仅事件数增长而无 assistant/tool 事件 → 不算仪式结束(判据绑定因果,不是长度)')
+  ok(rU && rU.ok && rU.refreshRitual === 'timeout', '③仅事件数增长而无 assistant/tool 事件 → 不算仪式结束(判据绑定因果,不是长度)')
 
   // ①② 降级:旧 host 没有 cancel(或 cancel 抛错)→ 交接照常完成,弱点记录在案(report 不许静默近似)。
   const eNC = makeEngine({ config: { autoContinueEnabled: true, handoffEnabled: true }, noCancel: true })
@@ -436,19 +452,60 @@ console.log('[autocont-host] A11 终止旧回合 → 仪式真结束 → 新窗�
   ok(rCF && rCF.ok && rCF.stopped === 'error',
     'cancel 抛错 → stopped=error,交接照常完成(绝不因停回合失败放弃交接 —— 那才会撞上压缩)')
 
-  // ③ 降级:inspect 抛错(会话被回收等)→ 退回指纹判据,且 waited 降级成 stamp-fallback。
-  const eIF = makeEngine({ config: { autoContinueEnabled: true, handoffEnabled: true }, stamp: mkStamp(), inspect: () => { throw new Error('inspect boom') } })
+  // ③ 降级:事件尾**读不出来**（旧 host 三条读法全无）→ 退回材料指纹判据，
+  //    waited 降级成 stamp-fallback，交接照常完成（★2026-11-08 语义修正：
+  //    「读不到事件尾」是能力缺失，不是仪式失败，绝不能让整条接续失败）。
+  const eIF = makeEngine({ config: { autoContinueEnabled: true, handoffEnabled: true }, stamp: mkStamp(), noInspect: true })
   eIF.fns.armAutoContinue(agent, wl)
   const rIF = await eIF.fns.hostAutoContinue()
-  ok(rIF && !rIF.ok && rIF.error.includes('inspect boom') && eIF.calls.create.length === 0, 'inspect 抛错不能证明完成：拒绝创建新会话')
+  ok(rIF && rIF.ok && rIF.refreshRitual === 'stamp-fallback' && eIF.calls.create.length === 1,
+    '三条读法全无（旧 host）→ stamp-fallback 降级，接续照常完成（不许整条失败）')
+
+  // ★2026-11-08 事故用例（DSH 0.2.2-rc.1）：宿主**移除了 inspect**、改由 events 读。
+  //   旧实现在这里 100% 失败并 throw，而旧回合此时已被 cancel ⇒ 旧会话被打断、新会话没建出来。
+  console.log('[autocont-host] A12 0.2.2-rc.1：inspect 缺失 + events 存在（真机形态）')
+  {
+    const eEv = makeEngine({ config: { autoContinueEnabled: true, handoffEnabled: true }, stamp: mkStamp(), readVia: 'events' })
+    eEv.fns.armAutoContinue(agent, wl)
+    const rEv = await eEv.fns.hostAutoContinue()
+    ok(rEv && rEv.ok && rEv.stopped === 'ok' && eEv.calls.create.length === 1,
+      'inspect 缺失但 events 可用 → 接续成功建新会话（不再 ritual-inspection-unavailable）')
+    ok(eEv.calls.events && eEv.calls.events.length >= 2,
+      '仪式基线与轮询都走 events（≥2 次读，形态 {address, maxMessages}）')
+    ok(eEv.calls.events[0] && eEv.calls.events[0].address && eEv.calls.events[0].address.kind === 'session' &&
+       eEv.calls.events[0].address.sessionId === 'session-a',
+      'events 请求带 {kind:"session", sessionId} address（宿主 addressId 要求）')
+    ok(rEv.refreshRitual === 'updated' && eEv.eng._autoContState.lastOk.refreshRitual === 'updated',
+      'events 读法同样能证明「仪式请求所在 turn 真结束」→ waited=updated（不是 stamp-fallback）')
+  }
+
+  // ★同一事故的第二半：读法全无 + 但 sessionController 只有 prompt ⇒ 也不许 throw。
+  {
+    const eNoAll = makeEngine({ config: { autoContinueEnabled: true, handoffEnabled: true }, stamp: mkStamp(), noInspect: true })
+    eNoAll.fns.armAutoContinue(agent, wl)
+    const rNoAll = await eNoAll.fns.hostAutoContinue()
+    ok(rNoAll && rNoAll.ok, '读法全无时 hostAutoContinue 仍 ok（仪式失败绝不阻断接续）')
+  }
 
   // A1 源码守卫(新增调用点)
   ok(/await sc\.cancel\(\{ sessionId: oldSid \}\)/.test(SRC), '源码:hostAutoContinue 调 sessionController.cancel({ sessionId })')
-  ok(/if \(typeof sc\.cancel !== 'function'\)/.test(SRC) && /typeof sc\.inspect !== 'function'/.test(SRC),
-    '源码:cancel/inspect 都先探测可用性(旧 host 不至于抛错中断)')
-  ok(SRC.includes('continuationRitualEndPre(snap && snap.events, reqId, baseSeq)'),
+  ok(/if \(typeof sc\.cancel !== 'function'\)/.test(SRC), '源码:cancel 先探测可用性(旧 host 不至于抛错中断)')
+  // ★2026-11-08：守卫口径由「必须有 inspect」改为「inspect 或 events 或 page 至少一个」——
+  //   前者把 0.2.2-rc.1 的正常宿主判成缺陷（事故根因），后者才是真正的能力契约。
+  ok(/typeof sc\.inspect === 'function' \|\| typeof sc\.events === 'function' \|\| typeof sc\.page === 'function'/.test(SRC),
+    '源码:事件尾读法接受 inspect / events / page 三选一（不再把 inspect 当必需）')
+  ok(!SRC.includes("reason: 'ritual-inspection-unavailable'"),
+    '源码:ritual-inspection-unavailable 已消失（不再把能力缺失判成仪式失败）')
+  ok(SRC.includes('sessionTailPre(sc, sid') && !/sc\.inspect\(sid, signal\)/.test(SRC),
+    '源码:事件尾统一走 sessionTailPre（无直接 sc.inspect 调用点）')
+  ok(SRC.includes("waited: 'stamp-fallback'"),
+    '源码:读不到事件尾时降级为 stamp-fallback（弱点在 result/lastOk 里可见）')
+  ok(/if \(ritual && !ritual\.ok && ritual\.reason && ritual\.reason !== 'cancelled'\) \{[\s\S]{0,320}?diag\(/.test(SRC) &&
+     !/if \(ritual && !ritual\.ok && !\['disabled', 'handoff-disabled'\]\.includes\(ritual\.reason\)\)/.test(SRC),
+    '源码:非 cancelled 的仪式失败只记 diag，不再 throw 中断接续')
+  ok(SRC.includes('continuationRitualEndPre(snap.events, reqId, baseSeq)'),
     '仪式结束绑定 requestId 与 turn/end，不接受首个工具调用')
-  ok(SRC.includes('sc.inspect(sid, signal)') && SRC.includes('const initial = await probe'),
+  ok(SRC.includes('const initial = canReadTail ? await probe('),
     '基线与所有轮询检查均受 probe 截止时间保护')
   ok(/diag\('auto-continue agreed by user: edge='/.test(SRC), '源码:agree 分支记录触发来源(此前只有 reject 有日志)')
   ok(/stopped: st\.lastOk\.stopped \|\| ''/.test(SRC), '源码:stopped 透给浏览器轮询视图')
