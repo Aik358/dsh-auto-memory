@@ -67,7 +67,7 @@ console.log('routes:', registeredRoutes.map((r) => r.path).join(', '))
 
 // ★ T4（2026-09-19）：16 → 17 —— 新增 memory_procedure（procedure memory 的模型直写通路）。
 //   该工具**无条件注册**（不像 expand/trace 受 boardMode=graph 闸门），故任何档位下都 +1。
-if (registeredTools.length !== 21) throw new Error('expected 21 tools (… + v4-U6 memory_upgrade), got ' + registeredTools.length)
+if (registeredTools.length !== 22) throw new Error('expected 21 tools (… + v4-U6 memory_upgrade), got ' + registeredTools.length)
 // ★ 召回统计（2026-09-22）：49 → 50 —— 新增只读路由 GET /recall-stats（面板「统计」页签的数据源）。
 //   该路由**无条件注册**（不受任何开关闸门约束），故任何档位下都 +1。
 // ★ 记忆工作台（2026-09-24）：54 → 55 —— 新增 POST /workbench（工作台三重校验诊断/修复；

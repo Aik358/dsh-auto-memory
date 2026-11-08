@@ -37,7 +37,7 @@ console.log('[U6-1] 结构守卫');
 {
   ok(IX.indexOf("defineTool('memory_upgrade'") >= 0, '★U6-1a memory_upgrade 工具已定义');
   const cnt = (IX.match(/defineTool\(/g) || []).length;
-  ok(cnt === 23, '★★U6-1b defineTool 总数 = 23（原 22 + 1）', String(cnt));
+  ok(cnt === 24, '★★U6-1b defineTool 总数 = 24（原 23 + 1）', String(cnt));
   ok(/enum: \['start', 'status', 'ack'\]/.test(IX), '★U6-1c action 枚举 = start/status/ack');
   ok(/UPGRADE_SUBAGENT_LABEL = 'auto-memory-upgrade'/.test(IX), '★★U6-1d label 常量含 auto-memory- 前缀');
   ok(/UPGRADE_DONE_MAX_CHARS = 520/.test(IX) && /UPGRADE_FAILED_MAX_CHARS = 320/.test(IX), '★U6-1e 段长上限常量 520/320');
@@ -119,7 +119,7 @@ try {
   console.log('');
   console.log('[U6-2] 工具注册与 status/ack');
   ok(!!up && typeof up.execute === 'function', 'U6-2a memory_upgrade 已注册且可 execute');
-  ok(tools.length === 21, '★★★U6-2b 工具总数 = 21（用户批准 20→21）', String(tools.length));
+  ok(tools.length === 22, '★★★U6-2b 工具总数 = 21（用户批准 20→21）', String(tools.length));
   const stPath = path.join(p.userDir, 'upgrade-state.json');
   // status：无文件时也要 ok（fail-soft）
   const st0 = JSON.parse(String(await up.execute({ action: 'status' }, { agent })));

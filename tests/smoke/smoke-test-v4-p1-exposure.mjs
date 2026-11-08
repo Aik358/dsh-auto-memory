@@ -38,7 +38,7 @@ const CONDITIONAL = new Set(['memory_expand', 'memory_trace'])
 console.log('[P1-1] ★功能暴露：全部 20 个工具至少有一条通路告知模型')
 const src = readFileSync(path.join(ROOT, 'lib', 'index.js'), 'utf8')
 const registered = [...new Set([...src.matchAll(/defineTool\('([a-z0-9_]+)'/g)].map(m => m[1]))]
-ok(registered.length === 21, '工具注册总数 = 21（v4-U6 起；实测 ' + registered.length + '）')
+ok(registered.length === 22, '工具注册总数 = 21（v4-U6 起；实测 ' + registered.length + '）')
 
 const uncovered = []
 for (const t of TOOLS) {

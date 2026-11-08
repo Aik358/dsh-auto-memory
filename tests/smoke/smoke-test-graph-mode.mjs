@@ -90,7 +90,7 @@ t('A1 graph 档工具数 = 21(v4-U6 起 = 20 + memory_upgrade) —— 断言「�
   const names = bg.tools.map((x) => x.name)
   assert(names.includes('memory_expand'), 'graph 档必须注册 memory_expand(修 BUG-1: 此前闸门恒假, 永不注册)')
   assert(names.includes('memory_trace'), 'graph 档必须注册 memory_trace')
-  assert(bg.tools.length === 21, 'graph 档工具数应为 21（v4-U6 起 +memory_upgrade）, 实为 ' + bg.tools.length + ': ' + names.join(','))
+  assert(bg.tools.length === 22, 'graph 档工具数应为 21（v4-U6 起 +memory_upgrade）, 实为 ' + bg.tools.length + ': ' + names.join(','))
 })
 t('A2 两遍历工具契约完整(parameters.id/tag + execute 是函数)', () => {
   const ex = bg.tools.find((x) => x.name === 'memory_expand')
@@ -224,7 +224,7 @@ t('D1 ★H0 解耦：legacy 档与 graph 档工具数一致（同为 21），且
   const bl = bootPre('legacy')
   try {
     const names = bl.tools.map((x) => x.name)
-    assert(bl.tools.length === 21, 'legacy 档工具数必须与 graph 档一致（21）, 实为 ' + bl.tools.length)
+    assert(bl.tools.length === 22, 'legacy 档工具数必须与 graph 档一致（21）, 实为 ' + bl.tools.length)
     assert(names.includes('memory_expand'), '★H0 解耦后 legacy 档**必须**注册 memory_expand（旧判据「不得注册」已过期）')
     assert(names.includes('memory_trace'), '★H0 解耦后 legacy 档**必须**注册 memory_trace（旧判据「不得注册」已过期）')
     // T4 工具**不属**白板闸门 ⇒ legacy 档也必须在场(反向保证:别把它错当 graph-only)
@@ -235,7 +235,7 @@ t('D1 ★H0 解耦：legacy 档与 graph 档工具数一致（同为 21），且
 t('D2 非法档位值 fail closed → legacy，工具数同样 20（H0 后档位不再影响工具集）', () => {
   const bx = bootPre('bogus-mode')
   try {
-    assert(bx.tools.length === 21, '非法值回落 legacy 后工具数 = 21, 实为 ' + bx.tools.length)
+    assert(bx.tools.length === 22, '非法值回落 legacy 后工具数 = 21, 实为 ' + bx.tools.length)
     const names = bx.tools.map((x) => x.name)
     assert(names.includes('memory_expand') && names.includes('memory_trace'), '★回落 legacy 后 expand/trace 同样注册（解耦是全局的）')
   } finally { cleanup(bx) }
@@ -249,7 +249,7 @@ t('D3 ★H0 解耦：event 档工具数 = 20，且 expand/trace 都在场', () =
   const be = bootPre('event')
   try {
     const names = be.tools.map((x) => x.name)
-    assert(be.tools.length === 21, 'event 档工具数必须为 21, 实为 ' + be.tools.length)
+    assert(be.tools.length === 22, 'event 档工具数必须为 21, 实为 ' + be.tools.length)
     assert(names.includes('memory_expand'), '★event 档必须注册 memory_expand（H0 解耦的核心场景）')
     assert(names.includes('memory_trace'), '★event 档必须注册 memory_trace')
     assert(names.includes('memory_log') && names.includes('memory_event'), 'event 档核心工具仍在')
@@ -275,7 +275,7 @@ t('D5 ★负向：任一档位与前两档不一致则 FAIL（防止断言恒真
     // 三档都用同一 boot 口径 ⇒ 若某档工具集真的不同，D4 必红；这里再断言「键非空且含关键工具」
     assert(kl.length > 0 && kg.length > 0, '工具集键非空（防空串相等导致 D4 恒真）')
     assert(kl.split(',').includes('memory_expand'), '工具集键含 memory_expand（防 boot 失败时全空串误判相等）')
-    assert(kl.split(',').length === 21, '工具集键项数 = 21, 实为 ' + kl.split(',').length)
+    assert(kl.split(',').length === 22, '工具集键项数 = 21, 实为 ' + kl.split(',').length)
   } finally { cleanup(bl); cleanup(bg) }
 })
 

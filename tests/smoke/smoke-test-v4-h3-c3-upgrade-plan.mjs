@@ -58,7 +58,7 @@ console.log('[C3-2] 结构守卫');
 {
   const cnt = (s, x) => s.split(x).length - 1;
   // ★v4-U6（2026-10-25 用户批准 20→21）：22 → 23（23 = 21 真实 + 2 条件注册）
-  ok(cnt(IX, 'defineTool(') === 23, '★★C3-2a defineTool 调用数 23（v4-U6 后；23 = 21 真实 + 2 条件注册）', String(cnt(IX, 'defineTool(')));
+  ok(cnt(IX, 'defineTool(') === 24, '★★C3-2a defineTool 调用数 24（v4-U6 后；24 = 22 真实 + 2 条件注册）', String(cnt(IX, 'defineTool(')));
   ok(/import \{[^}]*MEMORY_BASIS_MIGRATION_PROMPT[^}]*\} from '\.\/migration-prompt\.js'/.test(IX), '★★★C3-2b 提示词走独立模块静态导入（不硬编码进 index.js）');
   // ★负：index.js 里不得出现提示词正文的独有长句（防有人把它复制进来）
   // ★判据修正：不能只查短标题 —— index.js 里确实有一个 `[记忆基座整理 · 标准流程]` 的 head 行，
@@ -177,7 +177,7 @@ try {
   console.log('');
   console.log('[C3-3] 真引擎：返回提示词 + ★不写任何文件');
   ok(!!st && typeof st.execute === 'function', 'C3-3a memory_status 已注册且可 execute');
-  ok(tools.length === 21, '★★C3-3b 工具数 = 21（v4-U6 新增 memory_upgrade）', String(tools.length));
+  ok(tools.length === 22, '★★C3-3b 工具数 = 21（v4-U6 新增 memory_upgrade）', String(tools.length));
 
   // 造旧格式
   const OLD = '## 2026-08-14\n- 必须用 CRLF 换行\n- 严禁裸 hex 色值\n';

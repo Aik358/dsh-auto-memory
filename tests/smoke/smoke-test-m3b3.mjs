@@ -42,7 +42,7 @@ apply(ctx, {})
 
 const tool = (name) => registeredTools.find((t) => t.name === name)
 // ★ T4（2026-09-19）：16 → 17 —— 新增 memory_procedure（procedure memory 的模型直写通路，无条件注册）。
-if (registeredTools.length !== 21) throw new Error('expected 21 tools (17 + T4 memory_procedure + P9 memory_rules + M8-B memory_procedure_list + v4 memory_event + v4-U6 memory_upgrade), got ' + registeredTools.length)
+if (registeredTools.length !== 22) throw new Error('expected 21 tools (17 + T4 memory_procedure + P9 memory_rules + M8-B memory_procedure_list + v4 memory_event + v4-U6 memory_upgrade), got ' + registeredTools.length)
 // ★ 记忆工作台（2026-09-24）：54 → 55 —— 新增 POST /workbench（工作台三重校验诊断/修复，无条件注册）。
 // 49 → 50：新增只读路由 GET /recall-stats（2026-09-22）。
 // ★2026-09-27：65 → 66（/team-compliance 落线）
