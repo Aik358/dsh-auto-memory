@@ -26,7 +26,7 @@
 
 源码声明 **21** 个工具；`memory_expand` / `memory_trace` 仅在 `boardMode=graph` 时注册。完整参数查 [defineTool 声明](../lib/index.js)。
 
-普通插件注册 **85** 个唯一路径，前缀 `/api/dsh-auto-memory/`。完整路径查 [API](../lib/index.js)，方法、参数与写入门查 [路由 handler](../lib/index.js)。
+普通插件注册 **86** 个唯一路径，前缀 `/api/dsh-auto-memory/`。完整路径查 [API](../lib/index.js)，方法、参数与写入门查 [路由 handler](../lib/index.js)。
 
 | 常用接口 | 用途 |
 |---|---|
