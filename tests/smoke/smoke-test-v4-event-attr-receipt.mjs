@@ -371,6 +371,30 @@ console.log('\n══ M · 1.5 新建事件名 40→80（模块级 + 关联契�
   ok(c3.event.name === '短名', 'M3 负路径：短名逐字节不变')
 }
 
+console.log('\n══ N · evt id 自指（真实会话接驳验证抓到的 P1 缺陷）══')
+{
+  // 缺陷复现条件：日志正文写「… evt_xxxxxxxx …」，而该 id 指向的事件自身 name/summary 里
+  // 当然不含自己的 id ⇒ L1 求交必然零交集；若库里有其它带标识的 active 事件，
+  // 「强负证据」分支就会把它误判成「标识冲突 ⇒ 新建」。
+  // 修法：evt: 型标识不参与 name∪summary 求交，改为**按 id 直查**；不存在的 id 不算负证据。
+  resetProject()
+  const a = await EW.createEventForWorkPre(storePath, { today: engine.memToday(), dayBoundaryMinutes: 450, name: '甲事件' })
+  const b = await EW.createEventForWorkPre(storePath, { today: engine.memToday(), dayBoundaryMinutes: 450, name: '乙事件 issue #777' })
+  const st1 = await EW.readEventStorePre(storePath)
+  // N1 正路径：正文引用 a 的 id ⇒ 必须挂到 a（修复前会判 create）
+  const p1 = EW.pickActiveEventByTopicPre(st1, '这条日志属于 ' + a.id + '，继续处理')
+  ok(!!p1 && p1.id === a.id, 'N1 正文写 evt id ⇒ 按 id 直挂该事件（不是判标识冲突）', p1 && p1 .id)
+  // N2 负路径：不存在的 evt id ⇒ 不得升级成「标识冲突」，应落到词袋/新建
+  const p2 = EW.pickActiveEventByTopicPre(st1, '这条提到一个不存在的 ' + 'evt_deadbeef' + '，应降级')
+  ok(!p2 || p2.id !== a.id, 'N2 不存在的 evt id ⇒ 不当作负证据、不误挂', p2 && p2.id)
+  // N3 标识层不被破坏：issue 编号仍按 name/summary 求交（b 的名字里有 #777）
+  const p3 = EW.pickActiveEventByTopicPre(st1, '关于 issue #777 的进展')
+  ok(!!p3 && p3.id === b.id, 'N3 issue 标识路径未被改动（回归对照）', p3 && p3.id)
+  // N4 对照：显式 id 与正文 id 应落到同一事件（两条路径同源）
+  const viaText = EW.pickActiveEventByTopicPre(st1, '见 ' + a.id)
+  ok(!!viaText && viaText.id === a.id, 'N4 正文 id 与显式 eventId 同源（都指向 a）', viaText && viaText.id)
+}
+
 console.log('')
 console.log('TOTAL ' + (pass + fail) + '  PASS ' + pass + '  FAIL ' + fail)
 process.exit(fail === 0 ? 0 : 1)
