@@ -14,13 +14,48 @@
 |---|---|---|---|---|---|
 | **C1** | — | — | 无（词法） | 内置 | 可用 |
 | **C2** | `xenova-e5-small-q8` | **384** | multilingual-e5-small q8 | **必装**（每个用户都有） | ✅ 已装 |
-| **C3** | `bge-m3-onnx-int8-pre-v1` | **1024** | bge-m3 int8 | **选装**（高级功能） | ❌ **未安装** |
+| **C3** | `bge-m3-onnx-int8-pre-v1` | **1024** | bge-m3 int8 | **选装**（高级功能） | ✅ **已装（开发路径）** |
 
 代码依据：
 - C2：`lib/embedding-config.js` `createJsEmbeddingConfigPre()` → `onnxFile: 'multilingual-e5-small/onnx/model_quantized.onnx'`
 - C3：`lib/embedding-config.js` `createDefaultEmbeddingConfigPre(dshHome,'python')` → `provider:'bge-m3-onnx-int8-pre-v1'`, `dimension:1024`, `onnxFile:'model_int8.onnx'`，模型目录 `<dshHome>/python-engine/models/`
 - C3 走 **Python sidecar**：`python/worker_semantic_v1.py`（84,744 B）+ `python/m7_embedding_v1.py`（16,902 B，含 `BgeM3Embedder` fp32 与 `BgeM3OnnxInt8Embedder` 两个实现）
 - 档位解析：`lib/index.js:22154` `resolveSemanticTier()`，`semanticEngineMode==='python'` 才走 C3
+
+### 0.1.1 C3 的实际安装位置（**开发路径，2026-11-09 实测**）
+
+> ⚠ **重要**：C3 **已安装**，但不在产品默认路径 `~/.dsh/python-engine/models/`，
+> 而在**开发者 bench 路径**。这是它此前被误判为「未安装」的原因。
+
+| 项 | 值 |
+|---|---|
+| **实际路径** | `D:/dsh-auto-memory/python/bench/models-xenova-bge-m3-int8/` |
+| 与 C3 契约的对应 | `modelDir` = 上述目录；`onnxFile` = `'onnx/model_int8.onnx'`（见 `m7_embedding_v1.py:274`） |
+| `onnx/model_int8.onnx` | ✅ **542.1 MB** |
+| `tokenizer.json` | ✅ 16.3 MB |
+| `config.json` / `tokenizer_config.json` / `special_tokens_map.json` | ✅ 齐全 |
+| **config.json 关键字段** | `hidden_size = 1024`（与 C3 的 dimension 契约一致）、`model_type = "xlm-roberta"`、`architectures = ["XLMRobertaModel"]`、`max_position_embeddings = 8194`、`vocab_size = 250002` |
+| git 状态 | 该目录在 `.gitignore` 中（`python/bench/models-xenova-bge-m3-int8/`）⇒ **不入库，需就地使用** |
+
+**⇒ 结论：C3 可以在本机直接实测，无需下载。**
+
+### 0.1.2 开发者 bench 路径下的**其他可用模型**（小模型选型的现成素材）
+
+`D:/dsh-auto-memory/python/bench/models/` 下已有 5 个模型，**其中大部分可直接用于 Q3 对比**：
+
+| 目录 | 体积 | 说明 |
+|---|---|---|
+| `qwen3-emb-0.6b/` | **1152 MB** | Qwen3-Embedding 0.6B（safetensors，非 ONNX） |
+| `bge-reranker-v2-m3/` | 2187 MB | 重排模型，非 embedder（**仅作参考，不适用本任务**） |
+| `multilingual-e5-large/` | 2157 MB | e5-large，C2 的放大版（**上界对照**，非小模型） |
+| `qwen3-reranker-0.6b/` | 1152 MB | 重排模型（**不适用**） |
+| `bge-m3/` | 0 MB | 只有 `sparse_linear.pt`，**不完整**（完整版见 0.1.1 的 int8 目录） |
+
+> **注意**：这些是 **safetensors / torch 格式**，不是 ONNX。本机 **未装 torch/transformers**，
+> 因此 **只能实测 ONNX 的那一个（C3 int8）**；其余需先转 ONNX 或装 torch，成本较高。
+> **建议**：Q3 的小模型探索仍以「下载/寻找 ONNX 版本」为主，bench 下的 safetensors 可作为**上界参考**（如 e5-large 的表现），不必强行跑通。
+
+
 
 ### 0.2 本机 C2 实测（2026-11-09，47 个真实 active 事件）
 
@@ -46,7 +81,7 @@ transformers         ❌ 未装（同上）
 ```
 
 > **重要**：C3 的 int8 ONNX 路径只需 `onnxruntime`（已装），**不需要 torch/transformers**。
-> 这意味着 C3 的 int8 档在本机**具备可跑性**，只差模型文件（用户未下载）。
+> **且模型已在本机**（见 §0.1.1）⇒ **C3 现在就可以直接实测，无任何前置缺口。**
 
 ---
 
@@ -100,7 +135,7 @@ C3 是**选装**（用户主动下载 ~600MB+）。它只能被用作**高级功
 | 4 | 所有实验**可复算**：脚本 + 固定数据快照 + 随机种子 |
 | 5 | 数据集**必须**是真实事件库，不得自造理想样本 |
 | 6 | 报告必须给**物理量**（数值/字节/耗时），禁止「效果不错」这种表述 |
-| 7 | C3 若未安装，**先如实记录「未测」**，不得用论文数字冒充本机实测 |
+| 7 | **C3 必须实测**（模型在 §0.1.1 的开发路径，已确认可用）；任何模型都不得用论文数字冒充本机实测 |
 
 ---
 
@@ -110,7 +145,10 @@ C3 是**选装**（用户主动下载 ~600MB+）。它只能被用作**高级功
   - 52 事件 / 47 active / 765 检查点。**先复制到实验目录再用，禁止改动原件。**
 - 账本：同目录 `handoff/handoff-YYYYMMDD-HHMMSS.md`（685 篇）
 - C2 模型：`C:/Users/JH Z/.dsh/models/js-semantic/multilingual-e5-small/`（已装）
-- C3 模型：`C:/Users/JH Z/.dsh/python-engine/models/`（**不存在，需安装或跳过**）
+- **C3 模型（已装，开发路径）**：`D:/dsh-auto-memory/python/bench/models-xenova-bge-m3-int8/`
+  - `onnx/model_int8.onnx` 542.1 MB / `tokenizer.json` 16.3 MB / config 等齐全
+  - ⚠ 该目录在 `.gitignore` 中，**不得提交或移动**，就地读取
+- C3 产品默认路径 `~/.dsh/python-engine/models/` **不存在**（用户未走产品安装流程）——这是它此前被误判为「未安装」的原因
 
 **C2 加载方式（实测可用，照抄）**：
 
@@ -164,15 +202,31 @@ e = emb.build_embedder({'provider':'bge-m3-onnx-int8-pre-v1',
 
 **这一条决定后面所有实验的方向，必须先做。**
 
-### 实验 C · C3 对比（若可安装）
+### 实验 C · C3 对比（**模型已在本机，直接实测，不需要下载**）
 
-若能装上 bge-m3 int8：
+**加载路径（照抄）**：
 
-- 同任务、同数据，测 margin / top-1 / top-5 / 难点样本准确率
-- 记录**实际安装体积**（字节）、**冷启动耗时**、**单次嵌入耗时**
-- 与 C2 做**配对比较**（同一批查询，统计 C3 优于 C2 的比例）
+```python
+import sys; sys.path.insert(0, 'D:/dsh-auto-memory/python')
+import m7_embedding_v1 as emb
+e = emb.build_embedder({
+    'provider': 'bge-m3-onnx-int8-pre-v1',
+    'modelDir': 'D:/dsh-auto-memory/python/bench/models-xenova-bge-m3-int8',
+    'onnxFile': 'onnx/model_int8.onnx',
+    'dimension': 1024,
+})
+# e.embed_passages([...]) / e.embed_query(...) —— 具体方法名以 m7_embedding_v1.py 为准
+```
 
-**若装不上**：如实写「未测」，并给出安装所需的体积与步骤估算。**不得凭论文数字下结论。**
+必须测：
+- 同任务、同数据（与实验 A 完全相同的 47 事件 / 同一批查询），测 **margin / top-1 / top-5 / 难点样本准确率**
+- **实际体积**：542.1 MB（ONNX）+ 16.3 MB（tokenizer）≈ **558 MB**
+- **冷启动耗时**、**单次嵌入耗时**、**批量嵌入 32 事件耗时**
+- 与 C2 做**配对比较**：同一批查询，统计「C3 对、C2 错」与「C2 对、C3 错」的条数
+- **维度验证**：确认实际输出为 1024 维且已 L2 归一化（`np.linalg.norm`）
+
+> ⚠ 该目录在 `.gitignore` 中，**不要提交、不要移动**，就地读取即可。
+> ⚠ 542 MB 的模型加载慢，冷启动务必**单独计时并预热一次后再测热查询**。
 
 ### 实验 D · 小模型选型（Q3 的核心）
 
@@ -233,7 +287,7 @@ e = emb.build_embedder({'provider':'bge-m3-onnx-int8-pre-v1',
 |---|---|---|
 | `pluginDir` 不传 | `ERR_INVALID_ARG_TYPE: path must be string` | 必传 `{ pluginDir }` |
 | C2 首次调用慢 | 1068 ms（子进程加载 onnx） | 先预热一次再计时 |
-| C3 未安装 | `~/.dsh/python-engine/models/` 不存在 | 先确认是否要下载 600MB，再决定测不测 |
+| C3「看起来没装」 | `~/.dsh/python-engine/models/` 不存在 | **实际在开发路径** `python/bench/models-xenova-bge-m3-int8/`，见 §0.1.1 |
 | torch 未装 | `ModuleNotFoundError: No module named 'torch'` | **int8 ONNX 路径不需要 torch**，别被误导 |
 | 分数绝对值 | E5 中文短文本余弦普遍 0.85+ | 只能同一次查询内部比相对排序 |
 | 事件表示 | 只用 name 会漏细节，用全部 checkpoints 会淹没信号 | 实验 B 之后会知道该用哪种 |
@@ -250,7 +304,7 @@ e = emb.build_embedder({'provider':'bge-m3-onnx-int8-pre-v1',
 - [ ] 决策表：场景 → 方法
 - [ ] 脚本可复现
 - [ ] 报告中**没有任何**未附物理量的形容词结论
-- [ ] C3 若未测，明确写「未测」并说明原因，**不得编造**
+- [ ] **C3 必须实测**（模型已在 §0.1.1 路径，无理由跳过）；若因环境原因跑不通，须贴出完整报错
 
 ---
 
