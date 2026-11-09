@@ -85,6 +85,81 @@ transformers         ❌ 未装（同上）
 
 ---
 
+## 0.5 【最高优先级】技术路线约束：JS 原生优先（用户裁定）
+
+> 用户原话：「因为绝大多数用户是不装 C3，不建立 Python 环境，也不下载 torch 和 transformers 的，
+> 所以我建议还是优先选择 JavaScript 原生支持的」
+
+### 0.5.1 这条约束意味着什么
+
+| 用户类型 | 占比（用户判断） | 具备什么 | 能跑什么 |
+|---|---|---|---|
+| **绝大多数** | 主体 | 只有 DSH + 插件 + C2（必装） | **只能跑 JS/ONNX 路径** |
+| 少数进阶 | 很小 | 另装 C3（Python + 模型） | C2 + C3 |
+
+⇒ **任何新方案都不能把「装 Python / 装 torch / 装 C3」作为前置条件。**
+⇒ C3 的结论只能用于回答「**给已经装了的人**能不能额外获益」，不能作为主路径。
+
+### 0.5.2 好消息：JS 侧换模型的成本**远低于预期**（已实测）
+
+我把现有 C2 的通路跑通了，关键在于：
+
+```
+lib/semantic-js-worker.js:79
+  extractor = await pipeline('feature-extraction', MODEL, { dtype: 'q8' })
+lib/semantic-js-worker.js:16
+  const MODEL = 'multilingual-e5-small'
+```
+
+这是 **HuggingFace transformers.js 的通用 pipeline**，不是 e5 专用代码。
+**实测验证**：`pipeline('feature-extraction', 'multilingual-e5-small', { dtype:'q8' })`
+从本地目录加载成功（846 ms），输出 Float32Array(384)。
+
+⇒ **换模型 = 换 `localModelPath` + 换 `MODEL` 常量**，不需要新的运行时依赖。
+
+### 0.5.3 但有 **3 处硬编码** 必须同步改（这是真正的成本）
+
+| # | 位置 | 内容 | 换其他模型时的后果 |
+|---|---|---|---|
+| **H1** | `semantic-js-worker.js:60` | `if (vector.length !== 384) throw` | **维度不是 384 的模型会直接抛错** —— bge-small-zh(512) / bge-m3(1024) 全部命中 |
+| **H2** | `semantic-js-worker.js:58,80,89,93` | 强制加 `'query: '` / `'passage: '` 前缀 | e5 需要这个前缀；**bge 系、多数中文模型不需要**，加了可能反而降质 |
+| **H3** | `semantic-js.js:326` | 探测固定路径 `multilingual-e5-small/onnx/model_quantized.onnx` | 换模型要改探测逻辑，否则「资产缺失」误判 |
+| **H4** | `semantic-js.js:375` | `POOL_MAX` 注释按 384 维算内存（30MB） | 1024 维时同一条目数约 80MB，需重算 |
+| **H5** | `embedding-config.js` `createJsEmbeddingConfigPre` | 固定 `onnxFile: 'multilingual-e5-small/onnx/model_quantized.onnx'` | 同上 |
+
+**⇒ 任务要求：换模型不是「改一行」，而是「改一处常量 + 维度改为参数化 + 前缀改为按模型配置」。**
+请给出**参数化方案**（模型名 / 维度 / 前缀 / onnx 路径 四元组放进配置），而不是硬改常量。
+
+### 0.5.4 JS 原生候选池（**必须全部走 ONNX + transformers.js 可加载**）
+
+优先在 `huggingface.co/models?library=transformers.js` 里找，或 `onnx-community/*-ONNX` 组织下的模型。
+
+| 候选 | 维度 | 参考体积 | ONNX 状态 | 备注 |
+|---|---|---|---|---|
+| **multilingual-e5-small**（=现 C2） | 384 | ~130 MB（q8 118 MB） | ✅ 已装 | **基线，必须参与对比** |
+| **bge-small-zh-v1.5** | 512 | **~25–30 MB**（q8） | 有 `onnx-community/bge-small-zh-v1.5-ONNX`、`Xenova/bge-small-zh-v1.5` | **最贴合小模型目标**，中文强 |
+| **bge-small-en-v1.5** | 384 | ~30 MB | ✅ 有 | 维度与 C2 相同（H1 不用改），但中文弱 |
+| **jina-embeddings-v2-small-en** | 512 | ~30 MB | 有 Xenova 版 | 英文为主 |
+| **gte-small** | 384 | ~30 MB | 有 Xenova 版 | 多语，维度同 C2 |
+| **paraphrase-multilingual-MiniLM-L12-v2** | 384 | ~120 MB | 有 Xenova 版 | 维度同 C2，多语，体积不占优 |
+| **all-MiniLM-L6-v2** | 384 | ~23 MB | ✅ 有 | **最小之一**，英文为主 |
+| nomic-embed-text-v1.5 | 768 | ~140 MB | 有 | 体积不占优 |
+
+> **务必逐项核实**：① 是否真有 ONNX 版（`onnx/model_quantized.onnx` 或 `model_int8.onnx`）；
+> ② 是否被 transformers.js 官方支持（pipeline 能加载）；③ 中文能力实测（不要只看榜单）。
+
+### 0.5.5 一个隐藏优势：维度相同 = 改动最小
+
+若最终选中的模型维度**恰好是 384**（如 `bge-small-en-v1.5` / `gte-small` / `all-MiniLM-L6-v2`），
+则 **H1（维度校验）与 H4（内存估算）都不用改**，只需要：
+- 换 `MODEL` 常量
+- 换 `localModelPath` / `onnxFile`
+- **确认是否需要 query/passage 前缀**（H2）
+
+⇒ **请把「维度 384」作为选型的加分项明确列出**，这会显著降低落地成本。
+
+---
+
 ## 1. 核心问题（三问，按顺序回答）
 
 ### Q1 · C3（bge-m3 1024 维）能否解决 C2 解决不了的区分度问题？
@@ -98,13 +173,18 @@ C3 是**选装**（用户主动下载 ~600MB+）。它只能被用作**高级功
 - 降级链（C3 不可用 → C2 → C1）
 - 用户可见的提示措辞
 
-### Q3 · 有没有**体积更小**的模型能胜任「事件聚类」？
+### Q3 【**主路径**】有没有**体积更小、且 JS 原生可用**的模型能胜任「事件聚类」？
 
-这是在 Q1 结论为「C3 也不够」或「C3 太重」时的替代路线。要求：
-- **体积显著小于 C2**（C2 约 130 MB），目标 **≤ 50 MB**，最好 ≤ 20 MB
+> ⚠ **这一问是主路径**（见 §0.5）。绝大多数用户不装 C3、不建 Python 环境、不装 torch。
+> Q1 的 C3 只服务少数进阶用户，**不能作为落地方案**。
+
+要求（全部为硬条件）：
+- **JS 原生可加载**：走 `@huggingface/transformers` 的 `pipeline('feature-extraction', ...)`，**不得引入 Python/torch**
+- **有 ONNX 版**：优先 `onnx-community/*-ONNX` 或 `Xenova/*`（`model_quantized.onnx` 或 `model_int8.onnx`）
+- **体积显著小于 C2**（C2 q8 ≈ 118 MB），目标 **≤ 50 MB**，最好 ≤ 20 MB
 - 中文/中英混合可用
-- 能走 ONNX（本机已有 onnxruntime，不引入新运行时）
-- 许可允许随插件分发或由插件下载
+- 许可允许随插件分发或由插件下载（记录 license）
+- **维度 384 是加分项**（见 §0.5.5，可省掉两处硬编码改动）
 
 ---
 
@@ -228,15 +308,30 @@ e = emb.build_embedder({
 > ⚠ 该目录在 `.gitignore` 中，**不要提交、不要移动**，就地读取即可。
 > ⚠ 542 MB 的模型加载慢，冷启动务必**单独计时并预热一次后再测热查询**。
 
-### 实验 D · 小模型选型（Q3 的核心）
+### 实验 D · JS 原生小模型选型（**Q3 主路径，优先级仅次于实验 B**）
 
-按 §2 候选表，逐个：
+**这一项是最终能否落地的关键。** 做法：
 
-1. 核实参数量 / 维度 / ONNX 可用性 / 许可
-2. 能跑的就跑（ONNX 下载到实验目录）
-3. 同任务同数据对比：margin / top-1 / top-5 / 难点准确率 / **体积** / **耗时**
+1. 从 §0.5.4 候选池出发，**逐个核实**：
+   - HF 仓库是否存在 ONNX 版（给链接 + 实际文件字节数）
+   - 是否被 transformers.js 支持（**真加载一次**，不能只看 README）
+   - 许可（Apache-2.0 / MIT / 其他）
+2. **能跑的真跑**：用与 C2 完全相同的通路
+   ```js
+   const { pipeline, env } = (await import('@huggingface/transformers')).default
+   env.allowRemoteModels = false
+   env.allowLocalModels = true
+   env.localModelPath = '<实验目录>'
+   const ext = await pipeline('feature-extraction', '<模型名>', { dtype: 'q8' })
+   const v = await ext('<文本>', { pooling: 'mean', normalize: true, truncation: true })
+   ```
+   > 已实测该通路可用（846 ms 加载 `multilingual-e5-small`，输出 Float32Array(384)）。
+   > 若模型需要 query/passage 前缀，**分别测「加前缀」与「不加前缀」两种**，报告差异。
+3. 同任务同数据对比：**margin / top-1 / top-5 / 难点准确率 / 体积 / 冷启动 / 单次嵌入耗时**
+4. 同时记录**改造工作量**：需要改 §0.5.3 的哪几处硬编码（H1–H5）
 
-**输出一张选型表**，按「体积 × 效果」二维排序，标出帕累托前沿。
+**输出一张选型表**，按「**体积 × 效果 × 改造工作量**」三维排序，标出帕累托前沿。
+**必须给出 1 个推荐型号**，或明确说明「无一合格」。
 
 ### 实验 E · 任务形态重估：聚类 vs 二分类
 
@@ -300,7 +395,9 @@ e = emb.build_embedder({
 - [ ] 实验 B 的 32×32 矩阵（数值表或图）——**没有它不许下任何结论**
 - [ ] A–F 全部完成，每项有数据表
 - [ ] Q1/Q2/Q3 三个结论各选一个，附理由
-- [ ] 候选模型选型表（含体积/维度/许可/实测效果）
+- [ ] **JS 原生候选选型表**（含体积/维度/许可/ONNX 实测加载/是否需要前缀/改造工作量）
+- [ ] **至少 1 个 JS 原生模型真跑通**（不能只有 C3 的结论）
+- [ ] 参数化方案：模型名 / 维度 / 前缀 / onnx 路径 四元组如何配置（改 H1–H5）
 - [ ] 决策表：场景 → 方法
 - [ ] 脚本可复现
 - [ ] 报告中**没有任何**未附物理量的形容词结论
