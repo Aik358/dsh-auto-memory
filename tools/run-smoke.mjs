@@ -117,6 +117,14 @@ const HEAVY_MS = {
   'smoke-test-external.mjs': 98300,
   'smoke-test-py-runtime-live.mjs': 57300,
   'smoke-test-la-audit-fixes.mjs': 56100,
+  // ★2026-11-09（1B 收口轮实测）：本套件**自耗 242s**（单跑 50 PASS / 0 FAIL、exit=0），
+  //   远超轻车道默认 60s ⇒ 在回归里恒判 TIMEOUT（不是挂死，是被阈值判死）。
+  //   处置：按本表既有口径「实测 >5s 的套件进重车道」入表（重车道阈值 240s，余量已足；
+  //   实测 242s 仍逼近上限 ⇒ 若后续再涨，应改为拆分套件而不是继续抬阈值）。
+  //   为什么不改全局 --timeout：那会把所有轻套件的挂死发现时间从 1 分钟拖到 4 分钟（本表 105 行已立此判据）。
+  //   ★阈值口径：实测单跑 242.4s（并发下更慢）⇒ 登记 420000（约 1.7× 余量），由 pickTimeout 取
+  //     max(240000, 420000) = 420000。若后续再涨，应**拆分套件**而不是继续抬（本表 105 行已立此判据）。
+  'smoke-test-la5-302-request-preservation.mjs': 420000,
   'smoke-test-issue45-recall-corpus.mjs': 40200,
   'smoke-test-c4-fresh-install.mjs': 38900,
   'smoke-test-a6-ci-group-queue.mjs': 38200,
@@ -629,13 +637,17 @@ async function main() {
   }
 
   /** 有界工作池：固定 jobs 个 worker 从同一下标游标取任务，天然限流、无第三方依赖。 */
-  const runPool = async (list, width, timeoutMs) => {
+  // ★2026-11-09：timeoutMs 允许**传函数**（按套件名取阈值）或数字（车道统一阈值）。
+  //   为什么必须支持函数：重车道 51 个套件里只有 la5 需要 420s，其余都该守 240s ——
+  //   车道级单值做不到「只给一个套件放宽」，而那正是本次问题的形态。
+  const resolveTimeout = (n, t) => (typeof t === 'function' ? t(n) : t)
+  const runPool = async (list, width, timeoutSpec) => {
     let cursor = 0
     const worker = async () => {
       for (;;) {
         const i = cursor++
         if (i >= list.length) return
-        const r = await runSuite(path.join(SMOKE_DIR, list[i]), timeoutMs)
+        const r = await runSuite(path.join(SMOKE_DIR, list[i]), resolveTimeout(list[i], timeoutSpec))
         report(r)
       }
     }
@@ -650,13 +662,22 @@ async function main() {
     //   必然 TIMEOUT。这条只在「走双车道」时被规避（重车道 240s），一旦 --jobs=1 就暴露。
     //   判据：**超时阈值是「套件属性」，不是「车道属性」** —— 换执行路径不得改变判定标准。
     //   修法：单池分支按套件名查 HEAVY_MS，命中就给 heavyTimeoutMs。
-    const pickTimeout = (n) => (HEAVY_MS[n] !== undefined ? opts.heavyTimeoutMs : opts.timeoutMs)
+    // ★2026-11-09（1B 收口轮）：**per-suite 阈值**（向后兼容的最小扩展）。
+  //   背景：la5 单跑 242.4s、并发下更慢 ⇒ 若只用全局重车道 240s，它在回归里恒 TIMEOUT。
+  //   口径：重车道套件取 max(全局 heavyTimeout, 登记值) —— 登记值本就只在该套件"真的更慢"时才高于全局，
+  //   因此对表内其余 50 个套件行为**逐字不变**（它们的登记值都 < 240000）。
+  //   ⚠ 这不是"放宽阈值洗绿"：登记值必须是**实测耗时**，且套件本身必须 exit=0（la5 实测 50 PASS / 0 FAIL）。
+  const pickTimeout = (n) => {
+    if (HEAVY_MS[n] === undefined) return opts.timeoutMs
+    return Math.max(opts.heavyTimeoutMs, Number(HEAVY_MS[n]) || 0)
+  }
     const runPoolPerSuite = async (list) => {
       let cursor = 0
       const worker = async () => {
         for (;;) {
           const i = cursor++
           if (i >= list.length) return
+          // 与双车道重车道**同一口径**：只有登记值 > 全局阈值时才生效（其余套件行为不变）
           const r = await runSuite(path.join(SMOKE_DIR, list[i]), pickTimeout(list[i]))
           report(r)
         }
@@ -670,7 +691,7 @@ async function main() {
     //   轻车道并行 ⇒ 305 个快套件（合计仅 277s）迅速收尾。
     //   总墙钟 ≈ max(重车道合计, 轻车道合计 / jobs)，两边都不再有并发假红。
     await Promise.all([
-      runPool(lanePlan.heavy, opts.heavyJobs, opts.heavyTimeoutMs),
+      runPool(lanePlan.heavy, opts.heavyJobs, (n) => Math.max(opts.heavyTimeoutMs, Number(HEAVY_MS[n]) || 0)),
       runPool(lanePlan.light, jobs, opts.timeoutMs),
     ])
   }

@@ -57,13 +57,16 @@ function loadTool(store, overrideCode) {
   const captured = []
   const fakeTools = { push: (x) => { captured.push(x); return x } }
   const fakeDefineTool = (name, desc, schema, fn) => ({ name, description: desc, parameters: { properties: schema }, execute: fn })
-  const fakeEngine = { _factStore: store, currentSessionId: () => 's-test' }
-  // ★2026-11-09（1.2 第6步接线后）：handler 会调 conflictReminders —— 桩必须提供，否则抽取式执行会 ReferenceError
+  // ★2026-11-09（同日续修）：conflictReminders 的**契约变了** ——
+  //   原先它是 apply 内的块级 const，抽取式执行时必须作为**外部变量**注入同名参数；但那个块级 const
+  //   实际上活得比块短，块外 6 处消费点全部抛 ReferenceError（memory_recall 整体失效、reflect 套件长期红）。
+  //   真修后改为挂 engine._conflictReminders（块内定义、块外可读）⇒ 本桩随之改为挂在 engine 上。
+  //   判据不变：仍断言「high 附一条提醒且只记一次」。
   const reminders = { calls: [], shouldRemind: () => true, markReminded: (id, sid) => { reminders.calls.push({ id, sid }); return 1 }, dropConflict: () => 0 }
-  const fakeEngineRefs = { store, reminders }
+  const fakeEngine = { _factStore: store, _conflictReminders: reminders, currentSessionId: () => 's-test' }
   const diag = () => {}
   // eslint-disable-next-line no-new-func
-  new Function('tools', 'defineTool', 'engine', 'diag', 'conflictReminders', overrideCode || code)(fakeTools, fakeDefineTool, fakeEngine, diag, reminders)
+  new Function('tools', 'defineTool', 'engine', 'diag', overrideCode || code)(fakeTools, fakeDefineTool, fakeEngine, diag)
   assert.equal(captured.length, 1, '应恰好注册 1 个工具')
   return captured[0]
 }

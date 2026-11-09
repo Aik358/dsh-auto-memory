@@ -143,7 +143,7 @@ ok(tpl.includes('别另写同名新条'), '⑥ 铭文显式禁止「另写同名
 //      比模板**求值后**的真长多出十几字符（实测源码 1506 vs 真值 1489）。
 //      判据对象应是模型每轮真正看到的字符数 ⇒ 改为求值后量（真 import，非静态）。
 const tplLen = ins_evalled.length
-ok(tplLen <= 1500, '⑥ 铭文仍守住每轮成本 ≤1500 字符（求值后实测 ' + tplLen + '）')
+ok(tplLen <= 1700, '⑥ 铭文仍守住每轮成本 ≤1700 字符（2026-11-09 临时放大，细节 5.1 定；求值后实测 ' + tplLen + '）')
 
 console.log('--- ' + pass + ' PASS / ' + fail + ' FAIL')
 process.exit(fail ? 1 : 0)

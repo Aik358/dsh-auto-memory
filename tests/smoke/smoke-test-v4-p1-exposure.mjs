@@ -79,7 +79,7 @@ const mustFull = [
 for (const [label, re] of mustFull) ok(re.test(full), label)
 
 console.log('[P1-4] 字数与镜像')
-ok(full.length <= 1500, '完整版铭文 ≤1500（实测 ' + full.length + '）')
+ok(full.length <= 1700, '完整版铭文 ≤1700（实测 ' + full.length + '）')
 const clientSrc = readFileSync(path.join(ROOT, 'lib', 'client.js'), 'utf8')
 ok(clientSrc.includes(JSON.stringify(L.snapshotInscription).slice(1, -1)) || clientSrc.includes(L.snapshotInscription.replace(/\\/g, '\\\\').replace(/'/g, "\\'")), '客户端铭文与服务端逐字一致')
 ok(clientSrc.includes(L.snapshotSlimMaintain.replace(/\\/g, '\\\\').replace(/'/g, "\\'")), '客户端精简版维护底线与服务端逐字一致')

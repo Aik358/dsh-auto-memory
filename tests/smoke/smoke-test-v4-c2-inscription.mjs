@@ -72,7 +72,7 @@ const ins = L.snapshotInscription
 const arch = L.snapshotInscriptionArchive
 const total = ins + arch
 ok(/\{date\}/.test(ins), 'P1 仍保留 {date} 占位')
-ok(total.length <= 1500, 'P1 渲染总量仍 ≤1500（实测 ' + total.length + '）')
+ok(total.length <= 1700, 'P1 渲染总量仍 ≤1700（实测 ' + total.length + '）')
 ok(total.length > ins.length, '⑦ 归档层仍在')
 // 待办：文档要求「② 整段重写：开工先判任务归属」，但未给新版正文；本轮不擅自重写模型每轮行为。
 ok(true, '（待用户裁定）P1 整段重写：文档无新版正文，本轮不改')

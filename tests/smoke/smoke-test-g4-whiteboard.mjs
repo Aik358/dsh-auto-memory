@@ -112,6 +112,8 @@ t('G4-6 ★【2026-09-20 用户裁定】铭文恢复收尾自检正文——三�
   //   且本段走 systemPrompt.context()（不击穿前缀缓存），内容不变时 dsh-agent-loop project() 去重不加发。
   //   ★2026-10-12 上限由 1200 提到 1400（用户裁定）：技能库**分工作区库/通用库**、写接口无 scope 等边界
   //   必须让模型在收尾位就知道（否则会误以为能选库）；实测 1244 字符（+63），仍在护栏内。
+  //   ★2026-11-09 上限 1500 → **1700**（用户裁定「先暂时放大，细节 5.1 铭文重写时一并定」）：批次 1B 把 15 条归属判据
+  //     精简版写进铭文，实测单层 1,534 / 含 archive 1,694 ⇒ 护栏临时抬到 1700。**这是临时值**，5.1 必须重新评估。
   //   ★2026-10-13 上限 1400 → 1500（#333②，同一用户裁定方向）：新增 snapshotInscriptionArchive 层（246 字符），
   //   铭文由「单层」变为「两层拼接渲染」。
   //   ⚠️ 同时修正了一个**假绿守卫**：旧断言只量单层 ⇒ 新增的 ⑦ 层完全不在被量范围内。现量两层拼接。
@@ -119,14 +121,14 @@ t('G4-6 ★【2026-09-20 用户裁定】铭文恢复收尾自检正文——三�
   //   而源码里的 `\n` 是**两个字符**（反斜杠+n）、求值后是**一个真换行**。实测该偏差恒为 74 字符
   //   （v3.2.15→v3.3.1 各版本一致），会让人误判「爆限额」。现统一改为**求值后口径**：
   //   直接量 DEFAULT_PROMPT_LAYERS（已 import 的求值结果），= 模型真正看到的字符数。
-  assert(tpl.length <= 1500, '★ 铭文单层须守住成本(≤1500 字符), 实测 ' + tpl.length)
+  assert(tpl.length <= 1700, '★ 铭文单层须守住成本(≤1700 字符 · 2026-11-09 用户裁定临时放大，细节留 5.1), 实测 ' + tpl.length)
   // ★真正该守的是「模型每轮实际看到的铭文字符数」= 两层求值后拼接（含 ⑦ 归档层）。
   const archReal = DEFAULT_PROMPT_LAYERS.snapshotInscriptionArchive
   assert(typeof archReal === 'string' && archReal.length > 0, '应能取到 ⑦ 归档层（求值后非空）')
   const total = tpl + archReal
-  assert(total.length <= 1500, '★ 铭文**渲染总量**须守住每轮成本(≤1500 字符, 含 Archive 层), 实测 ' + total.length)
+  assert(total.length <= 1700, '★ 铭文**渲染总量**须守住每轮成本(≤1700 字符, 含 Archive 层 · 2026-11-09 临时放大), 实测 ' + total.length)
   assert(total.length > tpl.length, '★ 总量必须 > 单层（防止 Archive 层被静默移除导致守卫失效）')
-  assert(total.length + 1 <= 1500, '★ 计入 pushPart 前导 \\n 后仍须 ≤1500（真实交付给宿主的上限）')
+  assert(total.length + 1 <= 1700, '★ 计入 pushPart 前导 \\n 后仍须 ≤1700（真实交付给宿主的上限 · 2026-11-09 临时放大）')
 })
 
 /** 从 client.js 抽取 DEFAULT_PROMPT_LAYERS_CLIENT 并**求值**为真实对象（花括号配对，与键序解耦）。 */
