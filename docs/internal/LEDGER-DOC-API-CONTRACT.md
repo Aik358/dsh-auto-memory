@@ -175,5 +175,7 @@ R4-M 只组织既有模块，不改变字段、WAL 状态机、存储原子性�
 | upsertDocument(args) | async；启用且 started 后转调 wal.execute；committed 后发布失效通知，保留 WAL 原始返回形状。 |
 | queryHistory(args) | async；启用且 started 后转调 history.query，保留原形状。 |
 | auditCoverage(args={}) | async；启用且 started 后转调 audit.auditAll(args)，保留原形状并写隔离报告。 |
+| readDocuments(args={}) | async；转调 LedgerDocReadSide.current(args)，按 documentId/eventIds/current manifest 选择当前维护文档，返回 `{ok,selection,document,documents,chunks,readErrors}`。无绑定多文档返回 document-selection-required。 |
+| readSide getter | 同步返回 LedgerDocReadSide；list/chunks/readChunk/forEvent 提供只读枚举、按 revision 的 chunk、当前正文下钻和显式事件关联，不猜最近文档。 |
 
 未启用时上述操作返回 `{ok:false,error:'ledger-doc-system-disabled',enabled:false}`；已启用未 start 返回 `{ok:false,error:'ledger-doc-system-not-started',enabled:true}`。getters 只是模块实例访问，不绕过系统生命周期隐式创建、迁移或启动生产功能。

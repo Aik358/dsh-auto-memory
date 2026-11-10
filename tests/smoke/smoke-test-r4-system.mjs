@@ -72,22 +72,22 @@ async function copyModuleTree(name, transform = (source) => source) {
   const moduleDir = path.join(lib, 'ledger-doc')
   await fs.rm(root, { recursive: true, force: true })
   await fs.mkdir(moduleDir, { recursive: true })
-  for (const file of ['protocol.js', 'document-store.js', 'locked-store.js', 'material-stamp.js', 'history-query.js', 'coverage-audit.js', 'wal.js', 'index.js', 'system.js']) {
+  for (const file of ['protocol.js', 'document-store.js', 'locked-store.js', 'material-stamp.js', 'history-query.js', 'coverage-audit.js', 'wal.js', 'read-side.js', 'event-store-sink.js', 'index.js', 'system.js']) {
     const source = await fs.readFile(path.resolve('lib/ledger-doc', file), 'utf8')
     await fs.writeFile(path.join(moduleDir, file), file === 'system.js' || file === 'index.js' ? transform(source) : source)
   }
-  for (const file of ['shared-state-lock.js', 'file-boundary.js']) await fs.copyFile(path.resolve('lib', file), path.join(lib, file))
+  for (const file of ['shared-state-lock.js', 'file-boundary.js', 'event-store.js']) await fs.copyFile(path.resolve('lib', file), path.join(lib, file))
   return { root, moduleDir }
 }
 
 console.log('=== Unified import and complete API contract ===')
 await test('M-01 single index exports every public symbol from all seven modules', async () => {
-  const modules = ['protocol', 'document-store', 'locked-store', 'material-stamp', 'history-query', 'coverage-audit', 'wal']
+  const modules = ['protocol', 'document-store', 'locked-store', 'material-stamp', 'history-query', 'coverage-audit', 'wal', 'read-side', 'event-store-sink']
   const expected = new Set()
   for (const name of modules) for (const key of Object.keys(await import('../../lib/ledger-doc/' + name + '.js'))) expected.add(key)
   expected.add('LedgerDocSystem')
   assert.deepEqual(Object.keys(api).sort(), [...expected].sort())
-  assert.equal(expected.size, 40)
+  assert.equal(expected.size, 43)
 })
 await test('M-02 API contract documents every public class method and pure helper', async () => {
   const contract = await fs.readFile('docs/internal/LEDGER-DOC-API-CONTRACT.md', 'utf8')
@@ -326,7 +326,7 @@ console.log('=== Isolated facade mutations and protected hashes ===')
     assert.equal(result.ok, true)
     assert.equal(result.phase, 3)
     assert.equal(current.system.history instanceof restoredApi.LedgerHistoryQuery, true)
-    assert.equal(Object.keys(restoredApi).length, 39)
+    assert.equal(Object.keys(restoredApi).length, Object.keys(api).length - 1)
     assert.equal((await current.system.stop()).stopped, true)
   })
   evidence.push({ kind: 'restored', result: result.ok ? 'GREEN' : 'RED' })
