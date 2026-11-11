@@ -352,6 +352,8 @@ async function frontendClassic() {
   docCalls(world)[0].resolve({ enabled: true, documentId: 'doc-a-261111-0001', revision: docEntry('doc-a-261111-0001', 'a').revision, text: 'DOC-A BODY ONE' })
   await pump(comp)
   ok(textOf(comp.tree).includes('DOC-A BODY ONE'), 'classic 正文必须显示')
+  const bodyNode = findAll(comp.tree, (n) => n.props && n.props['data-dam-content'] === '' && textOf(n).includes('DOC-A BODY ONE'))[0]
+  eq(bodyNode && bodyNode.props.style && bodyNode.props.style.maxHeight, 'none', '维护文档正文不得受共享 max-height 截断')
   env.panel = panelData([docEntry('doc-a-261111-0001', 'a'), docEntry('doc-b-261111-0002', 'b')])
   comp.setProps({ nonce: 2 })
   await pump(comp)
@@ -466,6 +468,8 @@ async function frontendClassicReengen(planTabBody) {
   comp.setProps({ nonce: 2 })
   await pump(comp)
   if (docCalls(world).length < 2) throw new Error('revision 变了但没有重取')
+  const bodyNode = findAll(comp.tree, (n) => n.props && n.props['data-dam-content'] === '' && textOf(n).includes('A'))[0]
+  if (!bodyNode || bodyNode.props.style?.maxHeight !== 'none') throw new Error('维护文档正文高度上限未被移除')
 }
 async function frontendClassicStale(planTabBody) {
   const env = { sessionId: 'session-a', locale: 'zh', i18n: { planMaintenanceDocs: '维护文档', planMaintenanceEmpty: '(该工作区还没有维护文档)', planMaintenanceRevShort: '版本 ' } }
@@ -509,6 +513,21 @@ async function frontendIter5Reengen(iter5Body) {
   await pump(comp)
   if (docCalls(world).length < 2) throw new Error('iter5 revision 变了但没有重取')
 }
+function memoryTabBodySource() {
+  const start = CLIENT.indexOf('function MemoryTabBody')
+  const end = CLIENT.indexOf('// ===================== L3-team:begin', start)
+  if (start < 0 || end < 0) throw new Error('MemoryTabBody 边界未找到')
+  if (CLIENT.indexOf('function MemoryTabBody', start + 1) >= 0) throw new Error('MemoryTabBody 不唯一')
+  return CLIENT.slice(start, end).trimEnd()
+}
+async function frontendMemoryTabBodyNonce(body) {
+  const source = body || memoryTabBodySource()
+  function PlanTab() {}
+  const h = (type, props) => ({ type, props })
+  const out = vm.runInNewContext('(' + source + ')("plan", 17)', { PlanTab, h })
+  if (out.type !== PlanTab) throw new Error('plan 未路由到 PlanTab')
+  if (!out.props || out.props.nonce !== 17) throw new Error('MemoryTabBody 未把 nonce 传给 PlanTab')
+}
 
 /* ───────────────────────── 主流程 ───────────────────────── */
 console.log('=== R4 P4-2：后端 handoff-state/fileQ + 前端 classic/iter5 面板 ===')
@@ -526,6 +545,7 @@ if (PROBE) {
 await test('A-01 backend：graph 独立清单/合法 fileQ/磁盘重算/非法名/未命中/读失败/junction/legacy 可读/默认关闭', backendProbe)
 await test('B-01 classic PlanTab：独立分组 + 点击取文 + revision 未变不重取 + revision 变重取 + 旧请求不覆盖 + 切会话重绑', frontendClassic)
 await test('C-01 iter5 Iter5Handoff：独立分组 + 点击取文 + revision 失效重取 + 旧请求不覆盖', frontendIter5)
+await test('D-01 MemoryTabBody：真实 plan 路由必须把 nonce 传给 PlanTab', () => frontendMemoryTabBodyNonce())
 
 console.log('\n=== 隔离变异（backend 用副本 + DAM_AUDIT_ENGINE_SOURCE；frontend 只改内存源码）===')
 await fs.rm(mutationRoot, { recursive: true, force: true })
@@ -556,10 +576,13 @@ for (const variant of backendVariants) {
 }
 const planTabSrc = extractFunction(CLIENT, 'PlanTab')
 const iter5Src = extractFunction(legacyBlockOf(CLIENT), 'Iter5Handoff')
+const memoryTabBodySrc = memoryTabBodySource()
 const frontendVariants = [
   { name: 'classic-revision-dep-removed', anchor: '[mdocOpen && mdocOpen.documentId, mdocOpen && mdocOpen.revision, sid]', replacement: '[mdocOpen && mdocOpen.documentId, sid]', body: planTabSrc, run: frontendClassicReengen },
   { name: 'classic-request-identity-removed', anchor: 'if (mdocReq.current !== seq) return', replacement: 'if (false) return', body: planTabSrc, run: frontendClassicStale },
   { name: 'iter5-revision-dep-removed', anchor: '[mdocOpen && mdocOpen.documentId, mdocOpen && mdocOpen.revision, currentSessionIdClient()]', replacement: '[mdocOpen && mdocOpen.documentId, currentSessionIdClient()]', body: iter5Src, run: frontendIter5Reengen },
+  { name: 'classic-body-nonce-removed', anchor: 'h(PlanTab, { nonce: nonce })', replacement: 'h(PlanTab)', body: memoryTabBodySrc, run: frontendMemoryTabBodyNonce },
+  { name: 'classic-body-height-cap-restored', anchor: "style: { maxHeight: 'none', overflow: 'visible' }", replacement: '', body: planTabSrc, run: frontendClassicReengen },
 ]
 for (const variant of frontendVariants) {
   const hits = variant.body.split(variant.anchor).length - 1
