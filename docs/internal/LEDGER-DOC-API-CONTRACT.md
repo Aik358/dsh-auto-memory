@@ -160,7 +160,11 @@ R4-M 只组织既有模块，不改变字段、WAL 状态机、存储原子性�
 
 ### 配置与目录
 
-`new LedgerDocSystem({rootDir,enabled=false,...config})` 同步构造。rootDir 必须是当前工作区 artifacts 下的绝对隔离目录；enabled 必须为 boolean。没有默认 eventSink，也不导入生产 event-store。
+`new LedgerDocSystem({rootDir,enabled=false,...config})` 同步构造。rootDir 必须是绝对路径；默认/写入模式的 rootDir 必须位于当前工作区 artifacts 下，enabled 必须为 boolean。没有默认 eventSink，也不导入生产 event-store。
+
+`readOnly:true` 只解耦读取生命周期：允许读取真实绝对 handoff/rootDir，不构造 EventStoreLedgerSink/WAL/可写审计器，不要求 sink 路径或父目录存在，不创建 documents/logs/archive/legacy/coverage-reports 目录，不预热 stamp、不做 WAL reconcile。current/readChunk/forEvent 仍走 LedgerDocReadSide；auditCoverage 返回 `audit-read-only`。readOnly 的 LedgerDocumentStore 构造不放宽默认写入约束，其 create/update 返回 `document-read-only`。
+
+`createLedgerDocSystemPre({enabled:true,readOnly:false,rootDir,storePath})` 显式启用写入时才构造真实 EventStoreLedgerSink。storePath 必须是 `<cwd>/artifacts` 下的绝对路径；sink 构造函数会创建校验后的隔离父目录，调用方不必预先 mkdir。该父目录自动创建只适用于 sink 自己的隔离路径，不放宽生产记忆根、文档写入或审计根约束。
 
 默认目录：handoff/documents、handoff/event-store.json、logs、archive、legacy、coverage-reports，均位于 rootDir。可配置 useLocks、stampEnabled、timeZone、workspaceKey、now、fs、invalidation 和 eventSink。eventSink 实现 append/listCheckpoints/operations 才支持 WAL 与对账。
 
@@ -179,3 +183,9 @@ R4-M 只组织既有模块，不改变字段、WAL 状态机、存储原子性�
 | readSide getter | 同步返回 LedgerDocReadSide；list/chunks/readChunk/forEvent 提供只读枚举、按 revision 的 chunk、当前正文下钻和显式事件关联，不猜最近文档。 |
 
 未启用时上述操作返回 `{ok:false,error:'ledger-doc-system-disabled',enabled:false}`；已启用未 start 返回 `{ok:false,error:'ledger-doc-system-not-started',enabled:true}`。getters 只是模块实例访问，不绕过系统生命周期隐式创建、迁移或启动生产功能。
+
+### 只读观测与检索返回
+
+`/state` 的 snapshot 与 `/handoff-state` 返回 `latestHandoffTextTier`、`ledgerDocId`、`ledgerDocRevision`、`latestHandoffTextChars`，仅表示当前注入装配观测，不含整篇维护文档正文。tier 为 maintenance-document、legacy 或 empty；字段来自同一 state，不是第二真源。同进程 committed 与跨进程更新经现有 refresh 指向当前 revision；没有真实模型轮次时不能据此声称模型已消费。
+
+维护文档命中按 `chunkId=documentId+sectionId+revision` 去重，保留 L0/full 下钻、不同 section 与 readErrors。HTTP `/recall` 在 current/all/archive 之外接受 handoff；events/sessions 不加入该白名单，缺 sessionId、未知工作区与非法 scope 仍拒绝。
