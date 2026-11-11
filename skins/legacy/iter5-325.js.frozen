@@ -599,6 +599,30 @@
       var known = water && water.window>0 && Number.isFinite(water.ratio) && water.modelKnown!==false
       var text = chosen[0] ? file.data && file.data.text : data && data.plan
       var ledgers = data && data.ledgers || [], versions = data && data.planVersions || []
+      // ★R4 P4-2：维护文档独立分组（R4 关闭时 data.maintenanceDocuments 不存在 ⇒ 整块不渲染）。
+      //   已打开文档 = {documentId, revision}；revision 变化才重取。请求身份由 useIter5Data 的
+      //   requestKey（identity + deps）+ alive 守卫保证：旧请求返回时 key 不匹配 ⇒ 不覆盖新选择/新会话。
+      var mdoc = useState(null), mdocOpen = mdoc[0]
+      var mdocFile = useIter5Data(function () {
+        return mdocOpen && mdocOpen.documentId ? apiGet(API.handoffState, { sessionId: currentSessionIdClient(), file: 'documents/' + mdocOpen.documentId + '.md' }) : Promise.resolve(null)
+      }, [mdocOpen && mdocOpen.documentId, mdocOpen && mdocOpen.revision, currentSessionIdClient()])
+      var mdDocs = data && data.maintenanceDocuments
+      var mdocActive = !!(mdocOpen && mdocOpen.documentId)
+      var mdocText = mdocActive ? (mdocFile.data && mdocFile.data.text) : ''
+      var mdocErr = mdocActive ? (mdocFile.error || (mdocFile.data && mdocFile.data.error) || '') : ''
+      // ★必须在声明之后覆写：上面那几个 var 的原始位置在 mdoc 之前，直接改那一行会读到 undefined。
+      if (mdocActive) text = mdocText
+      var docErr = mdocActive ? mdocErr : (file.error || '')
+      var docLoading = mdocActive ? mdocFile.loading : (chosen[0] && file.loading)
+      // revision 失效：同 documentId 的 revision 变了 ⇒ 重取当前正文；未变不动（避免无谓请求）。
+      //   当前会话的列表里没有该文档（切工作区）⇒ 关闭已打开文档，遵守工作区绑定。
+      useEffect(function () {
+        if (!mdocOpen || !mdocOpen.documentId || !mdDocs) return
+        var hit = null
+        for (var i = 0; i < mdDocs.length; i++) if (mdDocs[i].documentId === mdocOpen.documentId) { hit = mdDocs[i]; break }
+        if (!hit) { mdoc[1](null); return }
+        if (String(hit.revision || '') !== String(mdocOpen.revision || '')) mdoc[1]({ documentId: hit.documentId, revision: String(hit.revision || '') })
+      }, [mdDocs, mdocOpen && mdocOpen.documentId, mdocOpen && mdocOpen.revision])
       var identity = iter5Identity(), alive = useRef(true)
       useEffect(function(){return function(){alive.current=false}},[])
       function progress(message){if(alive.current && identity===iter5Identity())status[1](message)}
@@ -614,10 +638,11 @@
         h('div',{className:'i5-handoff-overview'},h('div',{className:'i5-info-callout'},h(Iter5Icon,{name:'handoff'}),h('div',null,h('strong',null,L('上下文会流动，工作可以接着走','Context moves on. Your work can continue.')),h('p',null,L('白板记录当前状态，交接账本保留阶段经验。接续由宿主统一执行。','The whiteboard holds current state; handoff notes retain progress. The host owns continuation.')))),h('div',{className:'i5-mini-metric'},h('strong',null,known?Math.round(water.ratio*100)+'%':'—'),h('small',null,L('上下文水位','Context usage'))),h('div',{className:'i5-mini-metric'},h('strong',null,data?ledgers.length:'—'),h('small',null,L('交接账本','Handoff notes')))),
         result.error?h(Iter5Error,{error:result.error,retry:result.retry}):null,
         h('div',{className:'i5-handoff-columns'},
-          h(Iter5Card,{className:'i5-handoff-index'},h('div',{className:'i5-section-heading'},h('h2',null,h(Iter5Icon,{name:'handoff'}),L('交接材料','Handoff materials'))),result.loading?h(Loading):docs.map(function(d){return h('button',{key:d.kind+':'+d.name,className:'i5-ledger-row','aria-current':chosen[0]===d.name?'true':undefined,onClick:function(){chosen[1](d.name)}},h('span',{className:'i5-badge','data-hue':d.kind==='archive'?'purple':'blue'},h(Iter5Icon,{name:d.kind==='plan'?'folder':'note'})),h('div',null,h('strong',null,d.title),h('small',null,d.kind==='plan'?L('持续更新的当前任务快照','Current task snapshot'):d.kind==='archive'?L('白板历史版本','Whiteboard history'):L('阶段交接记录','Saved handoff record'))))}),
+          h(Iter5Card,{className:'i5-handoff-index'},h('div',{className:'i5-section-heading'},h('h2',null,h(Iter5Icon,{name:'handoff'}),L('交接材料','Handoff materials'))),result.loading?h(Loading):docs.map(function(d){return h('button',{key:d.kind+':'+d.name,className:'i5-ledger-row','aria-current':chosen[0]===d.name&&!mdocActive?'true':undefined,onClick:function(){chosen[1](d.name);mdoc[1](null)}},h('span',{className:'i5-badge','data-hue':d.kind==='archive'?'purple':'blue'},h(Iter5Icon,{name:d.kind==='plan'?'folder':'note'})),h('div',null,h('strong',null,d.title),h('small',null,d.kind==='plan'?L('持续更新的当前任务快照','Current task snapshot'):d.kind==='archive'?L('白板历史版本','Whiteboard history'):L('阶段交接记录','Saved handoff record'))))}),
+            Array.isArray(mdDocs)?h('div',{className:'i5-handoff-group','data-i5-mdoc-group':'1'},h('div',{className:'i5-source-meta'},h('span',{className:'i5-tag'},L('维护文档','Maintenance documents'))),mdDocs.length?mdDocs.map(function(m){return h('button',{key:'mdoc:'+m.documentId,className:'i5-ledger-row','data-i5-mdoc':m.documentId,'data-i5-mdoc-rev':String(m.revision||''),'aria-current':mdocActive&&mdocOpen.documentId===m.documentId?'true':undefined,onClick:function(){chosen[1]('');mdoc[1]({documentId:m.documentId,revision:String(m.revision||'')})}},h('span',{className:'i5-badge','data-hue':'green'},h(Iter5Icon,{name:'note'})),h('div',null,h('strong',null,m.title||m.documentId),h('small',null,L('版本 ','rev ')+String(m.revision||'').replace(/^sha256:/,'').slice(0,8)+' · '+m.documentId)))}):h('div',{className:'i5-muted'},L('暂无维护文档','No maintenance documents yet'))):null,
             h('div',{className:'i5-info-callout'},h('div',null,h('strong',null,L('保留来源，按原文查看','Read it as recorded')),h('p',null,L('这里展示宿主返回的真实材料，不补写任务或虚构进度。','These are the actual host materials. No tasks or progress are invented.'))))),
-          h(Iter5Card,{className:'i5-handoff-document'},h('div',{className:'i5-source-heading'},h('span',{className:'i5-badge i5-badge-lg','data-hue':'blue'},h(Iter5Icon,{name:'folder'})),h('div',null,h('h2',null,chosen[0]?iter5LedgerTitle(chosen[0]):L('当前任务 · PLAN 白板','Current task · PLAN')),h('small',null,data&&data.ws?pathName(data.ws):L('当前工作区','Current workspace')))),h('div',{className:'i5-source-meta'},h('span',{className:'i5-tag'},L('只读原文','Read-only source')),text?h('span',null,text.length+L(' 字符',' characters')):null),
-            file.error?h(Iter5Error,{error:file.error,retry:file.retry}):result.loading||(chosen[0]&&file.loading)?h(Loading):text?h(Iter5Document,{text:text}):h(Iter5Empty,{slot:'empty.timeline',title:L('交接材料尚未生成','No handoff material yet'),text:data&&data.wsBound===false?L('当前会话尚未绑定工作区。','This session has no workspace binding.'):L('开启白板或完成一次阶段交接后，可以在这里回顾。','Enable the whiteboard or complete a handoff to review it here.')}),
+          h(Iter5Card,{className:'i5-handoff-document'},h('div',{className:'i5-source-heading'},h('span',{className:'i5-badge i5-badge-lg','data-hue':'blue'},h(Iter5Icon,{name:'folder'})),h('div',null,h('h2',null,mdocActive?('documents/'+mdocOpen.documentId+'.md'):(chosen[0]?iter5LedgerTitle(chosen[0]):L('当前任务 · PLAN 白板','Current task · PLAN'))),h('small',null,data&&data.ws?pathName(data.ws):L('当前工作区','Current workspace')))),h('div',{className:'i5-source-meta'},h('span',{className:'i5-tag'},L('只读原文','Read-only source')),text?h('span',null,text.length+L(' 字符',' characters')):null),
+            docErr?h(Iter5Error,{error:docErr,retry:mdocActive?mdocFile.retry:file.retry}):result.loading||docLoading?h(Loading):text?h(Iter5Document,{text:text}):h(Iter5Empty,{slot:'empty.timeline',title:L('交接材料尚未生成','No handoff material yet'),text:data&&data.wsBound===false?L('当前会话尚未绑定工作区。','This session has no workspace binding.'):L('开启白板或完成一次阶段交接后，可以在这里回顾。','Enable the whiteboard or complete a handoff to review it here.')}),
             h('div',{className:'i5-handoff-actions'},h('button',{className:'i5-primary',disabled:running[0],onClick:continueNow},running[0]?L('正在接续…','Continuing…'):L('一键接续','Continue in a new session')),h('small',null,L('沿用宿主工作区与模型，交接材料自动装入新会话。','Uses the host workspace and model, and loads handoff material.'))),status[0]?h('p',{className:'i5-muted',role:'status'},status[0]):null,failure[0]?h(Iter5Error,{error:failure[0]}):null)),
         h('details',{className:'i5-card i5-secondary-details'},h('summary',null,L('接续开关、水位详情与完整白板看板','Continuation controls, measurement details and full whiteboard')),h('div',{className:'i5-hosted'},h(PlanTab))))
     }
