@@ -146,6 +146,10 @@ C:\Users\JH Z\.dsh\dsh-auto-memory-diagnose.log:18369
 - **C3（PARTIAL，HOST+MOD）**：子判据「唯一标记词能命中」「L0/full 下钻内容与 revision 一致」通过（`scope=all` HOST 命中、L0 与 full 都带同一 revision）；**子判据「同一正文在一次结果中最多一份」不成立**——同一篇维护文档正文在一次 `scope=all` 结果里出现 **2 次**（交接白板臂 1 次 + L0 臂 1 次），而 legacy 对照标记只出现 1 次。这是本轮唯一一条**有区分力的功能偏差**，已作为 **D-C3-1** 记入附录 F：涉及 `lib/index.js:6011-6019`（handoff 臂）、`:14274-14275`（L0 臂）、组装处 `:14243-14248`。另 `scope=handoff` 在 HTTP 面被白名单挡住（**D-C3-2**，`lib/index.js:27966` 只允许 current/all/archive），故该 scope 只能 MOD 级验收。
 - **其余 26 项全部 PASS**；FAIL 0、BLOCKED 0。
 
+### 9.2A Lead 后续处置（2026-11-11）
+
+D-C3-1、D-C3-2、C1 观测面与 E-C1-1/OBS-1 已在独立批次修复并提交 **6d9573bb**，详见 `docs/internal/R4-ACCEPTANCE-FIX-RESULT-20261111.md`。Lead 独立复核：新修复套件 5/0、4 变异 CAUGHT；独立真实宿主 16/16 PASS；八套 R4 205/0、v4-event-store 96/0、受影响检索/接续/注入套件通过。默认关闭与 legacy 双读不变；仍无真实模型轮次，不声称模型已消费注入帧。
+
 ### 9.3 尚未实现
 - P4-2 面板、P4-3 简报与归并扫描、P6 存量迁移与恢复演练、P7 物理删除。
 
