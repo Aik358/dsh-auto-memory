@@ -40,7 +40,7 @@ ok(SRC.includes('async expandMemoryRecordPre(id, agent) {'), 'expandMemoryRecord
 ok(/import \{[^}]*\bparseAnchors\b[^}]*\} from '\.\/memory-anchor\.js'/.test(SRC), 'parseAnchors 复用(字节区间定位,非新造)')
 ok(SRC.includes("format: { type: 'string', enum: ['l0', 'full']"), '工具 schema 新增可选 format')
 ok(SRC.includes("expand: { type: 'string', description: '按记忆 id"), '工具 schema 新增可选 expand')
-ok(SRC.includes("{ format: args.format || 'l0', expand: args.expand }"), '工具层 format 缺省 l0(模型默认拿 L0 列表)')
+ok(/\{ format: args\.format \|\| 'l0', expand: args\.expand(?:, eventId: args\.eventId, checkpointIndex: args\.checkpointIndex, idemKey: args\.idemKey)? \}/.test(SRC), '工具层 format 缺省 l0；2.7 可选下钻参数原样透传')
 ok(SRC.includes("== L0 命中(摘要,含 id/得分/匹配原因"), 'L0 输出节头存在')
 ok(SRC.includes("== 本地记忆文件命中 =="), '旧输出节头保留(旧调用行为不变)')
 ok(SRC.includes("(scope === 'all' || scope === 'current') && !l0Mode && (typeof this._semanticRankBest === 'function' || typeof this._jsSemanticRank === 'function')"), '独立语义节在 l0Mode 下跳过(防重复注入)，full 共用引擎选择器')

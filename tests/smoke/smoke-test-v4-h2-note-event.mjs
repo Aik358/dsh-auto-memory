@@ -183,7 +183,9 @@ ok(a.goal !== b.goal, '★比对口径非恒真：不同 PLAN → sections 不�
 let throwEv = false, errMsg = ''
 try { await EW.appendHandoffCheckpointPre(storePath, { ledgerText: LEDGER, eventId: 'not-a-valid-id' }) } catch (e) { throwEv = true; errMsg = String(e && e.message) }
 ok(throwEv, '★负路径②：事件侧失败 → 抛错（调用方据此给 ⚠ 半完成提示）', errMsg.slice(0, 80))
-ok(/事件不存在|bad-id/.test(errMsg), '★负路径②：失败原因是可定位的（不是笼统报错）', errMsg.slice(0, 60))
+// 有意的协议演进（task-10 / 2.6）：显式 eventId 统一为 event-id-unavailable。
+// 保留旧诊断文案兼容，同时仍拒绝笼统错误；不放宽「可定位错误」不变量。
+ok(/event-id-unavailable|事件不存在|bad-id/.test(errMsg), '★负路径②：失败原因可定位（新协议码或旧诊断兼容）', errMsg.slice(0, 60))
 // 确认 index.js 的 memory_note 里确实把它转成 eventWarn（含「已写成功」字样）
 const IDX = fs.readFileSync(path.join(REPO, 'lib/index.js'), 'utf8')
 const noteStart = IDX.indexOf("defineTool('memory_note'")
