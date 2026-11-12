@@ -244,7 +244,7 @@ D	[MEMORY-LOGIC-GAPS-20261108.md](file:///D:/dsh-auto-memory/docs/internal/MEMOR
 > **2.3 / 2.9 / 3.0 顺序与语义复核（2026-11-12 用户指正后补齐）**：
 > ① **2.3 的核心是事件归属判定器**，不只是事后存量归并。其完整范围是：在 `memory_log`（以及采用显式事件归属的 `memory_note`）写入口做语义候选排序，返回候选、分数、margin、解释与提案状态；同时支持历史事件的语义归并提案。**不得自动 attach、merge 或 archive**；1.4 的标识规则仍是自动归属边界，模型不能凭高余弦越过它。详见 `REGROUP-MODEL-EVAL-REPORT-20261109.md` 与 `HANDOFF-SIDECAR-PRODUCTION-WIRING-POST-23-20261112.md`。
 > ② 2.9 是 2026-11-10 新增编号，设计晚于 2.3 的最初登记，但依赖 2.6；它不是 2.3 的前置，也不是早已完成的工作。handoff 四段解析早已存在，未闭合的是规范化、空值、覆盖证明与 sourceRef；log 不强套四段。
-> **2.9 并行启动（2026-11-13）**：`task-14` 已派给明确的 `dshapi-kimi/kimi-k3.1-pro` 执行代理 `06c0d365-60b9-4258-bc76-150ecfbb9cec`，只写独立规范化/覆盖证明模块、专项测试与结果文档。任务书 `PROMPT-BATCH2-2.9-HANDOFF-COVERAGE-20261113.md`；`lib/index.js`/`lib/event-write.js` 共享接线留给 Lead。尚未交付或生产启用。
+> **2.9 独立核心已交付（2026-11-13）**：task-14 由 Kimi 完成；Lead 独立复跑专项 39 PASS/0 FAIL、3 变异 CAUGHT/0 MISSED，三个相邻回归均通过。结果报告 `RESULT-BATCH2-2.9-CORE-20261113.md`；共享生产入口、真实存量审计与 HOST 仍未接线/验收。
 > ③ 当前主线按 **2.5–2.8 已隔离验收 → 2.3 语义候选与零写提案 → 3.0 注入投递基础修复**推进，2.4 继续冻结。3.0-A 确定的小修与 2.3 没有全量技术阻塞；本顺序是当前施工优先级，不得误写成 SidecarStore 与 3.0 互相依赖。SidecarStore 的独立后续线在 2.3 profile/API 冻结后按专项任务书接入。
 > ④ **模型证据以真实口径复测为准**：`ATTR-REALISTIC-20261110.md` 的 630 查询表明 C2 top-1=21.7%、top-5=57.1%，早期 63 精选查询上的 fields 增益已证伪；C2 保留为召回/语义特征底座，不自动归属。`REGROUP-MODEL-EVAL-REPORT-20261109.md` 的旧聚类/模型绝对数字仅作历史对照，不再当生产验收基线。
 > ⑤ 当前 `memory_log` 已有 C2 top-3/margin/dryRun 候选；缺统一归属协议、`memory_note` 对齐、历史零写提案与真实判定基准。新实验任务书：`PROMPT-EVENT-ATTRIBUTION-BENCHMARK-20261112.md`，含真实数据金标、按事件防泄漏切分、跨语言构造组、候选/新建/不确定/不适用四态与 A–F 实验臂。2.9 与 2.3 可并行，最终共享 `lib/index.js`/`lib/event-write.js` 的接线串行。
@@ -720,6 +720,7 @@ Lead 已按子代理口径独立复核，逐项吻合。
 | [PROMPT-EVENT-ATTRIBUTION-TEACHER-TRAINING-20261113.md](./PROMPT-EVENT-ATTRIBUTION-TEACHER-TRAINING-20261113.md) | 2.3模型教师候选+独立奖励/人工仲裁+隔离训练；自答自评不算RL，未过门不训练 | 2.3 |
 | [PROMPT-EVENT-ATTRIBUTION-BENCHMARK-20261112.md](./PROMPT-EVENT-ATTRIBUTION-BENCHMARK-20261112.md) | 事件归属判定器：真实金标、候选/新建/不确定/不适用、跨语言、训练与否决判据 | 2.3 |
 | [PROMPT-BATCH2-2.9-HANDOFF-COVERAGE-20261113.md](./PROMPT-BATCH2-2.9-HANDOFF-COVERAGE-20261113.md) | 独立规范化、覆盖证明、sourceRef 与隔离验收；共享生产入口由 Lead 串行接线 | 2.9 |
+| [RESULT-BATCH2-2.9-CORE-20261113.md](./RESULT-BATCH2-2.9-CORE-20261113.md) | 四个独立 API；39/0、3变异捕获、相邻回归；生产接线/HOST仍未验 | 2.9 |
 
 四份分线报告合计 2,135 行 / 219,683 B。
 ### 代码级落点（细化时直接打开）
