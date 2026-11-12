@@ -2,7 +2,7 @@ import path from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { IndexState, normalizeChanges, validateLegacySnapshot } from './index-state.js'
 import { JournalStorage } from './journal-storage.js'
-import { IndexStorageError, sha256 } from './codec.js'
+import { IndexStorageError, sha256, storageFailure } from './codec.js'
 
 const DEFAULT_PARSER_VERSION = 'wb-parser-v1'
 const fail = (code, message) => { throw new IndexStorageError(code, message) }
@@ -61,7 +61,7 @@ export class SidecarStore {
     if (typeof workspaceKey !== 'string' || !workspaceKey.trim()) fail('INDEX_INVALID_ARGUMENT', 'workspaceKey is required')
     if (typeof parserVersion !== 'string' || !parserVersion) fail('INDEX_INVALID_ARGUMENT', 'parserVersion must be a nonempty string')
     if (!Number.isSafeInteger(operationHistoryLimit) || operationHistoryLimit < 1) fail('INDEX_INVALID_ARGUMENT', 'operationHistoryLimit must be a positive integer')
-    const storage = await JournalStorage.open(options)
+    const storage = await JournalStorage.open(options).catch(storageFailure)
     const store = new SidecarStore(storage, { workspaceKey, parserVersion, operationHistoryLimit })
     try { await store.#run(() => {}); return store } catch (error) { await storage.close(); throw error }
   }
@@ -74,6 +74,7 @@ export class SidecarStore {
   }
 
   get workspaceKey() { return this.#workspaceKey }
+  get parserVersion() { return this.#parserVersion }
 
   #restore(checkpoint) {
     this.#state = IndexState.fromCheckpoint(checkpoint, { workspaceKey: this.#workspaceKey })

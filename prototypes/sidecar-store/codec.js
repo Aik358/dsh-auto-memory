@@ -12,6 +12,14 @@ export class IndexStorageError extends Error {
 
 export const sha256 = value => createHash('sha256').update(value).digest('hex')
 
+/** Convert lower-level lock and filesystem failures at the public storage edge. */
+export function storageFailure(cause) {
+  if (cause instanceof IndexStorageError) return cause
+  const message = cause instanceof Error ? cause.message : String(cause)
+  const code = message.startsWith('state-lock-timeout:') ? 'INDEX_LOCK_TIMEOUT' : 'INDEX_PATH'
+  return new IndexStorageError(code, message, { cause })
+}
+
 export function encodeEnvelope(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value) || Object.hasOwn(value, 'checksum')) {
     throw new IndexStorageError('INDEX_INVALID_ARGUMENT', 'A checksum envelope requires an object without a checksum property')

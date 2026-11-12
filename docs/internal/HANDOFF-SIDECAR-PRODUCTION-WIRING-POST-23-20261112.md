@@ -53,7 +53,7 @@
 - 固定 PLAN source 事务：`33,568 B`；最新模块 API 运行中位 `13.8257 ms`。
 - 正常 source 更新不改 checkpoint/manifest；checkpoint 不保存 `by_tag/by_cue`。
 - 原型测试是在 Node/Windows 沙盒完成的，不等于 Electron、断电或生产全链路已验证。
-- 独立评审 `REVIEW-SIDECARSTORE-PROTOTYPE-20261113.md` 已证四个接入阻断：非空 versions 丢失、`.d.ts`/运行时属性不一致、迁移缺 approved root/regular-file 边界、锁超时未映射公开错误。先修再接 facade。
+- 独立评审 `REVIEW-SIDECARSTORE-PROTOTYPE-20261113.md` 曾证四个接入阻断；B1–B4修复已由 `RESULT-SIDECARSTORE-BLOCKERS-20261113.md` 与Lead独立复跑验证（37/37、0 skipped、6 CAUGHT/0 MISSED）。这只解除原型层阻断，不是生产/HOST验收；facade、R4/审计/迁移与真实宿主仍未实施或未验。
 - 归属基准以 `PROMPT-EVENT-ATTRIBUTION-BENCHMARK-20261112.md` 为准；R4 维护文档生命周期与 `events.jsonl` 审计必须保留。
 
 ## 4. 生产接线范围

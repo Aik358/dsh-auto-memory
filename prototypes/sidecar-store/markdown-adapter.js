@@ -1,8 +1,57 @@
-import { readFile } from 'node:fs/promises'
+import { lstat, open, realpath } from 'node:fs/promises'
+import path from 'node:path'
 import { buildSidecarEntriesPre, wbRefPre } from '../../lib/wb-sidecar.js'
 import { planRevisionPre } from '../../lib/plan-store.js'
 import { normalizeChanges } from './index-state.js'
 import { IndexStorageError, sha256 } from './codec.js'
+
+function pathFailure(message, cause) {
+  return new IndexStorageError('INDEX_PATH', message, { cause })
+}
+
+function insideRoot(root, target) {
+  const relative = path.relative(root, target)
+  return relative !== '' && relative !== '..' && !relative.startsWith('..' + path.sep) && !path.isAbsolute(relative)
+}
+
+/** Validate the approved root and open the same regular inode, not a later path. */
+async function openApprovedRegularFile(file, approvedRoot) {
+  if (typeof file !== 'string' || !file || typeof approvedRoot !== 'string' || !approvedRoot || !path.isAbsolute(approvedRoot)) {
+    throw new IndexStorageError('INDEX_INVALID_ARGUMENT', 'importLegacyFile requires a file and an absolute approvedRoot')
+  }
+  try {
+    const rootInfo = await lstat(approvedRoot)
+    if (!rootInfo.isDirectory() || rootInfo.isSymbolicLink()) throw pathFailure('Approved root must be a non-symlink directory: ' + approvedRoot)
+    const physicalRoot = await realpath(approvedRoot)
+    const target = path.resolve(approvedRoot, file)
+    // A lexical escape cannot become authorized merely by naming a file that
+    // exists elsewhere; absolute targets must still pass the physical boundary.
+    const lexicalRelative = path.relative(approvedRoot, target)
+    if (!lexicalRelative || lexicalRelative === '..' || lexicalRelative.startsWith('..' + path.sep) || path.isAbsolute(lexicalRelative)) {
+      throw pathFailure('Legacy input must be a file inside approvedRoot: ' + target)
+    }
+    const targetInfo = await lstat(target)
+    if (!targetInfo.isFile() || targetInfo.isSymbolicLink()) throw pathFailure('Legacy input must be a non-symlink regular file: ' + target)
+    const physicalTarget = await realpath(target)
+    if (!insideRoot(physicalRoot, physicalTarget)) throw pathFailure('Legacy input escapes approvedRoot: ' + target)
+    const descriptor = await open(physicalTarget, 'r')
+    try {
+      const opened = await descriptor.stat()
+      if (!opened.isFile() || opened.dev !== targetInfo.dev || opened.ino !== targetInfo.ino) {
+        throw pathFailure('Legacy input changed before it could be opened: ' + target)
+      }
+      const text = await descriptor.readFile('utf8')
+      const finished = await descriptor.stat()
+      if (finished.dev !== opened.dev || finished.ino !== opened.ino || finished.size !== opened.size || finished.mtimeMs !== opened.mtimeMs) {
+        throw pathFailure('Legacy input changed while it was being read: ' + target)
+      }
+      return text
+    } finally { await descriptor.close() }
+  } catch (cause) {
+    if (cause instanceof IndexStorageError) throw cause
+    throw pathFailure('Cannot read an approved legacy input: ' + (cause?.message ?? String(cause)), cause)
+  }
+}
 
 /**
  * Existing deterministic Markdown parsing sits here, outside persistence.
@@ -46,7 +95,13 @@ export class MarkdownSidecarAdapter {
   }
 
   async importLegacyFile(file, options = {}) {
-    return this.#store.importLegacy(JSON.parse(await readFile(file, 'utf8')), options)
+    const { approvedRoot, ...mutation } = options ?? {}
+    const text = await openApprovedRegularFile(file, approvedRoot)
+    let snapshot
+    try { snapshot = JSON.parse(text) } catch (cause) {
+      throw new IndexStorageError('INDEX_INVALID_DATA', 'Invalid legacy JSON: ' + cause.message, { cause })
+    }
+    return this.#store.importLegacy(snapshot, mutation)
   }
 
   /** The caller supplies the explicit document scope, including archive if desired. */

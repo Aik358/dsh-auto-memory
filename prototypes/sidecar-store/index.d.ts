@@ -87,6 +87,7 @@ export interface CompactionResult {
 
 export class SidecarStoreError extends Error {
   code: string
+  cause?: unknown
   constructor(code: string, message: string, details?: Record<string, unknown>)
 }
 
@@ -94,6 +95,7 @@ export class SidecarStore {
   private constructor()
   static open(options: OpenOptions): Promise<SidecarStore>
   readonly workspaceKey: string
+  readonly parserVersion: string
   loadView(): Promise<LegacySnapshot>
   readSnapshot(): Promise<{ view: LegacySnapshot; revision: StateToken }>
   getEntry(id: string): Promise<SidecarEntry | null>
@@ -124,6 +126,11 @@ export interface MarkdownDocument {
   expectedRevision?: string | null
 }
 
+export interface ImportLegacyFileOptions extends MutationOptions {
+  /** Existing absolute directory; symlinks and out-of-root files are rejected. */
+  approvedRoot: string
+}
+
 export class MarkdownSidecarAdapter {
   constructor(store: SidecarStore, options: { workspaceKey: string; parserVersion?: string })
   readonly workspaceKey: string
@@ -132,5 +139,5 @@ export class MarkdownSidecarAdapter {
   indexDocument(document: MarkdownDocument, options?: MutationOptions): Promise<MutationResult>
   indexDocuments(documents: MarkdownDocument[], options?: MutationOptions): Promise<MutationResult>
   rebuild(documents: MarkdownDocument[], options?: MutationOptions): Promise<MutationResult>
-  importLegacyFile(file: string, options?: MutationOptions): ReturnType<SidecarStore['importLegacy']>
+  importLegacyFile(file: string, options: ImportLegacyFileOptions): ReturnType<SidecarStore['importLegacy']>
 }

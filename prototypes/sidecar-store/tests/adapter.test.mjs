@@ -89,7 +89,7 @@ test('legacy file import reads the supplied JSON file without modifying it', asy
     const legacy = { version: 'wb_sidecar_pre_v1', ws: workspaceKey, rebuilt_at: '', entries: [], by_tag: {}, by_cue: {}, versions: {}, sourceRevisions: {} }
     const original = JSON.stringify(legacy, null, 2)
     await writeFile(file, original)
-    await adapter.importLegacyFile(file, { operationId: 'import:file' })
+    await adapter.importLegacyFile(file, { approvedRoot: root, operationId: 'import:file' })
     assert.equal(await readFile(file, 'utf8'), original)
     assert.deepEqual(await store.loadView(), legacy)
   } finally { await store.close() }

@@ -324,11 +324,15 @@ export class IndexState {
       for (const id of previousIds) {
         const previous = this.#entries.get(id)
         this.#removeEntry(previous, !incoming.has(id))
-        this.#versions.delete(id)
+        // Versions are opaque historical evidence, not a derivable current-entry
+        // posting. Replacing/removing an entry is not permission to erase lineage.
       }
       for (const entry of change.entries) {
         this.#addEntry(entry)
-        if (entry.kind === 'archive') this.#versions.set(entry.id, [entry.source])
+        if (entry.kind === 'archive') {
+          const lineage = this.#versions.get(entry.id) ?? []
+          if (!lineage.includes(entry.source)) this.#versions.set(entry.id, [...lineage, entry.source])
+        }
       }
       this.#revisions.set(change.source, change.sourceRevision)
       this.#sourceParsers.set(change.source, change.parserVersion ?? parserVersion)
