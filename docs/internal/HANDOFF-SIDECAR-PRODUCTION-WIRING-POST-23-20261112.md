@@ -28,7 +28,7 @@
 5. 降级链清楚：模型不可用时回到可用模型，最终回到词法路径；失败原因可观测。
 6. 模型选择、pooling 和 prefix 不再由 SidecarStore 自己决定。
 
-当前评测不能支持自动判定：C2 fields 归属 top-1 为 **47.6%**、ARI **0.409**；C3 fields top-1 为 **50.8%**、ARI **0.443**。任务书门槛是 top-1 ≥ 70%、ARI ≥ 0.60。因此不要把评测报告中的 margin 自动 attach 示例或全局 merge threshold 直接复制进生产。
+当前评测不能支持自动判定：早期 C2 fields top-1=47.6%、ARI=0.409、C3 fields top-1=50.8%、ARI=0.443 只作历史对照。后续 `ATTR-REALISTIC-20261110.md` 的 630 真实查询复测为 C2 top-1=21.7%、top-5=57.1%，早期 fields 增益已证伪。2.3 归属判定器的新基准见 `PROMPT-EVENT-ATTRIBUTION-BENCHMARK-20261112.md`。不得把旧报告中的 margin 自动 attach 示例或全局 merge threshold 直接复制进生产。
 
 ## 3. 原型资产
 
