@@ -180,7 +180,7 @@ store service 应按 canonical projectDir 缓存，配置根切换时显式 clos
 
 ## 5. 与 2.3 模型接入的关系
 
-2.3 模型负责事件候选、语义分数和提案；SidecarStore 负责白板派生索引。两者不共享持久化格式，也不互相替代。
+2.3 模型负责事件候选、语义分数和提案；SidecarStore 负责白板派生索引。两者不共享持久化格式，也不互相替代。Prototype 的存储/CAS/锁逻辑本身不调用2.3模型；依赖2.3冻结的是候选/文档语义、身份与profile接口，而不是等待训练后才能测试存储。
 
 2.3 接入完成后，必须把以下 profile 元数据纳入 embedding identity 和向量缓存分区：
 
