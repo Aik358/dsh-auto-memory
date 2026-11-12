@@ -14,7 +14,7 @@ V4 的总体方向是 **系统化、模块化、API 化**：
 
 这个分支用于公开当前进度、接收探索与实现协作。请先读文档、声明写域，再开始实现；不要直接覆盖当前工作。
 
-## 当前进度（2026-11-12）
+## 当前进度（2026-11-13）
 
 ### 批次 1 · 已完成收口
 
@@ -25,10 +25,10 @@ V4 的总体方向是 **系统化、模块化、API 化**：
 | 范围 | 当前状态 |
 |---|---|
 | 2.1 / 2.2 | 已实现；以总表及细则为准 |
-| 2.5 | 已有 `fromEvents` 渲染与稳定定序；完整自动重绘契约未闭合 |
-| **2.6 / 2.7 / 2.8** | **可执行细则已完成，生产代码尚未实施**；须依次独立验收 |
-| 2.9 | 规范写入仍待闭合；与 2.6/2.7 共用入口时按细则对齐 |
-| 2.3 | 等 2.6/2.7/2.8 独立验收后再启动；只产建议、零写盘 |
+| 2.5 | 已实现默认关闭的事件成功后重绘与锁内合并（`8848e336`）；生产启用未验 |
+| **2.6 / 2.7 / 2.8** | 约定范围已实现并隔离验收（`8848e336`）；G-1/G-2 仍未裁定，生产未开启 |
+| 2.9 | **独立核心已交付**（`787a41b8`）：规范化/空值语义/覆盖证明/sourceRef 四 API；生产接线与真实存量审计未做 |
+| 2.3 | 隔离实验与训练门已交付；可保留候选/提案，**不自动 attach/merge/archive**；可靠训练未完成 |
 | 2.4 | 真实归并冻结；需前置修复、当前备份/恢复与明确的最小批次授权 |
 
 2.6–2.8 当前还有两项规格门：**G-1 容器事件形态**与 **G-2 摘要上限**。未定前，相关条款不施工；不要由实现者自行发明第二套归属源或固定阈值。
@@ -45,6 +45,24 @@ P0–P4 已完成；P5 关键可执行证据已补齐；P6/P7 **A1 保留原件*
 - **808 篇只读盘点、30 篇备份/恢复抽样**，不是全量恢复或生产迁移证明。
 
 A1 受影响回归：**20 套 / 382 PASS / 0 FAIL**，文档校验通过。该数字不是全仓回归，也不代表真实模型已按新协议行动。
+
+### 批次 3 · 调查与施工细则已交付，生产实现未开始
+
+| 范围 | 当前状态 |
+|---|---|
+| 3.0 · 注入投递基础修复 | 七个子项均有既有基础但**未闭环**；3.0-B 预算/豁免等边界仍待裁定 |
+| 3.1 · consolidate 扩读取面 | 细则已给 API/验收/回滚；当前 prompt 仍只有日志与两份记忆尾部 |
+| 3.2 · 四段消费侧 | 细则已给映射与变异判据；失败/卡点尚未真正进入最终帧 |
+| 3.3 · 检查点截断 | 细则要求首尾或动态分配；现实现仍单向头截 |
+| 3.4 · 事件可见性 | 细则已给选择器与预算联验；T2 默认仍只展开 2 个 active |
+
+共同管线按 **Sources/Readers → Projection/Policy → Envelope/Budget → Notification/Delivery → Facade** 组织；`lib/index.js` 保持单写者串行接线，生产启用前需真实 HOST 验收。
+
+### SidecarStore 原型 · 接入阻断已关闭，生产 facade 未做
+
+B1–B4 原型层阻断已修复（`1d03c8f3`）：保留 opaque versions、补只读 `parserVersion`、批准根 regular-file 迁移、锁与路径错误映射。
+Lead 独立复跑 **37 PASS / 0 FAIL / 0 skipped**，隔离变异 **6 CAUGHT / 0 MISSED**。
+这是 Node/Windows 原型层结果，**不等于生产可接入**：facade、R4 生命周期、`events.jsonl` 审计、掉电/跨 OS 均未验。
 
 ## 开发者可探索与认领的内容
 
@@ -73,6 +91,12 @@ A1 受影响回归：**20 套 / 382 PASS / 0 FAIL**，文档校验通过。该�
 - [旧账本兼容接口](docs/internal/R4-LEGACY-COMPAT-API-20261112.md)：旧快照读/枚举/适配与受控旧写的边界，不退役公共基础设施。
 - [2.6/2.7/2.8 测绘](docs/internal/SURVEY-2.6-2.7-2.8-20261110.md)：问题规模、调用链与约束的调查依据；具体实现须服从下一份细则与施工门。
 - [2.6/2.7/2.8 可执行细则](docs/internal/DETAIL-BATCH2-2.6-2.8-20261112.md)：三项串行实现的 API 合同、失败语义、测试、负路径、并发、验收与回滚。
+- [2.9 独立核心结果](docs/internal/RESULT-BATCH2-2.9-CORE-20261113.md)：四个 handoff API、空值语义、来源证明与五门评估；生产接线未做。
+- [3.0 进度报告](docs/internal/REPORT-3.0-INJECTION-PROGRESS-20261113.md)：定版规范与当前代码逐项对照。
+- [批次 3 独立调查](docs/internal/INVESTIGATION-BATCH3-MODULAR-API-20261113.md)：真实管线、模块接口矩阵、已证缺陷与不成立项。
+- [批次 3 施工细则](docs/internal/DETAIL-BATCH3-IMPLEMENTATION-20261113.md)：3.0–3.4 的 API、验收、回滚与串行接入顺序。
+- [2.3 归属实验与训练门](docs/internal/RESULT-EVENT-ATTRIBUTION-BENCHMARK-20261112.md)：隔离 C2/D 结果与停训判据。
+- [SidecarStore 原型评审](docs/internal/REVIEW-SIDECARSTORE-PROTOTYPE-20261113.md) 与 [阻断修复结果](docs/internal/RESULT-SIDECARSTORE-BLOCKERS-20261113.md)。
 
 ## 协作方式与同步
 
@@ -91,6 +115,6 @@ A1 受影响回归：**20 套 / 382 PASS / 0 FAIL**，文档校验通过。该�
 - [前端共创说明](docs/FRONTEND-CO-CREATION.md)：既有界面与共创协作边界；前端改造需独立评审。
 - [皮肤与面板说明](docs/SKIN-GUIDE.md)：现有 Twelve tabs / 十二个页签界面说明；本分支未增加前端页签。
 
-当前产品计数校验：**7 user capabilities / 22 tools / 86 routes / 180 config keys**。这是当前基线的可复算快照，不是新增功能承诺。
+当前产品计数校验：**22 tools / 86 routes / 181 config keys**（`tools/verify-docs.mjs` 实测）。这是当前基线的可复算快照，不是新增功能承诺。
 
 [![](https://img.shields.io/badge/powered_by-dsh-4D6BFE?style=flat-square&logo=deepseek&logoColor=white)](https://github.com/deepseek-ai/deepseek-harness)

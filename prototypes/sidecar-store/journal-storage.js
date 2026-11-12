@@ -3,7 +3,7 @@ import path from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { setTimeout as delay } from 'node:timers/promises'
 import { withSharedStateLock } from '../../lib/shared-state-lock.js'
-import { decodeEnvelope, encodeEnvelope, IndexStorageError } from './codec.js'
+import { decodeEnvelope, encodeEnvelope, IndexStorageError, storageFailure } from './codec.js'
 
 const MANIFEST_SCHEMA = 'sidecar_manifest_v1'
 const CHECKPOINT_SCHEMA = 'sidecar_checkpoint_v1'
@@ -135,7 +135,7 @@ export class JournalStorage {
       try { return await callback(tx) } catch (error) { this.invalidate(); throw error } finally { active = false }
     }, { timeoutMs: this.#lockTimeoutMs }))
     this.#queue = task.catch(() => {})
-    return task
+    return task.catch(error => { throw storageFailure(error) })
   }
 
   async close() { this.#closed = true; await this.#queue; this.invalidate() }

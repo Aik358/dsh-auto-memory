@@ -13,7 +13,7 @@ node prototypes/sidecar-store/examples/basic.mjs
 # 用上轮已封存的2,848条fixture运行真实模块 API，不读取/改写在线记忆。
 node prototypes/sidecar-store/examples/fixture.mjs
 
-# 自动发现两个测试文件；含真实多进程写入与指定边界SIGKILL。
+# 自动发现三个测试文件；含真实多进程写入、锁负路径与指定边界SIGKILL。
 node prototypes/sidecar-store/tests/run-contracts.mjs
 ```
 
@@ -81,7 +81,7 @@ try {
 | `importLegacy(snapshot)` | 仅未使用的store可导入旧格式；拒未知version，不改原文件 |
 | `exportLegacySnapshot()` | 返回完整v1 JSON字符串；常态写不再生成整份旧磁盘JSON |
 | `getStatus / close` | 状态和生命周期；close等待已受理调用完成，拒绝新调用 |
-| `MarkdownSidecarAdapter` | 复用现有确定性解析器；导入文件、派生文档、显式文档范围重建 |
+| `MarkdownSidecarAdapter` | 复用现有确定性解析器；派生文档、显式文档范围重建 |
 
 目录与实现分层：
 
@@ -119,7 +119,9 @@ index.js                         公共导出 + index.d.ts
   manifest.json.lock[.acquire]        复用仓内共享锁协议，释放时移除
 ```
 
-checkpoint 不存 by_tag/by_cue；它们只在内存维护。兼容输出仍有 `version/ws/rebuilt_at/entries/by_tag/by_cue/versions/sourceRevisions` 八字段。versions导入时保留旧值；触及条目按当前archive entry规则更新，不擅自扩展现行卡→历史卡血缘。
+checkpoint 不存 by_tag/by_cue；它们只在内存维护。兼容输出仍有 `version/ws/rebuilt_at/entries/by_tag/by_cue/versions/sourceRevisions` 八字段。versions 是不可由当前 entries 唯一确定的 opaque 血缘：旧链及空数组原样保留，包括触及/删除的 entry；archive entry 仅在其 `entry.source` 不存在时追加到该 id 的链尾，不重复追加，不臆造现行卡→历史卡关系，也不因 replace/remove 自动删链。
+
+`importLegacyFile(file, { approvedRoot, ...mutationOptions })` 必须传已存在的绝对批准目录；绝对/相对 file 均须落在根内，且不能是根自身、目录、符号链接或根外物理目标。校验后从同一 regular-file 句柄读取，非法 JSON 映射 `INDEX_INVALID_DATA`，路径/文件错误映射 `INDEX_PATH`，均保留 `cause`。`SidecarStore.parserVersion` 是与状态一致的只读属性。共享锁超时公开为 `INDEX_LOCK_TIMEOUT`；底层文件系统错误为 `INDEX_PATH`；失败会清理自身锁和 cursor，后续队列可恢复。
 
 每次读API在共享锁内检查manifest并读取新日志后缀，避免另一个进程写后本实例一直用旧缓存；这不是无IO的Map.get。同generation已校验日志前缀按协议不可修改；外部同长篡改已缓存前缀可能要冷重开才检出。
 
@@ -133,7 +135,9 @@ checkpoint 不存 by_tag/by_cue；它们只在内存维护。兼容输出仍有 
 
 旧客户端直接读磁盘 `handoff/index.json` 不会自动读到新格式。后续应将原有五个存储门改为调用本模块，并让 `?file=index.json` 返回 `exportLegacySnapshot()`；如每次事务又整份写旧JSON，写放大仍会回来。
 
-## 本次实测
+B1–B4 的新增行为合同、bytes/SHA、变异及未测项见 `docs/internal/RESULT-SIDECARSTORE-BLOCKERS-20261113.md`。下表仅保留最初原型（B1–B4 修复前）的基线，不代替最新完整验收。
+
+## 修复前基线实测
 
 原始输出：`artifacts/_index-gov-20261109/out/prototype-fixture.json`、`prototype-basic.json`、`prototype-tests.json`、`prototype-tests.tap`。耗时是本机热缓存墙钟采样，不是生产工具端到端。
 
