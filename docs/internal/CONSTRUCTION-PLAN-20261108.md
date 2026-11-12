@@ -713,6 +713,7 @@ Lead 已按子代理口径独立复核，逐项吻合。
 | [EXPERIMENT-TASK-SEMANTIC-ATTRIBUTION-20261109.md](./EXPERIMENT-TASK-SEMANTIC-ATTRIBUTION-20261109.md) | 语义归属实验任务书（1.4 的 L2+L3 验证，数据包已生成） | 1B / §15 |
 | [CONSTRUCTION-GUIDELINE-INJECT-20261108.md](./CONSTRUCTION-GUIDELINE-INJECT-20261108.md) | 注入专项v1；已确认缺陷用于溯源，旧估算/验收须按本表3.0校正 | 3.0 |
 | [AUDIT-CROSS-ROUND1-CODEX-20261108.md](./AUDIT-CROSS-ROUND1-CODEX-20261108.md) | 第一轮交叉审计回执；生产路径、全文预截断、通知与计量证据 | 3.0 |
+| [REPORT-3.0-INJECTION-PROGRESS-20261113.md](./REPORT-3.0-INJECTION-PROGRESS-20261113.md) | 定版规范与当前代码逐项对照；七项有基础但均未闭环，3.0-B边界保留 | 3.0 |
 | [PROMPT-EVENT-ATTRIBUTION-BENCHMARK-20261112.md](./PROMPT-EVENT-ATTRIBUTION-BENCHMARK-20261112.md) | 事件归属判定器：真实金标、候选/新建/不确定/不适用、跨语言、训练与否决判据 | 2.3 |
 | [PROMPT-BATCH2-2.9-HANDOFF-COVERAGE-20261113.md](./PROMPT-BATCH2-2.9-HANDOFF-COVERAGE-20261113.md) | 独立规范化、覆盖证明、sourceRef 与隔离验收；共享生产入口由 Lead 串行接线 | 2.9 |
 
@@ -751,7 +752,7 @@ Lead 已按子代理口径独立复核，逐项吻合。
 | 计数锁现状 | 工具 **22** / 路由 **86** / 配置键 **181**（2026-11-12 `verify-docs` EXIT=0）；A1 初版 `lib/index.js` 指纹与 r26 锁见环境快照；修正后以实际复跑与 A1 报告为准，不把过程值写成最终基线 |
 | 批次1/2细则 | 两份文档已产出，按分项批准与实际提交推进；细则旧“全部未开工”不覆盖已经提交的止血事实 |
 | **2.3 事件归属判定器** | 模型/候选实验与 `memory_log` L2 候选已有；历史归并提案、统一 `memory_note` 协议和真实判定验收未完成。已新增隔离实验任务书；不自动 attach/merge/archive |
-| **3.0注入投递基础修复** | **审计/补充调查完成；7个子项的确定细节已登记，尚未施工；4类边界见3.0-B** |
+| **3.0注入投递基础修复** | 定版规范与审计完成；七项均有既有代码/复用基础，但目标验收均未闭环。逐项进度见 `REPORT-3.0-INJECTION-PROGRESS-20261113.md`；3.0-B边界仍待定，未生产施工 |
 | 3.1–3.4 / 批次4/6 | 保留原任务，按各自细则细化；涉及注入的部分对齐3.0契约 |
 | 5.1铭文 | 待相关能力、投递与联动稳定后实施 |
 | **批次 2 新增 2.6/2.7/2.8** | **代码与隔离验收已完成，已提交 `45a7f905`、未做生产启用**。2.6 真实工具 22/0、归属 7/0；2.7 指针 46/0、工具下钻 25/0；2.8 预检 19/0、真实工具 17/0。G-1/G-2 未裁定，未做摘要替换或新容器；D4 另验收 |
