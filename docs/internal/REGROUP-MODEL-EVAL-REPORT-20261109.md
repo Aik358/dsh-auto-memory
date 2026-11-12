@@ -1,5 +1,7 @@
 # 事件聚类模型选型与调优 · 实测报告（2026-11-09）
 
+> **状态订正（2026-11-12）**：本报告保留原始实验过程，不再作为生产归属数字的现行基线。后续 `ATTR-REALISTIC-20261110.md` 用 630 条真实查询复测，C2 top-1=21.7%、top-5=57.1%；早期 63 条精选查询上的 fields 增益已证伪。C2 可保留为默认召回/语义特征底座，不自动归属。归属判定器的新基准与实验范围见 `PROMPT-EVENT-ATTRIBUTION-BENCHMARK-20261112.md`。
+
 > 性质：**只读调研 + 实验**，未改 `lib/` 任何文件
 > 任务书：`docs/internal/PROMPT-REGROUP-MODEL-EVAL-PASTE-20261109.md`（v5）
 > 实验目录：`artifacts/_regroup-model-eval-20261109/`
