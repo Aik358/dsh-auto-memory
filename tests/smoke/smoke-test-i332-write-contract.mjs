@@ -20,6 +20,7 @@ import { readFileSync, existsSync } from 'node:fs'
 import { execFileSync } from 'node:child_process'
 import pathModule from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { preflightPlanMutationPre } from '../../lib/plan-preflight.js'
 
 // ★2026-10-13 #344：URL.pathname 百分号编码（中文/空格）⇒ 路径不存在。改用 fileURLToPath。
 const ROOT = pathModule.join(pathModule.dirname(fileURLToPath(import.meta.url)), '..', '..')
@@ -60,14 +61,15 @@ function makeRunner(branch, over = {}) {
     })
   const eventStorePathOfPre = (handoffDir) => String(handoffDir || '') + '\\event-store.json'
   const diagThrottled = () => {}
+  const readPlanPre = async () => ''
   const factory = new Function(
-    'sanitizeForWrite', 'writeGateRefusalTextPre', 'nowHm',
+    'sanitizeForWrite', 'writeGateRefusalTextPre', 'nowHm', 'readPlanPre', 'preflightPlanMutationPre',
     'appendHandoffCheckpointPre', 'eventStorePathOfPre', 'diagThrottled',
     'return async function (args, engine, p) {' + branch + '\n}')
   const sanitizeForWrite = (t, o) => ({ ok: true, clean: t, truncated: false })
   const writeGateRefusalTextPre = (n, g) => (n + ': ' + ((g && g.reason) || 'gate'))
   const nowHm = () => '16:00'
-  const fn = factory(sanitizeForWrite, writeGateRefusalTextPre, nowHm,
+  const fn = factory(sanitizeForWrite, writeGateRefusalTextPre, nowHm, readPlanPre, preflightPlanMutationPre,
     appendHandoffCheckpointPre, eventStorePathOfPre, diagThrottled)
   return (args, engine) => fn(args, engine, { projectDir: 'D:\\proj', handoffDir: 'D:\\proj\\handoff' })
 }
@@ -78,6 +80,8 @@ function baseEngine(over = {}) {
     memToday: () => '2026-10-12',
     // 2026-10-27 补桩：分支入口的 settings-root-changed 前置判定需要它
     projectDirOf: (ws) => String(ws || '\\proj').replace(/\\handoff$/, ''),
+    config: { ledgerDocEnabled: false, criteriaGate: false },
+    readTextSafe: async () => '',
     state: {},
     async writePlanSnapshot() { return { ok: true, committed: true, revision: 'R1', indexStale: false, path: 'D:\\proj\\handoff\\PLAN.md', final: '# x' } },
     async writeHandoffLedger() { return { ok: true, path: 'D:\\proj\\handoff\\h.md', clean: 'body' } },

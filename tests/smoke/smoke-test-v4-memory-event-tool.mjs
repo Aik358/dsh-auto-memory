@@ -13,6 +13,8 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { eventStorePre } from '../../lib/event-store.js'
+import { readEventStorePre } from '../../lib/event-write.js'
+import { redrawPlanAfterEventPre } from '../../lib/plan-redraw.js'
 
 let pass = 0, fail = 0
 const ok = (c, m) => { if (c) { pass++; console.log('  PASS ' + m) } else { fail++; console.log('  FAIL ' + m) } }
@@ -41,12 +43,13 @@ const refreshCalls = { n: 0 }
 const engineForTool = {
   resolvePaths: async () => ({ handoffDir: null, projectDir: null, ws: null }),
   refreshEventStatePre: async () => { refreshCalls.n++ },
+  config: { planAutoRedrawEnabled: false },
 }
 let captured = null
 const defineToolStub = (name, desc, params, execute) => { captured = { name, desc, params, execute }; return captured }
-const factory = new Function('defineTool', 'eventStorePre', 'V4_EVENT_STORE_FILENAME', 'path', 'engine',
+const factory = new Function('defineTool', 'eventStorePre', 'V4_EVENT_STORE_FILENAME', 'path', 'engine', 'readEventStorePre', 'redrawPlanAfterEventPre',
   'return (' + callSrc + ')')
-const tool = factory(defineToolStub, eventStorePre, 'event-store.json', path, engineForTool)
+const tool = factory(defineToolStub, eventStorePre, 'event-store.json', path, engineForTool, readEventStorePre, redrawPlanAfterEventPre)
 ok(!!tool && tool.name === 'memory_event', '求值得到 memory_event 工具')
 
 console.log('[B-1] schema 形状：checkpoint 必须是 type:object（defineTool 只透传 type/description）')
