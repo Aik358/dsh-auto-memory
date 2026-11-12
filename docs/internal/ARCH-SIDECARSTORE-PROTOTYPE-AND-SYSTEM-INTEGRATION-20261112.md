@@ -241,7 +241,7 @@ JournalStorage 的恢复读会用 `r+` 打开 journal，因为它可能在独占
 
 ## 7A. 独立评审追加的接入阻断（2026-11-13）
 
-`REVIEW-SIDECARSTORE-PROTOTYPE-20261113.md` 已通过源码与隔离 API 验证：非空旧 versions 增量丢失、`.d.ts` 与运行时 API 不一致、迁移缺批准根/regular-file 边界、共享锁超时未映射公开错误。以上均是接入前阻断项，不是现网已损坏证明。
+`REVIEW-SIDECARSTORE-PROTOTYPE-20261113.md` 已通过源码与隔离 API 验证：非空旧 versions 增量丢失、公开 `parserVersion` 在类型声明与运行时两侧均缺、迁移缺批准根/regular-file 边界、共享锁超时未映射公开错误。以上均是接入前阻断项，不是现网已损坏证明。
 
 旧 fixture 的 versions=0 且缺文件可 skip，不能代替非空血缘/required-fixture 验收。R4 维护文档生命周期、`events.jsonl` 审计与生产迁移/回滚均须在 facade 层保留。详见独立报告；完成上述项之前不得把 27/27 解释为可生产接入。
 

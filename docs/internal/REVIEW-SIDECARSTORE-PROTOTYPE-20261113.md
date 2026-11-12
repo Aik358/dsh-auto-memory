@@ -24,10 +24,10 @@
 
 验收：保留/追加/删除的所有权规则先定稿；用非空 versions fixture 做增量、重启、导入/导出与回归，不允许静默丢链。
 
-### B2 · 类型声明与运行时 API 不一致 [runtime]
-`index.d.ts:72` 声明 `store.parserVersion:string`，运行时无该 getter；`sidecar-store.js:253` 只在 `getStatus()` 返回。实测 `typeof store.parserVersion==='undefined'`。
+### B2 · 公开只读属性在类型声明与运行时均缺失 [runtime]
+`index.d.ts:72` 的 `parserVersion` 属于 `StoreStatus`；`SidecarStore` 类未声明该只读属性，运行时也无 getter。`sidecar-store.js:253` 只在 `getStatus()` 返回，实测 `typeof store.parserVersion==='undefined'`。
 
-验收：按既有接口选择删声明或实现 getter，不凭命名猜；增加真实 .d.ts/消费测试。若本机无 tsc，如实标注未编译，不虚构类型通过。
+验收：按既有接口补 getter 与 `.d.ts` 只读声明，保持 `getStatus()` 字段兼容；增加真实 .d.ts/消费测试。若本机无 tsc，如实标注未编译，不虚构类型通过。
 
 ### B3 · 迁移输入缺少根与 regular-file 边界 [runtime]
 `markdown-adapter.js:48–50` 对任意 `file` 直接 `readFile + JSON.parse`；没有 approved root、symlink/regular-file 检查，坏 JSON/目录/锁错误也可能以原生异常逸出。与 `codec.js` 的公开错误契约及接入文档批准文件要求不一致。
