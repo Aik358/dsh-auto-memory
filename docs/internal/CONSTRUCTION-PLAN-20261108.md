@@ -714,6 +714,7 @@ Lead 已按子代理口径独立复核，逐项吻合。
 | [CONSTRUCTION-GUIDELINE-INJECT-20261108.md](./CONSTRUCTION-GUIDELINE-INJECT-20261108.md) | 注入专项v1；已确认缺陷用于溯源，旧估算/验收须按本表3.0校正 | 3.0 |
 | [AUDIT-CROSS-ROUND1-CODEX-20261108.md](./AUDIT-CROSS-ROUND1-CODEX-20261108.md) | 第一轮交叉审计回执；生产路径、全文预截断、通知与计量证据 | 3.0 |
 | [REPORT-3.0-INJECTION-PROGRESS-20261113.md](./REPORT-3.0-INJECTION-PROGRESS-20261113.md) | 定版规范与当前代码逐项对照；七项有基础但均未闭环，3.0-B边界保留 | 3.0 |
+| [REVIEW-SIDECARSTORE-PROTOTYPE-20261113.md](./REVIEW-SIDECARSTORE-PROTOTYPE-20261113.md) | 原型模块化成立；四个接入阻断、versions/fixture/生命周期与生产同步边界 | 独立后续线 |
 | [PROMPT-EVENT-ATTRIBUTION-BENCHMARK-20261112.md](./PROMPT-EVENT-ATTRIBUTION-BENCHMARK-20261112.md) | 事件归属判定器：真实金标、候选/新建/不确定/不适用、跨语言、训练与否决判据 | 2.3 |
 | [PROMPT-BATCH2-2.9-HANDOFF-COVERAGE-20261113.md](./PROMPT-BATCH2-2.9-HANDOFF-COVERAGE-20261113.md) | 独立规范化、覆盖证明、sourceRef 与隔离验收；共享生产入口由 Lead 串行接线 | 2.9 |
 
