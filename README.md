@@ -1,6 +1,6 @@
 # 无问自忆 · 记忆不断线
 
-**dsh-auto-memory** — *She remembers, unbidden.*
+**dsh-auto-memory** — *She remembers, unbidden.* （注意，此版本为适配于 dsh 0.15 RC2的早期版本）
 
 > **EN** Now, across windows, too. Context that survives windows, sessions, and tools
 > **中文** 该想起的，自己浮现。跨窗口 · 跨会话 · 跨工具，记忆不断线
