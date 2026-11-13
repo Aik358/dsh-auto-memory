@@ -58,20 +58,21 @@ try {
   const race = await note.execute({ kind: 'plan', content: '# Synthetic plan\n## 目标\n- 足够长的项目目标内容\n' + card('a'.repeat(32), '保留甲'), eventId: ev.id, expectedRevision: m1Revision }, { agent })
   check(race.includes('PLAN.md 已更新'), 'post-preflight no-op follows existing final gates')
   const raceCps = (await eventStorePre.detail(store, ev.id)).event.checkpoints
-  check(raceCps.length === 2 && raceCps[1].kind === 'plan' && raceCps[1].text === '# Synthetic plan\n## 目标\n- 足够长的项目目标内容\n' + card('a'.repeat(32), '保留甲'), 'identical no-op append is deduped by actual event store')
+  const repeated = (await eventStorePre.detail(store, ev.id)).event.checkpoints
+  check(raceCps.length === 2 && repeated.length === 2 && repeated[1].kind === 'plan' && repeated[1].text.length <= 300, 'identical no-op append remains deduped with pointer summary')
   const forced = engine.writePlanSnapshot.bind(engine)
   engine.writePlanSnapshot = async () => ({ ok: false, error: 'plan-external-edit-conflict' })
   const staleAfter = await note.execute({ kind: 'plan', content: latestM1 + '\n不同正文避免与已有检查点同幂等键', eventId: ev.id, expectedRevision: m1Revision }, { agent })
   engine.writePlanSnapshot = forced
   check(staleAfter.includes('plan-external-edit-conflict'), 'formal final-gate failure still surfaced')
   const afterRace = (await eventStorePre.detail(store, ev.id)).event.checkpoints
-  check(afterRace.length === 4 && afterRace[2].kind === 'plan' && afterRace[3].kind === 'plan-write-failed', 'formal failure retains WAL compensation')
+  check(afterRace.length === 3 && afterRace[2].kind === 'plan-write-failed', 'formal final-gate failure retains explicit failure without fabricated prior plan checkpoint')
   const fromEvents = await note.execute({ kind: 'plan', fromEvents: true, eventId: ev.id, expectedRevision: planRevisionPre(await fs.readFile(planPath, 'utf8')) }, { agent })
   check(fromEvents.includes('PLAN.md 已更新'), 'real fromEvents write remains compatible')
   const rendered = await fs.readFile(planPath, 'utf8')
   check(rendered.includes('synthetic preflight target'), 'real renderer output committed')
   const cps = (await eventStorePre.detail(store, ev.id)).event.checkpoints
-  check(cps.filter((cp) => cp.kind === 'plan').length === 4 && cps.filter((cp) => cp.kind === 'plan-write-failed').length === 1, 'fromEvents adds one plan checkpoint without new failure')
+  check(cps.filter((cp) => cp.kind === 'plan').length === 3 && cps.filter((cp) => cp.kind === 'plan-write-failed').length === 1, 'fromEvents adds one pointer-summary plan checkpoint without new failure')
   console.log('SUMMARY PASS ' + pass + ' / FAIL 0')
   console.log('PHYSICAL eventCheckpoints=' + cps.length + ' planBytes=' + Buffer.byteLength(rendered) + ' revision=' + planRevisionPre(rendered))
 } finally {
