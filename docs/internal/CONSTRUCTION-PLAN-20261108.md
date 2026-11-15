@@ -733,6 +733,7 @@ Lead 已按子代理口径独立复核，逐项吻合。
 | [REVIEW-2.3-TRAINING-PROGRESS-20261114.md](./REVIEW-2.3-TRAINING-PROGRESS-20261114.md) | 训练回报与当前训练门独立复核；优先修独立金标，不直接训练 | 2.3 |
 | [NEXT-STEPS-20261114.md](./NEXT-STEPS-20261114.md) | 当前提交、三条后续工作线、隔离HOST与生产边界 | 当前接续 |
 | [PROMPT-EVENT-ATTRIBUTION-MODEL-REVIEW-20261116.md](./PROMPT-EVENT-ATTRIBUTION-MODEL-REVIEW-20261116.md) | 模型可执行双盲复核/仲裁/困难负样本；独立上下文+确定性证据；模型审核不等于人工金标 | 2.3 |
+| [RESULT-EVENT-ATTRIBUTION-MODEL-REVIEW-20261116.md](./RESULT-EVENT-ATTRIBUTION-MODEL-REVIEW-20261116.md) | Lead复跑21/21；发现旧protocolConflict弱金标为协议构造；困难样本2独立失败；sourceVerified0、训练未启动 | 2.3 |
 
 
 四份分线报告合计 2,135 行 / 219,683 B。
@@ -769,7 +770,7 @@ Lead 已按子代理口径独立复核，逐项吻合。
 | 1B（1.4–1.6） | **✅ 已实现并验收（`e7baa4fb`）**，后又经收口轮与缺陷 A 修复。11-09 实测 `smoke-test-v4-event-attr-receipt` **68 PASS / 0 FAIL**；当时锁值 IX **1,570,100** / `B950E713234096F9`、iter5 classic **1,547,375** / `5c126642…` 均为历史快照，当前值见上行。落地记录见 [DETAIL-BATCH1B](./DETAIL-BATCH1B-20261109.md) §9–§11 |
 | 计数锁现状 | 工具 **22** / 路由 **86** / 配置键 **181**（2026-11-12 `verify-docs` EXIT=0）；A1 初版 `lib/index.js` 指纹与 r26 锁见环境快照；修正后以实际复跑与 A1 报告为准，不把过程值写成最终基线 |
 | 批次1/2细则 | 两份文档已产出，按分项批准与实际提交推进；细则旧“全部未开工”不覆盖已经提交的止血事实 |
-| **2.3 事件归属判定器** | 隔离C2/D实验、训练门与模型教师接续任务书已交付；可保留候选/提案，不自动attach/merge/archive；金标/重复族/四态与真实训练未闭环 |
+| **2.3 事件归属判定器** | 模型复核闭环已完成且Lead复跑21/21；发现旧protocolConflict弱金标为协议构造，困难样本2独立失败。标签仍仅model-reviewed、sourceVerified0/20、人工复核0；不自动attach/merge/archive，训练门未关闭 |
 | **3.0注入投递基础修复** | 定版规范与审计完成；2.7/2.9的摘要指针可供3.0.5复用，但最终帧仍未验。逐项进度见 `REPORT-3.0-INJECTION-PROGRESS-20261113.md`；3.0-B边界仍待定 |
 | 3.1–3.4 / 批次4/6 | 3.1 consolidate扩读取面、3.2四段消费、3.3检查点截断、3.4事件展开均有独立API/验收/回滚章节；生产实现未完成，统一与3.0最终帧联验 |
 | 5.1铭文 | 待相关能力、投递与联动稳定后实施 |
