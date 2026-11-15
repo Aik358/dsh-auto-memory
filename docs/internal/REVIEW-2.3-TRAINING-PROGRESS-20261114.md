@@ -73,5 +73,9 @@ C2订正：可见证据包同文泄漏不成立，最高12-gram包含度0.350、
 
 第二轮已完成并由Lead按权威管道复跑：A=8/15，B-model=7/15，B-provable=9/15，真实最佳仍与首轮持平；M1去LOO与M2去结构仅−0.012噪声，说明新特征未被利用。首300字摘要分离度−0.0135、全量检查点自引用、jac3偏移7.676未修；S5 closed从14/14错改善为12/12对。公开轨迹许可已核实但无parquet解码能力，未安装依赖。下一轮应停止synthetic调参，切真实train/dev并解决historicalWeak证据不对等。
 
+### 第三轮已启动（2026-11-16）
+
+用户同意停止synthetic调参，task-21复用同一DeepSeek teammate。按真实事件/重复族/来源切train/dev，严格LOO与候选证据对齐，保留真实test；不装依赖、不公开轨迹转换、不生产。任务书：`PROMPT-EVENT-ATTRIBUTION-LAB-ROUND3-20261116.md`。
+
 ### 模型执行复核的补充（2026-11-16）
 模型可承担双盲复核、仲裁和困难负样本构造；同一模型必须使用不同独立上下文，不能自产自证。输出为 `model-reviewed`，不等同双人复核或 `human-reviewed` 金标。若放宽人工门，须单独验收模型标签的可靠性，不能自动训练。执行 Prompt：`PROMPT-EVENT-ATTRIBUTION-MODEL-REVIEW-20261116.md`。
