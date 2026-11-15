@@ -44,6 +44,9 @@
 - 结果报告：`RESULT-EVENT-ATTRIBUTION-MODEL-REVIEW-20261116.md`；隔离目录：`artifacts/_event-attribution-review-20261116/`。
 - 后续只修**隔离基线**：跨事件同文须显式标注并排除出冲突金标，不能删除真实历史；重做 `protocolConflict` 与 `originTimeReplay` 的独立归属复核。未启动训练、未写生产。
 
+### 用户授权隔离挂机训练（2026-11-16）
+用户允许模型直接构造训练标签、结合公开/合成事件库并挂机多轮训练。标签仍为 `model-reviewed` 实验数据，不冒充人工金标；任务书 `PROMPT-EVENT-ATTRIBUTION-LAB-20261116.md`，task-19由既有DeepSeek teammate执行。先构造与审计多源数据，再训练冻结C2轻量分类/排序器，在独立留出集验证误attach/误新建/跨语言/伞事件成本。生产与19387不动。
+
 
 ## 4. 与用户临时需求的衔接
 
