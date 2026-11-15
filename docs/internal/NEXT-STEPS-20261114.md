@@ -29,7 +29,7 @@
 2. 以 `REVIEW-2.3-TRAINING-PROGRESS-20261114.md` 为起点；用户现已授权模型构造标签、多源事件库与隔离挂机训练，task-19按 `PROMPT-EVENT-ATTRIBUTION-LAB-20261116.md` 执行。模型标签为实验数据，不冒充人工金标。
 3. 组织双人独立复核，保留 reviewer 身份、证据、分歧和仲裁；同一教师不得兼任两位复核者。
 4. 同时补齐四态、跨语言、closed、多候选、无正确候选和困难负样本，按事件及重复族隔离。
-5. 第三轮task-21已按 `PROMPT-EVENT-ATTRIBUTION-LAB-ROUND3-20261116.md` 启动：真实train/dev、严格LOO与证据对齐，保留真实test。公开轨迹因缺parquet库B1阻塞，未安装依赖。
+5. 第三轮task-21完成：真实19事件/单类split，cov12零参数test0.725优于LR0.325，监督训练不再继续。公开轨迹B1阻塞；cov12仅作实验候选，不直接生产。
 
 ### B. 3.0–3.4 模块化/API 化生产实现
 
