@@ -732,6 +732,8 @@ Lead 已按子代理口径独立复核，逐项吻合。
 | [RESULT-EVENT-ATTRIBUTION-TEACHER-TRAINING-20261113.md](./RESULT-EVENT-ATTRIBUTION-TEACHER-TRAINING-20261113.md) | 20合法提案、27来源证明；双人复核0、金标0、E/F/RL未运行 | 2.3 |
 | [REVIEW-2.3-TRAINING-PROGRESS-20261114.md](./REVIEW-2.3-TRAINING-PROGRESS-20261114.md) | 训练回报与当前训练门独立复核；优先修独立金标，不直接训练 | 2.3 |
 | [NEXT-STEPS-20261114.md](./NEXT-STEPS-20261114.md) | 当前提交、三条后续工作线、隔离HOST与生产边界 | 当前接续 |
+| [PROMPT-EVENT-ATTRIBUTION-MODEL-REVIEW-20261116.md](./PROMPT-EVENT-ATTRIBUTION-MODEL-REVIEW-20261116.md) | 模型可执行双盲复核/仲裁/困难负样本；独立上下文+确定性证据；模型审核不等于人工金标 | 2.3 |
+
 
 四份分线报告合计 2,135 行 / 219,683 B。
 ### 代码级落点（细化时直接打开）
