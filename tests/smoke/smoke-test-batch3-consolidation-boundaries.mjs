@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+import { collectConsolidationSourcesPre, applyConsolidationResultPre } from '../../lib/injection/consolidation.js';
+const texts = { '2026-11-10.md': 'old', '2026-11-16.md': 'new', 'other.md': 'other' };
+const sources = collectConsolidationSourcesPre({ days: 2, clock: () => Date.parse('2026-11-17T00:00:00Z'), readers: { logs: Object.keys(texts) }, readFile: (p) => texts[p] });
+assert.deepEqual(sources.logs.map((x) => x.ref).sort(), ['2026-11-16.md', 'other.md'].sort());
+const calls = [];
+const writer = { writeProjectNote: (pts) => calls.push(pts) };
+const withNone = applyConsolidationResultPre({ parsed: { status: 'ok', text: '[PROJECT]\n- 讨论是否输出(无)及何时不写' }, writer });
+assert.equal(calls.length, 1);
+const unknown = applyConsolidationResultPre({ parsed: { status: 'unknown-status', text: '[PROJECT]\n- valid' }, writer });
+assert.equal(unknown.wroteAnything, false);
+console.log('PASS consolidation day filter + literal none marker + unknown status no-write');

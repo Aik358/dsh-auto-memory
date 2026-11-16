@@ -41,6 +41,7 @@ const REQUIRED_BY_UNIT = {
   "B3-NT": ["prepareNotificationPre", "finalizeInjectionPre", "commitNotificationPre", "splitRuntimeSignalsPre"],
   "B3-FM": ["composeFinalEnvelopePre", "SEGMENT_KINDS", "BUDGET_MODES", "DEFAULT_SEPARATOR"],
   "B3-EV": ["projectEventSectionsPre", "renderCheckpointPreviewPre", "selectEventProjectionPre", "renderEventSourcePointersPre"],
+  "B3-CO": ["collectConsolidationSourcesPre", "buildConsolidationPromptPre", "applyConsolidationResultPre", "CONSOLIDATION_CHANNELS"],
 };
 for (const [unit, names] of Object.entries(REQUIRED_BY_UNIT)) {
   const missing = names.filter((n) => !(n in m));
@@ -67,12 +68,11 @@ ok(m.INJECTION_CONTRACT_INFO.implements[0] === "contract-only", "[import] 包自
   ok(Array.isArray(IMPL) && Array.isArray(NOT), "[import] implements / doesNotImplement 都是数组");
   const overlap = IMPL.filter((x) => NOT.includes(x));
   ok(overlap.length === 0, "★[import] 实现与未实现列表**无交集**（不得既声称实现又声称未实现）", overlap.join(",") || "无交集");
-  for (const u of ["B3-SR", "B3-RC", "B3-CA", "B3-PJ", "B3-RP", "B3-BD", "B3-NT", "B3-FM", "B3-EV"]) {
+  for (const u of ["B3-SR", "B3-RC", "B3-CA", "B3-PJ", "B3-RP", "B3-BD", "B3-NT", "B3-FM", "B3-EV", "B3-CO"]) {
     ok(IMPL.includes(u) && !NOT.includes(u), "[import] " + u + " 已在 implements 且不在 doesNotImplement");
   }
-  for (const u of ["B3-CO"]) {
-    ok(NOT.includes(u) && !IMPL.includes(u), "[import] " + u + " 仍在 doesNotImplement（未实现）");
-  }
+  // ★批次3 全部单元已实现 ⇒ doesNotImplement 为空，不再逐项断言
+  ok(NOT.length === 0, "★[import] doesNotImplement **已清空**（批次3 单元全部实现）", NOT.join(",") || "空");
 }
 
 // ── 1. 8 个 DTO：真构造 + 字段完整 + JSON 往返
