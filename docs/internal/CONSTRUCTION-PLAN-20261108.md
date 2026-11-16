@@ -412,7 +412,21 @@ Lead 已按子代理口径独立复核，逐项吻合。
 
 **系统化重建契约**：本批以系统化、模块化、API化重写相关投递系统，原因是投递系统存在数量较多且杂乱的复杂性耦合，导致功能紊乱。既有调查、交叉审计、用户裁定与模块边界统一见 [DETAIL-BATCH3-SYSTEMIC-REBUILD-CONTRACT-20261116.md](./DETAIL-BATCH3-SYSTEMIC-REBUILD-CONTRACT-20261116.md)。该契约是实施真源，不是重新讨论方向。
 
-**施工顺序细则**：按 B3-CB → 公共契约 → B3-RC/RP → B3-NT/BD/FM → B3-EV 分阶段实施，见 [DETAIL-BATCH3-IMPLEMENTATION-SEQUENCE-20261116.md](./DETAIL-BATCH3-IMPLEMENTATION-SEQUENCE-20261116.md)。该文档更新并替代原有3.0/3.1类分散施工内容，旧文档仅作调查与溯源。
+**施工顺序细则**：按 B3-CB → 公共契约 → B3-RC → B3-PJ → B3-RP → B3-NT/BD/FM → B3-EV 分阶段实施，见 [DETAIL-BATCH3-IMPLEMENTATION-SEQUENCE-20261116.md](./DETAIL-BATCH3-IMPLEMENTATION-SEQUENCE-20261116.md)。该文档更新并替代原有3.0/3.1类分散施工内容，旧文档仅作调查与溯源。
+
+**★三份批次3文档的效力层级（2026-11-16 修订，冲突时按此裁决）**：
+
+| 层级 | 文件 | 管什么 |
+|---|---|---|
+| **L1 架构契约** | `DETAIL-BATCH3-SYSTEMIC-REBUILD-CONTRACT-20261116.md` | 模块划分、**公共 API 签名**、DTO/profile、已裁定约束、非目标 |
+| **L2 施工细则** | `DETAIL-BATCH3-IMPLEMENTATION-SEQUENCE-20261116.md` | 施工顺序、每单位实施/验收/回滚、停止条件 |
+| **L3 测绘大纲** | `DETAIL-BATCH3-UNIFIED-20261116.md` | 代号溯源、依赖图、现状实测、3.0-B 未决边界 |
+
+裁决规则：**API/profile/DTO 冲突 ⇒ L1 为准**；施工顺序冲突 ⇒ L2 为准；现状事实冲突 ⇒ **以当前代码实测为准**。
+
+**B3-PJ 是独立代号（投影与策略层）**，负责档位 / full-slim 视角 / 特殊档策略；它不是 B3-RP 或 B3-BD 的子步骤。代号全表见 L1 §4.6。
+
+**⚠ 已裁定 ≠ 已实现**：截至 2026-11-16 实测，**50% 水位仍为 `'25,50'`**（未实现 50% 默认关）、**`ruleSummaryPre` 仍 `max = 200`**（未实现不看逐条 200）。逐条现状见 L1 §6 的「代码现状」列。
 
 | # | 任务 | 落点 | 验收判据 | 依赖 / 并行边界 |
 |---|---|---|---|---|

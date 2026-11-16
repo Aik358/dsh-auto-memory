@@ -2,7 +2,18 @@
 
 > 日期：2026-11-16
 > 性质：施工契约与架构定稿；基于既有调查、交叉审计、用户裁定与task-30/31/32复核。
-> 本文件内联到总体施工大纲，作为批次3重建的统一契约。不是新方向讨论，不改生产代码。
+> 本文件是批次3重建的**架构契约（最高效力）**。不是新方向讨论，不改生产代码。
+>
+> ## 效力层级（**冲突时按此裁决**）
+>
+> | 层级 | 文件 | 管什么 | 不得越界 |
+> |---|---|---|---|
+> | **L1 契约（本文）** | `DETAIL-BATCH3-SYSTEMIC-REBUILD-CONTRACT-20261116.md` | 模块划分、公共 API 签名、DTO/profile、已裁定约束、非目标 | 不写施工步骤与验收清单 |
+> | **L2 施工细则** | `DETAIL-BATCH3-IMPLEMENTATION-SEQUENCE-20261116.md` | 施工顺序、每单位实施步骤、验收、回滚、停止条件 | **API 签名与 DTO 必须逐字引用 L1**，不得自创 |
+> | **L3 测绘大纲** | `DETAIL-BATCH3-UNIFIED-20261116.md` | 语义代号溯源、依赖图、现状实测、3.0-B 未决边界 | 现状证据与依赖关系；**API/profile 一律以 L1 为准** |
+>
+> **冲突裁决规则**：①API 签名/profile/DTO 冲突 ⇒ **以 L1 为准**；②施工顺序冲突 ⇒ 以 L2 为准；③现状事实冲突 ⇒ **以当前代码实测为准**，并由发现者回写对应文档。
+> 本层级表由 `REVIEW-BATCH3-DOCUMENTS-20261116.md` M1 修订引入（2026-11-16）。
 
 ## 1. 总体纲要
 
@@ -36,6 +47,8 @@
 - 不在本批训练模型、引入RL或新模型依赖。
 - 不在本批改前端、生成器或lib/client.js。
 - 不用静态源码命中、空输出或未调用工厂冒充验收。
+- **不改 SidecarStore / R4 文档存储边界**：Prototype 只负责派生索引持久化，不负责归属、档位或预算，不写 Markdown 正文（详见 L2 细则 §10.2）。
+- 不改 2.6/2.7/2.8 的写入口，不改 2.9 的来源证明语义。
 
 ## 4. 模块与公共API契约
 
@@ -49,7 +62,10 @@
 - 规则读取必须覆盖 user+project；完整正文与指针读取分离。
 - `parseWaterPctThresholdsPre` 等纯函数进入明确内部模块；通过真实回调验证最终行为，只有确实需要外部调用才纳入公共 facade。
 
-### 4.2 Projection / Policy
+### 4.2 Projection / Policy（代号 **B3-PJ**）
+
+> **B3-PJ 是独立代号**，不是 B3-RP/B3-BD/B3-EV 的子步骤。它负责「档位/视角/特殊档策略只在此层决定」。
+> 见 §4.6 代号总表。
 
 `projectInjectionPre({sources,tier,frame,config}) → {candidates,notifications,policyVersion}`
 
@@ -89,6 +105,22 @@
 - 两者服从B3-FM最终预算，不另建平行预算。
 - 2.5负责白板生成/更新，B3只负责选择与投递。
 
+### 4.6 代号总表（**与 L3 大纲一致**）
+
+| 代号 | 层 | 公共 API |
+|---|---|---|
+| **B3-RC** | Sources/Readers | `readInjectionSourcesPre` |
+| **B3-PJ** | Projection/Policy | `projectInjectionPre` |
+| **B3-RP** | Projection 的规则呈现子步骤 | `renderRulesForTierPre`（消费 B3-PJ 的候选） |
+| **B3-FM** | Envelope/Budget | `composeFinalEnvelopePre` |
+| **B3-NT** | Notification/Delivery | `prepareNotificationPre` / `finalizeInjectionPre` / `commitNotificationPre` |
+| **B3-BD** | Board Docs | `projectHandoffPre` |
+| **B3-CB** | 验收基础 | 无公共 API（测试与真实回调面） |
+| **B3-EV** | Event Views | `projectEventSectionsPre` / `renderCheckpointPreviewPre` / `selectEventProjectionPre` |
+
+> **B3-RC 的范围就是 `readInjectionSourcesPre` 的全部返回**（rules/events/plan/handoff/reflections/logs/proofs），
+> **不是**只读规则。L3 大纲早期版本中的 `readRulesAggregatePre` 已被本表取代，仅作为 B3-RC 的**内部子步骤**保留。
+
 ## 5. 公共数据契约
 
 - SourceProof：sourceRef/bytes/rawSha256/normalizedSha256/revision。
@@ -100,15 +132,21 @@
 
 ## 6. 已裁定约束与协调边界
 
-### 已裁定，直接作为施工约束
+### 已裁定 ≠ 已实现（**必读**）
 
-- 摘要档规则只投一行指针。
-- human_full给完整有效正文，不逐条200截断；低频投递接受全量。
-- 50%水位默认关闭，25%保留；显式off/0保留。
-- 总量上限必须生效，不新增预算配置键。
-- legacy少给；snapshotSlimMaintain只在human_slim。
-- handoff_carry/hang_compensate保留，未经调查不得删除/合并/改触发。
-- 2.4真实归并继续冻结；5.1铭文最后实施。
+下表「代码现状」列由 `REVIEW-BATCH3-DOCUMENTS-20261116.md` M13 补入，取证于 2026-11-16。**「已裁定」只表示方向已定，不表示代码已符合。**
+
+| # | 已裁定约束 | 代码现状（实测） | 判定 |
+|---|---|---|---|
+| 1 | 摘要档规则只投一行指针 | 精简版已不投规则段；但 `ruleSummaryPre` 仍 `max = 200` | ⚠ 部分 |
+| 2 | human_full 给完整正文、不逐条200 | **`rules-layer.js:446 ruleSummaryPre(text, max = 200)` 仍在** | ❌ **未实现** |
+| 3 | **50%水位默认关闭，25%保留；显式off/0保留** | **`DEFAULT_CONFIG.fullInjectWaterPct = '25,50'`**（25 与 50 都开） | ❌ **未实现** |
+| 4 | 总量上限必须生效，不新增预算配置键 | `injectBudgetChars: 8000` 存在；`composeFinalEnvelopePre` 未实现 | ❌ 未实现 |
+| 5 | legacy少给；snapshotSlimMaintain只在human_slim | 本轮未逐条实测 | ? **未验** |
+| 6 | handoff_carry/hang_compensate保留，未经调查不得删除/合并/改触发 | 沿用既有，本轮未改 | ✓ 一致 |
+| 7 | 2.4真实归并继续冻结；5.1铭文最后实施 | `applyRegroupPre` **0 调用**；5.1 未动 | ✓ 一致 |
+
+> **施工者注意**：第 2、3 项是本批最核心的两条，**当前都还没做**。任何「已完成」的说法必须先有代码级证据。
 
 ### 施工协调项，不等于重新讨论方向
 

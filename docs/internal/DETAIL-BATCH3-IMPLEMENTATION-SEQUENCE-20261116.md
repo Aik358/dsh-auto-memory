@@ -5,6 +5,10 @@
 > 总体依据：DETAIL-BATCH3-SYSTEMIC-REBUILD-CONTRACT-20261116.md。
 > 原则：系统化、模块化、API化；先验收基础，再公共契约，再分阶段接线。
 > 本轮只写施工文档，不改生产代码。
+>
+> **效力层级（完整表见 L1 契约顶部）**：本文 = **L2 施工细则**；**L1 架构契约** = `DETAIL-BATCH3-SYSTEMIC-REBUILD-CONTRACT-20261116.md`；**L3 测绘大纲** = `DETAIL-BATCH3-UNIFIED-20261116.md`。
+> 本文件是 **L2 施工细则**。**API 签名 / DTO / profile 一律逐字引用 L1 契约，不得自创**；施工顺序与验收以本文件为准；现状事实以当前代码实测为准。
+> 若本文件与 L1 冲突，**以 L1 为准**。
 
 ## 0. 施工总序
 
@@ -58,13 +62,33 @@ DTO可JSON序列化，不含函数、Map、循环引用；输入不可变。每�
 ### 回滚
 删除新增契约适配，保留旧协议，不改真源。
 
+## 2.5 B3-PJ：投影与策略层（**新增，M7 修订**）
+
+### 目标
+把「档位 / full-slim 视角 / 特殊档策略」集中在一层决定，避免散落到 RC/RP/BD/EV。
+
+### API（逐字引用 L1 §4.2）
+`projectInjectionPre({sources,tier,frame,config}) → {candidates,notifications,policyVersion}`
+
+### 约束
+纯函数；候选带 id/kind/bucket/priority/text/sourceIdentity/contentVersion；各段可有不同名单，不为统一名单改语义；画像只用 accepted/used 与 authorResponse 结构化来源；事件归属只消费 2.3 proposal-only，不自动 attach/merge/archive。
+
+### 验收
+固定 sources + 三种 tier，断言 candidates 的 bucket/priority 随 tier 变化且不丢段；同一输入两次调用输出逐字节相同；非法 tier 不擅自扩档。
+
+### 回滚
+删除 B3-PJ 适配，恢复各模块自行判定（旧行为）。
+
 ## 3. B3-RC：完整读取与来源聚合
 
 ### 目标
 建立user+project的完整只读读取与来源证明，先能读到，再谈指针。
 
-### API
-readInjectionSourcesPre({paths,state,policyVersion}) → {rules,events,plan,handoff,reflections,logs,proofs,warnings}
+### API（逐字引用 L1 §4.1）
+`readInjectionSourcesPre({paths,state,policyVersion}) → {rules,events,plan,handoff,reflections,logs,proofs,warnings}`
+
+> **范围澄清（M2 修订）**：B3-RC 的范围是**全部注入源**，不是只读规则。
+> `rules` 字段内部可再细分 user/project 两层；**「规则聚合」是 B3-RC 的内部子步骤，不是独立代号**。
 
 ### 实施
 聚合规则、事件、白板、账本、反思、日志；保留来源身份、相对路径、bytes、raw/normalized SHA、revision；区分missing/empty/unreadable/invalid；不改变旧applyRuleEditPre的层内索引、expect、revision与跨层CAS拒绝。
@@ -105,7 +129,14 @@ prepare不消费、不清状态、不写水位、不发通知；finalize只定�
 
 ### 5.2 B3-BD：白板/账本投递
 
-去掉plan/ledger选择前的2000预截断；按节选择，保尾部失败原因与下一步；与2.5生成/更新边界分离；full/slim视角、无命中回退与特殊档按既定契约联验。
+**API（逐字引用 L1 §4.5，M10 修订补齐）**：
+`projectHandoffPre({planText,latestHandoffText,tier,policy}) → {planPart,ledgerPart,sourceIdentity,degradations}`
+
+实施：去掉plan/ledger选择前的2000预截断；按节选择，保尾部失败原因与下一步；与2.5生成/更新边界分离；full/slim视角、无命中回退与特殊档按既定契约联验。
+
+**验收**：长输入/多节/尾部唯一标记/中英混合/异常结构；同fingerprint的min/full读取与内容路径一致；最终正文包含所选章节与失败/下一步（不只数标题）；变异：恢复默认2000或先cut后选 ⇒ 必红。
+
+**接口联验**：`projectHandoffPre` 的产出必须能作为 `composeFinalEnvelopePre` 的 `candidates` 输入（形状对齐 `ProjectionCandidate`）。
 
 ### 5.3 B3-FM：最终预算与计量
 
@@ -174,6 +205,19 @@ Prototype/SidecarStore只负责派生索引持久化，不负责归属、档位�
 - global-brief.js：复用diffBriefPre/buildDraftPre/renderBriefPre，但拆prepare/commit，禁止候选预消费。
 - memory-envelope.js：复用分项账本，但最终尾巴与通知必须进入同一最终计量。
 - lib/index.js：只做依赖注入与旧契约兼容，单写者，不堆业务实现。
+
+### 10.2b 与第二批 2.6–2.9 的边界（**M11 修订补入**）
+
+本批**不修改**以下写入口与语义，只**消费**其产物：
+
+| 第二批项 | 本批关系 | 不得做 |
+|---|---|---|
+| **2.6** 写入口归属统一 | B3-NT 消费其归属结果；`memory_note` 的 Phase 0 `assertWritableEventTargetPre` 不改 | 不改写入口、不搬 `#543` 话题门 |
+| **2.7** 摘要+指针 | **B3-NT 的数据来源**（进度报告 §0 已注明）；三口径（真源 raw / 指针 normalize / 覆盖 normalize / 摘要自身）不改 | 不改指纹口径、不回退到整篇快照 |
+| **2.8** 失败标记不进事件 | 不改其 Phase 0 前置拦截与留痕 | 不改 idemKey、不改失败留痕协议 |
+| **2.9** 四段校验+覆盖证明 | B3-BD 复用其 sourceRef 与 raw/normalized 指纹 | 不改四段语义、不改 `appendHandoffCheckpointPre` |
+
+> **实测佐证（2026-11-16）**：`appendEventNotePre` 在生产代码 **0 处**（仅 5 个 docs 提及），故「统一入口」尚未落地；本批**不得**把它当作已存在的基础设施。
 
 ### 10.3 证据的使用规则
 

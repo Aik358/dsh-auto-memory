@@ -2,6 +2,7 @@
 
 > 性质：**架构与接口施工大纲**。本轮只做文档解耦，**不改生产代码、不启动 HOST**。
 > 取代关系：本文**取代**两套 3.0.x 编号作为施工依据；旧编号**仅作溯源**，不得直接映射。
+> **效力层级**：本文 = **L3 测绘大纲**；**L1 架构契约** = `DETAIL-BATCH3-SYSTEMIC-REBUILD-CONTRACT-20261116.md`；**L2 施工细则** = `DETAIL-BATCH3-IMPLEMENTATION-SEQUENCE-20261116.md`。API 签名 / DTO / profile **一律以 L1 契约（`DETAIL-BATCH3-SYSTEMIC-REBUILD-CONTRACT-20261116.md`）为准**；本文只保留代号溯源、依赖图、现状实测与 3.0-B 未决边界。
 > 前置：`REPORT-BATCH3-NUMBERING-DECOUPLING-20261116.md`（编号冲突取证）、`REPORT-BATCH2-BATCH3-DEPENDENCIES-20261116.md`（依赖测绘）、`RESULT-BATCH2-IMPLEMENTATION-REVIEW-20261116.md`（第二批复核）。
 
 ---
@@ -26,7 +27,8 @@
 
 | 代号 | 名称 | 一句话职责 | 旧编号溯源（**仅供追溯，不用于映射**） |
 |---|---|---|---|
-| **B3-RC** | Rules Complete — 规则完整读取 | 用户层+项目层的**完整只读聚合**，含多行正文 | 细则 3.0.1；进度报告 3.0.1 |
+| **B3-RC** | Rules Complete — **全部注入源**完整读取 | user+project 规则聚合**是其中一部分**；另含 events/plan/handoff/reflections/logs 与来源证明。**API 见 L1 §4.1 `readInjectionSourcesPre`** | 细则 3.0.1；进度报告 3.0.1 |
+| **B3-PJ** | Projection & Policy — 投影与策略 | **新增代号（M7 修订）**：档位 / full-slim 视角 / 特殊档策略只在此层决定。API 见 L1 §4.2 `projectInjectionPre` | 无旧编号（L1 首创） |
 | **B3-RP** | Rules Pointer — 规则指针与摘要 | 摘要档输出「一行指针」，`human_full` 给完整正文 | 细则 3.0.1/3.0.2；进度报告 3.0.1/3.0.2（**两口径混合**） |
 | **B3-FM** | Final Metering — 最终帧预算与计量 | 最终段组装后再计量，账实一致、每请求记一次 | 细则 3.0.4；进度报告 3.0.4 |
 | **B3-NT** | Notification — 通知与定稿 | prepare 不消费、只提交最终保留、幂等 | 细则 3.0.5；进度报告 3.0.2/3.0.3（**两口径混合**） |
@@ -47,8 +49,9 @@ B3-CB（回归基础）  ← 唯一无前置者，必须最先做
    │
    ├──> 公共契约层（DTO/profile）
    │        │
-   │        ├──> B3-RC（规则完整读取）
-   │        │        └──> B3-RP（指针/摘要切换：必须在 RC 可用之后）
+   │        ├──> B3-RC（全部注入源读取）
+   │        │        └──> B3-PJ（投影/策略：B3-RP 的上游，M7 修订新增）
+   │        │                 └──> B3-RP（规则指针/摘要呈现）
    │        ├──> B3-FM（最终计量）
    │        │        └──> B3-EV（四段 / 检查点 / 展开均服从 FM 预算）
    │        ├──> B3-NT（通知定稿）
@@ -60,7 +63,8 @@ B3-CB（回归基础）  ← 唯一无前置者，必须最先做
 | 边 | 含义 | 类型 |
 |---|---|---|
 | B3-CB → 全部 | 没有可信验收基础，其余项的 PASS 不可信 | **硬依赖** |
-| B3-RC → B3-RP | 先能完整读到，才谈摘要/指针切换 | **硬依赖**（细则 §9.3「读取先于指针切换」） |
+| B3-RC → B3-PJ | 先有 sources，才谈投影与策略 | **硬依赖** |
+| B3-PJ → B3-RP | 档位/名单由 PJ 决定，RP 只呈现 | **硬依赖**（M7 修订） |
 | B3-FM → B3-EV | 3.2/3.3/3.4 不得另建平行预算 | **硬依赖** |
 | B3-BD ↔ 2.5 | 3.0 负责「选择与投递」，2.5 负责「生成/更新」 | **接口对齐**，非阻塞 |
 | 3.0-B → B3-FM/BD/EV | 边界未定则只能做「已定部分」 | **软阻塞** |
@@ -98,24 +102,32 @@ DeliveryReceipt {
 }
 ```
 
-### 3.2 profile（冻结，模型/口径变更须升版本号）
+### 3.2 profile（**以 L1 为准** · M3 修订）
+
+早期草案给了五个平级字段（`schemaVersion`/`promptVersion`/`inputNormalizationVersion`/`candidatePoolPolicy`/`budgetPolicy`），
+与 L1 §4 的 6 字段**零重合**。**M3 修订后统一为 L1 口径**：
 
 | 字段 | 作用 | 变更规则 |
 |---|---|---|
-| `schemaVersion` | DTO 形状版本 | 形状变更必升 |
-| `promptVersion` | 提示词版本 | 提示词变更必升 |
-| `inputNormalizationVersion` | 输入规范化版本 | 规范化规则变更必升 |
-| `candidatePoolPolicy` | 候选池策略版本 | 截断/排序策略变更必升 |
-| `budgetPolicy` | 预算策略（受 3.0-B） | **未定项不得写死** |
+| `policyVersion` | **单一版本号**（DTO 形状 + 提示词 + 规范化 + 候选池策略的联合版本） | 任一组分变更必升 |
+| 来源身份 | 规则/事件/白板/账本等来源的稳定标识 | 来源定义变更必升 |
+| 档位 | full / slim / 特殊档的策略选择 | 档位语义变更必升 |
+| 预算单位 | JS 字符 / UTF-8 字节 / token（token 未实测不得冒称） | 计量口径变更必升 |
+| 表示版本 | 事件表示与四段映射版本 | 表示变更必升 |
+| 降级策略 | 截断/丢弃/降级的可见方式 | 降级语义变更必升 |
 
-> 纪律：**不得隐式复用旧证据/旧结论**。任何变更必须让旧结果可被判为「不可比」，而不是静默混用。
+> 早期五项**降为 `policyVersion` 的组成**，不再作平级公共字段。纪律不变：**不得隐式复用旧证据/旧结论**，任何变更必须让旧结果可被判为「不可比」。
 
-### 3.3 一个必须先解决的前置事实（B3-CB 的输入）
+### 3.3 `parseWaterPctThresholdsPre` 现状与**已定处置**（M8 修订）
 
-**`parseWaterPctThresholdsPre` 是模块内部 `const`，未导出**（`lib/index.js:2153`；导出表 24 项中不含它）。
-而施工细则要求「真调该函数断言返回值」——**当前做不到**。
+**事实**：该函数是 `lib/index.js:2153` 的内部 `const`，**未导出**（导出表 24 项不含它；真 import 探针确认 `typeof m.parseWaterPctThresholdsPre === 'function'` 为 **false**）。
 
-⇒ B3-CB 必须二选一：**①加导出**（改导出数，需重钉计数锁）或 **②经导出符号间接验证**（如 `inject`/`apply` 的真实回调）。本大纲**不替实现者定案**，但这决定了 B3-RC/B3-RP 的验收形态。
+**处置（已由 L1 §4.1 裁定，不再是待决项）**：
+
+> 「`parseWaterPctThresholdsPre` 等纯函数进入明确内部模块；**通过真实回调验证最终行为**，只有确实需要外部调用才纳入公共 facade。」
+
+⇒ **结论：走真实回调间接验证，不新增导出**（导出数保持 24，**无需重钉计数锁**）。
+B3-CB 的验收应改为「经 `inject`/`apply` 的真实回调断言最终注入文本」，**不得**再等「加导出 vs 间接验证」的裁定。
 
 ---
 
@@ -126,7 +138,8 @@ DeliveryReceipt {
 | 项 | 内容 |
 |---|---|
 | 现状（实测） | `rules-layer.js:396 firstLine(max=200)`、`:446 ruleSummaryPre(max=200)` 仍在；`lib/index.js:26307` `memory_rules list` **只取 user 层**；目标 API `readRulesAggregatePre` **0 命中** |
-| 目标 API | `readRulesAggregatePre({userFile,notesPath}) → {user:{path,revision,items}, project:{…}, counts:{rule,note,retired,physicalEditable}, errors:[]}` |
+| 目标 API | **以 L1 §4.1 为准**：`readInjectionSourcesPre({paths,state,policyVersion}) → {rules,events,plan,handoff,reflections,logs,proofs,warnings}`。其中 `rules` 细分 user/project 两层。
+> **M2 修订**：早期草案 `readRulesAggregatePre({userFile,notesPath})` **已被取代**，其语义降为 `readInjectionSourcesPre().rules` 的内部实现细节，**不再作为公共 API**。 |
 | 关键约束 | 每 item 保留 layer / 层内 index / **完整多行 text** / kind / status / source revision；**不造跨层统一编辑索引**；编辑仍用原层 index |
 | 副作用 | **纯只读**；区分「缺文件 / 空文件 / 读取失败 / 非法结构」四种，**读取失败不得静默变空全集** |
 | 验收 | ①>200 字且多行限定的 user/project 各一条，按指针取回**全部正文**；②两个 bullet 与单条多行**分别断言**（粒度不得混用）；③`revision(user) ≠ revision(project)`（同内容也保持分层命名空间）；④跨层 revision 更新仍拒绝且文件**逐字节不变**；⑤缺层/空层/unreadable 三种负路径各自可见 |
@@ -148,7 +161,7 @@ DeliveryReceipt {
 | 项 | 内容 |
 |---|---|
 | 现状（实测） | `composeMemoryEnvelopePre` 4 处；`composeFinalEnvelopePre` **0 命中**；`observeInjection` 仅 **1 处** |
-| 目标 API | `composeFinalEnvelopePre({candidates,budgetPolicy}) → {text,chars,segments,dropped,truncated,degradations,unresolved}` |
+| 目标 API | `composeFinalEnvelopePre({candidates,**tier**,budgetPolicy}) → {text,chars,segments,dropped,truncated,degradations,unresolved}`（**M4 修订：补 `tier`**，与 L1 §4.3 一致；缺档位则无法做分档预算） |
 | 关键约束 | `rules`/`memoryReferences`/`otherDynamic` **共享同一总额**；降级提示/标题/分隔符/通知/反思**全部进段后再计量**；候选账与实际投递账**分离**；只按最终选帧**每请求记一次**；恒等式 `chars.total === text.length === 分桶之和 === 最终段长度之和` |
 | 错误面 | `unresolved` 必须显式返回未决预算边界，**不能默认只记超额就宣称硬上限**；`must` 自身超额可见；普通段截断也可见 |
 | **阻塞** | **受 3.0-B1/B2 强约束**（50K 单位、full/压缩豁免、rules/must 超额、静态/M6/反思/诊断计费范围、8000 迁移）⇒ **只可做骨架与已定部分** |
@@ -160,7 +173,11 @@ DeliveryReceipt {
 | 项 | 内容 |
 |---|---|
 | 现状（实测） | `planUpdatePending` 在 `lib/index.js:13834` 注释「一次性：取了就清」；`briefDetectSyncPre` 在 `:13552` **候选阶段即调用** |
-| 目标 API | `prepareNotificationPre(scan) → {id,version,payload,commitToken}`；`finalizeInjectionPre({requestId,text,prepared}) → {text,selectedNotificationIds}`；`commitNotificationPre({requestId,receipt}) → {committed,errors}` |
+| 目标 API | **逐字以 L1 §4.4 为准**（**M5/M6 修订**）：
+`prepareNotificationPre(scanResult) → {id,version,payload,commitToken}`
+`finalizeInjectionPre({requestId,text,prepared}) → {text,**finalizeReceipt**,selectedNotificationIds}`
+`commitNotificationPre({requestId,**finalizeReceipt**}) → {committed,skipped,errors}`
+> **M6**：finalize **必须产出 `finalizeReceipt`**，否则 commit 无输入、**链条断裂**。**M5**：第二参数统一为 `finalizeReceipt`（旧写 `receipt` 会解构为 undefined 且静默）。 |
 | 必须修的现行为 | ①`global-brief` 候选用**非法桶名 `external`**，应改合法 `otherDynamic`；②`briefDetectSyncPre` 在**候选阶段**写水位/snapshot/outbox；③`renderPlanUpdateRequest` **取文本即清** `planUpdatePending`；④`_recallJustDelivered` 在非空 tail 返回时置位；⑤水位/F7 full 提前返回需补**公共 full 记账**，但**不得顺手改触发配额** |
 | 关键约束 | **prepare 零写**；只提交**最终保留**的通知 id/version；旧 commit 遇新 version **必须拒绝**；EPERM **显式返回**、可重试、不得静默；UI `/global-brief` **只读候选**、不消费模型通知；finalize 只表示**插件定稿**，不等于宿主交付 |
 | 验收 | 选 slim/旧缓存、通知关闭/被裁掉/被截断时**不误消费**；第一次候选后未定稿，第二次**仍可取到同一通知**；写盘失败**保留通知并显式报错**，修复后重试成功；同请求输出一致且**只记一次**；跨请求 full 不漏 `_snapFp` 等公共记账；**反思另做最终追加兼容验收，不得混称已证实的候选消费缺陷** |
@@ -175,6 +192,7 @@ DeliveryReceipt {
 | 关键约束 | 清洗**不再默认 2000 预截断**；先按既定章节/四段选择，**再**按明确总策略裁剪；**保住后部失败原因与下一步**；`planCap` 只是**桶预留**，不能冒充单段上限；无命中章节**不自动回退全文** |
 | 阻塞 | **full/slim 视角受 3.0-B3 约束**（章节/排序/必保正文/无命中兜底/当前任务可靠来源）⇒ 只可做「去预截断」 |
 | 验收 | 长输入/多节/尾部唯一标记/中英混合/异常结构；同 fingerprint 的 min/full 读取与内容路径一致；最终正文**包含所选章节与失败/下一步**（不只数标题）；legacy 数据格式的 2400/800 按**目标实测**、不当作既有不变量；变异：恢复默认 2000 或先 cut 后选 ⇒ 必红 |
+| 接口联验 | **M10 修订**：`projectHandoffPre` 的产出（planPart/ledgerPart）必须能作为 `composeFinalEnvelopePre` 的 `candidates` 输入，形状对齐 `ProjectionCandidate`；SEQUENCE §5.2 已补同一签名 |
 | 回滚 | 恢复旧 sanitize/weighted 路径；**不改** PLAN.md、账本或 R4 文档 |
 
 ### B3-CB · 真实回调与回归基础（**必须最先做**）
@@ -183,7 +201,7 @@ DeliveryReceipt {
 |---|---|
 | 现存假绿（**本文档写作时已实测 4 处**） | ①`smoke-test-p6a-rules-layer.mjs:311/337/339`：shell 只返回 `{renderSlimSnapshotPre}` ⇒ `shell.renderMemoryDynamic` 恒 `undefined` ⇒ 条件含 `fullOut === ''` ⇒ **恒真**；②`smoke-test-v4-h5-user-portrait.mjs:151/161`：`makeFn` 定义后**全文 0 次调用**，只断言 `typeof === 'function'`；③`smoke-test-batch2-2.9-wiring.mjs:103` 末尾 `|| true`；④`…:179` `linkTested \|\| true`（隔离变异 M2 换 `(false) \|\| true` **仍 PASS** ⇒ 恒真确证） |
 | 目标测试面 | ①修上述 4 处，使其**真执行**并断言**非空产品输出**；②真 import / 真 `apply()` / 真 context 回调；③同请求双调用、下一请求、压缩、水位、预算、通知未投不消费；④**每帧形态 × 档位 × 保留段**；⑤每条正路径配负路径 + 隔离变异必红；⑥保留四个「直接抽取动态渲染」套件的兼容性**或逐套迁移**，不新增永久内联禁令；⑦受影响回归、行尾检查、r26 漂移锁与指纹逐项归因 |
-| **前置事实** | `parseWaterPctThresholdsPre` **未导出**（`:2153` 内部 `const`）⇒ 若要求「真调它」必须先加导出（**改导出数需重钉计数锁**）或改走 `inject`/`apply` 间接验证。**实现者不得默默二选一**，须先报。 |
+| **前置事实** | `parseWaterPctThresholdsPre` **未导出**（`:2153` 内部 `const`）⇒ **已由 L1 §4.1 裁定：走 `inject`/`apply` 真实回调间接验证，不新增导出**（见 §3.3）。验收须断言最终注入文本，而非直接调内部函数。 |
 | 回滚 | 回滚测试适配与实现单位；**不得通过删除失败断言或放宽空结果来「修绿」** |
 
 ### B3-EV · 事件消费侧（旧 3.1–3.4）
@@ -271,6 +289,18 @@ DeliveryReceipt {
 | B3-EV | 恢复原 T2/检查点预览/展开数 | 改检查点原文或事件 schema |
 
 ---
+
+## 9.5 旧事实更正：`lib/inject-tier.js` **不存在**（M9 修订）
+
+进度报告 §4「已存在的正确模块化方向」把 `lib/inject-tier.js` 列为**既有可复用模块**。
+**实测（2026-11-16）：该文件不存在。**
+
+| 检查 | 结果 |
+|---|---|
+| `lib/inject-tier.js` 文件 | **不存在** |
+| 档位逻辑实际位置 | **内联在 `lib/index.js`**：`:1837` 注释所列 13 个声明（`INJECT_TIERS` / `decideInjectTierPre` / `parseWaterPctThresholdsPre` 等） |
+
+⇒ 本批若要做档位模块化，**是新建 `lib/inject-tier.js`**，不是复用。施工者按旧报告去找会找不到入口。
 
 ## 10. 本大纲的边界
 
