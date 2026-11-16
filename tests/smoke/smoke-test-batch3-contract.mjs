@@ -22,22 +22,48 @@ function throwsCode(fn, code, n, label) {
 // ── 0. 真 import
 const m = await import(pathToFileURL(path.join(REPO, "lib/injection/index.js")).href);
 ok(typeof m === "object" && m !== null, "[import] lib/injection/index.js 可加载");
-// ★计数锁演进记录（判据过期类重钉，非回归缺陷）：
-//   36 → 37：新增 RESERVED_FIELD_NAMES（U2 保留字段清单）
-//   37 → 43：新增 SR/RC 的 6 个导出 —— readRulesAggregatePre / RULE_LAYERS / READ_STATUS /
-//            readInjectionSourcesPre / createSourcesPort / SOURCE_CHANNELS（task-37，B3-SR+B3-RC）
-// 若后续再改导出数，本条会红，须同步更新并说明新增/删除的符号。
-ok(Object.keys(m).length === 43, "[import] 导出符号 43（36+RESERVED + SR/RC 6）", String(Object.keys(m).length));
+// ★判据改造（2026-11-17，第三次计数锁漂移后）：**不再把导出总数写死成字面量**。
+//   原因：每次实现新单元都会加导出（36→37→43→54），写死数字只会周期性变红，
+//   每次都要人工重钉 —— 这是「判据过期」的反复发生，而不是缺陷检出。
+//   改为**结构性判据**：①导出数必须是正整数；②**已实现单元的关键符号必须都在**；
+//   ③**未实现单元的符号必须都不在**（防止「声称没实现却已偷偷导出」）。
+//   这样新增合法导出不会假红，而删掉/漏掉关键符号仍会真红。
+const exported = Object.keys(m);
+ok(exported.length > 0, "[import] 导出符号非空", String(exported.length));
+const REQUIRED_BY_UNIT = {
+  "U2-contract": ["makeSourceProof", "makeContentSpec", "makeCadenceDecision", "createPortRegistry", "RESERVED_FIELD_NAMES"],
+  "B3-SR": ["readInjectionSourcesPre", "createSourcesPort"],
+  "B3-RC": ["readRulesAggregatePre", "RULE_LAYERS", "READ_STATUS"],
+  "B3-CA": ["decideInjectionCadencePre", "createCadencePort", "GRANT_REASONS"],
+  "B3-PJ": ["projectInjectionPre", "createProjectionPort", "CONTENT_SPEC_TO_PROMPT_SECTION"],
+};
+for (const [unit, names] of Object.entries(REQUIRED_BY_UNIT)) {
+  const missing = names.filter((n) => !(n in m));
+  ok(missing.length === 0, "[import] " + unit + " 的关键导出齐全", missing.length ? "缺: " + missing.join(",") : names.length + " 个");
+}
+// 未实现单元不得有实现符号（防「声称没实现却已导出」）
+{
+  const forbidden = ["renderRulesForTierPre", "projectHandoffPre", "composeFinalEnvelopePre", "prepareNotificationPre", "commitNotificationPre", "selectEventProjectionPre", "renderCheckpointPreviewPre"];
+  const leaked = forbidden.filter((n) => n in m);
+  ok(leaked.length === 0, "★[import] 未实现单元（RP/BD/FM/NT/EV）的符号**未**被导出", leaked.length ? "泄漏: " + leaked.join(",") : "0 泄漏");
+}
 ok(Array.isArray(m.RESERVED_FIELD_NAMES) && m.RESERVED_FIELD_NAMES.join(",") === "dtoKind,schemaVersion", "[import] 保留字段清单 = dtoKind,schemaVersion");
 ok(m.INJECTION_CONTRACT_INFO.implements[0] === "contract-only", "[import] 包自述为 contract-only（不实现业务模块）");
 // ★判据改法（判据过期类）：不锁死长度，而锁「**仍未实现**的业务模块必须显式列在 doesNotImplement」。
 //   SR/RC 已由 task-37 实现并移出该列表 ⇒ 旧断言「长度===4」属过期判据，已按纪律重钉。
 {
-  const ni = m.INJECTION_CONTRACT_INFO.doesNotImplement;
-  ok(Array.isArray(ni) && ni.includes("B3-CA") && ni.includes("B3-PJ"),
-    "[import] 未实现模块仍显式声明（含 CA/PJ）", ni.join(","));
-  ok(m.INJECTION_CONTRACT_INFO.implements.includes("B3-SR") && m.INJECTION_CONTRACT_INFO.implements.includes("B3-RC"),
-    "[import] 已在 implements 中声明 SR/RC", m.INJECTION_CONTRACT_INFO.implements.join(","));
+  const info = m.INJECTION_CONTRACT_INFO;
+  const IMPL = info.implements, NOT = info.doesNotImplement;
+  // ★结构性判据（同样的理由：不写死长度/成员，只锁「一致性」）
+  ok(Array.isArray(IMPL) && Array.isArray(NOT), "[import] implements / doesNotImplement 都是数组");
+  const overlap = IMPL.filter((x) => NOT.includes(x));
+  ok(overlap.length === 0, "★[import] 实现与未实现列表**无交集**（不得既声称实现又声称未实现）", overlap.join(",") || "无交集");
+  for (const u of ["B3-SR", "B3-RC", "B3-CA", "B3-PJ"]) {
+    ok(IMPL.includes(u) && !NOT.includes(u), "[import] " + u + " 已在 implements 且不在 doesNotImplement");
+  }
+  for (const u of ["B3-RP", "B3-BD", "B3-FM", "B3-NT", "B3-EV", "B3-CO"]) {
+    ok(NOT.includes(u) && !IMPL.includes(u), "[import] " + u + " 仍在 doesNotImplement（未实现）");
+  }
 }
 
 // ── 1. 8 个 DTO：真构造 + 字段完整 + JSON 往返
