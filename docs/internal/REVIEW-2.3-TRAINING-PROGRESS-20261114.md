@@ -77,6 +77,10 @@ C2订正：可见证据包同文泄漏不成立，最高12-gram包含度0.350、
 
 真实可训练独立事件仅19个，split单类；候选级零参数cov12 test0.725，训练LR0.325，dev0.875过拟合。监督训练不再继续，cov12仅作实验候选，不直接生产。公开轨迹B1阻塞、人工金标/HOST未验。Lead已核对落盘train-eval.json，完整run_code复跑两次120s超时，不宣称完整复跑通过。
 
+### 外部语料跨域验证已启动（2026-11-16）
+
+用户要求引入其他语料验证，task-22复用同一DeepSeek teammate。优先真实GitHub issue/PR/commit，再SWE-bench/MEnvData；先跨域验证cov12/候选排序，不直接恢复监督训练，不装依赖、不生产。任务书：`PROMPT-EVENT-ATTRIBUTION-CROSSDOMAIN-20261116.md`。
+
 ### 第三轮已启动（2026-11-16）
 
 用户同意停止synthetic调参，task-21复用同一DeepSeek teammate。按真实事件/重复族/来源切train/dev，严格LOO与候选证据对齐，保留真实test；不装依赖、不公开轨迹转换、不生产。任务书：`PROMPT-EVENT-ATTRIBUTION-LAB-ROUND3-20261116.md`。
