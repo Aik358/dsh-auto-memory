@@ -4,6 +4,7 @@
 > 工作区 `D:/dsh-auto-memory`｜分支 `preview`｜开工 HEAD **`9dc6e3fe`**
 > 依据：`REVIEW-BATCH3-DOCUMENTS-20261116.md`（task-33 核对报告，13 项必须修订 / 7 项可接受）
 > **性质：只改文档。未改生产代码、未启动 HOST、未改前端、未 push/发版。**
+> 后续范围说明：本报告仅闭合task-33十份文档的M1–M13，不代表批次3全量内容审核完成。2026-11-17 Lead扩大至42份文档后发现SR/RC职责、CA节奏层、CO consolidate、事件指针与宿主交付仍需订正，见 `REVIEW-BATCH3-LEAD-FULL-AUDIT-20261117.md`。
 
 ---
 

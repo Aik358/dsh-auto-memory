@@ -29,7 +29,7 @@
 2. 以 `REVIEW-2.3-TRAINING-PROGRESS-20261114.md` 为起点；用户现已授权模型构造标签、多源事件库与隔离挂机训练，task-19按 `PROMPT-EVENT-ATTRIBUTION-LAB-20261116.md` 执行。模型标签为实验数据，不冒充人工金标。
 3. 组织双人独立复核，保留 reviewer 身份、证据、分歧和仲裁；同一教师不得兼任两位复核者。
 4. 同时补齐四态、跨语言、closed、多候选、无正确候选和困难负样本，按事件及重复族隔离。
-5. 第二批复核与3.0解耦已完成：12套件335 PASS、2.3三专项133 PASS；2.9两处恒真断言待修，真实HOST/全量未验。统一大纲采用B3-RC/RP/FM/NT/BD/CB/EV，旧3.0.x仅溯源；下一步先B3-CB，再按公共契约分阶段实施，3.0-B边界不擅自定案。
+5. Lead全量审核批次3新旧内容、42份相关文档、prototype与当前代码已完成。L1/L2/L3已修订：SR与RC分离，新增CA节奏层与CO consolidate，保留NT/BD/FM/EV和跨批接口。下一步按L2先做B3-CB，目标API未实现，真实HOST/全量未验；详见 `REVIEW-BATCH3-LEAD-FULL-AUDIT-20261117.md`。
 
 ### B. 3.0–3.4 模块化/API 化生产实现
 
