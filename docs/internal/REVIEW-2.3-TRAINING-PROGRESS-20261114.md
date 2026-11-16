@@ -133,6 +133,10 @@ task-26由Lead独立复跑一致：C2真加载384维/770文本13.346s/禁网；�
 
 task-27由Lead独立复跑 `s3-eval.py` 一致：339例总体0.8348，排除19例closed-boundary循环论证后279/320=0.8719，attach目标定位0.9665。候选截断曾使gold仅91/333可见，是装置缺陷；任何top-K必须报gold覆盖率。多合理候选0.5946仍未解；跨语言/伞事件无真实样本、模型标签非人审，生产未启用。
 
+### 模块化/API化归属提醒接线已启动（2026-11-16）
+
+用户确认2.3是向模型返回判断与异常提醒，不是自动写入；task-28复用同一DeepSeek teammate。按 `PROMPT-EVENT-ATTRIBUTION-IMPLEMENTATION-20261116.md` 建立独立模块与公共API facade，接入memory_log/memory_note/历史零写提案；`lib/index.js`仅薄接线，不接2.4或Sidecar facade，真实HOST另验。
+
 ### 第三轮已启动（2026-11-16）
 
 用户同意停止synthetic调参，task-21复用同一DeepSeek teammate。按真实事件/重复族/来源切train/dev，严格LOO与候选证据对齐，保留真实test；不装依赖、不公开轨迹转换、不生产。任务书：`PROMPT-EVENT-ATTRIBUTION-LAB-ROUND3-20261116.md`。
