@@ -29,7 +29,7 @@
 2. 以 `REVIEW-2.3-TRAINING-PROGRESS-20261114.md` 为起点；用户现已授权模型构造标签、多源事件库与隔离挂机训练，task-19按 `PROMPT-EVENT-ATTRIBUTION-LAB-20261116.md` 执行。模型标签为实验数据，不冒充人工金标。
 3. 组织双人独立复核，保留 reviewer 身份、证据、分歧和仲裁；同一教师不得兼任两位复核者。
 4. 同时补齐四态、跨语言、closed、多候选、无正确候选和困难负样本，按事件及重复族隔离。
-5. task-26已复核：cov12+rerank@5=0.5625仍最优，语义/融合未提升。新增 `ANALYSIS-EVENT-ATTRIBUTION-SIGNALS-20261116.md`：时间/生命周期/来源/身份分层，后续消融验证，不直接生产。
+5. 归属信号分层已归档；用户授权归属判定后，task-27按 `PROMPT-EVENT-ATTRIBUTION-CLASSIFICATION-20261116.md` 验证时间/生命周期/来源/身份证据能否准确归类事件，覆盖困难场景、严格LOO与真实留出，不直接生产。
 
 ### B. 3.0–3.4 模块化/API 化生产实现
 
