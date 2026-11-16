@@ -85,6 +85,10 @@ C2订正：可见证据包同文泄漏不成立，最高12-gram包含度0.350、
 
 真实GitHub跨域结果由Lead复跑一致：T3 comment→issue125例，cov12严格LOO=0.288 vs 随机0.016，按仓库一致；T1含自身0.966 vs LOO0.023，量化自引用虚高。支持弱信号迁移，不支持恢复监督训练；无四态标签、Parquet B1阻塞、真实HOST未验，不直接生产。
 
+### 外部四态训练已启动（2026-11-16）
+
+用户授权接入外部数据，task-23复用同一DeepSeek teammate。外部真实事件+独立模型四态标注(model-reviewed)+严格LOO+外部留出训练；不冒充人工金标、不装依赖、不生产。任务书：`PROMPT-EVENT-ATTRIBUTION-EXTERNAL-TRAIN-20261116.md`。
+
 ### 第三轮已启动（2026-11-16）
 
 用户同意停止synthetic调参，task-21复用同一DeepSeek teammate。按真实事件/重复族/来源切train/dev，严格LOO与候选证据对齐，保留真实test；不装依赖、不公开轨迹转换、不生产。任务书：`PROMPT-EVENT-ATTRIBUTION-LAB-ROUND3-20261116.md`。
