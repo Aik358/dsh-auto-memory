@@ -117,6 +117,10 @@ task-25由Lead独立复跑一致：heldout80例cov12=0.5125、召回+pairwise精
 
 用户授权多方向尝试，task-26复用同一DeepSeek teammate。比较cov12/放宽K/语义召回/召回+精排/主动学习，严格LOO与真实留出；可用本机冻结C2，不装依赖、不生产。任务书：`PROMPT-EVENT-ATTRIBUTION-RECALL-MULTI-20261116.md`。
 
+### 多方向召回已复核（2026-11-16）
+
+task-26由Lead独立复跑一致：C2真加载384维/770文本13.346s/禁网；语义0.25、融合0.5125，cov12+rerank@5=0.5625仍最优，K10=0.5375。语义相似不是归属证据；下一步case-level是否存在可attach目标，不直接生产。
+
 ### 第三轮已启动（2026-11-16）
 
 用户同意停止synthetic调参，task-21复用同一DeepSeek teammate。按真实事件/重复族/来源切train/dev，严格LOO与候选证据对齐，保留真实test；不装依赖、不公开轨迹转换、不生产。任务书：`PROMPT-EVENT-ATTRIBUTION-LAB-ROUND3-20261116.md`。
