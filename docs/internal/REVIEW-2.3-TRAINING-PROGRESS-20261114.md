@@ -141,6 +141,10 @@ task-27由Lead独立复跑 `s3-eval.py` 一致：339例总体0.8348，排除19�
 
 task-28/29完成独立lib/event-attribution facade与memory_log/memory_note/历史零写提案接线。Lead复跑67专项/29工具/37提案/r26均通过；impact216/3/1非全绿，2既有FAIL+1并发FAIL/1并发TIMEOUT已单列，真实HOST与全量未验。不接2.4或Sidecar facade。
 
+### 批次2/3依赖与第三批分阶段实施（2026-11-16）
+
+已核对：第二批不是全部完成；2.3已接线，2.4冻结，2.5–2.9隔离验收、真实HOST未闭合。第三批可按公共契约→回归基础→逐项实施分阶段开工，3.0-B边界不擅自定案；交同一DeepSeek teammate按PROMPT-BATCH3-MODULAR-IMPLEMENTATION-20261116.md执行。
+
 ### 第三轮已启动（2026-11-16）
 
 用户同意停止synthetic调参，task-21复用同一DeepSeek teammate。按真实事件/重复族/来源切train/dev，严格LOO与候选证据对齐，保留真实test；不装依赖、不公开轨迹转换、不生产。任务书：`PROMPT-EVENT-ATTRIBUTION-LAB-ROUND3-20261116.md`。
