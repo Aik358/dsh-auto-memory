@@ -257,7 +257,7 @@ applyConsolidationResultPre({parsed,writer,budget})
 - CadenceDecision：tier、fullGranted、slimAllowed、grants、reasons、requestKey。
 - PreparedNotification：id、version、payload、commitToken。
 - FinalizeReceipt：requestId、textSha256、selectedNotificationIds、preparedVersions、hostObservation。
-- DeliveryReceipt：requestId、finalizedText、selectedNotificationIds、committed、skipped、errors。
+- DeliveryReceipt：requestId、finalizedText、selectedNotificationIds、committed、skipped、errors；committed/skipped为ID数组，skippedDetail是可选的返回级诊断，不改变DTO。
 - HostDeliveryObservation：requestId、projected、retained、observedAt、evidenceRef；未观测时明确unknown，不得伪造hostDelivered。
 
 所有DTO可JSON序列化，不含函数、Map或循环引用；输入不可变。公共返回带稳定身份、来源证明、错误码与降级信息。

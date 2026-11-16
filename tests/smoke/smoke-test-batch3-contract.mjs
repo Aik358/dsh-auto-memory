@@ -37,6 +37,9 @@ const REQUIRED_BY_UNIT = {
   "B3-CA": ["decideInjectionCadencePre", "createCadencePort", "GRANT_REASONS"],
   "B3-PJ": ["projectInjectionPre", "createProjectionPort", "CONTENT_SPEC_TO_PROMPT_SECTION"],
   "B3-RP": ["renderRulesForTierPre", "RENDER_TIERS", "NOTE_PREFIX", "SLIM_MAINTAIN_BLOCK"],
+  "B3-BD": ["projectHandoffPre", "HANDOFF_TAGS", "HANDOFF_VIEW_TIERS", "SLIM_MUST_KEEP", "tailTruncate"],
+  "B3-NT": ["prepareNotificationPre", "finalizeInjectionPre", "commitNotificationPre", "splitRuntimeSignalsPre"],
+  "B3-FM": ["composeFinalEnvelopePre", "SEGMENT_KINDS", "BUDGET_MODES", "DEFAULT_SEPARATOR"],
 };
 for (const [unit, names] of Object.entries(REQUIRED_BY_UNIT)) {
   const missing = names.filter((n) => !(n in m));
@@ -46,7 +49,8 @@ for (const [unit, names] of Object.entries(REQUIRED_BY_UNIT)) {
 {
   // ★B3-RP 已实现 ⇒ 其符号从「未实现」清单移出（这正是结构性判据在起作用：
   //   上轮它在此处红了两条，提示「声称没实现却已导出」——本轮按实现进度同步）。
-  const forbidden = ["projectHandoffPre", "composeFinalEnvelopePre", "prepareNotificationPre", "commitNotificationPre", "selectEventProjectionPre", "renderCheckpointPreviewPre"];
+  // ★BD/FM/NT 已实现 ⇒ 其符号从「未实现」清单移出，只留 B3-EV 的符号。
+  const forbidden = ["selectEventProjectionPre", "renderCheckpointPreviewPre"];
   const leaked = forbidden.filter((n) => n in m);
   ok(leaked.length === 0, "★[import] 未实现单元（RP/BD/FM/NT/EV）的符号**未**被导出", leaked.length ? "泄漏: " + leaked.join(",") : "0 泄漏");
 }
@@ -61,10 +65,10 @@ ok(m.INJECTION_CONTRACT_INFO.implements[0] === "contract-only", "[import] 包自
   ok(Array.isArray(IMPL) && Array.isArray(NOT), "[import] implements / doesNotImplement 都是数组");
   const overlap = IMPL.filter((x) => NOT.includes(x));
   ok(overlap.length === 0, "★[import] 实现与未实现列表**无交集**（不得既声称实现又声称未实现）", overlap.join(",") || "无交集");
-  for (const u of ["B3-SR", "B3-RC", "B3-CA", "B3-PJ", "B3-RP"]) {
+  for (const u of ["B3-SR", "B3-RC", "B3-CA", "B3-PJ", "B3-RP", "B3-BD", "B3-NT", "B3-FM"]) {
     ok(IMPL.includes(u) && !NOT.includes(u), "[import] " + u + " 已在 implements 且不在 doesNotImplement");
   }
-  for (const u of ["B3-BD", "B3-FM", "B3-NT", "B3-EV", "B3-CO"]) {
+  for (const u of ["B3-EV", "B3-CO"]) {
     ok(NOT.includes(u) && !IMPL.includes(u), "[import] " + u + " 仍在 doesNotImplement（未实现）");
   }
 }
