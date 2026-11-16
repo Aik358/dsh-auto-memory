@@ -29,7 +29,7 @@
 2. 以 `REVIEW-2.3-TRAINING-PROGRESS-20261114.md` 为起点；用户现已授权模型构造标签、多源事件库与隔离挂机训练，task-19按 `PROMPT-EVENT-ATTRIBUTION-LAB-20261116.md` 执行。模型标签为实验数据，不冒充人工金标。
 3. 组织双人独立复核，保留 reviewer 身份、证据、分歧和仲裁；同一教师不得兼任两位复核者。
 4. 同时补齐四态、跨语言、closed、多候选、无正确候选和困难负样本，按事件及重复族隔离。
-5. task-27已复核并确认2.3可开工：目标是工具回执中的归属建议与异常提醒，不自动attach/merge/archive。task-28按 `PROMPT-EVENT-ATTRIBUTION-IMPLEMENTATION-20261116.md` 以独立模块+公共API facade实现memory_log/memory_note/历史零写提案；`lib/index.js`只作薄接线，不接2.4或Sidecar facade，真实HOST另验。
+5. task-28/29模块化/API化归属提醒已由Lead复核：独立lib/event-attribution facade，memory_log/memory_note/历史零写提案与真实入口已接线；67/29/37与r26复跑通过。impact216/3/1非全绿、全量与真实HOST未验；不接2.4或Sidecar facade。详见 `RESULT-EVENT-ATTRIBUTION-IMPLEMENTATION-20261116.md`。
 
 ### B. 3.0–3.4 模块化/API 化生产实现
 
