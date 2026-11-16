@@ -145,6 +145,10 @@ task-28/29完成独立lib/event-attribution facade与memory_log/memory_note/历�
 
 已核对：第二批不是全部完成；2.3已接线，2.4冻结，2.5–2.9隔离验收、真实HOST未闭合。第三批可按公共契约→回归基础→逐项实施分阶段开工，3.0-B边界不擅自定案；交同一DeepSeek teammate按PROMPT-BATCH3-MODULAR-IMPLEMENTATION-20261116.md执行。
 
+### 批次2/3测绘已完成（2026-11-16）
+
+测绘报告确认3.0.x编号冲突、两处恒真断言与当前代码缺口；T1–T4可排期，但先修测试装置。第二批真实HOST/全量未闭合，3.0-B边界未定；本轮零代码改动，未产新PASS/FAIL。
+
 ### 第三轮已启动（2026-11-16）
 
 用户同意停止synthetic调参，task-21复用同一DeepSeek teammate。按真实事件/重复族/来源切train/dev，严格LOO与候选证据对齐，保留真实test；不装依赖、不公开轨迹转换、不生产。任务书：`PROMPT-EVENT-ATTRIBUTION-LAB-ROUND3-20261116.md`。
