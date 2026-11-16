@@ -101,6 +101,10 @@ task-23由Lead独立复跑一致：dev0.372 vs majority0.314/cov12 0.235，首�
 
 task-24由Lead独立复跑一致：520标注、1,024包、候选池openRatio0.5126、冻结留出153；训练0.3137 vs cov12 0.3203，四态多分类不优于零参。标签model-reviewed非人审，heldout同标注器只衡量拟合，不等于真实归属准确率。停止继续加量/调参，后续另评case-level或混合，不直接生产。
 
+### 开源训练方案已核对（2026-11-16）
+
+BLINK(MIT)为候选检索+交叉编码器精排；dedupe(MIT)为记录消歧+主动学习；sentence-transformers提供pairwise/困难负样本/排序损失。下一轮优先case-level或pairwise匹配、候选召回精排、主动学习；不再继续四态调参。报告：`RESEARCH-EVENT-ATTRIBUTION-OPEN-SOURCE-20261116.md`。
+
 ### 第三轮已启动（2026-11-16）
 
 用户同意停止synthetic调参，task-21复用同一DeepSeek teammate。按真实事件/重复族/来源切train/dev，严格LOO与候选证据对齐，保留真实test；不装依赖、不公开轨迹转换、不生产。任务书：`PROMPT-EVENT-ATTRIBUTION-LAB-ROUND3-20261116.md`。

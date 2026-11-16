@@ -29,7 +29,7 @@
 2. 以 `REVIEW-2.3-TRAINING-PROGRESS-20261114.md` 为起点；用户现已授权模型构造标签、多源事件库与隔离挂机训练，task-19按 `PROMPT-EVENT-ATTRIBUTION-LAB-20261116.md` 执行。模型标签为实验数据，不冒充人工金标。
 3. 组织双人独立复核，保留 reviewer 身份、证据、分歧和仲裁；同一教师不得兼任两位复核者。
 4. 同时补齐四态、跨语言、closed、多候选、无正确候选和困难负样本，按事件及重复族隔离。
-5. task-24已由Lead复跑：520标注、153冻结留出，训练0.3137 vs cov12 0.3203，四态训练不优于零参；停止继续加标注/调参，后续另评case-level二分类或cov12+模型混合，不直接生产。
+5. task-24已由Lead复跑：训练0.3137 vs cov12 0.3203，停止四态加量调参。已核对BLINK/dedupe/sentence-transformers，后续优先候选检索+精排、case-level/pairwise与主动学习；见 `RESEARCH-EVENT-ATTRIBUTION-OPEN-SOURCE-20261116.md`，不直接生产。
 
 ### B. 3.0–3.4 模块化/API 化生产实现
 
