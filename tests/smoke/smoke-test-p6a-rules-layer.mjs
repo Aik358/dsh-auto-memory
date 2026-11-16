@@ -332,12 +332,26 @@ console.log('[P6A-6] ★T7-1（在能测的范围内）：规则在**每一轮**
   const out1 = renderRulesOnly.call(fakeThis('self'))
   ok(!out1.includes(RULES_SECTION_GUIDE_PRE_V1), '精简版不含规则段引导语（规则已移出精简版）')
   ok(out1.startsWith('<memory_system>'), '是完整可注入的块（有固定首行）')
-  // ★规则分层本身仍然生效：验证移到**完整版渲染**（不丢覆盖）
-  const fullOut = (() => {
-    try { return shell.renderMemoryDynamic ? shell.renderMemoryDynamic.call(fakeThis('self')) : '' } catch (_) { return '' }
-  })()
-  ok(fullOut === '' || fullOut.includes('【用户硬性规则') || fullOut.includes(RULES_SECTION_GUIDE_PRE_V1),
-    '★规则分层仍生效（完整版路径；精简版不含属用户裁定的预期行为）')
+  // B3-CB：真实 apply + section 回调，不允许空输出冒充通过。
+  const realMod = await import(new URL('../../lib/index.js', import.meta.url).href)
+  const registered = { contexts: [], sections: [] }
+  const realCtx = {
+    log: { info() {}, warn() {}, error() {}, debug() {} }, config: {},
+    effect(fn) { try { const r = fn(); if (r && typeof r.catch === 'function') r.catch(() => {}) } catch (_) {} return () => {} },
+    on() { return () => {} }, get() { return undefined },
+    tools: { register(d) { return d } },
+    systemPrompt: { context(o) { registered.contexts.push(o); return () => {} }, section(o) { registered.sections.push(o); return () => {} } },
+    policy: {}, head: {}, sessions: {}, directoryPicker: {}, remote: {},
+    router: { get() { return true }, post() { return true } },
+    webServer: { register() { return () => {} } }, slot() { return () => {} },
+  }
+  await realMod.apply(realCtx, {})
+  const rulesSection = registered.sections.find((s) => s.name === 'dsh:auto-memory-pre-rules')
+  ok(!!rulesSection && typeof rulesSection.text === 'function', '★真实apply注册规则section回调')
+  const fullOut = rulesSection ? String(rulesSection.text() || '') : ''
+  ok(fullOut.length > 0, '★真实section回调产出非空文本，不再接受空输出放行')
+  ok(fullOut.includes('[记忆系统 — 固定纪律]') && fullOut.includes('[记忆写入纪律 — 必须遵守]'),
+    '★真实section回调产出固定纪律铭文（实测长度=' + fullOut.length + '）')
   // ★新契约：精简版必须含检索指引（砍掉规则后的替代手段）
   ok(out1.includes('记忆检索指引'), '★精简版含检索指引（用户裁定第 3 条）')
   ok(out1.trimEnd().endsWith('</memory_system>'), '有固定尾行（边界完整）')

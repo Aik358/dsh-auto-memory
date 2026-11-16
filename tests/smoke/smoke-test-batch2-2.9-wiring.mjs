@@ -100,7 +100,14 @@ eq(a.fingerprintScopes.sourceDocumentNormalizedSha256, a.sourceProof.documentNor
 eq(a.fingerprintScopes.sourceCoverageNormalizedSha256, a.sourceProof.normalizedSha256, 'A24d 覆盖口径 == proof.normalizedSha256')
 eq(a.fingerprintScopes.summaryTextRawSha256, sha256(Buffer.from(cp1.text, 'utf8')), 'A24e 摘要正文自身 sha256 独立可算')
 ok(a.fingerprintScopes.sourceRawSha256 !== a.fingerprintScopes.summaryTextRawSha256, 'A24f 真源哈希 ≠ 摘要哈希（不得混用）')
-ok(a.fingerprintScopes.sourceDocumentNormalizedSha256 !== a.fingerprintScopes.sourceCoverageNormalizedSha256 || true, 'A24g 两个 normalized 口径都已单列')
+// ★B3-CB（2026-11-17）：原断言末尾拼 `|| true` ⇒ **恒真、永远无法失败**（隔离变异确证）。
+//   改为真判据：两个 normalized 口径**都必须存在（非空字符串）**且**互不相同**（不同口径不得混用）。
+ok(typeof a.fingerprintScopes.sourceDocumentNormalizedSha256 === 'string'
+  && a.fingerprintScopes.sourceDocumentNormalizedSha256.length > 0
+  && typeof a.fingerprintScopes.sourceCoverageNormalizedSha256 === 'string'
+  && a.fingerprintScopes.sourceCoverageNormalizedSha256.length > 0
+  && a.fingerprintScopes.sourceDocumentNormalizedSha256 !== a.fingerprintScopes.sourceCoverageNormalizedSha256,
+  'A24g 两个 normalized 口径都已单列且互不相同')
 ok(a.coverage && !String(a.coverage.reasonCodes || '').includes('checkpoint-raw-fingerprint-mismatch'), 'A24h 覆盖评估不再出现指纹假红（已剥离真源口径）')
 // ★A24i 起：摘要指针形态的**真覆盖判据**（Lead 要求：不能靠解释把 mismatch 改口成 covered）
 ok(a.pointerCoverage && a.pointerCoverage.ok === true, 'A24i 摘要指针形态：当前覆盖评估 ok=true（六门全过）:: ' + (a.pointerCoverage && a.pointerCoverage.reasonCodes.join(',')))
@@ -176,7 +183,14 @@ try {
   if (error && error.code === 'handoff-write-handoff-dir-unsafe') throw error
   console.log('SKIP C4 链接根（本平台无法创建目录链接）: ' + String(error && error.code))
 }
-ok(linkTested || true, 'C5 链接段已处置（真测或显式 SKIP）')
+// ★B3-CB（2026-11-17）：原断言 `linkTested || true` **恒真**（隔离变异 M2 换 `(false)||true` 仍 PASS）。
+//   改为**显式二态**：真测通过 ⇒ PASS；平台不支持而 SKIP ⇒ **打印 SKIP 且不计 PASS**（不再静默变绿）。
+//   注意：C4 分支内的 `assert.rejects` 已能抛真失败；此处只负责「没测到也不能算通过」。
+if (linkTested) {
+  ok(true, 'C5 链接段真测通过（junction 被拒 handoff-write-handoff-dir-unsafe）')
+} else {
+  console.log('SKIP C5 链接段（本平台无法创建目录链接）—— 本项**未验证**，不计入 PASS')
+}
 
 /* ══════ D. 幂等：相同意图不重复；摘要外内容变 ⇒ 新检查点 ══════ */
 const beforeDup = await readStorePre(storePath)
