@@ -89,6 +89,10 @@ C2订正：可见证据包同文泄漏不成立，最高12-gram包含度0.350、
 
 用户授权接入外部数据，task-23复用同一DeepSeek teammate。外部真实事件+独立模型四态标注(model-reviewed)+严格LOO+外部留出训练；不冒充人工金标、不装依赖、不生产。任务书：`PROMPT-EVENT-ATTRIBUTION-EXTERNAL-TRAIN-20261116.md`。
 
+### 外部四态训练已复核（2026-11-16）
+
+task-23由Lead独立复跑一致：dev0.372 vs majority0.314/cov12 0.235，首次超零参；M5打乱标签0.059。仍不是可靠模型：候选池3157全closed、dev51例、heldout51未评估、模型标签非人审。下一轮优先重采含open候选，再决定扩大训练。
+
 ### 第三轮已启动（2026-11-16）
 
 用户同意停止synthetic调参，task-21复用同一DeepSeek teammate。按真实事件/重复族/来源切train/dev，严格LOO与候选证据对齐，保留真实test；不装依赖、不公开轨迹转换、不生产。任务书：`PROMPT-EVENT-ATTRIBUTION-LAB-ROUND3-20261116.md`。

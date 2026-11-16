@@ -29,7 +29,7 @@
 2. 以 `REVIEW-2.3-TRAINING-PROGRESS-20261114.md` 为起点；用户现已授权模型构造标签、多源事件库与隔离挂机训练，task-19按 `PROMPT-EVENT-ATTRIBUTION-LAB-20261116.md` 执行。模型标签为实验数据，不冒充人工金标。
 3. 组织双人独立复核，保留 reviewer 身份、证据、分歧和仲裁；同一教师不得兼任两位复核者。
 4. 同时补齐四态、跨语言、closed、多候选、无正确候选和困难负样本，按事件及重复族隔离。
-5. task-22跨域验证已复核：cov12=0.288 vs 随机0.016，弱信号迁移；用户授权外部数据后，task-23按 `PROMPT-EVENT-ATTRIBUTION-EXTERNAL-TRAIN-20261116.md` 做模型四态标注、严格LOO与外部训练，不装依赖、不直接生产。
+5. task-23外部训练已由Lead复跑：dev0.372 vs majority0.314/cov12 0.235，首次超零参但绝对低；候选池100% closed使not-applicable偏易，heldout51未评估。下一步优先重采open候选，再决定是否扩大训练；不直接生产。
 
 ### B. 3.0–3.4 模块化/API 化生产实现
 
