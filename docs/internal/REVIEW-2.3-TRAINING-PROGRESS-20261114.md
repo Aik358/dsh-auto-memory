@@ -97,6 +97,10 @@ task-23由Lead独立复跑一致：dev0.372 vs majority0.314/cov12 0.235，首�
 
 用户授权可自行决定是否扩大标注到500+，task-24复用同一DeepSeek teammate。先修候选池全closed偏置，再按真实独立事件扩展；冻结模型后独立标注heldout评估，不凑数、不装依赖、不生产。任务书：`PROMPT-EVENT-ATTRIBUTION-EXTERNAL-EXPANDED-20261116.md`。
 
+### 外部扩大标注与冻结留出已复核（2026-11-16）
+
+task-24由Lead独立复跑一致：520标注、1,024包、候选池openRatio0.5126、冻结留出153；训练0.3137 vs cov12 0.3203，四态多分类不优于零参。标签model-reviewed非人审，heldout同标注器只衡量拟合，不等于真实归属准确率。停止继续加量/调参，后续另评case-level或混合，不直接生产。
+
 ### 第三轮已启动（2026-11-16）
 
 用户同意停止synthetic调参，task-21复用同一DeepSeek teammate。按真实事件/重复族/来源切train/dev，严格LOO与候选证据对齐，保留真实test；不装依赖、不公开轨迹转换、不生产。任务书：`PROMPT-EVENT-ATTRIBUTION-LAB-ROUND3-20261116.md`。
