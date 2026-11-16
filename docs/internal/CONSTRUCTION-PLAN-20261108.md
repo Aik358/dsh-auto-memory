@@ -495,7 +495,7 @@ Lead 已按子代理口径独立复核，逐项吻合。
 
 | # | 任务 | 落点 | 验收判据 |
 |---|---|---|---|
-| 5.1 | **铭文改写成判断清单**：加跳过条件、加终止位、合并重复条目（事件更新与检查点同动作）、删缺前置数据的条目 | `[lib/index.js](file:///D:/dsh-auto-memory/lib/index.js):1537-1553` + `:1560` | ①每条能答是/否；②每条有跳过条件；③总长 ≤ 当前 1,489 字符；④更新 `:1534` 过期注释（420 → 实测）；⑤真跑一轮看模型是否按顺序执行 |
+| 5.1 | **铭文改写成判断清单**：加跳过条件、加终止位、合并重复条目（事件更新与检查点同动作）、删缺前置数据的条目。**2026-11-16定案**：事件更新仅在任务/阶段完成、实质进展、重要用户裁定或失败根因落地时触发；同一轮合并为一个检查点，纯读取/派活/等待/重复状态不写；只改提示词，不改变现有事件数据 | `[lib/index.js](file:///D:/dsh-auto-memory/lib/index.js):1537-1553` + `:1560` | ①每条能答是/否；②每条有跳过条件；③总长 ≤ 当前 1,489 字符；④更新 `:1534` 过期注释（420 → 实测）；⑤真跑一轮看模型是否按顺序执行 |
 
 > **为什么放最后**：铭文要求「挂到已有事件」「重写四段」「加检查点」—— 这些依赖批次 1-4 先把数据与投递修通。
 > 顺序反了，清单会变成「要求模型做但系统不支持」的空要求 —— **现在就是这个状态**。
@@ -751,6 +751,7 @@ Lead 已按子代理口径独立复核，逐项吻合。
 | [RESULT-EVENT-ATTRIBUTION-RECALL-MULTI-20261116.md](./RESULT-EVENT-ATTRIBUTION-RECALL-MULTI-20261116.md) | Lead复跑一致：语义0.25、融合0.5125，cov12+rerank@5=0.5625仍最优；下一步case-level | 2.3 |
 | [ANALYSIS-EVENT-ATTRIBUTION-SIGNALS-20261116.md](./ANALYSIS-EVENT-ATTRIBUTION-SIGNALS-20261116.md) | 时间/生命周期/来源/身份分层；时间为约束与弱证据，后续消融，不直接生产 | 2.3 |
 | [PROMPT-EVENT-ATTRIBUTION-CLASSIFICATION-20261116.md](./PROMPT-EVENT-ATTRIBUTION-CLASSIFICATION-20261116.md) | task-27：归属分类验证时间/生命周期/来源/身份证据，困难场景、严格LOO与真实留出 | 2.3 |
+| [RESULT-EVENT-ATTRIBUTION-CLASSIFICATION-20261116.md](./RESULT-EVENT-ATTRIBUTION-CLASSIFICATION-20261116.md) | Lead复跑一致：排除矛盾场景0.8719、attach定位0.9665；候选截断必须报gold覆盖率，多合理候选0.5946仍未解，生产未启用 | 2.3 |
 | [PROMPT-EVENT-ATTRIBUTION-MODEL-REVIEW-20261116.md](./PROMPT-EVENT-ATTRIBUTION-MODEL-REVIEW-20261116.md) | 模型可执行双盲复核/仲裁/困难负样本；独立上下文+确定性证据；模型审核不等于人工金标 | 2.3 |
 | [RESULT-EVENT-ATTRIBUTION-MODEL-REVIEW-20261116.md](./RESULT-EVENT-ATTRIBUTION-MODEL-REVIEW-20261116.md) | Lead复跑21/21；发现旧protocolConflict弱金标为协议构造；困难样本2独立失败；sourceVerified0、训练未启动 | 2.3 |
 
