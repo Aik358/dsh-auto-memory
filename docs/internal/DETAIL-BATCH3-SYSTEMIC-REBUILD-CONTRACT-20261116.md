@@ -92,13 +92,15 @@ readInjectionSourcesPre({paths,state,policyVersion})
 ### 4.2 B3-RC：规则完整读取
 
 ~~~text
-readRulesAggregatePre({userFile,notesPath})
-→ {rules,counts,chars,proofs,warnings}
+readRulesAggregatePre({userFile,notesPath,candidatePath,ownerSessionId,sessionKey,readFile})
+→ {rules,candidates,references,retired,counts,chars,proofs,warnings}
 ~~~
 
-- 覆盖user+project完整有效正文与多行限定；rule/note/retired分别计数。
+- 覆盖user+project完整有效正文与多行限定；rule/note/candidate/reference/retired分别计数。
+- userFile/notesPath可缺省；candidatePath/ownerSessionId/sessionKey/readFile由真实调用方注入，不能从全局状态猜。
 - 区分“两条bullet”与“一条多行规则”。
 - 保留applyRuleEditPre的层内index/expect/revision及跨层CAS拒绝；不制造跨层统一编辑索引。
+- 候选规则是候选，不因包含规则措辞自动升格；owner/session缺失时保留边界，不跨会话读取。
 - revision(user)与revision(project)属于不同命名空间。
 - 只读，不要求GUI编辑，不改变现有写入。
 
@@ -130,11 +132,19 @@ events: none|cards|cards+catalog
 portrait: none|short|full
 semantic: none|full
 logs: none|tail|full
+calendar: none|current|full
+externalMemory: none|full
+workspaceMap: none|brief|full
+recentLogs: none|tail|full
+reflection: none|recent|full
+diagnostic: none|brief|full
 maintenance: none|slim-maintain
 ~~~
 
 - 纯函数；候选带id/kind/bucket/priority/text/sourceIdentity/contentVersion。
 - 各段可有不同名单；不得为统一名单改变语义。
+- ContentSpec覆盖tier0/rules/goal/rules/plan/handoff/events/portrait/semantic/calendar/externalMemory/workspaceMap/recentLogs/reflection/diagnostic/maintenance，并映射现有PROMPT_SECTION_KEYS_PRE_V1；扩展段须先登记，不得静默新增公共面。
+- calendar/externalMemory等通道区可在超限整段省略，但省略必须产生显式degradation，不得静默。
 - 画像仅使用accepted/used及authorResponse结构化来源。
 - 事件归属只消费2.3建议，不自动attach/merge/archive。
 - 不得把human_slim/run_slim强制送入renderMemoryDynamic；精简帧走真实精简路径。
@@ -192,6 +202,8 @@ commitNotificationPre({requestId,finalizeReceipt})
 - commit只提交最终保留的身份与版本；旧版本不得清掉新待办。
 - 同请求幂等，写盘失败显式报错并可重试。
 - planUpdatePending、_recallJustDelivered与CA的water/postCompact/full grant分开处理。
+- 运行时状态必须通过显式runtimeScope/sessionId写入，不能使用无ALS上下文的默认runtime。
+- 写入持久通知前复用现有队列/锁/CAS/原子替换；不得把Prototype当跨文件事务，也不得把多个文件写入伪装成单次原子操作。
 
 ### 4.9 B3-EV：事件视图
 
@@ -233,6 +245,7 @@ applyConsolidationResultPre({parsed,writer,budget})
 - 来源含日志、事件、白板、账本、反思；unreadable不得当空来源。
 - USER候选仍只进待确认区，不直接写全局用户级MEMORY。
 - 不承担事件归并、四段补全或2.4；模型解析失败、空正文、超时不得产生新写入。
+- 同型读取/预算/写入问题须同时审查consolidate/maintain/autoSummary，不仅修被举报路径；scope/默认不扩写不等于三者均可改生产。
 
 ## 5. 公共DTO与profile
 

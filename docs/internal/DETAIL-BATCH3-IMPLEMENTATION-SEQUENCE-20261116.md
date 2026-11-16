@@ -40,7 +40,7 @@ B3-CB
 7. RESULT-BATCH2-IMPLEMENTATION-REVIEW-20261116.md；
 8. 当前lib/index.js、rules-layer.js、memory-envelope.js、event-render.js及相关测试。
 
-其余39份直接相关文档按审核报告的索引查阅，不要求实施者重新做方向性调查，但不得只凭文件名或旧行号施工。
+其余42份直接相关文档按审核报告的索引查阅，不要求实施者重新做方向性调查，但不得只凭文件名或旧行号施工。
 
 ### 1.2 基线记录
 
@@ -124,8 +124,9 @@ lib/index.js保持既有CRLF；其他新模块和测试沿用LF。不得整文�
 ### 4.2 RC
 
 - 按L1 §4.2实现readRulesAggregatePre；
-- user+project完整有效正文，多行限定不丢；
-- rule/note/retired分别计数，两个bullet与单条多行规则分别断言；
+- userFile/notesPath可缺省；candidatePath/ownerSessionId/sessionKey/readFile由调用方注入，不从全局状态猜；
+- user+project完整有效正文与候选规则，多行限定不丢；rule/note/candidate/reference/retired分别计数；候选不因措辞自动升格；
+- 两个bullet与单条多行规则分别断言；
 - 保留applyRuleEditPre层内index/expect/revision与跨层CAS拒绝。
 
 ### 4.3 验收与回滚
@@ -148,7 +149,7 @@ lib/index.js保持既有CRLF；其他新模块和测试沿用LF。不得整文�
 
 ### 5.2 PJ
 
-- 按L1 §4.4冻结ContentSpec；
+- 按L1 §4.4冻结ContentSpec，覆盖calendar/externalMemory/workspaceMap/recentLogs/reflection/diagnostic与现有PROMPT_SECTION_KEYS_PRE_V1；新增公共面先登记，通道区整段省略须显式degradation。
 - 同一sources在不同tier/frame下产出正确候选；
 - 不把human_slim/run_slim送入renderMemoryDynamic；
 - 画像只用accepted/used与authorResponse；2.3只作建议；
@@ -178,6 +179,7 @@ lib/index.js保持既有CRLF；其他新模块和测试沿用LF。不得整文�
 - finalize只定稿插件文本与候选身份；
 - commit只提交最终保留的版本，旧commit不得清新待办；
 - _recallJustDelivered只由真实Reference Tail交付路径写入；
+- 运行时状态带runtimeScope/sessionId，不使用无ALS上下文的默认runtime；持久写入复用现有队列/锁/CAS/原子替换，Prototype不作跨文件事务。
 - 写盘失败显式报错、可重试；同请求幂等。
 
 ### 7.2 BD
@@ -272,8 +274,11 @@ lib/index.js保持既有CRLF；其他新模块和测试沿用LF。不得整文�
 
 ### 11.1 并行边界
 
-- 可并行：不同模块的独立设计、纯函数与隔离测试；
+- 可并行：不同模块的独立设计、纯函数与隔离测试；不得因此并行修改同一共享契约或生产入口；
 - 必须串行：lib/index.js及共享旧协议适配；
+- 必须按序：CB→DTO/profile→SR/RC→CA/PJ→RP；NT/BD/FM共享最终帧共同验收；EV服从FM，CO在SR后可独立设计；
+- 可并行仅限同一阶段已冻结契约下、写域不重叠的实现，例如SR与RC、独立事件纯函数、consolidate只读收集；
+- NT/BD/FM共享状态与帧，不能由多个执行者并行接线；4.1/4.5/5.1不提前实施。
 - 每单位先实现、测试、文档、锁/指纹与回滚，再进入下一依赖；
 - 不把所有改动堆到最后统一联调。
 
