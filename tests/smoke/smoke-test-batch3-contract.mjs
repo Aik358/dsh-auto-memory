@@ -22,12 +22,23 @@ function throwsCode(fn, code, n, label) {
 // ── 0. 真 import
 const m = await import(pathToFileURL(path.join(REPO, "lib/injection/index.js")).href);
 ok(typeof m === "object" && m !== null, "[import] lib/injection/index.js 可加载");
-// 37 = 36 + 1：新增 RESERVED_FIELD_NAMES（保留字段名清单，供调用方自检）。
+// ★计数锁演进记录（判据过期类重钉，非回归缺陷）：
+//   36 → 37：新增 RESERVED_FIELD_NAMES（U2 保留字段清单）
+//   37 → 43：新增 SR/RC 的 6 个导出 —— readRulesAggregatePre / RULE_LAYERS / READ_STATUS /
+//            readInjectionSourcesPre / createSourcesPort / SOURCE_CHANNELS（task-37，B3-SR+B3-RC）
 // 若后续再改导出数，本条会红，须同步更新并说明新增/删除的符号。
-ok(Object.keys(m).length === 37, "[import] 导出符号 37（36+RESERVED_FIELD_NAMES）", String(Object.keys(m).length));
+ok(Object.keys(m).length === 43, "[import] 导出符号 43（36+RESERVED + SR/RC 6）", String(Object.keys(m).length));
 ok(Array.isArray(m.RESERVED_FIELD_NAMES) && m.RESERVED_FIELD_NAMES.join(",") === "dtoKind,schemaVersion", "[import] 保留字段清单 = dtoKind,schemaVersion");
 ok(m.INJECTION_CONTRACT_INFO.implements[0] === "contract-only", "[import] 包自述为 contract-only（不实现业务模块）");
-ok(m.INJECTION_CONTRACT_INFO.doesNotImplement.length === 4, "[import] 明确声明不实现 SR/RC/CA/PJ", m.INJECTION_CONTRACT_INFO.doesNotImplement.join(","));
+// ★判据改法（判据过期类）：不锁死长度，而锁「**仍未实现**的业务模块必须显式列在 doesNotImplement」。
+//   SR/RC 已由 task-37 实现并移出该列表 ⇒ 旧断言「长度===4」属过期判据，已按纪律重钉。
+{
+  const ni = m.INJECTION_CONTRACT_INFO.doesNotImplement;
+  ok(Array.isArray(ni) && ni.includes("B3-CA") && ni.includes("B3-PJ"),
+    "[import] 未实现模块仍显式声明（含 CA/PJ）", ni.join(","));
+  ok(m.INJECTION_CONTRACT_INFO.implements.includes("B3-SR") && m.INJECTION_CONTRACT_INFO.implements.includes("B3-RC"),
+    "[import] 已在 implements 中声明 SR/RC", m.INJECTION_CONTRACT_INFO.implements.join(","));
+}
 
 // ── 1. 8 个 DTO：真构造 + 字段完整 + JSON 往返
 const HEX = "a".repeat(64);
