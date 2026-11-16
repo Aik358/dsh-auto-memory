@@ -412,6 +412,8 @@ Lead 已按子代理口径独立复核，逐项吻合。
 
 **系统化重建契约**：本批以系统化、模块化、API化重写相关投递系统，原因是投递系统存在数量较多且杂乱的复杂性耦合，导致功能紊乱。既有调查、交叉审计、用户裁定与模块边界统一见 [DETAIL-BATCH3-SYSTEMIC-REBUILD-CONTRACT-20261116.md](./DETAIL-BATCH3-SYSTEMIC-REBUILD-CONTRACT-20261116.md)。该契约是实施真源，不是重新讨论方向。
 
+**施工顺序细则**：按 B3-CB → 公共契约 → B3-RC/RP → B3-NT/BD/FM → B3-EV 分阶段实施，见 [DETAIL-BATCH3-IMPLEMENTATION-SEQUENCE-20261116.md](./DETAIL-BATCH3-IMPLEMENTATION-SEQUENCE-20261116.md)。该文档更新并替代原有3.0/3.1类分散施工内容，旧文档仅作调查与溯源。
+
 | # | 任务 | 落点 | 验收判据 | 依赖 / 并行边界 |
 |---|---|---|---|---|
 | **3.0** | **注入投递基础修复**：档位、规则读取、全文、预算、定稿、通知和计量 | `lib/index.js` 的两种渲染器及 context 回调；`rules-layer.js`、`memory-envelope.js`、相关测试 | 按 3.0-A 的真实回调、负路径及变异验收；3.0-B 未定边界先定规格 | 是 3.2–3.4 的共同投递契约；与 2.5/4.1/4.5 对齐接口 |
@@ -763,6 +765,7 @@ Lead 已按子代理口径独立复核，逐项吻合。
 | [RESULT-BATCH2-IMPLEMENTATION-REVIEW-20261116.md](./RESULT-BATCH2-IMPLEMENTATION-REVIEW-20261116.md) | task-31：12套件335 PASS，2.3三专项133 PASS；2.9两处恒真断言，真实HOST/全量未验 | 批次2 |
 | [DETAIL-BATCH3-UNIFIED-20261116.md](./DETAIL-BATCH3-UNIFIED-20261116.md) | task-32：语义代号B3-RC/RP/FM/NT/BD/CB/EV统一施工大纲，旧编号仅溯源 | 批次3 |
 | [DETAIL-BATCH3-SYSTEMIC-REBUILD-CONTRACT-20261116.md](./DETAIL-BATCH3-SYSTEMIC-REBUILD-CONTRACT-20261116.md) | 系统化/模块化/API化重建总契约：重写原因、模块职责、DTO、依赖、裁定约束与验收回滚 | 批次3 |
+| [DETAIL-BATCH3-IMPLEMENTATION-SEQUENCE-20261116.md](./DETAIL-BATCH3-IMPLEMENTATION-SEQUENCE-20261116.md) | 按依赖顺序的施工细则：B3-CB→公共契约→RC/RP→NT/BD/FM→EV，替代旧3.0/3.1分散施工内容 | 批次3 |
 | [REPORT-BATCH3-NUMBERING-DECOUPLING-20261116.md](./REPORT-BATCH3-NUMBERING-DECOUPLING-20261116.md) | 3.0.x错位5/7，含同号跨事与noticeRemote误归；禁止裸编号映射 | 批次3 |
 | [PROMPT-EVENT-ATTRIBUTION-MODEL-REVIEW-20261116.md](./PROMPT-EVENT-ATTRIBUTION-MODEL-REVIEW-20261116.md) | 模型可执行双盲复核/仲裁/困难负样本；独立上下文+确定性证据；模型审核不等于人工金标 | 2.3 |
 | [RESULT-EVENT-ATTRIBUTION-MODEL-REVIEW-20261116.md](./RESULT-EVENT-ATTRIBUTION-MODEL-REVIEW-20261116.md) | Lead复跑21/21；发现旧protocolConflict弱金标为协议构造；困难样本2独立失败；sourceVerified0、训练未启动 | 2.3 |
