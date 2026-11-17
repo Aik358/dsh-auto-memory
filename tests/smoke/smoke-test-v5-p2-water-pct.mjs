@@ -13,6 +13,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { execSync } from 'node:child_process'
+import { pathToFileURL } from 'node:url'
 import { fileURLToPath } from 'node:url'
 
 // ★#507（2026-11-02）：ROOT 由**本文件位置**派生，而不是写死维护者本机路径。
@@ -50,7 +51,7 @@ const mk = (name) => {
   if (!s) return null
   try { return new Function(s + "; return " + name + ";")() } catch (e) { return null }
 }
-const parsePct = mk("parseWaterPctThresholdsPre")
+const parsePct = (await import(pathToFileURL(path.join(ROOT, "lib", "injection", "cadence.js")).href)).parseWaterThresholds
 const decideFire = mk("decideWaterPctFirePre")
 
 console.log("== A. parseWaterPctThresholdsPre 解析 ==")
@@ -63,10 +64,10 @@ if (typeof parsePct === "function") {
   ok(eq(parsePct("25;50"), [25, 50]), "A-4 分号 -> [25,50]")
   ok(eq(parsePct("25 50"), [25, 50]), "A-5 空格 -> [25,50]")
   ok(eq(parsePct("25,25,50"), [25, 50]), "A-6 去重 -> [25,50]")
-  ok(eq(parsePct(""), [25, 50]), "A-7 空串 -> 回落默认")
-  ok(eq(parsePct(null), [25, 50]), "A-8 null -> 回落默认")
-  ok(eq(parsePct(undefined), [25, 50]), "A-9 undefined -> 回落默认")
-  ok(eq(parsePct("abc,xyz"), [25, 50]), "A-10 全非法 -> 回落默认")
+  ok(eq(parsePct(""), [25]), "A-7 空串 -> 回落默认 [25]（AD1 裁定：50 档默认关闭）")
+  ok(eq(parsePct(null), [25]), "A-8 null -> 回落默认 [25]（AD1）")
+  ok(eq(parsePct(undefined), [25]), "A-9 undefined -> 回落默认 [25]（AD1）")
+  ok(eq(parsePct("abc,xyz"), [25]), "A-10 全非法 -> 回落默认 [25]（AD1）")
   ok(eq(parsePct("0"), []), "A-11 填 0 -> 禁用 []（负路径）")
   ok(eq(parsePct("off"), []), "A-12 填 off -> 禁用 []")
   ok(eq(parsePct("OFF"), []), "A-13 OFF 大小写不敏感")
@@ -143,7 +144,10 @@ if (dcStart >= 0) {
   }
 }
 const dcBody = dcStart >= 0 ? idxSrc.slice(dcStart + 1, dcEnd) : ""
-ok(/^\s{2}fullInjectWaterPct\s*:\s*.25,50./m.test(dcBody), "C-1 DEFAULT_CONFIG 有 fullInjectWaterPct")
+ok(/^\s{2}fullInjectWaterPct\s*:\s*.25./m.test(dcBody), "C-1 DEFAULT_CONFIG 缺省为 25（AD1 裁定：50 档默认关闭）")
+  // ★加强（AD1）：缺省改 25 后，必须同时证明**显式 25,50 仍是双档** —— 否则「默认关闭」会掩盖「双档失效」
+  ok(eq(parsePct("25,50"), [25, 50]), "C-1b 显式 \"25,50\" 仍为双档（默认关闭 ≠ 禁用）")
+  ok(eq(parsePct("0"), []) && eq(parsePct("off"), []), "C-1c off/0 仍禁用")
 ok(!/^\s{2}fullInjectTokenGap\s*:/m.test(dcBody), "C-2 旧键 fullInjectTokenGap 已删（负路径）")
 
 const clientSrc = fs.readFileSync(path.join(ROOT, "lib", "client.js"), "utf8")
