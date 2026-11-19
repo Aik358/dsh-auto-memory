@@ -117,6 +117,20 @@ const HEAVY_MS = {
   'smoke-test-external.mjs': 98300,
   'smoke-test-py-runtime-live.mjs': 57300,
   'smoke-test-la-audit-fixes.mjs': 56100,
+  // ★2026-11-18（A1c）：本套件并发全量时曾被 180s 轻车道误判 TIMEOUT；单跑实测 11.4s、20/0、3 变异全 CAUGHT。
+  //   登记值取实测两倍余量，进重车道（240s）避免负载争抢致假超时。
+  // ★2026-11-19 订正：A1c 按其**单跑** 11.4s 登记 11400，但重车道阈值取 max(240000, 登记值)
+  //   ⇒ 登记值实际无效，仍是 240s。实测并发下 >240s（单跑 15.8s，放大 >15×）：
+  //   它 spawnSync 起 4 个 node 子进程、各写仓库内 artifacts/_r4-p4-3-mutations（2.1MB）。
+  //   登记 420000 与 la5 同档；若再超，应**拆分套件**而不是继续抬（本表 105 行判据）。
+  'smoke-test-r4-p4-3-brief-scan.mjs': 420000,
+  // ★2026-11-19（基线债复核实测）：`r4-p4-2-panels` 单跑 7.4s，但它 spawnSync 起 4 个 node 子进程、
+  //   每个子进程自带 180s 超时，且各写仓库内 artifacts/_r4-p4-2-mutations ⇒ 并发下墙钟远超单跑。
+  //   实测：轻车道 180s 判 TIMEOUT，单跑 14/0。登记入重车道（阈值 240s）。
+  'smoke-test-r4-p4-2-panels.mjs': 9000,
+  // ★2026-11-19（同批）：`r4-read-side` 单跑 126.3s（3 变异 CAUGHT / RESTORED GREEN），
+  //   超轻车道默认 60s ⇒ 全量里恒判 TIMEOUT。登记入重车道。
+  'smoke-test-r4-read-side.mjs': 130000,
   // ★2026-11-09（1B 收口轮实测）：本套件**自耗 242s**（单跑 50 PASS / 0 FAIL、exit=0），
   //   远超轻车道默认 60s ⇒ 在回归里恒判 TIMEOUT（不是挂死，是被阈值判死）。
   //   处置：按本表既有口径「实测 >5s 的套件进重车道」入表（重车道阈值 240s，余量已足；

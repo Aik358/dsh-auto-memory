@@ -117,7 +117,7 @@ ok(IDX.indexOf('renderMemoryDynamic(context) {') > 0, '守卫：renderMemoryDyna
 ok(/'user-memory'[^\n]*'must', 'tail'\)/.test(IDX), '守卫：user-memory 调用点传了 tail')
 ok(/'project-notes'[^\n]*'must', 'tail'\)/.test(IDX), '守卫：project-notes 调用点传了 tail')
 ok(/truncatePlanByPriority\(_planRaw, _planBudget\)/.test(IDX), '守卫：PLAN 段调用 truncatePlanByPriority')
-ok(/weightedTrimHandoffLedgerPre\(_ledgerRaw, _ledgerBudget\)/.test(IDX), '守卫：账本段调用 weightedTrimHandoffLedgerPre')
+ok(/weightedTrimHandoffLedgerPre\((?:selected|_ledgerRaw), _ledgerBudget\)/.test(IDX), '守卫：账本段调用 weightedTrimHandoffLedgerPre（实参可为选中段或原文）')
 ok(!/truncateLinesBounded\(stripSensitiveSections\(sanitizeForInjection\(s\.planText/.test(IDX), '守卫：旧的 PLAN 位置截断调用已消失（不是两套并存）')
 ok(!/truncateLinesBounded\(stripSensitiveSections\(sanitizeForInjection\(s\.latestHandoffText/.test(IDX), '守卫：旧的账本位置截断调用已消失')
 

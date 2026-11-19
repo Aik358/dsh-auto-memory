@@ -107,7 +107,7 @@ const real = cadence.parseWaterThresholds;
   ok(leaked.length === 0, "★★[AD1] 薄适配边界：**只**引 parseWaterThresholds，不引 CA 其它符号", leaked.join(",") || "0 泄漏");
 }
 
-// ══════════ G0. ★真实 apply(ctx)：22 tools / 86 routes 不变 ══════════
+// ══════════ G0. ★P1：delivery-preview 新增路由；22 tools / 87 routes ══════════
 {
   const idx = await import(pathToFileURL(path.join(REPO, "lib/index.js")).href);
   const routes = [], sect = [], effects = [], tools = [];
@@ -130,7 +130,7 @@ const real = cadence.parseWaterThresholds;
   try { await idx.apply(ctx); applied = true } catch (e) { err = String((e && e.message) || e) }
   ok(applied, "★★[AD1] 真实 apply(ctx) 无异常（AD1 未破坏插件装配）", err ? err.slice(0, 120) : "OK");
   ok(tools.length === 22, "★★[AD1] tools 注册数仍为 22（计数锁不变）", String(tools.length));
-  ok(routes.length === 86, "★★[AD1] routes 注册数仍为 86（计数锁不变）", String(routes.length));
+  ok(routes.length === 87, "★★[P1] routes 注册数为 87（新增 delivery-preview；其余注册面不变）", String(routes.length));
   ok(effects.length === 2 && sect.length === 3, "★[AD1] effect=2 / 注入槽=3 均不变", "effect=" + effects.length + " sect=" + sect.length);
 }
 

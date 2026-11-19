@@ -48,7 +48,7 @@ function makeHost() {
     },
     policy: {}, head: {}, sessions: {}, directoryPicker: {}, remote: {},
     router: { get() { return true }, post() { return true } },
-    // ★路由走 ctx.webServer.register(route) —— 桩必须**记录参数**，否则「注册 86 条」无法验证
+    // ★P1新增delivery-preview后为87条；桩必须记录真实register参数，不能只数源码。
     webServer: { register(route) { reg.routes.push(route); return () => {} } },
     slot() { return () => {} },
   }
@@ -61,7 +61,7 @@ ok(!applyErr, "[真apply] apply(ctx) 无抛错", applyErr ? String(applyErr.mess
 ok(host.reg.tools.length === 22, "[真apply] 注册 22 个工具", "实测 " + host.reg.tools.length)
 ok(host.reg.contexts.length === 2, "[真apply] 注册 2 个 systemPrompt.context", "实测 " + host.reg.contexts.length)
 ok(host.reg.sections.length === 1, "[真apply] 注册 1 个 systemPrompt.section", "实测 " + host.reg.sections.length)
-ok(host.reg.routes.length === 86, "[真apply] 注册 86 条路由", "实测 " + host.reg.routes.length)
+ok(host.reg.routes.length === 87, "[真apply/P1] 注册 87 条路由（新增 delivery-preview）", "实测 " + host.reg.routes.length)
 
 // ─────────────────────────────────────────────────────────────
 // 2. 真 context 回调（B3-CB 的核心新增面）

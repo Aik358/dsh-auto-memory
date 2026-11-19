@@ -31,39 +31,55 @@ const REAL = (over) => Object.assign({
   waterPct: 10, _waterPctFired: 0,
 }, over || {});
 const CA = (over) => m.decideInjectionCadencePre(Object.assign({ state: REAL(), frame: {}, signals: {}, config: CFG }, over || {}));
+const waterRound = (waterPct, thresholds, fired = 0) => CA({
+  state: REAL({ waterPct, _waterPctFired: fired }),
+  signals: { isHumanTurn: true },
+  config: thresholds === undefined ? CFG : { ...CFG, fullInjectWaterPct: thresholds },
+});
+const waterGrants = (result) => result.grants.filter((grant) => grant.startsWith("water-"));
 
 // ── A. 缺省水位只 25；显式 25,50；off/0 禁用（修订 1）
 {
   ok(JSON.stringify(m.DEFAULT_WATER_THRESHOLDS) === "[25]", "★★[CA] 缺省水位阈值 = [25]（**50 默认关闭**）", JSON.stringify(m.DEFAULT_WATER_THRESHOLDS));
-  const d26 = CA({ state: REAL({ waterPct: 26 }) });
+  const d26 = waterRound(26);
   ok(d26.tier === "full" && d26.grants.includes("water-25"), "★[CA] 缺省配置 waterPct=26 ⇒ water-25 授予 full", d26.grants.join(","));
-  const d51 = CA({ state: REAL({ waterPct: 51 }) });
+  const d51 = waterRound(51);
   ok(d51.grants.includes("water-25") && !d51.grants.includes("water-50"),
     "★★[CA] 缺省配置 waterPct=51 ⇒ **只有 25 档生效**（50 默认关闭，不出现 water-50）", d51.grants.join(","));
-  const e50 = m.decideInjectionCadencePre({ state: REAL({ waterPct: 51, _waterPctFired: 25 }), config: Object.assign({}, CFG, { fullInjectWaterPct: "25,50" }) });
+  const e50 = waterRound(51, "25,50", 25);
   ok(e50.tier === "full" && e50.grants.includes("water-50"),
     "★★[CA] **显式** '25,50' + waterPct=51 + 已投25 ⇒ water-50（显式双档不被缺省逻辑吞掉）", e50.grants.join(","));
-  const e25 = m.decideInjectionCadencePre({ state: REAL({ waterPct: 26 }), config: Object.assign({}, CFG, { fullInjectWaterPct: "25,50" }) });
+  const e25 = waterRound(26, "25,50");
   ok(e25.grants.includes("water-25"), "[CA] 显式 '25,50' + waterPct=26 ⇒ water-25");
-  for (const off of ["off", "0", "none", "false", 0, false]) {
-    const r = m.decideInjectionCadencePre({ state: REAL({ waterPct: 99 }), config: Object.assign({}, CFG, { fullInjectWaterPct: off }) });
-    ok(r.tier !== "full" && r.fullGranted === false, "★★[CA] 显式禁用 " + JSON.stringify(off) + " + 水位99% ⇒ 仍不投 full", r.tier);
+  // 真人旁路独立授予 full；关闭水位必须用授予原因和水位标记区分。
+  for (const off of ["off", "0", "none", "false", 0, false, []]) {
+    const r = waterRound(99, off);
+    ok(r.fullGranted === true && r.grants.includes("human-turn") && waterGrants(r).length === 0 && r.observed.waterFireAt === 0,
+      "★★[CA] 显式禁用 " + JSON.stringify(off) + " + 真人水位99% ⇒ 仅真人旁路，无水位授予", r.grants.join(","));
   }
-  // 对照：同水位默认阈值必须投 ⇒ 证明上条「不投」确由 off/0 造成
-  ok(CA({ state: REAL({ waterPct: 99 }) }).tier === "full", "★★[CA] 对照：同水位99% 用缺省阈值 ⇒ 投 full（证明禁用是唯一差异）");
+  const enabled = waterRound(99);
+  ok(enabled.fullGranted === true && waterGrants(enabled).join(",") === "water-25" && enabled.observed.waterFireAt === 25,
+    "★★[CA] 对照：同为真人水位99%，缺省阈值授予 water-25");
+  const noHuman = CA({ state: REAL({ waterPct: 99 }), config: { ...CFG, fullInjectWaterPct: "25,50" } });
+  ok(noHuman.isHuman === false && noHuman.fullGranted === false && waterGrants(noHuman).length === 0 && noHuman.observed.waterFireAt === 0,
+    "★★[CA] 非真人即使水位99%且开启双档，仍无水位授予");
   // 全非法/空 ⇒ 回落缺省 [25]
-  const bad = m.decideInjectionCadencePre({ state: REAL({ waterPct: 26 }), config: Object.assign({}, CFG, { fullInjectWaterPct: "abc" }) });
-  ok(bad.grants.includes("water-25"), "★[CA] 全非法串 'abc' ⇒ 回落缺省 [25]（不是 [25,50]）", bad.grants.join(","));
-  const empty = m.decideInjectionCadencePre({ state: REAL({ waterPct: 51 }), config: Object.assign({}, CFG, { fullInjectWaterPct: "" }) });
+  const bad = waterRound(51, "abc");
+  ok(waterGrants(bad).join(",") === "water-25", "★[CA] 全非法串 'abc' ⇒ 回落缺省 [25]（不是 [25,50]）", bad.grants.join(","));
+  const empty = waterRound(51, "");
   ok(empty.grants.includes("water-25") && !empty.grants.includes("water-50"), "★[CA] 空串 ⇒ 回落 [25]（无 50 档）", empty.grants.join(","));
   // 一次性 + 复位
-  ok(CA({ state: REAL({ waterPct: 27, _waterPctFired: 25 }) }).tier !== "full", "★[CA] 已投25档后 27% ⇒ 不重复投");
-  ok(CA({ state: REAL({ waterPct: 26, _waterPctFired: 0 }) }).tier === "full", "★[CA] _waterPctFired 复位0 ⇒ 可再投");
-  const jump = m.decideInjectionCadencePre({ state: REAL({ waterPct: 55, _waterPctFired: 0 }), config: Object.assign({}, CFG, { fullInjectWaterPct: "25,50" }) });
-  ok(jump.grants.includes("water-50") && jump.grants.filter((g) => g.startsWith("water-")).length === 1,
+  const repeated = waterRound(27, undefined, 25);
+  ok(waterGrants(repeated).length === 0 && repeated.observed.waterFireAt === 0, "★[CA] 真人已投25档后 27% ⇒ 不重复授予水位");
+  const reset = waterRound(27, undefined, 0);
+  ok(reset.fullGranted === true && waterGrants(reset).join(",") === "water-25" && reset.observed.waterFireAt === 25,
+    "★[CA] 同为真人水位27%，_waterPctFired 复位0 ⇒ 可再授予 water-25");
+  const jump = waterRound(55, "25,50");
+  ok(waterGrants(jump).join(",") === "water-50" && jump.observed.waterFireAt === 50,
     "★[CA] 一次从低跳到55 ⇒ **只投一次**（fireAt=最高已跨50）", jump.grants.join(","));
-  const custom = m.decideInjectionCadencePre({ state: REAL({ waterPct: 71, _waterPctFired: 0 }), config: Object.assign({}, CFG, { fullInjectWaterPct: "70,90" }) });
-  ok(custom.grants.includes("water-custom"), "★[CA] 自定义阈值 70 ⇒ water-custom", custom.grants.join(","));
+  const custom = waterRound(71, "70,90");
+  ok(waterGrants(custom).join(",") === "water-custom" && custom.observed.waterFireAt === 70,
+    "★[CA] 自定义阈值 70 ⇒ water-custom", custom.grants.join(","));
 }
 
 // ── B. 真实 engine 字段 vs 紧凑别名（修订 2）
@@ -77,8 +93,8 @@ const CA = (over) => m.decideInjectionCadencePre(Object.assign({ state: REAL(), 
   ok(a.observed.compactionSeq === 3 && a.observed.compactSeqSeen === 2, "★[CA] 返回 observed 只读回显真实字段值");
   ok(Object.isFrozen(a.observed), "[CA] observed 已冻结");
   // 真实 _waterPctFired 生效
-  const wf = m.decideInjectionCadencePre({ state: { _stepSeq: 0, _lastFullStepSeq: 0, compactionSeq: 1, _compactSeqSeenPre: 1, waterPct: 27, _waterPctFired: 25 }, config: CFG });
-  ok(wf.tier !== "full", "★[CA] 真实字段 _waterPctFired=25 ⇒ 27% 不重复投");
+  const wf = CA({ state: REAL({ waterPct: 27, _waterPctFired: 25, waterFired: 0 }), signals: { isHumanTurn: true } });
+  ok(waterGrants(wf).length === 0 && wf.observed.waterFireAt === 0, "★[CA] 真实字段 _waterPctFired=25 优先于别名0，27% 不重复授予水位");
   // requestKey：真实输入、不自造
   const rkState = m.decideInjectionCadencePre({ state: REAL({ requestKey: "sess-1:7:2" }), config: CFG });
   ok(rkState.requestKey === "sess-1:7:2" && rkState.requestKeyMissing === false, "★★[CA] requestKey 来自 state 真实字段", String(rkState.requestKey));
@@ -173,17 +189,23 @@ const CA = (over) => m.decideInjectionCadencePre(Object.assign({ state: REAL(), 
 const mkSpec = (over) => m.makeContentSpec(Object.assign(
   Object.fromEntries(m.CONTENT_SPEC_SEGMENTS.map((x) => [x, m.CONTENT_SPEC_ENUMS[x][0]])),
   { budgetPolicy: { unit: "js-chars", cap: null, unresolved: true }, sourceIdentity: "src-1" }, over || {}));
+const planSource = {
+  text: "# 白板\n\n## 当前目标\nCORE-PLAN\n\n## 归档杂项\nNONCORE-DETAIL",
+  policy: { planCoreSections: ["当前目标"] },
+};
 
 // 11. 按 ContentSpec 投影候选
 {
   const spec = mkSpec({ rules: "full", plan: "core", events: "cards", portrait: "short" });
   const pj = m.projectInjectionPre({
-    sources: { rules: { ruleText: "- 必须A" }, plan: { text: "# 白板\n内容" }, events: { text: "[事件]" } },
+    sources: { rules: { ruleText: "- 必须A" }, plan: planSource, events: { text: "[事件]" } },
     tier: "full", contentSpec: spec,
   });
   ok(pj.dtoKind === "Projection", "[PJ] 返回 Projection");
   const kinds = pj.candidates.map((c) => c.kind);
   ok(kinds.includes("rules") && kinds.includes("plan") && kinds.includes("events"), "★[PJ] 请求的三段都产出候选", kinds.join(","));
+  const plan = pj.candidates.find((c) => c.kind === "plan");
+  ok(plan?.text.includes("CORE-PLAN") && !plan.text.includes("NONCORE-DETAIL"), "★★[PJ] plan:core 按显式白名单选节并排除非核心内容");
   ok(pj.candidates.every((c) => c.dtoKind === "ProjectionCandidate" && typeof c.id === "string" && typeof c.priority === "number"), "[PJ] 候选字段完整（id/kind/bucket/priority/text/sourceIdentity/contentVersion）");
   ok(pj.candidates.every((c) => Object.isFrozen(c)), "[PJ] 候选已冻结");
   const modes = ["none", "pointer"];
@@ -192,11 +214,14 @@ const mkSpec = (over) => m.makeContentSpec(Object.assign(
 
 // 12. 各段语义独立：同一 sources 不同 ContentSpec 产出不同候选
 {
-  const src = { rules: { ruleText: "R" }, plan: { text: "P" }, handoff: { text: "H" } };
+  const src = { rules: { ruleText: "R" }, plan: planSource, handoff: { text: "H" } };
   const a = m.projectInjectionPre({ sources: src, contentSpec: mkSpec({ rules: "pointer" }), tier: "full" });
   const b = m.projectInjectionPre({ sources: src, contentSpec: mkSpec({ rules: "pointer", plan: "core" }), tier: "full" });
   ok(a.candidates.length !== b.candidates.length, "★★[PJ] 不同 ContentSpec ⇒ 不同候选集（各段名单独立）", a.candidates.length + " vs " + b.candidates.length);
   ok(!a.candidates.some((c) => c.kind === "plan") && b.candidates.some((c) => c.kind === "plan"), "★[PJ] plan=none 时不投影 plan");
+  const rawOnly = m.projectInjectionPre({ sources: { plan: { text: planSource.text } }, contentSpec: mkSpec({ plan: "core" }), tier: "full" });
+  ok(!rawOnly.candidates.some((c) => c.kind === "plan") && rawOnly.degradations.some((d) => d.scope === "plan" && d.code === "mode-policy-missing"),
+    "★★[PJ] plan:core 缺选择策略时明确降级，不拿全文充当核心节");
 }
 
 // 13. none 段不产生 degradation；请求了但无内容 ⇒ 显式 degradation
@@ -209,14 +234,20 @@ const mkSpec = (over) => m.makeContentSpec(Object.assign(
 // 14. 通道区超限 ⇒ 整段省略 + 显式 degradation
 {
   const big = "x".repeat(5000);
-  const pj = m.projectInjectionPre({
-    sources: { calendar: { text: big }, externalMemory: { text: "小" } },
+  const input = {
+    sources: { calendar: { representations: { current: big } }, externalMemory: { text: "小" } },
     contentSpec: mkSpec({ calendar: "current", externalMemory: "full" }),
     tier: "full", channelLimit: 2000,
-  });
+  };
+  const pj = m.projectInjectionPre(input);
   ok(!pj.candidates.some((c) => c.kind === "calendar"), "★★[PJ] 超限的通道段**整段省略**（不截断后仍投）");
   ok(pj.degradations.some((d) => d.code === "channel-overflow" && d.scope === "calendar"), "★★[PJ] 省略**必须**显式 degradation（不静默）");
   ok(pj.candidates.some((c) => c.kind === "externalMemory"), "[PJ] 未超限的通道段正常投影");
+  const atLimit = m.projectInjectionPre({ ...input, channelLimit: big.length });
+  ok(atLimit.candidates.find((c) => c.kind === "calendar")?.text === big, "★[PJ] 同一日历 current 表示恰好等于上限时完整保留");
+  const rawOnly = m.projectInjectionPre({ ...input, sources: { calendar: { text: big } } });
+  ok(!rawOnly.candidates.some((c) => c.kind === "calendar") && rawOnly.degradations.some((d) => d.scope === "calendar" && d.code === "mode-representation-missing"),
+    "★★[PJ] raw 日历全文不能当作 current 表示计入通道预算");
 }
 
 // 15. 画像只用 accepted/used + authorResponse
@@ -285,9 +316,9 @@ const mkSpec = (over) => m.makeContentSpec(Object.assign(
     "[变异M1] 真人/非真人 ⇒ fullGranted 可区分");
   // 新增内置变异：缺省 vs 显式双档的**水位档位可区分**
   {
-    const def = m.decideInjectionCadencePre({ state: REAL({ waterPct: 51, _waterPctFired: 25 }), config: CFG });
-    const two = m.decideInjectionCadencePre({ state: REAL({ waterPct: 51, _waterPctFired: 25 }), config: Object.assign({}, CFG, { fullInjectWaterPct: "25,50" }) });
-    ok(!def.grants.includes("water-50") && two.grants.includes("water-50"),
+    const def = waterRound(51, undefined, 25);
+    const two = waterRound(51, "25,50", 25);
+    ok(waterGrants(def).length === 0 && waterGrants(two).join(",") === "water-50",
       "[变异M4] 缺省(只25) 与 显式25,50 的档位差异可区分", def.grants.join(",") + " vs " + two.grants.join(","));
   }
   // 新增内置变异：requestKey 若不伪造则可区分

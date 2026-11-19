@@ -20,6 +20,7 @@ let pass = 0, fail = 0;
 function ok(c, n, d) { if (c) { pass++; console.log("PASS " + n + (d ? "  =>  " + d : "")) } else { fail++; console.log("FAIL " + n + (d ? "  =>  " + d : "")) } }
 
 const ph = await import(pathToFileURL(path.join(REPO, "lib/injection/project-handoff.js")).href);
+const { parseHandoffLedgerPre, weightedTrimHandoffLedgerPre } = await import(pathToFileURL(path.join(REPO, "lib/handoff-anchor.js")).href);
 const CR = String.fromCharCode(13);
 const idx = fs.readFileSync(path.join(REPO, "lib", "index.js"), "utf8").split(CR).join("");
 
@@ -90,17 +91,22 @@ const ALL4 = ["type:goal","type:state","type:dead-end","type:progress"];
 const mL = idx.match(/const ledgerPart = \(\(\) => \{[\s\S]*?\n      \}\)\(\)/);
 ok(!!mL, "★[④] 能抽取生产 ledgerPart 块");
 function runLedger(tier) {
-  const fn = new Function("projectHandoffPre","_tier","_ledgerRaw","_ledgerBudget","weightedTrimHandoffLedgerPre","truncateLinesBounded","_weighted","_bdDegradations", mL[0] + "\nreturn {p:ledgerPart,d:_bdDegradations}");
+  const fn = new Function("projectHandoffPre","_tier","_ledgerRaw","_ledgerBudget","parseHandoffLedgerPre","weightedTrimHandoffLedgerPre","truncateLinesBounded","_bdDegradations", mL[0] + "\nreturn {p:ledgerPart,d:_bdDegradations}");
   const d = [];
-  const r = fn(ph.projectHandoffPre, tier, LEDGER4, 8000, (t) => t, (t, b) => t, null, d);
-  return { len: r.p.length, has: ALL4.filter((x) => r.p.indexOf(x) >= 0), degs: d };
+  const r = fn(ph.projectHandoffPre, tier, LEDGER4, 8000, parseHandoffLedgerPre, weightedTrimHandoffLedgerPre, (t, b) => t.slice(0, b), d);
+  return { len: r.p.length, text: r.p, has: ALL4.filter((x) => r.p.indexOf(x) >= 0), degs: d };
 }
-const FULL_LEDGER = ["human_full","run_full","post_compact","handoff_carry","hang_compensate","legacy"];
+// P1 R1 明确将 run_full 账本降为三段；其他 full 档仍逐项要求四段。
+const FULL_LEDGER = ["human_full","post_compact","handoff_carry","hang_compensate","legacy"];
 for (const t of FULL_LEDGER) {
   ok(runLedger(t).has.length === 4, "★★[④] " + t + " 账本保留四段（full 映射）");
 }
-for (const t of ["human_slim","run_slim"]) {
-  ok(runLedger(t).has.indexOf("type:state") < 0, "★★[④] " + t + " 账本省略 type:state（slim 映射）");
+for (const t of ["human_slim","run_full","run_slim"]) {
+  const projected = runLedger(t);
+  ok(projected.has.indexOf("type:state") < 0, "★★[④] " + t + " 账本省略 type:state（slim 映射）");
+  ok(projected.has.length === 3 && ["type:goal","type:dead-end","type:progress"].every(tag => projected.has.includes(tag)),
+    "★★[④/P1] " + t + " 三段完整：目标、失败原因、下一步");
+  if (t === "run_full") ok(!projected.text.includes("任务状态"), "★★[R1负路径] run_full 不含任务状态标题或正文段");
 }
 ok(runLedger("human_full").has.length !== runLedger("human_slim").has.length, "★★[④] full/slim 两组可区分（判据非恒真）");
 
@@ -121,11 +127,11 @@ ok(runLedger("human_full").has.length !== runLedger("human_slim").has.length, "�
 }
 {
   const d = [];
-  const fn = new Function("projectHandoffPre","_tier","_ledgerRaw","_ledgerBudget","weightedTrimHandoffLedgerPre","truncateLinesBounded","_weighted","_bdDegradations", mL[0] + "\nreturn {p:ledgerPart,d:_bdDegradations}");
+  const fn = new Function("projectHandoffPre","_tier","_ledgerRaw","_ledgerBudget","parseHandoffLedgerPre","weightedTrimHandoffLedgerPre","truncateLinesBounded","_bdDegradations", mL[0] + "\nreturn {p:ledgerPart,d:_bdDegradations}");
   const boom = () => { throw new Error("simulated-ledger-failure") };
-  const r = fn(boom, "human_full", LEDGER4, 8000, (t) => t.slice(0, 40), (t, b) => t.slice(0, b), null, d);
+  const r = fn(boom, "human_full", LEDGER4, 8000, parseHandoffLedgerPre, weightedTrimHandoffLedgerPre, (t, b) => t.slice(0, b), d);
   ok(r.d.length === 1, "★★[⑤] 账本抛错**留 degradation**", r.d.length + " 条");
-  ok(r.p.length <= 40, "★★[⑤] 账本抛错仍过**四段加权预算**（非无限全文）", String(r.p.length));
+  ok(r.p === "", "★★[⑤/R-I] 账本投影失败显式省略，不回落原文", String(r.p.length));
 }
 
 // ══════════ ⑥ 冲突 profile/tier + 重复请求 ══════════
@@ -161,7 +167,8 @@ ok(runLedger("human_full").has.length !== runLedger("human_slim").has.length, "�
   let applied = false, err = null;
   try { await mod.apply(ctx); applied = true } catch (e) { err = String((e && e.message) || e) }
   ok(applied, "★★[⑦] 真实 apply(ctx) 无异常", err ? err.slice(0, 120) : "OK");
-  ok(tools.length === 22 && routes.length === 86, "★★[⑦] tools=22 / routes=86 不变", tools.length + "/" + routes.length);
+  // P1 新增唯一 preview 路由；工具与导出保持原数。
+  ok(tools.length === 22 && routes.length === 87, "★★[⑦/P1] tools=22 / routes=87（新增 delivery-preview）", tools.length + "/" + routes.length);
   ok(Object.keys(mod).filter((k) => k !== "default").length === 41, "★★[⑦] 导出仍 41");
 }
 

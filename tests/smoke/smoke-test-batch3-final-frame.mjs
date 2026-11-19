@@ -223,29 +223,71 @@ const mkStore = () => { const mem = {}; return { mem, read: (k) => (k in mem ? m
 // 15. ★finalize 不冒充宿主已交付
 {
   const p = m.prepareNotificationPre({ scanResult: mkScan(), runtimeScope: "ws-1", sessionId: "s-1" });
-  const fin = m.finalizeInjectionPre({ requestId: "req-1", text: "最终文本", prepared: [p] });
+  const text = "最终文本\n" + p.payload;
+  const fin = m.finalizeInjectionPre({ requestId: "req-1", text, prepared: [p] });
   ok(fin.finalizeReceipt.hostObservation.projected === "unknown", "★★[NT] finalize 的 hostObservation **恒 unknown**（不冒充已交付）", fin.finalizeReceipt.hostObservation.projected);
   ok(fin.finalizeReceipt.hostObservation.retained === "unknown", "★★[NT] retained 也恒 unknown");
-  ok(fin.selectedNotificationIds.length === 1 && fin.selectedNotificationIds[0] === p.id, "★[NT] selectedNotificationIds 记录候选身份");
+  ok(fin.selectedNotificationIds.length === 1 && fin.selectedNotificationIds[0] === p.id, "★[NT] selectedNotificationIds 记录实际进入定稿的通知");
   ok(fin.finalizeReceipt.preparedVersions[p.id] === p.version, "★[NT] preparedVersions 记录版本");
-  ok(fin.text === "最终文本", "★[NT] finalize 只定稿**插件最终文本**");
+  ok(fin.text === text, "★[NT] finalize 只定稿**插件最终文本**");
   ok(typeof fin.finalizeReceipt.textSha256 === "string" && fin.finalizeReceipt.textSha256.length === 64, "★[NT] 记录 textSha256", fin.finalizeReceipt.textSha256.slice(0, 12) + "…");
 }
 
-// 16. ★commit 幂等 + 旧版本不清新待办 + 写盘失败可重试
+// 15b. F13：候选与保留名单都不能替代最终文本中的通知正文。
+{
+  const p = m.prepareNotificationPre({ scanResult: mkScan(), runtimeScope: "ws-1", sessionId: "s-1" });
+  const requestId = "r-dropped";
+  const dropped = m.finalizeInjectionPre({ requestId, text: "最终文本", prepared: [p], retainedNotificationIds: [p.id] });
+  ok(dropped.selectedNotificationIds.length === 0 && !Object.hasOwn(dropped.finalizeReceipt.preparedVersions, p.id),
+    "★★[NT] 正文被裁掉时，即使在保留名单内也不选中通知");
+  const excluded = m.finalizeInjectionPre({ requestId, text: p.payload, prepared: [p], retainedNotificationIds: [] });
+  ok(excluded.selectedNotificationIds.length === 0, "★★[NT] 正文存在但不在显式保留名单时，不选中通知");
+  const partial = m.finalizeInjectionPre({ requestId, text: p.payload, prepared: [{ id: p.id, version: p.version }] });
+  ok(partial.selectedNotificationIds.length === 0 && partial.degradations.some(d => d.code === "notification-payload-unverified"),
+    "★★[NT] 旧候选无正文时可读并显式降级，不选中通知");
+  const store = mkStore();
+  const result = m.commitNotificationPre({ requestId, finalizeReceipt: dropped.finalizeReceipt, finalizedText: dropped.text, store });
+  ok(result.committed.length === 0 && result.errors.length === 0 && !Object.hasOwn(store.mem, requestId),
+    "★★[NT] 没有选中的通知时正常返回且不创建存储记录");
+}
+
+// 16. ★commit 幂等，旧版本不能覆盖已提交的新版本。
+{
+  const store = mkStore();
+  const input = { scanResult: mkScan(), runtimeScope: "ws-1", sessionId: "s-1" };
+  const pOld = m.prepareNotificationPre(input);
+  const p = m.prepareNotificationPre({ ...input, prevVersion: pOld.version });
+  const fin = m.finalizeInjectionPre({ requestId: "r-1", text: p.payload, prepared: [p] });
+  const args = { requestId: "r-1", finalizeReceipt: fin.finalizeReceipt, finalizedText: fin.text, store };
+  const c1 = m.commitNotificationPre(args);
+  ok(c1.committed.length === 1 && c1.errors.length === 0, "★[NT] 首次 commit 成功", "committed=" + c1.committed.length);
+  ok(c1.verification.finalizedText === "verified", "★[NT] 提交核对了最终文本");
+  const c2 = m.commitNotificationPre(args);
+  ok(c2.committed.length === 0 && c2.skipped.length === 1, "★★[NT] 同请求再次 commit ⇒ **幂等跳过**（不重复提交）", "skipped=" + c2.skipped.length);
+  const older = m.finalizeInjectionPre({ requestId: "r-1", text: pOld.payload, prepared: [pOld] });
+  ok(pOld.id === p.id && pOld.version < p.version && older.finalizeReceipt.preparedVersions[p.id] === pOld.version,
+    "[夹具] 同一通知的旧版本正文进入定稿，提交实际触发版本检查");
+  const c3 = m.commitNotificationPre({ ...args, finalizeReceipt: older.finalizeReceipt, finalizedText: older.text });
+  ok(c3.committed.length === 0 && c3.skippedDetail.some(d => d.id === p.id && d.reason === "stale-version"),
+    "★★[NT] **旧版本不得覆盖新版本**，按过期版本跳过", String(c3.committed.length));
+  const savedVersion = store.mem["r-1"]?.versions?.[p.id];
+  ok(savedVersion === p.version, "★★[NT] 存储里的版本**仍是新版本**（旧 commit 未清掉新待办）", String(savedVersion));
+}
+
+// 16b. 文本变化必须在写入之前被拒绝，省略旧参数仍可提交并留下未验证回执。
 {
   const store = mkStore();
   const p = m.prepareNotificationPre({ scanResult: mkScan(), runtimeScope: "ws-1", sessionId: "s-1" });
-  const fin = m.finalizeInjectionPre({ requestId: "r-1", text: "T", prepared: [p] });
-  const c1 = m.commitNotificationPre({ requestId: "r-1", finalizeReceipt: fin.finalizeReceipt, store });
-  ok(c1.committed.length === 1 && c1.errors.length === 0, "★[NT] 首次 commit 成功", "committed=" + c1.committed.length);
-  const c2 = m.commitNotificationPre({ requestId: "r-1", finalizeReceipt: fin.finalizeReceipt, store });
-  ok(c2.committed.length === 0 && c2.skipped.length === 1, "★★[NT] 同请求再次 commit ⇒ **幂等跳过**（不重复提交）", "skipped=" + c2.skipped.length);
-  // 旧版本 commit 不得清新待办
-  const older = m.finalizeInjectionPre({ requestId: "r-1", text: "T", prepared: [{ id: p.id, version: p.version - 1 > 0 ? p.version - 1 : 0 }] });
-  const c3 = m.commitNotificationPre({ requestId: "r-1", finalizeReceipt: older.finalizeReceipt, store });
-  ok(c3.committed.length === 0, "★★[NT] **旧版本不得覆盖新版本**（committed=0）", String(c3.committed.length));
-  ok(store.mem["r-1"].versions[p.id] === p.version, "★★[NT] 存储里的版本**仍是新版本**（旧 commit 未清掉新待办）", String(store.mem["r-1"].versions[p.id]));
+  const fin = m.finalizeInjectionPre({ requestId: "r-hash", text: p.payload, prepared: [p] });
+  const args = { requestId: "r-hash", finalizeReceipt: fin.finalizeReceipt, store };
+  let error = null;
+  try { m.commitNotificationPre({ ...args, finalizedText: fin.text + "\n额外内容" }) } catch (e) { error = e }
+  ok(error?.field === "finalizeReceipt.textSha256" && !Object.hasOwn(store.mem, args.requestId),
+    "★★[NT] 最终文本变化时拒绝提交，存储没有写入");
+  const legacy = m.commitNotificationPre({ ...args, store: mkStore() });
+  ok(legacy.committed.length === 1 && legacy.verification.finalizedText === "unverified"
+    && legacy.degradations.some(d => d.code === "notification-text-unverified"),
+    "★★[NT] 旧调用省略 finalizedText 仍可提交，并标注文本未验证");
 }
 
 // 17. ★写盘失败显式报错 + 可重试
@@ -257,12 +299,13 @@ const mkStore = () => { const mem = {}; return { mem, read: (k) => (k in mem ? m
     write: (k, v) => { if (failOnce) { failOnce = false; const e = new Error("EPERM: readonly"); throw e } mem[k] = v },
   };
   const p = m.prepareNotificationPre({ scanResult: mkScan(), runtimeScope: "ws-1", sessionId: "s-1" });
-  const fin = m.finalizeInjectionPre({ requestId: "r-2", text: "T", prepared: [p] });
-  const c1 = m.commitNotificationPre({ requestId: "r-2", finalizeReceipt: fin.finalizeReceipt, store: flaky });
+  const fin = m.finalizeInjectionPre({ requestId: "r-2", text: p.payload, prepared: [p] });
+  const args = { requestId: "r-2", finalizeReceipt: fin.finalizeReceipt, finalizedText: fin.text, store: flaky };
+  const c1 = m.commitNotificationPre(args);
   ok(c1.errors.length > 0 && c1.errors.some((e) => e.code === "store-write-failed"), "★★[NT] 写盘失败 ⇒ **显式报错**（不吞）", c1.errors.map((e) => e.code).join(","));
   ok(c1.committed.length === 0, "★★[NT] 写失败时 **不谎报已提交**");
   ok(!("r-2" in mem), "★★[NT] 写失败时存储无残留");
-  const c2 = m.commitNotificationPre({ requestId: "r-2", finalizeReceipt: fin.finalizeReceipt, store: flaky });
+  const c2 = m.commitNotificationPre(args);
   ok(c2.committed.length === 1 && c2.errors.length === 0, "★★[NT] **重试成功**（可重试）", "committed=" + c2.committed.length);
 }
 

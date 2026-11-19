@@ -144,7 +144,8 @@ const MT = "【真实维护块·取自 DEFAULT_PROMPT_LAYERS】";
   try { await mod.apply(ctx); applied = true } catch (e) { err = String((e && e.message) || e) }
   ok(applied, "★★[RP] 真实 apply(ctx) 无异常", err ? err.slice(0, 120) : "OK");
   ok(tools.length === 22, "★★[RP] tools 注册数仍 22", String(tools.length));
-  ok(routes.length === 86, "★★[RP] routes 注册数仍 86", String(routes.length));
+  // P1 授权新增 delivery-preview；保留真 apply 计数，工具/导出等独立断言不变。
+  ok(routes.length === 87, "★★[RP/P1] routes 为 87（新增 delivery-preview）", String(routes.length));
   ok(effects.length === 2 && sect.length === 3, "★[RP] effect=2 / 注入槽=3 不变", "effect=" + effects.length + " sect=" + sect.length);
   ok(Object.keys(mod).filter((k) => k !== "default").length === 41, "★★[RP] 导出符号仍 41");
 }

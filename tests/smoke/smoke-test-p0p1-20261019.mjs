@@ -58,9 +58,10 @@ ok(/out\.reason = /.test(body), 'P1-3c 未就绪必须写 reason')
 ok(/await engine\.pythonReadinessPre\(\)/.test(body), 'P1-3d 旧别名复用统一判据')
 
 console.log('=== v3.3.8 节奏降频 ===')
-ok(/const DEFAULT_SNAPSHOT_MIN_GAP_ROUNDS = 20/.test(SRC), 'R-a 完整版默认 20')
-ok(/const DEFAULT_SLIM_EVERY_ROUNDS = 8/.test(SRC), 'R-b 精简版默认 8')
-ok(/const SLIM_EVERY_DEFAULTS_VERSION = 1/.test(SRC), 'R-c SLIM 有独立版本戳（不与 FULL 共用）')
+// P1 R2：默认40/15且独立版本戳各前进一次；显式0/1与独立迁移行为另有真调用覆盖。
+ok(/const DEFAULT_SNAPSHOT_MIN_GAP_ROUNDS = 40/.test(SRC), 'R-a 完整版默认 40')
+ok(/const DEFAULT_SLIM_EVERY_ROUNDS = 15/.test(SRC), 'R-b 精简版默认 15')
+ok(/const SLIM_EVERY_DEFAULTS_VERSION = 2/.test(SRC), 'R-c SLIM 独立版本戳 = 2（不与 FULL 共用）')
 const iFull = SRC.indexOf('const fullDone =')
 const iSlimGuard = SRC.indexOf('const slimOnDiskVer =')
 ok(iFull > 0 && iSlimGuard > iFull, 'R-d FULL 与 SLIM 各自守卫、互不阻塞')

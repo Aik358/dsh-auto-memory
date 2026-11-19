@@ -46,13 +46,25 @@ function extractFn(src, name) {
 }
 
 console.log("== A. T1 设置页文案（三语）==")
-ok(clientSrc.indexOf("用来防止长任务里模型对上下文漂移。默认 20。") >= 0, "A-1 中文写「默认 20」")
-ok(clientSrc.indexOf("drifting in long tasks. Default 20.") >= 0, "A-2 英文写「Default 20」")
-ok(clientSrc.indexOf("文脈ドリフトを防ぎます。既定 20。") >= 0, "A-3 日文写「既定 20」")
-ok(clientSrc.indexOf("防止长任务里模型对上下文漂移。默认 10。") < 0, "A-4 中文旧值已清（负路径）")
-ok(clientSrc.indexOf("drifting in long tasks. Default 10.") < 0, "A-5 英文旧值已清（负路径）")
+// P2 F4 aligns the actual settings hints with the P1 defaults. Match the hint keys,
+// so historical changelog text and the separate Policy UI cannot satisfy this lock.
+const gapHints = (source, key) => [...source.matchAll(new RegExp(`(?:\\b${key}|"${key}"):\\s*(['"])([^\\r\\n]*?)\\1`, 'g'))].map(match => match[2])
+const labels = [['默认', '。'], ['Default', '.'], ['既定', '。']]
+const copyMatches = (full, slim) => full.length === 3 && slim.length === 3 && labels.every(([label, end], i) =>
+  full[i].includes(`${label} 40${end}`) && slim[i].includes(`${label} 15${end}`) &&
+  ![10, 20].some(n => full[i].includes(`${label} ${n}${end}`)) && ![3, 8].some(n => slim[i].includes(`${label} ${n}${end}`)))
+const fullHints = gapHints(clientSrc, 'fSnapGapHint'), slimHints = gapHints(clientSrc, 'fSlimEveryHint')
+ok(copyMatches(fullHints, slimHints), "A-1 三语文案分别为 40 / 15，且无旧默认")
+for (const [i, [label, end]] of labels.entries()) {
+  const oldFull = fullHints.map((hint, n) => n === i ? hint.replace(`${label} 40${end}`, `${label} 20${end}`) : hint)
+  const oldSlim = slimHints.map((hint, n) => n === i ? hint.replace(`${label} 15${end}`, `${label} 8${end}`) : hint)
+  ok(!copyMatches(oldFull, slimHints) && !copyMatches(fullHints, oldSlim), `A-2 ${label}：恢复任一旧默认即红`)
+}
+const copySource = fs.readFileSync(path.join(ROOT, 'skins', 'iter5', 'settings-copy.js'), 'utf8')
+const variantFull = copySource.split('\n').find(line => line.trimStart().startsWith('fSnapGap: [')) || ''
+ok(variantFull.includes('默认 40 次模型请求。') && variantFull.includes('Default 40 model requests.'), "A-5 v4 解释沿用 40 次模型请求")
 const mConst = idxSrc.match(/DEFAULT_SNAPSHOT_MIN_GAP_ROUNDS\s*=\s*(\d+)/)
-ok(mConst && Number(mConst[1]) === 20, "A-6 常量 === 20", mConst ? mConst[1] : "null")
+ok(mConst && Number(mConst[1]) === 40, "A-6 P1 cadence fallback === 40", mConst ? mConst[1] : "null")
 
 console.log("")
 console.log("== B. T2 新配置键 ==")
@@ -72,11 +84,9 @@ if (dcStart >= 0) {
 const dcBody = dcStart >= 0 ? idxSrc.slice(dcStart + 1, dcEnd) : ""
 const dc = dcBody
 const want = [
-  // ★v5-P2（2026-10-26 用户裁定）判据更新：fullInjectTokenGap 已被 fullInjectWaterPct 取代。
-  //   原因：用户认为「累计 250k token」太死板，且 250k 在不同窗口大小下语义漂移
-  //   （1M 窗口是 25%，128k 窗口是 195%）⇒ 改为直接按水位百分比判定（默认 "25,50"）。
-  //   本行原为 ["fullInjectTokenGap", "250000"]，现改为新键（判据意图不变：F1 触发配置存在且可用）。
-  ["fullInjectWaterPct", "'25,50'"],
+  // ★R8（2026-11-17）：默认只启用 25 档；50 档由用户显式配置 "25,50" 开启。
+  //   一次迁移会把未打戳的旧默认残留 "25,50" 收敛为 "25"。
+  ["fullInjectWaterPct", "'25'"],
   ["slimCheckpointCount", "3"],
   ["hangCompensateTokens", "300000"],
   // ★2026-10-30 T3：删除该行 —— 「压缩后是否注入完整版」配置键已**彻底删除**（死键，全仓 0 读取点）。

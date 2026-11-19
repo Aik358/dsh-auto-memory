@@ -252,7 +252,7 @@
           'data-i5-conflict-dot': '',
           'aria-hidden': 'true',
           title: L('有待裁定的冲突', 'Pending conflicts'),
-          style: { display: 'inline-block', width: '6px', height: '6px', borderRadius: '50%', marginLeft: '5px', verticalAlign: 'top', marginTop: '1px', background: 'radial-gradient(circle at 35% 30%, #A9304C 0%, #7B2135 72%)', boxShadow: '0 0 0 1px rgba(255,255,255,.20), 0 0 5px rgba(123,33,53,.55)' },
+          style: { display: 'inline-block', width: '6px', height: '6px', borderRadius: '50%', marginLeft: '5px', verticalAlign: 'top', marginTop: '1px', background: 'radial-gradient(circle at 35% 30%, var(--dam-conflict-dot-from) 0%, var(--dam-conflict-dot-to) 72%)', boxShadow: '0 0 0 1px var(--dam-conflict-dot-ring), 0 0 5px var(--dam-conflict-dot-glow)' },
         }) : null)
       var items = [['browse', L('浏览', 'Browse')], ['conflicts', conflictLabel], ['logs', L('日志', 'Logs')], ['reflections', L('反思', 'Reflections')], ['search', L('检索', 'Search')]]
       var component = tab[0] === 'browse' ? Iter5Browse : tab[0] === 'conflicts' ? Iter5Conflicts : tab[0] === 'search' ? Iter5Search : Iter5History
@@ -369,7 +369,7 @@
         h('main', { ref: content, className: 'i5-main', key: identity, 'aria-label': title },
           h('header', { className: 'i5-page-head' }, h('div', null, h('h1', null, title), h('p', null, locale === 'zh' ? ({ home: '查看最近记录、今日日程与当前会话，继续手头的工作。', library: '集中查看用户偏好、项目笔记、每日日志与反思记录。', handoff: '让当前的目标、进度与经验，在下一段会话中继续。', calendar: '把待办与重要时刻放在一起，让每一天更从容。', recall: '回顾每一次记忆唤起，查看判定依据并留下反馈。', skills: '让反复验证的经验，沉淀为可复用的工作方法。', mindmap: '从工作区与记忆之间，发现持续连接的脉络。', storage: '查看记忆语料、维护索引，以及迁移你的积累。', settings: '决定记忆如何记录、唤回与接续，让它更适合你。' }[page[0]] || '记忆与任务，按当前工作区呈现') : 'Memory and tasks for the current workspace')),
             h('div', { className: 'i5-page-actions' }, h('button', { 'data-i5-theme': theme[0], 'aria-label': L('外观主题：', 'Appearance theme: ') + iter5ThemeLabel(theme[0]) + L('（点击切换 跟随 → 亮 → 暗）', ' (click to cycle auto → light → dark)'), title: L('主题：', 'Theme: ') + iter5ThemeLabel(theme[0]) + L('（点击切换）', ' (click to cycle)'), onClick: function () { theme[2](iter5ThemeCycle(theme[0])) } }, h(Iter5Icon, { name: iter5ThemeIcon(theme[0]) }), ' ', iter5ThemeLabel(theme[0])), h('button', { 'aria-label': focus[0] ? L('退出专注查看', 'Exit focused view') : L('专注查看', 'Focused view'), 'aria-pressed': focus[0], onClick: function () { focus[1](!focus[0]) } }, focus[0] ? L('返回会话', 'Back to conversation') : L('专注查看', 'Focused view')), h('button', { 'aria-label': L('刷新当前页', 'Refresh current page'), onClick: function () { if (root.current.querySelector('[data-i5-dirty="true"]') && !window.confirm(L('刷新会放弃未保存修改，继续？', 'Discard changes and refresh?'))) return; if (page[0] === 'settings') delete iter5SettingsDrafts[iter5Identity() + '|workbench']; refresh[1](refresh[0] + 1) } }, L('刷新', 'Refresh')))),
-          h('div', { className: ['team', 'stats'].indexOf(page[0]) >= 0 ? 'i5-card i5-hosted' : '' }, h(Component, { key: page[0] + ':' + nonce + ':' + JSON.stringify(intent[0]), nonce: nonce, onNav: nav, intent: intent[0] })),
+          h('div', { className: ['team', 'stats'].indexOf(page[0]) >= 0 ? 'i5-card i5-hosted' : '' }, h(Component, { key: page[0] + ':' + nonce + ':' + JSON.stringify(intent[0]), nonce: nonce, onNav: nav, intent: intent[0], policySettings: page[0] === 'settings' ? props.policySettings : undefined })),
           page[0] === 'storage' ? h('details', { className: 'i5-card' }, h('summary', null, L('调试中心', 'Diagnostics')), h(DebugCenter), h('button', { onClick: function () { nav('settings', { group: 'behavior' }) } }, L('检查更新与高级设置', 'Updates and advanced settings'))) : null))
     }
     // Product views: reference artwork informs layout, never invents data or actions.
@@ -863,7 +863,7 @@
           } },
           h('header', { className: 'i5-settings-frame-head' }, h('strong', null, L('记忆设置', 'Memory settings')),
             h('button', { 'data-i5-settings-return': '', onClick: function () { expanded[1](!expanded[0]) } }, expanded[0] ? L('返回宿主设置', 'Back to host settings') : L('展开设置', 'Expand settings'))),
-          h('div', { className: 'i5-main' }, h(Iter5Settings, { key: identity[0], draftScope: 'host', close: props && props.close }))))
+          h('div', { className: 'i5-main' }, h(Iter5Settings, { key: identity[0], draftScope: 'host', close: props && props.close, policySettings: props && props.policySettings }))))
       return h('div', { ref: slot, 'data-i5-settings-slot': '' },
         expanded[0] ? h('button', { onClick: function () { if (root.current) root.current.querySelector('button').focus() } }, L('记忆设置已展开', 'Memory settings expanded')) : null,
         target ? createPortal(form, target) : form)
@@ -883,7 +883,7 @@
       var i5Initialized = useRef(false), i5AppliedRead = useRef(0)
       var i5Identity = iter5Identity()
       var i5DraftKey = i5Identity + '|' + (props && props.draftScope || 'workbench')
-      var i5GroupsDef = { engine: ['engine'], memory: ['window', 'capacity', 'skills'], appearance: ['store', 'look', 'skin'], behavior: ['handoff', 'auto', 'team', 'about'] }
+      var i5GroupsDef = { engine: ['engine'], memory: ['window', 'capacity', 'skills'], appearance: ['store', 'look', 'skin'], behavior: ['policy', 'handoff', 'auto', 'team', 'about'] }
       useEffect(function () {
         i5Alive.current = true
         function before(e) { if (!Object.keys(i5Draft.current).length) return; e.preventDefault(); e.returnValue = '' }
@@ -922,6 +922,8 @@
       var cfgPair = useState(null)
       var cfg = cfgPair[0]
       var setCfg = cfgPair[1]
+      var policyLegacy = useRef(null)
+      var policyNavigation = useState(null)
       var busyPair = useState(false)
       var busy = busyPair[0]
       function setBusy(value) {
@@ -1214,6 +1216,10 @@
       }
       function save() {
         if (i5Busy.current || !Object.keys(i5Draft.current).length) return
+        if (iter5HasSavedDeliveryPolicyPre(policyLegacy.current || i5Base.current)) {
+          iter5PolicyClearLegacyDraftPre(i5Draft.current, i5Groups.current, iter5SettingsDrafts, i5DraftKey)
+          if (!Object.keys(i5Draft.current).length) { setDirty(false); return }
+        }
         i5AppliedRead.current=++i5Read.current;i5Busy.current=true
         setBusy(true); setMsg(''); setErr('')
         var patch = Object.assign({}, i5Draft.current)
@@ -1232,10 +1238,25 @@
         })
       }
       function field(label, control, hint) {
+        var policyKey = control && control.props && control.props['data-dam-policy-legacy-key']
+        if (policyKey && policyOwnsLegacy(policyKey)) control = iter5PolicyLegacyReadoutPre(policyLegacy.current || i5Base.current || cfg, policyKey, control.props)
         if (control && (control.type === 'input' || control.type === 'select' || control.type === 'textarea')) control = React.cloneElement(control, { 'aria-label': label, disabled: busy || control.props.disabled, role: control.type === 'input' && control.props.type === 'checkbox' ? 'switch' : undefined })
         return h('div', { 'data-dam-settings-row': '', 'data-i5-field': label },
           h('div', { 'data-dam-slot': 'list', 'data-dam-row': '' }, h('label', null, label), control),
           hint ? h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, hint) : null)
+      }
+      function policyOwnsLegacy(key) {
+        return iter5PolicyOwnsLegacyPre(policyLegacy.current || i5Base.current || cfg, key)
+      }
+      function applyPolicyLegacyConfig(remote) {
+        var before = iter5HasSavedDeliveryPolicyPre(policyLegacy.current || i5Base.current || cfg)
+        var saved = iter5HasSavedDeliveryPolicyPre(remote)
+        policyLegacy.current = remote
+        if (!before && !saved) return
+        i5Base.current = iter5PolicyLegacyConfigPre(i5Base.current, remote)
+        if (saved) iter5PolicyClearLegacyDraftPre(i5Draft.current, i5Groups.current, iter5SettingsDrafts, i5DraftKey)
+        setDirty(Object.keys(i5Draft.current).length > 0)
+        setCfg(function (previous) { return iter5PolicyLegacyConfigPre(previous, remote) })
       }
       function setAccent(value) {
         accentTheme = ACCENT_VALUES[value] ? value : 'deepseek'
@@ -1295,6 +1316,7 @@
         team: L('团队协作', 'Teamwork'),
         team: L('团队协作', 'Teamwork'),
         skin: L('皮肤素材', 'Skin assets'),
+        policy: L('投递策略', 'Delivery policy'),
         about: L3('关于与维护', 'About & maintenance', '情報とメンテナンス'),
       }
       var i5WelcomeControl = null
@@ -1318,12 +1340,18 @@
             h(Iter5Card, { className: 'i5-setup-card', title: L('引擎状态与安装', 'Engine status & setup'), icon: 'spark', hue: 'purple' }, support),
             h(Iter5Card, { title: title, icon: 'pulse', hue: 'green' }, primary, h('details', null, h('summary', null, L('高级：发射模式、判定参数与观测', 'Advanced: emission, thresholds & observation')), advanced)))
         }
-        var icons = { window: 'library', capacity: 'storage', skills: 'skills', handoff: 'handoff', auto: 'timeline', store: 'folder', look: 'settings', team: 'mindmap', skin: 'spark', about: 'note' }
+        var icons = { window: 'library', capacity: 'storage', skills: 'skills', policy: 'settings', handoff: 'handoff', auto: 'timeline', store: 'folder', look: 'settings', team: 'mindmap', skin: 'spark', about: 'note' }
         return h('section', { id: i5SettingsId + '-section-' + key, 'data-dam-settings-group': '', hidden: hidden }, h('h3', { className: 'i5-card-title' }, h('span', { className: 'i5-badge', 'data-hue': key === 'skills' ? 'green' : key === 'handoff' ? 'cyan' : key === 'auto' ? 'orange' : 'blue' }, h(Iter5Icon, { name: icons[key] || 'settings' })), title), content)
       }
       function jumpToSection(key) {
         setSettingsSection(key)
         try { var el = document.getElementById('dam-settings-' + key); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }) } catch (e) {}
+      }
+      var policyMount = props && props.policySettings
+      function openPolicyPage(page) {
+        i5Group[1]('behavior')
+        setSettingsSection('policy')
+        policyNavigation[1]({ page: page })
       }
       return h('div', { 'data-dam-settings': '', 'data-i5-dirty': dirty ? 'true' : 'false' },
         h(Iter5Tabs, { id: i5SettingsId, label: L('设置分组', 'Settings groups'), value: i5Group[0], onChange: i5Group[1], items: [['engine', L('引擎', 'Engine')], ['memory', L('记忆', 'Memory')], ['appearance', L('外观与目录', 'Appearance & paths')], ['behavior', L('行为与维护', 'Behavior & maintenance')]].map(function (r) { return [r[0], r[1], Object.keys(i5Groups.current).some(function (k) { return i5Groups.current[k] === r[0] })] }) }),
@@ -1650,7 +1678,8 @@
               }) : h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, L('未能从宿主取到分区清单（请重启宿主后重试）。', 'Section list unavailable (restart the host and retry).')),
             ])
           })() : null,
-  field(t('fInject'), h('input', { type: 'checkbox', checked: !!cfg.injectEnabled, onChange: function (e) { set('injectEnabled', e.target.checked) } }), t('fInjectHint')),
+  field(t('fInject'), h('input', { type: 'checkbox', 'data-dam-policy-legacy-key': 'injectEnabled', checked: !!cfg.injectEnabled, onChange: function (e) { if (!policyOwnsLegacy('injectEnabled')) set('injectEnabled', e.target.checked) } }), t('fInjectHint')),
+          iter5HasSavedDeliveryPolicyPre(policyLegacy.current || i5Base.current || cfg) ? iter5PolicyLegacyActionsPre(openPolicyPage) : null,
           field(t('fBudget'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 400, value: cfg.injectBudgetChars, onChange: function (e) { set('injectBudgetChars', Number(e.target.value) || 8000) } }), t('fBudgetHint')),
           // 2026-09-22 补接线(设置页缺口审计 P0-3/P0-4/P0-6):目录层与规则分层此前只有后端实现。
           field(t('fTier0Catalog'), h('input', { type: 'checkbox', 'data-dam-key': 'tier0CatalogEnabled', checked: cfg.tier0CatalogEnabled !== false, onChange: function (e) { set('tier0CatalogEnabled', e.target.checked) } }), t('fTier0CatalogHint')),
@@ -1669,19 +1698,19 @@
             },
           }), t('fExcludeHint')),
           field(t('fDays'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 1, max: 14, value: cfg.recentDaysInjected, onChange: function (e) { set('recentDaysInjected', Number(e.target.value) || 1) } }), t('fDaysHint')),
-          field(t('fExtBudget'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 200, value: cfg.externalInjectionChars === undefined ? 1400 : cfg.externalInjectionChars, onChange: function (e) { set('externalInjectionChars', Number(e.target.value) || 1400) } }), t('fExtBudgetHint')),
-          field(t('fSnapGap'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 0, max: 50, value: cfg.snapshotMinGapRounds === undefined ? 20 : cfg.snapshotMinGapRounds, onChange: function (e) { set('snapshotMinGapRounds', normalizeGapRounds(e.target.value, 20)) } }), t('fSnapGapHint')),
+          field(t('fExtBudget'), h('span', { 'data-dam-legacy-readonly': 'externalInjectionChars' }, String(cfg.externalInjectionChars === undefined ? 1400 : cfg.externalInjectionChars)), t('fExtBudgetHint')),
+          field(t('fSnapGap'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', 'data-dam-policy-legacy-key': 'snapshotMinGapRounds', type: 'number', min: 0, max: 50, value: cfg.snapshotMinGapRounds === undefined ? 40 : cfg.snapshotMinGapRounds, onChange: function (e) { if (!policyOwnsLegacy('snapshotMinGapRounds')) set('snapshotMinGapRounds', normalizeGapRounds(e.target.value, 40)) } }), t('fSnapGapHint')),
           // ★2026-10-13（用户裁定）：精简版节奏单键 —— 与服务端 DEFAULT_CONFIG 的 slimEveryRounds 对应；
           //   fullEverySlims（「攒够 N 次精简才放行完整版」的间接门槛）已废弃删除：
           //   完整版节奏现在由 snapshotMinGapRounds（每 N 轮一次完整版）+ 真人轮强制 决定，不再有独立门槛键。
-          field(t('fSlimEvery'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 1, max: 50, value: cfg.slimEveryRounds === undefined ? 8 : cfg.slimEveryRounds, onChange: function (e) { set('slimEveryRounds', normalizeGapRounds(e.target.value, 8)) } }), t('fSlimEveryHint')),
-          // ★2026-10-26（P2 · 用户裁定）：**上下文窗口占用水位阈值**（百分比列表）。
-          //   语义：水位跨过阈值（默认 25%、50%）后，用户下一次说话时投递一次「用户发声的完整版」；
+          field(t('fSlimEvery'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', 'data-dam-policy-legacy-key': 'slimEveryRounds', type: 'number', min: 1, max: 50, value: cfg.slimEveryRounds === undefined ? 15 : cfg.slimEveryRounds, onChange: function (e) { if (!policyOwnsLegacy('slimEveryRounds')) set('slimEveryRounds', normalizeGapRounds(e.target.value, 15)) } }), t('fSlimEveryHint')),
+          // 水位阈值为百分比列表，默认 25；显式填写 25,50 可开启 50 档。
+          //   语义：水位跨过阈值后，用户下一次说话时投递一次「用户发声的完整版」；
           //         投完标记，同阈值内不再重复，跨过下一阈值才再投。
           //   为什么是列表而非「每 N% 一次」：压缩阈值 70-80%，实际到不了 75% ⇒ 间隔写法会
-          //   在 70% 附近产生「刚触发就压缩」的无用注入。列表天然只有 25/50 两档。
+          //   在 70% 附近产生「刚触发就压缩」的无用注入。
           //   填 '0' / 'off' = 禁用（F1 只由首轮/接话/压缩触发）。
-          field(t('fInjectWaterPct'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'text', placeholder: '25,50', value: cfg.fullInjectWaterPct === undefined ? '25,50' : String(cfg.fullInjectWaterPct), onChange: function (e) { set('fullInjectWaterPct', String(e.target.value || '').trim() || '25,50') } }), t('fInjectWaterPctHint')),
+          field(t('fInjectWaterPct'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', 'data-dam-policy-legacy-key': 'fullInjectWaterPct', type: 'text', placeholder: '25', value: cfg.fullInjectWaterPct === undefined ? '25' : String(cfg.fullInjectWaterPct), onChange: function (e) { if (!policyOwnsLegacy('fullInjectWaterPct')) set('fullInjectWaterPct', String(e.target.value || '').trim() || '25') } }), t('fInjectWaterPctHint')),
           field(t('fInjectSemanticChars'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 200, max: 4000, value: cfg.fullInjectSemanticChars === undefined ? 800 : cfg.fullInjectSemanticChars, onChange: function (e) { set('fullInjectSemanticChars', Number(e.target.value) || 800) } }), t('fInjectSemanticCharsHint')),
           field(t('fReinjectOnCompact'), h('input', { type: 'checkbox', checked: cfg.snapshotReinjectOnCompact !== false, onChange: function (e) { set('snapshotReinjectOnCompact', e.target.checked) } }), t('fReinjectOnCompactHint')),
           // ★2026-09-30（C2 · 用户裁定：设置面必须全量，不得缺项）——注入预算/白板账本/水位四组键，
@@ -1693,7 +1722,12 @@
           //      = 上下文水位与压缩的四个人为旋钮（auto 档校准用）。
           //   全部写 DEFAULT_CONFIG 内既有键（宿主白名单通过）。
           field(t('fTier0Share'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 0, max: 1, step: 0.05, value: cfg.tier0BudgetShare === undefined ? 0.25 : cfg.tier0BudgetShare, onChange: function (e) { set('tier0BudgetShare', Math.max(0, Number(e.target.value) || 0.25)) } }), t('fTier0ShareHint')),
-          field(t('fTieredInject'), h('input', { type: 'checkbox', 'data-dam-key': 'snapshotTieredInject', checked: cfg.snapshotTieredInject !== false, onChange: function (e) { set('snapshotTieredInject', e.target.checked) } }), t('fTieredInjectHint')),
+          field(t('fTieredInject'), h('input', { type: 'checkbox', 'data-dam-key': 'snapshotTieredInject', 'data-dam-policy-legacy-key': 'snapshotTieredInject', checked: cfg.snapshotTieredInject !== false, onChange: function (e) { if (!policyOwnsLegacy('snapshotTieredInject')) set('snapshotTieredInject', e.target.checked) } }), t('fTieredInjectHint')),
+          field(L('启用挂机补偿', 'Enable unattended compensation'), h('input', { type: 'checkbox', 'data-dam-policy-legacy-key': 'hangCompensateEnabled', checked: cfg.hangCompensateEnabled === true, onChange: function (e) { if (!policyOwnsLegacy('hangCompensateEnabled')) set('hangCompensateEnabled', e.target.checked) } })),
+          field(L('挂机补偿 token 阈值', 'Unattended compensation token threshold'), h('input', { type: 'number', min: 1, 'data-dam-input': '', 'data-dam-policy-legacy-key': 'hangCompensateTokens', value: cfg.hangCompensateTokens === undefined ? 300000 : cfg.hangCompensateTokens, onChange: function (e) {
+            var value = Number(e.target.value)
+            if (!policyOwnsLegacy('hangCompensateTokens')) set('hangCompensateTokens', Number.isSafeInteger(value) && value > 0 ? value : 300000)
+          } })),
           field(t('fWaterMode'), h('select', { 'data-dam-select': '', value: String(cfg.waterLevelThresholdMode || 'auto'), onChange: function (e) { set('waterLevelThresholdMode', e.target.value) } },
             h('option', { value: 'auto' }, L('auto 自动校准（推荐）', 'auto (calibrated)')),
             h('option', { value: 'fixed' }, L('fixed 固定阈值（旧行为）', 'fixed threshold (legacy)'))), t('fWaterModeHint')),
@@ -1748,6 +1782,15 @@
             h('option', { value: 'hint' }, L('hint 仅提示', 'hint (hint only)'))), t('fProcLevelHint')),
           h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginTop: '4px' } }, t('memoryHubViewHint')),
         ]),
+        policyMount && policyMount.component ? section('policy', sectionLabels.policy, [
+          h('div', { 'data-dam-policy-mountpoint': 'frozen' }, h(policyMount.component, {
+            onSave: policyMount.onSave,
+            onPreview: policyMount.onPreview,
+            onLegacyConfig: applyPolicyLegacyConfig,
+            navigation: policyNavigation[0],
+            onOpenDiagnostics: function () { setDbgOpen(true) },
+          })),
+        ]) : null,
         section('handoff', sectionLabels.handoff, [
           h('div', {'data-dam-effective-water':'',role:'status'}, effectiveWater[0] && effectiveWater[0].live ? L3('实际水位阈值：','Effective threshold: ','実際のしきい値：') + Math.round(effectiveWater[0].threshold*100) + '% · ' + effectiveWater[0].window + ' token · ' + effectiveWater[0].thresholdMode : L3('当前会话尚未测量；生效值将在测量后显示。','This session has not been measured; effective values appear after measurement.','この会話は未計測です。計測後に実際の値を表示します。')),
           field(t('fWaterMode'), h('select', { 'data-dam-select': '', value: String(cfg.waterLevelThresholdMode || 'auto'), onChange: function (e) { set('waterLevelThresholdMode', e.target.value) } },
@@ -1758,7 +1801,7 @@
           field(t('fAutoMargin'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 0.3, max: 1, step: 0.05, value: cfg.waterLevelAutoMargin === undefined ? 0.9 : cfg.waterLevelAutoMargin, onChange: function (e) { set('waterLevelAutoMargin', Math.min(1, Math.max(0.3, Number(e.target.value) || 0.9))) } }), t('fAutoMarginHint')),
   field(t('fHandoff'), h('input', { type: 'checkbox', 'data-dam-key': 'handoffEnabled', checked: cfg.handoffEnabled !== false, onChange: function (e) { set('handoffEnabled', e.target.checked) } }), t('fHandoffHint')),
           field(t('fAutoContinue'), h('input', { type: 'checkbox', 'data-dam-key': 'autoContinueEnabled', checked: cfg.autoContinueEnabled !== false, onChange: function (e) { set('autoContinueEnabled', e.target.checked) } }), t('fAutoContinueHint')),
-          field(t('fHandoffPlan'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 200, value: cfg.handoffPlanChars === undefined ? 1200 : cfg.handoffPlanChars, onChange: function (e) { set('handoffPlanChars', Number(e.target.value) || 1200) } }), t('fHandoffPlanHint')),
+          field(t('fHandoffPlan'), h('span', { 'data-dam-legacy-readonly': 'handoffPlanChars' }, String(cfg.handoffPlanChars === undefined ? 1200 : cfg.handoffPlanChars)), t('fHandoffPlanHint')),
           // 2026-09-22 补接线(设置页缺口审计 P0-5):criteriaGate 此前只能改文件才能退。
           field(t('fCriteriaGate'), h('input', { type: 'checkbox', 'data-dam-key': 'criteriaGate', checked: cfg.criteriaGate !== false, onChange: function (e) { set('criteriaGate', e.target.checked) } }), t('fCriteriaGateHint')),
           field(t('fHandoffLedger'), h('input', { 'data-dam-slot': 'form', 'data-dam-input': '', type: 'number', min: 100, value: cfg.handoffLedgerChars === undefined ? 800 : cfg.handoffLedgerChars, onChange: function (e) { set('handoffLedgerChars', Number(e.target.value) || 800) } }), t('fHandoffLedgerHint')),
@@ -2056,6 +2099,9 @@
       var migConflictPair = useState('keep')
       var migConflict = migConflictPair[0]
       var setMigConflict = migConflictPair[1]
+      var migConfirmedLegacyPackPair = useState('')
+      var migConfirmedLegacyPack = migConfirmedLegacyPackPair[0]
+      var setMigConfirmedLegacyPack = migConfirmedLegacyPackPair[1]
       // ok===false 时把 error / errors / warnings 一并显示,绝不静默。
       function migFail(tag, j, e) {
         j = j || (e && e.response)
@@ -2110,7 +2156,7 @@
         if (migBusy) return
         if (!migPack) { setMigErr(t('migPickPack')); return }
         setMigBusy('preview'); setMigErr(''); setMigNote(''); setMigPlan(null); setMigResult(null)
-        apiPost(API.migrateInspect, { packPath: migPack, targetWs: currentWs() || undefined, onConflict: migConflict }).then(function (j) {
+        apiPost(API.migrateInspect, Object.assign({ packPath: migPack, targetWs: currentWs() || undefined, onConflict: migConflict }, globalThis.__damMigrationOptIn.body(migPack, migConfirmedLegacyPack))).then(function (j) {
           setMigBusy('')
           if (!j || j.ok === false) { migFail(t('migPreview'), j, null); return }
           var p = Object.assign({}, j.plan || {}, { previewToken: j.previewToken })
@@ -2131,7 +2177,7 @@
         if (migBusy) return
         if (!migPack) { setMigErr(t('migPickPack')); return }
         setMigBusy('apply'); setMigErr(''); setMigNote('')
-        apiPost(API.migrateImport, { packPath: migPack, targetWs: currentWs() || undefined, onConflict: migConflict, previewToken: migPlan && migPlan.previewToken }).then(function (j) {
+        apiPost(API.migrateImport, Object.assign({ packPath: migPack, targetWs: currentWs() || undefined, onConflict: migConflict, previewToken: migPlan && migPlan.previewToken }, globalThis.__damMigrationOptIn.body(migPack, migConfirmedLegacyPack))).then(function (j) {
           setMigBusy('')
           if (!j || j.ok === false) { migFail(t('migApply'), j, null); return }
           setMigResult(j)
@@ -2229,6 +2275,11 @@
           migPackPicking ? t('loading') : t('migPickPack')),
         h('button', { 'data-dam-slot': 'actions', 'data-dam-btn': '', disabled: !!migBusy, style: { opacity: migBusy ? .5 : 1 },
           onClick: migPreview }, migBusy === 'preview' ? t('loading') : t('migPreview'))),
+      globalThis.__damMigrationOptIn.required() ? h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '', style: { marginTop: '6px' } },
+        h('label', null,
+          h('input', { type: 'checkbox', 'data-dam-migration': 'legacy-opt-in', checked: !!migPack && migConfirmedLegacyPack === migPack,
+            disabled: !!migBusy || !migPack, onChange: function (e) { setMigConfirmedLegacyPack(e.target.checked ? migPack : '') } }),
+          ' ' + L('旧版包（≤3.3.4）请勾选：用户级文件（如日历）未被摘要保护，仍要导入', 'Legacy pack (<= 3.3.4): user-level files (e.g. calendar) are not covered by the checksum. Import anyway'))) : null,
       migPlan ? h('div', { style: { wordBreak: 'break-all', fontSize: 'calc(11.5px * var(--dam-scale))' } },
         h('div', null, migPlan.pathChanged ? t('migPathChanged') : t('migSamePath')),
         h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, (L('路径: ', 'path: ')) + String(migPlan.fromPath || '') + ' → ' + String(migPlan.toPath || '')),

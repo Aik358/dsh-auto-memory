@@ -20,7 +20,7 @@ function sliceBetween(src, a, b) {
   assert.ok(j > i, 'end not found: ' + String(b).slice(0, 40))
   return src.slice(i, j)
 }
-const classic = sliceBetween(client, '    function SettingsPage() {', '    // ───────────────────────── 插件挂载')
+const classic = sliceBetween(client, '    function SettingsPage(props) {', '    // ───────────────────────── 插件挂载')
 // ★#276 修法（2026-10-08）：**行锚匹配**，不再用 `indexOf` 的子串命中。
 //   旧实现 `client.indexOf('    // ITER5-GENERATED:BEGIN')`（四空格 + 注释体）：
 //   client.js 内 legit 变体块的 marker 是 **8 空格缩进**（`      // ITER5-GENERATED:BEGIN`），

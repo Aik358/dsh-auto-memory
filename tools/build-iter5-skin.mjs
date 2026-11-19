@@ -75,7 +75,10 @@ const legacyBody = legacySrc.slice(lbIdx, leIdx + '    // ITER5-GENERATED:END'.l
 //   只附加到 legacy 表（LEGACY_ITER5_CSS）；变体表（ITER5_CSS）一字节不变 ⇒ iter5 档行为逐字节守恒。
 //   注意：此处位于 readSkin 定义之前 ⇒ 直接按同口径读文件（CRLF→LF + trim）。
 const legacyOverlayCss = readFileSync(path.join(root, 'skins/iter5/legacy-native-overlays.css'), 'utf8').replace(/\r\n/g, '\n').trim()
-const LEGACY_OVERLAY_EXTRA_DEF = '    var LEGACY_OVERLAY_EXTRA = ' + JSON.stringify(String.fromCharCode(10) + legacyOverlayCss + String.fromCharCode(10)) + String.fromCharCode(10)
+// The shared policy component appears on both skin families; give each the same scoped sheet.
+const policySettingsCss = readFileSync(path.join(root, 'skins/iter5/policy-settings.css'), 'utf8').replace(/\r\n/g, '\n').trim()
+const sharedSkinTokens = readFileSync(path.join(root, 'skins/iter5/shared-tokens.css'), 'utf8').replace(/\r\n/g, '\n').trim()
+const LEGACY_OVERLAY_EXTRA_DEF = '    var LEGACY_OVERLAY_EXTRA = ' + JSON.stringify('\n' + legacyOverlayCss + '\n' + policySettingsCss + '\n' + sharedSkinTokens + '\n') + '\n'
 const legacyWrapped = legacyBegin + '\n' +
   '    // 3.2.5 的「新款」皮肤（用户裁定的默认）。整体包 IIFE：内部仍用原来的 Iter5* 名字，' + '\n' +
   '    // 作用域隔离 ⇒ 与三套变体块零冲突；只导出 page/css 两个跨块符号。' + '\n' +
@@ -202,8 +205,9 @@ function requireAnchor(text, anchor, name, want) {
   if (hits < need) throw g2Miss(name, '不小于 ' + need, hits)
   return hits
 }
-let settings = client.slice(client.indexOf('    function SettingsPage() {'), client.indexOf('    // ───────────────────────── 插件挂载'))
-settings = replaceOnce(settings, 'function SettingsPage()', 'function Iter5Settings(props)')
+let settings = client.slice(client.indexOf('    function SettingsPage(props) {'), client.indexOf('    // ───────────────────────── 插件挂载'))
+settings = replaceOnce(settings, 'function SettingsPage(props)', 'function Iter5Settings(props)')
+settings = replaceOnce(settings, "'data-dam-policy-mountpoint': 'classic'", "'data-dam-policy-mountpoint': 'v4'")
 settings = replaceOnce(settings, '      var tickPair = useTick()', `      var tickPair = useTick()
       var i5Group = useState(props && props.intent && ['engine', 'memory', 'appearance', 'behavior'].indexOf(props.intent.group) >= 0 ? props.intent.group : 'engine')
       var i5Base = useRef(null)
@@ -213,7 +217,7 @@ settings = replaceOnce(settings, '      var tickPair = useTick()', `      var ti
       var i5Initialized = useRef(false), i5AppliedRead = useRef(0)
       var i5Identity = iter5Identity()
       var i5DraftKey = i5Identity + '|' + (props && props.draftScope || 'workbench')
-      var i5GroupsDef = { engine: ['engine'], memory: ['window', 'capacity', 'skills'], appearance: ['store', 'look', 'skin'], behavior: ['handoff', 'auto', 'team', 'about'] }
+      var i5GroupsDef = { engine: ['engine'], memory: ['window', 'capacity', 'skills'], appearance: ['store', 'look', 'skin'], behavior: ['policy', 'handoff', 'auto', 'team', 'about'] }
       useEffect(function () {
         i5Alive.current = true
         function before(e) { if (!Object.keys(i5Draft.current).length) return; e.preventDefault(); e.returnValue = '' }
@@ -301,11 +305,10 @@ settings = settings.slice(0, saveStart) + `      function save() {
         })
       }
 ` + settings.slice(fieldStart)
-settings = replaceOnce(settings, "      function field(label, control, hint) {\n        return", `      function field(label, control, hint) {
-        var plain = iter5SettingCopy(label)
+settings = replaceOnce(settings, "        return h('div', { 'data-dam-settings-row': '' },", `        var plain = iter5SettingCopy(label)
         var shownLabel = plain ? plain.label : label
         if (control && (control.type === 'input' || control.type === 'select' || control.type === 'textarea')) control = React.cloneElement(control, { 'aria-label': shownLabel, disabled: busy || control.props.disabled, role: control.type === 'input' && control.props.type === 'checkbox' ? 'switch' : undefined })
-        return`)
+        return h('div', { 'data-dam-settings-row': '' },`)
 settings = replaceOnce(settings, "return h('div', { 'data-dam-settings-row': '' },", "return h('div', { 'data-dam-settings-row': '', 'data-i5-field': label },")
 settings = replaceOnce(settings,
   "h('div', { 'data-dam-slot': 'list', 'data-dam-row': '' }, h('label', null, label), control),\n          hint ? h('div', { 'data-dam-slot': 'hint', 'data-dam-hint': '' }, hint) : null)",
@@ -387,7 +390,7 @@ settings = replaceOnce(settings,
           if (key === 'capacity') basic.sort(function (a, b) { return common[key].map(t).indexOf(a.props['data-i5-field']) - common[key].map(t).indexOf(b.props['data-i5-field']) })
           content = basic.concat(extra.length ? [h('details', { className: 'i5-settings-advanced' }, h('summary', null, L('进阶选项：', 'Advanced: ') + title), extra)] : [])
         }
-        var icons = { window: 'library', capacity: 'storage', skills: 'skills', handoff: 'handoff', auto: 'timeline', store: 'folder', look: 'settings', team: 'mindmap', skin: 'spark', about: 'note' }
+        var icons = { window: 'library', capacity: 'storage', skills: 'skills', policy: 'settings', handoff: 'handoff', auto: 'timeline', store: 'folder', look: 'settings', team: 'mindmap', skin: 'spark', about: 'note' }
         var subs = {}
         return h('section', { id: 'dam-settings-' + key, 'data-dam-settings-group': '', hidden: hidden }, h('h3', { className: 'i5-card-title' }, h('span', { className: 'i5-badge', 'data-hue': key === 'skills' ? 'green' : key === 'handoff' ? 'cyan' : key === 'auto' ? 'orange' : 'blue' }, h(Iter5Icon, { name: icons[key] || 'settings' })), h('span', { className: 'i5-card-title-txt' }, title, subs[key] ? h('span', { className: 'i5-card-sub' }, subs[key]) : null)), content)
       }`)
@@ -478,11 +481,14 @@ storage = storage.slice(0, migrationStart) + `    var migRows = h(Iter5Migration
       pickPack: function () { migPickFilePre(function (value) { setMigPack(value); setMigPlan(null); setMigResult(null) }, setMigPackPicking, migAlive, setMigNote, setMigErr) },
       onPreview: function () { migPreview(migConflict) }, plan: migPlan, onCancelPreview: function () { setMigPlan(null) },
       conflict: migConflict, setConflict: function (value) { setMigConflict(value); migPreview(value) }, onApply: migApply,
+      confirmedLegacyPack: migConfirmedLegacyPack, setConfirmedLegacyPack: setMigConfirmedLegacyPack,
       busy: migBusy, error: migErr, message: migNote, result: migResult
     })
 ` + storage.slice(migrationEnd)
 storage = replaceOnce(storage, 'function migPreview() {', 'function migPreview(conflict) {')
-storage = replaceOnce(storage, "apiPost(API.migrateInspect, { packPath: migPack, targetWs: currentWs() || undefined, onConflict: migConflict })", "apiPost(API.migrateInspect, { packPath: migPack, targetWs: currentWs() || undefined, onConflict: conflict || migConflict })")
+// ★2026-11-19（#546 后半截移植）：经典源已改成 Object.assign({...}, body(...)) 形态，
+//   seam 只替换 onConflict 的值（inspect 请求点；import 带 previewToken 不匹配，天然唯一）。
+storage = replaceOnce(storage, "Object.assign({ packPath: migPack, targetWs: currentWs() || undefined, onConflict: migConflict }, globalThis.__damMigrationOptIn.body(migPack, migConfirmedLegacyPack))", "Object.assign({ packPath: migPack, targetWs: currentWs() || undefined, onConflict: conflict || migConflict }, globalThis.__damMigrationOptIn.body(migPack, migConfirmedLegacyPack))")
 storage = replaceOnce(storage, "return h('div', { 'data-dam-slot': 'timeline', 'data-dam-flow': '' }, rows)", `return h('div', { className: 'i5-storage-view i5-panel i5-instrument' }, h(Iter5Screws),
         deleteRequest[0] ? h(Iter5DeleteConfirmation, { payload: deleteRequest[0].payload, onClose: function () { deleteRequest[1](null) }, onConfirm: function () { var pending = deleteRequest[0]; deleteRequest[1](null); act('delete', pending.payload, pending.onDone, true) } }) : null,
         h('div', { className: 'i5-stats i5-stats-four' },
@@ -515,10 +521,10 @@ stats = replaceOnce(stats, "      h('div', { style: { opacity: .72, fontSize: '1
 // Zero-event channels used to repeat statsNoInject in all three cards; their own hint now carries the empty state.
 stats = replaceOnce(stats, "        : h('div', { style: { opacity: .5, fontSize: '12px' } }, t('statsNoInject'))))", "        : ch.events ? h('div', { className: 'i5-native-stat-empty' }, t('statsNoInject')) : null))")
 const readSkin = name => readFileSync(path.join(root, 'skins/iter5', name), 'utf8').replace(/\r\n/g, '\n')
-const cssRaw = (readSkin('skin.css') + '\n' + readSkin('native-tour.css') + '\n' + readSkin('native-panel.css') + '\n' + readSkin('native-settings.css') + '\n' + readSkin('native-workbench.css') + '\n' + readSkin('native-library.css') + '\n' + readSkin('native-operations.css') + '\n' + readSkin('native-secondary.css') + '\n' + readSkin('style-variants.css')).trim()
+const cssRaw = (readSkin('skin.css') + '\n' + readSkin('native-tour.css') + '\n' + readSkin('native-panel.css') + '\n' + readSkin('native-settings.css') + '\n' + readSkin('native-workbench.css') + '\n' + readSkin('native-library.css') + '\n' + readSkin('native-operations.css') + '\n' + readSkin('native-secondary.css') + '\n' + readSkin('style-variants.css') + '\n' + policySettingsCss + '\n' + sharedSkinTokens).trim()
 let css = replaceT(cssRaw, '[data-iter5]{--i5-blue:', '[data-iter5],[data-dam-theme]{--i5-blue:', 'G0-2/css:370 变体表浅色主题选择器前缀')
 css = replaceT(css, '[data-iter5][data-deep=true]{--i5-blue:', '[data-iter5][data-deep=true],[data-dam-theme][data-deep=true],[data-dam-theme][data-deep=true] [data-iter5]{--i5-blue:', 'G0-2/css:371 变体表深色主题选择器前缀')
-const ui = readSkin('style-choice.js').trimEnd() + '\n' + readSkin('alternate-home.js').trimEnd() + '\n' + readSkin('ui.js').trimEnd() + '\n' + readSkin('views.js').trimEnd() + '\n' + readSkin('surfaces.js').trimEnd() + '\n' + readSkin('native-panel.js').trimEnd() + '\n' + readSkin('native-workbench.js').trimEnd() + '\n' + readSkin('native-search.js').trimEnd() + '\n' + readSkin('native-skills.js').trimEnd() + '\n' + readSkin('native-storage.js').trimEnd() + '\n' + readSkin('native-team.js').trimEnd() + '\n' + readSkin('native-map.js').trimEnd() + '\n' + readSkin('native-messages.js').trimEnd()
+const ui = readSkin('style-choice.js').trimEnd() + '\n' + readSkin('alternate-home.js').trimEnd() + '\n' + readSkin('ui.js').trimEnd() + '\n' + readSkin('views.js').trimEnd() + '\n' + readSkin('surfaces.js').trimEnd() + '\n' + readSkin('policy-settings.js').trimEnd() + '\n' + readSkin('native-panel.js').trimEnd() + '\n' + readSkin('native-workbench.js').trimEnd() + '\n' + readSkin('native-search.js').trimEnd() + '\n' + readSkin('native-skills.js').trimEnd() + '\n' + readSkin('native-storage.js').trimEnd() + '\n' + readSkin('native-team.js').trimEnd() + '\n' + readSkin('native-map.js').trimEnd() + '\n' + readSkin('native-messages.js').trimEnd()
 settings = replaceT(settings, "L('引擎', 'Engine')", "L('查找与回忆', 'Find & recall')", 'G0-2/settings:372 分组标题「引擎」')
 settings = replaceT(settings, "L('记忆', 'Memory')", "L('记录与使用', 'Record & use')", 'G0-2/settings:372 分组标题「记忆」')
 settings = replaceT(settings, "L('行为与维护', 'Behavior & maintenance')", "L('接续与维护', 'Continue & maintain')", 'G0-2/settings:372 分组标题「行为与维护」')
@@ -557,7 +563,7 @@ client = replaceOnce(client, seam, generated + seam)
   if (!client.includes('damSkinLegacy()')) {
     client = replaceT(client, "h('div', { 'data-dam-skin-v4-root': '1' }, h(Iter5Page, { nonce: nonce, onExit: function () { damSkinRemoveCss(); setNonce(nonce + 1) } })))",
       "h('div', { 'data-dam-skin-v4-root': '1' }, damSkinLegacy()\n" +
-      "            ? h(Legacy5Page, { nonce: nonce, onExit: function () { damSkinRemoveCss(); setNonce(nonce + 1) } })\n" +
+      "            ? h(Legacy5Page, { nonce: nonce, onExit: function () { damSkinRemoveCss(); setNonce(nonce + 1) }, policySettings: createDeliveryPolicySettingsPre() })\n" +
       "            : h(Iter5Page, { nonce: nonce, onExit: function () { damSkinRemoveCss(); setNonce(nonce + 1) } })))", 'G0-2/mount:395 挂载点皮肤双分派')
   }
   if (!client.includes('function damSkinLegacy()')) {
@@ -598,6 +604,11 @@ client = replaceOnce(client, seam, generated + seam)
     if (!client.includes('function damSkinCssText()')) client = replaceT(client, '    function damSkinEnsureCss() {', helper + '    function damSkinEnsureCss() {', 'G0-2/ensureCss:435 判档助手定义注入')
   }
 }
+client = replaceMigrated(client,
+  "            ? h(Legacy5Page, { nonce: nonce, onExit: function () { damSkinRemoveCss(); setNonce(nonce + 1) } })",
+  "            ? h(Legacy5Page, { nonce: nonce, onExit: function () { damSkinRemoveCss(); setNonce(nonce + 1) }, policySettings: createDeliveryPolicySettingsPre() })",
+  'G0-2/mount:396 Legacy5Page receives the shared delivery policy component',
+  'policySettings: createDeliveryPolicySettingsPre()')
 
 client = replaceMigrated(client, 'try { ensureStyle() } catch', "try { ensureStyle(); if (damSkinActive() !== 'classic') damSkinEnsureCss() } catch", 'G0-2/apply:439 ensureStyle 后补挂皮肤 CSS（目标态为无档位条件，见 H35b）', 'try { ensureStyle(); damSkinEnsureCss() }')
 // Upstream welcome branch called a hook after its early return, causing React #310

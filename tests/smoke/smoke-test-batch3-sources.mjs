@@ -82,7 +82,7 @@ const base = () => { const f = mkFiles(); return { f, readFile: (p) => { if (!(p
 // ── RC：候选不因措辞自动升格
 {
   const f = { "c.md": ANCH("e") + "\n- 必须参考历史文档的写法\n" };
-  const r = m.readRulesAggregatePre({ userFile: "u.md", candidatePath: "c.md", readFile: (p) => f[p] || USER });
+  const r = m.readRulesAggregatePre({ userFile: "u.md", candidatePath: "c.md", ownerSessionId: "s1", sessionKey: "k1", readFile: (p) => f[p] || USER });
   ok(r.counts.candidate >= 1, "★[RC] 含「参考历史」语境 ⇒ 计入 candidate", String(r.counts.candidate));
   ok(r.rules.every((x) => !x.text.includes("参考历史")), "★[RC] 该条**未**升格进 rules（候选不因措辞自动升格）");
   ok(r.candidates.every((x) => x.kind === "candidate"), "[RC] 候选层产出一律 kind=candidate");
