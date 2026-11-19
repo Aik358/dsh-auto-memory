@@ -17,7 +17,9 @@ const root = { querySelector: () => close, querySelectorAll: () => [first, last]
 const handlers = {}
 const env = {
   Math, String, Array, getComputedStyle: () => ({ overflowY: 'auto' }), dialogState: null, iter5SettingsDrafts: {}, iter5Identity: () => 'fixture',
-  useIter5Style: () => 'legacy', Iter5Surface() {}, Iter5Settings() {}, L: s => s,
+  useIter5Style: () => 'legacy', Iter5Surface() {}, Iter5Settings() {},
+  createDeliveryPolicySettingsPre: () => ({ component: function PolicySettings() {}, onSave() {}, onPreview() {} }),
+  createDeliveryPolicySettingsPre: () => ({ component: function PolicySettings() {}, onSave() {}, onPreview() {} }), L: s => s,
   h: (tag, props, ...children) => { if (props && props.ref) props.ref.current = props['data-i5-settings-slot'] !== undefined ? slot : root; return { tag, props: props || {}, children: children.flat() } },
   createPortal: form => form,
   useState: value => { const n = index++; if (!(n in slots)) slots[n] = typeof value === 'function' ? value() : value; return [slots[n], v => { slots[n] = v }] },

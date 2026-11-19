@@ -33,6 +33,7 @@ import {
 //   与本批修复前的「白板关仍测量」语义逐字节一致。
 import { EVENT_STORE_FILENAME as V4_EVENT_STORE_FILENAME } from '../../lib/event-store.js'
 import { pickCarryEventPre } from '../../lib/event-carry.js'
+import { readLatestLegacyLedger } from '../../lib/legacy-handoff-compat.js'
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 const SRC = readFileSync(path.resolve(HERE, '..', '..', 'lib', 'index.js'), 'utf8')
@@ -369,7 +370,7 @@ console.log('[switch-decouple] D3 行为:buildContinueCarry 白板关 → 载体
       allocContSeq: async () => 99,
       state: {},
     })
-    fake.readLatestHandoff = bindMethod('async readLatestHandoff(handoffDir) {', fake)
+    fake.readLatestHandoff = bindMethod('async readLatestHandoff(handoffDir) {', fake, { readLatestLegacyLedger }, { strictInjection: true })
     // ★2026-09-28（R51）：buildContinueCarry 的材料解析改为 `this.resolvePathsForSession(preferSid…)`
     //   （修「工作目录不正确」，见 continue-host H10）。抽取式沙箱纪律：被提取方法新增的 self 依赖
     //   必须注入 —— 与上方 resolvePaths 同形（本夹具单工作区，两者等价）。

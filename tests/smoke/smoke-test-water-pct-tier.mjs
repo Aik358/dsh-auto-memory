@@ -18,7 +18,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { createRequire } from 'node:module'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import { execSync } from 'node:child_process'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -81,12 +81,15 @@ if (typeof decide === 'function') {
 // ══════════════════════════════════════════════════════════════════════════
 console.log('')
 console.log('== B. 阈值解析：parseWaterPctThresholdsPre ==')
-const pSrcM = idxSrc.match(/const parseWaterPctThresholdsPre = \(raw\) => \{[\s\S]*?\n\}/)
+const pSrcM = idxSrc.match(/const parseWaterPctThresholdsPre = \(raw\) => parseWaterThresholds\(raw\)/)
 ok(!!pSrcM, 'B-0 能抽取 parseWaterPctThresholdsPre 源码')
 if (pSrcM) {
-  const parse = new Function(pSrcM[0] + '\nreturn parseWaterPctThresholdsPre')()
+  const parse = (await import(pathToFileURL(path.join(ROOT, "lib", "injection", "cadence.js")).href)).parseWaterThresholds
   ok(JSON.stringify(parse('25,50')) === '[25,50]', 'B-1 字符串 "25,50" ⇒ [25,50]', JSON.stringify(parse('25,50')))
-  ok(JSON.stringify(parse(undefined)) === '[25,50]', 'B-2 未配置 ⇒ 默认 [25,50]（水位钩子默认开启）', JSON.stringify(parse(undefined)))
+  ok(JSON.stringify(parse(undefined)) === '[25]', 'B-2 未配置 ⇒ 默认 [25]（AD1 裁定：50 档默认关闭）', JSON.stringify(parse(undefined)))
+  // ★加强（AD1）：必须同时证明显式双档仍生效 —— 「默认关闭」不等于「50 档被删」
+  ok(JSON.stringify(parse('25,50')) === '[25,50]', 'B-2b 显式 "25,50" ⇒ 仍为双档', JSON.stringify(parse('25,50')))
+  ok(JSON.stringify(parse('0')) === '[]', 'B-2c "0" ⇒ 禁用', JSON.stringify(parse('0')))
   ok(JSON.stringify(parse('off')) === '[]', 'B-3 "off" ⇒ 显式关闭', JSON.stringify(parse('off')))
   ok(JSON.stringify(parse('50,25')) === '[25,50]', 'B-4 乱序输入 ⇒ 排序为升序', JSON.stringify(parse('50,25')))
   ok(JSON.stringify(parse('25,25')) === '[25]', 'B-5 重复阈值去重', JSON.stringify(parse('25,25')))

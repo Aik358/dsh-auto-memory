@@ -417,7 +417,7 @@
           } },
           h('header', { className: 'i5-settings-frame-head' }, h('strong', null, L('记忆设置', 'Memory settings')),
             h('button', { 'data-i5-settings-return': '', onClick: function () { autoExpanded.current = true; settingsTop[1](availableTop()); expanded[1](!expanded[0]) } }, expanded[0] ? L('返回宿主设置', 'Back to host settings') : L('展开设置', 'Expand settings'))),
-          h('div', { className: 'i5-main' }, h(Iter5Settings, { key: identity[0], draftScope: 'host', close: props && props.close }))))
+          h('div', { className: 'i5-main' }, h(Iter5Settings, { key: identity[0], draftScope: 'host', close: props && props.close, policySettings: createDeliveryPolicySettingsPre() }))))
       return h('div', { ref: slot, 'data-i5-settings-slot': '' },
         expanded[0] ? h('button', { onClick: function () { if (root.current) root.current.querySelector('button').focus() } }, L('记忆设置已展开', 'Memory settings expanded')) : null,
         target ? createPortal(form, target) : form)

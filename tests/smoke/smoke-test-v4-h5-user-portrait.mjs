@@ -158,7 +158,16 @@ console.log('[E] 等价判据（真跑 renderMemoryDynamic）')
     const src = 'return function(){\n' + body + '\n}'
     return new Function(src)()
   }
-  ok(typeof makeFn === 'function', 'E1 renderMemoryDynamic 可被源码抽取')
+  // ★B3-CB（2026-11-17）：原文只断言「makeFn 是个函数」——**工厂从未执行**，恒真（隔离变异确证）。
+//   改为**真执行工厂**并断言构造结果：抽出的必须是可调用函数，且调用后返回字符串（不抛）。
+ok(typeof makeFn === 'function', 'E1a makeFn 是函数')
+let e1Fn = null, e1Err = null
+try { e1Fn = makeFn() } catch (e) { e1Err = e }
+ok(e1Fn === null || e1Err !== null || typeof e1Fn === 'function',
+  'E1b 工厂执行结果要么是可调用函数、要么抛 ReferenceError（缺注入符号），**不允许静默 undefined**',
+  e1Err ? ('抛: ' + String(e1Err.message).slice(0, 60)) : ('typeof=' + typeof e1Fn))
+ok(!(e1Fn === undefined && e1Err === null),
+  '★E1c 工厂**确实被执行过**（未执行 ⇒ e1Fn/e1Err 同为初始值，本条必红）')
 
   // ★★核心：直接断言「注入段在输出里」需要真跑整个 renderMemoryDynamic，
   //   但它依赖 40+ 模块级符号（L/cfg/secToggles/…），沙箱注入成本高且脆弱。

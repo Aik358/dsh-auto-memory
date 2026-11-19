@@ -208,14 +208,13 @@
         }).catch(function () {})
         return function () { alive = false }
       }, [props.nonce])
-      // 酒红点美术：径向渐变（#A9304C→#7B2135）+ 1px 亮边 + 外发光；
-      // 内联 style 而非新 class —— 深浅主题都可见，也不新增 CSS（避免与社区皮肤打架）。
+      // 酒红点沿用径向渐变、亮边和外发光；颜色由两套皮肤共用的令牌提供。
       var conflictLabel = h('span', { 'data-i5-tab': 'conflicts' }, L('冲突处置', 'Conflicts'),
         conflictBadge[0] > 0 ? h('span', {
           'data-i5-conflict-dot': '',
           'aria-hidden': 'true',
           title: L('有待裁定的冲突', 'Pending conflicts'),
-          style: { display: 'inline-block', width: '6px', height: '6px', borderRadius: '50%', marginLeft: '5px', verticalAlign: 'top', marginTop: '1px', background: 'radial-gradient(circle at 35% 30%, #A9304C 0%, #7B2135 72%)', boxShadow: '0 0 0 1px rgba(255,255,255,.20), 0 0 5px rgba(123,33,53,.55)' },
+          style: { display: 'inline-block', width: '6px', height: '6px', borderRadius: '50%', marginLeft: '5px', verticalAlign: 'top', marginTop: '1px', background: 'radial-gradient(circle at 35% 30%, var(--dam-conflict-dot-from) 0%, var(--dam-conflict-dot-to) 72%)', boxShadow: '0 0 0 1px var(--dam-conflict-dot-ring), 0 0 5px var(--dam-conflict-dot-glow)' },
         }) : null)
       // ★2026-11-09（1.2 第4步·返工，用户裁定）：「冲突处置」页签插在「浏览」之后、「日志」之前。
       //   有待裁定冲突时，页签带酒红色圆点（数据来自本组件的 badge 状态，非全局变量）。

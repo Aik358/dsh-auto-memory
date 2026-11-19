@@ -70,7 +70,9 @@ try {
   engine.writePlanSnapshot = originalPlan
   check(called && String(phase3).includes('stale-revision'), 'real tool reaches Phase3 failure')
   const phase3Checks = (await detail(active.id)).checkpoints.slice(beforePhase3)
-  check(phase3Checks.some((cp) => cp.kind === 'plan') && phase3Checks.some((cp) => cp.kind === 'plan-write-failed'), 'Phase1 and Phase3 use the same explicit eventId')
+  // 2.9：真源先落盘，文档失败时没有成功 plan 检查点；失败仍须归入同一显式 eventId。
+  // 不补造 plan 正文，也不把「正文未记」误判为「失败未记」。
+  check(phase3Checks.some((cp) => cp.kind === 'plan-write-failed') && phase3Checks.every((cp) => cp.kind !== 'plan'), 'failed document keeps failure in same explicit eventId without fabricated plan checkpoint')
 
   engine.config.ledgerDocEnabled = true
   const a1Event = await eventStorePre.create(storePath, { name: 'task10 A1 event' })

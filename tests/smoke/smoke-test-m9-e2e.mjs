@@ -45,6 +45,7 @@ const PREV = C('DEFAULT_CAPACITY_CHARS_PREV'), VER = C('CAPACITY_DEFAULTS_VERSIO
 //   （与本文件开头第 3 段、INJ-2 段点名的失败同型）。
 const SNAP_GAP = C('DEFAULT_SNAPSHOT_MIN_GAP_ROUNDS')
 const SNAP_GAP_VER = C('SNAPSHOT_GAP_DEFAULTS_VERSION')
+const WATER_VER = C('WATER_PCT_DEFAULTS_VERSION')
 
 // 把真实方法体包进一个类里(方法间的 this 调用关系原样保留)
 //
@@ -74,6 +75,7 @@ const DEFAULT_CAPACITY_CHARS_PREV = ${PREV}
 const CAPACITY_DEFAULTS_VERSION = ${VER}
 const DEFAULT_SNAPSHOT_MIN_GAP_ROUNDS = ${SNAP_GAP}
 const SNAPSHOT_GAP_DEFAULTS_VERSION = ${SNAP_GAP_VER}
+const WATER_PCT_DEFAULTS_VERSION = ${WATER_VER}
 // 注意: 两个档位版本号都在此 —— 正是"默认值污染判据"的成因, 必须保真
 const DEFAULT_CONFIG = {
   noteCapacityChars: DEFAULT_NOTE_CAPACITY_CHARS,
@@ -99,6 +101,7 @@ export class Engine {
   ${sliceMethod('_mergeConfigPre(parsed) {')}
   ${sliceMethod('upgradeCapacityDefaultsPre(rawCfg) {')}
   ${sliceMethod('upgradeSnapshotGapDefaultPre(rawCfg) {')}
+  ${sliceMethod('upgradeWaterPctDefaultPre(rawCfg) {')}
   ${sliceMethod('_readConfigDiskPre(maxBytes = 65536) {')}
   ${sliceMethod('_persistConfigMergePre() {')}
   ${sliceMethod('loadConfigSync() {')}

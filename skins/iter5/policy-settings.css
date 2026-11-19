@@ -1,0 +1,130 @@
+/* Layout for the shared policy editor; controls follow the enclosing settings skin. */
+[data-dam-settings-group]:has(> [data-dam-policy-mountpoint]) { grid-column: 1 / -1; }
+.i5-policy-settings {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  container: delivery-settings / inline-size;
+}
+.i5-policy-entry,
+.i5-policy-save-actions,
+.i5-policy-module-head,
+.i5-policy-subhead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+.i5-policy-entry > p { flex: 1 1 15rem; margin: 0; }
+.i5-policy-save-actions { justify-content: flex-end; margin-inline-start: auto; }
+.i5-policy-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 6.75rem), 1fr));
+  gap: 12px 16px;
+  margin: 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--i5-line);
+}
+.i5-policy-summary dt { color: var(--i5-secondary); font-size: .9em; }
+.i5-policy-summary dd { margin: 2px 0 0; font-weight: 600; font-variant-numeric: tabular-nums; }
+.i5-policy-editor:not([hidden]), .i5-policy-panel, .i5-policy-page-content {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+.i5-policy-settings .i5-policy-editor > .i5-tabs {
+  position: static;
+  gap: 14px;
+  margin: 0;
+  padding: 0 2px;
+  background: transparent;
+  overflow-x: auto;
+}
+.i5-policy-editor .i5-tabs > button { flex: 0 0 auto; white-space: nowrap; }
+.i5-policy-section + .i5-policy-section,
+.i5-policy-module-row + .i5-policy-module-row {
+  border-top: 1px solid var(--i5-line);
+  padding-top: 12px;
+}
+.i5-policy-section > h3, .i5-policy-module-head h4, .i5-policy-subhead h5 {
+  margin: 0 0 4px;
+  font-size: 1em;
+  line-height: 1.45;
+}
+.i5-policy-settings .i5-policy-field {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, max-content);
+  align-items: center;
+  gap: 8px 16px;
+  min-width: 0;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--i5-hair, var(--i5-line));
+}
+.i5-policy-settings .i5-policy-field:last-child { border-bottom: 0; }
+.i5-policy-settings .i5-policy-field[data-wide=true] { grid-template-columns: minmax(0, 1fr); }
+.i5-policy-field .i5-setting-copy { min-width: 0; }
+.i5-policy-field .i5-setting-copy :is(label, strong) { font-weight: 600; }
+.i5-policy-field-control { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-width: 0; }
+.i5-policy-field:not([data-wide=true]) .i5-policy-field-control { justify-content: flex-end; }
+.i5-policy-field-control > :is(select, input:not([type=checkbox])) { width: min(12rem, 100%); }
+.i5-policy-settings :is(input, select, textarea, button) { min-width: 0; max-width: 100%; font: inherit; }
+.i5-policy-settings button:not([role=tab]) { white-space: normal; }
+.i5-policy-hint, .i5-policy-unit-hint, .i5-policy-readonly, .i5-policy-redaction {
+  margin: 4px 0 0;
+  color: var(--i5-secondary);
+  font-size: .9em;
+}
+.i5-policy-module-details { margin: 6px 0 0; }
+.i5-policy-module-details > summary { cursor: pointer; color: var(--i5-secondary); padding-block: 6px; }
+.i5-policy-module-head > div:first-child { min-width: 0; }
+.i5-policy-quota-list, .i5-policy-selection-fields, .i5-policy-receipt,
+.i5-policy-debug-meta { display: grid; gap: 8px; min-width: 0; }
+.i5-policy-quota-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 6.5rem), 1fr));
+  gap: 8px;
+  min-width: 0;
+  padding-block: 8px;
+  border-top: 1px solid var(--i5-hair, var(--i5-line));
+}
+.i5-policy-section-choices { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.i5-policy-section-choice { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; }
+.i5-policy-section-choice small, .i5-policy-lock, .i5-policy-alias, .i5-policy-ineffective { color: var(--i5-secondary); font-size: .9em; }
+.i5-policy-fallbacks, .i5-policy-fallback-order { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.i5-policy-preview-text, .i5-policy-json, .i5-policy-code-list {
+  box-sizing: border-box;
+  max-width: 100%;
+  max-height: 20rem;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--i5-line);
+  border-radius: 6px;
+  background: var(--i5-bg);
+  font: .9em/1.55 ui-monospace, Consolas, monospace;
+}
+.i5-policy-scope, .i5-policy-partial, .i5-policy-warning, .i5-policy-error, .i5-policy-notice {
+  margin: 0;
+  padding: 8px 12px;
+  border-inline-start: 2px solid var(--i5-blue, #2563eb);
+  background: color-mix(in srgb, var(--i5-blue, #2563eb) 8%, transparent);
+  font-size: .93em;
+}
+.i5-policy-scope, .i5-policy-partial, .i5-policy-warning { border-color: var(--dam-warn); background: color-mix(in srgb, var(--dam-warn) 8%, transparent); }
+.i5-policy-error { border-color: var(--dam-tone-error); background: color-mix(in srgb, var(--dam-tone-error) 8%, transparent); }
+.i5-policy-status, .i5-policy-dirty-indicator { margin: 0; color: var(--i5-secondary); font-size: .9em; }
+.i5-policy-settings button.i5-policy-primary:not(:disabled) { color: var(--i5-surface, #fff); background: var(--i5-blue, #2563eb); border-color: var(--i5-blue, #2563eb); }
+.i5-policy-legacy-list { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: 0 12px; }
+.i5-policy-legacy-list > div { display: contents; }
+.i5-policy-legacy-list :is(dt, dd) { margin: 0; padding: 6px 0; border-bottom: 1px solid var(--i5-line); }
+.i5-policy-legacy-list dt { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+@container delivery-settings (max-width: 28rem) {
+  .i5-policy-settings .i5-policy-field:not(:has(input[type=checkbox])) { grid-template-columns: minmax(0, 1fr); }
+  .i5-policy-field:not(:has(input[type=checkbox])) .i5-policy-field-control { justify-content: flex-start; }
+  .i5-policy-legacy-list { grid-template-columns: minmax(0, 1fr); }
+  .i5-policy-legacy-list dt { border-bottom: 0; padding-bottom: 0; }
+}

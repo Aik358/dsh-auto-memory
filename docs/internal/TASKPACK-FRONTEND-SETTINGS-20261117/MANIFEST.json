@@ -1,0 +1,37 @@
+{
+  "pack": "TASKPACK-FRONTEND-SETTINGS-20261117",
+  "date": "2026-11-17",
+  "revisedFor": "delivery-settings-module + water-default-ruling + write-scope-approval",
+  "files": [
+    {
+      "file": "README.md",
+      "bytes": 2571,
+      "sha256": "5136ea795aafd4bdda48a8708843a9f0ecbaf5efa8fe4d57dfef2d14559f793c"
+    },
+    {
+      "file": "03-SETTINGS-CONTRACT.md",
+      "bytes": 5793,
+      "sha256": "7ab94bef4c7d72359f3cea4e6e89901dba77d0336f46801aa161cbe815138554"
+    },
+    {
+      "file": "04-ACCEPTANCE.md",
+      "bytes": 2020,
+      "sha256": "49fda68790f7b59f529b5c473b8cccf884d22fe956fe0fbbdc3137f7bdb1e7ed"
+    },
+    {
+      "file": "skills/01-frontend-construction-map.md",
+      "bytes": 13713,
+      "sha256": "174d4f5c1d6036cfb301d4417746beabcdf0e2e83bc8cf3931b2f30535411e37"
+    },
+    {
+      "file": "skills/02-ui-guard-map.md",
+      "bytes": 4872,
+      "sha256": "0d1365869bbd13dedbeeee8bc0fefd5b99867967c212dd85c92a9ab2a66c5168"
+    },
+    {
+      "file": "skills/03-line-ending-mixed-check.md",
+      "bytes": 2816,
+      "sha256": "1454ad458cf029d17771c9438b84c8956d8be36bb0c0bf94600063bb8b8b8cd7"
+    }
+  ]
+}

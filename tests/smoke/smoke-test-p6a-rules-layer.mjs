@@ -20,6 +20,7 @@
  * 只读、零依赖、不联网、不启宿主。
  */
 import { readFileSync } from 'node:fs'
+import { effectiveTriggers, resolveRuntimePolicy } from '../../lib/injection/policy-runtime.js'
 import {
   extractRulesLayerPre,
   renderRulesSectionPre,
@@ -156,16 +157,16 @@ console.log('[P6A-4] ★零值解析：0 必须能表达（旧 `Number(v) || 5` 
   // 旧写法必须已从注入路径消失
   const code = idx.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '')
   ok(!/Number\(engine\.config\.snapshotMinGapRounds\) \|\| 5/.test(code), '★旧 `Number(v) || 5` 已从注入路径移除')
-  // ★2026-10-28 判据更新（D10/P2-3）：三处 fallback 已统一为真源默认 20（原为 5/10 各自写死）。
-  //   判据从「必须恰好是 5」改为「用 parseGapRoundsPre 且 fallback 与真源一致（20）」。
-  ok(/parseGapRoundsPre\(engine\.config\.snapshotMinGapRounds, (20|DEFAULT_SNAPSHOT_MIN_GAP_ROUNDS)\)/.test(code), '注入路径改用 parseGapRoundsPre 且 fallback 与真源一致')
+  // ★P1 R2（2026-11-17）：默认改40，保留parseGapRoundsPre与真源同口径的守卫。
+  //   显式夹具5/10等不是默认值，不作批量替换；0合法的真执行用例保留。
+  ok(/parseGapRoundsPre\(engine\.config\.snapshotMinGapRounds, (40|DEFAULT_SNAPSHOT_MIN_GAP_ROUNDS)\)/.test(code), '注入路径改用 parseGapRoundsPre 且 fallback 与真源一致')
   // ★2026-09-15 分级注入；★2026-10-13 用户裁定默认 5→10 ⇒ 现在是「**完整版**每 10 轮一次」的间隔
   //（其间各轮给精简版）——不再是"5 轮不注入"。
   // ★2026-10-13 判据更新：用户裁定 gap 默认 5→10（强制覆盖所有用户）。判据语义未削弱 ——
   //   仍断言「默认值 = 完整快照每 N 轮一次（其间给精简版，不是不注入）」，只更新被锁的常量。
   //   ⚠️ 该断言锁的是**源码里的常量引用**，故同时接受字面量 10 与常量名（默认值已抽成
   //   DEFAULT_SNAPSHOT_MIN_GAP_ROUNDS 以便配套强制迁移复用）。
-  ok(/snapshotMinGapRounds: (10|DEFAULT_SNAPSHOT_MIN_GAP_ROUNDS),/.test(code), '★默认值 = 完整快照每 10 轮一次（其间给精简版，不是不注入）')
+  ok(/snapshotMinGapRounds: (40|DEFAULT_SNAPSHOT_MIN_GAP_ROUNDS),/.test(code), '★R2默认值 = 完整快照每 40 轮一次（其间给精简版，不是不注入）')
   ok(/injectBudgetChars: 8000,/.test(code), '★注入预算默认 8000（旧 2000 下用户级记忆只进去约 9%）')
   ok(/snapshotTieredInject: true,/.test(code), '★分级注入开关默认开（可 false 回退旧行为）')
 }
@@ -183,8 +184,35 @@ console.log('[P6A-5] ★分级注入（用户裁定"不是不注入，而是精�
   //   判据意图不变：节流时返回的必须是**精简版全文**（规则 + 索引 + 日程都在场），不是空串。
   ok(/return finalizePre\(slimText \+ engine\.renderReflectionRequest\(\)\)/.test(code),
     '★节流分支改为返回**精简版**（经 finalizePre 定稿；规则 + 索引 + 日程都在场）')
-  ok(/const slimText = engine\.config\.snapshotTieredInject === false \? '' : engine\.renderSlimSnapshotPre\([^)]*\)/.test(code),
-    '注入调用方取精简版，且开关可一键回退')
+  // A1b2：只在生产动态回调内抽取策略读取和 slimText 门控。
+  const contextStart = code.indexOf('const disposeContext = ctx.systemPrompt.context({')
+  const contextEnd = code.indexOf('const disposeSection = ctx.systemPrompt.section({', contextStart)
+  const contextCode = contextStart >= 0 && contextEnd > contextStart ? code.slice(contextStart, contextEnd) : ''
+  const triggerRead = /^[ \t]*const _runtimePolicyPre = [\s\S]*?^[ \t]*const _deliveryTriggersPre = [^\r\n]+/m.exec(contextCode)?.[0]
+  const slimGate = /^[ \t]*const slimText = ([^\r\n;]+)/m.exec(contextCode)?.[1]
+  const tieredGate = /^\(_deliveryTriggersPre\?\.tieredInject\s*\?\?\s*engine\.config\.snapshotTieredInject\)\s*===\s*false\s*\?\s*''\s*:\s*engine\.renderSlimSnapshotPre\([^)]*\)$/
+  ok(!!triggerRead && !!slimGate && tieredGate.test(slimGate),
+    '注入调用方按 saved 策略读取 tieredInject，并回退旧开关')
+  if (triggerRead && slimGate) {
+    const bindSlimGate = expression => new Function(
+      'engine', 'resolveRuntimePolicy', 'effectiveTriggers', 'wsHintPre', 'agent',
+      triggerRead + '\nreturn (' + expression + ')'
+    )
+    const render = (evaluate, config) => evaluate(
+      { config, renderSlimSnapshotPre: () => '[slim]' }, resolveRuntimePolicy, effectiveTriggers, null, null
+    )
+    const saved = tieredInject => ({ schemaVersion: 2, presetId: 'human_full', triggers: { tieredInject } })
+    const savedOff = { deliveryPolicy: saved(false), snapshotTieredInject: true }
+    const savedOn = { deliveryPolicy: saved(true), snapshotTieredInject: false }
+    const evaluate = bindSlimGate(slimGate)
+    eq(render(evaluate, savedOff), '', 'saved 策略 tieredInject=false 关闭精简文本')
+    eq(render(evaluate, savedOn), '[slim]', 'saved 策略 tieredInject=true 保留精简文本')
+    eq(render(evaluate, { snapshotTieredInject: false }), '', '无策略时旧 snapshotTieredInject=false 仍关闭精简文本')
+    eq(render(evaluate, { snapshotTieredInject: true }), '[slim]', '无策略时旧 snapshotTieredInject=true 仍开启精简文本')
+    const legacyOnly = slimGate.replace(/_deliveryTriggersPre\?\.tieredInject\s*\?\?\s*/, '')
+    ok(legacyOnly !== slimGate && render(bindSlimGate(legacyOnly), savedOff) !== '',
+      '负路径：门控忽略 saved tieredInject=false 时，精简文本断言必红')
+  }
   // ★2026-09-15：签名由 `renderSlimSnapshotPre()` 变为 `renderSlimSnapshotPre(wsHint)`（首轮工作区兜底）。
   // 这里**不写死参数表**——用 `[^)]*` 容忍后续参数演进，避免签名一变就让本套件切片落空而假失败。
   ok(/renderSlimSnapshotPre\([^)]*\) \{/.test(code), '引擎侧提供 renderSlimSnapshotPre')
@@ -210,10 +238,10 @@ console.log('[P6A-5] ★分级注入（用户裁定"不是不注入，而是精�
   ok(/snapshotSlimRecallHit/.test(fn), '★精简版含唤回动态行（用户裁定：通知模型本轮自动想起了什么）')
   ok(/snapshotSlimRecallNote/.test(fn), '★精简版保留唤回声明（用户 2026-10-01 重申必须出现）')
   ok(/'snapshotSlimNote'/.test(fn), '精简版显式说明"这是精简版、完整版每 N 轮一次、怎么取全文"')
-  // ★2026-10-28 判据更新（D10/P2-3）：fallback 已统一为真源默认 20（原为 5）。
-  //   判据语义不变（N 与 gap 同源、不写死），只把被锁常量从 5 更新为 20/常量名。
-  ok(/L\('snapshotSlimNote', \{ n: parseGapRoundsPre\(cfg\.snapshotMinGapRounds, (20|DEFAULT_SNAPSHOT_MIN_GAP_ROUNDS)\) \}\)/.test(fn.replace(/\s+/g, ' '))
-    || /parseGapRoundsPre\(cfg\.snapshotMinGapRounds, (20|DEFAULT_SNAPSHOT_MIN_GAP_ROUNDS)\)/.test(fn), '精简说明里的 N 与 gap 同源（与真源一致，不写死）')
+  // ★P1 R2：精简说明的N与默认40同源；显式配置仍通过公共解析器决定。
+  //   不强求写死数值，守「parseGapRoundsPre + 与真源一致」。
+  ok(/L\('snapshotSlimNote', \{ n: parseGapRoundsPre\(cfg\.snapshotMinGapRounds, (40|DEFAULT_SNAPSHOT_MIN_GAP_ROUNDS)\) \}\)/.test(fn.replace(/\s+/g, ' '))
+    || /parseGapRoundsPre\(cfg\.snapshotMinGapRounds, (40|DEFAULT_SNAPSHOT_MIN_GAP_ROUNDS)\)/.test(fn), '精简说明里的 N 与 gap 同源（与真源一致，不写死）')
   // ★2026-09-15（用户裁定）：精简版**必须显式声明记忆唤回**——
   // 唤回是独立 context 面（M6 Reference Tail，在 `lib/index.js` 另一处单独注册），
   // 不随本函数渲染，不声明的话模型会以为"精简轮没有唤回"。
@@ -332,12 +360,26 @@ console.log('[P6A-6] ★T7-1（在能测的范围内）：规则在**每一轮**
   const out1 = renderRulesOnly.call(fakeThis('self'))
   ok(!out1.includes(RULES_SECTION_GUIDE_PRE_V1), '精简版不含规则段引导语（规则已移出精简版）')
   ok(out1.startsWith('<memory_system>'), '是完整可注入的块（有固定首行）')
-  // ★规则分层本身仍然生效：验证移到**完整版渲染**（不丢覆盖）
-  const fullOut = (() => {
-    try { return shell.renderMemoryDynamic ? shell.renderMemoryDynamic.call(fakeThis('self')) : '' } catch (_) { return '' }
-  })()
-  ok(fullOut === '' || fullOut.includes('【用户硬性规则') || fullOut.includes(RULES_SECTION_GUIDE_PRE_V1),
-    '★规则分层仍生效（完整版路径；精简版不含属用户裁定的预期行为）')
+  // B3-CB：真实 apply + section 回调，不允许空输出冒充通过。
+  const realMod = await import(new URL('../../lib/index.js', import.meta.url).href)
+  const registered = { contexts: [], sections: [] }
+  const realCtx = {
+    log: { info() {}, warn() {}, error() {}, debug() {} }, config: {},
+    effect(fn) { try { const r = fn(); if (r && typeof r.catch === 'function') r.catch(() => {}) } catch (_) {} return () => {} },
+    on() { return () => {} }, get() { return undefined },
+    tools: { register(d) { return d } },
+    systemPrompt: { context(o) { registered.contexts.push(o); return () => {} }, section(o) { registered.sections.push(o); return () => {} } },
+    policy: {}, head: {}, sessions: {}, directoryPicker: {}, remote: {},
+    router: { get() { return true }, post() { return true } },
+    webServer: { register() { return () => {} } }, slot() { return () => {} },
+  }
+  await realMod.apply(realCtx, {})
+  const rulesSection = registered.sections.find((s) => s.name === 'dsh:auto-memory-pre-rules')
+  ok(!!rulesSection && typeof rulesSection.text === 'function', '★真实apply注册规则section回调')
+  const fullOut = rulesSection ? String(rulesSection.text() || '') : ''
+  ok(fullOut.length > 0, '★真实section回调产出非空文本，不再接受空输出放行')
+  ok(fullOut.includes('[记忆系统 — 固定纪律]') && fullOut.includes('[记忆写入纪律 — 必须遵守]'),
+    '★真实section回调产出固定纪律铭文（实测长度=' + fullOut.length + '）')
   // ★新契约：精简版必须含检索指引（砍掉规则后的替代手段）
   ok(out1.includes('记忆检索指引'), '★精简版含检索指引（用户裁定第 3 条）')
   ok(out1.trimEnd().endsWith('</memory_system>'), '有固定尾行（边界完整）')
@@ -375,29 +417,37 @@ console.log('[P6A-7] ★T7-7：不能只靠"引导语不同"判"遵守问题已�
     '裁剪只对 memoryReferences / otherDynamic 各执行一次')
   ok(!/enforceLimit\('rules'\)/.test(budget), '★代码里不存在对 rules 的裁剪调用')
   ok(!/dropFromTail\('rules'\)/.test(budget), '历史写法 dropFromTail 也从未指向 rules')
-  // 规则段位置在参考内容之前（位置本身是"醒目"的一半，也是 T7-6 前缀稳定的前提）
-  // 注意切片起点：`renderSlimSnapshotPre` 定义在 `renderMemoryDynamic` **之前**，
-  // 故这里从 `renderMemoryDynamic` 起切到 `renderMemoryStatic`（不能用前者的 indexOf 当起点，
-  // 否则切片为空、indexOf 全为 -1 —— 本套件首跑就因为这个假红过一次）。
-  const dyn = idx.slice(idx.indexOf('renderMemoryDynamic(context) {'), idx.indexOf('renderMemoryStatic() {'))
-  // ★★2026-10-27 存量判据修复（**归因：锚点引号风格漏匹配，不是代码缺陷**）：
-  //   实测：本批**开始前**（7ff4a80a）跑本套件同样 121/2 红 ⇒ 是存量问题，不是本批引入。
-  //   根因：代码里 `pushPart("rules", "rules-section", ...)` 用**双引号**，
-  //   而锚点写死单引号 `pushPart('rules', 'rules-section'` ⇒ indexOf 恒 -1 ⇒ 位置断言假红。
-  //   （与 b2-zone-registry 的抽取正则同类问题 —— 该处已在 10-27 修过，此处漏改。）
-  //   ⇒ 锚点改为**同时接受单/双引号**，判据意图不变（规则段必须在参考内容之前）。
-  const _findQuoteAgnostic = (hay, single, dbl) => {
-    const i1 = hay.indexOf(single)
-    const i2 = hay.indexOf(dbl)
-    if (i1 < 0) return i2
-    if (i2 < 0) return i1
-    return Math.min(i1, i2)
+  // A1b2：匹配实际 part / pushPart 调用，锁段守卫里的段名不会被记作投递。
+  const dynamicStart = idx.indexOf('renderMemoryDynamic(context) {')
+  const dynamicEnd = idx.indexOf('renderMemoryStatic() {', dynamicStart)
+  const dyn = dynamicStart >= 0 && dynamicEnd > dynamicStart ? idx.slice(dynamicStart, dynamicEnd) : ''
+  const dynCode = dyn.replace(/\/\*[\s\S]*?\*\/|^[ \t]*\/\/[^\r\n]*/gm, comment => comment.replace(/[^\r\n]/g, ' '))
+  const deliveryCalls = source => ({
+    rules: [...source.matchAll(/^[ \t]*pushPart\([ \t]*(['"])rules\1[ \t]*,[ \t]*(['"])rules-section\2[ \t]*,[^\r\n]+\)[ \t]*(?=\r?$)/gm)],
+    refs: [...source.matchAll(/\b(?:part|pushPart)\(\s*(['"])memoryReferences\1\s*,\s*(['"])([^'"]+)\2\s*,/g)],
+  })
+  const rulesBeforeReferences = ({ rules, refs }) => rules.length === 1
+    && ['recent-logs', 'project-notes'].every(kind => refs.some(call => call[3] === kind))
+    && refs.every(call => call.index > rules[0].index)
+  const calls = deliveryCalls(dynCode)
+  const [rule] = calls.rules
+  ok(rulesBeforeReferences(calls),
+    '★规则段排在所有参考内容之前（实调用位置：' + rule?.index + ' < '
+    + calls.refs.map(call => call[3] + ':' + call.index).join(' / ') + '）')
+  const tier0 = calls.refs.find(call => call[3] === 'tier0-catalog')
+  ok(!!rule && !!tier0 && rule.index < tier0.index, '规则段也排在 Tier-0 目录之前（规矩比索引更靠前）')
+  const lastReference = calls.refs.at(-1)
+  const insertAt = lastReference ? dynCode.indexOf('\n', lastReference.index) + 1 : 0
+  if (rule && insertAt > rule.index + rule[0].length) {
+    const moved = dynCode.slice(0, rule.index) + dynCode.slice(rule.index + rule[0].length, insertAt)
+      + rule[0] + '\n' + dynCode.slice(insertAt)
+    const mutant = deliveryCalls(moved)
+    ok(mutant.rules.length === 1 && mutant.refs.length === calls.refs.length
+      && mutant.rules[0].index > mutant.refs.at(-1).index && !rulesBeforeReferences(mutant),
+    '负路径：将规则 push 移到最后一个参考调用之后，顺序判据必红')
+  } else {
+    ok(false, '找不到可移到参考内容之后的规则 push 调用')
   }
-  const iRules = _findQuoteAgnostic(dyn, "pushPart('rules', 'rules-section'", 'pushPart("rules", "rules-section"')
-  const iLogs = _findQuoteAgnostic(dyn, "'recent-logs'", '"recent-logs"')
-  const iNotes = _findQuoteAgnostic(dyn, "'project-notes'", '"project-notes"')
-  ok(iRules > 0 && iLogs > iRules && iNotes > iRules, '★规则段排在所有参考内容之前（实测位置：' + iRules + ' < ' + iLogs + ' / ' + iNotes + '）')
-  ok(iRules < dyn.indexOf("'tier0-catalog'"), '规则段也排在 Tier-0 目录之前（规矩比索引更靠前）')
   // 如实标注依赖边界：最终 messages 需要宿主 U6
   ok(/U6/.test(RULES_SRC) || /U6/.test(idx), '代码/模块注释如实标注"最终请求需 U6，未宣称已保证"')
 }

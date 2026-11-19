@@ -1,6 +1,6 @@
 # 记忆系统大修 · 施工总表
 
-> 初建 2026-11-08 · 更新 **2026-11-12（Asia/Hong_Kong）：R4 P0–P4 已完成，P5 关键可执行缺口已有证据，P6/P7 A1 约定范围已验收；2.6/2.7/2.8 先补可执行协议再串行实施** · 此前 11-09 五更记录批次 1 收口；当前源码基线 HEAD `b7668c83`，本批工作未提交 · 基于 A/B/C/D 四线审计、注入专项交叉复核、R4 protocol 与后续提交验收
+> 初建 2026-11-08 · 更新 **2026-11-14（Asia/Hong_Kong）**：2.7/2.9真实链接线已隔离验收并本地提交 `9cca3b14` · 3.0–3.4细则待实施、2.3金标/训练门与真实HOST未完成 · 未push/未发布
 > 用途：这张表是施工安排的**唯一入口**，每行可独立搬到你自己的任务板
 > 细则版（每项的具体改法）留给子代理逐批绘制，见第九节
 
@@ -12,30 +12,30 @@
 
 ### 一句话现状
 
-**批次 1 已全部完成并收口**：1.1/1.2/1.3（`7974d930`…`551c9b31`）、1B（`e7baa4fb` + `b8335108`）、收口轮（`2d0dbe6d` + `21874114`）、真实会话接驳与缺陷 A 修复（`20a736b0`）。**独立线 L（R4）当前不是「全部完成」也不是「未开工」：P0–P4 已完成；P5 的两进程竞争、R4-off 写侧、真实 queryHistory 观测与 classic 完整正文已复核；P6/P7 的 A1 已有实现、808 篇只读盘点及 30 篇备份/恢复抽样；默认退出、单一 R4 WAL、拒绝零副作用与受控真实根已由修正报告闭合；物理删除未做。** 批次 2 已有 2.1/2.2 与 2.5 的部分实现；2.6/2.7/2.8 的旧 `memory_note` 路径尚未闭环，2.3/2.4 不得据此直接归并；批次 3–6 的原任务未按本表逐项验收完成，S-1 的 L2 语义层仍待裁定。**
+**批次 1 已全部完成并收口**：1.1/1.2/1.3（`7974d930`…`551c9b31`）、1B（`e7baa4fb` + `b8335108`）、收口轮（`2d0dbe6d` + `21874114`）、真实会话接驳与缺陷 A 修复（`20a736b0`）。**独立线 L（R4）当前不是「全部完成」也不是「未开工」：P0–P4 已完成；P5 的两进程竞争、R4-off 写侧、真实 queryHistory 观测与 classic 完整正文已复核；P6/P7 的 A1 已有实现、808 篇只读盘点及 30 篇备份/恢复抽样；默认退出、单一 R4 WAL、拒绝零副作用与受控真实根已由修正报告闭合；物理删除未做。** 批次 2 已有 2.1/2.2 与 2.5 的部分实现；2.6–2.8及2.9约定范围接线已隔离验收，但真实HOST未验；2.3/2.4不得据此直接训练或归并；批次 3–6 的原任务未按本表逐项验收完成，S-1 的 L2 语义层仍待裁定。**
 
 - **已完成代码提交**：1.1 容量上限 + 1.3a 去重 + 1.3b 形态守卫（`7974d930`）；**1.2 六步全落**（`a323bb58` 方案 → `231e67ff` → `594b37c2` → `3531b983`/`fb39ab4d`/`465ad3ba` → `966c900e` → `e990fa84` → `551c9b31`）；#475 代码收尾（`3b85cf9b`）。提交里的验收回执属历史记录，本轮只做只读核验，未重跑生产。
-- **R4 独立线 L 当前进度（2026-11-12 复核）**：P0/P1=`dfa00e1e`、P2A–P2D=`b2d80ae6`、P3=`4f12634c`、R4-M=`3cc1d128`、P4-0=`2f4ab63c`、P4-1=`ada1a29b`、P4-4=`10e66faf`；综合验收后的去重/观测/只读装配修复=`6d9573bb`；P4-2=`897f20be` + 前端修复 `b7668c83`；P4-3=`cb1f42bb`。P4-2 当前为 14 PASS/0 FAIL、9 CAUGHT，P4-3 为 20 PASS/0 FAIL、3 CAUGHT。**P4 完成不等于 P5/P6/P7 完成**：classic 修复后的完整正文宿主截图已闭合；P5 报告见 `R4-P5-IMPL-RESULT-20261112.md`。P6/P7 已按 A1 实施但未提交，真实模型轮次、跨设备同步与全量审计/恢复仍未完成；生产仍默认 `ledgerDocEnabled=false`，旧数据不迁移、不删除。当前状态矩阵见下方独立线 L。
+- **R4 独立线 L 当前进度（2026-11-12 复核）**：P0/P1=`dfa00e1e`、P2A–P2D=`b2d80ae6`、P3=`4f12634c`、R4-M=`3cc1d128`、P4-0=`2f4ab63c`、P4-1=`ada1a29b`、P4-4=`10e66faf`；综合验收后的去重/观测/只读装配修复=`6d9573bb`；P4-2=`897f20be` + 前端修复 `b7668c83`；P4-3=`cb1f42bb`。P4-2 当前为 14 PASS/0 FAIL、9 CAUGHT，P4-3 为 20 PASS/0 FAIL、3 CAUGHT。**P4 完成不等于 P5/P6/P7 完成**：classic 修复后的完整正文宿主截图已闭合；P5 报告见 `R4-P5-IMPL-RESULT-20261112.md`。P6/P7 已按 A1 实施并提交于 `45a7f905`，真实模型轮次、跨设备同步与全量审计/恢复仍未完成；生产仍默认 `ledgerDocEnabled=false`，旧数据不迁移、不删除。当前状态矩阵见下方独立线 L。
 - **当前主线（历史快照）**：**批次 1 已完成并收口**。1.4 = 「L1 标识自动 attach + **evt id 直查** + 强负证据新建 + 0.34 词袋兜底 + L2 语义候选只排序不判定 + dryRun 写前预检 + 回执三态」；1.5 事件名 40→80；1.6 注入面输出 `#evt_xxxxxxxx`（T2 必加、目录由生产点 `withId:true` 开启）。
 - **1.4 真实会话接驳验证已完成**（2026-11-09，真实插件进程 9 条用例）：dryRun 零写入 9/9、回执三态如实、L1 对 issue/task 有效、词袋兜底未回退。**验证中发现并修复 P1 缺陷 A**：日志正文写 `evt_xxx` 时 L1 只与各事件 name∪summary 求交，而该 id 指向的事件自身不含自己的 id ⇒ 零交集 + 库内大量带标识 active 事件 ⇒ 被「强负证据」误判成「标识冲突⇒新建」。这是 **1.4 × 1.6 的交叉缺陷**。修法见 [DETAIL §11.7](./DETAIL-BATCH1B-20261109.md)。宿主重启后真机复测 4/4 通过。
 - **⚠ 订正**：初判的「缺陷 B（dryRun 与真写不同源）」经复算**不成立**，是验证者用不同文本当同一场景对比的方法论错误，见 [DETAIL §11.6](./DETAIL-BATCH1B-20261109.md)。验收与落地清单见 [DETAIL-BATCH1B](./DETAIL-BATCH1B-20261109.md) §9。
-- **主线未完成项**：批次 2 的 2.3/2.4/2.6–2.9 及 2.5 完整契约仍待闭合；批次 3–6 按本表登记的任务尚未逐项验收完成。2.1/2.2=`4f2b5d23`，2.5 已有 `fromEvents` 重绘与稳定定序，不能继续写成整批未开工。S-1 的 L2 语义层仍待用户裁定方向；铭文护栏临时值 1700 留待 5.1 定稿。
+- **主线未完成项**：2.3训练/可靠判定与2.4冻结；2.9旧plan/handoff链接线已隔离验收，真实HOST/生产启用未完成；3.0–3.4有完整调查/细则但生产实现未逐项验收。2.7摘要正文与2.9真实来源/覆盖证据见本批结果文档，不把隔离验收当生产启用。S-1的L2语义层和5.1仍按各自裁定。
 - **已知遗留（非阻塞）**：① L2 文案「语义档未就绪（C1/资产缺失）」与磁盘不符 —— `~/.dsh/models/js-semantic/multilingual-e5-small` 资产齐全，`ready` 为假是因 peer 推理库不可加载；文案需区分「模型不在」与「推理库不在」（可并入 5.1）。② 真实会话验证须在隔离 `DSH_HOME` 下做，不要在生产事件库裸跑（本轮已清理测试残留）。
 - **计数**：按 §〇 统一为 **36 个主任务**（含批次 2 新增的 2.6–2.9）；R4 为独立线 L，不并入主任务编号；3.0 的子项不重复计数。旧「32 个主任务」仅作历史快照。
 
-> 本次授权是**更新施工总表**。登记已定范围不等于开始批次 3 代码施工；待定的预算范围、MEMORY 投递范围、白板视角和特殊档边界不能由执行者自行定案。
+> 当前接续清单：[NEXT-STEPS-20261114.md](./NEXT-STEPS-20261114.md)；2.3训练回报与阻塞：[REVIEW-2.3-TRAINING-PROGRESS-20261114.md](./REVIEW-2.3-TRAINING-PROGRESS-20261114.md)。登记任务不等于开始代码施工、训练或生产启用。
 
-### 环境快照（2026-11-12 本轮只读核验）
+### 环境快照（2026-11-14 当前基线复核）
 
 | 项 | 值 |
 |---|---|
 | 分支 | `preview` |
-| HEAD（本次只读核验起点） | **`b7668c83`**（R4 classic nonce 刷新与正文高度修复） |
-| 工作树 | 本轮起点 `b7668c83`；P5/A1 有未提交源码、测试与文档改动。既有未跟踪探针和临时目录不属于本批，不清理 |
+| HEAD（当前基线） | **`9cca3b14`**（2.7摘要检查点与2.9真实链接线） |
+| 工作树 | 本批从 `preview` HEAD `3d3c4547` 开工；G-1/G-2 已定稿，2.7/2.9 真实链接线及专项验收完成，按验收范围本地提交。无关未跟踪产物与并行文件保留，不清理 |
 | 未跟踪 | `artifacts/probe_classiclf.mjs`、1 个 `artifacts/._p1i...tmpdir/`、3 个 `tools/_run-smoke-mut536-*.mjs`、1 个 shell 引号残留文件；均为先前产物，未删除未整理 |
 | #475 | 代码已于 `3b85cf9b` 收尾；对外 PR 状态本轮未核验 |
-| `lib/index.js` 当前指纹 | A1 修正后 Lead 已核 **2,162,687 B / 29,759 行 / 27 个 `export` 行**；r26 IX **1,608,289** / sha16 `39C81F8F96025886`；CRLF 29,758、裸 LF 0。完整报告见 A1 §14 |
-| 计数锁 | 工具 **22** / 路由 **86** / 配置键 **180**（R4 新增 `ledgerDocEnabled`，默认 false）；2026-11-12 `node tools/verify-docs.mjs` EXIT=0 |
+| `lib/index.js` 当前指纹 | **2,172,889 B / 29,872 行**；r26 IX **1,616,211** / sha16 `C1BC1369686A2BCC`；CRLF 29,872、裸 LF 0；真实 import 导出 23 |
+| 计数锁 | 工具 **22** / 路由 **86** / 配置键 **181**（R4 新增 `ledgerDocEnabled`，默认 false）；2026-11-12 `node tools/verify-docs.mjs` EXIT=0 |
 | R4 读侧/前端 | P4 已完成；真实模型消费仍未验证；classic 修复后的完整正文宿主截图与 iter5 截图均已交付。A1 不改前端 |
 | 实验/调优包（不入库） | `artifacts/_ranker-prototype-v3-20261109/`（92 条盲评）、`_ranker-iter-20261109/`（dev 61 / holdout 31）、`_ranker-selfloop-20261109/`（自监督挂机包）；均被 .gitignore 的 `artifacts/_*` 覆盖 |
 | `hub/facts.json` | **475,794 B**（1.2 第1步前为 88,972,380 B ⇒ 186×）；`hub/facts-conflicts.json` 尚未生成（存量清空后 0 条真冲突） |
@@ -46,7 +46,7 @@
 
 1. **批次 1 已全部收口**；R4 不得因 P0–P4 的提交或 A1 接口存在而视为全项目完成。先读 [PROTOCOL-R4-20261110.md](./PROTOCOL-R4-20261110.md) §9.2A，再读本表独立线 L 的当前矩阵。
 2. **P5 的可执行关键证据已补齐并复核**；真实模型行为与跨设备仍单列未验。**P6/P7 A1 约定范围已验收**：真实写入、独立兼容模块、30 篇备份/恢复抽样及默认退出已有证据；20 套 382 PASS/0 FAIL，见 A1 报告 §14。真实模型、跨设备、全量审计/恢复与 HOST 写入仍未验，不是直接迁移或删除。
-3. **批次 2 顺序**：先补齐可执行协议、API、锁/失败时序、测试与回退方案，再逐项 **2.6 → 2.7 → 2.8** 实施与独立验收；三项全部完成后才做 2.3。不得把测绘报告当成可直接编码的完整施工单。2.4 分「隔离工程门 / 真实执行门」，真实归并未获授权保持冻结。2.5 的自动重绘缺口与 D4 的实施另验收。
+3. **当前接续**：2.7/2.9 已完成约定范围接线与独立验收；按 [NEXT-STEPS-20261114.md](./NEXT-STEPS-20261114.md) 推进：①等待用户2.3临时需求，先复核独立来源与归属金标；②按批次3细则实施3.0–3.4；③独立DSH_HOME验证HOST。2.4真实归并继续冻结，不直接启用生产。
 4. **1.2 已完成，不要再按旧快照征询「面板 A / 工具 B 选哪个」**；S-1 的 L2 语义层仍待裁定。批次 3 的 3.0-B 预算、MEMORY 投递范围、白板视角与特殊档边界未定前，不因 R4 进展而放行。
 5. 批次 1/2 细则：[DETAIL-BATCH1-20261108.md](./DETAIL-BATCH1-20261108.md)、[DETAIL-BATCH2-20261108.md](./DETAIL-BATCH2-20261108.md)。施工时不清理无关工作区改动，不擅自 stash；同文件单执行者规则不变。
 
@@ -232,14 +232,22 @@ D	[MEMORY-LOGIC-GAPS-20261108.md](file:///D:/dsh-auto-memory/docs/internal/MEMOR
 > | 2.1 / 2.2 | ✅ 已提交 `4f2b5d23`：goal 透传与 kind 推断；历史库不据此自动回填 |
 > | 2.3 | ⬜ 语义归并只读提案未按本表闭环；已有确定性草案不是替代验收 |
 > | 2.4 | ⬜ 真实归并未执行；**条件触发，非永久取消**。仅隔离 apply 修复/演练可先做；真实执行仍须 2.3、备份、恢复和明确授权，见下方 2.4 双门 |
-> | 2.5 | 🟡 已提交稳定定序与 `fromEvents` 重绘入口；生产自动重绘 hook 未证实，逐项正/负路径契约仍需独立验收 |
-> | 2.6–2.8 | 🟡 测绘完成，R4 新文档链有部分同族协议；旧 `memory_note` 路径尚未完成 |
-> | 2.9 | 🟡 handoff 四段写入已存在；统一规范化、空值语义、覆盖证明与 sourceRef 仍未闭合 |
+> | 2.5 | ✅ `45a7f905` 已实现默认关闭的事件成功后重绘与锁内合并；13/0、18/0、9/0；生产启用未验 |
+> | 2.6–2.8 | 显式归属、旧plan预检保持；G-1不加容器、G-2=300字符已定稿。2.7新plan/handoff检查点已改为摘要+可信指针+完整raw/normalized指纹+原始四段，专项30/0、4变异捕获；真实HOST/生产启用未验 |
+> | 2.9 | ✅ 独立核心与旧plan/handoff真实链接线已隔离验收：专项PASS90/DONE122、4变异捕获，i332=30/0、h2-h0=17/0、r26=26/0；真实HOST/生产启用未验 |
 
 > **2.4 双门（2026-11-12 复核，不改既有条件触发裁定）**：
 > ① **隔离工程门**：先修 apply 的全量 active 误归档、未知字段/非法 `archived` 状态、源事件对象与内容迁移；补 `sourceEventIds`、检查点/idemKey/内容指纹守恒、合法 closed 语义、跨进程锁与静默窗口、真实回滚与故障注入。此门可先做，只允许合成/冻结副本。
 > ② **真实执行门**：2.3 的 AI 判类 + 人审零写提案完成；当前真实清单/字节数/碎片口径重算；0.2 备份与恢复逐字节校验；用户明确批准该最小批次。缺一门即保持冻结。
 > **历史数字不作现行清单**：2026-11-08 的「23 个碎片」仅是该时点 active + unknown + checkpoints≤2 的口径，不能当今天的归并范围。R4 P4-3 只读清单、R4 P2B 的 687 篇审计均不解除上述任一门。
+>
+> **2.3 / 2.9 / 3.0 顺序与语义复核（2026-11-12 用户指正后补齐）**：
+> ① **2.3 的核心是事件归属判定器**，不只是事后存量归并。其完整范围是：在 `memory_log`（以及采用显式事件归属的 `memory_note`）写入口做语义候选排序，返回候选、分数、margin、解释与提案状态；同时支持历史事件的语义归并提案。**不得自动 attach、merge 或 archive**；1.4 的标识规则仍是自动归属边界，模型不能凭高余弦越过它。详见 `REGROUP-MODEL-EVAL-REPORT-20261109.md` 与 `HANDOFF-SIDECAR-PRODUCTION-WIRING-POST-23-20261112.md`。
+> ② 2.9依赖2.6；旧plan/handoff真实文件读取、sourceProof、规范化与原始四段已接入共享入口。摘要指针另用六门评估identity/binding/provenance/quad/summary/recoverable，不拿摘要冒充全文；log不强套四段。
+> **2.9 接线已交付（2026-11-13）**：task-14 的独立核心由既有实现复用；task-18 由 DeepSeek teammate 完成真实链接线，Lead 复跑专项 PASS90/DONE122、4 变异 CAUGHT。2.6-note-integration=22/0、2.8-integration=17/0，意外失败留痕保留且不伪造成功正文。真实 HOST、全仓回归和生产启用仍未验。
+> ③ 当前主线按 **2.5–2.8 已隔离验收 → 2.3 语义候选与零写提案 → 3.0 注入投递基础修复**推进，2.4 继续冻结。3.0-A 确定的小修与 2.3 没有全量技术阻塞；本顺序是当前施工优先级，不得误写成 SidecarStore 与 3.0 互相依赖。SidecarStore 的独立后续线在 2.3 profile/API 冻结后按专项任务书接入。
+> ④ **模型证据以真实口径复测为准**：`ATTR-REALISTIC-20261110.md` 的 630 查询表明 C2 top-1=21.7%、top-5=57.1%，早期 63 精选查询上的 fields 增益已证伪；C2 保留为召回/语义特征底座，不自动归属。`REGROUP-MODEL-EVAL-REPORT-20261109.md` 的旧聚类/模型绝对数字仅作历史对照，不再当生产验收基线。
+> ⑤ 当前 `memory_log` 已有 C2 top-3/margin/dryRun 候选；缺统一归属协议、`memory_note` 对齐、历史零写提案与真实判定基准。新实验任务书：`PROMPT-EVENT-ATTRIBUTION-BENCHMARK-20261112.md`，含真实数据金标、按事件防泄漏切分、跨语言构造组、候选/新建/不确定/不适用四态与 A–F 实验臂。2.9 与 2.3 可并行，最终共享 `lib/index.js`/`lib/event-write.js` 的接线串行。
 > **历史裁定出处**：`MAP-BATCH2-20261109.md:320-330` 已把 2.4 改为「条件触发」，触发为面板确实被碎片淹没、或用户希望只显示少数主线事件；`:335-348` 记录「2.4 挂起（用户裁定）」。本表现已补入，不宣称历史上曾经解冻。
 
 ### 批次 2 · 2.6/2.7/2.8 测绘与施工门（2026-11-12 更新）
@@ -249,13 +257,13 @@ Lead 已按子代理口径独立复核，逐项吻合。
 
 | 项 | 状态 | 测绘结论 |
 |---|---|---|
-| **2.6** | 🟡 测绘完成，旧路径未闭环 | **不能把 #543 的门搬到 `memory_note`**：200 条全文检查点中 18.5% 无 L1 标识、**60.1% 与全部带标识事件零交集**（强负证据会判「新建」）、19.0% 命中多事件（max fanout 24）⇒ 搬门会让六成以上账本/白板各自新建事件。**2026-11-12 复核**：底层 `appendHandoffCheckpointPre` 已支持显式 `opts.eventId`，但 `memory_note` 的 19 个属性中新增的是维护文档 `documentId`（不是 `eventId`），旧 WAL 调用也未透传；未显式传参仍由 `resolveActiveEventPre` 选最近 active。测绘提出的显式归属 + 项目级容器协议尚未完成 |
-| **2.7** | 🟡 测绘完成；R4 新链已有 changeSet，旧链未闭环 | 全文**不是没人读**：`event-recall.js:45` 的 `textOfEventPre` 真读且不截断，plan/handoff 全文占召回语料 **61.28%**（移动靶）；但**渲染侧在四段齐全时完全不读**（handoff 93.3% / plan 97.3%），Phase 2 失败**无自动回放**（靠 `memory_recall` 人工取回）。方向定为**「摘要 + 指针」**，不采用「成功后降级」。**2026-11-12 复核**：旧 `event-write.js:737` 仍 `text:ledgerText`；R4/P3 的 `changeSet/revision` 属另一条文档 WAL，且 content 区变化仍整区携带，不能当作旧链的摘要指针改造完成 |
-| **2.8** | 🟡 测绘完成；R4 Phase 0 已隔离实现，旧链未闭环 | **idemKey 去重其实有效**（13 条仅 5 个唯一键，同 reason 键完全相同）⇒ 原判断「同因重犯不去重」**错误**。真问题是**可预期失败先入库**：Phase 0 白名单（H1/H2×7 + card-format×1 + version-conflict×5）可前置拦，磁盘/权限/JSON/进程中断属意外应留痕。**2026-11-12 复核**：旧 `memory_note` Phase 3 仍补偿写 `plan-write-failed/handoff-write-failed`，未由 R4 新 WAL 接管 |
+| **2.6** | ✅ 显式归属已接（22/0） | **不能把 #543 的门搬到 `memory_note`**：200 条全文检查点中 18.5% 无 L1 标识、**60.1% 与全部带标识事件零交集**（强负证据会判「新建」）、19.0% 命中多事件（max fanout 24）⇒ 搬门会让六成以上账本/白板各自新建事件。**2026-11-12 复核**：底层 `appendHandoffCheckpointPre` 已支持显式 `opts.eventId`，但 `memory_note` 的 19 个属性中新增的是维护文档 `documentId`（不是 `eventId`），旧 WAL 调用也未透传；未显式传参仍由 `resolveActiveEventPre` 选最近 active。测绘提出的显式归属 + 项目级容器协议尚未完成 |
+| **2.7** | ✅ 摘要+指针正文已接（30/0、4变异捕获） | 全文**不是没人读**：`event-recall.js:45` 的 `textOfEventPre` 真读且不截断，plan/handoff 全文占召回语料 **61.28%**（移动靶）；但**渲染侧在四段齐全时完全不读**（handoff 93.3% / plan 97.3%），Phase 2 失败**无自动回放**（靠 `memory_recall` 人工取回）。方向定为**「摘要 + 指针」**，不采用「成功后降级」。**2026-11-12 复核**：旧 `event-write.js:737` 仍 `text:ledgerText`；R4/P3 的 `changeSet/revision` 属另一条文档 WAL，且 content 区变化仍整区携带，不能当作旧链的摘要指针改造完成 |
+| **2.8** | ✅ 旧plan预检/意外失败留痕已接（17/0） | **idemKey 去重其实有效**（13 条仅 5 个唯一键，同 reason 键完全相同）⇒ 原判断「同因重犯不去重」**错误**。真问题是**可预期失败先入库**：Phase 0 白名单（H1/H2×7 + card-format×1 + version-conflict×5）可前置拦，磁盘/权限/JSON/进程中断属意外应留痕。**2026-11-12 复核**：旧 `memory_note` Phase 3 仍补偿写 `plan-write-failed/handoff-write-failed`，未由 R4 新 WAL 接管 |
 
 **共同解法（测绘 §五 的架构借鉴结论）**：不是抽 5 个模块，而是给写入口收 **1 层 API（`appendEventNotePre`）+ 4 条成文协议**（P-1 归属 / P-2 正文 / P-3 失败 / P-4 回读）。
 **最前面须插一步「立协议 + API 骨架」**，否则同一条 Phase 1 要改三次。
-**2026-11-12 状态补充**：`appendEventNotePre` 尚未落地；R4 的 `LedgerWal` / `EventStoreLedgerSink` 服务维护文档，不替代这层旧写入口 API。下表保留原测绘数字作为当时快照，不把移动的生产库存量当作永久计数。
+**2026-11-14 状态补充**：旧写入口已落地为 `appendStoredHandoffCheckpointPre` + `handoff-checkpoint.js` 的受限扩展；不另造同名 `appendEventNotePre`。R4 的 `LedgerWal` / `EventStoreLedgerSink` 仍属维护文档另一条链，未改。下表保留原测绘数字作为当时快照，不把移动库存量当永久计数。
 
 **口径订正（已修）**：此前传播的「126 条整篇快照 / 32.0%」是**首行前缀口径**；
 按 `kind∈{plan,handoff}` 真值为 **200 条 / 671,701 字符 / 64.43%**（少算 58.7% 条数）。
@@ -266,7 +274,7 @@ Lead 已按子代理口径独立复核，逐项吻合。
 > 但从未登记进本表，因此没有任何迭代会把它捡起来。**不是存量问题**：最后一条整篇快照为 `2026-11-09T09:29`（当天），
 > #543 修复（11-04）之后仍新增 **16 条**整篇快照、**5 条**失败标记。
 >
-> **施工顺序硬约束**：2.6 → 2.7 → 2.8 依次串行。测绘已完成；下一步是补齐 P-1/P-2/P-3/P-4、API、精确写域、失败时序和独立验收的可执行施工细则，然后才交执行者编码。2.3 等三项独立验收完成后才启动。
+> **当前状态**：2.6/2.7/2.8 已完成约定范围的接线与独立验收。2.3 的下一段按用户临时需求先复核独立来源与归属金标，不直接启动训练；详见 [REVIEW-2.3-TRAINING-PROGRESS-20261114.md](./REVIEW-2.3-TRAINING-PROGRESS-20261114.md)。
 > 理由：2.6 改归属语义（会改账本/白板挂到哪个事件），2.7 改正文存储形态（需保证回读），2.8 改写前拦截（需保证真失败仍留痕）——
 > 三者都会碰同一段 WAL 路径，串行 + 先测绘可避免互相踩。
 >
@@ -372,7 +380,7 @@ Lead 已按子代理口径独立复核，逐项吻合。
 > | P4-2 | ✅ 实现 `897f20be` + 修复 `b7668c83` | legacy/graph/iter5 面板与 revision 更新；14/0、9 CAUGHT；classic 修复后完整正文截图已由 P5 闭合，变体皮肤不在范围 |
 > | P4-3 | ✅ `cb1f42bb` | 外部 revision 简报与独立维护文档清单；20/0、3 CAUGHT，HOST on 12/12、off 3/3。**不等于 2.3 语义归并或 2.4 真实归并** |
 > | P5 | 🟡 关键可执行缺口已复核；未宣称整体验证 | Lead 复跑两进程竞争 8/0、R4-off 7/0、真实 historyProbe 12/0、r26 26/0；classic 完整正文截图已核。`R4-P5-IMPL-RESULT-20261112.md` 中的「无维护文档写入口」已被 A1 取代。真实模型行为与跨设备基线未验；queryHistory 仅 facade + debug 观测，无 HTTP 路由；不做全仓完成宣称 |
-> | P6/P7（合并） | ✅ A1 约定范围完成（未提交）；选 **A1 保留原件** | 显式更新走 R4 CAS/WAL；显式主题/真实事件首建 create-only；无身份明确拒绝，不再默认新增旧快照；拒绝零副作用、受控真实根、兼容读取薄转发有测试与变异。20 套 382 PASS/0 FAIL；808 篇只读盘点，30 篇抽样恢复非全量。真实模型、跨设备、HOST 写入未验；不迁移、不删除 |
+> | P6/P7（合并） | ✅ A1 约定范围完成（`45a7f905`）；选 **A1 保留原件** | 显式更新走 R4 CAS/WAL；显式主题/真实事件首建 create-only；无身份明确拒绝，不再默认新增旧快照；拒绝零副作用、受控真实根、兼容读取薄转发有测试与变异。20 套 382 PASS/0 FAIL；808 篇只读盘点，30 篇抽样恢复非全量。真实模型、跨设备、HOST 写入未验；不迁移、不删除 |
 >
 > **团队线解决方法**：P4-4 在 P5 前完成，不等 R4 总体做完。维护文档以 documents/<documentId>.md 随基线携带，含正文/documentId/revision/eventIds；沿用既有备份/写入/回滚写计划做兼容 pack→unpack→隔离 apply；checksum、路径与 revision 逐份校验。目标存在不同 revision 默认冲突，须显式解决，不静默覆盖；同 revision 幂等，不生成 -b/-c 伪身份。基线只携带当前维护态，不充当旧账本删除恢复备份。团队传输、权限与在线同步协议大改另排独立线，不混入 P4-4。
 >
@@ -400,7 +408,25 @@ Lead 已按子代理口径独立复核，逐项吻合。
 
 **目标**：让写进去的有效内容在正确时机、正确档位被完整投递，最终预算与账本一致，一次性通知不因候选渲染被提前消费。
 
-**进度**：3.0 已完成交叉审计与补充调查，以下只登记确定下来的施工细节；代码尚未实施。总体主线仍约到 1.2，不因本节细化而标记批次 3 已开工。
+**进度（2026-11-17 Lead全量审核修订）**：42份直接相关文档、prototype与当前代码已复核；新旧联系、遗漏和当前事实见 [REVIEW-BATCH3-LEAD-FULL-AUDIT-20261117.md](./REVIEW-BATCH3-LEAD-FULL-AUDIT-20261117.md)。L1/L2/L3已统一，但目标API尚未实现，真实HOST与全量回归未验。
+
+**系统化重建契约**：本批以系统化、模块化、API化重写相关投递系统，原因是投递系统存在数量较多且杂乱的复杂性耦合，导致功能紊乱。既有调查、交叉审计、用户裁定与模块边界统一见 [DETAIL-BATCH3-SYSTEMIC-REBUILD-CONTRACT-20261116.md](./DETAIL-BATCH3-SYSTEMIC-REBUILD-CONTRACT-20261116.md)。该契约是实施真源，不是重新讨论方向。
+
+**施工顺序细则**：按 B3-CB → 公共契约 → B3-RC → B3-PJ → B3-RP → B3-NT/BD/FM → B3-EV 分阶段实施，见 [DETAIL-BATCH3-IMPLEMENTATION-SEQUENCE-20261116.md](./DETAIL-BATCH3-IMPLEMENTATION-SEQUENCE-20261116.md)。该文档更新并替代原有3.0/3.1类分散施工内容，旧文档仅作调查与溯源。
+
+**★三份批次3文档的效力层级（2026-11-16 修订，冲突时按此裁决）**：
+
+| 层级 | 文件 | 管什么 |
+|---|---|---|
+| **L1 架构契约** | `DETAIL-BATCH3-SYSTEMIC-REBUILD-CONTRACT-20261116.md` | 模块划分、**公共 API 签名**、DTO/profile、已裁定约束、非目标 |
+| **L2 施工细则** | `DETAIL-BATCH3-IMPLEMENTATION-SEQUENCE-20261116.md` | 施工顺序、每单位实施/验收/回滚、停止条件 |
+| **L3 测绘大纲** | `DETAIL-BATCH3-UNIFIED-20261116.md` | 代号溯源、依赖图、现状实测、3.0-B 未决边界 |
+
+裁决规则：**API/profile/DTO 冲突 ⇒ L1 为准**；施工顺序冲突 ⇒ L2 为准；现状事实冲突 ⇒ **以当前代码实测为准**。
+
+**B3-PJ 是独立代号（投影与策略层）**，负责档位 / full-slim 视角 / 特殊档策略；它不是 B3-RP 或 B3-BD 的子步骤。代号全表见 L1 §4.6。
+
+**⚠ 已裁定 ≠ 已实现**：截至 2026-11-16 实测，**50% 水位仍为 `'25,50'`**（未实现 50% 默认关）、**`ruleSummaryPre` 仍 `max = 200`**（未实现不看逐条 200）。逐条现状见 L1 §6 的「代码现状」列。
 
 | # | 任务 | 落点 | 验收判据 | 依赖 / 并行边界 |
 |---|---|---|---|---|
@@ -410,7 +436,9 @@ Lead 已按子代理口径独立复核，逐项吻合。
 | 3.3 | **检查点截断策略**：保留开头与结尾信息或按内容动态分配 | `lib/event-render.js` 的检查点渲染 | 构造 1400 字检查点 → 开头与结尾特征均可达；段级预算仍≤1800，并与3.0最终帧总预算同时满足 | 先定段级规格，再与 3.0 最终输出联验 |
 | 3.4 | **事件可见性**：改善 active 事件展开及定位 | 注入段及事件渲染 | 固定10个active的夹具，保留原“含5个以上”的展开目标，同时验证id与正文；原≤8000的验收须明确是段级还是整帧，与3.0预算同时满足，不擅自扩大额度 | 依赖 3.3，并以 3.0 最终帧预算和计量为准 |
 
-### 3.0-A · 已确认的施工范围与验收
+### 3.0-A · 历史施工分解（仅供溯源，不作并行施工入口）
+
+> 本节保留旧缺陷、调查与验收背景。公共模块/API/DTO以L1为准，实际顺序以L2为准；新增B3-SR、B3-CA、B3-CO，B3-RC只负责规则完整读取。
 
 > **编号口径**：3.0.1–3.0.7 是 3.0 的子项；旧专项文档的 S1–S12 仅用于溯源。表内“已定”指方向和缺陷已确认，不能据此跳过同一行列出的未定规格。
 > **代码位置口径**：以下定位锚点以 `index.js` 的审计指纹 `IX=1543353 / SHA16=FC3156244B5D87B9` 为准；施工时按函数和字段重新定位，不依赖会漂移的旧行号。
@@ -447,12 +475,14 @@ Lead 已按子代理口径独立复核，逐项吻合。
 
 ### 3.0-C · 施工顺序、验收单位与相关任务
 
-1. **先建验收基础**（3.0.7），固定语料、请求键和时序，证明测试确实能抓住旧缺陷。
-2. **可独立细化的小修**：合法桶名、维护提醒范围、水位默认真源一致；各自完成负路径回归。未知配置迁移和特殊档边界不在“小修”名义下扩大。
-3. **读取先于指针切换**：两层完整读取可达且旧编辑协议安全后，再替换实际摘要输出；legacy少给按所选段规格实施，不能只删两处名单就宣称完成。
-4. **定稿、通知、最终计量共同验收**：prepare不消费，按最终保留通知确认；选帧后只记一次实际内容。full出口缺记账独立有跨请求对照，不捆绑无关死代码清理。
-5. **放大内容与预算协调发布**：3.0-B明确后，完整规则、白板/账本去预截断和最终预算按同一规格联验。S6与S3需要协调保护，但S4/S12不是“同一个函数所以必须同批”的技术硬依赖；可依发布完整性安排批次。
-6. **每个可独立交付单位都收口**：对应实现、行为测试、文案/客户端真源（涉及才改）和漂移锁一起验收；回滚范围包含该单位确实改变的配置与通知状态，不清理无关工作树和用户数据。
+1. **B3-CB**：修恒真断言与真实import/apply/context，先证明测试能抓旧缺陷。
+2. **公共DTO/profile与兼容适配**：冻结身份、来源、预算与交付契约。
+3. **B3-SR + B3-RC**：全来源读取与规则完整读取分离，读取先于指针切换。
+4. **B3-CA + B3-PJ**：节奏决定何时给，ContentSpec决定给什么。
+5. **B3-RP**：规则指针、摘要与完整正文呈现。
+6. **B3-NT + B3-BD + B3-FM**：通知、白板/账本、最终帧共同验收。
+7. **B3-EV**：事件四段、检查点、目录与来源指针，服从FM。
+8. **B3-CO**：consolidate扩读取面；再与4.1/4.5接口联验，5.1最后。每单位独立实现、负路径、隔离变异、回滚与提交，不在最后统一堆接线。
 
 | 相关任务 | 对接关系 |
 |---|---|
@@ -487,7 +517,7 @@ Lead 已按子代理口径独立复核，逐项吻合。
 
 | # | 任务 | 落点 | 验收判据 |
 |---|---|---|---|
-| 5.1 | **铭文改写成判断清单**：加跳过条件、加终止位、合并重复条目（事件更新与检查点同动作）、删缺前置数据的条目 | `[lib/index.js](file:///D:/dsh-auto-memory/lib/index.js):1537-1553` + `:1560` | ①每条能答是/否；②每条有跳过条件；③总长 ≤ 当前 1,489 字符；④更新 `:1534` 过期注释（420 → 实测）；⑤真跑一轮看模型是否按顺序执行 |
+| 5.1 | **铭文改写成判断清单**：加跳过条件、加终止位、合并重复条目（事件更新与检查点同动作）、删缺前置数据的条目。**2026-11-16定案**：事件更新仅在任务/阶段完成、实质进展、重要用户裁定或失败根因落地时触发；同一轮合并为一个检查点，纯读取/派活/等待/重复状态不写；只改提示词，不改变现有事件数据 | `[lib/index.js](file:///D:/dsh-auto-memory/lib/index.js):1537-1553` + `:1560` | ①每条能答是/否；②每条有跳过条件；③总长 ≤ 当前 1,489 字符；④更新 `:1534` 过期注释（420 → 实测）；⑤真跑一轮看模型是否按顺序执行 |
 
 > **为什么放最后**：铭文要求「挂到已有事件」「重写四段」「加检查点」—— 这些依赖批次 1-4 先把数据与投递修通。
 > 顺序反了，清单会变成「要求模型做但系统不支持」的空要求 —— **现在就是这个状态**。
@@ -705,6 +735,59 @@ Lead 已按子代理口径独立复核，逐项吻合。
 | [EXPERIMENT-TASK-SEMANTIC-ATTRIBUTION-20261109.md](./EXPERIMENT-TASK-SEMANTIC-ATTRIBUTION-20261109.md) | 语义归属实验任务书（1.4 的 L2+L3 验证，数据包已生成） | 1B / §15 |
 | [CONSTRUCTION-GUIDELINE-INJECT-20261108.md](./CONSTRUCTION-GUIDELINE-INJECT-20261108.md) | 注入专项v1；已确认缺陷用于溯源，旧估算/验收须按本表3.0校正 | 3.0 |
 | [AUDIT-CROSS-ROUND1-CODEX-20261108.md](./AUDIT-CROSS-ROUND1-CODEX-20261108.md) | 第一轮交叉审计回执；生产路径、全文预截断、通知与计量证据 | 3.0 |
+| [REPORT-3.0-INJECTION-PROGRESS-20261113.md](./REPORT-3.0-INJECTION-PROGRESS-20261113.md) | 定版规范与当前代码逐项对照；七项有基础但均未闭环，3.0-B边界保留 | 3.0 |
+| [REVIEW-SIDECARSTORE-PROTOTYPE-20261113.md](./REVIEW-SIDECARSTORE-PROTOTYPE-20261113.md) | 原型模块化成立；四个接入阻断、versions/fixture/生命周期与生产同步边界 | 独立后续线 |
+| [RESULT-SIDECARSTORE-BLOCKERS-20261113.md](./RESULT-SIDECARSTORE-BLOCKERS-20261113.md) | B1–B4原型层修复；Lead复跑37/37、6变异捕获；生产/HOST仍未验 | 独立后续线 |
+| [PROMPT-BATCH3-MODULAR-API-INVESTIGATION-20261113.md](./PROMPT-BATCH3-MODULAR-API-INVESTIGATION-20261113.md) | 批次3统一读取/投影/预算/通知/交付API与真实接缝的独立调查任务书 | 批次3 |
+| [INVESTIGATION-BATCH3-MODULAR-API-20261113.md](./INVESTIGATION-BATCH3-MODULAR-API-20261113.md) | Kimi聊天交付、Lead落盘；真实管线与缺陷/模块/依赖/风险矩阵 | 批次3 |
+| [DETAIL-BATCH3-IMPLEMENTATION-20261113.md](./DETAIL-BATCH3-IMPLEMENTATION-20261113.md) | 3.0–3.4共同接口、逐项验收、回滚和串行接入细则；不代表已实现 | 批次3 |
+| [PROMPT-EVENT-ATTRIBUTION-TEACHER-TRAINING-20261113.md](./PROMPT-EVENT-ATTRIBUTION-TEACHER-TRAINING-20261113.md) | 2.3模型教师候选+独立奖励/人工仲裁+隔离训练；自答自评不算RL，未过门不训练 | 2.3 |
+| [PROMPT-EVENT-ATTRIBUTION-BENCHMARK-20261112.md](./PROMPT-EVENT-ATTRIBUTION-BENCHMARK-20261112.md) | 事件归属判定器：真实金标、候选/新建/不确定/不适用、跨语言、训练与否决判据 | 2.3 |
+| [PROMPT-BATCH2-2.9-HANDOFF-COVERAGE-20261113.md](./PROMPT-BATCH2-2.9-HANDOFF-COVERAGE-20261113.md) | 独立规范化、覆盖证明、sourceRef 与隔离验收；共享生产入口由 Lead 串行接线 | 2.9 |
+| [RESULT-BATCH2-2.9-CORE-20261113.md](./RESULT-BATCH2-2.9-CORE-20261113.md) | 四个独立 API；39/0、3变异捕获、相邻回归；生产接线/HOST仍未验 | 2.9 |
+| [RESULT-BATCH2-2.7-CHECKPOINT-20261113.md](./RESULT-BATCH2-2.7-CHECKPOINT-20261113.md) | 300字符摘要、完整正文幂等、真实指纹与四段；Lead复跑30/0、4变异捕获 | 2.7 |
+| [RESULT-BATCH2-2.9-WIRING-20261113.md](./RESULT-BATCH2-2.9-WIRING-20261113.md) | 真实落盘→可信来源→检查点→六门指针覆盖；PASS90/DONE122及相邻回归 | 2.9 |
+
+| [PROMPT-BATCH2-2.7-2.9-WIRING-20261113.md](./PROMPT-BATCH2-2.7-2.9-WIRING-20261113.md) | G-1/G-2定稿；2.7摘要检查点+2.9真实文件/事件/覆盖证明；两位DeepSeek teammate独立写域 | 2.7 / 2.9 |
+| [RESULT-EVENT-ATTRIBUTION-BENCHMARK-20261112.md](./RESULT-EVENT-ATTRIBUTION-BENCHMARK-20261112.md) | 隔离C2/D与训练门；金标未过、E/F/RL未运行；不自动归属/归并 | 2.3 |
+| [RESULT-EVENT-ATTRIBUTION-TEACHER-20261113.md](./RESULT-EVENT-ATTRIBUTION-TEACHER-20261113.md) | 教师候选与反假设/unknowns；只作提案，不作金标 | 2.3 |
+| [RESULT-EVENT-ATTRIBUTION-TEACHER-TRAINING-20261113.md](./RESULT-EVENT-ATTRIBUTION-TEACHER-TRAINING-20261113.md) | 20合法提案、27来源证明；双人复核0、金标0、E/F/RL未运行 | 2.3 |
+| [REVIEW-2.3-TRAINING-PROGRESS-20261114.md](./REVIEW-2.3-TRAINING-PROGRESS-20261114.md) | 训练回报与当前训练门独立复核；优先修独立金标，不直接训练 | 2.3 |
+| [NEXT-STEPS-20261114.md](./NEXT-STEPS-20261114.md) | 当前提交、三条后续工作线、隔离HOST与生产边界 | 当前接续 |
+| [PROMPT-EVENT-ATTRIBUTION-LAB-20261116.md](./PROMPT-EVENT-ATTRIBUTION-LAB-20261116.md) | 用户授权模型构造训练标签、多源事件库与隔离挂机训练；先冻结C2轻量分类器，独立留出评估 | 2.3 |
+| [RESULT-EVENT-ATTRIBUTION-LAB-20261116.md](./RESULT-EVENT-ATTRIBUTION-LAB-20261116.md) | 首轮训练完成：484样本/26特征、参数真更新；真实留出9/15=60%；18/26特征偏移，下一轮修证据视野 | 2.3 |
+| [PROMPT-EVENT-ATTRIBUTION-LAB-ROUND2-20261116.md](./PROMPT-EVENT-ATTRIBUTION-LAB-ROUND2-20261116.md) | 候选首300字摘要、真实分布与公开轨迹小样本；不盲目调参或生产启用 | 2.3 |
+| [RESULT-EVENT-ATTRIBUTION-LAB-ROUND2-20261116.md](./RESULT-EVENT-ATTRIBUTION-LAB-ROUND2-20261116.md) | Lead复跑四臂真实结果一致：最高9/15无提升；LOO特征无贡献、首300字负贡献、closed改善；公开轨迹B1阻塞 | 2.3 |
+| [PROMPT-EVENT-ATTRIBUTION-LAB-ROUND3-20261116.md](./PROMPT-EVENT-ATTRIBUTION-LAB-ROUND3-20261116.md) | 第三轮task-21：真实train/dev、严格LOO与证据对齐，停止synthetic调参，保留真实test | 2.3 |
+| [RESULT-EVENT-ATTRIBUTION-LAB-ROUND3-20261116.md](./RESULT-EVENT-ATTRIBUTION-LAB-ROUND3-20261116.md) | 19真实事件/单类split；cov12零参数test0.725 vs LR0.325，监督训练不再继续；不直接生产 | 2.3 |
+| [PROMPT-EVENT-ATTRIBUTION-CROSSDOMAIN-20261116.md](./PROMPT-EVENT-ATTRIBUTION-CROSSDOMAIN-20261116.md) | task-22：真实GitHub/SWE-bench/MEnvData跨域验证候选排序；不直接恢复监督训练 | 2.3 |
+| [RESULT-EVENT-ATTRIBUTION-CROSSDOMAIN-20261116.md](./RESULT-EVENT-ATTRIBUTION-CROSSDOMAIN-20261116.md) | Lead复跑一致：T3 cov12=0.288 vs 随机0.016；T1含自身0.966 vs LOO0.023；无四态标签、不恢复训练 | 2.3 |
+| [PROMPT-EVENT-ATTRIBUTION-EXTERNAL-TRAIN-20261116.md](./PROMPT-EVENT-ATTRIBUTION-EXTERNAL-TRAIN-20261116.md) | task-23：外部真实事件、独立模型四态标注、严格LOO与外部留出训练 | 2.3 |
+| [RESULT-EVENT-ATTRIBUTION-EXTERNAL-TRAIN-20261116.md](./RESULT-EVENT-ATTRIBUTION-EXTERNAL-TRAIN-20261116.md) | Lead复跑一致：dev0.372 vs majority0.314/cov12 0.235；候选池全closed、heldout未评估，下一轮重采open候选 | 2.3 |
+| [PROMPT-EVENT-ATTRIBUTION-EXTERNAL-EXPANDED-20261116.md](./PROMPT-EVENT-ATTRIBUTION-EXTERNAL-EXPANDED-20261116.md) | task-24：重采open/closed候选池、真实500+标注、冻结留出评估；不凑数 | 2.3 |
+| [RESULT-EVENT-ATTRIBUTION-EXTERNAL-EXPANDED-20261116.md](./RESULT-EVENT-ATTRIBUTION-EXTERNAL-EXPANDED-20261116.md) | Lead复跑一致：520标注、153冻结留出，训练0.3137 vs cov12 0.3203；四态训练不优于零参，停止加量调参 | 2.3 |
+| [RESEARCH-EVENT-ATTRIBUTION-OPEN-SOURCE-20261116.md](./RESEARCH-EVENT-ATTRIBUTION-OPEN-SOURCE-20261116.md) | BLINK/dedupe/sentence-transformers：候选检索+精排、主动学习、pairwise困难负样本；不继续四态调参 | 2.3 |
+| [PROMPT-EVENT-ATTRIBUTION-PAIRWISE-20261116.md](./PROMPT-EVENT-ATTRIBUTION-PAIRWISE-20261116.md) | task-25：真实pair、候选召回+精排/主动学习、严格LOO与冻结留出；不恢复四态调参 | 2.3 |
+| [RESULT-EVENT-ATTRIBUTION-PAIRWISE-20261116.md](./RESULT-EVENT-ATTRIBUTION-PAIRWISE-20261116.md) | Lead复跑一致：heldout80例cov12=0.5125、精排0.5625；召回@5=0.70为硬上限，未加载预训练模型、不生产 | 2.3 |
+| [PROMPT-EVENT-ATTRIBUTION-RECALL-MULTI-20261116.md](./PROMPT-EVENT-ATTRIBUTION-RECALL-MULTI-20261116.md) | task-26：多方向召回/精排/主动学习对比，严格LOO与真实留出，可用冻结C2，不生产 | 2.3 |
+| [RESULT-EVENT-ATTRIBUTION-RECALL-MULTI-20261116.md](./RESULT-EVENT-ATTRIBUTION-RECALL-MULTI-20261116.md) | Lead复跑一致：语义0.25、融合0.5125，cov12+rerank@5=0.5625仍最优；下一步case-level | 2.3 |
+| [ANALYSIS-EVENT-ATTRIBUTION-SIGNALS-20261116.md](./ANALYSIS-EVENT-ATTRIBUTION-SIGNALS-20261116.md) | 时间/生命周期/来源/身份分层；时间为约束与弱证据，后续消融，不直接生产 | 2.3 |
+| [PROMPT-EVENT-ATTRIBUTION-CLASSIFICATION-20261116.md](./PROMPT-EVENT-ATTRIBUTION-CLASSIFICATION-20261116.md) | task-27：归属分类验证时间/生命周期/来源/身份证据，困难场景、严格LOO与真实留出 | 2.3 |
+| [RESULT-EVENT-ATTRIBUTION-CLASSIFICATION-20261116.md](./RESULT-EVENT-ATTRIBUTION-CLASSIFICATION-20261116.md) | Lead复跑一致：排除矛盾场景0.8719、attach定位0.9665；候选截断必须报gold覆盖率，多合理候选0.5946仍未解，生产未启用 | 2.3 |
+| [PROMPT-EVENT-ATTRIBUTION-IMPLEMENTATION-20261116.md](./PROMPT-EVENT-ATTRIBUTION-IMPLEMENTATION-20261116.md) | task-28/29：模块化/API化归属建议与异常提醒；Lead复核专项/工具/历史入口通过，真实HOST与全量未验 | 2.3 |
+| [PROMPT-EVENT-ATTRIBUTION-REVIEW-FIX-20261116.md](./PROMPT-EVENT-ATTRIBUTION-REVIEW-FIX-20261116.md) | Lead返工：真实checkpoint字段、focus目标可见性、真实engine/HTTP入口与工具级正向测试 | 2.3 |
+| [RESULT-EVENT-ATTRIBUTION-IMPLEMENTATION-20261116.md](./RESULT-EVENT-ATTRIBUTION-IMPLEMENTATION-20261116.md) | 67/29/37与r26复跑通过；impact216/3/1非全绿，既有红灯与真实HOST未验单列 | 2.3 |
+| [PROMPT-BATCH3-MODULAR-IMPLEMENTATION-20261116.md](./PROMPT-BATCH3-MODULAR-IMPLEMENTATION-20261116.md) | task-30：批次2/3依赖核对与第三批分阶段模块化/API化实施；不擅自定3.0-B边界 | 批次3 |
+| [REPORT-BATCH2-BATCH3-DEPENDENCIES-20261116.md](./REPORT-BATCH2-BATCH3-DEPENDENCIES-20261116.md) | 测绘：3.0.x编号冲突已确认；两处恒真断言需先修；T1–T4可排期，3.0-B未验 | 批次3 |
+| [RESULT-BATCH3-MODULAR-IMPLEMENTATION-20261116.md](./RESULT-BATCH3-MODULAR-IMPLEMENTATION-20261116.md) | 只读测绘收口，零代码改动；不产PASS/FAIL，不扩写lib/tests | 批次3 |
+| [RESULT-BATCH2-IMPLEMENTATION-REVIEW-20261116.md](./RESULT-BATCH2-IMPLEMENTATION-REVIEW-20261116.md) | task-31：12套件335 PASS，2.3三专项133 PASS；2.9两处恒真断言，真实HOST/全量未验 | 批次2 |
+| [DETAIL-BATCH3-UNIFIED-20261116.md](./DETAIL-BATCH3-UNIFIED-20261116.md) | task-32：语义代号B3-RC/RP/FM/NT/BD/CB/EV统一施工大纲，旧编号仅溯源 | 批次3 |
+| [DETAIL-BATCH3-SYSTEMIC-REBUILD-CONTRACT-20261116.md](./DETAIL-BATCH3-SYSTEMIC-REBUILD-CONTRACT-20261116.md) | 系统化/模块化/API化重建总契约：重写原因、模块职责、DTO、依赖、裁定约束与验收回滚 | 批次3 |
+| [DETAIL-BATCH3-IMPLEMENTATION-SEQUENCE-20261116.md](./DETAIL-BATCH3-IMPLEMENTATION-SEQUENCE-20261116.md) | 按依赖顺序的施工细则：B3-CB→公共契约→RC/RP→NT/BD/FM→EV，替代旧3.0/3.1分散施工内容 | 批次3 |
+| [REPORT-BATCH3-NUMBERING-DECOUPLING-20261116.md](./REPORT-BATCH3-NUMBERING-DECOUPLING-20261116.md) | 3.0.x错位5/7，含同号跨事与noticeRemote误归；禁止裸编号映射 | 批次3 |
+| [PROMPT-EVENT-ATTRIBUTION-MODEL-REVIEW-20261116.md](./PROMPT-EVENT-ATTRIBUTION-MODEL-REVIEW-20261116.md) | 模型可执行双盲复核/仲裁/困难负样本；独立上下文+确定性证据；模型审核不等于人工金标 | 2.3 |
+| [RESULT-EVENT-ATTRIBUTION-MODEL-REVIEW-20261116.md](./RESULT-EVENT-ATTRIBUTION-MODEL-REVIEW-20261116.md) | Lead复跑21/21；发现旧protocolConflict弱金标为协议构造；困难样本2独立失败；sourceVerified0、训练未启动 | 2.3 |
+
 
 四份分线报告合计 2,135 行 / 219,683 B。
 ### 代码级落点（细化时直接打开）
@@ -729,22 +812,23 @@ Lead 已按子代理口径独立复核，逐项吻合。
 
 ---
 
-## 十三、总表状态（2026-11-12 对齐）
+## 十三、总表状态（2026-11-13 对齐）
 
 | 项 | 状态 |
 |---|---|
 | 总计 | **36个主任务**；3.0为一个主项，其7个子项不重复计数；R4 独立线 L 不重复计数 |
-| 当前总体位置 | **批次 1 全部完成；R4 P0–P4 已完成、P5 关键缺口有实测，P6/P7 A1 复核中**。批次 2 的 2.1/2.2 已实现，2.5 部分实现；2.3/2.4/2.6–2.9 未闭环；批次 3–6 未逐项验收。先补可执行细则，再 2.6→2.7→2.8，完成后才做 2.3；2.4 真实归并继续挂起 |
+| 当前总体位置 | **批次1完成；R4 P0–P4/P5/P6/P7 A1约定范围已验收**。2.1/2.2/2.5–2.8及2.9约定范围已隔离验收；Prototype B1–B4原型层修复已验收。2.3已有教师提案与来源证据，但双人复核/金标/训练未闭环；2.4冻结。批次3有调查/细则，3.0–3.4生产实现、真实HOST/迁移/生产启用未闭环 |
 | 1.1 / 1.3a / 1.3b | **✅ 代码已提交 `7974d930`**；本次未重跑其历史验收或生产增长观测 |
 | **1.2 冲突处置（A+B）** | **✅ 六步全部完成并提交**（`a323bb58` … `551c9b31`），详见 §1.2 完成记录；面板待用户重启宿主确认可见 |
 | 1B（1.4–1.6） | **✅ 已实现并验收（`e7baa4fb`）**，后又经收口轮与缺陷 A 修复。11-09 实测 `smoke-test-v4-event-attr-receipt` **68 PASS / 0 FAIL**；当时锁值 IX **1,570,100** / `B950E713234096F9`、iter5 classic **1,547,375** / `5c126642…` 均为历史快照，当前值见上行。落地记录见 [DETAIL-BATCH1B](./DETAIL-BATCH1B-20261109.md) §9–§11 |
-| 计数锁现状 | 工具 **22** / 路由 **86** / 配置键 **180**（2026-11-12 `verify-docs` EXIT=0）；A1 初版 `lib/index.js` 指纹与 r26 锁见环境快照；修正后以实际复跑与 A1 报告为准，不把过程值写成最终基线 |
+| 计数锁现状 | 工具 **22** / 路由 **86** / 配置键 **181**（2026-11-12 `verify-docs` EXIT=0）；A1 初版 `lib/index.js` 指纹与 r26 锁见环境快照；修正后以实际复跑与 A1 报告为准，不把过程值写成最终基线 |
 | 批次1/2细则 | 两份文档已产出，按分项批准与实际提交推进；细则旧“全部未开工”不覆盖已经提交的止血事实 |
-| **3.0注入投递基础修复** | **审计/补充调查完成；7个子项的确定细节已登记，尚未施工；4类边界见3.0-B** |
-| 3.1–3.4 / 批次4/6 | 保留原任务，按各自细则细化；涉及注入的部分对齐3.0契约 |
+| **2.3 事件归属判定器** | 三轮隔离监督训练完成：真实仅19独立事件且split单类；cov12零参数test0.725优于LR0.325，监督训练停止。公开轨迹B1阻塞；人工金标/HOST/生产未验，cov12不直接生产 |
+| **批次3系统化重建** | Lead已全量审核42份相关文档、prototype与当前代码；L1/L2/L3已修订，新增SR/CA/CO并拆分SR/RC。目标API未实现，真实HOST与全量未验；见 `REVIEW-BATCH3-LEAD-FULL-AUDIT-20261117.md` |
+| 3.1–3.4 / 批次4/6 | 3.1 consolidate扩读取面、3.2四段消费、3.3检查点截断、3.4事件展开均有独立API/验收/回滚章节；生产实现未完成，统一与3.0最终帧联验 |
 | 5.1铭文 | 待相关能力、投递与联动稳定后实施 |
-| **批次 2 新增 2.6/2.7/2.8** | **测绘与可执行细则已完成，生产实现未开始**。见 `DETAIL-BATCH2-2.6-2.8-20261112.md`；G-1 容器形态、G-2 摘要上限未定时对应条款不施工。串行实施 2.6→2.7→2.8，三项完成后才做 2.3；D4 另验收 |
-| **R4 独立线 L** | P0–P4 提交完成；P5 关键可执行缺口已复核；P6/P7 A1 约定范围已验收（20 套 380/0，未提交）。真实模型/跨设备/HOST 写入未验；生产默认关闭、未迁移/删除，A1 保留原件 |
+| **批次 2 新增 2.6/2.7/2.8** | G-1不加容器、G-2=300字符已定稿；2.7摘要指针检查点（30/0、4变异捕获）与2.9真实链接线已隔离验收。2.6-note-integration=22/0、2.8-integration=17/0，意外失败保留显式留痕、无伪造成功正文；未做真实HOST/全仓回归/生产启用 |
+| **R4 独立线 L** | P0–P4 提交完成；P5 关键可执行缺口已复核；P6/P7 A1 约定范围已验收（20 套 382/0，`45a7f905`）。真实模型/跨设备/HOST 写入未验；生产默认关闭、未迁移/删除，A1 保留原件 |
 | **批次 2 的 2.4** | **真实执行继续冻结（条件触发）**；可先修 apply 并做隔离回滚，但不得把该工程门当真实归并授权。须 2.3 + 当前备份/恢复 + 最小批次用户授权同时成立 |
 | 0.4 / X.1 | **#475代码处置及收尾已提交 `3b85cf9b`**；其他工作区改动仍在，未授权清理 |
 
@@ -761,7 +845,7 @@ Lead 已按子代理口径独立复核，逐项吻合。
 | 4 | **3.0白板视角及特殊档公共修复边界** | 与2.5/D1、R7对齐；不擅自新增全局聚焦字段、删档或改触发次数 |
 | 5 | ~~1.4 实现形态~~ **已结案** | 用户裁定 **C（两者都做）**：铭文主路径「已知归属必须传 eventId」+ `dryRun` 写前预检 + 写后回执兜底。已落 `e7baa4fb`；本行保留作历史 |
 | 6 | **铭文护栏临时值 1,700** | 用户 2026-11-09 裁定「先暂时放大，细节 5.1 一并定」。**现测单层 1,511 / 含 archive 1,671 / 计入前导换行 1,672**（护栏 1,700，余量 28）。四处守卫已同步：g4-whiteboard / v4-c2-inscription / i335-procedure-update / v4-p1-exposure。**5.1 重写铭文时必须重新评估**：要么收紧回 1,500 并重排，要么按新内容定新基线 |
-| 7 | **fromEvents 锚点直通（2.5 的可选增强）** | 现修法是「旧卡并入 archivedIds」（有留痕的归档，M1 不改）。若要 M1 对 fromEvents **真正生效**，需让渲染器直接携带事件 id 作锚点 —— 属 2.5 范围，需单独评估 |
+| 7 | **2.5 默认关闭事件后重绘** | 已实现 `planAutoRedrawEnabled:false`、锁内按真实事件 ID 继承 memId、人工卡与 user 区保留；独立 13/0、真实工具 18/0、锁/变异 9/0。默认关闭且未做生产启用；不自动认领未绑定旧卡 |
 | 8 | **L2 文案「资产缺失」与磁盘不符** | 实测 `~/.dsh/models/js-semantic/multilingual-e5-small` 的 config/tokenizer/onnx 齐全，但 `resolveSemanticTier()` 走 `semanticAssetProbe().ready`，后者还要求 peer 推理库可加载 ⇒ 文案把「模型不在」和「推理库不在」混成一句，会误导用户重下 130MB。建议拆成两种提示，可并入 5.1 |
 | 10 | **D4 读侧止血的口径（已裁定后置）** | 用户 2026-11-10 裁定：**等 2.6/2.7/2.8 测绘完成后再做 D4**。原因：过滤口径须由测绘结果确定（哪些 `kind` 该跳过、快照与失败标记是否同口径），先做等于拍脑袋定口径，会掩盖真实分布。**本轮明确不动代码** |
 | 9 | **真实会话验证的隔离纪律** | 本轮验证在**生产事件库**上跑，真建过事件（`evt_7bf3ec29` 已 close、日志测试行已删）。后续同类验证应在隔离 `DSH_HOME` 下做 —— 是否把这条写成工具侧护栏（如 dryRun 默认、或检测到测试标记时禁写）待裁定 |
@@ -972,7 +1056,7 @@ prototype 成功后，作为 1.4 的「排序层增强」叠加，不推翻 1.4 
 
   R4 当前：P0–P4 已完成；P5 两进程、off 写侧、历史观测、classic 完整正文已有实测；真实模型与跨设备未验。
   P6/P7 A1 约定范围已验收：默认退出、单一R4 WAL、拒绝零副作用、受控真实根与create-only首建均有证据；真实模型、跨设备、HOST写入、全量恢复仍未验。
-  后续顺序：先补齐 2.6/2.7/2.8 的可执行协议/API/测试/回退细则，再 2.6 → 2.7 → 2.8，完成后才做 2.3。2.4 条件触发，真实归并继续挂起；隔离修复/验收不等于执行授权。
+  当前顺序：先复核2.3独立来源与归属金标，并按批次3细则实施3.0–3.4；2.7/2.9在独立DSH_HOME做HOST验证。2.4真实归并继续挂起；不启动E/F/RL/LoRA，不启用生产。
   批次 2 的 2.1/2.2=4f2b5d23；2.5 有部分实现；2.3/2.4 不得直接执行真实归并。
 
   按我的本次请求继续已授权的那一项，先做可独立核实的工作。

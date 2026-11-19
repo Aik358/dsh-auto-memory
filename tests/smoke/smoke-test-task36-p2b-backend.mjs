@@ -66,9 +66,10 @@ try {
   const statePath = path.join(p.userDir, 'upgrade-state.json');
 
   console.log('[T36-1] 路由已注册（结构守卫，非功能证据）');
-  ok(routes.length === 86, '★★★T36-1a 路由总数 = 86（77 + 2 + memory-upgrade + team-pause + team-upgrade + team-baseline + upgrade-archive-plan）', String(routes.length));
+  // P1 授权新增 delivery-preview；升级路由行为不变，仍数真实注册与API表。
+  ok(routes.length === 87, '★★★T36-1a 路由总数 = 87（P1新增 delivery-preview）', String(routes.length));
   ok(!!stR && !!snR, '★★★T36-1b 两个路由都已注册');
-  ok(Object.keys(API_KEYS()).length === 86, '★★T36-1c API 常量表 = 85 条（★方案A：+team-baseline；R158 已 +team-pause +team-upgrade；S2/alpha.7 已 +upgrade-archive-plan）', String(Object.keys(API_KEYS()).length));
+  ok(Object.keys(API_KEYS()).length === 87, '★★T36-1c API 常量表 = 87 条（P1新增 delivery-preview，与注册数一致）', String(Object.keys(API_KEYS()).length));
   function API_KEYS() { const m = IX.match(/const API = \{([\s\S]*?)\n\}/); return m ? [...m[1].matchAll(/([\w'-]+):\s*'\/api/g)].reduce((a, x) => (a[x[1]] = 1, a), {}) : {} }
 
   console.log('');

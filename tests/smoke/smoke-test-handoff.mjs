@@ -3,6 +3,7 @@ import { withMemoryAdmissionScopePre } from '../../lib/memory-mutation-transacti
 import { withCalendarLock, canonicalCalendarPath } from '../../lib/calendar-lock.js'
 import { writeTextAtomicPre } from '../../lib/config-io.js'
 import { readPlanPre, planRevisionPre, anchoredPlanPre, archivePlanPre, conflictPlanPre, preparePlanPre } from '../../lib/plan-store.js'
+import { readLatestLegacyLedger } from '../../lib/legacy-handoff-compat.js'
 /** [handoff] M-CM1 交接白板回归(PLAN.md 白板层 + 四段式交接账本 + 注入首位)。
  * 真实抽取 writePlanSnapshot/writeHandoffLedger/readLatestHandoff/handoffStamp/renderMemoryDynamic
  * (花括号配平),在临时目录与受控闭包里驱动 —— 测的是随包发布的真实代码:
@@ -13,7 +14,7 @@ import { readPlanPre, planRevisionPre, anchoredPlanPre, archivePlanPre, conflict
  *   G4 renderMemoryDynamic:白板+交接注入在日志段之前 / handoffEnabled=false 隐藏 / 超预算硬截断
  */
 import { readFileSync, mkdirSync, writeFileSync, readdirSync, existsSync, mkdtempSync, statSync } from 'node:fs'
-import { readFile, writeFile, mkdir, readdir, stat } from 'node:fs/promises'
+import { readFile, writeFile, mkdir, readdir, stat, utimes } from 'node:fs/promises'
 import path from 'node:path'
 import os from 'node:os'
 import { fileURLToPath } from 'node:url'
@@ -90,8 +91,8 @@ function makeFakeEngine() {
   }
 }
 const bindMethod = (header, fake, extra) => { // 方法简写 → 对象字面量 → 取出绑定 fake this(注入模块级符号+extra)
-  const names = ['withMemoryAdmissionScopePre', 'canonicalCalendarPath', 'withCalendarLock', 'writeTextAtomicPre', 'readPlanPre', 'planRevisionPre', 'anchoredPlanPre', 'archivePlanPre', 'conflictPlanPre', 'preparePlanPre', 'path', 'existsSync', 'mkdir', 'writeFile', 'readdir', 'stat', 'handoffStamp', 'nowHm']
-  const vals = [withMemoryAdmissionScopePre, canonicalCalendarPath, withCalendarLock, writeTextAtomicPre, readPlanPre, planRevisionPre, anchoredPlanPre, archivePlanPre, conflictPlanPre, preparePlanPre, path, existsSync, mkdir, writeFile, readdir, stat, handoffStampFn, nowHmFn]
+  const names = ['withMemoryAdmissionScopePre', 'canonicalCalendarPath', 'withCalendarLock', 'writeTextAtomicPre', 'readPlanPre', 'planRevisionPre', 'anchoredPlanPre', 'archivePlanPre', 'conflictPlanPre', 'preparePlanPre', 'readLatestLegacyLedger', 'path', 'existsSync', 'mkdir', 'writeFile', 'readdir', 'stat', 'handoffStamp', 'nowHm']
+  const vals = [withMemoryAdmissionScopePre, canonicalCalendarPath, withCalendarLock, writeTextAtomicPre, readPlanPre, planRevisionPre, anchoredPlanPre, archivePlanPre, conflictPlanPre, preparePlanPre, readLatestLegacyLedger, path, existsSync, mkdir, writeFile, readdir, stat, handoffStampFn, nowHmFn]
   for (const k of Object.keys(extra || {})) { names.push(k); vals.push(extra[k]) }
   const obj = new Function(...names, 'return {' + extractFn(header) + '};')(...vals)
   return obj[Object.keys(obj)[0]].bind(fake)
@@ -116,7 +117,7 @@ ok(r3.ok && !r3.archived, '同内容重写不产生冗余归档')
 console.log('[handoff] G3 writeHandoffLedger + readLatestHandoff')
 const fake3 = makeFakeEngine()
 const writeHandoffLedger = bindMethod('async writeHandoffLedger(projectDir, content, opts) {', fake3)
-const readLatestHandoff = bindMethod('async readLatestHandoff(handoffDir) {', fake3)
+const readLatestHandoff = bindMethod('async readLatestHandoff(handoffDir) {', fake3, { readLatestLegacyLedger })
 const l1 = await writeHandoffLedger(proj, '## 任务状态\n第一阶段')
 const l2 = await writeHandoffLedger(proj, '## 任务状态\n第二阶段')
 ok(l1.ok && l2.ok && l1.path !== l2.path, '同秒双写不撞名(-b 后缀)')
@@ -124,6 +125,17 @@ ok(/handoff-\d{8}-\d{6}(-[a-z])?\.md$/.test(l2.path), '账本文件名契约')
 const latest = await readLatestHandoff(path.join(proj, 'handoff'))
 ok(latest.includes('第二阶段') && !latest.includes('第一阶段'), 'readLatestHandoff 返回最新篇(字典序=时间序)')
 ok(latest.startsWith('# 交接账本 · '), '账本自带时间头')
+const legacyOrderDir = path.join(tmpRoot, 'legacy-order')
+await mkdir(legacyOrderDir, { recursive: true })
+const lexicalLater = path.join(legacyOrderDir, 'handoff-20260908-201429.md')
+const mtimeLater = path.join(legacyOrderDir, 'handoff-20260908-201428.md')
+await writeFile(lexicalLater, '# 交接账本 · lexical-later\nLEXICAL_LATER')
+await writeFile(mtimeLater, '# 交接账本 · mtime-later\nMTIME_LATER')
+await utimes(lexicalLater, new Date(1600000000000), new Date(1600000000000))
+await utimes(mtimeLater, new Date(1700000000000), new Date(1700000000000))
+const mtimeWinner = await readLatestHandoff(legacyOrderDir)
+ok(mtimeWinner.includes('MTIME_LATER') && !mtimeWinner.includes('LEXICAL_LATER'), '负路径：mtime 优先于反向文件名字典序')
+ok(await readLatestHandoff(path.join(tmpRoot, 'missing-ledger-dir')) === '', '负路径：缺失旧账本目录 fail-soft 返回空串')
 
 console.log('[handoff] G4 renderMemoryDynamic 注入行为')
 const dynSrc = extractFn('renderMemoryDynamic(context) {')
@@ -232,7 +244,10 @@ ok(SRC.includes("if (scope === 'handoff') {") && SRC.includes("if (scope === 'se
 //   比字符串全等更贴合原意（将来再加 scope 也不会假红）。
 {
   const enumLine = "scope: { type: 'string', enum: ['all', 'handoff', 'sessions', 'archive', 'events']"
-  ok(SRC.includes(enumLine) && SRC.includes("engine.recall(args.query, args.limit, exec.agent, args.scope || 'all', { format: args.format || 'l0', expand: args.expand })"), 'memory_recall 工具声明 scope 枚举（含 archive/events）并透传(P4 可选 format/expand 随 opts 透传)')
+  const recallCall = "engine.recall(args.query, args.limit, exec.agent, args.scope || 'all', { format: args.format || 'l0', expand: args.expand, eventId: args.eventId, checkpointIndex: args.checkpointIndex, idemKey: args.idemKey })"
+  ok(SRC.includes(enumLine) && SRC.includes(recallCall), 'memory_recall 工具声明 scope 枚举（含 archive/events）并透传事件下钻字段')
+  const hasRecallWire = (source) => source.includes(enumLine) && source.includes(recallCall)
+  ok(!hasRecallWire(SRC.replace(recallCall, recallCall.replace(', eventId: args.eventId, checkpointIndex: args.checkpointIndex, idemKey: args.idemKey', ''))), '负路径：移除事件下钻透传时判据必红')
   for (const sc of ['all', 'handoff', 'sessions', 'archive', 'events']) {
     ok(SRC.includes("'" + sc + "'") && enumLine.includes("'" + sc + "'"), 'scope 枚举含 ' + sc)
   }

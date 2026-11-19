@@ -1,15 +1,16 @@
 /**
  * T1/T2/T3 永久守卫：设置页「逐段注入控制」二级页
  *
- * 用户口径（2026-09-22）：
- *   - 13 个注入分区开关**不做在一级页**，一级只放中性说明 + 入口，**不推荐用户修改**；
+ * 用户口径（2026-11-18 P2）：
+ *   - P3 接线前，旧设置的 13 个 prompt section 开关及「全部恢复全开」仍控制实际投递。
  *   - 开关的**成员与顺序唯一真源 = 宿主常量** `PROMPT_SECTION_KEYS_PRE_V1`（经 /config 应答体的
  *     `promptSections` 下发），前端只提供文案，**不得硬编码第二份清单**；
- *   - 每个 must 段开关旁标注关闭后果；开关改动必须即时回显；提供「全部恢复全开」。
+ *   - 2 个 must 段保留关闭后果提示；Policy v2 的只读清单只作信息展示。
  *
  * 本守卫用**真值解析**两侧清单（不是子串计数），再断言集合相等 ——
- * 前端漏一个键或宿主新增一个键都会红。
+ * 前端漏一个键或宿主新增一个键都会红。三面执行原始控件及其事件处理函数。
  */
+import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -21,7 +22,25 @@ const ok = (c, m) => { if (c) { pass++; console.log('  ok   - ' + m) } else { fa
 const eq = (a, b, m) => ok(JSON.stringify(a) === JSON.stringify(b), m + '  (got ' + JSON.stringify(a) + ')')
 
 const IX = fs.readFileSync(path.join(ROOT, 'lib/index.js'), 'utf8')
-const CL = fs.readFileSync(path.join(ROOT, 'lib/client.js'), 'utf8')
+const CL = fs.readFileSync(path.join(ROOT, 'lib/client.js'), 'utf8').replace(/\r\n/g, '\n')
+const FROZEN = fs.readFileSync(path.join(ROOT, 'skins/legacy/iter5-325.js.frozen'), 'utf8').replace(/\r\n/g, '\n')
+
+function sliceOnce(source, start, end) {
+  const from = source.indexOf(start)
+  const to = source.indexOf(end, from + start.length)
+  assert(from >= 0 && from === source.lastIndexOf(start) && to > from && to === source.lastIndexOf(end),
+    '切片锚点须按顺序各命中一次：' + start.trim() + ' / ' + end.trim())
+  return source.slice(from, to)
+}
+
+const variant = sliceOnce(CL, '\n    // ITER5-GENERATED:BEGIN\n', '\n    // ITER5-GENERATED:END\n')
+const FACES = [
+  ['classic 模板', sliceOnce(CL, 'function SettingsPage(props) {', '    // ───────────────────────── 插件挂载')],
+  ['v4 生成区', sliceOnce(variant, 'function Iter5Settings(props) {', 'function Iter5Storage(props) {')],
+  ['Frozen 源', sliceOnce(FROZEN, 'function Iter5Settings(props) {', 'function Iter5Storage(props) {')],
+]
+const ENTRY = "field(t('fPromptSections'), h('button'"
+const NEXT = "field(t('fInject'),"
 
 /** 解析宿主 Object.freeze([...]) 常量 → 真数组（去注释后 eval，仅字面量） */
 function hostList(src, name) {
@@ -89,37 +108,101 @@ for (const k of MUST) {
 console.log('[G3] 通路：宿主下发 → 前端消费（前端不得硬编码成员）')
 ok(IX.indexOf('promptSections: PROMPT_SECTION_KEYS_PRE_V1') >= 0, 'G3a 宿主 /config 应答体下发 keys')
 ok(IX.indexOf('promptSectionMust: PROMPT_SECTION_MUST_PRE_V1') >= 0, 'G3b 宿主 /config 应答体下发 must')
-ok(CL.indexOf('setPsecKeys(Array.isArray(d.promptSections) ? d.promptSections : [])') >= 0, 'G3c 前端装载点收下 keys（含 fail-soft 兜底）')
-ok(CL.indexOf('setPsecMust(Array.isArray(d.promptSectionMust) ? d.promptSectionMust : [])') >= 0, 'G3d 前端装载点收下 must')
-ok(CL.indexOf('psecKeys.map(function (k)') >= 0, 'G3e 开关行由 psecKeys 派生（而非写死数组）')
-{
-  // 负向：渲染器里不得出现「≥3 个宿主键字面量组成的数组」
-  const renderBlockStart = CL.indexOf("'data-dam-prompt-sections'")
-  const renderBlock = CL.slice(renderBlockStart, CL.indexOf('})() : null,', renderBlockStart))
-  const litCount = KEYS.filter((k) => renderBlock.indexOf("'" + k + "'") >= 0).length
-  ok(litCount === 0, 'G3f 渲染块内零宿主键字面量（实得 ' + litCount + '）')
-}
+ok(FACES.every(([, src]) => src.includes('setPsecKeys(Array.isArray(d.promptSections) ? d.promptSections : [])')), 'G3c 三面装载点收下 keys（含 fail-soft 兜底）')
+ok(FACES.every(([, src]) => src.includes('setPsecMust(Array.isArray(d.promptSectionMust) ? d.promptSectionMust : [])')), 'G3d 三面装载点收下 must')
+const panels = FACES.map(([name, src]) => [name, sliceOnce(src, ENTRY, NEXT)])
+ok(panels.every(([, src]) => src.includes('psecKeys.map(function (k)')), 'G3e 三面开关由 psecKeys 派生（而非写死数组）')
+ok(panels.every(([, src]) => KEYS.every((k) => !src.includes("'" + k + "'"))), 'G3f 三面渲染块内零宿主键字面量')
 
 console.log('[G4] 一级/二级分层与会话状态')
-ok(CL.indexOf("field(t('fPromptSections'), h('button'") >= 0, 'G4a 一级页只有一个入口按钮')
-ok(CL.indexOf('var psecOpenPair = useState(false)') >= 0, 'G4b 二级页开合状态存在')
-ok(CL.indexOf('psecOpen ? (function () {') >= 0, 'G4c 二级页面板由 psecOpen 单一状态 gate')
-ok(CL.indexOf('不推荐修改') >= 0, 'G4d 二级页含「不推荐修改」中性文案')
-{
-  // ★作用域必须限定在 SettingsPage 内，且锚点必须是**真实早退语句**：
-  //   文件里 6045/6058 的注释也含 `if (!cfg)` 字样，用裸 indexOf 会命中注释 ⇒ 恒假（本次踩过）。
-  const spStart = CL.indexOf('function SettingsPage() {')
-  const sp = CL.slice(spStart)
-  const hooksRel = sp.indexOf('var psecOpenPair = useState(false)')
-  const earlyRel = sp.indexOf('if (!cfg) return')
-  ok(spStart > 0 && hooksRel > 0 && earlyRel > 0 && hooksRel < earlyRel, 'G4e hooks 挂在真实早退语句之前（React hooks 纪律）')
+ok(FACES.every(([, src]) => src.split(ENTRY).length === 2), 'G4a 三面一级页各一个入口按钮')
+ok(FACES.every(([, src]) => src.includes('var psecOpenPair = useState(false)')), 'G4b 三面有二级页开合状态')
+ok(panels.every(([, src]) => src.includes('psecOpen ? (function () {')), 'G4c 三面二级页面板由 psecOpen 单一状态控制')
+ok(panels.every(([, src]) => src.includes('不推荐修改')), 'G4d 三面二级页保留谨慎修改说明')
+ok(FACES.every(([, src]) => {
+  const early = src.search(/^\s*if \(!cfg\) return/m)
+  const hooks = src.indexOf('var psecOpenPair = useState(false)')
+  return hooks >= 0 && early > hooks
+}), 'G4e 三面 hooks 挂在真实早退语句之前（React hooks 纪律）')
+
+const h = (type, props, ...children) => ({ type, props: props || {}, children: children.flat(Infinity) })
+function flatten(tree) {
+  return tree.flatMap((node) => node && typeof node === 'object' ? [node, ...flatten(node.children)] : [])
 }
 
-console.log('[G5] 即时回显与一键恢复')
-ok(CL.indexOf("checked: toggles[k] !== false") >= 0, 'G5a 未设置 = 默认开（undefined 视为 true）')
-ok(CL.indexOf("if (e.target.checked) delete t2[k]; else t2[k] = false") >= 0, 'G5b 勾选即删键（回归出厂态）、取消即写 false')
-ok(CL.indexOf("set('promptSectionToggles', t2)") >= 0, 'G5c 走既有 set() 写入路径（= 即时回显机制）')
-ok(CL.indexOf("set('promptSectionToggles', {})") >= 0, 'G5d 「全部恢复全开」一键写空对象')
+function exercisePanel(source) {
+  // 夹具只提供渲染包装和草稿状态；入口、开关及其事件处理函数来自成品源码。
+  const renderPanel = new Function('h', 'field', 't', 'L', 'cfg', 'psecOpen', 'setPsecOpen', 'psecKeys', 'psecMust',
+    'PROMPT_SECTION_TEXT', 'locale', 'set', 'return [' + source + '\n]')
+  let open = false, cfg = { promptSectionToggles: Object.freeze({}) }
+  const writes = []
+  const render = (keys = KEYS) => flatten(renderPanel(h, (label, button) => h('div', { label }, button), (s) => s,
+    (zh) => zh, cfg, open, (next) => { open = next }, keys, MUST, TEXT, 'zh', (key, value) => {
+      writes.push([key, value])
+      cfg = { ...cfg, [key]: Object.freeze(value) }
+    }))
+  const switches = (tree) => tree.filter((node) => node.props['data-dam-pswitch'] !== undefined)
+  const switchFor = (key) => switches(render()).find((node) => node.props['data-dam-pswitch'] === key)
+  const verifyWrite = (expected, count) => {
+    assert.equal(writes.length, count)
+    assert.deepEqual(writes.at(-1), ['promptSectionToggles', expected])
+  }
+  const entries = render().filter((node) => node.type === 'button')
+  assert.equal(entries.length, 1, '一级页须有一个入口')
+  assert.equal(switches(render()).length, 0, '二级页关闭时不开列开关')
+  entries[0].props.onClick()
+  const tree = render()
+  assert.deepEqual(switches(tree).map((node) => node.props['data-dam-pswitch']), KEYS)
+  for (const control of switches(tree)) {
+    const key = control.props['data-dam-pswitch']
+    assert.equal(control.props.checked, true, key + ' 默认开启')
+    assert(control.props.disabled !== true && typeof control.props.onChange === 'function', key + ' 开关必须可编辑')
+  }
+  const mustLabels = tree.filter((node) => node.type === 'span' && node.children.some((text) => String(text).endsWith(' · 硬性要求')))
+  assert.deepEqual(mustLabels.flatMap((node) => node.children), MUST.map((key) => TEXT[key].zh + ' · 硬性要求'))
+  for (const key of MUST) assert(tree.some((node) => node.children.includes(TEXT[key].offZh)), key + ' 关闭后果必须可见')
+  const alternate = [KEYS[1], 'server-supplied-fixture', KEYS[0]]
+  assert.deepEqual(switches(render(alternate)).map((node) => node.props['data-dam-pswitch']), alternate)
+  assert.equal(switches(render([])).length, 0, '无清单时不生成客户端兜底开关')
+  assert.equal(writes.length, 0, '浏览清单不写草稿')
+
+  const expected = {}
+  for (const [index, key] of KEYS.entries()) {
+    switchFor(key).props.onChange({ target: { checked: false } })
+    expected[key] = false
+    verifyWrite({ ...expected }, index + 1)
+    assert.equal(switchFor(key).props.checked, false, key + ' 关闭后立即回显')
+  }
+  switchFor(KEYS[0]).props.onChange({ target: { checked: true } })
+  delete expected[KEYS[0]]
+  verifyWrite(expected, KEYS.length + 1)
+  assert.equal(switchFor(KEYS[0]).props.checked, true, '重新开启后立即回显')
+
+  const reset = render().filter((node) => node.type === 'button' && node.children.includes('全部恢复全开'))
+  assert.equal(reset.length, 1, '恢复按钮必须存在且唯一')
+  assert(reset[0].props.disabled !== true && typeof reset[0].props.onClick === 'function', '恢复按钮必须可编辑')
+  reset[0].props.onClick()
+  verifyWrite({}, KEYS.length + 2)
+  assert(switches(render()).every(({ props }) => props.checked === true), '恢复后 13 项全开')
+}
+
+console.log('[G5] 三面旧分区真执行：逐项关闭、单项重新开启、全部恢复')
+for (const [name, source] of panels) {
+  ok(source.includes("set('promptSectionToggles', t2)") && source.includes("set('promptSectionToggles', {})")
+    && source.includes('全部恢复全开'), 'G5a ' + name + ' 有旧分区写入与恢复入口')
+  try {
+    exercisePanel(source)
+    ok(true, 'G5b ' + name + ' 逐项关闭/回显、重新开启保留其它禁用项、一键恢复')
+    const anchor = "'data-dam-pswitch': k, checked:"
+    assert(source.indexOf(anchor) >= 0 && source.indexOf(anchor) === source.lastIndexOf(anchor), '只读变异锚点唯一')
+    const mutant = source.replace(anchor, "'data-dam-pswitch': k, disabled: true, checked:")
+    assert.throws(() => exercisePanel(mutant), /开关必须可编辑/)
+    exercisePanel(source)
+    ok(true, 'G5c ' + name + ' 原始源码通过 → 注入只读必失败 → 还原复绿')
+  } catch (error) {
+    ok(false, name + ' · ' + error.message)
+  }
+}
 ok(IX.indexOf('promptSectionToggles: {},') >= 0, 'G5e 宿主 DEFAULT_CONFIG 出厂为空对象（= 全开）')
 
 console.log('\n[T1] ' + pass + ' passed, ' + fail + ' failed')

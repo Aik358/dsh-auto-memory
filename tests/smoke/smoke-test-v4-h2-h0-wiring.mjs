@@ -27,7 +27,13 @@ console.log('[H2] memory_note 事件侧双写')
   //   plan/handoff），handoff 与 plan 走同一条 append 通道 ⇒ 旧字面量不再存在。
   //   判据改为：存在 Phase1 的 append 调用，且 kind 参数能区分两种语义。**不是放宽** ——
   //   下面 H2-7 改为在 Phase1 上验「先于 .md 写入」，比旧判据更强（旧版只验「在 r.ok 之后」）。
-  ok(/appendHandoffCheckpointPre\(storePathEv1, \{/.test(B) && /kind:\s*args\.kind === 'plan' \? 'plan' : 'handoff'/.test(B), 'H2-3 ★C1：Phase1 调 appendHandoffCheckpointPre 且 kind 区分 plan/handoff')
+  // ★2.9 判据迁移（2026-11-13 · task-18 · 用户裁定 G-1/G-2）：
+  //   Phase 1 从「先写事件全文检查点」改为「文档真实落盘后经共享入口记录可信检查点」，
+  //   因为 sourceRef/rawSha256/normalizedSha256 只能从**已落盘**文件取得（旧顺序拿不到指针，
+  //   只能写全文 —— 那正是 2.7 要治的病）。判据因此改为钉**共享入口**，且仍要求 kind 可区分。
+  //   ★不是放宽：H2-7 改为验「append 在 writePlanSnapshot 之后」这一**新的**不变量，
+  //     并额外验「文档失败时绝不伪造已记事件」（见 H2-9）。
+  ok(/appendStoredHandoffCheckpointPre\(\{/.test(B) && /kind:\s*args\.kind === 'plan' \? 'plan' : 'handoff'/.test(B), 'H2-3 ★2.9：Phase1\' 调共享入口且 kind 区分 plan/handoff')
   ok(/mirrorPlanSectionsPre\(storePathEv, \{ sections: secP \}\)/.test(B), 'H2-4 plan 分支调 mirrorPlanSectionsPre')
   // ★2026-10-25 C1 判据更新：WAL 后「半完成」有**两个方向** ——
   //   Phase1 失败 ⇒ 中止（事件优先，连 .md 都不写）；Phase2 失败 ⇒ 补偿 checkpoint + 如实报错。
@@ -41,9 +47,18 @@ console.log('[H2] memory_note 事件侧双写')
   // ★2026-10-25 C1 判据更新：守卫语义从「在 r.ok 之后才碰事件」变成
   //   「Phase1 append 在 writePlanSnapshot **之前**」（WAL 方向反转）。这是**更强**的断言：
   //   旧版只保证「不成功不写事件」，新版保证「事件一定先落」。
-  const ph1 = B.indexOf('appendHandoffCheckpointPre(storePathEv1')
+  // ★★2.9 判据迁移（2026-11-13 · task-18）：顺序**有意反转回来**。
+  //   旧 C1 的「事件先于文档」是为「事件是源」；但 2.7 要求正文用摘要 + 真实指针，
+  //   而指针（sourceRef/bytes/rawSha256/normalizedSha256）只在文件落盘后才存在。
+  //   ⇒ 新不变量：**文档先落盘，再记可信事件**；同时（更强）**文档失败时绝不伪造「已记事件」**。
+  const ph1 = B.indexOf('appendStoredHandoffCheckpointPre({')
   const ph2 = B.indexOf('await engine.writePlanSnapshot(')
-  ok(ph1 > 0 && ph2 > 0 && ph1 < ph2, 'H2-7 ★★C1 WAL：Phase1 事件 append 早于 writePlanSnapshot（方向反转）', 'phase1@' + ph1 + ' phase2@' + ph2)
+  ok(ph1 > 0 && ph2 > 0 && ph2 < ph1, 'H2-7 ★★2.9：文档落盘在事件记录**之前**（指针只能来自已落盘文件）', 'write@' + ph2 + ' append@' + ph1)
+  // H2-9（2.9 新增，不可削弱的保护）：文档失败时不得声称「原内容已记入前一检查点」。
+  //   旧实现无条件写那句文案；2.9 改为只有真记过（walEventId 非空）才这么写。
+  ok(/walEventId\s*\n?\s*\?/.test(B) || /walEventId \?/.test(B), 'H2-9 ★2.9：失败文案按「是否真记过事件」分岔（不伪造已记）')
+  // H2-10（2.9 新增）：事件侧失败必须明确半完成（文档已落盘、事件未记），不得静默成功。
+  ok(/文档已落盘/.test(B) && /事件未记/.test(B), 'H2-10 ★2.9：事件侧失败明确半完成（文档已写、事件未记）')
   ok(ew > 0 && ew < g, 'H2-8 eventWarn 声明在守卫**外面**（回执要读它）', 'decl@' + ew + ' guard@' + g)
 }
 
