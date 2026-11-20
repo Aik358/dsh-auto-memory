@@ -1,6 +1,6 @@
 # 记忆系统大修 · 施工总表
 
-> 初建 2026-11-08 · 更新 **2026-11-14（Asia/Hong_Kong）**：2.7/2.9真实链接线已隔离验收并本地提交 `9cca3b14` · 3.0–3.4细则待实施、2.3金标/训练门与真实HOST未完成 · 未push/未发布
+> 初建 2026-11-08 · 更新 **2026-11-20（Asia/Hong_Kong）**：批次 3 P3-A2 的 U0/U1/U2/U3a 已落地并本地提交。U3b（on 接管 + deliveryModule + 真实宿主）未开工 · 已同步 v4-collaboration
 > 用途：这张表是施工安排的**唯一入口**，每行可独立搬到你自己的任务板
 > 细则版（每项的具体改法）留给子代理逐批绘制，见第九节
 
@@ -24,6 +24,14 @@
 - **计数**：按 §〇 统一为 **36 个主任务**（含批次 2 新增的 2.6–2.9）；R4 为独立线 L，不并入主任务编号；3.0 的子项不重复计数。旧「32 个主任务」仅作历史快照。
 
 > 当前接续清单：[NEXT-STEPS-20261114.md](./NEXT-STEPS-20261114.md)；2.3训练回报与阻塞：[REVIEW-2.3-TRAINING-PROGRESS-20261114.md](./REVIEW-2.3-TRAINING-PROGRESS-20261114.md)。登记任务不等于开始代码施工、训练或生产启用。
+
+### P3-A2 当前状态（2026-11-20）
+
+- U0 契约 **v1.3** 已交付，含 A1–A7 裁定。详见 [U0 契约复核](./REVIEW-BATCH3-P3A2-U0-CONTRACT-20261120.md)。
+- U1 `unit-policy.js` **32 PASS / 0 FAIL**，U2 `unit-adapters.js` **35 PASS / 0 FAIL**，U3a `unit-shadow.js` **14 PASS / 0 FAIL**。
+- U3a 仅在 `policy.modules.diagnostics.enabled === true` 时计算。回执通过 `POST /api/dsh-auto-memory/delivery-preview` 与 `debugInfo()` 只读暴露，注入正文逐字节不变。单位选择使用真实身份，遇到身份重复时记录 `duplicate-id`。详见 [U3a-3 回执](./RECEIPT-BATCH3-U3A-3-REAL-IDENTITY-20261120.md)。
+- U3b **未开工**。范围包括 `on` 接管、`deliveryModule` 实产与真实宿主逐轮对比。
+- Lead 于 2026-11-20 复跑的基线为 **22 tools / 87 routes / 182 config keys**，全量 **647 PASS / 0 FAIL / 0 TIMEOUT / 0 FLAKY**，r26 **26 PASS / 0 FAIL**。
 
 ### 环境快照（2026-11-14 当前基线复核）
 
