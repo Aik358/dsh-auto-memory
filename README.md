@@ -46,17 +46,21 @@ P0–P4 已完成；P5 关键可执行证据已补齐；P6/P7 **A1 保留原件*
 
 A1 受影响回归：**20 套 / 382 PASS / 0 FAIL**，文档校验通过。该数字不是全仓回归，也不代表真实模型已按新协议行动。
 
-### 批次 3 · P3-A2 已交付
+### 批次 3 · 主体已交付，生产接线分阶段推进
+
+批次 3 的 `B3-XX` 公共实现及回调验收基础已交付。`23646c04` 收口了 P1 策略接口、P2 设置页和 P3-A1 的首批生产接线。P3-A2 负责让设置中的模块开关、视图、表示和单位配额进入实际组帧。该阶段已验收到 U3a 的影子观测。[模块契约](docs/internal/DETAIL-BATCH3-SYSTEMIC-REBUILD-CONTRACT-20261116.md)
 
 | 范围 | 当前状态 |
 |---|---|
-| 3.0 · 注入投递基础修复 | P1 已落地并接线：整帧运输/预算、presets、cadence/triggers、diagnostics；模块级开关与单位配额仍仅预览生效 |
-| #546 opt-in UI 移植 | 已落地（手写区 + frozen 源 + 生成器 seam 三处同改）；套件 40 PASS / 0 FAIL，全量回归无新增红 |
+| P1 / P2 / P3-A1 · 投递策略主体 | 策略接口、三面设置和预览已交付。保存策略后，动态投递总开关、节奏、水位和整帧限制会影响实际投递。诊断和精简账本选段已接入。删除策略可恢复旧设置。[A1 范围](docs/internal/DECISIONS-BATCH3-P3A-SCOPE-20261118.md) |
+| B3 公共模块接线 | 水位解析、动态规则呈现、白板及账本投影已有生产调用。统一来源读取、通知最终提交和公共组帧器仍待接入。 |
+| P3-B · 隔离宿主验收 | 已核验三个设置入口、保存策略、七个旧控件的条件冻结和删除 API 回滚。页面最终删除确认仅部分验证，真实模型轮待验。[宿主回执](docs/internal/RECEIPT-BATCH3-A1C-P3B-20261118.md) |
+| #546 · 迁移 opt-in | 设置生成源上的移植已完成，宿主接线套件 40/0。隔离宿主 E1–E6 通过，覆盖显式授权、预览、换包重置和字节对比。导入请求为 0。[端到端回执](docs/internal/RECEIPT-HOST-E2E-546-OPTIN-20261120.md) |
 | P3-A2 · U0 契约 | 已交付 **v1.3**，含 A1–A7 七条裁定：diagnostics 不进 Unit 模型 / budget=总额且 S8 优先 / F13 quota-bypass / overcommit 先判 enabled / 配额按 scope 家族共享 / ruleModule 归属 / 用真实身份 |
 | P3-A2 · U1 选择器 | 已交付 lib/injection/unit-policy.js：**32 PASS / 0 FAIL**，变异 12/12 CAUGHT；F3 同模块重复 (unit,scope) 判非法 |
 | P3-A2 · U2 六处 adapter | 已交付 lib/injection/unit-adapters.js：**35 PASS / 0 FAIL**，变异 5/5 CAUGHT；分层为 RawUnit → bindUnits → Unit，adapter 零 IO、不读 policy |
 | P3-A2 · U3a 影子观测 | 已交付 lib/injection/unit-shadow.js：**14 PASS / 0 FAIL**，变异 6/6 CAUGHT；仅在 policy.modules.diagnostics.enabled 时计算，回执经 POST /preview 与 debugInfo() **只读**暴露，注入正文零变化；影子使用真实身份，身份塌缩会如实报 duplicate-id |
-| P3-A2 · U3b | **未开工**：on 接管、deliveryModule 实产、真实宿主逐轮对比 |
+| P3-A2 · U3b | **未开工**。模块开关、视图、表示和单位配额接管实际投递，生成 `deliveryModule`，并在真实宿主上逐轮对比。 |
 | **B3-CO** · 记忆提炼扩充来源（原 3.1） | 日志、事件、白板、账本、反思五类来源的读取、提示组装与结果应用已实现，模块测试 66/0。生产 `memory_consolidate` 仍以每日日志为主要提炼输入。[实施结果](docs/internal/RESULT-BATCH3-CO-20261117.md) |
 | **B3-EV** · 事件视图（原 3.2–3.4） | 四段投影、检查点预览保首尾、事件卡片与目录、来源指针已实现，模块测试 86/0。生产事件投递仍使用 `event-render.js`，尚未接入新的事件视图 API。[实施结果](docs/internal/RESULT-BATCH3-EV-20261117.md) |
 
