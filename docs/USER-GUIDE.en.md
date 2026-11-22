@@ -96,7 +96,8 @@ The control room of proactive recall. On, the plugin watches context, runs seman
 |---|---|---|
 | Enable engine (`associativeMemoryEnabled`) | off | Master switch. Off = the whole engine idles — no retrieval, no decision, no injection, no recall records; stored memories are kept. Turn off if you're token-shy or want zero surprises |
 | Emit mode (`activationEmitMode`) | `shadow` | **shadow** = record decisions only, inject nothing (calibration; safest); **canary-explicit** = inject only on confident explicit recall (recommended daily); **active** = inject on every decision. JS/Python share one source. The current emit mode shows beside it |
-| Recall cooldown (`jsDecideCooldownRounds`) | 1 | No re-decision for N rounds after an injection, to save tokens; **0 = no cooldown** (legal) |
+| JS recall decision cooldown (`jsDecideCooldownRounds`) | 1 min | After a JS `emit`, skip another JS decision for N minutes. `Rounds` is a legacy key name; runtime uses minutes. **0 disables this decision gate**; it does not control actual delivery |
+| Cooldown after actual delivery (`activationDeliveryCooldownMinutes`) | Off (`null`) | Off by default. When enabled, starts at 3 minutes; choose any whole minute from 1–5. Starts only after the Reference Tail is confirmed in the model message. `0` is rejected. This is independent of the JS decision cooldown |
 | Margin threshold (`jsDecideDeltaExp`) | 0.01 | Gap between top-1 and top-2 candidates must exceed this to inject (e5's cosine distribution is tight: 0.01; bge-m3 calibrates to 0.03). Smaller = more eager, larger = more conservative; 0 = no filter |
 | Candidate scheme (`jsDecideCandidateScheme`) | `balanced` | balanced = 3 refs × 40 chars; dense = 6 × 20 (more candidates, wider association); custom = your own count (1–8) and length |
 | Injected excerpt length (`jsDecideExcerptChars`) | 40 | Reference-line content cap. 40 = keyword-level (cheap; the model fetches full text via `memory_read`); range 20–480 |
@@ -104,6 +105,8 @@ The control room of proactive recall. On, the plugin watches context, runs seman
 | CoT observer (`reasoningObserverEnabled`) | on | Include the model's chain of thought in live observation `(restart)` — closed-source models' summarizing CoT counts too; an important signal for "remembering while doing" |
 | Branch-session observation (`contextBridgeObserveChildSessions`) | on | Sessions that continue across days are marked as branches and observed too |
 | Recall thresholds (calibration) | fixed | tauHi 0.45 · tauLo 0.35 (read-only; owned by the calibrated policy JSON) |
+
+Each activation packet also has `ActivationRequestPre.ttlSteps`, a per-runtime step-based expiry. It controls how long an undelivered packet survives, not a cooldown. The historical `packetTtlSteps`, `injectionCooldownSteps`, `maxPacketItems` and `maxPacketChars` keys have no production readers and do not control actual recall delivery.
 
 ### 4.2 Memory Hub
 

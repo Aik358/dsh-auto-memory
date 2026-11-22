@@ -33,12 +33,13 @@ try{
  const configHandler=handler('      path: API.config,')
  async function call(fn,body){const res={};await fn({method:'POST',body},res);return res}
  const original=await fs.readFile(engine._configPath,'utf8')
- for(const [key,value] of [['memoryRoot','/outside/dsh'],['userMemoryDir',''],['workbenchRoot',home+'-escape'],['dayBoundaryMinutes',1440],['workbenchLoopShort',1],['autoSummaryTimes',['12:00','24:00']]]){
+ for(const [key,value] of [['memoryRoot','/outside/dsh'],['userMemoryDir',''],['workbenchRoot',home+'-escape'],['dayBoundaryMinutes',1440],['workbenchLoopShort',1],['autoSummaryTimes',['12:00','24:00']],['activationDeliveryCooldownMinutes',0],['activationDeliveryCooldownMinutes',1.5],['activationDeliveryCooldownMinutes',6],['activationDeliveryCooldownMinutes','3']]){
   const result=await call(configHandler,{[key]:value,locale:'ja'})
   assert.equal(result.status,400);assert(result.body.fields[key]);assert.equal(await fs.readFile(engine._configPath,'utf8'),original)
  }
- assert.equal((await call(configHandler,{autoSummaryTimes:[],dayBoundaryMinutes:0,workbenchLoopShort:2})).status,200)
- console.log('PASS actual /config handler: field-specific errors are all-or-nothing; zero midnight and empty off array accepted')
+ assert.equal((await call(configHandler,{autoSummaryTimes:[],dayBoundaryMinutes:0,workbenchLoopShort:2,activationDeliveryCooldownMinutes:5})).status,200)
+ assert.equal(engine.config.activationDeliveryCooldownMinutes,5)
+ console.log('PASS actual /config handler: invalid cooldown values are atomic 400s; 5 minutes saves; zero midnight and empty off array accepted')
  const semanticPath=path.join(home,'memory','semantic','embedding-config.json')
  await fs.mkdir(path.dirname(semanticPath),{recursive:true})
  await fs.writeFile(semanticPath,JSON.stringify({activationEmitMode:'shadow',extra:'preserve'}))

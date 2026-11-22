@@ -62,7 +62,10 @@ console.log("=== T2 适配层真执行：0.2.x（提供 startActivation）===")
   let seenSpec = null
   const fakeActivation = { childId: "child-1", messageId: "msg-1", result: Promise.resolve({ output: [{ type: "text", text: "hi" }] }), dispose: () => {} }
   const v02 = { startActivation: async (spec) => { seenSpec = spec; return fakeActivation } }
-  const run02 = await call(v02, "spawn", { label: "L", prompt: [{ type: "text", text: "p" }], parent: { session: { id: "s" } } })
+  const parent = { session: { id: "s" } }
+  const prompt = [{ type: "text", text: "p" }]
+  const agentOptions = { model: "test-model" }
+  const run02 = await call(v02, "spawn", { label: "L", prompt, parent, cwd: "C:/work", agentOptions, maxDepth: 2 })
   ok(!!run02, "0.2.x 返回 run 对象")
   ok(run02.childId === "child-1", "run.childId 透传（实测 " + run02.childId + "）")
   ok(typeof run02.dispose === "function", "run.dispose 存在（finally 清理可用）")
@@ -71,8 +74,11 @@ console.log("=== T2 适配层真执行：0.2.x（提供 startActivation）===")
   ok(seenSpec && seenSpec.provider === "spawn", "spec.provider 正确")
   ok(seenSpec && seenSpec.label === "L", "spec.label 正确")
   ok(seenSpec && seenSpec.delivery === "parent", "spec.delivery='parent'（照抄官方工具）")
-  ok(seenSpec && seenSpec.request && Array.isArray(seenSpec.request.prompt), "request.prompt 为数组")
-  ok(seenSpec && seenSpec.request.parent && seenSpec.request.parent.session.id === "s", "request.parent 透传")
+  ok(seenSpec && Array.isArray(seenSpec.prompt), "spec.prompt 为顶层数组")
+  ok(seenSpec && seenSpec.parent === parent && seenSpec.parent.session.id === "s", "spec.parent 顶层透传")
+  ok(seenSpec && seenSpec.agentOptions === agentOptions, "spec.agentOptions 顶层透传")
+  ok(seenSpec && seenSpec.cwd === "C:/work" && seenSpec.maxDepth === 2, "可选请求参数放在 spec 顶层")
+  ok(seenSpec && !Object.hasOwn(seenSpec, "request"), "负路径：不再发送已移除的嵌套 request 字段")
 }
 
 // ── T3 适配层：0.1.x 兼容分支 ─────────────────────────────────────

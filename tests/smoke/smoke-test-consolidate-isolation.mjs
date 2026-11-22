@@ -37,9 +37,8 @@ const subagents = {
   // 0.2.x 正路：参数形状 { provider, label, request, signal, delivery }
   async startActivation(arg) {
     pathHits.push('startActivation')
-    const req = (arg && arg.request) || {}
-    const ao = req.agentOptions
-    parentCalls.push({ provider: arg && arg.provider, parent: req.parent, model: ao ? ao.model : undefined, via: 'startActivation' })
+    const ao = arg && arg.agentOptions
+    parentCalls.push({ provider: arg && arg.provider, parent: arg && arg.parent, model: ao ? ao.model : undefined, via: 'startActivation' })
     await new Promise((resolve) => setTimeout(resolve, 15))
     return {
       childId: 'child-' + parentCalls.length,

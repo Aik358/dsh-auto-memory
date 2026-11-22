@@ -116,7 +116,7 @@ console.log('[F2/F3] 开启矩阵 + capability 快照')
   ok(am.activationInbox.enabled === true, 'F2 双开 → enabled')
   eq(am.activationInbox.capability.packetPatch, 'dynamic-context', 'F3 capability=dynamic-context(按宿主形状,非模型名)')
   eq(am.activationInbox.capability.supportsDeliveryAck, true, 'F3 supportsDeliveryAck=true(context 返回非空=进入 messages)')
-  eq(am.activationInbox.cooldownSteps, 2, 'F3 冷却步数=2')
+  eq(am.activationInbox.cooldownMinutes, null, 'F3 默认投递冷却=null（关闭）')
   console.log('[F2/F3] 开启矩阵 + capability')
 }
 
@@ -151,7 +151,9 @@ let deliveredSeenCount = 0
   ok(/Source: mem_[0-9a-f]{32} \/ Workspace \/ v/.test(out1), 'F5 Source 行含完整 provenance 身份')
   ok(out1.trim().endsWith(A.TAIL_VERIFY_LINE_PRE_V1), 'F5 Verify 收尾行结尾')
   const out2 = String(tc.text({ agent: h.agent }))
-  eq(out2, '', 'F5 已投递后再次渲染为空(同一 packet 不重复出现)')
+  eq(out2, out1, 'F5 同一 pre-step 的第二次 context.text() 逐字节重放同一尾注')
+  const afterReplay = await h.dbg()
+  eq(afterReplay.activationInbox.stats.delivered, 1, 'F5 重放不重复 markDelivered 记账')
   await sleep(500)
   const evDir = path.join(h.home, 'memory', 'evidence', 'events')
   let seenCount = 0
@@ -180,9 +182,32 @@ console.log('[F6] 冷却门')
   await h.fire('agent/pre-step', { agent: h.agent, turn: 2, step: 3 }, () => {})
   const out6 = String(h.tailComponent().text({ agent: h.agent }))
   const amC = await h.dbg()
-  ok(out6 === '' || out6.includes(A.TAIL_MARKER_LINE_PRE_V1), 'F6 第二轮渲染要么冷却为空要么正常尾注(确定性二选一)')
-  ok(amC.activationInbox.stats.delivered >= deliveredBefore, 'F6 delivered 单调不减(' + deliveredBefore + '→' + amC.activationInbox.stats.delivered + ')；严格 2 步冷却窗由 smoke-test-m62 E8 锁定')
-  console.log('[F6] 冷却语义=单元锁定;live 验证投递单调性')
+  ok(out6.includes(A.TAIL_MARKER_LINE_PRE_V1), 'F6 默认关闭投递冷却，下一请求可正常投递')
+  eq(amC.activationInbox.stats.delivered, deliveredBefore + 1, 'F6 无冷却时实际投递计数增加一次')
+  console.log('[F6] 默认关闭投递冷却；1–5 分钟边界由 smoke-test-m62 E8 锁定')
+}
+
+console.log('[F6b] 设置值进入真实 ActivationHost claim / delivery ack')
+{
+  const h = globalThis.__h
+  await h.cfgPost({ activationDeliveryCooldownMinutes: 5 })
+  const before = await h.dbg()
+  const cv = (before.runtimes.find((r) => r.sessionId === 's1') || {}).contextVersion || 0
+  const miv = before.activationInbox.memoryIndexVersion
+  const req = A.makeFakeActivationRequestPre({ seed: 'live-cooldown-5', sessionId: 's1', agentId: 'a1', workspaceKey: canonicalSourcePath(h.wsA), contextVersion: cv, memoryIndexVersion: miv, ttlSteps: 9, now: Date.now(), records: h.records })
+  await h.actPost({ action: 'inject', request: req })
+  await h.fire('agent/pre-step', { agent: h.agent, turn: 3, step: 4 }, () => {})
+  const tail = String(h.tailComponent().text({ agent: h.agent }))
+  ok(tail.includes(A.TAIL_MARKER_LINE_PRE_V1), 'F6b with configured 5-minute cooldown still allows the first delivery')
+  const delivered = await h.dbg()
+  eq(delivered.activationInbox.cooldownMinutes, 5, 'F6b live activation host reports the configured 5-minute value')
+
+  const nextCv = (delivered.runtimes.find((r) => r.sessionId === 's1') || {}).contextVersion || cv
+  const nextReq = A.makeFakeActivationRequestPre({ seed: 'live-cooldown-blocked', sessionId: 's1', agentId: 'a1', workspaceKey: canonicalSourcePath(h.wsA), contextVersion: nextCv, memoryIndexVersion: miv, ttlSteps: 9, now: Date.now(), records: h.records })
+  await h.actPost({ action: 'inject', request: nextReq })
+  const blocked = await h.dbg()
+  eq(blocked.activationInbox.stats.delivered, delivered.activationInbox.stats.delivered, 'F6b actual host does not acknowledge another delivery during cooldown')
+  ok(blocked.activationInbox.recentEvents.some((event) => event.kind === 'pump' && event.reason === 'cooldown'), 'F6b actual host reports the cooldown claim decision')
 }
 
 console.log('[F7/F8] section 字节稳定 / 尾注不进 section / 关闭恢复')

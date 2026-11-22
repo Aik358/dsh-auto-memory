@@ -96,7 +96,8 @@
 |---|---|---|
 | 启用自动记忆引擎（associativeMemoryEnabled） | 关 | 总开关。关闭则整个引擎不运行——不检索、不判定、不注入、不生成唤起记录；已存记忆保留。介意 token 消耗或担心动作跑偏可关 |
 | 唤起注入模式（activationEmitMode） | `shadow` | **shadow**=只记录决策不注入（校准用，最稳）；**canary-explicit**=仅明确回忆时注入（推荐日常档）；**active**=所有判定都注入。JS/Python 双轨同源。旁边显示当前发射模式 |
-| 唤起冷却（分钟）（jsDecideCooldownRounds） | 1 | 注入后 N 轮内不再判定，防连续唤起浪费 token；**0=不冷却**（合法值） |
+| JS 唤起判定冷却（分钟）（`jsDecideCooldownRounds`） | 1 | JS 发出 emit 后 N 分钟内不再重复判定；键名里的 Rounds 是历史遗留，实际单位是分钟。**0=不限制 JS 判定**；这不控制实际投递 |
+| 实际投递后冷却（`activationDeliveryCooldownMinutes`） | 关闭（`null`） | 默认关闭。开启后默认 3 分钟，可拖动选择 1–5 分钟。只在 Reference Tail 确认进入模型消息后起算；`0` 不接受。它和 JS 判定冷却是两道独立门 |
 | 唤起 margin 阈值（jsDecideDeltaExp） | 0.01 | 候选第 1/2 名分差须超过此值才注入（e5 余弦分布紧，默认 0.01；bge-m3 校准值 0.03）。调小=更容易唤起，调大=更保守；0=不过滤 |
 | 唤起候选方案（jsDecideCandidateScheme） | `balanced` | balanced=3 条×40 字符（信息量/token 平衡）；dense=6 条×20 字符（更多候选更广联想）；custom=自定义条数（1-8）与长度 |
 | 唤起注入内容长度（jsDecideExcerptChars） | 40 | Reference 行内容上限。40=关键词级（省 token，细节由模型 `memory_read` 取全文）；可调 20-480 |
@@ -104,6 +105,8 @@
 | 思维链监听（reasoningObserverEnabled） | 开 | 把模型思维链纳入实时观测 `(重启生效)`——闭源模型的概括式思维链同样纳入，是「边做边想起」的重要信号源 |
 | 分支会话观测（contextBridgeObserveChildSessions） | 开 | 跨天续接的会话标记为分支后同样纳入观测 |
 | 唤起阈值（校准策略） | 固定 | tauHi 0.45 · tauLo 0.35（只读展示，由校准策略 JSON 权威控制） |
+
+唤起包另有按 runtime 步数计算的 `ActivationRequestPre.ttlSteps`，它只决定未投递包何时过期。历史键 `packetTtlSteps`、`injectionCooldownSteps`、`maxPacketItems` 和 `maxPacketChars` 当前没有生产读取方，不会控制实际唤回。
 
 ### 4.2 记忆中枢（memoryHub）
 
