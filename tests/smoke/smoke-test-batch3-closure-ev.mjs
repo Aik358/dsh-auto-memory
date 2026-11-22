@@ -124,12 +124,13 @@ try {
   }
   await Promise.all([paths.projectDir, paths.handoffDir, paths.reflectDir].map(dir => mkdir(dir)))
 
-  async function production(engineModule, events, activeLimit) {
+  async function production(engineModule, events, activeLimit, deliveryMode) {
     const engine = new engineModule.MemoryEngine()
     engine.configLoaded = true
     engine.memToday = () => FIXTURE_DAY
     engine.resolvePaths = async () => paths
     engine.state.ws = paths.ws
+    if (deliveryMode) engine.config.deliveryPolicy = { schemaVersion: 2, presetId: 'human_full', deliveryMode }
     if (activeLimit !== undefined) engine.config.eventMaxActiveInInject = activeLimit
     await writeFile(path.join(paths.handoffDir, EVENT_STORE_FILENAME), JSON.stringify({ events }), 'utf8')
     await engine.refreshEventStatePre()
@@ -167,8 +168,6 @@ try {
     return pathToFileURL(viewPath)
   }
 
-  const switchOff = source => replaceOnce(source, 'const useEventView = true', 'const useEventView = false')
-  const switchOffEngine = await engineFrom(switchOff(indexSource), 'switch-off')
   const events = eventsFixture()
   const main = await production(current, events, 5)
 
@@ -217,7 +216,7 @@ try {
   }
 
   await check('A6 switch off restores pre-change full frame, slim frame and overview bytes', async () => {
-    const rollback = await production(switchOffEngine, events)
+    const rollback = await production(current, events, undefined, 'legacy')
     const normal = await production(current, events)
     const observed = Object.fromEntries(Object.entries(rollback).map(([key, value]) =>
       [key, [value.length, Buffer.byteLength(value, 'utf8'), SHA256(value)]]))
@@ -262,9 +261,8 @@ try {
     const t1Probe = 'T1-NEW-ROUTE-PROBE'
     const replaceT1Value = source => replaceOnce(source, 'firstSentencePre(text, RENDER_LIMITS.T1)', JSON.stringify(t1Probe))
     const probeEngine = await engineFrom(indexSource, 't1-consumers', replaceT1Value)
-    const probeRollbackEngine = await engineFrom(switchOff(indexSource), 't1-consumers-off', replaceT1Value)
     const probeOn = await production(probeEngine, events, 5)
-    const probeOff = await production(probeRollbackEngine, events, 5)
+    const probeOff = await production(probeEngine, events, 5, 'legacy')
     assert.ok(probeOn.slim.includes('[当前事件] ' + t1Probe))
     assert.ok(probeOn.overview.includes('· ' + t1Probe))
     assert.ok(!probeOff.slim.includes(t1Probe) && !probeOff.overview.includes(t1Probe))
