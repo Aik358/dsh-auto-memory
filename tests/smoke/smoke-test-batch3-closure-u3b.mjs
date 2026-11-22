@@ -7,12 +7,15 @@ import test, { after } from 'node:test';
 import { pathToFileURL } from 'node:url';
 import { EVENT_STORE_FILENAME } from '../../lib/event-store.js';
 import { validatePolicy } from '../../lib/injection/policy-v2.js';
+import { measureFrame } from '../../lib/injection/policy-runtime.js';
+import { collectDeliveryEventUnitsPre, composeUnitDeliveryPre } from '../../lib/injection/unit-delivery.js';
 
 const engineUrl = new URL('../lib/audit-engine.mjs', import.meta.url);
 const indexUrl = new URL('../../lib/index.js', import.meta.url);
 const policyUrl = new URL('../../lib/injection/unit-policy.js', import.meta.url);
 const adapterUrl = new URL('../../lib/injection/unit-adapters.js', import.meta.url);
 const deliveryUrl = new URL('../../lib/injection/unit-delivery.js', import.meta.url);
+const dedupeUrl = new URL('../../lib/injection/inject-dedupe.js', import.meta.url);
 const temp = await mkdtemp(path.join(tmpdir(), 'dam-u3b-closure-'));
 const iso = path.join(temp, 'dsh');
 const priorHome = process.env.DSH_HOME;
@@ -51,6 +54,12 @@ const baseline = {
     empty: [2080, 4005, '1e986f357071f597115c2b5bf8e7520404a7f1f858ac4f511e14598c7ada8c5e'],
     normal: [2769, 5099, 'e583dbaf2b7b80c959bbfe1c712d60bb260e6d878ceb51cb48ea7413d0dd83b8'],
     full: [6684, 9750, '30219e0b0f943b6e0206d22a0bf3391bc0334fae48c825e8a607d3173e34e50b'],
+  },
+  // Captured on 0880b650 before D4-2 was implemented.
+  units: {
+    empty: [2080, 4005, '9b8b21b7d7678afe32673f149e96ed58afb89efa3fa38817d26f5a9b0875629b'],
+    normal: [2748, 4840, '0583a4b20b3d370ccbf3f92046c958b3a8c9a264e0abf118ffb38bf0ffb0b2dc'],
+    full: [3619, 4199, '73fc5fb11211c0fc67fafefecef8bf9dafb2aa5813ea8fb31718caa4aedf77ca'],
   },
 };
 
@@ -110,7 +119,7 @@ test('C0/C1 three modes, default and null frames against pre-edit baselines', as
     t.diagnostic(JSON.stringify({ scene,
       legacy: requireBaseline('legacy', scene, legacy.frame),
       eventView: requireBaseline('eventView', scene, eventView.frame),
-      units: digest(selected.frame),
+      units: requireBaseline('units', scene, selected.frame),
     }));
     assert.ok(selected.frame !== eventView.frame, `${scene} units must enter the production assembler`);
   }
@@ -326,4 +335,205 @@ test('C2 production frames contain exactly 3, 1 and 5 checkpoint bodies at the c
     assert.equal(markers.length, max, `production frame checkpoint limit ${max}`);
     t.diagnostic(`${max}: ${markers.join(', ')}`);
   }
+});
+
+const SHARED_BODY = 'D4_EXACT_LEDGER_BODY_X';
+const NEAR_BODY = 'D4_EXACT_LEDGER_BODY_Y';
+const OTHER_FIELD = 'D4_KEEP_NEXT_STEP';
+const EXACT_LEDGER = '## 目标\n' + SHARED_BODY;
+const DISABLED_EVENT_UNIT = { unit: 'event', scope: 'module', max: 0, strength: 'hard' };
+
+function dedupeEvent(checkpoint) {
+  const ev = event(0, 1);
+  return { ...ev, checkpoints: [{ ...ev.checkpoints[0], text: '', ...checkpoint }] };
+}
+
+async function dedupeFrame(host, { checkpoint = { text: SHARED_BODY }, ledger = EXACT_LEDGER,
+  policy = units(), tier = 'human_full', slim = false } = {}) {
+  const { engine, frame } = await fixture(host, { events: [dedupeEvent(checkpoint)], policy,
+    setup: engine => Object.assign(engine.state, { latestHandoffText: ledger, _injectTierPre: tier }) });
+  return { frame: slim ? engine.renderSlimSnapshotPre() : frame, receipt: engine.state._unitDeliveryReceiptPre };
+}
+
+const occurrences = (frame, body) => frame.split(body).length - 1;
+
+function reportDedupe(result) {
+  const { frame, receipt } = result;
+  const { jsChars, utf8Bytes } = measureFrame(frame);
+  assert.deepEqual(receipt.dynamicCost, { jsChars, utf8Bytes });
+  return { jsChars, utf8Bytes, selectedCount: receipt.selectedCount, rejectedCount: receipt.rejectedCount,
+    budgetOvercommit: receipt.budgetOvercommit,
+    excerpt: frame.split('\n').filter(line => line.startsWith('## 目标') || line.includes(SHARED_BODY)) };
+}
+
+test('D4-2 full exact matches keep the ledger and reduce real frame cost against isolated pre-dedupe assembly', async t => {
+  const mutant = await deliveryVariant('dedupe-disabled', src => replaceOne(src,
+    'const covers = ledgerBodyCoveragePre([...owners.values()].map(owner => owner.body))', 'const covers = () => false'));
+  async function verify(host) {
+    const result = await dedupeFrame(host);
+    assert.equal(occurrences(result.frame, SHARED_BODY), 1, 'exact ledger content must appear once');
+    return result;
+  }
+  await assert.rejects(() => verify(mutant), /exact ledger content must appear once/);
+  const before = reportDedupe(await dedupeFrame(mutant));
+  const after = reportDedupe(await verify(current));
+  assert.equal(after.selectedCount, before.selectedCount - 1);
+  assert.equal(after.rejectedCount, before.rejectedCount);
+  assert.ok(after.jsChars < before.jsChars && after.utf8Bytes < before.utf8Bytes);
+  assert.equal(after.budgetOvercommit, before.budgetOvercommit);
+  assert.deepEqual(after.excerpt, ['## 目标', SHARED_BODY]);
+  t.diagnostic(JSON.stringify({ before, after, mutation: 'disabled exact match CAUGHT, production PASS' }));
+});
+
+test('D4-2 CRLF and boundary whitespace normalize, only the matching checkpoint field is omitted', async t => {
+  const multiline = SHARED_BODY + '\n保留边界 🧠';
+  const cases = [
+    { ledger: '## 目标\n前段\n\n' + multiline + '\n\n末段',
+      checkpoint: { goal: '  ' + multiline.replaceAll('\n', '\r\n') + '  ', next: OTHER_FIELD } },
+    { ledger: '## 目标\r\n' + multiline.replaceAll('\n', '\r\n'),
+      checkpoint: { text: '  ' + multiline + '  ' } },
+  ];
+  for (const { ledger, checkpoint } of cases) {
+    const result = await dedupeFrame(current, { checkpoint, ledger });
+    assert.equal(occurrences(result.frame, SHARED_BODY), 1);
+    assert.ok(result.frame.includes('## 目标') && result.frame.includes('保留边界 🧠'));
+    assert.equal(result.frame.includes('下一步：' + OTHER_FIELD), !!checkpoint.next);
+    assert.ok(!result.frame.includes('目标：' + SHARED_BODY));
+    reportDedupe(result);
+  }
+  const slim = await dedupeFrame(current, { tier: 'human_slim', slim: true });
+  assert.equal(occurrences(slim.frame, SHARED_BODY), 1);
+  assert.deepEqual(reportDedupe(slim).excerpt, ['## 目标', SHARED_BODY]);
+  t.diagnostic('normalized multiline content, distinct next field, and slim assembly validated');
+});
+
+test('D4-2 repeated checkpoint ids cannot borrow another checkpoint’s field offsets', async t => {
+  const shared = 'same';
+  const source = event(0, 2);
+  source.checkpoints[0] = { ...source.checkpoints[0], id: 'same-id', text: 'plain text' };
+  source.checkpoints[1] = { ...source.checkpoints[1], id: 'same-id', text: '', goal: shared, next: 'diff' };
+  const base = { events: [source], setup: engine => { engine.state.latestHandoffText = '## 目标\n' + shared; }, policy: units() };
+  const wrongOffsets = await deliveryVariant('dedupe-borrowed-offsets', src => {
+    let mutated = replaceOne(src, 'const fieldsByUnit = new WeakMap()', 'const fieldsByUnit = new Map()');
+    mutated = replaceOne(mutated, 'fieldsByUnit.set(unit,', 'fieldsByUnit.set(unit.sourceRef,');
+    return replaceOne(mutated, 'fieldsByUnit.get(unit)', 'fieldsByUnit.get(unit.sourceRef)');
+  });
+  async function verify(host) {
+    const { frame } = await fixture(host, base);
+    assert.ok(frame.includes('[检查点 #evt_00000001] plain text'), 'preserve unaffiliated checkpoint bytes');
+  }
+  await assert.rejects(() => verify(wrongOffsets), /preserve unaffiliated checkpoint bytes/);
+  await verify(current);
+  const normalizedId = await dedupeFrame(current, { checkpoint: { sourceRef: ' padded ', goal: SHARED_BODY, next: OTHER_FIELD } });
+  assert.equal(occurrences(normalizedId.frame, SHARED_BODY), 1);
+  assert.ok(normalizedId.frame.includes(OTHER_FIELD));
+  t.diagnostic('field offsets keyed by duplicate ids: CAUGHT, production PASS');
+});
+
+test('D4-2 sanitization cannot turn distinct interior whitespace into a match', async t => {
+  const body = 'D4_LINE_A\n\nD4_LINE_B';
+  const different = body.replace('\n\n', '\n\n\n');
+  const mutant = await deliveryVariant('dedupe-cleaned-whitespace', src => replaceOne(src,
+    "if (raw.unitKind === 'checkpoint' && (bodyChanged || changed && raw.checkpointFields))",
+    "if (raw.unitKind === 'checkpoint' && changed && raw.checkpointFields)"));
+  async function verify(host, checkpointBody, ledgerBody) {
+    const { frame } = await dedupeFrame(host, { checkpoint: { text: checkpointBody }, ledger: '## 目标\n' + ledgerBody });
+    assert.equal(occurrences(frame, body), 2, 'authored interior whitespace difference must remain');
+  }
+  await assert.rejects(() => verify(mutant, different, body), /authored interior whitespace difference must remain/);
+  await verify(current, different, body);
+  await verify(current, body, different);
+  t.diagnostic('match after sanitization only: CAUGHT, production PASS');
+});
+
+test('D4-2 compatibility modes still retain both copies of the same text', async t => {
+  for (const deliveryMode of ['eventView', 'legacy']) {
+    const { frame } = await dedupeFrame(current, { policy: units({ deliveryMode }) });
+    assert.equal(occurrences(frame, SHARED_BODY), 2, deliveryMode);
+    t.diagnostic(deliveryMode + ': matching body still occurs twice');
+  }
+});
+
+test('D4-2 absent, disabled, quota-rejected, pointer and incomplete ledgers cannot cover a checkpoint', async t => {
+  const cases = [
+    { name: 'empty', ledger: '' },
+    { name: 'disabled', policy: units({ modules: { handoff: { enabled: false } } }) },
+    { name: 'quota', policy: units({ modules: { handoff: { quotas: [{ unit: 'ledgerSection', scope: 'module', max: 0, strength: 'hard' }] } } }) },
+    { name: 'pointer', ledger: '## 任务状态\n' + SHARED_BODY + '\n## 目标\nOther goal',
+      tier: 'human_slim', policy: units({ presetId: 'human_slim', modules: { events: { quotas: [DISABLED_EVENT_UNIT] } } }) },
+    { name: 'trimmed', ledger: EXACT_LEDGER + '\n\n' + 'padding '.repeat(140) },
+  ];
+  for (const { name, ...input } of cases) {
+    const result = await dedupeFrame(current, input);
+    assert.ok(result.frame.includes('[检查点 #evt_00000001] ' + SHARED_BODY), name);
+    if (name === 'pointer') assert.ok(result.frame.includes('· type:state'));
+    assert.ok(!result.receipt.degradations.some(row => row.code === 'checkpoint-body-covered-by-ledger'), name);
+    t.diagnostic(name + ': checkpoint preserved');
+  }
+});
+
+test('D4-2 equal-length one-character differences survive, with isolated length-only mutation', async t => {
+  const fp = await importableCopy(dedupeUrl, 'dedupe-by-length', src => src.replaceAll('computeExactDigest(', 'StringLength(')
+    + '\nfunction StringLength(text) { return text.length }\n');
+  const mutant = await deliveryVariant('dedupe-length-only', src => replaceOne(src,
+    "from './inject-dedupe.js'", 'from ' + JSON.stringify(fp.href)));
+  async function verify(host) {
+    const { frame } = await dedupeFrame(host, { checkpoint: { text: NEAR_BODY } });
+    assert.equal(occurrences(frame, SHARED_BODY), 1, 'ledger remains');
+    assert.equal(occurrences(frame, NEAR_BODY), 1, 'one-character difference must remain');
+  }
+  await assert.rejects(() => verify(mutant), /one-character difference must remain/);
+  await verify(current);
+  t.diagnostic('length-only fingerprint CAUGHT, production PASS');
+});
+
+test('D4-2 reruns the budget using revised selections, with isolated stale-cost mutation', async t => {
+  const staleUrl = await importableCopy(deliveryUrl, 'dedupe-stale-budget', src => replaceOne(src,
+    '    selection = next\n    selectionDegradations = revisedDegradations',
+    '    selection = { ...next, cost: selection.cost }\n    selectionDegradations = revisedDegradations'));
+  const stale = await import(staleUrl.href);
+  const snapshot = collectDeliveryEventUnitsPre({ events: [dedupeEvent({ text: SHARED_BODY })], now });
+  const aux = 'D4_OPTIONAL_BUDGET_RECOVERY';
+  const args = { policy: units({ modules: { events: { quotas: [DISABLED_EVENT_UNIT] } } }),
+    phase: 'human_full', sourceSnapshot: snapshot, sources: { handoffText: EXACT_LEDGER },
+    parts: [{ kind: 'budget-probe', text: aux }] };
+  const beforeDedupeBudget = SHARED_BODY.length + '\n[检查点 #evt_00000001] '.length + EXACT_LEDGER.length + 1;
+  function verify(compose) {
+    const { text, receipt } = compose({ ...args, budgetChars: beforeDedupeBudget });
+    assert.ok(text.includes(aux), 'released budget must admit the optional segment');
+    assert.ok(measureFrame(text, { jsChars: beforeDedupeBudget }).ok);
+    assert.deepEqual(receipt.dynamicCost, { jsChars: text.length, utf8Bytes: Buffer.byteLength(text) });
+    assert.equal(receipt.budgetOvercommit, false);
+  }
+  assert.throws(() => verify(stale.composeUnitDeliveryPre), /released budget must admit the optional segment/);
+  verify(composeUnitDeliveryPre);
+  t.diagnostic('stale post-dedupe cost CAUGHT, production PASS');
+});
+
+test('D4-2 newly admitted complete ledger sections also cover matching checkpoints', async t => {
+  const goal = 'D4_FIRST_LEDGER_SECTION';
+  const progress = 'D4_SECOND_LEDGER_SECTION';
+  const ev = event(0, 2);
+  ev.checkpoints[0].text = goal;
+  ev.checkpoints[1].text = progress;
+  const snapshot = collectDeliveryEventUnitsPre({ events: [ev], now });
+  const goalBlock = '## 目标\n' + goal;
+  const progressBlock = '## 进度与下一步\n' + progress;
+  const checkpointHeader = '\n[检查点 #evt_00000001] ';
+  const args = { policy: units({ modules: { events: { quotas: [DISABLED_EVENT_UNIT] } } }),
+    phase: 'human_full', sourceSnapshot: snapshot, sources: { handoffText: goalBlock + '\n' + progressBlock },
+    budgetChars: (checkpointHeader + goal + checkpointHeader + progress + '\n' + goalBlock).length };
+  const onePassUrl = await importableCopy(deliveryUrl, 'dedupe-first-owner-only', src => replaceOne(src,
+    '    deduped = true\n  }', '    deduped = true\n    break\n  }'));
+  const onePass = await import(onePassUrl.href);
+  function verify(compose) {
+    const { text, receipt } = compose(args);
+    assert.ok(text.includes(goalBlock) && text.includes(progressBlock), 'the freed space admits the second ledger section');
+    assert.equal(occurrences(text, progress), 1, 'the second full ledger section covers its checkpoint');
+    assert.equal(receipt.selectedCount, 2);
+    assert.ok(measureFrame(text, { jsChars: args.budgetChars }).ok);
+  }
+  assert.throws(() => verify(onePass.composeUnitDeliveryPre), /the second full ledger section covers its checkpoint/);
+  verify(composeUnitDeliveryPre);
+  t.diagnostic('one pass missing a newly admitted owner: CAUGHT, production PASS');
 });
