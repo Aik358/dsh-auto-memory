@@ -924,6 +924,7 @@
       var setCfg = cfgPair[1]
       var policyLegacy = useRef(null)
       var policyNavigation = useState(null)
+      var settingsSearchRoot = useRef(null)
       var busyPair = useState(false)
       var busy = busyPair[0]
       function setBusy(value) {
@@ -1356,7 +1357,18 @@
         setSettingsSection('policy')
         policyNavigation[1]({ page: page })
       }
-      return h('div', { 'data-dam-settings': '', 'data-i5-dirty': dirty ? 'true' : 'false' },
+      return h('div', { 'data-dam-settings': '', ref: settingsSearchRoot, 'data-i5-dirty': dirty ? 'true' : 'false' },
+        policyMount && policyMount.search ? h(policyMount.search, {
+          root: settingsSearchRoot,
+          sections: sectionLabels,
+          policyPages: policyMount.searchPages(),
+          onSelect: function (key, page) {
+            if (page || key === 'policy') { openPolicyPage(page || 'preset'); return }
+            var group = Object.keys(i5GroupsDef).find(function (name) { return i5GroupsDef[name].indexOf(key) >= 0 })
+            if (group) i5Group[1](group)
+            setSettingsSection(key)
+          },
+        }) : null,
         h(Iter5Tabs, { id: i5SettingsId, label: L('设置分组', 'Settings groups'), value: i5Group[0], onChange: i5Group[1], items: [['engine', L('引擎', 'Engine')], ['memory', L('记忆', 'Memory')], ['appearance', L('外观与目录', 'Appearance & paths')], ['behavior', L('行为与维护', 'Behavior & maintenance')]].map(function (r) { return [r[0], r[1], Object.keys(i5Groups.current).some(function (k) { return i5Groups.current[k] === r[0] })] }) }),
         h('nav', { 'data-dam-region': 'settings', 'data-dam-settings-nav': '', 'aria-label': L('设置分组', 'Settings sections') }, Object.keys(sectionLabels).map(function (key) {
           return h('button', { key: key, 'data-dam-slot': 'actions', 'data-dam-btn': '', 'data-active': settingsSection === key ? 'true' : undefined, onClick: function () { jumpToSection(key) } }, sectionLabels[key])

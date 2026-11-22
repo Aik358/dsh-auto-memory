@@ -300,15 +300,7 @@ function Iter5PolicySettings(props) {
       h('strong', null, L('生效范围：', 'Applies to: ')), policyScope[location])
   }
 
-  var pages = [
-    { id: 'preset', label: L('预设与节奏', 'Presets & cadence') },
-    { id: 'modules', label: L('模块', 'Modules') },
-    { id: 'budget', label: L('预算与超额', 'Budget & overflow') },
-    { id: 'triggers', label: L('触发', 'Triggers') },
-    { id: 'diagnostics', label: L('诊断', 'Diagnostics') },
-    { id: 'preview', label: L('预览与回执', 'Preview & receipt') },
-    { id: 'compatibility', label: L('兼容', 'Compatibility') },
-  ]
+  var pages = iter5DeliveryPolicyPagesPre()
 
   function markDirty() {
     setNotice('')
@@ -1016,9 +1008,24 @@ function Iter5PolicySettings(props) {
     dirtyNow && draft ? h('p', { className: 'i5-policy-dirty-indicator', role: 'status' }, L('有未保存的策略修改。', 'Policy changes are unsaved.')) : null)
 }
 
+// Search can link to the tabs even when the editor has not opened.
+function iter5DeliveryPolicyPagesPre() {
+  return [
+    { id: 'preset', label: L('预设与节奏', 'Presets & cadence'), search: L('投递模式 按单位投递 真人完整 精简帧 完整帧间隔', 'delivery mode unit-based delivery slim interval full interval') },
+    { id: 'modules', label: L('模块', 'Modules'), search: L('事件 检查点 规则 白板 账本 配额 模块视图', 'event checkpoint rules plan ledger quota module view') },
+    { id: 'budget', label: L('预算与超额', 'Budget & overflow'), search: L('整帧硬顶 软预算 字节 字符 单元表示', 'frame limit hard ceiling soft budget bytes characters representation') },
+    { id: 'triggers', label: L('触发', 'Triggers'), search: L('水位 挂机补偿 压缩后重投递 首帧', 'water thresholds unattended compensation compaction first frame') },
+    { id: 'diagnostics', label: L('诊断', 'Diagnostics'), search: L('诊断注入 本地诊断日志', 'diagnostic injection local diagnostic log') },
+    { id: 'preview', label: L('预览与回执', 'Preview & receipt'), search: L('预览投递 配额回执', 'preview delivery quota receipt') },
+    { id: 'compatibility', label: L('兼容', 'Compatibility'), search: L('删除策略 回滚 旧键', 'remove policy rollback legacy keys') },
+  ]
+}
+
 function createDeliveryPolicySettingsPre() {
   return {
     component: Iter5PolicySettings,
+    search: typeof Iter5SettingsSearch === 'function' ? Iter5SettingsSearch : null,
+    searchPages: iter5DeliveryPolicyPagesPre,
     onSave: function (policy) {
       return saveConfigPatch({ deliveryPolicy: policy }, {
         onSaved: function (result) {

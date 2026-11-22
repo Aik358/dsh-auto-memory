@@ -1,0 +1,101 @@
+/* The same search control sits above the classic and Iter5 settings groups. */
+.i5-settings-search {
+  grid-column: 1 / -1;
+  align-self: start;
+  flex: none;
+  min-width: 0;
+  margin-block-end: var(--dam-space-s3, 8px);
+}
+.i5-settings-search-line {
+  display: flex;
+  align-items: center;
+  gap: var(--dam-space-s3, 8px);
+  padding-inline: var(--dam-space-s4, 10px);
+  min-height: 38px;
+  border: 1px solid var(--i5-line, var(--dsw-alias-border-l1, color-mix(in srgb, currentColor 22%, transparent)));
+  border-radius: var(--dam-radius-md, 8px);
+  background: var(--i5-face, var(--dsw-alias-bg-layer-1, Canvas));
+}
+.i5-settings-search-line > svg {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  color: var(--i5-secondary, var(--dsw-alias-label-secondary));
+}
+.i5-settings-search-line input[data-dam-input] {
+  flex: 1;
+  width: auto;
+  min-width: 0;
+  min-height: 36px;
+  padding-inline: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.i5-settings-search-line input::placeholder {
+  color: var(--i5-secondary, var(--dsw-alias-label-secondary));
+}
+.i5-settings-search-line input::-webkit-search-cancel-button {
+  display: none;
+}
+.i5-settings-search-line:focus-within {
+  outline: 2px solid var(--i5-blue, var(--dam-accent, Highlight));
+  outline-offset: 1px;
+}
+.i5-settings-search-line input[data-dam-input]:focus {
+  outline: none;
+}
+.i5-settings-search-line button {
+  flex: none;
+}
+.i5-settings-search-line button:focus-visible {
+  outline: 2px solid var(--i5-blue, var(--dam-accent, Highlight));
+  outline-offset: 1px;
+}
+.i5-settings-search-results {
+  min-width: 0;
+  max-height: min(15rem, 28dvh);
+  overflow: auto;
+  overscroll-behavior: contain;
+  margin: var(--dam-space-s2, 6px) 0 0;
+  padding: var(--dam-space-s1, 4px);
+  list-style: none;
+  border: 1px solid var(--i5-line, var(--dsw-alias-border-l1, color-mix(in srgb, currentColor 22%, transparent)));
+  border-radius: var(--dam-radius-md, 8px);
+  background: var(--i5-face, var(--dsw-alias-bg-layer-1, Canvas));
+}
+.i5-settings-search button.i5-settings-search-result {
+  display: grid;
+  gap: 2px;
+  width: 100%;
+  min-height: 38px;
+  padding: var(--dam-space-s2, 6px) var(--dam-space-s3, 8px);
+  border: 0;
+  border-radius: var(--dam-radius-sm2, 7px);
+  background: transparent;
+  box-shadow: none;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+.i5-settings-search-result strong { font-weight: 600; }
+.i5-settings-search-result small,
+.i5-settings-search-status {
+  color: var(--i5-secondary, var(--dsw-alias-label-secondary));
+  font-size: .9em;
+  line-height: 1.45;
+}
+.i5-settings-search-status { margin-block: var(--dam-space-s2, 6px) 0; }
+.i5-settings-search button.i5-settings-search-result:focus-visible {
+  background: var(--i5-soft, var(--dsw-alias-bg-layer-2, color-mix(in srgb, currentColor 8%, transparent)));
+  outline: 2px solid var(--i5-blue, var(--dam-accent, Highlight));
+  outline-offset: -2px;
+}
+@media (hover: hover) and (pointer: fine) {
+  .i5-settings-search button.i5-settings-search-result:hover {
+    background: var(--i5-soft, var(--dsw-alias-bg-layer-2, color-mix(in srgb, currentColor 8%, transparent)));
+  }
+}

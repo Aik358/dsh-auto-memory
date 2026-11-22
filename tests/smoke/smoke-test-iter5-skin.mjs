@@ -697,7 +697,8 @@ assert.equal(createHash('sha256').update(classicLF).digest('hex'), "c8ed05c18565
 */
 // R2YB rebaseline (2026-11-21): refine the document disclosure shadow to the existing host shadow token.
 // The reviewed classic changes remain covered by this complete LF-normalized lock.
-assert.equal(createHash('sha256').update(classicLF).digest('hex'), "db560339a2c44063055f79b6c101ee0045016be4f261ead18911a79ee7cd81fd", 'Reviewed native-reference entry (LF-normalized) baseline')
+// Settings search adds its mount to the classic form. The exact LF lock uses the suite actual.
+assert.equal(createHash('sha256').update(classicLF).digest('hex'), "658a16e33b4acc59e9cfb4a22b19462eaa12e23c041fd8ee491d2fc8d55eb4a2", 'Reviewed native-reference entry (LF-normalized) baseline')
 // ★★R202 重钉（2026-11-11 · classic 刷新真机修复）：classicLF 1,552,810 → **1,552,897**（Δ **+87**），
 //   sha256 8a18539a… → **0c28c65a…**。MemoryTabBody 的 plan 分支补传 {nonce}，修复真实面板点击刷新不重取；维护文档正文覆盖共享 max-height:220px，随面板完整滚动。
 //   值取本套件自身 9-replace 管道 actual；生成区零触碰，build-iter5-skin --check = SYNC-OK。

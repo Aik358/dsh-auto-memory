@@ -708,10 +708,7 @@ ${traceSet(frozen)}
     activeHooks.flushEffects()
     return tree
   }
-  function renderPolicy(tree, instance = 'single') {
-    const mount = nodes(tree, node => Object.hasOwn(node.props, 'data-dam-policy-mountpoint'))[0]
-    const child = mount?.children[0]
-    assert(child && typeof child.type === 'function', 'the real settings face mounts the shared policy component')
+  function renderChild(child, instance) {
     const previous = activeHooks
     const childHooks = hooksFor(editorHooks, instance)
     activeHooks = childHooks
@@ -724,6 +721,12 @@ ${traceSet(frozen)}
       activeHooks = previous
     }
     return expandTabs(content)
+  }
+  function renderPolicy(tree, instance = 'single') {
+    const mount = nodes(tree, node => Object.hasOwn(node.props, 'data-dam-policy-mountpoint'))[0]
+    const child = mount?.children[0]
+    assert(child && typeof child.type === 'function', 'the real settings face mounts the shared policy component')
+    return renderChild(child, instance)
   }
   function expandTabs(node) {
     if (Array.isArray(node)) return node.map(expandTabs)
@@ -739,6 +742,7 @@ ${traceSet(frozen)}
     configReads: () => configReads,
     refresh: exposed.emit,
     renderPolicy,
+    renderChild,
     pauseReads() {
       assert(!delayedReads, 'only one config read batch may be held')
       const held = { ...delay(), count: 0 }
@@ -1690,6 +1694,42 @@ async function openFactoryModePage(host, face) {
   assertDeliveryMode(redraw(), 'eventView', 'eventView', true)
   assertLegacyState(reload, face, false)
   check(true, '24 factory deletion restores the labeled eventView default and unlocks all seven legacy fields')
+}
+
+{
+  function verifySearchMount(tree, face) {
+    const mounts = nodes(tree, node => typeof node.type === 'function' && node.type.name === 'Iter5SettingsSearch')
+    assert.equal(mounts.length, 1, face + ': one factory search mount')
+    const [mount] = mounts
+    assert(mount.props.policyPages.length > 0, face + ': searchPages supplies the policy tabs')
+    return mount
+  }
+
+  const host = legacyHost(clientSource, frozenSource, a1bConfig)
+  for (const face of ['classic', 'v4', 'embedded', 'frozen']) {
+    const tree = await host.mount(face)
+    const mount = verifySearchMount(tree, face)
+    mount.props.root.current = { querySelectorAll: () => [{ id: 'dam-settings-policy', querySelector: () => null }] }
+    const draw = () => host.renderChild(mount, 'search:' + face)
+    const search = () => nodes(draw(), node => node.type === 'input' && node.props.type === 'search')[0]
+    assert.equal(search()?.props['aria-label'], 'Search settings', face + ': accessible search input')
+    search().props.onChange({ target: { value: 'delivery mode' } })
+    assert(buttonFor(draw(), node => textOf(node).includes('Presets & cadence')), face + ': closed policy page is searchable')
+    search().props.onChange({ target: { value: 'missing-setting-000' } })
+    assert(textOf(draw()).includes('No matching settings'), face + ': explicit empty result')
+    buttonFor(draw(), node => textOf(node) === 'Clear').props.onClick()
+    assert.equal(search().props.value, '', face + ': clears the query')
+    assert(!textOf(draw()).includes('No matching settings'), face + ': dismisses the empty state')
+    search().props.onChange({ target: { value: 'delivery mode' } })
+    buttonFor(draw(), node => textOf(node).includes('Presets & cadence')).props.onClick()
+    const policy = nodes(host.render(face), node => Object.hasOwn(node.props, 'data-dam-policy-mountpoint'))[0]
+    assert.equal(policy.children[0].props.navigation.page, 'preset', face + ': result opens its policy tab')
+  }
+  const noPages = legacyHost(replaceOnce(clientSource, 'searchPages: iter5DeliveryPolicyPagesPre,', 'searchPages: () => [],'),
+    frozenSource, a1bConfig)
+  const mutatedTree = await noPages.mount('v4')
+  assert.throws(() => verifySearchMount(mutatedTree, 'v4'), /searchPages supplies the policy tabs/)
+  check(true, '25 factory renders accessible settings search, indexes unopened policy tabs, and supports no-hit and clear on every face; empty searchPages is caught')
 }
 
 console.log('Delivery settings UI guards: ' + pass + ' PASS / ' + fail + ' FAIL')
