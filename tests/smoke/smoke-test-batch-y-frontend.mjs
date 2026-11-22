@@ -136,7 +136,14 @@ ok(cnt(client, 'fWaterWindowHint: "0 表示自动检测模型窗口') === 1, 'G4
 ok(cnt(client, '"fWaterWindowHint": "0 はモデルのウィンドウを自動検出します') === 1, 'G5 ja fWaterWindowHint 修正')
 ok(cnt(client, 'fAutoMarginHint: \'auto 档下水位判定的安全余量系数。范围 0.3-1，默认 0.9。\'') === 1, 'G6 zh fAutoMarginHint 修正')
 ok(cnt(client, 'fAutoMarginHint: \'Safety margin factor for the auto water-level mode. 0.3-1, default 0.9.\'') === 1, 'G7 en fAutoMarginHint 修正')
-ok(client.includes("'两次主动回忆的间隔（轮）', 'Minimum recall interval (turns)'"), 'G8 settings-copy fJsCooldown 分钟→轮')
+/* ★G8（2026-11-22 重钉）：产品**有意**把 fJsCooldown 的语义从「轮」改为「分钟」
+   （skins/iter5/settings-copy.js:19，文案里已明确标注「配置键名中的 Rounds 是历史遗留」），
+   并新增投递冷却三键。旧断言钉「两次主动回忆的间隔（轮）」，属**判据过期**而非产品缺陷
+   （M6 冷却语义已裁定：jsDecideCooldownRounds 运行时按分钟，只限 JS 再次判定、不控实际投递）
+   ⇒ 改钉「分钟」新文案，并保留「新增投递冷却键确实进入生成产物」一条，使本锁仍有区分力。 */
+ok(cnt(client, "fJsCooldown: ['唤起判定冷却（分钟）', 'Recall decision cooldown (min)'") === 1, 'G8 settings-copy fJsCooldown 钉「分钟」新语义（旧「分钟→轮」判据作废）')
+ok(cnt(client, "'两次主动回忆的间隔（轮）', 'Minimum recall interval (turns)'") === 0, 'G8b 负路径：旧「分钟→轮」文案已从产物消失（回退旧文案必红）')
+ok(cnt(client, "fActivationDeliveryCooldown: ['启用投递后冷却', 'Cooldown after delivery'") === 1, 'G8c 新增投递冷却键 fActivationDeliveryCooldown 已进入生成产物')
 
 /* ── H. 保存回执与固守（#213 claim7 合规佐证） ── */
 ok(cnt(client, "setMsg(t('saved') + (d.migrated ? ' · ' + d.migrated : '') + (d.warning ? ' · ' + d.warning : ''))") === 2, 'H1 save 显示迁移/警告回执 ×2')
