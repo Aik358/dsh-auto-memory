@@ -33,7 +33,7 @@ const extract = (marker) => {
 const methods = [
   'async searchSessionHistory(', 'lexicalSessionScanFallback(', 'async applyNoteStatusPre(',
   'async recall(', 'async readTextSafe(', 'async writeFull(', '_degradeViewSnapshot(',
-  '_quotaViewSnapshot(', '_persistObservabilityPre(', 'async debugInfo(',
+  '_quotaViewSnapshot(', '_persistObservabilityPre(', 'globalPaths(', 'async debugInfo(',
 ].map(extract).join('\n')
 const constants = ['OBSERVER_SCHEMA_VERSION', 'ENVELOPE_RING_LIMIT', 'SEGMENT_RING_LIMIT', 'SEGMENT_RING_CHAR_BUDGET', 'SEED_REPLAY_MAX_EVENTS']
   .map((name) => { const found = source.match(new RegExp('const ' + name + ' = [^\\n]+')); assert.ok(found); return found[0] }).join('\n')
@@ -53,6 +53,7 @@ import { memoryWriteError } from ${JSON.stringify(url('memory-writer.js'))}
 import { persistDegradeLedgerPre, deriveQuotaVerdictPre } from ${JSON.stringify(url('degrade.js'))}
 import { decodeZstdFramesHead as realDecode } from ${JSON.stringify(url('subagent-gc.js'))}
 import { recordDiagnosticErrorPre } from ${JSON.stringify(pathToFileURL(path.join(ownRoot, 'lib/diagnostic-error.js')).href)}
+import { dirSize } from ${JSON.stringify(url('session-archive.js'))}
 import { readDeliveryMode } from ${JSON.stringify(url('injection/policy-runtime.js'))}
 ${constants}
 const home = ${JSON.stringify(home)}
@@ -64,7 +65,7 @@ const diag = () => {}
 const DATE_RE = /^\\d{4}-\\d{2}-\\d{2}$/
 export function make(overrides) {
  const io = Object.assign({}, nativeFs, nativePromises, overrides)
- const { readdirSync, readFileSync, statSync, existsSync, mkdirSync, writeFileSync, readFile, readdir, stat, mkdir, writeFile } = io
+ const { readdirSync, readFileSync, statSync, existsSync, mkdirSync, writeFileSync, readFile, readdir, stat, lstat, mkdir, writeFile } = io
  const zstdDec = 'zstdDec' in overrides ? overrides.zstdDec : true
  const decodeZstdFramesHead = overrides.decodeZstdFramesHead || realDecode
  const instance = new (class ProductionHarness {
