@@ -71,6 +71,21 @@
 .i5-policy-field-control > :is(select, input:not([type=checkbox])) { width: min(12rem, 100%); }
 .i5-policy-settings :is(input, select, textarea, button) { min-width: 0; max-width: 100%; font: inherit; }
 .i5-policy-settings button:not([role=tab]) { white-space: normal; }
+.i5-policy-mode-choices { display: grid; gap: 6px; }
+.i5-policy-mode-choice {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--i5-line);
+  border-radius: 6px;
+  cursor: pointer;
+}
+.i5-policy-mode-choice:has(:checked) { background: var(--i5-soft); }
+.i5-policy-mode-choice:focus-within { outline: 2px solid var(--i5-blue); outline-offset: 2px; }
+.i5-policy-mode-choice input { margin: .28em 0 0; }
+.i5-policy-mode-choice .i5-policy-hint { display: block; margin-top: 2px; }
 .i5-policy-hint, .i5-policy-unit-hint, .i5-policy-readonly, .i5-policy-redaction {
   margin: 4px 0 0;
   color: var(--i5-secondary);

@@ -1,4 +1,13 @@
     // Plain-language presentation only. Configuration keys and handlers stay upstream-owned.
+    function iter5DeliveryModeCopyPre(mode) {
+      var copy = {
+        legacy: [L('旧版投递', 'Legacy'), L('恢复旧事件视图和按字符组装，用于兼容回滚。', 'Restore the old event view and character-based assembly for compatibility.')],
+        eventView: [L('新版事件视图（推荐）', 'Event view (recommended)'), L('使用新版事件卡片和目录，沿用按字符组装。', 'Use the newer event cards and catalog with character-based assembly.')],
+        units: [L('按单位投递', 'Unit-based delivery'), L('按检查点等单位组装正文，模块开关、视图、表示和配额决定实际投递。', 'Assemble content by units such as checkpoints. Module switches, views, representations and quotas control what is delivered.')],
+      }
+      return copy[mode]
+    }
+
     function iter5SettingCopy(label) {
       var rows = {
         fEpisodicMin: ['至少几段对话才形成经历记录', 'Minimum conversation segments per episode', '太少容易留下琐碎内容，太多可能跳过短对话。通常无需调整。', 'Too few can retain trivial content; too many can skip short conversations. Usually unchanged.'],

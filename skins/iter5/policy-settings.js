@@ -1,3 +1,5 @@
+var ITER5_DELIVERY_MODES = ['legacy', 'eventView', 'units']
+
 function iter5PolicyClonePre(value) {
   if (value === null || value === undefined) return value
   try { return JSON.parse(JSON.stringify(value)) } catch (e) { return null }
@@ -271,15 +273,21 @@ function Iter5PolicySettings(props) {
   var producerIds = modulesReady ? Object.keys(capabilityModules).filter(function (id) { return capabilityModules[id] && capabilityModules[id].locked !== true && id !== 'diagnostics' && id !== 'logs' }) : []
 
   var savedPolicy = !!(snapshot && snapshot.persistedPolicy)
+  var savedMode = savedPolicy && snapshot.persistedPolicy.deliveryMode
+  var effectiveMode = ITER5_DELIVERY_MODES.indexOf(savedMode) >= 0 ? savedMode : 'eventView'
+  var unitsActive = effectiveMode === 'units'
   var activePolicyText = L('已保存的策略控制已接入项。', 'The saved policy controls connected settings.')
   var policyScope = {
     header: !snapshot ? L('未读取到策略状态。', 'Policy status is unavailable.')
       : savedPolicy ? activePolicyText : L('尚未保存策略；真实投递仍使用原设置。', 'No policy has been saved; live delivery uses the original settings.'),
-    preset: L('已接入：动态投递总开关、精简与完整帧间隔。内容预设和特殊档映射仅供预览。',
+    preset: unitsActive ? L('已接入：投递模式、动态投递总开关和精简与完整帧间隔。内容预设提供可编辑的策略初值。', 'Connected: delivery mode, dynamic delivery switch and slim/full intervals. Content presets provide editable policy defaults.')
+      : L('已接入：动态投递总开关、精简与完整帧间隔。内容预设和特殊档映射仅供预览。',
       'Connected: dynamic delivery switch and slim/full intervals. Content presets and special-tier mappings are preview only.'),
-    modules: L('仅供预览：模块开关、视图、单元表示和数量配额尚未接入真实投递。',
+    modules: unitsActive ? L('按单位投递已生效。保存后的模块开关、视图、单元表示和数量配额应用于实际投递。', 'Unit-based delivery is active. Saved module switches, views, representations and quotas apply to live delivery.')
+      : L('仅供预览：模块开关、视图、单元表示和数量配额尚未接入真实投递。',
       'Preview only: module switches, views, unit representation and count quotas do not control live delivery.'),
-    budget: L('已接入：动态投递的整帧硬顶与软预算。模块级预算和单元表示仅供预览。',
+    budget: unitsActive ? L('按单位投递使用整帧预算和模块级预算，并按选定的方式提供单元。', 'Unit-based delivery uses both whole-frame and module budgets and applies the selected representations.')
+      : L('已接入：动态投递的整帧硬顶与软预算。模块级预算和单元表示仅供预览。',
       'Connected: whole-frame hard ceilings and soft budgets for dynamic delivery. Module budgets and unit representation are preview only.'),
     triggers: L('已接入：水位、分层节奏和挂机补偿。真人、压缩、首帧及交接选项仅供预览。',
       'Connected: water thresholds, tiered cadence and unattended compensation. Human, compaction, first-frame and handoff options are preview only.'),
@@ -369,6 +377,7 @@ function Iter5PolicySettings(props) {
   function selectPreset(id) {
     if (!presets || !presets[id]) return
     var next = iter5PolicyClonePre(presets[id])
+    if (draft && draft.deliveryMode !== undefined) next.deliveryMode = draft.deliveryMode
     var currentCompatibility = draft && draft.compatibility ? iter5PolicyClonePre(draft.compatibility) : null
     if (currentCompatibility) next.compatibility = currentCompatibility
     next.presetId = id
@@ -384,6 +393,7 @@ function Iter5PolicySettings(props) {
 
   function validateDraft(candidate) {
     if (!candidate || candidate.schemaVersion !== 2) return L('策略数据版本无效。', 'Invalid policy schema version.')
+    if (candidate.deliveryMode !== undefined && ITER5_DELIVERY_MODES.indexOf(candidate.deliveryMode) < 0) return L('投递模式无效。', 'Invalid delivery mode.')
     if (!presetsReady || !capabilityModules) return L('能力清单不可用，暂时不能保存。', 'Capabilities are unavailable; saving is disabled.')
     if (!presets[candidate.presetId]) return L('所选预设不在服务器能力清单中。', 'Selected preset is not in server capabilities.')
     if (!candidate.representation || !Array.isArray(candidate.representation.fallback)) return L('请检查表示回退列表。', 'Check the representation fallback list.')
@@ -457,6 +467,12 @@ function Iter5PolicySettings(props) {
     return ''
   }
 
+  function modeSaveText(mode) {
+    return mode === 'units'
+      ? L('模块、表示与数量配额会应用到实际投递。', 'Modules, representation and count quotas apply to live delivery.')
+      : L('模块、表示与数量配额仍仅供预览。', 'Modules, representation and count quotas remain preview only.')
+  }
+
   function saveDraft(value) {
     if (busy) return Promise.resolve(false)
     if (typeof props.onSave !== 'function') {
@@ -465,6 +481,7 @@ function Iter5PolicySettings(props) {
     }
     var candidate = value === null ? null : iter5PolicyClonePre(value)
     if (candidate) {
+      if (candidate.deliveryMode === undefined) candidate.deliveryMode = 'eventView'
       candidate.compatibility = candidate.compatibility || { source: 'policy', legacyKeys: {}, migrationCodes: [] }
       candidate.compatibility.source = 'policy'
       var message = validateDraft(candidate)
@@ -493,7 +510,7 @@ function Iter5PolicySettings(props) {
       setBusy(false)
       setNotice(value === null
         ? L('策略键已移除；读取将回到旧键适配。', 'Policy key removed; reads return to the legacy adapter.')
-        : L('策略已保存。', 'Policy saved.') + ' ' + activePolicyText + ' ' + L('模块、表示与数量配额仍仅供预览。', 'Modules, representation and count quotas remain preview only.'))
+        : L('策略已保存。', 'Policy saved.') + ' ' + activePolicyText + ' ' + modeSaveText(candidate.deliveryMode))
       if (typeof props.snapshot !== 'object' || !props.snapshot) readConfig()
       return true
     }).catch(function (failure) {
@@ -575,6 +592,31 @@ function Iter5PolicySettings(props) {
     ]
   }
 
+  function renderDeliveryMode() {
+    var headingId = inputId('delivery-mode-title')
+    var statusId = inputId('delivery-mode-status')
+    var selected = draft.deliveryMode === undefined ? 'eventView' : draft.deliveryMode
+    return h('div', { className: 'i5-policy-field', 'data-dam-settings-row': '', 'data-wide': 'true' },
+      h('div', { className: 'i5-setting-copy' },
+        h('strong', { id: headingId }, L('投递模式', 'Delivery mode')),
+        h('p', { id: statusId, role: 'status', className: 'i5-policy-hint', 'data-dam-effective-delivery-mode': effectiveMode },
+          L('当前生效', 'Effective mode'), ' · ', iter5DeliveryModeCopyPre(effectiveMode)[0],
+          savedPolicy ? '' : ' · ' + L('默认（未保存策略）', 'Default (no saved policy)'))),
+      h('div', { className: 'i5-policy-mode-choices', role: 'radiogroup', 'aria-labelledby': headingId,
+        'aria-describedby': statusId, 'data-dam-delivery-mode': '' },
+        ITER5_DELIVERY_MODES.map(function (mode) {
+          var copy = iter5DeliveryModeCopyPre(mode)
+          var labelId = inputId('delivery-mode-' + mode + '-label')
+          var descriptionId = inputId('delivery-mode-' + mode + '-description')
+          return h('label', { className: 'i5-policy-mode-choice', key: mode },
+            h('input', { type: 'radio', name: inputId('delivery-mode'), value: mode,
+              checked: selected === mode, disabled: busy || loading || !modulesReady || !presetsReady,
+              'aria-labelledby': labelId, 'aria-describedby': descriptionId, onChange: function () { setTop('deliveryMode', mode) } }),
+            h('span', null, h('strong', { id: labelId }, copy[0]),
+              h('span', { id: descriptionId, className: 'i5-policy-hint' }, copy[1])))
+        })))
+  }
+
   function renderPresetPage() {
     if (!draft) return null
     var presetOptions = presetsReady ? Object.keys(presets).map(function (id) { return { value: id, label: iter5PolicyHumanizePre(id) } }) : []
@@ -583,8 +625,10 @@ function Iter5PolicySettings(props) {
     ]
     return h('div', { className: 'i5-policy-page-content' },
       h('section', { className: 'i5-policy-section' }, h('h3', null, L('预设与节奏', 'Presets & cadence')),
+        renderDeliveryMode(),
         field(L('内容预设', 'Content preset'), selectControl('preset', draft.presetId, presetOptions, function (event) { selectPreset(event.target.value) }, { disabled: !presetsReady }),
-          L('内容差异仅供预览；选择预设会重置编辑项。', 'Content differences are preview only. Choosing a preset resets the editor values.'), false),
+          unitsActive ? L('选择预设将重置内容设置，并保留投递模式。', 'Choosing a preset resets content settings and keeps the delivery mode.')
+            : L('内容差异仅供预览；选择预设会重置编辑项。', 'Content differences are preview only. Choosing a preset resets the editor values.'), false),
         field(L('策略总开关', 'Policy master switch'), checkboxControl('enabled', draft.enabled, function (value) { setTop('enabled', value) }),
           L('保存为关闭后，停止动态投递；静态内容不受影响。', 'Saving this as off stops dynamic delivery. Static content is unaffected.'), false),
         field(L('精简帧间隔', 'Slim interval'), numberControl('slimEveryRounds', draft.triggers.slimEveryRounds, function (raw) {
@@ -780,9 +824,11 @@ function Iter5PolicySettings(props) {
           ['full', 'summary', 'preview', 'pointer'], function (event) {
             changePolicy(function (next) { next.representation.preferred = event.target.value })
           }, { 'data-policy-representation-control': 'preferred', disabled: draft.presetId === 'human_full' }),
-           L('仅供预览；表示与模块视图分别设置。', 'Preview only; representation is set separately from module view.'), false),
+           unitsActive ? L('表示与模块视图分别设置。', 'Representation is set separately from module view.')
+             : L('仅供预览；表示与模块视图分别设置。', 'Preview only; representation is set separately from module view.'), false),
         field(L('超额回退顺序', 'Overflow fallback order'), renderRepresentationFallbacks(),
-           L('仅供预览；末项可设为整单元省略。', 'Preview only; whole-unit omission may be last.'), true)))
+           unitsActive ? L('末项可设为省略整个单元。', 'The last fallback can omit the whole unit.')
+             : L('仅供预览；末项可设为整单元省略。', 'Preview only; whole-unit omission may be last.'), true)))
   }
 
   function renderTriggersPage() {

@@ -13,7 +13,9 @@
 | 前端 factory 导出 | **14** | 真实执行 factory；P1 未改前端 |
 | 用户可关分区 / must | **13 / 2** | 保留既有清单；不能与 11 内容生产者 + 2 锁定来源硬对齐 |
 
-P1 范围是 Policy v2 契约、只读预览、默认关闭的脱敏诊断 provider、15/40 双节奏及独立迁移、水位旧默认残留迁移和 run_full 账本三段视图。预览必须标记 `partial:true`：完整自然单位引擎尚未接管，不能把字符预算或预览标签当成检查点配额已执行。
+P1 范围是 Policy v2 契约、只读预览、默认关闭的脱敏诊断 provider、15/40 双节奏及独立迁移、水位旧默认残留迁移和 run_full 账本三段视图。只读预览标记 `partial:true`，生产帧的检查点配额由 `units` 模式执行。
+
+2026-11-23 投递策略在「预设与节奏」提供 `legacy`、`eventView`（默认）和 `units` 三态入口。模式与其他策略字段一同保存。删除策略后，被策略接管的设置恢复由旧键控制，投递模式回到默认 `eventView`。
 
 唤回冷却由独立门控制：`jsDecideCooldownRounds` 的运行单位实际为分钟，约束 JS emit 后的再次判定；`activationDeliveryCooldownMinutes` 默认 `null`（关闭），开启后默认 3，可选整数 1–5，并在 M6 确认 Reference Tail 已进入模型消息后起算；`ActivationRequestPre.ttlSteps` 按 runtime 步数决定 packet 过期。`injectionCooldownSteps`、`packetTtlSteps`、`maxPacketItems`、`maxPacketChars` 是无生产读取方的历史键，不得描述成实际生效的投递控制。
 

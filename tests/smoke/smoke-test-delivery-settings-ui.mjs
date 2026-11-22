@@ -13,6 +13,7 @@ import { PROMPT_SECTION_KEYS_PRE_V1, PROMPT_SECTION_MUST_PRE_V1 } from '../../li
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
 const read = name => readFileSync(path.join(root, name), 'utf8').replace(/\r\n/g, '\n')
 const policySource = read('skins/iter5/policy-settings.js')
+const settingsCopySource = read('skins/iter5/settings-copy.js')
 const clientSource = read('lib/client.js')
 const indexSource = read('lib/index.js')
 const frozenSource = read('skins/legacy/iter5-325.js.frozen')
@@ -127,7 +128,7 @@ function componentFrom(source, overrides = {}) {
   const names = Object.keys(env)
   const values = Object.values(env)
   assert(nativePolicyControlSource, 'native settings tabs and icons must be extractable')
-  const Runtime = new Function(...names, nativePolicyControlSource + '\n' + source
+  const Runtime = new Function(...names, nativePolicyControlSource + '\n' + settingsCopySource + '\n' + source
     + '\nreturn { component: Iter5PolicySettings, createAdapter: createDeliveryPolicySettingsPre, tabs: Iter5Tabs, icon: Iter5Icon };')(...values)
   return {
     createAdapter: Runtime.createAdapter,
@@ -665,6 +666,7 @@ ${traceSet(frozen)}
   let config = { locale: 'en', ...initialConfig }
   exposed.setLocale(config.locale)
   const posts = []
+  let configReads = 0
   const managedKeys = Array.from(exposed.managedKeys)
   const envelope = () => ({ config: structuredClone(config), deliveryPolicy: legacyToPolicy(config),
     deliveryPolicyCapabilities: { schemaVersion: 2, presets: PRESETS, modules: MODULE_REGISTRY, previewPartial: true },
@@ -682,6 +684,7 @@ ${traceSet(frozen)}
   }
   exposed.transport(async url => {
     if (url !== exposed.config) return {}
+    configReads++
     const snapshot = envelope()
     if (delayedReads) {
       const held = delayedReads
@@ -733,6 +736,7 @@ ${traceSet(frozen)}
     legacySetKeys,
     managedKeys,
     config: () => structuredClone(config),
+    configReads: () => configReads,
     refresh: exposed.emit,
     renderPolicy,
     pauseReads() {
@@ -972,7 +976,7 @@ function editableControl(tree, key) {
     assert(!buttonFor(tree, node => textOf(node).trim() === fixture.remove), 'successful rollback hides the remove action')
   }
   const noHeader = replaceOnce(policySource, "renderPolicyScope('header')", 'null')
-  const noSaveScope = replaceOnce(policySource, " + ' ' + activePolicyText + ' ' + L('模块、表示与数量配额仍仅供预览。', 'Modules, representation and count quotas remain preview only.')", '')
+  const noSaveScope = replaceOnce(policySource, " + ' ' + activePolicyText + ' ' + modeSaveText(candidate.deliveryMode)", '')
   const savedSnapshot = /setSnapshot\(function \(current\) \{ return current && Object\.assign\(\{\}, current, \{ persistedPolicy: (\w+) \}\) \}\)/.exec(policySource)
   assert(savedSnapshot, 'saved strategy publishes the confirmed stored state')
   const noTransition = replaceOnce(policySource, savedSnapshot[0], 'void ' + savedSnapshot[1])
@@ -1558,6 +1562,134 @@ async function exerciseOtherEntryRollback(host) {
     /Classic stale draft must not resubmit the deleted policy/)
   await exerciseOtherEntryRollback(legacyHost(clientSource, frozenSource, savedConfig))
   check(true, '20 sibling settings apply saved and deleted policy before delayed GETs finish, preserving only the unowned draft. Missing publish and rollback resurrection mutants are detected')
+}
+
+function deliveryModeGroup(tree) {
+  const groups = visibleNodes(tree, node => Object.hasOwn(node.props, 'data-dam-delivery-mode'))
+  assert.equal(groups.length, 1, 'the shipped Presets & cadence page has one delivery mode group')
+  return groups[0]
+}
+
+function deliveryModeOptions(tree) {
+  const options = visibleNodes(deliveryModeGroup(tree), node => node.type === 'input' && node.props.type === 'radio')
+  assert.deepEqual(options.map(node => node.props.value), ['legacy', 'eventView', 'units'])
+  assert(options[0].props.name && options.every(node => node.props.name === options[0].props.name),
+    'three delivery modes share one native radio group')
+  assert(options.every(node => typeof node.props.onChange === 'function'), 'all delivery modes can be picked')
+  assert(options.every(node => nodes(tree, hint => hint.props.id
+    && hint.props.id === node.props['aria-describedby'] && textOf(hint).trim()).length === 1),
+  'every delivery mode has an accessible explanation')
+  return options
+}
+
+function assertDeliveryMode(tree, selected, effective, isDefault = false) {
+  assert.deepEqual(deliveryModeOptions(tree).filter(node => node.props.checked).map(node => node.props.value),
+    [selected], 'exactly the requested draft mode is highlighted')
+  const statuses = visibleNodes(tree, node => Object.hasOwn(node.props, 'data-dam-effective-delivery-mode'))
+  assert.equal(statuses.length, 1, 'current effective mode has its own status')
+  assert.equal(statuses[0].props['data-dam-effective-delivery-mode'], effective,
+    'current effective mode follows saved data while a draft is pending')
+  assert.equal(textOf(statuses[0]).includes('Default (no saved policy)'), isDefault, 'unconfigured default is labeled')
+}
+
+function pickDeliveryMode(tree, mode) {
+  const option = deliveryModeOptions(tree).find(node => node.props.value === mode)
+  assert(option && option.props.disabled !== true, 'the selected delivery mode is enabled')
+  option.props.onChange({ target: { value: mode, checked: true }, currentTarget: { value: mode, checked: true } })
+}
+
+async function openFactoryModePage(host, face) {
+  await host.mount(face)
+  host.selectGroup(face, host.render(face), 'behavior')
+  const draw = () => host.renderPolicy(host.render(face))
+  draw()
+  await flushUi()
+  const toggle = policyToggle(draw())
+  assert(toggle && toggle.props['aria-expanded'] === false, 'open the real delivery policy disclosure')
+  toggle.props.onClick()
+  const preset = pageTab(draw(), 'Presets & cadence')
+  assert(preset, 'delivery policy has a Presets & cadence tab')
+  preset.props.onClick()
+  return draw
+}
+
+{
+  const marker = "'data-dam-delivery-mode':"
+  check(count(generatedV4(clientSource), marker) === 1 && count(clientSource, marker) === 1,
+    '21 generated client contains exactly one delivery mode selector anchor')
+
+  const face = 'v4'
+  const host = legacyHost(clientSource, frozenSource, a1bConfig)
+  const draw = await openFactoryModePage(host, face)
+  assertDeliveryMode(draw(), 'eventView', 'eventView', true)
+  assertLegacyState(host, face, false)
+  const group = deliveryModeGroup(draw())
+  for (const copy of ['Legacy', 'Event view (recommended)', 'Unit-based delivery',
+    'old event view and character-based assembly', 'newer event cards and catalog', 'quotas control what is delivered']) {
+    assert(textOf(group).includes(copy), 'rendered English mode label or explanation: ' + copy)
+  }
+  const chinese = await boot({ snapshot }, policySource, { locale: 'zh', L: zh => zh })
+  const chineseGroup = deliveryModeGroup(openEditor(chinese))
+  for (const copy of ['旧版投递', '新版事件视图（推荐）', '按单位投递', '旧事件视图和按字符组装',
+    '新版事件卡片和目录', '配额决定实际投递']) {
+    assert(textOf(chineseGroup).includes(copy), 'rendered Chinese mode label or explanation: ' + copy)
+  }
+  check(true, '21b all three modes render distinct explanations in English and Chinese, with accessible descriptions')
+
+  pickDeliveryMode(draw(), 'units')
+  assert.equal(host.posts.length, 0, 'selecting a mode does not write config immediately')
+  assertDeliveryMode(draw(), 'units', 'eventView', true)
+  const preset = policyInput(draw(), 'preset', 'select')
+  preset.props.onChange({ target: { value: 'human_slim' } })
+  assertDeliveryMode(draw(), 'units', 'eventView', true)
+  policyInput(draw(), 'fullGapRounds').props.onChange({ target: { value: '46' } })
+
+  const beforeUnits = host.configReads()
+  const pending = host.pauseWrite()
+  const saving = buttonFor(draw(), node => textOf(node).trim() === 'Save policy').props.onClick()
+  await flushUi()
+  assert.equal(host.posts.length, 1, 'one save persists the mode and cadence together')
+  assert.deepEqual(Object.keys(host.posts[0]), ['deliveryPolicy'])
+  assert.equal(host.posts[0].deliveryPolicy.deliveryMode, 'units')
+  assert.equal(host.posts[0].deliveryPolicy.triggers.fullGapRounds, 46)
+  assertDeliveryMode(draw(), 'units', 'eventView', true)
+  pending.release()
+  assert.equal(await saving, true)
+  await flushUi()
+  assert(host.configReads() > beforeUnits, 'the factory reads config back after saving')
+  assert.equal(host.config().deliveryPolicy.deliveryMode, 'units')
+  assertDeliveryMode(draw(), 'units', 'units')
+  assertLegacyState(host, face, true)
+  pageTab(draw(), 'Modules').props.onClick()
+  assert(textOf(draw()).includes('Saved module switches, views, representations and quotas apply to live delivery.'))
+  pageTab(draw(), 'Presets & cadence').props.onClick()
+  check(true, '22 factory renders three clickable radios and confirms units and cadence in one save and config readback')
+
+  const reload = legacyHost(clientSource, frozenSource, host.config())
+  const redraw = await openFactoryModePage(reload, face)
+  assertDeliveryMode(redraw(), 'units', 'units')
+  for (const mode of ['legacy', 'eventView']) {
+    pickDeliveryMode(redraw(), mode)
+    assert.equal(await buttonFor(redraw(), node => textOf(node).trim() === 'Save policy').props.onClick(), true)
+    await flushUi()
+    assert.equal(reload.posts.at(-1).deliveryPolicy.deliveryMode, mode)
+    assert.equal(reload.config().deliveryPolicy.deliveryMode, mode)
+    assertDeliveryMode(redraw(), mode, mode)
+    assertLegacyState(reload, face, true)
+  }
+  check(true, '23 factory reload restores units and supports saving legacy and eventView with frozen legacy fields')
+
+  pageTab(redraw(), 'Compatibility').props.onClick()
+  const remove = buttonFor(redraw(), node => textOf(node).trim() === 'Remove policy and roll back to legacy adapter')
+  assert(remove, 'the actual policy editor provides a remove action')
+  assert.equal(await remove.props.onClick(), true)
+  assert.deepEqual(reload.posts.at(-1), { deliveryPolicy: null })
+  await flushUi()
+  assert(!Object.hasOwn(reload.config(), 'deliveryPolicy'))
+  pageTab(redraw(), 'Presets & cadence').props.onClick()
+  assertDeliveryMode(redraw(), 'eventView', 'eventView', true)
+  assertLegacyState(reload, face, false)
+  check(true, '24 factory deletion restores the labeled eventView default and unlocks all seven legacy fields')
 }
 
 console.log('Delivery settings UI guards: ' + pass + ' PASS / ' + fail + ' FAIL')

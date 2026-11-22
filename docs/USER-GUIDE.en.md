@@ -25,6 +25,7 @@
    - [4.3 Appearance](#43-appearance)
    - [4.4 Storage](#44-storage)
    - [4.5 Memory window](#45-memory-window)
+     - [Delivery mode](#delivery-mode)
    - [4.6 Automation](#46-automation)
    - [4.7 Context management](#47-context-management)
    - [4.8 Maintenance](#48-maintenance)
@@ -154,6 +155,18 @@ The static injection face: the `<memory_system>` block composed into every turn.
 | Snapshot min gap rounds (`snapshotMinGapRounds`) | 5 | Re-inject a changed snapshot at most every N rounds, to keep history from bloating; 0 = try every turn (content-change rules still apply) |
 | Re-inject after compaction (`snapshotReinjectOnCompact`) | on | Force an immediate re-injection after context compaction/truncation, rebuilding memory background |
 | Custom injection prompts (`promptLayerOverrides`) | empty | Layer-by-layer prompt overrides (niche), supports `{date}` `{ws}` `{budget}` `{n}`; one-click restore defaults |
+
+#### Delivery mode
+
+Under **Settings → Delivery policy**, click **Configure policy** and open **Presets & cadence**. Choose a mode under **Delivery mode**, then click **Save policy**. **Effective mode** shows the mode in use. If no policy has been saved, it shows **Event view (recommended)** with **Default (no saved policy)**.
+
+| Mode | What gets delivered |
+|---|---|
+| Legacy (`legacy`) | Restores the old event renderer and character-based assembly for compatibility. |
+| Event view (recommended) (`eventView`) | Uses the new event cards, catalog and summaries with character-based assembly. This is the recommended default. |
+| Unit-based delivery (`units`) | Assembles content by units such as event checkpoints. Choose this when you want module switches, views, representations and quotas to control what is delivered. |
+
+To return from unit-based delivery to the default assembly, select **Event view (recommended)** and save. Select **Legacy** and save if you also need the old event renderer. Both choices keep the saved policy. To remove the entire saved policy and return control to the original settings, use **Compatibility → Remove policy and roll back to legacy adapter**. The delivery mode then returns to the default **Event view (recommended)**.
 
 ### 4.6 Automation
 
