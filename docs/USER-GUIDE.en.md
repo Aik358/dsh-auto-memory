@@ -25,6 +25,7 @@
    - [4.3 Appearance](#43-appearance)
    - [4.4 Storage](#44-storage)
    - [4.5 Memory window](#45-memory-window)
+     - [Delivery mode](#delivery-mode)
    - [4.6 Automation](#46-automation)
    - [4.7 Context management](#47-context-management)
    - [4.8 Maintenance](#48-maintenance)
@@ -96,7 +97,8 @@ The control room of proactive recall. On, the plugin watches context, runs seman
 |---|---|---|
 | Enable engine (`associativeMemoryEnabled`) | off | Master switch. Off = the whole engine idles — no retrieval, no decision, no injection, no recall records; stored memories are kept. Turn off if you're token-shy or want zero surprises |
 | Emit mode (`activationEmitMode`) | `shadow` | **shadow** = record decisions only, inject nothing (calibration; safest); **canary-explicit** = inject only on confident explicit recall (recommended daily); **active** = inject on every decision. JS/Python share one source. The current emit mode shows beside it |
-| Recall cooldown (`jsDecideCooldownRounds`) | 1 | No re-decision for N rounds after an injection, to save tokens; **0 = no cooldown** (legal) |
+| JS recall decision cooldown (`jsDecideCooldownRounds`) | 1 min | After a JS `emit`, skip another JS decision for N minutes. `Rounds` is a legacy key name; runtime uses minutes. **0 disables this decision gate**; it does not control actual delivery |
+| Cooldown after actual delivery (`activationDeliveryCooldownMinutes`) | Off (`null`) | Off by default. When enabled, starts at 3 minutes; choose any whole minute from 1–5. Starts only after the Reference Tail is confirmed in the model message. `0` is rejected. This is independent of the JS decision cooldown |
 | Margin threshold (`jsDecideDeltaExp`) | 0.01 | Gap between top-1 and top-2 candidates must exceed this to inject (e5's cosine distribution is tight: 0.01; bge-m3 calibrates to 0.03). Smaller = more eager, larger = more conservative; 0 = no filter |
 | Candidate scheme (`jsDecideCandidateScheme`) | `balanced` | balanced = 3 refs × 40 chars; dense = 6 × 20 (more candidates, wider association); custom = your own count (1–8) and length |
 | Injected excerpt length (`jsDecideExcerptChars`) | 40 | Reference-line content cap. 40 = keyword-level (cheap; the model fetches full text via `memory_read`); range 20–480 |
@@ -104,6 +106,8 @@ The control room of proactive recall. On, the plugin watches context, runs seman
 | CoT observer (`reasoningObserverEnabled`) | on | Include the model's chain of thought in live observation `(restart)` — closed-source models' summarizing CoT counts too; an important signal for "remembering while doing" |
 | Branch-session observation (`contextBridgeObserveChildSessions`) | on | Sessions that continue across days are marked as branches and observed too |
 | Recall thresholds (calibration) | fixed | tauHi 0.45 · tauLo 0.35 (read-only; owned by the calibrated policy JSON) |
+
+Each activation packet also has `ActivationRequestPre.ttlSteps`, a per-runtime step-based expiry. It controls how long an undelivered packet survives, not a cooldown. The historical `packetTtlSteps`, `injectionCooldownSteps`, `maxPacketItems` and `maxPacketChars` keys have no production readers and do not control actual recall delivery.
 
 ### 4.2 Memory Hub
 
@@ -151,6 +155,18 @@ The static injection face: the `<memory_system>` block composed into every turn.
 | Snapshot min gap rounds (`snapshotMinGapRounds`) | 5 | Re-inject a changed snapshot at most every N rounds, to keep history from bloating; 0 = try every turn (content-change rules still apply) |
 | Re-inject after compaction (`snapshotReinjectOnCompact`) | on | Force an immediate re-injection after context compaction/truncation, rebuilding memory background |
 | Custom injection prompts (`promptLayerOverrides`) | empty | Layer-by-layer prompt overrides (niche), supports `{date}` `{ws}` `{budget}` `{n}`; one-click restore defaults |
+
+#### Delivery mode
+
+Under **Settings → Delivery policy**, click **Configure policy** and open **Presets & cadence**. Choose a mode under **Delivery mode**, then click **Save policy**. **Effective mode** shows the mode in use. If no policy has been saved, it shows **Event view (recommended)** with **Default (no saved policy)**.
+
+| Mode | What gets delivered |
+|---|---|
+| Legacy (`legacy`) | Restores the old event renderer and character-based assembly for compatibility. |
+| Event view (recommended) (`eventView`) | Uses the new event cards, catalog and summaries with character-based assembly. This is the recommended default. |
+| Unit-based delivery (`units`) | Assembles content by units such as event checkpoints. Choose this when you want module switches, views, representations and quotas to control what is delivered. |
+
+To return from unit-based delivery to the default assembly, select **Event view (recommended)** and save. Select **Legacy** and save if you also need the old event renderer. Both choices keep the saved policy. To remove the entire saved policy and return control to the original settings, use **Compatibility → Remove policy and roll back to legacy adapter**. The delivery mode then returns to the default **Event view (recommended)**.
 
 ### 4.6 Automation
 
@@ -397,7 +413,7 @@ Available to the AI in conversation (14 in total; you don't need to memorize the
 | Tool | Purpose |
 |---|---|
 | `memory_recall` | Retrieve memory: local memory (all workspaces' logs / notes / reflections / whiteboard) + cross-workspace + external + session history. Returns an L0 summary list by default; `expand` for full text; `scope=handoff/sessions` shortcuts |
-| `memory_read` | Read a specific memory / day's log / reflection / notes on demand |
+| `memory_read` | Read a memory file on demand. Kinds include `log`, `reflection`, `user`, `notes`, `calendar`, `plan`, `archive` and `summary`. The `summary` kind reads the latest generated period summary shared across workspaces (`scope:"global"`). |
 | `memory_note` | Write project notes / handoff ledger / rewrite the PLAN whiteboard (`kind=plan/handoff`) |
 | `memory_log` | Append today's log (append-only) |
 | `memory_user` | Cross-project long-term rules |

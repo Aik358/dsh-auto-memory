@@ -429,7 +429,7 @@ const receipt = F => {
   return F.st._deliveryTransportReceiptPre;
 };
 const disableTransport = () => replace(INDEX,
-  'const _deliveryTransportPre = _savedPolicyPre ? frameTransport(engine.config, _runtimePolicyPre) : null',
+  'const _deliveryTransportPre = _savedPolicyPre && !_useDeliveryUnitsPre ? frameTransport(engine.config, _runtimePolicyPre) : null',
   'const _deliveryTransportPre = null');
 
 test('06 hard transport measures the full UTF-16/UTF-8 text; excess yields no injected fragment', async t => {

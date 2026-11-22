@@ -67,7 +67,7 @@ function hooksApi () {
     },
     useRef (v) { const i = cursor++; if (!(i in refs)) refs[i] = { current: v }; return refs[i] },
     useMemo (fn, deps) { const i = cursor++; const p = memos[i]; if (p && sameDeps(p.deps, deps)) return p.v; const v = fn(); memos[i] = { v, deps }; return v },
-    useEffect (fn, deps) { const i = cursor++; const p = effects[i]; if (!p || !sameDeps(p.deps, deps)) effects[i] = { fn, done: false } },
+    useEffect (fn, deps) { const i = cursor++; const p = effects[i]; if (!p || !sameDeps(p.deps, deps)) effects[i] = { fn, deps: deps && deps.slice(), done: false } },
     useReducer (r, init) { const i = cursor++; if (!(i in states)) states[i] = init; return [states[i], noop] },
     useCallback (fn) { return fn }, useContext () { return {} },
   }
@@ -79,11 +79,15 @@ function hooksApi () {
 }
 
 function createTimers () {
-  const q = new Map(); let next = 1
+  const q = new Map(), intervals = new Map(); let next = 1
   return {
     setTimeout (fn) { const id = next++; q.set(id, fn); return id },
     clearTimeout (id) { q.delete(id) },
     flush () { const all = Array.from(q.entries()); q.clear(); for (const [, fn] of all) { try { fn() } catch (e) {} } },
+    setInterval (fn, delay) { const id = next++; intervals.set(id, { fn, delay }); return id },
+    clearInterval (id) { intervals.delete(id) },
+    runIntervals () { for (const item of intervals.values()) { try { item.fn() } catch (e) {} } },
+    intervalDelays: () => Array.from(intervals.values()).map((item) => item.delay),
     size: () => q.size,
   }
 }
@@ -91,6 +95,7 @@ function createTimers () {
 /** 真执行 factory + 真渲染 EventView，返回渲染树（不展开子组件，避免共享 hook 槽串味） */
 async function renderEventView (events, srcOverride) {
   const timers = createTimers()
+  const server = { events: events.slice(), listHits: 0, failList: false }
   const hk = hooksApi()
   const store = new Map()
   const storage = {
@@ -106,6 +111,7 @@ async function renderEventView (events, srcOverride) {
   }, hk.api)
   const domStub = {
     head: mkEl(), body: mkEl(), documentElement: mkEl(),
+    visibilityState: 'visible',
     createElement: mkEl, createElementNS: mkEl, createTextNode: () => mkEl(),
     getElementById: () => null, querySelector: () => null, querySelectorAll: () => [],
     addEventListener: noop, removeEventListener: noop, readyState: 'complete', cookie: '', title: '',
@@ -115,7 +121,7 @@ async function renderEventView (events, srcOverride) {
     window: {
       __ModuleLoader__: { load: (e) => loaded.push(e) },
       addEventListener: noop, removeEventListener: noop,
-      setTimeout: timers.setTimeout, clearTimeout: timers.clearTimeout, setInterval: noop, clearInterval: noop,
+      setTimeout: timers.setTimeout, clearTimeout: timers.clearTimeout, setInterval: timers.setInterval, clearInterval: timers.clearInterval,
       localStorage: storage, sessionStorage: storage,
       location: { href: 'http://localhost/', origin: 'http://localhost', search: '', hash: '' },
       navigator: { userAgent: 'node', language: 'zh' },
@@ -125,13 +131,17 @@ async function renderEventView (events, srcOverride) {
     },
     document: domStub, localStorage: storage, sessionStorage: storage,
     navigator: { userAgent: 'node', language: 'zh' },
-    setTimeout: timers.setTimeout, clearTimeout: timers.clearTimeout, setInterval: noop, clearInterval: noop,
+    setTimeout: timers.setTimeout, clearTimeout: timers.clearTimeout, setInterval: timers.setInterval, clearInterval: timers.clearInterval,
     queueMicrotask, Promise,
     requestAnimationFrame: (f) => { void f; return 0 }, cancelAnimationFrame: noop,
     fetch: (url) => {
       const u = String(url)
       let body = { ok: true }
-      if (u.indexOf('/event-list') >= 0) body = { ok: true, events: events, total: events.length }
+      if (u.indexOf('/event-list') >= 0) {
+        server.listHits++
+        if (server.failList) return Promise.reject(new Error('event-list unavailable'))
+        body = { ok: true, events: server.events.slice(), total: server.events.length }
+      }
       else if (u.indexOf('/event-unarchived') >= 0) body = { ok: true, unarchived: 0, total: 0 }
       else if (u.indexOf('/event-detail') >= 0) body = { ok: true, event: null }
       return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(body), text: () => Promise.resolve('') })
@@ -148,16 +158,25 @@ async function renderEventView (events, srcOverride) {
   const view = ex.__probeEventView
   if (typeof view !== 'function') { console.log('SETUP-FAIL: __probeEventView 未导出'); process.exit(2) }
   let tree = null
-  for (let i = 0; i < 8; i++) {
+  async function rerender () {
     hk.begin()
     tree = view({ sessionId: 'sess-1', zh: true, limit: 10 })
     hk.runEffects()
+    await new Promise((r) => setTimeout(r, 5))
     hk.begin()
     tree = view({ sessionId: 'sess-1', zh: true, limit: 10 })
     hk.runEffects()
-    await new Promise((r) => setTimeout(r, 20))
   }
-  return { tree }
+  for (let i = 0; i < 8; i++) { await rerender(); await new Promise((r) => setTimeout(r, 10)) }
+  return {
+    tree,
+    listHits: () => server.listHits,
+    intervalDelays: () => timers.intervalDelays(),
+    addServerEvent: (event) => server.events.push(event),
+    failList: (value) => { server.failList = !!value },
+    setVisibility: (value) => { domStub.visibilityState = value },
+    async poll () { timers.runIntervals(); await rerender(); await new Promise((r) => setTimeout(r, 10)); return tree },
+  }
 }
 
 /** 代码锚串抽取（花括号配平），返回函数源码文本 */
@@ -232,8 +251,13 @@ console.log('== A. 真渲染 EventView（members 3 条）==')
   const paths = byProp(s, 'data-dam-docs-path')
   const copyNodes = s.nodes.filter((n) => typeof n.type === 'function' && n.type.name === 'DocsCopyButtonPre')
   ok(strips.length === 1, 'A-1 ★渲染出 1 条「相关文档」容器（实测 ' + strips.length + '）')
+  ok(strips[0] && strips[0].type === 'details', 'A-1b 文档入口是原生可访问 disclosure')
+  const summary = byProp(s, 'data-dam-docs-summary')[0]
+  const panel = byProp(s, 'data-dam-docs-panel')[0]
+  ok(summary && summary.type === 'summary' && strips[0].props.open === undefined, 'A-1c 文档路径默认收起，可由 summary 展开')
+  ok(panel && panel.props.style && panel.props.style.position === 'absolute', 'A-1d 路径面板浮层展开，不占事件画布布局高度')
   ok(strips[0] && strips[0].props['data-dam-docs-count'] === '3', 'A-2 条数标记 = 3（实测 ' + (strips[0] && strips[0].props['data-dam-docs-count']) + '）')
-  ok(s.text.indexOf('相关文档') >= 0, 'A-3 标题文案「相关文档」出现在渲染树里')
+  ok(String(textOf(summary)).indexOf('文档') >= 0, 'A-3 disclosure 标题含「文档」')
   ok(paths.length === 3, 'A-4 ★渲染出 3 条路径（实测 ' + paths.length + '）')
   const gotPaths = paths.map(textOf)
   ok(gotPaths.join('|') === [P1, P2, P3].join('|'), 'A-5 ★三条路径逐字一致且保序：' + gotPaths.join(' | '))
@@ -246,7 +270,37 @@ console.log('== A. 真渲染 EventView（members 3 条）==')
   ok(stripIdx >= 0 && frameIdx >= 0 && stripIdx < frameIdx, 'A-10 条子在 iframe **之前**（详情头部位置）got ' + stripIdx + ' < ' + frameIdx)
   const scopeIdx = s.nodes.findIndex((n) => n.props['data-dam-event-scope'] !== undefined)
   ok(scopeIdx >= 0 && scopeIdx < stripIdx, 'A-11 条子在范围条**之后**（题面指定位置）got ' + scopeIdx + ' < ' + stripIdx)
-  ok(strips[0].props.style && strips[0].props.style.flex === 'none', 'A-12 容器 flex:none（不参与伸缩，iframe 仍吃满剩余高度）')
+  ok(strips[0].props.style && strips[0].props.style.flex === 'none', 'A-12 disclosure does not shrink the event canvas')
+}
+
+/* ═══════════ A2. 后台写入的事件会进入看板 ═══════════ */
+console.log('== A2. 真执行前台轮询与手动同步 ==')
+{
+  const live = await renderEventView([EV3])
+  ok(live.listHits() === 1, 'A2-1 首次挂载只拉取一次事件库（实测 ' + live.listHits() + '）')
+  ok(live.intervalDelays().includes(15000), 'A2-1b 前台事件库同步间隔为 15 秒')
+  live.addServerEvent(Object.assign({}, EV3, { id: 'evt_dddddddd', name: '后台新增事件', updatedAt: 9000 }))
+  live.setVisibility('hidden')
+  await live.poll()
+  ok(live.listHits() === 1, 'A2-2 后台标签隐藏时不轮询')
+  live.setVisibility('visible')
+  let refreshedTree = await live.poll()
+  ok(live.listHits() === 2, 'A2-3 返回前台后立即重新读取事件库')
+  let iframe = byProp(scan(refreshedTree), 'data-dam-ev4-iframe')[0]
+  ok(iframe && String(iframe.props.srcDoc).includes('后台新增事件'), 'A2-4 新事件从 event-list 进入画布 iframe')
+  live.addServerEvent(Object.assign({}, EV3, { id: 'evt_eeeeeeee', name: '手动刷新事件', updatedAt: 10000 }))
+  const refresh = byProp(scan(refreshedTree), 'data-dam-event-refresh')[0]
+  ok(refresh && typeof refresh.props.onClick === 'function', 'A2-5 范围切换条有手动刷新入口')
+  refresh.props.onClick()
+  refreshedTree = await live.poll()
+  iframe = byProp(scan(refreshedTree), 'data-dam-ev4-iframe')[0]
+  ok(live.listHits() === 3 && iframe && String(iframe.props.srcDoc).includes('手动刷新事件'), 'A2-6 手动刷新后新增事件可见')
+  live.failList(true)
+  refreshedTree = await live.poll()
+  const failedSync = scan(refreshedTree)
+  iframe = byProp(failedSync, 'data-dam-ev4-iframe')[0]
+  ok(live.listHits() === 4 && iframe && String(iframe.props.srcDoc).includes('手动刷新事件'), 'A2-7 同步失败保留上次成功的事件快照')
+  ok(byProp(failedSync, 'data-dam-event-sync-warning').length === 1, 'A2-8 同步失败状态明确可见')
 }
 
 /* ═══════════ B. 负路径：members=[] ⇒ 整条不渲染 ═══════════ */
@@ -321,7 +375,7 @@ console.log('== E. [变异反向验证] 把「members 为空不渲染」改坏 �
   const { tree } = await renderEventView([EV0], patchSrc(mutatedSrc))
   const s = scan(tree)
   const strips = byProp(s, 'data-dam-docs-strip').length
-  const hasTitle = s.text.indexOf('相关文档') >= 0
+  const hasTitle = String(textOf(byProp(s, 'data-dam-docs-summary')[0] || {})).indexOf('文档') >= 0
   ok(strips === 1 && hasTitle, 'E-1 ★★变异后 members=[] 也渲染出空壳（strips=' + strips + ' / 标题=' + hasTitle + '）⇒ B 组断言有区分力')
   const back = await renderEventView([EV0])
   ok(byProp(scan(back.tree), 'data-dam-docs-strip').length === 0, 'E-1b ★还原后容器回到 0（变异必红、还原复绿）')

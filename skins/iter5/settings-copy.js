@@ -1,4 +1,13 @@
     // Plain-language presentation only. Configuration keys and handlers stay upstream-owned.
+    function iter5DeliveryModeCopyPre(mode) {
+      var copy = {
+        legacy: [L('旧版投递', 'Legacy'), L('恢复旧事件视图和按字符组装，用于兼容回滚。', 'Restore the old event view and character-based assembly for compatibility.')],
+        eventView: [L('新版事件视图（推荐）', 'Event view (recommended)'), L('使用新版事件卡片和目录，沿用按字符组装。', 'Use the newer event cards and catalog with character-based assembly.')],
+        units: [L('按单位投递', 'Unit-based delivery'), L('按检查点等单位组装正文，模块开关、视图、表示和配额决定实际投递。', 'Assemble content by units such as checkpoints. Module switches, views, representations and quotas control what is delivered.')],
+      }
+      return copy[mode]
+    }
+
     function iter5SettingCopy(label) {
       var rows = {
         fEpisodicMin: ['至少几段对话才形成经历记录', 'Minimum conversation segments per episode', '太少容易留下琐碎内容，太多可能跳过短对话。通常无需调整。', 'Too few can retain trivial content; too many can skip short conversations. Usually unchanged.'],
@@ -16,7 +25,11 @@
         semMode: ['用什么方式查找', 'How to search', '不确定时选「自动」。可用时按意思查找，否则按关键词查找；切换后立即保存，不用再点保存设置。', 'Choose Auto when unsure: search by meaning when available, otherwise by keywords. Changes save immediately.'],
         fAnchorIndex: ['启用记忆检查与修复', 'Enable memory checks and repair', '需要在「存储管理」检查、修复索引或联动删除记忆时开启；普通记忆读写与检索不依赖它。', 'Enable for index checks, repair and linked deletion in Storage. Ordinary reading, writing and search do not require it.'],
         fIncEmbed: ['只更新有变化的搜索索引', 'Update only changed search entries', '通常保持开启，减少重复计算；仅在排查索引问题时考虑关闭。', 'Usually keep this on to avoid repeated computation. Turn off only when investigating index problems.'],
-        fJsCooldown: ['两次主动回忆的间隔（轮）', 'Minimum recall interval (turns)', '刚提供过记忆后，等待多久再尝试。调大可减少重复回忆；0 表示不等待。', 'Wait this long after supplying a memory before trying again. Increase to reduce repeated recall; 0 means no wait.'],
+        fJsCooldown: ['唤起判定冷却（分钟）', 'Recall decision cooldown (min)', '配置键名中的 Rounds 是历史遗留；运行时单位为分钟，只限制 JS 再次判定，不控制实际投递。0 表示不冷却。', 'Rounds is a legacy name; runtime uses minutes. This only gates JS decisions, not actual delivery. 0 means no decision cooldown.'],
+        fActivationDeliveryCooldown: ['启用投递后冷却', 'Cooldown after delivery', '默认关闭。开启后默认 3 分钟，可拖动选择 1–5 分钟；只在 Reference Tail 确认进入模型消息后开始。', 'Off by default. When enabled, defaults to 3 minutes; choose any whole minute from 1–5. Starts only after a Reference Tail is confirmed in the model message.'],
+        fActivationDeliveryCooldownMinutes: ['冷却时长', 'Cooldown duration', '拖动选择 1–5 分钟；当前值显示在滑块旁。', 'Choose 1–5 minutes; the current value appears beside the slider.'],
+        fCooldownOneMinute: ['1 分钟', '1 minute', '1 分钟', '1 minute'],
+        fCooldownThreeMinutes: ['3 分钟', '3 minutes', '3 分钟', '3 minutes'],
         fJsDelta: ['区分相似结果的严格程度', 'How clearly the best match must stand out', '最相关的两条记忆得分太接近时不提供。调大更谨慎，调小更容易触发；0 关闭这项过滤。', 'Skip matches when the top two scores are too close. Higher is more cautious; lower recalls more easily. 0 disables this filter.'],
         fJsExcerpt: ['每条回忆提供多少文字（字符）', 'Text supplied per recalled memory (characters)', '较短更省 token；较长能直接提供更多内容。AI 仍可按需读取全文。', 'Shorter excerpts use fewer tokens; longer ones provide more content directly. AI can still read the full memory when needed.'],
         fCandScheme: ['一次参考多少条候选记忆', 'Candidate memory preset', '平衡：3 条，每条 40 字符；广泛：6 条，每条 20 字符。只在需要微调回忆效果时更改。', 'Balanced: 3 × 40 characters. Broad: 6 × 20 characters. Change only to tune recall.'],

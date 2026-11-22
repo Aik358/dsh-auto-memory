@@ -1348,6 +1348,9 @@
         try { var el = document.getElementById('dam-settings-' + key); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }) } catch (e) {}
       }
       var policyMount = props && props.policySettings
+      var deliveryCooldownConfig = cfg.activationDeliveryCooldownMinutes
+      var deliveryCooldownEnabled = Number.isInteger(deliveryCooldownConfig) && deliveryCooldownConfig >= 1 && deliveryCooldownConfig <= 5
+      var deliveryCooldownValue = deliveryCooldownEnabled ? deliveryCooldownConfig : 3
       function openPolicyPage(page) {
         i5Group[1]('behavior')
         setSettingsSection('policy')
@@ -1379,6 +1382,8 @@
           //   ⚠️ 不给 pythonBackendEnabled / activationSource / contextSinkMode 独立控件：
           //   它们是 semanticEngineMode 的**联动派生值**（index.js 自动对齐），单独可改会互相打架。
           field(t('fInboxGate'), h('input', { type: 'checkbox', 'data-dam-gate': 'activationInboxEnabled', checked: cfg.activationInboxEnabled === true, onChange: function (e) { set('activationInboxEnabled', e.target.checked) } }), t('fInboxGateHint')),
+          field(t('fActivationDeliveryCooldown'), h('input', { type: 'checkbox', checked: deliveryCooldownEnabled, onChange: function (e) { set('activationDeliveryCooldownMinutes', e.target.checked ? deliveryCooldownValue : null) } }), t('fActivationDeliveryCooldownHint')),
+          field(t('fActivationDeliveryCooldownMinutes'), h('input', { type: 'range', 'data-dam-delivery-cooldown-range': '', min: 1, max: 5, step: 1, disabled: !deliveryCooldownEnabled, value: deliveryCooldownValue, 'aria-label': t('fActivationDeliveryCooldownMinutes'), 'aria-valuetext': deliveryCooldownValue + ' ' + L('分钟', 'minutes'), onChange: function (e) { set('activationDeliveryCooldownMinutes', Math.max(1, Math.min(5, Math.round(Number(e.target.value) || 3)))) } }), t('fActivationDeliveryCooldownMinutesHint') + ' ' + deliveryCooldownValue + ' ' + L('分钟', 'minutes')),
           field(t('fShadowRetrieval'), h('input', { type: 'checkbox', 'data-dam-gate': 'shadowRetrievalEnabled', checked: cfg.shadowRetrievalEnabled === true, onChange: function (e) { set('shadowRetrievalEnabled', e.target.checked) } }), t('fShadowRetrievalHint')),
           field(t('fContextBridge'), h('input', { type: 'checkbox', 'data-dam-gate': 'contextBridgeEnabled', checked: cfg.contextBridgeEnabled === true, onChange: function (e) { set('contextBridgeEnabled', e.target.checked) } }), t('fContextBridgeHint')),
           field(t('fL0Index'), h('input', { type: 'checkbox', 'data-dam-gate': 'l0IndexEnabled', checked: cfg.l0IndexEnabled !== false, onChange: function (e) { set('l0IndexEnabled', e.target.checked) } }), t('fL0IndexHint')),

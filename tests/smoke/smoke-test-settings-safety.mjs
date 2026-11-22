@@ -99,6 +99,9 @@ try {
   assert.equal(await fs.readFile(configPath,'utf8'),'broken JSON')
   console.log('PASS actual MemoryEngine: write failure, concurrent saves, corrupt config preservation')
   assert.deepEqual(validateSettingsPatch({workbenchLoopShort:1000,workbenchLoopLong:2000}),{})
+  assert.deepEqual(validateSettingsPatch({activationDeliveryCooldownMinutes:null}),{})
+  for (const minutes of [1, 2, 3, 4, 5]) assert.deepEqual(validateSettingsPatch({activationDeliveryCooldownMinutes:minutes}), {}, 'delivery cooldown accepts ' + minutes + ' minutes')
+  for (const minutes of [0, -1, 1.5, 6, '3']) assert(validateSettingsPatch({activationDeliveryCooldownMinutes:minutes}).activationDeliveryCooldownMinutes, 'delivery cooldown rejects ' + minutes)
   engine.config.workbenchLoopShort=1000;engine.config.workbenchLoopLong=2000
   assert.equal(engine._subagentLoopSize('short'),1000);assert.equal(engine._subagentLoopSize('long'),2000)
   const good={dayBoundaryMinutes:0,workbenchLoopShort:2,workbenchLoopLong:720,autoSummaryTimes:[]}

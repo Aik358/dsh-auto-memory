@@ -133,7 +133,7 @@ if (h.registeredRoutes.length !== 87) throw new Error('route count drifted (expe
     if (cfg.contextBridgeObserveChildSessions !== true) throw new Error('contextBridgeObserveChildSessions default must be true (2026-08-26 ruling), got ' + cfg.contextBridgeObserveChildSessions)
     if (cfg.subagentModel !== '') throw new Error('subagentModel default must be empty string')
     if (cfg.memoryFileIndexEnabled !== false) throw new Error('memoryFileIndexEnabled default must be false')
-    if (cfg.maxPacketItems !== 2 || cfg.maxPacketChars !== 800 || cfg.packetTtlSteps !== 2 || cfg.injectionCooldownSteps !== 3) {
+    if (cfg.maxPacketItems !== 2 || cfg.maxPacketChars !== 800 || cfg.packetTtlSteps !== 2 || cfg.activationDeliveryCooldownMinutes !== null) {
       throw new Error('packet budget defaults drifted')
     }
     console.log('P1 config-compat ✓ (defaults off + packet budgets)')

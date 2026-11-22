@@ -285,7 +285,12 @@ console.log('== D. 运行期断言：真渲染 EventView，数范围切换按钮
   // ★变异锚点必须**整行精确**匹配：若用「8 空格 + 调用」做子串，
   //   它会同时命中空态那行（10 空格缩进，偏移 2 处起恰好是 8 空格 + 调用）⇒ 变异会误删空态那一行，
   //   变异验证变假（本轮实测就是 2 处命中）。改成按行比较 + 行内容全等。
-  const MAIN_LINE = '        renderEventScopeBarPre(evScope, setEvScope, zh),'
+  // ★2026-11-22 重钉（批次3 P3-A2 + M6 合批 2a22da62）：主路径调用点已从 3 参数升为 5 参数
+  //   （新增 refreshEventView, syncing）⇒ 旧的 3 参数行在 client.js 里命中 0 次，E-0 变红。
+  //   这里换成**当前真实主路径那一行**的精确文本：8 空格缩进 + 5 参数 + 逗号结尾（client.js L10418）。
+  //   注意同文件里另有 10 空格（L10173 空态分支，同为 5 参数）与 9 空格（L10314，3 参数）两处调用；
+  //   保持「整行全等」才不会被它们命中 —— 退化成子串匹配会同时命中这两处，变异就失去区分力。
+  const MAIN_LINE = '        renderEventScopeBarPre(evScope, setEvScope, zh, refreshEventView, syncing),'
   // ★client.js 是 CRLF，而本文件的 SRC 未做行尾归一化（A/B/C 组都按子串工作，不受影响）；
   //   按行比较前必须先剥掉尾随回车（CR）——否则整行全等永远为假（本轮实测 got=0）。
   const srcLinesRaw = SRC.split('\n')
@@ -344,6 +349,16 @@ console.log('== D. 运行期断言：真渲染 EventView，数范围切换按钮
   // ── E 变异验证：证明 D 组有区分力（内存里去掉主路径那一行 ⇒ 按钮必须归零）──
   {
     ok(mainLineIdx.length === 1, 'E-0 主路径调用点唯一（整行全等比较，全文恰 1 行）got=' + mainLineIdx.length)
+    // ★真因护栏（2026-11-22 实证，勿删）：MAIN_LINE 一旦漂移，mainLineIdx[0] === undefined，
+    //   而 Array.slice(0, undefined) 与 slice(NaN) **各自返回整个数组** ⇒ 所谓「变异体」= 源码重复两遍
+    //   （实测长度 2,611,132 → 5,222,265，__ModuleLoader__.load 出现 2 次）⇒ 脚本跑两遍、patchSrc 只注入
+    //   第一份 ⇒ loaded[last] 取到第二份（无注入）⇒ 报 SETUP-FAIL「__probeEventView 未导出」。
+    //   该症状极易被误诊为「最小 harness 缺宿主桩」，实为**判据过期**。故在此硬失败并打印真因，
+    //   不要让后续断言在无效变异体上继续跑出误导性结论。
+    if (mainLineIdx.length !== 1) {
+      console.log('SETUP-FAIL: 判据过期（不是缺桩）—— MAIN_LINE 在当前 client.js 命中 ' + mainLineIdx.length + ' 次（应恰 1 次）；请先把 MAIN_LINE 更新为真实主路径行')
+      process.exit(2)
+    }
     const mutated = srcLinesRaw.slice(0, mainLineIdx[0]).concat(srcLinesRaw.slice(mainLineIdx[0] + 1)).join('\n')
     ok(mutated.length === SRC.length - (MAIN_LINE.length + 2), 'E-0b 变异只删掉这一行（长度差 = 行内容 + CRLF）got=' + (SRC.length - mutated.length))
     ok(mutated.split('\n').length === srcLinesRaw.length - 1, 'E-0d 变异体行数守恒（原行数 - 1）')

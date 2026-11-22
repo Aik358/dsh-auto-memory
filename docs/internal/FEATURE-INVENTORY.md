@@ -1,6 +1,6 @@
 # FEATURE-INVENTORY · dsh-auto-memory 三层功能全量清单
 
-## 当前接口快照（2026-11-17 · 投递策略 P1）
+## 当前接口快照（2026-11-21 · 投递策略 P2 + M6 冷却审计）
 
 本节为当前代码核实快照；下方原有 2026-09-20/09-25 枚举和行号保持为历史档案，不作为当前接口数或默认值真源。
 
@@ -8,14 +8,18 @@
 |---|---:|---|
 | 模型工具 | **22** | 默认 graph 档真实 `apply(ctx)` 注册数 |
 | HTTP 路由 | **87** | 真实 `apply(ctx)` 注册数；新增本地只读 `POST /api/dsh-auto-memory/delivery-preview` |
-| DEFAULT_CONFIG 顶层键 | **182** | 校验器实际提取；仅新增公开键 `deliveryPolicy`，迁移版本戳沿用 metadata 机制 |
+| DEFAULT_CONFIG 顶层键 | **182** | 校验器实际提取；含 `deliveryPolicy` 与实际投递冷却键 `activationDeliveryCooldownMinutes`；迁移版本戳沿用 metadata 机制 |
 | 后端导出 | **41** | 真实 import 的主入口导出面，未增删 |
 | 前端 factory 导出 | **14** | 真实执行 factory；P1 未改前端 |
 | 用户可关分区 / must | **13 / 2** | 保留既有清单；不能与 11 内容生产者 + 2 锁定来源硬对齐 |
 
-P1 范围是 Policy v2 契约、只读预览、默认关闭的脱敏诊断 provider、15/40 双节奏及独立迁移、水位旧默认残留迁移和 run_full 账本三段视图。预览必须标记 `partial:true`：完整自然单位引擎尚未接管，不能把字符预算或预览标签当成检查点配额已执行。
+P1 范围是 Policy v2 契约、只读预览、默认关闭的脱敏诊断 provider、15/40 双节奏及独立迁移、水位旧默认残留迁移和 run_full 账本三段视图。只读预览标记 `partial:true`，生产帧的检查点配额由 `units` 模式执行。
 
-本快照不宣称 P2 设置大模块、真实宿主重启、真实会话、三入口 a11y/截图或全量回归已验收。历史“39 用户能力”和设置页“60 可写键”等旧 UI 盘点不随 P1 接口加键机械增加。
+2026-11-23 投递策略在「预设与节奏」提供 `legacy`、`eventView`（默认）和 `units` 三态入口。模式与其他策略字段一同保存。删除策略后，被策略接管的设置恢复由旧键控制，投递模式回到默认 `eventView`。
+
+唤回冷却由独立门控制：`jsDecideCooldownRounds` 的运行单位实际为分钟，约束 JS emit 后的再次判定；`activationDeliveryCooldownMinutes` 默认 `null`（关闭），开启后默认 3，可选整数 1–5，并在 M6 确认 Reference Tail 已进入模型消息后起算；`ActivationRequestPre.ttlSteps` 按 runtime 步数决定 packet 过期。`injectionCooldownSteps`、`packetTtlSteps`、`maxPacketItems`、`maxPacketChars` 是无生产读取方的历史键，不得描述成实际生效的投递控制。
+
+本快照不宣称真实宿主重启、真实会话或三入口 a11y/截图已验收。历史“39 用户能力”和设置页“60 可写键”等旧 UI 盘点不随接口加键机械增加。
 
 ---
 
