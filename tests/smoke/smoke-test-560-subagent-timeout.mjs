@@ -131,7 +131,9 @@ console.log('== E. 报错可区分：正反断言（Lead 点名「比 A 更值�
   const cons = block(IDX, '  async consolidateMemory(agent, days = 7) {');
   ok(!!cons, 'E0 能抽出真实 memory_consolidate 函数体')
   const m0 = (cons || '').indexOf('if (!text) {');
-  const m1 = (cons || '').indexOf("if (text.includes('(无)'))", m0);
+  // The following result parser is selected by the CO switch. Extract only the !text block.
+  const endOfNoText = (cons || '').slice(m0).match(/\r?\n    \}\r?\n/);
+  const m1 = m0 >= 0 && endOfNoText ? m0 + endOfNoText.index + endOfNoText[0].length : -1;
   ok(m0 > 0 && m1 > m0, 'E0b 能定位「!text」报错段')
   const errSrc = (m0 > 0 && m1 > m0) ? cons.slice(m0, m1) : ''
   // ★★E0c：**防空跑**守卫 —— errSrc 为空时 runErr 返回 undefined，会让「含/不含超时」双双假绿。
@@ -159,9 +161,9 @@ console.log('== E. 报错可区分：正反断言（Lead 点名「比 A 更值�
   try { rTimeout = String(runErr(true, '')) } catch (e) { console.log('  (E 正例异常: ' + e.message + ')') }
   try { rNoBody = String(runErr(false, '')) } catch (e) { console.log('  (E 反例异常: ' + e.message + ')') }
 
-  ok(rTimeout.length > 0 && rTimeout !== 'null', '★★E1 [正] timedOut=true + text 空 ⇒ 有报错')
+  ok(rTimeout.length > 0 && rTimeout !== 'null' && rTimeout !== 'undefined', '★★E1 [正] timedOut=true + text 空 ⇒ 有报错')
   ok(rTimeout.indexOf('超时') >= 0, '★★E2 [正] 超时分支输出**含**「超时」')
-  ok(rNoBody.length > 0 && rNoBody !== 'null', '★★E3 [反] timedOut=false + text 空 ⇒ 有报错')
+  ok(rNoBody.length > 0 && rNoBody !== 'null' && rNoBody !== 'undefined', '★★E3 [反] timedOut=false + text 空 ⇒ 有报错')
   // ★E4 判据拆分（这是判据层的取舍，回执「待复核项」已如实披露）：
   //   Lead 原话是「强制 false ⇒ 输出**不得**含『超时』」。
   //   但反例文案写的是「**这不是超时**，调大超时无效」—— 字面含「超时」，语义是在**否定**它。
