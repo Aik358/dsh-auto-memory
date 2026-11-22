@@ -53,6 +53,7 @@ import { memoryWriteError } from ${JSON.stringify(url('memory-writer.js'))}
 import { persistDegradeLedgerPre, deriveQuotaVerdictPre } from ${JSON.stringify(url('degrade.js'))}
 import { decodeZstdFramesHead as realDecode } from ${JSON.stringify(url('subagent-gc.js'))}
 import { recordDiagnosticErrorPre } from ${JSON.stringify(pathToFileURL(path.join(ownRoot, 'lib/diagnostic-error.js')).href)}
+import { readDeliveryMode } from ${JSON.stringify(url('injection/policy-runtime.js'))}
 ${constants}
 const home = ${JSON.stringify(home)}
 const dshHome = () => home
