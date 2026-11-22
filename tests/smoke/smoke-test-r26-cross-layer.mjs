@@ -820,7 +820,7 @@ ok(damNoMixedEol(SRC), 'E2 纯 CRLF')
 // R4 acceptance fix (2026-11-11): stable chunk dedupe, handoff HTTP scope, bounded observation, and readOnly factory decoupling; recomputed with this suite's own CRLF-to-LF pipeline.
 // ★B3-RP-AD1（2026-11-17）：生产规则出口薄适配 —— sha16 A93D2EAA39017564 -> 3D1F9F7A23738AB2;//   LF 归一化长度 1625870 -> 1629675（Δ **+3805**，同批 R153_CHARS 已按实测重钉）。//   归因（可复算，唯一漂移源 = 本次三处，全在 lib/index.js 手写区）：//     ① `import { renderRulesForTierPre } from './injection/render-rules.js'` + 3 行说明注释；//     ② 规则出口改为**纯委托** renderRulesForTierPre（typeof 兜底 + 既有路径作 else 分支，非双实现）；//     ③ 出口注释说明档位映射与维护块来源。//   判据意图不变（宿主 index.js 不得无痕漂移），按 2026-10-01 裁定复算重钉。// ★Delivery P1（2026-11-17）：本套件的 IX 管道实测从 1,635,484 增至 1,642,735 字符（+7,251）；新增 delivery-preview 路由令总数从 86 增至 87。保留 SHA16 + E3c 长度双锁。
 // ★P3-A1（2026-11-18）：仅 index.js 的节奏、整帧准入、账本选段和回滚接线改变本锁。
-eq(createHash('sha256').update(IX).digest('hex').slice(0, 16).toUpperCase(), '8DFC4449DF6F5F1A', '★2026-11-21：冷却设置按本套件 LF 归一化管道重钉。')
+eq(createHash('sha256').update(IX).digest('hex').slice(0, 16).toUpperCase(), '1355F758DB6D182A', '★2026-11-22：B3-EV 接线按本套件 LF 归一化管道重钉。')
 // ★★2026-10-25 E3c（Lead 二次裁决：**删掉 E3b**）：
 //
 //   【为什么删 E3b】原 E3b 是 `eq(R132_CHARS - R131_CHARS, R132_DELTA)` ——
@@ -1064,7 +1064,8 @@ const R153_CHARS = 1635484  // ★B3-CA-AD1：旧锁过期，按本套件LF归�
 // ★2026-11-21: the prior U3a-2 registration was stale before this cooldown update.
 //   HEAD measured 1,652,347 chars / 6A01ADFE83DE9512; current is 1,652,400 / 8DFC4449DF6F5F1A.
 //   The +53 delta is the delivery-cooldown config key and clarified decision-cooldown comments in DEFAULT_CONFIG.
-const BASELINE_DEBT_R153_CHARS = 1652400
+// ★2026-11-22 B3-EV: 1,652,400 / 8DFC4449DF6F5F1A → 1,653,539 / 1355F758DB6D182A (this suite's actual).
+const BASELINE_DEBT_R153_CHARS = 1653539
 eq(IX.length, BASELINE_DEBT_R153_CHARS,
   'E3c ★实际长度必须等于登记长度（防「锁定了一个陈旧读数」）：实际 ' + IX.length + ' 应 = ' + BASELINE_DEBT_R153_CHARS)
 // ★2026-10-08 R1 重钉（R87 → R88）：lib/index.js **有意演进** —— R1 收口修 issue #174：
