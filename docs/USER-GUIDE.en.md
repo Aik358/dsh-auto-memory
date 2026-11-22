@@ -413,7 +413,7 @@ Available to the AI in conversation (14 in total; you don't need to memorize the
 | Tool | Purpose |
 |---|---|
 | `memory_recall` | Retrieve memory: local memory (all workspaces' logs / notes / reflections / whiteboard) + cross-workspace + external + session history. Returns an L0 summary list by default; `expand` for full text; `scope=handoff/sessions` shortcuts |
-| `memory_read` | Read a specific memory / day's log / reflection / notes on demand |
+| `memory_read` | Read a memory file on demand. Kinds include `log`, `reflection`, `user`, `notes`, `calendar`, `plan`, `archive` and `summary`. The `summary` kind reads the latest generated period summary shared across workspaces (`scope:"global"`). |
 | `memory_note` | Write project notes / handoff ledger / rewrite the PLAN whiteboard (`kind=plan/handoff`) |
 | `memory_log` | Append today's log (append-only) |
 | `memory_user` | Cross-project long-term rules |

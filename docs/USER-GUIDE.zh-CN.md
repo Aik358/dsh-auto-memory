@@ -414,7 +414,7 @@ AI 在对话中可直接调用（共 14 个，你不需要记）：
 | 工具 | 作用 |
 |---|---|
 | `memory_recall` | 检索记忆：本地记忆（全工作区日志/笔记/反思/白板）+ 跨工作区 + 外部记忆 + 历史会话。默认返回 L0 摘要列表；`expand` 展开原文；`scope=handoff/sessions` 直达 |
-| `memory_read` | 按需读取某条记忆/某天日志/反思/笔记全文 |
+| `memory_read` | 按需读取记忆文件。类型包括 `log`、`reflection`、`user`、`notes`、`calendar`、`plan`、`archive`、`summary`。选择 `summary` 可读取最新一条已生成的全局时段总结（`scope:"global"`），跨工作区共用。 |
 | `memory_note` | 写项目笔记 / 交接账本 / 重写白板 PLAN（`kind=plan/handoff`） |
 | `memory_log` | 追加今日日志（append-only） |
 | `memory_user` | 跨项目长期规则读写 |
