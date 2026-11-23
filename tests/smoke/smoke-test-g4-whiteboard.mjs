@@ -5,6 +5,7 @@
 //   ⚠️ 边界(文档 §2.3 硬约束): 零新增管线 / 不自动写盘 / 白板关时无副作用。
 import { GUIDANCE, DEFAULT_PROMPT_LAYERS } from '../../lib/index.js'
 import { readFileSync } from 'node:fs'
+import { createHash } from 'node:crypto'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -128,6 +129,11 @@ t('G4-6 ★【2026-09-20 用户裁定】铭文恢复收尾自检正文——三�
   const archReal = DEFAULT_PROMPT_LAYERS.snapshotInscriptionArchive
   assert(typeof archReal === 'string' && archReal.length > 0, '应能取到 ⑦ 归档层（求值后非空）')
   const total = tpl + archReal
+  // 2026-11-23 approved structure: main and archive each appear once.
+  const rendered = total.replaceAll('{date}', '2026-11-23')
+  assert(tpl.length === 1601 && archReal.length === 117, '批准的主段和归档段长度须分别为 1601 与 117')
+  assert(('\n' + rendered).length === 1723, '批准的完整帧须含日期和前导 LF，共 1723 字符')
+  assert(createHash('sha256').update(rendered).digest('hex').startsWith('5fe771981bdaeff8'), '批准的铭文渲染 SHA256 前缀不符')
   assert(total.length <= 1900, '★ 铭文**渲染总量**须守住每轮成本(≤1900 字符, 含 Archive 层 · 2026-11-23 5.1 用户裁定), 实测 ' + total.length)
   assert(total.length > tpl.length, '★ 总量必须 > 单层（防止 Archive 层被静默移除导致守卫失效）')
   // ★2026-11-23（5.1 用户裁定）：三条上限统一为 1900 —— 原 1700 会把真实生效上限压回 1699，
