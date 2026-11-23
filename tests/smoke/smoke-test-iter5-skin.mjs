@@ -699,7 +699,11 @@ assert.equal(createHash('sha256').update(classicLF).digest('hex'), "c8ed05c18565
 // The reviewed classic changes remain covered by this complete LF-normalized lock.
 // Settings search adds its mount to the classic form. The exact LF lock uses the suite actual.
 // 2026-11-23 Batch 5. The single adjusted inscription mirror changes the classic digest.
-assert.equal(createHash('sha256').update(classicLF).digest('hex'), "e51317ecc854469dd1537a02de98a3cd71419e4041af3d0e2af0f1f460a2ac4c", 'Reviewed native-reference entry (LF-normalized) baseline')
+// ★R154 = R153 + 2026-11-23 **3.4.0 正式版发版**：`lib/client.js` 仅两处改动 —— ① 界面指纹行
+//   `v3.4.0-alpha.5 / dsh-034-alpha5-preview` → `v3.4.0 / dsh-034-final`（−17 字符）② 应用内更新说明字典
+//   新增 `3.4.0` 条目（+3,048 字符），净增 **3,031** 字符。`build-iter5-skin --check` = SYNC-OK 证明
+//   生成区与源一致、手写区未被触碰 ⇒ **有意演进，非意外污染**。按守卫报出的 actual 重钉。
+assert.equal(createHash('sha256').update(classicLF).digest('hex'), "a363365e9306f983d627eede10dbe4ab3dd3949acd86ef3d097664e78dc1e483", 'Reviewed native-reference entry (LF-normalized) baseline')
 // ★★R202 重钉（2026-11-11 · classic 刷新真机修复）：classicLF 1,552,810 → **1,552,897**（Δ **+87**），
 //   sha256 8a18539a… → **0c28c65a…**。MemoryTabBody 的 plan 分支补传 {nonce}，修复真实面板点击刷新不重取；维护文档正文覆盖共享 max-height:220px，随面板完整滚动。
 //   值取本套件自身 9-replace 管道 actual；生成区零触碰，build-iter5-skin --check = SYNC-OK。
