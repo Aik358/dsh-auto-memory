@@ -1,9 +1,11 @@
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
+import { execFileSync } from 'node:child_process'
+import { runInNewContext } from 'node:vm'
 import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
-import { pathToFileURL } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 
 const INDEX = new URL('../../lib/index.js', import.meta.url)
 const EVENT_VIEW = new URL('../../lib/injection/event-view.js', import.meta.url)
@@ -124,12 +126,13 @@ try {
   }
   await Promise.all([paths.projectDir, paths.handoffDir, paths.reflectDir].map(dir => mkdir(dir)))
 
-  async function production(engineModule, events, activeLimit, deliveryMode) {
+  async function production(engineModule, events, activeLimit, deliveryMode, promptLayerOverrides) {
     const engine = new engineModule.MemoryEngine()
     engine.configLoaded = true
     engine.memToday = () => FIXTURE_DAY
     engine.resolvePaths = async () => paths
     engine.state.ws = paths.ws
+    if (promptLayerOverrides) engine.config.promptLayerOverrides = promptLayerOverrides
     if (deliveryMode) engine.config.deliveryPolicy = { schemaVersion: 2, presetId: 'human_full', deliveryMode }
     if (activeLimit !== undefined) engine.config.eventMaxActiveInInject = activeLimit
     await writeFile(path.join(paths.handoffDir, EVENT_STORE_FILENAME), JSON.stringify({ events }), 'utf8')
@@ -216,8 +219,17 @@ try {
   }
 
   await check('A6 switch off restores pre-change full frame, slim frame and overview bytes', async () => {
-    const rollback = await production(current, events, undefined, 'legacy')
-    const normal = await production(current, events)
+    // Keep the original event-render hash with the same two wording layers as the captured baseline.
+    const original = execFileSync('git', ['show', 'decdeccf:lib/index.js'], {
+      cwd: fileURLToPath(new URL('../../', import.meta.url)), encoding: 'utf8', maxBuffer: 8 * 1024 * 1024,
+    }).replaceAll('\r\n', '\n')
+    const wording = Object.fromEntries(['snapshotInscription', 'snapshotInscriptionArchive'].map(key => {
+      const literal = original.match(new RegExp('^  ' + key + ': ([\\s\\S]+?),\\n', 'm'))?.[1]
+      assert.ok(literal, 'missing baseline wording: ' + key)
+      return [key, runInNewContext(literal)]
+    }))
+    const rollback = await production(current, events, undefined, 'legacy', wording)
+    const normal = await production(current, events, undefined, undefined, wording)
     const observed = Object.fromEntries(Object.entries(rollback).map(([key, value]) =>
       [key, [value.length, Buffer.byteLength(value, 'utf8'), SHA256(value)]]))
     assert.deepEqual(observed, BASELINE)

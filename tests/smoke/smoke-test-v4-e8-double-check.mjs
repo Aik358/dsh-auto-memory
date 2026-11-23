@@ -26,6 +26,7 @@
  *   ★出现 kind='to-delete' ⇒ 必红（意思是「该删的没删」）
  */
 import fs from 'node:fs'
+import { tmpdir } from 'node:os'
 import path from 'node:path'
 import vm from 'node:vm'
 import { spawn } from 'node:child_process'
@@ -36,7 +37,6 @@ import { fileURLToPath } from 'node:url'
 //   那不是产品缺陷，是测试不可移植。**不要改回 process.cwd()**：run-smoke 的
 //   工作目录与开发者 shell 的 cwd 都不保证是仓库根。
 const ROOT = fileURLToPath(new URL('../..', import.meta.url))
-const OUT = path.join(ROOT, 'artifacts', 'e8-visual')
 const CHROME = 'C:/Program Files/Google/Chrome/Application/chrome.exe'
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 const CL = fs.readFileSync(path.join(ROOT, 'lib', 'client.js'), 'utf8')
@@ -176,7 +176,8 @@ html,body{margin:0;height:100%} body{display:flex}
 </div></div></body></html>`
 
 const port = 9467
-const profile = path.join(OUT, ".cdp-e87-" + Date.now())
+const outputDir = fs.mkdtempSync(path.join(tmpdir(), 'dam-e8-double-check-'))
+const profile = path.join(outputDir, 'chrome-profile')
 const chrome = spawn(CHROME, ["--headless=new", "--disable-gpu", "--no-sandbox", "--window-size=1600,1000", "--remote-debugging-port=" + port, "--user-data-dir=" + profile, "about:blank"], { stdio: "ignore" })
 
 try {
@@ -307,7 +308,8 @@ try {
   const mutToDel = Object.keys(mutWl).filter((k) => mutWl[k].kind === "to-delete");
   ok(mutToDel.length === 1 && mutToDel[0] === "lane-today", "★★★[变异3] 把 lane-today 标成 to-delete ⇒ 约束2 的「无 to-delete」断言必红（实测命中 " + mutToDel.join(",") + "）");
 
-  fs.writeFileSync(path.join(OUT, "e8-7-double-check.json"), JSON.stringify({
+  const receiptPath = path.join(outputDir, "e8-7-double-check.json")
+  fs.writeFileSync(receiptPath, JSON.stringify({
     scopedClassCount: scopedClass.size,
     domClassCount: domSet.size,
     missingInDom, noRule,
@@ -315,6 +317,7 @@ try {
     wlActuallyMissing,
     at: new Date().toISOString(),
   }, null, 2), "utf8")
+  console.log("Evidence: " + receiptPath)
 } catch (e) {
   console.log("ERROR: " + (e && e.message));
   results.push({ cond: false });

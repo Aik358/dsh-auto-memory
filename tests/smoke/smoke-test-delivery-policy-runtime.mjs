@@ -10,6 +10,7 @@ import { fileURLToPath } from 'node:url';
 import { validatePolicy, resolvePolicy, legacyToPolicy } from '../../lib/injection/policy-v2.js';
 import { parseWaterThresholds } from '../../lib/injection/cadence.js';
 import { previewDelivery } from '../../lib/injection/preview.js';
+import { collectDeliveryEventUnitsPre } from '../../lib/injection/unit-delivery.js';
 import { projectHandoffPre } from '../../lib/injection/project-handoff.js';
 import { parseHandoffLedgerPre, weightedTrimHandoffLedgerPre } from '../../lib/handoff-anchor.js';
 
@@ -93,6 +94,24 @@ const mark = text => fullOnly(text) ? 'F' : text.includes('SLIM') ? 'S' : '-';
 // Compare the raw outputs first. Normalize the random fixture root only for receipt hashes.
 const receiptText = text => text.replaceAll(root, '<fixture-root>');
 const sha256 = text => createHash('sha256').update(text).digest('hex');
+const approvedInscription = current.DEFAULT_PROMPT_LAYERS.snapshotInscription;
+const runInscription = '\n' + approvedInscription.replaceAll('{date}', '2026-11-18') + current.DEFAULT_PROMPT_LAYERS.snapshotInscriptionArchive;
+// Run the historic cadence with the currently approved text so byte diffs isolate the run switch.
+const baselineInscription = { promptLayerOverrides: { snapshotInscription: approvedInscription } };
+const runMemoryMarker = 'RUN-MEMORY-FIXTURE';
+
+function assertRunSkeleton(text) {
+  const tail = runInscription + '\n</memory_system>';
+  assert(text.endsWith(tail), '完整铭文必须位于闭合标签之前');
+  const skeleton = text.slice(0, -tail.length).trimStart();
+  assert(skeleton.startsWith('<memory_system>'), '骨架必须以记忆块开头');
+  assert(skeleton.includes('工作区: ' + root + ' | 日期: 2026-11-18'), '骨架应保留当前工作区与日期');
+  assert.match(skeleton, /\[记忆检索指引\][^\n]*memory_recall[^\n]*memory_read/);
+  assert(skeleton.includes(current.DEFAULT_PROMPT_LAYERS.snapshotSlimMaintain), '记忆维护指引必须在场');
+  assert(!text.includes(runMemoryMarker), '运行档关闭后不得携带快照正文');
+  assert(!skeleton.includes('[Retrieved memory reference'), '独立的唤回通道不得混入骨架');
+}
+
 function fixture(host, config = {}, { actual = false } = {}) {
   const engine = new host.MemoryEngine();
   Object.assign(engine.config, {
@@ -235,21 +254,25 @@ test('Batch 5 suppresses both run snapshots by default and restores byte-identic
       const render = engine.renderMemoryDynamic.bind(engine), slim = engine.renderSlimSnapshotPre.bind(engine);
       engine.renderMemoryDynamic = (...a) => { emitted.push(st._injectTierPre); return render(...a); };
       engine.renderSlimSnapshotPre = (...a) => { emitted.push(st._injectTierPre); return slim(...a); };
-      st.logText = 'RUN-LOG-FIXTURE';
+      st.eventCardsText = runMemoryMarker;
+      const event = { id: 'evt_00000001', name: runMemoryMarker, summary: runMemoryMarker, status: 'active',
+        createdAt: Date.now(), updatedAt: Date.now(), sections: { goal: runMemoryMarker, doing: '', deadend: '', next: '' } };
+      st._deliveryEventUnitsPre = collectDeliveryEventUnitsPre({ events: [event], now: Date.now() });
       const rows = Array.from({ length: 5 }, () => run({ human: false }));
       assert.equal(run({ human: false, repeat: true }), rows.at(-1));
       return { rows, emitted };
     };
-    const baseline = exercise(preRunSwitch, config);
+    const baseline = exercise(preRunSwitch, { ...config, ...baselineInscription });
     const enabled = exercise(current, { ...config, runTierInjectEnabled: true });
     assert.deepEqual(enabled, baseline);
     assert(baseline.emitted.includes('run_full') && baseline.emitted.includes('run_slim'));
+    assert(enabled.rows.some(text => text.includes(runMemoryMarker)), '打开时应观察到夹具中的记忆正文');
     const disabled = exercise(current, config);
-    const { snapshotInscription, snapshotInscriptionArchive } = current.DEFAULT_PROMPT_LAYERS;
-    const reminder = '\n' + snapshotInscription.replace('{date}', '2026-11-18') + snapshotInscriptionArchive;
-    assert.deepEqual(disabled.rows, Array(5).fill(reminder));
     assert.deepEqual(disabled.emitted, []);
-    receipt.push({ deliveryMode, snapshotsWhenOff: disabled.emitted.length, reminderBytes: Buffer.byteLength(reminder),
+    for (const row of disabled.rows) assertRunSkeleton(row);
+    const reminder = disabled.rows.at(-1);
+    receipt.push({ deliveryMode, snapshotsWhenOff: disabled.emitted.length, reminderChars: reminder.length,
+      reminderBytes: Buffer.byteLength(reminder),
       baselineBytes: baseline.rows.map(row => Buffer.byteLength(row)),
       baselineAndEnabledSha256: sha256(JSON.stringify(baseline.rows.map(receiptText))) });
   }
@@ -279,7 +302,7 @@ test('Batch 5 leaves human full/slim, post-compaction and handoff delivery intac
     assert(handoffCarry.includes('HANDOFF-CARRY-MEMORY-FIXTURE'));
     return { human_full: humanFull, human_slim: humanSlim, post_compact: postCompact, handoff_carry: handoffCarry };
   };
-  const baseline = exercise(preRunSwitch, {});
+  const baseline = exercise(preRunSwitch, baselineInscription);
   const actual = exercise(current, { runTierInjectEnabled: false });
   assert.deepEqual(actual, baseline);
   t.diagnostic(JSON.stringify(Object.fromEntries(Object.entries(actual).map(([name, text]) => [name, {
@@ -342,16 +365,24 @@ test('Batch 5 counts unattended tokens once per request and replays the distinct
 });
 
 test('Batch 5 applies units frame caps to the reminder with the independent static cost', () => {
-  const config = { deliveryPolicy: policy({ deliveryMode: 'units', transport: { strength: 'hard', utf8Bytes: 2800 } }) };
-  const F = fixture(current, config, { actual: true });
-  F.engine.renderMemoryStatic = () => '站'.repeat(50);
-  assert.equal(F.run({ human: false }), '');
-  assert(F.st._unitDeliveryReceiptPre.degradations.some(row => row.code === 'frame-content-omitted'));
-  F.engine.config.deliveryPolicy = policy({ deliveryMode: 'units',
-    transport: { strength: 'soft', utf8Bytes: 2800, overflowAllowance: { utf8Bytes: 100 } } });
-  const reminder = F.run({ human: false });
-  assert.equal(Buffer.byteLength(reminder), 2733);
-  assert.equal(F.st._unitDeliveryReceiptPre.softTargetExceeded, true);
+  const staticText = '站'.repeat(50);
+  const runWith = transport => {
+    const deliveryPolicy = policy({ deliveryMode: 'units', transport });
+    const F = fixture(current, { deliveryPolicy }, { actual: true });
+    F.engine.renderMemoryStatic = () => staticText;
+    const text = F.run({ human: false });
+    return { text, receipt: F.st._unitDeliveryReceiptPre };
+  };
+  const uncapped = runWith({});
+  assertRunSkeleton(uncapped.text);
+  const target = Buffer.byteLength(uncapped.text) + Buffer.byteLength(staticText) - 1;
+  const hard = runWith({ strength: 'hard', utf8Bytes: target });
+  assert.equal(hard.text, '', '静态纪律使完整动态帧超过硬顶 1 字节');
+  assert(hard.receipt.degradations.some(row => row.code === 'frame-content-omitted'));
+  const soft = runWith({ strength: 'soft', utf8Bytes: target, overflowAllowance: { utf8Bytes: 1 } });
+  assert.equal(soft.text, uncapped.text, '软额度恰好容纳完整骨架与铭文');
+  assert.equal(soft.receipt.cost.utf8Bytes, target + 1);
+  assert.equal(soft.receipt.softTargetExceeded, true);
 });
 
 test('01 HEAD and A1 emit byte-identical FSSS output on four consecutive humans', async t => {

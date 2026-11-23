@@ -35,7 +35,7 @@ const body = SRC.slice(S0, SRC.lastIndexOf(END) + END.length)
 //   旧夹具只注入决策段 ⇒ new Function 抛 ReferenceError ⇒ 整套假红。
 //   下列片段从源码**真实抽取** finalizePre，保证夹具与生产同源（不复制实现）。
 const FIN_SRC = (function (SRC) {
-  const A = "const finalizePre = (txt) => {"
+  const A = "const finalizePre = (txt, hangGranted = false) => {"
   const i0 = SRC.indexOf(A)
   if (i0 < 0) throw new Error("finalizePre not found in source")
   let depth = 0

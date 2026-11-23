@@ -23,18 +23,6 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '.
 const SUITE = 'tests/smoke/smoke-test-fullpage-composer.mjs'
 const ARTIFACT = 'lib/client.js'
 
-const SKIP_DIRS = new Set(['.git', 'node_modules', 'python', 'artifacts', '.vision-tmp', 'canvas-local', '_probe'])
-function copyTree(from, to) {
-  fs.mkdirSync(to, { recursive: true })
-  for (const e of fs.readdirSync(from, { withFileTypes: true })) {
-    // ★2026-10-08：排除重型目录（python/ 10GB、artifacts/ 2GB 等），否则整树复制会让本套件超时。
-    if (SKIP_DIRS.has(e.name) || e.name.startsWith('.diag') || e.name.startsWith('.smoke-tmp')) continue
-    const a = path.join(from, e.name), b = path.join(to, e.name)
-    if (e.isDirectory()) copyTree(a, b)
-    else if (e.isFile()) fs.copyFileSync(a, b)
-  }
-}
-
 function runSuite(dir) {
   const r = spawnSync(process.execPath, [SUITE], { cwd: dir, encoding: 'utf8' })
   const out = (r.stdout || '') + (r.stderr || '')
@@ -49,7 +37,12 @@ function ok(name, fn) {
 }
 
 const base = fs.mkdtempSync(path.join(os.tmpdir(), 'dam-fp-neg-'))
-copyTree(ROOT, base)
+// The child reads only this client artifact. Do not copy transient files from concurrent suites.
+for (const file of [SUITE, ARTIFACT]) {
+  const target = path.join(base, file)
+  fs.mkdirSync(path.dirname(target), { recursive: true })
+  fs.copyFileSync(path.join(ROOT, file), target)
+}
 
 const baseRun = runSuite(base)
 ok('N0 副本基线全绿（PASS ' + baseRun.pass + ' / FAIL ' + baseRun.fail + '）', function () {

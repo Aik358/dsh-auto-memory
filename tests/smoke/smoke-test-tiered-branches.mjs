@@ -8,7 +8,7 @@ const body = SRC.slice(S0, SRC.lastIndexOf(END) + END.length)
 // ★2026-10-18（交付层根治配套）：决策段现依赖 finalizePre（生产侧同源抽取）。
 //   旧夹具只注入决策段 ⇒ new Function 抛 ReferenceError ⇒ 整套假红。
 const FIN_SRC = (function (SRC) {
-  const A = "const finalizePre = (txt) => {"
+  const A = "const finalizePre = (txt, hangGranted = false) => {"
   const i0 = SRC.indexOf(A)
   if (i0 < 0) throw new Error("finalizePre not found in source")
   let depth = 0

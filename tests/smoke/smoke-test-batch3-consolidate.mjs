@@ -29,9 +29,10 @@ const FILES = {
   "crlf.md": "line1\r\nline2\r\n",
 };
 const readFile = (p) => { if (!(p in FILES)) { const e = new Error("nope"); e.code = "ENOENT"; throw e } return FILES[p] };
+const clock = () => Date.parse("2026-11-18T12:00:00Z");
 
 {
-  const src = m.collectConsolidationSourcesPre({ days: 7, readFile, readers: {
+  const src = m.collectConsolidationSourcesPre({ days: 7, clock, readFile, readers: {
     logs: [{ path: "logs/2026-11-16.md" }],
     events: [{ path: "events/events.jsonl" }],
     plan: { path: "handoff/PLAN.md" },
@@ -48,7 +49,7 @@ const readFile = (p) => { if (!(p in FILES)) { const e = new Error("nope"); e.co
 
 // 2. ★ unreadable 不得当空来源（L1 §4.10 / L2 §9.2 变异点）
 {
-  const src = m.collectConsolidationSourcesPre({ days: 7, readFile, readers: {
+  const src = m.collectConsolidationSourcesPre({ days: 7, clock, readFile, readers: {
     logs: [{ path: "logs/2026-11-16.md" }, { path: "logs/不存在.md" }],
   } });
   ok(src.states.logs === "unreadable", "★★[CO] 通道含读取失败 ⇒ state=**unreadable**（不是 empty/missing）", src.states.logs);
@@ -85,7 +86,7 @@ const readFile = (p) => { if (!(p in FILES)) { const e = new Error("nope"); e.co
 }
 
 // ══════════ 6. build：prompt / counts / truncation / sourceProofs ══════════
-const mkSrc = () => m.collectConsolidationSourcesPre({ days: 7, readFile, readers: {
+const mkSrc = () => m.collectConsolidationSourcesPre({ days: 7, clock, readFile, readers: {
   logs: [{ path: "logs/2026-11-16.md" }],
   events: [{ path: "events/events.jsonl" }],
   plan: { path: "handoff/PLAN.md" },
@@ -128,7 +129,7 @@ const mkSrc = () => m.collectConsolidationSourcesPre({ days: 7, readFile, reader
 
 // 9. unreadable 通道在 build 里单列，不混进空
 {
-  const src = m.collectConsolidationSourcesPre({ readFile, readers: { logs: [{ path: "logs/2026-11-16.md" }, { path: "缺.md" }] } });
+  const src = m.collectConsolidationSourcesPre({ clock, readFile, readers: { logs: [{ path: "logs/2026-11-16.md" }, { path: "缺.md" }] } });
   const b = m.buildConsolidationPromptPre({ sources: src, budgetPolicy: {} });
   ok(b.unreadableChannels.includes("logs"), "★★[CO] build 单列 unreadableChannels", b.unreadableChannels.join(","));
   ok(b.counts.inputChars.logs > 0, "★[CO] 可读部分仍计入字符（不因通道 unreadable 而清 0）", String(b.counts.inputChars.logs));

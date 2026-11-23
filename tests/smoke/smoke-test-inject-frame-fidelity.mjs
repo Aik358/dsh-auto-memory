@@ -39,7 +39,7 @@ const s1 = SRC.lastIndexOf(END) + END.length
 if (s0 < 0 || s1 <= s0) { console.log("  FAIL - 找不到决策段"); process.exit(1) }
 let SEG = SRC.slice(s0, s1)
 // 决策段依赖 finalizePre —— 从源码里抽出其真实实现（保证测的是生产代码而非复制品）
-const FIN_START = "const finalizePre = (txt) => {"
+const FIN_START = "const finalizePre = (txt, hangGranted = false) => {"
 const f0 = SRC.indexOf(FIN_START)
 if (f0 < 0) { console.log("  FAIL - 找不到 finalizePre"); process.exit(1) }
 let depth = 0, f1 = -1
