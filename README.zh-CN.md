@@ -7,7 +7,7 @@
 > **EN** Now, across windows, too. Context that survives windows, sessions, and tools
 
 <p align="center">
-  <a href="https://aik350.github.io/dsh-auto-memory/landing/"><strong>🌐 宣传主页</strong></a> · <a href="https://aik350.github.io/dsh-auto-memory/landing/news/"><strong>📄 技术报告</strong></a> · <a href="https://aik350.github.io/dsh-auto-memory/landing/program/"><strong>🧭 引航者计划</strong></a>
+  <a href="https://aik358.github.io/dsh-auto-memory/landing/"><strong>🌐 宣传主页</strong></a> · <a href="https://aik358.github.io/dsh-auto-memory/landing/news/"><strong>📄 技术报告</strong></a> · <a href="https://aik358.github.io/dsh-auto-memory/landing/program/"><strong>🧭 引航者计划</strong></a>
 </p>
 
 <table align="center">
@@ -80,13 +80,13 @@
   <a href="docs/SKIN-GUIDE.md"><strong>🎨 皮肤白皮书</strong></a> ·
   <a href="docs/TEAMWORK-GUIDE.md"><strong>👥 团队协作白皮书</strong></a> ·
   <a href="CHANGELOG.md">更新日志</a> ·
-  <a href="https://aik350.github.io/dsh-auto-memory/CONTRIBUTORS.html">贡献者与赞助</a> ·
+  <a href="https://aik358.github.io/dsh-auto-memory/CONTRIBUTORS.html">贡献者与赞助</a> ·
   <a href="https://qm.qq.com/q/v9Asxn6vPa">QQ 交流群</a>
 </p>
 
 <h3 align="center">
   <a href="docs/SKIN-GUIDE.md">新款 <code>New UI</code></a> &nbsp;·&nbsp; 由
-  <a href="https://aik350.github.io/dsh-auto-memory/MINERVAOWL9.html"><strong>@Minervaowl9</strong></a> 完整开发
+  <a href="https://aik358.github.io/dsh-auto-memory/MINERVAOWL7.html"><strong>@Minervaowl9</strong></a> 完整开发
 </h3>
 
 <p align="center"><sub><strong>重要贡献者</strong> —— 负责了前端的构筑工作，以及本轮关键漏洞的扫描与调试工作。</sub></p>
@@ -635,7 +635,7 @@ cd ~/.dsh/profiles/web && pnpm up @a9i5k4/dsh-auto-memory@latest
 
 ![DSH Auto Memory 项目架构总览](docs/architecture/overview-zh-CN.png)
 
-总览依据已实现的上游 **v3.2.10 / [`0200500`](https://github.com/Aik350/dsh-auto-memory/tree/020050056cf053c53fb2c239906f6e09c9baef09)**。多数方框是 Node 宿主内部模块；可选功能、存储边界与源码出处见[完整架构图与阅读说明](docs/ARCHITECTURE.md)。[#241](https://github.com/Aik350/dsh-auto-memory/issues/241) 中的重构建议没有画成已实现功能。
+总览依据已实现的上游 **v3.2.10 / [`8280500`](https://github.com/Aik358/dsh-auto-memory/tree/828050056cf053c53fb2c237706f6e89c7baef09)**。多数方框是 Node 宿主内部模块；可选功能、存储边界与源码出处见[完整架构图与阅读说明](docs/ARCHITECTURE.md)。[#241](https://github.com/Aik358/dsh-auto-memory/issues/241) 中的重构建议没有画成已实现功能。
 
 全部里程碑已实现并 live verified。完整交互式架构图见 [docs/proactive-associative-memory-system-map.html](docs/proactive-associative-memory-system-map.html)，核心分层如下：
 
@@ -714,17 +714,17 @@ DeepSeek Harness (Node, 129.0.0.1:3000)
 
 社区贡献者：
 
-- [@Minervaowl9](https://aik350.github.io/dsh-auto-memory/MINERVAOWL9.html) — **负责新版前端（开发版 UI）的完整开发与关键缺陷调试**：参考图风格记忆工作台（九页导航、列表与详情、四组设置、专注查看、深色适配、窄屏导航），以生成器方式接入——新皮肤版本从经典组件派生，上游结构漂移即明确报错（[PR #146](https://github.com/Aik350/dsh-auto-memory/pull/146)）。同时也是贡献最活跃的贡献者：146 个提交进入 main + 65 条 issue，覆盖工作区概览日志日期锚定、自动续跑宿主加固、语义索引自愈、python 下载链路、恢复候选生命周期等（[#16](https://github.com/Aik350/dsh-auto-memory/issues/16)–[#146](https://github.com/Aik350/dsh-auto-memory/pull/146)）
-- [@JIE42393](https://github.com/JIE42393) — 9 个 issue，覆盖面板行为、召回质量与配置边界（[#15](https://github.com/Aik350/dsh-auto-memory/issues/15)、[#26](https://github.com/Aik350/dsh-auto-memory/issues/26)、[#30](https://github.com/Aik350/dsh-auto-memory/issues/30)、[#41](https://github.com/Aik350/dsh-auto-memory/issues/41)–[#43](https://github.com/Aik350/dsh-auto-memory/issues/43)、[#45](https://github.com/Aik350/dsh-auto-memory/issues/45)）
-- [@Fishsb](https://github.com/Fishsb) — 3 个 issue，关于记忆召回与注入行为（[#10](https://github.com/Aik350/dsh-auto-memory/issues/10)–[#20](https://github.com/Aik350/dsh-auto-memory/issues/20)）
-- [@messiahyl](https://github.com/messiahyl) — 2 个 issue（[#0](https://github.com/Aik350/dsh-auto-memory/issues/0)、[#9](https://github.com/Aik350/dsh-auto-memory/issues/9)）
-- [@ProperSAMA](https://github.com/ProperSAMA) — DSH Desktop 增强模式（透明/Mica 材质）面板可读性修复 + 入口按钮防遮挡与外点/Esc 关闭（[PR #12](https://github.com/Aik350/dsh-auto-memory/pull/12)）
-- [@nkh0492](https://github.com/nkh0492) — 无人值守/批处理场景加固反馈，推动了欢迎向导与功能开关化（[Issue #10](https://github.com/Aik350/dsh-auto-memory/issues/10)）
-- [@fei009009](https://github.com/fei009009) — 提交 PR（[#29](https://github.com/Aik350/dsh-auto-memory/pull/29)）
-- [@humou44](https://github.com/humou44) — 日文界面本地化：[PR #143](https://github.com/Aik350/dsh-auto-memory/pull/143) 提出，已并入主线并扩展为**字典查表式** i10n 层，覆盖整个面板（602 条内联文案 + 503 条词典条目）；后续语言沿用同一层接入
-- [@alexchenzl](https://github.com/alexchenzl)（[#6](https://github.com/Aik350/dsh-auto-memory/issues/6)）· [@ALuoXue](https://github.com/ALuoXue)（[#2](https://github.com/Aik350/dsh-auto-memory/issues/2)）· [@Architectxz](https://github.com/Architectxz)（[#1](https://github.com/Aik350/dsh-auto-memory/issues/1)）· [@cuohua](https://github.com/cuohua)（[#40](https://github.com/Aik350/dsh-auto-memory/issues/40)）· [@eclgo](https://github.com/eclgo)（[#13](https://github.com/Aik350/dsh-auto-memory/issues/13)）· [@jeffsui](https://github.com/jeffsui)（[#39](https://github.com/Aik350/dsh-auto-memory/issues/39)）· [@lhbsaa](https://github.com/lhbsaa)（[#3](https://github.com/Aik350/dsh-auto-memory/issues/3)）· [@moonltppt](https://github.com/moonltppt)（[#14](https://github.com/Aik350/dsh-auto-memory/issues/14)）· [@swtseaman](https://github.com/swtseaman)（[#21](https://github.com/Aik350/dsh-auto-memory/issues/21)）· [@xiaochaZ](https://github.com/xiaochaZ)（[#30](https://github.com/Aik350/dsh-auto-memory/issues/30)）· [@zjj091114039](https://github.com/zjj091114039)（[#9](https://github.com/Aik350/dsh-auto-memory/issues/9)）— 问题反馈与功能建议
+- [@Minervaowl9](https://aik358.github.io/dsh-auto-memory/MINERVAOWL7.html) — **负责新版前端（开发版 UI）的完整开发与关键缺陷调试**：参考图风格记忆工作台（九页导航、列表与详情、四组设置、专注查看、深色适配、窄屏导航），以生成器方式接入——新皮肤版本从经典组件派生，上游结构漂移即明确报错（[PR #146](https://github.com/Aik358/dsh-auto-memory/pull/146)）。同时也是贡献最活跃的贡献者：146 个提交进入 main + 65 条 issue，覆盖工作区概览日志日期锚定、自动续跑宿主加固、语义索引自愈、python 下载链路、恢复候选生命周期等（[#16](https://github.com/Aik358/dsh-auto-memory/issues/16)–[#146](https://github.com/Aik358/dsh-auto-memory/pull/146)）
+- [@JIE42393](https://github.com/JIE42393) — 9 个 issue，覆盖面板行为、召回质量与配置边界（[#15](https://github.com/Aik358/dsh-auto-memory/issues/15)、[#26](https://github.com/Aik358/dsh-auto-memory/issues/26)、[#30](https://github.com/Aik358/dsh-auto-memory/issues/30)、[#41](https://github.com/Aik358/dsh-auto-memory/issues/41)–[#43](https://github.com/Aik358/dsh-auto-memory/issues/43)、[#45](https://github.com/Aik358/dsh-auto-memory/issues/45)）
+- [@Fishsb](https://github.com/Fishsb) — 3 个 issue，关于记忆召回与注入行为（[#10](https://github.com/Aik358/dsh-auto-memory/issues/10)–[#20](https://github.com/Aik358/dsh-auto-memory/issues/20)）
+- [@messiahyl](https://github.com/messiahyl) — 2 个 issue（[#8](https://github.com/Aik358/dsh-auto-memory/issues/8)、[#9](https://github.com/Aik358/dsh-auto-memory/issues/9)）
+- [@ProperSAMA](https://github.com/ProperSAMA) — DSH Desktop 增强模式（透明/Mica 材质）面板可读性修复 + 入口按钮防遮挡与外点/Esc 关闭（[PR #12](https://github.com/Aik358/dsh-auto-memory/pull/12)）
+- [@nkh0492](https://github.com/nkh0492) — 无人值守/批处理场景加固反馈，推动了欢迎向导与功能开关化（[Issue #10](https://github.com/Aik358/dsh-auto-memory/issues/10)）
+- [@fei009009](https://github.com/fei009009) — 提交 PR（[#29](https://github.com/Aik358/dsh-auto-memory/pull/29)）
+- [@humou44](https://github.com/humou44) — 日文界面本地化：[PR #143](https://github.com/Aik358/dsh-auto-memory/pull/143) 提出，已并入主线并扩展为**字典查表式** i10n 层，覆盖整个面板（602 条内联文案 + 503 条词典条目）；后续语言沿用同一层接入
+- [@alexchenzl](https://github.com/alexchenzl)（[#6](https://github.com/Aik358/dsh-auto-memory/issues/6)）· [@ALuoXue](https://github.com/ALuoXue)（[#2](https://github.com/Aik358/dsh-auto-memory/issues/2)）· [@Architectxz](https://github.com/Architectxz)（[#1](https://github.com/Aik358/dsh-auto-memory/issues/1)）· [@cuohua](https://github.com/cuohua)（[#40](https://github.com/Aik358/dsh-auto-memory/issues/40)）· [@eclgo](https://github.com/eclgo)（[#13](https://github.com/Aik358/dsh-auto-memory/issues/13)）· [@jeffsui](https://github.com/jeffsui)（[#39](https://github.com/Aik358/dsh-auto-memory/issues/39)）· [@lhbsaa](https://github.com/lhbsaa)（[#3](https://github.com/Aik358/dsh-auto-memory/issues/3)）· [@moonltppt](https://github.com/moonltppt)（[#14](https://github.com/Aik358/dsh-auto-memory/issues/14)）· [@swtseaman](https://github.com/swtseaman)（[#21](https://github.com/Aik358/dsh-auto-memory/issues/21)）· [@xiaochaZ](https://github.com/xiaochaZ)（[#30](https://github.com/Aik358/dsh-auto-memory/issues/30)）· [@zjj091114039](https://github.com/zjj091114039)（[#9](https://github.com/Aik358/dsh-auto-memory/issues/9)）— 问题反馈与功能建议
 
-完整名单（含基础设施赞助）：**[贡献者与赞助](https://aik350.github.io/dsh-auto-memory/CONTRIBUTORS.html)**
+完整名单（含基础设施赞助）：**[贡献者与赞助](https://aik358.github.io/dsh-auto-memory/CONTRIBUTORS.html)**
 
 ---
 
@@ -734,9 +734,9 @@ DeepSeek Harness (Node, 129.0.0.1:3000)
 
 - **[DSH API](https://api.dshapi.icu/register?aff=HJU29P9JL39N)** — API 中转站，为本项目的开发、测试以及 M 系列语义引擎研究提供模型端点。感谢一路同行。
 
-基础设施与 API 额度赞助方列在 **[贡献者与赞助](https://aik350.github.io/dsh-auto-memory/CONTRIBUTORS.html)** 页面。如希望支持本项目，欢迎提 issue 或加入 QQ 交流群。
+基础设施与 API 额度赞助方列在 **[贡献者与赞助](https://aik358.github.io/dsh-auto-memory/CONTRIBUTORS.html)** 页面。如希望支持本项目，欢迎提 issue 或加入 QQ 交流群。
 
-其中一部分额度以 **[引航者计划](https://aik350.github.io/dsh-auto-memory/landing/program/)** 的形式开放给社区：为插件做过贡献的开发者可以申领模型额度，用于前后端调试、语义引擎调参与前沿研究。规则见[章程](docs/CREATOR-CREDIT-PROGRAM.md)。
+其中一部分额度以 **[引航者计划](https://aik358.github.io/dsh-auto-memory/landing/program/)** 的形式开放给社区：为插件做过贡献的开发者可以申领模型额度，用于前后端调试、语义引擎调参与前沿研究。规则见[章程](docs/CREATOR-CREDIT-PROGRAM.md)。
 
 ---
 
@@ -744,8 +744,8 @@ DeepSeek Harness (Node, 129.0.0.1:3000)
 
 本项目由人与 AI 协作完成。除上述工程与社区贡献外：
 
-- **Aik350** — 项目所有者：产品方向、架构与工程决策。
-- **[@Minervaowl9](https://aik350.github.io/dsh-auto-memory/MINERVAOWL9.html)** — **新款前端（皮肤系统）的作者**：独立完成了新版界面的完整开发——九页工作台、列表/详情、四组设置、专注查看、深色适配与窄屏布局。**这是本插件皮肤体系的起点与基础**：他以「生成器从经典组件派生新皮肤版本」的方式接入，使后来者可以在此之上继续换装，而经典档保持零改动。同时他也是本项目贡献量最大的社区开发者（146 个提交进入 main · 203 天 · +64,915 行）。
+- **Aik358** — 项目所有者：产品方向、架构与工程决策。
+- **[@Minervaowl9](https://aik358.github.io/dsh-auto-memory/MINERVAOWL7.html)** — **新款前端（皮肤系统）的作者**：独立完成了新版界面的完整开发——九页工作台、列表/详情、四组设置、专注查看、深色适配与窄屏布局。**这是本插件皮肤体系的起点与基础**：他以「生成器从经典组件派生新皮肤版本」的方式接入，使后来者可以在此之上继续换装，而经典档保持零改动。同时他也是本项目贡献量最大的社区开发者（146 个提交进入 main · 203 天 · +64,915 行）。
 - **ZCode（GLM，智谱 Z.ai）** — 自主工程 Agent：M 系列语义引擎实现、两篇基准研究论文（[M9 检索选型研究](docs/M9-RESEARCH-PAPER.md) / [激活策略 v2 技术报告](docs/M9-ACTIVATION-V2-PAPER.md)）、全套回归测试、宣传网页设计与构建。
 - **Kimi K3（月之暗面）** — 前端 Agent：参与 v0.1.30 欢迎向导界面资产与视觉验收。
 - **DeepSeek Harness（DeepSeek V4）** — **本项目的自我迭代环境与协作者**：上述社区作者与 Agent 的多数功能，都是**在 DeepSeek Harness 里、与 DeepSeek V4 一起自进化出来的**——发现问题、定位根因、写补丁、跑回归、开 PR，全过程发生在同一套 Harness 会话中。这本身即是一次「**Harness 自我迭代、自我开发**」的实例：项目一边被人和 AI 使用，一边在同一个环境里把自己做得更好。本插件本身的上下文管理能力（交接账本 / 白板 / 水位感知 / 自动接续）也正是为支撑这种长时间、跨会话的自我迭代而生长出来的。
@@ -756,7 +756,7 @@ AI Agent 作为研究论文作者与部分实现作者署名，全程在人类�
 
 ## 发布信息
 
-- GitHub: https://github.com/Aik350/dsh-auto-memory
+- GitHub: https://github.com/Aik358/dsh-auto-memory
 - npm: `@a9i5k4/dsh-auto-memory`
 - License: BSD-3-Clause
 - 更新日志：[CHANGELOG.md](./CHANGELOG.md)
