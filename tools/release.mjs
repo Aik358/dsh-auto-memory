@@ -315,7 +315,7 @@ reportDocsOverwriteRisk()
 //     · tests/smoke/smoke-test-issue368-write-contract-negative.mjs → tools/check-write-contract-await.mjs（PR#420）
 //   而 tools/ 是**白名单**入包 ⇒ 不列即静默跳过；漏了会出现「发布树里测试引用的工具不存在」，
 //   即本文件反复记录的同一型漏网（CI 里 ERR_MODULE_NOT_FOUND / ENOENT）。
-for (const toolFile of 'run-smoke.mjs,smoke-impact.mjs,release.mjs,reconcile-upstream.mjs,check-write-contract.mjs,check-write-contract-await.mjs,chart-engine.mjs,chart-figs.mjs,chart-figs-step5.mjs,chart-audit.mjs'.split(',')) {
+for (const toolFile of 'guard-tracked-imports.mjs,run-smoke.mjs,smoke-impact.mjs,release.mjs,reconcile-upstream.mjs,check-write-contract.mjs,check-write-contract-await.mjs,chart-engine.mjs,chart-figs.mjs,chart-figs-step5.mjs,chart-audit.mjs'.split(',')) {
   const src = path.join(DEV, 'tools', toolFile)
   if (!existsSync(src)) continue
   mkdirSync(path.join(REL, 'tools'), { recursive: true })
@@ -354,7 +354,7 @@ for (const toolFile of 'build-iter5-skin.mjs'.split(',')) {
 //   （**静默跳过**）—— 这正是本缺陷的成因：文件没被列入，构建照样「成功」。
 //   故此处**不信任清单**，直接核对**交付结果**：每个必需工具必须已落在 REL 里。
 //   判据从「源侧有没有」改为「产物侧有没有」—— 与 3.7 的调用点严格配套。
-const REQUIRED_RELEASE_TOOLS = ['run-smoke.mjs', 'smoke-impact.mjs', 'release.mjs', 'build-iter5-skin.mjs', 'reconcile-upstream.mjs']
+const REQUIRED_RELEASE_TOOLS = ['run-smoke.mjs', 'smoke-impact.mjs', 'release.mjs', 'build-iter5-skin.mjs', 'reconcile-upstream.mjs', 'guard-tracked-imports.mjs']
 {
   const absent = REQUIRED_RELEASE_TOOLS.filter((f) => !existsSync(path.join(REL, 'tools', f)))
   if (absent.length) {
