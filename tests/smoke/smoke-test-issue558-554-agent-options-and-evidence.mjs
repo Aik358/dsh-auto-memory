@@ -225,7 +225,7 @@ T.eq(m3.rows[0].phase, 'partial', 'E-3 变异体看不到白板变化 ⇒ 判 pa
 console.log('')
 console.log('== F. [守卫·非功能证据] 接线在位（可证伪，但不算功能验收）==')
 T.ok(IX.indexOf('resolveSubAgentOptionsPre(override, this.config, lane)') >= 0, 'F-1 runSubagent 内部真解析 override')
-T.ok(IX.indexOf("...(_ao && _ao.ok && _ao.value ? { agentOptions: _ao.value } : {})") >= 0, 'F-2 主路径 agentOptions 走 override（不再直接 subAgentOptions）')
+T.ok(IX.includes('run = await start(_ao && _ao.ok ? _ao.value : undefined)') && /await callSubagentStartPre\([\s\S]{0,400}\.\.\.\(agentOptions \? \{ agentOptions \} : \{\}\)/.test(IX), 'F-2 主路径经共用启动器下发解析后的 agentOptions')
 T.ok(IX.indexOf('agentOptions: subAgentOptions({ ...this.config, subagentModel: fbModel') < 0, 'F-3 回退路径已不再「只跑全局」（半修防线）')
 T.ok(IX.indexOf('_aoCommit.override') >= 0, 'F-4 startUpgradeJobPre 把 override 传给 runSubagent')
 T.ok(IX.indexOf('evidenceBaseline') >= 0, 'F-5 start 落写前证据快照')

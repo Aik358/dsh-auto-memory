@@ -32,8 +32,8 @@ console.log('== A. 函数存在与接入 ==')
   // ★批0（2026-11-05）升级：原为 IX.indexOf('async buildWorkspaceManifestPre()') / '(engineRef.buildWorkspaceManifestPre())'
   //   两条**纯源码字符串**断言（CR-10 禁止充当功能证据），且签名改三参后会假红。
   //   改为「真执行」：从源码抽函数体建实例，断言签名长度 + 真调不抛 + 不传参时行为与旧版一致（向后兼容）。
-  ok(/async buildWorkspaceManifestPre\(scope, workspaceKeys, currentWs\)/.test(IX), 'A-1 定义为三参（scope/keys/当前区）——签名守卫，非功能证据')
-  ok(IX.indexOf('buildWorkspaceManifestPre(_scopeOpt, _scopeKeys, _scopeWs)') >= 0, 'A-2 ★startUpgradeJobPre 已把范围传下去（调用点守卫）')
+  ok(/async buildWorkspaceManifestPre\(scope, workspaceKeys, currentWs, scopedInventory\)/.test(IX), 'A-1 定义为四参（scope/keys/当前区/已选清单）——签名守卫，非功能证据')
+  ok(IX.indexOf('buildWorkspaceManifestPre(_scopeOpt, _scopeKeys, _scopeWs, scopedInventory)') >= 0, 'A-2 ★startUpgradeJobPre 已把范围传下去（调用点守卫）')
   ok(IX.indexOf('WORKSPACE-MANIFEST:BEGIN') >= 0, 'A-3 含清单起止标记')
   ok(IX.indexOf('WORKSPACE-MANIFEST:END') >= 0, 'A-4 含清单结束标记')
   // 必须在 runSubagent 之前算好并前置
@@ -51,8 +51,8 @@ console.log('== A. 函数存在与接入 ==')
 console.log('')
 console.log('== B. 真执行 buildWorkspaceManifestPre ==')
 {
-  // ★批0（2026-11-05）：签名已改为三参 —— 抽取锚点必须同步（否则 start=-1 ⇒ B 段全废）。
-  const start = IX.indexOf('async buildWorkspaceManifestPre(scope, workspaceKeys, currentWs) {')
+  // ★2026-11-23：签名改为四参（新增 scopedInventory）—— 抽取锚点必须同步（否则 start=-1 ⇒ B 段全废）。
+  const start = IX.indexOf('async buildWorkspaceManifestPre(scope, workspaceKeys, currentWs, scopedInventory) {')
   let i = IX.indexOf('{', start), depth = 0, end = -1
   for (; i < IX.length; i++) { const c = IX[i]; if (c === '{') depth++; else if (c === '}') { depth--; if (depth === 0) { end = i + 1; break } } }
   ok(end > start, 'B-1 函数体括号配平成功', 'len=' + (end - start))

@@ -1,0 +1,11 @@
+### Result
+{
+  "focused": "接续冷却(分钟)",
+  "detailsOpen": true,
+  "viewportTop": 485,
+  "focusedRow": true
+}
+### Ran Playwright code
+```js
+await page.evaluate('() => ({ focused: document.activeElement?.querySelector("label")?.textContent, detailsOpen: document.activeElement?.closest("details")?.open, viewportTop: Math.round(document.activeElement?.getBoundingClientRect().top ?? -1), focusedRow: document.activeElement?.hasAttribute("data-dam-settings-row") })');
+```

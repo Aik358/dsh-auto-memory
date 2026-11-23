@@ -72,7 +72,10 @@ try {
   for (const dir of ['lib', 'tests', 'python', 'tools', 'locale']) mkdirSync(path.join(fixture, dir), { recursive: true })
   writeFileSync(path.join(fixture, 'lib', 'index.js'), 'export const fixture = true' + String.fromCharCode(10))
   writeFileSync(path.join(fixture, 'lib', 'client.js'), 'export const fixture = true' + String.fromCharCode(10))
-  for (const f of ['run-smoke.mjs', 'smoke-impact.mjs', 'build-iter5-skin.mjs']) writeFileSync(path.join(fixture, 'tools', f), '// fixture' + String.fromCharCode(10))
+  // ★2026-11-23：release.mjs 的 REQUIRED_RELEASE_TOOLS 现有 6 项（新增 guard-tracked-imports.mjs）。
+  //   fixture 必须覆盖**完整清单**（除单独断言其缺失的 reconcile-upstream.mjs 外），
+  //   否则正路径会因「发布树缺必需文件」而失败——那是夹具未跟随清单演进，不是产品缺陷。
+  for (const f of ['run-smoke.mjs', 'smoke-impact.mjs', 'build-iter5-skin.mjs', 'guard-tracked-imports.mjs']) writeFileSync(path.join(fixture, 'tools', f), '// fixture' + String.fromCharCode(10))
   // ★关键：release.mjs **本体**拷进 fixture，使其相对解析的 DEV == fixture。
   cpSync(RELEASE, path.join(fixture, 'tools', 'release.mjs'))
   // ★哨兵：fixture 独有（真仓库绝无此文件）⇒ 出现在 staging 即证明 DEV == fixture。

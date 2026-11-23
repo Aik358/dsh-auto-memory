@@ -28,7 +28,8 @@ console.log("=== T1 startActivation 适配层存在 ===")
   ok(/typeof subagents\.start === "function"/.test(SRC), "保留 0.1.x 的 start 兼容分支")
   // 两处调用点都必须走适配层
   const callSites = (SRC.match(/await callSubagentStartPre\(/g) || []).length
-  ok(callSites === 2, "两处调用点都改走适配层（实测 " + callSites + " 处）")
+  const starts = (SRC.match(/\brun = await start\(/g) || []).length
+  ok(callSites === 1 && starts === 2, "主启动与回退共用适配层（" + starts + " 次启动，" + callSites + " 处适配）")
   // 不得再有**裸 start 调用**：适配函数内部的 0.1.x 兼容分支本身会写 subagents.start(，
   //   那是唯一合法位置 ⇒ 判据是「除适配函数体之外，剥注释后零 subagents.start(」。
   const stripped = SRC.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "")

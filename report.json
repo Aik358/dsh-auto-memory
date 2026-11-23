@@ -1,0 +1,52 @@
+{
+  "at": "2026-11-19T14:58:02.481Z",
+  "target": "C:\\Users\\JH Z\\AppData\\Local\\Temp\\dam-optin-probe2",
+  "status": "APPLIED",
+  "backend": {
+    "field": "allowUnprovenUserFiles",
+    "required": true,
+    "sources": [
+      "route-primary:allowUnprovenUserFiles",
+      "route-primary:allowUnprovenUserFiles"
+    ],
+    "drift": []
+  },
+  "shape": {
+    "requests": 6,
+    "states": 3,
+    "classicSlots": 2,
+    "iterSlots": 1,
+    "propsSlots": 1,
+    "hasUpstreamFix": false,
+    "drift": [],
+    "fieldResolved": "allowUnprovenUserFiles"
+  },
+  "drift": [],
+  "actions": [
+    "内联 HELPER 契约层（单一真源，默认字段 allowUnprovenUserFiles）",
+    "6 处请求点改为 Object.assign(..., __damMigrationOptIn.body(packExpr, confirmedPack))",
+    "3 组向导各注入按「包路径」绑定的确认状态",
+    "3 处勾选框（含 required() 开关）+ 大屏页 props 传递",
+    "已写入 C:\\Users\\JH Z\\AppData\\Local\\Temp\\dam-optin-probe2\\lib\\client.js（换行=CRLF，原件备份 C:\\Users\\JH Z\\AppData\\Local\\Temp\\dam-optin-probe2\\lib\\client.js.orig-449ui）"
+  ],
+  "checks": {
+    "requestsWithBody": 6,
+    "boxes": 3,
+    "states": 3,
+    "unconditionalTrue": 0,
+    "helperInline": true,
+    "helperUnique": 1,
+    "syntax": true,
+    "ok": true,
+    "anchors": {
+      "requests": 6,
+      "states": 3,
+      "classicSlots": 2,
+      "iterSlots": 1,
+      "propsSlots": 1
+    },
+    "anchorsOk": true,
+    "fieldOverride": null
+  },
+  "version": "3.4.0-alpha.6"
+}

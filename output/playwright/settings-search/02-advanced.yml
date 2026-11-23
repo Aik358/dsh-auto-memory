@@ -1,0 +1,427 @@
+### Page
+- Page URL: http://127.0.0.1:19436/
+- Page Title: DeepSeek Harness
+### Snapshot
+```yaml
+- generic [ref=f1e1]:
+  - generic [ref=f1e4]:
+    - generic [ref=f1e7]:
+      - generic [ref=f1e8]:
+        - button "新建会话" [ref=f1e9] [cursor=pointer]
+        - button "收起侧边栏" [ref=f1e38] [cursor=pointer]
+      - button "新建会话" [ref=f1e43] [cursor=pointer]:
+        - generic [ref=f1e44]: 新会话
+        - generic:
+          - generic:
+            - generic: Ctrl
+            - generic: +
+            - generic: Alt
+            - generic: +
+            - generic: "N"
+      - generic [ref=f1e50]:
+        - navigation "全局面板" [ref=f1e51]:
+          - button "插件" [ref=f1e53] [cursor=pointer]
+          - generic [ref=f1e59]:
+            - button "自动化任务" [ref=f1e60] [cursor=pointer]
+            - button "从侧边栏取消固定自动化任务" [ref=f1e66] [cursor=pointer]
+          - button "更多" [ref=f1e70] [cursor=pointer]
+        - generic [ref=f1e77]:
+          - generic [ref=f1e78]:
+            - generic [ref=f1e79]: 工作区
+            - generic [ref=f1e81]:
+              - button "搜索会话" [ref=f1e82] [cursor=pointer]
+              - textbox "搜索会话名称"
+            - generic [ref=f1e85]:
+              - button "视图选项" [ref=f1e87] [cursor=pointer]
+              - button "添加工作区" [ref=f1e90] [cursor=pointer]
+          - tree "会话" [ref=f1e95]:
+            - generic [ref=f1e96]:
+              - treeitem "默认工作区" [expanded] [ref=f1e98] [cursor=pointer]
+              - treeitem "新会话" [selected] [ref=f1e194] [cursor=pointer]
+      - generic [ref=f1e104]:
+        - button "记忆" [ref=f1e108] [cursor=pointer]
+        - button "账号菜单" [ref=f1e116] [cursor=pointer]:
+          - generic [ref=f1e119]: 更多
+    - generic [ref=f1e124]:
+      - banner [ref=f1e126]:
+        - button "打开右侧边栏" [ref=f1e201] [cursor=pointer]
+      - generic [ref=f1e135]:
+        - generic [ref=f1e143]:
+          - generic [ref=f1e144]: 探索未至之境
+          - generic [ref=f1e145]: 预览版
+        - generic [ref=f1e146]:
+          - button "选择工作区" [ref=f1e147] [cursor=pointer]:
+            - generic [ref=f1e150]: 默认工作区
+          - button "标准模式" [ref=f1e208] [cursor=pointer]
+        - generic [ref=f1e155]:
+          - generic [ref=f1e157]:
+            - textbox "描述你想要构建的内容, / 调用指令, @ 文件或对话" [ref=f1e214]
+            - generic: 描述你想要构建的内容, / 调用指令, @ 文件或对话
+          - generic [ref=f1e159]:
+            - generic [ref=f1e160]:
+              - button "添加文件或调用指令" [ref=f1e215] [cursor=pointer]
+              - button "访问模式，当前：工作区内修改" [ref=f1e221] [cursor=pointer]:
+                - generic [ref=f1e227]: 工作区内修改
+            - generic [ref=f1e161]:
+              - button "请选择模型" [ref=f1e234] [cursor=pointer]
+              - button "发送消息" [disabled] [ref=f1e238]
+  - dialog "设置" [ref=f1e283]:
+    - navigation [ref=f1e285]:
+      - generic [ref=f1e286]:
+        - button "通用设置" [ref=f1e287] [cursor=pointer]
+        - button "模型" [ref=f1e293] [cursor=pointer]
+        - button "内置插件" [ref=f1e299] [cursor=pointer]
+        - button "Agent 预设" [ref=f1e305] [cursor=pointer]
+        - button "自动记忆" [ref=f1e311] [cursor=pointer]
+    - generic [ref=f1e317]:
+      - button "打开配置文件" [ref=f1e321] [cursor=pointer]
+      - button "关闭" [ref=f1e322] [cursor=pointer]
+    - generic "记忆设置" [ref=f1e437]:
+      - banner [ref=f1e438]:
+        - strong [ref=f1e439]: 记忆设置
+        - button "展开设置" [ref=f1e440] [cursor=pointer]
+      - generic [ref=f1e442]:
+        - tablist "设置分组" [ref=f1e443]:
+          - tab "查找与回忆" [ref=f1e444] [cursor=pointer]
+          - tab "记录与使用" [ref=f1e445] [cursor=pointer]
+          - tab "外观与目录" [ref=f1e446] [cursor=pointer]
+          - tab "接续与维护" [selected] [ref=f1e447] [cursor=pointer]
+        - search "搜索设置" [ref=f1e448]:
+          - searchbox "搜索设置" [ref=f1e452]
+        - tabpanel "接续与维护" [ref=f1e529]:
+          - paragraph [ref=f1e454]: 长对话接续、免打扰和定时整理都在这里。接续会先询问你；定时任务需要 DSH 运行。 除标有「立即生效」的选项外，修改后请点击底部保存。立即生效项不会被取消修改撤销；标有重启的设置保存后需重启。
+          - generic [ref=f1e530]:
+            - heading "投递策略" [level=3] [ref=f1e531]
+            - generic [ref=f1e537]:
+              - generic [ref=f1e538]:
+                - paragraph [ref=f1e539]: 尚未保存策略；真实投递仍使用原设置。
+                - button "配置策略" [ref=f1e541] [cursor=pointer]
+              - generic [ref=f1e542]:
+                - generic [ref=f1e543]:
+                  - term [ref=f1e544]: 内容预设
+                  - definition [ref=f1e545]: 真人 完整
+                - generic [ref=f1e546]:
+                  - term [ref=f1e547]: 启用模块
+                  - definition [ref=f1e548]: 11 / 11
+                - generic [ref=f1e549]:
+                  - term [ref=f1e550]: 精简 / 完整节奏
+                  - definition [ref=f1e551]: 15 / 40
+                - generic [ref=f1e552]:
+                  - term [ref=f1e553]: 总预算
+                  - definition [ref=f1e554]: 8000 字符
+                - generic [ref=f1e555]:
+                  - term [ref=f1e556]: 诊断注入
+                  - definition [ref=f1e557]: 已关闭
+          - generic [ref=f1e558]:
+            - heading "长对话换窗口后继续" [level=3] [ref=f1e559]
+            - status [ref=f1e564]: 当前会话尚未测量；生效值将在测量后显示。
+            - generic [ref=f1e566]:
+              - generic [ref=f1e567]:
+                - text: 保存任务交接材料
+                - generic [ref=f1e568]: 用白板和交接记录保存计划、进展与下一步，方便长对话换窗口后继续。可在「白板」查看。
+              - switch "保存任务交接材料" [checked] [ref=f1e570] [cursor=pointer]
+            - generic [ref=f1e572]:
+              - generic [ref=f1e573]:
+                - text: 对话快满时询问是否换新会话
+                - generic [ref=f1e574]: 达到阈值后显示确认卡；同意或无人值守倒计时结束后接续到新会话；沿用工作区、模型和思考档位。此功能仍在测试。
+              - switch "对话快满时询问是否换新会话" [ref=f1e576] [cursor=pointer]
+            - group [ref=f1e577]:
+              - generic "进阶选项：长对话换窗口后继续" [ref=f1e578]
+              - option "auto 自动校准（推荐）" [selected]
+              - option "fixed 固定阈值（旧行为）"
+          - generic [ref=f1e579]:
+            - heading "免打扰与定时整理" [level=3] [ref=f1e580]
+            - generic [ref=f1e586]:
+              - generic [ref=f1e587]:
+                - text: 回来时自动打开记忆面板
+                - generic [ref=f1e588]: 离开一段时间再回来时自动显示记忆面板；关闭后仍可手动打开。
+              - switch "回来时自动打开记忆面板" [checked] [ref=f1e590] [cursor=pointer]
+            - generic [ref=f1e592]:
+              - generic [ref=f1e593]:
+                - text: 批量任务免打扰
+                - generic [ref=f1e594]: 适合夜间或批量运行：不提供欢迎语、行为提示和日历提醒，仍提供事实记忆。
+              - switch "批量任务免打扰" [ref=f1e596] [cursor=pointer]
+            - generic [ref=f1e598]:
+              - generic [ref=f1e599]:
+                - text: 非工作时间自动免打扰
+                - generic [ref=f1e600]: 在设定的非工作时间或检测到托管任务时自动进入免打扰；手动设置优先。
+              - switch "非工作时间自动免打扰" [ref=f1e602] [cursor=pointer]
+            - generic [ref=f1e604]:
+              - generic [ref=f1e605]:
+                - text: 自动总结时间点(HH:MM,逗号分隔)
+                - generic [ref=f1e606]:
+                  - text: 到点自动生成本时段总结并弹窗展示,如 12:00,18:00,22:00。
+                  - group [ref=f1e607]:
+                    - generic "详细说明" [ref=f1e608]
+              - textbox "自动总结时间点(HH:MM,逗号分隔)" [ref=f1e610]
+            - generic [ref=f1e612]:
+              - generic [ref=f1e613]:
+                - text: 每天提炼长期记忆
+                - generic [ref=f1e614]: 到点读取近期日志，将长期有用的内容整理到项目笔记或跨项目记忆；需宿主在线，会调用模型。
+              - switch "每天提炼长期记忆" [checked] [ref=f1e616] [cursor=pointer]
+            - generic [ref=f1e618]:
+              - generic [ref=f1e619]:
+                - text: 每天几点提炼（HH:MM）
+                - generic [ref=f1e620]: 例如 09:30；到点时 DSH 需要保持运行。
+              - textbox "每天几点提炼（HH:MM）" [ref=f1e622]:
+                - /placeholder: 09:30
+                - text: 09:30
+            - generic [ref=f1e624]:
+              - generic [ref=f1e625]:
+                - text: 提炼最近几天的日志
+                - generic [ref=f1e626]: 只回看这些天的日志；天数越多，待处理内容通常越多。
+              - spinbutton "提炼最近几天的日志" [ref=f1e628]: "7"
+            - generic [ref=f1e630]:
+              - generic [ref=f1e631]:
+                - text: 每天整理超过 30 天的旧日志
+                - generic [ref=f1e632]: 到点提炼并归档旧日志；没有符合条件的旧日志就跳过。
+              - switch "每天整理超过 30 天的旧日志" [checked] [ref=f1e634] [cursor=pointer]
+            - generic [ref=f1e636]:
+              - generic [ref=f1e637]:
+                - text: 每天几点整理旧日志（HH:MM）
+                - generic [ref=f1e638]: 例如 10:00；建议与长期记忆提炼时间错开，并保持 DSH 运行。
+              - textbox "每天几点整理旧日志（HH:MM）" [ref=f1e640]:
+                - /placeholder: 10:00
+                - text: 10:00
+            - group [ref=f1e641]:
+              - generic "进阶选项：免打扰与定时整理" [ref=f1e642]
+              - generic [ref=f1e644]:
+                - generic [ref=f1e645]:
+                  - text: 子代理模型 / 思考强度
+                  - generic [ref=f1e646]:
+                    - text: ★作用域=「记忆中枢」工作区(aik_auto_memory_use)下所有会话的默认模型与思考强度;后台子代理(问候/总结/沉淀/蒸馏)挂在该工作区下运行,因此也跟随这里。
+                    - group [ref=f1e647]:
+                      - generic "详细说明" [ref=f1e648]
+                - generic [ref=f1e650]:
+                  - generic [ref=f1e651]: 跟随路由默认
+                  - button "选择模型 / 强度" [ref=f1e652] [cursor=pointer]
+              - generic [ref=f1e654]:
+                - generic [ref=f1e655]:
+                  - text: 接续确认等待(秒)
+                  - generic [ref=f1e656]:
+                    - text: 自动接续前给用户确认的等待秒数。
+                    - group [ref=f1e657]:
+                      - generic "详细说明" [ref=f1e658]
+                - spinbutton "接续确认等待(秒)" [ref=f1e660]: "35"
+              - generic [ref=f1e662]:
+                - generic [ref=f1e663]:
+                  - text: 接续冷却(分钟)
+                  - generic [ref=f1e664]:
+                    - text: 同一会话两次自动接续之间的最小间隔。
+                    - group [ref=f1e665]:
+                      - generic "详细说明" [ref=f1e666]
+                - spinbutton "接续冷却(分钟)" [ref=f1e668]: "30"
+              - generic [ref=f1e670]:
+                - generic [ref=f1e671]:
+                  - text: 归档巡检周期(分钟)
+                  - generic [ref=f1e672]:
+                    - text: 会话归档扫描的巡检间隔。
+                    - group [ref=f1e673]:
+                      - generic "详细说明" [ref=f1e674]
+                - spinbutton "归档巡检周期(分钟)" [ref=f1e676]: "60"
+              - generic [ref=f1e678]:
+                - generic [ref=f1e679]:
+                  - text: 工作台轮询·短轴(分钟)
+                  - generic [ref=f1e680]:
+                    - text: 短期任务（产出/维护短期记忆）的轮询节奏。
+                    - group [ref=f1e681]:
+                      - generic "详细说明" [ref=f1e682]
+                - spinbutton "工作台轮询·短轴(分钟)" [ref=f1e684]: "10"
+              - generic [ref=f1e686]:
+                - generic [ref=f1e687]:
+                  - text: 工作台轮询·长轴(小时)
+                  - generic [ref=f1e688]:
+                    - text: 长期任务（巩固/蒸馏/长期记忆）的轮询节奏。
+                    - group [ref=f1e689]:
+                      - generic "详细说明" [ref=f1e690]
+                - spinbutton "工作台轮询·长轴(小时)" [ref=f1e692]: "24"
+              - generic [ref=f1e694]:
+                - generic [ref=f1e695]:
+                  - text: 工作台重试间隔(毫秒)
+                  - generic [ref=f1e696]:
+                    - text: 工作台任务失败后的重试间隔。
+                    - group [ref=f1e697]:
+                      - generic "详细说明" [ref=f1e698]
+                - spinbutton "工作台重试间隔(毫秒)" [ref=f1e700]: "30000"
+              - generic [ref=f1e702]:
+                - generic [ref=f1e703]:
+                  - text: 工作台轮换周期（天）
+                  - generic [ref=f1e704]:
+                    - text: "**跟随上一项「归档阈值」**，不再单独设置（默认 **2** 天）。"
+                    - group [ref=f1e705]:
+                      - generic "详细说明" [ref=f1e706]
+                - spinbutton "工作台轮换周期（天）" [disabled] [ref=f1e708]: "2"
+              - generic [ref=f1e710]:
+                - generic [ref=f1e711]:
+                  - text: 工作台工作区
+                  - generic [ref=f1e712]:
+                    - text: 留空 = 自动使用 **DSH 本体目录**下的 aik_auto_memory_use（Windows / macOS / Linux 都能匹配到，与 DSH 自己的数据同根，无需改盘符或家目录）。
+                    - group [ref=f1e713]:
+                      - generic "详细说明" [ref=f1e714]
+                - generic [ref=f1e716]:
+                  - textbox "aik_auto_memory_use" [ref=f1e717]
+                  - button "浏览…" [ref=f1e718] [cursor=pointer]
+              - generic [ref=f1e720]:
+                - generic [ref=f1e721]:
+                  - text: 多久没操作算离开（分钟）
+                  - generic [ref=f1e722]: 配合回归提示和自动弹窗使用。0 关闭离开检测与欢迎问候。
+                - spinbutton "多久没操作算离开（分钟）" [ref=f1e724]: "60"
+              - generic [ref=f1e726]:
+                - generic [ref=f1e727]:
+                  - text: 会话归档与删除（自持）
+                  - generic [ref=f1e728]: 总开关。开启后本插件自己按下面的天数归档并清理会话，**不依赖任何外部会话管理插件**；关掉则两条策略都不跑。
+                - switch "会话归档与删除（自持）" [checked] [ref=f1e730] [cursor=pointer]
+              - generic [ref=f1e732]:
+                - generic [ref=f1e733]:
+                  - text: 自动归档
+                  - generic [ref=f1e734]: 子代理跑完后先**保留**；超过右边的天数未再活动即自动归档（归档 = 移出默认视野、可恢复，不是删除）。
+                - switch "自动归档" [ref=f1e736] [cursor=pointer]
+              - generic [ref=f1e738]:
+                - generic [ref=f1e739]:
+                  - text: 归档阈值（天）
+                  - generic [ref=f1e740]:
+                    - text: 默认 **2** 天（用户口径）。
+                    - group [ref=f1e741]:
+                      - generic "详细说明" [ref=f1e742]
+                - spinbutton "归档阈值（天）" [ref=f1e744]: "2"
+              - generic [ref=f1e746]:
+                - generic [ref=f1e747]:
+                  - text: 自动删除
+                  - generic [ref=f1e748]:
+                    - text: 归档后超过右边天数才**物理删除**（不可恢复）。
+                    - group [ref=f1e749]:
+                      - generic "详细说明" [ref=f1e750]
+                - switch "自动删除" [ref=f1e752] [cursor=pointer]
+              - generic [ref=f1e754]:
+                - generic [ref=f1e755]:
+                  - text: 归档后保留（天）
+                  - generic [ref=f1e756]:
+                    - text: 默认 **7** 天（用户口径）。
+                    - group [ref=f1e757]:
+                      - generic "详细说明" [ref=f1e758]
+                - spinbutton "归档后保留（天）" [ref=f1e760]: "7"
+          - generic [ref=f1e761]:
+            - heading "与团队共享记忆" [level=3] [ref=f1e762]
+            - generic [ref=f1e767]:
+              - generic [ref=f1e768]: 待保存的团队开关：关
+              - generic [ref=f1e769]: 团队连接设置保存后需重启宿主。当前版本仅 S3 传输已接线；HTTP 和 folder 的旧值保留，但不可新选。
+              - generic [ref=f1e771]:
+                - generic [ref=f1e772]: 团队协作
+                - switch "团队协作" [ref=f1e774] [cursor=pointer]
+              - generic [ref=f1e776]:
+                - generic [ref=f1e777]: 团队服务地址
+                - textbox "团队服务地址" [ref=f1e779]
+              - generic [ref=f1e781]:
+                - generic [ref=f1e782]: 团队 ID
+                - textbox "团队 ID" [ref=f1e784]
+              - generic [ref=f1e786]:
+                - generic [ref=f1e787]: 团队项目 ID
+                - textbox "团队项目 ID" [ref=f1e789]
+              - generic [ref=f1e791]:
+                - generic [ref=f1e792]: 我的成员名
+                - textbox "我的成员名" [ref=f1e794]
+              - generic [ref=f1e796]:
+                - generic [ref=f1e797]: 注入团队快照
+                - switch "注入团队快照" [ref=f1e799] [cursor=pointer]
+              - generic [ref=f1e801]:
+                - generic [ref=f1e802]: 冲突策略
+                - combobox "冲突策略" [ref=f1e804]:
+                  - option "ask 每次询问" [selected]
+                  - option "mine 总用本地"
+                  - option "theirs 总用云端"
+                  - option "both 都保留"
+              - generic [ref=f1e806]:
+                - generic [ref=f1e807]: 审计留痕
+                - switch "审计留痕" [ref=f1e809] [cursor=pointer]
+              - generic [ref=f1e811]:
+                - generic [ref=f1e812]: 显示成员徽章
+                - switch "显示成员徽章" [checked] [ref=f1e814] [cursor=pointer]
+              - generic [ref=f1e816]:
+                - generic [ref=f1e817]: 同步传输方式
+                - combobox "同步传输方式" [ref=f1e819]:
+                  - option "s3 对象存储" [selected]
+                  - option "http 服务端（当前宿主尚未接线，旧值保留）" [disabled]
+                  - option "folder 共享目录（尚未实现，旧值保留）" [disabled]
+              - generic [ref=f1e821]:
+                - generic [ref=f1e822]: HTTP 端点
+                - textbox "HTTP 端点" [ref=f1e824]
+              - generic [ref=f1e826]:
+                - generic [ref=f1e827]: 存储桶
+                - textbox "存储桶" [ref=f1e829]
+              - generic [ref=f1e831]:
+                - generic [ref=f1e832]: 区域
+                - textbox "区域" [ref=f1e834]
+              - generic [ref=f1e836]:
+                - generic [ref=f1e837]: 访问密钥 ID
+                - textbox "访问密钥 ID" [ref=f1e839]
+              - generic [ref=f1e841]:
+                - generic [ref=f1e842]: 访问密钥密文
+                - generic [ref=f1e844]:
+                  - textbox "访问密钥密文" [ref=f1e845]
+                  - button "显示密钥" [ref=f1e846] [cursor=pointer]
+              - generic [ref=f1e848]:
+                - generic [ref=f1e849]: 路径风格寻址
+                - switch "路径风格寻址" [checked] [ref=f1e851] [cursor=pointer]
+              - generic [ref=f1e853]:
+                - generic [ref=f1e854]: 同步间隔(毫秒)
+                - spinbutton "同步间隔(毫秒)" [ref=f1e856]: "5000"
+              - generic [ref=f1e858]:
+                - generic [ref=f1e859]: 发件箱上限(条)
+                - spinbutton "发件箱上限(条)" [ref=f1e861]: "500"
+              - generic [ref=f1e863]:
+                - generic [ref=f1e864]: 单次拉取上限(条)
+                - spinbutton "单次拉取上限(条)" [ref=f1e866]: "200"
+              - generic [ref=f1e868]:
+                - generic [ref=f1e869]: 上行端点路径
+                - textbox "上行端点路径" [ref=f1e871]
+              - generic [ref=f1e873]:
+                - generic [ref=f1e874]: 冲突中心上限(条)
+                - spinbutton "冲突中心上限(条)" [ref=f1e876]: "200"
+              - generic [ref=f1e878]:
+                - generic [ref=f1e879]: 端到端加密档位
+                - combobox "端到端加密档位" [ref=f1e881]:
+                  - option "off 明文上传（默认）" [selected]
+                  - option "unsupported 声明本环境要求端到端加密（本版未实装，会明示不可用）"
+              - generic [ref=f1e883]:
+                - generic [ref=f1e884]: 行为数据上报
+                - switch "行为数据上报" [ref=f1e886] [cursor=pointer]
+              - generic [ref=f1e888]:
+                - generic [ref=f1e889]: 本机用量留痕路径
+                - textbox "本机用量留痕路径" [ref=f1e891]
+              - generic [ref=f1e893]:
+                - generic [ref=f1e894]: 派生重算防抖(毫秒)
+                - spinbutton "派生重算防抖(毫秒)" [ref=f1e896]: "2000"
+          - generic [ref=f1e897]:
+            - heading "关于与维护" [level=3] [ref=f1e898]
+            - generic [ref=f1e904]:
+              - generic [ref=f1e905]:
+                - text: 白板模式（立即保存，需重启）
+                - generic [ref=f1e906]:
+                  - text: 一键切换白板形态。
+                  - group [ref=f1e907]:
+                    - generic "详细说明" [ref=f1e908]
+              - button "事件视图（白板页签固定为此形态）" [disabled] [ref=f1e911]
+            - generic [ref=f1e913]:
+              - generic [ref=f1e914]:
+                - text: 插件版本
+                - generic [ref=f1e915]:
+                  - text: "更新命令: cd ~/.dsh/profiles/web && pnpm up @a9i5k4/dsh-auto-memory,然后重启 dsh web 生效。"
+                  - group [ref=f1e916]:
+                    - generic "详细说明" [ref=f1e917]
+              - generic [ref=f1e919]:
+                - generic [ref=f1e920]: 3.4.0-alpha.6 → 3.3.17 (有新版本)
+                - button "检查更新" [ref=f1e921] [cursor=pointer]
+                - generic [ref=f1e922]: 开发树 v3.4.0-alpha.6 → 线上 v3.3.17，请同步开发源码后重新构建
+            - generic [ref=f1e924]:
+              - generic [ref=f1e925]:
+                - text: 交流群
+                - generic [ref=f1e926]: 点击链接一键加群。
+              - generic [ref=f1e928]:
+                - generic [ref=f1e929]: 反馈问题、交流使用技巧——加群响应比 issue 更快。
+                - link "点击加入 QQ 交流群" [ref=f1e930] [cursor=pointer]:
+                  - /url: https://qm.qq.com/q/v7Asxn6vPa
+          - button "▾ 调试中心" [ref=f1e510] [cursor=pointer]
+        - status [ref=f1e511]:
+          - button "取消修改" [disabled] [ref=f1e512]
+          - button "保存设置" [disabled] [ref=f1e513]
+```

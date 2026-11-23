@@ -1,0 +1,126 @@
+- generic [ref=e4]:
+  - generic [ref=e7]:
+    - generic [ref=e8]:
+      - button "新建会话" [ref=e9] [cursor=pointer]
+      - button "收起侧边栏" [ref=e38] [cursor=pointer]
+    - button "新建会话" [ref=e43] [cursor=pointer]:
+      - generic [ref=e44]: 新会话
+      - generic:
+        - generic:
+          - generic: Ctrl
+          - generic: +
+          - generic: Alt
+          - generic: +
+          - generic: "N"
+    - generic [ref=e50]:
+      - navigation "全局面板" [ref=e51]:
+        - button "插件" [active] [ref=e53] [cursor=pointer]
+        - generic [ref=e59]:
+          - button "自动化任务" [ref=e60] [cursor=pointer]
+          - button "从侧边栏取消固定自动化任务" [ref=e66] [cursor=pointer]
+        - button "更多" [ref=e70] [cursor=pointer]
+      - generic [ref=e77]:
+        - generic [ref=e78]:
+          - generic [ref=e79]: 工作区
+          - generic [ref=e81]:
+            - button "搜索会话" [ref=e82] [cursor=pointer]
+            - textbox "搜索会话名称"
+          - generic [ref=e85]:
+            - button "视图选项" [ref=e87] [cursor=pointer]
+            - button "添加工作区" [ref=e90] [cursor=pointer]
+        - tree "会话" [ref=e95]:
+          - generic [ref=e197]:
+            - treeitem "默认工作区" [expanded] [ref=e199] [cursor=pointer]
+            - treeitem "新会话" [ref=e206] [cursor=pointer]
+    - generic [ref=e100]:
+      - button "记忆" [ref=e334] [cursor=pointer]
+      - button "账号菜单" [ref=e112] [cursor=pointer]:
+        - generic [ref=e115]: 更多
+  - generic [ref=e337]:
+    - generic [ref=e338]:
+      - generic [ref=e339]:
+        - heading "插件" [level=1] [ref=e340]
+        - generic [ref=e341]:
+          - generic [ref=e342]: 安装、启用和配置插件
+          - button "插件说明" [ref=e343] [cursor=pointer]
+      - generic [ref=e346]:
+        - button "刷新" [ref=e347] [cursor=pointer]
+        - group "添加插件" [ref=e352]:
+          - button "添加插件" [ref=e353] [cursor=pointer]
+          - button "选择添加插件方式" [ref=e359] [cursor=pointer]
+    - generic [ref=e362]:
+      - generic [ref=e363]:
+        - heading "内置插件配置" [level=3] [ref=e365]
+        - list [ref=e366]:
+          - listitem [ref=e367]:
+            - generic [ref=e373]:
+              - button "查看 子智能体" [ref=e375] [cursor=pointer]: 子智能体
+              - generic [ref=e376]: 设置子智能体的递归层级、数量和模型。
+          - listitem [ref=e377]:
+            - generic [ref=e386]:
+              - button "查看 网页搜索与获取" [ref=e388] [cursor=pointer]: 网页搜索与获取
+              - generic [ref=e389]: 选择网页搜索与网页获取使用的提供方。
+          - listitem [ref=e390]:
+            - generic [ref=e398]:
+              - button "查看 Agent 循环" [ref=e400] [cursor=pointer]: Agent 循环
+              - generic [ref=e401]: 控制 Agent 派发工具调用的方式。
+          - listitem [ref=e402]:
+            - generic [ref=e407]:
+              - button "查看 终端" [ref=e409] [cursor=pointer]: 终端
+              - generic [ref=e410]: 限制每条命令最多能跑多久、最多输出多少内容。
+      - generic [ref=e411]:
+        - generic [ref=e412]:
+          - heading "实验性插件" [level=3] [ref=e413]
+          - button "更多" [ref=e414] [cursor=pointer]
+        - list [ref=e417]:
+          - listitem [ref=e418]:
+            - generic [ref=e419]:
+              - generic [ref=e421]:
+                - generic [ref=e422]:
+                  - button "查看 语音输入" [ref=e423] [cursor=pointer]: 语音输入
+                  - generic [ref=e424]: 实验性
+                - generic [ref=e425]: 在本机使用 SenseVoice 转写录音，首次使用需安装依赖。
+              - generic [ref=e427]:
+                - status [ref=e428]
+                - switch "启用 语音输入" [ref=e430] [cursor=pointer]
+          - listitem [ref=e432]:
+            - generic [ref=e433]:
+              - generic [ref=e435]:
+                - generic [ref=e436]:
+                  - button "查看 自定义插件索引" [ref=e437] [cursor=pointer]: 自定义插件索引
+                  - generic [ref=e438]: 实验性
+                - generic [ref=e439]: 在插件页添加“发现”标签页，从你添加的插件索引中浏览和安装插件。
+              - generic [ref=e441]:
+                - status [ref=e442]
+                - switch "启用 自定义插件索引" [ref=e444] [cursor=pointer]
+          - listitem [ref=e446]:
+            - generic [ref=e447]:
+              - generic [ref=e449]:
+                - generic [ref=e450]:
+                  - button "查看 自动授权审查" [ref=e451] [cursor=pointer]: 自动授权审查
+                  - generic [ref=e452]: 实验性
+                - generic [ref=e453]: 提供“自动审查”访问模式：每次工具调用前，由模型对照你的要求检查，获准的调用立即运行，被拒绝的调用等你审批。
+              - generic [ref=e455]:
+                - status [ref=e456]
+                - switch "启用 自动授权审查" [ref=e458] [cursor=pointer]
+          - listitem [ref=e460]:
+            - generic [ref=e461]:
+              - generic [ref=e463]:
+                - generic [ref=e464]:
+                  - button "查看 变更请求与工作树" [ref=e465] [cursor=pointer]: 变更请求与工作树
+                  - generic [ref=e466]: 实验性
+                - generic [ref=e467]: 在会话侧栏集中跟踪关联的 GitHub PR：查看检查状态、评审意见与代码差异，并把修改建议交给智能体继续处理。也可查看本地改动，用独立工作树隔离任务。GitHub 功能需要本机安装 gh 并登录。
+              - generic [ref=e469]:
+                - status [ref=e470]
+                - switch "启用 变更请求与工作树" [ref=e472] [cursor=pointer]
+      - generic [ref=e474]:
+        - heading "已安装插件" [level=3] [ref=e476]
+        - list [ref=e477]:
+          - listitem [ref=e478]:
+            - generic [ref=e479]:
+              - generic [ref=e481]:
+                - button "查看 主动联想记忆（dsh-auto-memory）" [ref=e483] [cursor=pointer]: 主动联想记忆（dsh-auto-memory）
+                - generic [ref=e484]: 潜藏追忆，如影随形 —— 主动联想记忆 + Astra 式上下文管理：自动唤回 / 自动沉淀 / 技能固化 / 交接账本与白板跨窗口续命 / 水位感知。
+              - generic [ref=e486]:
+                - status [ref=e487]
+                - switch "启用 主动联想记忆（dsh-auto-memory）" [checked] [ref=e489] [cursor=pointer]

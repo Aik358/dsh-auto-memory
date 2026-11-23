@@ -1,0 +1,108 @@
+- generic [ref=e1]:
+  - generic [ref=e4]:
+    - generic [ref=e7]:
+      - generic [ref=e8]:
+        - button "新建会话" [ref=e9] [cursor=pointer]
+        - button "收起侧边栏" [ref=e38] [cursor=pointer]
+      - button "新建会话" [ref=e43] [cursor=pointer]:
+        - generic [ref=e44]: 新会话
+        - generic:
+          - generic:
+            - generic: Ctrl
+            - generic: +
+            - generic: Alt
+            - generic: +
+            - generic: "N"
+      - generic [ref=e50]:
+        - navigation "全局面板" [ref=e51]:
+          - button "插件" [ref=e53] [cursor=pointer]
+          - generic [ref=e59]:
+            - button "自动化任务" [ref=e60] [cursor=pointer]
+            - button "从侧边栏取消固定自动化任务" [ref=e66] [cursor=pointer]
+          - button "更多" [ref=e70] [cursor=pointer]
+        - generic [ref=e77]:
+          - generic [ref=e78]:
+            - generic [ref=e79]: 工作区
+            - generic [ref=e81]:
+              - button "搜索会话" [ref=e82] [cursor=pointer]
+              - textbox "搜索会话名称"
+            - generic [ref=e85]:
+              - button "视图选项" [ref=e87] [cursor=pointer]
+              - button "添加工作区" [ref=e90] [cursor=pointer]
+          - tree "会话" [ref=e95]:
+            - generic [ref=e197]:
+              - treeitem "默认工作区" [expanded] [ref=e199] [cursor=pointer]
+              - treeitem "新会话" [selected] [ref=e206] [cursor=pointer]
+      - generic [ref=e100]:
+        - button "记忆" [active] [ref=e104] [cursor=pointer]
+        - button "账号菜单" [ref=e112] [cursor=pointer]:
+          - generic [ref=e115]: 更多
+    - generic [ref=e120]:
+      - banner [ref=e122]:
+        - button "打开右侧边栏" [ref=e213] [cursor=pointer]
+      - generic [ref=e131]:
+        - generic [ref=e139]:
+          - generic [ref=e140]: 探索未至之境
+          - generic [ref=e141]: 预览版
+        - generic [ref=e142]:
+          - button "选择工作区" [ref=e143] [cursor=pointer]:
+            - generic [ref=e146]: 默认工作区
+          - button "标准模式" [ref=e219] [cursor=pointer]
+        - generic [ref=e159]:
+          - generic [ref=e161]:
+            - textbox "描述你想要构建的内容, / 调用指令, @ 文件或对话" [ref=e225]
+            - generic: 描述你想要构建的内容, / 调用指令, @ 文件或对话
+          - generic [ref=e163]:
+            - generic [ref=e164]:
+              - button "添加文件或调用指令" [ref=e226] [cursor=pointer]
+              - button "访问模式，当前：工作区内修改" [ref=e232] [cursor=pointer]:
+                - generic [ref=e238]: 工作区内修改
+            - generic [ref=e165]:
+              - button "请选择模型" [ref=e245] [cursor=pointer]
+              - button "发送消息" [disabled] [ref=e249]
+  - dialog "自动记忆" [ref=e281]:
+    - banner "拖动移动" [ref=e282]:
+      - strong [ref=e283]: 自动记忆
+      - generic [ref=e284]: v3.4.0-alpha.6-ui
+      - button "钉住面板(点桌面其他地方不收起)" [ref=e285] [cursor=pointer]
+      - button "⤾" [ref=e286] [cursor=pointer]
+      - button "⟳" [ref=e287] [cursor=pointer]
+      - button "✕" [ref=e288] [cursor=pointer]
+    - button "打开完整工作台" [ref=e290] [cursor=pointer]
+    - generic [ref=e291]:
+      - button "向左滚动模块" [disabled] [ref=e292]: ‹
+      - generic [ref=e294]:
+        - button "概览" [ref=e295] [cursor=pointer]
+        - button "日志" [ref=e296] [cursor=pointer]
+        - button "唤起回顾" [ref=e297] [cursor=pointer]
+        - button "记忆中枢" [ref=e298] [cursor=pointer]
+        - button "存储管理" [ref=e299] [cursor=pointer]
+        - button "笔记" [ref=e300] [cursor=pointer]
+        - button "白板" [ref=e301] [cursor=pointer]
+        - button "反思" [ref=e302] [cursor=pointer]
+        - button "团队" [ref=e303] [cursor=pointer]
+        - button "接续" [ref=e304] [cursor=pointer]
+        - button "日历" [ref=e305] [cursor=pointer]
+        - button "检索" [ref=e306] [cursor=pointer]
+        - button "工作区" [ref=e307] [cursor=pointer]
+        - button "统计" [ref=e308] [cursor=pointer]
+      - button "向右滚动模块" [ref=e309] [cursor=pointer]: ›
+    - generic [ref=e311]:
+      - generic [ref=e312]:
+        - generic [ref=e313]: 上午好 · 上午
+        - generic [ref=e314]: 上午好,今天也在稳步推进。
+      - button "▸ 工作区总结(跨工作区)" [ref=e317] [cursor=pointer]
+      - generic [ref=e318]:
+        - generic [ref=e319]: 今日工作
+        - generic [ref=e320]: 0 条日志
+        - generic [ref=e321]: 每日反思
+        - generic [ref=e322]: (还没有)
+        - generic [ref=e323]: 工作区
+        - generic [ref=e324]: D:\dsh-auto-memory\artifacts\_settings-search-20261123\workspace\deepseek-harness\default-workspace
+      - generic [ref=e325]: 本轮对话暂无自动沉淀
+      - generic [ref=e326]:
+        - button "一键反思" [ref=e327] [cursor=pointer]
+        - generic [ref=e328]: 用最近日志自动生成反思
+      - generic [ref=e329]: 快捷入口:日志页签看每日记录 · 笔记页签追加项目笔记 · 接续页签接入其他 AI 记忆 · 检索页签全文搜索。
+      - button "技术信息 ▾" [ref=e331] [cursor=pointer]
+    - generic "拖动调整大小" [ref=e332]

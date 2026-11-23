@@ -1,0 +1,163 @@
+### Page
+- Page URL: http://127.0.0.1:19436/
+- Page Title: DeepSeek Harness
+### Snapshot
+```yaml
+- generic [ref=f1e1]:
+  - generic [ref=f1e4]:
+    - generic [ref=f1e7]:
+      - generic [ref=f1e8]:
+        - button "新建会话" [ref=f1e9] [cursor=pointer]
+        - button "收起侧边栏" [ref=f1e38] [cursor=pointer]
+      - button "新建会话" [ref=f1e43] [cursor=pointer]:
+        - generic [ref=f1e44]: 新会话
+        - generic:
+          - generic:
+            - generic: Ctrl
+            - generic: +
+            - generic: Alt
+            - generic: +
+            - generic: "N"
+      - generic [ref=f1e50]:
+        - navigation "全局面板" [ref=f1e51]:
+          - button "插件" [ref=f1e53] [cursor=pointer]
+          - generic [ref=f1e59]:
+            - button "自动化任务" [ref=f1e60] [cursor=pointer]
+            - button "从侧边栏取消固定自动化任务" [ref=f1e66] [cursor=pointer]
+          - button "更多" [ref=f1e70] [cursor=pointer]
+        - generic [ref=f1e77]:
+          - generic [ref=f1e78]:
+            - generic [ref=f1e79]: 工作区
+            - generic [ref=f1e81]:
+              - button "搜索会话" [ref=f1e82] [cursor=pointer]
+              - textbox "搜索会话名称"
+            - generic [ref=f1e85]:
+              - button "视图选项" [ref=f1e87] [cursor=pointer]
+              - button "添加工作区" [ref=f1e90] [cursor=pointer]
+          - tree "会话" [ref=f1e95]:
+            - generic [ref=f1e96]:
+              - treeitem "默认工作区" [expanded] [ref=f1e98] [cursor=pointer]
+              - treeitem "新会话" [selected] [ref=f1e194] [cursor=pointer]
+      - generic [ref=f1e104]:
+        - button "记忆" [ref=f1e108] [cursor=pointer]
+        - button "账号菜单" [ref=f1e116] [cursor=pointer]:
+          - generic [ref=f1e119]: 更多
+    - generic [ref=f1e124]:
+      - banner [ref=f1e126]:
+        - button "打开右侧边栏" [ref=f1e201] [cursor=pointer]
+      - generic [ref=f1e135]:
+        - generic [ref=f1e143]:
+          - generic [ref=f1e144]: 探索未至之境
+          - generic [ref=f1e145]: 预览版
+        - generic [ref=f1e146]:
+          - button "选择工作区" [ref=f1e147] [cursor=pointer]:
+            - generic [ref=f1e150]: 默认工作区
+          - button "标准模式" [ref=f1e208] [cursor=pointer]
+        - generic [ref=f1e155]:
+          - generic [ref=f1e157]:
+            - textbox "描述你想要构建的内容, / 调用指令, @ 文件或对话" [ref=f1e214]
+            - generic: 描述你想要构建的内容, / 调用指令, @ 文件或对话
+          - generic [ref=f1e159]:
+            - generic [ref=f1e160]:
+              - button "添加文件或调用指令" [ref=f1e215] [cursor=pointer]
+              - button "访问模式，当前：工作区内修改" [ref=f1e221] [cursor=pointer]:
+                - generic [ref=f1e227]: 工作区内修改
+            - generic [ref=f1e161]:
+              - button "请选择模型" [ref=f1e234] [cursor=pointer]
+              - button "发送消息" [disabled] [ref=f1e238]
+  - dialog "设置" [ref=f1e283]:
+    - navigation [ref=f1e285]:
+      - generic [ref=f1e286]:
+        - button "通用设置" [ref=f1e287] [cursor=pointer]
+        - button "模型" [ref=f1e293] [cursor=pointer]
+        - button "内置插件" [ref=f1e299] [cursor=pointer]
+        - button "Agent 预设" [ref=f1e305] [cursor=pointer]
+        - button "自动记忆" [ref=f1e311] [cursor=pointer]
+    - generic [ref=f1e317]:
+      - button "打开配置文件" [ref=f1e321] [cursor=pointer]
+      - button "关闭" [ref=f1e322] [cursor=pointer]
+    - generic "记忆设置" [ref=f1e437]:
+      - banner [ref=f1e438]:
+        - strong [ref=f1e439]: 记忆设置
+        - button "展开设置" [ref=f1e440] [cursor=pointer]
+      - generic [ref=f1e442]:
+        - tablist "设置分组" [ref=f1e443]:
+          - tab "查找与回忆" [selected] [ref=f1e444] [cursor=pointer]
+          - tab "记录与使用" [ref=f1e445] [cursor=pointer]
+          - tab "外观与目录" [ref=f1e446] [cursor=pointer]
+          - tab "接续与维护" [ref=f1e447] [cursor=pointer]
+        - search "搜索设置" [ref=f1e448]:
+          - generic [ref=f1e449]:
+            - searchbox "搜索设置" [active] [ref=f1e452]: 冷却
+            - button "清除" [ref=f1e514] [cursor=pointer]
+          - generic [ref=f1e515]:
+            - status [ref=f1e516]: 4 项匹配
+            - button "冷却时长 语义记忆总开关" [ref=f1e517] [cursor=pointer]:
+              - strong [ref=f1e518]: 冷却时长
+              - generic [ref=f1e519]: 语义记忆总开关
+            - button "唤起判定冷却（分钟） 语义记忆总开关" [ref=f1e520] [cursor=pointer]:
+              - strong [ref=f1e521]: 唤起判定冷却（分钟）
+              - generic [ref=f1e522]: 语义记忆总开关
+            - button "启用投递后冷却 语义记忆总开关" [ref=f1e523] [cursor=pointer]:
+              - strong [ref=f1e524]: 启用投递后冷却
+              - generic [ref=f1e525]: 语义记忆总开关
+            - button "接续冷却(分钟) 免打扰与定时整理" [ref=f1e526] [cursor=pointer]:
+              - strong [ref=f1e527]: 接续冷却(分钟)
+              - generic [ref=f1e528]: 免打扰与定时整理
+        - tabpanel "查找与回忆" [ref=f1e453]:
+          - paragraph [ref=f1e454]: 这里决定如何找到旧记忆，以及找到后是否交给 AI。记录新内容请到「记录与使用」。 除标有「立即生效」的选项外，修改后请点击底部保存。立即生效项不会被取消修改撤销；标有重启的设置保存后需重启。
+          - generic [ref=f1e455]:
+            - generic [ref=f1e456]:
+              - heading [level=2] [ref=f1e457]
+              - generic [ref=f1e462]:
+                - generic [ref=f1e463]:
+                  - text: 主动查找相关记忆
+                  - generic [ref=f1e464]: 对话中寻找可能有用的旧记忆，可能消耗额外 token。是否交给 AI，还取决于下面的「找到后如何使用」。关闭并保存会清空观察数据，已保存的记忆正文保留。
+                - switch "主动查找相关记忆" [ref=f1e466] [cursor=pointer]
+              - generic [ref=f1e468]:
+                - generic [ref=f1e469]:
+                  - text: 找到后如何使用（立即生效）
+                  - generic [ref=f1e470]: 「只观察」不会把找到的记忆交给 AI；「明确要求时」用于你主动要求回忆；「主动提供」用于所有通过判定的结果。需要先开启主动查找。
+                - combobox "找到后如何使用（立即生效）" [ref=f1e472]:
+                  - option "只观察，不交给 AI" [selected]
+                  - option "明确要求回忆时提供"
+                  - option "主动提供相关记忆"
+              - generic [ref=f1e473]:
+                - generic [ref=f1e474]: 总闸（自动记忆 + 收件箱）：关（唤回不会投递）
+                - generic [ref=f1e475]: 唤起注入模式：shadow
+                - generic [ref=f1e476]: 索引就绪：否
+                - generic [ref=f1e477]: 当前档位：C1 · c1
+            - generic [ref=f1e478]:
+              - heading [level=2] [ref=f1e479]
+              - generic [ref=f1e484]:
+                - generic [ref=f1e485]:
+                  - generic [ref=f1e486]: 用什么方式查找
+                  - generic [ref=f1e487]: 不确定时选「自动」。可用时按意思查找，否则按关键词查找；切换后立即保存，不用再点保存设置。
+                - generic [ref=f1e489]:
+                  - radiogroup "检索模式（即时生效）" [ref=f1e490]:
+                    - generic [ref=f1e491] [cursor=pointer]:
+                      - radio "自动（推荐）" [ref=f1e492]
+                      - generic [ref=f1e493]: 自动（推荐）
+                    - generic [ref=f1e494] [cursor=pointer]:
+                      - radio "按关键词查找（无需下载模型）" [checked] [ref=f1e495]
+                      - generic [ref=f1e496]: 按关键词查找（无需下载模型）
+                    - generic [ref=f1e497] [cursor=pointer]:
+                      - radio "按意思查找（需本地模型）" [ref=f1e498]
+                      - generic [ref=f1e499]: 按意思查找（需本地模型）
+                    - generic [ref=f1e500] [cursor=pointer]:
+                      - radio "Python 搜索工具（需单独安装）" [ref=f1e501]
+                      - generic [ref=f1e502]: Python 搜索工具（需单独安装）
+                  - button "⟳ 检测" [ref=f1e503] [cursor=pointer]
+                  - button "🧩 安装向导" [ref=f1e504] [cursor=pointer]
+            - group [ref=f1e505]:
+              - generic "安装与检查查找工具" [ref=f1e506]
+            - group [ref=f1e507]:
+              - generic "进阶：回忆频率、准确度与索引维护" [ref=f1e508]
+              - option "平衡：3 条 × 40 字符" [selected]
+              - option "广泛：6 条 × 20 字符"
+              - option "自定义"
+          - button "▾ 调试中心" [ref=f1e510] [cursor=pointer]
+        - status [ref=f1e511]:
+          - button "取消修改" [disabled] [ref=f1e512]
+          - button "保存设置" [disabled] [ref=f1e513]
+```

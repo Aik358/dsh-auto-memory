@@ -1,0 +1,103 @@
+- generic [ref=e1]:
+  - generic [ref=e4]:
+    - generic [ref=e7]:
+      - generic [ref=e8]:
+        - button "新建会话" [ref=e9] [cursor=pointer]
+        - button "收起侧边栏" [ref=e38] [cursor=pointer]
+      - button "新建会话" [ref=e43] [cursor=pointer]:
+        - generic [ref=e44]: 新会话
+        - generic:
+          - generic:
+            - generic: Ctrl
+            - generic: +
+            - generic: Alt
+            - generic: +
+            - generic: "N"
+      - generic [ref=e50]:
+        - navigation "全局面板" [ref=e51]:
+          - button "插件" [ref=e53] [cursor=pointer]
+          - generic [ref=e59]:
+            - button "自动化任务" [ref=e60] [cursor=pointer]
+            - button "从侧边栏取消固定自动化任务" [ref=e66] [cursor=pointer]
+          - button "更多" [ref=e70] [cursor=pointer]
+        - generic [ref=e77]:
+          - generic [ref=e78]:
+            - generic [ref=e79]: 工作区
+            - generic [ref=e81]:
+              - button "搜索会话" [ref=e82] [cursor=pointer]
+              - textbox "搜索会话名称"
+            - generic [ref=e85]:
+              - button "视图选项" [ref=e87] [cursor=pointer]
+              - button "添加工作区" [ref=e90] [cursor=pointer]
+          - tree "会话" [ref=e95]:
+            - generic [ref=e197]:
+              - treeitem "默认工作区" [expanded] [ref=e199] [cursor=pointer]
+              - treeitem "新会话" [selected] [ref=e206] [cursor=pointer]
+      - generic [ref=e100]:
+        - button "记忆" [ref=e104] [cursor=pointer]
+        - button "账号菜单" [ref=e112] [cursor=pointer]:
+          - generic [ref=e115]: 更多
+    - generic [ref=e120]:
+      - banner [ref=e122]:
+        - button "打开右侧边栏" [ref=e213] [cursor=pointer]
+      - generic [ref=e131]:
+        - generic [ref=e139]:
+          - generic [ref=e140]: 探索未至之境
+          - generic [ref=e141]: 预览版
+        - generic [ref=e142]:
+          - button "选择工作区" [ref=e143] [cursor=pointer]:
+            - generic [ref=e146]: 默认工作区
+          - button "标准模式" [ref=e219] [cursor=pointer]
+        - generic [ref=e159]:
+          - generic [ref=e161]:
+            - textbox "描述你想要构建的内容, / 调用指令, @ 文件或对话" [active] [ref=e225]
+            - generic: 描述你想要构建的内容, / 调用指令, @ 文件或对话
+          - generic [ref=e163]:
+            - generic [ref=e164]:
+              - button "添加文件或调用指令" [ref=e226] [cursor=pointer]
+              - button "访问模式，当前：工作区内修改" [ref=e232] [cursor=pointer]:
+                - generic [ref=e238]: 工作区内修改
+            - generic [ref=e165]:
+              - button "请选择模型" [ref=e245] [cursor=pointer]
+              - button "发送消息" [disabled] [ref=e249]
+  - dialog "记忆工作台" [ref=e168]:
+    - generic [ref=e169]: 建立「记忆中枢」
+    - generic [ref=e170]: 接下来会新建一个属于插件的工作区（目录「记忆中枢」）和一个工作台会话，并把初始化对话放进去；后台的记忆整理（问候 / 总结 / 沉淀 / 蒸馏）都挂在它下面运行，这样不会再往你的会话列表里塞子对话。
+    - generic [ref=e171]:
+      - generic [ref=e172]: ·
+      - generic [ref=e173]: ① 工作区位置
+      - generic [ref=e174]: D:\dsh-auto-memory\artifacts\_settings-search-20261123\dsh-home\aik_auto_memory_use
+    - generic [ref=e175]:
+      - generic [ref=e176]: ·
+      - generic [ref=e177]: ② 权限（完全访问）
+      - generic [ref=e178]: danger-full-access
+    - generic [ref=e179]:
+      - generic [ref=e180]: ·
+      - generic [ref=e181]: ③ 期号（编号）
+      - generic [ref=e182]: — → B10388
+    - generic [ref=e183]:
+      - generic [ref=e184]: ·
+      - generic [ref=e185]: ④ 工作区登记
+      - generic [ref=e186]: D:\dsh-auto-memory\artifacts\_settings-search-20261123\dsh-home\aik_auto_memory_use
+    - generic [ref=e187]: 当前状态：尚未建立工作台
+    - generic [ref=e188]:
+      - strong [ref=e189]: 记忆目录：
+      - text: D:\dsh-auto-memory\artifacts\_settings-search-20261123\dsh-home\aik_auto_memory_use（DSH 本体目录下，跨平台一致；设置留空即自动）
+    - generic [ref=e190]:
+      - strong [ref=e191]: 必须「完全访问」：
+      - text: 这个工作台会话必须使用「完全访问」权限——若用受限权限，后台任务会被沙箱拦住、
+      - strong [ref=e192]: 读不到记忆条目
+      - text: ，相关功能会静默失效（界面上看不到任何报错）。若上方第 ② 行未通过，请点「一键添加并修复」重建为该权限。该会话下的后台任务只做记忆整理，不会改动你的项目代码。
+    - generic [ref=e193]:
+      - button "同意并建立" [ref=e194] [cursor=pointer]
+      - button "稍后" [ref=e195] [cursor=pointer]
+    - generic [ref=e196]: 在建立完成前，所有后台记忆任务都会暂停（不会发送任何请求）；只有你点了「同意并建立」才会写入。
+  - dialog "开始使用" [ref=e256]:
+    - generic [ref=e257]:
+      - generic [ref=e258]:
+        - heading "开始使用" [level=2] [ref=e259]
+        - button "关闭" [ref=e260] [cursor=pointer]
+      - paragraph [ref=e263]: 登录 DeepSeek 账号，或添加 API Key，即可开始使用。你的项目和文件保存在本地。
+    - generic [ref=e264]:
+      - button "添加 API Key" [ref=e265] [cursor=pointer]
+      - button "登录" [ref=e266] [cursor=pointer]

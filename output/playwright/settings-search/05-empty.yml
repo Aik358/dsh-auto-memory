@@ -1,0 +1,510 @@
+### Page
+- Page URL: http://127.0.0.1:19436/
+- Page Title: DeepSeek Harness
+### Snapshot
+```yaml
+- generic [ref=e1]:
+  - generic [ref=e4]:
+    - generic [ref=e7]:
+      - generic [ref=e8]:
+        - button "新建会话" [ref=e9] [cursor=pointer]
+        - button "收起侧边栏" [ref=e38] [cursor=pointer]
+      - button "新建会话" [ref=e43] [cursor=pointer]:
+        - generic [ref=e44]: 新会话
+        - generic:
+          - generic:
+            - generic: Ctrl
+            - generic: +
+            - generic: Alt
+            - generic: +
+            - generic: "N"
+      - generic [ref=e50]:
+        - navigation "全局面板" [ref=e51]:
+          - button "插件" [ref=e53] [cursor=pointer]
+          - generic [ref=e59]:
+            - button "自动化任务" [ref=e60] [cursor=pointer]
+            - button "从侧边栏取消固定自动化任务" [ref=e66] [cursor=pointer]
+          - button "更多" [ref=e70] [cursor=pointer]
+        - generic [ref=e77]:
+          - generic [ref=e78]:
+            - generic [ref=e79]: 工作区
+            - generic [ref=e81]:
+              - button "搜索会话" [ref=e82] [cursor=pointer]
+              - textbox "搜索会话名称"
+            - generic [ref=e85]:
+              - button "视图选项" [ref=e87] [cursor=pointer]
+              - button "添加工作区" [ref=e90] [cursor=pointer]
+          - tree "会话" [ref=e95]:
+            - generic [ref=e189]:
+              - treeitem "默认工作区" [expanded] [ref=e191] [cursor=pointer]
+              - treeitem "新会话" [selected] [ref=e198] [cursor=pointer]
+      - generic [ref=e100]:
+        - button "记忆" [ref=e261] [cursor=pointer]
+        - button "账号菜单" [ref=e112] [cursor=pointer]:
+          - generic [ref=e115]: 更多
+    - generic [ref=e120]:
+      - banner [ref=e122]:
+        - button "打开右侧边栏" [ref=e205] [cursor=pointer]
+      - generic [ref=e131]:
+        - generic [ref=e139]:
+          - generic [ref=e140]: 探索未至之境
+          - generic [ref=e141]: 预览版
+        - generic [ref=e142]:
+          - button "选择工作区" [ref=e143] [cursor=pointer]:
+            - generic [ref=e146]: 默认工作区
+          - button "标准模式" [ref=e212] [cursor=pointer]
+        - generic [ref=e151]:
+          - generic [ref=e153]:
+            - textbox "描述你想要构建的内容, / 调用指令, @ 文件或对话" [ref=e218]
+            - generic: 描述你想要构建的内容, / 调用指令, @ 文件或对话
+          - generic [ref=e155]:
+            - generic [ref=e156]:
+              - button "添加文件或调用指令" [ref=e219] [cursor=pointer]
+              - button "访问模式，当前：工作区内修改" [ref=e225] [cursor=pointer]:
+                - generic [ref=e231]: 工作区内修改
+            - generic [ref=e157]:
+              - button "请选择模型" [ref=e238] [cursor=pointer]
+              - button "发送消息" [disabled] [ref=e242]
+  - alert "提前预警：下周有一次记忆架构大改版" [ref=e293]:
+    - banner [ref=e294]:
+      - heading "提前预警：下周有一次记忆架构大改版" [level=2] [ref=e295]
+    - paragraph [ref=e296]: 这不是小更新。约 7 天后，记忆会从「按时间堆的流水账」改成以「事件」为单位——一件事一个容器，跨天能接着做，还能记住你们的共识和共同经历。 升级后如果你已有旧记忆，会提示你派一个子代理整理一次（约 10 分钟）。整理不会删除任何东西，原始记忆会先备份。
+    - contentinfo [ref=e297]:
+      - link "了解更多" [ref=e298] [cursor=pointer]:
+        - /url: https://github.com/Aik358/dsh-auto-memory
+      - button "知道了" [ref=e299] [cursor=pointer]
+  - dialog "设置" [ref=e327]:
+    - navigation [ref=e329]:
+      - generic [ref=e330]:
+        - button "通用设置" [ref=e331] [cursor=pointer]
+        - button "模型" [ref=e337] [cursor=pointer]
+        - button "内置插件" [ref=e343] [cursor=pointer]
+        - button "Agent 预设" [ref=e349] [cursor=pointer]
+        - button "自动记忆" [ref=e355] [cursor=pointer]
+    - generic [ref=e361]:
+      - button "打开配置文件" [ref=e365] [cursor=pointer]
+      - button "关闭" [ref=e366] [cursor=pointer]
+    - generic "记忆设置" [ref=e481]:
+      - banner [ref=e482]:
+        - strong [ref=e483]: 记忆设置
+        - button "展开设置" [ref=e484] [cursor=pointer]
+      - generic [ref=e486]:
+        - tablist "设置分组" [ref=e487]:
+          - tab "查找与回忆" [ref=e488] [cursor=pointer]
+          - tab "记录与使用" [ref=e489] [cursor=pointer]
+          - tab "外观与目录" [ref=e490] [cursor=pointer]
+          - tab "接续与维护" [selected] [ref=e491] [cursor=pointer]
+        - search "搜索设置" [ref=e492]:
+          - generic [ref=e493]:
+            - searchbox "搜索设置" [active] [ref=e496]: 没有这种设置9823
+            - button "清除" [ref=e1063] [cursor=pointer]
+          - status [ref=e1065]: 没有匹配的设置，试试其他关键词。
+        - tabpanel "接续与维护" [ref=e574]:
+          - paragraph [ref=e498]: 长对话接续、免打扰和定时整理都在这里。接续会先询问你；定时任务需要 DSH 运行。 除标有「立即生效」的选项外，修改后请点击底部保存。立即生效项不会被取消修改撤销；标有重启的设置保存后需重启。
+          - generic [ref=e575]:
+            - heading "投递策略" [level=3] [ref=e576]
+            - generic [ref=e582]:
+              - generic [ref=e585]:
+                - button "收起策略" [expanded] [ref=e982] [cursor=pointer]
+                - button "保存策略" [disabled] [ref=e983]
+              - generic [ref=e984]:
+                - note [ref=e985]:
+                  - strong [ref=e986]: 生效范围：
+                  - text: 尚未保存策略；真实投递仍使用原设置。
+                - tablist "投递策略子页" [ref=e987]:
+                  - tab "预设与节奏" [selected] [ref=e988] [cursor=pointer]
+                  - tab "模块" [ref=e989] [cursor=pointer]
+                  - tab "预算与超额" [ref=e990] [cursor=pointer]
+                  - tab "触发" [ref=e991] [cursor=pointer]
+                  - tab "诊断" [ref=e992] [cursor=pointer]
+                  - tab "预览与回执" [ref=e993] [cursor=pointer]
+                  - tab "兼容" [ref=e994] [cursor=pointer]
+                - tabpanel "预设与节奏" [ref=e995]:
+                  - note [ref=e996]:
+                    - strong [ref=e997]: 生效范围：
+                    - text: 已接入：动态投递总开关、精简与完整帧间隔。内容预设和特殊档映射仅供预览。
+                  - generic [ref=e998]:
+                    - generic [ref=e999]:
+                      - heading "预设与节奏" [level=3] [ref=e1000]
+                      - generic [ref=e1001]:
+                        - generic [ref=e1002]:
+                          - strong [ref=e1003]: 投递模式
+                          - status [ref=e1004]: 当前生效 · 新版事件视图（推荐） · 默认（未保存策略）
+                        - radiogroup "投递模式" [ref=e1005]:
+                          - generic [ref=e1006] [cursor=pointer]:
+                            - radio "旧版投递" [ref=e1007]
+                            - generic [ref=e1008]:
+                              - strong [ref=e1009]: 旧版投递
+                              - generic [ref=e1010]: 恢复旧事件视图和按字符组装，用于兼容回滚。
+                          - generic [ref=e1011] [cursor=pointer]:
+                            - radio "新版事件视图（推荐）" [checked] [ref=e1012]
+                            - generic [ref=e1013]:
+                              - strong [ref=e1014]: 新版事件视图（推荐）
+                              - generic [ref=e1015]: 使用新版事件卡片和目录，沿用按字符组装。
+                          - generic [ref=e1016] [cursor=pointer]:
+                            - radio "按单位投递" [ref=e1017]
+                            - generic [ref=e1018]:
+                              - strong [ref=e1019]: 按单位投递
+                              - generic [ref=e1020]: 按检查点等单位组装正文，模块开关、视图、表示和配额决定实际投递。
+                      - generic [ref=e1021]:
+                        - generic [ref=e1022]:
+                          - text: 内容预设
+                          - paragraph [ref=e1023]: 内容差异仅供预览；选择预设会重置编辑项。
+                        - combobox "内容预设" [ref=e1025]:
+                          - option "真人 完整" [selected]
+                          - option "真人 精简"
+                          - option "运行 完整"
+                          - option "运行 精简"
+                      - generic [ref=e1026]:
+                        - generic [ref=e1027]:
+                          - text: 策略总开关
+                          - paragraph [ref=e1028]: 保存为关闭后，停止动态投递；静态内容不受影响。
+                        - switch "策略总开关" [checked] [ref=e1030] [cursor=pointer]
+                      - generic [ref=e1031]:
+                        - generic [ref=e1032]:
+                          - text: 精简帧间隔
+                          - paragraph [ref=e1033]: 默认 15；显式 0/1 保留。
+                        - spinbutton "精简帧间隔" [ref=e1035]: "15"
+                      - generic [ref=e1036]:
+                        - generic [ref=e1037]:
+                          - text: 完整帧间隔
+                          - paragraph [ref=e1038]: 默认 40；水位触发仍要求真人轮。
+                        - spinbutton "完整帧间隔" [ref=e1040]: "40"
+                      - generic [ref=e1041]:
+                        - generic [ref=e1042]:
+                          - strong [ref=e1043]: 水位默认值
+                          - paragraph [ref=e1044]: 默认只启用 25；可在“触发”页面调整阈值。
+                        - generic [ref=e1045]: "25"
+                    - generic [ref=e1047]:
+                      - heading "内容档与特殊触发映射" [level=3] [ref=e1048]
+                      - list [ref=e1049]:
+                        - listitem [ref=e1050]:
+                          - code [ref=e1051]: post_compact
+                          - text: →human_full
+                        - listitem [ref=e1052]:
+                          - code [ref=e1053]: handoff_carry
+                          - text: →human_full
+                        - listitem [ref=e1054]:
+                          - code [ref=e1055]: hang_compensate
+                          - text: →run_full
+                        - listitem [ref=e1056]:
+                          - code [ref=e1057]: legacy
+                          - text: →锁定兼容档
+                      - generic [ref=e1058]:
+                        - generic [ref=e1059]:
+                          - text: 压缩后提醒
+                          - paragraph [ref=e1060]: 仅供预览；真实压缩提醒仍由原设置控制。
+                        - switch "压缩后提醒" [checked] [ref=e1062] [cursor=pointer]
+          - generic [ref=e603]:
+            - heading "长对话换窗口后继续" [level=3] [ref=e604]
+            - status [ref=e609]: 当前会话尚未测量；生效值将在测量后显示。
+            - generic [ref=e611]:
+              - generic [ref=e612]:
+                - text: 保存任务交接材料
+                - generic [ref=e613]: 用白板和交接记录保存计划、进展与下一步，方便长对话换窗口后继续。可在「白板」查看。
+              - switch "保存任务交接材料" [checked] [ref=e615] [cursor=pointer]
+            - generic [ref=e617]:
+              - generic [ref=e618]:
+                - text: 对话快满时询问是否换新会话
+                - generic [ref=e619]: 达到阈值后显示确认卡；同意或无人值守倒计时结束后接续到新会话；沿用工作区、模型和思考档位。此功能仍在测试。
+              - switch "对话快满时询问是否换新会话" [ref=e621] [cursor=pointer]
+            - group [ref=e622]:
+              - generic "进阶选项：长对话换窗口后继续" [ref=e623]
+              - option "auto 自动校准（推荐）" [selected]
+              - option "fixed 固定阈值（旧行为）"
+          - generic [ref=e624]:
+            - heading "免打扰与定时整理" [level=3] [ref=e625]
+            - generic [ref=e631]:
+              - generic [ref=e632]:
+                - text: 回来时自动打开记忆面板
+                - generic [ref=e633]: 离开一段时间再回来时自动显示记忆面板；关闭后仍可手动打开。
+              - switch "回来时自动打开记忆面板" [checked] [ref=e635] [cursor=pointer]
+            - generic [ref=e637]:
+              - generic [ref=e638]:
+                - text: 批量任务免打扰
+                - generic [ref=e639]: 适合夜间或批量运行：不提供欢迎语、行为提示和日历提醒，仍提供事实记忆。
+              - switch "批量任务免打扰" [ref=e641] [cursor=pointer]
+            - generic [ref=e643]:
+              - generic [ref=e644]:
+                - text: 非工作时间自动免打扰
+                - generic [ref=e645]: 在设定的非工作时间或检测到托管任务时自动进入免打扰；手动设置优先。
+              - switch "非工作时间自动免打扰" [ref=e647] [cursor=pointer]
+            - generic [ref=e649]:
+              - generic [ref=e650]:
+                - text: 自动总结时间点(HH:MM,逗号分隔)
+                - generic [ref=e651]:
+                  - text: 到点自动生成本时段总结并弹窗展示,如 12:00,18:00,22:00。
+                  - group [ref=e652]:
+                    - generic "详细说明" [ref=e653]
+              - textbox "自动总结时间点(HH:MM,逗号分隔)" [ref=e655]
+            - generic [ref=e657]:
+              - generic [ref=e658]:
+                - text: 每天提炼长期记忆
+                - generic [ref=e659]: 到点读取近期日志，将长期有用的内容整理到项目笔记或跨项目记忆；需宿主在线，会调用模型。
+              - switch "每天提炼长期记忆" [checked] [ref=e661] [cursor=pointer]
+            - generic [ref=e663]:
+              - generic [ref=e664]:
+                - text: 每天几点提炼（HH:MM）
+                - generic [ref=e665]: 例如 09:30；到点时 DSH 需要保持运行。
+              - textbox "每天几点提炼（HH:MM）" [ref=e667]:
+                - /placeholder: 09:30
+                - text: 09:30
+            - generic [ref=e669]:
+              - generic [ref=e670]:
+                - text: 提炼最近几天的日志
+                - generic [ref=e671]: 只回看这些天的日志；天数越多，待处理内容通常越多。
+              - spinbutton "提炼最近几天的日志" [ref=e673]: "7"
+            - generic [ref=e675]:
+              - generic [ref=e676]:
+                - text: 每天整理超过 30 天的旧日志
+                - generic [ref=e677]: 到点提炼并归档旧日志；没有符合条件的旧日志就跳过。
+              - switch "每天整理超过 30 天的旧日志" [checked] [ref=e679] [cursor=pointer]
+            - generic [ref=e681]:
+              - generic [ref=e682]:
+                - text: 每天几点整理旧日志（HH:MM）
+                - generic [ref=e683]: 例如 10:00；建议与长期记忆提炼时间错开，并保持 DSH 运行。
+              - textbox "每天几点整理旧日志（HH:MM）" [ref=e685]:
+                - /placeholder: 10:00
+                - text: 10:00
+            - group [ref=e686]:
+              - generic "进阶选项：免打扰与定时整理" [ref=e687]
+              - generic [ref=e689]:
+                - generic [ref=e690]:
+                  - text: 子代理模型 / 思考强度
+                  - generic [ref=e691]:
+                    - text: ★作用域=「记忆中枢」工作区(aik_auto_memory_use)下所有会话的默认模型与思考强度;后台子代理(问候/总结/沉淀/蒸馏)挂在该工作区下运行,因此也跟随这里。
+                    - group [ref=e692]:
+                      - generic "详细说明" [ref=e693]
+                - generic [ref=e695]:
+                  - generic [ref=e696]: 跟随路由默认
+                  - button "选择模型 / 强度" [ref=e697] [cursor=pointer]
+              - generic [ref=e699]:
+                - generic [ref=e700]:
+                  - text: 接续确认等待(秒)
+                  - generic [ref=e701]:
+                    - text: 自动接续前给用户确认的等待秒数。
+                    - group [ref=e702]:
+                      - generic "详细说明" [ref=e703]
+                - spinbutton "接续确认等待(秒)" [ref=e705]: "35"
+              - generic [ref=e707]:
+                - generic [ref=e708]:
+                  - text: 接续冷却(分钟)
+                  - generic [ref=e709]:
+                    - text: 同一会话两次自动接续之间的最小间隔。
+                    - group [ref=e710]:
+                      - generic "详细说明" [ref=e711]
+                - spinbutton "接续冷却(分钟)" [ref=e713]: "30"
+              - generic [ref=e715]:
+                - generic [ref=e716]:
+                  - text: 归档巡检周期(分钟)
+                  - generic [ref=e717]:
+                    - text: 会话归档扫描的巡检间隔。
+                    - group [ref=e718]:
+                      - generic "详细说明" [ref=e719]
+                - spinbutton "归档巡检周期(分钟)" [ref=e721]: "60"
+              - generic [ref=e723]:
+                - generic [ref=e724]:
+                  - text: 工作台轮询·短轴(分钟)
+                  - generic [ref=e725]:
+                    - text: 短期任务（产出/维护短期记忆）的轮询节奏。
+                    - group [ref=e726]:
+                      - generic "详细说明" [ref=e727]
+                - spinbutton "工作台轮询·短轴(分钟)" [ref=e729]: "10"
+              - generic [ref=e731]:
+                - generic [ref=e732]:
+                  - text: 工作台轮询·长轴(小时)
+                  - generic [ref=e733]:
+                    - text: 长期任务（巩固/蒸馏/长期记忆）的轮询节奏。
+                    - group [ref=e734]:
+                      - generic "详细说明" [ref=e735]
+                - spinbutton "工作台轮询·长轴(小时)" [ref=e737]: "24"
+              - generic [ref=e739]:
+                - generic [ref=e740]:
+                  - text: 工作台重试间隔(毫秒)
+                  - generic [ref=e741]:
+                    - text: 工作台任务失败后的重试间隔。
+                    - group [ref=e742]:
+                      - generic "详细说明" [ref=e743]
+                - spinbutton "工作台重试间隔(毫秒)" [ref=e745]: "30000"
+              - generic [ref=e747]:
+                - generic [ref=e748]:
+                  - text: 工作台轮换周期（天）
+                  - generic [ref=e749]:
+                    - text: "**跟随上一项「归档阈值」**，不再单独设置（默认 **2** 天）。"
+                    - group [ref=e750]:
+                      - generic "详细说明" [ref=e751]
+                - spinbutton "工作台轮换周期（天）" [disabled] [ref=e753]: "2"
+              - generic [ref=e755]:
+                - generic [ref=e756]:
+                  - text: 工作台工作区
+                  - generic [ref=e757]:
+                    - text: 留空 = 自动使用 **DSH 本体目录**下的 aik_auto_memory_use（Windows / macOS / Linux 都能匹配到，与 DSH 自己的数据同根，无需改盘符或家目录）。
+                    - group [ref=e758]:
+                      - generic "详细说明" [ref=e759]
+                - generic [ref=e761]:
+                  - textbox "aik_auto_memory_use" [ref=e762]
+                  - button "浏览…" [ref=e763] [cursor=pointer]
+              - generic [ref=e765]:
+                - generic [ref=e766]:
+                  - text: 多久没操作算离开（分钟）
+                  - generic [ref=e767]: 配合回归提示和自动弹窗使用。0 关闭离开检测与欢迎问候。
+                - spinbutton "多久没操作算离开（分钟）" [ref=e769]: "60"
+              - generic [ref=e771]:
+                - generic [ref=e772]:
+                  - text: 会话归档与删除（自持）
+                  - generic [ref=e773]: 总开关。开启后本插件自己按下面的天数归档并清理会话，**不依赖任何外部会话管理插件**；关掉则两条策略都不跑。
+                - switch "会话归档与删除（自持）" [checked] [ref=e775] [cursor=pointer]
+              - generic [ref=e777]:
+                - generic [ref=e778]:
+                  - text: 自动归档
+                  - generic [ref=e779]: 子代理跑完后先**保留**；超过右边的天数未再活动即自动归档（归档 = 移出默认视野、可恢复，不是删除）。
+                - switch "自动归档" [ref=e781] [cursor=pointer]
+              - generic [ref=e783]:
+                - generic [ref=e784]:
+                  - text: 归档阈值（天）
+                  - generic [ref=e785]:
+                    - text: 默认 **2** 天（用户口径）。
+                    - group [ref=e786]:
+                      - generic "详细说明" [ref=e787]
+                - spinbutton "归档阈值（天）" [ref=e789]: "2"
+              - generic [ref=e791]:
+                - generic [ref=e792]:
+                  - text: 自动删除
+                  - generic [ref=e793]:
+                    - text: 归档后超过右边天数才**物理删除**（不可恢复）。
+                    - group [ref=e794]:
+                      - generic "详细说明" [ref=e795]
+                - switch "自动删除" [ref=e797] [cursor=pointer]
+              - generic [ref=e799]:
+                - generic [ref=e800]:
+                  - text: 归档后保留（天）
+                  - generic [ref=e801]:
+                    - text: 默认 **7** 天（用户口径）。
+                    - group [ref=e802]:
+                      - generic "详细说明" [ref=e803]
+                - spinbutton "归档后保留（天）" [ref=e805]: "7"
+          - generic [ref=e806]:
+            - heading "与团队共享记忆" [level=3] [ref=e807]
+            - generic [ref=e812]:
+              - generic [ref=e813]: 待保存的团队开关：关
+              - generic [ref=e814]: 团队连接设置保存后需重启宿主。当前版本仅 S3 传输已接线；HTTP 和 folder 的旧值保留，但不可新选。
+              - generic [ref=e816]:
+                - generic [ref=e817]: 团队协作
+                - switch "团队协作" [ref=e819] [cursor=pointer]
+              - generic [ref=e821]:
+                - generic [ref=e822]: 团队服务地址
+                - textbox "团队服务地址" [ref=e824]
+              - generic [ref=e826]:
+                - generic [ref=e827]: 团队 ID
+                - textbox "团队 ID" [ref=e829]
+              - generic [ref=e831]:
+                - generic [ref=e832]: 团队项目 ID
+                - textbox "团队项目 ID" [ref=e834]
+              - generic [ref=e836]:
+                - generic [ref=e837]: 我的成员名
+                - textbox "我的成员名" [ref=e839]
+              - generic [ref=e841]:
+                - generic [ref=e842]: 注入团队快照
+                - switch "注入团队快照" [ref=e844] [cursor=pointer]
+              - generic [ref=e846]:
+                - generic [ref=e847]: 冲突策略
+                - combobox "冲突策略" [ref=e849]:
+                  - option "ask 每次询问" [selected]
+                  - option "mine 总用本地"
+                  - option "theirs 总用云端"
+                  - option "both 都保留"
+              - generic [ref=e851]:
+                - generic [ref=e852]: 审计留痕
+                - switch "审计留痕" [ref=e854] [cursor=pointer]
+              - generic [ref=e856]:
+                - generic [ref=e857]: 显示成员徽章
+                - switch "显示成员徽章" [checked] [ref=e859] [cursor=pointer]
+              - generic [ref=e861]:
+                - generic [ref=e862]: 同步传输方式
+                - combobox "同步传输方式" [ref=e864]:
+                  - option "s3 对象存储" [selected]
+                  - option "http 服务端（当前宿主尚未接线，旧值保留）" [disabled]
+                  - option "folder 共享目录（尚未实现，旧值保留）" [disabled]
+              - generic [ref=e866]:
+                - generic [ref=e867]: HTTP 端点
+                - textbox "HTTP 端点" [ref=e869]
+              - generic [ref=e871]:
+                - generic [ref=e872]: 存储桶
+                - textbox "存储桶" [ref=e874]
+              - generic [ref=e876]:
+                - generic [ref=e877]: 区域
+                - textbox "区域" [ref=e879]
+              - generic [ref=e881]:
+                - generic [ref=e882]: 访问密钥 ID
+                - textbox "访问密钥 ID" [ref=e884]
+              - generic [ref=e886]:
+                - generic [ref=e887]: 访问密钥密文
+                - generic [ref=e889]:
+                  - textbox "访问密钥密文" [ref=e890]
+                  - button "显示密钥" [ref=e891] [cursor=pointer]
+              - generic [ref=e893]:
+                - generic [ref=e894]: 路径风格寻址
+                - switch "路径风格寻址" [checked] [ref=e896] [cursor=pointer]
+              - generic [ref=e898]:
+                - generic [ref=e899]: 同步间隔(毫秒)
+                - spinbutton "同步间隔(毫秒)" [ref=e901]: "5000"
+              - generic [ref=e903]:
+                - generic [ref=e904]: 发件箱上限(条)
+                - spinbutton "发件箱上限(条)" [ref=e906]: "500"
+              - generic [ref=e908]:
+                - generic [ref=e909]: 单次拉取上限(条)
+                - spinbutton "单次拉取上限(条)" [ref=e911]: "200"
+              - generic [ref=e913]:
+                - generic [ref=e914]: 上行端点路径
+                - textbox "上行端点路径" [ref=e916]
+              - generic [ref=e918]:
+                - generic [ref=e919]: 冲突中心上限(条)
+                - spinbutton "冲突中心上限(条)" [ref=e921]: "200"
+              - generic [ref=e923]:
+                - generic [ref=e924]: 端到端加密档位
+                - combobox "端到端加密档位" [ref=e926]:
+                  - option "off 明文上传（默认）" [selected]
+                  - option "unsupported 声明本环境要求端到端加密（本版未实装，会明示不可用）"
+              - generic [ref=e928]:
+                - generic [ref=e929]: 行为数据上报
+                - switch "行为数据上报" [ref=e931] [cursor=pointer]
+              - generic [ref=e933]:
+                - generic [ref=e934]: 本机用量留痕路径
+                - textbox "本机用量留痕路径" [ref=e936]
+              - generic [ref=e938]:
+                - generic [ref=e939]: 派生重算防抖(毫秒)
+                - spinbutton "派生重算防抖(毫秒)" [ref=e941]: "2000"
+          - generic [ref=e942]:
+            - heading "关于与维护" [level=3] [ref=e943]
+            - generic [ref=e949]:
+              - generic [ref=e950]:
+                - text: 白板模式（立即保存，需重启）
+                - generic [ref=e951]:
+                  - text: 一键切换白板形态。
+                  - group [ref=e952]:
+                    - generic "详细说明" [ref=e953]
+              - button "事件视图（白板页签固定为此形态）" [disabled] [ref=e956]
+            - generic [ref=e958]:
+              - generic [ref=e959]:
+                - text: 插件版本
+                - generic [ref=e960]:
+                  - text: "更新命令: cd ~/.dsh/profiles/web && pnpm up @a9i5k4/dsh-auto-memory,然后重启 dsh web 生效。"
+                  - group [ref=e961]:
+                    - generic "详细说明" [ref=e962]
+              - generic [ref=e964]:
+                - generic [ref=e965]: 3.4.0-alpha.6 → 3.3.17 (有新版本)
+                - button "检查更新" [ref=e966] [cursor=pointer]
+                - generic [ref=e967]: 开发树 v3.4.0-alpha.6 → 线上 v3.3.17，请同步开发源码后重新构建
+            - generic [ref=e969]:
+              - generic [ref=e970]:
+                - text: 交流群
+                - generic [ref=e971]: 点击链接一键加群。
+              - generic [ref=e973]:
+                - generic [ref=e974]: 反馈问题、交流使用技巧——加群响应比 issue 更快。
+                - link "点击加入 QQ 交流群" [ref=e975] [cursor=pointer]:
+                  - /url: https://qm.qq.com/q/v7Asxn6vPa
+          - button "▾ 调试中心" [ref=e555] [cursor=pointer]
+        - status [ref=e556]:
+          - button "取消修改" [disabled] [ref=e557]
+          - button "保存设置" [disabled] [ref=e558]
+```

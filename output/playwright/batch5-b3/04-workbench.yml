@@ -1,0 +1,61 @@
+- generic [ref=e4]:
+  - generic [ref=e7]:
+    - generic [ref=e8]:
+      - button "新建会话" [ref=e9] [cursor=pointer]
+      - button "收起侧边栏" [ref=e38] [cursor=pointer]
+    - button "新建会话" [ref=e43] [cursor=pointer]:
+      - generic [ref=e44]: 新会话
+      - generic:
+        - generic:
+          - generic: Ctrl
+          - generic: +
+          - generic: Alt
+          - generic: +
+          - generic: "N"
+    - generic [ref=e50]:
+      - navigation "全局面板" [ref=e51]:
+        - button "插件" [ref=e53] [cursor=pointer]
+        - generic [ref=e59]:
+          - button "自动化任务" [ref=e60] [cursor=pointer]
+          - button "从侧边栏取消固定自动化任务" [ref=e66] [cursor=pointer]
+        - button "更多" [ref=e70] [cursor=pointer]
+      - generic [ref=e77]:
+        - generic [ref=e78]:
+          - generic [ref=e79]: 工作区
+          - generic [ref=e81]:
+            - button "搜索会话" [ref=e82] [cursor=pointer]
+            - textbox "搜索会话名称"
+          - generic [ref=e85]:
+            - button "视图选项" [ref=e87] [cursor=pointer]
+            - button "添加工作区" [ref=e90] [cursor=pointer]
+        - tree "会话" [ref=e95]:
+          - generic [ref=e197]:
+            - treeitem "默认工作区" [expanded] [ref=e199] [cursor=pointer]
+            - treeitem "新会话" [selected] [ref=e206] [cursor=pointer]
+    - generic [ref=e100]:
+      - button "记忆" [ref=e334] [cursor=pointer]
+      - button "账号菜单" [ref=e112] [cursor=pointer]:
+        - generic [ref=e115]: 更多
+  - generic [ref=e120]:
+    - banner [ref=e122]:
+      - button "打开右侧边栏" [ref=e213] [cursor=pointer]
+    - generic [ref=e131]:
+      - generic [ref=e139]:
+        - generic [ref=e140]: 探索未至之境
+        - generic [ref=e141]: 预览版
+      - generic [ref=e142]:
+        - button "选择工作区" [ref=e143] [cursor=pointer]:
+          - generic [ref=e146]: 默认工作区
+        - button "标准模式" [ref=e219] [cursor=pointer]
+      - generic [ref=e159]:
+        - generic [ref=e161]:
+          - textbox "描述你想要构建的内容, / 调用指令, @ 文件或对话" [ref=e225]
+          - generic: 描述你想要构建的内容, / 调用指令, @ 文件或对话
+        - generic [ref=e163]:
+          - generic [ref=e164]:
+            - button "添加文件或调用指令" [ref=e226] [cursor=pointer]
+            - button "访问模式，当前：工作区内修改" [ref=e232] [cursor=pointer]:
+              - generic [ref=e238]: 工作区内修改
+          - generic [ref=e165]:
+            - button "请选择模型" [ref=e245] [cursor=pointer]
+            - button "发送消息" [disabled] [ref=e249]

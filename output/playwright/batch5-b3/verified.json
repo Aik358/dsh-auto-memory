@@ -1,0 +1,28 @@
+{
+  "host": "DeepSeek Harness Web via installed CLI",
+  "port": 19437,
+  "profile": "settings-search",
+  "entry": "插件 > dsh-auto-memory > 记忆设置 > 接续与维护 > 投递策略",
+  "default": {
+    "configKeyPresent": false,
+    "checked": false
+  },
+  "saved": {
+    "runTierInjectEnabled": true,
+    "checked": true
+  },
+  "reloaded": {
+    "checked": true
+  },
+  "manuallyDisabled": {
+    "runTierInjectEnabled": false,
+    "checked": false
+  },
+  "screenshots": [
+    "07-default.png",
+    "08-enabled.png",
+    "09-reloaded.png"
+  ],
+  "restoredConfigSha256": "09d86cbbdb8d4ec2f4da00928942c24f288e895805e1edd640f11d2fa1871140",
+  "portReleased": true
+}

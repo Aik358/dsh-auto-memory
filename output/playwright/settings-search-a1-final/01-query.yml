@@ -1,0 +1,156 @@
+- generic [ref=e1]:
+  - generic [ref=e4]:
+    - generic [ref=e7]:
+      - generic [ref=e8]:
+        - button "新建会话" [ref=e9] [cursor=pointer]
+        - button "收起侧边栏" [ref=e38] [cursor=pointer]
+      - button "新建会话" [ref=e43] [cursor=pointer]:
+        - generic [ref=e44]: 新会话
+        - generic:
+          - generic:
+            - generic: Ctrl
+            - generic: +
+            - generic: Alt
+            - generic: +
+            - generic: "N"
+      - generic [ref=e50]:
+        - navigation "全局面板" [ref=e51]:
+          - button "插件" [ref=e53] [cursor=pointer]
+          - generic [ref=e59]:
+            - button "自动化任务" [ref=e60] [cursor=pointer]
+            - button "从侧边栏取消固定自动化任务" [ref=e66] [cursor=pointer]
+          - button "更多" [ref=e70] [cursor=pointer]
+        - generic [ref=e77]:
+          - generic [ref=e78]:
+            - generic [ref=e79]: 工作区
+            - generic [ref=e81]:
+              - button "搜索会话" [ref=e82] [cursor=pointer]
+              - textbox "搜索会话名称"
+            - generic [ref=e85]:
+              - button "视图选项" [ref=e87] [cursor=pointer]
+              - button "添加工作区" [ref=e90] [cursor=pointer]
+          - tree "会话" [ref=e95]:
+            - generic [ref=e96]:
+              - treeitem "默认工作区" [expanded] [ref=e98] [cursor=pointer]
+              - treeitem "新会话" [selected] [ref=e196] [cursor=pointer]
+      - generic [ref=e104]:
+        - button "记忆" [ref=e108] [cursor=pointer]
+        - button "账号菜单" [ref=e116] [cursor=pointer]:
+          - generic [ref=e119]: 更多
+    - generic [ref=e124]:
+      - banner [ref=e126]:
+        - button "打开右侧边栏" [ref=e203] [cursor=pointer]
+      - generic [ref=e135]:
+        - generic [ref=e143]:
+          - generic [ref=e144]: 探索未至之境
+          - generic [ref=e145]: 预览版
+        - generic [ref=e146]:
+          - button "选择工作区" [ref=e147] [cursor=pointer]:
+            - generic [ref=e150]: 默认工作区
+          - button "标准模式" [ref=e210] [cursor=pointer]
+        - generic [ref=e155]:
+          - generic [ref=e157]:
+            - textbox "描述你想要构建的内容, / 调用指令, @ 文件或对话" [ref=e216]
+            - generic: 描述你想要构建的内容, / 调用指令, @ 文件或对话
+          - generic [ref=e159]:
+            - generic [ref=e160]:
+              - button "添加文件或调用指令" [ref=e217] [cursor=pointer]
+              - button "访问模式，当前：工作区内修改" [ref=e223] [cursor=pointer]:
+                - generic [ref=e229]: 工作区内修改
+            - generic [ref=e161]:
+              - button "请选择模型" [ref=e236] [cursor=pointer]
+              - button "发送消息" [disabled] [ref=e240]
+  - alert "提前预警：下周有一次记忆架构大改版" [ref=e258]:
+    - banner [ref=e259]:
+      - heading "提前预警：下周有一次记忆架构大改版" [level=2] [ref=e260]
+    - paragraph [ref=e261]: 这不是小更新。约 7 天后，记忆会从「按时间堆的流水账」改成以「事件」为单位——一件事一个容器，跨天能接着做，还能记住你们的共识和共同经历。 升级后如果你已有旧记忆，会提示你派一个子代理整理一次（约 10 分钟）。整理不会删除任何东西，原始记忆会先备份。
+    - contentinfo [ref=e262]:
+      - link "了解更多" [ref=e263] [cursor=pointer]:
+        - /url: https://github.com/Aik358/dsh-auto-memory
+      - button "知道了" [ref=e264] [cursor=pointer]
+  - dialog "设置" [ref=e292]:
+    - navigation [ref=e294]:
+      - generic [ref=e295]:
+        - button "通用设置" [ref=e296] [cursor=pointer]
+        - button "模型" [ref=e302] [cursor=pointer]
+        - button "内置插件" [ref=e308] [cursor=pointer]
+        - button "Agent 预设" [ref=e314] [cursor=pointer]
+        - button "自动记忆" [ref=e320] [cursor=pointer]
+    - generic [ref=e326]:
+      - button "打开配置文件" [ref=e330] [cursor=pointer]
+      - button "关闭" [ref=e331] [cursor=pointer]
+    - generic "记忆设置" [ref=e446]:
+      - banner [ref=e447]:
+        - strong [ref=e448]: 记忆设置
+        - button "展开设置" [ref=e449] [cursor=pointer]
+      - generic [ref=e451]:
+        - tablist "设置分组" [ref=e452]:
+          - tab "查找与回忆" [selected] [ref=e453] [cursor=pointer]
+          - tab "记录与使用" [ref=e454] [cursor=pointer]
+          - tab "外观与目录" [ref=e455] [cursor=pointer]
+          - tab "接续与维护" [ref=e456] [cursor=pointer]
+        - search "搜索设置" [ref=e457]:
+          - generic [ref=e458]:
+            - searchbox "搜索设置" [active] [ref=e461]: 投递模式
+            - button "清除" [ref=e523] [cursor=pointer]
+          - generic [ref=e524]:
+            - status [ref=e525]: 1 项匹配
+            - button "预设与节奏 投递策略" [ref=e526] [cursor=pointer]:
+              - strong [ref=e527]: 预设与节奏
+              - generic [ref=e528]: 投递策略
+        - tabpanel "查找与回忆" [ref=e462]:
+          - paragraph [ref=e463]: 这里决定如何找到旧记忆，以及找到后是否交给 AI。记录新内容请到「记录与使用」。 除标有「立即生效」的选项外，修改后请点击底部保存。立即生效项不会被取消修改撤销；标有重启的设置保存后需重启。
+          - generic [ref=e464]:
+            - generic [ref=e465]:
+              - heading [level=2] [ref=e466]
+              - generic [ref=e471]:
+                - generic [ref=e472]:
+                  - text: 主动查找相关记忆
+                  - generic [ref=e473]: 对话中寻找可能有用的旧记忆，可能消耗额外 token。是否交给 AI，还取决于下面的「找到后如何使用」。关闭并保存会清空观察数据，已保存的记忆正文保留。
+                - switch "主动查找相关记忆" [ref=e475] [cursor=pointer]
+              - generic [ref=e477]:
+                - generic [ref=e478]:
+                  - text: 找到后如何使用（立即生效）
+                  - generic [ref=e479]: 「只观察」不会把找到的记忆交给 AI；「明确要求时」用于你主动要求回忆；「主动提供」用于所有通过判定的结果。需要先开启主动查找。
+                - combobox "找到后如何使用（立即生效）" [ref=e481]:
+                  - option "只观察，不交给 AI" [selected]
+                  - option "明确要求回忆时提供"
+                  - option "主动提供相关记忆"
+              - generic [ref=e482]:
+                - generic [ref=e483]: 总闸（自动记忆 + 收件箱）：关（唤回不会投递）
+                - generic [ref=e484]: 唤起注入模式：shadow
+                - generic [ref=e485]: 索引就绪：否
+                - generic [ref=e486]: 当前档位：C1 · c1
+            - generic [ref=e487]:
+              - heading [level=2] [ref=e488]
+              - generic [ref=e493]:
+                - generic [ref=e494]:
+                  - generic [ref=e495]: 用什么方式查找
+                  - generic [ref=e496]: 不确定时选「自动」。可用时按意思查找，否则按关键词查找；切换后立即保存，不用再点保存设置。
+                - generic [ref=e498]:
+                  - radiogroup "检索模式（即时生效）" [ref=e499]:
+                    - generic [ref=e500] [cursor=pointer]:
+                      - radio "自动（推荐）" [ref=e501]
+                      - generic [ref=e502]: 自动（推荐）
+                    - generic [ref=e503] [cursor=pointer]:
+                      - radio "按关键词查找（无需下载模型）" [checked] [ref=e504]
+                      - generic [ref=e505]: 按关键词查找（无需下载模型）
+                    - generic [ref=e506] [cursor=pointer]:
+                      - radio "按意思查找（需本地模型）" [ref=e507]
+                      - generic [ref=e508]: 按意思查找（需本地模型）
+                    - generic [ref=e509] [cursor=pointer]:
+                      - radio "Python 搜索工具（需单独安装）" [ref=e510]
+                      - generic [ref=e511]: Python 搜索工具（需单独安装）
+                  - button "⟳ 检测" [ref=e512] [cursor=pointer]
+                  - button "🧩 安装向导" [ref=e513] [cursor=pointer]
+            - group [ref=e514]:
+              - generic "安装与检查查找工具" [ref=e515]
+            - group [ref=e516]:
+              - generic "进阶：回忆频率、准确度与索引维护" [ref=e517]
+              - option "平衡：3 条 × 40 字符" [selected]
+              - option "广泛：6 条 × 20 字符"
+              - option "自定义"
+          - button "▾ 调试中心" [ref=e519] [cursor=pointer]
+        - status [ref=e520]:
+          - button "取消修改" [disabled] [ref=e521]
+          - button "保存设置" [disabled] [ref=e522]

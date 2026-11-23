@@ -10,13 +10,13 @@ import { parseModelWindowsPre, pickWindowPre } from '../../lib/water-window.js'
 import { withSubagentGuardPre } from '../../lib/subagent-prompt-guard.js'
 
 const source = readFileSync(new URL('../../lib/index.js', import.meta.url), 'utf8').replace(/\r\n/g, '\n')
-const start = source.indexOf('  async _runSubagentOnce(text, label, agent, timeoutMs, override) {')
+const start = source.indexOf('  async _runSubagentOnce(')
 const end = source.indexOf('  /** 子代理痕迹回收', start)
 const optionsStart = source.indexOf('function subAgentOptions(config, lane) {')
 const optionsEnd = source.indexOf('\n}', optionsStart) + 2
 const parserStart = source.indexOf('function parseAgentDefaultModelPre(text) {')
 const parserEnd = source.indexOf('\n}', parserStart) + 2
-// ★2026-10-18（DSH 0.2.1 迁移）：_runSubagentOnce 内的两处启动改走 callSubagentStartPre 适配层，
+// 主启动与模型回退共用 callSubagentStartPre 适配层。
 //   该函数定义在 vm 切片之外 ⇒ 必须一并注入上下文，否则 vm 内 ReferenceError 被 catch 吞成空结果。
 const optResolverStart = source.indexOf('function resolveSubAgentOptionsPre(')
 const optResolverEnd = source.indexOf('\n}', optResolverStart) + 2

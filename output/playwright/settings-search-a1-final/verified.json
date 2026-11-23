@@ -1,0 +1,26 @@
+{
+  "dshProfile": "settings-search",
+  "deliveryQuery": {
+    "query": "投递模式",
+    "result": "预设与节奏 投递策略",
+    "target": "接续与维护 / 预设与节奏",
+    "selectedAndFocused": true
+  },
+  "port": 19437,
+  "host": "DeepSeek Harness Web 0.2.2-rc.5 via installed CLI",
+  "miss": {
+    "query": "不存在的设置9817",
+    "emptyState": "没有匹配的设置，试试其他关键词。"
+  },
+  "cleared": {
+    "tabLabels": [
+      "查找与回忆",
+      "记录与使用",
+      "外观与目录",
+      "接续与维护"
+    ],
+    "emptyStateRemoved": true,
+    "searchActive": true,
+    "selectedTabRetained": "接续与维护"
+  }
+}
