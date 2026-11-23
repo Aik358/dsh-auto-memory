@@ -4,7 +4,7 @@
 
 ## 4.1 一页摘要
 
-建议审批下方中文稿。它把归属、账本、检查点、白板和结束事件排成一条可以逐项核对回执的流程。同文优先使用必须更新的账本，检查点已有回执就省正文，未落盘的四类感知仍能补入。
+建议审批下方中文稿。它把归属、账本、检查点、白板和结束事件排成一条可以逐项核对回执的流程。同文优先使用必须更新的账本，检查点已有回执就省正文，未落盘的四类感知仍能补入。用户画像由事件的 `userPercept` 生成，正文现已明确其写入字段和入选条件。
 
 | 变更 | 数量和口径 |
 | --- | --- |
@@ -14,7 +14,7 @@
 | 合并重复 | 3 组：归属规则与建事件、检查点与自动记录、白板及账本说明 |
 | 补缺失能力 | L1 采纳 5 项，L2 采纳 2 项，L3 采纳 0 项。详见 §4.5 |
 
-真实帧由 **1,675 JS 字符 / 3,034 B / 估 707 token** 变为 **1,699 JS 字符 / 2,715 B / 估 663 token**。JS 字符增加 24，UTF-8 减少 319 B，估算 token 减少 44。余量 **1 JS 字符**。字符和字节来自实际全文。token 数是按任务书公式复算的估值。
+完整帧由 **1,675 JS 字符 / 3,034 B / 估 707 token** 变为 **1,723 JS 字符 / 2,733 B / 估 669 token**。JS 字符增加 48，UTF-8 减少 301 B，估算 token 减少 38。距批准的 **1,750** 字符护栏还有 **27** 字符。
 
 三条取舍：
 
@@ -28,20 +28,20 @@
 
 ```text
 [铭文 · 每轮提醒 {date}]
-【收尾自检】阶段完成、实质进展、重要裁定或查明根因才写。纯读/闲聊/派活/等待/重复跳过。缺凭据停该项。
-① 先定归属。同文优先账本，日志用 memory_log(note,eventId)，kind 选 rule=用户约束/约定、preference=偏好、fact=事实、todo=待办。
+【收尾自检】阶段完成/实质进展/重要裁定/根因落地才写。纯读/闲聊/派活/等待/重复跳过。缺凭据停。
+① 先定归属，同文优先账本。日志 memory_log(note,eventId)，kind 取 rule=用户约束/约定、preference=偏好、fact=事实、todo=待办。
 ② 事件索引，账本是原文载体。
-· 标识优先找 #evt_xxx，已知必传 eventId，存疑 memory_log(note,dryRun:true)。批次日志挂伞事件（三录/编排/alpha.N/总表/白板）。专属限同日同修复，founding 仅首检查点。同标识异线不挂。无匹配才 memory_event(action=create,name)，宁建勿挂仅限证据不足。
-· 动 lib/（含测试/工具）或需交接必写 memory_note(kind=handoff)。content 四段：任务状态/目标/已试方案与失败原因/进度与下一步。R4 指定真实 documentId 或 maintenanceTopic。更新传 expectedRevision，首建传真实 eventId，显式首建带 createDocument:true。关闭走旧账本。
-· 同轮合一检查点。memory_event(action=append,eventId,checkpoint)，含 kind/text/goal/state/dead/next，重试同 idemKey。回执已记则省 checkpoint。感知 userPercept/agentTrace/sharedGround/commitment 据实补缺。头四段 goal/doing/deadend/next，变才 set(eventId,变更)，暂停带 pausedReason。确已结束才 set summary 后 close(eventId,outcome)。
-· 白板不符才 memory_note(kind=plan)，读原版带 expectedRevision。事件板 fromEvents:true。手写带 content，保锚点/备注。补结论用 memory_note(kind=note,action=append,content)。note/docs 不算白板/账本。
-· memory_recall(scope=events,query)，取全文带同值 expand/eventId、checkpointIndex 或 idemKey。
-③ 多步先 memory_procedure_list，按 successCriteria 验收。跑通可复用才 memory_procedure。已有 action=update 带 procedureId/改动，别另写同名新条。新项带 title/steps/successCriteria。确信才 action=activate，否则 write。跨轮结论 memory_note(content)，跨项目规则 memory_user(action,content)。memory_rules 增改带 content，改删先 list 得 index/expect。
+· 先查标识 #evt_xxx，已知必传 eventId，存疑 memory_log(note,dryRun:true)。批次挂伞（三录/编排/alpha.N/总表/白板）。专属限同日同修复，founding 仅首检查点。同标识异线不挂。无匹配才 memory_event(action=create,name)。粒度不明宁拆勿并，归属不明宁建勿挂。
+· 动 lib/（含测试/工具）或交接必写 memory_note(kind=handoff)。content 四段：任务状态/目标/已试方案与失败原因/进度与下一步。R4 用真实 documentId 或 maintenanceTopic。更新带 expectedRevision，首建带真实 eventId，显式首建加 createDocument:true。关用旧账本。
+· 同轮合一检查点。memory_event(action=append,eventId,checkpoint)，含 kind/text/goal/state/dead/next，重试同 idemKey。已记省 checkpoint。画像用 userPercept。确认/用上填 stage=accepted/used，明确回应填 kind=authorResponse。agentTrace/sharedGround/commitment 据实补缺。头段 goal/doing/deadend/next 变才 set(eventId,变更)，暂停需 pausedReason。事件结束才 set summary→close(eventId,outcome)。仍有下一步不可 close。
+· 白板不符才 memory_note(kind=plan)，读原版带 expectedRevision。事件板 fromEvents:true。手写 content 保锚/备注。跨轮结论 memory_note(kind=note,action=append,content)。note/docs 不代白板/账本。
+· memory_recall(scope=events,query)，取检查点带同值 expand/eventId、checkpointIndex 或 idemKey。
+③ 多步先 memory_procedure_list，按 successCriteria 验收。跑通可复用才 memory_procedure。action=update 带 procedureId/改动，别另写同名新条。新项 title/steps/successCriteria，确信才 action=activate，否则 write。跨项目规则 memory_user(action,content)。memory_rules 增改带 content，改删先 list 取 index/expect。
 ④ 失效用 memory_note(kind=note,content)。旧ID数组。有后继 supersedes=，错则 retract=加 retractReason=，标错 restore=。
 ⑤ 标题/正文标泳道 type:goal/type:state/type:dead-end/type:progress。
-⑥ 客观第三人称，只留可复用事实/决策/规则/路径。核回执即停。
-⑧ 见「存量未归档」才按提示归事件。
-⑦ archive/ 默认30天，不进 all。memory_recall(scope=archive,query) 找名→memory_read(kind=archive,name)。超长按路径取原文。省 name 列目录，未命中停。
+⑥ 客观第三人称，仅留可复用事实/决策/规则/路径。核回执即停。
+⑧ 见「存量未归档」按提示归事件。
+⑦ archive/ 默认30天，不进 all。memory_recall(scope=archive,query) 找名→memory_read(kind=archive,name)。超长按路径读。省 name 列目录，无命中停。
 ```
 
 ### 改前与改后逐行对照
@@ -69,20 +69,20 @@
 - ⑧ 存量未归档 —— 注入面出现「存量未归档」段时按其指引把账本归入事件；无存量时该段零字节、不出现。
 - ⑦ 旧日志在 archive/(30 天前归档，不在 memory_recall 的 all 里)。取原文：memory_recall(scope=archive) 找文件名 → memory_read(kind=archive, name) 取全文；只列目录用 memory_read(kind=archive)。
 + [铭文 · 每轮提醒 {date}]
-+ 【收尾自检】阶段完成、实质进展、重要裁定或查明根因才写。纯读/闲聊/派活/等待/重复跳过。缺凭据停该项。
-+ ① 先定归属。同文优先账本，日志用 memory_log(note,eventId)，kind 选 rule=用户约束/约定、preference=偏好、fact=事实、todo=待办。
++ 【收尾自检】阶段完成/实质进展/重要裁定/根因落地才写。纯读/闲聊/派活/等待/重复跳过。缺凭据停。
++ ① 先定归属，同文优先账本。日志 memory_log(note,eventId)，kind 取 rule=用户约束/约定、preference=偏好、fact=事实、todo=待办。
 + ② 事件索引，账本是原文载体。
-+ · 标识优先找 #evt_xxx，已知必传 eventId，存疑 memory_log(note,dryRun:true)。批次日志挂伞事件（三录/编排/alpha.N/总表/白板）。专属限同日同修复，founding 仅首检查点。同标识异线不挂。无匹配才 memory_event(action=create,name)，宁建勿挂仅限证据不足。
-+ · 动 lib/（含测试/工具）或需交接必写 memory_note(kind=handoff)。content 四段：任务状态/目标/已试方案与失败原因/进度与下一步。R4 指定真实 documentId 或 maintenanceTopic。更新传 expectedRevision，首建传真实 eventId，显式首建带 createDocument:true。关闭走旧账本。
-+ · 同轮合一检查点。memory_event(action=append,eventId,checkpoint)，含 kind/text/goal/state/dead/next，重试同 idemKey。回执已记则省 checkpoint。感知 userPercept/agentTrace/sharedGround/commitment 据实补缺。头四段 goal/doing/deadend/next，变才 set(eventId,变更)，暂停带 pausedReason。确已结束才 set summary 后 close(eventId,outcome)。
-+ · 白板不符才 memory_note(kind=plan)，读原版带 expectedRevision。事件板 fromEvents:true。手写带 content，保锚点/备注。补结论用 memory_note(kind=note,action=append,content)。note/docs 不算白板/账本。
-+ · memory_recall(scope=events,query)，取全文带同值 expand/eventId、checkpointIndex 或 idemKey。
-+ ③ 多步先 memory_procedure_list，按 successCriteria 验收。跑通可复用才 memory_procedure。已有 action=update 带 procedureId/改动，别另写同名新条。新项带 title/steps/successCriteria。确信才 action=activate，否则 write。跨轮结论 memory_note(content)，跨项目规则 memory_user(action,content)。memory_rules 增改带 content，改删先 list 得 index/expect。
++ · 先查标识 #evt_xxx，已知必传 eventId，存疑 memory_log(note,dryRun:true)。批次挂伞（三录/编排/alpha.N/总表/白板）。专属限同日同修复，founding 仅首检查点。同标识异线不挂。无匹配才 memory_event(action=create,name)。粒度不明宁拆勿并，归属不明宁建勿挂。
++ · 动 lib/（含测试/工具）或交接必写 memory_note(kind=handoff)。content 四段：任务状态/目标/已试方案与失败原因/进度与下一步。R4 用真实 documentId 或 maintenanceTopic。更新带 expectedRevision，首建带真实 eventId，显式首建加 createDocument:true。关用旧账本。
++ · 同轮合一检查点。memory_event(action=append,eventId,checkpoint)，含 kind/text/goal/state/dead/next，重试同 idemKey。已记省 checkpoint。画像用 userPercept。确认/用上填 stage=accepted/used，明确回应填 kind=authorResponse。agentTrace/sharedGround/commitment 据实补缺。头段 goal/doing/deadend/next 变才 set(eventId,变更)，暂停需 pausedReason。事件结束才 set summary→close(eventId,outcome)。仍有下一步不可 close。
++ · 白板不符才 memory_note(kind=plan)，读原版带 expectedRevision。事件板 fromEvents:true。手写 content 保锚/备注。跨轮结论 memory_note(kind=note,action=append,content)。note/docs 不代白板/账本。
++ · memory_recall(scope=events,query)，取检查点带同值 expand/eventId、checkpointIndex 或 idemKey。
++ ③ 多步先 memory_procedure_list，按 successCriteria 验收。跑通可复用才 memory_procedure。action=update 带 procedureId/改动，别另写同名新条。新项 title/steps/successCriteria，确信才 action=activate，否则 write。跨项目规则 memory_user(action,content)。memory_rules 增改带 content，改删先 list 取 index/expect。
 + ④ 失效用 memory_note(kind=note,content)。旧ID数组。有后继 supersedes=，错则 retract=加 retractReason=，标错 restore=。
 + ⑤ 标题/正文标泳道 type:goal/type:state/type:dead-end/type:progress。
-+ ⑥ 客观第三人称，只留可复用事实/决策/规则/路径。核回执即停。
-+ ⑧ 见「存量未归档」才按提示归事件。
-+ ⑦ archive/ 默认30天，不进 all。memory_recall(scope=archive,query) 找名→memory_read(kind=archive,name)。超长按路径取原文。省 name 列目录，未命中停。
++ ⑥ 客观第三人称，仅留可复用事实/决策/规则/路径。核回执即停。
++ ⑧ 见「存量未归档」按提示归事件。
++ ⑦ archive/ 默认30天，不进 all。memory_recall(scope=archive,query) 找名→memory_read(kind=archive,name)。超长按路径读。省 name 列目录，无命中停。
 ```
 
 ## 4.3 逐条改动表与方法 B
@@ -93,11 +93,11 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | 总闸，1599 | 实质产出才做 | 四类触发，纯读、闲聊、派活、等待及重复跳过 | 补跳过条件 | 展开 11 月 16 日总表裁定 | 阶段收口或有新增事实才写 |
 | 2 | ①，1600 | 日志四分类 | 先定归属，给 `note`，同文优先账本，保留四种 kind | 合并重复 | `memory_log` 也会生成检查点 | 该写的独立日志仍能分类 |
-| 3 | ② 归属，1605、1610 | 显式归属与口诀分两段 | 标识、伞事件、专属范围、founding、异工作线、证据不足在一处，预检带 `note` | 修缺陷 | 预检缺 `note` 会过不了 schema | 不拿最近事件当真归属，确无匹配才带 `name` 建事件 |
+| 3 | ② 归属，1605、1610 | 显式归属与口诀分两段 | 合并标识、伞事件、专属范围、founding 与异工作线判据。粒度不明宁拆勿并，归属不明宁建勿挂。预检带 `note` | 修缺陷 | 两条规则分别判断事件粒度与归属。预检要求 `note` | 同标识但不同工作线保持独立。确无匹配时带 `name` 建事件 |
 | 4 | ② 账本，1602、1608 | 动 lib 即写四段 | 保留动作及四段。R4 更新读 revision，首建绑有效事件，关闭后走旧账本 | 补缺失能力 | R4 缺身份或版本会拒绝 | 账本承载原文，CAS 冲突不猜新版本 |
-| 5 | ② 追加，1606 | 有新进展就 append | 同轮合并一次。补 `kind/text`、四段及幂等键，查回执后以已有记录作准 | 修缺陷 | 处理器可能接受缺正文的检查点，未带幂等键的重试可重复追加 | 已有正文时，四类感知只补实际缺项 |
+| 5 | ② 追加，1606 | 有新进展就 append | 同轮合并一次。补 `kind/text`、四段及幂等键，查回执后以已有记录作准。用 `userPercept` 记录有依据的用户反馈，正文写明画像入选条件 | 修缺陷 | 处理器可能接受缺正文的检查点，未带幂等键的重试可重复追加。只列感知字段不能说明画像如何取用 | 已有正文时，四类感知只补实际缺项，画像条目的阶段来自实际反馈 |
 | 6 | ② 改四段，1607 | 目标或状态变就 set | 显式 `eventId` 和变更，头四段 `goal/doing/deadend/next`，暂停附原因 | 修缺陷 | set 需实际可变字段，暂停另有前置 | 保存当前全貌，检查点与事件头分开 |
-| 7 | ② 关闭，1607 | 做完就 close | 整件事结束后先 set summary，再 close 并给 outcome | 修缺陷 | 直接 close 可保留旧 summary | 收尾一轮不等于事件已结案 |
+| 7 | ② 关闭，1607 | 做完就 close | 整件事结束后先 set summary，再 close 并给 outcome。仍有下一步不可 close | 修缺陷 | 直接 close 可保留旧 summary，提前关闭会阻断后续记录 | 仍待接续的事件保持可追加 |
 | 8 | ② 白板，1603 | 白板不符就 plan | 先判断是否仍不符。读取原版 revision。事件板走投影，手写留锚点和备注 | 补缺失能力 | 投影可省 content，现存白板仍需版本，手写卡不能交给整体投影保活 | 已自动重绘就跳过，避免无故改写 |
 | 9 | ② 笔记，1604、1609 | append 笔记，另有重复提醒 | 追加带 `content`，保留 note 或直接写 docs 不算更新白板及账本 | 压缩措辞 | 笔记正文是处理器前置 | 不以笔记回执冒充白板回执 |
 | 10 | ② 事件经过，1608 | scope=events 查全经过 | 搜索加 `query`。完整单个检查点另给同值 `expand/eventId` 和索引或幂等键 | 修缺陷 | 普通召回给命中摘要。下钻回真源 | 锁定所需的检查点再取原文 |
@@ -110,6 +110,31 @@
 | 17 | ⑦，1622 | 归档 scope 短写，按 name 取全文 | 查词后按命中文件名取正文，超长按路径取，列表省 name，无命中停 | 修缺陷 | `query` 必填，正文响应有 8,000 字符阈值 | 只按真实文件名读，不盲猜 |
 
 动作前置及用户裁定依据见 [现有铭文](/D:/dsh-auto-memory/lib/index.js:1598)、[5.1 总表](/D:/dsh-auto-memory/docs/internal/CONSTRUCTION-PLAN-20261108.md:520)。
+
+### M2 与 M3 修订前后
+
+| 修订 | 修订前原文 | 修订后完整所在行 |
+| --- | --- | --- |
+| M2 | `· 先查标识 #evt_xxx，已知必传 eventId，存疑 memory_log(note,dryRun:true)。批次挂伞（三录/编排/alpha.N/总表/白板）。专属限同日同修复，founding 仅首检查点。同标识异线不挂。无匹配才 memory_event(action=create,name)，证据不足宁建勿挂。` | `· 先查标识 #evt_xxx，已知必传 eventId，存疑 memory_log(note,dryRun:true)。批次挂伞（三录/编排/alpha.N/总表/白板）。专属限同日同修复，founding 仅首检查点。同标识异线不挂。无匹配才 memory_event(action=create,name)。粒度不明宁拆勿并，归属不明宁建勿挂。` |
+| M3 | `· 同轮合一检查点。memory_event(action=append,eventId,checkpoint)，含 kind/text/goal/state/dead/next，重试同 idemKey。已记省 checkpoint。画像用 userPercept。确认/用上填 stage=accepted/used，明确回应填 kind=authorResponse。agentTrace/sharedGround/commitment 据实补缺。头段 goal/doing/deadend/next 变才 set(eventId,变更)，暂停需 pausedReason。事件结束才 set summary→close(eventId,outcome)。` | `· 同轮合一检查点。memory_event(action=append,eventId,checkpoint)，含 kind/text/goal/state/dead/next，重试同 idemKey。已记省 checkpoint。画像用 userPercept。确认/用上填 stage=accepted/used，明确回应填 kind=authorResponse。agentTrace/sharedGround/commitment 据实补缺。头段 goal/doing/deadend/next 变才 set(eventId,变更)，暂停需 pausedReason。事件结束才 set summary→close(eventId,outcome)。仍有下一步不可 close。` |
+
+### 内容保全自检
+
+行号从 §4.2 审批代码块首行计数。
+
+| 必须保留的内容 | 审批稿位置 |
+| --- | --- |
+| 15 条归属判据的主干 | 第 5 行。标识优先、已知必传 eventId、存疑预检、批次挂伞（三录/编排/alpha.N/总表/白板）、专属限同日同修复、founding 仅首检查点、同标识异线不挂。粒度不明宁拆勿并，归属不明宁建勿挂 |
+| 四类感知 | 第 7 行。`userPercept`、`agentTrace`、`sharedGround`、`commitment` |
+| 画像入选条件 | 第 7 行。`stage=accepted/used`、`kind=authorResponse` |
+| 检查点四段键及账本四段 | 第 7 行的 `goal/state/dead/next`。第 6 行的任务状态、目标、已试方案与失败原因、进度与下一步 |
+| 四个泳道 tag | 第 12 行。`type:goal`、`type:state`、`type:dead-end`、`type:progress` |
+| ⑦ 归档及查询参数 | 第 15 行。`memory_recall(scope=archive,query)` |
+| ⑧ 存量未归档 | 第 14 行。见到「存量未归档」按提示归事件 |
+| 事件召回及检查点定位 | 第 9 行。`memory_recall(scope=events,query)`，同值 `expand/eventId` 加 `checkpointIndex` 或 `idemKey` |
+| 白板与事件重绘 | 第 8 行。`memory_note(kind=plan)`、`expectedRevision`、`fromEvents:true` |
+| 技能三种写入动作和验收条件 | 第 10 行。`memory_procedure`、`action=update`、`write`、`action=activate`、`successCriteria` |
+| 规则改删前读取当前值 | 第 10 行。`memory_rules` 改删先 list 取 `index/expect` |
 
 ## 4.4 缺陷修复落点与独立验证
 
@@ -170,7 +195,7 @@
 | --- | --- | --- | --- |
 | R4 定位、版本、首建 | L1 | 进 | 省略即拒绝或误把已有文档当首建。 `index.js:26044–26054` |
 | 检查点实参、同轮合并、重试键 | L1 | 进 | 省略可写空正文或重复。 `event-store.js:986–1025` |
-| 四类感知有实据才填写及补缺 | L1 | 进 | 统一假定账本已写会丢 R4 感知。 `index.js:26035–26038,26359–26362` |
+| 四类感知有实据才填写及补缺 | L1 | 进 | 明确用户画像用 `userPercept`，普通观察按 `accepted/used` 进画像，`authorResponse` 按类型入选。R4 账本落盘后，对照事件记录补实际缺项。 `index.js:26035–26038,26359–26362`、`user-portrait.js:164` |
 | 正文载体与软状态 ID 数组 | L1 | 进 | 不指向 `memory_note` 和正文会让短写无法执行。 `index.js:26021–26025,26171` |
 | 改删规则先读 `index/expect` | L1 | 进 | 避免过期序号更新错条，也避免缺参拒绝。 `index.js:26794–26798` |
 | 事件原文下钻 | L2 | 进 | 正文已经承诺查经过，补 `expand/eventId` 路径省二次试错。 `index.js:14528,26603–26606` |
@@ -183,10 +208,50 @@
 | 外部记忆接入 | L2 | 留工具说明 | `memory_external(action=list/import)`，import 需 source，仅导入链接指针。继承其他工具记忆时再调用。 `index.js:26735–26738` |
 | 只读账本归属复核 | L2 | 留工具说明 | `memory_note(attributionReview:true)` 是可选前置。直接用现有日志 dry-run 已覆盖短铭文的通用路径。 `index.js:26046–26050` |
 | 白板按 tag 展开与回溯 | L2 | 留工具说明 | `memory_expand/tag` 与 `memory_trace/id` 在主动调查时会用。它们不属于收尾必写动作。 `index.js:27493–27499` |
-| 日历和主动维护工具 | L3 | 不采纳 | `calendar_*`、`memory_maintain`、`memory_upgrade` 针对明确日期、蒸馏或升级任务。高代价写入按工具说明触发 |
+| 记忆状态与漏写诊断 | L2 | 留工具说明 | `memory_status` 查位置、条数及待反思状态。怀疑漏写时先查，避免盲目补写。 `index.js:26670` |
+| 阶段性主动固化 | L2 | 留工具说明 | `memory_consolidate` 提炼近期材料并写入长期记忆。用户要求归纳或阶段收尾确需固化时才有价值。 `index.js:27041`、`:19681` |
+| 每日反思落盘 | L3 | 不采纳 | `memory_reflect` 由「昨日反思待生成」提示触发，先呈现反思再写。对应提示已给出完整调用方法。 `index.js:14134`、`:26730` |
+| 日历和主动维护工具 | L3 | 不采纳 | `calendar_*`、`memory_maintain`、`memory_upgrade` 分别用于日程、旧日志归档维护和旧基座迁移，按相应任务触发 |
 | 文献及适配工具候选 | L3 | 不采纳 | `literature_*` 与 `memory_fit_*` 未见于本基线的 22 个注册模型工具。此处不向模型承诺它们可调用 |
 
 最终 **L1 5 项，L2 2 项，L3 0 项**。必填修复和已存在条文的恢复计入 §4.1 的缺陷或跳过条件统计。
+
+### 用户画像的来源和写入
+
+普通写入用 `memory_event(action=append)`，带实际 `eventId` 与 `userPercept:{kind,stage,text}`。用户明确确认了一项偏好、当前处境或尚未完成的目标时，`kind` 分别写 `preference`、`state`、`unfinished-goal`，`stage` 填 `accepted`。确认已有记录在后续实际用上时才填 `used`。用户明确同意、反对、纠正或拍板可写 `kind=authorResponse`，这一类按 `kind` 入选，不要求同样的 `stage`。例如用户确认下一版设置应默认关闭 50% 档，可记 `userPercept:{kind:'authorResponse',stage:'accepted',text:'确认默认关闭 50% 档'}`。 [事件追加](/D:/dsh-auto-memory/lib/index.js:26958) · [画像筛选](/D:/dsh-auto-memory/lib/user-portrait.js:164)
+
+画像是在刷新事件后生成的投递段，读取当前工作区事件与 profile 下现有的 `memory/person/event-store.json`。上述模型工具将新增观察写入所属工作区事件。批次 4.1 接入了跨工作区画像读取，这 22 个模型工具中没有直接选择 person 库的写入参数。跨项目的长期规则与偏好继续用 `memory_user` 写入用户级 `MEMORY.md`。 [画像来源](/D:/dsh-auto-memory/lib/index.js:10537) · [用户级记忆工具](/D:/dsh-auto-memory/lib/index.js:26506)
+
+### 按实际注册工具逐项核对
+
+在隔离 profile 执行 `apply()`，读取模型工具注册对象的名称与参数 schema。插件共注册 **22 个**模型工具。审批正文点名 **9 个**，其余 **13 个**按各自的使用场景保留在工具说明或专用提示中。上一版盘点已经评估 19 个，其中六个通过日历和维护的分组行列出。本次补齐 `memory_status`、`memory_reflect`、`memory_consolidate` 的使用边界。该口径以本插件的注册表为准。见 [模型工具注册入口](/D:/dsh-auto-memory/lib/index.js:30530)。
+
+| 模型工具 | schema 顶层必填 | 铭文覆盖及用途 | 来源 |
+| --- | --- | --- | --- |
+| `memory_log` | `note` | 正文。分类记录及预检，已知归属显式传事件 ID | `index.js:25458` |
+| `memory_note` | 无 | 正文。项目笔记、账本、白板与结论状态。各种写入的前置见 §4.4 | `index.js:26001` |
+| `memory_user` | `content, action` | 正文。跨项目用户规则与偏好 | `index.js:26506` |
+| `memory_read` | `kind` | 正文点名归档回读。白板原版及 revision 也是该工具的读取场景。全局总结及其他读取类型按需使用 | `index.js:26535` |
+| `memory_recall` | `query` | 正文点名事件与归档检索。交接材料和历史会话检索按工具说明使用 | `index.js:26602` |
+| `memory_maintain` | 无 | L3。旧日志归档维护，`days` 缺省 30。仅在归档维护任务触发 | `index.js:26616` |
+| `memory_upgrade` | `action` | L3。获同意后才启动旧基座迁移，另有查看状态和确认已汇报入口 | `index.js:26632` |
+| `memory_status` | 无 | L2。怀疑漏写或用户询问存储位置时查状态。获同意后可用 `op=upgrade-plan` 读迁移步骤 | `index.js:26670` |
+| `memory_reflect` | `date, text` | L3。在专用反思提示触发且已向用户呈现反思后，用被反思日志的日期写入 | `index.js:26730` |
+| `memory_external` | `action` | L2。按需列出外部来源。接入时用可信来源 ID 写入链接指针 | `index.js:26735` |
+| `calendar_add` | `title` | L3。用户日程、约定时间和截止日使用 | `index.js:26756` |
+| `calendar_list` | 无 | L3。查询日程及稳定条目 ID | `index.js:26766` |
+| `calendar_done` | `date, time, title` | L3。按查询结果标记完成，同名条目还需 ID | `index.js:26780` |
+| `calendar_remove` | `date, time, title` | L3。按查询结果删除指定日程，同名条目还需 ID | `index.js:26787` |
+| `memory_rules` | `op` | 正文。规则增删改，改删先取当前序号和原文 | `index.js:26794` |
+| `memory_event` | `action` | 正文。建事件、追加、更新与关闭，改名按工具说明调用 | `index.js:26843` |
+| `memory_consolidate` | 无 | L2。阶段性提炼近期五源材料，调用子代理，结果可写项目或用户长期笔记。工具描述仍以日志表述输入，生产收集链以五源为准 | `index.js:27041`、`:19681` |
+| `memory_procedure` | 无 | 正文。写新技能、补修及激活，分别校验动作所需参数 | `index.js:27061` |
+| `memory_procedure_list` | 无 | 正文。多步任务先查已有流程，其他筛选条件按需用 | `index.js:27381` |
+| `memory_expand` | 无 | L2。给 `tag` 按主题展开白板或账本条目。三种白板模式均注册 | `index.js:27488–27496` |
+| `memory_trace` | 无 | L2。给 `id` 回溯条目来源与版本。三种白板模式均注册 | `index.js:27488–27499` |
+| `memory_conflict` | 无 | L2。先列冲突再预演裁定，真实落盘需明确依据及 `confirm:true` | `index.js:27505` |
+
+三项新增盘点沿用既有调用时机。`memory_consolidate` 有独立的材料选择及运行代价。`memory_expand` 和 `memory_trace` 的注册描述仍写「需 boardMode=graph」，这条限制已落后于实际注册逻辑。
 
 ## 4.6 长度与判据
 
@@ -195,17 +260,21 @@
 | 口径 | JS 字符 | UTF-8 B | ASCII | 非 ASCII | token 估算 |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | 旧完整帧，日期已渲染 | 1675 | 3034 | 992 | 683 | 707 |
-| 新主模板，含 `{date}` | 1575 | 2529 | 1095 | 480 | 617 |
-| 新⑦，自带 LF | 119 | 181 | 88 | 31 | 45 |
-| 新两模板拼接 | 1694 | 2710 | 1183 | 511 | 662 |
-| 新模板拼接加前导 LF | 1695 | 2711 | 1184 | 511 | 662 |
-| **新完整帧，日期已渲染** | **1699** | **2715** | **1188** | **511** | **663** |
+| 新主模板，含 `{date}` | 1601 | 2553 | 1122 | 479 | 624 |
+| 新⑦，自带 LF | 117 | 175 | 88 | 29 | 44 |
+| 新两模板拼接，含 `{date}` | 1718 | 2728 | 1210 | 508 | 668 |
+| 代入日期 | 1722 | 2732 | 1214 | 508 | 669 |
+| **代入日期并加 `pushPart` 前导 LF** | 1723 | 2733 | 1215 | 508 | 669 |
 
-新稿完整渲染帧的 SHA256 为 `737121b921370f7be76039120c2d9d00f2fe7479b30de4a5614e35037186f511`。复算逐字核对了审批稿、diff 中的新文以及旧词条的求值结果。
+| SHA256 口径 | 完整值 |
+| --- | --- |
+| 两模板拼接 | `6ed40ac0a9e6de885e6e2663c87148614cb43880d2f459409bdea4fda277df9f` |
+| 代入日期 | `5fe771981bdaeff85699bee121115098c2c917bddfa657385c00ddaa8d38cd5a` |
+| 代入日期并加前导 LF | `2ef1fe966bce77ca52df0f6e497af5d90bda8f2fcb0159c42e33c920d346984d` |
 
-- **1,700 重新评估，建议保留。** 当前只余 1 字符，新增正文需要先再压缩。新稿使用更多工具键和 ASCII，以更少字节承载更完整的动作。1,489 比本稿少 210 字符，作为硬顶会重新挤压用户裁定及接口前置。
-- **G4-6** 现有第 124、129、131 行量模板求值，没有代入十位日期。实施时在原断言之外增加明确的日期代入后、含 ⑦ 和帧前导 LF 的 1,700 判据。保留 G4-6b/G4-6d 对客户端镜像的绑定。当前候选保留 V4-P1 的原文载体、宁建勿挂、状态、看板 tag 字面以及 i335 的技能三锚。 [G4-6](/D:/dsh-auto-memory/tests/smoke/smoke-test-g4-whiteboard.mjs:124)
-- **总表 5.1 ③④**。③ 把旧 1,489 基准更新为「审批稿 1,699，渲染上限 1,700」。④ 指向当前 `index.js:1594–1597` 的 420 字符旧注释。产品落盘后按最终稿更新字符、字节及 token 估算口径。 [施工总表](/D:/dsh-auto-memory/docs/internal/CONSTRUCTION-PLAN-20261108.md:520)
+- **1,750 已裁定。** 以 5.1 上一版完整帧 1,700 的实测值加 50 字符作护栏。本次补齐语义后，完整帧 1,723，实际余量 27。
+- **G4-6** 本轮按授权将单层模板与两模板合计的两项长度阈值改为 1,750。第三项 `total.length + 1 <= 1700` 继续约束含前导 LF 的未代入模板。生产词条当前通过。审批稿若直接落盘，该项会用 1,719 与 1,700 比较并失败。正式实施时需要处理这条断言，并用代入日期的完整帧与 1,750 对照。G4-6b 比较两侧词条逐字相等。 [G4-6](/D:/dsh-auto-memory/tests/smoke/smoke-test-g4-whiteboard.mjs:115) · [G4-6b](/D:/dsh-auto-memory/tests/smoke/smoke-test-g4-whiteboard.mjs:149)
+- **总表 5.1 ③④**。③ 把旧 1,489 基准更新为「审批稿 1,723，渲染上限 1,750」。④ 指向当前 `index.js:1594–1597` 的 420 字符旧注释。产品落盘后按最终稿更新字符、字节及 token 估算口径。 [施工总表](/D:/dsh-auto-memory/docs/internal/CONSTRUCTION-PLAN-20261108.md:520)
 - **实施收口** 同步服务端两个词条与客户端镜像，r26 和 Iter5 只按套件报出的 actual 处理。正文、镜像和守卫需在用户确认后走下一轮。 [服务端](/D:/dsh-auto-memory/lib/index.js:1598) · [客户端](/D:/dsh-auto-memory/lib/client.js:2678)
 
 ## 4.7 风险与未验证
@@ -224,7 +293,6 @@
 | 决断 | A | B |
 | --- | --- | --- |
 | 铭文方向 | **中文判断清单**。审批上方全文后做一轮真实模型验收 | 同批另测英语等义稿。增加试验成本，且旧英文等义稿估算更长 |
-| 长度目标 | **以 1,699 为本稿目标**，按完整渲染口径。留足实际工具信息 | 坚持 1,489 硬顶。需要再排正文与工具详述的分工，须重新提交全文 |
-| 1,700 护栏 | **5.1 重新评估后保留 1,700**。新增时优先压缩，余量 1 | 视现有硬顶既定，维持原模板守卫。这样需另接受日期代入后的额外口径差 |
+| 长度目标 | **按修订稿完整渲染实测 1,723 审批**。距已裁定的 1,750 还有 27 字符 | 另行收紧长度。需要再排正文与工具说明的分工并重新审批全文 |
 | 何时写账本与同文日志 | **按交接需要写，动 lib 仍必写**。有前置才落盘。账本已覆盖同文即跳过重复日志，同一内容不产生第二次显式 append | 保留账本与日志同时为必写。如果同时要求只新增一条检查点，需要另案调整执行器 |
 | 归档提示位置 | **铭文保留⑦，明确 query 和读原文路径**。继续承担固定帧开销 | 把细节移到工具说明。释放帧空间，需重做归档可发现性验证 |
