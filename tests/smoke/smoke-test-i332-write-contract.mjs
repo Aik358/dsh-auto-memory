@@ -75,7 +75,7 @@ function makeRunner(branch, over = {}) {
     'sanitizeForWrite', 'writeGateRefusalTextPre', 'nowHm', 'readPlanPre', 'preflightPlanMutationPre',
     'appendHandoffCheckpointPre', 'eventStorePathOfPre', 'diagThrottled',
     'appendStoredHandoffCheckpointPre', 'assertWritableEventTargetPre',
-    'return async function (args, engine, p) {' + branch + '\n}')
+    'return async function (args, engine, p, replay) {' + branch + '\n}')
   const sanitizeForWrite = (t, o) => ({ ok: true, clean: t, truncated: false })
   const writeGateRefusalTextPre = (n, g) => (n + ': ' + ((g && g.reason) || 'gate'))
   const nowHm = () => '16:00'

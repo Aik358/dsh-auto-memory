@@ -455,15 +455,16 @@ test('note-status remains fail-soft with a broken sink and unchanged skipped-sta
 test('real memory_note callback confirms the completed note write and safely reports a status exception', async () => {
   const { notes, host } = await noteFixture()
   const sectionStart = source.indexOf("defineTool('memory_note'")
-  const start = source.indexOf('}, async (args, exec) => {', sectionStart) + '}, async (args, exec) => {'.length
+  const header = '}, async (args, exec, replay) => {'
+  const start = source.indexOf(header, sectionStart) + header.length
   const end = source.indexOf("\n    }),\n\n    defineTool('memory_user'", start)
   assert.ok(sectionStart > 0 && start > sectionStart && end > start)
   const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor
-  const callback = new AsyncFunction('args', 'exec', 'engine', 'sanitizeForWrite', 'tailHas', 'writeGateRefusalTextPre', 'recordDiagnosticErrorPre', source.slice(start, end))
+  const callback = new AsyncFunction('args', 'exec', 'replay', 'engine', 'sanitizeForWrite', 'tailHas', 'writeGateRefusalTextPre', 'recordDiagnosticErrorPre', source.slice(start, end))
   host.resolvePaths = async () => ({ notesPath: notes })
   host.ensureBudget = async () => ({ ok: true })
   host.applyNoteStatusPre = async () => { throw secretError() }
-  const result = await callback({ content: 'New conclusion', action: 'replace', retract: [memoryId] }, {}, host,
+  const result = await callback({ content: 'New conclusion', action: 'replace', retract: [memoryId] }, {}, undefined, host,
     (content) => ({ ok: true, clean: content }), () => false, () => '', recordDiagnosticErrorPre)
   assert.equal(await fsp.readFile(notes, 'utf8'), 'New conclusion')
   assert.match(result, /笔记写入已完成，但状态变更未确认/)

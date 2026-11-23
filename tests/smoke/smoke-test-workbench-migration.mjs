@@ -21,16 +21,17 @@ const count = (s, sub) => s.split(sub).length - 1
 
 // ── ① 门控必须先于 spawn：runSubagent 里 _workbenchReady 判定要在 subagents.start 之前
 {
-  const fn = idx.indexOf('async runSubagent(text, label, agent, timeoutMs, override) {')
+  const fn = idx.indexOf('async _runSubagentOnce(')
   const gateAt = idx.indexOf('if (!this._workbenchReady) {', fn)
-  const startAt = idx.indexOf('subagents.start(', fn)
+  const startAt = idx.indexOf('await callSubagentStartPre(', fn)
   check('① 门控在 spawn 之前', fn > 0 && gateAt > fn && startAt > gateAt,
     'gate@' + (gateAt - fn) + ' spawn@' + (startAt - fn))
 }
 
 // ── ② 失败必须可重试：清 memo + 记失败时刻（否则永久门控到重启）
 {
-  const seg = idx.slice(idx.indexOf('async runSubagent('), idx.indexOf('async runSubagent(') + 2200)
+  const start = idx.indexOf('async _runSubagentOnce(')
+  const seg = idx.slice(start, idx.indexOf('const subagents = this._subagents', start))
   check('② 失败清 _workbenchInit', /this\._workbenchInit = null/.test(seg))
   check('② 失败记 _workbenchFailedAt', /this\._workbenchFailedAt = Date\.now\(\)/.test(seg))
   check('② 有退避窗口', /workbenchRetryMs/.test(seg) && /_wbBackoff/.test(seg))
@@ -114,7 +115,7 @@ check('⑨ 有独立优先级', /d\.kind === 'workbenchSetup'\) return \d+/.test
 // ── ⑩ 9 个调用点未改签名（迁移不碰调用点）
 {
   const calls = idx.match(/this\.runSubagent\(([^)]*)/g) || []
-  check('⑩ runSubagent 签名仍为 text,label,agent,timeoutMs(+可选 override)', /async runSubagent\(text, label, agent, timeoutMs, override\)/.test(idx))
+  check('⑩ runSubagent 保留原参数次序，末尾接可选 upgradeJobId', /async runSubagent\(text, label, agent, timeoutMs, override, upgradeJobId\)/.test(idx))
   check('⑩ 调用点数 = 9', calls.length === 9, 'actual=' + calls.length)
 }
 
@@ -250,13 +251,11 @@ check('⑭ 同意门：建立入口显式传 consent + 无 consent 不建',
   const s = idx.indexOf('async runSubagent(')
   const e = idx.indexOf('async recycleSubagentSession(')
   const fn = s > 0 && e > s ? idx.slice(s, e) : ''
-  const starts = (fn.match(/await subagents\.start\(/g) || []).length
-  // ★2026-10-18（DSH 0.2.1 迁移）：两处启动改走 callSubagentStartPre 适配层，
-  //   故判据从「2 条 await subagents.start(」改为「2 条 await callSubagentStartPre(」；
-  //   被守卫的**不变量不变**：主路径与 UNKNOWN_MODEL 回退路径都会拿到 run，且都由同一变量接住 + finally 回收。
+  // 主路径和 UNKNOWN_MODEL 回退必须各调用一次共用的启动器，且复用同一 run 变量。
   const stray = (fn.match(/\brun\d+\b/g) || []).length
-  const starts2 = (fn.match(/await callSubagentStartPre\(/g) || []).length
-  check('⑱ runSubagent 内含 2 条 spawn（主 + 回退，经 0.2.1 适配层）', starts2 === 2, 'viaAdapter=' + starts2 + ' legacyStarts=' + starts + ' len=' + fn.length)
+  const viaAdapter = (fn.match(/await callSubagentStartPre\(/g) || []).length
+  const starts = (fn.match(/\brun = await start\(/g) || []).length
+  check('⑱ 主启动和回退都经过共用适配层', viaAdapter === 1 && starts === 2, 'viaAdapter=' + viaAdapter + ' starts=' + starts)
   check('⑱ 无 run2 之类独立变量（否则回退路径不被回收）', stray === 0, 'stray=' + stray)
   // finally 里必须同时有 dispose 与 recycle
   const fi = fn.indexOf('} finally {')

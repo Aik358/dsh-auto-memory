@@ -40,7 +40,7 @@ await t('#1-1 收 supersedes / restore 两个可选参数', () => {
   ok(/restore:\s*\{\s*type:\s*'array'/.test(CODE), 'restore 参数已声明（撤销通道）')
 })
 await t('#1-2 ★ 两个参数都**非 required**（不传 ⇒ 行为与从前逐字节相同）', () => {
-  const seg = CODE.slice(CODE.indexOf('supersedes: {'), CODE.indexOf('}, async (args, exec) => {', CODE.indexOf('supersedes: {')))
+  const seg = CODE.slice(CODE.indexOf('supersedes: {'), CODE.indexOf('}, async (args, exec, replay) => {', CODE.indexOf('supersedes: {')))
   ok(!/supersedes:[\s\S]{0,200}required:\s*true/.test(seg), 'supersedes 非必填')
   ok(!/restore:[\s\S]{0,200}required:\s*true/.test(seg), 'restore 非必填')
 })

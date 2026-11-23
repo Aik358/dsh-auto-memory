@@ -84,7 +84,9 @@ function extractToolParts(name) {
   const pEnd = balancePre(IDX, pOpen);
   if (pEnd < 0) return null;
   const paramsSrc = IDX.slice(pOpen, pEnd);
-  const eArrow = IDX.indexOf("async (args, exec) =>", pEnd);
+  // ★2026-11-23：迁移重构给 execute 加了第三个参数 replay ⇒ 锚点必须兼容两种签名。
+  let eArrow = IDX.indexOf("async (args, exec, replay) =>", pEnd);
+  if (eArrow < 0) eArrow = IDX.indexOf("async (args, exec) =>", pEnd);
   if (eArrow < 0) return null;
   const bOpen = IDX.indexOf("{", eArrow);
   const bEnd = balancePre(IDX, bOpen);

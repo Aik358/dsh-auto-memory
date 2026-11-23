@@ -216,7 +216,7 @@ try {
   //   改为：真拿到引擎方法 + 断言它是函数 + 调用点确实把范围传下去了。
   ok(typeof engine.buildWorkspaceManifestPre === 'function', '★★★T36-9c-1 buildWorkspaceManifestPre 是真方法（不是占位）');
   ok(engine.buildWorkspaceManifestPre.length >= 1, '★★★T36-9c-2 方法签名接受范围参数（length=' + engine.buildWorkspaceManifestPre.length + '）');
-  ok(IX.indexOf('engineRef.runSubagent(') >= 0 && IX.indexOf('buildWorkspaceManifestPre(_scopeOpt, _scopeKeys, _scopeWs)') >= 0,
+  ok(IX.indexOf('engineRef.runSubagent(') >= 0 && IX.indexOf('buildWorkspaceManifestPre(_scopeOpt, _scopeKeys, _scopeWs, scopedInventory)') >= 0,
     '★★★T36-9c-3 start 真调 runSubagent（后台化，不阻塞）且 manifest 带范围调用');
 } finally {
   globalThis.setInterval = iv; globalThis.setTimeout = to; globalThis.fetch = fe;

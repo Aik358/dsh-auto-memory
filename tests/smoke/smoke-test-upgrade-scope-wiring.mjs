@@ -48,9 +48,9 @@ function extractMethod (signature) {
 }
 
 const scopeBody = extractMethod('resolveUpgradeScopeRowsPre(scope, workspaceKeys, currentWs, rows) {')
-const maniBody = extractMethod('async buildWorkspaceManifestPre(scope, workspaceKeys, currentWs) {')
+const maniBody = extractMethod('async buildWorkspaceManifestPre(scope, workspaceKeys, currentWs, scopedInventory) {')
 ok(!!scopeBody, 'X-0a 能抽出 resolveUpgradeScopeRowsPre 函数体')
-ok(!!maniBody, 'X-0b 能抽出 buildWorkspaceManifestPre 函数体（三参签名）')
+ok(!!maniBody, 'X-0b 能抽出 buildWorkspaceManifestPre 函数体（可传已选清单）')
 
 // ── 夹具：3 个真实工作区目录 ────────────────────────────────────────────────
 // ★夹具根**不能放在 os.tmpdir()**：Windows 下那是 %LOCALAPPDATA%\\Temp，

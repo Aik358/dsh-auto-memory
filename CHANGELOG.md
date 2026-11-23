@@ -4,7 +4,7 @@ All notable changes to dsh-auto-memory.
 
 ---
 
-## [3.4.1] — 2026-11-23 · 正式版
+## [3.4.2] — 2026-11-23 · 正式版
 
 > 自 `3.4.0-alpha.6`（2026-11-05）以来累计 **203 个提交**，主线为「记忆单元从流水账迁到事件」的收尾三批：
 > **批次3**（事件视图 EV / 归并 CO / 三态投递 U3b）、**批次4**（五项投递与画像能力）、**批次5**（铭文升级 + 运行档默认关闭）。
@@ -29,6 +29,15 @@ All notable changes to dsh-auto-memory.
 - **4.5 按单位组装去重** `ba8c41b2`：仅 `units` 生效，账本完整段原位保留、检查点省去同文字段；差一字符两份均保留，专项 19/0。
 - **设置页三态选择器** `886caa09`：设置页可切换 `deliveryMode`，交付设置套件 30/0（现已 32/0）。
 
+### 已确认 · 迁移与在飞任务修复（2026-11-23）
+
+- **在飞任务身份改用作业表** `2ca5d2bf` 之后：子代理会话登记从 `_crossWsSubagentSessionIds`（WeakSet）改为 `_inflightUpgradeJobs`（Map）+ `upgradeExecutorJobPre()` 反查。
+  - **旧机制的问题**：WeakSet 不可枚举，白名单合成必须另记一份；进程重启即清空，身份不跨重启。
+  - **新机制**：作业表同时承载 `executorSessionId`，会话→作业可双向反查；`runSubagent` 末尾新增可选 `upgradeJobId`。
+- **#523 在跑任务被判孤儿并重启**：调用方传 `inflightJobIds`、`team-baseline.js` 读 `inflightIds` ⇒ `ids` 恒 `[]` ⇒ 同世代在跑任务也判 orphan，每点一次「立即整理」就重启新任务。修法统一为 `inflightIds`。
+  - **验收含 5 条变异反向验证**：MUT-523c（第二次返回不同 jobId）· MUT-523d（误判 orphan 并写标记）· MUT-523d2（起了第二个子代理）· MUT-523e（产品源文件全程未被改动）。
+- **工作区清单可按已选范围传入**：`buildWorkspaceManifestPre(scope, workspaceKeys, currentWs, scopedInventory)` 新增第 4 参，避免重复构建清单。
+- **`missing-target` 诊断保留定性**：`条目缺 target` 仍标注「（旧版条目的已知缺陷）」，不因文案精简而弱化归因。
 ### 已确认 · 批次 5（2026-11-23）
 
 - **铭文升级** `9b2ec568` + `262c354f`：采纳用户逐字审批的版本，修正工具调用契约缺陷（`memory_recall` 归档/事件检索补必填 `query`、`memory_log` 预检补 `note`、R4 文档定位参数、`kind=plan` 正文要求），补入**用户画像生成条件**（`stage=accepted/used`、`kind=authorResponse`）。
