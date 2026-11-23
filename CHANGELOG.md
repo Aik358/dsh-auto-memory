@@ -4,7 +4,7 @@ All notable changes to dsh-auto-memory.
 
 ---
 
-## [3.4.2] — 2026-11-23 · 正式版
+## [3.4.3] — 2026-11-24 · 安全修复版
 
 > 自 `3.4.0-alpha.6`（2026-11-05）以来累计 **203 个提交**，主线为「记忆单元从流水账迁到事件」的收尾三批：
 > **批次3**（事件视图 EV / 归并 CO / 三态投递 U3b）、**批次4**（五项投递与画像能力）、**批次5**（铭文升级 + 运行档默认关闭）。
@@ -29,6 +29,17 @@ All notable changes to dsh-auto-memory.
 - **4.5 按单位组装去重** `ba8c41b2`：仅 `units` 生效，账本完整段原位保留、检查点省去同文字段；差一字符两份均保留，专项 19/0。
 - **设置页三态选择器** `886caa09`：设置页可切换 `deliveryMode`，交付设置套件 30/0（现已 32/0）。
 
+### 已确认 · 安全修复（2026-11-24）
+
+- **一键更新路由的 shell 注入**（外部安全报告 `update-route-rce`，已独立复现）：
+  - **缺陷**：`lib/index.js` 更新 handler 把 registry 的 `dist-tags.latest`（**网络输入**）直接拼进 `child_process.exec` 命令串；`exec` 走 shell ⇒ `&` 可串联任意命令。实测 `target = "3.4.3 & echo INJECTED > PWNED.txt & rem"` 后半段照常执行。
+  - **定性**：已发布的**本地提权 + 供应链投毒放大器**，**不是**远程未授权 RCE（需点「一键更新」且过 4 道前置门槛）。根因是输入端跨了信任边界。
+  - **三层防御**：
+    ① **信任边界**：新增 `lib/release-spec.js`（纯函数，无副作用）——`validateReleaseVersionPre` 严格 semver 白名单 + 长度上限 64 + 片段级检查；`buildInstallSpecPre` 非法即不产出规格串，**绝不降级成 `@latest` 静默继续**。
+    ② **不经过 shell**：安装改用 `execFile(bin, args, { shell: <仅 Windows> })` + 参数数组，元字符只是普通实参。Windows 上经 shell 但**已无网络值**（spec 已过白名单）。
+    ③ **纵深**：`checkUpdate` 取数处即校验，非法值不进 `result.latest`，并置 `latestUntrusted` + `latestRejectReason`，让所有消费方拿不到裸串。
+  - **可观测**：拦截时记 `update-route-unsafe-version` 诊断（只记长度与类型类别，**不记原文**——原文可能是构造串，记下来等于把日志变成注入面）。
+  - **验收**：新套件 `smoke-test-update-route-rce.mjs` **44 PASS / 0 FAIL**，含 8 条恶意串负路径、8 条合法串正路径、5 条源码结构守卫、4 条**变异反向验证**、3 条端到端语义。
 ### 已确认 · 迁移与在飞任务修复（2026-11-23）
 
 - **在飞任务身份改用作业表** `2ca5d2bf` 之后：子代理会话登记从 `_crossWsSubagentSessionIds`（WeakSet）改为 `_inflightUpgradeJobs`（Map）+ `upgradeExecutorJobPre()` 反查。

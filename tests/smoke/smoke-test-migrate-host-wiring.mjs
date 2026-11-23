@@ -112,10 +112,15 @@ console.log('\n[H5] 一键更新：必须关 pnpm 供应链闸门 + 装后复核
   // 根因：pnpm 11 默认 1 天 Minimum Release Age 静默跳过新版本，而路由无条件报成功。
   const i = ix.indexOf("path: API.update,")
   ok(i > 0, 'H5a update 路由在场')
-  const seg = i > 0 ? ix.slice(i, i + 3000) : ''
+  // ★2026-11-24：安全修复（update-route-rce）给该段插入了 30+ 行校验与 execFile 改造，
+  //   旧 3000 字符窗口已装不下尾部三条判据（H5d/H5e/H5f 测的行为仍然存在，只是落到窗口外）。
+  //   窗口放宽到 6000，判据本身不变（仍要求钉死具体版本 / 读回真实版本 / 不符即失败）。
+  const seg = i > 0 ? ix.slice(i, i + 6000) : ''
   ok(/--config\.minimumReleaseAge=0/.test(seg), 'H5b pnpm 分支显式关闭供应链闸门（Release Age）')
   ok(/--min-release-age=0/.test(seg), 'H5c npm 分支同样关闭闸门')
-  ok(/dsh-auto-memory' \+ \(target \? '@' \+ target : '@latest'\)/.test(seg) || /const spec = '@a9i5k4\/dsh-auto-memory'/.test(seg),
+  // ★2026-11-24：安全修复后规格串改由 buildInstallSpecPre 产出（严格 semver 白名单，非法即不产出）。
+  //   被守卫的**不变量不变**：命令里的版本必须是具体版本号，不得裸用 @latest。新实现用 specR.spec 同样满足。
+  ok(/const spec = specR\.spec/.test(seg) || /dsh-auto-memory' \+ \(target \? '@' \+ target : '@latest'\)/.test(seg) || /const spec = '@a9i5k4\/dsh-auto-memory'/.test(seg),
     'H5d 命令钉死具体目标版本（不再裸 @latest）')
   ok(/landedVersion/.test(seg), 'H5e 装后读回真实版本（后续失败分支要用）')
   ok(/landed !== want/.test(seg), 'H5f 版本不符即判失败（不再谎报成功）')
