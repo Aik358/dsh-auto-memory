@@ -11,7 +11,14 @@ for (const [index, line] of source.split(/\r?\n/).entries()) {
   if (/^\s*(?:\/\/|\*|\/\*)/.test(line)) continue
   for (const match of line.matchAll(calls)) {
     count++
-    if (!/\b(?:await|return)\s*$/.test(line.slice(0, match.index))) failures.push((index + 1) + ': ' + match[1] + ' must be awaited or returned')
+    const prefix = line.slice(0, match.index)
+    const explicit = /\b(?:await|return)\s*$/.test(prefix)
+    // Recognize direct arrow returns with identifier arguments and a same-line boundary.
+    // For more complex callback bodies, use explicit return or await instead of guessing.
+    const suffix = line.slice(match.index + match[0].length)
+    const directArrowReturn = /=>\s*$/.test(prefix)
+      && /^\s*(?:[a-z_$][\w$]*(?:\s*,\s*[a-z_$][\w$]*)*\s*,?\s*)?\)\s*[,;)\]}]/i.test(suffix)
+    if (!explicit && !directArrowReturn) failures.push((index + 1) + ': ' + match[1] + ' must be awaited or returned')
   }
 }
 if (!count) failures.push('no writer calls found; input or contract coverage is invalid')

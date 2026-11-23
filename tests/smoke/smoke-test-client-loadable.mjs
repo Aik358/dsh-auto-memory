@@ -202,5 +202,81 @@ for (var hi = 0; hi < EOL_NAMES.length; hi++) {
 ok(hits.length === 0, '[CRLF 同型] 行尾记号均已定义；未定义的：' + (hits.join(', ') || '无'))
 ok(hits.indexOf('CRLF') < 0, '[CRLF 同型] 具体回归：不得再出现未声明的 CRLF 拼接')
 
+
+console.log('== 8. ★B6 团队头像三形态：真执行，不是静态断言 ==')
+// ★为什么必须真执行：`teamAvatarShapePre` 是**纯函数**，它的返回值就是渲染依据。
+//   静态断言只能证明「源码里有这个字符串」，无法证明降级链真的按预期分流。
+//   本轮就靠真执行抓到两个真缺陷（序号形态永不可达 / 名字形态永不可达）。
+// 从 client.js 源码里按花括号配对抽出两个函数，塞进 vm 里真调用。
+function extractFn (name) {
+  var i = SRC.indexOf('function ' + name + '(')
+  if (i < 0) return null
+  var depth = 0, started = false, j = i
+  for (; j < SRC.length; j++) {
+    var ch = SRC[j]
+    if (ch === '{') { depth++; started = true }
+    else if (ch === '}') { depth--; if (started && depth === 0) { j++; break } }
+  }
+  return SRC.slice(i, j)
+}
+var fnHue = extractFn('teamActorHue')
+var fnShape = extractFn('teamAvatarShapePre')
+ok(!!fnHue && !!fnShape, '[B6] 两个纯函数都能从源码中抽出（缺任一 ⇒ 后续断言无意义）')
+var AV = {}
+if (fnHue && fnShape) {
+  var avCtx = vm.createContext({})
+  vm.runInContext(fnHue + '\n' + fnShape + '\nglobalThis.__AV = teamAvatarShapePre; globalThis.__HUE = teamActorHue', avCtx)
+  AV = { shape: avCtx.__AV, hue: avCtx.__HUE }
+}
+var shapeOk = !!AV.shape
+ok(shapeOk, '[B6] 纯函数在 vm 中真加载成功')
+if (shapeOk) {
+  // 形态①：图片
+  var sImg = AV.shape({ id: 'u1', name: '张三', avatarUrl: 'https://x/a.png' }, 0)
+  ok(sImg.kind === 'image' && sImg.url === 'https://x/a.png', '[B6] 形态①图片：有 avatarUrl ⇒ kind=image 且 url 透传')
+  // 形态②：圆圈字母（中文首字）
+  var sZh = AV.shape({ id: 'u2', name: '李四' }, 1)
+  ok(sZh.kind === 'letter' && sZh.letter === '李', '[B6] 形态②字母：中文名取首字（李）')
+  // 形态②：英文首字母大写
+  var sEn = AV.shape({ id: 'u3', name: 'alice' }, 2)
+  ok(sEn.kind === 'letter' && sEn.letter === 'A', '[B6] 形态②字母：英文名首字母大写（A）')
+  // 形态②：序号（用户点名「1、2、3、4、5」）—— 本轮真缺陷回归点
+  var sNum = AV.shape({ id: 'u5' }, 4)
+  ok(sNum.kind === 'letter' && sNum.letter === '5', '[B6] ★回归：无名字时退回序号（第 5 个 ⇒ "5"），此形态曾经永不可达')
+  // 形态③：显式选「用户名作头像」
+  var sName = AV.shape({ id: 'u3', name: '王小明', avatarStyle: 'name' }, 2)
+  ok(sName.kind === 'name' && sName.label === '王小明', '[B6] 形态③用户名：avatarStyle=name ⇒ kind=name 且 label 是完整人名，此形态曾经永不可达')
+  // 显式选择优先于自动判断
+  var sNameBeat = AV.shape({ id: 'u4', name: '赵六', avatarUrl: 'https://x/b.png', avatarStyle: 'name' }, 3)
+  ok(sNameBeat.kind === 'name', '[B6] 显式 name 压过 avatarUrl（用户点了要这个形态就该给这个形态）')
+  var sLetterBeat = AV.shape({ id: 'u5', name: 'Amy', avatarUrl: 'https://x/c.png', avatarStyle: 'letter' }, 4)
+  ok(sLetterBeat.kind === 'letter', '[B6] 显式 letter 压过 avatarUrl')
+  // 向后兼容：不传 avatarStyle 仍走自动降级
+  ok(AV.shape({ id: 'u6', name: 'n1', avatarUrl: 'https://x/d.png' }, 5).kind === 'image', '[B6] 向后兼容：不传 avatarStyle 时自动选图片')
+  ok(AV.shape({ id: 'u7', name: 'n2' }, 6).kind === 'letter', '[B6] 向后兼容：不传 avatarStyle 时有名字走字母')
+  // 负路径：空/畸形输入不得抛
+  var threw = false, sEmpty = null
+  try { sEmpty = AV.shape({}, 0) } catch (e) { threw = true }
+  ok(!threw && sEmpty && typeof sEmpty.kind === 'string', '[B6][负路径] 空对象不抛且仍给出可用形状')
+  var threw2 = false
+  try { AV.shape(null, 0) } catch (e) { threw2 = true }
+  ok(!threw2, '[B6][负路径] 传 null 不抛（渲染层会传空成员）')
+  // 色相确定性（同 id 同色、不同 id 不同色）
+  ok(AV.hue('u-alice') === AV.hue('u-alice'), '[B6] 色相确定性：同 id 两次调用同值')
+  ok(AV.hue('u-alice') !== AV.hue('u-bob'), '[B6] 色相区分度：不同 id 不同色')
+  // ★变异反向验证：把降级链改坏（去掉序号兜底）⇒ 上面的序号断言必须变红
+  if (fnHue && fnShape) {
+    var mutated = fnShape.replace('if (!ini && seqLabel) ini = seqLabel', '/* mutated: 去掉序号兜底 */')
+    var mutChanged = mutated !== fnShape
+    ok(mutChanged, '[B6][变异] 能定位到序号兜底那一行（否则变异验证本身无效）')
+    if (mutChanged) {
+      var mCtx = vm.createContext({})
+      vm.runInContext(fnHue + '\n' + mutated + '\nglobalThis.__M = teamAvatarShapePre', mCtx)
+      var mNum = mCtx.__M({ id: 'u5' }, 4)
+      ok(mNum.kind === 'name' || mNum.letter !== '5', '[B6][变异] 去掉序号兜底后，第 5 个无名成员不再得到 "5" ⇒ 证明该断言测的是真行为')
+    }
+  }
+}
+
 console.log('\n[client-loadable] PASS ' + pass + ' / FAIL ' + fail)
 process.exit(fail ? 1 : 0)

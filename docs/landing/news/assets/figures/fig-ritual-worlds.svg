@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 400" width="880" height="400" preserveAspectRatio="xMidYMid meet" role="img" style="font-variant-numeric:tabular-nums" font-family="Manrope,'Space Grotesk','PingFang SC','Microsoft YaHei',system-ui,sans-serif">
+<title>接续仪式的完成率：事件库为空时 11/12 完成（92%），已有 3 个事件时只有 2/13 完成（15%）</title>
+<rect width="880" height="400" fill="#ffffff"/>
+<!--region canvas 0 0 880 400-->
+<!--region h 44 84 792 260-->
+<!--region h-col0.5 486.26 96 330.68 188-->
+<!--region h-col1 678.51 96 138.43 188-->
+<text x="44" y="32" font-size="17.5" font-weight="700" fill="#1e232c">接续仪式：事件越多，越做不成</text>
+<text x="44" y="54" font-size="12.5" fill="#454545">4 个提示词版本 × 2 个世界，共 25 次真调工具运行</text>
+<text x="44" y="362" font-size="13.5" font-weight="700" fill="#c0504d">根因不是提示词措辞 —— R0/R1/R2/R3 四个版本都救不了</text>
+<text x="44" y="380" font-size="13.5" font-weight="700" fill="#454545">瓶颈在 memory_recall(scope=events) 是词法匹配：模型必须猜中关键词</text>
+<line x1="294" y1="96" x2="294" y2="296" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4 5"/><text x="294" y="315" text-anchor="middle" font-size="12.5" font-weight="700" fill="#454545">0%</text><line x1="486.26" y1="96" x2="486.26" y2="296" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4 5"/><text x="486.26" y="315" text-anchor="middle" font-size="12.5" font-weight="700" fill="#454545">50%</text><line x1="678.51" y1="96" x2="678.51" y2="296" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4 5"/><text x="678.51" y="315" text-anchor="middle" font-size="12.5" font-weight="700" fill="#454545">100%</text><line x1="294" y1="296" x2="816.94" y2="296" stroke="#94a3b8" stroke-width="1.4" data-role="axis" data-orient="h" data-panel="h" data-base="296" data-origin="294"/><text x="555.47" y="336" text-anchor="middle" font-size="13" fill="#454545">完整完成率</text>
+<rect x="294" y="100" width="352.47" height="77" fill="#2563eb" data-role="hrow"/>
+<text x="282" y="143" text-anchor="end" font-size="13.5" font-weight="600" fill="#1e232c">空库世界（无事件可查）</text>
+<text x="658.47" y="143" font-size="13.5" font-weight="700" fill="#2563eb">11/12（92%）</text>
+<rect x="294" y="203" width="59.16" height="77" fill="#c0504d" data-role="hrow"/>
+<text x="282" y="246" text-anchor="end" font-size="13.5" font-weight="600" fill="#1e232c">有事件世界（3 个活跃事件）</text>
+<text x="365.16" y="246" font-size="13.5" font-weight="700" fill="#c0504d">2/13（15%）</text>
+</svg>

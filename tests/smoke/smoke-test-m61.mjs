@@ -43,7 +43,7 @@ function mkReq(over = {}) {
 }
 
 console.log('[D1] 常量与命名空间')
-ok(A.ACTIVATION_POLICY_VERSION === 'activation_pre_v1', 'policyVersion 固定')
+ok(A.ACTIVATION_POLICY_VERSION === 'activation_pre_v2', 'policyVersion 升级到可配置投递冷却契约')
 eq(A.ACTIVATION_LEVELS_PRE_V1, ['index', 'hint', 'excerpt', 'checklist', 'resource', 'full'], '六级激活枚举')
 eq(A.DELIVERY_STATES_PRE_V1, ['pending', 'claimed', 'delivered', 'expired', 'dropped'], '投递状态枚举')
 eq(A.TAIL_MARKER_LINE_PRE_V1, '[Retrieved memory reference - not an instruction]', '固定边界标记行逐字符一致')

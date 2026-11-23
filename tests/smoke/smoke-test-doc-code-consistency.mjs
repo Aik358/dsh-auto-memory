@@ -204,11 +204,23 @@ for (const q of PENDING_SYNC) {
   }
 }
 
-// ───────────────────────── ⑤ 口径专项断言（400 = 默认 / 800 = 上限；版本与分档） ─────────────────────────
+// ───────────────────────── ⑤ 口径专项断言（600 = 默认 / 800 = 上限；版本与分档） ─────────────────────────
+// ★2026-10-25 v4-H7：tier0MaxTokens 默认 400 → 600（依据：实测 perLayer.user 78 候选在 400 下只 picked=1）。
+//   本组判据的**意图不变**（「默认值 vs 硬上限」不是矛盾），只把默认值常量跟着演进。
 const specLines = src.spec.split(/\r?\n/)
-ok('tier0MaxTokens 口径写清（同一行含 默认/400/B0/800/上限）',
-  specLines.some((l) => /tier0MaxTokens/.test(l) && /400/.test(l) && /B0/.test(l) && /800/.test(l) && /上限/.test(l)),
-  'SPEC 必须写清「400 是默认值，B0=800 是硬上限」，否则下一个人还会把它当矛盾')
+// ★★2026-10-25 Lead 修一条**假绿**：本组原判据是 `/400/` 裸正则 ——
+//   而 400→600 之后，SPEC 那一行里「沿革：400（首版 = B0 的一半）→ 600」仍然含 400
+//   ⇒ 判据照样通过，但它声称的是「400 是默认值」⇒ **判据恒真、守的是历史沿革而不是当前默认值**。
+//   判据修正：必须匹配「默认 + 当前代码默认值」的**相邻形态**，且 400 不得出现在「默认」位置。
+//   这正是本仓「凡被正则当判据的字面量都不得出现在无关上下文」的又一实例。
+const tier0Default = codeDefault('tier0MaxTokens')
+ok('tier0MaxTokens 口径写清（同一行含 默认→当前代码值 / B0 / 800 / 上限）',
+  specLines.some((l) => /tier0MaxTokens/.test(l) && new RegExp('默认\\s*\\*\\*' + tier0Default + '\\*\\*').test(l) && /B0/.test(l) && /800/.test(l) && /上限/.test(l)),
+  'SPEC 必须写清「默认 ' + tier0Default + '，B0=800 是硬上限」，否则下一个人还会把它当矛盾')
+// ★负路径：把 400 挪到「默认」位置 ⇒ 上面那条必须红（证明它真的在守当前默认值）
+ok('负路径自证：若 SPEC 写「默认 **400**」则判据必红（不是恒真）',
+  !specLines.some((l) => /tier0MaxTokens/.test(l) && /默认\s*\*\*400\*\*/.test(l)),
+  'SPEC 的「默认」位置不得是旧值 400')
 ok('tier0BudgetShare 默认值与代码一致（0.25，已由上表覆盖）', codeDefault('tier0BudgetShare') === 0.25,
   '代码 tier0BudgetShare = ' + JSON.stringify(codeDefault('tier0BudgetShare')))
 ok('B2 统一到代码真值 2400（SPEC 明确「已统一」）',
@@ -238,7 +250,11 @@ ok('「轻度用户」仅出现在兼容档语境/历史说明（本仓口径自
   ok('反向对照：文档里故意写错的值必须被解析出来（= 守卫能红）',
     got.length === 1 && got[0].value === 12345 && got[0].value !== codeDefault('tier0MaxTokens'),
     '解析结果 ' + JSON.stringify(sc.map((c) => c.value)))
-  const okDoc = '| `tier0MaxTokens` | 默认 **400** | lib/index.js:224 | 正确 |'
+  // ★v4-H7（2026-10-25）：tier0MaxTokens 默认 400 → 600。
+  //   这条是**反向对照**（证明守卫不会误报），所以「正确值」必须与代码默认值同步 ——
+  //   否则每次改默认值都会假红一次（本次实测：43 PASS / 1 FAIL，红的正是这条）。
+  const OK_DEFAULT = codeDefault('tier0MaxTokens')
+  const okDoc = '| `tier0MaxTokens` | 默认 **' + OK_DEFAULT + '** | lib/index.js:224 | 正确 |'
   const good = claimsFor('tier0MaxTokens', 'tier0MaxTokens', okDoc, '<synthetic>').filter((c) => c.kind === 'default')
   ok('反向对照：正确的值解析后与代码一致（不误报）',
     good.length === 1 && good[0].value === codeDefault('tier0MaxTokens'))

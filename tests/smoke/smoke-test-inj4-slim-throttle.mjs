@@ -39,7 +39,7 @@ let body = SRC.slice(S0, SRC.lastIndexOf(END) + END.length)
 // ★2026-10-18（交付层根治配套）：决策段现依赖 finalizePre（生产侧同源抽取）。
 //   旧夹具只注入决策段 ⇒ new Function 抛 ReferenceError ⇒ 整套假红。
 const FIN_SRC = (function (SRC) {
-  const A = "const finalizePre = (txt) => {"
+  const A = "const finalizePre = (txt, hangGranted = false) => {"
   const i0 = SRC.indexOf(A)
   if (i0 < 0) throw new Error("finalizePre not found in source")
   let depth = 0
@@ -196,7 +196,9 @@ console.log('=== T6 负路径：缺 turn 键时 fail-open（宁可多发，不�
 console.log('')
 console.log('=== T7 守卫：修复标记必须在位（防回退）===')
 {
-  ok(/const slimGap = parseGapRoundsPre\(engine\.config\.slimEveryRounds/.test(SRC), 'T7-a：slimGap 从配置读取（节流判据入口在位）')
+  ok(/const slimGap = _deliveryTriggersPre\?\.slimEveryRounds \?\? parseGapRoundsPre\(engine\.config\.slimEveryRounds, 15\)/.test(SRC)
+    && /const slimGapStep = Math\.max\(1, _stepTriggersPre\?\.slimEveryRounds \?\? parseGapRoundsPre\(engine\.config\.slimEveryRounds, 15\)\)/.test(SRC),
+  'T7-a：外层与 step 节流都优先读已保存策略；缺策略才解析旧 slimEveryRounds')
   ok(/slimThrottleOkPre|markSlimEmitPre/.test(SRC), 'T7-b：节流原语在位')
   ok(/snapshotMinGapRounds: DEFAULT_SNAPSHOT_MIN_GAP_ROUNDS,/.test(SRC), 'T7-c：默认值引用常量（非硬编码 5）')
   ok(/upgradeSnapshotGapDefaultPre\(rawCfg\) \{/.test(SRC), 'T7-d：强制覆盖迁移方法在位')

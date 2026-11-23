@@ -117,6 +117,11 @@ const r1b = await host.lexicalSessionScanFallback('巨型会话', 8)
 ok(!r1b.some((l) => l.includes('cccc-3333') || l.includes('proj-c')), '①b超巨型文件被预算纪律跳过')
 
 // ── ② 宿主正常 ⇒ 兜底不触发，走原渲染 ──
+// ★2026-10-24 R0 归因：①把宿主打成失败态后，R0 的**熔断**会延续到下一次调用（这是修复的目的本身），
+//   故此处必须先清熔断标记再测「正常路径」——否则测的是熔断、不是宿主正常路径。
+//   定性：**判据过期**（新增了跨调用状态），不是真缺陷。同时补一条断言把这层状态显式测出来。
+ok(Number(host._sessionQueryFailAt) > 0, '②前置：①留下的熔断标记存在（跨调用状态真实存在）')
+host._sessionQueryFailAt = 0
 host._sessionQuery = { searchSessions: async ({ query, limit }) => ({ items: [{ header: { createdAt: 1787125212713, cwd: 'D:\\x', id: 'zz' }, bestMatch: { snippet: 'host-index-hit' } }] }) }
 const r2 = await host.searchSessionHistory('任意', 8)
 ok(r2.length === 1 && r2[0].includes('host-index-hit') && !r2.join('').includes('兜底口径'), '②宿主正常路径不走兜底')

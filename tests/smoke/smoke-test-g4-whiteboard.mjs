@@ -5,6 +5,7 @@
 //   ⚠️ 边界(文档 §2.3 硬约束): 零新增管线 / 不自动写盘 / 白板关时无副作用。
 import { GUIDANCE, DEFAULT_PROMPT_LAYERS } from '../../lib/index.js'
 import { readFileSync } from 'node:fs'
+import { createHash } from 'node:crypto'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -20,14 +21,17 @@ console.log('=== G4 白板纪律 + 写记忆时维护白板 ===')
 // G4-1..3 ★ 根因修复: GUIDANCE 的七个关键词全覆盖(实测前全 False)
 // ─────────────────────────────────────────────────────────────
 t('G4-1 ★ GUIDANCE 覆盖白板七个关键词(实测修复前全部 False —— 这就是白板腐烂的真因)', () => {
-  const keys = ['白板', 'PLAN.md', 'kind=plan', 'kind=handoff', '账本', 'handoff-', '维护']
+  // 2026-10-27 判据更新（用户裁定 Q3「白板 = 事件的投影视图」落地）：旧判据守「白板=稳定事实+手写」
+// 是已被推翻的旧决策 ⇒ 关键词 kind=plan 换成 fromEvents（新契约），其余六个不变。
+const keys = ['白板', 'PLAN.md', 'fromEvents', 'kind=handoff', '账本', 'handoff-', '维护']
   const missing = keys.filter((k) => !GUIDANCE.includes(k))
   assert(missing.length === 0, '★ 缺失关键词: ' + missing.join(', '))
 })
 
-t('G4-2 ★ GUIDANCE 声明三层分工(白板=稳定事实 / 账本=动态状态唯一权威 / 笔记=可复用结论)', () => {
+t('G4-2 ★ GUIDANCE 声明三层分工(白板=事件投影 / 账本=动态状态唯一权威 / 笔记=可复用结论)', () => {
   assert(/白板纪律/.test(GUIDANCE), '须有「白板纪律」小节')
-  assert(/稳定的/.test(GUIDANCE) || /稳定/.test(GUIDANCE), '须说明白板装"稳定"事实')
+  // 2026-10-27：白板语义由「稳定事实」改为「事件的投影视图」（用户裁定 Q3）
+  assert(/投影视图|事件渲染/.test(GUIDANCE), '须说明白板是事件的投影视图（用户裁定 Q3），不是手写稳定事实')
   assert(/动态状态的唯一权威/.test(GUIDANCE), '★ 须点明账本是动态状态的**唯一权威**(否则两者都会写"下一步"而漂移)')
   assert(/append-only/.test(GUIDANCE), '须说明账本 append-only(不追改旧账本)')
 })
@@ -109,21 +113,37 @@ t('G4-6 ★【2026-09-20 用户裁定】铭文恢复收尾自检正文——三�
   //   且本段走 systemPrompt.context()（不击穿前缀缓存），内容不变时 dsh-agent-loop project() 去重不加发。
   //   ★2026-10-12 上限由 1200 提到 1400（用户裁定）：技能库**分工作区库/通用库**、写接口无 scope 等边界
   //   必须让模型在收尾位就知道（否则会误以为能选库）；实测 1244 字符（+63），仍在护栏内。
+  //   ★2026-11-09 上限 1500 → **1700**（用户裁定「先暂时放大，细节 5.1 铭文重写时一并定」）：批次 1B 把 15 条归属判据
+  //     精简版写进铭文，实测单层 1,534 / 含 archive 1,694 ⇒ 护栏临时抬到 1700。**这是临时值**，5.1 必须重新评估。
   //   ★2026-10-13 上限 1400 → 1500（#333②，同一用户裁定方向）：新增 snapshotInscriptionArchive 层（246 字符），
   //   铭文由「单层」变为「两层拼接渲染」。
+  //   ★2026-11-23 用户裁定：5.1 定稿的完整帧实测为 **1,793 字符**（模板 1,671 + 归档层 117，含日期与前导 LF）。
+  //     以实测为基准留 23 字符余量，三项上限统一设为 **1,900**，防止正文无意膨胀（原计划 1,750 装不下本稿）。
   //   ⚠️ 同时修正了一个**假绿守卫**：旧断言只量单层 ⇒ 新增的 ⑦ 层完全不在被量范围内。现量两层拼接。
   //   ★2026-10-13 量法修正（#333② 复盘中发现的**系统性偏差**）：此前用**源码正则**截取字面量来量，
   //   而源码里的 `\n` 是**两个字符**（反斜杠+n）、求值后是**一个真换行**。实测该偏差恒为 74 字符
   //   （v3.2.15→v3.3.1 各版本一致），会让人误判「爆限额」。现统一改为**求值后口径**：
   //   直接量 DEFAULT_PROMPT_LAYERS（已 import 的求值结果），= 模型真正看到的字符数。
-  assert(tpl.length <= 1500, '★ 铭文单层须守住成本(≤1500 字符), 实测 ' + tpl.length)
+  assert(tpl.length <= 1900, '★ 铭文单层须守住成本(≤1900 字符 · 2026-11-23 5.1 用户裁定), 实测 ' + tpl.length)
   // ★真正该守的是「模型每轮实际看到的铭文字符数」= 两层求值后拼接（含 ⑦ 归档层）。
   const archReal = DEFAULT_PROMPT_LAYERS.snapshotInscriptionArchive
   assert(typeof archReal === 'string' && archReal.length > 0, '应能取到 ⑦ 归档层（求值后非空）')
   const total = tpl + archReal
-  assert(total.length <= 1500, '★ 铭文**渲染总量**须守住每轮成本(≤1500 字符, 含 Archive 层), 实测 ' + total.length)
+  // 2026-11-23 approved structure: main and archive each appear once.
+  const rendered = total.replaceAll('{date}', '2026-11-23')
+  // ★2026-11-23（用户裁定「乙」）：批次5 压缩曾丢失 5 条纠偏语句（改过 lib/ ⇒ 必写 handoff、
+  //   kind=note 不等于白板/账本、write 写 docs/ 不算），经 t7bcd 五条断言抓出后按「极度压缩」补回，
+  //   主段 1,601 → 1,671（+70），归档段不变。
+  assert(tpl.length === 1671 && archReal.length === 117, '批准的主段和归档段长度须分别为 1671 与 117')
+  // ★2026-11-23（用户裁定「乙」）：纠偏语句补回后完整帧 1,723 → 1,793。
+  assert(('\n' + rendered).length === 1793, '批准的完整帧须含日期和前导 LF，共 1793 字符')
+  // ★2026-11-23（用户裁定「乙」）：纠偏语句补回后渲染 SHA256 前缀 5fe77198 → 42f6e31b（模板 1,671 / 完整帧 1,793）。
+  assert(createHash('sha256').update(rendered).digest('hex').startsWith('42f6e31b25ecd241'), '批准的铭文渲染 SHA256 前缀不符')
+  assert(total.length <= 1900, '★ 铭文**渲染总量**须守住每轮成本(≤1900 字符, 含 Archive 层 · 2026-11-23 5.1 用户裁定), 实测 ' + total.length)
   assert(total.length > tpl.length, '★ 总量必须 > 单层（防止 Archive 层被静默移除导致守卫失效）')
-  assert(total.length + 1 <= 1500, '★ 计入 pushPart 前导 \\n 后仍须 ≤1500（真实交付给宿主的上限）')
+  // ★2026-11-23（5.1 用户裁定）：三条上限统一为 1900 —— 原 1700 会把真实生效上限压回 1699，
+  //   原计划 1750 又装不下定稿（完整帧 1,877）。本条比总量那条更严，不同步则前两条放宽形同虚设。
+  assert(total.length + 1 <= 1900, '★ 计入 pushPart 前导 \\n 后仍须 ≤1900（真实交付给宿主的口径 · 2026-11-23 5.1 用户裁定）, 实测 ' + (total.length + 1))
 })
 
 /** 从 client.js 抽取 DEFAULT_PROMPT_LAYERS_CLIENT 并**求值**为真实对象（花括号配对，与键序解耦）。 */
@@ -164,7 +184,11 @@ t('G4-6d ★ 提示词层镜像：客户端 27 层与服务端逐键逐字一致
   //   服务端与客户端镜像**同一提交内同步补齐**（无漏钉）。
   // ★2026-10-13（#333②）：25 → 26 —— 新增 snapshotInscriptionArchive（归档取回通道）层，
   //   服务端与客户端镜像**同步新增**（本次同一提交内补齐，无漏钉）。
-  assert(srvKeys.length === 27, '服务端层数应为 27（实测 ' + srvKeys.length + '）')
+  // ★2026-10-29：27 → 29（**有意演进**）。归因（可复算）：研究报告 D5 要求把静态纪律的两节
+//   拆成可配置层 —— 新增 staticPerceptDiscipline（四类感知）与 staticCalendarDiscipline（日历）。
+//   两层默认值都是空串（空 ⇒ 用内置文本，保证未配置时输出逐字节不变）。
+//   客户端 lib/client.js 镜像已在同一提交内同步补齐（两键同为空串），故逐键逐字比对仍成立。
+assert(srvKeys.length === 29, '服务端层数应为 29（实测 ' + srvKeys.length + '）')
   const missing = srvKeys.filter((k) => !cliKeys.includes(k))
   const extra = cliKeys.filter((k) => !srvKeys.includes(k))
   assert(missing.length === 0, '★ 客户端缺失层: ' + missing.join(', '))

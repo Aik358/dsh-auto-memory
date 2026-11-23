@@ -151,7 +151,9 @@ try {
     ok(/engine\._hubIoFactory = hubIo/.test(INDEX), 'io 工厂挂到 engine（跨块可取到批控制）')
     ok(/ioFactory\.beginBatch\(\)/.test(INDEX) && /ioFactory\.endBatch\(\)/.test(INDEX), 'feed 循环确实开关了批')
     ok(/\} finally \{[\s\S]{0,400}endBatch\(\)/.test(INDEX), '★endBatch 放在 finally（任何一行抛错都不把改动留在内存不落盘）')
-    ok(/createFactStorePre\(\{ config: \{ get maxFacts\(\) \{ return Number\(engine\.config\.factRetentionMax\) \|\| 1000 \}/.test(INDEX),
+    // ★2026-11-09（1.2 第1步）：断言意图不变（index.js 必须把 factRetentionMax 传给 store），
+    //   但落点从单行对象字面量改成了多行对象（同批加入 maxConflicts）⇒ 正则改为允许任意空白/换行。
+    ok(/createFactStorePre\(\{[\s\S]{0,300}?get maxFacts\(\) \{ return Number\(engine\.config\.factRetentionMax\) \|\| 1000 \}/.test(INDEX),
       'index.js 把 factRetentionMax 传给 fact store')
     ok(/factRetentionMax: 1000/.test(INDEX), 'DEFAULT_CONFIG 有 factRetentionMax（默认 1000）')
     ok(/getLastPrune: \(\) =>/.test(FACT) && /const retentionLimit = \(\) =>/.test(FACT) && /retentionLimit,/.test(FACT), 'fact store 暴露淘汰痕迹与上限（可诊断）')

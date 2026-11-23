@@ -2,6 +2,7 @@
 import { withMemoryAdmissionScopePre } from '../../lib/memory-mutation-transaction.js'
 import { withCalendarLock, canonicalCalendarPath } from '../../lib/calendar-lock.js'
 import { writeTextAtomicPre } from '../../lib/config-io.js'
+import { readLatestLegacyLedger } from '../../lib/legacy-handoff-compat.js'
 import { readPlanPre, planRevisionPre, anchoredPlanPre, archivePlanPre, conflictPlanPre, preparePlanPre } from '../../lib/plan-store.js'
 /** smoke-test-p7-write-fix —— P7 写入侧缺陷修复回归锁定(2026-09-09)。
  * 缺陷① 账本双标题:writeHandoffLedger 无条件前置标题,模型 content 自带标题行 → 单文件双标题
@@ -215,14 +216,16 @@ const mixed = [
   const legacyDir = path.join(tmpRoot, 'ws-legacy', 'handoff')
   mkdirSync(legacyDir, { recursive: true })
   const legacyText = '# 交接账本 · 2026-09-08 20:14\n\n# 交接账本 · 2026-09-08 20:15\n\n## 任务状态\n旧版产生的双标题数据。\n'
-  writeFileSync(path.join(legacyDir, 'handoff-20260908-201428.md'), legacyText, 'utf8')
+  const legacyPath = path.join(legacyDir, 'handoff-20260908-201428.md')
+  writeFileSync(legacyPath, legacyText, 'utf8')
   const engL = makeFakeEngine()
-  const readLatest = bindMethod('async readLatestHandoff(handoffDir) {', engL)
+  const readLatest = bindMethod('async readLatestHandoff(handoffDir) {', engL, { readLatestLegacyLedger })
   const got = await readLatest(legacyDir)
   ok(got === legacyText, '兼容:旧版双标题账本原样读出(新代码不迁移不触碰既有数据)')
   const r = await writeLedger(path.join(tmpRoot, 'ws-legacy'), '## 任务状态\n升级后的新账本。')
   const newText = await readFile(r.path, 'utf8')
   ok(countTitleLines(newText) === 1, '兼容:升级后新账本从首篇起就是单标题(新旧机制不打架)')
+  ok((await readFile(legacyPath)).equals(Buffer.from(legacyText)), '兼容:读旧账本并写入新账本后，旧文件字节不变')
 }
 
 console.log(`\n[p7-write-fix] ${pass}/${pass + fail} assertions passed`)

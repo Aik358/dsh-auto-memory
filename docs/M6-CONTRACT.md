@@ -11,6 +11,20 @@
 >
 > 后续：M7 Python Semantic Engine 实现真实 ContextSink 与 activation_request
 
+## 当前冷却语义补充（2026-11-21）
+
+早期 §17-§19 记录的是固定步数冷却；当前运行代码已拆成不同职责，不能用一个“冷却”设置统称：
+
+| 门 | 当前来源 | 单位与起点 | 控制范围 |
+|---|---|---|---|
+| JS 判定冷却 | `jsDecideCooldownRounds` | 实际按分钟；JS `emit` 后记录 `Date.now() + N * 60000`。`Rounds` 是历史键名 | 限制 JS 再次运行判定，不表示已投递，也不阻止其他 activation 来源 |
+| Activation packet TTL | `ActivationRequestPre.ttlSteps` | 每个 runtime 的步数，从 request 创建时计算 | 未在期限内 claim 的 packet 过期；它是存活期限，不是投递冷却。DEFAULT_CONFIG 的 `packetTtlSteps` 当前没有生产读取方 |
+| M6 实际投递冷却 | `activationDeliveryCooldownMinutes` | 关闭为 `null`；启用后为整数 1–5 分钟，UI 首次开启默认 3 分钟。仅在 Reference Tail 确认进入模型消息、`markDelivered` 成功后起算 | 限制实际送达后的后续 claim；不抑制 JS 判定本身 |
+
+`0` 不是 M6 实际投递冷却的有效值，配置接口拒绝它；运行时对历史无效值 fail-closed 为关闭。开启/关闭设置只接受 `1–5` 或 `null`。三道门可串联影响一次唤回：判定冷却跳过 JS emit、packet TTL 让过期 packet 被丢弃、实际投递冷却让 claim 暂缓。UI 应明确呈现被调节的是哪一道门。
+
+`injectionCooldownSteps`、`packetTtlSteps`、`maxPacketItems`、`maxPacketChars` 目前只是历史兼容键/策略影子，没有生产读取方；不得把它们当作 M6 实际运行参数或给它们做“可调即生效”的控件。
+
 ## 1. 定位
 
 M6 是 JS 工程的第二阶段。它先用 deterministic fake activation 实现完整投递轨道，使未来 Python 只需发送 activation_request，不需要理解或修改 DSH prompt 生命周期。

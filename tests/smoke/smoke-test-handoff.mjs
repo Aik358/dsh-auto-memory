@@ -3,6 +3,7 @@ import { withMemoryAdmissionScopePre } from '../../lib/memory-mutation-transacti
 import { withCalendarLock, canonicalCalendarPath } from '../../lib/calendar-lock.js'
 import { writeTextAtomicPre } from '../../lib/config-io.js'
 import { readPlanPre, planRevisionPre, anchoredPlanPre, archivePlanPre, conflictPlanPre, preparePlanPre } from '../../lib/plan-store.js'
+import { readLatestLegacyLedger } from '../../lib/legacy-handoff-compat.js'
 /** [handoff] M-CM1 交接白板回归(PLAN.md 白板层 + 四段式交接账本 + 注入首位)。
  * 真实抽取 writePlanSnapshot/writeHandoffLedger/readLatestHandoff/handoffStamp/renderMemoryDynamic
  * (花括号配平),在临时目录与受控闭包里驱动 —— 测的是随包发布的真实代码:
@@ -13,7 +14,7 @@ import { readPlanPre, planRevisionPre, anchoredPlanPre, archivePlanPre, conflict
  *   G4 renderMemoryDynamic:白板+交接注入在日志段之前 / handoffEnabled=false 隐藏 / 超预算硬截断
  */
 import { readFileSync, mkdirSync, writeFileSync, readdirSync, existsSync, mkdtempSync, statSync } from 'node:fs'
-import { readFile, writeFile, mkdir, readdir, stat } from 'node:fs/promises'
+import { readFile, writeFile, mkdir, readdir, stat, utimes } from 'node:fs/promises'
 import path from 'node:path'
 import os from 'node:os'
 import { fileURLToPath } from 'node:url'
@@ -90,8 +91,8 @@ function makeFakeEngine() {
   }
 }
 const bindMethod = (header, fake, extra) => { // 方法简写 → 对象字面量 → 取出绑定 fake this(注入模块级符号+extra)
-  const names = ['withMemoryAdmissionScopePre', 'canonicalCalendarPath', 'withCalendarLock', 'writeTextAtomicPre', 'readPlanPre', 'planRevisionPre', 'anchoredPlanPre', 'archivePlanPre', 'conflictPlanPre', 'preparePlanPre', 'path', 'existsSync', 'mkdir', 'writeFile', 'readdir', 'stat', 'handoffStamp', 'nowHm']
-  const vals = [withMemoryAdmissionScopePre, canonicalCalendarPath, withCalendarLock, writeTextAtomicPre, readPlanPre, planRevisionPre, anchoredPlanPre, archivePlanPre, conflictPlanPre, preparePlanPre, path, existsSync, mkdir, writeFile, readdir, stat, handoffStampFn, nowHmFn]
+  const names = ['withMemoryAdmissionScopePre', 'canonicalCalendarPath', 'withCalendarLock', 'writeTextAtomicPre', 'readPlanPre', 'planRevisionPre', 'anchoredPlanPre', 'archivePlanPre', 'conflictPlanPre', 'preparePlanPre', 'readLatestLegacyLedger', 'path', 'existsSync', 'mkdir', 'writeFile', 'readdir', 'stat', 'handoffStamp', 'nowHm']
+  const vals = [withMemoryAdmissionScopePre, canonicalCalendarPath, withCalendarLock, writeTextAtomicPre, readPlanPre, planRevisionPre, anchoredPlanPre, archivePlanPre, conflictPlanPre, preparePlanPre, readLatestLegacyLedger, path, existsSync, mkdir, writeFile, readdir, stat, handoffStampFn, nowHmFn]
   for (const k of Object.keys(extra || {})) { names.push(k); vals.push(extra[k]) }
   const obj = new Function(...names, 'return {' + extractFn(header) + '};')(...vals)
   return obj[Object.keys(obj)[0]].bind(fake)
@@ -116,7 +117,7 @@ ok(r3.ok && !r3.archived, '同内容重写不产生冗余归档')
 console.log('[handoff] G3 writeHandoffLedger + readLatestHandoff')
 const fake3 = makeFakeEngine()
 const writeHandoffLedger = bindMethod('async writeHandoffLedger(projectDir, content, opts) {', fake3)
-const readLatestHandoff = bindMethod('async readLatestHandoff(handoffDir) {', fake3)
+const readLatestHandoff = bindMethod('async readLatestHandoff(handoffDir) {', fake3, { readLatestLegacyLedger })
 const l1 = await writeHandoffLedger(proj, '## 任务状态\n第一阶段')
 const l2 = await writeHandoffLedger(proj, '## 任务状态\n第二阶段')
 ok(l1.ok && l2.ok && l1.path !== l2.path, '同秒双写不撞名(-b 后缀)')
@@ -124,6 +125,17 @@ ok(/handoff-\d{8}-\d{6}(-[a-z])?\.md$/.test(l2.path), '账本文件名契约')
 const latest = await readLatestHandoff(path.join(proj, 'handoff'))
 ok(latest.includes('第二阶段') && !latest.includes('第一阶段'), 'readLatestHandoff 返回最新篇(字典序=时间序)')
 ok(latest.startsWith('# 交接账本 · '), '账本自带时间头')
+const legacyOrderDir = path.join(tmpRoot, 'legacy-order')
+await mkdir(legacyOrderDir, { recursive: true })
+const lexicalLater = path.join(legacyOrderDir, 'handoff-20260908-201429.md')
+const mtimeLater = path.join(legacyOrderDir, 'handoff-20260908-201428.md')
+await writeFile(lexicalLater, '# 交接账本 · lexical-later\nLEXICAL_LATER')
+await writeFile(mtimeLater, '# 交接账本 · mtime-later\nMTIME_LATER')
+await utimes(lexicalLater, new Date(1600000000000), new Date(1600000000000))
+await utimes(mtimeLater, new Date(1700000000000), new Date(1700000000000))
+const mtimeWinner = await readLatestHandoff(legacyOrderDir)
+ok(mtimeWinner.includes('MTIME_LATER') && !mtimeWinner.includes('LEXICAL_LATER'), '负路径：mtime 优先于反向文件名字典序')
+ok(await readLatestHandoff(path.join(tmpRoot, 'missing-ledger-dir')) === '', '负路径：缺失旧账本目录 fail-soft 返回空串')
 
 console.log('[handoff] G4 renderMemoryDynamic 注入行为')
 const dynSrc = extractFn('renderMemoryDynamic(context) {')
@@ -167,7 +179,12 @@ const grab = (name) => { // 逐行扫描+(){} 混合配平(兼容 Object.freeze 
 //   ⇒ 本套件的 grab() 只在本文件里找定义，找不到即抛 helper not found。
 //   修法与下面对 `memory-envelope.js` 的既有做法**完全同款**：把那个模块整体注入沙箱
 //   （injection-policy.js 零 import，可直接内联）。守卫语义不变，仍是抽取真代码执行。
-const helpers = ['DEFAULT_PROMPT_LAYERS', 'neutralizePromptTemplateVars', 'truncateHead', 'truncateLinesBounded', 'sanitizeForInjection', 'scrubJunkLines', 'reflectionDigest', 'mojibakeDensity', 'MOJIBAKE_RE', 'detectStutter', 'hasStutter', 'BASE64_LINE', 'todayStr'] // ★2026-09-29 hasStutter 改调 detectStutter(P0-2 语种盲区修复),抽取清单同步补符号,否则 eval 沙箱 ReferenceError
+// ★批次 0.5（2026-10-24）：`renderMemoryDynamic` 新增两处模块级依赖 ——
+//   ① user-memory / project-notes 改 tail 截断 ⇒ 需要 `truncateTail`；
+//   ② PLAN 改按节优先级截断 ⇒ 需要 `truncatePlanByPriority`；账本改加权截断 ⇒ 需要 handoff-anchor 模块。
+//   本套件是「源码抽取 + new Function」范式，抽取依赖的**全部**模块级符号都必须显式提供，
+//   否则测的就不是真代码（与本文件 165-189 行已有的两条同类注释同因）。**不是放宽断言**。
+const helpers = ['DEFAULT_PROMPT_LAYERS', 'neutralizePromptTemplateVars', 'truncateHead', 'truncateTail', 'truncateLinesBounded', 'truncatePlanByPriority', 'sanitizeForInjection', 'scrubJunkLines', 'reflectionDigest', 'mojibakeDensity', 'MOJIBAKE_RE', 'detectStutter', 'hasStutter', 'BASE64_LINE', 'todayStr'] // ★2026-09-29 hasStutter 改调 detectStutter(P0-2 语种盲区修复),抽取清单同步补符号,否则 eval 沙箱 ReferenceError
 // ★T7-a（2026-09-20 · 上游 #86-4）：水位/接续默认值已抽为**模块级常量**，本套件同样是
 //   "源码抽取 + new Function"执行 `renderMemoryDynamic`，故必须显式注入这两个自由变量，
 //   否则抛 `ReferenceError: DEFAULT_WATER_LEVEL_THRESHOLD is not defined`（实测已发生）。
@@ -186,7 +203,10 @@ const helperCode = helpers.map((h) => grab(h)).join('\n')
 // 都必须显式提供，否则测的就不是真代码。
 const envelopeCode = readFileSync(path.resolve(HERE, '..', '..', 'lib', 'memory-envelope.js'), 'utf8')
   .replace(/^export /gm, '')
-const renderFn = new Function(helperCode + '\n' + envelopeCode + '\nreturn {' + dynSrc + '};')()['renderMemoryDynamic']
+// ★批次 0.5：账本加权截断（`weightedTrimHandoffLedgerPre`）来自 lib/handoff-anchor.js —— 零 import 纯模块，可直接内联。
+const ledgerWeightCode = readFileSync(path.resolve(HERE, '..', '..', 'lib', 'handoff-anchor.js'), 'utf8')
+  .replace(/^export /gm, '')
+const renderFn = new Function(helperCode + '\n' + envelopeCode + '\n' + ledgerWeightCode + '\nreturn {' + dynSrc + '};')()['renderMemoryDynamic']
 const run = (fake) => renderFn.call(fake, {})
 const out1 = run(makeFakeThis(PLAN_LONG, '# 交接账本 · 2026-09-06 12:00\n## 任务状态\n第二阶段', true))
 const iPlan = out1.indexOf('白板 PLAN.md')
@@ -195,7 +215,10 @@ const iLogs = out1.indexOf('工作日志')
 ok(iPlan > 0 && iLedger > iPlan && iLogs > iLedger, '注入顺序:白板 → 交接账本 → 工作日志(动态快照首位)')
 ok(iPlan > out1.indexOf('workspaceMap') >= 0 || iPlan > 0, '白板位于记忆地图之后(头部区)')
 const planSeg = out1.slice(iPlan, iLedger)
-ok(planSeg.length <= 500 + 220 && !out1.includes('条目 199'), 'PLAN 段硬预算截断(段长 ' + planSeg.length + ',尾部未注入)')
+  // ★2026-10-27 判据更新（同批修真缺陷的连带）：完整档白板预算由 handoffPlanChars(1200)
+  //   提升到 max(handoffPlanChars, fullInjectSlimBudgetChars)=3000 ⇒ 段长由 ~720 变为 2149。
+  //   语义意图不变：**白板段必须被硬预算截断、不注入尾部哨兵**（防无限膨胀），只是上限变了。
+  ok(planSeg.length <= 3000 + 220 && !out1.includes('条目 199'), 'PLAN 段硬预算截断(段长 ' + planSeg.length + ',尾部未注入)')
 const out2 = run(makeFakeThis(PLAN_LONG, '', true))
 ok(out2.includes('白板 PLAN.md') && !out2.includes('最近交接'), '无账本时只注入白板')
 const out3 = run(makeFakeThis(PLAN_LONG, '# 交接账本', false))
@@ -216,7 +239,20 @@ ok(SRC.includes("async recall(query, limit = 8, agent, scope = 'all', opts = nul
 ok(SRC.includes("if (scope === 'handoff') {") && SRC.includes("if (scope === 'sessions') {"), 'handoff/sessions 早返分支存在')
 // ★2026-10-13（#333②）：scope 枚举新增 'archive'（检索已归档旧日志的显式通道，不并入 all）。
 //   判据演进为「枚举包含四个值」= 仍守住「声明完整且透传」的原意。
-ok(SRC.includes("scope: { type: 'string', enum: ['all', 'handoff', 'sessions', 'archive']") && SRC.includes("engine.recall(args.query, args.limit, exec.agent, args.scope || 'all', { format: args.format || 'l0', expand: args.expand })"), 'memory_recall 工具声明 scope 枚举（含 archive）并透传(P4 可选 format/expand 随 opts 透传)')
+// ★2026-10-24（v4 批次 D 归因，判据过期非缺陷）：枚举由四值扩为五值（加 'events'）。
+//   判据守的是「声明完整且透传」，不是「恰好四个值」⇒ 改为**逐个断言五个值都在**，
+//   比字符串全等更贴合原意（将来再加 scope 也不会假红）。
+{
+  const enumLine = "scope: { type: 'string', enum: ['all', 'handoff', 'sessions', 'archive', 'events']"
+  const recallCall = "engine.recall(args.query, args.limit, exec.agent, args.scope || 'all', { format: args.format || 'l0', expand: args.expand, eventId: args.eventId, checkpointIndex: args.checkpointIndex, idemKey: args.idemKey })"
+  ok(SRC.includes(enumLine) && SRC.includes(recallCall), 'memory_recall 工具声明 scope 枚举（含 archive/events）并透传事件下钻字段')
+  const hasRecallWire = (source) => source.includes(enumLine) && source.includes(recallCall)
+  ok(!hasRecallWire(SRC.replace(recallCall, recallCall.replace(', eventId: args.eventId, checkpointIndex: args.checkpointIndex, idemKey: args.idemKey', ''))), '负路径：移除事件下钻透传时判据必红')
+  for (const sc of ['all', 'handoff', 'sessions', 'archive', 'events']) {
+    ok(SRC.includes("'" + sc + "'") && enumLine.includes("'" + sc + "'"), 'scope 枚举含 ' + sc)
+  }
+}
+ok(SRC.includes("if (scope === 'events') {") && SRC.includes('[记忆检索|events]'), 'memory_recall 的 events 分支确实接线（含其专属标签，非仅枚举）')
 // 新增：archive 分支确实存在（负路径 —— 只声明枚举而无分支等于没接线）
 ok(SRC.includes("if (scope === 'archive') {") && SRC.includes('[记忆检索|archive]'), 'memory_recall 的 archive 分支确实接线（含其专属标签，非仅枚举）')
 ok(CSRC.includes("set('handoffEnabled', e.target.checked)") && CSRC.includes("fHandoff: '交接白板'"), '设置页交接白板开关接线(client)')
@@ -334,7 +370,9 @@ console.log('[handoff] G5.6 活设置文件定位器(#144-B 新布局兼容)')
 
 console.log('[handoff] G6 M-CM4 水位感知(官方 token 公式+compaction 事件)')
 function makeWaterFake(opts, ledgerCalls) {
-  const rt = {}
+  // ★2026-10-26：runtime 必须带 state —— 生产侧 createSessionRuntime() 恒写 `state: createRuntimeState()`
+  //   （lib/index.js:2323）。空对象桩导致 checkWaterLevel 的 22 个 agent-runtime 字段无处可写。
+  const rt = { disposed: false, state: {} }
   const fake = Object.assign(makeFakeEngine(), {
     // ⚠️ 2026-09-15（方案 1）：水位账本链路现在由 `handoffChainEnabledPre()` 统一把关
     //   （= autoContinueEnabled && handoffEnabled）。本套件测的是**接续材料**链路，
@@ -387,22 +425,22 @@ ok(estTokensFn([{ text: 'a' }, { text: 'bb' }]) === 10, '多消息逐条计价:�
 // 低于阈值
 const fLow = makeWaterFake({}, [])
 wlBind(fLow)({ messages: [{ text: 'x'.repeat(320) }] })
-ok(!fLow._rt.waterLevelAdvised && (fLow.state.waterLevelRatio || 0) < 0.8, '低于阈值不触发 advisory(ratio=' + (fLow.state.waterLevelRatio || 0).toFixed(2) + ')')
+ok(!fLow._rt.waterLevelAdvised && (fLow._rt.state.waterLevelRatio || 0) < 0.8, '低于阈值不触发 advisory(ratio=' + (fLow._rt.state.waterLevelRatio || 0).toFixed(2) + ')')
 // 越阈值(3200 字符 → ceil(3200/4)+4=804 token → ratio 0.804)
 const ledgerCalls = []
 const fHigh = makeWaterFake({}, ledgerCalls)
 const wlHigh = wlBind(fHigh)
 await wlHigh({ messages: [{ text: 'x'.repeat(3200) }] })
-ok(fHigh._rt.waterLevelAdvised && (fHigh.state.waterLevelRatio || 0) >= 0.8, '越阈值触发 advisory 标志(ratio=' + fHigh.state.waterLevelRatio.toFixed(2) + ')')
+ok(fHigh._rt.waterLevelAdvised && (fHigh._rt.state.waterLevelRatio || 0) >= 0.8, '越阈值触发 advisory 标志(ratio=' + fHigh._rt.state.waterLevelRatio.toFixed(2) + ')')
 ok(ledgerCalls.length === 1 && ledgerCalls[0].includes('系统自动快照') && ledgerCalls[0].includes('token') && ledgerCalls[0].includes('## 已试方案与失败原因'), '抽取性骨架账本写一次(' + JSON.stringify(String(ledgerCalls[0] || '').slice(0, 150)) + ')')
 await wlHigh({ messages: [{ text: 'x'.repeat(3200) }] })
 ok(ledgerCalls.length === 1, '第二次调用不重复写(每会话一次)')
 // 2.2.4 修复:水位比例不再硬截断到 1.5(旧版把 761692/131072≈5.81 显示成 150%)
 const fOver = makeWaterFake({}, [])
 await wlBind(fOver)({ messages: [{ text: 'w'.repeat(12000) }] })
-const overRatio = Number(fOver.state.waterLevelRatio) || 0
+const overRatio = Number(fOver._rt.state.waterLevelRatio) || 0
 ok(Math.abs(overRatio - 3.004) < 0.001, '超额水位如实上报 ratio=' + overRatio.toFixed(3) + '(旧版恒为 1.5)')
-ok(fOver.state.waterLevelWindow === 1000 && fOver.state.waterLevelSource === 'manual', '窗口数值/来源同步写入 state(' + fOver.state.waterLevelWindow + '/' + fOver.state.waterLevelSource + ')')
+ok(fOver._rt.state.waterLevelWindow === 1000 && fOver._rt.state.waterLevelSource === 'manual', '窗口数值/来源同步写入 state(' + fOver._rt.state.waterLevelWindow + '/' + fOver._rt.state.waterLevelSource + ')')
 // 会话级记录(2026-09-08):切会话时按 sessionId 取数,不再显示别的会话的水位
 const fSess = makeWaterFake({}, [])
 const wlSess = wlBind(fSess)
@@ -420,7 +458,15 @@ await wlCmp({ messages: [{ text: 'y'.repeat(2400) }], session: { events: [{ type
 ok(ledgerCalls2.length === 0, '首次观测遇历史 compaction 只建基线,不触发(重启不再误接续)')
 await wlCmp({ messages: [{ text: 'y'.repeat(2400) }], session: { events: [{ type: 'compaction/summary', seq: 3 }] } })
 ok(ledgerCalls2.length === 0, '同一历史 compaction 持续不触发(seq 未前进)')
-const twoCmp = [{ type: 'compaction/summary', seq: 3 }, { type: 'compaction/start', seq: 9 }]
+// ★2026-11-03 判据升级（K2 双触发修复配套）：
+//   旧 fixture 写成 [summary seq=3, start seq=9] —— **summary 在前、start 在后**，
+//   与真宿主相反：dsh-compaction-basic 是 `:469 compaction/start` → `:634 compaction/summary`
+//   （start 先落、summary 后落，seq 递增）。旧 fixture 因此隐含了「start 也算水位」的旧语义。
+//   K2 修复后水位**只认 summary**（真宿主一次压缩 start+summary 两条，两条都认会让消费方
+//   `cseq > seen` 触发两次 ⇒ 同一轮压缩强制重建全貌两次）。
+//   ⇒ 本 fixture 改为真宿主形状：先 start(8) 再 summary(9)；判据意图不变（新压缩触发一次、
+//     重复不触发、首次观测只建基线）。
+const twoCmp = [{ type: 'compaction/start', seq: 8 }, { type: 'compaction/summary', seq: 9 }]
 await wlCmp({ messages: [{ text: 'y'.repeat(2400) }], session: { events: twoCmp } })
 ok(ledgerCalls2.length === 1, '基线之后出现**新的** compaction → 硬触发补写(水位仅 0.6)')
 await wlCmp({ messages: [{ text: 'y'.repeat(2400) }], session: { events: twoCmp } })

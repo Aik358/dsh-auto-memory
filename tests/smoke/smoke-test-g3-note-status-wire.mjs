@@ -252,6 +252,27 @@ await t('#6-3 ★★ 全部注册产物里，array 节点的 items 必须存在�
   const bad = []
   for (const x of REGISTERED_TOOLS) collectSchemaProblems(x.parameters, x.name, bad)
   ok(bad.length === 0, '★ 无 array 缺 items / items 不是对象 / 非法 type' + (bad.length ? '；违规：' + bad.join('；') : ''))
+
+  const note = REGISTERED_TOOLS.find((x) => x.name === 'memory_note')
+  const changeSet = note?.parameters.properties.changeSet
+  const item = changeSet?.items
+  const optional = note && !note.parameters.required.includes('changeSet')
+  const fields = item?.properties
+  const regionIds = fields?.regionId?.enum
+  ok(optional && changeSet?.type === 'array' && item?.type === 'object' &&
+    JSON.stringify(item.required) === JSON.stringify(['regionId', 'afterText']) &&
+    fields?.afterText?.type === 'string' && fields?.regionId?.type === 'string' &&
+    regionIds?.length === 3 && ['title', 'content', 'eventIds'].every(id => regionIds.includes(id)) &&
+    !Object.hasOwn(fields, 'beforeText'), 'changeSet 可省略；数组元素描述调用方的区域键和新文本，旧文本由后端读取')
+
+  if (changeSet) {
+    const oldNote = structuredClone(note)
+    delete oldNote.parameters.properties.changeSet.items
+    const oldBad = []
+    collectSchemaProblems(oldNote.parameters, oldNote.name, oldBad)
+    ok(oldBad.length === 1 && oldBad[0].startsWith('memory_note.changeSet：array 的 items=undefined'),
+      '负路径：从真实注册产物移除 changeSet.items，原递归判据报告缺失')
+  }
 })
 
 await t('#6-4 ★ 注册的工具名稳定（防注册退化被静默吞掉）', () => {

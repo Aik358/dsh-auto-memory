@@ -158,6 +158,16 @@ console.log('[B] #269：worker 健康探测必须监听子进程异步 error（�
     ok(ms < 5000, '不再空转到 30s（实测 ' + ms + ' ms）')
 
     // 负路径：去掉 child 的 error 监听 ⇒ 事件无宿主（未捕获）+ 失败无法反映到返回体。
+    //
+    // ★★2026-11-05（用户裁定 · 显式标记前缀）：**本段会故意制造一次未捕获异常**，
+    //   这是被测语义本身（断言「没有 error 监听器时，异常无人接管」），不是假绿。
+    //   插件生产处理器（lib/index.js:19772，生产容错，不能摘）会把同一条异常写进 stderr，
+    //   运行器的假绿防线（#536）因此会把它判成 FAIL。
+    //   ⇒ 按用户裁定的新机制，**主动向 stderr 打一行信用标记** （见下），
+    //     运行器按行消费该信用：只抵扣**紧邻的这一次**，多抛一条照旧 FAIL。
+    //   ⚠️ 这不是白名单：标记是一次性额度、只在本段有效；套件其余任何未捕获异常仍会被判 FAIL。
+    //      （可证伪性见 run-smoke 的两条变异测试：去掉本标记 ⇒ 本套件必被判 FAIL。）
+    process.stderr.write('[smoke-expected-fatal] la-audit-fixes [B] 负路径：故意移除 error 监听以断言「异常无人接管」\n')
     const uncaught = []
     const onUncaught = (e) => { uncaught.push(e) }
     process.on('uncaughtException', onUncaught)

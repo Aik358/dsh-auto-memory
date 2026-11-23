@@ -57,11 +57,16 @@ function grab(name) {
 }
 
 const dynSrc = extractFn('renderMemoryDynamic(context) {')
-const helpers = ['pad', 'DEFAULT_PROMPT_LAYERS', 'neutralizePromptTemplateVars', 'truncateHead', 'truncateLinesBounded', 'sanitizeForInjection', 'scrubJunkLines', 'reflectionDigest', 'mojibakeDensity', 'MOJIBAKE_RE', 'detectStutter', 'hasStutter', 'BASE64_LINE', 'todayStr']
+// ★批次 0.5（2026-10-24）：renderMemoryDynamic 新增两处模块级依赖 ——
+//   ① user-memory / project-notes 改 tail ⇒ `truncateTail`；② PLAN 按节优先级 ⇒ `truncatePlanByPriority`；
+//   ③ 账本加权截断 ⇒ handoff-anchor 模块（下面注入）。抽取式沙箱依赖的全部模块级符号都必须显式提供。
+const helpers = ['pad', 'DEFAULT_PROMPT_LAYERS', 'neutralizePromptTemplateVars', 'truncateHead', 'truncateTail', 'truncateLinesBounded', 'truncatePlanByPriority', 'sanitizeForInjection', 'scrubJunkLines', 'reflectionDigest', 'mojibakeDensity', 'MOJIBAKE_RE', 'detectStutter', 'hasStutter', 'BASE64_LINE', 'todayStr']
 const helperCode = helpers.map((h) => grab(h)).join('\n')
   + '\nconst DEFAULT_WATER_LEVEL_THRESHOLD = 0.75\nconst DEFAULT_AUTO_CONTINUE_THRESHOLD = 0.75\n'
   + readFileSync(path.join(ROOT, 'lib', 'injection-policy.js'), 'utf8').replace(/^export /gm, '') + '\n'
 const envelopeCode = readFileSync(path.join(ROOT, 'lib', 'memory-envelope.js'), 'utf8').replace(/^export /gm, '')
+// ★批次 0.5：账本加权截断来自 lib/handoff-anchor.js（零 import 纯模块，可内联）。
+const ledgerWeightCode = readFileSync(path.join(ROOT, 'lib', 'handoff-anchor.js'), 'utf8').replace(/^export /gm, '')
 // 旁路探针：把 renderMemoryDynamic 里唯一一次 `composeMemoryEnvelopePre(...)` 换成 __spyCompose，
 // 以便拿到**完整 envelope**（生产投影 state.envelopeMeta 只留 bucket/kind，拿不到 dropped[i].chars）。
 // 这一步只改测试沙箱里的调用名，被测函数本体与生产调用点逐字未变（dynSrc 其余部分原样）。
@@ -69,7 +74,7 @@ if (dynSrc.split('const envelope = composeMemoryEnvelopePre({').length !== 2) th
 const dynPatched = dynSrc.replace('const envelope = composeMemoryEnvelopePre({', 'const envelope = __spyCompose({')
 const spyPrelude = '\nconst __spyState = { last: null }\n'
   + 'function __spyCompose(input) { const env = composeMemoryEnvelopePre(input); __spyState.last = env; return env }\n'
-const sandbox = new Function(helperCode + '\n' + envelopeCode + spyPrelude + '\nreturn {' + dynPatched + ', __spyState};')()
+const sandbox = new Function(helperCode + '\n' + envelopeCode + '\n' + ledgerWeightCode + spyPrelude + '\nreturn {' + dynPatched + ', __spyState};')()
 const renderFn = sandbox['renderMemoryDynamic']
 const spyState = sandbox['__spyState']
 

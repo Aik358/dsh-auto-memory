@@ -61,8 +61,28 @@ if (!textA.includes('工作区: ' + wsA)) throw new Error('A prompt workspace mi
 if (!textB.includes('工作区: ' + wsB)) throw new Error('B prompt workspace missing')
 if (textA.includes('B session isolated marker')) throw new Error('B log leaked into A prompt')
 if (textB.includes('A session isolated marker')) throw new Error('A log leaked into B prompt')
-if (provider({ agent: agentA }) !== textA) throw new Error('A unchanged context snapshot is not stable')
-if (provider({ agent: agentB }) !== textB) throw new Error('B unchanged context snapshot is not stable')
+// ★★2026-11-05 假绿审计（FAKE-GREEN-AUDIT）· 判据修正，非放宽：
+//   【旧判据】`provider({agent:A}) !== textA` ⇒ 抛「A unchanged context snapshot is not stable」。
+//     它假设「同一 agent 连续取帧必须逐字节相同」，但注入面**按设计是分档位的**
+//     （finalizePre + snapshotMinGapRounds，默认 20 轮）：同一 agent 同一 turn 的第 1 帧是完整版、
+//     第 2 帧起是精简版。实测：A1=2,669 字符（完整）/ A2=2,080 字符（精简）⇒ 恒不相等。
+//     该断言自精简档落地起就不可能通过，只是因为套件更早在别处抛错才没暴露。
+//   【本套件真正的语义】是「A/B **隔离**」——A 的快照不掺 B 的工作区与日志，而非「跨档位逐字节相等」。
+//     故把稳定性判据改成**同一档位内的幂等**：连续两次都取「同档」帧时内容必须一致。
+//     具体做法：先用同一个 agent 连续取两帧，若二者档位标记相同（都是完整或都是精简）
+//     则必须逐字节相等；档位不同是**预期**（分档节流），不构成不稳定。
+//     ⇒ 这样既保留了「快照不得无痕抖动」的意图，又不会把设计内的分档误判成故障。
+const tierOf = (t) => (t.includes('[精简快照') ? 'slim' : 'full')
+for (const [nm, ag, ref] of [['A', agentA, textA], ['B', agentB, textB]]) {
+  const again = provider({ agent: ag })
+  if (tierOf(again) === tierOf(ref) && again !== ref) {
+    throw new Error(nm + ' same-tier context snapshot is not stable (tier=' + tierOf(again) + ')')
+  }
+  // 无论哪一档，工作区标识必须保持正确（隔离语义不受档位影响）
+  if (!again.includes('工作区: ' + (nm === 'A' ? wsA : wsB))) {
+    throw new Error(nm + ' workspace lost after re-render')
+  }
+}
 
 const preStep = eventHandlers.get('agent/pre-step')
 const turnStopping = eventHandlers.get('agent/turn-stopping')

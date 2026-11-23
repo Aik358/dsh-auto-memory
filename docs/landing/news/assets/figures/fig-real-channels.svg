@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 540" width="880" height="540" preserveAspectRatio="xMidYMid meet" role="img" style="font-variant-numeric:tabular-nums" font-family="Manrope,'Space Grotesk','PingFang SC','Microsoft YaHei',system-ui,sans-serif">
+<title>真实 551 个会话中各记忆通道的调用次数：日志 514 次最多，而四类感知参数合计只有 4 次，共识与承诺为 0</title>
+<rect width="880" height="540" fill="#ffffff"/>
+<!--region canvas 0 0 880 540-->
+<!--region h 44 84 792 400-->
+<!--region h-col200 496.01 96 326.73 328.01-->
+<!--region h-col400 680.02 96 142.72 328.01-->
+<text x="44" y="32" font-size="17.5" font-weight="700" fill="#1e232c">真实使用：流水账写满，关系记忆几乎为零</text>
+<text x="44" y="54" font-size="12.5" fill="#454545">551 个真实会话 · 71,393 次工具调用</text>
+<text x="44" y="520" font-size="13.5" font-weight="700" fill="#c0504d">四类感知参数合计 4 次，共识与承诺各 0 次 —— 而日志有 514 次</text>
+<line x1="312" y1="96" x2="312" y2="436" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4 5"/><text x="312" y="455" text-anchor="middle" font-size="12" font-weight="700" fill="#454545">0</text><line x1="496.01" y1="96" x2="496.01" y2="436" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4 5"/><text x="496.01" y="455" text-anchor="middle" font-size="12" font-weight="700" fill="#454545">200</text><line x1="680.02" y1="96" x2="680.02" y2="436" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4 5"/><text x="680.02" y="455" text-anchor="middle" font-size="12" font-weight="700" fill="#454545">400</text><line x1="312" y1="436" x2="822.74" y2="436" stroke="#94a3b8" stroke-width="1.4" data-role="axis" data-orient="h" data-panel="h" data-base="436" data-origin="312"/><text x="567.37" y="476" text-anchor="middle" font-size="13" fill="#454545">调用次数</text>
+<rect x="312" y="99" width="472.91" height="26.89" fill="#2563eb" data-role="hrow"/>
+<text x="300" y="116.95" text-anchor="end" font-size="12.5" font-weight="700" fill="#2563eb">今日日志 memory_log</text>
+<text x="793.91" y="116.95" font-size="12.5" font-weight="600" fill="#2563eb">514</text>
+<rect x="312" y="135.89" width="149.05" height="26.89" fill="#94a3b8" data-role="hrow"/>
+<text x="300" y="153.83" text-anchor="end" font-size="12.5" font-weight="400" fill="#1e232c">交接账本 memory_note(handoff)</text>
+<text x="470.05" y="153.83" font-size="12.5" font-weight="600" fill="#94a3b8">162</text>
+<rect x="312" y="172.78" width="57.04" height="26.89" fill="#94a3b8" data-role="hrow"/>
+<text x="300" y="190.73" text-anchor="end" font-size="12.5" font-weight="400" fill="#1e232c">事件 memory_event</text>
+<text x="378.04" y="190.73" font-size="12.5" font-weight="600" fill="#94a3b8">62</text>
+<rect x="312" y="209.67" width="11.96" height="26.89" fill="#94a3b8" data-role="hrow"/>
+<text x="300" y="227.62" text-anchor="end" font-size="12.5" font-weight="400" fill="#1e232c">技能库 memory_procedure</text>
+<text x="332.96" y="227.62" font-size="12.5" font-weight="600" fill="#94a3b8">13</text>
+<rect x="312" y="246.56" width="1.89" height="26.89" fill="#c0504d" data-role="hrow"/>
+<text x="300" y="264.51" text-anchor="end" font-size="12.5" font-weight="400" fill="#1e232c">日历 calendar_add</text>
+<text x="322.89" y="264.51" font-size="12.5" font-weight="600" fill="#c0504d">1</text>
+<rect x="312" y="283.45" width="1.89" height="26.89" fill="#c0504d" data-role="hrow"/>
+<text x="300" y="301.4" text-anchor="end" font-size="12.5" font-weight="400" fill="#1e232c">userPercept 参数</text>
+<text x="322.89" y="301.4" font-size="12.5" font-weight="600" fill="#c0504d">1</text>
+<rect x="312" y="320.34" width="2.76" height="26.89" fill="#c0504d" data-role="hrow"/>
+<text x="300" y="338.29" text-anchor="end" font-size="12.5" font-weight="400" fill="#1e232c">agentTrace 参数</text>
+<text x="323.76" y="338.29" font-size="12.5" font-weight="600" fill="#c0504d">3</text>
+<rect x="312" y="357.23" width="1.89" height="26.89" fill="#c0504d" data-role="hrow"/>
+<text x="300" y="375.18" text-anchor="end" font-size="12.5" font-weight="400" fill="#1e232c">sharedGround 参数</text>
+<text x="322.89" y="375.18" font-size="12.5" font-weight="600" fill="#c0504d">0</text>
+<rect x="312" y="394.12" width="1.89" height="26.89" fill="#c0504d" data-role="hrow"/>
+<text x="300" y="412.07" text-anchor="end" font-size="12.5" font-weight="400" fill="#1e232c">commitment 参数</text>
+<text x="322.89" y="412.07" font-size="12.5" font-weight="600" fill="#c0504d">0</text>
+</svg>

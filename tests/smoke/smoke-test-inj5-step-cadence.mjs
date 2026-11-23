@@ -35,7 +35,7 @@ const body = SRC.slice(S0, SRC.lastIndexOf(END) + END.length)
 //   旧夹具只注入决策段 ⇒ new Function 抛 ReferenceError ⇒ 整套假红。
 //   下列片段从源码**真实抽取** finalizePre，保证夹具与生产同源（不复制实现）。
 const FIN_SRC = (function (SRC) {
-  const A = "const finalizePre = (txt) => {"
+  const A = "const finalizePre = (txt, hangGranted = false) => {"
   const i0 = SRC.indexOf(A)
   if (i0 < 0) throw new Error("finalizePre not found in source")
   let depth = 0
@@ -147,8 +147,12 @@ console.log("=== T2 真人在第 7 个模型请求时说话 ⇒ 立即得完整�
     row.push(P.run(evs.slice()))
   }
   const fullAt = row.map((c, i) => (c === "F" ? i + 1 : 0)).filter(Boolean)
-  ok(fullAt.includes(7), "第 7 个请求（真人说话处）得完整版（实测完整版位置 " + fullAt.join(",") + "）")
-  ok(fullAt.includes(17), "并从第 7 个起重新计时 ⇒ 第 17 个再给完整版（实测 " + fullAt.join(",") + "）")
+  // ★★2026-11-04 判据升级（H2/H3）：真人说话处**不再**强制完整版。
+//   新语义：完整版只由首轮 / 压缩 / 水位三时机产生，节奏回到纯步数门槛。
+ok(!fullAt.includes(7), "第 7 个请求（真人说话处）**不再**得完整版（实测完整版位置 " + fullAt.join(",") + "）")
+  // ★2026-11-04 判据升级（H2/H3）：第 7 个不再授予完整版 ⇒ 「从第 7 个起重新计时」的前提消失。
+//   节奏回到纯步数门槛：实测完整版落在 1,11（首轮 + 第 10 步）。
+ok(fullAt.join(",") === "1,11", "节奏为准步数门槛 ⇒ 完整版落在 1,11（实测 " + fullAt.join(",") + "）")
 }
 
 // ── T3 精简版密度 ──────────────────────────────────────────────────

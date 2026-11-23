@@ -28,7 +28,14 @@ const HOST_ONLY_WHITELIST = [
   '/api/dsh-auto-memory/subagent-gc',
   // ★B0（2026-09-25）：子代理契约探针 —— 消费者是本仓只读取证脚本（artifacts/_b0-probe-call.mjs），
   //   界面侧零引用。**它不是死端点**：可复用子代理（B1）的架构决策依赖它产出的真实契约数据。
+  // ★v4 批次 D2/F（2026-10-24）：4 条事件路由**不进本白名单** ——
+  //   本轮已在 `lib/client.js` 的 `API` 表里补了它们的键（eventUnarchived/eventCurate/eventList/eventDetail），
+  //   A2 的判据是「宿主独有 == 白名单」，既然前端已有键 ⇒ 它们**不再是宿主独有**，列进来反而必红。
+  //   （首版列进来是对的——那时前端还没补键；补完键之后就必须移出。这是 A2 判据的正常联动。）
   '/api/dsh-auto-memory/subagent-probe',
+  // ★R171（2026-11-03 向导 P3）：/upgrade-workspaces 是**新增的只读清单路由**；
+  //   ★P4（2026-11-03）前端已接上（client.js：API.upgradeWorkspaces + 向导第 2/3 页真实消费）
+  //   ⇒ 按 A2 判据的正常联动**移出本白名单**（与上面 4 条事件路由同理：不再是「宿主独有」）。
   // ★2026-10-02 审计修复批 #174：/team-state、/team-attribution、/team-conflicts、/team-sync-debug
   //   四条**已移出本白名单** —— client.js 团队层已改为真实消费这 4 条专用路由
   //   （fetchTeamState 的 Promise.all），不再是「宿主独有」。这正是 B10 注释预告的收口。
@@ -44,6 +51,12 @@ const HOST_ONLY_WHITELIST = [
   //   「合规」区块（B12 消费；在 B12 落地前暂无界面消费者，故暂列白名单）。
   //   它**不是死端点**：客户环境要求「声明 E2E / 关闭上报」时，这是唯一可被读取的明示出口。
   '/api/dsh-auto-memory/team-compliance',
+  // ★★2026-10-26 修正（白名单语义是「**宿主独有** == 白名单」，不是「宿主新增」）：
+  //   P2b 的三条通路（upgrade-status / upgrade-snooze / memory-upgrade）**前端 API 表里也有**
+  //   ⇒ 它们不属于「宿主独有」⇒ **不应列入本白名单**。
+  //   历史：task-36 曾把 upgrade-status/upgrade-snooze 加进来 —— 那是**误判**，
+  //   它当时能绿是因为前端 API 表还没加这两个键；本轮前端接上后 A2 立刻暴露出方向反了。
+  //   判据：加白名单前先问「前端到底调不调它」；调 ⇒ 不列白名单（A1 会自动覆盖）。
 ]
 
 function parseHostTable(src) {

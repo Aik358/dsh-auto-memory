@@ -72,7 +72,10 @@ ck('status 回传 epochTokenNow（诊断可见）', /epochTokenNow/.test(idx))
 
 console.log('\n══ ④ E3 轮换门结构 ══')
 ck('_wbRotateTick 是相位迁移的唯一写者（挂在 15s 心跳）', (() => {
-  const hb = idx.split('\n').filter((l) => l.includes('void engine._wbRotateTick()'))
+  // ★2026-11-02（真机崩溃 P0 同批）：心跳里的后台任务已从裸 `void engine._wbRotateTick()`
+  //   改为 `bgGuard('wb rotate', engine._wbRotateTick())`（未捕获的拒绝会让宿主 fail-loud 自杀）。
+  //   本守卫的原意是「唯一写者 + 挂在 15s 心跳」，不是钉死某个字符形态 ⇒ 两种形态都认。
+  const hb = idx.split('\n').filter((l) => /(?:\bvoid engine\._wbRotateTick\(\)|bgGuard\('wb rotate', engine\._wbRotateTick\(\)\))/.test(l))
   return hb.length === 1 && hb[0].includes('}, 15000)')
 })())
 ck('四常量齐备（QUIET / SEAL_TIMEOUT / SEAL_RETRY）', (() => {
@@ -117,8 +120,11 @@ ck('门异常 fail-open（宁可漏拦不停摆）', /ownership gate error \(fai
 console.log('\n══ ⑥ E4 父缓存绑定期牌 ══')
 ck('_workbenchParent 赋值点仍为 3（未散落）', (idx.match(/this\._workbenchParent = /g) || []).length === 3,
   'got=' + (idx.match(/this\._workbenchParent = /g) || []).length)
-ck('三处赋值点都打标签（标签出现 6 次 = 3 赋值 + 2 比较 + 1 诊断）',
-  (idx.match(/_workbenchParentEpoch/g) || []).length === 6,
+// ★2026-10-26 归因（判据过期，非缺陷）：7 = 6（3 赋值 + 2 比较 + 1 诊断）+ 1（新增的
+//   upgrade 失败诊断快照读取 parentEpoch，用于定位「是否挂到上一期工作台」）。
+//   判据意图不变（守「赋值点不散落 + 每处都打标签」），按实测上调。
+ck('三处赋值点都打标签（标签出现 7 次 = 3 赋值 + 2 比较 + 2 诊断）',
+  (idx.match(/_workbenchParentEpoch/g) || []).length === 7,
   'got=' + (idx.match(/_workbenchParentEpoch/g) || []).length)
 ck('★空标签 = 迁移态放行（判据以 !! 开头）',
   /const _wbParentStale = !!this\._workbenchParentEpoch && String\(this\._workbenchParentEpoch\) !== _wbEpochNow/.test(idx))

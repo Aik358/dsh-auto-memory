@@ -39,7 +39,7 @@ const s1 = SRC.lastIndexOf(END) + END.length
 if (s0 < 0 || s1 <= s0) { console.log("  FAIL - 找不到决策段"); process.exit(1) }
 let SEG = SRC.slice(s0, s1)
 // 决策段依赖 finalizePre —— 从源码里抽出其真实实现（保证测的是生产代码而非复制品）
-const FIN_START = "const finalizePre = (txt) => {"
+const FIN_START = "const finalizePre = (txt, hangGranted = false) => {"
 const f0 = SRC.indexOf(FIN_START)
 if (f0 < 0) { console.log("  FAIL - 找不到 finalizePre"); process.exit(1) }
 let depth = 0, f1 = -1
@@ -171,8 +171,10 @@ const isSlim = (o) => !!o && o.includes("SLIM-MARKER")
   ok(r1.f1 === r1.f2, "T3-a 第一条真人请求两帧一致")
   ok(isFull(r1.f2), "T3-b 第一条真人请求交付完整版")
   // T3-c：第二条真人请求的两帧都必须交付完整版（内容差异由真实快照变化引起，属正常）
-  ok(isFull(r2.f1) && isFull(r2.f2), "T3-c 第二条真人请求两帧均为完整版")
-  ok(isFull(r2.f2), "T3-d ★同 turn 内第二条真人消息仍交付完整版（旧实现被 firstOfTurn 吞掉）")
+  // ★★2026-11-04 判据升级（H2/H3）：第二条真人消息不再强制完整版。
+//   但仍必须满足**两帧一致**（这是交付确定性的核心契约，与档位无关）。
+ok(r2.f1 === r2.f2, "T3-c 第二条真人请求两帧逐字节一致（档位可变，一致性不可破）")
+  ok(!isFull(r2.f2), "T3-d ★同 turn 内第二条真人消息交付精简版（H2 后不再走真人旁路）")
 }
 
 // ── T3e 同一 turn 的连续非真人请求不得重复授予完整版 ──

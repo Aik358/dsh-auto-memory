@@ -1,11 +1,20 @@
     // Plain-language presentation only. Configuration keys and handlers stay upstream-owned.
+    function iter5DeliveryModeCopyPre(mode) {
+      var copy = {
+        legacy: [L('旧版投递', 'Legacy'), L('恢复旧事件视图和按字符组装，用于兼容回滚。', 'Restore the old event view and character-based assembly for compatibility.')],
+        eventView: [L('新版事件视图（推荐）', 'Event view (recommended)'), L('使用新版事件卡片和目录，沿用按字符组装。', 'Use the newer event cards and catalog with character-based assembly.')],
+        units: [L('按单位投递', 'Unit-based delivery'), L('按检查点等单位组装正文，模块开关、视图、表示和配额决定实际投递。', 'Assemble content by units such as checkpoints. Module switches, views, representations and quotas control what is delivered.')],
+      }
+      return copy[mode]
+    }
+
     function iter5SettingCopy(label) {
       var rows = {
         fEpisodicMin: ['至少几段对话才形成经历记录', 'Minimum conversation segments per episode', '太少容易留下琐碎内容，太多可能跳过短对话。通常无需调整。', 'Too few can retain trivial content; too many can skip short conversations. Usually unchanged.'],
         fEpisodicRet: ['最多保留多少条经历', 'Maximum stored episodes', '超过上限时淘汰最旧的经历记录。', 'The oldest episodes are removed when the limit is exceeded.'],
         fFactRetention: ['最多保留多少条事实', 'Maximum stored facts', '超过后优先淘汰已撤销、较旧的事实，重要内容最后淘汰。', 'Revoked and older facts are removed first when the limit is exceeded; important facts are removed last.'],
         fChildObs: ['也观察续接产生的分支会话', 'Observe continuation branches too', '让跨天续接等分支会话也参与记忆观察。', 'Includes branch sessions, such as continuations across days, in memory observation.'],
-        fHandoffPlan: ['交给 AI 的白板长度（字符）', 'Whiteboard text supplied to AI (characters)', '限制每次提供的计划快照长度，超出截短；完整白板仍可单独查看。', 'Truncates the supplied plan snapshot at this length. The full whiteboard remains readable separately.'],
+        fHandoffPlan: ['白板长度（历史设置）', 'Whiteboard length (historical setting)', '当前无效（历史键）。仅显示保留的配置值。', 'Currently ineffective (historical key). Shown for reference only.'],
         fHandoffLedger: ['交给 AI 的交接记录长度（字符）', 'Handoff text supplied to AI (characters)', '限制最新一篇交接记录放进对话背景的长度。', 'Limits how much of the latest handoff note is supplied as conversation background.'],
         fPromptSections: ['选择交给 AI 的记忆内容类型', 'Choose which memory sections AI receives', '通常保持全部开启；关闭某一段，会让 AI 缺少对应背景或规则。', 'Usually keep all sections on. Disabling one removes its background or rules from the AI prompt.'],
         fPromptCustom: ['自定义给 AI 的记忆说明', 'Customize memory instructions for AI', '进阶用途：改写各层记忆的提示词。不确定时保留原文，可在编辑器恢复默认。', 'Advanced: edit the instructions for each memory layer. Keep the original when unsure; the editor can restore defaults.'],
@@ -16,7 +25,11 @@
         semMode: ['用什么方式查找', 'How to search', '不确定时选「自动」。可用时按意思查找，否则按关键词查找；切换后立即保存，不用再点保存设置。', 'Choose Auto when unsure: search by meaning when available, otherwise by keywords. Changes save immediately.'],
         fAnchorIndex: ['启用记忆检查与修复', 'Enable memory checks and repair', '需要在「存储管理」检查、修复索引或联动删除记忆时开启；普通记忆读写与检索不依赖它。', 'Enable for index checks, repair and linked deletion in Storage. Ordinary reading, writing and search do not require it.'],
         fIncEmbed: ['只更新有变化的搜索索引', 'Update only changed search entries', '通常保持开启，减少重复计算；仅在排查索引问题时考虑关闭。', 'Usually keep this on to avoid repeated computation. Turn off only when investigating index problems.'],
-        fJsCooldown: ['两次主动回忆的间隔（轮）', 'Minimum recall interval (turns)', '刚提供过记忆后，等待多久再尝试。调大可减少重复回忆；0 表示不等待。', 'Wait this long after supplying a memory before trying again. Increase to reduce repeated recall; 0 means no wait.'],
+        fJsCooldown: ['唤起判定冷却（分钟）', 'Recall decision cooldown (min)', '配置键名中的 Rounds 是历史遗留；运行时单位为分钟，只限制 JS 再次判定，不控制实际投递。0 表示不冷却。', 'Rounds is a legacy name; runtime uses minutes. This only gates JS decisions, not actual delivery. 0 means no decision cooldown.'],
+        fActivationDeliveryCooldown: ['启用投递后冷却', 'Cooldown after delivery', '默认关闭。开启后默认 3 分钟，可拖动选择 1–5 分钟；只在 Reference Tail 确认进入模型消息后开始。', 'Off by default. When enabled, defaults to 3 minutes; choose any whole minute from 1–5. Starts only after a Reference Tail is confirmed in the model message.'],
+        fActivationDeliveryCooldownMinutes: ['冷却时长', 'Cooldown duration', '拖动选择 1–5 分钟；当前值显示在滑块旁。', 'Choose 1–5 minutes; the current value appears beside the slider.'],
+        fCooldownOneMinute: ['1 分钟', '1 minute', '1 分钟', '1 minute'],
+        fCooldownThreeMinutes: ['3 分钟', '3 minutes', '3 分钟', '3 minutes'],
         fJsDelta: ['区分相似结果的严格程度', 'How clearly the best match must stand out', '最相关的两条记忆得分太接近时不提供。调大更谨慎，调小更容易触发；0 关闭这项过滤。', 'Skip matches when the top two scores are too close. Higher is more cautious; lower recalls more easily. 0 disables this filter.'],
         fJsExcerpt: ['每条回忆提供多少文字（字符）', 'Text supplied per recalled memory (characters)', '较短更省 token；较长能直接提供更多内容。AI 仍可按需读取全文。', 'Shorter excerpts use fewer tokens; longer ones provide more content directly. AI can still read the full memory when needed.'],
         fCandScheme: ['一次参考多少条候选记忆', 'Candidate memory preset', '平衡：3 条，每条 40 字符；广泛：6 条，每条 20 字符。只在需要微调回忆效果时更改。', 'Balanced: 3 × 40 characters. Broad: 6 × 20 characters. Change only to tune recall.'],
@@ -28,8 +41,8 @@
         fTier0Catalog: ['先给 AI 一份记忆目录', 'Give AI a memory overview', '每轮提供条目名称和一句话摘要，方便 AI 再按需读取详情。关闭可减少这部分 token。', 'Supplies titles and short summaries each turn so AI can read details as needed. Turning off saves these tokens.'],
         fTier0Max: ['记忆目录长度上限（token）', 'Memory overview limit (tokens)', '只限制目录摘要的长度，实际还受总记忆预算限制。token 是模型计算文本用量的单位。', 'Limits the overview only; the total memory budget also applies. Tokens measure model text usage.'],
         fRulesLayering: ['单独保留规则类记忆', 'Keep rules in a separate section', '把规则独立放入每轮背景，避免和普通记忆一起被裁剪。通常保持开启。', 'Keeps rules in a separate section each turn so they are not trimmed with ordinary memories. Usually leave on.'],
-        fExtBudget: ['外部记忆文字上限（字符）', 'External memory limit (characters)', '限制外部来源交给 AI 的文字量。主要使用本插件记忆时通常无需调整。', 'Limits text supplied from external sources. Usually unchanged when using only this plugin.'],
-        fSnapGap: ['更新对话记忆的最小间隔（轮）', 'Minimum memory refresh interval (turns)', '记忆内容发生变化后，至少隔这些轮数再追加一次；减少反复追加造成的上下文膨胀。', 'After memory changes, wait this many turns before adding a new snapshot to avoid repeated context growth.'],
+        fExtBudget: ['外部记忆文字上限（历史设置）', 'External memory limit (historical setting)', '当前无效（历史键）。仅显示保留的配置值。', 'Currently ineffective (historical key). Shown for reference only.'],
+        fSnapGap: ['完整版快照间隔（模型请求）', 'Full snapshot interval (model requests)', '默认 40 次模型请求。填 0 表示每次请求都尝试，仍按内容去重。', 'Default 40 model requests. Enter 0 to try on every request; duplicate content is still skipped.'],
         fReinjectOnCompact: ['对话被压缩后补回记忆', 'Restore memory after context compression', '对话太长而被压缩后，立即重新提供一次记忆背景。通常保持开启。', 'Supplies memory background again after a long conversation is compressed. Usually leave on.'],
         fAutoConsolidate: ['自动记录对话要点', 'Automatically record conversation highlights', '对话结束后按间隔与每日额度调用 AI 评估，把值得保留的内容写入今日日志；会产生模型调用。', 'Uses AI after turns, subject to the interval and daily limit, to assess useful content and write daily logs. Uses model calls.'],
         fConsolidate: ['自动记录的最小间隔（分钟）', 'Minimum recording interval (minutes)', '两次自动记录之间至少等待多久。间隔越长，调用越少；非工作时间还会自动延长。', 'Minimum wait between automatic recordings. Longer intervals mean fewer calls; off-hours extend the interval further.'],
@@ -67,6 +80,8 @@
         fDayBoundary: ['每天从几点开始计日志（分钟）', 'Start of the log day (minutes after midnight)', '450 表示 07:30，480 表示 08:00，0 表示午夜。此前的凌晨记录归到前一天。', '450 means 07:30, 480 means 08:00, and 0 means midnight. Earlier records belong to the previous day.'],
         fFontSize: ['记忆面板字号（立即生效）', 'Memory panel text size (immediate)', '只调整记忆面板的本机字号；当前 DSH 设置页的字体和字号跟随 DSH 全局设置。', 'Changes memory panel text on this device. This DSH settings page follows the global DSH font and text size.'],
         fPanelPos: ['在哪里打开记忆', 'Where to show memory', '选择浮动窗口、会话页或两者；内容相同。立即生效，仅影响本机。', 'Choose the floating panel, session page or both. They share content. Applies immediately on this device.'],
+        fInjectSemanticChars: ['长期关系记忆段的长度（字符）', 'Length of the long-term relationship memory section', '「共同经历与情感」那一小段的字数上限，只在你说的话里出现。默认 800；调大能放下更多过往，但会占用上下文。', 'Character cap for the shared-history section, only shown when you speak. Default 800; larger holds more past context but uses more of the window.'],
+        fInjectWaterPct: ['水位到多少百分比时补发完整记忆（可填多个）', 'Context-usage thresholds for a full memory refresh', '填百分比，多个用逗号分隔，默认 25；填写 25,50 可显式开启 50 档。上下文用到 25% 后，你下一次发言时会补发一次完整记忆；用到 50% 时再补一次。同一档位内不会重复补发。填 0 或 off 表示关闭此功能（仍保留首轮、接话与压缩后的补发）。', 'Percentages separated by commas, default 25; enter 25,50 to explicitly enable the 50 threshold. After context usage passes 25%, your next message triggers one full memory refresh; passing 50% triggers another. Each threshold fires once. Enter 0 or off to disable (first turn, new human messages and post-compaction refreshes still apply).'],
         fExclude: ['不让 AI 使用的记忆来源', 'Memory sources AI should not use', '每行填写一个来源，可用记忆 ID、分类或文件路径；适合屏蔽错误或不适用的内容，不会因此删除原文件。', 'One source per line: a memory ID, category or path. Excludes unsuitable content without deleting its files.']
       }
       var key = Object.keys(rows).find(function (key) { return t(key) === label })

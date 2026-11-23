@@ -154,8 +154,14 @@ console.log('[ws-hint] S0 源码守卫')
 
   ok(/renderSlimSnapshotPre\s*\(\s*wsHint\b/.test(SRC),
     '★签名已接受 wsHint（防被改回无参）')
-  ok(/const\s+wsEff\s*=\s*s\.ws\s*\|\|\s*wsHint\s*\|\|\s*''/.test(SLIM_METHOD),
-    "★口径 = s.ws || wsHint || ''（state 优先，首轮回退 hint）")
+  // ★2026-10-28 判据更新（D6/P1-2）：ws 口径增加「本 agent runtime」主源，修多会话串线。
+  //   旧：s.ws || wsHint || ''
+  //   新：_wsFromAgent || s.ws || wsHint || ''（_wsFromAgent = stateFor(agent).ws 且非空）
+  //   判据语义不变（仍是「按优先级回退、首轮不显示 (未知)」），只把被锁的表达式更新。
+  ok(/const\s+wsEff\s*=\s*_wsFromAgent\s*\|\|\s*s\.ws\s*\|\|\s*wsHint\s*\|\|\s*''/.test(SLIM_METHOD),
+    "★口径 = _wsFromAgent || s.ws || wsHint || ''（agent runtime 优先，再 state，再 hint）")
+  ok(/stateFor\s*\(\s*agent\s*\)/.test(SLIM_METHOD),
+    "★ws 主源取自 stateFor(agent)（修多会话串线，D6/P1-2）")
   ok(/ws:\s*wsEff\s*\|\|\s*'\(未知\)'/.test(SLIM_METHOD),
     '★精简版 frame-meta 使用 wsEff')
   ok(!/ws:\s*s\.ws\s*\|\|\s*'\(未知\)'/.test(SLIM_METHOD),

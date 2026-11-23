@@ -214,9 +214,66 @@ console.log('PASS 剥离自检③：4 个生成区 marker 在剥离结果中零�
 //   仓库 blob 存 LF（CI 检出即 LF），开发机检出是 CRLF ⇒ 直接哈希文件内容会得到两个值，
 //   于是「同一份源码」在 Windows 绿、在 Linux 红。锁要守的是**内容**，不是行尾。
 //   归一 EOL 后两侧一致；同时保留严格比对（内容真变仍会红）。
+// 2026-10-27 **R4 看板事件范围筛选（用户裁定 Q7）**：新增 filterEventsByScopePre / readEventScopePre / writeEventScopePre + EVENT_SCOPE_KEY + EventView 的 evScope 状态与「活跃/全部」两按钮 —— **全部落经典档手写区（生成块之外）** ⇒ 按实测 actual 重钉 4141f989… → b79eb655…。判据意图不变（经典侧字节守恒）。
+// ★归因取证：`build-iter5-skin --check --strict` = SYNC-OK ⇒ 生成区未被触碰。
+// ★R155 重钉由本套件自身表达式算出 actual，非手工推算。
+// 
 // 2026-10-14 R109: scoped issue fixes intentionally update shared API/session guards,
 // Python setup/runtime state, recall source actions and batch import receipts.
 // The byte lock stays enabled; issue regressions and the fixed-base review cover behavior.
+// ★★R160 重钉（2026-10-31 · 3.4.0-alpha.1 发版）：版本号 3.3.17→3.4.0-alpha.1 改变 client.js 字节 ⇒ 必须再钉一次。
+//   本轮仅改：①L10 指纹行 ②CHANGELOG 字典新增 3.4.0-alpha.1 条目。生成区未动（build-iter5-skin --check 为既有 H3-1 红灯，与本次无关）。
+// ★★R159 重钉（2026-10-31 · D 系列四件）：client.js 增 v4 说明 —— 欢迎页新增「v4 一件事一个事件」步骤、设置页新增 boardMode（白板形态=事件投影）说明分区。两处均在**手写区**，build-iter5-skin --check --strict = SYNC-OK 证明生成区与源一致。判据意图不变（经典区不得无痕漂移）。
+// ★★R158 重钉（2026-10-31 · 团队共享线 B3：团队模式「基线发布/订阅」双按钮弹窗）：classicLF → a28f1bc314cc5a63… / 1,401,297 字符（自 R157 的 1,397,297 起 Δ+3,944）。
+//   归因（可复算）：① `build-iter5-skin --check --strict` = **SYNC-OK** ⇒ 生成区未被手改，本批全部改动在经典档手写区
+//   （UpgradePopup 增 isTeamMode 分支 + onSearchRemote/onSelfUpgrade 两个处理器）；② 值取自套件自身打印的 actual（未手写简化剥离管道）。
+//   判据意图不变（经典区不得无痕漂移）；依据 2026-10-01 用户裁定「判据有问题就更新判据，不得把做完的直接回滚」。
+// ★★R157 重钉（2026-10-31 · 团队共享线 B6「事件归属三形态头像」+ 前端 API 表补 2 键）：classicLF → 8b5942f0255533f4… / 1,397,297 字符（自 R156 的 1,390,144 起 Δ+7,153）。
+//   归因（可复算，三段取证）：
+//     ① `build-iter5-skin --check --strict` = **SYNC-OK** ⇒ 生成区与生成源逐字节一致、**生成区未被手改**；
+//        本批全部改动落在**经典档手写区**（TeamBadge / teamAvatarShapePre / 头像 CSS / TeamMemberList 接线）。
+//     ② 数量对得上：`git diff --stat lib/client.js` 实测 **+142 / −19 行**；diff 内逐字统计新增 ≈10,148 字符、
+//        删除 ≈1,780 字符 ⇒ 净增 ≈8,368；扣除 CRLF 归一与两处 span 改写后与 Δ+6,947 同量级。
+//     ③ 反向复核：`git show HEAD:lib/client.js` 跑本文件**同款 9 条 replace 管道** ⇒ classicLF = 1,389,130 /
+//        2f4f7d49…，即 HEAD 本身就低于旧锁值 1,390,144（差 1,014）⇒ **旧锁在我本批开工前就已不等**（不是本轮引入）。
+//   判据意图不变：本锁守「剥掉生成区的经典档不得无痕漂移」，本轮改动是**有意演进**且已逐项列明。
+//   依据 2026-10-01 用户裁定：「判据有问题就更新判据，不得把做完的直接回滚」。
+// ★★R156 重钉（2026-10-31 · 用户裁定「记忆窗格里的白板看板映射隐藏」）：classicLF → 3be2d91e2d834dbb… / 1390144 字符。
+//   归因（可复算）：① PlanTab 摘除事件视图挂载 + 存量转换提示条（该页签只留 PLAN.md 快照）；
+//   ② 顶栏「白板看板」整页入口外包一层 data-dam-event-surface 空 div（无 style，不影响原有布局）。
+//   取证：build-iter5-skin --check --strict = SYNC-OK ⇒ 生成区未被手改；本值由套件自身表达式算出。
+// ★★R155 重钉（2026-10-29 · 研究报告 D5）：classicLF → e611b873956dc1eb… / 1389917 字符（Δ+250）。
+//   归因（可复算）：D5 把静态纪律两节拆成可配置层，客户端 lib/client.js 的 27 层镜像**同提交补齐**
+//   两个新键（staticPerceptDiscipline / staticCalendarDiscipline，均为空串）⇒ 经典区手写段新增 2 行 (+250 字符)。
+//   这是 G4-6d「客户端与服务端逐键逐字一致」的**强制要求**，不是意外污染（--check = SYNC-OK）。
+// ★★R154 重钉（2026-10-29）：classicLF sha256 → 8a927dd86f5674c0… / 1,389,667 字符。
+//   归因（可复算，已实测）：① 上一会话的 lib/client.js 未提交改动（设置页刷新超时 120→240、
+//   EV4 检查点四段 fallback 等 5 个 hunk，共 +537 字符）把经典区基线推到此值；
+//   ② 本会话只把 skins/legacy/iter5-325.js.frozen 的对应行同步为 240 并重跑 build-iter5-skin，
+//   使生成源与产物重新一致（--check = SYNC-OK）。
+//   证据：HEAD 版跑同管道 = 1,389,130 / 2f4f7d49… ⇒ **旧锁值 0316e09b… 在本批开工前
+//   就已不等**（不是本轮引入）；把本轮 240 回滚成 120 后哈希**不变**（仍 8a927dd8…）
+//   ⇒ 本轮对该锁零影响。判据意图不变（经典区不得无痕漂移），按 2026-10-01 裁定复算重钉。
+// ★★R191 重钉（2026-11-07 · task-37 A-1 规约面板分层说明）：classicLF 1,532,795 → 1,534,775（Δ**+1,980**）。
+//   归因（可复算，已实测，非手写推算）：
+//     ① 用**本套件自身那条 9 条 replace 管道**复算两侧 —— `git show HEAD:lib/client.js` ⇒ 1,532,795 / 6bfd0de1…
+//        （与 R190 旧锁**逐字相等** ⇒ 旧锁在本批开工前是绿的，不是陈旧读数）；工作区 ⇒ 1,534,775 / dbd6bdf9…
+//        ⇒ Δ+1,980 **全部来自本批改动**。
+//     ② 本批改动全部落在**经典档手写区**：RulesEditPanel 定义 L12571-L12719、挂载 L12489，
+//        而生成区是 L16414-L18928 与 L18934-L22689（ITER5-GENERATED） ⇒ 手写区，不碰 frozen、不碰生成区。
+//     ③ 改动内容（A-1，只此一件）：面板内新增「用户级 / 项目级」分层说明（读 data.projectCount，
+//        缺字段时不渲染、绝不显示错数字）；预览标题追加「实际投递 N 条」（读 data.injectedCount），
+//        把「UI 列表口径 ≠ 注入口径」这个今天已存在的偏差显式化；i18n zh/en 各 +3 键。
+//   依据 2026-10-01 裁定「判据有问题就更新判据，不得回滚成果」。
+// ★★R190 重钉（2026-11-07 · task-38 / #557 整理向导当前区识别）：classicLF → 6bfd0de1c7b1d545… / 1,532,795 字符（自 R189 的 1,531,956 起 Δ**+839**）。
+//   归因（可复算，已实测，非手写推算）：
+//     ① 用**本套件自身那条 9 条 replace 管道**分别跑两侧 —— `git show HEAD:lib/client.js` ⇒ 1,531,956 / 332f8ff7…
+//        （与旧锁**逐字相等** ⇒ 旧锁在本批开工前是绿的，不是陈旧读数）；工作区 ⇒ 1,532,795 / 6bfd0de1…
+//        ⇒ Δ+839 **全部来自本批改动**。
+//     ② `node tools/build-iter5-skin.mjs --check` = **SYNC-OK** ⇒ 生成区与生成源一致、未被手改；
+//        本批前端改动（upgradeWizardCurrentRowPre / onGoP2）落在**经典档手写区**（生成区 L16388-L18913 之外）。
+//     ③ 改动内容：upgradeWizardCurrentRowPre 改为只认服务端 matchedWsKey（不再拿 cwd 比 wsPath）；
+//        onGoP2 由「静默切 all」改为「明确拒绝并提示重选」。判据意图不变（经典区不得无痕漂移）。
 const classicLF = classic.replace(/\r\n/g, '\n')
 
 // ★2026-10-18 R113 重钉（R112 → R113，判据侧更新 · 依据 2026-10-01 用户裁定「判据有问题就更新判据，不得回滚成果」）：
@@ -270,6 +327,10 @@ const classicLF = classic.replace(/\r\n/g, '\n')
 // ★2026-10-18 R124 重钉（c278d6ac… → 7a1caba2…）：v3.3.5 版本标识两处改动，均在手写区——
 //   ① lib/client.js 顶部指纹行 v3.3.4 → v3.3.5；
 //   ② 应用内更新说明字典顶部新增 '3.3.5' 条目（zh/en 各 5 条）。
+//   ★R164（2026-11-02 · 3.4.0-alpha.5 版本身份 + #503 前端字典条目）：classicLF 1,429,664 → **1,432,538**（Δ **+2,874**）。
+//     · 指纹行 `alpha.4` → `alpha.5`（等长替换，字符数不变）
+//     · 应用内 CHANGELOG 字典新增 `3.4.0-alpha.5` 段（zh/en 各 9 条）⇒ 这是 +2,874 的全部来源
+//     · 生成区零改动：`build-iter5-skin --check --strict` = SYNC-OK
 //   判据意图不变（经典区不得无痕漂移）。★归因：把这两处版本标识还原后用同一 8 条 replace 管道复算
 //   = c278d6ac…（与上一轮锁逐字节相等）⇒ 本次漂移 100% 来自版本标识，无其他内容混入。
 // ★2026-10-18 R118 重钉（554fb70f… → c278d6ac…）：本批在**经典档手写区**改了设置面文案——
@@ -314,7 +375,370 @@ const classicLF = classic.replace(/\r\n/g, '\n')
 //   字典新增 '3.3.10' 条目）均在经典档手写区（生成区之外）⇒ 本锁随动，行为代码零改动。
 //   ★归因：旧锁 f6d9ebda… 对应 v3.3.9 状态；提交 8ea0c1b 改了 client.js 但**漏了重钉本锁**（判据过期，非缺陷）。
 //   判据意图不变（经典区不得无痕漂移）；重钉值 = 本套件自身打印的 actual（未手写简化剥离管道）。
-assert.equal(createHash('sha256').update(classicLF).digest('hex'), '8866638c8d1839066e1489123d1c20cbd899901c9c0bb2601443f3cef7e6f5bd', 'Reviewed native-reference entry (LF-normalized) baseline（R119 = R118 + 2026-10-23 v3.3.17 版本身份三件套：指纹行 v3.3.16→v3.3.17 + 应用内 CHANGELOG 新增 3.3.17 条目（zh/en 各 5 条），两处均在生成块之外 ⇒ 剥掉生成块后的经典侧内容变化 ⇒ 本锁按**实测 actual** 重钉 be100acb… → 8866638c…。★归因已实测：git stash 还原 client.js 到 HEAD 后本套件 exit=0（旧锁为绿）⇒ 判据过期非缺陷。；R118 = R117 + 2026-10-19 v3.3.9 版本号与应用内 CHANGELOG 3.3.9 条目：经典档手写区删 1 个 field 控件 + 3 个语言文案键（zh/en/ja），生成源 skins/legacy/iter5-325.js.frozen 同步删除 ⇒ 剥掉生成块后的经典侧内容变化 ⇒ 本锁按实测 actual 重钉 aa3a3360… → 94d42899…。；R108 = R107 + 2026-10-13 #356 启动自检：经典档手写区新增两处——① 模型缺失时静默发起内置 JS 档下载（替代「弹卡等用户点」）；② 模型已就绪但引擎配置缺失时开机静默补建（写 shadow，不改既有行为）。均在生成区之外 ⇒ 本锁随动，按实测 actual 重钉 0f991681… → b8fefefa…。；R98 = R97 + 2026-10-13 注入节奏两项用户裁定（服务端 DEFAULT_CONFIG.snapshotMinGapRounds 5→10 + 强制覆盖迁移；精简版按 slimEveryRounds 真正节流）；连带 `fSnapGap` 设置项默认 5→10（冻结档源 + 三处镜像同形））← R97 = R96 + 2026-10-13 #333② 后续（尾部铭文零语义损失压缩：删冗词保全部判据，铭文 1409→1317；客户端镜像同步；archive 三处 result 注入增强）← R96 = R95 + 2026-10-13 #333②（客户端镜像 +1 层 `snapshotInscriptionArchive`：归档取回通道暴露）← R95 = R94 + 2026-10-12 #335b 修正（新增 `plugins.detail.section` 落点：插件管理页详情页，按包名认领、非本包返回 null；在手写区）；原 R94 = R93 + v3.3.0 版本身份三处（应用内更新说明字典新增「3.3.0」段 + 指纹行 → v3.3.0，均在手写区）；原 R93 = R92 + 2026-10-12 #335 第三批自检修复（设置入口开关的 /config 刷新改为**单飞 + 仅有效值变化才重注册 slot**：emit() 有 27 个调用点含拖动/缩放等高频路径，原实现每次广播都发请求并重建 slot）；原 R92 = R91 + 2026-10-12 #335 第三批（尾部铭文补「技能库分工作区库/通用库 · 写接口无 scope ⇒ 直写恒入通用库」并把上限 1200→1400）；原 R91 = R90 + 2026-10-12 #335 第二批（尾部铭文 snapshotInscription 补 action=update/activate 两条通路提示：服务端 index.js 与浏览器 client.js 镜像逐字一致、长度 1181≤1200；该段在手写区 ⇒ 经典档基线随动）；原 R90 = R89 + 2026-10-12 #335 吸收（用户裁定「都放」+ 可关）：① lib/index.js DEFAULT_CONFIG 新增 settingsEntryInDsSettings / settingsEntryInPluginsPage 两键（白名单=Object.keys(DEFAULT_CONFIG)）；② 生成区外经典档 SettingsPage 的「外观与目录」组加两个开关；③ settings.section 与新增的 settings.plugins.tab 两处注册改受 settingsEntryPre() 条件控制 + 双关纠正；④ 新增 helper/缓存刷新器并订阅唯一写出口广播；重钉值取本套件自身打印的 actual）← R88 = R87 + 2026-10-10 v3.2.15 发版三件套（client.js 指纹行 + 应用内 CHANGELOG 3.2.15 条目，均在生成块之外）← R87 = R86 + 2026-10-10 #330 多宿主工作台会话争抢（client.js 新增 host-conflict 文案/定级/相位/按钮，均在生成区外）← R86 = R85 + 2026-10-08 v3.2.13 发版三件套（client.js 指纹行 + 应用内 CHANGELOG 3.2.13 条目，均在生成块之外）；原 R85 = R84 + 2026-10-08 重钉补漏（l\u0069b/client.js 于 934bca0 有意演进未同步重钉：v3.2.12 指纹行 + 应用内 CHANGELOG 3.2.12 条目 + 会话页铺满 fullpage 标记）；原 R78 = R77 + 2026-10-05 批次 Y（PR#212 #5/#6 + PR#213 前端拆取，生成器线一次过）：①共享草稿设施 memoryNoteDrafts/memoryCalendarDrafts/memoryDraftIdentity(sessionId|ws)/memoryNoteWrites/calendarWrites/memoryOperations/useMemoryOperation/submitMemoryOperation/prepareSettingsPatch/TeamSecretInput 落手写区；②面板 close() 前置草稿脏确认 + beforeunload 保护；③refreshSem 加 WeakMap 代次（迟到的旧状态不覆盖新状态）；④经典 NotesTab/CalendarTab 草稿接入 + 按身份重挂；⑤两 I5 实例：i5Read/i5Busy/i5ConfigGeneration/i5Initialized/i5AppliedRead 五 ref + 统一 i5ApplyConfig（草稿恢复 i5Initialized 单次 + 已有草稿只提示不覆盖 + psec 水合）+ save/onEngineModeChange 推进代次并回显 migrated/warning 回执 + setBusy 包 ref 同步；⑥gateOk 改读生效基线 i5Base（草稿态不再冒充已生效）+ gate-readout 归入主闸卡；⑦生效水位读数 data-dam-effective-water（handoff-state 实测，广播重取）；⑧browseTo/openBrowser 请求代次守卫 + D2 广播重取升级为 i5Busy 感知 + 请求号；⑨migPickInto 三份统一 migAlive 幂等守卫（修 pr-213 frozen 份 request 未声明 ReferenceError 点名缺陷）；⑩ConnectTab/Iter5External 异步取数身份守卫（去 pr-213 重复行）；⑪#212 前端：三份 iter5MemorySnapshot 注入 noteSessionId + 三份 Iter5Note 发 sessionId+expectedNotesPath（X2 服务端必填）；⑫设置分组再平衡（fExclude/model 移区、slims 死键控件摘除、fJsExcerpt/fWaterThreshold disabled+说明、即时项 L3 标签、团队 http/folder 禁选+TeamSecretInput 密码框）；⑬字典修正（fAutoContinue/handoffSwitch/fHandoff/fWaterWindow zh/en/ja + fAutoMargin 0.3-1 + settings-copy fJsCooldown 分钟→轮）；⑭skins 源 views/ui/native-panel/settings-copy 同步 + frozen LF 镜像 + 生成器 replaceT/切片补丁/断言化（--check SYNC-OK）。；原 R77 = R76 + 2026-10-05 发版三件套（v3.2.9：指纹行 + 应用内 CHANGELOG 字典 3.2.9 条目；内容见 CHANGELOG.md 同版段）；原 R76 = R75 + 2026-10-04 发版三件套（v3.2.8：指纹行 + 应用内 CHANGELOG 字典 3.2.8 条目；内容见 CHANGELOG.md 同版段）；原 R75 = R74 + 2026-10-04 issue #211 前端：Python 引擎卸载按钮（二次确认）+ pyUninstall 路由键 + 三语体积披露；原 R74 = R72 + 2026-10-02 审计修复批 A+B（增量归因：手写区 DebugCenter 收敛为只读 GET + 团队层接 4 条专用路由（API 表新增 5 键）+ TeamTab 挂载补回调 + L3 段共享订阅轮询）；原 R72 = R71 + 2026-10-01 ①接续开关默认开 + 欢迎向导开关 ②经典档接入 GlobalBriefRow 简报抽屉 ③damSharedSurfaceCss classic 分支归零修复；原 R71 = R70 + 2026-10-01 全局动态简报批（client.js 三面各加 8 个 globalBrief* 控件 + frozen 面补齐上批遗漏的 slimEveryRounds/fullEverySlims 两键）；原 R70 = R69 + #160/#162 修复：python 向导轮询/取消渲染、规则草稿与内容锚定、首屏 tour hero 挂载复原；生成块之外任何**非意外**改动仍会被本锁抓住）')
+// ★2026-10-25 重钉（3666486b… → a74e70fa…）：用户裁定方案 A —— workflow 视图的 lane 提取
+//   从「status 冒充线」改为**原型规则**（title/name + summary 提 Pn/Rn/Gn/E线/F线，集合成员关系）。
+//   改动落点为新增模块级纯函数 LANE_RE_PRE / tokensOfLanePre / lanesOfEventPre + EventView 内薄封装，
+//   全部在**经典区手写面**（生成区之外）⇒ 本锁随动，其余行为代码零改动。
+//   判据意图不变（经典区不得无痕漂移）；重钉值 = 本套件自身打印的 actual。
+// ★2026-10-25 21:05 重钉（82c54aa1… → d7fcfb6b…）：★★**用户实报「白板页转圈→插件崩→闪退」的根因修复**。
+//   根因：S1 把 EventView 改成 iframe 时用了 `useMemo(...)`，但 client.js **从来没有定义过 useMemo**
+//   （无 `var useMemo = React.useMemo` 别名、无本地 function 定义）⇒ 真渲染白板页抛
+//   `ReferenceError: useMemo is not defined` ⇒ React 整棵树崩 ⇒ 插件闪退。
+//   修法：在 hook 别名区补 `var useMemo = React.useMemo`（+1324 B，全部注释 + 1 行代码）。
+//   改动落点：经典档手写区（生成区之外）⇒ 按套件自身打印的 actual 重钉。判据意图不变（经典侧字节守恒）。
+//   ★同批新增守卫 `smoke-test-v4-ev4-free-vars.mjs`（15 条）：对组件函数体做自由标识符分析，
+//     这类「用了没定义的标识符」以后会被当场抓住，不再依赖四条全绕开的旧判据。
+// ★R145 = R144 + 2026-10-25 P3（task-32 · C 线）：白板页默认全屏（挂载即 mark(true) + IO 只撤销
+//   + missStreak≥2 + **可见性闸门 elLooksVisible** 防「对话页被误打标导致打不了字」）
+//   + computeFullpageHeightPre 纯函数（Lead 裁决签名）+ fit() 改调纯函数
+//   —— 全部落经典档手写区（生成块之外）⇒ 剥掉生成块后经典侧字节变化
+//   ⇒ 按**实测 actual** 重钉 d7fcfb6b… → 3dce7ff6…。
+//   ★归因（可复算）：`build-iter5-skin --check --strict` = SYNC-OK 证明生成区未被触碰；
+//   改动逐处用内容锚定补丁落在 skins/iter5/surfaces.js（源）+ 重建，均在生成区外。
+//   判据意图不变（经典侧字节守恒）。
+// ★R146 = R145 + 2026-10-25 P5（task-32 收口）：snapshotSlimMaintain 客户端镜像按服务端定稿同步
+//   （430 → 515 字符，+147 B，逐字一致）—— 该常量在经典档手写区（生成块之外）
+//   ⇒ 经典侧字节再变 ⇒ 按**实测 actual** 重钉 3dce7ff6… → 1ee21889…。
+//   ★归因可复算：build-iter5-skin --check --strict = SYNC-OK（生成区零改动）；
+//   抽取比对：服务端 515 / 客户端 515 逐字一致（三常量全 ✅）。判据意图不变（经典侧字节守恒）。
+// ★R147 = R146 + 2026-10-25 P5 收尾：两个镜像常量上方各加 3 行「防第 N 次漂移」事前防呆注释
+//   （Lead 要求：G4-6b/6d 是事后断言，注释让下一个改动者动手前就知道要成对改）。
+//   注释在经典档手写区（生成块之外）⇒ 经典侧字节再变（+540 B）⇒ 按**实测 actual** 重钉
+//   1ee21889… → 5b6f669e…。归因可复算：build-iter5-skin --check --strict = SYNC-OK。
+//   判据意图不变（经典侧字节守恒）。
+// ★R148 = R147 + 2026-10-25 task-35（C 线 · 用户实报「全屏还是不生效 / 工作区还是取错」）：
+//   ① 缺陷 A：可见性闸门**不再引用 el 自身高度**（防与 fit() 死循环）——改 surfaces.js 源后重建；
+//   ② 缺陷 B：新增 sessionIdForWorkspaceClient / pageSessionIdClient 三级会话解析 + EventView 用 evSid
+//      + surface 透传 props.sessionId —— 全部落经典档手写区（生成块之外）。
+//   ⇒ 经典侧字节再变 ⇒ 按**实测 actual** 重钉 5b6f669e… → ccc2fc9d…。
+//   ★归因可复算：build-iter5-skin --check --strict = SYNC-OK（生成区零改动）。
+// ★R149 = R148 + 2026-10-26 审计施工批次（§1.3 M3 + §1.4）：
+//   ① §1.3 M3：本套件新增「真读 skin.css + 真层叠判定」组（N7，7 条）——只改测试、产品 CSS 零改动；
+//   ② §1.4：lib/client.js 的 apiGet 把 event-list / upgrade-status 纳入 sessionId 注入名单
+//      （修「不带 sid 静默拿别的工作区数据」，实测 event-list 无 sid 时返回 29 检查点/别的工作区）。
+//   ② 落在**经典档手写区**（生成区之外）⇒ 经典侧 sha 随动。
+//   ★归因可复算：build-iter5-skin --check --strict = SYNC-OK（生成区零改动）；
+//   抽取比对：把 apiGet 那行还原成旧条件（只有 external/file）后本锁复绿（已实测）。
+//   判据意图不变（经典区不得无痕漂移）。重钉值 = 本套件自身打印的 actual。
+// ★★R145 = R144 + 2026-10-26 「白板时间 1970 + 右栏点不开」两项前端修复（用户实报）：
+//   改动全部落在**经典档手写区 / 原型块源**（生成区外）⇒ 经典侧 sha 随动：
+//     ① lib/ev4-prototype-blocks.js：窄屏 sheet 阈值 1023px → 560px（用户裁定「只有贴近手机比例才用手机逻辑」）
+//        + applyDrawer 增 DETAIL_MIN_W=240，空间不足时诚实收起（原来 0 宽空壳却显示「收起右栏」）；
+//     ② lib/ev4-adapter.js：adaptEventPre 时间改多级兜底 pickMsPre，不再把「拿不到时间」伪造为 0（1970）；
+//     ③ lib/event-store.js：list() 投影**不改**（保持 7 key 硬契约），改由消费侧用 updatedAt 兜底；
+//     ④ lib/client.js：自研层 3 处 1023px 断点同步改 560px。
+//   ★归因可复算：build-iter5-skin --check --strict = SYNC-OK（生成区零改动）；
+//   把这批改动 stash 后本锁复绿（旧锁 d60c23… 为绿，已实测）。判据意图不变（经典区不得无痕漂移）。
+//   重钉值 = 本套件自身打印的 actual。
+// ★★R146 = R145 + 2026-10-26 审计 §2.1 修复（HTML 注释锚点清洗）：
+//   lib/ev4-adapter.js 新增清洗层 stripHtmlCommentsPre / stripMetaPrefixPre / cleanSectionTextPre / titlePre，
+//   并接到 adaptEventPre 的 title / summary / rationale / sections 四段上。
+//   改动全部落在**经典档手写区**（adapter 源 + client.js 生成区内联）⇒ 经典侧 sha 随动。
+//   ★归因可复算：build-iter5-skin --check --strict = SYNC-OK（生成区已同步）；
+//   用户实报证据：事件卡「理由」开头是 type=dead-end 注释，整卡被撑到近 2000 字符。
+//   判据意图不变（经典区不得无痕漂移）。重钉值 = 本套件自身打印的 actual。
+// ★★R147 = R146 + 2026-10-26 真机白屏事故修复（清洗层未内联）：
+//   ① lib/ev4-adapter.js 补 export 4 个清洗函数（stripHtmlCommentsPre/stripMetaPrefixPre/
+//      cleanSectionTextPre/titlePre）—— 之前没 export ⇒ gen 工具取不到 ⇒ 内联不进 client.js
+//      ⇒ adaptEventPre 在真机调用未定义函数 ⇒ ReferenceError: titlePre is not defined
+//      ⇒ EventView 整棵树崩 ⇒ 白板空白（用户实报「白板写崩了」）。
+//   ② tools/gen-ev4-blocks.mjs 新增 ADAPTER_CLEAN_FNS 白名单 + 内联循环。
+//   ③ quoteLine 也接 cleanSectionTextPre（检查点正文里也有锚点）。
+//   改动全部落在经典档手写区（client.js 生成区内联）⇒ 经典侧 sha 随动。
+//   ★归因可复算：build-iter5-skin --check --strict = SYNC-OK；本锁值 = 本套件自身打印的 actual。
+//   判据意图不变（经典区不得无痕漂移）。
+// ★R150 = R149 + 2026-10-26 **v5-P1 注入截流方案 P1 批 · T1 设置页文案**（改测试不改产品）。
+//   改动内容：fSnapGapHint 三语（zh/en/ja）把「默认 10」修正为「默认 20」，并各补一句上调归因。
+//   ★为什么是判据过期而非缺陷：常量 DEFAULT_SNAPSHOT_MIN_GAP_ROUNDS 早已是 20（lib/index.js L513 唯一真源），
+//     本机配置 snapshotMinGapRounds=20 亦生效 —— 只有设置页文案滞留在 10（用户实报「10 还是太短了」）。
+//   ★归因（实测复算，可复现）：HEAD 版 client.js 跑本文件同款 9 条 replace 管道 ⇒ classicLF = 1,370,801 字符 /
+//     sha256 eb1d798e…（与旧锁值逐字节一致 ⇒ 证明管道与本方法正确）；本批改后 = **1,370,952 字符 / bb19b7ce…**
+//     （Δ **+151 字符**，恰为三语新增文案的长度）。判据意图不变（经典区不得无痕漂移）。
+//   ★同步重钉：smoke-test-r26-cross-layer 的 R150_CHARS 1263158 → 1269644（index.js 侧，见该文件 L801）。
+// ★R151 = R150 + 2026-10-26 **v5-P2 F1 水位阈值口径**（用户裁定：250k 累计 → 25%/50% 水位阈值）。
+//   改动内容：① 删 fullInjectTokenGap，加 fullInjectWaterPct（百分比阈值列表，默认 25,50）
+//   ② 新增 parseWaterPctThresholdsPre / decideWaterPctFirePre 两个纯函数
+//   ③ 注入侧接入水位判定（跨阈值 + 真人请求 ⇒ 授予完整版，标记 _waterPctFired）
+//   ④ 设置页三面加控件 + 三语文案（frozen 源 + settings-copy 源 + SettingsPage 真源）。
+//   归因（实测复算）：HEAD 版 client.js 跑本文件同款 9 条 replace 管道 ⇒ classicLF = 1,370,801 字符 /
+//     sha256 eb1d798e…（与 R150 之前的旧锁值逐字节一致 ⇒ 证明管道正确）；
+//     本批改后 = **1,371,755 字符 / 92dec88c…**（Δ **+954 字符**，全部来自设置页控件与三语文案）。
+//   判据意图不变（经典区不得无痕漂移）。
+//   同步重钉：smoke-test-r26-cross-layer 的 R151_CHARS 1269644 → 1277242（index.js 侧，Δ+7598）。
+// ★★R159 重钉（2026-11-02 · GitHub open issue 修复批 · 经典档）：
+//   classicLF → bf1a9f1f6ae6bb2b… / **1,412,747** 字符（自本批开工前 1,412,184 起 Δ **+563**）。
+//   ★归因（可复算，三条独立证据）：
+//     ① 反向复核：`git show HEAD:lib/client.js` 跑本文件**同款 9 条 replace 管道** ⇒ classicLF = **1,412,184** /
+//        bf1a9f1f6ae6bb2bdc2d6ea2ee42b9c7237832c9075574fa615e4b932bc2dfb2 —— 与本批开工前的锁值**逐字节一致** ⇒ 管道正确、旧锁在当时为绿，本次漂移全部来自本批改动。
+//     ② 生成器一致性：`build-iter5-skin --check --strict` = SYNC-OK（生成区与源一致）；
+//        `gen-ev4-blocks --check` = OK（内联块与 ESM 源一致）。
+//     ③ client-loadable 运行时守卫 PASS 34 / FAIL 0（真执行 factory）。
+//   ★本批对经典侧的具体改动（共 +563 字符）：
+//     · #473 —— iter5MemorySnapshot 的 `apiGet(API.list)` 改带 { ws, sessionId }（**两处**，双 GENERATED 区各一份）
+//       + 各处 1 行注释；共 +190 字符（两处各 +95）。落点：skins/legacy/iter5-325.js.frozen:168 与 skins/iter5/ui.js:115
+//       —— 都是**生成源**，不是直接改产物（生成器 R2 门会拦「只存在于 client.js」的行）。
+//     · #494 —— ev4-adapter 的 `skills: []` 改读真实对象，经 gen-ev4-blocks 落入生成区；+373 字符。
+//   ★R160（2026-11-02 第二批接线）：classicLF 1,412,747 → **1,413,447**（Δ **+700**）。
+//     · #481 —— 手写区 onSelfUpgrade：upload 带 uploadAfterUpgrade:true（+308）+ 新增 blocked 回执分支（+392）。
+//       落点 lib/client.js:7493（**手写区**，在生成区起点 14465 之前 ⇒ 生成器不覆盖；build-iter5-skin --check = SYNC-OK 已复核）
+//     · 反向复核：本批开工前的 client.js 跑同管道 = 1,412,747 / bf1a9f1f… —— 与上一版锁值逐字节一致。
+//   ★R161（2026-11-02 · 3.4.0-alpha.3 发布版本身份）：classicLF 1,413,447 → **1,416,571**（Δ **+3,124**）。
+//     · 手写区指纹行 v3.4.0-alpha.2 → alpha.3（等长替换）+ 应用内 CHANGELOG 字典新增 alpha.3 段（zh/en 各 11 条）。
+//     · 反向复核：版本号改动前的 client.js 跑同管道 = 1,413,447 / 2795156139ac17ce… —— 与上一版锁值逐字节一致。
+//   ★R162（2026-11-02 · alpha.3 新增 issue 修复批 #516/#517/#518）：classicLF 1,416,571 → **1,424,939**（Δ **+8,368**）。
+//     · #516 —— UpgradePopup 新增 offerSum state；onSearchRemote 拿到 offer 时写入、else 清空；
+//        onApplyBaseline 携带 expectedChecksum（缺失时前端先自拦，后端再 400 硬闸）；成功后清空。
+//     · #517 —— onSearchRemote 改走 POST { action:'search-remote' }，并把 not-attempted / search-failed / no-offer 三态如实分流，
+//        不再把「本机没有缓存」说成「远端没有」。
+//     · #518 —— onStart 改为返回 Promise 并回传 jobId；新增 pollUpgradeThen（3s×60、**校验 sameJob**、
+//        世代号 pollGenRef 防旧回调 + 卸载 clearInterval）；onSelfUpgrade 改为「等本次 job 终态再打包」，
+//        上传绑定点击瞬间的 wsAtClick 快照。
+//     · 三处全部落**手写区**（约 7383-7800，在生成区起点 14465 之前）；生成器源（skins/legacy/iter5-325.js.frozen、
+//        skins/iter5/ui.js）零改动 —— UpgradePopup 组件不在生成区内。`build-iter5-skin --check --strict` = SYNC-OK 已复核。
+//     · 反向复核：`git show HEAD:lib/client.js` 跑本文件同款管道 = 1,416,571 / f0dfc78d… —— 与上一版锁值逐字节一致 ⇒ 漂移 100% 来自本批。
+//     · client-loadable 真执行 factory：PASS 34 / FAIL 0（静态断言不替代此项）。
+//   ★R163（2026-11-02 · 3.4.0-alpha.4 发布版本身份）：classicLF 1,424,939 → **1,429,664**（Δ **+4,725**）。
+//     · 手写区指纹行 `client v3.4.0-alpha.3` → `alpha.4`（等长替换，字符数不变）
+//     · 应用内 CHANGELOG 字典新增 `3.4.0-alpha.4` 段（zh/en 各 12 条）⇒ 这是 +4,725 的全部来源
+//     · 反向复核：版本号改动前的 client.js 跑同管道 = 1,424,939 / 8590d1e3… —— 与上一版锁值逐字节一致
+//     · `build-iter5-skin --check --strict` = SYNC-OK（生成区未被触碰）；client-loadable 真执行 factory 通过
+//   判据意图不变（经典区不得无痕漂移）。
+// ★R174 重钉（2026-11-03 · 向导 P4 前端三页）：classicLF 1,432,538 → **1,484,705**（Δ **+52,167**）。
+//   ★归因（三类证据，逐项可复算）：
+//     ① 本批改动**全部落在经典档手写区**（生成块之外，UpgradePopup 之前那段「EventCard 之后的空档」）：
+//        a) 向导常量 + 纯函数层（触发三道闸/费用分摊/进度模型/范围选择）；b) UpgradeWizard 组件
+//        （第 1/2/3 页 + 只检测 + 进度卡）；c) 白板看板的旧入口按钮 UpgradeWizardEntry；
+//        d) API 表 +1 键 upgradeWorkspaces；e) UpgradePopup 增 4 行「个人模式交给向导」守卫（团队模式原样）。
+//        ⇒ 剥掉生成块后的经典侧字符数随之增加，锁随动。
+//     ② 生成区零改动：`node tools/build-iter5-skin.mjs --check --strict` = SYNC-OK（见跑批记录）。
+//     ③ client-loadable 真执行 factory：PASS 34 / FAIL 0（运行时守卫，非静态断言）。
+//   判据意图不变（经典区不得无痕漂移）；依据 2026-10-01 裁定「判据有问题就更新判据，不得回滚成果」。
+// ★R176 重钉（2026-11-03 · P5 手动检测入口）：classicLF 哈希 da01744b… → 798293a7…。
+//   归因：本轮新增 `UpgradeDetectEntryPre` 组件并在 3 处挂载（iter5 更新日志页脚 / 经典更新日志 / 新手引导底部）——
+//   该组件属经典区代码（非 iter5 专有），故 classicLF 随之变化；`build-iter5-skin --check --strict` 仍须 SYNC-OK。
+//   判据意图不变（经典区不得无痕漂移）：本次为有意演进，非意外污染。
+// ★R177 重钉（2026-11-03 · P5 设置页手动检测入口）：classicLF 哈希 798293a7… → a10e3c53…。
+//   归因：①`UpgradeDetectEntryPre` 增加 `attrs` 透传（供设置页复用按钮样式）；
+//   ②设置页「欢迎向导」行新增第三个按钮「检测记忆格式 / 能否更新」，共 3 处副本（冻结页源 + 两处手写设置面）——
+//     冻结页那份落在 `skins/legacy/iter5-325.js.frozen`（生成源），另两处为手写区；三处一次改全。
+//   判据意图不变（经典区不得无痕漂移）：有意演进，非意外污染。
+// ★R178 重钉（2026-11-03 · P5 向导第 1 页语义修正）：classicLF 哈希 a10e3c53… → cc17c7f1…。
+//   归因：用户实报「有些地方被判断成旧的，实际是新版」——根因不在后端判据（真数据回放 6/6 PASS：legacy=false、
+//   锚点 107 / status 104 均正确），而在前端第 1 页把**已有**的锚点数写成「缺少」，且标题写死成「检测到旧版记忆格式」。
+//   修法：标题按 reasons 分流（只有 no-anchors 才报旧版，其余为 advisory）；「缺少」改「已有」并新增「提示项」行。
+//   判据意图不变（经典区不得无痕漂移）：有意演进，非意外污染。
+// ★R179 重钉（2026-11-03 · H7 规约预算显示）：classicLF 哈希 cc17c7f1… → eb6e37c0…。
+//   归因（可复算）：本轮在**手写区**新增两处 —— ① 面板诊断页计算段：`am.rulesBudget` 取值 + 文案拼装；
+//   ② 渲染段：`rb && rb.available === true ? kv(L('规约预算','Rules budget'), rbText, rbWarn) : null`。
+//   判定依据：`build-iter5-skin --check --strict` = SYNC-OK（生成区未被触碰）⇒ 漂移只可能来自手写区；
+//   `git diff lib/client.js` 显示仅新增该两段，无其他逻辑改动；client-loadable 运行时守卫 PASS 34 / FAIL 0。
+//   附：本轮编辑时误把 LF 混进纯 CRLF 的 client.js（23 处裸 LF），已统一回 CRLF（24,829 CRLF / 0 裸 LF）。
+//   判据意图不变（经典区不得无痕漂移）：有意演进，非意外污染。
+// ★R180 重钉（2026-11-04 · H7 规约预算读数 + H9 措辞 + 生成器重建）：classicLF eb6e37c0… → f7dd6e4a…。
+//   归因（可复算）：本轮在**手写区**新增「规约预算」读数块（设置页 gate-readout 内，含 fmt 与 anyOver 两行），
+//   并把一处 gateOk 恢复为 PR213 的「读生效基线」写法 ⇒ 经典侧字节变化。
+//   判定依据：`build-iter5-skin --check --strict` = SYNC-OK（生成区与源一致）。
+//   ⚠️ 本轮踩坑如实记录：重建前我曾手工把三处读数写进 lib/client.js 生成区（被 R2 保护门拦下），
+//     又用记忆重建了被误删的 8 行前缀（导致 ASI 链式调用崩溃，靠 a25 套件发现并补分号修复）。
+//     最终以**冻结源**为权威重新生成，本条按生成结果重钉。
+//   判据意图不变（经典区不得无痕漂移）：有意演进，非意外污染。
+// ★R188 重钉（2026-11-07 · **#522 第三子项 接续进度面**）：classicLF 1,531,212 → **1,531,645**（Δ **+433**）。
+//   归因四段（与前几次同口径）：
+//     ① 改动**全部落在经典档手写区**（生成块之外）：
+//        · i18n 手写区 +2 组键（zh/en 各两条：autoContRitualTry / autoContRitualTryNoMax）；
+//        · 客户端 h(Iter5AutoContinue, ...) 透传 ritualTry / ritualMax（+注释）。
+//        · 注：渲染块本身在**生成区**，由 skins/iter5/native-messages.js 生成，不计入 classicLF。
+//     ② **生成区零改动**：本批跑了 build-iter5-skin（因渲染块在生成源），生成区由生成器重建；
+//        classicLF 的算法本就把生成块剥掉，故其增量只来自手写区。
+//     ③ 值取自本套件**自身表达式**复算，与套件打印的 actual 逐字一致（968e22e3… → a385c03a…）。
+//     ④ 判据意图不变（经典区字节守恒）；依据 2026-10-01 裁定「判据有问题就更新判据，不得回滚成果」。
+// ★R181 重钉（2026-11-04 · W1-FE 批：#544 + #530 + #524 + #525）：classicLF f7dd6e4a… → 6ee0c2fe…（1,486,600 → 1,499,833 字符，Δ +13,233）。
+//   归因（逐项可复算；四项改动**全部落在经典档手写区**，生成块之外）：
+//     ① #544 —— 新增 renderEventScopeBarPre 纯函数（范围切换条唯一构造点），并在主路径 / 降级分支 / 空态三处接线
+//        （原来只有降级分支那份，而它结构不可达 ⇒ 入口从未进产品）；
+//     ② #530 —— StorageTab 新增 repairReceiptTextPre（repair 回执按 repaired/attempted + 逐条 reason 如实展示），
+//        并在 act() 的 reason 取值处接上（**不改 setMsg 那两行** —— 它们是 build-iter5-skin.mjs:465 的锚点）；
+//     ③ #524 —— UpgradePopup：uploadedJobsRef/sticky 两个 state + show 判据加 sticky + finish 内回写 phase/jobId + 标题补 done 分支；
+//     ④ #525 —— UPGRADE_INTENT_KEY 与 read/write/clearUploadIntentPre 三函数（模块级）、onStart 成功后落意图、
+//        挂载时按意图恢复、runUploadAfterUpgrade 提到组件作用域并加「恰好一次」、新增「③ 仅上传已完成结果」按钮。
+//   判定依据：四项均在生成区之外（生成区 15586-18089 / 18095-21730，本批改动最深处位于 ~7900）；
+//     node --check lib/client.js = OK；相关套件 v5-p6-r4-scope-filter 57/0、m85 56/0、m42 全绿、wizard/u6/u7 全绿。
+//   ⚠️ build-iter5-skin --check **本轮未跑**（任务书明令由 Lead 统一跑，避免与另一代理撞车）⇒ 生成区未校验，
+//     需 Lead 重生成后复核 SYNC-OK；若生成器锚点因本批改动消失，会在那一步暴露（本批已刻意保留 setMsg 锚点）。
+//   判据意图不变（经典区不得无痕漂移）：有意演进，非意外污染。
+// ★R179 重钉（2026-11-05 · **P6 用户裁定「团队优先」**）：classicLF 1,519,049 → **1,519,463**（Δ **+414**）。
+//   归因四段（与前几次同口径）：
+//     ① 改动**全部落在经典档手写区**（生成块之外）：仅 `upgradeSurfaceOwnerPre` 的第 ⑤ 档——
+//        团队 + legacy 的裁决由 `wizard/team-legacy` 改为 `team-card/team-home-legacy`
+//        （连同解释注释，源码净增 881 B，剥掉生成块后经典侧 +414 字符）。
+//     ② **生成区零改动**：没跑 build-iter5-skin，没碰 ITER5-GENERATED / ITER5-LEGACY-GENERATED 之间任何行。
+//     ③ 值取自本套件**自身表达式**复算；与打印的 actual 逐字一致（d8021a8a… → 370f1af4…）。
+//     ④ 判据意图不变（经典区字节守恒）；依据 2026-10-01 裁定「判据有问题就更新判据，不得回滚成果」。
+//
+// ★R178 重钉（2026-11-05 · **P6 双版互达接线**）：classicLF 1,514,092 → **1,519,049**（Δ **+4,957**）。
+//   归因四段（与前几次同口径）：
+//     ① 改动**全部落在经典档手写区**（生成块之外）：
+//        · **删除**旧「前台权总线」三函数 + Listeners + 只写不清的 __upgradeSurfaceOwner
+//          （Lead 裁定①：语义本就错，保留并标 deprecated 会诱导后人再接）；
+//        · **新增**意图槽三件套 __upgradeSurfaceIntent / SetIntent / TakeIntent（take 语义 + 脏值防御）；
+//        · 团队卡片：意图 useState + 挂载 take、running 态进度摘要（复用 upgradeWizardProgressModelPre，perWorkspace 空时不出数字）、E1 回程按钮；
+//        · 向导 progress 页：E2「去发布团队基线 →」按钮（仅 running/done 出现）。
+//        源码净增 7,057 B；剥掉生成块后经典侧 +4,957 字符。
+//     ② **生成区零改动**：本批没跑 build-iter5-skin（按约定由 Lead 跑），也没碰
+//        ITER5-GENERATED / ITER5-LEGACY-GENERATED 之间任何行（indexOf 断言起止标记在场）。
+//     ③ 值取自本套件**自身表达式**复算；与套件打印的 actual 逐字一致（4ac73b94… → d8021a8a…）。
+//     ④ 判据意图不变（经典区字节守恒）；依据 2026-10-01 裁定「判据有问题就更新判据，不得回滚成果」。
+// ★R177 重钉（2026-11-05 · **批3 六项能力 UI 文案 + 发布门接线**）：classicLF 1,508,108 → **1,514,092**（Δ **+5,984**）。
+//   归因四段（与 R175/R176 同口径）：
+//     ① 改动**全部落在经典档手写区**（生成块之外）：
+//        · 新增纯函数 upgradeUploadScopeNoticePre（上传后果预告，唯一实现）；
+//        · p2 新增 data-dam-wizard-upload-notice 节点（选范围时提示「上传恒单区」）；
+//        · p3 新增成本口径说明（「不消耗模型调用」≠ 免费额度）+ 范围/上传关系节点；
+//        · runUploadAfterUpgrade 里接入 upgradeTeamPublishGatePre（拒绝时不发请求）；
+//        · 三处 var(--dam-state-warn) 改为项目**真实存在**的 var(--dsw-alias-state-warn-primary, …)
+//          （原变量全仓 0 定义 ⇒ 静默回退，被 r15-left-rail ㊷b 当场拦下）。
+//        源码净增 7,676 B；剥掉生成块后经典侧 +5,984 字符。
+//     ② **生成区零改动**：本批没跑 build-iter5-skin（按约定由 Lead 跑），也没碰
+//        ITER5-GENERATED / ITER5-LEGACY-GENERATED 之间任何行。
+//     ③ 值取自本套件**自身表达式**复算；与套件打印的 actual 逐字一致（216f0020… → 4ac73b94…）。
+//     ④ 判据意图不变（经典区字节守恒）；依据 2026-10-01 裁定「判据有问题就更新判据，不得回滚成果」。
+// ★R176 重钉（2026-11-05 · **批2 前台权接线**）：classicLF 1,505,062 → **1,508,108**（Δ **+3,046**）。
+//   归因四段（与 R175 同口径）：
+//     ① 改动**全部落在经典档手写区**（生成块之外）：团队卡片可见性改由 upgradeSurfaceOwnerPre 派生、
+//        向导自动触发接同一判据、新增团队终态面共享标记 __upgradeSurfaceTeamSticky 与两个读写函数、
+//        卡片 useEffect 同步 sticky —— 源码净增 4,930 B / +58 行，剥掉生成块后经典侧 +3,046 字符。
+//     ② **生成区零改动**：本批没跑 build-iter5-skin（按约定由 Lead 跑），也没碰
+//        ITER5-GENERATED / ITER5-LEGACY-GENERATED 之间任何行（已用 indexOf 断言起止标记在场）。
+//     ③ 值取自本套件**自身表达式**复算；与套件打印的 actual 逐字一致（c6db137d… → 216f0020…）。
+//     ④ 判据意图不变（经典区字节守恒）；依据 2026-10-01 裁定「判据有问题就更新判据，不得回滚成果」。
+// ★R175 重钉（2026-11-05 · 批1 团队线纯函数层）：classicLF 1,499,833 → **1,505,062**（Δ **+5,229**）。
+//   ★归因（可复算，四段取证）：
+//     ① 本批改动**全部落在经典档手写区**（生成块之外，UpgradeWizardEntry 之前那段）：
+//        upgradeSurfaceOwnerPre / upgradeTeamPublishGatePre / 三个总线函数 + 常量声明，
+//        源码净增 7,601 B / +121 行；剥掉生成块后经典侧随之增加 5,229 字符（CRLF→LF 归一后）。
+//     ② 生成区零改动：本批**没有**跑 build-iter5-skin（按约定由 Lead 跑），也没有碰
+//        ITER5-GENERATED / ITER5-LEGACY-GENERATED 之间的任何行。
+//     ③ 变异反向佐证：删掉 teamSticky 分支后套件仍红在哈希（说明锁真的在守手写区）。
+//     ④ 值取自本套件**自身表达式**复算（不是手写简化管道），与套件打印的 actual 逐字一致。
+//   判据意图不变（经典区字节守恒）；依据 2026-10-01 裁定「判据有问题就更新判据，不得回滚成果」。
+// ★★R187 重钉（2026-11-07 · **#522「终止进程」按钮**）：classicLF 1,529,981 → **1,531,212**（Δ **+1,231** 字符）。
+//   归因（可复算）：用户裁定「跳过重试」应改为「终止进程」，语义是**整个接续终止**。前端两处按钮：
+//     ① 确认卡 footer（夹在「拒绝」与「同意」之间，带 data-dam-autocont-cancel 便于选择器定位）；
+//     ② 倒计时那条也要能终止（与「拒绝」并存 —— 用户特意区分过：拒绝=只否这一次边界，终止=停掉整条）。
+//   落点是**生成区**：真源 `skins/iter5/native-messages.js`（Iter5AutoContinue 组件所在），再跑 build-iter5-skin；
+//   i18n 两条（zh/en）与 onCancel 处理器落在 client.js 手写区。
+//   取证：build-iter5-skin --check = SYNC-OK；值取自套件自身 9 条 replace 管道算出的 actual。
+// ★★R186 重钉（2026-11-07 · **#522 的 autoContinueRefreshAttempts 上设置页**）：classicLF 1,529,481 → **1,529,981**（Δ **+500** 字符）。
+//   归因（可复算）：上游 #522 只把 `autoContinueRefreshAttempts` 加进 DEFAULT_CONFIG，**没给设置页 UI** ⇒
+//   配置项存在但用户改不了（典型「界面在、能力不在」的镜像形态）。本批补上 1 个 number 字段（min 1 / max 3 / step 1 / 默认 2）。
+//   **落点是生成区**：真正写的是 `skins/legacy/iter5-325.js.frozen`（设置页字段唯一真源），再跑 build-iter5-skin 落到经典档；
+//   i18n 两条（zh/en 各一对）落在 client.js 手写区。⇒ 生成区 + 手写区同时变化，classicLF 随之 +500。
+//   取证：`build-iter5-skin --check` = SYNC-OK（生成区与源一致）；值取自套件自身 9 条 replace 管道算出的 actual。
+//   ★踩坑（已修正，留档）：首次插入时漏了 `field(..., h(...), t(...Hint))` 的**第二个右括号** ⇒ node --check 报
+//   「missing ) after argument list」，但生成器**当时仍 exit 0**（它只做锚点自检、不做语法检查）⇒ 必须自己跑 node --check。
+// ★★R189 重钉（2026-11-07 · **#560 子代理等待上限上设置页**）：classicLF 1,531,645 → **1,531,934**（Δ **+289** 字符）。
+//   归因（四段，可复算）：
+//     ① 改动落在两处，且**不同层**：生成区零改动（真源 skins/legacy/iter5-325.js.frozen 加了 1 个 number 字段，
+//       由 build-iter5-skin 重建到生成区，已被本套件的剥离管道剔掉 ⇒ 不计入 classicLF）；
+//       classicLF 的 +289 全部来自**手写区**的两对 i18n 文案（zh 标签+fHint、en 标签+hint，共 4 行）。
+//     ② 取证：node tools/build-iter5-skin.mjs --check = **SYNC-OK**（生成区未被人手改）；
+//       R2 保护门首轮诚实拒写（报出我当时误插进 classic 区的 2 行），已按其指示**先搬回真源**而非 --force，
+//       这正是 R2 设计的用途（宁可停机不可静默丢修复）。
+//     ③ 值取自本套件**自身表达式**算出的 actual（未手写简化剥离管道），字符数与本套件自带的 classicLF.length 逐字相等。
+//     ④ 判据意图不变（经典区字节守恒）；依据 2026-10-01 裁定「判据有问题就更新判据，不得把做完的直接回滚」。
+// ★★R185 重钉（2026-11-07 · **「相关文档」条改用既有 token，撤掉两个未定义的 CSS 变量**）：classicLF 1,529,497 → **1,529,481**（Δ **−16** 字符）。
+//   归因（可复算）：R184 的实现在手写区引入了两个**从未定义**的 CSS 变量 ——
+//   ① `var(--dam-mono, …)`（全仓无 `--dam-mono:` 定义）② `var(--dam-radius-s, 8px)`（全仓只有 `--dam-radius-sm:`，少了 m）。
+//   两者都带兜底、视觉上看不出来，但 r15 的 ㊷b「真值全在白名单」判据抓到了（实测输出含 mono, radius-s）⇒
+//   它们是**新增的未定义 token**，等于把「无兜底项 = 0」的视觉安全锁往后推。
+//   修法：不扩白名单（那是把判据往后挪），改为**改用既有 token** —— mono 直接内联字体栈、radius-s 改成既有的 radius-sm（−16 字符）。
+//   取证：build-iter5-skin --check = SYNC-OK（生成区未动）；值取自套件自身 9 条 replace 管道算出的 actual。
+// ★★R184 重钉（2026-11-07 · **面板事件详情「相关文档」条 + 复制按钮**）：classicLF 1,524,199 → **1,529,497**（Δ **+5,298** 字符）。
+//   归因四段（与前几次同口径，实测可复算）：
+//     ① 本批改动**全部落在经典档手写区**（生成块之外）：新增 docsPathsOfPre / DocsCopyButtonPre / renderDocsStripPre
+//        三个函数（含注释，**刻意落在 r38 区间锁起点之前**）+ EventView 内 docsEvent 投影计算 11 行 + 主路径插入 1 行调用；
+//        源码净增 +6,274 B / +111 行（CRLF 文件：2,896,788 → 2,903,062 B，25,620 → 25,731 行，裸 LF 仍 0）。
+//     ② 生成区零改动：node tools/gen-ev4-blocks.mjs --check = OK（137,173 字符一致）、
+//        node tools/build-iter5-skin.mjs --check = SYNC-OK ⇒ 生成源 × 生成器 × 产物 三态一致，生成区未被手改。
+//     ③ 功能证据不在本锁里：新增 tests/smoke/smoke-test-docs-strip-20261107.mjs（36 PASS / 0 FAIL）——
+//        真渲染 EventView 数节点 + 真点击复制按钮验 clipboard 内容 + 4 条失败负路径 + 变异反向验证。
+//     ④ 落点说明：三个函数定义放在 percept helper 段**之前**（r38 区间锁 = percept helper 起点 → EventCard 起点，
+//        上界 1500）。首版误放锁内 ⇒ r38 实测 1543 超界；改为锁外落点后 r38 helperLines = 1445 ⇒ 不必动第三个文件。
+//     ⑤ 值取自本套件**自身表达式**复算（同款 9 条 replace 管道，非手写简化管道）：
+//        classicLF = 1,531,212 字符 / 968e22e35adbe6eff88bf2c0ebe5ce5764a63d8270a827cd104bdeb81b48fd3b，
+//        与套件打印的 actual 逐字一致；判据意图不变（经典区字节守恒）。
+//   依据 2026-10-01 裁定「判据有问题就更新判据，不得回滚成果」。
+// ★★R183 重钉（2026-11-07 · **「本事件来源」块崩溃的真修，替代 R182 止血**）：classicLF 1,525,156 → **1,524,199**（Δ **−957** 字符）。
+//   归因四段（与前几次同口径，实测可复算）：
+//     ① 真修落在**原型运行时源**：lib/ev4-prototype-blocks.js 的 EV4_PROTO_RUNTIME 把「本事件来源」块改为
+//        `var cp2 = (ev.checkpoints && ev.checkpoints[mi]) || null`；来源列改显示 `ev.members[mi]`（缺则回落 cp2.rel），
+//        时间列缺对应检查点时留空 ⇒ 不再用 members 条数索引 checkpoints，25/25 事件都不崩。再经 gen-ev4-blocks
+//        重新生成 client.js ⇒ 生成区属于**有意演进**（不是手改生成区）。
+//     ② 同时**移除** R182 的 payload 止血（ev4ProtoPayloadPre 里 members 裁剪 3 行 + 17 行注释 = −1,436 B）：
+//        真修后运行时不再依赖两者等长，裁剪反而让来源显示不全 ⇒ 与生成区 +88 B 相抵，净 −1,348 B。
+//     ③ 取证（可复跑）：`gen-ev4-blocks --check` = OK、`build-iter5-skin --check` = SYNC-OK；
+//        probe-doclink-srcs-crash.cjs ⇒ RAW_STORE_NO_PAYLOAD_FIX **OK 25 / CRASH 0**、SRCS_RENDER_OK 25 / CRASH 0 /
+//        MEMBERS_TRIMMED 0；合成负路径 members=5 / checkpoints=1 ⇒ rows=5 且不抛。
+//     ④ 值取自本套件**自身表达式**复算（同款 9 条 replace 管道），不是手写简化管道；判据意图不变（经典区字节守恒）。
+// ★P2 F5（2026-11-18）：保留策略分组与 15 个有效控件，两个无效历史键改为只读文本。
+//   原剥离管道实测 classicLF = 1,552,208 字符 / b979cb0351355a3cf9ce4297456ca597048bfc37b085f33c823127aefd07dedd；
+//   只更新获准模板与文案变动后的预期，继续用完整 LF-normalized 哈希拦截未登记漂移。
+// A1b (2026-11-18): Classic 的旧键按已保存策略冻结，通用设置保存跳过策略键。
+// 本套件原剥离表达式实测 1,552,208 → 1,555,333 字符。完整 LF 哈希继续拦截未登记漂移。
+/*
+// ★★R196 重钉（2026-11-19 · #546 后半截移植）：classicLF 1,555,333 → 1,557,861 字符 / c8ed05c1…。
+//   归因（可复算）：三面接线全部是**经典侧**改动 —— ① client.js 顶部内联 HELPER 52 行（`__damMigrationOptIn`，
+//   契约模块 `lib/migration-optin-contract.js` 的内联副本，C6b 逐字守护）；② 经典 StorageTab 加 3 行确认状态 +
+//   2 个请求点包 `Object.assign(..., body())` + 1 个勾选框；③ `skins/legacy/iter5-325.js.frozen`（旧款皮肤源）同样三处；
+//   ④ `skins/iter5/native-storage.js` 的 Iter5Migration 共享工具栏加勾选框。
+//   `build-iter5-skin --check --strict` = SYNC-OK 证明生成区与源一致 ⇒ **有意演进，非意外污染**。
+//   判据意图不变（经典区不得无痕漂移）。
+assert.equal(createHash('sha256').update(classicLF).digest('hex'), "c8ed05c18565c957895f89febb710faabe6c8454292737bb41c519670be3110c", 'Reviewed native-reference entry (LF-normalized) baseline（★R153 = R152 + 2026-10-29 **检查点四段空白修复 · 前端回退**：`ev4-adapter.js` 的 `adaptCheckpointPre` 在「四段全空」时回落到后端补的 `fallbackText`（label=「正文」，不冒充 GOAL/STATE/DEAD/NEXT）⇒ 经 gen-ev4-blocks 落入生成区 ⇒ 经典档字节变化。★归因（可复算）：`git diff lib/client.js` 显示改动仅 12 行 = ① 生成区头部 sha16 行（98A7C1B2…→27315682…）② fallback 逻辑 11 行；`build-iter5-skin --check --strict` = SYNC-OK 证明生成区与源一致、手写区未被触碰 ⇒ **有意演进，非意外污染**。旧锁 2f4f7d49… 在本批开工前为绿（R152 刚重钉），本次按实测 actual 重钉。判据意图不变（经典区不得无痕漂移）。；R152 = R147 + 2026-10-27 **前端映射批**：① 手写区 ev4ProtoCheckpointPre 的 ms 兜底两级加 `<= 0` 守卫（P9 真根因：占位检查点 at="" ⇒ Number("")=0 骗过 isFinite）；② gen 重生成（adaptEventPre 排序 / rationale 不再回落 deadend / normConfPre 不伪造 medium / 消费 checkpointQuad）。★归因（可复算，已验证）：照抄本文件同款管道 ⇒ 当前 classicLF = 1,388,310 字符，与套件 actual 逐字节一致；把本次两类改动（生成区 + 手写区）都换回 HEAD 后 = 1,381,163 ⇒ 本批净增 7,147 字符。★注意：旧锁 f38e75a6… 在**本批开工前就已红**（工作区在 HEAD 之上另有未提交改动），故本次一并按实测 actual 重钉，并在下面 E3c 以「实际长度」独立复核。判据意图不变（经典区不得无痕漂移）。★R147 = R146 + 2026-10-27 **P9 真根因二连修**：① `adaptCheckpointPre` 的 `ms = NaN` → `undefined`（NaN 经 JSON 序列化变 null，`null < Infinity` 为 true ⇒ 污染 min ⇒ 兜底失效）；② `adaptEventPre` 的 `startMs/endMs = NaN` → `undefined`（同陷阱，且导致 `Number(null)=0` 使兜底的 `s0>0` 判据为假 ⇒ 整段跳过）。新增守卫 smoke-test-v4-json-roundtrip（11 条，含负路径）。重钉 e3dddf09… → 本值。★R146 = R145 + 2026-10-27 泳道/甘特时间轴兜底。★R145 = R144 + 2026-10-27 白板事件视图·检查点数修复 + 占位检查点不伪造时间：`ev4-adapter.js` 的 `adaptEventPre` 原先只认 `ev.checkpoints`，而 `event-store.list()` 按 7 键硬契约**只返回 `checkpointCount`** ⇒ `cps.length` 恒 0 ⇒ UI 每个事件都显示「0 个检查点」（用户实测 10 个事件全 0，而磁盘实有 311）。修法：列表态按 `checkpointCount` 生成等长轻量占位检查点供计数/宽窄/甘特使用，正文仍由 /event-detail 补；并加 `_hasRealTimes` 守卫——占位检查点无时间，若直接用 `cps[0].ms` 会让时间回到 1970（此回归被 wb-time-and-drawer A-3/A-4 当场拦下，已修）。经 gen-ev4-blocks 重新生成 ⇒ 按实测 actual 重钉 8570474b… → c18c1247…。判据意图不变。★R144 = R143 + 2026-10-25 P1 右栏抽屉（C 线）：新增 DETAIL_OPEN_KEY/readDetailOpenPre/writeDetailOpenPre/applyDetailWidthPre/createSpringPre/driveDetailPre/prefersReducedMotionPre + renderDetailPanePre + `.dam-evt-split` 三栏 grid 与收起态末列 0px + 窄屏 sheet —— 全部落经典档手写区（生成块之外）⇒ 按实测 actual 重钉 50ed388f… → 51b9c000…。判据意图不变。★R143 = R142 + 2026-10-24 P1 三视图 + 空档 + 倒序（C 线）：新增 VIEW_MODES/VIEW_MODE_KEY/GAP_HOURS/normalizeViewModePre/readViewModePre/writeViewModePre/eventSpanOfPre/computeGapsPre/computeLaneStatsPre/computeWorkflowGroupsPre/scrollToBottomPre/isAtBottomPre + renderStream/Lanes/WorkflowViewPre + renderGapRowPre；EventView 改三档状态机 —— 全部落经典档手写区 ⇒ 按实测 actual 重钉 7dd2a9e8… → 50ed388f…。判据意图不变。★R142 = R141 + 2026-10-24 P0 检查点折叠 + 六类 panel（C 线）：新增 `renderCheckpointListPre`/`PANEL_KIND_UI`/`PANEL_KINDS_UI`/`toggleCheckpointPre`（默认全折叠 0fr↔1fr）+ `.dam-cp-body` CSS（复用 --dur-fast，未新造时长）+ EventCard 接入 —— 全部落经典档手写区（生成块之外）⇒ 按实测 actual 重钉 b3f028f8… → 7dd2a9e8…。判据意图不变。★R141 = R140 + 2026-10-24 D1 收口修正：确认弹窗边框原用 `--dam-state-warn`（全文件 0 定义 ⇒ 静默回退）改为既有 `--dsw-alias-state-warn-primary → --dam-dec-prefetch`（总监裁定 A：收敛不扩张）⇒ 手写区字节再变，按实测 actual 重钉 2058e285… → b3f028f8…。判据意图不变。★R140 = R139 + 2026-10-24 v4 H4/H10 前端（C 线）：EventCard 加四 percept + panelDigest 渲染、统计条第 5 卡「有值才显示」、PlanTab 存量转换三步 UI、DEFAULT 修 unarchivedTotal 取数 bug —— **全部落经典档手写区（生成块之外）** ⇒ 剥掉生成块后的经典侧字节变化 ⇒ 按实测 actual 重钉 2573c706… → 2058e285…。★归因（可复算）：本次改动逐处用内容锚定补丁落在 EventCard/EventView/PlanTab/DAM_STAT_META 四处，均在生成区外；`build-iter5-skin --check --strict` = SYNC-OK 证明生成区未被触碰。判据意图不变（经典侧字节守恒）。R139 = R138 + 2026-10-24 v4 批次 D 检索（P3 铭文把 scope="events" 写回，经典档手写区）⇒ 按实测 actual 重钉 512f90ad… → 91969ff1…。★归因（实测）：仅回退该句文案 ⇒ 旧锁绿，换回即红 ⇒ 漂移 100% 来自这句。判据意图不变（经典侧字节守恒）。（R138 = R137 + 2026-10-24 v4 批次 C-2 P2/P3（snapshotSlimMaintain +第7项 memory_event、「六项」→「七项」；snapshotSlimGuide +事件卡片入口、白板账本语义改四段式）——两段均在**经典档手写区**（生成块之外）⇒ 经典侧内容变化 ⇒ 本锁按实测 actual 重钉 8866638c… → 512f90ad…。★归因（实测）：P2/P3 回退后本套件全绿（旧锁绿），换回本批改动即红 ⇒ 漂移 100% 来自这两段文案，无历史内容混入。判据意图不变（经典侧字节守恒）。R119 = R118 + 2026-10-23 v3.3.17 版本身份三件套：指纹行 v3.3.16→v3.3.17 + 应用内 CHANGELOG 新增 3.3.17 条目（zh/en 各 5 条），两处均在生成块之外 ⇒ 剥掉生成块后的经典侧内容变化 ⇒ 本锁按**实测 actual** 重钉 be100acb… → 8866638c…。★归因已实测：git stash 还原 client.js 到 HEAD 后本套件 exit=0（旧锁为绿）⇒ 判据过期非缺陷。；R118 = R117 + 2026-10-19 v3.3.9 版本号与应用内 CHANGELOG 3.3.9 条目：经典档手写区删 1 个 field 控件 + 3 个语言文案键（zh/en/ja），生成源 skins/legacy/iter5-325.js.frozen 同步删除 ⇒ 剥掉生成块后的经典侧内容变化 ⇒ 本锁按实测 actual 重钉 aa3a3360… → 94d42899…。；R108 = R107 + 2026-10-13 #356 启动自检：经典档手写区新增两处——① 模型缺失时静默发起内置 JS 档下载（替代「弹卡等用户点」）；② 模型已就绪但引擎配置缺失时开机静默补建（写 shadow，不改既有行为）。均在生成区之外 ⇒ 本锁随动，按实测 actual 重钉 0f991681… → b8fefefa…。；R98 = R97 + 2026-10-13 注入节奏两项用户裁定（服务端 DEFAULT_CONFIG.snapshotMinGapRounds 5→10 + 强制覆盖迁移；精简版按 slimEveryRounds 真正节流）；连带 `fSnapGap` 设置项默认 5→10（冻结档源 + 三处镜像同形））← R97 = R96 + 2026-10-13 #333② 后续（尾部铭文零语义损失压缩：删冗词保全部判据，铭文 1409→1317；客户端镜像同步；archive 三处 result 注入增强）← R96 = R95 + 2026-10-13 #333②（客户端镜像 +1 层 `snapshotInscriptionArchive`：归档取回通道暴露）← R95 = R94 + 2026-10-12 #335b 修正（新增 `plugins.detail.section` 落点：插件管理页详情页，按包名认领、非本包返回 null；在手写区）；原 R94 = R93 + v3.3.0 版本身份三处（应用内更新说明字典新增「3.3.0」段 + 指纹行 → v3.3.0，均在手写区）；原 R93 = R92 + 2026-10-12 #335 第三批自检修复（设置入口开关的 /config 刷新改为**单飞 + 仅有效值变化才重注册 slot**：emit() 有 27 个调用点含拖动/缩放等高频路径，原实现每次广播都发请求并重建 slot）；原 R92 = R91 + 2026-10-12 #335 第三批（尾部铭文补「技能库分工作区库/通用库 · 写接口无 scope ⇒ 直写恒入通用库」并把上限 1200→1400）；原 R91 = R90 + 2026-10-12 #335 第二批（尾部铭文 snapshotInscription 补 action=update/activate 两条通路提示：服务端 index.js 与浏览器 client.js 镜像逐字一致、长度 1181≤1200；该段在手写区 ⇒ 经典档基线随动）；原 R90 = R89 + 2026-10-12 #335 吸收（用户裁定「都放」+ 可关）：① lib/index.js DEFAULT_CONFIG 新增 settingsEntryInDsSettings / settingsEntryInPluginsPage 两键（白名单=Object.keys(DEFAULT_CONFIG)）；② 生成区外经典档 SettingsPage 的「外观与目录」组加两个开关；③ settings.section 与新增的 settings.plugins.tab 两处注册改受 settingsEntryPre() 条件控制 + 双关纠正；④ 新增 helper/缓存刷新器并订阅唯一写出口广播；重钉值取本套件自身打印的 actual）← R88 = R87 + 2026-10-10 v3.2.15 发版三件套（client.js 指纹行 + 应用内 CHANGELOG 3.2.15 条目，均在生成块之外）← R87 = R86 + 2026-10-10 #330 多宿主工作台会话争抢（client.js 新增 host-conflict 文案/定级/相位/按钮，均在生成区外）← R86 = R85 + 2026-10-08 v3.2.13 发版三件套（client.js 指纹行 + 应用内 CHANGELOG 3.2.13 条目，均在生成块之外）；原 R85 = R84 + 2026-10-08 重钉补漏（l\u0069b/client.js 于 934bca0 有意演进未同步重钉：v3.2.12 指纹行 + 应用内 CHANGELOG 3.2.12 条目 + 会话页铺满 fullpage 标记）；原 R78 = R77 + 2026-10-05 批次 Y（PR#212 #5/#6 + PR#213 前端拆取，生成器线一次过）：①共享草稿设施 memoryNoteDrafts/memoryCalendarDrafts/memoryDraftIdentity(sessionId|ws)/memoryNoteWrites/calendarWrites/memoryOperations/useMemoryOperation/submitMemoryOperation/prepareSettingsPatch/TeamSecretInput 落手写区；②面板 close() 前置草稿脏确认 + beforeunload 保护；③refreshSem 加 WeakMap 代次（迟到的旧状态不覆盖新状态）；④经典 NotesTab/CalendarTab 草稿接入 + 按身份重挂；⑤两 I5 实例：i5Read/i5Busy/i5ConfigGeneration/i5Initialized/i5AppliedRead 五 ref + 统一 i5ApplyConfig（草稿恢复 i5Initialized 单次 + 已有草稿只提示不覆盖 + psec 水合）+ save/onEngineModeChange 推进代次并回显 migrated/warning 回执 + setBusy 包 ref 同步；⑥gateOk 改读生效基线 i5Base（草稿态不再冒充已生效）+ gate-readout 归入主闸卡；⑦生效水位读数 data-dam-effective-water（handoff-state 实测，广播重取）；⑧browseTo/openBrowser 请求代次守卫 + D2 广播重取升级为 i5Busy 感知 + 请求号；⑨migPickInto 三份统一 migAlive 幂等守卫（修 pr-213 frozen 份 request 未声明 ReferenceError 点名缺陷）；⑩ConnectTab/Iter5External 异步取数身份守卫（去 pr-213 重复行）；⑪#212 前端：三份 iter5MemorySnapshot 注入 noteSessionId + 三份 Iter5Note 发 sessionId+expectedNotesPath（X2 服务端必填）；⑫设置分组再平衡（fExclude/model 移区、slims 死键控件摘除、fJsExcerpt/fWaterThreshold disabled+说明、即时项 L3 标签、团队 http/folder 禁选+TeamSecretInput 密码框）；⑬字典修正（fAutoContinue/handoffSwitch/fHandoff/fWaterWindow zh/en/ja + fAutoMargin 0.3-1 + settings-copy fJsCooldown 分钟→轮）；⑭skins 源 views/ui/native-panel/settings-copy 同步 + frozen LF 镜像 + 生成器 replaceT/切片补丁/断言化（--check SYNC-OK）。；原 R77 = R76 + 2026-10-05 发版三件套（v3.2.9：指纹行 + 应用内 CHANGELOG 字典 3.2.9 条目；内容见 CHANGELOG.md 同版段）；原 R76 = R75 + 2026-10-04 发版三件套（v3.2.8：指纹行 + 应用内 CHANGELOG 字典 3.2.8 条目；内容见 CHANGELOG.md 同版段）；原 R75 = R74 + 2026-10-04 issue #211 前端：Python 引擎卸载按钮（二次确认）+ pyUninstall 路由键 + 三语体积披露；原 R74 = R72 + 2026-10-02 审计修复批 A+B（增量归因：手写区 DebugCenter 收敛为只读 GET + 团队层接 4 条专用路由（API 表新增 5 键）+ TeamTab 挂载补回调 + L3 段共享订阅轮询）；原 R72 = R71 + 2026-10-01 ①接续开关默认开 + 欢迎向导开关 ②经典档接入 GlobalBriefRow 简报抽屉 ③damSharedSurfaceCss classic 分支归零修复；原 R71 = R70 + 2026-10-01 全局动态简报批（client.js 三面各加 8 个 globalBrief* 控件 + frozen 面补齐上批遗漏的 slimEveryRounds/fullEverySlims 两键）；原 R70 = R69 + #160/#162 修复：python 向导轮询/取消渲染、规则草稿与内容锚定、首屏 tour hero 挂载复原；生成块之外任何**非意外**改动仍会被本锁抓住★R154 = R153 + 2026-10-31 白板高度塌陷修复（C 方案·解除循环依赖）：高度链在 div[data-dam-event-surface] 这层断开（该层无高度规则）⇒ [data-dam-fullpage-host]{height:100%} 相对 auto 父解析为 auto ⇒ iframe 回落 HTML 默认 150px。旧路径靠 fit() 写 inline height 兜住，但 fit() 三道闸门（closest 到 data-conversation-scroll 非空 / area.clientHeight 大于 0 / elLooksVisible）在白板改挂 conversation.view 后全不满足且均静默 return ⇒ 从未写入。修法：新增高度链三条规则各补 flex:1 与 min-height:0，使高度只依赖祖先 data-dam-page、不依赖 fit()。★归因：改动落手写区 offset 450984 小于生成区起点 1187916；git diff --numstat = 20 增 0 删且全为 CSS 与注释；build-iter5-skin --check --strict = SYNC-OK；client-loadable PASS 34 FAIL 0。⇒ 有意演进。判据意图不变。★R155 = R154 + 2026-10-31 升级弹窗按钮点不动修复（pointer-events 继承）：用户实报点击没反应。真根因：pointer-events 是可继承属性，遮罩 data-dam-upgrade-mask 设 pointerEvents:none 后，其后代（整卡与稍后/关闭/立即派子代理整理三按钮）全部继承 none ⇒ 点击穿透、onClick 永不触发。该写法源于 2026-10-26 修「点了白板就切不走」，意图正确但把遮罩本身不挡与卡片不挡混成一条。修法：遮罩保持 none，卡片显式 pointerEvents:auto 掰回继承值。★归因：git diff --numstat 仅卡 style 加 1 键与 17 行注释；生成器 SYNC-OK；client-loadable PASS 34 FAIL 0。⇒ 有意演进。判据意图不变。★R156 = R155 + 2026-10-31 发版版本身份 3.4.0-alpha.1 升到 3.4.0-alpha.2：三处标识统一 —— ① package.json version ② CHANGELOG.md 顶部新增 alpha.2 段 ③ lib/client.js 指纹行与应用内 CHANGELOG 字典新增 alpha.2 条目（zh/en 各 4 条）。②③ 均落手写区（生成块之外）⇒ 剥掉生成块后经典侧字节变化。★归因：生成器 SYNC-OK 证明生成区未被触碰；client-loadable PASS 34 FAIL 0；git diff 仅含版本字符串与新增 CHANGELOG 条目，无逻辑改动。⇒ 有意演进。判据意图不变。）')
+*/
+// R2YB rebaseline (2026-11-21): refine the document disclosure shadow to the existing host shadow token.
+// The reviewed classic changes remain covered by this complete LF-normalized lock.
+// Settings search adds its mount to the classic form. The exact LF lock uses the suite actual.
+// 2026-11-23 Batch 5. The single adjusted inscription mirror changes the classic digest.
+// ★R154 = R153 + 2026-11-23 **3.4.0 正式版发版**：`lib/client.js` 仅两处改动 —— ① 界面指纹行
+//   `v3.4.0-alpha.5 / dsh-034-alpha5-preview` → `v3.4.0 / dsh-034-final`（−17 字符）② 应用内更新说明字典
+//   新增 `3.4.0` 条目（+3,048 字符），净增 **3,031** 字符。`build-iter5-skin --check` = SYNC-OK 证明
+//   生成区与源一致、手写区未被触碰 ⇒ **有意演进，非意外污染**。按守卫报出的 actual 重钉。
+assert.equal(createHash('sha256').update(classicLF).digest('hex'), "a363365e9306f983d627eede10dbe4ab3dd3949acd86ef3d097664e78dc1e483", 'Reviewed native-reference entry (LF-normalized) baseline')
+// ★★R202 重钉（2026-11-11 · classic 刷新真机修复）：classicLF 1,552,810 → **1,552,897**（Δ **+87**），
+//   sha256 8a18539a… → **0c28c65a…**。MemoryTabBody 的 plan 分支补传 {nonce}，修复真实面板点击刷新不重取；维护文档正文覆盖共享 max-height:220px，随面板完整滚动。
+//   值取本套件自身 9-replace 管道 actual；生成区零触碰，build-iter5-skin --check = SYNC-OK。
+// ★★R201 重钉（2026-11-11 · R4 P4-2 面板与 revision 更新）：classicLF 1,547,375 → **1,552,810**（Δ **+5,435**），
+//   sha256 5c126642… → **8a18539a…**。归因（可复算，用本套件自身那条 9-replace 剥离管道复算，非手写推算）：
+//   ① legacy 面板（classic PlanTab）新增「维护文档」独立分组 + {documentId,revision} 双键选择 + revision 失效重取
+//      + useRef 请求身份（防旧响应串写）—— 落经典档手写区；② i18n 三键（zh/en/ja）；③ PlanTab 的 handoff-state 取数 deps
+//      增宿主刷新信号（不改函数签名，nonce 取自实参 —— 多个守卫以 'function PlanTab()' 字面定位该组件）。
+//      生成区零触碰：build-iter5-skin --check = SYNC-OK。判据意图不变（经典侧字节守恒）。
+// ★★R200 重钉（2026-11-09 · 铭文护栏临时放大 + 15 条判据进铭文 · 压预算后终态）：classicLF 1,547,197 → **1,547,375**（Δ **+178**），
+//   sha256 ca144c5a… → **5c126642…**。归因：用户裁定「铭文 1500 护栏先暂时放大，细节 5.1 一并定」⇒
+//   snapshotInscription 写入 15 条归属判据精简版（客户端镜像同批同步）+ 恢复 i335 要求的两句锚
+//   （action=activate / 别另写同名新条），压到单层 1,511 / 含 archive 1,671（护栏 1,700），且恢复 T7d-2/T7d-3 与 i335 三处既有锚；生成区零触碰
+//   （build-iter5-skin --check = SYNC-OK）。值取自本套件自身剥离管道。
+// ★★R198 重钉（2026-11-09 · 批次 1B：1.4 归属判据 + 1.5 事件名 + 1.6 注入面 evt id）：classicLF 1,547,156 → **1,547,197**（Δ **+41 字符**），
+//   sha256 fee0fe9b… → **ca144c5a…**。归因（可复算，非手写推算）：
+//     ① 用**本套件自身那条剥离管道**分别跑两侧 —— `git show HEAD:lib/client.js` ⇒ 1,547,156 / fee0fe9b…
+//        （与 R196 登记值**逐字相等** ⇒ 旧锁在本批开工前是绿的，不是陈旧读数）；工作区 ⇒ 1,547,197 / ca144c5a…
+//        ⇒ Δ+41 **全部来自本批**。
+//     ② 本批唯一改动：lib/client.js 的 **DEFAULT_PROMPT_LAYERS_CLIENT 两处提示词层镜像**同步服务端——
+//        snapshotInscription（1,330 → 1,334 求值字符：新增「已知归属必须显式传 eventId + dryRun 预检」硬要求，
+//        并按用户设定的 ≤1500 成本护栏压缩腾挪）与 snapshotSlimMaintain（1,149 → 1,186：补 dryRun 入口）。
+//        两处都在**经典档手写区**，生成区零触碰 ⇒ `node tools/build-iter5-skin.mjs --check` = **SYNC-OK**（本批实测）。
+//     ③ 判据意图不变（剥掉生成区后的经典档字节守恒）；依据 2026-10-01 裁定「判据有问题就更新判据，不得回滚成果」。
+// ★★R195 重钉（2026-11-08 · P0-3 / #558① 向导模型与档位）：classicLF sha256 → 本值（Δ 由 #558 前端 4 处 + 档位 2 处引起）。
+//   归因（可复算，已实测）：本批前端改动**全部落在经典档手写区**（renderPage3 / useEffect 默认值 / onConfirmStart / effortOpt）,
+//   生成区 L16431-18956 与 L18957-22712 均未触碰 ⇒ node tools/build-iter5-skin.mjs --check = **SYNC-OK**。
+//   旧值用**本套件自身那条 9 条 replace 管道**复算得出（不是手写简化管道）——这条纪律来自 R112 的两次错值教训。
+//   判据意图不变（剥掉生成区后的经典档字节守恒）。
+// ★★R196 重钉（2026-11-08 · Lead 裁决三条的收口）：classicLF → 本值。
+//   归因（可复算，已实测）：① #554 的 evidenceNote/unverified 透传到 UI（进度模型 + 计数槽 + 原文提示）；
+//     ② 全部落在**经典档手写区**（upgradeWizardProgressModelPre / renderProgress），生成区零触碰
+//     ⇒ node tools/build-iter5-skin.mjs --check = SYNTAX SYNC-OK。
+//   旧值证明：`git show HEAD:lib/client.js` 跑**本套件自身那条 9 条 replace 管道** ⇒ 1,536,334 / ec65425c…，
+//   与登记值**逐字相等** ⇒ 旧锁在本批开工前是绿的，Δ 全部来自本批。
 console.log('PASS reviewed shared-entry source baseline preserved')
 
 const css = readFileSync(new URL('../../skins/iter5/skin.css', import.meta.url), 'utf8')
@@ -332,7 +756,7 @@ console.log('PASS scoped token colors and no demo data')
 // browser globals, or production exports are modified by this test.
 let states = [], effects = [], cursor = 0, exposed, accept = true, confirmCount = 0
 let requests = [], failSave = false
-let config = { semanticEngineMode: 'auto', associativeMemoryEnabled: true, memoryAnchorEnabled: false, jsDecideCooldownRounds: 1, injectEnabled: true, locale: 'zh', externalSources: {} }
+let config = { semanticEngineMode: 'auto', associativeMemoryEnabled: true, activationInboxEnabled: true, activationDeliveryCooldownMinutes: null, memoryAnchorEnabled: false, jsDecideCooldownRounds: 1, injectEnabled: true, locale: 'zh', externalSources: {} }
 const React = {
   Fragment: Symbol('Fragment'),
   createElement: (type, props, ...children) => ({ type, props: { ...(props || {}), children } }),
@@ -402,6 +826,30 @@ const memorySection = nodes(tree, n => n.type === 'section' && n.props.id?.endsW
 assert.equal(nodes(memorySection, n => n.props?.['data-i5-field'] === test.t('fAutoConsolidate')).length, 1, 'Automatic recording stays reachable after regrouping')
 assert.equal(nodes(memorySection, n => n.type === 'details' && n.props.className === 'i5-settings-advanced').length, 1)
 console.log('PASS beginner settings expose recall delivery and preserve advanced controls')
+const deliveryRow = nodes(tree, n => n.props?.['data-i5-field'] === test.t('fActivationDeliveryCooldown'))[0]
+const deliveryMinutesRow = nodes(tree, n => n.props?.['data-i5-field'] === test.t('fActivationDeliveryCooldownMinutes'))[0]
+const deliveryToggle = nodes(deliveryRow, n => n.type === 'input' && n.props.type === 'checkbox')[0]
+const deliveryRange = nodes(deliveryMinutesRow, n => n.type === 'input' && n.props.type === 'range')[0]
+assert(deliveryToggle, 'Actual delivery cooldown toggle exists')
+assert(deliveryRange, 'Actual delivery cooldown slider exists')
+assert.equal(deliveryToggle.props.checked, false, 'Actual delivery cooldown defaults off')
+assert.equal(deliveryRange.props.disabled, true, 'Duration is disabled while cooldown is off')
+assert.deepEqual([deliveryRange.props.min, deliveryRange.props.max, deliveryRange.props.step], [1, 5, 1], 'Slider exposes whole-minute range 1–5')
+deliveryToggle.props.onChange({ target: { checked: true } }); tree = render(); await settle()
+const enabledMinutesRow = nodes(tree, n => n.props?.['data-i5-field'] === test.t('fActivationDeliveryCooldownMinutes'))[0]
+const enabledDeliveryRange = nodes(enabledMinutesRow, n => n.type === 'input' && n.props.type === 'range')[0]
+assert.equal(enabledDeliveryRange.props.disabled, false, 'Duration becomes editable when cooldown is enabled')
+assert.equal(enabledDeliveryRange.props.value, 3, 'Enabled cooldown defaults to 3 minutes')
+enabledDeliveryRange.props.onChange({ target: { value: '5' } }); tree = render(); await settle()
+button(tree, '保存更改').props.onClick(); tree = await settle()
+assert.deepEqual(requests.at(-1).patch, { activationDeliveryCooldownMinutes: 5 }, 'Saving delivery cooldown writes only the selected 5-minute value')
+assert.equal(config.activationDeliveryCooldownMinutes, 5)
+const savedDeliveryRow = nodes(tree, n => n.props?.['data-i5-field'] === test.t('fActivationDeliveryCooldown'))[0]
+nodes(savedDeliveryRow, n => n.type === 'input' && n.props.type === 'checkbox')[0].props.onChange({ target: { checked: false } }); tree = render(); await settle()
+button(tree, '保存更改').props.onClick(); tree = await settle()
+assert.deepEqual(requests.at(-1).patch, { activationDeliveryCooldownMinutes: null }, 'Turning cooldown off saves null, never numeric zero')
+assert.equal(config.activationDeliveryCooldownMinutes, null)
+console.log('PASS actual delivery cooldown round-trip off → enabled 3 → selected 5 → off/null')
 const appearance=nodes(tree,n=>n.type==='section'&&n.props.id&&n.props.id.endsWith('-section-look'))[0]
 assert(button(appearance,test.t('tourReplay')),'Manual welcome entry stays in appearance group')
 console.log('PASS welcome replay is reachable under appearance settings')
@@ -470,22 +918,35 @@ await assert.rejects(test.iter5MemorySnapshot(),/工作区数据正在切换/)
 assert(reads[0].endsWith('/state')&&reads[1].endsWith('/list'),'State is read before workspace-global list')
 console.log('PASS handoff naming and cross-workspace read mismatch rejection')
 states=[];effects=[];cursor=0
-window['dsh-auto-memory.wizStatus']={loaded:true,ready:false,download:{phase:'idle'}}
+window['dsh-auto-memory.wizStatus']={loaded:true,ready:false,download:{phase:'idle'},cfgLoaded:true,tourCfg:{...config}}
 test.setDialog(null);test.DialogHost();const hiddenHooks=cursor
 cursor=0;test.setDialog({kind:'welcomeTour',manual:true});const tour=test.DialogHost()
 assert(tour,'Welcome tour renders')
+const tourReady=tour
 // ★2026-10-01 判据升级（用户裁定「那就修守卫」）：原断言锚在**容器标识** data-native-tour-nav 上，
 //   而它要守的真实语义是「欢迎向导每一步都可达 + 当前步唯一」。H33 批按用户裁定恢复 3.2.5 观感、
 //   把步骤胶囊换成圆点条（data-dam-tour-dots）后**功能未变、容器名变了** ⇒ 锚点型断言转红。
 //   判据纪律：断言对象若是「某 class/属性名是否存在」即恒真守卫，不构成功能验收。
 //   此处改为**直接断言功能**，并接受两种容器名（旧 nav 条 / 新圆点条）：
 //   ① 步骤导航容器存在；② 步骤按钮数 = 实际步数；③ 每个步骤按钮都**真的可点**（有 onClick）；④ 当前步唯一。
-const navC=nodes(tour,n=>n.props?.['data-native-tour-nav']===''||n.props?.['data-dam-tour-dots']==='')[0]
+const navC=nodes(tourReady,n=>n.props?.['data-native-tour-nav']===''||n.props?.['data-dam-tour-dots']==='')[0]
 assert(navC,'Welcome provides step navigation (nav bar or dot rail)')
 const stepBtns=nodes(navC,n=>n.type==='button')
-assert.equal(stepBtns.length,9,'All actual welcome steps remain reachable')
+assert.equal(stepBtns.length,10,'All actual welcome steps remain reachable (★D3 2026-10-31: +v4 事件单元步骤 9→10)')
 assert(stepBtns.every(n=>typeof n.props?.onClick==='function'),'Every welcome step is actually reachable (clickable)')
 assert.equal(stepBtns.filter(n=>n.props?.['aria-current']==='step').length,1,'Exactly one step is current')
+let recallToggle = null
+for (const navButton of stepBtns) {
+  navButton.props.onClick()
+  cursor = 0
+  const page = test.DialogHost()
+  recallToggle = nodes(page, n => n.props?.['data-dam-tour-key'] === 'activationInboxEnabled')[0]
+  if (recallToggle) break
+}
+assert(recallToggle, 'Welcome tour exposes the live activationInboxEnabled control')
+assert.equal(recallToggle.props.disabled, false, 'Welcome tour recall gate is writable in loaded config')
+assert.equal(typeof recallToggle.props.onClick, 'function', 'Welcome tour recall gate has a real click handler')
+console.log('PASS welcome tour exposes writable activationInboxEnabled recall gate')
 // ★2026-10-03（G3）：原断言读 window['dsh-auto-memory.TOUR_STEPS'] —— 那是**写给已摘除死壳 welcome 的
 //   暴露**（唯一消费者）。改判据为「不依赖任何 window 暴露」，直接从**真渲染出的向导步骤**按配置键收集：
 //   遍历每步导航按钮（真点击 → 真重渲染），收集该步 tour toggle 按钮上的 data-dam-tour-key。

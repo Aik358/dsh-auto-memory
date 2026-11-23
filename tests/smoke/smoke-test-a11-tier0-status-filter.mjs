@@ -106,10 +106,13 @@ console.log('[A11-2] 负路径①：无状态行 ⇒ 仍为 current（向后兼�
   ].join('\n')
   const items = extractTier0ItemsPre(plain, 'project')
   eq(items.length, 1, '无状态行 ⇒ 1 条目录项')
+  // ★2026-11-08（#475 收尾）：条目新增公开字段 id（锚点 id），故此处仍用**逐字段深等**，
+  // 只把那一个有意公开的新字段显式写出来 —— 不改成"包含即可"，否则等于放弃逐字段比对。
   eq(items[0], {
     layer: 'project', status: 'current', date: '2026-09-10',
     title: '无状态条目', oneLine: '无状态行的结论句_A11_PLAIN',
-  }, '★ 无状态行 ⇒ current（逐字段与修前相同）')
+    id: items[0].id,
+  }, '★ 无状态行 ⇒ current（逐字段与修前相同；唯一新增 = 公开的 id）')
 
   const cat = buildTier0CatalogFromTextPre([{ layer: 'project', text: plain, path: 'MEMORY.md' }], {})
   eq(cat.statusDropped, 0, '无状态行 ⇒ statusDropped=0')
@@ -269,14 +272,20 @@ console.log('[A11-7] 最后一个状态行胜出（不因"历史上曾被 supers
 }
 
 // ─────────────────────────────────────────────────────────────
-console.log('[A11-8] 公共 API 向后兼容：条目仍只有契约五字段')
+console.log('[A11-8] 公共 API 向后兼容：契约五字段 + 1 个公开的锚点 id，无其它泄漏字段')
 {
   const cat = buildTier0CatalogFromTextPre(MIXED_SOURCES, {})
   const keys = Object.keys(cat.items[0] || {}).sort()
-  eq(keys, ['date', 'layer', 'oneLine', 'status', 'title'],
-    '★ items[0] 的字段集 == 契约五字段（未新增泄漏字段）')
+  // ★2026-11-08（#475 收尾）：条目新增第 6 个字段 id（记忆锚点 id），这是**有意公开**的
+  // （toPublicItemPre 注释：用于与 memory_recall(expand) 对齐、按条记账），与「不泄漏」不冲突。
+  // 但白名单必须**精确** —— 多出任何一个内部字段都要红，所以不是放宽成 includes。
+  eq(keys, ['date', 'id', 'layer', 'oneLine', 'status', 'title'],
+    '★ items[0] 的字段集 == 契约五字段 + id（白名单精确，未泄漏其它内部字段）')
   ok(cat.items.every((i) => typeof i.title === 'string' && typeof i.oneLine === 'string'),
     '五字段类型不变')
+  // ★#475 负路径：id 属公开契约，必须恒为字符串（无锚点条目为空串）；内部记账字段绝不可透出。
+  ok(cat.items.every((i) => typeof i.id === 'string'), 'id 为字符串（无锚点条目为空串）')
+  ok(cat.items.every((i) => !('_path' in i) && !('_seq' in i)), '★ 内部字段 _path/_seq 未泄漏到公共条目')
   // renderCatalogLinePre 的输出仍逐字节同旧格式
   eq(renderCatalogLinePre({ layer: 'project', status: 'current', date: '2026-09-01', title: '甲', oneLine: '乙' }),
     '甲 · 乙 · project · current · 2026-09-01', '★ 渲染格式逐字节未变')

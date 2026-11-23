@@ -10,7 +10,7 @@ const body = SRC.slice(S0, SRC.lastIndexOf(END) + END.length)
 //   旧夹具只注入决策段 ⇒ new Function 抛 ReferenceError ⇒ 整套假红。
 //   下列片段从源码**真实抽取** finalizePre，保证夹具与生产同源（不复制实现）。
 const FIN_SRC = (function (SRC) {
-  const A = "const finalizePre = (txt) => {"
+  const A = "const finalizePre = (txt, hangGranted = false) => {"
   const i0 = SRC.indexOf(A)
   if (i0 < 0) throw new Error("finalizePre not found in source")
   let depth = 0
@@ -57,7 +57,10 @@ console.log("=== T1 turn17 真人轮（turn 边界滞后）必须给完整版 ==
   // 真实形态：新一轮的真人消息已落地（seq=3172），但 turn/start 尚未可见（仍是 turn:16）
   const lag = [evTurn(3158,16), evUser(3162,"user"), evUser(3163,"runtime-context"), evUser(3172,"user"), evUser(3173,"runtime-context")]
   const r2 = E.run(lag, mkSnap("B"))
-  ok(r2 === "完整", "T1-b turn 边界滞后但真人消息已到 ⇒ 完整【修复前为精简】")
+  // ★★2026-11-04 判据升级（H2/H3）：真人**不再**是「给完整版」的理由 ——
+//   用户裁定 full 只在①首轮 ②压缩后 ③水位过 25%/50% 后的人说话轮。
+//   本条原测「turn 边界滞后 + 真人消息已到 ⇒ 完整」；新语义下同 turn 第二次决策走节流 ⇒ 精简。
+ok(r2 === "精简", "T1-b turn 边界滞后但真人消息已到 ⇒ 精简（H2 后真人旁路已移除）")
 }
 console.log("")
 console.log("=== T2 非真人轮仍受节流（不可放宽）===")

@@ -11,6 +11,33 @@
       ['settings', '设置', 'Settings', 'slate', 'settings'],
     ]
     function iter5Identity() { return String(currentSessionIdClient() || '') + '|' + String(currentWs() || '') }
+    /* ★★2026-10-26 修「点上下文页卡死 / 渲染进程崩溃」：500ms 轮询无条件 setState。
+     *   每 500ms 构造新字符串（值同引用不同）⇒ React 认不等 ⇒ 必然重渲染
+     *   ⇒ 每秒 2 次全量重渲染 ⇒ CPU 打满 + 内存堆积 ⇒ 切页时渲染进程被系统杀掉。
+     *   崩溃日志无 JS 异常、只有 ResizeObserver loop ⇒ 正是渲染循环持续触发的典型症状。
+     *   修法：值不变则不 setState（唯一封装，所有 500ms 调用点共用）。
+     */
+    /* ★★#532（2026-11-04）：第二个形参 `readState` 是**状态值**、不是读取函数 —— 删掉它，统一函数式更新。
+     *
+     * 【真缺陷（真调用实测）】两个调用点传的都是 useState 的**值**（字符串，形如 "sid|ws"），
+     *   旧实现却按函数调用 `readState()` ⇒ 抛 TypeError: "sid|ws" is not a function
+     *   ⇒ 被本函数的 try/catch **静默吞掉** ⇒ setter **0 次**被调用
+     *   ⇒ 切会话 / 切工作区后身份永不更新（页面一直停在旧工作区的数据上）。
+     *   ★空字符串（首帧尚未取到会话时）`'' && ...` 恰好短路 ⇒ 看起来正常，
+     *     这正是它长期没被发现的原因：只有拿到非空身份的机器才 100% 失效。
+     *
+     * 【修法】删掉该形参、只留 (setter)，统一用**函数式更新**：
+     *   值相同 ⇒ 返回同一引用 ⇒ React bail out（不重渲染 ⇒ 500ms 轮询不产生渲染风暴）；
+     *   值不同 ⇒ 正常提交。**不再保留「字符串或函数」的双契约**。
+     *   ★改这个函数必须同批改两个调用点（ui.js 的 Iter5Page / surfaces.js 的 Iter5HostSettings）：
+     *     本函数在生成区里被**定义两份**（ui.js / surfaces.js），只改一份 = 半修。
+     */
+    function iter5SyncIdentityIfChanged(setter) {
+      try {
+        var next = iter5Identity()
+        setter(function (prev) { return prev === next ? prev : next })
+      } catch (e) { /* fail-soft */ }
+    }
     function iter5PageForTab(tab) {
       if (['notes', 'logs', 'reflections', 'search'].indexOf(tab) >= 0) return 'library'
       if (tab === 'connect') return 'handoff'
@@ -99,7 +126,8 @@
       var noteSessionId = currentSessionIdClient()
       var state = await apiGet(API.state, { ws: currentWs(), sessionId: currentSessionIdClient() })
       state = Object.assign({}, state, { noteSessionId: noteSessionId })
-      var list = await apiGet(API.list)
+      // #473（2026-11-02）：/list 也要带身份，否则读引擎全局「当前工作区」槽位 ⇒ 并发下比对必失败
+      var list = await apiGet(API.list, { ws: currentWs(), sessionId: currentSessionIdClient() })
       var expected = String(state.notesPath || '').replace(/[\\/][^\\/]+$/, '').replace(/\\/g, '/')
       var actual = String(list.projectDir || '').replace(/\\/g, '/')
       if (expected && actual && expected !== actual) throw Error(L('工作区数据正在切换，请刷新后重试。', 'Workspace data changed. Refresh and try again.'))
@@ -167,11 +195,31 @@
             chosen ? h('div', { className: 'i5-source-origin' }, h('strong', null, L('文件来源', 'Source file')), h('small', null, file.data && file.data.path || path)) : null)))
     }
     function Iter5Memory(props) {
-      var initial = { reflections: 'reflections', search: 'search', notes: 'browse' }[controller.panelTab()] || 'browse'
+      var initial = { reflections: 'reflections', search: 'search', notes: 'browse', conflicts: 'conflicts' }[controller.panelTab()] || 'browse'
       var tab = useState(initial)
       var root = useRef(null)
-      var items = [['browse', L('浏览', 'Browse')], ['logs', L('日志', 'Logs')], ['reflections', L('反思', 'Reflections')], ['search', L('检索', 'Search')]]
-      var component = tab[0] === 'browse' ? Iter5Browse : tab[0] === 'search' ? Iter5Search : Iter5History
+      // ★2026-11-09（1.2 第4步·返工，用户裁定）：待决冲突数 → 页签酒红点。
+      //   用组件内 state 驱动（不用全局变量）：fetch 回来 setState ⇒ 页签文案自然重画。
+      var conflictBadge = useState(0)
+      useEffect(function () {
+        var alive = true
+        apiGet(API.factsConflicts).then(function (j) {
+          if (alive) conflictBadge[1](Number((j && j.pendingCount) || 0))
+        }).catch(function () {})
+        return function () { alive = false }
+      }, [props.nonce])
+      // 酒红点沿用径向渐变、亮边和外发光；颜色由两套皮肤共用的令牌提供。
+      var conflictLabel = h('span', { 'data-i5-tab': 'conflicts' }, L('冲突处置', 'Conflicts'),
+        conflictBadge[0] > 0 ? h('span', {
+          'data-i5-conflict-dot': '',
+          'aria-hidden': 'true',
+          title: L('有待裁定的冲突', 'Pending conflicts'),
+          style: { display: 'inline-block', width: '6px', height: '6px', borderRadius: '50%', marginLeft: '5px', verticalAlign: 'top', marginTop: '1px', background: 'radial-gradient(circle at 35% 30%, var(--dam-conflict-dot-from) 0%, var(--dam-conflict-dot-to) 72%)', boxShadow: '0 0 0 1px var(--dam-conflict-dot-ring), 0 0 5px var(--dam-conflict-dot-glow)' },
+        }) : null)
+      // ★2026-11-09（1.2 第4步·返工，用户裁定）：「冲突处置」页签插在「浏览」之后、「日志」之前。
+      //   有待裁定冲突时，页签带酒红色圆点（数据来自本组件的 badge 状态，非全局变量）。
+      var items = [['browse', L('浏览', 'Browse')], ['conflicts', conflictLabel], ['logs', L('日志', 'Logs')], ['reflections', L('反思', 'Reflections')], ['search', L('检索', 'Search')]]
+      var component = tab[0] === 'browse' ? Iter5Browse : tab[0] === 'conflicts' ? Iter5Conflicts : tab[0] === 'search' ? Iter5Search : Iter5History
       return h('div', { ref: root }, h(Iter5Tabs, { id: 'i5-memory', label: L('记忆库分区', 'Memory sections'), items: items, value: tab[0], onChange: function(next) { if(root.current&&root.current.querySelector('[data-i5-dirty="true"]')&&!window.confirm(L('有未保存的笔记，确定切换？','Discard the unsaved note and switch?')))return;tab[1](next) } }),
         h('div', { role: 'tabpanel', id: 'i5-memory-panel', 'aria-labelledby': 'i5-memory-tab-' + tab[0] }, h(component, { key: tab[0], kind: tab[0], nonce: props.nonce, intent: props.intent })))
     }
@@ -228,7 +276,8 @@
         var next = controller.panelTab()
         if (next !== lastTab.current) { lastTab.current = next; page[1](iter5PageForTab(next)) }
       }) }, [])
-      useEffect(function () { var timer = setInterval(function () { identityState[1](iter5Identity()) }, 500); return function () { clearInterval(timer) } }, [])
+      // ★#532：只传 setter —— 身份值由函数式更新里的 prev 提供（旧第二实参 identityState[0] 是字符串，被当函数调用 ⇒ 静默 0 次）。
+      useEffect(function () { var timer = setInterval(function () { iter5SyncIdentityIfChanged(identityState[1]) }, 500); return function () { clearInterval(timer) } }, [])
       useEffect(function () { if (content.current) content.current.scrollTop = 0 }, [page[0]])
       function nav(id, options) {
         if (root.current && root.current.querySelector('[data-i5-dirty="true"]') && !window.confirm(L('有未保存的修改，确定离开？', 'Discard unsaved changes and leave?'))) return

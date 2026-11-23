@@ -1,0 +1,6 @@
+[data-i5-conflict-dot] {
+  --dam-conflict-dot-from: #A9304C;
+  --dam-conflict-dot-to: #7B2135;
+  --dam-conflict-dot-ring: rgba(255,255,255,.20);
+  --dam-conflict-dot-glow: rgba(123,33,53,.55);
+}

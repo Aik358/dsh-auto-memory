@@ -44,6 +44,11 @@
    LLM_BASE_URL=https://api.deepseek.com  <可选,换其他 OpenAI 兼容服务时改>
    ```
 5. 部署后,函数详情页拿「**访问服务 URL**」(默认公网域名,HTTPS),在末尾拼上 `/<ROUTE_TOKEN>/`;
+   > **凭据三种写法(2026-11-04 起等价,任选一种)**:①请求头 `x-route-token: <ROUTE_TOKEN>`(**推荐**:令牌不进 URL,
+   > 不会落进访问日志/浏览器历史);②查询参数 `?token=<ROUTE_TOKEN>`;③路径段 `/<ROUTE_TOKEN>/` —— 就是上面这种老形态,**继续可用**。
+   > 三者一律按**完整值相等**判定(不再有「URL 里出现过这个串就放行」):令牌只出现在别的参数名/参数值里
+   > (例如 `?report=1`)时会被 403 拒绝。因此 `ROUTE_TOKEN` 不要取 `report` / `diag` / `timer`
+   > 这类在 URL 里必然出现的词;取一段随机串仍是最省事的防线。
 6. QQ 新版控制台 → 开发设置 → 「事件订阅与回调地址」→ 接收方式切换 **Webhook** → 粘贴上面的 URL;
    平台立刻发 op=13 验证请求,我们的服务会自动应答(用 AppSecret 派生 Ed25519 密钥签名),通过即绑定;
 7. 真实验证:群里发「反馈 这是一条测试」→ 应出现:新建 issue(带 group-report 标签)+ 群里「收到 ✅」。
@@ -54,6 +59,12 @@
 - **签名**:seed = AppSecret 自我拼接补足 32 字节 → 派生 Ed25519 密钥对;op=13 用私钥签 `event_ts+plain_token` 回 `{plain_token, signature}`;事件推送用公钥验 `X-Signature-Ed25519`(原文 = 时间戳+原始 body);
 - **切换即生效**:Webhook 与 WebSocket 互斥——切过去后,`qq-capture-openid.mjs`/`group-listener.mjs` 这类 WS 工具就收不到事件了(切回来同理);
 - 建议在函数配置里把 `STRICT_VERIFY=1`(验签严格模式)等真实验证跑通后再开。
+- **握手(op=13)只对「最小信封」免验签**(2026-11-04 / issue #531):报文的顶层键必须只有 `op` 与 `d`,且 `d` 的键只能是
+  `plain_token` / `event_ts`;`plain_token` 必须是 1..256 字符且**不含 JSON 结构字符** `{ } [ ] "`,`event_ts` 必须是纯数字串。
+  不满足一律 **400 + `bad_handshake`**,且**不返回签名**。其余任何报文(op 写成字符串、多带字段、`d` 是数组…)都走正常
+  验签,验不过按 `STRICT_VERIFY` 回 401。原因:握手签名 `sign(event_ts+plain_token)` 与回调验签 `sign(timestamp+rawBody)`
+  **完全同构**,旧实现只看 `op===13` 就免签,于是任何人把业务回调原串当 `plain_token` 换回签名再重放,就能伪造群反馈
+  并让匿名流量走到花 `LLM_API_KEY` 的那条路。签名口径本身没有改。
 
 ## 与 Copilot/修理工的关系
 
@@ -61,10 +72,20 @@
 
 ## 按需报告接口(给 DeepSeek Harness / 人工用)
 
+**凭据三种写法(等价,任选一种)**:①请求头 `x-route-token: <ROUTE_TOKEN>`(**推荐**:令牌不进 URL,不会被访问日志/浏览器历史记下来);
+②查询参数 `?token=<ROUTE_TOKEN>`;③路径段 `/<ROUTE_TOKEN>/` —— 老文档的部署形态,**保留兼容**。
+②③与①一样都按**完整值相等**判定,不会再出现「URL 里出现过这个串就放行」。
+
 ```
-GET https://<函数URL>/<ROUTE_TOKEN>/?report=N      # 最近 N 小时(1-48)群反馈
-GET ...?report=12&raw=1                            # 只要原文不要 AI 总结
+GET https://<函数URL>/<ROUTE_TOKEN>/?report=N              # 兼容写法:最近 N 小时(1-48)群反馈
+GET https://<函数URL>/?report=N&token=<ROUTE_TOKEN>        # 推荐写法(与上面等价)
+GET https://<函数URL>/?report=12&raw=1&token=<ROUTE_TOKEN> # 只要原文不要 AI 总结
 ```
+
+- **会被 403 的写法(刻意收窄的负路径)**:`GET /?report=1`(不带任何凭据)、`GET /?diag=1&x=<ROUTE_TOKEN>`(令牌只出现在**别的参数值**里)。
+  旧实现按 `String(req.url).includes(token)` 做**子串**放行,因此 `ROUTE_TOKEN` 一旦取 `report` / `diag` 这类
+  在 URL 里必然出现的词,匿名 `/?report=1` 就能读出群聊原文(上游 issue #538)。现在三条通道各自都是整值/整段相等,该缺口已关闭;
+  代价是令牌不能再靠「碰巧出现在 URL 里」生效 —— 取一段随机串仍是最省事的防线。
 返回 JSON:`{ window_hours, total, items:[{t,u,w,m}], summary?, v }`。
 - items=带时间戳的原始反馈;配了云函数 LLM_API_KEY 时附 summary(AI 分诊:问题清单+修复优先级),没配则只有原文——harness 的模型可直接读原文自己分析。
 - 注意:每次日报(11:40/20:40)读完后会清空收集区,所以可查范围≈「自上次日报以来收集的反馈」(与 12h 窗口天然对齐)。

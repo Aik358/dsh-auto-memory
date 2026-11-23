@@ -149,7 +149,11 @@ ok(HSRC.includes('expiresAt: now + sec * 1000') && /autoContinueConfirmSeconds/.
 ok(!SRC.includes('wl.tokens === autoState.lastTokens'), 'G11 old "two polls flat tokens = idle" heuristic removed')
 ok(SRC.includes('apiGet(API.autoContState,') && SRC.includes('setInterval(poll, 3000)'),
   'G11 client polls host auto-continue state every 3s (render-only)')
-ok(HSRC.includes('void engine.tickAutoContinue()'), 'G11 host heartbeat drives deadline execution (15s tick)')
+// ★2026-11-02：心跳里的后台任务已从裸 `void engine.tickAutoContinue()` 改为
+//   `bgGuard('auto continue', engine.tickAutoContinue())`（未捕获的拒绝会让宿主 fail-loud 自杀）。
+//   本断言的原意是「15s 心跳驱动接续」，不是钉死某个字符形态 ⇒ 两种形态都认。
+ok(/void engine\.tickAutoContinue\(\)|bgGuard\('auto continue', engine\.tickAutoContinue\(\)\)/.test(HSRC),
+  'G11 host heartbeat drives deadline execution (15s tick)')
 
 // —— G14(2026-09-10 实机取证):宿主已接续完成后,旧窗口的卡必须收起、提示要有期限、轮询要带会话 id ——
 ok(/if \(s\.executing\) \{[\s\S]{0,700}?setAcConfirm\(null\)/.test(SRC) && /if \(s\.lastOk && \(okAt === 0/.test(SRC) && /(okAt === 0[\s\S]{0,1000}?setAcConfirm\(null\))/.test(SRC),

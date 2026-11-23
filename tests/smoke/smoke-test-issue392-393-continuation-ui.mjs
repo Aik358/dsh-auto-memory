@@ -9,7 +9,13 @@ const flow = source.slice(start, source.indexOf('    function PlanTab()', start)
 for (const leave of [false, true, 'return']) {
   let sid = 'A', opened = [], listener, release
   const response = new Promise((resolve) => { release = resolve })
+  // ★2026-10-24（C 线）：本段（runContinueFlow → PlanTab）现在**还包含** EventConvertPanel
+  //   （存量转换三步 UI，插在 PlanTab 之前）。它引用 ROUTE_PREFIX / h / useState，
+  //   抽取式真执行必须注入这些模块级依赖，否则报的是「抽取不全」而不是「代码有 bug」。
+  //   （与 smoke-test-r38 的 PERCEPT_TITLES 同型；本条是 2026-10-24 全量回归实测到的。）
   const env = { currentSessionIdClient: () => sid, L: (s) => s, continueFlowBusy: false,
+    ROUTE_PREFIX: '/api/dsh-auto-memory',
+    h: function () { return null }, useState: function (v) { return [typeof v === 'function' ? v() : v, function () {}] },
     API: { autoContDecide: '/fixture' }, apiPost: () => response,
     sessions: { open: (id) => opened.push(id), list: { subscribe: (fn) => { listener = fn; return () => { listener = null } } } } }
   vm.createContext(env); vm.runInContext(flow, env)

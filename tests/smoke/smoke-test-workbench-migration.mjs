@@ -21,7 +21,7 @@ const count = (s, sub) => s.split(sub).length - 1
 
 // ── ① 门控必须先于 spawn：runSubagent 里 _workbenchReady 判定要在 subagents.start 之前
 {
-  const fn = idx.indexOf('async runSubagent(text, label, agent, timeoutMs) {')
+  const fn = idx.indexOf('async runSubagent(text, label, agent, timeoutMs, override) {')
   const gateAt = idx.indexOf('if (!this._workbenchReady) {', fn)
   const startAt = idx.indexOf('subagents.start(', fn)
   check('① 门控在 spawn 之前', fn > 0 && gateAt > fn && startAt > gateAt,
@@ -114,7 +114,7 @@ check('⑨ 有独立优先级', /d\.kind === 'workbenchSetup'\) return \d+/.test
 // ── ⑩ 9 个调用点未改签名（迁移不碰调用点）
 {
   const calls = idx.match(/this\.runSubagent\(([^)]*)/g) || []
-  check('⑩ runSubagent 定义仍为 4 参', /async runSubagent\(text, label, agent, timeoutMs\)/.test(idx))
+  check('⑩ runSubagent 签名仍为 text,label,agent,timeoutMs(+可选 override)', /async runSubagent\(text, label, agent, timeoutMs, override\)/.test(idx))
   check('⑩ 调用点数 = 9', calls.length === 9, 'actual=' + calls.length)
 }
 
@@ -122,9 +122,17 @@ check('⑨ 有独立优先级', /d\.kind === 'workbenchSetup'\) return \d+/.test
 check('⑪ parent 优先工作台', /const parent = this\._workbenchParent \|\| agent \|\| this\._lastAgent/.test(idx))
 
 // ── ⑫ 门控语义：未就绪返回空串（= 不发任何信息）
+// ★#560（2026-11-07）：该守卫用「固定字符窗口」取样，而 #560 在 runSubagent 之后增了若干行实现，
+//   使「workbench not ready」与其 return 不再同时落在 2200 字符内 ⇒ 判据过期（非功能回归）。
+//   改为按「门控块」取样：在 _runSubagentOnce 内找到 gated 分支后取直到下一个 return 为止的小段，
+//   语义不变（仍要求「未就绪 ⇒ return 空串」），且不再受函数长度漂移影响。
 {
-  const seg = idx.slice(idx.indexOf('async runSubagent('), idx.indexOf('async runSubagent(') + 2200)
-  check('⑫ 未就绪 return 空串', /workbench not ready[\s\S]{0,120}return ''/.test(seg))
+  const st = idx.indexOf('async _runSubagentOnce(')
+  const seg = st < 0 ? '' : idx.slice(st, st + 6000)
+  const gate = seg.indexOf('workbench not ready')
+  // 取「门控到下一个 return」的小段，不靠固定字符偏移
+  const near = gate < 0 ? '' : seg.slice(gate, gate + 400)
+  check('⑫ 未就绪 return 空串', /workbench not ready[\s\S]{0,200}return ''/.test(near))
 }
 
 // ── ⑬ P5 周期设置项：前端可选 + 后端有默认值 + 重试退避可配

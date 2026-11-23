@@ -30,6 +30,17 @@
  *      身份由 Ed25519 验签(X-Signature-Ed25519)负责。**给回调加 ROUTE_TOKEN 要求 = 机器人直接失联**。
  *   ② 人用端点 ?report= / ?diag= —— 需要 ROUTE_TOKEN(?token= 或请求头 x-route-token)。
  *   ③ 定时触发 ?timer=1 / POST Type:Timer —— 需要 TIMER_SECRET(另有触发名比对)。
+ *
+ * ★ 2026-11-04 公网面二轮加固(#531 / #538 / #537):
+ *   #531(P0) 握手不能替任意正文签名 —— op=13 的**免验签**只留给「最小握手信封」(顶层的键只有 op/d、
+ *        d 的键只有 plain_token/event_ts);plain_token 必须是 1..256 字符且**不含 JSON 结构字符**、
+ *        event_ts 必须是纯数字串;不合法 ⇒ 400 且**不生成签名**。
+ *        旧实现等于把签名器开放给匿名者:业务回调原串当 plain_token ⇒ 换回同构签名
+ *        (sign(ts+原文),与回调验签口径完全一致)⇒ 重放业务回调 ⇒ verified 变真 ⇒ 伪造反馈入库 + 烧 LLM key。
+ *   #538 人用端点准入收窄成**三条明确通道**(请求头 / ?token= / **路径段整段相等**),兼容分支不再看 query。
+ *        旧实现把「令牌在 URL 里出现过」当成「请求持有令牌」⇒ ROUTE_TOKEN 恰好是 report 时匿名可读群聊原文。
+ *   #537 反馈写入的成功判据从「整份文件逐字节相等」改成「**本行在不在**」,并按 k=sha1(id|正文) 做幂等追加。
+ *        旧实现在并发追加后把已经成功的写判成失败并重试,导致同一条反馈入库两份(A/B/A)而 POST 回 200。
  */
 const http = require('node:http')
 const crypto = require('node:crypto')
@@ -90,7 +101,7 @@ const CFG = {
 for (const k of ['appId', 'appSecret', 'groupId', 'ghToken']) {
   if (!CFG[k]) { console.error(`[webhook] 缺少环境变量 ${k}`); process.exit(1) }
 }
-const VERSION = 'webhook-retry-20261009a' // 部署核对标记:diag 端点与错误响应都会带它(20260914a=@ 答疑优先于已记录;20260921a=#113-#116 四条默认值全部改 fail-closed;20261008a=#310 群反馈写 gist 改条件请求 CAS,防并发覆盖丢行;20261009a=#324 去重标记改为持久成功后才发布,持久失败回可重试 503)
+const VERSION = 'webhook-retry-20261104a' // 部署核对标记:diag 端点与错误响应都会带它(20260914a=@ 答疑优先于已记录;20260921a=#113-#116 四条默认值全部改 fail-closed;20261008a=#310 群反馈写 gist 改条件请求 CAS,防并发覆盖丢行;20261009a=#324 去重标记改为持久成功后才发布,持久失败回可重试 503;20261104a=#531 握手挑战校验+最小握手信封 / #538 人用端点改路径段精确匹配 / #537 反馈稳定身份 k + 回读只认本行)
 const FEEDBACK_FILE = 'group-feedback.jsonl' // 反馈收集钉死文件名(digest 与 report 同读此名,清空时保留文件本身)
 let lastError = null // 最近一次内部错误(diag 可见)
 let botMentionToken = null // 从「@机器人+反馈词」消息里学习的机器人 mention 标识
@@ -332,7 +343,7 @@ const FEEDBACK_MAX_LINES = 400
  * @param {(prevText:string)=>string} mutate 纯函数:读到的内容 → 期望写回的内容(重试会再调一次)
  * @returns {Promise<{attempts:number}>}
  */
-async function gistCasAppend(mutate) {
+async function gistCasAppend(mutate, key = '') {
   const ATTEMPTS = 5
   let lastStatus = 0
   for (let attempt = 1; attempt <= ATTEMPTS; attempt++) {
@@ -340,6 +351,9 @@ async function gistCasAppend(mutate) {
     if (!r0.ok) throw new Error(`读 gist 失败 ${r0.status}`)
     const cur = String((r0.body && r0.body.files && r0.body.files[FEEDBACK_FILE] && r0.body.files[FEEDBACK_FILE].content) || '')
     const next = mutate(cur)
+    // ★#537:mutate 若判定「本行已经在文件里」会**原样返回 cur** ⇒ 目标状态已达成,不必再发一次 PATCH。
+    //   旧实现无论如何都把 next 写回去(那是"追加"语义);于是重试时就把同一行再追加了一遍。
+    if (next === cur) return { attempts: attempt, alreadyPresent: true }
     const headers = { 'Content-Type': 'application/json' }
     if (r0.etag) headers['If-Match'] = r0.etag
     else if (r0.lastModified) headers['If-Unmodified-Since'] = r0.lastModified
@@ -349,7 +363,13 @@ async function gistCasAppend(mutate) {
       // 回读确认本行落地(见上注 ④):读不到就一定不是"成功",不许当成功返回
       const rb = await gh(`/gists/${CFG.gistId}`)
       const after = String((rb.body && rb.body.files && rb.body.files[FEEDBACK_FILE] && rb.body.files[FEEDBACK_FILE].content) || '')
-      if (after === next) return { attempts: attempt }
+      // ★#537:回读判据从「整份文件与自己写的那份逐字节相等」改成「**本行在不在**」。
+      //   旧判据的失效形态(已实测复现):PATCH 成功之后、回读之前,另一个写者追加了一行(一次完全合法的
+      //   并发写) ⇒ after !== next ⇒ 判失败 ⇒ 重试 ⇒ 再追加一遍本行 ⇒ 文件里变成 A/B/A 两份重复反馈,
+      //   而外层 POST 回的是 200(用户只看到"已记录"一次,实际入库两份)。
+      //   别人的行本来就不该让"我这行有没有落地"变成失败 —— 只认本行的稳定身份键。
+      const lineLanded = !!key && after.split('\n').some((l) => l.includes(key))
+      if (after === next || lineLanded) return { attempts: attempt }
       lastStatus = 0   // 写成功但内容被并发改写 ⇒ 当冲突处理,重读重算
       if (attempt === ATTEMPTS) throw new Error('写 gist 后被并发改写,回读校验未通过(本行未确认落地)')
     } else if (r.status === 412) {
@@ -365,19 +385,24 @@ async function gistCasAppend(mutate) {
   throw new Error(`写 gist 冲突未收敛(已重试 ${ATTEMPTS} 次,末次状态 ${lastStatus}):并发写者过密,本次反馈未记录`)
 }
 
-async function gistAppend(line) {
+async function gistAppend(line, key = '') {
   // 2026-09-13 修复:反馈一律写进**钉死的文件名** group-feedback.jsonl(PATCH 到不存在的文件名会自动创建)。
   // 旧实现取「gist 里第一个文件」——raw-debug 文件先建/清空后文件被删,第一个文件就会换人,
   // 反馈与原始调试混写(实测 14:29 的反馈行混进了 group-raw-debug.txt)。
   // ★2026-10-08(#310):上面的"读出的整份 → 追加 → 写回"必须整段放进 CAS 重试里 ——
   //   把它拆成"先读一次,再带版本写一次"是不够的:412 之后必须用**新读到的内容**重算下一份,
   //   否则重试写的还是过期快照,只是把覆盖延后一轮。
+  // ★#537:key = 这条反馈的稳定身份(记录里的 k 字段,见 handleEvent)。两个作用:
+  //   ① mutate 幂等 —— 重试(412 / 网络抖动 / 平台重投)时若发现本行已在文件里,原样返回 cur,
+  //      不再追加第二份;② 回读确认只认本行(gistCasAppend 的 key 参数)。
+  //   注意:**CAS 条件头没有放宽**(If-Match / If-Unmodified-Since 照旧),改的只是"什么算写成功"。
   await gistCasAppend((cur) => {
     const prev = cur.split('\n').filter(Boolean)
+    if (key && prev.some((l) => l.includes(key))) return cur // 本行已在 ⇒ 目标状态已达成,不再追加
     prev.push(line)
     while (prev.length > FEEDBACK_MAX_LINES) prev.shift() // 只保留最近 400 条
     return prev.join('\n') + '\n'
-  })
+  }, key)
 }
 
 // 状态文件(bot-state.json,与反馈收集同一个 gist):@问答配额/定时班去重都落这里,防冷启动失忆
@@ -406,16 +431,56 @@ function publishSeen(id, dedupKey, nowMs) {
 const clip = (s, n) => { const t = String(s || '').replace(/\s+/g, ' ').trim(); return t.length > n ? t.slice(0, n) + '…' : t }
 const when = () => new Intl.DateTimeFormat('zh-CN', { timeZone: 'Asia/Shanghai', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date())
 
+// ★#531(P0):握手挑战校验 —— 必须在**签名之前**跑,因为签名口径本身就是危险面:
+//   op=13 回的是 sign(event_ts + plain_token),业务回调验的是 sign(timestamp + rawBody) —— 两者**完全同构**。
+//   旧实现只判「plain_token / event_ts 有没有值」,匿名者的完整攻击链因此成立(已实测复现):
+//     ① 无签名业务回调 → 401;
+//     ② 匿名 POST {op:13,d:{plain_token:<业务事件原串>,event_ts:<ts>}} → 200 + sign(ts+原串);
+//     ③ 拿这个签名重放业务回调 → verified=true → 伪造反馈入库 + 匿名流量走到烧 LLM_API_KEY 的路。
+//   三处判据,缺一即半修:
+//   ① plain_token 必须是 string 且 1..256 字符(旧实现可以是对象/数组,模板串会静默 String() 成 "[object Object]");
+//   ② event_ts 必须是纯数字串(同上,旧实现可以是对象);
+//   ③ ★关键:plain_token 不得含 JSON 结构字符 { } [ ] " ——
+//      充分性:任何业务回调 body 都必须能被 HTTP 层的 JSON.parse 解成**带 op/t 的对象**,故必含这些字符;
+//      不含这些字符的合法 JSON 字面量只剩 true/false/null/数字,进不了业务分支(handleEvent 只认 op===0 / 13)。
+//      ⇒ 「能被握手签出可用签名」与「能当业务回调重放」被彻底分开。签名口径**不动**(平台固定 event_ts+plain_token)。
+const JSON_STRUCT_CHARS = '{}[]"'
+function hasJsonStructCharsPre(s) { for (const ch of JSON_STRUCT_CHARS) { if (s.indexOf(ch) >= 0) return true } return false }
+function validateHandshakePre(payload) {
+  const d = payload ? payload.d : undefined
+  const bad = (error, hint) => ({ ok: false, code: 'bad_handshake', error, hint })
+  if (!d || typeof d !== 'object' || Array.isArray(d)) {
+    return bad('op=13 的 d 不是普通对象', '平台握手报文形如 {"op":13,"d":{"plain_token":"…","event_ts":"…"}};d 缺失或不是普通对象时无法给出合法签名。')
+  }
+  const plainToken = d.plain_token
+  const eventTs = d.event_ts
+  if (typeof plainToken !== 'string' || plainToken.length < 1 || plainToken.length > 256) {
+    return bad('plain_token 必须是 1..256 字符的字符串', '平台给的 plain_token 是短随机串;超长或非字符串一律不签(否则任意正文都能换到可用签名)。')
+  }
+  if (typeof eventTs !== 'string' || !/^[0-9]{1,16}$/.test(eventTs)) {
+    return bad('event_ts 必须是纯数字串(1..16 位)', '平台传的是秒级时间戳字符串;对象/非数字会被模板串静默 stringify 成可疑正文,一律不签。')
+  }
+  if (hasJsonStructCharsPre(plainToken)) {
+    return bad('plain_token 含 JSON 结构字符({ } [ ] "),拒绝签名', '握手签名与回调验签同构:能被当成 plain_token 签出去的正文,就能被当成业务回调重放。JSON 结构字符正是这两类载荷的分界线。')
+  }
+  return { ok: true, plainToken, eventTs }
+}
+
 // verified = 本次请求是否通过 Ed25519 验签(HTTP 层传入)。默认配置下未验签请求已在上游被 401 拦掉,
 // 这个参数只用于「显式关掉验签的联调模式」下继续拦住花钱的那条路径(issue #113)。
 async function handleEvent(payload, verified = false) {
   // URL 验证(op=13):回传 plain_token + 对 event_ts+plain_token 的 Ed25519 签名(hex)
+  // ★#531:先校验挑战载荷;不合法就返回 bad_handshake(HTTP 层回 400),**连签名都不生成**。
+  //   旧实现在这里一律 200,连"缺字段"都回 200 —— 等于把签名器开放给任何匿名请求。
   if (payload.op === 13) {
-    const { plain_token: plainToken, event_ts: eventTs } = payload.d || {}
-    if (!plainToken || !eventTs) { console.warn('[webhook] op=13 缺字段'); return { plain_token: plainToken || '', signature: '' } }
-    const sig = crypto.sign(null, Buffer.from(`${eventTs}${plainToken}`), KEYS.priv)
+    const hs = validateHandshakePre(payload)
+    if (!hs.ok) {
+      console.warn('[webhook] op=13 握手校验失败:', hs.error)
+      return hs
+    }
+    const sig = crypto.sign(null, Buffer.from(`${hs.eventTs}${hs.plainToken}`), KEYS.priv)
     console.log('[webhook] URL 验证应答完成')
-    return { plain_token: plainToken, signature: sig.toString('hex') }
+    return { plain_token: hs.plainToken, signature: sig.toString('hex') }
   }
   // 群消息事件
   // 事件识别:WS 信封用 t 字段;Webhook 信封没有 t,事件名在顶层 id 前缀(GROUP_MESSAGE_CREATE:xxx)
@@ -453,7 +518,10 @@ async function handleEvent(payload, verified = false) {
     let recorded = false
     if (collected && CFG.gistId) {
       try {
-        await gistAppend(JSON.stringify({ t: d.timestamp || new Date().toISOString(), u: clip(d.author?.username || d.author?.member_openid || '?', 16), w: collected, m: clip(text, 200) }))
+        // ★#537:每条反馈带稳定身份 k = sha1(id|正文) 前 12 位(id 用上面那套带兜底的稳定标识)。
+        //   它是「这条反馈有没有落地」的唯一判据:幂等追加与回读确认都只认它,不再拿整份文件做比较。
+        const feedbackKey = crypto.createHash('sha1').update(id + '|' + text, 'utf8').digest('hex').slice(0, 12)
+        await gistAppend(JSON.stringify({ t: d.timestamp || new Date().toISOString(), k: feedbackKey, u: clip(d.author?.username || d.author?.member_openid || '?', 16), w: collected, m: clip(text, 200) }), feedbackKey)
         recorded = true
         console.log('[webhook] 已收集:', clip(text, 50), isAt ? '(随 @ 答疑合并确认)' : '(非 @,静默)')
       } catch (e) {
@@ -613,6 +681,18 @@ function noteReject(code, detail) {
 }
 const safeJson = (s) => { try { return JSON.parse(s) } catch { return null } }
 
+// ★#531(第 2 处):「跳过验签」只允许**最小握手信封**。
+//   旧实现是 `if (payload.op === 13) { /* 免验签 */ } else { …验签… }` —— 只要 op 写 13 就整段跳过验签,
+//   与载荷里还有别的什么字段无关。现在只有「顶层的键只有 op/d、d 是普通对象、d 的键只有
+//   plain_token/event_ts」才承认它是握手;其余一切(op 写成字符串 "13"、多一个字段、d 是数组…)都走
+//   正常验签 —— 验不过就按 STRICT_VERIFY 回 401(fail-closed),不再有"写个 13 就免检"的旁门。
+function isHandshakeEnvelopePre(payload) {
+  const isPlainObj = (v) => !!v && typeof v === 'object' && !Array.isArray(v)
+  if (!isPlainObj(payload) || payload.op !== 13 || !isPlainObj(payload.d)) return false
+  if (!Object.keys(payload).every((k) => k === 'op' || k === 'd')) return false
+  return Object.keys(payload.d).every((k) => k === 'plain_token' || k === 'event_ts')
+}
+
 // ★ 人用端点准入门(issue #115):?report= / ?diag= 必须持 ROUTE_TOKEN,**未配即 403**(门不存在 = 门关闭)。
 //   旧实现是 `if (CFG.routeToken && !req.url.includes(routeToken)) 404` —— 没配 ROUTE_TOKEN 时这道门
 //   根本不存在,于是匿名可读到群聊原文、LLM key 形状(长度+头3+尾4)、appId/gistId/ghToken 前缀,
@@ -624,8 +704,22 @@ function routeAuth(req, url) {
   if (!tok) return { ok: false, code: 'route_token_unconfigured' }
   const given = String(req.headers['x-route-token'] || url.searchParams.get('token') || '')
   if (given && timingSafeEq(given, tok)) return { ok: true }
-  // 兼容旧用法:旧实现只做 `req.url.includes(token)` 子串判定,老 URL 形如 ?diag=1&token=xxx 继续可用
-  if (String(req.url || '').includes(tok)) return { ok: true, legacy: true }
+  // ★#538:兼容分支**收窄成路径段精确匹配**,不再对整条 req.url 做子串判定。
+  //   旧写法 `String(req.url).includes(tok)` 的失效形态:ROUTE_TOKEN 一旦恰好是 "report"/"diag" 这种
+  //   URL 里必然出现的词,匿名 GET /?report=1 就被放行 ⇒ 群聊原文裸奔(该分支出自 #115 的兼容需求,
+  //   但它把「令牌在 URL 里出现过」当成了「请求持有令牌」,而 query 是任何匿名者都能随手写的地方)。
+  //   现在三条通道,每条都是**完整值相等**(timing-safe):
+  //     ① 请求头 x-route-token;
+  //     ② ?token= 查询参数;
+  //     ③ 路径段 /<ROUTE_TOKEN>/ —— 老文档的部署形态,保留兼容;该分支**只看 pathname,不看 query**。
+  //   ⇒ /?report=1 不再命中("report" 只是参数名),而 /<ROUTE_TOKEN>/?report=N 照常可用。
+  const segs = String(url.pathname || '').split('/')
+  for (const seg of segs) {
+    if (!seg) continue
+    let dec = seg
+    try { dec = decodeURIComponent(seg) } catch { dec = seg } // 令牌含 % 等字符时按原样比,不让解码异常改变判据
+    if (timingSafeEq(dec, tok)) return { ok: true, legacy: true }
+  }
   return { ok: false, code: 'route_token_mismatch' }
 }
 function routeDeny(res, endpoint, code) {
@@ -800,9 +894,11 @@ const server = http.createServer((req, res) => {
       //   ⚠️ 给下一个读者:不要给这条路径加 token 要求,平台无法配合,那等于让机器人失联。
       const payload = JSON.parse(raw || '{}')
       let verified = false
-      if (payload.op === 13) {
+      if (isHandshakeEnvelopePre(payload)) {
         // URL 验证握手(op=13):平台校验的是我们的**应答签名**,响应内容自证身份,故不要求我们先验签。
         // 这条分支只回 plain_token + 签名,不碰群数据、不回显任何密钥。
+        // ★#531:免验签的判定从「op 是不是 13」收窄成「是不是**最小握手信封**(见 isHandshakeEnvelopePre);
+        //   老天真的写法只看 op===13,载荷里再多塞什么都会连带跳过验签。
       } else {
         const sigHex = String(req.headers['x-signature-ed25519'] || '')
         const ts = String(req.headers['x-signature-timestamp'] || '')
@@ -824,6 +920,12 @@ const server = http.createServer((req, res) => {
       //   "请求一进来就采集 + 默认开" ⇒ 任何匿名请求都能把全量入站报文(含群成员聊天文本)灌进共享 gist。
       if (verified && RAW_DEBUG) rawDebug(req, raw).catch(() => {})
       const out = await handleEvent(payload, verified)
+      // ★#531(第 3 处):握手校验失败 ⇒ **400**,并且绝不把签名交出去。
+      //   旧实现无论载荷长什么样都回 200(连"缺字段"都回 200 + 空签名),匿名者因此总能拿到"可用或至少可解析"的应答。
+      if (out && out.ok === false && out.code === 'bad_handshake') {
+        noteReject('bad_handshake')
+        return deny(res, 400, 'bad_handshake', out.error, out.hint)
+      }
       res.writeHead(200, { 'Content-Type': 'application/json' })
       if (payload.op === 13) res.end(JSON.stringify(out || {})) // op=13 应答结构严格,不附加字段
       else res.end(JSON.stringify({ ...(out || {}), v: VERSION }))

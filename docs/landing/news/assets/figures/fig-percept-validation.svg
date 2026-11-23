@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 500" width="880" height="500" preserveAspectRatio="xMidYMid meet" role="img" style="font-variant-numeric:tabular-nums" font-family="Manrope,'Space Grotesk','PingFang SC','Microsoft YaHei',system-ui,sans-serif">
+<title>四类感知与日历的字段校验强度：只有 userPercept.stage 有枚举校验，其余七个字段完全不校验</title>
+<rect width="880" height="500" fill="#ffffff"/>
+<!--region canvas 0 0 880 500-->
+<!--region h 44 84 792 360-->
+<!--region h-col1 637.23 96 188.77 288-->
+<text x="44" y="32" font-size="17.5" font-weight="700" fill="#1e232c">四类感知：只有 1 个字段有校验</text>
+<text x="44" y="54" font-size="12.5" fill="#454545">对照：交接账本有 H1–H4 四组硬判据</text>
+<text x="44" y="480" font-size="13.5" font-weight="700" fill="#c0504d">当前数据质量靠提示词与 schema 描述维持，不是靠校验兜底</text>
+<line x1="294" y1="96" x2="294" y2="396" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4 5"/><text x="294" y="415" text-anchor="middle" font-size="12" font-weight="700" fill="#454545">无</text><line x1="637.23" y1="96" x2="637.23" y2="396" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4 5"/><text x="637.23" y="415" text-anchor="middle" font-size="12" font-weight="700" fill="#454545">有</text><line x1="294" y1="396" x2="826" y2="396" stroke="#94a3b8" stroke-width="1.4" data-role="axis" data-orient="h" data-panel="h" data-base="396" data-origin="294"/><text x="560" y="436" text-anchor="middle" font-size="13" fill="#454545">是否有校验</text>
+<rect x="294" y="100" width="343.23" height="22.75" fill="#2563eb" data-role="hrow"/>
+<text x="282" y="115.88" text-anchor="end" font-size="12.5" fill="#1e232c">userPercept.stage</text>
+<text x="647.23" y="115.88" font-size="12" font-weight="700" fill="#2563eb">枚举校验</text>
+<rect x="294" y="136.75" width="0" height="22.75" fill="#c0504d" data-role="hrow"/>
+<text x="282" y="152.63" text-anchor="end" font-size="12.5" fill="#1e232c">userPercept.text</text>
+<text x="310.86" y="152.63" font-size="12" font-weight="700" fill="#c0504d">空字符串也收</text>
+<rect x="294" y="173.5" width="0" height="22.75" fill="#c0504d" data-role="hrow"/>
+<text x="282" y="189.38" text-anchor="end" font-size="12.5" fill="#1e232c">userPercept.kind</text>
+<text x="310.86" y="189.38" font-size="12" font-weight="700" fill="#c0504d">任意字符串</text>
+<rect x="294" y="210.25" width="0" height="22.75" fill="#c0504d" data-role="hrow"/>
+<text x="282" y="226.13" text-anchor="end" font-size="12.5" fill="#1e232c">agentTrace.action</text>
+<text x="310.86" y="226.13" font-size="12" font-weight="700" fill="#c0504d">空也收</text>
+<rect x="294" y="247" width="0" height="22.75" fill="#c0504d" data-role="hrow"/>
+<text x="282" y="262.88" text-anchor="end" font-size="12.5" fill="#1e232c">sharedGround.claim</text>
+<text x="310.86" y="262.88" font-size="12" font-weight="700" fill="#c0504d">空也收</text>
+<rect x="294" y="283.75" width="0" height="22.75" fill="#c0504d" data-role="hrow"/>
+<text x="282" y="299.63" text-anchor="end" font-size="12.5" fill="#1e232c">commitments.promise</text>
+<text x="310.86" y="299.63" font-size="12" font-weight="700" fill="#c0504d">空也收</text>
+<rect x="294" y="320.5" width="0" height="22.75" fill="#c0504d" data-role="hrow"/>
+<text x="282" y="336.38" text-anchor="end" font-size="12.5" fill="#1e232c">commitments.state</text>
+<text x="310.86" y="336.38" font-size="12" font-weight="700" fill="#c0504d">枚举只是文档约定</text>
+<rect x="294" y="357.25" width="0" height="22.75" fill="#c0504d" data-role="hrow"/>
+<text x="282" y="373.13" text-anchor="end" font-size="12.5" fill="#1e232c">calendar.date / time</text>
+<text x="310.86" y="373.13" font-size="12" font-weight="700" fill="#c0504d">任意字符串</text>
+</svg>

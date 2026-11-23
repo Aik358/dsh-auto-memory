@@ -93,7 +93,7 @@ function setExprs(text) {
 
 // ============================ ① 签名级 ============================
 const COMPONENTS = [
-  { name: 'Settings', classicSig: '    function SettingsPage() {', iter5Sig: 'function Iter5Settings(props) {', genAnchor: "    function SettingsPage() {", frozen: true },
+  { name: 'Settings', classicSig: '    function SettingsPage(props) {', iter5Sig: 'function Iter5Settings(props) {', genAnchor: "    function SettingsPage(props) {", frozen: true },
   { name: 'Storage', classicSig: '    function StorageTab(props) {', iter5Sig: 'function Iter5Storage(props) {', genAnchor: '    function StorageTab(props) {', frozen: true },
   { name: 'Skills', classicSig: '    function MemoryHubTab(props) {', iter5Sig: 'function Iter5Skills(props) {', genAnchor: '    function MemoryHubTab(props) {', frozen: true },
   // Stats：frozen 侧无 Iter5Stats —— 旧款皮肤的统计页由宿主托管（frozen 内 'stats' 走 i5-hosted 卡），
@@ -114,7 +114,7 @@ ok(cnt(v4Face, 'function Iter5Skills(props) {') === 1, '签名级：v4 面有 It
 ok(cnt(v4Face, 'function Iter5Stats() {') === 1, '签名级：v4 面有 Iter5Stats 定义')
 
 // ============================ ② 表达式级 ============================
-const classicSettings = bodyOf(classicFace, '    function SettingsPage() {')
+const classicSettings = bodyOf(classicFace, '    function SettingsPage(props) {')
 const frozenSettings = bodyOf(frozen, 'function Iter5Settings(props) {')
 const v4Settings = bodyOf(v4Face, 'function Iter5Settings(props) {')
 ok(!!classicSettings && !!frozenSettings && !!v4Settings, '表达式级：三面 Settings 函数体均可配平抽取')
@@ -207,7 +207,7 @@ ok(usedExempt.length === KNOWN_DRIFT.length, '全部豁免条目都仍在使用�
 // (d) 组件切片锚：三处关键锚串在生成器与经典面同源
 // 每条的期望命中数按实际切片语句数给出（Storage 同时是 skills 的终锚 ⇒ 2）。
 for (const [anchor, want] of [
-  ["client.slice(client.indexOf('    function SettingsPage() {'), client.indexOf('    // ───────────────────────── 插件挂载'))", 1],
+  ["client.slice(client.indexOf('    function SettingsPage(props) {'), client.indexOf('    // ───────────────────────── 插件挂载'))", 1],
   ["client.slice(client.indexOf('    function StorageTab(props) {'), client.indexOf('    function NotesTab() {'))", 1],
   ["client.slice(client.indexOf('    function MemoryHubTab(props) {'), client.indexOf('    function StorageTab(props) {'))", 1],
   ["client.slice(client.indexOf('function StatsTab() {'), client.indexOf('function WorkspaceTab() {'))", 1],

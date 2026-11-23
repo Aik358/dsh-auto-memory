@@ -23,7 +23,9 @@
           h('p', { className: 'i5-muted' }, t('updateSub')),
           versions.map(function (version, i) { return h('details', { key: version.version || i, open: i === 0 },
             h('summary', null, 'v' + version.version), h('ul', null, ((version.items && (version.items[locale] || version.items.zh)) || []).map(function (item, n) { return h('li', { key: n }, item) }))) }),
-          h('div', { className: 'i5-dialog-footer' }, h('button', { className: 'i5-primary', onClick: props.onClose }, t('gotIt')))))
+          h('div', { className: 'i5-dialog-footer' },
+            h(UpgradeDetectEntryPre, { key: 'i5-upd-detect', style: { marginRight: 'auto', padding: '7px 12px', borderRadius: '9px', border: '1px solid var(--i5-line, rgba(128,128,128,.35))', background: 'transparent', color: 'inherit', cursor: 'pointer', fontSize: '12.5px' } }),
+            h('button', { className: 'i5-primary', onClick: props.onClose }, t('gotIt')))))
     }
     function Iter5AutoContinue(props) {
       var confirmation = props.confirmation
@@ -40,8 +42,32 @@
           h('p', { className: 'i5-continuation-info' }, L('接续由宿主执行：刷新白板与账本、创建新会话，再注入交接材料。', 'The host refreshes the PLAN and ledger, creates a new session, and injects the handoff material.')),
           h('footer', null, props.countdown > 0 ? h('span', { role: 'timer' }, t('autoContTimeout').replace('{s}', String(props.countdown))) : null,
             h('button', { 'data-dam-btn': '', onClick: props.onReject }, t('autoContReject')),
+            // ★#522 用户裁定（2026-11-07）：「终止进程」——**整个接续终止**，不是「跳过重试」。
+            //   与左侧「拒绝」的区别（用户特意区分过，别混）：拒绝 = 只否掉这一次边界，水位再超标会重新 arm；
+            //   终止 = 停掉整条接续（后端 action:'cancel'：清 armed + 中止正在跑的仪式 + 记 lastCancel）。
+            //   文案用「终止进程」四个字，不写「跳过」——避免用户以为是「再试一次」的同义词。
+            h('button', { 'data-dam-btn': '', 'data-dam-autocont-cancel': '', onClick: props.onCancel }, t('autoContCancel')),
             h('button', { 'data-dam-btn': '', 'data-primary': 'true', onClick: props.onAgree }, t('autoContAgree')))) : null,
-        !confirmation && props.countdown > 0 ? h('p', null, t('autoContCountdown').replace('{s}', String(props.countdown)), ' ', h('button', { 'data-dam-btn': '', onClick: props.onReject }, t('autoContCancel'))) : null,
-        props.executing ? h('div', { className: 'i5-continuation-progress', role: 'progressbar', 'aria-label': L('接续正在执行', 'Continuation in progress'), 'aria-busy': true }, h('span')) : null,
+        // ★#522：倒计时态也要能终止（用户裁定「终止进程」= 整个接续终止）。
+        //   注意与拒绝按钮并存：拒绝=只否这一次边界；终止=停掉整条接续。
+        !confirmation && props.countdown > 0 ? h('p', null, t('autoContCountdown').replace('{s}', String(props.countdown)), ' ', h('button', { 'data-dam-btn': '', onClick: props.onReject }, t('autoContReject')), ' ', h('button', { 'data-dam-btn': '', 'data-dam-autocont-cancel': '', onClick: props.onCancel }, t('autoContCancel'))) : null,
+        props.executing ? h('div', { className: 'i5-continuation-progress', role: 'progressbar', 'aria-label': L('接续正在执行', 'Continuation in progress'), 'aria-busy': true },
+          // ★#522 第三子项（2026-11-07）：显示「正在尝试 N/M」，而不是只有一个无信息的进度条。
+          //   ★只信任后端给的数字：n 必须是 >=1 的整数才渲染；m 缺失或 <=0 时**不显示分母**，
+          //     退化成不带总数的文案 —— 绝不编造「/2」或显示「正在尝试 0/2」。
+          (function () {
+            var n0 = Number(props.ritualTry)
+            if (!(isFinite(n0) && n0 >= 1)) return null   // 没有可信的次数 ⇒ 只留空进度条
+            var nn = Math.floor(n0)
+            var m0 = Number(props.ritualMax)
+            var hasMax = isFinite(m0) && m0 >= 1 && m0 >= nn
+            return h('span', {
+              'data-dam-autocont-try': '',
+              'data-dam-autocont-try-n': String(nn),
+              'data-dam-autocont-try-m': hasMax ? String(Math.floor(m0)) : '',
+            }, hasMax
+              ? t('autoContRitualTry').replace('{n}', String(nn)).replace('{m}', String(Math.floor(m0)))
+              : t('autoContRitualTryNoMax').replace('{n}', String(nn)))
+          })()) : null,
         props.status ? h('p', { className: 'i5-continuation-status', role: 'status' }, props.status) : null)
     }

@@ -374,7 +374,27 @@ console.log('[A2] ⑩ #250 load({pendingSnapshot})：pending 差分叠加到磁�
 if (!process.env.A2_SOURCE_ROOT) {
   console.log('[A2] ⑨ 负路径：回退树（真删 #250/#274 接线）必须让断言变红')
   const negRoot = path.join(temp, 'a2-negative')
-  await fsp.cp(path.join(ownRoot, 'lib'), path.join(negRoot, 'lib'), { recursive: true })
+  // ★★2026-10-25 修（Lead 定位 · 并行干扰根治）：**复制 lib/ 时必须排除其他套件的临时变异文件**。
+  //   实测缺陷：`issue341-lockgate` 会**往真实 lib/ 写** `__mut-341-config-lock.mjs`（L299）、finally 删（L326）；
+  //   本套件 `fsp.cp(lib → negRoot/lib, {recursive:true})`（原 L377）假设「lib/ 在复制期间静止」——
+  //   两者并行时若 341 恰好在此刻删除该文件 ⇒ `ENOENT: lstat __mut-341-config-lock.mjs` ⇒ 本套件随机 FAIL。
+  //
+  //   ★为什么用 filter 而不是「给 341 加锁」：过滤器是**只读侧防护** —— 谁都不用改自己的写行为，
+  //     也不会引入锁顺序风险。且 `__mut-*` 是本仓变异文件的**统一命名约定**（全仓 grep 确认），
+  //     排除前缀不会误伤真实源码。
+  //   ★为什么 341 写在 lib/ 里是对的：config-lock 有相对导入，放临时目录会模块加载崩溃（假红），
+  //     所以**不能**把 341 改成写别处；只能在复制侧排除。
+  await fsp.cp(path.join(ownRoot, 'lib'), path.join(negRoot, 'lib'), {
+    recursive: true,
+    filter: (src) => !/__mut-/.test(path.basename(src)),
+  })
+  // ★★P1 永久断言（Lead 2026-10-25 要求）：复制**必须排除**其他套件的临时变异文件。
+  //   为什么必须断言而不只靠 filter：filter 是「防」；这条是「验」——若有人日后删了 filter
+  //   或改了 `__mut-` 命名约定，这里当场红，而不是等全量回归随机 FAIL。
+  {
+    const leaked = fs.readdirSync(path.join(negRoot, 'lib')).filter((f) => /__mut-/.test(f))
+    assert.equal(leaked.length, 0, '复制的 lib/ 里不得含其他套件的 __mut-* 临时变异文件（实测: ' + JSON.stringify(leaked) + '）')
+  }
   const revert = (file, pairs) => {
     let text = fs.readFileSync(file, 'utf8')
     for (const [from, to] of pairs) {

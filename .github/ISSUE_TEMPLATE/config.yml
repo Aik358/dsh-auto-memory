@@ -1,0 +1,13 @@
+# .github/ISSUE_TEMPLATE/config.yml — 新建 issue 的模板选择器配置
+#
+# 定位：模板只是「填写规范」，不是表单，也不设任何必填项。
+#   · blank_issues_enabled: true ⇒ 不想套模板的人永远可以直接开空白 issue（GitHub 默认值，此处显式写死，
+#     防止以后有人为了「收口」把它改成 false —— 那会变成强制，与本仓约定相反）。
+#   · contact_links 只做引导，不拦截。
+
+blank_issues_enabled: true
+
+contact_links:
+  - name: 💬 讨论区（提问 / 想法 / 设计取舍）
+    url: https://github.com/Aik358/dsh-auto-memory/discussions
+    about: 不确定算不算问题、想先聊聊设计取舍时发这里更合适；讨论清楚再开 issue 也不会丢上下文。

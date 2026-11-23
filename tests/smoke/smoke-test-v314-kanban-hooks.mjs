@@ -26,11 +26,38 @@ let pass = 0, fail = 0
 const ok = (c, n, d) => { if (c) { pass++; console.log('  ✓ ' + n) } else { fail++; console.error('  ✗ ' + n + (d ? ' — ' + d : '')) } }
 const cnt = (h, n) => { let c = 0, i = 0; for (;;) { const p = h.indexOf(n, i); if (p < 0) return c; c++; i = p + n.length } }
 
-console.log('=== K1 抽屉正文已收进独立组件（#310 修法的落点）===')
-ok(CL.includes('function KanbanDrawerBody(props)'), 'K1a ★抽屉正文是独立组件（hook 收进组件内 ⇒ 挂载期 hook 数恒定）')
-ok(CL.includes('h(KanbanDrawerBody, {'), 'K1b 抽屉渲染改为挂载该组件')
-ok(!/(useCardFull\(drawer\))/.test(CL.replace(/[\s\S]*?function KanbanDrawerBody[\s\S]*?\n    }/, '')), 'K1c ★已无「在条件分支里裸调 useCardFull(drawer)」')
-ok(CL.includes('useCardFull(d) || d.full || d.preview'), 'K1d 兜底链保留（取不到全文时回退 preview，绝不空白）')
+// ★★D14（2026-10-24 用户裁定）：看板组件已退场，K1 的**对象**（KanbanDrawerBody / KanbanCard）不再存在。
+//   但本套件真正的价值是下面的 **K2/K4 hook 安全网**（React #310 / #300 真实事故），
+//   那两条与「哪个组件」无关，**原样保留**。K1 改为守**事件视图**是否复用了同一套安全写法：
+//   ① 事件卡必须是**独立组件**（hook 收进组件内 ⇒ 挂载期 hook 数恒定）；
+//   ② 渲染必须是 `h(EventCard, ...)` 挂载，不是内联调用；
+//   ③ 展开态用 state 而不是在条件分支里调 hook。
+console.log('=== K1 事件视图沿用 #310 修法（hook 收进独立组件）===')
+ok(CL.includes('function EventCard(props)'), 'K1a ★事件卡是独立组件（hook 收进组件内 ⇒ 挂载期 hook 数恒定）')
+ok(CL.includes('h(EventCard, {'), 'K1b 事件卡经 h(EventCard, ...) 挂载（不是内联调用）')
+ok(CL.includes('var openPair = useState(false)'), 'K1c ★展开态用 state 持有（不在条件分支里调 hook）')
+// ★2026-10-25 判据更新（Lead 裁决 · 判据过期，非缺陷）：
+//   旧判据盯字面量 `h(EventCard, { key: ev.id` —— 它假设事件卡只在一个地方、且 key 就是 ev.id。
+//   P1 加三视图后，事件卡挪进 renderStreamViewPre 的循环里，key 变成 `'sc-' + id + '-' + i`
+//   （循环内保证唯一，比 ev.id 更正确）⇒ 旧判据**检的字面量已不存在，但功能更强了**。
+//   这不是放宽：改成三条**结构性**断言，任一条都盯真实语义，不盯字面量。
+const EVVIEW_I = CL.indexOf('function EventView(props)')
+// ★2026-10-25 Lead 修（判据过期，非缺陷）：原用固定 12000 字符窗口 —— 实测 EventView 的**真实函数体
+//   长约 15,972 字符**，三个渲染器调用点分别在 +12,109 / +12,222 / +12,326 字符处 ⇒ **全部落在窗口外** ⇒
+//   断言恒假（真缺陷是判据的窗口，不是实现）。修法：按**结构边界**切函数体（到下一个同级 function 为止），
+//   不写死任何字符数 —— 「按内容长度估边界」和「按字面量断语义」是同一类错误。
+const _EVVIEW_END = (() => {
+  if (EVVIEW_I < 0) return -1
+  const rest = CL.slice(EVVIEW_I + 10)
+  const m = /\n    function \w+/.exec(rest)
+  return m ? EVVIEW_I + 10 + m.index : CL.length
+})()
+const EVVIEW_BODY = EVVIEW_I >= 0 && _EVVIEW_END > EVVIEW_I ? CL.slice(EVVIEW_I, _EVVIEW_END) : ''
+ok(EVVIEW_I >= 0 && EVVIEW_BODY.length > 0, 'K1d-1 事件视图组件可定位（不是只定义不调用）')
+// ② 事件视图必须真的把三视图渲染器之一调起来（结构性：进了渲染树才对）
+ok(/render(Stream|Lanes|Workflow)ViewPre\(/.test(EVVIEW_BODY), 'K1d-2 ★事件视图体内真的调用三视图渲染器（结构性，不盯字面量）')
+// ③ 事件卡必须被挂载（挂载点可以在任一视图渲染器里，不限 stream）
+ok(/h\(EventCard, \{/.test(CL), 'K1d-3 ★事件卡真被 h(EventCard, {...}) 挂载（全仓任一视图渲染器内）')
 
 console.log('\n=== K2 全仓 hook 调用面：不得出现在条件表达式/JSX 实参里 ===')
 {
@@ -50,7 +77,8 @@ console.log('\n=== K2 全仓 hook 调用面：不得出现在条件表达式/JSX
 }
 
 console.log('\n=== K3 同一 hook 的既有正确写法未被改坏 ===')
-ok(CL.includes('useCardFull(expanded ? c : null)'), 'K3 KanbanCard 仍是无条件调用 + 可空参数')
+// ★D14：KanbanCard 已删除 ⇒ 该写法不再存在；改守「事件卡也不在条件分支里调 hook」（同族判据，对象换新组件）
+ok(!/\?\s*[^:]*use[A-Z]/.test(CL.slice(CL.indexOf('function EventCard'), CL.indexOf('function EventView'))), 'K3 事件卡内 hook 不得出现在三元表达式里')
 
 // ★2026-09-28 追加 K4（issue #145 同族）：**组件级早退之后不得再有 hook 调用**。
 //   背景：宿主槽位边界报 React error #300（"rendered fewer hooks than expected"），

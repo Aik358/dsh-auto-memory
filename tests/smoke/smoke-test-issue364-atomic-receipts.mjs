@@ -10,7 +10,8 @@ const root = fs.mkdtempSync(path.join(tmpdir(), 'dam-364-receipts-'))
 try {
   let denied = false
   const io = createHubIoPre({ dir: root, fsApi: { renameSync: (from, to) => { if (denied) throw Object.assign(Error('fixture rename denied'), { code: 'EPERM' }); fs.renameSync(from, to) } } })
-  const store = createFactStorePre({ io: io('facts.json') })
+  // ★2026-11-09（1.2 第1步）冲突集已独立存储，需同时注入 conflictsIo。
+  const store = createFactStorePre({ io: io('facts.json'), conflictsIo: io('facts-conflicts.json') })
   const candidate = object => ({ scope: 'Workspace', subject: 'receipt project', predicate: 'uses', object, sourceKind: 'explicit', provenance: ['fixture'] })
   const context = { teamId: 'team-fixture', cursor: 10, index: 0 }
   const event = { eventId: 'conflict-event-364' }
@@ -27,12 +28,13 @@ try {
     import assert from 'node:assert/strict';
     import {createHubIoPre} from ${JSON.stringify(new URL('../../lib/hub-io.js', import.meta.url).href)};
     import {createFactStorePre} from ${JSON.stringify(new URL('../../lib/fact-store.js', import.meta.url).href)};
-    const io=createHubIoPre({dir:process.argv[1]}),store=createFactStorePre({io:io('facts.json')});
+    const io=createHubIoPre({dir:process.argv[1]}),store=createFactStorePre({io:io('facts.json'),conflictsIo:io('facts-conflicts.json')});
     const r=store.applyTeamChange(${JSON.stringify(candidate('Python'))},${JSON.stringify(event)},${JSON.stringify(context)});
     assert.equal(r.ok,true);assert.equal(r.outcome,'duplicate');assert.equal(store.pendingConflicts().length,1);
   `, root], { encoding: 'utf8', timeout: 10000 })
   assert.equal(child.status, 0, child.stderr)
-  assert.equal(JSON.parse(fs.readFileSync(file, 'utf8')).conflicts.length, 1)
+  // ★2026-11-09（1.2 第1步）冲突改写独立文件。
+  assert.equal(JSON.parse(fs.readFileSync(path.join(root, 'facts-conflicts.json'), 'utf8')).conflicts.length, 1)
   const legacy = { key: 'legacy-same-fact' }
   assert.equal(store.applyTeamChange(candidate('Go'), legacy, { ...context, cursor: 12, index: 0 }).ok, true)
   assert.equal(store.pendingConflicts().length, 2)

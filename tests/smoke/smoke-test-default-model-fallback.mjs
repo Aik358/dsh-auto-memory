@@ -3,9 +3,14 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import vm from 'node:vm'
 import { parseModelWindowsPre, pickWindowPre } from '../../lib/water-window.js'
+// ★2026-10-28（R158 判据跟进）：_runSubagentOnce 新增了 prompt 护栏（withSubagentGuardPre），
+//   它定义在 vm 切片之外 ⇒ 与文件头 callSubagentStartPre 完全同一类问题：必须把真函数注入上下文，
+//   否则 vm 内 ReferenceError 被 catch 吞成空结果（表现为本条套件 8 个用例全红）。
+//   ★注入的是**真模块导出的真函数**，不是手写假桩 —— 保证「护栏确实会加到 prompt 上」这件事被真的执行到。
+import { withSubagentGuardPre } from '../../lib/subagent-prompt-guard.js'
 
 const source = readFileSync(new URL('../../lib/index.js', import.meta.url), 'utf8').replace(/\r\n/g, '\n')
-const start = source.indexOf('  async _runSubagentOnce(text, label, agent, timeoutMs) {')
+const start = source.indexOf('  async _runSubagentOnce(text, label, agent, timeoutMs, override) {')
 const end = source.indexOf('  /** 子代理痕迹回收', start)
 const optionsStart = source.indexOf('function subAgentOptions(config, lane) {')
 const optionsEnd = source.indexOf('\n}', optionsStart) + 2
@@ -13,6 +18,8 @@ const parserStart = source.indexOf('function parseAgentDefaultModelPre(text) {')
 const parserEnd = source.indexOf('\n}', parserStart) + 2
 // ★2026-10-18（DSH 0.2.1 迁移）：_runSubagentOnce 内的两处启动改走 callSubagentStartPre 适配层，
 //   该函数定义在 vm 切片之外 ⇒ 必须一并注入上下文，否则 vm 内 ReferenceError 被 catch 吞成空结果。
+const optResolverStart = source.indexOf('function resolveSubAgentOptionsPre(')
+const optResolverEnd = source.indexOf('\n}', optResolverStart) + 2
 const adapterStart = source.indexOf('async function callSubagentStartPre(')
 const adapterEnd = source.indexOf('\n}', adapterStart) + 2
 let failed = 0
@@ -28,8 +35,17 @@ async function run(settings, registered = ['spawn'], config = { subagentProvider
     AbortController, setTimeout, clearTimeout, Date, console: { error() {} },
     diag() {}, WB_GATED_JOBS: [], subagentJob: () => 'sum',
     readSettingsTextPre: async () => settings,
+    // ★R158：_runSubagentOnce 内的 prompt 护栏依赖（vm 切片之外，必须注入）
+    withSubagentGuardPre,
+    // ★#560：_runSubagentOnce 现引用这三个模块级常量（切片之外），
+    //   与 withSubagentGuardPre / callSubagentStartPre 对待方式相同：直接注入真值，不在 vm 里手写假桩。
+    SUBAGENT_TIMEOUT_MIN_SECONDS: 30, SUBAGENT_TIMEOUT_MAX_SECONDS: 900, DEFAULT_SUBAGENT_TIMEOUT_SECONDS: 240,
+    // ★#558：_runSubagentOnce 现引用 resolveSubAgentOptionsPre（切片之外），
+    //   它又依赖模块级 SUBAGENT_EFFORT_WHITELIST ⇒ 两者一起注入（与上面三常量同款处理）。
+    SUBAGENT_EFFORT_WHITELIST: ['off', 'low', 'high', 'max'],
   })
   if (parserStart >= 0) vm.runInContext(source.slice(parserStart, parserEnd), context)
+  if (optResolverStart >= 0) vm.runInContext(source.slice(optResolverStart, optResolverEnd), context)
   if (adapterStart >= 0) vm.runInContext(source.slice(adapterStart, adapterEnd), context)
   const engine = vm.runInContext(source.slice(optionsStart, optionsEnd) + '\nnew (class { ' + source.slice(start, end) + ' })()', context)
   Object.assign(engine, {

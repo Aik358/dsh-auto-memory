@@ -94,12 +94,12 @@
 
 | 项 | 数量 | 说明 |
 |---|---|---|
-| 模型工具 | **19** | 17 个基础 + 2 个条件注册（`memory_expand` / `memory_trace` 仅在 `boardMode=graph` 时注册） |
-| HTTP 路由 | **73** | 全部 loopback-only；插件层外部访问返回 403，宿主层为 401——**两者都是预期行为** |
-| 设置键 | **160** | 其中 **60** 个可在设置页写入 |
+| 模型工具 | **22** | 20 个常态注册 + 2 个条件注册（`memory_expand` / `memory_trace` 仅在 `boardMode=graph` 时注册；2026-11-17 默认 graph 档真实 apply 注册 22 个） |
+| HTTP 路由 | **87** | 2026-11-17 P1 实测；含只读 `delivery-preview`。全部 loopback-only；插件层外部访问返回 403，宿主层为 401——**两者都是预期行为** |
+| 设置键 | **183** | 2026-11-23 收口新增 `runTierInjectEnabled`，实测 183 键。60 个可写键为历史盘点。 |
 | 面板页签 | **12** | 概览 / 日志 / 唤起回顾 / 记忆中枢 / 存储管理 / 笔记 / 白板 / 反思 / 接续 / 日历 / 检索 / 工作区 |
 | 插槽注册 | **6** | 侧栏入口 / 浮层面板 / 弹窗 / 接续卡 / 设置分区 / 会话页看板 |
-| 回归套件 | **180** | `node tools/run-smoke.mjs`，基线 **180 PASS / 0 FAIL / TIMEOUT 0**（约 58s） |
+| 回归套件 | **535** | `node tools/run-smoke.mjs`（`--jobs=8 --timeout=180000`），实测 **535 PASS / 0 FAIL / TIMEOUT 0**（约 162s） |
 | 运行时依赖 | **0** | 本插件自身不引入任何 npm 运行时依赖 |
 | 浏览器侧 | 单文件 | `lib/client.js`，纯 ESM，**无构建步骤** |
 
@@ -145,6 +145,211 @@
 > **`workbenchPeriodDays` 键仍存在但不再是独立输入** —— 运行时不读它，
 > 仅作老配置兼容；把它当第二个旋钮使用即为回退（守卫 ⑬ 有反向断言钉死）。
 > **判据**：凡有两个可独立影响同一行为的输入，即未真正合并。
+
+---
+
+---
+
+## 3.1a v4 记忆模型：事件是第一等单元（2026-10 落地）
+
+> 这一节回答一个问题：**「记忆」到底以什么为单位存？** 3.x 之前是流水账，v4 起是**事件**。
+
+### 3.1a.1 三层结构，各管一件事
+
+| 层 | 单位 | 是否事件化 | 职责 |
+|---|---|---|---|
+| **长期记忆** | 事件（`evt_xxxxxxxx`） | ✅ **是** | 一件事一个容器，跨天可中断再捡起 |
+| 每日日志 | 日期（`YYYY-MM-DD.md`） | ❌ 否 | 日记类，按天追加，不进事件 |
+| 每日反思 | 日期（`reflections/`） | ❌ 否 | 日记类的**蒸馏产物**，独立于事件 |
+
+**为什么日志与反思不事件化**：它们的语义单位是「一天」，不是「一件事」。硬塞进事件会强迫模型
+在写日记时反推「这属于哪件事」，反而增加噪声。蒸馏链表上 `memory_log` / `memory_reflect` /
+`memory_consolidate` 三处均标注「❌ 不事件化」。
+
+### 3.1a.2 一个事件里装什么
+
+```
+事件 evt_a1b2c3d4
+├── name / summary        ← L0 总览（模型写作，随时可重写）
+├── sections{             ← 四段：反映【当前】状态，不是历史累积
+│     goal  这段要达成什么
+│     doing 做到了哪
+│     dead  卡在哪 / 失败原因（无则空串）
+│     next  下一步（可直接执行的第一步）
+│   }
+├── checkpoints[]          ← append-only 检查点，只增不改（一条 = 一个证据点）
+│     每条含四段 + 溯源（quoteRef / quoteLine / rel / sha256）
+├── userPercept[]          ← 人类侧观察（偏好 / 状态 / 未完成目标）
+├── agentTrace[]           ← Agent 动作（改了什么、结果如何、是否被推翻）
+├── sharedGround[]         ← 已达成的共识（双方真的对齐）
+└── commitment[]           ← 对用户的承诺（open / kept / dropped）
+```
+
+**关键约束**
+
+1. **检查点 append-only**：不修改、不删除。要更正结论，追加一条新检查点说明「前一条作废及原因」，
+   或用 `supersedes` / `retract` 标记。历史不可篡改是审计的前提。
+2. **四段要跟着重写**：每次 append 检查点后必须审视 `sections` 是否还代表**当前**状态。
+   只 append 不更新四段 ⇒ 四段变成陈年快照，注入面会给出过时的 next。
+3. **溯源不是可选项**：没有 `quoteRef` / `sha256` 的检查点等于无法审计的传闻。
+4. **事件只是索引，原文载体仍是账本**：`memory_note(kind=handoff)` 写四段式交接账本，
+   事件只挂指针。两者都要写，不能只写其一。
+
+### 3.1a.3 白板是事件的投影，不是手写文档
+
+`handoff/PLAN.md` **由事件渲染而来**（`memory_note(kind=plan, fromEvents=true)`），不是模型手写的正文。
+
+- 模型改**事件** ⇒ 白板自己会变；
+- 手写白板正文会丢 `<!-- memory:mem_* -->` 锚点，卡片体系断裂；
+- 因此**不要手写白板正文**，也不要在渲染侧靠过滤检查点「修」污染 —— 那是治标。
+
+> **真实事故**：白板第一节标题「当前状态」与账本 `sections.doing` 的别名表撞名，整张状态表（1,670 字符）
+> 被解析成 `doing`，再经 mirror 写回事件头。修法是规范化白板节标题 + 表格形状兜底，**不是**在渲染侧加过滤器。
+
+### 3.1a.4 存储与索引
+
+| 文件 | 角色 | 是否可重建 |
+|---|---|---|
+| `handoff/event-store.json` | 事件本体（schema v2） | ❌ **唯一真源** |
+| `handoff/index.json` | 检索索引 | ✅ 可从事件库重建 |
+| `handoff/PLAN.md` | 白板（事件投影） | ✅ `fromEvents=true` 重渲染 |
+| `handoff/*.md` | 交接账本（四段式原文载体） | ❌ 不可重建 |
+
+> **推论**：团队同步时 `index.json` **不进基线** —— 它比事件本体大 3 倍（6.3 MB vs 1.7 MB），
+> 且可由 `event-store.json` 重建。把索引传上去纯属浪费带宽。
+
+## 3.1b 两张图看懂架构（2026-10-27）
+
+> 白皮书正文按「不变量 → 事故 → 边界」组织，适合**判断**，不适合**建立全貌**。
+> 这一节补两张图：**图 A 数据流**（东西从哪来、到哪去）、**图 B 注入面分层**（模型每轮看到什么）。
+
+### 图 A · 数据流全景（写入 → 存储 → 注入 → 展示）
+
+```mermaid
+flowchart LR
+    subgraph SRC["① 输入源"]
+        U["用户对话"]
+        L["每日日志<br/>.dsh-memory/YYYY-MM-DD.md"]
+        A["AI 工具外部记忆<br/>WorkBuddy/CodeBuddy/Codex…"]
+        S["DSH 历史会话"]
+    end
+
+    subgraph WRITE["② 写入层（18 个 memory_* 工具）"]
+        EV["memory_event<br/>事件 = 长期记忆单元<br/>append-only 检查点"]
+        NO["memory_note<br/>plan=白板 / handoff=账本 / note=笔记"]
+        US["memory_user / memory_rules<br/>跨项目规约（条目级增删改）"]
+        LG["memory_log<br/>日记类，不事件化"]
+        RF["memory_reflect / consolidate<br/>反思与蒸馏，不事件化"]
+    end
+
+    subgraph STORE["③ 存储层（明文文件，零运行时依赖）"]
+        ES[("event-store.json<br/>事件 + 检查点<br/>schema v2")]
+        PL[("handoff/PLAN.md<br/>白板 = 记忆主承载面")]
+        HB[("handoff/handoff-*.md<br/>账本 = 一次性接续")]
+        UM[("~/.dsh/memory/MEMORY.md<br/>用户规约")]
+    end
+
+    subgraph INJECT["④ 注入面（每轮渲染，见 图 B）"]
+        RD["renderMemoryDynamic<br/>4 档位 × 9 段"]
+    end
+
+    subgraph VIEW["⑤ 展示层"]
+        EV4["EV4 三栏视图<br/>时间轴 / 事件流 / 详情"]
+        BD["白板看板<br/>12 页签"]
+    end
+
+    U --> WRITE
+    A -->|memory_external 接入| WRITE
+    S -->|session_search| WRITE
+    L -->|append 检查点| EV
+    WRITE --> STORE
+    STORE --> RD
+    STORE --> EV4
+    STORE --> BD
+    RD -->|"system prompt"| U
+
+    classDef store fill:#e8f4f8,stroke:#4a90a4
+    classDef write fill:#f0f8e8,stroke:#7cb342
+    classDef view fill:#fff4e0,stroke:#e0a030
+    class ES,PL,HB,UM store
+    class EV,NO,US,LG,RF write
+    class EV4,BD view
+```
+
+**读图要点（三句话）**
+
+| # | 要点 | 为什么重要 |
+|---|---|---|
+| 1 | **事件是唯一长期单元**：日志/反思/日记都**不**事件化，只事件化「一件事」 | 混了就会退化成流水账（v4 之前的形态） |
+| 2 | **白板是产出物，账本是接续材料** | 白板由事件渲染；账本读完即弃、不进注入主面 |
+| 3 | **注入面是唯一出口**：写进去的东西如果渲染不出来 = 没写 | 本仓「只存不用」家族已复现 5 次 |
+
+---
+
+### 图 B · 注入面分层（4 档位 × 9 段）
+
+```mermaid
+flowchart TB
+    subgraph TIER["① 档位判定（谁在说话）"]
+        T1["human_full<br/>F1 用户发声完整版"]
+        T2["human_slim<br/>F2 用户发声精简版"]
+        T3["run_full<br/>F3 运行完整版"]
+        T4["run_slim<br/>F4 运行精简版"]
+        T5["handoff_carry<br/>F6 接续首帧"]
+        T6["legacy<br/>档位缺失兜底"]
+    end
+
+    subgraph SEG["② 九段内容（按档位取舍）"]
+        direction TB
+        G1["① 头部区<br/>身份 + 当前日期 + 工作区"]
+        G2["② 用户规约<br/>每轮在场，不参与裁剪"]
+        G3["③ 用户画像<br/>emotional，可裁剪"]
+        G4["④ 当前事件卡片<br/>事件名/目标/四段/最近检查点"]
+        G5["⑤ 白板 PLAN<br/>★完整档 3000 / 瘦档核心 N 节"]
+        G6["⑥ 交接账本<br/>四段式"]
+        G7["⑦ 工作日志<br/>近期 N 天"]
+        G8["⑧ 语义唤回<br/>独立通道，跨会话命中"]
+        G9["⑨ 维护纪律<br/>★四档共用同一份<br/>含事件工具速查"]
+    end
+
+    subgraph BUDGET["③ 预算闸门"]
+        B1["分段预算<br/>envelopeMeta.segments<br/>逐段记 chars"]
+        B2["总闸门<br/>injectBudgetChars"]
+        B3["降级如实标注<br/>dropped / degradations"]
+    end
+
+    T1 --> SEG
+    T2 --> SEG
+    T3 --> SEG
+    T4 --> SEG
+    T5 --> SEG
+    T6 --> SEG
+    SEG --> BUDGET
+    BUDGET -->|"低于预算"| OK["原样注入"]
+    BUDGET -->|"超预算"| CUT["按优先级击杀<br/>★绝不静默"]
+
+    classDef tier fill:#e8f0f8,stroke:#4a7ca4
+    classDef seg fill:#f8f0e8,stroke:#a47c4a
+    classDef bud fill:#f0e8f8,stroke:#7c4aa4
+    class T1,T2,T3,T4,T5,T6 tier
+    class G1,G2,G3,G4,G5,G6,G7,G8,G9 seg
+    class B1,B2,B3 bud
+```
+
+**档位 × 段的实际取舍（2026-10-27 实测）**
+
+| 档位 | 白板 | 规则 | 画像 | 语义唤回 | 实测注入量 |
+|---|---|---|---|---|---|
+| `human_full` | **全文**（预算 3000，实测 2,149） | 全文 | 完整 | 有 | 最大 |
+| `human_slim` | 核心 7 节 | 全文 | 精简 | 有 | 中 |
+| `run_full` | 核心 7 节（实测 2,079） | 全文 | 精简 | 有 | 中 |
+| `run_slim` | **不投**（0） | 摘要 | 精简 | 无 | 最小 |
+| `handoff_carry` | 全文 | 全文 | 完整 | 有 | 首帧专用 |
+| `legacy` | 强制截流（单节 800 / 总 2400） | 全文 | — | — | 兜底 |
+
+> **★ 2026-10-27 修的真缺陷**：`handoffPlanChars` 默认 1,200 而 `fullInjectSlimBudgetChars` 默认 3,000
+> ⇒ **完整档（human_full 1,251）投得比精简档（run_full 2,079）还少**，档位语义倒挂。
+> 已修为 `完整档预算 = max(两者)`，实测 human_full 升至 2,149。
 
 ---
 

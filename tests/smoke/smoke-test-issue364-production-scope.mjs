@@ -49,10 +49,12 @@ try {
     assert.equal(engine._teamPull.status().since, 12, 'cursor advances so the same batch is not replayed forever')
     assert.equal(store.query({}).length, 1)
   }
-  assert.ok(urls.every(url => new URL(url).searchParams.get('kinds') === 'fact'))
+  // ★R158（2026-10-31 · B5 事件进同步）：requestKinds 由 ['fact'] 扩为 ['fact','event']。
+  //   判据意图不变（只请求这两类；procedure/handoff 仍被拒），故按新口径断言。
+  assert.ok(urls.every(url => new URL(url).searchParams.get('kinds') === 'fact,event,baseline'))
   const state = (await request('teamState')).data.pull
-  assert.deepEqual(state.supportedKinds, ['fact']); assert.deepEqual(state.unsupportedKinds, ['procedure', 'handoff'])
-  assert.deepEqual(state.requestedKinds, ['fact']); assert.equal(state.scopeConfirmed, false)
+  assert.deepEqual(state.supportedKinds, ['fact', 'event', 'baseline']); assert.deepEqual(state.unsupportedKinds, ['procedure', 'handoff'])
+  assert.deepEqual(state.requestedKinds, ['fact', 'event', 'baseline']); assert.equal(state.scopeConfirmed, false)
   if (procedures) assert.equal(JSON.stringify(procedures.snapshot().procedures), beforeProcedures, 'remote events cannot bypass procedure approval')
   assert.equal(await fs.readFile(planFile, 'utf8'), 'fixture whiteboard stays unchanged')
   changes = [fact]; assert.equal((await engine._teamPull.pullOnce()).ok, true)

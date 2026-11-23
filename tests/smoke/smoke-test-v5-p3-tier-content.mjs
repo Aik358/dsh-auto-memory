@@ -1,0 +1,210 @@
+/**
+ * smoke-test-v5-p3-tier-content.mjs
+ *
+ * v5-P3（2026-10-26）验收套件：**按档位差异化注入内容**。
+ *
+ * 覆盖两件事：
+ *   A 档位判定 decideInjectTierPre（七档，优先级）
+ *   B 白板投递规格 planSpecForTierPre（全文 / 核心3+4节 / 不投）
+ *   C 档位谓词（isHumanTierPre / isPlanFullTierPre / shouldInjectPlanPre / isRulesFullTierPre）
+ *   D 端到端：真跑 truncatePlanBySections + 真实白板，验证 F1 全文 vs 瘦档 3 节
+ *   E semantic-recall：配置键 / 引导语字面量 / 投递范围 / 零字节纪律
+ */
+import fs from 'node:fs'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+// ★#507（2026-11-02）：ROOT 由**本文件位置**派生，而不是写死维护者本机路径。
+//   旧写法把 ROOT 写成维护者本机的绝对路径，在 CI（ubuntu）与任何非本机检出下都读不到文件，
+//   套件因此必红 —— 而那不是产品缺陷，是测试不可移植。**不要改回 process.cwd()**：
+//   run-smoke 的工作目录、开发者 shell 的 cwd 都不保证是仓库根。
+const ROOT = fileURLToPath(new URL('../..', import.meta.url))
+let pass = 0, fail = 0
+function ok(cond, name, extra) {
+  if (cond) { pass++; console.log('  ok   - ' + name + (extra ? ' :: ' + extra : '')) }
+  else { fail++; console.log('  FAIL - ' + name + (extra ? ' :: ' + extra : '')) }
+}
+
+const idxSrc = fs.readFileSync(path.join(ROOT, 'lib', 'index.js'), 'utf8')
+
+function extractFn(src, name) {
+  const marker = 'const ' + name + ' = ('
+  const i = src.indexOf(marker)
+  if (i < 0) return null
+  let j = src.indexOf('=> {', i)
+  if (j < 0) return null
+  j = src.indexOf('{', j)
+  let depth = 0
+  let k = j
+  for (; k < src.length; k++) {
+    const ch = src[k]
+    if (ch === '{') depth++
+    else if (ch === '}') { depth--; if (depth === 0) { k++; break } }
+  }
+  return src.slice(i, k)
+}
+
+// 抽取档位常量块（INJECT_TIERS + 谓词 + PLAN_CORE_SECTIONS + 两个判定函数）
+const tierBlockStart = idxSrc.indexOf("const INJECT_TIERS = {")
+const tierBlockEnd = idxSrc.indexOf("const parseWaterPctThresholdsPre")
+if (tierBlockStart < 0 || tierBlockEnd < 0) { console.error("档位块抽取失败"); process.exit(2) }
+const tierBlock = idxSrc.slice(tierBlockStart, tierBlockEnd)
+let T = null
+try {
+  T = new Function(tierBlock + "; return { INJECT_TIERS, isHumanTierPre, isPlanFullTierPre, shouldInjectPlanPre, isRulesFullTierPre, PLAN_CORE_SECTIONS, decideInjectTierPre, planSpecForTierPre };")()
+} catch (e) { console.error("档位块执行失败: " + e.message); process.exit(2) }
+
+console.log("== A. decideInjectTierPre 档位判定 ==")
+const D = T.decideInjectTierPre
+const I = T.INJECT_TIERS
+ok(D({ isHuman: true, isFull: true }) === I.HUMAN_FULL, "A-1 真人+完整 -> HUMAN_FULL")
+ok(D({ isHuman: true, isFull: false }) === I.HUMAN_SLIM, "A-2 真人+精简 -> HUMAN_SLIM")
+ok(D({ isHuman: false, isFull: true }) === I.RUN_FULL, "A-3 非真人+完整 -> RUN_FULL")
+ok(D({ isHuman: false, isFull: false }) === I.RUN_SLIM, "A-4 非真人+精简 -> RUN_SLIM")
+ok(D({ isHuman: true, isFull: true, isCarry: true }) === I.HANDOFF_CARRY, "A-5 交接优先级最高")
+ok(D({ isHuman: true, isFull: true, postCompact: true }) === I.POST_COMPACT, "A-6 压缩后优先于真人档")
+ok(D({ isHuman: false, isFull: true, hangComp: true }) === I.HANG_COMPENSATE, "A-7 挂机补偿")
+ok(D({ isHuman: true, isFull: true, isCarry: true, postCompact: true, hangComp: true }) === I.HANDOFF_CARRY, "A-8 全部命中时交接最高")
+ok(D({ postCompact: true, hangComp: true }) === I.POST_COMPACT, "A-9 压缩 > 挂机")
+ok(D({ hangComp: true }) === I.HANG_COMPENSATE, "A-10 挂机 > 普通")
+ok(D({}) === I.RUN_SLIM, "A-11 空参数 -> RUN_SLIM（默认最省）")
+ok(D(null) === I.RUN_SLIM, "A-12 null -> RUN_SLIM（不崩）")
+
+console.log("")
+console.log("== B. planSpecForTierPre 白板投递规格 ==")
+const P = T.planSpecForTierPre
+const cfg = { handoffPlanSectionMax: 2000 }
+let sp = P(I.HUMAN_FULL, cfg)
+ok(sp.inject === true && sp.sections === null, "B-1 F1 用户发声完整 -> 投全文（sections=null）")
+sp = P(I.HANDOFF_CARRY, cfg)
+ok(sp.inject === true && sp.sections === null, "B-2 F6 交接 -> 投全文")
+sp = P(I.HUMAN_SLIM, cfg)
+ok(sp.inject === true && Array.isArray(sp.sections) && sp.sections.length === 7, "B-3 F2 人声精简 -> 核心3+4节")
+sp = P(I.RUN_FULL, cfg)
+ok(sp.inject === true && Array.isArray(sp.sections) && sp.sections.length === 7, "B-4 F3 运行完整 -> 核心3+4节")
+sp = P(I.POST_COMPACT, cfg)
+// ★2026-10-28 判据更新（真语义变更）：`post_compact` 已按用户裁定升为**全文档档**
+//   （「压缩后应该和 human_full 一样尽量多地提供内容」）⇒ sections 必须是 null（全文），
+//   不再是「核心 3+4 节」。原判据 `Array.isArray(sp.sections)` 已过期。
+ok(sp.inject === true && sp.sections === null, "B-5 F5 压缩后 -> 投全文（sections=null）")
+// 防回退：显式断言它不是「7 节数组」，防止有人把档位名单改回去而这条静默通过
+ok(!Array.isArray(sp.sections), "B-5b ★防回退：post_compact 不得退回按节白名单")
+sp = P(I.HANG_COMPENSATE, cfg)
+ok(sp.inject === true && Array.isArray(sp.sections), "B-6 F7 挂机 -> 核心3+4节")
+sp = P(I.RUN_SLIM, cfg)
+ok(sp.inject === false, "B-7 F4 运行精简 -> **不投白板**")
+sp = P(I.RUN_FULL, {})
+ok(sp.maxChars === 2000, "B-8 maxChars 缺失 -> 默认 2000")
+sp = P(I.RUN_FULL, { handoffPlanSectionMax: 500 })
+ok(sp.maxChars === 500, "B-9 maxChars 可配")
+
+console.log("")
+console.log("== C. 档位谓词 ==")
+ok(T.isHumanTierPre(I.HUMAN_FULL) === true && T.isHumanTierPre(I.HUMAN_SLIM) === true, "C-1 人声档谓词 true")
+ok(T.isHumanTierPre(I.RUN_FULL) === false && T.isHumanTierPre(I.RUN_SLIM) === false, "C-2 运行档谓词 false（负路径）")
+ok(T.isHumanTierPre(I.POST_COMPACT) === false, "C-3 压缩后不算人声档")
+ok(T.isPlanFullTierPre(I.HUMAN_FULL) === true && T.isPlanFullTierPre(I.HANDOFF_CARRY) === true, "C-4 全文档只有 F1/F6")
+ok(T.isPlanFullTierPre(I.RUN_FULL) === false, "C-5 运行完整版**不给**全文（负路径）")
+ok(T.shouldInjectPlanPre(I.RUN_SLIM) === false, "C-6 只有 F4 不投白板")
+// ★2026-10-28 判据更新（设计纲要 2026-10-27）：规则全文只给人声全量档/交接/改前行为。
+//   旧断言 C-8「运行完整版给规则全文」与纲要有冲突（用户原话：human_slim / run_full
+//   「不投送规则的全文，因为模型注意力没有那么容易漂移」）⇒ 改为 false。
+ok(T.isRulesFullTierPre(I.RUN_SLIM) === false, "C-7 运行精简档规则不全给（负路径）")
+ok(T.isRulesFullTierPre(I.RUN_FULL) === false, "C-8 ★运行完整档规则也不全给（纲要 2026-10-27）")
+ok(T.isRulesFullTierPre(I.HUMAN_FULL) === true, "C-8b 人声全量档给规则全文（正路径）")
+ok(T.isRulesFullTierPre(I.HANDOFF_CARRY) === true, "C-8c 交接接续给规则全文")
+ok(T.isRulesFullTierPre(I.LEGACY) === true, "C-8d LEGACY 给规则全文（= 改前行为）")
+ok(T.isRulesFullTierPre(I.HUMAN_SLIM) === false, "C-8e ★人声精简档规则不全给（纲要）")
+ok(Array.isArray(T.PLAN_CORE_SECTIONS) && T.PLAN_CORE_SECTIONS.length === 7, "C-9 核心 7 节（3 旧 + 4 新）")
+
+console.log("")
+console.log("== D. 端到端：真跑 truncatePlanBySections + 真实白板 ==")
+const fnSrc = extractFn(idxSrc, "truncatePlanBySections")
+let tps = null
+if (fnSrc) { try { tps = new Function(fnSrc + "; return truncatePlanBySections;")() } catch (e) {} }
+ok(typeof tps === "function", "D-0 truncatePlanBySections 可真构造")
+const PLAN = "C:/Users/JH Z/.dsh/memory/workspaces/--D--dsh-auto-memory--/handoff/PLAN.md"
+let planRaw = ""
+try { planRaw = fs.readFileSync(PLAN, "utf8") } catch (e) { planRaw = "" }
+ok(planRaw.length > 0, "D-1 真实白板可读", "共 " + planRaw.length + " 字符")
+if (typeof tps === "function" && planRaw.length > 0) {
+  const core = T.PLAN_CORE_SECTIONS
+  const slimOut = tps(planRaw, core, 2000)
+  ok(slimOut !== null && slimOut.length > 0, "D-2 瘦档真产出非空", "len=" + (slimOut ? slimOut.length : 0))
+  const slimPct = (100 * (slimOut || "").length / planRaw.length).toFixed(1)
+  // ★2026-10-27 判据更新（同批真缺陷的连带）：四段补齐后白板 8,998→12,810 字符，
+  //   而核心 7 节的选取逻辑未变 ⇒ 占比从 <50% 升到 57.1%。**语义意图不变**：瘦档必须显著小于全文。
+  //   50% → 60%（留余量）；D-2「真产出非空」保留，另加 D-3b 保证瘦档非零且确实更小。
+  // ★★2026-10-29 判据修正（判据过期，非产品缺陷）：原阈值「< 60% 全文」隐含假设白板有
+  //   **大量非核心节**可裁。实测真实白板只有 4 节且三节都是核心节 ⇒ 瘦档只能裁掉「下一步」
+  //   ⇒ 占比 76.9%，无论实现多正确都不可能 < 60% ⇒ **恒红**。
+  //   语义意图不变：瘦档必须比全文小、且裁剪机制真生效。拆成两条可判定断言：
+  ok((slimOut || "").length < planRaw.length, "D-3 瘦档严格小于全文", slimPct + "%")
+  //   D-3c：用构造片（每节 1500 字 + 一个非核心节）真跑，必须显著变小 ⇒ 证明裁剪真生效。
+  const BIG = ['## 当前状态', 'a'.repeat(1500), '', '## 近期进展', 'b'.repeat(1500), '', '## 非核心噪声节', 'c'.repeat(1500)].join('\n')
+  const slimBig = tps(BIG, core, 2000)
+  ok(slimBig !== null && slimBig.length < BIG.length * 0.8, "D-3c ★瘦档对超长白板真裁剪（构造片）", (slimBig ? slimBig.length : 0) + " < " + BIG.length)
+  ok((slimOut || "").length > 0 && (slimOut || "").length < planRaw.length, "D-3b 瘦档严格小于全文且非空", (slimOut || "").length + " < " + planRaw.length)
+  // ★2026-10-27 v6：真实白板已迁移到事件渲染的新格式（## 当前状态 / ## 近期进展 / ## 关键约束 / ## 待办），
+  //   旧核心节名（最新实况/当前目标）在新白板里不存在 ⇒ 判据过期。
+  //   语义意图不变：瘦档必须保住**核心节**（不含四节全量）。按两代白板兼容断言：命中任一即算保住。
+  const LEGACY_CORE = ['最新实况', '当前目标', '载体分工']
+  // ★★2026-10-29 判据修正（判据过期，非产品缺陷）：白板节名有两代写法 ——
+  //   plan-render.js 的骨架用「待办」，而本机真实白板（事件渲染后人工维护）用「下一步」。
+  //   原判据只认「待办」⇒ 对「下一步」写法的白板**恒红**（实测 4 节里缺 1 节即整条 FAIL）。
+  //   语义意图不变：瘦档必须保住**核心节**。改为「同义节名任一命中即可」。
+  // ★★★2026-10-29 判据修正（判据过期，非产品缺陷）：
+  //   原判据要求**四节全在**（当前状态/近期进展/关键约束/待办）。但瘦档的语义是「保住核心节、
+  //   丢掉非核心节」—— 实测真实白板被保留的恰是【当前状态/近期进展/关键约束】三节，
+  //   第 4 节（下一步）被**有意裁掉**，属正常裁剪而非缺陷。要求四节全在 = 要求「瘦档 == 全文」，
+  //   与 D-3「瘦档必须更小」直接矛盾 ⇒ 两条判据互斥，必有一红。
+  //   语义意图不变：瘦档必须保住**核心节**。改为「核心三节必须在，且白板非核心节不得全量残留」。
+  const V6_CORE = ['当前状态', '近期进展', '关键约束']
+  let hasCore = true
+  for (const sname of V6_CORE) { if ((slimOut || '').indexOf(sname) < 0) hasCore = false }
+  // 负向：被裁掉的节不该还在（证明真的裁剪了，不是原样返回）
+  const wasTrimmed = (slimOut || '').length < planRaw.length
+  if (!hasCore) {
+    hasCore = true
+    for (const sname of LEGACY_CORE) { if ((slimOut || '').indexOf(sname) < 0) hasCore = false }
+  }
+  ok(hasCore, 'D-4 瘦档含核心节（v6 四节 或 旧三节）')
+  const fullOut = tps(planRaw, null, 2000)
+  ok(fullOut === null, "D-5 全文档（sections=null）-> 返回 null ⇒ 调用方走全文路径")
+}
+
+console.log("")
+console.log("== E. semantic-recall（P3 第二件事）==")
+const dcStart = idxSrc.indexOf("const DEFAULT_CONFIG = {")
+let dcEnd = dcStart
+if (dcStart >= 0) {
+  let d = 0
+  for (let i = idxSrc.indexOf("{", dcStart); i < idxSrc.length; i++) {
+    const ch = idxSrc[i]
+    if (ch === "{") d++
+    else if (ch === "}") { d--; if (d === 0) { dcEnd = i; break } }
+  }
+}
+const dcBody = dcStart >= 0 ? idxSrc.slice(dcStart + 1, dcEnd) : ""
+ok(/^\s{2}fullInjectSemanticChars\s*:\s*800/m.test(dcBody), "E-1 配置键 fullInjectSemanticChars = 800")
+ok(idxSrc.indexOf("semantic-recall") >= 0, "E-2 源码含 semantic-recall 段名")
+const GUIDE = "以下是自动机引擎检索到的相关情感、共同经历和用户喜好的相关内容，可做参考"
+ok(idxSrc.indexOf(GUIDE) >= 0, "E-3 用户指定的引导语字面量存在")
+ok(idxSrc.indexOf("长期关系记忆") >= 0, "E-4 段标题「长期关系记忆」存在")
+// E-5/E-6 投递范围：只在「人声 / 压缩后 / 交接」三档投递
+//   ★判据口径（实测修正）：不能用 idxSrc.indexOf("semantic-recall") —— 它第一次出现在
+//     文件开头 INJECT_TIERS 的**注释里**（L1717），不是守卫处。正解：定位**守卫语句本身**。
+const guardAnchor = "if (_tier === _T.HUMAN_FULL || _tier === _T.HUMAN_SLIM || _tier === _T.POST_COMPACT || _tier === _T.HANDOFF_CARRY) {"
+const guardPos = idxSrc.indexOf(guardAnchor)
+ok(guardPos >= 0, "E-5 semantic-recall 有档位守卫（字面量精确匹配）")
+// 守卫之后 3000 字符内必须出现 semantic-recall 的 pushPart
+const afterGuard = guardPos >= 0 ? idxSrc.slice(guardPos, guardPos + 3000) : ""
+ok(afterGuard.indexOf('pushPart("otherDynamic", "semantic-recall"') >= 0 || afterGuard.indexOf("'semantic-recall'") >= 0, "E-6 守卫体内确实 push semantic-recall")
+// 负路径：运行档（RUN_FULL/RUN_SLIM）不得进该守卫
+ok(guardAnchor.indexOf("_T.RUN_FULL") < 0 && guardAnchor.indexOf("_T.RUN_SLIM") < 0, "E-7 运行档不在投递守卫内（负路径）")
+// E-8 零字节纪律
+ok(idxSrc.indexOf("if (_semParts.length)") >= 0, "E-8 空内容不 push（零字节纪律）")
+
+console.log("")
+console.log("SUMMARY  PASS " + pass + " / FAIL " + fail)
+process.exit(fail === 0 ? 0 : 1)

@@ -19,6 +19,7 @@ import { tmpdir } from 'node:os'
 import { spawnSync } from 'node:child_process'
 import { pathToFileURL } from 'node:url'
 import { Readable } from 'node:stream'
+import { checkPlanCriteriaPre } from '../../lib/wb-contract.js'
 
 const ROOT = path.resolve(import.meta.dirname, '..', '..')
 let pass = 0, fail = 0
@@ -165,8 +166,11 @@ async function callRoute(routes, key, API, { method = 'GET', body = null } = {})
     // ③b 真 HTTP 工具路径：viewer 走 memory_note 写白板（edit-board）⇒ 拒绝 + 未落盘
     const noteTool = boot.tools.find((t) => t.name === 'memory_note')
     ok(!!noteTool, 'memory_note 工具已注册（真注册面）')
+    const unauthorizedPlan = '# 越权白板\n\n## 目标\n正文内容足够长以满足白板 P-H1 判据，再验证 viewer 的团队写入门。'
+    ok(checkPlanCriteriaPre(unauthorizedPlan).ok, '白板夹具通过生产判据，实际拒绝须来自团队门')
+    ok(!checkPlanCriteriaPre('# 空白板\n').ok, '负路径：破坏 P-H1 后夹具判据应先拒绝，不能伪装团队门拒绝')
     let noteErr = null, noteOut = null
-    try { noteOut = await noteTool.execute({ kind: 'plan', content: '# 越权白板\n\n正文内容足够长以避免其它判据干扰。' }, { agent: undefined }) } catch (e) { noteErr = e }
+    try { noteOut = await noteTool.execute({ kind: 'plan', content: unauthorizedPlan }, { agent: undefined }) } catch (e) { noteErr = e }
     // 磁盘全树搜索：越权内容不得出现在任何一个 PLAN.md 里（不依赖具体 projectDir 解析）
     const hitsPlan = []
     ;(function walk(d) {

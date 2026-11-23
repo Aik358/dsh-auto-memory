@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import {mkdtemp,writeFile,readFile,rm} from 'node:fs/promises'
+import {mkdtemp,writeFile,readFile,readdir,rm} from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import {apply,MemoryEngine} from '../lib/audit-engine.mjs'
@@ -21,7 +21,15 @@ try {
  const snapshot=JSON.parse(await read.execute({kind:'plan'},exec));assert.match(snapshot.guidance,/职责指派/);assert.ok(snapshot.cards[0].id);assert.equal(snapshot.content,await readFile(snapshot.path,'utf8'))
  const changed=snapshot.cards[0].text.replace('Initial facts','Verified facts')
  const success=await note.execute({kind:'plan',content:changed,cardId:snapshot.cards[0].id,expectedCardRevision:snapshot.cards[0].revision},exec);assert.match(success,/已更新/);assert.match(success,/revision:/)
- const stale=await note.execute({kind:'plan',content:changed.replace('Verified','Stale'),cardId:snapshot.cards[0].id,expectedCardRevision:snapshot.cards[0].revision},exec);assert.match(stale,/冲突双方已保存/);assert.doesNotMatch(stale,/已更新/)
+ const handoffDir=path.dirname(snapshot.path)
+ const listConflicts=()=>readdir(path.join(handoffDir,'conflicts')).catch(err=>{if(err.code==='ENOENT')return [];throw err})
+ const eventBytes=()=>readFile(path.join(handoffDir,'event-store.json'))
+ const beforeStale=await readFile(snapshot.path),beforeEvents=await eventBytes(),beforeConflicts=await listConflicts()
+ const stale=await note.execute({kind:'plan',content:changed.replace('Verified','Stale'),cardId:snapshot.cards[0].id,expectedCardRevision:snapshot.cards[0].revision},exec)
+ assert.match(stale,/白板预检拒绝（plan-card-conflict:/);assert.doesNotMatch(stale,/已更新|冲突双方已保存/)
+ assert.deepEqual(await readFile(snapshot.path),beforeStale,'stale card rejection leaves PLAN bytes unchanged')
+ assert.deepEqual(await eventBytes(),beforeEvents,'stale card rejection does not write an event checkpoint')
+ assert.deepEqual(await listConflicts(),beforeConflicts,'preflight rejection does not create a conflict copy')
  const fresh=JSON.parse(await read.execute({kind:'plan'},exec));assert.match(fresh.content,/Verified facts/);assert.doesNotMatch(fresh.content,/Stale facts/)
  const recovered=await note.execute({kind:'plan',content:fresh.cards[0].text.replace('Verified','Reviewed'),cardId:fresh.cards[0].id,expectedCardRevision:fresh.cards[0].revision},exec);assert.match(recovered,/已更新/)
  const denied=await note.execute({kind:'plan',content:fresh.content},exec);assert.match(denied,/version-conflict/);assert.doesNotMatch(denied,/已更新/)

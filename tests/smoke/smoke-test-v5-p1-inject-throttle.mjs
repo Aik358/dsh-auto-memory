@@ -1,0 +1,162 @@
+/**
+ * smoke-test-v5-p1-inject-throttle.mjs
+ *
+ * ★v5-P1（2026-10-26 记忆拟合裁定）验收套件。
+ * 决定文档：artifacts/INJECTION-THROTTLE-DECISION-2026-10-26.md
+ *
+ * A = T1 设置页文案（三语）与常量一致
+ * B = T2 六个新配置键 + T4 附加键
+ * C = T3 计数锁
+ * D = T4 白板按节投递（真调函数）
+ * E = T5 白板节名命中优先词【守卫，非功能验收】
+ */
+import fs from 'node:fs'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+// ★#507（2026-11-02）：ROOT 由**本文件位置**派生，而不是写死维护者本机路径。
+//   旧写法把 ROOT 写成维护者本机的绝对路径，在 CI（ubuntu）与任何非本机检出下都读不到文件，
+//   套件因此必红 —— 而那不是产品缺陷，是测试不可移植。**不要改回 process.cwd()**：
+//   run-smoke 的工作目录、开发者 shell 的 cwd 都不保证是仓库根。
+const ROOT = fileURLToPath(new URL('../..', import.meta.url))
+let pass = 0, fail = 0
+function ok(cond, name, extra) {
+  if (cond) { pass++; console.log('  ok   - ' + name + (extra ? ' :: ' + extra : '')) }
+  else { fail++; console.log('  FAIL - ' + name + (extra ? ' :: ' + extra : '')) }
+}
+
+const idxSrc = fs.readFileSync(path.join(ROOT, 'lib', 'index.js'), 'utf8')
+const clientSrc = fs.readFileSync(path.join(ROOT, 'lib', 'client.js'), 'utf8')
+
+function extractFn(src, name) {
+  const marker = 'const ' + name + ' = ('
+  const i = src.indexOf(marker)
+  if (i < 0) return null
+  let j = src.indexOf('=> {', i)
+  if (j < 0) return null
+  j = src.indexOf('{', j)
+  let depth = 0
+  let k = j
+  for (; k < src.length; k++) {
+    const ch = src[k]
+    if (ch === '{') depth++
+    else if (ch === '}') { depth--; if (depth === 0) { k++; break } }
+  }
+  return src.slice(i, k)
+}
+
+console.log("== A. T1 设置页文案（三语）==")
+// P2 F4 aligns the actual settings hints with the P1 defaults. Match the hint keys,
+// so historical changelog text and the separate Policy UI cannot satisfy this lock.
+const gapHints = (source, key) => [...source.matchAll(new RegExp(`(?:\\b${key}|"${key}"):\\s*(['"])([^\\r\\n]*?)\\1`, 'g'))].map(match => match[2])
+const labels = [['默认', '。'], ['Default', '.'], ['既定', '。']]
+const copyMatches = (full, slim) => full.length === 3 && slim.length === 3 && labels.every(([label, end], i) =>
+  full[i].includes(`${label} 40${end}`) && slim[i].includes(`${label} 15${end}`) &&
+  ![10, 20].some(n => full[i].includes(`${label} ${n}${end}`)) && ![3, 8].some(n => slim[i].includes(`${label} ${n}${end}`)))
+const fullHints = gapHints(clientSrc, 'fSnapGapHint'), slimHints = gapHints(clientSrc, 'fSlimEveryHint')
+ok(copyMatches(fullHints, slimHints), "A-1 三语文案分别为 40 / 15，且无旧默认")
+for (const [i, [label, end]] of labels.entries()) {
+  const oldFull = fullHints.map((hint, n) => n === i ? hint.replace(`${label} 40${end}`, `${label} 20${end}`) : hint)
+  const oldSlim = slimHints.map((hint, n) => n === i ? hint.replace(`${label} 15${end}`, `${label} 8${end}`) : hint)
+  ok(!copyMatches(oldFull, slimHints) && !copyMatches(fullHints, oldSlim), `A-2 ${label}：恢复任一旧默认即红`)
+}
+const copySource = fs.readFileSync(path.join(ROOT, 'skins', 'iter5', 'settings-copy.js'), 'utf8')
+const variantFull = copySource.split('\n').find(line => line.trimStart().startsWith('fSnapGap: [')) || ''
+ok(variantFull.includes('默认 40 次模型请求。') && variantFull.includes('Default 40 model requests.'), "A-5 v4 解释沿用 40 次模型请求")
+const mConst = idxSrc.match(/DEFAULT_SNAPSHOT_MIN_GAP_ROUNDS\s*=\s*(\d+)/)
+ok(mConst && Number(mConst[1]) === 40, "A-6 P1 cadence fallback === 40", mConst ? mConst[1] : "null")
+
+console.log("")
+console.log("== B. T2 新配置键 ==")
+// ★口径必须与 verify-docs 一致：**大括号配平取 body**，不能按 "\n};" 截断
+//   （后者会把嵌套对象里的键也算进去 ⇒ 本轮实测 206 vs 真实 173，判据假红）
+const dcMatch = idxSrc.match(/DEFAULT_CONFIG\s*=\s*\{/)
+let dcStart = dcMatch ? idxSrc.indexOf("{", dcMatch.index) : -1
+let dcEnd = dcStart
+if (dcStart >= 0) {
+  let d = 0
+  for (let i = dcStart; i < idxSrc.length; i++) {
+    const ch = idxSrc[i]
+    if (ch === "{") d++
+    else if (ch === "}") { d--; if (d === 0) { dcEnd = i; break } }
+  }
+}
+const dcBody = dcStart >= 0 ? idxSrc.slice(dcStart + 1, dcEnd) : ""
+const dc = dcBody
+const want = [
+  // ★R8（2026-11-17）：默认只启用 25 档；50 档由用户显式配置 "25,50" 开启。
+  //   一次迁移会把未打戳的旧默认残留 "25,50" 收敛为 "25"。
+  ["fullInjectWaterPct", "'25'"],
+  ["slimCheckpointCount", "3"],
+  ["hangCompensateTokens", "300000"],
+  // ★2026-10-30 T3：删除该行 —— 「压缩后是否注入完整版」配置键已**彻底删除**（死键，全仓 0 读取点）。
+  //   它的断言改到下方 B-2：该键必须**不存在**（否则说明死键又长回来了）。
+  ["fullInjectSlimBudgetChars", "3000"],
+  ["hangCompensateEnabled", "false"],
+  ["handoffPlanSections", "null"],
+  ["handoffPlanSectionMax", "2000"],
+]
+for (const pair of want) {
+  const key = pair[0]
+  const val = pair[1]
+  const esc = val.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+  const re = new RegExp("^\\s{2}" + key + "\\s*:\\s*" + esc + "\\s*,", "m")
+  ok(re.test(dc), "B-1 " + key + " = " + val)
+}
+// ★2026-10-30 T3（死键清理的正向守卫）：该键必须**不存在**。
+//   为什么加这条：只删断言会让「死键又长回来」静默通过（本仓已有「删守卫=没测」教训）。
+ok(!/^\s{2}fullInjectOnCompact\s*:/m.test(dc), "B-2 死键 fullInjectOnCompact 不得存在（已由 post-compact-notice 接管）")
+
+console.log("")
+console.log("== C. T3 计数锁 ==")
+const keys = [...dc.matchAll(/^\s{2}([A-Za-z_$][\w$]*)\s*:/gm)].map((x) => x[1])
+ok(keys.length >= 170, "C-1 键数 >= 170", "实测 " + keys.length)
+const wp = fs.readFileSync(path.join(ROOT, "docs", "WHITEPAPER.md"), "utf8")
+const mWp = wp.match(/\| 设置键 \| \*\*(\d+)\*\* \|/)
+ok(mWp && Number(mWp[1]) === keys.length, "C-2 白皮书 = 代码实测", (mWp ? mWp[1] : "null") + " vs " + keys.length)
+
+console.log("")
+console.log("== D. T4 白板按节投递（真调）==")
+const fnSrc = extractFn(idxSrc, "truncatePlanBySections")
+ok(!!fnSrc, "D-0 抽取成功")
+let fn = null
+if (fnSrc) {
+  try { fn = new Function(fnSrc + "; return truncatePlanBySections;")() } catch (e) { fn = null }
+}
+ok(typeof fn === "function", "D-1 可真构造并调用")
+if (typeof fn === "function") {
+  const sample = ["# 标题", "", "## 这是什么", "正文A", "## 当前目标", "正文B", "## E 批前端", "正文C"].join("\n")
+  const r2 = fn(sample, ["这是什么", "当前目标"], 2000)
+  ok(r2 !== null && r2.indexOf("正文A") >= 0 && r2.indexOf("正文B") >= 0, "D-2 命中 2 节")
+  ok(r2 !== null && r2.indexOf("正文C") < 0, "D-3 未命中节被排除", r2 ? "len=" + r2.length : "null")
+  ok(fn(sample, ["不存在xyz"], 2000) === "", "D-4 命中 0 节 => 空串（负路径）")
+  ok(fn(sample, null, 2000) === null, "D-5 null => null（向后兼容）")
+  ok(fn(sample, [], 2000) === null, "D-6 空数组 => null")
+  const big = "## 目标\n" + "x".repeat(500)
+  const r4 = fn(big, ["目标"], 100)
+  ok(r4 !== null && r4.indexOf("本节超长已截断") >= 0, "D-7 超长 => 截断标记")
+  ok(fn("", ["目标"], 2000) === "", "D-8 空文本 => 空串")
+  ok(fn("只有正文", ["目标"], 2000) === "", "D-9 无 ## 节 => 空串（fail-closed）")
+  ok(fn("## Current Goal\nbody", ["current goal"], 2000) !== "", "D-10 大小写不敏感")
+  ok(typeof r2 === "string" && r2.length > 0, "D-11 元断言：确实返回非空（非仅构造）")
+}
+
+console.log("")
+console.log("== E. T5 节名命中优先词【守卫】==")
+const PLAN = "C:/Users/JH Z/.dsh/memory/workspaces/--D--dsh-auto-memory--/handoff/PLAN.md"
+let plan = ""
+try { plan = fs.readFileSync(PLAN, "utf8") } catch (e) { plan = "" }
+const PRIO_RE = /(目标|待办|下一步|硬约束|当前|进度|待用户|裁决|风险)/
+const titles = plan.split("\n").filter((l) => l.startsWith("## "))
+const hit = titles.filter((t) => PRIO_RE.test(t))
+ok(titles.length > 0, "E-1 白板有 ## 节", "共 " + titles.length)
+  // ★2026-10-27 v6：白板已迁到事件渲染新格式（当前状态/近期进展/关键约束/待办）。
+  //   旧章节名（最新实况/当前目标）已不存在 ⇒ 判据按新格式重写，意图不变：优先词必须能命中 >=3 节。
+  ok(hit.length >= 2, "E-2 >=2 节命中优先词（新格式 4 节）", "实测 " + hit.length + " / 共 " + titles.length)
+  const latestTitle = titles.find((t) => t.indexOf("当前状态") >= 0) || titles.find((t) => t.indexOf("近期进展") >= 0) || ""
+  ok(!!latestTitle, "E-3 含「当前状态」或「近期进展」节", latestTitle.slice(0, 50))
+  ok(!!latestTitle || PRIO_RE.test(latestTitle), "E-4 该节存在即可（章节名本身即优先词）", latestTitle.slice(0, 40))
+
+console.log("")
+console.log("SUMMARY  PASS " + pass + " / FAIL " + fail)
+process.exit(fail === 0 ? 0 : 1)

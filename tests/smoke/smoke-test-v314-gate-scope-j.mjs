@@ -30,6 +30,13 @@ const ok = (c, n, d) => { if (c) { pass++; console.log('  ✓ ' + n) } else { fa
 const cnt = (h, n) => { let k = 0, i = 0; for (;;) { const p = h.indexOf(n, i); if (p < 0) return k; k++; i = p + n.length } }
 /** 在 [start, start+win) 窗口内查找 —— 防止 indexOf 命中文件里更早的同类文本（本项目经典假红源）。 */
 const inWindow = (h, anchor, needle, win) => { const i = h.indexOf(anchor); if (i < 0) return -1; const j = h.indexOf(needle, i); return (j >= 0 && j - i < win) ? j : -1 }
+const between = (source, start, end) => {
+  const a = source.indexOf(start)
+  const b = source.indexOf(end, a + start.length)
+  return a >= 0 && b > a ? source.slice(a, b) : ''
+}
+const writePlanBody = between(IX, '\n  async writePlanSnapshot(', '\n  async writeHandoffLedger(')
+const noteBody = between(IX, "\n    defineTool('memory_note',", "\n    defineTool('memory_user',")
 
 console.log('=== J1 调用层降级（折中档 A）===')
 {
@@ -40,12 +47,20 @@ console.log('=== J1 调用层降级（折中档 A）===')
     'J1b 降级时置 ok=true + m1Downgraded=true（照写）')
   ok(IX.includes('planDowngradeWarn') && IX.includes('白板丢卡警示'),
     'J1c ★降级产生**显式警示行**（不静默放行）')
-  // 警示必须能一路带到工具回执（否则"放行"变静默）
-  ok(inWindow(IX, 'async writePlanSnapshot', 'const m1Warn = (gate && gate.m1Downgraded)', 4000) > 0,
-    'J1d 警示在 writePlanSnapshot 内取出')
-  ok(IX.includes('final: written, warn: m1Warn'), 'J1e 警示挂在成功 return 上')
-  ok(inWindow(IX, "defineTool('memory_note'", 'const warnLine = (r && r.warn)', 30000) > 0,
-    'J1f ★警示在 memory_note 里被拼进回执')
+  // 警示必须能一路带到工具回执（否则"放行"变静默）。按真实方法边界取窗口，
+  // 不用固定字符数承受方法内部演进。
+  const hasM1WarnRead = (body) => /^[ \t]*const m1Warn = \(gate && gate\.m1Downgraded\)/m.test(body)
+  ok(hasM1WarnRead(writePlanBody), 'J1d 警示在 writePlanSnapshot 内取出')
+  const noWritePlanWarning = writePlanBody.replace(/^([ \t]*)const m1Warn = .*$/m, "$1const m1Warn = ''")
+  ok(noWritePlanWarning !== writePlanBody && !hasM1WarnRead(noWritePlanWarning), 'J1d 变异：移除 m1Warn 取值后守卫判据必红')
+  // ★R186（2026-11-07 · alpha.7 S3）：S3 在同一 return 里插了 `committedBytes`（`final: written,` 与 `warn: m1Warn` 之间），
+  //   原整串精确匹配失配。判据意图不变（**警示必须挂在成功 return 上**，不许只在失败分支给）——
+  //   改为「同一 return 对象内同时出现 final: written 与 warn: m1Warn」，不再钉死中间字段的先后。
+  ok(/return \{[^}]*final: written[^}]*warn: m1Warn[^}]*\}/.test(writePlanBody), 'J1e 警示挂在成功 return 上')
+  const hasToolWarning = (body) => /^[ \t]*const warnLine = \(r && r\.warn\)/m.test(body) && body.includes(' + warnLine +')
+  ok(hasToolWarning(noteBody), 'J1f ★警示在 memory_note 里被拼进回执')
+  const noToolWarning = noteBody.replace(' + warnLine +', ' +')
+  ok(noToolWarning !== noteBody && !hasToolWarning(noToolWarning), 'J1f 变异：回执不再拼 warnLine 后守卫判据必红')
 }
 
 console.log('\n=== J2 纯函数语义未动（降级不许污染判据层）===')
@@ -60,8 +75,13 @@ console.log('\n=== J3 archivedIds 三层链路真通（假出路已修）===')
 {
   ok(IX.includes("archivedIds: { type: 'array'"), 'J3a 工具参数表已暴露 archivedIds（此前缺 ⇒ 假出路）')
   ok(IX.includes('archivedIds: archIds'), 'J3b memory_note 真的把参数喂下去')
-  ok(inWindow(IX, 'async writePlanSnapshot', 'archivedIds: Array.isArray(opts && opts.archivedIds)', 4000) > 0,
-    'J3c writePlanSnapshot 把 opts.archivedIds 透给 checkMutationPre（此前只传 4 字段）')
+  const hasArchivedForward = (body) => {
+    const gateArgs = /this\.checkMutationPre\(\{([^}]+)\}\)/.exec(body)?.[1] || ''
+    return /^[ \t]*archivedIds: Array\.isArray\(opts && opts\.archivedIds\) \? opts\.archivedIds : \[\],/m.test(gateArgs)
+  }
+  ok(hasArchivedForward(writePlanBody), 'J3c writePlanSnapshot 把 opts.archivedIds 透给 checkMutationPre（此前只传 4 字段）')
+  const noArchivedForward = writePlanBody.replace('archivedIds: Array.isArray(opts && opts.archivedIds) ? opts.archivedIds : [],', 'archivedIds: [],')
+  ok(noArchivedForward !== writePlanBody && !hasArchivedForward(noArchivedForward), 'J3c 变异：固定空 archivedIds 后守卫判据必红')
   ok(IX.includes('archivedIds: Array.isArray(o.archivedIds) ? o.archivedIds : []'), 'J3d checkMutationPre 仍原样喂给纯函数')
   ok(MM.includes('archivedIds'), 'J3e 纯函数侧本就认这个键（链路末端）')
 }

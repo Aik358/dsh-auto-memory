@@ -90,7 +90,10 @@ console.log('[H1] 健康扫描')
   const sm = makeManager()
   const sc = sm.scanHealth()
   ok(sc.ok, 'H1 扫描成功')
-  eq(sc.counts, { total: 3, ok: 3, stale: 0, unrepairable: 0 }, 'H1 健康语料 3/3 ok、零 stale')
+  // ★#530（2026-11-04）判据更新（判据过期，非缺陷）：counts 新增 absent 分档 ——
+  //   「源文件本身不存在」（如当天日志还没创建）从 stale 里独立出来，单独计数。
+  //   本处期望值随形状一起更新，discrimination 意图不变（健康语料仍必须零 stale、全 ok）。
+  eq(sc.counts, { total: 3, ok: 3, stale: 0, unrepairable: 0, absent: 0 }, 'H1 健康语料 3/3 ok、零 stale、零 absent')
   ok(sc.sources.every((s) => s.status === 'ok' && s.reasons.length === 0), 'H1 每源状态 ok 且无失效原因')
   // 制造 stale:直接改正文(模拟用户手改文件)→ sidecar fileDigest 失配
   writeFileSync(NOTES, NOTES_BODY + '\n- 手动新增一行\n', 'utf8')
@@ -112,9 +115,41 @@ console.log('[H2] repair:只重建 sidecar,正文逐字节不变')
   const after = readFileSync(NOTES)
   ok(before.equals(after), 'H2 正文逐字节不变(零风险自愈,不动用户内容)')
   const sc2 = makeManager().scanHealth()
-  eq(sc2.counts, { total: 3, ok: 3, stale: 0, unrepairable: 0 }, 'H2 修复后重扫转全 ok')
+  eq(sc2.counts, { total: 3, ok: 3, stale: 0, unrepairable: 0, absent: 0 }, 'H2 修复后重扫转全 ok')
   // 修复后新增的那条记忆应重新进入语料(自愈的意义所在)
   ok(sc2.sources.find((s) => s.file === NOTES).status === 'ok', 'H2 该源回到语料')
+}
+
+console.log('[H2b] #530 源文件不存在 = absent（正常态：不计 stale、不进可修集合）')
+{
+  // ★#530（2026-11-04）：当天日志尚未创建时，旧判据把源判成 stale/sidecar-missing 并列入可修集合，
+  //   而 repair 必须先读到正文 ⇒ 永远修不成、按钮恒空转。以下逐项断言新分档，并保留负路径（写出日志后转 ok）。
+  const MISSING_LOG = path.join(wsDir, '2026-11-04.md')
+  const PATHS_MISSING = Object.assign({}, PATHS, { todayLogPath: MISSING_LOG })
+  const sm = makeManager()
+  const sc = sm.scanHealth(PATHS_MISSING)
+  const row = sc.sources.find((s) => s.file === MISSING_LOG)
+  ok(!!row && row.status === 'absent', 'H2b 源不存在 ⇒ status=absent（不是 stale）got=' + (row && row.status))
+  ok(!!row && row.reasons.includes('source-missing'), 'H2b 原因分类 = source-missing（不是 sidecar-missing）got=' + JSON.stringify(row && row.reasons))
+  ok(!!row && row.repairable.length === 0, 'H2b ★absent 不进可修集合（repairable 为空）')
+  ok(sc.counts.absent === 1, 'H2b ★counts.absent 单独计数=1 got=' + sc.counts.absent)
+  ok(sc.stale.length === 0, 'H2b ★stale 列表不含 absent（本夹具其余两源健康）got=' + sc.stale.length)
+  // 自动修复路径：list = sc.stale ⇒ 完全不含该源，attempted 应为 0（旧实现会尝试 1 次并空转）
+  const rpAuto = await sm.repair(undefined, PATHS_MISSING)
+  ok(rpAuto.attempted === 0 && rpAuto.repaired === 0, 'H2b ★repair(auto) 不尝试 absent 源（attempted=0）got=' + rpAuto.attempted)
+  // 显式点名仍会失败，并如实回报 missing（证明「永不可修」的根因是源不存在，不是权限或判据漏判）
+  const rpOne = await sm.repair([{ file: MISSING_LOG, sourceRef: 'workspace-log:2026-11-04.md' }])
+  ok(rpOne.repaired === 0 && rpOne.results[0].ok === false && rpOne.results[0].reason === 'missing', 'H2b 显式点名修复仍 missing（源不存在）got=' + JSON.stringify(rpOne.results[0]))
+  // ★负路径（三段）：把源写出来 ⇒ ① 不再是 absent ② 转成**真正可修**的 stale（sidecar 还没建）
+  //   ③ auto repair 修成后转 ok。证明 absent 判据跟的是磁盘事实，不是把一个固定分类换个名字。
+  writeFileSync(MISSING_LOG, '<!-- memory:' + memIdOf('n') + ' -->\n## 今日\n- 今天的一条\n', 'utf8')
+  const sc2b = makeManager().scanHealth(PATHS_MISSING)
+  const row2 = sc2b.sources.find((s) => s.file === MISSING_LOG)
+  ok(!!row2 && row2.status === 'stale' && row2.repairable.includes('sidecar-missing'), 'H2b ★负路径①：源写出后不再是 absent，转为可修的 stale（sidecar 未建）got=' + JSON.stringify(row2))
+  ok(sc2b.counts.absent === 0, 'H2b ★负路径②：counts.absent 归零')
+  const rpAfter = await makeManager().repair(undefined, PATHS_MISSING)
+  ok(rpAfter.repaired >= 1, 'H2b ★负路径③：源存在后 auto repair 能真正修成 repaired=' + rpAfter.repaired)
+  ok(makeManager().scanHealth(PATHS_MISSING).sources.find((s) => s.file === MISSING_LOG).status === 'ok', 'H2b ★负路径③b：重建 sidecar 后该行转 ok')
 }
 
 console.log('[H3] 删除三联动:正文 + 在途激活包 + 派生事实')

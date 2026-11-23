@@ -35,7 +35,10 @@ ok(SRC.includes('checkWaterLevelAtStep(agent, minGapMs = 0) {'), 'checkWaterLeve
 // 无任何节流 → 模型越快(单步越短)越容易被官方抢先压缩、自动接续永不触发。默认必须为 0,仅测试可注入。
 ok(!/checkWaterLevelAtStep\(agent, minGapMs = [1-9]/.test(SRC), '默认 minGapMs 不得为正值(否则官方压缩会抢跑)')
 ok(/try \{ engine\.checkWaterLevelAtStep\(agent\) \} catch \(eWL\) \{\}/.test(SRC), 'pre-step 处理器调用 checkWaterLevelAtStep(带 try 保护)')
-ok(SRC.includes('void engine.checkWaterLevel(agent)'), 'turn-stopping 仍保留轮末测量')
+// ★2026-11-02：turn-stopping 的轮末测量已从 `try { void … }` 改为 engineBg 收口
+//   （同步 try 抓不到异步拒绝 ⇒ 宿主 fail-loud 会整树 dispose + 退出）。
+//   断言原意是「turn-stopping 仍保留轮末测量」⇒ 两种形态都认。
+ok(SRC.includes('void engine.checkWaterLevel(agent)') || SRC.includes("engineBg(engine, 'turn-stopping water level', engine.checkWaterLevel(agent)"), 'turn-stopping 仍保留轮末测量')
 ok(/waterStepAt/.test(SRC) && /now - rt\.waterStepAt < minGapMs/.test(SRC), '节流状态 waterStepAt + 窗口判断仍存在(默认 0 即不节流,测试可注入)')
 ok(SRC.includes('thresholdRatio=0.8') && /compaction\/start\+summary/.test(SRC), '注释记录官方压缩阈值与实锤证据')
 

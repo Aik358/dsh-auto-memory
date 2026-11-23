@@ -164,7 +164,7 @@ const mkMeter = (kind, estimatedTokens, usageAnchorTokens) => ({
 })
 
 const makeEngine = (config, meter, proxyGlobal) => {
-  const rt = { disposed: false }
+  const rt = { disposed: false, state: {} }
   const eng = {
     config, state: {}, _rt: rt,
     runtimeFor: () => rt,
@@ -230,8 +230,8 @@ const usageEvent = (seq, n) => ({ seq, type: 'assistant/message', data: { usage:
   const eng = makeEngine({ handoffEnabled: false }, mkMeter('estimated', HUGE), {})
   const wl = wlBind(eng)
   await wl(agentFor([usageEvent(2, REAL_USAGE)]))
-  eq(eng.state.waterLevelMeter, 'official:estimated', '★场景① 无插件 ⇒ meter 仍是 official:estimated（与修复前逐字节一致）')
-  eq(eng.state.waterLevelMeasuredTokens, HUGE + 50, '★场景① 无插件 ⇒ 分子仍是 token-meter 全量估算（未被改动）')
+  eq(eng._rt.state.waterLevelMeter, 'official:estimated', '★场景① 无插件 ⇒ meter 仍是 official:estimated（与修复前逐字节一致）')
+  eq(eng._rt.state.waterLevelMeasuredTokens, HUGE + 50, '★场景① 无插件 ⇒ 分子仍是 token-meter 全量估算（未被改动）')
   ok(!eng._proxyCompatLast, '★场景① 无插件 ⇒ 连留证记录都不产生（整段新逻辑未执行）')
 }
 
@@ -241,12 +241,12 @@ const usageEvent = (seq, n) => ({ seq, type: 'assistant/message', data: { usage:
   const eng = makeEngine({ handoffEnabled: false }, mkMeter('estimated', HUGE), g)
   const wl = wlBind(eng)
   await wl(agentFor([usageEvent(2, REAL_USAGE)]))
-  eq(eng.state.waterLevelMeter, 'official:proxyUsage', '★场景② 有插件 + estimated ⇒ meter 标 official:proxyUsage')
-  eq(eng.state.waterLevelMeasuredTokens, REAL_USAGE + 50, '★场景② 分子 = 真实 usage + surfaceDelta（' + (REAL_USAGE + 50) + '）')
-  ok(eng.state.waterLevelRatio > 0.15 && eng.state.waterLevelRatio < 0.17, '★场景② 水位回到真实量级（实测 ratio=' + eng.state.waterLevelRatio + '）')
-  ok(eng.state.waterLevelRatio < 1, '★场景② 水位不再虚高到 >1（修复前 ' + (HUGE / 1e6).toFixed(2) + ' 倍）')
-  eq(eng.state.waterLevelProxyCompat && eng.state.waterLevelProxyCompat.applied, true, '★场景② state.waterLevelProxyCompat.applied=true')
-  eq(eng.state.waterLevelProxyCompat.estimated, HUGE + 50, '★场景② 留证：写入走兜底前的官方估算值')
+  eq(eng._rt.state.waterLevelMeter, 'official:proxyUsage', '★场景② 有插件 + estimated ⇒ meter 标 official:proxyUsage')
+  eq(eng._rt.state.waterLevelMeasuredTokens, REAL_USAGE + 50, '★场景② 分子 = 真实 usage + surfaceDelta（' + (REAL_USAGE + 50) + '）')
+  ok(eng._rt.state.waterLevelRatio > 0.15 && eng._rt.state.waterLevelRatio < 0.17, '★场景② 水位回到真实量级（实测 ratio=' + eng._rt.state.waterLevelRatio + '）')
+  ok(eng._rt.state.waterLevelRatio < 1, '★场景② 水位不再虚高到 >1（修复前 ' + (HUGE / 1e6).toFixed(2) + ' 倍）')
+  eq(eng._rt.state.waterLevelProxyCompat && eng._rt.state.waterLevelProxyCompat.applied, true, '★场景② state.waterLevelProxyCompat.applied=true')
+  eq(eng._rt.state.waterLevelProxyCompat.estimated, HUGE + 50, '★场景② 留证：写入走兜底前的官方估算值')
 }
 
 // 场景③ 有插件但 baseline=usage（原生链路已经正确）⇒ 一字不动
@@ -255,8 +255,8 @@ const usageEvent = (seq, n) => ({ seq, type: 'assistant/message', data: { usage:
   const eng = makeEngine({ handoffEnabled: false }, mkMeter('usage', HUGE, 500000), g)
   const wl = wlBind(eng)
   await wl(agentFor([usageEvent(2, REAL_USAGE)]))
-  eq(eng.state.waterLevelMeter, 'official:usage', '★场景③ baseline=usage ⇒ meter 保持 official:usage（不介入）')
-  eq(eng.state.waterLevelMeasuredTokens, 500050, '★场景③ 分子仍是 token-meter 的值（未替换）')
+  eq(eng._rt.state.waterLevelMeter, 'official:usage', '★场景③ baseline=usage ⇒ meter 保持 official:usage（不介入）')
+  eq(eng._rt.state.waterLevelMeasuredTokens, 500050, '★场景③ 分子仍是 token-meter 的值（未替换）')
 }
 
 // 场景④ 有插件 + estimated，但末条 usage 之后有原生压缩 ⇒ 不兜底
@@ -265,9 +265,9 @@ const usageEvent = (seq, n) => ({ seq, type: 'assistant/message', data: { usage:
   const eng = makeEngine({ handoffEnabled: false }, mkMeter('estimated', HUGE), g)
   const wl = wlBind(eng)
   await wl(agentFor([usageEvent(2, REAL_USAGE), { seq: 3, type: 'compaction/start', data: {} }, { seq: 4, type: 'compaction/end', data: {} }]))
-  eq(eng.state.waterLevelMeter, 'official:estimated', '★场景④ 原生压缩之后 ⇒ 放弃兜底，meter 保持 estimated')
-  eq(eng.state.waterLevelMeasuredTokens, HUGE + 50, '★场景④ 分子保持 token-meter 原值（避免用压缩前 usage 反向高估）')
-  ok(eng.state.waterLevelProxyCompat && eng.state.waterLevelProxyCompat.applied === false, '★场景④ 留证记录 applied=false')
+  eq(eng._rt.state.waterLevelMeter, 'official:estimated', '★场景④ 原生压缩之后 ⇒ 放弃兜底，meter 保持 estimated')
+  eq(eng._rt.state.waterLevelMeasuredTokens, HUGE + 50, '★场景④ 分子保持 token-meter 原值（避免用压缩前 usage 反向高估）')
+  ok(eng._rt.state.waterLevelProxyCompat && eng._rt.state.waterLevelProxyCompat.applied === false, '★场景④ 留证记录 applied=false')
 }
 
 // 场景⑤ 有插件，但 usage 形状不可校验 ⇒ fail-open
@@ -276,8 +276,8 @@ const usageEvent = (seq, n) => ({ seq, type: 'assistant/message', data: { usage:
   const eng = makeEngine({ handoffEnabled: false }, mkMeter('estimated', HUGE), g)
   const wl = wlBind(eng)
   await wl(agentFor([{ seq: 2, type: 'assistant/message', data: { usage: { inputTokens: 5, outputTokens: 5, totalTokens: 999 } } }]))
-  eq(eng.state.waterLevelMeter, 'official:estimated', '★场景⑤ usage 形状不自洽 ⇒ 放弃兜底（fail-open）')
-  eq(eng.state.waterLevelMeasuredTokens, HUGE + 50, '★场景⑤ 分子保持原值')
+  eq(eng._rt.state.waterLevelMeter, 'official:estimated', '★场景⑤ usage 形状不自洽 ⇒ 放弃兜底（fail-open）')
+  eq(eng._rt.state.waterLevelMeasuredTokens, HUGE + 50, '★场景⑤ 分子保持原值')
 }
 
 // 场景⑥ 开关关闭 ⇒ 即使有插件也不兜底
@@ -286,8 +286,8 @@ const usageEvent = (seq, n) => ({ seq, type: 'assistant/message', data: { usage:
   const eng = makeEngine({ handoffEnabled: false, waterLevelProxyCompat: false }, mkMeter('estimated', HUGE), g)
   const wl = wlBind(eng)
   await wl(agentFor([usageEvent(2, REAL_USAGE)]))
-  eq(eng.state.waterLevelMeter, 'official:estimated', '★场景⑥ 配置关 ⇒ 完全不探测、不兜底')
-  eq(eng.state.waterLevelMeasuredTokens, HUGE + 50, '★场景⑥ 分子保持原值')
+  eq(eng._rt.state.waterLevelMeter, 'official:estimated', '★场景⑥ 配置关 ⇒ 完全不探测、不兜底')
+  eq(eng._rt.state.waterLevelMeasuredTokens, HUGE + 50, '★场景⑥ 分子保持原值')
 }
 
 // ══════════════════════════════════════════════════════════════════════

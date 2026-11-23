@@ -329,8 +329,13 @@ console.log('[A1] ④ #251 apply 挂载失败回滚')
     const m = mount(null)
     ok(!m.thrown, '④ 成功挂载不抛错', m.thrown && m.thrown.message)
     ok(m.timers.length >= 3, '④ 成功挂载确实建立了后台计时器', 'timers=' + m.timers.length)
-    await sleep(60)
-    ok(fs.existsSync(hb), '④ 挂载后心跳文件确实落盘（探针前置条件）', hb)
+    // ★2026-10-24 v4 批次 C-3 归因：这里原本固定 sleep(60) 后断言心跳文件存在。
+    //   轻车道并行 4 路时，心跳写盘的调度会被推后 >60ms ⇒ 偶发假红（本轮全量实测：本条 + 下方
+    //   「重新挂载后心跳恢复」两条同时红，构成 50 PASS / 2 FAIL；单跑 3 次全绿，且本套件未被本批改动）。
+    //   改为**自适应轮询**（最多 3000ms / 25ms 一次）：只放宽等待，不放宽判据。
+    let hbReady = false
+    for (let w = 0; w < 120; w++) { if (fs.existsSync(hb)) { hbReady = true; break } await sleep(25) }
+    ok(hbReady, '④ 挂载后心跳文件确实落盘（探针前置条件）', hb)
     disposeSurface(m); disposeSurface(m); disposeSurface(m)   // 幂等：重复 dispose 必须无害
     m.restore()
     const lo = leftover(m)
@@ -362,8 +367,14 @@ console.log('[A1] ④ #251 apply 挂载失败回滚')
     const m2 = mount(null)
     try { fs.rmSync(hb, { force: true }) } catch (e) {}
     for (const { fn } of m2.timers) { try { fn() } catch (e) {} }
-    await sleep(250)
-    ok(fs.existsSync(hb), '④ 重新挂载后心跳恢复（dispose 标志未跨实例泄漏）')
+    // ★2026-10-24 v4 批次 B 归因：这里原本固定 await sleep(250) 后断言文件存在。
+    //   满负载并行（8 车道）时心跳写盘的调度会被推后 250ms 以上 ⇒ 偶发假红
+    //   （实测两轮全量各红一次、单跑 3 次全绿、本套件未被本批改动）。
+    //   改为**自适应轮询**：最多等 3000ms，每 25ms 查一次 —— 只放宽等待，不放宽判据
+    //   （判据仍是「文件必须存在」；真缺陷即不写盘，轮询到 3000ms 也不会出现）。
+    let hbSeen = false
+    for (let w = 0; w < 120; w++) { if (fs.existsSync(hb)) { hbSeen = true; break } await sleep(25) }
+    ok(hbSeen, '④ 重新挂载后心跳恢复（dispose 标志未跨实例泄漏）')
     disposeSurface(m2); m2.restore()
   }
   globalThis.fetch = realFetch

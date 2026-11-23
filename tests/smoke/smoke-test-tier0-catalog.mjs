@@ -96,19 +96,19 @@ t('project：最深标题作 title，剥（HH:MM）尾巴；首句并接；日�
   const items = extractTier0ItemsPre(NOTES_TEXT, 'project')
   assert.equal(items.length, 1)
   assert.deepEqual(items[0], {
-    layer: 'project', status: 'current', date: '2026-09-13', title: '交付甲', oneLine: '甲结论句一。甲结论句二',
+    id: items[0].id, layer: 'project', status: 'current', date: '2026-09-13', title: '交付甲', oneLine: '甲结论句一。甲结论句二',
   })
 })
 t('user：无有效标题时取首行【标签】作 title', () => {
   const items = extractTier0ItemsPre(USER_TEXT, 'user')
   assert.deepEqual(items[0], {
-    layer: 'user', status: 'current', date: '2026-08-14', title: '规则标签', oneLine: '乙结论句一。乙结论句二',
+    id: items[0].id, layer: 'user', status: 'current', date: '2026-08-14', title: '规则标签', oneLine: '乙结论句一。乙结论句二',
   })
 })
 t('log：无标题 title 为空；日期回退到文件名日期', () => {
   const items = extractTier0ItemsPre(LOG_TEXT, 'log', { path: LOG_PATH })
   assert.equal(items.length, 2)
-  assert.deepEqual(items[0], { layer: 'log', status: 'current', date: '2026-09-15', title: '', oneLine: '戊结论句一。戊结论句二' })
+  assert.deepEqual(items[0], { id: items[0].id, layer: 'log', status: 'current', date: '2026-09-15', title: '', oneLine: '戊结论句一。戊结论句二' })
   assert.equal(items[1].oneLine, '己结论句一很长的句子用于超过十五个字')
 })
 t('whiteboard：文档标题独立成条，节标题成条，日期回退文件头', () => {
@@ -153,7 +153,7 @@ t('四类来源：layer 正确、优先级顺序 project>whiteboard>user>log', (
   const res = buildTier0CatalogFromTextPre(TEXT_SOURCES, { maxTokens: 4000 })
   assert.deepEqual([...new Set(res.items.map((i) => i.layer))], ['project', 'whiteboard', 'user', 'log'])
   assert.deepEqual(res.items[0], {
-    layer: 'project', status: 'current', date: '2026-09-13', title: '交付甲', oneLine: '甲结论句一。甲结论句二',
+    id: res.items[0].id, layer: 'project', status: 'current', date: '2026-09-13', title: '交付甲', oneLine: '甲结论句一。甲结论句二',
   })
   assert.equal(res.items.length, res.text.split('\n').length)
   assert.equal(res.dropped, 0)
@@ -203,10 +203,41 @@ t('超大来源：默认 800 预算下裁剪但不丢高优先级来源', () => 
   assert.equal(res.items.length, res.text.split('\n').length)
 })
 t('markTruncation 默认关（text 不含裁剪标记）；开启也不破预算', () => {
-  const off = buildTier0CatalogFromTextPre(SMALL_SOURCES, { maxTokens: 25 })
-  assert.ok(!off.text.includes('已裁剪'))
+  const off = buildTier0CatalogFromTextPre(SMALL_SOURCES, { maxTokens: 25, markTruncation: false })
+  // ★PR #475：裁剪标注文案由「已裁剪」改为「…另有 N 条未上桌（…）· 用 memory_recall 取」
+  assert.ok(!off.text.includes('未上桌'))
+  assert.equal(off.truncationNote, '')
   const on = buildTier0CatalogFromTextPre(SMALL_SOURCES, { maxTokens: 25, markTruncation: true })
   assert.ok(on.tokens <= on.maxTokens && on.tokenRepo <= on.maxTokens)
+  // ★#475 收尾：小预算装不下标注时不许内联击穿预算，但信号必须落在 truncationNote 上（不静默）
+  assert.ok(on.truncationNote.length > 0, '小预算下 truncationNote 不得为空')
+  assert.equal(on.truncationInlined, false)
+  assert.ok(!on.text.includes('未上桌'))
+})
+
+t('#475：预算装得下时裁剪标注内联进 text（正路径可达，非恒走降级）', () => {
+  // 构造「有裁剪 + 预算够容纳标注」的窗口：逐档扫描，至少命中一个。
+  const SRC = [
+    { layer: 'project', text: '# P\n\n## 甲\n\n甲结论句一。甲结论句二', path: 'MEMORY.md' },
+    { layer: 'whiteboard', text: '# W\n\n## 乙\n\n乙结论句一。乙结论句二', path: 'PLAN.md' },
+    { layer: 'user', text: '# U\n\n【标签】丙结论句一。丙结论句二', path: 'M.md' },
+    { layer: 'log', text: '# L\n\n- 1 [kind:fact] 丁结论句一。丁结论句二', path: '2026-09-15.md' },
+    { layer: 'log', text: '# L2\n\n- 2 [kind:fact] 戊结论句一。戊结论句二', path: '2026-09-16.md' },
+    { layer: 'log', text: '# L3\n\n- 3 [kind:fact] 己结论句一。己结论句二', path: '2026-09-17.md' },
+  ]
+  const hits = []
+  for (let mt = 30; mt <= 400; mt += 2) {
+    const r = buildTier0CatalogFromTextPre(SRC, { maxTokens: mt, markTruncation: true })
+    assert.ok(r.tokens <= r.maxTokens, 'budget broke at ' + mt)
+    if (r.dropped > 0 && r.truncationInlined) hits.push(mt)
+  }
+  assert.ok(hits.length > 0, '未找到可内联窗口：正路径不可达 ⇒ 该分支等于未测')
+  const r = buildTier0CatalogFromTextPre(SRC, { maxTokens: hits[0], markTruncation: true })
+  assert.ok(r.text.includes('未上桌'))
+  assert.equal(r.truncationNote, r.text.split('\n').pop())
+  // 变异反向验证：旧实现（无条件 text += mark）在 maxTokens=25 时得 42>25；新实现必须不破
+  const tight = buildTier0CatalogFromTextPre(SRC, { maxTokens: 25, markTruncation: true })
+  assert.ok(tight.tokens <= tight.maxTokens, 'maxTokens=25 破预算 ⇒ 变异未被拦下')
 })
 t('空来源：不抛错、items 空、text 显式发声（I7 精神）；无实质内容记 no-items', () => {
   const res = buildTier0CatalogFromTextPre([], {})
@@ -254,7 +285,7 @@ try {
     const res = buildTier0CatalogPre(input)
     assert.deepEqual([...new Set(res.items.map((i) => i.layer))], ['project', 'whiteboard', 'user', 'log'])
     assert.deepEqual(res.items[0], {
-      layer: 'project', status: 'current', date: '2026-09-13', title: '交付甲', oneLine: '甲结论句一。甲结论句二',
+      id: res.items[0].id, layer: 'project', status: 'current', date: '2026-09-13', title: '交付甲', oneLine: '甲结论句一。甲结论句二',
     })
     assert.deepEqual(res.skipped, [])
     assert.ok(res.tokens <= res.maxTokens && res.tokenRepo <= res.maxTokens)
