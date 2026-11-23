@@ -304,7 +304,7 @@ status[0]?h('p',{className:'i5-muted',role:'status'},status[0]):null,failure[0]?
       var logs=workspaces.every(function(w){return typeof w.logCount==='number'})?workspaces.reduce(function(n,w){return n+w.logCount},0):null
       function resize(n){scale[1](Math.max(.55,Math.min(1.75,n)))}
       return h('div',{className:'i5-workspaces-view i5-panel i5-instrument'},h(Iter5Screws),h('details', { className: 'i5-native-summary' }, h('summary', null, L('工作区统计', 'Workspace statistics')), h('div',{className:'i5-stats i5-stats-three'},
-        h(Iter5Stat,{icon:'folder',hue:'green',label:L('已发现工作区','Discovered workspaces'),value:data?workspaces.length:null,hint:L('有记忆记录的工作空间','Workspaces with memory records')}),
+        h(Iter5Stat,{icon:'folder',hue:'green',label:L('已发现工作区','Discovered workspaces'),value:data?workspaces.length:null,hint:(function(){var n=data&&data.workspaces?data.workspaces.length:0;var tot=data&&data.discoveredTotal?Number(data.discoveredTotal):0;var lim=data&&data.sampleLimit?Number(data.sampleLimit):0;if(lim&&tot>n)return L('活跃前 '+n+'（共发现 '+tot+' 个目录，按活跃度排序）','Top '+n+' of '+tot+' discovered, ranked by activity');return L('有记忆记录的工作空间','Workspaces with memory records')})()}),
         h(Iter5Stat,{icon:'timeline',hue:'purple',label:L('日志文件','Log files'),value:data?logs:null,hint:L('这些工作区中的记录累计','Records in these workspaces')}),
         h(Iter5Stat,{icon:'mindmap',hue:'blue',label:L('主题关联','Topic connections'),value:data&&data.graph&&Array.isArray(data.graph.links)?data.graph.links.length:null,hint:L('宿主返回的工作区关联','Workspace connections returned by the host')}))),
         result.error?h(Iter5Error,{error:result.error,retry:result.retry}):null,

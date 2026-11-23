@@ -703,7 +703,7 @@ assert.equal(createHash('sha256').update(classicLF).digest('hex'), "c8ed05c18565
 //   `v3.4.0-alpha.5 / dsh-034-alpha5-preview` → `v3.4.0 / dsh-034-final`（−17 字符）② 应用内更新说明字典
 //   新增 `3.4.0` 条目（+3,048 字符），净增 **3,031** 字符。`build-iter5-skin --check` = SYNC-OK 证明
 //   生成区与源一致、手写区未被触碰 ⇒ **有意演进，非意外污染**。按守卫报出的 actual 重钉。
-assert.equal(createHash('sha256').update(classicLF).digest('hex'), "f35f86d7cb4d8c54c94a024d9876501a03d8f2c565aaeee21c0b8da06bea3e50", 'Reviewed native-reference entry (LF-normalized) baseline')
+assert.equal(createHash('sha256').update(classicLF).digest('hex'), "5f182ec6c2fa841486f1ebaadd3d56d4b96129158e55d7886ce173e741b243cf", 'Reviewed native-reference entry (LF-normalized) baseline')
 // ★★R202 重钉（2026-11-11 · classic 刷新真机修复）：classicLF 1,552,810 → **1,552,897**（Δ **+87**），
 //   sha256 8a18539a… → **0c28c65a…**。MemoryTabBody 的 plan 分支补传 {nonce}，修复真实面板点击刷新不重取；维护文档正文覆盖共享 max-height:220px，随面板完整滚动。
 //   值取本套件自身 9-replace 管道 actual；生成区零触碰，build-iter5-skin --check = SYNC-OK。

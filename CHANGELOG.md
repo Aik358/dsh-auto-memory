@@ -4,7 +4,7 @@ All notable changes to dsh-auto-memory.
 
 ---
 
-## [3.4.3] — 2026-11-24 · 安全修复版
+## [3.4.4] — 2026-11-24 · 修复版
 
 > 自 `3.4.0-alpha.6`（2026-11-05）以来累计 **203 个提交**，主线为「记忆单元从流水账迁到事件」的收尾三批：
 > **批次3**（事件视图 EV / 归并 CO / 三态投递 U3b）、**批次4**（五项投递与画像能力）、**批次5**（铭文升级 + 运行档默认关闭）。
@@ -29,6 +29,40 @@ All notable changes to dsh-auto-memory.
 - **4.5 按单位组装去重** `ba8c41b2`：仅 `units` 生效，账本完整段原位保留、检查点省去同文字段；差一字符两份均保留，专项 19/0。
 - **设置页三态选择器** `886caa09`：设置页可切换 `deliveryMode`，交付设置套件 30/0（现已 32/0）。
 
+### 已确认 · #577 工具描述的记忆路径为旧版布局（2026-11-24）
+
+**现象**（issue #577）：集中式存储改造后，项目记忆实际落在 `~/.dsh/memory/workspaces/<key>/`，但 4 个工具描述仍写 `.dsh-memory/`（旧版分散布局）⇒ 模型按描述去工作区找文件会落空，进而误判「记忆没写进去」或重复建目录，排查时也被误导。
+
+**核实**（逐条对照代码，非采信描述）：
+- `projectDirOf()` → `workspaceStorageDirPre(wsKey(ws))` → `path.join(memoryRoot, wsKey)`；`.dsh-memory` 仅作**旧版迁移来源**与绝对路径兼容，**当前不写入**。
+- 用户级压缩归档的真实落点是**单个文件** `~/.dsh/memory/archived-user.md`，不是 `archive/` 目录 —— issue 未提、但我一并查明并修正（`memory_user` 描述同样写错）。
+- `reflectionShownSession` 记已提示日期 ⇒ 「漏落盘」的真实后果是**本会话内不再提醒 + 下个新会话再提醒且内容丢失**，原描述「后续轮次重复出现」与实现不符。
+
+**修复**：
+- `memory_log` / `memory_note` / `memory_maintain` / `memory_reflect` 四段描述统一改为**「本项目记忆目录（集中式，默认 `~/.dsh/memory/workspaces/<工作区>/`）」**，并给出相对子目录（`archive/`、`reflections/`、`handoff/`）。
+- `memory_log` 额外加一条**显式警示**：不要在工作区下的 `.dsh-memory/` 找文件（那是旧版布局）—— 把曾经的错误认知反转成防错提示。
+- `memory_user` 归档落点改为 `~/.dsh/memory/archived-user.md`（按真实实现）。
+- `GUIDANCE` 常量同步改为集中式口径。
+- 反思提示语改为准确后果：**本会话（当前 runtime）内不会再次提醒；下一个新会话仍会再提示，且反思内容丢失**。
+
+**验收**：新套件 `smoke-test-issue577-tool-desc-memory-path.mjs` **33 PASS / 0 FAIL** —— 含 4 个工具描述 + GUIDANCE 口径断言、`projectDirOf`/`workspaceStorageDirPre` **功能锚**（代码事实，防文案再次漂移）、反思后果与实现一致性、以及 **5 条变异反向验证**。
+### 已确认 · #578 旧格式升级向导死锁（2026-11-24）
+
+**现象**（issue #578，macOS 用户报，含宿主默认工作区）：第 1 页点「开始整理」恒报「当前工作区不在工作区清单内，请在第 2 页改选」，而**范围选择器只在第 2 页**、进第 2 页的校验又在该情形直接 `return` ⇒ 永远进不了第 2 页 = **死锁**。
+
+**根因（三处，前两处是真正第一因）**：
+1. **`apiGet` 的 sessionId 白名单漏了 `upgradeWorkspaces`**（只列 `external`/`file`/`eventList`/`upgradeStatus`）⇒ 清单请求不带会话身份 ⇒ 后端解析不出当前工作区 ⇒ 所有行 `matchedWsKey=null` ⇒ 前端误判「不在清单」。
+2. `ensureInventory` 未携带弹窗已知的 `ws` ⇒ 即使会话解析失败也无兜底。
+3. `onGoP2` 在未匹配时直接 `return`，把出口（第 2 页选择器）挡在执行之后。
+
+**修复**：
+- **白名单补齐**：`API.upgradeWorkspaces` 纳入 `apiGet` 的带 sid 名单（与 `event-*` / `upgrade-status` 同源）。
+- **双保险**：`ensureInventory` 同时携带 `ws: wsNow`；后端新增显式 `ws` 入参并**优先于**会话解析结果。
+- **死锁解除**：判定抽成纯函数 `upgradeWizardGoP2GatePre`，`allow` 恒 `true`（第 1 页不再可能被挡住），改为**进第 2 页并显式告警**；仍**不替用户改范围**（保 #557：范围失效时拒绝执行，但不得卡死入口）。
+- **语义纠偏**：区分两种成因——`wsNow` 为空 ⇒「**无法确定**当前工作区」（能力缺口）；`wsNow` 非空且未匹配 ⇒「清单里**没有匹配到**」（事实判定）。文案改为指引「**本页**改选」，不再指向用户此刻不可达的第 2 页。
+- **附带观察**（issue 同报）：工作区关系页「已发现工作区」实为**活跃度前 8**（AI 总结有成本，故截尾）。后端 payload 新增 `sampleLimit` / `discoveredTotal`，两处标签改为「活跃前 N（共发现 M 个目录，按活跃度排序）」，不再让用户误读为全量。
+
+**验收**：新套件 `smoke-test-issue578-upgrade-wizard-deadlock.mjs` **33 PASS / 0 FAIL** —— 含**真执行** `apiGet`（fetch 桩捕捉真实 URL）、**真调用**两个纯函数、8 条成因区分正反例、6 条接线结构守卫、**4 条变异反向验证**。
 ### 已确认 · 安全修复（2026-11-24）
 
 - **一键更新路由的 shell 注入**（外部安全报告 `update-route-rce`，已独立复现）：
