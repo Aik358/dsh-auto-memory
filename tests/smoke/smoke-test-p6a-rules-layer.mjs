@@ -190,16 +190,16 @@ console.log('[P6A-5] ★分级注入（用户裁定"不是不注入，而是精�
   const contextCode = contextStart >= 0 && contextEnd > contextStart ? code.slice(contextStart, contextEnd) : ''
   const triggerRead = /^[ \t]*const _runtimePolicyPre = [\s\S]*?^[ \t]*const _deliveryTriggersPre = [^\r\n]+/m.exec(contextCode)?.[0]
   const slimGate = /^[ \t]*const slimText = ([^\r\n;]+)/m.exec(contextCode)?.[1]
-  const tieredGate = /^\(_deliveryTriggersPre\?\.tieredInject\s*\?\?\s*engine\.config\.snapshotTieredInject\)\s*===\s*false\s*\?\s*''\s*:\s*engine\.renderSlimSnapshotPre\([^)]*\)$/
+  const tieredGate = /^skipRunSnapshot\s*\|\|\s*\(_deliveryTriggersPre\?\.tieredInject\s*\?\?\s*engine\.config\.snapshotTieredInject\)\s*===\s*false\s*\?\s*''\s*:\s*engine\.renderSlimSnapshotPre\([^)]*\)$/
   ok(!!triggerRead && !!slimGate && tieredGate.test(slimGate),
     '注入调用方按 saved 策略读取 tieredInject，并回退旧开关')
   if (triggerRead && slimGate) {
     const bindSlimGate = expression => new Function(
-      'engine', 'resolveRuntimePolicy', 'effectiveTriggers', 'wsHintPre', 'agent',
+      'engine', 'resolveRuntimePolicy', 'effectiveTriggers', 'wsHintPre', 'agent', 'skipRunSnapshot',
       triggerRead + '\nreturn (' + expression + ')'
     )
-    const render = (evaluate, config) => evaluate(
-      { config, renderSlimSnapshotPre: () => '[slim]' }, resolveRuntimePolicy, effectiveTriggers, null, null
+    const render = (evaluate, config, skipRun = false) => evaluate(
+      { config, renderSlimSnapshotPre: () => '[slim]' }, resolveRuntimePolicy, effectiveTriggers, null, null, skipRun
     )
     const saved = tieredInject => ({ schemaVersion: 2, presetId: 'human_full', triggers: { tieredInject } })
     const savedOff = { deliveryPolicy: saved(false), snapshotTieredInject: true }
@@ -212,6 +212,10 @@ console.log('[P6A-5] ★分级注入（用户裁定"不是不注入，而是精�
     const legacyOnly = slimGate.replace(/_deliveryTriggersPre\?\.tieredInject\s*\?\?\s*/, '')
     ok(legacyOnly !== slimGate && render(bindSlimGate(legacyOnly), savedOff) !== '',
       '负路径：门控忽略 saved tieredInject=false 时，精简文本断言必红')
+    eq(render(evaluate, savedOn, true), '', '运行档关闭时独立拦截普通运行精简版')
+    const noRunGuard = slimGate.replace(/^skipRunSnapshot\s*\|\|\s*/, '')
+    ok(noRunGuard !== slimGate && render(bindSlimGate(noRunGuard), savedOn, true) !== '',
+      '负路径：删掉运行档开关门控时，精简文本断言必红')
   }
   // ★2026-09-15：签名由 `renderSlimSnapshotPre()` 变为 `renderSlimSnapshotPre(wsHint)`（首轮工作区兜底）。
   // 这里**不写死参数表**——用 `[^)]*` 容忍后续参数演进，避免签名一变就让本套件切片落空而假失败。

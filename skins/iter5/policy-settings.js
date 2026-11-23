@@ -104,6 +104,13 @@ function Iter5PolicySettings(props) {
   var noticePair = useState('')
   var notice = noticePair[0]
   var setNotice = noticePair[1]
+  var runSavingPair = useState(false)
+  var runSaving = runSavingPair[0]
+  var setRunSaving = runSavingPair[1]
+  var runSavingRef = useRef(false)
+  var runErrorPair = useState('')
+  var runError = runErrorPair[0]
+  var setRunError = runErrorPair[1]
   var previewPair = useState(null)
   var preview = previewPair[0]
   var setPreview = previewPair[1]
@@ -539,11 +546,11 @@ function Iter5PolicySettings(props) {
 
   function inputId(value) { return id + '-' + String(value).replace(/[^a-zA-Z0-9_-]/g, '-') }
 
-  function field(label, control, hint, wide) {
+  function field(label, control, hint, wide, hintId) {
     var direct = !!(control && control.props && typeof control.type === 'string'
       && ['input', 'select', 'textarea'].indexOf(control.type) >= 0)
     return h('div', { className: 'i5-policy-field', 'data-dam-settings-row': '', 'data-wide': wide ? 'true' : undefined },
-      h('div', { className: 'i5-setting-copy' }, direct ? h('label', { htmlFor: control.props.id }, label) : h('strong', null, label), hint ? h('p', { className: 'i5-policy-hint', 'data-dam-hint': '' }, hint) : null),
+      h('div', { className: 'i5-setting-copy' }, direct ? h('label', { htmlFor: control.props.id }, label) : h('strong', null, label), hint ? h('p', { id: hintId, className: 'i5-policy-hint', 'data-dam-hint': '' }, hint) : null),
       h('div', { className: 'i5-policy-field-control' }, control))
   }
 
@@ -565,9 +572,9 @@ function Iter5PolicySettings(props) {
       value: value === undefined || value === null ? '' : value, 'aria-label': accessibleLabel, onChange: function (event) { onChange(event.target.value) } })
   }
 
-  function checkboxControl(id, checked, onChange, disabled, accessibleLabel) {
+  function checkboxControl(id, checked, onChange, disabled, accessibleLabel, describedBy) {
     return h('input', { id: inputId(id), type: 'checkbox', role: 'switch', checked: !!checked, disabled: !!disabled,
-      'aria-label': accessibleLabel || undefined, onChange: function (event) { onChange(event.target.checked) } })
+      'aria-label': accessibleLabel || undefined, 'aria-describedby': describedBy, onChange: function (event) { return onChange(event.target.checked) } })
   }
 
   function summaryRows() {
@@ -618,6 +625,7 @@ function Iter5PolicySettings(props) {
     return h('div', { className: 'i5-policy-page-content' },
       h('section', { className: 'i5-policy-section' }, h('h3', null, L('预设与节奏', 'Presets & cadence')),
         renderDeliveryMode(),
+        renderRunTierSetting(),
         field(L('内容预设', 'Content preset'), selectControl('preset', draft.presetId, presetOptions, function (event) { selectPreset(event.target.value) }, { disabled: !presetsReady }),
           unitsActive ? L('选择预设将重置内容设置，并保留投递模式。', 'Choosing a preset resets content settings and keeps the delivery mode.')
             : L('内容差异仅供预览；选择预设会重置编辑项。', 'Content differences are preview only. Choosing a preset resets the editor values.'), false),
@@ -642,6 +650,44 @@ function Iter5PolicySettings(props) {
             next.presetOverrides.post_compact.notice = value
           })
         }), L('仅供预览；真实压缩提醒仍由原设置控制。', 'Preview only; live compaction notices still use the original setting.'), false)))
+  }
+
+  function saveRunTierEnabled(enabled) {
+    if (runSavingRef.current || loading || typeof enabled !== 'boolean') return Promise.resolve(false)
+    runSavingRef.current = true
+    setRunSaving(true)
+    setRunError('')
+    return saveConfigPatch({ runTierInjectEnabled: enabled }).then(function (result) {
+      var confirmed = result && result.config && result.config.runTierInjectEnabled
+      if (confirmed !== enabled) throw new Error('Run tier setting was not confirmed')
+      if (alive.current) {
+        setSnapshot(function (current) {
+          return current && Object.assign({}, current, {
+            config: Object.assign({}, current.config, { runTierInjectEnabled: confirmed }),
+          })
+        })
+      }
+      return true
+    }).catch(function () {
+      if (alive.current) setRunError(L('保存失败。请重试。', 'Could not save. Try again.'))
+      return false
+    }).finally(function () {
+      runSavingRef.current = false
+      if (alive.current) setRunSaving(false)
+    })
+  }
+
+  function renderRunTierSetting() {
+    var hintId = inputId('runTierInjectEnabled-hint')
+    var enabled = !!(snapshot && snapshot.config && snapshot.config.runTierInjectEnabled === true)
+    return h(React.Fragment, null,
+      field(L('无人值守投递', 'Unattended delivery'),
+        checkboxControl('runTierInjectEnabled', enabled, saveRunTierEnabled, loading || runSaving, undefined, hintId),
+        L('关闭时，无人值守和工具循环的普通帧只保留投递提醒。记忆唤回独立运行。此开关即时保存。',
+          'When off, ordinary unattended and tool-loop frames keep only the delivery reminder. Memory recall runs independently. This switch saves immediately.'),
+        false, hintId),
+      runSaving ? h('p', { className: 'i5-policy-hint', role: 'status' }, L('正在保存无人值守投递设置…', 'Saving unattended delivery…')) : null,
+      runError ? h('p', { className: 'i5-policy-error', role: 'alert' }, runError) : null)
   }
 
   function renderModuleRow(id) {
@@ -1011,7 +1057,7 @@ function Iter5PolicySettings(props) {
 // Search can link to the tabs even when the editor has not opened.
 function iter5DeliveryPolicyPagesPre() {
   return [
-    { id: 'preset', label: L('预设与节奏', 'Presets & cadence'), search: L('投递模式 按单位投递 真人完整 精简帧 完整帧间隔', 'delivery mode unit-based delivery slim interval full interval') },
+    { id: 'preset', label: L('预设与节奏', 'Presets & cadence'), search: L('投递模式 按单位投递 无人值守投递 工具循环 真人完整 精简帧 完整帧间隔', 'delivery mode unit-based delivery unattended delivery tool loop slim interval full interval') },
     { id: 'modules', label: L('模块', 'Modules'), search: L('事件 检查点 规则 白板 账本 配额 模块视图', 'event checkpoint rules plan ledger quota module view') },
     { id: 'budget', label: L('预算与超额', 'Budget & overflow'), search: L('整帧硬顶 软预算 字节 字符 单元表示', 'frame limit hard ceiling soft budget bytes characters representation') },
     { id: 'triggers', label: L('触发', 'Triggers'), search: L('水位 挂机补偿 压缩后重投递 首帧', 'water thresholds unattended compensation compaction first frame') },

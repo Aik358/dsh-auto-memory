@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import * as fs from 'node:fs/promises';
 import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { Readable } from 'node:stream';
@@ -80,12 +81,18 @@ async function loadHost(source, label) {
 }
 const current = await loadHost(INDEX, 'current');
 const historical = await loadHost(HEAD, 'head');
+const preRunSwitch = await loadHost(execFileSync('git', ['show', '9b2ec568:lib/index.js'], {
+  cwd: repo, encoding: 'utf8', maxBuffer: 8 * 1024 * 1024,
+}).replaceAll('\r\n', '\n'), 'pre-run-switch');
 const policy = (overrides = {}) => validatePolicy({ schemaVersion: 2, presetId: 'human_full', ...overrides });
 
 const FULL = '<memory_system>\n白板 PLAN.md\n完整正文：汉字🧠\n[降级] 合成快照尾注\n</memory_system>';
 const SLIM = '<memory_system>SLIM</memory_system>';
 const fullOnly = text => text.includes('白板 PLAN.md');
 const mark = text => fullOnly(text) ? 'F' : text.includes('SLIM') ? 'S' : '-';
+// Compare the raw outputs first. Normalize the random fixture root only for receipt hashes.
+const receiptText = text => text.replaceAll(root, '<fixture-root>');
+const sha256 = text => createHash('sha256').update(text).digest('hex');
 function fixture(host, config = {}, { actual = false } = {}) {
   const engine = new host.MemoryEngine();
   Object.assign(engine.config, {
@@ -216,6 +223,137 @@ const request = async (fn, method, body) => {
   return out;
 };
 
+test('Batch 5 suppresses both run snapshots by default and restores byte-identical output when enabled', t => {
+  t.mock.timers.enable({ apis: ['Date'], now: Date.UTC(2026, 10, 23, 12) });
+  const modes = ['legacy', 'eventView', 'units'];
+  const receipt = [];
+  for (const deliveryMode of modes) {
+    const config = { deliveryPolicy: policy({ deliveryMode, triggers: { fullGapRounds: 4, waterPct: [] } }) };
+    const exercise = (host, settings) => {
+      const { engine, st, run } = fixture(host, settings, { actual: true });
+      const emitted = [];
+      const render = engine.renderMemoryDynamic.bind(engine), slim = engine.renderSlimSnapshotPre.bind(engine);
+      engine.renderMemoryDynamic = (...a) => { emitted.push(st._injectTierPre); return render(...a); };
+      engine.renderSlimSnapshotPre = (...a) => { emitted.push(st._injectTierPre); return slim(...a); };
+      st.logText = 'RUN-LOG-FIXTURE';
+      const rows = Array.from({ length: 5 }, () => run({ human: false }));
+      assert.equal(run({ human: false, repeat: true }), rows.at(-1));
+      return { rows, emitted };
+    };
+    const baseline = exercise(preRunSwitch, config);
+    const enabled = exercise(current, { ...config, runTierInjectEnabled: true });
+    assert.deepEqual(enabled, baseline);
+    assert(baseline.emitted.includes('run_full') && baseline.emitted.includes('run_slim'));
+    const disabled = exercise(current, config);
+    const { snapshotInscription, snapshotInscriptionArchive } = current.DEFAULT_PROMPT_LAYERS;
+    const reminder = '\n' + snapshotInscription.replace('{date}', '2026-11-18') + snapshotInscriptionArchive;
+    assert.deepEqual(disabled.rows, Array(5).fill(reminder));
+    assert.deepEqual(disabled.emitted, []);
+    receipt.push({ deliveryMode, snapshotsWhenOff: disabled.emitted.length, reminderBytes: Buffer.byteLength(reminder),
+      baselineBytes: baseline.rows.map(row => Buffer.byteLength(row)),
+      baselineAndEnabledSha256: sha256(JSON.stringify(baseline.rows.map(receiptText))) });
+  }
+  t.diagnostic(JSON.stringify(receipt));
+});
+
+test('Batch 5 leaves human full/slim, post-compaction and handoff delivery intact', t => {
+  t.mock.timers.enable({ apis: ['Date'], now: Date.UTC(2026, 10, 23, 12) });
+  const exercise = (host, config) => {
+    const human = fixture(host, config, { actual: true });
+    human.st.userText = 'FULL-ONLY-MEMORY-FIXTURE';
+    const humanFull = human.run();
+    const humanSlim = human.run();
+    assert(humanFull.includes('FULL-ONLY-MEMORY-FIXTURE'));
+    assert(humanSlim && !humanSlim.includes('FULL-ONLY-MEMORY-FIXTURE'));
+    const compact = fixture(host, config, { actual: true });
+    compact.st.userText = 'POST-COMPACT-MEMORY-FIXTURE';
+    compact.run({ human: false });
+    const postCompact = compact.run({ human: false, compact: true });
+    assert.equal(compact.st._injectTierPre, 'post_compact');
+    assert(postCompact.includes('POST-COMPACT-MEMORY-FIXTURE'));
+    assert.equal(compact.run({ human: false, repeat: true }), postCompact, 'same request retains the compaction rebuild');
+    const carry = fixture(host, { ...config, snapshotMinGapRounds: 0 }, { actual: true });
+    Object.assign(carry.st, { ws: '', globalLedgerPath: '/fixture/handoff.md', userText: 'HANDOFF-CARRY-MEMORY-FIXTURE' });
+    const handoffCarry = carry.run({ human: false });
+    assert.equal(carry.st._injectTierPre, 'handoff_carry');
+    assert(handoffCarry.includes('HANDOFF-CARRY-MEMORY-FIXTURE'));
+    return { human_full: humanFull, human_slim: humanSlim, post_compact: postCompact, handoff_carry: handoffCarry };
+  };
+  const baseline = exercise(preRunSwitch, {});
+  const actual = exercise(current, { runTierInjectEnabled: false });
+  assert.deepEqual(actual, baseline);
+  t.diagnostic(JSON.stringify(Object.fromEntries(Object.entries(actual).map(([name, text]) => [name, {
+    bytes: Buffer.byteLength(text), sha256: sha256(receiptText(text)), baselineEqual: true,
+  }]))));
+});
+
+test('Batch 5 config keeps explicit true and rejects non-booleans before disk writes', async t => {
+  const configFile = path.join(root, 'dsh-auto-memory.json');
+  await fs.writeFile(configFile, JSON.stringify({ snapshotGapDefaultsVersion: 3, slimEveryDefaultsVersion: 2, waterPctDefaultsVersion: 1 }));
+  const bind = () => {
+    const engine = new current.MemoryEngine();
+    engine.refresh = async () => {};
+    return current.bindConfig(engine);
+  };
+  const route = bind();
+  assert.equal((await request(route, 'GET')).data.config.runTierInjectEnabled, false);
+  assert.equal((await request(route, 'POST', { runTierInjectEnabled: true })).status, 200);
+  const reopened = bind();
+  assert.equal((await request(reopened, 'GET')).data.config.runTierInjectEnabled, true);
+  const before = await fs.readFile(configFile);
+  for (const v of ['false', null, 0]) {
+    const error = await request(reopened, 'POST', { runTierInjectEnabled: v });
+    assert.equal(error.status, 400);
+    assert.match(JSON.stringify(error.data), /runTierInjectEnabled/);
+    assert.deepEqual(await fs.readFile(configFile), before);
+  }
+  assert.equal((await request(reopened, 'POST', { runTierInjectEnabled: false })).status, 200);
+  assert.equal(JSON.parse(await fs.readFile(configFile, 'utf8')).runTierInjectEnabled, false);
+  t.diagnostic('missing=false, saved true survived reload, string/null/0 returned HTTP 400 with byte-identical disk');
+});
+
+test('Batch 5 does not replay an ordinary run snapshot after disabling the switch mid-request', () => {
+  const F = fixture(current, { runTierInjectEnabled: true, hangCompensateEnabled: true, hangCompensateTokens: 100 });
+  assert.equal(F.run({ human: false }), FULL);
+  F.engine.config.runTierInjectEnabled = false;
+  F.engine.isUnattendedNow = () => true;
+  const after = F.run({ human: false, repeat: true, usage: { outputTokens: 10 } });
+  assert(after.includes('memory_event'));
+  assert(!after.includes(FULL));
+  assert.equal(F.st._hangCompensateCount ?? 0, 0);
+  assert.notEqual(F.st._reqTextKeyPre, F.engine.requestIdPre(F.agent), 'the discarded snapshot is no longer a current draft');
+  F.engine.config.runTierInjectEnabled = true;
+  const updated = F.run({ human: false, repeat: true, snap: FULL.replace('汉字', '更新') });
+  assert.notEqual(updated, FULL, 're-enabling cannot retrieve the discarded snapshot via cadence state');
+});
+
+test('Batch 5 counts unattended tokens once per request and replays the distinct compensation grant', () => {
+  const F = fixture(current, { hangCompensateEnabled: true, hangCompensateTokens: 100 });
+  F.engine.isUnattendedNow = () => true;
+  const usage = { outputTokens: 60 };
+  const reminder = F.run({ human: false, usage });
+  assert(reminder.includes('memory_event'));
+  assert.equal(F.run({ human: false, repeat: true, usage }), reminder);
+  assert.equal(F.st._hangAccumTokens, 60);
+  assert.equal(F.run({ human: false, usage }), FULL);
+  assert.equal(F.run({ human: false, repeat: true, usage }), FULL);
+  assert.equal(F.st._hangCompensateCount, 1);
+  assert.equal(F.st._hangAccumTokens, 0);
+});
+
+test('Batch 5 applies units frame caps to the reminder with the independent static cost', () => {
+  const config = { deliveryPolicy: policy({ deliveryMode: 'units', transport: { strength: 'hard', utf8Bytes: 2800 } }) };
+  const F = fixture(current, config, { actual: true });
+  F.engine.renderMemoryStatic = () => '站'.repeat(50);
+  assert.equal(F.run({ human: false }), '');
+  assert(F.st._unitDeliveryReceiptPre.degradations.some(row => row.code === 'frame-content-omitted'));
+  F.engine.config.deliveryPolicy = policy({ deliveryMode: 'units',
+    transport: { strength: 'soft', utf8Bytes: 2800, overflowAllowance: { utf8Bytes: 100 } } });
+  const reminder = F.run({ human: false });
+  assert.equal(Buffer.byteLength(reminder), 2733);
+  assert.equal(F.st._unitDeliveryReceiptPre.softTargetExceeded, true);
+});
+
 test('01 HEAD and A1 emit byte-identical FSSS output on four consecutive humans', async t => {
   const evaluate = host => {
     const F = fixture(host);
@@ -226,7 +364,9 @@ test('01 HEAD and A1 emit byte-identical FSSS output on four consecutive humans'
   const baseline = evaluate(historical);
   assert.deepEqual(evaluate(current), baseline);
   const renderedBytes = host => {
-    const F = fixture(host, {}, { actual: true });
+    // Compare cadence against the same approved text. G4-6 separately locks the changed inscription.
+    const { snapshotInscription, snapshotInscriptionArchive } = current.DEFAULT_PROMPT_LAYERS;
+    const F = fixture(host, { promptLayerOverrides: { snapshotInscription, snapshotInscriptionArchive } }, { actual: true });
     F.st.userText = 'FULL-ONLY-MEMORY-FIXTURE';
     F.st.notesText = 'Project note for the complete frame.';
     const rows = Array.from({ length: 4 }, () => F.run());
@@ -247,7 +387,7 @@ test('02 direct [] remains closed in production and 25.5 is a real trigger', asy
     assert.throws(() => policy({ triggers: { waterPct: illegal } }), /waterPct/);
   }
   const trajectory = (host, selected, legacy = '25') => {
-    const F = fixture(host, { fullInjectWaterPct: legacy,
+    const F = fixture(host, { runTierInjectEnabled: true, fullInjectWaterPct: legacy,
       ...(selected === undefined ? {} : { deliveryPolicy: policy({ triggers: { waterPct: selected, fullGapRounds: 999 } }) }) });
     const rows = [F.run(), F.run({ ratio: 0.253 }), F.run({ ratio: 0.256, human: false }), F.run({ ratio: 0.256 })];
     return { marks: rows.map(mark).join(''), fired: F.st._waterPctFired || 0 };
@@ -385,7 +525,7 @@ test('05 trigger reader is saved only; the host preserves legacy values and defa
   assert.throws(() => assertCadence(mutated), { code: 'ERR_ASSERTION' });
   assertCadence(current);
   const slimProgress = (host, config) => {
-    const F = fixture(host, { ...old, ...config });
+    const F = fixture(host, { ...old, runTierInjectEnabled: true, ...config });
     return [1, 2, 3, 4].map(n => {
       F.run({ human: false, snap: FULL + '\n' + n });
       return F.st._lastSlimStepSeq;
@@ -401,7 +541,7 @@ test('05 trigger reader is saved only; the host preserves legacy values and defa
     if (mark(defaultFull.run({ snap: FULL + '\n' + step })) === 'F') fullSteps.push(step);
   }
   assert.deepEqual(fullSteps, [1, 41], 'the old full gap defaults to 40 in the host callback');
-  const defaultSlim = fixture(current, { ...old, slimEveryRounds: undefined });
+  const defaultSlim = fixture(current, { ...old, runTierInjectEnabled: true, slimEveryRounds: undefined });
   const slimSteps = [];
   for (let step = 1; step <= 16; step++) {
     defaultSlim.run({ human: false, snap: FULL + '\n' + step });
@@ -412,7 +552,7 @@ test('05 trigger reader is saved only; the host preserves legacy values and defa
   assert.equal([0, 0.26, 0.51].map(ratio => mark(defaultWater.run({ ratio }))).join(''), 'FFS');
   assert.equal(defaultWater.st._waterPctFired, 25, 'the old water defaults to 25 in the host callback');
   const hang = (host, config) => {
-    const F = fixture(host, { ...old, hangCompensateEnabled: false, ...config });
+    const F = fixture(host, { ...old, runTierInjectEnabled: true, hangCompensateEnabled: false, ...config });
     F.engine.isUnattendedNow = () => true;
     const frames = [0, 60, 45].map(outputTokens => F.run({ human: false, usage: { outputTokens } }));
     return { frames: frames.map(mark).join(''), count: F.st._hangCompensateCount || 0 };

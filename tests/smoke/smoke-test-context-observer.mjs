@@ -41,6 +41,8 @@ function makeHarness(phaseLabel, configPatch) {
     userMemoryDir: path.join(ws, '.user-root'),
     projectMemoryDir: '.project-memory',
     externalSources: {},
+    // This suite compares snapshots with and without the observer under the same policy.
+    runTierInjectEnabled: true,
     ...(configPatch || {}),
   }), 'utf8')
   process.env.DSH_HOME = home

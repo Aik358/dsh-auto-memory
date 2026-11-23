@@ -1732,5 +1732,61 @@ async function openFactoryModePage(host, face) {
   check(true, '25 factory renders accessible settings search, indexes unopened policy tabs, and supports no-hit and clear on every face; empty searchPages is caught')
 }
 
+function runTierSwitch(tree) {
+  const input = policyInput(tree, 'runTierInjectEnabled')
+  assert(input && input.props.type === 'checkbox' && input.props.role === 'switch', 'unattended delivery is an accessible switch')
+  const labels = visibleNodes(tree, node => node.type === 'label' && node.props.htmlFor === input.props.id)
+  assert.equal(textOf(labels), 'Unattended delivery')
+  const hint = visibleNodes(tree, node => node.props.id === input.props['aria-describedby'])
+  assert.equal(hint.length, 1)
+  assert.match(textOf(hint[0]), /ordinary unattended and tool-loop frames keep only the delivery reminder/)
+  assert.match(textOf(hint[0]), /Memory recall runs independently/)
+  return input
+}
+
+async function exerciseRunTierSetting(client, face) {
+  const host = legacyHost(client, frozenSource, a1bConfig)
+  const draw = await openFactoryModePage(host, face)
+  assert.equal(runTierSwitch(draw()).props.checked, false, 'missing top-level setting renders off')
+  pickDeliveryMode(draw(), 'units')
+  const held = host.pauseWrite()
+  const pending = runTierSwitch(draw()).props.onChange({ target: { checked: true } })
+  await flushUi()
+  assert.deepEqual(host.posts, [{ runTierInjectEnabled: true }], 'save sends only the top-level switch')
+  assert.equal(runTierSwitch(draw()).props.checked, false, 'switch stays off pending confirmation')
+  assert.equal(runTierSwitch(draw()).props.disabled, true, 'switch is disabled while saving')
+  held.release()
+  assert.equal(await pending, true)
+  await flushUi()
+  assert.equal(runTierSwitch(draw()).props.checked, true)
+  assertDeliveryMode(draw(), 'units', 'eventView', true)
+  assert(!Object.hasOwn(host.config(), 'deliveryPolicy'), 'switch does not save the policy draft')
+
+  const reload = legacyHost(client, frozenSource, { ...host.config(), deliveryPolicy: PRESETS.human_full })
+  const redraw = await openFactoryModePage(reload, face)
+  assert.equal(runTierSwitch(redraw()).props.checked, true, 'a fresh settings instance reads the top-level value')
+  const reject = reload.pauseWrite()
+  const rejected = runTierSwitch(redraw()).props.onChange({ target: { checked: false } })
+  await flushUi()
+  reject.reject(new Error('write failed'))
+  assert.equal(await rejected, false)
+  await flushUi()
+  assert.equal(runTierSwitch(redraw()).props.checked, true, 'failed write retains the confirmed value')
+  assert(textOf(visibleNodes(redraw(), node => node.props.role === 'alert')).includes('Could not save. Try again.'))
+  assert.equal(await runTierSwitch(redraw()).props.onChange({ target: { checked: false } }), true)
+  await flushUi()
+  assert.deepEqual(reload.posts, [{ runTierInjectEnabled: false }, { runTierInjectEnabled: false }])
+  assert.equal(runTierSwitch(redraw()).props.checked, false)
+  assert.deepEqual(reload.config().deliveryPolicy, structuredClone(PRESETS.human_full))
+}
+
+{
+  for (const face of Object.keys(legacyFaces)) await exerciseRunTierSetting(clientSource, face)
+  const mutant = replaceOnce(clientSource, 'saveConfigPatch({ runTierInjectEnabled: enabled })',
+    'saveConfigPatch({ deliveryPolicy: { runTierInjectEnabled: enabled } })')
+  await assert.rejects(exerciseRunTierSetting(mutant, 'v4'), /save sends only the top-level switch/)
+  check(true, '26 unattended delivery is independently saved, reloaded and retried from every settings face; a nested-policy write is rejected')
+}
+
 console.log('Delivery settings UI guards: ' + pass + ' PASS / ' + fail + ' FAIL')
 process.exitCode = fail === 0 ? 0 : 1

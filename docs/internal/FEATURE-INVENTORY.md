@@ -8,7 +8,7 @@
 |---|---:|---|
 | 模型工具 | **22** | 默认 graph 档真实 `apply(ctx)` 注册数 |
 | HTTP 路由 | **87** | 真实 `apply(ctx)` 注册数；新增本地只读 `POST /api/dsh-auto-memory/delivery-preview` |
-| DEFAULT_CONFIG 顶层键 | **182** | 校验器实际提取；含 `deliveryPolicy` 与实际投递冷却键 `activationDeliveryCooldownMinutes`；迁移版本戳沿用 metadata 机制 |
+| DEFAULT_CONFIG 顶层键 | **183** | 校验器实际提取。含 `deliveryPolicy`、`activationDeliveryCooldownMinutes`，批次 5 新增 `runTierInjectEnabled`。迁移版本戳沿用 metadata 机制 |
 | 后端导出 | **41** | 真实 import 的主入口导出面，未增删 |
 | 前端 factory 导出 | **14** | 真实执行 factory；P1 未改前端 |
 | 用户可关分区 / must | **13 / 2** | 保留既有清单；不能与 11 内容生产者 + 2 锁定来源硬对齐 |

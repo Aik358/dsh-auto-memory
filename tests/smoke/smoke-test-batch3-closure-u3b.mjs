@@ -1,9 +1,11 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
+import { execFileSync } from 'node:child_process';
 import { mkdtemp, mkdir, readFile, realpath, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import test, { after } from 'node:test';
+import { runInNewContext } from 'node:vm';
 import { pathToFileURL } from 'node:url';
 import { EVENT_STORE_FILENAME } from '../../lib/event-store.js';
 import { validatePolicy } from '../../lib/injection/policy-v2.js';
@@ -63,6 +65,17 @@ const baseline = {
   },
 };
 
+// Keep D30B-14's exact frame hashes. Only the two approved wording layers changed in Batch 5.
+const originalSource = execFileSync('git', ['show', '37f20223:lib/index.js'], {
+  cwd: new URL('../../', import.meta.url), encoding: 'utf8', maxBuffer: 8 * 1024 * 1024,
+}).replaceAll('\r\n', '\n');
+const baselineWording = Object.fromEntries(['snapshotInscription', 'snapshotInscriptionArchive'].map(key => {
+  const literal = originalSource.match(new RegExp('^  ' + key + ': ([\\s\\S]+?),\\n', 'm'))?.[1];
+  assert.ok(literal, 'missing baseline wording: ' + key);
+  return [key, runInNewContext(literal)];
+}));
+const useBaselineWording = engine => { engine.config.promptLayerOverrides = baselineWording; };
+
 function event(i, count, { full = false, status = 'active' } = {}) {
   return {
     id: 'evt_' + (i + 1).toString(16).padStart(8, '0'), name: 'Event ' + i, status,
@@ -109,11 +122,11 @@ function requireBaseline(mode, scene, frame) {
 
 test('C0/C1 three modes, default and null frames against pre-edit baselines', async t => {
   for (const scene of Object.keys(baseline.eventView)) {
-    const legacy = await fixture(current, { scene, policy: { deliveryMode: 'legacy' } });
-    const eventView = await fixture(current, { scene, policy: { deliveryMode: 'eventView' } });
-    const byDefault = await fixture(current, { scene });
-    const nullPolicy = await fixture(current, { scene, policy: null });
-    const selected = await fixture(current, { scene, policy: units() });
+    const legacy = await fixture(current, { scene, policy: { deliveryMode: 'legacy' }, setup: useBaselineWording });
+    const eventView = await fixture(current, { scene, policy: { deliveryMode: 'eventView' }, setup: useBaselineWording });
+    const byDefault = await fixture(current, { scene, setup: useBaselineWording });
+    const nullPolicy = await fixture(current, { scene, policy: null, setup: useBaselineWording });
+    const selected = await fixture(current, { scene, policy: units(), setup: useBaselineWording });
     assert.equal(byDefault.frame, eventView.frame, `${scene} missing policy must use eventView`);
     assert.equal(nullPolicy.frame, eventView.frame, `${scene} null policy must use eventView`);
     t.diagnostic(JSON.stringify({ scene,
@@ -320,6 +333,7 @@ test('C7c bypassing the eventView branch breaks the frozen batch-A frame', async
     `if (typeof readDeliveryMode === 'function' && readDeliveryMode(cfg).mode !== 'legacy') {`));
   const run = async host => requireBaseline('eventView', 'normal', (await fixture(host, {
     policy: { schemaVersion: 2, presetId: 'human_full', deliveryMode: 'eventView' },
+    setup: useBaselineWording,
   })).frame);
   await assert.rejects(() => run(mutant), /eventView\/normal frame differs/);
   await run(current);
