@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs"
 import { createHash } from "node:crypto"
+import { claimedHuman, deliveryRequestScope } from '../../lib/injection/request-scope.js'
 
 // 冷启动就绪门（方案 A）负路径验收：
 // 真执行决策段，断言「数据未就绪时不得冒充完整版、不得污染节流基准，且就绪后必须补完整版」。
@@ -62,22 +63,36 @@ const mk = (opts) => {
     _snapFp: undefined, _snapLogFp: "", _snapRound: 0, _snapLastRound: 0, _snapPendingSnap: null,
     _snapPendingLogFp: null, _snapCv: undefined,
     loadedAt: opts.loadedAt === undefined ? 0 : opts.loadedAt }
+  const history = [{ seq: 1, type: 'turn/start', data: { turn: 1 } }]
+  const agent = { session: { events: history } }
+  const scope = () => deliveryRequestScope(history)
+  let step = 0
+  const emit = (type, data) => history.push({ seq: history.length + 1, type, data })
   const engine = {
     stateFor: () => st,
     runtimeFor: () => ({ contextVersion: 0 }),
     turnBoundaryKeyPre: () => opts.tk || "turn:1",
-    humanTurnObservedPre: () => !!opts.isHuman,
-    humanTurnSeqPre: () => (opts.isHuman ? 77 : null),
+    humanTurnSeqPre: () => scope().humanSeq ?? null,
+    requestIdPre: () => scope().key,
     renderReflectionRequest: () => "",
     config: Object.assign({ snapshotMinGapRounds: 5, snapshotTieredInject: true, fullEverySlims: 3,
       slimEveryRounds: 3, snapshotReinjectOnCompact: true }, opts.cfg || {}),
   }
-  const F = new Function("engine", "agent", "gap", "snap", "slimText", "diag", "createHash", "parseGapRoundsPre", FIN_SRC + String.fromCharCode(10) + body + ";")
+  const F = new Function("engine", "agent", "gap", "snap", "slimText", "diag", "createHash", "parseGapRoundsPre", "_currentHumanRequestPre", FIN_SRC + String.fromCharCode(10) + body + ";")
   const slimText = opts.slimText === undefined ? SLIM : opts.slimText
   const diags = []
-  const run = (snap) => {
-    const o = F(engine, {}, opts.gap === undefined ? 5 : opts.gap, snap, slimText,
-      (m) => diags.push(m), createHash, (v, d) => { const n = Number(v); return Number.isFinite(n) ? n : d }) || ""
+  const run = (snap, sameStep = false) => {
+    if (!sameStep) {
+      if (step) emit('step/end', { turn: 1, step })
+      step++
+      const human = step === 1 && opts.isHuman === true
+      st._deliveryClaimPre = { key: scope().key, position: '1:' + step, human }
+      emit('step/start', { turn: 1, step })
+      if (human) emit('user/message', { role: 'user', source: { kind: 'user' } })
+    }
+    const o = F(engine, agent, opts.gap === undefined ? 5 : opts.gap, snap, slimText,
+      (m) => diags.push(m), createHash, (v, d) => Number.isFinite(Number(v)) ? Number(v) : d,
+      () => claimedHuman(scope(), st._deliveryClaimPre)) || ''
     return o
   }
   return { st, run, diags, slimText }
@@ -148,7 +163,7 @@ console.log("")
 console.log("=== C7 逐字节一致契约：同一步两次调用返回相同文本 ===")
 {
   const E = mk({ loadedAt: 0 })
-  const a = E.run(skeleton), b = E.run(skeleton)
+  const a = E.run(skeleton), b = E.run(skeleton, true)
   ok(a === b, "同一状态下两次调用逐字节相同")
 }
 console.log("")

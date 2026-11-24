@@ -4,6 +4,26 @@ All notable changes to dsh-auto-memory.
 
 ---
 
+## [3.4.5] — 2026-11-25 · Correct memory delivery during tool runs
+
+### Verified fixes
+
+- Memory delivery now classifies each model request using the messages received for that request. An earlier user message can no longer make a later tool step use the user delivery tier when unattended delivery is off.
+- The preliminary assembly preserves the currently retained memory section. Only the assembly used for the model request can consume a delivery grant, and it can reuse the full frame only for that request.
+- A desktop restart test ran with unattended delivery off. The user request received a full snapshot, the next tool request switched to the run reminder, and subsequent tool requests retained that reminder. Local regressions also cover a user message during a tool run, 45 tool continuations in one turn, watermarks, and compaction.
+
+### Test maintenance
+
+- Repaired seven existing regression tests that had been blocking clean-checkout validation: two line-ending guards now accept the repository's LF format; EV4 and migration tests use checked-in fixtures; the EV4 generator is delivered when its guard suite is shipped; and the browser test discovers Chrome or reports an explicit environment skip (CI requires Chrome). The release docs-overwrite guard now parses NUL-delimited Git paths, preserving Unicode filenames. These are test/tooling corrections, not changes to EV4 or migration behavior.
+- Full regression command: `node tools/run-smoke.mjs --jobs=8 --timeout=180000 --exclude=-live --exclude=m79-feature-v2 --exclude=m710-fv2-emit --exclude=c4-fresh-install` (662 runnable entries; 9 explicit exclusions).
+- Final candidate result: 650 PASS / 0 FAIL / 0 TIMEOUT / 3 FLAKY in 265.2 seconds. The three FLAKY suites (`m78-host`, `m76`, `m73`) each passed standalone validation (33/0, 36/0 and 59/0 respectively). The 9 excluded suites are the six live integrations matched by `-live`, the two M7 model/venv suites, and C4 fresh-install requiring its local packed model artifact.
+- Targeted checks: browser DOM/CSS and three mutations PASS 15/0; release delivery and Unicode documentation-path guard PASS 31/0; migration prompt PASS 100/0. Environment: Windows x64, Node.js v24.18.0, Google Chrome 158.0.8127.36.
+
+### Known behavior and verification limits
+
+- The Run-off reminder still includes maintenance guidance. Changes to the associative recall section can cause the host to resend the whole context snapshot.
+- Desktop verification used the default event-view mode. The release notes record the test environment, regression command, and results for the packaged candidate.
+
 ## [3.4.4] — 2026-11-24 · 修复版
 
 > 自 `3.4.0-alpha.6`（2026-11-05）以来累计 **203 个提交**，主线为「记忆单元从流水账迁到事件」的收尾三批：

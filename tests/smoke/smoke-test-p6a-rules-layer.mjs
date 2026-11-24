@@ -179,11 +179,10 @@ console.log('[P6A-5] ★分级注入（用户裁定"不是不注入，而是精�
   // 旧病灶：节流分支里 `return engine.renderReflectionRequest()`（整份快照被跳过 ⇒ 规则与索引也不在场）
   ok(!/st\._snapPendingSnap = snap\s*\n\s*st\._snapPendingLogFp = logFp\s*\n\s*return engine\.renderReflectionRequest\(\)/.test(code),
     '★旧的"节流即跳过整份快照"已被移除')
-  // ★2026-10-18（判据更新）：节流分支现已统一包进 finalizePre(...)（请求级幂等定稿），
-  //   字面量从 `return slimText + ...` 变为 `return finalizePre(slimText + ...)`。
-  //   判据意图不变：节流时返回的必须是**精简版全文**（规则 + 索引 + 日程都在场），不是空串。
-  ok(/return finalizePre\(slimText \+ engine\.renderReflectionRequest\(\)\)/.test(code),
-    '★节流分支改为返回**精简版**（经 finalizePre 定稿；规则 + 索引 + 日程都在场）')
+  // A slim return selects the slim tier and delegates to the same request finalizer as a full return.
+  ok(/return finalizeSlimPre\(slimText \+ engine\.renderReflectionRequest\(\)\)/.test(code)
+    && /const finalizeSlimPre\s*=[^}]+return finalizePre\(text\)/.test(code),
+    '节流分支返回精简正文，并交给相同的请求定稿入口')
   // A1b2：只在生产动态回调内抽取策略读取和 slimText 门控。
   const contextStart = code.indexOf('const disposeContext = ctx.systemPrompt.context({')
   const contextEnd = code.indexOf('const disposeSection = ctx.systemPrompt.section({', contextStart)
@@ -283,14 +282,24 @@ console.log('[P6A-5b] ★新 turn 首次注入强制完整版（用户裁定 A �
   //    这条断言的作用：任何人把门控改回"只认真人消息"，都会在这里报红。
   ok(!/engine\.humanTurnKeyPre/.test(code),
     '★★门控不得改回"只卷真人消息"（首版 A 的实测失败点，注释里有完整成因）')
-ok(/humanTurnObservedPre/.test(code), '真人判定参与完整版门槛（★2026-10-01 用户裁定方案 Y：真人在场即给完整版）')
+  // Validate the request observation itself; the historical turn-wide alias is not the gate.
+  const { MemoryEngine } = await import('../lib/audit-engine.mjs')
+  const events = [{ type: 'turn/start', seq: 1, data: { turn: 1 } },
+    { type: 'step/start', seq: 2, data: { turn: 1, step: 1 } },
+    { type: 'user/message', seq: 3, data: { role: 'user', source: { kind: 'user' } } }]
+  const agent = { session: { snapshotEvents: () => events.slice() } }
+  const observed = () => MemoryEngine.prototype.humanRequestObservedPre.call({ stateFor: () => ({}) }, agent)
+  ok(observed() === true, '收到真人消息的当步可观测到真人输入')
+  events.push({ type: 'step/end', seq: 4, data: { turn: 1, step: 1 } },
+    { type: 'step/start', seq: 5, data: { turn: 1, step: 2 } })
+  ok(observed() === false, '同轮下一步只见历史真人消息，判为运行')
   // 判定必须在节流分支之前（首轮 `_snapFp === undefined` 走"首次注入"那条路）
   const iForce = code.indexOf('engine.turnBoundaryKeyPre(agent)')
   const iThrottle = code.indexOf('st._snapRound = (st._snapRound || 0) + 1')
   ok(iForce > 0 && iThrottle > 0 && iForce < iThrottle,
     '★强制判定位于节流分支之前（否则首轮永远进不到）')
   // turn 号必须从 `data.turn` 读（首版读 ev.turn 恒 undefined，是已踩过的坑）
-  const fnSrc = idx.slice(idx.indexOf('turnBoundaryKeyPre(agent) {'), idx.indexOf('humanTurnObservedPre(agent) {'))
+  const fnSrc = idx.match(/^  turnBoundaryKeyPre\(agent\) \{[\s\S]*?^  \}/m)?.[0] || ''
   ok(/ev\.data\.turn/.test(fnSrc), '★turn 号从 event.data 读（顶层没有 turn；首版踩过这个坑）')
   ok(/'turn:' \+ curTurn/.test(fnSrc), '返回稳定的 turn 标识')
   ok(/events\.length - 400/.test(fnSrc), '只扫事件尾部 400 条（不做全量扫描）')

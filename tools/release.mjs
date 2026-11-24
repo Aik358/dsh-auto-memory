@@ -267,7 +267,7 @@ function reportDocsOverwriteRisk() {
     let base = null
     try { base = git(['rev-parse', '--verify', 'origin/main']).toString('utf8').trim() } catch (e) { return } // 无 origin/main(干净克隆/CI) ⇒ 跳过
     if (!base) return
-    const changed = git(['diff', '--name-only', base, '--', 'docs']).toString('utf8').split(/\r?\n/).filter(Boolean)
+    const changed = git(['diff', '--name-only', '-z', base, '--', 'docs']).toString('utf8').split('\0').filter(Boolean)
     if (!changed.length) { console.log('[release] docs 覆盖护栏: docs/ 与 origin/main 无差异 ✓'); return }
     const real = []
     for (const rel of changed) {
@@ -315,7 +315,7 @@ reportDocsOverwriteRisk()
 //     · tests/smoke/smoke-test-issue368-write-contract-negative.mjs → tools/check-write-contract-await.mjs（PR#420）
 //   而 tools/ 是**白名单**入包 ⇒ 不列即静默跳过；漏了会出现「发布树里测试引用的工具不存在」，
 //   即本文件反复记录的同一型漏网（CI 里 ERR_MODULE_NOT_FOUND / ENOENT）。
-for (const toolFile of 'guard-tracked-imports.mjs,run-smoke.mjs,smoke-impact.mjs,release.mjs,reconcile-upstream.mjs,check-write-contract.mjs,check-write-contract-await.mjs,chart-engine.mjs,chart-figs.mjs,chart-figs-step5.mjs,chart-audit.mjs'.split(',')) {
+for (const toolFile of 'guard-tracked-imports.mjs,run-smoke.mjs,smoke-impact.mjs,release.mjs,reconcile-upstream.mjs,check-write-contract.mjs,check-write-contract-await.mjs,chart-engine.mjs,chart-figs.mjs,chart-figs-step5.mjs,chart-audit.mjs,gen-ev4-blocks.mjs'.split(',')) {
   const src = path.join(DEV, 'tools', toolFile)
   if (!existsSync(src)) continue
   mkdirSync(path.join(REL, 'tools'), { recursive: true })
@@ -355,6 +355,10 @@ for (const toolFile of 'build-iter5-skin.mjs'.split(',')) {
 //   故此处**不信任清单**，直接核对**交付结果**：每个必需工具必须已落在 REL 里。
 //   判据从「源侧有没有」改为「产物侧有没有」—— 与 3.7 的调用点严格配套。
 const REQUIRED_RELEASE_TOOLS = ['run-smoke.mjs', 'smoke-impact.mjs', 'release.mjs', 'build-iter5-skin.mjs', 'reconcile-upstream.mjs', 'guard-tracked-imports.mjs']
+// Minimal release fixtures can omit the EV4 suites. A release that ships them needs the generator.
+if (existsSync(path.join(REL, 'tests/smoke/smoke-test-v4-ev4-marker-guard.mjs'))) {
+  REQUIRED_RELEASE_TOOLS.push('gen-ev4-blocks.mjs')
+}
 {
   const absent = REQUIRED_RELEASE_TOOLS.filter((f) => !existsSync(path.join(REL, 'tools', f)))
   if (absent.length) {

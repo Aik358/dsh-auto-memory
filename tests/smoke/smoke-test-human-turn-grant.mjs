@@ -1,111 +1,39 @@
-import { readFileSync } from "node:fs"
-import { createHash } from "node:crypto"
-// 支持 DAM_INDEX_JS 指向变异副本（变异反向验证：变异必红、还原复绿）
-const SRC = readFileSync(process.env.DAM_INDEX_JS || "lib/index.js", "utf8")
-const S0 = SRC.indexOf("let tieredFullGranted = false")
-const END = "return finalizePre(snap + engine.renderReflectionRequest())"
-const body = SRC.slice(S0, SRC.lastIndexOf(END) + END.length)
+import path from 'node:path'
+import { startDeliveryHost, message, markers } from '../lib/delivery-step-fixture.mjs'
 
-// ★2026-10-18（交付层根治配套）：决策段现依赖 finalizePre（生产侧同源抽取）。
-//   旧夹具只注入决策段 ⇒ new Function 抛 ReferenceError ⇒ 整套假红。
-//   下列片段从源码**真实抽取** finalizePre，保证夹具与生产同源（不复制实现）。
-const FIN_SRC = (function (SRC) {
-  const A = "const finalizePre = (txt, hangGranted = false) => {"
-  const i0 = SRC.indexOf(A)
-  if (i0 < 0) throw new Error("finalizePre not found in source")
-  let depth = 0
-  for (let i = i0; i < SRC.length; i++) {
-    const c = SRC[i]
-    if (c === "{") depth++
-    else if (c === "}") { depth--; if (depth === 0) return SRC.slice(i0, i + 1) + ";" }
-  }
-  throw new Error("finalizePre body unbalanced")
-})(SRC)
-const NL = String.fromCharCode(10), LB = String.fromCharCode(91), RB = String.fromCharCode(93)
-const mkSnap = (n) => ["<memory_system>", LB + "最近 1 天工作日志(尾部)" + RB, LB + "2026-10-05" + RB + " 日志" + n, LB + "白板 PLAN.md" + RB, "</memory_system>"].join(NL)
-const grab = (name) => {
-  const i0 = SRC.indexOf("  " + name + "(agent) {")
-  let d = 0, i1 = -1
-  for (let i = SRC.indexOf("{", i0); i < SRC.length; i++) { const c = SRC[i]; if (c === "{") d++; else if (c === "}") { d--; if (d === 0) { i1 = i + 1; break } } }
-  return SRC.slice(i0, i1).replace(name + "(agent) {", "function (agent) {")
+if (process.env.DAM_INDEX_JS && !process.env.DAM_AUDIT_ENGINE_SOURCE) {
+  process.env.DAM_AUDIT_ENGINE_SOURCE = path.resolve(process.env.DAM_INDEX_JS)
 }
-const sessionEventsOf = (s) => s.events
-const callTk = new Function("agent", "sessionEventsOf", "return (" + grab("turnBoundaryKeyPre") + ")(agent)")
-const callH = new Function("agent", "sessionEventsOf", "return (" + grab("humanTurnObservedPre") + ")(agent)")
-const callSeq = new Function("agent", "sessionEventsOf", "return (" + grab("humanTurnSeqPre") + ")(agent)")
-const evTurn = (seq, turn) => ({ seq, type: "turn/start", data: { turn } })
-const evUser = (seq, kind) => ({ seq, type: "user/message", data: { source: { kind } } })
 let pass = 0, fail = 0
-const ok = (c, m) => { if (c) { pass++; console.log("  ok - " + m) } else { fail++; console.log("  FAIL - " + m) } }
-const mk = () => {
-  const st = { _slimStep:0,_lastSlimCounted:0,_slimCount:0,_humanFullKey:undefined,_snapFp:undefined,_snapLogFp:"",_snapRound:0,_snapLastRound:0,_tk:"" }
-  const engine = { stateFor:()=>st, runtimeFor:()=>({contextVersion:0}),
-    turnBoundaryKeyPre:(a)=>callTk(a, sessionEventsOf), humanTurnObservedPre:(a)=>callH(a, sessionEventsOf),
-    humanTurnSeqPre:(a)=>callSeq(a, sessionEventsOf),
-    renderReflectionRequest:()=>"", config:{snapshotMinGapRounds:5,snapshotTieredInject:true,slimEveryRounds:3,snapshotReinjectOnCompact:true} }
-  const F = new Function("engine","agent","gap","snap","slimText","diag","createHash","parseGapRoundsPre", FIN_SRC + String.fromCharCode(10) + body + ";")
-  const agent = { session: { events: [] } }
-  return { st, agent, run:(evs, snap)=>{ agent.session.events = evs
-    const o = F(engine, agent, 5, snap, "<memory_system>SLIM</memory_system>", ()=>{}, createHash, (v,d)=>{const n=Number(v);return Number.isFinite(n)?n:d}) || ""
-    return o.includes("SLIM") ? "精简" : (o.includes("白板 PLAN.md") ? "完整" : "空") } }
-}
-console.log("=== T1 turn17 真人轮（turn 边界滞后）必须给完整版 ===")
-{
-  const E = mk()
-  const turn16 = [evTurn(3158,16), evUser(3162,"user")]
-  ok(E.run(turn16, mkSnap("A")) === "完整", "T1-a turn16 首次（真人）⇒ 完整")
-  // 真实形态：新一轮的真人消息已落地（seq=3172），但 turn/start 尚未可见（仍是 turn:16）
-  const lag = [evTurn(3158,16), evUser(3162,"user"), evUser(3163,"runtime-context"), evUser(3172,"user"), evUser(3173,"runtime-context")]
-  const r2 = E.run(lag, mkSnap("B"))
-  // ★★2026-11-04 判据升级（H2/H3）：真人**不再**是「给完整版」的理由 ——
-//   用户裁定 full 只在①首轮 ②压缩后 ③水位过 25%/50% 后的人说话轮。
-//   本条原测「turn 边界滞后 + 真人消息已到 ⇒ 完整」；新语义下同 turn 第二次决策走节流 ⇒ 精简。
-ok(r2 === "精简", "T1-b turn 边界滞后但真人消息已到 ⇒ 精简（H2 后真人旁路已移除）")
-}
-console.log("")
-console.log("=== T2 非真人轮仍受节流（不可放宽）===")
-{
-  const E = mk()
-  const cron = [evTurn(3158,16)]
-  ok(E.run(cron, mkSnap("A")) === "完整", "T2-a 首次注入 ⇒ 完整")
-  ok(E.run(cron, mkSnap("B")) === "精简", "T2-b 非真人且间距未到 ⇒ 精简")
-}
-console.log("")
-console.log("=== T3 同一真人轮只强放一次（不刷屏）===")
-{
-  const E = mk()
-  // ★2026-10-18 夹具修正：本档测的是「同一 turn 内**进入新 step** 后是否回到节流」，
-  //   必须真的推进 step/start 才能触发重新决策。原夹具 evs 不推进 step ⇒
-  //   在「入口总闸·同一模型请求保真」语义下必然保持完整版（正确行为），断言与语义冲突。
-  const evs = [evTurn(3169,17), evUser(3172,"user"), { seq: 3172.5, type: "step/start", data: { turn: 17, step: 1 } }]
-  ok(E.run(evs, mkSnap("A")) === "完整", "T3-a 真人 turn 首次 ⇒ 完整")
-  const next = evs.concat([{ seq: 3173, type: "step/end", data: { turn: 17, step: 1 } },
-                           { seq: 3174, type: "step/start", data: { turn: 17, step: 2 } }])
-  const r2 = E.run(next, mkSnap("B"))
-  ok(r2 === "精简", "T3-b 同 turn 进入新 step ⇒ 回到节流【修复前为完整】")
-}
-console.log("=== T4 同一 step 内续帧保真：完整版不被次帧精简版覆盖（2026-10-18 用户裁定）===")
-{
-  // 语义变更理由：宿主在同一 step 内会对 context 面多次调用 text()，但只有**最后一次**结果被投影。
-  //   若首次给完整版、次帧降级为精简版，则完整版会被精简版覆盖 ⇒ 用户看到「人说话了但没注入」。
-  //   宿主对**全部 context 面拼接后的整串**去重 ⇒ 同 step 返回逐字节相同的完整版不会真的重复投递。
-  //   ⇒ 新判据：同 step 内必须保持一致（都给完整版）。
-  const E = mk()
-  // ★2026-10-18 夹具修正：原 evs 只有 turn/start + user/message、**没有 step/start**
-  //   ⇒ 生产代码取不到 step 号 ⇒ stepScopeKey 为空串 ⇒ 「空 scope 不参与保真」守卫会跳过保真
-  //   （T4-d 之所以原本就绿，正是因为它自己补了 step/start）。本档测的就是同 step 保真，
-  //   夹具必须给出**真实存在的 step**（与 tiered-branches 分档 5、inj5 T7 同口径）。
-  const evs = [evTurn(3169,17), evUser(3172,"user"),
-               { seq: 3172.5, type: "step/start", data: { turn: 17, step: 1 } }]
-  const a = E.run(evs, mkSnap("A"))
-  const b = E.run(evs, mkSnap("A"))
-  ok(a === "完整", "T4-a 真人在场首次 ⇒ 完整（实得 " + a + "）")
-  ok(b === "完整", "T4-b ★同 step 续帧 ⇒ 仍完整（保真：不得被精简版覆盖；实得 " + b + "）")
-  ok(E.run(evs, mkSnap("A")) === b, "T4-c 续帧文本逐字节稳定（不抖动）")
-  // 跨 step 必须能重新决策，否则完整版会在整个 turn 内无限续命
-  const crossStep = [evTurn(3169,17), evUser(3172,"user"), { seq: 3173, type: "step/start", data: { turn: 17, step: 2 } }]
-  ok(E.run(crossStep, mkSnap("A")) === "精简", "T4-d ★跨 step ⇒ 重新决策为精简（保真不跨 step 续命）")
-}
+function ok(cond, label) { if (cond) { pass++; console.log('  ok - ' + label) } else { fail++; console.log('  FAIL - ' + label) } }
+const host = await startDeliveryHost()
+try {
+  const session = () => host.session({ runTierInjectEnabled: true, snapshotMinGapRounds: 5, slimEveryRounds: 3 })
+  const freshHuman = () => message('user')
+  const r = (s, messages) => s.request(messages, { repeat: true, toolStep: true })
 
-console.log("PASS " + pass + " / FAIL " + fail)
-process.exit(fail ? 1 : 0)
+  // No new turn/start: a fresh user message still owns this request, even behind a notice.
+  const lag = session()
+  ok((await r(lag, [freshHuman()])).text.includes(markers.full), 'T1-a 首次真人请求交付完整正文')
+  const adjacent = await r(lag, [message('runtime-context'), freshHuman()])
+  ok(adjacent.kind === 'human-slim' && adjacent.text.includes(markers.event), 'T1-b 轮界未变，新的真人请求得到精简事件，而非运行档或重复完整帧')
+
+  const cron = session()
+  ok((await r(cron, [])).kind === 'full', 'T2-a 运行档开启，首次非真人请求为完整')
+  ok((await r(cron, [])).kind === 'run-slim', 'T2-b 非真人且间距未到，仍受节流')
+
+  const mixed = session()
+  const first = await r(mixed, [freshHuman()]), next = await r(mixed, [])
+  ok(first.kind === 'full', 'T3-a 首次真人请求为完整')
+  ok(next.kind === 'run-slim' && !next.text.includes(markers.event), 'T3-b 同 turn 下一工具步不继承真人')
+
+  const repeated = session()
+  const granted = await r(repeated, [freshHuman()])
+  ok(granted.firstPostText.includes(markers.full), 'T4-a 真人首个准入读取为完整正文')
+  ok(granted.kind === 'full', 'T4-b 同请求的重复读取未将完整正文覆盖为精简')
+  ok(granted.firstPostText === granted.text, 'T4-c 准入帧逐字节等于最终投影，非仅档位相同')
+  const cross = await r(repeated, [message('agent-message')])
+  ok(cross.kind === 'run-slim' && cross.text !== granted.text, 'T4-d 跨步重新判档，不复读上个真人帧')
+} finally { await host.close() }
+console.log('PASS ' + pass + ' / FAIL ' + fail)
+process.exitCode = fail ? 1 : 0

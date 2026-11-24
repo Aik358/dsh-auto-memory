@@ -175,7 +175,8 @@ ok(lastLine.indexOf('join(') >= 0 && lastLine.trim().slice(-1) !== ';', '★★�
 
 console.log('')
 console.log('== 5. 生成器 --check（幂等/一致性）==')
-const r1 = spawnSync(process.execPath, [GEN, '--check'], { cwd: ROOT, encoding: 'utf8', timeout: 180000 })
+const inline = spawnSync(process.execPath, [GEN, '--check-inline'], { cwd: ROOT, encoding: 'utf8', timeout: 30000 })
+ok(inline.status === 0, 'The generator verifies the tracked client block in a clean checkout', inline.error?.message || inline.stderr || inline.stdout)
 // ★★#507（2026-11-02）：`--check` 同时校验**两处**产物，其中 lib/ev4-blocks.generated.js 是生成物，
 //   被 .gitignore:55（lib/*.*.*）排除 ⇒ **CI / 干净检出里根本没有这个文件** ⇒ gen 脚本走
 //   「generated.js 无」分支直接 STALE（status=2）。这与产品无关，是「测试依赖一个未跟踪的本地生成物」。
@@ -185,9 +186,10 @@ const r1 = spawnSync(process.execPath, [GEN, '--check'], { cwd: ROOT, encoding: 
 const GENERATED = path.join(ROOT, 'lib/ev4-blocks.generated.js')
 const hasGenerated = fs.existsSync(GENERATED)
 if (hasGenerated) {
-  ok(r1.status === 0, '★★★[幂等] --check 返回 0', 'status=' + r1.status)
+  const r1 = spawnSync(process.execPath, [GEN, '--check'], { cwd: ROOT, encoding: 'utf8', timeout: 30000 })
+  ok(r1.status === 0, 'Both outputs match the generator when the local generated file exists', r1.error?.message || r1.stderr || r1.stdout)
 } else {
-  skip('★★★[幂等] --check 返回 0', 'lib/ev4-blocks.generated.js 不存在（被 .gitignore:55 排除的生成物，CI 无此文件）⇒ status=' + r1.status + ' 属环境原因；产物存在时会真判')
+  skip('Optional local output check', 'lib/ev4-blocks.generated.js is generated locally. The tracked inline block was checked above.')
 }
 
 console.log('')

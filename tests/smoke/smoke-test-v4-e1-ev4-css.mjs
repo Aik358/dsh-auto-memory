@@ -2,7 +2,7 @@
  * v4 E1 · 原型视觉系统照搬（作用域化 CSS）
  *
  * ## 本套件守什么
- * 把 artifacts/wb-event-preview/extract/prototype.css（655 行 / 412 规则）经三条机械变换后
+ * 把 tests/fixtures/ev4/prototype.css（655 行 / 412 规则）经三条机械变换后
  * 作为 EV4_CSS 常量注入 lib/client.js，并由 ensureStyle() 单一出口拼接进同一个 style 标签。
  *
  * ## 为什么必须作用域化（这是本步唯一的高风险点）
@@ -23,7 +23,7 @@ import vm from 'node:vm'
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 const ROOT = path.resolve(HERE, '..', '..')
 const SRC = readFileSync(path.join(ROOT, 'lib', 'client.js'), 'utf8')
-const PROTO_CSS = readFileSync(path.join(ROOT, 'artifacts/wb-event-preview/extract/prototype.css'), 'utf8').replace(/\r/g, '')
+const PROTO_CSS = readFileSync(path.join(ROOT, 'tests/fixtures/ev4/prototype.css'), 'utf8').replace(/\r/g, '')
 
 let pass = 0, fail = 0
 const ok = (cond, msg) => { if (cond) { pass++; console.log('  ok   - ' + msg) } else { fail++; console.log('  FAIL - ' + msg) } }

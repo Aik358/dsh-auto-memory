@@ -53,6 +53,8 @@ jobs:
           ls tests/smoke/*.mjs | wc -l
 
       - name: 全量 smoke 回归（排除依赖本机产物/网络的套件）
+        env:
+          DAM_REQUIRE_CHROME: "1"
         run: |
           node tools/run-smoke.mjs \
             --jobs=1 \

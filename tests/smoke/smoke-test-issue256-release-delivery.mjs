@@ -69,13 +69,13 @@ const stagingOf = (out) => {
 
 try {
   // 最小可跑夹具：足以走到「tools 交付核对」（与 issue170 同款隔离思路）。
-  for (const dir of ['lib', 'tests', 'python', 'tools', 'locale']) mkdirSync(path.join(fixture, dir), { recursive: true })
+  for (const dir of ['lib', 'tests/smoke', 'python', 'tools', 'locale']) mkdirSync(path.join(fixture, dir), { recursive: true })
   writeFileSync(path.join(fixture, 'lib', 'index.js'), 'export const fixture = true' + String.fromCharCode(10))
   writeFileSync(path.join(fixture, 'lib', 'client.js'), 'export const fixture = true' + String.fromCharCode(10))
-  // ★2026-11-23：release.mjs 的 REQUIRED_RELEASE_TOOLS 现有 6 项（新增 guard-tracked-imports.mjs）。
-  //   fixture 必须覆盖**完整清单**（除单独断言其缺失的 reconcile-upstream.mjs 外），
-  //   否则正路径会因「发布树缺必需文件」而失败——那是夹具未跟随清单演进，不是产品缺陷。
-  for (const f of ['run-smoke.mjs', 'smoke-impact.mjs', 'build-iter5-skin.mjs', 'guard-tracked-imports.mjs']) writeFileSync(path.join(fixture, 'tools', f), '// fixture' + String.fromCharCode(10))
+  // Keep this minimal fixture aligned with required tools enabled by its suite inputs.
+  // EV4 marker guard activates conditional generator delivery in release.mjs.
+  writeFileSync(path.join(fixture, 'tests/smoke/smoke-test-v4-ev4-marker-guard.mjs'), '// fixture' + String.fromCharCode(10))
+  for (const f of ['run-smoke.mjs', 'smoke-impact.mjs', 'build-iter5-skin.mjs', 'guard-tracked-imports.mjs', 'gen-ev4-blocks.mjs']) writeFileSync(path.join(fixture, 'tools', f), '// fixture' + String.fromCharCode(10))
   // ★关键：release.mjs **本体**拷进 fixture，使其相对解析的 DEV == fixture。
   cpSync(RELEASE, path.join(fixture, 'tools', 'release.mjs'))
   // ★哨兵：fixture 独有（真仓库绝无此文件）⇒ 出现在 staging 即证明 DEV == fixture。
@@ -99,7 +99,18 @@ try {
   const posStaging = stagingOf(posOut)
   ok(posOut.includes('交付核对: OK'), '★ 正路径：tools 交付核对通过（' + (posOut.match(/交付核对: OK\([^)]*\)/) || [''])[0] + '）')
   ok(!!posStaging && existsSync(path.join(posStaging, 'tools', 'reconcile-upstream.mjs')), '★ 正路径：staging 里**存在** tools/reconcile-upstream.mjs（本缺陷的直接验收）')
+  ok(!!posStaging && existsSync(path.join(posStaging, 'tools', 'gen-ev4-blocks.mjs')), '★ 正路径：EV4 marker guard 存在时交付其真实生成器')
   ok(!!posStaging && existsSync(path.join(posStaging, 'locale', SENTINEL)), '★★ 正路径：staging 出现**哨兵** ⇒ DEV 解析为 fixture 自身（相对脚本位置生效，未用硬编码路径）')
+
+  // The conditional generator requirement must fail closed when its test consumer exists.
+  rmSync(path.join(fixture, 'tools', 'gen-ev4-blocks.mjs'))
+  const missingGenerator = runFixtureRelease(cleanEnv)
+  const missingGeneratorOut = missingGenerator.stdout + missingGenerator.stderr
+  stagingOf(missingGeneratorOut)
+  ok(missingGenerator.status !== 0, '★ EV4 marker guard without its generator fails closed')
+  ok(missingGeneratorOut.includes('gen-ev4-blocks.mjs'), '★ generator delivery error names gen-ev4-blocks.mjs')
+  ok(!missingGeneratorOut.includes('交付核对: OK'), '★ missing generator cannot report successful delivery')
+  writeFileSync(path.join(fixture, 'tools', 'gen-ev4-blocks.mjs'), '// fixture' + String.fromCharCode(10))
   ok(!existsSync(path.join(ROOT, 'locale', SENTINEL)), '哨兵是真仓库不存在的 fixture 专有文件（鉴别力前提成立）')
 
   // ── B3 自毁护栏：DEV === REL（同一目录）必须 fail closed ──
@@ -111,6 +122,68 @@ try {
   ok(same.status !== 0, '★ DEV === REL 时非零退出（实测 exit ' + same.status + '）')
   ok(sameOut.includes('同一个目录') || sameOut.includes('自毁'), '★ DEV === REL 时给出明确自毁指引')
   ok(existsSync(path.join(fixture, 'lib', 'index.js')), '★★ DEV === REL 被拒后 fixture 仍完好（**没有真的执行清空**）')
+
+  // A real REL git index proves docs-overwrite path decoding keeps UTF-8 filenames intact.
+  console.log('[#256] C. Chinese documentation paths survive docs-overwrite review')
+  const docsFixture = mkdtempSync(path.join(tmpdir(), 'dam-256-doc-paths-'))
+  try {
+    const dev = path.join(docsFixture, 'dev')
+    const rel = path.join(docsFixture, 'rel')
+    const write = (base, name, text) => {
+      const file = path.join(base, name)
+      mkdirSync(path.dirname(file), { recursive: true })
+      writeFileSync(file, text, 'utf8')
+      return file
+    }
+    for (const dir of ['lib', 'tests/smoke', 'python', 'tools', 'docs']) mkdirSync(path.join(dev, dir), { recursive: true })
+    write(dev, 'package.json', JSON.stringify({ version: '3.4.4', type: 'module' }))
+    write(dev, 'CHANGELOG.md', '# Changelog\n\n## [3.4.5]\n')
+    write(dev, 'lib/index.js', 'export const fixture = true\n')
+    write(dev, 'lib/client.js', "console.log('[dsh-auto-memory] client v3.4.5 fingerprint: fixture')\nconst CHANGELOG = { '3.4.5': { zh: [], en: [] } }\n")
+    write(dev, 'cordis.patch.yml', "- insert:\n    - id: auto-memory-pre\n      name: '@deepseek-ai/dsh-auto-memory'\n")
+    for (const file of ['run-smoke.mjs', 'smoke-impact.mjs', 'build-iter5-skin.mjs', 'guard-tracked-imports.mjs', 'gen-ev4-blocks.mjs']) write(dev, 'tools/' + file, '// fixture\n')
+    write(dev, 'tools/release.mjs', readFileSync(RELEASE, 'utf8'))
+    write(dev, 'tools/reconcile-upstream.mjs', "process.stdout.write(JSON.stringify({fork:{preOnly:0,mainOnly:0,mergeBase:'fixture',mergeBaseDate:'2026-11-25'},orphans:[],artifacts:[],unregistered:[]}))\n")
+    for (const file of ['worker_v1.py', 'worker_semantic_v1.py', 'm7_activation_features_v2.py', 'm7_embedding_v1.py']) write(dev, 'python/' + file, '# fixture\n')
+    write(dev, 'tests/smoke/smoke-test-v4-ev4-marker-guard.mjs', '// fixture\n')
+    const editedDoc = 'docs/teamwork-impl/中文-变更.md'
+    const missingDoc = 'docs/teamwork-impl/中文-应报告缺失.md'
+    const unchangedDoc = 'docs/teamwork-research/中文-相同.md'
+    write(dev, editedDoc, 'source version\n')
+    write(dev, unchangedDoc, 'same bytes\n')
+
+    mkdirSync(rel, { recursive: true })
+    const git = (args) => {
+      const result = spawnSync('git', ['-C', rel, ...args], { encoding: 'utf8', windowsHide: true })
+      assert.equal(result.status, 0, result.stderr || ('git ' + args.join(' ') + ' failed'))
+      return String(result.stdout || '').trim()
+    }
+    git(['init', '--initial-branch=main'])
+    git(['config', 'core.autocrlf', 'false'])
+    git(['config', 'core.quotepath', 'true'])
+    write(rel, editedDoc, 'main version\n')
+    write(rel, missingDoc, 'main-only version\n')
+    write(rel, unchangedDoc, 'same bytes\n')
+    git(['add', 'docs'])
+    const commit = spawnSync('git', ['-C', rel, '-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '-m', 'fixture baseline'], { encoding: 'utf8', windowsHide: true })
+    assert.equal(commit.status, 0, commit.stderr)
+    git(['update-ref', 'refs/remotes/origin/main', 'HEAD'])
+
+    const built = spawnSync(process.execPath, [RELEASE, '3.4.5'], {
+      cwd: dev, encoding: 'utf8', timeout: 60000, windowsHide: true,
+      env: { ...process.env, DSH_AUTO_MEMORY_DEV: dev, DSH_AUTO_MEMORY_REL: rel },
+    })
+    const output = String(built.stdout || '') + String(built.stderr || '')
+    if (built.status !== 0) console.log('中文路径 fixture 构建失败:\n' + output.slice(-5000))
+    ok(built.status === 0, '中文路径发布 fixture 构建成功', output.slice(-3000))
+    ok(output.includes('docs 覆盖护栏'), 'docs 覆盖护栏检查了公开 REL 索引')
+    ok(output.includes(editedDoc), '变更的中文路径以原文报告，不转成 Git C 转义字符串')
+    ok(output.includes(missingDoc) && output.includes('dev 缺失'), '真实缺失的公开文件仍被明确报告')
+    ok(!output.includes(editedDoc + ' (dev 缺失'), '已存在的中文文件不会被误判为缺失')
+    ok(!output.includes(unchangedDoc), '内容相同的中文路径不被列作覆盖差异')
+  } finally {
+    rmSync(docsFixture, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
+  }
 } finally {
   rmSync(fixture, { recursive: true, force: true })
   for (const d of stagingDirs) { if (d) rmSync(d, { recursive: true, force: true }) }

@@ -22,7 +22,7 @@
  * ## 白名单三条硬约束（防它变垃圾桶）
  *   1. 数量锁定：whitelist.size 必须等于常量，多一个少一个都红
  *   2. 逐条带 kind + 理由/凭据：feature-todo / struct-equiv / to-delete
- *   3. 每条必须在 artifacts/ 有对应记录（待办清单 / 等价证明）
+ *   3. Each exception must have a checked-in record (feature backlog or equivalence proof).
  *   ★出现 kind='to-delete' ⇒ 必红（意思是「该删的没删」）
  */
 import fs from 'node:fs'
@@ -37,39 +37,66 @@ import { fileURLToPath } from 'node:url'
 //   那不是产品缺陷，是测试不可移植。**不要改回 process.cwd()**：run-smoke 的
 //   工作目录与开发者 shell 的 cwd 都不保证是仓库根。
 const ROOT = fileURLToPath(new URL('../..', import.meta.url))
-const CHROME = 'C:/Program Files/Google/Chrome/Application/chrome.exe'
+function isExecutable(file) {
+  try {
+    fs.accessSync(file, fs.constants.X_OK)
+    return fs.statSync(file).isFile()
+  } catch {
+    return false
+  }
+}
+function findChrome() {
+  if (process.env.CHROME_BIN) {
+    const configured = path.resolve(process.env.CHROME_BIN)
+    if (!isExecutable(configured)) throw new Error('CHROME_BIN does not point to an executable')
+    return configured
+  }
+  const windows = process.platform === 'win32'
+  const names = windows ? ['chrome.exe', 'chromium.exe'] : ['google-chrome', 'google-chrome-stable', 'chromium', 'chromium-browser']
+  for (const dir of (process.env.PATH || '').split(path.delimiter).filter(Boolean)) {
+    for (const name of names) {
+      const file = path.resolve(dir, name)
+      if (isExecutable(file)) return file
+    }
+  }
+  const defaults = windows
+    ? [process.env.ProgramFiles, process.env['ProgramFiles(x86)'], process.env.LOCALAPPDATA].filter(Boolean)
+        .map(dir => path.join(dir, 'Google/Chrome/Application/chrome.exe'))
+    : ['/Applications/Google Chrome.app/Contents/MacOS/Google Chrome']
+  return defaults.find(isExecutable)
+}
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 const CL = fs.readFileSync(path.join(ROOT, 'lib', 'client.js'), 'utf8')
 
 const results = []
 const ok = (cond, msg) => { results.push({ cond: !!cond }); console.log((cond ? "  ok   - " : "  FAIL - ") + msg) }
 
-// ═══ 白名单（三条硬约束：数量锁定 / 逐条 kind+理由 / 必须在 artifacts 有记录）═══
+// Keep the whitelist size, rationale and checked-in supporting records aligned.
 const WHITELIST_LOCKED_SIZE = 4
 const WHITELIST = {
   "lane-today": {
     kind: "feature-todo",
     ticket: "E8-T1",
     why: "lanes 视图缺「今日」竖线 —— 真功能缺失，renderLanesViewPre 里 0 处 today 逻辑",
-    record: "artifacts/e8-visual/FEATURE-TODO.md",
+    record: "tests/fixtures/ev4/FEATURE-TODO.md",
   },
   "navbtn": {
     kind: "feature-todo",
     ticket: "E8-T2",
     why: "窄屏导航按钮缺失 —— E5 只做了隐藏 grip，没做抽屉入口",
-    record: "artifacts/e8-visual/FEATURE-TODO.md",
+    record: "tests/fixtures/ev4/FEATURE-TODO.md",
   },
   "layout": {
     kind: "struct-equiv",
-    proof: "artifacts/e8-visual/layout-equiv.md",
+    proof: "tests/fixtures/ev4/layout-equiv.md",
     why: "原型三栏容器；我用 .dam-evt-split 实现同结构（真 Chrome 控制变量实测列宽/gap/overflow 三项差 0px）",
-    record: "artifacts/e8-visual/layout-equiv.md",
+    record: "tests/fixtures/ev4/layout-equiv.md",
   },
   "col": {
     kind: "struct-equiv",
-    proof: "artifacts/e8-visual/layout-equiv.md",
+    proof: "tests/fixtures/ev4/layout-equiv.md",
     why: "原型两列滚动容器；我用带 overflow:auto+min-width:0 的 div 实现（同上三项实测等价）",
-    record: "artifacts/e8-visual/layout-equiv.md",
+    record: "tests/fixtures/ev4/layout-equiv.md",
   },
 };
 
@@ -86,7 +113,7 @@ ok(noWhy.length === 0, "★★★[约束2] 每项都有实质理由（>=10 字�
 const missingRecord = wlKeys.filter((k) => {
   try { return !fs.existsSync(path.join(ROOT, WHITELIST[k].record)) } catch (e) { return true }
 });
-ok(missingRecord.length === 0, "★★★[约束3] 每项在 artifacts 都有对应记录（缺：" + (missingRecord.join(",") || "无") + "）");
+ok(missingRecord.length === 0, "★★★[约束3] 每项都有随仓库检出的对应记录（缺：" + (missingRecord.join(",") || "无") + "）");
 
 // ═══ CSS 侧：EV4_CSS 里 .dam-ev4 作用域下声明了样式的类名 ═══
 const at = CL.indexOf('var EV4_CSS = [')
@@ -119,7 +146,29 @@ const scopedClass = new Set()
   })
 }
 
-async function waitJson (u, t = 90) { for (let i = 0; i < t; i++) { try { const r = await fetch(u); if (r.ok) return await r.json() } catch (e) {} await sleep(200) } throw new Error("cdp timeout") }
+async function waitForChrome(profile, getLaunchError) {
+  const portFile = path.join(profile, 'DevToolsActivePort')
+  const deadline = Date.now() + 20000
+  while (Date.now() < deadline) {
+    const launchError = getLaunchError()
+    if (launchError) throw launchError
+    try {
+      const port = Number(fs.readFileSync(portFile, 'utf8').split(/\r?\n/)[0])
+      if (Number.isInteger(port) && port > 0 && port <= 65535) {
+        const response = await fetch('http://127.0.0.1:' + port + '/json/list', { signal: AbortSignal.timeout(1000) })
+        if (response.ok) {
+          const page = (await response.json()).find(target => target.type === 'page')
+          if (page?.webSocketDebuggerUrl) return page.webSocketDebuggerUrl
+        }
+      }
+    } catch (error) {
+      // Chrome creates the port file and HTTP endpoint during startup.
+      if (error.code && error.code !== 'ENOENT') throw error
+    }
+    await sleep(100)
+  }
+  throw new Error('Chrome did not open its DevTools endpoint within 20 seconds')
+}
 class CDP {
   constructor (ws) { this.ws = ws; this.id = 0; this.pending = new Map(); ws.onmessage = (e) => this.onMsg(e.data) }
   static async connect (u) { const ws = new WebSocket(u); await new Promise((res, rej) => { ws.onopen = res; ws.onerror = rej }); return new CDP(ws) }
@@ -175,15 +224,23 @@ html,body{margin:0;height:100%} body{display:flex}
   <div class="detail-sheet"><div class="sheet-close">×</div></div><div class="scrim"></div><div class="rail-open"></div>
 </div></div></body></html>`
 
-const port = 9467
+const chromePath = findChrome()
+if (!chromePath) {
+  const failed = results.filter((result) => !result.cond).length
+  if (process.env.DAM_REQUIRE_CHROME === '1') throw new Error('Chrome is required. Set CHROME_BIN to its executable.')
+  console.log('SKIP: Chrome is unavailable. Set CHROME_BIN to run DOM and mutation checks.')
+  console.log('SUMMARY  PASS ' + (results.length - failed) + ' / FAIL ' + failed + ' / SKIP 1 (browser checks)')
+  process.exit(failed ? 1 : 0)
+}
 const outputDir = fs.mkdtempSync(path.join(tmpdir(), 'dam-e8-double-check-'))
 const profile = path.join(outputDir, 'chrome-profile')
-const chrome = spawn(CHROME, ["--headless=new", "--disable-gpu", "--no-sandbox", "--window-size=1600,1000", "--remote-debugging-port=" + port, "--user-data-dir=" + profile, "about:blank"], { stdio: "ignore" })
+const chrome = spawn(chromePath, ['--headless=new', '--disable-gpu', '--no-sandbox', '--window-size=1600,1000', '--remote-debugging-port=0', '--user-data-dir=' + profile, 'about:blank'], { stdio: 'ignore' })
+let launchError
+chrome.once('error', error => { launchError = error })
+chrome.once('exit', (code, signal) => { launchError ??= new Error('Chrome exited during the test (' + (code ?? signal) + ')') })
 
 try {
-  await waitJson("http://127.0.0.1:" + port + "/json/version")
-  const list = await waitJson("http://127.0.0.1:" + port + "/json/list")
-  const cdp = await CDP.connect(list.find((t) => t.type === "page").webSocketDebuggerUrl)
+  const cdp = await CDP.connect(await waitForChrome(profile, () => launchError))
   await cdp.send("Page.enable"); await cdp.send("Runtime.enable")
   await cdp.send("Emulation.setDeviceMetricsOverride", { width: 1600, height: 1000, deviceScaleFactor: 1, mobile: false })
   await cdp.send("Page.navigate", { url: "data:text/html;charset=utf-8," + encodeURIComponent(PAGE) })

@@ -25,6 +25,7 @@
  */
 import { readFileSync } from 'node:fs'
 import { createHash } from 'node:crypto'
+import { claimedHuman, deliveryRequestScope } from '../../lib/injection/request-scope.js'
 
 // 支持 DAM_INDEX_JS 指向变异副本（变异反向验证用）
 const SRC = readFileSync(process.env.DAM_INDEX_JS || new URL('../../lib/index.js', import.meta.url), 'utf8')
@@ -66,7 +67,6 @@ const mkSnap = (n) => ['<memory_system>', LB + '最近 1 天工作日志(尾部)
 const evTurn = (seq, turn) => ({ seq, type: 'turn/start', data: { turn } })
 const evUser = (seq, kind) => ({ seq, type: 'user/message', data: { source: { kind } } })
 const turnOf = (ev) => (ev.data && ev.data.turn !== undefined) ? Number(ev.data.turn) : NaN
-const kindOf = (ev) => (ev.data && ev.data.source) ? String(ev.data.source.kind || '') : ''
 
 function mk(over) {
   const st = { _slimStep: 0, _lastSlimCounted: 0, _slimCount: 0, _humanFullKey: undefined, _snapFp: undefined, _snapLogFp: 0, _snapRound: 0,
@@ -76,40 +76,18 @@ function mk(over) {
     stateFor: () => st,
     runtimeFor: () => ({ contextVersion: 0 }),
     turnBoundaryKeyPre: (a) => { const e = a.session.events; for (let k = e.length - 1; k >= 0; k--) { const t = turnOf(e[k]); if (Number.isFinite(t)) return 'turn:' + t } return '' },
-    humanTurnObservedPre: (a) => { const e = a.session.events; let cur = NaN
-      for (let k = e.length - 1; k >= 0; k--) { const t = turnOf(e[k]); if (Number.isFinite(t)) { cur = t; break } }
-      for (let k = e.length - 1; k >= 0; k--) { const x = e[k]; const t = turnOf(x); if (Number.isFinite(t) && Number.isFinite(cur) && t !== cur) break
-        if (x.type !== 'user/message') continue; const kd = kindOf(x); if (!kd || kd === 'user') return true }
-      return false },
-    humanTurnSeqPre: (a) => { const e = a.session.events; let cur = NaN
-      for (let k = e.length - 1; k >= 0; k--) { const t = turnOf(e[k]); if (Number.isFinite(t)) { cur = t; break } }
-      for (let k = e.length - 1; k >= 0; k--) { const x = e[k]; const t = turnOf(x); if (Number.isFinite(t) && Number.isFinite(cur) && t !== cur) break
-        if (x.type !== 'user/message') continue; const kd = kindOf(x); if (!kd || kd === 'user') return x.seq }
-      return null },
+    humanTurnSeqPre: a => deliveryRequestScope(a.session.events).humanSeq ?? null,
     renderReflectionRequest: () => '',
-
-    // ★2026-10-18（与生产同源）：请求键在两帧之间恒定、每请求翻新。
-    //   生产用「最近一次 step/end 的 seq」；本夹具每次 run 追加一条 step/start，
-    //   因此用其条数作稳定键即可（同一请求内不追加 ⇒ 键不变；新请求 ⇒ +1）。
-    requestIdPre: (a) => {
-      const evs = (a && a.session && Array.isArray(a.session.events)) ? a.session.events : []
-      let n = 0
-      for (let k = 0; k < evs.length; k++) {
-        const e = evs[k]
-        if (!e) continue
-        if (e.type === "step/end") n = Math.max(n, Number(e.seq) || 0)
-        else if (e.type === "step/start") n = Math.max(n, Number(e.seq) || 0)
-      }
-      return "k:" + n
-    },
+    requestIdPre: a => deliveryRequestScope(a.session.events).key,
     config: Object.assign({ snapshotMinGapRounds: 10, snapshotTieredInject: true, fullEverySlims: 10, slimEveryRounds: 3, snapshotReinjectOnCompact: true }, over || {}),
   }
-  const F = new Function('engine', 'agent', 'gap', 'snap', 'slimText', 'diag', 'createHash', 'parseGapRoundsPre', FIN_SRC + String.fromCharCode(10) + body + ';')
+  const F = new Function('engine', 'agent', 'gap', 'snap', 'slimText', 'diag', 'createHash', 'parseGapRoundsPre', '_currentHumanRequestPre', FIN_SRC + String.fromCharCode(10) + body + ';')
   const agent = { session: { events: [] } }
   const run = (evs, snap) => {
     agent.session.events = evs
     const o = F(engine, agent, Number(engine.config.snapshotMinGapRounds), snap, '<memory_system>SLIM</memory_system>', () => {}, createHash,
-      (v) => { const n = Number(v); return Number.isFinite(n) ? n : 0 })
+      (v, fallback) => Number.isFinite(Number(v)) ? Number(v) : fallback,
+      () => claimedHuman(deliveryRequestScope(agent.session.events), st._deliveryClaimPre))
     return o.includes('SLIM') ? 'S' : (o.includes('白板 PLAN.md') ? 'F' : (o === '' ? '-' : '?'))
   }
   return { st, run }
@@ -127,8 +105,12 @@ function renderTurn(E, turnNo, renders, opts) {
   const r = []
   let stepNo = 0
   for (let k = 0; k < renders; k++) {
-    if (stepPerFrame) stepNo += 1
-    e.push({ seq: 3000 + turnNo * 1000 + k, type: "step/start", data: { turn: turnNo, step: stepNo || 1 } })
+    if (stepPerFrame || !stepNo) {
+      const seq = 3000 + turnNo * 1000 + k * 2
+      if (stepNo) e.push({ seq, type: 'step/end', data: { turn: turnNo, step: stepNo } })
+      stepNo++
+      e.push({ seq: seq + 1, type: 'step/start', data: { turn: turnNo, step: stepNo } })
+    }
     r.push(E.run(e.slice(), mkSnap("t" + turnNo + "k" + k)))
   }
   return r

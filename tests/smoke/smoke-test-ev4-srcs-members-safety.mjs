@@ -28,7 +28,7 @@
  *   D [负路径] 把同一块里可空解引用改回裸解引用 ⇒ members>cp 时必须抛 TypeError（判据非恒真）。
  *   E [负路径] 真实 store 的同批事件在「裸解引用」变体下必须崩 —— 证明本批数据真的会触发该缺陷。
  *   F 真实 store（存在才跑）：25 事件零崩溃、零截断。
- *   G 行尾守恒：lib/client.js 裸 LF = 0。
+ *   G 行尾守恒：客户端源码使用统一的 LF 或 CRLF。
  */
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
@@ -229,8 +229,13 @@ if (!storeText) {
 
 // ═══ G 行尾守恒 ═══
 console.log('== G 行尾守恒 ==')
-const bareLF = (SRC.match(/(?<!\r)\n/g) || []).length
-ok(bareLF === 0, '[G] lib/client.js 裸 LF = 0（实得 ' + bareLF + '）')
+function consistentEol(source) {
+  const endings = new Set(source.match(/\r\n|\n|\r/g))
+  return endings.size === 1 && !endings.has('\r')
+}
+ok(consistentEol(SRC), '[G] client.js uses one line-ending style (LF or CRLF)')
+ok(consistentEol('a\nb\n') && consistentEol('a\r\nb\r\n'), '[G] LF and CRLF checkouts both pass')
+ok(!consistentEol('a\nb\r\n') && !consistentEol('a\rb\n'), '[G] mixed endings and lone CR are rejected')
 
 console.log('\n[ev4-srcs-members-safety] PASS ' + pass + ' / FAIL ' + fail)
 process.exitCode = fail ? 1 : 0
