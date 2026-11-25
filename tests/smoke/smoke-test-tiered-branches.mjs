@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs"
 import { createHash } from "node:crypto"
+import { claimedHuman, deliveryRequestScope, isUserInput } from '../../lib/injection/request-scope.js'
 const SRC = readFileSync(process.env.DAM_INDEX_JS || "lib/index.js", "utf8")
 const S0 = SRC.indexOf("let tieredFullGranted = false")
 const END = "return finalizePre(snap + engine.renderReflectionRequest())"
@@ -38,8 +39,7 @@ const grab = (name) => {
 }
 const seo = (s) => s.events
 const callTk = new Function("agent","sessionEventsOf","return (" + grab("turnBoundaryKeyPre") + ")(agent)")
-const callH  = new Function("agent","sessionEventsOf","return (" + grab("humanTurnObservedPre") + ")(agent)")
-const callS  = new Function("agent","sessionEventsOf","return (" + grab("humanTurnSeqPre") + ")(agent)")
+
 const evT = (seq, turn) => ({ seq, type: "turn/start", data: { turn } })
 const evU = (seq, kind) => ({ seq, type: "user/message", data: { source: { kind } } })
 let pass = 0, fail = 0
@@ -48,35 +48,33 @@ const mk = (cfg) => {
   const st = { _slimStep:0,_lastSlimCounted:0,_slimCount:0,_humanFullKey:undefined,_snapFp:undefined,_snapLogFp:"",_snapRound:0,_snapLastRound:0,_tk:"" }
   const CFG = Object.assign({ snapshotMinGapRounds:5, snapshotTieredInject:true, slimEveryRounds:3, snapshotReinjectOnCompact:true }, cfg||{})
   const GAP_DEF = Number(CFG.snapshotMinGapRounds) >= 0 ? Number(CFG.snapshotMinGapRounds) : 5
-  const engine = { stateFor:()=>st, runtimeFor:()=>({contextVersion:0}),
-    turnBoundaryKeyPre:(a)=>callTk(a, seo), humanTurnObservedPre:(a)=>callH(a, seo), humanTurnSeqPre:(a)=>callS(a, seo),
-    renderReflectionRequest:()=>"",
-    // ★2026-10-18（与生产同源）：请求键在两帧之间恒定、每请求翻新。
-    //   生产用「最近一次 step/end 的 seq」；本夹具以「step/start 的 seq 最大值」作稳定键
-    //   （同一请求内不追加新 step/start ⇒ 键不变；新请求 ⇒ +1）。
-    //   缺此方法 ⇒ 决策段抛错被 catch 吞 ⇒ 计数器停摆 ⇒ 本套件恒红。
-    requestIdPre:(a)=>{ const evs=(a&&a.session&&Array.isArray(a.session.events))?a.session.events:[]
-      let n=0; for(let k=0;k<evs.length;k++){const e=evs[k]; if(!e)continue
-        if(e.type==="step/end"||e.type==="step/start"){const q=Number(e.seq); if(Number.isFinite(q)&&q>n)n=q}}
-      return "k:"+n },
-    config: CFG }
-  const F = new Function("engine","agent","gap","snap","slimText","diag","createHash","parseGapRoundsPre", FIN_SRC + String.fromCharCode(10) + body + ";")
-  const agent = { session: { events: [] } }
-  // ★2026-10-18（与生产同源）：每次 run() = 一个新模型请求，必须追加本请求的 step/start
-  //   （生产侧 requestIdPre 取「最近一次 step/end 的 seq」，夹具用递增 step/start seq 等价表达）。
-  //   否则所有帧共用同一键 ⇒ 幂等闸把不同请求当成同一请求（夹具失真，非产品缺陷）。
-  let _rk = 0
-  let _lastBoundary = null
-  return { st, agent, gapDef: GAP_DEF, run:(evs, snap, gap, sameReq)=>{ 
-    // sameReq=true ⇒ 模拟「同一模型请求的后续帧」：不推进 step 边界（键不变 ⇒ 幂等闸复读）。
-    // 否则视为新请求：追加递增 step/start 使 requestIdPre 翻新。
+  const events = [], agent = { session: { events } }
+  const scope = () => deliveryRequestScope(events)
+  const engine = {
+    stateFor: () => st, runtimeFor: () => ({ contextVersion: 0 }),
+    turnBoundaryKeyPre: a => callTk(a, seo), humanTurnSeqPre: () => scope().humanSeq ?? null,
+    requestIdPre: () => scope().key, renderReflectionRequest: () => '', config: CFG,
+  }
+  const F = new Function('engine', 'agent', 'gap', 'snap', 'slimText', 'diag', 'createHash', 'parseGapRoundsPre', '_currentHumanRequestPre', FIN_SRC + NL + body)
+  const seenInputs = new Set()
+  const emit = (type, data) => events.push({ seq: events.length + 1, type, data })
+  let open
+  function run(evs, snap, gap = GAP_DEF, sameReq = false) {
     if (!sameReq) {
-      _rk += 1
-      _lastBoundary = { seq: 700000 + _rk, type: "step/start", data: { turn: 1, step: _rk } }
+      const turn = evs.findLast(e => e.type === 'turn/start').data.turn
+      if (open) emit('step/end', open)
+      if (open?.turn !== turn) emit('turn/start', { turn })
+      open = { turn, step: open?.turn === turn ? open.step + 1 : 1 }
+      const fresh = evs.filter(e => e.type === 'user/message' && !seenInputs.has(e.seq))
+      st._deliveryClaimPre = { key: scope().key, position: turn + ':' + open.step, human: fresh.some(e => isUserInput(e.data)) }
+      emit('step/start', open)
+      for (const e of fresh) { seenInputs.add(e.seq); emit(e.type, e.data) }
     }
-    agent.session.events = evs.concat(_lastBoundary ? [_lastBoundary] : [])
-    const o = F(engine, agent, gap===undefined?GAP_DEF:gap, snap, "<memory_system>SLIM</memory_system>", ()=>{}, createHash, (v,d)=>{const n=Number(v);return Number.isFinite(n)?n:d}) || ""
-    return o.includes("SLIM") ? "精简" : (o.includes("白板 PLAN.md") ? "完整" : "空") } }
+    const out = F(engine, agent, gap, snap, '<memory_system>SLIM</memory_system>', () => {}, createHash,
+      (v, fallback) => Number.isFinite(Number(v)) ? Number(v) : fallback, () => claimedHuman(scope(), st._deliveryClaimPre))
+    return out.includes('SLIM') ? '精简' : (out.includes('白板 PLAN.md') ? '完整' : '空')
+  }
+  return { st, run }
 }
 
 console.log("=== 分档 1：真人说话那一轮 ⇒ 完整版（本轮修的真缺陷）===")

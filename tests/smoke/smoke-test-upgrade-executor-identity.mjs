@@ -79,6 +79,12 @@ const subagents = {
   async startActivation(spec) {
     starts.push({ scenario, spec })
     const executor = makeAgent(spec.childId || 'host-generated-' + starts.length, wsC)
+    if (scenario === 'failed-turn') {
+      const error = new Error('UNSUPPORTED_REASONING_EFFORT: provider apigoto model deepseek-flash does not support reasoning effort max')
+      const result = Promise.reject(error)
+      result.catch(() => {})
+      return { childId: executor.id, messageId: 'rejected-effort', result, dispose() {} }
+    }
     if (scenario !== 'main' && starts.filter(x => x.scenario === scenario).length === 1) {
       const error = new Error('UNKNOWN_MODEL fixture')
       if (scenario === 'fallback-start') throw error
@@ -336,6 +342,44 @@ try {
       assert.ok(!(await readStorePre(storePath(wsB))).events.some(event => event.name === mode + ' retired privilege'))
     })
   }
+  engine._llm = {
+    listProviders: () => [{ id: 'apigoto' }],
+    listModels: async () => [{ id: 'deepseek-flash' }],
+  }
+  scenario = 'unsupported-selection'
+  user.session.header.cwd = wsA
+  const startsBeforeUnsupported = starts.length
+  const unsupported = await engine.startUpgradeJobPre(parent, {
+    scope: 'subset', workspaceKeys: [engine.wsKey(wsA)], ws: wsC,
+    provider: 'apigoto', model: 'deepseek-flash', effort: 'max',
+  })
+  const unsupportedState = await readState()
+  await check('unsupported effort is rejected before spawning and marked failed', () => {
+    assert.equal(unsupported.ok, false, JSON.stringify(unsupported))
+    assert.equal(unsupported.error, 'unsupported-reasoning-effort')
+    assert.equal(starts.length, startsBeforeUnsupported)
+    assert.equal(unsupportedState.phase, 'failed')
+    assert.equal(unsupportedState.perWorkspace[0].phase, 'failed')
+  })
+  engine._llm = undefined
+  scenario = 'failed-turn'
+  childWork = undefined
+  user.session.header.cwd = wsA
+  const failedStart = await engine.startUpgradeJobPre(parent, {
+    scope: 'subset', workspaceKeys: [engine.wsKey(wsA)], ws: wsC,
+  })
+  assert.equal(failedStart.ok, true, JSON.stringify(failedStart))
+  const failedTurn = await until(readState, current => current.phase !== 'running', 'failed model turn did not settle')
+  await check('failed model turn preserves the provider error in upgrade state', () => {
+    assert.equal(failedTurn.phase, 'failed', JSON.stringify(failedTurn))
+    assert.match(failedTurn.error, /UNSUPPORTED_REASONING_EFFORT/)
+    assert.match(failedTurn.error, /apigoto.*deepseek-flash/)
+  })
+  await check('zero-write failure is counted failed, never complete or pending', () => {
+    assert.equal(failedTurn.perWorkspace.length, 1)
+    assert.equal(failedTurn.perWorkspace[0].phase, 'failed', JSON.stringify(failedTurn.perWorkspace))
+    assert.equal(failedTurn.perWorkspace.some(row => row.phase === 'done'), false)
+  })
 } catch (err) {
   fail++
   console.error(err.stack)

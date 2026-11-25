@@ -100,28 +100,28 @@ const runInscription = '\n' + approvedInscription.replaceAll('{date}', '2026-11-
 const baselineInscription = { promptLayerOverrides: { snapshotInscription: approvedInscription } };
 const runMemoryMarker = 'RUN-MEMORY-FIXTURE';
 
-function assertRunSkeleton(text) {
+function assertRunSkeleton(text, detail = '', workspace = root) {
   const tail = runInscription + '\n</memory_system>';
-  assert(text.endsWith(tail), '完整铭文必须位于闭合标签之前');
+  assert(text.endsWith(tail), '完整铭文必须位于闭合标签之前 ' + detail + ' bytes=' + Buffer.byteLength(text) + ' tailChars=' + tail.length);
   const skeleton = text.slice(0, -tail.length).trimStart();
   assert(skeleton.startsWith('<memory_system>'), '骨架必须以记忆块开头');
-  assert(skeleton.includes('工作区: ' + root + ' | 日期: 2026-11-18'), '骨架应保留当前工作区与日期');
+  assert(skeleton.includes('工作区: ' + workspace + ' | 日期: 2026-11-18'), '骨架应保留当前工作区与日期');
   assert.match(skeleton, /\[记忆检索指引\][^\n]*memory_recall[^\n]*memory_read/);
   assert(skeleton.includes(current.DEFAULT_PROMPT_LAYERS.snapshotSlimMaintain), '记忆维护指引必须在场');
   assert(!text.includes(runMemoryMarker), '运行档关闭后不得携带快照正文');
   assert(!skeleton.includes('[Retrieved memory reference'), '独立的唤回通道不得混入骨架');
 }
 
-function fixture(host, config = {}, { actual = false } = {}) {
+function fixture(host, config = {}, { actual = false, workspace = root } = {}) {
   const engine = new host.MemoryEngine();
   Object.assign(engine.config, {
     snapshotMinGapRounds: 999, slimEveryRounds: 3, fullInjectWaterPct: 'off', snapshotTieredInject: true,
     snapshotReinjectOnCompact: true, tier0CatalogEnabled: false, handoffEnabled: false,
     locale: 'zh-CN', rulesLayeringMode: 'off', ...config,
   });
-  const agent = { id: 'delivery-agent', session: { id: 'delivery-session', header: { cwd: root }, events: [] } };
+  const agent = { id: 'delivery-agent', session: { id: 'delivery-session', header: { cwd: workspace }, events: [] } };
   const st = engine.runtimeFor(agent).state;
-  Object.assign(st, { ws: root, loadedAt: Date.now(), waterLevelRatio: 0 });
+  Object.assign(st, { ws: workspace, loadedAt: Date.now(), waterLevelRatio: 0 });
   engine.memToday = () => '2026-11-18';
   engine.capturePathsFor = () => {};
   engine.refresh = async () => {};
@@ -245,11 +245,14 @@ const request = async (fn, method, body) => {
 test('Batch 5 suppresses both run snapshots by default and restores byte-identical output when enabled', t => {
   t.mock.timers.enable({ apis: ['Date'], now: Date.UTC(2026, 10, 23, 12) });
   const modes = ['legacy', 'eventView', 'units'];
+  // The workspace name is rendered and charged to the frame budget. Keep the byte-comparison
+  // input fixed while DSH_HOME and all files remain in the random private test directory.
+  const workspace = '/fixture/batch5';
   const receipt = [];
   for (const deliveryMode of modes) {
     const config = { deliveryPolicy: policy({ deliveryMode, triggers: { fullGapRounds: 4, waterPct: [] } }) };
     const exercise = (host, settings) => {
-      const { engine, st, run } = fixture(host, settings, { actual: true });
+      const { engine, st, run } = fixture(host, settings, { actual: true, workspace });
       const emitted = [];
       const render = engine.renderMemoryDynamic.bind(engine), slim = engine.renderSlimSnapshotPre.bind(engine);
       engine.renderMemoryDynamic = (...a) => { emitted.push(st._injectTierPre); return render(...a); };
@@ -269,7 +272,7 @@ test('Batch 5 suppresses both run snapshots by default and restores byte-identic
     assert(enabled.rows.some(text => text.includes(runMemoryMarker)), '打开时应观察到夹具中的记忆正文');
     const disabled = exercise(current, config);
     assert.deepEqual(disabled.emitted, []);
-    for (const row of disabled.rows) assertRunSkeleton(row);
+    disabled.rows.forEach((row, i) => assertRunSkeleton(row, deliveryMode + ' request=' + (i + 1), workspace));
     const reminder = disabled.rows.at(-1);
     receipt.push({ deliveryMode, snapshotsWhenOff: disabled.emitted.length, reminderChars: reminder.length,
       reminderBytes: Buffer.byteLength(reminder),

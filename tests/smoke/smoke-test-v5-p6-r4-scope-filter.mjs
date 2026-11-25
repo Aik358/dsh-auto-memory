@@ -291,8 +291,7 @@ console.log('== D. 运行期断言：真渲染 EventView，数范围切换按钮
   //   注意同文件里另有 10 空格（L10173 空态分支，同为 5 参数）与 9 空格（L10314，3 参数）两处调用；
   //   保持「整行全等」才不会被它们命中 —— 退化成子串匹配会同时命中这两处，变异就失去区分力。
   const MAIN_LINE = '        renderEventScopeBarPre(evScope, setEvScope, zh, refreshEventView, syncing),'
-  // ★client.js 是 CRLF，而本文件的 SRC 未做行尾归一化（A/B/C 组都按子串工作，不受影响）；
-  //   按行比较前必须先剥掉尾随回车（CR）——否则整行全等永远为假（本轮实测 got=0）。
+  // Compare the anchor without its optional CR. Keep the original bytes for the mutation.
   const srcLinesRaw = SRC.split('\n')
   const mainLineIdx = srcLinesRaw.reduce((acc, l, i) => (l.replace(/\r$/, '') === MAIN_LINE ? acc.concat(i) : acc), [])
 
@@ -359,8 +358,10 @@ console.log('== D. 运行期断言：真渲染 EventView，数范围切换按钮
       console.log('SETUP-FAIL: 判据过期（不是缺桩）—— MAIN_LINE 在当前 client.js 命中 ' + mainLineIdx.length + ' 次（应恰 1 次）；请先把 MAIN_LINE 更新为真实主路径行')
       process.exit(2)
     }
-    const mutated = srcLinesRaw.slice(0, mainLineIdx[0]).concat(srcLinesRaw.slice(mainLineIdx[0] + 1)).join('\n')
-    ok(mutated.length === SRC.length - (MAIN_LINE.length + 2), 'E-0b 变异只删掉这一行（长度差 = 行内容 + CRLF）got=' + (SRC.length - mutated.length))
+    const [anchorIndex] = mainLineIdx
+    const removed = srcLinesRaw[anchorIndex] + '\n'
+    const mutated = srcLinesRaw.slice(0, anchorIndex).concat(srcLinesRaw.slice(anchorIndex + 1)).join('\n')
+    ok(mutated.length === SRC.length - removed.length, 'E-0b mutation removes the exact source line and its actual line ending; removed=' + (SRC.length - mutated.length))
     ok(mutated.split('\n').length === srcLinesRaw.length - 1, 'E-0d 变异体行数守恒（原行数 - 1）')
     ok(mutated.indexOf('exports.__probeEventView') < 0, 'E-0c 变异体取自产品源码（不含测试钩子）')
     const { tree } = await renderWith([ACTIVE, CLOSED], patchSrc(mutated))

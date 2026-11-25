@@ -15,6 +15,7 @@
 import { readFileSync } from "node:fs"
 import { createHash } from "node:crypto"
 import path from "node:path"
+import { claimedHuman, deliveryRequestScope } from '../../lib/injection/request-scope.js'
 
 const ROOT = path.resolve(import.meta.dirname, "..", "..")
 const SRC_PATH = process.env.DAM_INDEX_JS || path.join(ROOT, "lib", "index.js")
@@ -65,50 +66,33 @@ function mkSnap(logTail) {
   return parts.join(NL)
 }
 
-function mkEngine(opts) {
-  opts = opts || {}
-  const st = { _slimStep: 0, _lastSlimCounted: 0, _slimCount: 0, _humanFullKey: undefined,
-    _snapFp: undefined, _snapLogFp: "", _snapRound: 0, _snapLastRound: 0, _tk: "" }
-  const agent = { session: { events: [] } }
+function mkEngine(opts = {}) {
+  const st = { _slimStep: 0, _lastSlimCounted: 0, _slimCount: 0, _tk: '' }
+  const events = [], agent = { session: { events } }
+  const scope = () => deliveryRequestScope(events)
+  const human = () => claimedHuman(scope(), st._deliveryClaimPre)
   const engine = {
-    stateFor: function () { return st },
-    runtimeFor: function () { return { contextVersion: 0 } },
-    turnBoundaryKeyPre: function () { return st._tk },
-    humanTurnObservedPre: function () { return !!opts.human },
-    renderReflectionRequest: function () { return "" },
-
-    // ★2026-10-18（与生产同源）：请求键在两帧之间恒定、每请求翻新。
-    //   生产用「最近一次 step/end 的 seq」；本夹具每次 run 追加一条 step/start，
-    //   因此用其条数作稳定键即可（同一请求内不追加 ⇒ 键不变；新请求 ⇒ +1）。
-    requestIdPre: (a) => {
-      const evs = (a && a.session && Array.isArray(a.session.events)) ? a.session.events : []
-      let n = 0
-      for (let k = 0; k < evs.length; k++) {
-        const e = evs[k]
-        if (!e) continue
-        if (e.type === "step/end") n = Math.max(n, Number(e.seq) || 0)
-        else if (e.type === "step/start") n = Math.max(n, Number(e.seq) || 0)
-      }
-      return "k:" + n
-    },
-    config: Object.assign({ snapshotMinGapRounds: 5, snapshotTieredInject: true,
-      slimEveryRounds: 3, snapshotReinjectOnCompact: true }, opts.cfg || {})
+    stateFor: () => st, runtimeFor: () => ({ contextVersion: 0 }),
+    turnBoundaryKeyPre: () => st._tk, requestIdPre: () => scope().key,
+    renderReflectionRequest: () => '',
+    config: { snapshotMinGapRounds: 5, snapshotTieredInject: true, slimEveryRounds: 3, snapshotReinjectOnCompact: true, ...opts.cfg },
   }
-  const GAP_DEF = (function () { const n = Number(engine.config.snapshotMinGapRounds); return Number.isFinite(n) && n >= 0 ? n : 5 })()
-  const F = new Function("engine", "agent", "gap", "snap", "slimText", "diag", "createHash", "parseGapRoundsPre", FIN_SRC + String.fromCharCode(10) + SEG + ";")
-  // ★2026-10-18（step 口径）：计数单位改为**模型请求**（step），不是 turn。
-  //   旧夹具只改 st._tk（turn 键）⇒ 新代码的 _stepSeq 不推进 ⇒ T4/T7 恒红（这属夹具过时，不是缺陷）。
-  //   现在每次 run 都追加一条 step/start 事件，让 step 键真实推进（与生产事件流同形）。
-  let stepNo = 0
-  const run = function (tk, snap, gap, sameStep) {
+  const emit = (type, data) => events.push({ seq: events.length + 1, type, data })
+  const F = new Function('engine', 'agent', 'gap', 'snap', 'slimText', 'diag', 'createHash', 'parseGapRoundsPre', '_currentHumanRequestPre', FIN_SRC + NL + SEG)
+  let open = null
+  function run(tk, snap, gap = engine.config.snapshotMinGapRounds, sameStep = false) {
+    if (!sameStep) {
+      if (open) emit('step/end', open)
+      const turn = Number(tk.split(':')[1])
+      if (!open || open.turn !== turn) emit('turn/start', { turn })
+      open = { turn, step: open?.turn === turn ? open.step + 1 : 1 }
+      st._deliveryClaimPre = { key: scope().key, position: turn + ':' + open.step, human: opts.human === true }
+      emit('step/start', open)
+    }
     st._tk = tk
-    // sameStep=true ⇒ 复用同一 step（模拟宿主在**同一个 step 内**多次调用 text()）
-    if (!sameStep) { stepNo += 1 }
-    agent.session.events.push({ seq: stepNo * 10 + (sameStep ? 1 : 0), type: "step/start", data: { turn: 1, step: stepNo } })
-    return F(engine, agent, gap === undefined ? GAP_DEF : gap, snap, "<memory_system>SLIM</memory_system>",
-      function () {}, createHash, function (v, d) { const n = Number(v); return Number.isFinite(n) ? n : d })
+    return F(engine, agent, gap, snap, '<memory_system>SLIM</memory_system>', () => {}, createHash, (v, d) => Number.isFinite(Number(v)) ? Number(v) : d, human)
   }
-  return { st: st, run: run }
+  return { st, run }
 }
 const isFull = (o) => !!o && o.includes("白板 PLAN.md")
 const isSlim = (o) => !!o && o.includes("SLIM")

@@ -29,7 +29,7 @@ console.log('== A. 基础（版本与一致性）==')
   ok(P.indexOf('v7 产出新白板') >= 0, 'A-1 版本号已升至 v7', (P.match(/# 记忆迁移[^\n]*/) || [''])[0])
   ok(P.indexOf('唯一权威') >= 0, 'A-2 ★开头声明「本文是唯一权威」（替代原修订史）')
   ok(N === P.length, 'A-3 CHARS 常量与实际一致', N)
-  const art = fs.readFileSync(new URL('../../artifacts/MEMORY-BASIS-MIGRATION-PROMPT-2026-10-25.md', import.meta.url), 'utf8')
+  const art = fs.readFileSync(new URL('../fixtures/migration/basis-prompt-v7.md', import.meta.url), 'utf8')
   ok(art === P, 'A-4 ★★★ 两份真源逐字一致（防漂移）', 'art=' + art.length + ' mod=' + P.length)
 }
 

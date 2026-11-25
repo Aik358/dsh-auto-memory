@@ -49,14 +49,18 @@ function cutFn(src, header) {
   }
   throw new Error('花括号未配平: ' + header)
 }
+const normalizeEffortsSrc = cutFn(IX, 'function normalizeSubagentReasoningEffortsPre(')
+const resolveEffortsSrc = cutFn(IX, 'async function resolveSubagentReasoningEffortsPre(')
+const validateEffortSrc = cutFn(IX, 'function validateSubagentReasoningEffortPre(')
+const subagentErrorSrc = cutFn(IX, 'function subagentResultErrorMessagePre(')
 const resolveSrc = cutFn(IX, 'function resolveSubAgentOptionsPre(')
 const judgeSrc = cutFn(IX, 'function judgeUpgradeEvidencePre(')
 const subOptSrc = cutFn(IX, 'function subAgentOptions(config, lane) {')
 const whitelistSrc = (IX.match(/const SUBAGENT_EFFORT_WHITELIST = [^\n]+/) || [''])[0]
 if (!whitelistSrc) throw new Error('未找到 SUBAGENT_EFFORT_WHITELIST')
 // 把 subAgentOptions 一起喂进作用域（resolve 依赖它）
-const factoryBody = ['"use strict";', whitelistSrc, subOptSrc, resolveSrc, judgeSrc,
-  'return { resolveSubAgentOptionsPre, judgeUpgradeEvidencePre, subAgentOptions, SUBAGENT_EFFORT_WHITELIST };'].join('\n')
+const factoryBody = ['"use strict";', whitelistSrc, normalizeEffortsSrc, resolveEffortsSrc, validateEffortSrc, subagentErrorSrc, subOptSrc, resolveSrc, judgeSrc,
+  'return { normalizeSubagentReasoningEffortsPre, resolveSubagentReasoningEffortsPre, validateSubagentReasoningEffortPre, subagentResultErrorMessagePre, resolveSubAgentOptionsPre, judgeUpgradeEvidencePre, subAgentOptions, SUBAGENT_EFFORT_WHITELIST };'].join('\n')
 const M = new Function(factoryBody)()
 M.normalizeEffortPre = normalizeEffortPre
 M.estimateUpgradeCostPre = estimateUpgradeCostPre
@@ -76,6 +80,8 @@ T.eq(a2.ok, true, 'A-2 合法 override ⇒ ok')
 T.eq(a2.value.model, 'user-model', 'A-2b ★model 用用户选的（不是全局 glob-model）')
 T.eq(a2.value.reasoningEffort, 'max', 'A-2c ★effort 用用户选的')
 T.eq(a2.value.provider, 'glob-prov', 'A-2d override 没给 provider ⇒ 回落全局（三级优先级②）')
+const a2p = M.resolveSubAgentOptionsPre({ provider: 'user-prov', model: 'user-model', reasoningEffort: 'max' }, CFG, 'long')
+T.eq(a2p.value.provider, 'user-prov', 'A-2e 向导显式选择的 provider 进入真实 agentOptions')
 
 // A-3 非法值 ⇒ 明确拒绝，不静默丢弃
 const a3 = M.resolveSubAgentOptionsPre({ reasoningEffort: 'medium' }, CFG, 'long')
@@ -94,6 +100,31 @@ for (const ef of ['off', 'low', 'high', 'max']) {
 const a6 = M.resolveSubAgentOptionsPre({ model: '', reasoningEffort: '' }, CFG, 'long')
 T.eq(a6.value.model, 'glob-model', 'A-6 空串 model ⇒ 回落全局（不是空串下发）')
 T.eq(a6.value.reasoningEffort, 'low', 'A-6b 空串 effort ⇒ 回落全局')
+const a7 = M.resolveSubAgentOptionsPre({ model: '', reasoningEffort: '', omitReasoningEffort: true }, CFG, 'long')
+T.eq(a7.value, { provider: 'glob-prov', model: 'glob-model' }, 'A-7 向导默认显式省略强度（不继承全局档位）')
+const mockLlm = {
+  listProviders: () => [{ id: 'apigoto' }, { id: 'tokenbank' }],
+  listModels: async (provider) => provider === 'apigoto'
+    ? [{ id: 'deepseek-flash' }]
+    : provider === 'tokenbank'
+      ? [{ id: 'deepseek-flash', reasoningEfforts: { off: true, low: true, high: true, max: true } }]
+      : [],
+}
+const apigotoCaps = await M.resolveSubagentReasoningEffortsPre(mockLlm, 'apigoto', 'deepseek-flash')
+T.eq({ declared: apigotoCaps.declared, efforts: apigotoCaps.efforts }, { declared: false, efforts: [] }, 'A-8 provider 未声明能力时返回空档位')
+const tokenbankCaps = await M.resolveSubagentReasoningEffortsPre(mockLlm, 'tokenbank', 'deepseek-flash')
+T.eq(tokenbankCaps.efforts, ['off', 'low', 'high', 'max'], 'A-9 模型对象能力映射被归一为白名单')
+T.eq(M.validateSubagentReasoningEffortPre(tokenbankCaps, 'max').ok, true, 'A-9b 已声明支持的强度通过后端能力门')
+T.eq(M.validateSubagentReasoningEffortPre(apigotoCaps, 'max').ok, false, 'A-9c 未声明强度被后端能力门拒绝')
+const mutatedEffortGate = validateEffortSrc.replace('if (caps.ok !== true || caps.declared !== true || supported.indexOf(normalized) < 0) {', 'if (false) {')
+T.ok(mutatedEffortGate !== validateEffortSrc, 'A-9d 能命中能力拒绝判据的变异锚点')
+const MutatedEffortGate = new Function(['"use strict";', whitelistSrc, normalizeEffortsSrc, mutatedEffortGate, 'return { validateSubagentReasoningEffortPre };'].join('\n'))()
+T.eq(MutatedEffortGate.validateSubagentReasoningEffortPre(apigotoCaps, 'max').ok, true, 'A-9e 变异去掉能力判据后错误放行（反向验证有效）')
+const unsupportedCap = await M.resolveSubagentReasoningEffortsPre(mockLlm, 'missing', 'deepseek-flash')
+T.eq(unsupportedCap.ok, false, 'A-10 未知 provider 拒绝能力校验（不猜）')
+const structuredError = M.subagentResultErrorMessagePre({ reason: { kind: 'error', error: { code: 'UNSUPPORTED_REASONING_EFFORT', message: 'provider apigoto rejected max' } } })
+T.eq(structuredError, 'UNSUPPORTED_REASONING_EFFORT: provider apigoto rejected max', 'A-11 从宿主结构化 turn 错误保留 code/message')
+T.eq(M.subagentResultErrorMessagePre({ output: [{ type: 'text', text: 'ok' }] }), '', 'A-12 正常文本结果不产生错误')
 
 console.log('')
 console.log('== B. #554  逐区证据判定（真调用）==')
@@ -107,7 +138,7 @@ const b1 = M.judgeUpgradeEvidencePre(base, [
   { wsKey: 'k2', name: 'w2', dir: '/d/w2', ok: true, eventCount: 0, checkpointCount: 0, planDigest: '' },
 ])
 T.eq(b1.rows[0].phase, 'done', 'B-1 ★eventCount 增 ⇒ done')
-T.eq(b1.rows[1].phase, 'partial', 'B-1b 该区无变化 ⇒ partial（不是 done）')
+T.eq(b1.rows[1].phase, 'failed', 'B-1b 该区无变化 ⇒ failed（不是 done/partial）')
 T.eq(b1.overall, 'partial', 'B-1c 部分有 ⇒ overall=partial')
 
 // B-2 检查点数增（事件数不变）⇒ done —— 证明②独立成立
@@ -188,9 +219,11 @@ T.eq(splitModel(''), { model: '', provider: '' }, 'C-4b 空值 ⇒ 两项都空�
 console.log('')
 console.log('== D. #558①  档位口径同源（前端 = 后端 = 估算表）==')
 T.ok(CLI.indexOf("useState('medium')") < 0, 'D-1 ★默认档位不再是 medium（宿主不认）')
-T.ok(CLI.indexOf("useState('high')") >= 0, 'D-1b 默认档位 = high（宿主缺省档）')
+T.ok(CLI.indexOf("var effortPair = useState('')") >= 0, 'D-1b 默认强度为空（跟随模型默认）')
+T.ok(CLI.includes('omitReasoningEffort: !effort'), 'D-1c 默认 payload 要求后端不下发 reasoningEffort')
 for (const ef of ['off', 'low', 'high', 'max']) {
-  T.ok(CLI.indexOf("effortOpt('" + ef + "'") >= 0, 'D-2 前端提供档位 ' + ef)
+  T.ok(CLI.indexOf("['" + ef + "', T(") >= 0, 'D-2 前端定义档位文案 ' + ef)
+  T.ok(CLI.includes("supportedEfforts.indexOf(choices[ci][0]) >= 0"), 'D-2b 档位按模型声明能力过滤')
 }
 T.ok(CLI.indexOf("effortOpt('medium'") < 0, 'D-3 ★前端不再提供 medium')
 T.ok(CLI.indexOf('data-dam-wizard-effort-hint') >= 0, 'D-4 ★显示实际生效值（effort-hint 带 data 属性）')
@@ -220,7 +253,7 @@ const m3 = M3.judgeUpgradeEvidencePre(
   [{ wsKey: 'k1', ok: true, eventCount: 1, checkpointCount: 1, planDigest: 'aa' }],
   [{ wsKey: 'k1', ok: true, eventCount: 1, checkpointCount: 1, planDigest: 'bb' }],
 )
-T.eq(m3.rows[0].phase, 'partial', 'E-3 变异体看不到白板变化 ⇒ 判 partial（证明 B-3 有区分力）')
+T.eq(m3.rows[0].phase, 'failed', 'E-3 变异体看不到白板变化 ⇒ 判 failed（证明 B-3 有区分力）')
 
 console.log('')
 console.log('== F. [守卫·非功能证据] 接线在位（可证伪，但不算功能验收）==')
@@ -231,6 +264,10 @@ T.ok(IX.indexOf('_aoCommit.override') >= 0, 'F-4 startUpgradeJobPre 把 override
 T.ok(IX.indexOf('evidenceBaseline') >= 0, 'F-5 start 落写前证据快照')
 T.ok(IX.indexOf('judgeUpgradeEvidencePre(_base, _after)') >= 0, 'F-6 finish 用证据判定终态')
 T.ok(IX.indexOf('evidence-insufficient') >= 0, 'F-7 证据不足时写入可判读的 error')
+T.ok(IX.includes('omitReasoningEffort: _omitReasoningEffort'), 'F-8 upgrade start 将默认强度标为显式省略')
+T.ok(IX.includes('resolveSubagentReasoningEffortsPre(this._llm'), 'F-9 显式强度按后端模型能力核验')
+T.ok(IX.includes('subagentResultErrorMessagePre(outcome?.value)'), 'F-10 子代理结果中的结构化错误被提取')
+T.ok(IX.includes('if (upgradeJobId) throw (e instanceof Error'), 'F-11 升级子代理异常向 finish 写入链传播')
 
 console.log('')
 console.log('== G. ★Lead 裁决三条（2026-11-08）==')

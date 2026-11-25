@@ -152,7 +152,7 @@ console.log("== C. 接线结构守卫 ==")
   ok(ni < 0, "C3 不存在「未匹配 ⇒ 旧内联 return」形态（已改为 gate + 恒放行）", "idx=" + ni)
 }
 {
-  ok(SRC.indexOf("apiGet(API.upgradeWorkspaces, { effort: eff, ws: String(wsNow || '') })") > 0,
+  ok(SRC.indexOf("apiGet(API.upgradeWorkspaces, { effort: estimateEffort, ws: String(wsNow || '') })") > 0,
      "C4 ensureInventory 请求携带弹窗已知的 ws")
 }
 {

@@ -90,7 +90,7 @@ try {
 
   console.log('');
   console.log('[T36-3] ★★★ 功能：POST /upgrade-snooze 真写盘（判据 b）');
-  const r2 = await call(snR, '/api/dsh-auto-memory/upgrade-snooze', 'POST', { sessionId: 'sid-good' });
+  const r2 = await call(snR, '/api/dsh-auto-memory/upgrade-snooze', 'POST', { ws });
   ok(r2.code === 200, '★★★T36-3a HTTP 200', String(r2.code));
   ok(r2.body.ok === true && r2.body.declined === true, '★★★T36-3b 返回 {ok:true, declined:true}');
   ok(fs.existsSync(statePath), '★★★T36-3c **upgrade-state.json 真写盘**');

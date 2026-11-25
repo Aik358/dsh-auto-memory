@@ -9,7 +9,7 @@
  *   ① **工具数恒 20** ⇒ 挂在既有 memory_status 上，不新增工具；
  *   ② **不写任何文件** ⇒ mtime + size 快照必须逐字节一致（这是本套件最关键的一条）；
  *   ③ 提示词**不硬编码进 index.js** ⇒ 独立模块 lib/migration-prompt.js，
- *      与 artifacts/MEMORY-BASIS-MIGRATION-PROMPT-2026-10-25.md **逐字比对**（两份真源防漂移）。
+ *      与 tests/fixtures/migration/basis-prompt-v7.md **逐字比对**（两份真源防漂移）。
  */
 import fs from 'node:fs'
 import os from 'node:os'
@@ -29,8 +29,8 @@ const ok = (c, n, d) => { if (c) { pass++; console.log('  PASS ' + n + (d ? '  =
 // ══════════════════════════════════════════════════════════════════════
 console.log('[C3-1] 提示词模块（独立模块 vs artifacts 两份真源）');
 {
-  const ART = path.join(ROOT, 'artifacts', 'MEMORY-BASIS-MIGRATION-PROMPT-2026-10-25.md');
-  ok(fs.existsSync(ART), 'C3-1a artifacts 那份存在');
+  const ART = path.join(ROOT, 'tests', 'fixtures', 'migration', 'basis-prompt-v7.md');
+  ok(fs.existsSync(ART), 'C3-1a checked-in migration prompt fixture exists');
   const artText = fs.readFileSync(ART, 'utf8');
   ok(typeof MP.MEMORY_BASIS_MIGRATION_PROMPT === 'string' && MP.MEMORY_BASIS_MIGRATION_PROMPT.length > 1000, '★★C3-1b 模块导出提示词且非空', 'len=' + MP.MEMORY_BASIS_MIGRATION_PROMPT.length);
   ok(MP.MEMORY_BASIS_MIGRATION_PROMPT === artText, '★★★C3-1c 模块与 artifacts **逐字相等**（防两份真源漂移）', '模块 ' + MP.MEMORY_BASIS_MIGRATION_PROMPT.length + ' vs 文件 ' + artText.length);

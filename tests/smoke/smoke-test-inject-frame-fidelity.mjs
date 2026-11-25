@@ -1,211 +1,63 @@
 #!/usr/bin/env node
 /**
- * smoke-test-inject-frame-fidelity —— 「宿主真实帧序」下的注入交付验收
- *
- * 背景（2026-10-18 实测，宿主 @deepseek-ai/dsh-agent-loop 源码为证）：
- *   每个模型请求，宿主调用 systemPrompt.context() 的 text() **恰好两次**：
- *     ① preStep 的 assemble(:907) —— 结果被准入逻辑**结构性丢弃**(:1067-1073)
- *     ② step() 的 refreshContext(:1053) —— 只有这一份进模型
- *   两次之间宿主会 append step/start(:970)。
- *
- * 旧缺陷：插件用 step/start 派生「当前请求」，两帧拿到不同编号 ⇒ 完整版被②帧的精简版覆盖。
- * 实测主会话 1,693 个请求中仅 316 个（18.7%）真落地；80 条真人消息只有 22 条（27%）拿到完整版。
- *
- * 本套件按**真实帧序**驱动生产决策段：
- *   pre-step 钩子写请求键 → 帧①渲染 → 宿主 append step/start → 帧②渲染
- * 判据：两帧返回必须**逐字节相同**；含真人消息的请求必须交付完整版。
- *
- * 判据纪律（本仓 CR-10）：真执行被测决策段，不用「源码含某字符串」当功能验收。
- * 变异验证：把 finalizePre 的定稿写入注释掉 ⇒ 本套件必红。
+ * The host proposes sections before pre-step and admits them after step/start. Only the
+ * admitted snapshot is projected. A proposal retains the preceding section; repeated
+ * admission of the same request must reproduce the bytes, not spend another grant.
  */
-import { readFileSync } from "node:fs"
-import { createHash } from "node:crypto"
-import path from "node:path"
+import { readFileSync } from 'node:fs'
+import path from 'node:path'
+import { markers, message, startDeliveryHost } from '../lib/delivery-step-fixture.mjs'
 
-const ROOT = path.resolve(import.meta.dirname, "..", "..")
-const SRC_PATH = process.env.DAM_INDEX_JS || path.join(ROOT, "lib", "index.js")
-const SRC = readFileSync(SRC_PATH, "utf8")
-
+const SRC_PATH = path.resolve(process.env.DAM_AUDIT_ENGINE_SOURCE || process.env.DAM_INDEX_JS || path.join(import.meta.dirname, '../../lib/index.js'))
+if (process.env.DAM_INDEX_JS) process.env.DAM_AUDIT_ENGINE_SOURCE = SRC_PATH
+const SRC = readFileSync(SRC_PATH, 'utf8')
 let pass = 0, fail = 0
-function ok(cond, msg) { if (cond) { pass++; console.log("  ok - " + msg) } else { fail++; console.log("  FAIL - " + msg) } }
-const NL = String.fromCharCode(10)
-const LB = String.fromCharCode(91), RB = String.fromCharCode(93)
+function ok(cond, msg) { if (cond) { pass++; console.log('  ok - ' + msg) } else { fail++; console.log('  FAIL - ' + msg) } }
 
-// 抽出生产决策段（与既有套件同一口径）
-const START = "let tieredFullGranted = false"
-const END = "return finalizePre(snap + engine.renderReflectionRequest())"
-const s0 = SRC.indexOf(START)
-const s1 = SRC.lastIndexOf(END) + END.length
-if (s0 < 0 || s1 <= s0) { console.log("  FAIL - 找不到决策段"); process.exit(1) }
-let SEG = SRC.slice(s0, s1)
-// 决策段依赖 finalizePre —— 从源码里抽出其真实实现（保证测的是生产代码而非复制品）
-const FIN_START = "const finalizePre = (txt, hangGranted = false) => {"
-const f0 = SRC.indexOf(FIN_START)
-if (f0 < 0) { console.log("  FAIL - 找不到 finalizePre"); process.exit(1) }
-let depth = 0, f1 = -1
-for (let i = f0; i < SRC.length; i++) {
-  const c = SRC[i]
-  if (c === "{") depth++
-  else if (c === "}") { depth--; if (depth === 0) { f1 = i + 1; break } }
-}
-const FIN_SRC = SRC.slice(f0, f1) + ";"
-SEG = FIN_SRC + NL + SEG
+// Used only by the structural guard below. Behavioral cases exercise apply()'s registered hook and surface.
+const start = SRC.indexOf('let tieredFullGranted = false')
+const end = 'return finalizePre(snap + engine.renderReflectionRequest())'
+const stop = SRC.lastIndexOf(end)
+if (start < 0 || stop <= start) throw Error('Decision section not found for structural guard T7')
+const SEG = SRC.slice(start, stop + end.length)
+const host = await startDeliveryHost()
+try {
+  const session = (gap = 10) => host.session({ runTierInjectEnabled: true, snapshotMinGapRounds: gap, slimEveryRounds: 3 })
+  const run = (s, msgs = []) => s.request(msgs, { repeat: true, toolStep: true })
+  const isFull = r => r.kind === 'full' && r.text.includes(markers.card)
 
-function mkSnap(logTail) {
-  const parts = [
-    "<memory_system>",
-    "自动记忆已启用。工作区: D:/dsh-auto-memory | 日期: 2026-10-18",
-    LB + "规则 — 用户级硬性约束" + RB,
-    "- 规则一",
-    LB + "最近 1 天工作日志(尾部)" + RB,
-    LB + "2026-10-18" + RB + " " + logTail,
-    LB + "白板 PLAN.md — 项目全貌快照" + RB,
-    "dsh-auto-memory —— DSH 的记忆插件",
-    "</memory_system>"
-  ]
-  return parts.join(NL)
-}
+  const auto = session()
+  const a = await run(auto), b = await run(auto)
+  ok(a.draftText === '', 'T1-a 首请求无历史主面，预备帧为空')
+  ok(isFull(a) && a.firstPostText === a.text, 'T1-b 首次准入交付完整卡，重复读取字节不变')
+  ok(b.draftText === a.text, 'T3e-a 下一工具步的预备帧只读上次已投主面')
+  ok(b.kind === 'run-slim' && !b.text.includes(markers.event), 'T3e-b 同 turn 内的非真人下一步不重复投完整版、无真人事件卡')
 
-const SLIM = "<memory_system>" + NL + "SLIM-MARKER" + NL + "</memory_system>"
+  const people = session()
+  const h1 = await run(people, [message('user')]), h2 = await run(people, [message('user')])
+  ok(h1.draftText === '', 'T2-a 未准入的首次真人请求不提前消耗完整版')
+  ok(isFull(h1) && h1.text.includes(markers.full), 'T2-b 首次真人投影含完整正文')
+  ok(h1.firstPostText === h1.text, 'T3-a 第一条真人请求的准入输出与投影逐字节一致')
+  ok(h2.draftText === h1.text, 'T3-b 第二条真人请求的预备帧仍是上次完整正文')
+  ok(h2.firstPostText === h2.text && h2.text !== h2.draftText, 'T3-c 新请求准入不误用上一份完整定稿')
+  ok(h2.kind === 'human-slim' && h2.text.includes(markers.event), 'T3-d 同 turn 相邻第二条真人精简正文含事件 marker')
 
-function mkEngine(opts) {
-  opts = opts || {}
-  const st = {
-    _slimStep: 0, _slimCount: 0, _humanFullKey: undefined,
-    _snapFp: undefined, _snapLogFp: "", _snapRound: 0, _snapLastRound: 0, _tk: "",
-    _reqKeyPre: "", _reqTextKeyPre: "", _reqTextPre: "", _reqHumanPre: "", _reqHumanFullPre: ""
+  const periodic = session(), fullAt = [], unexpected = []
+  for (let step = 1; step <= 31; step++) {
+    const r = await run(periodic)
+    if (isFull(r)) fullAt.push(step)
+    else if (r.kind !== 'run-slim') unexpected.push(step + ':' + r.kind)
   }
-  const agent = { session: { events: [{ seq: 1, type: "turn/start", data: { turn: 1 } }] } }
-  const engine = {
-    stateFor: function () { return st },
-    runtimeFor: function () { return { contextVersion: 0 } },
-    turnBoundaryKeyPre: function () { return st._tk },
-    humanTurnObservedPre: function () { return !!opts.human },
-    humanTurnSeqPre: function () { return opts.humanSeq === undefined ? null : opts.humanSeq },
-    renderReflectionRequest: function () { return "" },
-    // 与生产同源：最近一次 step/end 的 seq；无 end 时用事件条数
-    requestIdPre: function (a) {
-      const evs = (a && a.session && Array.isArray(a.session.events)) ? a.session.events : []
-      for (let i = evs.length - 1; i >= 0; i--) {
-        if (evs[i] && evs[i].type === "step/end") return "e:" + Number(evs[i].seq)
-      }
-      // ⚠ 与生产一致：不得用事件条数（①帧→②帧之间会 append step/start ⇒ 条数变）
-      for (let i = evs.length - 1; i >= 0; i--) {
-        if (evs[i] && evs[i].type === "turn/start") return "t:" + Number(evs[i].seq)
-      }
-      return "e0:" + evs.length
-    },
-    config: Object.assign({
-      snapshotMinGapRounds: 10, snapshotTieredInject: true,
-      slimEveryRounds: 3, snapshotReinjectOnCompact: true
-    }, opts.cfg || {})
-  }
-  // 注入 pre-step 钩子的等价行为（生产代码里写在 ctx.on('agent/pre-step')）
-  function preStep(turn, step, claimed) {
-    const rawT = turn, rawS = step
-    const okNum = (v) => v !== undefined && v !== null && v !== "" && Number.isFinite(Number(v))
-    if (okNum(rawT) && okNum(rawS)) {
-      // ★钩子跑在**第①帧之后**（宿主 :907 assemble → :909 钩子 → :970 step/start → :1053 ②帧）
-      //   ⇒ 这里写「本请求的键」已无意义；只置「本请求必须给完整版」的待办标记。
-      let isHumanNow = false
-      for (const m of (claimed || [])) {
-        const src = m && m.source
-        const kd = src ? (typeof src === "string" ? src : String(src.kind || "")) : ""
-        if (!kd || kd === "user") { isHumanNow = true; break }
-      }
-      if (isHumanNow) { st._humanPending = true; st._humanPendingAt = Date.now() }
-    }
-  }
-  const F = new Function("engine", "agent", "gap", "snap", "slimText", "diag",
-    "createHash", "parseGapRoundsPre", SEG + ";")
-  const diagSink = []
-  function frame(tk, snap, gap) {
-    st._tk = tk
-    return F(engine, agent, gap === undefined ? 10 : gap, snap, SLIM,
-      function (m) { diagSink.push(m) }, createHash,
-      function (v, d) { const n = Number(v); return Number.isFinite(n) ? n : d })
-  }
-  // 宿主一次模型请求 = append step/start + 两帧
-  let stepNo = 0
-  function hostRequest(turn, claimed, snap) {
-    stepNo += 1
-    // ★宿主真实顺序（@deepseek-ai/dsh-agent-loop）：
-    //   :907 assemble = 帧① → :909 agent/pre-step 钩子 → :970 step/start → :1053 refreshContext = 帧②
-    //   → step() 跑完 → :994 step/end
-    //   关键：钩子在**帧①之后**，因此它只能置待办标记，无法影响帧①的键。
-    const f1out = frame("turn:" + turn, snap)
-    preStep(turn, stepNo, claimed)
-    agent.session.events.push({ seq: stepNo * 10, type: "step/start", data: { turn, step: stepNo } })
-    const f2out = frame("turn:" + turn, snap)
-    agent.session.events.push({ seq: stepNo * 10 + 1, type: "step/end", data: { turn, step: stepNo } })
-    return { f1: f1out, f2: f2out }
-  }
-  return { st, frame, hostRequest, diag: diagSink, get stepNo() { return stepNo } }
-}
+  ok(unexpected.length === 0, 'T4 其余请求均投运行精简正文；异常步 ' + JSON.stringify(unexpected))
+  ok(fullAt.join(',') === '1,11,21,31', 'T4 完整版精确落在第 1/11/21/31 个模型请求（实测 ' + fullAt + '）')
 
-const isFull = (o) => !!o && o.includes("白板 PLAN.md")
-const isSlim = (o) => !!o && o.includes("SLIM-MARKER")
-
-// ── T1 帧内幂等：同一请求两帧必须逐字节相同 ──
-{
-  const E = mkEngine({ human: false })
-  const r = E.hostRequest(1, [], mkSnap("日志A"))
-  ok(r.f1 === r.f2, "T1-a 同一请求两帧逐字节相同（旧实现此处必红：①完整版 / ②精简版）")
-  ok(isFull(r.f2), "T1-b 投影帧（第②帧，宿主真正采用的）交付完整版")
-}
-
-// ── T2 真人消息：即使 preStep 帧尚看不到事件流，也必须交付完整版 ──
-{
-  // human:false 模拟「humanTurnObservedPre 扫事件流尚未命中」的真实时序
-  const E = mkEngine({ human: false })
-  const r = E.hostRequest(1, [{ source: { kind: "user" }, content: [{ type: "text", text: "人说的话" }] }], mkSnap("日志A"))
-  ok(r.f1 === r.f2, "T2-a 真人请求两帧仍逐字节相同")
-  ok(isFull(r.f2), "T2-b ★真人消息的请求 ⇒ 投影帧交付完整版（用户核心诉求）")
-}
-
-// ── T3 同一 turn 内连发两条真人消息：两条都必须拿到完整版 ──
-{
-  const E = mkEngine({ human: false })
-  const r1 = E.hostRequest(1, [{ source: { kind: "user" } }], mkSnap("日志A"))
-  const r2 = E.hostRequest(1, [{ source: { kind: "user" } }], mkSnap("日志B"))
-  ok(r1.f1 === r1.f2, "T3-a 第一条真人请求两帧一致")
-  ok(isFull(r1.f2), "T3-b 第一条真人请求交付完整版")
-  // T3-c：第二条真人请求的两帧都必须交付完整版（内容差异由真实快照变化引起，属正常）
-  // ★★2026-11-04 判据升级（H2/H3）：第二条真人消息不再强制完整版。
-//   但仍必须满足**两帧一致**（这是交付确定性的核心契约，与档位无关）。
-ok(r2.f1 === r2.f2, "T3-c 第二条真人请求两帧逐字节一致（档位可变，一致性不可破）")
-  ok(!isFull(r2.f2), "T3-d ★同 turn 内第二条真人消息交付精简版（H2 后不再走真人旁路）")
-}
-
-// ── T3e 同一 turn 的连续非真人请求不得重复授予完整版 ──
-{
-  const E = mkEngine({ human: false, cfg: { snapshotMinGapRounds: 10 } })
-  const a = E.hostRequest(1, [], mkSnap("日志A"))
-  const b = E.hostRequest(1, [], mkSnap("日志B"))
-  ok(isFull(a.f2), "T3e-a 首个请求交付完整版")
-  ok(!isFull(b.f2), "T3e-b ★同一 turn 的第二个非真人请求不得再给完整版（严格 10 轮）")
-}
-
-// ── T4 非真人长任务：完整版严格每 10 个模型请求一次 ──
-{
-  const E = mkEngine({ human: false, cfg: { snapshotMinGapRounds: 10 } })
-  const fullAt = []
-  for (let i = 1; i <= 31; i++) {
-    const r = E.hostRequest(1, [], mkSnap("日志" + i))
-    if (isFull(r.f2)) fullAt.push(i)
-  }
-  ok(fullAt.join(",") === "1,11,21,31",
-    "T4 ★完整版精确落在第 1/11/21/31 个模型请求（实测 " + fullAt.join(",") + "）")
-}
-
-// ── T5 帧内幂等对精简版同样成立（旧实现只保护完整版）──
-{
-  const E = mkEngine({ human: false, cfg: { snapshotMinGapRounds: 999 } })
-  E.hostRequest(1, [], mkSnap("日志0"))          // 首帧完整版
-  const r = E.hostRequest(1, [], mkSnap("日志1")) // 精简
-  ok(r.f1 === r.f2, "T5-a 精简版请求两帧逐字节相同（旧实现此处可能不同）")
-  ok(isSlim(r.f2), "T5-b 该请求交付精简版")
-}
+  const sparse = session(999)
+  const first = await run(sparse), slim = await run(sparse)
+  ok(slim.draftText === first.text && slim.firstPostText === slim.text, 'T5-a 精简请求预备帧保留旧正文，准入定稿可复读')
+  ok(slim.kind === 'run-slim' && slim.text.includes(markers.slim), 'T5-b 实际准入为精简正文')
+  const guideTools = ['memory_log', 'memory_note', 'memory_procedure', 'memory_recall']
+  ok(guideTools.every(n => slim.text.includes(n)), 'T6 精简版实际交付四项维护与检索指引')
+} finally { await host.close() }
 
 // ── T6 精简版必须含「记忆维护底线」（用户硬性底线）──
 {
@@ -233,10 +85,11 @@ ok(r2.f1 === r2.f2, "T3-c 第二条真人请求两帧逐字节一致（档位可
   const stripped = SEG
     .replace(/\/\*[\s\S]*?\*\//g, "")
     .split(/\r?\n/).map((l) => l.replace(/\/\/[^\r\n]*/, "")).join("\n")
-  const wrapped = (stripped.match(/return finalizePre\(/g) || []).length
-  const rawExits = (stripped.match(/return (?!finalizePre)[^\n;]*renderReflectionRequest\(\)/g) || []).length
-  ok(wrapped >= 8, "T7-a 决策段内 finalizePre 包裹数 ≥8（实测 " + wrapped + "）")
-  ok(rawExits === 0, "T7-b ★零个未包裹的决策出口（剥注释后实测残留 " + rawExits + " 个）")
+  const wrapped = (stripped.match(/return finalize(?:Slim)?Pre\(/g) || []).length
+  const rawExits = (stripped.match(/return (?!finalize(?:Slim)?Pre\b)[^\n;]*renderReflectionRequest\(\)/g) || []).length
+  const delegates = /const finalizeSlimPre\s*=[^}]+return finalizePre\(text\)/.test(stripped)
+  ok(wrapped >= 8 && delegates, 'T7-a 完整与精简出口均走同一个请求定稿函数（实测 ' + wrapped + ' 处）')
+  ok(rawExits === 0, 'T7-b 决策出口没有漏过定稿（剥注释后实测 ' + rawExits + ' 个）')
 }
 
 console.log("PASS " + pass + " / FAIL " + fail)

@@ -13,6 +13,8 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { spawnSync } from 'node:child_process'
+import { tmpdir } from 'node:os'
 
 // ★#507（2026-11-02）：ROOT 由**本文件位置**派生，而不是写死维护者本机路径。
 //   旧写法把 ROOT 写成维护者本机的绝对路径，在 CI（ubuntu）与任何非本机检出下都读不到文件，
@@ -104,10 +106,28 @@ ok(mutInner.length === 0, '★★★[负路径] 删掉 END 后「块体积」判
 
 console.log('')
 console.log('== 5. 生成器 --check 必须能识别块缺失 ==')
-// 断言生成器源码里有「找不到内联块 ⇒ exit 2」的分支（结构性，非字符串白名单）
-const genSrc = fs.readFileSync(GEN, 'utf8')
-ok(genSrc.indexOf('process.exit(2)') >= 0, '★★⑤ 生成器有 exit(2) 的 STALE 分支')
-ok(genSrc.indexOf('EV4-BLOCKS 内联区') >= 0, '★★⑤ 生成器知道内联区标记')
+const check = (script) => spawnSync(process.execPath, [script, '--check-inline'], { encoding: 'utf8', timeout: 30000 })
+const clean = check(GEN)
+ok(clean.status === 0, 'The checked-in inline block matches the real generator', clean.error?.message || clean.stderr || clean.stdout)
+const sandbox = fs.mkdtempSync(path.join(tmpdir(), 'dam-ev4-marker-'))
+try {
+  fs.mkdirSync(path.join(sandbox, 'lib'))
+  fs.mkdirSync(path.join(sandbox, 'tools'))
+  fs.writeFileSync(path.join(sandbox, 'package.json'), JSON.stringify({ type: 'module' }))
+  const script = path.join(sandbox, 'tools/gen-ev4-blocks.mjs')
+  fs.copyFileSync(GEN, script)
+  for (const file of ['lib/ev4-adapter.js', 'lib/ev4-prototype-blocks.js']) {
+    fs.copyFileSync(path.join(ROOT, file), path.join(sandbox, file))
+  }
+  // Remove the one outer end marker from a copy. The real generator must report stale output.
+  const broken = CL.replace(/^\/\/ ═══ EV4-BLOCKS 内联区结束 ═══\r?$/m, '')
+  ok(broken !== CL, 'The mutation removed the inline block end marker')
+  fs.writeFileSync(path.join(sandbox, 'lib/client.js'), broken, 'utf8')
+  const invalid = check(script)
+  ok(invalid.status === 2 && invalid.stdout?.includes('STALE'), 'The real generator rejects the removed marker', invalid.error?.message || invalid.stderr || invalid.stdout)
+} finally {
+  fs.rmSync(sandbox, { recursive: true, force: true })
+}
 
 console.log('')
 console.log('SUMMARY  PASS ' + pass + ' / FAIL ' + fail)

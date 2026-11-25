@@ -289,19 +289,13 @@ ok(_pnEv === 2, 'I-7 user-memory 与 project-notes 两段都用 subEv', _pnEv + 
 ok(idxSrc.indexOf('+ (subEv - sub) * 2') >= 0,
    'I-8 memRefLimit 同步加上两段增量（否则桶超限会把 must 段整段 drop）')
 
-// 真引擎：run_full 与 slim 档的这两段必须仍是原 sub 值
-let _ENG_OK = false, _eng = null
-try {
-  const mod = await import('../lib/audit-engine.mjs')
-  _eng = new mod.MemoryEngine()
-  await _eng.refresh(undefined)
-  const st0 = _eng.stateFor(undefined)
-  _ENG_OK = String(st0 && st0.userText || '').length > 0
-} catch (_eEng) { _ENG_OK = false }
-if (!_ENG_OK) {
-  console.log('  SKIP - I-9/I-10 引擎不可用（无真实记忆语料），跳过运行时字节比对')
-} else {
+// Compare the projected sections against controlled archives on a clean installation.
+{
+  const { MemoryEngine } = await import('../lib/audit-engine.mjs')
+  const _eng = new MemoryEngine()
   const st1 = _eng.stateFor(undefined)
+  st1.userText = 'User archive fixture: retain reviewed workspace decisions.'
+  st1.notesText = 'Project archive fixture: release procedures use a staging area.'
   const segOf = (tier, kind) => {
     st1._injectTierPre = tier
     st1.memLegacy = { legacy: false, reasons: [], counts: {} }
@@ -465,8 +459,13 @@ let _M_OK = false, _tierSeg = {}
 try {
   const mod4 = await import('../lib/audit-engine.mjs')
   const e4 = new mod4.MemoryEngine()
-  await e4.refresh(undefined)
   const s4 = e4.stateFor(undefined)
+  // Supply all three candidate sources even on a fresh installation, so their absence is a real assertion.
+  Object.assign(s4, {
+    userText: 'User archive fixture: retain reviewed workspace decisions.',
+    notesText: 'Project archive fixture: release procedures use a staging area.',
+    recentLogs: [{ date: '2026-11-24', text: 'Recent log fixture: verify the workspace handoff.' }],
+  })
   for (const tier of ['run_full', 'human_slim', 'human_full', 'post_compact']) {
     s4._injectTierPre = tier
     s4.memLegacy = { legacy: false, reasons: [], counts: {} }
@@ -566,23 +565,19 @@ ok(_panelCnt >= 1, 'N-4 面板诊断页有「规约预算」行', '实测 ' + _p
 ok(_setCnt >= 1, 'N-5 设置页有「规约预算」读数', '实测 ' + _setCnt + ' 处')
 ok(cliSrc.indexOf('仅提示，不截断') >= 0, 'N-6 设置页文案写明「仅提示，不截断」')
 // 真执行投影
-let _N_OK = false, _rbv = null
-try {
-  const mod5 = await import('../lib/audit-engine.mjs')
-  const e5 = new mod5.MemoryEngine()
-  await e5.refresh(undefined)
+{
+  const { MemoryEngine } = await import('../lib/audit-engine.mjs')
+  const e5 = new MemoryEngine()
+  e5.config.rulesLayeringMode = 'self'
   const s5 = e5.stateFor(undefined)
+  s5.userText = '<!-- memory:mem_' + 'd'.repeat(32) + ' -->\n【必须遵守】提交前必须运行测试。'
   s5._injectTierPre = 'human_full'
   s5.memLegacy = { legacy: false, reasons: [], counts: {} }
-  s5.envelopeMeta = null
   e5.renderMemoryDynamic({ agent: undefined })
-  _rbv = e5._rulesBudgetViewSnapshot()
-  _N_OK = !!_rbv
-} catch (_eN) { _N_OK = false }
-if (!_N_OK) { console.log('  SKIP - N-7..N-9 引擎不可用') } else {
-  ok(_rbv.truncation === false, 'N-7 投影显式声明 truncation:false（不截断）')
-  ok(typeof _rbv.user.chars === 'number' && _rbv.user.chars > 0, 'N-8 真执行：实测到用户规约字符数 ' + _rbv.user.chars)
-  ok(_rbv.user.overBudget === (_rbv.user.chars > _rbv.user.budget), 'N-9 超限判定与 chars/budget 自洽')
+  const budget = (await e5.debugInfo()).associativeMemory.rulesBudget
+  ok(budget.truncation === false, 'N-7 真实诊断投影声明 truncation:false')
+  ok(budget.available === true && budget.user.chars > 0, 'N-8 诊断含合成用户规约字符数 ' + budget.user.chars)
+  ok(budget.user.overBudget === (budget.user.chars > budget.user.budget), 'N-9 超限判定与 chars/budget 自洽')
 }
 
 console.log('')

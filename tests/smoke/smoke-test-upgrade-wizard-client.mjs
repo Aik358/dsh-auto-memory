@@ -56,6 +56,11 @@ function mkCtx (extra) {
       setItem: (k, v) => { store.set(String(k), String(v)) },
       removeItem: (k) => { store.delete(String(k)) },
     },
+    localStorage: {
+      getItem: (k) => (store.has(String(k)) ? store.get(String(k)) : null),
+      setItem: (k, v) => { store.set(String(k), String(v)) },
+      removeItem: (k) => { store.delete(String(k)) },
+    },
     h: function (type, props) { return { type: type, props: props || {}, kids: Array.prototype.slice.call(arguments, 2) } },
     useState: function (v) { return [typeof v === "function" ? v() : v, function () {}] },
     useEffect: function () {},
@@ -78,7 +83,7 @@ function execSeg (source, ctx, exports) {
 const NAMES = ["upgradeWizardTriggerPre", "upgradeWizardCostSharePre", "upgradeWizardSecondsPre",
   "upgradeWizardProgressModelPre", "upgradeWizardScopeRowsPre", "upgradeWizardCurrentRowPre",
   "upgradeWizardFmtMoneyPre", "upgradeWizardFmtCharsPre", "upgradeWizardFmtDurationPre",
-  "upgradeWizardDismissedInSessionPre", "upgradeWizardMarkDismissedPre",
+  "upgradeWizardDismissedForWorkspacePre", "upgradeWizardMarkDismissedForWorkspacePre",
   "UPGRADE_WIZARD_DELAY_MS", "UPGRADE_REPROMPT_MS", "UPGRADE_LINKS_PRE", "UPGRADE_LINK_LABELS_PRE",
   "UPGRADE_LINK_DISCLAIMER_PRE", "UpgradeWizard", "UpgradeWizardEntry"]
 const ctx = mkCtx()
@@ -109,14 +114,15 @@ eq(Object.keys(usableUpgradeLinksPre({ bad: "javascript:alert(1)", ok: "https://
 // ═══ 2. 触发三道闸：真调用正反例 ═════════════════════════════════════════════
 console.log("== 2. 触发三道闸 upgradeWizardTriggerPre（真调用） ==")
 eq(X.UPGRADE_WIZARD_DELAY_MS, 3000, "G1 自动弹出延迟常量 = 3000ms（用户裁定延迟 3 秒避开首屏）")
-eq(X.UPGRADE_REPROMPT_MS, 24 * 3600 * 1000, "G2 闸③阈值 = 24h")
+eq(X.UPGRADE_REPROMPT_MS, 24 * 3600 * 1000, "G2 旧后端 fallback 阈值 = 24h")
 {
   const cases = [
     [{ legacy: true }, true, "G3 ①legacy=true 且无 snooze ⇒ 弹"],
     [{ legacy: false }, false, "G4 [负路径] legacy=false ⇒ 不弹"],
     [{}, false, "G5 [负路径] 缺 legacy ⇒ 不弹（不把 undefined 当 true）"],
-    [{ legacy: true, sessionDismissed: true }, false, "G6 [负路径] 本会话点过「本次不再提示」⇒ 不弹"],
-    [{ legacy: true, declined: true, sinceMs: 3600 * 1000 }, false, "G7 [负路径] snooze 未满 24h ⇒ 不弹"],
+    [{ legacy: true, workspaceDismissed: true }, false, "G6 [负路径] 工作区持久关闭后不弹"],
+    [{ legacy: true, declined: true, sinceMs: 3600 * 1000 }, false, "G7 [负路径] fallback snooze 未满 24h ⇒ 不弹"],
+    [{ legacy: true, declined: true, sinceMs: 4 * 24 * 3600 * 1000, snoozeRemainingMs: 1 }, false, "G7b 服务端仍有 snooze 剩余时优先抑制弹窗"],
     [{ legacy: true, declined: true, sinceMs: 24 * 3600 * 1000 }, true, "G8 snooze 恰满 24h ⇒ 弹"],
     [{ legacy: true, declined: true, sinceMs: 25 * 3600 * 1000 }, true, "G9 snooze 超 24h ⇒ 弹"],
     [{ legacy: true, declined: false }, true, "G10 未 snooze 过（declined=false）⇒ 弹"],
@@ -247,25 +253,47 @@ console.log("== 6. 范围选择 upgradeWizardScopeRowsPre / 当前区定位 ==")
   eq(X.upgradeWizardScopeRowsPre("whatever", FIX_ROWS, [], FIX_ROWS[0]).code, "bad-scope", "S10 [负路径] 未知 scope ⇒ 明确拒绝（不猜）")
 }
 
-// ═══ 7. 「本次不再提示」= 会话级（sessionStorage） ══════════════════════════
-console.log("== 7. 「本次不再提示」会话级标记 ==")
+// ═══ 7. 工作区级关闭标记跨上下文持久化 ═════════════════════════════════════
+console.log("== 7. 工作区级「不再提示」持久标记 ==")
 {
-  eq(X.upgradeWizardDismissedInSessionPre("D:\\proj-a"), false, "D1 初始未标记")
-  X.upgradeWizardMarkDismissedPre("D:\\proj-a")
-  eq(X.upgradeWizardDismissedInSessionPre("D:\\proj-a"), true, "D2 标记后为 true（本会话不再弹）")
-  eq(X.upgradeWizardDismissedInSessionPre("D:\\proj-b"), false, "D3 其他工作区不受影响（按 ws 分键）")
-  eq(X.upgradeWizardTriggerPre({ legacy: true, sessionDismissed: X.upgradeWizardDismissedInSessionPre("D:\\proj-a") }).show, false, "D4 标记后触发闸不弹（两道判据联动）")
+  eq(X.upgradeWizardDismissedForWorkspacePre("D:\\proj-a"), false, "D1 初始未标记")
+  X.upgradeWizardMarkDismissedForWorkspacePre("D:\\proj-a")
+  eq(X.upgradeWizardDismissedForWorkspacePre("D:\\proj-a"), true, "D2 标记后为 true（持久关闭）")
+  eq(X.upgradeWizardDismissedForWorkspacePre("D:\\proj-b"), false, "D3 其他工作区不受影响（按 ws 分键）")
+  eq(X.upgradeWizardTriggerPre({ legacy: true, workspaceDismissed: X.upgradeWizardDismissedForWorkspacePre("D:\\proj-a") }).show, false, "D4 标记后触发闸不弹（工作区级）")
+  const values = new Map()
+  const persistentStorage = {
+    getItem: (k) => values.has(String(k)) ? values.get(String(k)) : null,
+    setItem: (k, v) => { values.set(String(k), String(v)) },
+    removeItem: (k) => { values.delete(String(k)) },
+  }
+  const first = mkCtx({ localStorage: persistentStorage })
+  execSeg(SEG, first, NAMES)
+  first.__X_upgradeWizardMarkDismissedForWorkspacePre(String.raw`D:\proj-a`)
+  const reopened = mkCtx({ localStorage: persistentStorage })
+  execSeg(SEG, reopened, NAMES)
+  eq(reopened.__X_upgradeWizardDismissedForWorkspacePre(String.raw`D:\proj-a`), true, "D5 新标签/宿主重启后仍为 true")
+  const sessionOnlyMutant = SEG
+    .replace("localStorage.getItem(UPGRADE_WIZARD_DISMISS_PREFIX", "sessionStorage.getItem(UPGRADE_WIZARD_DISMISS_PREFIX")
+    .replace("localStorage.setItem(UPGRADE_WIZARD_DISMISS_PREFIX", "sessionStorage.setItem(UPGRADE_WIZARD_DISMISS_PREFIX")
+  ok(sessionOnlyMutant !== SEG, "D6 变异改回 sessionStorage 命中 helper")
+  const mutantFirst = mkCtx()
+  execSeg(sessionOnlyMutant, mutantFirst, NAMES)
+  mutantFirst.__X_upgradeWizardMarkDismissedForWorkspacePre("project-x")
+  const mutantRestart = mkCtx()
+  execSeg(sessionOnlyMutant, mutantRestart, NAMES)
+  eq(mutantRestart.__X_upgradeWizardDismissedForWorkspacePre("project-x"), false, "D7 sessionStorage 变异在新上下文丢失")
 }
 
 // ═══ 8. 四页真渲染（fixture 注入抽取片段，真执行） ══════════════════════════
 console.log("== 8. 四页真渲染（真执行抽取片段） ==")
-function render (patches) {
-  let seg = SEG
+function render (patches, extra, source) {
+  let seg = source || SEG
   for (const [from, to] of patches) {
     if (seg.indexOf(from) < 0) throw new Error("渲染注入锚串缺失：" + from)
     seg = seg.replace(from, to)
   }
-  const rctx = mkCtx({})
+  const rctx = mkCtx(extra || {})
   execSeg(seg, rctx, ["UpgradeWizard"])
   return rctx.__X_UpgradeWizard({ zh: true, ws: "D:\\proj-a" })
 }
@@ -296,7 +324,10 @@ const ST_FIX = {
   runId: "", scope: "", perWorkspace: [], startedAt: 0, finishedAt: 0, agentOptions: {},
 }
 const INV_FIX = { ok: true, workspaces: FIX_ROWS, totals: TOTALS, opencodeUsableChars: opencodeUsableCharsPre() }
-const MODELS_FIX = { providers: [{ id: "deepseek", name: "DeepSeek", models: [{ id: "deepseek-v4.1-flash" }] }], failures: [] }
+const MODELS_FIX = { providers: [
+  { id: "apigoto", name: "ApiGoto", models: [{ id: "deepseek-flash", reasoningEfforts: [] }] },
+  { id: "tokenbank", name: "Tokenbank", models: [{ id: "deepseek-flash", reasoningEfforts: ["off", "low", "high", "max"] }] },
+], failures: [] }
 const BASE = [
   ["      var openPair = useState(false)", "      var openPair = useState(true)"],
   ["      var stPair = useState(null)", "      var stPair = useState(" + JSON.stringify(ST_FIX) + ")"],
@@ -304,16 +335,30 @@ const BASE = [
   ["      var modelsPair = useState(null)", "      var modelsPair = useState(" + JSON.stringify(MODELS_FIX) + ")"],
 ]
 const PAGE = (p) => ["      var pagePair = useState('p1')", "      var pagePair = useState('" + p + "')"]
+const SELECT_MODEL = (provider) => ["      var modelPair = useState('')", "      var modelPair = useState(" + JSON.stringify(provider + String.fromCharCode(1) + 'deepseek-flash') + ")"]
 
 // 第 1 页
 {
-  const tree = render(BASE)
+  const snoozeCalls = []
+  const tree = render(BASE, { apiPost: (url, body) => { snoozeCalls.push({ url, body }); return Promise.resolve({ ok: true }) } })
   ok(!!tree, "R0 第 1 页真的渲染出节点（不是 null）")
   const cnt = (attr) => findAll(tree, (n) => hasAttr(n, attr)).length
   eq(cnt("data-dam-upgrade-snooze"), 1, "R1 第 1 页「稍后」")
-  eq(cnt("data-dam-wizard-dismiss"), 1, "R2 第 1 页「本次不再提示」")
+  eq(cnt("data-dam-wizard-dismiss"), 1, "R2 第 1 页「不再提示此工作区」")
   eq(cnt("data-dam-wizard-dryrun"), 1, "R3 第 1 页「先只看体量」（只检测入口）")
   eq(cnt("data-dam-upgrade-start"), 1, "R4 第 1 页「开始整理」")
+  const laterButton = findAll(tree, (n) => hasAttr(n, "data-dam-upgrade-snooze"))[0]
+  laterButton.props.onClick()
+  await new Promise((resolve) => setImmediate(resolve))
+  eq(snoozeCalls[0] && snoozeCalls[0].url, "/api/dsm/upgrade-snooze", "R4a 「稍后」按钮调用正确路由")
+  eq(snoozeCalls[0] && snoozeCalls[0].body.ws, "D:" + String.fromCharCode(92) + "proj-a", "R4b 「稍后」按实际前端载荷发送 workspace")
+  const dismissValues = new Map()
+  const dismissStorage = { getItem: (k) => dismissValues.get(String(k)) || null, setItem: (k, v) => dismissValues.set(String(k), String(v)), removeItem: (k) => dismissValues.delete(String(k)) }
+  const dismissTree = render(BASE, { localStorage: dismissStorage })
+  findAll(dismissTree, (n) => hasAttr(n, "data-dam-wizard-dismiss"))[0].props.onClick()
+  const reopened = mkCtx({ localStorage: dismissStorage })
+  execSeg(SEG, reopened, NAMES)
+  eq(reopened.__X_upgradeWizardDismissedForWorkspacePre("D:" + String.fromCharCode(92) + "proj-a"), true, "R4c 点击关闭按钮后跨上下文仍保持关闭")
   const text = collectText(tree, []).join("\n")
   // ★2026-11-03 改判据（用户实报「有些地方被判断成旧的，实际是新版」）：
   //   原 R5 只断言写死标题存在 ⇒ 恒绿，无法发现「新版也报旧版」。现改为按 reasons 分流判据。
@@ -356,12 +401,10 @@ const PAGE = (p) => ["      var pagePair = useState('p1')", "      var pagePair 
 {
   const tree = render(BASE.concat([PAGE("p3")]))
   eq(findAll(tree, (n) => hasAttr(n, "data-dam-wizard-model")).length, 1, "R24 第 3 页模型下拉")
-  // ★#558①（2026-11-08）判据更新：旧断言锁的是「恰好三档 低/中/高、默认中」——那是**旧决策**。
-//   不变量是「向导提供的档位 ⊆ 宿主白名单 off|low|high|max，且默认值必须在白名单内」。
-//   medium 宿主不认（见 index.js subAgentOptions 注释），继续提供它就是「显示 != 生效」。
-eq(findAll(tree, (n) => hasAttr(n, "data-dam-wizard-effort")).length, 4, "R25 第 3 页四个思考强度（off/低/高/最高，默认高=宿主缺省）")
+  // ★#580：默认项必须不下发；只有显式选择模型后才展示该模型目录声明支持的档位。
+eq(findAll(tree, (n) => hasAttr(n, "data-dam-wizard-effort")).length, 1, "R25 未知路由默认只提供“不下发”选项")
   const effortLabels = findAll(tree, (n) => hasAttr(n, "data-dam-wizard-effort")).map((n) => n.props["data-dam-wizard-effort"])
-  eq(effortLabels.join(","), "off,low,high,max", "R26 ★思考强度键 = off,low,high,max（= 宿主白名单，与 estimate 档位同源）")
+  eq(effortLabels.join(","), "", "R26 默认选项是空强度（不发送 reasoningEffort）")
 // ★新增：默认档位必须在白名单内（否则「用户不动就点开始」必然发出非法值）
 // 注意：data-dam-wizard-effort 挂在 <label> 上，checked 在内层 <input> 上（两个不同节点）。
 // 按渲染顺序一一对应（label 顺序 == input 顺序），用序号把 input 的 checked 映射回档位键。
@@ -370,10 +413,34 @@ eq(_effortInputs.length, effortLabels.length, "R26b 每个档位恰有一个 rad
 const _checkedIdx = _effortInputs.map((n, i) => (n.props.checked === true ? i : -1)).filter((i) => i >= 0)
 eq(_checkedIdx.length, 1, "R26c ★有且仅有一个默认选中的档位（实测 " + _checkedIdx.length + "）")
 const _defKey = _checkedIdx.length === 1 ? String(effortLabels[_checkedIdx[0]]) : ""
-eq(_defKey, "high", "R26d ★★默认档位 = high（宿主缺省档，实测 " + _defKey + "）")
-eq(["off", "low", "high", "max"].indexOf(_defKey) >= 0, true, "R26e ★默认档位必在宿主白名单内（防「用户不动就点开始」发出非法值）")
+eq(_defKey, "", "R26d ★★默认档位为空（跟随模型默认）")
+eq(_defKey === "", true, "R26e ★默认档位明确不下发（不触发 provider 能力拒绝）")
+  const defaultIsOmitted = (root) => {
+    const labels = findAll(root, (n) => hasAttr(n, "data-dam-wizard-effort"))
+    const inputs = findAll(root, (n) => n && n.props && n.props.name === "dam-wizard-effort")
+    const checked = inputs.map((n, i) => n.props.checked === true ? i : -1).filter((i) => i >= 0)
+    return checked.length === 1 && String(labels[checked[0]].props["data-dam-wizard-effort"]) === ""
+  }
+  eq(defaultIsOmitted(tree), true, "R26f 默认强度不下发")
+  const highDefaultMutant = SEG.replace("var effortPair = useState('')", "var effortPair = useState('high')")
+  ok(highDefaultMutant !== SEG, "R26g 变异恢复 high 默认已命中")
+  eq(defaultIsOmitted(render(BASE.concat([PAGE("p3")]), {}, highDefaultMutant)), false, "R26h high 默认变异被行为判据检出")
   const text = collectText(tree, []).join("\n")
-  ok(text.includes("不推荐"), "R27 低档标「不推荐」")
+  const supportedTree = render(BASE.concat([PAGE("p3"), SELECT_MODEL("tokenbank")]))
+  const supportedLabels = findAll(supportedTree, (n) => hasAttr(n, "data-dam-wizard-effort")).map((n) => n.props["data-dam-wizard-effort"])
+  eq(supportedLabels.join(","), ",off,low,high,max", "R27 只显示被模型声明支持的档位")
+  ok(collectText(supportedTree, []).join("\n").includes("不推荐"), "R27b 支持低档时保留“不推荐”提示")
+  const unsupportedTree = render(BASE.concat([PAGE("p3"), SELECT_MODEL("apigoto")]))
+  eq(findAll(unsupportedTree, (n) => hasAttr(n, "data-dam-wizard-effort")).map((n) => n.props["data-dam-wizard-effort"]).join(","), "", "R27c 未声明能力的模型不能选择任何强度档")
+  ok(text.includes("不下发 reasoningEffort"), "R27d 默认档说明明确不下发")
+  const startCalls = []
+  const actionTree = render(BASE.concat([PAGE("p3")]), { apiPost: (url, body) => { startCalls.push({ url, body }); return Promise.resolve({ ok: false, error: "fixture-stop" }) } })
+  const confirm = findAll(actionTree, (n) => hasAttr(n, "data-dam-wizard-confirm"))[0]
+  confirm.props.onClick()
+  await new Promise((resolve) => setImmediate(resolve))
+  eq(startCalls.length, 1, "R27e 默认点击开始只发起一次请求")
+  eq(startCalls[0] && startCalls[0].body.effort, "", "R27f 默认请求强度为空")
+  eq(startCalls[0] && startCalls[0].body.omitReasoningEffort, true, "R27g 默认请求明确要求后端不下发强度")
   eq(findAll(tree, (n) => hasAttr(n, "data-dam-wizard-cost")).length, 4, "R28 费用四行（谷/峰/中转/免费）")
   eq(findAll(tree, (n) => hasAttr(n, "data-dam-wizard-link")).length, 4, "R29 渠道四按钮")
   const links = findAll(tree, (n) => hasAttr(n, "data-dam-wizard-link"))

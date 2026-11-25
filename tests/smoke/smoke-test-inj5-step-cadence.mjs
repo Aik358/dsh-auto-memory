@@ -13,8 +13,8 @@
  *
  * 本套件用**真实事件序列**驱动生产代码段（不是合成计数），断言：
  *   T1 单个 turn 内 25 个模型请求 ⇒ 完整版落在第 1/11/21 个（间隔恰 10）
- *   T2 真人插话（第 7 个请求）⇒ 该请求立即得完整版，并从该点重新计时
- *   T3 精简版在 10 个模型请求之间出现 2–3 次
+ *   T2 第 7 个请求真人插话不产生额外完整版，仍按请求间隔计数
+ *   T3 两个完整请求之间，每步仍提供精简正文
  *   T4 同一 step 内多次渲染 ⇒ 保持一致（不得被次帧精简版覆盖）
  *   T5 负路径：把计数单位改回 turn ⇒ 必须红
  *   T6 守卫：决策段内不得出现 turn 口径的计数器名
@@ -22,6 +22,7 @@
  */
 import { readFileSync } from "node:fs"
 import { createHash } from "node:crypto"
+import { claimedHuman, deliveryRequestScope, isUserInput } from '../../lib/injection/request-scope.js'
 
 const SRC = readFileSync(process.env.DAM_INDEX_JS || "lib/index.js", "utf8")
 const S0 = SRC.indexOf("let tieredFullGranted = false")
@@ -53,67 +54,41 @@ const ok = (c, m) => { if (c) { pass++; console.log("  ok - " + m) } else { fail
 const FULL = "<memory_system>[规则 — 用户级硬性约束]x[最近 1 天工作日志(尾部)]y</memory_system>"
 const SLIM = "<memory_system>[记忆系统 · 精简注入]</memory_system>"
 
-function mkProbe(cfg) {
+function mkProbe(cfg = {}) {
   const st = { loadedAt: 1 }
-  // ★2026-10-18 T7：支持两种宿主 Session 形状 —— 旧版有 .events，0.2.1 只有 snapshotEvents()。
-  //   探针形状必须可切换，否则本套件只能在旧版形状下绿，掩盖真实生产回归。
-  const host021 = !!(cfg && cfg.__host021)
-  const _events = []
-  let _reqSeq = 0   // ★单调递增的请求序号：每次 run() = 一个模型请求
-  const agent = host021
-    ? { session: { snapshotEvents: () => _events.slice() } }
-    : { session: { events: _events } }
-  let humanSeq = null
+  const history = []
+  const session = cfg.__host021 ? { snapshotEvents: () => history.slice() } : { events: history }
+  const agent = { session }
+  const scope = () => deliveryRequestScope(session.events ?? session.snapshotEvents())
   const engine = {
     stateFor: () => st,
     runtimeFor: () => ({ contextVersion: 0 }),
-    turnBoundaryKeyPre: () => "turn:1",
-    humanTurnObservedPre: () => humanSeq !== null,
-    humanTurnSeqPre: () => humanSeq,
-    renderReflectionRequest: () => "",
-    // 与生产同源：最近一次 step/end 的 seq；无则退回 turn/start 的 seq
-    // 夹具内直接读闭包里的 _events（host021 模式下 agent.session 只有 snapshotEvents，无 .events）
-    requestIdPre: () => {
-      for (let i = _events.length - 1; i >= 0; i--) if (_events[i] && _events[i].type === "step/end") return "e:" + Number(_events[i].seq)
-      for (let i = _events.length - 1; i >= 0; i--) if (_events[i] && _events[i].type === "turn/start") return "t:" + Number(_events[i].seq)
-      return "t:-1"
-    },
-    config: Object.assign({ snapshotMinGapRounds: 10, snapshotTieredInject: true, slimEveryRounds: 3, snapshotReinjectOnCompact: true }, cfg || {}),
+    turnBoundaryKeyPre: () => 'turn:1',
+    requestIdPre: () => scope().key,
+    renderReflectionRequest: () => '',
+    config: { snapshotMinGapRounds: 10, snapshotTieredInject: true, slimEveryRounds: 3, snapshotReinjectOnCompact: true, ...cfg },
   }
-  const F = new Function("engine", "agent", "gap", "snap", "slimText", "diag", "createHash", "parseGapRoundsPre", FIN_SRC + String.fromCharCode(10) + body + ";")
-  const run = (events, snap) => {
-    _events.length = 0
-    for (const e of events) _events.push(e)
-    // ★2026-10-18（交付层根治配套 · 与生产同源）：本套件每次 run() 代表**一个模型请求的一次 text() 调用**。
-    //   生产侧请求键来自 requestIdPre(agent) = 最近一次 step/end 的 seq（两帧之间恒定、每请求翻新）；
-    //   真人待办来自 pre-step 钩子置的 _humanPending。
-    //   因此探针只需要：①让事件流里有一个稳定的 turn/start（首请求兜底键）
-    //                ②在有真人时置 _humanPending，并在授予被消费后清掉。
-    try {
-      const evsNow = _events
-      const hasTurnStart = evsNow.some((e) => e && e.type === "turn/start")
-      if (!hasTurnStart) evsNow.unshift({ seq: 1, type: "turn/start", data: { turn: 1 } })
-      // 每次 run() = 一个新模型请求 ⇒ 上一个请求的 step/end 已落地。
-      //   ⚠ 不能用「事件流里已有几个 step/end」推序号：上方刚把 _events 清空重填，
-      //     数量恒为初始值 ⇒ 序号不变 ⇒ 计数器停摆。用外部单调计数。
-      _reqSeq += 1
-      evsNow.push({ seq: 1000 + _reqSeq, type: "step/end", data: { turn: 1, step: _reqSeq } })
-      if (humanSeq !== null) st._humanPending = true
-    } catch (_) {}
-    let err = null, out = ""
-    try {
-      out = F(engine, agent, 10, snap || FULL, SLIM, () => {}, createHash, (v, d) => { const n = Number(v); return Number.isFinite(n) ? n : d })
-    } catch (e) { err = String(e) }
-    if (err) return "ERR:" + err
-    if (typeof out !== "string") {
-      if (process.env.DAM_DEBUG_PROBE) {
-        console.log("  [probe] out=" + String(out) + " st=" + JSON.stringify(st) + " evs=" + JSON.stringify(agent.session.events || []))
-      }
-      return "ERR:non-string(" + typeof out + ")"
+  const F = new Function('engine', 'agent', 'gap', 'snap', 'slimText', 'diag', 'createHash', 'parseGapRoundsPre', '_currentHumanRequestPre', FIN_SRC + '\n' + body)
+  const emit = (type, data) => history.push({ type, data, seq: history.length + 1 })
+  const seenInputs = new Set()
+  let open
+  emit('turn/start', { turn: 1 })
+  function run(events, snap = FULL) {
+    const pos = events.findLast(e => e.type === 'step/start').data
+    if (!open || pos.step !== open.step || pos.turn !== open.turn) {
+      if (open) emit('step/end', open)
+      const fresh = events.filter(e => e.type === 'user/message' && !seenInputs.has(e.seq))
+      st._deliveryClaimPre = { key: scope().key, position: pos.turn + ':' + pos.step, human: fresh.some(e => isUserInput(e.data)) }
+      open = pos
+      emit('step/start', open)
+      for (const e of fresh) { seenInputs.add(e.seq); emit(e.type, e.data) }
     }
-    return out.includes("精简注入") ? "S" : "F"
+    const out = F(engine, agent, engine.config.snapshotMinGapRounds, snap, SLIM, () => {}, createHash,
+      (v, fallback) => Number.isFinite(Number(v)) ? Number(v) : fallback, () => claimedHuman(scope(), st._deliveryClaimPre))
+    if (typeof out !== 'string') throw Error('Expected projected snapshot text')
+    return out.includes('精简注入') ? 'S' : 'F'
   }
-  return { st, run, setHuman: (v) => { humanSeq = v } }
+  return { st, run }
 }
 
 // ── T1 单 turn 25 个模型请求 ────────────────────────────────────────
@@ -135,14 +110,14 @@ console.log("=== T1 单个 turn 内 25 个模型请求 ⇒ 完整版落在第 1/
 
 // ── T2 真人插话 ────────────────────────────────────────────────────
 console.log("")
-console.log("=== T2 真人在第 7 个模型请求时说话 ⇒ 立即得完整版并重新计时 ===")
+console.log("=== T2 第 7 个请求真人插话，完整帧仍按模型请求间隔 ===")
 {
   const P = mkProbe()
   const evs = [{ seq: 1, type: "turn/start", data: { turn: 1 } }]
   let seq = 2
   const row = []
   for (let s = 1; s <= 20; s++) {
-    if (s === 7) { P.setHuman(100 + s); evs.push({ seq: seq++, type: "user/message", data: { source: { kind: "user" } } }) }
+    if (s === 7) evs.push({ seq: seq++, type: "user/message", data: { role: "user", source: { kind: "user" } } })
     evs.push({ seq: seq++, type: "step/start", data: { turn: 1, step: s } })
     row.push(P.run(evs.slice()))
   }
@@ -157,7 +132,7 @@ ok(fullAt.join(",") === "1,11", "节奏为准步数门槛 ⇒ 完整版落在 1,
 
 // ── T3 精简版密度 ──────────────────────────────────────────────────
 console.log("")
-console.log("=== T3 10 个模型请求之间出现 2–3 次精简版 ===")
+console.log("=== T3 完整请求之间的精简正文 ===")
 {
   const P = mkProbe({ slimEveryRounds: 3 })
   const evs = [{ seq: 1, type: "turn/start", data: { turn: 1 } }]

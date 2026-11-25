@@ -24,6 +24,14 @@ function ok(cond, name, extra) {
   else { fail++; console.log('  FAIL - ' + name + (extra ? ' :: ' + extra : '')) }
 }
 
+// Give both real renderers a stable user-memory document in an otherwise empty HOME.
+const ruleTexts = [
+  '合并前必须核对变更清单。', '更新档位时必须保留用户配置。',
+  '投递前必须检查请求来源。', '验收时必须读取实际正文。',
+].map((rule, i) => rule + ('这是第' + (i + 1) + '项的核对细节和验收条件。').repeat(7))
+const userMemoryFixture = ruleTexts.map((rule, i) =>
+  '<!-- memory:mem_' + (i + 1).toString(16).padStart(32, '0') + ' -->\n- ' + rule).join('\n')
+
 const idxSrc = fs.readFileSync(path.join(ROOT, 'lib', 'index.js'), 'utf8')
 
 // 抽取模块级常量块（从 INJECT_TIERS 到 parseWaterPctThresholdsPre）
@@ -83,8 +91,9 @@ ok(T.isRulesFullTierPre(I.LEGACY) === true, "A-13 LEGACY 给全文（= 改前行
   // 真引擎：动态 import（本套件主体是静态断言，此处单独引入真引擎做功能验收）
   const { MemoryEngine: _ME } = await import('../../tests/lib/audit-engine.mjs')
   const _probeEng = new _ME()
-  await _probeEng.refresh(undefined)
-  const _st = _probeEng.stateFor ? _probeEng.stateFor(undefined) : _probeEng.state
+  _probeEng.config.rulesLayeringMode = 'self'
+  const _st = _probeEng.stateFor(undefined)
+  _st.userText = userMemoryFixture
   const _rulesCharsOf = (tier) => {
     _st._injectTierPre = tier
     _st.memLegacy = { legacy: false, reasons: [], counts: {} }
@@ -162,22 +171,15 @@ h = H(1000, 0, true)
 ok(h.fire === false, "C-9 阈值 0 且累计很小 => 不触发（证明回落生效）")
 
 console.log("")
-console.log("== D. 端到端：真跑 renderRulesSlimPre + 真实用户级记忆 ==")
-const USER = 'C:/Users/JH Z/.dsh/memory/MEMORY.md'
-let userRaw = ""
-try { userRaw = fs.readFileSync(USER, "utf8") } catch (e) { userRaw = "" }
-ok(userRaw.length > 0, "D-1 真实用户级记忆可读", userRaw.length + " 字符")
-if (userRaw.length > 0) {
-  // 从真实文本抽「- 」开头的条目当作规则
-  const realRules = userRaw.split(/\r?\n/).filter((l) => l.trim().indexOf("- ") === 0).slice(0, 20).map((l, i) => ({ id: "ur" + i, text: l.trim().slice(2) }))
-  ok(realRules.length > 0, "D-2 从真实记忆抽出规则条目", realRules.length + " 条")
-  const realSlim = R({ rules: realRules }, { title: "[规则 — 精简版]", maxPerRule: 60 })
-  const fullLen = realRules.reduce((a, r) => a + r.text.length, 0)
-  ok(realSlim.text.length > 0, "D-3 真实规则精简产出非空")
-  ok(realSlim.text.length < fullLen, "D-4 精简确实更短", realSlim.text.length + " < " + fullLen)
-  const ratio = (100 * realSlim.text.length / fullLen).toFixed(1)
-  console.log("       实际压缩比: " + ratio + "%（" + realSlim.text.length + " / " + fullLen + "）")
-}
+console.log("== D. 端到端：用户规则解析与精简渲染 ==")
+const { extractRulesLayerPre } = await import('../../lib/rules-layer.js')
+const layer = extractRulesLayerPre({ userText: userMemoryFixture, rulesLayeringMode: 'self' })
+ok(layer.enabled, 'D-1 用户规则层开启')
+ok(layer.rules.length === ruleTexts.length, 'D-2 解析出全部夹具规则', layer.rules.length + ' 条')
+const projected = R(layer, { title: '[规则 — 精简版]', maxPerRule: 60 })
+const inputLength = layer.rules.reduce((sum, rule) => sum + rule.text.length, 0)
+ok(projected.text.length > 0, 'D-3 精简规则正文可读')
+ok(projected.text.length < inputLength, 'D-4 精简正文短于完整规则', projected.text.length + ' < ' + inputLength)
 
 console.log("")
 console.log("== E. 接线守卫 ==")
