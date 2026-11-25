@@ -54,8 +54,10 @@ apply(ctx, {})
 const preStep = eventHandlers.get('agent/pre-step')
 if (!preStep) { console.log('FAIL - agent/pre-step 未注册'); process.exit(1) }
 
-function mkAgent(cwd, sid) {
-  return { id: sid, session: { id: sid, header: { id: sid, cwd }, events: [{ seq: 1, type: 'turn/start', data: { turn: 1 } }] } }
+function mkAgent(cwd, sid, origin) {
+  const header = { id: sid, cwd }
+  if (origin) header.origin = origin
+  return { id: sid, session: { id: sid, header, events: [{ seq: 1, type: 'turn/start', data: { turn: 1 } }] } }
 }
 function agentMsg(text) {
   return { role: 'user', content: [{ type: 'text', text: 'Agent s-1 sent a message: ' + text }],
@@ -99,6 +101,16 @@ console.log('=== 记忆中枢 cwd = ' + HUB_CWD + ' ===\n')
 
 await run('[中枢] 纯 agent-message 批次', hubAgent, [agentMsg('hello')], 'reject')
 await run('[中枢] 两条 agent-message 批次', hubAgent, [agentMsg('a'), agentMsg('b')], 'reject')
+
+// ★2026-11-25（DSH 0.2.3 兼容）：宿主把**子代理的初始任务**也包装成 agent-message
+//   （@deepseek-ai/dsh-subagent/startLocalNamed → createAgentMessage）。收件人是子代理时
+//   它是「指令」不是「回报」⇒ 必须放行；按旧判据会被 reject，导致 upgrade/consolidate/fold
+//   首个 step 直接 blocked（turn/end kind='blocked'、零 token ⇒ 上游只看到「subagent 返回空」）。
+const childAgent = mkAgent(HUB_CWD, 'c-1', 'subagent')
+await run('[中枢·子代理] 初始任务（agent-message relay，origin=subagent）', childAgent, [agentMsg('任务书')], 'enter')
+await run('[中枢·子代理] 两条 agent-message（origin=subagent）', childAgent, [agentMsg('a'), agentMsg('b')], 'enter')
+await run('[中枢·子代理] 子代理收到的真人消息（origin=subagent）', childAgent, [humanMsg('继续')], 'enter')
+await run('[中枢·子代理] 子代理收到结算通知（origin=subagent）', childAgent, [settledMsg('c-2')], 'enter')
 // ★2026-10-31 用户原话「consolidate 等操作结束之后」—— 对应的正是 subagent-settled
 await run('[中枢] 纯 subagent-settled 批次（操作结束通知）', hubAgent, [settledMsg('c-1')], 'reject')
 await run('[中枢] agent-message+subagent-settled 混合批次（R159 实测形状）', hubAgent,
