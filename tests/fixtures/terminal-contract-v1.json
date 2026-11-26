@@ -1,0 +1,7416 @@
+[
+  {
+    "id": "board.card",
+    "title": "Read the full whiteboard card",
+    "group": "board",
+    "scope": "workspace",
+    "access": "read",
+    "approval": "none",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "route",
+      "key": "kanban-card",
+      "method": "GET",
+      "path": "/api/dsh-auto-memory/kanban-card"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "board.checkpoint.read",
+    "title": "Verify and read a checkpoint source",
+    "group": "board",
+    "scope": "workspace",
+    "access": "read",
+    "approval": "none",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "pattern": "^evt_[a-f0-9]{8}$"
+        },
+        "checkpointIndex": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "idemKey": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "eventId"
+      ],
+      "additionalProperties": false,
+      "oneOf": [
+        {
+          "required": [
+            "checkpointIndex"
+          ]
+        },
+        {
+          "required": [
+            "idemKey"
+          ]
+        }
+      ]
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {
+        "eventId": {
+          "type": "string"
+        },
+        "checkpointIndex": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "idemKey": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "verified": {
+          "type": "boolean"
+        },
+        "code": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        },
+        "source": {
+          "enum": [
+            "checkpoint",
+            "trusted-handoff"
+          ]
+        }
+      },
+      "required": [
+        "eventId",
+        "checkpointIndex",
+        "verified",
+        "code",
+        "text",
+        "source"
+      ],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "service",
+      "key": "readEventCheckpointPre"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "board.continue.decide",
+    "title": "Handle an automatic continuation request",
+    "group": "board",
+    "scope": "session",
+    "access": "write",
+    "approval": "explicit-confirmation",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "action": {
+          "enum": [
+            "agree",
+            "reject",
+            "cancel",
+            "manual"
+          ]
+        },
+        "edgeAt": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "action"
+      ],
+      "additionalProperties": false,
+      "if": {
+        "properties": {
+          "action": {
+            "const": "manual"
+          }
+        }
+      },
+      "else": {
+        "required": [
+          "edgeAt"
+        ]
+      }
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "service",
+      "key": "decideAutoContinue"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "board.continue.permissions",
+    "title": "Inherit the selected conversation permission preset",
+    "group": "board",
+    "scope": "session",
+    "access": "write",
+    "approval": "explicit-confirmation",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "successorId": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "successorId"
+      ],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "service",
+      "key": "inheritPermissionForContinue"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "board.continue.preview",
+    "title": "Review the handoff material for this conversation",
+    "group": "board",
+    "scope": "session",
+    "access": "write",
+    "approval": "explicit-confirmation",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "route",
+      "key": "handoff-continue",
+      "method": "POST",
+      "path": "/api/dsh-auto-memory/handoff-continue"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "board.continue.status",
+    "title": "Automatic continuation status",
+    "group": "board",
+    "scope": "session",
+    "access": "read",
+    "approval": "none",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "route",
+      "key": "auto-continue-state",
+      "method": "GET",
+      "path": "/api/dsh-auto-memory/auto-continue-state"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "board.curate.apply",
+    "title": "Apply reviewed event curation",
+    "group": "board",
+    "scope": "session",
+    "access": "write",
+    "approval": "explicit-confirmation",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "candidateIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 1,
+          "maxItems": 200,
+          "uniqueItems": true
+        },
+        "confirmToken": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "candidateIds",
+        "confirmToken"
+      ],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "service",
+      "key": "writeCuratedEventsPre"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "board.curate.preview",
+    "title": "Preview historical handoff curation",
+    "group": "board",
+    "scope": "session",
+    "access": "read",
+    "approval": "none",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 200
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "route",
+      "key": "event-curate",
+      "method": "POST",
+      "path": "/api/dsh-auto-memory/event-curate"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "board.curate.propose",
+    "title": "Generate curation candidates and confirmation token",
+    "group": "board",
+    "scope": "session",
+    "access": "write",
+    "approval": "explicit-confirmation",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 200
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "route",
+      "key": "event-curate",
+      "method": "POST",
+      "path": "/api/dsh-auto-memory/event-curate"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "board.document.write",
+    "title": "Create or edit a maintenance document",
+    "group": "board",
+    "scope": "session",
+    "access": "write",
+    "approval": "explicit-confirmation",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "content": {
+          "type": "string",
+          "description": "笔记内容。kind=note/handoff 必填；kind=plan 且 fromEvents=true 时**可省略**（正文由事件库渲染）。kind=plan 手写时必须给完整新全貌并带 expectedRevision；单卡更新给完整卡片并带 cardId/expectedCardRevision。"
+        },
+        "documentId": {
+          "type": "string",
+          "description": "（可选，R4 A1-c）维护文档身份 handoff/documents/<documentId>.md。**只能用注入面或面板实际给出的 id**，绝不凭猜测编造。**R4 开启时**：文档存在 ⇒ 配 expectedRevision 做 CAS 更新；文档不存在 ⇒ 配 createDocument:true + eventId 做 create-only 首建。**没给 documentId 时**：R4 开启 ⇒ 用 maintenanceTopic 走确定性路径，两者都没给则明确拒绝（**不再新开旧时间戳快照**）；R4 关闭 ⇒ 仍走旧账本。"
+        },
+        "expectedRevision": {
+          "type": "string",
+          "description": "（可选，R4 A1-c）**配合 documentId** 的维护文档 CAS：面板或读侧给出的 sha256:<64hex> 当前 revision。与磁盘不一致 ⇒ 报 document-version-conflict 且不写。与白板卡片的 expectedRevision 是两个不同字段，不要混用。"
+        },
+        "createDocument": {
+          "type": "boolean",
+          "description": "（可选，R4 A1-c）**只在首建维护文档时传 true**：配合 documentId + eventId 在该 id 尚不存在时新建 handoff/documents/<id>.md。已存在则报 document-already-exists 且**绝不覆盖**（更新请用 expectedRevision）。缺 eventId ⇒ 拒绝，不猜最近事件。R4-off 传了也无效果（仍然拒绝写入维护文档）。"
+        },
+        "eventId": {
+          "type": "string",
+          "description": "（可选）显式事件 id（evt_xxxxxxxx），必须已存在且 active/paused，否则 event-id-unavailable。R4 A1-c 首建维护文档时必填（createDocument:true），不猜最近事件；旧 handoff/plan 也可指定检查点与镜像归属，缺省沿用最新 active / 新建回退。R4 既有文档更新沿用其 eventIds，不用此参数重绑。"
+        }
+      },
+      "required": [
+        "content",
+        "documentId"
+      ],
+      "additionalProperties": false,
+      "if": {
+        "required": [
+          "createDocument"
+        ],
+        "properties": {
+          "createDocument": {
+            "const": true
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "eventId"
+        ]
+      },
+      "else": {
+        "required": [
+          "expectedRevision"
+        ]
+      }
+    },
+    "resultSchema": {
+      "type": "string"
+    },
+    "source": {
+      "kind": "tool",
+      "key": "memory_note"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "board.events.append",
+    "title": "Append a checkpoint, constraint or observation",
+    "group": "board",
+    "scope": "session",
+    "access": "write",
+    "approval": "explicit-confirmation",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "pattern": "^evt_[0-9a-f]{8}$"
+        },
+        "expectedRevision": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "Revision from board.events.detail or the last successful event write."
+        },
+        "checkpoint": {
+          "type": "object",
+          "properties": {
+            "at": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 8640000000000000
+            },
+            "kind": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S",
+              "default": "log"
+            },
+            "text": {
+              "type": "string"
+            },
+            "sourceRef": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "panels": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "enum": [
+                      "state",
+                      "log",
+                      "deadend",
+                      "next",
+                      "userPercept",
+                      "commitment"
+                    ]
+                  },
+                  "text": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "text"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "idemKey": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S"
+            },
+            "goal": {
+              "type": "string",
+              "maxLength": 4000
+            },
+            "state": {
+              "type": "string",
+              "maxLength": 4000
+            },
+            "dead": {
+              "type": "string",
+              "maxLength": 4000
+            },
+            "next": {
+              "type": "string",
+              "maxLength": 4000
+            },
+            "quoteRef": {
+              "type": "string",
+              "maxLength": 4000
+            },
+            "quoteLine": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            "rel": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S",
+              "description": "Relative path to the source document."
+            },
+            "bytes": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^(?:sha256:)?[0-9a-f]{64}$"
+            },
+            "rawSha256": {
+              "type": "string",
+              "pattern": "^(?:sha256:)?[0-9a-f]{64}$"
+            },
+            "normalizedSha256": {
+              "type": "string",
+              "pattern": "^(?:sha256:)?[0-9a-f]{64}$"
+            },
+            "date": {
+              "type": "string"
+            },
+            "time": {
+              "type": "string"
+            }
+          },
+          "required": [],
+          "additionalProperties": false,
+          "minProperties": 1
+        },
+        "constraint": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "userPercept": {
+          "type": "object",
+          "properties": {
+            "at": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 8640000000000000
+            },
+            "sourceRef": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "minLength": 1,
+              "description": "For example, preference, state, unfinished-goal or authorResponse."
+            },
+            "stage": {
+              "enum": [
+                "retrieved",
+                "delivered",
+                "used",
+                "mentioned",
+                "accepted"
+              ],
+              "default": "mentioned"
+            },
+            "text": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "kind",
+            "text"
+          ],
+          "additionalProperties": false
+        },
+        "agentTrace": {
+          "type": "object",
+          "properties": {
+            "at": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 8640000000000000
+            },
+            "sourceRef": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "action": {
+              "type": "string"
+            },
+            "result": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "wasRefuted": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "action"
+          ],
+          "additionalProperties": false
+        },
+        "sharedGround": {
+          "type": "object",
+          "properties": {
+            "at": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 8640000000000000
+            },
+            "sourceRef": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "claim": {
+              "type": "string"
+            },
+            "confirmedBy": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "correction": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "required": [
+            "claim"
+          ],
+          "additionalProperties": false
+        },
+        "commitment": {
+          "type": "object",
+          "properties": {
+            "at": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 8640000000000000
+            },
+            "sourceRef": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "promise": {
+              "type": "string"
+            },
+            "boundary": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "state": {
+              "enum": [
+                "open",
+                "kept",
+                "dropped"
+              ],
+              "default": "open"
+            }
+          },
+          "required": [
+            "promise"
+          ],
+          "additionalProperties": false
+        },
+        "quoteRef": {
+          "type": "string",
+          "maxLength": 4000
+        },
+        "quoteLine": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "eventId",
+        "expectedRevision"
+      ],
+      "additionalProperties": false,
+      "anyOf": [
+        {
+          "required": [
+            "checkpoint"
+          ]
+        },
+        {
+          "required": [
+            "constraint"
+          ]
+        },
+        {
+          "required": [
+            "userPercept"
+          ]
+        },
+        {
+          "required": [
+            "agentTrace"
+          ]
+        },
+        {
+          "required": [
+            "sharedGround"
+          ]
+        },
+        {
+          "required": [
+            "commitment"
+          ]
+        }
+      ],
+      "dependentRequired": {
+        "quoteRef": [
+          "checkpoint"
+        ],
+        "quoteLine": [
+          "checkpoint"
+        ]
+      }
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "pattern": "^evt_[0-9a-f]{8}$"
+        },
+        "revision": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "eventId",
+        "revision",
+        "message"
+      ],
+      "additionalProperties": false
+    },
+    "source": {
+      "kind": "tool",
+      "key": "memory_event"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "board.events.close",
+    "title": "Close an event with its outcome",
+    "group": "board",
+    "scope": "session",
+    "access": "write",
+    "approval": "explicit-confirmation",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "pattern": "^evt_[0-9a-f]{8}$"
+        },
+        "expectedRevision": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "Revision from board.events.detail or the last successful event write."
+        },
+        "outcome": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        }
+      },
+      "required": [
+        "eventId",
+        "expectedRevision",
+        "outcome"
+      ],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "pattern": "^evt_[0-9a-f]{8}$"
+        },
+        "revision": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "eventId",
+        "revision",
+        "message"
+      ],
+      "additionalProperties": false
+    },
+    "source": {
+      "kind": "tool",
+      "key": "memory_event"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "board.events.create",
+    "title": "Create a whiteboard event",
+    "group": "board",
+    "scope": "session",
+    "access": "write",
+    "approval": "explicit-confirmation",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S",
+          "maxLength": 80
+        },
+        "summary": {
+          "type": "string",
+          "maxLength": 400
+        },
+        "sections": {
+          "type": "object",
+          "properties": {
+            "goal": {
+              "type": "string"
+            },
+            "doing": {
+              "type": "string"
+            },
+            "deadend": {
+              "type": "string"
+            },
+            "next": {
+              "type": "string"
+            }
+          },
+          "required": [],
+          "additionalProperties": false
+        },
+        "skillRef": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "startMs": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 8640000000000000
+        },
+        "endMs": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 8640000000000000
+        },
+        "members": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 500
+        },
+        "rationale": {
+          "type": "string",
+          "maxLength": 600
+        },
+        "kind": {
+          "enum": [
+            "ledger",
+            "planSnapshot",
+            "sessionTranscript",
+            "project",
+            "mechanical",
+            "unknown"
+          ]
+        },
+        "confidence": {
+          "enum": [
+            "high",
+            "medium",
+            "low",
+            "unknown"
+          ]
+        },
+        "outcomes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 50
+        },
+        "skills": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "constraints": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "ordinal": {
+          "type": "integer",
+          "minimum": -9007199254740991,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "pattern": "^evt_[0-9a-f]{8}$"
+        },
+        "revision": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "eventId",
+        "revision",
+        "message"
+      ],
+      "additionalProperties": false
+    },
+    "source": {
+      "kind": "tool",
+      "key": "memory_event"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "board.events.detail",
+    "title": "Event detail and checkpoint sources",
+    "group": "board",
+    "scope": "workspace",
+    "access": "read",
+    "approval": "none",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "type": "boolean"
+        },
+        "event": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": true
+        },
+        "revision": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "_resolved": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": true
+        }
+      },
+      "required": [
+        "ok",
+        "event",
+        "revision"
+      ],
+      "additionalProperties": false
+    },
+    "source": {
+      "kind": "route",
+      "key": "event-detail",
+      "method": "GET",
+      "path": "/api/dsh-auto-memory/event-detail"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "board.events.list",
+    "title": "Events, timeline and checkpoints",
+    "group": "board",
+    "scope": "workspace",
+    "access": "read",
+    "approval": "none",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "cursor": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 200
+        },
+        "all": {
+          "enum": [
+            0,
+            1
+          ]
+        },
+        "status": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "type": "boolean"
+        },
+        "events": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {},
+            "required": [],
+            "additionalProperties": true
+          }
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "route",
+      "key": "event-list",
+      "method": "GET",
+      "path": "/api/dsh-auto-memory/event-list"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "board.events.rename",
+    "title": "Rename an event",
+    "group": "board",
+    "scope": "session",
+    "access": "write",
+    "approval": "explicit-confirmation",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "pattern": "^evt_[0-9a-f]{8}$"
+        },
+        "expectedRevision": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "Revision from board.events.detail or the last successful event write."
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S",
+          "maxLength": 80
+        }
+      },
+      "required": [
+        "eventId",
+        "expectedRevision",
+        "name"
+      ],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "pattern": "^evt_[0-9a-f]{8}$"
+        },
+        "revision": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "eventId",
+        "revision",
+        "message"
+      ],
+      "additionalProperties": false
+    },
+    "source": {
+      "kind": "tool",
+      "key": "memory_event"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "board.events.set",
+    "title": "Edit the current revision of an event",
+    "group": "board",
+    "scope": "session",
+    "access": "write",
+    "approval": "explicit-confirmation",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "pattern": "^evt_[0-9a-f]{8}$"
+        },
+        "expectedRevision": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "Revision from board.events.detail or the last successful event write."
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S",
+          "maxLength": 80
+        },
+        "summary": {
+          "type": "string",
+          "maxLength": 400
+        },
+        "sections": {
+          "type": "object",
+          "properties": {
+            "goal": {
+              "type": "string"
+            },
+            "doing": {
+              "type": "string"
+            },
+            "deadend": {
+              "type": "string"
+            },
+            "next": {
+              "type": "string"
+            }
+          },
+          "required": [],
+          "additionalProperties": false,
+          "minProperties": 1
+        },
+        "skillRef": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "startMs": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 8640000000000000
+        },
+        "endMs": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 8640000000000000
+        },
+        "members": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 500
+        },
+        "rationale": {
+          "type": "string",
+          "maxLength": 600
+        },
+        "kind": {
+          "enum": [
+            "ledger",
+            "planSnapshot",
+            "sessionTranscript",
+            "project",
+            "mechanical",
+            "unknown"
+          ]
+        },
+        "confidence": {
+          "enum": [
+            "high",
+            "medium",
+            "low",
+            "unknown"
+          ]
+        },
+        "outcomes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 50
+        },
+        "skills": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "outcome": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "status": {
+          "enum": [
+            "active",
+            "paused",
+            "closed"
+          ]
+        },
+        "pausedReason": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "eventId",
+        "expectedRevision"
+      ],
+      "additionalProperties": false,
+      "minProperties": 3,
+      "allOf": [
+        {
+          "if": {
+            "required": [
+              "status"
+            ],
+            "properties": {
+              "status": {
+                "const": "paused"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "pausedReason": {
+                "type": "string",
+                "minLength": 1,
+                "pattern": "\\S"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "status"
+            ],
+            "properties": {
+              "status": {
+                "const": "active"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "pausedReason": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "status"
+            ],
+            "properties": {
+              "status": {
+                "const": "closed"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "outcome": {
+                "type": "string",
+                "minLength": 1,
+                "pattern": "\\S"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "pattern": "^evt_[0-9a-f]{8}$"
+        },
+        "revision": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "eventId",
+        "revision",
+        "message"
+      ],
+      "additionalProperties": false
+    },
+    "source": {
+      "kind": "tool",
+      "key": "memory_event"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "board.events.unarchived",
+    "title": "Unarchived handoff records",
+    "group": "board",
+    "scope": "workspace",
+    "access": "read",
+    "approval": "none",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "cursor": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 200
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "route",
+      "key": "event-unarchived",
+      "method": "GET",
+      "path": "/api/dsh-auto-memory/event-unarchived"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "board.kanban",
+    "title": "Whiteboard lanes",
+    "group": "board",
+    "scope": "workspace",
+    "access": "read",
+    "approval": "none",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "includeArchive": {
+          "enum": [
+            0,
+            1
+          ]
+        },
+        "foldDays": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 3650
+        },
+        "actor": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "route",
+      "key": "kanban-board",
+      "method": "GET",
+      "path": "/api/dsh-auto-memory/kanban-board"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "board.ledger",
+    "title": "Plan and handoff documents",
+    "group": "board",
+    "scope": "workspace",
+    "access": "read",
+    "approval": "none",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "file": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "route",
+      "key": "handoff-state",
+      "method": "GET",
+      "path": "/api/dsh-auto-memory/handoff-state"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "board.plan.archive",
+    "title": "Archive the selected workspace plan",
+    "group": "board",
+    "scope": "session",
+    "access": "write",
+    "approval": "explicit-confirmation",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "route",
+      "key": "upgrade-archive-plan",
+      "method": "POST",
+      "path": "/api/dsh-auto-memory/upgrade-archive-plan"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "board.plan.update",
+    "title": "Update a plan at its current revision",
+    "group": "board",
+    "scope": "session",
+    "access": "write",
+    "approval": "explicit-confirmation",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "content": {
+          "type": "string",
+          "description": "笔记内容。kind=note/handoff 必填；kind=plan 且 fromEvents=true 时**可省略**（正文由事件库渲染）。kind=plan 手写时必须给完整新全貌并带 expectedRevision；单卡更新给完整卡片并带 cardId/expectedCardRevision。"
+        },
+        "expectedRevision": {
+          "type": "string",
+          "description": "（可选，R4 A1-c）**配合 documentId** 的维护文档 CAS：面板或读侧给出的 sha256:<64hex> 当前 revision。与磁盘不一致 ⇒ 报 document-version-conflict 且不写。与白板卡片的 expectedRevision 是两个不同字段，不要混用。"
+        },
+        "fromEvents": {
+          "type": "boolean",
+          "description": "（可选，仅 kind=plan）**推荐**：由当前工作区的事件库**自动渲染**白板正文，不需要手写 content。"
+        },
+        "archivedIds": {
+          "type": "array",
+          "description": "（可选，仅 kind=plan 有意义）要**显式归档**的卡片 id 列表（mem_<32hex>）。用于白板重写时有意移除某张卡：列进来即视为\"合法消失（有留痕）\"，不会被丢卡检查拦下。**只在你确实要移除该卡时传**；顺手漏抄卡片不要用它掩盖——那属于内容丢失，应改回原样带回。",
+          "items": {
+            "type": "string"
+          }
+        },
+        "cardId": {
+          "type": "string",
+          "description": "plan 可选条目更新：content 仅提供这一张完整卡（含原锚点），其余卡片保持原文。"
+        },
+        "expectedCardRevision": {
+          "type": "string",
+          "description": "cardId 更新必填：memory_read(kind=plan) cards 中该卡片 revision。"
+        }
+      },
+      "required": [],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "required": [
+              "cardId"
+            ]
+          },
+          "then": {
+            "required": [
+              "expectedCardRevision",
+              "content"
+            ]
+          },
+          "else": {
+            "required": [
+              "expectedRevision"
+            ]
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "fromEvents"
+            ],
+            "properties": {
+              "fromEvents": {
+                "const": true
+              }
+            }
+          },
+          "else": {
+            "required": [
+              "content"
+            ]
+          }
+        }
+      ]
+    },
+    "resultSchema": {
+      "type": "string"
+    },
+    "source": {
+      "kind": "tool",
+      "key": "memory_note"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "external.lifecycle",
+    "title": "Receive a bound host lifecycle event",
+    "group": "harness",
+    "scope": "session",
+    "access": "read",
+    "approval": "none",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "harness": {
+          "enum": [
+            "codex",
+            "zcode",
+            "claude",
+            "kimi",
+            "cloud-code",
+            "antigravity",
+            "opencode"
+          ]
+        },
+        "name": {
+          "enum": [
+            "SessionStart",
+            "UserPromptSubmit",
+            "Stop",
+            "SessionEnd",
+            "PreCompact",
+            "PostCompact",
+            "PreInvocation"
+          ]
+        },
+        "sessionId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200,
+          "pattern": "^[a-zA-Z0-9_.:-]+$"
+        },
+        "turnId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200,
+          "pattern": "^[a-zA-Z0-9_.:-]+$"
+        },
+        "source": {
+          "enum": [
+            "startup",
+            "resume",
+            "clear",
+            "compact",
+            "fork"
+          ]
+        },
+        "trigger": {
+          "enum": [
+            "manual",
+            "auto"
+          ]
+        }
+      },
+      "required": [
+        "harness",
+        "name",
+        "sessionId"
+      ],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "enum": [
+            "accepted",
+            "duplicate",
+            "out-of-order",
+            "unavailable"
+          ]
+        },
+        "context": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "status"
+      ],
+      "additionalProperties": false
+    },
+    "source": {
+      "kind": "service",
+      "key": "observeExternal"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "jobs.engine.cancel",
+    "title": "Cancel engine setup",
+    "group": "jobs",
+    "scope": "instance",
+    "access": "write",
+    "approval": "explicit-confirmation",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "route",
+      "key": "py-setup-cancel",
+      "method": "POST",
+      "path": "/api/dsh-auto-memory/python-setup/cancel"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "jobs.engine.configure",
+    "title": "Repair the engine configuration",
+    "group": "jobs",
+    "scope": "instance",
+    "access": "write",
+    "approval": "explicit-confirmation",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "route",
+      "key": "py-setup-config",
+      "method": "POST",
+      "path": "/api/dsh-auto-memory/python-setup/config"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "jobs.engine.dependencies",
+    "title": "Install engine dependencies",
+    "group": "jobs",
+    "scope": "instance",
+    "access": "write",
+    "approval": "explicit-confirmation",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "gpu": {
+          "type": "boolean"
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "route",
+      "key": "py-setup-deps",
+      "method": "POST",
+      "path": "/api/dsh-auto-memory/python-setup/deps"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "jobs.engine.detect",
+    "title": "Detect the Python engine",
+    "group": "jobs",
+    "scope": "instance",
+    "access": "write",
+    "approval": "explicit-confirmation",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "route",
+      "key": "py-setup-detect",
+      "method": "POST",
+      "path": "/api/dsh-auto-memory/python-setup/detect"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "jobs.engine.download.cancel",
+    "title": "Cancel the semantic asset download",
+    "group": "jobs",
+    "scope": "instance",
+    "access": "write",
+    "approval": "explicit-confirmation",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "route",
+      "key": "semantic-download",
+      "method": "POST",
+      "path": "/api/dsh-auto-memory/semantic-download"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "jobs.engine.download.start",
+    "title": "Download semantic engine assets",
+    "group": "jobs",
+    "scope": "instance",
+    "access": "write",
+    "approval": "explicit-confirmation",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "mirror": {
+          "enum": [
+            "auto",
+            "cn",
+            "intl"
+          ]
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "route",
+      "key": "semantic-download",
+      "method": "POST",
+      "path": "/api/dsh-auto-memory/semantic-download"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "jobs.engine.model",
+    "title": "Fetch engine model assets",
+    "group": "jobs",
+    "scope": "instance",
+    "access": "write",
+    "approval": "explicit-confirmation",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "route",
+      "key": "py-setup-model",
+      "method": "POST",
+      "path": "/api/dsh-auto-memory/python-setup/model"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "jobs.engine.status",
+    "title": "Engine setup progress",
+    "group": "jobs",
+    "scope": "instance",
+    "access": "read",
+    "approval": "none",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "route",
+      "key": "py-setup-status",
+      "method": "GET",
+      "path": "/api/dsh-auto-memory/python-setup/status"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "jobs.engine.uninstall",
+    "title": "Uninstall the Python engine",
+    "group": "jobs",
+    "scope": "instance",
+    "access": "write",
+    "approval": "explicit-confirmation",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "route",
+      "key": "py-setup-uninstall",
+      "method": "POST",
+      "path": "/api/dsh-auto-memory/python-setup/uninstall"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "jobs.engine.venv",
+    "title": "Create the engine environment",
+    "group": "jobs",
+    "scope": "instance",
+    "access": "write",
+    "approval": "explicit-confirmation",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "route",
+      "key": "py-setup-venv",
+      "method": "POST",
+      "path": "/api/dsh-auto-memory/python-setup/venv"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "jobs.get",
+    "title": "Read a background job receipt",
+    "group": "jobs",
+    "scope": "workspace",
+    "access": "read",
+    "approval": "none",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "service",
+      "key": "job"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "jobs.maintain.start",
+    "title": "Distill and archive old logs",
+    "group": "jobs",
+    "scope": "session",
+    "access": "write",
+    "approval": "explicit-confirmation",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "days": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 3650
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "tool",
+      "key": "memory_maintain"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "jobs.upgrade.snooze",
+    "title": "Snooze the selected workspace upgrade",
+    "group": "jobs",
+    "scope": "session",
+    "access": "write",
+    "approval": "explicit-confirmation",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "route",
+      "key": "upgrade-snooze",
+      "method": "POST",
+      "path": "/api/dsh-auto-memory/upgrade-snooze"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "jobs.upgrade.start",
+    "title": "Start memory upgrade for a reviewed scope",
+    "group": "jobs",
+    "scope": "session",
+    "access": "write",
+    "approval": "explicit-confirmation",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "model": {
+          "type": "string",
+          "minLength": 1
+        },
+        "effort": {
+          "type": "string",
+          "minLength": 1
+        },
+        "scope": {
+          "enum": [
+            "current",
+            "subset",
+            "all"
+          ],
+          "default": "current"
+        },
+        "workspaceKeys": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 1,
+          "maxItems": 200,
+          "uniqueItems": true
+        }
+      },
+      "required": [],
+      "additionalProperties": false,
+      "if": {
+        "required": [
+          "scope"
+        ],
+        "properties": {
+          "scope": {
+            "const": "subset"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "workspaceKeys"
+        ]
+      },
+      "else": {
+        "not": {
+          "required": [
+            "workspaceKeys"
+          ]
+        }
+      }
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "route",
+      "key": "memory-upgrade",
+      "method": "POST",
+      "path": "/api/dsh-auto-memory/memory-upgrade"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "jobs.upgrade.status",
+    "title": "Upgrade progress",
+    "group": "jobs",
+    "scope": "session",
+    "access": "read",
+    "approval": "none",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "route",
+      "key": "upgrade-status",
+      "method": "GET",
+      "path": "/api/dsh-auto-memory/upgrade-status"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "jobs.upgrade.workspaces",
+    "title": "List workspace upgrade scope and cost",
+    "group": "jobs",
+    "scope": "session",
+    "access": "read",
+    "approval": "none",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "effort": {
+          "type": "string",
+          "minLength": 1
+        },
+        "scope": {
+          "enum": [
+            "all",
+            "current",
+            "subset"
+          ]
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "route",
+      "key": "upgrade-workspaces",
+      "method": "GET",
+      "path": "/api/dsh-auto-memory/upgrade-workspaces"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "jobs.workbench.setup",
+    "title": "Create or repair the memory workbench",
+    "group": "jobs",
+    "scope": "instance",
+    "access": "write",
+    "approval": "explicit-confirmation",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "route",
+      "key": "workbench",
+      "method": "POST",
+      "path": "/api/dsh-auto-memory/workbench"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "jobs.workbench.status",
+    "title": "Memory workbench status",
+    "group": "jobs",
+    "scope": "instance",
+    "access": "read",
+    "approval": "none",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "route",
+      "key": "workbench",
+      "method": "POST",
+      "path": "/api/dsh-auto-memory/workbench"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "memory.brief",
+    "title": "Global brief and watched sources",
+    "group": "memory",
+    "scope": "session",
+    "access": "read",
+    "approval": "none",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "route",
+      "key": "global-brief",
+      "method": "GET",
+      "path": "/api/dsh-auto-memory/global-brief"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "memory.calendar",
+    "title": "Memory calendar",
+    "group": "memory",
+    "scope": "instance",
+    "access": "read",
+    "approval": "none",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {
+        "entries": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {},
+            "required": [],
+            "additionalProperties": true
+          }
+        },
+        "path": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "entries",
+        "path"
+      ],
+      "additionalProperties": false
+    },
+    "source": {
+      "kind": "service",
+      "key": "calendarEntriesPre"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "memory.calendar.add",
+    "title": "Add a calendar entry",
+    "group": "memory",
+    "scope": "instance",
+    "access": "write",
+    "approval": "explicit-confirmation",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "date": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+        },
+        "time": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "note": {
+          "type": "string"
+        },
+        "quadrant": {
+          "enum": [
+            "重要紧急",
+            "重要不紧急",
+            "紧急不重要",
+            "不重要不紧急",
+            "未分类"
+          ]
+        }
+      },
+      "required": [
+        "date",
+        "title"
+      ],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "route",
+      "key": "calendar",
+      "method": "POST",
+      "path": "/api/dsh-auto-memory/calendar"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "memory.calendar.done",
+    "title": "Complete a calendar entry",
+    "group": "memory",
+    "scope": "instance",
+    "access": "write",
+    "approval": "explicit-confirmation",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "date": {
+          "type": "string",
+          "minLength": 1
+        },
+        "time": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [],
+      "additionalProperties": false,
+      "anyOf": [
+        {
+          "required": [
+            "id"
+          ]
+        },
+        {
+          "required": [
+            "date",
+            "time",
+            "title"
+          ]
+        }
+      ]
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "route",
+      "key": "calendar",
+      "method": "POST",
+      "path": "/api/dsh-auto-memory/calendar"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "memory.calendar.remove",
+    "title": "Remove a calendar entry",
+    "group": "memory",
+    "scope": "instance",
+    "access": "write",
+    "approval": "explicit-confirmation",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "date": {
+          "type": "string",
+          "minLength": 1
+        },
+        "time": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [],
+      "additionalProperties": false,
+      "anyOf": [
+        {
+          "required": [
+            "id"
+          ]
+        },
+        {
+          "required": [
+            "date",
+            "time",
+            "title"
+          ]
+        }
+      ]
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "route",
+      "key": "calendar",
+      "method": "POST",
+      "path": "/api/dsh-auto-memory/calendar"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "memory.conflicts",
+    "title": "Unresolved fact conflicts",
+    "group": "memory",
+    "scope": "instance",
+    "access": "read",
+    "approval": "none",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "route",
+      "key": "facts-conflicts",
+      "method": "GET",
+      "path": "/api/dsh-auto-memory/facts-conflicts"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "memory.conflicts.resolve",
+    "title": "Resolve a fact conflict",
+    "group": "memory",
+    "scope": "instance",
+    "access": "write",
+    "approval": "explicit-confirmation",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "conflictId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "choice": {
+          "enum": [
+            "left",
+            "right"
+          ]
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "conflictId",
+        "choice"
+      ],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "route",
+      "key": "facts-conflicts",
+      "method": "POST",
+      "path": "/api/dsh-auto-memory/facts-conflicts"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "memory.delivery.preview",
+    "title": "Delivery policy preview",
+    "group": "memory",
+    "scope": "instance",
+    "access": "read",
+    "approval": "none",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "policy": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": true
+        },
+        "tier": {
+          "type": "string",
+          "minLength": 1
+        },
+        "isHuman": {
+          "type": "boolean"
+        },
+        "isFull": {
+          "type": "boolean"
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "route",
+      "key": "deliveryPreview",
+      "method": "POST",
+      "path": "/api/dsh-auto-memory/delivery-preview"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "memory.delivery.receipt",
+    "title": "Last observed delivery for the selected session",
+    "group": "memory",
+    "scope": "session",
+    "access": "read",
+    "approval": "none",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "service",
+      "key": "status"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "memory.external",
+    "title": "External memory sources",
+    "group": "memory",
+    "scope": "session",
+    "access": "read",
+    "approval": "none",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "route",
+      "key": "external",
+      "method": "GET",
+      "path": "/api/dsh-auto-memory/external"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "memory.external.import",
+    "title": "Import an external source",
+    "group": "memory",
+    "scope": "session",
+    "access": "write",
+    "approval": "explicit-confirmation",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "source": {
+          "type": "string",
+          "minLength": 1
+        },
+        "target": {
+          "enum": [
+            "user",
+            "project"
+          ]
+        }
+      },
+      "required": [
+        "source",
+        "target"
+      ],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "route",
+      "key": "external-import",
+      "method": "POST",
+      "path": "/api/dsh-auto-memory/external-import"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "memory.external.remove",
+    "title": "Remove an external import",
+    "group": "memory",
+    "scope": "session",
+    "access": "write",
+    "approval": "explicit-confirmation",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "source": {
+          "type": "string",
+          "minLength": 1
+        },
+        "target": {
+          "enum": [
+            "user",
+            "project"
+          ]
+        }
+      },
+      "required": [
+        "source",
+        "target"
+      ],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "route",
+      "key": "external-remove",
+      "method": "POST",
+      "path": "/api/dsh-auto-memory/external-remove"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "memory.external.source",
+    "title": "Read an external source preview",
+    "group": "memory",
+    "scope": "optional-session",
+    "access": "read",
+    "approval": "none",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "source": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "source"
+      ],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "route",
+      "key": "external-view",
+      "method": "GET",
+      "path": "/api/dsh-auto-memory/external-view"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "memory.greet",
+    "title": "Generate the workspace greeting",
+    "group": "memory",
+    "scope": "session",
+    "access": "write",
+    "approval": "explicit-confirmation",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "route",
+      "key": "greet",
+      "method": "POST",
+      "path": "/api/dsh-auto-memory/greet"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "memory.hub",
+    "title": "Memory hub and pending reviews",
+    "group": "memory",
+    "scope": "instance",
+    "access": "read",
+    "approval": "none",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "route",
+      "key": "memory-hub",
+      "method": "GET",
+      "path": "/api/dsh-auto-memory/memory-hub"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "memory.hub.review",
+    "title": "Review a skill in the memory hub",
+    "group": "memory",
+    "scope": "session",
+    "access": "write",
+    "approval": "explicit-confirmation",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "procedureId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "action": {
+          "enum": [
+            "approve",
+            "promote",
+            "force-promote",
+            "activate",
+            "deprecate",
+            "pin"
+          ]
+        },
+        "v": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "procedureId",
+        "action"
+      ],
+      "additionalProperties": false,
+      "if": {
+        "properties": {
+          "action": {
+            "const": "pin"
+          }
+        }
+      },
+      "else": {
+        "not": {
+          "required": [
+            "v"
+          ]
+        }
+      }
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "route",
+      "key": "memory-hub",
+      "method": "POST",
+      "path": "/api/dsh-auto-memory/memory-hub"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "memory.list",
+    "title": "Project notes, logs and reflections",
+    "group": "memory",
+    "scope": "workspace",
+    "access": "read",
+    "approval": "none",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {
+        "ws": {
+          "type": "string"
+        },
+        "wsBound": {
+          "type": "boolean"
+        },
+        "logs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {},
+            "required": [],
+            "additionalProperties": true
+          }
+        },
+        "reflections": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {},
+            "required": [],
+            "additionalProperties": true
+          }
+        }
+      },
+      "required": [
+        "ws",
+        "wsBound",
+        "logs",
+        "reflections"
+      ],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "route",
+      "key": "list",
+      "method": "GET",
+      "path": "/api/dsh-auto-memory/list"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "memory.log.preflight",
+    "title": "Preview daily log event attribution",
+    "group": "memory",
+    "scope": "session",
+    "access": "read",
+    "approval": "none",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "note": {
+          "type": "string",
+          "description": "简短条目:一句话概括做了什么、结果如何。",
+          "minLength": 1,
+          "pattern": "\\S",
+          "maxLength": 2000
+        },
+        "kind": {
+          "type": "string",
+          "description": "★P6B:条目性质标记(缺省 fact)。rule=用户规则/约定;preference=偏好;todo=待办;fact=事实记录。是规则或用户明确约定的条目请传 kind=rule——它会被规则层识别为必须遵守的约束。纯标记、零额外 LLM 调用。",
+          "enum": [
+            "rule",
+            "preference",
+            "fact",
+            "todo"
+          ]
+        },
+        "date": {
+          "type": "string",
+          "description": "日志日期 YYYY-MM-DD,**缺省今天**。★可补写过去某天(如补记昨天的工作)——会写进那一天的文件,不会覆盖同文件已有内容(append-only)。格式非法时静默回退到今天。",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+        },
+        "eventId": {
+          "type": "string",
+          "description": "（可选）本条日志归属的事件 id（evt_xxx）。**已知归属就必须传**——这是主路径：注入面的事件卡/目录里带 #evt_xxx；不传则由标识层/词袋层自动判定并在回执说明；传了但不存在/已关闭直接报错。",
+          "pattern": "^evt_[a-f0-9]{8}$"
+        }
+      },
+      "required": [
+        "note"
+      ],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "string"
+    },
+    "source": {
+      "kind": "tool",
+      "key": "memory_log"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "memory.migration.export",
+    "title": "Export selected project memory",
+    "group": "memory",
+    "scope": "session",
+    "access": "write",
+    "approval": "explicit-confirmation",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "outPath": {
+          "type": "string",
+          "minLength": 1
+        },
+        "compress": {
+          "type": "boolean"
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "route",
+      "key": "migrate-export",
+      "method": "POST",
+      "path": "/api/dsh-auto-memory/migrate-export"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "memory.migration.import",
+    "title": "Apply a checked migration package",
+    "group": "memory",
+    "scope": "session",
+    "access": "write",
+    "approval": "explicit-confirmation",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "packPath": {
+          "type": "string",
+          "minLength": 1
+        },
+        "onConflict": {
+          "enum": [
+            "keep",
+            "overwrite",
+            "rename"
+          ]
+        },
+        "rewriteBody": {
+          "type": "boolean"
+        },
+        "allowUnprovenUserFiles": {
+          "type": "boolean"
+        },
+        "previewToken": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "packPath",
+        "previewToken"
+      ],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "route",
+      "key": "migrate-import",
+      "method": "POST",
+      "path": "/api/dsh-auto-memory/migrate-import"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "memory.migration.inspect",
+    "title": "Inspect a migration package",
+    "group": "memory",
+    "scope": "session",
+    "access": "read",
+    "approval": "none",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "packPath": {
+          "type": "string",
+          "minLength": 1
+        },
+        "onConflict": {
+          "enum": [
+            "keep",
+            "overwrite",
+            "rename"
+          ]
+        },
+        "rewriteBody": {
+          "type": "boolean"
+        },
+        "allowUnprovenUserFiles": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "packPath"
+      ],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "route",
+      "key": "migrate-inspect",
+      "method": "POST",
+      "path": "/api/dsh-auto-memory/migrate-inspect"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "memory.migration.stage",
+    "title": "Stage and validate a local migration package",
+    "group": "memory",
+    "scope": "instance",
+    "access": "write",
+    "approval": "explicit-confirmation",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "packPath": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "packPath"
+      ],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "type": "boolean"
+        },
+        "path": {
+          "type": "string"
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "ok",
+        "path",
+        "bytes"
+      ],
+      "additionalProperties": false
+    },
+    "source": {
+      "kind": "service",
+      "key": "migrateUploadPre"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "memory.note",
+    "title": "Append project note",
+    "group": "memory",
+    "scope": "workspace",
+    "access": "write",
+    "approval": "explicit-confirmation",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "content": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 8000
+        },
+        "expectedNotesPath": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "content",
+        "expectedNotesPath"
+      ],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "route",
+      "key": "note",
+      "method": "POST",
+      "path": "/api/dsh-auto-memory/note"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "memory.note.replace",
+    "title": "Replace the full project note at its current revision",
+    "group": "memory",
+    "scope": "session",
+    "access": "write",
+    "approval": "explicit-confirmation",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "expectedNotesPath": {
+          "type": "string",
+          "minLength": 1
+        },
+        "expectedRevision": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "content": {
+          "type": "string",
+          "description": "笔记内容。kind=note/handoff 必填；kind=plan 且 fromEvents=true 时**可省略**（正文由事件库渲染）。kind=plan 手写时必须给完整新全貌并带 expectedRevision；单卡更新给完整卡片并带 cardId/expectedCardRevision。",
+          "minLength": 1,
+          "pattern": "\\S",
+          "maxLength": 200000
+        }
+      },
+      "required": [
+        "content",
+        "expectedNotesPath",
+        "expectedRevision"
+      ],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "revision": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "changed": {
+          "type": "boolean"
+        },
+        "warning": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "path",
+        "revision",
+        "changed"
+      ],
+      "additionalProperties": false
+    },
+    "source": {
+      "kind": "tool",
+      "key": "memory_note"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "memory.note.restore",
+    "title": "Restore project note entries to current status",
+    "group": "memory",
+    "scope": "session",
+    "access": "write",
+    "approval": "explicit-confirmation",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "expectedNotesPath": {
+          "type": "string",
+          "minLength": 1
+        },
+        "expectedRevision": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "restore": {
+          "type": "array",
+          "description": "（可选）**撤销通道**：把指定 memoryId 的状态改回 current（移除状态行）。用于纠正标错的 superseded/retracted。",
+          "items": {
+            "type": "string",
+            "pattern": "^mem_[a-f0-9]{32}$"
+          },
+          "minItems": 1,
+          "maxItems": 50,
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "restore",
+        "expectedNotesPath",
+        "expectedRevision"
+      ],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "revision": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "changed": {
+          "type": "boolean"
+        },
+        "warning": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "path",
+        "revision",
+        "changed"
+      ],
+      "additionalProperties": false
+    },
+    "source": {
+      "kind": "tool",
+      "key": "memory_note"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "memory.note.retract",
+    "title": "Mark project note entries as retracted",
+    "group": "memory",
+    "scope": "session",
+    "access": "write",
+    "approval": "explicit-confirmation",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "expectedNotesPath": {
+          "type": "string",
+          "minLength": 1
+        },
+        "expectedRevision": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "retract": {
+          "type": "array",
+          "description": "（可选）要标为 **retracted（撤回）** 的旧条目 memoryId 列表（mem_<32hex>）。**与 supersedes 的分工**：supersedes = 被**更新的结论取代**（有后继结论，可追 mem_id）；**retract = 当时就做错了、直接撤回**（无后继，\"错误本身\"就是教训）。用户裁定「retracted 不是垃圾，是教训，不过滤只备注」⇒ 检索仍会返回它并标 ⚠已撤回。**强烈建议同时传 retractReason 说明错在哪**。仅在你确知标错的是哪条时传。",
+          "items": {
+            "type": "string",
+            "pattern": "^mem_[a-f0-9]{32}$"
+          },
+          "minItems": 1,
+          "maxItems": 50,
+          "uniqueItems": true
+        },
+        "retractReason": {
+          "type": "string",
+          "description": "（可选，配合 retract）撤回原因，一行内说明**错在哪**，上限 120 字符。会写成 `reason=\"…\"` 附在状态行上，供检索时显示。",
+          "minLength": 1,
+          "pattern": "^[^\\r\\n]+$",
+          "maxLength": 120
+        }
+      },
+      "required": [
+        "retract",
+        "expectedNotesPath",
+        "expectedRevision"
+      ],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "revision": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "changed": {
+          "type": "boolean"
+        },
+        "warning": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "path",
+        "revision",
+        "changed"
+      ],
+      "additionalProperties": false
+    },
+    "source": {
+      "kind": "tool",
+      "key": "memory_note"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "memory.note.supersede",
+    "title": "Mark project note entries as superseded",
+    "group": "memory",
+    "scope": "session",
+    "access": "write",
+    "approval": "explicit-confirmation",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "expectedNotesPath": {
+          "type": "string",
+          "minLength": 1
+        },
+        "expectedRevision": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "successorId": {
+          "type": "string",
+          "pattern": "^mem_[a-f0-9]{32}$"
+        },
+        "supersedes": {
+          "type": "array",
+          "description": "（可选）要标为 superseded 的旧条目 memoryId 列表（mem_<32hex>）。**仅在你明确知道被取代的是哪条时传**；不确定就不要传。会在旧条目正文末尾追加一行 `<!-- dsh-status: superseded by=<新条目id> -->`。",
+          "items": {
+            "type": "string",
+            "pattern": "^mem_[a-f0-9]{32}$"
+          },
+          "minItems": 1,
+          "maxItems": 50,
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "supersedes",
+        "successorId",
+        "expectedNotesPath",
+        "expectedRevision"
+      ],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "revision": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "changed": {
+          "type": "boolean"
+        },
+        "warning": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "path",
+        "revision",
+        "changed"
+      ],
+      "additionalProperties": false
+    },
+    "source": {
+      "kind": "tool",
+      "key": "memory_note"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "memory.notices",
+    "title": "Plugin notices",
+    "group": "memory",
+    "scope": "instance",
+    "access": "read",
+    "approval": "none",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "route",
+      "key": "notices",
+      "method": "GET",
+      "path": "/api/dsh-auto-memory/notices"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "memory.overview",
+    "title": "Project memory overview",
+    "group": "memory",
+    "scope": "workspace",
+    "access": "read",
+    "approval": "none",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "service",
+      "key": "snapshot"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "memory.plan.expand",
+    "title": "Expand whiteboard entries by tag",
+    "group": "memory",
+    "scope": "session",
+    "access": "read",
+    "approval": "none",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "tag": {
+          "type": "string",
+          "description": "要展开的 tag,如 type:dead-end 或 topic:主题名。",
+          "minLength": 1,
+          "pattern": "\\S",
+          "maxLength": 512
+        },
+        "limit": {
+          "type": "integer",
+          "description": "返回条数上限,缺省 10,硬帽 20。",
+          "minimum": 1,
+          "maximum": 20
+        }
+      },
+      "required": [
+        "tag"
+      ],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "tool",
+      "key": "memory_expand"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "memory.plan.trace",
+    "title": "Trace a whiteboard entry and its versions",
+    "group": "memory",
+    "scope": "session",
+    "access": "read",
+    "approval": "none",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "条目 id(index.json 里的条目标识)。",
+          "minLength": 1,
+          "pattern": "\\S",
+          "maxLength": 256
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "tool",
+      "key": "memory_trace"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "memory.read",
+    "title": "Read named memory and archive",
+    "group": "memory",
+    "scope": "workspace",
+    "access": "read",
+    "approval": "none",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "description": "读取类型: log=某日日志, reflection=某日反思, user=用户级记忆, notes=项目笔记, calendar=日历, plan=白板, summary=最新一条已生成的全局时段总结, **archive=已归档的旧日志(30 天前的日志原文,冷存储,不在常规检索面,需显式取)**。",
+          "enum": [
+            "log",
+            "reflection",
+            "user",
+            "notes",
+            "calendar",
+            "plan",
+            "archive",
+            "summary"
+          ]
+        },
+        "name": {
+          "type": "string",
+          "description": "仅 kind=archive:归档文件名(如 2026-01-01.md)。**缺省=列出全部归档文件**;给了=返回该文件全文。可用 memory_recall(scope=\"archive\") 先按关键词定位文件名。"
+        },
+        "date": {
+          "type": "string",
+          "description": "日期 YYYY-MM-DD(仅 log/reflection 需要,缺省今天)。"
+        }
+      },
+      "required": [
+        "kind"
+      ],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "string"
+    },
+    "source": {
+      "kind": "tool",
+      "key": "memory_read"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "memory.recall",
+    "title": "Search memory and sources",
+    "group": "memory",
+    "scope": "workspace",
+    "access": "read",
+    "approval": "none",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "query": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 50
+        },
+        "scope": {
+          "enum": [
+            "current",
+            "all",
+            "archive",
+            "handoff"
+          ]
+        },
+        "format": {
+          "enum": [
+            "full",
+            "l0"
+          ]
+        }
+      },
+      "required": [
+        "query"
+      ],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "type": "string"
+        },
+        "hits": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {},
+            "required": [],
+            "additionalProperties": true
+          }
+        }
+      },
+      "required": [
+        "result",
+        "hits"
+      ],
+      "additionalProperties": false
+    },
+    "source": {
+      "kind": "route",
+      "key": "recall",
+      "method": "POST",
+      "path": "/api/dsh-auto-memory/recall"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "memory.recall.expand",
+    "title": "Read a recalled memory record by ID",
+    "group": "memory",
+    "scope": "session",
+    "access": "read",
+    "approval": "none",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "expand": {
+          "type": "string",
+          "description": "按记忆 id(mem_ + 32 hex)或事件 id(evt_ + 8 hex)展开；事件可配合同值 eventId 与 checkpointIndex/idemKey 精确下钻。★**提供 expand 时 query 只作占位、检索语义被忽略**(仍必填,随便填该 id 即可);这是**两段式用法**:先用默认 l0 拿到候选列表与 id,再对感兴趣的那条 expand 取全文,避免一次性灌入大量原文。",
+          "pattern": "^mem_[a-f0-9]{32}$"
+        }
+      },
+      "required": [
+        "expand"
+      ],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "string"
+    },
+    "source": {
+      "kind": "tool",
+      "key": "memory_recall"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "memory.recall.metrics",
+    "title": "Recall statistics",
+    "group": "memory",
+    "scope": "instance",
+    "access": "read",
+    "approval": "none",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "route",
+      "key": "recallStats",
+      "method": "GET",
+      "path": "/api/dsh-auto-memory/recall-stats"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "memory.recall.metrics.reset",
+    "title": "Reset recall statistics",
+    "group": "memory",
+    "scope": "instance",
+    "access": "write",
+    "approval": "explicit-confirmation",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "route",
+      "key": "recallStats",
+      "method": "POST",
+      "path": "/api/dsh-auto-memory/recall-stats"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "memory.recall.scoped",
+    "title": "Search DSH session history or project events",
+    "group": "memory",
+    "scope": "session",
+    "access": "read",
+    "approval": "none",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "scope": {
+          "type": "string",
+          "description": "检索范围:all=全部(默认,**不含 archive**；**events 自 v4-H9 起已并入 all**), handoff=交接白板语料(跨窗口续命材料), sessions=历史 DSH 会话, **archive=已归档的旧日志(30 天前原文,冷存储,需显式指定)**, **events=只搜事件库**(事件记忆的四段/检查点;按命中词+updatedAt 排序)。★命中给「文件名/事件 id+命中行」,正文用 memory_read(kind=\"archive\", name=…) 或对应事件工具取(两段式)。",
+          "enum": [
+            "sessions",
+            "events"
+          ]
+        },
+        "query": {
+          "type": "string",
+          "description": "检索关键词或自包含描述;expand 时填该记忆 id 即可。",
+          "maxLength": 4000
+        },
+        "limit": {
+          "type": "integer",
+          "description": "最多返回条数,缺省 8。",
+          "minimum": 1,
+          "maximum": 50
+        },
+        "format": {
+          "type": "string",
+          "description": "本地记忆命中格式:l0=L0 摘要列表(默认,每条含 id/得分/匹配原因),full=整条原文(旧行为)。",
+          "enum": [
+            "l0",
+            "full"
+          ]
+        }
+      },
+      "required": [
+        "scope",
+        "query"
+      ],
+      "additionalProperties": false,
+      "if": {
+        "properties": {
+          "scope": {
+            "const": "sessions"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "query": {
+            "pattern": "\\S"
+          }
+        }
+      }
+    },
+    "resultSchema": {
+      "type": "string"
+    },
+    "source": {
+      "kind": "tool",
+      "key": "memory_recall"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "memory.recall.semantic",
+    "title": "Context-aware memory search",
+    "group": "memory",
+    "scope": "session",
+    "access": "read",
+    "approval": "none",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "query": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000
+        }
+      },
+      "required": [
+        "query"
+      ],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "route",
+      "key": "smartRecall",
+      "method": "POST",
+      "path": "/api/dsh-auto-memory/smart-recall"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "memory.reflection.generate",
+    "title": "Generate a daily reflection",
+    "group": "memory",
+    "scope": "session",
+    "access": "write",
+    "approval": "explicit-confirmation",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "route",
+      "key": "reflect-auto",
+      "method": "POST",
+      "path": "/api/dsh-auto-memory/reflect-auto"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "memory.reflection.save",
+    "title": "Save a daily reflection",
+    "group": "memory",
+    "scope": "session",
+    "access": "write",
+    "approval": "explicit-confirmation",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "date": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "date",
+        "text"
+      ],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "route",
+      "key": "reflect",
+      "method": "POST",
+      "path": "/api/dsh-auto-memory/reflect"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "memory.relationships.refresh",
+    "title": "Generate workspace relationships",
+    "group": "memory",
+    "scope": "instance",
+    "access": "write",
+    "approval": "explicit-confirmation",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "force": {
+          "type": "boolean"
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "route",
+      "key": "workspaces",
+      "method": "POST",
+      "path": "/api/dsh-auto-memory/workspaces"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "memory.review.queue",
+    "title": "Review feedback queue",
+    "group": "memory",
+    "scope": "instance",
+    "access": "read",
+    "approval": "none",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "route",
+      "key": "review-feedback",
+      "method": "GET",
+      "path": "/api/dsh-auto-memory/review-feedback"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "memory.review.recent",
+    "title": "Recent review observations",
+    "group": "memory",
+    "scope": "instance",
+    "access": "read",
+    "approval": "none",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "route",
+      "key": "shadow-recent",
+      "method": "GET",
+      "path": "/api/dsh-auto-memory/shadow-recent"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "memory.review.submit",
+    "title": "Submit a review decision",
+    "group": "memory",
+    "scope": "instance",
+    "access": "write",
+    "approval": "explicit-confirmation",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "observationId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "choice": {
+          "enum": [
+            "A",
+            "P",
+            "S",
+            "H",
+            "E"
+          ]
+        },
+        "targetMemoryId": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "observationId",
+        "choice"
+      ],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "route",
+      "key": "review-feedback",
+      "method": "POST",
+      "path": "/api/dsh-auto-memory/review-feedback"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "memory.rules",
+    "title": "User rules and revisions",
+    "group": "memory",
+    "scope": "instance",
+    "access": "read",
+    "approval": "none",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "route",
+      "key": "rules-list",
+      "method": "GET",
+      "path": "/api/dsh-auto-memory/rules"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "memory.rules.edit",
+    "title": "Edit a user rule",
+    "group": "memory",
+    "scope": "instance",
+    "access": "write",
+    "approval": "explicit-confirmation",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "op": {
+          "enum": [
+            "add",
+            "update",
+            "remove"
+          ]
+        },
+        "index": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000
+        },
+        "expect": {
+          "type": "string",
+          "minLength": 1
+        },
+        "revision": {
+          "type": "string",
+          "minLength": 1
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 8000
+        },
+        "dateSection": {
+          "type": "string",
+          "minLength": 1
+        },
+        "layer": {
+          "enum": [
+            "user"
+          ]
+        }
+      },
+      "required": [
+        "op",
+        "revision"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "op": {
+                "const": "add"
+              }
+            }
+          },
+          "else": {
+            "required": [
+              "index",
+              "expect"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "op": {
+                "const": "remove"
+              }
+            }
+          },
+          "else": {
+            "required": [
+              "text"
+            ]
+          }
+        }
+      ]
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "route",
+      "key": "rules-apply",
+      "method": "POST",
+      "path": "/api/dsh-auto-memory/rules/apply"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "memory.source",
+    "title": "Read the complete source",
+    "group": "memory",
+    "scope": "workspace",
+    "access": "read",
+    "approval": "none",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "path"
+      ],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {
+        "content": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "revision": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      },
+      "required": [
+        "content",
+        "path",
+        "revision"
+      ],
+      "additionalProperties": false
+    },
+    "source": {
+      "kind": "service",
+      "key": "readMemorySource"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "memory.storage",
+    "title": "Storage management overview",
+    "group": "memory",
+    "scope": "workspace",
+    "access": "read",
+    "approval": "none",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "service",
+      "key": "storageManager.scanHealth"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "memory.storage.delete",
+    "title": "Delete a memory entry by digest",
+    "group": "memory",
+    "scope": "session",
+    "access": "write",
+    "approval": "explicit-confirmation",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "filePath": {
+          "type": "string",
+          "minLength": 1
+        },
+        "memoryId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "expectedDigest": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "filePath",
+        "memoryId",
+        "expectedDigest"
+      ],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "service",
+      "key": "storageManager.deleteMemory"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "memory.storage.diagnostics",
+    "title": "Inspect plugin storage diagnostics",
+    "group": "memory",
+    "scope": "instance",
+    "access": "write",
+    "approval": "explicit-confirmation",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "route",
+      "key": "debug",
+      "method": "GET",
+      "path": "/api/dsh-auto-memory/debug"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "memory.storage.dirty",
+    "title": "Scan the selected workspace for dirty memory",
+    "group": "memory",
+    "scope": "session",
+    "access": "read",
+    "approval": "none",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "route",
+      "key": "scanDirty",
+      "method": "GET",
+      "path": "/api/dsh-auto-memory/scan-dirty"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "memory.storage.repair",
+    "title": "Repair selected memory index entries",
+    "group": "memory",
+    "scope": "session",
+    "access": "write",
+    "approval": "explicit-confirmation",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "file": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "file"
+            ],
+            "additionalProperties": false
+          },
+          "minItems": 1,
+          "maxItems": 200
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "service",
+      "key": "storageManager.repair"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "memory.summary.generate",
+    "title": "Generate a period summary",
+    "group": "memory",
+    "scope": "session",
+    "access": "write",
+    "approval": "explicit-confirmation",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "period": {
+          "type": "string",
+          "minLength": 1
+        },
+        "force": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "period"
+      ],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "route",
+      "key": "summarize",
+      "method": "POST",
+      "path": "/api/dsh-auto-memory/summarize"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "settings.engine.activation",
+    "title": "Save semantic activation mode",
+    "group": "settings",
+    "scope": "instance",
+    "access": "write",
+    "approval": "explicit-confirmation",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "mode": {
+          "enum": [
+            "shadow",
+            "canary-explicit",
+            "active"
+          ]
+        },
+        "createOnly": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "mode"
+      ],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "route",
+      "key": "semantic-emit",
+      "method": "POST",
+      "path": "/api/dsh-auto-memory/semantic-emit"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "settings.get",
+    "title": "Settings",
+    "group": "settings",
+    "scope": "instance",
+    "access": "read",
+    "approval": "none",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {
+        "config": {
+          "type": "object",
+          "properties": {
+            "activationDeliveryCooldownMinutes": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "activationInboxEnabled": {
+              "type": "boolean"
+            },
+            "associativeMemoryEnabled": {
+              "type": "boolean"
+            },
+            "autoArchiveCheckMin": {
+              "type": "number"
+            },
+            "autoArchiveDays": {
+              "type": "number"
+            },
+            "autoArchiveEnabled": {
+              "type": "boolean"
+            },
+            "autoConsolidate": {
+              "type": "boolean"
+            },
+            "autoConsolidateCooldownMinutes": {
+              "type": "number"
+            },
+            "autoConsolidateDailyMax": {
+              "type": "number"
+            },
+            "autoConsolidateMinChars": {
+              "type": "number"
+            },
+            "autoContinueConfirmSeconds": {
+              "type": "number"
+            },
+            "autoContinueCooldownMinutes": {
+              "type": "number"
+            },
+            "autoContinueEnabled": {
+              "type": "boolean"
+            },
+            "autoContinueProbeTimeoutSeconds": {
+              "type": "number"
+            },
+            "autoContinueRefreshAttempts": {
+              "type": "number"
+            },
+            "autoContinueRefreshTimeoutSeconds": {
+              "type": "number"
+            },
+            "autoContinueThreshold": {
+              "type": "number",
+              "minimum": 0.01,
+              "maximum": 1
+            },
+            "autoDeleteDays": {
+              "type": "number"
+            },
+            "autoDeleteEnabled": {
+              "type": "boolean"
+            },
+            "autoSummaryTimes": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "autoPopupEnabled": {
+              "type": "boolean"
+            },
+            "awayMinutes": {
+              "type": "number"
+            },
+            "boardMode": {
+              "enum": [
+                "legacy",
+                "graph",
+                "event"
+              ]
+            },
+            "consolidateScheduleDays": {
+              "type": "number"
+            },
+            "consolidateScheduleEnabled": {
+              "type": "boolean"
+            },
+            "consolidateScheduleTime": {
+              "type": "string"
+            },
+            "contextBridgeEnabled": {
+              "type": "boolean"
+            },
+            "contextBridgeObserveChildSessions": {
+              "type": "boolean"
+            },
+            "criteriaGate": {
+              "type": "boolean"
+            },
+            "dayBoundaryMinutes": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1439
+            },
+            "deliveryPolicy": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {},
+                  "required": [],
+                  "additionalProperties": true
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "episodicMinSegments": {
+              "type": "number"
+            },
+            "episodicRetention": {
+              "type": "number"
+            },
+            "eventCatalogRecentClosedDays": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 3650
+            },
+            "externalSources": {
+              "type": "object",
+              "properties": {
+                "workbuddy-user": {
+                  "type": "boolean"
+                },
+                "workbuddy-profile": {
+                  "type": "boolean"
+                },
+                "codebuddy-memory": {
+                  "type": "boolean"
+                },
+                "claude-global": {
+                  "type": "boolean"
+                },
+                "project-conventions": {
+                  "type": "boolean"
+                },
+                "workbuddy-sessions": {
+                  "type": "boolean"
+                },
+                "claude-sessions": {
+                  "type": "boolean"
+                },
+                "codex-sessions": {
+                  "type": "boolean"
+                },
+                "zcode-memory": {
+                  "type": "boolean"
+                },
+                "zcode-sessions": {
+                  "type": "boolean"
+                },
+                "kimi-global": {
+                  "type": "boolean"
+                },
+                "kimi-sessions": {
+                  "type": "boolean"
+                },
+                "trae-rules": {
+                  "type": "boolean"
+                }
+              },
+              "required": [],
+              "additionalProperties": false
+            },
+            "factRetentionMax": {
+              "type": "number"
+            },
+            "fullInjectSemanticChars": {
+              "type": "number"
+            },
+            "fullInjectWaterPct": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "number"
+                  }
+                }
+              ]
+            },
+            "globalBriefChars": {
+              "type": "number"
+            },
+            "globalBriefEnabled": {
+              "type": "boolean"
+            },
+            "globalBriefInstruction": {
+              "enum": [
+                "none",
+                "soft"
+              ]
+            },
+            "globalBriefUnattended": {
+              "type": "boolean"
+            },
+            "globalBriefWatchDocs": {
+              "type": "boolean"
+            },
+            "globalBriefWatchExternal": {
+              "type": "boolean"
+            },
+            "globalBriefWatchMemory": {
+              "type": "boolean"
+            },
+            "globalBriefWatchTeam": {
+              "type": "boolean"
+            },
+            "handoffLedgerChars": {
+              "type": "number"
+            },
+            "handoffEnabled": {
+              "type": "boolean"
+            },
+            "hangCompensateEnabled": {
+              "type": "boolean"
+            },
+            "hangCompensateTokens": {
+              "type": "number"
+            },
+            "injectEnabled": {
+              "type": "boolean"
+            },
+            "injectBudgetChars": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000000
+            },
+            "injectExcludeSources": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "jsDecideCandidateScheme": {
+              "type": "string"
+            },
+            "jsDecideCandidatesN": {
+              "type": "number"
+            },
+            "jsDecideCooldownRounds": {
+              "type": "number"
+            },
+            "jsDecideDeltaExp": {
+              "type": "number"
+            },
+            "jsDecideExcerptChars": {
+              "type": "number"
+            },
+            "l0IndexEnabled": {
+              "type": "boolean"
+            },
+            "ledgerDocEnabled": {
+              "type": "boolean"
+            },
+            "locale": {
+              "type": "string"
+            },
+            "maintainScheduleEnabled": {
+              "type": "boolean"
+            },
+            "maintainScheduleTime": {
+              "type": "string"
+            },
+            "memoryAnchorEnabled": {
+              "type": "boolean"
+            },
+            "memoryFileIndexEnabled": {
+              "type": "boolean"
+            },
+            "memoryHubEnabled": {
+              "type": "boolean"
+            },
+            "memoryRoot": {
+              "type": "string",
+              "minLength": 1
+            },
+            "noteCapacityChars": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000000
+            },
+            "officialCompactionRatio": {
+              "type": "number"
+            },
+            "officialHeadroomTokens": {
+              "type": "number"
+            },
+            "planAutoRedrawEnabled": {
+              "type": "boolean"
+            },
+            "procedureActiveLevel": {
+              "type": "string"
+            },
+            "procedureCorrectionCap": {
+              "type": "number"
+            },
+            "procedureHighRiskApproval": {
+              "type": "boolean"
+            },
+            "procedureInjectEnabled": {
+              "type": "boolean"
+            },
+            "procedureMinSessions": {
+              "type": "number"
+            },
+            "procedureMinSuccess": {
+              "type": "number"
+            },
+            "projectMemoryDir": {
+              "type": "string",
+              "minLength": 1
+            },
+            "projectRulesWarnChars": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000000
+            },
+            "promptLayerOverrides": {
+              "type": "object",
+              "properties": {},
+              "required": [],
+              "additionalProperties": {
+                "type": "string"
+              }
+            },
+            "promptSectionToggles": {
+              "type": "object",
+              "properties": {},
+              "required": [],
+              "additionalProperties": {
+                "type": "boolean"
+              }
+            },
+            "reasoningObserverEnabled": {
+              "type": "boolean"
+            },
+            "recentDaysInjected": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 3650
+            },
+            "reflectEnabled": {
+              "type": "boolean"
+            },
+            "reflectStyle": {
+              "type": "string"
+            },
+            "rulesLayeringMode": {
+              "type": "string"
+            },
+            "runTierInjectEnabled": {
+              "type": "boolean"
+            },
+            "semanticEmbedIncremental": {
+              "type": "boolean"
+            },
+            "semanticEngineMode": {
+              "enum": [
+                "auto",
+                "lexical",
+                "js",
+                "python"
+              ]
+            },
+            "sessionArchiveEnabled": {
+              "type": "boolean"
+            },
+            "settingsEntryInDsSettings": {
+              "type": "boolean"
+            },
+            "settingsEntryInPluginsPage": {
+              "type": "boolean"
+            },
+            "shadowRetrievalEnabled": {
+              "type": "boolean"
+            },
+            "slimEveryRounds": {
+              "type": "number"
+            },
+            "snapshotMinGapRounds": {
+              "type": "number"
+            },
+            "snapshotReinjectOnCompact": {
+              "type": "boolean"
+            },
+            "snapshotTieredInject": {
+              "type": "boolean"
+            },
+            "subagentGcEnabled": {
+              "type": "boolean"
+            },
+            "subagentGcKeepDays": {
+              "type": "number"
+            },
+            "subagentTimeoutSeconds": {
+              "type": "number"
+            },
+            "teamEnabled": {
+              "type": "boolean"
+            },
+            "teamAuditEnabled": {
+              "type": "boolean"
+            },
+            "teamBucket": {
+              "type": "string"
+            },
+            "teamConflictPolicy": {
+              "enum": [
+                "ask",
+                "mine",
+                "theirs",
+                "both",
+                "keep-both"
+              ]
+            },
+            "teamDerivedDebounceMs": {
+              "type": "number"
+            },
+            "teamE2E": {
+              "enum": [
+                "off",
+                "unsupported"
+              ]
+            },
+            "teamEndpoint": {
+              "type": "string"
+            },
+            "teamId": {
+              "type": "string"
+            },
+            "teamInjectEnabled": {
+              "type": "boolean"
+            },
+            "teamMemberName": {
+              "type": "string"
+            },
+            "teamMaxConflicts": {
+              "type": "number"
+            },
+            "teamOutboxMaxItems": {
+              "type": "number"
+            },
+            "teamPathStyle": {
+              "type": "boolean"
+            },
+            "teamProjectId": {
+              "type": "string"
+            },
+            "teamPullPageLimit": {
+              "type": "number"
+            },
+            "teamPushPath": {
+              "type": "string"
+            },
+            "teamRegion": {
+              "type": "string"
+            },
+            "teamServerUrl": {
+              "type": "string"
+            },
+            "teamShowMemberBadges": {
+              "type": "boolean"
+            },
+            "teamSyncIntervalMs": {
+              "type": "integer",
+              "minimum": 100,
+              "maximum": 3600000
+            },
+            "teamSyncTransport": {
+              "enum": [
+                "s3",
+                "http"
+              ]
+            },
+            "teamUsageLog": {
+              "type": "string"
+            },
+            "teamUsageReport": {
+              "type": "boolean"
+            },
+            "tier0BudgetShare": {
+              "type": "number"
+            },
+            "tier0CatalogEnabled": {
+              "type": "boolean"
+            },
+            "tier0MaxTokens": {
+              "type": "number"
+            },
+            "unattendedAuto": {
+              "type": "boolean"
+            },
+            "unattendedMode": {
+              "type": "boolean"
+            },
+            "userCapacityChars": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000000
+            },
+            "userMemoryDir": {
+              "type": "string",
+              "minLength": 1
+            },
+            "userRulesWarnChars": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000000
+            },
+            "waterLevelAdvisory": {
+              "type": "boolean"
+            },
+            "waterLevelAutoHandoff": {
+              "type": "boolean"
+            },
+            "waterLevelAutoMargin": {
+              "type": "number"
+            },
+            "waterLevelProxyCompat": {
+              "type": "boolean"
+            },
+            "waterLevelThreshold": {
+              "type": "number"
+            },
+            "waterLevelThresholdMode": {
+              "type": "string"
+            },
+            "waterLevelWindowTokens": {
+              "type": "number"
+            },
+            "welcomeTourEnabled": {
+              "type": "boolean"
+            },
+            "workbenchEnabled": {
+              "type": "boolean"
+            },
+            "workbenchLoopLong": {
+              "type": "number"
+            },
+            "workbenchLoopShort": {
+              "type": "number"
+            },
+            "workbenchRetryMs": {
+              "type": "number"
+            },
+            "workbenchRoot": {
+              "type": "string"
+            },
+            "workspaceDiscoverMax": {
+              "type": "number"
+            }
+          },
+          "required": [],
+          "additionalProperties": false
+        },
+        "revision": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      },
+      "required": [
+        "config",
+        "revision"
+      ],
+      "additionalProperties": false
+    },
+    "source": {
+      "kind": "service",
+      "key": "loadConfig"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "settings.set",
+    "title": "Save settings",
+    "group": "settings",
+    "scope": "instance",
+    "access": "write",
+    "approval": "explicit-confirmation",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "patch": {
+          "type": "object",
+          "properties": {
+            "activationDeliveryCooldownMinutes": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "activationInboxEnabled": {
+              "type": "boolean"
+            },
+            "associativeMemoryEnabled": {
+              "type": "boolean"
+            },
+            "autoArchiveCheckMin": {
+              "type": "number"
+            },
+            "autoArchiveDays": {
+              "type": "number"
+            },
+            "autoArchiveEnabled": {
+              "type": "boolean"
+            },
+            "autoConsolidate": {
+              "type": "boolean"
+            },
+            "autoConsolidateCooldownMinutes": {
+              "type": "number"
+            },
+            "autoConsolidateDailyMax": {
+              "type": "number"
+            },
+            "autoConsolidateMinChars": {
+              "type": "number"
+            },
+            "autoContinueConfirmSeconds": {
+              "type": "number"
+            },
+            "autoContinueCooldownMinutes": {
+              "type": "number"
+            },
+            "autoContinueEnabled": {
+              "type": "boolean"
+            },
+            "autoContinueProbeTimeoutSeconds": {
+              "type": "number"
+            },
+            "autoContinueRefreshAttempts": {
+              "type": "number"
+            },
+            "autoContinueRefreshTimeoutSeconds": {
+              "type": "number"
+            },
+            "autoContinueThreshold": {
+              "type": "number",
+              "minimum": 0.01,
+              "maximum": 1
+            },
+            "autoDeleteDays": {
+              "type": "number"
+            },
+            "autoDeleteEnabled": {
+              "type": "boolean"
+            },
+            "autoSummaryTimes": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "autoPopupEnabled": {
+              "type": "boolean"
+            },
+            "awayMinutes": {
+              "type": "number"
+            },
+            "boardMode": {
+              "enum": [
+                "legacy",
+                "graph",
+                "event"
+              ]
+            },
+            "consolidateScheduleDays": {
+              "type": "number"
+            },
+            "consolidateScheduleEnabled": {
+              "type": "boolean"
+            },
+            "consolidateScheduleTime": {
+              "type": "string"
+            },
+            "contextBridgeEnabled": {
+              "type": "boolean"
+            },
+            "contextBridgeObserveChildSessions": {
+              "type": "boolean"
+            },
+            "criteriaGate": {
+              "type": "boolean"
+            },
+            "dayBoundaryMinutes": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1439
+            },
+            "deliveryPolicy": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {},
+                  "required": [],
+                  "additionalProperties": true
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "episodicMinSegments": {
+              "type": "number"
+            },
+            "episodicRetention": {
+              "type": "number"
+            },
+            "eventCatalogRecentClosedDays": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 3650
+            },
+            "externalSources": {
+              "type": "object",
+              "properties": {
+                "workbuddy-user": {
+                  "type": "boolean"
+                },
+                "workbuddy-profile": {
+                  "type": "boolean"
+                },
+                "codebuddy-memory": {
+                  "type": "boolean"
+                },
+                "claude-global": {
+                  "type": "boolean"
+                },
+                "project-conventions": {
+                  "type": "boolean"
+                },
+                "workbuddy-sessions": {
+                  "type": "boolean"
+                },
+                "claude-sessions": {
+                  "type": "boolean"
+                },
+                "codex-sessions": {
+                  "type": "boolean"
+                },
+                "zcode-memory": {
+                  "type": "boolean"
+                },
+                "zcode-sessions": {
+                  "type": "boolean"
+                },
+                "kimi-global": {
+                  "type": "boolean"
+                },
+                "kimi-sessions": {
+                  "type": "boolean"
+                },
+                "trae-rules": {
+                  "type": "boolean"
+                }
+              },
+              "required": [],
+              "additionalProperties": false
+            },
+            "factRetentionMax": {
+              "type": "number"
+            },
+            "fullInjectSemanticChars": {
+              "type": "number"
+            },
+            "fullInjectWaterPct": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "number"
+                  }
+                }
+              ]
+            },
+            "globalBriefChars": {
+              "type": "number"
+            },
+            "globalBriefEnabled": {
+              "type": "boolean"
+            },
+            "globalBriefInstruction": {
+              "enum": [
+                "none",
+                "soft"
+              ]
+            },
+            "globalBriefUnattended": {
+              "type": "boolean"
+            },
+            "globalBriefWatchDocs": {
+              "type": "boolean"
+            },
+            "globalBriefWatchExternal": {
+              "type": "boolean"
+            },
+            "globalBriefWatchMemory": {
+              "type": "boolean"
+            },
+            "globalBriefWatchTeam": {
+              "type": "boolean"
+            },
+            "handoffLedgerChars": {
+              "type": "number"
+            },
+            "handoffEnabled": {
+              "type": "boolean"
+            },
+            "hangCompensateEnabled": {
+              "type": "boolean"
+            },
+            "hangCompensateTokens": {
+              "type": "number"
+            },
+            "injectEnabled": {
+              "type": "boolean"
+            },
+            "injectBudgetChars": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000000
+            },
+            "injectExcludeSources": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "jsDecideCandidateScheme": {
+              "type": "string"
+            },
+            "jsDecideCandidatesN": {
+              "type": "number"
+            },
+            "jsDecideCooldownRounds": {
+              "type": "number"
+            },
+            "jsDecideDeltaExp": {
+              "type": "number"
+            },
+            "jsDecideExcerptChars": {
+              "type": "number"
+            },
+            "l0IndexEnabled": {
+              "type": "boolean"
+            },
+            "ledgerDocEnabled": {
+              "type": "boolean"
+            },
+            "locale": {
+              "type": "string"
+            },
+            "maintainScheduleEnabled": {
+              "type": "boolean"
+            },
+            "maintainScheduleTime": {
+              "type": "string"
+            },
+            "memoryAnchorEnabled": {
+              "type": "boolean"
+            },
+            "memoryFileIndexEnabled": {
+              "type": "boolean"
+            },
+            "memoryHubEnabled": {
+              "type": "boolean"
+            },
+            "memoryRoot": {
+              "type": "string",
+              "minLength": 1
+            },
+            "noteCapacityChars": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000000
+            },
+            "officialCompactionRatio": {
+              "type": "number"
+            },
+            "officialHeadroomTokens": {
+              "type": "number"
+            },
+            "planAutoRedrawEnabled": {
+              "type": "boolean"
+            },
+            "procedureActiveLevel": {
+              "type": "string"
+            },
+            "procedureCorrectionCap": {
+              "type": "number"
+            },
+            "procedureHighRiskApproval": {
+              "type": "boolean"
+            },
+            "procedureInjectEnabled": {
+              "type": "boolean"
+            },
+            "procedureMinSessions": {
+              "type": "number"
+            },
+            "procedureMinSuccess": {
+              "type": "number"
+            },
+            "projectMemoryDir": {
+              "type": "string",
+              "minLength": 1
+            },
+            "projectRulesWarnChars": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000000
+            },
+            "promptLayerOverrides": {
+              "type": "object",
+              "properties": {},
+              "required": [],
+              "additionalProperties": {
+                "type": "string"
+              }
+            },
+            "promptSectionToggles": {
+              "type": "object",
+              "properties": {},
+              "required": [],
+              "additionalProperties": {
+                "type": "boolean"
+              }
+            },
+            "reasoningObserverEnabled": {
+              "type": "boolean"
+            },
+            "recentDaysInjected": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 3650
+            },
+            "reflectEnabled": {
+              "type": "boolean"
+            },
+            "reflectStyle": {
+              "type": "string"
+            },
+            "rulesLayeringMode": {
+              "type": "string"
+            },
+            "runTierInjectEnabled": {
+              "type": "boolean"
+            },
+            "semanticEmbedIncremental": {
+              "type": "boolean"
+            },
+            "semanticEngineMode": {
+              "enum": [
+                "auto",
+                "lexical",
+                "js",
+                "python"
+              ]
+            },
+            "sessionArchiveEnabled": {
+              "type": "boolean"
+            },
+            "settingsEntryInDsSettings": {
+              "type": "boolean"
+            },
+            "settingsEntryInPluginsPage": {
+              "type": "boolean"
+            },
+            "shadowRetrievalEnabled": {
+              "type": "boolean"
+            },
+            "slimEveryRounds": {
+              "type": "number"
+            },
+            "snapshotMinGapRounds": {
+              "type": "number"
+            },
+            "snapshotReinjectOnCompact": {
+              "type": "boolean"
+            },
+            "snapshotTieredInject": {
+              "type": "boolean"
+            },
+            "subagentGcEnabled": {
+              "type": "boolean"
+            },
+            "subagentGcKeepDays": {
+              "type": "number"
+            },
+            "subagentTimeoutSeconds": {
+              "type": "number"
+            },
+            "teamEnabled": {
+              "type": "boolean"
+            },
+            "teamAuditEnabled": {
+              "type": "boolean"
+            },
+            "teamBucket": {
+              "type": "string"
+            },
+            "teamConflictPolicy": {
+              "enum": [
+                "ask",
+                "mine",
+                "theirs",
+                "both",
+                "keep-both"
+              ]
+            },
+            "teamDerivedDebounceMs": {
+              "type": "number"
+            },
+            "teamE2E": {
+              "enum": [
+                "off",
+                "unsupported"
+              ]
+            },
+            "teamEndpoint": {
+              "type": "string"
+            },
+            "teamId": {
+              "type": "string"
+            },
+            "teamInjectEnabled": {
+              "type": "boolean"
+            },
+            "teamMemberName": {
+              "type": "string"
+            },
+            "teamMaxConflicts": {
+              "type": "number"
+            },
+            "teamOutboxMaxItems": {
+              "type": "number"
+            },
+            "teamPathStyle": {
+              "type": "boolean"
+            },
+            "teamProjectId": {
+              "type": "string"
+            },
+            "teamPullPageLimit": {
+              "type": "number"
+            },
+            "teamPushPath": {
+              "type": "string"
+            },
+            "teamRegion": {
+              "type": "string"
+            },
+            "teamServerUrl": {
+              "type": "string"
+            },
+            "teamShowMemberBadges": {
+              "type": "boolean"
+            },
+            "teamSyncIntervalMs": {
+              "type": "integer",
+              "minimum": 100,
+              "maximum": 3600000
+            },
+            "teamSyncTransport": {
+              "enum": [
+                "s3",
+                "http"
+              ]
+            },
+            "teamUsageLog": {
+              "type": "string"
+            },
+            "teamUsageReport": {
+              "type": "boolean"
+            },
+            "tier0BudgetShare": {
+              "type": "number"
+            },
+            "tier0CatalogEnabled": {
+              "type": "boolean"
+            },
+            "tier0MaxTokens": {
+              "type": "number"
+            },
+            "unattendedAuto": {
+              "type": "boolean"
+            },
+            "unattendedMode": {
+              "type": "boolean"
+            },
+            "userCapacityChars": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000000
+            },
+            "userMemoryDir": {
+              "type": "string",
+              "minLength": 1
+            },
+            "userRulesWarnChars": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000000
+            },
+            "waterLevelAdvisory": {
+              "type": "boolean"
+            },
+            "waterLevelAutoHandoff": {
+              "type": "boolean"
+            },
+            "waterLevelAutoMargin": {
+              "type": "number"
+            },
+            "waterLevelProxyCompat": {
+              "type": "boolean"
+            },
+            "waterLevelThreshold": {
+              "type": "number"
+            },
+            "waterLevelThresholdMode": {
+              "type": "string"
+            },
+            "waterLevelWindowTokens": {
+              "type": "number"
+            },
+            "welcomeTourEnabled": {
+              "type": "boolean"
+            },
+            "workbenchEnabled": {
+              "type": "boolean"
+            },
+            "workbenchLoopLong": {
+              "type": "number"
+            },
+            "workbenchLoopShort": {
+              "type": "number"
+            },
+            "workbenchRetryMs": {
+              "type": "number"
+            },
+            "workbenchRoot": {
+              "type": "string"
+            },
+            "workspaceDiscoverMax": {
+              "type": "number"
+            },
+            "teamAccessKeyId": {
+              "type": "string"
+            },
+            "teamSecretAccessKey": {
+              "type": "string"
+            }
+          },
+          "required": [],
+          "additionalProperties": false,
+          "minProperties": 1
+        },
+        "revision": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      },
+      "required": [
+        "patch",
+        "revision"
+      ],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {
+        "config": {
+          "type": "object",
+          "properties": {
+            "activationDeliveryCooldownMinutes": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "activationInboxEnabled": {
+              "type": "boolean"
+            },
+            "associativeMemoryEnabled": {
+              "type": "boolean"
+            },
+            "autoArchiveCheckMin": {
+              "type": "number"
+            },
+            "autoArchiveDays": {
+              "type": "number"
+            },
+            "autoArchiveEnabled": {
+              "type": "boolean"
+            },
+            "autoConsolidate": {
+              "type": "boolean"
+            },
+            "autoConsolidateCooldownMinutes": {
+              "type": "number"
+            },
+            "autoConsolidateDailyMax": {
+              "type": "number"
+            },
+            "autoConsolidateMinChars": {
+              "type": "number"
+            },
+            "autoContinueConfirmSeconds": {
+              "type": "number"
+            },
+            "autoContinueCooldownMinutes": {
+              "type": "number"
+            },
+            "autoContinueEnabled": {
+              "type": "boolean"
+            },
+            "autoContinueProbeTimeoutSeconds": {
+              "type": "number"
+            },
+            "autoContinueRefreshAttempts": {
+              "type": "number"
+            },
+            "autoContinueRefreshTimeoutSeconds": {
+              "type": "number"
+            },
+            "autoContinueThreshold": {
+              "type": "number",
+              "minimum": 0.01,
+              "maximum": 1
+            },
+            "autoDeleteDays": {
+              "type": "number"
+            },
+            "autoDeleteEnabled": {
+              "type": "boolean"
+            },
+            "autoSummaryTimes": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "autoPopupEnabled": {
+              "type": "boolean"
+            },
+            "awayMinutes": {
+              "type": "number"
+            },
+            "boardMode": {
+              "enum": [
+                "legacy",
+                "graph",
+                "event"
+              ]
+            },
+            "consolidateScheduleDays": {
+              "type": "number"
+            },
+            "consolidateScheduleEnabled": {
+              "type": "boolean"
+            },
+            "consolidateScheduleTime": {
+              "type": "string"
+            },
+            "contextBridgeEnabled": {
+              "type": "boolean"
+            },
+            "contextBridgeObserveChildSessions": {
+              "type": "boolean"
+            },
+            "criteriaGate": {
+              "type": "boolean"
+            },
+            "dayBoundaryMinutes": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1439
+            },
+            "deliveryPolicy": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {},
+                  "required": [],
+                  "additionalProperties": true
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "episodicMinSegments": {
+              "type": "number"
+            },
+            "episodicRetention": {
+              "type": "number"
+            },
+            "eventCatalogRecentClosedDays": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 3650
+            },
+            "externalSources": {
+              "type": "object",
+              "properties": {
+                "workbuddy-user": {
+                  "type": "boolean"
+                },
+                "workbuddy-profile": {
+                  "type": "boolean"
+                },
+                "codebuddy-memory": {
+                  "type": "boolean"
+                },
+                "claude-global": {
+                  "type": "boolean"
+                },
+                "project-conventions": {
+                  "type": "boolean"
+                },
+                "workbuddy-sessions": {
+                  "type": "boolean"
+                },
+                "claude-sessions": {
+                  "type": "boolean"
+                },
+                "codex-sessions": {
+                  "type": "boolean"
+                },
+                "zcode-memory": {
+                  "type": "boolean"
+                },
+                "zcode-sessions": {
+                  "type": "boolean"
+                },
+                "kimi-global": {
+                  "type": "boolean"
+                },
+                "kimi-sessions": {
+                  "type": "boolean"
+                },
+                "trae-rules": {
+                  "type": "boolean"
+                }
+              },
+              "required": [],
+              "additionalProperties": false
+            },
+            "factRetentionMax": {
+              "type": "number"
+            },
+            "fullInjectSemanticChars": {
+              "type": "number"
+            },
+            "fullInjectWaterPct": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "number"
+                  }
+                }
+              ]
+            },
+            "globalBriefChars": {
+              "type": "number"
+            },
+            "globalBriefEnabled": {
+              "type": "boolean"
+            },
+            "globalBriefInstruction": {
+              "enum": [
+                "none",
+                "soft"
+              ]
+            },
+            "globalBriefUnattended": {
+              "type": "boolean"
+            },
+            "globalBriefWatchDocs": {
+              "type": "boolean"
+            },
+            "globalBriefWatchExternal": {
+              "type": "boolean"
+            },
+            "globalBriefWatchMemory": {
+              "type": "boolean"
+            },
+            "globalBriefWatchTeam": {
+              "type": "boolean"
+            },
+            "handoffLedgerChars": {
+              "type": "number"
+            },
+            "handoffEnabled": {
+              "type": "boolean"
+            },
+            "hangCompensateEnabled": {
+              "type": "boolean"
+            },
+            "hangCompensateTokens": {
+              "type": "number"
+            },
+            "injectEnabled": {
+              "type": "boolean"
+            },
+            "injectBudgetChars": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000000
+            },
+            "injectExcludeSources": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "jsDecideCandidateScheme": {
+              "type": "string"
+            },
+            "jsDecideCandidatesN": {
+              "type": "number"
+            },
+            "jsDecideCooldownRounds": {
+              "type": "number"
+            },
+            "jsDecideDeltaExp": {
+              "type": "number"
+            },
+            "jsDecideExcerptChars": {
+              "type": "number"
+            },
+            "l0IndexEnabled": {
+              "type": "boolean"
+            },
+            "ledgerDocEnabled": {
+              "type": "boolean"
+            },
+            "locale": {
+              "type": "string"
+            },
+            "maintainScheduleEnabled": {
+              "type": "boolean"
+            },
+            "maintainScheduleTime": {
+              "type": "string"
+            },
+            "memoryAnchorEnabled": {
+              "type": "boolean"
+            },
+            "memoryFileIndexEnabled": {
+              "type": "boolean"
+            },
+            "memoryHubEnabled": {
+              "type": "boolean"
+            },
+            "memoryRoot": {
+              "type": "string",
+              "minLength": 1
+            },
+            "noteCapacityChars": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000000
+            },
+            "officialCompactionRatio": {
+              "type": "number"
+            },
+            "officialHeadroomTokens": {
+              "type": "number"
+            },
+            "planAutoRedrawEnabled": {
+              "type": "boolean"
+            },
+            "procedureActiveLevel": {
+              "type": "string"
+            },
+            "procedureCorrectionCap": {
+              "type": "number"
+            },
+            "procedureHighRiskApproval": {
+              "type": "boolean"
+            },
+            "procedureInjectEnabled": {
+              "type": "boolean"
+            },
+            "procedureMinSessions": {
+              "type": "number"
+            },
+            "procedureMinSuccess": {
+              "type": "number"
+            },
+            "projectMemoryDir": {
+              "type": "string",
+              "minLength": 1
+            },
+            "projectRulesWarnChars": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000000
+            },
+            "promptLayerOverrides": {
+              "type": "object",
+              "properties": {},
+              "required": [],
+              "additionalProperties": {
+                "type": "string"
+              }
+            },
+            "promptSectionToggles": {
+              "type": "object",
+              "properties": {},
+              "required": [],
+              "additionalProperties": {
+                "type": "boolean"
+              }
+            },
+            "reasoningObserverEnabled": {
+              "type": "boolean"
+            },
+            "recentDaysInjected": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 3650
+            },
+            "reflectEnabled": {
+              "type": "boolean"
+            },
+            "reflectStyle": {
+              "type": "string"
+            },
+            "rulesLayeringMode": {
+              "type": "string"
+            },
+            "runTierInjectEnabled": {
+              "type": "boolean"
+            },
+            "semanticEmbedIncremental": {
+              "type": "boolean"
+            },
+            "semanticEngineMode": {
+              "enum": [
+                "auto",
+                "lexical",
+                "js",
+                "python"
+              ]
+            },
+            "sessionArchiveEnabled": {
+              "type": "boolean"
+            },
+            "settingsEntryInDsSettings": {
+              "type": "boolean"
+            },
+            "settingsEntryInPluginsPage": {
+              "type": "boolean"
+            },
+            "shadowRetrievalEnabled": {
+              "type": "boolean"
+            },
+            "slimEveryRounds": {
+              "type": "number"
+            },
+            "snapshotMinGapRounds": {
+              "type": "number"
+            },
+            "snapshotReinjectOnCompact": {
+              "type": "boolean"
+            },
+            "snapshotTieredInject": {
+              "type": "boolean"
+            },
+            "subagentGcEnabled": {
+              "type": "boolean"
+            },
+            "subagentGcKeepDays": {
+              "type": "number"
+            },
+            "subagentTimeoutSeconds": {
+              "type": "number"
+            },
+            "teamEnabled": {
+              "type": "boolean"
+            },
+            "teamAuditEnabled": {
+              "type": "boolean"
+            },
+            "teamBucket": {
+              "type": "string"
+            },
+            "teamConflictPolicy": {
+              "enum": [
+                "ask",
+                "mine",
+                "theirs",
+                "both",
+                "keep-both"
+              ]
+            },
+            "teamDerivedDebounceMs": {
+              "type": "number"
+            },
+            "teamE2E": {
+              "enum": [
+                "off",
+                "unsupported"
+              ]
+            },
+            "teamEndpoint": {
+              "type": "string"
+            },
+            "teamId": {
+              "type": "string"
+            },
+            "teamInjectEnabled": {
+              "type": "boolean"
+            },
+            "teamMemberName": {
+              "type": "string"
+            },
+            "teamMaxConflicts": {
+              "type": "number"
+            },
+            "teamOutboxMaxItems": {
+              "type": "number"
+            },
+            "teamPathStyle": {
+              "type": "boolean"
+            },
+            "teamProjectId": {
+              "type": "string"
+            },
+            "teamPullPageLimit": {
+              "type": "number"
+            },
+            "teamPushPath": {
+              "type": "string"
+            },
+            "teamRegion": {
+              "type": "string"
+            },
+            "teamServerUrl": {
+              "type": "string"
+            },
+            "teamShowMemberBadges": {
+              "type": "boolean"
+            },
+            "teamSyncIntervalMs": {
+              "type": "integer",
+              "minimum": 100,
+              "maximum": 3600000
+            },
+            "teamSyncTransport": {
+              "enum": [
+                "s3",
+                "http"
+              ]
+            },
+            "teamUsageLog": {
+              "type": "string"
+            },
+            "teamUsageReport": {
+              "type": "boolean"
+            },
+            "tier0BudgetShare": {
+              "type": "number"
+            },
+            "tier0CatalogEnabled": {
+              "type": "boolean"
+            },
+            "tier0MaxTokens": {
+              "type": "number"
+            },
+            "unattendedAuto": {
+              "type": "boolean"
+            },
+            "unattendedMode": {
+              "type": "boolean"
+            },
+            "userCapacityChars": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000000
+            },
+            "userMemoryDir": {
+              "type": "string",
+              "minLength": 1
+            },
+            "userRulesWarnChars": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000000
+            },
+            "waterLevelAdvisory": {
+              "type": "boolean"
+            },
+            "waterLevelAutoHandoff": {
+              "type": "boolean"
+            },
+            "waterLevelAutoMargin": {
+              "type": "number"
+            },
+            "waterLevelProxyCompat": {
+              "type": "boolean"
+            },
+            "waterLevelThreshold": {
+              "type": "number"
+            },
+            "waterLevelThresholdMode": {
+              "type": "string"
+            },
+            "waterLevelWindowTokens": {
+              "type": "number"
+            },
+            "welcomeTourEnabled": {
+              "type": "boolean"
+            },
+            "workbenchEnabled": {
+              "type": "boolean"
+            },
+            "workbenchLoopLong": {
+              "type": "number"
+            },
+            "workbenchLoopShort": {
+              "type": "number"
+            },
+            "workbenchRetryMs": {
+              "type": "number"
+            },
+            "workbenchRoot": {
+              "type": "string"
+            },
+            "workspaceDiscoverMax": {
+              "type": "number"
+            }
+          },
+          "required": [],
+          "additionalProperties": false
+        },
+        "revision": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "migration": {
+          "type": "string"
+        },
+        "warning": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "config",
+        "revision"
+      ],
+      "additionalProperties": false
+    },
+    "source": {
+      "kind": "service",
+      "key": "saveConfig"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "status",
+    "title": "Live status",
+    "group": "system",
+    "scope": "optional-session",
+    "access": "read",
+    "approval": "none",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {
+        "revision": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "settingsRevision": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "engineMode": {
+          "type": "string"
+        },
+        "searchIndex": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": true
+        },
+        "connection": {
+          "type": "string"
+        },
+        "scope": {
+          "type": "object",
+          "properties": {
+            "sessionId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "workspace": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [],
+          "additionalProperties": false
+        },
+        "delivery": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": true
+        },
+        "jobs": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": true
+        },
+        "lastRefreshAt": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "memory": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": true
+        }
+      },
+      "required": [
+        "revision",
+        "settingsRevision",
+        "connection",
+        "engineMode",
+        "scope",
+        "searchIndex",
+        "delivery",
+        "jobs",
+        "memory"
+      ],
+      "additionalProperties": false
+    },
+    "source": {
+      "kind": "service",
+      "key": "status"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "system.directory.browse",
+    "title": "Browse local directories",
+    "group": "system",
+    "scope": "instance",
+    "access": "read",
+    "approval": "none",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "route",
+      "key": "browseDir",
+      "method": "POST",
+      "path": "/api/dsh-auto-memory/browse-dir"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "system.directory.pick",
+    "title": "Open the host directory picker",
+    "group": "system",
+    "scope": "instance",
+    "access": "write",
+    "approval": "explicit-confirmation",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "route",
+      "key": "pickDir",
+      "method": "POST",
+      "path": "/api/dsh-auto-memory/pick-dir"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "system.engine.detect",
+    "title": "Probe the semantic engine",
+    "group": "system",
+    "scope": "instance",
+    "access": "write",
+    "approval": "explicit-confirmation",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "route",
+      "key": "semantic-deep-detect",
+      "method": "GET",
+      "path": "/api/dsh-auto-memory/semantic-deep-detect"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "system.models",
+    "title": "Available model routes",
+    "group": "system",
+    "scope": "instance",
+    "access": "read",
+    "approval": "none",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "route",
+      "key": "models",
+      "method": "GET",
+      "path": "/api/dsh-auto-memory/models"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "system.semantic",
+    "title": "Semantic engine status",
+    "group": "system",
+    "scope": "instance",
+    "access": "read",
+    "approval": "none",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "route",
+      "key": "semantic-status",
+      "method": "GET",
+      "path": "/api/dsh-auto-memory/semantic-status"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "system.update.check",
+    "title": "Check Auto Memory updates",
+    "group": "system",
+    "scope": "instance",
+    "access": "read",
+    "approval": "none",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "force": {
+          "enum": [
+            0,
+            1
+          ]
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "route",
+      "key": "updateCheck",
+      "method": "GET",
+      "path": "/api/dsh-auto-memory/update-check"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "system.update.install",
+    "title": "Install the checked plugin update",
+    "group": "system",
+    "scope": "instance",
+    "access": "write",
+    "approval": "explicit-confirmation",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "type": "boolean"
+        },
+        "landedVersion": {
+          "type": "string"
+        },
+        "targetVersion": {
+          "type": "string"
+        },
+        "restartHint": {
+          "type": "string"
+        },
+        "installKind": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "ok"
+      ],
+      "additionalProperties": false
+    },
+    "source": {
+      "kind": "route",
+      "key": "update",
+      "method": "POST",
+      "path": "/api/dsh-auto-memory/update"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "system.workspaces",
+    "title": "Select a DSH workspace and session",
+    "group": "system",
+    "scope": "instance",
+    "access": "read",
+    "approval": "none",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {
+        "workspaces": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {},
+            "required": [],
+            "additionalProperties": true
+          }
+        }
+      },
+      "required": [
+        "workspaces"
+      ],
+      "additionalProperties": false
+    },
+    "source": {
+      "kind": "service",
+      "key": "sessions.list"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "team.attribution",
+    "title": "Attribution",
+    "group": "team",
+    "scope": "instance",
+    "access": "read",
+    "approval": "none",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "route",
+      "key": "teamAttribution",
+      "method": "GET",
+      "path": "/api/dsh-auto-memory/team-attribution"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "team.baseline.apply",
+    "title": "Apply a reviewed team baseline",
+    "group": "team",
+    "scope": "session",
+    "access": "write",
+    "approval": "explicit-confirmation",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "expectedChecksum": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "expectedChecksum"
+      ],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "route",
+      "key": "teamBaseline",
+      "method": "POST",
+      "path": "/api/dsh-auto-memory/team-baseline"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "team.baseline.search",
+    "title": "Search for a team baseline",
+    "group": "team",
+    "scope": "session",
+    "access": "write",
+    "approval": "explicit-confirmation",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "route",
+      "key": "teamBaseline",
+      "method": "POST",
+      "path": "/api/dsh-auto-memory/team-baseline"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "team.baseline.status",
+    "title": "Available team baseline",
+    "group": "team",
+    "scope": "instance",
+    "access": "read",
+    "approval": "none",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "route",
+      "key": "teamBaseline",
+      "method": "GET",
+      "path": "/api/dsh-auto-memory/team-baseline"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "team.baseline.upload",
+    "title": "Publish a team baseline",
+    "group": "team",
+    "scope": "session",
+    "access": "write",
+    "approval": "explicit-confirmation",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "uploadAfterUpgrade": {
+          "type": "boolean"
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "route",
+      "key": "teamBaseline",
+      "method": "POST",
+      "path": "/api/dsh-auto-memory/team-baseline"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "team.compliance",
+    "title": "Compliance",
+    "group": "team",
+    "scope": "instance",
+    "access": "read",
+    "approval": "none",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "route",
+      "key": "teamCompliance",
+      "method": "GET",
+      "path": "/api/dsh-auto-memory/team-compliance"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "team.conflicts",
+    "title": "Conflicts",
+    "group": "team",
+    "scope": "instance",
+    "access": "read",
+    "approval": "none",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "route",
+      "key": "teamConflicts",
+      "method": "GET",
+      "path": "/api/dsh-auto-memory/team-conflicts"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "team.cursor.reset",
+    "title": "Reset the team synchronization cursor",
+    "group": "team",
+    "scope": "instance",
+    "access": "write",
+    "approval": "explicit-confirmation",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "route",
+      "key": "teamControl",
+      "method": "POST",
+      "path": "/api/dsh-auto-memory/team-control"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "team.handoffs",
+    "title": "Handoffs",
+    "group": "team",
+    "scope": "instance",
+    "access": "read",
+    "approval": "none",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "route",
+      "key": "teamHandoffs",
+      "method": "GET",
+      "path": "/api/dsh-auto-memory/team-handoffs"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "team.members",
+    "title": "Members",
+    "group": "team",
+    "scope": "instance",
+    "access": "read",
+    "approval": "none",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "route",
+      "key": "teamMembers",
+      "method": "GET",
+      "path": "/api/dsh-auto-memory/team-members"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "team.pause",
+    "title": "Pause or resume team synchronization",
+    "group": "team",
+    "scope": "instance",
+    "access": "write",
+    "approval": "explicit-confirmation",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "paused": {
+          "type": "boolean"
+        },
+        "reason": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "paused"
+      ],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "type": "boolean"
+        },
+        "paused": {
+          "type": "boolean"
+        },
+        "reason": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "ok",
+        "paused"
+      ],
+      "additionalProperties": false
+    },
+    "source": {
+      "kind": "route",
+      "key": "teamPause",
+      "method": "POST",
+      "path": "/api/dsh-auto-memory/team-pause"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "team.pause.runtime",
+    "title": "Temporarily pause or resume the current team runtime",
+    "group": "team",
+    "scope": "instance",
+    "access": "write",
+    "approval": "explicit-confirmation",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "paused": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "paused"
+      ],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "route",
+      "key": "teamControl",
+      "method": "POST",
+      "path": "/api/dsh-auto-memory/team-control"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "team.presence",
+    "title": "Member presence",
+    "group": "team",
+    "scope": "instance",
+    "access": "read",
+    "approval": "none",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "route",
+      "key": "teamPresence",
+      "method": "GET",
+      "path": "/api/dsh-auto-memory/team-presence"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "team.skills",
+    "title": "Skills",
+    "group": "team",
+    "scope": "instance",
+    "access": "read",
+    "approval": "none",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "route",
+      "key": "teamSkills",
+      "method": "GET",
+      "path": "/api/dsh-auto-memory/team-skills"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "team.skills.transfer",
+    "title": "Move a reviewed skill between scopes",
+    "group": "team",
+    "scope": "session",
+    "access": "write",
+    "approval": "explicit-confirmation",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "procedureId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "scope": {
+          "enum": [
+            "global",
+            "workspace"
+          ]
+        }
+      },
+      "required": [
+        "procedureId",
+        "scope"
+      ],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "route",
+      "key": "memory-hub",
+      "method": "POST",
+      "path": "/api/dsh-auto-memory/memory-hub"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "team.status",
+    "title": "Team memory and synchronization status",
+    "group": "team",
+    "scope": "instance",
+    "access": "read",
+    "approval": "none",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "route",
+      "key": "teamState",
+      "method": "GET",
+      "path": "/api/dsh-auto-memory/team-state"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "team.sync.debug",
+    "title": "Team subsystem diagnostics",
+    "group": "team",
+    "scope": "instance",
+    "access": "read",
+    "approval": "none",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "route",
+      "key": "teamSyncDebug",
+      "method": "GET",
+      "path": "/api/dsh-auto-memory/team-sync-debug"
+    },
+    "since": "1.0",
+    "deprecated": null
+  },
+  {
+    "id": "team.sync.diagnostics",
+    "title": "Team synchronization diagnostics",
+    "group": "team",
+    "scope": "instance",
+    "access": "read",
+    "approval": "none",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "resultSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true
+    },
+    "source": {
+      "kind": "route",
+      "key": "teamState",
+      "method": "GET",
+      "path": "/api/dsh-auto-memory/team-state"
+    },
+    "since": "1.0",
+    "deprecated": null
+  }
+]

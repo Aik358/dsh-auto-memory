@@ -94,13 +94,14 @@ await t('#3-3 ★ 留痕（不新建状态源）', () => {
   ok(/STATUS-CHANGES\.log/.test(body), '每次变更写一行留痕')
   ok(/appendText\(/.test(body), '走 append-only')
 })
-await t('#3-4 fail-soft：任何异常不抛出', () => {
+await t('#3-4 默认 fail-soft，终端 CAS 按显式修订报告失败', () => {
   const i = CODE.indexOf('async applyNoteStatusPre(')
-  const body = CODE.slice(i, i + 4000)
-  // ★2026-10-01 判据更新（移植上游 #162）：catch 内新增 recordDiagnosticErrorPre 落诊断，
-  //   再依据 statusSaved 二分返回兜底文案；判据改为「catch 内最终返回兜底说明、且不抛」。
-  ok(/catch \(e\) \{[\s\S]{0,600}?return statusSaved[\s\S]{0,200}?状态写入失败/.test(body)
-    && !/catch \(e\) \{[\s\S]{0,600}?throw /.test(body), '★ 兜底返回说明而非抛出')
+  const body = CODE.slice(i, CODE.indexOf('async recall(', i))
+  const fallback = body.slice(body.lastIndexOf('} catch (e) {'))
+  const legacy = fallback.slice(fallback.indexOf('recordDiagnosticErrorPre'))
+  ok(/return statusSaved[\s\S]{0,200}?状态写入失败/.test(legacy) && !/throw /.test(legacy), '★ 默认调用返回兜底说明')
+  ok(/const revisionBound = expectedDigest !== undefined/.test(body)
+    && /if \(revisionBound\) \{[\s\S]+?throw e/.test(fallback), '★ CAS 调用保留失败状态')
 })
 
 // ═══ 4. 读侧：★ 声明位置（本仓「标识符作用域」类缺陷） ═══

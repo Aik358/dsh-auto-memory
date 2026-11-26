@@ -7,8 +7,8 @@
  *   不以「读源码找字符串」充当功能验收。含**负路径**（该失败时必须失败），否则守卫恒真。
  *
  * ★覆盖范围：只覆盖**独立模块** 'lib/team-transport-http.js'（createHttpBackend）。
- *   本套件**不**触碰 lib/team-transport.js 的接线状态 —— 'transport: "http"' 目前仍是
- *   构造即抛（"未实装；不静默降级到 s3"），该行为归 B11b 的 smoke-test-team-transport.mjs 管。
+ *   本套件验收 lib/team-transport-http.js 的独立传输后端。真实插件装配接线由
+ *   tests/live/auto-memory-terminal-storage.mjs 的隔离 Desktop/loopback 服务覆盖。
  *
  * 覆盖：
  *  A. 接缝形式：返回对象恰好含 put/get/list 三个自有可枚举键（与产线动词表同集合）

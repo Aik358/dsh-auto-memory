@@ -77,7 +77,7 @@ console.log("== B. 功能锚 projectDirOf ==")
 {
   const i = IX.indexOf("  projectDirOf(ws) {")
   ok(i > 0, "B0 projectDirOf 可定位")
-  const body = IX.slice(i, i + 900)
+  const body = IX.slice(i, IX.indexOf("\n  }", i))
   ok(body.indexOf("workspaceStorageDirPre") >= 0, "B1 projectDirOf 走 workspaceStorageDirPre（集中式）")
   ok(body.indexOf("this.wsKey(ws)") >= 0, "B2 传入 wsKey（每工作区一个子目录）")
   // workspaceStorageDirPre 的真落点 = memoryRoot + wsKey

@@ -498,8 +498,8 @@ console.log('  · MUT-492：从产线摘掉跨进程文件锁，重跑双进程�
 const MUT492_ROUNDS = 5
 {
   const patches = [
-    ["  return withStoreChainPre(storePath, () => withStoreFileLockPre(storePath, () => mutateUnlockedPre(storePath, mutator)))",
-      '  return withStoreChainPre(storePath, () => mutateUnlockedPre(storePath, mutator))'],
+    ["  return withStoreChainPre(storePath, () => withStoreFileLockPre(storePath, () => mutateUnlockedPre(storePath, mutator, options, eventId)))",
+      '  return withStoreChainPre(storePath, () => mutateUnlockedPre(storePath, mutator, options, eventId))'],
   ]
   const mut = mutateAndLoad(STORE_PATH, patches, 'fam492')
   console.log('  · 锚点命中数：' + JSON.stringify(mut.hits))

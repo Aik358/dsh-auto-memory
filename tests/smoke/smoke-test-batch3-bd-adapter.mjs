@@ -10,6 +10,7 @@
  *  ⑤ 移除 BD 对 _isFullTier 依赖；空 catch 禁止吞档位错误，异常留 degradation 且走同档安全投影
  *  ⑥ 覆盖 8 档 × memLegacy、冲突 profile/tier、异常、重复请求、入口实参 + 最终字符验证
  */
+import { CONTRACT_PATH } from '../../lib/terminal/contract.js'
 import { pathToFileURL } from "node:url";
 import path from "node:path";
 import fs from "node:fs";
@@ -168,7 +169,8 @@ ok(runLedger("human_full").has.length !== runLedger("human_slim").has.length, "�
   try { await mod.apply(ctx); applied = true } catch (e) { err = String((e && e.message) || e) }
   ok(applied, "★★[⑦] 真实 apply(ctx) 无异常", err ? err.slice(0, 120) : "OK");
   // P1 新增唯一 preview 路由；工具与导出保持原数。
-  ok(tools.length === 22 && routes.length === 87, "★★[⑦/P1] tools=22 / routes=87（新增 delivery-preview）", tools.length + "/" + routes.length);
+  const webRoutes = routes.filter(route => route !== CONTRACT_PATH);
+  ok(tools.length === 22 && webRoutes.length === 87, "★★[⑦/P1] tools=22 / WebUI routes=87", tools.length + "/" + webRoutes.length);
   ok(Object.keys(mod).filter((k) => k !== "default").length === 41, "★★[⑦] 导出仍 41");
 }
 

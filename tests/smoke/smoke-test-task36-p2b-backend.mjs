@@ -8,6 +8,7 @@
  *
  * 覆盖 Lead 判据 a–f + 三条裁决（start 门控 / legacy 可读错误 / 路由字段）。
  */
+import { CONTRACT_PATH } from '../../lib/terminal/contract.js'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
@@ -67,7 +68,8 @@ try {
 
   console.log('[T36-1] 路由已注册（结构守卫，非功能证据）');
   // P1 授权新增 delivery-preview；升级路由行为不变，仍数真实注册与API表。
-  ok(routes.length === 87, '★★★T36-1a 路由总数 = 87（P1新增 delivery-preview）', String(routes.length));
+  const webRoutes = routes.filter(route => route.path !== CONTRACT_PATH);
+  ok(webRoutes.length === 87, '★★★T36-1a WebUI 路由总数 = 87', String(webRoutes.length));
   ok(!!stR && !!snR, '★★★T36-1b 两个路由都已注册');
   ok(Object.keys(API_KEYS()).length === 87, '★★T36-1c API 常量表 = 87 条（P1新增 delivery-preview，与注册数一致）', String(Object.keys(API_KEYS()).length));
   function API_KEYS() { const m = IX.match(/const API = \{([\s\S]*?)\n\}/); return m ? [...m[1].matchAll(/([\w'-]+):\s*'\/api/g)].reduce((a, x) => (a[x[1]] = 1, a), {}) : {} }

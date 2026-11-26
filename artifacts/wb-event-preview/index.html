@@ -1537,7 +1537,7 @@ body.rail-open .scrim,body.detail-sheet .scrim{opacity:1;pointer-events:auto}
         var dot = el("div", "lpt-single");
         dot.style.left = pctOf(scale, ev.checkpoints[0].ms) + "%";
         track.appendChild(dot);
-      } else {
+      } else if (ev.checkpoints.length > 1) {
         var segs = segmentsOf(ev);
         var line = el("div", "lline");
         line.style.left = pctOf(scale, segs[0][0].ms) + "%";

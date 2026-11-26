@@ -1,3 +1,4 @@
+import { CONTRACT_PATH } from '../../lib/terminal/contract.js'
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as fs from 'node:fs/promises';
@@ -203,7 +204,7 @@ test('10 shipped apply really registers the local preview handler and it execute
     webServer: { register(route) { routes.push(route); return true; } },
     log() {}, logger: { info() {}, warn() {}, error() {}, debug() {} }, config: {},
   });
-  assert.equal(routes.length, 87); assert.equal(tools.length, 22);
+  assert.equal(routes.filter(route => route.path !== CONTRACT_PATH).length, 87); assert.equal(tools.length, 22);
   assert.equal(effects.length, 2); assert.equal(slots.length, 3);
   const route = routes.find(r => r.path === API.deliveryPreview);
   assert(route && typeof route.handler === 'function');

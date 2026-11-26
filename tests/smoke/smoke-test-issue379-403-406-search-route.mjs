@@ -13,7 +13,7 @@ for (const name of ['recall', 'smartRecall']) {
     resolvePathsForSession: async (sid) => ({ wsBound: sid === 'A', ws: '/fixture/A' }), agentForSessionId: () => null,
     withAgent: (agent, fn) => fn(), recall: async (...args) => { calls.push(args); return 'A result' },
     smartRecall: async (...args) => { calls.push(args); return { answer: 'A result', hits: [] } } }
-  const env = { engine, bindRecallResponseCancellation, isLoopbackRequest: () => true, panelAllowedHosts: [], forbiddenPanelPayloadPre: (req) => ({ error: 'forbidden: panel-access' }), readJsonBody: async (req) => req.body,
+  const env = { engine, terminalWorkspacePaths: Symbol('workspace paths'), bindRecallResponseCancellation, isLoopbackRequest: () => true, panelAllowedHosts: [], forbiddenPanelPayloadPre: (req) => ({ error: 'forbidden: panel-access' }), readJsonBody: async (req) => req.body,
     writeJson: (res, status, body) => Object.assign(res, { status, body }) }
   const handler = new Function(...Object.keys(env), 'return (' + host.slice(start, end) + '\n})')(...Object.values(env))
   for (const sessionId of ['', 'unknown', 'A']) {

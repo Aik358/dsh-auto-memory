@@ -160,6 +160,15 @@ if (sourceProblems.length) {
   console.log('[release] 源侧预检: OK(' + REQUIRED_SOURCE_DIRS.length + ' 个必需目录 + ' + REQUIRED_SOURCE_FILES.length + ' 个必需文件)')
 }
 
+const sourceManifest = path.join(DEV, 'package.json')
+const terminalRelease = (existsSync(sourceManifest) && JSON.parse(readFileSync(sourceManifest, 'utf8')).bin?.dam)
+  || existsSync(path.join(DEV, 'lib', 'terminal', 'cli.js'))
+if (terminalRelease) {
+  // Check the mounted contract before replacing release files.
+  execFileSync(process.execPath, [path.join(DEV, 'tools', 'inventory-auto-memory.mjs'), '--check'], { cwd: DEV, stdio: 'inherit' })
+  execFileSync(process.execPath, [path.join(DEV, 'tests', 'smoke', 'smoke-test-terminal-contract.mjs')], { cwd: DEV, stdio: 'inherit' })
+}
+
 mkdirSync(REL, { recursive: true })
 for (const entry of readdirSync(REL)) {
   if (entry === '.git' || entry === '.gitignore') continue
@@ -237,7 +246,7 @@ for (const entry of ['.gitattributes', 'cordis.patch.yml', 'README.md', 'README.
   // ★2026-09-21 补 CHANGELOG.md：两份 README **各有 3 处**链接到 `CHANGELOG.md`（导航条 / 文末链接区，
   //   共 6 处），但此文件此前**从不在复制清单里**，REL 仓也从未有过它 ⇒ GitHub 上点「Changelog」
   //   一直是 **404**（`git log --all -- CHANGELOG.md` 为空可证）。发版脚本漏拷，属真断链。
-  'CHANGELOG.md', 'skins', 'docs',
+  'CHANGELOG.md', 'skins', 'docs', 'integrations',
   // ★2026-09-29（3.2.4 插件图标批）：宿主新增插件元数据机制（`@deepseek-ai/dsh-app-boot` 的
   //   readPluginMeta / iconOf / dictionariesOf）—— 插件用 package.json 的 `icon` 字段 +
   //   `locale/<lang>.json` 在设置页插件行显示图标与中/英标题描述。
@@ -248,6 +257,33 @@ for (const entry of ['.gitattributes', 'cordis.patch.yml', 'README.md', 'README.
   'icon.svg', 'locale']) {
   const s = path.join(DEV, entry), d = path.join(REL, entry)
   if (existsSync(s)) cpSync(s, d, { recursive: true })
+}
+
+if (terminalRelease) {
+  const pluginRoot = path.join(REL, 'integrations', 'antigravity')
+  const bridgeFiles = [
+    'lib/dsh-home.js',
+    'lib/harness/antigravity.js', 'lib/harness/external-dsh-proxy.js', 'lib/harness/external-entry.js',
+    'lib/harness/external-hosts.js', 'lib/harness/external-mcp.js', 'lib/harness/kimi.js',
+    'lib/terminal/client.js', 'lib/terminal/contract.js', 'lib/terminal/discovery.js',
+  ]
+  for (const file of bridgeFiles) {
+    const destination = path.join(pluginRoot, file)
+    mkdirSync(path.dirname(destination), { recursive: true })
+    cpSync(path.join(REL, file), destination)
+  }
+  writeFileSync(path.join(pluginRoot, 'lib', 'package.json'), '{"type":"module"}\n')
+  const logoPath = path.join(pluginRoot, 'assets', 'logo.svg')
+  mkdirSync(path.dirname(logoPath), { recursive: true })
+  cpSync(path.join(DEV, 'icon.svg'), logoPath)
+  const manifestPath = path.join(pluginRoot, 'plugin.json')
+  const pluginManifest = JSON.parse(readFileSync(manifestPath, 'utf8'))
+  pluginManifest.version = version
+  writeFileSync(manifestPath, JSON.stringify(pluginManifest, null, 2) + '\n')
+  const required = ['mcp_config.json', 'hooks.json', 'scripts/hook.mjs', 'scripts/mcp.mjs',
+    'lib/harness/external-entry.js', 'lib/terminal/client.js', 'assets/logo.svg']
+  const absent = required.filter(file => !existsSync(path.join(pluginRoot, file)))
+  if (absent.length) throw new Error('Antigravity plugin package is incomplete: ' + absent.join(', '))
 }
 
 // ---------- 2.5 docs 覆盖护栏(#v3.3.15，fail-soft + 显式告警) ----------
@@ -315,7 +351,7 @@ reportDocsOverwriteRisk()
 //     · tests/smoke/smoke-test-issue368-write-contract-negative.mjs → tools/check-write-contract-await.mjs（PR#420）
 //   而 tools/ 是**白名单**入包 ⇒ 不列即静默跳过；漏了会出现「发布树里测试引用的工具不存在」，
 //   即本文件反复记录的同一型漏网（CI 里 ERR_MODULE_NOT_FOUND / ENOENT）。
-for (const toolFile of 'guard-tracked-imports.mjs,run-smoke.mjs,smoke-impact.mjs,release.mjs,reconcile-upstream.mjs,check-write-contract.mjs,check-write-contract-await.mjs,chart-engine.mjs,chart-figs.mjs,chart-figs-step5.mjs,chart-audit.mjs'.split(',')) {
+for (const toolFile of 'guard-tracked-imports.mjs,run-smoke.mjs,smoke-impact.mjs,release.mjs,reconcile-upstream.mjs,inventory-auto-memory.mjs,check-write-contract.mjs,check-write-contract-await.mjs,chart-engine.mjs,chart-figs.mjs,chart-figs-step5.mjs,chart-audit.mjs'.split(',')) {
   const src = path.join(DEV, 'tools', toolFile)
   if (!existsSync(src)) continue
   mkdirSync(path.join(REL, 'tools'), { recursive: true })
@@ -355,6 +391,7 @@ for (const toolFile of 'build-iter5-skin.mjs'.split(',')) {
 //   故此处**不信任清单**，直接核对**交付结果**：每个必需工具必须已落在 REL 里。
 //   判据从「源侧有没有」改为「产物侧有没有」—— 与 3.7 的调用点严格配套。
 const REQUIRED_RELEASE_TOOLS = ['run-smoke.mjs', 'smoke-impact.mjs', 'release.mjs', 'build-iter5-skin.mjs', 'reconcile-upstream.mjs', 'guard-tracked-imports.mjs']
+if (terminalRelease) REQUIRED_RELEASE_TOOLS.push('inventory-auto-memory.mjs')
 {
   const absent = REQUIRED_RELEASE_TOOLS.filter((f) => !existsSync(path.join(REL, 'tools', f)))
   if (absent.length) {
@@ -611,12 +648,17 @@ const relPkg = {
   version,
   type: 'module',
   main: 'lib/index.js',
+  ...(terminalRelease ? { bin: { dam: './lib/terminal/cli.js' } } : {}),
   // ★2026-09-29（3.2.4）：插件图标 + 本地化元数据。宿主 `readPluginMeta` 读**发布包**里的
   //   package.json（icon 字段）与 icon.svg/locale 文件；缺任一项 ⇒ 设置页插件行无图标/标题。
   icon: './icon.svg',
   exports: {
     '.': './lib/index.js',
     './client': './lib/client.js',
+    ...(terminalRelease ? {
+      './terminal': './lib/terminal/client.js',
+      './harness': './lib/harness/external-dsh-proxy.js',
+    } : {}),
     './package.json': './package.json',
     './locale/*.json': './locale/*.json',
   },
@@ -632,7 +674,7 @@ const relPkg = {
   //      （`.bak` 与 `.bak-*` 都被覆盖），再补一条 `!lib/*.m8b*bak` 覆盖上述无点形态。
   // ★issue #211（2026-10-04）：`docs` 移出 files —— 与 package.json 同源，两处必须一致。
   //   实测 docs/ 占仓库约 97%（约 177MB），其中 docs/internal 是审计/规划稿，运行时零消费者。
-  files: ['lib', 'python', 'skins', 'icon.svg', 'locale', 'cordis.patch.yml', '!python/bench', '!python/__pycache__',
+  files: ['lib', 'python', 'skins', 'icon.svg', 'locale', 'cordis.patch.yml', ...(terminalRelease ? ['integrations/antigravity'] : []), '!python/bench', '!python/__pycache__',
     '!**/node_modules',
     '!**/*.bak*', '!lib/*.m8b*bak*',
     // ★2026-10-01 修（issue #166）：**结构性排除** —— lib/ 下任何「主名后还有第二个点」的文件

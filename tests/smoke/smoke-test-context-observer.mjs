@@ -4,6 +4,7 @@
 // root-nested tool call 关联 / 无 owner 不入任何 runtime(含匿名 agent-object:*) / dispose 清理 /
 // 关闭时零行为差异且零 payload 留存 / 真实 ToolFailure 字段 / 原生 event.time 保留 /
 // live→resume 同一 nativeSeq 的 Segment id 稳定 / seed replay 有界窗口。
+import { CONTRACT_PATH as TERMINAL_PATH } from '../../lib/terminal/contract.js'
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readdirSync, existsSync } from 'node:fs'
 import { tmpdir, homedir } from 'node:os'
 import path from 'node:path'
@@ -118,7 +119,7 @@ const turnStartEvent = (seq, turn, time) => ({ type: 'turn/start', seq, time: ti
 // ★2026-10-02 再演进：69→70（审计修复批 #174 新增 POST /team-control，loopback-only，无条件注册）。
 // ★issue #211（2026-10-04）再演进：70→71（新增 POST /python-setup/uninstall，无条件注册）。
     // ★R158（2026-10-31 · 团队共享线 B1/B3）：80 → 82。新增 POST /team-pause、POST /team-upgrade 两条无条件路由。
-if (h.registeredRoutes.length !== 87) throw new Error('route count drifted (expected 87, unconditional routes): ' + h.registeredRoutes.length)
+if (h.registeredRoutes.filter(route => route.path !== TERMINAL_PATH).length !== 87) throw new Error('route count drifted (expected 87, unconditional routes): ' + h.registeredRoutes.length)
     const cfg = await h.prime()
     // 2026-08-26 裁定:reasoningObserverEnabled/contextBridgeObserveChildSessions 默认 true
     // (开源模型为主,思维链/分支是主要观测面);其余实验开关仍默认 false

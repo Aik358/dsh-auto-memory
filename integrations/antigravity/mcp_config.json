@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "auto-memory": {
+      "command": "node",
+      "args": ["${PLUGIN_ROOT}/scripts/mcp.mjs"],
+      "env": {
+        "DAM_AUTO_MEMORY_WORKSPACE_ROOT": "${WORKSPACE_ROOT}"
+      },
+      "variables": [
+        {
+          "name": "WORKSPACE_ROOT",
+          "title": "Bound project directory",
+          "description": "Absolute path to the project bound to this DSH Auto Memory instance."
+        }
+      ]
+    }
+  }
+}

@@ -193,11 +193,12 @@ status[0]?h('p',{className:'i5-muted',role:'status'},status[0]):null,failure[0]?
     }
     function Iter5External(props) {
       var revision=useState(0), selected=useState(''), busy=useState(false), message=useState(''), error=useState(''), search=useState('')
-      var response=useIter5Data(function(){return Promise.all([apiGet(API.external),apiGet(API.config)])},[props.nonce,revision[0]])
+      var sessionId=currentSessionIdClient()
+      var response=useIter5Data(function(){return Promise.all([apiGet(API.external,{sessionId:sessionId}),apiGet(API.config)])},[sessionId,props.nonce,revision[0]])
       var sources=response.data&&response.data[0].sources||[]
       var source=sources.find(function(s){return s.id===selected[0]})||sources[0]
       var id=source&&source.id||''
-      var detail=useIter5Data(function(){return id?apiGet(API.externalView,{source:id}):Promise.resolve(null)},[id,revision[0]])
+      var detail=useIter5Data(function(){return id?apiGet(API.externalView,{source:id,sessionId:sessionId}):Promise.resolve(null)},[id,sessionId,revision[0]])
       // ★2026-10-01（用户裁定 B 方案）：全局简报状态 —— 与「外部来源」同页展示。
       //   语义归位：简报 = 继承其他 Agent 的记忆，属「外部记忆」而非「长会话接续」。
       //   形态：**一行汇总 + 抽屉展开**（展开后是逐条清单），故取数与渲染都放在本组件内。

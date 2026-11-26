@@ -13,6 +13,7 @@ import { pathToFileURL } from "node:url";
 import path from "node:path";
 import fs from "node:fs";
 import { fileURLToPath } from "node:url";
+import { CONTRACT_PATH } from '../../lib/terminal/contract.js'
 
 const REPO = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 let pass = 0, fail = 0;
@@ -145,7 +146,8 @@ const MT = "【真实维护块·取自 DEFAULT_PROMPT_LAYERS】";
   ok(applied, "★★[RP] 真实 apply(ctx) 无异常", err ? err.slice(0, 120) : "OK");
   ok(tools.length === 22, "★★[RP] tools 注册数仍 22", String(tools.length));
   // P1 授权新增 delivery-preview；保留真 apply 计数，工具/导出等独立断言不变。
-  ok(routes.length === 87, "★★[RP/P1] routes 为 87（新增 delivery-preview）", String(routes.length));
+  const webRoutes = routes.filter(route => route !== CONTRACT_PATH);
+  ok(webRoutes.length === 87, "★★[RP/P1] WebUI 路由为 87", String(webRoutes.length));
   ok(effects.length === 2 && sect.length === 3, "★[RP] effect=2 / 注入槽=3 不变", "effect=" + effects.length + " sect=" + sect.length);
   ok(Object.keys(mod).filter((k) => k !== "default").length === 41, "★★[RP] 导出符号仍 41");
 }

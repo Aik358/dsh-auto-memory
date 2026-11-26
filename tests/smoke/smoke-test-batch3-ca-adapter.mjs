@@ -7,6 +7,7 @@
  *   ② 语义按 AD1 裁定：缺省 [25]、显式 25,50 双档、off/0 禁用、自定义不变；
  *   ③ 同名适配函数可被抽取；测试显式注入公共依赖，不要求生产双实现。
  */
+import { CONTRACT_PATH } from '../../lib/terminal/contract.js'
 import { pathToFileURL } from "node:url";
 import path from "node:path";
 import fs from "node:fs";
@@ -130,7 +131,8 @@ const real = cadence.parseWaterThresholds;
   try { await idx.apply(ctx); applied = true } catch (e) { err = String((e && e.message) || e) }
   ok(applied, "★★[AD1] 真实 apply(ctx) 无异常（AD1 未破坏插件装配）", err ? err.slice(0, 120) : "OK");
   ok(tools.length === 22, "★★[AD1] tools 注册数仍为 22（计数锁不变）", String(tools.length));
-  ok(routes.length === 87, "★★[P1] routes 注册数为 87（新增 delivery-preview；其余注册面不变）", String(routes.length));
+  const webRoutes = routes.filter(route => route !== CONTRACT_PATH);
+  ok(webRoutes.length === 87, "★★[P1] WebUI 路由注册数为 87", String(webRoutes.length));
   ok(effects.length === 2 && sect.length === 3, "★[AD1] effect=2 / 注入槽=3 均不变", "effect=" + effects.length + " sect=" + sect.length);
 }
 

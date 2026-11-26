@@ -52,6 +52,12 @@ jobs:
           echo "--- 套件总数 ---"
           ls tests/smoke/*.mjs | wc -l
 
+      - name: 运行时终端契约和覆盖清单
+        run: |
+          node tools/inventory-auto-memory.mjs --check
+          node tests/smoke/smoke-test-api-paths.mjs
+          node tools/verify-docs.mjs
+
       - name: 全量 smoke 回归（排除依赖本机产物/网络的套件）
         run: |
           node tools/run-smoke.mjs \

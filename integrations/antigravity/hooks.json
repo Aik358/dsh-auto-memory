@@ -1,0 +1,26 @@
+{
+  "auto-memory": {
+    "enabled": true,
+    "SessionStart": [
+      {
+        "type": "command",
+        "command": "node ./scripts/hook.mjs SessionStart",
+        "timeout": 5
+      }
+    ],
+    "PreInvocation": [
+      {
+        "type": "command",
+        "command": "node ./scripts/hook.mjs PreInvocation",
+        "timeout": 5
+      }
+    ],
+    "Stop": [
+      {
+        "type": "command",
+        "command": "node ./scripts/hook.mjs Stop",
+        "timeout": 5
+      }
+    ]
+  }
+}

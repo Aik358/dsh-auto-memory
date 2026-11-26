@@ -5,9 +5,14 @@
   "private": true,
   "type": "module",
   "main": "lib/index.js",
+  "bin": {
+    "dam": "./lib/terminal/cli.js"
+  },
   "exports": {
     ".": "./lib/index.js",
     "./client": "./lib/client.js",
+    "./terminal": "./lib/terminal/client.js",
+    "./harness": "./lib/harness/external-dsh-proxy.js",
     "./package.json": "./package.json",
     "./locale/*.json": "./locale/*.json"
   },

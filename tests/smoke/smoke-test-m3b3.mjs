@@ -3,6 +3,7 @@
 // 默认关闭逐字节回归 / 开启态 append+sidecar 版本 / replace §9 / reflect / calendar 排除 /
 // maintain archive 保留 ID / 关闭-开启-关闭切换 / 真实目录零污染。
 // 全程临时 DSH_HOME + 隔离 memoryRoot,真实记忆零接触;hard-fail guard。
+import { CONTRACT_PATH as TERMINAL_PATH } from '../../lib/terminal/contract.js'
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, readdirSync, existsSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
@@ -51,7 +52,7 @@ if (registeredTools.length !== 22) throw new Error('expected 21 tools (17 + T4 m
 // ★2026-10-02 再演进：69→70（审计修复批 #174 新增 POST /team-control，loopback-only，无条件注册）。
 // ★issue #211（2026-10-04）再演进：70→71（新增 POST /python-setup/uninstall，无条件注册）。
 // ★R158（2026-10-31）：80 → 82（新增 team-pause / team-upgrade）。
-if (registeredRoutes.length !== 87) throw new Error('expected 87 routes, got ' + registeredRoutes.length)
+if (registeredRoutes.filter(route => route.path !== TERMINAL_PATH).length !== 87) throw new Error('expected 87 routes, got ' + registeredRoutes.length)
 
 const cfgRoute = registeredRoutes.find((r2) => r2.path === '/api/dsh-auto-memory/config')
 let body

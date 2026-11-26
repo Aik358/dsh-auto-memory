@@ -6,7 +6,7 @@ import { apply, API, MemoryEngine } from './audit-engine.mjs'
 import { MemoryDocumentStore } from '../../lib/memory-writer.js'
 
 // The complete apply() wiring and real HTTP handlers; no DSH host or model is needed.
-export async function startRecallHost(root, config = {}, { services = {}, onHttpRequest } = {}) {
+export async function startRecallHost(root, config = {}, { services = {}, onHttpRequest, webOrigin } = {}) {
   const previous = { home: process.env.DSH_HOME, load: MemoryEngine.prototype.loadConfigSync,
     interval: globalThis.setInterval, timeout: globalThis.setTimeout }
   const listeners = new Map(['uncaughtException', 'unhandledRejection', 'exit'].map(key => [key, new Set(process.listeners(key))]))
@@ -21,7 +21,7 @@ export async function startRecallHost(root, config = {}, { services = {}, onHttp
   try {
     apply({ get: name => services[name], on: () => {}, systemPrompt: { context: () => () => {}, section: () => () => {} },
       tools: { register: tool => { modelTools.set(tool.name, tool); return () => {} } },
-      webServer: { register: route => { routes.push(route); return () => {} } },
+      webServer: { register: route => { routes.push(route); return () => {} }, getOrigin: webOrigin },
       effect: fn => { cleanup = fn() } }, {})
   } finally {
     MemoryEngine.prototype.loadConfigSync = previous.load
@@ -40,7 +40,7 @@ export async function startRecallHost(root, config = {}, { services = {}, onHttp
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve))
   const base = 'http://127.0.0.1:' + server.address().port
   return {
-    engine, agent, paths,
+    engine, agent, paths, base,
     invokeTool: (name, args, exec = {}) => modelTools.get(name).execute(args, { agent, ...exec }),
     request: async (key, body, query = '', signal) => {
       const response = await fetch(base + API[key] + query, {

@@ -11,6 +11,7 @@
  * 为什么不用「抽取式」：renderMemoryDynamic 依赖 43 个非成员调用（其中 25 个无法按声明定位），
  *   抽取必然要补一堆桩、且桩本身会掩盖缺陷。真实 apply 是更强的验收面。
  */
+import { CONTRACT_PATH } from '../../lib/terminal/contract.js'
 import { pathToFileURL } from "node:url";
 import fs from "node:fs";
 import path from "node:path";
@@ -61,7 +62,8 @@ ok(!applyErr, "[真apply] apply(ctx) 无抛错", applyErr ? String(applyErr.mess
 ok(host.reg.tools.length === 22, "[真apply] 注册 22 个工具", "实测 " + host.reg.tools.length)
 ok(host.reg.contexts.length === 2, "[真apply] 注册 2 个 systemPrompt.context", "实测 " + host.reg.contexts.length)
 ok(host.reg.sections.length === 1, "[真apply] 注册 1 个 systemPrompt.section", "实测 " + host.reg.sections.length)
-ok(host.reg.routes.length === 87, "[真apply/P1] 注册 87 条路由（新增 delivery-preview）", "实测 " + host.reg.routes.length)
+const webRoutes = host.reg.routes.filter(route => route.path !== CONTRACT_PATH)
+ok(webRoutes.length === 87, "[真apply/P1] 注册 87 条 WebUI 路由", "实测 " + webRoutes.length)
 
 // ─────────────────────────────────────────────────────────────
 // 2. 真 context 回调（B3-CB 的核心新增面）

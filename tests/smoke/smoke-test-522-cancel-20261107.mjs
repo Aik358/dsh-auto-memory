@@ -63,7 +63,8 @@ console.log('\n=== D. 变异反向验证（在内存副本里做）===')
   const a = IX.indexOf('if (this._ritualAbort && this._ritualAbort[this.waterKey(sid)]) {')
   const b = IX.indexOf('if (Date.now() >= deadline) { lastReason', a)
   const mut = (a > 0 && b > a) ? IX.slice(0, a) + IX.slice(b) : IX
-  ok(mut !== IX && !mut.includes("reason: 'cancelled', attempts: attemptsMade"), 'D2 变异（删检查点）后 B1 必红', '切除 ' + (b - a) + ' 字符')
+  ok(mut !== IX && !/if \(this\._ritualAbort && this\._ritualAbort\[this\.waterKey\(sid\)\]\) \{/.test(mut),
+    'D2 变异（删尝试前检查点）后 B2 必红', '切除 ' + (b - a) + ' 字符')
 }
 
 console.log('\n[522-cancel] PASS ' + pass + ' / FAIL ' + fail)

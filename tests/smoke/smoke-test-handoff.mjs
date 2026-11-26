@@ -244,7 +244,7 @@ ok(SRC.includes("if (scope === 'handoff') {") && SRC.includes("if (scope === 'se
 //   比字符串全等更贴合原意（将来再加 scope 也不会假红）。
 {
   const enumLine = "scope: { type: 'string', enum: ['all', 'handoff', 'sessions', 'archive', 'events']"
-  const call = /engine\.recall\(args\.query, args\.limit, exec\.agent, args\.scope \|\| 'all', \{[^\r\n{}]+\}\)/g
+  const call = /engine\.recall\(args\.query, args\.limit, exec\.agent, args\.scope \|\| 'all', \{[^{}]+\}\)/g
   const fields = ['eventId: args.eventId', 'checkpointIndex: args.checkpointIndex', 'idemKey: args.idemKey', 'signal: exec.signal']
   const hasRecallWire = (source) => {
     const calls = [...source.matchAll(call)]

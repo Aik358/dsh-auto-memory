@@ -134,13 +134,13 @@ ok(/const rawSid = String\(sessionId == null \? '' : sessionId\)\.trim\(\)/.test
 
 console.log('')
 console.log('== S3 路由必须把回落状态暴露出去（不许静默）==')
-const fb = (INDEX.match(/wsFallback: _rp\.sidExplicit !== true/g) || []).length
+const fb = (INDEX.match(/wsFallback: !_rp\.source && _rp\.sidExplicit !== true/g) || []).length
 ok(fb >= 2, '★★★S3a event-list 与 event-detail 两处都暴露 wsFallback', '命中 ' + fb + ' 处')
 ok((INDEX.match(/sidExplicit: _rp\.sidExplicit === true/g) || []).length >= 2, '★★★S3b 两处都暴露 sidExplicit')
 // 负路径：确认这两行不是恒真 —— 删掉后正则应不再命中
 {
-  const mut = INDEX.split('wsFallback: _rp.sidExplicit !== true').join('')
-  ok(!/wsFallback: _rp\.sidExplicit !== true/.test(mut), '★★★S3c [负路径] 去掉后不再命中（判据有鉴别力）')
+  const mut = INDEX.split('wsFallback: !_rp.source && _rp.sidExplicit !== true').join('')
+  ok(!/wsFallback: !_rp\.source && _rp\.sidExplicit !== true/.test(mut), '★★★S3c [负路径] 去掉后不再命中（判据有鉴别力）')
 }
 
 console.log('')

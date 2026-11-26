@@ -27,7 +27,7 @@ const ok = (c, n, d) => { if (c) { pass++; console.log('  PASS ' + n + (d ? '  =
 // ═══════════════════════════════════════════════════════════════════
 console.log('[T31-1] P0 结构守卫（守卫，非功能证据）');
 {
-  const helper = IX.indexOf('  async resolvePathsForRequestPre(sessionId) {');
+  const helper = IX.indexOf('  async resolvePathsForRequestPre(sessionId, workspacePaths) {');
   ok(helper > 0, '★T31-1a resolvePathsForRequestPre 辅助方法存在');
   // 两 handler 区间内不得再有 resolvePaths(undefined)
   const iList = IX.indexOf("path: API['event-list']");

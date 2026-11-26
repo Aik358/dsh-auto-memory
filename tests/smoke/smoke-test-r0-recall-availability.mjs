@@ -159,7 +159,7 @@ test('recall truncates only over the output cap and retains the request receipt'
 })
 
 test('HTTP recall keeps the current/full default and forwards explicit l0', async () => {
-  const execute = new AsyncFunction('body', 'res', 'req', 'agent', 'liveAgent', 'engine', 'writeJson', 'bindRecallResponseCancellation',
+  const execute = new AsyncFunction('body', 'res', 'req', 'agent', 'liveAgent', 'engine', 'writeJson', 'bindRecallResponseCancellation', 'workspacePaths',
     readSection("          const scope = body.scope || 'current'", '\n        } catch (e) { writeJson(res, 500'))
   for (const [body, expected] of [[{ query: 'needle' }, ['current', 'full']], [{ query: 'needle', scope: 'all', format: 'l0' }, ['all', 'l0']]]) {
     const agent = caller
@@ -177,7 +177,7 @@ test('HTTP recall keeps the current/full default and forwards explicit l0', asyn
       },
     }
     await execute(body, {}, {}, agent, agent, engine,
-      (_res, status, data) => { returned = [status, data] }, () => ({ signal, release() {} }))
+      (_res, status, data) => { returned = [status, data] }, () => ({ signal, release() {} }), undefined)
     assert.deepEqual(returned, [200, { result: 'result text', hits: ['structured-hit'] }])
   }
 })

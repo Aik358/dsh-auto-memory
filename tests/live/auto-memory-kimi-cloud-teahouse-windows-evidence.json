@@ -1,0 +1,135 @@
+{
+  "host": "Cloud Teahouse Cloud Code CLI",
+  "hostVersion": "0.2.0",
+  "bindingHarness": "kimi",
+  "dshDesktopVersion": "0.2.2-rc.5",
+  "dshIdentity": {
+    "pluginVersion": "3.4.4",
+    "buildId": "3de0029cd6eeffa0b1b190aea1133f2f18409f30ada6085b320ce3c3e9d29fd3"
+  },
+  "reports": [
+    {
+      "label": "binding",
+      "boundCliExit": 0,
+      "crossWorkspaceCliExit": 1,
+      "crossWorkspaceHookRejected": true
+    },
+    {
+      "label": "cloud-project-mcp-without-trust-override",
+      "exit": 0,
+      "modelRequests": 5,
+      "context": true,
+      "events": [
+        {
+          "name": "SessionStart",
+          "sessionId": "session_f1f5d281-8ca5-4ce9-be6a-b5ab910dc73b",
+          "source": "startup",
+          "context": false,
+          "code": 0
+        },
+        {
+          "name": "UserPromptSubmit",
+          "sessionId": "session_f1f5d281-8ca5-4ce9-be6a-b5ab910dc73b",
+          "context": true,
+          "code": 0
+        },
+        {
+          "name": "Stop",
+          "sessionId": "session_f1f5d281-8ca5-4ce9-be6a-b5ab910dc73b",
+          "context": false,
+          "code": 0
+        },
+        {
+          "name": "SessionEnd",
+          "sessionId": "session_f1f5d281-8ca5-4ce9-be6a-b5ab910dc73b",
+          "reason": "exit",
+          "context": false,
+          "code": 0
+        }
+      ],
+      "offered": [
+        "mcp__auto_memory__memory_list",
+        "mcp__auto_memory__memory_recall",
+        "mcp__auto_memory__status"
+      ]
+    },
+    {
+      "label": "resume",
+      "exit": 0,
+      "modelRequests": 1,
+      "context": true,
+      "events": [
+        {
+          "name": "SessionStart",
+          "sessionId": "session_f1f5d281-8ca5-4ce9-be6a-b5ab910dc73b",
+          "source": "resume",
+          "context": false,
+          "code": 0
+        },
+        {
+          "name": "UserPromptSubmit",
+          "sessionId": "session_f1f5d281-8ca5-4ce9-be6a-b5ab910dc73b",
+          "context": true,
+          "code": 0
+        },
+        {
+          "name": "Stop",
+          "sessionId": "session_f1f5d281-8ca5-4ce9-be6a-b5ab910dc73b",
+          "context": false,
+          "code": 0
+        },
+        {
+          "name": "SessionEnd",
+          "sessionId": "session_f1f5d281-8ca5-4ce9-be6a-b5ab910dc73b",
+          "reason": "exit",
+          "context": false,
+          "code": 0
+        }
+      ],
+      "offered": [
+        "mcp__auto_memory__memory_list",
+        "mcp__auto_memory__memory_recall",
+        "mcp__auto_memory__status"
+      ]
+    },
+    {
+      "label": "deny-recall",
+      "exit": 0,
+      "modelRequests": 5,
+      "context": true,
+      "events": [
+        {
+          "name": "SessionStart",
+          "sessionId": "session_7d284eed-2273-44e0-92ce-fae9cfc6f06e",
+          "source": "startup",
+          "context": false,
+          "code": 0
+        },
+        {
+          "name": "UserPromptSubmit",
+          "sessionId": "session_7d284eed-2273-44e0-92ce-fae9cfc6f06e",
+          "context": true,
+          "code": 0
+        },
+        {
+          "name": "Stop",
+          "sessionId": "session_7d284eed-2273-44e0-92ce-fae9cfc6f06e",
+          "context": false,
+          "code": 0
+        },
+        {
+          "name": "SessionEnd",
+          "sessionId": "session_7d284eed-2273-44e0-92ce-fae9cfc6f06e",
+          "reason": "exit",
+          "context": false,
+          "code": 0
+        }
+      ],
+      "offered": [
+        "mcp__auto_memory__memory_list",
+        "mcp__auto_memory__memory_recall",
+        "mcp__auto_memory__status"
+      ]
+    }
+  ]
+}

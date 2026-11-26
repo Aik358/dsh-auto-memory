@@ -1,0 +1,10 @@
+{
+  "$schema": "https://antigravity.google/schemas/v1/plugin.json",
+  "name": "auto-memory",
+  "displayName": "Auto Memory",
+  "version": "3.4.4",
+  "logo": "assets/logo.svg",
+  "description": "Connect Antigravity to one bound DSH Auto Memory workspace with read-only tools and project context.",
+  "license": "BSD-3-Clause",
+  "keywords": ["memory", "dsh", "context"]
+}
