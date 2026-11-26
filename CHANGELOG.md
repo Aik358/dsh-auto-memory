@@ -4,6 +4,23 @@ All notable changes to dsh-auto-memory.
 
 ---
 
+## [3.4.6] — 2026-11-26 · Hub task delivery and explicit fact protection
+
+### Verified in the fact store
+
+- Automatic inference can no longer replace a current fact that the user explicitly recorded. Users can still correct their own facts. The store checks provenance under the write lock and reports a protected-fact refusal. Regression tests cover legacy provenance, batch commit and rollback, and retry after a failed write. [#550](https://github.com/Aik358/dsh-auto-memory/issues/550)
+
+### Implemented and tested in isolation
+
+- The hub admits the first delegated task on DSH 0.2.3 using the host's subagent identity fields. The filter still drops settlement notices addressed to the workbench. The official DSH 0.2.3-alpha.2 components admitted the delegated task in an isolated dispatch check with a stubbed execution step. A live Desktop run of background jobs is pending. Thanks to [@nohappiness](https://github.com/nohappiness). [PR #582](https://github.com/Aik358/dsh-auto-memory/pull/582)
+
+### Contributor credits for changes shipped in v3.4.5
+
+- [@HY-pt](https://github.com/HY-pt) contributed per-package confirmation for historical migration and bounded retry for the continuation ritual. [PR #546](https://github.com/Aik358/dsh-auto-memory/pull/546#issuecomment-7180854977) · [PR #522](https://github.com/Aik358/dsh-auto-memory/pull/522#issuecomment-7180856288)
+- [@gezerui888](https://github.com/gezerui888) contributed Python worker reload after saving the activation mode and its regression coverage. [PR #471](https://github.com/Aik358/dsh-auto-memory/pull/471#issuecomment-7180857758)
+
+The remaining follow-ups and original-environment checks are tracked in [#584](https://github.com/Aik358/dsh-auto-memory/issues/584).
+
 ## [3.4.5] — 2026-11-25 · Correct memory delivery during tool runs
 
 ### Verified fixes

@@ -9,8 +9,9 @@
  *
  *   若 handler 内部抛 ReferenceError 并被空 catch 吞掉，则 decision 原样返回 ⇒ 拦截失效。
  */
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync, existsSync, readFileSync } from 'node:fs'
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
+import { isDeepStrictEqual } from 'node:util'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -38,7 +39,8 @@ writeFileSync(path.join(home, 'dsh-auto-memory.json'), JSON.stringify({
 process.env.DSH_HOME = home
 globalThis.fetch = async () => ({ ok: false, status: 503, json: async () => ({}) })
 
-const { apply } = await import('file:///' + SRC.replace(/\\/g, '/'))
+process.env.DAM_AUDIT_ENGINE_SOURCE ||= SRC
+const { apply, MemoryEngine, flushDiagnostics } = await import('../lib/audit-engine.mjs')
 
 const eventHandlers = new Map()
 const ctx = {
@@ -49,13 +51,24 @@ const ctx = {
   tools: { register() { return () => {} } },
   webServer: { register() { return () => {} } },
 }
-apply(ctx, {})
+const loadConfigSync = MemoryEngine.prototype.loadConfigSync
+try {
+  MemoryEngine.prototype.loadConfigSync = function (...args) {
+    // Disable the developer trace that points outside this test’s temporary DSH_HOME.
+    this._hubProbe = false
+    return loadConfigSync.apply(this, args)
+  }
+  apply(ctx, {})
+} finally {
+  MemoryEngine.prototype.loadConfigSync = loadConfigSync
+}
 
 const preStep = eventHandlers.get('agent/pre-step')
 if (!preStep) { console.log('FAIL - agent/pre-step 未注册'); process.exit(1) }
 
-function mkAgent(cwd, sid) {
-  return { id: sid, session: { id: sid, header: { id: sid, cwd }, events: [{ seq: 1, type: 'turn/start', data: { turn: 1 } }] } }
+function mkAgent(cwd, sid, headerFields = {}) {
+  const header = { id: sid, cwd, ...headerFields }
+  return { id: sid, session: { id: sid, header, events: [{ seq: 1, type: 'turn/start', data: { turn: 1 } }] } }
 }
 function agentMsg(text) {
   return { role: 'user', content: [{ type: 'text', text: 'Agent s-1 sent a message: ' + text }],
@@ -85,8 +98,10 @@ async function run(label, agent, messages, expected) {
   const next = async () => ({ kind: 'enter', messages: messages.slice() })
   const decision = await preStep(payload, next)
   const got = decision && decision.kind
-  ok(got === expected, label + ' (期望 kind=' + expected + '，实际=' + got + ')',
-    decision && Array.isArray(decision.messages) ? 'messages.length=' + decision.messages.length : '')
+  const wantedMessages = expected === 'enter' ? messages : []
+  const keptBatch = isDeepStrictEqual(decision?.messages, wantedMessages)
+  ok(got === expected && keptBatch, label + ' (期望 kind=' + expected + '，实际=' + got + ')',
+    'messages.length=' + (decision?.messages?.length ?? 'missing'))
   return decision
 }
 
@@ -99,6 +114,18 @@ console.log('=== 记忆中枢 cwd = ' + HUB_CWD + ' ===\n')
 
 await run('[中枢] 纯 agent-message 批次', hubAgent, [agentMsg('hello')], 'reject')
 await run('[中枢] 两条 agent-message 批次', hubAgent, [agentMsg('a'), agentMsg('b')], 'reject')
+
+// Hosted child sessions inherit the workbench cwd before their local handles are registered.
+const child = mkAgent(HUB_CWD, 'child-with-origin', { origin: 'subagent', parentSession: hubAgent.id })
+const legacyChild = mkAgent(HUB_CWD, 'child-with-depth', { delegationDepth: 1, parentSession: hubAgent.id })
+const continued = mkAgent(HUB_CWD, 'continued-session', { delegationDepth: 0, parentSession: hubAgent.id })
+await run('[中枢工作区的子代理] DSH 0.2.3 初始任务保留原批次', child, [agentMsg('Initial delegated task')], 'enter')
+await run('[中枢工作区的子代理] 旧版初始任务保留原批次', child, [humanMsg('Initial delegated task')], 'enter')
+await run('[中枢工作区的子代理] 后续中继消息保留原批次', child, [agentMsg('First relay'), agentMsg('Second relay')], 'enter')
+await run('[中枢工作区的子代理] 下级子代理的结算通知保留原批次', child, [settledMsg('nested-child')], 'enter')
+await run('[中枢工作区的子代理] 仅有 delegationDepth 时也保留初始任务', legacyChild, [agentMsg('Legacy delegated task')], 'enter')
+await run('[中枢工作区的接续会话] 只有 parentSession 不算子代理', continued, [settledMsg('child-with-origin')], 'reject')
+
 // ★2026-10-31 用户原话「consolidate 等操作结束之后」—— 对应的正是 subagent-settled
 await run('[中枢] 纯 subagent-settled 批次（操作结束通知）', hubAgent, [settledMsg('c-1')], 'reject')
 await run('[中枢] agent-message+subagent-settled 混合批次（R159 实测形状）', hubAgent,
@@ -110,5 +137,6 @@ await run('[其他工作区] 纯 agent-message（必须放行，用户硬要求�
 await run('[其他工作区] 纯 subagent-settled（必须放行，用户硬要求）', otherAgent, [settledMsg('c-1')], 'enter')
 
 console.log('\n=== 结果：' + pass + ' pass / ' + fail + ' fail ===')
+await flushDiagnostics()
 rmSync(ws, { recursive: true, force: true })
 process.exit(fail ? 1 : 0)
