@@ -6,8 +6,7 @@
 //      抛 SESSION_QUERY_SEARCH_DISABLED）被当成真故障：每次 recall 都落一条降级台账
 //      + 白付 6s 超时 + 一句「具体成因未确定」，用户拿不到任何可操作线索。
 //   ② 「检索成功但零命中」与「索引为空」也混成一个"没搜到"。
-//   ③ eventFilters：**全仓命中 0**（grep lib/ tests/ tools/ skins/ + git log --all -S 均为 0）
-//      ⇒ 它不是"声明了没接线"，而是**根本不存在这个声明**，故无可删、也无可补接线。
+//   ③ Historical recall must deliver only current user/assistant messages from the authorized workspace.
 //
 // 本套件是**功能验收（CR-10）**：真 import → 真构造 → 真调用 → 断言返回值。
 //   [A] 错误 → 姿态分类：disabled / index-error / unknown 三态可区分
@@ -15,7 +14,7 @@
 //   [C] 台账判据：预期内姿态**不得**进降级台账（#476 主诉），预期外必须进
 //   [D] 枚举自洽：姿态全集 / 预期集 / 未知值 fail-closed
 //   [E] 降级台账真跑：disabled 不计数、index-error 计数
-//   [F] eventFilters 死字段判定的可复算证据（计数为 0，且非"声明后未接线"）
+//   [F] Production adapter sends and verifies visible message filters.
 import {
   classifySessionSearchErrorPre, classifySessionSearchResultPre, isSessionSearchPosturePre,
   recordDiagnosticErrorPre, diagnosticErrorReasonPre,
@@ -25,9 +24,7 @@ import {
   createDegradeSinkPre, shouldRecordSessionSearchPre,
   SESSION_SEARCH_POSTURES_PRE_V1, SESSION_SEARCH_EXPECTED_POSTURES_PRE_V1,
 } from '../../lib/degrade.js'
-import { readFileSync, readdirSync } from 'node:fs'
-import path from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { SessionRecallReader } from '../../lib/session-recall.js'
 
 let pass = 0, fail = 0
 const ok = (c, name, extra) => { if (c) { pass++; console.log('  ok   - ' + name + (extra ? ' :: ' + extra : '')) } else { fail++; console.error('  FAIL - ' + name + (extra ? ' :: ' + extra : '')) } }
@@ -104,37 +101,24 @@ ok(sink.snapshot().counts['session-search'] === 2, 'E-8 snapshot 里 counts 一�
 ok(diagnosticErrorReasonPre(err406('SESSION_QUERY_SEARCH_DISABLED')).includes('code=SESSION_QUERY_SEARCH_DISABLED'), 'E-9 reason 仍保留稳定 code')
 
 console.log('')
-console.log('=== F. eventFilters：死字段判定的可复算证据 ===')
-const HERE = path.dirname(fileURLToPath(import.meta.url))
-const ROOT = path.resolve(HERE, '..', '..')
-function countIn(dir, re) {
-  let n = 0
-  const walk = (d) => {
-    let ents = []
-    try { ents = readdirSync(d, { withFileTypes: true }) } catch (_) { return }
-    for (const e of ents) {
-      const p = path.join(d, e.name)
-      if (e.isDirectory()) { if (!/^(node_modules|\.git)$/.test(e.name)) walk(p); continue }
-      if (!/\.(js|mjs)$/.test(e.name)) continue
-      if (e.name === 'client.js') continue   // 生成产物，不是真源
-      if (e.name === 'smoke-test-issue476-session-posture.mjs') continue   // 本套件自身（含该词用于计数）
-      let t = ''
-      try { t = readFileSync(p, 'utf8') } catch (_) { continue }
-      const m = t.match(re)
-      if (m) n += m.length
-    }
-  }
-  walk(dir)
-  return n
-}
-const libHits = countIn(path.join(ROOT, 'lib'), /eventFilters/g)
-const testHits = countIn(path.join(ROOT, 'tests'), /eventFilters/g)
-const toolHits = countIn(path.join(ROOT, 'tools'), /eventFilters/g)
-ok(libHits === 0, 'F-1 lib/ 下 eventFilters 出现 0 次（含 client.js 之外全部 .js）', String(libHits))
-ok(testHits === 0 && toolHits === 0, 'F-2 tests/ 与 tools/ 同样 0 次', testHits + ' / ' + toolHits)
-// ★判据区分「声明了没接线」与「根本不存在」：死字段 = 有声明点无读取点 ⇒ 声明 ≥1 且读取 =0
-//   实测两者都 =0 ⇒ 不是死字段，是**从未存在**，故无可删、也无可补接线的对象。
-ok(libHits === 0, 'F-3 ★ 声明点也是 0 ⇒ 判定为「从未存在」而非「声明后未接线」（前者无可删，后者才该补接线）', 'decl=' + libHits + ' read=' + libHits)
+console.log('=== F. Production history adapter enforces event visibility ===')
+const agent = { session: { id: 'caller', header: { cwd: '/fixture' } } }
+let request
+const service = { async searchSessions(value) {
+  request = value
+  return { items: [
+    { header: { id: 'prior', cwd: '/fixture' }, bestMatch: { sessionId: 'prior', type: 'user/message', surface: 'current', snippet: 'valid visible message' } },
+    { header: { id: 'shadow', cwd: '/fixture' }, bestMatch: { sessionId: 'shadow', type: 'assistant/message', surface: 'shadowed', snippet: 'must omit shadow' } },
+    { header: { id: 'thought', cwd: '/fixture' }, bestMatch: { sessionId: 'thought', type: 'assistant/reasoning', surface: 'current', snippet: 'must omit reasoning' } },
+  ] }
+} }
+const reader = new SessionRecallReader({ getService: () => service })
+try {
+  const lines = await reader.search('message', 3, { agent })
+  ok(request?.eventFilters.some(filter => filter.kind === 'surface' && filter.values.join() === 'current'), 'F-1 sends the current surface filter')
+  ok(request?.eventFilters.some(filter => filter.kind === 'type' && filter.values.join() === 'user/message,assistant/message'), 'F-2 limits the event types to visible messages')
+  ok(lines.length === 1 && lines[0].includes('valid visible message') && !lines.join().includes('must omit'), 'F-3 filters unsafe rows even if the host returned them')
+} finally { reader.dispose() }
 
 console.log('')
 console.log((fail === 0 ? 'PASS ' : 'FAIL ') + pass + ' / FAIL ' + fail)

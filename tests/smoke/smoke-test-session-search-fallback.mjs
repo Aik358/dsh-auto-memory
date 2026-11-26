@@ -1,191 +1,187 @@
 #!/usr/bin/env node
-/**
- * smoke-test-session-search-fallback.mjs —— sessions 检索兜底（2026-09-29）★真抽取产线方法真执行。
- *
- * 背景（用户报障实录）：宿主 `@deepseek-ai/dsh-session-format-v0-to-v1` 的 v0→v1 迁移器只认
- * `subagent/descriptor` data.version===3；本机 2026-08-19~23 的 39 个旧会话写的是 v2 ⇒ 任一
- * 冷会话重索引失败 ⇒ 整轮 persistence observation 抛 SESSION_QUERY_PERSISTENCE_FAILED ⇒
- * `sq.searchSessions` 整体不可用 ⇒ 「记忆检索|sessions」通道全死。
- *
- * 修法：`searchSessionHistory` 捕获宿主索引抛错后，走插件内**词法兜底扫描**
- * （多帧 zstd 解码 + 预算内逐文件扫描 + 跳过解不开的文件），通道从「全死」变「绕过毒会话继续搜」。
- *
- * 判据（断言对象 = 产线代码的执行结果，不是副本）：
- *  - 宿主抛错 ⇒ 兜底真被触发，返回非空结果，尾部带兜底口径说明行
- *  - 结果条目形状与宿主索引同构（`· [日期] cwd` + snippet 行）
- *  - 预算纪律：超巨型文件被跳过（负路径：全坏文件 ⇒ 空数组，绝不抛）
- *  - `sessionQuery` 缺失 ⇒ 恒 []（既有契约不回归：recall 侧打印「索引未部署」）
- *  - 宿主正常路径 ⇒ 兜底**不触发**（走原渲染，保持既有输出形状）
- *  - 变异检查：兜底说明行字面量被改 ⇒ 红（证明断言非恒真）
- */
-import { readFileSync } from 'node:fs'
-import { dirname, join } from 'node:path'
-import pathModule from 'node:path'
-import { fileURLToPath } from 'node:url'
-import { createRequire } from 'node:module'
-import { zstdDecompressSync } from 'node:zlib'
-import { decodeZstdFramesHead } from '../../lib/subagent-gc.js'
+/** The disabled-FTS compatibility path uses only authorized host projections. */
+import assert from 'node:assert/strict'
+import { test } from 'node:test'
+import { SessionRecallReader } from '../../lib/session-recall.js'
 
-let pass = 0, fail = 0
-const failures = []
-function ok(cond, name, got) {
-  if (cond) { pass++ } else { fail++; failures.push(name + (got === undefined ? '' : ' | got=' + JSON.stringify(got))) }
+const cwd = 'D:/workspace'
+const caller = { session: { id: 'caller', header: { cwd } } }
+const cwdFilter = { kind: 'cwd', values: [cwd] }
+const messageFilters = [
+  { kind: 'type', values: ['user/message', 'assistant/message'] },
+  { kind: 'surface', values: ['current'] },
+]
+const record = (id, workspace = cwd) => ({ header: { id, cwd: workspace, createdAt: '2026-08-19T01:00:00Z' } })
+const message = (sessionId, text, overrides = {}) => ({ sessionId, text, seq: 1, type: 'user/message', surface: 'current', ...overrides })
+const hostError = code => Object.assign(new Error('private host detail'), { code })
+const disabled = () => { throw hostError('SESSION_QUERY_SEARCH_DISABLED') }
+
+function makeSearch(t, service) {
+  const reader = new SessionRecallReader({ getService: () => service, getLiveSession: id => id === caller.session.id ? caller.session : undefined })
+  t.after(() => reader.dispose())
+  return (query, limit = 8, options) => reader.search(query, limit, { agent: caller, ...options })
 }
 
-const require = createRequire(import.meta.url)
-const here = dirname(fileURLToPath(import.meta.url))
-const root = join(here, '..', '..')
-const src = readFileSync(join(root, 'lib', 'index.js'), 'utf8')
-
-// ── 真抽取：searchSessionHistory + lexicalSessionScanFallback 两个产线方法 ──
-const start = src.indexOf('  async searchSessionHistory(')
-const end = src.indexOf('  /** M-CM4·自动窗口')
-ok(start > 0, '抽取窗口起点命中')
-ok(end > start, '抽取窗口终点命中')
-const body = src.slice(start, end)
-
-// 沙箱依赖：与产线模块同名的注入参数（真 fs / 真 zstd / 真 subagent-gc 解码器）
-const fsSync = {
-  readdirSync: (await import('node:fs')).readdirSync,
-  readFileSync: (await import('node:fs')).readFileSync,
-  statSync: (await import('node:fs')).statSync,
-  existsSync: (await import('node:fs')).existsSync,
-}
-const dateStrOf = (ts) => { const d = new Date(ts); const p = (n) => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}` }
-// 抽取窗口只含两个方法体；产线模块顶层的 fs 具名导入（readdirSync 等）在窗口之外 ⇒ 壳单独绑定
-const makeHost = (over = {}) => {
-  const factory = new Function('path', 'readdirSync', 'readFileSync', 'statSync', 'existsSync',
-    'zstdDec', 'decodeZstdFramesHead', 'dateStrOf', 'dshHome',
-    `return class SessHost {\n${'  ' + body}\n}`)
-  const Cls = factory(pathModule, fsSync.readdirSync, fsSync.readFileSync, fsSync.statSync, fsSync.existsSync,
-    zstdDecompressSync, decodeZstdFramesHead, dateStrOf, over.dshHome || (() => join(process.env.USERPROFILE || '', '.dsh')))
-  return new Cls()
-}
-
-// ── 夹具：临时会话目录（DSH_HOME 隔离，不碰真机 ~/.dsh）──
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs'
-import { tmpdir } from 'node:os'
-import { zstdCompressSync } from 'node:zlib'
-const tmpHome = mkdtempSync(join(tmpdir(), 'dam-sessfb-'))
-function zstdFramesJsonl(lines) {
-  // 每行一帧，且帧内容含行尾换行（与会话日志同构：逐事件独立 zstd 帧，解压拼接后是合法 JSONL）
-  return Buffer.concat(lines.map((l) => zstdCompressSync(Buffer.from(l + '\n', 'utf8'))))
-}
-const wsName = '--D-dsh-auto-memory--'
-function mkSession(sid, events) {
-  const dir = join(tmpHome, 'sessions', wsName, sid)
-  mkdirSync(dir, { recursive: true })
-  writeFileSync(join(dir, 'session.jsonl.zstd'), zstdFramesJsonl(events))
-  return dir
-}
-const hdrOf = (id, cwd) => JSON.stringify({ type: 'session', version: 0, id, createdAt: 1787125212713, cwd })
-const POISON_DESC = JSON.stringify({ type: 'subagent/descriptor', seq: 5, data: { version: 2, mode: 'one-shot', provider: 'spawn', label: 'Find closest prior art' } })
-
-mkSession('aaaa-1111', [hdrOf('aaaa-1111', 'D:\\proj-a'), POISON_DESC,
-  JSON.stringify({ type: 'user/message', seq: 6, data: { content: '讨论水位感知阈值的校准问题' } })])
-mkSession('bbbb-2222', [hdrOf('bbbb-2222', 'D:\\proj-b'),
-  JSON.stringify({ type: 'assistant/message', seq: 1, data: { content: '交接白板提到发布前必跑回归' } })])
-// 超巨型文件（>16MB 原始）⇒ 必须被预算纪律跳过
-{
-  const dir = mkSession('cccc-3333', [hdrOf('cccc-3333', 'D:\\proj-c'),
-    JSON.stringify({ type: 'user/message', seq: 1, data: { content: '水位 巨型会话也应可被跳过' } })])
-  const f = join(dir, 'session.jsonl.zstd')
-  const big = Buffer.concat([readFileSync(f), Buffer.alloc(17 * 1024 * 1024, 0)])
-  writeFileSync(f, big)
-}
-// 全坏文件（非 zstd 魔数）⇒ 负路径
-{
-  const dir = join(tmpHome, 'sessions', wsName, 'dddd-4444')
-  mkdirSync(dir, { recursive: true })
-  writeFileSync(join(dir, 'session.jsonl.zstd'), Buffer.from('not zstd at all'))
+for (const hasSearch of [false, true]) {
+  test((hasSearch ? 'disabled FTS' : 'older host without FTS') + ' scans only host-authorized visible messages', async t => {
+    const sessionCalls = []
+    const eventsCalls = []
+    let searchCalls = 0
+    const visible = record('authorized')
+    const service = {
+      ...(hasSearch ? { searchSessions: async () => { searchCalls++; disabled() } } : {}),
+      async filterSessions(filters, signal) {
+        sessionCalls.push(filters)
+        assert.ok(signal instanceof AbortSignal)
+        if (filters.some(filter => filter.kind === 'id')) return [visible]
+        // A stale or broad host response must still be narrowed at the reader boundary.
+        return [record('foreign', 'D:/unrelated'), record(caller.session.id), visible]
+      },
+      async filterEvents(id, filters) {
+        eventsCalls.push([id, filters])
+        return [
+          message('another-session', '水位 foreign document'),
+          message(id, '水位 shadowed document', { surface: 'shadowed' }),
+          message(id, '水位 log only document', { surface: 'log-only' }),
+          message(id, '水位 tool payload', { type: 'tool/result' }),
+          message(id, '水位 out-of-budget event', { seq: 160 }),
+          message(id, '水位 ill-formed event', { seq: -1 }),
+          message(id, 'unrelated visible event', { seq: 0 }),
+          message(id, '  水位阈值\n已校准  ', { type: 'assistant/message', seq: 159 }),
+        ]
+      },
+    }
+    const result = await makeSearch(t, service)(' 水位，Never-Matches ')
+    assert.deepEqual([...result], ['· [2026-08-19] D:/workspace\n  水位阈值 已校准'])
+    assert.match(result.diagnostic, hasSearch ? /全文索引未启用/ : /全文索引未提供/)
+    assert.match(result.diagnostic, /宿主可见消息接口.*当前工作区.*8 个会话的前 160 条记录/)
+    assert.doesNotMatch(result.diagnostic, /部分会话|private host detail/)
+    assert.deepEqual(sessionCalls, [[cwdFilter], [cwdFilter, { kind: 'id', values: ['authorized'] }]])
+    assert.deepEqual(eventsCalls, [['authorized', [...messageFilters, { kind: 'seq', to: 159 }]]])
+    assert.equal(searchCalls, Number(hasSearch))
+  })
 }
 
-const host = makeHost({ dshHome: () => tmpHome })
-
-// ── ① 宿主索引抛错 ⇒ 兜底触发 ──
-host._sessionQuery = { searchSessions: async () => { throw new Error('session-search persistence observation failed: subagent/descriptor 5 uses unsupported descriptor version 2; source v0 artifact remains unchanged') } }
-const r1 = await host.searchSessionHistory('水位 感知', 8)
-ok(Array.isArray(r1) && r1.length >= 2, '①兜底非空(命中+说明行)', r1.length)
-ok(r1.some((l) => l.includes('水位感知阈值') || l.includes('水位')), '①命中词出现在 snippet')
-// ★2026-10-01 判据更新（移植上游 #162）：说明行文案由「按修改时间覆盖最近 N 个会话」
-//   改为「按修改时间从新到旧…头部受预算限制…非全量」——措辞变了，语义未变。
-//   判据改为「尾部有兜底口径说明行 + 声明了分页/预算边界（非全量）」，不再绑定旧措辞。
-ok(r1[r1.length - 1].includes('兜底口径') && r1[r1.length - 1].includes('非全量'), '①尾部兜底说明行(含非全量声明)')
-ok(r1[0].startsWith('· [2026-'), '①条目形状与宿主索引同构(日期头)', r1[0].slice(0, 20))
-// 巨型文件（cccc-3333，17MB）必须被 16MB 预算纪律跳过 ⇒ 其专属命中词不成为条目
-const r1b = await host.lexicalSessionScanFallback('巨型会话', 8)
-ok(!r1b.some((l) => l.includes('cccc-3333') || l.includes('proj-c')), '①b超巨型文件被预算纪律跳过')
-
-// ── ② 宿主正常 ⇒ 兜底不触发，走原渲染 ──
-// ★2026-10-24 R0 归因：①把宿主打成失败态后，R0 的**熔断**会延续到下一次调用（这是修复的目的本身），
-//   故此处必须先清熔断标记再测「正常路径」——否则测的是熔断、不是宿主正常路径。
-//   定性：**判据过期**（新增了跨调用状态），不是真缺陷。同时补一条断言把这层状态显式测出来。
-ok(Number(host._sessionQueryFailAt) > 0, '②前置：①留下的熔断标记存在（跨调用状态真实存在）')
-host._sessionQueryFailAt = 0
-host._sessionQuery = { searchSessions: async ({ query, limit }) => ({ items: [{ header: { createdAt: 1787125212713, cwd: 'D:\\x', id: 'zz' }, bestMatch: { snippet: 'host-index-hit' } }] }) }
-const r2 = await host.searchSessionHistory('任意', 8)
-ok(r2.length === 1 && r2[0].includes('host-index-hit') && !r2.join('').includes('兜底口径'), '②宿主正常路径不走兜底')
-
-// ── ③ sessionQuery 缺失 ⇒ 恒 [] ──
-host._sessionQuery = undefined
-const r3 = await host.searchSessionHistory('水位', 8)
-ok(Array.isArray(r3) && r3.length === 0, '③无索引恒空数组')
-
-// ── ④ 全坏文件 + 未命中词 ⇒ 空数组，绝不抛 ──
-host._sessionQuery = { searchSessions: async () => { throw new Error('boom') } }
-const r4 = await host.searchSessionHistory('完全不相干的查询词组', 8)
-ok(Array.isArray(r4) && r4.length === 0, '④未命中返回空(不抛)', r4.length)
-
-// ── ⑤ 预算纪律：scan 帧预算上限生效（160 帧 / 4MB 头预算内正常返回）──
-const r5 = await host.lexicalSessionScanFallback('发布前必跑回归', 8)
-ok(r5.length >= 2 && r5.some((l) => l.includes('proj-b')), '⑤第二会话可命中', r5.length)
-
-// ── ⑥ 变异检查：兜底说明行字面量被改 ⇒ 红 ──
-{
-  // ★2026-10-01 判据更新（移植上游 #162）：产线现含**两处**「兜底口径」字面量（searchSessionHistory
-  //   的 catch 与 lexicalSessionScanFallback 的 finish）——String.replace 只换第一处，真正走到的那处
-  //   没被变异 ⇒ 断言恒红（假绿失效）。改用带 g 的正则，保证全量变异。
-  const mutated = body.replace(/兜底口径/g, "兜底口径X")
-  const factory = new Function('path', 'readdirSync', 'readFileSync', 'statSync', 'existsSync',
-    'zstdDec', 'decodeZstdFramesHead', 'dateStrOf', 'dshHome', `return class SessHostM {\n  ${mutated}\n}`)
-  const M = factory(pathModule, fsSync.readdirSync, fsSync.readFileSync, fsSync.statSync, fsSync.existsSync,
-    zstdDecompressSync, decodeZstdFramesHead, dateStrOf, () => tmpHome)
-  const m = new M()
-  m._sessionQuery = { searchSessions: async () => { throw new Error('x') } }
-  const rm = await m.searchSessionHistory('水位 感知', 8)
-  // 变异把说明行前缀 [兜底口径] 改成 [兜底口径X] ⇒ 原字面量「兜底口径]」应消失
-  ok(!rm.join('').includes('兜底口径]'), '⑥变异后说明行字面量改变(断言非恒真)')
-}
-
-
-// ── ⑦ #331（2026-10-12）：**v4 命名宿主必须可扫到**（固定候选表缺陷回归）──
-//   报告人实测：宿主已迁 `session.v4.jsonl.zstd`，而旧实现只认 v3 / 无版本两张**固定名**
-//   ⇒ 一个候选都选不中、attempted 恒 0、`scope=sessions` 静默失效（与 #173 同缺陷类）。
-//   本套件原夹具只用 `session.jsonl.zstd`，故修前也「全绿」——这正是漏网原因，此处补齐。
-{
-  const wsV4 = '--D-v4-only--'
-  const mkV4 = (sid, events, fname) => {
-    const dir = join(tmpHome, 'sessions', wsV4, sid)
-    mkdirSync(dir, { recursive: true })
-    writeFileSync(join(dir, fname), zstdFramesJsonl(events))
-    return dir
+test('ordinary, unauthorized, and text-only failures never consult the compatibility API', async t => {
+  let code
+  let filterCalls = 0
+  const service = {
+    async searchSessions() {
+      if (code) throw hostError(code)
+      throw new Error('SESSION_QUERY_SEARCH_DISABLED private host detail')
+    },
+    async filterSessions() { filterCalls++; return [record('not-allowed')] },
+    async filterEvents(id) { filterCalls++; return [message(id, 'private transcript')] },
   }
-  const d7 = mkV4('v4aaa-1111', [hdrOf('v4aaa-1111', 'D:\\proj-v4a'),
-    JSON.stringify({ type: 'user/message', seq: 1, data: { content: 'v4 宿主下的水位感知校准结论' } })], 'session.v4.jsonl.zstd')
-  // 负路径：同目录放一个**非会话**文件，不得被误当候选（也就不得假绿）
-  writeFileSync(join(d7, '_debug_child.jsonl'), Buffer.from('{"type":"session","id":"bogus"}\n'))
-  const r7 = host.lexicalSessionScanFallback('水位感知', 8)
-  ok(r7.some((l) => l.includes('proj-v4a')), '⑦v4 命名会话可被扫到（修前恒 0 个候选）', r7.length)
-  const diag7 = r7.diagnostic || ''
-  ok(/本次尝试 [1-9]\d* 个/.test(diag7), '⑦诊断如实报出 attempted>0（修前恒 0）', diag7.slice(0, 48))
-  // 负路径：该会话目录里只有非会话文件 ⇒ 不产生条目（不假绿）
-  mkV4('v4bbb-2222', [JSON.stringify({ type: 'user/message', seq: 1, data: { content: '非会话文件不该被扫到' } })], '_debug_child.jsonl')
-  const r7b = host.lexicalSessionScanFallback('非会话文件不该被扫到', 8)
-  ok(!r7b.some((l) => l.includes('不该被扫到')), '⑦负路径：非会话文件不被当候选（不假绿）', r7b.length)
-}
+  const search = makeSearch(t, service)
+  for (const [value, receipt] of [
+    ['SESSION_QUERY_TOOL_UNAUTHORIZED', /无法确认.*授权/],
+    ['EACCES', /检索失败.*EACCES/],
+    ['EPERM', /检索失败.*EPERM/],
+    ['SESSION_QUERY_PERSISTENCE_FAILED', /SESSION_QUERY_PERSISTENCE_FAILED/],
+    [undefined, /检索失败/],
+  ]) {
+    code = value
+    const result = await search('private')
+    assert.equal(result.length, 0)
+    assert.match(result.diagnostic, receipt)
+    assert.doesNotMatch(result.diagnostic, /宿主可见消息接口|熔断|private host detail/)
+  }
+  const deniedCaller = { session: { id: 'no-live-session', header: { cwd } } }
+  assert.match((await search('private', 8, { agent: deniedCaller })).diagnostic, /无法确认.*授权/)
+  assert.equal(filterCalls, 0)
+})
 
-// ── 清理 ──
-try { rmSync(tmpHome, { recursive: true, force: true }) } catch (e) { /* 临时目录清理失败不碍事 */ }
+test('an access error during fallback discards the already collected hits', async t => {
+  let errorCode
+  const eventsCalls = []
+  const search = makeSearch(t, {
+    searchSessions: disabled,
+    async filterSessions(filters) {
+      assert.deepEqual(filters, [cwdFilter], 'no results should reach the second authorization check')
+      return [record('first'), record('restricted')]
+    },
+    async filterEvents(id) {
+      eventsCalls.push(id)
+      if (id === 'restricted') throw hostError(errorCode)
+      return [message(id, 'previously collected needle')]
+    },
+  })
+  for (const [code, receipt] of [['SESSION_QUERY_TOOL_UNAUTHORIZED', /无法确认.*授权/], ['EACCES', /检索失败.*EACCES/], ['EPERM', /检索失败.*EPERM/]]) {
+    errorCode = code
+    const result = await search('needle')
+    assert.deepEqual([...result], [])
+    assert.match(result.diagnostic, receipt)
+    assert.doesNotMatch(result.diagnostic, /previously collected needle|private host detail/)
+  }
+  assert.deepEqual(eventsCalls, ['first', 'restricted', 'first', 'restricted', 'first', 'restricted'])
+})
 
-console.log(`PASS ${pass} / FAIL ${fail}`)
-if (fail) { console.log('FAILURES:\n' + failures.map((f) => ' - ' + f).join('\n')); process.exit(1) }
+test('fallback attempts at most eight authorized candidates and reports partial coverage', async t => {
+  const ids = Array.from({ length: 9 }, (_, i) => 'candidate-' + i)
+  const eventsCalls = []
+  const search = makeSearch(t, {
+    searchSessions: disabled,
+    async filterSessions(filters) {
+      const selected = filters.find(filter => filter.kind === 'id')?.values ?? ids
+      return [record('foreign', 'D:/unrelated'), ...selected.map(id => record(id))]
+    },
+    async filterEvents(id) {
+      eventsCalls.push(id)
+      if (id === ids[0]) throw hostError('EIO')
+      if (id === ids[1]) return [message(id, 'visible needle')]
+      if (id === ids[8]) return [message(id, 'out-of-budget needle')]
+      return []
+    },
+  })
+  const result = await search('needle')
+  assert.deepEqual([...result], ['· [2026-08-19] D:/workspace\n  visible needle'])
+  assert.deepEqual(eventsCalls, ids.slice(0, 8))
+  assert.match(result.diagnostic, /部分会话未能读取或超出扫描范围/)
+  assert.doesNotMatch(result.diagnostic, /private host detail/)
+})
+
+test('fallback rechecks matched session authorization before returning the snippet', async t => {
+  const sessionCalls = []
+  const visible = record('revoked')
+  const search = makeSearch(t, {
+    searchSessions: disabled,
+    async filterSessions(filters) {
+      sessionCalls.push(filters)
+      return sessionCalls.length === 1 ? [visible] : [record('revoked', 'D:/unrelated')]
+    },
+    async filterEvents(id) { return [message(id, 'revoked needle')] },
+  })
+  const result = await search('needle')
+  assert.deepEqual([...result], [])
+  assert.deepEqual(sessionCalls, [[cwdFilter], [cwdFilter, { kind: 'id', values: ['revoked'] }]])
+  assert.match(result.diagnostic, /部分会话未能读取或超出扫描范围/)
+})
+
+test('index hits and misses retain their output shape and do not invoke fallback', async t => {
+  const requests = []
+  let filterCalls = 0
+  const search = makeSearch(t, {
+    async searchSessions(request) {
+      requests.push(request)
+      return { items: request.query === 'found' ? [
+        { ...record('off-workspace', 'D:/unrelated'), bestMatch: { ...message('off-workspace'), snippet: 'secret' } },
+        { ...record('host-hit'), bestMatch: { ...message('host-hit'), snippet: 'index hit\n' + 'x'.repeat(400) } },
+        { ...record('other-hit'), bestMatch: { ...message('other-hit'), snippet: 'second hit' } },
+      ] : [] }
+    },
+    async filterSessions() { filterCalls++; return [] },
+    async filterEvents() { filterCalls++; return [] },
+  })
+  const found = await search('found', 1)
+  assert.deepEqual([...found], ['· [2026-08-19] D:/workspace\n  index hit ' + 'x'.repeat(290)])
+  assert.equal(found.diagnostic, '')
+  const missing = await search('missing')
+  assert.equal(missing.length, 0)
+  assert.match(missing.diagnostic, /已完成，未命中/)
+  assert.deepEqual(requests, [
+    { query: 'found', limit: 2, sessionFilters: [cwdFilter], eventFilters: messageFilters },
+    { query: 'missing', limit: 9, sessionFilters: [cwdFilter], eventFilters: messageFilters },
+  ])
+  assert.equal(filterCalls, 0)
+})

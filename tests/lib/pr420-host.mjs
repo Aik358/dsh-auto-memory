@@ -6,11 +6,12 @@ import { apply, API, MemoryEngine } from './audit-engine.mjs'
 import { MemoryDocumentStore } from '../../lib/memory-writer.js'
 
 // The complete apply() wiring and real HTTP handlers; no DSH host or model is needed.
-export async function startRecallHost(root, config = {}) {
+export async function startRecallHost(root, config = {}, { services = {}, onHttpRequest } = {}) {
   const previous = { home: process.env.DSH_HOME, load: MemoryEngine.prototype.loadConfigSync,
     interval: globalThis.setInterval, timeout: globalThis.setTimeout }
   const listeners = new Map(['uncaughtException', 'unhandledRejection', 'exit'].map(key => [key, new Set(process.listeners(key))]))
   const routes = []
+  const modelTools = new Map()
   let engine, cleanup
   process.env.DSH_HOME = root
   await fs.writeFile(path.join(root, 'dsh-auto-memory.json'), JSON.stringify({ memoryRoot: path.join(root, 'memory'),
@@ -18,8 +19,9 @@ export async function startRecallHost(root, config = {}) {
   MemoryEngine.prototype.loadConfigSync = function () { engine = this; return previous.load.call(this) }
   globalThis.setInterval = globalThis.setTimeout = (callback, ms) => ({ callback, ms, unref() {} })
   try {
-    apply({ get: () => undefined, on: () => {}, systemPrompt: { context: () => () => {}, section: () => () => {} },
-      tools: { register: () => () => {} }, webServer: { register: route => { routes.push(route); return () => {} } },
+    apply({ get: name => services[name], on: () => {}, systemPrompt: { context: () => () => {}, section: () => () => {} },
+      tools: { register: tool => { modelTools.set(tool.name, tool); return () => {} } },
+      webServer: { register: route => { routes.push(route); return () => {} } },
       effect: fn => { cleanup = fn() } }, {})
   } finally {
     MemoryEngine.prototype.loadConfigSync = previous.load
@@ -30,6 +32,7 @@ export async function startRecallHost(root, config = {}) {
   engine.agentForSessionId = sid => sid === agent.session.id ? agent : null
   engine.resolvePathsForSession = async sid => ({ ...paths, wsBound: sid === agent.session.id })
   const server = createServer((req, res) => {
+    onHttpRequest?.(req, res)
     const route = routes.find(route => route.path === new URL(req.url, 'http://localhost').pathname)
     if (route) Promise.resolve(route.handler(req, res)).catch(error => { res.statusCode = 500; res.end(JSON.stringify({ error: error.message })) })
     else { res.statusCode = 404; res.end('{}') }
@@ -38,8 +41,12 @@ export async function startRecallHost(root, config = {}) {
   const base = 'http://127.0.0.1:' + server.address().port
   return {
     engine, agent, paths,
-    request: async (key, body, query = '') => {
-      const response = await fetch(base + API[key] + query, body ? { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) } : {})
+    invokeTool: (name, args, exec = {}) => modelTools.get(name).execute(args, { agent, ...exec }),
+    request: async (key, body, query = '', signal) => {
+      const response = await fetch(base + API[key] + query, {
+        ...(body ? { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) } : {}),
+        signal,
+      })
       return { status: response.status, data: await response.json() }
     },
     close: async () => {

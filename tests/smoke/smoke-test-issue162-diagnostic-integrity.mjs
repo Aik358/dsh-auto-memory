@@ -1,6 +1,6 @@
 /** Issue #162: method-level integration with real production bodies, sink,
  * parser, persistence and head decoder. No DSH bootstrap, user data or APIs.
- * ISSUE162_SOURCE_ROOT selects an unfixed tree for red/green proof.
+ * ISSUE162_SOURCE_ROOT selects an alternate production source tree.
  */
 import assert from 'node:assert/strict'
 import { test, after } from 'node:test'
@@ -9,7 +9,7 @@ import * as fsp from 'node:fs/promises'
 import path from 'node:path'
 import { tmpdir } from 'node:os'
 import { fileURLToPath, pathToFileURL } from 'node:url'
-import { zstdCompressSync, zstdDecompressSync } from 'node:zlib'
+import { zstdCompressSync } from 'node:zlib'
 import { createDegradeSinkPre, DEGRADE_REASON_MAX_PRE_V1 } from '../../lib/degrade.js'
 import { diagnosticErrorReasonPre, recordDiagnosticErrorPre } from '../../lib/diagnostic-error.js'
 
@@ -31,7 +31,7 @@ const extract = (marker) => {
   return source.slice(start, end + 5).replace(/import\('\.\/([^']+)'\)/g, (_, name) => `import(${JSON.stringify(url(name))})`)
 }
 const methods = [
-  'async searchSessionHistory(', 'lexicalSessionScanFallback(', 'async applyNoteStatusPre(',
+  'async searchSessionHistory(', 'async applyNoteStatusPre(',
   'async recall(', 'async readTextSafe(', 'async writeFull(', '_degradeViewSnapshot(',
   '_quotaViewSnapshot(', '_persistObservabilityPre(', 'globalPaths(', 'async debugInfo(',
 ].map(extract).join('\n')
@@ -51,10 +51,11 @@ import { fileURLToPath } from 'node:url'
 import { createHash } from 'node:crypto'
 import { memoryWriteError } from ${JSON.stringify(url('memory-writer.js'))}
 import { persistDegradeLedgerPre, deriveQuotaVerdictPre } from ${JSON.stringify(url('degrade.js'))}
-import { decodeZstdFramesHead as realDecode } from ${JSON.stringify(url('subagent-gc.js'))}
+import { SessionRecallReader, historyRecallLines } from ${JSON.stringify(url('session-recall.js'))}
 import { recordDiagnosticErrorPre } from ${JSON.stringify(pathToFileURL(path.join(ownRoot, 'lib/diagnostic-error.js')).href)}
 import { dirSize } from ${JSON.stringify(url('session-archive.js'))}
 import { readDeliveryMode } from ${JSON.stringify(url('injection/policy-runtime.js'))}
+import { EVENT_STORE_FILENAME as V4_EVENT_STORE_FILENAME } from ${JSON.stringify(url('event-store.js'))}
 ${constants}
 const home = ${JSON.stringify(home)}
 const dshHome = () => home
@@ -66,8 +67,6 @@ const DATE_RE = /^\\d{4}-\\d{2}-\\d{2}$/
 export function make(overrides) {
  const io = Object.assign({}, nativeFs, nativePromises, overrides)
  const { readdirSync, readFileSync, statSync, existsSync, mkdirSync, writeFileSync, readFile, readdir, stat, lstat, mkdir, writeFile } = io
- const zstdDec = 'zstdDec' in overrides ? overrides.zstdDec : true
- const decodeZstdFramesHead = overrides.decodeZstdFramesHead || realDecode
  const instance = new (class ProductionHarness {
 ${methods}
  })()
@@ -85,7 +84,7 @@ ${methods}
     //   诊断完整性（失败要如实上报、私密错误不外泄），故这里给恒过桩。
     _assertTeamActionPre: () => {},
     _teamWriteActionPre: () => 'write-own-memory',
-    _degradeSink: createDegradeSinkPre(), config: {}, state: {}, _observerStats: {},
+    _ctxRef: new Map(), _degradeSink: createDegradeSinkPre(), config: {}, state: {}, _observerStats: {},
     runtimes: { values: () => [] }, autoStats: { count: 0 },
     memoryIndexSnapshot: async () => ({}), _hubIoViewSnapshot: () => null,
     // ★L-E（2026-10-08）夹具同步（非回滚 · 依据 §9.3-2 口径与上文 R1 同型）：#261 给 debugInfo 新增了
@@ -106,20 +105,14 @@ ${methods}
   return { home, host }
 }
 function todayStr() { return '2026-09-30' }
-function session(home, id, content, { frames = 0, size = 0, name = 'session.jsonl.zstd', mtime = 1000 } = {}) {
-  const dir = path.join(home, 'sessions/ws', id)
-  fs.mkdirSync(dir, { recursive: true })
-  const lines = [JSON.stringify({ type: 'session', id, createdAt: '2026-09-30T00:00:00Z', cwd: id })]
-  for (let i = 0; i < frames; i++) lines.push(JSON.stringify({ type: 'user/message', data: { content: 'unrelated-' + i } }))
-  lines.push(JSON.stringify({ type: 'user/message', data: { content } }))
-  const file = path.join(dir, name)
-  fs.writeFileSync(file, Buffer.concat(lines.map((line) => zstdCompressSync(Buffer.from(line + '\n')))))
-  if (size) fs.truncateSync(file, size)
-  fs.utimesSync(file, mtime, mtime)
-  return file
-}
-const secretError = () => Object.assign(new Error('Bearer credential123\nhttps://user:pass@host/private?token=URLSECRET\nC:\\Users\\PERSONAL\\secret.md /home/PERSONAL/secret.md\n正文私人内容\n' + 'X'.repeat(6000)), { code: 'EACCES' })
-const brokenQuery = () => ({ searchSessions: async () => { throw secretError() } })
+const cwd = 'D:/fixture-workspace'
+const caller = { session: { id: 'caller', header: { cwd } } }
+const historyHeader = id => ({ id, cwd, createdAt: '2026-09-30T00:00:00Z' })
+const historyMatch = (sessionId, snippet) => ({ header: historyHeader(sessionId), bestMatch: { sessionId, snippet, surface: 'current', type: 'user/message' } })
+const secretError = (code = 'EACCES') => Object.assign(new Error('Bearer credential123\nhttps://user:pass@host/private?token=URLSECRET\nC:\\Users\\PERSONAL\\secret.md /home/PERSONAL/secret.md\n正文私人内容\n' + 'X'.repeat(6000)), { code })
+const disabledSearch = () => { throw secretError('SESSION_QUERY_SEARCH_DISABLED') }
+const confirmedFault = () => Object.assign(secretError('SESSION_QUERY_PERSISTENCE_FAILED'), { cause: secretError('SQLITE_CORRUPT') })
+const useSessionService = (host, service) => host._ctxRef.set('sessionQuery', service)
 const absentSecrets = (value) => {
   assert.doesNotMatch(JSON.stringify(value), /credential123|URLSECRET|PERSONAL|正文私人内容|user:pass|Bearer|\b39\s*(?:个?旧会话|old sessions\b)|descriptor v2|v0→v1/)
 }
@@ -133,170 +126,136 @@ test('privacy checks accept timestamp second 39 but reject obsolete session clai
 
 
 test('missing capability, missing method, successful empty and successful hit stay distinct', async () => {
-  const { home, host } = await harness()
-  session(home, 'local-hit', 'needle')
-  let scans = 0
-  const scan = host.lexicalSessionScanFallback.bind(host)
-  host.lexicalSessionScanFallback = (...args) => { scans++; return scan(...args) }
-  for (const sq of [undefined, {}]) {
-    host._sessionQuery = sq
-    const output = await host.recall('needle', 8, undefined, 'sessions')
-    assert.match(output, /能力未提供/)
-    assert.doesNotMatch(output, /会话命中|抛错/)
+  const { host } = await harness()
+  for (const service of [undefined, {}]) {
+    useSessionService(host, service)
+    const output = await host.recall('needle', 8, caller, 'sessions')
+    assert.match(output, /能力当前不可用/)
+    assert.doesNotMatch(output, /会话命中|已完成，未命中/)
   }
-  host._sessionQuery = { searchSessions: async () => ({ items: [] }) }
-  const empty = await host.recall('needle', 8, undefined, 'sessions')
+  let scans = 0
+  let items = []
+  useSessionService(host, {
+    searchSessions: async () => ({ items }),
+    filterSessions: async () => { scans++; return [] },
+    filterEvents: async () => { scans++; return [] },
+  })
+  const empty = await host.recall('needle', 8, caller, 'sessions')
   assert.match(empty, /已完成，未命中/)
-  assert.doesNotMatch(empty, /未部署|抛错|兜底口径/)
-  host._sessionQuery = { searchSessions: async () => ({ items: [{ header: { id: 'host-hit', createdAt: '2026-09-30' }, bestMatch: { snippet: 'needle' } }] }) }
-  const hit = await host.recall('needle', 8, undefined, 'sessions')
-  assert.match(hit, /host-hit/)
+  assert.doesNotMatch(empty, /能力当前不可用|宿主可见消息接口/)
+  items = [historyMatch('host-hit', 'needle from the index')]
+  const hit = await host.recall('needle', 8, caller, 'sessions')
+  assert.match(hit, /历史 DSH 会话命中.*needle from the index/s)
   assert.equal(scans, 0)
   assert.ok(host._degradeSink.isEmpty())
 })
 
-test('thrown host query uses truthful fallback and the real counters/recent, once per call', async () => {
-  const { home, host } = await harness()
-  session(home, 'only-v3-data', 'needle', { name: 'session.v3.jsonl.zstd' })
-  host._sessionQuery = brokenQuery()
-  // ★2026-10-24 R0 归因（判据过期，非真缺陷）：本用例要验证「每调用一次就留一条真实失败痕迹」。
-  //   R0 加了 60s 半开熔断后，第 2 次调用会被熔断短路、不再产生新留痕 ⇒ counts 恒 1。
-  //   修法：每次迭代前清掉熔断标记，让「两次真实失败」这个前提成立。
-  //   熔断/半开的真行为由 smoke-test-r0-recall-availability §2/§9 专门验收。
-  for (let i = 1; i <= 2; i++) {
-    host._sessionQueryFailAt = 0
-    const result = await host.recall('needle', 8, undefined, 'sessions')
-    assert.match(result, /only-v3-data/)
-    assert.match(result, /宿主会话检索抛错/)
-    assert.match(result, /具体成因未确定/)
-    assert.match(result, /本次尝试 1 个，读到非空头部 1 个/)
+test('confirmed faults redact sensitive details and record one incident across repeated receipts', async () => {
+  const { host } = await harness()
+  let calls = 0
+  useSessionService(host, { searchSessions: async () => { calls++; throw confirmedFault() } })
+  for (let i = 0; i < 2; i++) {
+    const result = await host.recall('needle', 8, caller, 'sessions')
+    assert.match(result, /已熔断.*本次未覆盖历史会话.*SQLITE_CORRUPT/s)
+    assert.match(result, /Issue 未提交/)
+    assert.doesNotMatch(result, /会话命中|宿主可见消息接口/)
     absentSecrets(result)
-    assert.equal(host._degradeSink.countOf('session-search'), i)
-    assert.equal(host._degradeSink.snapshot().recent.length, i)
-    assert.equal(host._degradeSink.countOf('session-scan'), 0)
   }
-  assert.match(host._degradeSink.snapshot().recent[0].reason, /code=EACCES/)
-  absentSecrets(host._degradeSink.snapshot())
+  assert.equal(calls, 1)
+  const ledger = host._degradeSink.snapshot()
+  assert.equal(ledger.counts['session-search'], 1)
+  assert.equal(ledger.recent.length, 1)
+  assert.match(ledger.recent[0].reason, /code=SQLITE_CORRUPT; stage=execution/)
+  absentSecrets(ledger)
 })
 
-test('empty fallback reports bounded scan, and recovery carries no stale request diagnostics', async () => {
-  const { home, host } = await harness()
-  session(home, 'no-hit', 'unrelated')
-  host._sessionQuery = brokenQuery()
-  const lines = await host.searchSessionHistory('needle')
-  assert.equal(lines.length, 0)
-  assert.match(lines.diagnostic, /扫描范围内未命中/)
-  assert.match(await host.recall('needle', 8, undefined, 'sessions'), /非全量/)
-  // ★2026-10-24 R0 归因（判据过期）：熔断期内**不应**放行宿主调用 —— 这正是修复的目的。
-  //   先断言熔断期内的行为（可预期），再模拟「半开窗口已到」验证自愈后不带陈旧诊断。
-  assert.equal(host._degradeSink.countOf('session-search'), 1, '熔断期内不再产生新的失败留痕')
-  host._sessionQueryFailAt = Date.now() - 61 * 1000   // 模拟半开窗口已到
-  host._sessionQuery = { searchSessions: async () => ({ items: [] }) }
-  const success = await host.searchSessionHistory('needle')
-  assert.equal(success.diagnostic, undefined)
-  assert.doesNotMatch(await host.recall('needle', 8, undefined, 'sessions'), /兜底|抛错|EACCES/)
-  assert.equal(host._degradeSink.countOf('session-search'), 1) // 熔断期外成功不再留痕，历史保留
+test('an ordinary host rejection leaves no stale receipt or incident on recovery', async () => {
+  const { host } = await harness()
+  let calls = 0
+  let scans = 0
+  useSessionService(host, {
+    searchSessions: async () => { if (++calls === 1) throw secretError(); return { items: [] } },
+    filterSessions: async () => { scans++; return [] },
+    filterEvents: async () => { scans++; return [] },
+  })
+  const result = await host.recall('needle', 8, caller, 'sessions')
+  assert.match(result, /检索失败.*EACCES/)
+  assert.doesNotMatch(result, /熔断|宿主可见消息接口|会话命中/)
+  absentSecrets(result)
+  const success = await host.recall('needle', 8, caller, 'sessions')
+  assert.match(success, /已完成，未命中/)
+  assert.doesNotMatch(success, /EACCES|熔断/)
+  assert.equal(calls, 2)
+  assert.equal(scans, 0)
+  assert.ok(host._degradeSink.isEmpty())
 })
 
-test('concurrent requests share history but never explanations or hits', async () => {
-  const { home, host } = await harness()
-  session(home, 'fallback-hit', 'failing-query')
+test('concurrent history requests keep each receipt and its hits separate', async () => {
+  const { host } = await harness()
   let release
-  const gate = new Promise((resolve) => { release = resolve })
-  host._sessionQuery = { searchSessions: async ({ query }) => {
+  const gate = new Promise(resolve => { release = resolve })
+  useSessionService(host, { searchSessions: async ({ query }) => {
     if (query === 'failing-query') { await gate; throw secretError() }
-    return { items: [{ header: { id: 'clean-host-hit' }, bestMatch: { snippet: query } }] }
-  } }
-  const failure = host.recall('failing-query', 8, undefined, 'sessions')
-  const success = await host.recall('successful-query', 8, undefined, 'sessions')
-  release()
-  assert.match(await failure, /fallback-hit/)
-  assert.doesNotMatch(success, /兜底|抛错|fallback-hit/)
-  assert.equal(host._degradeSink.countOf('session-search'), 1)
-})
-
-test('missing decoder, absent directory and root IO failure do not masquerade as empty success', async () => {
-  const noDecoder = await harness({ zstdDec: false })
-  noDecoder.host._sessionQuery = brokenQuery()
-  assert.match(await noDecoder.host.recall('needle', 8, undefined, 'sessions'), /缺少 zstd 解码能力，未扫描/)
-  assert.equal(noDecoder.host._degradeSink.countOf('session-scan'), 0)
-  const absent = await harness()
-  absent.host._sessionQuery = brokenQuery()
-  assert.match(await absent.host.recall('needle', 8, undefined, 'sessions'), /目录不存在/)
-  assert.equal(absent.host._degradeSink.countOf('session-scan'), 0)
-  const denied = await harness({ readdirSync: () => { throw secretError() } })
-  denied.host._sessionQuery = brokenQuery()
-  const result = await denied.host.recall('needle', 8, undefined, 'sessions')
-  assert.match(result, /目录读取失败，无法判断/)
-  assert.doesNotMatch(result, /会话命中/)
-  assert.equal(denied.host._degradeSink.countOf('session-scan'), 1)
-  absentSecrets(result)
-})
-
-test('scan read/decode failures aggregate once and preserve usable hits', async () => {
-  const { home, host } = await harness({ readFileSync: (file) => {
-    if (file.includes('unreadable')) throw secretError()
-    return fs.readFileSync(file)
+    return { items: [historyMatch('clean', 'successful query hit')] }
   } })
-  session(home, 'unreadable', 'needle')
-  const bad = session(home, 'undecodable', 'needle')
-  fs.writeFileSync(bad, 'broken')
-  session(home, 'usable', 'needle')
-  host._sessionQuery = brokenQuery()
-  const result = await host.recall('needle', 8, undefined, 'sessions')
-  assert.match(result, /usable/)
-  assert.match(result, /目录\/文件读取或头部解码失败 2 次/)
-  assert.equal(host._degradeSink.countOf('session-scan'), 1)
-  assert.equal(host._degradeSink.countOf('session-search'), 1)
+  const failure = host.recall('failing-query', 8, caller, 'sessions')
+  const success = host.recall('successful-query', 8, caller, 'sessions')
+  release()
+  const [failedResult, successfulResult] = await Promise.all([failure, success])
+  assert.match(failedResult, /检索失败/)
+  assert.doesNotMatch(failedResult, /successful query hit/)
+  assert.match(successfulResult, /successful query hit/)
+  assert.doesNotMatch(successfulResult, /检索失败|熔断|EACCES/)
+  absentSecrets(failedResult)
+  assert.ok(host._degradeSink.isEmpty())
+})
+
+test('failure of the authorized fallback listing is reported without exposing host details', async () => {
+  const { host } = await harness()
+  let events = 0
+  useSessionService(host, {
+    searchSessions: disabledSearch,
+    filterSessions: async () => { throw secretError() },
+    filterEvents: async () => { events++; return [] },
+  })
+  const result = await host.recall('needle', 8, caller, 'sessions')
+  assert.match(result, /检索失败.*EACCES/)
+  assert.doesNotMatch(result, /会话命中|已完成，未命中|熔断/)
+  assert.equal(events, 0)
+  assert.ok(host._degradeSink.isEmpty())
   absentSecrets(result)
 })
 
-test('scan cap counts failed attempts, newest order and oversized skip before file read', async () => {
-  let reads = 0
-  const { home, host } = await harness({ readFileSync: (file) => { reads++; return fs.readFileSync(file) } })
-  session(home, 'old-hit', 'needle', { mtime: 1 })
-  session(home, 'newest-oversized', 'needle', { size: 17 * 1024 * 1024, mtime: 1000 })
-  for (let i = 0; i < 80; i++) {
-    const file = session(home, 'broken-' + i, 'needle', { mtime: 100 + i })
-    fs.writeFileSync(file, 'broken')
-    fs.utimesSync(file, 100 + i, 100 + i)
-  }
-  const result = host.lexicalSessionScanFallback('needle')
-  assert.equal(result.length, 0)
-  assert.equal(reads, 79)
-  assert.match(result.diagnostic, /最多尝试 80 个会话；本次尝试 80 个/)
-  assert.match(result.diagnostic, /超大跳过 1 个/)
-  assert.equal(host._degradeSink.countOf('session-scan'), 1)
-})
-
-test('frame and byte budgets really constrain production head decoding', async () => {
-  const { home, host } = await harness()
-  session(home, 'too-late', 'tailneedle', { frames: 160 })
-  const output = host.lexicalSessionScanFallback('tailneedle')
-  assert.equal(output.length, 0)
-  assert.match(output.diagnostic, /最多 160 帧 \/ 4MiB/)
+test('frame and byte budgets really constrain production head decoding', () => {
+  const frame = zstdCompressSync(Buffer.from('prefix\n'))
+  const tail = zstdCompressSync(Buffer.from('tailneedle\n'))
+  const crowded = Buffer.concat([...Array(160).fill(frame), tail])
+  const observation = {}
+  assert.equal(decodeZstdFramesHead(crowded, 160, 4 * 1024 * 1024, observation), 'prefix\n'.repeat(160))
+  assert.deepEqual(observation, { limited: true, failedFrames: 0 })
   const oversizedFrame = zstdCompressSync(Buffer.from('x'.repeat(4 * 1024 * 1024 + 1)))
   assert.ok(Buffer.byteLength(decodeZstdFramesHead(oversizedFrame, 160, 4 * 1024 * 1024)) <= 4 * 1024 * 1024)
-  const frames = Buffer.concat(['1234', '5678', 'overflow'].map((s) => zstdCompressSync(Buffer.from(s))))
+  const frames = Buffer.concat(['1234', '5678', 'overflow'].map(s => zstdCompressSync(Buffer.from(s))))
   assert.equal(decodeZstdFramesHead(frames, 3, 8), '12345678')
-  // A valid frame that cannot be decoded within the remaining byte budget still
-  // consumes a frame attempt; it must not allow a later frame beyond maxFrames.
+  // A valid frame that exceeds the byte budget still consumes a frame attempt.
   assert.equal(decodeZstdFramesHead(Buffer.concat([oversizedFrame, zstdCompressSync(Buffer.from('later'))]), 1, 8), '')
 })
 
-test('throwing and rejecting sinks/scanners cannot break fail-soft recall', async () => {
+test('throwing and rejecting diagnostic sinks cannot break fail-soft recall', async () => {
   for (const sink of [{ record: () => { throw secretError() } }, { record: () => Promise.reject(secretError()) }, Object.defineProperty({}, 'record', { get() { throw secretError() } })]) {
-    const { home, host } = await harness()
-    session(home, 'usable', 'needle')
-    host._sessionQuery = brokenQuery()
+    const { host } = await harness()
     host._degradeSink = sink
-    assert.match(await host.recall('needle', 8, undefined, 'sessions'), /usable/)
-    host.lexicalSessionScanFallback = () => { throw secretError() }
-    const output = await host.recall('needle', 8, undefined, 'sessions')
-    assert.match(output, /扫描失败，无法判断/)
-    absentSecrets(output)
+    useSessionService(host, { searchSessions: async () => { throw confirmedFault() } })
+    const incident = await host.recall('needle', 8, caller, 'sessions')
+    assert.match(incident, /已熔断.*SQLITE_CORRUPT/)
+    absentSecrets(incident)
+    host._ctxRef = { get() { throw secretError() } }
+    const lookup = await host.recall('needle', 8, caller, 'sessions')
+    assert.match(lookup, /检索失败/)
+    assert.doesNotMatch(lookup, /已熔断/)
+    absentSecrets(lookup)
   }
-  await new Promise((resolve) => setImmediate(resolve))
+  await new Promise(resolve => setImmediate(resolve))
 })
 
 test('exception projection redacts messages, paths, query secrets, content and malicious values within bounds', () => {
@@ -370,9 +329,15 @@ test('audit log failure and post-save failure report what actually persisted', a
 
 test('real debugInfo/persistence/dashboard path exposes failures and persistence failure stays observable', async () => {
   const { home, host } = await harness()
-  session(home, 'local', 'needle')
-  host._sessionQuery = brokenQuery()
-  await host.recall('needle', 8, undefined, 'sessions')
+  useSessionService(host, { searchSessions: async () => { throw confirmedFault() } })
+  await host.recall('needle', 8, caller, 'sessions')
+  host._ctxRef = { get() { throw secretError() } }
+  assert.match(await host.recall('needle', 8, caller, 'sessions'), /检索失败/)
+  // The existing dashboard also presents sanitized I/O error details for note status.
+  const { notesPath } = await host.resolvePaths()
+  await fsp.writeFile(notesPath, noteBody)
+  host.writeFull = async () => { throw secretError() }
+  assert.match(await host.applyNoteStatusPre(notesPath, { retract: [memoryId] }, noteBody), /状态写入失败/)
   assert.equal(host._degradeViewSnapshot().persisted, true)
   const data = await host.debugInfo()
   const degrade = data.associativeMemory.degrade
@@ -383,10 +348,15 @@ test('real debugInfo/persistence/dashboard path exposes failures and persistence
   //   ⇒ 去掉 readOnly 后 debugInfo 重新落盘，persisted 应为 true。下面紧跟的磁盘断言正是它的证据。
   assert.equal(degrade.persisted, true) // Diagnostic GET 读驱动写：debugInfo 一次即刷新降级台账
   assert.equal(degrade.counts['session-search'], 1)
+  assert.equal(degrade.counts['session-recall-handler'], 1)
+  assert.equal(degrade.counts['note-status'], 1)
   assert.equal(degrade.schemaVersion, 'degrade_pre_v1')
   const disk = JSON.parse(fs.readFileSync(path.join(home, 'memory/degrade/latest.json'), 'utf8'))
-  assert.equal(disk.counts['session-search'], 1)
-  assert.equal(disk.recent.length, 1)
+  assert.deepEqual(disk.counts, degrade.counts)
+  assert.deepEqual(disk.recent.map(entry => entry.kind), ['session-search', 'session-recall-handler', 'note-status'])
+  assert.match(disk.recent[0].reason, /code=SQLITE_CORRUPT; stage=execution/)
+  assert.match(disk.recent[1].reason, /code=EACCES/)
+  assert.match(disk.recent[2].reason, /code=EACCES/)
   assert.equal(disk.quota.schemaVersion, 'quota_probe_pre_v1')
   absentSecrets(disk)
 
@@ -414,32 +384,36 @@ test('real debugInfo/persistence/dashboard path exposes failures and persistence
   assert.equal(failedView.associativeMemory.degrade.counts['note-status'], 1)
 })
 
-test('unchanged retention bounds apply to newly wired diagnostic events', async () => {
+test('unchanged retention bounds apply to confirmed incidents across service generations', async () => {
   const { host } = await harness()
   host._degradeSink = createDegradeSinkPre({ cap: 2 })
-  host._sessionQuery = brokenQuery()
-  // ★2026-10-24 R0 归因（判据过期，非真缺陷）：本用例的目的是**环形缓冲的保留边界**（cap=2 / evicted=3），
-  //   只是借用 session-search 作为载体。R0 给 session-search 加了失败熔断后，连续 5 次调用只有第 1 次
-  //   真正碰到宿主并留痕，其余 4 次被熔断短路 ⇒ counts 恒为 1。
-  //   修法：每轮清掉熔断标记，让「5 次真实失败」这一前提重新成立 —— 测的仍是保留边界本身。
-  //   熔断本身由 smoke-test-r0-recall-availability 专门验收（含「第二次不再碰宿主」的真行为断言）。
-  for (let i = 0; i < 5; i++) { host._sessionQueryFailAt = 0; await host.searchSessionHistory('needle') }
+  let calls = 0
+  for (let i = 0; i < 5; i++) {
+    useSessionService(host, { searchSessions: async () => { calls++; throw confirmedFault() } })
+    const result = await host.searchSessionHistory('needle', 8, caller)
+    assert.match(result.diagnostic, /已熔断/)
+  }
   const snapshot = host._degradeSink.snapshot()
+  assert.equal(calls, 5)
   assert.equal(snapshot.counts['session-search'], 5)
   assert.equal(snapshot.recent.length, 2)
   assert.equal(snapshot.evicted, 3)
+  absentSecrets(snapshot)
 })
 
-
-test('malformed successful host response is reported as processing failure, not a thrown host search', async () => {
-  const { home, host } = await harness()
-  session(home, 'fallback-hit', 'needle')
-  host._sessionQuery = { searchSessions: async () => ({ items: {} }) }
-  const result = await host.recall('needle', 8, undefined, 'sessions')
-  assert.match(result, /结果处理失败/)
-  assert.doesNotMatch(result, /宿主会话检索抛错/)
-  assert.match(result, /fallback-hit/)
-  assert.equal(host._degradeSink.countOf('session-search'), 1)
+test('a malformed host page reports an invalid response without fallback or an incident', async () => {
+  const { host } = await harness()
+  let scans = 0
+  useSessionService(host, {
+    searchSessions: async () => ({ items: {} }),
+    filterSessions: async () => { scans++; return [] },
+    filterEvents: async () => { scans++; return [] },
+  })
+  const result = await host.recall('needle', 8, caller, 'sessions')
+  assert.match(result, /SESSION_QUERY_INVALID_RESPONSE/)
+  assert.doesNotMatch(result, /已完成，未命中|熔断|会话命中/)
+  assert.equal(scans, 0)
+  assert.ok(host._degradeSink.isEmpty())
 })
 
 test('note-status remains fail-soft with a broken sink and unchanged skipped-status behavior', async () => {
@@ -473,13 +447,7 @@ test('real memory_note callback confirms the completed note write and safely rep
 })
 
 
-test('normal head-budget truncation is visible and is not recorded as an unexpected decode failure', async () => {
-  const { home, host } = await harness()
-  session(home, 'head-limited', 'tailneedle', { frames: 160 })
-  const output = host.lexicalSessionScanFallback('tailneedle')
-  assert.equal(output.length, 0)
-  assert.match(output.diagnostic, /头部受预算限制 1 个/)
-  assert.equal(host._degradeSink.countOf('session-scan'), 0)
+test('normal head-budget truncation is distinct from a decode failure', () => {
   const observation = {}
   const huge = zstdCompressSync(Buffer.from('x'.repeat(100)))
   assert.equal(decodeZstdFramesHead(huge, 160, 8, observation), '')
@@ -487,22 +455,31 @@ test('normal head-budget truncation is visible and is not recorded as an unexpec
   assert.equal(observation.failedFrames, 0)
 })
 
-test('scope=all preserves empty fallback explanation without fabricating a sessions hit section', async () => {
-  const { home, host } = await harness()
-  session(home, 'no-hit', 'unrelated')
+test('scope=all preserves local hits and the empty fallback receipt; current skips history', async () => {
+  const { host } = await harness()
+  const { notesPath } = await host.resolvePaths()
+  await fsp.writeFile(notesPath, 'A local note with needle context.\n')
   Object.assign(host, {
     listDailyLogs: async () => [], listReflections: async () => [],
     external: { search: async () => [] }, searchHandoffCorpus: async () => [],
   })
-  host._sessionQuery = brokenQuery()
-  const result = await host.recall('needle', 8, undefined, 'all')
-  assert.match(result, /历史 DSH 会话检索说明/)
+  let historyCalls = 0
+  useSessionService(host, {
+    searchSessions: async () => { historyCalls++; disabledSearch() },
+    filterSessions: async () => [{ header: historyHeader('visible-session') }],
+    filterEvents: async () => { throw secretError('EIO') },
+  })
+  const result = await host.recall('needle', 8, caller, 'all')
+  assert.match(result, /A local note with needle context/)
+  assert.match(result, /历史会话检索说明.*宿主可见消息接口.*部分会话未能读取或超出扫描范围/)
   assert.doesNotMatch(result, /历史 DSH 会话命中/)
-  assert.match(result, /非全量/)
-  assert.equal(host._degradeSink.countOf('session-search'), 1)
+  assert.ok(host._degradeSink.isEmpty())
   absentSecrets(result)
+  const current = await host.recall('needle', 8, caller, 'current')
+  assert.match(current, /A local note with needle context/)
+  assert.doesNotMatch(current, /历史会话检索说明|历史 DSH 会话命中/)
+  assert.equal(historyCalls, 1)
 })
-
 
 test('analogous Python rank catch records an actual sidecar exception once, while empty success stays quiet', async () => {
   const { host, home } = await harness()
@@ -531,33 +508,6 @@ test('analogous Python rank catch records an actual sidecar exception once, whil
   assert.equal(engine._degradeSink.countOf('semantic-arm'), 1)
 })
 
-
-test('migration candidates use newest mtime, v3 wins ties, and stat failure retains a usable candidate', async () => {
-  const { home, host } = await harness()
-  session(home, 'migrated', 'stale unrelated', { mtime: 1000 })
-  session(home, 'migrated', 'needle newest', { name: 'session.v3.jsonl.zstd', mtime: 2000 })
-  const latest = host.lexicalSessionScanFallback('needle')
-  assert.equal(latest.length, 2) // One hit plus the compatibility footer.
-  assert.match(latest[0], /needle newest/)
-  session(home, 'migrated', 'needle tied v3', { name: 'session.v3.jsonl.zstd', mtime: 1000 })
-  assert.match(host.lexicalSessionScanFallback('needle')[0], /needle tied v3/)
-  // The old-name file can also be newer: compatibility is based on observation.
-  session(home, 'migrated', 'needle newest old', { mtime: 3000 })
-  assert.match(host.lexicalSessionScanFallback('needle')[0], /needle newest old/)
-  for (const failingName of ['session.jsonl.zstd', 'session.v3.jsonl.zstd']) {
-    const fixture = await harness({ statSync: (file) => {
-      if (path.basename(file) === failingName) throw secretError()
-      return fs.statSync(file)
-    } })
-    session(fixture.home, 'stat-failure', 'needle old')
-    session(fixture.home, 'stat-failure', 'needle v3', { name: 'session.v3.jsonl.zstd' })
-    const result = fixture.host.lexicalSessionScanFallback('needle')
-    assert.equal(result.length, 2) // One hit plus the compatibility footer.
-    assert.equal(fixture.host._degradeSink.countOf('session-scan'), 1)
-    assert.match(result.diagnostic, /目录\/文件读取或头部解码失败 1 次/)
-    absentSecrets(result)
-  }
-})
 
 test('head decoder recovers prefix and reports structural corruption only inside frame and byte budgets', () => {
   const prefix = 'recoverable-prefix'
@@ -597,15 +547,4 @@ test('truncated header, block, checksum and reserved block type retain preceding
     assert.deepEqual(observation, { failedFrames: 1, limited: false })
     assert.deepEqual(scanZstdFrames(buf), [{ start: 0, end: prefix.length }])
   }
-})
-
-test('fallback keeps usable hits while aggregating an in-budget corrupt tail into the real sink', async () => {
-  const { home, host } = await harness()
-  const file = session(home, 'partial-corrupt', 'needle')
-  fs.appendFileSync(file, Buffer.from([0x28, 0xb5, 0x2f, 0xfd]))
-  const result = host.lexicalSessionScanFallback('needle')
-  assert.equal(result.length, 2) // One hit plus the compatibility footer.
-  assert.match(result[0], /needle/)
-  assert.equal(host._degradeSink.countOf('session-scan'), 1)
-  assert.match(result.diagnostic, /目录\/文件读取或头部解码失败 1 次/)
 })

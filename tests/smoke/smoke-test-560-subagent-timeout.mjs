@@ -190,7 +190,7 @@ console.log('== F. 复位与置位收口 ==')
   ok(iReset > 0 && iGate > iReset, '★★F2 复位在任何早退之前（所有路径都先复位）')
   ok(/const _markTimeout = \(\) => \{ try \{ this\._subagentLastTimeout = true/.test(b),
      '★★F3 置位只经 _markTimeout 这一个收口')
-  ok(/setTimeout\(\(\) => \{ _markTimeout\(\);/.test(b),
+  ok(/setTimeout\(\(\) => \{\s*if \(!maintainDistill\) _markTimeout\(\)/.test(b),
      '★★F4 置位点在 timer 回调内（_noTimeout 时不建 timer ⇒ 走不到）')
   ok(/const timer = _noTimeout \? null : setTimeout/.test(b), 'F5 _noTimeout 时不注册定时器')
 }

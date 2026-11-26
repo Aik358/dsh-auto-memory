@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import vm from 'node:vm'
 import { setImmediate } from 'node:timers/promises'
+import { bindRecallResponseCancellation } from '../../lib/session-recall.js'
 
 const host = readFileSync(new URL('../../lib/index.js', import.meta.url), 'utf8')
 for (const name of ['recall', 'smartRecall']) {
@@ -12,7 +13,7 @@ for (const name of ['recall', 'smartRecall']) {
     resolvePathsForSession: async (sid) => ({ wsBound: sid === 'A', ws: '/fixture/A' }), agentForSessionId: () => null,
     withAgent: (agent, fn) => fn(), recall: async (...args) => { calls.push(args); return 'A result' },
     smartRecall: async (...args) => { calls.push(args); return { answer: 'A result', hits: [] } } }
-  const env = { engine, isLoopbackRequest: () => true, panelAllowedHosts: [], forbiddenPanelPayloadPre: (req) => ({ error: 'forbidden: panel-access' }), readJsonBody: async (req) => req.body,
+  const env = { engine, bindRecallResponseCancellation, isLoopbackRequest: () => true, panelAllowedHosts: [], forbiddenPanelPayloadPre: (req) => ({ error: 'forbidden: panel-access' }), readJsonBody: async (req) => req.body,
     writeJson: (res, status, body) => Object.assign(res, { status, body }) }
   const handler = new Function(...Object.keys(env), 'return (' + host.slice(start, end) + '\n})')(...Object.values(env))
   for (const sessionId of ['', 'unknown', 'A']) {
@@ -21,7 +22,10 @@ for (const name of ['recall', 'smartRecall']) {
   }
   const agent = calls[0][name === 'recall' ? 2 : 1]
   assert.equal(agent.session.id, 'A'); assert.equal(agent.session.header.cwd, '/fixture/A')
-  if (name === 'recall') assert.equal(calls[0][3], 'archive')
+  if (name === 'recall') {
+    assert.equal(calls[0][3], 'archive')
+    assert.ok(calls[0][4].signal instanceof AbortSignal)
+  }
 }
 const source = readFileSync(new URL('../../skins/iter5/native-search.js', import.meta.url), 'utf8')
 const boxes = [], payloads = [], copied = []

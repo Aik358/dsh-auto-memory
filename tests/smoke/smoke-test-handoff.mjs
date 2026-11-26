@@ -244,10 +244,16 @@ ok(SRC.includes("if (scope === 'handoff') {") && SRC.includes("if (scope === 'se
 //   比字符串全等更贴合原意（将来再加 scope 也不会假红）。
 {
   const enumLine = "scope: { type: 'string', enum: ['all', 'handoff', 'sessions', 'archive', 'events']"
-  const recallCall = "engine.recall(args.query, args.limit, exec.agent, args.scope || 'all', { format: args.format || 'l0', expand: args.expand, eventId: args.eventId, checkpointIndex: args.checkpointIndex, idemKey: args.idemKey })"
-  ok(SRC.includes(enumLine) && SRC.includes(recallCall), 'memory_recall 工具声明 scope 枚举（含 archive/events）并透传事件下钻字段')
-  const hasRecallWire = (source) => source.includes(enumLine) && source.includes(recallCall)
-  ok(!hasRecallWire(SRC.replace(recallCall, recallCall.replace(', eventId: args.eventId, checkpointIndex: args.checkpointIndex, idemKey: args.idemKey', ''))), '负路径：移除事件下钻透传时判据必红')
+  const call = /engine\.recall\(args\.query, args\.limit, exec\.agent, args\.scope \|\| 'all', \{[^\r\n{}]+\}\)/g
+  const fields = ['eventId: args.eventId', 'checkpointIndex: args.checkpointIndex', 'idemKey: args.idemKey', 'signal: exec.signal']
+  const hasRecallWire = (source) => {
+    const calls = [...source.matchAll(call)]
+    return source.includes(enumLine) && calls.length === 1 && fields.every(field => calls[0][0].includes(field))
+  }
+  ok(hasRecallWire(SRC), 'memory_recall 工具声明 scope 枚举并透传事件下钻字段与取消信号')
+  const [actualCall] = [...SRC.matchAll(call)]
+  const missingEventId = actualCall && SRC.replace(actualCall[0], actualCall[0].replace(', eventId: args.eventId', ''))
+  ok(missingEventId && missingEventId !== SRC && !hasRecallWire(missingEventId), '负路径：实际移除事件下钻透传时判据必红')
   for (const sc of ['all', 'handoff', 'sessions', 'archive', 'events']) {
     ok(SRC.includes("'" + sc + "'") && enumLine.includes("'" + sc + "'"), 'scope 枚举含 ' + sc)
   }
