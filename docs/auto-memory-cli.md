@@ -16,6 +16,19 @@ auto-memory.cmd
 
 旧版插件兼容模式提供工作区记忆列表、项目笔记和日志、白板事件及设置的只读浏览。旧版白板事件接口需要工作区内已有会话。终端契约提供插件按权限公布的更多操作。
 
+## 宿主总览
+
+独立客户端启动时显示宿主总览。方向键选择宿主，Enter 打开详情。已连接的 DSH 可用 Enter 进入工作区。按 `0` 返回总览，`1` 查看记忆，`2` 查看白板，`w` 选择工作区，`r` 刷新当前页。
+
+总览依据本机进程、PATH、桌面安装记录与配置文件检测宿主。支持接入 Auto Memory 的宿主会显示绑定或连接状态，其他宿主显示「仅检测」。配置文件里有桥接入口时显示「已登记」，可用的绑定通过 DSH 调用核实后显示「已连接」。
+
+通过 `--binding`、`DAM_HARNESS_BINDING` 或每个宿主一个 `<harness>.json` 提供现有绑定。默认绑定目录在 Windows 为 `%LOCALAPPDATA%\AutoMemory\bindings`，在其他系统为 `$XDG_CONFIG_HOME/auto-memory/bindings`（默认 `~/.config/auto-memory/bindings`）。`DAM_BINDINGS_DIR` 可指定其他目录。查看当前项目的宿主状态可使用以下命令。
+
+```powershell
+auto-memory.cmd harnesses --json
+auto-memory.cmd harnesses --workspace D:\project --json
+```
+
 ## 安装候选包
 
 Windows PowerShell

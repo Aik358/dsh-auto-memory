@@ -15,7 +15,7 @@ try {
   await mkdir(destination, { recursive: true })
   const files = [
     'LICENSE', 'docs/auto-memory-cli.md', 'lib/dsh-home.js', 'lib/file-boundary.js',
-    ...['cli', 'client', 'contract', 'discovery', 'legacy-client', 'legacy-discovery', 'settings',
+    ...['cli', 'client', 'contract', 'discovery', 'harness-status', 'legacy-client', 'legacy-discovery', 'settings',
       'tui', 'tui-board', 'tui-data', 'tui-screen', 'tui-text', 'tui-view'].map(name => `lib/terminal/${name}.js`),
     ...['antigravity', 'external-dsh-proxy', 'external-hosts', 'kimi'].map(name => `lib/harness/${name}.js`),
   ]
