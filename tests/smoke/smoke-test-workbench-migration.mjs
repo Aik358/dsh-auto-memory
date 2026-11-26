@@ -254,7 +254,7 @@ check('⑭ 同意门：建立入口显式传 consent + 无 consent 不建',
   // 主路径和 UNKNOWN_MODEL 回退必须各调用一次共用的启动器，且复用同一 run 变量。
   const stray = (fn.match(/\brun\d+\b/g) || []).length
   const viaAdapter = (fn.match(/await callSubagentStartPre\(/g) || []).length
-  const starts = (fn.match(/\brun = await start\(/g) || []).length
+  const starts = (fn.match(/\brun = await (?:withinMaintainDeadline\()?start\(/g) || []).length
   check('⑱ 主启动和回退都经过共用适配层', viaAdapter === 1 && starts === 2, 'viaAdapter=' + viaAdapter + ' starts=' + starts)
   check('⑱ 无 run2 之类独立变量（否则回退路径不被回收）', stray === 0, 'stray=' + stray)
   // finally 里必须同时有 dispose 与 recycle

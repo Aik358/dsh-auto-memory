@@ -42,11 +42,12 @@ function extractNoteRoute(src) {
   return src.slice(braceStart, end).trim().replace(/,\s*$/, '')
 }
 function extractMaintFallback(src) {
-  const a = src.indexOf('    } else if (archived.length) {')
+  const condition = '    } else if (archived.length && !distillTimeoutMs) {'
+  const a = src.indexOf(condition)
   const end = src.indexOf('    // 4) 活跃目录移除旧日志', a)
-  assert.ok(a > 0 && end > a, '抽取 maintain 归档回灌段命中')
-  // 抽取段以 `} else if (...) {` 起头 ⇒ 单独放进函数体是**悬挂 else**；转成 `if`。
-  return src.slice(a, end).replace(/^\s*\} else if \(archived\.length\) \{/, 'if (archived.length) {')
+  assert.ok(a > 0 && end > a, '抽取 maintain 普通归档指针段命中')
+  // Execute the production condition with and without a distillation timeout.
+  return 'if (archived.length && !distillTimeoutMs) {' + src.slice(a + condition.length, end)
 }
 
 const noteRoute = extractNoteRoute(SRC)
@@ -156,7 +157,7 @@ const tmp = mkdtempSync(pathModule.join(tmpdir(), 'dam-i333-'))
 // ── maintain 归档回灌段的可执行实例 ──
 function makeMaint(src, opts) {
   const block = extractMaintFallback(src)
-  const factory = new Function('path', 'p', 'archiveDir', 'archived', 'agent', 'noteMsg',
+  const factory = new Function('path', 'p', 'archiveDir', 'archived', 'agent', 'noteMsg', 'distillTimeoutMs',
     'return async function () {' + block + '\nreturn { noteMsg } }')
   const calls = []
   const self = {
@@ -172,7 +173,7 @@ function makeMaint(src, opts) {
     budgetRefusalTextPre: (r) => '项目笔记已达容量上限(' + r.acct.used + '/' + r.acct.limit + ' 字符)',
     state: {},
   }
-  const fn = factory(pathModule, { notesPath: opts.notesPath }, opts.archiveDir, opts.archived, null, '')
+  const fn = factory(pathModule, { notesPath: opts.notesPath }, opts.archiveDir, opts.archived, null, '', opts.distillTimeoutMs ?? 0)
   return { run: () => fn.call(self), calls }
 }
 
@@ -216,6 +217,12 @@ function makeMaint(src, opts) {
   ok(!readFileSync(notesPath, 'utf8').includes(fullText), '⑤ 磁盘确无归档全文（负路径）')
   ok(calls[0].includes(archiveDir) && /memory_read\(kind="archive"\)/.test(calls[0]), '⑤ 写的是**指针**（含路径 + 取回命令）')
   ok(existsSync(pathModule.join(archiveDir, '2026-01-01.md')), '⑤ ★硬约束：归档副本仍在（取回通道的前提）')
+  const noteBeforeTimeout = readFileSync(notesPath)
+  const afterTimeout = makeMaint(SRC, { notesPath, archiveDir, archived, limit: 100000, distillTimeoutMs: 240000 })
+  await afterTimeout.run()
+  assert.deepEqual(afterTimeout.calls, [], 'timeout skips the optional note pointer')
+  assert.deepEqual(readFileSync(notesPath), noteBeforeTimeout)
+  assert.equal(readFileSync(pathModule.join(archiveDir, archived[0]), 'utf8'), fullText)
 }
 
 // ═══ ⑥ 变异反向验证（证明断言非恒真）═══
