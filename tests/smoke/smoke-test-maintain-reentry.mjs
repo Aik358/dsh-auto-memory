@@ -194,6 +194,51 @@ try {
     }
   })
 
+  await it('rejected disposal keeps the worker session until the terminal result', async () => {
+    const f = await scope('rejected-disposal')
+    engine.config.subagentTimeoutSeconds = 180
+    const accepted = Promise.withResolvers()
+    const result = Promise.withResolvers()
+    const advanced = Promise.withResolvers()
+    const recycled = Promise.withResolvers()
+    const earlierBump = engine.bumpGenFor
+    const earlierRecycle = engine.recycleSubagentSession
+    let recycleCount = 0
+    engine.bumpGenFor = async () => { advanced.resolve() }
+    engine.recycleSubagentSession = async (child) => {
+      recycleCount++
+      recycled.resolve(child.session.id)
+    }
+    setBackend(async (spec) => {
+      accepted.resolve(spec)
+      return {
+        childId: spec.childId,
+        localAgent: worker(f, spec.childId),
+        result: result.promise,
+        dispose: async () => { throw new Error('Fixture disposal rejected') },
+      }
+    })
+    try {
+      const outer = call(f.agent)
+      const spec = await checked(accepted.promise, 'child with failing disposal')
+      await nextTick()
+      fireDeadline(180000)
+      assert.match(await checked(outer, 'archive survives a disposal rejection'), /已核验 1 份归档副本/)
+      await assertArchived(f)
+      await checked(advanced.promise, 'generation bookkeeping after disposal rejection')
+      assert.equal(recycleCount, 0, 'session remains intact while the worker is active')
+      assert.match(await call(worker(f, spec.childId)), /^NO：/)
+      result.resolve(completed('Ignored late completion'))
+      assert.equal(await checked(recycled.promise, 'deferred cleanup after worker completion'), spec.childId)
+      assert.equal(recycleCount, 1)
+      await assert.rejects(readFile(f.notesPath), { code: 'ENOENT' })
+    } finally {
+      result.resolve(completed('Fixture cleanup'))
+      engine.bumpGenFor = earlierBump
+      engine.recycleSubagentSession = earlierRecycle
+    }
+  })
+
   await it('stalled host activation times out and a late receipt is disposed', async () => {
     const f = await scope('stuck-startup')
     engine.config.subagentTimeoutSeconds = 300
