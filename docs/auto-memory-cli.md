@@ -1,6 +1,20 @@
 # Auto Memory 命令行和终端工作台
 
-`dam` 随 `@a9i5k4/dsh-auto-memory` 同包安装。它连接已经加载插件的 DeepSeek Harness 实例，读取该实例的记忆、白板、设置与任务。宿主重载插件后，`dam doctor` 会显示重新加载的构建指纹和实例 ID。
+`dam` 随 `@a9i5k4/dsh-auto-memory` 同包安装。也可单独安装 `@a9i5k4/auto-memory-cli`，使用 `auto-memory` 连接已经加载插件的 DeepSeek Harness 实例。两种入口都支持 Auto Memory 终端契约。
+
+## 独立安装
+
+用 Node.js 24 或更新版本构建并安装客户端。
+
+```powershell
+npm.cmd run pack:cli -- .
+npm.cmd install --global .\a9i5k4-auto-memory-cli-3.4.4.tgz
+auto-memory.cmd
+```
+
+独立客户端优先发现终端契约。旧版插件兼容模式在 Windows 自动识别同一登录会话中的 DSH Desktop，核对插件报告的 DSH 目录，再读取 DSH 的工作区登记表。记忆、白板和设置通过正在运行的插件读取。使用 DSH 提供的授权启动 URL 时，也可通过 `DSH_CONNECT_URL` 查询工作区。
+
+旧版插件兼容模式提供工作区记忆列表、项目笔记和日志、白板事件及设置的只读浏览。旧版白板事件接口需要工作区内已有会话。终端契约提供插件按权限公布的更多操作。
 
 ## 安装候选包
 

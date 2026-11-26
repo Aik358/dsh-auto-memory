@@ -26,6 +26,7 @@ const deliveryOnly = process.env.DAM_STORAGE_DELIVERY_ONLY === '1'
 const conptyOnly = process.env.DAM_STORAGE_CONPTY_ONLY === '1'
 const externalUserOnly = process.env.DAM_STORAGE_EXTERNAL_USER_ONLY === '1'
 const memoryActionsOnly = process.env.DAM_STORAGE_MEMORY_ACTIONS_ONLY === '1'
+const standaloneEntry = process.env.DAM_STANDALONE_CLI_ENTRY
 
 // Reuse the live launcher while keeping this probe's fixtures and assertions independent.
 async function loadLauncher() {
@@ -1504,7 +1505,39 @@ async function runDeliveryChecks() {
 
 let host
 try {
-  if (teamOnly) {
+  if (standaloneEntry) {
+    const home = await prepare(root, plugin)
+    host = startDesktop(root, home)
+    const { url: launch } = await host.ready()
+    const connection = await authenticate(launch)
+    const workspace = join(root, 'legacy-project')
+    const { sessionId, workspaceId } = await createWorkspace(connection, workspace)
+    const empty = join(root, 'sessionless-workspace')
+    await mkdir(empty)
+    const { workspace: { workspaceId: emptyId } } = await remote(connection.origin, 'workspace/create',
+      { request: { path: empty } }, connection.browserCookie)
+    const run = (args, authorization = launch, expectedExit = 0) => cli(root, home, null, args, authorization,
+      { entry: standaloneEntry, expectedExit })
+    const denied = await run(['doctor', '--url', connection.origin], null, 3)
+    assert.ok(['legacy-auth-required', 'unauthorized'].includes(denied.error.code))
+    const doctor = await run(['doctor'])
+    assert.equal(doctor.mode, 'dsh-legacy')
+    const { workspaces } = await run(['api', 'call', 'system.workspaces'])
+    assert.equal(workspaces.find(item => item.workspaceRef === workspaceId).workspace, workspace)
+    assert.equal(workspaces.find(item => item.workspaceRef === emptyId).workspace, empty)
+    for (const [ref, target] of [[workspaceId, workspace], [emptyId, empty]]) {
+      const list = await run(['--workspace-ref', ref, 'memory', 'list'])
+      assert.equal(list.ws, target)
+      assert.equal(list.wsBound, true)
+    }
+    const board = await run(['--workspace-ref', workspaceId, 'board', 'events'])
+    assert.equal(board._resolved.sessionId, sessionId)
+    assert.equal(board._resolved.ws, workspace)
+    const boardUnavailable = await run(['--workspace-ref', emptyId, 'board', 'events'], launch, 5)
+    assert.equal(boardUnavailable.error.code, 'operation-unavailable')
+    report('standalone CLI with a legacy Desktop plugin', { authorizedWorkspaces: true, sessionlessMemory: true,
+      scopedBoard: true, anonymousDenied: true })
+  } else if (teamOnly) {
     await runTeamChecks()
   } else if (remoteTeamOnly) {
     await runRemoteTeamChecks()

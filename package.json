@@ -5,6 +5,9 @@
   "private": true,
   "type": "module",
   "main": "lib/index.js",
+  "scripts": {
+    "pack:cli": "node tools/pack-auto-memory-cli.mjs"
+  },
   "bin": {
     "dam": "./lib/terminal/cli.js"
   },
