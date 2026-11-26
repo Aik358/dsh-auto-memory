@@ -1480,17 +1480,21 @@ async function runDeliveryChecks() {
     report('DSH workspace activity during independent browse', { onlyOriginActive: true, otherWorkspaceRead: true,
       noSessionNeeded: true, realTurnStillRunning: true })
     if (process.env.DAM_STORAGE_ACTIVITY_CONPTY === '1') {
-      const env = { ...environment(root, home), PYTHONUTF8: '1' }
+      const emptyWorkspace = join(root, 'delivery-project-empty')
+      await mkdir(emptyWorkspace)
+      await rpc('workspace/create', { request: { path: emptyWorkspace } })
+      const env = { ...environment(root, home), PYTHONUTF8: '1', DSH_SESSION_ID: a.sessionId }
       delete env.ELECTRON_RUN_AS_NODE
       for (const name of ['PYTHONPATH', 'DAM_TUI_ARTIFACT_DIR']) {
         if (process.env[name]) env[name] = process.env[name]
       }
       const args = ['-B', join(repo, 'tests', 'live', 'auto-memory-tui-pty.py'), '--workspace-activity',
-        '--', process.execPath, entry, '--dsh-home', home, '--profile', 'desktop', '--workspace-ref', b.workspaceId]
+        '--', process.execPath, entry, '--dsh-home', home, '--profile', 'desktop']
       const output = await collectProcess('python', args, { env, cwd: root })
       assert.equal(output.code, 0, output.stderr)
       assert.match(output.stdout, /ConPTY workspace activity passed/)
-      report('ConPTY switches browsing workspace during a running DSH turn', { greenIndicator: true, scopeIsolated: true })
+      report('ConPTY opens the workspace picker and switches workspace during a running DSH turn',
+        { inheritedSessionIgnored: true, greenIndicator: true, scopeIsolated: true })
     }
   } finally {
     await host?.stop()

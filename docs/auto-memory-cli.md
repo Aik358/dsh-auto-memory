@@ -27,6 +27,18 @@ dam --help
 
 ## 连接和选择范围
 
+在交互式终端直接运行 `dam`，连接成功后会打开工作区选择器，列出实例已登记的工作区和会话。用方向键和 Enter 选择浏览目标，随时可按 `w` 切换。传入 `--workspace`、`--workspace-ref` 或 `--session` 可直接打开指定范围。
+
+PowerShell 中也可以把下面的函数加入当前用户的 profile，用 `auto memory` 启动。示例使用 PATH 上的 `dam.cmd`。
+
+```powershell
+function auto {
+    param([string] $Product)
+    if ($Product -ne 'memory') { throw 'Usage: auto memory [dam arguments]' }
+    & dam.cmd @args
+}
+```
+
 ```text
 dam doctor --json
 dam api call system.workspaces --json

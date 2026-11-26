@@ -649,9 +649,8 @@ def storage(command, delete_input):
 def workspace_activity(command):
     terminal = Terminal(29, 120, command=command)
     try:
-        terminal.wait("已连接", "delivery-project-1", "未指定")
-        terminal.send("w")
-        terminal.wait("选择工作区", "● 处理中 · delivery-project-0", "delivery-project-1")
+        terminal.wait("已连接", "未绑定工作区", "选择工作区", "● 处理中 · delivery-project-0",
+                      "delivery-project-1", "delivery-project-empty")
         terminal.screenshot("wide-workspaces-active")
         assert "\x1b[32m" in terminal.raw
         terminal.select("delivery-project-0")
