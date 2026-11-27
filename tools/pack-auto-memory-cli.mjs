@@ -15,7 +15,7 @@ try {
   await mkdir(destination, { recursive: true })
   const files = [
     'LICENSE', 'docs/auto-memory-cli.md', 'lib/dsh-home.js', 'lib/file-boundary.js',
-    ...['cli', 'client', 'contract', 'discovery', 'harness-status', 'legacy-client', 'legacy-discovery', 'settings',
+    ...['auto', 'cli', 'client', 'contract', 'discovery', 'harness-status', 'legacy-client', 'legacy-discovery', 'settings',
       'tui', 'tui-board', 'tui-data', 'tui-screen', 'tui-text', 'tui-view'].map(name => `lib/terminal/${name}.js`),
     ...['antigravity', 'external-dsh-proxy', 'external-hosts', 'kimi'].map(name => `lib/harness/${name}.js`),
   ]
@@ -32,7 +32,7 @@ try {
     repository: source.repository,
     type: 'module',
     engines: { node: '>=24' },
-    bin: { 'auto-memory': './lib/terminal/cli.js' },
+    bin: { auto: './lib/terminal/auto.js', 'auto-memory': './lib/terminal/cli.js' },
   }
   await writeFile(join(stage, 'package.json'), JSON.stringify(metadata, null, 2) + '\n')
   const result = spawnSync(process.execPath, [npm, 'pack', '--pack-destination', destination, '--quiet'],

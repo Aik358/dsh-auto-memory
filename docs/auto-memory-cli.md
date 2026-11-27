@@ -4,12 +4,21 @@
 
 ## 独立安装
 
-用 Node.js 24 或更新版本构建并安装客户端。
+使用 Node.js 24 或更新版本。全局安装客户端后，可以直接在终端打开宿主总览。
+
+```sh
+npm install -g @a9i5k4/auto-memory-cli
+auto memory
+```
+
+`auto-memory` 也是独立的启动命令。Windows PowerShell 可使用 `auto.cmd memory` 或 `auto-memory.cmd`。
+
+开发者可以从工作树打包并安装本地候选包。
 
 ```powershell
 npm.cmd run pack:cli -- .
 npm.cmd install --global .\a9i5k4-auto-memory-cli-3.4.4.tgz
-auto-memory.cmd
+auto.cmd memory
 ```
 
 独立客户端优先发现终端契约。旧版插件兼容模式在 Windows 自动识别同一登录会话中的 DSH Desktop，核对插件报告的 DSH 目录，再读取 DSH 的工作区登记表。记忆、白板和设置通过正在运行的插件读取。使用 DSH 提供的授权启动 URL 时，也可通过 `DSH_CONNECT_URL` 查询工作区。
@@ -55,16 +64,6 @@ dam --help
 ## 连接和选择范围
 
 在交互式终端直接运行 `dam`，连接成功后会打开工作区选择器，列出实例已登记的工作区和会话。用方向键和 Enter 选择浏览目标，随时可按 `w` 切换。传入 `--workspace`、`--workspace-ref` 或 `--session` 可直接打开指定范围。
-
-PowerShell 中也可以把下面的函数加入当前用户的 profile，用 `auto memory` 启动。示例使用 PATH 上的 `dam.cmd`。
-
-```powershell
-function auto {
-    param([string] $Product)
-    if ($Product -ne 'memory') { throw 'Usage: auto memory [dam arguments]' }
-    & dam.cmd @args
-}
-```
 
 ```text
 dam doctor --json
