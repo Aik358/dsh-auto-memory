@@ -8,14 +8,15 @@
  * 覆盖:
  *   G1  parseSessionHead:取首帧 header 与 subagent descriptor
  *   G2  isPluginOneShotSubagent:插件 one-shot 子代理 → hit
- *   G3  判据:continuable 子代理不回收(可续聊)
+ *   G3  判据:continuable 子代理同样回收(DSH v4 宿主把一次性子代理标成 continuable)
+ *   G3b 判据:未知 mode 不回收(保守跳过)
  *   G4  判据:非插件 label 不回收(用户/主代理的委派)
  *   G5  判据:普通会话(origin!=='subagent')不回收
  *   G6  判据:缺少 parentSession 不回收
  *   G7  判据:keepMs 之内(太新)不回收
  *   G8  scanPluginSubagentSessions:目录扫描命中数/统计正确
  *   G9  recycleSessions:dry-run 不移动任何文件
- *   G10 recycleSessions:apply 移动会话目录 + 投影缓存,普通会话原样保留
+ *   G10 recycleSessions:apply 移动会话目录 + 投影缓存,普通会话与陌生 label 原样保留
  *   G11 备份目录同名冲突 → 跳过(不覆盖)
  *   G12 多帧 zstd 全量解码 + 坏文件不抛错
  */
@@ -99,8 +100,10 @@ try {
   // ── G2-G7 判据 ──────────────────────────────────────────
   const base = { labelPrefix: PLUGIN_LABEL_PREFIX, keepMs: 0, now: Date.now(), mtimeMs: 1 }
   ok('G2 插件 one-shot 子代理 → hit', isPluginOneShotSubagent(head, base).hit === true)
-  ok('G3 continuable 子代理不回收', isPluginOneShotSubagent(
-    { header: head.header, descriptor: descriptor('auto-memory-summarize', 'continuable') }, base).hit === false)
+  ok('G3 continuable 子代理同样回收', isPluginOneShotSubagent(
+    { header: head.header, descriptor: { ...head.descriptor, mode: 'continuable' } }, base).hit === true)
+  ok('G3b 未知 mode 不回收', isPluginOneShotSubagent(
+    { header: head.header, descriptor: { ...head.descriptor, mode: 'mystery-mode' } }, base).hit === false)
   ok('G4 非插件 label 不回收', isPluginOneShotSubagent(
     { header: head.header, descriptor: descriptor('Research official Mem0 sources', 'one-shot') }, base).hit === false)
   ok('G5 普通会话不回收', isPluginOneShotSubagent(
@@ -136,27 +139,27 @@ try {
   const scan = await scanPluginSubagentSessions({ sessionsRoot: root, labelPrefix: PLUGIN_LABEL_PREFIX, keepMs: 0 })
   ok('G8 扫描到 5 个会话目录', scan.scanned === 5, 'scanned=' + scan.scanned)
   ok('G8 其中 origin=subagent 4 个', scan.subagents === 4, 'subagents=' + scan.subagents)
-  ok('G8 可回收 2 个(1 one-shot + 1 one-shot)', scan.candidates.length === 2, 'candidates=' + scan.candidates.length)
-  ok('G8 候选只含插件 one-shot', scan.candidates.every((c) => c.label.startsWith(PLUGIN_LABEL_PREFIX) && c.mode === 'one-shot'))
-  ok('G8 统计到 reason 分布', scan.reasons.hit === 2 && scan.reasons.continuable === 1 && scan.reasons['foreign-label'] === 1, JSON.stringify(scan.reasons))
+  ok('G8 可回收 3 个(2 one-shot + 1 continuable)', scan.candidates.length === 3, 'candidates=' + scan.candidates.length)
+  ok('G8 候选只含插件子代理(one-shot 或 continuable)', scan.candidates.every((c) => c.label.startsWith(PLUGIN_LABEL_PREFIX) && (c.mode === 'one-shot' || c.mode === 'continuable')))
+  ok('G8 统计到 reason 分布', scan.reasons.hit === 3 && !scan.reasons.continuable && scan.reasons['foreign-label'] === 1, JSON.stringify(scan.reasons))
 
   // ── G9 dry-run ──────────────────────────────────────────
   const dry = await recycleSessions({ candidates: scan.candidates, backupRoot, projcacheRoot, apply: false })
-  ok('G9 dry-run 报告 2 个待移动', dry.moved.length === 2 && dry.applied === false)
+  ok('G9 dry-run 报告 3 个待移动', dry.moved.length === 3 && dry.applied === false)
   const stillThere = await stat(path.join(root, WS, scan.candidates[0].sid)).then(() => true, () => false)
   ok('G9 dry-run 未移动任何文件', stillThere === true)
 
   // ── G10 apply ───────────────────────────────────────────
   const applied = await recycleSessions({ candidates: scan.candidates, backupRoot, projcacheRoot, apply: true })
-  ok('G10 apply 移动 2 个', applied.moved.length === 2 && applied.failed.length === 0, JSON.stringify(applied.failed))
+  ok('G10 apply 移动 3 个', applied.moved.length === 3 && applied.failed.length === 0, JSON.stringify(applied.failed))
   const movedOk = await stat(path.join(backupRoot, WS, scan.candidates[0].sid)).then(() => true, () => false)
   ok('G10 备份目录出现会话', movedOk === true)
   const srcGone = await stat(path.join(root, WS, scan.candidates[0].sid)).then(() => false, () => true)
   ok('G10 源目录已移走', srcGone === true)
   const cacheMoved = await stat(path.join(backupRoot, '_projcache', scan.candidates[0].sid)).then(() => true, () => false)
   ok('G10 投影缓存一并移走', cacheMoved === true)
-  const continuableKept = await stat(path.join(root, WS, 'cccc3333-0000-0000-0000-000000000003')).then(() => true, () => false)
-  ok('G10 continuable 会话原样保留', continuableKept === true)
+  const continuableGone = await stat(path.join(root, WS, 'cccc3333-0000-0000-0000-000000000003')).then(() => false, () => true)
+  ok('G10 continuable 会话已回收', continuableGone === true)
   const plainKept = await stat(path.join(root, WS, 'session-plain-0000-0000-000000000005')).then(() => true, () => false)
   ok('G10 普通会话原样保留', plainKept === true)
   const foreignKept = await stat(path.join(root, WS, 'dddd4444-0000-0000-0000-000000000004')).then(() => true, () => false)
